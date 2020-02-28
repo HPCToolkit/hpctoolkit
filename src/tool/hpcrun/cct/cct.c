@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -81,11 +81,17 @@
 #include <lib/prof-lean/splay-macros.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
+#include <lib/prof-lean/spinlock.h>
 #include <hpcrun/hpcrun_return_codes.h>
 
 #include "cct.h"
 #include "cct_addr.h"
 #include "cct2metrics.h"
+#include "../memory/hpcrun-malloc.h"
+//#include "../ompt/ompt-interface.h"
+//#include "../memory/hpcrun-malloc.h"
+
+#define HPCRUN_CCT_KEEP_DUMMY 1
 
 //***************************** concrete data structure definition **********
 
@@ -110,22 +116,26 @@ struct cct_node_t {
   // ---------------------------------------------------------
 
   // parent node and the beginning of the child list
+  // vi3: also used as a next pointer for freelist of trees
   struct cct_node_t* parent;
   struct cct_node_t* children;
 
   // left and right pointers for splay tree of siblings
   struct cct_node_t* left;
   struct cct_node_t* right;
+
 };
 
+#if 0
 //
 // cache of info from most recent splay
 //
 static struct {
-  cct_node_t* node;
+  cct_node_tt* node;
   bool found;
   cct_addr_t* addr;
 } splay_cache;
+#endif
 
 //
 // ******************* Local Routines ********************
@@ -154,7 +164,8 @@ cct_node_create(cct_addr_t* addr, cct_node_t* parent)
     node = hpcrun_malloc_freeable(sz);
   }
   else {
-    node = hpcrun_malloc(sz);
+//    node = hpcrun_malloc(sz);
+    node = hpcrun_cct_node_alloc();
   }
 
   memset(node, 0, sz);
@@ -232,11 +243,20 @@ walkset_l(cct_node_t* cct, cct_op_t fn, cct_op_arg_t arg, size_t level)
 //
 // walker op used by counting utility
 //
+typedef struct {
+  bool count_dummy;
+  size_t n;
+} count_arg_t;
+
 static void
 l_count(cct_node_t* n, cct_op_arg_t arg, size_t level)
 {
-  size_t* cnt = (size_t*) arg;
-  (*cnt)++;
+  count_arg_t *count_arg = (count_arg_t *)arg;
+  if (hpcrun_cct_is_dummy(n) && !count_arg->count_dummy) {
+    return;
+  }
+
+  (count_arg->n)++;
 }
 
 //
@@ -253,21 +273,79 @@ walk_path_l(cct_node_t* node, cct_op_t op, cct_op_arg_t arg, size_t level)
 //
 // Writing helpers
 //
-
 typedef struct {
-  hpcfmt_uint_t num_metrics;
+  hpcfmt_uint_t num_kind_metrics;
   FILE* fs;
   epoch_flags_t flags;
   hpcrun_fmt_cct_node_t* tmp_node;
+  cct2metrics_t* cct2metrics_map;
 } write_arg_t;
 
+//
+// Merge the metrics of dummy nodes to their parents
+//
+static void
+collapse_dummy_node(cct_node_t *node, cct_op_arg_t arg, size_t level)
+{
+  if (!hpcrun_cct_is_dummy(node)) {
+    return;
+  }
+  
+  // get thread specific map
+  write_arg_t *write_arg = (write_arg_t *)arg;
+  cct2metrics_t **map = &(write_arg->cct2metrics_map);
+
+  // merge dummy child metrics
+  cct_node_t* parent = hpcrun_cct_parent(node);
+  metric_data_list_t *node_metrics = hpcrun_get_metric_data_list_specific(map, node);
+  if (node_metrics != NULL) {
+    metric_data_list_t *parent_metrics = hpcrun_get_metric_data_list_specific(map, parent);
+    if (parent_metrics != NULL) {
+      hpcrun_merge_cct_metrics(parent_metrics, node_metrics);
+    } else {
+      hpcrun_move_metric_data_list_specific(map, parent, node);
+    }
+  }
+}
+
+static void
+l_dummy(cct_node_t* n, cct_op_arg_t arg, size_t level)
+{
+  bool *dummy = (bool *)arg;
+  if (!hpcrun_cct_is_dummy(n)) {
+    *dummy = false;
+  } 
+}
 
 static void
 lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
 {
+  // avoid writing dummy nodes
+  if (!HPCRUN_CCT_KEEP_DUMMY) {
+    if (hpcrun_cct_is_dummy(node)) {
+      return;
+    }
+  }
+
+  // skip all the dummy parents
+  cct_node_t* parent = hpcrun_cct_parent(node);
+
+  if (!HPCRUN_CCT_KEEP_DUMMY) {
+    while (parent != NULL && hpcrun_cct_is_dummy(parent)) {
+      parent = hpcrun_cct_parent(parent);
+    }
+  }
+
+  bool all_children_dummy;
+  if (!HPCRUN_CCT_KEEP_DUMMY) {
+    all_children_dummy = true;
+    hpcrun_cct_walk_node_1st(node, l_dummy, &all_children_dummy);
+  } else {
+    all_children_dummy = false;
+  }
+
   write_arg_t* my_arg = (write_arg_t*) arg;
   hpcrun_fmt_cct_node_t* tmp = my_arg->tmp_node;
-  cct_node_t* parent = hpcrun_cct_parent(node);
   epoch_flags_t flags = my_arg->flags;
   cct_addr_t* addr    = hpcrun_cct_addr(node);
 
@@ -275,8 +353,8 @@ lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
   tmp->id_parent = parent ? hpcrun_cct_persistent_id(parent) : 0;
 
   // if no children, chg sign of id when written out
-  if (hpcrun_cct_no_children(node)) {
-    tmp->id = - tmp->id;
+  if (hpcrun_cct_no_children(node) || all_children_dummy) {
+    tmp->id = -tmp->id;
   }
   if (flags.fields.isLogicalUnwind){
     tmp->as_info = addr->as_info;
@@ -290,9 +368,19 @@ lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
   // double casts to avoid warnings when pointer is < 64 bits 
   tmp->lm_ip = (hpcfmt_vma_t) (uintptr_t) (addr->ip_norm).lm_ip;
 
+#if 1
+  // keren's code
+  tmp->num_metrics = my_arg->num_kind_metrics;
+  metric_data_list_t *data_list = 
+    hpcrun_get_metric_data_list_specific(&(my_arg->cct2metrics_map), node);
+  hpcrun_metric_set_dense_copy(tmp->metrics, data_list, my_arg->num_kind_metrics);
+#else
+  // code from master
   tmp->num_metrics = my_arg->num_metrics;
-  hpcrun_metric_set_dense_copy(tmp->metrics, hpcrun_get_metric_set(node),
-			       my_arg->num_metrics);
+  metric_set_t* ms = hpcrun_get_metric_set_specific(&(my_arg->cct2metrics_map), node);
+
+  hpcrun_metric_set_dense_copy(tmp->metrics, ms, my_arg->num_metrics);
+#endif
   hpcrun_fmt_cct_node_fwrite(tmp, flags, my_arg->fs);
 }
 
@@ -341,6 +429,12 @@ hpcrun_cct_parent(cct_node_t* x)
   return x? x->parent : NULL;
 }
 
+cct_node_t*
+hpcrun_cct_children(cct_node_t* x)
+{
+    return x? x->children : NULL;
+}
+
 int32_t
 hpcrun_cct_persistent_id(cct_node_t* x)
 {
@@ -376,10 +470,33 @@ hpcrun_cct_is_root(cct_node_t* node)
   return ! node->parent;
 }
 
+bool
+hpcrun_cct_is_dummy(cct_node_t* node)
+{
+  cct_addr_t* addr = hpcrun_cct_addr(node);
+  if ((addr->ip_norm).lm_id == HPCRUN_DUMMY_NODE) {
+    return true;
+  }
+  return false;
+}
 
 //
 // ********** Mutator functions: modify a given cct
 //
+
+cct_node_t*
+hpcrun_cct_insert_ip_norm(cct_node_t* node, ip_normalized_t ip_norm)
+{
+  cct_addr_t frm;
+
+  memset(&frm, 0, sizeof(cct_addr_t));
+  frm.ip_norm = ip_norm;
+
+  cct_node_t *child = hpcrun_cct_insert_addr(node, &frm);
+
+  return child;
+}
+
 
 //
 // Fundamental mutation operation: insert a given addr into the
@@ -426,6 +543,64 @@ hpcrun_cct_insert_addr(cct_node_t* node, cct_addr_t* frm)
     found->right = NULL;
   }
   return new;
+}
+
+cct_node_t*
+hpcrun_cct_insert_dummy(cct_node_t* node, uint16_t lm_ip)
+{
+  ip_normalized_t ip = { .lm_id = HPCRUN_DUMMY_NODE, .lm_ip = lm_ip };
+  cct_addr_t frm = { .ip_norm = ip };
+  cct_node_t *dummy = hpcrun_cct_insert_addr(node, &frm);
+  return dummy;
+}
+
+cct_node_t*
+hpcrun_cct_delete_addr(cct_node_t* node, cct_addr_t* frm)
+{
+  if(!node) return NULL;
+
+  cct_node_t* found = splay(node->children, frm);
+
+  node->children = found;
+
+  if(!found || !cct_addr_eq(frm, &(found->addr))) 
+    return NULL;
+
+  if(node->children->left == NULL) {
+    node->children = node->children->right;
+    return found;
+  }
+  node->children->left = splay(node->children->left, frm);
+  node->children->left->right = node->children->right;
+  node->children = node->children->left;
+  return found;
+}
+
+// insert a path to the root and return the path in the root
+cct_node_t*
+hpcrun_cct_insert_path_return_leaf(cct_node_t *root, cct_node_t *path)
+{
+  if(!path || ! path->parent) return root;
+  root = hpcrun_cct_insert_path_return_leaf(root, path->parent);
+  return hpcrun_cct_insert_addr(root, &(path->addr));
+}
+
+// remove the sub-tree rooted at cct from it's parent
+//
+// TODO: actual freelist manipulation required
+//       for now, do nothing
+//
+void
+hpcrun_cct_delete_self(cct_node_t *cct)
+{
+  hpcrun_cct_delete_addr(cct->parent, &cct->addr);
+  // FIXME vi3: I think below should be added, because of freelist
+  // cause previous function remove node from parent tree,
+  // but do not remove parent, left and right
+  cct->left = NULL;
+  cct->right = NULL;
+  cct->parent = NULL;
+  hpcrun_cct_node_free(cct);
 }
 
 //
@@ -536,7 +711,8 @@ hpcrun_cct_walk_node_1st_w_level(cct_node_t* cct, cct_op_t op, cct_op_arg_t arg,
 void
 hpcrun_cct_walkset(cct_node_t* cct, cct_op_t fn, cct_op_arg_t arg)
 {
-  walkset_l(cct, fn, arg, 0);
+  if(!cct->children) return;
+  walkset_l(cct->children, fn, arg, 0);
 }
 
 //
@@ -583,28 +759,42 @@ hpcrun_cct_insert_path(cct_node_t ** root, cct_node_t* path)
 // Writing operation
 //
 int
-hpcrun_cct_fwrite(cct_node_t* cct, FILE* fs, epoch_flags_t flags)
+hpcrun_cct_fwrite(cct2metrics_t* cct2metrics_map, cct_node_t* cct, FILE* fs, epoch_flags_t flags)
 {
   if (!fs) return HPCRUN_ERR;
 
-  hpcfmt_int8_fwrite((uint64_t) hpcrun_cct_num_nodes(cct), fs);
-  TMSG(DATA_WRITE, "num cct nodes = %d", hpcrun_cct_num_nodes(cct));
+  size_t nodes = 0;
+  if (HPCRUN_CCT_KEEP_DUMMY) {
+    nodes = hpcrun_cct_num_nodes(cct, true);
+  } else {
+    nodes = hpcrun_cct_num_nodes(cct, false);
+  }
 
-  hpcfmt_uint_t num_metrics = hpcrun_get_num_metrics();
-  TMSG(DATA_WRITE, "num metrics in a cct node = %d", num_metrics);
+  hpcfmt_int8_fwrite((uint64_t) nodes, fs);
+  TMSG(DATA_WRITE, "num cct nodes = %d", nodes);
+
+  hpcfmt_uint_t num_kind_metrics = hpcrun_get_num_kind_metrics();
+  TMSG(DATA_WRITE, "num metrics in a cct node = %d", num_kind_metrics);
   
   hpcrun_fmt_cct_node_t tmp_node;
 
   write_arg_t write_arg = {
-    .num_metrics = num_metrics,
+    .num_kind_metrics = num_kind_metrics,
     .fs          = fs,
     .flags       = flags,
     .tmp_node    = &tmp_node,
+
+    // multithreaded code: add personalized cct2metrics_map for multithreading programs
+    // this is to allow a thread to write the profile data of another thread.
+    .cct2metrics_map = cct2metrics_map
   };
   
-  hpcrun_metricVal_t metrics[num_metrics];
+  hpcrun_metricVal_t metrics[num_kind_metrics];
   tmp_node.metrics = &(metrics[0]);
 
+  if (!HPCRUN_CCT_KEEP_DUMMY) {
+    hpcrun_cct_walk_child_1st(cct, collapse_dummy_node, &write_arg);
+  }
   hpcrun_cct_walk_node_1st(cct, lwrite, &write_arg);
 
   return HPCRUN_OK;
@@ -614,11 +804,14 @@ hpcrun_cct_fwrite(cct_node_t* cct, FILE* fs, epoch_flags_t flags)
 // Utilities
 //
 size_t
-hpcrun_cct_num_nodes(cct_node_t* cct)
+hpcrun_cct_num_nodes(cct_node_t* cct, bool count_dummy)
 {
-  size_t n = 0;
-  hpcrun_cct_walk_node_1st(cct, l_count, &n);
-  return n;
+  count_arg_t count_arg = {
+    .count_dummy = count_dummy,
+    .n = 0,
+  };
+  hpcrun_cct_walk_node_1st(cct, l_count, &count_arg);
+  return count_arg.n;
 }
 
 //
@@ -658,10 +851,40 @@ hpcrun_cct_find_addr(cct_node_t* cct, cct_addr_t* addr)
 //       cct_addr_data(CCT_A) == cct_addr_data(CCT_B)
 //
 
+// vi3: Added by vi3
+static cct_node_t*
+walkset_l_merge(cct_node_t* cct, cct_op_merge_t fn, cct_op_arg_t arg, size_t level)
+{
+  // if node is NULL, the return NULL
+  if (! cct) return NULL;
+  // if left should be disconnected
+  if (! walkset_l_merge(cct->left, fn, arg, level))
+    cct->left = NULL;
+  // if right should be disconnected
+  if(! walkset_l_merge(cct->right, fn, arg, level))
+    cct->right = NULL;
+  // fn is going to decide if cct should be disconnected from parent or not
+  return fn(cct, arg, level);
+}
+
+void
+hpcrun_cct_walkset_merge(cct_node_t* cct, cct_op_merge_t fn, cct_op_arg_t arg)
+{
+  if(! cct->children) return;
+  // should children be disconnected
+  if(! walkset_l_merge(cct->children, fn, arg, 0))
+    cct->children = NULL;
+}
+
+
+
+
 //
 // Helpers & datatypes for cct_merge operation
 //
-static void merge_or_join(cct_node_t* n, cct_op_arg_t a, size_t l);
+//static void merge_or_join(cct_node_t* n, cct_op_arg_t a, size_t l);
+static cct_node_t* merge_or_join(cct_node_t* n, cct_op_arg_t a, size_t l);
+
 static cct_node_t* cct_child_find_cache(cct_node_t* cct, cct_addr_t* addr);
 static void cct_disjoint_union_cached(cct_node_t* target, cct_node_t* src);
 
@@ -671,65 +894,75 @@ typedef struct {
   merge_op_arg_t arg;
 } mjarg_t;
 
+// always returns NULL which indicated that node should be disconnected from old tree
+static void
+attach_to_a(cct_node_t* node, cct_op_arg_t arg, size_t l)
+{
+  cct_node_t* targ = (cct_node_t*) arg;
+  node->parent = targ;
+}
+
 //
 // The merging operation main code
 //
+
+#include "../utilities/ip-normalized.h"
 
 void
 hpcrun_cct_merge(cct_node_t* cct_a, cct_node_t* cct_b,
 		 merge_op_t merge, merge_op_arg_t arg)
 {
   if (hpcrun_cct_is_leaf (cct_a) && hpcrun_cct_is_leaf(cct_b)) {
+    // nothing to clean, because cct_b is leaf
     merge(cct_a, cct_b, arg);
   }
-  if (! cct_b->children)
-    cct_b->children = cct_a->children;
+  if (! cct_a->children){
+      // FIXME: vi3 bug because cct_b->children has the same addr as cct_a
+    cct_a->children = cct_b->children;
+    // whole cct->children splay tree is used as kids of cct_a,
+    // enough to disconnect children from cct_b (that's why hpcrun_cct_walkset is called)
+    hpcrun_cct_walkset(cct_b, attach_to_a, (cct_op_arg_t) cct_a);
+    cct_b->children = NULL;
+  }
   else {
     mjarg_t local = (mjarg_t) {.targ = cct_a, .fn = merge, .arg = arg};
-    hpcrun_cct_walkset(cct_b->children, merge_or_join, (cct_op_arg_t) &local);
+    hpcrun_cct_walkset_merge(cct_b, merge_or_join, (cct_op_arg_t) &local);
   }
 }
 
 //
 // merge helper functions (forward declared above)
 //
-static void
+// if function cct_disjoint_union_cached is called, that means n should be removed from cct_b tree,
+// which is indicated by NULL as a return value
+// if hpcrun_cct_merge is called, that means that node n should stay in the cct_b tree
+// which is indicated by n as a return value (not NULL value)
+static cct_node_t*
 merge_or_join(cct_node_t* n, cct_op_arg_t a, size_t l)
 {
   mjarg_t* the_arg = (mjarg_t*) a;
   cct_node_t* targ = the_arg->targ;
-  if (cct_child_find_cache(targ, hpcrun_cct_addr(n)))
-    hpcrun_cct_merge(splay_cache.node, n, the_arg->fn, the_arg->arg);
-  else
-    cct_disjoint_union_cached(targ, n);
-}
-
-static cct_addr_t dc = ADDR2_I(-1, -1);
-
-static void
-help_cct_child_find_set_cache(cct_node_t* cct, cct_addr_t* addr)
-{
-  splay_cache.node  = NULL;
-  splay_cache.found = false;
-  splay_cache.addr = &dc;
-
-  if ( ! cct) return;
-
-  cct_node_t* found    = splay(cct->children, addr);
-    //
-    // !! SPECIAL CASE for cct splay !!
-    // !! The splay tree (represented by the root) is the data structure for the set
-    // !! of children of the parent. Consequently, when the splay operation changes the root,
-    // !! the parent's children pointer must point to the NEW root node
-    // !! NOT the old (pre-splay) root node
-    //
-
-  cct->children = found;
-  if (found) {
-    splay_cache.node = found;
-    splay_cache.addr = &(found->addr);
-    splay_cache.found = found && cct_addr_eq(addr, &(found->addr));
+  cct_node_t* tmp = NULL;
+  if ((tmp = cct_child_find_cache(targ, hpcrun_cct_addr(n)))){
+    // when merge, n should stay in the same tree, because the whole tree is going to to freelist
+    // that is the reason why return value is not NULL
+    hpcrun_cct_merge(tmp, n, the_arg->fn, the_arg->arg);
+    return n;
   }
+  else{
+    // disjoint has to happen, which means that node n is going to change tree
+    // if it has left and right siblings, they are going to bee added to freelist
+    // and the return value is NULL (indicates that n is goint to be disconnected from previous cct_b tree)
+
+    // add left to freelist, if needed
+    hpcrun_cct_node_free(n->left);
+    // add right to freelist, if needed
+    hpcrun_cct_node_free(n->right);
+
+    cct_disjoint_union_cached(targ, n);
+    return NULL;
+  }
+
 }
 
 //
@@ -739,8 +972,7 @@ help_cct_child_find_set_cache(cct_node_t* cct, cct_addr_t* addr)
 static cct_node_t*
 cct_child_find_cache(cct_node_t* cct, cct_addr_t* addr)
 {
-  help_cct_child_find_set_cache(cct, addr);
-  return splay_cache.found ? splay_cache.node : NULL;
+  return hpcrun_cct_find_addr(cct, addr);
 }
 
 //
@@ -750,18 +982,128 @@ cct_child_find_cache(cct_node_t* cct, cct_addr_t* addr)
 static void
 cct_disjoint_union_cached(cct_node_t* target, cct_node_t* src)
 {
-  src->parent = target;
-  if (splay_cache.node) {
-    if (cct_addr_lt(hpcrun_cct_addr(src), splay_cache.addr)) {
-      src->left = splay_cache.node->left;
-      src->right = splay_cache.node;
-      splay_cache.node->left = NULL;
-    }
-    else { // src addr > addr(splay(target))
-      src->left = splay_cache.node;
-      src->right = splay_cache.node->right;
-      splay_cache.node->right = NULL;
-    }
+  
+  if ( ! target) {
+    if ( src) EMSG("WARNING: cct disjoin union called w null target!!");
+    return;
+  }
+    
+  cct_addr_t* addr = hpcrun_cct_addr(src);
+  cct_node_t* found    = splay(target->children, addr);  // FIXME: vi3: is it possible that splay returns something which address is not equal to addre
+    //
+    // !! SPECIAL CASE for cct splay !!
+    // !! The splay tree (represented by the root) is the data structure for the set
+    // !! of children of the parent. Consequently, when the splay operation changes the root,
+    // !! the parent's children pointer must point to the NEW root node
+    // !! NOT the old (pre-splay) root node
+    //
+  if (!found) {
+    target->children = src;
+    src->parent = target;
+    return;
+  }
+
+  if (cct_addr_lt(addr, &(found->addr))){
+    src->left = found->left;
+    src->right = found;
+    found->left = NULL;
+  }
+  else { // addr > addr of found
+    src->left = found;
+    src->right = found->right;
+    found->right = NULL;
   }
   target->children = src;
+  src->parent = target;
 }
+
+
+
+
+// FIXME: only temporary function, until hpcrun_merge is repaired
+void
+cct_remove_my_subtree(cct_node_t* cct){
+  cct->children = NULL;
+//  printf("CHILDREN: %p\tLEFT: %p\tRIGHT: %p\n", cct->children, cct->left, cct->right);
+}
+
+
+// FIXME: is this proper place for handling memory leaks caused by cct_node_t
+// frelist manipulation
+
+__thread cct_node_t* cct_node_freelist_head = NULL;
+
+// vi3: functions used for manipulation of freelist of trees
+void
+add_node_to_freelist(cct_node_t* cct){
+  // parent is used as a next pointer
+  if(cct){
+    cct->parent = cct_node_freelist_head;
+    cct_node_freelist_head = cct;
+  }
+}
+
+// vi3: remove root of first tree in the freelist
+cct_node_t*
+remove_node_from_freelist(){
+  cct_node_t* first_root = cct_node_freelist_head;
+  if(!first_root){
+    return NULL;
+  }
+  // new head is free_root's next (parent pointer is used for now)
+  cct_node_freelist_head = first_root->parent;
+
+  cct_node_t* children = first_root->children;
+  cct_node_t* left = first_root->left;
+  cct_node_t* right = first_root->right;
+
+  add_node_to_freelist(children);
+  add_node_to_freelist(left);
+  add_node_to_freelist(right);
+
+  return first_root;
+
+  // FIXME: seg fault happened once and i cannot reproduce it anymore
+}
+
+
+// allocating and free cct_node_t
+cct_node_t*
+hpcrun_cct_node_alloc(){
+  cct_node_t* cct_new = remove_node_from_freelist();
+  return cct_new ? cct_new : (cct_node_t*)hpcrun_malloc(sizeof(cct_node_t));
+}
+
+
+void
+hpcrun_cct_node_free(cct_node_t *cct){
+  add_node_to_freelist(cct);
+}
+
+
+// FIXME vi3: disccuss about hpcrun_merge
+
+
+
+cct_node_t*
+hpcrun_cct_copy_just_addr(cct_node_t *cct)
+{
+  return cct ? cct_node_create(&cct->addr, NULL): NULL;
+}
+
+void
+hpcrun_cct_set_children(cct_node_t* cct, cct_node_t* children)
+{
+  if(!cct)
+    return;
+  cct->children = children;
+}
+
+void
+hpcrun_cct_set_parent(cct_node_t* cct, cct_node_t* parent)
+{
+  if(!cct)
+    return;
+  cct->parent = parent;
+}
+

@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2018, Rice University
+## Copyright ((c)) 2002-2020, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -66,12 +66,20 @@ AUTOMAKE_OPTIONS = foreign
 
 include $(top_srcdir)/src/Makeinclude.config
 
+BOOST_IFLAGS = @BOOST_IFLAGS@
+DYNINST_IFLAGS = @DYNINST_IFLAGS@
+LIBDWARF_INC = @LIBDWARF_INC@
+LIBELF_INC = @LIBELF_INC@
+
+if OPT_DYNINST_LIBDWARF
+DWARF_IFLAGS = -I$(LIBDWARF_INC)
+endif
+
 #############################################################################
 # Local settings
 #############################################################################
 
 MYSOURCES = \
-        Demangler.hpp Demangler.cpp \
 	LM.hpp LM.cpp \
 	Seg.hpp Seg.cpp \
 	Proc.hpp Proc.cpp \
@@ -85,12 +93,20 @@ MYSOURCES = \
 	Dbg-Proc.hpp Dbg-Proc.cpp \
 	\
 	BinUtils.hpp BinUtils.cpp \
-	VMAInterval.hpp VMAInterval.cpp 
+	VMAInterval.hpp VMAInterval.cpp \
+	Fatbin.cpp \
+	ElfHelper.cpp \
+	InputFile.cpp \
+	RelocateCubin.cpp 
 
 
 #############################################################################
-MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @GNUBINUTILS_IFLAGS@
+MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @BINUTILS_IFLAGS@
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@ \
+	$(BOOST_IFLAGS)  \
+	$(DWARF_IFLAGS)  \
+	-I$(LIBELF_INC)  \
+	$(DYNINST_IFLAGS)
 
 if IS_HOST_AR
   MYAR = @HOST_AR@

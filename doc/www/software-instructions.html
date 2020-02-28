@@ -1,693 +1,1233 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- -*- coding: utf-8 -*- -->
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" 
-          "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+	  "http://www.w3.org/TR/html4/loose.dtd">
 
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 
-<!-- ********************************************************************** -->
-
 <head>
-  <!-- meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" /> -->
-
-  <title>HPCToolkit: Building and Installing</title>
-
+  <!-- meta http-equiv="Content-Type" content="text/html; charset=utf-8" -->
   <link rel="stylesheet" type="text/css" href="style/style.css" />
+
+  <title>Installing HPCToolkit with Spack</title>
 </head>
 
 <body>
 
-<!-- ********************************************************************** -->
+<!-- HPCToolkit Image (height = 71 pixels) -->
+<img style="position: absolute; top: 0px; left: 0px" src="style/header.gif" alt="hpctoolkit" />
+<div style="position: relative; margin-top: 60px; width: 100%; text-align: right;">
+<p style="margin: 0px; font-size: small;">
+  [ <a href="index.html">Home</a>
+  | <a href="overview.html">Overview</a>
+  | <a href="publications.html">Publications</a> ]
+  &bull;
+  [ <a href="examples.html">Examples</a> ]
+  &bull;
+  [ <a href="software.html">Software/Downloads</a>
+  | <a href="documentation.html">Documentation/Questions</a> ]
+  &bull;
+  [ <a href="info-people.html">People</a> |
+    <a href="info-acks.html">Acks</a> ]
+</p>
+</div>
+<div style="width: 100%;">
+  <hr />
+</div>
 
-<!-- HPCToolkit Image (height = 71 pixels) --> <img style="position: absolute; top: 0px; left: 0px" src="style/header.gif" alt="hpctoolkit" /> <div style="position: relative; margin-top: 60px; width: 100%; text-align: right;"> <p style="margin: 0px; font-size: small;">   [ <a href="index.html">Home</a>   | <a href="overview.html">Overview</a>   | <a href="publications.html">Publications</a> ]   &bull;   [ <a href="examples.html">Examples</a> ]   &bull;   [ <a href="software.html">Software/Downloads</a>   | <a href="documentation.html">Documentation/Questions</a> ]   &bull;   [ <a href="info-people.html">People</a> |     <a href="info-acks.html">Acks</a> ] </p> </div> <div style="width: 100%;">   <hr /> </div> 
-<!-- ********************************************************************** -->
+<h1 class="settitle" align="center">Installing HPCToolkit with Spack</h1>
 
-<a name="toc"></a>
-<h1>Building and Installing HPCToolkit</h1>
+<a name="SEC_Contents"></a>
+<h2 class="contents-heading">Table of Contents</h2>
 
-<h2>Contents</h2>
+<div class="contents">
+<ul class="no-bullet">
+<li><a name="toc-Introduction" href="#Introduction">1 Introduction</a></li>
+<li><a name="toc-Prerequisites" href="#Prerequisites">2 Prerequisites</a></li>
+<li><a name="toc-Spack-Notation" href="#Spack-Notation">3 Spack Notation</a></li>
+<li><a name="toc-Clone-Spack-and-HPCToolkit" href="#Clone-Spack-and-HPCToolkit">4 Clone Spack and HPCToolkit</a></li>
+<li><a name="toc-Config_002eyaml" href="#Config_002eyaml">5 Config.yaml</a></li>
+<li><a name="toc-Packages_002eyaml" href="#Packages_002eyaml">6 Packages.yaml</a></li>
+<li><a name="toc-Compilers-and-compilers_002eyaml" href="#Compilers-and-compilers_002eyaml">7 Compilers and compilers.yaml</a></li>
+<li><a name="toc-Spack-Install" href="#Spack-Install">8 Spack Install</a></li>
+<li><a name="toc-Manual-Install" href="#Manual-Install">9 Manual Install</a></li>
+<li><a name="toc-Advanced-Options" href="#Advanced-Options">10 Advanced Options</a>
+<ul class="no-bullet">
+  <li><a name="toc-MPI" href="#MPI">10.1 MPI</a></li>
+  <li><a name="toc-PAPI-vs-Perfmon" href="#PAPI-vs-Perfmon">10.2 PAPI vs Perfmon</a></li>
+</ul></li>
+<li><a name="toc-Platform-Specific-Notes" href="#Platform-Specific-Notes">11 Platform Specific Notes</a>
+<ul class="no-bullet">
+  <li><a name="toc-Blue-Gene" href="#Blue-Gene">11.1 Blue Gene</a></li>
+  <li><a name="toc-Cray" href="#Cray">11.2 Cray</a></li>
+</ul></li>
+<li><a name="toc-Hpcviewer-and-Hpctraceviewer" href="#Hpcviewer-and-Hpctraceviewer">12 Hpcviewer and Hpctraceviewer</a>
+<ul class="no-bullet">
+  <li><a name="toc-Spack-Install-1" href="#Spack-Install-1">12.1 Spack Install</a></li>
+  <li><a name="toc-Manual-Install-1" href="#Manual-Install-1">12.2 Manual Install</a></li>
+</ul></li>
+<li><a name="toc-Building-a-New-Compiler" href="#Building-a-New-Compiler">13 Building a New Compiler</a>
+<ul class="no-bullet">
+  <li><a name="toc-Using-the-New-Compiler" href="#Using-the-New-Compiler">13.1 Using the New Compiler</a></li>
+  <li><a name="toc-Bootstrapping-Environment-Modules" href="#Bootstrapping-Environment-Modules">13.2 Bootstrapping Environment Modules</a></li>
+</ul></li>
+<li><a name="toc-Spack-Mirrors" href="#Spack-Mirrors">14 Spack Mirrors</a></li>
+<li><a name="toc-Common-Problems" href="#Common-Problems">15 Common Problems</a>
+<ul class="no-bullet">
+  <li><a name="toc-Unable-to-fetch-tar-file" href="#Unable-to-fetch-tar-file">15.1 Unable to fetch tar file</a></li>
+  <li><a name="toc-New-releases-break-the-build" href="#New-releases-break-the-build">15.2 New releases break the build</a></li>
+  <li><a name="toc-Failure-to-load-modules" href="#Failure-to-load-modules">15.3 Failure to load modules</a></li>
+</ul></li>
 
-<ul>
-  <li><a href="#prerequisites">Prerequisites</a></li>
-
-  <li><a href="#downloading">Downloading Source Code</a></li>
-
-  <li><a href="#building-installing">Building and Installing</a></li>
-
-  <li><a href="#infrequent-options">Infrequently Used Build Options</a></li>
 </ul>
+</div>
 
 
-<!-- ********************************************************************** -->
-<!-- ********************************************************************** -->
+<a name="Introduction"></a>
+<h3 class="section">1 Introduction</h3>
 
-<a name="prerequisites"></a>
-
-<h2>Prerequisites</h2>
-<p><i>[<a href="#toc">Contents</a>]</i></p>
-
-<p>To reduce our maintenance efforts, we have opted to distribute HPCToolkit primarily in source form.
-The following prerequisites apply to our default source code distribution.
-</p>
-
-<ol class="noindent">
-
-<li><p>HPCToolkit can be installed on the following platforms:</p>
-
-  <table cellpadding="2" cellspacing="2" border="1" width="90%">
-    <tr>
-      <th>Platform (Supported)</th>
-      <th>Notes</th>
-    </tr>
-    <tr>
-      <td>Linux + x86_64</td>
-      <td></td>
-    </tr>
-    <tr>
-      <td>Linux + x86 (32-bit)</td>
-      <td></td>
-    </tr>
-    <tr>
-      <td>Linux + ppc64</td>
-      <td></td>
-    </tr>
-    <tr>
-      <td>Cray XT/XE/XK/XC (CNL + x86_64)</td>
-      <td>Compute Node Linux &ge; 2.1</td>
-    </tr>
-    <tr>
-      <td>IBM Blue Gene/Q (BG/Q kernel + ppc64)</td>
-      <td></td>
-    </tr>
-    <tr>
-      <td>IBM Blue Gene/P (BG/P kernel + ppc32)</td>
-      <td>BG/P kernel &ge; V1R3M0</td>
-    </tr>
-    <tr>
-      <th>Platform (Legacy and Not Supported)</th>
-      <th> </th>
-    </tr>
-    <tr>
-      <td>Linux + IA64 </td>
-      <td>testing (uses <a href="http://www.nongnu.org/libunwind/">libunwind</a>)</td>
-    </tr>
-
-    <tr>
-      <td>Linux + MIPS-le (64 and n32)</td>
-      <td>for SiCortex clusters; little endian MIPS (no longer tested) </td>
-    </tr>
-  </table>
-</li>
-
-<li>
-<p>Compiler: HPCToolkit requires GNU GCC version 4.4 or later.  Some
-vendor compilers that support GNU extensions may also work, but we
-recommend building with GNU gcc/g++.  HPCToolkit also requires GNU
-make, preferably version 3.81 or later.
-</p>
-</li>
-
-<li>
-<p>To use <span class="hpctool">hpcviewer</span>
-and <span class="hpctool">hpctraceviewer</span> (HPCToolkit's
-graphical interface) on MacOS, Windows, or Linux, a Java runtime
-environment (JRE) &ge; 1.6 is required.  Use the Oracle or IBM
-version; we have had problems with OpenJDK.
-</p>
-
-<p>
-To use <span class="hpctool">hpcviewer</span> and <span class="hpctool">hpctraceviewer</span> on Linux, <a href="http://www.gtk.org">GTK+</a> is also required.
-</p>
-
-<p>Note: Since HPCToolkit's databases are portable, we often install <span class="hpctool">hpcviewer</span> and <span class="hpctool">hpctraceviewer</span> on local laptops/desktops to avoid sending display traffic over relatively slow network connections.
-</p>
-</li>
-
-<li>
-<p>Highly recommended: To collect measurements based on hardware performance monitoring unit (PMU) information, <a href="http://icl.cs.utk.edu/projects/papi/">PAPI</a> &ge; 4.1 is required.
-Without PAPI, HPCToolkit can only collect measurements based on an operating system timer.
-(Exception: On IBM Blue Gene/P, PAPI is not required. On this system, HPCToolkit uses 
-IBM's native Universal Performance Counters directly.)
-</p>
-
-<p>There are currently three ways to support PAPI on Linux-based OSs:</p>
-  <ul>
-    <li><p>Use a kernel with <a href="https://perf.wiki.kernel.org">perf_events</a> (see also: <a href="http://web.eecs.utk.edu/~vweaver1/projects/perf-events/">this</a>), which was introduced with kernel 2.6.32 (n&eacute;e PCL in kernel 2.6.31) and which is now becoming part of standard distributions.
-	<b>With perf_events, use PAPI &ge; 4.1.2</b>.
-       </p>
-    </li>
-
-    <li><p>Apply the <a href="http://user.it.uu.se/~mikpe/linux/perfctr/">perfctr</a> kernel patch (x86_64-based systems only).
-	One benefit of perfctr is that it includes out-of-the-box support for many Red Hat kernels.
-	As of this writing, perfctr supports vanilla kernels through 2.6.32.
-       </p>
-    </li>
-
-    <li><p>Apply the <a href="http://perfmon2.sourceforge.net">perfmon2</a> kernel patch.
-         As of this writing, perfmon2 supports vanilla kernels through 2.6.30.
-	 (Unfortunately, development has stopped because of perf_events.)
-       </p>
-     </li>
-  </ul>
-  
-</li>
-
-<li>
-<p>Minor requirement: To use <span class="hpctool">hpcsummary</span> (a relatively minor tool), Python 2.x is required.
-</p>
-</li>
-
-<li>
-<p>Minor requirement: To build HPCToolkit's man pages, a variant of Perl 5 is required.
-We have successfully used versions 5.6.x - 5.10.x.
-</p>
-</li>
-
-</ol>
-
-
-<!-- ********************************************************************** -->
-<!-- ********************************************************************** -->
-
-<a name="downloading"></a>
-
-<h2>Downloading Source Code</h2>
-<p><i>[<a href="#toc">Contents</a>]</i></p>
-
-<p>
-<a href="software.html">Download</a> HPCToolkit components as follows:
+<p>These notes describe how to build and install HPCToolkit and hpcviewer
+and their prerequisites with Spack.  HPCToolkit proper (hpcrun,
+hpcstruct and hpcprof) is used to measure and analyze an application&rsquo;s
+performance and then produce a database for hpcviewer.  HPCToolkit is
+supported on the following platforms.
 </p>
 <ol>
-  <li><p>Download hpctoolkit from GitHub.</p>
-    <div class="indent">
-      <code>git clone https://github.com/HPCToolkit/hpctoolkit.git</code>
-    </div>
+<li> Linux (64-bit) on x86_64, big and little-endian powerpc (power7, 8 and
+9) and ARM (aarch64).
 
-  <li><p>Download hpctoolkit-externals from GitHub.</p>
-    <div class="indent">
-      <code>git clone https://github.com/HPCToolkit/hpctoolkit-externals.git</code>
-    </div>
-      <p>
-      Think of hpctoolkit-externals as a "package manager" that automatically configures and builds 
-      support libraries that hpctoolkit needs.
-      It contains several external libraries.
-      (Some of these libraries, like libelf and libxml2 are commonly found on Linux systems, but not always.
-      Others, like OpenAnalysis and SymtabAPI are almost never available.
-      Finally, a few packages, like GNU binutils have been heavily patched.)
-      In some cases it may be possible to use versions of these packages that are already installed on your system.
-      However, we do not support such configurations.
-    </p>
-  </li>
+</li><li> Cray XT/XE/XK/XC on x86_64 and Compute Node Linux.
 
-  <li><p>Download binary releases of <span class="hpctool">hpcviewer</span> and <span class="hpctool">hpctraceviewer</span> for the platform on which your are building HPCToolkit.</p>
-    <div class="indent">
-      <a href="http://hpctoolkit.org/download/hpcviewer">
-	http://hpctoolkit.org/download/hpcviewer</a>
-    </div>
+</li><li> IBM Blue Gene/Q on ppc64.
+</li></ol>
 
-  <p>Note: It is perfectly reasonable to install <span class="hpctool">hpcviewer</span> and <span class="hpctool">hpctraceviewer</span> in multiple locations.
-    Since HPCToolkit's databases are portable, we often install <span class="hpctool">hpcviewer</span> and <span class="hpctool">hpctraceviewer</span> on local laptops/desktops to avoid sending display traffic over relatively slow network connections from systems where we collect measurement data.</p>
-  </li>
+<p>We provide binary distributions for hpcviewer and hpctraceviewer on
+Linux (x86_64 and powerpc), Windows and MacOS.  HPCToolkit databases are
+platform-independent and it is common to run hpcrun on one machine and
+then view the results on another machine.
+</p>
+<p>We build HPCToolkit and its prerequisite libraries from source.
+HPCToolkit has some 15-20 prerequisites and we now use spack to build
+them.  It is possible to use spack to install all of hpctoolkit or
+build just the prerequisites and then build hpctoolkit with the
+traditional <code>configure ; make ; make install</code> method from
+autotools.  Developers will probably want to run <code>configure</code> and
+<code>make</code> manually, but both methods are supported.
+</p>
+<p>Note: the old method of using hpctoolkit-externals to build the
+prerequisite libraries is now superseded by spack.  Although externals
+will continue to work for a while, we have stopped updating externals
+and now add newer versions of packages only in spack.
+</p>
+<p>These notes are written mostly from the view of using spack to build
+hpctoolkit and its dependencies.  If you are a more experienced spack
+user, especially if you want to use spack to build hpctoolkit plus
+several other packages, then you will want to adapt these directions to
+your own needs.
+</p>
+<p>Spack documentation is available at:
+</p>
+<div class="example">
+<pre class="example"><a href="https://spack.readthedocs.io/en/latest/index.html">https://spack.readthedocs.io/en/latest/index.html</a>
+</pre></div>
 
-</ol>
+<p>The current status of using Spack for HPCToolkit is at:
+</p>
+<div class="example">
+<pre class="example"><a href="http://hpctoolkit.org/spack-issues.html">http://hpctoolkit.org/spack-issues.html</a>
+</pre></div>
 
-<!--
-<p>To extract the tarball <i>zoo.tar.gz</i>, execute:</p>
-<div class="indent">
-  <code>tar zxvf <i>zoo.tar.gz</i></code>
-</div>
--->
-
-
-<!-- ********************************************************************** -->
-<!-- ********************************************************************** -->
-
-<a name="building-installing"></a>
-
-<h2>Building and Installing</h2>
-<p><i>[<a href="#toc">Contents</a>]</i></p>
-
-<p>The build and install follows autotools conventions (<code>./configure &amp;&amp; make &amp;&amp; make install</code>).
-In each case, more options are available by executing <code>./configure --help</code>.
-See the README file for more details.
+<p>Last revised: Oct 4, 2019.
 </p>
 
-<p>The typical build is as follows.
-Please note that a list of examples below provides <code>configure</code> commands for selected platforms.
+<a name="Prerequisites"></a>
+<h3 class="section">2 Prerequisites</h3>
+
+<p>Building HPCToolkit requires the following prerequisites.
+</p>
+<ol>
+<li> The GNU gcc and g++ compilers version 4.8 or later and preferably 5.x or
+later.  On systems with older compilers, you can use spack to build a
+later version of gcc.
+
+</li><li> Basic build tools: make, ld, ar, objcopy, nm, etc, and shell utilities:
+bash, sed, awk, grep, etc.  Most Linux systems have these tools, or else
+you couldn&rsquo;t compile anything.
+
+</li><li> Cmake version 3.4 or later, perl version 5.x, and python version 2.7 or
+3.4 or later.  On systems that are missing these tools or have versions
+that are too old, you can use spack to build a later version.
+
+</li><li> Git and curl for downloading files.
+
+</li><li> (optional) Environment (TCL) or LUA (Lmod) modules, if you want to make
+HPCToolkit available as a module.  Again, spack can install these
+packages if they are missing from your system.
+</li></ol>
+
+<p>Hpcviewer and hpctraceviewer require Java version 8.  On Linux, the
+viewers also require GTK+ version 2.x.
 </p>
 
-<ol class="noindent">
+<a name="Spack-Notation"></a>
+<h3 class="section">3 Spack Notation</h3>
 
-<li>Configuring the perf_events sample source:
-<p>
-HPCToolkit's configure command will automatically check the availability of the Linux perf_events interface on the build system. 
-The test includes checking the existence of <code>/usr/include/linux/perf_event.h</code> and <code>/proc/sys/kernel/perf_event_paranoid</code> files. If the two files do not exist, it assumes the system does not support the perf_events interface.
+<p>Spack uses a special notation for specifying the version, variants,
+compilers and dependencies when describing how to build a package.
+This combination of version, variants, etc is called a &rsquo;spec&rsquo; and is
+used both on the command line and in config files.
 </p>
-To profile on a remote machine that has different system or architecture configuration, one must download and build the libpfm4 library (<a href="http://perfmon2.sourceforge.net">http://perfmon2.sourceforge.net</a>) and indicate its install directory by specifying the option <code>--with-perfmon=&lt;libpfm4_install_directory&gt;</code> to  HPCToolkit's <code>configure</code> command.
-</li>
-<li><p>Build and install HPCToolkit's Externals, which typically does not require any special options; we recommend using the GCC compilers:
+<ol>
+<li> &rsquo;@&rsquo; specifies the package version.  <code>spack info &lt;package&gt;</code> shows
+the available versions and variants for a package.  In most cases,
+spaces are optional between elements of a spec.  For example:
+
+<div class="example">
+<pre class="example">boost@1.66.0    dyninst @10.1.0    hpctoolkit@master
+</pre></div>
+
+</li><li> &rsquo;+&rsquo;, &rsquo;-&rsquo;, &rsquo;~&rsquo; specify boolean (on/off) variants.  Note: <code>-</code>
+(dash) and <code>~</code> (tilde) both mean &rsquo;off&rsquo;.  Use dash after a space
+and tilde after a non-space.  For example:
+
+<div class="example">
+<pre class="example">elfutils+bzip2~nls    elfutils +bzip2 -nls    elfutils@0.176 +bzip2~nls
+</pre></div>
+
+</li><li> &rsquo;name=value&rsquo; specifies a non-boolean variant, for example:
+
+<div class="example">
+<pre class="example">dyninst+openmp build_type=RelWithDebInfo    xerces-c@3.2.2 transcoder=iconv
+</pre></div>
+
+</li><li> &rsquo;%&rsquo; specifies the build compiler and its version, for example:
+
+<div class="example">
+<pre class="example">hpctoolkit@master %gcc@7.3.0
+</pre></div>
+
+</li><li> &rsquo;cflags&rsquo;, &rsquo;cxxflags&rsquo;, &rsquo;fflags&rsquo;, &rsquo;cppflags&rsquo;, &rsquo;ldflags&rsquo; and &rsquo;ldlibs&rsquo; are
+special name/value variants for compiler flags.  These are normally not
+needed, but if you do need to add a flag to the build, then one example
+might be:
+
+<div class="example">
+<pre class="example">amg2013 cflags='-O2 -mavx512pf'
+</pre></div>
+
+</li><li> &rsquo;^&rsquo; represents a dependency spec.  The spec for a dependency package is
+a full spec and may include its own version, variants, etc.  For
+example:
+
+<div class="example">
+<pre class="example">hpctoolkit@master ^dyninst@10.1.0+openmp
+</pre></div>
+
+</li><li> &rsquo;arch&rsquo;, &rsquo;platform&rsquo;, &rsquo;os&rsquo; and &rsquo;target&rsquo; are special options for the system
+architecture and machine type.  Platform is normally &rsquo;linux&rsquo;, or else
+&rsquo;cray&rsquo; or &rsquo;bgq&rsquo; (or even &rsquo;windows&rsquo; or &rsquo;darwin&rsquo;).  OS is the Linux
+distribution, &rsquo;rhel7&rsquo;, &rsquo;sles15&rsquo;, etc, and target is the machine type,
+&rsquo;x86_64&rsquo;, &rsquo;ppc64le&rsquo;, etc.  Arch is a triple of platform, os and target
+separated by dashes.
+
+<p>Normally, a system has only one arch type and you don&rsquo;t need to
+specify this.  However, for systems with separate front and back-end
+types, the default is the back end.  For example, if you wanted to
+build python for the front end on Cray, then you might use something
+like this.
+</p>
+<div class="example">
+<pre class="example">python@3.7.4 arch=cray-sles12-x86_64
+</pre></div>
+
+<p>Also, now that spack has implemented microarchitecture targets
+(haswell, ivybridge, etc), you can use &rsquo;target&rsquo; to build for a generic
+x86_64 or a specific CPU type.  For example:
+</p>
+<div class="example">
+<pre class="example">amg2013 target=x86_64    lulesh target=ivybridge
+</pre></div>
+</li></ol>
+
+<p>When writing a spec (for <code>spack install</code> or other), spack will
+fully resolve all possible choices for the package and all of its
+dependencies and create a unique hash value for that exact
+configuration.  This process is called &rsquo;concretization.&rsquo;  To see how
+spack would concretize a spec, use <code>spack spec &lt;partial-spec&gt;</code>.
+</p>
+<div class="example">
+<pre class="example"><a href="https://spack.readthedocs.io/en/latest/basic_usage.html#specs-dependencies">https://spack.readthedocs.io/en/latest/basic_usage.html#specs-dependencies</a>
+</pre></div>
+
+
+<a name="Clone-Spack-and-HPCToolkit"></a>
+<h3 class="section">4 Clone Spack and HPCToolkit</h3>
+
+<p>Spack is available via git clone from GitHub.  This includes the core
+spack machinery and recipes for building more than 3,500 packages (and
+growing).  You should also clone HPCToolkit for the
+<code>packages.yaml</code> file which is used to configure the spack build.
+</p>
+<div class="example">
+<pre class="example">git clone https://github.com/spack/spack.git
+git clone https://github.com/hpctoolkit/hpctoolkit.git
+</pre></div>
+
+<p>After cloning, add the <code>spack/bin</code> directory to your PATH, or else
+source the spack <code>setup-env</code> script.
+</p>
+<div class="example">
+<pre class="example">(bash)   .  /path/to/spack/share/spack/setup-env.sh
+(csh)    setenv SPACK_ROOT /path/to/spack/root
+         source $SPACK_ROOT/share/spack/setup-env.csh
+</pre></div>
+
+<p>It suffices to add <code>spack/bin</code> to your PATH (or even symlink the
+spack launch script).  Sourcing the <code>setup-env</code> script adds extra
+support for modules built by spack.
+</p>
+
+<a name="Config_002eyaml"></a>
+<h3 class="section">5 Config.yaml</h3>
+
+<p><code>config.yaml</code> is the top-level spack config file.  This specifies
+the directory layout for installed files and the top-level spack
+parameters.  There are two or three fields in this file that you should
+set for your local system.
+</p>
+<ol>
+<li> <code>install_tree</code> &ndash; by default, spack installs packages inside the
+spack repository at <code>spack/opt/spack</code>.  If you want to use another
+location, then set this.
+
+</li><li> <code>module_roots</code> &ndash; by default, spack installs module files inside
+the spack repository at <code>spack/share/spack</code>.  If you want to use
+another location, then set this.
+
+</li><li> <code>build_jobs</code> &ndash; by default, spack uses all available hardware
+threads for parallel make.  For machines with many threads, this can
+sometimes overwhelm the system and you should set this to a smaller
+number.  (There is precedent.)
+</li></ol>
+
+<p>There are also parameters for the locations of the build directories,
+the cache of downloaded tar files, etc, which you may wish to set.
+</p>
+<p>The default <code>config.yaml</code> file is in the spack repository at
+<code>spack/etc/spack/defaults</code>.  The simplest solution is to copy this
+file one directory up and then edit the copy (don&rsquo;t edit the default
+file directly).
+</p>
+<div class="example">
+<pre class="example">cd spack/etc/spack
+cp defaults/config.yaml .
+vi config.yaml
+</pre></div>
+
+<p>Alternatively, you could put this file in a separate directory, outside
+of the spack repository and then use <code>-C dir</code> on the spack command
+line.  (The <code>-C</code> option goes before the spack command name.)
+</p>
+<div class="example">
+<pre class="example">spack -C dir install ...
+</pre></div>
+
+<p>Note: if you put <code>config.yaml</code> in <code>spack/etc/spack</code>, then it
+will apply to every spack command for that repository (and you won&rsquo;t
+forget).  Putting it in a separate directory is more flexible because
+you can support multiple configurations from the same repository.  But
+then you must use <code>-C dir</code> with every spack command or else you
+will get inconsistent results.
+</p>
+<p>You can view the current configuration with <code>spack config</code>.
+</p>
+<div class="example">
+<pre class="example">spack [-C dir] config get config
+</pre></div>
+
+<p>See the spack docs on &lsquo;Configuration Files&rsquo; and &lsquo;Basic Settings&rsquo;.
+</p>
+<div class="example">
+<pre class="example"><a href="https://spack.readthedocs.io/en/latest/configuration.html">https://spack.readthedocs.io/en/latest/configuration.html</a>
+<a href="https://spack.readthedocs.io/en/latest/config_yaml.html">https://spack.readthedocs.io/en/latest/config_yaml.html</a>
+</pre></div>
+
+
+<a name="Packages_002eyaml"></a>
+<h3 class="section">6 Packages.yaml</h3>
+
+<p>The <code>packages.yaml</code> file specifies the versions and variants for
+the packages that spack installs and serves as a common reference
+point for HPCToolkit&rsquo;s prerequisites.  This file also specifies the
+paths or modules for system build tools (cmake, python, etc) to avoid
+rebuilding them.  Put this file in the same directory as
+<code>config.yaml</code>.  A sample <code>packages.yaml</code> file is available
+in the <code>spack</code> directory of the hpctoolkit repository.
+</p>
+<p>There are two main sections to <code>packages.yaml</code>.  The first
+specifies the versions and variants for hpctoolkit&rsquo;s prereqs.  By
+default, spack will choose the latest version of each package (plus
+any constraints from hpctoolkit&rsquo;s <code>package.py</code> file).  In most
+cases, this will work, but not always.  If you need to specify a
+different version or variant, then set this in <code>packages.yaml</code>.
+</p>
+<p>Note: the versions and variants specified in hpctoolkit&rsquo;s
+<code>package.py</code> file are hard constraints and should not be changed.
+Variants in <code>packages.yaml</code> are preferences that may be modified
+for your local system.  (But don&rsquo;t report a bug until you have first
+tried the versions from <code>packages.yaml</code> that we supply.)
+</p>
+<p>There are at least two packages with a variant that you may need to
+change depending on your system.  But always check the current
+<code>packages.yaml</code> file to see if any more have been added.
+</p>
+<ol>
+<li> <code>intel-tbb</code> &ndash; for very old Intel or AMD systems that don&rsquo;t support
+transactional memory, change <code>+tm</code> to <code>~tm</code>.  (This option has
+no effect on non-x86 systems.)
+
+</li><li> <code>libmonitor</code> &ndash; on Blue Gene/Q, add <code>+bgq</code>.
+</li></ol>
+
+<p>The second section in <code>packages.yaml</code> specifies a path or module
+for system build tools.  Building hpctoolkit&rsquo;s prerequisites requires
+cmake 3.4 or later, perl 5.x and python 2.7 or 3.4 or later.  There are
+three ways to satisfy these requirements: a system installed version
+(eg, /usr), a pre-built module or build from scratch.
+</p>
+<p>By default, spack will rebuild these from scratch, even if your local
+version is perfectly fine.  If you already have an installed version
+and prefer to use that instead, then you can specify this in
+<code>packages.yaml</code>.  Note that these are only build tools.
+Hpctoolkit does not link with any of their libraries.
+</p>
+<p>For example, this entry says that cmake 3.7.2 is available from module
+<code>CMake/3.7.2</code> and that spack should use this instead of building
+its own copy.
+</p>
+<div class="example">
+<pre class="example">cmake:
+  modules:
+    cmake@3.7.2:  CMake/3.7.2
+  buildable: False
+</pre></div>
+
+<p>This example says that perl v5.16.3 is installed at
+<code>/usr/bin/perl</code>.  Note that the <code>paths:</code> entry is the parent
+directory of <code>bin</code>, not the bin directory itself (similar to
+prefix).
+</p>
+<div class="example">
+<pre class="example">perl:
+  paths:
+    perl@5.16.3:  /usr
+  buildable: False
+</pre></div>
+
+<p>See the spack docs on &rsquo;Build Customization&rsquo; and &rsquo;Specs and
+Dependencies&rsquo;.
+</p>
+<div class="example">
+<pre class="example"><a href="https://spack.readthedocs.io/en/latest/build_settings.html">https://spack.readthedocs.io/en/latest/build_settings.html</a>
+<a href="https://spack.readthedocs.io/en/latest/basic_usage.html#specs-dependencies">https://spack.readthedocs.io/en/latest/basic_usage.html#specs-dependencies</a>
+</pre></div>
+
+
+<a name="Compilers-and-compilers_002eyaml"></a>
+<h3 class="section">7 Compilers and compilers.yaml</h3>
+
+<p>Building HPCToolkit requires GNU gcc/g++ at a minimum version 4.8 and
+preferably 5.x or later.  By default, spack uses the latest available
+version of gcc, but you can specify a different compiler, if one is
+available.
+</p>
+<p>Spack uses a separate file, <code>compilers.yaml</code> to store information
+about available compilers.  This file is normally in your home directory
+at <code>~/.spack/platform</code> where &lsquo;platform&rsquo; is normally &lsquo;linux&rsquo; (or
+else &lsquo;cray&rsquo; or &lsquo;bgq&rsquo;).
+</p>
+<p>The first time you use spack, or after adding a new compiler, you should
+run <code>spack compiler find</code> to have spack search your system for
+available compilers.  If a compiler is provided as a module, then you
+should load the module before running <code>find</code>.  Normally, you only
+need to run <code>find</code> once, unless you want to add or delete a
+compiler.  You can also run <code>spack compiler list</code> and <code>spack
+compiler info</code> to see what compilers spack knows about.
+</p>
+<p>For example, on one power8 system running RedHat 7.3, /usr/bin/gcc is
+version 4.8.5, but gcc 6.4.0 is available as module <code>GCC/6.4.0</code>.
+</p>
+<div class="example">
+<pre class="example">module load GCC/6.4.0
+
+spack compiler find
+==&gt; Added 2 new compilers to /home/krentel/.spack/linux/compilers.yaml
+    gcc@6.4.0  gcc@4.8.5
+==&gt; Compilers are defined in the following files:
+    /home/krentel/.spack/linux/compilers.yaml
+
+spack compiler list
+==&gt; Available compilers
+-- gcc rhel7-ppc64le --------------------------------------------
+gcc@6.4.0  gcc@4.8.5
+
+spack compiler info gcc@6.4
+gcc@6.4.0:
+    paths:
+        cc = /opt/apps/software/Core/GCCcore/6.4.0/bin/gcc
+        cxx = /opt/apps/software/Core/GCCcore/6.4.0/bin/g++
+        f77 = /opt/apps/software/Core/GCCcore/6.4.0/bin/gfortran
+        fc = /opt/apps/software/Core/GCCcore/6.4.0/bin/gfortran
+    modules  = ['GCC/6.4.0']
+    operating system  = rhel7
+</pre></div>
+
+<p>Note: for compilers from modules, spack does not fill in the
+<code>modules:</code> field in the <code>compilers.yaml</code> file.  You need to
+do this manually.  In the above example, after running <code>find</code>, I
+edited <code>compilers.yaml</code> to add <code>GCC/6.4.0</code> to the
+<code>modules:</code> field as below.  This is important to how spack
+manipulates the build environment.
+</p>
+<div class="example">
+<pre class="example">- compiler:
+    modules: [GCC/6.4.0]
+    operating_system: rhel7
+    spec: gcc@6.4.0
+    ...
+</pre></div>
+
+<p>Spack uses <code>%</code> syntax to specify the build compiler and <code>@</code>
+syntax to specify the version.  For example, suppose you had gcc
+versions 7.3.1, 6.4.0 and 5.4.0 available and you wanted to use 6.4.0.
+You could write this as:
+</p>
+<div class="example">
+<pre class="example">spack install package %gcc@6.4.0
+</pre></div>
+
+<p>See the spack docs on &lsquo;Compiler Configuration&rsquo;.
+</p>
+<div class="example">
+<pre class="example"><a href="https://spack.readthedocs.io/en/latest/getting_started.html#compiler-configuration">https://spack.readthedocs.io/en/latest/getting_started.html#compiler-configuration</a>
+</pre></div>
+
+
+<a name="Spack-Install"></a>
+<h3 class="section">8 Spack Install</h3>
+
+<p>First, set up your <code>config.yaml</code>, <code>packages.yaml</code> and
+<code>compilers.yaml</code> files as above and edit them for your system.
+You can see how spack will build hpctoolkit with <code>spack spec</code> and
+<code>spack graph</code>.
+</p>
+<div class="example">
+<pre class="example">spack spec hpctoolkit
+spack graph hpctoolkit
+</pre></div>
+
+<p>Then, the &ldquo;one button&rdquo; method uses spack to install everything.
+</p>
+<div class="example">
+<pre class="example">spack install hpctoolkit
+</pre></div>
+
+<p><b>Tip:</b> Spack fetch is somewhat fragile and often has transient
+problems downloading files.  You can use <code>spack fetch -D</code> to
+pre-fetch all of the tar files and resolve any downloading problems
+before starting the full install.
+</p>
+<div class="example">
+<pre class="example">spack fetch -D hpctoolkit
+</pre></div>
+
+
+<a name="Manual-Install"></a>
+<h3 class="section">9 Manual Install</h3>
+
+<p>The manual method uses spack to build hpctoolkit&rsquo;s prerequisites and
+then uses the traditional autotools <code>configure &amp;&amp; make &amp;&amp; make
+install</code> to install hpctoolkit.  This method is primarily for
+developers who want to compile hpctoolkit, edit the source code and
+recompile, etc.  This method is also useful if you need some configure
+option that is not available through spack.
+</p>
+<p>First, use spack to build hpctoolkit&rsquo;s prerequisites as above.  You
+can either build some version of hpctoolkit as before (which will pull
+in the prerequisites), or else use <code>--only dependencies</code> to avoid
+building hpctoolkit itself.
+</p>
+<div class="example">
+<pre class="example">spack install --only dependencies hpctoolkit
+</pre></div>
+
+<p>Then, configure and build hpctoolkit as follows.  Hpctoolkit uses
+automake and so allows for parallel make.
+</p>
+<div class="example">
+<pre class="example">configure  \
+   --prefix=/path/to/hpctoolkit/install/prefix  \
+   --with-spack=/path/to/spack/install_tree/linux-fedora26-x86_64/gcc-7.3.1  \
+   ...
+make -j &lt;num&gt;
+make install
+</pre></div>
+
+<p>The argument to <code>--with-spack</code> should be the directory containing
+all of the individual package directories, normally two directories
+down from the top-level <code>install_tree</code> and named by the platform
+and compiler.  This option replaces the old <code>--with-externals</code>.
+The following are other options that may be useful.  For the full list
+of options, see <code>configure -h</code>.
+</p>
+<ol>
+<li> <code>--enable-all-static</code> &ndash; build hpcprof-mpi statically linked for
+the compute nodes.
+
+</li><li> <code>--enable-bgq</code> &ndash; configure for Blue Gene/Q back end.
+
+</li><li> <code>--enable-develop</code> &ndash; compile with optimization turned off for
+debugging.
+
+</li><li> <code>--with-package=path</code> &ndash; specify the install prefix for some
+prerequisite package, mostly for developers who want to use a custom,
+non-spack version of some package.
+
+</li><li> <code>MPICXX=compiler</code> &ndash; specify the MPI C++ compiler for
+hpcprof-mpi, may be a compiler name or full path.
+</li></ol>
+
+<p>Note: if your spack install tree has multiple versions or variants for
+the same package, then <code>--with-spack</code> will select the one with
+the most recent directory time stamp (and issue a warning).  If this
+is not what you want, then you will need to specify the correct
+version with a <code>--with-package</code> option.
+</p>
+
+<a name="Advanced-Options"></a>
+<h3 class="section">10 Advanced Options</h3>
+
+<a name="MPI"></a>
+<h4 class="subsection">10.1 MPI</h4>
+
+<p>HPCToolkit always supports profiling MPI applications.  For
+hpctoolkit, the spack variant <code>+mpi</code> is for building hpcprof-mpi,
+the MPI version of hpcprof.  If you want to build hpcprof-mpi, then
+you need to supply an installation of MPI.
+</p>
+<p>Normally, for systems with compute nodes, you should use an existing
+MPI module that was built for the correct interconnect for your system
+and add this to <code>packages.yaml</code>.  The MPI module should be built
+with the same version of GNU gcc/g++ used to build hpctoolkit (to keep
+the C++ libraries in sync).
+</p>
+<a name="PAPI-vs-Perfmon"></a>
+<h4 class="subsection">10.2 PAPI vs Perfmon</h4>
+
+<p>HPCToolkit can access the Hardware Performance Counters with either
+PAPI or Perfmon (libpfm4).  By default, the hpctoolkit package uses
+perfmon.  If you want to use PAPI instead, then build hpctoolkit with
+<code>+papi</code>.  However, you can&rsquo;t use both due to a potential conflict
+in their header files.
+</p>
+<p>PAPI runs on top of the perfmon library, but PAPI uses its own,
+internal copy of perfmon.  Prior to version 5.6.0, PAPI did not
+install the perfmon header files, so it was impossible to access the
+perfmon events through PAPI.
+</p>
+<p>However, starting with version 5.6.0, PAPI now installs both the
+perfmon library and its header files.  Hpctoolkit configure will
+automatically detect this, so if you build hpctoolkit with a recent
+enough version of PAPI, then both the PAPI and perfmon interfaces will
+be available.
+</p>
+
+<a name="Platform-Specific-Notes"></a>
+<h3 class="section">11 Platform Specific Notes</h3>
+
+<a name="Blue-Gene"></a>
+<h4 class="subsection">11.1 Blue Gene</h4>
+
+<p>Blue Gene systems are being phased out, without a next generation
+replacement, but are still supported by hpctoolkit (for now).  Blue
+Gene normally comes with a Red Hat Enterprise Linux (RHEL) 6.x front
+end and the GNU gcc/g++ 4.4 compilers with are too old to support the
+latest version of hpctoolkit.
+</p>
+<p>Spack supports two architecture types on Blue Gene.  The front-end arch
+is <code>bgq-rhel6-ppc64</code> and the back-end arch is <code>bgq-cnk-ppc64</code>.
+Normally, it would matter whether we built for the front end or back
+end.  But for the GNU compilers on Blue Gene, both compilers are
+/usr/bin/gcc.  So, we just build for the default back end.
+</p>
+<p>There are two ways to build hpctoolkit for Blue Gene, depending on the
+version of the compiler and Dyninst.  The simple method uses the default
+GCC 4.4 compiler and Dyninst 9.3.2.  Edit these two entries in the
+<code>packages.yaml</code> file.
+</p>
+<ol>
+<li> Set the dyninst version to <code>9.3.2</code>.
+
+</li><li> Add <code>+bgq</code> to the libmonitor variants.
+</li></ol>
+
+<p>Then, build hpctoolkit with <code>+bgq</code> turned on.  The <code>+bgq</code>
+variant adds MPI and hpcprof-mpi and supersedes the <code>+mpi</code>
+variant.
+</p>
+<div class="example">
+<pre class="example">spack install hpctoolkit +bgq
+</pre></div>
+
+<p>The advanced method involves building a new compiler (gcc 4.8 or 4.9)
+but allows using Dyninst 10.x.  This method requires TCL or Lmod
+modules and an MPI C++ compiler built for a compatible version of g++.
+Mira and vesta at ANL have softenv modules for +mpiwrapper-gcc and
++bgqtoolchain-gcc484 but don&rsquo;t provide TCL or Lmod modules.
+</p>
+<p>First, use spack to build a new compiler.  Dyninst 10.x requires
+gcc&nbsp;<!-- /@w -->4.8 or later, but libmonitor requires the true back-end
+<code>powerpc64-bgq-linux-gcc</code> compiler which is version 4.4.  We
+settle on gcc 4.8.5 as a compromise between these two constraints.
+Edit <code>config.yaml</code> to set <code>module_roots</code> to a directory in
+which to install the modules and then build gcc.
+</p>
+<div class="example">
+<pre class="example">spack install gcc @4.8.5
+</pre></div>
+
+<p>Assuming you have modules installed, then load the new gcc module and
+rerun <code>spack compiler find</code>.  This should add the new compiler to
+your <code>compilers.yaml</code> file (twice, for front and back end).  For
+example, on vulcan at LLNL,
+</p>
+<div class="example">
+<pre class="example">module use /path/to/modules/bgq-cnk-ppc64
+module load gcc-4.8.5-gcc-4.4.7-nzvjwva
+spack compiler find
+==&gt; Added 2 new compilers to /g/g21/krentel1/.spack/bgq/compilers.yaml
+    gcc@4.8.5  gcc@4.8.5
+</pre></div>
+
+<p>Note: after running <code>spack compiler find</code>, you still need to add
+the modules field to the compiler entry in <code>compilers.yaml</code> as in
+the section on Compilers.
+</p>
+<p>Note: in the above example, we used gcc 4.4.7 to build gcc 4.8.5 (so
+the gcc-4.8.5 package is in the gcc-4.4.7 directory).  You could then
+use gcc 4.8.5 to rebuild 4.8.5, if you like, but this is not
+necessary.
+</p>
+<p>Finally, use the new compiler to build hpctoolkit with the new compiler.
+If you have modified the dyninst entry in <code>packages.yaml</code>, then
+reset the dyninst version to 10.1.0 (or later).
+</p>
+<div class="example">
+<pre class="example">spack install hpctoolkit +bgq %gcc@4.8.5
+</pre></div>
+
+<p>If you don&rsquo;t have modules installed, then use <code>spack bootstrap</code>
+to build the environment-modules package.  Then, source the bash or
+csh script in the <code>Modules/init</code> directory to add the
+<code>module</code> function to your environment.  For example,
+</p>
+<div class="example">
+<pre class="example">spack bootstrap
+cd /path/to/environment-modules-4.2.4-rwtvlanuss35fxd3xuyldbfopt2m4ecs/init
+(bash)  . ./bash
+(csh)   source ./csh
+</pre></div>
+
+<p>Alternatively, you could try adding the module environment variables
+(PATH and LD_LIBRARY_PATH) manually, but then you may have to run
+spack install with <code>--dirty</code>.  The <code>--dirty</code> option tells
+spack not to erase LD_LIBRARY_PATH while building packages.
+</p>
+<div class="example">
+<pre class="example">spack install --dirty hpctoolkit +bgq %gcc@4.8.5
+</pre></div>
+
+<p>For developers, if you are building hpctoolkit directly (outside of
+spack) but using spack prerequisites, then use a configure line
+similar to the following.
+</p>
+<div class="example">
+<pre class="example">configure  \
+    --prefix=/path/to/install/prefix  \
+    --with-spack=/path/to/bgq-cnk-ppc64/gcc-4.8.5  \
+    --enable-bgq  \
+    --enable-all-static  \
+    MPICXX=mpicxx
+</pre></div>
+
+
+<a name="Cray"></a>
+<h4 class="subsection">11.2 Cray</h4>
+
+<p>Cray systems, like Blue Gene, have separate front and back-end
+architecture types.  For example, on theta at ANL, the front-end arch
+is <code>cray-sles12-x86_64</code> (SuSE Linux version 12 for x86_64) and
+the back-end is <code>cray-cnl6-mic_knl</code> (Compute Node Linux for KNL).
+</p>
+<p>Hpctoolkit needs to be built with the GNU Programming Environment and
+the front-end x86_64 compilers, plus the <code>CC</code> MPI C++ wrapper.
+Switch to the <code>PrgEnv-gnu</code> module and unload the darshan module.
+Darshan is a profiling tool that monitors an application&rsquo;s use of I/O,
+but it conflicts with hpctoolkit.
+</p>
+<div class="example">
+<pre class="example">module swap PrgEnv-intel PrgEnv-gnu
+module unload darshan
+</pre></div>
+
+<p>By default, spack probably does not recognize the gcc compiler modules
+as front-end compilers.  You have to tell spack to add them
+explicitly.  Check that the latest gcc module is loaded (it probably
+is from <code>PrgEnv-gnu</code>) and run <code>spack compiler find</code> with the
+path to the compiler (one directory up from <code>bin</code>).  For example,
+on theta at ANL,
+</p>
+<div class="example">
+<pre class="example">module load gcc/7.3.0
+spack compiler find /opt/gcc/7.3.0
+spack compiler list
+==&gt; Available compilers
+-- gcc cnl6-any -------------------------------------------------
+gcc@7.3.0  gcc@7.2.0  gcc@7.1.0  gcc@6.3.0  gcc@6.1.0  gcc@5.3.0
+gcc@4.9.3
+
+-- gcc sles12-x86_64 --------------------------------------------
+gcc@7.3.0  gcc@4.8
+</pre></div>
+
+<p>Normally, spack does not fill in the <code>modules:</code> field for the new
+compiler, you have to add that manually.  And although we mostly use
+the front-end environment, we also need the <code>CC</code> wrapper to be
+the back-end MPI compiler.
+</p>
+<p>Spack does not support using both front-end and back-end compilers in
+the same build.  But there are two workarounds for Cray.  One option is
+to load the <code>cray-mpich</code> module and run <code>spack install</code> with
+option <code>--dirty</code>.  A better way is to add <code>cray-mpich</code> to the
+list of modules for gcc in <code>compilers.yaml</code>.  Edit the front-end
+gcc entry (operating system sles12 and target x86_64) to add the
+following modules (your versions may differ).
+</p>
+<div class="example">
+<pre class="example">- compiler:
+    modules:
+    - PrgEnv-gnu/6.0.4
+    - gcc/7.3.0
+    - cray-mpich/7.7.3
+    operating_system: sles12
+    paths:
+      cc: /opt/gcc/7.3.0/bin/gcc
+      cxx: /opt/gcc/7.3.0/bin/g++
+      f77: /opt/gcc/7.3.0/bin/gfortran
+      fc: /opt/gcc/7.3.0/bin/gfortran
+    spec: gcc@7.3.0
+    target: x86_64
+</pre></div>
+
+<p>This tells spack to load the above modules when using the gcc 7.3.0
+compiler.  With the cray-mpich module loaded, the <code>CC</code> wrapper
+becomes an MPI C++ compiler, which is what hpctoolkit needs.
+</p>
+<p>Next, review your <code>packages.yaml</code> file.  On Cray systems with
+Xeon Phi back-end nodes (KNL, KNH, etc), add <code>~tm</code> to intel-tbb
+to disable transactional memory.
+</p>
+<p>Finally, build hpctoolkit with the front-end arch type
+(cray-sles12-x86_64) and option <code>+cray</code>.  Normally, you can use OS
+type <code>fe</code> (front-end) in place of <code>sles12</code>.  As with Blue
+Gene, the <code>+cray</code> option adds MPI and hpcprof-mpi and supersedes
+the <code>+mpi</code> variant.
+</p>
+<div class="example">
+<pre class="example">spack install hpctoolkit +cray arch=cray-fe-x86_64
+</pre></div>
+
+<p>For developers, if you are building hpctoolkit directly (outside of
+spack) but using spack prerequisites, then use a configure line
+similar to the following.
+</p>
+<div class="example">
+<pre class="example">configure  \
+    --prefix=/path/to/install/prefix  \
+    --with-spack=/path/to/cray-sles12-x86_64/gcc-7.3.0  \
+    --enable-all-static  \
+    MPICXX=CC
+</pre></div>
+
+
+<a name="Hpcviewer-and-Hpctraceviewer"></a>
+<h3 class="section">12 Hpcviewer and Hpctraceviewer</h3>
+
+<p>We provide binary distributions for hpcviewer and hpctraceviewer on
+Linux (x86_64 and powerpc), Windows and MacOS.  HPCToolkit databases are
+platform-independent and it is common to run hpcrun on one machine and
+then view the results on another machine.
+</p>
+<p>All versions of the viewers require Java version 8 (not 9 or later).
+The Linux versions also require GTK+ version 2.x.
+</p>
+<a name="Spack-Install-1"></a>
+<h4 class="subsection">12.1 Spack Install</h4>
+
+<p>The spack install is available on Linux x86_64, big-endian power7
+(ppc64) and little-endian power8 and 9 (ppc64le).  This installs both
+hpcviewer and hpctraceviewer and includes the Java 8 prerequisite.
+</p>
+<p>On x86_64, use either jdk or openjdk.  The latest 1.8 jdk package,
+1.8.0_202 has trouble downloading due to licensing issues, however
+1.8.0_141-b15 seems to work.  (Or, you could manually download jdk
+1.8.0_202 and copy it to the spack file cache.)  For openjdk, use
+version 1.8.0_202-b08.
+</p>
+<div class="example">
+<pre class="example">spack install hpcviewer ^jdk@1.8.0_141-b15
+spack install hpcviewer ^openjdk@1.8.0_202-b08
+</pre></div>
+
+<p>On powerpc (big and little-endian), use the IBM version of Java.
+</p>
+<div class="example">
+<pre class="example">spack install hpcviewer ^ibm-java
+</pre></div>
+
+<a name="Manual-Install-1"></a>
+<h4 class="subsection">12.2 Manual Install</h4>
+
+<p>Binary distributions of the viewers for all supported platforms are
+available at:
+</p>
+<div class="example">
+<pre class="example"><a href="http://hpctoolkit.org/download/hpcviewer">http://hpctoolkit.org/download/hpcviewer</a>
+</pre></div>
+
+<p>On Linux, download the <code>linux.gtk</code> versions of hpcviewer and
+hpctraceviewer, unpack the tar files and run the install scripts (for
+both viewers) with the path to the desired install prefix.
+</p>
+<div class="example">
+<pre class="example">./install /path/to/install/directory
+</pre></div>
+
+<p>On Windows and MacOS, download the <code>win32</code> or <code>macosx.cocoa</code>
+versions and unpack the zip files in the desired directory.  Due to
+Apple&rsquo;s security precautions, on MacOS, you will need to use curl or
+wget instead of a web browser.
+</p>
+
+<a name="Building-a-New-Compiler"></a>
+<h3 class="section">13 Building a New Compiler</h3>
+
+<p>Some systems may have compilers that are too old for building
+HPCToolkit or other packages.  For example, RedHat 7.x comes with gcc
+4.8.x which is very old.  If your system doesn&rsquo;t already have modules
+for later compilers, then you may need to build a new compiler
+yourself.
+</p>
+<p>First, pick a directory in which to install the modules and make
+subdirectories for the spack packages and module files.  In this
+example, I&rsquo;m using <code>/opt/spack/Modules</code> as my top-level directory
+and subdirectories <code>packages</code> and <code>modules</code>.  Edit
+<code>config.yaml</code> to add these paths.
+</p>
+<div class="example">
+<pre class="example">config:
+  install_tree:  /opt/spack/Modules/packages
+
+  # just use one of these
+  module_roots:
+    tcl:  /opt/spack/Modules/modules
+    lmod: /opt/spack/Modules/modules
+</pre></div>
+
+<p>Determine if your system uses TCL (environment) or Lmod modules.
+Normally, the <code>module</code> command is a shell function.  TCL modules
+use <code>modulecmd</code> and Lmod modules eval <code>LMOD_CMD</code>.  Edit
+<code>modules.yaml</code> to enable the module type for your system.  Again,
+you only need one of these (and don&rsquo;t use dotkit unless you work at
+LLNL).
+</p>
+<div class="example">
+<pre class="example">modules:
+  enable:
+   - tcl
+   - lmod
+</pre></div>
+
+<p>Then, choose a version of gcc and use the default compiler (normally
+<code>/usr/bin/gcc</code>) to build the newer version.  Currently, gcc 7.x
+is a good choice that builds robustly, has enough modern features but
+is not too new to cause problems for some packages.  For example,
+</p>
+<div class="example">
+<pre class="example">spack install gcc@7.4.0
+</pre></div>
+
+<p>Note: it is not necessary to rebuild the new compiler with itself.
+</p>
+<a name="Using-the-New-Compiler"></a>
+<h4 class="subsection">13.1 Using the New Compiler</h4>
+
+<p>After building a new compiler, then you need to tell spack how to find
+it.  First, use <code>module use</code> and <code>module load</code> to load the
+module.  For TCL modules, the module files are in a subdirectory of
+<code>module_roots</code> named after the system architecture.  For example,
+</p>
+<div class="example">
+<pre class="example">module use /opt/spack/Modules/modules/linux-rhel7-x86_64
+module load gcc-7.4.0-gcc-4.8.5-qemsqrc
+</pre></div>
+
+<p>For Lmod modules, the module directory is one level below that and the
+module names are a little different.
+</p>
+<div class="example">
+<pre class="example">module use /opt/spack/Modules/modules/linux-rhel7-x86_64/Core
+module load gcc/7.4.0-dan4vbm
+</pre></div>
+
+<p>For both TCL and Lmod modules, it&rsquo;s best to put the <code>module use</code>
+command in your shell&rsquo;s startup scripts so that <code>module avail</code> and
+<code>module load</code> will know where to find them.  After loading the
+module, run <code>spack compiler find</code>.
+</p>
+<div class="example">
+<pre class="example">$ spack compiler find
+==&gt; Added 1 new compiler to /home/krentel/.spack/linux/compilers.yaml
+    gcc@7.4.0
+</pre></div>
+
+<p>Finally, always check the new entry in <code>compilers.yaml</code> and add the
+name of the module to the <code>modules:</code> field.
+</p>
+<div class="example">
+<pre class="example">- compiler:
+    environment: {}
+    extra_rpaths: []
+    flags: {}
+    modules:
+    - gcc-7.4.0-gcc-4.8.5-qemsqrc
+    operating_system: rhel7
+    paths:
+      cc:  /opt/spack/Modules/packages/linux-rhel7-x86_64/gcc-4.8.5/gcc-7.4.0-qemsqrcwkk52f6neef4kg5wvoucsroif/bin/gcc
+      cxx: /opt/spack/Modules/packages/linux-rhel7-x86_64/gcc-4.8.5/gcc-7.4.0-qemsqrcwkk52f6neef4kg5wvoucsroif/bin/g++
+      f77: /opt/spack/Modules/packages/linux-rhel7-x86_64/gcc-4.8.5/gcc-7.4.0-qemsqrcwkk52f6neef4kg5wvoucsroif/bin/gfortran
+      fc:  /opt/spack/Modules/packages/linux-rhel7-x86_64/gcc-4.8.5/gcc-7.4.0-qemsqrcwkk52f6neef4kg5wvoucsroif/bin/gfortran
+    spec: gcc@7.4.0
+    target: x86_64
+</pre></div>
+
+<p>Note: as long as the spack packages and modules directories remain
+intact and you don&rsquo;t remove the <code>compilers.yaml</code> entry, then this
+compiler will always be available from within spack.  You can also use
+this compiler outside of spack by using <code>module load</code>.  If you
+want to make this your default compiler for all spack builds, then you
+can specify this in <code>packages.yaml</code>.  For example,
+</p>
+<div class="example">
+<pre class="example">packages:
+  all:
+    compiler: [gcc@7.4.0]
+</pre></div>
+
+<p>Also, when using the compiler from within spack, it doesn&rsquo;t matter if
+you have the module loaded or not.  Spack will erase your environment
+and re-add the appropriate modules automatically.
+</p>
+<div class="example">
+<pre class="example"><a href="https://spack.readthedocs.io/en/latest/getting_started.html#compiler-configuration">https://spack.readthedocs.io/en/latest/getting_started.html#compiler-configuration</a>
+</pre></div>
+
+<a name="Bootstrapping-Environment-Modules"></a>
+<h4 class="subsection">13.2 Bootstrapping Environment Modules</h4>
+
+<p>If your system does not support modules, then you will have to add it.
+If you have root access, the easiest solution is to install a system
+package for modules.  If not, then use <code>spack bootstrap</code> to build
+the environment-modules package.  Source the bash or csh script in the
+<code>init</code> directory to add the <code>module</code> function to your
+environment.  For example,
+</p>
+<div class="example">
+<pre class="example">spack bootstrap
+cd /path/to/environment-modules-4.3.1-ism7cdy4xverxywj27jvjstqwk5oxe2v/init
+(bash)  . ./bash
+(csh)   source ./csh
+</pre></div>
+
+<p>Again, add the setup command to your shell&rsquo;s startup scripts.  Note:
+<code>spack bootstrap</code> is just shorthand for <code>spack install
+environment-modules</code> and you could run that instead.
+</p>
+
+<a name="Spack-Mirrors"></a>
+<h3 class="section">14 Spack Mirrors</h3>
+
+<p>A spack mirror allows you to download and save a source tar file in
+advance.  This is useful if your system is behind a firewall, or if you
+need to manually agree to a license, or if you just don&rsquo;t want to keep
+downloading the same file over and over.
+</p>
+<p>A mirror has a simple directory structure and is easy to set up.  Create
+a top-level directory with subdirectories named after the spack packages
+and copy the tar files into their package&rsquo;s subdirectory.  For example,
+</p>
+<div class="example">
+<pre class="example">my-mirror/
+   boost/
+      boost-1.66.0.tar.bz2      (from boost_1_66_0.tar.bz2)
+      boost-1.70.0.tar.bz2
+   dyninst/
+      dyninst-10.1.0.tar.gz     (from git checkout)
+   ibm-java/
+      ibm-java-8.0.5.30.None    (from ibm-java-sdk-8.0-5.30-ppc64le-archive.bin)
+   intel-xed/
+      intel-xed-2019.03.01.tar.gz    (from git checkout)
+      mbuild-2019.03.01.tar.gz       (resource from git checkout)
+   jdk/
+      jdk-1.8.0_202.tar.gz      (from jdk-8u202-linux-x64.tar.gz)
+</pre></div>
+
+<p>Note: the names of the files in the spack mirror always follow the same,
+specific format, regardless of the actual name of the tar file.  Version
+is the spack name for the version (from <code>spack info</code>), and
+extension is the same extension as the tar file (<code>tar.gz</code>,
+<code>tar.bz2</code>, etc) or else <code>None</code> for other types of files.
+</p>
+<div class="example">
+<pre class="example">&lt;package-name&gt; - &lt;version&gt; . &lt;extension&gt;
+</pre></div>
+
+<p>For example, the boost 1.66.0 tar file is actually named
+<code>boost_1_66_0.tar.bz2</code> but is stored in the mirror as
+<code>boost-1.66.0.tar.bz2</code> and <code>jdk-8u202-linux-x64.tar.gz</code> is
+renamed to <code>jdk-1.8.0_202.tar.gz</code>.
+</p>
+<p>For packages that use a snapshot from a git repository (tag or commit
+hash), clone the repository, checkout the desired version, make a tar
+file and gzip the file.  (You should exclude the <code>.git</code>
+subdirectory.)  But note that spack refuses to use a cached file for
+the head of a branch because it is a moving target.
+</p>
+<p>Finally, after creating the mirror directory, add it to spack with
+<code>spack mirror add</code>.  For example,
+</p>
+<div class="example">
+<pre class="example">spack mirror add my-mirror file:///home/krentel/spack/my-mirror
+spack mirror list
+my-mirror    file:///home/krentel/spack/mirror
+</pre></div>
+
+<p>Note: by default, spack stores downloaded files inside the spack
+repository at <code>spack/var/spack/cache</code>.  This directory is a full
+spack mirror, so instead of creating a separate directory tree, you
+could just copy the files into the <code>cache</code> directory.  This is
+useful when <code>spack fetch</code> has trouble downloading a file.  If you
+can download the file manually, or copy it from another machine, then
+just rename the file as above and copy it into the spack file cache.
+</p>
+<p>For more information on mirrors, see:
+</p>
+<div class="example">
+<pre class="example"><a href="https://spack.readthedocs.io/en/latest/mirrors.html">https://spack.readthedocs.io/en/latest/mirrors.html</a>
+</pre></div>
+
+
+<a name="Common-Problems"></a>
+<h3 class="section">15 Common Problems</h3>
+
+<a name="Unable-to-fetch-tar-file"></a>
+<h4 class="subsection">15.1 Unable to fetch tar file</h4>
+
+<p>Spack is somewhat fragile for how it downloads tar files and will
+often fail for transitory network problems.  This is especially true
+for packages with many dependencies.  For example:
+</p>
+<div class="example">
+<pre class="example">==&gt; Installing m4
+==&gt; Searching for binary cache of m4
+==&gt; No binary for m4 found: installing from source
+curl: (6) Could not resolve host: ftp.wayne.edu; Name or service not known
+==&gt; Fetching https://ftpmirror.gnu.org/m4/m4-1.4.18.tar.gz
+==&gt; Fetching from https://ftpmirror.gnu.org/m4/m4-1.4.18.tar.gz failed.
+==&gt; Error: FetchError: All fetchers failed for m4-1.4.18-vorbvkcjfac43b7vuswsvnm6xe7w7or5
+</pre></div>
+
+<p>There are two workarounds.  First, assuming the problem is temporary,
+simply wait 10 minutes or an hour and try again.  Second, you could
+manually download the file(s) by some other means and copy them to
+spack&rsquo;s cache directory <code>spack/var/spack/cache/&lt;package&gt;</code> or to a
+spack mirror.
+</p>
+<a name="New-releases-break-the-build"></a>
+<h4 class="subsection">15.2 New releases break the build</h4>
+
+<p>Normally, HPCToolkit should build and work correctly with the latest
+version for all of its dependencies.  But sometimes a new release will
+change something and break the build.  This has happened a couple times
+where a new release of Boost has broken the build for Dyninst.  Or,
+maybe the latest version of gcc/g++ disallows some usage and breaks the
+build.
+</p>
+<p>The solution is to use <code>packages.yaml</code> to specify an earlier
+version until the rest of the code adapts to the change.
+</p>
+<a name="Failure-to-load-modules"></a>
+<h4 class="subsection">15.3 Failure to load modules</h4>
+
+<p>Spack is quite aggressive about compiling with a clean environment and
+will unload modules unless they are specifically required by some config
+file (<code>compilers.yaml</code> or <code>packages.yaml</code>).  This can result
+in a situation where you think some compiler or build tool is available
+from your environment but spack removes it during the build.
+</p>
+<p>In this example, I am using modules for <code>GCC/6.4.0</code> and
+<code>CMake/3.8.2</code>.  Spack finds the gcc 6.4.0 compiler and I added
+<code>cmake@3.8.2</code> to <code>packages.yaml</code>.  But I failed to add the
+<code>modules:</code> field for gcc 6.4.0 in <code>compilers.yaml</code>.  As a
+result, the build fails with:
+</p>
+<div class="example">
+<pre class="example">cmake: /usr/lib64/libstdc++.so.6: version `GLIBCXX_3.4.20' not found (required by cmake)
+cmake: /usr/lib64/libstdc++.so.6: version `GLIBCXX_3.4.21' not found (required by cmake)
+cmake: /usr/lib64/libstdc++.so.6: version `CXXABI_1.3.9' not found (required by cmake)
+==&gt; Error: ProcessError: Command exited with status 1:
+</pre></div>
+
+<p>The problem is that cmake 3.8.2 was built with g++ 6.4.0, but spack is
+running cmake without the GCC/6.4.0 libraries and so the build fails as
+above.  One way to confirm this is to rerun <code>spack install --dirty</code>
+which then succeeds.  The <code>--dirty</code> option tells spack not to
+unload your modules.  Whenever the build fails with a mismatched library
+as above and especially when <code>--dirty</code> fixes the problem, this is a
+clear sign that spack is missing a module during the build.
+</p>
+<p>Although <code>--dirty</code> may make the build succeed, there should be no
+case where this is necessary.  The correct solution is to fill in the
+<code>modules:</code> field in <code>compilers.yaml</code> or some other config
+file.  See the section on Compilers above.
+</p>
+<hr>
+
+
+
+<div style="width: 100%; font-size: small;">
+  <hr />
+  <p style="margin: 0px; font-size: small;">
+    &copy;2000-2018 <a href="http://www.rice.edu">Rice University</a>
+    &bull;
+    <a href="http://www.cs.rice.edu">Rice Computer Science</a>
   </p>
-<div class="indent">
-  <code>cd hpctoolkit-externals</code><br />
-  <code>mkdir BUILD &amp;&amp; cd BUILD</code><br />
-  <code>../configure [CC=&lt;<i>c-compiler</i>&gt;] 
-                     [CXX=&lt;<i>c++-compiler</i>&gt;] \<br />
-  &nbsp;&nbsp;&nbsp;&nbsp; [--prefix=&lt;<i>hpctoolkit-externals-install</i>&gt;</code>] <br />
-  <code>make install</code><br />
-  <code>make clean</code><br />
+  <a href="http://validator.w3.org/check/referer">
+    <img src="http://www.w3.org/Icons/valid-xhtml10-blue" alt="" height="15" /></a>
+  <a href="http://jigsaw.w3.org/css-validator/check/referer">
+    <img src="http://www.w3.org/Icons/valid-css-blue" alt="" height="15" /></a>
 </div>
-
-<p>Externals is <i>not</i> persistent as HPCToolkit will copy everything it needs from the installation.
-  Thus, the installation path <code>&lt;hpctoolkit-externals-install&gt;</code> should be a local path and not something like <code>/usr</code>.
-  If <code>--prefix</code> is not supplied it will automatically be set to <code>./&lt;Autoconf-host&gt;</code>.
-</p>
-
-<p>To specify a C and C++ compiler other than <code>gcc</code> and <code>g++</code>, use <code>CC</code> and <code>CXX</code>.
-</p>
-
-
-<p>Please be sure the Externals build completes before configuring HPCToolkit.
-  (Note: After building Externals once, HPCToolkit can be configured and built several times using the same Externals installation.)
-</p>
-</li>
-
-<li>
-<p>Build and install HPCToolkit using commands similar to the following; we recommend using the GCC compilers:
-</p>
-<div class="indent">
-  <code>cd hpctoolkit</code><br />
-  <code>mkdir BUILD &amp;&amp; cd BUILD</code><br />
-  <code>../configure [CC=&lt;<i>c-compiler</i>&gt;]
-                     [CXX=&lt;<i>c++-compiler</i>&gt;]
-                     [MPICXX=&lt;<i>mpi-c++-compiler</i>&gt;] \<br />
-  &nbsp;&nbsp;&nbsp;&nbsp; --prefix=&lt;<i>hpctoolkit-install</i>&gt; \<br />
-  &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;<i>hpctoolkit-externals-install</i>&gt; \<br />
-   &nbsp;&nbsp;&nbsp;&nbsp; [--with-papi=&lt;<i>papi-install</i>&gt;]</code><br />
-  <code>make install</code><br />
-</div>
-
-<p>The above commands will build HPCToolkit and install it into <code>&lt;<i>hpctoolkit-install</i>&gt;</code>.
-</p>
-
-<p>To specify a C and C++ compiler other than <code>gcc</code> and <code>g++</code>, use <code>CC</code> and <code>CXX</code>.
-  To enable MPI support, (1) ensure a working <code>mpicxx</code> or <code>mpiCC</code> is in your shell's path; or (2) use <code>MPICXX</code>.
-  (Naturally, <code>CXX</code> and <code>MPICXX</code> should be compatible; typically <code>MPICXX</code> is a wrapper for <code>CXX</code>.)
-  To enable PAPI-based measurements, use the <code>--with-papi</code> option; it takes as an argument the path of your PAPI installation, <code>&lt;<i>papi-install</i>&gt;</code>.
-</p>
-
-<p>Because the HPCToolkit installation is self-contained, it may be renamed or moved to another location.
-  All HPCToolkit Externals source code, build files and installations may be removed; all HPCToolkit source code and build files may be removed.
-</p>
-</li>
-
-<li>
-<p>Install <span class="hpctool">hpcviewer</span> and <span class="hpctool">hpctraceviewer</span> .
-</p>
-
-  <ul class="noindent">
-  
-  <li> To install <span class="hpctool">hpcviewer</span> or <span class="hpctool">hpctraceviewer</span> as a stand-alone package, simply unpack and move the directory tree to the desired location.
-  (This is the only option on Windows or MacOS.)
-  </li>
-
-  <!--
-  <li> To install <span class="hpctool">hpcviewer</span> or <span class="hpctool">hpctraceviewer</span> in an HPCToolkit installation, unpack the tarball and execute the following commands:
-    <div class="indent">
-      <code>cd &lt;<i>hpcviewer</i>&gt; &amp;&amp; ./install &lt;<i>hpctoolkit-install</i>&gt;</code><br />
-      <code>cd &lt;<i>hpctraceviewer</i>&gt; &amp;&amp; ./install &lt;<i>hpctoolkit-install</i>&gt;</code>
-    </div>
-    Here, <code>&lt;<i>hpcviewer</i>&gt;</code> and <code>&lt;<i>hpctraceviewer</i>&gt;</code> are the directories created by unpacking the respective tarballs; and <code>&lt;<i>hpctoolkit-install</i>&gt;</code> is the above HPCToolkit installation directory.
-  </li>
-
-  -->
-
-  <li> To install <span class="hpctool">hpcviewer</span> or <span class="hpctool">hpctraceviewer</span> in an HPCToolkit installation, unpack the tarball and execute the following commands:
-    <div class="indent">
-      <code>cd &lt;<i>hpcviewer</i>&gt; &amp;&amp; ./install [ -j &lt;path-to-java&gt; ] &lt;<i>hpctoolkit-install</i>&gt;</code><br />
-      <code>cd &lt;<i>hpctraceviewer</i>&gt; &amp;&amp; ./install [ -j &lt;path-to-java&gt; ] &lt;<i>hpctoolkit-install</i>&gt;</code>
-    </div>
-    Here, <code>&lt;<i>hpcviewer</i>&gt;</code> and <code>&lt;<i>hpctraceviewer</i>&gt;</code> are the directories created by unpacking the respective tarballs; and <code>&lt;<i>hpctoolkit-install</i>&gt;</code> is the above HPCToolkit installation directory.<br />
-
-  The optional flag -j &lt;path-to-java&gt; allows the specification of an appropriate java to be used with
-  <span class="hpctool">hpcviewer</span> or <span class="hpctool">hpctraceviewer</span>. 
-  </li>
-
-  </ul>
-
-</li>
-
-</ol>
-
-
-<h3>Selected Examples</h3>
-
-<p>The list below gives example HPCToolkit Externals and HPCToolkit <code>configure</code> commands (respectively) for selected platforms.</p>
-
-<p><strong>N.B.:</strong> These commands are designed to replace the respective commands in the <a href="#building-installing">above build instructions</a>.</p>
-  <ul>
-
-    <li><p>Blue Gene/Q:</p>
-        <dl class="indent">
-	  <dt>
-	  Load the '<code>+mpiwrapper-gcc</code>' softenv package (for the MPICXX
-	  compiler) and check that the back-end <code>powerpc64-bgq-linux</code>
-	  compilers are on your PATH.
-	  Use the '<code>--enable-bgq</code>' option for HPCToolkit externals
-	  to build for the Blue Gene/Q compute nodes.
-	  </dt>
-	  <dd><code>soft add +mpiwrapper-gcc <br/>
-	       PATH="/bgsys/drivers/ppcfloor/gnu-linux/bin/:$PATH"
-	      </code>
-	  </dd>
-
-          <p><dt>HPCToolkit's Externals</dt>
-          <dd><code>../configure --prefix=`pwd`/../powerpc64-linux \<br/>
-               &nbsp;&nbsp;&nbsp;&nbsp; --enable-bgq
-              </code>
-          </dd>
-
-          <dt>HPCToolkit</dt>
-          <dd><code>../configure \<br />
-              &nbsp;&nbsp;&nbsp;&nbsp; MPICXX=/bgsys/drivers/ppcfloor/comm/gcc/bin/mpicxx \<br />
-              &nbsp;&nbsp;&nbsp;&nbsp; HPCPROFMPI_LT_LDFLAGS="-all-static" \<br />
-              &nbsp;&nbsp;&nbsp;&nbsp; --prefix=&lt;<i>install-path</i>&gt; \<br />
-              &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;<i>hpctoolkit-externals</i>&gt;/powerpc64-linux \<br />
-              &nbsp;&nbsp;&nbsp;&nbsp; --with-papi=/soft/perftools/papi
-              </code>
-          </dd>
-	  <p><dt>
-	  Normally on Blue Gene, you want to build HPCToolkit to run on the compute nodes.
-	  Configure will auto-detect this and default to the back-end nodes (but issue
-	  a warning).  The '<code>--enable-bgq</code>' flag adds options specific
-	  to the Blue Gene/Q compute nodes and suppresses the warning.
-	  If you want to build <code>hpcrun</code> to run on the front-end nodes,
-	  then use the option '<code>--disable-bgq</code>'.
-	  </dt>
-	  <p><dt>Note: The paths for <code>MPICXX</code> and PAPI may be different on your system.</dt>
-        </dl>
-    </li>
-
-    <li><p>Blue Gene/P:</p>
-	<dl class="indent">
-          <dt>HPCToolkit's Externals</dt>
-	  <dd><code>../configure --prefix=`pwd`/../powerpc32-linux
-	      </code>
-  	  </dd>
-
-          <dt>HPCToolkit</dt>
-	  <!-- Explanation: Must link against backend libstdc++ and libc. -->
-	  <dd><code>../configure \<br />
-	      &nbsp;&nbsp;&nbsp;&nbsp; HPC_LT_LDFLAGS="-all-static -L../../lib/stubs-gcc_s" \<br />
-	      &nbsp;&nbsp;&nbsp;&nbsp; HPCPROFMPI_LT_LDFLAGS="-L/bgsys/drivers/ppcfloor/gnu-linux/powerpc-bgp-linux/lib -lstdc++" \<br />
-	      &nbsp;&nbsp;&nbsp;&nbsp; --prefix=&lt;<i>hpctoolkit-install</i>&gt; \<br />
-	      &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;<i>hpctoolkit-externals</i>&gt;/powerpc32-linux
-	      </code>
-          </dd>
-	  <dt>&nbsp;</dt>
-	  <dt>Note: PAPI is not available on Blue Gene/P.</dt>
-	</dl>
-    </li>
-
-    <li><p>Cray XT/XE/XK/XC:</p>
-	<dl class="indent">
-          <dt>N.B.: Use the GNU programming environment, e.g.:</dt>
-	  <dd><code>
-              module swap PrgEnv-pgi PrgEnv-gnu
-	      </code>
-	  </dd>
-
-          <dt>HPCToolkit's Externals</dt>
-	  <dd><code>
-	      ../configure --prefix=`pwd`/../x86_64-linux<br />
-	      </code>
-	  </dd>
-
-          <dt>HPCToolkit</dt>
-	  <dd><code>../configure \<br />
-	      &nbsp;&nbsp;&nbsp;&nbsp; MPICXX="CC" \<br />
-	      &nbsp;&nbsp;&nbsp;&nbsp; HPCPROFMPI_LT_LDFLAGS="-all-static" \<br />
-	      &nbsp;&nbsp;&nbsp;&nbsp; --prefix=&lt;<i>hpctoolkit-install</i>&gt; \<br />
-              &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;<i>hpctoolkit-externals</i>&gt;/x86_64-linux \<br />
-	      &nbsp;&nbsp;&nbsp;&nbsp; --with-papi=/opt/cray/papi/4.3.0.1/perf_events/no-cuda
-	      </code>
-          </dd>
-	  <dt>&nbsp;</dt>
-	  <dt>Note: On systems with AMD CPUs with the new XOP instructions,
-	      add the option '<code>--enable-xop</code>'.
-	      The AMD Interlagos CPUs (6200 series) use these instructions.
-	      Currently, Jaguar at ORNL uses these CPUs, but Hopper at NERSC does not.
-	  </dt>
-	</dl>
-    </li>
-
-    <li><p>Intel MIC (early and experimental):</p>
-      <dl class="indent">
-	<dt>
-	Systems such as Stampede at TACC (Texas Advanced Computing Center)
-	have Intel MIC (Many Integrated Cores) coprocessors on the compute nodes.
-	Although the MIC cores use an extension of the Intel x86_64
-	instruction set, the architecture type of the MIC binaries (k1om)
-	is different from the type on the main cores (x86_64).
-	Binaries compiled for the MIC will not run on the main cores
-	and vice versa.
-	<p>
-	The solution is to build all of externals and hpctoolkit twice:
-	once for the main cores and once for the MIC cores.
-	Install the builds into two separate install trees (prefixes).
-	Both externals and hpctoolkit support VPATH builds, so you only
-	need to checkout one copy of each source tree.
-	Let's say that you use <code>BUILD-x86_64</code> and <code>BUILD-k1om</code>
-	for the build directories and <code>install-x86_64</code> and
-	<code>install-k1om</code> for the install directories.
-	</dt>
-	<dt>HPCToolkit Externals for the main cores:</dt>
-	<dd><code>
-	    cd BUILD-x86_64 <br>
-	    ../configure --prefix=/path/to/externals/install-x86_64 \<br>
-	    &nbsp;&nbsp;&nbsp;&nbsp; --enable-mic
-	    </code>
-	</dd>
-	<p><dt>HPCToolkit Externals for the MIC cores:</dt>
-	<dd><code>
-	    PATH="/usr/linux-k1om-4.7/bin/:$PATH" <br>
-	    cd BUILD-k1om <br>
-	    ../configure --prefix=/path/to/externals/install-k1om \<br>
-	    &nbsp;&nbsp;&nbsp;&nbsp; --host=x86_64-k1om-linux \<br>
-	    &nbsp;&nbsp;&nbsp;&nbsp; CC=x86_64-k1om-linux-gcc \<br>
-	    &nbsp;&nbsp;&nbsp;&nbsp; CXX=x86_64-k1om-linux-g++
-	    </code>
-	</dd>
-	<p><dt>HPCToolkit for the main cores:</dt>
-	<dd><code>
-	    cd BUILD-x86_64 <br>
-	    ../configure --prefix=/path/to/hpctoolkit/install-x86_64 \<br>
-	    &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=/path/to/externals/install-x86_64 \<br>
-	    &nbsp;&nbsp;&nbsp;&nbsp; --with-papi=/path/to/papi-install
-	    </code>
-	</dd>
-	<p><dt>HPCToolkit for the MIC cores:</dt>
-	<dd><code>
-	    PATH="/usr/linux-k1om-4.7/bin/:$PATH" <br>
-	    cd BUILD-k1om <br>
-	    ../configure --prefix=/path/to/hpctoolkit/install-k1om \<br>
-	    &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=/path/to/externals/install-k1om \<br>
-	    &nbsp;&nbsp;&nbsp;&nbsp; --host=x86_64-k1om-linux \<br>
-	    &nbsp;&nbsp;&nbsp;&nbsp; CC=x86_64-k1om-linux-gcc \<br>
-	    &nbsp;&nbsp;&nbsp;&nbsp; CXX=x86_64-k1om-linux-g++
-	    </code>
-	</dd>
-	<p><dt>
-	If PAPI is available for the MIC cores, then add
-	<code>--with-papi=/path/to/papi-k1om</code> to the hpctoolkit configure
-	for MIC.
-	Make sure that this version of PAPI is built for the MIC cores.
-	<code>hpcprof-mpi</code> is untested for the MIC cores.
-	<p>
-	Be sure to use the option <code>--enable-mic</code> in the
-	externals's build for the main cores.
-	This option selects a version of XED that runs on the main (x86_64)
-	cores but understands the MIC (k1om) instructions.
-	(This option is ignored for the k1om build.)
-	Without this option, <code>hpcstruct</code> will crash on MIC binaries.
-	Unfortunately, this version of XED is new and currently available
-	only as a shared library, thus making it incompatible with
-	<code>hpclink</code> and the static case (why the default is no).
-	If you need to run static binaries on Stampede with
-	<code>hpclink</code>, then build a second version of hpctoolkit
-	for the main cores without this option.
-	<p>
-	You can build a restricted set of tools with the
-	<code>--enable-back-end</code> option for hpctoolkit (experimental).
-	This option builds only the tools, libraries and prerequisites needed for
-	running <code>hpcrun</code> and <code>hpclink</code> and collecting data
-	on the back-end compute nodes.
-	In that case, run <code>hpcstruct</code> and <code>hpcprof</code>
-	on the main cores.
-	<p>
-	On Stampede, you can launch a mixed-mode job (symmetric computing) with
-	<code>ibrun.symm</code> and give separate command lines for the main
-	and MIC cores.
-	</dt>
-	<dd><code>
-	    ibrun.symm -c "command line for main cores" \<br>
-	    &nbsp;&nbsp;&nbsp;&nbsp; -m "command line for MIC cores"
-	    </code>
-	</dd>
-      </dl>
-    </li>
-
-    <li><p>Linux-x86 (32-bit) on Linux-x86_64:</p>
-	<dl class="indent">
-          <dt>HPCToolkit's Externals</dt>
-	  <dd><code>
-              ../configure CC="gcc -m32" CXX="g++ -m32" \<br />
-	      &nbsp;&nbsp;&nbsp;&nbsp; --host=i686-linux --prefix=`pwd`/../i686-linux \<br />
-	      &nbsp;&nbsp;&nbsp;&nbsp; --without-libunwind
-	      </code>
-	  </dd>
-
-          <dt>HPCToolkit</dt>
-	  <dd><code>../configure CC="gcc -m32" CXX="g++ -m32" MPICXX="mpicxx -m32" \<br />
-	      &nbsp;&nbsp;&nbsp;&nbsp; --host=i686-linux --prefix=&lt;<i>hpctoolkit-install</i>&gt; \<br />
-              &nbsp;&nbsp;&nbsp;&nbsp; --with-externals=&lt;<i>hpctoolkit-externals</i>&gt;/i686-linux \<br />
-	      &nbsp;&nbsp;&nbsp;&nbsp; --with-papi=&lt;<i>papi-install</i>&gt; \<br />
-	      &nbsp;&nbsp;&nbsp;&nbsp; --disable-hpcrun-static
-	      </code>
-          </dd>
-	</dl>
-    </li>
-
-
-  </ul>
-
-
-<!-- ********************************************************************** -->
-<!-- ********************************************************************** -->
-
-<a name="infrequent-options"></a>
-
-<h2>Infrequently Used Build Options</h2>
-<p><i>[<a href="#toc">Contents</a>]</i></p>
-
-<p>The following options may be useful in exceptional circumstances.</p>
-
-<ul>
-<li><p>To enable/disable HPCToolkit features, the following options may be used.</p>
-
-  <table cellpadding="2" cellspacing="2" border="1" width="100%">
-    <tr>
-      <th>Option</th>
-      <th>Meaning</th>
-    </tr>
-    <tr>
-      <td><code>--enable-mpi</code></td>
-      <td>enable/disable build of hpcprof-mpi [default: yes]</td>
-    </tr>
-    <tr>
-      <td colspan="2"><hr /></td>
-    </tr>
-
-    <tr>
-      <td><code>--with-upc=PATH</code></td>
-      <td>path to IBM BlueGene/P UPC installation</td>
-    </tr>
-    <tr>
-      <td><code>--with-upc-lib=LIBRARY</code></td>
-      <td>path to IBM BlueGene/P UPC library(s), absolute or relative to WITH_UPC/runtime/SPI</td>
-    </tr>
-    <tr>
-      <td colspan="2"><hr /></td>
-    </tr>
-
-    <tr>
-      <td><code>--enable-develop</code></td>
-      <td>enable/disable build for development (sane debugging) [default: no]</td>
-    </tr>
-  </table>
-</li>
-
-<li><p>To request that HPCToolkit Externals use an alternate user-supplied installation for a given package, the following options may be used.</p>
-
-  <table cellpadding="2" cellspacing="2" border="1" width="100%">
-    <tr>
-      <th>Option</th>
-      <th>Meaning</th>
-    </tr>
-    <tr>
-      <td><code>--with-binutils=PATH</code></td>
-      <td>path to binutils install directory</td>
-    </tr>
-    <tr>
-      <td><code>--with-libdwarf=PATH</code></td>
-      <td>path to libdwarf install directory</td>
-    </tr>
-    <tr>
-      <td><code>--with-libelf=PATH</code></td>
-      <td>path to libelf install directory</td>
-    </tr>
-    <tr>
-      <td><code>--with-libmonitor=PATH</code></td>
-      <td>path to libmonitor install directory</td>
-    </tr>
-    <tr>
-      <td><code>--with-libunwind=PATH</code></td>
-      <td>path to libunwind install directory</td>
-    </tr>
-    <tr>
-      <td><code>--with-libxml2=PATH</code></td>
-      <td>path to libxml2 install directory</td>
-    </tr>
-    <tr>
-      <td><code>--with-old-monitor=PATH</code></td>
-      <td>path to old monitor install directory</td>
-    </tr>
-    <tr>
-      <td><code>--with-open-analysis=PATH</code></td>
-      <td>path to open analysis install directory</td>
-    </tr>
-    <tr>
-      <td><code>--with-symtabAPI=PATH</code></td>
-      <td>path to symtabAPI install directory</td>
-    </tr>
-    <tr>
-      <td><code>--with-xed2=PATH</code></td>
-      <td>path to xed2 install directory</td>
-    </tr>
-    <tr>
-      <td><code>--with-xerces=PATH</code></td>
-      <td>path to xerces/c install directory</td>
-    </tr>
-  </table>
-
-
-<p>In all cases, the default is for HPCToolkit externals build the package itself, depending on platform.
-</p>
-</li>
-
-<li><p>To explicitly request that a package <code>x</code> <i>not</i> be built, use <code>--without-x</code>.</p>
-</li>
-
-<!-- <li><p>These same options, with the same names, may be used with either externals's or HPCToolkit's configure, except that old-monitor in externals is just called monitor in HPCToolkit.-->
-
-</ul>
-
-<p>[<span class="lastupdated">Page last updated: 2017/01/20</span>]
-</p>
-
-<!-- ********************************************************************** -->
-
-<div style="width: 100%; font-size: small;">   <hr />   <p style="margin: 0px; font-size: small;">     &copy;2000-2018 <a href="http://www.rice.edu">Rice University</a>     &bull;     <a href="http://www.cs.rice.edu">Rice Computer Science</a>   </p>   <a href="http://validator.w3.org/check/referer">     <img src="http://www.w3.org/Icons/valid-xhtml10-blue" alt="" height="15" /></a>   <a href="http://jigsaw.w3.org/css-validator/check/referer">     <img src="http://www.w3.org/Icons/valid-css-blue" alt="" height="15" /></a> </div> 
-<!-- ********************************************************************** -->
 
 </body>
 </html>
-
-
-<!-- Local Variables: -->
-<!-- eval: (add-hook 'write-file-hooks 'time-stamp) -->
-<!-- time-stamp-start: "<span class=\"lastupdated\">Page last updated: " -->
-<!-- time-stamp-format: "%:y/%02m/%02d" -->
-<!-- time-stamp-end: "</span>" -->
-<!-- time-stamp-line-limit: 10000 -->
-<!-- End: -->

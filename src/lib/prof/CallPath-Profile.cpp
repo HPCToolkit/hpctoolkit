@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -98,6 +98,7 @@ using std::string;
 #include "FileError.hpp"
 #include "NameMappings.hpp"
 #include "Struct-Tree.hpp"
+#include "LoadMap.hpp"
 
 #include <lib/xml/xml.hpp>
 using namespace xml;
@@ -151,10 +152,7 @@ namespace Prof {
 // ---------------------------------------------------
 std::map<uint, uint> m_mapFileIDs;      // map between file IDs
 std::map<uint, uint> m_mapProcIDs;      // map between proc IDs
-
-// all fake load modules will be merged into one single load module
-// whoever the first one arrive, will be the main fake load module
-std::map<uint, uint> m_pairFakeLoadModule;
+std::map<uint, uint> m_mapLoadModuleIDs;      // map between load module IDs
 
 namespace CallPath {
 
@@ -197,6 +195,7 @@ Profile::merge(Profile& y, int mergeTy, uint mrgFlag)
   Profile& x = (*this);
 
   DIAG_Assert(!y.m_structure, "Profile::merge: source profile should not have structure yet!");
+  DIAG_Assert(y.m_fmtVersion == x.m_fmtVersion, "Error: cannot merge two different versions of measurement");
 
   // -------------------------------------------------------
   // merge name, flags, etc
@@ -528,8 +527,9 @@ public:
 // this hack is needed to avoid duplicate filenames
 // which occurs with alien nodes
 // ---------------------------------------------------
-static std::map<std::string, uint, StringCompare> m_mapFiles; // map the filenames and the ID
-static std::map<std::string, uint, StringCompare> m_mapProcs; // map the procedure names and the ID
+static std::map<std::string, uint, StringCompare> m_mapFiles;       // map the filenames and the ID
+static std::map<std::string, uint, StringCompare> m_mapProcs;       // map the procedure names and the ID
+static std::map<std::string, uint, StringCompare> m_mapLoadModules; // map the load modules names and the ID
 
 // attempt to retrieve the filename of a node
 // if the node is an alien or a loop or a file, then we are guaranteed to
@@ -562,6 +562,22 @@ getFileName(Struct::ANode* strct)
   return nm;
 }
 
+static std::string
+getFilenameKey(Struct::LM *lm, const char *filename)
+{
+  std::string lm_name;
+  if (lm) {
+    // use pretty_name for the key to unify different names of vmlinux 
+    // i.e.: vmlinux.aaaaa = vmlinux.bbbbbb = vmlinux.ccccc = vmlinux
+    lm_name = Prof::LoadMap::LM::pretty_name(lm->name());
+  } else {
+    lm_name = "";
+  }
+  std::string key = lm_name + ":" + filename;
+
+  return key;
+}
+
 // writing XML dictionary in the header part of experiment.xml
 static void
 writeXML_help(std::ostream& os, const char* entry_nm,
@@ -577,34 +593,42 @@ writeXML_help(std::ostream& os, const char* entry_nm,
     Struct::ANode* strct = it.current();
 
     uint id = strct->id();
+    std::string pretty_filename;
     const char* nm = NULL;
 
     bool fake_procedure = false;
 
     if (type == 1) { // LoadModule
-      nm = static_cast<Prof::Struct::LM *> (strct)->pretty_name(); //strct->name().c_str();
-      SimpleSymbolsFactory * sf = simpleSymbolsFactories.find(nm);
-      if (sf) {
-        sf->id(id);
-        m_pairFakeLoadModule.insert(std::make_pair(id, sf->id()));
+      pretty_filename = Prof::LoadMap::LM::pretty_name(strct->name());
+      nm = pretty_filename.c_str(); 
+      // check load module duplicates
+      std::map<std::string, uint>::iterator it = m_mapLoadModules.find(nm);
 
-        nm = sf->unified_name();
+      if (it == m_mapLoadModules.end()) 
+      {
+        // the load module is not in dictionary. Add it into the map.
+         m_mapLoadModules[nm] = id;
+      } else 
+      {
+        // the same procedure name already exists, we need to reuse
+        // the previous ID instead of the original one.
+        //
+        // remember that this ID needs redirection to the existing ID
+
+        Prof::m_mapLoadModuleIDs[id] = it->second;
+        continue;
       }
     }
     else if (type == 2) { // File
-      nm = getFileName(strct);	
+      pretty_filename = getFileName(strct);
+      pretty_filename = Prof::LoadMap::LM::pretty_file_name(pretty_filename);
+      nm = pretty_filename.c_str();
       // ---------------------------------------
       // avoid redundancy in XML filename dictionary
       // (exception for unknown-file)
       // ---------------------------------------
       Struct::LM *lm = strct->ancestorLM();
-      std::string lm_name;
-      if (lm) {
-        // use pretty_name for the key to unify different names of vmlinux 
-        // i.e.: vmlinux.aaaaa = vmlinux.bbbbbb = vmlinux.ccccc = vmlinux
-        lm_name = lm->pretty_name();
-      }
-      std::string key = lm_name + ":" + nm;
+      std::string key = getFilenameKey(lm, nm); 
 
       if (m_mapFiles.find(key) == m_mapFiles.end()) {
         //  the filename is not in the list. Add it.
@@ -624,11 +648,11 @@ writeXML_help(std::ostream& os, const char* entry_nm,
       }
     }
     else if (type == 3) { // Proc
-      const char *proc_name = strct->name().c_str();
-      nm = normalize_name(proc_name, fake_procedure);
+      pretty_filename = Prof::LoadMap::LM::pretty_file_name(strct->name());
+      nm = normalize_name(pretty_filename.c_str(), fake_procedure);
 
       if (remove_redundancy && 
-          proc_name != Prof::Struct::Tree::UnknownProcNm)
+          pretty_filename != Prof::Struct::Tree::UnknownProcNm)
       {  
         // -------------------------------------------------------
         // avoid redundancy in XML procedure dictionary
@@ -637,33 +661,24 @@ writeXML_help(std::ostream& os, const char* entry_nm,
         // -------------------------------------------------------
         std::string completProcName;
 
-        Struct::File *file = strct->ancestorFile();
-        uint file_id       = (file != NULL ? file->id() : 0);
         Struct::LM *lm     = strct->ancestorLM();
-        if (lm) {
-          uint lm_id = lm->id();
-          SimpleSymbolsFactory *sf = simpleSymbolsFactories.find(lm->name().c_str());
-          if (sf) {
-            lm_id = sf->id();
-
-            // if we haven't set fake_file_id, we need to set it with
-            //   the file id of this struct.
-            //   otherwise, we just reuse the fake_file_id to make it consistent
-            //   across different lm
-
-            sf->fileId(file_id);
-            file_id = sf->fileId();
-          }
-
-          char buffer[MAX_PREFIX_CHARS];
-          snprintf(buffer, MAX_PREFIX_CHARS, "lm_%d:", lm_id);
-          completProcName.append(buffer);
-        }
 
         // we need to allow the same function name from a different file
-        char buffer[MAX_PREFIX_CHARS];
-        snprintf(buffer, MAX_PREFIX_CHARS, "f_%d:", file_id);
-        completProcName.append(buffer);
+        const char *fn = getFileName(strct);
+        std::string file_key = getFilenameKey(lm, fn); 
+        
+        completProcName.append(file_key);
+        completProcName.append(":");
+
+        if ((strct->type() == Prof::Struct::ANode::TyAlien) &&
+            strct->name().compare("<inline>")==0) {
+          Prof::Struct::ANode *parent = strct->parent();
+          if (parent) {
+            char buffer[128];
+            sprintf(buffer, "%d:", parent->id());
+            completProcName.append(buffer);
+          }
+        }
 
         const char *lnm;
 
@@ -675,7 +690,7 @@ writeXML_help(std::ostream& os, const char* entry_nm,
         {
           if (proc->linkName().empty()) {
             // the proc has no mangled name
-            lnm = proc_name;
+            lnm = pretty_filename.c_str();
           } else
           { // get the mangled name
             lnm = proc->linkName().c_str();
@@ -685,7 +700,12 @@ writeXML_help(std::ostream& os, const char* entry_nm,
           lnm = strct->name().c_str();
         }
         completProcName.append(lnm);
-        if (m_mapProcs.find(completProcName) == m_mapProcs.end()) 
+
+        // make sure the triple <load_module_id, filename, proc_name> is unique
+        //
+        std::map<std::string, uint>::iterator it = m_mapProcs.find(completProcName);
+
+        if (it == m_mapProcs.end()) 
         {
           // the proc is not in dictionary. Add it into the map.
           m_mapProcs[completProcName] = id;
@@ -708,9 +728,19 @@ writeXML_help(std::ostream& os, const char* entry_nm,
            << " n" << MakeAttrStr(nm);
 
     if (fake_procedure) {
-      os << " f" << MakeAttrNum(1);
-    } 
+      os << " f" << MakeAttrNum(1); 
+    }
 
+    if (type == 3) { // Procedure
+       Struct::ACodeNode *proc = dynamic_cast<Struct::ACodeNode *>(strct);
+	   if (proc) {
+	      const VMAIntervalSet &vma = proc->vmaSet();
+	      VMA addr = vma.begin()->beg();
+	      // print vma of procs for trace analysis
+	      os << " v=\"" << StrUtil::toStr(addr, 16) << "\"";
+	   }	
+	}
+  
     os << "/>\n";
   }
 }
@@ -759,7 +789,9 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
     // Metric
     os << "    <Metric i" << MakeAttrNum(i)
        << " n" << MakeAttrStr(m->name())
+       << " o" << MakeAttrNum(m->order())
        << " v=\"" << m->toValueTyStringXML() << "\""
+       << " md=\"" << m->description()      << "\""
        << " em=\"" << m->isMultiplexed()    << "\""
        << " es=\"" << m->num_samples()      << "\""
        << " ep=\"" << long(m->periodMean())       << "\""
@@ -767,12 +799,19 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
     if (m->partner()) {
       os << " partner" << MakeAttrNum(m->partner()->id());
     }
-    os << " show=\"" << ((m->isVisible()) ? "1" : "0")  << "\""
+    if (!m->format().empty()) {
+      os << " fmt" << MakeAttrStr(m->format());
+    }
+    os << " show=\"" << m->visibility()  << "\""
        << " show-percent=\"" << ((m->doDispPercent()) ? "1" : "0") << "\""
        << ">\n";
 
     // MetricFormula
-    if (isDrvd) {
+    if (!m->formula().empty()) {
+    	os << "      <MetricFormula t=\"view\""
+	   << " frm=\"" <<  m->formula() << "\"/>\n";
+    }
+    else if (isDrvd) {
 
       // 0. retrieve combine formula (each DerivedIncrDesc corresponds
       // to an 'accumulator')
@@ -845,8 +884,13 @@ Profile::writeXML_hdr(std::ostream& os, uint metricBeg, uint metricEnd,
   //
   // -------------------------------------------------------
   if (!traceFileNameSet().empty()) {
+    long unit_time_per_second = 1000000000L;
+    if (m_fmtVersion < 3) {
+      unit_time_per_second = 1000000;
+    }
     os << "  <TraceDBTable>\n";
     os << "    <TraceDB i" << MakeAttrNum(0)
+       << " u=\"" << unit_time_per_second << "\""
        << " db-glob=\"" << "*." << HPCRUN_TraceFnmSfx << "\""
        << " db-min-time=\"" << m_traceMinTime << "\""
        << " db-max-time=\"" << m_traceMaxTime << "\""
@@ -1304,7 +1348,10 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     // ----------------------------------------
     Metric::SampledDesc* m =
       new Metric::SampledDesc(nm, desc, mdesc.period, true/*isUnitsEvents*/,
-			      profFileName, profRelId, "HPCRUN");
+			      profFileName, profRelId, "HPCRUN", mdesc.flags.fields.show, false,
+            mdesc.flags.fields.showPercent);
+    
+    m->order((int)i);
 
     if (doMakeInclExcl) {
       m->type(Metric::ADesc::TyIncl);
@@ -1323,7 +1370,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     m->flags(mdesc.flags);
     
     // ----------------------------------------
-    // 1b. Update the additional perf event attributes
+    // 1b. Update the additional attributes
     // ----------------------------------------
 
     Prof::Metric::SamplingType_t sampling_type = mdesc.is_frequency_metric ?
@@ -1333,6 +1380,9 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     m->isMultiplexed(current_aux_info.is_multiplexed);
     m->periodMean   (current_aux_info.threshold_mean);
     m->num_samples  (current_aux_info.num_samples);
+
+    m->formula      (mdesc.formula);
+    m->format       (mdesc.format);
 
     // ----------------------------------------
     // 1c. add to the list of metric
@@ -1347,12 +1397,15 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
       Metric::SampledDesc* mSmpl =
 	new Metric::SampledDesc(nm, desc, mdesc.period,
 				true/*isUnitsEvents*/,
-				profFileName, profRelId, "HPCRUN");
+				profFileName, profRelId, "HPCRUN", mdesc.flags.fields.show,
+        false, mdesc.flags.fields.showPercent);
       mSmpl->type(Metric::ADesc::TyExcl);
       if (!m_sfx.empty()) {
 	mSmpl->nameSfx(m_sfx);
       }
-      mSmpl->flags(mdesc.flags);
+      mSmpl->flags  (mdesc.flags);
+      mSmpl->formula(mdesc.formula);
+      mSmpl->format (mdesc.format);
       
       prof->metricMgr()->insert(mSmpl);
     }
@@ -1416,6 +1469,10 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 
   hpcrun_fmt_epochHdr_free(&ehdr, free);
   hpcrun_fmt_metricTbl_free(&metricTbl, free);
+
+  if (aux_info) {
+    free(aux_info);
+  }
   
   return HPCFMT_OK;
 }
@@ -1468,7 +1525,9 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     (hpcrun_metricVal_t*)alloca(numMetricsSrc * sizeof(hpcrun_metricVal_t))
     : NULL;
 
+#if 0
   ExprEval eval;
+#endif
 
   for (uint i = 0; i < numNodes; ++i) {
     // ----------------------------------------------------------
@@ -1482,6 +1541,7 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
       hpcrun_fmt_cct_node_fprint(&nodeFmt, outfs, prof.m_flags,
 				 &metricTbl, "  ");
     }
+#if 0
     // ------------------------------------------
     // check if the metric contains a formula
     //  if this is the case, we'll compute the metric based on the formula
@@ -1502,6 +1562,7 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
       	hpcrun_fmt_metric_set_value(m_lst[i], &nodeFmt.metrics[i], res);
       }
     }
+#endif
 
     int nodeId   = (int)nodeFmt.id;
     int parentId = (int)nodeFmt.id_parent;

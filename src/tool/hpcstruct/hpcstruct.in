@@ -3,19 +3,13 @@
 #
 @copyright_hash@
 #
-# $Id$
-#
 # Launch script for hpcstruct.
 #
 #------------------------------------------------------------
 # Values from configure
 #------------------------------------------------------------
 
-# If this script can't find its own install prefix, or if it's
-# moved elsewhere, then set HPCTOOLKIT here.
-# HPCTOOLKIT='@prefix@'
-
-VERSION='@PACKAGE_VERSION@'
+@launch_script_vars@
 
 # Relative paths are relative to HPCTOOLKIT.
 ext_libs_dir='@hpc_ext_libs_dir@'
@@ -38,12 +32,7 @@ hpc_path_to_root=..
 # Set environment and exec
 #------------------------------------------------------------
 
-case "$1" in
-    -V | -version | --version )
-	echo "${prog_name}: A member of HPCToolkit, version $VERSION"
-	exit 0
-	;;
-esac
+@launch_early_options@
 
 # Relative paths are relative to HPCTOOLKIT.
 case "$ext_libs_dir" in

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -75,12 +75,15 @@
 #include "validate_return_addr.h"
 #include "write_data.h"
 #include "cct_insert_backtrace.h"
+#include "utilities/arch/context-pc.h"
 
 #include <monitor.h>
 
 #include <messages/messages.h>
 
 #include <lib/prof-lean/hpcrun-fmt.h>
+
+#define HPCRUN_DEBUG_TRACING 0
 
 //*************************** Forward Declarations **************************
 
@@ -123,6 +126,9 @@ record_partial_unwind(
     return NULL;
   }
 
+  if (bt_last < bt_beg)
+    bt_last = bt_beg;
+  
   bt_beg = hpcrun_skip_chords(bt_last, bt_beg, skipInner);
 
   backtrace_info_t bt;
@@ -161,6 +167,7 @@ hpcrun_sample_callpath(void* context, int metricId,
 		       hpcrun_metricVal_t metricIncr,
 		       int skipInner, int isSync, sampling_info_t *data)
 {
+
   sample_val_t ret;
   hpcrun_sample_val_init(&ret);
 
@@ -282,7 +289,7 @@ hpcrun_sample_callpath(void* context, int metricId,
 
   bool trace_ok = ! td->deadlock_drop;
   TMSG(TRACE1, "trace ok (!deadlock drop) = %d", trace_ok);
-  if (trace_ok && hpcrun_trace_isactive()) {
+  if (trace_ok && hpcrun_trace_isactive() && !isSync) {
     TMSG(TRACE, "Sample event encountered");
 
     cct_addr_t frm;
@@ -293,14 +300,10 @@ hpcrun_sample_callpath(void* context, int metricId,
     cct_node_t* func_proxy =
       hpcrun_cct_insert_addr(hpcrun_cct_parent(node), &frm);
 
-    TMSG(TRACE, "inserted func start addr into parent node, func_proxy = %p", func_proxy);
     ret.trace_node = func_proxy;
 
-    // mark the leaf of a call path recorded in a trace record for retention
-    // so that the call path associated with the trace record can be recovered.
-    hpcrun_cct_retain(func_proxy);
     TMSG(TRACE, "Changed persistent id to indicate mutation of func_proxy node");
-    hpcrun_trace_append(&td->core_profile_trace_data, hpcrun_cct_persistent_id(func_proxy), metricId);
+    hpcrun_trace_append(&td->core_profile_trace_data, func_proxy, metricId, td->prev_dLCA);
     TMSG(TRACE, "Appended func_proxy node to trace");
   }
 
@@ -356,6 +359,10 @@ hpcrun_gen_thread_ctxt(void* context)
   td->btbuf_cur = NULL;
   int ljmp = sigsetjmp(it->jb, 1);
   backtrace_info_t bt;
+
+  // initialize bt
+  memset(&bt, 0, sizeof(bt));
+
   if (ljmp == 0) {
     if (epoch != NULL) {
       if (! hpcrun_generate_backtrace_no_trampoline(&bt, context,

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -88,9 +88,11 @@ using std::string;
 #include <lib/support/PathFindMgr.hpp>
 #include <lib/support/PathReplacementMgr.hpp>
 #include <lib/support/diagnostics.h>
+#include <lib/support/dictionary.h>
 #include <lib/support/realpath.h>
 
-//*************************** Forward Declarations **************************
+#define DEBUG_DEMAND_STRUCT  0
+#define TMP_BUFFER_LEN 1024
 
 //***************************************************************************
 
@@ -313,34 +315,57 @@ namespace Util {
 // effects.  One example of a problem is that for simple structure, a
 // line -> Struct::Stmt map is consulted which is ambiguous in the
 // presence of inline (Struct::Alien).
+//
+// Note: now with precomputeStructSimple(), except for hpcprof-flat,
+// binutils 'lm' is always NULL and we only ever use Prof lmStruct.
+// With precompute, findStmt() should always find the stmt, but if not
+// (eg, gap in full struct file), then the answer has to be unknown.
+//
 Prof::Struct::ACodeNode*
-demandStructure(VMA vma, Prof::Struct::LM* lmStrct,
+demandStructure(VMA vma, Prof::Struct::LM* lmStruct,
 		BinUtil::LM* lm, bool useStruct,
 		const string* unknownProcNm)
 {
   using namespace Prof;
+  using namespace std;
 
-  Struct::ACodeNode* strct = lmStrct->findByVMA(vma);
-  if (!strct) {
-    if (useStruct) {
-      Struct::File* fileStrct =
-	Struct::File::demand(lmStrct, Struct::Tree::UnknownFileNm);
+  Struct::ACodeNode * stmt = lmStruct->findStmt(vma);
+  bool found = (stmt != NULL);
 
-      const string* unkProcNm =
-	(unknownProcNm) ? unknownProcNm : &Struct::Tree::UnknownProcNm;
-
-      Struct::Proc* procStrct =
-	Struct::Proc::demand(fileStrct, *unkProcNm);
-
-      strct = BAnal::Struct::demandStmtStructure(lmStrct, procStrct,
-						Struct::Tree::UnknownLine,
-						vma, vma + 1);
+  if (! found) {
+    if (lm != NULL) {
+      // only for hpcprof-flat
+      stmt = BAnal::Struct::makeStructureSimple(lmStruct, lm, vma);
     }
     else {
-      strct = BAnal::Struct::makeStructureSimple(lmStrct, lm, vma);
+      char tmp_buf[TMP_BUFFER_LEN];
+      string unknown_proc = (unknownProcNm) ? *unknownProcNm : string(UNKNOWN_PROC);
+      if (unknown_proc == UNKNOWN_PROC) {
+        snprintf(tmp_buf, TMP_BUFFER_LEN, " 0x%lx", vma);
+        unknown_proc += tmp_buf;
+        if (lmStruct != NULL) {
+          std::string base = FileUtil::basename(lmStruct->name().c_str());
+          snprintf(tmp_buf, TMP_BUFFER_LEN, " [%s]", base.c_str());
+          unknown_proc += tmp_buf;
+        }
+      }
+      Struct::File * fileStruct = Struct::File::demand(lmStruct, UNKNOWN_FILE);
+      Struct::Proc * procStruct = Struct::Proc::demand(fileStruct, unknown_proc);
+
+      stmt = procStruct->demandStmtSimple(0, vma, vma + 1);
     }
   }
-  return strct;
+
+#if DEBUG_DEMAND_STRUCT
+  cout << "------------------------------------------------------------\n"
+       << "0x" << hex << vma << dec << "  (demand struct)"
+       << "  found: " << found << "\n\n";
+
+  stmt->dumpmePath(cout, 0, "");
+  cout << "\n";
+#endif
+
+  return stmt;
 }
 
 } // end of Util namespace

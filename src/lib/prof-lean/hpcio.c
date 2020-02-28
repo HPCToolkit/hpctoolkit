@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -66,6 +66,13 @@
 #ifndef _POSIX_SOURCE
 #  define _POSIX_SOURCE // fdopen()
 #endif
+
+// quiets the warning about _SVID_SOURCE being deprecated
+// why are any of these flags necessary ?
+#ifndef _DEFAULT_SOURCE
+#  define _DEFAULT_SOURCE
+#endif
+
 #ifndef _SVID_SOURCE
 #  define _SVID_SOURCE  // fputc_unlocked()
 #endif

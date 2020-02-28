@@ -152,7 +152,7 @@ bitree_uwi_inrange(bitree_uwi_t *tree, uintptr_t address);
  * pre-condition: uwr is of type uw_recipe_t*
  */
 void
-uw_recipe_tostr(void* uwr, char str[]);
+uw_recipe_tostr(void* uwr, char str[], unwinder_t uw);
 
 void
 uw_recipe_print(void* uwr);
@@ -161,12 +161,6 @@ uw_recipe_print(void* uwr);
 // return result in the treestr parameter.
 // caller should provide the appropriate length for treestr.
 void
-bitree_uwi_tostring(bitree_uwi_t *tree, char treestr[]);
-
-void
-bitree_uwi_tostring_indent(bitree_uwi_t *tree, char *indents, char treestr[]);
-
-void
-bitree_uwi_print(bitree_uwi_t *tree);
+bitree_uwi_tostring_indent(bitree_uwi_t *tree, char *indents, char treestr[], unwinder_t uw);
 
 #endif /* __BINARYTREE_UWI_H__ */

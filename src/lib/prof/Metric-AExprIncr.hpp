@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -853,8 +853,8 @@ public:
   // Metric::IDBExpr: exported formulas for Flat and Callers view
   // ------------------------------------------------------------
 
-  virtual int
-  hasAccum() const
+  virtual uint
+  numAccum() const
   { return 2; }
 
   virtual bool

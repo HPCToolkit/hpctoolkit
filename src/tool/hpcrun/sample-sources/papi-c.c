@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -52,6 +52,7 @@
 /******************************************************************************
  * system includes
  *****************************************************************************/
+
 #include <alloca.h>
 #include <assert.h>
 #include <ctype.h>
@@ -77,8 +78,11 @@
 #include "simple_oo.h"
 #include "sample_source_obj.h"
 #include "common.h"
+#include "display.h"
 #include "papi-c-extended-info.h"
+#include "sample-filters.h"
 
+#include <hpcrun/main.h>
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/metrics.h>
@@ -128,6 +132,9 @@ static int papi_unavail = 0;
 // Flag below controls this disabling
 //
 static bool disable_papi_cuda = false;
+
+static kind_info_t *papi_kind;
+
 
 /******************************************************************************
  * private operations 
@@ -183,46 +190,6 @@ thread_count_scaling_for_component(int cidx)
   return 0;
 }
 
-//-----------------------------------------------------------
-// function print_desc
-//   wrap lines for native event descriptions to contain 
-//   four white space followed by BUFLEN characters
-//-----------------------------------------------------------
-static void 
-print_desc(char *s)
-{
-#define BUFLEN 68 
-  char buffer[BUFLEN];
-  char *s_end = s + strlen(s);
-  while (s < s_end) {
-    int i;
-    char *cur = s;
-           
-    //-------------------------------------------------
-    // peel off at most the next BUFLEN characters from
-    // the string. break the text at last white 
-    // space if a word will extend beyond the boundary. 
-    //-------------------------------------------------
-    int last_blank = BUFLEN-1;
-    for(i=0;i<BUFLEN; i++) {
-      buffer[i] = *cur;
-      if (*cur == ' ') {
-	// remember last white space
-	last_blank = i;
-      }
-      if (*cur == '\n'|| *cur == 0) { 
-	// break at newline or end of string
-	last_blank = i;
-	break;
-      }
-      cur++;
-    }
-    buffer[last_blank] = 0;
-    s += last_blank + 1;
-
-    printf("      %s\n", buffer);
-  }
-}
 
 /******************************************************************************
  * sample source registration
@@ -231,12 +198,6 @@ print_desc(char *s)
 // Support for derived events (proxy sampling).
 static int derived[MAX_EVENTS];
 static int some_overflow;
-
-
-/******************************************************************************
- * external thread-local variables
- *****************************************************************************/
-extern __thread bool hpcrun_thread_suppress_sample;
 
 /******************************************************************************
  * method functions
@@ -501,6 +462,8 @@ METHOD_FN(process_event_list, int lush_metrics)
   int i, ret;
   int num_lush_metrics = 0;
 
+  papi_kind = hpcrun_metrics_new_kind();
+
   char* evlist = METHOD_CALL(self, get_event_str);
   for (event = start_tok(evlist); more_tok(); event = next_tok()) {
     char name[1024];
@@ -546,9 +509,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   some_overflow = 0;
   for (i = 0; i < nevents; i++) {
     char buffer[PAPI_MAX_STR_LEN + 10];
-    int metric_id = hpcrun_new_metric(); /* weight */
     metric_desc_properties_t prop = metric_property_none;
-    METHOD_CALL(self, store_metric_id, i, metric_id);
     PAPI_event_code_to_name(self->evl.events[i].event, buffer);
     TMSG(PAPI, "metric for event %d = %s", i, buffer);
 
@@ -584,27 +545,35 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     if (component_uses_sync_samples(cidx))
       TMSG(PAPI, "Event %s from synchronous component", buffer);
-    hpcrun_set_metric_info_and_period(metric_id, strdup(buffer),
-				      MetricFlags_ValFmt_Int,
-				      threshold, prop);
+    int metric_id = /* weight */
+      hpcrun_set_new_metric_info_and_period(papi_kind, strdup(buffer),
+					    MetricFlags_ValFmt_Int,
+					    threshold, prop);
+    METHOD_CALL(self, store_metric_id, i, metric_id);
 
     // FIXME:LUSH: need a more flexible metric interface
     if (num_lush_metrics > 0 && strcmp(buffer, "PAPI_TOT_CYC") == 0) {
       // there should be one lush metric; its source is the last event
+      int mid_idleness =
+	hpcrun_set_new_metric_info_and_period(papi_kind, "idleness",
+					      MetricFlags_ValFmt_Real,
+					      self->evl.events[i].thresh, prop);
       assert(num_lush_metrics == 1 && (i == (nevents - 1)));
-      int mid_idleness = hpcrun_new_metric();
       lush_agents->metric_time = metric_id;
       lush_agents->metric_idleness = mid_idleness;
-
-      hpcrun_set_metric_info_and_period(mid_idleness, "idleness",
-					MetricFlags_ValFmt_Real,
-					self->evl.events[i].thresh, prop);
     }
   }
+
+  hpcrun_close_kind(papi_kind);
 
   if (! some_overflow) {
     hpcrun_ssfail_all_derived("PAPI");
   }
+}
+
+static void
+METHOD_FN(finalize_event_list)
+{
 }
 
 static void
@@ -775,8 +744,7 @@ METHOD_FN(display_events)
       memset(&info, 0, sizeof(info));
       if (PAPI_get_event_info(ev, &info) == PAPI_OK) {
 	cmp_event_count++;
-	printf("%-48s\n", info.symbol); 
-        print_desc(info.long_descr);
+        display_event_info(stdout, info.symbol, info.long_descr);
         printf("---------------------------------------------------------------------------\n");
       }
       ret = PAPI_enum_cmp_event(&ev, PAPI_ENUM_EVENTS, cidx);
@@ -869,7 +837,7 @@ papi_event_handler(int event_set, void *pc, long long ovec,
   int my_event_codes_count = MAX_EVENTS;
 
   // if sampling disabled explicitly for this thread, skip all processing
-  if (hpcrun_thread_suppress_sample) return;
+  if (hpcrun_suppress_sample() || sample_filters_apply()) return;
 
   if (!ovec) {
     TMSG(PAPI_SAMPLE, "papi overflow event: event set %d ovec = %ld",

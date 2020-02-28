@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -101,7 +101,9 @@
 #include "simple_oo.h"
 #include "sample_source_obj.h"
 #include "common.h"
-
+#include "ss-errno.h"
+ 
+#include <hpcrun/main.h>
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/metrics.h>
@@ -114,11 +116,6 @@
 #include <messages/messages.h>
 #include <lush/lush-backtrace.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
-
-/******************************************************************************
- * external thread-local variables
- *****************************************************************************/
-extern __thread bool hpcrun_thread_suppress_sample;
 
 /******************************************************************************
  * local variables
@@ -186,13 +183,19 @@ trim_event_desc(char *desc)
 static int
 hpcrun_upc_handler(int sig, siginfo_t *info, void *context)
 {
+  HPCTOOLKIT_APPLICATION_ERRNO_SAVE();
+
   int64_t counter, threshold;
   int ev, k;
 
   
 
   // if sampling disabled explicitly for this thread, skip all processing
-  if (hpcrun_thread_suppress_sample) return;
+  if (hpcrun_suppress_sample()) {
+    HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
+
+    return 0; // tell monitor that the signal has been handled
+  }
 
   BGP_UPC_Stop();
 
@@ -226,8 +229,9 @@ hpcrun_upc_handler(int sig, siginfo_t *info, void *context)
     hpcrun_safe_exit();
   }
 
-  // Tell monitor this was our signal.
-  return 0;
+  HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
+
+  return 0; // tell monitor that the signal has been handled
 }
 
 // Note: Must run BGP_UPC_Initialize() in every process,
@@ -290,17 +294,26 @@ METHOD_FN(process_event_list, int lush_metrics)
   nevents = self->evl.nevents;
   hpcrun_pre_allocate_metrics(nevents);
 
+  kind_info_t *upc_kind = hpcrun_metrics_new_kind();
+
   for (k = 0; k < nevents; k++) {
-    metric_id = hpcrun_new_metric();
     code = self->evl.events[k].event;
     threshold = self->evl.events[k].thresh;
     BGP_UPC_Get_Event_Name(code, EVENT_NAME_SIZE, name);
-    hpcrun_set_metric_info_and_period(metric_id, strdup(name),
-				      MetricFlags_ValFmt_Int, threshold, (metric_desc_properties_t){} );
+    metric_id = 
+      hpcrun_set_new_metric_info_and_period(upc_kind, strdup(name),
+        MetricFlags_ValFmt_Int, threshold, metric_property_none);
     self->evl.events[k].metric_id = metric_id;
     TMSG(UPC, "add event %s(%d), threshold %ld, metric %d",
 	 name, code, threshold, metric_id);
   }
+
+  hpcrun_close_kind(upc_kind);
+}
+
+static void
+METHOD_FN(finalize_event_list)
+{
 }
 
 /*

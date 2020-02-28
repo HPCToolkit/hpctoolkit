@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,62 +44,19 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//***************************************************************************
-//
-// File:
-//   $HeadURL$
-//
-// Purpose:
-//   [The purpose of this file]
-//
-// Description:
-//   [The set of functions, macros, etc. defined in the file]
-//
-//***************************************************************************
-
-//************************* System Include Files ****************************
-
-#include <iostream>
 #include <string>
 using std::string;
 
 #include <cstdlib> // for 'free'
-#include <cstring> // for 'strlen', 'strcpy'
 
-#include <hpctoolkit-config.h>
-
-#include <cxxabi.h>
-
-//*************************** User Include Files ****************************
+#include <lib/support-lean/demangle.h>
+#include <lib/support/ProcNameMgr.hpp>
 
 #include "BinUtils.hpp"
-#include "Demangler.hpp"
-
-
-//****************************************************************************
-
-// Include the system demangle
-#if defined(HOST_OS_SOLARIS)
-# include <../../usr/include/demangle.h> // demangle (don't confuse with GNU)
-  const int DEMANGLE_BUF_SZ = 32768; // see MAXDBUF in SGI's dem.h
-#elif defined(HOST_OS_LINUX) || defined(HOST_OS_MACOS)
-  // the system demangle is GNU's demangle
-#else
-# error "binutils::BinUtils does not recognize your platform."
-#endif
-
-// Include GNU's demangle
-#include <include/gnu_demangle.h> // GNU's demangle
-
-//*************************** Forward Declarations ***************************
 
 //****************************************************************************
 
 namespace BinUtil {
-
-//***************************************************************************
-// 
-//***************************************************************************
 
 // 'canonicalizeProcName': If 'name' is non-empty, uses 'demangleProcName' 
 // to attempt to demangle it.  If there is an error in demangling,
@@ -124,20 +81,16 @@ canonicalizeProcName(const std::string& name, ProcNameMgr* procNameMgr)
 string
 demangleProcName(const std::string& name)
 {
-  string bestname = name;
+  string ans = name;
 
-  //----------------------------------------------------------
-  // demangle using the API for the C++ demangler
-  //----------------------------------------------------------
-  int status;
-  char *str = hpctoolkit_demangle(name.c_str(), 0, 0, &status);
+  char *str = hpctoolkit_demangle(name.c_str());
 
-  if (str) {
-    bestname = str;
+  if (str != NULL) {
+    ans = str;
     free(str);
   }
 
-  return bestname;
+  return ans;
 }
 
 } // namespace BinUtil

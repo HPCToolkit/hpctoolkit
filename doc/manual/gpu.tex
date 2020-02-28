@@ -1,9 +1,9 @@
 HPCToolkit can measure both the CPU and GPU performance of GPU-accelerated applications. It can measure CPU performance using asynchronous sampling triggered by Linux timers or hardware counter events as described in 
 Section~\ref{sample-sources} and it can monitor GPU performance using tool support libraries provided by GPU vendors.
 
-The foundation of HPCToolkit's support for measuring the performance of GPU-accelerated applications is a vendor-independent monitoring substrate. A thin software layer connects NVIDIA's CUPTI~\cite{cupti} and AMD's ROC-tracer~\cite{roctracer} monitoring libraries to this substrate. HPCToolkit reports GPU performance metrics in a vendor-neutral way. For instance, rather than focusing on NVIDIA warps or AMD wavefronts, HPCToolkit presents both as fine-grain, thread-level parallelism.
+The foundation of HPCToolkit's support for measuring the performance of GPU-accelerated applications is a vendor-independent monitoring substrate. A thin software layer connects NVIDIA's CUPTI (CUDA Performance Tools Interface)~\cite{cupti} and AMD's ROC-tracer (ROCm Tracer Callback/Activity Library)~\cite{roctracer} monitoring libraries to this substrate. HPCToolkit reports GPU performance metrics in a vendor-neutral way. For instance, rather than focusing on NVIDIA warps or AMD wavefronts, HPCToolkit presents both as fine-grain, thread-level parallelism.
 
-In the following sections, we describe how to measure GPU metrics for GPU-accelerated applications. We begin with a discussion of NVIDIA GPUs since HPCToolkit's support for them is more complete than for others.
+In the following sections, we describe how to use HPCToolkit to measure GPU metrics for GPU-accelerated applications. We begin with a discussion of NVIDIA GPUs since HPCToolkit's support for them is more complete than for others.
 
 \begin{comment}
 
@@ -217,7 +217,7 @@ Metric & Description\\\hline\hline
 \end{comment}
 
 
-At present, using NVIDIA's CUPTI (CUDA Performance Tools Interface) library adds substantial measurement overhead.  Unlike CPU monitoring based on asynchronous sampling, GPU performance monitoring uses vendor-provided callback interfaces to intercept the initiation of each GPU operation. Accordingly,  the overhead of GPU performance monitoring depends upon how frequently GPU operations are initiated. 
+At present, using NVIDIA's CUPTI library adds substantial measurement overhead.  Unlike CPU monitoring based on asynchronous sampling, GPU performance monitoring uses vendor-provided callback interfaces to intercept the initiation of each GPU operation. Accordingly,  the overhead of GPU performance monitoring depends upon how frequently GPU operations are initiated. 
 In our experience to date, profiling (and if requested, tracing) on NVIDIA GPUs using NVIDIA's CUPTI interface roughly doubles the execution time of a GPU-accelerated application. In our experience, we have seen NVIDIA's PC sampling dilate the execution time of a GPU-accelerated program by $30\times$. The overhead of GPU monitoring is principally on the host side. As measured by CUPTI, the time spent in GPU operations or PC samples are expected to be relatively accurate. However, since execution as a whole is slowed while measuring GPU performance, when evaluating GPU activity reported by HPCToolkit, one must be careful.
 
 For instance, if a GPU-accelerated program runs in 1000 seconds without HPCToolkit monitoring GPU activity but slows to 2000 seconds when GPU profiling and tracing is enabled, then if GPU profiles and traces show that the GPU is active for 25\% of the execution time, one should  re-scale the accurate measurements of GPU activity by considering the $2\times$ dilation when monitoring GPU activity. Without monitoring, one would expect the same level of GPU activity, but the host time would be twice as fast. Thus, without monitoring, the ratio of GPU activity to host activity would be roughly double.
@@ -235,7 +235,9 @@ an SM's warp schedulers in a round robin fashion.
 When an instruction is sampled, its stall reason (if any) is
 recorded. If all warps on a scheduler are stalled when a sample is
 taken, the sample is marked as a latency sample, meaning no instruction will be issued by the warp scheduler in the next cycle.
-Figure~\ref{fig:pc sampling} shows a PC sampling example on an SM with four schedulers. Among the six collected samples, four are latency samples, so the estimated stall ratio is $4/6$. Figure~\ref{table:pc-stall} shows the stall metrics recorded by HPCToolkit using CUPTI's PC sampling. Figure~\ref{table:gsamp} shows PC sampling summary statistics recorded by HPCToolkit. Of particular note is the metric \verb|GSAMP:UTIL|. HPCToolkit computes approximate GPU utilization using information gathered using PC sampling. Given the average clock frequency and the sampling rate, if all SMs are active, then HPCToolkit knows how many instruction samples would be expected ({\tt GSAMP:EXP}) if the GPU was fully active for the interval when it was in use. HPCToolkit approximates the percentage of GPU utilization by comparing the measured samples with the expected samples using the following formula: $100 * {\tt (GSAMP:TOT)/ (GSAMP:EXP)}$.
+Figure~\ref{fig:pc sampling} shows a PC sampling example on an SM with four schedulers. Among the six collected samples, four are latency samples, so the estimated stall ratio is $4/6$. 
+
+Figure~\ref{table:pc-stall} shows the stall metrics recorded by HPCToolkit using CUPTI's PC sampling. Figure~\ref{table:gsamp} shows PC sampling summary statistics recorded by HPCToolkit. Of particular note is the metric \verb|GSAMP:UTIL|. HPCToolkit computes approximate GPU utilization using information gathered using PC sampling. Given the average clock frequency and the sampling rate, if all SMs are active, then HPCToolkit knows how many instruction samples would be expected ({\tt GSAMP:EXP}) if the GPU was fully active for the interval when it was in use. HPCToolkit approximates the percentage of GPU utilization by comparing the measured samples with the expected samples using the following formula: $100 * {\tt (GSAMP:TOT)/ (GSAMP:EXP)}$.
 
 
 \begin{figure}[t]
@@ -333,12 +335,12 @@ hpcstruct -j 16 --gpucfg yes hpctoolkit-laghos-measurements
 
 
 The CUPTI API returns flat PC samples without any information about GPU call stacks.
-With complex code generated from template-based GPU programming models, calling contexts on GPUs are essential for developers to understand the code and its performance. The GPU-accelerated Quicksilver miniapp illustrates this problem. Figure~\ref{qs-no-cct} shows a \hpcviewer{} screenshot of Quicksilver without approximate reconstruction the GPU calling context tree. The figure shows a top-down view of heterogeneous calling contexts that span both the CPU and GPU. In the middle of the figure is a placeholder \verb|<gpu kernel>| that is inserted by HPCToolkit. Above the placeholder is a CPU calling context where a GPU kernel was invoked. Below the \verb|<gpu kernel>| placeholder, \hpcviewer{} shows a dozen of the GPU functions that were executed on behalf of the GPU kernel \verb|CycleTrackingKernel|. 
+With complex code generated from template-based GPU programming models, calling contexts on GPUs are essential for developers to understand the code and its performance. Lawrence Livermore National Laboratory's GPU-accelerated Quicksilver proxy app~\cite{quicksilver} illustrates this problem. Figure~\ref{qs-no-cct} shows a \hpcviewer{} screenshot of Quicksilver without approximate reconstruction the GPU calling context tree. The figure shows a top-down view of heterogeneous calling contexts that span both the CPU and GPU. In the middle of the figure is a placeholder \verb|<gpu kernel>| that is inserted by HPCToolkit. Above the placeholder is a CPU calling context where a GPU kernel was invoked. Below the \verb|<gpu kernel>| placeholder, \hpcviewer{} shows a dozen of the GPU functions that were executed on behalf of the GPU kernel \verb|CycleTrackingKernel|. 
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\textwidth]{qs-no-cct.pdf}
-\caption{A screenshot of \hpcviewer{} for the GPU-accelerated Quicksilver miniapp without GPU CCT reconstruction.}
+\caption{A screenshot of \hpcviewer{} for the GPU-accelerated Quicksilver proxy app without GPU CCT reconstruction.}
 \label{qs-no-cct}
 \end{figure}
 
@@ -394,11 +396,11 @@ treats an SCC vertex as a normal ``function'' in the call graph.
 \begin{figure}[t]
 \centering
 \includegraphics[width=\textwidth]{qs-cct.pdf}
-\caption{A screenshot of \hpcviewer{} for the GPU-accelerated Quicksilver miniapp with GPU CCT reconstruction.}
+\caption{A screenshot of \hpcviewer{} for the GPU-accelerated Quicksilver proxy app with GPU CCT reconstruction.}
 \label{qs-cct}
 \end{figure}
 
-Figure~\ref{fig:gpu calling context tree} illustrates the reconstruction of an approximate calling context tree for a GPU computation given the static call graph (computed by \hpcstruct{} from a CUBIN's machine instructions) and PC sample counts for some or all GPU instructions in the CUBIN. Figure~\ref{qs-cct} shows an \hpcviewer{} screenshot for the GPU-accelerated Quicksilver miniapp following reconstruction of GPU calling contexts using the algorithm described in this section. Notice that after the reconstruction, one can see that \verb|CycleTrackingKernel| calls \verb|CycleTrackingGuts|, which calls \verb|CollisionEvent|, which eventually calls  \verb|macroscopicCrossSection| and \verb|NuclearData::getNumberOfReactions|. The the rich  approximate GPU calling context tree reconstructed by \hpcprof{} also shows loop nests and inlined code.\footnote{The control flow graph used to produce this reconstruction for Quicksilver was computed with a pre-release version of {\tt nvdisasm}. You will not be able to reproduce these results with CUDA 10's {\tt nvdisasm} because the released version of {\tt nvdisasm} fails to analyze some of the key functions in Quicksilver.}
+Figure~\ref{fig:gpu calling context tree} illustrates the reconstruction of an approximate calling context tree for a GPU computation given the static call graph (computed by \hpcstruct{} from a CUBIN's machine instructions) and PC sample counts for some or all GPU instructions in the CUBIN. Figure~\ref{qs-cct} shows an \hpcviewer{} screenshot for the GPU-accelerated Quicksilver proxy app following reconstruction of GPU calling contexts using the algorithm described in this section. Notice that after the reconstruction, one can see that \verb|CycleTrackingKernel| calls \verb|CycleTrackingGuts|, which calls \verb|CollisionEvent|, which eventually calls  \verb|macroscopicCrossSection| and \verb|NuclearData::getNumberOfReactions|. The the rich  approximate GPU calling context tree reconstructed by \hpcprof{} also shows loop nests and inlined code.\footnote{The control flow graph used to produce this reconstruction for Quicksilver was computed with a pre-release version of {\tt nvdisasm}. You will not be able to reproduce these results with CUDA 10's {\tt nvdisasm} because the released version of {\tt nvdisasm} fails to analyze some of the key functions in Quicksilver.}
 
 
 

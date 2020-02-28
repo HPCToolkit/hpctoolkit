@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -47,8 +47,16 @@
 // This file is the main program for hpcstruct.  This side just
 // handles the argument list.  The real work is in makeStructure() in
 // lib/banal/Struct.cpp.
+//
+// This side now handles the case of a measurements directory with
+// cubins.  We don't analyze anything here, just setup a Makefile and
+// launch the work for each cubin.
 
 //****************************** Include Files ******************************
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <dirent.h>
 
 #include <iostream>
 using std::cerr;
@@ -56,63 +64,126 @@ using std::endl;
 
 #include <dlfcn.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <fstream>
 #include <string>
 #include <streambuf>
 #include <new>
+#include <vector>
+
+#include <include/hpctoolkit-config.h>
+
+#include <include/hpctoolkit-config.h>
 
 #include "Args.hpp"
 
 #include <lib/banal/Struct.hpp>
-#include <lib/binutils/Demangler.hpp>
 #include <lib/prof-lean/hpcio.h>
-
 #include <lib/support/diagnostics.h>
 #include <lib/support/realpath.h>
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/IOUtil.hpp>
 #include <lib/support/RealPathMgr.hpp>
 
-//**************************** Support Functions ****************************
+#ifdef ENABLE_OPENMP
+#include <omp.h>
+#endif
 
-#define CXX_DEMANGLER_FN_NAME "__cxa_demangle"
+#define PRINT_ERROR(mesg)  \
+  DIAG_EMsg(mesg << "\nTry 'hpcstruct --help' for more information.")
+
+using namespace std;
 
 static int
 realmain(int argc, char* argv[]);
 
 
+//***************************** Analyze Cubins ******************************
+
+static const char* cubins_analysis_makefile =
+#include "cubins-analysis.h"
+;
+
+//
+// For a measurements directory, write a Makefile and launch hpcstruct
+// for each .cubin file.
+//
 static void
-hpctoolkit_demangler_error(char *error_string, const char *demangler_library_filename)
+doMeasurementsDir(string measurements_dir, BAnal::Struct::Options & opts)
 {
-  std::cerr << "WARNING: Unable to open user-specified C++ demangler library '" 
-            << demangler_library_filename << "'" << std::endl; 
+  measurements_dir = RealPath(measurements_dir.c_str());
 
-  std::cerr << "         Dynamic library error: '" << error_string <<  "'" 
-            << std::endl; 
+  //
+  // Check that 'measurements_dir' has at least one .cubin file.
+  //
+#ifndef OPT_HAVE_CUDA
+  PRINT_ERROR("Hpcstruct is not compiled with cuda.");
+  exit(1);
+#endif
 
-  std::cerr << "         Using default demangler instead." << std::endl;
-}
+  string cubins_dir = measurements_dir + "/cubins";
+  struct dirent *ent;
+  bool found = false;
 
+  DIR *dir = opendir(cubins_dir.c_str());
+  if (dir == NULL) {
+    PRINT_ERROR("Unable to open measurements directory: " << cubins_dir);
+    exit(1);
+  }
 
-static void
-hpctoolkit_demangler_init(const char *demangler_library_filename, const char *demangler_function)
-{
-  if (demangler_library_filename) {
-    static void *demangler_library_handle =
-      dlopen(demangler_library_filename, RTLD_LAZY | RTLD_LOCAL);
-
-    if (demangler_library_handle) {
-      dlerror(); // clear error condition before calling dlsym
-
-      demangler_t demangle_fn = (demangler_t) 
-        dlsym(demangler_library_handle, demangler_function);
-      if (demangle_fn) {
-        hpctoolkit_demangler_set(demangle_fn);
-        return; 
-      }
+  while ((ent = readdir(dir)) != NULL) {
+    string file_name(ent->d_name);
+    if (file_name.find(".cubin") != string::npos) {
+      found = true;
+      break;
     }
-    hpctoolkit_demangler_error(dlerror(), demangler_library_filename);
-  } 
+  }
+
+  if (! found) {
+    PRINT_ERROR("Measurements directory does not contain cubins: " << cubins_dir);
+    exit(1);
+  }
+  closedir(dir);
+
+  //
+  // Put hpctoolkit and cuda (nvdisasm) on path.
+  //
+  char *path = getenv("PATH");
+  string new_path = string(HPCTOOLKIT_INSTALL_PREFIX) + "/bin/"
+    + ":" + path + ":" + CUDA_INSTALL_PREFIX + "/bin/";
+
+  setenv("PATH", new_path.c_str(), 1);
+
+  //
+  // Write Makefile and launch analysis.
+  //
+  string structs_dir = measurements_dir + "/structs";
+  mkdir(structs_dir.c_str(), 0755);
+
+  string makefile_name = structs_dir + "/Makefile";
+  fstream makefile;
+  makefile.open(makefile_name, fstream::out | fstream::trunc);
+
+  if (! makefile.is_open()) {
+    DIAG_EMsg("Unable to write file: " << makefile_name);
+    exit(1);
+  }
+
+  string gpucfg = opts.compute_gpu_cfg ? "yes" : "no";
+
+  makefile << "CUBINS_DIR =  " << cubins_dir << "\n"
+	   << "STRUCTS_DIR = " << structs_dir << "\n"
+	   << "CUBIN_CFG = " << gpucfg << "\n\n"
+	   << cubins_analysis_makefile << endl;
+  makefile.close();
+
+  string make_cmd = string("make -C ") + structs_dir + " -k -j " + to_string(opts.jobs)
+    + " --silent --no-print-directory analyze";
+
+  if (system(make_cmd.c_str()) != 0) {
+    DIAG_EMsg("Make hpcstruct files for cubins failed.");
+    exit(1);
+  }
 }
 
 //****************************** Main Program *******************************
@@ -146,37 +217,56 @@ static int
 realmain(int argc, char* argv[])
 {
   Args args(argc, argv);
-  bool ourDemangle = false;
+  BAnal::Struct::Options opts;
 
   RealPathMgr::singleton().searchPaths(args.searchPathStr);
   RealPathMgr::singleton().realpath(args.in_filenm);
 
   // ------------------------------------------------------------
-  // open the specified load module
+  // Parameters on how to run hpcstruct
   // ------------------------------------------------------------
-  InputFile loadModule;
-  bool loadModuleOpen = loadModule.openFile(args.in_filenm);
-  if (!loadModuleOpen) {
-    // error already printed by openFile
-    exit(1);
+
+#ifdef ENABLE_OPENMP
+  opts.jobs = args.jobs;
+  opts.jobs_parse = args.jobs_parse;
+  opts.jobs_symtab = args.jobs_symtab;
+
+  // default is to run serial (for correctness), unless --jobs is
+  // specified.
+  if (opts.jobs < 1) {
+    opts.jobs = 1;
+  }
+  if (opts.jobs_parse < 1) {
+    opts.jobs_parse = opts.jobs;
+  }
+
+  // libdw is not yet thread-safe, so run symtab serial unless
+  // specifically requested.
+  if (opts.jobs_symtab < 1) {
+    opts.jobs_symtab = 1;
+  }
+  omp_set_num_threads(1);
+#else
+  opts.jobs = 1;
+  opts.jobs_parse = 1;
+  opts.jobs_symtab = 1;
+#endif
+
+  opts.show_time = args.show_time;
+  opts.compute_gpu_cfg = args.compute_gpu_cfg;
+
+  // ------------------------------------------------------------
+  // If in_filenm is a directory, then analyze separately
+  // ------------------------------------------------------------
+  struct stat sb;
+
+  if (stat(args.in_filenm.c_str(), &sb) == 0 && S_ISDIR(sb.st_mode)) {
+    doMeasurementsDir(args.in_filenm, opts);
+    return 0;
   }
 
   // ------------------------------------------------------------
-  // Set the demangler before reading the executable 
-  // ------------------------------------------------------------
-  if (!args.demangle_library.empty()) {
-    const char* demangle_library = args.demangle_library.c_str();
-    const char* demangle_function = CXX_DEMANGLER_FN_NAME;
-    if (!args.demangle_function.empty()) {
-      demangle_function = args.demangle_function.c_str();
-    }
-    hpctoolkit_demangler_init(demangle_library, demangle_function);
-    ourDemangle = true;
-  }
-
-
-  // ------------------------------------------------------------
-  // Build and print the program structure tree
+  // Single application binary
   // ------------------------------------------------------------
 
   const char* osnm = (args.out_filenm == "-") ? NULL : args.out_filenm.c_str();
@@ -205,16 +295,8 @@ realmain(int argc, char* argv[])
     gaps_rdbuf->pubsetbuf(gapsBuf, HPCIO_RWBufferSz);
   }
 
-  ProcNameMgr* procNameMgr = NULL;
-  if (args.lush_agent == "agent-c++") {
-    procNameMgr = new CppNameMgr;
-  }
-  else if (args.lush_agent == "agent-cilk") {
-    procNameMgr = new CilkNameMgr;
-  }
-
-  BAnal::Struct::makeStructure(loadModule, outFile, gapsFile, gapsName,
-			       ourDemangle, procNameMgr);
+  BAnal::Struct::makeStructure(args.in_filenm, outFile, gapsFile, gapsName,
+			       args.searchPathStr, opts);
 
   IOUtil::CloseStream(outFile);
   delete[] outBuf;

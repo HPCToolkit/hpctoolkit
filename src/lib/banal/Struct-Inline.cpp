@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -63,9 +63,9 @@
 // optional, not required.  So, wrap the symtab calls with sigsetjmp()
 // so that failure does not kill the process.
 //
-// But be careful about overusing sigsetjmp().  There is only one
-// handler per process, so this could break other libraries or the
-// main program.
+//   Note -- (2) is gone.  Symtab doesn't throw asserts very often
+//   anymore, there isn't any reasonable way to continue if it did,
+//   and this is broken for the parallel case.
 //
 // 3. Apologies for the single static buffer.  Ideally, we would read
 // the dwarf info from inside lib/binutils and carry it down into
@@ -76,8 +76,6 @@
 
 //***************************************************************************
 
-#include <setjmp.h>
-#include <signal.h>
 #include <string.h>
 
 #include <list>
@@ -87,13 +85,14 @@
 #include <vector>
 
 #include <lib/binutils/BinUtils.hpp>
+#include <lib/binutils/ElfHelper.hpp>
 #include <lib/support/diagnostics.h>
 #include <lib/support/FileNameMap.hpp>
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/RealPathMgr.hpp>
 #include <lib/support/StringTable.hpp>
+#include <lib/support/dictionary.h>
 
-#include "ElfHelper.hpp"
 #include "Struct-Inline.hpp"
 
 #include <Module.h>
@@ -104,59 +103,10 @@ using namespace Dyninst;
 using namespace SymtabAPI;
 using namespace std;
 
-static const string UNKNOWN_PROC ("unknown-proc");
-
 // FIXME: uses a single static buffer.
 static Symtab *the_symtab = NULL;
 
-static struct sigaction old_act_abrt;
-static struct sigaction old_act_segv;
-static sigjmp_buf jbuf;
-static int jbuf_active = 0;
-
-static int num_queries = 0;
-static int num_errors = 0;
-
-#define DEBUG_INLINE_NAMES  0
-
-//***************************************************************************
-
-static void restore_sighandler(void);
-
-static void
-banal_sighandler(int sig)
-{
-  if (jbuf_active) {
-    siglongjmp(jbuf, 1);
-  }
-
-  // caught a signal, but it didn't come from symtab
-  restore_sighandler();
-  DIAG_Die("banal caught unexpected signal " << sig);
-}
-
-static void
-init_sighandler(void)
-{
-  struct sigaction act;
-
-  memset(&act, 0, sizeof(act));
-  act.sa_handler = banal_sighandler;
-  act.sa_flags = 0;
-  sigemptyset(&act.sa_mask);
-
-  jbuf_active = 0;
-  sigaction(SIGABRT, &act, &old_act_abrt);
-  sigaction(SIGSEGV, &act, &old_act_segv);
-}
-
-static void
-restore_sighandler(void)
-{
-  sigaction(SIGABRT, &old_act_abrt, NULL);
-  sigaction(SIGSEGV, &old_act_segv, NULL);
-  jbuf_active = 0;
-}
+#define DEBUG_INLINE_SEQNS  0
 
 //***************************************************************************
 
@@ -166,32 +116,17 @@ namespace Inline {
 Symtab *
 openSymtab(ElfFile *elfFile)
 {
-  bool ret = false;
+  bool ret = Symtab::openFile(the_symtab, elfFile->getMemory(),
+			      elfFile->getLength(), elfFile->getFileName());
 
-  init_sighandler();
-  num_queries = 0;
-  num_errors = 0;
-
-  if (sigsetjmp(jbuf, 1) == 0) {
-    // normal return
-    jbuf_active = 1;
-    ret = Symtab::openFile(the_symtab, elfFile->getMemory(), elfFile->getLength(),
-			   elfFile->getFileName());
-    if (ret) {
-      the_symtab->parseTypesNow();
-      the_symtab->parseFunctionRanges();
-    }
-  }
-  else {
-    // error return
-    ret = false;
-  }
-  jbuf_active = 0;
-
-  if (! ret) {
+  if (! ret || the_symtab == NULL) {
     DIAG_WMsgIf(1, "SymtabAPI was unable to open: " << elfFile->getFileName());
     the_symtab = NULL;
+    return NULL;
   }
+
+  the_symtab->parseTypesNow();
+  the_symtab->parseFunctionRanges();
 
   return the_symtab;
 }
@@ -206,86 +141,17 @@ closeSymtab()
   }
   the_symtab = NULL;
 
-  restore_sighandler();
-
-  if (num_errors > 0) {
-    DIAG_WMsgIf(1, "SymtabAPI had " << num_errors << " errors in "
-		<< num_queries << " queries.");
-  }
-
   return ret;
 }
 
 //***************************************************************************
-
-// Lookup the Module (comp unit) containing 'vma' to see if it is from
-// a source file that mangles function names.  A full Symtab Function
-// already does this, but inlined functions do not, so we have to
-// decide this ourselves.
-//
-// Returns: true if 'vma' is from a C++ module (mangled names).
-//
-static string cplus_exts[] = {
-  ".C", ".cc", ".cpp", ".cxx", ".c++",
-  ".CC", ".CPP", ".CXX", ".hpp", ".hxx", ""
-};
-
-static bool
-analyzeDemangle(VMA vma)
-{
-  if (the_symtab == NULL) {
-    return false;
-  }
-
-  // find module (comp unit) containing vma
-  set <Module *> modSet;
-  the_symtab->findModuleByOffset(modSet, vma);
-
-  if (modSet.empty()) {
-    return false;
-  }
-
-  Module * mod = *(modSet.begin());
-  if (mod == NULL) {
-    return false;
-  }
-
-  // languages that need demangling
-  supportedLanguages lang = mod->language();
-  if (lang == lang_CPlusPlus || lang == lang_GnuCPlusPlus) {
-    return true;
-  }
-  if (lang != lang_Unknown) {
-    return false;
-  }
-
-  // if language is unknown, then try file name
-  string filenm = mod->fileName();
-  long file_len = filenm.length();
-
-  if (filenm == "") {
-    return false;
-  }
-
-  for (auto i = 0; cplus_exts[i] != ""; i++) {
-    string ext = cplus_exts[i];
-    long len = ext.length();
-
-    if (file_len > len && filenm.compare(file_len - len, len, ext) == 0) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
 
 // Returns nodelist as a list of InlineNodes for the inlined sequence
 // at VMA addr.  The front of the list is the outermost frame, back is
 // innermost.
 //
 bool
-analyzeAddr(InlineSeqn &nodelist, VMA addr)
+analyzeAddr(InlineSeqn & nodelist, VMA addr, RealPathMgr * realPath)
 {
   FunctionBase *func, *parent;
   bool ret = false;
@@ -295,60 +161,40 @@ analyzeAddr(InlineSeqn &nodelist, VMA addr)
   }
   nodelist.clear();
 
-  num_queries++;
+  if (the_symtab->getContainingInlinedFunction(addr, func) && func != NULL)
+  {
+    ret = true;
 
-  if (sigsetjmp(jbuf, 1) == 0) {
-    //
-    // normal return
-    //
-    jbuf_active = 1;
-    if (the_symtab->getContainingInlinedFunction(addr, func))
-    {
-      bool demangle = analyzeDemangle(addr);
+    parent = func->getInlinedParent();
+    while (parent != NULL) {
+      //
+      // func is inlined iff it has a parent
+      //
+      InlinedFunction *ifunc = static_cast <InlinedFunction *> (func);
+      pair <string, Offset> callsite = ifunc->getCallsite();
+      string filenm = callsite.first;
+      if (filenm != "") { realPath->realpath(filenm); }
+      long lineno = callsite.second;
 
-      parent = func->getInlinedParent();
-      while (parent != NULL) {
-	//
-	// func is inlined iff it has a parent
-	//
-	InlinedFunction *ifunc = static_cast <InlinedFunction *> (func);
-	pair <string, Offset> callsite = ifunc->getCallsite();
-	string filenm = callsite.first;
-	if (filenm != "") { RealPathMgr::singleton().realpath(filenm); }
-	long lineno = callsite.second;
+      // symtab does not provide mangled and pretty names for
+      // inlined functions, so we have to decide this ourselves
+      string procnm = func->getName();
+      string prettynm =
+	  (procnm == "") ? UNKNOWN_PROC : BinUtil::demangleProcName(procnm);
 
-	// symtab does not provide mangled and pretty names for
-	// inlined functions, so we have to decide this ourselves
-	string procnm = func->getName();
-	string prettynm = procnm;
-
-        if (procnm == "") {
-	  procnm = UNKNOWN_PROC;
-	  prettynm = UNKNOWN_PROC;
-	}
-	else if (demangle) {
-	  prettynm = BinUtil::demangleProcName(procnm);
-	}
-
-#if DEBUG_INLINE_NAMES
-	cout << "raw-inline:  0x" << hex << addr << dec
-	     << "  link:  " << procnm << "  pretty:  " << prettynm << "\n";
+#if DEBUG_INLINE_SEQNS
+      cout << "\n0x" << hex << addr << dec
+	   << "  l=" << lineno << "  file:  " << filenm << "\n"
+	   << "0x" << hex << addr << "  symtab:  " << procnm << "\n"
+	   << "0x" << addr << dec << "  demang:  " << prettynm << "\n";
 #endif
 
-	nodelist.push_front(InlineNode(filenm, procnm, prettynm, lineno));
+      nodelist.push_front(InlineNode(filenm, prettynm, lineno));
 
-	func = parent;
-	parent = func->getInlinedParent();
-      }
-      ret = true;
+      func = parent;
+      parent = func->getInlinedParent();
     }
   }
-  else {
-    // error return
-    num_errors++;
-    ret = false;
-  }
-  jbuf_active = 0;
 
   return ret;
 }
@@ -359,6 +205,9 @@ analyzeAddr(InlineSeqn &nodelist, VMA addr)
 //
 // Note: we pass the stmt info in 'sinfo', but we don't link sinfo
 // itself into the map.  Instead, insert a copy.
+//
+// Note: call stmts never merge with adjacent stmts.  They are always
+// a single instruction.
 //
 void
 StmtMap::insert(StmtInfo * sinfo)
@@ -397,11 +246,14 @@ StmtMap::insert(StmtInfo * sinfo)
   // compare vma with stmt to the left
   if (left == NULL || left_end < vma) {
     // intervals don't overlap, insert new one
-    info = new StmtInfo(vma, end_vma - vma, file, base, line);
+    info = new StmtInfo(vma, end_vma - vma, file, base, line, sinfo->device,
+			sinfo->is_call, sinfo->is_sink, sinfo->target);
     (*this)[vma] = info;
   }
-  else if (left->base_index == base && left->line_num == line) {
-    // intervals overlap and match file and line
+  else if (left->base_index == base && left->line_num == line
+	   && !left->is_call && !sinfo->is_call)
+  {
+    // intervals overlap and match file and line (and not calls).
     // merge with left stmt
     end_vma = std::max(end_vma, left_end);
     left->len = end_vma - left->vma;
@@ -412,16 +264,19 @@ StmtMap::insert(StmtInfo * sinfo)
     // truncate interval to start at left_end and insert
     if (left_end < end_vma && (right == NULL || left_end < right->vma)) {
       vma = left_end;
-      info = new StmtInfo(vma, end_vma - vma, file, base, line);
+      info = new StmtInfo(vma, end_vma - vma, file, base, line, sinfo->device,
+			  sinfo->is_call, sinfo->is_sink, sinfo->target);
       (*this)[vma] = info;
     }
   }
 
   // compare interval with stmt to the right
-  if (info != NULL && right != NULL && end_vma >= right->vma) {
-
-    if (right->base_index == base && right->line_num == line) {
-      // intervals overlap and match file and line
+  if (info != NULL && right != NULL && end_vma >= right->vma)
+  {
+    if (right->base_index == base && right->line_num == line
+	&& !info->is_call && !right->is_call)
+    {
+      // intervals overlap and match file and line (and not calls).
       // merge with right stmt
       end_vma = right->vma + right->len;
       info->len = end_vma - info->vma;
@@ -442,13 +297,14 @@ StmtMap::insert(StmtInfo * sinfo)
 // adjacent stmts if their file and line match.
 //
 void
-addStmtToTree(TreeNode * root, HPC::StringTable & strTab, VMA vma,
-	      int len, string & filenm, SrcFile::ln line)
+addStmtToTree(TreeNode * root, HPC::StringTable & strTab, RealPathMgr * realPath, 
+              VMA vma, int len, string & filenm, SrcFile::ln line, 
+              string & device, bool is_call, bool is_sink, VMA target)
 {
   InlineSeqn path;
   TreeNode *node;
 
-  analyzeAddr(path, vma);
+  analyzeAddr(path, vma, realPath);
 
   // follow 'path' down the tree and insert any edges that don't exist
   node = root;
@@ -470,7 +326,7 @@ addStmtToTree(TreeNode * root, HPC::StringTable & strTab, VMA vma,
   // insert statement at this level
   long file = strTab.str2index(filenm);
   long base = strTab.str2index(FileUtil::basename(filenm.c_str()));
-  StmtInfo info(vma, len, file, base, line);
+  StmtInfo info(vma, len, file, base, line, device, is_call, is_sink, target);
 
   node->stmtMap.insert(&info);
 }

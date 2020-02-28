@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -49,6 +49,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 
 //******************************************************************************
@@ -75,31 +76,66 @@ static const char *newline = "\n";
 // Local methods
 //******************************************************************************
 
+static 
+char *
+sanitize
+(
+  char *out,
+  const char *in
+)
+{
+	char *result = out;
+	while (*in != 0) {
+ 	  // filter out unprintable characters
+          if (isprint(*in)) *out++ = *in++;
+          else in++;
+	}
+	*out = 0;
+	return result;
+}
+
 static void
-printw(FILE *output, const char *name, const char *desc)
+printw(FILE *output, const char *name, const char *desc_unsanitized)
 {
   char **line;
   int *len;
   char sdesc[MAX_DESC_PER_LINE];
 
-  int lines = strwrap((char *)desc, MAX_DESC_PER_LINE, &line, &len);
-  for (int i=0; i<lines; i++) {
-    strncpy(sdesc, line[i], len[i]);
-    sdesc[len[i]] = '\0';
-    const char *name_ptr = " ";
+  int dlen;
+  char *desc_buffer;
 
-    if (i == 0) {
-      int len = strlen(name);
-      if (len > MAX_EVENT_NAME) {
-        fprintf(output, "%s\n", name);
-      } else {
-	name_ptr = name;
+  if (desc_unsanitized) {
+    dlen = strlen(desc_unsanitized);
+    desc_buffer = (char *) malloc(dlen+1); 
+    char *desc = sanitize(desc_buffer, desc_unsanitized);
+
+    int lines = strwrap((char *)desc, MAX_DESC_PER_LINE, &line, &len);
+    if (lines == 0) {
+      fprintf(output, "%s\n", name);
+    } else {
+      int i;
+      for (i = 0; i < lines; i++) {
+        strncpy(sdesc, line[i], len[i]);
+        sdesc[len[i]] = '\0';
+        const char *name_ptr = " ";
+
+        if (i == 0) {
+          int len = strlen(name);
+          if (len > MAX_EVENT_NAME) {
+            fprintf(output, "%s\n", name);
+          } else {
+	    name_ptr = name;
+          }
+        }
+        fprintf(output, "%-*s %s\n", MAX_EVENT_NAME, name_ptr, sdesc);
       }
+      free(line);
+      free(len);
     }
-    fprintf(output, "%-*s %s\n", MAX_EVENT_NAME, name_ptr, sdesc);
+    free(desc);
+  } else {
+    fprintf(output, "%s\n", name);
   }
-  free (line);
-  free (len);
 }
 
 

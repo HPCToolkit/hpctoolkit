@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -109,22 +109,23 @@ public:
   // Parsed Data: Command
   const std::string& getCmd() const;
 
+  int jobs;
+  int jobs_parse;
+  int jobs_symtab;
+  bool show_time;
+  bool compute_gpu_cfg;
+
   // Parsed Data: optional arguments
-  std::string lush_agent;
   std::string searchPathStr;          // default: "."
-  std::string demangle_library;       // default: ""
-  std::string demangle_function;       // default: ""
-  bool isIrreducibleIntervalLoop;     // default: true
-  bool isForwardSubstitution;         // default: false
   std::string dbgProcGlob;
 
-  std::string out_filenm;
   bool prettyPrintOutput;         // default: true
   bool useBinutils;		  // default: false
   bool show_gaps;                 // default: false
 
   // Parsed Data: arguments
   std::string in_filenm;
+  std::string out_filenm;
 
 private:
   void
