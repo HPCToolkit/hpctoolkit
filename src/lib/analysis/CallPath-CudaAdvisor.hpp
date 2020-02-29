@@ -196,6 +196,8 @@ class CudaAdvisor {
   // Helper functions
   int demandNodeMetric(int mpi_rank, int thread_id, Prof::CCT::ADynNode *node);
 
+  std::string debugInstOffset(int vma);
+
   void debugInstDepGraph();
 
   void debugCCTDepPaths(CCTEdgePathMap &cct_edge_path_map);
@@ -236,6 +238,7 @@ class CudaAdvisor {
   MetricNameProfMap *_metric_name_prof_map;
 
   Prof::CCT::ADynNode *_gpu_root;
+  std::map<int, std::string> _function_offset;
 
   CCTGraph<CudaParse::InstructionStat *> _inst_dep_graph;
   VMAPropertyMap _vma_prop_map;

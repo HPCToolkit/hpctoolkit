@@ -2,13 +2,14 @@
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
 
-#include <bitset>
-#include <string>
 #include <climits>
 #include <cstring>
 #include <cstdio>
 
+#include <bitset>
+#include <string>
 #include <typeinfo>
 #include <unordered_map>
 #include <algorithm>
@@ -53,13 +54,8 @@ using std::string;
 #include <lib/support/StrUtil.hpp>
 
 #define DEBUG_CALLPATH_CUDAADVISOR 1
-#define DEBUG_CALLPATH_CUDAADVISOR_DETAILS 1
+#define DEBUG_CALLPATH_CUDAADVISOR_DETAILS 0
 
-// Define an offset in cubin
-// It varies for different cubins.
-// It is hard to figure out a way to find the offset automatically,
-// because we could have device functions before global functions in cubins
-#define DEBUG_OFFSET(x) (x - 22400)
 
 namespace Analysis {
 
@@ -68,6 +64,18 @@ namespace CallPath {
 /*
  * Debug methods
  */
+
+// Define an offset in cubin
+std::string CudaAdvisor::debugInstOffset(int vma) {
+  auto iter = _function_offset.upper_bound(vma);
+  if (iter != _function_offset.begin()) {
+    --iter;
+  }
+  std::stringstream ss;
+  ss << iter->second << ": " << std::hex << "0x" << vma - iter->first << std::dec;
+  return ss.str();
+}
+
 
 void CudaAdvisor::debugCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph) {
   std::cout << "Nodes (" << cct_dep_graph.size() << ")" << std::endl;
@@ -99,9 +107,9 @@ void CudaAdvisor::debugCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::C
     if (innode_iter != cct_dep_graph.incoming_nodes_end()) {
       for (auto *from_node : innode_iter->second) {
         auto from_vma = from_node->lmIP();
-        std::cout << std::hex << "0x" << DEBUG_OFFSET(from_vma) << "," << std::dec;
+        std::cout << debugInstOffset(from_vma) << "," << std::dec;
       }
-      std::cout << std::hex << " -> 0x" << DEBUG_OFFSET(to_vma) << std::dec << std::endl;
+      std::cout << debugInstOffset(to_vma) << std::endl;
     }
   }
 
@@ -115,7 +123,7 @@ void CudaAdvisor::debugCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::C
     std::cout << iter.first << "(" <<
       static_cast<double>(iter.first) / exec_dep_stall * 100 << "%): ";
     for (auto vma : iter.second) {
-      std::cout << std::hex << "0x" << DEBUG_OFFSET(vma) << std::dec << ", ";
+      std::cout << debugInstOffset(vma) << ", ";
     }
     std::cout << std::endl;
   }
@@ -128,7 +136,7 @@ void CudaAdvisor::debugCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::C
     std::cout << iter.first << "(" <<
       static_cast<double>(iter.first) / mem_dep_stall * 100 << "%): ";
     for (auto vma : iter.second) {
-      std::cout << std::hex << "0x" << DEBUG_OFFSET(vma) << std::dec << ", ";
+      std::cout << debugInstOffset(vma) << ", ";
     }
     std::cout << std::endl;
   }
@@ -175,7 +183,7 @@ void CudaAdvisor::debugCCTDepGraphNoPath(int mpi_rank, int thread_id,
     std::cout << iter.first << "(" <<
       static_cast<double>(iter.first) / exec_dep_stall * 100 << "%): ";
     for (auto vma : iter.second) {
-      std::cout << std::hex << "0x" << DEBUG_OFFSET(vma) << std::dec << ", ";
+      std::cout << debugInstOffset(vma) << ", ";
     }
     std::cout << std::endl;
   }
@@ -190,7 +198,7 @@ void CudaAdvisor::debugCCTDepGraphNoPath(int mpi_rank, int thread_id,
     std::cout << iter.first << "(" <<
       static_cast<double>(iter.first) / mem_dep_stall * 100 << "%): ";
     for (auto vma : iter.second) {
-      std::cout << std::hex << "0x" << DEBUG_OFFSET(vma) << std::dec << ", ";
+      std::cout << debugInstOffset(vma) << ", ";
     }
     std::cout << std::endl;
   }
@@ -233,7 +241,7 @@ void CudaAdvisor::debugCCTDepGraphStallExec(int mpi_rank, int thread_id,
     std::cout << iter.first << "(" <<
       static_cast<double>(iter.first) / exec_dep_stall * 100 << "%): ";
     for (auto vma : iter.second) {
-      std::cout << std::hex << "0x" << DEBUG_OFFSET(vma) << std::dec << ", ";
+      std::cout << debugInstOffset(vma) << ", ";
     }
     std::cout << std::endl;
   }
@@ -301,13 +309,13 @@ void CudaAdvisor::debugCCTDepPaths(CCTEdgePathMap &cct_edge_path_map) {
         continue;
       }
       auto to_vma = to_iter.first;
-      std::cout << std::hex << "0x" << DEBUG_OFFSET(from_vma) << " -> 0x" <<
-        DEBUG_OFFSET(to_vma) << std::dec << ":" << std::endl;
+      std::cout << debugInstOffset(from_vma) << " -> " <<
+        debugInstOffset(to_vma) << ":" << std::endl;
       for (auto &path : to_iter.second) {
         std::cout << "[";
         for (auto *b : path) {
           auto front_vma = b->insts.front()->inst_stat->pc;
-          std::cout << std::hex << "0x" << DEBUG_OFFSET(front_vma) << std::dec << ",";
+          std::cout << debugInstOffset(front_vma) << ",";
         }
         std::cout << "]" << std::endl;
       }
@@ -328,9 +336,9 @@ void CudaAdvisor::debugInstDepGraph() {
     if (innode_iter != _inst_dep_graph.incoming_nodes_end()) {
       for (auto *from_node : innode_iter->second) {
         auto from_vma = from_node->pc;
-        std::cout << std::hex << "0x" << DEBUG_OFFSET(from_vma) << "," << std::dec;
+        std::cout << debugInstOffset(from_vma) << "," << std::dec;
       }
-      std::cout << std::hex << " -> 0x" << DEBUG_OFFSET(to_vma) << std::dec << std::endl;
+      std::cout << debugInstOffset(to_vma) << std::dec << std::endl;
     }
   }
 }
@@ -354,14 +362,9 @@ void CudaAdvisor::debugInstBlames(InstBlames &inst_blames) {
   std::sort(inst_blames_copy.begin(), inst_blames_copy.end(), InstructionBlameValueCompare());
 
   for (auto &inst_blame : inst_blames_copy) {
-    std::cout << std::hex << "0x" << inst_blame.src->pc << " -> ";
-    if (inst_blame.src->pc != inst_blame.dst->pc) {
-      std::cout << "0x" << inst_blame.dst->pc << ", ";
-    } else {
-      std::cout << "-1, ";
-    }
-    std::cout << std::dec << 
-      _metric_name_prof_map->name(inst_blame.metric_id) << ": " <<
+    std::cout << debugInstOffset(inst_blame.src->pc) <<
+      " -> " << debugInstOffset(inst_blame.dst->pc) << ", ";
+    std::cout << _metric_name_prof_map->name(inst_blame.metric_id) << ": " <<
       inst_blame.value << "(" << static_cast<double>(inst_blame.value) /
       blame_sum * 100 << "%)" << std::endl;
   }
@@ -496,8 +499,8 @@ void CudaAdvisor::pruneCCTDepGraphOpcode(int mpi_rank, int thread_id,
       auto to_vma = to->lmIP();
       auto mem_dep = to->demandMetric(mem_dep_stall_id);
       auto exec_dep = to->demandMetric(exec_dep_stall_id);
-      std::cout << "Remove 0x" << std::hex << DEBUG_OFFSET(from_vma) << " -> 0x" <<
-        DEBUG_OFFSET(to_vma) << std::dec << ", Mem_deps: " << mem_dep <<
+      std::cout << "Remove " << debugInstOffset(from_vma) << " -> " <<
+        debugInstOffset(to_vma) << ", Mem_deps: " << mem_dep <<
         ", Exec_deps: " << exec_dep << std::endl;
     }
     cct_dep_graph.removeEdge(iter);
@@ -558,8 +561,8 @@ void CudaAdvisor::pruneCCTDepGraphBarrier(int mpi_rank, int thread_id,
       auto *to_inst = _vma_prop_map[to_vma].inst;
       auto mem_dep = to->demandMetric(mem_dep_stall_id);
       auto exec_dep = to->demandMetric(exec_dep_stall_id);
-      std::cout << "Remove 0x" << std::hex << DEBUG_OFFSET(from_vma) << " -> 0x" <<
-        DEBUG_OFFSET(to_vma) << std::dec << ", Barrier: b" <<
+      std::cout << "Remove " << debugInstOffset(from_vma) << " -> " <<
+        debugInstOffset(to_vma) << ", Barrier: b" <<
         std::bitset<6>(to_inst->control.wait) << ", Write: " <<
         static_cast<int>(from_inst->control.write) << ", Mem_deps: " << mem_dep <<
         ", Exec_deps: " << exec_dep << std::endl;
@@ -747,8 +750,8 @@ void CudaAdvisor::pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
       auto to_vma = to->lmIP();
       auto mem_dep = to->demandMetric(mem_dep_stall_id);
       auto exec_dep = to->demandMetric(exec_dep_stall_id);
-      std::cout << "Remove 0x" << std::hex << DEBUG_OFFSET(from_vma) << " -> 0x" <<
-        DEBUG_OFFSET(to_vma) << std::dec << ", Mem_deps: " << mem_dep <<
+      std::cout << "Remove " << debugInstOffset(from_vma) << " -> " <<
+        debugInstOffset(to_vma) << ", Mem_deps: " << mem_dep <<
         ", Exec_deps: " << exec_dep << std::endl;
     }
     cct_dep_graph.removeEdge(iter);
@@ -869,7 +872,7 @@ void CudaAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
         from_node->demandMetric(ex_blame_metric_index) += latency;
         // One metric id is enough for inst blame analysis
         inst_blames.emplace_back(
-          InstructionBlame(to_inst, from_inst, ex_blame_metric_index, latency));
+          InstructionBlame(from_inst, to_inst, ex_blame_metric_index, latency));
       } else {
         std::map<Prof::CCT::ADynNode *, double> no_stalls;
         std::map<Prof::CCT::ADynNode *, double> issues;
@@ -903,6 +906,8 @@ void CudaAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
             no_stall_sum += no_stall;
           }
           auto issue = from_node->demandMetric(issue_metric_index);
+          // Guarantee that issue is not zero
+          issue = issue > 0 ? issue : 1;
           issues[from_node] = issue;
           issue_sum += issue;
         }
@@ -912,14 +917,15 @@ void CudaAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
           auto from_vma = from_node->lmIP();
           auto *from_inst = _vma_prop_map[from_vma].inst;
 
-          auto blame_latency = latency * (no_stalls[from_node] / no_stall_sum) *
-            (issues[from_node] / issue_sum);
+          auto no_stall_ratio = no_stall_sum == 0 ? 1 : no_stalls[from_node] / no_stall_sum;
+          auto issue_ratio = issues[from_node] / issue_sum;
+          auto blame_latency = latency * no_stall_ratio * issue_ratio;
           from_node->demandMetric(in_blame_metric_index) += blame_latency;
           from_node->demandMetric(ex_blame_metric_index) += blame_latency;
 
           // One metric id is enough for inst blame analysis
           inst_blames.emplace_back(
-            InstructionBlame(to_inst, from_inst, ex_blame_metric_index, blame_latency));
+            InstructionBlame(from_inst, to_inst, ex_blame_metric_index, blame_latency));
         }
       }
     }
@@ -941,6 +947,42 @@ void CudaAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
       inst_blames.emplace_back(
         InstructionBlame(to_inst, to_inst, ex_blame_metric_index, stall));
     }
+
+    // Sync latency
+    auto sync_stall_metric_index = _metric_name_prof_map->metric_id(
+      mpi_rank, thread_id, _sync_stall_metric);
+    auto sync_stall = to_node->demandMetric(sync_stall_metric_index);
+    if (sync_stall == 0) {
+      continue;
+    }
+
+    auto in_blame_sync_metric_index = _metric_name_prof_map->metric_id(
+      mpi_rank, thread_id, "BLAME " + _sync_stall_metric, true);
+    auto ex_blame_sync_metric_index = _metric_name_prof_map->metric_id(
+      mpi_rank, thread_id, "BLAME " + _sync_stall_metric, false);
+    // inclusive and exclusive metrics have the same value
+    // blame the previous node
+    auto sync_vma = to_vma - _arch->inst_size();
+    auto *sync_node = _vma_prop_map[sync_vma].prof_node;
+    auto *sync_inst = _vma_prop_map[sync_vma].inst;
+
+    assert(sync_inst->op.find(".SYNC") != std::string::npos ||
+      sync_inst->op.find(".BAR") != std::string::npos);
+
+    if (sync_node == NULL) {
+      // Create a new prof node
+      Prof::Metric::IData metric_data(_prof->metricMgr()->size());
+      metric_data.clearMetrics();
+
+      sync_node = new Prof::CCT::Stmt(to_node->parent(), HPCRUN_FMT_CCTNodeId_NULL,
+        lush_assoc_info_NULL, _gpu_root->lmId(), sync_vma, 0, NULL, metric_data);
+    }
+
+    sync_node->demandMetric(in_blame_sync_metric_index) += sync_stall;
+    sync_node->demandMetric(ex_blame_sync_metric_index) += sync_stall;
+    // one metric id is enough for inst blame analysis
+    inst_blames.emplace_back(
+      InstructionBlame(sync_inst, to_inst, ex_blame_sync_metric_index, sync_stall));
   }
 
   std::sort(inst_blames.begin(), inst_blames.end());
@@ -1122,9 +1164,12 @@ void CudaAdvisor::init() {
 void CudaAdvisor::configInst(const std::vector<CudaParse::Function *> &functions) {
   _vma_prop_map.clear();
   _inst_dep_graph.clear();
+  _function_offset.clear();
 
   // Property map
   for (auto *function : functions) {
+    _function_offset[function->address] = function->name;
+
     for (auto *block : function->blocks) {
       for (auto *_inst : block->insts) {
         auto *inst = _inst->inst_stat;
@@ -1302,11 +1347,19 @@ void CudaAdvisor::blame(FunctionBlamesMap &function_blames_map) {
       InstBlames inst_blames;
       blameCCTDepGraph(mpi_rank, thread_id, cct_dep_graph, cct_edge_path_map, inst_blames);
 
-      if (DEBUG_CALLPATH_CUDAADVISOR_DETAILS) {
+      if (DEBUG_CALLPATH_CUDAADVISOR) {
         std::cout << "Inst blames: " << std::endl;
         debugInstBlames(inst_blames);
         std::cout << std::endl;
       }
+
+      // TODO(Keren):
+      // 1. Implement sync
+      // 2. Debug function start
+      // 3. Implement WAR and Predicate
+      // 4. Implement scheduler stall
+      // 5. Debug apportion
+      // 6. Overlay back
 
       //// 5. Overlay blames
       //auto &function_blames = function_blames_map[mpi_rank][thread_id];

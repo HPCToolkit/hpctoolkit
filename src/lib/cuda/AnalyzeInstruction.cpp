@@ -170,10 +170,10 @@ void analyze_instruction<INS_TYPE_CONTROL>(const Instruction &inst, std::string 
   if (opcode.find("MEMBAR") != std::string::npos ||
     opcode.find("DEPBAR") != std::string::npos) {
     type = ".BAR";
-  } else if (opcode.find("SYNC") != std::string::npos) {
-    type = ".CONVERGE";
   } else if (opcode.find("BAR") != std::string::npos) {
     type = ".SYNC";
+  } else if (opcode.find("SYNC") != std::string::npos) {
+    type = ".CONVERGE";
   } else if (opcode.find("CAL") != std::string::npos) {
     type = ".CALL";
   } else if (opcode.find("EXIT") != std::string::npos) {
