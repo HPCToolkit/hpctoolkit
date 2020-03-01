@@ -265,9 +265,11 @@ overlayCudaInstructionsMain(Prof::CallPath::Profile &prof,
     CudaParse::readCudaInstructions(file, functions);
 
     // Step 2: Sort the instructions by PC
+    // Assign absolute addresses to instructions
     CudaParse::relocateCudaInstructionStats(functions);
 
     std::vector<CudaParse::InstructionStat *> inst_stats;
+    // Put instructions to a vector
     CudaParse::flatCudaInstructionStats(functions, inst_stats);
 
     // Step 3: Find new metric names and insert new mappings between from name to prof metric ids
@@ -297,7 +299,7 @@ overlayCudaInstructionsMain(Prof::CallPath::Profile &prof,
       cuda_advisor.blame(function_blames_map);
 
       // Make advise for the calling context and cache result
-      cuda_advisor.advise(function_blames_map);
+      //cuda_advisor.advise(function_blames_map);
     }
 
     // TODO(Keren): output advise using this file other than cuda_advisor

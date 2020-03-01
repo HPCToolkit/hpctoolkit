@@ -34,32 +34,19 @@ void CudaBlock::getInsns(Insns &insns) const {
 
     // TODO(Keren): sm_60-> size 8
     // It does not matter now because hpcstruct explicitly set length of instructions
-#ifdef DYNINST_INSTRUCTION_PTR
-    InstructionAPI::InstructionPtr instruction_ptr(
-      new InstructionAPI::Instruction(op, 16, NULL, Arch_cuda));
-#else
     InstructionAPI::Instruction instruction(op, 16, NULL, Arch_cuda);
-#endif
 
     if (inst->inst_stat->dsts.size() == 0) {
       // Fake register
       MachRegister r(256 | cuda::GPR | Arch_cuda);
       InstructionAPI::RegisterAST::Ptr reg_ptr(new InstructionAPI::RegisterAST(r));
-#ifdef DYNINST_INSTRUCTION_PTR
-      instruction_ptr->appendOperand(reg_ptr, false, true);
-#else
       instruction.appendOperand(reg_ptr, false, true);
-#endif
     } else {
       for (auto dst : inst->inst_stat->dsts) {
         if (dst != -1) {
           MachRegister r(dst | cuda::GPR | Arch_cuda);
           InstructionAPI::RegisterAST::Ptr reg_ptr(new InstructionAPI::RegisterAST(r));
-#ifdef DYNINST_INSTRUCTION_PTR
-          instruction_ptr->appendOperand(reg_ptr, false, true);
-#else
           instruction.appendOperand(reg_ptr, false, true);
-#endif
         }   
       }   
     }   
@@ -68,20 +55,11 @@ void CudaBlock::getInsns(Insns &insns) const {
       if (src != -1) {
         MachRegister r(src | cuda::GPR | Arch_cuda);
         InstructionAPI::RegisterAST::Ptr reg_ptr(new InstructionAPI::RegisterAST(r));
-#ifdef DYNINST_INSTRUCTION_PTR
-        instruction_ptr.appendOperand(reg_ptr, true, false);
-#else
         instruction.appendOperand(reg_ptr, true, false);
-#endif
       }
     }
 
-#ifdef DYNINST_INSTRUCTION_PTR
-    insns.insert(std::pair<long unsigned int, 
-      InstructionAPI::InstructionPtr>(inst->offset, instruction_ptr));
-#else
     insns[inst->offset] = instruction;
-#endif
   }
 }
 

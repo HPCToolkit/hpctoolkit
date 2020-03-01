@@ -143,11 +143,11 @@ class CudaAdvisor {
     CudaParse::Block *block;
     int latency_lower;
     int latency_upper;
-    int latency_throughput;
+    int latency_issue;
 
     VMAProperty() : vma(0), prof_node(NULL), struct_node(NULL),
       inst(NULL), function(NULL), block(NULL), latency_lower(0),
-      latency_upper(0), latency_throughput(0) {}
+      latency_upper(0), latency_issue(0) {}
   };
 
   typedef std::map<VMA, VMAProperty> VMAPropertyMap;
@@ -163,17 +163,20 @@ class CudaAdvisor {
   void pruneCCTDepGraphOpcode(int mpi_rank, int thread_id,
     CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
 
-  void trackReg(int to_vma, int from_vma, int reg,
-    CudaParse::Block *to_block, CudaParse::Block *from_block,
-    int latency_throughput, int latency, std::set<CudaParse::Block *> &visited_blocks,
-    std::vector<CudaParse::Block *> &path,
-    std::vector<std::vector<CudaParse::Block *>> &paths);
+  void pruneCCTDepGraphBarrier(int mpi_rank, int thread_id,
+    CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
 
   void pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
     CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph,
     CCTEdgePathMap &cct_edge_path_map);
 
-  double computePathStallRatio(int mpi_rank, int thread_id, int to_vma, int from_vma,
+  void trackReg(int to_vma, int from_vma, int reg,
+    CudaParse::Block *to_block, CudaParse::Block *from_block,
+    int latency_issue, int latency, std::set<CudaParse::Block *> &visited_blocks,
+    std::vector<CudaParse::Block *> &path,
+    std::vector<std::vector<CudaParse::Block *>> &paths);
+
+  double computePathNoStall(int mpi_rank, int thread_id, int from_vma, int to_vma,
     std::vector<CudaParse::Block *> &path);
     
   void blameCCTDepGraph(int mpi_rank, int thread_id,
@@ -193,11 +196,19 @@ class CudaAdvisor {
   // Helper functions
   int demandNodeMetric(int mpi_rank, int thread_id, Prof::CCT::ADynNode *node);
 
+  std::string debugInstOffset(int vma);
+
   void debugInstDepGraph();
+
+  void debugCCTDepPaths(CCTEdgePathMap &cct_edge_path_map);
 
   void debugCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
 
-  void debugCCTDepGraphSinglePath(int mpi_rank, int thread_id, CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
+  void debugCCTDepGraphNoPath(int mpi_rank, int thread_id, CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
+
+  void debugCCTDepGraphStallExec(int mpi_rank, int thread_id, CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
+  
+  void debugCCTDepGraphSinglePath(CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
 
   void debugInstBlames(InstBlames &inst_blames);
 
@@ -227,6 +238,7 @@ class CudaAdvisor {
   MetricNameProfMap *_metric_name_prof_map;
 
   Prof::CCT::ADynNode *_gpu_root;
+  std::map<int, std::string> _function_offset;
 
   CCTGraph<CudaParse::InstructionStat *> _inst_dep_graph;
   VMAPropertyMap _vma_prop_map;

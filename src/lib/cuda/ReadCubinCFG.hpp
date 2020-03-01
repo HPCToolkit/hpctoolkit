@@ -16,6 +16,7 @@ readCubinCFG
  Dyninst::ParseAPI::CodeSource **code_src, 
  Dyninst::ParseAPI::CodeObject **code_obj,
  bool dump_insts = true,
+ bool control = true,
  bool slice = true,
  bool livenes = false
 );

@@ -184,9 +184,11 @@ class CCTGraph {
   void removeEdge(typename std::set<CCTEdge<T> >::iterator edge) {
     T from = edge->from;
     T to = edge->to;
+    // Erase edges
     _incoming_nodes[to].erase(from);
     _outgoing_nodes[from].erase(to);
     _edges.erase(edge);
+    // XXX(Keren): do not erase nodes
   }
 
   void addNode(T node) {
@@ -198,6 +200,10 @@ class CCTGraph {
   size_t size() {
     return _nodes.size();
   }  
+
+  size_t edge_size() {
+    return _edges.size();
+  }
 
   void clear() {
     _nodes.clear();

@@ -292,6 +292,7 @@ readCubinCFG
  Dyninst::ParseAPI::CodeSource **code_src, 
  Dyninst::ParseAPI::CodeObject **code_obj,
  bool dump_insts,
+ bool control,
  bool slice,
  bool liveness
 ) 
@@ -319,6 +320,10 @@ readCubinCFG
       *code_src = new CudaCodeSource(functions, the_symtab); 
       *code_obj = new CodeObject(*code_src, cfg_fact);
       (*code_obj)->parse();
+
+      if (control) {
+        controlCudaInstructions(elfFile->getMemoryOriginal(), functions);
+      }
 
       if (slice) {
         sliceCudaInstructions((*code_obj)->funcs(), functions);
