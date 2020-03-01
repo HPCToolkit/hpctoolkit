@@ -229,7 +229,7 @@ send_funcs ()
       lastaddr = farray[i].fadd;
     }
   }
-  fprintf(stderr, "newfnb %s = %d -- %s\n", strrchr(inbuf, '/'), np, inbuf );
+  fprintf(stderr, "newfnb %s = %d (%d) -- %s\n", strrchr(inbuf, '/'), np, nfunc, inbuf );
 
   // send the OK mesg with the count of addresses
   ret = write_mesg(SYSERV_OK, np+1);
@@ -294,6 +294,7 @@ send_funcs ()
   struct rusage usage;
   if (getrusage(RUSAGE_SELF, &usage) == 0) {
     fnb_info.memsize = usage.ru_maxrss;
+    fnb_info.memsize = -1;	// Set to -1 to avoid hpcrun killing server
   } else {
     fnb_info.memsize = -1;
   }
