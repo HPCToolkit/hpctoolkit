@@ -73,8 +73,9 @@ std::pair<int, int> SM70::latency(const std::string &opcode) {
       return std::pair<int, int>(19, 19 + 31);
     } else {
       // Hard to estimate memory latency
-      // Use cache hit latency
-      return std::pair<int, int>(28, 512);
+      // Use TLB miss latency
+      // TODO(Keren): classify different level latencies
+      return std::pair<int, int>(28, 1024);
     }
   }
   // Use pipeline latency
