@@ -13,6 +13,10 @@
 
 \documentclass[11pt,letterpaper]{report}
 
+ \setcounter{topnumber}{4}
+ \setcounter{totalnumber}{4}
+  \renewcommand{\floatpagefraction}{0.7}
+
 
 % ***************************************************************************
 % Standard packages
@@ -116,7 +120,7 @@
 % ***************************************************************************
 % ***************************************************************************
 
-\title{\HPCToolkit{} User's Manual\\[.5in]Version 2019.08}
+\title{\HPCToolkit{} User's Manual\\[.5in]Version 2020.03.01}
 %\subtitle{}
 
 \author{
@@ -124,14 +128,14 @@ John Mellor-Crummey\\
 Laksono Adhianto,
 Mike Fagan,
 Mark Krentel,
-Nathan Tallent\\
+Nathan Tallent, Keren Zhou\\
 \\
 Rice University\\
 %\\
 %For \HPCToolkit{} 5.3.2 ($Revision$)
 }
 
-%\date{}
+\date{March 1, 2020}
 
 \maketitle
 
@@ -933,7 +937,44 @@ To isolate code that is an impediment to scalable performance, one can use the {
 % ***************************************************************************
 % ***************************************************************************
 
-\chapter{\hpcviewer{} User Interface}
+\chapter{Measurement and Analysis of GPU-accelerated Applications}
+\label{chpt:gpu}
+
+{
+\centering
+ \fbox{\parbox{\textwidth}{Note: This release contains beta support for monitoring computations offloaded onto  NVIDIA GPUs and alpha support for monitoring computations offloaded onto AMD GPUs.}}
+ \vspace{2ex}
+}
+
+
+\input{gpu}
+
+
+% ***************************************************************************
+% ***************************************************************************
+
+\chapter{Measurement and Analysis of OpenMP Multithreading}
+\label{chpt:gpu}
+
+{
+\centering
+ \fbox{\parbox{\textwidth}{Note: This release contains beta support for monitoring OpenMP computations using the OpenMP 5.0 OpenMP Tools API support known as OMPT.}}
+ \vspace{2ex}
+}
+
+HPCToolkit includes an implementation of the OpenMP 5.0 Tools API known as OMPT. The OMPT interface enables HPCToolkit to extract enough information to reconstruct user-level calling contexts from implementation-level measurements. 
+
+Support for OpenMP 5.0 and OMPT is emerging in OpenMP runtimes. Recent versions of LLVM's OpenMP runtime, IBM's LOMP (Lightweight OpenMP Runtime) and Intel's OpenMP runtime provide emerging support for OMPT. At present, support in these implementations is known to be incomplete, especially with respect to offloading computation onto TARGET devices. 
+
+If an interaction between HPCToolkit's support for the OMPT interface and an OpenMP runtime causes problems, OMPT support may be disabled when using HPCToolkit by setting  OpenMP environment variable {\tt OMP\_TOOL} to {\tt disabled}.
+
+
+
+
+% ***************************************************************************
+% ***************************************************************************
+
+\chapter{The \hpcviewer{} User Interface}
 \label{chpt:hpcviewer-interface}
 
 \input{hpcviewer}
@@ -942,7 +983,7 @@ To isolate code that is an impediment to scalable performance, one can use the {
 % ***************************************************************************
 % ***************************************************************************
 
-\chapter{\hpctraceviewer{} User Interface}
+\chapter{The \hpctraceviewer{} User Interface}
 \label{chpt:hpctraceviewer-interface}
 
 \input{hpctraceviewer}
@@ -1207,6 +1248,28 @@ In cases such as this, you can often specify \texttt{-fast} along with an option
 
 \chapter{FAQ and Troubleshooting}
 \label{chpt:faq-troubleshooting}
+
+To measure an application's performance with \HPCToolkit, one must add
+\HPCToolkit's measurement subsystem to an application's address
+space.  
+\begin{itemize}
+\item
+For a statically-linked binary, one adds \HPCToolkit's
+measurement subsystem directly into the binary 
+by prefixing your link command
+with \HPCToolkit{}'s \hpclink{} command.  
+\item 
+For a dynamically-linked
+binary, launching your application with \HPCToolkit's \hpcrun{}
+command pre-loads \HPCToolkit's measurement subsystem into your
+application's address space before the application begins to execute. 
+\end{itemize}
+In this Chapter, for convenience, we refer to HPCToolkit's measurement
+system simply as \hpcrun{} since the measurement subsystem is most commonly used
+with dynamically-linked binaries. From the context, it should be clear enough
+whether we are talking about \HPCToolkit's measurement subsystem
+or the \hpcrun{} command itself.
+
 
 % ===========================================================================
 % ===========================================================================
@@ -1652,16 +1715,18 @@ such as {\tt select()}, {\tt poll()} or {\tt sem\_wait()}.
 % ===========================================================================
 % ===========================================================================
 
-\section{How do I debug \hpcrun{}?}
+\section{How do I debug \HPCToolkit{}'s measurement?}
 
-Assume you want to debug \hpcrun{} when collecting measurements for an application named \texttt{app}.
+Assume you want to debug \HPCToolkit{}'s measurement subsystem when 
+collecting measurements for an application named \texttt{app}.
 
 % ==========================================================
 % ==========================================================
 
 \subsection{Tracing \libmonitor{}}
 
-\hpcrun{} uses \libmonitor{} for process/thread control.
+\HPCToolkit{}'s measurement subsystem
+uses \libmonitor{} for process/thread control.
 To collect a debug trace of \libmonitor{}, use either \texttt{monitor-run} or \texttt{monitor-link}, which are located within:
 %
 \begin{quote}
@@ -1696,7 +1761,7 @@ export MONITOR_DEBUG=1
 % ==========================================================
 % ==========================================================
 
-\subsection{Tracing \hpcrun{}}
+\subsection{Tracing \HPCToolkit{}'s Measurement Subsystem}
 
 Broadly speaking, there are two levels at which a user can test \hpcrun{}.
 The first level is tracing \hpcrun{}'s application control, that is, running \hpcrun{} without an asynchronous sample source.
@@ -1738,12 +1803,33 @@ The \mytt{--dynamic-debug/HPCRUN_DEBUG_FLAGS} flag enables \hpcrun{} tracing.
 % ==========================================================
 % ==========================================================
 
-\subsection{Using \hpcrun{} with a debugger}
+\subsection{Using a debugger to inspect an execution being monitored by \HPCToolkit{}}
 
-To debug hpcrun within a debugger use the following instructions.
-Note that \hpcrun{} is easiest to debug if you configure and build \HPCToolkit{} with \texttt{configure}'s \texttt{--enable-develop} option.
-(It is not necessary to rebuild \HPCToolkit{}'s Externals.)
+If \HPCToolkit{} has trouble monitoring an application, you may find it useful to 
+execute an application being monitored by \HPCToolkit{} under the control 
+of a debugger to observe how \HPCToolkit{}'s measurement subsystem interacts with the application.
+
+\HPCToolkit{}'s measurement subsystem is easiest to debug if you configure and 
+build \HPCToolkit{} by adding the \texttt{--enable-develop} option as an argument to \texttt{configure} when preparing to build \HPCToolkit{}.
+(It is not necessary to rebuild \HPCToolkit{}'s \verb|hpctoolkit-externals|.)
 %
+
+One can debug a statically-linked or a dynamically-linked applications being measured by 
+\HPCToolkit{}'s measurement subsystem. 
+\begin{itemize}
+\item Dynamically-linked applications. When launching an application with \hpcrun{}, add the \verb|--debug| option to \hpcrun{}.
+\item Statically-linked applications. To debug a statically-linked application that has \HPCToolkit{}'s measurement subsystem linked into it, set \verb|HPCRUN_WAIT| in the environment before launching the application, e.g. 
+\begin{verbatim}
+export HPCRUN_WAIT=1
+export HPCRUN_EVENT_LIST="... the metric(s) you want to measure ..."
+app [app-arguments]
+\end{verbatim}
+\end{itemize}
+
+There are two ways to use launch an application with a debugger when using 
+To attach a debugger when monitoring an application using \hpcrun{}, add \hpcrun{}'s \verb|--debug| option 
+
+o debug hpcrun with a debugger use the following approach.
 \begin{enumerate}
 
 \item Launch your application.
@@ -1764,12 +1850,14 @@ app [app-arguments]
 \end{quote}
 
 \item Attach a debugger.
-  The debugger should be spinning in a loop whose exit is conditioned by the \verb|DEBUGGER_WAIT| variable.
+  The debugger should be spinning in a loop whose exit is conditioned by the 
+  \verb|HPCRUN_DEBUGGER_WAIT| variable.
 
 \item Set any desired breakpoints.
   To send a sampling signal at a particular point, make sure to stop at that point with a \emph{one-time} or \emph{temporary} breakpoint (\texttt{tbreak} in GDB).
 
-\item Set the \verb|DEBUGGER_WAIT| variable to 0 and continue.
+\item Call \verb|hpcrun_continue()| or set the \verb|HPCRUN_DEBUGGER_WAIT| variable to 0 
+and continue.
 
 \item To raise a controlled sampling signal, raise a SIGPROF, \eg{}, using GDB's command \verb|signal SIGPROF|.
 
@@ -2045,7 +2133,7 @@ No hpcstruct =
 
 \bibliographystyle{abbrv}
 %\bibliographystyle{acm}
-\bibliography{texmf/bibtex/bib/refs,texmf/bibtex/bib/pubs}
+\bibliography{texmf/bibtex/bib/refs,texmf/bibtex/bib/pubs,texmf/bibtex/bib/gpurefs}
 
 %\thispagestyle{plain}
 

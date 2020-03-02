@@ -383,6 +383,35 @@ isInsn_BLR(uint32_t insn)
 }
 
 
+static inline bool 
+isInsn_B(uint32_t insn)
+{ 
+  return ((insn & PPC_OP_I_MASK) == PPC_OP_B);
+}
+
+
+static inline bool 
+isInsn_BA(uint32_t insn)
+{ 
+  return ((insn & PPC_OP_I_MASK) == PPC_OP_BA);
+}
+
+
+static inline uint32_t *
+branchTarget(uint32_t insn, uint32_t *insnAddr)
+{
+  uint32_t AA = PPC_AA_MASK & insn;
+  uint32_t LI_mask =  ~PPC_OP_I_MASK;
+  uint32_t LI_hibit =  LI_mask & ~(LI_mask >> 1);
+  uint32_t LI = insn & LI_mask;
+  uint32_t LIsign = insn & LI_hibit;
+  uint64_t LI_extbits = ~((LI_hibit << 1) - 1);
+  uint64_t LIext =  LI | (LIsign ? LI_extbits : 0); 
+  uint64_t target =  LIext + (AA ? 0 : (uint64_t) insnAddr); 
+  return (uint32_t *) target;
+}
+
+
 //***************************************************************************
 
 static inline int 
@@ -667,18 +696,49 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
       }
     }
     //--------------------------------------------------
-    // interior returns/epilogues
+    // interior instruction
     //--------------------------------------------------
-    else if (isInsn_BLR(*cur_insn) && (cur_insn + 1 < end_insn)) {
-      // TODO: ensure that frame has been deallocated and mtlr issued
-      // and adjust intervals if necessary.
+    else if ((cur_insn + 1 < end_insn)) {
+      //--------------------------------------------------
+      // interior return
+      //--------------------------------------------------
+      if (isInsn_BLR(*cur_insn)) {
+	// TODO: ensure that frame has been deallocated and mtlr issued
+	// and adjust intervals if necessary.
 
-      // An interior return.  Restore the canonical interval if necessary.
-      if (!ui_cmp(ui, canon_ui)) {
-    	nxt_ui =
-    		new_ui(nextInsn(cur_insn), UWI_RECIPE(canon_ui)->sp_ty, UWI_RECIPE(canon_ui)->ra_ty,
-    		UWI_RECIPE(canon_ui)->sp_arg, UWI_RECIPE(canon_ui)->ra_arg);
-    	ui = nxt_ui;
+	// Restore the canonical interval, if necessary.
+	if (!ui_cmp(ui, canon_ui)) {
+	  nxt_ui =
+	    new_ui(nextInsn(cur_insn), UWI_RECIPE(canon_ui)->sp_ty, 
+		   UWI_RECIPE(canon_ui)->ra_ty, 
+		   UWI_RECIPE(canon_ui)->sp_arg, 
+		   UWI_RECIPE(canon_ui)->ra_arg);
+	  ui = nxt_ui;
+	}
+      } 
+      //--------------------------------------------------
+      // unconditional branch when return address is in
+      // the link register
+      //--------------------------------------------------
+      else if ((isInsn_B(*cur_insn) || isInsn_BA(*cur_insn)) && 
+	       (UWI_RECIPE(ui)->ra_ty == RATy_Reg && 
+		UWI_RECIPE(ui)->ra_arg == PPC_REG_LR)) {
+	uint32_t *target = branchTarget(*cur_insn, cur_insn);
+	//--------------------------------------------------
+	// interior tail call if branch target is outside 
+	// the current function 
+	//--------------------------------------------------
+	if (target >= end_insn || target < (uint32_t *) beg_insn) {
+	  // Restore the canonical interval, if necessary.
+	  if (!ui_cmp(ui, canon_ui)) {
+	    nxt_ui =
+	      new_ui(nextInsn(cur_insn), UWI_RECIPE(canon_ui)->sp_ty, 
+		     UWI_RECIPE(canon_ui)->ra_ty, 
+		     UWI_RECIPE(canon_ui)->sp_arg,
+		     UWI_RECIPE(canon_ui)->ra_arg);
+	    ui = nxt_ui;
+	  }
+	}
       }
     }
 
