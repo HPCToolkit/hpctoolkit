@@ -281,8 +281,7 @@ module_ignore_map_lookup
 bool
 module_ignore_map_ignore
 (
- void *start, 
- void *end
+  load_module_t* lm
 )
 {
   // Update path
@@ -294,7 +293,7 @@ module_ignore_map_ignore
   pfq_rwlock_write_lock(&modules_lock, &me);
 
 
-  load_module_t *module = hpcrun_loadmap_findByAddr(start, end);
+  load_module_t *module = lm;
 
   if (!pseudo_module_p(module->name)) {
     // this is a real load module; let's see if it contains 
@@ -319,10 +318,11 @@ module_ignore_map_ignore
 bool
 module_ignore_map_delete
 (
- void *start, 
- void *end
+ load_module_t* lm
 )
 {
+  void* start = lm->dso_info->start_addr;
+  void* end = lm->dso_info->end_addr;
   size_t i;
   bool result = false;
   pfq_rwlock_node_t me;

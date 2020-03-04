@@ -330,7 +330,7 @@ fnbounds_dso_exec(void)
 }
 
 bool
-fnbounds_ensure_mapped_dso(const char *module_name, void *start, void *end)
+fnbounds_ensure_mapped_dso(const char *module_name, void *start, void *end, struct dl_phdr_info* info)
 {
   bool isOk = true;
 
@@ -340,7 +340,12 @@ fnbounds_ensure_mapped_dso(const char *module_name, void *start, void *end)
   if (!lm) {
     dso_info_t *dso = fnbounds_compute(module_name, start, end);
     if (dso) {
-      hpcrun_loadmap_map(dso);
+      lm = hpcrun_loadmap_map(dso);
+      if (info != NULL) {
+        lm->phdr_info = *info;
+      } else {
+        lm->phdr_info.dlpi_addr = 0;
+      }
     }
     else {
       EMSG("!! INTERNAL ERROR, not possible to map dso for %s (%p, %p)",

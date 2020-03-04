@@ -82,12 +82,12 @@ hpcrun_loadmap_notify_register(loadmap_notify_t *n)
 
 
 static void
-hpcrun_loadmap_notify_map(void *start, void *end)
+hpcrun_loadmap_notify_map(load_module_t* lm)
 {
   loadmap_notify_t * n = notification_recipients;
   while (n) { 
     if (n->map) {
-      n->map(start, end);
+      n->map(lm);
     }
     n = n->next;
   }
@@ -95,12 +95,12 @@ hpcrun_loadmap_notify_map(void *start, void *end)
 
 
 static void
-hpcrun_loadmap_notify_unmap(void *start, void *end)
+hpcrun_loadmap_notify_unmap(load_module_t* lm)
 {
   loadmap_notify_t * n = notification_recipients;
   while (n) {
     if (n->unmap) {
-      n->unmap(start, end);
+      n->unmap(lm);
     }
     n = n->next;
   }
@@ -451,8 +451,7 @@ hpcrun_loadmap_map(dso_info_t* dso)
 
   }
 
-  hpcrun_loadmap_notify_map(lm->dso_info->start_addr, 
-			    lm->dso_info->end_addr);
+  hpcrun_loadmap_notify_map(lm);
 
   TMSG(LOADMAP, "hpcrun_loadmap_map: '%s' size=%d %s",
        dso->name, s_loadmap_ptr->size, msg);
@@ -499,7 +498,7 @@ hpcrun_loadmap_unmap(load_module_t* lm)
           lm->name, start_addr, end_addr);
 #endif
 
-  hpcrun_loadmap_notify_unmap(start_addr, end_addr);
+  hpcrun_loadmap_notify_unmap(lm);
 }
 
 
@@ -533,4 +532,19 @@ hpcrun_loadmap_t*
 hpcrun_getLoadmap()
 {
   return s_loadmap_ptr;
+}
+
+int
+hpcrun_loadmap_iterate
+(
+  int (*cb)(struct dl_phdr_info * info, size_t size, void* data),
+  void *data
+)
+{
+  int ret = 0;
+  for (load_module_t* x = s_loadmap_ptr->lm_head; (x); x = x->next) {        
+    ret = cb(&(x->phdr_info), sizeof(struct dl_phdr_info), data);
+    if (ret != 0) return ret;    
+  }  
+  return ret;
 }

@@ -133,7 +133,7 @@ dylib_map_open_dsos()
     char *vdso_end = vdso_start + vdso_segment_len();
     // create a real file for vdso in our measurements directory and
     // process bounds on that
-    fnbounds_ensure_mapped_dso(get_saved_vdso_path(), vdso_start, vdso_end);
+    fnbounds_ensure_mapped_dso(get_saved_vdso_path(), vdso_start, vdso_end, NULL);
   }
 }
 
@@ -146,7 +146,7 @@ void
 dylib_map_executable()
 {
   const char *executable_name = "/proc/self/exe";
-  fnbounds_ensure_mapped_dso(executable_name, NULL, NULL);
+  fnbounds_ensure_mapped_dso(executable_name, NULL, NULL , NULL);
 }
 
 
@@ -296,7 +296,7 @@ dylib_map_open_dsos_callback(struct dl_phdr_info *info, size_t size,
     // is a pseudo-file, so we can't process it directly below, which 
     // expects a real file
     if (bounds.start != vdso_start) {
-      fnbounds_ensure_mapped_dso(info->dlpi_name, bounds.start, bounds.end);
+      fnbounds_ensure_mapped_dso(info->dlpi_name, bounds.start, bounds.end, info);
     }
   }
 

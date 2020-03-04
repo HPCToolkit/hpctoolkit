@@ -8,17 +8,17 @@
 
 
 static void
-device_notify_map(void *start, void *end)
+device_notify_map(load_module_t* lm)
 {
   // TODO(Keren): improve the mechanism by inserting every module into the map and avoiding dlopen test
-  module_ignore_map_ignore(start, end);
+  module_ignore_map_ignore(lm);
 }
 
 
 static void
-device_notify_unmap(void *start, void *end)
+device_notify_unmap(load_module_t* lm)
 {
-  module_ignore_map_delete(start, end);
+  module_ignore_map_delete(lm);
 }
 
 
