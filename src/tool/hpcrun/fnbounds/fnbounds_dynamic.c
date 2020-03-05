@@ -352,6 +352,8 @@ fnbounds_ensure_mapped_dso(const char *module_name, void *start, void *end, stru
 	   module_name, start, end);
       isOk = false;
     }
+  } else if (lm->phdr_info.dlpi_addr == 0) {
+    if (info != NULL) lm->phdr_info = *info;
   }
 
   return isOk;
