@@ -69,13 +69,14 @@
  *****************************************************************************/
 
 #define KERNEL_BLOCKING_DEBUG 0
+#define METRIC_HIDDEN         0
 
 // -----------------------------------------------------
 // Predefined events
 // -----------------------------------------------------
 
 #define EVNAME_KERNEL_BLOCK     "BLOCKTIME"
-#define EVNAME_CONTEXT_SWITCHES "CS"
+#define EVNAME_CONTEXT_SWITCHES "CNTXT_SWTCH"
 
 
 //******************************************************************************
@@ -239,6 +240,11 @@ register_blocking(sample_source_t *self, kind_info_t *kb_kind,
     hpcrun_set_new_metric_info_and_period(
       kb_kind, EVNAME_CONTEXT_SWITCHES,
       MetricFlags_ValFmt_Real, 1 /* period*/, metric_property_none);
+
+  event_desc->metric_desc = 
+    hpcrun_id2metric_linked(event_desc->hpcrun_metric_id); 
+
+  event_desc->metric_desc->flags.fields.show = METRIC_HIDDEN;
 
   // ------------------------------------------
   // set context switch event description to be used when creating

@@ -38,6 +38,7 @@
 
 <h1 class="settitle" align="center">Current Spack Issues for HPCToolkit</h1>
 
+
 <a name="SEC_Contents"></a>
 <h2 class="contents-heading">Table of Contents</h2>
 
@@ -72,6 +73,7 @@
 </div>
 
 
+
 <a name="Introduction"></a>
 <h3 class="section">1 Introduction</h3>
 
@@ -79,7 +81,9 @@
 Normally, HPCToolkit will build and run successfully with the latest
 version of all of its prerequisite packages, but sometimes not.  This
 page covers the current known issues where HPCToolkit fails to build
-with the latest version of spack.
+with the latest version of spack.  The main build directions are at:
+</p>
+<p><a href="software-instructions.html">software-instructions.html</a>
 </p>
 <p>Report problems to <code>hpctoolkit-forum at rice dot edu</code>.  But before
 reporting a problem, first try the versions recommended in the
@@ -91,7 +95,7 @@ on the hpctoolkit web site.
 <pre class="example"><a href="http://hpctoolkit.org/spack-issues.html">http://hpctoolkit.org/spack-issues.html</a>
 </pre></div>
 
-<p>Last revised: Dec 1, 2019.
+<p>Last revised: Feb 28, 2020.
 </p>
 
 <a name="Current-Issues"></a>
@@ -113,21 +117,11 @@ micro-architecture targets.
 <pre class="example">spack arch --known-targets
 </pre></div>
 
-<p><b>Workaround:</b> Although a fresh install from scratch should work and
-usually does work, there may be some packages or corner cases that can&rsquo;t
-handle the micro-arch specs.  If you prefer to avoid this change until
-the dust settles, then use commit <code>a940ff34d745</code> from Sept 19,
-2019.
-</p>
-<div class="example">
-<pre class="example">git clone https://github.com/spack/spack.git
-cd spack
-git checkout a940ff34d745
-</pre></div>
-
-<p><b>Workaround:</b> A better workaround is to use the current develop head
-but build for a generic family instead of the micro-arch target.  Use
-the <code>target</code> option to specify the arch family.  For example:
+<p><b>Workaround:</b> Instead of building for the micro-arch target, you can
+use the <code>target</code> option to build for a generic architecture
+family (x86_64, ppc64, ppc64le, aarch64).  This is also useful for
+creating a shared install that needs to work across multiple machines
+with different micro-arch types.  For example:
 </p>
 <div class="example">
 <pre class="example">spack install hpctoolkit ... target=x86_64
@@ -240,7 +234,7 @@ solution is to remove the test for <code>python3</code> in the
 &quot;&quot;&quot;:&quot;
 # prefer python3, then python, then python2
 for cmd in python3 python python2; do
-   command -v &gt; /dev/null $cmd &amp;&amp; exec $cmd $0 &quot;$"
+   command -v &gt; /dev/null $cmd &amp;&amp; exec $cmd $0 &quot;$@&quot;
 done
 </pre></div>
 
