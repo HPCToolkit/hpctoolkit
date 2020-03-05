@@ -45,6 +45,9 @@
 #define gpu_trace_channel_h
 
 
+#include <lib/prof-lean/bichannel.h>
+#include <pthread.h>
+
 
 //******************************************************************************
 // local includes
@@ -61,7 +64,14 @@
 
 typedef struct gpu_trace_channel_t gpu_trace_channel_t;
 
+typedef struct gpu_trace_channel_t {
+    bistack_t bistacks[2];
+    pthread_mutex_t mutex;
+    pthread_cond_t cond;
+    uint64_t count;
+    thread_data_t *td;
 
+} gpu_trace_channel_t;
 //******************************************************************************
 // interface operations 
 //******************************************************************************
@@ -84,9 +94,7 @@ gpu_trace_channel_produce
 void
 gpu_trace_channel_consume
 (
- gpu_trace_channel_t *channel,
- thread_data_t *td, 
- gpu_trace_item_consume_fn_t trace_item_consume
+ gpu_trace_channel_t *channel
 );
 
 

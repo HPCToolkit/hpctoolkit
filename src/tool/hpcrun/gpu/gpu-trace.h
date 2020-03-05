@@ -54,6 +54,7 @@
 
 
 
+
 //******************************************************************************
 // forward declarations
 //******************************************************************************
@@ -68,7 +69,7 @@ typedef struct gpu_trace_t gpu_trace_t;
 
 typedef struct gpu_trace_item_t gpu_trace_item_t;
 
-
+typedef struct thread_trace_data thread_trace_data;
 
 //******************************************************************************
 // type declarations
@@ -76,17 +77,26 @@ typedef struct gpu_trace_item_t gpu_trace_item_t;
 
 typedef void (*gpu_trace_fn_t)
 (
- gpu_trace_t *trace, 
+ gpu_trace_t *trace,
  gpu_trace_item_t *ti
 );
 
+////TODO: Forward declaration: This is copied from gpu-trace-channel.c
+//typedef struct gpu_trace_channel_t {
+//    bistack_t bistacks[2];
+//    pthread_mutex_t mutex;
+//    pthread_cond_t cond;
+//    uint64_t count;
+//    thread_data_t *td;
+//
+//} gpu_trace_channel_t;
 
 
 //******************************************************************************
 // interface operations
 //******************************************************************************
 
-void 
+void
 gpu_trace_init
 (
  void
@@ -103,11 +113,13 @@ gpu_trace_create
 void *
 gpu_trace_record
 (
+
  gpu_trace_t *thread_args
+
 );
 
 
-void 
+void
 gpu_trace_produce
 (
  gpu_trace_t *t,
@@ -115,7 +127,7 @@ gpu_trace_produce
 );
 
 
-void 
+void
 gpu_trace_signal_consumer
 (
  gpu_trace_t *t
@@ -128,6 +140,24 @@ gpu_trace_fini
  void *arg
 );
 
+/*static*/ thread_data_t *
+gpu_trace_stream_acquire(void);
 
+/*static*/ void
+gpu_trace_stream_release
+        (
+//                thread_data_t *td
+        gpu_trace_channel_t *channel
+        );
+
+
+/*static*/ void
+consume_one_trace_item
+        (
+                thread_data_t* td,
+                cct_node_t *call_path,
+                uint64_t start_time,
+                uint64_t end_time
+        );
 
 #endif 

@@ -49,8 +49,13 @@
 
 #include <hpcrun/memory/hpcrun-malloc.h>
 
+
+#include <hpcrun/thread_data.h>
+
 #include "gpu-trace-channel.h"
 #include "gpu-trace-channel-set.h"
+
+#include "gpu-trace.h"
 
 
 
@@ -76,10 +81,29 @@
 // type declarations
 //******************************************************************************
 
+//TODO: Forward Declaration: This is the same like in gpu-trace.c -> include it from there
+typedef struct gpu_trace_t {
+    pthread_t thread;
+    gpu_trace_channel_t *trace_channel;
+
+    // dejan:temporarly added
+    unsigned int map_id;
+} gpu_trace_t;
+
+////TODO: Forward declaration: This is copied from gpu-trace-channel.c
+//typedef struct gpu_trace_channel_t {
+//    bistack_t bistacks[2];
+//    pthread_mutex_t mutex;
+//    pthread_cond_t cond;
+//    uint64_t count;
+//    thread_data_t *td;
+//
+//} gpu_trace_channel_t;
+
+
 //----------------------------------------------------------
 // support for a stack of trace channels
 //----------------------------------------------------------
-
 typedef gpu_trace_channel_t *gpu_trace_channel_ptr_t;
 
 
@@ -98,7 +122,7 @@ typed_stack_declare_type(gpu_trace_channel_ptr_t);
 //******************************************************************************
 
 
-static 
+static
 typed_stack_elem_ptr(gpu_trace_channel_ptr_t)
 gpu_trace_channel_stack[MAX_THREADS_CONSUMERS];
 
@@ -132,10 +156,12 @@ static void
 gpu_trace_channel_set_forall
 (
  gpu_trace_channel_fn_t channel_fn,
- int thread_num
+ int channel_num
+
 )
 {
-  channel_stack_forall( & gpu_trace_channel_stack[thread_num], channel_forone,
+
+  channel_stack_forall( &gpu_trace_channel_stack[ channel_num ], channel_forone,
 		       channel_fn);
 }
 
@@ -147,7 +173,7 @@ gpu_trace_channel_set_forall
 void
 gpu_trace_channel_set_insert
 (
-// gpu_trace_channel_t *channel
+ gpu_trace_channel_t *channel,
  int thread_num
 )
 {
@@ -155,21 +181,50 @@ gpu_trace_channel_set_insert
   channel_stack_elem_t *e = 
     (channel_stack_elem_t *) hpcrun_malloc_safe(sizeof(channel_stack_elem_t));
 
+
+  // Alocate all things needed by stream
+  channel->td = gpu_trace_stream_acquire();
+
   // initialize the new entry
-//  e->channel = channel;
-  e->channel = gpu_trace_channel_stack[thread_num];
+  e->channel = channel;
+
   channel_stack_elem_ptr_set(e, 0); // clear the entry's next ptr
 
   // add the entry to the channel stack
-  channel_stack_push(&gpu_trace_channel_stack, e);
+  channel_stack_push(&gpu_trace_channel_stack[thread_num], e);
 }
 
 
 void
 gpu_trace_channel_set_consume
 (
- int thread_num
+ int channel_num
+//
 )
 {
-  gpu_trace_channel_set_forall(gpu_trace_channel_consume, thread_num);
+    printf("gpu_trace_channel_set_consume: Thread_ID = %d\n\n", channel_num);
+  gpu_trace_channel_set_forall(gpu_trace_channel_consume, channel_num);
+
+}
+
+void get_buffer_size(int *channel_size){
+    (*channel_size)++;
+}
+
+
+int gpu_trace_channel_size(int channel_id){
+
+    int *channel_size = (int *)malloc(sizeof(int)) ;
+
+    *channel_size = 0;
+
+    channel_stack_forall( &gpu_trace_channel_stack[ channel_id ], get_buffer_size, channel_size);
+
+    return channel_size;
+}
+
+int gpu_trace_channel_set_release(int channel_num) {
+
+    gpu_trace_channel_set_forall(gpu_trace_stream_release, channel_num);
+
 }
