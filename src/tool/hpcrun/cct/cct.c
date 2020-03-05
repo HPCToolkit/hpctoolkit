@@ -1191,3 +1191,11 @@ hpcrun_cct_set_parent(cct_node_t* cct, cct_node_t* parent)
   cct->parent = parent;
 }
 
+cct_node_t*
+hpcrun_insert_special_node(cct_node_t *root, void *addr)
+{
+  ip_normalized_t tmp_ip = hpcrun_normalize_ip(addr, NULL);
+  // plus 1 make sure lm_ip points to the correct callsite
+  cct_addr_t tmp = ADDR2(tmp_ip.lm_id, tmp_ip.lm_ip+1);
+  return hpcrun_cct_insert_addr(root, &tmp);
+}

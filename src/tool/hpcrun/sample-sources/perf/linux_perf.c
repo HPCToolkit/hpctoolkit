@@ -896,7 +896,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     if (!is_period) {
       threshold = 1;
     }
-    METHOD_CALL(self, store_event, event_attr->config, threshold);
+    METHOD_CALL(self, store_event_and_info, event_attr->config, threshold, metric, event_info);
     free(name);
   }
 
