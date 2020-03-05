@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -135,7 +135,7 @@ event_custom_register(event_custom_t *event)
  * returns 0 if the name is not part of custom events
  */
 int
-event_custom_create_event(sample_source_t *self, char *name)
+event_custom_create_event(sample_source_t *self, kind_info_t *kb_kind, char *name)
 {
   event_custom_t *event = event_custom_find(name);
 
@@ -146,7 +146,7 @@ event_custom_create_event(sample_source_t *self, char *name)
   struct event_threshold_s default_threshold;
   perf_util_get_default_threshold( &default_threshold );
 
-  return event->register_fn(self, event, &default_threshold);
+  return event->register_fn(self, kb_kind, event, &default_threshold);
 }
 
 event_accept_type_t

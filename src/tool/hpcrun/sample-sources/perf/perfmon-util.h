@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -53,6 +53,7 @@ int pfmu_showEventList();
 int pfmu_isSupported(const char *eventname);
 int pfmu_getEventType(const char *eventname, u64 *code, u64 *type);
 int pfmu_getEventAttribute(const char *eventname, struct perf_event_attr *event_attr);
+const char* pfmu_getEventDescription(const char *event_name);
 
 void pfmu_fini();
 

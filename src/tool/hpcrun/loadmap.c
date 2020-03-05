@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -93,9 +93,11 @@ static void
 hpcrun_loadmap_notify_map(void *start, void *end)
 {
   loadmap_notify_t * n = notification_recipients;
-  while (n) {
-     n->map(start, end);
-     n = n->next;
+  while (n) { 
+    if (n->map) {
+      n->map(start, end);
+    }
+    n = n->next;
   }
 }
 
@@ -105,8 +107,10 @@ hpcrun_loadmap_notify_unmap(void *start, void *end)
 {
   loadmap_notify_t * n = notification_recipients;
   while (n) {
-     n->unmap(start, end);
-     n = n->next;
+    if (n->unmap) {
+      n->unmap(start, end);
+    }
+    n = n->next;
   }
 }
 

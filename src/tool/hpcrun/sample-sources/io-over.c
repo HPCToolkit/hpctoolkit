@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -235,6 +235,7 @@ MONITOR_EXT_WRAP_NAME(fread)(void *ptr, size_t size, size_t count, FILE *stream)
 
   // insert samples before and after the slow functions to make the
   // traces look better.
+
   getcontext(&uc);
   hpcrun_sample_callpath(&uc, metric_id_read, 
             (hpcrun_metricVal_t) {.i=0}, 

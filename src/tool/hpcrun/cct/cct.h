@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -102,9 +102,16 @@
 #define ADDR(L)      (cct_addr_t) NON_LUSH_ADDR_INI(L)
 #define ADDR2_I(id, ip) NON_LUSH_ADDR_INI(id, ip)
 #define ADDR2(id, ip) (cct_addr_t) ADDR2_I(id, ip)
+#define HPCRUN_DUMMY_NODE 65534
+
 //***************************************************************************
 // Calling context tree node (abstract data type)
 //***************************************************************************
+
+
+#define IS_PARTIAL_ROOT(addr) \
+	(addr->ip_norm.lm_id == HPCRUN_FMT_LMId_NULL) && \
+	(addr->ip_norm.lm_ip == HPCRUN_FMT_LMIp_Flag1)
 
 typedef struct cct_node_t cct_node_t;
 //
@@ -130,9 +137,12 @@ extern cct_node_t* hpcrun_cct_top_new(uint16_t lmid, uintptr_t lmip);
 // 
 
 extern cct_node_t* hpcrun_cct_parent(cct_node_t* node);
+extern cct_node_t* hpcrun_cct_children(cct_node_t* node);
 extern int32_t hpcrun_cct_persistent_id(cct_node_t* node);
 extern cct_addr_t* hpcrun_cct_addr(cct_node_t* node);
 extern bool hpcrun_cct_is_leaf(cct_node_t* node);
+extern cct_node_t* hpcrun_cct_insert_path_return_leaf(cct_node_t *root, cct_node_t *path);
+extern void hpcrun_cct_delete_self(cct_node_t *node);
 //
 // NOTE: having no children is not exactly the same as being a leaf
 //       A leaf represents a full path. There might be full paths
@@ -140,10 +150,13 @@ extern bool hpcrun_cct_is_leaf(cct_node_t* node);
 //
 extern bool hpcrun_cct_no_children(cct_node_t* node);
 extern bool hpcrun_cct_is_root(cct_node_t* node);
+extern bool hpcrun_cct_is_dummy(cct_node_t* node);
 
 //
 // Mutator functions: modify a given cct
 //
+
+extern cct_node_t* hpcrun_cct_insert_ip_norm(cct_node_t* node, ip_normalized_t ip_norm);
 
 //
 // Fundamental mutation operation: insert a given addr into the
@@ -153,6 +166,11 @@ extern bool hpcrun_cct_is_root(cct_node_t* node);
 // and returned]
 //
 extern cct_node_t* hpcrun_cct_insert_addr(cct_node_t* cct, cct_addr_t* addr);
+
+//
+// Insert a dummy node to represent the callback function by hpcrun, which will
+// be eliminated before writing out the cct.
+extern cct_node_t* hpcrun_cct_insert_dummy(cct_node_t* node, uint16_t lm_ip);
 
 //
 // 2nd fundamental mutator: mark a node as "terminal". That is,
@@ -256,7 +274,7 @@ int hpcrun_cct_fwrite(cct2metrics_t* cct2metrics_map,
 //
 // Utilities
 //
-extern size_t hpcrun_cct_num_nodes(cct_node_t* cct);
+extern size_t hpcrun_cct_num_nodes(cct_node_t* cct, bool count_dummy);
 //
 // look up addr in the set of cct's children
 // return the found node or NULL
@@ -280,10 +298,6 @@ extern void hpcrun_cct_merge(cct_node_t* cct_a, cct_node_t* cct_b,
 
 cct_node_t*
 hpcrun_insert_special_node(cct_node_t *root, void *addr);
-
-cct_node_t*
-hpcrun_cct_insert_path_return_leaf(cct_node_t *path, cct_node_t *root);
-
 
 
 
@@ -313,6 +327,32 @@ void
 hpcrun_cct_set_node_unknown_attribute(cct_node_t *root);
 
 void
+hpcrun_cct_set_node_type(cct_node_id_t node, uint32_t node_type);
+
+void
 hpcrun_cct_link_source_memaccess(cct_node_t *node, cct_node_t *source);
+
+
+// FIXME: This should not be here vi3: allocation and free cct_node_t
+extern __thread cct_node_t* cct_node_freelist_head;
+
+cct_node_t* hpcrun_cct_node_alloc();
+void hpcrun_cct_node_free(cct_node_t *cct);
+// remove Children from cct
+void cct_remove_my_subtree(cct_node_t* cct);
+
+
+
+
+// for hpcrun_cct_walkset_merge
+typedef cct_node_t* (*cct_op_merge_t)(cct_node_t* cct, cct_op_arg_t arg, size_t level);
+extern void hpcrun_cct_walkset_merge(cct_node_t* cct, cct_op_merge_t fn, cct_op_arg_t arg);
+
+
+// copy cct node
+cct_node_t* hpcrun_cct_copy_just_addr(cct_node_t *cct);
+void hpcrun_cct_set_children(cct_node_t* cct, cct_node_t* children);
+void hpcrun_cct_set_parent(cct_node_t* cct, cct_node_t* parent);
+
 
 #endif // cct_h

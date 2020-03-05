@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2019, Rice University
+## Copyright ((c)) 2002-2020, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -126,9 +126,6 @@ if OPT_ENABLE_HPCRUN_DYNAMIC
   pkglib_LTLIBRARIES += libhpcrun_io.la
   pkglib_LTLIBRARIES += libhpcrun_memleak.la
   pkglib_LTLIBRARIES += libhpcrun_pthread.la
-if OPT_ENABLE_CUDA
-  pkglib_LTLIBRARIES += libhpcrun_gpu.la
-endif
   pkglib_LTLIBRARIES += libhpctoolkit.la
   bin_SCRIPTS += scripts/hpcrun
 endif
@@ -141,9 +138,6 @@ if OPT_ENABLE_HPCRUN_STATIC
   pkglib_LIBRARIES += libhpcrun_io_wrap.a
   pkglib_LIBRARIES += libhpcrun_memleak_wrap.a
   pkglib_LIBRARIES += libhpcrun_pthread_wrap.a
-if OPT_ENABLE_CUDA
-  pkglib_LIBRARIES += libhpcrun_gpu_wrap.a
-endif
   pkglib_LIBRARIES += libhpctoolkit.a
   bin_SCRIPTS += scripts/hpclink
 endif
@@ -157,6 +151,8 @@ endif
 # source files, part 1
 #-----------------------------------------------------------
 
+LIBELF_INC   = @LIBELF_INC@
+LIBELF_LIB   = @LIBELF_LIB@
 LIBMONITOR_INC = @LIBMONITOR_INC@
 LIBMONITOR_LIB = @LIBMONITOR_LIB@
 PAPI_INC_FLGS =  @OPT_PAPI_IFLAGS@ 
@@ -165,6 +161,7 @@ XED2_INC = @XED2_INC@
 XED2_HPCRUN_LIBS =  @XED2_HPCRUN_LIBS@
 XED2_HPCLINK_LIBS = @XED2_HPCLINK_LIBS@
 CUPTI_INC_FLGS = @OPT_CUPTI_IFLAGS@
+CUPTI_LD_FLGS = @OPT_CUPTI_LDFLAGS@
 CUPTI_BASE = @OPT_CUPTI@
 
 MPI_INC = @MPI_INC@
@@ -198,6 +195,7 @@ UNW_COMMON_FILES = \
 	unwind/common/interval_t.c			\
 	unwind/common/libunw_intervals.c		\
 	unwind/common/stack_troll.c			\
+	unwind/common/uw_hash.c			\
 	unwind/common/uw_recipe_map.c
 
 UNW_X86_FILES = \
@@ -210,6 +208,7 @@ UNW_X86_FILES = \
 	unwind/x86-family/x86-unwind-interval-fixup.c	\
 	unwind/x86-family/x86-unwind.c		        \
 	unwind/x86-family/x86-unwind-support.c		\
+	unwind/x86-family/manual-intervals/x86-gcc-adjust.c \
 	unwind/x86-family/manual-intervals/x86-gcc-main64.c \
 	unwind/x86-family/manual-intervals/x86-linux-dlresolver.c \
 	unwind/x86-family/manual-intervals/x86-intel11-f90main.c \
@@ -221,6 +220,7 @@ UNW_X86_FILES = \
 	unwind/x86-family/manual-intervals/x86-fail-intervals.c \
 	unwind/x86-family/manual-intervals/x86-pgi-mp_pexit.c
 
+# unwind/x86-family/x86-libunwind.c  # presently unused on x86
 
 UNW_X86_INCLUDE_DIRS = \
 	-I$(srcdir)/unwind/x86-family	\
@@ -266,19 +266,23 @@ UNW_MIPS_LD_FLAGS =
 
 MY_CPP_DEFINES =			\
 	-D_GNU_SOURCE			\
-	-DINLINE_FN=1
+	-DINLINE_FN=1 \
+	-DLOCAL_BUILD=1 \
+	-D__HIP_PLATFORM_HCC__=1
 
 MY_BASE_FILES =				\
 	utilities/first_func.c		\
 	\
 	main.h main.c			\
 	disabled.c			\
-	cct_insert_backtrace.c          \
-	cct_backtrace_finalize.c        \
+        closure-registry.c              \
+        cct_insert_backtrace.c          \
+        cct_backtrace_finalize.c        \
 	env.c				\
 	epoch.c				\
 	files.c				\
 	handling_sample.c		\
+	hpcrun-initializers.c		\
 	hpcrun_options.c		\
 	hpcrun_stats.c			\
 	loadmap.c			\
@@ -288,10 +292,14 @@ MY_BASE_FILES =				\
 	sample_event.c			\
 	sample_prob.c			\
 	sample_sources_all.c		\
-	sample-sources/blame-shift/blame-shift.c        \
-	sample-sources/blame-shift/blame-map.c          \
-	sample-sources/common.c         \
-	sample-sources/display.c	\
+	sample-sources/blame-shift/blame-shift.c \
+	sample-sources/blame-shift/blame-map.c   \
+	sample-sources/blame-shift/directed.c    \
+	sample-sources/blame-shift/undirected.c    \
+	sample-sources/omp-mutex.c      \
+	sample-sources/omp-idle.c       \
+        sample-sources/common.c         \
+	sample-sources/display.c		\
 	sample-sources/ga.c		\
 	sample-sources/io.c 		\
 	sample-sources/itimer.c		\
@@ -299,14 +307,22 @@ MY_BASE_FILES =				\
 	sample-sources/memleak.c	\
 	sample-sources/pthread-blame.c  \
 	sample-sources/none.c           \
-	sample-sources/retcnt.c         \
-	sample-sources/sync.c           \
+        sample-sources/retcnt.c         \
+        sample-sources/sync.c           \
 	sample_sources_registered.c	\
+	sample-sources/sample-filters.c \
 	segv_handler.c			\
 	start-stop.c			\
 	term_handler.c			\
 	thread_data.c			\
 	thread_use.c			\
+	thread_finalize.c		\
+	control-knob.c   \
+	control-knob.h   \
+	hpcrun_flag_stacks.c \
+	device-finalizers.c \
+	device-initializers.c \
+	module-ignore-map.c \
 	threadmgr.c			\
 	trace.c				\
 	weak.c				\
@@ -315,12 +331,13 @@ MY_BASE_FILES =				\
 	cct/cct_bundle.c		\
 	cct/cct_ctxt.c			\
 	cct/cct.c               	\
+	cct/cct-node-vector.c     \
 	\
 	cct2metrics.c                   \
 	\
 	data_tree.c	\
-	\
-	trampoline/common/trampoline.c  \
+##	\
+##	trampoline/common/trampoline.c  \
 	\
 	lush/lush-backtrace.h lush/lush-backtrace.c \
 	lush/lush.h lush/lush.c	\
@@ -339,12 +356,60 @@ MY_BASE_FILES =				\
 	messages/messages-sync.c	\
 	messages/messages-async.c	\
 	messages/fmt.c	                \
+	hpcrun-placeholders.c 		\
+	gpu/gpu-activity.c 		\
+	gpu/gpu-activity-channel.c 	\
+	gpu/gpu-activity-process.c 	\
+	gpu/gpu-application-thread-api.c \
+	gpu/gpu-channel-item-allocator.c \
+	gpu/gpu-context-id-map.c	\
+	gpu/gpu-correlation.c 		\
+	gpu/gpu-correlation-channel.c 	\
+	gpu/gpu-correlation-channel-set.c \
+	gpu/gpu-correlation-id.c	\
+	gpu/gpu-correlation-id-map.c 	\
+	gpu/gpu-event-id-map.c \
+	gpu/gpu-function-id-map.c \
+	gpu/gpu-host-correlation-map.c 	\
+	gpu/gpu-metrics.c 		\
+	gpu/gpu-monitoring.c 		\
+	gpu/gpu-monitoring-thread-api.c \
+	gpu/gpu-op-placeholders.c 	\
+	gpu/gpu-splay-allocator.c	\
+	gpu/gpu-stream-id-map.c		\
+	gpu/gpu-trace.c			\
+	gpu/gpu-trace-channel.c		\
+	gpu/gpu-trace-item.c		\
+	\
+	ompt/ompt-callstack.c           \
+	ompt/ompt-defer.c               \
+	ompt/ompt-device.c              \
+	ompt/ompt-defer-write.c         \
+	ompt/ompt-interface.c           \
+	ompt/ompt-queues.c              \
+	ompt/ompt-region.c              \
+	ompt/ompt-region-debug.c        \
+	ompt/ompt-placeholders.c        \
+	ompt/ompt-device-map.c          \
+	ompt/ompt-task.c                \
+	ompt/ompt-thread.c              \
 	\
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
 	utilities/line_wrapping.c	\
+	utilities/timer.c		\
 	utilities/tokenize.h utilities/tokenize.c \
 	utilities/unlink.h utilities/unlink.c
+
+# 	gpu/gpu-api.c
+
+if HOST_CPU_PPC
+MY_BASE_FILES +=			\
+        trampoline/common/trampoline_eager.c
+else
+MY_BASE_FILES +=			\
+        trampoline/common/trampoline_lazy.c
+endif
 
 if OPT_ENABLE_PERF_EVENT
 MY_BASE_FILES +=  \
@@ -466,11 +531,32 @@ MY_PAPI_FILES = \
     sample-sources/papi-c.c \
     sample-sources/papi-c-extended-info.c
 else
-MY_PAPI_FILES = sample-sources/papi.c
+    MY_PAPI_FILES = sample-sources/papi.c
 endif
 
 if OPT_PAPI_CUPTI
-MY_PAPI_FILES += sample-sources/papi-c-cupti.c
+    MY_PAPI_FILES += sample-sources/papi-c-cupti.c
+endif
+
+if OPT_ENABLE_CUPTI
+MY_CUPTI_FILES = sample-sources/nvidia.c	\
+	gpu/nvidia/cubin-hash-map.c		\
+	gpu/nvidia/cubin-id-map.c		\
+	gpu/nvidia/cubin-symbols.c		\
+	gpu/nvidia/cuda-api.c			\
+	gpu/nvidia/cuda-device-map.c		\
+	gpu/nvidia/cupti-activity-translate.c	\
+	gpu/nvidia/cupti-analysis.c		\
+	gpu/nvidia/cupti-api.c			\
+	gpu/nvidia/cupti-gpu-api.c		
+endif
+
+
+if OPT_ENABLE_ROCM
+MY_ROCM_FILES=\
+	sample-sources/amd.c \
+	gpu/amd/roctracer-activity-translate.c \
+	gpu/amd/roctracer-api.c 	
 endif
 
 MY_UPC_FILES = sample-sources/upc.c
@@ -490,12 +576,15 @@ MY_INCLUDE_DIRS =			\
 	-I$(srcdir)/memory		\
 	-I$(srcdir)/os/linux		\
 	-I$(srcdir)/cct			\
+	-I$(srcdir)/ompt                \
 	-I$(srcdir)/unwind/common	\
 	-I$(srcdir)/utilities		\
 	$(HPC_IFLAGS)			\
 	$(LIBUNWIND_IFLAGS)		\
 	-I$(HPCFNBOUNDS_INC)		\
+        $(OPT_CUDA_IFLAGS)             \
         $(OPT_CUPTI_IFLAGS)             \
+	-I$(LIBELF_INC)			\
 	-I$(LIBMONITOR_INC)
 
 MY_MIPS_INCLUDE_DIRS = \
@@ -554,16 +643,6 @@ libhpcrun_pthread_la_SOURCES = 		\
 
 libhpcrun_pthread_wrap_a_SOURCES = 	\
 	sample-sources/pthread-blame-overrides.c
-
-libhpcrun_gpu_la_SOURCES = 		\
-	sample-sources/gpu_blame-overrides.c \
-	gpu_blame-driver-overrides-generated.c \
-	gpu_blame-runtime-overrides-generated.c
-
-libhpcrun_gpu_wrap_a_SOURCES = 	\
-	sample-sources/gpu_blame-overrides.c  \
-	gpu_blame-driver-overrides-generated.c \
-	gpu_blame-runtime-overrides-generated.c
 
 libhpcrun_mpi_la_SOURCES = 		\
 	./mpi-overrides.c
@@ -649,15 +728,6 @@ libhpcrun_pthread_wrap_a_CPPFLAGS =	\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
 
-libhpcrun_gpu_la_CPPFLAGS =		\
-	$(MY_CPP_DEFINES)		\
-	$(MY_INCLUDE_DIRS)
-
-libhpcrun_gpu_wrap_a_CPPFLAGS =	\
-	-DHPCRUN_STATIC_LINK		\
-	$(MY_CPP_DEFINES)		\
-	$(MY_INCLUDE_DIRS)
-
 libhpcrun_mpi_la_CPPFLAGS =		\
 	$(MY_CPP_DEFINES)		\
 	-I$(MPI_INC)			\
@@ -671,46 +741,6 @@ libhpctoolkit_a_CPPFLAGS =		\
 	-DHPCRUN_STATIC_LINK		\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
-
-
-CUDA_TABLES = gpu_blame-cuda-driver-table.c gpu_blame-cuda-runtime-table.c
-CUDA_FILES = sample-sources/gpu_blame.c sample-sources/gpu_ctxt_actions.c $(CUDA_TABLES)
-
-if OPT_ENABLE_CUDA
-
-generated_file_base = .
-generated_file_src_path = $(srcdir)/sample-sources
-
-generated_cuda_driver_files = $(addprefix $(generated_file_base)/, gpu_blame-cuda-driver-header.h gpu_blame-cuda-driver-table.c gpu_blame-driver-overrides-generated.c)
-generated_cuda_driver_api_files = $(addprefix $(generated_file_base)/, cuda_driver_apis.h)
-generated_cuda_runtime_files = $(addprefix $(generated_file_base)/, gpu_blame-cuda-runtime-header.h gpu_blame-cuda-runtime-table.c gpu_blame-runtime-overrides-generated.c)
-generated_cuda_runtime_api_files = $(addprefix $(generated_file_base)/, cuda_runtime_apis.h)
-
-BUILT_SOURCES += $(generated_cuda_driver_files) $(generated_cuda_driver_api_files) $(generated_cuda_runtime_files) $(generated_cuda_runtime_api_files)
-
-CLEANFILES  +=  $(generated_cuda_driver_files) $(generated_cuda_driver_api_files) $(generated_cuda_runtime_files) $(generated_cuda_runtime_api_files)
-
-$(generated_cuda_runtime_api_files) : $(generated_file_src_path)/cuda_runtime_dummy.c
-	$(CC) $(OPT_CUDA_IFLAGS) -E -B -c $(generated_file_src_path)/cuda_runtime_dummy.c  -o  $(generated_file_base)/cuda_runtime_apis.h 
-
-$(generated_cuda_runtime_files) : $(generated_file_src_path)/make-cuda-wrappers.py $(generated_cuda_runtime_api_files)
-	$(PYTHON) $(generated_file_src_path)/make-cuda-wrappers.py runtime $(generated_cuda_runtime_api_files) $(generated_cuda_runtime_files)
-
-$(generated_file_base)/gpu_blame-cuda-runtime-header.h:  $(generated_file_base)/gpu_blame-cuda-runtime-table.c
-
-$(generated_file_base)/gpu_blame-cuda-runtime-table.c: $(generated_file_base)/gpu_blame-runtime-overrides-generated.c
-
-$(generated_cuda_driver_api_files) :  $(generated_file_src_path)/cuda_driver_dummy.c
-	$(CC) $(OPT_CUDA_IFLAGS)  -E -B -c $(generated_file_src_path)/cuda_driver_dummy.c -o $(generated_file_base)/cuda_driver_apis.h
-
-$(generated_cuda_driver_files) : $(generated_file_src_path)/make-cuda-wrappers.py $(generated_cuda_driver_api_files) 
-	$(PYTHON) $(generated_file_src_path)/make-cuda-wrappers.py driver $(generated_cuda_driver_api_files)  $(generated_cuda_driver_files)
-
-$(generated_file_base)/gpu_blame-cuda-driver-header.h : $(generated_file_base)/gpu_blame-cuda-driver-table.c
-
-$(generated_file_base)/gpu_blame-cuda-driver-table.c : $(generated_file_base)/gpu_blame-driver-overrides-generated.c
-
-endif
 
 if OPT_ENABLE_MPI_WRAP
 
@@ -742,8 +772,6 @@ libhpcrun_memleak_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_memleak_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_pthread_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_pthread_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
-libhpcrun_gpu_la_CFLAGS = -g $(CFLAGS) $(HOST_CFLAGS)
-libhpcrun_gpu_wrap_a_CFLAGS = -g $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_mpi_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 
 
@@ -760,9 +788,9 @@ if OPT_BGQ_BACKEND
 endif
 
 libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic 	\
-	-L$(LIBMONITOR_LIB) -lmonitor -lpthread -lrt \
+	-L$(LIBMONITOR_LIB) -lmonitor -lpthread -lrt -lelf -L$(LIBELF_LIB)  \
         $(LIBUNWIND_LDFLAGS_DYN) $(LZMA_LDFLAGS_DYN) \
-        $(PERFMON_LDFLAGS_DYN)
+        $(PERFMON_LDFLAGS_DYN) $(MBEDTLS_LIBS) $(OPT_ROCM_LDFLAGS)
 
 libhpcrun_datacentric_la_LDFLAGS = -Wl,-Bsymbolic
 
@@ -773,8 +801,6 @@ libhpcrun_io_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_memleak_la_LDFLAGS = -Wl,-Bsymbolic
 
 libhpcrun_pthread_la_LDFLAGS = -Wl,-Bsymbolic
-
-libhpcrun_gpu_la_LDFLAGS = -Wl,-Bsymbolic
 
 libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic
 
@@ -811,8 +837,6 @@ if HOST_CPU_MIPS
   libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
   libhpcrun_pthread_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
   libhpcrun_pthread_wrap_a_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
-  libhpcrun_gpu_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
-  libhpcrun_gpu_wrap_a_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
   libhpcrun_mpi_la_CPPFLAGS += $(MY_MIPS_INCLUDE_DIRS)
 endif
 
@@ -837,8 +861,6 @@ if HOST_CPU_PPC
   libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_pthread_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_pthread_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
-  libhpcrun_gpu_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
-  libhpcrun_gpu_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_mpi_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
   libhpcrun_o_CCASFLAGS  = $(AM_CCASFLAGS)
@@ -863,8 +885,6 @@ if HOST_CPU_X86_FAMILY
   libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_pthread_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_pthread_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
-  libhpcrun_gpu_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
-  libhpcrun_gpu_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_mpi_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   MY_AGENT_INCLUDE_DIRS += $(MY_X86_INCLUDE_DIRS)
 endif
@@ -904,8 +924,6 @@ if HOST_CPU_AARCH64
   libhpcrun_memleak_wrap_a_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
   libhpcrun_pthread_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
   libhpcrun_pthread_wrap_a_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
-  libhpcrun_gpu_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
-  libhpcrun_gpu_wrap_a_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
   libhpcrun_mpi_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
 endif
 
@@ -915,6 +933,14 @@ if OPT_PAPI_DYNAMIC
   libhpcrun_la_LDFLAGS  += $(PAPI_LD_FLGS)
 
   MY_CPP_DEFINES  += -DHPCRUN_SS_PAPI
+endif
+
+if OPT_ENABLE_CUPTI
+  libhpcrun_la_SOURCES  += $(MY_CUPTI_FILES)
+  libhpcrun_o_SOURCES   += $(MY_CUPTI_FILES)
+  libhpcrun_la_CPPFLAGS += $(CUPTI_INC_FLGS)
+
+  MY_CPP_DEFINES  += -DHPCRUN_SS_NVIDIA
 endif
 
 if OPT_PAPI_CUPTI
@@ -963,18 +989,19 @@ if UNW_PPC64
 endif
 
 if OPT_ENABLE_CUDA
-  libhpcrun_la_SOURCES += $(CUDA_FILES)
+  libhpcrun_la_SOURCES += $(MY_CUDA_FILES)
   libhpcrun_la_CPPFLAGS += -DENABLE_CUDA
-  libhpcrun_la_CFLAGS  += $(OPT_CUDA_IFLAGS) -g
-#  libhpcrun_la_LDFLAGS += $(OPT_CUDA_LDFLAGS)
+  libhpcrun_la_CFLAGS += $(OPT_CUDA_IFLAGS)
+  libhpcrun_o_SOURCES += $(MY_CUDA_FILES)
+endif
 
-  libhpcrun_gpu_la_CPPFLAGS += -DENABLE_CUDA
-  libhpcrun_gpu_la_CFLAGS  += $(OPT_CUDA_IFLAGS)
-  libhpcrun_gpu_la_LDFLAGS += $(OPT_CUDA_LDFLAGS)
 
-  libhpcrun_gpu_wrap_a_CPPFLAGS += -DENABLE_CUDA
-  libhpcrun_gpu_wrap_a_CFLAGS  += $(OPT_CUDA_IFLAGS)
+if OPT_ENABLE_ROCM
+  libhpcrun_la_SOURCES  += $(MY_ROCM_FILES)
+  libhpcrun_la_CPPFLAGS += -DENABLE_ROCM
+  libhpcrun_la_CFLAGS   += $(OPT_ROCM_IFLAGS) -g
 
+  MY_CPP_DEFINES  += -DHPCRUN_SS_AMD
 endif
 
 if UNW_LIBUNW
@@ -998,8 +1025,6 @@ libhpcrun_memleak_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_memleak_wrap_a_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_pthread_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_pthread_wrap_a_CPPFLAGS += $(UNW_INCLUDE_DIRS)
-libhpcrun_gpu_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
-libhpcrun_gpu_wrap_a_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_mpi_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_la_LDFLAGS  += $(UNW_DYNAMIC_LD_FLAGS)
 libhpcrun_o_LDFLAGS   += $(UNW_STATIC_LD_FLAGS)

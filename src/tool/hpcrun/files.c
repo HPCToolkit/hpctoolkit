@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -129,6 +129,8 @@
 #include "sample_prob.h"
 
 #include <lib/prof-lean/spinlock.h>
+#include <lib/prof-lean/vdso.h>
+#include <lib/prof-lean/crypto-hash.h> // Calculate a hash for vdso
 #include <lib/support-lean/OSUtil.h>
 
 
@@ -179,7 +181,9 @@ static int log_done = 0;
 static int log_rename_done = 0;
 static int log_rename_ret = 0;
 
+static int vdso_written = 0; // for coordination across fork
 
+char vdso_hash_str[HASH_LENGTH * 2];
 //***************************************************************
 // private operations
 //***************************************************************
@@ -524,4 +528,81 @@ hpcrun_rename_trace_file(int rank, int thread)
   TMSG(TRACE, "(rename) Spin lock released for (R:%d, T:%d)", rank, thread);
 
   return ret;
+}
+
+
+// Record the contents of a [vdso] file, if one exists. Die on failure.
+void
+hpcrun_save_vdso()
+{
+  char name[PATH_MAX];
+  int fd;
+  int error = 0;
+
+  // don't need to try writing it again after a fork
+  if (vdso_written) return;
+
+  // optimistically assume success; failure will cause an abort
+  vdso_written = 1;
+
+  void *vdso_addr = vdso_segment_addr();
+
+  // if there is a [vdso] to write
+  if (vdso_addr) {
+    size_t vdso_len = vdso_segment_len();
+
+  // Calculate a hash based on the contents of VDSO.
+  // We can distinguish different vdso on different compute nodes
+  unsigned char hash[HASH_LENGTH];  
+  unsigned int hash_len = crypto_hash_length();
+  crypto_hash_compute((const unsigned char*)vdso_addr, vdso_len, hash, hash_len);
+  size_t i;
+  for (i = 0; i < hash_len; ++i) {
+    sprintf(&vdso_hash_str[i*2], "%02x", hash[i]);
+  }
+  if (strlen(output_directory) + 6 + hash_len * 2 + 5 >= PATH_MAX) {
+    fd = -1;
+    error = ENAMETOOLONG;
+    hpcrun_abort("hpctoolkit: unable to write [vdso] file: %s", strerror(error));
+    return;
+  }
+  strcpy(name, output_directory);
+  strcat(name, "/vdso/");
+  mkdir(name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+  strcat(name, vdso_hash_str);
+  strcat(name, ".[vdso]");  
+
+  // loop enables us to use break for unstructured control flow
+  for(;;) {
+    errno = 0;
+    fd = open(name, O_WRONLY | O_CREAT | O_EXCL, 0644);
+    if (errno == EEXIST) {
+      // another process already wrote [vdso]
+      set_saved_vdso_path(name);
+      return;
+    }
+    if (fd >= 0) {
+      // my process is the designated writer of [vdso]
+
+      if (write(fd, vdso_addr, vdso_len) != vdso_len) {
+	// write error; attempt to close file and
+        // jump to error reporting. no checking on close
+        // necessary. we are reporting an error anyway
+        error = errno;
+        close(fd);
+        break;
+      }
+      if (close(fd) == 0) {
+        set_saved_vdso_path(name);
+        return;
+      }
+      error = errno;
+      // fall through to error reporting
+    }
+    break;
+  }
+
+  // opening or writing [vdso] has failed. abort with error.
+  hpcrun_abort("hpctoolkit: unable to write [vdso] file: %s", strerror(error));
+  }
 }

@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -90,6 +90,7 @@
 #include "sample-sources/common.h"
 #include "sample-sources/ss-errno.h"
  
+#include <hpcrun/main.h>
 #include <hpcrun/cct_insert_backtrace.h>
 #include <hpcrun/files.h>
 #include <hpcrun/hpcrun_stats.h>
@@ -202,13 +203,7 @@ static const struct timespec nowait = {0, 0};
 // local variables
 //******************************************************************************
 
-
-
-
-/******************************************************************************
- * external thread-local variables
- *****************************************************************************/
-extern __thread bool hpcrun_thread_suppress_sample;
+static kind_info_t *lnux_kind;
 
 
 //******************************************************************************
@@ -501,7 +496,7 @@ static double
 record_sample(event_thread_t *current, perf_mmap_data_t *mmap_data,
     void* context, int metric, int freq, sample_val_t *sv)
 {
-  if (current == NULL)
+  if (current == NULL || current->mmap == NULL)
     return 0.0;
 
   // ----------------------------------------------------------------------------
@@ -818,6 +813,8 @@ METHOD_FN(process_event_list, int lush_metrics)
   char *evlist = METHOD_CALL(self, get_event_str);
   int i=0;
 
+  lnux_kind = hpcrun_metrics_new_kind();
+
   struct event_threshold_s default_threshold;
   perf_util_get_default_threshold( &default_threshold );
 
@@ -840,7 +837,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     // this "customized" event will use one or more perf events
     // ------------------------------------------------------------
 
-    if (event_custom_create_event(self, name) > 0) {
+    if (event_custom_create_event(self, lnux_kind, name) > 0) {
       continue;
     }
 
@@ -882,9 +879,16 @@ METHOD_FN(process_event_list, int lush_metrics)
     }
 
     char *name_dup = strdup(name); // we need to duplicate the name of the metric until the end
-                                   // since the os will free it, we don't have to do it in hpcrun
-    int metric = hpcrun_new_metric();
-   
+                                   // since the OS will free it, we don't have to do it in hpcrun
+    const char *desc = pfmu_getEventDescription(name);
+
+    // set the metric for this perf event
+    int metric = hpcrun_set_new_metric_desc_and_period(lnux_kind, name_dup,
+            desc, MetricFlags_ValFmt_Real, threshold, prop);
+
+    metric_desc_t *mdesc = hpcrun_id2metric_linked(metric);
+    mdesc->is_frequency_metric = event_attr->freq == 1;
+
     // ------------------------------------------------------------
     // if we use frequency (event_type=1) then the period is not deterministic,
     // it can change dynamically. in this case, the period is 1
@@ -892,28 +896,22 @@ METHOD_FN(process_event_list, int lush_metrics)
     if (!is_period) {
       threshold = 1;
     }
-    metric_desc_t *metric_desc = hpcrun_set_metric_info_and_period(metric, name_dup,
-            MetricFlags_ValFmt_Real, threshold, prop);
-
-    if (metric_desc == NULL) {
-      EMSG("error: unable to create metric #%d: %s", index, name);
-    } else {
-      metric_desc->is_frequency_metric = (event_info->attr.freq == 1);
-    }
-
-    int index = METHOD_CALL(self, store_event_and_info,
-                         event_attr->config, threshold, metric, event_info);;
-    if (index < 0) {
-      EMSG("error: cannot create event %s (%d)", name, event_attr->config);
-    }
+    METHOD_CALL(self, store_event, event_attr->config, threshold);
     free(name);
   }
+
+  hpcrun_close_kind(lnux_kind);
 
   int nevents = self->evl.nevents;
   if (nevents > 0)
     perf_init();
 }
 
+
+static void
+METHOD_FN(finalize_event_list)
+{
+}
 
 // --------------------------------------------------------------------------
 // --------------------------------------------------------------------------
@@ -922,8 +920,8 @@ METHOD_FN(gen_event_set, int lush_metrics)
 {
   TMSG(LINUX_PERF, "gen_event_set");
 
-  int nevents 	  = self->evl.nevents;
-  int num_metrics = hpcrun_get_num_metrics();
+  int nevents 	  = (self->evl).nevents;
+  int num_metrics = hpcrun_get_num_metrics(lnux_kind);
 
   // -------------------------------------------------------------------------
   // TODO: we need to fix this allocation.
@@ -1078,7 +1076,7 @@ perf_event_handler(
   // check #2:
   // if sampling disabled explicitly for this thread, skip all processing
   // ----------------------------------------------------------------------------
-  if (hpcrun_thread_suppress_sample) {
+  if (hpcrun_suppress_sample()) {
     HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
 
     return 0; // tell monitor that the signal has been handled

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -84,16 +84,20 @@
 
 #include "sample_source_obj.h"
 #include "common.h"
+#include "sample-filters.h"
+#include "itimer.h"
 #include "ss-errno.h"
 
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
 
+#include <hpcrun/main.h>
 #include <hpcrun/metrics.h>
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_event.h>
 #include <hpcrun/sample_sources_registered.h>
 #include <hpcrun/thread_data.h>
+#include <hpcrun/ompt/ompt-region.h>
 
 #include <lush/lush-backtrace.h>
 #include <messages/messages.h>
@@ -122,25 +126,25 @@
 // Implement WALLCLOCK as CPUTIME where possible, except on Blue Gene
 // where we need to use ITIMER.
 
-#define IDLE_METRIC_NAME     "idleness (usec)"
+#define IDLE_METRIC_NAME     "idleness (sec)"
 
 #define WALLCLOCK_EVENT_NAME   "WALLCLOCK"
-#define WALLCLOCK_METRIC_NAME  "WALLCLOCK (usec)"
+#define WALLCLOCK_METRIC_NAME  "WALLCLOCK (sec)"
 
 #define ITIMER_EVENT_NAME    "ITIMER"
-#define ITIMER_METRIC_NAME   "ITIMER (usec)"
+#define ITIMER_METRIC_NAME   "ITIMER (sec)"
 #define ITIMER_SIGNAL         SIGPROF
 #define ITIMER_TYPE           ITIMER_PROF
 
 #define REALTIME_EVENT_NAME   "REALTIME"
-#define REALTIME_METRIC_NAME  "REALTIME (usec)"
+#define REALTIME_METRIC_NAME  "REALTIME (sec)"
 #define REALTIME_SIGNAL       (SIGRTMIN + 3)
 
 #define REALTIME_CLOCK_TYPE     CLOCK_REALTIME
 #define REALTIME_NOTIFY_METHOD  SIGEV_THREAD_ID
 
 #define CPUTIME_EVENT_NAME    "CPUTIME"
-#define CPUTIME_METRIC_NAME   "CPUTIME (usec)"
+#define CPUTIME_METRIC_NAME   "CPUTIME (sec)"
 #define CPUTIME_CLOCK_TYPE     CLOCK_THREAD_CPUTIME_ID
 
 // the man pages cite sigev_notify_thread_id in struct sigevent,
@@ -202,11 +206,6 @@ static struct itimerspec itspec_stop;
 static sigset_t timer_mask;
 
 static __thread bool wallclock_ok = false;
-
-/******************************************************************************
- * external thread-local variables
- *****************************************************************************/
-extern __thread bool hpcrun_thread_suppress_sample;
 
 // ****************************************************************************
 // * public helper function
@@ -436,7 +435,6 @@ METHOD_FN(thread_fini_action)
     thread_data_t *td = hpcrun_get_thread_data();
     hpcrun_delete_real_timer(td);
   }
-
 }
 
 static void
@@ -588,29 +586,34 @@ METHOD_FN(process_event_list, int lush_metrics)
   // handle metric allocation
   hpcrun_pre_allocate_metrics(1 + lush_metrics);
   
-  int metric_id = hpcrun_new_metric();
-  METHOD_CALL(self, store_metric_id, ITIMER_EVENT, metric_id);
 
   // set metric information in metric table
   TMSG(ITIMER_CTL, "setting metric timer period = %ld", sample_period);
-  hpcrun_set_metric_info_and_period(metric_id, the_metric_name,
-				    MetricFlags_ValFmt_Int,
-				    sample_period, metric_property_time);
+  kind_info_t *timer_kind = hpcrun_metrics_new_kind();
+  int metric_id =
+    hpcrun_set_new_metric_info_and_period(timer_kind, the_metric_name, MetricFlags_ValFmt_Real,
+					  sample_period, metric_property_time);
+  METHOD_CALL(self, store_metric_id, ITIMER_EVENT, metric_id);
   if (lush_metrics == 1) {
-    int mid_idleness = hpcrun_new_metric();
+    int mid_idleness = 
+      hpcrun_set_new_metric_info_and_period(timer_kind, IDLE_METRIC_NAME,
+					    MetricFlags_ValFmt_Real,
+					    sample_period, metric_property_time);
     lush_agents->metric_time = metric_id;
     lush_agents->metric_idleness = mid_idleness;
-
-    hpcrun_set_metric_info_and_period(mid_idleness, IDLE_METRIC_NAME,
-				      MetricFlags_ValFmt_Real,
-				      sample_period, metric_property_time);
   }
+  hpcrun_close_kind(timer_kind);
 
   event = next_tok();
   if (more_tok()) {
     EEMSG("Can't use multiple timer events in the same run.");
     hpcrun_ssfail_conflict("timer", event);
   }
+}
+
+static void
+METHOD_FN(finalize_event_list)
+{
 }
 
 //
@@ -683,7 +686,7 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
   sample_source_t *self = &_itimer_obj;
 
   // if sampling is suppressed for this thread, restart timer, & exit
-  if (hpcrun_thread_suppress_sample) {
+  if (hpcrun_suppress_sample() || sample_filters_apply()) {
     TMSG(ITIMER_HANDLER, "thread sampling suppressed");
     hpcrun_restart_timer(self, 1);
 
@@ -712,7 +715,7 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
 
   // Ensure metrics are finalized.
   if (!metrics_finalized) {
-    hpcrun_finalize_metrics();
+    hpcrun_get_num_kind_metrics();
     metrics_finalized = true;
   }
 
@@ -729,14 +732,18 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
   }
   metric_incr = cur_time_us - TD_GET(last_time_us);
 #endif
-  hpcrun_metricVal_t metric_delta = {.i = metric_incr};
+  // convert microseconds to seconds
+  hpcrun_metricVal_t metric_delta = {.r = metric_incr / 1.0e6}; 
 
   int metric_id = hpcrun_event2metric(self, ITIMER_EVENT);
-  sample_val_t sv = hpcrun_sample_callpath(context, metric_id, 
-			metric_delta,
+  sample_val_t sv = hpcrun_sample_callpath(context, metric_id, metric_delta,
 					    0/*skipInner*/, 0/*isSync*/, NULL);
+
   blame_shift_apply(metric_id, sv.sample_node, metric_incr);
 
+  if(sv.sample_node) {
+    blame_shift_apply(metric_id, sv.sample_node, metric_incr);
+  }
   if (hpcrun_is_sampling_disabled()) {
     TMSG(ITIMER_HANDLER, "No itimer restart, due to disabled sampling");
   }

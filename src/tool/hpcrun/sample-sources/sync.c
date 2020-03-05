@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -165,12 +165,16 @@ METHOD_FN(process_event_list,int lush_metrics)
     n_events = 1;
   }
 #endif // OLD_DEFAULT
-  for (int i = 0; i < n_events; i++) {
-    int n = hpcrun_new_metric();
-    hpcrun_set_metric_info(n, "RENAME");
-  }
+  kind_info_t *sync_kind = hpcrun_metrics_new_kind();
+  for (int i = 0; i < n_events; i++)
+    hpcrun_set_new_metric_info(sync_kind, "RENAME");
+  hpcrun_close_kind(sync_kind);
 }
 
+static void
+METHOD_FN(finalize_event_list)
+{
+}
 
 //
 // Event sets not relevant for this sample source

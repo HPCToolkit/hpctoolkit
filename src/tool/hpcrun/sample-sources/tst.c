@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -298,9 +298,6 @@ METHOD_FN(process_event_list, int lush_metrics)
   // handle metric allocation
   hpcrun_pre_allocate_metrics(1 + lush_metrics);
   
-  int metric_id = hpcrun_new_metric();
-  METHOD_CALL(self, store_metric_id, _TST_EVENT, metric_id);
-
   // set metric information in metric table
 
 #ifdef USE_ELAPSED_TIME_FOR_WALLCLOCK
@@ -309,24 +306,31 @@ METHOD_FN(process_event_list, int lush_metrics)
 # define sample_period period
 #endif
 
-  TMSG(_TST_CTL, "setting metric _TST, period = %ld", sample_period);
-  hpcrun_set_metric_info_and_period(metric_id, "_TST",
-				    MetricFlags_ValFmt_Int,
-				    sample_period, metric_property_none);
-  if (lush_metrics == 1) {
-    int mid_idleness = hpcrun_new_metric();
-    lush_agents->metric_time = metric_id;
-    lush_agents->metric_idleness = mid_idleness;
+  kind_info_t *tst_kind = hpcrun_metrics_new_kind();
 
-    hpcrun_set_metric_info_and_period(mid_idleness, "idleness (ms)",
-				      MetricFlags_ValFmt_Real,
-				      sample_period, metric_property_none);
+  int metric_id = hpcrun_set_new_metric_info_and_period(,
+    tst_kind, "_TST", MetricFlags_ValFmt_Int, sample_period, metric_property_none);
+  METHOD_CALL(self, store_metric_id, _TST_EVENT, metric_id);
+  TMSG(_TST_CTL, "setting metric _TST, period = %ld", sample_period);
+  if (lush_metrics == 1) {
+    int mid_idleness = 
+      hpcrun_set_new_metric_info_and_period(tst_kind, "idleness (ms)",
+        MetricFlags_ValFmt_Real, sample_period, metric_property_none);
+    lush_agents->metric_idleness = mid_idleness;
+    lush_agents->metric_time = metric_id;
   }
+
+  hpcrun_close_kind(tst_kind);
 
   event = next_tok();
   if (more_tok()) {
     EMSG("MULTIPLE _TST events detected! Using first event spec: %s");
   }
+}
+
+static void
+METHOD_FN(finalize_event_list)
+{
 }
 
 //

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -53,6 +53,8 @@
 
 #include <iostream>
 
+
+
 //******************************************************************************
 // local includes
 //******************************************************************************
@@ -61,6 +63,25 @@
 #include "LinuxKernelSymbols.hpp"
 
 #include "../support-lean/compress.h"
+
+
+
+//******************************************************************************
+// macros
+//******************************************************************************
+
+#define PROVIDE_LOAD_MODULE_NAME 1
+
+
+
+//******************************************************************************
+// local data
+//******************************************************************************
+
+#ifdef PROVIDE_LOAD_MODULE_NAME
+static const char *LINUX_KERNEL_LOAD_MODULE_NAME = "[" LINUX_KERNEL_NAME "]"; 
+#endif
+
 
 
 //******************************************************************************
@@ -89,6 +110,20 @@ getKernelFilename(const std::set<std::string> &directorySet, std::string virtual
   }
   return path;
 }
+
+
+static void
+add_suffix
+(
+ char *name,
+ const char *suffix
+)
+{
+  strcat(name, " ");
+  strcat(name, suffix);
+}
+
+
 
 //******************************************************************************
 // interface operations
@@ -165,10 +200,13 @@ LinuxKernelSymbols::parse(const std::set<std::string> &directorySet, const char 
       case 't':
       case 'T':
         // if module is non-empty, append it to name
-	      if (strlen(module) > 0) {
-           strcat(name, " ");
-           strcat(name, module);
+        if (strlen(module) > 0) {
+	  add_suffix(name, module);
         }
+
+#ifdef PROVIDE_LOAD_MODULE_NAME
+	add_suffix(name, LINUX_KERNEL_LOAD_MODULE_NAME);
+#endif
 
         binding = ((type == 't') ?
 	           SimpleSymbolBinding_Local :
@@ -178,7 +216,7 @@ LinuxKernelSymbols::parse(const std::set<std::string> &directorySet, const char 
         add((uint64_t) addr, SimpleSymbolKind_Function, binding, name);
         break;
       default:
-	      break;
+        break;
       }
     }
     fclose(fp);
@@ -215,45 +253,6 @@ LinuxKernelSymbolsFactory::create(void)
   return m_kernelSymbol;
 }
 
-void
-LinuxKernelSymbolsFactory::id(uint _id)
-{
-  // only accept the first ID, and throw the others
-  if (m_id_status == UNINITIALIZED) {
-    m_id = _id;
-    m_id_status = INITIALIZED;
-  }
-}
-
-uint
-LinuxKernelSymbolsFactory::id()
-{
-  return m_id;
-}
-
-void
-LinuxKernelSymbolsFactory::fileId(uint _id)
-{
-  // only accept the first ID, and throw the others
-  if (m_fileId_status == UNINITIALIZED) {
-    m_fileId = _id;
-    m_fileId_status = INITIALIZED;
-  }
-}
-
-uint
-LinuxKernelSymbolsFactory::fileId()
-{
-  return m_fileId;
-}
-
-
-
-const char*
-LinuxKernelSymbolsFactory::unified_name()
-{
-  return LINUX_KERNEL_NAME;
-}
 
 
 //******************************************************************************

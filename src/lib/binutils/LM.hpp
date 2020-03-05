@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -412,6 +412,11 @@ public:
 		  std::string& func, std::string& file,
 		  SrcFile::ln& begLine, SrcFile::ln& endLine,
 		  unsigned flags = 1) /*const*/;
+
+  // used for kernel symbols
+  bool
+  findSimpleFunction(VMA vma, std::string& func);
+
 
   bool
   findProcSrcCodeInfo(VMA vma, ushort opIndex, SrcFile::ln& line) const;

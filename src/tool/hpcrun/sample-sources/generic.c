@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -367,6 +367,8 @@ METHOD_FN(process_event_list, int lush_metrics)
     local_event[n_events].code   = YOUR_NAME_TO_CODE(event);
     local_event[n_events].thresh = thresh;
 
+    kind_info_t *metric_kind = hpcrun_metrics_new_kind();
+
     // for each event, process metrics for that event
     // If there is only 1 metric for each event, then the loop is unnecessary
     //
@@ -374,31 +376,34 @@ METHOD_FN(process_event_list, int lush_metrics)
     //         to track the metric ids.
     //
     for (int i=0; i < NUM_METRICS_FOR_EVENT(event); i++) {
-      int metric_id = hpcrun_new_metric();
-      metrics[n_events][i] = metric_id;
+      int metric_id;
+      const char *name = NAME_FOR_EVENT_METRIC(event, i);
       
       if (METRIC_IS_STANDARD) {
       // For a standard updating metric (add some counts at each sample time), use
       // hpcrun_set_metric_info_and_period routine, as shown below
       //
-        hpcrun_set_metric_info_and_period(metric_id, NAME_FOR_EVENT_METRIC(event, i),
-                                          HPCRUN_MetricFlag_Async, // This is the correct flag value for almost all events
-                                          thresh, metric_property_none);
+        metric_id = hpcrun_set_new_metric_info_and_period(
+          metric_kind, name, HPCRUN_MetricFlag_Async, // This is the correct flag value for almost all events
+          thresh, metric_property_none);
       }
       else { // NON STANDARD METRIC
         // For a metric that updates in a NON standard fashion, use
         // hpcrun_set_metric_info_w_fn, and pass the updating function as the last argument
         //
-        hpcrun_set_metric_info_w_fn(metric_id, NAME_FOR_EVENT_METRIC(event, i),
-                                    YOUR_FLAG_VALUES, thresh,
-                                    YOUR_UPD_FN);
+        metric_id = hpcrun_set_new_metric_info_w_fn(name, YOUR_FLAG_VALUES, thresh, YOUR_UPD_FN);
       }
+      metrics[n_events++][i] = metric_id;
     }
-    n_events++;
-  }
-  
-  // NOTE: some lush-aware event list processing may need to be done here ...
 
+    hpcrun_close_kind(metric_kind);
+  }
+  // NOTE: some lush-aware event list processing may need to be done here ...
+}
+
+static void
+METHOD_FN(finalize_event_list)
+{
 }
 
 static void

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -109,7 +109,8 @@ static pmsg_category all_list_entries [] = {
  E(_TST_CTL),
  E(UNW),
  // E(UW_RECIPE_MAP),
- E(TRAMP),
+ // E(TRAMP), // Writing messages to logs in trampoline can lead to execution errors.
+ E(RETCNT_CTL),
  E(SEGV),
  E(MPI),
  E(INTV2),

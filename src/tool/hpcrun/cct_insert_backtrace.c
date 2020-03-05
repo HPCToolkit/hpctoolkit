@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -52,7 +52,7 @@
 #include <cct/cct.h>
 #include <messages/messages.h>
 #include <hpcrun/metrics.h>
-// #include <hpcrun/unresolved.h>
+#include <hpcrun/unresolved.h>
 
 #include <lib/prof-lean/lush/lush-support.h>
 #include <lib/prof-lean/placeholders.h>
@@ -65,8 +65,15 @@
 #include "frame.h"
 #include <unwind/common/backtrace_info.h>
 #include <unwind/common/fence_enum.h>
+#include <ompt/ompt-defer.h>
+#include <ompt/ompt-callstack.h>
+
 #include "cct_insert_backtrace.h"
 #include "cct_backtrace_finalize.h"
+#include "lush/lush-backtrace.h"
+#include "unwind/common/backtrace.h"
+#include "thread_data.h"
+#include "utilities/ip-normalized.h"
 
 
 //--------------------------------------------------------------------------
@@ -109,6 +116,8 @@ cct_insert_raw_backtrace(cct_node_t* cct,
   }
 #endif
 
+  // FIXME: POGLEDAJ KOLIKO ON PUTA KROZ OVO PRODJE
+
   ip_normalized_t parent_routine = ip_normalized_NULL;
   for(; path_beg >= path_end; path_beg--){
     if ( (! retain_recursion) &&
@@ -128,6 +137,7 @@ cct_insert_raw_backtrace(cct_node_t* cct,
     parent_routine = path_beg->the_function;
   }
   hpcrun_cct_terminate_path(cct);
+  // FIXME: vi3 consider this function
   return cct;
 }
 
@@ -141,6 +151,11 @@ hpcrun_set_retain_recursion_mode(bool mode)
   retain_recursion = mode;
 }
 
+bool
+hpcrun_get_retain_recursion_mode()
+{
+  return retain_recursion;
+}
 
 // See usage in header.
 cct_node_t*
@@ -198,7 +213,7 @@ hpcrun_cct_insert_backtrace_w_metric(cct_bundle_t* cct, cct_node_t* treenode,
     path = custom_update->update_after_fn(path, custom_update->data_aux);
   }
 
-  metric_set_t* mset = hpcrun_reify_metric_set(path);
+  metric_data_list_t* mset = hpcrun_reify_metric_set(path, metric_id);
 
   metric_upd_proc_t* upd_proc = hpcrun_get_metric_proc(metric_id);
   if (upd_proc) {
@@ -218,7 +233,7 @@ cct_node_t*
 hpcrun_cct_insert_bt(cct_node_t* node,
 		     int metricId,
 		     backtrace_t* bt,
-		     cct_metric_data_t datum, void **trace_pc)
+		     cct_metric_data_t datum)
 {
   return hpcrun_cct_insert_backtrace_w_metric(NULL, node, metricId,
 					      bt->beg + bt->len - 1,
@@ -264,6 +279,43 @@ hpcrun_backtrace2cct(cct_bundle_t* cct, ucontext_t* context,
   return n;
 }
 
+#if 0 // TODO: tallent: Use Mike's improved code; retire prior routines
+
+static cct_node_tt*
+help_hpcrun_bt2cct(cct_bundle_t *cct, ucontext_t* context,
+	       int metricId, uint64_t metricIncr,
+	       bt_mut_fn bt_fn, bt_fn_arg bt_arg);
+
+//
+// utility routine that does 3 things:
+//   1) Generate a std backtrace
+//   2) Modifies the backtrace according to a passed in function
+//   3) enters the generated backtrace in the cct
+//
+cct_node_tt*
+hpcrun_bt2cct(cct_bundle_t *cct, ucontext_t* context,
+	      int metricId, uint64_t metricIncr,
+	      bt_mut_fn bt_fn, bt_fn_arg arg, int isSync)
+{
+  cct_node_tt* n = NULL;
+  if (hpcrun_isLogicalUnwind()) {
+#ifdef LATER
+    TMSG(LUSH,"lush backtrace2cct invoked");
+    n = lush_backtrace2cct(cct, context, metricId, metricIncr, skipInner,
+			   isSync);
+#endif
+  }
+  else {
+    TMSG(LUSH,"regular (NON-lush) bt2cct invoked");
+    n = help_hpcrun_bt2cct(cct, context, metricId, metricIncr, bt_fn);
+  }
+
+  // N.B.: for lush_backtrace() it may be that n = NULL
+
+  return n;
+}
+
+#endif
 
 cct_node_t*
 hpcrun_cct_record_backtrace(
@@ -301,7 +353,7 @@ hpcrun_cct_record_backtrace(
 
 
 cct_node_t*
-hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial, 
+hpcrun_cct_record_backtrace_w_metric(cct_bundle_t* cct, bool partial,
                                      backtrace_info_t *bt, bool tramp_found,
 	                             int metricId, hpcrun_metricVal_t metricIncr,
 				     struct cct_custom_update_s *custom_update)
@@ -353,6 +405,9 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
   thread_data_t* td = hpcrun_get_thread_data();
   backtrace_info_t bt;
 
+  // initialize bt
+  memset(&bt, 0, sizeof(bt));
+
   bool success = hpcrun_generate_backtrace(&bt, context, skipInner);
 
   assert(!success == bt.partial_unwind);
@@ -375,9 +430,7 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
     }
   }
 
- // bt.trace_pc = bt.begin->cursor.pc_unnorm;  // JMC
-
-  cct_backtrace_finalize(&bt, isSync); 
+  cct_backtrace_finalize(&bt, isSync);
 
   if (bt.partial_unwind) {
     if (ENABLED(NO_PARTIAL_UNW)){
@@ -394,7 +447,14 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
 					 tramp_found, metricId, metricIncr, 
 					 custom_update);
 
-  // *trace_pc = bt.trace_pc;  // JMC
+  if (!ompt_eager_context_p()) {
+    // FIXME vi3: a big hack
+    if (isSync == 33) {
+      provide_callpath_for_end_of_the_region(&bt, n);
+    } else {
+      provide_callpath_for_regions_if_needed(&bt, n);
+    }
+  }
 
   if (bt.n_trolls != 0) hpcrun_stats_trolled_inc();
   hpcrun_stats_frames_total_inc((long)(bt.last - bt.begin + 1));
@@ -403,9 +463,14 @@ help_hpcrun_backtrace2cct(cct_bundle_t* bundle, ucontext_t* context,
   if (ENABLED(USE_TRAMP)){
     TMSG(TRAMP, "--NEW SAMPLE--: Remove old trampoline");
     hpcrun_trampoline_remove();
-    td->tramp_frame = td->cached_bt;
-    TMSG(TRAMP, "--NEW SAMPLE--: Insert new trampoline");
-    hpcrun_trampoline_insert(n);
+    if (!bt.partial_unwind) {
+      td->tramp_frame = td->cached_bt_frame_beg;
+      td->prev_dLCA = td->dLCA;
+      td->dLCA = 0;
+      TMSG(TRAMP, "--NEW SAMPLE--: Insert new trampoline");
+      hpcrun_trampoline_insert(n);
+    } else
+      td->prev_dLCA = HPCTRACE_FMT_DLCA_NULL;
   }
 
   return n;

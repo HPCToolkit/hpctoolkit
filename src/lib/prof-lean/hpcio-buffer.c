@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -93,7 +93,79 @@
 #define HPCIO_OUTBUF_MAGIC  0x494F4246
 
 
+
+//***************************************************************************
+// type declarations
+//***************************************************************************
+
+typedef struct hpcio_outbuf_s {
+  struct hpcio_outbuf_s *next;
+  uint32_t magic;
+  void  *buf_start;
+  size_t buf_size;
+  size_t in_use;
+  int  fd;
+  int  flags;
+  char use_lock;
+  spinlock_t lock;
+} hpcio_outbuf_t;
+
+
+
+//***************************************************************************
+// variables
+//***************************************************************************
+
+static spinlock_t freelist_lock = SPINLOCK_UNLOCKED;
+static hpcio_outbuf_t *freelist = 0;
+
+
+
 //*************************** Private Functions *****************************
+
+static hpcio_outbuf_t *
+freelist_dequeue
+(
+  void
+)
+{
+   hpcio_outbuf_t *ob = 0; 
+   spinlock_lock(&freelist_lock);
+   if (freelist) {
+     ob = freelist;
+     freelist = ob->next;
+   }
+   spinlock_unlock(&freelist_lock);
+   return ob;
+}
+
+
+static hpcio_outbuf_t *
+outbuf_alloc
+(
+  allocator_t alloc
+)
+{
+  hpcio_outbuf_t *ob = freelist_dequeue();
+  if (ob == 0) {
+    ob = (hpcio_outbuf_t *) alloc(sizeof(hpcio_outbuf_t));
+  }
+  return ob;
+}
+
+
+static void
+outbuf_free
+(
+  hpcio_outbuf_t *ob
+)
+{
+   spinlock_lock(&freelist_lock);
+   ob->next = freelist;
+   freelist = ob;
+   spinlock_unlock(&freelist_lock);
+}
+
 
 // Try to write() the entire outbuf.
 //
@@ -145,15 +217,25 @@ outbuf_flush_buffer(hpcio_outbuf_t *outbuf)
 // Returns: HPCFMT_OK on success, else HPCFMT_ERR.
 //
 int
-hpcio_outbuf_attach(hpcio_outbuf_t *outbuf /* out */, int fd,
-		    void *buf_start, size_t buf_size, int flags)
+hpcio_outbuf_attach
+(
+  hpcio_outbuf_t **outbuf_ptr /* out */, 
+  int fd,
+  void *buf_start, 
+  size_t buf_size, 
+  int flags,
+  allocator_t alloc
+)
 {
   // Attach fills in the outbuf struct, so there is no magic number
   // and locks don't exist.
-  if (outbuf == NULL || fd < 0 || buf_start == NULL || buf_size == 0) {
+  if (outbuf_ptr == NULL || fd < 0 || buf_start == NULL || buf_size == 0) {
     return HPCFMT_ERR;
   }
 
+  hpcio_outbuf_t *outbuf = outbuf_alloc(alloc);
+
+  outbuf->next = NULL;
   outbuf->magic = HPCIO_OUTBUF_MAGIC;
   outbuf->buf_start = buf_start;
   outbuf->buf_size = buf_size;
@@ -162,6 +244,8 @@ hpcio_outbuf_attach(hpcio_outbuf_t *outbuf /* out */, int fd,
   outbuf->flags = flags;
   outbuf->use_lock = (flags & HPCIO_OUTBUF_LOCKED);
   spinlock_unlock(&outbuf->lock);
+
+  *outbuf_ptr = outbuf;
 
   return HPCFMT_OK;
 }
@@ -238,9 +322,11 @@ hpcio_outbuf_flush(hpcio_outbuf_t *outbuf)
 // Returns: HPCFMT_OK on success, else HPCFMT_ERR.
 //
 int
-hpcio_outbuf_close(hpcio_outbuf_t *outbuf)
+hpcio_outbuf_close(hpcio_outbuf_t **outbuf_ptr)
 {
   int ret = HPCFMT_OK;
+
+  hpcio_outbuf_t *outbuf = *outbuf_ptr;
 
   if (outbuf == NULL || outbuf->magic != HPCIO_OUTBUF_MAGIC) {
     return HPCFMT_ERR;
@@ -262,5 +348,10 @@ hpcio_outbuf_close(hpcio_outbuf_t *outbuf)
   if (outbuf->use_lock) {
     spinlock_unlock(&outbuf->lock);
   }
+
+  outbuf_free(*outbuf_ptr);
+
+  *outbuf_ptr = NULL;
+
   return ret;
 }

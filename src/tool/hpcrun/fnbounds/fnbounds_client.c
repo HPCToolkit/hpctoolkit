@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -84,6 +84,13 @@
 // (1) turn on this #if and (2) fetch copies of syserv-mesg.h
 // and fnbounds_file_header.h.
 
+// Usage:
+// To trace the client-side messages, use -v
+// To tell the server to run in verbose mode, use -V
+// To tell the server not to do agressive function searching, use -d
+// To have the client write its output to a file, use -o <outfile>
+// The last argument should be the path to the server
+
 #if 0
 #define STAND_ALONE_CLIENT
 #define EMSG(...)
@@ -98,6 +105,15 @@
 #define monitor_sigaction(...)  0
 int datacentric_is_enabled() { return 1; }
 int zero_fcn(void) { return 0; }
+int verbose = 0;
+int serv_verbose = 0;
+int noscan = 0;
+
+#include <stdio.h>
+FILE	*outf;
+
+char	*outfile;
+
 #endif
 
 //***************************************************************************
@@ -109,6 +125,7 @@ int zero_fcn(void) { return 0; }
 #include <err.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <sched.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -134,6 +151,8 @@ int zero_fcn(void) { return 0; }
 
 // Limit on memory use at which we restart the server in Meg.
 #define SERVER_MEM_LIMIT  140
+// Size to allocate for the stack of the server setup function, in KiB.
+#define SERVER_STACK_SIZE 1024
 #define MIN_NUM_QUERIES   12
 
 #define SUCCESS   0
@@ -147,6 +166,7 @@ enum {
 
 static int client_status = SYSERV_INACTIVE;
 static char *server;
+static char *server_stack;
 
 static int fdout = -1;
 static int fdin = -1;
@@ -175,6 +195,11 @@ read_all(int fd, void *buf, size_t count)
   ssize_t ret;
   size_t len;
 
+#ifdef STAND_ALONE_CLIENT
+  if(verbose) {
+    fprintf(stderr, "Client read_all, count = %ld bytes\n", count);
+  }
+#endif
   len = 0;
   while (len < count) {
     ret = read(fd, ((char *) buf) + len, count - len);
@@ -202,6 +227,11 @@ write_all(int fd, const void *buf, size_t count)
   ssize_t ret;
   size_t len;
 
+#ifdef STAND_ALONE_CLIENT
+  if(verbose) {
+    fprintf(stderr, "Client write_all, count = %ld bytes\n", count);
+  }
+#endif
   len = 0;
   while (len < count) {
     ret = write(fd, ((const char *) buf) + len, count - len);
@@ -230,6 +260,11 @@ read_mesg(struct syserv_mesg *mesg)
   if (ret == SUCCESS && mesg->magic != SYSERV_MAGIC) {
     ret = FAILURE;
   }
+#ifdef STAND_ALONE_CLIENT
+  if(verbose) {
+    fprintf(stderr, "Client read message, type = %d, len = %ld\n", mesg->type, mesg->len);
+  }
+#endif
 
   return ret;
 }
@@ -247,6 +282,11 @@ write_mesg(int32_t type, int64_t len)
   mesg.type = type;
   mesg.len = len;
 
+#ifdef STAND_ALONE_CLIENT
+  if(verbose) {
+    fprintf(stderr, "Client write message, type = %d, len = %ld\n", type, len);
+  }
+#endif
   return write_all(fdout, &mesg, sizeof(mesg));
 }
 
@@ -340,12 +380,67 @@ shutdown_server(void)
   TMSG(SYSTEM_SERVER, "syserv shutdown");
 }
 
+static int
+hpcfnbounds_child(void* fds_vp)
+{
+  //
+  // child process: disable profiling, dup the log file fd onto
+  // stderr and exec hpcfnbounds in server mode.
+  //
+  hpcrun_set_disabled();
+
+  struct {
+    int sendfd[2], recvfd[2];
+  }* fds = fds_vp;
+
+  close(fds->sendfd[1]);
+  close(fds->recvfd[0]);
+
+  // dup the hpcrun log file fd onto stdout and stderr.
+  if (dup2(messages_logfile_fd(), 1) < 0) {
+    warn("dup of log fd onto stdout failed");
+  }
+  if (dup2(messages_logfile_fd(), 2) < 0) {
+    warn("dup of log fd onto stderr failed");
+  }
+
+  // make the command line and exec
+  char *arglist[10];
+  char fdin_str[10], fdout_str[10];
+  sprintf(fdin_str,  "%d", fds->sendfd[0]);
+  sprintf(fdout_str, "%d", fds->recvfd[1]);
+
+  int j = 0;
+  arglist[j++] = server;
+#ifdef STAND_ALONE_CLIENT
+  if (serv_verbose) {
+    arglist[j++] = "-v";
+  }
+  if (noscan) {
+    arglist[j++] = "-d";
+  }
+#else
+  // verbose from hpcrun -dd var
+  if (ENABLED(FNBOUNDS_SERVER)) {
+    arglist[j++] = "-v";
+  }
+#endif
+  arglist[j++] = "-s";
+  arglist[j++] = fdin_str;
+  arglist[j++] = fdout_str;
+  arglist[j++] = NULL;
+
+  monitor_real_execve(server, arglist, environ);
+  err(1, "hpcrun system server: exec(%s) failed", server);
+}
 
 // Returns: 0 on success, else -1 on failure.
 static int
 launch_server(void)
 {
-  int sendfd[2], recvfd[2];
+  struct {
+    int sendfd[2], recvfd[2];
+  } fds;
   bool sampling_is_running;
   pid_t pid;
 
@@ -359,7 +454,7 @@ launch_server(void)
     shutdown_server();
   }
 
-  if (pipe(sendfd) != 0 || pipe(recvfd) != 0) {
+  if (pipe(fds.sendfd) != 0 || pipe(fds.recvfd) != 0) {
     EMSG("SYSTEM_SERVER ERROR: syserv launch failed: pipe failed");
     return -1;
   }
@@ -370,7 +465,8 @@ launch_server(void)
   if (sampling_is_running) {
     SAMPLE_SOURCES(stop);
   }
-  pid = monitor_real_fork();
+  // For safety, we don't assume the direction of stack growth
+  pid = clone(hpcfnbounds_child, &server_stack[SERVER_STACK_SIZE * 1024], SIGCHLD, &fds);
 
   if (pid < 0) {
     //
@@ -379,49 +475,14 @@ launch_server(void)
     EMSG("SYSTEM_SERVER ERROR: syserv launch failed: fork failed");
     return -1;
   }
-  else if (pid == 0) {
-    //
-    // child process: disable profiling, dup the log file fd onto
-    // stderr and exec hpcfnbounds in server mode.
-    //
-    hpcrun_set_disabled();
-
-    close(sendfd[1]);
-    close(recvfd[0]);
-
-    // dup the hpcrun log file fd onto stdout and stderr.
-    if (dup2(messages_logfile_fd(), 1) < 0) {
-      warn("dup of log fd onto stdout failed");
-    }
-    if (dup2(messages_logfile_fd(), 2) < 0) {
-      warn("dup of log fd onto stderr failed");
-    }
-
-    // make the command line and exec
-    char *arglist[8];
-    char fdin_str[10], fdout_str[10];
-    sprintf(fdin_str,  "%d", sendfd[0]);
-    sprintf(fdout_str, "%d", recvfd[1]);
-
-    int n=0;
-
-    arglist[n++] = server;
-    arglist[n++] = "-s";
-    arglist[n++] = fdin_str;
-    arglist[n++] = fdout_str;
-    arglist[n++] = NULL;
-
-    monitor_real_execve(server, arglist, environ);
-    err(1, "hpcrun system server: exec(%s) failed", server);
-  }
 
   //
   // parent process: return and wait for queries.
   //
-  close(sendfd[0]);
-  close(recvfd[1]);
-  fdout = sendfd[1];
-  fdin = recvfd[0];
+  close(fds.sendfd[0]);
+  close(fds.recvfd[1]);
+  fdout = fds.sendfd[1];
+  fdin = fds.recvfd[0];
   my_pid = getpid();
   server_pid = pid;
   client_status = SYSERV_ACTIVE;
@@ -458,6 +519,10 @@ hpcrun_syserv_init(void)
     size = SERVER_MEM_LIMIT;
   }
   mem_limit = size * 1024;
+
+  // Allocate enough space for fnbounds summoning.
+  // Twice as much to allow for growth in either direction.
+  server_stack = mmap_anon(SERVER_STACK_SIZE * 1024 * 2);
 
   if (monitor_sigaction(SIGPIPE, &hpcrun_sigpipe_handler, 0, NULL) != 0) {
     EMSG("SYSTEM_SERVER ERROR: unable to install handler for SIGPIPE");
@@ -656,7 +721,7 @@ query_loop(void)
   long k;
 
   for (;;) {
-    printf("\nfnbounds> ");
+    fprintf(outf, "\nclientfnbounds> ");
     if (fgets(fname, BUF_SIZE, stdin) == NULL) {
       break;
     }
@@ -668,13 +733,13 @@ query_loop(void)
     addr = (void **) hpcrun_syserv_query(fname, &fnb_hdr);
 
     if (addr == NULL) {
-      printf("error\n");
+      fprintf(outf, "Client error NULL return from hpcrun_syserv_query\n");
     }
     else {
       for (k = 0; k < fnb_hdr.num_entries; k++) {
-	printf("  %p\n", addr[k]);
+	fprintf(outf, "  %p\n", addr[k]);
       }
-      printf("num symbols = %ld, offset = 0x%lx, reloc = %d\n",
+      fprintf(outf, "num symbols = %ld, offset = 0x%lx, reloc = %d\n",
 	     fnb_hdr.num_entries, fnb_hdr.reference_offset,
 	     fnb_hdr.is_relocatable);
 
@@ -685,16 +750,53 @@ query_loop(void)
   }
 }
 
-
 int
 main(int argc, char *argv[])
 {
   struct sigaction act;
+  int i;
 
-  if (argc < 2) {
-    errx(1, "usage: client /path/to/fnbounds");
+  outf = stdout;
+  server = NULL;
+  for (i = 1; i < argc; i++) {
+    // fprintf (stderr, "argv[%d] = \"%s\"\n", i, argv[i] );
+    if (*argv[i] == '-') {
+      // control arguments
+      switch (argv[i][1]) {
+      case 'd':
+        noscan = 1;
+        break;
+      case 'V':
+        serv_verbose = 1;
+        break;
+      case 'v':
+        verbose = 1;
+        break;
+      case 'o':
+        if ( (i+1) >= argc) {
+	  errx(1, "outfile must be specified; usage: client [-V} [-v] [-d] [-o outfile] /path/to/fnbounds");
+	}
+	i++;
+	outfile = argv[i];
+	outf = fopen(outfile, "w");
+	if (outf == NULL) {
+	    errx(1,"outfile fopen failed; usage: client [-V} [-v] [-d] [-o outfile] /path/to/fnbounds");
+	}
+        break;
+      default:
+	errx(1, "unknown flag; usage: client [-V} [-v] [-d] [-o outfile] /path/to/fnbounds");
+	break;
+      }
+    } else {
+      // no - flag; must be the path to the server
+      server = argv[i];
+      break;	// from argument loop
+    }
   }
-  server = argv[1];
+  // Make sure the server is non-NULL
+  if ( (server == NULL) || (strlen(server) == 0) ) {
+    errx(1,"NULL server name; usage: client [-V} [-v] [-d] [-o outfile] /path/to/fnbounds");
+  }
 
   memset(&act, 0, sizeof(act));
   act.sa_handler = SIG_IGN;
@@ -706,15 +808,15 @@ main(int argc, char *argv[])
   if (launch_server() != 0) {
     errx(1, "fnbounds server failed");
   }
-  printf("server: %s\n", server);
-  printf("parent: %d, child: %d\n", my_pid, server_pid);
-  printf("connected\n");
+  fprintf(outf, "server: %s\n", server);
+  fprintf(outf, "parent: %d, child: %d\n", my_pid, server_pid);
+  fprintf(outf, "connected\n");
 
   query_loop();
 
   write_mesg(SYSERV_EXIT, 0);
 
-  printf("done\n");
+  fprintf(outf, "done\n");
   return 0;
 }
 

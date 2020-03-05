@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -159,6 +159,12 @@ public:
     
     void
     ddump() const;
+
+    static const std::string&
+    pretty_name(const std::string& lm_nm);
+
+    static std::string
+    pretty_file_name(const std::string& lm_nm);
 
   private:
     void

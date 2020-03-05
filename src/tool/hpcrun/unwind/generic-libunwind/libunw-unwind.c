@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -171,15 +171,15 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
 }
 
 step_state
-hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
+hpcrun_unw_step(hpcrun_unw_cursor_t* cursor, int *steps_taken)
 {
   step_state state = STEP_ERROR;
-  state = libunw_unw_step(cursor);
+  state = libunw_unw_step(cursor, steps_taken);
   if (state == STEP_ERROR) {
     unw_cursor_t *unw_cursor = &(cursor->uc);
     if (unw_step(unw_cursor)) {
       state = STEP_OK;
-      libunw_finalize_cursor(cursor);
+      libunw_finalize_cursor(cursor, *steps_taken > 0);
     }
   }
   return state;

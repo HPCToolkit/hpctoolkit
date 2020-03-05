@@ -243,7 +243,7 @@ static void
 datacentric_record_size_variable(datatree_info_t *info , cct_node_t * var_decl_node)
 {
   // record the size of the variable
-  metric_set_t *mset       = hpcrun_reify_metric_set(var_decl_node);
+  metric_data_list_t *mset = hpcrun_reify_metric_set(var_decl_node, datacentric_get_metric_variable_size());
   const int size_in_bytes  = info->rmemblock - info->memblock;
   hpcrun_metricVal_t value = {.i = size_in_bytes};
 
@@ -370,7 +370,7 @@ datacentric_post_handler(event_handler_arg_t *args)
   hpcrun_cct_link_source_memaccess(sample_node, var_decl_node);
 #endif
 
-  metric_set_t *mset = hpcrun_reify_metric_set(node);
+  metric_data_list_t *mset = hpcrun_reify_metric_set(node, args->metric);
 
 #if SUPPORT_FOR_ADDRESS_CENTRIC
   // variable address is store in the database
@@ -420,6 +420,7 @@ datacentric_post_handler(event_handler_arg_t *args)
  *************/
 static int
 datacentric_register_address_centric(sample_source_t *self,
+    kind_info_t     *kb_kind,
     event_custom_t  *event,
     struct event_threshold_s *period)
 {
@@ -460,10 +461,8 @@ datacentric_register_address_centric(sample_source_t *self,
   // ------------------------------------------
   // create metric page-fault
   // ------------------------------------------
-  int metric_page_fault = hpcrun_new_metric();
-
-  hpcrun_set_metric_info_and_period(
-      metric_page_fault, EVNAME_ADDRESS_CENTRIC,
+  int metric_page_fault = hpcrun_set_new_metric_info_and_period(
+      kb_kind, EVNAME_ADDRESS_CENTRIC,
       MetricFlags_ValFmt_Real, 1, metric_property_none);
 
   // ------------------------------------------
@@ -492,16 +491,16 @@ datacentric_register_address_centric(sample_source_t *self,
  */
 static int
 datacentric_register(sample_source_t *self,
+                     kind_info_t     *kb_kind,
                      event_custom_t  *event,
                      struct event_threshold_s *period)
 {
   // ------------------------------------------
   // metric for variable size (in bytes)
   // ------------------------------------------
-  metric_variable_size = hpcrun_new_metric();
-
-  hpcrun_set_metric_and_attributes(metric_variable_size,  DATACENTRIC_METRIC_PREFIX  "Size (byte)",
-      MetricFlags_ValFmt_Int, 1, metric_property_none, false /* disable show*/, true );
+  metric_variable_size = hpcrun_set_new_metric_info_and_period(
+      kb_kind,  DATACENTRIC_METRIC_PREFIX  "Size (byte)",
+      MetricFlags_ValFmt_Int, 1, metric_property_none );
 
   // ------------------------------------------
   // hardware-specific data centric setup (if supported)
@@ -509,14 +508,14 @@ datacentric_register(sample_source_t *self,
   struct event_threshold_s threshold;
   perf_util_get_default_threshold( &threshold );
 
-  int result = datacentric_hw_register(self, event, &threshold);
+  int result = datacentric_hw_register(self, kb_kind, event, &threshold);
   if (result == 0)
     return 0;
 
   // ------------------------------------------
   // Support for address centric (page fault event)
   // ------------------------------------------
-  datacentric_register_address_centric(self, event, period);
+  datacentric_register_address_centric(self, kb_kind, event, period);
 
   // ------------------------------------------
   // mark that data centric has been initialized, ready to be activated

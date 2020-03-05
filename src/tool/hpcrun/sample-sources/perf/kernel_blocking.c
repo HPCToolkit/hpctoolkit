@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -55,6 +55,8 @@
  */
 #include <assert.h>
 #include <include/linux_info.h>
+
+#include <hpcrun/metrics.h>
 
 #include "kernel_blocking.h"
 
@@ -209,7 +211,7 @@ kernel_block_handler(event_handler_arg_t *args)
  * - context switch metric to store the number of context switches
  ****************************************************************/
 static int
-register_blocking(sample_source_t *self,
+register_blocking(sample_source_t *self, kind_info_t *kb_kind, 
                   event_custom_t *event,
                   struct event_threshold_s *period)
 {
@@ -225,18 +227,18 @@ register_blocking(sample_source_t *self,
   event_info->metric_custom = event;
   event_info->id            = EVNAME_KERNEL_BLOCK;
 
-  metric_blocking_index= hpcrun_new_metric();
-  hpcrun_set_metric_info_and_period(
-      metric_blocking_index, EVNAME_KERNEL_BLOCK,
+  metric_blocking_index = 
+    hpcrun_set_new_metric_info_and_period(
+      kb_kind, EVNAME_KERNEL_BLOCK,
       MetricFlags_ValFmt_Int, 1 /* period */, metric_property_none);
 
   // ------------------------------------------
   // create metric to store context switches
   // ------------------------------------------
-  int metric_cs     = hpcrun_new_metric();
-  hpcrun_set_metric_info_and_period(
-                         metric_cs, EVNAME_CONTEXT_SWITCHES,
-                         MetricFlags_ValFmt_Real, 1 /* period*/, metric_property_none);
+   int metric_cs = 
+    hpcrun_set_new_metric_info_and_period(
+      kb_kind, EVNAME_CONTEXT_SWITCHES,
+      MetricFlags_ValFmt_Real, 1 /* period*/, metric_property_none);
 
   // ------------------------------------------
   // set context switch event description to be used when creating
@@ -259,7 +261,6 @@ register_blocking(sample_source_t *self,
 
   event_info->attr.context_switch = 1;
   event_info->attr.sample_id_all  = 1;
-
 
   METHOD_CALL(self, store_event_and_info,
                           attr->config, 1, metric_cs, event_info);;

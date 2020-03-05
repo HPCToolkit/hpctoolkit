@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -81,6 +81,7 @@
 #include <memory/hpcrun-malloc.h>
 #include <main.h>
 #include "thread_data.h"
+#include "uw_hash.h"
 #include "uw_recipe_map.h"
 #include "unwind-interval.h"
 #include <fnbounds/fnbounds_interface.h>
@@ -581,6 +582,9 @@ uw_recipe_map_notify_unmap(void *start, void *end)
   for (uw = 0; uw < NUM_UNWINDERS; uw++)
     uw_recipe_map_repoison((uintptr_t)start, (uintptr_t)end, uw);
 
+  thread_data_t *td = hpcrun_get_thread_data();
+  uw_hash_delete_range(td->uw_hash_table, start, end);
+
   uw_recipe_map_report_and_dump("*** unmap: after poisoning", start, end);
 }
 
@@ -646,7 +650,7 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
   // hpcrun_generate_backtrace_no_trampoline calls
   //   1. hpcrun_unw_init_cursor(&cursor, context), which calls
   //        uw_recipe_map_lookup,
-  //   2. hpcrun_unw_step(&cursor), which calls
+  //   2. hpcrun_unw_step(&cursor, &steps_taken), which calls
   //        hpcrun_unw_step_real(cursor), which looks at cursor->unwr_info
 
   unwr_info->btuwi    = NULL;
@@ -655,91 +659,133 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
   unwr_info->interval.start = 0;
   unwr_info->interval.end   = 0;
 
-  // check if addr is already in the range of an interval key in the map
-  ilmstat_btuwi_pair_t* ilm_btui =
-    uw_recipe_map_inrange_find((uintptr_t)addr, uw);
-
-  if (!ilm_btui) {
-	load_module_t *lm;
-	void *fcn_start, *fcn_end;
-	if (!fnbounds_enclosing_addr(addr, &fcn_start, &fcn_end, &lm)) {
-	  TMSG(UW_RECIPE_MAP, "BAD fnbounds_enclosing_addr failed: addr %p", addr);
-	  return false;
-	}
-	if (addr < fcn_start || fcn_end <= addr) {
-	  TMSG(UW_RECIPE_MAP, "BAD fnbounds_enclosing_addr failed: addr %p "
-		  "not within fcn range %p to %p", addr, fcn_start, fcn_end);
-	  return false;
-	}
-
-	// bounding addresses found; set DEFERRED state and pair it with
-	// (bitree_uwi_t*)NULL and try to insert into map:
-	ilm_btui =
-		ilmstat_btuwi_pair_malloc((uintptr_t)fcn_start, (uintptr_t)fcn_end, lm,
-			DEFERRED, my_alloc);
-
-	
-	csklnode_t *node = cskl_insert(addr2recipe_map[uw], ilm_btui, my_alloc);
-	if (ilm_btui !=  (ilmstat_btuwi_pair_t*)node->val) {
-	  // interval_ldmod_pair ([fcn_start, fcn_end), lm) is already in the map,
-	  // so free the unused copy and use the mapped one
-	  ilmstat_btuwi_pair_free(ilm_btui, uw);
-	  ilm_btui = (ilmstat_btuwi_pair_t*)node->val;
-	}
-	// ilm_btui is now in the map.
-  }
-#if UW_RECIPE_MAP_DEBUG
-  assert(ilm_btui != NULL);
-#endif
-
   tree_stat_t oldstat = DEFERRED;
-  if (atomic_compare_exchange_strong_explicit(&ilm_btui->stat, &oldstat, FORTHCOMING,
-					      memory_order_release, memory_order_relaxed)) {
-    // it is my responsibility to build the tree of intervals for the function
-    void *fcn_start = (void*)ilm_btui->interval.start;
-    void *fcn_end   = (void*)ilm_btui->interval.end;
+  ilmstat_btuwi_pair_t* ilm_btui = NULL;
+  uw_hash_entry_t *e = NULL;
+  thread_data_t *td = hpcrun_get_thread_data();
 
-    // ----------------------------------------------------------
-    // potentially crash in this statement. need to save the state 
-    // ----------------------------------------------------------
+  // With -e cputime, sometimes addr is 0
+  if (addr != NULL) {
+    e = uw_hash_lookup(td->uw_hash_table, uw, addr);
 
-    thread_data_t* td    = hpcrun_get_thread_data();
-    sigjmp_buf_t *oldjmp = td->current_jmp_buf;       // store the outer sigjmp
+    if (e == NULL) {
+      // check if addr is already in the range of an interval key in the map
+      ilm_btui = uw_recipe_map_inrange_find((uintptr_t)addr, uw);
 
-    td->current_jmp_buf  = &(td->bad_interval);
-
-    int ljmp = sigsetjmp(td->bad_interval.jb, 1);
-    if (ljmp == 0) {
-      btuwi_status_t btuwi_stat = build_intervals(fcn_start, fcn_end - fcn_start, uw);
-      if (btuwi_stat.error != 0) {
-        TMSG(UW_RECIPE_MAP, "build_intervals: fcn range %p to %p: error %d",
-       fcn_start, fcn_end, btuwi_stat.error);
+      // if we find ilm_btui, replace it in the hash table
+      if (ilm_btui != NULL) {
+        oldstat = atomic_load_explicit(&ilm_btui->stat, memory_order_acquire);
+        if (oldstat == READY) {
+          unwr_info->btuwi = bitree_uwi_inrange(ilm_btui->btuwi, (uintptr_t)addr);
+          if (unwr_info->btuwi != NULL) {
+            uw_hash_insert(td->uw_hash_table, uw, addr, ilm_btui, 
+			   unwr_info->btuwi);
+          }
+        } else {
+          // reset oldstat to deferred
+          oldstat = DEFERRED;
+        }
       }
-      ilm_btui->btuwi = bitree_uwi_rebalance(btuwi_stat.first, btuwi_stat.count);
-      atomic_store_explicit(&ilm_btui->stat, READY, memory_order_release);
-
-      td->current_jmp_buf = oldjmp;   // restore the outer sigjmp
-
     } else {
-      td->current_jmp_buf = oldjmp;   // restore the outer sigjmp
-      EMSG("Fail to get interval %p to %p", fcn_start, fcn_end);
-      atomic_store_explicit(&ilm_btui->stat, NEVER, memory_order_release);
+      ilm_btui = e->ilm_btui;
+      unwr_info->btuwi = e->btuwi;
+      // if we find ilm_btui, we do not need to update btuwi
+      oldstat = READY;
+    }
+  } else {
+    TMSG(UW_RECIPE_MAP, "BAD fnbounds_enclosing_addr failed: addr %p", addr);
+  }
+
+  if (oldstat != READY) {
+    if (!ilm_btui) {
+    load_module_t *lm;
+    void *fcn_start, *fcn_end;
+    if (!fnbounds_enclosing_addr(addr, &fcn_start, &fcn_end, &lm)) {
+      TMSG(UW_RECIPE_MAP, "BAD fnbounds_enclosing_addr failed: addr %p", addr);
       return false;
     }
-  }
-  else {
-    while (FORTHCOMING == oldstat)
-      oldstat = atomic_load_explicit(&ilm_btui->stat, memory_order_acquire);
-    if (oldstat == NEVER) {
-      // addr is in the range of some poisoned load module
+    if (addr < fcn_start || fcn_end <= addr) {
+      TMSG(UW_RECIPE_MAP, "BAD fnbounds_enclosing_addr failed: addr %p "
+        "not within fcn range %p to %p", addr, fcn_start, fcn_end);
       return false;
     }
-  }
+
+    // bounding addresses found; set DEFERRED state and pair it with
+    // (bitree_uwi_t*)NULL and try to insert into map:
+    ilm_btui =
+      ilmstat_btuwi_pair_malloc((uintptr_t)fcn_start, (uintptr_t)fcn_end, lm,
+        DEFERRED, my_alloc);
+    
+    csklnode_t *node = cskl_insert(addr2recipe_map[uw], ilm_btui, my_alloc);
+    if (ilm_btui !=  (ilmstat_btuwi_pair_t*)node->val) {
+      // interval_ldmod_pair ([fcn_start, fcn_end), lm) is already in the map,
+      // so free the unused copy and use the mapped one
+      ilmstat_btuwi_pair_free(ilm_btui, uw);
+      ilm_btui = (ilmstat_btuwi_pair_t*)node->val;
+    }
+    }
+#if UW_RECIPE_MAP_DEBUG
+    assert(ilm_btui != NULL);
+#endif
+    
+    if (atomic_compare_exchange_strong_explicit(&ilm_btui->stat, &oldstat, FORTHCOMING,
+                  memory_order_release, memory_order_relaxed)) {
+      // it is my responsibility to build the tree of intervals for the function
+      void *fcn_start = (void*)ilm_btui->interval.start;
+      void *fcn_end   = (void*)ilm_btui->interval.end;
+
+      // ----------------------------------------------------------
+      // potentially crash in this statement. need to save the state 
+      // ----------------------------------------------------------
+
+      thread_data_t* td    = hpcrun_get_thread_data();
+      sigjmp_buf_t *oldjmp = td->current_jmp_buf;       // store the outer sigjmp
+
+      td->current_jmp_buf  = &(td->bad_interval);
+
+      int ljmp = sigsetjmp(td->bad_interval.jb, 1);
+      if (ljmp == 0) {
+        btuwi_status_t btuwi_stat = build_intervals(fcn_start, fcn_end - fcn_start, uw);
+        if (btuwi_stat.error != 0) {
+          TMSG(UW_RECIPE_MAP, "build_intervals: fcn range %p to %p: error %d",
+         fcn_start, fcn_end, btuwi_stat.error);
+        }
+        ilm_btui->btuwi = bitree_uwi_rebalance(btuwi_stat.first, btuwi_stat.count);
+        atomic_store_explicit(&ilm_btui->stat, READY, memory_order_release);
+
+        td->current_jmp_buf = oldjmp;   // restore the outer sigjmp
+
+      } else {
+        td->current_jmp_buf = oldjmp;   // restore the outer sigjmp
+        EMSG("Fail to get interval %p to %p", fcn_start, fcn_end);
+        atomic_store_explicit(&ilm_btui->stat, NEVER, memory_order_release);
+        // I am going to switch an unwinder because it does not help
+        //uw_hash_delete(td->uw_hash_table, addr);
+        return false;
+      }
+    }
+    else {
+      while (FORTHCOMING == oldstat)
+        oldstat = atomic_load_explicit(&ilm_btui->stat, memory_order_acquire);
+      if (oldstat == NEVER) {
+        // addr is in the range of some poisoned load module
+        // I am going to switch an unwinder because it does not help
+        //uw_hash_delete(td->uw_hash_table, addr);
+        return false;
+      }
+    }
+
+    // I am going to update my btuwi by searching the binary tree
+    if (addr != NULL) {
+      unwr_info->btuwi = bitree_uwi_inrange(ilm_btui->btuwi, (uintptr_t)addr);
+      if (unwr_info->btuwi != NULL) {
+        uw_hash_insert(td->uw_hash_table, uw, addr, ilm_btui, unwr_info->btuwi);
+      }
+    }
+  } 
 
   TMSG(UW_RECIPE_MAP_LOOKUP, "found in unwind tree: addr %p", addr);
 
-  bitree_uwi_t *btuwi = ilm_btui->btuwi;
-  unwr_info->btuwi    = bitree_uwi_inrange(btuwi, (uintptr_t)addr);
   unwr_info->treestat = READY;
   unwr_info->lm         = ilm_btui->lm;
   unwr_info->interval   = ilm_btui->interval;

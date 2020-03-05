@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2019, Rice University
+## Copyright ((c)) 2002-2020, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -70,7 +70,19 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
+LIBDWARF_INC = @LIBDWARF_INC@
+LIBDWARF_LIB = @LIBDWARF_LIB@
+
+LIBELF_INC = @LIBELF_INC@
+LIBELF_LIB   = @LIBELF_LIB@
+
 XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
+
+if OPT_DYNINST_LIBDW
+MY_ELF_DWARF = -L$(LIBELF_LIB) -ldw -lelf
+else
+MY_ELF_DWARF = -L$(LIBDWARF_LIB) -ldwarf -L$(LIBELF_LIB) -lelf
+endif
 
 MYSOURCES = \
 	main.cpp \
@@ -90,13 +102,14 @@ MYLDADD = \
 	$(HPCLIB_Banal_Simple) \
 	$(HPCLIB_ProfXML) \
 	$(HPCLIB_Prof) \
-	$(HPCLIB_ProfLean) \
 	$(HPCLIB_Binutils) \
+	$(HPCLIB_ProfLean) \
 	$(HPCLIB_ISA) \
 	$(MY_LIB_XED) \
 	$(HPCLIB_XML) \
 	$(HPCLIB_Support) \
 	$(HPCLIB_SupportLean) \
+	$(MY_ELF_DWARF) \
 	@LZMA_LDFLAGS_STAT@ \
 	@XERCES_LDLIBS@ \
 	@BINUTILS_LIBS@ \

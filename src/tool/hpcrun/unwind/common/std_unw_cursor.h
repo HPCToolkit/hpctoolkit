@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -50,6 +50,8 @@
 //************************* System Include Files ****************************
 
 #include <inttypes.h>
+#include <ucontext.h>
+
 #define UNW_LOCAL_ONLY
 #include <libunwind.h>
 
@@ -85,14 +87,14 @@ typedef struct hpcrun_unw_cursor_t {
   // ------------------------------------------------------------
   // common state
   // ------------------------------------------------------------
-  void *pc_unnorm; //only place where un-normalized pc will exist
-  void **bp;
+  void *pc_unnorm; // only place where un-normalized pc exists
+  void **bp;       // maintained only on x86_64
   void **sp;
   void *ra;
 
-  void *ra_loc;  // for trampolines
+  void *ra_loc;    // return address location (for trampolines)
 
-  fence_enum_t fence; // Details on which fence stopped an unwind
+  fence_enum_t fence; // which fence stopped an unwind
   unwindr_info_t unwr_info; // unwind recipe info
   ip_normalized_t the_function; // (normalized) ip for function
 
@@ -104,6 +106,10 @@ typedef struct hpcrun_unw_cursor_t {
   // ------------------------------------------------------------
   int32_t flags:30;
   enum libunw_state libunw_status:2;
+
+#ifdef HOST_CPU_PPC
+  ucontext_t *ctxt; // needed for register-based unwinding
+#endif
 
   unw_cursor_t uc;
 } hpcrun_unw_cursor_t;

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -282,8 +282,10 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
   }
 
   bool doDispPercent = true;
-  bool isPercent = false;
-  bool isVisible = mSrc->isVisible();
+  bool isPercent     = false;
+  int  visibility    = mSrc->visibility();
+
+  int metric_order = ORDER_ARTIFICIAL_METRIC;
 
   // This is a cheesy way of creating the metrics, but it is good
   // enough for now.
@@ -291,8 +293,12 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
   Metric::AExpr* expr = NULL;
   if (mDrvdTy.find("Sum", 0) == 0) {
     expr = new Metric::Plus(opands, mOpands.size());
+
     doDispPercent = mSrc->doDispPercent();
     isPercent     = mSrc->isPercent();
+
+    // metric order is used to compute formula from hpcrun
+    metric_order = mSrc->order();
   }
   else if (mDrvdTy.find("Mean", 0) == 0) {
     expr = new Metric::Mean(opands, mOpands.size());
@@ -327,7 +333,7 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
   const string& mDesc = mSrc->description();
 
   DerivedDesc* m =
-    new DerivedDesc(mNmFmt, mDesc, expr, isVisible, true/*isSortKey*/,
+    new DerivedDesc(mNmFmt, mDesc, expr, visibility, true/*isSortKey*/,
 		    doDispPercent, isPercent);
   m->nameBase(mNmBase);
   m->nameSfx(""); // clear; cf. Prof::CallPath::Profile::RFlg_NoMetricSfx
@@ -340,13 +346,17 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
   m->isMultiplexed(mSrc->isMultiplexed());
   m->formula      (mSrc->formula());
 
+  m->formula      (mSrc->formula());
+  m->format       (mSrc->format());
+  m->order        (metric_order);
+
   insert(m);
   expr->accumId(0, m->id());
 
   for (uint k = 1; k < expr->numAccum(); ++k) {
     string m2NmBase = mNmBase + ":accum" + StrUtil::toStr(k+1);
     DerivedDesc* m2 =
-      new DerivedDesc(mNmFmt, mDesc, NULL/*expr*/, false/*isVisible*/,
+      new DerivedDesc(mNmFmt, mDesc, NULL/*expr*/, HPCRUN_FMT_METRIC_HIDE /*isVisible*/,
 		      false/*isSortKey*/, false/*doDispPercent*/,
 		      false/*isPercent*/);
     m2->nameBase(m2NmBase);
@@ -361,7 +371,7 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
     string m3NmBase = mNmBase + ":num-src";
     Metric::NumSource* m3Expr = new Metric::NumSource(mOpands.size());
     DerivedDesc* m3 =
-      new DerivedDesc(mNmFmt, mDesc, m3Expr, false/*isVisible*/,
+      new DerivedDesc(mNmFmt, mDesc, m3Expr, HPCRUN_FMT_METRIC_HIDE /*isVisible*/,
 		      false/*isSortKey*/, false/*doDispPercent*/,
 		      false/*isPercent*/);
     m3->nameBase(m3NmBase);
@@ -381,8 +391,10 @@ Metric::DerivedIncrDesc*
 Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
 {
   bool doDispPercent = true;
-  bool isPercent = false;
-  bool isVisible = mSrc->isVisible();
+  bool isPercent     = false;
+  int  visibility    = mSrc->visibility();
+
+  int metric_order = ORDER_ARTIFICIAL_METRIC;
 
   // This is a cheesy way of creating the metrics, but it is good
   // enough for now.
@@ -391,9 +403,11 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
   if (mDrvdTy.find("Sum", 0) == 0) {
     expr = new Metric::SumIncr(Metric::IData::npos, mSrc->id());
 
-    // some metrics (like ratio) don't display the percent
-    // we should respect the original metric description here
     doDispPercent = mSrc->doDispPercent();
+    isPercent     = mSrc->isPercent();
+
+    // metric order is used to compute formula from hpcrun
+    metric_order = mSrc->order();
   }
   else if (mDrvdTy.find("Mean", 0) == 0) {
     expr = new Metric::MeanIncr(Metric::IData::npos, mSrc->id());
@@ -428,7 +442,7 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
   const string& mDesc = mSrc->description();
 
   DerivedIncrDesc* m =
-    new DerivedIncrDesc(mNmFmt, mDesc, expr, isVisible,
+    new DerivedIncrDesc(mNmFmt, mDesc, expr, visibility,
 			true/*isSortKey*/, doDispPercent, isPercent);
   m->nameBase(mNmBase);
   m->zeroDBInfo(); // clear
@@ -439,13 +453,17 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
   m->num_samples  (mSrc->num_samples());
   m->isMultiplexed(mSrc->isMultiplexed());
 
+  m->formula      (mSrc->formula());
+  m->format       (mSrc->format());
+  m->order        (metric_order);
+
   insert(m);
   expr->accumId(0, m->id());
 
   for (uint k = 1; k < expr->numAccum(); ++k) {
     string m2NmBase = mNmBase + ":accum" + StrUtil::toStr(k+1);
     DerivedIncrDesc* m2 =
-      new DerivedIncrDesc(mNmFmt, mDesc, NULL/*expr*/, false/*isVisible*/,
+      new DerivedIncrDesc(mNmFmt, mDesc, NULL/*expr*/, HPCRUN_FMT_METRIC_HIDE /*isVisible*/,
 			  false/*isSortKey*/, false/*doDispPercent*/,
 			  false/*isPercent*/);
     m2->nameBase(m2NmBase);
@@ -459,7 +477,7 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
     string m3NmBase = mNmBase + ":num-src";
     Metric::NumSourceIncr* m3Expr = new Metric::NumSourceIncr(0, mSrc->id());
     DerivedIncrDesc* m3 =
-      new DerivedIncrDesc(mNmFmt, mDesc, m3Expr, false/*isVisible*/,
+      new DerivedIncrDesc(mNmFmt, mDesc, m3Expr, HPCRUN_FMT_METRIC_HIDE /*isVisible*/,
 			  false/*isSortKey*/, false/*doDispPercent*/,
 			  false/*isPercent*/);
     m3->nameBase(m3NmBase);

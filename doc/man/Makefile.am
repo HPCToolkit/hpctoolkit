@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2019, Rice University
+## Copyright ((c)) 2002-2020, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -100,6 +100,7 @@ man_MANS = \
 	hpclink.1hpctoolkit \
 	hpcstruct.1hpctoolkit \
 	hpcprof.1hpctoolkit \
+	hpcprof-mpi.1hpctoolkit \
 	hpcproftt.1hpctoolkit \
 	hpcsummary.1hpctoolkit \
 	hpctraceviewer.1hpctoolkit \

@@ -122,15 +122,16 @@ host_triplet = @host@
 @OPT_PERF_MEM_DATA_SRC_TRUE@am__append_1 = \
 @OPT_PERF_MEM_DATA_SRC_TRUE@	variable-entries.cpp
 
-@OPT_DYNINST_LIBDW_TRUE@am__append_2 = -L$(LIBELF_LIB) -ldw -lelf -ldl
-@OPT_DYNINST_LIBDW_FALSE@am__append_3 = -L$(LIBDWARF_LIB) -ldwarf -L$(LIBELF_LIB) -lelf
-@OPT_USE_ZLIB_TRUE@am__append_4 = -L$(ZLIB_LIB) -lz
+@OPT_ENABLE_OPENMP_SYMTAB_TRUE@am__append_2 = $(OPENMP_FLAG)
+@OPT_DYNINST_LIBDW_TRUE@am__append_3 = -L$(LIBELF_LIB) -ldw -lelf -ldl
+@OPT_DYNINST_LIBDW_FALSE@am__append_4 = -L$(LIBDWARF_LIB) -ldwarf -L$(LIBELF_LIB) -lelf
+@OPT_USE_ZLIB_TRUE@am__append_5 = -L$(ZLIB_LIB) -lz
 pkglibexec_PROGRAMS = hpcfnbounds-bin$(EXEEXT)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_5 = x86-process-ranges.cpp amd-xop.c
-@HOST_CPU_X86_FAMILY_TRUE@am__append_6 = -I$(XED2_INC)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_7 = $(XED2_LIB_FLAGS)
-@HOST_CPU_AARCH64_TRUE@@HOST_CPU_X86_FAMILY_FALSE@am__append_8 = arm-process-ranges.cpp
-@HOST_CPU_AARCH64_FALSE@@HOST_CPU_X86_FAMILY_FALSE@am__append_9 = generic-process-ranges.cpp
+@HOST_CPU_X86_FAMILY_TRUE@am__append_6 = x86-process-ranges.cpp amd-xop.c
+@HOST_CPU_X86_FAMILY_TRUE@am__append_7 = -I$(XED2_INC)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_8 = $(XED2_LIB_FLAGS)
+@HOST_CPU_AARCH64_TRUE@@HOST_CPU_X86_FAMILY_FALSE@am__append_9 = arm-process-ranges.cpp
+@HOST_CPU_AARCH64_FALSE@@HOST_CPU_X86_FAMILY_FALSE@am__append_10 = generic-process-ranges.cpp
 subdir = src/tool/hpcfnbounds
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/config/libtool.m4 \
@@ -180,7 +181,7 @@ am_hpcfnbounds_bin_OBJECTS = $(am__objects_2) $(am__objects_3) \
 hpcfnbounds_bin_OBJECTS = $(am_hpcfnbounds_bin_OBJECTS)
 am__DEPENDENCIES_1 =
 am__DEPENDENCIES_2 = libeh_frames.a $(HPCLIB_SupportLean) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(HPCLIB_ProfLean) $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 @HOST_CPU_X86_FAMILY_TRUE@am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1)
@@ -428,6 +429,10 @@ LZMA_PROF_MPI_LIBS = @LZMA_PROF_MPI_LIBS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
+MBEDTLS_COPY = @MBEDTLS_COPY@
+MBEDTLS_IFLAGS = @MBEDTLS_IFLAGS@
+MBEDTLS_LIB = @MBEDTLS_LIB@
+MBEDTLS_LIBS = @MBEDTLS_LIBS@
 MKDIR_P = @MKDIR_P@
 MPICC = @MPICC@
 MPICXX = @MPICXX@
@@ -440,16 +445,19 @@ OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 OPENMP_FLAG = @OPENMP_FLAG@
 OPT_CILK_IFLAGS = @OPT_CILK_IFLAGS@
-OPT_CUDA = @OPT_CUDA@
 OPT_CUDA_IFLAGS = @OPT_CUDA_IFLAGS@
 OPT_CUDA_LDFLAGS = @OPT_CUDA_LDFLAGS@
 OPT_CUPTI = @OPT_CUPTI@
 OPT_CUPTI_IFLAGS = @OPT_CUPTI_IFLAGS@
+OPT_CUPTI_LDFLAGS = @OPT_CUPTI_LDFLAGS@
 OPT_OBJCOPY = @OPT_OBJCOPY@
 OPT_PAPI = @OPT_PAPI@
 OPT_PAPI_IFLAGS = @OPT_PAPI_IFLAGS@
 OPT_PAPI_LDFLAGS = @OPT_PAPI_LDFLAGS@
 OPT_PAPI_LIBPATH = @OPT_PAPI_LIBPATH@
+OPT_ROCM = @OPT_ROCM@
+OPT_ROCM_IFLAGS = @OPT_ROCM_IFLAGS@
+OPT_ROCM_LDFLAGS = @OPT_ROCM_LDFLAGS@
 OPT_UPC_IFLAGS = @OPT_UPC_IFLAGS@
 OPT_UPC_LDFLAGS = @OPT_UPC_LDFLAGS@
 OTOOL = @OTOOL@
@@ -592,23 +600,23 @@ HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
 MYSOURCES = main.cpp code-ranges.cpp function-entries.cpp \
 	intervals.cpp sections.cpp server.cpp $(am__append_1)
 MYCPPFLAGS = $(HPC_IFLAGS) $(BOOST_IFLAGS) -I$(LIBELF_INC) -I$(LIBDWARF_INC) \
-	$(DYNINST_IFLAGS)
+	$(DYNINST_IFLAGS) $(TBB_IFLAGS)
 
-MYCXXFLAGS = @HOST_CXXFLAGS@
-MYLDADD = libeh_frames.a $(HPCLIB_SupportLean) $(DYNINST_LFLAGS) \
-	$(BOOST_LFLAGS) $(TBB_LFLAGS) $(am__append_2) $(am__append_3) \
-	$(am__append_4)
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(am__append_2)
+MYLDADD = libeh_frames.a $(HPCLIB_SupportLean) $(HPCLIB_ProfLean) \
+	$(DYNINST_LFLAGS) $(BOOST_LFLAGS) $(TBB_LFLAGS) \
+	$(am__append_3) $(am__append_4) $(am__append_5)
 MYCLEAN = @HOST_LIBTREPOSITORY@
 noinst_LIBRARIES = libeh_frames.a
 pkglibexec_SCRIPTS = hpcfnbounds
 libeh_frames_a_SOURCES = eh-frames.cpp
 libeh_frames_a_CPPFLAGS = $(HPC_IFLAGS) $(BOOST_IFLAGS) -I$(LIBDWARF_INC)
 libeh_frames_a_CXXFLAGS = $(MYCXXFLAGS)
-hpcfnbounds_bin_SOURCES = $(MYSOURCES) $(am__append_5) $(am__append_8) \
-	$(am__append_9)
-hpcfnbounds_bin_CPPFLAGS = $(MYCPPFLAGS) $(am__append_6)
+hpcfnbounds_bin_SOURCES = $(MYSOURCES) $(am__append_6) $(am__append_9) \
+	$(am__append_10)
+hpcfnbounds_bin_CPPFLAGS = $(MYCPPFLAGS) $(am__append_7)
 hpcfnbounds_bin_CXXFLAGS = $(MYCXXFLAGS)
-hpcfnbounds_bin_LDADD = $(MYLDADD) $(am__append_7)
+hpcfnbounds_bin_LDADD = $(MYLDADD) $(am__append_8)
 MOSTLYCLEANFILES = $(MYCLEAN)
 
 # Assumes includer sets MYCXXFLAGS and MYCFLAGS

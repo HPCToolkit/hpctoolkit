@@ -101,6 +101,7 @@ struct perf_mem_metric {
  *****************************************************************************/
 
 static struct perf_mem_metric metric;
+static kind_info_t *data_kind;
 
 #if 0
 static char formula_llc_miss[MAX_FORMULA_CHAR];
@@ -254,26 +255,26 @@ datacentric_record_store_mem( cct_node_t *node, cct_node_t *datacentric_node,
     }
 }
 
+
+
 void
 pmu_handler_init()
 {
+  data_kind = hpcrun_metrics_new_kind();
+
   // ------------------------------------------
   // Memory load metric
   // ------------------------------------------
-  metric.memload = hpcrun_new_metric();
-  hpcrun_set_metric_info(metric.memload, "MEM-Load");
+  metric.memload = hpcrun_set_new_metric_info(data_kind, "MEM-Load");
 
-  metric.memld_fbhit = hpcrun_new_metric();
-  hpcrun_set_metric_and_attributes(metric.memld_fbhit,  "MEM-Load-FBhit",
-      MetricFlags_ValFmt_Int, 1, metric_property_none, false /* disable show*/, true );
+  metric.memld_fbhit = hpcrun_set_new_metric_info_and_period(data_kind,  "MEM-Load-FBhit",
+      MetricFlags_ValFmt_Int, 1, metric_property_none );
 
-  metric.memld_l1hit = hpcrun_new_metric();
-  hpcrun_set_metric_and_attributes(metric.memld_l1hit,  "MEM-Load-L1hit",
-      MetricFlags_ValFmt_Int, 1, metric_property_none, true /* enable show*/, true );
+  metric.memld_l1hit = hpcrun_set_new_metric_info_and_period(data_kind,  "MEM-Load-L1hit",
+      MetricFlags_ValFmt_Int, 1, metric_property_none );
 
-  metric.memld_l2hit = hpcrun_new_metric();
-  hpcrun_set_metric_and_attributes(metric.memld_l2hit,  "MEM-Load-L2hit",
-      MetricFlags_ValFmt_Int, 1, metric_property_none, true /* enable show*/, true );
+  metric.memld_l2hit = hpcrun_set_new_metric_info_and_period(data_kind,  "MEM-Load-L2hit",
+      MetricFlags_ValFmt_Int, 1, metric_property_none );
 
   // ------------------------------------------
   // percent of cache l1 and l2 hit
@@ -301,17 +302,15 @@ pmu_handler_init()
   // last level cache (llc) hit
   // ------------------------------------------
 
-  metric.memllc_hit = hpcrun_new_metric();
-  hpcrun_set_metric_and_attributes(metric.memllc_hit,  "MEM-LLC-hit",
-        MetricFlags_ValFmt_Int, 1, metric_property_none, true /* enable show*/, true );
+  metric.memllc_hit = hpcrun_set_new_metric_info_and_period(data_kind,  "MEM-LLC-hit",
+        MetricFlags_ValFmt_Int, 1, metric_property_none );
 
   // ------------------------------------------
   // hitm local
   // ------------------------------------------
 
-  metric.mem_lcl_hitm = hpcrun_new_metric();
-  hpcrun_set_metric_and_attributes(metric.mem_lcl_hitm, "MEM-hitm-local",
-      MetricFlags_ValFmt_Int, 1, metric_property_none, true /* enable show*/, true );
+  metric.mem_lcl_hitm = hpcrun_set_new_metric_info_and_period(data_kind, "MEM-hitm-local",
+      MetricFlags_ValFmt_Int, 1, metric_property_none );
 
   // ------------------------------------------
   // percent l3 hit
@@ -333,29 +332,24 @@ pmu_handler_init()
   // Local and remote memory
   // ------------------------------------------
 
-  metric.mem_rmt_hitm = hpcrun_new_metric();
-  hpcrun_set_metric_info(metric.mem_rmt_hitm, "MEM-hitm-rmt");
+  metric.mem_rmt_hitm = hpcrun_set_new_metric_info(data_kind, "MEM-hitm-rmt");
 
   // ------------------------------------------
   // Remote hit
   // ------------------------------------------
-  metric.mem_rmt_hit = hpcrun_new_metric();
-  hpcrun_set_metric_info(metric.mem_rmt_hit, "MEM-rmt-hit");
+  metric.mem_rmt_hit = hpcrun_set_new_metric_info(data_kind, "MEM-rmt-hit");
 
   // ------------------------------------------
   // DRAM
   // ------------------------------------------
-  metric.miss_dram_lcl = hpcrun_new_metric();
-  hpcrun_set_metric_info(metric.miss_dram_lcl, "DRAM-miss-to-lcl");
+  metric.miss_dram_lcl = hpcrun_set_new_metric_info(data_kind, "DRAM-miss-to-lcl");
 
-  metric.miss_dram_rmt = hpcrun_new_metric();
-  hpcrun_set_metric_info(metric.miss_dram_rmt, "DRAM-miss-to-rmt");
+  metric.miss_dram_rmt = hpcrun_set_new_metric_info(data_kind, "DRAM-miss-to-rmt");
 
   // ------------------------------------------
   // Memory load miss metric
   // ------------------------------------------
-  metric.memload_miss = hpcrun_new_metric();
-  hpcrun_set_metric_info(metric.memload_miss, "MEM-Load-miss");
+  metric.memload_miss = hpcrun_set_new_metric_info(data_kind, "MEM-Load-miss");
 
   // ------------------------------------------
   // llc miss
@@ -379,36 +373,30 @@ pmu_handler_init()
   // ------------------------------------------
   // misc
   // ------------------------------------------
-  metric.memld_io = hpcrun_new_metric();
-  hpcrun_set_metric_and_attributes(metric.memld_io, "MEM-Load I/O Address",
-      MetricFlags_ValFmt_Int, 1, metric_property_none, false /* disable show*/, true);
+  metric.memld_io = hpcrun_set_new_metric_info_and_period(data_kind, "MEM-Load I/O Address",
+      MetricFlags_ValFmt_Int, 1, metric_property_none);
 
-  metric.memld_shared = hpcrun_new_metric();
-  hpcrun_set_metric_and_attributes(metric.memld_shared, "MEM-Load MESI State Shared",
-      MetricFlags_ValFmt_Int, 1, metric_property_none, false /* disable show*/, true);
+  metric.memld_shared = hpcrun_set_new_metric_info_and_period(data_kind, "MEM-Load MESI State Shared",
+      MetricFlags_ValFmt_Int, 1, metric_property_none);
 
-  metric.memld_uncache = hpcrun_new_metric();
-  hpcrun_set_metric_and_attributes(metric.memld_uncache, "MEM-Load Uncache",
-      MetricFlags_ValFmt_Int, 1, metric_property_none, false /* disable show*/, true);
+  metric.memld_uncache = hpcrun_set_new_metric_info_and_period(data_kind, "MEM-Load Uncache",
+      MetricFlags_ValFmt_Int, 1, metric_property_none);
 
-  metric.memld_excl = hpcrun_new_metric();
-  hpcrun_set_metric_and_attributes(metric.memld_excl, "MEM-Load Exclusive",
-      MetricFlags_ValFmt_Int, 1, metric_property_none, false /* disable show*/, true);
+  metric.memld_excl = hpcrun_set_new_metric_info_and_period(data_kind, "MEM-Load Exclusive",
+      MetricFlags_ValFmt_Int, 1, metric_property_none);
 
   // ------------------------------------------
   // Memory store metric
   // ------------------------------------------
-  metric.memstore = hpcrun_new_metric();
-  hpcrun_set_metric_info(metric.memstore, "MEM-Store");
+  metric.memstore = hpcrun_set_new_metric_info(data_kind, "MEM-Store");
 
-  metric.memstore_l1_hit = hpcrun_new_metric();
-  hpcrun_set_metric_info(metric.memstore_l1_hit, "MEM-Store-L1hit");
+  metric.memstore_l1_hit = hpcrun_set_new_metric_info(data_kind, "MEM-Store-L1hit");
 
-  metric.memstore_l1_miss = hpcrun_new_metric();
-  hpcrun_set_metric_info(metric.memstore_l1_miss, "MEM-Store-L1miss");
+  metric.memstore_l1_miss = hpcrun_set_new_metric_info(data_kind, "MEM-Store-L1miss");
 
-  metric.memstore_uncache = hpcrun_new_metric();
-  hpcrun_set_metric_info(metric.memstore_uncache, "MEM-Store-Uncache");
+  metric.memstore_uncache = hpcrun_set_new_metric_info(data_kind, "MEM-Store-Uncache");
+
+  hpcrun_close_kind(data_kind);
 }
 
 

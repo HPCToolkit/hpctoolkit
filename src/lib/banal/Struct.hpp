@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -65,6 +65,7 @@ public:
   int  jobs_parse;
   int  jobs_symtab;
   bool show_time;
+  bool compute_gpu_cfg;
   bool ourDemangle;
 
   Options()

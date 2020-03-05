@@ -14,6 +14,8 @@
 
 #include <hpcrun/frame.h>
 #include <unwind/common/fence_enum.h>
+#include "../../frame.h"
+#include "fence_enum.h"
 
 typedef struct {
   frame_t* begin;     // beginning frame of backtrace
@@ -23,6 +25,7 @@ typedef struct {
   bool     has_tramp:1; // true when a trampoline short-circuited the unwind
   bool     bottom_frame_elided:1; // true if bottom frame has been elided 
   bool     partial_unwind:1; // true if not a full unwind
+  bool     collapsed:1; // callstack collapsed by hpctoolkit, e.g. OpenMP placeholders 
   void    *trace_pc;  // in/out value: modified to adjust trace when modifying backtrace
 } backtrace_info_t;
 

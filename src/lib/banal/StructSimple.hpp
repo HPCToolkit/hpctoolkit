@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -85,11 +85,10 @@ namespace Struct {
 
   Prof::Struct::Stmt*
   makeStructureSimple(Prof::Struct::LM* lmStrct, BinUtil::LM* lm, VMA vma,
-      const string* unknownProcNm);
+      const std::string* unknownProcNm);
 
   Prof::Struct::Stmt*
-  demandStmtStructure(Prof::Struct::LM* lmStrct, Prof::Struct::Proc* procStrct,
-		      SrcFile::ln line, VMA begVMA, VMA endVMA);
+  makeStructureSimple(Prof::Struct::LM* lmStrct, BinUtil::LM* lm, VMA vma);
 
 } // namespace Struct
 

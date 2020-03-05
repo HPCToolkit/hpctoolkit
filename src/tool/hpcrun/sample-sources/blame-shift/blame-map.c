@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -105,10 +105,14 @@ typedef struct {
   uint32_t blame;
 } blame_parts_t;
 
+typedef union {
+  uint_fast64_t combined;
+  blame_parts_t parts;
+} blame_all_t;
+
 
 union blame_entry_t {
-  atomic_uint_least64_t  all;
-  blame_parts_t parts; 
+  atomic_uint_fast64_t value;
 };
 
 
@@ -126,6 +130,23 @@ static uint64_t volatile thelock;
  ***************************************************************************/
 
 uint32_t 
+blame_entry_obj_id(uint_fast64_t value)
+{
+  blame_all_t entry;
+  entry.combined = value;
+  return entry.parts.obj_id;
+}
+
+
+uint32_t 
+blame_entry_blame(uint_fast64_t value)
+{
+  blame_all_t entry;
+  entry.combined = value;
+  return entry.parts.blame;
+}
+
+uint32_t 
 blame_map_obj_id(uint64_t obj)
 {
   return ((uint32_t) ((uint64_t)obj) >> 2);
@@ -139,13 +160,13 @@ blame_map_hash(uint64_t obj)
 }
 
 
-uint64_t 
+uint_fast64_t 
 blame_map_entry(uint64_t obj, uint32_t metric_value)
 {
-  blame_entry_t be;
+  blame_all_t be;
   be.parts.obj_id = blame_map_obj_id(obj);
   be.parts.blame = metric_value;
-  return atomic_load_explicit(&be.all, memory_order_relaxed);
+  return be.combined;
 }
 
 
@@ -167,8 +188,7 @@ blame_map_init(blame_entry_t table[])
 {
   int i;
   for(i = 0; i < N; i++) {
-    table[i].parts.obj_id = 0;
-    table[i].parts.blame = 0;
+    atomic_store(&table[i].value, 0);
   }
 }
 
@@ -183,36 +203,35 @@ blame_map_add_blame(blame_entry_t table[],
   assert(index >= 0 && index < N);
 
   do_lock();
-  for(;;) {
-    blame_entry_t oldval = table[index];
+  uint_fast64_t oldval = atomic_load(&table[index].value);
 
-    if(oldval.parts.obj_id == obj_id) {
+  for(;;) {
+    blame_all_t newval;
+    newval.combined = oldval;
+    newval.parts.blame += metric_value;
+
+    uint32_t obj_at_index = newval.parts.obj_id;
+    if(obj_at_index == obj_id) {
 #ifdef LOSSLESS_BLAME
-      blame_entry_t newval = oldval;
-      newval.parts.blame += metric_value;
-      uint64_t oldall = atomic_load_explicit(&oldval.all, memory_order_relaxed);
-      uint64_t testoldall = oldall;
-      uint64_t newall = atomic_load_explicit(&oldval.all, memory_order_relaxed);
-      if (atomic_compare_exchange_strong_explicit(&table[index].all, &oldall, newall,
-						  memory_order_relaxed, memory_order_relaxed) 
-	    == testoldall) break;
+      if (atomic_compare_exchange_strong_explicit(&table[index].value, &oldval, newval.combined,
+						  memory_order_relaxed, memory_order_relaxed)) 
+        break;
 #else
-      oldval.parts.blame += metric_value;
-      table[index].all = oldval.all;
+      // the atomicity is not needed here, but it is the easiest way to write this
+      atomic_store(&table[index].value, newval.combined);
       break;
 #endif
     } else {
-      if(oldval.parts.obj_id == 0) {
-	uint64_t newval = blame_map_entry(obj, metric_value);
+      if(newval.parts.obj_id == 0) {
+	newval.combined = blame_map_entry(obj, metric_value);
 #ifdef LOSSLESS_BLAME
-	uint64_t oldall = atomic_load_explicit(&oldval.all, memory_order_relaxed);
-	uint64_t testoldall = oldall;
-	if ((atomic_compare_exchange_strong_explicit(&table[index].all, &oldall, newval,
-						     memory_order_relaxed, memory_order_relaxed)) 
-	    == testoldall) break;
+	if ((atomic_compare_exchange_strong_explicit(&table[index].value, &oldval, newval.combined,
+						     memory_order_relaxed, memory_order_relaxed)))  
+          break;
 	// otherwise, try again
 #else
-	table[index].all = newval;
+        // the atomicity is not needed here, but it is the easiest way to write this
+        atomic_store(&table[index].value, newval.combined);
 	break;
 #endif
       }
@@ -241,18 +260,17 @@ blame_map_get_blame(blame_entry_t table[], uint64_t obj)
 
   do_lock();
   for(;;) {
-    blame_entry_t oldval = table[index];
-    if(oldval.parts.obj_id == obj_id) {
+    uint_fast64_t oldval = atomic_load(&table[index].value);
+    uint32_t entry_obj_id = blame_entry_obj_id(oldval);
+    if(entry_obj_id == obj_id) {
 #ifdef LOSSLESS_BLAME
-      uint64_t oldall = atomic_load_explicit(&oldval.all, memory_order_relaxed);
-      uint64_t testoldall = oldall;
-      if (atomic_compare_exchange_strong_explicit(&table[index].all, &oldall, zero,
-						  memory_order_relaxed, memory_order_relaxed)
-	  != testoldall) continue; // try again on failure
+      if (!atomic_compare_exchange_strong_explicit(&table[index].value, &oldval, zero,
+						  memory_order_relaxed, memory_order_relaxed)) 
+        continue; // try again on failure
 #else
       table[index].all = 0;
 #endif
-      val = (uint64_t)oldval.parts.blame;
+      val = (uint64_t) blame_entry_blame(oldval);
     }
     break;
   }

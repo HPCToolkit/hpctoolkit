@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -62,6 +62,7 @@ extern void hpcrun_all_sources_init(void);
 extern void hpcrun_all_sources_thread_init(void);
 extern void hpcrun_all_sources_thread_init_action(void);
 extern void hpcrun_all_sources_process_event_list(int lush_metrics);
+extern void hpcrun_all_sources_finalize_event_list(void);
 extern void hpcrun_all_sources_gen_event_set(int lush_metrics);
 extern void hpcrun_all_sources_start(void);
 extern void hpcrun_all_sources_thread_fini_action(void);

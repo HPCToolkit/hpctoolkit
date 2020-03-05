@@ -57,7 +57,10 @@
 #define EVNAME_STALL "STALL"
 
 int
-stall_hw_register(sample_source_t *self, event_custom_t  *event, struct event_threshold_s *period);
+stall_hw_register(sample_source_t *self, 
+                  kind_info_t     *kb_kind,
+                  event_custom_t  *event, 
+                  struct event_threshold_s *period);
 
 void
 stall_init();

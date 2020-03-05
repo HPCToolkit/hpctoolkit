@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -303,6 +303,38 @@ show_info(char *event )
 //******************************************************************************
 // Supported operations
 //******************************************************************************
+
+
+const char *
+pfmu_getEventDescription(const char *event_name)
+{
+  if (event_name == NULL) return NULL;
+
+  pfm_perf_encode_arg_t arg;
+  char *fqstr = NULL;
+
+  arg.fstr = &fqstr;
+  arg.size = sizeof(pfm_perf_encode_arg_t);
+  struct perf_event_attr attr;
+  memset(&attr, 0, sizeof(struct perf_event_attr));
+
+  arg.attr = &attr;
+  int ret = pfm_get_os_event_encoding(event_name, PFM_PLM0|PFM_PLM3, PFM_OS_PERF_EVENT_EXT, &arg);
+
+  if (ret == PFM_SUCCESS) {
+    pfm_event_info_t info;
+    memset(&info, 0, sizeof(info));
+    info.size = sizeof(info);
+    
+    ret = pfm_get_event_info(arg.idx, PFM_OS_NONE, &info);
+
+    if (ret == PFM_SUCCESS) {
+      return info.desc;
+    }
+  }
+  return event_name;
+}
+
 
 /**
  * get the complete perf event attribute for a given pmu

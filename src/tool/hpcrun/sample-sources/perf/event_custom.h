@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -74,10 +74,10 @@ typedef struct event_handler_arg_s {
 
 // --------------------------------------------------------------
 // callback functions
-// --------------------------------------------------------------
 
 typedef int  register_event_t(sample_source_t *self,
-                              event_custom_t *event,
+                              kind_info_t     *kb_kind,
+                              event_custom_t  *event,
                               struct event_threshold_s *period);
 
 typedef event_accept_type_t event_handler_t(event_handler_arg_t *args);
@@ -107,7 +107,7 @@ typedef struct event_custom_s {
 /***
  * create a custom event
  */ 
-int event_custom_create_event(sample_source_t *self, char *name);
+int event_custom_create_event(sample_source_t *self, kind_info_t *kb_kind, char *name);
 /**
  * find an event custom based on its event name.
  * @return event_custom_t if exists, NULL otherwise.

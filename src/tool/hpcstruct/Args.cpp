@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -125,6 +125,11 @@ Options: Parallel usage\n\
   --time               Display stats on time and space usage.\n\
 \n\
 Options: Structure recovery\n\
+  --gpucfg <yes/no>    Compute loop nesting structure for GPU machine code.\n\
+                       Currently, this applies only to NVIDIA CUDA binaries\n\
+                       (cubins). Loop nesting structure is only useful with\n\
+                       instruction-level measurements collected using PC\n\
+                       sampling. {no} \n\
   -I <path>, --include <path>\n\
                        Use <path> when resolving source file names. For a\n\
                        recursive search, append a '*' after the last slash,\n\
@@ -156,6 +161,7 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   {  0 ,  "time",         CLP::ARG_NONE, CLP::DUPOPT_CLOB,  NULL,  NULL },
 
   // Structure recovery options
+  {  0 ,  "gpucfg",         CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
   { 'I', "include",         CLP::ARG_REQ,  CLP::DUPOPT_CAT,  ":",
      NULL },
   { 'R', "replace-path",    CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
@@ -211,6 +217,7 @@ Args::Ctor()
   show_time = false;
   searchPathStr = ".";
   show_gaps = false;
+  compute_gpu_cfg = false;
 }
 
 
@@ -237,7 +244,7 @@ Args::printUsage(std::ostream& os) const
 void
 Args::printError(std::ostream& os, const char* msg) const
 {
-  os << "ERROR: " << msg << "\n"
+  os << "ERROR: " << msg << endl
      << "Try '" << getCmd() << " --help' for more information." << endl;
 }
 
@@ -310,6 +317,13 @@ Args::parse(int argc, const char* const argv[])
     if (parser.isOpt("jobs-symtab")) {
       const string & arg = parser.getOptArg("jobs-symtab");
       jobs_symtab = (int) CmdLineParser::toLong(arg);
+    }
+    if (parser.isOpt("gpucfg")) {
+      const string & arg = parser.getOptArg("gpucfg");
+      bool yes = strcasecmp("yes", arg.c_str()) == 0;
+      bool no = strcasecmp("no", arg.c_str()) == 0;
+      if (!yes && !no) ARG_ERROR("gpucfg argument must be 'yes' or 'no'.");
+      compute_gpu_cfg = yes;
     }
     if (parser.isOpt("time")) {
       show_time = true;

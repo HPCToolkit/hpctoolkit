@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2019, Rice University
+## Copyright ((c)) 2002-2020, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -111,9 +111,8 @@ MYSOURCES = \
 	VarMap.hpp VarMap.cpp \
 	ExprEval.hpp ExprEval.cpp
 
-
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) 
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) 
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS)
 
 if IS_HOST_AR
   MYAR = @HOST_AR@

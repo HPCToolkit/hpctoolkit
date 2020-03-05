@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -53,6 +53,7 @@
 //*****************************************************************************
 
 void hpcrun_files_set_directory();
+
 void hpcrun_files_set_executable(char *execname);   
 
 const char *hpcrun_files_executable_pathname();
@@ -65,7 +66,9 @@ int hpcrun_open_profile_file(int rank, int thread);
 int hpcrun_rename_log_file(int rank);
 int hpcrun_rename_trace_file(int rank, int thread);
 
-
+// storing the hash of the vdso for the current process
+extern char vdso_hash_str[];
+void hpcrun_save_vdso();
 
 //*****************************************************************************
 

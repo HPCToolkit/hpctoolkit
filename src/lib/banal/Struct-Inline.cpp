@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -85,6 +85,7 @@
 #include <vector>
 
 #include <lib/binutils/BinUtils.hpp>
+#include <lib/binutils/ElfHelper.hpp>
 #include <lib/support/diagnostics.h>
 #include <lib/support/FileNameMap.hpp>
 #include <lib/support/FileUtil.hpp>
@@ -92,7 +93,6 @@
 #include <lib/support/StringTable.hpp>
 #include <lib/support/dictionary.h>
 
-#include "ElfHelper.hpp"
 #include "Struct-Inline.hpp"
 
 #include <Module.h>
@@ -206,6 +206,9 @@ analyzeAddr(InlineSeqn & nodelist, VMA addr, RealPathMgr * realPath)
 // Note: we pass the stmt info in 'sinfo', but we don't link sinfo
 // itself into the map.  Instead, insert a copy.
 //
+// Note: call stmts never merge with adjacent stmts.  They are always
+// a single instruction.
+//
 void
 StmtMap::insert(StmtInfo * sinfo)
 {
@@ -243,11 +246,14 @@ StmtMap::insert(StmtInfo * sinfo)
   // compare vma with stmt to the left
   if (left == NULL || left_end < vma) {
     // intervals don't overlap, insert new one
-    info = new StmtInfo(vma, end_vma - vma, file, base, line);
+    info = new StmtInfo(vma, end_vma - vma, file, base, line, sinfo->device,
+			sinfo->is_call, sinfo->is_sink, sinfo->target);
     (*this)[vma] = info;
   }
-  else if (left->base_index == base && left->line_num == line) {
-    // intervals overlap and match file and line
+  else if (left->base_index == base && left->line_num == line
+	   && !left->is_call && !sinfo->is_call)
+  {
+    // intervals overlap and match file and line (and not calls).
     // merge with left stmt
     end_vma = std::max(end_vma, left_end);
     left->len = end_vma - left->vma;
@@ -258,16 +264,19 @@ StmtMap::insert(StmtInfo * sinfo)
     // truncate interval to start at left_end and insert
     if (left_end < end_vma && (right == NULL || left_end < right->vma)) {
       vma = left_end;
-      info = new StmtInfo(vma, end_vma - vma, file, base, line);
+      info = new StmtInfo(vma, end_vma - vma, file, base, line, sinfo->device,
+			  sinfo->is_call, sinfo->is_sink, sinfo->target);
       (*this)[vma] = info;
     }
   }
 
   // compare interval with stmt to the right
-  if (info != NULL && right != NULL && end_vma >= right->vma) {
-
-    if (right->base_index == base && right->line_num == line) {
-      // intervals overlap and match file and line
+  if (info != NULL && right != NULL && end_vma >= right->vma)
+  {
+    if (right->base_index == base && right->line_num == line
+	&& !info->is_call && !right->is_call)
+    {
+      // intervals overlap and match file and line (and not calls).
       // merge with right stmt
       end_vma = right->vma + right->len;
       info->len = end_vma - info->vma;
@@ -288,8 +297,9 @@ StmtMap::insert(StmtInfo * sinfo)
 // adjacent stmts if their file and line match.
 //
 void
-addStmtToTree(TreeNode * root, HPC::StringTable & strTab, RealPathMgr * realPath,
-	      VMA vma, int len, string & filenm, SrcFile::ln line)
+addStmtToTree(TreeNode * root, HPC::StringTable & strTab, RealPathMgr * realPath, 
+              VMA vma, int len, string & filenm, SrcFile::ln line, 
+              string & device, bool is_call, bool is_sink, VMA target)
 {
   InlineSeqn path;
   TreeNode *node;
@@ -316,7 +326,7 @@ addStmtToTree(TreeNode * root, HPC::StringTable & strTab, RealPathMgr * realPath
   // insert statement at this level
   long file = strTab.str2index(filenm);
   long base = strTab.str2index(FileUtil::basename(filenm.c_str()));
-  StmtInfo info(vma, len, file, base, line);
+  StmtInfo info(vma, len, file, base, line, device, is_call, is_sink, target);
 
   node->stmtMap.insert(&info);
 }

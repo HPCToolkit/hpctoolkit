@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -257,7 +257,7 @@ Driver::write_experiment(std::ostream &os) const
        << " n" << MakeAttrStr(m->name())
        << " v=\"" << m->toValueTyStringXML() << "\""
        << " t=\"" << Prof::Metric::ADesc::ADescTyToXMLString(m->type()) << "\""
-       << " show=\"" << ((m->isVisible()) ? "1" : "0") << "\">\n";
+       << " show=\"" << m->visibility() << "\">\n";
     os << "      <Info>"
        << "<NV n=\"units\" v=\"events\"/>" // or "samples" m->isUnitsEvents()
        << "<NV n=\"percent\" v=\"" << ((m->doDispPercent()) ? "1" : "0") << "\"/>"

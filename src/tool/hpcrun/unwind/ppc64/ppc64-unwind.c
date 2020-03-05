@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -220,7 +220,21 @@ hpcrun_unw_get_ip_unnorm_reg(hpcrun_unw_cursor_t* c, void** reg_value)
 void*
 hpcrun_unw_get_ra_loc(hpcrun_unw_cursor_t* cursor)
 {
-  return NULL;
+  return cursor->ra_loc;
+}
+
+void *
+getNxtPCFromReg(hpcrun_unw_cursor_t* cursor) 
+{
+	unwind_interval *intvl = cursor->unwr_info.btuwi;
+	if (intvl && UWI_RECIPE(intvl)->ra_ty == RATy_Reg) {
+		if (UWI_RECIPE(intvl)->ra_arg == PPC_REG_LR) {
+			return (void*)(cursor->ctxt->uc_mcontext.regs->link);
+		} else {
+			return (void*)(cursor->ctxt->uc_mcontext.regs->gpr[UWI_RECIPE(intvl)->ra_arg]);
+		}
+	} 
+	return 0;
 }
 
 
@@ -231,8 +245,13 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
 
   save_registers(cursor, ucontext_pc(ctxt), NULL, ucontext_sp(ctxt), NULL);
   cursor->pc_norm   = (ip_normalized_t) ip_normalized_NULL;
-
+  cursor->ra        = NULL;
+  cursor->sp        = ucontext_sp(ctxt);
+  cursor->bp        = NULL;
   cursor->flags     = UnwFlg_StackTop;
+  cursor->ctxt      = ctxt;
+  cursor->ra_loc    = NULL;
+
   bitree_uwi_t* intvl = NULL;
   bool found = uw_recipe_map_lookup(cursor->pc_unnorm, NATIVE_UNWINDER, &(cursor->unwr_info));
   if (found) {
@@ -240,9 +259,11 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
 	  if (intvl && UWI_RECIPE(intvl)->ra_ty == RATy_Reg) {
 	    if (UWI_RECIPE(intvl)->ra_arg == PPC_REG_LR) {
 	      cursor->ra = (void*)(ctxt->uc_mcontext.regs->link);
+              cursor->ra_loc = &(ctxt->uc_mcontext.regs->link);
 	    }
 	    else {
 	      cursor->ra = (void*)(ctxt->uc_mcontext.regs->gpr[UWI_RECIPE(intvl)->ra_arg]);
+              cursor->ra_loc = &(ctxt->uc_mcontext.regs->gpr[UWI_RECIPE(intvl)->ra_arg]);
 	    }
 	  }
   }
@@ -253,8 +274,8 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
 
   compute_normalized_ips(cursor);
 
-  TMSG(UNW, "init: pc=%p, ra=%p, sp=%p, fp=%p", 
-       cursor->pc_unnorm, cursor->ra, cursor->sp, cursor->bp);
+  TMSG(UNW, "init: pc=%p, sp=%p, fp=%p", 
+       cursor->pc_unnorm, cursor->sp, cursor->bp);
   if (MYDBG) { ui_dump(intvl); }
 }
 
@@ -263,7 +284,7 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
 //
 
 step_state
-hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
+hpcrun_unw_step(hpcrun_unw_cursor_t *cursor, int *steps_taken)
 {
   // current frame
   void*  pc = cursor->pc_unnorm;
@@ -278,6 +299,7 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
   void** nxt_sp = NULL;
   void** nxt_fp = NULL; // unused
   void*  nxt_ra = NULL; // always NULL unless we go through a signal handler
+  void*  ra_loc = NULL;
   unwind_interval* nxt_intvl = NULL;
   
   if (!intvl) {
@@ -311,12 +333,6 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
   if (UWI_RECIPE(intvl)->sp_ty == SPTy_Reg) {
     // SP already points to caller's stack frame
     nxt_sp = sp;
-    
-    // consistency check: interior frames should not have type SPTy_Reg
-    if (isInteriorFrm) {
-      nxt_sp = *sp;
-      TMSG(UNW, "warning: correcting sp: %p -> %p", sp, nxt_sp);
-    }
   }
   else if (UWI_RECIPE(intvl)->sp_ty == SPTy_SPRel) {
     // SP points to parent's SP
@@ -333,16 +349,15 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
   // compute RA (return address) for the caller's frame
   //-----------------------------------------------------------
   if (UWI_RECIPE(intvl)->ra_ty == RATy_Reg) {
-    nxt_pc = cursor->ra;
-
-    // consistency check: interior frames should not have type RATy_Reg
-    if (isInteriorFrm) {
-      nxt_pc = getNxtPCFromSP(nxt_sp);
-      TMSG(UNW, "warning: correcting pc: %p -> %p", cursor->ra, nxt_pc);
+    nxt_pc = getNxtPCFromReg(cursor);
+    if (nxt_pc == 0) {
+       EMSG("bad register-based unwind at pc: %p, sp: %p", pc, sp);
+       return STEP_ERROR;
     }
-  }
-  else if (UWI_RECIPE(intvl)->ra_ty == RATy_SPRel) {
+    ra_loc = cursor->ra_loc;
+  } else if (UWI_RECIPE(intvl)->ra_ty == RATy_SPRel) {
     nxt_pc = getNxtPCFromSP(nxt_sp);
+    ra_loc = (void*)getNxtPCLocFromSP(nxt_sp);
   }
   else {
     // assert(0);
@@ -354,7 +369,7 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
   //-----------------------------------------------------------
   // compute unwind information for the caller's pc
   //-----------------------------------------------------------
-  bool found = uw_recipe_map_lookup(nxt_pc, NATIVE_UNWINDER, &(cursor->unwr_info));
+  bool found = uw_recipe_map_lookup(nxt_pc - 1, NATIVE_UNWINDER, &(cursor->unwr_info));
   if (found) {
 	nxt_intvl = cursor->unwr_info.btuwi;
   }
@@ -374,6 +389,7 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
 	  // Sanity check SP: Once in a while SP is clobbered.
 	  if (isPossibleParentSP(nxt_sp, try_sp)) {
 		nxt_pc = getNxtPCFromSP(try_sp);
+    ra_loc = (void*)getNxtPCLocFromSP(try_sp);
 		bool found2 = uw_recipe_map_lookup(nxt_pc, NATIVE_UNWINDER, &(cursor->unwr_info));
 		if (found2) {
 		  nxt_intvl = cursor->unwr_info.btuwi;
@@ -394,13 +410,20 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
   // INVARIANT: At this point, 'nxt_intvl' is valid
 
 
-  // INVARIANT: Ensure we always make progress unwinding the stack...
-  bool mayFrameSizeBe0 = (UWI_RECIPE(intvl)->sp_ty == SPTy_Reg && !isInteriorFrm);
-  if (!mayFrameSizeBe0 && !isPossibleParentSP(sp, nxt_sp)) {
-    // TMSG(UNW, " warning: adjust sp b/c nxt_sp=%p < sp=%p", nxt_sp, sp);
-    // nxt_sp = sp + 1
-    TMSG(UNW, "error: loop! nxt_sp=%p, sp=%p", nxt_sp, sp);
-    return STEP_ERROR;
+  // INVARIANT: Ensure we always make progress unwinding ...
+  bool mayFrameSizeBe0 = (UWI_RECIPE(intvl)->sp_ty == SPTy_Reg);
+  if (mayFrameSizeBe0) { 
+    if (cursor->pc_unnorm == nxt_pc && cursor->sp == nxt_sp) {
+      // no forward progess with a register-based unwind
+      TMSG(UNW, "error: loop! pc = nxt_pc = %p sp = nxt_sp = %p", nxt_pc, nxt_sp);
+      return STEP_ERROR;
+    }
+  } else {
+    if (!isPossibleParentSP(sp, nxt_sp)) {
+      // no forward progess with a stack-based unwind
+      TMSG(UNW, "error: loop! nxt_sp=%p, sp=%p", nxt_sp, sp);
+      return STEP_ERROR;
+    }
   }
 
 
@@ -408,6 +431,7 @@ hpcrun_unw_step(hpcrun_unw_cursor_t* cursor)
   if (MYDBG) { ui_dump(nxt_intvl); }
 
   save_registers(cursor, nxt_pc, nxt_fp, nxt_sp, nxt_ra);
+  cursor->ra_loc    = ra_loc;
   cursor->flags     = UnwFlg_NULL;
 
   compute_normalized_ips(cursor);

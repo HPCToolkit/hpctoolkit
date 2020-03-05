@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -50,11 +50,18 @@
 #include <setjmp.h>
 #include <stdbool.h>
 
+// FIXME: not in master-gpu-trace. why?
+// #include <tool/hpcrun/sample-sources/nvidia/stream-tracing.h>
+//#include <tool/hpcrun/sample-sources/amd/amd.h>
+
 extern bool hpcrun_is_initialized();
 
 extern bool hpcrun_is_safe_to_sync(const char* fn);
 extern void hpcrun_set_safe_to_sync(void);
 extern void hpcrun_set_real_siglongjmp(void);
+
+extern void hpcrun_force_dlopen(bool forced);
+
 //
 // fetch the full path of the execname
 //
@@ -72,5 +79,10 @@ void hpcrun_process_aux_cleanup_remove(hpcrun_aux_cleanup_t * node);
 // ** HACK to accomodate PAPI-C w cuda component & gpu blame shifting
 
 extern void special_cuda_ctxt_actions(bool enable);
+
+extern void hpcrun_dlfunction_begin();
+extern void hpcrun_dlfunction_end();
+extern bool hpcrun_dlfunction_is_active();
+extern bool hpcrun_suppress_sample();
 
 #endif  // ! main_h

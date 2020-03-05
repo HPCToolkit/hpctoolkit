@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2019, Rice University
+## Copyright ((c)) 2002-2020, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -82,6 +82,7 @@ LIBDWARF_LIB = @LIBDWARF_LIB@
 LIBELF_INC   = @LIBELF_INC@
 LIBELF_LIB   = @LIBELF_LIB@
 
+TBB_IFLAGS = @TBB_IFLAGS@
 TBB_LFLAGS = @TBB_LFLAGS@
 
 XED2_INC = @XED2_INC@
@@ -103,15 +104,20 @@ MYSOURCES += \
 endif
 
 MYCPPFLAGS = $(HPC_IFLAGS) $(BOOST_IFLAGS) -I$(LIBELF_INC) -I$(LIBDWARF_INC) \
-	$(DYNINST_IFLAGS)
+	$(DYNINST_IFLAGS) $(TBB_IFLAGS)
 
 MYCXXFLAGS = @HOST_CXXFLAGS@
 
 MYLDADD = libeh_frames.a  \
 	$(HPCLIB_SupportLean) \
+        $(HPCLIB_ProfLean) \
 	$(DYNINST_LFLAGS)  \
 	$(BOOST_LFLAGS) \
 	$(TBB_LFLAGS)
+
+if OPT_ENABLE_OPENMP_SYMTAB
+  MYCXXFLAGS += $(OPENMP_FLAG)
+endif
 
 if OPT_DYNINST_LIBDW
   MYLDADD += -L$(LIBELF_LIB) -ldw -lelf -ldl

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -70,6 +70,8 @@ using std::string;
 
 #include <climits>
 #include <cstring>
+#include <map>
+#include <vector>
 
 #include <typeinfo>
 
@@ -83,6 +85,8 @@ using std::string;
 #include "CallPath.hpp"
 #include "CallPath-MetricComponentsFact.hpp"
 #include "Util.hpp"
+
+#include <lib/banal/StructSimple.hpp>
 
 #include <lib/prof/CCT-Tree.hpp>
 #include <lib/prof/Metric-Mgr.hpp>
@@ -105,17 +109,15 @@ using namespace xml;
 #include <lib/support/StrUtil.hpp>
 
 
-
 //********************************** Macros **********************************
 
 #define DEBUG_COALESCING 0
 
-
+#define DATABASE_VERSION "2.2"
 
 //*************************** Forward Declarations ***************************
 
 std::ostream* Analysis::CallPath::dbgOs = NULL; // for parallel debugging
-
 
 
 //****************************************************************************
@@ -124,14 +126,6 @@ std::ostream* Analysis::CallPath::dbgOs = NULL; // for parallel debugging
 
 static void
 coalesceStmts(Prof::Struct::Tree& structure);
-
-
-static bool
-vdso_loadmodule(const char *pathname)
-{
-  return pathname && strstr(pathname,  "vdso");
-}
-
 
 namespace Analysis {
 
@@ -312,10 +306,101 @@ coalesceStmts(Prof::Struct::ANode* node)
 
 
 //****************************************************************************
+// Precompute Struct Simple
+//****************************************************************************
+
+//
+// Use use binutils to pre-compute the struct simple tree for all load
+// modules that don't have a full structure file.  Overlay static
+// structure has trouble with aliens if we compute the stmt nodes
+// incrementally.  (why?)
+//
+// Note: adding inline sequences from a struct file can blow up the
+// size of the CCT by 50x, so we gather all the vma's per load module
+// early in one pass.
+//
+
+typedef std::vector <VMA> VmaVec;
+typedef std::map <int, VmaVec *> VmaVecMap;
+
+//
+// Traverse CCT Tree, collect (VMA, LM) pairs for each dyn node, and
+// make a vector of VMA's per load module.
+//
+static void
+makeVMAmap(VmaVecMap & vmaMap, Prof::CCT::ANode * node)
+{
+  using namespace Prof;
+
+  // traverse CCT tree, same order as overlayStaticStructure()
+  for (CCT::ANodeSortedChildIterator nit(node, CCT::ANodeSortedIterator::cmpByDynInfo);
+       nit.current(); )
+  {
+    CCT::ANode * n2 = nit.current();
+    nit++;
+
+    // only dynamic nodes have vma address
+    CCT::ADynNode * n_dyn = dynamic_cast <CCT::ADynNode *> (n2);
+    if ( n_dyn ) {
+      Prof::LoadMap::LMId_t lmid = n_dyn->lmId();
+      VMA vma = n_dyn->lmIP();
+      VmaVec * vec = NULL;
+
+      auto it = vmaMap.find(lmid);
+      if (it != vmaMap.end()) {
+	vec = it->second;
+      }
+      else {
+	vec = new VmaVec;
+	vmaMap[lmid] = vec;
+      }
+      vec->push_back(vma);
+    }
+
+    if (! n2->isLeaf()) {
+      makeVMAmap(vmaMap, n2);
+    }
+  }
+}
+
+
+//
+// Precompute struct simple for one struct tree (lmStruct) from the
+// binutils load module (lm) and vma vector (vmaVec).
+//
+static void
+precomputeStructSimple(Prof::Struct::LM * lmStruct,
+		       BinUtil::LM * lm,
+		       VmaVec * vmaVec)
+{
+  if (lm == NULL || vmaVec == NULL) {
+    return;
+  }
+
+  for (uint i = 0; i < vmaVec->size(); i++) {
+    VMA vma = (*vmaVec)[i];
+
+    if (lmStruct->findStmt(vma) == NULL) {
+      BAnal::Struct::makeStructureSimple(lmStruct, lm, vma);
+    }
+  }
+
+  lmStruct->computeVMAMaps();
+}
+
+
+//****************************************************************************
 // Overlaying static structure on a CCT
 //****************************************************************************
 
 typedef std::map<Prof::Struct::ANode*, Prof::CCT::ANode*> StructToCCTMap;
+
+static void
+overlayStaticStructureMain(Prof::CallPath::Profile& prof,
+			   Prof::LoadMap::LM* loadmap_lm,
+			   Prof::Struct::LM* lmStrct,
+			   VmaVec * vmaVec,
+                           bool printProgress);
 
 static void
 overlayStaticStructure(Prof::CCT::ANode* node,
@@ -341,7 +426,10 @@ coalesceStmts(Prof::CallPath::Profile& prof);
 
 //****************************************************************************
 
-
+//
+// The main entry point for hpcprof and prof-mpi.  Iterate over load
+// modules and overlay structure one LM at a time.
+//
 void
 Analysis::CallPath::
 overlayStaticStructureMain(Prof::CallPath::Profile& prof,
@@ -350,6 +438,9 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
 {
   const Prof::LoadMap* loadmap = prof.loadmap();
   Prof::Struct::Root* rootStrct = prof.structure()->root();
+  VmaVecMap vmaMap;
+
+  makeVMAmap(vmaMap, prof.cct()->root());
 
   std::string errors;
 
@@ -360,13 +451,19 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
   for (Prof::LoadMap::LMId_t i = Prof::LoadMap::LMId_NULL;
       i <= loadmap->size(); ++i) {
     Prof::LoadMap::LM* lm = loadmap->lm(i);
+
     if (lm->isUsed()) {
       try {
         const string& lm_nm = lm->name();
-
         Prof::Struct::LM* lmStrct = Prof::Struct::LM::demand(rootStrct, lm_nm);
-        Analysis::CallPath::overlayStaticStructureMain(prof, lm, lmStrct,
-                                                       printProgress);
+
+	VmaVec * vmaVec = NULL;
+	auto it = vmaMap.find(i);
+	if (it != vmaMap.end()) {
+	  vmaVec = it->second;
+	}
+
+	overlayStaticStructureMain(prof, lm, lmStrct, vmaVec, printProgress);
       }
       catch (const Diagnostics::Exception& x) {
         errors += "  " + x.what() + "\n";
@@ -378,6 +475,10 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
     DIAG_WMsgIf(1, "Cannot fully process samples because of errors reading load modules:\n" << errors);
   }
 
+  // delete VMA vectors
+  for (auto it = vmaMap.begin(); it != vmaMap.end(); ++it) {
+    delete it->second;
+  }
 
   // -------------------------------------------------------
   // Basic normalization
@@ -387,66 +488,64 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
   }
   
   applyThreadMetricAgents(prof, agent);
+
+  normalize(prof, "none", true);
 }
 
 
-void
-Analysis::CallPath::
+//
+// Overlay for one load module.
+//
+static void
 overlayStaticStructureMain(Prof::CallPath::Profile& prof,
 			   Prof::LoadMap::LM* loadmap_lm,
 			   Prof::Struct::LM* lmStrct,
+			   VmaVec * vmaVec,
                            bool printProgress)
 {
   const string& lm_nm = loadmap_lm->name();
+  const string& lm_pretty_name = Prof::LoadMap::LM::pretty_name(lm_nm);
+
   BinUtil::LM* lm = NULL;
 
   bool useStruct = (lmStrct->childCount() > 0);
 
   if (useStruct) {
-    DIAG_MsgIf(printProgress, "STRUCTURE: " << lm_nm);
+    DIAG_MsgIf(printProgress, "STRUCTURE: " << lm_pretty_name);
   } else if (loadmap_lm->id() == Prof::LoadMap::LMId_NULL) {
     // no-op for this case
-  } else if (vdso_loadmodule(lm_nm.c_str()))  {
-    DIAG_WMsgIf(printProgress, "Cannot fully process samples for virtual load module " << lm_nm);
   } else {
-
     try {
       lm = new BinUtil::LM();
       lm->open(lm_nm.c_str());
       lm->read(prof.directorySet(), BinUtil::LM::ReadFlg_Proc);
+      if (vmaVec == NULL) {
+	DIAG_WMsgIf(printProgress, "Unable to compute struct simple for " << lm_nm);
+      }
+      else {
+	precomputeStructSimple(lmStrct, lm, vmaVec);
+      }
     }
     catch (const Diagnostics::Exception& x) {
       delete lm;
       lm = NULL;
       DIAG_WMsgIf(printProgress, "Cannot fully process samples for load module " << 
-                  lm_nm << ": " << x.what());
+                  lm_pretty_name << ": " << x.what());
     }
-    if (lm) DIAG_MsgIf(printProgress, "Line map : " << lm_nm);
+    if (lm) DIAG_MsgIf(printProgress, "Line map : " << lm_pretty_name);
   }
 
   if (lm) {
-    lmStrct->pretty_name(lm->name().c_str());
+    lmStrct->pretty_name(lm->name());
   }
-  Analysis::CallPath::overlayStaticStructure(prof, loadmap_lm, lmStrct, lm);
+
+  overlayStaticStructure(prof.cct()->root(), loadmap_lm, lmStrct, NULL);
   
   // account for new structure inserted by BAnal::Struct::makeStructureSimple()
   lmStrct->computeVMAMaps();
 
   delete lm;
 }
-
-
-// overlayStaticStructure: Create frames for CCT::Call and CCT::Stmt
-// nodes using a preorder walk over the CCT.
-void
-Analysis::CallPath::
-overlayStaticStructure(Prof::CallPath::Profile& prof,
-		       Prof::LoadMap::LM* loadmap_lm,
-		       Prof::Struct::LM* lmStrct, BinUtil::LM* lm)
-{
-  overlayStaticStructure(prof.cct()->root(), loadmap_lm, lmStrct, lm);
-}
-
 
 
 void
@@ -484,8 +583,28 @@ noteStaticStructureOnLeaves(Prof::CallPath::Profile& prof)
 }
 
 
+//
+// overlayStaticStructure: Create frames for CCT::Call and CCT::Stmt
+// nodes using a preorder walk over the CCT.
+//
+// Technically an entry point for one load module, but nothing
+// actually uses this.
+//
+void
+Analysis::CallPath::
+overlayStaticStructure(Prof::CallPath::Profile& prof,
+		       Prof::LoadMap::LM* loadmap_lm,
+		       Prof::Struct::LM* lmStrct, BinUtil::LM* lm)
+{
+  overlayStaticStructure(prof.cct()->root(), loadmap_lm, lmStrct, lm);
+}
+
+
 //****************************************************************************
 
+//
+// Where the overlay actually happens.  This is per load module.
+//
 static void
 overlayStaticStructure(Prof::CCT::ANode* node,
 		       Prof::LoadMap::LM* loadmap_lm,
@@ -547,10 +666,11 @@ overlayStaticStructure(Prof::CCT::ANode* node,
       // 1. Add symbolic information to 'n_dyn'
       VMA lm_ip = n_dyn->lmIP();
       Struct::ACodeNode* strct =
-	Analysis::Util::demandStructure(lm_ip, lmStrct, lm, useStruct,
-					unkProcNm);
+        Analysis::Util::demandStructure(lm_ip, lmStrct, lm, useStruct,
+				unkProcNm);
       
       n->structure(strct);
+
       //strct->demandMetric(CallPath::Profile::StructMetricIdFlg) += 1.0;
 
       DIAG_MsgIf(0, "overlayStaticStructure: dyn (" << n_dyn->lmId() << ", " << hex << lm_ip << ") --> struct " << strct << dec << " " << strct->toStringMe());
@@ -735,46 +855,51 @@ coalesceStmts(Prof::CCT::ANode* node)
     if ( n->isLeaf() && (typeid(*n) == typeid(Prof::CCT::Stmt)) ) {
       // Test for duplicate source line info.
       Prof::CCT::Stmt* n_stmt = static_cast<Prof::CCT::Stmt*>(n);
-      SrcFile::ln line = n_stmt->begLine();
-      LineToStmtMap::iterator it_stmt = stmtMap->find(line);
-      if (it_stmt != stmtMap->end()) {
-	// found -- we have a duplicate
-	Prof::CCT::Stmt* n_stmtOrig = (*it_stmt).second;
+      auto *strct = dynamic_cast<Prof::Struct::Stmt *>(n_stmt->structure());
 
-        DIAG_MsgIf(DEBUG_COALESCING, "Coalescing:\n" 
-		   << "\tx: " 
-		   << n_stmtOrig->toStringMe(Prof::CCT::Tree::OFlg_Debug) 
-		   << "\n\ty: " 
-		   << n_stmt->toStringMe(Prof::CCT::Tree::OFlg_Debug));
+      // Filter out call stmts
+      if (strct->stmtType() == Prof::Struct::Stmt::STMT_STMT) {
+        SrcFile::ln line = n_stmt->begLine();
+        LineToStmtMap::iterator it_stmt = stmtMap->find(line);
+        if (it_stmt != stmtMap->end()) {
+          // found -- we have a duplicate
+          Prof::CCT::Stmt* n_stmtOrig = (*it_stmt).second;
 
-	// N.B.: Because (a) trace records contain a function's
-	// representative IP and (b) two traces that contain samples
-	// from the same function should have their conflict resolved
-	// in Prof::CallPath::Profile::merge(), we would expect that
-	// merge effects are impossible.  That is, we expect that it
-	// is impossible that a CCT::ProcFrm has multiple CCT::Stmts
-	// with distinct trace ids.
-	//
-	// However, merge effects are possible *after* static
-	// structure is added to the CCT.  The reason is that multiple
-	// object-level procedures can map to one source-level
-	// procedure (e.g., multiple template instantiations mapping
-	// to the same source template or multiple stripped functions
-	// mapping to UnknownProcNm).
-	if (! Prof::CCT::ADynNode::hasMergeEffects(*n_stmtOrig, *n_stmt)) {
-	  Prof::CCT::MergeEffect effct = n_stmtOrig->mergeMe(*n_stmt, /*MergeContext=*/ NULL,/*metricBegIdx=*/ 0, /*mayConflict=*/ false);
-	  DIAG_Assert(effct.isNoop(), "Analysis::CallPath::coalesceStmts: trace ids lost (" << effct.toString() << ") when merging y into x:\n"
-		      << "\tx: " << n_stmtOrig->toStringMe(Prof::CCT::Tree::OFlg_Debug) << "\n"
-		      << "\ty: " << n_stmt->toStringMe(Prof::CCT::Tree::OFlg_Debug));
-	
-	  // remove 'n_stmt' from tree
-	  n_stmt->unlink();
-	  delete n_stmt; // NOTE: could clear corresponding StructMetricIdFlg
-	}
-      }
-      else {
-	// no entry found -- add
-	stmtMap->insert(std::make_pair(line, n_stmt));
+          DIAG_MsgIf(DEBUG_COALESCING, "Coalescing:\n" 
+            << "\tx: " 
+            << n_stmtOrig->toStringMe(Prof::CCT::Tree::OFlg_Debug) 
+            << "\n\ty: " 
+            << n_stmt->toStringMe(Prof::CCT::Tree::OFlg_Debug));
+
+          // N.B.: Because (a) trace records contain a function's
+          // representative IP and (b) two traces that contain samples
+          // from the same function should have their conflict resolved
+          // in Prof::CallPath::Profile::merge(), we would expect that
+          // merge effects are impossible.  That is, we expect that it
+          // is impossible that a CCT::ProcFrm has multiple CCT::Stmts
+          // with distinct trace ids.
+          //
+          // However, merge effects are possible *after* static
+          // structure is added to the CCT.  The reason is that multiple
+          // object-level procedures can map to one source-level
+          // procedure (e.g., multiple template instantiations mapping
+          // to the same source template or multiple stripped functions
+          // mapping to UnknownProcNm).
+          if (! Prof::CCT::ADynNode::hasMergeEffects(*n_stmtOrig, *n_stmt)) {
+            Prof::CCT::MergeEffect effct = n_stmtOrig->mergeMe(*n_stmt, /*MergeContext=*/ NULL,/*metricBegIdx=*/ 0, /*mayConflict=*/ false);
+            DIAG_Assert(effct.isNoop(), "Analysis::CallPath::coalesceStmts: trace ids lost (" << effct.toString() << ") when merging y into x:\n"
+              << "\tx: " << n_stmtOrig->toStringMe(Prof::CCT::Tree::OFlg_Debug) << "\n"
+              << "\ty: " << n_stmt->toStringMe(Prof::CCT::Tree::OFlg_Debug));
+
+            // remove 'n_stmt' from tree
+            n_stmt->unlink();
+            delete n_stmt; // NOTE: could clear corresponding StructMetricIdFlg
+          }
+        }
+        else {
+          // no entry found -- add
+          stmtMap->insert(std::make_pair(line, n_stmt));
+        }
       }
     }
     else if (!n->isLeaf()) {
@@ -1170,7 +1295,7 @@ write(Prof::CallPath::Profile& prof, std::ostream& os,
   os << "<?xml version=\"1.0\"?>\n";
   os << "<!DOCTYPE HPCToolkitExperiment [\n" << experimentDTD << "]>\n";
 
-  os << "<HPCToolkitExperiment version=\"2.1\">\n";
+  os << "<HPCToolkitExperiment version=\"" DATABASE_VERSION "\">\n";
   os << "<Header n" << MakeAttrStr(name) << ">\n";
   os << "  <Info/>\n";
   os << "</Header>\n";

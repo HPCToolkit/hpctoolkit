@@ -82,6 +82,7 @@ int datacentric_get_metric_variable_size();
 // called to create events and the metric has to be stored by store_events_and_info
 int 
 datacentric_hw_register(sample_source_t          *self, 
+                        kind_info_t              *kb_kind, 
                         event_custom_t           *event,
                         struct event_threshold_s *period);
 

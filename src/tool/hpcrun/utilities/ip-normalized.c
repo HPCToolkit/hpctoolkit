@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -100,4 +100,18 @@ hpcrun_normalize_ip(void* unnormalized_ip, load_module_t* lm)
 
   return (ip_normalized_t) {.lm_id = HPCRUN_FMT_LMId_NULL,
 			    .lm_ip = (uintptr_t) unnormalized_ip};
+}
+
+void *
+hpcrun_denormalize_ip(ip_normalized_t *normalized_ip)
+{
+  if (normalized_ip->lm_id != HPCRUN_FMT_LMId_NULL) {
+    load_module_t* lm = hpcrun_loadmap_findById(normalized_ip->lm_id);
+    if (lm != 0) {
+      uint64_t offset = lm->dso_info->start_to_ref_dist;
+      void *denormalized_ip = (void *) (normalized_ip->lm_ip + offset); 
+      return denormalized_ip;
+    }
+  } 
+  return (void *) normalized_ip->lm_ip;
 }

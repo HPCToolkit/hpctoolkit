@@ -149,6 +149,7 @@ stall_post_handler(event_handler_arg_t *args)
 
 int
 stall_hw_register(sample_source_t *self,
+                  kind_info_t     *kb_kind,
                   event_custom_t  *event,
                   struct event_threshold_s *period)
 {
@@ -177,9 +178,8 @@ stall_hw_register(sample_source_t *self,
     // ------------------------------------------
     // create metric data centric
     // ------------------------------------------
-    int metric = hpcrun_new_metric();
-    hpcrun_set_metric_info_and_period(
-          metric, stall_events[i].name,
+    int metric = hpcrun_set_new_metric_info_and_period(
+          kb_kind, stall_events[i].name,
           MetricFlags_ValFmt_Real, 1, metric_property_none);
 
     // ------------------------------------------

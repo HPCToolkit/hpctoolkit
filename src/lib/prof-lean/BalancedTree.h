@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -74,7 +74,6 @@
 #include <include/uint.h>
 
 #include "pfq-rwlock.h"
-#include "spinlock.h"
 
 
 //*************************** Forward Declarations **************************
@@ -138,8 +137,6 @@ typedef struct BalancedTree
   size_t nodeDataSz; // size of BalancedTreeNode_t.data
 
   pfq_rwlock_t rwlock;
-  spinlock_t spinlock;
-  
 } BalancedTree_t;
 
 

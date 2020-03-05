@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -75,12 +75,15 @@
 #include "validate_return_addr.h"
 #include "write_data.h"
 #include "cct_insert_backtrace.h"
+#include "utilities/arch/context-pc.h"
 
 #include <monitor.h>
 
 #include <messages/messages.h>
 
 #include <lib/prof-lean/hpcrun-fmt.h>
+
+#define HPCRUN_DEBUG_TRACING 0
 
 //*************************** Forward Declarations **************************
 
@@ -123,6 +126,9 @@ record_partial_unwind(
     return NULL;
   }
 
+  if (bt_last < bt_beg)
+    bt_last = bt_beg;
+  
   bt_beg = hpcrun_skip_chords(bt_last, bt_beg, skipInner);
 
   backtrace_info_t bt;
@@ -161,6 +167,7 @@ hpcrun_sample_callpath(void* context, int metricId,
 		       hpcrun_metricVal_t metricIncr,
 		       int skipInner, int isSync, sampling_info_t *data)
 {
+
   sample_val_t ret;
   hpcrun_sample_val_init(&ret);
 
@@ -286,11 +293,10 @@ hpcrun_sample_callpath(void* context, int metricId,
     // sometimes sample-sources don't want us to record traces.
     //
     // For instance, datacentric avoid traces in the middle of allocation routines
-    trace_ok = !(data->flags & SAMPLING_NO_TRACES == SAMPLING_NO_TRACES);
+    trace_ok = !((data->flags & SAMPLING_NO_TRACES) == SAMPLING_NO_TRACES);
   }
   TMSG(TRACE1, "trace ok (!deadlock drop) = %d", trace_ok);
-
-  if (trace_ok && hpcrun_trace_isactive()) {
+  if (trace_ok && hpcrun_trace_isactive() && !isSync) {
     TMSG(TRACE, "Sample event encountered");
 
     cct_addr_t frm;
@@ -304,8 +310,7 @@ hpcrun_sample_callpath(void* context, int metricId,
     ret.trace_node = func_proxy;
 
     TMSG(TRACE, "Changed persistent id to indicate mutation of func_proxy node");
-
-    hpcrun_trace_append(&td->core_profile_trace_data, func_proxy, metricId);
+    hpcrun_trace_append(&td->core_profile_trace_data, func_proxy, metricId, td->prev_dLCA);
     TMSG(TRACE, "Appended func_proxy node to trace");
   }
 
@@ -361,6 +366,10 @@ hpcrun_gen_thread_ctxt(void* context)
   td->btbuf_cur = NULL;
   int ljmp = sigsetjmp(it->jb, 1);
   backtrace_info_t bt;
+
+  // initialize bt
+  memset(&bt, 0, sizeof(bt));
+
   if (ljmp == 0) {
     if (epoch != NULL) {
       if (! hpcrun_generate_backtrace_no_trampoline(&bt, context,

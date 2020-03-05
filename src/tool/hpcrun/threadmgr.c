@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -305,9 +305,19 @@ hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data)
   return need_to_allocate;
 }
 
+void
+hpcrun_threadMgr_non_compact_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data)
+{
+    adjust_num_logical_threads(1);
+    *data = allocate_and_init_thread_data(id, thr_ctxt);
+
+#if HPCRUN_THREADS_DEBUG
+    atomic_fetch_add_explicit(&threadmgr_tot_threads, 1, memory_order_relaxed);
+#endif
+}
 
 void
-hpcrun_threadMgr_data_put( epoch_t *epoch, thread_data_t *data )
+hpcrun_threadMgr_data_put( epoch_t *epoch, thread_data_t *data, int no_separator)
 {
 
   // ---------------------------------------------------------------------
@@ -331,7 +341,15 @@ hpcrun_threadMgr_data_put( epoch_t *epoch, thread_data_t *data )
   //         to the file at the end of the process
   // ---------------------------------------------------------------------
 
-  // step 1: enqueue thread data into the free list
+  // step 1: get the dummy node that marks the end of the thread trace
+
+  if (!no_separator) {
+    cct_node_t *node  = hpcrun_cct_bundle_get_no_activity_node(&epoch->csdata);
+    hpcrun_trace_append(&(data->core_profile_trace_data), node, 0, 
+			HPCTRACE_FMT_DLCA_NULL);
+  }
+
+  // step 2: enqueue thread data into the free list
 
   spinlock_lock(&threaddata_lock);
 
@@ -340,11 +358,6 @@ hpcrun_threadMgr_data_put( epoch_t *epoch, thread_data_t *data )
   SLIST_INSERT_HEAD(&list_thread_head, list_item, entries);
 
   spinlock_unlock(&threaddata_lock);
-
-  // step 2: get the dummy node that marks the end of the thread trace
-
-  cct_node_t *node  = hpcrun_cct_bundle_get_nothread_node(&epoch->csdata);
-  hpcrun_trace_append(&(data->core_profile_trace_data), node, 0);
 
   TMSG(PROCESS, "%d: release thread data", data->core_profile_trace_data.id);
 }

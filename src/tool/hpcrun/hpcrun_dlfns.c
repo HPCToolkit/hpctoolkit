@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -151,6 +151,9 @@ hpcrun_dlopen_downgrade_lock(void)
 
 
 // Readers try to acquire a lock, but they don't wait if that fails.
+// As with write_lock, allow read_lock to succeed if the current
+// thread holds the write log.
+//
 // Returns: 1 if acquired, else 0 if not.
 int
 hpcrun_dlopen_read_lock(void)
@@ -158,7 +161,10 @@ hpcrun_dlopen_read_lock(void)
   int acquire = 0;
 
   spinlock_lock(&dlopen_lock);
-  if (dlopen_num_writers == 0 || ENABLED(DLOPEN_RISKY)) {
+  if (dlopen_num_writers == 0
+      || monitor_get_thread_num() == dlopen_writer_tid
+      || ENABLED(DLOPEN_RISKY))
+  {
     atomic_fetch_add_explicit(&dlopen_num_readers, 1L, memory_order_relaxed);
     acquire = 1;
   }

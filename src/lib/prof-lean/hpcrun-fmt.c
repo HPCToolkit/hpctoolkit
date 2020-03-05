@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -306,8 +306,6 @@ hpcrun_fmt_metricTbl_fread(metric_tbl_t* metric_tbl, metric_aux_info_t **aux_inf
 int
 hpcrun_fmt_metricTbl_fwrite(metric_desc_p_tbl_t* metric_tbl, metric_aux_info_t *aux_info, FILE* fs)
 {
-  hpcfmt_int4_fwrite(metric_tbl->len, fs);
-
   for (uint32_t i = 0; i < metric_tbl->len; i++) {
 
 	  // corner case: for other sampling sources than perf event, the
@@ -457,6 +455,15 @@ hpcrun_fmt_metricDesc_free(metric_desc_t* x, hpcfmt_free_fn dealloc)
   hpcfmt_str_free(x->format, dealloc);
   x->format = NULL;
 }
+
+
+void
+hpcrun_fmt_metric_set_format(metric_desc_t *metric_desc, char *format)
+{
+  metric_desc->format = format;
+}
+
+
 
 double 
 hpcrun_fmt_metric_get_value(metric_desc_t metric_desc, hpcrun_metricVal_t metric)
@@ -777,9 +784,7 @@ hpcrun_fmt_lip_fprint(lush_lip_t* x, FILE* fs, const char* pre)
 // [hpctrace] hdr
 //***************************************************************************
 
-const hpctrace_hdr_flags_t hpctrace_hdr_flags_NULL = {
-  .bits = 0
-};
+const hpctrace_hdr_flags_t hpctrace_hdr_flags_NULL = 0;
 
 
 int
@@ -811,7 +816,7 @@ hpctrace_fmt_hdr_fread(hpctrace_fmt_hdr_t* hdr, FILE* infs)
 
   hdr->flags = hpctrace_hdr_flags_NULL;
   if (hdr->version > 1.0) {
-    HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(hdr->flags.bits), infs));
+    HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(hdr->flags), infs));
   }
 
   return HPCFMT_OK;
@@ -828,7 +833,7 @@ hpctrace_fmt_hdr_outbuf(hpctrace_hdr_flags_t flags, hpcio_outbuf_t* outbuf)
   const int bufSZ = sizeof(flags);
   unsigned char buf[bufSZ];
 
-  uint64_t flag_bits = flags.bits;
+  uint64_t flag_bits = flags;
   int k = 0;
   for (int shift = 56; shift >= 0; shift -= 8) {
     buf[k] = (flag_bits >> shift) & 0xff;
@@ -863,7 +868,7 @@ hpctrace_fmt_hdr_fwrite(hpctrace_hdr_flags_t flags, FILE* fs)
   nw = fwrite(HPCTRACE_FMT_Endian,  1, HPCTRACE_FMT_EndianLen, fs);
   if (nw != HPCTRACE_FMT_EndianLen) return HPCFMT_ERR;
 
-  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(flags.bits, fs));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(flags, fs));
 
   return HPCFMT_OK;
 }
@@ -877,7 +882,7 @@ hpctrace_fmt_hdr_fprint(hpctrace_fmt_hdr_t* hdr, FILE* fs)
   fprintf(fs, "[hdr:\n");
   fprintf(fs, "  (version: %s)\n", hdr->versionStr);
   fprintf(fs, "  (endian: %c)\n", hdr->endian);
-  fprintf(fs, "  (flags: 0x%"PRIx64")\n", hdr->flags.bits);
+  fprintf(fs, "  (flags: 0x%"PRIx64")\n", hdr->flags);
   fprintf(fs, "]\n");
 
   return HPCFMT_OK;
@@ -894,18 +899,18 @@ hpctrace_fmt_datum_fread(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
 {
   int ret = HPCFMT_OK;
   
-  ret = hpcfmt_int8_fread(&(x->time), fs);
+  ret = hpcfmt_int8_fread(&(x->comp), fs);
   if (ret != HPCFMT_OK) {
     return ret; // can be HPCFMT_EOF
   }
 
   HPCFMT_ThrowIfError(hpcfmt_int4_fread(&(x->cpId), fs));
 
-  if (flags.fields.isDataCentric) {
+  if (HPCTRACE_HDR_FLAGS_GET_BIT(flags, HPCTRACE_HDR_FLAGS_DATA_CENTRIC_BIT_POS)) {
     HPCFMT_ThrowIfError(hpcfmt_int4_fread(&(x->metricId), fs));
   }
   else {
-    x->metricId = HPCRUN_FMT_MetricId_NULL;
+    x->metricId = HPCTRACE_FMT_MetricId_NULL;
   }
 
   return HPCFMT_OK;
@@ -924,9 +929,9 @@ hpctrace_fmt_datum_outbuf(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
 
   k = 0;
 
-  uint64_t time = x->time;
+  uint64_t comp = x->comp;
   for (shift = 56; shift >= 0; shift -= 8) {
-    buf[k] = (time >> shift) & 0xff;
+    buf[k] = (comp >> shift) & 0xff;
     k++;
   }
 
@@ -936,14 +941,14 @@ hpctrace_fmt_datum_outbuf(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
     k++;
   }
 
-  if (flags.fields.isDataCentric) {
+  if (HPCTRACE_HDR_FLAGS_GET_BIT(flags, HPCTRACE_HDR_FLAGS_DATA_CENTRIC_BIT_POS)) {
     uint32_t metricId = x->metricId;
     for (shift = 24; shift >= 0; shift -= 8) {
       buf[k] = (metricId >> shift) & 0xff;
       k++;
     }
   }
-
+  
   if (hpcio_outbuf_write(outbuf, buf, k) != k) {
     return HPCFMT_ERR;
   }
@@ -956,9 +961,9 @@ int
 hpctrace_fmt_datum_fwrite(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
 			  FILE* outfs)
 {
-  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->time, outfs));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->comp, outfs));
   HPCFMT_ThrowIfError(hpcfmt_int4_fwrite(x->cpId, outfs));
-  if (flags.fields.isDataCentric) {
+  if (HPCTRACE_HDR_FLAGS_GET_BIT(flags, HPCTRACE_HDR_FLAGS_DATA_CENTRIC_BIT_POS)) {
     HPCFMT_ThrowIfError(hpcfmt_int4_fwrite(x->metricId, outfs));
   }
 
@@ -970,8 +975,11 @@ int
 hpctrace_fmt_datum_fprint(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
 			  FILE* fs)
 {
-  fprintf(fs, "(%"PRIu64", %u", x->time, x->cpId);
-  if (flags.fields.isDataCentric) {
+  fprintf(fs, "(%llu, %u", HPCTRACE_FMT_GET_TIME(x->comp), x->cpId);
+  if (HPCTRACE_HDR_FLAGS_GET_BIT(flags, HPCTRACE_HDR_FLAGS_LCA_RECORDED_BIT_POS)) {
+    fprintf(fs, ", %llu",  HPCTRACE_FMT_GET_DLCA(x->comp));
+  }
+  if (HPCTRACE_HDR_FLAGS_GET_BIT(flags, HPCTRACE_HDR_FLAGS_DATA_CENTRIC_BIT_POS)) {
     fprintf(fs, ", %u",  x->metricId);
   }
   fputs(")\n", fs);

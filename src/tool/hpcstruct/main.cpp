@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -47,8 +47,16 @@
 // This file is the main program for hpcstruct.  This side just
 // handles the argument list.  The real work is in makeStructure() in
 // lib/banal/Struct.cpp.
+//
+// This side now handles the case of a measurements directory with
+// cubins.  We don't analyze anything here, just setup a Makefile and
+// launch the work for each cubin.
 
 //****************************** Include Files ******************************
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <dirent.h>
 
 #include <iostream>
 using std::cerr;
@@ -56,10 +64,14 @@ using std::endl;
 
 #include <dlfcn.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <fstream>
 #include <string>
 #include <streambuf>
 #include <new>
+#include <vector>
+
+#include <include/hpctoolkit-config.h>
 
 #include <include/hpctoolkit-config.h>
 
@@ -77,9 +89,102 @@ using std::endl;
 #include <omp.h>
 #endif
 
+#define PRINT_ERROR(mesg)  \
+  DIAG_EMsg(mesg << "\nTry 'hpcstruct --help' for more information.")
+
+using namespace std;
+
 static int
 realmain(int argc, char* argv[]);
 
+
+//***************************** Analyze Cubins ******************************
+
+static const char* cubins_analysis_makefile =
+#include "cubins-analysis.h"
+;
+
+//
+// For a measurements directory, write a Makefile and launch hpcstruct
+// for each .cubin file.
+//
+static void
+doMeasurementsDir(string measurements_dir, BAnal::Struct::Options & opts)
+{
+  measurements_dir = RealPath(measurements_dir.c_str());
+
+  //
+  // Check that 'measurements_dir' has at least one .cubin file.
+  //
+#ifndef OPT_HAVE_CUDA
+  PRINT_ERROR("Hpcstruct is not compiled with cuda.");
+  exit(1);
+#endif
+
+  string cubins_dir = measurements_dir + "/cubins";
+  struct dirent *ent;
+  bool found = false;
+
+  DIR *dir = opendir(cubins_dir.c_str());
+  if (dir == NULL) {
+    PRINT_ERROR("Unable to open measurements directory: " << cubins_dir);
+    exit(1);
+  }
+
+  while ((ent = readdir(dir)) != NULL) {
+    string file_name(ent->d_name);
+    if (file_name.find(".cubin") != string::npos) {
+      found = true;
+      break;
+    }
+  }
+
+  if (! found) {
+    PRINT_ERROR("Measurements directory does not contain cubins: " << cubins_dir);
+    exit(1);
+  }
+  closedir(dir);
+
+  //
+  // Put hpctoolkit and cuda (nvdisasm) on path.
+  //
+  char *path = getenv("PATH");
+  string new_path = string(HPCTOOLKIT_INSTALL_PREFIX) + "/bin/"
+    + ":" + path + ":" + CUDA_INSTALL_PREFIX + "/bin/";
+
+  setenv("PATH", new_path.c_str(), 1);
+
+  //
+  // Write Makefile and launch analysis.
+  //
+  string structs_dir = measurements_dir + "/structs";
+  mkdir(structs_dir.c_str(), 0755);
+
+  string makefile_name = structs_dir + "/Makefile";
+  fstream makefile;
+  makefile.open(makefile_name, fstream::out | fstream::trunc);
+
+  if (! makefile.is_open()) {
+    DIAG_EMsg("Unable to write file: " << makefile_name);
+    exit(1);
+  }
+
+  string gpucfg = opts.compute_gpu_cfg ? "yes" : "no";
+
+  makefile << "CUBINS_DIR =  " << cubins_dir << "\n"
+	   << "STRUCTS_DIR = " << structs_dir << "\n"
+	   << "CUBIN_CFG = " << gpucfg << "\n\n"
+	   << cubins_analysis_makefile << endl;
+  makefile.close();
+
+  string make_cmd = string("make -C ") + structs_dir + " -k -j " + to_string(opts.jobs)
+    + " --silent --no-print-directory analyze";
+
+  if (system(make_cmd.c_str()) != 0) {
+    DIAG_EMsg("Make hpcstruct files for cubins failed.");
+    exit(1);
+  }
+}
 
 //****************************** Main Program *******************************
 
@@ -148,9 +253,20 @@ realmain(int argc, char* argv[])
 #endif
 
   opts.show_time = args.show_time;
+  opts.compute_gpu_cfg = args.compute_gpu_cfg;
 
   // ------------------------------------------------------------
-  // Build and print the program structure tree
+  // If in_filenm is a directory, then analyze separately
+  // ------------------------------------------------------------
+  struct stat sb;
+
+  if (stat(args.in_filenm.c_str(), &sb) == 0 && S_ISDIR(sb.st_mode)) {
+    doMeasurementsDir(args.in_filenm, opts);
+    return 0;
+  }
+
+  // ------------------------------------------------------------
+  // Single application binary
   // ------------------------------------------------------------
 
   const char* osnm = (args.out_filenm == "-") ? NULL : args.out_filenm.c_str();

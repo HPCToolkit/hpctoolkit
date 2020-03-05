@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -96,6 +96,8 @@ extern void* hpcrun_trampoline_handler(void);
 extern void hpcrun_trampoline_insert(cct_node_t* node);
 extern void hpcrun_trampoline_remove(void);
 extern void hpcrun_trampoline_bt_dump(void);
+
+extern bool hpcrun_trampoline_update(frame_t* stop_frame);
 
 extern void hpcrun_trampoline(void);
 extern void hpcrun_trampoline_end(void);

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -411,6 +411,8 @@ lush_step_pchord(lush_cursor_t* cursor)
 lush_step_t
 lush_forcestep_pnote(lush_cursor_t* cursor)
 {
+  int steps_taken = 1;
+
   if (lush_cursor_is_flag(cursor, LUSH_CURSOR_FLAGS_END_PPROJ)) {
     return LUSH_STEP_END_PROJ;
   }
@@ -425,7 +427,7 @@ lush_forcestep_pnote(lush_cursor_t* cursor)
   }
   else {
     // Identity agent: Association is 1-to-1, so p-chord is unit length
-    int t = hpcrun_unw_step(lush_cursor_get_pcursor(cursor));
+    int t = hpcrun_unw_step(lush_cursor_get_pcursor(cursor), &steps_taken);
     if (t > 0) {
       ty = LUSH_STEP_END_CHORD;
     }

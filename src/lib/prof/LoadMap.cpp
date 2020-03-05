@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -78,6 +78,8 @@
 //****************************************************************************
 // LoadMap
 //****************************************************************************
+
+#define HASH_LEN 32
 
 namespace Prof {
 
@@ -226,5 +228,30 @@ LoadMap::LM::ddump() const
   dump(std::cerr);
 }
 
+
+const std::string&
+LoadMap::LM::pretty_name(const std::string& lm_nm)
+{
+  static const std::string vdso_nm("[vdso]");
+
+  static const std::string vmlinux_nm("<vmlinux");
+  static const std::string vmlinux_pretty_nm("[vmlinux]");
+
+  if (lm_nm.find(vdso_nm) != std::string::npos) return vdso_nm;
+  if (lm_nm.find(vmlinux_nm) != std::string::npos) return vmlinux_pretty_nm;
+
+  return lm_nm;
+}
+
+std::string
+LoadMap::LM::pretty_file_name(const std::string& name)
+{
+  static const std::string vdso_suffix(".[vdso]");
+  size_t pos = name.find(vdso_suffix);
+  if (pos == std::string::npos) return name;
+  std::string new_name = name;
+  new_name.replace(pos - HASH_LEN, HASH_LEN + vdso_suffix.size(), "vdso");
+  return new_name;
+}
 
 } // namespace Prof

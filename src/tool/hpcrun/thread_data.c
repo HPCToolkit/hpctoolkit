@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -214,7 +214,6 @@ hpcrun_allocate_thread_data(int id)
 static inline void
 core_profile_trace_data_init(core_profile_trace_data_t * cptd, int id, cct_ctxt_t* thr_ctxt) 
 {
-
   // ----------------------------------------
   // id
   // ----------------------------------------
@@ -243,13 +242,18 @@ core_profile_trace_data_init(core_profile_trace_data_t * cptd, int id, cct_ctxt_
   // ----------------------------------------
   cptd->hpcrun_file  = NULL;
   cptd->trace_buffer = NULL;
+  cptd->trace_outbuf = NULL;
 
   // ----------------------------------------
   // perf event support
   // ----------------------------------------
   cptd->perf_event_info   = NULL;
-}
 
+  // ----------------------------------------
+  // ???
+  // ----------------------------------------
+  cptd->scale_fn = NULL;
+}
 
 #ifdef ENABLE_CUDA
 static inline void gpu_data_init(gpu_data_t * gpu_data)
@@ -287,7 +291,40 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child, size_t n_sou
   // ----------------------------------------
   core_profile_trace_data_init(&(td->core_profile_trace_data), id, thr_ctxt);
 
-  td->idle = 0; // begin at work
+  // ----------------------------------------
+  // blame shifting support
+  // ----------------------------------------
+
+  td->idle = 0;         // a thread begins in the working state 
+  td->blame_target = 0; // initially, no target for directed blame
+
+  td->last_sample = 0; 
+  td->last_synch_sample = -1; 
+ 
+  td->overhead = 0; // begin at not in overhead
+
+  td->lockwait = 0;
+  td->lockid = NULL;
+
+  td->region_id = 0;
+
+  td->outer_region_id = 0;
+  td->outer_region_context = 0;
+
+  td->defer_flag = 0;
+  
+  td->omp_task_context = 0;
+  td->master = 0;
+  td->team_master = 0;
+
+  td->defer_write = 0;
+
+  td->reuse = 0;
+
+  td->add_to_pool = 0;
+
+  td->omp_thread = 0;
+  td->last_bar_time_us = 0;
 
   // ----------------------------------------
   // sample sources
@@ -318,16 +355,18 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child, size_t n_sou
 
   hpcrun_bt_init(&(td->bt), NEW_BACKTRACE_INIT_SZ);
 
+  td->uw_hash_table = uw_hash_new(1023, hpcrun_malloc);
+
   // ----------------------------------------
   // trampoline
   // ----------------------------------------
   td->tramp_present     = false;
   td->tramp_retn_addr   = NULL;
   td->tramp_loc         = NULL;
-  td->cached_bt         = hpcrun_malloc(sizeof(frame_t)
+  td->cached_bt_buf_beg = hpcrun_malloc(sizeof(frame_t)
 					* CACHED_BACKTRACE_SIZE);
-  td->cached_bt_end     = td->cached_bt;          
-  td->cached_bt_buf_end = td->cached_bt + CACHED_BACKTRACE_SIZE;
+  td->cached_bt_frame_beg = td->cached_bt_buf_beg + CACHED_BACKTRACE_SIZE;         
+  td->cached_bt_buf_frame_end = td->cached_bt_frame_beg;
   td->tramp_frame       = NULL;
   td->tramp_cct_node    = NULL;
 
@@ -373,16 +412,17 @@ void
 hpcrun_cached_bt_adjust_size(size_t n)
 {
   thread_data_t *td = hpcrun_get_thread_data();
-  if ((td->cached_bt_buf_end - td->cached_bt) >= n) {
+  if ((td->cached_bt_buf_frame_end - td->cached_bt_buf_beg) >= n) {
     return; // cached backtrace buffer is already big enough
   }
 
   frame_t* newbuf = hpcrun_malloc(n * sizeof(frame_t));
-  memcpy(newbuf, td->cached_bt, (void*)td->cached_bt_buf_end - (void*)td->cached_bt);
-  size_t idx            = td->cached_bt_end - td->cached_bt;
-  td->cached_bt         = newbuf;
-  td->cached_bt_buf_end = newbuf+n;
-  td->cached_bt_end     = newbuf + idx;
+  size_t frameSize = td->cached_bt_buf_frame_end - td->cached_bt_frame_beg;
+  memcpy(newbuf + n - frameSize, td->cached_bt_frame_beg, 
+      (void*)td->cached_bt_buf_frame_end - (void*)td->cached_bt_frame_beg);
+  td->cached_bt_buf_beg = newbuf;
+  td->cached_bt_buf_frame_end = newbuf+n;
+  td->cached_bt_frame_beg = newbuf + n - frameSize;
 }
 
 

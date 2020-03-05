@@ -48,7 +48,7 @@
 #define __DATACENTRIC_DATA_TREE_H__
 
 #include <cct/cct.h>
-
+#include <lib/prof-lean/spinlock.h>
 
 /******************************************************************************
  * macros

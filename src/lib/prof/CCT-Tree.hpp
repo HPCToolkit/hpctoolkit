@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -286,6 +286,7 @@ class Proc;
 class Loop;
 class Call;
 class Stmt;
+class SCC;  // recursion frame
 
 // ---------------------------------------------------------
 // ANode: The base node for a call stack profile tree.
@@ -307,7 +308,8 @@ public:
     TyCall,
     TyStmt,
     TyANY,
-    TyNUMBER
+    TyNUMBER,
+    TySCC
   };
   
   static const std::string&
@@ -346,7 +348,7 @@ public:
   ANode(const ANode& x)
     : NonUniformDegreeTreeNode(NULL),
       Metric::IData(x),
-      m_type(x.m_type), m_hpcrun_type(NODE_TYPE_REGULAR), /*m_id: skip*/ m_strct(x.m_strct)
+      m_type(x.m_type), m_hpcrun_type(NODE_TYPE_REGULAR), m_id(s_nextUniqueId), m_strct(x.m_strct)
   {
     zeroLinks();
     s_nextUniqueId += 2; // cf. HPCRUN_FMT_RetainIdFlag
@@ -360,12 +362,17 @@ public:
       //NonUniformDegreeTreeNode::operator=(x);
       Metric::IData::operator=(x);
       m_type = x.m_type;
+      m_id = s_nextUniqueId;
+      s_nextUniqueId += 2;
       // m_id: skip
       m_strct = x.m_strct;
     }
     return *this;
   }
 
+  virtual ANode*
+  clone()
+  { return new ANode(*this); }
 
   // --------------------------------------------------------
   // General data
@@ -481,6 +488,9 @@ public:
 
   Loop*
   ancestorLoop() const;
+
+  SCC*
+  ancestorSCC() const;
 
   Call*
   ancestorCall() const;
@@ -778,6 +788,9 @@ public:
     return *this;
   }
 
+  virtual ANode*
+  clone()
+  { return new ADynNode(*this); }
 
   // -------------------------------------------------------
   // call path id
@@ -1134,6 +1147,26 @@ public:
   // Dump contents for inspection
   virtual std::string
   toStringMe(uint oFlags = 0) const;
+
+  // deep copy of internals (but without children)
+  Root(const Root& x)
+    : ANode(x), m_name(x.name())
+  { }
+
+  // deep copy of internals (but without children)
+  Root&
+  operator=(const Root& x)
+  {
+    if (this != &x) {
+      ANode::operator=(x);
+      m_name = x.name();
+    }
+    return *this;
+  }
+
+  virtual ANode*
+  clone()
+  { return new Root(*this); }
   
 protected:
 private:
@@ -1156,12 +1189,6 @@ public:
 
   virtual ~ProcFrm()
   { }
-
-  // shallow copy (in the sense the children are not copied)
-  ProcFrm(const ProcFrm& x)
-    : AProcNode(x)
-  { }
-
 
   // -------------------------------------------------------
   // Static structure (NOTE: m_strct is always Struct::Proc)
@@ -1193,6 +1220,25 @@ public:
   virtual std::string
   codeName() const;
 
+  // deep copy of internals (but without children)
+  ProcFrm(const ProcFrm& x)
+    : AProcNode(x)
+  { }
+
+  // deep copy of internals (but without children)
+  ProcFrm&
+  operator=(const ProcFrm& x)
+  {
+    if (this != &x) {
+      AProcNode::operator=(x);
+    }
+    return *this;
+  }
+
+  virtual ANode*
+  clone()
+  { return new ProcFrm(*this); }
+
 private:
 };
 
@@ -1212,7 +1258,6 @@ public:
   
   virtual ~Proc()
   { }
-  
 
   // -------------------------------------------------------
   // Static structure (NOTE: m_strct is either Struct::Proc or Struct::Alien)
@@ -1229,6 +1274,25 @@ public:
 
   virtual std::string
   toStringMe(uint oFlags = 0) const;
+  
+  // deep copy of internals (but without children)
+  Proc(const Proc& x)
+    : AProcNode(x)
+  { }
+
+  // deep copy of internals (but without children)
+  Proc&
+  operator=(const Proc& x)
+  {
+    if (this != &x) {
+      AProcNode::operator=(x);
+    }
+    return *this;
+  }
+
+  virtual ANode*
+  clone()
+  { return new Proc(*this); }
 
 private:
 };
@@ -1264,6 +1328,78 @@ public:
   virtual std::string
   toStringMe(uint oFlags = 0) const;
   
+  // deep copy of internals (but without children)
+  Loop(const Loop& x)
+    : ANode(x)
+  { }
+
+  // deep copy of internals (but without children)
+  Loop&
+  operator=(const Loop& x)
+  {
+    if (this != &x) {
+      ANode::operator=(x);
+    }
+    return *this;
+  }
+
+  virtual ANode*
+  clone()
+  { return new Loop(*this); }
+
+private:
+};
+
+
+// --------------------------------------------------------------------------
+// SCC
+// --------------------------------------------------------------------------
+
+class SCC
+  : public ANode
+{
+public:
+  // Constructor/Destructor
+  SCC(ANode* parent, Struct::ACodeNode* strct = NULL)
+    : ANode(TySCC, parent, strct)
+  { }
+
+  virtual uint
+  fileId() const
+  {
+    uint id = 0;
+    if (m_strct) {
+      id = m_strct->id(); 
+    }
+    return id;
+  }
+
+  virtual ~SCC()
+  { }
+
+  // Dump contents for inspection
+  virtual std::string
+  toStringMe(uint oFlags = 0) const;
+  
+  // deep copy of internals (but without children)
+  SCC(const SCC& x)
+    : ANode(x)
+  { }
+
+  // deep copy of internals (but without children)
+  SCC&
+  operator=(const SCC& x)
+  {
+    if (this != &x) {
+      ANode::operator=(x);
+    }
+    return *this;
+  }
+
+  virtual ANode*
+  clone()
+  { return new SCC(*this); }
+
 private:
 };
 
@@ -1315,6 +1451,24 @@ public:
   virtual std::string
   toStringMe(uint oFlags = 0) const;
 
+  // deep copy of internals (but without children)
+  Call(const Call& x)
+    : ADynNode(x)
+  { }
+
+  // deep copy of internals (but without children)
+  Call&
+  operator=(const Call& x)
+  {
+    if (this != &x) {
+      ADynNode::operator=(x);
+    }
+    return *this;
+  }
+
+  virtual ANode*
+  clone()
+  { return new Call(*this); }
 };
 
 
@@ -1343,6 +1497,16 @@ class Stmt
   virtual ~Stmt()
   { }
 
+  // Dump contents for inspection
+  virtual std::string
+  toStringMe(uint oFlags = 0) const;
+
+  // deep copy of internals (but without children)
+  Stmt(const Stmt& x)
+    : ADynNode(x)
+  { }
+
+  // deep copy of internals (but without children)
   Stmt&
   operator=(const Stmt& x)
   {
@@ -1352,11 +1516,9 @@ class Stmt
     return *this;
   }
 
-
-
-  // Dump contents for inspection
-  virtual std::string
-  toStringMe(uint oFlags = 0) const;
+  virtual ANode*
+  clone()
+  { return new Stmt(*this); }
 };
 
 

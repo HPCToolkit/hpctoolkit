@@ -104,7 +104,9 @@ datacentric_hw_handler(perf_mmap_data_t *mmap_data,
 }
 
 int
-datacentric_hw_register(sample_source_t *self, event_custom_t *event,
+datacentric_hw_register(sample_source_t *self, 
+                        kind_info_t     *kb_kind, 
+                        event_custom_t  *event,
                         struct event_threshold_s *period)
 {
   int size = sizeof(pmu_events)/sizeof(struct pmu_config_s);
@@ -148,9 +150,8 @@ datacentric_hw_register(sample_source_t *self, event_custom_t *event,
       // ------------------------------------------
       // create metric data centric
       // ------------------------------------------
-      int metric = hpcrun_new_metric();
-      hpcrun_set_metric_info_and_period(
-            metric, pmu_events[i].name,
+      int metric = hpcrun_set_metric_info_and_period(
+            kb_kind, pmu_events[i].name,
             MetricFlags_ValFmt_Int, 1, metric_property_none);
 
       // ------------------------------------------

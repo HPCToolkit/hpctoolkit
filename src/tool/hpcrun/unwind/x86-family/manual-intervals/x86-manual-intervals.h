@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -61,6 +61,7 @@
         MACRO(x86_adjust_intel11_f90main_intervals) \
         MACRO(x86_adjust_dl_runtime_resolve_unwind_intervals) \
         MACRO(x86_adjust_pgi_mp_pexit_intervals) \
+        MACRO(x86_adjust_gcc_stack_intervals) \
         MACRO(x86_fail_intervals)
 
 

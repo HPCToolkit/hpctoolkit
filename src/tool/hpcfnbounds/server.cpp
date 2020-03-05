@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -219,6 +219,7 @@ syserv_add_addr(void *addr, long func_entry_map_size)
 {
   int ret;
 
+#if 0
   // send the OK mesg on first addr callback
   if (! sent_ok_mesg) {
     max_num_addrs = func_entry_map_size + 1;
@@ -228,6 +229,7 @@ syserv_add_addr(void *addr, long func_entry_map_size)
     }
     sent_ok_mesg = 1;
   }
+#endif
 
   // see if buffer needs to be flushed
   if (num_addrs >= ADDR_SIZE) {
@@ -306,7 +308,6 @@ static void
 do_query(DiscoverFnTy fn_discovery, struct syserv_mesg *mesg, int query)
 {
   int ret;
-  long k;
 
   if (mesg->len > inbuf_size) {
     inbuf_size += mesg->len;
@@ -339,13 +340,30 @@ do_query(DiscoverFnTy fn_discovery, struct syserv_mesg *mesg, int query)
     // pad list of addrs in case there are fewer function addrs than
     // size of map.
     fnb_info.num_entries = total_num_addrs;
+
+#if 0
+    // XXX why is this padding done?
     for (k = total_num_addrs; k < max_num_addrs; k++) {
       syserv_add_addr(NULL, 0);
     }
+#endif
+    int oldcount = total_num_addrs;
+
+    ret = write_mesg(SYSERV_OK, oldcount+1);
+    if (ret != SUCCESS) {
+      errx(1, "write SYSERV_OK to fdout failed");
+    }
+    // add one extra zero
+    syserv_add_addr(NULL, 0);
+
     if (num_addrs > 0) {
       ret = write_all(fdout, addr_buf, num_addrs * sizeof(void *));
       if (ret != SUCCESS) {
 	errx(1, "write to fdout failed");
+      }
+      if (verbose_mode()) {
+	fprintf(stderr, "oldfnb %s = %d (%ld) -- %s\n",
+		strrchr(inbuf, '/'), oldcount, num_addrs, inbuf);
       }
       num_addrs = 0;
     }
@@ -390,6 +408,12 @@ system_server(DiscoverFnTy fn_discovery, int fd1, int fd2)
 
   fdin = fd1;
   fdout = fd2;
+
+  // write version to runtime log
+  if (verbose_mode()) {
+    fprintf(stderr, "Begin hpcfnbounds (old) server, DiscoverFnTy = %d\n",
+	    fn_discovery);
+  }
 
   inbuf_size = INIT_INBUF_SIZE;
   inbuf = (char *) malloc(inbuf_size);

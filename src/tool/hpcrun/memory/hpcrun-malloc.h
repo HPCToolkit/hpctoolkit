@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -87,6 +87,7 @@ extern "C" {
 //---------------------------------------------------------------------------
 void* hpcrun_malloc(size_t size);
 void* hpcrun_malloc_freeable(size_t size);
+void* hpcrun_malloc_safe(size_t size);
 
 #else
 #define hpcrun_malloc malloc

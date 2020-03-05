@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -67,6 +67,7 @@
 #include "write_data.h"
 #include "loadmap.h"
 #include "sample_prob.h"
+#include "cct/cct_bundle.h"
 
 #include <messages/messages.h>
 
@@ -135,7 +136,6 @@ static const uint64_t default_measurement_granularity = 1;
 static FILE *
 lazy_open_data_file(core_profile_trace_data_t * cptd)
 {
-
   FILE* fs = cptd->hpcrun_file;
   if (fs) {
     return fs;
@@ -260,10 +260,15 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch)
     // == metrics ==
     //
 
-    metric_desc_p_tbl_t *metric_tbl = hpcrun_get_metric_tbl();
+    kind_info_t *curr = NULL;
+    metric_desc_p_tbl_t *metric_tbl = hpcrun_get_metric_tbl(&curr);
 
-    TMSG(DATA_WRITE, "metric tbl len = %d", metric_tbl->len);
-    hpcrun_fmt_metricTbl_fwrite(metric_tbl, cptd->perf_event_info, fs);
+    hpcfmt_int4_fwrite(hpcrun_get_num_kind_metrics(), fs);
+    while (curr != NULL) {
+      TMSG(DATA_WRITE, "metric tbl len = %d", metric_tbl->len);
+      hpcrun_fmt_metricTbl_fwrite(metric_tbl, cptd->perf_event_info, fs);
+      metric_tbl = hpcrun_get_metric_tbl(&curr);
+    }
 
     TMSG(DATA_WRITE, "Done writing metric data");
 
@@ -328,6 +333,8 @@ hpcrun_flush_epochs(core_profile_trace_data_t * cptd)
 int
 hpcrun_write_profile_data(core_profile_trace_data_t * cptd)
 {
+  if(cptd->scale_fn) cptd->scale_fn((void*)cptd);
+
   TMSG(DATA_WRITE,"Writing hpcrun profile data");
   FILE* fs = lazy_open_data_file(cptd);
   if (fs == NULL)

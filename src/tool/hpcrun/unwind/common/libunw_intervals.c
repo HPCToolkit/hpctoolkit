@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -188,6 +188,50 @@ libunw_cursor_get_pc(hpcrun_unw_cursor_t* cursor)
   return (void *) tmp;
 }
 
+
+static void *
+libunw_cursor_get_sp(hpcrun_unw_cursor_t* cursor)
+{
+  unw_word_t tmp;
+
+  unw_cursor_t *unw_cursor = &(cursor->uc);
+  unw_get_reg(unw_cursor, UNW_REG_SP, &tmp);
+
+  return (void *) tmp;
+}
+
+
+static void *
+libunw_cursor_get_bp(hpcrun_unw_cursor_t* cursor)
+{
+  unw_word_t tmp;
+
+#if HOST_CPU_x86_64
+  unw_cursor_t *unw_cursor = &(cursor->uc);
+  unw_get_reg(unw_cursor, UNW_TDEP_BP, &tmp);
+#else
+  tmp = 0;
+#endif
+
+  return (void *) tmp;
+}
+
+
+static void **
+libunw_cursor_get_ra_loc(hpcrun_unw_cursor_t* cursor)
+{
+  unw_save_loc_t ip_loc;
+
+  unw_cursor_t *unw_cursor = &(cursor->uc);
+  unw_get_save_loc(unw_cursor, UNW_REG_IP, &ip_loc);
+
+  unw_word_t tmp = (ip_loc.type == UNW_SLT_MEMORY ? ip_loc.u.addr : 0);
+
+  return (void **) tmp;
+}
+
+
+
 static void
 compute_normalized_ips(hpcrun_unw_cursor_t* cursor)
 {
@@ -207,11 +251,18 @@ compute_normalized_ips(hpcrun_unw_cursor_t* cursor)
 }
 
 bool
-libunw_finalize_cursor(hpcrun_unw_cursor_t* cursor)
+libunw_finalize_cursor(hpcrun_unw_cursor_t* cursor, int decrement_pc)
 {
-  void *pc = libunw_cursor_get_pc(cursor);
+  char *pc = libunw_cursor_get_pc(cursor);
   cursor->pc_unnorm = pc;
+
+  cursor->sp = libunw_cursor_get_sp(cursor);
+  cursor->bp = libunw_cursor_get_bp(cursor);
+  cursor->ra_loc = libunw_cursor_get_ra_loc(cursor);
+
+  if (decrement_pc) pc--;
   bool found = uw_recipe_map_lookup(pc, DWARF_UNWINDER, &cursor->unwr_info);
+
   compute_normalized_ips(cursor);
   TMSG(UNW, "unw_step: advance pc: %p\n", pc);
   cursor->libunw_status = found ? LIBUNW_READY : LIBUNW_UNAVAIL;
@@ -269,7 +320,7 @@ libunw_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
   unw_context_t *ctx = (unw_context_t *) context;
 
   if (ctx != NULL && unw_init_local2(unw_cursor, ctx, UNW_INIT_SIGNAL_FRAME) == 0) {
-    libunw_finalize_cursor(cursor);
+    libunw_finalize_cursor(cursor, 0);
   }
 }
 
@@ -344,11 +395,11 @@ libunw_build_intervals(char *beg_insn, unsigned int len)
 // ---------------------------------------------------------
 
 step_state
-libunw_unw_step(hpcrun_unw_cursor_t* cursor)
+libunw_unw_step(hpcrun_unw_cursor_t* cursor, int *steps_taken)
 {
   step_state result = libunw_take_step(cursor);
   if (result != STEP_ERROR) {
-    libunw_finalize_cursor(cursor);
+    libunw_finalize_cursor(cursor, *steps_taken > 0);
   }
 
 #if DEBUG_LIBUNWIND_INTERFACE

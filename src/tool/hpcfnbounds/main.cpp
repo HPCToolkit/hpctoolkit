@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2019, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -63,12 +63,22 @@
 #include <fcntl.h>
 #include <setjmp.h>
 #include <signal.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <cstring>   // strcmp
+
+#include <include/hpctoolkit-config.h>
+
+#ifdef ENABLE_OPENMP_SYMTAB
+#include <omp.h>
+#endif
+
 
 //*****************************************************************************
 // local includes
 //*****************************************************************************
+
+#include <lib/prof-lean/vdso.h>
 
 #include "code-ranges.h"
 #include "eh-frames.h"
@@ -82,9 +92,17 @@
 #include "Symtab.h"
 #include "lib/support-lean/datacentric_config.h"
 
-using namespace std;
+
+//*****************************************************************************
+// namespaces
+//*****************************************************************************
+
 using namespace Dyninst;
 using namespace SymtabAPI;
+
+using namespace std;
+
+
 
 //*****************************************************************************
 // macros
@@ -129,6 +147,13 @@ main(int argc, char* argv[])
   DiscoverFnTy fn_discovery = DiscoverFnTy_Aggressive;
   char *object_file;
   int n, fdin, fdout, query = SYSERV_QUERY;
+  int jobs = 1;
+
+  // num threads may be specified via environ or -js arg
+  char *str = getenv("HPCFNBOUNDS_NUM_THREADS");
+  if (str != NULL) {
+    jobs = atoi(str);
+  }
 
   for (n = 1; n < argc; n++) {
     if (strcmp(argv[n], "-c") == 0) {
@@ -143,6 +168,13 @@ main(int argc, char* argv[])
     else if (strcmp(argv[n], "-m") == 0) {
       // datacentric usage to query static variables
       query = SYSERV_QUERY_VAR;
+    } 
+    else if (strcmp(argv[n], "-js") == 0) {
+      if (argc < n + 2 || sscanf(argv[n+1], "%d", &jobs) < 1 || jobs < 1) {
+	fprintf(stderr, "hpcfnbounds: bad or missing number of threads for -js\n");
+	usage(argv[0], 1);
+      }
+      n += 1;
     }
     else if (strcmp(argv[n], "-s") == 0) {
       the_mode = MODE_SERVER;
@@ -176,6 +208,12 @@ main(int argc, char* argv[])
       break;
     }
   }
+
+  // If symtab supports openmp, then set num threads.
+#ifdef ENABLE_OPENMP_SYMTAB
+  if (jobs < 1) { jobs = 1; }
+  omp_set_num_threads(jobs);
+#endif
 
   // Run as the system server.
   if (server_mode()) {
@@ -216,6 +254,12 @@ server_mode(void)
   return the_mode == MODE_SERVER;
 }
 
+bool
+verbose_mode(void)
+{
+  return verbose;
+}
+
 
 extern "C" {
 
@@ -250,10 +294,11 @@ usage(char *command, int status)
     "\t-d\tdon't perform function discovery on stripped code\n"
     "\t-h\tprint this help message and exit\n"
     "\t-m send data-centric information\n"
+    "\t-x\tnot to send data-centric information\n\n"
+    "\t-js num \trun with num threads in symtab (default 1)\n"
     "\t-s fdin fdout\trun in server mode\n"
     "\t-t\twrite output in text format (default)\n"
-    "\t-v\tturn on verbose output in hpcfnbounds script\n\n"
-    "\t-x\tnot to send data-centric information\n\n"
+    "\t-v\tverbose mode for fnbounds server\n\n"
     "If no format is specified, then text mode is used.\n");
 
   exit(status);
@@ -504,6 +549,22 @@ assert_file_is_readable(const char *filename)
 }
 
 
+static Symtab *
+symtabOpenVDSO()
+{
+  Symtab * the_symtab = NULL;
+
+  char *mem_image = (char *) vdso_segment_addr();
+  size_t vdso_size = vdso_segment_len();
+
+  if (Symtab::openFile(the_symtab, mem_image, vdso_size,
+		       VDSO_SEGMENT_NAME_SHORT)) {
+    return the_symtab;
+  }
+  return NULL;
+}
+
+
 void 
 dump_file_info(const char *filename, DiscoverFnTy fn_discovery, int query)
 {
@@ -512,15 +573,26 @@ dump_file_info(const char *filename, DiscoverFnTy fn_discovery, int query)
   vector<Symbol *> symvec;
   uintptr_t image_offset = 0;
 
-  assert_file_is_readable(filename);
+  if (strcmp(filename,"[vdso]") == 0) {
+    syms = symtabOpenVDSO();
+    if (syms == NULL) {
+      fprintf(stderr,
+	      "!!! INTERNAL hpcfnbounds-bin error !!!\n"
+	      "  -- Symtab::openFile fails for in-memory segment [vdso]!\n");
+      exit(1);
+    }
+  } else {
+    assert_file_is_readable(filename);
 
-  if ( ! Symtab::openFile(syms, sfile) ) {
-    fprintf(stderr,
-	    "!!! INTERNAL hpcfnbounds-bin error !!!\n"
-	    "  -- file %s is readable, but Symtab::openFile fails !\n",
-	    filename);
-    exit(1);
+    if ( ! Symtab::openFile(syms, sfile) ) {
+      fprintf(stderr,
+	      "!!! INTERNAL hpcfnbounds-bin error !!!\n"
+	      "  -- file %s is readable, but Symtab::openFile fails !\n",
+	      filename);
+      exit(1);
+    }
   }
+
   int relocatable = 0;
 
 #ifdef USE_SYMTABAPI_EXCEPTION_BLOCKS 
@@ -555,6 +627,9 @@ dump_file_info(const char *filename, DiscoverFnTy fn_discovery, int query)
   switch (query) {
   case SYSERV_QUERY:
     syms->getAllSymbolsByType(symvec, Symbol::ST_FUNCTION);
+    if (symvec.size() == 0) {
+      syms->getAllSymbolsByType(symvec, Symbol::ST_NOTYPE);
+    }
     break;
   case SYSERV_QUERY_VAR:
     syms->getAllSymbolsByType(symvec, Symbol::ST_OBJECT);

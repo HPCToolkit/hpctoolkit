@@ -141,8 +141,9 @@ am_hpclump_OBJECTS = $(am__objects_1)
 hpclump_OBJECTS = $(am_hpclump_OBJECTS)
 am__DEPENDENCIES_1 =
 @HOST_CPU_X86_FAMILY_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
-am__DEPENDENCIES_3 = $(HPCLIB_Binutils) $(HPCLIB_ISA) \
-	$(am__DEPENDENCIES_2) $(HPCLIB_Support) $(HPCLIB_SupportLean)
+am__DEPENDENCIES_3 = $(HPCLIB_Binutils) $(HPCLIB_ProfLean) \
+	$(HPCLIB_ISA) $(am__DEPENDENCIES_2) $(HPCLIB_Support) \
+	$(HPCLIB_SupportLean) $(am__DEPENDENCIES_1)
 hpclump_DEPENDENCIES = $(am__DEPENDENCIES_3)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -313,6 +314,14 @@ INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LD = @LD@
 LDFLAGS = @LDFLAGS@
 LIBDWARF_COPY = @LIBDWARF_COPY@
+
+#############################################################################
+# Common settings
+#############################################################################
+
+#############################################################################
+# Local settings
+#############################################################################
 LIBDWARF_INC = @LIBDWARF_INC@
 LIBDWARF_LIB = @LIBDWARF_LIB@
 LIBELF_COPY = @LIBELF_COPY@
@@ -347,6 +356,10 @@ LZMA_PROF_MPI_LIBS = @LZMA_PROF_MPI_LIBS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
+MBEDTLS_COPY = @MBEDTLS_COPY@
+MBEDTLS_IFLAGS = @MBEDTLS_IFLAGS@
+MBEDTLS_LIB = @MBEDTLS_LIB@
+MBEDTLS_LIBS = @MBEDTLS_LIBS@
 MKDIR_P = @MKDIR_P@
 MPICC = @MPICC@
 MPICXX = @MPICXX@
@@ -359,16 +372,19 @@ OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 OPENMP_FLAG = @OPENMP_FLAG@
 OPT_CILK_IFLAGS = @OPT_CILK_IFLAGS@
-OPT_CUDA = @OPT_CUDA@
 OPT_CUDA_IFLAGS = @OPT_CUDA_IFLAGS@
 OPT_CUDA_LDFLAGS = @OPT_CUDA_LDFLAGS@
 OPT_CUPTI = @OPT_CUPTI@
 OPT_CUPTI_IFLAGS = @OPT_CUPTI_IFLAGS@
+OPT_CUPTI_LDFLAGS = @OPT_CUPTI_LDFLAGS@
 OPT_OBJCOPY = @OPT_OBJCOPY@
 OPT_PAPI = @OPT_PAPI@
 OPT_PAPI_IFLAGS = @OPT_PAPI_IFLAGS@
 OPT_PAPI_LDFLAGS = @OPT_PAPI_LDFLAGS@
 OPT_PAPI_LIBPATH = @OPT_PAPI_LIBPATH@
+OPT_ROCM = @OPT_ROCM@
+OPT_ROCM_IFLAGS = @OPT_ROCM_IFLAGS@
+OPT_ROCM_LDFLAGS = @OPT_ROCM_LDFLAGS@
 OPT_UPC_IFLAGS = @OPT_UPC_IFLAGS@
 OPT_UPC_LDFLAGS = @OPT_UPC_LDFLAGS@
 OTOOL = @OTOOL@
@@ -403,14 +419,6 @@ XED2_HPCLINK_LIBS = @XED2_HPCLINK_LIBS@
 XED2_HPCRUN_LIBS = @XED2_HPCRUN_LIBS@
 XED2_INC = @XED2_INC@
 XED2_LIB_DIR = @XED2_LIB_DIR@
-
-#############################################################################
-# Common settings
-#############################################################################
-
-#############################################################################
-# Local settings
-#############################################################################
 XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
 XED2_PROF_MPI_LIBS = @XED2_PROF_MPI_LIBS@
 XERCES = @XERCES@
@@ -516,6 +524,8 @@ HPCLIB_ISA = $(top_builddir)/src/lib/isa/libHPCisa.la
 HPCLIB_XML = $(top_builddir)/src/lib/xml/libHPCxml.la
 HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
 HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
+@OPT_DYNINST_LIBDW_FALSE@MY_ELF_DWARF = -L$(LIBDWARF_LIB) -ldwarf -L$(LIBELF_LIB) -lelf
+@OPT_DYNINST_LIBDW_TRUE@MY_ELF_DWARF = -L$(LIBELF_LIB) -ldw -lelf
 MYSOURCES = \
 	main.cpp \
 	Args.hpp Args.cpp
@@ -529,10 +539,12 @@ MYLDFLAGS = \
 MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
 	$(HPCLIB_Binutils) \
+	$(HPCLIB_ProfLean) \
 	$(HPCLIB_ISA) \
 	$(MY_LIB_XED) \
 	$(HPCLIB_Support) \
 	$(HPCLIB_SupportLean) \
+	$(MY_ELF_DWARF) \
 	@LZMA_LDFLAGS_STAT@ \
 	@BINUTILS_LIBS@ \
 	@HOST_HPCSTRUCT_LDFLAGS@
