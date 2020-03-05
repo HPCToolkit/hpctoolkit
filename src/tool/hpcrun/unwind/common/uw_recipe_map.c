@@ -555,8 +555,11 @@ uw_recipe_map_repoison(uintptr_t start, uintptr_t end, unwinder_t uw)
 }
 
 static void
-uw_recipe_map_notify_map(void *start, void *end)
+uw_recipe_map_notify_map(load_module_t* lm)
 {
+  if (lm == NULL || lm->dso_info == NULL) return;
+  void* start = lm->dso_info->start_addr;
+  void* end = lm->dso_info->end_addr;
   uw_recipe_map_report_and_dump("*** map: before unpoisoning", start, end);
 
   unwinder_t uw;
@@ -568,8 +571,11 @@ uw_recipe_map_notify_map(void *start, void *end)
 
 
 static void
-uw_recipe_map_notify_unmap(void *start, void *end)
+uw_recipe_map_notify_unmap(load_module_t* lm)
 {
+  if (lm == NULL || lm->dso_info == NULL) return;
+  void* start = lm->dso_info->start_addr;
+  void* end = lm->dso_info->end_addr;
   uw_recipe_map_report_and_dump("*** unmap: before poisoning", start, end);
 
   // Remove intervals in the range [start, end) from the unwind interval tree.

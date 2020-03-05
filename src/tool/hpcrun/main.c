@@ -1630,6 +1630,7 @@ void
 monitor_pre_dlopen(const char* path, int flags)
 {
   hpcrun_dlfunction_begin();
+  /*
   if (! hpcrun_dlopen_forced) {
     if (! hpcrun_is_initialized()) {
       hpcrun_dlopen_flags_push(false);
@@ -1641,6 +1642,8 @@ monitor_pre_dlopen(const char* path, int flags)
     }
   }
   hpcrun_dlopen_flags_push(true);
+  */
+  if (! hpcrun_safe_enter()) return;
   hpcrun_pre_dlopen(path, flags);
   hpcrun_safe_exit();
 }
@@ -1648,8 +1651,8 @@ monitor_pre_dlopen(const char* path, int flags)
 
 void
 monitor_dlopen(const char *path, int flags, void* handle)
-{
-  hpcrun_dlfunction_end();
+{  
+  /*
   if (!hpcrun_dlopen_flags_pop()) {
     return;
   }
@@ -1661,8 +1664,11 @@ monitor_dlopen(const char *path, int flags, void* handle)
       return;
     }
   }
+  */
+  if (! hpcrun_safe_enter()) return;
   hpcrun_dlopen(path, flags, handle);
   hpcrun_safe_exit();
+  hpcrun_dlfunction_end();
 }
 
 
@@ -1670,11 +1676,13 @@ void
 monitor_dlclose(void* handle)
 {
   hpcrun_dlfunction_begin();
+  /*
   if (! hpcrun_is_initialized()) {
     hpcrun_dlclose_flags_push(false);
     return;
   }
   hpcrun_dlclose_flags_push(true);
+  */
   hpcrun_safe_enter();
   hpcrun_dlclose(handle);
   hpcrun_safe_exit();
@@ -1684,16 +1692,18 @@ monitor_dlclose(void* handle)
 void
 monitor_post_dlclose(void* handle, int ret)
 {
-  hpcrun_dlfunction_end();
+  /*  
   if (! hpcrun_dlclose_flags_pop()) {
     return;
   }
   if (! hpcrun_is_initialized()) {
     return;
   }
+  */
   hpcrun_safe_enter();
   hpcrun_post_dlclose(handle, ret);
   hpcrun_safe_exit();
+  hpcrun_dlfunction_end();
 }
 
 #endif /* ! HPCRUN_STATIC_LINK */

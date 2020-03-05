@@ -184,58 +184,26 @@ hpcrun_dlopen_read_unlock(void)
 void 
 hpcrun_pre_dlopen(const char *path, int flags)
 {
-  hpcrun_dlopen_write_lock();
-  atomic_fetch_add_explicit(&num_dlopen_pending, 1L, memory_order_relaxed);
-  TD_GET(inside_dlfcn) = true;
+    
 }
 
 
-// It's safe to downgrade the lock during fnbounds_map_open_dsos()
-// because it acquires the dl-iterate lock before the fnbounds lock,
-// and that order is consistent with sampling.  Note: can only
-// downgrade the lock on the last (outermost) dlopen.
-//
 void 
 hpcrun_dlopen(const char *module_name, int flags, void *handle)
 {
-  int outermost = (dlopen_num_writers == 1);
-
-  TMSG(LOADMAP, "dlopen: handle = %p, name = %s", handle, module_name);
-  if (outermost) {
-    hpcrun_dlopen_downgrade_lock();
-  }
   fnbounds_map_open_dsos();
-  atomic_fetch_add_explicit(&num_dlopen_pending, -1L, memory_order_relaxed);
-  if (outermost) {
-    TD_GET(inside_dlfcn) = false;
-    hpcrun_dlopen_read_unlock();
-  } else {
-    hpcrun_dlopen_write_unlock();
-  }
 }
 
 
 void
 hpcrun_dlclose(void *handle)
 {
-  hpcrun_dlopen_write_lock();
-  TD_GET(inside_dlfcn) = true;
+
 }
 
-
-// We can't downgrade the lock during fnbounds_unmap_closed_dsos()
-// because it acquires the fnbounds lock before the dl-iterate lock,
-// and that is a LOR with sampling.
-//
 void
 hpcrun_post_dlclose(void *handle, int ret)
-{
-  int outermost = (dlopen_num_writers == 1);
-
+{  
   TMSG(LOADMAP, "dlclose: handle = %p", handle);
   fnbounds_unmap_closed_dsos();
-  if (outermost) {
-    TD_GET(inside_dlfcn) = false;
-  }
-  hpcrun_dlopen_write_unlock();
 }

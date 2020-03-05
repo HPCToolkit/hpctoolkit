@@ -241,7 +241,9 @@ fnbounds_enclosing_addr(void* ip, void** start, void** end, load_module_t** lm)
 void
 fnbounds_map_open_dsos()
 {
+  FNBOUNDS_LOCK;
   dylib_map_open_dsos();
+  FNBOUNDS_UNLOCK;
 }
 
 
@@ -334,8 +336,6 @@ fnbounds_ensure_mapped_dso(const char *module_name, void *start, void *end, stru
 {
   bool isOk = true;
 
-  FNBOUNDS_LOCK;
-
   load_module_t *lm = hpcrun_loadmap_findByAddr(start, end);
   if (!lm) {
     dso_info_t *dso = fnbounds_compute(module_name, start, end);
@@ -353,8 +353,6 @@ fnbounds_ensure_mapped_dso(const char *module_name, void *start, void *end, stru
       isOk = false;
     }
   }
-
-  FNBOUNDS_UNLOCK;
 
   return isOk;
 }
@@ -542,14 +540,6 @@ fnbounds_get_loadModule(void *ip)
 static void
 fnbounds_map_executable()
 {
-  // dylib_map_executable() ==>
-  // fnbounds_ensure_mapped_dso("/proc/self/exe", NULL, NULL) ==>
-  //{
-  //   FNBOUNDS_LOCK;
-  //   dso = fnbound_compute(exename, ...);
-  //   hpcrun_loadmap_map(dso);
-  //   FNBOUNDS_UNLOCK;
-  //}
   FNBOUNDS_LOCK;
   hpcrun_loadmap_map(fnbounds_dso_exec());
   FNBOUNDS_UNLOCK;

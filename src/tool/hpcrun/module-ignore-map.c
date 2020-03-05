@@ -300,7 +300,7 @@ module_ignore_map_ignore
     // any of the nvidia functions
     for (i = 0; i < NUM_FNS; ++i) {
       if (modules[i].empty == true) {
-	if (lm_contains_fn(module->name, NVIDIA_FNS[i])) {
+	if (0 && lm_contains_fn(module->name, NVIDIA_FNS[i])) {
 	  modules[i].module = module;
 	  modules[i].empty = false;
 	  result = true;
@@ -321,6 +321,7 @@ module_ignore_map_delete
  load_module_t* lm
 )
 {
+  if (lm == NULL || lm->dso_info == NULL) return false;
   void* start = lm->dso_info->start_addr;
   void* end = lm->dso_info->end_addr;
   size_t i;
