@@ -540,7 +540,7 @@ hpcrun_loadmap_iterate
   int (*cb)(struct dl_phdr_info * info, size_t size, void* data),
   void *data
 )
-{
+{  
   int ret = 0;
   for (load_module_t* x = s_loadmap_ptr->lm_head; (x); x = x->next) {        
     ret = cb(&(x->phdr_info), sizeof(struct dl_phdr_info), data);

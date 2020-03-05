@@ -147,7 +147,13 @@
 #include <messages/messages.h>
 #include <messages/debug-flag.h>
 
-
+#include <loadmap.h>
+#include <gotcha/gotcha.h>
+static gotcha_wrappee_handle_t wrappee_dl_iterate_phdr_handle;
+struct gotcha_binding_t wrap_actions [] = {
+  { "dl_iterate_phdr", hpcrun_loadmap_iterate, &wrappee_dl_iterate_phdr_handle}    
+};
+  
 extern void hpcrun_set_retain_recursion_mode(bool mode);
 #ifndef USE_LIBUNW
 extern void hpcrun_dump_intervals(void* addr);
@@ -432,6 +438,7 @@ dump_interval_handler(int sig, siginfo_t* info, void* ctxt)
 void
 hpcrun_init_internal(bool is_child)
 {
+  gotcha_wrap(wrap_actions, sizeof(wrap_actions)/sizeof(struct gotcha_binding_t), "hpctoolkit");
   hpcrun_initLoadmap();
 
   hpcrun_memory_reinit();

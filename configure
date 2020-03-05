@@ -644,6 +644,8 @@ my_pkglibdir
 OPT_ENABLE_DEVTOOLS_FALSE
 OPT_ENABLE_DEVTOOLS_TRUE
 OPT_OBJCOPY
+GOTCHA_LDFLAGS
+GOTCHA_IFLAGS
 OPT_ROCM_LDFLAGS
 OPT_ROCM_IFLAGS
 OPT_ROCM
@@ -23395,6 +23397,14 @@ fi
 
 
 
+
+
+#-------------------------------------------------
+# GOTCHA
+#-------------------------------------------------
+GOTCHA="/home/xm13/hpctoolkit-dir/GOTCHA/install"
+GOTCHA_IFLAGS="-I${GOTCHA}/include"
+GOTCHA_LDFLAGS="-L${GOTCHA}/lib64 -lgotcha"
 
 
 

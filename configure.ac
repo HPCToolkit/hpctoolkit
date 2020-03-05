@@ -4598,6 +4598,14 @@ AC_SUBST([OPT_ROCM])
 AC_SUBST([OPT_ROCM_IFLAGS])
 AC_SUBST([OPT_ROCM_LDFLAGS])
 
+#-------------------------------------------------
+# GOTCHA 
+#-------------------------------------------------
+GOTCHA="/home/xm13/hpctoolkit-dir/GOTCHA/install"
+GOTCHA_IFLAGS="-I${GOTCHA}/include"
+GOTCHA_LDFLAGS="-L${GOTCHA}/lib64 -lgotcha"
+AC_SUBST([GOTCHA_IFLAGS])
+AC_SUBST([GOTCHA_LDFLAGS])
 
 #-------------------------------------------------
 # enable-data-centric-tracing: data-centric tracing
