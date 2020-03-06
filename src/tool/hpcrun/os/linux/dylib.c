@@ -280,18 +280,14 @@ static int
 dylib_map_open_dsos_callback(struct dl_phdr_info *info, size_t size, 
 			     void *vdso_start)
 {
-  if (strcmp(info->dlpi_name,"") != 0) {
-    struct dylib_seg_bounds_s bounds;
-    dylib_get_segment_bounds(info, &bounds);
-
-    // the file name provided by dl_iterate_phdr for the vdso segment 
-    // is a pseudo-file, so we can't process it directly below, which 
-    // expects a real file
-    if (bounds.start != vdso_start) {
-      fnbounds_ensure_mapped_dso(info->dlpi_name, bounds.start, bounds.end, info);
-    }
+  struct dylib_seg_bounds_s bounds;
+  dylib_get_segment_bounds(info, &bounds);
+  // the file name provided by dl_iterate_phdr for the vdso segment 
+  // is a pseudo-file, so we can't process it directly below, which 
+  // expects a real file
+  if (bounds.start != vdso_start) {
+    fnbounds_ensure_mapped_dso(info->dlpi_name, bounds.start, bounds.end, info);
   }
-
   return 0;
 }
 

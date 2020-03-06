@@ -215,7 +215,7 @@ hpcrun_loadModule_new(const char* name)
   x->dso_info = NULL;
   x->next = NULL;
   x->prev = NULL;
-  x->phdr_info.dlpi_addr = 0;
+  x->phdr_info.dlpi_phdr = NULL;
 
   return x;
 }

@@ -343,8 +343,6 @@ fnbounds_ensure_mapped_dso(const char *module_name, void *start, void *end, stru
       lm = hpcrun_loadmap_map(dso);
       if (info != NULL) {
         lm->phdr_info = *info;
-      } else {
-        lm->phdr_info.dlpi_addr = 0;
       }
     }
     else {
@@ -352,7 +350,7 @@ fnbounds_ensure_mapped_dso(const char *module_name, void *start, void *end, stru
 	   module_name, start, end);
       isOk = false;
     }
-  } else if (lm->phdr_info.dlpi_addr == 0) {
+  } else if (lm->phdr_info.dlpi_phdr == NULL) {
     if (info != NULL) lm->phdr_info = *info;
   }
 
