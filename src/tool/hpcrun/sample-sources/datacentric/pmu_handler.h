@@ -49,7 +49,7 @@
 #define __PMU_HANDLER_H__
 
 void
-pmu_handler_init();
+pmu_handler_init(kind_info_t *data_kind);
 
 
 void

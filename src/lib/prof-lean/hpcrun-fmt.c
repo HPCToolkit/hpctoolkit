@@ -629,7 +629,7 @@ int
 hpcrun_fmt_cct_node_fread(hpcrun_fmt_cct_node_t* x, double fmtVersion,
 			  epoch_flags_t flags, FILE* fs)
 {
-  if (fmtVersion >= HPCRUN_FMT_Version_21)
+  if (fmtVersion >= HPCRUN_FMT_Version_31)
     HPCFMT_ThrowIfError(hpcfmt_int4_fread(&x->node_type, fs));
 
   HPCFMT_ThrowIfError(hpcfmt_int4_fread(&x->id, fs));

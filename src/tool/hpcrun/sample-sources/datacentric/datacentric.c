@@ -307,7 +307,7 @@ datacentric_post_handler(event_handler_arg_t *args)
     cct_node_t *datacentric_root = hpcrun_cct_bundle_init_datacentric_node(bundle);
     cct_node_t *variable_root    = hpcrun_insert_special_node(datacentric_root, DATACENTRIC_Dynamic);
 
-    cct_node_t* var_decl_node = hpcrun_cct_insert_path_return_leaf(var_context, variable_root);
+    cct_node_t* var_decl_node = hpcrun_cct_insert_path_return_leaf(variable_root, var_context);
     hpcrun_cct_set_node_allocation(var_decl_node);
 
     // add artificial root for memory-access call-path
@@ -361,7 +361,7 @@ datacentric_post_handler(event_handler_arg_t *args)
   }
 
   // copy the callpath of the sample to the variable context
-  cct_node_t *node = hpcrun_cct_insert_path_return_leaf(sample_node, var_context);
+  cct_node_t *node = hpcrun_cct_insert_path_return_leaf(var_context, sample_node);
 
 #if 0
   // sample node will point to this var node.

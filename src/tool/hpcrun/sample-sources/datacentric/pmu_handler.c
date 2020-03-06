@@ -101,7 +101,7 @@ struct perf_mem_metric {
  *****************************************************************************/
 
 static struct perf_mem_metric metric;
-static kind_info_t *data_kind;
+//static kind_info_t *data_kind;
 
 #if 0
 static char formula_llc_miss[MAX_FORMULA_CHAR];
@@ -258,10 +258,8 @@ datacentric_record_store_mem( cct_node_t *node, cct_node_t *datacentric_node,
 
 
 void
-pmu_handler_init()
+pmu_handler_init(kind_info_t *data_kind)
 {
-  data_kind = hpcrun_metrics_new_kind();
-
   // ------------------------------------------
   // Memory load metric
   // ------------------------------------------
@@ -395,8 +393,6 @@ pmu_handler_init()
   metric.memstore_l1_miss = hpcrun_set_new_metric_info(data_kind, "MEM-Store-L1miss");
 
   metric.memstore_uncache = hpcrun_set_new_metric_info(data_kind, "MEM-Store-Uncache");
-
-  hpcrun_close_kind(data_kind);
 }
 
 
@@ -418,10 +414,10 @@ pmu_handler_callback(perf_mmap_data_t *mmap_data,
   perf_mem_data_src_t data_src = (perf_mem_data_src_t)mmap_data->data_src;
 
   if (data_src.mem_op & P(OP, LOAD)) {
-    datacentric_record_load_mem( datacentric_node, sample_node, &data_src );
+    datacentric_record_load_mem( sample_node, datacentric_node, &data_src );
   }
   if (data_src.mem_op & P(OP, STORE)) {
-    datacentric_record_store_mem( datacentric_node, sample_node, &data_src );
+    datacentric_record_store_mem( sample_node, datacentric_node, &data_src );
   }
 }
 

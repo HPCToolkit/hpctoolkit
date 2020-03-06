@@ -134,7 +134,7 @@ datacentric_hw_register(sample_source_t *self,
 
   }
   if (num_pmu > 0)
-    pmu_handler_init();
+    pmu_handler_init(kb_kind);
 
   return num_pmu;
 }

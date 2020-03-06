@@ -111,7 +111,7 @@ static const char HPCPROF_TmpFnmSfx[] = "tmp";
 // N.B.: The header string is 24 bytes of character data
 
 static const char HPCRUN_FMT_Magic[]   = "HPCRUN-profile____"; // 18 bytes
-static const char HPCRUN_FMT_Version[] = "03.00";              // 5 bytes
+static const char HPCRUN_FMT_Version[] = "03.10";              // 5 bytes
 static const char HPCRUN_FMT_Endian[]  = "b";                  // 1 byte
 
 static const int HPCRUN_FMT_MagicLen   = (sizeof(HPCRUN_FMT_Magic) - 1);
@@ -120,7 +120,7 @@ static const int HPCRUN_FMT_EndianLen  = (sizeof(HPCRUN_FMT_Endian) - 1);
 
 
 // currently supported versions
-static const double HPCRUN_FMT_Version_21 = 2.1;
+static const double HPCRUN_FMT_Version_31 = 3.1;
 
 // supported old versions
 static const double HPCRUN_FMT_Version_20 = 2.0;
