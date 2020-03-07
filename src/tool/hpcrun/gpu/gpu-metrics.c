@@ -75,7 +75,8 @@
   macro(GXCOPY, 3)				\
   macro(GSYNC, 4)				\
   macro(GGMEM, 5)				\
-  macro(GLMEM, 6)
+  macro(GLMEM, 6)       \
+  macro(GRED,  7)
 
 
 #define FORALL_SCALAR_METRIC_KINDS(macro)	\
@@ -543,6 +544,24 @@ gpu_metrics_attribute_branch
 }
 
 
+static void
+gpu_metrics_attribute_redundancy
+(
+ gpu_activity_t *activity
+)
+{
+  gpu_redundancy_t *r = &(activity->details.redundancy);
+  cct_node_t *cct_node = activity->cct_node;  
+
+  int red_type_metric_index = METRIC_ID(GRED)[r->type];
+
+  metric_data_list_t *metrics = 
+    hpcrun_reify_metric_set(cct_node, red_type_metric_index);
+
+  gpu_metrics_attribute_metric_int(metrics, red_type_metric_index, r->count);
+}
+
+
 //******************************************************************************
 // interface operations
 //******************************************************************************
@@ -596,6 +615,10 @@ gpu_metrics_attribute
 
   case GPU_ACTIVITY_BRANCH:
     gpu_metrics_attribute_branch(activity);
+    break;
+
+  case GPU_ACTIVITY_REDUNDANCY:
+    gpu_metrics_attribute_redundancy(activity);
     break;
 
   default:
@@ -830,6 +853,23 @@ gpu_metrics_GPU_INST_STALL_enable
   INITIALIZE_METRIC_KIND();
 
   FORALL_GPU_INST_STALL(INITIALIZE_INDEXED_METRIC_INT)
+
+  FINALIZE_METRIC_KIND();
+}
+
+
+void
+gpu_metrics_GPU_REDUNDANCY_enable
+(
+ void
+)
+{
+#undef CURRENT_METRIC 
+#define CURRENT_METRIC GRED
+
+  INITIALIZE_METRIC_KIND();
+
+  FORALL_GRED(INITIALIZE_INDEXED_METRIC_INT)
 
   FINALIZE_METRIC_KIND();
 }

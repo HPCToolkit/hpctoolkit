@@ -477,6 +477,9 @@ METHOD_FN(process_event_list, int lush_metrics)
     // Register redshow analysis
     sanitizer_analysis_enable();
 
+    // Enable metrics
+    gpu_metrics_GPU_REDUNDANCY_enable();
+
     // Register sanitizer callbacks
     sanitizer_callbacks_subscribe();
 

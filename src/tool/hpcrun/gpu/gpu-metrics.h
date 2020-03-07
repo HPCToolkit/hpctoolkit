@@ -363,6 +363,17 @@ typedef enum {
   macro("GBR:EXE",                GPU_BR_EXECUTED,		\
 	"GPU branches: executed")
 
+// gpu redundancy information
+#define FORALL_GRED(macro)    \
+  macro("GRED:SPATIAL_READ",       GPU_RED_SPATIAL_READ,		\
+    "GPU redundancy: spatial value read")				\
+  macro("GRED:SPATIAL_WRITE",      GPU_RED_SPATIAL_WRITE,	\
+    "GPU redundancy: spatial value write")      \
+  macro("GRED:TEMPORAL_READ",      GPU_RED_TEMPORAL_READ,		\
+    "GPU redundancy: temporal value read")			\
+  macro("GRED:TEMPORAL_WRITE",     GPU_RED_TEMPORAL_WRITE,	\
+    "GPU redundancy: temporal value write")
+
 
 // gpu sampling information
 #define FORALL_GSAMP_INT(macro)					\
@@ -477,6 +488,16 @@ gpu_metrics_GLMEM_enable
 
 void
 gpu_metrics_GBR_enable
+(
+ void
+);
+
+
+//--------------------------------------------------
+// record redundancy statistics
+//--------------------------------------------------
+void
+gpu_metrics_GPU_REDUNDANCY_enable
 (
  void
 );

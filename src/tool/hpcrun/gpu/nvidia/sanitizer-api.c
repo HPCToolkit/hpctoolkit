@@ -120,6 +120,7 @@
 #define MIN2(m1, m2) m1 > m2 ? m2 : m1
 
 #define GPU_PATCH_RECORD_NUM (16 * 1024)
+#define SANITIZER_NUM_VIEWS (10)
 
 #define SANITIZER_FN_NAME(f) DYN_FN_NAME(f)
 
@@ -407,11 +408,58 @@ sanitizer_error_report
 static void
 sanitizer_log_data_callback
 (
- uint32_t kernel_id,
+ uint64_t kernel_id,
  gpu_patch_buffer_t *trace_data
 )
 {
 }
+
+
+static void
+sanitizer_record_data_callback
+(
+ uint32_t cubin_id,
+ uint64_t kernel_id,
+ redshow_record_data_t *record_data
+)
+{
+  gpu_activity_t ga;
+
+  ga.kind = GPU_ACTIVITY_REDUNDANCY;
+
+  if (record_data->analysis_type == REDSHOW_ANALYSIS_SPATIAL_REDUNDANCY &&
+    record_data->access_type == REDSHOW_ACCESS_READ) {
+    ga.details.redundancy.type = GPU_RED_SPATIAL_READ;
+  } else if (record_data->analysis_type == REDSHOW_ANALYSIS_SPATIAL_REDUNDANCY &&
+    record_data->access_type == REDSHOW_ACCESS_WRITE) {
+    ga.details.redundancy.type = GPU_RED_SPATIAL_WRITE;
+  } else if (record_data->analysis_type == REDSHOW_ANALYSIS_TEMPORAL_REDUNDANCY &&
+    record_data->access_type == REDSHOW_ACCESS_READ) {
+    ga.details.redundancy.type = GPU_RED_TEMPORAL_READ;
+  } else if (record_data->analysis_type == REDSHOW_ANALYSIS_TEMPORAL_REDUNDANCY &&
+    record_data->access_type == REDSHOW_ACCESS_WRITE) {
+    ga.details.redundancy.type = GPU_RED_TEMPORAL_WRITE;
+  } else {
+    assert(0);
+  }
+  cstack_ptr_set(&(ga.next), 0);
+  
+  uint32_t num_views = record_data->num_views;
+  uint32_t i;
+  for (i = 0; i < num_views; ++i) {
+    uint32_t function_index = record_data->views[i].function_index;
+    uint64_t pc_offset = record_data->views[i].pc_offset;
+    uint64_t count = record_data->views[i].count;
+
+    ip_normalized_t ip = cubin_id_transform(cubin_id, function_index, pc_offset);
+    cct_node_t *host_op_node = (cct_node_t *)kernel_id;
+    ga.cct_node = hpcrun_cct_insert_ip_norm(host_op_node, ip);
+    ga.details.redundancy.count = count;
+    // Associate record_data with calling context (kernel_id)
+    gpu_metrics_attribute(&ga);
+  }
+}
+
 
 
 #ifndef HPCRUN_STATIC_LINK
@@ -508,6 +556,9 @@ sanitizer_process_thread
 
   // Last records
   sanitizer_buffer_channel_set_consume();
+
+  // Attribute performance metrics to CCTs
+  redshow_flush();
   
   atomic_fetch_add(&sanitizer_process_thread_counter, -1);
 
@@ -923,7 +974,8 @@ sanitizer_bind()
 void
 sanitizer_analysis_enable()
 {
-  redshow_analysis_enable(REDSHOW_REUSE_DISTANCE);
+  redshow_analysis_enable(REDSHOW_ANALYSIS_SPATIAL_REDUNDANCY);
+  redshow_analysis_enable(REDSHOW_ANALYSIS_TEMPORAL_REDUNDANCY);
 }
 
 
@@ -933,6 +985,8 @@ sanitizer_callbacks_subscribe()
   sanitizer_correlation_callback = gpu_application_thread_correlation_callback;
 
   redshow_log_data_callback_register(sanitizer_log_data_callback);
+
+  redshow_record_data_callback_register(sanitizer_record_data_callback, SANITIZER_NUM_VIEWS);
 
   HPCRUN_SANITIZER_CALL(sanitizerSubscribe,
     (&sanitizer_subscriber_handle, sanitizer_subscribe_callback, NULL));

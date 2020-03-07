@@ -94,7 +94,8 @@ typedef enum {
   GPU_ACTIVITY_EXTERNAL_CORRELATION    = 13,
   GPU_ACTIVITY_EVENT                   = 14,
   GPU_ACTIVITY_ENVIRONMENT             = 15,
-  GPU_ACTIVITY_FUNCTION                = 16
+  GPU_ACTIVITY_FUNCTION                = 16,
+  GPU_ACTIVITY_REDUNDANCY              = 17
 } gpu_activity_kind_t;
 
 
@@ -176,6 +177,14 @@ typedef enum {
   GPU_MEM_UNKNOWN         = 7,
   GPU_MEM_COUNT           = 8
 } gpu_mem_kind_t;
+
+
+typedef enum {
+  GPU_RED_SPATIAL_READ  = 0,
+  GPU_RED_SPATIAL_WRITE  = 1,
+  GPU_RED_TEMPORAL_READ  = 2,
+  GPU_RED_TEMPORAL_WRITE = 3
+} gpu_red_type_t;
 
 
 // pc sampling
@@ -352,6 +361,12 @@ typedef struct gpu_environment_t {
 } gpu_environment_t;
 
 
+typedef struct gpu_redundancy_t {
+  gpu_red_type_t type;
+  uint32_t count;
+} gpu_redundancy_t;
+
+
 typedef struct gpu_activity_details_t { 
   union {
     /* Each field stores the complete information needed
@@ -371,6 +386,7 @@ typedef struct gpu_activity_details_t {
     gpu_branch_t branch;
     gpu_synchronization_t synchronization;
     gpu_host_correlation_t correlation;
+    gpu_redundancy_t redundancy;
 
     /* Access short cut for activitiy fields shared by multiple kinds */
 

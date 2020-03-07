@@ -535,6 +535,16 @@ gpu_environment_process
 
 
 static void
+gpu_redundancy_process
+(
+ gpu_activity_t *activity
+)
+{
+  // No need to use it for now
+}
+
+
+static void
 gpu_memory_process
 (
  gpu_activity_t *activity
@@ -637,6 +647,10 @@ gpu_activity_process
 
   case GPU_ACTIVITY_ENVIRONMENT:
     gpu_environment_process(ga);
+    break;
+
+  case GPU_ACTIVITY_REDUNDANCY:
+    gpu_redundancy_process(ga);
     break;
 
   case GPU_ACTIVITY_MEMCPY2:
