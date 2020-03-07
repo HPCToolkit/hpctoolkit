@@ -150,7 +150,7 @@ datacentric_hw_register(sample_source_t *self,
       // ------------------------------------------
       // create metric data centric
       // ------------------------------------------
-      int metric = hpcrun_set_metric_info_and_period(
+      int metric = hpcrun_set_new_metric_info_and_period(
             kb_kind, pmu_events[i].name,
             MetricFlags_ValFmt_Int, 1, metric_property_none);
 
@@ -170,7 +170,7 @@ datacentric_hw_register(sample_source_t *self,
     }
   }
   if (num_pmu > 0)
-    pmu_handler_init();
+    pmu_handler_init(kb_kind);
 
   return num_pmu;
 }

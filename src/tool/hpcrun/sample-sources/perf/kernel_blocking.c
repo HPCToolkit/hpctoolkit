@@ -241,10 +241,10 @@ register_blocking(sample_source_t *self, kind_info_t *kb_kind,
       kb_kind, EVNAME_CONTEXT_SWITCHES,
       MetricFlags_ValFmt_Real, 1 /* period*/, metric_property_none);
 
-  event_desc->metric_desc = 
-    hpcrun_id2metric_linked(event_desc->hpcrun_metric_id); 
+  metric_desc_t *metric_desc = 
+    hpcrun_id2metric_linked(metric_cs); 
 
-  event_desc->metric_desc->flags.fields.show = METRIC_HIDDEN;
+  metric_desc->flags.fields.show = METRIC_HIDDEN;
 
   // ------------------------------------------
   // set context switch event description to be used when creating
