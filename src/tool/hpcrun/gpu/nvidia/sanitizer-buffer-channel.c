@@ -90,6 +90,8 @@
 
 typedef struct sanitizer_buffer_channel_t {
   bistack_t bistacks[2];
+  atomic_bool flush;
+  atomic_bool finish;
 } sanitizer_buffer_channel_t;
 
 //******************************************************************************
@@ -115,6 +117,9 @@ sanitizer_buffer_channel_alloc
     hpcrun_malloc_safe(sizeof(sanitizer_buffer_channel_t));
 
   channel_init(b);
+
+  atomic_store(&b->flush, false);
+  atomic_store(&b->finish, false);
 
   sanitizer_buffer_channel_set_insert(b);
 
@@ -143,6 +148,7 @@ sanitizer_buffer_channel_get
 sanitizer_buffer_t *
 sanitizer_buffer_channel_produce
 (
+ uint32_t thread_id,
  uint32_t cubin_id,
  uint64_t kernel_id,
  uint64_t host_op_id,
@@ -153,7 +159,7 @@ sanitizer_buffer_channel_produce
 
   sanitizer_buffer_t *b = sanitizer_buffer_alloc(buf_channel);
 
-  sanitizer_buffer_produce(b, cubin_id, kernel_id, host_op_id, num_records);
+  sanitizer_buffer_produce(b, thread_id, cubin_id, kernel_id, host_op_id, num_records);
 
   return b;
 }
@@ -172,11 +178,32 @@ sanitizer_buffer_channel_push
 
 
 void
+sanitizer_buffer_channel_flush
+(
+)
+{
+  atomic_store(&sanitizer_buffer_channel->flush, true);
+}
+
+
+bool
+sanitizer_buffer_channel_finish
+(
+)
+{
+  return atomic_load(&sanitizer_buffer_channel->finish);
+}
+
+
+void
 sanitizer_buffer_channel_consume
 (
  sanitizer_buffer_channel_t *channel
 )
 {
+  bool do_flush = false;
+
+FLUSH:
   // steal elements previously enqueued by the producer
   channel_steal(channel, bichannel_direction_forward);
 
@@ -189,5 +216,16 @@ sanitizer_buffer_channel_consume
     if (!b) break;
     sanitizer_buffer_process(b);
     sanitizer_buffer_free(channel, b);
+  }
+
+  if (atomic_load(&channel->flush)) {
+    // If we need flush, we double check the channel
+    do_flush = true;
+    atomic_store(&channel->flush, false);
+    goto FLUSH;
+  }
+
+  if (do_flush == true) {
+    atomic_store(&channel->finish, true);
   }
 }

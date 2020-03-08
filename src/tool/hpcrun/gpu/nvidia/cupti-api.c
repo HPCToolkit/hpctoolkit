@@ -181,7 +181,8 @@ typedef CUptiResult (*cupti_activity_enable_t)
 
 typedef cct_node_t *(*cupti_correlation_callback_t)
 (
- uint64_t id
+ uint64_t id,
+ uint32_t skip_frames
 );
 
 
@@ -207,7 +208,8 @@ cupti_error_callback_dummy
 static cct_node_t *
 cupti_correlation_callback_dummy
 (
- uint64_t id
+ uint64_t id,
+ uint32_t skip_frames
 );
 
 
@@ -512,7 +514,8 @@ cupti_bind
 static cct_node_t *
 cupti_correlation_callback_dummy // __attribute__((unused))
 (
- uint64_t id
+ uint64_t id,
+ uint32_t skip_frames
 )
 {
   return NULL;
@@ -756,7 +759,7 @@ cupti_subscriber_callback
         uint64_t correlation_id = gpu_correlation_id();
         cupti_correlation_id_push(correlation_id);
 
-        cct_node_t *api_node = cupti_correlation_callback(correlation_id);
+        cct_node_t *api_node = cupti_correlation_callback(correlation_id, 0);
 
         gpu_op_ccts_t gpu_op_ccts;
 
@@ -907,7 +910,7 @@ cupti_subscriber_callback
         // Though unlikely in most cases,
         // it is still possible that a cupti buffer is full and returned to the host
         // in the interval of a runtime api.
-        cct_node_t *api_node = cupti_correlation_callback(correlation_id);
+        cct_node_t *api_node = cupti_correlation_callback(correlation_id, 0);
 
         gpu_op_ccts_t gpu_op_ccts;
 

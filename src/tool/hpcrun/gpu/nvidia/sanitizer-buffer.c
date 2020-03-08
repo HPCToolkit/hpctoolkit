@@ -74,6 +74,7 @@
 typedef struct sanitizer_buffer_t {
   s_element_t next;
 
+  uint32_t thread_id;
   uint32_t cubin_id;
   uint64_t kernel_id;
   uint64_t host_op_id;
@@ -90,13 +91,14 @@ sanitizer_buffer_process
  sanitizer_buffer_t *b
 )
 {
+  uint32_t thread_id = b->thread_id;
   uint32_t cubin_id = b->cubin_id;
   uint64_t kernel_id = b->kernel_id;
   uint64_t host_op_id = b->host_op_id;
 
   gpu_patch_buffer_t *gpu_patch_buffer = b->gpu_patch_buffer;
   
-  redshow_analyze(cubin_id, kernel_id, host_op_id, gpu_patch_buffer);
+  redshow_analyze(thread_id, cubin_id, kernel_id, host_op_id, gpu_patch_buffer);
 }
 
 
@@ -114,12 +116,14 @@ void
 sanitizer_buffer_produce
 (
  sanitizer_buffer_t *b,
+ uint32_t thread_id,
  uint32_t cubin_id,
  uint64_t kernel_id,
  uint64_t host_op_id,
  size_t num_records
 )
 {
+  b->thread_id = thread_id;
   b->cubin_id = cubin_id;
   b->kernel_id = kernel_id;
   b->host_op_id = host_op_id;

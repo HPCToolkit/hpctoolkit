@@ -76,7 +76,8 @@ gpu_application_thread_process_activities
 cct_node_t *
 gpu_application_thread_correlation_callback
 (
- uint64_t correlation_id
+ uint64_t correlation_id,
+ uint32_t skip_frames
 );
 
 

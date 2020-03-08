@@ -82,7 +82,8 @@ gpu_application_thread_process_activities
 cct_node_t *
 gpu_application_thread_correlation_callback
 (
- uint64_t correlation_id
+ uint64_t correlation_id,
+ uint32_t skip_frames
 )
 {
   PRINT("enter gpu_correlation_callback %u\n", correlation_id);
@@ -128,6 +129,13 @@ gpu_application_thread_correlation_callback
   // skip any procedure frames that should be suppressed,
   // e.g. stripped procedure frames inside libcupti and libcuda
   while (module_ignore_map_module_id_lookup(node_addr->ip_norm.lm_id)) {
+    node = hpcrun_cct_parent(node);
+    node_addr = hpcrun_cct_addr(node);
+  }
+
+  // manually skip extra frames
+  uint32_t i;
+  for (i = 0; i < skip_frames; ++i) {
     node = hpcrun_cct_parent(node);
     node_addr = hpcrun_cct_addr(node);
   }

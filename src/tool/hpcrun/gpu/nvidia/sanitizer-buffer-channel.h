@@ -64,6 +64,7 @@ typedef struct sanitizer_buffer_channel_t sanitizer_buffer_channel_t;
 sanitizer_buffer_t *
 sanitizer_buffer_channel_produce
 (
+ uint32_t thread_id,
  uint32_t cubin_id,
  uint64_t kernel_id,
  uint64_t host_op_id,
@@ -76,6 +77,18 @@ void
 sanitizer_buffer_channel_push
 (
  sanitizer_buffer_t *b
+);
+
+
+void
+sanitizer_buffer_channel_flush
+(
+);
+
+
+bool
+sanitizer_buffer_channel_finish
+(
 );
 
 

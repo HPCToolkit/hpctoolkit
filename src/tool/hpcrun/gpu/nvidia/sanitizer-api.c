@@ -90,6 +90,8 @@
 #include <hpcrun/main.h>
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_event.h>
+#include <hpcrun/thread_data.h>
+#include <hpcrun/threadmgr.h>
 
 #include <hpcrun/gpu/gpu-application-thread-api.h>
 #include <hpcrun/gpu/gpu-monitoring-thread-api.h>
@@ -163,13 +165,15 @@ typedef void (*sanitizer_error_callback_t)
 
 typedef cct_node_t *(*sanitizer_correlation_callback_t)
 (
- uint64_t id
+ uint64_t id,
+ uint32_t skip_frames
 );
 
 static cct_node_t *
 sanitizer_correlation_callback_dummy // __attribute__((unused))
 (
- uint64_t id
+ uint64_t id,
+ uint32_t skip_frames
 );
 
 static void
@@ -192,13 +196,14 @@ static Sanitizer_SubscriberHandle sanitizer_subscriber_handle;
 static sanitizer_thread_t sanitizer_thread;
 
 static __thread bool sanitizer_stop_flag = false;
+static __thread uint32_t sanitizer_thread_id_self = (1 << 30);
 static __thread uint32_t sanitizer_thread_id_local = 0;
 
 static __thread gpu_patch_buffer_t gpu_patch_buffer_reset = {
- .head_index = 0,
- .tail_index = 0,
- .size = GPU_PATCH_RECORD_NUM,
- .full = 0
+  .head_index = 0,
+  .tail_index = 0,
+  .size = GPU_PATCH_RECORD_NUM,
+  .full = 0
 };
 static __thread gpu_patch_buffer_t *gpu_patch_buffer_device = NULL;
 static __thread gpu_patch_buffer_t *gpu_patch_buffer_host = NULL;
@@ -372,7 +377,8 @@ SANITIZER_FN
 static cct_node_t *
 sanitizer_correlation_callback_dummy // __attribute__((unused))
 (
- uint64_t id
+ uint64_t id,
+ uint32_t skip_frames
 )
 {
   return NULL;
@@ -452,7 +458,7 @@ sanitizer_record_data_callback
     uint64_t count = record_data->views[i].count;
 
     ip_normalized_t ip = cubin_id_transform(cubin_id, function_index, pc_offset);
-    cct_node_t *host_op_node = (cct_node_t *)kernel_id;
+    cct_node_t *host_op_node = (cct_node_t *)(void *)kernel_id;
     ga.cct_node = hpcrun_cct_insert_ip_norm(host_op_node, ip);
     ga.details.redundancy.count = count;
     // Associate record_data with calling context (kernel_id)
@@ -557,8 +563,11 @@ sanitizer_process_thread
   // Last records
   sanitizer_buffer_channel_set_consume();
 
-  // Attribute performance metrics to CCTs
-  redshow_flush();
+  // Create thread data
+  thread_data_t* td = NULL;
+  int id = sanitizer_thread_id_self;
+  hpcrun_threadMgr_non_compact_data_get(id, NULL, &td);
+  hpcrun_set_thread_data(td);
   
   atomic_fetch_add(&sanitizer_process_thread_counter, -1);
 
@@ -608,8 +617,23 @@ sanitizer_load_callback
   used += sprintf(&file_name[used], "%s", ".cubin");
   PRINT("cubin_id %d hash %s\n", cubin_id, file_name);
 
+  uint32_t hpctoolkit_module_id;
+  load_module_t *load_module = NULL;
+  hpcrun_loadmap_lock();
+  if ((load_module = hpcrun_loadmap_findByName(file_name)) == NULL) {
+    hpctoolkit_module_id = hpcrun_loadModule_add(file_name);
+  } else {
+    hpctoolkit_module_id = load_module->id;
+  }
+  hpcrun_loadmap_unlock();
+  PRINT("cubin_id %d -> hpctoolkit_module_id %d\n", cubin_id, hpctoolkit_module_id);
+  cubin_id_map_entry_t *entry = cubin_id_map_lookup(cubin_id);
+
   // Compute elf vector
   Elf_SymbolVector *elf_vector = computeCubinFunctionOffsets(cubin, cubin_size);
+
+  // Register cubin module
+  cubin_id_map_insert(cubin_id, hpctoolkit_module_id, elf_vector);
 
   // Query cubin function offsets
   uint64_t *addrs = (uint64_t *)hpcrun_malloc_safe(sizeof(uint64_t) * elf_vector->nsymbols);
@@ -689,16 +713,23 @@ sanitizer_kernel_launch_sync
 
   // Get a place holder cct node
   uint64_t correlation_id = gpu_correlation_id();
-  cct_node_t *api_node = sanitizer_correlation_callback(correlation_id);
+  // TODO(Keren): why two extra layers?
+  cct_node_t *api_node = sanitizer_correlation_callback(correlation_id, 2);
 
   PRINT("op %lu, id %lu\n", correlation_id, (uint64_t)api_node);
 
   // Insert a function cct node
+  hpcrun_safe_enter();
+
   gpu_op_ccts_t gpu_op_ccts;
   gpu_op_placeholder_flags_t gpu_op_placeholder_flags = 0;
   gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
     gpu_placeholder_type_kernel);
 	gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
+  api_node = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel);
+
+  hpcrun_safe_exit();
+
   // TODO(Keren): correlate metrics with api_node
 
   int sampling_frequency = sanitizer_block_sampling_frequency_get();
@@ -712,7 +743,7 @@ sanitizer_kernel_launch_sync
 
   // Init a buffer on host
   if (gpu_patch_buffer_host == NULL) {
-    gpu_patch_buffer_host = (gpu_patch_buffer_t *)hpcrun_malloc_safe(sizeof(gpu_patch_buffer_host));
+    gpu_patch_buffer_host = (gpu_patch_buffer_t *)hpcrun_malloc_safe(sizeof(gpu_patch_buffer_t));
   }
 
   while (true) {
@@ -729,7 +760,7 @@ sanitizer_kernel_launch_sync
 
     // Allocate memory
     sanitizer_buffer_t *sanitizer_buffer = sanitizer_buffer_channel_produce(
-      cubin_id, (uint64_t)api_node, correlation_id, GPU_PATCH_RECORD_NUM);
+      sanitizer_thread_id_local, cubin_id, (uint64_t)api_node, correlation_id, GPU_PATCH_RECORD_NUM);
     gpu_patch_buffer_t *gpu_patch_buffer = sanitizer_buffer_entry_gpu_patch_buffer_get(sanitizer_buffer);
 
     // Move host buffer to a cache
@@ -881,7 +912,18 @@ sanitizer_subscribe_callback
       case SANITIZER_CBID_RESOURCE_DEVICE_MEMORY_ALLOC:
         {
           uint64_t correlation_id = gpu_correlation_id();
-          cct_node_t *api_node = sanitizer_correlation_callback(correlation_id);
+          cct_node_t *api_node = sanitizer_correlation_callback(correlation_id, 0);
+
+          hpcrun_safe_enter();
+
+          gpu_op_ccts_t gpu_op_ccts;
+          gpu_op_placeholder_flags_t gpu_op_placeholder_flags = 0;
+          gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
+            gpu_placeholder_type_alloc);
+          gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
+          api_node = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_alloc);
+
+          hpcrun_safe_exit();
 
           Sanitizer_ResourceMemoryData *md = (Sanitizer_ResourceMemoryData *)cbdata;
           redshow_memory_register(md->address, md->address + md->size, correlation_id, (uint64_t)api_node);
@@ -1051,6 +1093,14 @@ sanitizer_device_flush(void *args)
 {
   if (sanitizer_stop_flag) {
     sanitizer_stop_flag_unset();
+
+    // Spin wait
+    sanitizer_buffer_channel_flush();
+    sanitizer_process_signal(); 
+    while (sanitizer_buffer_channel_finish() == false) {}
+
+    // Attribute performance metrics to CCTs
+    redshow_flush(sanitizer_thread_id_local);
   }
 }
 
@@ -1062,7 +1112,13 @@ sanitizer_device_shutdown(void *args)
 
   atomic_store(&sanitizer_process_stop_flag, true);
 
-  sanitizer_process_signal();
+  // Spin wait
+  sanitizer_buffer_channel_flush();
+  sanitizer_process_signal(); 
+  while (sanitizer_buffer_channel_finish() == false) {}
+
+  // Attribute performance metrics to CCTs
+  redshow_flush(sanitizer_thread_id_local);
 
   while (atomic_load(&sanitizer_process_thread_counter));
 }

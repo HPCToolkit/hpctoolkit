@@ -353,7 +353,7 @@ roctracer_subscriber_callback
   if (data->phase == ACTIVITY_API_PHASE_ENTER) {
     uint64_t correlation_id = data->correlation_id;
     cct_node_t *api_node =
-      gpu_application_thread_correlation_callback(correlation_id);
+      gpu_application_thread_correlation_callback(correlation_id, 0);
 
     gpu_op_ccts_t gpu_op_ccts;
     hpcrun_safe_enter();
