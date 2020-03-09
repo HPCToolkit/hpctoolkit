@@ -672,7 +672,7 @@ sanitizer_unload_callback
 {
   hpctoolkit_cumod_st_t *cumod = (hpctoolkit_cumod_st_t *)module;
   cuda_unload_callback(cumod->cubin_id);
-  redshow_cubin_unregister(cumod->cubin_id);
+  //redshow_cubin_unregister(cumod->cubin_id);
 }
 
 //******************************************************************************
