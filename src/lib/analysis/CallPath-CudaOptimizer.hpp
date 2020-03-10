@@ -132,7 +132,7 @@ struct BlockBlame {
 struct FunctionBlame {
   int id;
   VMA start, end;
-  std::vector<BlockBlame> block_blames;
+  std::map<int, BlockBlame> block_blames;
   std::map<int, double> blames;
   double blame;
 

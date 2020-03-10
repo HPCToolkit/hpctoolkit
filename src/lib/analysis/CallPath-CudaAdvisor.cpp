@@ -53,7 +53,7 @@ using std::string;
 #include <lib/support/IOUtil.hpp>
 #include <lib/support/StrUtil.hpp>
 
-#define DEBUG_CALLPATH_CUDAADVISOR 1
+#define DEBUG_CALLPATH_CUDAADVISOR 0
 #define DEBUG_CALLPATH_CUDAADVISOR_DETAILS 0
 
 
@@ -545,7 +545,7 @@ void CudaAdvisor::pruneCCTDepGraphBarrier(int mpi_rank, int thread_id,
 
     // RAW concerns
     // Barrier does not match
-    if ((to_inst->control.wait & (1 << from_inst->control.write)) == 0) {
+    if ((to_inst->control.wait & (1 << (from_inst->control.write - 1))) == 0) {
       remove_edges.push_back(iter);
     }
   }
@@ -887,7 +887,7 @@ void CudaAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
           auto from_vma = from_node->lmIP();
           auto *from_inst = _vma_prop_map[from_vma].inst;
 
-          if ((to_inst->control.wait & (1 << from_inst->control.write)) == 1) {
+          if ((to_inst->control.wait & (1 << (from_inst->control.write - 1))) == 1) {
             barrier_from_nodes.push_back(from_node);
           }
         }
@@ -989,51 +989,23 @@ void CudaAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
 }
 
 
-void CudaAdvisor::overlayInstBlames(const std::vector<CudaParse::Function *> &functions,
-  const InstBlames &inst_blames, FunctionBlames &function_blames) {
-  auto inst_blame_index = 0;
-  // Construct function boundaries
-  for (auto *function : functions) {
-    VMA function_start = std::numeric_limits<VMA>::max();
-    VMA function_end = std::numeric_limits<VMA>::min();
-    FunctionBlame function_blame(function->id);
-    for (auto *block : function->blocks) {
-      VMA block_start = block->insts.front()->inst_stat->pc;
-      VMA block_end = block->insts.back()->inst_stat->pc; 
-      function_start = std::min(block_start, function_start);
-      function_end = std::max(block_end, function_end);
-      BlockBlame block_blame(block->id, block_start, block_end);
-      function_blame.block_blames.push_back(block_blame);
-    }
-    function_blame.start = function_start;
-    function_blame.end = function_end;
+void CudaAdvisor::overlayInstBlames(const InstBlames &inst_blames, FunctionBlames &function_blames) {
+  for (auto &inst_blame : inst_blames) {
+    auto *from_inst = inst_blame.src;
+    auto *block = _vma_prop_map[from_inst->pc].block;
+    auto *function = _vma_prop_map[from_inst->pc].function;
 
-    // Accumulate blames
-    auto block_blame_index = 0;
-    for (; inst_blame_index < inst_blames.size(); ++inst_blame_index) {
-      auto &block_blame = function_blame.block_blames[block_blame_index];
-      auto &inst_blame = inst_blames[inst_blame_index];
+    auto &function_blame = function_blames[function->id];
+    auto &block_blame = function_blame.block_blames[block->id];
 
-      if (inst_blame.src->pc > function_blame.end) {
-        // Go to next function
-        break;
-      }
+    // Update block blame
+    block_blame.blames[inst_blame.metric_id] += inst_blame.value;
+    block_blame.blame += inst_blame.value;
+    block_blame.inst_blames.push_back(inst_blame);
 
-      // Find the correponding block
-      while (block_blame.end < inst_blame.src->pc) {
-        ++block_blame_index;
-        block_blame = function_blame.block_blames[block_blame_index];
-      }
-      if (inst_blame.src->pc >= block_blame.start) {
-        block_blame.inst_blames.push_back(inst_blame);
-        block_blame.blames[inst_blame.metric_id] += inst_blame.value;
-        block_blame.blame += inst_blame.value;
-        function_blame.blames[inst_blame.metric_id] += inst_blame.value;
-        function_blame.blame += inst_blame.value;
-      }
-    }
-
-    function_blames.push_back(function_blame);
+    // Update function blame
+    function_blame.blames[inst_blame.metric_id] += inst_blame.value;
+    function_blame.blame += inst_blame.value;
   }
 }
 
@@ -1041,7 +1013,8 @@ void CudaAdvisor::overlayInstBlames(const std::vector<CudaParse::Function *> &fu
 void CudaAdvisor::selectTopBlockBlames(const FunctionBlames &function_blames, BlockBlameQueue &top_block_blames) {
   // TODO(Keren): Clustering similar blocks?
   for (auto &function_blame : function_blames) {
-    for (auto &block_blame : function_blame.block_blames) {
+    for (auto &block_iter : function_blame.block_blames) {
+      auto &block_blame = block_iter.second;
       auto &min_block_blame = top_block_blames.top();
       if (min_block_blame.blame < block_blame.blame &&
         top_block_blames.size() > _top_block_blames) {
@@ -1354,16 +1327,16 @@ void CudaAdvisor::blame(FunctionBlamesMap &function_blames_map) {
       }
 
       // TODO(Keren):
-      // 1. Implement sync
-      // 2. Debug function start
+      // x1. Implement sync
+      // x2. Debug function start
       // 3. Implement WAR and Predicate
       // 4. Implement scheduler stall
       // 5. Debug apportion
       // 6. Overlay back
 
       //// 5. Overlay blames
-      //auto &function_blames = function_blames_map[mpi_rank][thread_id];
-      //overlayInstBlames(functions, inst_blames, function_blames);
+      auto &function_blames = function_blames_map[mpi_rank][thread_id];
+      overlayInstBlames(inst_blames, function_blames);
     }
   }
 }
