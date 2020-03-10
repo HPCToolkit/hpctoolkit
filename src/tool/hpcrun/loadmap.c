@@ -475,6 +475,9 @@ hpcrun_loadmap_unmap(load_module_t* lm)
 
   lm->dso_info = NULL;
 
+  // Set dl_phdr_info structure to uninitialized state
+  lm->phdr_info.dlpi_phdr = NULL;
+
   // tallent: For now, do not move the loadmap to the back of the
   //   list.  If we want to enable, this, we could have
   //   hpcrun_loadmap_findByName() begin its search from the end
@@ -543,7 +546,9 @@ hpcrun_loadmap_iterate
 )
 {  
   int ret = 0;
-  for (load_module_t* x = s_loadmap_ptr->lm_head; (x); x = x->next) {        
+  for (load_module_t* x = s_loadmap_ptr->lm_head; (x); x = x->next) {
+    // Skip load modules that do not have a valid dl_phdr_info structure
+    if (x->phdr_info.dlpi_phdr == NULL) continue;
     ret = cb(&(x->phdr_info), sizeof(struct dl_phdr_info), data);
     if (ret != 0) return ret;    
   }  

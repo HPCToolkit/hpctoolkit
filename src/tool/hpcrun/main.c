@@ -235,14 +235,20 @@ static char execname[PATH_MAX] = {'\0'};
 // Interface functions for suppressing samples
 //***************************************************************************
 
+static spinlock_t dl_op_lock = SPINLOCK_UNLOCKED;
+
 void hpcrun_dlfunction_begin()
 {
+  if (hpcrun_thread_dl_operation == 0)
+    spinlock_lock(&dl_op_lock);
   hpcrun_thread_dl_operation += 1;
 }
 
 void hpcrun_dlfunction_end()
 {
   hpcrun_thread_dl_operation -= 1;
+  if (hpcrun_thread_dl_operation == 0)
+    spinlock_unlock(&dl_op_lock);
 }
 
 bool hpcrun_dlfunction_is_active()
@@ -1630,20 +1636,7 @@ void
 monitor_pre_dlopen(const char* path, int flags)
 {
   hpcrun_dlfunction_begin();
-  /*
-  if (! hpcrun_dlopen_forced) {
-    if (! hpcrun_is_initialized()) {
-      hpcrun_dlopen_flags_push(false);
-      return;
-    }
-    if (! hpcrun_safe_enter()) {
-      hpcrun_dlopen_flags_push(false);
-      return;
-    }
-  }
-  hpcrun_dlopen_flags_push(true);
-  */
-  if (! hpcrun_safe_enter()) return;
+  hpcrun_safe_enter();
   hpcrun_pre_dlopen(path, flags);
   hpcrun_safe_exit();
 }
@@ -1651,21 +1644,8 @@ monitor_pre_dlopen(const char* path, int flags)
 
 void
 monitor_dlopen(const char *path, int flags, void* handle)
-{  
-  /*
-  if (!hpcrun_dlopen_flags_pop()) {
-    return;
-  }
-  if (! hpcrun_dlopen_forced) {
-    if (! hpcrun_is_initialized()) {
-      return;
-    }
-    if (! hpcrun_safe_enter()) {
-      return;
-    }
-  }
-  */
-  if (! hpcrun_safe_enter()) return;
+{
+  hpcrun_safe_enter();
   hpcrun_dlopen(path, flags, handle);
   hpcrun_safe_exit();
   hpcrun_dlfunction_end();
@@ -1676,13 +1656,6 @@ void
 monitor_dlclose(void* handle)
 {
   hpcrun_dlfunction_begin();
-  /*
-  if (! hpcrun_is_initialized()) {
-    hpcrun_dlclose_flags_push(false);
-    return;
-  }
-  hpcrun_dlclose_flags_push(true);
-  */
   hpcrun_safe_enter();
   hpcrun_dlclose(handle);
   hpcrun_safe_exit();
@@ -1692,14 +1665,6 @@ monitor_dlclose(void* handle)
 void
 monitor_post_dlclose(void* handle, int ret)
 {
-  /*  
-  if (! hpcrun_dlclose_flags_pop()) {
-    return;
-  }
-  if (! hpcrun_is_initialized()) {
-    return;
-  }
-  */
   hpcrun_safe_enter();
   hpcrun_post_dlclose(handle, ret);
   hpcrun_safe_exit();
