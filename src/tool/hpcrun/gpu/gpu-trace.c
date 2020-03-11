@@ -359,7 +359,7 @@ gpu_trace_stream_acquire
   hpcrun_threadMgr_non_compact_data_get(id, NULL, &td);
 
   // TODO: not needed
-  hpcrun_set_thread_data(td);
+  // hpcrun_set_thread_data(td);
 
   return td;
 }
@@ -415,8 +415,8 @@ gpu_trace_record
     gpu_trace_activities_process( thread_args->map_id );
       gpu_trace_activities_await(thread_args);
 
-      int ch_size = gpu_trace_channel_size(thread_args->map_id);
-      printf("\n***********************************\nChannel SIZE: %d\n\n", ch_size);
+//      int ch_size = gpu_trace_channel_size(thread_args->map_id);
+//      printf("\n***********************************\nChannel SIZE: %d\n\n", ch_size);
   }
 
 //  gpu_trace_activities_process( thread_args);
@@ -442,7 +442,7 @@ gpu_trace_fini
   gpu_context_stream_map_signal_all();
 
     int i = 0;
-  while (atomic_load(&stream_counter)> 0 && i++ != 50)
+  while (atomic_load(&stream_counter) != 0 )//&& i++ != 50)
       printf("END: stream_counter == %llu\n", atomic_load(&stream_counter));
 }
 
@@ -475,7 +475,7 @@ schedule_multi_threads
     gpu_trace_channel_set_insert( trace->trace_channel,  trace->map_id);
 
 
-    printf("schedule_multi_threads:: PUSH \t|\t thread_num = %u\n\n", trace->map_id);
+    printf("schedule_multi_threads:: PUSH \t|\t thread_num = %u => Stream = %d\n\n", trace->map_id, stream_counter_local);
 
     return NULL;
 

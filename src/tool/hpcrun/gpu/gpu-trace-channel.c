@@ -179,6 +179,7 @@ gpu_trace_channel_consume
 //    thread_data_t *td = gpu_trace_stream_acquire();
 //    thread_data_t td = channel->td;
 
+    hpcrun_set_thread_data(channel->td);
 
     // steal elements previously pushed by the producer
     channel_steal(channel, bichannel_direction_forward);
