@@ -93,7 +93,7 @@ typedef struct gpu_trace_t {
   pthread_t thread;
   gpu_trace_channel_t *trace_channel;
 
-  // dejan: This is number of stack in which is this trace
+  // This is number of stack in which this trace is stored
   unsigned int map_id;
 } gpu_trace_t;
 
@@ -255,7 +255,7 @@ gpu_trace_start_adjust
 }
 
 
-/*static*/ void
+void
 consume_one_trace_item
 (
  thread_data_t* td,
@@ -316,9 +316,6 @@ gpu_trace_activities_process
   int channel_num
 )
 {
-//  gpu_trace_channel_consume(thread_args->trace_channel, td,
-//			    consume_one_trace_item);
-
     gpu_trace_channel_set_consume(channel_num);
 }
 
@@ -346,7 +343,7 @@ gpu_trace_stream_id
 }
 
 
-/*static*/ thread_data_t *
+thread_data_t *
 gpu_trace_stream_acquire
 (
  void
@@ -358,26 +355,24 @@ gpu_trace_stream_acquire
 
   hpcrun_threadMgr_non_compact_data_get(id, NULL, &td);
 
-  // TODO: not needed
-  // hpcrun_set_thread_data(td);
-
   return td;
 }
 
 
-/*static*/ void
+void
 gpu_trace_stream_release
 (
 // thread_data_t *td
  gpu_trace_channel_t *channel
 )
 {
-  epoch_t *epoch = TD_GET(core_profile_trace_data.epoch);
+    thread_data_t *td = channel->td;
 
-  int no_separator = 1;
-  hpcrun_threadMgr_data_put(epoch, channel->td, no_separator);
+    hpcrun_write_profile_data(&td->core_profile_trace_data);
 
-  atomic_fetch_add(&stream_counter, -1);
+    hpcrun_trace_close(&td->core_profile_trace_data);
+
+    atomic_fetch_add(&stream_counter, -1);
 }
 
 
@@ -404,25 +399,13 @@ gpu_trace_record
  gpu_trace_t *thread_args
 )
 {
-    // just creates a thread data -> this should be for each stream, not for each thread
-  // thread_data_t* td = gpu_trace_stream_acquire();
-
-    printf("gpu_trace_record: thread_num = %u\n\n", thread_args->map_id);
 
   while (!atomic_load(&stop_trace_flag)) {
       //getting data from a trace channel
-
     gpu_trace_activities_process( thread_args->map_id );
-      gpu_trace_activities_await(thread_args);
-
-//      int ch_size = gpu_trace_channel_size(thread_args->map_id);
-//      printf("\n***********************************\nChannel SIZE: %d\n\n", ch_size);
+    gpu_trace_activities_await(thread_args);
   }
 
-//  gpu_trace_activities_process( thread_args);
-
-//  atomic_fetch_add(&stream_counter, -1);
-//    gpu_trace_stream_release(td);
     gpu_trace_channel_set_release(thread_args->map_id);
 
   return NULL;
@@ -441,9 +424,9 @@ gpu_trace_fini
 
   gpu_context_stream_map_signal_all();
 
-    int i = 0;
-  while (atomic_load(&stream_counter) != 0 )//&& i++ != 50)
-      printf("END: stream_counter == %llu\n", atomic_load(&stream_counter));
+
+  while (atomic_load(&stream_counter) != 0 );
+
 }
 
 
@@ -460,22 +443,14 @@ schedule_multi_threads
     static int num_threads = -1;
     unsigned long long stream_counter_local = atomic_fetch_add(&stream_counter, 1);
 
-
-
     if(stream_counter_local % streams_per_thread == 0){
         num_threads++;
-
         pthread_create(&trace->thread, NULL, (pthread_start_routine_t) gpu_trace_record, trace);
-        printf("Create thread %d \n\n", num_threads);
     }
-
 
     // First insert stream to the channel -> gpu_trace_channel_stack[thread_num]
     trace->map_id = num_threads;
     gpu_trace_channel_set_insert( trace->trace_channel,  trace->map_id);
-
-
-    printf("schedule_multi_threads:: PUSH \t|\t thread_num = %u => Stream = %d\n\n", trace->map_id, stream_counter_local);
 
     return NULL;
 
@@ -495,13 +470,7 @@ gpu_trace_create
   // Create a new thread for the stream without libmonitor watching
   monitor_disable_new_threads();
 
-
   schedule_multi_threads(trace);
-
-//  atomic_fetch_add(&stream_counter, 1);
-//  pthread_create(&trace->thread, NULL, (pthread_start_routine_t) gpu_trace_record,
-//		 trace);
-
 
   monitor_enable_new_threads();
 

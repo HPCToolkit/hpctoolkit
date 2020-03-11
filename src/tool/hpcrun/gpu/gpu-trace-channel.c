@@ -133,9 +133,10 @@ gpu_trace_channel_signal_consumer_when_full
 
 gpu_trace_channel_t *
 gpu_trace_channel_alloc
-        (
-                void
-        ) {
+(
+    void
+)
+{
     gpu_trace_channel_t *channel =
             hpcrun_malloc_safe(sizeof(gpu_trace_channel_t));
 
@@ -152,10 +153,11 @@ gpu_trace_channel_alloc
 
 void
 gpu_trace_channel_produce
-        (
-                gpu_trace_channel_t *channel,
-                gpu_trace_item_t *ti
-        ) {
+(
+    gpu_trace_channel_t *channel,
+    gpu_trace_item_t *ti
+)
+{
     gpu_trace_item_t * cti = gpu_trace_item_alloc(channel);
 
     *cti = *ti;
@@ -170,14 +172,11 @@ gpu_trace_channel_produce
 void
 gpu_trace_channel_consume
 (
-        gpu_trace_channel_t *channel
+    gpu_trace_channel_t *channel
 )
 {
 
-    printf("gpu_trace_channel_consume:: channel_count = %u\n", channel->count);
-
-//    thread_data_t *td = gpu_trace_stream_acquire();
-//    thread_data_t td = channel->td;
+    PRINT("gpu_trace_channel_consume:: channel_count = %u\n", channel->count);
 
     hpcrun_set_thread_data(channel->td);
 
@@ -195,18 +194,15 @@ gpu_trace_channel_consume
         gpu_trace_item_free(channel, ti);
     }
 
-//    gpu_trace_stream_release(channel->td);
-
-
-
 }
 
 
 void
 gpu_trace_channel_await
-        (
-                gpu_trace_channel_t *channel
-        ) {
+(
+    gpu_trace_channel_t *channel
+)
+{
     struct timespec time;
     clock_gettime(CLOCK_REALTIME, &time); // get current time
     time.tv_sec += SECONDS_UNTIL_WAKEUP;
@@ -219,9 +215,10 @@ gpu_trace_channel_await
 
 void
 gpu_trace_channel_signal_consumer
-        (
-                gpu_trace_channel_t *trace_channel
-        ) {
+(
+    gpu_trace_channel_t *trace_channel
+)
+{
     pthread_cond_signal(&trace_channel->cond);
 }
 
