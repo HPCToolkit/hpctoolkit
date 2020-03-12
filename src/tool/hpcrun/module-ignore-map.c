@@ -64,7 +64,16 @@
 #include <fcntl.h>   // open
 #include <dlfcn.h>  // dlopen
 #include <limits.h>  // PATH_MAX
+#include <sys/mman.h>
+#include <sys/stat.h>
 
+
+//#include <stdlib.h>
+//#include <unistd.h>
+
+#include	<elf.h>
+#include	<libelf.h>
+#include	<gelf.h>
 
 
 //***************************************************************************
@@ -277,6 +286,36 @@ module_ignore_map_lookup
   return result;
 }
 
+int
+serach_functions_in_module(Elf *e, GElf_Shdr* secHead, Elf_Scn *section)
+{
+  Elf_Data *data;
+  char *symName;
+  uint64_t count;
+  GElf_Sym curSym;  
+  uint64_t i, ii,symType, symBind;
+  // char *marmite;
+  
+  data = elf_getdata(section, NULL);           // use it to get the data
+  count = (secHead->sh_size)/(secHead->sh_entsize);
+  for (ii=0; ii<count; ii++) {
+    gelf_getsym(data, ii, &curSym);
+    symName = elf_strptr(e, secHead->sh_link, curSym.st_name);
+    symType = GELF_ST_TYPE(curSym.st_info);
+    symBind = GELF_ST_BIND(curSym.st_info);
+
+    // the .dynsym section can contain undefined symbols that represent imported symbols.
+    // We need to find functions defined in the module.
+    if ( (symType == STT_FUNC) && (symBind == STB_GLOBAL) && (curSym.st_value != 0)) {
+      for (i = 0; i < NUM_FNS; ++i) {
+        if (modules[i].empty && (strcmp(symName, NVIDIA_FNS[i]) == 0)) {
+          return i;          
+        }
+      }
+    }
+	}
+  return -1;
+}
 
 bool
 module_ignore_map_ignore
@@ -296,18 +335,39 @@ module_ignore_map_ignore
   load_module_t *module = lm;
 
   if (!pseudo_module_p(module->name)) {
-    // this is a real load module; let's see if it contains 
-    // any of the nvidia functions
-    for (i = 0; i < NUM_FNS; ++i) {
-      if (modules[i].empty == true) {
-	if (0 && lm_contains_fn(module->name, NVIDIA_FNS[i])) {
-	  modules[i].module = module;
-	  modules[i].empty = false;
-	  result = true;
-	  break;
-	}
+    char resolved_path[PATH_MAX];
+    char *lm_real = realpath(module->name, resolved_path);
+
+    int fd = open (resolved_path, O_RDONLY);
+    if (fd < 0) return false;
+    struct stat stat;
+    if (fstat (fd, &stat) < 0) {
+      close(fd);
+      return false;
+    }
+
+    char* buffer = (char*) mmap (NULL, stat.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
+    if (buffer == NULL) {
+      close(fd);
+      return false;
+    }
+    elf_version(EV_CURRENT);
+    Elf *elf = elf_memory(buffer, stat.st_size);
+    Elf_Scn *scn = NULL;
+    GElf_Shdr secHead;
+
+    while ((scn = elf_nextscn(elf, scn)) != NULL) {
+      gelf_getshdr(scn, &secHead);
+      int module_ignore_index = serach_functions_in_module(elf, &secHead, scn);
+      if (secHead.sh_type == SHT_DYNSYM && module_ignore_index != -1) {
+        modules[module_ignore_index].module = module;
+        modules[module_ignore_index].empty = false;
+        result = true;
+        break;
       }
     }
+    munmap(buffer, stat.st_size);
+    close(fd);
   }
 
   pfq_rwlock_write_unlock(&modules_lock, &me);

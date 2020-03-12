@@ -108,48 +108,6 @@ hpcrun_dlopen_pending(void)
 }
 
 
-// Writers always wait until they acquire the lock.  Now allow writers
-// to lock against themselves, but only in the same thread.
-static void
-hpcrun_dlopen_write_lock(void)
-{
-  int tid = monitor_get_thread_num();
-  int acquire = 0;
-
-  do {
-    spinlock_lock(&dlopen_lock);
-    if (dlopen_num_writers == 0 || tid == dlopen_writer_tid) {
-      dlopen_num_writers++;
-      dlopen_writer_tid = tid;
-      acquire = 1;
-    }
-    spinlock_unlock(&dlopen_lock);
-  } while (! acquire);
-
-  // Wait for any readers to finish.
-  if (! ENABLED(DLOPEN_RISKY)) {
-    while (atomic_load_explicit(&dlopen_num_readers, memory_order_relaxed) > 0) ;
-  }
-}
-
-
-static void
-hpcrun_dlopen_write_unlock(void)
-{
-  dlopen_num_writers--;
-}
-
-
-// Downgrade the dlopen lock from a writers lock to a readers lock.
-// Must already hold the writers lock.
-static void
-hpcrun_dlopen_downgrade_lock(void)
-{
-  atomic_fetch_add_explicit(&dlopen_num_readers, 1L, memory_order_relaxed);
-  dlopen_num_writers = 0;
-}
-
-
 // Readers try to acquire a lock, but they don't wait if that fails.
 // As with write_lock, allow read_lock to succeed if the current
 // thread holds the write log.
