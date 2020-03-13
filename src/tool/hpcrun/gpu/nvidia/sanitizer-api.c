@@ -733,18 +733,24 @@ sanitizer_kernel_launch_sync
   // TODO(Keren): correlate metrics with api_node
 
   int sampling_frequency = sanitizer_block_sampling_frequency_get();
-  size_t num_left_blocks = 0;
+  int grid_dim = grid_size.x * grid_size.y * grid_size.z;
+  int block_dim = block_size.x * block_size.y * block_size.z;
+  uint64_t num_threads = grid_dim * block_dim;
+  size_t num_left_threads = 0;
 
   // If block sampling is set
   if (sampling_frequency != 0) {
-    size_t total = grid_size.x * grid_size.y * grid_size.z;
-    num_left_blocks = total - ((total - 1) / sampling_frequency + 1);
+    num_left_threads = num_threads - ((grid_dim - 1) / sampling_frequency + 1) * block_dim;
   }
 
   // Init a buffer on host
   if (gpu_patch_buffer_host == NULL) {
     gpu_patch_buffer_host = (gpu_patch_buffer_t *)hpcrun_malloc_safe(sizeof(gpu_patch_buffer_t));
   }
+
+  // Reserve for debugging correctness
+  //PRINT("head_index %zu, tail_index %zu, num_left_threads %zu\n",
+  //  gpu_patch_buffer_host->head_index, gpu_patch_buffer_host->tail_index, num_threads);
 
   while (true) {
     // Copy buffer
@@ -753,10 +759,17 @@ sanitizer_kernel_launch_sync
 
     size_t num_records = gpu_patch_buffer_host->head_index;
 
+    // Reserve for debugging correctness
+    //PRINT("head_index %zu, tail_index %zu, num_left_threads %zu expected %zu\n",
+    //  gpu_patch_buffer_host->head_index, gpu_patch_buffer_host->tail_index, gpu_patch_buffer_host->num_threads, num_left_threads);
+
     // Wait until the buffer is full or the kernel is finished
-    if (!(gpu_patch_buffer_host->num_blocks == num_left_blocks || gpu_patch_buffer_host->full) || num_records == 0) {
+    if (!(gpu_patch_buffer_host->num_threads == num_left_threads || gpu_patch_buffer_host->full) || num_records == 0) {
       continue;
     }
+
+    // Reserve for debugging correctness
+    //PRINT("num_records %zu\n", num_records);
 
     // Allocate memory
     sanitizer_buffer_t *sanitizer_buffer = sanitizer_buffer_channel_produce(
@@ -785,8 +798,8 @@ sanitizer_kernel_launch_sync
     // but we finally still process all the records
     sanitizer_process_signal(); 
     
-    // Finish all the blocks
-    if (gpu_patch_buffer->num_blocks == num_left_blocks) {
+    // Finish all the threads
+    if (gpu_patch_buffer->num_threads == num_left_threads) {
       break;
     }
   }
@@ -805,9 +818,13 @@ sanitizer_kernel_launch_callback
  dim3 block_size
 )
 {
-  int num_blocks = grid_size.x * grid_size.y * grid_size.z;
-  int block_sampling_offset = rand() % num_blocks;
+  int grid_dim = grid_size.x * grid_size.y * grid_size.z;
+  int block_dim = block_size.x * block_size.y * block_size.z;
   int sampling_frequency = sanitizer_block_sampling_frequency_get();
+  int block_sampling_offset = sampling_frequency == 0 ? 0 : rand() % grid_dim % sampling_frequency;
+
+  PRINT("Sampling offset %d\n", block_sampling_offset);
+  PRINT("Sampling frequency %d\n", sampling_frequency);
 
   if (gpu_patch_buffer_device == NULL) {
     // allocate buffer
@@ -828,18 +845,15 @@ sanitizer_kernel_launch_callback
     PRINT("Allocate gpu_patch_records %p, size %zu\n", gpu_patch_records, GPU_PATCH_RECORD_NUM * sizeof(gpu_patch_record_t));
 
     gpu_patch_buffer_reset.records = gpu_patch_records;
-    gpu_patch_buffer_reset.num_blocks = grid_size.x * grid_size.y * grid_size.z;
+    gpu_patch_buffer_reset.num_threads = grid_dim * block_dim;
     gpu_patch_buffer_reset.block_sampling_frequency = sampling_frequency;
     gpu_patch_buffer_reset.block_sampling_offset = block_sampling_offset;
-
-    PRINT("Sampling offset %d\n", block_sampling_offset);
-    PRINT("Sampling frequency %d\n", sampling_frequency);
 
     HPCRUN_SANITIZER_CALL(sanitizerMemcpyHostToDeviceAsync,
       (gpu_patch_buffer_device, &gpu_patch_buffer_reset, sizeof(gpu_patch_buffer_t), stream));
   } else {
     // reset buffer
-    gpu_patch_buffer_reset.num_blocks = grid_size.x * grid_size.y * grid_size.z;
+    gpu_patch_buffer_reset.num_threads = grid_dim * block_dim;
     gpu_patch_buffer_reset.block_sampling_offset = block_sampling_offset;
 
     HPCRUN_SANITIZER_CALL(sanitizerMemcpyHostToDeviceAsync,
