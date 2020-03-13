@@ -159,6 +159,7 @@ XED2_INC = @XED2_INC@
 XED2_HPCRUN_LIBS =  @XED2_HPCRUN_LIBS@
 XED2_HPCLINK_LIBS = @XED2_HPCLINK_LIBS@
 CUPTI_INC_FLGS = @OPT_CUPTI_IFLAGS@
+OPENCL_INC_FLGS = @OPT_OPENCL_IFLAGS@
 CUPTI_LD_FLGS = @OPT_CUPTI_LDFLAGS@
 CUPTI_BASE = @OPT_CUPTI@
 
@@ -496,6 +497,13 @@ MY_CUPTI_FILES = sample-sources/nvidia.c	\
 	gpu/nvidia/cupti-api.c			\
 	gpu/nvidia/cupti-gpu-api.c		
 endif
+
+if ENABLE_OPENCL
+MY_OPENCL_FILES = gpu/intel/gotcha-opencl-wrapper.c	\
+	gpu/intel/opencl-gpu-api.h	\
+	gpu/intel/opencl-gpu-setup.c
+endif
+
 
 
 if OPT_ENABLE_ROCM
@@ -864,6 +872,13 @@ if OPT_PAPI_CUPTI
 libhpcrun_la_CPPFLAGS += $(CUPTI_INC_FLGS)
 MY_CPP_DEFINES += -DHPCRUN_SS_PAPI_C_CUPTI
 endif
+
+if ENABLE_OPENCL
+  libhpcrun_la_SOURCES  += $(MY_OPENCL_FILES)
+  libhpcrun_o_SOURCES   += $(MY_OPENCL_FILES)
+  libhpcrun_la_CPPFLAGS += $(OPENCL_INC_FLGS)
+
+endif 
 
 if OPT_PAPI_STATIC
   libhpcrun_o_SOURCES   += $(MY_PAPI_FILES)

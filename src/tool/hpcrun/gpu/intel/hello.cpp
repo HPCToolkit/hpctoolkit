@@ -109,8 +109,17 @@ int main() {
 	cl::Buffer C(context, CL_MEM_READ_WRITE,
 		c.size() * sizeof(double));
 
-	// Set kernel parameters.
+	/*cl::Memory temp = cl::Buffer(context, CL_MEM_READ_WRITE, 4*sizeof(float), NULL, NULL);
+ 	size_t mem_obj_size;
+    clGetMemObjectInfo(temp, CL_MEM_SIZE, sizeof(mem_obj_size), &mem_obj_size, NULL);
+	printf(" meminfo: %lu\n", mem_obj_size);*/
+	
+// Set kernel parameters.
+
 	add.setArg(0, static_cast<cl_ulong>(N));
+	queue.enqueueWriteBuffer(A, CL_TRUE, 0, a.size() * sizeof(double), a.data());
+	queue.enqueueWriteBuffer(B, CL_TRUE, 0, b.size() * sizeof(double), b.data());
+	queue.enqueueWriteBuffer(C, CL_TRUE, 0, c.size() * sizeof(double), c.data());
 	add.setArg(1, A);
 	add.setArg(2, B);
 	add.setArg(3, C);
