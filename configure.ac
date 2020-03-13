@@ -4565,6 +4565,19 @@ AC_SUBST([OPT_CUPTI_IFLAGS])
 AC_SUBST([OPT_CUPTI_LDFLAGS])
 
 
+
+#-------------------------------------------------
+# Option: --with-opencl=PATH
+#-------------------------------------------------
+
+# Note: we will need location of intel/libOpenCL.so
+
+OPT_HAVE_OPENCL=yes
+AM_CONDITIONAL([ENABLE_OPENCL], [test "$OPT_HAVE_OPENCL" = yes])
+OPT_OPENCL_IFLAGS="-lOpenCL -shared -lgotcha -fPIC -o"
+AC_SUBST([OPT_OPENCL_IFLAGS])
+
+
 #-------------------------------------------------
 # Option: --with-rocm=PATH
 #-------------------------------------------------

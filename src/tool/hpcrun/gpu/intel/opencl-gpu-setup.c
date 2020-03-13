@@ -6,7 +6,7 @@
 #include <hpcrun/loadmap.h>
 
 int NUM_CL_FNS = 4;
-static const char *OPENCL_FNS[NUM_CL_FNS] = {"clCreateCommandQueue", "clEnqueueNDRangeKernel", "clEnqueueWriteBuffer", "clEnqueueReadBuffer"};
+static const char *OPENCL_FNS[] = {"clCreateCommandQueue", "clEnqueueNDRangeKernel", "clEnqueueWriteBuffer", "clEnqueueReadBuffer"};
 bool isOpenclModuleLoaded = false;
 static pfq_rwlock_t modules_lock;
 
@@ -14,8 +14,8 @@ static bool lm_contains_fn (const char *, const char *);
 
 /* input address start and end of a module entering application space.
 if libOpenCL.so has not already been loaded, we checks if current module is libOpenCL.so */
-#ifdef OPENCL
-bool isOpenclModuleLoaded (void *start, void *end)
+
+bool checkOpenclModuleLoaded (void *start, void *end)
 {
 	if (isOpenclModuleLoaded)
 		return true;
@@ -32,21 +32,15 @@ bool isOpenclModuleLoaded (void *start, void *end)
 
 	if (!pseudo_module_p(module->name))
 	{
-	   	// this is a real load module; let's see if it contains 
-   		// any of the opencl functions
+	   	// this is a real load module; let's see if it contains any of the opencl functions
     	for (i = 0; i < NUM_CL_FNS; ++i) 
 		{
-   		 	//if (modules[i].empty == true) 
-			//{
-				if (lm_contains_fn(module->name, OPENCL_FNS[i])) 
-				{
-					//modules[i].module = module;
-					//modules[i].empty = false;
-					//result = true;
-					isOpenclModuleLoaded = true;
-					break;
-				}
-      		//}
+			if (lm_contains_fn(module->name, OPENCL_FNS[i])) 
+			{
+				isOpenclModuleLoaded = true;
+				// call constructor of gotcha-opencl-wrapperc
+				break;
+			}
 		}
 	}
 	pfq_rwlock_write_unlock(&modules_lock, &me);
