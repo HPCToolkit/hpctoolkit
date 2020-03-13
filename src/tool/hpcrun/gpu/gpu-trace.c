@@ -362,15 +362,14 @@ gpu_trace_stream_acquire
 void
 gpu_trace_stream_release
 (
-// thread_data_t *td
  gpu_trace_channel_t *channel
 )
 {
-    thread_data_t *td = channel->td;
 
-    hpcrun_write_profile_data(&td->core_profile_trace_data);
+  thread_data_t *td = channel->td;
 
-    hpcrun_trace_close(&td->core_profile_trace_data);
+  hpcrun_write_profile_data(&td->core_profile_trace_data);
+  hpcrun_trace_close(&td->core_profile_trace_data);
 
     atomic_fetch_add(&stream_counter, -1);
 }
