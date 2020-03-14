@@ -714,7 +714,7 @@ sanitizer_kernel_launch_sync
   // Get a place holder cct node
   uint64_t correlation_id = gpu_correlation_id();
   // TODO(Keren): why two extra layers?
-  cct_node_t *api_node = sanitizer_correlation_callback(correlation_id, 2);
+  cct_node_t *api_node = sanitizer_correlation_callback(correlation_id, 0);
 
   PRINT("op %lu, id %lu\n", correlation_id, (uint64_t)api_node);
 
