@@ -4,6 +4,8 @@
 #include <monitor.h>
 #include <lib/prof-lean/pfq-rwlock.h>
 #include <hpcrun/loadmap.h>
+#include "opencl-setup.h"
+#include "opencl-intercept.h"
 
 int NUM_CL_FNS = 4;
 static const char *OPENCL_FNS[] = {"clCreateCommandQueue", "clEnqueueNDRangeKernel", "clEnqueueWriteBuffer", "clEnqueueReadBuffer"};
@@ -12,14 +14,26 @@ static pfq_rwlock_t modules_lock;
 
 static bool lm_contains_fn (const char *, const char *); 
 
+void initialize()
+{
+	setup_opencl_intercept();
+}
+
+void finalize()
+{
+	teardown_opencl_intercept();
+}
+
 /* input address start and end of a module entering application space.
 if libOpenCL.so has not already been loaded, we checks if current module is libOpenCL.so */
 
-bool checkOpenclModuleLoaded (void *start, void *end)
+bool checkIfOpenCLModuleLoadedAndSetIntercepts (void *start, void *end)
 {
 	if (isOpenclModuleLoaded)
+	{
+		initialize();
 		return true;
-
+	}
 	// Update path
 	// Only one thread could update the flag,
 	// Guarantee dlopen modules before notification are updated.
@@ -38,7 +52,7 @@ bool checkOpenclModuleLoaded (void *start, void *end)
 			if (lm_contains_fn(module->name, OPENCL_FNS[i])) 
 			{
 				isOpenclModuleLoaded = true;
-				// call constructor of gotcha-opencl-wrapperc
+				initialize();	
 				break;
 			}
 		}

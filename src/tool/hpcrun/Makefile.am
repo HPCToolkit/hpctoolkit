@@ -499,9 +499,9 @@ MY_CUPTI_FILES = sample-sources/nvidia.c	\
 endif
 
 if ENABLE_OPENCL
-MY_OPENCL_FILES = gpu/intel/gotcha-opencl-wrapper.c	\
-	gpu/intel/opencl-gpu-api.h	\
-	gpu/intel/opencl-gpu-setup.c
+MY_OPENCL_FILES = gpu/intel/opencl-intercept.c	\
+	gpu/intel/opencl-api.c	\
+	gpu/intel/opencl-setup.c
 endif
 
 
@@ -875,8 +875,8 @@ endif
 
 if ENABLE_OPENCL
   libhpcrun_la_SOURCES  += $(MY_OPENCL_FILES)
-  libhpcrun_o_SOURCES   += $(MY_OPENCL_FILES)
-  libhpcrun_la_CPPFLAGS += $(OPENCL_INC_FLGS)
+  libhpcrun_la_CFLAGS += $(OPENCL_INC_FLGS)
+  libhpcrun_la_LDFLAGS += $(OPENCL_INC_FLGS)
 
 endif 
 
