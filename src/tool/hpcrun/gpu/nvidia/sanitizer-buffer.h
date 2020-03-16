@@ -46,6 +46,7 @@
 #define _HPCTOOLKIT_GPU_NVIDIA_SANITIZER_BUFFER_H_
 
 #include <stddef.h>
+#include <lib/prof-lean/stdatomic.h>
 
 #include <gpu-patch.h>
 
@@ -76,7 +77,8 @@ sanitizer_buffer_produce
  uint32_t cubin_id,
  uint64_t kernel_id,
  uint64_t host_op_id,
- size_t num_records
+ size_t num_records,
+ atomic_uint *balance
 );
 
 
@@ -84,7 +86,8 @@ void
 sanitizer_buffer_free
 (
  sanitizer_buffer_channel_t *channel, 
- sanitizer_buffer_t *b
+ sanitizer_buffer_t *b,
+ atomic_uint *balance
 );
 
 

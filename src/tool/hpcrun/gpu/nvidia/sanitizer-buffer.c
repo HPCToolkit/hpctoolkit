@@ -47,7 +47,7 @@
 
 #define UNIT_TEST 0
 
-#define DEBUG 0
+#define DEBUG 1
 
 #include "../gpu-print.h"
 
@@ -56,6 +56,7 @@
 //******************************************************************************
 
 #include "sanitizer-buffer.h"
+#include "sanitizer-api.h"
 
 #include <stddef.h>
 #include <gpu-patch.h>
@@ -66,6 +67,8 @@
 #include "sanitizer-buffer-channel.h"
 #include "../gpu-channel-item-allocator.h"
 
+
+static const int SANITIZER_BUFFER_BALANCE = 500;
 
 //******************************************************************************
 // type declarations
@@ -120,7 +123,8 @@ sanitizer_buffer_produce
  uint32_t cubin_id,
  uint64_t kernel_id,
  uint64_t host_op_id,
- size_t num_records
+ size_t num_records,
+ atomic_uint *balance
 )
 {
   b->thread_id = thread_id;
@@ -128,10 +132,19 @@ sanitizer_buffer_produce
   b->kernel_id = kernel_id;
   b->host_op_id = host_op_id;
 
+  // Increase balance
+  atomic_fetch_add(balance, 1);
   if (b->gpu_patch_buffer == NULL) {
+    // Spin waiting
+    while (atomic_load(balance) >= SANITIZER_BUFFER_BALANCE) {
+      sanitizer_process_signal();
+    }
+    PRINT("Allocate buffer size %lu\n", num_records * sizeof(gpu_patch_record_t));
     b->gpu_patch_buffer = (gpu_patch_buffer_t *) hpcrun_malloc_safe(sizeof(gpu_patch_buffer_t));
     b->gpu_patch_buffer->records = (gpu_patch_record_t *) hpcrun_malloc_safe(
       num_records * sizeof(gpu_patch_record_t));
+  } else {
+    PRINT("Reuse buffer size %lu\n", num_records * sizeof(gpu_patch_record_t));
   }
 }
 
@@ -140,10 +153,12 @@ void
 sanitizer_buffer_free
 (
  sanitizer_buffer_channel_t *channel, 
- sanitizer_buffer_t *b
+ sanitizer_buffer_t *b,
+ atomic_uint *balance
 )
 {
   channel_item_free(channel, b);
+  atomic_fetch_add(balance, -1);
 }
 
 

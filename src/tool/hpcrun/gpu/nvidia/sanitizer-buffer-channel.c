@@ -92,6 +92,7 @@ typedef struct sanitizer_buffer_channel_t {
   bistack_t bistacks[2];
   atomic_bool flush;
   atomic_bool finish;
+  atomic_int balance;
 } sanitizer_buffer_channel_t;
 
 //******************************************************************************
@@ -120,6 +121,7 @@ sanitizer_buffer_channel_alloc
 
   atomic_store(&b->flush, false);
   atomic_store(&b->finish, false);
+  atomic_store(&b->balance, 0);
 
   sanitizer_buffer_channel_set_insert(b);
 
@@ -159,7 +161,7 @@ sanitizer_buffer_channel_produce
 
   sanitizer_buffer_t *b = sanitizer_buffer_alloc(buf_channel);
 
-  sanitizer_buffer_produce(b, thread_id, cubin_id, kernel_id, host_op_id, num_records);
+  sanitizer_buffer_produce(b, thread_id, cubin_id, kernel_id, host_op_id, num_records, &buf_channel->balance);
 
   return b;
 }
@@ -215,7 +217,8 @@ FLUSH:
     sanitizer_buffer_t *b = channel_pop(channel, bichannel_direction_forward);
     if (!b) break;
     sanitizer_buffer_process(b);
-    sanitizer_buffer_free(channel, b);
+    // Restore balance
+    sanitizer_buffer_free(channel, b, &channel->balance);
   }
 
   if (atomic_load(&channel->flush)) {
