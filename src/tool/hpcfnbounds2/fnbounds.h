@@ -87,7 +87,7 @@ void	cleanup();
 void	disable_sources(char *);
 uint64_t	dynsymread(Elf *e, GElf_Shdr sh);
 uint64_t	symtabread(Elf *e, GElf_Shdr sh);
-void symsecread(Elf *e, GElf_Shdr sechdr, char *src);
+uint64_t  symsecread(Elf *e, GElf_Shdr sechdr, char *src);
 
 // Flags governing which sources are processed
 extern	int	dynsymread_f;

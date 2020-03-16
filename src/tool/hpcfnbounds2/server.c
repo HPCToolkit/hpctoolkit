@@ -229,7 +229,7 @@ send_funcs ()
       lastaddr = farray[i].fadd;
     }
   }
-  fprintf(stderr, "newfnb %s = %d (%d) -- %s\n", strrchr(inbuf, '/'), np, nfunc, inbuf );
+  fprintf(stderr, "newfnb %s = %d (%ld) -- %s\n", strrchr(inbuf, '/'), np, (uint64_t)nfunc, inbuf );
 
   // send the OK mesg with the count of addresses
   ret = write_mesg(SYSERV_OK, np+1);
