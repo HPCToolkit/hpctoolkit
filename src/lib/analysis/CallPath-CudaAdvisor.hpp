@@ -152,10 +152,6 @@ class CudaAdvisor {
 
   typedef std::map<VMA, VMAProperty> VMAPropertyMap;
 
-  struct KernelProperty {
-    int registers;
-  };
-
  private:
   void initCCTDepGraph(int mpi_rank, int thread_id,
     CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
@@ -184,8 +180,7 @@ class CudaAdvisor {
     CCTEdgePathMap &cct_edge_path_map,
     InstBlames &inst_blames);
 
-  void overlayInstBlames(const std::vector<CudaParse::Function *> &functions, const InstBlames &inst_blames,
-    FunctionBlames &function_blames);
+  void overlayInstBlames(const InstBlames &inst_blames, FunctionBlames &function_blames);
 
   void selectTopBlockBlames(const FunctionBlames &function_blames, BlockBlameQueue &top_block_blames);
 
