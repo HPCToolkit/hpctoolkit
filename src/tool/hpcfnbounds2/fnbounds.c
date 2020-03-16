@@ -89,6 +89,7 @@ const char __t_[] = {"t"};
 const char __f_[] = {"f"};
 const char __a_[] = {"a"};
 const char __e_[] = {"e"};
+static char elfGenericErr[] = {"libelf error in fnbounds:"};
 
 int
 main(int argc, char **argv, char **envp)
@@ -246,8 +247,6 @@ get_funclist(char *name)
     return ebuf;
   }
   
-  // NB going forward we now assume libelf is working
-
   // process the mapped header
   // ret points to either a char error buffer or is NULL,
   // in which case just return it to indicate success
@@ -255,7 +254,7 @@ get_funclist(char *name)
   ret = process_mapped_header(e);
 
   cleanup();
-  elf_end(e);
+  (void) elf_end(e);
   close (fd);
   return ret;
 }
@@ -314,11 +313,18 @@ process_mapped_header(Elf *lelf)
   size_t j,jn;
   GElf_Phdr progHeader;
   ehRecord_t ehInfo;
+  uint64_t rf;
   uint32_t symTabPresent;
+  uint32_t dynSymIssue;
+  char elfclass;
 
   // verify the header is as it should be
 
-  gelf_getehdr(lelf, &ehdr);
+  if (gelf_getehdr(lelf, &ehdr) == NULL) {
+    sprintf(ebuf2,"%s %s\n", elfGenericErr, elf_errmsg(-1));
+    return ebuf2;
+  }
+
   if (    (ehdr.e_ident[EI_MAG0] != ELFMAG0) ||
           (ehdr.e_ident[EI_MAG1] != ELFMAG1) ||
           (ehdr.e_ident[EI_MAG2] != ELFMAG2) ||
@@ -326,7 +332,7 @@ process_mapped_header(Elf *lelf)
     sprintf( ebuf2, "incorrect elf header magic numbers" );
     return ebuf2;
   }
-  char elfclass=ehdr.e_ident[EI_CLASS];
+  elfclass = ehdr.e_ident[EI_CLASS];
 
   if( elfclass != ELFCLASS64 ) {
     sprintf( ebuf2, "incorrect elfclass -- 0x%x", elfclass );
@@ -354,9 +360,15 @@ process_mapped_header(Elf *lelf)
   // determine the load address, it's the first v_addr of a program
   // header marked PT_LOAD, with the execute flag set
   //
-  elf_getphdrnum(lelf,&jn);
+  if (elf_getphdrnum(lelf,&jn) != 0) {
+    sprintf(ebuf2,"%s %s\n", elfGenericErr, elf_errmsg(-1));
+    return ebuf2;
+  }
   for (j=0; j<jn; j++) {
-    gelf_getphdr(lelf,j,&progHeader);
+    if (gelf_getphdr(lelf,j,&progHeader) != &progHeader) {
+      sprintf(ebuf2,"%s %s\n", elfGenericErr, elf_errmsg(-1));
+      return ebuf2;
+    }
     if ( (progHeader.p_type == PT_LOAD) && ((progHeader.p_flags & PF_X) == PF_X ) ) {
       refOffset = progHeader.p_vaddr;
       break;
@@ -368,8 +380,15 @@ process_mapped_header(Elf *lelf)
     return ebuf2;
   }
 
-  elf_getshdrnum(lelf, &nsec);
-  elf_getshdrstrndx(lelf, &secHeadStringIndex);
+  if (elf_getshdrnum(lelf, &nsec) != 0) {
+    sprintf(ebuf2,"%s %s\n", elfGenericErr, elf_errmsg(-1));
+    return ebuf2;
+  }
+
+  if (elf_getshdrstrndx(lelf, &secHeadStringIndex) != 0) {
+    sprintf(ebuf2,"%s %s\n", elfGenericErr, elf_errmsg(-1));
+    return ebuf2;
+  }
 
   // initialize ehRecord
   ehInfo.ehHdrSection = NULL;
@@ -382,22 +401,27 @@ process_mapped_header(Elf *lelf)
   section = NULL;
 
   symTabPresent = FR_NO;
+  dynSymIssue = FR_NO;
   //
   // This is the main loop for traversing the sections.
   // NB section numbering starts at 1, not 0.
   //
   for(i=1; i < nsec; i++) {
     section = elf_nextscn(lelf, section);
-#if 1
     if (section == NULL) {
       sprintf( ebuf2, "section count mismatch, expected %d but got %d\n", (uint32_t)nsec, i);
       return ebuf2;
     }
-#else
-    if (section == NULL) continue;  // hack in case there is a section 0, or other null section
-#endif
-    gelf_getshdr(section, &secHead);
+
+    if (gelf_getshdr(section, &secHead) != &secHead) {
+      sprintf(ebuf2,"%s %s\n", elfGenericErr, elf_errmsg(-1));
+      return ebuf2;
+    }
     secName = elf_strptr(lelf, secHeadStringIndex, secHead.sh_name);
+    if (secName == NULL) {
+      sprintf(ebuf2,"%s %s\n", elfGenericErr, elf_errmsg(-1));
+      return ebuf2;
+    }
     if (secHead.sh_flags == (SHF_ALLOC|SHF_EXECINSTR)) { 
 
       sprintf(foo, "start %s section", secName);
@@ -410,11 +434,19 @@ process_mapped_header(Elf *lelf)
     }
       
     if (secHead.sh_type == SHT_SYMTAB) {
-      symTabPresent = FR_YES;
-      symtabread(lelf, secHead);
+      rf = symtabread(lelf, secHead);
+      // only skip eh_frame if symtabread was successful
+      if ((rf == SC_DONE) && (symtabread_f == SC_DONE) && (dynSymIssue == FR_NO)){
+        symTabPresent = FR_YES;
+      }
     }
     else if (secHead.sh_type == SHT_DYNSYM) {
-      dynsymread(lelf, secHead);
+      rf = dynsymread(lelf, secHead);
+      // force eh_frame read if something went wrong
+      if ((rf == SC_SKIP) && (dynsymread_f == SC_DONE)) {
+        dynSymIssue = FR_YES;
+        symTabPresent = FR_NO;
+      }
     }
 
     else if (secHead.sh_type == SHT_PROGBITS) {
@@ -451,10 +483,17 @@ process_mapped_header(Elf *lelf)
   //
   // any eh_frame scans are done after traversing the sections,
   // because various of them may be needed for relative addressing
-  // Only scan the eh_frame if no symtab available.
+  // Only scan the eh_frame if no symtab available.  However this will
+  // cause any personality/landing functions to be missed; to get these,
+  // always call ehframescan.  If there was an error with another section,
+  // scan the eh_frame regardless.  This is registered in symTabPresent.
+  //
+  // errors are signaled from within ehframescan, so we dont check for them
+  // again here.  effectively we might have gotten plenty of good addresses
+  // from the scan, even if there were errors.
   //
   if (symTabPresent == FR_NO) {
-    ehframescan(lelf, &ehInfo);  
+    (void)ehframescan(lelf, &ehInfo);  
   }
 
   if (verbose) {
@@ -526,30 +565,34 @@ disable_sources(char *str)
 uint64_t
 dynsymread(Elf *e, GElf_Shdr sechdr)
 {
+  uint64_t rf;
+
   if (skipSectionScan(e, sechdr, dynsymread_f) == SC_SKIP) {
     return SC_SKIP;
   }
 
-  symsecread (e, sechdr, SC_FNTYPE_DYNSYM);
+  rf = symsecread (e, sechdr, SC_FNTYPE_DYNSYM);
 
-  return SC_DONE;
+  return rf;
 
 }
 
 uint64_t 
 symtabread(Elf *e, GElf_Shdr sechdr)
 {
+  uint64_t rf;
+
   if (skipSectionScan(e, sechdr, symtabread_f) == SC_SKIP) {
       return SC_SKIP;
   }
 
-  symsecread (e, sechdr, SC_FNTYPE_SYMTAB);
+  rf = symsecread (e, sechdr, SC_FNTYPE_SYMTAB);
 
-  return SC_DONE;
+  return rf;
 
 }
 
-void
+uint64_t
 symsecread(Elf *e, GElf_Shdr secHead, char *src)
 {
   Elf_Data *data;
@@ -561,12 +604,28 @@ symsecread(Elf *e, GElf_Shdr secHead, char *src)
   // char *marmite;
 
   section = gelf_offscn(e,secHead.sh_offset);  // back read section from header offset
+  if (section == NULL) {
+    fprintf(stderr, "%s %s\n", elfGenericErr, elf_errmsg(-1));
+    return SC_SKIP;
+  }
   data = elf_getdata(section, NULL);           // use it to get the data
+  if (data == NULL) {
+    fprintf(stderr, "%s %s\n", elfGenericErr, elf_errmsg(-1));
+    return SC_SKIP;
+  }
+
 
   count = (secHead.sh_size)/(secHead.sh_entsize);
   for (ii=0; ii<count; ii++) {
-    gelf_getsym(data, ii, &curSym);
+    if (gelf_getsym(data, ii, &curSym) != &curSym) {
+      fprintf(stderr, "%s %s\n", elfGenericErr, elf_errmsg(-1));
+      return SC_SKIP;
+    }
     symName = elf_strptr(e, secHead.sh_link, curSym.st_name);
+    if (symName == NULL) {
+      fprintf(stderr, "%s %s\n", elfGenericErr, elf_errmsg(-1));
+      return SC_SKIP;
+    }
     symType = GELF_ST_TYPE(curSym.st_info);
 
     if ( (symType == STT_FUNC) && (curSym.st_value != 0) ) {
@@ -577,6 +636,8 @@ symsecread(Elf *e, GElf_Shdr secHead, char *src)
       // add_function(curSym.st_value, marmite, src, FR_YES);
     }
   }
+
+  return SC_DONE;
 
 }
 
