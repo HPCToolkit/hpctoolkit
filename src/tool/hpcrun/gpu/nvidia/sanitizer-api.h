@@ -28,4 +28,7 @@ sanitizer_device_shutdown(void *args);
 void
 sanitizer_process_init();
 
+void
+sanitizer_process_signal();
+
 #endif
