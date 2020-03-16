@@ -506,7 +506,7 @@ sanitizer_path
 // asynchronous process thread
 //******************************************************************************
 
-static void
+void
 sanitizer_process_signal
 (
 )
@@ -646,7 +646,7 @@ sanitizer_load_callback
       addrs[i] = pc;
     }
   }
-  redshow_cubin_register(cubin_id, elf_vector->nsymbols, addrs, file_name);
+  redshow_cubin_cache_register(cubin_id, elf_vector->nsymbols, addrs, file_name);
 
   PRINT("Patch CUBIN: \n");
   PRINT("%s\n", HPCTOOLKIT_GPU_PATCH);
