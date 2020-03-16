@@ -203,9 +203,29 @@ void analyze_instruction<INS_TYPE_MISC>(const Instruction &inst, std::string &op
   if (opcode.find("I2") != std::string::npos ||
     opcode.find("F2") != std::string::npos || opcode == "FRND") {
     type = ".CONVERT";
+    if (opcode.find("I2F") != std::string::npos || opcode.find("FRND") != std::string::npos) {
+      type += ".I2F";
+    } else if (opcode.find("F2I") != std::string::npos) {
+      type += ".F2I";
+    } else if (opcode.find("I2I") != std::string::npos) {
+      type += ".I2I";
+    } else if (opcode.find("F2F") != std::string::npos) {
+      type += ".F2F";
+      // TODO(Keren): other types
+      if (opcode.find("F64.F32") != std::string::npos) {
+        type += "._64_TO_32";
+      } else if (opcode.find("F32.F64") != std::string::npos) {
+        type += "._32_TO_64";
+      }
+    }
   } else if (opcode.find("SHFL") != std::string::npos ||
     opcode.find("PRMT") != std::string::npos) {
     type = ".SHUFFLE";
+  } else if (opcode.find("MOV") != std::string::npos) {
+    type = ".MOV";
+    if (opcode.find("MOV32I") != std::string::npos) {
+      type += ".I";
+    }
   } else {
     type = ".OTHER";
   }
@@ -302,7 +322,8 @@ InstructionStat::InstructionStat(const Instruction *inst) {
         }
       } else {
         // load or arithmetic
-        if (this->op.find(".64") != std::string::npos) {  // vec 64
+        if (this->op.find(".64") != std::string::npos ||
+          this->op.find("._32_TO_64") != std::string::npos) {  // vec 64
           this->dsts.push_back(reg);
           this->dsts.push_back(reg + 1);
         } else if (this->op.find(".128") != std::string::npos) {  // vec 128
@@ -341,7 +362,8 @@ InstructionStat::InstructionStat(const Instruction *inst) {
             this->srcs.push_back(reg);
           } else {
             // arithmetic or store
-            if (this->op.find(".64") != std::string::npos) {  // vec 64
+            if (this->op.find(".64") != std::string::npos ||
+              this->op.find("._64_TO_32") != std::string::npos) {  // vec 64
               if (reg == -1) {  // rz
                 this->srcs.push_back(reg);
                 this->srcs.push_back(reg);
