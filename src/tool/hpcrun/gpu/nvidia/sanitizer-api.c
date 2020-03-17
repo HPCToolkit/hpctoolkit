@@ -121,9 +121,6 @@
 
 #define MIN2(m1, m2) m1 > m2 ? m2 : m1
 
-#define GPU_PATCH_RECORD_NUM (16 * 1024)
-#define SANITIZER_NUM_VIEWS (10)
-
 #define SANITIZER_FN_NAME(f) DYN_FN_NAME(f)
 
 #define SANITIZER_FN(fn, args) \
@@ -195,6 +192,13 @@ static Sanitizer_SubscriberHandle sanitizer_subscriber_handle;
 // Single background process thread, can be extended
 static sanitizer_thread_t sanitizer_thread;
 
+// Configurable variables
+static int sanitizer_gpu_patch_record_num = 0;
+static int sanitizer_buffer_pool_size = 0;
+static int sanitizer_approx_level = 0;
+static int sanitizer_pc_views = 0;
+static int sanitizer_mem_views = 0;
+
 static __thread bool sanitizer_stop_flag = false;
 static __thread uint32_t sanitizer_thread_id_self = (1 << 30);
 static __thread uint32_t sanitizer_thread_id_local = 0;
@@ -202,7 +206,7 @@ static __thread uint32_t sanitizer_thread_id_local = 0;
 static __thread gpu_patch_buffer_t gpu_patch_buffer_reset = {
   .head_index = 0,
   .tail_index = 0,
-  .size = GPU_PATCH_RECORD_NUM,
+  .size = 0,
   .full = 0
 };
 static __thread gpu_patch_buffer_t *gpu_patch_buffer_device = NULL;
@@ -773,7 +777,7 @@ sanitizer_kernel_launch_sync
 
     // Allocate memory
     sanitizer_buffer_t *sanitizer_buffer = sanitizer_buffer_channel_produce(
-      sanitizer_thread_id_local, cubin_id, (uint64_t)api_node, correlation_id, GPU_PATCH_RECORD_NUM);
+      sanitizer_thread_id_local, cubin_id, (uint64_t)api_node, correlation_id, sanitizer_gpu_patch_record_num);
     gpu_patch_buffer_t *gpu_patch_buffer = sanitizer_buffer_entry_gpu_patch_buffer_get(sanitizer_buffer);
 
     // Move host buffer to a cache
@@ -838,16 +842,17 @@ sanitizer_kernel_launch_callback
 
     // gpu_patch_buffer_t->records
     HPCRUN_SANITIZER_CALL(sanitizerAlloc,
-      (&gpu_patch_records, GPU_PATCH_RECORD_NUM * sizeof(gpu_patch_record_t)));
+      (&gpu_patch_records, sanitizer_gpu_patch_record_num * sizeof(gpu_patch_record_t)));
     HPCRUN_SANITIZER_CALL(sanitizerMemset,
-      (gpu_patch_records, 0, GPU_PATCH_RECORD_NUM * sizeof(gpu_patch_record_t), stream));
+      (gpu_patch_records, 0, sanitizer_gpu_patch_record_num * sizeof(gpu_patch_record_t), stream));
 
-    PRINT("Allocate gpu_patch_records %p, size %zu\n", gpu_patch_records, GPU_PATCH_RECORD_NUM * sizeof(gpu_patch_record_t));
+    PRINT("Allocate gpu_patch_records %p, size %zu\n", gpu_patch_records, sanitizer_gpu_patch_record_num * sizeof(gpu_patch_record_t));
 
     gpu_patch_buffer_reset.records = gpu_patch_records;
     gpu_patch_buffer_reset.num_threads = grid_dim * block_dim;
     gpu_patch_buffer_reset.block_sampling_frequency = sampling_frequency;
     gpu_patch_buffer_reset.block_sampling_offset = block_sampling_offset;
+    gpu_patch_buffer_reset.size = sanitizer_gpu_patch_record_num;
 
     HPCRUN_SANITIZER_CALL(sanitizerMemcpyHostToDeviceAsync,
       (gpu_patch_buffer_device, &gpu_patch_buffer_reset, sizeof(gpu_patch_buffer_t), stream));
@@ -855,6 +860,7 @@ sanitizer_kernel_launch_callback
     // reset buffer
     gpu_patch_buffer_reset.num_threads = grid_dim * block_dim;
     gpu_patch_buffer_reset.block_sampling_offset = block_sampling_offset;
+    gpu_patch_buffer_reset.size = sanitizer_gpu_patch_record_num;
 
     HPCRUN_SANITIZER_CALL(sanitizerMemcpyHostToDeviceAsync,
       (gpu_patch_buffer_device, &gpu_patch_buffer_reset,
@@ -1042,7 +1048,7 @@ sanitizer_callbacks_subscribe()
 
   redshow_log_data_callback_register(sanitizer_log_data_callback);
 
-  redshow_record_data_callback_register(sanitizer_record_data_callback, SANITIZER_NUM_VIEWS);
+  redshow_record_data_callback_register(sanitizer_record_data_callback, sanitizer_pc_views, sanitizer_mem_views);
 
   HPCRUN_SANITIZER_CALL(sanitizerSubscribe,
     (&sanitizer_subscriber_handle, sanitizer_subscribe_callback, NULL));
@@ -1085,6 +1091,48 @@ sanitizer_callbacks_unsubscribe()
 
   HPCRUN_SANITIZER_CALL(sanitizerEnableDomain,
     (0, sanitizer_subscriber_handle, SANITIZER_CB_DOMAIN_MEMSET));
+}
+
+void
+sanitizer_buffer_config
+(
+ int gpu_patch_record_num,
+ int buffer_pool_size
+)
+{
+  sanitizer_gpu_patch_record_num = gpu_patch_record_num;
+  sanitizer_buffer_pool_size = buffer_pool_size;
+}
+
+
+void
+sanitizer_approx_level_config
+(
+ int approx_level
+)
+{
+  sanitizer_approx_level = approx_level;
+
+  redshow_approx_level_config(sanitizer_approx_level);
+}
+
+
+void
+sanitizer_views_config
+(
+ int pc_views,
+ int mem_views
+)
+{
+  sanitizer_pc_views = pc_views;
+  sanitizer_mem_views = mem_views;
+}
+
+
+int
+sanitizer_buffer_pool_size_get()
+{
+  return sanitizer_buffer_pool_size;
 }
 
 

@@ -140,10 +140,16 @@ static int cupti_enabled_activities = 0;
 static char nvidia_name[128];
 
 
-static const size_t DEFAULT_DEVICE_BUFFER_SIZE = 1024 * 1024 * 8;
-static const size_t DEFAULT_DEVICE_SEMAPHORE_SIZE = 65536;
+static const int DEFAULT_DEVICE_BUFFER_SIZE = 1024 * 1024 * 8;
+static const int DEFAULT_DEVICE_SEMAPHORE_SIZE = 65536;
 
-
+static const int DEFAULT_GPU_PATCH_RECORD_NUM = 16 * 1024;
+static const int DEFAULT_BUFFER_POOL_SIZE = 500;
+// 0-5, 0: no approximate
+static const int DEFAULT_APPROX_LEVEL = 0;
+static const int DEFAULT_PC_VIEWS = 10;
+// 0: no mem views
+static const int DEFAULT_MEM_VIEWS = 0;
 
 //******************************************************************************
 // constants
@@ -461,6 +467,45 @@ METHOD_FN(process_event_list, int lush_metrics)
     EEMSG("hpcrun: gpu patch not specified\n");
     monitor_real_exit(-1);
 #endif
+
+    // Get control knobs
+    int gpu_patch_record_num = 
+      control_knob_value_get_int(HPCRUN_SANITIZER_GPU_PATCH_RECORD_NUM);
+
+    int buffer_pool_size = 
+      control_knob_value_get_int(HPCRUN_SANITIZER_BUFFER_POOL_SIZE);
+
+    int approx_level = control_knob_value_get_int(HPCRUN_SANITIZER_APPROX_LEVEL);
+
+    int pc_views = control_knob_value_get_int(HPCRUN_SANITIZER_PC_VIEWS);
+
+    int mem_views = control_knob_value_get_int(HPCRUN_SANITIZER_MEM_VIEWS);
+
+    if (gpu_patch_record_num == 0) {
+      gpu_patch_record_num = DEFAULT_GPU_PATCH_RECORD_NUM;
+    }
+
+    if (buffer_pool_size == 0) {
+      buffer_pool_size = DEFAULT_BUFFER_POOL_SIZE;
+    }
+
+    if (approx_level == 0) {
+      approx_level = DEFAULT_APPROX_LEVEL;
+    }
+
+    if (pc_views == 0) {
+      pc_views = DEFAULT_PC_VIEWS;
+    }
+
+    if (mem_views == 0) {
+      mem_views = DEFAULT_MEM_VIEWS;
+    }
+
+    sanitizer_buffer_config(gpu_patch_record_num, buffer_pool_size);
+
+    sanitizer_approx_level_config(approx_level);
+
+    sanitizer_views_config(pc_views, mem_views);
 
     // Init random number generator
     srand(time(0));

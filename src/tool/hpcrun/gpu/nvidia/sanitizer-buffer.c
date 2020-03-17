@@ -68,8 +68,6 @@
 #include "../gpu-channel-item-allocator.h"
 
 
-static const int SANITIZER_BUFFER_BALANCE = 500;
-
 //******************************************************************************
 // type declarations
 //******************************************************************************
@@ -136,7 +134,7 @@ sanitizer_buffer_produce
   atomic_fetch_add(balance, 1);
   if (b->gpu_patch_buffer == NULL) {
     // Spin waiting
-    while (atomic_load(balance) >= SANITIZER_BUFFER_BALANCE) {
+    while (atomic_load(balance) >= sanitizer_buffer_pool_size_get()) {
       sanitizer_process_signal();
     }
     PRINT("Allocate buffer size %lu\n", num_records * sizeof(gpu_patch_record_t));

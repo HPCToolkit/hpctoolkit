@@ -31,4 +31,16 @@ sanitizer_process_init();
 void
 sanitizer_process_signal();
 
+void
+sanitizer_buffer_config(int gpu_patch_record_num, int buffer_pool_size);
+
+void
+sanitizer_approx_level_config(int approx_level);
+
+void
+sanitizer_views_config(int pc_views, int mem_views);
+
+int
+sanitizer_buffer_pool_size_get();
+
 #endif
