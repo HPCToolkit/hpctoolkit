@@ -222,7 +222,7 @@ void analyze_instruction<INS_TYPE_MISC>(const Instruction &inst, std::string &op
     opcode.find("PRMT") != std::string::npos) {
     type = ".SHUFFLE";
   } else if (opcode.find("MOV") != std::string::npos) {
-    type = ".MOV";
+    type = ".MOVE";
     if (opcode.find("MOV32I") != std::string::npos) {
       type += ".I";
     }
