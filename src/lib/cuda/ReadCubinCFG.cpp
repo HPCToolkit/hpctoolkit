@@ -109,7 +109,7 @@ parseDotCFG
 
   // Test valid symbols
   for (auto *symbol : symbols) {
-    if (symbol->getType() == Dyninst::SymtabAPI::Symbol::ST_FUNCTION) {
+    if (symbol->getType() == Dyninst::SymtabAPI::Symbol::ST_FUNCTION && symbol->getSize() != 0) {
       auto index = symbol->getIndex();
       const std::string cmd = "nvdisasm -fun " +
         std::to_string(index) + " -cfg -poff " + cubin + " > " + dot_filename;
@@ -128,9 +128,9 @@ parseDotCFG
             function->index = symbol_function->getIndex();
             function->address = symbol_function->getOffset();
             if (symbol_function != symbol &&
+              symbol_function->getType() != Dyninst::SymtabAPI::Symbol::ST_FUNCTION) {
               // NOTYPE functions' original offsets are relative.
               // hpcstruct relocates them with absolute offsets.
-              symbol_function->getType() != Dyninst::SymtabAPI::Symbol::ST_FUNCTION) {
               // Allow gaps between a function begining and the first block?
               //function->blocks[0]->address = symbol->getOffset();
               function->address += symbol->getOffset();
