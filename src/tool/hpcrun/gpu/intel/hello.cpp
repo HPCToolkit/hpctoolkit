@@ -1,6 +1,7 @@
 #include <iostream>
 #include <vector>
 #include <string>
+#include <time.h>
 
 #define __CL_ENABLE_EXCEPTIONS
 #include <CL/cl.hpp>
@@ -23,11 +24,17 @@ static const char source[] =
     "{\n"
     "    size_t i = get_global_id(0);\n"
     "    if (i < n) {\n"
-    "       c[i] = a[i] + b[i];\n"
+	"		for(int rep1=0; rep1<2000;rep1++){\n"
+	"			for(int rep2=0; rep2<5000;rep2++){\n"
+    "		       	c[i] /= (a[i] + b[i]);\n"
+	"			}\n"
+	"		}\n"
     "    }\n"
     "}\n";
 
 int main() {
+	clock_t start_t, end_t;
+	start_t = clock();
     const size_t N = 1 << 20;
 
     try {
@@ -139,4 +146,6 @@ int main() {
 	    << std::endl;
 	return 1;
     }
+	end_t = clock();
+	printf("Execution time: %f\n", (double)(end_t - start_t) / CLOCKS_PER_SEC);
 }

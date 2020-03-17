@@ -4623,7 +4623,7 @@ AC_SUBST([OPT_CUPTI_LDFLAGS])
 OPT_HAVE_OPENCL=yes
 AM_CONDITIONAL([ENABLE_OPENCL], [test "$OPT_HAVE_OPENCL" = yes])
 OPT_OPENCL_LDFLAGS="-lOpenCL -lgotcha"
-AC_SUBST([OPT_OPENCL_IFLAGS])
+AC_SUBST([OPT_OPENCL_LDFLAGS])
 
 
 #-------------------------------------------------

@@ -1,1 +1,1 @@
-bool checkIfOpenCLModuleLoadedAndSetIntercepts (void *start, void *end);
+void checkIfOpenCLModuleLoadedAndSetIntercepts (void *start, void *end);
