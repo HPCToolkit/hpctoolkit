@@ -20282,6 +20282,64 @@ BINUTILS_LIBS="${BINUTILS_LIBS} -ldl"
 
 
 
+#-------------------------------------------------
+
+# Test for binutils 2.34 or later.  The signature of
+# bfd_section_vma(), etc dropped the first argument.
+# up to 2.33.1:  #define bfd_section_vma(bfd, ptr) ((ptr)->vma)
+# after 2.34:    bfd_section_vma (const asection *sec)
+
+ORIG_CFLAGS="$CFLAGS"
+CFLAGS="$HOST_CFLAGS  $BINUTILS_IFLAGS"
+
+ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if binutils version 2.34 or later" >&5
+$as_echo_n "checking if binutils version 2.34 or later... " >&6; }
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+#define PACKAGE "hpctoolkit"
+#include <bfd.h>
+unsigned long
+get_vma(asection * asec)
+{
+    return bfd_section_vma(asec);
+}
+
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  binutils_234=yes
+else
+  binutils_234=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $binutils_234" >&5
+$as_echo "$binutils_234" >&6; }
+
+ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+
+CFLAGS="$ORIG_CFLAGS"
+
+if test "$binutils_234" = yes ; then
+
+$as_echo "#define BINUTILS_234 1" >>confdefs.h
+
+fi
+
 
 #-------------------------------------------------
 # Option: --with-boost=PATH
