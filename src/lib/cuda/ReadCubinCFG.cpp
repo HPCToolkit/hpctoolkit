@@ -127,9 +127,10 @@ parseDotCFG
             auto *symbol_function = symbol_map[function->name];
             function->index = symbol_function->getIndex();
             function->address = symbol_function->getOffset();
-            if (symbol_function != symbol) {
-              // Local functions' original offsets are relative.
-              // hpcstruct relocate them with absolute offsets.
+            if (symbol_function != symbol &&
+              // NOTYPE functions' original offsets are relative.
+              // hpcstruct relocates them with absolute offsets.
+              symbol_function->getType() != Dyninst::SymtabAPI::Symbol::ST_FUNCTION) {
               // Allow gaps between a function begining and the first block?
               //function->blocks[0]->address = symbol->getOffset();
               function->address += symbol->getOffset();
@@ -150,7 +151,6 @@ parseDotCFG
 
   // Step 2: Relocate instructions
   for (auto *function : functions) {
-    auto *symbol = symbol_map[function->name];
     auto begin_offset = function->blocks[0]->begin_offset;
     for (auto *block : function->blocks) {
       for (auto *inst : block->insts) {
