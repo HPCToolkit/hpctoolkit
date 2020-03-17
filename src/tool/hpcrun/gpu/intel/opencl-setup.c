@@ -7,15 +7,19 @@
 #include "opencl-setup.h"
 #include "opencl-intercept.h"
 
+#define PRINT(...) fprintf(stderr, __VA_ARGS__)
+
 int NUM_CL_FNS = 4;
 static const char *OPENCL_FNS[] = {"clCreateCommandQueue", "clEnqueueNDRangeKernel", "clEnqueueWriteBuffer", "clEnqueueReadBuffer"};
-bool isOpenclModuleLoaded = false;
+bool isOpenCLInterceptSetupDone = false;
 static pfq_rwlock_t modules_lock;
 
+int pseudo_module_p_opencl(char *);
 static bool lm_contains_fn (const char *, const char *); 
 
 void initialize()
 {
+	printf("We are setting up opencl intercepts\n");
 	setup_opencl_intercept();
 }
 
@@ -27,38 +31,53 @@ void finalize()
 /* input address start and end of a module entering application space.
 if libOpenCL.so has not already been loaded, we checks if current module is libOpenCL.so */
 
-bool checkIfOpenCLModuleLoadedAndSetIntercepts (void *start, void *end)
+void checkIfOpenCLModuleLoadedAndSetIntercepts (void *start, void *end)
 {
-	if (isOpenclModuleLoaded)
+	if (isOpenCLInterceptSetupDone)
 	{
-		initialize();
-		return true;
+		return;
 	}
 	// Update path
 	// Only one thread could update the flag,
 	// Guarantee dlopen modules before notification are updated.
 	size_t i;
-	bool result = false;
 	pfq_rwlock_node_t me;
 	pfq_rwlock_write_lock(&modules_lock, &me);
 
 	load_module_t *module = hpcrun_loadmap_findByAddr(start, end);
 
-	if (!pseudo_module_p(module->name))
+	if (!pseudo_module_p_opencl(module->name))
 	{
 	   	// this is a real load module; let's see if it contains any of the opencl functions
     	for (i = 0; i < NUM_CL_FNS; ++i) 
 		{
 			if (lm_contains_fn(module->name, OPENCL_FNS[i])) 
 			{
-				isOpenclModuleLoaded = true;
 				initialize();	
+				isOpenCLInterceptSetupDone = true;
 				break;
 			}
 		}
 	}
 	pfq_rwlock_write_unlock(&modules_lock, &me);
-	return result;
+}
+
+int pseudo_module_p_opencl(char *name)
+{
+    // last character in the name
+    char lastchar = 0;  // get the empty string case right
+
+    while (*name)
+	{
+      lastchar = *name;
+      name++;
+    }
+
+    // pseudo modules have [name] in /proc/self/maps
+    // because we store [vdso] in hpctooolkit's measurement directory,
+    // it actually has the name /path/to/measurement/directory/[vdso].
+    // checking the last character tells us it is a virtual shared library.
+    return lastchar == ']'; 
 }
 
 static bool lm_contains_fn (const char *lm, const char *fn) 
