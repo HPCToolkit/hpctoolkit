@@ -99,7 +99,7 @@ sanitizer_buffer_process
 
   gpu_patch_buffer_t *gpu_patch_buffer = b->gpu_patch_buffer;
   
-  redshow_analyze(thread_id, cubin_id, kernel_id, host_op_id, gpu_patch_buffer);
+  //redshow_analyze(thread_id, cubin_id, kernel_id, host_op_id, gpu_patch_buffer);
 }
 
 

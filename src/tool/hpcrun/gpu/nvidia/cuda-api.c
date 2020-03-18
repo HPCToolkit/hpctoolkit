@@ -134,7 +134,6 @@ CUDA_FN
   CUcontext *ctx
  )
 );
-#endif
 
 CUDA_FN
 (
@@ -155,6 +154,17 @@ CUDA_FN
    int priority
   );
 );
+
+
+CUDA_FN
+(
+  cuStreamSynchronize,
+  (
+   CUstream hStream
+  );
+);
+
+#endif
 
 //******************************************************************************
 // private operations 
@@ -178,6 +188,8 @@ cuda_bind
 
   CHK_DLSYM(cuda, cuStreamCreateWithPriority);
 
+  CHK_DLSYM(cuda, cuStreamSynchronize);
+
   return 0;
 #else
   return -1;
@@ -199,6 +211,18 @@ cuda_priority_stream_create
     (&stream, CU_STREAM_NON_BLOCKING, priority_high));
 #endif
   return stream;
+}
+
+
+void
+cuda_stream_synchronize
+(
+ CUstream stream
+)
+{
+#ifndef HPCRUN_STATIC_LINK
+  HPCRUN_CUDA_API_CALL(cuStreamSynchronize, (stream));
+#endif
 }
 
 

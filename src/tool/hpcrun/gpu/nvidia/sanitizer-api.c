@@ -147,6 +147,7 @@
   macro(sanitizerMemcpyHostToDeviceAsync)  \
   macro(sanitizerSetCallbackData)          \
   macro(sanitizerAddPatchesFromFile)       \
+  macro(sanitizerGetFunctionPcAndSize)     \
   macro(sanitizerPatchInstructions)        \
   macro(sanitizerPatchModule)              \
   macro(sanitizerGetResultString)          \
@@ -369,6 +370,18 @@ SANITIZER_FN
  (
   SanitizerResult result,
   const char **str
+ )
+);
+
+
+SANITIZER_FN
+(
+ sanitizerGetFunctionPcAndSize,
+ (
+  CUmodule module,
+  const char *functionName,
+  uint64_t* pc,
+  uint64_t* size
  )
 );
 
@@ -646,6 +659,7 @@ sanitizer_load_callback
     if (elf_vector->symbols[i] != 0) {
       uint64_t pc;
       uint64_t size;
+      // Only works for global functions, do not check error
       sanitizerGetFunctionPcAndSize(module, elf_vector->names[i], &pc, &size);
       addrs[i] = pc;
     }
@@ -868,6 +882,9 @@ sanitizer_kernel_launch_callback
   }
 
   HPCRUN_SANITIZER_CALL(sanitizerSetCallbackData, (stream, gpu_patch_buffer_device));
+
+  // Ensure data is sync
+  cuda_stream_synchronize(stream);
 }
 
 //-------------------------------------------------------------
@@ -1057,9 +1074,6 @@ sanitizer_callbacks_subscribe()
     (1, sanitizer_subscriber_handle, SANITIZER_CB_DOMAIN_RESOURCE));
 
   HPCRUN_SANITIZER_CALL(sanitizerEnableDomain,
-    (1, sanitizer_subscriber_handle, SANITIZER_CB_DOMAIN_SYNCHRONIZE));
-
-  HPCRUN_SANITIZER_CALL(sanitizerEnableDomain,
     (1, sanitizer_subscriber_handle, SANITIZER_CB_DOMAIN_LAUNCH));
 
   HPCRUN_SANITIZER_CALL(sanitizerEnableDomain,
@@ -1079,9 +1093,6 @@ sanitizer_callbacks_unsubscribe()
 
   HPCRUN_SANITIZER_CALL(sanitizerEnableDomain,
     (0, sanitizer_subscriber_handle, SANITIZER_CB_DOMAIN_RESOURCE));
-
-  HPCRUN_SANITIZER_CALL(sanitizerEnableDomain,
-    (0, sanitizer_subscriber_handle, SANITIZER_CB_DOMAIN_SYNCHRONIZE));
 
   HPCRUN_SANITIZER_CALL(sanitizerEnableDomain,
     (0, sanitizer_subscriber_handle, SANITIZER_CB_DOMAIN_LAUNCH));

@@ -135,6 +135,13 @@ cuda_priority_stream_create
 
 
 void
+cuda_stream_synchronize
+(
+ CUstream stream
+);
+
+
+void
 cuda_load_callback
 (
  uint32_t cubin_id, 
