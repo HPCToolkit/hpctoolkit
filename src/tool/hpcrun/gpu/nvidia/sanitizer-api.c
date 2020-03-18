@@ -821,6 +821,9 @@ sanitizer_kernel_launch_sync
       break;
     }
   }
+
+  // For safety conern
+  cuda_stream_synchronize(priority_stream);
 }
 
 
