@@ -758,7 +758,16 @@ sanitizer_kernel_launch_sync
 
   // If block sampling is set
   if (sampling_frequency != 0) {
-    num_left_threads = num_threads - ((grid_dim - 1) / sampling_frequency + 1) * block_dim;
+    // Uniform sampling
+    int sampling_offset = gpu_patch_buffer_reset.block_sampling_offset;
+    int mod_blocks = grid_dim % sampling_frequency;
+    int sampling_blocks = 0;
+    if (mod_blocks == 0) {
+      sampling_blocks = (grid_dim - 1) / sampling_frequency + 1;
+    } else {
+      sampling_blocks = (grid_dim - 1) / sampling_frequency + (sampling_offset > mod_blocks ? 0 : 1);
+    }
+    num_left_threads = num_threads - sampling_blocks * block_dim;
   }
 
   // Init a buffer on host
