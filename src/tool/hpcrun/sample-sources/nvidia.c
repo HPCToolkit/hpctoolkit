@@ -501,6 +501,12 @@ METHOD_FN(process_event_list, int lush_metrics)
       mem_views = DEFAULT_MEM_VIEWS;
     }
 
+    PRINT("gpu_patch_record_num %d\n", gpu_patch_record_num);
+    PRINT("buffer_pool_size %d\n", buffer_pool_size);
+    PRINT("approx_level %d\n", approx_level);
+    PRINT("pc_views %d\n", pc_views);
+    PRINT("mem_views %d\n", mem_views);
+
     sanitizer_buffer_config(gpu_patch_record_num, buffer_pool_size);
 
     sanitizer_approx_level_config(approx_level);

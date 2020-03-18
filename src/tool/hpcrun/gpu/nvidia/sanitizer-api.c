@@ -795,7 +795,7 @@ sanitizer_kernel_launch_sync
     gpu_patch_buffer_t *gpu_patch_buffer = sanitizer_buffer_entry_gpu_patch_buffer_get(sanitizer_buffer);
 
     // Move host buffer to a cache
-    memcpy(gpu_patch_buffer, gpu_patch_buffer_host, sizeof(gpu_patch_buffer_t) - sizeof(void *));
+    memcpy(gpu_patch_buffer, gpu_patch_buffer_host, offsetof(gpu_patch_buffer_t, records));
     // Copy all records to the cache
     gpu_patch_record_t *gpu_patch_record_device = (gpu_patch_record_t *)gpu_patch_buffer_host->records;
     HPCRUN_SANITIZER_CALL(sanitizerMemcpyDeviceToHost,
@@ -874,11 +874,10 @@ sanitizer_kernel_launch_callback
     // reset buffer
     gpu_patch_buffer_reset.num_threads = grid_dim * block_dim;
     gpu_patch_buffer_reset.block_sampling_offset = block_sampling_offset;
-    gpu_patch_buffer_reset.size = sanitizer_gpu_patch_record_num;
 
     HPCRUN_SANITIZER_CALL(sanitizerMemcpyHostToDeviceAsync,
       (gpu_patch_buffer_device, &gpu_patch_buffer_reset,
-       sizeof(gpu_patch_buffer_t) - sizeof(void *), stream));
+       sizeof(gpu_patch_buffer_t), stream));
   }
 
   HPCRUN_SANITIZER_CALL(sanitizerSetCallbackData, (stream, gpu_patch_buffer_device));
