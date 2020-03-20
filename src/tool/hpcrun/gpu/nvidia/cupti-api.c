@@ -573,7 +573,7 @@ cupti_bind
 }
 
 
-cct_node_t *
+static cct_node_t *
 cupti_correlation_callback_dummy // __attribute__((unused))
 (
  uint64_t id
