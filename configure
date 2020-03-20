@@ -23407,6 +23407,12 @@ fi
 OPT_CUPTI="$CUPTI"
 
 
+cat >>confdefs.h <<_ACEOF
+#define CUPTI_INSTALL_PREFIX "$CUPTI"
+_ACEOF
+
+
+
 
 
 
