@@ -17,10 +17,11 @@
   macro(INS_TYPE_INTEGER, 2)    \
   macro(INS_TYPE_TEXTRUE, 3)    \
   macro(INS_TYPE_CONTROL, 4)    \
-  macro(INS_TYPE_MISC, 5)      
+  macro(INS_TYPE_PREDICATE, 5)  \
+  macro(INS_TYPE_MISC, 6)      
 
 #define FORALL_INS_COUNT(macro) \
-  macro(INS_TYPE_COUNT, 6)
+  macro(INS_TYPE_COUNT, 7)
 
 namespace CudaParse {
 

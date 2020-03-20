@@ -34,6 +34,7 @@ struct InstructionStat {
   int pc;
   int predicate;  // P0-P6
   PredicateFlag predicate_flag;
+  std::vector<int> predicate_assign_pcs;
   std::vector<int> dsts;  // R0-R255: only records normal registers
   std::vector<int> srcs;  // R0-R255: only records normal registers
   std::vector<int> pdsts;  // P0-P6: only records predicate registers
@@ -48,29 +49,35 @@ struct InstructionStat {
 
   InstructionStat(const std::string &op,
     int pc, int predicate, PredicateFlag predicate_flag,
+    std::vector<int> predicate_assign_pcs,
     std::vector<int> &dsts, std::vector<int> &srcs,
     std::vector<int> &pdsts, std::vector<int> &psrcs) :
     op(op), pc(pc), predicate(predicate), predicate_flag(predicate_flag),
+    predicate_assign_pcs(predicate_assign_pcs),
     dsts(dsts), srcs(srcs), pdsts(pdsts), psrcs(psrcs) {}
 
   InstructionStat(const std::string &op,
     int pc, int predicate, PredicateFlag predicate_flag,
+    std::vector<int> predicate_assign_pcs,
     std::vector<int> &dsts, std::vector<int> &srcs,
     std::vector<int> &pdsts, std::vector<int> &psrcs,
     std::map<int, std::vector<int> > &assign_pcs,
     std::map<int, std::vector<int> > &passign_pcs) :
     op(op), pc(pc), predicate(predicate), predicate_flag(predicate_flag),
+    predicate_assign_pcs(predicate_assign_pcs),
     dsts(dsts), srcs(srcs), pdsts(pdsts), psrcs(psrcs),
     assign_pcs(assign_pcs), passign_pcs(passign_pcs) {}
 
   InstructionStat(const std::string &op,
     int pc, int predicate, PredicateFlag predicate_flag,
+    std::vector<int> predicate_assign_pcs,
     std::vector<int> &dsts, std::vector<int> &srcs,
     std::vector<int> &pdsts, std::vector<int> &psrcs,
     std::map<int, std::vector<int> > &assign_pcs,
     std::map<int, std::vector<int> > &passign_pcs,
     Control &control) :
     op(op), pc(pc), predicate(predicate), predicate_flag(predicate_flag),
+    predicate_assign_pcs(predicate_assign_pcs),
     dsts(dsts), srcs(srcs), pdsts(dsts), psrcs(srcs), 
     assign_pcs(assign_pcs), passign_pcs(passign_pcs), control(control) {}
 
