@@ -300,11 +300,13 @@ ompt_elide_runtime_frame(
     case ompt_state_wait_barrier:
     case ompt_state_wait_barrier_implicit:
     case ompt_state_wait_barrier_explicit:
+#if 0
       // collapse barriers on non-master ranks 
       if (hpcrun_ompt_get_thread_num(0) != 0) {
 	collapse_callstack(bt, &ompt_placeholders.ompt_barrier_wait_state);
 	goto return_label;
       }
+#endif
       break; 
     case ompt_state_idle:
       // collapse idle state

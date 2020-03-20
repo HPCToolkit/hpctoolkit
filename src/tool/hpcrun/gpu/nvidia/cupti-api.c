@@ -524,7 +524,7 @@ cupti_path
       path = buffer;
       resolved = 1;
     } else {
-      buffer[zero_index] = 0;
+      buffer[zero_index - 1] = 0;
       fprintf(stderr, "NOTE: CUDA root at %s lacks a copy of NVIDIA's CUPTI " 
 	      "tools library.\n", buffer); 
     }
