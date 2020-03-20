@@ -13,6 +13,12 @@ class Function;
 class Instruction;
 
 struct InstructionStat {
+  enum PredicateFlag {
+    PREDICATE_NONE = 0,
+    PREDICATE_TRUE = 1,
+    PREDICATE_FALSE = 2,
+  };
+
   struct Control {
     uint8_t reuse;
     uint8_t wait;
@@ -27,9 +33,13 @@ struct InstructionStat {
   std::string op;
   int pc;
   int predicate;  // P0-P6
+  PredicateFlag predicate_flag;
   std::vector<int> dsts;  // R0-R255: only records normal registers
-  std::vector<int> srcs;  // R0-R255, only records normal registers
+  std::vector<int> srcs;  // R0-R255: only records normal registers
+  std::vector<int> pdsts;  // P0-P6: only records predicate registers
+  std::vector<int> psrcs;  // P0-P6: only records predicate registers
   std::map<int, std::vector<int> > assign_pcs;
+  std::map<int, std::vector<int> > passign_pcs;
   Control control;
 
   InstructionStat() {}
@@ -37,21 +47,32 @@ struct InstructionStat {
   explicit InstructionStat(const Instruction *inst);
 
   InstructionStat(const std::string &op,
-    int pc, int predicate, std::vector<int> &dsts, std::vector<int> &srcs) :
-    op(op), pc(pc), predicate(predicate), dsts(dsts),
-    srcs(srcs) {}
+    int pc, int predicate, PredicateFlag predicate_flag,
+    std::vector<int> &dsts, std::vector<int> &srcs,
+    std::vector<int> &pdsts, std::vector<int> &psrcs) :
+    op(op), pc(pc), predicate(predicate), predicate_flag(predicate_flag),
+    dsts(dsts), srcs(srcs), pdsts(pdsts), psrcs(psrcs) {}
 
   InstructionStat(const std::string &op,
-    int pc, int predicate, std::vector<int> &dsts, std::vector<int> &srcs,
-    std::map<int, std::vector<int> > &assign_pcs) :
-    op(op), pc(pc), predicate(predicate), dsts(dsts),
-    srcs(srcs), assign_pcs(assign_pcs) {}
+    int pc, int predicate, PredicateFlag predicate_flag,
+    std::vector<int> &dsts, std::vector<int> &srcs,
+    std::vector<int> &pdsts, std::vector<int> &psrcs,
+    std::map<int, std::vector<int> > &assign_pcs,
+    std::map<int, std::vector<int> > &passign_pcs) :
+    op(op), pc(pc), predicate(predicate), predicate_flag(predicate_flag),
+    dsts(dsts), srcs(srcs), pdsts(pdsts), psrcs(psrcs),
+    assign_pcs(assign_pcs), passign_pcs(passign_pcs) {}
 
   InstructionStat(const std::string &op,
-    int pc, int predicate, std::vector<int> &dsts, std::vector<int> &srcs,
-    std::map<int, std::vector<int> > &assign_pcs, Control &control) :
-    op(op), pc(pc), predicate(predicate), dsts(dsts),
-    srcs(srcs), assign_pcs(assign_pcs), control(control) {}
+    int pc, int predicate, PredicateFlag predicate_flag,
+    std::vector<int> &dsts, std::vector<int> &srcs,
+    std::vector<int> &pdsts, std::vector<int> &psrcs,
+    std::map<int, std::vector<int> > &assign_pcs,
+    std::map<int, std::vector<int> > &passign_pcs,
+    Control &control) :
+    op(op), pc(pc), predicate(predicate), predicate_flag(predicate_flag),
+    dsts(dsts), srcs(srcs), pdsts(dsts), psrcs(srcs), 
+    assign_pcs(assign_pcs), passign_pcs(passign_pcs), control(control) {}
 
   bool operator < (const InstructionStat &other) const {
     return this->pc < other.pc;

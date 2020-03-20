@@ -36,6 +36,10 @@ void CudaBlock::getInsns(Insns &insns) const {
     // It does not matter now because hpcstruct explicitly set length of instructions
     InstructionAPI::Instruction instruction(op, 16, NULL, Arch_cuda);
 
+    if (inst->inst_stat->predicate_flag == CudaParse::InstructionStat::PredicateFlag::PREDICATE_TRUE) {
+    } else if (inst->inst_stat->predicate_flag == CudaParse::InstructionStat::PredicateFlag::PREDICATE_FALSE) {
+    }
+
     if (inst->inst_stat->dsts.size() == 0) {
       // Fake register
       MachRegister r(256 | cuda::GPR | Arch_cuda);

@@ -277,6 +277,7 @@ InstructionStat::InstructionStat(const Instruction *inst) {
   this->pc = inst->offset;
   // -1 means no value
   this->predicate = -1;
+  this->predicate_flag = InstructionStat::PredicateFlag::PREDICATE_NONE;
 
   if (INSTRUCTION_ANALYZER_DEBUG) {
     std::cout << inst->offset << " " << op << " ";
@@ -290,6 +291,12 @@ InstructionStat::InstructionStat(const Instruction *inst) {
     auto pos = inst->predicate.find("P");
     if (pos != std::string::npos) {
       this->predicate = convert_reg(inst->predicate, pos + 1);
+      pos = inst->predicate.find("!");
+      if (pos != std::string::npos) {
+        this->predicate_flag = InstructionStat::PredicateFlag::PREDICATE_FALSE;
+      } else {
+        this->predicate_flag = InstructionStat::PredicateFlag::PREDICATE_TRUE;
+      }
     }
   }
 
@@ -335,6 +342,13 @@ InstructionStat::InstructionStat(const Instruction *inst) {
           this->dsts.push_back(reg);
         }
       }
+    }
+
+    // Predicate register
+    pos = inst->operands[0].find("P");
+    if (pos != std::string::npos) {
+      auto reg = convert_reg(inst->operands[0], pos + 1);
+      this->pdsts.push_back(reg);
     }
 
     for (size_t i = 1; i < inst->operands.size(); ++i) {
@@ -389,6 +403,15 @@ InstructionStat::InstructionStat(const Instruction *inst) {
           }
         }
       }
+
+      pos = inst->operands[i].find("P");
+      if (pos != std::string::npos) {
+        auto reg = convert_reg(inst->operands[i], pos + 1);
+        if (reg != -1) {
+          // Preventing PT
+          this->psrcs.push_back(reg);
+        }
+      }
     }
   }
 
@@ -432,6 +455,11 @@ void relocateCudaInstructionStats(std::vector<Function *> &functions) {
           auto *inst_stat = inst->inst_stat;
           inst_stat->pc += function->address;
           for (auto &iter : inst_stat->assign_pcs) {
+            for (auto piter = iter.second.begin(); piter != iter.second.end(); ++piter) {
+              *piter += function->address;
+            }
+          }
+          for (auto &iter : inst_stat->passign_pcs) {
             for (auto piter = iter.second.begin(); piter != iter.second.end(); ++piter) {
               *piter += function->address;
             }
@@ -618,6 +646,8 @@ bool dumpCudaInstructions(const std::string &file_path,
         boost::property_tree::ptree ptree_inst;
         boost::property_tree::ptree ptree_srcs;
         boost::property_tree::ptree ptree_dsts;
+        boost::property_tree::ptree ptree_psrcs;
+        boost::property_tree::ptree ptree_pdsts;
 
         // Instruction offsets have been relocated
         if (inst->inst_stat == NULL) {
@@ -633,6 +663,7 @@ bool dumpCudaInstructions(const std::string &file_path,
           } else {
             ptree_inst.put("pred", "");
           }
+          ptree_inst.put("pred_flag", inst->inst_stat->predicate_flag);
 
           // Control info
           boost::property_tree::ptree control;
@@ -644,6 +675,7 @@ bool dumpCudaInstructions(const std::string &file_path,
           control.put("stall", inst->inst_stat->control.stall);
           ptree_inst.add_child("control", control);
 
+          // Dest operands and dest predicate operands
           for (auto dst : inst->inst_stat->dsts) {
             boost::property_tree::ptree t;
             t.put("", dst);
@@ -651,6 +683,14 @@ bool dumpCudaInstructions(const std::string &file_path,
           }
           ptree_inst.add_child("dsts", ptree_dsts);
 
+          for (auto pdst : inst->inst_stat->pdsts) {
+            boost::property_tree::ptree t;
+            t.put("", pdst);
+            ptree_pdsts.push_back(std::make_pair("", t));
+          }
+          ptree_inst.add_child("pdsts", ptree_pdsts);
+
+          // Source operands and source predicate operands
           for (auto src : inst->inst_stat->srcs) {
             boost::property_tree::ptree t;
             t.put("id", src);
@@ -670,6 +710,26 @@ bool dumpCudaInstructions(const std::string &file_path,
           }
 
           ptree_inst.add_child("srcs", ptree_srcs);
+
+          for (auto psrc : inst->inst_stat->psrcs) {
+            boost::property_tree::ptree t;
+            t.put("id", psrc);
+
+            boost::property_tree::ptree ptree_passign_pcs;
+            auto iter = inst->inst_stat->passign_pcs.find(psrc);
+            if (iter != inst->inst_stat->passign_pcs.end()) {
+              for (auto passign_pc : iter->second) {
+                boost::property_tree::ptree tt;
+                tt.put("", passign_pc);
+                ptree_passign_pcs.push_back(std::make_pair("", tt));
+              }
+            }
+            t.add_child("passign_pcs", ptree_passign_pcs);
+
+            ptree_psrcs.push_back(std::make_pair("", t));
+          }
+
+          ptree_inst.add_child("psrcs", ptree_psrcs);
         }
 
         ptree_insts.push_back(std::make_pair("", ptree_inst));
@@ -742,6 +802,8 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
         int pc = ptree_inst.second.get<int>("pc", 0);
         std::string op = ptree_inst.second.get<std::string>("op", "");
         int pred = ptree_inst.second.get<int>("pred", -1);
+        InstructionStat::PredicateFlag pred_flag = static_cast<InstructionStat::PredicateFlag>(
+          ptree_inst.second.get<int>("pred_flag", 0));
 
         InstructionStat::Control control;
         auto &ptree_control = ptree_inst.second.get_child("control");
@@ -759,6 +821,13 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
           dsts.push_back(dst);
         }
 
+        std::vector<int> pdsts;
+        auto &ptree_pdsts = ptree_inst.second.get_child("pdsts");
+        for (auto &ptree_pdst : ptree_pdsts) {
+          int pdst = boost::lexical_cast<int>(ptree_pdst.second.data());
+          pdsts.push_back(pdst);
+        }
+
         std::vector<int> srcs; 
         std::map<int, std::vector<int> > assign_pcs;
         auto &ptree_srcs = ptree_inst.second.get_child("srcs");
@@ -772,7 +841,21 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
           }
         }
 
-        auto *inst_stat = new InstructionStat(op, pc, pred, dsts, srcs, assign_pcs, control);
+        std::vector<int> psrcs; 
+        std::map<int, std::vector<int> > passign_pcs;
+        auto &ptree_psrcs = ptree_inst.second.get_child("psrcs");
+        for (auto &ptree_psrc : ptree_psrcs) {
+          int psrc = ptree_psrc.second.get<int>("id", 0);
+          psrcs.push_back(psrc);
+          auto &ptree_passign_pcs = ptree_psrc.second.get_child("passign_pcs");
+          for (auto &ptree_passign_pc : ptree_passign_pcs) {
+            int passign_pc = boost::lexical_cast<int>(ptree_passign_pc.second.data());
+            passign_pcs[psrc].push_back(passign_pc);
+          }
+        }
+
+        auto *inst_stat = new InstructionStat(op, pc, pred, pred_flag, dsts, srcs,
+          pdsts, psrcs, assign_pcs, passign_pcs, control);
         auto *inst = new Instruction(inst_stat);
         inst_map[pc] = inst;
 
@@ -780,6 +863,7 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
           std::cout << "Inst pc: " << pc << std::endl;
           std::cout << "     op: " << op << std::endl;
           std::cout << "     pred: " << pred << std::endl;
+          std::cout << "     pred_flag: " << pred_flag << std::endl;
           std::cout << "     dsts: ";
           for (auto dst : dsts) {
             std::cout << dst << ", ";
@@ -792,6 +876,22 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
             if (iter != assign_pcs.end()) {
               for (auto assign_pc : iter->second) {
                 std::cout << assign_pc << std::endl;
+              }
+            }
+          }
+          std::cout << std::endl;
+          std::cout << "     pdsts: ";
+          for (auto pdst : pdsts) {
+            std::cout << pdst << ", ";
+          }
+          std::cout << std::endl;
+          std::cout << "     psrcs: ";
+          for (auto psrc : psrcs) {
+            std::cout << psrc << ": ";
+            auto iter = passign_pcs.find(psrc);
+            if (iter != passign_pcs.end()) {
+              for (auto passign_pc : iter->second) {
+                std::cout << passign_pc << std::endl;
               }
             }
           }
