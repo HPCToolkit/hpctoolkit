@@ -58,6 +58,7 @@
 #include <errno.h>     // errno
 #include <fcntl.h>     // open
 #include <sys/stat.h>  // mkdir
+#include <sys/types.h>
 #include <unistd.h>
 
 #ifndef HPCRUN_STATIC_LINK
@@ -106,6 +107,9 @@
 //******************************************************************************
 // macros
 //******************************************************************************
+
+#define CUPTI_LIBRARY_LOCATION "/lib64/libcupti.so"
+#define CUPTI_PATH_FROM_CUDA "extras/CUPTI"
 
 #define CUPTI_API_DEBUG 0
 
@@ -479,13 +483,28 @@ cuda_path
 }
 
 
-const char *
+static void
+cupti_set_default_path(char *buffer)
+{
+  strcpy(buffer, CUPTI_INSTALL_PREFIX CUPTI_LIBRARY_LOCATION);
+}
+
+int
+library_path_resolves(const char *buffer)
+{
+  struct stat sb;
+  return stat(buffer, &sb) == 0;
+}
+    
+
+static const char *
 cupti_path
 (
   void
 )
 {
   const char *path = "libcupti.so";
+  int resolved = 0;
 
   static char buffer[PATH_MAX];
   buffer[0] = 0;
@@ -498,8 +517,27 @@ cupti_path
 
   if (dl_iterate_phdr(cuda_path, buffer)) {
     // invariant: buffer contains CUDA home
-    strcat(buffer, "extras/CUPTI/lib64/libcupti.so");
-    path = buffer;
+    int zero_index = strlen(buffer);
+    strcat(buffer, CUPTI_PATH_FROM_CUDA CUPTI_LIBRARY_LOCATION);
+
+    if (library_path_resolves(buffer)) {
+      path = buffer;
+      resolved = 1;
+    } else {
+      buffer[zero_index] = 0;
+      fprintf(stderr, "NOTE: CUDA root at %s lacks a copy of NVIDIA's CUPTI " 
+	      "tools library.\n", buffer); 
+    }
+  }
+
+  if (!resolved) {
+    cupti_set_default_path(buffer);
+    if (library_path_resolves(buffer)) {
+      fprintf(stderr, "NOTE: Using builtin path for NVIDIA's CUPTI tools "
+	      "library %s.\n", buffer); 
+      path = buffer;
+      resolved = 1;
+    }
   }
 
   if (h) monitor_real_dlclose(h);

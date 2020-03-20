@@ -6,6 +6,9 @@
 /* "Cuda install prefix" */
 #undef CUDA_INSTALL_PREFIX
 
+/* "CUPTI install prefix" */
+#undef CUPTI_INSTALL_PREFIX
+
 /* Data-centric tracing */
 #undef DATACENTRIC_TRACE
 
