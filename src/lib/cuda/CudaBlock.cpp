@@ -36,6 +36,20 @@ void CudaBlock::getInsns(Insns &insns) const {
     // It does not matter now because hpcstruct explicitly set length of instructions
     InstructionAPI::Instruction instruction(op, 16, NULL, Arch_cuda);
 
+    // Instruction predicate flags
+    int pred = inst->inst_stat->predicate;
+    if (inst->inst_stat->predicate_flag == CudaParse::InstructionStat::PredicateFlag::PREDICATE_TRUE) {
+      MachRegister r(pred | cuda::PR | Arch_cuda);
+      InstructionAPI::RegisterAST::Ptr reg_ptr(new InstructionAPI::RegisterAST(r));
+      // bool isRead, bool isWritten, bool isImplicit, bool trueP, bool falseP
+      instruction.appendOperand(reg_ptr, true, false, false, true, false);
+    } else if (inst->inst_stat->predicate_flag == CudaParse::InstructionStat::PredicateFlag::PREDICATE_FALSE) {
+      MachRegister r(pred | cuda::PR | Arch_cuda);
+      InstructionAPI::RegisterAST::Ptr reg_ptr(new InstructionAPI::RegisterAST(r));
+      // bool isRead, bool isWritten, bool isImplicit, bool trueP, bool falseP
+      instruction.appendOperand(reg_ptr, true, false, false, false, true);
+    }
+
     if (inst->inst_stat->dsts.size() == 0) {
       // Fake register
       MachRegister r(256 | cuda::GPR | Arch_cuda);
@@ -48,12 +62,28 @@ void CudaBlock::getInsns(Insns &insns) const {
           InstructionAPI::RegisterAST::Ptr reg_ptr(new InstructionAPI::RegisterAST(r));
           instruction.appendOperand(reg_ptr, false, true);
         }   
-      }   
+      } 
     }   
+
+    for (auto pdst : inst->inst_stat->pdsts) {
+      if (pdst != -1) {
+        MachRegister r(pdst | cuda::PR | Arch_cuda);
+        InstructionAPI::RegisterAST::Ptr reg_ptr(new InstructionAPI::RegisterAST(r));
+        instruction.appendOperand(reg_ptr, false, true);
+      }
+    } 
 
     for (auto src : inst->inst_stat->srcs) {
       if (src != -1) {
         MachRegister r(src | cuda::GPR | Arch_cuda);
+        InstructionAPI::RegisterAST::Ptr reg_ptr(new InstructionAPI::RegisterAST(r));
+        instruction.appendOperand(reg_ptr, true, false);
+      }
+    }
+
+    for (auto psrc : inst->inst_stat->psrcs) {
+      if (psrc != -1) {
+        MachRegister r(psrc | cuda::PR | Arch_cuda);
         InstructionAPI::RegisterAST::Ptr reg_ptr(new InstructionAPI::RegisterAST(r));
         instruction.appendOperand(reg_ptr, true, false);
       }
