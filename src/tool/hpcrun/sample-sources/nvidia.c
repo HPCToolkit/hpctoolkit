@@ -122,6 +122,7 @@ static device_finalizer_fn_entry_t device_trace_finalizer_shutdown;
 // default trace all the activities
 // -1: disabled, >0: x ms per activity
 // static long trace_frequency = -1;
+static long trace_frequency = -1;
 static long trace_frequency_default = -1;
 
 
@@ -223,7 +224,7 @@ typedef enum cupti_activities_flags {
   CUPTI_OVERHEAD	     = 64
 } cupti_activities_flags_t;
 
-#if 0
+
 int
 cupti_pc_sampling_frequency_get()
 {
@@ -237,42 +238,33 @@ cupti_trace_frequency_get()
   return trace_frequency;
 }
 
-#endif
-
 
 void
 cupti_enable_activities
 (
- CUcontext context
 )
 {
   PRINT("Enter cupti_enable_activities\n");
 
-  #define FORALL_ACTIVITIES(macro, context)                                      \
-    macro(context, CUPTI_DATA_MOTION_EXPLICIT, data_motion_explicit_activities)  \
-    macro(context, CUPTI_KERNEL_INVOCATION, kernel_invocation_activities)        \
-    macro(context, CUPTI_KERNEL_EXECUTION, kernel_execution_activities)          \
-    macro(context, CUPTI_DRIVER, driver_activities)                              \
-    macro(context, CUPTI_RUNTIME, runtime_activities)                            \
-    macro(context, CUPTI_OVERHEAD, overhead_activities)
+  cupti_correlation_enable();
 
-  #define CUPTI_SET_ACTIVITIES(context, activity_kind, activity)  \
-    if (cupti_enabled_activities & activity_kind) {               \
-      cupti_monitoring_set(context, activity, true);              \
+  #define FORALL_ACTIVITIES(macro)                                      \
+    macro(CUPTI_DATA_MOTION_EXPLICIT, data_motion_explicit_activities)  \
+    macro(CUPTI_KERNEL_INVOCATION, kernel_invocation_activities)        \
+    macro(CUPTI_KERNEL_EXECUTION, kernel_execution_activities)          \
+    macro(CUPTI_DRIVER, driver_activities)                              \
+    macro(CUPTI_RUNTIME, runtime_activities)                            \
+    macro(CUPTI_OVERHEAD, overhead_activities)
+
+  #define CUPTI_SET_ACTIVITIES(activity_kind, activity)  \
+    if (cupti_enabled_activities & activity_kind) {      \
+      cupti_monitoring_set(activity, true);     \
     }
 
-  FORALL_ACTIVITIES(CUPTI_SET_ACTIVITIES, context);
-
-  if (pc_sampling_frequency != -1) {
-    PRINT("pc sampling enabled\n");
-    cupti_pc_sampling_enable(context, pc_sampling_frequency);
-  }
-
-  cupti_correlation_enable();
+  FORALL_ACTIVITIES(CUPTI_SET_ACTIVITIES)
 
   PRINT("Exit cupti_enable_activities\n");
 }
-
 
 
 //******************************************************************************
@@ -350,7 +342,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     &frequency, frequency_default);
   
   if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA)) {
-    long int trace_frequency =
+    trace_frequency =
       (frequency == frequency_default) ? trace_frequency_default : frequency;
     gpu_monitoring_trace_sample_frequency_set(trace_frequency);
   } else if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_PC_SAMPLING)) {
@@ -412,8 +404,8 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   // Register cupti callbacks
   cupti_init();
-  cupti_callbacks_subscribe();
   cupti_start();
+  cupti_callbacks_subscribe();
 
   // Set enabling activities
   cupti_enabled_activities |= CUPTI_DRIVER;
@@ -435,6 +427,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 static void
 METHOD_FN(finalize_event_list)
 {
+  cupti_enable_activities();
 }
 
 static void

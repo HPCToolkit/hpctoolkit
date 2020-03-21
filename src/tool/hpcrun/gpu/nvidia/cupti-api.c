@@ -176,7 +176,6 @@ typedef void (*cupti_error_callback_t)
 
 typedef CUptiResult (*cupti_activity_enable_t)
 (
- CUcontext context,
  CUpti_ActivityKind activity
 );
 
@@ -758,7 +757,10 @@ cupti_subscriber_callback
         mrd->moduleId, mrd->cubinSize, mrd->pCubin);
       DISPATCH_CALLBACK(cupti_unload_callback, (mrd->moduleId, mrd->pCubin, mrd->cubinSize));
     } else if (cb_id == CUPTI_CBID_RESOURCE_CONTEXT_CREATED) {
-      cupti_enable_activities(rd->context);
+      int pc_sampling_frequency = cupti_pc_sampling_frequency_get();
+      if (pc_sampling_frequency != -1) {
+        cupti_pc_sampling_enable(rd->context, pc_sampling_frequency);
+      }
     }
   } else if (domain == CUPTI_CB_DOMAIN_DRIVER_API) {
     // stop flag is only set if a driver or runtime api called
@@ -1224,7 +1226,6 @@ cupti_buffer_completion_callback
 cupti_set_status_t
 cupti_monitoring_set
 (
- CUcontext context,
  const CUpti_ActivityKind activity_kinds[],
  bool enable
 )
@@ -1235,14 +1236,14 @@ cupti_monitoring_set
 
   cupti_activity_enable_t action =
     (enable ?
-     CUPTI_FN_NAME(cuptiActivityEnableContext):
-     CUPTI_FN_NAME(cuptiActivityDisableContext));
+     CUPTI_FN_NAME(cuptiActivityEnable):
+     CUPTI_FN_NAME(cuptiActivityDisable));
 
   int i = 0;
   for (;;) {
     CUpti_ActivityKind activity_kind = activity_kinds[i++];
     if (activity_kind == CUPTI_ACTIVITY_KIND_INVALID) break;
-    bool succ = action(context, activity_kind) == CUPTI_SUCCESS;
+    bool succ = action(activity_kind) == CUPTI_SUCCESS;
     if (succ) {
       if (enable) {
         PRINT("activity %d enable succeeded\n", activity_kind);
