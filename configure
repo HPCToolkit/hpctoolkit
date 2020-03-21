@@ -1046,6 +1046,7 @@ enable_xop
 with_cuda
 with_cupti
 with_rocm
+with_gotcha
 enable_data_centric_tracing
 with_objcopy
 enable_devtools
@@ -1792,6 +1793,7 @@ Optional Packages:
                           cuda
   --with-rocm=PATH        use given ROCM installation (absolute path) with
                           hpcrun (default is NO)
+  --with-gotcha=PATH      path to GOTCHA install directory
   --with-objcopy=<obcopy_path>
                           use given objcopy when hiding hpcrun library symbols
 
@@ -23402,7 +23404,15 @@ fi
 #-------------------------------------------------
 # GOTCHA
 #-------------------------------------------------
-GOTCHA="/home/xm13/hpctoolkit-dir/GOTCHA/install"
+
+# Check whether --with-gotcha was given.
+if test "${with_gotcha+set}" = set; then :
+  withval=$with_gotcha; GOTCHA="$withval"
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for gotcha" >&5
+$as_echo_n "checking for gotcha... " >&6; }
 GOTCHA_IFLAGS="-I${GOTCHA}/include"
 GOTCHA_LDFLAGS="-L${GOTCHA}/lib64 -lgotcha"
 

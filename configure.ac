@@ -4601,7 +4601,13 @@ AC_SUBST([OPT_ROCM_LDFLAGS])
 #-------------------------------------------------
 # GOTCHA 
 #-------------------------------------------------
-GOTCHA="/home/xm13/hpctoolkit-dir/GOTCHA/install"
+AC_ARG_WITH([gotcha],
+  [AS_HELP_STRING([--with-gotcha=PATH],
+      [path to GOTCHA install directory])],
+  [GOTCHA="$withval"],
+  [])
+
+AC_MSG_CHECKING([for gotcha])
 GOTCHA_IFLAGS="-I${GOTCHA}/include"
 GOTCHA_LDFLAGS="-L${GOTCHA}/lib64 -lgotcha"
 AC_SUBST([GOTCHA_IFLAGS])
