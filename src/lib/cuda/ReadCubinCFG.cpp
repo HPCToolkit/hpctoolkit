@@ -101,9 +101,15 @@ parseDotCFG
   std::vector<Symbol *> unparsable_function_symbols;
   // Remove functions that share the same names
   std::map<std::string, CudaParse::Function *> function_map;
+  std::map<std::string, Symbol *> symbol_map;
+
+  for (auto *symbol : symbols) {
+    symbol_map[symbol->getMangledName()] = symbol;
+  }
+
   // Test valid symbols
   for (auto *symbol : symbols) {
-    if (symbol->getType() == Dyninst::SymtabAPI::Symbol::ST_FUNCTION) {
+    if (symbol->getType() == Dyninst::SymtabAPI::Symbol::ST_FUNCTION && symbol->getSize() != 0) {
       auto index = symbol->getIndex();
       const std::string cmd = "nvdisasm -fun " +
         std::to_string(index) + " -cfg -poff " + cubin + " > " + dot_filename;
@@ -111,15 +117,25 @@ parseDotCFG
         // Only parse valid symbols
         CudaParse::GraphReader graph_reader(dot_filename);
         CudaParse::Graph graph;
-        std::vector<CudaParse::Function *> funcs;
+        std::vector<CudaParse::Function *> functions;
         graph_reader.read(graph);
-        cfg_parser.parse(graph, funcs);
+        cfg_parser.parse(graph, functions);
         // Local functions inside a global function cannot be independently parsed
-        for (auto *func : funcs) {
-          if (function_map.find(func->name) == function_map.end()) {
+        for (auto *function : functions) {
+          if (function_map.find(function->name) == function_map.end()) {
             // Assign symbol index to function
-            func->index = index;
-            function_map[func->name] = func;
+            auto *symbol_function = symbol_map[function->name];
+            function->index = symbol_function->getIndex();
+            function->address = symbol_function->getOffset();
+            if (symbol_function != symbol &&
+              symbol_function->getType() != Dyninst::SymtabAPI::Symbol::ST_FUNCTION) {
+              // NOTYPE functions' original offsets are relative.
+              // hpcstruct relocates them with absolute offsets.
+              // Allow gaps between a function begining and the first block?
+              //function->blocks[0]->address = symbol->getOffset();
+              function->address += symbol->getOffset();
+            }
+            function_map[function->name] = function;
           }
         }
       } else {
@@ -133,22 +149,14 @@ parseDotCFG
     functions.push_back(iter.second);
   }
 
-  // Step 2: Relocate functions
-  for (auto *symbol : symbols) {
-    for (auto *function : functions) {
-      if (function->name == symbol->getMangledName() &&
-        symbol->getType() == Dyninst::SymtabAPI::Symbol::ST_FUNCTION) {
-        auto begin_offset = function->blocks[0]->begin_offset;
-        for (auto *block : function->blocks) {
-          for (auto *inst : block->insts) {
-            inst->offset = (inst->offset - begin_offset) + symbol->getOffset();
-          }
-          block->address = block->insts[0]->offset;
-        }
-        // Allow gaps between a function begining and the first block?
-        //function->blocks[0]->address = symbol->getOffset();
-        function->address = symbol->getOffset();
+  // Step 2: Relocate instructions
+  for (auto *function : functions) {
+    auto begin_offset = function->blocks[0]->begin_offset;
+    for (auto *block : function->blocks) {
+      for (auto *inst : block->insts) {
+        inst->offset = (inst->offset - begin_offset) + function->address;
       }
+      block->address = block->insts[0]->offset;
     }
   }
 
@@ -196,34 +204,30 @@ parseDotCFG
   }
 
   // Step4: add compensate blocks that only contains nop instructions
-  for (auto *symbol : symbols) {
-    for (auto *function : functions) {
-      if (function->name == symbol->getMangledName() && symbol->getSize() > 0 &&
-        symbol->getType() == Dyninst::SymtabAPI::Symbol::ST_FUNCTION) {
-        int len = cuda_arch >= 70 ? 16 : 8;
-        int function_size = function->blocks.back()->insts.back()->offset + len - function->address;
-        int symbol_size = symbol->getSize();
-        if (function_size < symbol_size) {
-          if (DEBUG_CFG_PARSE) {
-            std::cout << function->name << " append nop instructions" << std::endl;
-            std::cout << "function_size: " << function_size << " < " << "symbol_size: " << symbol_size << std::endl;
-          }
-          auto *block = new CudaParse::Block(max_block_id, ".L_" + std::to_string(max_block_id));
-          block->address = function_size + function->address;
-          block->begin_offset = cuda_arch >= 70 ? 16 : 8;
-          max_block_id++;
-          while (function_size < symbol_size) {
-            block->insts.push_back(new CudaParse::Instruction(function_size + function->address));
-            function_size += len;
-          } 
-          if (function->blocks.size() > 0) {
-            auto *last_block = function->blocks.back();
-            last_block->targets.push_back(
-              new CudaParse::Target(last_block->insts.back(), block, CudaParse::TargetType::DIRECT));
-          }
-          function->blocks.push_back(block);
-        }
+  for (auto *function : functions) {
+    auto *symbol = symbol_map[function->name];
+    int len = cuda_arch >= 70 ? 16 : 8;
+    int function_size = function->blocks.back()->insts.back()->offset + len - function->address;
+    int symbol_size = symbol->getSize();
+    if (function_size < symbol_size) {
+      if (DEBUG_CFG_PARSE) {
+        std::cout << function->name << " append nop instructions" << std::endl;
+        std::cout << "function_size: " << function_size << " < " << "symbol_size: " << symbol_size << std::endl;
       }
+      auto *block = new CudaParse::Block(max_block_id, ".L_" + std::to_string(max_block_id));
+      block->address = function_size + function->address;
+      block->begin_offset = cuda_arch >= 70 ? 16 : 8;
+      max_block_id++;
+      while (function_size < symbol_size) {
+        block->insts.push_back(new CudaParse::Instruction(function_size + function->address));
+        function_size += len;
+      } 
+      if (function->blocks.size() > 0) {
+        auto *last_block = function->blocks.back();
+        last_block->targets.push_back(
+          new CudaParse::Target(last_block->insts.back(), block, CudaParse::TargetType::DIRECT));
+      }
+      function->blocks.push_back(block);
     }
   }
 
