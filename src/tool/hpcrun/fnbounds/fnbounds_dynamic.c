@@ -191,8 +191,6 @@ fnbounds_init()
 bool
 fnbounds_enclosing_addr(void* ip, void** start, void** end, load_module_t** lm)
 {
-  FNBOUNDS_LOCK;
-
   bool ret = false; // failure unless otherwise reset to 0 below
   
   load_module_t* lm_ = fnbounds_get_loadModule(ip);
@@ -224,8 +222,6 @@ fnbounds_enclosing_addr(void* ip, void** start, void** end, load_module_t** lm)
   if (lm) {
     *lm = lm_;
   }
-
-  FNBOUNDS_UNLOCK;
 
   return ret;
 }

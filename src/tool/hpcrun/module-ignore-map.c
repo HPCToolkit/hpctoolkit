@@ -297,6 +297,7 @@ serach_functions_in_module(Elf *e, GElf_Shdr* secHead, Elf_Scn *section)
   // char *marmite;
   
   data = elf_getdata(section, NULL);           // use it to get the data
+  if (data == NULL || secHead->sh_entsize == 0) return -1;
   count = (secHead->sh_size)/(secHead->sh_entsize);
   for (ii=0; ii<count; ii++) {
     gelf_getsym(data, ii, &curSym);
@@ -358,8 +359,10 @@ module_ignore_map_ignore
 
     while ((scn = elf_nextscn(elf, scn)) != NULL) {
       gelf_getshdr(scn, &secHead);
+      // Only search .dynsym section
+      if (secHead.sh_type != SHT_DYNSYM) continue;
       int module_ignore_index = serach_functions_in_module(elf, &secHead, scn);
-      if (secHead.sh_type == SHT_DYNSYM && module_ignore_index != -1) {
+      if (module_ignore_index != -1) {
         modules[module_ignore_index].module = module;
         modules[module_ignore_index].empty = false;
         result = true;
