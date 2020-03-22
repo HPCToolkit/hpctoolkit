@@ -404,8 +404,8 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   // Register cupti callbacks
   cupti_init();
-  cupti_start();
   cupti_callbacks_subscribe();
+  cupti_start();
 
   // Set enabling activities
   cupti_enabled_activities |= CUPTI_DRIVER;
