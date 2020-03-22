@@ -562,7 +562,11 @@ BinUtil::LM::findSrcCodeInfo(VMA vma, ushort opIndex,
   Seg* seg = findSeg(opVMA);
   if (seg) {
     bfdSeg = bfd_get_section_by_name(m_bfd, seg->name().c_str());
+#ifdef BINUTILS_234
+    base = bfd_section_vma(bfdSeg);
+#else
     base = bfd_section_vma(m_bfd, bfdSeg);
+#endif
   }
 
   if (!bfdSeg) {
@@ -931,9 +935,15 @@ BinUtil::LM::readSegs()
   for (asection* sec = m_bfd->sections; (sec); sec = sec->next) {
 
     // 1. Determine initial section attributes
+#ifdef BINUTILS_234
+    string segnm(bfd_section_name(sec));
+    bfd_vma segBeg = bfd_section_vma(sec);
+    uint64_t segSz = bfd_section_size(sec) / bfd_octets_per_byte(m_bfd, sec);
+#else
     string segnm(bfd_section_name(m_bfd, sec));
     bfd_vma segBeg = bfd_section_vma(m_bfd, sec);
     uint64_t segSz = bfd_section_size(m_bfd, sec) / bfd_octets_per_byte(m_bfd);
+#endif
     bfd_vma segEnd = segBeg + segSz;
     
     // 2. Create section

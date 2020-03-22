@@ -169,7 +169,6 @@ cupti_pc_sampling_disable
 cupti_set_status_t 
 cupti_monitoring_set
 (
- CUcontext context,
  const  CUpti_ActivityKind activity_kinds[],
  bool enable
 );

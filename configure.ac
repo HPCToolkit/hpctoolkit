@@ -2121,6 +2121,41 @@ BINUTILS_LIBS="${BINUTILS_LIBS} -ldl"
 AC_SUBST([BINUTILS_IFLAGS])
 AC_SUBST([BINUTILS_LIBS])
 
+#-------------------------------------------------
+
+# Test for binutils 2.34 or later.  The signature of
+# bfd_section_vma(), etc dropped the first argument.
+# up to 2.33.1:  #define bfd_section_vma(bfd, ptr) ((ptr)->vma)
+# after 2.34:    bfd_section_vma (const asection *sec)
+
+ORIG_CFLAGS="$CFLAGS"
+CFLAGS="$HOST_CFLAGS  $BINUTILS_IFLAGS"
+
+AC_LANG_PUSH([C])
+
+AC_MSG_CHECKING([if binutils version 2.34 or later])
+
+AC_COMPILE_IFELSE([
+AC_LANG_SOURCE([[
+#define PACKAGE "hpctoolkit"
+#include <bfd.h>
+unsigned long
+get_vma(asection * asec)
+{
+    return bfd_section_vma(asec);
+}
+]])], [binutils_234=yes], [binutils_234=no])
+
+AC_MSG_RESULT([$binutils_234])
+
+AC_LANG_POP
+
+CFLAGS="$ORIG_CFLAGS"
+
+if test "$binutils_234" = yes ; then
+  AC_DEFINE(BINUTILS_234, 1, [binutils version 2.34 or later])
+fi
+
 
 #-------------------------------------------------
 # Option: --with-boost=PATH
@@ -4559,6 +4594,9 @@ fi
 AM_CONDITIONAL([OPT_ENABLE_CUPTI], [test "$OPT_HAVE_CUPTI" = yes])
 
 OPT_CUPTI="$CUPTI"
+
+AC_DEFINE_UNQUOTED([CUPTI_INSTALL_PREFIX],
+  ["$CUPTI"], ["CUPTI install prefix"])
 
 AC_SUBST([OPT_CUPTI])
 AC_SUBST([OPT_CUPTI_IFLAGS])
