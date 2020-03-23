@@ -734,8 +734,6 @@ sanitizer_kernel_launch_sync
   // TODO(Keren): why two extra layers?
   cct_node_t *api_node = sanitizer_correlation_callback(correlation_id, 0);
 
-  PRINT("op %lu, id %lu\n", correlation_id, (uint64_t)api_node);
-
   // Insert a function cct node
   hpcrun_safe_enter();
 
@@ -747,6 +745,8 @@ sanitizer_kernel_launch_sync
   api_node = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel);
 
   hpcrun_safe_exit();
+
+  PRINT("Sync kernel op %lu, id %lu\n", correlation_id, (uint64_t)api_node);
 
   // TODO(Keren): correlate metrics with api_node
 
