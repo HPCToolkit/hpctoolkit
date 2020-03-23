@@ -123,7 +123,7 @@ void analyze_instruction<INS_TYPE_INTEGER>(const Instruction &inst, std::string 
 
   if (opcode.find("MAD") != std::string::npos) {
     type = ".MAD";
-    if (opcode.find(".MOV") != std::string::npos) {
+    if (opcode.find("MOV") != std::string::npos) {
       type += ".MOVE";
     }
   } else if (opcode.find("DP") != std::string::npos) {
