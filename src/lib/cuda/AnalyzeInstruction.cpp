@@ -123,9 +123,6 @@ void analyze_instruction<INS_TYPE_INTEGER>(const Instruction &inst, std::string 
 
   if (opcode.find("MAD") != std::string::npos) {
     type = ".MAD";
-    if (opcode.find("MOV") != std::string::npos) {
-      type += ".MOVE";
-    }
   } else if (opcode.find("DP") != std::string::npos) {
     type = ".DOT";
   } else if (opcode.find("MMA") != std::string::npos) {
@@ -144,11 +141,14 @@ void analyze_instruction<INS_TYPE_INTEGER>(const Instruction &inst, std::string 
 
   auto width = ".32";
 
-  // IADD only has 32 bit operands, it simulates 64 bit calculation by two IADD instructions
-  // IMAD could have 64 bit operands with a 'wide' modifier
   for (auto &modifier : inst.modifiers) {
     if (modifier == "WIDE") {
+      // IADD only has 32 bit operands, it simulates 64 bit calculation by two IADD instructions
+      // IMAD could have 64 bit operands with a 'wide' modifier
       width = ".64";
+    } else if (modifier == "MOV") {
+      // IMAD.MOV are used for MOVE either float or integer, probbably for higher throughput?
+      type += ".MOVE";
     }
   }
 
