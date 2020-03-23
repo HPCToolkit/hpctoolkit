@@ -245,7 +245,6 @@ UNW_PPC64_LD_FLAGS =
 UNW_LIBUNW_FILES = \
        $(UNW_COMMON_FILES) \
        unwind/generic-libunwind/libunw-unwind.c \
-	   unwind/generic-libunwind/no-dl-iterate.c \
        unwind/common/default_validation_summary.c
 
 UNW_LIBUNW_INCLUDE_DIRS = \

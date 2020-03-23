@@ -511,7 +511,6 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	unwind/common/stack_troll.c unwind/common/uw_hash.c \
 	unwind/common/uw_recipe_map.c \
 	unwind/generic-libunwind/libunw-unwind.c \
-	unwind/generic-libunwind/no-dl-iterate.c \
 	unwind/ppc64/ppc64-unwind.c \
 	unwind/ppc64/ppc64-unwind-interval.c \
 	unwind/x86-family/x86-all.c unwind/x86-family/amd-xop.c \
@@ -705,7 +704,6 @@ am__objects_39 = $(am__objects_38) \
 	unwind/common/libhpcrun_la-uw_recipe_map.lo
 am__objects_40 = $(am__objects_39) \
 	unwind/generic-libunwind/libhpcrun_la-libunw-unwind.lo \
-	unwind/generic-libunwind/libhpcrun_la-no-dl-iterate.lo \
 	unwind/common/libhpcrun_la-default_validation_summary.lo
 am__objects_41 = $(am__objects_39) \
 	unwind/ppc64/libhpcrun_la-ppc64-unwind.lo \
@@ -885,7 +883,6 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	unwind/common/libunw_intervals.c unwind/common/stack_troll.c \
 	unwind/common/uw_hash.c unwind/common/uw_recipe_map.c \
 	unwind/generic-libunwind/libunw-unwind.c \
-	unwind/generic-libunwind/no-dl-iterate.c \
 	unwind/ppc64/ppc64-unwind.c \
 	unwind/ppc64/ppc64-unwind-interval.c \
 	unwind/x86-family/x86-all.c unwind/x86-family/amd-xop.c \
@@ -1077,7 +1074,6 @@ am__objects_71 = $(am__objects_70) \
 	unwind/common/libhpcrun_o-uw_recipe_map.$(OBJEXT)
 am__objects_72 = $(am__objects_71) \
 	unwind/generic-libunwind/libhpcrun_o-libunw-unwind.$(OBJEXT) \
-	unwind/generic-libunwind/libhpcrun_o-no-dl-iterate.$(OBJEXT) \
 	unwind/common/libhpcrun_o-default_validation_summary.$(OBJEXT)
 am__objects_73 = $(am__objects_71) \
 	unwind/ppc64/libhpcrun_o-ppc64-unwind.$(OBJEXT) \
@@ -1657,7 +1653,6 @@ UNW_PPC64_LD_FLAGS =
 UNW_LIBUNW_FILES = \
        $(UNW_COMMON_FILES) \
        unwind/generic-libunwind/libunw-unwind.c \
-	   unwind/generic-libunwind/no-dl-iterate.c \
        unwind/common/default_validation_summary.c
 
 UNW_LIBUNW_INCLUDE_DIRS = \
@@ -2665,9 +2660,6 @@ unwind/generic-libunwind/$(DEPDIR)/$(am__dirstamp):
 unwind/generic-libunwind/libhpcrun_la-libunw-unwind.lo:  \
 	unwind/generic-libunwind/$(am__dirstamp) \
 	unwind/generic-libunwind/$(DEPDIR)/$(am__dirstamp)
-unwind/generic-libunwind/libhpcrun_la-no-dl-iterate.lo:  \
-	unwind/generic-libunwind/$(am__dirstamp) \
-	unwind/generic-libunwind/$(DEPDIR)/$(am__dirstamp)
 unwind/ppc64/$(am__dirstamp):
 	@$(MKDIR_P) unwind/ppc64
 	@: > unwind/ppc64/$(am__dirstamp)
@@ -3154,9 +3146,6 @@ unwind/common/libhpcrun_o-uw_recipe_map.$(OBJEXT):  \
 	unwind/common/$(am__dirstamp) \
 	unwind/common/$(DEPDIR)/$(am__dirstamp)
 unwind/generic-libunwind/libhpcrun_o-libunw-unwind.$(OBJEXT):  \
-	unwind/generic-libunwind/$(am__dirstamp) \
-	unwind/generic-libunwind/$(DEPDIR)/$(am__dirstamp)
-unwind/generic-libunwind/libhpcrun_o-no-dl-iterate.$(OBJEXT):  \
 	unwind/generic-libunwind/$(am__dirstamp) \
 	unwind/generic-libunwind/$(DEPDIR)/$(am__dirstamp)
 unwind/ppc64/libhpcrun_o-ppc64-unwind.$(OBJEXT):  \
@@ -3685,9 +3674,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/common/$(DEPDIR)/libhpcrun_o-uw_hash.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/common/$(DEPDIR)/libhpcrun_o-uw_recipe_map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/generic-libunwind/$(DEPDIR)/libhpcrun_la-libunw-unwind.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@unwind/generic-libunwind/$(DEPDIR)/libhpcrun_la-no-dl-iterate.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/generic-libunwind/$(DEPDIR)/libhpcrun_o-libunw-unwind.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@unwind/generic-libunwind/$(DEPDIR)/libhpcrun_o-no-dl-iterate.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/ppc64/$(DEPDIR)/libhpcrun_la-ppc64-unwind-interval.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/ppc64/$(DEPDIR)/libhpcrun_la-ppc64-unwind.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/ppc64/$(DEPDIR)/libhpcrun_o-ppc64-unwind-interval.Po@am__quote@
@@ -5097,13 +5084,6 @@ unwind/generic-libunwind/libhpcrun_la-libunw-unwind.lo: unwind/generic-libunwind
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/generic-libunwind/libunw-unwind.c' object='unwind/generic-libunwind/libhpcrun_la-libunw-unwind.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o unwind/generic-libunwind/libhpcrun_la-libunw-unwind.lo `test -f 'unwind/generic-libunwind/libunw-unwind.c' || echo '$(srcdir)/'`unwind/generic-libunwind/libunw-unwind.c
-
-unwind/generic-libunwind/libhpcrun_la-no-dl-iterate.lo: unwind/generic-libunwind/no-dl-iterate.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT unwind/generic-libunwind/libhpcrun_la-no-dl-iterate.lo -MD -MP -MF unwind/generic-libunwind/$(DEPDIR)/libhpcrun_la-no-dl-iterate.Tpo -c -o unwind/generic-libunwind/libhpcrun_la-no-dl-iterate.lo `test -f 'unwind/generic-libunwind/no-dl-iterate.c' || echo '$(srcdir)/'`unwind/generic-libunwind/no-dl-iterate.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) unwind/generic-libunwind/$(DEPDIR)/libhpcrun_la-no-dl-iterate.Tpo unwind/generic-libunwind/$(DEPDIR)/libhpcrun_la-no-dl-iterate.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/generic-libunwind/no-dl-iterate.c' object='unwind/generic-libunwind/libhpcrun_la-no-dl-iterate.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o unwind/generic-libunwind/libhpcrun_la-no-dl-iterate.lo `test -f 'unwind/generic-libunwind/no-dl-iterate.c' || echo '$(srcdir)/'`unwind/generic-libunwind/no-dl-iterate.c
 
 unwind/ppc64/libhpcrun_la-ppc64-unwind.lo: unwind/ppc64/ppc64-unwind.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT unwind/ppc64/libhpcrun_la-ppc64-unwind.lo -MD -MP -MF unwind/ppc64/$(DEPDIR)/libhpcrun_la-ppc64-unwind.Tpo -c -o unwind/ppc64/libhpcrun_la-ppc64-unwind.lo `test -f 'unwind/ppc64/ppc64-unwind.c' || echo '$(srcdir)/'`unwind/ppc64/ppc64-unwind.c
@@ -7498,20 +7478,6 @@ unwind/generic-libunwind/libhpcrun_o-libunw-unwind.obj: unwind/generic-libunwind
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/generic-libunwind/libunw-unwind.c' object='unwind/generic-libunwind/libhpcrun_o-libunw-unwind.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o unwind/generic-libunwind/libhpcrun_o-libunw-unwind.obj `if test -f 'unwind/generic-libunwind/libunw-unwind.c'; then $(CYGPATH_W) 'unwind/generic-libunwind/libunw-unwind.c'; else $(CYGPATH_W) '$(srcdir)/unwind/generic-libunwind/libunw-unwind.c'; fi`
-
-unwind/generic-libunwind/libhpcrun_o-no-dl-iterate.o: unwind/generic-libunwind/no-dl-iterate.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT unwind/generic-libunwind/libhpcrun_o-no-dl-iterate.o -MD -MP -MF unwind/generic-libunwind/$(DEPDIR)/libhpcrun_o-no-dl-iterate.Tpo -c -o unwind/generic-libunwind/libhpcrun_o-no-dl-iterate.o `test -f 'unwind/generic-libunwind/no-dl-iterate.c' || echo '$(srcdir)/'`unwind/generic-libunwind/no-dl-iterate.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) unwind/generic-libunwind/$(DEPDIR)/libhpcrun_o-no-dl-iterate.Tpo unwind/generic-libunwind/$(DEPDIR)/libhpcrun_o-no-dl-iterate.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/generic-libunwind/no-dl-iterate.c' object='unwind/generic-libunwind/libhpcrun_o-no-dl-iterate.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o unwind/generic-libunwind/libhpcrun_o-no-dl-iterate.o `test -f 'unwind/generic-libunwind/no-dl-iterate.c' || echo '$(srcdir)/'`unwind/generic-libunwind/no-dl-iterate.c
-
-unwind/generic-libunwind/libhpcrun_o-no-dl-iterate.obj: unwind/generic-libunwind/no-dl-iterate.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT unwind/generic-libunwind/libhpcrun_o-no-dl-iterate.obj -MD -MP -MF unwind/generic-libunwind/$(DEPDIR)/libhpcrun_o-no-dl-iterate.Tpo -c -o unwind/generic-libunwind/libhpcrun_o-no-dl-iterate.obj `if test -f 'unwind/generic-libunwind/no-dl-iterate.c'; then $(CYGPATH_W) 'unwind/generic-libunwind/no-dl-iterate.c'; else $(CYGPATH_W) '$(srcdir)/unwind/generic-libunwind/no-dl-iterate.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) unwind/generic-libunwind/$(DEPDIR)/libhpcrun_o-no-dl-iterate.Tpo unwind/generic-libunwind/$(DEPDIR)/libhpcrun_o-no-dl-iterate.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='unwind/generic-libunwind/no-dl-iterate.c' object='unwind/generic-libunwind/libhpcrun_o-no-dl-iterate.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o unwind/generic-libunwind/libhpcrun_o-no-dl-iterate.obj `if test -f 'unwind/generic-libunwind/no-dl-iterate.c'; then $(CYGPATH_W) 'unwind/generic-libunwind/no-dl-iterate.c'; else $(CYGPATH_W) '$(srcdir)/unwind/generic-libunwind/no-dl-iterate.c'; fi`
 
 unwind/ppc64/libhpcrun_o-ppc64-unwind.o: unwind/ppc64/ppc64-unwind.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT unwind/ppc64/libhpcrun_o-ppc64-unwind.o -MD -MP -MF unwind/ppc64/$(DEPDIR)/libhpcrun_o-ppc64-unwind.Tpo -c -o unwind/ppc64/libhpcrun_o-ppc64-unwind.o `test -f 'unwind/ppc64/ppc64-unwind.c' || echo '$(srcdir)/'`unwind/ppc64/ppc64-unwind.c
