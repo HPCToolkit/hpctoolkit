@@ -765,7 +765,7 @@ sanitizer_kernel_launch_sync
     if (mod_blocks == 0) {
       sampling_blocks = (grid_dim - 1) / sampling_frequency + 1;
     } else {
-      sampling_blocks = (grid_dim - 1) / sampling_frequency + (sampling_offset > mod_blocks ? 0 : 1);
+      sampling_blocks = (grid_dim - 1) / sampling_frequency + (sampling_offset >= mod_blocks ? 0 : 1);
     }
     num_left_threads = num_threads - sampling_blocks * block_dim;
   }
