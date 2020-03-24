@@ -284,7 +284,8 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
   bool isPercent     = false;
   int  visibility    = mSrc->visibility();
 
-  int metric_order = ORDER_ARTIFICIAL_METRIC;
+  int metric_order    = ORDER_ARTIFICIAL_METRIC;
+  std::string formula = "";
 
   // This is a cheesy way of creating the metrics, but it is good
   // enough for now.
@@ -295,6 +296,8 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
 
     doDispPercent = mSrc->doDispPercent();
     isPercent     = mSrc->isPercent();
+
+    formula       = mSrc->formula();
 
     // metric order is used to compute formula from hpcrun
     metric_order = mSrc->order();
@@ -344,7 +347,7 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
   m->num_samples  (mSrc->num_samples());
   m->isMultiplexed(mSrc->isMultiplexed());
 
-  m->formula      (mSrc->formula());
+  m->formula      (formula);
   m->format       (mSrc->format());
   m->order        (metric_order);
 
@@ -392,7 +395,8 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
   bool isPercent     = false;
   int  visibility    = mSrc->visibility();
 
-  int metric_order = ORDER_ARTIFICIAL_METRIC;
+  int metric_order    = ORDER_ARTIFICIAL_METRIC;
+  std::string formula = "";
 
   // This is a cheesy way of creating the metrics, but it is good
   // enough for now.
@@ -403,6 +407,8 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
 
     doDispPercent = mSrc->doDispPercent();
     isPercent     = mSrc->isPercent();
+
+    formula       = mSrc->formula();
 
     // metric order is used to compute formula from hpcrun
     metric_order = mSrc->order();
@@ -451,7 +457,7 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
   m->num_samples  (mSrc->num_samples());
   m->isMultiplexed(mSrc->isMultiplexed());
 
-  m->formula      (mSrc->formula());
+  m->formula      (formula);
   m->format       (mSrc->format());
   m->order        (metric_order);
 
