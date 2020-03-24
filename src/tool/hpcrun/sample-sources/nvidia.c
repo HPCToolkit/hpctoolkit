@@ -481,6 +481,8 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     int mem_views = control_knob_value_get_int(HPCRUN_SANITIZER_MEM_VIEWS);
 
+    char *data_type = control_knob_value_get(HPCRUN_SANITIZER_DEFAULT_TYPE);
+
     if (gpu_patch_record_num == 0) {
       gpu_patch_record_num = DEFAULT_GPU_PATCH_RECORD_NUM;
     }
@@ -512,6 +514,8 @@ METHOD_FN(process_event_list, int lush_metrics)
     sanitizer_approx_level_config(approx_level);
 
     sanitizer_views_config(pc_views, mem_views);
+
+    sanitizer_data_type_config(data_type);
 
     // Init random number generator
     srand(time(0));

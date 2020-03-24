@@ -40,6 +40,9 @@ sanitizer_approx_level_config(int approx_level);
 void
 sanitizer_views_config(int pc_views, int mem_views);
 
+void
+sanitizer_data_type_config(char *data_type);
+
 int
 sanitizer_buffer_pool_size_get();
 

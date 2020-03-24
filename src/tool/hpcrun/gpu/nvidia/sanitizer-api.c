@@ -196,9 +196,11 @@ static sanitizer_thread_t sanitizer_thread;
 // Configurable variables
 static int sanitizer_gpu_patch_record_num = 0;
 static int sanitizer_buffer_pool_size = 0;
-static int sanitizer_approx_level = 0;
 static int sanitizer_pc_views = 0;
 static int sanitizer_mem_views = 0;
+
+static redshow_approx_level_t sanitizer_approx_level = REDSHOW_APPROX_NONE;
+static redshow_data_type_t sanitizer_data_type = REDSHOW_DATA_FLOAT;
 
 static __thread bool sanitizer_stop_flag = false;
 static __thread uint32_t sanitizer_thread_id_self = (1 << 30);
@@ -1148,6 +1150,26 @@ sanitizer_views_config
 {
   sanitizer_pc_views = pc_views;
   sanitizer_mem_views = mem_views;
+}
+
+
+void
+sanitizer_data_type_config
+(
+ char *data_type
+)
+{
+  if (data_type == NULL) {
+    sanitizer_data_type = REDSHOW_DATA_FLOAT;
+  } else if (strcmp(data_type, "float") == 0 || strcmp(data_type, "FLOAT") == 0) {
+    sanitizer_data_type = REDSHOW_DATA_FLOAT;
+  } else if (strcmp(data_type, "int") == 0 || strcmp(data_type, "INT") == 0) {
+    sanitizer_data_type = REDSHOW_DATA_INT;
+  } else {
+    sanitizer_data_type = REDSHOW_DATA_FLOAT;
+  }
+
+  redshow_data_type_config(sanitizer_data_type);
 }
 
 
