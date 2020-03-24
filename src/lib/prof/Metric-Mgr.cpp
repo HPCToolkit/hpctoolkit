@@ -285,6 +285,8 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
   int  visibility    = mSrc->visibility();
 
   int metric_order    = ORDER_ARTIFICIAL_METRIC;
+
+  // we copy only the formula if the expression operator is "Sum"
   std::string formula = "";
 
   // This is a cheesy way of creating the metrics, but it is good
@@ -396,6 +398,8 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
   int  visibility    = mSrc->visibility();
 
   int metric_order    = ORDER_ARTIFICIAL_METRIC;
+
+  // we copy only the formula if the expression operator is "Sum"
   std::string formula = "";
 
   // This is a cheesy way of creating the metrics, but it is good
