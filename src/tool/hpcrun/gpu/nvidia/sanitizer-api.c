@@ -454,16 +454,16 @@ sanitizer_record_data_callback
 
   if (record_data->analysis_type == REDSHOW_ANALYSIS_SPATIAL_REDUNDANCY &&
     record_data->access_type == REDSHOW_ACCESS_READ) {
-    ga.details.redundancy.type = GPU_RED_SPATIAL_READ;
+    ga.details.redundancy.type = GPU_RED_SPATIAL_READ_RED;
   } else if (record_data->analysis_type == REDSHOW_ANALYSIS_SPATIAL_REDUNDANCY &&
     record_data->access_type == REDSHOW_ACCESS_WRITE) {
-    ga.details.redundancy.type = GPU_RED_SPATIAL_WRITE;
+    ga.details.redundancy.type = GPU_RED_SPATIAL_WRITE_RED;
   } else if (record_data->analysis_type == REDSHOW_ANALYSIS_TEMPORAL_REDUNDANCY &&
     record_data->access_type == REDSHOW_ACCESS_READ) {
-    ga.details.redundancy.type = GPU_RED_TEMPORAL_READ;
+    ga.details.redundancy.type = GPU_RED_TEMPORAL_READ_RED;
   } else if (record_data->analysis_type == REDSHOW_ANALYSIS_TEMPORAL_REDUNDANCY &&
     record_data->access_type == REDSHOW_ACCESS_WRITE) {
-    ga.details.redundancy.type = GPU_RED_TEMPORAL_WRITE;
+    ga.details.redundancy.type = GPU_RED_TEMPORAL_WRITE_RED;
   } else {
     assert(0);
   }
@@ -475,11 +475,13 @@ sanitizer_record_data_callback
     uint32_t function_index = record_data->views[i].function_index;
     uint64_t pc_offset = record_data->views[i].pc_offset;
     uint64_t count = record_data->views[i].count;
+    uint64_t access_count = record_data->views[i].access_sum_count;
 
     ip_normalized_t ip = cubin_id_transform(cubin_id, function_index, pc_offset);
     cct_node_t *host_op_node = (cct_node_t *)(void *)kernel_id;
     ga.cct_node = hpcrun_cct_insert_ip_norm(host_op_node, ip);
     ga.details.redundancy.count = count;
+    ga.details.redundancy.access_count = access_count;
     // Associate record_data with calling context (kernel_id)
     gpu_metrics_attribute(&ga);
   }

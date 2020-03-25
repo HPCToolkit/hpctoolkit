@@ -365,14 +365,22 @@ typedef enum {
 
 // gpu redundancy information
 #define FORALL_GRED(macro)    \
-  macro("GRED:SPATIAL_READ",       GPU_RED_SPATIAL_READ,		\
-    "GPU redundancy: spatial value read")				\
-  macro("GRED:SPATIAL_WRITE",      GPU_RED_SPATIAL_WRITE,	\
-    "GPU redundancy: spatial value write")      \
-  macro("GRED:TEMPORAL_READ",      GPU_RED_TEMPORAL_READ,		\
-    "GPU redundancy: temporal value read")			\
-  macro("GRED:TEMPORAL_WRITE",     GPU_RED_TEMPORAL_WRITE,	\
-    "GPU redundancy: temporal value write")
+  macro("GRED:SPATIAL_READ_RED",      GPU_RED_SPATIAL_READ_RED,		\
+    "GPU redundancy: redundant spatial value read")				\
+  macro("GRED:SPATIAL_READ_TOTAL",    GPU_RED_SPATIAL_READ_TOTAL,		\
+    "GPU redundancy: total spatial value read")				\
+  macro("GRED:SPATIAL_WRITE_RED",     GPU_RED_SPATIAL_WRITE_RED,	\
+    "GPU redundancy: redundant spatial value write")      \
+  macro("GRED:TEMPORAL_WRITE_TOTAL",  GPU_RED_TEMPORAL_WRITE_TOTAL,	\
+    "GPU redundancy: redundant temporal value write")  \
+  macro("GRED:TEMPORAL_READ_RED",     GPU_RED_TEMPORAL_READ_RED,		\
+    "GPU redundancy: redundant temporal value read")			\
+  macro("GRED:TEMPORAL_READ_TOTAL",   GPU_RED_TEMPORAL_READ_TOTAL,		\
+    "GPU redundancy: total temporal value read")			\
+  macro("GRED:SPATIAL_WRITE_RED",     GPU_RED_SPATIAL_WRITE_RED,	\
+    "GPU redundancy: total spatial value write")      \
+  macro("GRED:TEMPORAL_WRITE_TOTAL",  GPU_RED_TEMPORAL_WRITE_TOTAL,	\
+    "GPU redundancy: total temporal value write")
 
 
 // gpu sampling information

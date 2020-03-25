@@ -180,10 +180,14 @@ typedef enum {
 
 
 typedef enum {
-  GPU_RED_SPATIAL_READ  = 0,
-  GPU_RED_SPATIAL_WRITE  = 1,
-  GPU_RED_TEMPORAL_READ  = 2,
-  GPU_RED_TEMPORAL_WRITE = 3
+  GPU_RED_SPATIAL_READ_RED  = 0,
+  GPU_RED_SPATIAL_READ_TOTAL  = 1,
+  GPU_RED_SPATIAL_WRITE_RED  = 2,
+  GPU_RED_SPATIAL_WRITE_TOTAL  = 3,
+  GPU_RED_TEMPORAL_READ_RED  = 4,
+  GPU_RED_TEMPORAL_READ_TOTAL  = 5,
+  GPU_RED_TEMPORAL_WRITE_RED = 6,
+  GPU_RED_TEMPORAL_WRITE_TOTAL = 7,
 } gpu_red_type_t;
 
 
@@ -364,6 +368,7 @@ typedef struct gpu_environment_t {
 typedef struct gpu_redundancy_t {
   gpu_red_type_t type;
   uint32_t count;
+  uint32_t access_count;
 } gpu_redundancy_t;
 
 
