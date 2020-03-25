@@ -47,7 +47,7 @@
 
 #define UNIT_TEST 0
 
-#define DEBUG 0
+#define DEBUG 1
 
 #include "gpu-print.h"
 

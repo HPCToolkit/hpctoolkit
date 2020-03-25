@@ -52,11 +52,11 @@
 
 #include <hpcrun/thread_data.h>
 
+#include "gpu-print.h"
 #include "gpu-trace-channel.h"
 #include "gpu-trace-channel-set.h"
 
 #include "gpu-trace.h"
-
 
 
 //******************************************************************************

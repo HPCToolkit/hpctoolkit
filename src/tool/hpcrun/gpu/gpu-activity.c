@@ -56,7 +56,7 @@
 
 #define UNIT_TEST 0
 
-#define DEBUG 0
+#define DEBUG 1
 
 #include "gpu-print.h"
 
@@ -104,7 +104,6 @@ gpu_activity_consume
 )
 {
   gpu_context_activity_dump(activity, "CONSUME");
-
   aa_fn(activity);
 }
 

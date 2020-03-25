@@ -47,7 +47,7 @@
 
 #include <string.h>
 #include <pthread.h>
-
+#include "gpu-print.h"
 
 //******************************************************************************
 // macros
@@ -176,7 +176,7 @@ gpu_trace_channel_consume
 )
 {
 
-    PRINT("gpu_trace_channel_consume:: channel_count = %u\n", channel->count);
+//    PRINT("gpu_trace_channel_consume:: channel_count = %u\n", channel->count);
 
     hpcrun_set_thread_data(channel->td);
 

@@ -671,8 +671,9 @@ hpcrun_fini_internal()
 
     TMSG(FINI, "process attempting sample shutdown");
 
-    SAMPLE_SOURCES(stop);
-    SAMPLE_SOURCES(shutdown);
+    //comment this dejan
+//    SAMPLE_SOURCES(stop);
+//    SAMPLE_SOURCES(shutdown);
 
     // shutdown LUSH agents
     if (lush_agents) {
@@ -685,10 +686,11 @@ hpcrun_fini_internal()
       return;
     }
 
-    // Call all registered auxiliary functions before termination.
-    // This typically means flushing files that were not done by their creators.
-    device_finalizer_apply(device_finalizer_type_flush);
-    device_finalizer_apply(device_finalizer_type_shutdown);
+    //comment this dejan
+//      // Call all registered auxiliary functions before termination.
+//      // This typically means flushing files that were not done by their creators.
+//      device_finalizer_apply(device_finalizer_type_flush);
+//      device_finalizer_apply(device_finalizer_type_shutdown);
 
     hpcrun_process_aux_cleanup_action();
 
@@ -801,20 +803,22 @@ hpcrun_thread_fini(epoch_t *epoch)
       return;
     }
 
-    device_finalizer_apply(device_finalizer_type_flush);
+//    device_finalizer_apply(device_finalizer_type_flush);
 
     int is_process = 0;
     thread_finalize(is_process);
+
+      // inform thread manager that we are terminating the thread
+      // thread manager may enqueue the thread_data (in compact mode)
+      // or flush the data into hpcrun file
+      int add_separator = 0;
+      thread_data_t* td = hpcrun_get_thread_data();
+      hpcrun_threadMgr_data_put(epoch, td, add_separator);
+
+      TMSG(PROCESS, "End of thread");
   }
     
-  // inform thread manager that we are terminating the thread
-  // thread manager may enqueue the thread_data (in compact mode)
-  // or flush the data into hpcrun file
-  int add_separator = 0;
-  thread_data_t* td = hpcrun_get_thread_data();
-  hpcrun_threadMgr_data_put(epoch, td, add_separator);
 
-  TMSG(PROCESS, "End of thread");
 }
 
 //***************************************************************************
@@ -946,7 +950,9 @@ monitor_init_process(int *argc, char **argv, void* data)
 void
 monitor_fini_process(int how, void* data)
 {
-  if (hpcrun_get_disabled()) {
+    printf( "=========================MONITOR_FINI_PROCESS\n\n");
+
+    if (hpcrun_get_disabled()) {
     return;
   }
 
@@ -957,6 +963,35 @@ monitor_fini_process(int how, void* data)
   hpcrun_safe_exit();
 }
 
+void
+monitor_begin_process_exit(int how)
+{
+    printf( "=========================MONITOR_BEGIN_PROCESS_EXIT\n\n");
+
+    if (hpcrun_get_disabled()) {
+        return;
+    }
+
+
+    hpcrun_safe_enter();
+
+    if (hpcrun_is_initialized()) {
+
+        TMSG(FINI, "process attempting sample shutdown");
+
+        SAMPLE_SOURCES(stop);
+        SAMPLE_SOURCES(shutdown);
+
+        // Call all registered auxiliary functions before termination.
+        // This typically means flushing files that were not done by their creators.
+        device_finalizer_apply(device_finalizer_type_flush);
+        device_finalizer_apply(device_finalizer_type_shutdown);
+    }
+
+//    hpcrun_fini_internal();
+
+    hpcrun_safe_exit();
+}
 
 static fork_data_t from_fork;
 

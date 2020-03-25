@@ -238,7 +238,8 @@ hpcrun_trace_close(core_profile_trace_data_t * cptd)
 // private operations
 //*********************************************************************
 
-static inline void hpcrun_trace_append_with_time_real(core_profile_trace_data_t *cptd, unsigned int call_path_id, uint metric_id, uint32_t dLCA, uint64_t nanotime)
+static inline void
+hpcrun_trace_append_with_time_real(core_profile_trace_data_t *cptd, unsigned int call_path_id, uint metric_id, uint32_t dLCA, uint64_t nanotime)
 {
     if (cptd->trace_min_time_us == 0) {
         cptd->trace_min_time_us = nanotime;
