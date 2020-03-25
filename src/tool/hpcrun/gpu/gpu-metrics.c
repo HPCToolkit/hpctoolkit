@@ -562,7 +562,8 @@ gpu_metrics_attribute_redundancy
 
   gpu_metrics_attribute_metric_int(metrics, red_type_metric_index, r->count);
 
-  gpu_metrics_attribute_metric_int(metrics, access_count_metric_index, r->access_count);
+  hpcrun_metric_std_set(access_count_metric_index, metrics,
+			(cct_metric_data_t){.i = r->access_count});
 }
 
 

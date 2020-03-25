@@ -367,8 +367,8 @@ typedef struct gpu_environment_t {
 
 typedef struct gpu_redundancy_t {
   gpu_red_type_t type;
-  uint32_t count;
-  uint32_t access_count;
+  uint64_t count;
+  uint64_t access_count;
 } gpu_redundancy_t;
 
 
