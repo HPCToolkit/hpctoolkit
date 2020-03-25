@@ -555,7 +555,7 @@ gpu_metrics_attribute_redundancy
 
   int red_type_metric_index = METRIC_ID(GRED)[r->type];
 
-  int access_count_metric_index = METRIC_ID(GRED)[2 * r->type + 1];
+  int access_count_metric_index = METRIC_ID(GRED)[r->type + 1];
 
   metric_data_list_t *metrics = 
     hpcrun_reify_metric_set(cct_node, red_type_metric_index);

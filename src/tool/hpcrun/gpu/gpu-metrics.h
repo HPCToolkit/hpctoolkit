@@ -371,7 +371,7 @@ typedef enum {
     "GPU redundancy: total spatial value read")				\
   macro("GRED:SPATIAL_WRITE_RED",     GPU_RED_SPATIAL_WRITE_RED,	\
     "GPU redundancy: redundant spatial value write")      \
-  macro("GRED:TEMPORAL_WRITE_TOTAL",  GPU_RED_TEMPORAL_WRITE_TOTAL,	\
+  macro("GRED:TEMPORAL_WRITE_TOTAL",  GPU_RED_SPATIAL_WRITE_TOTAL,	\
     "GPU redundancy: redundant temporal value write")  \
   macro("GRED:TEMPORAL_READ_RED",     GPU_RED_TEMPORAL_READ_RED,		\
     "GPU redundancy: redundant temporal value read")			\
