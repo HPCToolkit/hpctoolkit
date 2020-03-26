@@ -67,6 +67,7 @@
 #include <hpcrun/thread_data.h>
 #include <hpcrun/threadmgr.h>
 #include <hpcrun/trace.h>
+#include <hpcrun/write_data.h>
 
 #include "gpu-context-id-map.h"
 #include "gpu-monitoring.h"
@@ -94,7 +95,7 @@ typedef struct gpu_trace_t {
     gpu_trace_channel_t *trace_channel;
 
     // This is number of stack in which this trace is stored
-    unsigned int map_id;
+    unsigned int channel_id;
 } gpu_trace_t;
 
 
@@ -361,9 +362,9 @@ gpu_trace_stream_acquire
 
 void
 gpu_trace_stream_release
-        (
-                gpu_trace_channel_t *channel
-        )
+(
+ gpu_trace_channel_t *channel
+)
 {
 
     thread_data_t *td = channel->td;
@@ -401,11 +402,11 @@ gpu_trace_record
 
     while (!atomic_load(&stop_trace_flag)) {
         //getting data from a trace channel
-        gpu_trace_activities_process( thread_args->map_id );
+        gpu_trace_activities_process( thread_args->channel_id );
         gpu_trace_activities_await(thread_args);
     }
 
-    gpu_trace_channel_set_release(thread_args->map_id);
+    gpu_trace_channel_set_release(thread_args->channel_id);
 
     return NULL;
 }
@@ -424,8 +425,8 @@ gpu_trace_fini
     gpu_context_stream_map_signal_all();
 
 
-    while (atomic_load(&stream_counter) != 0 )
-        printf("stream_counter = %llu\n", atomic_load(&stream_counter));
+    while (atomic_load(&stream_counter) != 0 );
+//        printf("stream_counter = %llu\n", atomic_load(&stream_counter));
 
 }
 
@@ -449,8 +450,8 @@ schedule_multi_threads
     }
 
     // First insert stream to the channel -> gpu_trace_channel_stack[thread_num]
-    trace->map_id = num_threads;
-    gpu_trace_channel_set_insert( trace->trace_channel,  trace->map_id);
+    trace->channel_id = num_threads;
+    gpu_trace_channel_set_insert( trace->trace_channel,  trace->channel_id);
 
     return NULL;
 

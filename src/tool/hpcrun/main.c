@@ -988,7 +988,6 @@ monitor_begin_process_exit(int how)
         device_finalizer_apply(device_finalizer_type_shutdown);
     }
 
-//    hpcrun_fini_internal();
 
     hpcrun_safe_exit();
 }

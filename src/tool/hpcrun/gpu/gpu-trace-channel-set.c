@@ -85,7 +85,7 @@
 typedef struct gpu_trace_t {
     pthread_t thread;
     gpu_trace_channel_t *trace_channel;
-    unsigned int map_id;
+    unsigned int channel_id;
 } gpu_trace_t;
 
 
