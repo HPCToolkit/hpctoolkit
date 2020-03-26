@@ -24,7 +24,7 @@ static const char source[] =
     "{\n"
     "    size_t i = get_global_id(0);\n"
     "    if (i < n) {\n"
-	"		for(int rep1=0; rep1<2000;rep1++){\n"
+	"		for(int rep1=0; rep1<1000;rep1++){\n"
 	"			for(int rep2=0; rep2<5000;rep2++){\n"
     "		       	c[i] /= (a[i] + b[i]);\n"
 	"			}\n"
@@ -138,7 +138,7 @@ int main() {
 	queue.enqueueReadBuffer(C, CL_TRUE, 0, c.size() * sizeof(double), c.data());
 
 	// Should get '3' here.
-	std::cout << c[42] << std::endl;
+	//std::cout << c[42] << std::endl;
     } catch (const cl::Error &err) {
 	std::cerr
 	    << "OpenCL error: "

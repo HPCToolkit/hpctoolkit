@@ -652,6 +652,9 @@ OPT_ROCM_IFLAGS
 OPT_ROCM
 OPT_ENABLE_ROCM_FALSE
 OPT_ENABLE_ROCM_TRUE
+OPT_OPENCL_LDFLAGS
+ENABLE_OPENCL_FALSE
+ENABLE_OPENCL_TRUE
 OPT_CUPTI_LDFLAGS
 OPT_CUPTI_IFLAGS
 OPT_CUPTI
@@ -23442,6 +23445,26 @@ _ACEOF
 
 
 
+
+#-------------------------------------------------
+# Option: --with-opencl=PATH
+#-------------------------------------------------
+
+# Note: we will need location of intel/libOpenCL.so
+
+OPT_HAVE_OPENCL=yes
+ if test "$OPT_HAVE_OPENCL" = yes; then
+  ENABLE_OPENCL_TRUE=
+  ENABLE_OPENCL_FALSE='#'
+else
+  ENABLE_OPENCL_TRUE='#'
+  ENABLE_OPENCL_FALSE=
+fi
+
+OPT_OPENCL_LDFLAGS="-lOpenCL -lgotcha"
+
+
+
 #-------------------------------------------------
 # Option: --with-rocm=PATH
 #-------------------------------------------------
@@ -24093,6 +24116,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_CUPTI_TRUE}" && test -z "${OPT_ENABLE_CUPTI_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_CUPTI\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${ENABLE_OPENCL_TRUE}" && test -z "${ENABLE_OPENCL_FALSE}"; then
+  as_fn_error $? "conditional \"ENABLE_OPENCL\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_ROCM_TRUE}" && test -z "${OPT_ENABLE_ROCM_FALSE}"; then

@@ -4,6 +4,7 @@
 #include "opencl-api.h"
 #include "opencl-intercept.h"
 
+#define MALLOC 1
 // function declarations
 typedef cl_command_queue (*clqueue_fptr)(cl_context, cl_device_id, cl_command_queue_properties, cl_int *);
 typedef cl_int (*clkernel_fptr)(cl_command_queue, cl_kernel, cl_uint, const size_t*, const size_t*, const size_t*, cl_uint, const cl_event*, cl_event*);
@@ -19,8 +20,8 @@ static cl_int clEnqueueWriteBuffer_wrapper(cl_command_queue, cl_mem, cl_bool, si
 //static cl_int clSetKernelArg_wrapper(cl_kernel, cl_uint, size_t, const void *);
 //static void mem_intercept(cl_kernel, size_t, cl_event *);
 static cl_int clEnqueueNDRangeKernel_wrapper(cl_command_queue, cl_kernel, cl_uint, const size_t*, const size_t*, const size_t*,																		   cl_uint, const cl_event*, cl_event*);
-struct profilingData* getEventTimeProfileInfo(cl_event);
-struct profilingData* getMemoryProfileInfo(struct profilingData*, struct cl_memory_callback*);
+profilingData* getEventTimeProfileInfo(cl_event);
+profilingData* getMemoryProfileInfo(profilingData*, cl_memory_callback*);
 
 // global variables
 static gotcha_wrappee_handle_t clCreateCommandQueue_handle;
@@ -41,13 +42,25 @@ static cl_int clEnqueueNDRangeKernel_wrapper(cl_command_queue command_queue, cl_
 	event = eventNullCheck(event);
     clkernel_fptr clEnqueueNDRangeKernel_wrappee = (clkernel_fptr) gotcha_get_wrappee(clEnqueueNDRangeKernel_handle);
 	cl_int return_status = clEnqueueNDRangeKernel_wrappee(command_queue, kernel, work_dim, global_work_offset, global_work_size, local_work_size, num_events_in_wait_list, event_wait_list, event);
-	
-	struct cl_kernel_callback *kernel_cb = (struct cl_kernel_callback*) malloc(sizeof(struct cl_kernel_callback));
-	cct_node_t* node = createNode();
-	kernel_cb->node = node;
-	kernel_cb->type = "cl_kernel";
-	printf("registering callback for type: %s\n", kernel_cb->type);
-	clSetEventCallback(*event, CL_COMPLETE, &event_callback, kernel_cb);
+	if (MALLOC)
+	{
+		cl_kernel_callback *kernel_cb = (cl_kernel_callback*) malloc(sizeof(cl_kernel_callback));
+		cct_node_t* node = createNode();
+		kernel_cb->node = node;
+		kernel_cb->type = "cl_kernel";
+		printf("registering callback for type: %s\n", kernel_cb->type);
+		clSetEventCallback(*event, CL_COMPLETE, &event_callback, kernel_cb);
+	}
+	else
+	{
+		cl_kernel_callback kernel_cb;
+		memset(&kernel_cb, 0, sizeof(cl_kernel_callback));
+		cct_node_t* node = createNode();
+		kernel_cb.node = node;
+		kernel_cb.type = "cl_kernel";
+		printf("registering callback for type: %s\n", kernel_cb.type);
+		clSetEventCallback(*event, CL_COMPLETE, &event_callback, &kernel_cb);
+	}
 	return return_status;
 }
 
@@ -57,14 +70,29 @@ static cl_int clEnqueueReadBuffer_wrapper (cl_command_queue command_queue, cl_me
     clreadbuffer_fptr clEnqueueReadBuffer_wrappee = (clreadbuffer_fptr) gotcha_get_wrappee(clEnqueueReadBuffer_handle);
 	cl_int return_status = clEnqueueReadBuffer_wrappee(command_queue, buffer, blocking_read, offset, cb, ptr, num_events_in_wait_list, event_wait_list, event);
 	printf("%zu(bytes) of data being transferred from device to host\n", cb); // pass this data
-	struct cl_memory_callback *mem_transfer_cb = (struct cl_memory_callback*) malloc(sizeof(struct cl_memory_callback));
-	cct_node_t* node = createNode();
-	mem_transfer_cb->node = node;
-	mem_transfer_cb->type = "cl_mem_transfer";
-	mem_transfer_cb->size = cb;
-	mem_transfer_cb->fromDeviceToHost = true;
-	printf("registering callback for type: %s\n", mem_transfer_cb->type);
-	clSetEventCallback(*event, CL_COMPLETE, &event_callback, mem_transfer_cb);
+	if (MALLOC)	
+	{
+		cl_memory_callback *mem_transfer_cb = (cl_memory_callback*) malloc(sizeof(cl_memory_callback));
+		cct_node_t* node = createNode();
+		mem_transfer_cb->node = node;
+		mem_transfer_cb->type = "cl_mem_transfer";
+		mem_transfer_cb->size = cb;
+		mem_transfer_cb->fromDeviceToHost = true;
+		printf("registering callback for type: %s\n", mem_transfer_cb->type);
+		clSetEventCallback(*event, CL_COMPLETE, &event_callback, mem_transfer_cb);
+	}
+	else
+	{
+		cl_memory_callback mem_transfer_cb;
+		memset(&mem_transfer_cb, 0, sizeof(cl_memory_callback));
+		cct_node_t* node = createNode();
+		mem_transfer_cb.node = node;
+		mem_transfer_cb.type = "cl_mem_transfer";
+		mem_transfer_cb.size = cb;
+		mem_transfer_cb.fromDeviceToHost = true;
+		printf("registering callback for type: %s\n", mem_transfer_cb.type);
+		clSetEventCallback(*event, CL_COMPLETE, &event_callback, &mem_transfer_cb);
+	}
 	return return_status;
 }
 
@@ -74,54 +102,38 @@ static cl_int clEnqueueWriteBuffer_wrapper(cl_command_queue command_queue, cl_me
     clwritebuffer_fptr clEnqueueWriteBuffer_wrappee = (clwritebuffer_fptr) gotcha_get_wrappee(clEnqueueWriteBuffer_handle);
 	cl_int return_status = clEnqueueWriteBuffer_wrappee(command_queue, buffer, blocking_write, offset, cb, ptr, num_events_in_wait_list, event_wait_list, event);
 	printf("%zu(bytes) of data being transferred from host to device\n", cb); // pass this data
-	struct cl_memory_callback *mem_transfer_cb = (struct cl_memory_callback*) malloc(sizeof(struct cl_memory_callback));
-	cct_node_t* node = createNode();
-	mem_transfer_cb->node = node;
-	mem_transfer_cb->type = "cl_mem_transfer";
-	mem_transfer_cb->size = cb;
-	mem_transfer_cb->fromHostToDevice = true;
-	printf("registering callback for type: %s\n", mem_transfer_cb->type);
-	clSetEventCallback(*event, CL_COMPLETE, &event_callback, mem_transfer_cb);
-	return return_status;
-}
-
-/* this fn can be called to indirectly pass buffer to devices. If so, we cannot get timing information, since there are no events tied to this method
- * So, the memory transfer time could be a part of enqueueKernel (to verify)*/
-/*deferred
-cl_int clSetKernelArg_wrapper(cl_kernel kernel, cl_uint arg_index, size_t arg_size, const void *arg_value)
-{
-	createNodeForMemTransfer("test_id_m_w2_1");
-	void *param_value;
-	size_t mem_obj_size;
-
-	if (!arg_value)
-		printf("NOT NULL\n");
+	if (MALLOC)
+	{
+		cl_memory_callback *mem_transfer_cb = (cl_memory_callback*) malloc(sizeof(cl_memory_callback));
+		cct_node_t* node = createNode();
+		mem_transfer_cb->node = node;
+		mem_transfer_cb->type = "cl_mem_transfer";
+		mem_transfer_cb->size = cb;
+		mem_transfer_cb->fromHostToDevice = true;
+		printf("registering callback for type: %s\n", mem_transfer_cb->type);
+		clSetEventCallback(*event, CL_COMPLETE, &event_callback, mem_transfer_cb);
+	}
 	else
-		printf("NULL\n");
-	cl_mem temp = (cl_mem) arg_value;
-	printf("check3: %s\n", CL_MEM_SIZE);
-    clGetMemObjectInfo((cl_mem)arg_value, CL_MEM_SIZE, sizeof(mem_obj_size), &mem_obj_size, NULL);
-	printf("checking size using meminfo: %lu\n", mem_obj_size);
-	mem_intercept(kernel, arg_size, NULL);
-	printf("size of setargs: %zu\n", sizeof(*arg_value));
-    clSetKernelArg_fptr clSetKernelArg_wrappee = (clSetKernelArg_fptr) gotcha_get_wrappee(clSetKernelArg_handle);
-	cl_int return_status = clSetKernelArg_wrappee(kernel, arg_index, arg_size, arg_value);
+	{
+		cl_memory_callback mem_transfer_cb;
+		memset(&mem_transfer_cb, 0, sizeof(cl_memory_callback));
+		cct_node_t* node = createNode();
+		mem_transfer_cb.node = node;
+		mem_transfer_cb.type = "cl_mem_transfer";
+		mem_transfer_cb.size = cb;
+		mem_transfer_cb.fromHostToDevice = true;
+		printf("registering callback for type: %s\n", mem_transfer_cb.type);
+		clSetEventCallback(*event, CL_COMPLETE, &event_callback, &mem_transfer_cb);
+	}
 	return return_status;
 }
-*/
-
-/*void mem_intercept(cl_kernel kernel, size_t size, cl_event *event)
-{
-	printf("%zu(bytes) of data being transferred from host to device\n", size); // pass this data
-	struct cl_callback *mem_transfer_cb = (struct cl_callback*) malloc(sizeof(struct cl_callback));
-	// pass data
-}*/
 
 cl_event* eventNullCheck(cl_event* event)
 {
 	if(!event)
 	{
-    	cl_event* new_event = (cl_event*)malloc(sizeof(cl_event));
+    	cl_event *new_event = (cl_event*)malloc(sizeof(cl_event));
+		//memset(&new_event, 0, sizeof(cl_event));
 		return new_event;
 	}
 	return event;
@@ -129,23 +141,25 @@ cl_event* eventNullCheck(cl_event* event)
 
 void event_callback(cl_event event, cl_int event_command_exec_status, void *user_data)
 {
-	struct cl_generic_callback* cb_data = (struct cl_generic_callback*)user_data;
+	cl_generic_callback* cb_data = (cl_generic_callback*)user_data;
 	printf("inside callback function. The callback type is: %s\n", cb_data->type);
-	struct profilingData* pd;
+	profilingData* pd;
 	if (strcmp(cb_data->type, "cl_kernel") == 0)
 	{
+		printf("Saving kernel data to node\n");
 		pd = getEventTimeProfileInfo(event);
-		updateNodeWithTimeProfileData(cb_data->node, pd);
+		updateNodeWithKernelProfileData(cb_data->node, pd);
 	}
 	else if (strcmp(cb_data->type, "cl_mem_transfer") == 0)
 	{
+		printf("Saving mem data to node\n");
 		pd = getEventTimeProfileInfo(event);
-		pd = getMemoryProfileInfo(pd, (struct cl_memory_callback*)user_data);
+		pd = getMemoryProfileInfo(pd, (cl_memory_callback*)user_data);
 		updateNodeWithMemTransferProfileData(cb_data->node, pd);
 	}
 }
 
-struct profilingData* getEventTimeProfileInfo(cl_event event)
+profilingData* getEventTimeProfileInfo(cl_event event)
 {
 	cl_ulong commandQueued = 0;
 	cl_ulong commandSubmit = 0;
@@ -159,7 +173,8 @@ struct profilingData* getEventTimeProfileInfo(cl_event event)
 	errorCode |= clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(commandEnd), &commandEnd, NULL);
 	if (errorCode != CL_SUCCESS)
 		printf("error in collecting profiling data.\n");	
-	struct profilingData *pd = (struct profilingData*) malloc(sizeof(struct profilingData));
+	profilingData *pd = (profilingData*) malloc(sizeof(profilingData));
+	//memset(&pd, 0, sizeof(profilingData)); //str.h
 	pd->queueTime = commandQueued;
 	pd->submitTime = commandSubmit;
 	pd->startTime = commandStart;
@@ -167,7 +182,7 @@ struct profilingData* getEventTimeProfileInfo(cl_event event)
 	return pd;
 }
 
-struct profilingData* getMemoryProfileInfo(struct profilingData* pd, struct cl_memory_callback* cb_data)
+profilingData* getMemoryProfileInfo(profilingData* pd, cl_memory_callback* cb_data)
 {
 	pd->size = cb_data->size;
 	pd->fromHostToDevice = cb_data->fromHostToDevice;
