@@ -4,6 +4,8 @@
 #include <monitor.h>
 #include <lib/prof-lean/pfq-rwlock.h>
 #include <hpcrun/loadmap.h>
+#include <hpcrun/gpu/gpu-metrics.h> // gpu_metrics_attribute, gpu_metrics_default_enable
+#include <hpcrun/gpu/gpu-activity-channel.h> // gpu_activity_channel_consume
 #include "opencl-setup.h"
 #include "opencl-intercept.h"
 
@@ -19,6 +21,7 @@ static bool lm_contains_fn (const char *, const char *);
 
 void initialize()
 {
+	gpu_metrics_default_enable();
 	printf("We are setting up opencl intercepts\n");
 	setup_opencl_intercept();
 }

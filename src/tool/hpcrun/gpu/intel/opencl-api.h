@@ -1,7 +1,7 @@
 #include <CL/cl.h>
 #include <hpcrun/cct/cct.h> // cct_node_t
 
-struct profilingData
+typedef struct profilingData
 {
 	cl_ulong queueTime;
 	cl_ulong submitTime;
@@ -10,10 +10,10 @@ struct profilingData
 	size_t size;
 	bool fromHostToDevice;
 	bool fromDeviceToHost;
-};
+} profilingData;
 
 cct_node_t* createNode();
 
-void updateNodeWithTimeProfileData(cct_node_t* cct_node, struct profilingData *pd);
+void updateNodeWithKernelProfileData(cct_node_t* cct_node, profilingData *pd);
 
-void updateNodeWithMemTransferProfileData(cct_node_t* cct_node, struct profilingData *pd);
+void updateNodeWithMemTransferProfileData(cct_node_t* cct_node, profilingData *pd);
