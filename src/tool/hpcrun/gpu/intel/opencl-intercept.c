@@ -78,6 +78,7 @@ static cl_int clEnqueueReadBuffer_wrapper (cl_command_queue command_queue, cl_me
 		mem_transfer_cb->type = "cl_mem_transfer";
 		mem_transfer_cb->size = cb;
 		mem_transfer_cb->fromDeviceToHost = true;
+		mem_transfer_cb->fromHostToDevice = false;
 		printf("registering callback for type: %s\n", mem_transfer_cb->type);
 		clSetEventCallback(*event, CL_COMPLETE, &event_callback, mem_transfer_cb);
 	}
@@ -90,6 +91,7 @@ static cl_int clEnqueueReadBuffer_wrapper (cl_command_queue command_queue, cl_me
 		mem_transfer_cb.type = "cl_mem_transfer";
 		mem_transfer_cb.size = cb;
 		mem_transfer_cb.fromDeviceToHost = true;
+		mem_transfer_cb.fromHostToDevice = false;
 		printf("registering callback for type: %s\n", mem_transfer_cb.type);
 		clSetEventCallback(*event, CL_COMPLETE, &event_callback, &mem_transfer_cb);
 	}
@@ -110,6 +112,7 @@ static cl_int clEnqueueWriteBuffer_wrapper(cl_command_queue command_queue, cl_me
 		mem_transfer_cb->type = "cl_mem_transfer";
 		mem_transfer_cb->size = cb;
 		mem_transfer_cb->fromHostToDevice = true;
+		mem_transfer_cb->fromDeviceToHost = false;
 		printf("registering callback for type: %s\n", mem_transfer_cb->type);
 		clSetEventCallback(*event, CL_COMPLETE, &event_callback, mem_transfer_cb);
 	}
@@ -122,6 +125,7 @@ static cl_int clEnqueueWriteBuffer_wrapper(cl_command_queue command_queue, cl_me
 		mem_transfer_cb.type = "cl_mem_transfer";
 		mem_transfer_cb.size = cb;
 		mem_transfer_cb.fromHostToDevice = true;
+		mem_transfer_cb.fromDeviceToHost = false;
 		printf("registering callback for type: %s\n", mem_transfer_cb.type);
 		clSetEventCallback(*event, CL_COMPLETE, &event_callback, &mem_transfer_cb);
 	}
@@ -186,6 +190,7 @@ profilingData* getMemoryProfileInfo(profilingData* pd, cl_memory_callback* cb_da
 {
 	pd->size = cb_data->size;
 	pd->fromHostToDevice = cb_data->fromHostToDevice;
+	pd->fromDeviceToHost = cb_data->fromDeviceToHost;
 	return pd;
 }
 
