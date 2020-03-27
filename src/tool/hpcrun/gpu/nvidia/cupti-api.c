@@ -58,6 +58,7 @@
 #include <errno.h>     // errno
 #include <fcntl.h>     // open
 #include <sys/stat.h>  // mkdir
+#include <sys/types.h>
 #include <unistd.h>
 
 #ifndef HPCRUN_STATIC_LINK
@@ -106,6 +107,9 @@
 //******************************************************************************
 // macros
 //******************************************************************************
+
+#define CUPTI_LIBRARY_LOCATION "/lib64/libcupti.so"
+#define CUPTI_PATH_FROM_CUDA "extras/CUPTI"
 
 #define CUPTI_API_DEBUG 0
 
@@ -172,7 +176,6 @@ typedef void (*cupti_error_callback_t)
 
 typedef CUptiResult (*cupti_activity_enable_t)
 (
- CUcontext context,
  CUpti_ActivityKind activity
 );
 
@@ -479,13 +482,28 @@ cuda_path
 }
 
 
-const char *
+static void
+cupti_set_default_path(char *buffer)
+{
+  strcpy(buffer, CUPTI_INSTALL_PREFIX CUPTI_LIBRARY_LOCATION);
+}
+
+int
+library_path_resolves(const char *buffer)
+{
+  struct stat sb;
+  return stat(buffer, &sb) == 0;
+}
+    
+
+static const char *
 cupti_path
 (
   void
 )
 {
   const char *path = "libcupti.so";
+  int resolved = 0;
 
   static char buffer[PATH_MAX];
   buffer[0] = 0;
@@ -498,8 +516,27 @@ cupti_path
 
   if (dl_iterate_phdr(cuda_path, buffer)) {
     // invariant: buffer contains CUDA home
-    strcat(buffer, "extras/CUPTI/lib64/libcupti.so");
-    path = buffer;
+    int zero_index = strlen(buffer);
+    strcat(buffer, CUPTI_PATH_FROM_CUDA CUPTI_LIBRARY_LOCATION);
+
+    if (library_path_resolves(buffer)) {
+      path = buffer;
+      resolved = 1;
+    } else {
+      buffer[zero_index - 1] = 0;
+      fprintf(stderr, "NOTE: CUDA root at %s lacks a copy of NVIDIA's CUPTI " 
+        "tools library.\n", buffer); 
+    }
+  }
+
+  if (!resolved) {
+    cupti_set_default_path(buffer);
+    if (library_path_resolves(buffer)) {
+      fprintf(stderr, "NOTE: Using builtin path for NVIDIA's CUPTI tools "
+        "library %s.\n", buffer); 
+      path = buffer;
+      resolved = 1;
+    }
   }
 
   if (h) monitor_real_dlclose(h);
@@ -720,7 +757,10 @@ cupti_subscriber_callback
         mrd->moduleId, mrd->cubinSize, mrd->pCubin);
       DISPATCH_CALLBACK(cupti_unload_callback, (mrd->moduleId, mrd->pCubin, mrd->cubinSize));
     } else if (cb_id == CUPTI_CBID_RESOURCE_CONTEXT_CREATED) {
-      cupti_enable_activities(rd->context);
+      int pc_sampling_frequency = cupti_pc_sampling_frequency_get();
+      if (pc_sampling_frequency != -1) {
+        cupti_pc_sampling_enable(rd->context, pc_sampling_frequency);
+      }
     }
   } else if (domain == CUPTI_CB_DOMAIN_DRIVER_API) {
     // stop flag is only set if a driver or runtime api called
@@ -755,8 +795,8 @@ cupti_subscriber_callback
       case CUPTI_DRIVER_TRACE_CBID_cuStreamWaitEvent:
       case CUPTI_DRIVER_TRACE_CBID_cuStreamWaitEvent_ptsz:
         {
-	  gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
-				       gpu_placeholder_type_sync);
+          gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
+            gpu_placeholder_type_sync);
           is_valid_op = true;
           break;
         }
@@ -768,8 +808,8 @@ cupti_subscriber_callback
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoD_v2_ptds:
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoDAsync_v2_ptsz:
         {
-	  gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
-				       gpu_placeholder_type_copyin);
+          gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
+            gpu_placeholder_type_copyin);
           is_valid_op = true;
           break;
         }
@@ -781,8 +821,8 @@ cupti_subscriber_callback
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoH_v2_ptds:
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoHAsync_v2_ptsz:
         {
-	  gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
-				       gpu_placeholder_type_copyout);
+          gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
+            gpu_placeholder_type_copyout);
           is_valid_op = true;
           break;
         }
@@ -843,12 +883,12 @@ cupti_subscriber_callback
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpyPeerAsync_ptsz:
       case CUPTI_DRIVER_TRACE_CBID_cuMemcpy3DPeerAsync_ptsz:
         {
-	  gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
-				       gpu_placeholder_type_copy);
+          gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
+            gpu_placeholder_type_copy);
           is_valid_op = true;
           break;
         }
-      // kernel apis
+        // kernel apis
       case CUPTI_DRIVER_TRACE_CBID_cuLaunch:
       case CUPTI_DRIVER_TRACE_CBID_cuLaunchGrid:
       case CUPTI_DRIVER_TRACE_CBID_cuLaunchGridAsync:
@@ -858,14 +898,14 @@ cupti_subscriber_callback
       case CUPTI_DRIVER_TRACE_CBID_cuLaunchCooperativeKernel_ptsz:
       case CUPTI_DRIVER_TRACE_CBID_cuLaunchCooperativeKernelMultiDevice:
         {
-	  gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
-				       gpu_placeholder_type_kernel);
-	  gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
-				       gpu_placeholder_type_trace);
+          gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
+            gpu_placeholder_type_kernel);
+          gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
+            gpu_placeholder_type_trace);
           is_valid_op = true;
 
           if (cd->callbackSite == CUPTI_API_ENTER) {
-	    gpu_application_thread_process_activities();
+            gpu_application_thread_process_activities();
 
             // XXX(Keren): cannot parse this kind of kernel launch
             //if (cb_id != CUPTI_DRIVER_TRACE_CBID_cuLaunchCooperativeKernelMultiDevice)
@@ -879,7 +919,7 @@ cupti_subscriber_callback
         break;
     }
     bool is_kernel_op = gpu_op_placeholder_flags_is_set(gpu_op_placeholder_flags, 
-							gpu_placeholder_type_kernel);
+      gpu_placeholder_type_kernel);
     // If we have a valid operation and is not in the interval of a cuda/ompt runtime api
     if (is_valid_op && !cupti_runtime_api_flag && !ompt_runtime_api_flag) {
       if (cd->callbackSite == CUPTI_API_ENTER) {
@@ -895,20 +935,20 @@ cupti_subscriber_callback
 
         hpcrun_safe_enter();
 
-	gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
+        gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
 
-	if (is_kernel_op) {
-	  cct_node_t *trace_node = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace);
-	  cct_node_t *cct_func = hpcrun_cct_insert_ip_norm(trace_node, func_ip);
-	  hpcrun_cct_retain(cct_func);
-	}
+        if (is_kernel_op) {
+          cct_node_t *trace_node = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace);
+          cct_node_t *cct_func = hpcrun_cct_insert_ip_norm(trace_node, func_ip);
+          hpcrun_cct_retain(cct_func);
+        }
 
         hpcrun_safe_exit();
 
         // Generate notification entry
-	uint64_t cpu_submit_time = CPU_NANOTIME();
+        uint64_t cpu_submit_time = CPU_NANOTIME();
         gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, 
-					cpu_submit_time);
+          cpu_submit_time);
 
         PRINT("Driver push externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
       } else if (cd->callbackSite == CUPTI_API_EXIT) {
@@ -917,16 +957,16 @@ cupti_subscriber_callback
         PRINT("Driver pop externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
       }
     } else if (is_kernel_op && cupti_runtime_api_flag && cd->callbackSite == 
-	       CUPTI_API_ENTER) {
+      CUPTI_API_ENTER) {
       if (cupti_trace_node != NULL) {
         cct_node_t *cct_func = hpcrun_cct_insert_ip_norm(cupti_trace_node, func_ip);
         hpcrun_cct_retain(cct_func);
       }
     } else if (is_kernel_op && ompt_runtime_api_flag && cd->callbackSite == 
-	       CUPTI_API_ENTER) {
+      CUPTI_API_ENTER) {
       cct_node_t *ompt_trace_node = ompt_trace_node_get();
       if (ompt_trace_node != NULL) {
-	cct_node_t *cct_func = hpcrun_cct_insert_ip_norm(ompt_trace_node, func_ip);
+        cct_node_t *cct_func = hpcrun_cct_insert_ip_norm(ompt_trace_node, func_ip);
         hpcrun_cct_retain(cct_func);
       }
     }
@@ -1022,7 +1062,7 @@ cupti_subscriber_callback
           is_valid_op = true;
           is_kernel_op = true;
           if (cd->callbackSite == CUPTI_API_ENTER) {
-	    gpu_application_thread_process_activities();
+            gpu_application_thread_process_activities();
           }
           break;
         }
@@ -1046,16 +1086,16 @@ cupti_subscriber_callback
 
         hpcrun_safe_enter();
 
-	gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags_all);
+        gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags_all);
         
         hpcrun_safe_exit();
 
         cupti_trace_node = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace);
 
         // Generate notification entry
-	uint64_t cpu_submit_time = CPU_NANOTIME();
+        uint64_t cpu_submit_time = CPU_NANOTIME();
         gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, 
-					cpu_submit_time);
+          cpu_submit_time);
 
         PRINT("Runtime push externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
       } else if (cd->callbackSite == CUPTI_API_EXIT) {
@@ -1186,7 +1226,6 @@ cupti_buffer_completion_callback
 cupti_set_status_t
 cupti_monitoring_set
 (
- CUcontext context,
  const CUpti_ActivityKind activity_kinds[],
  bool enable
 )
@@ -1197,14 +1236,14 @@ cupti_monitoring_set
 
   cupti_activity_enable_t action =
     (enable ?
-     CUPTI_FN_NAME(cuptiActivityEnableContext):
-     CUPTI_FN_NAME(cuptiActivityDisableContext));
+     CUPTI_FN_NAME(cuptiActivityEnable):
+     CUPTI_FN_NAME(cuptiActivityDisable));
 
   int i = 0;
   for (;;) {
     CUpti_ActivityKind activity_kind = activity_kinds[i++];
     if (activity_kind == CUPTI_ACTIVITY_KIND_INVALID) break;
-    bool succ = action(context, activity_kind) == CUPTI_SUCCESS;
+    bool succ = action(activity_kind) == CUPTI_SUCCESS;
     if (succ) {
       if (enable) {
         PRINT("activity %d enable succeeded\n", activity_kind);

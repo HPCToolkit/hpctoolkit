@@ -300,7 +300,10 @@ print_program_headers64
   fprintf(stderr, " idx type       flags      offset     virt-addr          phys-addr          file-size  mem-size   algn\n");
   elf_getphdrnum(e,&jn);
   for (j=0; j<(uint64_t)jn; j++) {
-    gelf_getphdr(e,j,&progHeader);
+    if (gelf_getphdr(e,j,&progHeader) != &progHeader) {
+      fprintf(stderr,"error calling gelf_getphdr: %s\n", elf_errmsg(-1));
+      return;
+    }
     if (progHeader.p_type == PT_LOAD) {
       refOffset = progHeader.p_vaddr;
     }   
@@ -331,7 +334,10 @@ print_section_headers64
   char *secName;
   size_t secHeadStringIndex;
 
-  elf_getshdrstrndx(e, &secHeadStringIndex);
+  if (elf_getshdrstrndx(e, &secHeadStringIndex) != 0) {
+      fprintf(stderr,"error calling elf_getshdrstrndx: %s\n", elf_errmsg(-1));
+      return;
+    }
   section = NULL;
 
   fprintf(stderr, "========================================");
@@ -344,9 +350,16 @@ print_section_headers64
     section = elf_nextscn(e, section);
     if (section == NULL) break;
 
-    gelf_getshdr(section, &secHead);
+    if (gelf_getshdr(section, &secHead) != &secHead) {
+      fprintf(stderr,"error calling gelf_getshdr: %s\n", elf_errmsg(-1));
+      return;
+    }
 
     secName = elf_strptr(e, secHeadStringIndex, secHead.sh_name);
+    if (secName == NULL) {
+      fprintf(stderr,"error calling elf_strptr: %s\n", elf_errmsg(-1));
+      return;
+    }
 
     fprintf(stderr, " %03ld ", (uintmax_t)elf_ndxscn(section));
     fprintf(stderr, "0x%08lx ", secHead.sh_offset);

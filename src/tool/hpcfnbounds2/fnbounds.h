@@ -43,7 +43,11 @@
 // if advised of the possibility of such damage.
 //
 // ******************************************************* EndRiceCopyright *
-// funclist.h - program to print the function list from its load-object arguments
+// fnbounds.h - program to print the function list from its load-object arguments
+
+#ifndef _FNBOUNDS_FNBOUNDS_H_
+#define _FNBOUNDS_FNBOUNDS_H_
+
 
 #include	<sys/types.h>
 #include	<stdio.h>
@@ -68,22 +72,12 @@ typedef struct Function {
   uint8_t fr_fnam;
 } Function_t;
 
-typedef struct __ehRecord {
-  Elf *e;
-  Elf_Scn   *ehHdrSection;
-  Elf_Scn   *ehFrameSection;
-  Elf_Scn   *textSection;
-  Elf_Scn   *dataSection; 
-  size_t    ehHdrIndex;
-  size_t    ehFrameIndex;
-} ehRecord_t;
-
 // prototypes
 char	*get_funclist(char *);
 char	*process_vdso();
 char	*process_mapped_header(Elf *e);
 void	print_funcs();
-void	send_funcs();
+// void	send_funcs();
 void	add_function(uint64_t, char *, char *, uint8_t);
 int	func_cmp(const void *a, const void *b);
 void	usage();
@@ -93,17 +87,7 @@ void	cleanup();
 void	disable_sources(char *);
 uint64_t	dynsymread(Elf *e, GElf_Shdr sh);
 uint64_t	symtabread(Elf *e, GElf_Shdr sh);
-uint64_t	pltscan(Elf *e, GElf_Shdr sh);
-uint64_t	initscan(Elf *e, GElf_Shdr sh);
-uint64_t	textscan(Elf *e, GElf_Shdr sh);
-uint64_t	finiscan(Elf *e, GElf_Shdr sh);
-uint64_t	altinstr_replacementscan(Elf *e, GElf_Shdr sh);
-uint64_t	ehframescan(Elf *e, ehRecord_t *ehRecord);
-uint64_t 	skipSectionScan(Elf *e, GElf_Shdr secHead, int secFlag);
-uint64_t  decodeULEB128(uint8_t *input, uint64_t *sizeInBytes);
-int64_t  decodeSLEB128(uint8_t *input, uint64_t *sizeInBytes);
-
-void symsecread(Elf *e, GElf_Shdr sechdr, char *src);
+uint64_t  symsecread(Elf *e, GElf_Shdr sechdr, char *src);
 
 // Flags governing which sources are processed
 extern	int	dynsymread_f;
@@ -115,7 +99,7 @@ extern	int	textscan_f;
 extern	int	finiscan_f;
 extern	int	altinstr_replacementscan_f;
 
-void	init_server(DiscoverFnTy, int, int);
+// void	init_server(DiscoverFnTy, int, int);
 
 extern	int	server_mode;
 extern	int	verbose;
@@ -124,6 +108,28 @@ extern	int	no_dwarf;;
 extern	int	is_dotso;
 extern  uint64_t refOffset;
 extern	char	*xname;
+
+// unified string pointers to contain function types
+
+extern const char __null_[];
+extern const char __p_[];
+extern const char __d_[];
+extern const char __s_[];
+extern const char __i_[];
+extern const char __t_[];
+extern const char __f_[];
+extern const char __a_[];
+extern const char __e_[];
+
+#define SC_FNTYPE_NONE      ((char *)__null_)
+#define SC_FNTYPE_PLT       ((char *)__p_)
+#define SC_FNTYPE_SYMTAB    ((char *)__s_)
+#define SC_FNTYPE_DYNSYM    ((char *)__d_)
+#define SC_FNTYPE_INIT      ((char *)__i_)
+#define SC_FNTYPE_TEXT      ((char *)__t_)
+#define SC_FNTYPE_FINI      ((char *)__f_)
+#define SC_FNTYPE_ALTINSTR  ((char *)__a_)
+#define SC_FNTYPE_EH_FRAME  ((char *)__e_)
 
 // for the fr_fnam flag, if fnam should be freed
 #define FR_YES	(1)
@@ -135,20 +141,6 @@ extern	char	*xname;
 #define MAX_SYM_SIZE	    (TB_SIZE)
 #define SC_SKIP		        (0)
 #define SC_DONE		        (1)
-#define EHF_CF_DONE	      (0)
-#define EHF_CF_CONT	      (1)
-#define EHF_WO_TYPE	      (1)
-#define EHF_WO_FS	        (2)
-#define EHF_TP_CIE	      (0)
-#define EHF_SLEB128_ERROR (-1)
-#define EHF_ULEB128_ERROR (0xffffffffffffffffull)
-
-#define EHF_CIE_BO_VER    (8)
-#define EHF_CIE_BO_AUSTR  (9)
-
-#define EHF_CIE_VER_1     (1)
-#define EHF_CIE_VER_3     (3)
-
 
 
 extern	Function_t *farray;
@@ -160,4 +152,4 @@ void	print_elf_header64(GElf_Ehdr *elf_header);
 void	print_program_headers64(Elf *e);
 void	print_section_headers64(Elf *e);
 
-
+#endif  // _FNBOUNDS_FNBOUNDS_H_
