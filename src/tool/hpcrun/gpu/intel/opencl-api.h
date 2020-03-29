@@ -17,6 +17,5 @@ typedef struct profilingData
 } profilingData;
 #endif
 
-cct_node_t* createNode();
-
-void opencl_subscriber_callback(cct_node_t *, opencl_call, gpu_placeholder_type_t, profilingData *);
+cct_node_t* opencl_subscriber_callback(opencl_call, uint32_t *);
+void opencl_buffer_completion_callback(cl_event, cl_int, void *);

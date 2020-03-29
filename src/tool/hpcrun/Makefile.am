@@ -499,9 +499,11 @@ MY_CUPTI_FILES = sample-sources/nvidia.c	\
 endif
 
 if ENABLE_OPENCL
-MY_OPENCL_FILES = gpu/intel/opencl-intercept.c	\
-	gpu/intel/opencl-api.c	\
-	gpu/intel/opencl-setup.c
+MY_OPENCL_FILES =\
+	gpu/intel/opencl-setup.c		\
+	gpu/intel/opencl-intercept.c	\
+	gpu/intel/opencl-api.c			\
+	gpu/intel/opencl-activity-translate.c
 endif
 
 
