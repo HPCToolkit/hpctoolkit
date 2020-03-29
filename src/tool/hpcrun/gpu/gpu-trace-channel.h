@@ -56,8 +56,6 @@
 #include "gpu-trace.h"
 #include "gpu-trace-item.h"
 
-
-
 //******************************************************************************
 // type declarations
 //******************************************************************************
@@ -65,13 +63,13 @@
 typedef struct gpu_trace_channel_t gpu_trace_channel_t;
 
 typedef struct gpu_trace_channel_t {
-    bistack_t bistacks[2];
-    pthread_mutex_t mutex;
-    pthread_cond_t cond;
-    uint64_t count;
-    thread_data_t *td;
-
+  bistack_t bistacks[2];
+  pthread_mutex_t mutex;
+  pthread_cond_t cond;
+  uint64_t count;
+  thread_data_t *td;
 } gpu_trace_channel_t;
+
 //******************************************************************************
 // interface operations 
 //******************************************************************************

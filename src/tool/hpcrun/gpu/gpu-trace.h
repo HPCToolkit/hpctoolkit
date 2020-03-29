@@ -53,8 +53,6 @@
 #include <stdint.h>
 
 
-
-
 //******************************************************************************
 // forward declarations
 //******************************************************************************
@@ -103,9 +101,7 @@ gpu_trace_create
 void *
 gpu_trace_record
 (
-
  gpu_trace_t *thread_args
-
 );
 
 
@@ -130,23 +126,28 @@ gpu_trace_fini
  void *arg
 );
 
+
 thread_data_t *
-gpu_trace_stream_acquire(void);
+gpu_trace_stream_acquire
+(
+ void
+);
+
 
 void
 gpu_trace_stream_release
-        (
-        gpu_trace_channel_t *channel
-        );
+(
+ gpu_trace_channel_t *channel
+);
 
 
 void
 consume_one_trace_item
-        (
-                thread_data_t* td,
-                cct_node_t *call_path,
-                uint64_t start_time,
-                uint64_t end_time
-        );
+(
+ thread_data_t* td,
+ cct_node_t *call_path,
+ uint64_t start_time,
+ uint64_t end_time
+);
 
 #endif 

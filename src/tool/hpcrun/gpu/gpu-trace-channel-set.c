@@ -83,9 +83,9 @@
 
 //TODO: Forward Declaration: This is the same like in gpu-trace.c -> include it from there
 typedef struct gpu_trace_t {
-    pthread_t thread;
-    gpu_trace_channel_t *trace_channel;
-    unsigned int channel_id;
+  pthread_t thread;
+  gpu_trace_channel_t *trace_channel;
+  unsigned int channel_id;
 } gpu_trace_t;
 
 
@@ -104,7 +104,6 @@ typedef struct {
 typed_stack_declare_type(gpu_trace_channel_ptr_t);
 
 
-
 //******************************************************************************
 // local data
 //******************************************************************************
@@ -113,8 +112,6 @@ typed_stack_declare_type(gpu_trace_channel_ptr_t);
 static
 typed_stack_elem_ptr(gpu_trace_channel_ptr_t)
 gpu_trace_channel_stack[MAX_THREADS_CONSUMERS];
-
-
 
 //******************************************************************************
 // private operations
@@ -148,9 +145,8 @@ gpu_trace_channel_set_forall
 
 )
 {
-
-  channel_stack_forall( &gpu_trace_channel_stack[ channel_num ], channel_forone,
-		       channel_fn);
+  channel_stack_forall(&gpu_trace_channel_stack[channel_num], channel_forone,
+    channel_fn);
 }
 
 
@@ -168,7 +164,6 @@ gpu_trace_channel_set_insert
   // allocate and initialize new entry for channel stack
   channel_stack_elem_t *e = 
     (channel_stack_elem_t *) hpcrun_malloc_safe(sizeof(channel_stack_elem_t));
-
 
   // Alocate all things needed by stream
   channel->td = gpu_trace_stream_acquire();
@@ -193,7 +188,12 @@ gpu_trace_channel_set_consume
   gpu_trace_channel_set_forall(gpu_trace_channel_consume, channel_num);
 }
 
-int gpu_trace_channel_set_release(int channel_num)
+
+int
+gpu_trace_channel_set_release
+(
+ int channel_num
+)
 {
-    gpu_trace_channel_set_forall(gpu_trace_stream_release, channel_num);
+  gpu_trace_channel_set_forall(gpu_trace_stream_release, channel_num);
 }

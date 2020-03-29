@@ -347,7 +347,7 @@ gpu_trace_stream_acquire
  void
 )
 {
-  thread_data_t* td = NULL;
+  thread_data_t *td = NULL;
 
   int id = gpu_trace_stream_id();
 
@@ -418,7 +418,7 @@ gpu_trace_fini
 
   gpu_context_stream_map_signal_all();
 
-  while (atomic_load(&stream_counter) != 0 );
+  while (atomic_load(&stream_counter) != 0);
 //        printf("stream_counter = %llu\n", atomic_load(&stream_counter));
 }
 
@@ -430,17 +430,17 @@ schedule_multi_threads
 )
 {
   int streams_per_thread = 4;
-  static int num_threads = -1;
+  static int num_threads = 0;
   unsigned long long stream_counter_local = atomic_fetch_add(&stream_counter, 1);
 
-  if(stream_counter_local % streams_per_thread == 0){
+  if (stream_counter_local >= (streams_per_thread * num_threads)) {
     num_threads++;
     pthread_create(&trace->thread, NULL, (pthread_start_routine_t) gpu_trace_record, trace);
   }
 
   // First insert stream to the channel -> gpu_trace_channel_stack[thread_num]
-  trace->channel_id = num_threads;
-  gpu_trace_channel_set_insert( trace->trace_channel,  trace->channel_id);
+  trace->channel_id = num_threads - 1;
+  gpu_trace_channel_set_insert(trace->trace_channel, trace->channel_id);
 
   return NULL;
 }

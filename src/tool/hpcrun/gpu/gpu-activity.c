@@ -103,7 +103,7 @@ gpu_activity_consume
  gpu_activity_attribute_fn_t aa_fn
 )
 {
-  gpu_context_activity_dump(activity, "CONSUME");
+  //gpu_context_activity_dump(activity, "CONSUME");
   aa_fn(activity);
 }
 

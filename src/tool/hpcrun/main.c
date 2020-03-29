@@ -803,22 +803,20 @@ hpcrun_thread_fini(epoch_t *epoch)
       return;
     }
 
-//    device_finalizer_apply(device_finalizer_type_flush);
+    device_finalizer_apply(device_finalizer_type_flush);
 
     int is_process = 0;
     thread_finalize(is_process);
 
-      // inform thread manager that we are terminating the thread
-      // thread manager may enqueue the thread_data (in compact mode)
-      // or flush the data into hpcrun file
-      int add_separator = 0;
-      thread_data_t* td = hpcrun_get_thread_data();
-      hpcrun_threadMgr_data_put(epoch, td, add_separator);
+    // inform thread manager that we are terminating the thread
+    // thread manager may enqueue the thread_data (in compact mode)
+    // or flush the data into hpcrun file
+    int add_separator = 0;
+    thread_data_t* td = hpcrun_get_thread_data();
+    hpcrun_threadMgr_data_put(epoch, td, add_separator);
 
-      TMSG(PROCESS, "End of thread");
+    TMSG(PROCESS, "End of thread");
   }
-    
-
 }
 
 //***************************************************************************
@@ -966,30 +964,29 @@ monitor_fini_process(int how, void* data)
 void
 monitor_begin_process_exit(int how)
 {
-    printf( "=========================MONITOR_BEGIN_PROCESS_EXIT\n\n");
+  printf( "=========================MONITOR_BEGIN_PROCESS_EXIT\n\n");
 
-    if (hpcrun_get_disabled()) {
-        return;
-    }
-
-
-    hpcrun_safe_enter();
-
-    if (hpcrun_is_initialized()) {
-
-        TMSG(FINI, "process attempting sample shutdown");
-
-        SAMPLE_SOURCES(stop);
-        SAMPLE_SOURCES(shutdown);
-
-        // Call all registered auxiliary functions before termination.
-        // This typically means flushing files that were not done by their creators.
-        device_finalizer_apply(device_finalizer_type_flush);
-        device_finalizer_apply(device_finalizer_type_shutdown);
-    }
+  if (hpcrun_get_disabled()) {
+    return;
+  }
 
 
-    hpcrun_safe_exit();
+  hpcrun_safe_enter();
+
+  if (hpcrun_is_initialized()) {
+    TMSG(FINI, "process attempting sample shutdown");
+
+    SAMPLE_SOURCES(stop);
+    SAMPLE_SOURCES(shutdown);
+
+    // Call all registered auxiliary functions before termination.
+    // This typically means flushing files that were not done by their creators.
+    device_finalizer_apply(device_finalizer_type_flush);
+    device_finalizer_apply(device_finalizer_type_shutdown);
+  }
+
+
+  hpcrun_safe_exit();
 }
 
 static fork_data_t from_fork;

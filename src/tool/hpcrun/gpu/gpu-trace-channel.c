@@ -116,13 +116,14 @@ typed_bichannel_impl(gpu_trace_item_t)
 
 static void
 gpu_trace_channel_signal_consumer_when_full
-        (
-                gpu_trace_channel_t *trace_channel
-        ) {
-    if (trace_channel->count++ > CHANNEL_FILL_COUNT) {
-        trace_channel->count = 0;
-        gpu_trace_channel_signal_consumer(trace_channel);
-    }
+(
+ gpu_trace_channel_t *trace_channel
+)
+{
+  if (trace_channel->count++ > CHANNEL_FILL_COUNT) {
+    trace_channel->count = 0;
+    gpu_trace_channel_signal_consumer(trace_channel);
+  }
 }
 
 
@@ -134,37 +135,37 @@ gpu_trace_channel_signal_consumer_when_full
 gpu_trace_channel_t *
 gpu_trace_channel_alloc
 (
-    void
+ void
 )
 {
-    gpu_trace_channel_t *channel =
-            hpcrun_malloc_safe(sizeof(gpu_trace_channel_t));
+  gpu_trace_channel_t *channel =
+    hpcrun_malloc_safe(sizeof(gpu_trace_channel_t));
 
-    memset(channel, 0, sizeof(gpu_trace_channel_t));
+  memset(channel, 0, sizeof(gpu_trace_channel_t));
 
-    channel_init(channel);
+  channel_init(channel);
 
-    pthread_mutex_init(&channel->mutex, NULL);
-    pthread_cond_init(&channel->cond, NULL);
+  pthread_mutex_init(&channel->mutex, NULL);
+  pthread_cond_init(&channel->cond, NULL);
 
-    return channel;
+  return channel;
 }
 
 
 void
 gpu_trace_channel_produce
 (
-    gpu_trace_channel_t *channel,
-    gpu_trace_item_t *ti
+ gpu_trace_channel_t *channel,
+ gpu_trace_item_t *ti
 )
 {
-    gpu_trace_item_t * cti = gpu_trace_item_alloc(channel);
+  gpu_trace_item_t * cti = gpu_trace_item_alloc(channel);
 
-    *cti = *ti;
+  *cti = *ti;
 
-    channel_push(channel, bichannel_direction_forward, cti);
+  channel_push(channel, bichannel_direction_forward, cti);
 
-    gpu_trace_channel_signal_consumer_when_full(channel);
+  gpu_trace_channel_signal_consumer_when_full(channel);
 }
 
 
@@ -172,53 +173,50 @@ gpu_trace_channel_produce
 void
 gpu_trace_channel_consume
 (
-    gpu_trace_channel_t *channel
+ gpu_trace_channel_t *channel
 )
 {
+  // PRINT("gpu_trace_channel_consume:: channel_count = %u\n", channel->count);
+  hpcrun_set_thread_data(channel->td);
 
-//    PRINT("gpu_trace_channel_consume:: channel_count = %u\n", channel->count);
+  // steal elements previously pushed by the producer
+  channel_steal(channel, bichannel_direction_forward);
 
-    hpcrun_set_thread_data(channel->td);
+  // reverse them so that they are in FIFO order
+  channel_reverse(channel, bichannel_direction_forward);
 
-    // steal elements previously pushed by the producer
-    channel_steal(channel, bichannel_direction_forward);
-
-    // reverse them so that they are in FIFO order
-    channel_reverse(channel, bichannel_direction_forward);
-
-    // consume all elements enqueued before this function was called
-    for (;;) {
-        gpu_trace_item_t * ti = channel_pop(channel, bichannel_direction_forward);
-        if (!ti) break;
-        gpu_trace_item_consume(consume_one_trace_item, channel->td, ti);
-        gpu_trace_item_free(channel, ti);
-    }
-
+  // consume all elements enqueued before this function was called
+  for (;;) {
+    gpu_trace_item_t * ti = channel_pop(channel, bichannel_direction_forward);
+    if (!ti) break;
+    gpu_trace_item_consume(consume_one_trace_item, channel->td, ti);
+    gpu_trace_item_free(channel, ti);
+  }
 }
 
 
 void
 gpu_trace_channel_await
 (
-    gpu_trace_channel_t *channel
+ gpu_trace_channel_t *channel
 )
 {
-    struct timespec time;
-    clock_gettime(CLOCK_REALTIME, &time); // get current time
-    time.tv_sec += SECONDS_UNTIL_WAKEUP;
+  struct timespec time;
+  clock_gettime(CLOCK_REALTIME, &time); // get current time
+  time.tv_sec += SECONDS_UNTIL_WAKEUP;
 
-    // wait for a signal or for a few seconds. periodically waking
-    // up avoids missing a signal.
-    pthread_cond_timedwait(&channel->cond, &channel->mutex, &time);
+  // wait for a signal or for a few seconds. periodically waking
+  // up avoids missing a signal.
+  pthread_cond_timedwait(&channel->cond, &channel->mutex, &time);
 }
 
 
 void
 gpu_trace_channel_signal_consumer
 (
-    gpu_trace_channel_t *trace_channel
+ gpu_trace_channel_t *trace_channel
 )
 {
-    pthread_cond_signal(&trace_channel->cond);
+  pthread_cond_signal(&trace_channel->cond);
 }
 
