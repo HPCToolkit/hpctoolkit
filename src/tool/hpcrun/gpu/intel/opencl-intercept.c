@@ -12,13 +12,10 @@ typedef cl_int (*clwritebuffer_fptr)(cl_command_queue, cl_mem, cl_bool, size_t, 
 typedef cl_int (*clSetKernelArg_fptr)(cl_kernel, cl_uint, size_t, const void *);
 
 cl_event* eventNullCheck(cl_event*);
-void event_callback(cl_event, cl_int, void *);
 static cl_command_queue clCreateCommandQueue_wrapper(cl_context, cl_device_id, cl_command_queue_properties, cl_int *);
 static cl_int clEnqueueReadBuffer_wrapper(cl_command_queue, cl_mem, cl_bool, size_t, size_t, void *, cl_uint, const cl_event *, cl_event *);
 static cl_int clEnqueueWriteBuffer_wrapper(cl_command_queue, cl_mem, cl_bool, size_t, size_t, const void *, cl_uint, const cl_event *, cl_event *);
 static cl_int clEnqueueNDRangeKernel_wrapper(cl_command_queue, cl_kernel, cl_uint, const size_t*, const size_t*, const size_t*,																		   cl_uint, const cl_event*, cl_event*);
-profilingData* getEventTimeProfileInfo(cl_event);
-profilingData* getMemoryProfileInfo(profilingData*, cl_memory_callback*);
 
 // global variables
 static gotcha_wrappee_handle_t clCreateCommandQueue_handle;
@@ -39,11 +36,12 @@ static cl_int clEnqueueNDRangeKernel_wrapper(cl_command_queue command_queue, cl_
     clkernel_fptr clEnqueueNDRangeKernel_wrappee = (clkernel_fptr) gotcha_get_wrappee(clEnqueueNDRangeKernel_handle);
 	cl_int return_status = clEnqueueNDRangeKernel_wrappee(command_queue, ocl_kernel, work_dim, global_work_offset, global_work_size, local_work_size, num_events_in_wait_list, event_wait_list, event);
 	cl_kernel_callback *kernel_cb = (cl_kernel_callback*) malloc(sizeof(cl_kernel_callback));
-	cct_node_t* node = createNode();
-	kernel_cb->node = node;
+	uint32_t correlation_id;
+	kernel_cb->node = opencl_subscriber_callback(kernel, &correlation_id);
+	kernel_cb->correlation_id = correlation_id;
 	kernel_cb->type = kernel; 
 	printf("registering callback for type: kernel\n");
-	clSetEventCallback(*event, CL_COMPLETE, &event_callback, kernel_cb);
+	clSetEventCallback(*event, CL_COMPLETE, &opencl_buffer_completion_callback, kernel_cb);
 	return return_status;
 }
 
@@ -54,14 +52,15 @@ static cl_int clEnqueueReadBuffer_wrapper (cl_command_queue command_queue, cl_me
 	cl_int return_status = clEnqueueReadBuffer_wrappee(command_queue, buffer, blocking_read, offset, cb, ptr, num_events_in_wait_list, event_wait_list, event);
 	printf("%zu(bytes) of data being transferred from device to host\n", cb); // pass this data
 	cl_memory_callback *mem_transfer_cb = (cl_memory_callback*) malloc(sizeof(cl_memory_callback));
-	cct_node_t* node = createNode();
-	mem_transfer_cb->node = node;
+	uint32_t correlation_id;
+	mem_transfer_cb->node = opencl_subscriber_callback(memcpy_D2H, &correlation_id);
+	mem_transfer_cb->correlation_id = correlation_id;
 	mem_transfer_cb->type = memcpy_D2H; 
 	mem_transfer_cb->size = cb;
 	mem_transfer_cb->fromDeviceToHost = true;
 	mem_transfer_cb->fromHostToDevice = false;
 	printf("registering callback for type: D2H\n");
-	clSetEventCallback(*event, CL_COMPLETE, &event_callback, mem_transfer_cb);
+	clSetEventCallback(*event, CL_COMPLETE, &opencl_buffer_completion_callback, mem_transfer_cb);
 	return return_status;
 }
 
@@ -72,14 +71,15 @@ static cl_int clEnqueueWriteBuffer_wrapper(cl_command_queue command_queue, cl_me
 	cl_int return_status = clEnqueueWriteBuffer_wrappee(command_queue, buffer, blocking_write, offset, cb, ptr, num_events_in_wait_list, event_wait_list, event);
 	printf("%zu(bytes) of data being transferred from host to device\n", cb); // pass this data
 	cl_memory_callback *mem_transfer_cb = (cl_memory_callback*) malloc(sizeof(cl_memory_callback));
-	cct_node_t* node = createNode();
-	mem_transfer_cb->node = node;
+	uint32_t correlation_id;
+	mem_transfer_cb->node = opencl_subscriber_callback(memcpy_H2D, &correlation_id);
+	mem_transfer_cb->correlation_id = correlation_id;
 	mem_transfer_cb->type = memcpy_H2D; 
 	mem_transfer_cb->size = cb;
 	mem_transfer_cb->fromHostToDevice = true;
 	mem_transfer_cb->fromDeviceToHost = false;
 	printf("registering callback for type: H2D\n");
-	clSetEventCallback(*event, CL_COMPLETE, &event_callback, mem_transfer_cb);
+	clSetEventCallback(*event, CL_COMPLETE, &opencl_buffer_completion_callback, mem_transfer_cb);
 	return return_status;
 }
 
@@ -93,66 +93,6 @@ cl_event* eventNullCheck(cl_event* event)
 	return event;
 }
 
-void event_callback(cl_event event, cl_int event_command_exec_status, void *user_data)
-{
-	cl_generic_callback* cb_data = (cl_generic_callback*)user_data;
-	opencl_call type = cb_data->type;
-	profilingData* pd;
-	if (type == kernel)
-	{
-		cl_kernel_callback* kernel_cb_data = (cl_kernel_callback*)user_data;
-		printf("inside callback function. Saving kernel data to node\n");
-		pd = getEventTimeProfileInfo(event);
-		opencl_subscriber_callback(kernel_cb_data->node, kernel, gpu_placeholder_type_kernel, pd);
-	}
-	else if (type == memcpy_H2D)
-	{
-		cl_memory_callback* memory_cb_data = (cl_memory_callback*)user_data;
-		printf("inside callback function. Saving H2D data to node\n");
-		pd = getEventTimeProfileInfo(event);
-		pd = getMemoryProfileInfo(pd, memory_cb_data);
-		opencl_subscriber_callback(memory_cb_data->node, memcpy_H2D, gpu_placeholder_type_copyin, pd);
-	}
-	else if (type == memcpy_D2H)
-	{
-		cl_memory_callback* memory_cb_data = (cl_memory_callback*)user_data;
-		printf("inside callback function. Saving D2H data to node\n");
-		pd = getEventTimeProfileInfo(event);
-		pd = getMemoryProfileInfo(pd, memory_cb_data);
-		opencl_subscriber_callback(memory_cb_data->node, memcpy_D2H, gpu_placeholder_type_copyout, pd);
-	}
-}
-
-profilingData* getEventTimeProfileInfo(cl_event event)
-{
-	cl_ulong commandQueued = 0;
-	cl_ulong commandSubmit = 0;
-	cl_ulong commandStart = 0;
-	cl_ulong commandEnd = 0;
-	cl_int errorCode = CL_SUCCESS;
-
-	errorCode |= clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_QUEUED, sizeof(commandQueued), &commandQueued, NULL);
-	errorCode |= clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_SUBMIT, sizeof(commandSubmit), &commandSubmit, NULL);
-	errorCode |= clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, sizeof(commandStart), &commandStart, NULL);
-	errorCode |= clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(commandEnd), &commandEnd, NULL);
-	if (errorCode != CL_SUCCESS)
-		printf("error in collecting profiling data.\n");	
-	profilingData *pd = (profilingData*) malloc(sizeof(profilingData));
-	//memset(&pd, 0, sizeof(profilingData)); //str.h
-	pd->queueTime = commandQueued;
-	pd->submitTime = commandSubmit;
-	pd->startTime = commandStart;
-	pd->endTime = commandEnd;
-	return pd;
-}
-
-profilingData* getMemoryProfileInfo(profilingData* pd, cl_memory_callback* cb_data)
-{
-	pd->size = cb_data->size;
-	pd->fromHostToDevice = cb_data->fromHostToDevice;
-	pd->fromDeviceToHost = cb_data->fromDeviceToHost;
-	return pd;
-}
 
 static gotcha_binding_t queue_wrapper[] = {{"clCreateCommandQueue", (void*) clCreateCommandQueue_wrapper, &clCreateCommandQueue_handle}};
 static gotcha_binding_t kernel_wrapper[] = {{"clEnqueueNDRangeKernel", (void*)clEnqueueNDRangeKernel_wrapper, &clEnqueueNDRangeKernel_handle}};
