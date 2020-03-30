@@ -20,7 +20,7 @@ uint32_t correlation_id = 0;
 cct_node_t * opencl_subscriber_callback(opencl_call type, uint32_t * correlation_id_arg)
 {
 	gpu_correlation_id_map_insert(correlation_id, correlation_id);
-	correlation_id_arg = &correlation_id;
+	*correlation_id_arg = correlation_id;
 	cct_node_t *api_node = gpu_application_thread_correlation_callback(correlation_id++);
 	gpu_op_placeholder_flags_t gpu_op_placeholder_flags = 0;
 	gpu_op_ccts_t gpu_op_ccts;
