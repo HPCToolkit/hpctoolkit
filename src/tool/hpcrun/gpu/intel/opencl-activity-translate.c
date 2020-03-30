@@ -1,5 +1,6 @@
 #include "opencl-activity-translate.h"
 #include "opencl-api.h" //profilingData
+#include <hpcrun/gpu/gpu-host-correlation-map.h> // gpu_host_correlation_map_lookup, gpu_host_correlation_map_entry_op_function_get, gpu_host_correlation_map_entry_op_cct_get
 
 void convert_kernel_launch(gpu_activity_t *, void *, cl_event);
 void convert_memcpy(gpu_activity_t *, void *, cl_event, gpu_memcpy_type_t);
@@ -12,7 +13,6 @@ void opencl_activity_translate(gpu_activity_t * ga, cl_event event, void * user_
 {
 	cl_generic_callback* cb_data = (cl_generic_callback*)user_data;
 	opencl_call type = cb_data->type;
-	ga->cct_node = cb_data->cct_node;
 	switch (type)
 	{
 		case kernel:
@@ -35,6 +35,11 @@ void convert_kernel_launch(gpu_activity_t * ga, void * user_data, cl_event event
 	ga->kind = GPU_ACTIVITY_KERNEL;
 	ga->details.kernel = openclKernelDataToGenericKernelData(pd);
 	ga->details.kernel.correlation_id = kernel_cb_data->correlation_id;
+	uint32_t correlation_id = ga->details.kernel.correlation_id;
+	gpu_host_correlation_map_entry_t * host_op_entry = gpu_host_correlation_map_lookup(correlation_id);
+	cct_node_t *kernel_node = gpu_host_correlation_map_entry_op_function_get(host_op_entry);
+	ga->cct_node = kernel_node;
+	set_gpu_interval(&ga->details.interval, pd->startTime, pd->endTime);
 }
 
 void convert_memcpy(gpu_activity_t * ga, void * user_data, cl_event event, gpu_memcpy_type_t kind)
@@ -45,17 +50,26 @@ void convert_memcpy(gpu_activity_t * ga, void * user_data, cl_event event, gpu_m
 	ga->kind = GPU_ACTIVITY_MEMCPY;
 	ga->details.memcpy = openclMemDataToGenericMemData(pd);
 	ga->details.memcpy.correlation_id = memory_cb_data->correlation_id;
+	gpu_placeholder_type_t mct;
 	switch (kind)
 	{
 		case GPU_MEMCPY_H2D:
 			printf("Saving memcpy_H2D data to gpu_activity_t\n");
+			mct = gpu_placeholder_type_copyin;
 			break;
 		case GPU_MEMCPY_D2H:
 			printf("Saving memcpy_D2H data to gpu_activity_t\n");
+			mct = gpu_placeholder_type_copyout;
 			break;
 		default:
 			printf("Unknown memcpy\n");
+			mct = gpu_placeholder_type_copy;
 	}
+	uint32_t correlation_id = ga->details.memcpy.correlation_id;
+	gpu_host_correlation_map_entry_t * host_op_entry = gpu_host_correlation_map_lookup(correlation_id);
+	cct_node_t *mem_node = gpu_host_correlation_map_entry_op_cct_get(host_op_entry, mct);
+	ga->cct_node = mem_node;
+	set_gpu_interval(&ga->details.interval, pd->startTime, pd->endTime);
 }
 
 profilingData* getTimingInfoFromClEvent(cl_event event)
