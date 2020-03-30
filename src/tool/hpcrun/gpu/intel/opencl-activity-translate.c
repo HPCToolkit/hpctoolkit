@@ -12,6 +12,7 @@ void opencl_activity_translate(gpu_activity_t * ga, cl_event event, void * user_
 {
 	cl_generic_callback* cb_data = (cl_generic_callback*)user_data;
 	opencl_call type = cb_data->type;
+	ga->cct_node = cb_data->cct_node;
 	switch (type)
 	{
 		case kernel:
