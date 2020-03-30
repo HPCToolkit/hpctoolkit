@@ -646,6 +646,7 @@ OPT_ENABLE_DEVTOOLS_TRUE
 OPT_OBJCOPY
 GOTCHA_LDFLAGS
 GOTCHA_IFLAGS
+GOTCHA
 OPT_ROCM_LDFLAGS
 OPT_ROCM_IFLAGS
 OPT_ROCM
@@ -23404,10 +23405,11 @@ fi
 #-------------------------------------------------
 # GOTCHA
 #-------------------------------------------------
+GOTCHA=
 
 # Check whether --with-gotcha was given.
 if test "${with_gotcha+set}" = set; then :
-  withval=$with_gotcha; GOTCHA="$withval"
+  withval=$with_gotcha; GOTCHA=${withval}
 fi
 
 
@@ -23415,6 +23417,7 @@ fi
 $as_echo_n "checking for gotcha... " >&6; }
 GOTCHA_IFLAGS="-I${GOTCHA}/include"
 GOTCHA_LDFLAGS="-L${GOTCHA}/lib64 -lgotcha"
+
 
 
 

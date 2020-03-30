@@ -468,10 +468,7 @@ hpcrun_loadmap_unmap(load_module_t* lm)
 
   dso_info_t* old_dso = lm->dso_info;
 
-  if (old_dso == NULL) return; // nothing to do!
-
-  void *start_addr = old_dso->start_addr;
-  void *end_addr = old_dso->end_addr;
+  if (old_dso == NULL) return; // nothing to do!  
 
   lm->dso_info = NULL;
 
@@ -494,12 +491,12 @@ hpcrun_loadmap_unmap(load_module_t* lm)
   TMSG(LOADMAP, "Deleting unw intervals");
 
 #if LOADMAP_DEBUG
-  assert((uintptr_t)end_addr < UINTPTR_MAX) ;
+  assert((uintptr_t)(old_dso->end_addr) < UINTPTR_MAX) ;
 #endif
 
 #if UW_RECIPE_MAP_DEBUG
   fprintf(stderr, "hpcrun_loadmap_unmap: '%s' start=%p end=%p\n", 
-          lm->name, start_addr, end_addr);
+          lm->name, old_dso->start_addr, old_dso->end_addr);
 #endif
 
   hpcrun_loadmap_notify_unmap(lm);
