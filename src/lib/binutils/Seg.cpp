@@ -485,7 +485,11 @@ BinUtil::TextSeg::findProcName(bfd* abfd, asymbol* procSym) const
   const char* bfd_func = NULL;
 
   if (bfdSeg) {
+#ifdef BINUTILS_234
+    bfd_vma secBase = bfd_section_vma(bfdSeg);
+#else
     bfd_vma secBase = bfd_section_vma(abfd, bfdSeg);
+#endif
     bfd_vma symVal = bfd_asymbol_value(procSym);
     
     const char* file = NULL;

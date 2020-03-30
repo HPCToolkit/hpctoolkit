@@ -104,7 +104,6 @@ static int fdout;
 static uint64_t  addr_buf[ADDR_SIZE];
 static long  num_addrs;
 static long  total_num_addrs;
-// static long  max_num_addrs;
 
 static char *inbuf;
 static long  inbuf_size;
@@ -114,9 +113,11 @@ static struct syserv_fnbounds_info fnb_info;
 static int jmpbuf_ok = 0;
 static sigjmp_buf jmpbuf;
 
-// static int sent_ok_mesg;
-
-void
+// 
+// Although init_server only returns 0 for now (errors don't interrupt)
+// we could return 1 in case of a problem
+//
+uint64_t 
 init_server (DiscoverFnTy fn_discovery, int fd1, int fd2)
 {
   struct syserv_mesg mesg;
@@ -164,7 +165,11 @@ init_server (DiscoverFnTy fn_discovery, int fd1, int fd2)
     }
   }
 
-  exit(0);
+  //
+  // if we've finished, return
+  //
+  return 0;
+//   exit(0);
 }
 
 
@@ -172,7 +177,7 @@ init_server (DiscoverFnTy fn_discovery, int fd1, int fd2)
 // fnbounds server
 //*****************************************************************
 
-static void
+void
 do_query(DiscoverFnTy fn_discovery, struct syserv_mesg *mesg)
 {
   char *ret;
@@ -224,7 +229,7 @@ send_funcs ()
       lastaddr = farray[i].fadd;
     }
   }
-  fprintf(stderr, "newfnb %s = %d -- %s\n", strrchr(inbuf, '/'), np, inbuf );
+  fprintf(stderr, "newfnb %s = %d (%ld) -- %s\n", strrchr(inbuf, '/'), np, (uint64_t)nfunc, inbuf );
 
   // send the OK mesg with the count of addresses
   ret = write_mesg(SYSERV_OK, np+1);
@@ -289,6 +294,7 @@ send_funcs ()
   struct rusage usage;
   if (getrusage(RUSAGE_SELF, &usage) == 0) {
     fnb_info.memsize = usage.ru_maxrss;
+    fnb_info.memsize = -1;	// Set to -1 to avoid hpcrun killing server
   } else {
     fnb_info.memsize = -1;
   }
@@ -315,7 +321,7 @@ send_funcs ()
 // Automatically restart short reads over a pipe.
 // Returns: SUCCESS, FAILURE or END_OF_FILE.
 //
-static int
+int
 read_all(int fd, void *buf, size_t count)
 {
   ssize_t ret;
@@ -342,7 +348,7 @@ read_all(int fd, void *buf, size_t count)
 // Automatically restart short writes over a pipe.
 // Returns: SUCCESS or FAILURE.
 //
-static int
+int
 write_all(int fd, const void *buf, size_t count)
 {
   ssize_t ret;
@@ -366,7 +372,7 @@ write_all(int fd, const void *buf, size_t count)
 // Read a single syserv mesg from incoming pipe.
 // Returns: SUCCESS, FAILURE or END_OF_FILE.
 //
-static int
+int
 read_mesg(struct syserv_mesg *mesg)
 {
   int ret;
@@ -388,7 +394,7 @@ read_mesg(struct syserv_mesg *mesg)
 // Write a single syserv mesg to outgoing pipe.
 // Returns: SUCCESS or FAILURE.
 //
-static int
+int
 write_mesg(int32_t type, int64_t len)
 {
   struct syserv_mesg mesg;
@@ -409,7 +415,7 @@ write_mesg(int32_t type, int64_t len)
 // signal handlers
 //*****************************************************************
 
-static void
+void
 signal_handler(int sig)
 {
   // SIGPIPE means that hpcrun has exited, probably prematurely.
@@ -426,7 +432,7 @@ signal_handler(int sig)
 
 
 // Catch segfaults, abort and SIGPIPE.
-static void
+void
 signal_handler_init(void)
 {
   struct sigaction act;
