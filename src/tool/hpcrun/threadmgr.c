@@ -352,13 +352,13 @@ hpcrun_threadMgr_data_put( epoch_t *epoch, thread_data_t *data, int no_separator
   // step 2: enqueue thread data into the free list
 
   // Temporary solution
-  //spinlock_lock(&threaddata_lock);
+  spinlock_lock(&threaddata_lock);
 
-  //thread_list_t *list_item = (thread_list_t *) hpcrun_malloc(sizeof(thread_list_t));
-  //list_item->thread_data   = data;
-  //SLIST_INSERT_HEAD(&list_thread_head, list_item, entries);
+  thread_list_t *list_item = (thread_list_t *) hpcrun_malloc(sizeof(thread_list_t));
+  list_item->thread_data   = data;
+  SLIST_INSERT_HEAD(&list_thread_head, list_item, entries);
 
-  //spinlock_unlock(&threaddata_lock);
+  spinlock_unlock(&threaddata_lock);
 
   TMSG(PROCESS, "%d: release thread data", data->core_profile_trace_data.id);
 }

@@ -432,15 +432,20 @@ schedule_multi_threads
   int streams_per_thread = 4;
   static int num_threads = 0;
   unsigned long long stream_counter_local = atomic_fetch_add(&stream_counter, 1);
+  volatile bool new_thread = false;
 
   if (stream_counter_local >= (streams_per_thread * num_threads)) {
     num_threads++;
-    pthread_create(&trace->thread, NULL, (pthread_start_routine_t) gpu_trace_record, trace);
+    new_thread = true;
   }
 
   // First insert stream to the channel -> gpu_trace_channel_stack[thread_num]
   trace->channel_id = num_threads - 1;
   gpu_trace_channel_set_insert(trace->trace_channel, trace->channel_id);
+
+  if (new_thread) {
+    pthread_create(&trace->thread, NULL, (pthread_start_routine_t) gpu_trace_record, trace);
+  }
 
   return NULL;
 }
