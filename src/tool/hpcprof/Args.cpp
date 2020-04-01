@@ -101,7 +101,7 @@ Args::~Args()
 void
 Args::parse(int argc, const char* const argv[])
 {
-  ArgsHPCProf::parse(argc, argv);
+  ArgsHPCProf::parse(argc, argv, Analysis::AppType::APP_HPCPROF);
 
   if (parser.isOpt("metric")) {
     hpcprof_isMetricArg = true;
