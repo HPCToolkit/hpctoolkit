@@ -475,7 +475,7 @@ sanitizer_record_data_callback
     uint32_t function_index = record_data->views[i].function_index;
     uint64_t pc_offset = record_data->views[i].pc_offset;
     uint64_t count = record_data->views[i].count;
-    uint64_t access_count = record_data->views[i].access_sum_count;
+    uint64_t access_count = record_data->views[i].access_count;
 
     ip_normalized_t ip = cubin_id_transform(cubin_id, function_index, pc_offset);
     cct_node_t *host_op_node = (cct_node_t *)(void *)kernel_id;
