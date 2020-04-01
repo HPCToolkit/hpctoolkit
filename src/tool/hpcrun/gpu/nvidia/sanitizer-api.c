@@ -474,13 +474,13 @@ sanitizer_record_data_callback
   for (i = 0; i < num_views; ++i) {
     uint32_t function_index = record_data->views[i].function_index;
     uint64_t pc_offset = record_data->views[i].pc_offset;
-    uint64_t count = record_data->views[i].count;
-    uint64_t access_count = record_data->views[i].access_sum_count;
+    uint64_t red_count = record_data->views[i].red_count;
+    uint64_t access_count = record_data->views[i].access_count;
 
     ip_normalized_t ip = cubin_id_transform(cubin_id, function_index, pc_offset);
     cct_node_t *host_op_node = (cct_node_t *)(void *)kernel_id;
     ga.cct_node = hpcrun_cct_insert_ip_norm(host_op_node, ip);
-    ga.details.redundancy.count = count;
+    ga.details.redundancy.red_count = red_count;
     ga.details.redundancy.access_count = access_count;
     // Associate record_data with calling context (kernel_id)
     gpu_metrics_attribute(&ga);

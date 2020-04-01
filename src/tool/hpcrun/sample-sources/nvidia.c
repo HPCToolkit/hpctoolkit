@@ -147,7 +147,7 @@ static const int DEFAULT_GPU_PATCH_RECORD_NUM = 16 * 1024;
 static const int DEFAULT_BUFFER_POOL_SIZE = 500;
 // 0-5, 0: no approximate
 static const int DEFAULT_APPROX_LEVEL = 0;
-static const int DEFAULT_PC_VIEWS = 10;
+static const int DEFAULT_PC_VIEWS = 30;
 // 0: no mem views
 static const int DEFAULT_MEM_VIEWS = 0;
 
