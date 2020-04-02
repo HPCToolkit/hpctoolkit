@@ -25,93 +25,93 @@ static gotcha_wrappee_handle_t clEnqueueWriteBuffer_handle;
 
 static cl_command_queue clCreateCommandQueue_wrapper(cl_context context, cl_device_id device, cl_command_queue_properties properties, cl_int *errcode_ret)
 {
-		properties |= (cl_command_queue_properties)CL_QUEUE_PROFILING_ENABLE; // enabling profiling
-		clqueue_fptr clCreateCommandQueue_wrappee = (clqueue_fptr) gotcha_get_wrappee(clCreateCommandQueue_handle);
-		return clCreateCommandQueue_wrappee(context, device, properties, errcode_ret);
+  properties |= (cl_command_queue_properties)CL_QUEUE_PROFILING_ENABLE; // enabling profiling
+  clqueue_fptr clCreateCommandQueue_wrappee = (clqueue_fptr) gotcha_get_wrappee(clCreateCommandQueue_handle);
+  return clCreateCommandQueue_wrappee(context, device, properties, errcode_ret);
 }
 
 static cl_int clEnqueueNDRangeKernel_wrapper(cl_command_queue command_queue, cl_kernel ocl_kernel, cl_uint work_dim, const size_t *global_work_offset, 													   const size_t *global_work_size, const size_t *local_work_size, cl_uint num_events_in_wait_list, 															 const cl_event *event_wait_list, cl_event *event)
 {
-		event = eventNullCheck(event);
-		clkernel_fptr clEnqueueNDRangeKernel_wrappee = (clkernel_fptr) gotcha_get_wrappee(clEnqueueNDRangeKernel_handle);
-		cl_int return_status = clEnqueueNDRangeKernel_wrappee(command_queue, ocl_kernel, work_dim, global_work_offset, global_work_size, local_work_size, num_events_in_wait_list, event_wait_list, event);
-		cl_kernel_callback *kernel_cb = (cl_kernel_callback*) malloc(sizeof(cl_kernel_callback));
-		uint64_t correlation_id;
-		opencl_subscriber_callback(kernel, &correlation_id);
-		kernel_cb->correlation_id = correlation_id;
-		kernel_cb->type = kernel; 
-		printf("registering callback for type: kernel\n");
-		clSetEventCallback(*event, CL_COMPLETE, &opencl_buffer_completion_callback, kernel_cb);
-		return return_status;
+  event = eventNullCheck(event);
+  clkernel_fptr clEnqueueNDRangeKernel_wrappee = (clkernel_fptr) gotcha_get_wrappee(clEnqueueNDRangeKernel_handle);
+  cl_int return_status = clEnqueueNDRangeKernel_wrappee(command_queue, ocl_kernel, work_dim, global_work_offset, global_work_size, local_work_size, num_events_in_wait_list, event_wait_list, event);
+  cl_kernel_callback *kernel_cb = (cl_kernel_callback*) malloc(sizeof(cl_kernel_callback));
+  uint64_t correlation_id;
+  opencl_subscriber_callback(kernel, &correlation_id);
+  kernel_cb->correlation_id = correlation_id;
+  kernel_cb->type = kernel; 
+  printf("registering callback for type: kernel\n");
+  clSetEventCallback(*event, CL_COMPLETE, &opencl_buffer_completion_callback, kernel_cb);
+  return return_status;
 }
 
 static cl_int clEnqueueReadBuffer_wrapper (cl_command_queue command_queue, cl_mem buffer, cl_bool blocking_read, size_t offset, size_t cb,															 void *ptr, cl_uint num_events_in_wait_list, const cl_event *event_wait_list, cl_event *event)
 {
-		event = eventNullCheck(event);
-		clreadbuffer_fptr clEnqueueReadBuffer_wrappee = (clreadbuffer_fptr) gotcha_get_wrappee(clEnqueueReadBuffer_handle);
-		cl_int return_status = clEnqueueReadBuffer_wrappee(command_queue, buffer, blocking_read, offset, cb, ptr, num_events_in_wait_list, event_wait_list, event);
-		printf("%zu(bytes) of data being transferred from device to host\n", cb); // pass this data
-		cl_memory_callback *mem_transfer_cb = (cl_memory_callback*) malloc(sizeof(cl_memory_callback));
-		uint64_t correlation_id;
-		opencl_subscriber_callback(memcpy_D2H, &correlation_id);
-		mem_transfer_cb->correlation_id = correlation_id;
-		mem_transfer_cb->type = memcpy_D2H; 
-		mem_transfer_cb->size = cb;
-		mem_transfer_cb->fromDeviceToHost = true;
-		mem_transfer_cb->fromHostToDevice = false;
-		printf("registering callback for type: D2H\n");
-		clSetEventCallback(*event, CL_COMPLETE, &opencl_buffer_completion_callback, mem_transfer_cb);
-		return return_status;
+  event = eventNullCheck(event);
+  clreadbuffer_fptr clEnqueueReadBuffer_wrappee = (clreadbuffer_fptr) gotcha_get_wrappee(clEnqueueReadBuffer_handle);
+  cl_int return_status = clEnqueueReadBuffer_wrappee(command_queue, buffer, blocking_read, offset, cb, ptr, num_events_in_wait_list, event_wait_list, event);
+  printf("%zu(bytes) of data being transferred from device to host\n", cb); // pass this data
+  cl_memory_callback *mem_transfer_cb = (cl_memory_callback*) malloc(sizeof(cl_memory_callback));
+  uint64_t correlation_id;
+  opencl_subscriber_callback(memcpy_D2H, &correlation_id);
+  mem_transfer_cb->correlation_id = correlation_id;
+  mem_transfer_cb->type = memcpy_D2H; 
+  mem_transfer_cb->size = cb;
+  mem_transfer_cb->fromDeviceToHost = true;
+  mem_transfer_cb->fromHostToDevice = false;
+  printf("registering callback for type: D2H\n");
+  clSetEventCallback(*event, CL_COMPLETE, &opencl_buffer_completion_callback, mem_transfer_cb);
+  return return_status;
 }
 
 static cl_int clEnqueueWriteBuffer_wrapper(cl_command_queue command_queue, cl_mem buffer, cl_bool blocking_write, size_t offset, size_t cb,														  const void *ptr, cl_uint num_events_in_wait_list, const cl_event *event_wait_list, cl_event *event)
 {
-		event = eventNullCheck(event);
-		clwritebuffer_fptr clEnqueueWriteBuffer_wrappee = (clwritebuffer_fptr) gotcha_get_wrappee(clEnqueueWriteBuffer_handle);
-		cl_int return_status = clEnqueueWriteBuffer_wrappee(command_queue, buffer, blocking_write, offset, cb, ptr, num_events_in_wait_list, event_wait_list, event);
-		printf("%zu(bytes) of data being transferred from host to device\n", cb); // pass this data
-		cl_memory_callback *mem_transfer_cb = (cl_memory_callback*) malloc(sizeof(cl_memory_callback));
-		uint64_t correlation_id;
-		opencl_subscriber_callback(memcpy_H2D, &correlation_id);
-		mem_transfer_cb->correlation_id = correlation_id;
-		mem_transfer_cb->type = memcpy_H2D; 
-		mem_transfer_cb->size = cb;
-		mem_transfer_cb->fromHostToDevice = true;
-		mem_transfer_cb->fromDeviceToHost = false;
-		printf("registering callback for type: H2D\n");
-		clSetEventCallback(*event, CL_COMPLETE, &opencl_buffer_completion_callback, mem_transfer_cb);
-		return return_status;
+  event = eventNullCheck(event);
+  clwritebuffer_fptr clEnqueueWriteBuffer_wrappee = (clwritebuffer_fptr) gotcha_get_wrappee(clEnqueueWriteBuffer_handle);
+  cl_int return_status = clEnqueueWriteBuffer_wrappee(command_queue, buffer, blocking_write, offset, cb, ptr, num_events_in_wait_list, event_wait_list, event);
+  printf("%zu(bytes) of data being transferred from host to device\n", cb); // pass this data
+  cl_memory_callback *mem_transfer_cb = (cl_memory_callback*) malloc(sizeof(cl_memory_callback));
+  uint64_t correlation_id;
+  opencl_subscriber_callback(memcpy_H2D, &correlation_id);
+  mem_transfer_cb->correlation_id = correlation_id;
+  mem_transfer_cb->type = memcpy_H2D; 
+  mem_transfer_cb->size = cb;
+  mem_transfer_cb->fromHostToDevice = true;
+  mem_transfer_cb->fromDeviceToHost = false;
+  printf("registering callback for type: H2D\n");
+  clSetEventCallback(*event, CL_COMPLETE, &opencl_buffer_completion_callback, mem_transfer_cb);
+  return return_status;
 }
 
 cl_event* eventNullCheck(cl_event* event)
 {
-		if(!event)
-		{
-				cl_event *new_event = (cl_event*)malloc(sizeof(cl_event));
-				return new_event;
-		}
-		return event;
+  if(!event)
+  {
+	cl_event *new_event = (cl_event*)malloc(sizeof(cl_event));
+	return new_event;
+  }
+  return event;
 }
 
 
 static gotcha_binding_t queue_wrapper[] = {{"clCreateCommandQueue", (void*) clCreateCommandQueue_wrapper, &clCreateCommandQueue_handle}};
 static gotcha_binding_t kernel_wrapper[] = {{"clEnqueueNDRangeKernel", (void*)clEnqueueNDRangeKernel_wrapper, &clEnqueueNDRangeKernel_handle}};
 static gotcha_binding_t buffer_wrapper[] = {{"clEnqueueReadBuffer", (void*) clEnqueueReadBuffer_wrapper, &clEnqueueReadBuffer_handle},
-		{"clEnqueueWriteBuffer", (void*) clEnqueueWriteBuffer_wrapper, &clEnqueueWriteBuffer_handle}};
+  {"clEnqueueWriteBuffer", (void*) clEnqueueWriteBuffer_wrapper, &clEnqueueWriteBuffer_handle}};
 
 void setup_opencl_intercept()
 {   
-		gotcha_wrap(queue_wrapper, 1, "queue_intercept");
-		gotcha_wrap(kernel_wrapper, 1, "kernel_intercept");
-		gotcha_wrap(buffer_wrapper, 2, "memory_intercept");
+  gotcha_wrap(queue_wrapper, 1, "queue_intercept");
+  gotcha_wrap(kernel_wrapper, 1, "kernel_intercept");
+  gotcha_wrap(buffer_wrapper, 2, "memory_intercept");
 }
 
 void teardown_opencl_intercept()
 {
-		// not sure if this works
-		gotcha_set_priority("queue_intercept", -1);
-		gotcha_set_priority("kernel_intercept", -1);
-		gotcha_set_priority("memory_intercept", -1);
+  // not sure if this works
+  gotcha_set_priority("queue_intercept", -1);
+  gotcha_set_priority("kernel_intercept", -1);
+  gotcha_set_priority("memory_intercept", -1);
 }
 
 /*
