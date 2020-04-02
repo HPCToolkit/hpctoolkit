@@ -36,7 +36,7 @@ static cl_int clEnqueueNDRangeKernel_wrapper(cl_command_queue command_queue, cl_
     clkernel_fptr clEnqueueNDRangeKernel_wrappee = (clkernel_fptr) gotcha_get_wrappee(clEnqueueNDRangeKernel_handle);
 	cl_int return_status = clEnqueueNDRangeKernel_wrappee(command_queue, ocl_kernel, work_dim, global_work_offset, global_work_size, local_work_size, num_events_in_wait_list, event_wait_list, event);
 	cl_kernel_callback *kernel_cb = (cl_kernel_callback*) malloc(sizeof(cl_kernel_callback));
-	uint32_t correlation_id;
+	uint64_t correlation_id;
 	opencl_subscriber_callback(kernel, &correlation_id);
 	kernel_cb->correlation_id = correlation_id;
 	kernel_cb->type = kernel; 
@@ -52,7 +52,7 @@ static cl_int clEnqueueReadBuffer_wrapper (cl_command_queue command_queue, cl_me
 	cl_int return_status = clEnqueueReadBuffer_wrappee(command_queue, buffer, blocking_read, offset, cb, ptr, num_events_in_wait_list, event_wait_list, event);
 	printf("%zu(bytes) of data being transferred from device to host\n", cb); // pass this data
 	cl_memory_callback *mem_transfer_cb = (cl_memory_callback*) malloc(sizeof(cl_memory_callback));
-	uint32_t correlation_id;
+	uint64_t correlation_id;
 	opencl_subscriber_callback(memcpy_D2H, &correlation_id);
 	mem_transfer_cb->correlation_id = correlation_id;
 	mem_transfer_cb->type = memcpy_D2H; 
@@ -71,7 +71,7 @@ static cl_int clEnqueueWriteBuffer_wrapper(cl_command_queue command_queue, cl_me
 	cl_int return_status = clEnqueueWriteBuffer_wrappee(command_queue, buffer, blocking_write, offset, cb, ptr, num_events_in_wait_list, event_wait_list, event);
 	printf("%zu(bytes) of data being transferred from host to device\n", cb); // pass this data
 	cl_memory_callback *mem_transfer_cb = (cl_memory_callback*) malloc(sizeof(cl_memory_callback));
-	uint32_t correlation_id;
+	uint64_t correlation_id;
 	opencl_subscriber_callback(memcpy_H2D, &correlation_id);
 	mem_transfer_cb->correlation_id = correlation_id;
 	mem_transfer_cb->type = memcpy_H2D; 

@@ -17,5 +17,5 @@ typedef struct profilingData
 } profilingData;
 #endif
 
-void opencl_subscriber_callback(opencl_call, uint32_t *);
+void opencl_subscriber_callback(opencl_call, uint64_t *);
 void opencl_buffer_completion_callback(cl_event, cl_int, void *);
