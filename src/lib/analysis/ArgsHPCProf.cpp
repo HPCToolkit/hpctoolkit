@@ -152,10 +152,14 @@ Options: Metrics:\n\
 Options: Output:\n\
   -o <db-path>, --db <db-path>, --output <db-path>\n\
                        Specify Experiment database name <db-path>.\n\
-                       {./" Analysis_DB_DIR "}\n\
+                       {./" Analysis_DB_DIR "}";
+
+static const char* usage_details_2 = "\n\
   --metric-db <yes|no>\n\
                        Control whether to generate a thread-level metric\n\
-                       value database for hpcviewer scatter plots. {no}\n\
+                       value database for hpcviewer scatter plots. {no}";
+
+static const char* usage_details_3 = "\n\
   --remove-redundancy \n\
                        Eliminate procedure name redundancy in experiment.xml\n\
   --struct-id          Add 'str=nnn' field to profile data with the hpcstruct\n\
@@ -256,10 +260,32 @@ ArgsHPCProf::printVersion(std::ostream& os) const
 
 
 void 
-ArgsHPCProf::printUsage(std::ostream& os) const
+ArgsHPCProf::printUsage(std::ostream& os, AppType type) const
+{
+  switch(type) {
+    case AppType::APP_HPCPROF: 
+      printUsageProf(os);
+      break;
+
+    case AppType::APP_HPCPROF_MPI:
+      printUsageProfMPI(os);
+      break;
+  }
+} 
+
+void 
+ArgsHPCProf::printUsageProf(std::ostream& os) const
 {
   os << "Usage: " << getCmd() << " " << usage_summary << endl
-     << usage_details << endl;
+     << usage_details << usage_details_3 << endl;
+} 
+
+
+void 
+ArgsHPCProf::printUsageProfMPI(std::ostream& os) const
+{
+  os << "Usage: " << getCmd() << " " << usage_summary << endl
+     << usage_details << usage_details_2 << usage_details_3 << endl;
 } 
 
 
@@ -310,7 +336,7 @@ static inline void find_files(std::vector<std::string> &files,
 
 
 void
-ArgsHPCProf::parse(int argc, const char* const argv[])
+ArgsHPCProf::parse(int argc, const char* const argv[], AppType type)
 {
   try {
     // -------------------------------------------------------
@@ -333,7 +359,7 @@ ArgsHPCProf::parse(int argc, const char* const argv[])
       trace = dbg;
     }
     if (parser.isOpt("help")) { 
-      printUsage(std::cerr); 
+      printUsage(std::cerr, type); 
       exit(0);
     }
     if (parser.isOpt("remove-redundancy")) { 
