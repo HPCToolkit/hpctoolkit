@@ -14,8 +14,9 @@
 #include <hpcrun/gpu/gpu-metrics.h> //gpu_metrics_attribute
 #include <hpcrun/gpu/gpu-event-id-map.h> //gpu_event_id_map_insert
 #include "opencl-activity-translate.h"
-#include <lib/prof-lean/usec_time.h>
+#include <lib/prof-lean/usec_time.h> //usec_time
 #include <hpcrun/gpu/gpu-monitoring-thread-api.h>
+#include <hpcrun/gpu/gpu-activity-channel.h> //gpu_activity_channel_consume
 
 #define CPU_NANOTIME() (usec_time() * 1000)
 
@@ -26,53 +27,53 @@ uint64_t correlation_id = 0;
 
 void opencl_subscriber_callback(opencl_call type, uint64_t * correlation_id_arg)
 {
-	uint64_t local_c_id;
-	__atomic_load(&correlation_id, &local_c_id, __ATOMIC_SEQ_CST); //TODO
-	gpu_correlation_id_map_insert(local_c_id, local_c_id);
-	*correlation_id_arg = local_c_id;
-	cct_node_t *api_node = gpu_application_thread_correlation_callback(local_c_id);
-	gpu_op_placeholder_flags_t gpu_op_placeholder_flags = 0;
-	gpu_op_ccts_t gpu_op_ccts;
-	
-	hpcrun_safe_enter();
-    switch (type)
-	{
-		case memcpy_H2D:
-			gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_copyin);
-			gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
-			break;
-		case memcpy_D2H:
-			gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_copyout);
-			gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
-			break;
-		case kernel:
-			gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_kernel);
-			gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
-			break;
-	}
-	hpcrun_safe_exit();
-	
-	gpu_application_thread_process_activities();
-	uint64_t cpu_submit_time = CPU_NANOTIME();
-    gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, cpu_submit_time);
-	__atomic_fetch_add(&correlation_id, 1, __ATOMIC_SEQ_CST);
+		uint64_t local_c_id;
+		__atomic_load(&correlation_id, &local_c_id, __ATOMIC_SEQ_CST); //TODO
+		gpu_correlation_id_map_insert(local_c_id, local_c_id);
+		*correlation_id_arg = local_c_id;
+		cct_node_t *api_node = gpu_application_thread_correlation_callback(local_c_id);
+		gpu_op_placeholder_flags_t gpu_op_placeholder_flags = 0;
+		gpu_op_ccts_t gpu_op_ccts;
+
+		hpcrun_safe_enter();
+		switch (type)
+		{
+				case memcpy_H2D:
+						gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_copyin);
+						gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
+						break;
+				case memcpy_D2H:
+						gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_copyout);
+						gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
+						break;
+				case kernel:
+						gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_kernel);
+						gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
+						break;
+		}
+		hpcrun_safe_exit();
+
+		gpu_activity_channel_consume(gpu_metrics_attribute);	
+		uint64_t cpu_submit_time = CPU_NANOTIME();
+		gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, cpu_submit_time);
+		__atomic_fetch_add(&correlation_id, 1, __ATOMIC_SEQ_CST);
 }
 
 void opencl_buffer_completion_callback(cl_event event, cl_int event_command_exec_status, void *user_data)
 {
-	opencl_buffer_completion_notify();
-	opencl_activity_process(event, user_data);
+		opencl_buffer_completion_notify();
+		opencl_activity_process(event, user_data);
 }
 
 void opencl_buffer_completion_notify()
 {
-	gpu_monitoring_thread_activities_ready();
+		gpu_monitoring_thread_activities_ready();
 }
 
 void opencl_activity_process(cl_event event, void * user_data)
 {
-	gpu_activity_t gpu_activity;
-	opencl_activity_translate(&gpu_activity, event, user_data);
-	gpu_activity_process(&gpu_activity);
-	//gpu_metrics_attribute(&gpu_activity);
+		gpu_activity_t gpu_activity;
+		opencl_activity_translate(&gpu_activity, event, user_data);
+		gpu_activity_process(&gpu_activity);
+		//gpu_metrics_attribute(&gpu_activity);
 }
