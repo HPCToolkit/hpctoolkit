@@ -22,6 +22,7 @@ static gotcha_wrappee_handle_t clCreateCommandQueue_handle;
 static gotcha_wrappee_handle_t clEnqueueNDRangeKernel_handle;
 static gotcha_wrappee_handle_t clEnqueueReadBuffer_handle;
 static gotcha_wrappee_handle_t clEnqueueWriteBuffer_handle;
+uint64_t correlation_id = 0;
 
 static cl_command_queue clCreateCommandQueue_wrapper(cl_context context, cl_device_id device, cl_command_queue_properties properties, cl_int *errcode_ret)
 {
@@ -32,53 +33,59 @@ static cl_command_queue clCreateCommandQueue_wrapper(cl_context context, cl_devi
 
 static cl_int clEnqueueNDRangeKernel_wrapper(cl_command_queue command_queue, cl_kernel ocl_kernel, cl_uint work_dim, const size_t *global_work_offset, 													   const size_t *global_work_size, const size_t *local_work_size, cl_uint num_events_in_wait_list, 															 const cl_event *event_wait_list, cl_event *event)
 {
+  uint64_t local_correlation_id = __atomic_fetch_add(&correlation_id, 1, __ATOMIC_SEQ_CST);
+  cl_kernel_callback *kernel_cb = (cl_kernel_callback*) malloc(sizeof(cl_kernel_callback));
+  kernel_cb->correlation_id = local_correlation_id;
+  kernel_cb->type = kernel; 
+  printf("registering callback for type: kernel\n");
+  
   event = eventNullCheck(event);
   clkernel_fptr clEnqueueNDRangeKernel_wrappee = (clkernel_fptr) gotcha_get_wrappee(clEnqueueNDRangeKernel_handle);
   cl_int return_status = clEnqueueNDRangeKernel_wrappee(command_queue, ocl_kernel, work_dim, global_work_offset, global_work_size, local_work_size, num_events_in_wait_list, event_wait_list, event);
-  cl_kernel_callback *kernel_cb = (cl_kernel_callback*) malloc(sizeof(cl_kernel_callback));
-  uint64_t correlation_id;
-  opencl_subscriber_callback(kernel, &correlation_id);
-  kernel_cb->correlation_id = correlation_id;
-  kernel_cb->type = kernel; 
-  printf("registering callback for type: kernel\n");
+  
+  clSetEventCallback(*event, CL_SUBMITTED, &opencl_subscriber_callback, kernel_cb);
   clSetEventCallback(*event, CL_COMPLETE, &opencl_buffer_completion_callback, kernel_cb);
   return return_status;
 }
 
 static cl_int clEnqueueReadBuffer_wrapper (cl_command_queue command_queue, cl_mem buffer, cl_bool blocking_read, size_t offset, size_t cb,															 void *ptr, cl_uint num_events_in_wait_list, const cl_event *event_wait_list, cl_event *event)
 {
-  event = eventNullCheck(event);
-  clreadbuffer_fptr clEnqueueReadBuffer_wrappee = (clreadbuffer_fptr) gotcha_get_wrappee(clEnqueueReadBuffer_handle);
-  cl_int return_status = clEnqueueReadBuffer_wrappee(command_queue, buffer, blocking_read, offset, cb, ptr, num_events_in_wait_list, event_wait_list, event);
-  printf("%zu(bytes) of data being transferred from device to host\n", cb); // pass this data
+  uint64_t local_correlation_id = __atomic_fetch_add(&correlation_id, 1, __ATOMIC_SEQ_CST);
   cl_memory_callback *mem_transfer_cb = (cl_memory_callback*) malloc(sizeof(cl_memory_callback));
-  uint64_t correlation_id;
-  opencl_subscriber_callback(memcpy_D2H, &correlation_id);
-  mem_transfer_cb->correlation_id = correlation_id;
+  mem_transfer_cb->correlation_id = local_correlation_id;
   mem_transfer_cb->type = memcpy_D2H; 
   mem_transfer_cb->size = cb;
   mem_transfer_cb->fromDeviceToHost = true;
   mem_transfer_cb->fromHostToDevice = false;
   printf("registering callback for type: D2H\n");
+  
+  event = eventNullCheck(event);
+  clreadbuffer_fptr clEnqueueReadBuffer_wrappee = (clreadbuffer_fptr) gotcha_get_wrappee(clEnqueueReadBuffer_handle);
+  cl_int return_status = clEnqueueReadBuffer_wrappee(command_queue, buffer, blocking_read, offset, cb, ptr, num_events_in_wait_list, event_wait_list, event);
+  printf("%zu(bytes) of data being transferred from device to host\n", cb);
+
+  clSetEventCallback(*event, CL_SUBMITTED, &opencl_subscriber_callback, mem_transfer_cb);
   clSetEventCallback(*event, CL_COMPLETE, &opencl_buffer_completion_callback, mem_transfer_cb);
   return return_status;
 }
 
 static cl_int clEnqueueWriteBuffer_wrapper(cl_command_queue command_queue, cl_mem buffer, cl_bool blocking_write, size_t offset, size_t cb,														  const void *ptr, cl_uint num_events_in_wait_list, const cl_event *event_wait_list, cl_event *event)
 {
-  event = eventNullCheck(event);
-  clwritebuffer_fptr clEnqueueWriteBuffer_wrappee = (clwritebuffer_fptr) gotcha_get_wrappee(clEnqueueWriteBuffer_handle);
-  cl_int return_status = clEnqueueWriteBuffer_wrappee(command_queue, buffer, blocking_write, offset, cb, ptr, num_events_in_wait_list, event_wait_list, event);
-  printf("%zu(bytes) of data being transferred from host to device\n", cb); // pass this data
+  uint64_t local_correlation_id = __atomic_fetch_add(&correlation_id, 1, __ATOMIC_SEQ_CST);
   cl_memory_callback *mem_transfer_cb = (cl_memory_callback*) malloc(sizeof(cl_memory_callback));
-  uint64_t correlation_id;
-  opencl_subscriber_callback(memcpy_H2D, &correlation_id);
-  mem_transfer_cb->correlation_id = correlation_id;
+  mem_transfer_cb->correlation_id = local_correlation_id;
   mem_transfer_cb->type = memcpy_H2D; 
   mem_transfer_cb->size = cb;
   mem_transfer_cb->fromHostToDevice = true;
   mem_transfer_cb->fromDeviceToHost = false;
   printf("registering callback for type: H2D\n");
+  
+  event = eventNullCheck(event);
+  clwritebuffer_fptr clEnqueueWriteBuffer_wrappee = (clwritebuffer_fptr) gotcha_get_wrappee(clEnqueueWriteBuffer_handle);
+  cl_int return_status = clEnqueueWriteBuffer_wrappee(command_queue, buffer, blocking_write, offset, cb, ptr, num_events_in_wait_list, event_wait_list, event);
+  printf("%zu(bytes) of data being transferred from host to device\n", cb);
+  
+  clSetEventCallback(*event, CL_SUBMITTED, &opencl_subscriber_callback, mem_transfer_cb);
   clSetEventCallback(*event, CL_COMPLETE, &opencl_buffer_completion_callback, mem_transfer_cb);
   return return_status;
 }
@@ -113,8 +120,3 @@ void teardown_opencl_intercept()
   gotcha_set_priority("kernel_intercept", -1);
   gotcha_set_priority("memory_intercept", -1);
 }
-
-/*
-   gcc gotcha-opencl-wrapper.c -lOpenCL -shared -lgotcha -fPIC -o gotcha-opencl-wrapper.so
-   LD_PRELOAD=./gotcha-opencl-wrapper.so ./hello
-   */

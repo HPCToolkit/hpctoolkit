@@ -19,14 +19,14 @@ static pfq_rwlock_t modules_lock;
 int pseudo_module_p_opencl(char *);
 static bool lm_contains_fn (const char *, const char *); 
 
-void initialize()
+void opencl_initialize()
 {
   gpu_metrics_default_enable();
   printf("We are setting up opencl intercepts\n");
   setup_opencl_intercept();
 }
 
-void finalize()
+void opencl_finalize()
 {
   teardown_opencl_intercept();
 }
@@ -56,7 +56,7 @@ void checkIfOpenCLModuleLoadedAndSetIntercepts (void *start, void *end)
 	{
 	  if (lm_contains_fn(module->name, OPENCL_FNS[i])) 
 	  {
-		initialize();	
+		opencl_initialize();	
 		isOpenCLInterceptSetupDone = true;
 		break;
 	  }
