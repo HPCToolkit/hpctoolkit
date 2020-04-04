@@ -53,6 +53,7 @@
 int verbose = 0;
 int scan_code = 1;
 int no_dwarf = 0;
+int outputmode = OM_TEXT;
 
 size_t  maxfunc = 0;
 size_t  nfunc = 0;
@@ -63,6 +64,7 @@ int dynsymread_f = SC_DONE;
 int symtabread_f = SC_DONE;
 int ehframeread_f = SC_DONE;
 int pltscan_f = SC_DONE;
+int pltsecscan_f = SC_DONE;
 int initscan_f = SC_DONE;
 int textscan_f = SC_DONE;
 int finiscan_f = SC_DONE;
@@ -82,6 +84,7 @@ char  *xname;
 //
 const char __null_[] = {""};
 const char __p_[] = {"p"};
+const char __q_[] = {"q"};
 const char __d_[] = {"d"};
 const char __s_[] = {"s"};
 const char __i_[] = {"i"};
@@ -108,9 +111,21 @@ main(int argc, char **argv, char **envp)
        p++;
        continue;
      }
+     if ( strcmp (*p, "-t") == 0 ) {
+       // Write output in text mode
+       outputmode = OM_TEXT;
+       p++;
+       continue;
+     }
+     if ( strcmp (*p, "-c") == 0 ) {
+       // write output in C-compilable format
+       outputmode = OM_CC;
+       p++;
+       continue;
+     }
      if ( strcmp (*p, "-d") == 0 ) {
-       // treat as an alias for "-n pitfa"
-       disable_sources ("pitfa");
+       // treat as an alias for "-n itfa"
+       disable_sources ("itfa");
        scan_code = 0;
        p++;
        continue;
@@ -453,6 +468,9 @@ process_mapped_header(Elf *lelf)
       if (!strcmp(secName,".plt")) {
         pltscan(lelf, secHead); 
       }
+      else if (!strcmp(secName,".plt.sec")) {
+        pltsecscan(lelf, secHead); 
+      }
       else if (!strcmp(secName,".init")) {
         initscan(lelf, secHead); 
       }
@@ -541,6 +559,9 @@ disable_sources(char *str)
         break;
       case 'p':
         pltscan_f = SC_SKIP;
+        break;
+      case 'q':
+        pltsecscan_f = SC_SKIP;
         break;
       case 'i':
         initscan_f = SC_SKIP;
@@ -645,9 +666,14 @@ void
 print_funcs()
 {
   int i;
-#if 0
-  printf ( "\n\n\tFunction list, sorted by address:\n");
-#endif
+  if ( verbose) {
+    fprintf(stderr, "Writing output in %s mode (%d)\n",
+       (outputmode == OM_TEXT ? "text" : "C-compilable"), outputmode );
+  }
+  if (outputmode == OM_CC ) {
+    write_cc_funcs();
+    return;
+  }
 
   // Print the function list
   int np = 0;
@@ -672,6 +698,45 @@ print_funcs()
   }
   printf("\nnum symbols = %d, reference offset = 0x%lx, relocatable = %d\n", np,
       refOffset, is_dotso );
+}
+
+void
+write_cc_funcs()
+{
+  int i;
+  // write the function address list
+  int np = 0;
+  if (nfunc > 0) {
+    // print the header
+    printf("unsigned long hpcrun_nm_addrs[] = {\n" );
+
+    // print the first entry, not beginning with new line
+    // printf("  0x%lx   /* %s(%s)", farray[0].fadd, farray[0].fnam, farray[0].src);
+    printf("  0x%lx  /* %s", farray[0].fadd, farray[0].fnam);
+    uint64_t lastaddr = farray[0].fadd;
+    np ++;
+
+    // now do the rest of the list
+    for (i=1; i<nfunc; i ++) {
+      if (farray[i].fadd == lastaddr) {
+        // if at the last address, just add the alias string
+        // printf(", %s(%s)", farray[i].fnam, farray[i].src);
+        printf(", %s", farray[i].fnam);
+      } else {
+        // terminate previous entry, and start new one
+        // printf(" */,\n  0x%lx  /*  %s(%s)", farray[i].fadd, farray[i].fnam, farray[i].src);
+        printf(" */,\n  0x%lx  /* %s", farray[i].fadd, farray[i].fnam);
+        lastaddr = farray[i].fadd;
+        np ++;
+      }
+    }
+    // terminate the last entry written, and the table
+    printf(" */\n};\n" );
+  }
+  // print the trailer
+  printf("unsigned long hpcrun_nm_addrs_len = sizeof(hpcrun_nm_addrs) / sizeof(hpcrun_nm_addrs[0]);\n" );
+  printf("unsigned long hpcrun_reference_offset = 0x%lx;\n" , refOffset );
+  printf("int hpcrun_is_relocatable = %d;\n", is_dotso );
 }
 
 void
@@ -752,21 +817,22 @@ usage()
       "\t\ts -- skip reading.symtab section\n"
       "\t\te -- skip reading.eh_frame section\n"
       "\t\tp -- skip scanning instructions from .plt section\n"
+      "\t\tq -- skip scanning instructions from .plt.sec section\n"
       "\t\ti -- skip scanning instructions from .init section\n"
       "\t\tt -- skip scanning instructions from .text section\n"
       "\t\tf -- skip scanning instructions from .fini section\n"
       "\t\ta -- skip scanning instructions from .altinstr_replacement section\n"
       "\t     also can be specified with environment variable HPCFNBOUNDS_NO_USE\n"
       "\t-d\tdon't perform function discovery on stripped code\n"
-      "\t\t    eguivalent to -n pitfa\n"
+      "\t\t    eguivalent to -n itfa\n"
       "\t-s fdin fdout\trun in server mode\n"
-      "\t-h\tprint this help message and exit\n"
 #if 0
       "\t-D\tdon't attempt to process DWARF\n"
+#endif
       "\t-c\twrite output in C source code\n"
       "\t-t\twrite output in text format (default)\n"
-      "If no format is specified, then text mode is used.\n"
-#endif
+      "\t\tIf no format is specified, then text mode is used.\n"
+      "\t-h\tprint this help message and exit\n"
       "\n"
   );
 }

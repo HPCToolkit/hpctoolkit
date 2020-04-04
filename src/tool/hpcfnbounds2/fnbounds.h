@@ -77,7 +77,7 @@ char	*get_funclist(char *);
 char	*process_vdso();
 char	*process_mapped_header(Elf *e);
 void	print_funcs();
-// void	send_funcs();
+void	write_cc_funcs();
 void	add_function(uint64_t, char *, char *, uint8_t);
 int	func_cmp(const void *a, const void *b);
 void	usage();
@@ -94,6 +94,7 @@ extern	int	dynsymread_f;
 extern	int	symtabread_f;
 extern	int	ehframeread_f;
 extern	int	pltscan_f;
+extern	int	pltsecscan_f;
 extern	int	initscan_f;
 extern	int	textscan_f;
 extern	int	finiscan_f;
@@ -109,10 +110,15 @@ extern	int	is_dotso;
 extern  uint64_t refOffset;
 extern	char	*xname;
 
+extern	int	outputmode;
+#define	OM_TEXT 0
+#define	OM_CC 1
+
 // unified string pointers to contain function types
 
 extern const char __null_[];
 extern const char __p_[];
+extern const char __q_[];
 extern const char __d_[];
 extern const char __s_[];
 extern const char __i_[];
@@ -123,6 +129,7 @@ extern const char __e_[];
 
 #define SC_FNTYPE_NONE      ((char *)__null_)
 #define SC_FNTYPE_PLT       ((char *)__p_)
+#define SC_FNTYPE_PLTSEC    ((char *)__q_)
 #define SC_FNTYPE_SYMTAB    ((char *)__s_)
 #define SC_FNTYPE_DYNSYM    ((char *)__d_)
 #define SC_FNTYPE_INIT      ((char *)__i_)

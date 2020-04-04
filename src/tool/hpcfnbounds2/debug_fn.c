@@ -340,11 +340,11 @@ print_section_headers64
     }
   section = NULL;
 
-  fprintf(stderr, "========================================");
+  fprintf(stderr, "==============================================");
   fprintf(stderr, "========================================\n");
   fprintf(stderr, "\t\tSection Headers: %s\n", xname);
   fprintf(stderr, " idx offset     load-addr          size       algn"
-        " flags      type       section\n");
+        " flags      type       entsz section\n");
 
   do {
     section = elf_nextscn(e, section);
@@ -368,6 +368,7 @@ print_section_headers64
     fprintf(stderr, "%4ld ", secHead.sh_addralign);
     fprintf(stderr, "0x%08lx ", secHead.sh_flags);
     fprintf(stderr, "0x%08x ", secHead.sh_type);
+    fprintf(stderr, "%05ld ", secHead.sh_entsize);
     fprintf(stderr, "%s\t", secName );
     fprintf(stderr, "\n");
 

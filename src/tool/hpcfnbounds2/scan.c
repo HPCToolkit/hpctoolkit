@@ -402,6 +402,40 @@ pltscan(Elf *e, GElf_Shdr secHead)
   return SC_DONE;
 }
 
+// scan the .pltsec section
+//
+uint64_t
+pltsecscan(Elf *e, GElf_Shdr secHead)
+{
+  uint64_t ii;
+  uint64_t startAddr, endAddr, pltEntrySize;
+  char nameBuff[TB_SIZE];
+  char *vegamite;
+
+  if (skipSectionScan(e, secHead, pltsecscan_f) == SC_SKIP) {
+    return SC_SKIP;
+  }
+  
+  startAddr = secHead.sh_addr;
+  endAddr = startAddr + secHead.sh_size;
+  pltEntrySize = secHead.sh_entsize;
+  //
+  // For a static build, even though the section contains trampolines,
+  // the entry size may be zero.  If so, just skip the section for now.
+  //
+  if ( pltEntrySize == 0 ) {
+    return SC_DONE;
+  }
+
+  for (ii = startAddr + pltEntrySize; ii < endAddr; ii += pltEntrySize) {
+    sprintf(nameBuff,"stripped_0x%lx",ii);
+    vegamite = strdup(nameBuff);
+    add_function(ii, vegamite, SC_FNTYPE_PLTSEC, FR_YES);
+  }
+
+  return SC_DONE;
+}
+
 // scan the .init section
 uint64_t
 initscan(Elf *e, GElf_Shdr secHead)

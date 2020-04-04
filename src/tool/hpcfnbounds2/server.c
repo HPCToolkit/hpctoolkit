@@ -125,8 +125,10 @@ init_server (DiscoverFnTy fn_discovery, int fd1, int fd2)
   fdin = fd1;
   fdout = fd2;
 
-// write version into output (.log file in the measurements directory)
-  fprintf(stderr, "Begin hpcfnbounds2 server, DiscoverFnTy = %d\n", fn_discovery);
+  // write version into output (.log file in the measurements directory)
+  if (verbose) {
+    fprintf(stderr, "Begin hpcfnbounds2 server, DiscoverFnTy = %d\n", fn_discovery);
+  }
 
   inbuf_size = INIT_INBUF_SIZE;
   inbuf = (char *) malloc(inbuf_size);
@@ -197,7 +199,9 @@ do_query(DiscoverFnTy fn_discovery, struct syserv_mesg *mesg)
     err(1, "read from fdin failed");
   }
 
-  fprintf(stderr, "newfnb begin processing %s -- %s\n", strrchr(inbuf, '/'), inbuf );
+  if (verbose) {
+    fprintf(stderr, "newfnb begin processing %s -- %s\n", strrchr(inbuf, '/'), inbuf );
+  }
   ret = get_funclist(inbuf);
   if ( ret != NULL) {
     fprintf(stderr, "\nServer failure processing %s: %s\n", inbuf, ret );
@@ -229,7 +233,9 @@ send_funcs ()
       lastaddr = farray[i].fadd;
     }
   }
-  fprintf(stderr, "newfnb %s = %d (%ld) -- %s\n", strrchr(inbuf, '/'), np, (uint64_t)nfunc, inbuf );
+  if (verbose) {
+    fprintf(stderr, "newfnb %s = %d (%ld) -- %s\n", strrchr(inbuf, '/'), np, (uint64_t)nfunc, inbuf );
+  }
 
   // send the OK mesg with the count of addresses
   ret = write_mesg(SYSERV_OK, np+1);
