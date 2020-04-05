@@ -54,11 +54,11 @@
 
 typedef struct gpu_trace_channel_t gpu_trace_channel_t;
 
-typedef struct thread_trace_data{
-    int thread_num;
-    gpu_trace_t *trace;
-
-}thread_trace_data ;
+//typedef struct thread_trace_data{
+//    int thread_num;
+//    gpu_trace_t *trace;
+//
+//}thread_trace_data ;
 
 
 //******************************************************************************

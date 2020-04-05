@@ -67,7 +67,7 @@ typedef struct gpu_trace_t gpu_trace_t;
 
 typedef struct gpu_trace_item_t gpu_trace_item_t;
 
-typedef struct thread_trace_data thread_trace_data;
+//typedef struct thread_trace_data thread_trace_data;
 
 //******************************************************************************
 // type declarations

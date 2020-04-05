@@ -186,6 +186,17 @@ gpu_trace_cct_insert_context
   cct_node_t *leaf =
     hpcrun_cct_insert_path_return_leaf(gpu_trace_cct_root(td), path);
 
+  // debug
+  cct_addr_t *path_addr = hpcrun_cct_addr(path);
+  assert(path_addr->ip_norm.lm_id == 25 || path_addr->ip_norm.lm_id == 2);
+
+  cct_addr_t *leaf_addr = hpcrun_cct_addr(leaf);
+  assert(leaf_addr->ip_norm.lm_id == path_addr->ip_norm.lm_id);
+
+  cct_node_t *parent = hpcrun_cct_parent(leaf);
+  cct_addr_t *parent_addr = hpcrun_cct_addr(parent);
+  assert(parent_addr->ip_norm.lm_id < 100);
+
   return leaf;
 }
 
@@ -265,45 +276,45 @@ consume_one_trace_item
 {
   cct_node_t *leaf = gpu_trace_cct_insert_context(td, call_path);
 
-  cct_node_t *no_activity = gpu_trace_cct_no_activity(td);
+  //cct_node_t *no_activity = gpu_trace_cct_no_activity(td);
 
-  uint64_t start = gpu_trace_time(start_time);
-  uint64_t end   = gpu_trace_time(end_time);
+  //uint64_t start = gpu_trace_time(start_time);
+  //uint64_t end   = gpu_trace_time(end_time);
 
-  stream_start_set(start_time);
+  //stream_start_set(start_time);
 
-  start = gpu_trace_start_adjust(start, end);
+  //start = gpu_trace_start_adjust(start, end);
 
-  int frequency = gpu_monitoring_trace_sample_frequency_get();
+  //int frequency = gpu_monitoring_trace_sample_frequency_get();
 
-  bool append = false;
+  //bool append = false;
 
-  if (frequency != -1) {
-    uint64_t cur_start = start_time;
-    uint64_t cur_end = end_time;
-    uint64_t intervals = (cur_start - stream_start_get() - 1) / frequency + 1;
-    uint64_t pivot = intervals * frequency + stream_start;
+  //if (frequency != -1) {
+  //  uint64_t cur_start = start_time;
+  //  uint64_t cur_end = end_time;
+  //  uint64_t intervals = (cur_start - stream_start_get() - 1) / frequency + 1;
+  //  uint64_t pivot = intervals * frequency + stream_start;
 
-    if (pivot <= cur_end && pivot >= cur_start) {
-      // only trace when the pivot is within the range
-      PRINT("pivot %" PRIu64 " not in <%" PRIu64 ", %" PRIu64
-        "> with intervals %" PRIu64 ", frequency %" PRIu64 "\n",
-        pivot, cur_start, cur_end, intervals, frequency);
-      append = true;
-    }
-  } else {
-    append = true;
-  }
+  //  if (pivot <= cur_end && pivot >= cur_start) {
+  //    // only trace when the pivot is within the range
+  //    PRINT("pivot %" PRIu64 " not in <%" PRIu64 ", %" PRIu64
+  //      "> with intervals %" PRIu64 ", frequency %" PRIu64 "\n",
+  //      pivot, cur_start, cur_end, intervals, frequency);
+  //    append = true;
+  //  }
+  //} else {
+  //  append = true;
+  //}
 
-  if (append) {
-    gpu_trace_first(td, no_activity, start);
+  //if (append) {
+  //  gpu_trace_first(td, no_activity, start);
 
-    gpu_trace_stream_append(td, leaf, start);
+  //  gpu_trace_stream_append(td, leaf, start);
 
-    gpu_trace_stream_append(td, no_activity, end + 1);
+  //  gpu_trace_stream_append(td, no_activity, end + 1);
 
-    PRINT("%p Append trace activity [%lu, %lu]\n", td, start, end);
-  }
+  //  PRINT("%p Append trace activity [%lu, %lu]\n", td, start, end);
+  //}
 }
 
 
@@ -365,8 +376,8 @@ gpu_trace_stream_release
 {
   thread_data_t *td = channel->td;
 
-  hpcrun_write_profile_data(&td->core_profile_trace_data);
-  hpcrun_trace_close(&td->core_profile_trace_data);
+  //hpcrun_write_profile_data(&td->core_profile_trace_data);
+  //hpcrun_trace_close(&td->core_profile_trace_data);
 
   atomic_fetch_add(&stream_counter, -1);
 }
