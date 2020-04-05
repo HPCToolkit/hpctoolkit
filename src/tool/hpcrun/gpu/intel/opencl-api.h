@@ -1,6 +1,5 @@
 #include <CL/cl.h>
-#include <hpcrun/cct/cct.h> // cct_node_t
-#include <hpcrun/gpu/gpu-op-placeholders.h> // gpu_placeholder_type_t
+
 #include "opencl-intercept.h"
 
 #ifndef _OPENCL_API_H_
@@ -17,5 +16,5 @@ typedef struct profilingData
 } profilingData;
 #endif
 
-void opencl_subscriber_callback(cl_event, cl_int, void *);
+void opencl_subscriber_callback(opencl_call, uint64_t);
 void opencl_buffer_completion_callback(cl_event, cl_int, void *);

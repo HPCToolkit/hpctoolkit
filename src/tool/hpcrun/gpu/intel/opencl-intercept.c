@@ -1,6 +1,7 @@
 #include <gotcha/gotcha.h>
 #include <stdio.h>
 #include <CL/cl.h>
+
 #include "opencl-api.h"
 #include "opencl-intercept.h"
 
@@ -43,7 +44,7 @@ static cl_int clEnqueueNDRangeKernel_wrapper(cl_command_queue command_queue, cl_
   clkernel_fptr clEnqueueNDRangeKernel_wrappee = (clkernel_fptr) gotcha_get_wrappee(clEnqueueNDRangeKernel_handle);
   cl_int return_status = clEnqueueNDRangeKernel_wrappee(command_queue, ocl_kernel, work_dim, global_work_offset, global_work_size, local_work_size, num_events_in_wait_list, event_wait_list, event);
   
-  clSetEventCallback(*event, CL_SUBMITTED, &opencl_subscriber_callback, kernel_cb);
+  opencl_subscriber_callback(kernel_cb->type, kernel_cb->correlation_id);
   clSetEventCallback(*event, CL_COMPLETE, &opencl_buffer_completion_callback, kernel_cb);
   return return_status;
 }
@@ -64,7 +65,7 @@ static cl_int clEnqueueReadBuffer_wrapper (cl_command_queue command_queue, cl_me
   cl_int return_status = clEnqueueReadBuffer_wrappee(command_queue, buffer, blocking_read, offset, cb, ptr, num_events_in_wait_list, event_wait_list, event);
   printf("%zu(bytes) of data being transferred from device to host\n", cb);
 
-  clSetEventCallback(*event, CL_SUBMITTED, &opencl_subscriber_callback, mem_transfer_cb);
+  opencl_subscriber_callback(mem_transfer_cb->type, mem_transfer_cb->correlation_id);
   clSetEventCallback(*event, CL_COMPLETE, &opencl_buffer_completion_callback, mem_transfer_cb);
   return return_status;
 }
@@ -85,7 +86,7 @@ static cl_int clEnqueueWriteBuffer_wrapper(cl_command_queue command_queue, cl_me
   cl_int return_status = clEnqueueWriteBuffer_wrappee(command_queue, buffer, blocking_write, offset, cb, ptr, num_events_in_wait_list, event_wait_list, event);
   printf("%zu(bytes) of data being transferred from host to device\n", cb);
   
-  clSetEventCallback(*event, CL_SUBMITTED, &opencl_subscriber_callback, mem_transfer_cb);
+  opencl_subscriber_callback(mem_transfer_cb->type, mem_transfer_cb->correlation_id);
   clSetEventCallback(*event, CL_COMPLETE, &opencl_buffer_completion_callback, mem_transfer_cb);
   return return_status;
 }
