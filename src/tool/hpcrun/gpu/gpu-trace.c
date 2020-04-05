@@ -188,13 +188,18 @@ gpu_trace_cct_insert_context
 
   // debug
   cct_addr_t *path_addr = hpcrun_cct_addr(path);
-  assert(path_addr->ip_norm.lm_id == 25 || path_addr->ip_norm.lm_id == 2);
+  assert(path != NULL);
+  assert(path_addr != NULL);
 
   cct_addr_t *leaf_addr = hpcrun_cct_addr(leaf);
+  assert(leaf != NULL);
+  assert(leaf_addr != NULL);
   assert(leaf_addr->ip_norm.lm_id == path_addr->ip_norm.lm_id);
 
   cct_node_t *parent = hpcrun_cct_parent(leaf);
   cct_addr_t *parent_addr = hpcrun_cct_addr(parent);
+  assert(parent != NULL);
+  assert(parent_addr != NULL);
   assert(parent_addr->ip_norm.lm_id < 100);
 
   return leaf;

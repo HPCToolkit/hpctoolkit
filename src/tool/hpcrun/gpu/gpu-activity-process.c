@@ -176,6 +176,7 @@ gpu_memcpy_process
           gpu_placeholder_type_copy);
       }
 
+      assert(host_op_node != NULL);
       gpu_trace_item_t entry_trace;
       trace_item_set(&entry_trace, activity, host_op_entry, host_op_node);
 
