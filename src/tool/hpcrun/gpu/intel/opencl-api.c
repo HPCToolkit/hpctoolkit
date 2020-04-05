@@ -76,8 +76,8 @@ void opencl_buffer_completion_callback(cl_event event, cl_int event_command_exec
 	gpu_correlation_id_map_entry_t *cid_map_entry = gpu_correlation_id_map_lookup(correlation_id);
 	if (cid_map_entry == NULL)
 	{
-		printf("completion callback was called before registration callback\n");
-		opencl_function_submitted(type, correlation_id);
+		printf("completion callback was called before registration callback. type: %d, correlation: %"PRIu64 "\n", type, correlation_id);
+		//opencl_function_submitted(type, correlation_id);
 	}
 	printf("completion type: %d, correlation: %"PRIu64 "\n", type, correlation_id);
  	opencl_buffer_completion_notify();

@@ -24,6 +24,7 @@ void opencl_activity_translate(gpu_activity_t * ga, cl_event event, void * user_
 	  convert_memcpy(ga, user_data, event, GPU_MEMCPY_D2H);
 	  break;
   }
+  cstack_ptr_set(&(ga->next), 0);
 }
 
 void convert_kernel_launch(gpu_activity_t * ga, void * user_data, cl_event event)
