@@ -60,7 +60,7 @@ dnl  Organization:
 dnl  1. Autoconf dependencies (autoconf version/automake version)
 dnl  2. Special options that need to be checked before compiler tests
 dnl  3. Basic prerequisites (compiler tests, tools, system, etc.)
-dnl  4. Host-specific settings and tests 
+dnl  4. Host-specific settings and tests
 dnl  5. Process and test --with/--enable options (which may need the host-specific settings)
 dnl  6. Generate output
 dnl
@@ -78,7 +78,7 @@ dnl--------------------------------------------------------------------------
 m4_include(config/hpc-cxxutils.m4)
 
 #----------------------------------------------------------------------------
-# Initialization: 
+# Initialization:
 #----------------------------------------------------------------------------
 
 AC_INIT([hpctoolkit], [2020.03-develop],
@@ -154,19 +154,19 @@ if test -d "${srcdir}/.git" ; then
     git_hash=`echo "$mesg" | grep -i commit | head -1 | awk '{print $2}'`
     git_hash=`expr "$git_hash" : '\(................\)'`
     git_date=`echo "$mesg" | grep -i date | head -1 | awk '{print $2}'`
-  
+
     mesg=`cd "$srcdir" && git status 2>/dev/null | head -1`
     if echo "$mesg" | grep -i branch >/dev/null ; then
       git_branch=`echo "$mesg" | sed -e 's/^.*branch//i' | awk '{print $1}'`
-  
+
     elif echo "$mesg" | grep -i detach >/dev/null ; then
       # detached commits don't have a branch name
       git_branch=detached
-  
+
     else
       git_branch=unknown
     fi
-  
+
     git_version="$git_branch at $git_date ($git_hash)"
   fi
 fi
@@ -629,7 +629,7 @@ my_demangle_ldflags=""
 if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
   my_opt_cflags="-g -O0 -Wall"
   my_opt_cxxflags="-g -O0 -Wall"
-else 
+else
   # On some compilers, -g implies -O0.  Make sure -O3 takes precedence!
   my_opt_cflags="-g -O3 -Wall"
   my_opt_cxxflags="-g -O3 -Wall"
@@ -712,7 +712,7 @@ case "${host}" in
     if HPCcccmp([cc]) ; then
       HOST_CFLAGS="-64"
     fi
-    
+
     # GCC
     if HPCcxxcmp([g++ c++]) ; then
       HOST_CXXFLAGS="-mabi=64"
@@ -720,7 +720,7 @@ case "${host}" in
     if HPCcccmp([gcc]) ; then
       HOST_CFLAGS="-mabi=64"
     fi
-   
+
     # SGI demangle
     my_demangle_ldflags="-lmangle"
     ;;
@@ -731,7 +731,7 @@ case "${host}" in
     if HPCcxxcmp([CC]); then
       if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
         my_opt_cxxflags="-g"
-      else 
+      else
         my_opt_cxxflags="-fast -g"
       fi
       HOST_AR="$CXX $CXXFLAGS -xar -o"
@@ -739,11 +739,11 @@ case "${host}" in
     if HPCcccmp([cc]); then
       if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
         my_opt_cflags="-g"
-      else 
+      else
         my_opt_cflags="-fast -g"
       fi
     fi
-    
+
     # Sun demangle
     my_demangle_ldflags="-ldemangle"
     ;;
@@ -761,14 +761,14 @@ case "${host}" in
       #old: HOST_LIBTREPOSITORY="./cxx_trepository/*.o"
       if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
         my_opt_cxxflags="-gall"
-      else 
+      else
         my_opt_cxxflags="-g3 -O2"
       fi
     fi
     if HPCcccmp([cc]); then
       if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
         my_opt_cflags="-g"
-      else 
+      else
         my_opt_cflags="-g3 -O3"
       fi
     fi
@@ -2836,7 +2836,7 @@ AC_MSG_RESULT([$MBEDTLS])
 case "$MBEDTLS" in
   /* )
     AC_MSG_CHECKING([if libmbedcrypto.a was compiled with -fPIC])
-    
+
     ORIG_CFLAGS="$CFLAGS"
     ORIG_LIBS="$LIBS"
     CFLAGS="-shared -fPIC $MBEDTLS_IFLAGS"
@@ -4494,7 +4494,7 @@ AC_ARG_WITH([cuda],
 AC_MSG_CHECKING([for cuda])
 
 case "$CUDA" in
-  /* ) 
+  /* )
     if test ! -f "${CUDA}/include/cuda.h" ; then
       AC_MSG_ERROR([unable to find cuda.h in: $CUDA])
     fi
@@ -4748,7 +4748,7 @@ AC_SUBST([VALGRIND_IFLAGS])
 
 
 #-------------------------------------------------
-# Option: --enable-valgrind-annotations, --with-valgrind=PATH
+# Option: --enable-valgrind-annotations
 #-------------------------------------------------
 
 OPT_ENABLE_VG_ANNOTATIONS="no"
@@ -5012,6 +5012,8 @@ AC_MSG_NOTICE([  zlib:         ${ZLIB}])
 AC_MSG_NOTICE([  cuda:         ${CUDA}])
 AC_MSG_NOTICE([  cupti:        ${CUPTI}])
 AC_MSG_NOTICE([  papi-c-cupti: ${use_papi_c_cupti}])
+AC_MSG_NOTICE([  valgrind:     ${VALGRIND}])
+AC_MSG_NOTICE([  valgrind:     annotated: ${OPT_ENABLE_VG_ANNOTATIONS}])
 
 if test "x$mult_spack_pkgs" != x ; then
   mult_spack_pkgs=`echo $mult_spack_pkgs`

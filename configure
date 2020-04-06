@@ -23605,7 +23605,7 @@ $as_echo "$VALGRIND" >&6; }
 
 
 #-------------------------------------------------
-# Option: --enable-valgrind-annotations, --with-valgrind=PATH
+# Option: --enable-valgrind-annotations
 #-------------------------------------------------
 
 OPT_ENABLE_VG_ANNOTATIONS="no"
@@ -26741,6 +26741,10 @@ $as_echo "$as_me:   cuda:         ${CUDA}" >&6;}
 $as_echo "$as_me:   cupti:        ${CUPTI}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   papi-c-cupti: ${use_papi_c_cupti}" >&5
 $as_echo "$as_me:   papi-c-cupti: ${use_papi_c_cupti}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   valgrind:     ${VALGRIND}" >&5
+$as_echo "$as_me:   valgrind:     ${VALGRIND}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   valgrind:     annotated: ${OPT_ENABLE_VG_ANNOTATIONS}" >&5
+$as_echo "$as_me:   valgrind:     annotated: ${OPT_ENABLE_VG_ANNOTATIONS}" >&6;}
 
 if test "x$mult_spack_pkgs" != x ; then
   mult_spack_pkgs=`echo $mult_spack_pkgs`
