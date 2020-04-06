@@ -687,6 +687,21 @@ gpu_metrics_KINFO_enable
   DIVISION_FORMULA(GPU_KINFO_REGISTERS);
   DIVISION_FORMULA(GPU_KINFO_BLK_THREADS);
   DIVISION_FORMULA(GPU_KINFO_BLK_SMEM);
+
+
+  hpcrun_set_percent(METRIC_ID(GPU_KINFO_OCCUPANCY), 0);
+
+  metric_desc_t* occ_metric = 
+    hpcrun_id2metric_linked(METRIC_ID(GPU_KINFO_OCCUPANCY));
+
+  char *occ_formula = hpcrun_malloc_safe(sizeof(char) * MAX_CHAR_FORMULA);
+  sprintf(occ_formula, "min(100, max(0, 100*#%d/#%d))", 
+	  METRIC_ID(GPU_KINFO_FGP_ACT), METRIC_ID(GPU_KINFO_FGP_MAX));
+  occ_metric->formula = occ_formula;
+
+  occ_metric->format  = FORMAT_DISPLAY_PERCENTAGE;
+
+  hpcrun_set_display(METRIC_ID(GPU_KINFO_OCCUPANCY), HPCRUN_FMT_METRIC_SHOW_EXCLUSIVE); 
 }
 
 
