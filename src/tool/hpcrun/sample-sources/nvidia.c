@@ -96,21 +96,13 @@
  * macros
  *****************************************************************************/
 
-#define NVIDIA_DEBUG 0
-
-#if NVIDIA_DEBUG
-#define PRINT(...) fprintf(stderr, __VA_ARGS__)
-#else
-#define PRINT(...)
-#endif
-
-#define NVIDIA_CUDA "gpu=nvidia" 
-#define NVIDIA_CUDA_PC_SAMPLING "gpu=nvidia,pc" 
+#define NVIDIA_CUDA "gpu=nvidia"
+#define NVIDIA_CUDA_PC_SAMPLING "gpu=nvidia,pc"
 
 
 
 /******************************************************************************
- * local variables 
+ * local variables
  *****************************************************************************/
 
 // finalizers
@@ -147,17 +139,17 @@ static const size_t DEFAULT_DEVICE_SEMAPHORE_SIZE = 65536;
 //******************************************************************************
 
 CUpti_ActivityKind
-external_correlation_activities[] = { 
-  CUPTI_ACTIVITY_KIND_EXTERNAL_CORRELATION, 
+external_correlation_activities[] = {
+  CUPTI_ACTIVITY_KIND_EXTERNAL_CORRELATION,
   CUPTI_ACTIVITY_KIND_INVALID
 };
 
 
 CUpti_ActivityKind
-data_motion_explicit_activities[] = { 
+data_motion_explicit_activities[] = {
   CUPTI_ACTIVITY_KIND_MEMCPY2,
-  CUPTI_ACTIVITY_KIND_MEMCPY, 
-  CUPTI_ACTIVITY_KIND_MEMSET, 
+  CUPTI_ACTIVITY_KIND_MEMCPY,
+  CUPTI_ACTIVITY_KIND_MEMSET,
 // FIXME(keren): memory activity does not have a correlation id
 // CUPTI_ACTIVITY_KIND_MEMORY,
   CUPTI_ACTIVITY_KIND_INVALID
@@ -165,14 +157,14 @@ data_motion_explicit_activities[] = {
 
 
 CUpti_ActivityKind
-data_motion_implicit_activities[] = { 
+data_motion_implicit_activities[] = {
   CUPTI_ACTIVITY_KIND_UNIFIED_MEMORY_COUNTER,
   CUPTI_ACTIVITY_KIND_INVALID
 };
 
 
 CUpti_ActivityKind
-kernel_invocation_activities[] = { 
+kernel_invocation_activities[] = {
   CUPTI_ACTIVITY_KIND_KERNEL,
   CUPTI_ACTIVITY_KIND_SYNCHRONIZATION,
   CUPTI_ACTIVITY_KIND_INVALID
@@ -188,7 +180,7 @@ kernel_execution_activities[] = {
 // CUPTI_ACTIVITY_KIND_SHARED_ACCESS,
 // CUPTI_ACTIVITY_KIND_BRANCH,
   CUPTI_ACTIVITY_KIND_INVALID
-};                                   
+};
 
 
 CUpti_ActivityKind
@@ -244,7 +236,7 @@ cupti_enable_activities
 (
 )
 {
-  PRINT("Enter cupti_enable_activities\n");
+  TMSG(CUPTI, "Enter cupti_enable_activities");
 
   cupti_correlation_enable();
 
@@ -263,7 +255,7 @@ cupti_enable_activities
 
   FORALL_ACTIVITIES(CUPTI_SET_ACTIVITIES)
 
-  PRINT("Exit cupti_enable_activities\n");
+  TMSG(CUPTI, "Exit cupti_enable_activities");
 }
 
 
@@ -324,14 +316,14 @@ METHOD_FN(supports_event, const char *ev_str)
   return false;
 #endif
 }
- 
+
 static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
   int nevents = (self->evl).nevents;
 
   TMSG(CUDA,"nevents = %d", nevents);
-  
+
   // Fetch the event string for the sample source
   // only one event is allowed
   char* evlist = METHOD_CALL(self, get_event_str);
@@ -340,22 +332,22 @@ METHOD_FN(process_event_list, int lush_metrics)
   int frequency_default = -1;
   hpcrun_extract_ev_thresh(event, sizeof(nvidia_name), nvidia_name,
     &frequency, frequency_default);
-  
+
   if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA)) {
     trace_frequency =
       (frequency == frequency_default) ? trace_frequency_default : frequency;
     gpu_monitoring_trace_sample_frequency_set(trace_frequency);
   } else if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_PC_SAMPLING)) {
-    pc_sampling_frequency = (frequency == frequency_default) ? 
+    pc_sampling_frequency = (frequency == frequency_default) ?
       pc_sampling_frequency_default : frequency;
-    
+
     gpu_monitoring_instruction_sample_frequency_set(pc_sampling_frequency);
 
-    gpu_metrics_GPU_INST_enable(); // instruction counts      
-    
+    gpu_metrics_GPU_INST_enable(); // instruction counts
+
     gpu_metrics_GPU_INST_STALL_enable(); // stall metrics
-    
-    gpu_metrics_GSAMP_enable(); // GPU utilization from sampling      
+
+    gpu_metrics_GSAMP_enable(); // GPU utilization from sampling
   }
 
   gpu_metrics_default_enable();
@@ -375,18 +367,18 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   // Register hpcrun callbacks
   device_finalizer_flush.fn = cupti_device_flush;
-  device_finalizer_register(device_finalizer_type_flush, 
+  device_finalizer_register(device_finalizer_type_flush,
 			    &device_finalizer_flush);
 
   device_finalizer_shutdown.fn = cupti_device_shutdown;
-  device_finalizer_register(device_finalizer_type_shutdown, 
+  device_finalizer_register(device_finalizer_type_shutdown,
 			    &device_finalizer_shutdown);
 
   // Get control knobs
-  int device_buffer_size = 
+  int device_buffer_size =
     control_knob_value_get_int(HPCRUN_CUDA_DEVICE_BUFFER_SIZE);
 
-  int device_semaphore_size = 
+  int device_semaphore_size =
     control_knob_value_get_int(HPCRUN_CUDA_DEVICE_SEMAPHORE_SIZE);
 
   if (device_buffer_size == 0) {
@@ -397,8 +389,8 @@ METHOD_FN(process_event_list, int lush_metrics)
     device_semaphore_size = DEFAULT_DEVICE_SEMAPHORE_SIZE;
   }
 
-  PRINT("Device buffer size %d\n", device_buffer_size);
-  PRINT("Device semaphore size %d\n", device_semaphore_size);
+  TMSG(CUDA, "Device buffer size %d", device_buffer_size);
+  TMSG(CUDA, "Device semaphore size %d", device_semaphore_size);
 
   cupti_device_buffer_config(device_buffer_size, device_semaphore_size);
 
@@ -420,7 +412,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   // Register shutdown functions to write trace files
   device_trace_finalizer_shutdown.fn = gpu_trace_fini;
-  device_finalizer_register(device_finalizer_type_shutdown, 
+  device_finalizer_register(device_finalizer_type_shutdown,
 			    &device_trace_finalizer_shutdown);
 }
 

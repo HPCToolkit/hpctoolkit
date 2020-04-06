@@ -64,6 +64,8 @@
 // local includes
 //******************************************************************************
 
+#include <hpcrun/messages/messages.h>
+
 #include "cubin-symbols.h"
 
 //******************************************************************************
@@ -77,8 +79,6 @@
 #define section_index(n) (n-1)
 
 #define EM_CUDA 190
-
-#define CUDA_SYMBOL_DEBUG 0
 
 //******************************************************************************
 // type definitions
@@ -260,7 +260,7 @@ printSymbols
 )
 {
   for (int i=0; i < symbols->nsymbols; i++) {
-    printf("symbol %d: 0x%lx\n", i, symbols->symbols[i]);
+    TMSG(CUDA_CUBIN, "symbol %d: 0x%lx", i, symbols->symbols[i]);
   }
 }
 
@@ -286,9 +286,8 @@ computeCubinFunctionOffsets
 	  if (ehdr) {
 		  if (ehdr->e_machine == EM_CUDA) {
 			  symbols = computeSymbolOffsets(cubin_ptr, elf);
-#if CUDA_SYMBOL_DEBUG
-        printSymbols(symbols);
-#endif
+			  if(ENABLED(CUDA_CUBIN))
+				  printSymbols(symbols);
 			  elf_end(elf);
 		  }
 	  }

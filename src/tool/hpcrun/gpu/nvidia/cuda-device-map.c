@@ -47,9 +47,9 @@
 //   cuda-device-map.c
 //
 // Purpose:
-//   implementation of a map that enables one to look up device 
+//   implementation of a map that enables one to look up device
 //   properties given a device id
-//  
+//
 //***************************************************************************
 
 
@@ -78,15 +78,6 @@
 //*****************************************************************************
 // macros
 //*****************************************************************************
-
-#define DEBUG 0
-
-#if DEBUG
-#define PRINT(...) fprintf(stderr, __VA_ARGS__)
-#else
-#define PRINT(...)
-#endif
-
 
 #define st_insert				\
   typed_splay_insert(device)
@@ -124,12 +115,12 @@ struct cuda_device_map_entry_t {
   uint64_t device; // key (must be 64 bits to use splay-uint64 base)
 
   cuda_device_property_t property;
-}; 
+};
 
 
 
 //*****************************************************************************
-// global data 
+// global data
 //*****************************************************************************
 
 static cuda_device_map_entry_t *map_root = NULL;
@@ -149,7 +140,7 @@ cuda_device_map_entry_new
  uint32_t device
 )
 {
-  cuda_device_map_entry_t *e = (cuda_device_map_entry_t *) 
+  cuda_device_map_entry_t *e = (cuda_device_map_entry_t *)
     hpcrun_malloc_safe(sizeof(cuda_device_map_entry_t));
 
   memset(e, 0, sizeof(cuda_device_map_entry_t));
@@ -173,7 +164,7 @@ cuda_device_map_lookup
 {
   cuda_device_map_entry_t *result = st_lookup(&map_root, id);
 
-  PRINT("device map lookup: id=0x%lx (record %p)\n", id, result);
+  TMSG(CUDA_DEVICE, "device map lookup: id=0x%lx (record %p)", id, result);
 
   return result;
 }
@@ -186,9 +177,9 @@ cuda_device_map_insert
 )
 {
   cuda_device_map_entry_t *entry = cuda_device_map_entry_new(device);
-  cuda_device_property_query(device, &entry->property); 
+  cuda_device_property_query(device, &entry->property);
 
-  PRINT("device map insert: id=0x%lx (record %p)\n", device, entry);
+  TMSG(CUDA_DEVICE, "device map insert: id=0x%lx (record %p)", device, entry);
 
   st_insert(&map_root, entry);
 }
@@ -219,7 +210,7 @@ cuda_device_map_entry_device_property_get
 // debugging code
 //*****************************************************************************
 
-int 
+int
 cuda_device_map_count
 (
  void
