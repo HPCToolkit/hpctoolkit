@@ -22,27 +22,26 @@ void opencl_activity_process(cl_event, void *);
 
 void opencl_subscriber_callback(opencl_call type, uint64_t correlation_id)
 {
-  gpu_correlation_id_map_insert(correlation_id, correlation_id);
-  cct_node_t *api_node = gpu_application_thread_correlation_callback(correlation_id);
   gpu_op_placeholder_flags_t gpu_op_placeholder_flags = 0;
   gpu_op_ccts_t gpu_op_ccts;
+  gpu_correlation_id_map_insert(correlation_id, correlation_id);
+  cct_node_t *api_node = gpu_application_thread_correlation_callback(correlation_id);
 
-  hpcrun_safe_enter();
   switch (type)
   {
 	case memcpy_H2D:
 	  gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_copyin);
-	  gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
 	  break;
 	case memcpy_D2H:
 	  gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_copyout);
-	  gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
 	  break;
 	case kernel:
 	  gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_kernel);
-	  gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
 	  break;
   }
+
+  hpcrun_safe_enter();
+  gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
   hpcrun_safe_exit();
 
   gpu_activity_channel_consume(gpu_metrics_attribute);	
