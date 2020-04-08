@@ -107,6 +107,7 @@
 #include "sanitizer-api.h"
 #include "sanitizer-context-map.h"
 #include "sanitizer-stream-map.h"
+#include "sanitizer-kernel-map.h"
 #include "sanitizer-buffer.h"
 #include "sanitizer-buffer-channel.h"
 #include "sanitizer-buffer-channel-set.h"
@@ -720,6 +721,7 @@ dim3_id_transform
 static void
 sanitizer_kernel_launch_sync
 (
+ cct_node_t *api_node,
  CUcontext context,
  CUmodule module,
  CUfunction function,
@@ -732,11 +734,6 @@ sanitizer_kernel_launch_sync
   // Look up module id
   hpctoolkit_cumod_st_t *cumod = (hpctoolkit_cumod_st_t *)module;
   uint32_t cubin_id = cumod->cubin_id;
-
-  // Get a place holder cct node
-  uint64_t correlation_id = gpu_correlation_id();
-  // TODO(Keren): why two extra layers?
-  cct_node_t *api_node = sanitizer_correlation_callback(correlation_id, 0);
 
   // Insert a function cct node
   hpcrun_safe_enter();
@@ -1005,11 +1002,23 @@ sanitizer_subscribe_callback
     static __thread dim3 block_size = { .x = 0, .y = 0, .z = 0};
     static __thread CUstream priority_stream = NULL;
     static __thread bool sampling = true;
+    static __thread cct_node_t *api_node = NULL;
 
     if (cbid == SANITIZER_CBID_LAUNCH_BEGIN) {
       // Kernel 
       int sampling_frequency = sanitizer_kernel_sampling_frequency_get();
       int sampling = sampling_frequency == 0 ? true : rand() % sampling_frequency == 0;
+
+      // Get a place holder cct node
+      uint64_t correlation_id = gpu_correlation_id();
+      // TODO(Keren): why two extra layers?
+      api_node = sanitizer_correlation_callback(correlation_id, 0);
+
+      // First time must be sampled
+      if (sanitizer_kernel_map_lookup(api_node) == NULL) {
+        sampling = true;
+        sanitizer_kernel_map_init(api_node);
+      }
 
       if (sampling) {
         grid_size.x = ld->gridDim_x;
@@ -1034,7 +1043,7 @@ sanitizer_subscribe_callback
       }
     } else if (cbid == SANITIZER_CBID_LAUNCH_END) {
       if (sampling) {
-        sanitizer_kernel_launch_sync(ld->context, ld->module, ld->function, ld->stream,
+        sanitizer_kernel_launch_sync(api_node, ld->context, ld->module, ld->function, ld->stream,
           priority_stream, grid_size, block_size);
 
         sanitizer_context_map_stream_unlock(ld->context, ld->stream);
