@@ -134,6 +134,8 @@ static long pc_sampling_frequency_default = 12;
 static long block_sampling_frequency = 0;
 static long block_sampling_frequency_default = 0;
 
+static int kernel_sampling_frequency = 0;
+
 static int cupti_enabled_activities = 0;
 
 // event name, which is nvidia-cuda
@@ -150,6 +152,8 @@ static const int DEFAULT_APPROX_LEVEL = 0;
 static const int DEFAULT_PC_VIEWS = 30;
 // 0: no mem views
 static const int DEFAULT_MEM_VIEWS = 0;
+// 0: no kernel sampling
+static const int DEFAULT_KERNEL_SAMPLING_FREQUENCY = 0;
 
 //******************************************************************************
 // constants
@@ -253,6 +257,13 @@ int
 sanitizer_block_sampling_frequency_get()
 {
   return block_sampling_frequency;
+}
+
+
+int
+sanitizer_kernel_sampling_frequency_get()
+{
+  return kernel_sampling_frequency;
 }
 
 
@@ -481,6 +492,8 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     int mem_views = control_knob_value_get_int(HPCRUN_SANITIZER_MEM_VIEWS);
 
+    int kernel_sampling_frequency = control_knob_value_get_int(HPCRUN_SANITIZER_KERNEL_SAMPLING_FREQUENCY);
+
     char *data_type = control_knob_value_get(HPCRUN_SANITIZER_DEFAULT_TYPE);
 
     if (gpu_patch_record_num == 0) {
@@ -501,6 +514,10 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     if (mem_views == 0) {
       mem_views = DEFAULT_MEM_VIEWS;
+    }
+
+    if (kernel_sampling_frequency == 0) {
+      kernel_sampling_frequency = DEFAULT_KERNEL_SAMPLING_FREQUENCY;
     }
 
     PRINT("gpu_patch_record_num %d\n", gpu_patch_record_num);

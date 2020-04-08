@@ -1004,32 +1004,42 @@ sanitizer_subscribe_callback
     static __thread dim3 grid_size = { .x = 0, .y = 0, .z = 0};
     static __thread dim3 block_size = { .x = 0, .y = 0, .z = 0};
     static __thread CUstream priority_stream = NULL;
+    static __thread bool sampling = true;
 
     if (cbid == SANITIZER_CBID_LAUNCH_BEGIN) {
-      grid_size.x = ld->gridDim_x;
-      grid_size.y = ld->gridDim_y;
-      grid_size.z = ld->gridDim_z;
-      block_size.x = ld->blockDim_x;
-      block_size.y = ld->blockDim_y;
-      block_size.z = ld->blockDim_z;
+      // Kernel 
+      int sampling_frequency = sanitizer_kernel_sampling_frequency_get();
+      int sampling = sampling_frequency == 0 ? true : rand() % sampling_frequency == 0;
 
-      PRINT("Launch kernel %s <%d, %d, %d>:<%d, %d, %d>\n", ld->functionName,
-        ld->gridDim_x, ld->gridDim_y, ld->gridDim_z, ld->blockDim_x, ld->blockDim_y, ld->blockDim_z);
-      
-      // thread-safe
-      // Create a high priority stream for the context at the first time
-      sanitizer_context_map_entry_t *entry = sanitizer_context_map_init(ld->context);
+      if (sampling) {
+        grid_size.x = ld->gridDim_x;
+        grid_size.y = ld->gridDim_y;
+        grid_size.z = ld->gridDim_z;
+        block_size.x = ld->blockDim_x;
+        block_size.y = ld->blockDim_y;
+        block_size.z = ld->blockDim_z;
 
-      sanitizer_context_map_stream_lock(ld->context, ld->stream);
+        PRINT("Launch kernel %s <%d, %d, %d>:<%d, %d, %d>\n", ld->functionName,
+          ld->gridDim_x, ld->gridDim_y, ld->gridDim_z, ld->blockDim_x, ld->blockDim_y, ld->blockDim_z);
 
-      priority_stream = sanitizer_context_map_entry_priority_stream_get(entry);
+        // thread-safe
+        // Create a high priority stream for the context at the first time
+        sanitizer_context_map_entry_t *entry = sanitizer_context_map_init(ld->context);
 
-      sanitizer_kernel_launch_callback(ld->stream, grid_size, block_size);
+        sanitizer_context_map_stream_lock(ld->context, ld->stream);
+
+        priority_stream = sanitizer_context_map_entry_priority_stream_get(entry);
+
+        sanitizer_kernel_launch_callback(ld->stream, grid_size, block_size);
+      }
     } else if (cbid == SANITIZER_CBID_LAUNCH_END) {
-      sanitizer_kernel_launch_sync(ld->context, ld->module, ld->function, ld->stream,
-        priority_stream, grid_size, block_size);
+      if (sampling) {
+        sanitizer_kernel_launch_sync(ld->context, ld->module, ld->function, ld->stream,
+          priority_stream, grid_size, block_size);
 
-      sanitizer_context_map_stream_unlock(ld->context, ld->stream);
+        sanitizer_context_map_stream_unlock(ld->context, ld->stream);
+      }
+      sampling = true;
     }
   } else if (domain == SANITIZER_CB_DOMAIN_MEMCPY) {
     // TODO(keren): variable correaltion and sync data
