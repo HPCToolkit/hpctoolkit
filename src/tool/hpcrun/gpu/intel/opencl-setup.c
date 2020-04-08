@@ -28,10 +28,15 @@ void opencl_initialize()
   //gpu_activity_channel_consume(gpu_metrics_attribute);
 }
 
+int opencl_bind()
+{
+  return 1;
+}
+/*
 void opencl_finalize()
 {
   teardown_opencl_intercept();
-}
+}*/
 
 /* input address start and end of a module entering application space.
    if libOpenCL.so has not already been loaded, we checks if current module is libOpenCL.so */

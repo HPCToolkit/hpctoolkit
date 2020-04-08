@@ -500,6 +500,7 @@ endif
 
 if ENABLE_OPENCL
 MY_OPENCL_FILES =\
+	sample-sources/opencl.c 		\
 	gpu/intel/opencl-setup.c		\
 	gpu/intel/opencl-intercept.c	\
 	gpu/intel/opencl-api.c			\
@@ -935,6 +936,7 @@ if ENABLE_OPENCL
   libhpcrun_la_SOURCES  += $(MY_OPENCL_FILES)
   libhpcrun_la_LDFLAGS += $(OPENCL_LD_FLGS)
 
+  MY_CPP_DEFINES  += -DHPCRUN_SS_OPENCL
 endif 
 
 if UNW_LIBUNW
