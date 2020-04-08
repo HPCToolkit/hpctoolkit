@@ -17,11 +17,14 @@
 
 #define CPU_NANOTIME() (usec_time() * 1000)
 
+uint64_t pending_opencl_ops = 0;
+
 void opencl_buffer_completion_notify();
 void opencl_activity_process(cl_event, void *);
 
 void opencl_subscriber_callback(opencl_call type, uint64_t correlation_id)
 {
+  __atomic_fetch_add(&pending_opencl_ops, 1, __ATOMIC_SEQ_CST);
   gpu_op_placeholder_flags_t gpu_op_placeholder_flags = 0;
   gpu_op_ccts_t gpu_op_ccts;
   gpu_correlation_id_map_insert(correlation_id, correlation_id);
@@ -67,6 +70,7 @@ void opencl_buffer_completion_callback(cl_event event, cl_int event_command_exec
  	opencl_buffer_completion_notify();
 	opencl_activity_process(event, user_data);
   }
+  __atomic_fetch_sub(&pending_opencl_ops, 1, __ATOMIC_SEQ_CST);
 }
 
 void opencl_buffer_completion_notify()
@@ -79,4 +83,15 @@ void opencl_activity_process(cl_event event, void * user_data)
   gpu_activity_t gpu_activity;
   opencl_activity_translate(&gpu_activity, event, user_data);
   gpu_activity_process(&gpu_activity);
+}
+
+void opencl_finalize()
+{
+  flush();
+  gpu_application_thread_process_activities();
+}
+
+void flush()
+{
+  while (__atomic_load_n(&pending_opencl_ops, __ATOMIC_SEQ_CST) != 0);
 }
