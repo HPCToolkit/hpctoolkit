@@ -722,6 +722,7 @@ static void
 sanitizer_kernel_launch_sync
 (
  cct_node_t *api_node,
+ uint64_t correlation_id,
  CUcontext context,
  CUmodule module,
  CUfunction function,
@@ -746,8 +747,6 @@ sanitizer_kernel_launch_sync
   api_node = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel);
 
   hpcrun_safe_exit();
-
-  PRINT("Sync kernel op %lu, id %lu\n", correlation_id, (uint64_t)api_node);
 
   // TODO(Keren): correlate metrics with api_node
 
@@ -1002,15 +1001,17 @@ sanitizer_subscribe_callback
     static __thread dim3 block_size = { .x = 0, .y = 0, .z = 0};
     static __thread CUstream priority_stream = NULL;
     static __thread bool sampling = true;
+    static __thread uint64_t correlation_id = 0;
     static __thread cct_node_t *api_node = NULL;
 
     if (cbid == SANITIZER_CBID_LAUNCH_BEGIN) {
       // Kernel 
       int sampling_frequency = sanitizer_kernel_sampling_frequency_get();
+      // TODO(Keren): thread safe rand
       int sampling = sampling_frequency == 0 ? true : rand() % sampling_frequency == 0;
 
       // Get a place holder cct node
-      uint64_t correlation_id = gpu_correlation_id();
+      correlation_id = gpu_correlation_id();
       // TODO(Keren): why two extra layers?
       api_node = sanitizer_correlation_callback(correlation_id, 0);
 
@@ -1028,8 +1029,9 @@ sanitizer_subscribe_callback
         block_size.y = ld->blockDim_y;
         block_size.z = ld->blockDim_z;
 
-        PRINT("Launch kernel %s <%d, %d, %d>:<%d, %d, %d>\n", ld->functionName,
-          ld->gridDim_x, ld->gridDim_y, ld->gridDim_z, ld->blockDim_x, ld->blockDim_y, ld->blockDim_z);
+        PRINT("Launch kernel %s <%d, %d, %d>:<%d, %d, %d>, op %lu, id %lu\n", ld->functionName,
+          ld->gridDim_x, ld->gridDim_y, ld->gridDim_z, ld->blockDim_x, ld->blockDim_y, ld->blockDim_z,
+          correlation_id, (uint64_t)api_node);
 
         // thread-safe
         // Create a high priority stream for the context at the first time
@@ -1043,7 +1045,8 @@ sanitizer_subscribe_callback
       }
     } else if (cbid == SANITIZER_CBID_LAUNCH_END) {
       if (sampling) {
-        sanitizer_kernel_launch_sync(api_node, ld->context, ld->module, ld->function, ld->stream,
+        sanitizer_kernel_launch_sync(api_node, correlation_id,
+          ld->context, ld->module, ld->function, ld->stream,
           priority_stream, grid_size, block_size);
 
         sanitizer_context_map_stream_unlock(ld->context, ld->stream);
