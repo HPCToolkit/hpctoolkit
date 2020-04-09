@@ -97,6 +97,7 @@
 #include <hpcrun/gpu/gpu-monitoring-thread-api.h>
 #include <hpcrun/gpu/gpu-correlation-id.h>
 #include <hpcrun/gpu/gpu-op-placeholders.h>
+#include <hpcrun/gpu/gpu-metrics.h>
 
 #include <hpcrun/sample-sources/libdl.h>
 #include <hpcrun/sample-sources/nvidia.h>
@@ -498,7 +499,7 @@ sanitizer_path
 )
 {
   // TODO(Keren): change it back after 10.2 public release
-  const char *path = "/home/kz21/Codes/Sanitizer/libsanitizer-public.so";
+  const char *path = "/ccs/home/kz21/Codes/Sanitizer/libsanitizer-public.so";
 
 #if 0
   static char buffer[PATH_MAX];
