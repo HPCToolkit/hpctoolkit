@@ -32,8 +32,6 @@
 // local includes
 //******************************************************************************
 
-//#include "amd.h"
-
 #include "simple_oo.h"
 #include "sample_source_obj.h"
 #include "common.h"
@@ -179,11 +177,11 @@ METHOD_FN(gen_event_set,int lush_metrics)
 METHOD_FN(display_events)
 {
   printf("===========================================================================\n");
-  printf("Available AMD GPU events\n");
+  printf("Available INTEL OPENCL GPU events\n");
   printf("===========================================================================\n");
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
-  printf("%s\t\tComprehensive operation-level monitoring on an AMD GPU.\n"
+  printf("%s\t\tComprehensive operation-level monitoring for opencl on an INTEL GPU.\n"
 	  "\t\tCollect timing information on GPU kernel invocations,\n"
 	  "\t\tmemory copies, etc.\n",
 	  INTEL_OPENCL);
