@@ -50,15 +50,7 @@
 // forward type declarations
 //******************************************************************************
 
-//typedef struct gpu_trace_t gpu_trace_t;
-
 typedef struct gpu_trace_channel_t gpu_trace_channel_t;
-
-//typedef struct thread_trace_data{
-//    int thread_num;
-//    gpu_trace_t *trace;
-//
-//}thread_trace_data ;
 
 
 //******************************************************************************
@@ -90,8 +82,6 @@ gpu_trace_channel_set_consume
  int channel_num
 );
 
-int gpu_trace_channel_size(int channel_num);
-
-int gpu_trace_channel_set_release(int channel_num);
+void gpu_trace_channel_set_release(int channel_num);
 
 #endif

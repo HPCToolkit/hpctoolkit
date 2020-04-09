@@ -81,14 +81,6 @@
 // type declarations
 //******************************************************************************
 
-////TODO: Forward Declaration: This is the same like in gpu-trace.c -> include it from there
-//typedef struct gpu_trace_t {
-//  pthread_t thread;
-//  gpu_trace_channel_t *trace_channel;
-//  unsigned int channel_id;
-//} gpu_trace_t;
-
-
 //----------------------------------------------------------
 // support for a stack of trace channels
 //----------------------------------------------------------
@@ -189,7 +181,7 @@ gpu_trace_channel_set_consume
 }
 
 
-int
+void
 gpu_trace_channel_set_release
 (
  int channel_num
