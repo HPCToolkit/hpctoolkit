@@ -9,7 +9,7 @@
 #include <hpcrun/gpu/gpu-monitoring-thread-api.h> //gpu_monitoring_thread_activities_ready
 #include <hpcrun/safe-sampling.h> //hpcrun_safe_enter, hpcrun_safe_exit 
 #include <lib/prof-lean/usec_time.h> //usec_time
-
+#include <hpcrun/messages/messages.h> //ETMSG
 #include <inttypes.h> //PRIu64
 
 #include "opencl-api.h"
@@ -65,9 +65,9 @@ void opencl_buffer_completion_callback(cl_event event, cl_int event_command_exec
 	gpu_correlation_id_map_entry_t *cid_map_entry = gpu_correlation_id_map_lookup(correlation_id);
 	if (cid_map_entry == NULL)
 	{
-		printf("completion callback was called before registration callback. type: %d, correlation: %"PRIu64 "\n", type, correlation_id);
+		ETMSG(OPENCL, "completion callback was called before registration callback. type: %d, correlation: %"PRIu64 "", type, correlation_id);
 	}
-	printf("completion type: %d, correlation: %"PRIu64 "\n", type, correlation_id);
+	ETMSG(OPENCL, "completion type: %d, correlation: %"PRIu64 "", type, correlation_id);
  	opencl_buffer_completion_notify();
 	opencl_activity_process(event, user_data);
   }
@@ -95,6 +95,6 @@ void opencl_finalize()
 
 void flush()
 {
-  printf("pending operations: %" PRIu64 "\n", __atomic_load_n(&pending_opencl_ops, __ATOMIC_SEQ_CST));
+  ETMSG(OPENCL, "pending operations: %" PRIu64 "", __atomic_load_n(&pending_opencl_ops, __ATOMIC_SEQ_CST));
   while (__atomic_load_n(&pending_opencl_ops, __ATOMIC_SEQ_CST) != 0);
 }
