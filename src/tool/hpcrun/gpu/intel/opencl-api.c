@@ -71,6 +71,7 @@ void opencl_buffer_completion_callback(cl_event event, cl_int event_command_exec
  	opencl_buffer_completion_notify();
 	opencl_activity_process(event, user_data);
   }
+  free(user_data);
   __atomic_fetch_sub(&pending_opencl_ops, 1, __ATOMIC_SEQ_CST);
 }
 

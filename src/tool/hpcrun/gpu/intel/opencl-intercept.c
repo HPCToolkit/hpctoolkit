@@ -88,6 +88,7 @@ static cl_int clEnqueueWriteBuffer_wrapper(cl_command_queue command_queue, cl_me
   
   opencl_subscriber_callback(mem_transfer_cb->type, mem_transfer_cb->correlation_id);
   clSetEventCallback(*event, CL_COMPLETE, &opencl_buffer_completion_callback, mem_transfer_cb);
+  free(event);
   return return_status;
 }
 
