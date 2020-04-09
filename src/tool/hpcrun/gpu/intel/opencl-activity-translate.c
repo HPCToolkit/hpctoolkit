@@ -36,6 +36,7 @@ void convert_kernel_launch(gpu_activity_t * ga, void * user_data, cl_event event
   ga->details.kernel = openclKernelDataToGenericKernelData(pd);
   set_gpu_interval(&ga->details.interval, pd->startTime, pd->endTime);
   ga->details.kernel.correlation_id = kernel_cb_data->correlation_id;
+  free(pd);
 }
 
 void convert_memcpy(gpu_activity_t * ga, void * user_data, cl_event event, gpu_memcpy_type_t kind)
@@ -47,6 +48,7 @@ void convert_memcpy(gpu_activity_t * ga, void * user_data, cl_event event, gpu_m
   ga->details.memcpy = openclMemDataToGenericMemData(pd);
   ga->details.memcpy.correlation_id = memory_cb_data->correlation_id;
   set_gpu_interval(&ga->details.interval, pd->startTime, pd->endTime);
+  free(pd);
 }
 
 // can we remove extra time variables?
