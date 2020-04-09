@@ -1,13 +1,6 @@
-#include <dlfcn.h>  // dlopen
-#include <limits.h>  // PATH_MAX
-
 #include <hpcrun/main.h> // hpcrun_force_dlopen
 #include <hpcrun/sample-sources/libdl.h> //CHK_DLOPEN, CHK_DLSYM
-#include <monitor.h>
-#include <lib/prof-lean/pfq-rwlock.h>
-#include <hpcrun/loadmap.h>
 #include <hpcrun/gpu/gpu-metrics.h> // gpu_metrics_default_enable, gpu_metrics_attribute
-#include <hpcrun/gpu/gpu-activity-channel.h> //gpu_activity_channel_consume
 
 #include "opencl-setup.h"
 #include "opencl-intercept.h"

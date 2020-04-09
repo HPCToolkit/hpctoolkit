@@ -21,6 +21,7 @@ uint64_t pending_opencl_ops = 0;
 
 void opencl_buffer_completion_notify();
 void opencl_activity_process(cl_event, void *);
+void flush();
 
 void opencl_subscriber_callback(opencl_call type, uint64_t correlation_id)
 {
@@ -93,5 +94,6 @@ void opencl_finalize()
 
 void flush()
 {
+  printf("pending operations: %" PRIu64 "\n", __atomic_load_n(&pending_opencl_ops, __ATOMIC_SEQ_CST));
   while (__atomic_load_n(&pending_opencl_ops, __ATOMIC_SEQ_CST) != 0);
 }
