@@ -281,45 +281,45 @@ consume_one_trace_item
 {
   cct_node_t *leaf = gpu_trace_cct_insert_context(td, call_path);
 
-  //cct_node_t *no_activity = gpu_trace_cct_no_activity(td);
+  cct_node_t *no_activity = gpu_trace_cct_no_activity(td);
 
-  //uint64_t start = gpu_trace_time(start_time);
-  //uint64_t end   = gpu_trace_time(end_time);
+  uint64_t start = gpu_trace_time(start_time);
+  uint64_t end   = gpu_trace_time(end_time);
 
-  //stream_start_set(start_time);
+  stream_start_set(start_time);
 
-  //start = gpu_trace_start_adjust(start, end);
+  start = gpu_trace_start_adjust(start, end);
 
-  //int frequency = gpu_monitoring_trace_sample_frequency_get();
+  int frequency = gpu_monitoring_trace_sample_frequency_get();
 
-  //bool append = false;
+  bool append = false;
 
-  //if (frequency != -1) {
-  //  uint64_t cur_start = start_time;
-  //  uint64_t cur_end = end_time;
-  //  uint64_t intervals = (cur_start - stream_start_get() - 1) / frequency + 1;
-  //  uint64_t pivot = intervals * frequency + stream_start;
+  if (frequency != -1) {
+    uint64_t cur_start = start_time;
+    uint64_t cur_end = end_time;
+    uint64_t intervals = (cur_start - stream_start_get() - 1) / frequency + 1;
+    uint64_t pivot = intervals * frequency + stream_start;
 
-  //  if (pivot <= cur_end && pivot >= cur_start) {
-  //    // only trace when the pivot is within the range
-  //    PRINT("pivot %" PRIu64 " not in <%" PRIu64 ", %" PRIu64
-  //      "> with intervals %" PRIu64 ", frequency %" PRIu64 "\n",
-  //      pivot, cur_start, cur_end, intervals, frequency);
-  //    append = true;
-  //  }
-  //} else {
-  //  append = true;
-  //}
+    if (pivot <= cur_end && pivot >= cur_start) {
+      // only trace when the pivot is within the range
+      PRINT("pivot %" PRIu64 " not in <%" PRIu64 ", %" PRIu64
+        "> with intervals %" PRIu64 ", frequency %" PRIu64 "\n",
+        pivot, cur_start, cur_end, intervals, frequency);
+      append = true;
+    }
+  } else {
+    append = true;
+  }
 
-  //if (append) {
-  //  gpu_trace_first(td, no_activity, start);
+  if (append) {
+    gpu_trace_first(td, no_activity, start);
 
-  //  gpu_trace_stream_append(td, leaf, start);
+    gpu_trace_stream_append(td, leaf, start);
 
-  //  gpu_trace_stream_append(td, no_activity, end + 1);
+    gpu_trace_stream_append(td, no_activity, end + 1);
 
-  //  PRINT("%p Append trace activity [%lu, %lu]\n", td, start, end);
-  //}
+    PRINT("%p Append trace activity [%lu, %lu]\n", td, start, end);
+  }
 }
 
 
@@ -452,9 +452,11 @@ schedule_multi_threads
 {
   int streams_per_thread = 4;
   static int num_threads = 0;
-  unsigned long long stream_counter_local = atomic_fetch_add(&stream_counter, 1);
+  static int num_streams = 0;
+  unsigned long long stream_counter_local = num_streams++;
   volatile bool new_thread = false;
 
+  atomic_fetch_add(&stream_counter, 1);
   if (stream_counter_local >= (streams_per_thread * num_threads)) {
     num_threads++;
     new_thread = true;
