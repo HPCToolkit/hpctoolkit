@@ -1,3 +1,5 @@
+#include <hpcrun/messages/messages.h> //ETMSG
+
 #include "opencl-activity-translate.h"
 #include "opencl-api.h" //profilingData
 
@@ -30,7 +32,7 @@ void opencl_activity_translate(gpu_activity_t * ga, cl_event event, void * user_
 void convert_kernel_launch(gpu_activity_t * ga, void * user_data, cl_event event)
 {
   cl_kernel_callback* kernel_cb_data = (cl_kernel_callback*)user_data;
-  printf("Saving kernel data to gpu_activity_t\n");
+  ETMSG(OPENCL, "Saving kernel data to gpu_activity_t");
   ga->kind = GPU_ACTIVITY_KERNEL;
   profilingData* pd = getTimingInfoFromClEvent(event);
   ga->details.kernel = openclKernelDataToGenericKernelData(pd);
@@ -65,7 +67,7 @@ profilingData* getTimingInfoFromClEvent(cl_event event)
   errorCode |= clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, sizeof(commandStart), &commandStart, NULL);
   errorCode |= clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(commandEnd), &commandEnd, NULL);
   if (errorCode != CL_SUCCESS)
-	printf("error in collecting profiling data.\n");	
+	ETMSG(OPENCL, "error in collecting profiling data");
   profilingData *pd = (profilingData*) malloc(sizeof(profilingData));
   pd->queueTime = commandQueued;
   pd->submitTime = commandSubmit;

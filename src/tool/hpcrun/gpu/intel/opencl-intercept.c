@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <CL/cl.h>
 
+#include <hpcrun/messages/messages.h>
 #include "opencl-api.h"
 #include "opencl-intercept.h"
 
@@ -38,7 +39,7 @@ static cl_int clEnqueueNDRangeKernel_wrapper(cl_command_queue command_queue, cl_
   cl_kernel_callback *kernel_cb = (cl_kernel_callback*) malloc(sizeof(cl_kernel_callback));
   kernel_cb->correlation_id = local_correlation_id;
   kernel_cb->type = kernel; 
-  printf("registering callback for type: kernel\n");
+  ETMSG(OPENCL, "registering callback for type: kernel");
   
   event = eventNullCheck(event);
   clkernel_fptr clEnqueueNDRangeKernel_wrappee = (clkernel_fptr) gotcha_get_wrappee(clEnqueueNDRangeKernel_handle);
@@ -58,12 +59,12 @@ static cl_int clEnqueueReadBuffer_wrapper (cl_command_queue command_queue, cl_me
   mem_transfer_cb->size = cb;
   mem_transfer_cb->fromDeviceToHost = true;
   mem_transfer_cb->fromHostToDevice = false;
-  printf("registering callback for type: D2H\n");
+  ETMSG(OPENCL, "registering callback for type: D2H");
   
   event = eventNullCheck(event);
   clreadbuffer_fptr clEnqueueReadBuffer_wrappee = (clreadbuffer_fptr) gotcha_get_wrappee(clEnqueueReadBuffer_handle);
   cl_int return_status = clEnqueueReadBuffer_wrappee(command_queue, buffer, blocking_read, offset, cb, ptr, num_events_in_wait_list, event_wait_list, event);
-  printf("%zu(bytes) of data being transferred from device to host\n", cb);
+  ETMSG(OPENCL, "%zu(bytes) of data being transferred from device to host", cb);
 
   opencl_subscriber_callback(mem_transfer_cb->type, mem_transfer_cb->correlation_id);
   clSetEventCallback(*event, CL_COMPLETE, &opencl_buffer_completion_callback, mem_transfer_cb);
@@ -79,12 +80,12 @@ static cl_int clEnqueueWriteBuffer_wrapper(cl_command_queue command_queue, cl_me
   mem_transfer_cb->size = cb;
   mem_transfer_cb->fromHostToDevice = true;
   mem_transfer_cb->fromDeviceToHost = false;
-  printf("registering callback for type: H2D\n");
+  ETMSG(OPENCL, "registering callback for type: H2D");
   
   event = eventNullCheck(event);
   clwritebuffer_fptr clEnqueueWriteBuffer_wrappee = (clwritebuffer_fptr) gotcha_get_wrappee(clEnqueueWriteBuffer_handle);
   cl_int return_status = clEnqueueWriteBuffer_wrappee(command_queue, buffer, blocking_write, offset, cb, ptr, num_events_in_wait_list, event_wait_list, event);
-  printf("%zu(bytes) of data being transferred from host to device\n", cb);
+  ETMSG(OPENCL, "%zu(bytes) of data being transferred from host to device", cb);
   
   opencl_subscriber_callback(mem_transfer_cb->type, mem_transfer_cb->correlation_id);
   clSetEventCallback(*event, CL_COMPLETE, &opencl_buffer_completion_callback, mem_transfer_cb);

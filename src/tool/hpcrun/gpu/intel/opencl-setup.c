@@ -1,6 +1,7 @@
 #include <hpcrun/main.h> // hpcrun_force_dlopen
 #include <hpcrun/sample-sources/libdl.h> //CHK_DLOPEN, CHK_DLSYM
 #include <hpcrun/gpu/gpu-metrics.h> // gpu_metrics_default_enable, gpu_metrics_attribute
+#include <hpcrun/messages/messages.h> //ETMSG
 
 #include "opencl-setup.h"
 #include "opencl-intercept.h"
@@ -42,7 +43,7 @@ static const char * opencl_path();
 void opencl_initialize()
 {
   gpu_metrics_default_enable();
-  printf("We are setting up opencl intercepts\n");
+  ETMSG(OPENCL, "We are setting up opencl intercepts");
   setup_opencl_intercept();
 }
 
