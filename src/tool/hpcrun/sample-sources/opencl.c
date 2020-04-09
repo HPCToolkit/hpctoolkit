@@ -96,7 +96,6 @@ METHOD_FN(thread_init_action)
   static void
 METHOD_FN(start)
 {
-  fprintf(stderr, "===============================================\n");
   TMSG(OPENCL, "start");
 }
 
@@ -127,7 +126,6 @@ METHOD_FN(shutdown)
   static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
-fprintf(stderr, "===============================================\n");
 #ifndef HPCRUN_STATIC_LINK
   return hpcrun_ev_is(ev_str, INTEL_OPENCL);
 #else
