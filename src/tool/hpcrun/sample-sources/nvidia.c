@@ -298,7 +298,7 @@ cupti_enable_activities
   cupti_correlation_enable();
 
   // XXX(keren): CUpti_Environment is only supported on x86, not powerpc
-  cupti_environment_enable();
+  //cupti_environment_enable();
 
   PRINT("Exit cupti_enable_activities\n");
 }
@@ -492,8 +492,6 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     int mem_views = control_knob_value_get_int(HPCRUN_SANITIZER_MEM_VIEWS);
 
-    int kernel_sampling_frequency = control_knob_value_get_int(HPCRUN_SANITIZER_KERNEL_SAMPLING_FREQUENCY);
-
     char *data_type = control_knob_value_get(HPCRUN_SANITIZER_DEFAULT_TYPE);
 
     if (gpu_patch_record_num == 0) {
@@ -516,6 +514,8 @@ METHOD_FN(process_event_list, int lush_metrics)
       mem_views = DEFAULT_MEM_VIEWS;
     }
 
+    kernel_sampling_frequency = control_knob_value_get_int(HPCRUN_SANITIZER_KERNEL_SAMPLING_FREQUENCY);
+
     if (kernel_sampling_frequency == 0) {
       kernel_sampling_frequency = DEFAULT_KERNEL_SAMPLING_FREQUENCY;
     }
@@ -525,6 +525,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     PRINT("approx_level %d\n", approx_level);
     PRINT("pc_views %d\n", pc_views);
     PRINT("mem_views %d\n", mem_views);
+    PRINT("kernel_sampling_frequency %d\n", kernel_sampling_frequency);
 
     sanitizer_buffer_config(gpu_patch_record_num, buffer_pool_size);
 

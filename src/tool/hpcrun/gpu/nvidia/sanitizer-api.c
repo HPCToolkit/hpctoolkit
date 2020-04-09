@@ -1000,7 +1000,7 @@ sanitizer_subscribe_callback
     static __thread dim3 grid_size = { .x = 0, .y = 0, .z = 0};
     static __thread dim3 block_size = { .x = 0, .y = 0, .z = 0};
     static __thread CUstream priority_stream = NULL;
-    static __thread bool sampling = true;
+    static __thread bool sampling = false;
     static __thread uint64_t correlation_id = 0;
     static __thread cct_node_t *api_node = NULL;
 
@@ -1008,7 +1008,7 @@ sanitizer_subscribe_callback
       // Kernel 
       int sampling_frequency = sanitizer_kernel_sampling_frequency_get();
       // TODO(Keren): thread safe rand
-      int sampling = sampling_frequency == 0 ? true : rand() % sampling_frequency == 0;
+      sampling = sampling_frequency == 0 ? true : rand() % sampling_frequency == 0;
 
       // Get a place holder cct node
       correlation_id = gpu_correlation_id();
@@ -1042,6 +1042,8 @@ sanitizer_subscribe_callback
         priority_stream = sanitizer_context_map_entry_priority_stream_get(entry);
 
         sanitizer_kernel_launch_callback(ld->stream, grid_size, block_size);
+      } else {
+        HPCRUN_SANITIZER_CALL(sanitizerSetCallbackData, (ld->stream, NULL));
       }
     } else if (cbid == SANITIZER_CBID_LAUNCH_END) {
       if (sampling) {
@@ -1051,7 +1053,7 @@ sanitizer_subscribe_callback
 
         sanitizer_context_map_stream_unlock(ld->context, ld->stream);
       }
-      sampling = true;
+      sampling = false;
     }
   } else if (domain == SANITIZER_CB_DOMAIN_MEMCPY) {
     // TODO(keren): variable correaltion and sync data
