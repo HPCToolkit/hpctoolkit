@@ -729,7 +729,8 @@ sanitizer_kernel_launch_sync
  CUstream stream,
  CUstream priority_stream,
  dim3 grid_size,
- dim3 block_size
+ dim3 block_size,
+ bool kernel_sampling
 )
 {
   // Look up module id
@@ -750,22 +751,22 @@ sanitizer_kernel_launch_sync
 
   // TODO(Keren): correlate metrics with api_node
 
-  int sampling_frequency = sanitizer_block_sampling_frequency_get();
+  int block_sampling_frequency = sanitizer_block_sampling_frequency_get();
   int grid_dim = grid_size.x * grid_size.y * grid_size.z;
   int block_dim = block_size.x * block_size.y * block_size.z;
   uint64_t num_threads = grid_dim * block_dim;
   size_t num_left_threads = 0;
 
   // If block sampling is set
-  if (sampling_frequency != 0) {
+  if (block_sampling_frequency != 0) {
     // Uniform sampling
     int sampling_offset = gpu_patch_buffer_reset.block_sampling_offset;
-    int mod_blocks = grid_dim % sampling_frequency;
+    int mod_blocks = grid_dim % block_sampling_frequency;
     int sampling_blocks = 0;
     if (mod_blocks == 0) {
-      sampling_blocks = (grid_dim - 1) / sampling_frequency + 1;
+      sampling_blocks = (grid_dim - 1) / block_sampling_frequency + 1;
     } else {
-      sampling_blocks = (grid_dim - 1) / sampling_frequency + (sampling_offset >= mod_blocks ? 0 : 1);
+      sampling_blocks = (grid_dim - 1) / block_sampling_frequency + (sampling_offset >= mod_blocks ? 0 : 1);
     }
     num_left_threads = num_threads - sampling_blocks * block_dim;
   }
@@ -779,7 +780,7 @@ sanitizer_kernel_launch_sync
   //PRINT("head_index %zu, tail_index %zu, num_left_threads %zu\n",
   //  gpu_patch_buffer_host->head_index, gpu_patch_buffer_host->tail_index, num_threads);
 
-  while (true) {
+  while (kernel_sampling) {
     // Copy buffer
     HPCRUN_SANITIZER_CALL(sanitizerMemcpyDeviceToHost,
       (gpu_patch_buffer_host, gpu_patch_buffer_device, sizeof(gpu_patch_buffer_t), priority_stream));
@@ -832,7 +833,7 @@ sanitizer_kernel_launch_sync
   }
 
   // For safety conern
-  cuda_stream_synchronize(priority_stream);
+  cuda_stream_synchronize(stream);
 }
 
 
@@ -845,16 +846,17 @@ sanitizer_kernel_launch_callback
 (
  CUstream stream,
  dim3 grid_size,
- dim3 block_size
+ dim3 block_size,
+ bool kernel_sampling
 )
 {
   int grid_dim = grid_size.x * grid_size.y * grid_size.z;
   int block_dim = block_size.x * block_size.y * block_size.z;
-  int sampling_frequency = sanitizer_block_sampling_frequency_get();
-  int block_sampling_offset = sampling_frequency == 0 ? 0 : rand() % grid_dim % sampling_frequency;
+  int block_sampling_frequency = kernel_sampling ? sanitizer_block_sampling_frequency_get() : 0;
+  int block_sampling_offset = kernel_sampling ? rand() % grid_dim % block_sampling_frequency : 0;
 
   PRINT("Sampling offset %d\n", block_sampling_offset);
-  PRINT("Sampling frequency %d\n", sampling_frequency);
+  PRINT("Sampling frequency %d\n", block_sampling_frequency);
 
   if (gpu_patch_buffer_device == NULL) {
     // allocate buffer
@@ -876,7 +878,7 @@ sanitizer_kernel_launch_callback
 
     gpu_patch_buffer_reset.records = gpu_patch_records;
     gpu_patch_buffer_reset.num_threads = grid_dim * block_dim;
-    gpu_patch_buffer_reset.block_sampling_frequency = sampling_frequency;
+    gpu_patch_buffer_reset.block_sampling_frequency = block_sampling_frequency;
     gpu_patch_buffer_reset.block_sampling_offset = block_sampling_offset;
     gpu_patch_buffer_reset.size = sanitizer_gpu_patch_record_num;
 
@@ -885,6 +887,7 @@ sanitizer_kernel_launch_callback
   } else {
     // reset buffer
     gpu_patch_buffer_reset.num_threads = grid_dim * block_dim;
+    gpu_patch_buffer_reset.block_sampling_frequency = block_sampling_frequency;
     gpu_patch_buffer_reset.block_sampling_offset = block_sampling_offset;
 
     HPCRUN_SANITIZER_CALL(sanitizerMemcpyHostToDeviceAsync,
@@ -1000,15 +1003,15 @@ sanitizer_subscribe_callback
     static __thread dim3 grid_size = { .x = 0, .y = 0, .z = 0};
     static __thread dim3 block_size = { .x = 0, .y = 0, .z = 0};
     static __thread CUstream priority_stream = NULL;
-    static __thread bool sampling = false;
+    static __thread bool kernel_sampling = false;
     static __thread uint64_t correlation_id = 0;
     static __thread cct_node_t *api_node = NULL;
 
     if (cbid == SANITIZER_CBID_LAUNCH_BEGIN) {
       // Kernel 
-      int sampling_frequency = sanitizer_kernel_sampling_frequency_get();
+      int kernel_sampling_frequency = sanitizer_kernel_sampling_frequency_get();
       // TODO(Keren): thread safe rand
-      sampling = sampling_frequency == 0 ? true : rand() % sampling_frequency == 0;
+      kernel_sampling = rand() % kernel_sampling_frequency == 0;
 
       // Get a place holder cct node
       correlation_id = gpu_correlation_id();
@@ -1017,43 +1020,38 @@ sanitizer_subscribe_callback
 
       // First time must be sampled
       if (sanitizer_kernel_map_lookup(api_node) == NULL) {
-        sampling = true;
+        kernel_sampling = true;
         sanitizer_kernel_map_init(api_node);
       }
 
-      if (sampling) {
-        grid_size.x = ld->gridDim_x;
-        grid_size.y = ld->gridDim_y;
-        grid_size.z = ld->gridDim_z;
-        block_size.x = ld->blockDim_x;
-        block_size.y = ld->blockDim_y;
-        block_size.z = ld->blockDim_z;
+      grid_size.x = ld->gridDim_x;
+      grid_size.y = ld->gridDim_y;
+      grid_size.z = ld->gridDim_z;
+      block_size.x = ld->blockDim_x;
+      block_size.y = ld->blockDim_y;
+      block_size.z = ld->blockDim_z;
 
-        PRINT("Launch kernel %s <%d, %d, %d>:<%d, %d, %d>, op %lu, id %lu\n", ld->functionName,
-          ld->gridDim_x, ld->gridDim_y, ld->gridDim_z, ld->blockDim_x, ld->blockDim_y, ld->blockDim_z,
-          correlation_id, (uint64_t)api_node);
+      PRINT("Launch kernel %s <%d, %d, %d>:<%d, %d, %d>, op %lu, id %lu\n", ld->functionName,
+        ld->gridDim_x, ld->gridDim_y, ld->gridDim_z, ld->blockDim_x, ld->blockDim_y, ld->blockDim_z,
+        correlation_id, (uint64_t)api_node);
 
-        // thread-safe
-        // Create a high priority stream for the context at the first time
-        sanitizer_context_map_entry_t *entry = sanitizer_context_map_init(ld->context);
+      // thread-safe
+      // Create a high priority stream for the context at the first time
+      sanitizer_context_map_entry_t *entry = sanitizer_context_map_init(ld->context);
 
-        sanitizer_context_map_stream_lock(ld->context, ld->stream);
+      sanitizer_context_map_stream_lock(ld->context, ld->stream);
 
-        priority_stream = sanitizer_context_map_entry_priority_stream_get(entry);
+      priority_stream = sanitizer_context_map_entry_priority_stream_get(entry);
 
-        sanitizer_kernel_launch_callback(ld->stream, grid_size, block_size);
-      } else {
-        HPCRUN_SANITIZER_CALL(sanitizerSetCallbackData, (ld->stream, NULL));
-      }
+      sanitizer_kernel_launch_callback(ld->stream, grid_size, block_size, kernel_sampling);
     } else if (cbid == SANITIZER_CBID_LAUNCH_END) {
-      if (sampling) {
-        sanitizer_kernel_launch_sync(api_node, correlation_id,
-          ld->context, ld->module, ld->function, ld->stream,
-          priority_stream, grid_size, block_size);
+      sanitizer_kernel_launch_sync(api_node, correlation_id,
+        ld->context, ld->module, ld->function, ld->stream,
+        priority_stream, grid_size, block_size, kernel_sampling);
 
-        sanitizer_context_map_stream_unlock(ld->context, ld->stream);
-      }
-      sampling = false;
+      sanitizer_context_map_stream_unlock(ld->context, ld->stream);
+
+      kernel_sampling = false;
     }
   } else if (domain == SANITIZER_CB_DOMAIN_MEMCPY) {
     // TODO(keren): variable correaltion and sync data

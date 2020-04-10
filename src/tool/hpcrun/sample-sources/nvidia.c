@@ -132,7 +132,7 @@ static long pc_sampling_frequency = -1;
 static long pc_sampling_frequency_default = 12;
 
 static long block_sampling_frequency = 0;
-static long block_sampling_frequency_default = 0;
+static long block_sampling_frequency_default = 1;
 
 static int kernel_sampling_frequency = 0;
 
@@ -153,7 +153,7 @@ static const int DEFAULT_PC_VIEWS = 30;
 // 0: no mem views
 static const int DEFAULT_MEM_VIEWS = 0;
 // 0: no kernel sampling
-static const int DEFAULT_KERNEL_SAMPLING_FREQUENCY = 0;
+static const int DEFAULT_KERNEL_SAMPLING_FREQUENCY = 1;
 
 //******************************************************************************
 // constants
