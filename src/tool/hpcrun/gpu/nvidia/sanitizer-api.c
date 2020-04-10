@@ -499,7 +499,7 @@ sanitizer_path
 )
 {
   // TODO(Keren): change it back after 10.2 public release
-  const char *path = "/ccs/home/kz21/Codes/Sanitizer/libsanitizer-public.so";
+  const char *path = "/home/kz21/Codes/Sanitizer/libsanitizer-public.so";
 
 #if 0
   static char buffer[PATH_MAX];
@@ -730,8 +730,7 @@ sanitizer_kernel_launch_sync
  CUstream stream,
  CUstream priority_stream,
  dim3 grid_size,
- dim3 block_size,
- bool kernel_sampling
+ dim3 block_size
 )
 {
   // Look up module id
@@ -781,7 +780,7 @@ sanitizer_kernel_launch_sync
   //PRINT("head_index %zu, tail_index %zu, num_left_threads %zu\n",
   //  gpu_patch_buffer_host->head_index, gpu_patch_buffer_host->tail_index, num_threads);
 
-  while (kernel_sampling) {
+  while (true) {
     // Copy buffer
     HPCRUN_SANITIZER_CALL(sanitizerMemcpyDeviceToHost,
       (gpu_patch_buffer_host, gpu_patch_buffer_device, sizeof(gpu_patch_buffer_t), priority_stream));
@@ -832,9 +831,6 @@ sanitizer_kernel_launch_sync
       break;
     }
   }
-
-  // For safety conern
-  cuda_stream_synchronize(stream);
 }
 
 
@@ -897,9 +893,6 @@ sanitizer_kernel_launch_callback
   }
 
   HPCRUN_SANITIZER_CALL(sanitizerSetCallbackData, (stream, gpu_patch_buffer_device));
-
-  // Ensure data is sync
-  cuda_stream_synchronize(stream);
 }
 
 //-------------------------------------------------------------
@@ -1045,10 +1038,18 @@ sanitizer_subscribe_callback
       priority_stream = sanitizer_context_map_entry_priority_stream_get(entry);
 
       sanitizer_kernel_launch_callback(ld->stream, grid_size, block_size, kernel_sampling);
+
+      // Ensure data is sync
+      cuda_stream_synchronize(ld->stream);
     } else if (cbid == SANITIZER_CBID_LAUNCH_END) {
-      sanitizer_kernel_launch_sync(api_node, correlation_id,
-        ld->context, ld->module, ld->function, ld->stream,
-        priority_stream, grid_size, block_size, kernel_sampling);
+      if (kernel_sampling) {
+        sanitizer_kernel_launch_sync(api_node, correlation_id,
+          ld->context, ld->module, ld->function, ld->stream,
+          priority_stream, grid_size, block_size);
+      }
+
+      // XXX(Keren): For safety conern only, could be removed
+      cuda_stream_synchronize(ld->stream);
 
       sanitizer_context_map_stream_unlock(ld->context, ld->stream);
 
