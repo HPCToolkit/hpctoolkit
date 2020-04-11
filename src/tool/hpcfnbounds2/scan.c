@@ -46,7 +46,118 @@
 // This file contains the routines that scan instructions to identify functions
 
 #include <fnbounds.h>
+#include <scan.h>
+#include <endian.h>
 
+uint64_t 
+decodeDwarfAddress(uint8_t *streamPtr, ehDecodeRecord_t *decodeRecord, uint64_t *adv, char *errString)
+{
+  uint64_t unsignedBaseAddr, unsignedFunctionAddr, unsignedRelAddr;
+  int64_t signedRelAddr;
+  uint64_t l, advance;
+  uint8_t fdeAddrDecodeType, fdeAddrOpType;
+
+  fdeAddrDecodeType = (decodeRecord->fdeEnc) & EHF_FDE_DMASK;
+  fdeAddrOpType = (decodeRecord->fdeEnc) & EHF_FDE_OMASK;
+
+  if ( (fdeAddrOpType == DW_EH_PE_omit) || (fdeAddrDecodeType == DW_EH_PE_omit)) {
+    fprintf(stderr, "Warning in eh_frame %s, omit found\n",errString);
+    return EHF_DECDWRF_ERROR;
+  }
+
+  unsignedBaseAddr = 0ull;
+  unsignedFunctionAddr = 0ull;
+  advance = 0;
+
+	switch(fdeAddrOpType) {
+		case DW_EH_PE_absptr:
+			unsignedBaseAddr = 0ull;
+		case DW_EH_PE_pcrel:
+		case DW_EH_PE_indirect:		// personality only
+		case DW_EH_PE_indpcrel:		// personality only
+			unsignedBaseAddr = decodeRecord->ehSecAddr;  // native uint64_t
+			unsignedBaseAddr += (decodeRecord->totalOffset);
+			break;
+		case DW_EH_PE_textrel:
+			unsignedBaseAddr = decodeRecord->textSecAddr;
+			break;
+		case DW_EH_PE_datarel:
+			unsignedBaseAddr = decodeRecord->dataSecAddr;
+			break;
+		//
+		// These cases do not apply.
+		//
+		case DW_EH_PE_funcrel:
+		case DW_EH_PE_aligned:
+		default:
+			fprintf(stderr, "Error in eh_frame %s, unsupported address operation type %.2x\n",
+					errString, fdeAddrOpType);
+      *adv = 0;
+			return EHF_DECDWRF_ERROR;
+			break;
+	}
+
+	switch (fdeAddrDecodeType) {
+		case DW_EH_PE_absptr:
+      unsignedFunctionAddr = unalignedEndianRead(streamPtr,sizeof(uint64_t),EHF_UER_UNSIGNED);
+      advance += sizeof(uint64_t);
+			break;
+		case DW_EH_PE_uleb128:
+			unsignedRelAddr = decodeULEB128(streamPtr, &l);
+			unsignedFunctionAddr = unsignedBaseAddr + unsignedRelAddr;
+      advance += l;
+			break;
+		case DW_EH_PE_udata2:
+      unsignedRelAddr = unalignedEndianRead(streamPtr,sizeof(uint16_t),EHF_UER_UNSIGNED);
+			unsignedFunctionAddr = unsignedBaseAddr + unsignedRelAddr;
+      advance += sizeof(uint16_t);
+			break;
+		case DW_EH_PE_udata4:
+      unsignedRelAddr = unalignedEndianRead(streamPtr,sizeof(uint32_t),EHF_UER_UNSIGNED);
+			unsignedFunctionAddr = unsignedBaseAddr + unsignedRelAddr;
+      advance += sizeof(uint32_t);
+			break;
+		case DW_EH_PE_udata8:
+      unsignedRelAddr = unalignedEndianRead(streamPtr,sizeof(uint64_t),EHF_UER_UNSIGNED);
+			unsignedFunctionAddr = unsignedBaseAddr + unsignedRelAddr;
+      advance += sizeof(uint64_t);
+			break;
+		//
+		// if the relative part is signed, we assume the base has
+		// the high bit clear (i.e. non-negative for signed arithmetic).
+		// This should always be so in user space.  If it's not, we need a
+		// special addition routine that does negate subtract of the addend.
+		//
+		case DW_EH_PE_sleb128:
+			signedRelAddr = decodeSLEB128(streamPtr, &l);
+			unsignedFunctionAddr = (uint64_t)((int64_t)unsignedBaseAddr + signedRelAddr);
+      advance += l;
+			break;
+		case DW_EH_PE_sdata2:
+      signedRelAddr = (int64_t) unalignedEndianRead(streamPtr,sizeof(uint16_t),EHF_UER_SIGNED);
+			unsignedFunctionAddr = (uint64_t)((int64_t)unsignedBaseAddr + signedRelAddr);
+      advance += sizeof(uint16_t);
+		case DW_EH_PE_sdata4:
+      signedRelAddr = (int64_t) unalignedEndianRead(streamPtr,sizeof(uint32_t),EHF_UER_SIGNED);
+			unsignedFunctionAddr = (uint64_t)((int64_t)unsignedBaseAddr + signedRelAddr);
+      advance += sizeof(uint32_t);
+			break;
+		case DW_EH_PE_sdata8:
+      signedRelAddr = (int64_t) unalignedEndianRead(streamPtr,sizeof(uint64_t),EHF_UER_SIGNED);
+			unsignedFunctionAddr = (uint64_t)((int64_t)unsignedBaseAddr + signedRelAddr);
+      advance += sizeof(uint64_t);
+		default:
+			fprintf(stderr, "Error in eh_frame %s, unsupported address decode type %.2x\n",
+        errString, fdeAddrDecodeType);
+      *adv = 0;
+			return EHF_DECDWRF_ERROR;
+			break;
+	}
+
+  *adv = advance;
+  return unsignedFunctionAddr;
+
+}
 
 int64_t 
 decodeSLEB128(uint8_t *input, uint64_t *adv) 
@@ -127,8 +238,16 @@ skipSectionScan(Elf *e, GElf_Shdr secHead, int secFlag)
   size_t secHeadStringIndex;
   char *secName;
 
-  elf_getshdrstrndx(e, &secHeadStringIndex);
+  if (elf_getshdrstrndx(e, &secHeadStringIndex) != 0) {
+    fprintf (stderr, "Warning, libelf error %s in scan check for %s\n",elf_errmsg(-1),xname);
+    return SC_SKIP;
+  }
+
   secName = elf_strptr(e, secHeadStringIndex, secHead.sh_name);
+  if (secName == NULL) {
+    fprintf (stderr, "Warning, libelf error %s in scan check for %s\n",elf_errmsg(-1),xname);
+    return SC_SKIP;
+  }
 
   if (secFlag == SC_SKIP) {
     if(verbose) {
@@ -144,6 +263,111 @@ skipSectionScan(Elf *e, GElf_Shdr secHead, int secFlag)
   return SC_DONE;
 }
 
+//
+// return an address from a byte stream that might not be aligned, and where
+// we don't know the endianness, and we can't assume unaligned access won't trap
+// The caller might need a signed value, so we sign extend and cast based on "sign"
+//
+uint64_t
+unalignedEndianRead(uint8_t *stream, size_t size, uint64_t sign)
+{
+  uint8_t *p;
+  uint64_t r, i;
+  uint64_t aligned;
+
+  r = 0ull;
+  p = (uint8_t *)&r;
+
+  //
+  // if the read is aligned for the size, just let the hw do the
+  // endian bit. The stream is always LE.
+  //
+  aligned = !((uint64_t)stream & (size-1));
+
+  if (aligned) {
+    switch (size) {
+      case sizeof(uint16_t):
+        if (sign == EHF_UER_SIGNED) {
+          r = (uint64_t)((int64_t) (* (int16_t *) stream));
+        }
+        else {
+          r = (uint64_t) (* (uint16_t *) stream);
+        }
+        return r;
+        break;
+      case sizeof(uint32_t):
+        if (sign == EHF_UER_SIGNED) {
+          r = (uint64_t)((int64_t) (* (int32_t *) stream));
+        }
+        else {
+          r = (uint64_t) (* (uint32_t *) stream);
+        }
+        return r;
+        break;
+      case sizeof(uint64_t):
+        if (sign == EHF_UER_SIGNED) {
+          r = (uint64_t)((int64_t) (* (int64_t *) stream));
+        }
+        else {
+          r = * (uint64_t *) stream;
+        }
+        return r;
+        break;
+      // 
+      // if size was funky, just fall through without returning
+      //
+      default:
+        break;
+    }
+  }
+
+#if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
+
+  for (i=0; i<size; i++) {
+    *(p + i) = *(stream + i);
+  }
+  // sign extend if negative
+  if (sign == EHF_UER_SIGNED) {
+    if ( (*(p+i-1) & 0x80) != 0) {
+      for (; i < sizeof(uint64_t); i++) {
+        *(p + i) = 0xff;
+      }
+    }
+  }
+
+#else // big endian
+
+#if EHF_STREAM_ORDER == EHF_STREAM_BE
+  // this is big endian support for a big endian stream on BE core
+  for (i=0; i<size; i++) {
+    *(p + i + sizeof(uint64_t) - size) = *(stream + i);
+  }
+  if (sign == EHF_UER_SIGNED) {
+    if ( (*(p+sizeof(uint64_t)-size) & 0x80) != 0) {
+      for (i=0; i<(sizeof(uint64_t)-size); i++) {
+        *(p + i) = 0xff;
+      }
+    }
+  }
+
+#else
+  for (i=1; i<=size; i++) {
+    *(p + (sizeof(uint64_t) - i)) = *(stream + i);
+  }
+
+  if (sign == EHF_UER_SIGNED) {
+    if ( (*(p + (sizeof(uint64_t) - i)) & 0x80) != 0) {
+      for (; i <= sizeof(uint64_t); i++) {
+        *(p + (sizeof(uint64_t) - i)) = 0xff;
+      }
+    }
+  }
+    
+#endif
+#endif
+
+  return r;
+}
 // scan the .plt section
 //
 uint64_t
@@ -161,6 +385,10 @@ pltscan(Elf *e, GElf_Shdr secHead)
   startAddr = secHead.sh_addr;
   endAddr = startAddr + secHead.sh_size;
   pltEntrySize = secHead.sh_entsize;
+  //
+  // For a static build, even though the section contains trampolines,
+  // the entry size may be zero.  If so, just skip the section for now.
+  //
   if ( pltEntrySize == 0 ) {
     return SC_DONE;
   }
@@ -168,7 +396,7 @@ pltscan(Elf *e, GElf_Shdr secHead)
   for (ii = startAddr + pltEntrySize; ii < endAddr; ii += pltEntrySize) {
     sprintf(nameBuff,"stripped_0x%lx",ii);
     vegamite = strdup(nameBuff);
-    add_function(ii, vegamite, "p",FR_YES);
+    add_function(ii, vegamite, SC_FNTYPE_PLT, FR_YES);
   }
 
   return SC_DONE;
@@ -186,7 +414,7 @@ initscan(Elf *e, GElf_Shdr secHead)
   if(verbose) {
     fprintf (stderr, "\tscanning .init instructions not yet implemented\n");
   }
-  // use "i" as source string in add_function() calls
+  // use SC_FNTYPE_INIT as source string in add_function() calls
   return SC_SKIP;
 }
 
@@ -202,7 +430,7 @@ textscan(Elf *e, GElf_Shdr secHead)
   if(verbose) {
     fprintf (stderr, "\tscanning .text instructions not yet implemented\n");
   }
-  // use "t" as source string in add_function() calls
+  // use SC_FNTYPE_TEXT as source string in add_function() calls
   return SC_SKIP;
 }
 
@@ -218,7 +446,7 @@ finiscan(Elf *e, GElf_Shdr secHead)
   if(verbose) {
     fprintf (stderr, "\tscanning .fini instructions not yet implemented\n");
   }
-  // use "f" as source string in add_function() calls
+  // use SC_FNTYPE_FINI as source string in add_function() calls
   return SC_SKIP;
 }
 
@@ -234,7 +462,7 @@ altinstr_replacementscan(Elf *e, GElf_Shdr secHead)
   if(verbose) {
     fprintf (stderr, "\tscanning .altinstr_replacement instructions not yet implemented\n");
   }
-  // use "a" as source string in add_function() calls
+  // use SC_FNTYPE_ALTINSTR as source string in add_function() calls
   return SC_SKIP;
 }
 
@@ -247,15 +475,12 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
 {
   GElf_Shdr ehSecHead,textSecHead,dataSecHead;
   Elf_Data *data;
-  uint64_t unsignedBaseAddr64;
-  int32_t signedRelAddr32;
   uint64_t recordOffset;
-  uint64_t calculatedAddr64;
-  uint32_t extra;
+  uint64_t calculatedAddr64, calculatedAddrRange;
+  uint64_t extra;
   uint8_t *pb;
   uint32_t *pw;
-  uint32_t kc, kf, recType, recLen, cf;
-  uint8_t fdeAddrDecodeType, fdeAddrOpType;
+  uint32_t kc, kf, recType, recLen, cf, kk, curCIE;
   char nameBuff[TB_SIZE];
   char *promite;  // mmmm
   uint8_t cieVersion;
@@ -265,11 +490,14 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
   uint8_t retReg;
   uint8_t fdeEnc;
   uint64_t augDataLen;
-  uint64_t cieOffset, a;
-  uint8_t *upt8;
-  int64_t signedRelAddr64;
-  uint64_t unsignedRelAddr64;
+  uint64_t cieOffset, fdeOffset, a, b;
   uint64_t dataSize;
+  uint64_t cieTableSize, cieAddress;
+  ehCIERecord_t *cieTable;
+  ehDecodeRecord_t decodeRecord;
+  ehCIERecord_t *fdeRefCIE;
+  uint64_t personalityFunctionAddr, landingFunctionAddr;
+  static char elfFailMess[] = {"Error in eh_frame handling, aborting scan.  libelf failed with "};
 
 
   // don't process non-existant section
@@ -277,25 +505,45 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
     return SC_SKIP;
   }
 
-  gelf_getshdr(ehRecord->ehFrameSection, &ehSecHead);
-
+  if (gelf_getshdr(ehRecord->ehFrameSection, &ehSecHead) != &ehSecHead) {
+    fprintf(stderr, "%s %s\n", elfFailMess, elf_errmsg(-1));
+    return SC_SKIP;
+  }
+    
   if (skipSectionScan(e, ehSecHead, ehframeread_f) == SC_SKIP) {
     return SC_SKIP;
   }
   //
-  // we may need these depending on the FDE encode field
-  // if the sections weren't present, those encodings make no sense, 
-  // so don't panic
+  // we may need these depending on the FDE encode field.
+  // the other parts of decodeRecord must be set before each 
+  // call to decodeDwarfAddress.
   //
+  decodeRecord.textSecAddr = 0ull;
   if (ehRecord->textSection != NULL) {
-    gelf_getshdr(ehRecord->textSection, &textSecHead);
+    if (gelf_getshdr(ehRecord->textSection, &textSecHead) != &textSecHead) {
+      fprintf(stderr, "%s %s\n", elfFailMess, elf_errmsg(-1));
+      return SC_SKIP;
+    }
+    decodeRecord.textSecAddr = textSecHead.sh_addr;
   }
+
+  decodeRecord.dataSecAddr = 0ull;
   if (ehRecord->dataSection != NULL) {
-    gelf_getshdr(ehRecord->dataSection, &dataSecHead);
+    if (gelf_getshdr(ehRecord->dataSection, &dataSecHead) != &dataSecHead) {
+      fprintf(stderr, "%s %s\n", elfFailMess, elf_errmsg(-1));
+      return SC_SKIP;
+    }
+    decodeRecord.dataSecAddr = dataSecHead.sh_addr;
   }
+
+  decodeRecord.ehSecAddr = ehSecHead.sh_addr;
 
   data = NULL;
   data = elf_getdata(ehRecord->ehFrameSection,data);
+  if (data == NULL) {
+    fprintf(stderr, "%s %s\n", elfFailMess, elf_errmsg(-1));
+    return SC_SKIP;
+  }
 
   dataSize = data->d_size;  // for clarity later
   if ((dataSize == 0) || (data->d_buf == NULL)) {
@@ -305,14 +553,20 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
   kc = 0; // cie count
   kf = 0; // fde count
   cf = EHF_CF_CONT; // continue flag
-  fdeAddrDecodeType = DW_EH_PE_omit;  // init these in case we get a corrupt section
-  fdeAddrOpType = DW_EH_PE_omit;
+
+  // allocate a cieTable
+  cieTableSize = EHF_MAX_CIE;
+  cieTable = (ehCIERecord_t *) malloc (cieTableSize * sizeof(ehCIERecord_t));
+  if (cieTable == NULL) {
+    fprintf(stderr, "Fatal error in eh_frame handler, cannot allocate cieTable.  Aborting.\n");
+    return SC_SKIP;
+  }
 
   recordOffset = 0;
 
   pb = (uint8_t *)(data -> d_buf);
 
-  extra = sizeof(*pw);  // FIXME: is this true for all addrDecodeType?
+  extra = sizeof(*pw);  // true because this is the sizeof recLen w.out extension
 
   //
   // read through the eh_frame until the terminating record is reached.
@@ -323,12 +577,16 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
     pw = (uint32_t *)pb;  // convenience to read words, and get rid of endian issue
     recLen = *pw;
 
-    // support extended record lengths here
-    if (recLen == 0xfffffffful) {
-      fprintf(stderr, "Warning in eh_frame handling, extended records not supported\n");
+
+    // support extended record lengths here if required
+    if (recLen == EHF_CIE_EXTREC) {
+      fprintf(stderr, "Fatal error in eh_frame handling, extended records not supported, aborting\n");
       return SC_SKIP;
     }
 
+    //
+    // This is the standard termination of the eh_frame scan
+    //
     if (recLen == 0ul) {
       cf = EHF_CF_DONE;
       continue;
@@ -344,30 +602,38 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
     // byte stream, then let the optimizer throw them out.
     // 
     if (recType == EHF_TP_CIE) {
-      ++kc;
+      cieTable[kc].cieBaseAddress = recordOffset;
+      cieTable[kc].cieSize = recLen + extra;
+
       cieVersion = *(pb + EHF_CIE_BO_VER);
       augString = (char *) (pb + EHF_CIE_BO_AUSTR);
 
       //
-      // we only support zR data. FIXME skip all FDEs not associated with zR?  better
+      // reject any augStrings generated by old compilers, or some other unknown condition
+      // set the cieSize to 0, and skip any FDE associated with it.
       //
-      if (strcmp((const char *)augString,"zR")) {
-        fprintf(stderr, "Warning in eh_frame handling, unsupported augmentation string %s found in %s\n",augString,xname);
-        return SC_SKIP;
+      if (augString[0] != 'z') {
+        fprintf(stderr, "Warning in eh_frame handling, unsupported augmentation string %s found in %s\n",
+            augString, xname);
+        cieTable[kc].cieSize = 0;
+        goto nextRecord;
       }
 
+      //
       // cieOffset, in bytes, is used to traverse the CIE where numbers are variable length
       //
       cieOffset = EHF_CIE_BO_AUSTR + strlen(augString) + 1; // Extra byte for null terminator
 
       codeAlign = decodeULEB128(pb+cieOffset, &a);
       if (codeAlign == EHF_ULEB128_ERROR) {
-        return SC_SKIP;
+        cieTable[kc].cieSize = 0;
+        goto nextRecord;
       }
       cieOffset += a;
       dataAlign = decodeSLEB128(pb+cieOffset, &a);
       if (dataAlign == EHF_SLEB128_ERROR) {
-        return SC_SKIP;
+        cieTable[kc].cieSize = 0;
+        goto nextRecord;
       }
       cieOffset += a;
 
@@ -380,115 +646,243 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
         cieOffset += a;
       }
       else {
-        // FIXME error message?
-        return SC_SKIP;
+        fprintf(stderr, "Warning in eh_frame handling, unsupported CIE version %d found in %s\n",
+            (uint32_t)cieVersion, xname);
+        cieTable[kc].cieSize = 0;
+        goto nextRecord;
       }
       if (retReg == EHF_ULEB128_ERROR) {
-        return SC_SKIP;
+        cieTable[kc].cieSize = 0;
+        goto nextRecord;
       }
 
       augDataLen = decodeULEB128(pb+cieOffset, &a);
       if (augDataLen == EHF_ULEB128_ERROR) {
-        return SC_SKIP;
+        cieTable[kc].cieSize = 0;
+        goto nextRecord;
       }
       cieOffset += a;
 
-      fdeEnc = *(pb+cieOffset);
-      ++cieOffset;  // should we need to read more...
-
-      fdeAddrDecodeType = fdeEnc & 0x0f;
-      fdeAddrOpType = fdeEnc & 0xf0;
-    }
-
-    else {
+      // 
+      // Now process each byte of the augData according to the augString
       //
-      // skip any FDE marked omit
+      cieTable[kc].cieContainsType.R = EHF_CIE_FALSE;
+      cieTable[kc].cieContainsType.P = EHF_CIE_FALSE;
+      cieTable[kc].cieContainsType.L = EHF_CIE_FALSE;
+      cieTable[kc].cieAddressOffset = 0ull;  // not an S, in other words
+
+      // b starts at 1 to skip the 'z'
+      b = 1;
+      while ( augString[b] != '\0' ) {
+        switch (augString[b]) {
+          case 'P':
+            cieTable[kc].cieContainsType.P = EHF_CIE_TRUE;
+            fdeEnc = *(pb+cieOffset);
+            ++cieOffset;
+            cieTable[kc].cieFDEEncType.P = fdeEnc;
+            cieTable[kc].cieAugDataOffset = recordOffset + cieOffset;
+            cieTable[kc].cieAugData = pb+cieOffset;
+            //
+            // in order to advence cieOffset with the length of the aug record,
+            // we have to make a dummy call to decode, which will give us
+            // an error condition if one exists, and the offset
+            //
+            decodeRecord.totalOffset = recordOffset + cieOffset;
+            decodeRecord.fdeEnc = fdeEnc;
+            if (decodeDwarfAddress(pb+cieOffset, &decodeRecord, &a, "personality dummy") == EHF_DECDWRF_ERROR) {
+              goto nextRecord;
+            }
+            cieOffset += a;
+            ++b;
+            break;
+          case 'L':
+            cieTable[kc].cieContainsType.L = EHF_CIE_TRUE;
+            fdeEnc = *(pb+cieOffset);
+            cieTable[kc].cieFDEEncType.L = fdeEnc;
+            ++cieOffset;  
+            ++b;
+            break;
+          case 'R':
+            cieTable[kc].cieContainsType.R = EHF_CIE_TRUE;
+            fdeEnc = *(pb+cieOffset);
+            cieTable[kc].cieFDEEncType.R = fdeEnc;
+            ++cieOffset;  
+            ++b;
+            break;
+          case 'S':
+            //
+            // non-zero stack offet, see the dot-h
+            //
+            cieTable[kc].cieAddressOffset = EHF_FORWARD_OFF;
+            ++b;
+            break;
+          //
+          // This is an error condition, and should never happen
+          //
+          default:
+            fprintf(stderr, "Error in eh_frame handling, unsupported augmentation character %c found in %s\n",
+                augString[b],  xname);
+            cieTable[kc].cieSize = 0;
+            goto nextRecord;
+            break;
+        } // !switch
+      } // !while
+
       //
-      if ( (fdeAddrOpType == DW_EH_PE_omit) || (fdeAddrDecodeType == DW_EH_PE_omit)) {
-        fprintf(stderr, "Error in eh_frame handling, malformed section or omit found\n");
-        return SC_SKIP;
+      // the cie count is also the index into the cieTable, that is the max
+      // defined CIE.  If the below condition happens, we need to increase the size of 
+      // the table.  This seems unlikely, but if it happens it might be a good idea to 
+      // increase EHF_MAX_CIE so there is no realloc here.
+      //
+      ++kc;
+      if (kc >= cieTableSize) {
+        cieTableSize += EHF_MAX_CIE;
+        cieTable = (ehCIERecord_t *) realloc ((void *)cieTable, cieTableSize * sizeof(ehCIERecord_t));
+        if (cieTable == NULL) {
+          fprintf(stderr, "Fatal error in eh_frame handler, cannot re-allocate cieTable at size %ld.  Aborting.\n",
+              cieTableSize);
+          return SC_SKIP;
+        }
       }
+
+    }  // ! recType is a CIE
+
+    else {  // process FDE
+
       ++kf; // bump count
 
-      switch(fdeAddrOpType) {
-        case DW_EH_PE_absptr:
-          unsignedBaseAddr64 = 0ull;
+      //
+      // determine to which CIE this FDE belongs. recType contains the offset to the CIE address
+      // from that point in the stream.  Since we don't expect a huge amount of CIEs, just leaf
+      // through them to find the right one.  (In theory the actual CIE should be near the last 
+      // one used in the list, this would be a performance enhancement).
+      //
+      cieAddress = recordOffset + sizeof(recLen) - recType; 
+
+      for (kk = 0; kk < kc; kk++) {
+        if ( cieTable[kk].cieBaseAddress == cieAddress ) {
+          curCIE = kk;
           break;
-        case DW_EH_PE_pcrel:
-          unsignedBaseAddr64 = ehSecHead.sh_addr;  // native uint64_t
-          unsignedBaseAddr64 += (recordOffset + EHF_WO_FS*sizeof(*pw));
-          break;
-        case DW_EH_PE_textrel:
-          unsignedBaseAddr64 = textSecHead.sh_addr; 
-          break;
-        case DW_EH_PE_datarel:
-          unsignedBaseAddr64 = dataSecHead.sh_addr; 
-          break;
-        //
-        // funcrel is for non-contiguous functions where a single function
-        // is split over multiple cie/fde groups. This is not supported here.
-        // Aligned may apply to changing some natural data sized addresses?
-        //
-        case DW_EH_PE_funcrel:
-        case DW_EH_PE_aligned:
-        default:
-          fprintf(stderr, "Error in eh_frame handling, unsupported address operation type %.2x\n",fdeAddrOpType);
-          return SC_SKIP;
-          break;
+        }
       }
 
-      switch (fdeAddrDecodeType) {
-        case DW_EH_PE_absptr:
-          calculatedAddr64 = * (uint64_t *) (pw+EHF_WO_FS);  // abs 64 bit addr
-          break;
-        case DW_EH_PE_uleb128:
-          upt8 = (uint8_t *)(pw+EHF_WO_FS);
-          unsignedRelAddr64 = decodeULEB128(upt8, &a);
-          calculatedAddr64 = unsignedBaseAddr64 + unsignedRelAddr64;
-          break;
-        case DW_EH_PE_udata2:
-          unsignedRelAddr64 = (uint64_t) (* (uint16_t *) (pw+EHF_WO_FS));
-          calculatedAddr64 = unsignedBaseAddr64 + unsignedRelAddr64;
-          break;
-        case DW_EH_PE_udata4:
-          unsignedRelAddr64 = (uint64_t) (* (uint32_t *) (pw+EHF_WO_FS));
-          calculatedAddr64 = unsignedBaseAddr64 + unsignedRelAddr64;
-          break;
-        case DW_EH_PE_udata8:
-          unsignedRelAddr64 = (uint64_t) (* (uint64_t *) (pw+EHF_WO_FS));
-          calculatedAddr64 = unsignedBaseAddr64 + unsignedRelAddr64;
-          break;
-          //
-          // if the relative part is signed, we assume the base has
-          // the high bit clear (i.e. non-negative for signed arithmetic).
-          // This should always be so in user space.  If it's not, we need a
-          // special addition routine that does negate subtract of the addend.
-          //
-        case DW_EH_PE_sleb128:
-          upt8 = (uint8_t *)(pw+EHF_WO_FS);
-          signedRelAddr64 = decodeSLEB128(upt8, &a);
-          calculatedAddr64 = (uint64_t)((int64_t)unsignedBaseAddr64 + signedRelAddr64);
-          break;
-        case DW_EH_PE_sdata2:
-          signedRelAddr64 = (int64_t) (* (int16_t *) (pw+EHF_WO_FS));
-          calculatedAddr64 = (uint64_t)((int64_t)unsignedBaseAddr64 + signedRelAddr64);
-        case DW_EH_PE_sdata4:
-          signedRelAddr32 = (int32_t)*(pw + EHF_WO_FS);
-          calculatedAddr64 = (uint64_t)((int64_t)unsignedBaseAddr64 + (int64_t)signedRelAddr32);
-          break;
-        case DW_EH_PE_sdata8:
-          signedRelAddr64 = (int64_t) (* (int64_t *) (pw+EHF_WO_FS));
-          calculatedAddr64 = (uint64_t)((int64_t)unsignedBaseAddr64 + signedRelAddr64);
-        default:
-          fprintf(stderr, "Error in eh_frame handling, unsupported address decode type %.2x\n",fdeAddrDecodeType);
-          return SC_SKIP;
-          break;
+      //
+      // Fatal error if the CIE wasn't found
+      //
+      if (kk == kc) {
+        fprintf(stderr, "Fatal error in eh_frame handling, FDE without associated CIE in %s\n", xname);
+        return SC_SKIP;
       }
 
-      sprintf(nameBuff,"stripped_0x%lx",calculatedAddr64);
-      promite = strdup(nameBuff);
-      add_function(calculatedAddr64, promite, "e", FR_YES);
-    }
+      fdeRefCIE = &cieTable[curCIE];
+
+      // 
+      // verify that the CIE parsed correctly
+      //
+      if ((fdeRefCIE -> cieSize) == 0) {
+        fprintf(stderr, "Warning in eh_frame handling, FDE references unparsed CIE 0x%lx in %s, skipping\n",
+            fdeRefCIE -> cieBaseAddress, xname);
+        goto nextRecord;
+      }
+
+      fdeOffset = EHF_WO_FS*sizeof(*pw);
+
+      //
+      // grab the personality function if there's a 'P'. This comes from the reference CIE and doesn't 
+      // change any of the FDE offsets
+      //
+      if ( (fdeRefCIE -> cieContainsType.P) == EHF_CIE_TRUE) {
+        decodeRecord.totalOffset = fdeRefCIE -> cieAugDataOffset;
+        decodeRecord.fdeEnc = fdeRefCIE -> cieFDEEncType.P;
+
+        personalityFunctionAddr = decodeDwarfAddress(fdeRefCIE->cieAugData, &decodeRecord, &a, 
+            "personality function");
+
+        //
+        // now add the personality function to the list
+        // note that since the personality address comes from the cie, 
+        // we don't increase fdeOffset
+        //
+        if (personalityFunctionAddr != EHF_DECDWRF_ERROR) {
+          sprintf(nameBuff,"personality_0x%lx", personalityFunctionAddr);
+          promite = strdup(nameBuff);
+          add_function(personalityFunctionAddr, promite, SC_FNTYPE_EH_FRAME, FR_YES);
+        }
+
+      }
+
+      //
+      // pick off the actual function address, if there's an 'R'
+      //
+      if ( (fdeRefCIE -> cieContainsType.R) == EHF_CIE_TRUE) {
+        decodeRecord.fdeEnc = fdeRefCIE -> cieFDEEncType.R;
+        decodeRecord.totalOffset = recordOffset+fdeOffset;
+
+        calculatedAddr64 = decodeDwarfAddress(pb+fdeOffset, &decodeRecord, &a, "FDE function address");
+
+        //
+        // add the function address to the list
+        //
+        if (calculatedAddr64 != EHF_DECDWRF_ERROR) {
+          calculatedAddr64 += fdeRefCIE -> cieAddressOffset; // adjust pointer if S
+          sprintf(nameBuff,"stripped_0x%lx",calculatedAddr64);
+          promite = strdup(nameBuff);
+          add_function(calculatedAddr64, promite, SC_FNTYPE_EH_FRAME, FR_YES);
+        }
+        else {
+          goto nextRecord;
+        }
+        fdeOffset += a;
+
+        //
+        // we have to decode the function range, even though it's not used, to get the offset
+        // to the LDSA function, if one is present.  The fdeEnc is the same
+        //
+        decodeRecord.totalOffset = recordOffset+fdeOffset;
+
+        calculatedAddrRange = decodeDwarfAddress(pb+fdeOffset, &decodeRecord, &a, "FDE function range");
+        if (calculatedAddrRange == EHF_DECDWRF_ERROR) {
+          goto nextRecord;
+        }
+        fdeOffset += a;
+
+      } // !R
+
+      if ( (fdeRefCIE -> cieContainsType.L) == EHF_CIE_TRUE) {
+        augDataLen = decodeULEB128(pb+fdeOffset, &a);
+        if (augDataLen == EHF_ULEB128_ERROR) {
+          fprintf(stderr, "Warning in eh_frame handling, cannot decode LSDA aug data len in %s\n", xname);
+          goto nextRecord;
+        }
+        fdeOffset += a;
+        fdeEnc = fdeRefCIE -> cieFDEEncType.L;
+        if (fdeEnc != DW_EH_PE_omit) {
+          decodeRecord.fdeEnc = fdeEnc;
+          decodeRecord.totalOffset = recordOffset+fdeOffset;
+          landingFunctionAddr = decodeDwarfAddress(pb+fdeOffset, &decodeRecord, &a, "LSDA function");
+          //
+          // add the lsda function
+          //
+          if (landingFunctionAddr != EHF_DECDWRF_ERROR) {
+            sprintf(nameBuff,"LSDA_0x%lx",landingFunctionAddr);
+            promite = strdup(nameBuff);
+            add_function(landingFunctionAddr, promite, SC_FNTYPE_EH_FRAME, FR_YES);
+          }
+          fdeOffset += a;
+
+        }
+      } // !L
+
+    } // ! recType is an FDE
+
+    //
+    // at this point, we don't care about the dwarf instructions in the rest
+    // of the record, so we can simply skip to the next record.  This is also
+    // the place we go if there was a non-critical error that cause us to skip
+    // a frame.
+    //
+
+nextRecord:
 
     pb += (recLen + extra);
     recordOffset +=  (recLen + extra);
@@ -498,8 +892,10 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
     if (recordOffset >= dataSize) {
       cf = EHF_CF_DONE;
     }
-  } while (cf == EHF_CF_CONT);
 
+  } while (cf == EHF_CF_CONT);  // ! traversal of eh_frame records
+
+  free ( cieTable );
 
   if(verbose) {
     fprintf (stderr, "scanning .eh_frame, found %d CIE and %d FDE records\n", kc, kf);
@@ -507,4 +903,5 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
   
   return SC_DONE;
 }
+
 

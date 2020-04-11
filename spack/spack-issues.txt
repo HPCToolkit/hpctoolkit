@@ -3,8 +3,9 @@ Current Spack Issues for HPCToolkit
 
 1 Introduction
 2 Current Issues
-2.1 (2019-09-25) New micro-architecture targets
-2.2 (2019-08-28) Cray front-end compilers
+2.1 (2020-03-27) Intel-TBB checksums don't match
+2.2 (2019-09-25) New micro-architecture targets
+2.3 (2019-08-28) Cray front-end compilers
 3 Recently Resolved Issues
 3.1 (2019-11-19) External perl breaks libunwind
 3.2 (2019-10-08) Python 3.x breaks PAPI
@@ -38,12 +39,31 @@ hpctoolkit web site.
 
      <http://hpctoolkit.org/spack-issues.html>
 
-Last revised: Feb 28, 2020.
+Last revised: March 27, 2020.
 
 2 Current Issues
 ================
 
-2.1 (2019-09-25) New micro-architecture targets
+2.1 (2020-03-27) Intel-TBB checksums don't match
+------------------------------------------------
+
+Intel recently moved the TBB project on GitHub to a new repository,
+'oneAPI-SRC/oneTBB'.  When downloading the intel-tbb tar file, github
+makes the tar file on the fly, and this includes the new top-level
+directory name (oneTBB). The contents of the tar file are the same, but
+the new directory name is enough to invalidate the spack checksum.
+
+Fixed: The new checksums were added to spack in commit 16f104aafe2b
+(https://github.com/spack/spack/pull/15675) on 2020-03-27.  So, if you
+update your spack repository after this commit, then the checksums will
+match.
+
+Workaround: If you have an older spack repository, then you will need to
+disable verifying checksums.
+
+     spack install --no-checksum intel-tbb
+
+2.2 (2019-09-25) New micro-architecture targets
 -----------------------------------------------
 
 Spack recently changed how it treats a system's architecture and target
@@ -72,7 +92,7 @@ specify this in 'packages.yaml'.  For example:
        all:
          target: ['x86_64']
 
-2.2 (2019-08-28) Cray front-end compilers
+2.3 (2019-08-28) Cray front-end compilers
 -----------------------------------------
 
 'Spack compiler find' is currently broken for detecting the front-end
