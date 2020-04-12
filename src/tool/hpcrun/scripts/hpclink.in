@@ -151,6 +151,10 @@ Options: Linking
                        for the back-end libraries and use <dir> for the install
                        directory (prefix) of the front-end tools (hpcfnbounds).
 
+  -fnb <path>, --fnbounds <path>
+                       Use <path> as alternate hpcfnbounds command.
+                       (mostly for developers)
+
   --io                 Include the IO bytes read and written library.
 
   --ga                 Include GA (Global Arrays) wrappers.
@@ -201,6 +205,7 @@ export LD_LIBRARY_PATH
 
 double_wrap=no
 front_end_dir=no
+alt_fnbounds=
 my_plugin_list=
 verbose=no
 verb=:
@@ -220,6 +225,11 @@ do
 	    front_end_dir="$2"
 	    shift ; shift
 	    ;;
+        -fnb | --fnbounds )
+	    test "x$2" != x || die "missing argument for --fnbounds"
+	    alt_fnbounds="$2"
+            shift ; shift
+            ;;
 	-io | --io )
 	    io_wrap="${libhpcrun_dir}/libhpcrun_io_wrap.a"
 	    test -f "$io_wrap" || die "unable to find: $io_wrap"
@@ -292,9 +302,13 @@ if test "$front_end_dir" != no ; then
     fi
 fi
 
-hpcfnbounds_dir="${HPCTOOLKIT}/${hpcfnbounds_dir}"
-hpcfnbounds="${hpcfnbounds_dir}/hpcfnbounds"
-test -x "$hpcfnbounds" || die "missing hpcfnbounds: $hpcfnbounds"
+case "$alt_fnbounds" in
+    '' ) hpcfnbounds="${HPCTOOLKIT}/${hpcfnbounds_dir}/hpcfnbounds" ;;
+    /* ) hpcfnbounds="$alt_fnbounds" ;;
+    * )  hpcfnbounds="${HPCTOOLKIT}/${hpcfnbounds_dir}/${alt_fnbounds}" ;;
+esac
+
+test -x "$hpcfnbounds" || die "unable to execute hpcfnbounds: $hpcfnbounds"
 
 #
 # Add plugin files: hpclink --plugin name

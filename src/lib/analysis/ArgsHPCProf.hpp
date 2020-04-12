@@ -80,6 +80,8 @@
 
 namespace Analysis {
 
+enum class AppType {APP_HPCPROF, APP_HPCPROF_MPI};
+
 class ArgsHPCProf
   : public Analysis::Args
 {
@@ -89,15 +91,21 @@ public:
 
   // Parse the command line
   virtual void
-  parse(int argc, const char* const argv[]);
+  parse(int argc, const char* const argv[], AppType type);
 
   // Version and Usage information
   void
   printVersion(std::ostream& os) const;
 
   void
-  printUsage(std::ostream& os) const;
-  
+  printUsage(std::ostream& os, AppType type) const;
+
+  void
+  printUsageProf(std::ostream& os) const;
+
+  void
+  printUsageProfMPI(std::ostream& os) const;
+
   // Error
   void
   printError(std::ostream& os, const char* msg) const;
