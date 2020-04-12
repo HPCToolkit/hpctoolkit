@@ -731,15 +731,20 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
     monitor_real_abort();
   }
   metric_incr = cur_time_us - TD_GET(last_time_us);
-#endif
+
   // convert microseconds to seconds
-  hpcrun_metricVal_t metric_delta = {.r = metric_incr / 1.0e6}; 
+  double metric_sec =  ((double) metric_incr) / 1.0e6; 
+#endif
+
+  hpcrun_metricVal_t metric_delta = {.r = metric_sec}; 
 
   int metric_id = hpcrun_event2metric(self, ITIMER_EVENT);
   sample_val_t sv = hpcrun_sample_callpath(context, metric_id, metric_delta,
 					    0/*skipInner*/, 0/*isSync*/, NULL);
 
+#if 0
   blame_shift_apply(metric_id, sv.sample_node, metric_incr);
+#endif
 
   if(sv.sample_node) {
     blame_shift_apply(metric_id, sv.sample_node, metric_incr);
