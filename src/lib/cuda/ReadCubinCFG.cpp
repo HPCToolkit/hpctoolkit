@@ -197,7 +197,7 @@ parseDotCFG
     int len = cuda_arch >= 70 ? 16 : 8;
     // Add dummy insts with absolute addresses
     for (size_t i = block->begin_offset; i < symbol->getSize(); i += len) {
-      block->insts.push_back(new CudaParse::Instruction(i + function->address));
+      block->insts.push_back(new CudaParse::Instruction(i + function->address, i));
     }
     function->blocks.push_back(block);
     functions.push_back(function);
@@ -219,7 +219,7 @@ parseDotCFG
       block->begin_offset = cuda_arch >= 70 ? 16 : 8;
       max_block_id++;
       while (function_size < symbol_size) {
-        block->insts.push_back(new CudaParse::Instruction(function_size + function->address));
+        block->insts.push_back(new CudaParse::Instruction(function_size + function->address, function_size));
         function_size += len;
       } 
       if (function->blocks.size() > 0) {
