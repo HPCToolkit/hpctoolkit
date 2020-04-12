@@ -105,95 +105,106 @@ main(int argc, char **argv, char **envp)
   p = argv;
   p++;
   for (i = 1; i < argc; i ++) {
-    if ( strcmp (*p, "-v") == 0 ) {
-       verbose = 1;
-       fprintf(stderr, "\nBegin execution of hpcfnbounds2\n" );
-       p++;
-       continue;
-     }
-     if ( strcmp (*p, "-t") == 0 ) {
-       // Write output in text mode
-       outputmode = OM_TEXT;
-       p++;
-       continue;
-     }
-     if ( strcmp (*p, "-c") == 0 ) {
-       // write output in C-compilable format
-       outputmode = OM_CC;
-       p++;
-       continue;
-     }
-     if ( strcmp (*p, "-d") == 0 ) {
-       // treat as an alias for "-n itfa"
-       disable_sources ("itfa");
-       scan_code = 0;
-       p++;
-       continue;
-     }
-#if 0
-     if ( strcmp (*p, "-D") == 0 ) {
-       no_dwarf = 1;
-       p++;
-       continue;
-     }
-#endif
-     if ( strcmp (*p, "-n") == 0 ) {
-       p++;
-       disable_sources(*p);
-       i++;
-       p++;
-       continue;
-     }
-     if ( strcmp (*p, "-h") == 0 ) {
-       usage();
-       exit(0);
-     }
-      if ( strcmp (*p, "-s") == 0 ) {
-       // code to inialize as a server  "-s <infd> <outfd>"
-       if ((i+2) > argc) {
-         // argument count is wrong
-         fprintf (stderr, "hpcfnbounds2 server invocation too few arguments\n" );
-         exit(1);
-       }
-       p++;
-       int _infd = atoi (*p);
-       p++;
-       int _outfd = atoi (*p);
-       server_mode = 1;
-       if (scan_code == 1) {
-         // aggressively search for stripped functions
-         sr = init_server(DiscoverFnTy_Aggressive, _infd, _outfd);
-       } else {
-         // conservatively search for stripped functions
-         sr = init_server(DiscoverFnTy_Conservative, _infd, _outfd);
-       }
-       // init_server returns 0 when done.  If it has finished, us too.
-       // if an error in init_server is reported, we report it here too.
-       return sr;
-      }
-      // any other arguments must be the name of a load objects to process
-      // First, check to see if environment varirable HPCFNBOUNDS_NO_USE is set
-      if (disable_init == 0 ) {
-        char *str = getenv( "HPCFNBOUNDS_NO_USE" );
-        if (str != NULL) {
-          disable_sources (str);
-        }
-        disable_init = 1;
-      }
-
-      // Process the next argument
-      if (verbose) {
-        fprintf(stderr, "\nBegin processing load-object %s\n", *p);
-      }
-      ret = get_funclist (*p);
-      if ( ret != NULL) {
-        fprintf(stderr, "\nFailure processing load-object %s: %s\n", *p, ret );
+    if( strncmp (*p, "-v", 2) == 0 ) {
+      // set verbose
+      char *type = *p+2;
+      if ( (strcmp(type, "") == 0) || (strcmp (type, "1") == 0 ) ) {
+        verbose = 1;
+        fprintf(stderr, "\nFNB2: Begin execution of hpcfnbounds2, verbose mode\n" );
+      } else if (strcmp (type,"2") == 0 ) {
+        verbose = 2;
+        fprintf(stderr, "\nFNB2: Begin execution of hpcfnbounds2, extended verbose mode\n" );
       } else {
-        if (verbose) {
-          fprintf(stderr, "\nSuccess processing load-object %s\n", *p);
-        }
+        verbose = 2;
+        fprintf (stderr, "\nFNB2: unexpected verbose parameter `%s'\n", type);
+        fprintf(stderr, "\nFNB2: Begin execution of hpcfnbounds2, extended verbose mode\n" );
       }
-      p ++;
+      p++;
+      continue;
+    }
+    if ( strcmp (*p, "-t") == 0 ) {
+      // Write output in text mode
+      outputmode = OM_TEXT;
+      p++;
+      continue;
+    }
+    if ( strcmp (*p, "-c") == 0 ) {
+      // write output in C-compilable format
+      outputmode = OM_CC;
+      p++;
+      continue;
+    }
+    if ( strcmp (*p, "-d") == 0 ) {
+      // treat as an alias for "-n itfa"
+      disable_sources ("itfa");
+      scan_code = 0;
+      p++;
+      continue;
+    }
+#if 0
+    if ( strcmp (*p, "-D") == 0 ) {
+      no_dwarf = 1;
+      p++;
+      continue;
+    }
+#endif
+    if ( strcmp (*p, "-n") == 0 ) {
+      p++;
+      disable_sources(*p);
+      i++;
+      p++;
+      continue;
+    }
+    if ( strcmp (*p, "-h") == 0 ) {
+      usage();
+      exit(0);
+    }
+    if ( strcmp (*p, "-s") == 0 ) {
+      // code to inialize as a server  "-s <infd> <outfd>"
+      if ((i+2) > argc) {
+        // argument count is wrong
+        fprintf (stderr, "FNB2: hpcfnbounds2 server invocation too few arguments\n" );
+        exit(1);
+      }
+     p++;
+     int _infd = atoi (*p);
+     p++;
+     int _outfd = atoi (*p);
+     server_mode = 1;
+     if (scan_code == 1) {
+       // aggressively search for stripped functions
+       sr = init_server(DiscoverFnTy_Aggressive, _infd, _outfd);
+     } else {
+       // conservatively search for stripped functions
+       sr = init_server(DiscoverFnTy_Conservative, _infd, _outfd);
+     }
+     // init_server returns 0 when done.  If it has finished, us too.
+     // if an error in init_server is reported, we report it here too.
+     return sr;
+    }
+    // any other arguments must be the name of a load objects to process
+    // First, check to see if environment varirable HPCFNBOUNDS_NO_USE is set
+    if (disable_init == 0 ) {
+      char *str = getenv( "HPCFNBOUNDS_NO_USE" );
+      if (str != NULL) {
+         disable_sources (str);
+       }
+       disable_init = 1;
+    }
+
+    // Process the next argument
+     if (verbose) {
+       fprintf(stderr, "\nFNB2: Begin processing load-object %s\n", *p);
+     }
+     ret = get_funclist (*p);
+     if ( ret != NULL) {
+       fprintf(stderr, "\nFNB2: Failure processing load-object %s: %s\n", *p, ret );
+     } else {
+       if (verbose) {
+         fprintf(stderr, "\nFNB2: Success processing load-object %s\n", *p);
+       }
+     }
+     p ++;
   }
 
   return 0;
@@ -226,8 +237,8 @@ get_funclist(char *name)
       farray[k].src = SC_FNTYPE_NONE;
       farray[k].fr_fnam = FR_NO;
     }
-    if ( verbose) {
-      fprintf(stderr, "Initial farray allocated for %ld functions\n", maxfunc);
+    if ( verbose > 1) {
+      fprintf(stderr, "FNB2: Initial farray allocated for %ld functions\n", maxfunc);
     }
   }
   xname = name;
@@ -354,7 +365,7 @@ process_mapped_header(Elf *lelf)
     return ebuf2;
   }
 
-  if (verbose) {
+  if (verbose > 1) {
     print_elf_header64(&ehdr);
     print_program_headers64(lelf);
     print_section_headers64(lelf);
@@ -514,7 +525,7 @@ process_mapped_header(Elf *lelf)
     (void)ehframescan(lelf, &ehInfo);  
   }
 
-  if (verbose) {
+  if (verbose > 1) {
     fprintf(stderr, "\n");
   }
 #if 0
@@ -543,7 +554,7 @@ void
 disable_sources(char *str)
 {
   if (verbose) {
-    fprintf(stderr, "Disabling sources \"%s\"\n", str);
+    fprintf(stderr, "FNB2: Disabling sources \"%s\"\n", str);
   }
   int i;
   for (i = 0; ; i++) {
@@ -626,12 +637,12 @@ symsecread(Elf *e, GElf_Shdr secHead, char *src)
 
   section = gelf_offscn(e,secHead.sh_offset);  // back read section from header offset
   if (section == NULL) {
-    fprintf(stderr, "%s %s\n", elfGenericErr, elf_errmsg(-1));
+    fprintf(stderr, "FNB2: %s %s\n", elfGenericErr, elf_errmsg(-1));
     return SC_SKIP;
   }
   data = elf_getdata(section, NULL);           // use it to get the data
   if (data == NULL) {
-    fprintf(stderr, "%s %s\n", elfGenericErr, elf_errmsg(-1));
+    fprintf(stderr, "FNB2: %s %s\n", elfGenericErr, elf_errmsg(-1));
     return SC_SKIP;
   }
 
@@ -639,12 +650,12 @@ symsecread(Elf *e, GElf_Shdr secHead, char *src)
   count = (secHead.sh_size)/(secHead.sh_entsize);
   for (ii=0; ii<count; ii++) {
     if (gelf_getsym(data, ii, &curSym) != &curSym) {
-      fprintf(stderr, "%s %s\n", elfGenericErr, elf_errmsg(-1));
+      fprintf(stderr, "FNB2: %s %s\n", elfGenericErr, elf_errmsg(-1));
       return SC_SKIP;
     }
     symName = elf_strptr(e, secHead.sh_link, curSym.st_name);
     if (symName == NULL) {
-      fprintf(stderr, "%s %s\n", elfGenericErr, elf_errmsg(-1));
+      fprintf(stderr, "FNB2: %s %s\n", elfGenericErr, elf_errmsg(-1));
       return SC_SKIP;
     }
     symType = GELF_ST_TYPE(curSym.st_info);
@@ -667,7 +678,7 @@ print_funcs()
 {
   int i;
   if ( verbose) {
-    fprintf(stderr, "Writing output in %s mode (%d)\n",
+    fprintf(stderr, "FNB2: Writing output in %s mode (%d)\n",
        (outputmode == OM_TEXT ? "text" : "C-compilable"), outputmode );
   }
   if (outputmode == OM_CC ) {
@@ -755,7 +766,7 @@ add_function(uint64_t faddr, char *fname, char *src, uint8_t freeFlag)
   // libelf will take care of it.
   //
 #if DEBUG
-  fprintf(stderr, "Adding: #%6d --0x%08lx\t%s(%s)\n", nfunc, farray[nfunc].fadd,
+  fprintf(stderr, "FNB2: Adding: #%6d --0x%08lx\t%s(%s)\n", nfunc, farray[nfunc].fadd,
       farray[nfunc].fnam, farray[nfunc].src);
 #endif
   nfunc ++;
@@ -764,12 +775,12 @@ add_function(uint64_t faddr, char *fname, char *src, uint8_t freeFlag)
     maxfunc = 2*maxfunc;
     of = farray;
     farray = (Function_t *)realloc(farray, maxfunc * sizeof(Function_t) );
-    if ( verbose) {
-      fprintf(stderr, "Increasing farray size to %ld functions %s\n",
+    if ( verbose > 1) {
+      fprintf(stderr, "FNB2: Increasing farray size to %ld functions %s\n",
          maxfunc, (of == farray ? "(not moved)" : "(moved)") );
     }
     if (farray == NULL) {
-      fprintf(stderr, "Fatal error: unable to increase function table to %ld functions; exiting", maxfunc);
+      fprintf(stderr, "FNB2: Fatal error: unable to increase function table to %ld functions; exiting", maxfunc);
       exit(1);
     }
     //
@@ -799,7 +810,7 @@ func_cmp(const void *a, const void *b)
     ret = strcmp (fp1.fnam, fp2.fnam);
   }
 #if 0
-  fprintf(stderr, "%d = compare (%s, 0x08lx) with (%s, 0x08lx)\n",
+  fprintf(stderr, "FNB2: %d = compare (%s, 0x08lx) with (%s, 0x08lx)\n",
       ret, fp1.fnam, fp1.fadd, fp2.fnam, fp2.fadd );
 #endif
   return ret;
@@ -811,6 +822,7 @@ usage()
   fprintf(stderr, 
       "Usage: hpcfnbounds [options] object-file\n    options are:\n"
       "\t-v\tturn on verbose output in hpcfnbounds\n"
+      "\t-v2\tturn on extended verbose output in hpcfnbounds\n"
       "\t-n <str>\tdon't use functions sources as listed in <str>\n"
       "\t    characters in <str> are interpreted as follows:\n"
       "\t\td -- skip reading.dynsym section\n"
