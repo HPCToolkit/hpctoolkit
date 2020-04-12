@@ -64,7 +64,7 @@ static cl_int clEnqueueReadBuffer_wrapper (cl_command_queue command_queue, cl_me
   event = eventNullCheck(event);
   clreadbuffer_fptr clEnqueueReadBuffer_wrappee = (clreadbuffer_fptr) gotcha_get_wrappee(clEnqueueReadBuffer_handle);
   cl_int return_status = clEnqueueReadBuffer_wrappee(command_queue, buffer, blocking_read, offset, cb, ptr, num_events_in_wait_list, event_wait_list, event);
-  ETMSG(OPENCL, "%zu(bytes) of data being transferred from device to host", cb);
+  ETMSG(OPENCL, "%d(bytes) of data being transferred from device to host", (long)cb);
 
   opencl_subscriber_callback(mem_transfer_cb->type, mem_transfer_cb->correlation_id);
   clSetEventCallback(*event, CL_COMPLETE, &opencl_buffer_completion_callback, mem_transfer_cb);
@@ -85,7 +85,7 @@ static cl_int clEnqueueWriteBuffer_wrapper(cl_command_queue command_queue, cl_me
   event = eventNullCheck(event);
   clwritebuffer_fptr clEnqueueWriteBuffer_wrappee = (clwritebuffer_fptr) gotcha_get_wrappee(clEnqueueWriteBuffer_handle);
   cl_int return_status = clEnqueueWriteBuffer_wrappee(command_queue, buffer, blocking_write, offset, cb, ptr, num_events_in_wait_list, event_wait_list, event);
-  ETMSG(OPENCL, "%zu(bytes) of data being transferred from host to device", cb);
+  ETMSG(OPENCL, "%d(bytes) of data being transferred from host to device", (long)cb);
   
   opencl_subscriber_callback(mem_transfer_cb->type, mem_transfer_cb->correlation_id);
   clSetEventCallback(*event, CL_COMPLETE, &opencl_buffer_completion_callback, mem_transfer_cb);
