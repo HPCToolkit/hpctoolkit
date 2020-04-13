@@ -44,7 +44,7 @@
 
 //******************************************************************************
 // Description:
-//   Read fields from a CUpti_Activity and assign to a 
+//   Read fields from a CUpti_Activity and assign to a
 //   GPU-independent gpu_activity_t.
 //
 //   This interface is only used by the CUPTI GPU monitoring thread.
@@ -83,20 +83,10 @@
 // macros
 //******************************************************************************
 
-#define DEBUG 0
-
-
-#if DEBUG
-#define PRINT(...) fprintf(stderr, __VA_ARGS__)
-#else
-#define PRINT(...)
-#endif
-
-
 #if CUPTI_API_VERSION >= 10
-#define CUpti_ActivityPCSamplingVersion CUpti_ActivityPCSampling3 
+#define CUpti_ActivityPCSamplingVersion CUpti_ActivityPCSampling3
 #else
-#define CUpti_ActivityPCSamplingVersion CUpti_ActivityPCSampling2 
+#define CUpti_ActivityPCSamplingVersion CUpti_ActivityPCSampling2
 #endif
 
 
@@ -105,7 +95,7 @@
 // private operations
 //******************************************************************************
 
-static gpu_inst_stall_t 
+static gpu_inst_stall_t
 convert_stall_type
 (
  CUpti_ActivityPCSamplingStallReason reason
@@ -114,13 +104,13 @@ convert_stall_type
   switch(reason) {
   case CUPTI_ACTIVITY_PC_SAMPLING_STALL_NONE:
     return GPU_INST_STALL_NONE;
-  case CUPTI_ACTIVITY_PC_SAMPLING_STALL_INST_FETCH:  
+  case CUPTI_ACTIVITY_PC_SAMPLING_STALL_INST_FETCH:
     return GPU_INST_STALL_IFETCH;
-  case CUPTI_ACTIVITY_PC_SAMPLING_STALL_EXEC_DEPENDENCY:  
+  case CUPTI_ACTIVITY_PC_SAMPLING_STALL_EXEC_DEPENDENCY:
     return GPU_INST_STALL_IDEPEND;
-  case CUPTI_ACTIVITY_PC_SAMPLING_STALL_MEMORY_DEPENDENCY:  
+  case CUPTI_ACTIVITY_PC_SAMPLING_STALL_MEMORY_DEPENDENCY:
     return GPU_INST_STALL_GMEM;
-  case CUPTI_ACTIVITY_PC_SAMPLING_STALL_TEXTURE: 
+  case CUPTI_ACTIVITY_PC_SAMPLING_STALL_TEXTURE:
     return GPU_INST_STALL_TMEM;
   case CUPTI_ACTIVITY_PC_SAMPLING_STALL_SYNC:
     return GPU_INST_STALL_SYNC;
@@ -143,7 +133,7 @@ convert_stall_type
 }
 
 
-static gpu_memcpy_type_t 
+static gpu_memcpy_type_t
 convert_memcpy_type
 (
  CUpti_ActivityMemcpyKind kind
@@ -160,7 +150,7 @@ convert_memcpy_type
   case CUPTI_ACTIVITY_MEMCPY_KIND_DTOD:      return GPU_MEMCPY_D2D;
   case CUPTI_ACTIVITY_MEMCPY_KIND_HTOH:      return GPU_MEMCPY_H2H;
   case CUPTI_ACTIVITY_MEMCPY_KIND_PTOP:      return GPU_MEMCPY_P2P;
-  case CUPTI_ACTIVITY_MEMCPY_KIND_UNKNOWN:   
+  case CUPTI_ACTIVITY_MEMCPY_KIND_UNKNOWN:
   default:                                   return GPU_MEMCPY_UNK;
   }
 }
@@ -195,7 +185,7 @@ set_gpu_instruction_fields
  uint32_t activity_correlation_id,
  uint32_t function_id,
  uint32_t pc_offset
-) 
+)
 {
   gpu_correlation_id_map_entry_t *cid_map_entry =
     gpu_correlation_id_map_lookup(activity_correlation_id);
@@ -208,7 +198,7 @@ set_gpu_instruction_fields
     gpu_host_correlation_map_lookup(host_correlation_id);
   assert(host_correlation_entry);
 
-  gpu_function_id_map_entry_t *fid_map_entry = 
+  gpu_function_id_map_entry_t *fid_map_entry =
     gpu_function_id_map_lookup(function_id);
   assert(fid_map_entry);
 
@@ -227,10 +217,10 @@ static void
 convert_pcsampling
 (
  gpu_activity_t *ga,
- CUpti_ActivityPCSamplingVersion *activity 
+ CUpti_ActivityPCSamplingVersion *activity
 )
 {
-  PRINT("source %u, functionId %u, pc 0x%x, corr %u, "
+  TMSG(CUPTI_ACTIVITY, "source %u, functionId %u, pc 0x%x, corr %u, "
 	"samples %u, latencySamples %u, stallReason %u\n",
 	activity->sourceLocatorId,
 	activity->functionId,
@@ -239,11 +229,11 @@ convert_pcsampling
 	activity->samples,
 	activity->latencySamples,
 	activity->stallReason);
-  
+
   ga->kind = GPU_ACTIVITY_PC_SAMPLING;
 
-  set_gpu_instruction_fields(&ga->details.instruction, activity->correlationId, 
-           activity->functionId, activity->pcOffset); 
+  set_gpu_instruction_fields(&ga->details.instruction, activity->correlationId,
+           activity->functionId, activity->pcOffset);
 
   ga->details.pc_sampling.stallReason = convert_stall_type(activity->stallReason);
   ga->details.pc_sampling.samples = activity->samples;
@@ -255,27 +245,27 @@ static void
 convert_pcsampling_record_info
 (
  gpu_activity_t *ga,
- CUpti_ActivityPCSamplingRecordInfo *activity_info 
+ CUpti_ActivityPCSamplingRecordInfo *activity_info
 )
 {
-  PRINT("corr %u, totalSamples %llu, droppedSamples %llu\n",
+  TMSG(CUPTI_ACTIVITY, "corr %u, totalSamples %llu, droppedSamples %llu",
    activity_info->correlationId,
    (unsigned long long)activity_info->totalSamples,
    (unsigned long long)activity_info->droppedSamples);
   ga->kind = GPU_ACTIVITY_PC_SAMPLING_INFO;
 
   ga->details.pc_sampling_info.correlation_id = activity_info->correlationId;
-  ga->details.pc_sampling_info.totalSamples = 
+  ga->details.pc_sampling_info.totalSamples =
     activity_info->totalSamples;
-  ga->details.pc_sampling_info.droppedSamples = 
+  ga->details.pc_sampling_info.droppedSamples =
     activity_info->droppedSamples;
-  ga->details.pc_sampling_info.samplingPeriodInCycles = 
+  ga->details.pc_sampling_info.samplingPeriodInCycles =
     activity_info->samplingPeriodInCycles;
-  
+
   uint64_t totalSamples = 0;
   uint64_t fullSMSamples = 0;
   cupti_sm_efficiency_analyze(activity_info, &totalSamples, &fullSMSamples);
-  
+
   ga->details.pc_sampling_info.fullSMSamples = fullSMSamples;
 }
 
@@ -287,9 +277,9 @@ convert_memcpy
  CUpti_ActivityMemcpy *activity
 )
 {
-  PRINT("Memcpy copy CorrelationId %u\n", activity->correlationId);
-  PRINT("Memcpy copy kind %u\n", activity->copyKind);
-  PRINT("Memcpy copy bytes %lu\n", activity->bytes);
+  TMSG(CUPTI_ACTIVITY, "Memcpy copy CorrelationId %u", activity->correlationId);
+  TMSG(CUPTI_ACTIVITY, "Memcpy copy kind %u", activity->copyKind);
+  TMSG(CUPTI_ACTIVITY, "Memcpy copy bytes %lu", activity->bytes);
 
   ga->kind = GPU_ACTIVITY_MEMCPY;
   ga->details.memcpy.correlation_id = activity->correlationId;
@@ -298,7 +288,7 @@ convert_memcpy
   ga->details.memcpy.copyKind = convert_memcpy_type(activity->copyKind);
   ga->details.memcpy.bytes = activity->bytes;
 
-  set_gpu_interval(&ga->details.interval, activity->start, activity->end);  
+  set_gpu_interval(&ga->details.interval, activity->start, activity->end);
 }
 
 
@@ -309,9 +299,9 @@ convert_memcpy2
  CUpti_ActivityMemcpy2 *activity
 )
 {
-  PRINT("Memcpy2 copy CorrelationId %u\n", activity->correlationId);
-  PRINT("Memcpy2 copy kind %u\n", activity->copyKind);
-  PRINT("Memcpy2 copy bytes %lu\n", activity->bytes);
+  TMSG(CUPTI_ACTIVITY, "Memcpy2 copy CorrelationId %u", activity->correlationId);
+  TMSG(CUPTI_ACTIVITY, "Memcpy2 copy kind %u", activity->copyKind);
+  TMSG(CUPTI_ACTIVITY, "Memcpy2 copy bytes %lu", activity->bytes);
 
   ga->kind = GPU_ACTIVITY_MEMCPY;
   ga->details.memcpy.correlation_id = activity->correlationId;
@@ -320,7 +310,7 @@ convert_memcpy2
   ga->details.memcpy.copyKind = convert_memcpy_type(activity->copyKind);
   ga->details.memcpy.bytes = activity->bytes;
 
-  set_gpu_interval(&ga->details.interval, activity->start, activity->end);  
+  set_gpu_interval(&ga->details.interval, activity->start, activity->end);
 }
 
 
@@ -354,7 +344,7 @@ convert_kernel
   uint32_t threadRegisters = 0;
   uint32_t blockThreads = 0;
   uint32_t blockSharedMemory = 0;
-  cupti_occupancy_analyze(activity, &activeWarpsPerSM, &maxActiveWarpsPerSM, 
+  cupti_occupancy_analyze(activity, &activeWarpsPerSM, &maxActiveWarpsPerSM,
 			  &threadRegisters, &blockThreads, &blockSharedMemory);
 
   ga->details.kernel.activeWarpsPerSM = activeWarpsPerSM;
@@ -372,7 +362,7 @@ convert_function
  CUpti_ActivityFunction *activity
 )
 {
-  PRINT("Function id %u\n", activity->id);
+  TMSG(CUPTI_ACTIVITY, "Function id %u", activity->id);
 
   ga->kind = GPU_ACTIVITY_FUNCTION;
 
@@ -392,10 +382,10 @@ convert_global_access
 {
   ga->kind = GPU_ACTIVITY_GLOBAL_ACCESS;
 
-  set_gpu_instruction_fields(&ga->details.instruction, activity->correlationId, 
-           activity->functionId, activity->pcOffset); 
+  set_gpu_instruction_fields(&ga->details.instruction, activity->correlationId,
+           activity->functionId, activity->pcOffset);
 
-  ga->details.global_access.l2_transactions = 
+  ga->details.global_access.l2_transactions =
     activity->l2_transactions;
 
   ga->details.global_access.theoreticalL2Transactions =
@@ -425,24 +415,24 @@ convert_shared_access
  gpu_activity_t *ga,
  CUpti_ActivitySharedAccess *activity
 )
-{ 
+{
   ga->kind = GPU_ACTIVITY_LOCAL_ACCESS;
 
-  set_gpu_instruction_fields(&ga->details.instruction, activity->correlationId, 
-           activity->functionId, activity->pcOffset); 
+  set_gpu_instruction_fields(&ga->details.instruction, activity->correlationId,
+           activity->functionId, activity->pcOffset);
 
-  ga->details.local_access.sharedTransactions = 
+  ga->details.local_access.sharedTransactions =
     activity->sharedTransactions;
 
   ga->details.local_access.theoreticalSharedTransactions =
     activity->theoreticalSharedTransactions;
 
-  ga->details.local_access.type = 
-    ((activity->flags & (1<<8)) ? 
-     GPU_LOCAL_ACCESS_LOAD : 
+  ga->details.local_access.type =
+    ((activity->flags & (1<<8)) ?
+     GPU_LOCAL_ACCESS_LOAD :
      GPU_LOCAL_ACCESS_STORE);
 
-  ga->details.local_access.bytes = (activity->flags & 0xFF) * 
+  ga->details.local_access.bytes = (activity->flags & 0xFF) *
     activity->threadsExecuted;
 }
 
@@ -455,8 +445,8 @@ convert_branch
 {
   ga->kind = GPU_ACTIVITY_BRANCH;
 
-  set_gpu_instruction_fields(&ga->details.instruction, activity->correlationId, 
-           activity->functionId, activity->pcOffset); 
+  set_gpu_instruction_fields(&ga->details.instruction, activity->correlationId,
+           activity->functionId, activity->pcOffset);
 
   ga->details.branch.diverged = activity->diverged;
   ga->details.branch.executed = activity->executed;
@@ -485,7 +475,7 @@ static void
 convert_memory
 (
   gpu_activity_t *ga,
-  CUpti_ActivityMemory *activity_mem 
+  CUpti_ActivityMemory *activity_mem
 )
 {
   ga->kind = GPU_ACTIVITY_MEMORY;
@@ -510,18 +500,18 @@ convert_memset
   ga->details.memset.memKind = activity->memoryKind;
   ga->details.memset.bytes = activity->bytes;
 
-  set_gpu_interval(&ga->details.interval, activity->start, activity->end);  
+  set_gpu_interval(&ga->details.interval, activity->start, activity->end);
 }
 
 static void
 convert_correlation
 (
-  gpu_activity_t *ga, 
+  gpu_activity_t *ga,
   CUpti_ActivityExternalCorrelation* activity
 )
 {
-  PRINT("External CorrelationId %lu\n", activity->externalId);
-  PRINT("CorrelationId %u\n", activity->correlationId);
+  TMSG(CUPTI_ACTIVITY, "External CorrelationId %lu", activity->externalId);
+  TMSG(CUPTI_ACTIVITY, "CorrelationId %u", activity->correlationId);
 
   ga->kind = GPU_ACTIVITY_EXTERNAL_CORRELATION;
   ga->details.correlation.correlation_id = activity->correlationId;
@@ -536,7 +526,7 @@ convert_cdpkernel
 )
 {
   ga->kind = GPU_ACTIVITY_CDP_KERNEL;
-  
+
   ga->details.cdpkernel.correlation_id = activity->correlationId;
   ga->details.cdpkernel.context_id = activity->contextId;
   ga->details.cdpkernel.stream_id = activity->streamId;
@@ -624,7 +614,7 @@ cupti_activity_translate
     convert_synchronization(ga, (CUpti_ActivitySynchronization *) activity);
     break;
 
-  case CUPTI_ACTIVITY_KIND_MEMORY:  
+  case CUPTI_ACTIVITY_KIND_MEMORY:
     convert_memory(ga, (CUpti_ActivityMemory *) activity);
     break;
 
