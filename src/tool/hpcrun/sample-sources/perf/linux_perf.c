@@ -884,10 +884,6 @@ METHOD_FN(process_event_list, int lush_metrics)
                                    // since the OS will free it, we don't have to do it in hpcrun
     const char *desc = pfmu_getEventDescription(name);
 
-    // set the metric for this perf event
-    event_desc[i].hpcrun_metric_id = hpcrun_set_new_metric_desc_and_period(lnux_kind, name_dup,
-            desc, MetricFlags_ValFmt_Real, threshold, prop);
-   
     // ------------------------------------------------------------
     // if we use frequency (event_type=1) then the period is not deterministic,
     // it can change dynamically. In this case, the period is 1
@@ -897,6 +893,11 @@ METHOD_FN(process_event_list, int lush_metrics)
       //                   since the period is determine dynamically
       threshold = 1;
     }
+
+    // set the metric for this perf event
+    event_desc[i].hpcrun_metric_id = hpcrun_set_new_metric_desc_and_period(lnux_kind, name_dup,
+            desc, MetricFlags_ValFmt_Real, threshold, prop);
+   
     METHOD_CALL(self, store_event, event_attr->config, threshold);
     free(name);
   }
