@@ -737,18 +737,6 @@ sanitizer_kernel_launch_sync
   hpctoolkit_cumod_st_t *cumod = (hpctoolkit_cumod_st_t *)module;
   uint32_t cubin_id = cumod->cubin_id;
 
-  // Insert a function cct node
-  hpcrun_safe_enter();
-
-  gpu_op_ccts_t gpu_op_ccts;
-  gpu_op_placeholder_flags_t gpu_op_placeholder_flags = 0;
-  gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
-    gpu_placeholder_type_kernel);
-	gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
-  api_node = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel);
-
-  hpcrun_safe_exit();
-
   // TODO(Keren): correlate metrics with api_node
 
   int block_sampling_frequency = sanitizer_block_sampling_frequency_get();
@@ -1007,16 +995,28 @@ sanitizer_subscribe_callback
       // TODO(Keren): thread safe rand
       kernel_sampling = rand() % kernel_sampling_frequency == 0;
 
-      // Get a place holder cct node
-      correlation_id = gpu_correlation_id();
-      // TODO(Keren): why two extra layers?
-      api_node = sanitizer_correlation_callback(correlation_id, 0);
-
       // First time must be sampled
       if (sanitizer_kernel_map_lookup(api_node) == NULL) {
         kernel_sampling = true;
         sanitizer_kernel_map_init(api_node);
       }
+
+      // Get a place holder cct node
+      correlation_id = gpu_correlation_id();
+      // TODO(Keren): why two extra layers?
+      api_node = sanitizer_correlation_callback(correlation_id, 0);
+
+      // Insert a function cct node
+      hpcrun_safe_enter();
+
+      gpu_op_ccts_t gpu_op_ccts;
+      gpu_op_placeholder_flags_t gpu_op_placeholder_flags = 0;
+      gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
+        gpu_placeholder_type_kernel);
+      gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
+      api_node = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel);
+
+      hpcrun_safe_exit();
 
       grid_size.x = ld->gridDim_x;
       grid_size.y = ld->gridDim_y;
