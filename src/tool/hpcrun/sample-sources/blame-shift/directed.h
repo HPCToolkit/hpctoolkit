@@ -28,7 +28,7 @@ void directed_blame_shift_start(void *arg, uint64_t obj) ;
 void directed_blame_shift_end(void *arg);
 
 void directed_blame_sample(void *arg, int metric_id, cct_node_t *node, 
-                           int metric_incr);
+                           float metric_incr);
 
 void directed_blame_accept(void *arg, uint64_t obj);
 

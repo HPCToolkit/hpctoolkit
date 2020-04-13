@@ -181,7 +181,7 @@ get_blame_metric_id(void)
 
 static inline
 void
-add_blame(uint64_t obj, uint32_t value)
+add_blame(uint64_t obj, float value)
 {
   if (! pthread_blame_table) {
     EMSG("Attempted to add pthread blame before initialization");
@@ -192,7 +192,7 @@ add_blame(uint64_t obj, uint32_t value)
 
 
 static inline
-uint64_t
+float
 get_blame(uint64_t obj)
 {
   if (! pthread_blame_table) {
@@ -204,10 +204,19 @@ get_blame(uint64_t obj)
 
 
 static void 
-process_directed_blame_for_sample(void* arg, int metric_id, cct_node_t* node, int metric_incr)
+process_directed_blame_for_sample
+(
+ void* arg, 
+ int metric_id, 
+ cct_node_t* node, 
+ float metric_incr
+)
 {
   TMSG(LOCKWAIT, "Processing directed blame");
+
+#if 0
   metric_desc_t* metric_desc = hpcrun_id2metric(metric_id);
+#endif
  
 #ifdef LOCKWAIT_FIX
   // Only blame shift idleness for time and cycle metrics. 
@@ -215,7 +224,14 @@ process_directed_blame_for_sample(void* arg, int metric_id, cct_node_t* node, in
     return;
 #endif // LOCKWAIT_FIX
   
+  // johnmc ompt-blame: check this
+  // metric_vale will need to be different for frequency-based sampling 
+  // than period-based sampling
+#if 0
   uint32_t metric_value = (uint32_t) (metric_desc->period * metric_incr);
+#endif
+
+  float metric_value = metric_incr;
 
   uint64_t obj_to_blame = get_blame_target();
   if(obj_to_blame) {
@@ -229,7 +245,7 @@ process_directed_blame_for_sample(void* arg, int metric_id, cct_node_t* node, in
     metric_data_list_t* metrics = hpcrun_reify_metric_set(node, metric_id);
     hpcrun_metric_std_inc(wait_metric,
 			  metrics,
-			  (cct_metric_data_t) {.i = metric_incr});
+			  (cct_metric_data_t) {.r = metric_incr});
   }
 }
 
@@ -357,9 +373,15 @@ METHOD_FN(process_event_list, int lush_metrics)
   blame_shift_register(&bs_entry);
 
   kind_info_t *pthr_kind = hpcrun_metrics_new_kind();
-  blame_metric_id = hpcrun_set_new_metric_info(pthr_kind, PTHREAD_BLAME_METRIC);
-  blockwait_metric_id = hpcrun_set_new_metric_info(pthr_kind, PTHREAD_BLOCKWAIT_METRIC);
-  spinwait_metric_id = hpcrun_set_new_metric_info(pthr_kind, PTHREAD_SPINWAIT_METRIC);
+  blame_metric_id = 
+    hpcrun_set_new_metric_info_and_period(pthr_kind, PTHREAD_BLAME_METRIC,
+					  MetricFlags_ValFmt_Real, 1, metric_property_none);
+  blockwait_metric_id = 
+    hpcrun_set_new_metric_info_and_period(pthr_kind, PTHREAD_BLOCKWAIT_METRIC,
+					  MetricFlags_ValFmt_Real, 1, metric_property_none);
+  spinwait_metric_id = 
+    hpcrun_set_new_metric_info_and_period(pthr_kind, PTHREAD_SPINWAIT_METRIC,
+					  MetricFlags_ValFmt_Real, 1, metric_property_none);
   hpcrun_close_kind(pthr_kind);
   metric_id_set = true;
 
@@ -399,7 +421,7 @@ METHOD_FN(display_events)
 
 #include <stdio.h>
 
-#define ss_name directed_blame
+#define ss_name pthread_blame
 #define ss_cls SS_SOFTWARE
 #define ss_sort_order  90
 

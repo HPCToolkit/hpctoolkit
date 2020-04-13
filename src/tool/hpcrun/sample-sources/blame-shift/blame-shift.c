@@ -14,7 +14,7 @@ blame_shift_register(bs_fn_entry_t *entry)
 
 
 void 
-blame_shift_apply(int metric_id, cct_node_t *node, int metric_incr)
+blame_shift_apply(int metric_id, cct_node_t *node, float metric_incr)
 {
    bs_fn_entry_t* fn = bs_fns;
    while(fn != 0) {

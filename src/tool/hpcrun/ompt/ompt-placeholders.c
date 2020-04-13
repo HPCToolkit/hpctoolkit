@@ -159,11 +159,11 @@ ompt_init_placeholders_internal
   // protect against receiving a sample here. if we do, we may get 
   // deadlock trying to acquire a lock associated with 
   // fnbounds_enclosing_addr
-  hpcrun_safe_enter();
+  //   hpcrun_safe_enter();
 
   FOREACH_OMPT_PLACEHOLDER_FN(initialize_placeholder)
 
-  hpcrun_safe_exit();
+  // hpcrun_safe_exit();
 }
 
 

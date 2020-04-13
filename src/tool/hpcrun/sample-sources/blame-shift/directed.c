@@ -99,20 +99,18 @@ directed_blame_accept(void *arg, uint64_t obj)
 
 void 
 directed_blame_sample(void *arg, int metric_id, cct_node_t *node, 
-                      int metric_incr)
+                      float metric_incr)
 {
   directed_blame_info_t *bi = (directed_blame_info_t *) arg;
-  int metric_period;
 
-  if (!metric_is_timebase(metric_id, &metric_period)) return;
+  if (!metric_is_timebase(metric_id)) return;
 
   uint64_t obj_to_blame = bi->get_blame_target();
   if (obj_to_blame) {
-    uint32_t metric_value = (uint32_t) (metric_period * metric_incr);
-    blame_map_add_blame(bi->blame_table, obj_to_blame, metric_value); 
+    blame_map_add_blame(bi->blame_table, obj_to_blame, metric_incr); 
     if (bi->wait_metric_id) {
       cct_metric_data_increment(bi->wait_metric_id, node, 
-                                (cct_metric_data_t){.i = metric_value});
+                                (cct_metric_data_t){.r = metric_incr});
     }
   }
 }

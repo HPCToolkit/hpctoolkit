@@ -69,10 +69,31 @@ typedef union blame_entry_t blame_entry_t;
  * interface operations
  ***************************************************************************/
 
-blame_entry_t* blame_map_new(void);
-void blame_map_init(blame_entry_t* table);
-void blame_map_add_blame(blame_entry_t* table,
-			 uint64_t obj, uint32_t metric_value);
-uint64_t blame_map_get_blame(blame_entry_t* table, uint64_t obj);
+blame_entry_t * 
+blame_map_new
+(
+ void
+);
+
+void 
+blame_map_init
+(
+ blame_entry_t* table
+);
+
+void 
+blame_map_add_blame
+(
+ blame_entry_t* table,
+ uint64_t obj, 
+ float metric_value
+);
+
+uint64_t 
+blame_map_get_blame
+(
+ blame_entry_t* table, 
+ uint64_t obj
+);
 
 #endif // _hpctoolkit_blame_map_h_

@@ -102,7 +102,7 @@
 
 typedef struct {
   uint32_t obj_id;
-  uint32_t blame;
+  float blame;
 } blame_parts_t;
 
 typedef union {
@@ -161,7 +161,7 @@ blame_map_hash(uint64_t obj)
 
 
 uint_fast64_t 
-blame_map_entry(uint64_t obj, uint32_t metric_value)
+blame_map_entry(uint64_t obj, float metric_value)
 {
   blame_all_t be;
   be.parts.obj_id = blame_map_obj_id(obj);
@@ -188,14 +188,14 @@ blame_map_init(blame_entry_t table[])
 {
   int i;
   for(i = 0; i < N; i++) {
-    atomic_store(&table[i].value, 0);
+    atomic_store(&table[i].value, 0.0);
   }
 }
 
 
 void
 blame_map_add_blame(blame_entry_t table[],
-		    uint64_t obj, uint32_t metric_value)
+		    uint64_t obj, float metric_value)
 {
   uint32_t obj_id = blame_map_obj_id(obj);
   uint32_t index = blame_map_hash(obj);
