@@ -641,6 +641,9 @@ LTLIBOBJS
 LIBOBJS
 my_pkglibexecdir
 my_pkglibdir
+OPT_ENABLE_VG_ANNOTATIONS_FALSE
+OPT_ENABLE_VG_ANNOTATIONS_TRUE
+VALGRIND_IFLAGS
 OPT_ENABLE_DEVTOOLS_FALSE
 OPT_ENABLE_DEVTOOLS_TRUE
 OPT_OBJCOPY
@@ -1047,6 +1050,8 @@ with_rocm
 enable_data_centric_tracing
 with_objcopy
 enable_devtools
+with_valgrind
+enable_valgrind_annotations
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1747,6 +1752,9 @@ Optional Features:
   --enable-data-centric-tracing
                           Enable data-centric tracing (prototype)
   --enable-devtools       Build development tools (enable debugging)
+  --enable-valgrind-annotations
+                          Add extra annotations for Valgrind analysis (aids
+                          debugging)
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -1792,6 +1800,7 @@ Optional Packages:
                           hpcrun (default is NO)
   --with-objcopy=<obcopy_path>
                           use given objcopy when hiding hpcrun library symbols
+  --with-valgrind=PATH    path to Valgrind install directory
 
 Some influential environment variables:
   HPCPROFMPI_LT_LDFLAGS
@@ -19982,6 +19991,7 @@ default_tbb_prefix=no
 default_xed_prefix=no
 default_xerces_prefix=no
 default_zlib_prefix=no
+default_valgrind_prefix=no
 
 if test "$use_externals" = yes ; then
   default_binutils_prefix="$ext_binutils_prefix"
@@ -20104,6 +20114,9 @@ $as_echo "$as_me: checking spack packages ..." >&6;}
   fi
   if find_spack_pkg zlib ; then
     default_zlib_prefix="$spack_ans"
+  fi
+  if find_spack_pkg valgrind ; then
+    default_valgrind_prefix="$spack_ans"
   fi
 fi
 
@@ -23551,6 +23564,83 @@ fi
 
 
 
+#-------------------------------------------------
+# Option: --with-valgrind=PATH
+#-------------------------------------------------
+
+VALGRIND="$default_valgrind_prefix"
+
+
+# Check whether --with-valgrind was given.
+if test "${with_valgrind+set}" = set; then :
+  withval=$with_valgrind; VALGRIND="$withval"
+fi
+
+
+VALGRIND_IFLAGS=
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for Valgrind headers" >&5
+$as_echo_n "checking for Valgrind headers... " >&6; }
+
+case "$VALGRIND" in
+  /* )
+    # valgrind/valgrind.h must exist on the include path
+    if test -f "$VALGRIND"/include/valgrind/valgrind.h; then
+      VALGRIND_IFLAGS=-I"$VALGRIND"/include
+    else
+      as_fn_error $? "unable to find valgrind.h in: $VALGRIND" "$LINENO" 5
+    fi
+    ;;
+  no )
+    ;;
+  * )
+    as_fn_error $? "Valgrind directory must be an absolute path" "$LINENO" 5
+    ;;
+esac
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $VALGRIND" >&5
+$as_echo "$VALGRIND" >&6; }
+
+
+
+
+#-------------------------------------------------
+# Option: --enable-valgrind-annotations
+#-------------------------------------------------
+
+OPT_ENABLE_VG_ANNOTATIONS="no"
+
+# Check whether --enable-valgrind-annotations was given.
+if test "${enable_valgrind_annotations+set}" = set; then :
+  enableval=$enable_valgrind_annotations; case "${enableval}" in
+     yes) OPT_ENABLE_VG_ANNOTATIONS="yes" ;;
+     no)  OPT_ENABLE_VG_ANNOTATIONS="no" ;;
+     *) as_fn_error $? "bad value ${enableval} for --enable-valgrind-annotations" "$LINENO" 5 ;;
+   esac
+else
+  OPT_ENABLE_VG_ANNOTATIONS=no
+fi
+
+
+if test x"$OPT_ENABLE_VG_ANNOTATIONS" = xyes; then
+  if test x"$VALGRIND" = xno; then
+    as_fn_error $? "Valgrind annotations requested but valgrind headers not available!" "$LINENO" 5
+  fi
+
+$as_echo "#define ENABLE_VG_ANNOTATIONS 1" >>confdefs.h
+
+fi
+
+ if test "${OPT_ENABLE_VG_ANNOTATIONS}" = "yes"; then
+  OPT_ENABLE_VG_ANNOTATIONS_TRUE=
+  OPT_ENABLE_VG_ANNOTATIONS_FALSE='#'
+else
+  OPT_ENABLE_VG_ANNOTATIONS_TRUE='#'
+  OPT_ENABLE_VG_ANNOTATIONS_FALSE=
+fi
+
+
+
 #----------------------------------------------------------------------------
 # Should we expect statically linked binaries
 #----------------------------------------------------------------------------
@@ -23999,6 +24089,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_DEVTOOLS_TRUE}" && test -z "${OPT_ENABLE_DEVTOOLS_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_DEVTOOLS\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_ENABLE_VG_ANNOTATIONS_TRUE}" && test -z "${OPT_ENABLE_VG_ANNOTATIONS_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_ENABLE_VG_ANNOTATIONS\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 
@@ -26647,6 +26741,10 @@ $as_echo "$as_me:   cuda:         ${CUDA}" >&6;}
 $as_echo "$as_me:   cupti:        ${CUPTI}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   papi-c-cupti: ${use_papi_c_cupti}" >&5
 $as_echo "$as_me:   papi-c-cupti: ${use_papi_c_cupti}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   valgrind:     ${VALGRIND}" >&5
+$as_echo "$as_me:   valgrind:     ${VALGRIND}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   valgrind:     annotated: ${OPT_ENABLE_VG_ANNOTATIONS}" >&5
+$as_echo "$as_me:   valgrind:     annotated: ${OPT_ENABLE_VG_ANNOTATIONS}" >&6;}
 
 if test "x$mult_spack_pkgs" != x ; then
   mult_spack_pkgs=`echo $mult_spack_pkgs`

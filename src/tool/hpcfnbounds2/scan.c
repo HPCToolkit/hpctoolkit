@@ -849,7 +849,7 @@ ehframescan(Elf *e, ehRecord_t *ehRecord)
       } // !R
 
       if ( (fdeRefCIE -> cieContainsType.L) == EHF_CIE_TRUE) {
-        augDataLen = decodeULEB128(pb+cieOffset, &a);
+        augDataLen = decodeULEB128(pb+fdeOffset, &a);
         if (augDataLen == EHF_ULEB128_ERROR) {
           fprintf(stderr, "Warning in eh_frame handling, cannot decode LSDA aug data len in %s\n", xname);
           goto nextRecord;
