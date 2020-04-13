@@ -1082,6 +1082,8 @@ perf_event_handler(
   // if sampling disabled explicitly for this thread, skip all processing
   // ----------------------------------------------------------------------------
   if (hpcrun_suppress_sample()) {
+    perf_start_all(nevents, event_thread);
+    hpcrun_safe_exit();
     HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
 
     return 0; // tell monitor that the signal has been handled
