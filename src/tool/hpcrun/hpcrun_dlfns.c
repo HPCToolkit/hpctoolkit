@@ -206,13 +206,11 @@ hpcrun_dlopen(const char *module_name, int flags, void *handle)
   }
   fnbounds_map_open_dsos();
   atomic_fetch_add_explicit(&num_dlopen_pending, -1L, memory_order_relaxed);
-
-  // johnmc ompt-blame: check this
   if (outermost) {
     TD_GET(inside_dlfcn) = false;
-    hpcrun_dlopen_write_unlock();
-  } else {
     hpcrun_dlopen_read_unlock();
+  } else {
+    hpcrun_dlopen_write_unlock();
   }
 }
 
