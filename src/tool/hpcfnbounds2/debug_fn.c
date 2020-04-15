@@ -64,11 +64,11 @@ print_elf_header64
 )
 {
 
-  fprintf(stderr, "========================================\n");
-  fprintf(stderr, "\t\tELF Header: %s\n", xname);
+  fprintf(stderr, "FNB2: ========================================\n");
+  fprintf(stderr, "FNB2: \t\tELF Header: %s\n", xname);
 
   /* Storage capacity class */
-  fprintf(stderr, "Storage class\t= ");
+  fprintf(stderr, "FNB2: Storage class\t= ");
   switch(elf_header->e_ident[EI_CLASS]) {
   case ELFCLASS32:
     fprintf(stderr, "32-bit objects\n");
@@ -84,7 +84,7 @@ print_elf_header64
   }
 
   /* Data Format */
-  fprintf(stderr, "Data format\t= ");
+  fprintf(stderr, "FNB2: Data format\t= ");
   switch(elf_header->e_ident[EI_DATA]) {
   case ELFDATA2LSB:
     fprintf(stderr, "2's complement, little endian\n");
@@ -100,7 +100,7 @@ print_elf_header64
   }
 
   /* OS ABI */
-  fprintf(stderr, "OS ABI\t\t= ");
+  fprintf(stderr, "FNB2: OS ABI\t\t= ");
   switch(elf_header->e_ident[EI_OSABI]) {
   case ELFOSABI_SYSV:
     fprintf(stderr, "UNIX System V ABI\n");
@@ -164,7 +164,7 @@ print_elf_header64
   }
 
   /* ELF filetype */
-  fprintf(stderr, "Filetype \t= ");
+  fprintf(stderr, "FNB2: Filetype \t= ");
   switch(elf_header->e_type) {
   case ET_NONE:
     fprintf(stderr, "N/A (0x0)\n");
@@ -188,7 +188,7 @@ print_elf_header64
   }
 
   /* ELF Machine-id */
-  fprintf(stderr, "Machine\t\t= ");
+  fprintf(stderr, "FNB2: Machine\t\t= ");
   switch(elf_header->e_machine) {
   case EM_NONE:
     fprintf(stderr, "None (0x0)\n");
@@ -212,26 +212,26 @@ print_elf_header64
   }
 
   /* Entry point */
-  fprintf(stderr, "Entry point\t= 0x%08lx\n", elf_header->e_entry);
+  fprintf(stderr, "FNB2: Entry point\t= 0x%08lx\n", elf_header->e_entry);
 
   /* ELF header size in bytes */
-  fprintf(stderr, "ELF header size\t= 0x%08x\n", elf_header->e_ehsize);
+  fprintf(stderr, "FNB2: ELF header size\t= 0x%08x\n", elf_header->e_ehsize);
 
   /* Program Header */
-  fprintf(stderr, "Program Header\t= ");
+  fprintf(stderr, "FNB2: Program Header\t= ");
   fprintf(stderr, "0x%08lx\n", elf_header->e_phoff);		/* start */
-  fprintf(stderr, "\t\t  %d entries\n", elf_header->e_phnum);	/* num entry */
-  fprintf(stderr, "\t\t  %d bytes\n", elf_header->e_phentsize);	/* size/entry */
+  fprintf(stderr, "FNB2: \t\t  %d entries\n", elf_header->e_phnum);	/* num entry */
+  fprintf(stderr, "FNB2: \t\t  %d bytes\n", elf_header->e_phentsize);	/* size/entry */
 
   /* Section header starts at */
-  fprintf(stderr, "Section Header\t= ");
+  fprintf(stderr, "FNB2: Section Header\t= ");
   fprintf(stderr, "0x%08lx\n", elf_header->e_shoff);		/* start */
-  fprintf(stderr, "\t\t  %d entries\n", elf_header->e_shnum);	/* num entry */
-  fprintf(stderr, "\t\t  %d bytes\n", elf_header->e_shentsize);	/* size/entry */
-  fprintf(stderr, "\t\t  0x%08x (string table offset)\n", elf_header->e_shstrndx);
+  fprintf(stderr, "FNB2: \t\t  %d entries\n", elf_header->e_shnum);	/* num entry */
+  fprintf(stderr, "FNB2: \t\t  %d bytes\n", elf_header->e_shentsize);	/* size/entry */
+  fprintf(stderr, "FNB2: \t\t  0x%08x (string table offset)\n", elf_header->e_shstrndx);
 
   /* File flags (Machine specific)*/
-  fprintf(stderr, "File flags \t= 0x%08x  ", elf_header->e_flags);
+  fprintf(stderr, "FNB2: File flags \t= 0x%08x  ", elf_header->e_flags);
 
   /* ELF file flags are machine specific.
    * INTEL implements NO flags.
@@ -278,9 +278,9 @@ print_elf_header64
   fprintf(stderr, "\n");
 
   /* MSB of flags conatins ARM EABI version */
-  fprintf(stderr, "ARM EABI\t= Version %d\n", (ef & EF_ARM_EABIMASK)>>24);
+  fprintf(stderr, "FNB2: ARM EABI\t= Version %d\n", (ef & EF_ARM_EABIMASK)>>24);
 
-  fprintf(stderr, "\n");	/* End of ELF header */
+  fprintf(stderr, "FNB2: \n");	/* End of ELF header */
 }
 
 // dump program headers
@@ -294,20 +294,20 @@ print_program_headers64
   size_t jn;
   GElf_Phdr progHeader;
 
-  fprintf(stderr, "========================================");
+  fprintf(stderr, "FNB2: ========================================");
   fprintf(stderr, "========================================\n");
-  fprintf(stderr, "\t\tProgram Headers: %s\n", xname);
-  fprintf(stderr, " idx type       flags      offset     virt-addr          phys-addr          file-size  mem-size   algn\n");
+  fprintf(stderr, "FNB2: \t\tProgram Headers: %s\n", xname);
+  fprintf(stderr, "FNB2:  idx type       flags      offset     virt-addr          phys-addr          file-size  mem-size   algn\n");
   elf_getphdrnum(e,&jn);
   for (j=0; j<(uint64_t)jn; j++) {
     if (gelf_getphdr(e,j,&progHeader) != &progHeader) {
-      fprintf(stderr,"error calling gelf_getphdr: %s\n", elf_errmsg(-1));
+      fprintf(stderr,"FNB2: error calling gelf_getphdr: %s\n", elf_errmsg(-1));
       return;
     }
     if (progHeader.p_type == PT_LOAD) {
       refOffset = progHeader.p_vaddr;
     }   
-    fprintf(stderr, "%4ld ", j);
+    fprintf(stderr, "FNB2: %4ld ", j);
     fprintf(stderr, "0x%08x ", progHeader.p_type);
     fprintf(stderr, "0x%08x ", progHeader.p_flags);
     fprintf(stderr, "0x%08lx ", progHeader.p_offset);
@@ -319,7 +319,7 @@ print_program_headers64
     fprintf(stderr, "\n");
   }
 
-  fprintf(stderr, "\n");	/* end of program header table */
+  fprintf(stderr, "FNB2: \n");	/* end of program header table */
 }
 
 // dump section header info
@@ -335,44 +335,45 @@ print_section_headers64
   size_t secHeadStringIndex;
 
   if (elf_getshdrstrndx(e, &secHeadStringIndex) != 0) {
-      fprintf(stderr,"error calling elf_getshdrstrndx: %s\n", elf_errmsg(-1));
+      fprintf(stderr,"FNB2: error calling elf_getshdrstrndx: %s\n", elf_errmsg(-1));
       return;
     }
   section = NULL;
 
-  fprintf(stderr, "========================================");
+  fprintf(stderr, "FNB2: ==============================================");
   fprintf(stderr, "========================================\n");
-  fprintf(stderr, "\t\tSection Headers: %s\n", xname);
-  fprintf(stderr, " idx offset     load-addr          size       algn"
-        " flags      type       section\n");
+  fprintf(stderr, "FNB2: \t\tSection Headers: %s\n", xname);
+  fprintf(stderr, "FNB2:  idx offset     load-addr          size       algn"
+        " flags      type       entsz section\n");
 
   do {
     section = elf_nextscn(e, section);
     if (section == NULL) break;
 
     if (gelf_getshdr(section, &secHead) != &secHead) {
-      fprintf(stderr,"error calling gelf_getshdr: %s\n", elf_errmsg(-1));
+      fprintf(stderr,"FNB2: error calling gelf_getshdr: %s\n", elf_errmsg(-1));
       return;
     }
 
     secName = elf_strptr(e, secHeadStringIndex, secHead.sh_name);
     if (secName == NULL) {
-      fprintf(stderr,"error calling elf_strptr: %s\n", elf_errmsg(-1));
+      fprintf(stderr,"FNB2: error calling elf_strptr: %s\n", elf_errmsg(-1));
       return;
     }
 
-    fprintf(stderr, " %03ld ", (uintmax_t)elf_ndxscn(section));
+    fprintf(stderr, "FNB2:  %03ld ", (uintmax_t)elf_ndxscn(section));
     fprintf(stderr, "0x%08lx ", secHead.sh_offset);
     fprintf(stderr, "0x%016lx ", secHead.sh_addr);
     fprintf(stderr, "0x%08lx ", secHead.sh_size);
     fprintf(stderr, "%4ld ", secHead.sh_addralign);
     fprintf(stderr, "0x%08lx ", secHead.sh_flags);
     fprintf(stderr, "0x%08x ", secHead.sh_type);
+    fprintf(stderr, "%05ld ", secHead.sh_entsize);
     fprintf(stderr, "%s\t", secName );
     fprintf(stderr, "\n");
 
   } while (section != NULL);
 
-  fprintf(stderr, "\n");	/* end of section header table */
+  fprintf(stderr, "FNB2: \n");	/* end of section header table */
 }
 

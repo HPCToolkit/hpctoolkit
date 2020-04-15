@@ -125,8 +125,8 @@ init_server (DiscoverFnTy fn_discovery, int fd1, int fd2)
   fdin = fd1;
   fdout = fd2;
 
-// write version into output (.log file in the measurements directory)
-  fprintf(stderr, "Begin hpcfnbounds2 server, DiscoverFnTy = %d\n", fn_discovery);
+  // write version into output (.log file in the measurements directory)
+  fprintf(stderr, "FNB2: Begin hpcfnbounds2 server, DiscoverFnTy = %d\n", fn_discovery);
 
   inbuf_size = INIT_INBUF_SIZE;
   inbuf = (char *) malloc(inbuf_size);
@@ -197,10 +197,12 @@ do_query(DiscoverFnTy fn_discovery, struct syserv_mesg *mesg)
     err(1, "read from fdin failed");
   }
 
-  fprintf(stderr, "newfnb begin processing %s -- %s\n", strrchr(inbuf, '/'), inbuf );
+  if (verbose) {
+    fprintf(stderr, "FNB2: begin processing %s -- %s\n", strrchr(inbuf, '/'), inbuf );
+  }
   ret = get_funclist(inbuf);
   if ( ret != NULL) {
-    fprintf(stderr, "\nServer failure processing %s: %s\n", inbuf, ret );
+    fprintf(stderr, "\nFNB2: Server failure processing %s: %s\n", inbuf, ret );
 
     // send the error message to the server
     int rets = write_mesg(SYSERV_ERR, 0);
@@ -229,7 +231,9 @@ send_funcs ()
       lastaddr = farray[i].fadd;
     }
   }
-  fprintf(stderr, "newfnb %s = %d (%ld) -- %s\n", strrchr(inbuf, '/'), np, (uint64_t)nfunc, inbuf );
+  if (verbose) {
+    fprintf(stderr, "FNB2: %s = %d (%ld) -- %s\n", strrchr(inbuf, '/'), np, (uint64_t)nfunc, inbuf );
+  }
 
   // send the OK mesg with the count of addresses
   ret = write_mesg(SYSERV_OK, np+1);
@@ -251,10 +255,12 @@ send_funcs ()
       ret = write_all(fdout, addr_buf, num_addrs * sizeof(void *));
       if (ret != SUCCESS) {
         errx(1, "Server write_all to fdout failed");
+#if DEBUG
       } else {
         if (verbose) {
-          fprintf(stderr, "Server write_all %ld\n", num_addrs * sizeof(void *) );
+          fprintf(stderr, "FNB2: Server write_all %ld\n", num_addrs * sizeof(void *) );
 	}
+#endif
       }
       num_addrs = 0;
     }
@@ -268,10 +274,12 @@ send_funcs ()
     ret = write_all(fdout, addr_buf, num_addrs * sizeof(void *));
     if (ret != SUCCESS) {
       errx(1, "Server write_all to fdout failed");
+#if DEBUG
     } else {
       if (verbose) {
-        fprintf(stderr, "Server write_all %ld\n", num_addrs * sizeof(void *) );
+        fprintf(stderr, "FNB2: Server write_all %ld\n", num_addrs * sizeof(void *) );
       }
+#endif
     }
     num_addrs = 0;
   }
@@ -284,10 +292,12 @@ send_funcs ()
   ret = write_all(fdout, addr_buf, num_addrs * sizeof(void *));
   if (ret != SUCCESS) {
     errx(1, "Server flush write_all to fdout failed");
+#if DEBUG
   } else {
     if (verbose) {
-      fprintf(stderr, "Server flush write_all %ld bytes\n", num_addrs * sizeof(void *) );
+      fprintf(stderr, "FNB2: Server flush write_all %ld bytes\n", num_addrs * sizeof(void *) );
     }
+#endif
   }
 
   // now send the fnb end record
@@ -308,9 +318,11 @@ send_funcs ()
   if (ret != SUCCESS) {
     err(1, "Server fnb_into write_all to fdout failed");
   } else {
+#if DEBUG
     if (verbose) {
-      fprintf(stderr, "Server fnb_info write_all %ld bytes\n", sizeof(fnb_info) );
+      fprintf(stderr, "FNB2: Server fnb_info write_all %ld bytes\n", sizeof(fnb_info) );
     }
+#endif
   }
 }
 
@@ -382,10 +394,12 @@ read_mesg(struct syserv_mesg *mesg)
   if (ret == SUCCESS && mesg->magic != SYSERV_MAGIC) {
     ret = FAILURE;
   }
+#if DEBUG
   if (verbose) {
-	fprintf(stderr, "Server read  message, type = %d, len = %ld\n",
+	fprintf(stderr, "FNB2: Server read  message, type = %d, len = %ld\n",
 	    mesg->type, mesg->len);
   }
+#endif
 
   return ret;
 }
@@ -403,10 +417,12 @@ write_mesg(int32_t type, int64_t len)
   mesg.type = type;
   mesg.len = len;
 
+#if DEBUG
   if (verbose) {
-	fprintf(stderr, "Server write  message, type = %d, len = %ld\n",
+	fprintf(stderr, "FNB2: Server write  message, type = %d, len = %ld\n",
 	    type, len);
   }
+#endif
   return write_all(fdout, &mesg, sizeof(mesg));
 }
 

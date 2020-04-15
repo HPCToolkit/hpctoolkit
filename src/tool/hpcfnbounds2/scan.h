@@ -95,6 +95,7 @@ typedef struct __ehDecodeRecord {
 
 // prototypes
 uint64_t	pltscan(Elf *e, GElf_Shdr sh);
+uint64_t	pltsecscan(Elf *e, GElf_Shdr sh);
 uint64_t	initscan(Elf *e, GElf_Shdr sh);
 uint64_t	textscan(Elf *e, GElf_Shdr sh);
 uint64_t	finiscan(Elf *e, GElf_Shdr sh);
