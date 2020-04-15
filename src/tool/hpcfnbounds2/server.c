@@ -304,7 +304,6 @@ send_funcs ()
   struct rusage usage;
   if (getrusage(RUSAGE_SELF, &usage) == 0) {
     fnb_info.memsize = usage.ru_maxrss;
-    fnb_info.memsize = -1;	// Set to -1 to avoid hpcrun killing server
   } else {
     fnb_info.memsize = -1;
   }
