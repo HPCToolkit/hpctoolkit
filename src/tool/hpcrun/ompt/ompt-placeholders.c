@@ -50,6 +50,7 @@
 //***************************************************************************
 
 #include <assert.h>
+#include <stdlib.h>
 
 
 
@@ -79,7 +80,7 @@
   }
 
 #define declare_placeholder_function(fn)	\
-  void fn(void) { }
+  void fn(void) { abort(); }
 
 
 
