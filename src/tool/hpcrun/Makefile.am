@@ -317,7 +317,6 @@ MY_BASE_FILES =				\
 	thread_finalize.c		\
 	control-knob.c   \
 	control-knob.h   \
-	hpcrun_flag_stacks.c \
 	device-finalizers.c \
 	device-initializers.c \
 	module-ignore-map.c \

@@ -191,21 +191,6 @@ hpcrun_sample_callpath(void* context, int metricId,
     return ret;
   }
 
-  // Synchronous unwinds (pthread_create) must wait until they acquire
-  // the read lock, but async samples give up if not avail.
-  // This only applies in the dynamic case.
-#ifndef HPCRUN_STATIC_LINK
-  if (isSync) {
-    while (! hpcrun_dlopen_read_lock()) ;
-  }
-  else if (! hpcrun_dlopen_read_lock()) {
-    TMSG(SAMPLE_CALLPATH, "skipping sample for dlopen lock");
-    hpcrun_stats_num_samples_blocked_dlopen_inc();
-    monitor_unblock_shootdown();
-    return ret;
-  }
-#endif
-
   TMSG(SAMPLE_CALLPATH, "attempting sample");
   hpcrun_stats_num_samples_attempted_inc();
 
@@ -312,9 +297,6 @@ hpcrun_sample_callpath(void* context, int metricId,
     hpcrun_flush_epochs(&(TD_GET(core_profile_trace_data)));
     hpcrun_reclaim_freeable_mem();
   }
-#ifndef HPCRUN_STATIC_LINK
-  hpcrun_dlopen_read_unlock();
-#endif
 
   TMSG(SAMPLE_CALLPATH,"done w sample, return %p", ret.sample_node);
   monitor_unblock_shootdown();
@@ -339,12 +321,6 @@ hpcrun_gen_thread_ctxt(void* context)
     return NULL;
   }
 
-  // Synchronous unwinds (pthread_create) must wait until they acquire
-  // the read lock, but async samples give up if not avail.
-  // This only applies in the dynamic case.
-#ifndef HPCRUN_STATIC_LINK
-  while (! hpcrun_dlopen_read_lock()) ;
-#endif
 
   thread_data_t* td   = hpcrun_get_thread_data();
   sigjmp_buf_t* it    = &(td->bad_unwind);
@@ -400,9 +376,6 @@ hpcrun_gen_thread_ctxt(void* context)
     hpcrun_flush_epochs(&(TD_GET(core_profile_trace_data)));
     hpcrun_reclaim_freeable_mem();
   }
-#ifndef HPCRUN_STATIC_LINK
-  hpcrun_dlopen_read_unlock();
-#endif
 
   TMSG(THREAD,"done w pthread ctxt");
   monitor_unblock_shootdown();

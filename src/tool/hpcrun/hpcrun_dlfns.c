@@ -107,38 +107,6 @@ hpcrun_dlopen_pending(void)
   return atomic_load_explicit(&num_dlopen_pending, memory_order_relaxed);
 }
 
-
-// Readers try to acquire a lock, but they don't wait if that fails.
-// As with write_lock, allow read_lock to succeed if the current
-// thread holds the write log.
-//
-// Returns: 1 if acquired, else 0 if not.
-int
-hpcrun_dlopen_read_lock(void)
-{
-  int acquire = 0;
-
-  spinlock_lock(&dlopen_lock);
-  if (dlopen_num_writers == 0
-      || monitor_get_thread_num() == dlopen_writer_tid
-      || ENABLED(DLOPEN_RISKY))
-  {
-    atomic_fetch_add_explicit(&dlopen_num_readers, 1L, memory_order_relaxed);
-    acquire = 1;
-  }
-  spinlock_unlock(&dlopen_lock);
-
-  return (acquire);
-}
-
-
-void
-hpcrun_dlopen_read_unlock(void)
-{
-  atomic_fetch_add_explicit(&dlopen_num_readers, -1L, memory_order_relaxed);
-}
-
-
 void 
 hpcrun_pre_dlopen(const char *path, int flags)
 {
