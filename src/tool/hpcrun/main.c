@@ -448,6 +448,7 @@ hpcrun_init_internal(bool is_child)
 {
   gotcha_filter_libraries_by_name(library_to_intercept);
   gotcha_wrap(wrap_actions, sizeof(wrap_actions)/sizeof(struct gotcha_binding_t), "hpctoolkit");
+  gotcha_restore_library_filter_func();
   hpcrun_initLoadmap();
 
   hpcrun_memory_reinit();
