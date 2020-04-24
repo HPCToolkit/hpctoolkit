@@ -48,7 +48,7 @@
 //
 // Purpose:
 //   wrapper around NVIDIA CUDA layer
-//  
+//
 //***************************************************************************
 
 
@@ -69,6 +69,7 @@
 //*****************************************************************************
 
 #include <hpcrun/sample-sources/libdl.h>
+#include <hpcrun/messages/messages.h>
 
 #include "cuda-api.h"
 
@@ -78,25 +79,16 @@
 // macros
 //*****************************************************************************
 
-#define CUDA_API_DEBUG 0
-
 #define CUDA_FN_NAME(f) DYN_FN_NAME(f)
 
 #define CUDA_FN(fn, args) \
   static CUresult (*CUDA_FN_NAME(fn)) args
 
-
-#if CUDA_API_DEBUG
-#define PRINT(...) fprintf(stderr, __VA_ARGS__)
-#else
-#define PRINT(...)
-#endif
-
 #define HPCRUN_CUDA_API_CALL(fn, args)                              \
 {                                                                   \
   CUresult error_result = CUDA_FN_NAME(fn) args;		    \
   if (error_result != CUDA_SUCCESS) {				    \
-    PRINT("cuda api %s returned %d\n", #fn, (int) error_result);    \
+    ETMSG(CUDA, "cuda api %s returned %d", #fn, (int) error_result);    \
     exit(-1);							    \
   }								    \
 }
@@ -110,10 +102,10 @@
 #ifndef HPCRUN_STATIC_LINK
 CUDA_FN
 (
- cuDeviceGetAttribute, 
+ cuDeviceGetAttribute,
  (
-  int* pi, 
-  CUdevice_attribute attrib, 
+  int* pi,
+  CUdevice_attribute attrib,
   CUdevice dev
  )
 );
@@ -121,7 +113,7 @@ CUDA_FN
 
 CUDA_FN
 (
- cuCtxGetCurrent, 
+ cuCtxGetCurrent,
  (
   CUcontext *ctx
  )
@@ -130,10 +122,10 @@ CUDA_FN
 
 
 //******************************************************************************
-// private operations 
+// private operations
 //******************************************************************************
 
-int 
+int
 cuda_bind
 (
   void
@@ -143,8 +135,8 @@ cuda_bind
   // dynamic libraries only availabile in non-static case
   CHK_DLOPEN(cuda, "libcuda.so", RTLD_NOW | RTLD_GLOBAL);
 
-  CHK_DLSYM(cuda, cuDeviceGetAttribute); 
-  CHK_DLSYM(cuda, cuCtxGetCurrent); 
+  CHK_DLSYM(cuda, cuDeviceGetAttribute);
+  CHK_DLSYM(cuda, cuCtxGetCurrent);
 
   return 0;
 #else
@@ -154,10 +146,10 @@ cuda_bind
 
 
 #ifndef HPCRUN_STATIC_LINK
-static int 
+static int
 cuda_device_sm_blocks_query
 (
- int major, 
+ int major,
  int minor
 )
 {
@@ -174,10 +166,10 @@ cuda_device_sm_blocks_query
 
 
 //******************************************************************************
-// interface operations 
+// interface operations
 //******************************************************************************
 
-int 
+int
 cuda_context
 (
  CUcontext *ctx
@@ -194,7 +186,7 @@ cuda_context
 int
 cuda_device_property_query
 (
- int device_id, 
+ int device_id,
  cuda_device_property_t *property
 )
 {
@@ -206,19 +198,19 @@ cuda_device_property_query
     (&property->sm_clock_rate, CU_DEVICE_ATTRIBUTE_CLOCK_RATE, device_id));
 
   HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
-    (&property->sm_shared_memory, 
+    (&property->sm_shared_memory,
      CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_MULTIPROCESSOR, device_id));
 
   HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
-    (&property->sm_registers, 
+    (&property->sm_registers,
      CU_DEVICE_ATTRIBUTE_MAX_REGISTERS_PER_MULTIPROCESSOR, device_id));
 
   HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
-    (&property->sm_threads, CU_DEVICE_ATTRIBUTE_MAX_THREADS_PER_MULTIPROCESSOR, 
+    (&property->sm_threads, CU_DEVICE_ATTRIBUTE_MAX_THREADS_PER_MULTIPROCESSOR,
      device_id));
 
   HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
-    (&property->num_threads_per_warp, CU_DEVICE_ATTRIBUTE_WARP_SIZE, 
+    (&property->num_threads_per_warp, CU_DEVICE_ATTRIBUTE_WARP_SIZE,
      device_id));
 
   int major = 0, minor = 0;
