@@ -38,6 +38,7 @@
 
 <h1 class="settitle" align="center">Current Spack Issues for HPCToolkit</h1>
 
+
 <a name="SEC_Contents"></a>
 <h2 class="contents-heading">Table of Contents</h2>
 
@@ -46,8 +47,9 @@
 <li><a name="toc-Introduction" href="#Introduction">1 Introduction</a></li>
 <li><a name="toc-Current-Issues" href="#Current-Issues">2 Current Issues</a>
 <ul class="no-bullet">
-  <li><a name="toc-_00282019_002d09_002d25_0029-New-micro_002darchitecture-targets" href="#g_t_00282019_002d09_002d25_0029-New-micro_002darchitecture-targets">2.1 (2019-09-25) New micro-architecture targets</a></li>
-  <li><a name="toc-_00282019_002d08_002d28_0029-Cray-front_002dend-compilers" href="#g_t_00282019_002d08_002d28_0029-Cray-front_002dend-compilers">2.2 (2019-08-28) Cray front-end compilers</a></li>
+  <li><a name="toc-_00282020_002d03_002d27_0029-Intel_002dTBB-checksums-don_0027t-match" href="#g_t_00282020_002d03_002d27_0029-Intel_002dTBB-checksums-don_0027t-match">2.1 (2020-03-27) Intel-TBB checksums don&rsquo;t match</a></li>
+  <li><a name="toc-_00282019_002d09_002d25_0029-New-micro_002darchitecture-targets" href="#g_t_00282019_002d09_002d25_0029-New-micro_002darchitecture-targets">2.2 (2019-09-25) New micro-architecture targets</a></li>
+  <li><a name="toc-_00282019_002d08_002d28_0029-Cray-front_002dend-compilers" href="#g_t_00282019_002d08_002d28_0029-Cray-front_002dend-compilers">2.3 (2019-08-28) Cray front-end compilers</a></li>
 </ul></li>
 <li><a name="toc-Recently-Resolved-Issues" href="#Recently-Resolved-Issues">3 Recently Resolved Issues</a>
 <ul class="no-bullet">
@@ -72,6 +74,7 @@
 </div>
 
 
+
 <a name="Introduction"></a>
 <h3 class="section">1 Introduction</h3>
 
@@ -79,7 +82,9 @@
 Normally, HPCToolkit will build and run successfully with the latest
 version of all of its prerequisite packages, but sometimes not.  This
 page covers the current known issues where HPCToolkit fails to build
-with the latest version of spack.
+with the latest version of spack.  The main build directions are at:
+</p>
+<p><a href="software-instructions.html">software-instructions.html</a>
 </p>
 <p>Report problems to <code>hpctoolkit-forum at rice dot edu</code>.  But before
 reporting a problem, first try the versions recommended in the
@@ -91,14 +96,37 @@ on the hpctoolkit web site.
 <pre class="example"><a href="http://hpctoolkit.org/spack-issues.html">http://hpctoolkit.org/spack-issues.html</a>
 </pre></div>
 
-<p>Last revised: Dec 1, 2019.
+<p>Last revised: March 27, 2020.
 </p>
 
 <a name="Current-Issues"></a>
 <h3 class="section">2 Current Issues</h3>
 
+<a name="g_t_00282020_002d03_002d27_0029-Intel_002dTBB-checksums-don_0027t-match"></a>
+<h4 class="subsection">2.1 (2020-03-27) Intel-TBB checksums don&rsquo;t match</h4>
+
+<p>Intel recently moved the TBB project on GitHub to a new repository,
+<code>oneAPI-SRC/oneTBB</code>.  When downloading the intel-tbb tar file,
+github makes the tar file on the fly, and this includes the new
+top-level directory name (oneTBB).  The contents of the tar file are the
+same, but the new directory name is enough to invalidate the spack
+checksum.
+</p>
+<p><b>Fixed:</b> The new checksums were added to spack in commit
+<a href="https://github.com/spack/spack/pull/15675">16f104aafe2b</a>
+on 2020-03-27.  So, if you update your spack repository after this
+commit, then the checksums will match.
+</p>
+<p><b>Workaround:</b> If you have an older spack repository, then you will
+need to disable verifying checksums.
+</p>
+<div class="example">
+<pre class="example">spack install --no-checksum intel-tbb
+</pre></div>
+
+
 <a name="g_t_00282019_002d09_002d25_0029-New-micro_002darchitecture-targets"></a>
-<h4 class="subsection">2.1 (2019-09-25) New micro-architecture targets</h4>
+<h4 class="subsection">2.2 (2019-09-25) New micro-architecture targets</h4>
 
 <p>Spack recently changed how it treats a system&rsquo;s architecture and target
 to allow a hierarchy of fine-grained micro-architectures.  The &rsquo;target&rsquo;
@@ -113,21 +141,11 @@ micro-architecture targets.
 <pre class="example">spack arch --known-targets
 </pre></div>
 
-<p><b>Workaround:</b> Although a fresh install from scratch should work and
-usually does work, there may be some packages or corner cases that can&rsquo;t
-handle the micro-arch specs.  If you prefer to avoid this change until
-the dust settles, then use commit <code>a940ff34d745</code> from Sept 19,
-2019.
-</p>
-<div class="example">
-<pre class="example">git clone https://github.com/spack/spack.git
-cd spack
-git checkout a940ff34d745
-</pre></div>
-
-<p><b>Workaround:</b> A better workaround is to use the current develop head
-but build for a generic family instead of the micro-arch target.  Use
-the <code>target</code> option to specify the arch family.  For example:
+<p><b>Workaround:</b> Instead of building for the micro-arch target, you can
+use the <code>target</code> option to build for a generic architecture
+family (x86_64, ppc64, ppc64le, aarch64).  This is also useful for
+creating a shared install that needs to work across multiple machines
+with different micro-arch types.  For example:
 </p>
 <div class="example">
 <pre class="example">spack install hpctoolkit ... target=x86_64
@@ -144,7 +162,7 @@ specify this in <code>packages.yaml</code>.  For example:
 
 
 <a name="g_t_00282019_002d08_002d28_0029-Cray-front_002dend-compilers"></a>
-<h4 class="subsection">2.2 (2019-08-28) Cray front-end compilers</h4>
+<h4 class="subsection">2.3 (2019-08-28) Cray front-end compilers</h4>
 
 <p><code>Spack compiler find</code> is currently broken for detecting the
 front-end compilers on Cray that HPCToolkit uses.  Normally, you would
@@ -240,7 +258,7 @@ solution is to remove the test for <code>python3</code> in the
 &quot;&quot;&quot;:&quot;
 # prefer python3, then python, then python2
 for cmd in python3 python python2; do
-   command -v &gt; /dev/null $cmd &amp;&amp; exec $cmd $0 &quot;$"
+   command -v &gt; /dev/null $cmd &amp;&amp; exec $cmd $0 &quot;$@&quot;
 done
 </pre></div>
 

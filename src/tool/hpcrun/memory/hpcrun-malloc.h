@@ -59,11 +59,12 @@
 #ifndef hpcrun_malloc_h
 #define hpcrun_malloc_h
 
-#include "valgrind.h"
 
 //************************* System Include Files ****************************
 
 #include <stddef.h>
+
+#include <include/hpctoolkit-config.h>
 
 //*************************** User Include Files ****************************
 
@@ -72,8 +73,6 @@
 #if defined(__cplusplus)
 extern "C" {
 #endif
-
-#if ! defined(VALGRIND) || defined(_IN_MEM_C)
 
 //---------------------------------------------------------------------------
 // Function: hpcrun_malloc 
@@ -88,12 +87,6 @@ extern "C" {
 void* hpcrun_malloc(size_t size);
 void* hpcrun_malloc_freeable(size_t size);
 void* hpcrun_malloc_safe(size_t size);
-
-#else
-#define hpcrun_malloc malloc
-#define hpcrun_malloc_freeable malloc
-
-#endif // VALGRIND
 
 void hpcrun_memory_reinit(void);
 void hpcrun_reclaim_freeable_mem(void);

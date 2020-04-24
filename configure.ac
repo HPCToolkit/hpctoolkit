@@ -60,7 +60,7 @@ dnl  Organization:
 dnl  1. Autoconf dependencies (autoconf version/automake version)
 dnl  2. Special options that need to be checked before compiler tests
 dnl  3. Basic prerequisites (compiler tests, tools, system, etc.)
-dnl  4. Host-specific settings and tests 
+dnl  4. Host-specific settings and tests
 dnl  5. Process and test --with/--enable options (which may need the host-specific settings)
 dnl  6. Generate output
 dnl
@@ -78,10 +78,10 @@ dnl--------------------------------------------------------------------------
 m4_include(config/hpc-cxxutils.m4)
 
 #----------------------------------------------------------------------------
-# Initialization: 
+# Initialization:
 #----------------------------------------------------------------------------
 
-AC_INIT([hpctoolkit], [2020-develop],
+AC_INIT([hpctoolkit], [2020.03-develop],
         [hpctoolkit-forum@rice.edu],
 	[hpctoolkit],
 	[http://hpctoolkit.org/])
@@ -154,19 +154,19 @@ if test -d "${srcdir}/.git" ; then
     git_hash=`echo "$mesg" | grep -i commit | head -1 | awk '{print $2}'`
     git_hash=`expr "$git_hash" : '\(................\)'`
     git_date=`echo "$mesg" | grep -i date | head -1 | awk '{print $2}'`
-  
+
     mesg=`cd "$srcdir" && git status 2>/dev/null | head -1`
     if echo "$mesg" | grep -i branch >/dev/null ; then
       git_branch=`echo "$mesg" | sed -e 's/^.*branch//i' | awk '{print $1}'`
-  
+
     elif echo "$mesg" | grep -i detach >/dev/null ; then
       # detached commits don't have a branch name
       git_branch=detached
-  
+
     else
       git_branch=unknown
     fi
-  
+
     git_version="$git_branch at $git_date ($git_hash)"
   fi
 fi
@@ -629,7 +629,7 @@ my_demangle_ldflags=""
 if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
   my_opt_cflags="-g -O0 -Wall"
   my_opt_cxxflags="-g -O0 -Wall"
-else 
+else
   # On some compilers, -g implies -O0.  Make sure -O3 takes precedence!
   my_opt_cflags="-g -O3 -Wall"
   my_opt_cxxflags="-g -O3 -Wall"
@@ -712,7 +712,7 @@ case "${host}" in
     if HPCcccmp([cc]) ; then
       HOST_CFLAGS="-64"
     fi
-    
+
     # GCC
     if HPCcxxcmp([g++ c++]) ; then
       HOST_CXXFLAGS="-mabi=64"
@@ -720,7 +720,7 @@ case "${host}" in
     if HPCcccmp([gcc]) ; then
       HOST_CFLAGS="-mabi=64"
     fi
-   
+
     # SGI demangle
     my_demangle_ldflags="-lmangle"
     ;;
@@ -731,7 +731,7 @@ case "${host}" in
     if HPCcxxcmp([CC]); then
       if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
         my_opt_cxxflags="-g"
-      else 
+      else
         my_opt_cxxflags="-fast -g"
       fi
       HOST_AR="$CXX $CXXFLAGS -xar -o"
@@ -739,11 +739,11 @@ case "${host}" in
     if HPCcccmp([cc]); then
       if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
         my_opt_cflags="-g"
-      else 
+      else
         my_opt_cflags="-fast -g"
       fi
     fi
-    
+
     # Sun demangle
     my_demangle_ldflags="-ldemangle"
     ;;
@@ -761,14 +761,14 @@ case "${host}" in
       #old: HOST_LIBTREPOSITORY="./cxx_trepository/*.o"
       if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
         my_opt_cxxflags="-gall"
-      else 
+      else
         my_opt_cxxflags="-g3 -O2"
       fi
     fi
     if HPCcccmp([cc]); then
       if test "$OPT_ENABLE_DEVELOP" = "yes" ; then
         my_opt_cflags="-g"
-      else 
+      else
         my_opt_cflags="-g3 -O3"
       fi
     fi
@@ -1832,6 +1832,7 @@ default_tbb_prefix=no
 default_xed_prefix=no
 default_xerces_prefix=no
 default_zlib_prefix=no
+default_valgrind_prefix=no
 
 if test "$use_externals" = yes ; then
   default_binutils_prefix="$ext_binutils_prefix"
@@ -1952,6 +1953,9 @@ then
   fi
   if find_spack_pkg zlib ; then
     default_zlib_prefix="$spack_ans"
+  fi
+  if find_spack_pkg valgrind ; then
+    default_valgrind_prefix="$spack_ans"
   fi
 fi
 
@@ -2120,6 +2124,41 @@ BINUTILS_LIBS="${BINUTILS_LIBS} -ldl"
 
 AC_SUBST([BINUTILS_IFLAGS])
 AC_SUBST([BINUTILS_LIBS])
+
+#-------------------------------------------------
+
+# Test for binutils 2.34 or later.  The signature of
+# bfd_section_vma(), etc dropped the first argument.
+# up to 2.33.1:  #define bfd_section_vma(bfd, ptr) ((ptr)->vma)
+# after 2.34:    bfd_section_vma (const asection *sec)
+
+ORIG_CFLAGS="$CFLAGS"
+CFLAGS="$HOST_CFLAGS  $BINUTILS_IFLAGS"
+
+AC_LANG_PUSH([C])
+
+AC_MSG_CHECKING([if binutils version 2.34 or later])
+
+AC_COMPILE_IFELSE([
+AC_LANG_SOURCE([[
+#define PACKAGE "hpctoolkit"
+#include <bfd.h>
+unsigned long
+get_vma(asection * asec)
+{
+    return bfd_section_vma(asec);
+}
+]])], [binutils_234=yes], [binutils_234=no])
+
+AC_MSG_RESULT([$binutils_234])
+
+AC_LANG_POP
+
+CFLAGS="$ORIG_CFLAGS"
+
+if test "$binutils_234" = yes ; then
+  AC_DEFINE(BINUTILS_234, 1, [binutils version 2.34 or later])
+fi
 
 
 #-------------------------------------------------
@@ -2797,7 +2836,7 @@ AC_MSG_RESULT([$MBEDTLS])
 case "$MBEDTLS" in
   /* )
     AC_MSG_CHECKING([if libmbedcrypto.a was compiled with -fPIC])
-    
+
     ORIG_CFLAGS="$CFLAGS"
     ORIG_LIBS="$LIBS"
     CFLAGS="-shared -fPIC $MBEDTLS_IFLAGS"
@@ -4455,7 +4494,7 @@ AC_ARG_WITH([cuda],
 AC_MSG_CHECKING([for cuda])
 
 case "$CUDA" in
-  /* ) 
+  /* )
     if test ! -f "${CUDA}/include/cuda.h" ; then
       AC_MSG_ERROR([unable to find cuda.h in: $CUDA])
     fi
@@ -4559,6 +4598,9 @@ fi
 AM_CONDITIONAL([OPT_ENABLE_CUPTI], [test "$OPT_HAVE_CUPTI" = yes])
 
 OPT_CUPTI="$CUPTI"
+
+AC_DEFINE_UNQUOTED([CUPTI_INSTALL_PREFIX],
+  ["$CUPTI"], ["CUPTI install prefix"])
 
 AC_SUBST([OPT_CUPTI])
 AC_SUBST([OPT_CUPTI_IFLAGS])
@@ -4666,6 +4708,70 @@ AC_ARG_ENABLE([devtools],
 
 AC_MSG_RESULT([${OPT_ENABLE_DEVTOOLS}])
 AM_CONDITIONAL(OPT_ENABLE_DEVTOOLS, test "${OPT_ENABLE_DEVTOOLS}" = "yes")
+
+
+#-------------------------------------------------
+# Option: --with-valgrind=PATH
+#-------------------------------------------------
+
+VALGRIND="$default_valgrind_prefix"
+
+AC_ARG_WITH([valgrind],
+  AS_HELP_STRING([--with-valgrind=PATH],
+                 [path to Valgrind install directory]),
+  [VALGRIND="$withval"],
+  [])
+
+VALGRIND_IFLAGS=
+
+AC_MSG_CHECKING([for Valgrind headers])
+
+case "$VALGRIND" in
+  /* )
+    # valgrind/valgrind.h must exist on the include path
+    if test -f "$VALGRIND"/include/valgrind/valgrind.h; then
+      VALGRIND_IFLAGS=-I"$VALGRIND"/include
+    else
+      AC_MSG_ERROR([unable to find valgrind.h in: $VALGRIND])
+    fi
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([Valgrind directory must be an absolute path])
+    ;;
+esac
+
+AC_MSG_RESULT([$VALGRIND])
+
+AC_SUBST([VALGRIND_IFLAGS])
+
+
+#-------------------------------------------------
+# Option: --enable-valgrind-annotations
+#-------------------------------------------------
+
+OPT_ENABLE_VG_ANNOTATIONS="no"
+
+AC_ARG_ENABLE([valgrind-annotations],
+  AS_HELP_STRING([--enable-valgrind-annotations],
+                 [Add extra annotations for Valgrind analysis (aids debugging)]),
+  [case "${enableval}" in
+     yes) OPT_ENABLE_VG_ANNOTATIONS="yes" ;;
+     no)  OPT_ENABLE_VG_ANNOTATIONS="no" ;;
+     *) AC_MSG_ERROR([bad value ${enableval} for --enable-valgrind-annotations]) ;;
+   esac],
+  [OPT_ENABLE_VG_ANNOTATIONS=no])
+
+if test x"$OPT_ENABLE_VG_ANNOTATIONS" = xyes; then
+  if test x"$VALGRIND" = xno; then
+    AC_MSG_ERROR([Valgrind annotations requested but valgrind headers not available!])
+  fi
+  AC_DEFINE([ENABLE_VG_ANNOTATIONS], [1],
+            [Add extra annotations for debugging with Valgrind])
+fi
+
+AM_CONDITIONAL(OPT_ENABLE_VG_ANNOTATIONS, test "${OPT_ENABLE_VG_ANNOTATIONS}" = "yes")
 
 
 #----------------------------------------------------------------------------
@@ -4906,6 +5012,8 @@ AC_MSG_NOTICE([  zlib:         ${ZLIB}])
 AC_MSG_NOTICE([  cuda:         ${CUDA}])
 AC_MSG_NOTICE([  cupti:        ${CUPTI}])
 AC_MSG_NOTICE([  papi-c-cupti: ${use_papi_c_cupti}])
+AC_MSG_NOTICE([  valgrind:     ${VALGRIND}])
+AC_MSG_NOTICE([  valgrind:     annotated: ${OPT_ENABLE_VG_ANNOTATIONS}])
 
 if test "x$mult_spack_pkgs" != x ; then
   mult_spack_pkgs=`echo $mult_spack_pkgs`
