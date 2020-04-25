@@ -64,6 +64,13 @@ void dylib_map_executable();
 
 int dylib_addr_is_mapped(void *addr);
 
+int dylib_find_executable_bounds(void** start, void** end);
+
+int 
+dylib_find_module_by_name(char* module_name,
+			  void** start, 
+			  void** end);
+
 int dylib_find_module_containing_addr(void *addr, 
 				      // output parameters
 				      char *module_name,
