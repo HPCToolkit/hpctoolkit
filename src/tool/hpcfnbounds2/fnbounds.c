@@ -50,6 +50,8 @@
 #include  "server.h"
 #include  "scan.h"
 
+#include <include/hpctoolkit-version.h>
+
 int verbose = 0;
 int scan_code = 1;
 int no_dwarf = 0;
@@ -105,6 +107,11 @@ main(int argc, char **argv, char **envp)
   p = argv;
   p++;
   for (i = 1; i < argc; i ++) {
+    if ( strcmp (*p, "-V") == 0 || strcmp (*p, "--version") == 0 ) {
+      // print version and exit
+      hpctoolkit_print_version("hpcfnbounds2");
+      exit(0);
+    }
     if( strncmp (*p, "-v", 2) == 0 ) {
       // set verbose
       char *type = *p+2;
@@ -823,11 +830,12 @@ usage()
       "Usage: hpcfnbounds [options] object-file\n    options are:\n"
       "\t-v\tturn on verbose output in hpcfnbounds\n"
       "\t-v2\tturn on extended verbose output in hpcfnbounds\n"
+      "\t-V, --version\tdisplay version and exit\n"
       "\t-n <str>\tdon't use functions sources as listed in <str>\n"
       "\t    characters in <str> are interpreted as follows:\n"
-      "\t\td -- skip reading.dynsym section\n"
-      "\t\ts -- skip reading.symtab section\n"
-      "\t\te -- skip reading.eh_frame section\n"
+      "\t\td -- skip reading .dynsym section\n"
+      "\t\ts -- skip reading .symtab section\n"
+      "\t\te -- skip reading .eh_frame section\n"
       "\t\tp -- skip scanning instructions from .plt section\n"
       "\t\tq -- skip scanning instructions from .plt.sec section\n"
       "\t\ti -- skip scanning instructions from .init section\n"

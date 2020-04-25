@@ -4168,6 +4168,18 @@ fi
 $as_echo "$spack_spec" >&6; }
 
 
+cat >>confdefs.h <<_ACEOF
+#define HPCTOOLKIT_GIT_VERSION "$git_version"
+_ACEOF
+
+
+
+cat >>confdefs.h <<_ACEOF
+#define HPCTOOLKIT_SPACK_SPEC "$spack_spec"
+_ACEOF
+
+
+
 #-------------------------------------------------
 # is_cross_compile: non-empty string if cross-compiling
 #-------------------------------------------------
