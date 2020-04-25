@@ -118,8 +118,8 @@ dylib_map_open_dsos_callback(struct dl_phdr_info *info,
 			     size_t size, void *);
 
 static int 
-dylib_find_module_by_name_callback(struct dl_phdr_info *info, 
-				   size_t size, void *fargs_v);
+dylib_find_module_bounds_by_name_callback(struct dl_phdr_info *info, 
+					  size_t size, void *fargs_v);
 
 
 static int 
@@ -166,21 +166,21 @@ dylib_find_executable_bounds(void** start, void** end)
   static volatile int exec_wait = 1;
 
   // executable name in map is empty string; don't know why
-  return dylib_find_module_by_name("", start, end);
+  return dylib_find_module_bounds_by_name("", start, end);
 }
 
 
 int 
-dylib_find_module_by_name(char* module_name,
-			  void** start, 
-			  void** end)
+dylib_find_module_bounds_by_name(char* module_name,
+				 void** start, 
+				 void** end)
 {
   int retval = 0; // not found
   struct dylib_fmbn_s arg;
 
   arg.module_name = module_name;
 
-  if (dl_iterate_phdr(dylib_find_module_by_name_callback, &arg)) {
+  if (dl_iterate_phdr(dylib_find_module_bounds_by_name_callback, &arg)) {
     //-------------------------------------
     // return callback results into arguments
     //-------------------------------------
@@ -337,8 +337,8 @@ dylib_map_open_dsos_callback(struct dl_phdr_info *info, size_t size,
 
 
 static int
-dylib_find_module_by_name_callback(struct dl_phdr_info* info, 
-				   size_t size, void* fargs_v)
+dylib_find_module_bounds_by_name_callback(struct dl_phdr_info* info, 
+					  size_t size, void* fargs_v)
 {
   struct dylib_fmbn_s* fargs = (struct dylib_fmbn_s*) fargs_v;
 
