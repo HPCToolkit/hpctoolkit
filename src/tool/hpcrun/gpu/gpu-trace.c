@@ -68,6 +68,7 @@
 #include <hpcrun/threadmgr.h>
 #include <hpcrun/trace.h>
 #include <hpcrun/write_data.h>
+#include <assert.h>
 
 #include "gpu-context-id-map.h"
 #include "gpu-monitoring.h"
@@ -386,8 +387,8 @@ gpu_trace_stream_release
 {
   thread_data_t *td = channel->td;
 
-  //hpcrun_write_profile_data(&td->core_profile_trace_data);
-  //hpcrun_trace_close(&td->core_profile_trace_data);
+  hpcrun_write_profile_data(&td->core_profile_trace_data);
+  hpcrun_trace_close(&td->core_profile_trace_data);
 
   atomic_fetch_add(&stream_counter, -1);
 }
@@ -440,7 +441,6 @@ gpu_trace_fini
   gpu_context_stream_map_signal_all();
 
   while (atomic_load(&stream_counter) != 0);
-//        printf("stream_counter = %llu\n", atomic_load(&stream_counter));
 }
 
 
@@ -450,17 +450,21 @@ schedule_multi_threads
  gpu_trace_t *trace
 )
 {
-  int streams_per_thread = 4;
+  int streams_per_thread = atoi(getenv("STREAMS_PER_THREAD"));
   static int num_threads = 0;
   static int num_streams = 0;
-  unsigned long long stream_counter_local = num_streams++;
   volatile bool new_thread = false;
 
+  num_streams++;
   atomic_fetch_add(&stream_counter, 1);
-  if (stream_counter_local >= (streams_per_thread * num_threads)) {
+
+  if (num_streams >= (streams_per_thread * num_threads)) {
     num_threads++;
     new_thread = true;
   }
+
+  assert(streams_per_thread > 0);
+  assert(num_threads < MAX_THREADS_CONSUMERS);
 
   // First insert stream to the channel -> gpu_trace_channel_stack[thread_num]
   trace->channel_id = num_threads - 1;
@@ -469,6 +473,8 @@ schedule_multi_threads
   if (new_thread) {
     pthread_create(&trace->thread, NULL, (pthread_start_routine_t) gpu_trace_record, trace);
   }
+
+  PRINT("thread_num = %d -> stream = %u\n", num_threads, num_streams);
 
   return NULL;
 }

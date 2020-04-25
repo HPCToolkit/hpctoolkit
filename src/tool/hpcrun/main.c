@@ -948,9 +948,7 @@ monitor_init_process(int *argc, char **argv, void* data)
 void
 monitor_fini_process(int how, void* data)
 {
-    printf( "=========================MONITOR_FINI_PROCESS\n\n");
-
-    if (hpcrun_get_disabled()) {
+   if (hpcrun_get_disabled()) {
     return;
   }
 
@@ -964,8 +962,6 @@ monitor_fini_process(int how, void* data)
 void
 monitor_begin_process_exit(int how)
 {
-  printf( "=========================MONITOR_BEGIN_PROCESS_EXIT\n\n");
-
   if (hpcrun_get_disabled()) {
     return;
   }
