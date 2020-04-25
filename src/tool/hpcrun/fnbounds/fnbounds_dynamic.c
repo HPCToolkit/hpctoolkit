@@ -539,14 +539,6 @@ fnbounds_get_loadModule(void *ip)
 static void
 fnbounds_map_executable()
 {
-  // dylib_map_executable() ==>
-  // fnbounds_ensure_mapped_dso("/proc/self/exe", NULL, NULL) ==>
-  //{
-  //   FNBOUNDS_LOCK;
-  //   dso = fnbound_compute(exename, ...);
-  //   hpcrun_loadmap_map(dso);
-  //   FNBOUNDS_UNLOCK;
-  //}
   FNBOUNDS_LOCK;
   hpcrun_loadmap_map(fnbounds_dso_exec());
   FNBOUNDS_UNLOCK;

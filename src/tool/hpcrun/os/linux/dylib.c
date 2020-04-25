@@ -149,20 +149,6 @@ dylib_map_open_dsos()
 }
 
 
-//------------------------------------------------------------------
-// ensure bounds information computed for the executable
-//------------------------------------------------------------------
-
-void 
-dylib_map_executable()
-{
-  const char *executable_name = "/proc/self/exe";
-  void *start = 0;
-  void *end = 0;
-  fnbounds_ensure_mapped_dso(executable_name, start, end);
-}
-
-
 int 
 dylib_addr_is_mapped(void *addr) 
 {

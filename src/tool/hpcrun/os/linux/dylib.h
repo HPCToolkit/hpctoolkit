@@ -60,8 +60,6 @@
 
 void dylib_map_open_dsos();
 
-void dylib_map_executable();
-
 int dylib_addr_is_mapped(void *addr);
 
 int dylib_find_executable_bounds(void** start, void** end);
