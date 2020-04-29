@@ -113,7 +113,7 @@ typedef enum {
   macro("GMEM:MST (B)",           GPU_MEM_MANAGED_STATIC,	\
 	"GPU memory alloc/free: managed static memory (bytes)") \
   macro("GMEM:COUNT",             GPU_MEM_COUNT, \
-  "GPU memory alloc/free: count")
+        "GPU memory alloc/free: count")
 
 
 // gpu memory set
@@ -135,7 +135,7 @@ typedef enum {
   macro("GMSET:MST (B)",          GPU_MEM_MANAGED_STATIC,	\
 	"GPU memory set: managed static memory (bytes)") \
   macro("GMSET:COUNT",            GPU_MEM_COUNT, \
-  "GPU memory set: count")
+        "GPU memory set: count")
 
 
 #define FORALL_GPU_INST_STALL(macro)					\
@@ -170,9 +170,7 @@ typedef enum {
   macro(GPU_INST_METRIC_NAME ":STL_OTHR",    GPU_INST_STALL_OTHER,	\
 	"GPU instruction stalls: other")				\
   macro(GPU_INST_METRIC_NAME ":STL_SLP",     GPU_INST_STALL_SLEEP,	\
-	"GPU instruction stalls: sleep")				\
-  macro(GPU_INST_METRIC_NAME ":STL_INV",     GPU_INST_STALL_INVALID,	\
-	"GPU instruction stalls: invalid")
+	"GPU instruction stalls: sleep")
 
 
 // gpu explicit copy
@@ -200,7 +198,7 @@ typedef enum {
   macro("GXCOPY:P2P (B)",         GPU_MEMCPY_P2P,		\
 	"GPU explicit memory copy: peer to peer (bytes)") \
   macro("GXCOPY:COUNT",           GPU_MEMCPY_COUNT, \
-  "GPU explicit memory copy: count")
+        "GPU explicit memory copy: count")
 
 
 #define FORALL_GSYNC(macro)					\
@@ -215,7 +213,7 @@ typedef enum {
   macro("GSYNC:CTX (us)",         GPU_SYNC_CONTEXT,		\
 	"GPU synchronizations: context")     \
   macro("GSYNC:COUNT",           GPU_SYNC_COUNT, \
-  "GPU synchronizations: count")
+        "GPU synchronizations: count")
 
 // gpu global memory access
 #define FORALL_GGMEM(macro)						\
@@ -268,17 +266,17 @@ typedef enum {
 
 // gpu activity times
 #define FORALL_GTIMES(macro)					\
-  macro("GKER (s)",               GPU_TIME_KER,			\
+  macro("GKER (sec)",               GPU_TIME_KER,			\
 	"GPU time: kernel execution (seconds)")			\
-  macro("GMEM (s)",               GPU_TIME_MEM,			\
+  macro("GMEM (sec)",               GPU_TIME_MEM,			\
 	"GPU time: memory allocation/deallocation (seconds)")	\
-  macro("GMSET (s)",              GPU_TIME_MSET,		\
+  macro("GMSET (sec)",              GPU_TIME_MSET,		\
 	"GPU time: memory set (seconds)")			\
-  macro("GXCOPY (s)",             GPU_TIME_XCOPY,		\
+  macro("GXCOPY (sec)",             GPU_TIME_XCOPY,		\
 	"GPU time: explicit data copy (seconds)")		\
-  macro("GICOPY (s)",             GPU_TIME_ICOPY,		\
+  macro("GICOPY (sec)",             GPU_TIME_ICOPY,		\
 	"GPU time: implicit data copy (seconds)")		\
-  macro("GSYNC (s)",              GPU_TIME_SYNC,		\
+  macro("GSYNC (sec)",              GPU_TIME_SYNC,		\
 	"GPU time: synchronization (seconds)")
 
 
@@ -289,42 +287,42 @@ typedef enum {
 
 
 // gpu kernel characteristics
-#define FORALL_KINFO(macro)					\
+#define FORALL_KINFO(macro)						\
   macro("GKER:STMEM_ACUMU (B)",         GPU_KINFO_STMEM_ACUMU,		\
-	"GPU kernel: static memory (bytes)")			\
-  macro("GKER:DYMEM_ACUMU (B)",         GPU_KINFO_DYMEM_ACUMU,		\
-	"GPU kernel: dynamic memory (bytes)")			\
+	"GPU kernel: static memory accumulator [internal use only]")	\
+  macro("GKER:DYMEM_ACUMU (B)",         GPU_KINFO_DYMEM_ACUMU,	        \
+	"GPU kernel: dynamic memory accumulator [internal use only]") 	\
   macro("GKER:LMEM_ACUMU (B)",          GPU_KINFO_LMEM_ACUMU,		\
-	"GPU kernel: local memory (bytes)")			\
-  macro("GKER:FGP_ACT_ACUMU",           GPU_KINFO_FGP_ACT_ACUMU,		\
-	"GPU kernel: fine-grain parallelism, actual")		\
-  macro("GKER:FGP_MAX_ACUMU",           GPU_KINFO_FGP_MAX_ACUMU,		\
-	"GPU kernel: fine-grain parallelism, maximum")		\
-  macro("GKER:THR_REG_ACUMU",           GPU_KINFO_REGISTERS_ACUMU,		\
-	"GPU kernel: thread register count")			\
+	"GPU kernel: local memory accumulator [internal use only]") 	\
+  macro("GKER:FGP_ACT_ACUMU",           GPU_KINFO_FGP_ACT_ACUMU,	\
+	"GPU kernel: fine-grain parallelism accumulator [internal use only]") \
+  macro("GKER:FGP_MAX_ACUMU",           GPU_KINFO_FGP_MAX_ACUMU,	\
+	"GPU kernel: fine-grain parallelism accumulator [internal use only]") \
+  macro("GKER:THR_REG_ACUMU",           GPU_KINFO_REGISTERS_ACUMU,	\
+	"GPU kernel: thread register count accumulator [internal use only]") \
   macro("GKER:BLK_THR_ACUMU",           GPU_KINFO_BLK_THREADS_ACUMU,	\
-	"GPU kernel: thread count")				\
-  macro("GKER:BLK_SM_ACUMU",            GPU_KINFO_BLK_SMEM_ACUMU,		\
-	"GPU kernel: block local memory (bytes)")		\
-  macro("GKER:STMEM (B)",         GPU_KINFO_STMEM,		\
-	"GPU kernel: static memory (bytes)")			\
-  macro("GKER:DYMEM (B)",         GPU_KINFO_DYMEM,		\
-	"GPU kernel: dynamic memory (bytes)")			\
-  macro("GKER:LMEM (B)",          GPU_KINFO_LMEM,		\
-	"GPU kernel: local memory (bytes)")			\
-  macro("GKER:FGP_ACT",           GPU_KINFO_FGP_ACT,		\
-	"GPU kernel: fine-grain parallelism, actual")		\
-  macro("GKER:FGP_MAX",           GPU_KINFO_FGP_MAX,		\
-	"GPU kernel: fine-grain parallelism, maximum")		\
-  macro("GKER:THR_REG",           GPU_KINFO_REGISTERS,		\
-	"GPU kernel: thread register count")			\
-  macro("GKER:BLK_THR",           GPU_KINFO_BLK_THREADS,	\
-	"GPU kernel: thread count")				\
-  macro("GKER:BLK_SM",            GPU_KINFO_BLK_SMEM,		\
-	"GPU kernel: block local memory (bytes)")		\
-  macro("GKER:COUNT",             GPU_KINFO_COUNT,  \
-  "GPU kernel: launch count")  \
-  macro("GKER:OCC",               GPU_KINFO_OCCUPANCY,		\
+	"GPU kernel: thread count accumulator [internal use only]")	\
+  macro("GKER:BLK_SM_ACUMU",            GPU_KINFO_BLK_SMEM_ACUMU,	\
+	"GPU kernel: block local memory accumulator [internal use only]") \
+  macro("GKER:STMEM (B)",         GPU_KINFO_STMEM,			\
+	"GPU kernel: static memory (bytes)")				\
+  macro("GKER:DYMEM (B)",         GPU_KINFO_DYMEM,			\
+	"GPU kernel: dynamic memory (bytes)")				\
+  macro("GKER:LMEM (B)",          GPU_KINFO_LMEM,			\
+	"GPU kernel: local memory (bytes)")				\
+  macro("GKER:FGP_ACT",           GPU_KINFO_FGP_ACT,			\
+	"GPU kernel: fine-grain parallelism, actual")			\
+  macro("GKER:FGP_MAX",           GPU_KINFO_FGP_MAX,			\
+	"GPU kernel: fine-grain parallelism, maximum")			\
+  macro("GKER:THR_REG",           GPU_KINFO_REGISTERS,			\
+	"GPU kernel: thread register count")				\
+  macro("GKER:BLK_THR",           GPU_KINFO_BLK_THREADS,		\
+	"GPU kernel: thread count")					\
+  macro("GKER:BLK_SM (B)",            GPU_KINFO_BLK_SMEM,		\
+	"GPU kernel: block local memory (bytes)")			\
+  macro("GKER:COUNT",             GPU_KINFO_COUNT,  			\
+	"GPU kernel: launch count")					\
+  macro("GKER:OCC",               GPU_KINFO_OCCUPANCY,			\
 	"GPU kernel: occupancy")          \
   
 

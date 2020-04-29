@@ -1,3 +1,25 @@
+Current Spack Issues for HPCToolkit
+===================================
+
+1 Introduction
+2 Current Issues
+2.1 (2020-03-27) Intel-TBB checksums don't match
+2.2 (2019-09-25) New micro-architecture targets
+2.3 (2019-08-28) Cray front-end compilers
+3 Recently Resolved Issues
+3.1 (2019-11-19) External perl breaks libunwind
+3.2 (2019-10-08) Python 3.x breaks PAPI
+3.3 (2019-08-28) External cuda modules
+3.4 (2019-08-19) Build stage not writable
+4 General Problems
+4.1 Unable to fetch
+4.2 New version breaks the build
+4.3 Spack core breaks the build
+5 Long Term Issues
+5.1 Boost 1.68.0
+5.2 Elfutils 0.176
+    
+
 1 Introduction
 ==============
 
@@ -5,9 +27,11 @@ Spack is a moving target and receives multiple commits per day.
 Normally, HPCToolkit will build and run successfully with the latest
 version of all of its prerequisite packages, but sometimes not.  This
 page covers the current known issues where HPCToolkit fails to build
-with the latest version of spack.
+with the latest version of spack.  The main build directions are at:
 
-   Report problems to 'hpctoolkit-forum at rice dot edu'.  But before
+   README.Install
+
+Report problems to 'hpctoolkit-forum at rice dot edu'.  But before
 reporting a problem, first try the versions recommended in the
 'packages.yaml' file in the 'spack' subdirectory of the hpctoolkit
 repository.  And always check the latest version of this file on the
@@ -15,12 +39,31 @@ hpctoolkit web site.
 
      <http://hpctoolkit.org/spack-issues.html>
 
-Last revised: Dec 1, 2019.
+Last revised: March 27, 2020.
 
 2 Current Issues
 ================
 
-2.1 (2019-09-25) New micro-architecture targets
+2.1 (2020-03-27) Intel-TBB checksums don't match
+------------------------------------------------
+
+Intel recently moved the TBB project on GitHub to a new repository,
+'oneAPI-SRC/oneTBB'.  When downloading the intel-tbb tar file, github
+makes the tar file on the fly, and this includes the new top-level
+directory name (oneTBB). The contents of the tar file are the same, but
+the new directory name is enough to invalidate the spack checksum.
+
+Fixed: The new checksums were added to spack in commit 16f104aafe2b
+(https://github.com/spack/spack/pull/15675) on 2020-03-27.  So, if you
+update your spack repository after this commit, then the checksums will
+match.
+
+Workaround: If you have an older spack repository, then you will need to
+disable verifying checksums.
+
+     spack install --no-checksum intel-tbb
+
+2.2 (2019-09-25) New micro-architecture targets
 -----------------------------------------------
 
 Spack recently changed how it treats a system's architecture and target
@@ -34,18 +77,11 @@ targets.
 
      spack arch --known-targets
 
-Workaround: Although a fresh install from scratch should work and
-usually does work, there may be some packages or corner cases that can't
-handle the micro-arch specs.  If you prefer to avoid this change until
-the dust settles, then use commit 'a940ff34d745' from Sept 19, 2019.
-
-     git clone https://github.com/spack/spack.git
-     cd spack
-     git checkout a940ff34d745
-
-   Workaround: A better workaround is to use the current develop head
-but build for a generic family instead of the micro-arch target.  Use
-the 'target' option to specify the arch family.  For example:
+Workaround: Instead of building for the micro-arch target, you can use
+the 'target' option to build for a generic architecture family (x86_64,
+ppc64, ppc64le, aarch64).  This is also useful for creating a shared
+install that needs to work across multiple machines with different
+micro-arch types.  For example:
 
      spack install hpctoolkit ... target=x86_64
 
@@ -56,7 +92,7 @@ specify this in 'packages.yaml'.  For example:
        all:
          target: ['x86_64']
 
-2.2 (2019-08-28) Cray front-end compilers
+2.3 (2019-08-28) Cray front-end compilers
 -----------------------------------------
 
 'Spack compiler find' is currently broken for detecting the front-end
@@ -142,7 +178,7 @@ script.
      """:"
      # prefer python3, then python, then python2
      for cmd in python3 python python2; do
-        command -v > /dev/null $cmd && exec $cmd $0 "$"
+        command -v > /dev/null $cmd && exec $cmd $0 "$@"
      done
 
 3.3 (2019-08-28) External cuda modules

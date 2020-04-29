@@ -181,7 +181,6 @@ cupti_environment_disable
 cupti_set_status_t 
 cupti_monitoring_set
 (
- CUcontext context,
  const  CUpti_ActivityKind activity_kinds[],
  bool enable
 );

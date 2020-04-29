@@ -103,6 +103,7 @@
 #include "common.h"
 #include "ss-errno.h"
  
+#include <hpcrun/main.h>
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/metrics.h>
@@ -115,11 +116,6 @@
 #include <messages/messages.h>
 #include <lush/lush-backtrace.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
-
-/******************************************************************************
- * external thread-local variables
- *****************************************************************************/
-extern __thread bool hpcrun_thread_suppress_sample;
 
 /******************************************************************************
  * local variables
@@ -195,7 +191,7 @@ hpcrun_upc_handler(int sig, siginfo_t *info, void *context)
   
 
   // if sampling disabled explicitly for this thread, skip all processing
-  if (hpcrun_thread_suppress_sample) {
+  if (hpcrun_suppress_sample()) {
     HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
 
     return 0; // tell monitor that the signal has been handled
@@ -298,17 +294,21 @@ METHOD_FN(process_event_list, int lush_metrics)
   nevents = self->evl.nevents;
   hpcrun_pre_allocate_metrics(nevents);
 
+  kind_info_t *upc_kind = hpcrun_metrics_new_kind();
+
   for (k = 0; k < nevents; k++) {
     code = self->evl.events[k].event;
     threshold = self->evl.events[k].thresh;
     BGP_UPC_Get_Event_Name(code, EVENT_NAME_SIZE, name);
     metric_id = 
-      hpcrun_set_new_metric_info_and_period(strdup(name),
-					    MetricFlags_ValFmt_Int, threshold, (metric_desc_properties_t){} );
+      hpcrun_set_new_metric_info_and_period(upc_kind, strdup(name),
+        MetricFlags_ValFmt_Int, threshold, metric_property_none);
     self->evl.events[k].metric_id = metric_id;
     TMSG(UPC, "add event %s(%d), threshold %ld, metric %d",
 	 name, code, threshold, metric_id);
   }
+
+  hpcrun_close_kind(upc_kind);
 }
 
 static void

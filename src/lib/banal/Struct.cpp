@@ -70,6 +70,14 @@
 #include <string.h>
 #include <include/uint.h>
 
+#if ENABLE_VG_ANNOTATIONS == 1
+#include <valgrind/helgrind.h>
+#include <valgrind/drd.h>
+#else
+#define ANNOTATE_HAPPENS_BEFORE(X)
+#define ANNOTATE_HAPPENS_AFTER(X)
+#endif
+
 #include <algorithm>
 #include <map>
 #include <set>
@@ -757,7 +765,8 @@ doWorkItem(WorkItem * witem, string & search_path, bool parsable,
     doUnparsableFunctionList(witem->env, finfo, ginfo);
   }
 
-  witem->is_done.store(true);
+  ANNOTATE_HAPPENS_BEFORE(&witem->is_done);
+  witem->is_done.exchange(true);
 }
 
 //----------------------------------------------------------------------
@@ -850,6 +859,7 @@ printWorkList(WorkList & workList, uint & num_done, ostream * outFile,
 	      ostream * gapsFile, string & gaps_filenm)
 {
   while (num_done < workList.size() && workList[num_done]->is_done.load()) {
+    ANNOTATE_HAPPENS_AFTER(&workList[num_done]->is_done);
     WorkItem * witem = workList[num_done];
     FileInfo * finfo = witem->finfo;
     GroupInfo * ginfo = witem->ginfo;
