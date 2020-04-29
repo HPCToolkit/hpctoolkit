@@ -287,19 +287,27 @@ module_ignore_map_ignore
   if (!pseudo_module_p(module->name)) {
     // Ignore the module if cannot resolve the path
     char resolved_path[PATH_MAX];
-    if (realpath(module->name, resolved_path) == NULL) return result;
+    if (realpath(module->name, resolved_path) == NULL) {
+      pfq_rwlock_write_unlock(&modules_lock, &me);
+      return result;
+    }
 
     int fd = open (resolved_path, O_RDONLY);
-    if (fd < 0) return false;
+    if (fd < 0) {
+      pfq_rwlock_write_unlock(&modules_lock, &me);
+      return false;
+    }
     struct stat stat;
     if (fstat (fd, &stat) < 0) {
       close(fd);
+      pfq_rwlock_write_unlock(&modules_lock, &me);
       return false;
     }
 
     char* buffer = (char*) mmap (NULL, stat.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
     if (buffer == NULL) {
       close(fd);
+      pfq_rwlock_write_unlock(&modules_lock, &me);
       return false;
     }
     elf_version(EV_CURRENT);
