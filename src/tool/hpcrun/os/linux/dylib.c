@@ -163,8 +163,6 @@ dylib_addr_is_mapped(void *addr)
 int 
 dylib_find_executable_bounds(void** start, void** end)
 {
-  static volatile int exec_wait = 1;
-
   // executable name in map is empty string; don't know why
   return dylib_find_module_bounds_by_name("", start, end);
 }
