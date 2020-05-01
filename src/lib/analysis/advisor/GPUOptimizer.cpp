@@ -20,8 +20,8 @@
 #include <include/gcc-attr.h>
 #include <include/gpu-metric-names.h>
 
-#include "CallPath-CudaOptimizer.hpp"
-#include "CallPath-CudaAdvisor.hpp"
+#include "GPUOptimizer.hpp"
+#include "GPUAdvisor.hpp"
 
 using std::string;
 
@@ -52,30 +52,28 @@ using std::string;
 
 namespace Analysis {
 
-namespace CallPath {
-
-CudaOptimizer *CudaOptimizerFactory(CudaOptimizerType type) {
-  CudaOptimizer *optimizer = NULL;
+GPUOptimizer *GPUOptimizerFactory(GPUOptimizerType type) {
+  GPUOptimizer *optimizer = NULL;
 
   switch (type) {
     case LOOP_UNROLL: {
-      optimizer = new CudaLoopUnrollOptimizer();
+      optimizer = new GPULoopUnrollOptimizer();
       break;
     }
     case MEMORY_LAYOUT: {
-      optimizer = new CudaMemoryLayoutOptimizer();
+      optimizer = new GPUMemoryLayoutOptimizer();
       break;
     }
     case STRENGTH_REDUCTION: {
-      optimizer = new CudaStrengthReductionOptimizer();
+      optimizer = new GPUStrengthReductionOptimizer();
       break;
     }
     case ADJUST_THREADS: {
-      optimizer = new CudaAdjustThreadsOptimizer();
+      optimizer = new GPUAdjustThreadsOptimizer();
       break;
     }
     case ADJUST_REGISTERS: {
-      optimizer = new CudaAdjustRegistersOptimizer();
+      optimizer = new GPUAdjustRegistersOptimizer();
       break;
     }
     default:
@@ -87,60 +85,58 @@ CudaOptimizer *CudaOptimizerFactory(CudaOptimizerType type) {
 
 
 
-double CudaLoopUnrollOptimizer::match(const BlockBlame &block_blame) {
+double GPULoopUnrollOptimizer::match(const BlockBlame &block_blame) {
   return 0.0;
 }
 
 
-std::string CudaLoopUnrollOptimizer::advise() {
+std::string GPULoopUnrollOptimizer::advise() {
   std::string ret;
   return ret;
 }
 
 
-double CudaMemoryLayoutOptimizer::match(const BlockBlame &block_blame) {
+double GPUMemoryLayoutOptimizer::match(const BlockBlame &block_blame) {
   return 0.0;
 }
 
 
-std::string CudaMemoryLayoutOptimizer::advise() {
+std::string GPUMemoryLayoutOptimizer::advise() {
   std::string ret;
   return ret;
 }
 
 
-double CudaStrengthReductionOptimizer::match(const BlockBlame &block_blame) {
+double GPUStrengthReductionOptimizer::match(const BlockBlame &block_blame) {
   return 0.0;
 }
 
 
-std::string CudaStrengthReductionOptimizer::advise() {
+std::string GPUStrengthReductionOptimizer::advise() {
   std::string ret;
   return ret;
 }
 
 
-double CudaAdjustThreadsOptimizer::match(const BlockBlame &block_blame) {
+double GPUAdjustThreadsOptimizer::match(const BlockBlame &block_blame) {
   return 0.0;
 }
 
 
-std::string CudaAdjustThreadsOptimizer::advise() {
+std::string GPUAdjustThreadsOptimizer::advise() {
   std::string ret;
   return ret;
 }
 
 
-double CudaAdjustRegistersOptimizer::match(const BlockBlame &block_blame) {
+double GPUAdjustRegistersOptimizer::match(const BlockBlame &block_blame) {
   return 0.0;
 }
 
 
-std::string CudaAdjustRegistersOptimizer::advise() {
+std::string GPUAdjustRegistersOptimizer::advise() {
   std::string ret;
   return ret;
 }
-
-}  // namespace CallPath
 
 }  // namespace Analysis

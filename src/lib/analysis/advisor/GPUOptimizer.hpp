@@ -58,8 +58,8 @@
 //***************************************************************************
 
 
-#ifndef Analysis_CallPath_CallPath_CudaOptimizer_hpp 
-#define Analysis_CallPath_CallPath_CudaOptimizer_hpp
+#ifndef Analysis_Advisor_GPUOptimizer_hpp 
+#define Analysis_Advisor_GPUOptimizer_hpp
 
 //************************* System Include Files ****************************
 
@@ -81,8 +81,6 @@
 //****************************************************************************
 
 namespace Analysis {
-
-namespace CallPath {
 
 
 struct KernelStat {
@@ -130,21 +128,26 @@ struct BlockBlame {
 
 
 struct FunctionBlame {
-  int id;
+  int index;
   VMA start, end;
   std::map<int, BlockBlame> block_blames;
   std::map<int, double> blames;
   double blame;
 
-  FunctionBlame(int id) : id(id), start(0), end(0), blame(0.0) {}
+  FunctionBlame(int index) : index(index), start(0), end(0), blame(0.0) {}
   FunctionBlame() : FunctionBlame(0) {}
 };
 
-// This type is shared with CallPath-CudaInstruction.hpp
-typedef std::map<int, std::map<int, std::vector<FunctionBlame>>> FunctionBlamesMap;
+
+typedef std::vector<InstructionBlame> InstBlames;
+
+typedef std::map<int, FunctionBlame> FunctionBlames;
+
+// This type is shared with GPUInstruction.hpp
+typedef std::map<int, std::map<int, FunctionBlames>> FunctionBlamesMap;
 
 
-enum CudaOptimizerType {
+enum GPUOptimizerType {
   LOOP_UNROLL,
   MEMORY_LAYOUT,
   STRENGTH_REDUCTION,
@@ -153,21 +156,21 @@ enum CudaOptimizerType {
 };
 
 
-class CudaOptimizer {
+class GPUOptimizer {
  public:
-  CudaOptimizer() {}
+  GPUOptimizer() {}
 
   virtual double match(const BlockBlame &block_blame) = 0;
 
   virtual std::string advise() = 0;
 
-  virtual ~CudaOptimizer() {}
+  virtual ~GPUOptimizer() {}
 };
 
 
-class CudaLoopUnrollOptimizer : public CudaOptimizer {
+class GPULoopUnrollOptimizer : public GPUOptimizer {
  public:
-  CudaLoopUnrollOptimizer() {}
+  GPULoopUnrollOptimizer() {}
 
   virtual double match(const BlockBlame &block_blame);
 
@@ -175,9 +178,9 @@ class CudaLoopUnrollOptimizer : public CudaOptimizer {
 };
 
 
-class CudaMemoryLayoutOptimizer : public CudaOptimizer {
+class GPUMemoryLayoutOptimizer : public GPUOptimizer {
  public:
-  CudaMemoryLayoutOptimizer() {}
+  GPUMemoryLayoutOptimizer() {}
 
   virtual double match(const BlockBlame &block_blame);
 
@@ -185,9 +188,9 @@ class CudaMemoryLayoutOptimizer : public CudaOptimizer {
 };
 
 
-class CudaStrengthReductionOptimizer : public CudaOptimizer {
+class GPUStrengthReductionOptimizer : public GPUOptimizer {
  public:
-  CudaStrengthReductionOptimizer() {}
+  GPUStrengthReductionOptimizer() {}
 
   virtual double match(const BlockBlame &block_blame);
 
@@ -195,9 +198,9 @@ class CudaStrengthReductionOptimizer : public CudaOptimizer {
 };
 
 
-class CudaAdjustRegistersOptimizer : public CudaOptimizer {
+class GPUAdjustRegistersOptimizer : public GPUOptimizer {
  public:
-  CudaAdjustRegistersOptimizer() {}
+  GPUAdjustRegistersOptimizer() {}
 
   virtual double match(const BlockBlame &block_blame);
 
@@ -205,9 +208,9 @@ class CudaAdjustRegistersOptimizer : public CudaOptimizer {
 };
 
 
-class CudaAdjustThreadsOptimizer : public CudaOptimizer {
+class GPUAdjustThreadsOptimizer : public GPUOptimizer {
  public:
-  CudaAdjustThreadsOptimizer() {}
+  GPUAdjustThreadsOptimizer() {}
 
   virtual double match(const BlockBlame &block_blame);
 
@@ -216,11 +219,9 @@ class CudaAdjustThreadsOptimizer : public CudaOptimizer {
 
 
 // A factory method
-CudaOptimizer *CudaOptimizerFactory(CudaOptimizerType type);
+GPUOptimizer *GPUOptimizerFactory(GPUOptimizerType type);
 
-
-}  // namespace CallPath
 
 }  // namespace Analysis
 
-#endif  // Analysis_CallPath_CallPath_CudaOptimizer_hpp
+#endif  // Analysis_Advisor_GPUOptimizer_hpp

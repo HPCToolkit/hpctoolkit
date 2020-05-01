@@ -25,9 +25,9 @@
 #include <include/gcc-attr.h>
 #include <include/gpu-metric-names.h>
 
-#include "CallPath-CudaAdvisor.hpp"
-#include "MetricNameProfMap.hpp"
-#include "CCTGraph.hpp"
+#include "GPUAdvisor.hpp"
+#include "../MetricNameProfMap.hpp"
+#include "../CCTGraph.hpp"
 
 using std::string;
 
@@ -53,20 +53,18 @@ using std::string;
 #include <lib/support/IOUtil.hpp>
 #include <lib/support/StrUtil.hpp>
 
-#define DEBUG_CALLPATH_CUDAADVISOR 0
-#define DEBUG_CALLPATH_CUDAADVISOR_DETAILS 0
+#define DEBUG_GPUADVISOR 0
+#define DEBUG_GPUADVISOR_DETAILS 0
 
 
 namespace Analysis {
-
-namespace CallPath {
 
 /*
  * Debug methods
  */
 
 // Define an offset in cubin
-std::string CudaAdvisor::debugInstOffset(int vma) {
+std::string GPUAdvisor::debugInstOffset(int vma) {
   auto iter = _function_offset.upper_bound(vma);
   if (iter != _function_offset.begin()) {
     --iter;
@@ -77,7 +75,7 @@ std::string CudaAdvisor::debugInstOffset(int vma) {
 }
 
 
-void CudaAdvisor::debugCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph) {
+void GPUAdvisor::debugCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph) {
   std::cout << "Nodes (" << cct_dep_graph.size() << ")" << std::endl;
   std::cout << "Edges (" << cct_dep_graph.edge_size() << ")" << std::endl;
 
@@ -143,7 +141,7 @@ void CudaAdvisor::debugCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::C
 }
 
 
-void CudaAdvisor::debugCCTDepGraphNoPath(int mpi_rank, int thread_id,
+void GPUAdvisor::debugCCTDepGraphNoPath(int mpi_rank, int thread_id,
   CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph) {
   // <dep_stalls, <vmas> >
   std::map<int, std::vector<int> > exec_dep_vmas;
@@ -211,7 +209,7 @@ void CudaAdvisor::debugCCTDepGraphNoPath(int mpi_rank, int thread_id,
 }
 
 
-void CudaAdvisor::debugCCTDepGraphStallExec(int mpi_rank, int thread_id,
+void GPUAdvisor::debugCCTDepGraphStallExec(int mpi_rank, int thread_id,
   CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph) {
   // <dep_stalls, <vmas> >
   std::map<int, std::vector<int> > stall_exec_dep_vmas;
@@ -250,7 +248,7 @@ void CudaAdvisor::debugCCTDepGraphStallExec(int mpi_rank, int thread_id,
 }
 
 
-void CudaAdvisor::debugCCTDepGraphSinglePath(CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph) {
+void GPUAdvisor::debugCCTDepGraphSinglePath(CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph) {
   double total_path = 0.0;
   double single_path = 0.0;
 
@@ -300,7 +298,7 @@ void CudaAdvisor::debugCCTDepGraphSinglePath(CCTGraph<Prof::CCT::ADynNode *> &cc
 }
 
 
-void CudaAdvisor::debugCCTDepPaths(CCTEdgePathMap &cct_edge_path_map) {
+void GPUAdvisor::debugCCTDepPaths(CCTEdgePathMap &cct_edge_path_map) {
   for (auto &from_iter : cct_edge_path_map) {
     auto from_vma = from_iter.first;
     for (auto &to_iter : from_iter.second) {
@@ -324,7 +322,7 @@ void CudaAdvisor::debugCCTDepPaths(CCTEdgePathMap &cct_edge_path_map) {
 }
 
 
-void CudaAdvisor::debugInstDepGraph() {
+void GPUAdvisor::debugInstDepGraph() {
   std::cout << "Nodes (" << _inst_dep_graph.size() << ")" << std::endl;
   std::cout << "Edges (" << _inst_dep_graph.edge_size() << ")" << std::endl;
 
@@ -351,7 +349,7 @@ struct InstructionBlameValueCompare {
 };
 
 
-void CudaAdvisor::debugInstBlames(InstBlames &inst_blames) {
+void GPUAdvisor::debugInstBlames(InstBlames &inst_blames) {
   // <blame_id, blame_sum>
   double blame_sum = 0.0;
   for (auto &inst_blame : inst_blames) {
@@ -375,7 +373,7 @@ void CudaAdvisor::debugInstBlames(InstBlames &inst_blames) {
  * Private methods
  */
 
-int CudaAdvisor::demandNodeMetric(int mpi_rank, int thread_id, Prof::CCT::ADynNode *node) {
+int GPUAdvisor::demandNodeMetric(int mpi_rank, int thread_id, Prof::CCT::ADynNode *node) {
   auto in_issue_metric_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _issue_metric, true);
   auto ex_issue_metric_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _issue_metric, false);
   auto in_inst_metric_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_metric, true);
@@ -394,7 +392,7 @@ int CudaAdvisor::demandNodeMetric(int mpi_rank, int thread_id, Prof::CCT::ADynNo
 }
 
 
-void CudaAdvisor::initCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph) {
+void GPUAdvisor::initCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph) {
   // Init nodes
   for (auto &iter : _vma_prop_map) {
     auto *prof_node = iter.second.prof_node;
@@ -448,10 +446,10 @@ void CudaAdvisor::initCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::CC
 }
 
 
-void CudaAdvisor::pruneCCTDepGraphOpcode(int mpi_rank, int thread_id,
+void GPUAdvisor::pruneCCTDepGraphOpcode(int mpi_rank, int thread_id,
   CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph) {
   // Profile single path coverage
-  if (DEBUG_CALLPATH_CUDAADVISOR) {
+  if (DEBUG_GPUADVISOR) {
     std::cout << "Single path coverage before opcode constraints:" << std::endl;
     debugCCTDepGraphSinglePath(cct_dep_graph);
     std::cout << std::endl;
@@ -476,8 +474,8 @@ void CudaAdvisor::pruneCCTDepGraphOpcode(int mpi_rank, int thread_id,
           remove_edges.push_back(iter);
         }
       } else {
-        // L1TEX Memory instructions only cause memory dep
-        if (to->demandMetric(mem_dep_stall_id) == 0) {
+        // L1TEX Memory instructions cause memory dep or short_scoreboard wait (RAW)
+        if (to->demandMetric(mem_dep_stall_id) == 0 && to->demandMetric(exec_dep_stall_id) == 0) {
           remove_edges.push_back(iter);
         }
       }
@@ -491,7 +489,7 @@ void CudaAdvisor::pruneCCTDepGraphOpcode(int mpi_rank, int thread_id,
   }
 
   for (auto &iter : remove_edges) {
-    if (DEBUG_CALLPATH_CUDAADVISOR_DETAILS) {
+    if (DEBUG_GPUADVISOR_DETAILS) {
       auto edge = *iter;
       auto *from = edge.from;
       auto from_vma = from->lmIP();
@@ -507,7 +505,7 @@ void CudaAdvisor::pruneCCTDepGraphOpcode(int mpi_rank, int thread_id,
   }
 
   // Profile single path coverage
-  if (DEBUG_CALLPATH_CUDAADVISOR) {
+  if (DEBUG_GPUADVISOR) {
     std::cout << "Single path coverage after opcode constraints:" << std::endl;
     debugCCTDepGraphSinglePath(cct_dep_graph);
     std::cout << std::endl;
@@ -515,10 +513,10 @@ void CudaAdvisor::pruneCCTDepGraphOpcode(int mpi_rank, int thread_id,
 }
 
 
-void CudaAdvisor::pruneCCTDepGraphBarrier(int mpi_rank, int thread_id,
+void GPUAdvisor::pruneCCTDepGraphBarrier(int mpi_rank, int thread_id,
   CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph) {
   // Profile single path coverage
-  if (DEBUG_CALLPATH_CUDAADVISOR) {
+  if (DEBUG_GPUADVISOR) {
     std::cout << "Single path coverage before barrier constraints:" << std::endl;
     debugCCTDepGraphSinglePath(cct_dep_graph);
     std::cout << std::endl;
@@ -538,20 +536,21 @@ void CudaAdvisor::pruneCCTDepGraphBarrier(int mpi_rank, int thread_id,
     auto to_vma = to->lmIP();
     auto *to_inst = _vma_prop_map[to_vma].inst;
 
-    // No barrier, we prune by path analysis
-    if (from_inst->control.write == 7) {
+    // No barrier, we prune it by path analysis
+    if (from_inst->control.write == CudaParse::InstructionStat::BARRIER_NONE &&
+      from_inst->control.read == CudaParse::InstructionStat::BARRIER_NONE) {
       continue;
     }
 
-    // RAW concerns
     // Barrier does not match
-    if ((to_inst->control.wait & (1 << (from_inst->control.write - 1))) == 0) {
+    if ((to_inst->control.wait & (1 << (from_inst->control.write - 1))) == 0 &&
+      (to_inst->control.wait & (1 << (from_inst->control.read - 1))) == 0) {
       remove_edges.push_back(iter);
     }
   }
 
   for (auto &iter : remove_edges) {
-    if (DEBUG_CALLPATH_CUDAADVISOR_DETAILS) {
+    if (DEBUG_GPUADVISOR_DETAILS) {
       auto edge = *iter;
       auto *from = edge.from;
       auto from_vma = from->lmIP();
@@ -571,7 +570,7 @@ void CudaAdvisor::pruneCCTDepGraphBarrier(int mpi_rank, int thread_id,
   }
 
   // Profile single path coverage
-  if (DEBUG_CALLPATH_CUDAADVISOR) {
+  if (DEBUG_GPUADVISOR) {
     std::cout << "Single path coverage after barrier constraints:" << std::endl;
     debugCCTDepGraphSinglePath(cct_dep_graph);
     std::cout << std::endl;
@@ -580,10 +579,13 @@ void CudaAdvisor::pruneCCTDepGraphBarrier(int mpi_rank, int thread_id,
 
 
 // DFS procedure
-void CudaAdvisor::trackReg(int from_vma, int to_vma, int reg,
+void GPUAdvisor::trackDep(int from_vma, int to_vma, int id,
   CudaParse::Block *from_block, CudaParse::Block *to_block,
-  int latency_issue, int latency, std::set<CudaParse::Block *> &visited_blocks,
-  std::vector<CudaParse::Block *> &path, std::vector<std::vector<CudaParse::Block *>> &paths) {
+  int latency_issue, int latency,
+  std::set<CudaParse::Block *> &visited_blocks,
+  std::vector<CudaParse::Block *> &path,
+  std::vector<std::vector<CudaParse::Block *>> &paths,
+  TrackType track_type) {
   // The current block has been visited
   if (visited_blocks.find(from_block) != visited_blocks.end()) {
     return;
@@ -626,9 +628,17 @@ void CudaAdvisor::trackReg(int from_vma, int to_vma, int reg,
     // 1: instruction issue
     latency_issue += 1;
 
-    // 1. Reg on path constraint
-    if (std::find(inst->srcs.begin(), inst->srcs.end(), reg) != inst->srcs.end() && 
-      start_vma != from_vma) {
+    // 1. id on path constraint
+    bool find = false;
+    if (track_type == TRACK_REG) {
+      find = inst->find_src_reg(id);
+    } else if (track_type == TRACK_PREDICATE) {
+      find = inst->find_src_predicate(id);
+    } else {  // track_type == TRACK_BARRIER
+      find = inst->find_src_barrier(id);
+    }
+
+    if (find && start_vma != from_vma) {
       find_def = true;
       break;
     }
@@ -652,8 +662,8 @@ void CudaAdvisor::trackReg(int from_vma, int to_vma, int reg,
       for (auto *target : to_block->targets) {
         if (target->type != CudaParse::TargetType::CALL && target->type != CudaParse::TargetType::CALL_FT) {
           // We do not need from_vma anymore
-          trackReg(0, to_vma, reg, target->block, to_block, latency_issue, latency,
-            visited_blocks, path, paths);
+          trackDep(0, to_vma, id, target->block, to_block, latency_issue, latency,
+            visited_blocks, path, paths, track_type);
         }
       }
     }
@@ -664,11 +674,56 @@ void CudaAdvisor::trackReg(int from_vma, int to_vma, int reg,
 }
 
 
-void CudaAdvisor::pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
+void GPUAdvisor::trackDepInit(int to_vma, int from_vma,
+  int dst, CCTEdgePathMap &cct_edge_path_map, TrackType track_type) {
+  // Search for all possible paths from dst to src.
+  // Since the single path rate here is expected to be high,
+  // The following code section only executes few times.
+  // Two constraints:
+  // 1. A path is eliminated if an instruction on the way uses dst
+  // 2. A path is eliminated if the throughput cycles is greater than latency
+  auto *from_block = _vma_prop_map.at(from_vma).block;
+  auto *to_block = _vma_prop_map.at(to_vma).block;
+  std::set<CudaParse::Block *> visited_blocks;
+  std::vector<CudaParse::Block *> path;
+  std::vector<std::vector<CudaParse::Block *>> paths;
+  auto latency = _vma_prop_map.at(from_vma).latency_upper;
+  trackDep(from_vma, to_vma, dst, from_block, to_block,
+    0, latency, visited_blocks, path, paths, track_type);
+
+  // Merge paths
+  for (auto &path : paths) {
+    bool new_path = true;
+    // Existing paths
+    for (auto &p : cct_edge_path_map[from_vma][to_vma]) {
+      if (path.size() != p.size()) {
+        continue;
+      }
+      // Same size paths, comparing every element
+      bool same_path = true;
+      for (size_t i = 0; i < p.size(); ++i) {
+        if (p[i] != path[i]) {
+          same_path = false;
+          break;
+        }
+      }
+      if (same_path == true) {
+        new_path = false;
+        break;
+      }
+    }
+    if (new_path == true) {
+      cct_edge_path_map[from_vma][to_vma].push_back(path);
+    }
+  }
+}
+
+
+void GPUAdvisor::pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
   CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph,
   CCTEdgePathMap &cct_edge_path_map) {
   // Profile single path coverage
-  if (DEBUG_CALLPATH_CUDAADVISOR) {
+  if (DEBUG_GPUADVISOR) {
     std::cout << "Single path coverage before latency constraints:" << std::endl;
     debugCCTDepGraphSinglePath(cct_dep_graph);
     std::cout << std::endl;
@@ -687,50 +742,29 @@ void CudaAdvisor::pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
     auto *to_inst = _vma_prop_map.at(to_vma).inst;
     auto *from_inst = _vma_prop_map.at(from_vma).inst;
 
+    // Regular regs
     for (auto dst : from_inst->dsts) {
       // Find the dst reg that causes dependency
       auto assign_iter = to_inst->assign_pcs.find(dst);
       if (assign_iter != to_inst->assign_pcs.end()) {
-        // Search for all possible paths from dst to src.
-        // Since the single path rate here is expected to be high,
-        // The following code section only executes few times.
-        // Two constraints:
-        // 1. A path is eliminated if a instruction on the way uses dst
-        // 2. A path is eliminated if the throughput cycles is greater than latency
-        auto *from_block = _vma_prop_map.at(from_vma).block;
-        auto *to_block = _vma_prop_map.at(to_vma).block;
-        std::set<CudaParse::Block *> visited_blocks;
-        std::vector<CudaParse::Block *> path;
-        std::vector<std::vector<CudaParse::Block *>> paths;
-        auto latency = _vma_prop_map.at(from_vma).latency_upper;
-        trackReg(from_vma, to_vma, dst, from_block, to_block,
-          0, latency, visited_blocks, path, paths);
+        trackDepInit(to_vma, from_vma, dst, cct_edge_path_map, TRACK_REG);
+      }
+    }
 
-        // Merge paths
-        for (auto &path : paths) {
-          bool new_path = true;
-          // Existing paths
-          for (auto &p : cct_edge_path_map[from_vma][to_vma]) {
-            if (path.size() != p.size()) {
-              continue;
-            }
-            // Same size paths, comparing every element
-            bool same_path = true;
-            for (size_t i = 0; i < p.size(); ++i) {
-              if (p[i] != path[i]) {
-                same_path = false;
-                break;
-              }
-            }
-            if (same_path == true) {
-              new_path = false;
-              break;
-            }
-          }
-          if (new_path == true) {
-            cct_edge_path_map[from_vma][to_vma].push_back(path);
-          }
-        }
+    // Predicate regs
+    for (auto pdst : from_inst->pdsts) {
+      auto passign_iter = to_inst->passign_pcs.find(pdst);
+      if (passign_iter != to_inst->passign_pcs.end()) {
+        trackDepInit(to_vma, from_vma, pdst, cct_edge_path_map, TRACK_PREDICATE);
+      }
+    }
+
+    // Barrier
+    for (auto bdst : from_inst->bdsts) {
+      // Find the dst barrier that causes dependency
+      auto bassign_iter = to_inst->bassign_pcs.find(bdst);
+      if (bassign_iter != to_inst->bassign_pcs.end()) {
+        trackDepInit(to_vma, from_vma, bdst, cct_edge_path_map, TRACK_BARRIER);
       }
     }
 
@@ -742,7 +776,7 @@ void CudaAdvisor::pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
   }
 
   for (auto &iter : remove_edges) {
-    if (DEBUG_CALLPATH_CUDAADVISOR_DETAILS) {
+    if (DEBUG_GPUADVISOR_DETAILS) {
       auto edge = *iter;
       auto *from = edge.from;
       auto from_vma = from->lmIP();
@@ -757,14 +791,14 @@ void CudaAdvisor::pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
     cct_dep_graph.removeEdge(iter);
   }
 
-  if (DEBUG_CALLPATH_CUDAADVISOR_DETAILS) {
+  if (DEBUG_GPUADVISOR_DETAILS) {
     std::cout << "CCT dependency paths: " << std::endl;
     debugCCTDepPaths(cct_edge_path_map);
     std::cout << std::endl;
   }
 
   // Profile single path coverage
-  if (DEBUG_CALLPATH_CUDAADVISOR) {
+  if (DEBUG_GPUADVISOR) {
     std::cout << "Single path coverage after latency constraints:" << std::endl;
     debugCCTDepGraphSinglePath(cct_dep_graph);
     std::cout << std::endl;
@@ -772,7 +806,7 @@ void CudaAdvisor::pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
 }
 
 
-double CudaAdvisor::computePathNoStall(
+double GPUAdvisor::computePathNoStall(
   int mpi_rank, int thread_id, int from_vma, int to_vma,
   std::vector<CudaParse::Block *> &path) {
   double inst = 0.0;
@@ -809,7 +843,7 @@ double CudaAdvisor::computePathNoStall(
 }
 
 
-void CudaAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
+void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
   CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph, CCTEdgePathMap &cct_edge_path_map,
   InstBlames &inst_blames) {
   for (auto iter = cct_dep_graph.nodeBegin(); iter != cct_dep_graph.nodeEnd(); ++iter) {
@@ -989,13 +1023,13 @@ void CudaAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
 }
 
 
-void CudaAdvisor::overlayInstBlames(const InstBlames &inst_blames, FunctionBlames &function_blames) {
+void GPUAdvisor::overlayInstBlames(const InstBlames &inst_blames, FunctionBlames &function_blames) {
   for (auto &inst_blame : inst_blames) {
     auto *from_inst = inst_blame.src;
     auto *block = _vma_prop_map[from_inst->pc].block;
     auto *function = _vma_prop_map[from_inst->pc].function;
 
-    auto &function_blame = function_blames[function->id];
+    auto &function_blame = function_blames[function->index];
     auto &block_blame = function_blame.block_blames[block->id];
 
     // Update block blame
@@ -1010,10 +1044,10 @@ void CudaAdvisor::overlayInstBlames(const InstBlames &inst_blames, FunctionBlame
 }
 
 
-void CudaAdvisor::selectTopBlockBlames(const FunctionBlames &function_blames, BlockBlameQueue &top_block_blames) {
+void GPUAdvisor::selectTopBlockBlames(const FunctionBlames &function_blames, BlockBlameQueue &top_block_blames) {
   // TODO(Keren): Clustering similar blocks?
-  for (auto &function_blame : function_blames) {
-    for (auto &block_iter : function_blame.block_blames) {
+  for (auto &function_iter : function_blames) {
+    for (auto &block_iter : function_iter.second.block_blames) {
       auto &block_blame = block_iter.second;
       auto &min_block_blame = top_block_blames.top();
       if (min_block_blame.blame < block_blame.blame &&
@@ -1026,7 +1060,7 @@ void CudaAdvisor::selectTopBlockBlames(const FunctionBlames &function_blames, Bl
 }
 
 
-void CudaAdvisor::rankOptimizers(BlockBlameQueue &top_block_blames, OptimizerScoreMap &optimizer_scores) {
+void GPUAdvisor::rankOptimizers(BlockBlameQueue &top_block_blames, OptimizerScoreMap &optimizer_scores) {
   while (top_block_blames.empty() == false) {
     auto &block_blame = top_block_blames.top();
     for (auto *optimizer : _intra_warp_optimizers) {
@@ -1042,8 +1076,8 @@ void CudaAdvisor::rankOptimizers(BlockBlameQueue &top_block_blames, OptimizerSco
 }
 
 
-void CudaAdvisor::concatAdvise(const OptimizerScoreMap &optimizer_scores) {
-  std::map<double, std::vector<CudaOptimizer *> > optimizer_rank;
+void GPUAdvisor::concatAdvise(const OptimizerScoreMap &optimizer_scores) {
+  std::map<double, std::vector<GPUOptimizer *> > optimizer_rank;
 
   for (auto &iter : optimizer_scores) {
     auto *optimizer = iter.first;
@@ -1069,7 +1103,7 @@ void CudaAdvisor::concatAdvise(const OptimizerScoreMap &optimizer_scores) {
  * Interface methods
  */
 
-void CudaAdvisor::init() {
+void GPUAdvisor::init() {
   if (_inst_stall_metrics.size() != 0) {
     // Init already
     return;
@@ -1117,16 +1151,16 @@ void CudaAdvisor::init() {
   }
 
   // Init optimizers
-  _loop_unroll_optimizer = CudaOptimizerFactory(LOOP_UNROLL);
-  _memory_layout_optimizer = CudaOptimizerFactory(MEMORY_LAYOUT);
-  _strength_reduction_optimizer = CudaOptimizerFactory(STRENGTH_REDUCTION);
+  _loop_unroll_optimizer = GPUOptimizerFactory(LOOP_UNROLL);
+  _memory_layout_optimizer = GPUOptimizerFactory(MEMORY_LAYOUT);
+  _strength_reduction_optimizer = GPUOptimizerFactory(STRENGTH_REDUCTION);
 
   _intra_warp_optimizers.push_back(_loop_unroll_optimizer);
   _intra_warp_optimizers.push_back(_memory_layout_optimizer);
   _intra_warp_optimizers.push_back(_strength_reduction_optimizer);
 
-  _adjust_registers_optimizer = CudaOptimizerFactory(ADJUST_REGISTERS);
-  _adjust_threads_optimizer = CudaOptimizerFactory(ADJUST_THREADS); 
+  _adjust_registers_optimizer = GPUOptimizerFactory(ADJUST_REGISTERS);
+  _adjust_threads_optimizer = GPUOptimizerFactory(ADJUST_THREADS); 
 
   _inter_warp_optimizers.push_back(_adjust_registers_optimizer);
   _inter_warp_optimizers.push_back(_adjust_threads_optimizer);
@@ -1134,7 +1168,7 @@ void CudaAdvisor::init() {
 
 // 1. Init static instruction information in vma_prop_map
 // 2. Init an instruction dependency graph
-void CudaAdvisor::configInst(const std::vector<CudaParse::Function *> &functions) {
+void GPUAdvisor::configInst(const std::vector<CudaParse::Function *> &functions) {
   _vma_prop_map.clear();
   _inst_dep_graph.clear();
   _function_offset.clear();
@@ -1150,6 +1184,7 @@ void CudaAdvisor::configInst(const std::vector<CudaParse::Function *> &functions
         VMAProperty property;
 
         property.inst = inst;
+        // Ensure inst->pc has been relocated
         property.vma = inst->pc;
         property.function = function;
         property.block = block;
@@ -1166,6 +1201,20 @@ void CudaAdvisor::configInst(const std::vector<CudaParse::Function *> &functions
 
     // Add latency dependencies
     for (auto &inst_iter : inst->assign_pcs) {
+      for (auto pc : inst_iter.second) {
+        auto *dep_inst = _vma_prop_map[pc].inst;
+        _inst_dep_graph.addEdge(dep_inst, inst);
+      }
+    }
+
+    for (auto &inst_iter : inst->passign_pcs) {
+      for (auto pc : inst_iter.second) {
+        auto *dep_inst = _vma_prop_map[pc].inst;
+        _inst_dep_graph.addEdge(dep_inst, inst);
+      }
+    }
+
+    for (auto &inst_iter : inst->bassign_pcs) {
       for (auto pc : inst_iter.second) {
         auto *dep_inst = _vma_prop_map[pc].inst;
         _inst_dep_graph.addEdge(dep_inst, inst);
@@ -1189,7 +1238,7 @@ void CudaAdvisor::configInst(const std::vector<CudaParse::Function *> &functions
     }
   }
 
-  if (DEBUG_CALLPATH_CUDAADVISOR_DETAILS) {
+  if (DEBUG_GPUADVISOR_DETAILS) {
     std::cout << "Instruction dependency graph: " << std::endl;
     debugInstDepGraph();
     std::cout << std::endl;
@@ -1197,7 +1246,7 @@ void CudaAdvisor::configInst(const std::vector<CudaParse::Function *> &functions
 }
 
 
-void CudaAdvisor::configGPURoot(Prof::CCT::ADynNode *gpu_root) {
+void GPUAdvisor::configGPURoot(Prof::CCT::ADynNode *gpu_root) {
   // Update current root
   this->_gpu_root = gpu_root;
 
@@ -1205,7 +1254,7 @@ void CudaAdvisor::configGPURoot(Prof::CCT::ADynNode *gpu_root) {
 
   // TODO(Keren): Find device tag under the root and use the corresponding archtecture
   // Problem: currently we only have device tags for call instructions
-  this->_arch = new SM70(); 
+  this->_arch = new V100(); 
 
   // Update vma->latency mapping
   for (auto &iter : _vma_prop_map) {
@@ -1234,7 +1283,7 @@ void CudaAdvisor::configGPURoot(Prof::CCT::ADynNode *gpu_root) {
 }
 
 
-void CudaAdvisor::blame(FunctionBlamesMap &function_blames_map) {
+void GPUAdvisor::blame(FunctionBlamesMap &function_blames_map) {
   // For each MPI process
   for (auto mpi_rank = 0; mpi_rank < _metric_name_prof_map->num_mpi_ranks();
     ++mpi_rank) {
@@ -1260,7 +1309,7 @@ void CudaAdvisor::blame(FunctionBlamesMap &function_blames_map) {
         continue;
       }
 
-      if (DEBUG_CALLPATH_CUDAADVISOR) {
+      if (DEBUG_GPUADVISOR) {
         std::cout << "[" << mpi_rank << "," << thread_id << "]" << std::endl << std::endl;
       }
 
@@ -1268,7 +1317,7 @@ void CudaAdvisor::blame(FunctionBlamesMap &function_blames_map) {
       CCTGraph<Prof::CCT::ADynNode *> cct_dep_graph;
       initCCTDepGraph(mpi_rank, thread_id, cct_dep_graph);
 
-      if (DEBUG_CALLPATH_CUDAADVISOR_DETAILS) {
+      if (DEBUG_GPUADVISOR_DETAILS) {
         std::cout << "CCT dependency graph after propgation: " << std::endl;
         debugCCTDepGraph(mpi_rank, thread_id, cct_dep_graph);
         std::cout << std::endl;
@@ -1278,7 +1327,7 @@ void CudaAdvisor::blame(FunctionBlamesMap &function_blames_map) {
       // 2.1 Opcode constraints
       pruneCCTDepGraphOpcode(mpi_rank, thread_id, cct_dep_graph);
 
-      if (DEBUG_CALLPATH_CUDAADVISOR_DETAILS) {
+      if (DEBUG_GPUADVISOR_DETAILS) {
         std::cout << "CCT dependency graph after opcode pruning: " << std::endl;
         debugCCTDepGraph(mpi_rank, thread_id, cct_dep_graph);
         std::cout << std::endl;
@@ -1287,29 +1336,29 @@ void CudaAdvisor::blame(FunctionBlamesMap &function_blames_map) {
       // 2.2 Barrier constraints
       pruneCCTDepGraphBarrier(mpi_rank, thread_id, cct_dep_graph);
 
-      if (DEBUG_CALLPATH_CUDAADVISOR_DETAILS) {
+      if (DEBUG_GPUADVISOR_DETAILS) {
         std::cout << "CCT dependency graph after barrier pruning: " << std::endl;
         debugCCTDepGraph(mpi_rank, thread_id, cct_dep_graph);
         std::cout << std::endl;
       }
 
-      // 2.3 issue constraints
+      // 2.3 Issue constraints
       CCTEdgePathMap cct_edge_path_map;
       pruneCCTDepGraphLatency(mpi_rank, thread_id, cct_dep_graph, cct_edge_path_map);
 
-      if (DEBUG_CALLPATH_CUDAADVISOR_DETAILS) {
+      if (DEBUG_GPUADVISOR_DETAILS) {
         std::cout << "CCT dependency graph after latency pruning: " << std::endl;
         debugCCTDepGraph(mpi_rank, thread_id, cct_dep_graph);
         std::cout << std::endl;
       }
 
-      if (DEBUG_CALLPATH_CUDAADVISOR_DETAILS) {
+      if (DEBUG_GPUADVISOR_DETAILS) {
         std::cout << "CCT pure stall latency: " << std::endl;
         debugCCTDepGraphStallExec(mpi_rank, thread_id, cct_dep_graph);
         std::cout << std::endl;
       }
 
-      if (DEBUG_CALLPATH_CUDAADVISOR_DETAILS) {
+      if (DEBUG_GPUADVISOR_DETAILS) {
         std::cout << "CCT no path latency all pruning: " << std::endl;
         debugCCTDepGraphNoPath(mpi_rank, thread_id, cct_dep_graph);
         std::cout << std::endl;
@@ -1320,7 +1369,7 @@ void CudaAdvisor::blame(FunctionBlamesMap &function_blames_map) {
       InstBlames inst_blames;
       blameCCTDepGraph(mpi_rank, thread_id, cct_dep_graph, cct_edge_path_map, inst_blames);
 
-      if (DEBUG_CALLPATH_CUDAADVISOR) {
+      if (DEBUG_GPUADVISOR) {
         std::cout << "Inst blames: " << std::endl;
         debugInstBlames(inst_blames);
         std::cout << std::endl;
@@ -1342,7 +1391,7 @@ void CudaAdvisor::blame(FunctionBlamesMap &function_blames_map) {
 }
 
 
-void CudaAdvisor::advise(const FunctionBlamesMap &function_blames_map) {
+void GPUAdvisor::advise(const FunctionBlamesMap &function_blames_map) {
   // For each MPI process
   for (auto mpi_rank = 0; mpi_rank < _metric_name_prof_map->num_mpi_ranks();
     ++mpi_rank) {
@@ -1371,11 +1420,9 @@ void CudaAdvisor::advise(const FunctionBlamesMap &function_blames_map) {
 }
 
 
-void CudaAdvisor::save(const std::string &file_name) {
+void GPUAdvisor::save(const std::string &file_name) {
   // clear previous advise
   _cache = "";
 }
-
-}  // namespace CallPath
 
 }  // namespace Analysis

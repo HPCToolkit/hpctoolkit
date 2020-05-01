@@ -57,8 +57,8 @@
 //
 //***************************************************************************
 
-#ifndef Analysis_GPUArchitecture_hpp 
-#define Analysis_GPUArchitecture_hpp
+#ifndef Analysis_Advisor_GPUArchitecture_hpp 
+#define Analysis_Advisor_GPUArchitecture_hpp
 
 //************************* System Include Files ****************************
 
@@ -97,16 +97,14 @@ class GPUArchitecture {
 
   virtual int inst_size() = 0;
 
-  virtual ~GPUArchitecture() {}
-
  protected:
   Vendor _vendor;
 };
 
 
-class SM70 : public GPUArchitecture {
+class V100 : public GPUArchitecture {
  public:
-  SM70() : GPUArchitecture(VENDOR_NVIDIA) {}
+  V100() : GPUArchitecture(VENDOR_NVIDIA) {}
 
   virtual std::pair<int, int> latency(const std::string &opcode);
 
@@ -123,5 +121,5 @@ class SM70 : public GPUArchitecture {
 
 }  // Analysis
 
-#endif  // Analysis_GPUArchitecture_hpp
+#endif  // Analysis_Advisor_GPUArchitecture_hpp
 

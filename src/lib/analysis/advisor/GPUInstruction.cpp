@@ -20,8 +20,8 @@
 #include <include/gcc-attr.h>
 #include <include/gpu-metric-names.h>
 
-#include "CallPath-CudaInstruction.hpp"
-#include "CallPath-CudaAdvisor.hpp"
+#include "GPUInstruction.hpp"
+#include "GPUAdvisor.hpp"
 
 using std::string;
 
@@ -223,7 +223,7 @@ associateInstStmts(const std::vector<VMAStmt> &vma_stmts,
 
 
 void
-overlayCudaInstructionsMain(Prof::CallPath::Profile &prof,
+overlayGPUInstructionsMain(Prof::CallPath::Profile &prof,
   const std::vector<std::string> &instruction_files) {
   auto *mgr = prof.metricMgr(); 
   MetricNameProfMap metric_name_prof_map(mgr);
@@ -238,8 +238,8 @@ overlayCudaInstructionsMain(Prof::CallPath::Profile &prof,
     return;
   }
 
-  CudaAdvisor cuda_advisor(&prof, &metric_name_prof_map);
-  cuda_advisor.init();
+  GPUAdvisor gpu_advisor(&prof, &metric_name_prof_map);
+  gpu_advisor.init();
   // Read instruction files
   for (auto &file: instruction_files) {
     if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
@@ -284,27 +284,27 @@ overlayCudaInstructionsMain(Prof::CallPath::Profile &prof,
     // Step 5: Lay metrics over prof tree
     associateInstStmts(vma_stmts, inst_stats, metric_name_prof_map);
 
-    cuda_advisor.configInst(functions);
+    gpu_advisor.configInst(functions);
 
     // Step 6: Make advise
     // Find each GPU calling context, make recommendation for each calling context 
     for (auto *gpu_root : gpu_roots) {
       // Pass current gpu root 
-      cuda_advisor.configGPURoot(gpu_root);
+      gpu_advisor.configGPURoot(gpu_root);
 
       // <mpi_rank, <thread_id, <blames>>>
       FunctionBlamesMap function_blames_map;
 
       // Blame latencies
-      cuda_advisor.blame(function_blames_map);
+      gpu_advisor.blame(function_blames_map);
 
       // Make advise for the calling context and cache result
-      //cuda_advisor.advise(function_blames_map);
+      //gpu_advisor.advise(function_blames_map);
     }
 
     // TODO(Keren): output advise using this file other than cuda_advisor
     // Save advise for this file and clear cache
-    cuda_advisor.save(file + ".advise");
+    gpu_advisor.save(file + ".advise");
     
     if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
       std::cout << "Finish reading instruction file " << file << std::endl;

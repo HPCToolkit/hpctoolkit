@@ -58,8 +58,8 @@
 //***************************************************************************
 
 
-#ifndef Analysis_CallPath_CallPath_CudaAdvisor_hpp 
-#define Analysis_CallPath_CallPath_CudaAdvisor_hpp
+#ifndef Analysis_Advisor_GPUAdvisor_hpp 
+#define Analysis_Advisor_GPUAdvisor_hpp
 
 //************************* System Include Files ****************************
 
@@ -82,9 +82,9 @@
 #include <lib/cuda/AnalyzeInstruction.hpp>
 #include <lib/cuda/DotCFG.hpp>
 
-#include "CallPath-CudaOptimizer.hpp"
-#include "CCTGraph.hpp"
-#include "MetricNameProfMap.hpp"
+#include "../CCTGraph.hpp"
+#include "../MetricNameProfMap.hpp"
+#include "GPUOptimizer.hpp"
 #include "GPUArchitecture.hpp"
 
 //*************************** Forward Declarations ***************************
@@ -93,12 +93,10 @@
 
 namespace Analysis {
 
-namespace CallPath {
 
-
-class CudaAdvisor {
+class GPUAdvisor {
  public:
-  explicit CudaAdvisor(Prof::CallPath::Profile *prof, MetricNameProfMap *metric_name_prof_map) :
+  explicit GPUAdvisor(Prof::CallPath::Profile *prof, MetricNameProfMap *metric_name_prof_map) :
     _prof(prof), _metric_name_prof_map(metric_name_prof_map) {}
 
   void init();
@@ -113,7 +111,7 @@ class CudaAdvisor {
 
   void save(const std::string &file_name);
  
-  ~CudaAdvisor() {
+  ~GPUAdvisor() {
     for (auto *optimizer : _intra_warp_optimizers) {
       delete optimizer;
     }
@@ -124,13 +122,9 @@ class CudaAdvisor {
   }
 
  private:
-  typedef std::vector<InstructionBlame> InstBlames;
-
-  typedef std::vector<FunctionBlame> FunctionBlames;
-
   typedef std::priority_queue<BlockBlame> BlockBlameQueue;
 
-  typedef std::map<CudaOptimizer *, double> OptimizerScoreMap;
+  typedef std::map<GPUOptimizer *, double> OptimizerScoreMap;
 
   typedef std::map<int, std::map<int, std::vector<std::vector<CudaParse::Block *> > > > CCTEdgePathMap;
 
@@ -152,6 +146,12 @@ class CudaAdvisor {
 
   typedef std::map<VMA, VMAProperty> VMAPropertyMap;
 
+  enum TrackType {
+    TRACK_REG = 0,
+    TRACK_PREDICATE = 1,
+    TRACK_BARRIER = 2
+  };
+
  private:
   void initCCTDepGraph(int mpi_rank, int thread_id,
     CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
@@ -166,11 +166,15 @@ class CudaAdvisor {
     CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph,
     CCTEdgePathMap &cct_edge_path_map);
 
-  void trackReg(int to_vma, int from_vma, int reg,
+  void trackDep(int to_vma, int from_vma, int reg,
     CudaParse::Block *to_block, CudaParse::Block *from_block,
     int latency_issue, int latency, std::set<CudaParse::Block *> &visited_blocks,
     std::vector<CudaParse::Block *> &path,
-    std::vector<std::vector<CudaParse::Block *>> &paths);
+    std::vector<std::vector<CudaParse::Block *>> &paths,
+    TrackType track_type);
+
+  void trackDepInit(int to_vma, int from_vma,
+    int dst, CCTEdgePathMap &cct_edge_path_map, TrackType track_type);
 
   double computePathNoStall(int mpi_rank, int thread_id, int from_vma, int to_vma,
     std::vector<CudaParse::Block *> &path);
@@ -240,14 +244,14 @@ class CudaAdvisor {
 
   std::string _cache;
 
-  std::vector<CudaOptimizer *> _intra_warp_optimizers;
-  std::vector<CudaOptimizer *> _inter_warp_optimizers;
+  std::vector<GPUOptimizer *> _intra_warp_optimizers;
+  std::vector<GPUOptimizer *> _inter_warp_optimizers;
 
-  CudaOptimizer *_loop_unroll_optimizer;
-  CudaOptimizer *_memory_layout_optimizer;
-  CudaOptimizer *_strength_reduction_optimizer;
-  CudaOptimizer *_adjust_threads_optimizer;
-  CudaOptimizer *_adjust_registers_optimizer;
+  GPUOptimizer *_loop_unroll_optimizer;
+  GPUOptimizer *_memory_layout_optimizer;
+  GPUOptimizer *_strength_reduction_optimizer;
+  GPUOptimizer *_adjust_threads_optimizer;
+  GPUOptimizer *_adjust_registers_optimizer;
 
   GPUArchitecture *_arch;
  
@@ -257,8 +261,6 @@ class CudaAdvisor {
 };
 
 
-}  // CallPath
-
 }  // Analysis
 
-#endif  // Analysis_CallPath_CallPath_CudaAdvisor_hpp
+#endif  // Analysis_Advisor_GPUAdvisor_hpp

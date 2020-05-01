@@ -138,13 +138,14 @@ CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libHPCanalysis_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
+am__dirstamp = $(am__leading_dot)dirstamp
 am__objects_1 = libHPCanalysis_la-CallPath.lo \
 	libHPCanalysis_la-CallPath-MetricComponentsFact.lo \
 	libHPCanalysis_la-CallPath-CudaCFG.lo \
-	libHPCanalysis_la-CallPath-CudaAdvisor.lo \
-	libHPCanalysis_la-CallPath-CudaOptimizer.lo \
-	libHPCanalysis_la-CallPath-CudaInstruction.lo \
-	libHPCanalysis_la-GPUArchitecture.lo \
+	advisor/libHPCanalysis_la-GPUAdvisor.lo \
+	advisor/libHPCanalysis_la-GPUOptimizer.lo \
+	advisor/libHPCanalysis_la-GPUInstruction.lo \
+	advisor/libHPCanalysis_la-GPUArchitecture.lo \
 	libHPCanalysis_la-MetricNameProfMap.lo \
 	libHPCanalysis_la-Flat-SrcCorrelation.lo \
 	libHPCanalysis_la-Flat-ObjCorrelation.lo \
@@ -499,7 +500,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 
 # We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)
-AUTOMAKE_OPTIONS = foreign
+AUTOMAKE_OPTIONS = subdir-objects foreign
 HPC_IFLAGS = -I@abs_top_srcdir@/src -I@abs_top_builddir@/src
 
 ############################################################
@@ -533,12 +534,12 @@ MYSOURCES = \
 	CallPath.hpp CallPath.cpp \
 	CallPath-MetricComponentsFact.hpp CallPath-MetricComponentsFact.cpp \
 	CallPath-CudaCFG.hpp CallPath-CudaCFG.cpp \
-	CallPath-CudaAdvisor.hpp CallPath-CudaAdvisor.cpp \
-	CallPath-CudaOptimizer.hpp CallPath-CudaOptimizer.cpp \
-	CallPath-CudaInstruction.hpp CallPath-CudaInstruction.cpp \
-	GPUArchitecture.hpp GPUArchitecture.cpp \
+	advisor/GPUAdvisor.hpp advisor/GPUAdvisor.cpp \
+	advisor/GPUOptimizer.hpp advisor/GPUOptimizer.cpp \
+	advisor/GPUInstruction.hpp advisor/GPUInstruction.cpp \
+	advisor/GPUArchitecture.hpp advisor/GPUArchitecture.cpp \
 	\
-	MetricNameProfMap.cpp \
+	MetricNameProfMap.hpp MetricNameProfMap.cpp \
 	Flat-SrcCorrelation.hpp Flat-SrcCorrelation.cpp \
 	Flat-ObjCorrelation.hpp Flat-ObjCorrelation.cpp \
 	\
@@ -622,49 +623,68 @@ clean-noinstLTLIBRARIES:
 	  echo rm -f $${locs}; \
 	  rm -f $${locs}; \
 	}
+advisor/$(am__dirstamp):
+	@$(MKDIR_P) advisor
+	@: > advisor/$(am__dirstamp)
+advisor/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) advisor/$(DEPDIR)
+	@: > advisor/$(DEPDIR)/$(am__dirstamp)
+advisor/libHPCanalysis_la-GPUAdvisor.lo: advisor/$(am__dirstamp) \
+	advisor/$(DEPDIR)/$(am__dirstamp)
+advisor/libHPCanalysis_la-GPUOptimizer.lo: advisor/$(am__dirstamp) \
+	advisor/$(DEPDIR)/$(am__dirstamp)
+advisor/libHPCanalysis_la-GPUInstruction.lo: advisor/$(am__dirstamp) \
+	advisor/$(DEPDIR)/$(am__dirstamp)
+advisor/libHPCanalysis_la-GPUArchitecture.lo: advisor/$(am__dirstamp) \
+	advisor/$(DEPDIR)/$(am__dirstamp)
 
 libHPCanalysis.la: $(libHPCanalysis_la_OBJECTS) $(libHPCanalysis_la_DEPENDENCIES) $(EXTRA_libHPCanalysis_la_DEPENDENCIES) 
 	$(AM_V_CXXLD)$(libHPCanalysis_la_LINK)  $(libHPCanalysis_la_OBJECTS) $(libHPCanalysis_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
+	-rm -f advisor/*.$(OBJEXT)
+	-rm -f advisor/*.lo
 
 distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-Args.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-ArgsHPCProf.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-CallPath-CudaAdvisor.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-CallPath-CudaCFG.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-CallPath-CudaInstruction.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-CallPath-CudaOptimizer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-CallPath-MetricComponentsFact.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-CallPath.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-Flat-ObjCorrelation.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-Flat-SrcCorrelation.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-GPUArchitecture.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-MetricNameProfMap.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-Raw.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-TextUtil.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-Util.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@advisor/$(DEPDIR)/libHPCanalysis_la-GPUAdvisor.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@advisor/$(DEPDIR)/libHPCanalysis_la-GPUArchitecture.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@advisor/$(DEPDIR)/libHPCanalysis_la-GPUInstruction.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@advisor/$(DEPDIR)/libHPCanalysis_la-GPUOptimizer.Plo@am__quote@
 
 .cpp.o:
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
+@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXXCOMPILE) -c -o $@ $<
 
 .cpp.obj:
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.obj$$||'`;\
+@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ `$(CYGPATH_W) '$<'` &&\
+@am__fastdepCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
 .cpp.lo:
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LTCXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.lo$$||'`;\
+@am__fastdepCXX_TRUE@	$(LTCXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Plo
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LTCXXCOMPILE) -c -o $@ $<
@@ -690,33 +710,33 @@ libHPCanalysis_la-CallPath-CudaCFG.lo: CallPath-CudaCFG.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCanalysis_la-CallPath-CudaCFG.lo `test -f 'CallPath-CudaCFG.cpp' || echo '$(srcdir)/'`CallPath-CudaCFG.cpp
 
-libHPCanalysis_la-CallPath-CudaAdvisor.lo: CallPath-CudaAdvisor.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCanalysis_la-CallPath-CudaAdvisor.lo -MD -MP -MF $(DEPDIR)/libHPCanalysis_la-CallPath-CudaAdvisor.Tpo -c -o libHPCanalysis_la-CallPath-CudaAdvisor.lo `test -f 'CallPath-CudaAdvisor.cpp' || echo '$(srcdir)/'`CallPath-CudaAdvisor.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCanalysis_la-CallPath-CudaAdvisor.Tpo $(DEPDIR)/libHPCanalysis_la-CallPath-CudaAdvisor.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='CallPath-CudaAdvisor.cpp' object='libHPCanalysis_la-CallPath-CudaAdvisor.lo' libtool=yes @AMDEPBACKSLASH@
+advisor/libHPCanalysis_la-GPUAdvisor.lo: advisor/GPUAdvisor.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -MT advisor/libHPCanalysis_la-GPUAdvisor.lo -MD -MP -MF advisor/$(DEPDIR)/libHPCanalysis_la-GPUAdvisor.Tpo -c -o advisor/libHPCanalysis_la-GPUAdvisor.lo `test -f 'advisor/GPUAdvisor.cpp' || echo '$(srcdir)/'`advisor/GPUAdvisor.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) advisor/$(DEPDIR)/libHPCanalysis_la-GPUAdvisor.Tpo advisor/$(DEPDIR)/libHPCanalysis_la-GPUAdvisor.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='advisor/GPUAdvisor.cpp' object='advisor/libHPCanalysis_la-GPUAdvisor.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCanalysis_la-CallPath-CudaAdvisor.lo `test -f 'CallPath-CudaAdvisor.cpp' || echo '$(srcdir)/'`CallPath-CudaAdvisor.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -c -o advisor/libHPCanalysis_la-GPUAdvisor.lo `test -f 'advisor/GPUAdvisor.cpp' || echo '$(srcdir)/'`advisor/GPUAdvisor.cpp
 
-libHPCanalysis_la-CallPath-CudaOptimizer.lo: CallPath-CudaOptimizer.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCanalysis_la-CallPath-CudaOptimizer.lo -MD -MP -MF $(DEPDIR)/libHPCanalysis_la-CallPath-CudaOptimizer.Tpo -c -o libHPCanalysis_la-CallPath-CudaOptimizer.lo `test -f 'CallPath-CudaOptimizer.cpp' || echo '$(srcdir)/'`CallPath-CudaOptimizer.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCanalysis_la-CallPath-CudaOptimizer.Tpo $(DEPDIR)/libHPCanalysis_la-CallPath-CudaOptimizer.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='CallPath-CudaOptimizer.cpp' object='libHPCanalysis_la-CallPath-CudaOptimizer.lo' libtool=yes @AMDEPBACKSLASH@
+advisor/libHPCanalysis_la-GPUOptimizer.lo: advisor/GPUOptimizer.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -MT advisor/libHPCanalysis_la-GPUOptimizer.lo -MD -MP -MF advisor/$(DEPDIR)/libHPCanalysis_la-GPUOptimizer.Tpo -c -o advisor/libHPCanalysis_la-GPUOptimizer.lo `test -f 'advisor/GPUOptimizer.cpp' || echo '$(srcdir)/'`advisor/GPUOptimizer.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) advisor/$(DEPDIR)/libHPCanalysis_la-GPUOptimizer.Tpo advisor/$(DEPDIR)/libHPCanalysis_la-GPUOptimizer.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='advisor/GPUOptimizer.cpp' object='advisor/libHPCanalysis_la-GPUOptimizer.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCanalysis_la-CallPath-CudaOptimizer.lo `test -f 'CallPath-CudaOptimizer.cpp' || echo '$(srcdir)/'`CallPath-CudaOptimizer.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -c -o advisor/libHPCanalysis_la-GPUOptimizer.lo `test -f 'advisor/GPUOptimizer.cpp' || echo '$(srcdir)/'`advisor/GPUOptimizer.cpp
 
-libHPCanalysis_la-CallPath-CudaInstruction.lo: CallPath-CudaInstruction.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCanalysis_la-CallPath-CudaInstruction.lo -MD -MP -MF $(DEPDIR)/libHPCanalysis_la-CallPath-CudaInstruction.Tpo -c -o libHPCanalysis_la-CallPath-CudaInstruction.lo `test -f 'CallPath-CudaInstruction.cpp' || echo '$(srcdir)/'`CallPath-CudaInstruction.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCanalysis_la-CallPath-CudaInstruction.Tpo $(DEPDIR)/libHPCanalysis_la-CallPath-CudaInstruction.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='CallPath-CudaInstruction.cpp' object='libHPCanalysis_la-CallPath-CudaInstruction.lo' libtool=yes @AMDEPBACKSLASH@
+advisor/libHPCanalysis_la-GPUInstruction.lo: advisor/GPUInstruction.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -MT advisor/libHPCanalysis_la-GPUInstruction.lo -MD -MP -MF advisor/$(DEPDIR)/libHPCanalysis_la-GPUInstruction.Tpo -c -o advisor/libHPCanalysis_la-GPUInstruction.lo `test -f 'advisor/GPUInstruction.cpp' || echo '$(srcdir)/'`advisor/GPUInstruction.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) advisor/$(DEPDIR)/libHPCanalysis_la-GPUInstruction.Tpo advisor/$(DEPDIR)/libHPCanalysis_la-GPUInstruction.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='advisor/GPUInstruction.cpp' object='advisor/libHPCanalysis_la-GPUInstruction.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCanalysis_la-CallPath-CudaInstruction.lo `test -f 'CallPath-CudaInstruction.cpp' || echo '$(srcdir)/'`CallPath-CudaInstruction.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -c -o advisor/libHPCanalysis_la-GPUInstruction.lo `test -f 'advisor/GPUInstruction.cpp' || echo '$(srcdir)/'`advisor/GPUInstruction.cpp
 
-libHPCanalysis_la-GPUArchitecture.lo: GPUArchitecture.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCanalysis_la-GPUArchitecture.lo -MD -MP -MF $(DEPDIR)/libHPCanalysis_la-GPUArchitecture.Tpo -c -o libHPCanalysis_la-GPUArchitecture.lo `test -f 'GPUArchitecture.cpp' || echo '$(srcdir)/'`GPUArchitecture.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCanalysis_la-GPUArchitecture.Tpo $(DEPDIR)/libHPCanalysis_la-GPUArchitecture.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='GPUArchitecture.cpp' object='libHPCanalysis_la-GPUArchitecture.lo' libtool=yes @AMDEPBACKSLASH@
+advisor/libHPCanalysis_la-GPUArchitecture.lo: advisor/GPUArchitecture.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -MT advisor/libHPCanalysis_la-GPUArchitecture.lo -MD -MP -MF advisor/$(DEPDIR)/libHPCanalysis_la-GPUArchitecture.Tpo -c -o advisor/libHPCanalysis_la-GPUArchitecture.lo `test -f 'advisor/GPUArchitecture.cpp' || echo '$(srcdir)/'`advisor/GPUArchitecture.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) advisor/$(DEPDIR)/libHPCanalysis_la-GPUArchitecture.Tpo advisor/$(DEPDIR)/libHPCanalysis_la-GPUArchitecture.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='advisor/GPUArchitecture.cpp' object='advisor/libHPCanalysis_la-GPUArchitecture.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCanalysis_la-GPUArchitecture.lo `test -f 'GPUArchitecture.cpp' || echo '$(srcdir)/'`GPUArchitecture.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -c -o advisor/libHPCanalysis_la-GPUArchitecture.lo `test -f 'advisor/GPUArchitecture.cpp' || echo '$(srcdir)/'`advisor/GPUArchitecture.cpp
 
 libHPCanalysis_la-MetricNameProfMap.lo: MetricNameProfMap.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCanalysis_la-MetricNameProfMap.lo -MD -MP -MF $(DEPDIR)/libHPCanalysis_la-MetricNameProfMap.Tpo -c -o libHPCanalysis_la-MetricNameProfMap.lo `test -f 'MetricNameProfMap.cpp' || echo '$(srcdir)/'`MetricNameProfMap.cpp
@@ -779,6 +799,7 @@ mostlyclean-libtool:
 
 clean-libtool:
 	-rm -rf .libs _libs
+	-rm -rf advisor/.libs advisor/_libs
 
 ID: $(am__tagged_files)
 	$(am__define_uniq_tagged_files); mkid -fID $$unique
@@ -893,6 +914,8 @@ clean-generic:
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
+	-rm -f advisor/$(DEPDIR)/$(am__dirstamp)
+	-rm -f advisor/$(am__dirstamp)
 
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
@@ -903,7 +926,7 @@ clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
 	mostlyclean-am
 
 distclean: distclean-am
-	-rm -rf ./$(DEPDIR)
+	-rm -rf ./$(DEPDIR) advisor/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -949,7 +972,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-	-rm -rf ./$(DEPDIR)
+	-rm -rf ./$(DEPDIR) advisor/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

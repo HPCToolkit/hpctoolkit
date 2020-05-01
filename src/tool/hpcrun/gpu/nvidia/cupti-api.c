@@ -1436,16 +1436,12 @@ cupti_environment_enable
 (
 )
 {
-  PRINT("enter cupti_environment_enable\n");
-
   if (!cupti_environment_enabled) {
     cupti_environment_enabled = true;
 
     HPCRUN_CUPTI_CALL(cuptiActivityEnable, 
       (CUPTI_ACTIVITY_KIND_ENVIRONMENT));
   }
-
-  PRINT("exit cupti_environment_enable\n");
 }
 
 
