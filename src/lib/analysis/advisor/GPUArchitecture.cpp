@@ -57,6 +57,8 @@ std::pair<int, int> V100::latency(const std::string &opcode) {
     } else {
       return std::pair<int, int>(4, 4);
     }
+  } else if (opcode.find("PREDICATE") != std::string::npos) {
+    return std::pair<int, int>(5, 5);
   } else if (opcode.find("FLOAT") != std::string::npos) {
     if (opcode.find(".MUFU") != std::string::npos) {
       return std::pair<int, int>(14, 14);

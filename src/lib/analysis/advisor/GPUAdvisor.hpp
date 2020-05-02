@@ -148,8 +148,9 @@ class GPUAdvisor {
 
   enum TrackType {
     TRACK_REG = 0,
-    TRACK_PREDICATE = 1,
-    TRACK_BARRIER = 2
+    TRACK_PRED_REG = 1,
+    TRACK_PREDICATE = 2,
+    TRACK_BARRIER = 3
   };
 
  private:
@@ -237,7 +238,7 @@ class GPUAdvisor {
   MetricNameProfMap *_metric_name_prof_map;
 
   Prof::CCT::ADynNode *_gpu_root;
-  std::map<int, std::string> _function_offset;
+  std::map<int, int> _function_offset;
 
   CCTGraph<CudaParse::InstructionStat *> _inst_dep_graph;
   VMAPropertyMap _vma_prop_map;

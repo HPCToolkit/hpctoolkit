@@ -53,8 +53,8 @@ using std::string;
 #include <lib/support/IOUtil.hpp>
 #include <lib/support/StrUtil.hpp>
 
-#define DEBUG_GPUADVISOR 0
-#define DEBUG_GPUADVISOR_DETAILS 0
+#define DEBUG_GPUADVISOR 1
+#define DEBUG_GPUADVISOR_DETAILS 1
 
 
 namespace Analysis {
@@ -70,7 +70,7 @@ std::string GPUAdvisor::debugInstOffset(int vma) {
     --iter;
   }
   std::stringstream ss;
-  ss << iter->second << ": " << std::hex << "0x" << vma - iter->first << std::dec;
+  ss << "(" << iter->second << ": " << std::hex << "0x" << vma - iter->first << ")" << std::dec;
   return ss.str();
 }
 
@@ -107,7 +107,7 @@ void GPUAdvisor::debugCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::CC
         auto from_vma = from_node->lmIP();
         std::cout << debugInstOffset(from_vma) << "," << std::dec;
       }
-      std::cout << debugInstOffset(to_vma) << std::endl;
+      std::cout << " -> " << debugInstOffset(to_vma) << std::endl;
     }
   }
 
@@ -336,7 +336,7 @@ void GPUAdvisor::debugInstDepGraph() {
         auto from_vma = from_node->pc;
         std::cout << debugInstOffset(from_vma) << "," << std::dec;
       }
-      std::cout << debugInstOffset(to_vma) << std::dec << std::endl;
+      std::cout << " -> " << debugInstOffset(to_vma) << std::dec << std::endl;
     }
   }
 }
@@ -474,8 +474,8 @@ void GPUAdvisor::pruneCCTDepGraphOpcode(int mpi_rank, int thread_id,
           remove_edges.push_back(iter);
         }
       } else {
-        // L1TEX Memory instructions cause memory dep or short_scoreboard wait (RAW)
-        if (to->demandMetric(mem_dep_stall_id) == 0 && to->demandMetric(exec_dep_stall_id) == 0) {
+        // L1TEX Memory instructions cause memory dep
+        if (to->demandMetric(mem_dep_stall_id) == 0) {
           remove_edges.push_back(iter);
         }
       }
@@ -537,14 +537,14 @@ void GPUAdvisor::pruneCCTDepGraphBarrier(int mpi_rank, int thread_id,
     auto *to_inst = _vma_prop_map[to_vma].inst;
 
     // No barrier, we prune it by path analysis
-    if (from_inst->control.write == CudaParse::InstructionStat::BARRIER_NONE &&
-      from_inst->control.read == CudaParse::InstructionStat::BARRIER_NONE) {
+    if (from_inst->control.read == CudaParse::InstructionStat::BARRIER_NONE ||
+      from_inst->control.write == CudaParse::InstructionStat::BARRIER_NONE) {
       continue;
     }
 
     // Barrier does not match
-    if ((to_inst->control.wait & (1 << (from_inst->control.write - 1))) == 0 &&
-      (to_inst->control.wait & (1 << (from_inst->control.read - 1))) == 0) {
+    if (((to_inst->control.wait & (1 << from_inst->control.read)) == 0) &&
+      ((to_inst->control.wait & (1 << from_inst->control.write)) == 0)) {
       remove_edges.push_back(iter);
     }
   }
@@ -563,7 +563,9 @@ void GPUAdvisor::pruneCCTDepGraphBarrier(int mpi_rank, int thread_id,
       std::cout << "Remove " << debugInstOffset(from_vma) << " -> " <<
         debugInstOffset(to_vma) << ", Barrier: b" <<
         std::bitset<6>(to_inst->control.wait) << ", Write: " <<
-        static_cast<int>(from_inst->control.write) << ", Mem_deps: " << mem_dep <<
+        static_cast<int>(from_inst->control.write) << ", Read: " <<
+        static_cast<int>(from_inst->control.read) << 
+        ", Mem_deps: " << mem_dep <<
         ", Exec_deps: " << exec_dep << std::endl;
     }
     cct_dep_graph.removeEdge(iter);
@@ -604,7 +606,7 @@ void GPUAdvisor::trackDep(int from_vma, int to_vma, int id,
 
   // [front_vma, from_vma, back_vma]
   if (from_vma <= back_vma && from_vma >= front_vma) {
-    start_vma = from_vma;
+    start_vma = from_vma + _arch->inst_size();
   }
 
   // [front_vma, to_vma, back_vma]
@@ -632,13 +634,15 @@ void GPUAdvisor::trackDep(int from_vma, int to_vma, int id,
     bool find = false;
     if (track_type == TRACK_REG) {
       find = inst->find_src_reg(id);
+    } else if (track_type == TRACK_PRED_REG) {
+      find = inst->find_src_pred_reg(id);
     } else if (track_type == TRACK_PREDICATE) {
-      find = inst->find_src_predicate(id);
+      find = (inst->predicate == id || inst->find_src_pred_reg(id));
     } else {  // track_type == TRACK_BARRIER
       find = inst->find_src_barrier(id);
     }
 
-    if (find && start_vma != from_vma) {
+    if (find && start_vma != (from_vma + _arch->inst_size())) {
       find_def = true;
       break;
     }
@@ -659,7 +663,7 @@ void GPUAdvisor::trackDep(int from_vma, int to_vma, int id,
     if (to_vma <= back_vma && to_vma >= front_vma) {
       paths.push_back(path);
     } else {
-      for (auto *target : to_block->targets) {
+      for (auto *target : from_block->targets) {
         if (target->type != CudaParse::TargetType::CALL && target->type != CudaParse::TargetType::CALL_FT) {
           // We do not need from_vma anymore
           trackDep(0, to_vma, id, target->block, to_block, latency_issue, latency,
@@ -755,7 +759,7 @@ void GPUAdvisor::pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
     for (auto pdst : from_inst->pdsts) {
       auto passign_iter = to_inst->passign_pcs.find(pdst);
       if (passign_iter != to_inst->passign_pcs.end()) {
-        trackDepInit(to_vma, from_vma, pdst, cct_edge_path_map, TRACK_PREDICATE);
+        trackDepInit(to_vma, from_vma, pdst, cct_edge_path_map, TRACK_PRED_REG);
       }
     }
 
@@ -765,6 +769,14 @@ void GPUAdvisor::pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
       auto bassign_iter = to_inst->bassign_pcs.find(bdst);
       if (bassign_iter != to_inst->bassign_pcs.end()) {
         trackDepInit(to_vma, from_vma, bdst, cct_edge_path_map, TRACK_BARRIER);
+      }
+    }
+
+    // Predicate
+    for (auto pred_dst : from_inst->pdsts) {
+      // Find the dst barrier that causes dependency
+      if (to_inst->predicate == pred_dst) {
+        trackDepInit(to_vma, from_vma, pred_dst, cct_edge_path_map, TRACK_PREDICATE);
       }
     }
 
@@ -817,7 +829,7 @@ double GPUAdvisor::computePathNoStall(
   auto stall_metric_index = _metric_name_prof_map->metric_id(
     mpi_rank, thread_id, _stall_metric, false);
 
-  for (size_t i = 0; i < path.size(); ++i) {
+  for (auto i = 0; i < path.size(); ++i) {
     auto *block = path[i];
     auto front_vma = block->insts.front()->inst_stat->pc;
     auto back_vma = block->insts.back()->inst_stat->pc;
@@ -830,7 +842,7 @@ double GPUAdvisor::computePathNoStall(
     if (i == path.size() - 1) {
       end_vma = to_vma;
     }
-    for (size_t j = start_vma; j <= end_vma; j += _arch->inst_size()) {
+    for (auto j = start_vma; j <= end_vma; j += _arch->inst_size()) {
       auto *prof_node = _vma_prop_map[j].prof_node;
       if (prof_node != NULL) {
         inst += prof_node->demandMetric(inst_metric_index);
@@ -865,8 +877,20 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
         if (from_inst->op.find("MEMORY") != std::string::npos) {
           if (from_inst->op.find(".GLOBAL") != std::string::npos ||
               from_inst->op.find(".LOCAL") != std::string::npos) {
-            // Global and local memory result in memory dependencies
+            // Global and local memory result in memory dependencies or raw dependencies
             latency_prof_nodes[_mem_dep_stall_metric].push_back(from_node);
+            latency_prof_nodes[_exec_dep_stall_metric].push_back(from_node);
+
+            // We must have found a correponding latency, otherwise the edge is removed by pruning
+            {
+              auto mem_latency_metric_index = _metric_name_prof_map->metric_id(
+                mpi_rank, thread_id, _mem_dep_stall_metric);
+              auto mem_latency = to_node->demandMetric(mem_latency_metric_index);
+              auto exec_latency_metric_index = _metric_name_prof_map->metric_id(
+                mpi_rank, thread_id, _exec_dep_stall_metric);
+              auto exec_latency = to_node->demandMetric(exec_latency_metric_index);
+              assert(mem_latency != 0 || exec_latency != 0);
+            }
           } else if (from_inst->op.find(".SHARED") != std::string::npos) {
             // Shared memory
             latency_prof_nodes[_exec_dep_stall_metric].push_back(from_node);
@@ -887,8 +911,10 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
       auto latency_metric_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, latency_metric);
       auto latency = to_node->demandMetric(latency_metric_index);
 
-      // We must have found a correponding latency, otherwise the edge is remove in pruning
-      assert(latency != 0);
+      if (latency == 0) {
+        // Checked by the previous assertion, must have at least one none-zero latency
+        continue;
+      }
 
       // inclusive and exclusive metrics have the same value
       auto in_blame_metric_index = _metric_name_prof_map->metric_id(
@@ -1175,7 +1201,7 @@ void GPUAdvisor::configInst(const std::vector<CudaParse::Function *> &functions)
 
   // Property map
   for (auto *function : functions) {
-    _function_offset[function->address] = function->name;
+    _function_offset[function->address] = function->index;
 
     for (auto *block : function->blocks) {
       for (auto *_inst : block->insts) {
@@ -1219,6 +1245,11 @@ void GPUAdvisor::configInst(const std::vector<CudaParse::Function *> &functions)
         auto *dep_inst = _vma_prop_map[pc].inst;
         _inst_dep_graph.addEdge(dep_inst, inst);
       }
+    }
+
+    for (auto pc : inst->predicate_assign_pcs) {
+      auto *dep_inst = _vma_prop_map[pc].inst;
+      _inst_dep_graph.addEdge(dep_inst, inst);
     }
   }
   
@@ -1380,6 +1411,7 @@ void GPUAdvisor::blame(FunctionBlamesMap &function_blames_map) {
       // x2. Debug function start
       // 3. Implement WAR and Predicate
       // 4. Implement scheduler stall
+      // 6. Implement fake barrier
       // 5. Debug apportion
       // 6. Overlay back
 

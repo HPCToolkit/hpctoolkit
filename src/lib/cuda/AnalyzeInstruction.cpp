@@ -463,6 +463,7 @@ void relocateCudaInstructionStats(std::vector<Function *> &functions) {
           // Calculate absolute address
           auto *inst_stat = inst->inst_stat;
           inst_stat->pc += function->address;
+
           for (auto &iter : inst_stat->assign_pcs) {
             for (auto piter = iter.second.begin(); piter != iter.second.end(); ++piter) {
               *piter += function->address;
@@ -477,6 +478,9 @@ void relocateCudaInstructionStats(std::vector<Function *> &functions) {
             for (auto biter = iter.second.begin(); biter != iter.second.end(); ++biter) {
               *biter += function->address;
             }
+          }
+          for (auto &predicate_assign_pc : inst_stat->predicate_assign_pcs) {
+            predicate_assign_pc += function->address;
           }
         }
       }

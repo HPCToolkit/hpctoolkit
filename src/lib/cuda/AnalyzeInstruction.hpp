@@ -91,7 +91,7 @@ struct InstructionStat {
     Control &control) :
     op(op), pc(pc), predicate(predicate), predicate_flag(predicate_flag),
     predicate_assign_pcs(predicate_assign_pcs),
-    dsts(dsts), srcs(srcs), pdsts(dsts), psrcs(srcs), 
+    dsts(dsts), srcs(srcs), pdsts(pdsts), psrcs(psrcs), 
     bdsts(bdsts), bsrcs(bsrcs),
     assign_pcs(assign_pcs), passign_pcs(passign_pcs), bassign_pcs(bassign_pcs),
     control(control) {}
@@ -104,8 +104,8 @@ struct InstructionStat {
     return std::find(srcs.begin(), srcs.end(), reg) != srcs.end();
   }
 
-  bool find_src_predicate(int predicate) {
-    return std::find(psrcs.begin(), psrcs.end(), predicate) != psrcs.end();
+  bool find_src_pred_reg(int pred_reg) {
+    return std::find(psrcs.begin(), psrcs.end(), pred_reg) != psrcs.end();
   }
 
   bool find_src_barrier(int barrier) {
