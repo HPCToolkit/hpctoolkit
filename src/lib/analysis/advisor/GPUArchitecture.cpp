@@ -54,11 +54,15 @@ std::pair<int, int> V100::latency(const std::string &opcode) {
   if (opcode.find("INTEGER") != std::string::npos) {
     if (opcode.find(".MAD") != std::string::npos) {
       return std::pair<int, int>(5, 5);
+    } else if (opcode.find(".POPC") != std::string::npos) {
+      return std::pair<int, int>(10, 10);
     } else {
       return std::pair<int, int>(4, 4);
     }
   } else if (opcode.find("PREDICATE") != std::string::npos) {
     return std::pair<int, int>(5, 5);
+  } else if (opcode.find("CONVERT") != std::string::npos) {
+    return std::pair<int, int>(14, 14);
   } else if (opcode.find("FLOAT") != std::string::npos) {
     if (opcode.find(".MUFU") != std::string::npos) {
       return std::pair<int, int>(14, 14);

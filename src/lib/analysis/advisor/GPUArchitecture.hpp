@@ -97,6 +97,8 @@ class GPUArchitecture {
 
   virtual int inst_size() = 0;
 
+  virtual ~GPUArchitecture() {}
+
  protected:
   Vendor _vendor;
 };
@@ -113,6 +115,8 @@ class V100 : public GPUArchitecture {
   virtual int inst_size() {
     return 16;
   }
+
+  virtual ~V100() {}
 
  protected:
   Vendor _vendor;
