@@ -67,20 +67,12 @@
 //*****************************************************************************
 
 
-#define CUPTI_CUBIN_ID_MAP_DEBUG 0
-
-#if CUPTI_CUBIN_ID_MAP_DEBUG
-#define PRINT(...) fprintf(stderr, __VA_ARGS__)
-#else
-#define PRINT(...)
-#endif
-
 #define CUPTI_CUBIN_ID_MAP_HASH_TABLE_SIZE 127
 
 
 
 //*****************************************************************************
-// type definitions 
+// type definitions
 //*****************************************************************************
 
 struct cubin_id_map_entry_s {
@@ -89,7 +81,7 @@ struct cubin_id_map_entry_s {
   Elf_SymbolVector *elf_vector;
   struct cubin_id_map_entry_s *left;
   struct cubin_id_map_entry_s *right;
-}; 
+};
 
 
 typedef struct {
@@ -100,7 +92,7 @@ typedef struct {
 
 
 //*****************************************************************************
-// global data 
+// global data
 //*****************************************************************************
 
 static cubin_id_map_entry_t *cubin_id_map_root = NULL;
@@ -142,8 +134,8 @@ cubin_id_map_delete_root()
   if (cubin_id_map_root->left == NULL) {
     cubin_id_map_root = cubin_id_map_root->right;
   } else {
-    cubin_id_map_root->left = 
-      cubin_id_map_splay(cubin_id_map_root->left, 
+    cubin_id_map_root->left =
+      cubin_id_map_splay(cubin_id_map_root->left,
         cubin_id_map_root->cubin_id);
     cubin_id_map_root->left->right = cubin_id_map_root->right;
     cubin_id_map_root = cubin_id_map_root->left;
@@ -165,7 +157,7 @@ cubin_id_map_lookup
   cubin_id_map_entry_t *result = NULL;
 
   static __thread cubin_id_map_hash_entry_t *cubin_id_map_hash_table = NULL;
-  
+
   if (cubin_id_map_hash_table == NULL) {
     cubin_id_map_hash_table = (cubin_id_map_hash_entry_t *)hpcrun_malloc_safe(
       CUPTI_CUBIN_ID_MAP_HASH_TABLE_SIZE * sizeof(cubin_id_map_hash_entry_t));
@@ -199,15 +191,15 @@ cubin_id_map_lookup
 void
 cubin_id_map_insert
 (
- uint32_t cubin_id, 
- uint32_t hpctoolkit_module_id, 
+ uint32_t cubin_id,
+ uint32_t hpctoolkit_module_id,
  Elf_SymbolVector *vector
 )
 {
   spinlock_lock(&cubin_id_map_lock);
 
   if (cubin_id_map_root != NULL) {
-    cubin_id_map_root = 
+    cubin_id_map_root =
       cubin_id_map_splay(cubin_id_map_root, cubin_id);
 
     if (cubin_id < cubin_id_map_root->cubin_id) {
@@ -283,10 +275,10 @@ cubin_id_transform(uint32_t cubin_id, uint32_t function_index, uint64_t offset)
 {
   cubin_id_map_entry_t *entry = cubin_id_map_lookup(cubin_id);
   ip_normalized_t ip;
-  PRINT("cubin_id %d\n", cubin_id);
+  TMSG(CUDA_CUBIN, "cubin_id %d", cubin_id);
   if (entry != NULL) {
     uint32_t hpctoolkit_module_id = cubin_id_map_entry_hpctoolkit_id_get(entry);
-    PRINT("get hpctoolkit_module_id %d\n", hpctoolkit_module_id);
+    TMSG(CUDA_CUBIN, "get hpctoolkit_module_id %d", hpctoolkit_module_id);
     const Elf_SymbolVector *vector = cubin_id_map_entry_elf_vector_get(entry);
     ip.lm_id = (uint16_t)hpctoolkit_module_id;
     ip.lm_ip = (uintptr_t)(vector->symbols[function_index] + offset);
@@ -300,7 +292,7 @@ cubin_id_transform(uint32_t cubin_id, uint32_t function_index, uint64_t offset)
 // debugging code
 //*****************************************************************************
 
-static int 
+static int
 cubin_id_map_count_helper
 (
  cubin_id_map_entry_t *entry
@@ -309,17 +301,17 @@ cubin_id_map_count_helper
   if (entry) {
     int left = cubin_id_map_count_helper(entry->left);
     int right = cubin_id_map_count_helper(entry->right);
-    return 1 + right + left; 
-  } 
+    return 1 + right + left;
+  }
   return 0;
 }
 
 
-int 
+int
 cubin_id_map_count
 (
  void
-) 
+)
 {
   return cubin_id_map_count_helper(cubin_id_map_root);
 }

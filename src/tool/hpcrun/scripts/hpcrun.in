@@ -486,7 +486,7 @@ preload_list="${hpcrun_dir}/libhpcrun.so ${preload_list}"
 # Allow fnbounds command relative to hpcfnbounds_dir.
 case "$HPCRUN_FNBOUNDS_CMD" in
     /* ) ;;
-    '' ) HPCRUN_FNBOUNDS_CMD="${hpcfnbounds_dir}/hpcfnbounds" ;;
+    '' ) HPCRUN_FNBOUNDS_CMD="${hpcfnbounds_dir}/hpcfnbounds2" ;;
     * )  HPCRUN_FNBOUNDS_CMD="${hpcfnbounds_dir}/$HPCRUN_FNBOUNDS_CMD" ;;
 esac
 
