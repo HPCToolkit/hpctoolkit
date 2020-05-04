@@ -505,6 +505,13 @@ MY_ROCM_FILES=\
 	gpu/amd/roctracer-api.c 	
 endif
 
+if OPT_ENABLE_LEVEL0
+MY_LEVEL0_FILES=\
+	sample-sources/level0.c \
+	gpu/level0/roctracer-activity-translate.c \
+	gpu/level/roctracer-api.c 	
+endif
+
 MY_UPC_FILES = sample-sources/upc.c
 
 
@@ -916,9 +923,17 @@ endif
 if OPT_ENABLE_ROCM
   libhpcrun_la_SOURCES  += $(MY_ROCM_FILES)
   libhpcrun_la_CPPFLAGS += -DENABLE_ROCM
-  libhpcrun_la_CFLAGS   += $(OPT_ROCM_IFLAGS) -g
+  libhpcrun_la_CFLAGS   += $(OPT_ROCM_IFLAGS)
 
   MY_CPP_DEFINES  += -DHPCRUN_SS_AMD
+endif
+
+if OPT_ENABLE_LEVEL0
+  libhpcrun_la_SOURCES  += $(MY_LEVEL0_FILES)
+  libhpcrun_la_CPPFLAGS += -DENABLE_LEVEL0
+  libhpcrun_la_CFLAGS   += $(OPT_LEVEL0_IFLAGS)
+
+  MY_CPP_DEFINES  += -DHPCRUN_SS_LEVEL0
 endif
 
 if UNW_LIBUNW

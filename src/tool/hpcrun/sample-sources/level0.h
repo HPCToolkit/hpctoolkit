@@ -2,9 +2,6 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
-//
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
 //
@@ -44,54 +41,15 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#ifndef HPCTOOLKIT_LEVEL0_H
+#define HPCTOOLKIT_LEVEL0_H
 
-//******************************************************************************
-// File: ss-list.h
-//
-// Purpose: 
-//   This file contains a list of sample sources wrapped by a call to an
-//   unspecified macro. The intended use of this file is to define the
-//   macro, include the file elsewhere one or more times to register the
-//   sample sources. This is not defined as a FORALL macro that applies
-//   a macro to each of the sample source names so that this file can
-//   contain ifdefs if a sample source is unused on a platform.
-//
-//******************************************************************************
 
-SAMPLE_SOURCE_DECL_MACRO(ga)
-SAMPLE_SOURCE_DECL_MACRO(io)  
-SAMPLE_SOURCE_DECL_MACRO(itimer)  
+typedef struct gpu_activity_t gpu_activity_t;
+typedef struct cct_node_t cct_node_t;
 
-#ifdef HPCRUN_SS_LINUX_PERF
-SAMPLE_SOURCE_DECL_MACRO(linux_perf)  
-#endif
+void level0_init();
+void level0_fini();
 
-SAMPLE_SOURCE_DECL_MACRO(memleak)  
 
-SAMPLE_SOURCE_DECL_MACRO(none)  
-
-#ifdef HPCRUN_SS_PAPI
-SAMPLE_SOURCE_DECL_MACRO(papi)  
-#endif
-
-SAMPLE_SOURCE_DECL_MACRO(directed_blame)
-
-#ifdef HOST_CPU_x86_64
-SAMPLE_SOURCE_DECL_MACRO(retcnt)
-#endif
-
-#ifdef HPCRUN_SS_PAPI_C_CUPTI
-SAMPLE_SOURCE_DECL_MACRO(papi_c_cupti)
-#endif
-
-#ifdef HPCRUN_SS_NVIDIA
-SAMPLE_SOURCE_DECL_MACRO(nvidia_gpu)
-#endif
-
-#ifdef HPCRUN_SS_AMD
-SAMPLE_SOURCE_DECL_MACRO(amd_gpu)
-#endif
-
-#ifdef HPCRUN_SS_LEVEL0
-SAMPLE_SOURCE_DECL_MACRO(level0)
-#endif
+#endif //HPCTOOLKIT_AMD_H
