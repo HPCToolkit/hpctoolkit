@@ -86,6 +86,12 @@ struct dylib_fmca_s {
 };
 
 
+struct dylib_fmbn_s {
+  const char *module_name;
+  struct dylib_seg_bounds_s bounds;
+};
+
+
 
 //*****************************************************************************
 // macro declarations
@@ -110,6 +116,11 @@ struct dylib_fmca_s {
 static int 
 dylib_map_open_dsos_callback(struct dl_phdr_info *info, 
 			     size_t size, void *);
+
+static int 
+dylib_find_module_bounds_by_name_callback(struct dl_phdr_info *info, 
+					  size_t size, void *fargs_v);
+
 
 static int 
 dylib_find_module_containing_addr_callback(struct dl_phdr_info *info, 
@@ -138,18 +149,6 @@ dylib_map_open_dsos()
 }
 
 
-//------------------------------------------------------------------
-// ensure bounds information computed for the executable
-//------------------------------------------------------------------
-
-void 
-dylib_map_executable()
-{
-  const char *executable_name = "/proc/self/exe";
-  fnbounds_ensure_mapped_dso(executable_name, NULL, NULL);
-}
-
-
 int 
 dylib_addr_is_mapped(void *addr) 
 {
@@ -158,6 +157,37 @@ dylib_addr_is_mapped(void *addr)
   // initialize arg structure
   arg.addr = addr;
   return dl_iterate_phdr(dylib_find_module_containing_addr_callback, &arg);
+}
+
+
+int 
+dylib_find_executable_bounds(void** start, void** end)
+{
+  // executable name in map is empty string; don't know why
+  return dylib_find_module_bounds_by_name("", start, end);
+}
+
+
+int 
+dylib_find_module_bounds_by_name(char* module_name,
+				 void** start, 
+				 void** end)
+{
+  int retval = 0; // not found
+  struct dylib_fmbn_s arg;
+
+  arg.module_name = module_name;
+
+  if (dl_iterate_phdr(dylib_find_module_bounds_by_name_callback, &arg)) {
+    //-------------------------------------
+    // return callback results into arguments
+    //-------------------------------------
+    *start = arg.bounds.start;
+    *end = arg.bounds.end;
+    retval = 1;
+  }
+
+  return retval;
 }
 
 
@@ -298,6 +328,21 @@ dylib_map_open_dsos_callback(struct dl_phdr_info *info, size_t size,
     if (bounds.start != vdso_start) {
       fnbounds_ensure_mapped_dso(info->dlpi_name, bounds.start, bounds.end);
     }
+  } 
+
+  return 0;
+}
+
+
+static int
+dylib_find_module_bounds_by_name_callback(struct dl_phdr_info* info, 
+					  size_t size, void* fargs_v)
+{
+  struct dylib_fmbn_s* fargs = (struct dylib_fmbn_s*) fargs_v;
+
+  if (strcmp(info->dlpi_name, fargs->module_name) == 0) {
+    dylib_get_segment_bounds(info, &fargs->bounds);
+    return 1;
   }
 
   return 0;

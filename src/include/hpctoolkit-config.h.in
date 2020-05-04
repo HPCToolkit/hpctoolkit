@@ -141,8 +141,14 @@
 /* IBM Blue Gene support */
 #undef HOST_SYSTEM_IBM_BLUEGENE
 
+/* Git branch and commit hash, if known. */
+#undef HPCTOOLKIT_GIT_VERSION
+
 /* HPCToolkit install prefix */
 #undef HPCTOOLKIT_INSTALL_PREFIX
+
+/* Spack version and variants, if known. */
+#undef HPCTOOLKIT_SPACK_SPEC
 
 /* HPCToolkit version */
 #undef HPCTOOLKIT_VERSION

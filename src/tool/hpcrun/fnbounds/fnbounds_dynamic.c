@@ -295,11 +295,13 @@ fnbounds_dso_exec(void)
   void** nm_table = (void**) hpcrun_syserv_query(filename, &fh);
   if (! nm_table) {
     EMSG("No nm_table for executable %s", filename);
-    return hpcrun_dso_make(filename, NULL, NULL, NULL, NULL, 0);
+    dylib_find_executable_bounds(&start, &end);
+    return hpcrun_dso_make(filename, NULL, NULL, start, end, 0);
   }
   if (fh.num_entries < 1) {
     EMSG("fnbounds returns no symbols for file %s, (all intervals poisoned)", filename);
-    return hpcrun_dso_make(filename, NULL, NULL, NULL, NULL, 0);
+    dylib_find_executable_bounds(&start, &end);
+    return hpcrun_dso_make(filename, NULL, NULL, start, end, 0);
   }
   TMSG(MAP_EXEC, "Relocatable exec");
   if (fh.is_relocatable) {
@@ -537,14 +539,6 @@ fnbounds_get_loadModule(void *ip)
 static void
 fnbounds_map_executable()
 {
-  // dylib_map_executable() ==>
-  // fnbounds_ensure_mapped_dso("/proc/self/exe", NULL, NULL) ==>
-  //{
-  //   FNBOUNDS_LOCK;
-  //   dso = fnbound_compute(exename, ...);
-  //   hpcrun_loadmap_map(dso);
-  //   FNBOUNDS_UNLOCK;
-  //}
   FNBOUNDS_LOCK;
   hpcrun_loadmap_map(fnbounds_dso_exec());
   FNBOUNDS_UNLOCK;
