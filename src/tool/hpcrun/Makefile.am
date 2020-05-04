@@ -389,6 +389,9 @@ MY_BASE_FILES =				\
 	ompt/ompt-task.c                \
 	ompt/ompt-thread.c              \
 	\
+	syscalls/poll.c	\
+	syscalls/select.c \
+	\
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
 	utilities/line_wrapping.c	\
