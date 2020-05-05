@@ -192,6 +192,9 @@
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
 
+/* use Level Zero */
+#undef USE_LEVEL0
+
 /* libunwind is the specified unwinder */
 #undef USE_LIBUNW
 

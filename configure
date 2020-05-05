@@ -647,6 +647,11 @@ VALGRIND_IFLAGS
 OPT_ENABLE_DEVTOOLS_FALSE
 OPT_ENABLE_DEVTOOLS_TRUE
 OPT_OBJCOPY
+OPT_LEVEL0_LDFLAGS
+OPT_LEVEL0_IFLAGS
+OPT_LEVEL0
+OPT_ENABLE_LEVEL0_FALSE
+OPT_ENABLE_LEVEL0_TRUE
 OPT_ROCM_LDFLAGS
 OPT_ROCM_IFLAGS
 OPT_ROCM
@@ -1047,6 +1052,7 @@ enable_xop
 with_cuda
 with_cupti
 with_rocm
+with_level0
 enable_data_centric_tracing
 with_objcopy
 enable_devtools
@@ -1798,6 +1804,8 @@ Optional Packages:
                           cuda
   --with-rocm=PATH        use given ROCM installation (absolute path) with
                           hpcrun (default is NO)
+  --with-level0=PATH      use given Level Zero installation (absolute path)
+                          with hpcrun (default is NO)
   --with-objcopy=<obcopy_path>
                           use given objcopy when hiding hpcrun library symbols
   --with-valgrind=PATH    path to Valgrind install directory
@@ -23486,6 +23494,47 @@ fi
 
 
 
+#-------------------------------------------------
+# Option: --with-level0=PATH
+#-------------------------------------------------
+
+OPT_LEVEL0=
+OPT_LEVEL0_INCPATH=
+OPT_LEVEL0_LDFLAGS=
+OPT_LEVEL0_LIBPATH=
+
+
+# Check whether --with-level0 was given.
+if test "${with_level0+set}" = set; then :
+  withval=$with_level0; if test $withval != no; then
+     OPT_HAVE_LEVEL0=yes
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       as_fn_error $? "--with-level0 requires absolute path as argument; given '${withval}'" "$LINENO" 5
+     fi
+     OPT_LEVEL0=${withval}
+   fi
+fi
+
+
+if test "$OPT_HAVE_LEVEL0" = "yes" ; then
+
+$as_echo "#define USE_LEVEL0 1" >>confdefs.h
+
+  OPT_LEVEL0_IFLAGS="-I${OPT_LEVEL0}/include"
+fi
+
+ if test "$OPT_HAVE_LEVEL0" = yes; then
+  OPT_ENABLE_LEVEL0_TRUE=
+  OPT_ENABLE_LEVEL0_FALSE='#'
+else
+  OPT_ENABLE_LEVEL0_TRUE='#'
+  OPT_ENABLE_LEVEL0_FALSE=
+fi
+
+
+
+
+
 
 #-------------------------------------------------
 # enable-data-centric-tracing: data-centric tracing
@@ -24097,6 +24146,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_ROCM_TRUE}" && test -z "${OPT_ENABLE_ROCM_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_ROCM\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_ENABLE_LEVEL0_TRUE}" && test -z "${OPT_ENABLE_LEVEL0_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_ENABLE_LEVEL0\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_DEVTOOLS_TRUE}" && test -z "${OPT_ENABLE_DEVTOOLS_FALSE}"; then

@@ -77,7 +77,8 @@
   macro(zetTracerCreate) \
   macro(zetTracerSetPrologues) \
   macro(zetTracerSetEpilogues) \
-  macro(zetTracerSetEnabled)
+  macro(zetTracerSetEnabled) \
+  macro(zetTracerDestroy)
 
 
 #define LEVEL0_FN_NAME(f) DYN_FN_NAME(f)
@@ -190,6 +191,14 @@ LEVEL0_FN
  )
 );
 
+LEVEL0_FN
+(
+ zetTracerDestroy,
+ (
+  zet_tracer_handle_t  
+ )
+);
+
 
 //******************************************************************************
 // private operations
@@ -231,7 +240,7 @@ get_gpu_driver_and_device
       
       for(d = 0; d < deviceCount; ++d) {
           ze_device_properties_t device_properties;
-          HPCRUN_LEVEL0_CALL(zeDeviceGetProperties, allDevices[d], &device_properties));          
+          HPCRUN_LEVEL0_CALL(zeDeviceGetProperties, (allDevices[d], &device_properties));  
           if(ZE_DEVICE_TYPE_GPU == device_properties.type) {
               hDriver = allDrivers[i];
               hDevice = allDevices[d];

@@ -50,6 +50,7 @@ typedef struct cct_node_t cct_node_t;
 
 void level0_init();
 void level0_fini();
+int level0_bind();
 
 
 #endif //HPCTOOLKIT_AMD_H

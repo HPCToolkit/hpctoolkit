@@ -4655,7 +4655,7 @@ OPT_LEVEL0_INCPATH=
 OPT_LEVEL0_LDFLAGS=
 OPT_LEVEL0_LIBPATH=
 
-AC_ARG_WITH([rocm],
+AC_ARG_WITH([level0],
   AS_HELP_STRING([--with-level0=PATH],
                  [use given Level Zero installation (absolute path) with hpcrun (default is NO)]),
   [if test $withval != no; then
@@ -4668,10 +4668,10 @@ AC_ARG_WITH([rocm],
 
 if test "$OPT_HAVE_LEVEL0" = "yes" ; then
   AC_DEFINE(USE_LEVEL0, 1, [use Level Zero])
-  OPT_LEVEL0_IFLAGS="-I${OPT_LEVEL0}"
+  OPT_LEVEL0_IFLAGS="-I${OPT_LEVEL0}/include"
 fi
 
-AM_CONDITIONAL([OPT_ENABLE_ROCM], [test "$OPT_HAVE_LEVEL0" = yes])
+AM_CONDITIONAL([OPT_ENABLE_LEVEL0], [test "$OPT_HAVE_LEVEL0" = yes])
 
 AC_SUBST([OPT_LEVEL0])
 AC_SUBST([OPT_LEVEL0_IFLAGS])
