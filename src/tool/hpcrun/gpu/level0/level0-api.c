@@ -105,6 +105,7 @@
 ze_driver_handle_t hDriver = NULL;
 ze_device_handle_t hDevice = NULL;
 zet_tracer_handle_t hTracer = NULL;
+static uint64_t correlation_id = 0;
 
 //----------------------------------------------------------
 // level0 function pointers for late binding
@@ -224,7 +225,6 @@ get_gpu_driver_and_device
   uint32_t driverCount = 0;
   uint32_t i, d;
   HPCRUN_LEVEL0_CALL(zeDriverGet, (&driverCount, NULL));
-  printf("Find %u drivers\n", driverCount);
   
   ze_driver_handle_t* allDrivers = (ze_driver_handle_t*)malloc(driverCount * sizeof(ze_driver_handle_t));
   HPCRUN_LEVEL0_CALL(zeDriverGet, (&driverCount, allDrivers));
@@ -233,7 +233,6 @@ get_gpu_driver_and_device
   for(i = 0; i < driverCount; ++i) {
       uint32_t deviceCount = 0;
       HPCRUN_LEVEL0_CALL(zeDeviceGet, (allDrivers[i], &deviceCount, NULL));
-      printf("\tFind %u devices for %uth driver\n", deviceCount, i);
       
       ze_device_handle_t* allDevices = (ze_device_handle_t*)malloc(deviceCount * sizeof(ze_device_handle_t));
       HPCRUN_LEVEL0_CALL(zeDeviceGet, (allDrivers[i], &deviceCount, allDevices));
@@ -267,7 +266,7 @@ typedef struct _my_tracer_data_t
 
 typedef struct _my_instance_data_t
 {
-    clock_t start;
+    struct timespec start;
 } my_instance_data_t;
 
 void OnEnterCommandListAppendLaunchKernel(
@@ -279,7 +278,25 @@ void OnEnterCommandListAppendLaunchKernel(
     my_instance_data_t* instance_data = (my_instance_data_t*) malloc( sizeof(my_instance_data_t) );
     *ppTracerInstanceUserData = instance_data;
 
-    instance_data->start = clock();
+    clock_gettime(CLOCK_REALTIME, &instance_data->start);
+
+    gpu_op_placeholder_flags_t gpu_op_placeholder_flags = 0;
+    gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
+				 gpu_placeholder_type_kernel);
+    correlation_id++;
+    cct_node_t *api_node =
+      gpu_application_thread_correlation_callback(correlation_id);
+
+    gpu_op_ccts_t gpu_op_ccts;
+    hpcrun_safe_enter();
+    gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
+    hpcrun_safe_exit();
+
+    gpu_activity_channel_consume(gpu_metrics_attribute);
+
+    // Generate notification entry
+    uint64_t cpu_submit_time = CPU_NANOTIME();
+    gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, cpu_submit_time);
 }
 
 void OnExitCommandListAppendLaunchKernel(
@@ -288,14 +305,27 @@ void OnExitCommandListAppendLaunchKernel(
     void* pTracerUserData,
     void** ppTracerInstanceUserData )
 {
-    clock_t end = clock();
+    struct timespec end;
+    clock_gettime(CLOCK_REALTIME, &end);
 
     my_tracer_data_t* tracer_data = (my_tracer_data_t*)pTracerUserData;
     my_instance_data_t* instance_data = *(my_instance_data_t**)ppTracerInstanceUserData;
 
-    float time = 1000.f * ( end - instance_data->start ) / CLOCKS_PER_SEC;
-    printf("zeCommandListAppendLaunchKernel #%d takes %.4f ms\n", tracer_data->instance++, time);
+    gpu_monitoring_thread_activities_ready();
+    gpu_activity_t gpu_activity;
+    gpu_activity_t* ga = &gpu_activity;
+    memset(ga, 0, sizeof(gpu_activity_t));
 
+    ga->kind = GPU_ACTIVITY_KERNEL;
+
+    #define CONVERT(x) ((uint64_t)((x).tv_sec) * (uint64_t)1000000000 + (uint64_t)((x).tv_nsec))
+    set_gpu_interval(&ga->details.interval, CONVERT(instance_data->start) , CONVERT(end));
+    ga->details.kernel.correlation_id = correlation_id;
+    cstack_ptr_set(&(ga->next), 0);
+    if (gpu_correlation_id_map_lookup(correlation_id) == NULL) {
+      gpu_correlation_id_map_insert(correlation_id, correlation_id);
+    }
+    gpu_activity_process(&gpu_activity);
     free(instance_data);
 }
 
