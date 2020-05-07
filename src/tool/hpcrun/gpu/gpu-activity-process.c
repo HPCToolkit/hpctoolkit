@@ -391,9 +391,11 @@ gpu_kernel_process
 	 &entry_trace);
 
       attribute_activity(host_op_entry, activity, func_node);
+    } else {
+      PRINT("Kernel execution external id %lu cannot be found\n", external_id);
     }
   } else {
-    PRINT("Kernel execution correlation_id %u cannot be found", correlation_id);
+    PRINT("Kernel execution correlation_id %u cannot be found\n", correlation_id);
   }
 
   PRINT("Kernel execution deviceId %u\n", activity->details.kernel.device_id);

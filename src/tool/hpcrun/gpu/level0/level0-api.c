@@ -78,7 +78,13 @@
   macro(zetTracerSetPrologues) \
   macro(zetTracerSetEpilogues) \
   macro(zetTracerSetEnabled) \
-  macro(zetTracerDestroy)
+  macro(zetTracerDestroy) \
+  macro(zeEventCreate) \
+  macro(zeEventDestroy) \
+  macro(zeEventPoolCreate) \
+  macro(zeEventPoolDestroy) \
+  macro(zeEventQueryStatus) \
+  macro(zeEventGetTimestamp)
 
 
 #define LEVEL0_FN_NAME(f) DYN_FN_NAME(f)
@@ -105,7 +111,6 @@
 ze_driver_handle_t hDriver = NULL;
 ze_device_handle_t hDevice = NULL;
 zet_tracer_handle_t hTracer = NULL;
-static uint64_t correlation_id = 0;
 
 //----------------------------------------------------------
 // level0 function pointers for late binding
@@ -200,6 +205,61 @@ LEVEL0_FN
  )
 );
 
+LEVEL0_FN
+(
+ zeEventCreate,
+ (
+  ze_event_pool_handle_t,
+  const ze_event_desc_t*,
+  ze_event_handle_t*
+ )
+);
+
+LEVEL0_FN
+(
+ zeEventDestroy,
+ (
+   ze_event_handle_t
+ )
+);
+
+LEVEL0_FN
+(
+ zeEventPoolCreate,
+ (
+  ze_driver_handle_t,
+  const ze_event_pool_desc_t*,
+  uint32_t,
+  ze_device_handle_t*,
+  ze_event_pool_handle_t*
+ )
+);
+
+LEVEL0_FN
+(
+ zeEventPoolDestroy,
+ (
+   ze_event_pool_handle_t
+ )
+);
+
+LEVEL0_FN
+(
+ zeEventQueryStatus,
+ (
+   ze_event_handle_t
+ )
+);
+
+LEVEL0_FN
+(
+ zeEventGetTimestamp,
+ (
+   ze_event_handle_t,
+   ze_event_timestamp_type_t,
+   void*
+ )
+);
 
 //******************************************************************************
 // private operations
@@ -259,91 +319,235 @@ get_gpu_driver_and_device
   }
 }
 
-typedef struct _my_tracer_data_t
-{
-    uint32_t instance;
-} my_tracer_data_t;
+typedef enum EventType {
+  EVENT_TYPE_USER = 0,
+  EVENT_TYPE_TOOL = 1
+} EventType;
 
-typedef struct _my_instance_data_t
-{
-    struct timespec start;
-} my_instance_data_t;
+typedef struct ActivityEventInfo {
+  ze_event_pool_handle_t event_pool;
+  ze_event_handle_t event;
+  EventType event_type;
+} ActivityEventInfo;
 
-void OnEnterCommandListAppendLaunchKernel(
-    ze_command_list_append_launch_kernel_params_t* params,
-    ze_result_t result,
-    void* pTracerUserData,
-    void** ppTracerInstanceUserData )
-{
-    my_instance_data_t* instance_data = (my_instance_data_t*) malloc( sizeof(my_instance_data_t) );
-    *ppTracerInstanceUserData = instance_data;
+static void OnEnterEventPoolCreate(ze_event_pool_create_params_t *params,
+                                   ze_result_t result,
+                                   void *global_data,
+                                   void **instance_data) {
+  const ze_event_pool_desc_t* desc = *(params->pdesc);
+  if (desc == NULL) {
+    return;
+  }
 
-    clock_gettime(CLOCK_REALTIME, &instance_data->start);
+  ze_event_pool_desc_t* profiling_desc = (ze_event_pool_desc_t*) malloc(sizeof(ze_event_pool_desc_t));
+  assert(profiling_desc != NULL);
+  profiling_desc->version = desc->version;
+  profiling_desc->flags = desc->flags;
+  profiling_desc->count = desc->count;
 
-    gpu_op_placeholder_flags_t gpu_op_placeholder_flags = 0;
-    gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
-				 gpu_placeholder_type_kernel);
-    correlation_id++;
-    cct_node_t *api_node =
-      gpu_application_thread_correlation_callback(correlation_id);
+  int flags = profiling_desc->flags | ZE_EVENT_POOL_FLAG_TIMESTAMP;
+  profiling_desc->flags = (ze_event_pool_flag_t)(flags);
 
-    gpu_op_ccts_t gpu_op_ccts;
-    hpcrun_safe_enter();
-    gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
-    hpcrun_safe_exit();
-
-    gpu_activity_channel_consume(gpu_metrics_attribute);
-
-    // Generate notification entry
-    uint64_t cpu_submit_time = CPU_NANOTIME();
-    gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, cpu_submit_time);
+  *(params->pdesc) = profiling_desc;
+  *instance_data = profiling_desc;
 }
 
-void OnExitCommandListAppendLaunchKernel(
+static void OnExitEventPoolCreate(ze_event_pool_create_params_t *params,
+                                  ze_result_t result,
+                                  void *global_data,
+                                  void **instance_data) {
+  ze_event_pool_desc_t* desc = (ze_event_pool_desc_t*)(*instance_data);
+  if (desc != NULL) {
+    free(desc);
+  }
+}
+
+static void ProcessEvent(ze_event_handle_t event) {
+  uint64_t correlation_id = (uint64_t)event;
+  ze_device_properties_t props = {};
+  props.version = ZE_DEVICE_PROPERTIES_VERSION_CURRENT;
+  HPCRUN_LEVEL0_CALL(zeDeviceGetProperties, (hDevice, &props));
+  HPCRUN_LEVEL0_CALL(zeEventQueryStatus, (event));
+
+  uint64_t start = 0;
+  HPCRUN_LEVEL0_CALL(zeEventGetTimestamp, (event, ZE_EVENT_TIMESTAMP_CONTEXT_START, &start));
+  uint64_t end = 0;
+  HPCRUN_LEVEL0_CALL(zeEventGetTimestamp, (event, ZE_EVENT_TIMESTAMP_CONTEXT_END, &end));
+
+  gpu_monitoring_thread_activities_ready();
+  gpu_activity_t gpu_activity;
+  gpu_activity_t* ga = &gpu_activity;
+  memset(ga, 0, sizeof(gpu_activity_t));
+  ga->kind = GPU_ACTIVITY_KERNEL;
+  set_gpu_interval(&ga->details.interval, start * props.timerResolution, end * props.timerResolution);
+  ga->details.kernel.correlation_id = correlation_id;
+  cstack_ptr_set(&(ga->next), 0);
+  if (gpu_correlation_id_map_lookup(correlation_id) == NULL) {
+    gpu_correlation_id_map_insert(correlation_id, correlation_id);
+  }
+  gpu_activity_process(&gpu_activity);
+
+  //if (info.event_type == EVENT_TYPE_TOOL) {
+    //HPCRUN_LEVEL0_CALL(zeEventDestroy, (event));
+    //HPCRUN_LEVEL0_CALL(zeEventPoolDestroy,(info.event_pool));
+  //}
+
+
+}
+
+static void OnEnterEventDestroy(ze_event_destroy_params_t *params,
+                                ze_result_t result,
+                                void *global_data,
+                                void **instance_data) {
+  ProcessEvent(*(params->phEvent));
+}
+
+static void OnEnterEventHostReset(ze_event_host_reset_params_t *params,
+                                  ze_result_t result,
+                                  void *global_data,
+                                  void **instance_data) {
+  ProcessEvent(*(params->phEvent));
+}
+
+static ze_event_handle_t OnEnterActivitySubmit(ze_event_handle_t event, void **instance_data) {
+  ActivityEventInfo* info =  (ActivityEventInfo*) malloc(sizeof(ActivityEventInfo));
+
+  if (event == NULL) {
+    ze_event_pool_desc_t event_pool_desc = {
+      ZE_EVENT_POOL_DESC_VERSION_CURRENT,
+      ZE_EVENT_POOL_FLAG_TIMESTAMP,
+      1 };
+    ze_event_pool_handle_t event_pool = NULL;
+    HPCRUN_LEVEL0_CALL(zeEventPoolCreate, (hDriver, &event_pool_desc, 1, &hDevice, &event_pool));
+
+    ze_event_desc_t event_desc = {
+      ZE_EVENT_DESC_VERSION_CURRENT,
+      0,
+      ZE_EVENT_SCOPE_FLAG_HOST,
+      ZE_EVENT_SCOPE_FLAG_HOST };
+    HPCRUN_LEVEL0_CALL(zeEventCreate, (event_pool, &event_desc, &event));
+
+    info->event_pool = event_pool;
+    info->event_type = EVENT_TYPE_TOOL;
+  } else {
+    info->event_pool = NULL;
+    info->event_type = EVENT_TYPE_USER;
+  }
+
+  info->event = event;
+  *instance_data = info;
+  return event;
+}
+
+static void OnEnterCommandListAppendLaunchKernel(
     ze_command_list_append_launch_kernel_params_t* params,
-    ze_result_t result,
-    void* pTracerUserData,
-    void** ppTracerInstanceUserData )
+    ze_result_t result, void* global_data, void** instance_data)
 {
-    struct timespec end;
-    clock_gettime(CLOCK_REALTIME, &end);
 
-    my_tracer_data_t* tracer_data = (my_tracer_data_t*)pTracerUserData;
-    my_instance_data_t* instance_data = *(my_instance_data_t**)ppTracerInstanceUserData;
+  *(params->phSignalEvent) = OnEnterActivitySubmit(*(params->phSignalEvent), instance_data);
+  gpu_op_placeholder_flags_t gpu_op_placeholder_flags = 0;
+  gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
+        gpu_placeholder_type_kernel);
 
-    gpu_monitoring_thread_activities_ready();
-    gpu_activity_t gpu_activity;
-    gpu_activity_t* ga = &gpu_activity;
-    memset(ga, 0, sizeof(gpu_activity_t));
+  uint64_t correlation_id = (uint64_t)(*(params->phSignalEvent));
+  cct_node_t *api_node =
+    gpu_application_thread_correlation_callback(correlation_id);
 
-    ga->kind = GPU_ACTIVITY_KERNEL;
+  gpu_op_ccts_t gpu_op_ccts;
+  hpcrun_safe_enter();
+  gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
+  hpcrun_safe_exit();
 
-    #define CONVERT(x) ((uint64_t)((x).tv_sec) * (uint64_t)1000000000 + (uint64_t)((x).tv_nsec))
-    set_gpu_interval(&ga->details.interval, CONVERT(instance_data->start) , CONVERT(end));
-    ga->details.kernel.correlation_id = correlation_id;
-    cstack_ptr_set(&(ga->next), 0);
-    if (gpu_correlation_id_map_lookup(correlation_id) == NULL) {
-      gpu_correlation_id_map_insert(correlation_id, correlation_id);
+  gpu_activity_channel_consume(gpu_metrics_attribute);
+
+  // Generate notification entry
+  uint64_t cpu_submit_time = CPU_NANOTIME();
+  gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, cpu_submit_time);
+}
+
+static void OnEnterCommandListAppendMemoryCopy(
+    ze_command_list_append_memory_copy_params_t* params,
+    ze_result_t result, void* global_data, void** instance_data) {
+/*
+  *(params->phEvent) = OnEnterActivitySubmit(
+      "<MemoryCopy>", *(params->phEvent), instance_data);
+*/
+}
+
+static void OnEnterCommandListAppendBarrier(
+    ze_command_list_append_barrier_params_t* params,
+    ze_result_t result, void* global_data, void** instance_data) {
+/*
+  *(params->phSignalEvent) = OnEnterActivitySubmit(
+      "<Barrier>", *(params->phSignalEvent), instance_data);
+*/
+}
+
+static void OnExitActivitySubmit(void **instance_data, ze_result_t result) {
+
+  ActivityEventInfo* info = (ActivityEventInfo*)(*instance_data);
+  if (info == NULL) {
+    return;
+  }
+
+  if (result != ZE_RESULT_SUCCESS && info != NULL) {
+    if (info->event_type == EVENT_TYPE_TOOL) {
+      HPCRUN_LEVEL0_CALL(zeEventDestroy, (info->event));
+      HPCRUN_LEVEL0_CALL(zeEventPoolDestroy, (info->event_pool));
     }
-    gpu_activity_process(&gpu_activity);
-    free(instance_data);
+  }
+  free(info);
 }
 
+static void OnExitCommandListAppendLaunchKernel(
+    ze_command_list_append_launch_kernel_params_t* params,
+    ze_result_t result, void* global_data, void** instance_data) {
+  assert(*(params->phSignalEvent) != NULL);
+  OnExitActivitySubmit(instance_data, result);
+}
+
+static void OnExitCommandListAppendMemoryCopy(
+    ze_command_list_append_memory_copy_params_t* params,
+    ze_result_t result, void* global_data, void** instance_data) {
+  //OnExitActivitySubmit(instance_data, result);
+}
+
+static void OnExitCommandListAppendBarrier(
+    ze_command_list_append_barrier_params_t* params,
+    ze_result_t result, void* global_data, void** instance_data) {
+  //OnExitActivitySubmit(instance_data, result);
+}
 
 void setup_tracer() {
-  my_tracer_data_t tracer_data = {};
   zet_tracer_desc_t tracer_desc;
   tracer_desc.version = ZET_TRACER_DESC_VERSION_CURRENT;
-  tracer_desc.pUserData = &tracer_data;
+  tracer_desc.pUserData = NULL;
   HPCRUN_LEVEL0_CALL(zetTracerCreate, (hDriver, &tracer_desc, &hTracer));
 
   // Set all callbacks
-  zet_core_callbacks_t prologCbs = {};
-  zet_core_callbacks_t epilogCbs = {};
-  prologCbs.CommandList.pfnAppendLaunchKernelCb = OnEnterCommandListAppendLaunchKernel;
-  epilogCbs.CommandList.pfnAppendLaunchKernelCb = OnExitCommandListAppendLaunchKernel;
-  HPCRUN_LEVEL0_CALL(zetTracerSetPrologues, (hTracer, &prologCbs));
-  HPCRUN_LEVEL0_CALL(zetTracerSetEpilogues, (hTracer, &epilogCbs));
+  zet_core_callbacks_t prologue_callbacks = {};
+  prologue_callbacks.Event.pfnDestroyCb = OnEnterEventDestroy;
+  prologue_callbacks.Event.pfnHostResetCb = OnEnterEventHostReset;
+  prologue_callbacks.EventPool.pfnCreateCb = OnEnterEventPoolCreate;
+  prologue_callbacks.CommandList.pfnAppendLaunchKernelCb =
+    OnEnterCommandListAppendLaunchKernel;
+  prologue_callbacks.CommandList.pfnAppendMemoryCopyCb =
+    OnEnterCommandListAppendMemoryCopy;
+  prologue_callbacks.CommandList.pfnAppendBarrierCb =
+    OnEnterCommandListAppendBarrier;
+
+  zet_core_callbacks_t epilogue_callbacks = {};
+  //epilogue_callbacks.Kernel.pfnCreateCb = OnExitKernelCreate;
+  //epilogue_callbacks.Kernel.pfnDestroyCb = OnExitKernelDestroy;
+  epilogue_callbacks.EventPool.pfnCreateCb = OnExitEventPoolCreate;
+  epilogue_callbacks.CommandList.pfnAppendLaunchKernelCb =
+    OnExitCommandListAppendLaunchKernel;
+  epilogue_callbacks.CommandList.pfnAppendMemoryCopyCb =
+    OnExitCommandListAppendMemoryCopy;
+  epilogue_callbacks.CommandList.pfnAppendBarrierCb =
+    OnExitCommandListAppendBarrier;
+  HPCRUN_LEVEL0_CALL(zetTracerSetPrologues, (hTracer, &prologue_callbacks));
+  HPCRUN_LEVEL0_CALL(zetTracerSetEpilogues, (hTracer, &epilogue_callbacks));
 
   // Enable tracing
   HPCRUN_LEVEL0_CALL(zetTracerSetEnabled, (hTracer, 1));
