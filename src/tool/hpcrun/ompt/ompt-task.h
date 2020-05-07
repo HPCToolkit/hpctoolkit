@@ -54,10 +54,33 @@
 
 #include "omp-tools.h"
 
+typedef struct ompt_task_data_t ompt_task_data_t;
 
 //*****************************************************************************
 // interface operations
 //*****************************************************************************
+
+ompt_task_data_t*
+ompt_task_acquire
+(
+ cct_node_t *callpath,
+ ompt_task_flag_t task_type
+);
+
+
+void
+ompt_task_release
+(
+ ompt_data_t *t
+);
+
+
+cct_node_t *
+ompt_task_callpath
+(
+ ompt_data_t *task_data
+);
+
 
 void 
 ompt_task_register_callbacks

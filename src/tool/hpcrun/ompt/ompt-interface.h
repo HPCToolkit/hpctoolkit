@@ -288,4 +288,16 @@ ompt_set_callback_internal
 );
 
 
+void
+ompt_idle_begin
+(
+ void
+);
+
+void
+ompt_idle_end
+(
+ void
+);
+
 #endif // _OMPT_INTERFACE_H_

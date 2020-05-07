@@ -124,6 +124,8 @@ static directed_blame_info_t omp_mutex_blame_info;
 // state for undirected blame shifting away from spinning waiting for work
 static undirected_blame_info_t omp_idle_blame_info;
 
+static __thread int thread_is_idle = 0;
+
 //-----------------------------------------
 // declare ompt interface function pointers
 //-----------------------------------------
@@ -268,8 +270,11 @@ ompt_thread_needs_blame
       case ompt_state_idle:
       case ompt_state_wait_taskwait:
       case ompt_state_wait_taskgroup:
-         return false;
       default:
+	return false;
+
+      case ompt_state_work_serial:
+      case ompt_state_work_parallel:
         return true;
     }
   }
@@ -422,26 +427,32 @@ ompt_thread_end
 // support undirected blame shifting
 //-------------------------------------------------
 
-static void
+void
 ompt_idle_begin
 (
  void
 )
 {
-  undirected_blame_idle_begin(&omp_idle_blame_info);
-  if (!ompt_eager_context_p()) {
-    while(try_resolve_one_region_context());
+  if (!thread_is_idle) {
+    undirected_blame_idle_begin(&omp_idle_blame_info);
+    if (!ompt_eager_context_p()) {
+      while(try_resolve_one_region_context());
+    }
+    thread_is_idle = 1;
   }
 }
 
 
-static void
+void
 ompt_idle_end
 (
  void
 )
 {
-  undirected_blame_idle_end(&omp_idle_blame_info);
+  if (thread_is_idle) {
+    undirected_blame_idle_end(&omp_idle_blame_info);
+    thread_is_idle = 0;
+  }
 }
 
 
@@ -479,6 +490,8 @@ ompt_sync
     case ompt_sync_region_barrier_implicit:
     case ompt_sync_region_barrier_explicit:
     case ompt_sync_region_barrier_implementation:
+    case ompt_sync_region_taskwait:
+    case ompt_sync_region_taskgroup:
       if (endpoint == ompt_scope_begin) ompt_idle_begin();
       else if (endpoint == ompt_scope_end) ompt_idle_end();
       else assert(0);

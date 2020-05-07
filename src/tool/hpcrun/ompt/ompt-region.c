@@ -305,8 +305,6 @@ ompt_implicit_task_internal_begin
  unsigned int index
 )
 {
-  task_data->ptr = NULL;
-
   ompt_region_data_t* region_data = (ompt_region_data_t*)parallel_data->ptr;
 
   if (region_data == NULL) {
@@ -318,7 +316,7 @@ ompt_implicit_task_internal_begin
 
   cct_node_t *prefix = region_data->call_path;
 
-  task_data->ptr = prefix;
+  task_data->ptr = ompt_task_acquire(prefix, ompt_task_implicit);
 
   if (!ompt_eager_context_p()) {
     // FIXME vi3: check if this is fine
@@ -349,6 +347,7 @@ ompt_implicit_task_internal_end
     pop_region_stack();
     ompt_resolve_region_contexts_poll();
   }
+  ompt_task_release(task_data);
 }
 
 

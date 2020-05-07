@@ -399,7 +399,7 @@ ompt_elide_runtime_frame(
     ompt_data_t *task_data = hpcrun_ompt_get_task_data(i);
     cct_node_t *omp_task_context = NULL;
     if (task_data)
-      omp_task_context = task_data->ptr;
+      omp_task_context = ompt_task_callpath(task_data);
     
     void *low_sp = (*bt_inner)->cursor.sp;
     void *high_sp = (*bt_outer)->cursor.sp;
