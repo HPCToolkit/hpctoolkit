@@ -144,6 +144,8 @@ undirected_blame_idle_end(undirected_blame_info_t *bi)
 {
   // if (--(idle_count(bi)) > 0) return;
   atomic_add(&bi->active_worker_count, 1);
+  assert(atomic_load(&bi->active_worker_count) <= 
+	 atomic_load(&bi->total_worker_count));
 }
 
 void

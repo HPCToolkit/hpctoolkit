@@ -68,8 +68,10 @@
 #include "sample_source_obj.h"
 #include "common.h"
 #include "pthread-blame.h"
+
 #include <sample-sources/blame-shift/blame-shift.h>
 #include <sample-sources/blame-shift/blame-map.h>
+#include <sample-sources/blame-shift/metric_info.h>
 
 #include <hpcrun/cct2metrics.h>
 #include <hpcrun/metrics.h>
@@ -209,43 +211,29 @@ process_directed_blame_for_sample
  void* arg, 
  int metric_id, 
  cct_node_t* node, 
- float metric_incr
+ float blame
 )
 {
   TMSG(LOCKWAIT, "Processing directed blame");
 
-#if 0
-  metric_desc_t* metric_desc = hpcrun_id2metric(metric_id);
-#endif
- 
-#ifdef LOCKWAIT_FIX
   // Only blame shift idleness for time and cycle metrics. 
-  if ( ! (metric_desc->properties.time | metric_desc->properties.cycles) ) 
-    return;
-#endif // LOCKWAIT_FIX
-  
-  // johnmc ompt-blame: check this
-  // metric_vale will need to be different for frequency-based sampling 
-  // than period-based sampling
-#if 0
-  uint32_t metric_value = (uint32_t) (metric_desc->period * metric_incr);
-#endif
-
-  float metric_value = metric_incr;
+  if (!metric_is_timebase(metric_id)) return;
 
   uint64_t obj_to_blame = get_blame_target();
   if(obj_to_blame) {
-    TMSG(LOCKWAIT, "about to add %d to blame object %d", metric_incr, obj_to_blame);
-    add_blame(obj_to_blame, metric_value);
+    TMSG(LOCKWAIT, "about to add %d to blame object %d", blame, obj_to_blame);
+    add_blame(obj_to_blame, blame);
+
     // update appropriate wait metric as well
-    int wait_metric = (pthread_blame.state == Blocked) ? blockwait_metric_id : spinwait_metric_id;
+    int wait_metric = (pthread_blame.state == Blocked) ? 
+      blockwait_metric_id : spinwait_metric_id;
+
     TMSG(LOCKWAIT, "about to add %d to %s-waiting in node %d",
-	 metric_incr, state2str(pthread_blame.state),
-	 hpcrun_cct_persistent_id(node));
+	 blame, state2str(pthread_blame.state), hpcrun_cct_persistent_id(node));
+
     metric_data_list_t* metrics = hpcrun_reify_metric_set(node, metric_id);
-    hpcrun_metric_std_inc(wait_metric,
-			  metrics,
-			  (cct_metric_data_t) {.r = metric_incr});
+    hpcrun_metric_std_inc(wait_metric, metrics, 
+			  (cct_metric_data_t) {.r = blame});
   }
 }
 
