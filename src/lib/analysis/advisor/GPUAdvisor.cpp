@@ -857,7 +857,7 @@ double GPUAdvisor::computePathNoStall(
 }
 
 
-std::string GPUAdvisor::getBlameMetric(CudaParse::InstructionStat *from_inst,
+std::string GPUAdvisor::detailizeExecBlame(CudaParse::InstructionStat *from_inst,
   CudaParse::InstructionStat *to_inst) {
   bool find_reg = false;
   for (auto dst : from_inst->dsts) {
@@ -891,6 +891,17 @@ std::string GPUAdvisor::getBlameMetric(CudaParse::InstructionStat *from_inst,
   } else {
     // war
     return _exec_dep_war_stall_metric;
+  }
+}
+
+
+std::string GPUAdvisor::detailizeMemBlame(CudaParse::InstructionStat *from_inst) {
+  if (from_inst->op.find(".LOCAL") != std::string::npos) {
+    // smem
+    return _mem_dep_lmem_stall_metric;
+  } else {
+    // reg
+    return _mem_dep_gmem_stall_metric;
   }
 }
 
@@ -983,7 +994,10 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
         std::string latency_metric = _mem_dep_stall_metric;
         if (latency_metric_index == exec_latency_metric_index) {
           // detailization: smem, reg_dep, or war
-          latency_metric = getBlameMetric(from_inst, to_inst);
+          latency_metric = detailizeExecBlame(from_inst, to_inst);
+        } else {
+          // detalization: gmem or lmem
+          latency_metric = detailizeMemBlame(from_inst);
         }
 
         // inclusive and exclusive metrics have the same value
@@ -1049,8 +1063,10 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
           std::string latency_metric = _mem_dep_stall_metric;
           if (latency_metric_index == exec_latency_metric_index) {
             // detailization: smem, reg_dep, or war
-            latency_metric = getBlameMetric(from_inst, to_inst);
-          } 
+            latency_metric = detailizeExecBlame(from_inst, to_inst);
+          } else {
+            latency_metric = detailizeMemBlame(from_inst);
+          }
           // inclusive and exclusive metrics have the same value
           in_blame_metric_index = _metric_name_prof_map->metric_id(
             mpi_rank, thread_id, "BLAME " + latency_metric, true);
@@ -1244,6 +1260,8 @@ void GPUAdvisor::init() {
   _exec_dep_smem_stall_metric = GPU_INST_METRIC_NAME":STL_IDEP_SMEM";
   _exec_dep_war_stall_metric = GPU_INST_METRIC_NAME":STL_IDEP_WAR";
   _mem_dep_stall_metric = GPU_INST_METRIC_NAME":STL_GMEM";
+  _mem_dep_gmem_stall_metric = GPU_INST_METRIC_NAME":STL_GMEM_GMEM";
+  _mem_dep_lmem_stall_metric = GPU_INST_METRIC_NAME":STL_GMEM_LMEM";
   _sync_stall_metric = GPU_INST_METRIC_NAME":STL_SYNC";
 
   _dep_stall_metrics.insert(_exec_dep_stall_metric);
@@ -1252,6 +1270,8 @@ void GPUAdvisor::init() {
   _dep_stall_metrics.insert(_exec_dep_smem_stall_metric);
   _dep_stall_metrics.insert(_exec_dep_war_stall_metric);
   _dep_stall_metrics.insert(_mem_dep_stall_metric);
+  _dep_stall_metrics.insert(_mem_dep_gmem_stall_metric);
+  _dep_stall_metrics.insert(_mem_dep_lmem_stall_metric);
   _dep_stall_metrics.insert(_sync_stall_metric);
 
   for (auto &s : _inst_stall_metrics) {
@@ -1394,7 +1414,9 @@ void GPUAdvisor::configGPURoot(Prof::CCT::ADynNode *gpu_root) {
     Prof::CCT::ADynNode* n_dyn = dynamic_cast<Prof::CCT::ADynNode*>(n);
     if (n_dyn) {
       auto vma = n_dyn->lmIP();
-      _vma_prop_map[vma].prof_node = n_dyn;
+      if (_vma_prop_map.find(vma) != _vma_prop_map.end()) {
+        _vma_prop_map[vma].prof_node = n_dyn;
+      }
     }
   }
 }
@@ -1498,8 +1520,9 @@ void GPUAdvisor::blame(FunctionBlamesMap &function_blames_map) {
       // x3. Implement WAR and Predicate
       // x4. Implement scheduler stall
       // x6. Implement fake barrier
-      // 5. Debug apportion
-      // 6. Overlay back
+      // 6. blame to local memory
+      // 7. Debug apportion
+      // 8. Overlay back
 
       //// 5. Overlay blames
       auto &function_blames = function_blames_map[mpi_rank][thread_id];

@@ -186,6 +186,7 @@ parseDotCFG
   for (auto *symbol : unparsable_function_symbols) {
     auto function_name = symbol->getMangledName();
     auto *function = new CudaParse::Function(max_function_id++, std::move(function_name));
+    function->unparsable = true;
     // Assign symbol index to function
     function->index = symbol->getIndex();
     function->address = symbol->getOffset();

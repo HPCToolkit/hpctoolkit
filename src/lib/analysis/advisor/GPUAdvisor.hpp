@@ -180,9 +180,11 @@ class GPUAdvisor {
   double computePathNoStall(int mpi_rank, int thread_id, int from_vma, int to_vma,
     std::vector<CudaParse::Block *> &path);
 
-  std::string getBlameMetric(CudaParse::InstructionStat *from_inst,
+  std::string detailizeExecBlame(CudaParse::InstructionStat *from_inst,
     CudaParse::InstructionStat *to_inst);
     
+  std::string detailizeMemBlame(CudaParse::InstructionStat *from_inst);
+
   void blameCCTDepGraph(int mpi_rank, int thread_id,
     CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph,
     CCTEdgePathMap &cct_edge_path_map,
@@ -238,6 +240,8 @@ class GPUAdvisor {
   std::string _exec_dep_smem_stall_metric;
   std::string _exec_dep_war_stall_metric;
   std::string _mem_dep_stall_metric;
+  std::string _mem_dep_gmem_stall_metric;
+  std::string _mem_dep_lmem_stall_metric;
   std::string _sync_stall_metric;
 
   std::set<std::string> _inst_stall_metrics;

@@ -695,6 +695,11 @@ bool dumpCudaInstructions(const std::string &file_path,
     ptree_function.put("index", function->index);
     ptree_function.put("name", function->name);
     ptree_function.put("address", function->address);
+    ptree_function.put("unparsable", function->unparsable);
+
+    if (function->unparsable == true) {
+      continue;
+    }
 
     for (auto *block : function->blocks) {
       boost::property_tree::ptree ptree_block;
@@ -877,10 +882,15 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
     int function_index = ptree_function.second.get<int>("index", 0);
     int function_address = ptree_function.second.get<int>("address", 0);
     std::string name = ptree_function.second.get<std::string>("name", "");
-    auto *function = new Function(function_id, function_index, name, function_address);
+    bool unparsable = ptree_function.second.get<bool>("unparsable", "");
+    auto *function = new Function(function_id, function_index, name, function_address, unparsable);
 
     if (INSTRUCTION_ANALYZER_DEBUG) {
       std::cout << "Function id: " << function_id << std::endl;
+    }
+
+    if (function->unparsable == true) {
+      continue;
     }
 
     auto &ptree_blocks = ptree_function.second.get_child("blocks");
