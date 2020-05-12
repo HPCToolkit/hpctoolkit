@@ -42,7 +42,6 @@ static const char * opencl_path();
 
 void opencl_initialize()
 {
-  gpu_metrics_default_enable();
   ETMSG(OPENCL, "We are setting up opencl intercepts");
   setup_opencl_intercept();
 }
