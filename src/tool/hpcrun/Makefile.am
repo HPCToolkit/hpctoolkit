@@ -501,10 +501,10 @@ endif
 if ENABLE_OPENCL
 MY_OPENCL_FILES =\
 	sample-sources/opencl.c 		\
-	gpu/intel/opencl-setup.c		\
-	gpu/intel/opencl-intercept.c	\
-	gpu/intel/opencl-api.c			\
-	gpu/intel/opencl-activity-translate.c
+	gpu/opencl/opencl-setup.c		\
+	gpu/opencl/opencl-intercept.c	\
+	gpu/opencl/opencl-api.c			\
+	gpu/opencl/opencl-activity-translate.c
 endif
 
 

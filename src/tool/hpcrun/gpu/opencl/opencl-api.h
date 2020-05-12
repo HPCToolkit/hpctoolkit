@@ -2,9 +2,6 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
-//
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
 //
@@ -44,54 +41,52 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+//******************************************************************************
+// system includes
+//******************************************************************************
+#include <CL/cl.h>
 
 //******************************************************************************
-// File: ss-list.h
-//
-// Purpose: 
-//   This file contains a list of sample sources wrapped by a call to an
-//   unspecified macro. The intended use of this file is to define the
-//   macro, include the file elsewhere one or more times to register the
-//   sample sources. This is not defined as a FORALL macro that applies
-//   a macro to each of the sample source names so that this file can
-//   contain ifdefs if a sample source is unused on a platform.
-//
+// local includes
 //******************************************************************************
+#include "opencl-intercept.h"
 
-SAMPLE_SOURCE_DECL_MACRO(ga)
-SAMPLE_SOURCE_DECL_MACRO(io)  
-SAMPLE_SOURCE_DECL_MACRO(itimer)  
+//******************************************************************************
+// type declarations
+//******************************************************************************
+#ifndef _OPENCL_API_H_
+#define _OPENCL_API_H_
 
-#ifdef HPCRUN_SS_LINUX_PERF
-SAMPLE_SOURCE_DECL_MACRO(linux_perf)  
+typedef struct
+profilingData
+{
+  cl_ulong queueTime;
+  cl_ulong submitTime;
+  cl_ulong startTime;
+  cl_ulong endTime;
+  size_t size;
+  bool fromHostToDevice;
+  bool fromDeviceToHost;
+} profilingData;
 #endif
 
-SAMPLE_SOURCE_DECL_MACRO(memleak)  
+void
+opencl_subscriber_callback
+(
+  opencl_call,
+  uint64_t
+);
 
-SAMPLE_SOURCE_DECL_MACRO(none)  
+void
+opencl_buffer_completion_callback
+(
+  cl_event,
+  cl_int,
+  void *
+);
 
-#ifdef HPCRUN_SS_PAPI
-SAMPLE_SOURCE_DECL_MACRO(papi)  
-#endif
-
-SAMPLE_SOURCE_DECL_MACRO(directed_blame)
-
-#ifdef HOST_CPU_x86_64
-SAMPLE_SOURCE_DECL_MACRO(retcnt)
-#endif
-
-#ifdef HPCRUN_SS_PAPI_C_CUPTI
-SAMPLE_SOURCE_DECL_MACRO(papi_c_cupti)
-#endif
-
-#ifdef HPCRUN_SS_NVIDIA
-SAMPLE_SOURCE_DECL_MACRO(nvidia_gpu)
-#endif
-
-#ifdef HPCRUN_SS_AMD
-SAMPLE_SOURCE_DECL_MACRO(amd_gpu)
-#endif
-
-#ifdef HPCRUN_SS_OPENCL
-SAMPLE_SOURCE_DECL_MACRO(opencl)
-#endif
+void
+opencl_finalize
+(
+  void
+);
