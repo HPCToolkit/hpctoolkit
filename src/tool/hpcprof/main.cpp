@@ -70,13 +70,18 @@ using std::string;
 //*************************** User Include Files ****************************
 
 #include <include/gcc-attr.h>
+#include <include/gpu-metric-names.h>
 
 #include "Args.hpp"
 
 #include <lib/analysis/CallPath-CudaCFG.hpp>
+#include <lib/analysis/MetricNameProfMap.hpp>
 #include <lib/analysis/advisor/GPUInstruction.hpp>
+#include <lib/analysis/advisor/GPUAdvisor.hpp>
 #include <lib/analysis/CallPath.hpp>
 #include <lib/analysis/Util.hpp>
+
+#include <lib/prof-lean/hpcrun-metric.h>
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/RealPathMgr.hpp>
@@ -203,13 +208,35 @@ realmain(int argc, char* const* argv)
 
   bool printProgress = true;
 
-  // Static instruction overlay should be down before stmt coalesce 
-  Analysis::CallPath::overlayGPUInstructionsMain(*prof, args.instructionFiles);
+  Analysis::MetricNameProfMap metric_name_prof_map(prof->metricMgr());
+  metric_name_prof_map.init();
+
+  Analysis::GPUAdvisor gpu_advisor(prof, &metric_name_prof_map);
+  gpu_advisor.init();
+
+  Analysis::TotalBlames total_blames;
+
+  // Check if prof contains gpu metrics
+  // Skip non-gpu prof
+  if (metric_name_prof_map.metric_ids(GPU_INST_METRIC_NAME":STL_NONE").size() != 0) {
+    // Static instruction overlay should be down before stmt coalesce 
+    Analysis::CallPath::overlayGPUInstructionsMain(args.instructionFiles,
+      *prof, total_blames, gpu_advisor);
+  }
 
   Analysis::CallPath::overlayStaticStructureMain(*prof, args.agent,
 						 args.doNormalizeTy, printProgress);
 
-  Analysis::CallPath::transformCudaCFGMain(*prof);
+  // Advise context
+  if (metric_name_prof_map.metric_ids(GPU_INST_METRIC_NAME":STL_NONE").size() != 0) {
+    gpu_advisor.advise(total_blames);
+  }
+
+  // Calling context
+  if (metric_name_prof_map.metric_ids(GPU_INST_METRIC_NAME":STL_NONE").size() != 0) {
+    Analysis::CallPath::transformCudaCFGMain(*prof);
+  }
+
   
   // -------------------------------------------------------
   // 2a. Create summary metrics for canonical CCT

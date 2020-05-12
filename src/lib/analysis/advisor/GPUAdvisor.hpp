@@ -99,23 +99,25 @@ class GPUAdvisor {
   explicit GPUAdvisor(Prof::CallPath::Profile *prof, MetricNameProfMap *metric_name_prof_map) :
     _prof(prof), _metric_name_prof_map(metric_name_prof_map) {}
 
+  MetricNameProfMap *metric_name_prof_map() {
+    return this->_metric_name_prof_map;
+  }
+
   void init();
 
   void configInst(const std::vector<CudaParse::Function *> &functions);
 
   void configGPURoot(Prof::CCT::ADynNode *gpu_root);
 
-  void blame(FunctionBlamesMap &function_blames);
+  void blame(TotalBlames &total_blames);
 
-  void advise(const FunctionBlamesMap &function_blames);
-
-  void save(const std::string &file_name);
+  void advise(const TotalBlames &total_blames);
  
   ~GPUAdvisor() {
-    for (auto *optimizer : _intra_warp_optimizers) {
+    for (auto *optimizer : _code_optimizers) {
       delete optimizer;
     }
-    for (auto *optimizer : _inter_warp_optimizers) {
+    for (auto *optimizer : _parallel_optimizers) {
       delete optimizer;
     }
     delete _arch;
@@ -194,6 +196,8 @@ class GPUAdvisor {
 
   void overlayInstBlames(const InstBlames &inst_blames, FunctionBlames &function_blames);
 
+  void summarizeFunctionBlames(const FunctionBlames &function_blames);
+
   void selectTopBlockBlames(const FunctionBlames &function_blames, BlockBlameQueue &top_block_blames);
 
   void rankOptimizers(BlockBlameQueue &top_block_blames, OptimizerScoreMap &optimizer_scores);
@@ -256,10 +260,9 @@ class GPUAdvisor {
   CCTGraph<CudaParse::InstructionStat *> _inst_dep_graph;
   VMAPropertyMap _vma_prop_map;
 
-  std::string _cache;
-
-  std::vector<GPUOptimizer *> _intra_warp_optimizers;
-  std::vector<GPUOptimizer *> _inter_warp_optimizers;
+  std::vector<GPUOptimizer *> _code_optimizers;
+  std::vector<GPUOptimizer *> _parallel_optimizers;
+  std::vector<GPUOptimizer *> _binary_optimizers;
 
   GPUOptimizer *_loop_unroll_optimizer;
   GPUOptimizer *_memory_layout_optimizer;
@@ -269,8 +272,9 @@ class GPUAdvisor {
 
   GPUArchitecture *_arch;
  
+  std::stringstream _output;
  private:
-  const int _top_block_blames = 5;
+  const int _top_block_blames = 10;
   const int _top_optimizers = 5;
 };
 

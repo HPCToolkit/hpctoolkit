@@ -56,26 +56,13 @@ GPUOptimizer *GPUOptimizerFactory(GPUOptimizerType type) {
   GPUOptimizer *optimizer = NULL;
 
   switch (type) {
-    case LOOP_UNROLL: {
-      optimizer = new GPULoopUnrollOptimizer();
-      break;
+#define DECLARE_OPTIMIZER_CASE(TYPE, CLASS, VALUE) \
+    case TYPE: { \
+      optimizer = new CLASS(); \
+      break; \
     }
-    case MEMORY_LAYOUT: {
-      optimizer = new GPUMemoryLayoutOptimizer();
-      break;
-    }
-    case STRENGTH_REDUCTION: {
-      optimizer = new GPUStrengthReductionOptimizer();
-      break;
-    }
-    case ADJUST_THREADS: {
-      optimizer = new GPUAdjustThreadsOptimizer();
-      break;
-    }
-    case ADJUST_REGISTERS: {
-      optimizer = new GPUAdjustRegistersOptimizer();
-      break;
-    }
+    FORALL_OPTIMIZER_TYPES(DECLARE_OPTIMIZER_CASE)
+#undef DECLARE_OPTIMIZER_CASE
     default:
       break;
   }
@@ -84,26 +71,43 @@ GPUOptimizer *GPUOptimizerFactory(GPUOptimizerType type) {
 }
 
 
+double GPURegisterIncreaseOptimizer::match(const BlockBlame &block_blame) {
+  return 0.0;
+}
+
+
+double GPURegisterIncreaseOptimizer::estimate(const BlockBlame &block_blame) {
+  return 0.0;
+}
+
+
+double GPURegisterDecreaseOptimizer::match(const BlockBlame &block_blame) {
+  return 0.0;
+}
+
+
+double GPURegisterDecreaseOptimizer::estimate(const BlockBlame &block_blame) {
+  return 0.0;
+}
+
 
 double GPULoopUnrollOptimizer::match(const BlockBlame &block_blame) {
   return 0.0;
 }
 
 
-std::string GPULoopUnrollOptimizer::advise() {
-  std::string ret;
-  return ret;
-}
-
-
-double GPUMemoryLayoutOptimizer::match(const BlockBlame &block_blame) {
+double GPULoopUnrollOptimizer::estimate(const BlockBlame &block_blame) {
   return 0.0;
 }
 
 
-std::string GPUMemoryLayoutOptimizer::advise() {
-  std::string ret;
-  return ret;
+double GPULoopNoUnrollOptimizer::match(const BlockBlame &block_blame) {
+  return 0.0;
+}
+
+
+double GPULoopNoUnrollOptimizer::estimate(const BlockBlame &block_blame) {
+  return 0.0;
 }
 
 
@@ -112,31 +116,118 @@ double GPUStrengthReductionOptimizer::match(const BlockBlame &block_blame) {
 }
 
 
-std::string GPUStrengthReductionOptimizer::advise() {
-  std::string ret;
-  return ret;
-}
-
-
-double GPUAdjustThreadsOptimizer::match(const BlockBlame &block_blame) {
+double GPUStrengthReductionOptimizer::estimate(const BlockBlame &block_blame) {
   return 0.0;
 }
 
 
-std::string GPUAdjustThreadsOptimizer::advise() {
-  std::string ret;
-  return ret;
-}
-
-
-double GPUAdjustRegistersOptimizer::match(const BlockBlame &block_blame) {
+double GPUWarpBalanceOptimizer::match(const BlockBlame &block_blame) {
   return 0.0;
 }
 
 
-std::string GPUAdjustRegistersOptimizer::advise() {
-  std::string ret;
-  return ret;
+double GPUWarpBalanceOptimizer::estimate(const BlockBlame &block_blame) {
+  return 0.0;
 }
+
+
+double GPUCodeReorderOptimizer::match(const BlockBlame &block_blame) {
+  return 0.0;
+}
+
+
+double GPUCodeReorderOptimizer::estimate(const BlockBlame &block_blame) {
+  return 0.0;
+}
+
+
+double GPUKernelMergeOptimizer::match(const BlockBlame &block_blame) {
+  return 0.0;
+}
+
+
+double GPUKernelMergeOptimizer::estimate(const BlockBlame &block_blame) {
+  return 0.0;
+}
+
+
+double GPUFunctionInlineOptimizer::match(const BlockBlame &block_blame) {
+}
+
+
+double GPUFunctionInlineOptimizer::estimate(const BlockBlame &block_blame) {
+  return 0.0;
+}
+
+
+double GPUSharedMemoryCoalesceOptimizer::match(const BlockBlame &block_blame) {
+  return 0.0;
+}
+
+
+double GPUSharedMemoryCoalesceOptimizer::estimate(const BlockBlame &block_blame) {
+  return 0.0;
+}
+
+
+double GPUGlobalMemoryCoalesceOptimizer::match(const BlockBlame &block_blame) {
+  return 0.0;
+}
+
+
+double GPUGlobalMemoryCoalesceOptimizer::estimate(const BlockBlame &block_blame) {
+  return 0.0;
+}
+
+
+double GPUOccupancyIncreaseOptimizer::match(const BlockBlame &block_blame) {
+  return 0.0;
+}
+
+
+double GPUOccupancyIncreaseOptimizer::estimate(const BlockBlame &block_blame) {
+  return 0.0;
+}
+
+
+double GPUOccupancyDecreaseOptimizer::match(const BlockBlame &block_blame) {
+  return 0.0;
+}
+
+
+double GPUOccupancyDecreaseOptimizer::estimate(const BlockBlame &block_blame) {
+  return 0.0;
+}
+
+
+double GPUSMBalanceOptimizer::match(const BlockBlame &block_blame) {
+  return 0.0;
+}
+
+
+double GPUSMBalanceOptimizer::estimate(const BlockBlame &block_blame) {
+  return 0.0;
+}
+
+
+double GPUBlockIncreaseOptimizer::match(const BlockBlame &block_blame) {
+  return 0.0;
+}
+
+
+double GPUBlockIncreaseOptimizer::estimate(const BlockBlame &block_blame) {
+  return 0.0;
+}
+
+
+double GPUBlockDecreaseOptimizer::match(const BlockBlame &block_blame) {
+  return 0.0;
+}
+
+
+double GPUBlockDecreaseOptimizer::estimate(const BlockBlame &block_blame) {
+  return 0.0;
+}
+
 
 }  // namespace Analysis

@@ -223,23 +223,9 @@ associateInstStmts(const std::vector<VMAStmt> &vma_stmts,
 
 
 void
-overlayGPUInstructionsMain(Prof::CallPath::Profile &prof,
-  const std::vector<std::string> &instruction_files) {
+overlayGPUInstructionsMain(const std::vector<std::string> &instruction_files,
+  Prof::CallPath::Profile &prof, TotalBlames &total_blames, GPUAdvisor &gpu_advisor) {
   auto *mgr = prof.metricMgr(); 
-  MetricNameProfMap metric_name_prof_map(mgr);
-  metric_name_prof_map.init();
-
-  // Check if prof contains gpu metrics
-  // Skip non-gpu prof
-  if (metric_name_prof_map.metric_ids(GPU_INST_METRIC_NAME":STL_NONE").size() == 0) {
-    if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
-      std::cout << "Skip non-gpu prof" << std::endl;
-    }
-    return;
-  }
-
-  GPUAdvisor gpu_advisor(&prof, &metric_name_prof_map);
-  gpu_advisor.init();
   // Read instruction files
   for (auto &file: instruction_files) {
     if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
@@ -273,7 +259,7 @@ overlayGPUInstructionsMain(Prof::CallPath::Profile &prof,
     CudaParse::flatCudaInstructionStats(functions, inst_stats);
 
     // Step 3: Find new metric names and insert new mappings between from name to prof metric ids
-    createMetrics(inst_stats, metric_name_prof_map, *mgr);
+    createMetrics(inst_stats, *gpu_advisor.metric_name_prof_map(), *mgr);
 
     // Step 4: Gather all CCT nodes with lm_id and find GPU roots
     std::vector<VMAStmt> vma_stmts;
@@ -282,7 +268,7 @@ overlayGPUInstructionsMain(Prof::CallPath::Profile &prof,
     gatherStmts(lm_id, inst_stats, prof_root, vma_stmts, gpu_roots);
 
     // Step 5: Lay metrics over prof tree
-    associateInstStmts(vma_stmts, inst_stats, metric_name_prof_map);
+    associateInstStmts(vma_stmts, inst_stats, *gpu_advisor.metric_name_prof_map());
 
     gpu_advisor.configInst(functions);
 
@@ -292,19 +278,9 @@ overlayGPUInstructionsMain(Prof::CallPath::Profile &prof,
       // Pass current gpu root 
       gpu_advisor.configGPURoot(gpu_root);
 
-      // <mpi_rank, <thread_id, <blames>>>
-      FunctionBlamesMap function_blames_map;
-
       // Blame latencies
-      gpu_advisor.blame(function_blames_map);
-
-      // Make advise for the calling context and cache result
-      //gpu_advisor.advise(function_blames_map);
+      gpu_advisor.blame(total_blames);
     }
-
-    // TODO(Keren): output advise using this file other than cuda_advisor
-    // Save advise for this file and clear cache
-    gpu_advisor.save(file + ".advise");
     
     if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
       std::cout << "Finish reading instruction file " << file << std::endl;

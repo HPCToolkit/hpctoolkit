@@ -56,6 +56,7 @@ using std::string;
 #define DEBUG_GPUADVISOR 1
 #define DEBUG_GPUADVISOR_DETAILS 1
 
+#define WARP_SIZE 32
 
 namespace Analysis {
 
@@ -346,7 +347,7 @@ void GPUAdvisor::debugInstDepGraph() {
 
 struct InstructionBlameValueCompare {
   bool operator()(const InstructionBlame &l, const InstructionBlame &r) {
-    return l.value < r.value;
+    return l.blame < r.blame;
   }
 };
 
@@ -355,7 +356,7 @@ void GPUAdvisor::debugInstBlames(InstBlames &inst_blames) {
   // <blame_id, blame_sum>
   double blame_sum = 0.0;
   for (auto &inst_blame : inst_blames) {
-    blame_sum += inst_blame.value;
+    blame_sum += inst_blame.blame;
   }
 
   InstBlames inst_blames_copy = inst_blames;
@@ -365,7 +366,7 @@ void GPUAdvisor::debugInstBlames(InstBlames &inst_blames) {
     std::cout << debugInstOffset(inst_blame.src->pc) <<
       " -> " << debugInstOffset(inst_blame.dst->pc) << ", ";
     std::cout << _metric_name_prof_map->name(inst_blame.metric_id) << ": " <<
-      inst_blame.value << "(" << static_cast<double>(inst_blame.value) /
+      inst_blame.blame << "(" << static_cast<double>(inst_blame.blame) /
       blame_sum * 100 << "%)" << std::endl;
   }
 }
@@ -1011,7 +1012,7 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
         from_node->demandMetric(ex_blame_metric_index) += latency;
         // One metric id is enough for inst blame analysis
         inst_blames.emplace_back(
-          InstructionBlame(from_inst, to_inst, ex_blame_metric_index, latency));
+          InstructionBlame(from_inst, to_inst, from_node, to_node, ex_blame_metric_index, latency));
       } else {
         std::map<Prof::CCT::ADynNode *, double> no_stalls;
         std::map<Prof::CCT::ADynNode *, double> issues;
@@ -1046,7 +1047,7 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
           }
           auto issue = from_node->demandMetric(issue_metric_index);
           // Guarantee that issue is not zero
-          issue = issue > 0 ? issue : 1;
+          issue = issue > 0 ? issue : WARP_SIZE;
           issues[from_node] = issue;
           issue_sum += issue;
         }
@@ -1078,7 +1079,7 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
 
           // One metric id is enough for inst blame analysis
           inst_blames.emplace_back(
-            InstructionBlame(from_inst, to_inst, ex_blame_metric_index, blame_latency));
+            InstructionBlame(from_inst, to_inst, from_node, to_node, ex_blame_metric_index, blame_latency));
         }
       }
     }
@@ -1099,7 +1100,7 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
       to_node->demandMetric(ex_blame_metric_index) += stall;
       // one metric id is enough for inst blame analysis
       inst_blames.emplace_back(
-        InstructionBlame(to_inst, to_inst, ex_blame_metric_index, stall));
+        InstructionBlame(to_inst, to_inst, to_node, to_node, ex_blame_metric_index, stall));
     }
 
     // Sync latency
@@ -1136,7 +1137,7 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
     sync_node->demandMetric(ex_blame_sync_metric_index) += sync_stall;
     // one metric id is enough for inst blame analysis
     inst_blames.emplace_back(
-      InstructionBlame(sync_inst, to_inst, ex_blame_sync_metric_index, sync_stall));
+      InstructionBlame(sync_inst, to_inst, sync_node, to_node, ex_blame_sync_metric_index, sync_stall));
   }
 
   std::sort(inst_blames.begin(), inst_blames.end());
@@ -1153,276 +1154,20 @@ void GPUAdvisor::overlayInstBlames(const InstBlames &inst_blames, FunctionBlames
     auto &block_blame = function_blame.block_blames[block->id];
 
     // Update block blame
-    block_blame.blames[inst_blame.metric_id] += inst_blame.value;
-    block_blame.blame += inst_blame.value;
+    block_blame.blames[inst_blame.metric_id] += inst_blame.blame;
+    block_blame.blame += inst_blame.blame;
     block_blame.inst_blames.push_back(inst_blame);
+    block_blame.block = block;
 
     // Update function blame
-    function_blame.blames[inst_blame.metric_id] += inst_blame.value;
-    function_blame.blame += inst_blame.value;
+    function_blame.blames[inst_blame.metric_id] += inst_blame.blame;
+    function_blame.blame += inst_blame.blame;
+    function_blame.function = function;
   }
 }
 
 
-void GPUAdvisor::selectTopBlockBlames(const FunctionBlames &function_blames, BlockBlameQueue &top_block_blames) {
-  // TODO(Keren): Clustering similar blocks?
-  for (auto &function_iter : function_blames) {
-    for (auto &block_iter : function_iter.second.block_blames) {
-      auto &block_blame = block_iter.second;
-      auto &min_block_blame = top_block_blames.top();
-      if (min_block_blame.blame < block_blame.blame &&
-        top_block_blames.size() > _top_block_blames) {
-        top_block_blames.pop();
-      }
-      top_block_blames.push(block_blame);
-    }
-  }
-}
-
-
-void GPUAdvisor::rankOptimizers(BlockBlameQueue &top_block_blames, OptimizerScoreMap &optimizer_scores) {
-  while (top_block_blames.empty() == false) {
-    auto &block_blame = top_block_blames.top();
-    for (auto *optimizer : _intra_warp_optimizers) {
-      double score = optimizer->match(block_blame);
-      optimizer_scores[optimizer] += score;
-    }
-    for (auto *optimizer : _inter_warp_optimizers) {
-      double score = optimizer->match(block_blame);
-      optimizer_scores[optimizer] += score;
-    }
-    top_block_blames.pop();
-  }
-}
-
-
-void GPUAdvisor::concatAdvise(const OptimizerScoreMap &optimizer_scores) {
-  std::map<double, std::vector<GPUOptimizer *> > optimizer_rank;
-
-  for (auto &iter : optimizer_scores) {
-    auto *optimizer = iter.first;
-    auto score = iter.second;
-    optimizer_rank[score].push_back(optimizer);
-  }
-
-  size_t rank = 0;
-  for (auto &iter : optimizer_rank) {
-    for (auto *optimizer : iter.second) {
-      ++rank;
-      // TODO(Keren): concat advise for the current gpu_root
-      _cache = _cache + optimizer->advise();
-      if (rank >= _top_optimizers) {
-        return;
-      }
-    }
-  }
-}
-
-
-/*
- * Interface methods
- */
-
-void GPUAdvisor::init() {
-  if (_inst_stall_metrics.size() != 0) {
-    // Init already
-    return;
-  }
-
-  // Init individual metrics
-  _issue_metric = GPU_INST_METRIC_NAME":STL_NONE";
-  _stall_metric = GPU_INST_METRIC_NAME":STL_ANY";
-  _inst_metric = GPU_INST_METRIC_NAME;
-
-  _invalid_stall_metric = GPU_INST_METRIC_NAME":STL_INV";
-  _tex_stall_metric = GPU_INST_METRIC_NAME":STL_TMEM";
-  _ifetch_stall_metric = GPU_INST_METRIC_NAME":STL_IFET";
-  _pipe_bsy_stall_metric = GPU_INST_METRIC_NAME":STL_PIPE";
-  _mem_thr_stall_metric = GPU_INST_METRIC_NAME":STL_MTHR";
-  _nosel_stall_metric = GPU_INST_METRIC_NAME":STL_NSEL";
-  _other_stall_metric = GPU_INST_METRIC_NAME":STL_OTHR";
-  _sleep_stall_metric = GPU_INST_METRIC_NAME":STL_SLP";
-  _cmem_stall_metric = GPU_INST_METRIC_NAME":STL_CMEM";
-  
-  _inst_stall_metrics.insert(_invalid_stall_metric);
-  _inst_stall_metrics.insert(_tex_stall_metric);
-  _inst_stall_metrics.insert(_ifetch_stall_metric);
-  _inst_stall_metrics.insert(_pipe_bsy_stall_metric);
-  _inst_stall_metrics.insert(_mem_thr_stall_metric);
-  _inst_stall_metrics.insert(_nosel_stall_metric);
-  _inst_stall_metrics.insert(_other_stall_metric);
-  _inst_stall_metrics.insert(_sleep_stall_metric);
-  _inst_stall_metrics.insert(_cmem_stall_metric);
-
-  _exec_dep_stall_metric = GPU_INST_METRIC_NAME":STL_IDEP";
-  _exec_dep_dep_stall_metric = GPU_INST_METRIC_NAME":STL_IDEP_DEP";
-  _exec_dep_sche_stall_metric = GPU_INST_METRIC_NAME":STL_IDEP_SCHE";
-  _exec_dep_smem_stall_metric = GPU_INST_METRIC_NAME":STL_IDEP_SMEM";
-  _exec_dep_war_stall_metric = GPU_INST_METRIC_NAME":STL_IDEP_WAR";
-  _mem_dep_stall_metric = GPU_INST_METRIC_NAME":STL_GMEM";
-  _mem_dep_gmem_stall_metric = GPU_INST_METRIC_NAME":STL_GMEM_GMEM";
-  _mem_dep_lmem_stall_metric = GPU_INST_METRIC_NAME":STL_GMEM_LMEM";
-  _sync_stall_metric = GPU_INST_METRIC_NAME":STL_SYNC";
-
-  _dep_stall_metrics.insert(_exec_dep_stall_metric);
-  _dep_stall_metrics.insert(_exec_dep_dep_stall_metric);
-  _dep_stall_metrics.insert(_exec_dep_sche_stall_metric);
-  _dep_stall_metrics.insert(_exec_dep_smem_stall_metric);
-  _dep_stall_metrics.insert(_exec_dep_war_stall_metric);
-  _dep_stall_metrics.insert(_mem_dep_stall_metric);
-  _dep_stall_metrics.insert(_mem_dep_gmem_stall_metric);
-  _dep_stall_metrics.insert(_mem_dep_lmem_stall_metric);
-  _dep_stall_metrics.insert(_sync_stall_metric);
-
-  for (auto &s : _inst_stall_metrics) {
-    _metric_name_prof_map->add("BLAME " + s);
-  }
-
-  for (auto &s : _dep_stall_metrics) {
-    _metric_name_prof_map->add("BLAME " + s);
-  }
-
-  // Init optimizers
-  _loop_unroll_optimizer = GPUOptimizerFactory(LOOP_UNROLL);
-  _memory_layout_optimizer = GPUOptimizerFactory(MEMORY_LAYOUT);
-  _strength_reduction_optimizer = GPUOptimizerFactory(STRENGTH_REDUCTION);
-
-  _intra_warp_optimizers.push_back(_loop_unroll_optimizer);
-  _intra_warp_optimizers.push_back(_memory_layout_optimizer);
-  _intra_warp_optimizers.push_back(_strength_reduction_optimizer);
-
-  _adjust_registers_optimizer = GPUOptimizerFactory(ADJUST_REGISTERS);
-  _adjust_threads_optimizer = GPUOptimizerFactory(ADJUST_THREADS); 
-
-  _inter_warp_optimizers.push_back(_adjust_registers_optimizer);
-  _inter_warp_optimizers.push_back(_adjust_threads_optimizer);
-}
-
-// 1. Init static instruction information in vma_prop_map
-// 2. Init an instruction dependency graph
-void GPUAdvisor::configInst(const std::vector<CudaParse::Function *> &functions) {
-  _vma_prop_map.clear();
-  _inst_dep_graph.clear();
-  _function_offset.clear();
-
-  // Property map
-  for (auto *function : functions) {
-    _function_offset[function->address] = function->index;
-
-    for (auto *block : function->blocks) {
-      for (auto *_inst : block->insts) {
-        auto *inst = _inst->inst_stat;
-
-        VMAProperty property;
-
-        property.inst = inst;
-        // Ensure inst->pc has been relocated
-        property.vma = inst->pc;
-        property.function = function;
-        property.block = block;
-
-        _vma_prop_map[property.vma] = property;
-      }
-    }
-  }
-
-  // Instruction Graph
-  for (auto &iter : _vma_prop_map) {
-    auto *inst = iter.second.inst;
-    _inst_dep_graph.addNode(inst);
-
-    // Add latency dependencies
-    for (auto &inst_iter : inst->assign_pcs) {
-      for (auto pc : inst_iter.second) {
-        auto *dep_inst = _vma_prop_map[pc].inst;
-        _inst_dep_graph.addEdge(dep_inst, inst);
-      }
-    }
-
-    for (auto &inst_iter : inst->passign_pcs) {
-      for (auto pc : inst_iter.second) {
-        auto *dep_inst = _vma_prop_map[pc].inst;
-        _inst_dep_graph.addEdge(dep_inst, inst);
-      }
-    }
-
-    for (auto &inst_iter : inst->bassign_pcs) {
-      for (auto pc : inst_iter.second) {
-        auto *dep_inst = _vma_prop_map[pc].inst;
-        _inst_dep_graph.addEdge(dep_inst, inst);
-      }
-    }
-
-    for (auto pc : inst->predicate_assign_pcs) {
-      auto *dep_inst = _vma_prop_map[pc].inst;
-      _inst_dep_graph.addEdge(dep_inst, inst);
-    }
-  }
-  
-  // Static struct
-  auto *struct_root = _prof->structure()->root();
-  Prof::Struct::ANodeIterator struct_iter(struct_root, NULL/*filter*/, true/*leavesOnly*/,
-    IteratorStack::PreOrder);
-  for (Prof::Struct::ANode *n = NULL; (n = struct_iter.current()); ++struct_iter) {
-    if (n->type() == Prof::Struct::ANode::TyStmt) {
-      auto *stmt = dynamic_cast<Prof::Struct::Stmt *>(n);
-      for (auto &vma_interval : stmt->vmaSet()) {
-        auto vma = vma_interval.beg();
-        if (_vma_prop_map.find(vma) != _vma_prop_map.end()) {
-          _vma_prop_map[vma].struct_node = stmt;
-        }
-      }
-    }
-  }
-
-  if (DEBUG_GPUADVISOR_DETAILS) {
-    std::cout << "Instruction dependency graph: " << std::endl;
-    debugInstDepGraph();
-    std::cout << std::endl;
-  }
-}
-
-
-void GPUAdvisor::configGPURoot(Prof::CCT::ADynNode *gpu_root) {
-  // Update current root
-  this->_gpu_root = gpu_root;
-
-  // TODO(Keren): Update kernel characteristics
-
-  // TODO(Keren): Find device tag under the root and use the corresponding archtecture
-  // Problem: currently we only have device tags for call instructions
-  this->_arch = new V100(); 
-
-  // Update vma->latency mapping
-  for (auto &iter : _vma_prop_map) {
-    auto &prop = iter.second;
-    auto *inst = prop.inst;
-
-    auto latency = _arch->latency(inst->op);
-    prop.latency_lower = latency.first;
-    prop.latency_upper = latency.second;
-    prop.latency_issue = _arch->issue(inst->op);
-
-    // Clear previous vma->prof mapping
-    prop.prof_node = NULL;
-  }
-
-  // Update vma->prof mapping
-  Prof::CCT::ANodeIterator prof_it(_gpu_root, NULL/*filter*/, true/*leavesOnly*/,
-    IteratorStack::PreOrder);
-  for (Prof::CCT::ANode *n = NULL; (n = prof_it.current()); ++prof_it) {
-    Prof::CCT::ADynNode* n_dyn = dynamic_cast<Prof::CCT::ADynNode*>(n);
-    if (n_dyn) {
-      auto vma = n_dyn->lmIP();
-      if (_vma_prop_map.find(vma) != _vma_prop_map.end()) {
-        _vma_prop_map[vma].prof_node = n_dyn;
-      }
-    }
-  }
-}
-
-
-void GPUAdvisor::blame(FunctionBlamesMap &function_blames_map) {
+void GPUAdvisor::blame(TotalBlames &total_blames) {
   // For each MPI process
   for (auto mpi_rank = 0; mpi_rank < _metric_name_prof_map->num_mpi_ranks();
     ++mpi_rank) {
@@ -1451,6 +1196,7 @@ void GPUAdvisor::blame(FunctionBlamesMap &function_blames_map) {
       if (DEBUG_GPUADVISOR) {
         std::cout << "[" << mpi_rank << "," << thread_id << "]" << std::endl << std::endl;
       }
+
 
       // 1. Init a CCT dependency graph
       CCTGraph<Prof::CCT::ADynNode *> cct_dep_graph;
@@ -1520,50 +1266,16 @@ void GPUAdvisor::blame(FunctionBlamesMap &function_blames_map) {
       // x3. Implement WAR and Predicate
       // x4. Implement scheduler stall
       // x6. Implement fake barrier
-      // 6. blame to local memory
-      // 7. Debug apportion
-      // 8. Overlay back
+      // x7. blame to local memory
+      // 8. Debug apportion
+      // x9. Overlay back
 
       //// 5. Overlay blames
-      auto &function_blames = function_blames_map[mpi_rank][thread_id];
+      auto &function_blames = total_blames[mpi_rank][thread_id][_gpu_root];
       overlayInstBlames(inst_blames, function_blames);
     }
   }
 }
 
-
-void GPUAdvisor::advise(const FunctionBlamesMap &function_blames_map) {
-  // For each MPI process
-  for (auto mpi_rank = 0; mpi_rank < _metric_name_prof_map->num_mpi_ranks();
-    ++mpi_rank) {
-    // For each CPU thread
-    for (auto thread_id = 0; thread_id < _metric_name_prof_map->num_thread_ids(mpi_rank);
-      ++thread_id) {
-      if (_metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_metric) == -1) {
-        // Skip tracing threads
-        continue;
-      }
-
-      const FunctionBlames &function_blames = function_blames_map.at(mpi_rank).at(thread_id);
-
-      // 2. Pick top 5 important blocks
-      BlockBlameQueue top_block_blames;
-      selectTopBlockBlames(function_blames, top_block_blames);
-
-      // 3. Rank optimizers
-      OptimizerScoreMap optimizer_scores;
-      rankOptimizers(top_block_blames, optimizer_scores);
-
-      // 4. Output top 5 advise to _cache
-      concatAdvise(optimizer_scores);
-    }
-  }
-}
-
-
-void GPUAdvisor::save(const std::string &file_name) {
-  // clear previous advise
-  _cache = "";
-}
 
 }  // namespace Analysis
