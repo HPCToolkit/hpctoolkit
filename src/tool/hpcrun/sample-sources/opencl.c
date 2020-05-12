@@ -57,13 +57,10 @@
 #include <lush/lush-backtrace.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 
-
 //******************************************************************************
-// macros
+// type declarations
 //******************************************************************************
-
 #define OPENCL "gpu=opencl"
-
 static device_finalizer_fn_entry_t device_finalizer_shutdown;
 
 //******************************************************************************
@@ -75,7 +72,6 @@ METHOD_FN(init)
 {
   self->state = INIT;
 }
-
 
 static void
 METHOD_FN(thread_init)
@@ -119,7 +115,6 @@ METHOD_FN(shutdown)
   self->state = UNINIT;
 }
 
-
 static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
@@ -152,13 +147,11 @@ METHOD_FN(finalize_event_list)
   device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_shutdown);
 }
 
-
 static void
 METHOD_FN(gen_event_set,int lush_metrics)
 {
 
 }
-
 
 static void
 METHOD_FN(display_events)

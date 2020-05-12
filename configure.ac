@@ -193,6 +193,12 @@ fi
 
 AC_MSG_RESULT([$spack_spec])
 
+AC_DEFINE_UNQUOTED([HPCTOOLKIT_GIT_VERSION],
+    ["$git_version"], [Git branch and commit hash, if known.])
+
+AC_DEFINE_UNQUOTED([HPCTOOLKIT_SPACK_SPEC],
+    ["$spack_spec"], [Spack version and variants, if known.])
+
 
 #-------------------------------------------------
 # is_cross_compile: non-empty string if cross-compiling

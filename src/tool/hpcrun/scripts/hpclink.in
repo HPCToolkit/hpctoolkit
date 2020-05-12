@@ -303,7 +303,7 @@ if test "$front_end_dir" != no ; then
 fi
 
 case "$alt_fnbounds" in
-    '' ) hpcfnbounds="${HPCTOOLKIT}/${hpcfnbounds_dir}/hpcfnbounds" ;;
+    '' ) hpcfnbounds="${HPCTOOLKIT}/${hpcfnbounds_dir}/hpcfnbounds2" ;;
     /* ) hpcfnbounds="$alt_fnbounds" ;;
     * )  hpcfnbounds="${HPCTOOLKIT}/${hpcfnbounds_dir}/${alt_fnbounds}" ;;
 esac
