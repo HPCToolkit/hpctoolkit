@@ -4,6 +4,7 @@
 #define FORALL_KNOBS(macro)  \
   macro(HPCRUN_CUDA_DEVICE_BUFFER_SIZE)     \
   macro(HPCRUN_CUDA_DEVICE_SEMAPHORE_SIZE)  \
+	macro(STREAMS_PER_THREAD)	\
 
 typedef enum {
 #define DEFINE_ENUM_KNOBS(knob_name)  \

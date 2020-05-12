@@ -68,6 +68,8 @@
 #include <hpcrun/threadmgr.h>
 #include <hpcrun/trace.h>
 #include <hpcrun/write_data.h>
+#include <hpcrun/control-knob.h>
+
 #include <assert.h>
 
 #include "gpu-context-id-map.h"
@@ -94,8 +96,6 @@
 typedef struct gpu_trace_t {
     pthread_t thread;
     gpu_trace_channel_t *trace_channel;
-
-    // This is number of stack in which this trace is stored
     unsigned int channel_id;
 } gpu_trace_t;
 
@@ -186,22 +186,6 @@ gpu_trace_cct_insert_context
 {
   cct_node_t *leaf =
     hpcrun_cct_insert_path_return_leaf(gpu_trace_cct_root(td), path);
-
-  // debug
-  cct_addr_t *path_addr = hpcrun_cct_addr(path);
-  assert(path != NULL);
-  assert(path_addr != NULL);
-
-  cct_addr_t *leaf_addr = hpcrun_cct_addr(leaf);
-  assert(leaf != NULL);
-  assert(leaf_addr != NULL);
-  assert(leaf_addr->ip_norm.lm_id == path_addr->ip_norm.lm_id);
-
-  cct_node_t *parent = hpcrun_cct_parent(leaf);
-  cct_addr_t *parent_addr = hpcrun_cct_addr(parent);
-  assert(parent != NULL);
-  assert(parent_addr != NULL);
-  assert(parent_addr->ip_norm.lm_id < 100);
 
   return leaf;
 }
@@ -389,8 +373,8 @@ gpu_trace_stream_release
 
   hpcrun_write_profile_data(&td->core_profile_trace_data);
   hpcrun_trace_close(&td->core_profile_trace_data);
-
   atomic_fetch_add(&stream_counter, -1);
+
 }
 
 
@@ -416,12 +400,12 @@ gpu_trace_record
  gpu_trace_t *thread_args
 )
 {
-  while (!atomic_load(&stop_trace_flag)) {
+	while (!atomic_load(&stop_trace_flag)) {
     //getting data from a trace channel
     gpu_trace_activities_process(thread_args->channel_id);
     gpu_trace_activities_await(thread_args);
   }
-
+	gpu_trace_activities_process(thread_args->channel_id);
   gpu_trace_channel_set_release(thread_args->channel_id);
 
   return NULL;
@@ -443,14 +427,13 @@ gpu_trace_fini
   while (atomic_load(&stream_counter) != 0);
 }
 
-
 void *
 schedule_multi_threads
 (
  gpu_trace_t *trace
 )
 {
-  int streams_per_thread = atoi(getenv("STREAMS_PER_THREAD"));
+  int streams_per_thread = control_knob_value_get_int(STREAMS_PER_THREAD);
   static int num_threads = 0;
   static int num_streams = 0;
   volatile bool new_thread = false;
@@ -466,7 +449,6 @@ schedule_multi_threads
   assert(streams_per_thread > 0);
   assert(num_threads < MAX_THREADS_CONSUMERS);
 
-  // First insert stream to the channel -> gpu_trace_channel_stack[thread_num]
   trace->channel_id = num_threads - 1;
   gpu_trace_channel_set_insert(trace->trace_channel, trace->channel_id);
 

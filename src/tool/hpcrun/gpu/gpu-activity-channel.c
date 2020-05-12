@@ -152,7 +152,7 @@ gpu_activity_channel_produce
   gpu_activity_t *channel_activity = gpu_activity_alloc(channel);
   *channel_activity = *a;
 
-  //gpu_context_activity_dump(channel_activity, "PRODUCE");
+  gpu_context_activity_dump(channel_activity, "PRODUCE");
 
   channel_push(channel, bichannel_direction_forward, channel_activity);
 }

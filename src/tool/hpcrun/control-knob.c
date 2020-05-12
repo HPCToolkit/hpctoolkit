@@ -22,6 +22,10 @@ typedef struct control_knob {
 
 control_knob_t control_knobs[HPCRUN_NUM_CONTROL_KNOBS];
 
+#define DEFAULT_DEVICE_BUFFER_SIZE "8388608"// 1024 * 1024 * 8;
+#define DEFAULT_DEVICE_SEMAPHORE_SIZE "65536"
+#define DEFAULT_STREAMS_PER_THREAD "65536"
+static const char * default_knob[HPCRUN_NUM_CONTROL_KNOBS] = {DEFAULT_DEVICE_BUFFER_SIZE, DEFAULT_DEVICE_SEMAPHORE_SIZE, DEFAULT_STREAMS_PER_THREAD};
 
 static void control_knob_process_string(char *in);
 
@@ -30,18 +34,21 @@ void
 control_knob_init()
 {
   char *s = getenv("HPCRUN_CONTROL_KNOBS");
-  if (s) {
+
 #define INIT_KNOBS(knob_name) \
   control_knobs[knob_name].name = control_knob_names[knob_name]; \
-  control_knobs[knob_name].value = NULL;
+  control_knobs[knob_name].value = default_knob[knob_name];
 
   FORALL_KNOBS(INIT_KNOBS) 
 
 #undef INIT_KNOBS
 
+	if (s) {
     control_knob_process_string(s);
   }
 }
+
+
 
 
 char *
@@ -91,7 +98,8 @@ control_knob_process_string(char *in)
     char *name = strtok_r(tmp, "=", &save);
     int i = -1;
 
-    if (name != NULL && (i = control_knob_name_lookup(name)) != -1) {
+
+		if (name != NULL && (i = control_knob_name_lookup(name)) != -1) {
       char *value = strtok_r(NULL, "=", &save);
       control_knobs[i].value = value;
     } else {
