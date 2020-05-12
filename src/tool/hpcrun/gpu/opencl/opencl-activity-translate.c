@@ -45,7 +45,7 @@
 // local includes
 //******************************************************************************
 #include <hpcrun/messages/messages.h> //ETMSG
-#include <hpcrun/memory/hpcrun-malloc.h>
+#include <hpcrun/memory/hpcrun-malloc.h> //hpcrun_malloc_safe
 
 #include "opencl-activity-translate.h"
 #include "opencl-api.h" //profilingData
@@ -111,7 +111,7 @@ convert_kernel_launch
   ga->details.kernel = kernel_data;
   set_gpu_interval(&ga->details.interval, pd->startTime, pd->endTime);
   ga->details.kernel.correlation_id = kernel_cb_data->correlation_id;
-  free(pd);
+  //free(pd);
 }
 
 static void
@@ -134,7 +134,7 @@ convert_memcpy
   ga->details.memcpy = memcpy_data;
   ga->details.memcpy.correlation_id = memory_cb_data->correlation_id;
   set_gpu_interval(&ga->details.interval, pd->startTime, pd->endTime);
-  free(pd);
+  //free(pd);
 }
 
 static void

@@ -146,15 +146,14 @@ opencl_buffer_completion_callback
  	opencl_activity_completion_notify();
 	opencl_activity_process(event, user_data);
   }
-  free(event);
-  free(user_data);
+  //free(user_data);
   opencl_pending_operations_adjust(-1);
 }
 
 void
 opencl_finalize
 (
-  void
+  void* args
 )
 {
   flush();

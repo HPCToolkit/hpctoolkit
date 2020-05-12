@@ -46,12 +46,14 @@
 //******************************************************************************
 #include <gotcha/gotcha.h>
 #include <stdio.h>
+#define CL_TARGET_OPENCL_VERSION 120
 #include <CL/cl.h>
 
 //******************************************************************************
 // local includes
 //******************************************************************************
 #include <hpcrun/messages/messages.h>
+#include <hpcrun/memory/hpcrun-malloc.h> //hpcrun_malloc_safe
 
 #include "opencl-api.h"
 #include "opencl-intercept.h"
@@ -150,6 +152,7 @@ clEnqueueNDRangeKernel_wrapper
   ETMSG(CL, "registering callback for type: kernel");
   opencl_subscriber_callback(kernel_cb->type, kernel_cb->correlation_id);
   clSetEventCallback(*event, CL_COMPLETE, &opencl_buffer_completion_callback, kernel_cb);
+  //free(event);
   return return_status;
 }
 
@@ -177,6 +180,7 @@ clEnqueueReadBuffer_wrapper
   ETMSG(CL, "%d(bytes) of data being transferred from device to host", (long)cb);
   opencl_subscriber_callback(mem_transfer_cb->type, mem_transfer_cb->correlation_id);
   clSetEventCallback(*event, CL_COMPLETE, &opencl_buffer_completion_callback, mem_transfer_cb);
+  //free(event);
   return return_status;
 }
 
@@ -204,6 +208,7 @@ clEnqueueWriteBuffer_wrapper
   ETMSG(CL, "%d(bytes) of data being transferred from host to device", (long)cb);
   opencl_subscriber_callback(mem_transfer_cb->type, mem_transfer_cb->correlation_id);
   clSetEventCallback(*event, CL_COMPLETE, &opencl_buffer_completion_callback, mem_transfer_cb);
+  //free(event);
   return return_status;
 }
 
@@ -237,7 +242,7 @@ initializeMemoryCallBackInfo
 )
 {
   mem_transfer_cb->correlation_id = correlation_id;
-  mem_transfer_cb->type = memcpy_H2D; 
+  mem_transfer_cb->type = (fromHostToDevice) ? memcpy_H2D: memcpy_D2H; 
   mem_transfer_cb->size = size;
   mem_transfer_cb->fromHostToDevice = fromHostToDevice;
   mem_transfer_cb->fromDeviceToHost = !fromHostToDevice;
