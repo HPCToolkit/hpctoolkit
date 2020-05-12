@@ -23449,7 +23449,7 @@ else
   ENABLE_OPENCL_FALSE=
 fi
 
-OPT_OPENCL_LDFLAGS="-lOpenCL -lgotcha"
+OPT_OPENCL_LDFLAGS="-lgotcha"
 
 
 

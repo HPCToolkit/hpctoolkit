@@ -2,9 +2,6 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
-//
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
 //
@@ -44,54 +41,26 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+//******************************************************************************
+// system includes
+//******************************************************************************
+#include <stdbool.h> 
 
 //******************************************************************************
-// File: ss-list.h
-//
-// Purpose: 
-//   This file contains a list of sample sources wrapped by a call to an
-//   unspecified macro. The intended use of this file is to define the
-//   macro, include the file elsewhere one or more times to register the
-//   sample sources. This is not defined as a FORALL macro that applies
-//   a macro to each of the sample source names so that this file can
-//   contain ifdefs if a sample source is unused on a platform.
-//
+// local includes
 //******************************************************************************
+#include <hpcrun/cct/cct.h> // cct_node_t
 
-SAMPLE_SOURCE_DECL_MACRO(ga)
-SAMPLE_SOURCE_DECL_MACRO(io)  
-SAMPLE_SOURCE_DECL_MACRO(itimer)  
-
-#ifdef HPCRUN_SS_LINUX_PERF
-SAMPLE_SOURCE_DECL_MACRO(linux_perf)  
+//******************************************************************************
+// type declarations
+//******************************************************************************
+#ifndef _OPENCL_INTERCEPT_H_
+#define _OPENCL_INTERCEPT_H_
+typedef enum opencl_call {memcpy_H2D, memcpy_D2H, kernel} opencl_call;
+typedef struct cl_generic_callback {uint64_t correlation_id; opencl_call type;} cl_generic_callback;
+typedef struct cl_kernel_callback {uint64_t correlation_id; opencl_call type;} cl_kernel_callback;
+typedef struct cl_memory_callback {uint64_t correlation_id; opencl_call type; bool fromHostToDevice; bool fromDeviceToHost; size_t size; } cl_memory_callback;
 #endif
 
-SAMPLE_SOURCE_DECL_MACRO(memleak)  
-
-SAMPLE_SOURCE_DECL_MACRO(none)  
-
-#ifdef HPCRUN_SS_PAPI
-SAMPLE_SOURCE_DECL_MACRO(papi)  
-#endif
-
-SAMPLE_SOURCE_DECL_MACRO(directed_blame)
-
-#ifdef HOST_CPU_x86_64
-SAMPLE_SOURCE_DECL_MACRO(retcnt)
-#endif
-
-#ifdef HPCRUN_SS_PAPI_C_CUPTI
-SAMPLE_SOURCE_DECL_MACRO(papi_c_cupti)
-#endif
-
-#ifdef HPCRUN_SS_NVIDIA
-SAMPLE_SOURCE_DECL_MACRO(nvidia_gpu)
-#endif
-
-#ifdef HPCRUN_SS_AMD
-SAMPLE_SOURCE_DECL_MACRO(amd_gpu)
-#endif
-
-#ifdef HPCRUN_SS_OPENCL
-SAMPLE_SOURCE_DECL_MACRO(opencl)
-#endif
+void setup_opencl_intercept();
+void teardown_opencl_intercept();

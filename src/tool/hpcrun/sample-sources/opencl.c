@@ -38,8 +38,8 @@
 
 #include <hpcrun/control-knob.h>
 #include <hpcrun/device-finalizers.h>
-#include <hpcrun/gpu/intel/opencl-setup.h> // opencl_initialize, opencl_bind
-#include <hpcrun/gpu/intel/opencl-api.h> //opencl_finalize
+#include <hpcrun/gpu/opencl/opencl-setup.h> // opencl_initialize, opencl_bind
+#include <hpcrun/gpu/opencl/opencl-api.h> //opencl_finalize
 #include <hpcrun/gpu/gpu-activity.h>
 #include <hpcrun/gpu/gpu-metrics.h>
 #include <hpcrun/hpcrun_options.h>
@@ -62,7 +62,7 @@
 // macros
 //******************************************************************************
 
-#define INTEL_OPENCL "gpu=opencl"
+#define OPENCL "gpu=opencl"
 
 static device_finalizer_fn_entry_t device_finalizer_shutdown;
 
@@ -70,121 +70,108 @@ static device_finalizer_fn_entry_t device_finalizer_shutdown;
 // interface operations
 //******************************************************************************
 
-  static void
+static void
 METHOD_FN(init)
 {
   self->state = INIT;
 }
 
 
-  static void
+static void
 METHOD_FN(thread_init)
 {
-  TMSG(OPENCL, "thread_init");
+  TMSG(CL, "thread_init");
 }
 
 
-  static void
+static void
 METHOD_FN(thread_init_action)
 {
-  TMSG(OPENCL, "thread_init_action");
+  TMSG(CL, "thread_init_action");
 }
 
 
-  static void
+static void
 METHOD_FN(start)
 {
-  TMSG(OPENCL, "start");
+  TMSG(CL, "start");
 }
 
 
-  static void
+static void
 METHOD_FN(thread_fini_action)
 {
-  TMSG(OPENCL, "thread_fini_action");
+  TMSG(CL, "thread_fini_action");
 }
 
 
-  static void
+static void
 METHOD_FN(stop)
 {
   hpcrun_get_thread_data();
-
   TD_GET(ss_state)[self->sel_idx] = STOP;
 }
 
 
-  static void
+static void
 METHOD_FN(shutdown)
 {
   self->state = UNINIT;
 }
 
 
-  static bool
+static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
-#ifndef HPCRUN_STATIC_LINK
-  return hpcrun_ev_is(ev_str, INTEL_OPENCL);
-#else
+  #ifndef HPCRUN_STATIC_LINK
+  return hpcrun_ev_is(ev_str, OPENCL);
+  #else
   return false;
-#endif
-
-
+  #endif
 }
 
-  static void
+static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
   int nevents = (self->evl).nevents;
   gpu_metrics_default_enable();
-  TMSG(OPENCL,"nevents = %d", nevents);
+  TMSG(CL,"nevents = %d", nevents);
 }
 
-  static void
+static void
 METHOD_FN(finalize_event_list)
 {
-#ifndef HPCRUN_STATIC_LINK
+  #ifndef HPCRUN_STATIC_LINK
   if (opencl_bind()) {
-	EEMSG("hpcrun: unable to bind to intel opencl library %s\n", dlerror());
+	EEMSG("hpcrun: unable to bind to opencl library %s\n", dlerror());
 	monitor_real_exit(-1);
   }
-#endif
-
-#if 0
-  // Fetch the event string for the sample source
-  // only one event is allowed
-  char* evlist = METHOD_CALL(self, get_event_str);
-  char* event = start_tok(evlist);
-#endif
+  #endif
   opencl_initialize();
-
   device_finalizer_shutdown.fn = opencl_finalize;
   device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_shutdown);
-
-
 }
 
 
-  static void
+static void
 METHOD_FN(gen_event_set,int lush_metrics)
 {
 
 }
 
 
-  static void
+static void
 METHOD_FN(display_events)
 {
   printf("===========================================================================\n");
-  printf("Available INTEL OPENCL GPU events\n");
+  printf("Available OPENCL GPU events\n");
   printf("===========================================================================\n");
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
-  printf("%s\t\tComprehensive operation-level monitoring for opencl on an INTEL GPU.\n"
+  printf("%s\t\tOperation-level monitoring for opencl on a GPU.\n"
 	  "\t\tCollect timing information on GPU kernel invocations,\n"
 	  "\t\tmemory copies, etc.\n",
-	  INTEL_OPENCL);
+	  OPENCL);
   printf("\n");
 }
 
@@ -194,7 +181,7 @@ METHOD_FN(display_events)
 // object
 //**************************************************************************
 
-#define ss_name intel_opencl
+#define ss_name opencl
 #define ss_cls SS_HARDWARE
 
 #include "ss_obj.h"

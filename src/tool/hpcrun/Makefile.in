@@ -509,8 +509,8 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	gpu/nvidia/cupti-gpu-api.c sample-sources/upc.c \
 	sample-sources/amd.c gpu/amd/roctracer-activity-translate.c \
 	gpu/amd/roctracer-api.c sample-sources/opencl.c \
-	gpu/intel/opencl-setup.c gpu/intel/opencl-intercept.c \
-	gpu/intel/opencl-api.c gpu/intel/opencl-activity-translate.c \
+	gpu/opencl/opencl-setup.c gpu/opencl/opencl-intercept.c \
+	gpu/opencl/opencl-api.c gpu/opencl/opencl-activity-translate.c \
 	unwind/common/backtrace.c unwind/common/unw-throw.c \
 	unwind/common/binarytree_uwi.c unwind/common/interval_t.c \
 	unwind/common/libunw_intervals.c unwind/common/stack_troll.c \
@@ -700,10 +700,10 @@ am__objects_35 =
 @OPT_ENABLE_ROCM_TRUE@am__objects_37 = $(am__objects_36)
 @ENABLE_OPENCL_TRUE@am__objects_38 =  \
 @ENABLE_OPENCL_TRUE@	sample-sources/libhpcrun_la-opencl.lo \
-@ENABLE_OPENCL_TRUE@	gpu/intel/libhpcrun_la-opencl-setup.lo \
-@ENABLE_OPENCL_TRUE@	gpu/intel/libhpcrun_la-opencl-intercept.lo \
-@ENABLE_OPENCL_TRUE@	gpu/intel/libhpcrun_la-opencl-api.lo \
-@ENABLE_OPENCL_TRUE@	gpu/intel/libhpcrun_la-opencl-activity-translate.lo
+@ENABLE_OPENCL_TRUE@	gpu/opencl/libhpcrun_la-opencl-setup.lo \
+@ENABLE_OPENCL_TRUE@	gpu/opencl/libhpcrun_la-opencl-intercept.lo \
+@ENABLE_OPENCL_TRUE@	gpu/opencl/libhpcrun_la-opencl-api.lo \
+@ENABLE_OPENCL_TRUE@	gpu/opencl/libhpcrun_la-opencl-activity-translate.lo
 @ENABLE_OPENCL_TRUE@am__objects_39 = $(am__objects_38)
 am__objects_40 = unwind/common/libhpcrun_la-backtrace.lo \
 	unwind/common/libhpcrun_la-unw-throw.lo
@@ -1791,10 +1791,10 @@ MY_AARCH64_FILES = \
 
 @ENABLE_OPENCL_TRUE@MY_OPENCL_FILES = \
 @ENABLE_OPENCL_TRUE@	sample-sources/opencl.c 		\
-@ENABLE_OPENCL_TRUE@	gpu/intel/opencl-setup.c		\
-@ENABLE_OPENCL_TRUE@	gpu/intel/opencl-intercept.c	\
-@ENABLE_OPENCL_TRUE@	gpu/intel/opencl-api.c			\
-@ENABLE_OPENCL_TRUE@	gpu/intel/opencl-activity-translate.c
+@ENABLE_OPENCL_TRUE@	gpu/opencl/opencl-setup.c		\
+@ENABLE_OPENCL_TRUE@	gpu/opencl/opencl-intercept.c	\
+@ENABLE_OPENCL_TRUE@	gpu/opencl/opencl-api.c			\
+@ENABLE_OPENCL_TRUE@	gpu/opencl/opencl-activity-translate.c
 
 @OPT_ENABLE_ROCM_TRUE@MY_ROCM_FILES = \
 @OPT_ENABLE_ROCM_TRUE@	sample-sources/amd.c \
@@ -2649,20 +2649,22 @@ gpu/amd/libhpcrun_la-roctracer-api.lo: gpu/amd/$(am__dirstamp) \
 	gpu/amd/$(DEPDIR)/$(am__dirstamp)
 sample-sources/libhpcrun_la-opencl.lo: sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
-gpu/intel/$(am__dirstamp):
-	@$(MKDIR_P) gpu/intel
-	@: > gpu/intel/$(am__dirstamp)
-gpu/intel/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) gpu/intel/$(DEPDIR)
-	@: > gpu/intel/$(DEPDIR)/$(am__dirstamp)
-gpu/intel/libhpcrun_la-opencl-setup.lo: gpu/intel/$(am__dirstamp) \
-	gpu/intel/$(DEPDIR)/$(am__dirstamp)
-gpu/intel/libhpcrun_la-opencl-intercept.lo: gpu/intel/$(am__dirstamp) \
-	gpu/intel/$(DEPDIR)/$(am__dirstamp)
-gpu/intel/libhpcrun_la-opencl-api.lo: gpu/intel/$(am__dirstamp) \
-	gpu/intel/$(DEPDIR)/$(am__dirstamp)
-gpu/intel/libhpcrun_la-opencl-activity-translate.lo:  \
-	gpu/intel/$(am__dirstamp) gpu/intel/$(DEPDIR)/$(am__dirstamp)
+gpu/opencl/$(am__dirstamp):
+	@$(MKDIR_P) gpu/opencl
+	@: > gpu/opencl/$(am__dirstamp)
+gpu/opencl/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) gpu/opencl/$(DEPDIR)
+	@: > gpu/opencl/$(DEPDIR)/$(am__dirstamp)
+gpu/opencl/libhpcrun_la-opencl-setup.lo: gpu/opencl/$(am__dirstamp) \
+	gpu/opencl/$(DEPDIR)/$(am__dirstamp)
+gpu/opencl/libhpcrun_la-opencl-intercept.lo:  \
+	gpu/opencl/$(am__dirstamp) \
+	gpu/opencl/$(DEPDIR)/$(am__dirstamp)
+gpu/opencl/libhpcrun_la-opencl-api.lo: gpu/opencl/$(am__dirstamp) \
+	gpu/opencl/$(DEPDIR)/$(am__dirstamp)
+gpu/opencl/libhpcrun_la-opencl-activity-translate.lo:  \
+	gpu/opencl/$(am__dirstamp) \
+	gpu/opencl/$(DEPDIR)/$(am__dirstamp)
 unwind/common/libhpcrun_la-backtrace.lo:  \
 	unwind/common/$(am__dirstamp) \
 	unwind/common/$(DEPDIR)/$(am__dirstamp)
@@ -3335,10 +3337,10 @@ mostlyclean-compile:
 	-rm -f gpu/*.lo
 	-rm -f gpu/amd/*.$(OBJEXT)
 	-rm -f gpu/amd/*.lo
-	-rm -f gpu/intel/*.$(OBJEXT)
-	-rm -f gpu/intel/*.lo
 	-rm -f gpu/nvidia/*.$(OBJEXT)
 	-rm -f gpu/nvidia/*.lo
+	-rm -f gpu/opencl/*.$(OBJEXT)
+	-rm -f gpu/opencl/*.lo
 	-rm -f lush-agents/*.$(OBJEXT)
 	-rm -f lush-agents/*.lo
 	-rm -f lush/*.$(OBJEXT)
@@ -3534,10 +3536,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_o-gpu-trace.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/amd/$(DEPDIR)/libhpcrun_la-roctracer-activity-translate.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/amd/$(DEPDIR)/libhpcrun_la-roctracer-api.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@gpu/intel/$(DEPDIR)/libhpcrun_la-opencl-activity-translate.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@gpu/intel/$(DEPDIR)/libhpcrun_la-opencl-api.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@gpu/intel/$(DEPDIR)/libhpcrun_la-opencl-intercept.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@gpu/intel/$(DEPDIR)/libhpcrun_la-opencl-setup.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_la-cubin-hash-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_la-cubin-id-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_la-cubin-symbols.Plo@am__quote@
@@ -3556,6 +3554,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_o-cupti-analysis.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_o-cupti-api.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_o-cupti-gpu-api.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/opencl/$(DEPDIR)/libhpcrun_la-opencl-activity-translate.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/opencl/$(DEPDIR)/libhpcrun_la-opencl-api.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/opencl/$(DEPDIR)/libhpcrun_la-opencl-intercept.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/opencl/$(DEPDIR)/libhpcrun_la-opencl-setup.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@lush-agents/$(DEPDIR)/libagent_cilk_la-agent-cilk.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@lush-agents/$(DEPDIR)/libagent_pthread_la-agent-pthread.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@lush-agents/$(DEPDIR)/libagent_tbb_la-agent-tbb.Plo@am__quote@
@@ -5071,33 +5073,33 @@ sample-sources/libhpcrun_la-opencl.lo: sample-sources/opencl.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/libhpcrun_la-opencl.lo `test -f 'sample-sources/opencl.c' || echo '$(srcdir)/'`sample-sources/opencl.c
 
-gpu/intel/libhpcrun_la-opencl-setup.lo: gpu/intel/opencl-setup.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/intel/libhpcrun_la-opencl-setup.lo -MD -MP -MF gpu/intel/$(DEPDIR)/libhpcrun_la-opencl-setup.Tpo -c -o gpu/intel/libhpcrun_la-opencl-setup.lo `test -f 'gpu/intel/opencl-setup.c' || echo '$(srcdir)/'`gpu/intel/opencl-setup.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/intel/$(DEPDIR)/libhpcrun_la-opencl-setup.Tpo gpu/intel/$(DEPDIR)/libhpcrun_la-opencl-setup.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/intel/opencl-setup.c' object='gpu/intel/libhpcrun_la-opencl-setup.lo' libtool=yes @AMDEPBACKSLASH@
+gpu/opencl/libhpcrun_la-opencl-setup.lo: gpu/opencl/opencl-setup.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/opencl/libhpcrun_la-opencl-setup.lo -MD -MP -MF gpu/opencl/$(DEPDIR)/libhpcrun_la-opencl-setup.Tpo -c -o gpu/opencl/libhpcrun_la-opencl-setup.lo `test -f 'gpu/opencl/opencl-setup.c' || echo '$(srcdir)/'`gpu/opencl/opencl-setup.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/opencl/$(DEPDIR)/libhpcrun_la-opencl-setup.Tpo gpu/opencl/$(DEPDIR)/libhpcrun_la-opencl-setup.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/opencl/opencl-setup.c' object='gpu/opencl/libhpcrun_la-opencl-setup.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/intel/libhpcrun_la-opencl-setup.lo `test -f 'gpu/intel/opencl-setup.c' || echo '$(srcdir)/'`gpu/intel/opencl-setup.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/opencl/libhpcrun_la-opencl-setup.lo `test -f 'gpu/opencl/opencl-setup.c' || echo '$(srcdir)/'`gpu/opencl/opencl-setup.c
 
-gpu/intel/libhpcrun_la-opencl-intercept.lo: gpu/intel/opencl-intercept.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/intel/libhpcrun_la-opencl-intercept.lo -MD -MP -MF gpu/intel/$(DEPDIR)/libhpcrun_la-opencl-intercept.Tpo -c -o gpu/intel/libhpcrun_la-opencl-intercept.lo `test -f 'gpu/intel/opencl-intercept.c' || echo '$(srcdir)/'`gpu/intel/opencl-intercept.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/intel/$(DEPDIR)/libhpcrun_la-opencl-intercept.Tpo gpu/intel/$(DEPDIR)/libhpcrun_la-opencl-intercept.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/intel/opencl-intercept.c' object='gpu/intel/libhpcrun_la-opencl-intercept.lo' libtool=yes @AMDEPBACKSLASH@
+gpu/opencl/libhpcrun_la-opencl-intercept.lo: gpu/opencl/opencl-intercept.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/opencl/libhpcrun_la-opencl-intercept.lo -MD -MP -MF gpu/opencl/$(DEPDIR)/libhpcrun_la-opencl-intercept.Tpo -c -o gpu/opencl/libhpcrun_la-opencl-intercept.lo `test -f 'gpu/opencl/opencl-intercept.c' || echo '$(srcdir)/'`gpu/opencl/opencl-intercept.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/opencl/$(DEPDIR)/libhpcrun_la-opencl-intercept.Tpo gpu/opencl/$(DEPDIR)/libhpcrun_la-opencl-intercept.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/opencl/opencl-intercept.c' object='gpu/opencl/libhpcrun_la-opencl-intercept.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/intel/libhpcrun_la-opencl-intercept.lo `test -f 'gpu/intel/opencl-intercept.c' || echo '$(srcdir)/'`gpu/intel/opencl-intercept.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/opencl/libhpcrun_la-opencl-intercept.lo `test -f 'gpu/opencl/opencl-intercept.c' || echo '$(srcdir)/'`gpu/opencl/opencl-intercept.c
 
-gpu/intel/libhpcrun_la-opencl-api.lo: gpu/intel/opencl-api.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/intel/libhpcrun_la-opencl-api.lo -MD -MP -MF gpu/intel/$(DEPDIR)/libhpcrun_la-opencl-api.Tpo -c -o gpu/intel/libhpcrun_la-opencl-api.lo `test -f 'gpu/intel/opencl-api.c' || echo '$(srcdir)/'`gpu/intel/opencl-api.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/intel/$(DEPDIR)/libhpcrun_la-opencl-api.Tpo gpu/intel/$(DEPDIR)/libhpcrun_la-opencl-api.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/intel/opencl-api.c' object='gpu/intel/libhpcrun_la-opencl-api.lo' libtool=yes @AMDEPBACKSLASH@
+gpu/opencl/libhpcrun_la-opencl-api.lo: gpu/opencl/opencl-api.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/opencl/libhpcrun_la-opencl-api.lo -MD -MP -MF gpu/opencl/$(DEPDIR)/libhpcrun_la-opencl-api.Tpo -c -o gpu/opencl/libhpcrun_la-opencl-api.lo `test -f 'gpu/opencl/opencl-api.c' || echo '$(srcdir)/'`gpu/opencl/opencl-api.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/opencl/$(DEPDIR)/libhpcrun_la-opencl-api.Tpo gpu/opencl/$(DEPDIR)/libhpcrun_la-opencl-api.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/opencl/opencl-api.c' object='gpu/opencl/libhpcrun_la-opencl-api.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/intel/libhpcrun_la-opencl-api.lo `test -f 'gpu/intel/opencl-api.c' || echo '$(srcdir)/'`gpu/intel/opencl-api.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/opencl/libhpcrun_la-opencl-api.lo `test -f 'gpu/opencl/opencl-api.c' || echo '$(srcdir)/'`gpu/opencl/opencl-api.c
 
-gpu/intel/libhpcrun_la-opencl-activity-translate.lo: gpu/intel/opencl-activity-translate.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/intel/libhpcrun_la-opencl-activity-translate.lo -MD -MP -MF gpu/intel/$(DEPDIR)/libhpcrun_la-opencl-activity-translate.Tpo -c -o gpu/intel/libhpcrun_la-opencl-activity-translate.lo `test -f 'gpu/intel/opencl-activity-translate.c' || echo '$(srcdir)/'`gpu/intel/opencl-activity-translate.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/intel/$(DEPDIR)/libhpcrun_la-opencl-activity-translate.Tpo gpu/intel/$(DEPDIR)/libhpcrun_la-opencl-activity-translate.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/intel/opencl-activity-translate.c' object='gpu/intel/libhpcrun_la-opencl-activity-translate.lo' libtool=yes @AMDEPBACKSLASH@
+gpu/opencl/libhpcrun_la-opencl-activity-translate.lo: gpu/opencl/opencl-activity-translate.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/opencl/libhpcrun_la-opencl-activity-translate.lo -MD -MP -MF gpu/opencl/$(DEPDIR)/libhpcrun_la-opencl-activity-translate.Tpo -c -o gpu/opencl/libhpcrun_la-opencl-activity-translate.lo `test -f 'gpu/opencl/opencl-activity-translate.c' || echo '$(srcdir)/'`gpu/opencl/opencl-activity-translate.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/opencl/$(DEPDIR)/libhpcrun_la-opencl-activity-translate.Tpo gpu/opencl/$(DEPDIR)/libhpcrun_la-opencl-activity-translate.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/opencl/opencl-activity-translate.c' object='gpu/opencl/libhpcrun_la-opencl-activity-translate.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/intel/libhpcrun_la-opencl-activity-translate.lo `test -f 'gpu/intel/opencl-activity-translate.c' || echo '$(srcdir)/'`gpu/intel/opencl-activity-translate.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/opencl/libhpcrun_la-opencl-activity-translate.lo `test -f 'gpu/opencl/opencl-activity-translate.c' || echo '$(srcdir)/'`gpu/opencl/opencl-activity-translate.c
 
 unwind/common/libhpcrun_la-backtrace.lo: unwind/common/backtrace.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT unwind/common/libhpcrun_la-backtrace.lo -MD -MP -MF unwind/common/$(DEPDIR)/libhpcrun_la-backtrace.Tpo -c -o unwind/common/libhpcrun_la-backtrace.lo `test -f 'unwind/common/backtrace.c' || echo '$(srcdir)/'`unwind/common/backtrace.c
@@ -7900,8 +7902,8 @@ clean-libtool:
 	-rm -rf fnbounds/.libs fnbounds/_libs
 	-rm -rf gpu/.libs gpu/_libs
 	-rm -rf gpu/amd/.libs gpu/amd/_libs
-	-rm -rf gpu/intel/.libs gpu/intel/_libs
 	-rm -rf gpu/nvidia/.libs gpu/nvidia/_libs
+	-rm -rf gpu/opencl/.libs gpu/opencl/_libs
 	-rm -rf lush/.libs lush/_libs
 	-rm -rf lush-agents/.libs lush-agents/_libs
 	-rm -rf memory/.libs memory/_libs
@@ -8150,10 +8152,10 @@ distclean-generic:
 	-rm -f gpu/$(am__dirstamp)
 	-rm -f gpu/amd/$(DEPDIR)/$(am__dirstamp)
 	-rm -f gpu/amd/$(am__dirstamp)
-	-rm -f gpu/intel/$(DEPDIR)/$(am__dirstamp)
-	-rm -f gpu/intel/$(am__dirstamp)
 	-rm -f gpu/nvidia/$(DEPDIR)/$(am__dirstamp)
 	-rm -f gpu/nvidia/$(am__dirstamp)
+	-rm -f gpu/opencl/$(DEPDIR)/$(am__dirstamp)
+	-rm -f gpu/opencl/$(am__dirstamp)
 	-rm -f lush-agents/$(DEPDIR)/$(am__dirstamp)
 	-rm -f lush-agents/$(am__dirstamp)
 	-rm -f lush/$(DEPDIR)/$(am__dirstamp)
@@ -8218,7 +8220,7 @@ clean-am: clean-generic clean-libtool clean-noinstPROGRAMS \
 	clean-pkglibexecPROGRAMS mostlyclean-am
 
 distclean: distclean-recursive
-	-rm -rf ./$(DEPDIR) cct/$(DEPDIR) fnbounds/$(DEPDIR) gpu/$(DEPDIR) gpu/amd/$(DEPDIR) gpu/intel/$(DEPDIR) gpu/nvidia/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) ompt/$(DEPDIR) os/linux/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) sample-sources/perf/$(DEPDIR) trampoline/aarch64/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/libunwind/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) cct/$(DEPDIR) fnbounds/$(DEPDIR) gpu/$(DEPDIR) gpu/amd/$(DEPDIR) gpu/nvidia/$(DEPDIR) gpu/opencl/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) ompt/$(DEPDIR) os/linux/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) sample-sources/perf/$(DEPDIR) trampoline/aarch64/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/libunwind/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -8268,7 +8270,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-recursive
-	-rm -rf ./$(DEPDIR) cct/$(DEPDIR) fnbounds/$(DEPDIR) gpu/$(DEPDIR) gpu/amd/$(DEPDIR) gpu/intel/$(DEPDIR) gpu/nvidia/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) ompt/$(DEPDIR) os/linux/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) sample-sources/perf/$(DEPDIR) trampoline/aarch64/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/libunwind/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) cct/$(DEPDIR) fnbounds/$(DEPDIR) gpu/$(DEPDIR) gpu/amd/$(DEPDIR) gpu/nvidia/$(DEPDIR) gpu/opencl/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) ompt/$(DEPDIR) os/linux/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) sample-sources/perf/$(DEPDIR) trampoline/aarch64/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/libunwind/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
