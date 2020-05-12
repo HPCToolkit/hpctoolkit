@@ -176,7 +176,7 @@ gpu_trace_channel_consume
  gpu_trace_channel_t *channel
 )
 {
-  // PRINT("gpu_trace_channel_consume:: channel_count = %u\n", channel->count);
+  PRINT("gpu_trace_channel_consume:: channel_count = %u\n", channel->count);
   hpcrun_set_thread_data(channel->td);
 
   // steal elements previously pushed by the producer
