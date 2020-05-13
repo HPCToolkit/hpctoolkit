@@ -200,8 +200,8 @@ int lush_metrics = 0; // FIXME: global variable for now
 /******************************************************************************
  * (public declaration) thread-local variables
  *****************************************************************************/
- static __thread bool hpcrun_thread_suppress_sample = true;
- static __thread int hpcrun_thread_dl_operation = 0;
+static __thread bool hpcrun_thread_suppress_sample = true;
+static __thread int hpcrun_thread_dl_operation = 0;
 
 
 //***************************************************************************
@@ -740,7 +740,7 @@ logit(cct_node_t* n, cct_op_arg_t arg, size_t l)
 }
 
 void*
-hpcrun_thread_init(int id, local_thread_data_t* local_thread_data) // cct_ctxt_t* thr_ctxt)
+hpcrun_thread_init(int id, local_thread_data_t* local_thread_data, bool has_trace) // cct_ctxt_t* thr_ctxt)
 {
   cct_ctxt_t* thr_ctxt = local_thread_data ? local_thread_data->thr_ctxt : NULL;
 
@@ -753,7 +753,7 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data) // cct_ctxt_t
   // ----------------------------------------
 
   thread_data_t* td = NULL;
-  hpcrun_threadMgr_data_get(id, thr_ctxt, &td);
+  hpcrun_threadMgr_data_get(id, thr_ctxt, &td, has_trace);
   hpcrun_set_thread_data(td);
 
   td->inside_hpcrun = 1;  // safe enter, disable signals
@@ -1186,13 +1186,13 @@ monitor_init_thread(int tid, void* data)
   void *thread_begin_address = monitor_get_addr_thread_start();
 
   if (module_ignore_map_inrange_lookup(thread_begin_address)) {
-    hpcrun_thread_suppress_sample = true;
+		hpcrun_thread_suppress_sample = true;
   }
 
   hpcrun_safe_enter();
 
   TMSG(THREAD,"init thread %d",tid);
-  void* thread_data = hpcrun_thread_init(tid, (local_thread_data_t*) data);
+  void* thread_data = hpcrun_thread_init(tid, (local_thread_data_t*) data, ! hpcrun_thread_suppress_sample);
   TMSG(THREAD,"back from init thread %d",tid);
 
   hpcrun_threadmgr_thread_new();
