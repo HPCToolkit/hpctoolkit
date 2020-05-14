@@ -4618,6 +4618,7 @@ AC_SUBST([OPT_CUPTI_LDFLAGS])
 # Option: --with-opencl=PATH
 #-------------------------------------------------
 
+OPENCL=no
 OPT_HAVE_OPENCL=no
 OPT_OPENCL_IFLAGS=
 # we need gotcha libraries for intercepting opencl calls. This can be removed later when gotcha support is available in master branch
@@ -4634,8 +4635,8 @@ case "$OPENCL" in
     if test ! -f "${OPENCL}/CL/cl.h" ; then
       AC_MSG_ERROR([unable to find CL/cl.h in: $OPENCL])
     else
-    OPT_OPENCL_IFLAGS="-I${OPENCL}"
-    OPT_HAVE_OPENCL=yes
+      OPT_OPENCL_IFLAGS="-I${OPENCL}"
+      OPT_HAVE_OPENCL=yes
     fi
     ;;
   no )
@@ -4645,10 +4646,12 @@ case "$OPENCL" in
     ;;
 esac
 
-if test "$OPT_HAVE_OPENCL" = no ; then
-  AC_MSG_ERROR([use --with-opencl to provide location of opencl headers])
-else
-  OPT_HAVE_OPENCL=yes
+if test "$OPENCL" = yes && test "$OPT_HAVE_OPENCL" = no ; then
+  AC_MSG_ERROR([use --with-opencl to provide path/location of opencl headers])
+fi
+
+if test "$OPT_HAVE_OPENCL" = yes ; then
+  AC_MSG_NOTICE([The <CL/cl.h> header file is available.])
 fi
 
 AM_CONDITIONAL([ENABLE_OPENCL], [test "$OPT_HAVE_OPENCL" = yes])

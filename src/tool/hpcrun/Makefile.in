@@ -285,10 +285,11 @@ pkglibexec_PROGRAMS =
 @OPT_ENABLE_ROCM_TRUE@am__append_120 = $(OPT_ROCM_IFLAGS) -g
 @OPT_ENABLE_ROCM_TRUE@am__append_121 = -DHPCRUN_SS_AMD
 @ENABLE_OPENCL_TRUE@am__append_122 = $(MY_OPENCL_FILES)
-@ENABLE_OPENCL_TRUE@am__append_123 = $(OPENCL_LD_FLGS)
-@ENABLE_OPENCL_TRUE@am__append_124 = -DHPCRUN_SS_OPENCL
-@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_125 = libagent-cilk.la
-@OPT_ENABLE_LUSH_TRUE@am__append_126 = libagent-pthread.la \
+@ENABLE_OPENCL_TRUE@am__append_123 = $(OPENCL_IFLAGS)
+@ENABLE_OPENCL_TRUE@am__append_124 = $(GOTCHA_LD_FLGS)
+@ENABLE_OPENCL_TRUE@am__append_125 = -DHPCRUN_SS_OPENCL
+@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_126 = libagent-cilk.la
+@OPT_ENABLE_LUSH_TRUE@am__append_127 = libagent-pthread.la \
 @OPT_ENABLE_LUSH_TRUE@	libagent-tbb.la
 subdir = src/tool/hpcrun
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -1408,8 +1409,9 @@ OPT_CUDA_LDFLAGS = @OPT_CUDA_LDFLAGS@
 OPT_CUPTI = @OPT_CUPTI@
 OPT_CUPTI_IFLAGS = @OPT_CUPTI_IFLAGS@
 OPT_CUPTI_LDFLAGS = @OPT_CUPTI_LDFLAGS@
+OPT_GOTCHA_LDFLAGS = @OPT_GOTCHA_LDFLAGS@
 OPT_OBJCOPY = @OPT_OBJCOPY@
-OPT_OPENCL_LDFLAGS = @OPT_OPENCL_LDFLAGS@
+OPT_OPENCL_IFLAGS = @OPT_OPENCL_IFLAGS@
 OPT_PAPI = @OPT_PAPI@
 OPT_PAPI_IFLAGS = @OPT_PAPI_IFLAGS@
 OPT_PAPI_LDFLAGS = @OPT_PAPI_LDFLAGS@
@@ -1593,14 +1595,15 @@ bin_SCRIPTS = $(am__append_4) $(am__append_6)
 pkglibexec_SCRIPTS = $(am__append_1)
 include_HEADERS = $(am__append_2)
 pkglib_LIBRARIES = $(am__append_5)
-pkglib_LTLIBRARIES = $(am__append_3) $(am__append_7) $(am__append_125) \
-	$(am__append_126)
+pkglib_LTLIBRARIES = $(am__append_3) $(am__append_7) $(am__append_126) \
+	$(am__append_127)
 BUILT_SOURCES = $(am__append_20)
 CLEANFILES = $(am__append_21)
 PAPI_INC_FLGS = @OPT_PAPI_IFLAGS@ 
 PAPI_LD_FLGS = @OPT_PAPI_LDFLAGS@
 CUPTI_INC_FLGS = @OPT_CUPTI_IFLAGS@
-OPENCL_LD_FLGS = @OPT_OPENCL_LDFLAGS@
+OPENCL_IFLAGS = @OPT_OPENCL_IFLAGS@
+GOTCHA_LD_FLGS = @OPT_GOTCHA_LDFLAGS@
 CUPTI_LD_FLGS = @OPT_CUPTI_LDFLAGS@
 CUPTI_BASE = @OPT_CUPTI@
 HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
@@ -1684,7 +1687,7 @@ UNW_MIPS_LD_FLAGS =
 MY_CPP_DEFINES = -D_GNU_SOURCE -DINLINE_FN=1 -DLOCAL_BUILD=1 \
 	-D__HIP_PLATFORM_HCC__=1 $(am__append_11) $(am__append_17) \
 	$(am__append_96) $(am__append_100) $(am__append_102) \
-	$(am__append_106) $(am__append_121) $(am__append_124)
+	$(am__append_106) $(am__append_121) $(am__append_125)
 MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	closure-registry.c cct_insert_backtrace.c \
 	cct_backtrace_finalize.c env.c epoch.c files.c \
@@ -1948,7 +1951,7 @@ libhpctoolkit_a_CPPFLAGS = \
 # cflags
 #-----------------------------------------------------------
 libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(PERFMON_CFLAGS) \
-	$(am__append_116) $(am__append_120)
+	$(am__append_116) $(am__append_120) $(am__append_123)
 libhpcrun_o_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(PERFMON_CFLAGS)
 libhpcrun_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_ga_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
@@ -1972,7 +1975,7 @@ libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic -L$(LIBMONITOR_LIB) -lmonitor \
 	-lpthread -lrt -lelf -L$(LIBELF_LIB) $(LIBUNWIND_LDFLAGS_DYN) \
 	$(LZMA_LDFLAGS_DYN) $(PERFMON_LDFLAGS_DYN) $(MBEDTLS_LIBS) \
 	$(OPT_ROCM_LDFLAGS) $(am__append_55) $(am__append_95) \
-	$(am__append_111) $(am__append_123) $(UNW_DYNAMIC_LD_FLAGS)
+	$(am__append_111) $(am__append_124) $(UNW_DYNAMIC_LD_FLAGS)
 libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_io_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_memleak_la_LDFLAGS = -Wl,-Bsymbolic
