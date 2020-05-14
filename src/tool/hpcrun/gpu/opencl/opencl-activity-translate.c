@@ -42,6 +42,11 @@
 // ******************************************************* EndRiceCopyright *
 
 //******************************************************************************
+// system includes
+//******************************************************************************
+#include <assert.h>   //assert
+
+//******************************************************************************
 // local includes
 //******************************************************************************
 #include <hpcrun/messages/messages.h> //ETMSG
@@ -51,92 +56,8 @@
 #include "opencl-api.h" //profilingData
 
 //******************************************************************************
-// type declarations
-//******************************************************************************
-static void convert_kernel_launch(gpu_activity_t *, void *, cl_event);
-static void convert_memcpy(gpu_activity_t *, void *, cl_event, gpu_memcpy_type_t);
-static void getTimingInfoFromClEvent(profilingData*, cl_event);
-static void getMemoryProfileInfo(profilingData*, cl_memory_callback*);
-static void openclKernelDataToGenericKernelData(gpu_kernel_t*, struct profilingData *);
-static void openclMemDataToGenericMemData(gpu_memcpy_t*, struct profilingData *);
-
-//******************************************************************************
-// interface operations
-//******************************************************************************
-void
-opencl_activity_translate
-(
-  gpu_activity_t * ga,
-  cl_event event,
-  void * user_data
-)
-{
-  cl_generic_callback* cb_data = (cl_generic_callback*)user_data;
-  opencl_call type = cb_data->type;
-  switch (type) {
-	case kernel:
-	  convert_kernel_launch(ga, user_data, event);
-	  break;
-	case memcpy_H2D:
-	  convert_memcpy(ga, user_data, event, GPU_MEMCPY_H2D);
-	  break;
-	case memcpy_D2H:
-	  convert_memcpy(ga, user_data, event, GPU_MEMCPY_D2H);
-	  break;
-	default:
-	  assert(0);
-  }
-  cstack_ptr_set(&(ga->next), 0);
-}
-
-//******************************************************************************
 // private operations
 //******************************************************************************
-static void
-convert_kernel_launch
-(
-  gpu_activity_t * ga,
-  void * user_data,
-  cl_event event
-)
-{
-  cl_kernel_callback* kernel_cb_data = (cl_kernel_callback*)user_data;
-  ETMSG(CL, "Saving kernel data to gpu_activity_t");
-  ga->kind = GPU_ACTIVITY_KERNEL;
-  profilingData *pd = (profilingData*) hpcrun_malloc_safe(sizeof(profilingData));
-  getTimingInfoFromClEvent(pd, event);
-  gpu_kernel_t kernel_data;
-  memset(&kernel_data, 0, sizeof(gpu_kernel_t));
-  openclKernelDataToGenericKernelData(&kernel_data, pd);
-  ga->details.kernel = kernel_data;
-  set_gpu_interval(&ga->details.interval, pd->startTime, pd->endTime);
-  ga->details.kernel.correlation_id = kernel_cb_data->correlation_id;
-  //free(pd);
-}
-
-static void
-convert_memcpy
-(
-  gpu_activity_t * ga,
-  void * user_data,
-  cl_event event,
-  gpu_memcpy_type_t kind
-)
-{
-  cl_memory_callback* memory_cb_data = (cl_memory_callback*)user_data;
-  profilingData *pd = (profilingData*) hpcrun_malloc_safe(sizeof(profilingData));
-  getTimingInfoFromClEvent(pd, event);
-  getMemoryProfileInfo(pd, memory_cb_data);
-  ga->kind = GPU_ACTIVITY_MEMCPY;
-  gpu_memcpy_t memcpy_data;
-  memset(&memcpy_data, 0, sizeof(gpu_memcpy_t));
-  openclMemDataToGenericMemData(&memcpy_data, pd);
-  ga->details.memcpy = memcpy_data;
-  ga->details.memcpy.correlation_id = memory_cb_data->correlation_id;
-  set_gpu_interval(&ga->details.interval, pd->startTime, pd->endTime);
-  //free(pd);
-}
-
 static void
 getTimingInfoFromClEvent
 (
@@ -191,4 +112,78 @@ openclMemDataToGenericMemData
   generic_data->bytes = (uint64_t)pd->size;
   generic_data->copyKind = (gpu_memcpy_type_t) (pd->fromHostToDevice)? GPU_MEMCPY_H2D: pd->fromDeviceToHost? GPU_MEMCPY_D2H:
 	GPU_MEMCPY_UNK;
+}
+
+static void
+convert_kernel_launch
+(
+  gpu_activity_t * ga,
+  void * user_data,
+  cl_event event
+)
+{
+  cl_kernel_callback* kernel_cb_data = (cl_kernel_callback*)user_data;
+  ETMSG(CL, "Saving kernel data to gpu_activity_t");
+  ga->kind = GPU_ACTIVITY_KERNEL;
+  profilingData *pd = (profilingData*) hpcrun_malloc_safe(sizeof(profilingData));
+  getTimingInfoFromClEvent(pd, event);
+  gpu_kernel_t kernel_data;
+  memset(&kernel_data, 0, sizeof(gpu_kernel_t));
+  openclKernelDataToGenericKernelData(&kernel_data, pd);
+  ga->details.kernel = kernel_data;
+  set_gpu_interval(&ga->details.interval, pd->startTime, pd->endTime);
+  ga->details.kernel.correlation_id = kernel_cb_data->correlation_id;
+  //free(pd);
+}
+
+static void
+convert_memcpy
+(
+  gpu_activity_t * ga,
+  void * user_data,
+  cl_event event,
+  gpu_memcpy_type_t kind
+)
+{
+  cl_memory_callback* memory_cb_data = (cl_memory_callback*)user_data;
+  profilingData *pd = (profilingData*) hpcrun_malloc_safe(sizeof(profilingData));
+  getTimingInfoFromClEvent(pd, event);
+  getMemoryProfileInfo(pd, memory_cb_data);
+  ga->kind = GPU_ACTIVITY_MEMCPY;
+  gpu_memcpy_t memcpy_data;
+  memset(&memcpy_data, 0, sizeof(gpu_memcpy_t));
+  openclMemDataToGenericMemData(&memcpy_data, pd);
+  ga->details.memcpy = memcpy_data;
+  ga->details.memcpy.correlation_id = memory_cb_data->correlation_id;
+  set_gpu_interval(&ga->details.interval, pd->startTime, pd->endTime);
+  //free(pd);
+}
+
+//******************************************************************************
+// interface operations
+//******************************************************************************
+void
+opencl_activity_translate
+(
+  gpu_activity_t * ga,
+  cl_event event,
+  void * user_data
+)
+{
+  cl_generic_callback* cb_data = (cl_generic_callback*)user_data;
+  opencl_call type = cb_data->type;
+  switch (type) {
+	case kernel:
+	  convert_kernel_launch(ga, user_data, event);
+	  break;
+	case memcpy_H2D:
+	  convert_memcpy(ga, user_data, event, GPU_MEMCPY_H2D);
+	  break;
+	case memcpy_D2H:
+	  convert_memcpy(ga, user_data, event, GPU_MEMCPY_D2H);
+	  break;
+	default:
+	  assert(0);
+  }
+  cstack_ptr_set(&(ga->next), 0);
 }

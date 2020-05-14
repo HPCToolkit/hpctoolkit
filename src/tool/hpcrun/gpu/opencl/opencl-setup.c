@@ -44,6 +44,7 @@
 //******************************************************************************
 // system includes
 //******************************************************************************
+#define CL_TARGET_OPENCL_VERSION 120
 #include <CL/cl.h>
 
 //******************************************************************************
@@ -55,6 +56,7 @@
 #include <hpcrun/messages/messages.h> //ETMSG
 
 #include "opencl-setup.h"
+#include "opencl-api.h"
 #include "opencl-intercept.h"
 
 //******************************************************************************
@@ -92,10 +94,17 @@ OPENCL_FN
 );
 
 //******************************************************************************
-// type declarations
+// private operations
 //******************************************************************************
 static const char*
-opencl_path(void);
+opencl_path
+(
+  void
+)
+{
+  const char *path = "libOpenCL.so";
+  return path;
+}
 
 //******************************************************************************
 // interface operations
@@ -108,6 +117,8 @@ opencl_initialize
 {
   ETMSG(CL, "We are setting up opencl intercepts");
   setup_opencl_intercept();
+  initialize_opencl_operation_count();
+  initialize_opencl_correlation_id();
 }
 
 int
@@ -135,19 +146,6 @@ opencl_bind
   #else
     return -1;
   #endif // ! HPCRUN_STATIC_LINK  
-}
-
-//******************************************************************************
-// private operations
-//******************************************************************************
-static const char*
-opencl_path
-(
-  void
-)
-{
-  const char *path = "libOpenCL.so";
-  return path;
 }
 
 /*

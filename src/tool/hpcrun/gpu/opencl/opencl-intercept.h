@@ -47,11 +47,6 @@
 #include <stdbool.h> 
 
 //******************************************************************************
-// local includes
-//******************************************************************************
-#include <hpcrun/cct/cct.h> // cct_node_t
-
-//******************************************************************************
 // type declarations
 //******************************************************************************
 #ifndef _OPENCL_INTERCEPT_H_
@@ -62,5 +57,20 @@ typedef struct cl_kernel_callback {uint64_t correlation_id; opencl_call type;} c
 typedef struct cl_memory_callback {uint64_t correlation_id; opencl_call type; bool fromHostToDevice; bool fromDeviceToHost; size_t size; } cl_memory_callback;
 #endif
 
-void setup_opencl_intercept();
-void teardown_opencl_intercept();
+void
+initialize_opencl_correlation_id
+(
+  void
+);
+
+void
+setup_opencl_intercept
+(
+  void
+);
+
+void
+teardown_opencl_intercept
+(
+  void
+);

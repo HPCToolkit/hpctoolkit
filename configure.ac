@@ -4618,13 +4618,42 @@ AC_SUBST([OPT_CUPTI_LDFLAGS])
 # Option: --with-opencl=PATH
 #-------------------------------------------------
 
-# Note: we will need location of intel/libOpenCL.so
+OPT_HAVE_OPENCL=no
+OPT_OPENCL_IFLAGS=
+# we need gotcha libraries for intercepting opencl calls. This can be removed later when gotcha support is available in master branch
+OPT_GOTCHA_LDFLAGS="-lgotcha"
 
-OPT_HAVE_OPENCL=yes
+AC_ARG_WITH([opencl],
+  [AS_HELP_STRING([--with-opencl=PATH],
+      [path to opencl headers])],
+  [OPENCL="$withval"],
+  [])
+
+case "$OPENCL" in
+  /* )
+    if test ! -f "${OPENCL}/CL/cl.h" ; then
+      AC_MSG_ERROR([unable to find CL/cl.h in: $OPENCL])
+    else
+    OPT_OPENCL_IFLAGS="-I${OPENCL}"
+    OPT_HAVE_OPENCL=yes
+    fi
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([opencl header path must be absolute: $OPENCL])
+    ;;
+esac
+
+if test "$OPT_HAVE_OPENCL" = no ; then
+  AC_MSG_ERROR([use --with-opencl to provide location of opencl headers])
+else
+  OPT_HAVE_OPENCL=yes
+fi
+
 AM_CONDITIONAL([ENABLE_OPENCL], [test "$OPT_HAVE_OPENCL" = yes])
-OPT_OPENCL_LDFLAGS="-lgotcha"
-AC_SUBST([OPT_OPENCL_LDFLAGS])
-
+AC_SUBST([OPT_OPENCL_IFLAGS])
+AC_SUBST([OPT_GOTCHA_LDFLAGS])
 
 #-------------------------------------------------
 # Option: --with-rocm=PATH

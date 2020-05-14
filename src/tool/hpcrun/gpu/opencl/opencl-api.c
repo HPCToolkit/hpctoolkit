@@ -45,6 +45,7 @@
 //******************************************************************************
 // system includes
 //******************************************************************************
+#include <assert.h>   //assert
 #include <inttypes.h> //PRIu64
 
 //******************************************************************************
@@ -62,7 +63,7 @@
 #include <hpcrun/safe-sampling.h> //hpcrun_safe_enter, hpcrun_safe_exit 
 #include <hpcrun/messages/messages.h> //ETMSG
 #include <lib/prof-lean/usec_time.h> //usec_time
-#include <lib/prof-lean/stdatomic.h> //
+#include <lib/prof-lean/stdatomic.h> //atomic_fetch_add, atomic_store, atomic_load
 
 #include "opencl-api.h"
 #include "opencl-activity-translate.h"
@@ -73,17 +74,52 @@
 #define CPU_NANOTIME() (usec_time() * 1000)
 
 //******************************************************************************
-// type declarations
-//******************************************************************************
-static void opencl_pending_operations_adjust(int);
-static void opencl_activity_completion_notify(void);
-static void opencl_activity_process(cl_event, void *);
-static void flush(void);
-
-//******************************************************************************
 // local data
 //******************************************************************************
-uint64_t pending_opencl_ops = 0;
+static atomic_ullong pending_opencl_ops;
+
+//******************************************************************************
+// private operations
+//******************************************************************************
+static void
+opencl_pending_operations_adjust
+(
+  int value
+)
+{
+  atomic_fetch_add(&pending_opencl_ops, value);
+}
+
+static void
+opencl_activity_completion_notify
+(
+  void
+)
+{
+  gpu_monitoring_thread_activities_ready();
+}
+
+static void
+opencl_activity_process
+(
+  cl_event event,
+  void * user_data
+)
+{
+  gpu_activity_t gpu_activity;
+  opencl_activity_translate(&gpu_activity, event, user_data);
+  gpu_activity_process(&gpu_activity);
+}
+
+static void
+flush
+(
+  void
+)
+{
+  ETMSG(CL, "pending operations: %lu", atomic_load(&pending_opencl_ops));
+  while (atomic_load(&pending_opencl_ops) != 0);
+}
 
 //******************************************************************************
 // interface operations
@@ -151,6 +187,15 @@ opencl_buffer_completion_callback
 }
 
 void
+initialize_opencl_operation_count
+(
+  void
+)
+{
+  atomic_store(&pending_opencl_ops, 0);
+}
+
+void
 opencl_finalize
 (
   void* args
@@ -158,47 +203,4 @@ opencl_finalize
 {
   flush();
   gpu_application_thread_process_activities();
-}
-
-//******************************************************************************
-// private operations
-//******************************************************************************
-static void
-opencl_pending_operations_adjust
-(
-  int value
-)
-{
-  __atomic_fetch_add(&pending_opencl_ops, value, __ATOMIC_RELAXED);
-}
-
-static void
-opencl_activity_completion_notify
-(
-  void
-)
-{
-  gpu_monitoring_thread_activities_ready();
-}
-
-static void
-opencl_activity_process
-(
-  cl_event event,
-  void * user_data
-)
-{
-  gpu_activity_t gpu_activity;
-  opencl_activity_translate(&gpu_activity, event, user_data);
-  gpu_activity_process(&gpu_activity);
-}
-
-static void
-flush
-(
-  void
-)
-{
-  ETMSG(CL, "pending operations: %" PRIu64 "", __atomic_load_n(&pending_opencl_ops, __ATOMIC_SEQ_CST));
-  while (__atomic_load_n(&pending_opencl_ops, __ATOMIC_SEQ_CST) != 0);
 }

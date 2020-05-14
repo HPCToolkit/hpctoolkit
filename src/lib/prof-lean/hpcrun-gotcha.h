@@ -44,56 +44,10 @@
 //******************************************************************************
 // system includes
 //******************************************************************************
-#define CL_TARGET_OPENCL_VERSION 120
-#include <CL/cl.h>
+#include <gotcha/gotcha.h>
 
 //******************************************************************************
-// local includes
+// macros
 //******************************************************************************
-#include "opencl-intercept.h"
 
-//******************************************************************************
-// type declarations
-//******************************************************************************
-#ifndef _OPENCL_API_H_
-#define _OPENCL_API_H_
-
-typedef struct
-profilingData
-{
-  cl_ulong queueTime;
-  cl_ulong submitTime;
-  cl_ulong startTime;
-  cl_ulong endTime;
-  size_t size;
-  bool fromHostToDevice;
-  bool fromDeviceToHost;
-} profilingData;
-#endif
-
-void
-opencl_subscriber_callback
-(
-  opencl_call,
-  uint64_t
-);
-
-void
-opencl_buffer_completion_callback
-(
-  cl_event,
-  cl_int,
-  void *
-);
-
-void
-initialize_opencl_operation_count
-(
-  void
-);
-
-void
-opencl_finalize
-(
-  void*
-);
+#define GOTCHA_GET_TYPED_WRAPPEE(wrapper, type) (type) gotcha_get_wrappee(wrapper)
