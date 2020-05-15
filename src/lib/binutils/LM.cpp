@@ -411,6 +411,10 @@ BinUtil::LM::open(const char* filenm)
   }
 
   // Write relocated cubins and reopen them
+  // TODO(Keren): fix the following problems before dumping relocate cubins
+  // 1. Adjust line mapping offsets to a large number not overlapped with other information
+  // 2. Avoid races in the filesystem when multiple MPI ranks try to write a .cubin.relocate file
+#if 0
   InputFile input_file;
   std::string file_name = std::string(filenm);
   if (input_file.openFile(file_name)) {
@@ -422,6 +426,7 @@ BinUtil::LM::open(const char* filenm)
       filenm = file_name.c_str();
     }
   }
+#endif
 
   // -------------------------------------------------------
   // 1. Initialize bfd and open the object file.
