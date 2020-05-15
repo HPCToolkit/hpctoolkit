@@ -411,22 +411,23 @@ BinUtil::LM::open(const char* filenm)
   }
 
   // Write relocated cubins and reopen them
-  // TODO(Keren): fix the following problems before dumping relocate cubins
-  // 1. Adjust line mapping offsets to a large number not overlapped with other information
-  // 2. Avoid races in the filesystem when multiple MPI ranks try to write a .cubin.relocate file
-#if 0
   InputFile input_file;
   std::string file_name = std::string(filenm);
   if (input_file.openFile(file_name)) {
     // We only relocate individual cubins, with filevector size 1
     ElfFile *elf_file = (*input_file.fileVector())[0];
-    if (isCubin(elf_file->getElf())) {
+    DIAG_Assert(!isCubin(elf_file->getElf()),
+      "hpcprof currently does not support opening CUBINs! "
+      "Please use hpcstruct to generate structure files CUBINs before applying hpcprof.");
+#if 0
+      // TODO(Keren): fix the following problems before dumping relocate cubins
+      // 1. Let hpcprof know that symbols of a cubin are relocated to a large offset not overlapped with other sections.
+      // 2. Avoid races in the filesystem when multiple MPI ranks try to write a .cubin.relocate file.
       file_name = elf_file->getFileName() + ".relocate";
       writeElfFile(elf_file, ".relocate");
       filenm = file_name.c_str();
-    }
-  }
 #endif
+  }
 
   // -------------------------------------------------------
   // 1. Initialize bfd and open the object file.
