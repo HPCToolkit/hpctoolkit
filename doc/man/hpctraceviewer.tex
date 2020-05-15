@@ -30,7 +30,7 @@
 \rcsInfo $Id: hpctraceviewer.tex 3428 2011-02-22 21:31:42Z tallent $
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{ 2011/02/22}
+\setDate{ 2020/05/15}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -97,7 +97,7 @@ Log additional information about plug-in dependency problems.
 
 
 \begin{itemize}
-\item Trace view (left, top):
+\item \textbf{Trace view} (left, top):
   This is hpctraceviewer's primary view.
   This view, which is similar to a conventional process/time (or space/time) view, shows time on the horizontal axis and process (or thread) rank on the vertical axis; time moves from left to right.
   Compared to typical process/time views, there is one key difference.
@@ -111,22 +111,25 @@ Log additional information about plug-in dependency problems.
   For this selected point, the Call Path View shows the corresponding call path.
   The Depth View shows the selected process.
 
-\item Depth view (left, bottom):
+\item \textbf{Depth view} (left, bottom):
   This is a call-path/time view for the process rank selected by the Trace view's crosshair.
   Given a process rank, the view shows for each virtual time along the horizontal axis a stylized call path along the vertical axis, where `main' is at the top and leaves (samples) are at the bottom.
   In other words, this view shows for the whole time range, in qualitative fashion, what the Call Path View shows for a selected point.
   The horizontal time axis is exactly aligned with the Trace View's time axis; and the colors are consistent across both views.
   This view has its own crosshair that corresponds to the currently selected time and call path depth.
 
-\item Summary view (same location as depth view on the left-bottom part):
+\item \textbf{Summary view} (same location as the Depth view on the left-bottom part):
   The view shows for the whole time range dislayed, the proportion of each subroutine in a certain time.
   Similar to Depth view, the time range in Summary reflects to the time range in the Trace view. 
 
-\item Call view (right, top):
+\item \textbf{Call view} (right, top):
   This view shows two things: (1) the current call path depth that defines the hierarchical slice shown in the Trace View; and (2) the actual call path for the point selected by the Trace View's crosshair.
   (To easily coordinate the call path depth value with the call path, the Call Path View currently suppresses details such as loop structure and call sites; we may use indentation or other techniques to display this in the future.)
 
-\item Mini map view (right, bottom):
+\item \textbf{Statistic view} (same location as the Call view on the top-right part):
+  The view shows the list of procedures and its estimated time execution percentage for the current display. If users change the region of the Trace view, the statistic view will also updates its list of procedures and the percentage. Similarly, a change in the Depth also reflects the change of the content in the statistic view.
+
+\item \textbf{Mini map view} (right, bottom):
   The Mini Map shows, relative to the process/time dimensions, the portion of the execution shown by the Trace View.
   The Mini Map enables one to zoom and to move from one close-up to another quickly.
 
