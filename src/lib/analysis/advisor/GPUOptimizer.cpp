@@ -50,6 +50,8 @@ using std::string;
 #include <vector>
 #include <iostream>
 
+#define INST_LEN 16
+
 namespace Analysis {
 
 GPUOptimizer *GPUOptimizerFactory(GPUOptimizerType type) {
@@ -58,7 +60,7 @@ GPUOptimizer *GPUOptimizerFactory(GPUOptimizerType type) {
   switch (type) {
 #define DECLARE_OPTIMIZER_CASE(TYPE, CLASS, VALUE) \
     case TYPE: { \
-      optimizer = new CLASS(); \
+      optimizer = new CLASS( #CLASS ); \
       break; \
     }
     FORALL_OPTIMIZER_TYPES(DECLARE_OPTIMIZER_CASE)
@@ -132,7 +134,54 @@ double GPUWarpBalanceOptimizer::estimate(const BlockBlame &block_blame) {
 
 
 double GPUCodeReorderOptimizer::match(const BlockBlame &block_blame) {
-  return 0.0;
+  // Match if for memory dep and exec dep
+  std::stringstream ss;
+  double blames = 0.0;
+
+  ss << "Apply " << this->_name << " optimization" << std::endl;
+
+  // TODO(Keren): init a template
+  for (auto &blame_iter : block_blame.blames) {
+    auto blame_name = blame_iter.first;
+
+    if (blame_name.find("STL_GMEM_GMEM") != std::string::npos ||
+      blame_name.find("STL_IDEP_DEP") != std::string::npos) {
+
+      auto pairs = 0;
+      // Find top latency pairs
+      for (size_t i = 0; i < block_blame.inst_blames.size(); ++i) {
+        auto &inst_blame = block_blame.inst_blames[i];
+        if (inst_blame.blame_name == blame_name) {
+          auto src_vma = inst_blame.src->pc;
+          auto dst_vma = inst_blame.dst->pc;
+          auto *src_struct =inst_blame.src_struct;
+          auto *dst_struct =inst_blame.dst_struct;
+
+          blames += inst_blame.blame;
+
+          ss << "Hot " << blame_name << " code (" << inst_blame.blame << "):" << std::endl;
+
+          ss << "From " << src_struct->ancestorFile()->name() << ":" << src_struct->begLine() <<
+            std::hex << " 0x" << src_vma << std::dec << std::endl;
+
+          ss << "To" << dst_struct->ancestorFile()->name() << ":" << dst_struct->begLine() <<
+            std::hex << " 0x" << dst_vma << std::dec << std::endl << std::endl;
+
+          if (++pairs == _top_pairs) {
+            // Find all pairs
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  if (blames != 0.0) {
+    // If find any match
+    this->_match += ss.str();
+  }
+
+  return blames;
 }
 
 
@@ -152,6 +201,7 @@ double GPUKernelMergeOptimizer::estimate(const BlockBlame &block_blame) {
 
 
 double GPUFunctionInlineOptimizer::match(const BlockBlame &block_blame) {
+  return 0.0;
 }
 
 

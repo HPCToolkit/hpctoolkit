@@ -65,11 +65,12 @@ void GPUAdvisor::summarizeFunctionBlames(const FunctionBlames &function_blames) 
     auto &function_blame = function_blame_iter.second;
     auto *function = function_blame.function;
     // First line, total
-    _output << function->name << "," << function_blame.blame << std::endl;
+    _output << "Summary " << function->name << "," << function_blame.blame << ":" << std::endl;
     // Following lines, blame metrics 
     for (auto &blame : function_blame.blames) {
-      _output << _metric_name_prof_map->name(blame.first) << "," << blame.second << std::endl;
+      _output << blame.first << "," << blame.second << std::endl;
     }
+    _output << std::endl;
   }
 }
 
@@ -79,12 +80,15 @@ void GPUAdvisor::selectTopBlockBlames(const FunctionBlames &function_blames, Blo
   for (auto &function_blame_iter : function_blames) {
     for (auto &block_iter : function_blame_iter.second.block_blames) {
       auto &block_blame = block_iter.second;
-      auto &min_block_blame = top_block_blames.top();
-      if (min_block_blame.blame < block_blame.blame &&
-        top_block_blames.size() >= _top_block_blames) {
-        top_block_blames.pop();
+      if (top_block_blames.size() >= _top_block_blames) {
+        auto &min_block_blame = top_block_blames.top();
+        if (min_block_blame.blame < block_blame.blame) {
+          top_block_blames.pop();
+          top_block_blames.push(block_blame);
+        }
+      } else {
+        top_block_blames.push(block_blame);
       }
-      top_block_blames.push(block_blame);
     }
   }
 }
@@ -132,7 +136,7 @@ void GPUAdvisor::concatAdvise(const OptimizerScoreMap &optimizer_scores) {
 }
 
 
-void GPUAdvisor::advise(const TotalBlames &total_blames) {
+void GPUAdvisor::advise(const CCTBlames &cct_blames) {
   _output.clear();
 
   for (auto mpi_rank = 0; mpi_rank < _metric_name_prof_map->num_mpi_ranks(); ++mpi_rank) {
@@ -144,29 +148,43 @@ void GPUAdvisor::advise(const TotalBlames &total_blames) {
         continue;
       }
 
-      const CCTBlames &cct_blames = total_blames.at(mpi_rank).at(thread_id);
-      
-      for (auto &cct_blame_iter : cct_blames) {
-        auto &function_blames = cct_blame_iter.second;
+      if (cct_blames.find(mpi_rank) != cct_blames.end()) {
+        auto &mpi_blames = cct_blames.at(mpi_rank);
+        if (mpi_blames.find(thread_id) != mpi_blames.end()) {
+          auto &function_blames = mpi_blames.at(thread_id);
 
-        // 1. Summarize function statistics
-        summarizeFunctionBlames(function_blames);
+          // 1. Summarize function statistics
+          summarizeFunctionBlames(function_blames);
 
-        // 2. Pick top N important blocks
-        BlockBlameQueue top_block_blames;
-        selectTopBlockBlames(function_blames, top_block_blames);
+          // 2. Pick top N important blocks
+          BlockBlameQueue top_block_blames;
+          selectTopBlockBlames(function_blames, top_block_blames);
 
-        // 3. Rank optimizers
-        OptimizerScoreMap optimizer_scores;
-        rankOptimizers(top_block_blames, optimizer_scores);
+          // 3. Rank optimizers
+          OptimizerScoreMap optimizer_scores;
+          rankOptimizers(top_block_blames, optimizer_scores);
 
-        // 4. Output top 5 advise to output
-        concatAdvise(optimizer_scores);
+          // 4. Output top 5 advise to output
+          concatAdvise(optimizer_scores);
+        }
       }
     }
   }
 
   std::cout << _output.str();
+
+  // Clean advise
+  for (auto *optimizer : _code_optimizers) {
+    optimizer->clear();
+  }
+
+  for (auto *optimizer : _parallel_optimizers) {
+    optimizer->clear();
+  }
+
+  for (auto *optimizer : _binary_optimizers) {
+    optimizer->clear();
+  }
 }
 
 }  // namespace Analysis

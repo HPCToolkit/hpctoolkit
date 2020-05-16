@@ -109,9 +109,9 @@ class GPUAdvisor {
 
   void configGPURoot(Prof::CCT::ADynNode *gpu_root);
 
-  void blame(TotalBlames &total_blames);
+  void blame(CCTBlames &cct_blames);
 
-  void advise(const TotalBlames &total_blames);
+  void advise(const CCTBlames &cct_blames);
  
   ~GPUAdvisor() {
     for (auto *optimizer : _code_optimizers) {
@@ -133,7 +133,6 @@ class GPUAdvisor {
   struct VMAProperty {
     VMA vma;
     Prof::CCT::ADynNode *prof_node;
-    Prof::Struct::Stmt *struct_node;
     CudaParse::InstructionStat *inst;
     CudaParse::Function *function;
     CudaParse::Block *block;
@@ -141,12 +140,14 @@ class GPUAdvisor {
     int latency_upper;
     int latency_issue;
 
-    VMAProperty() : vma(0), prof_node(NULL), struct_node(NULL),
-      inst(NULL), function(NULL), block(NULL), latency_lower(0),
+    VMAProperty() : vma(0), prof_node(NULL), inst(NULL),
+      function(NULL), block(NULL), latency_lower(0),
       latency_upper(0), latency_issue(0) {}
   };
 
   typedef std::map<VMA, VMAProperty> VMAPropertyMap;
+
+  typedef std::map<VMA, Prof::Struct::Stmt *> VMAStructureMap;
 
   enum TrackType {
     TRACK_REG = 0,
@@ -259,12 +260,14 @@ class GPUAdvisor {
 
   CCTGraph<CudaParse::InstructionStat *> _inst_dep_graph;
   VMAPropertyMap _vma_prop_map;
+  VMAStructureMap _vma_struct_map;
 
   std::vector<GPUOptimizer *> _code_optimizers;
   std::vector<GPUOptimizer *> _parallel_optimizers;
   std::vector<GPUOptimizer *> _binary_optimizers;
 
   GPUOptimizer *_loop_unroll_optimizer;
+  GPUOptimizer *_code_reorder_optimizer;
   GPUOptimizer *_memory_layout_optimizer;
   GPUOptimizer *_strength_reduction_optimizer;
   GPUOptimizer *_adjust_threads_optimizer;
@@ -274,7 +277,7 @@ class GPUAdvisor {
  
   std::stringstream _output;
  private:
-  const int _top_block_blames = 10;
+  const int _top_block_blames = 3;
   const int _top_optimizers = 5;
 };
 

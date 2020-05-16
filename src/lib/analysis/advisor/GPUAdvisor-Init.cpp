@@ -126,10 +126,25 @@ void GPUAdvisor::init() {
   // Init optimizers
   _loop_unroll_optimizer = GPUOptimizerFactory(LOOP_UNROLL);
   _strength_reduction_optimizer = GPUOptimizerFactory(STRENGTH_REDUCTION);
+  _code_reorder_optimizer = GPUOptimizerFactory(CODE_REORDER);
 
   _code_optimizers.push_back(_loop_unroll_optimizer);
-  _code_optimizers.push_back(_memory_layout_optimizer);
   _code_optimizers.push_back(_strength_reduction_optimizer);
+  _code_optimizers.push_back(_code_reorder_optimizer);
+
+  // Static struct
+  auto *struct_root = _prof->structure()->root();
+  Prof::Struct::ANodeIterator struct_iter(struct_root, NULL/*filter*/, true/*leavesOnly*/,
+    IteratorStack::PreOrder);
+  for (Prof::Struct::ANode *n = NULL; (n = struct_iter.current()); ++struct_iter) {
+    if (n->type() == Prof::Struct::ANode::TyStmt) {
+      auto *stmt = dynamic_cast<Prof::Struct::Stmt *>(n);
+      for (auto &vma_interval : stmt->vmaSet()) {
+        auto vma = vma_interval.beg();
+        _vma_struct_map[vma] = stmt;
+      }
+    }
+  }
 }
 
 // 1. Init static instruction information in vma_prop_map
@@ -193,22 +208,6 @@ void GPUAdvisor::configInst(const std::vector<CudaParse::Function *> &functions)
     }
   }
   
-  // Static struct
-  auto *struct_root = _prof->structure()->root();
-  Prof::Struct::ANodeIterator struct_iter(struct_root, NULL/*filter*/, true/*leavesOnly*/,
-    IteratorStack::PreOrder);
-  for (Prof::Struct::ANode *n = NULL; (n = struct_iter.current()); ++struct_iter) {
-    if (n->type() == Prof::Struct::ANode::TyStmt) {
-      auto *stmt = dynamic_cast<Prof::Struct::Stmt *>(n);
-      for (auto &vma_interval : stmt->vmaSet()) {
-        auto vma = vma_interval.beg();
-        if (_vma_prop_map.find(vma) != _vma_prop_map.end()) {
-          _vma_prop_map[vma].struct_node = stmt;
-        }
-      }
-    }
-  }
-
   if (DEBUG_GPUADVISOR_DETAILS) {
     std::cout << "Instruction dependency graph: " << std::endl;
     debugInstDepGraph();

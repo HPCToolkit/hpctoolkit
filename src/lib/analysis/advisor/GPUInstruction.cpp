@@ -50,7 +50,7 @@ using std::string;
 #include <vector>
 #include <iostream>
 
-#define DEBUG_CALLPATH_CUDAINSTRUCTION 0
+#define DEBUG_CALLPATH_CUDAINSTRUCTION 1
 
 namespace Analysis {
 
@@ -125,7 +125,8 @@ createMetrics(const std::vector<CudaParse::InstructionStat *> &inst_stats,
 
 static void
 gatherStmts(const Prof::LoadMap::LMId_t lm_id, const std::vector<CudaParse::InstructionStat *> &inst_stats,
-  const Prof::CCT::ANode *prof_root, std::vector<VMAStmt> &vma_stmts, std::set<Prof::CCT::ADynNode *> &gpu_roots) {
+  const Prof::CCT::ANode *prof_root, std::vector<VMAStmt> &vma_stmts,
+  std::vector<int> &gpu_inst_metric_ids, std::set<Prof::CCT::ADynNode *> &gpu_roots) {
   auto inst_pc_front = inst_stats.front()->pc;
   auto inst_pc_back = inst_stats.back()->pc;
 
@@ -139,12 +140,26 @@ gatherStmts(const Prof::LoadMap::LMId_t lm_id, const std::vector<CudaParse::Inst
     IteratorStack::PreOrder);
   for (Prof::CCT::ANode *n = NULL; (n = prof_it.current()); ++prof_it) {
     Prof::CCT::ADynNode* n_dyn = dynamic_cast<Prof::CCT::ADynNode*>(n);
-    if (n_dyn) {
+    if (n_dyn && n_dyn->isLeaf()) {
       Prof::LoadMap::LMId_t n_lm_id = n_dyn->lmId(); // ok if LoadMap::LMId_NULL
       VMA n_lm_ip = n_dyn->lmIP();
       // filter out
       if (n_lm_id != lm_id || n_lm_ip < inst_pc_front || n_lm_ip > inst_pc_back) {
         continue;
+      }
+
+      if (n_lm_ip == inst_pc_front) {
+        // Special handle for the first pc, which might be a pesudo node of trace
+        bool find = false;
+        for (auto metric_id : gpu_inst_metric_ids) {
+          if (n->demandMetric(metric_id) != 0) {
+            find = true;
+            break;
+          }
+        }
+        if (!find) {
+          continue;
+        }
       }
 
       if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
@@ -223,9 +238,23 @@ associateInstStmts(const std::vector<VMAStmt> &vma_stmts,
 
 
 void
-overlayGPUInstructionsMain(const std::vector<std::string> &instruction_files,
-  Prof::CallPath::Profile &prof, TotalBlames &total_blames, GPUAdvisor &gpu_advisor) {
+overlayGPUInstructionsMain(Prof::CallPath::Profile &prof,
+  const std::vector<std::string> &instruction_files) {
   auto *mgr = prof.metricMgr(); 
+  MetricNameProfMap metric_name_prof_map(mgr);
+  metric_name_prof_map.init();
+
+  // Check if prof contains gpu metrics
+  // Skip non-gpu prof
+  if (metric_name_prof_map.metric_ids(GPU_INST_METRIC_NAME":STL_NONE").size() == 0) {
+    if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
+      std::cout << "Skip non-gpu prof" << std::endl;
+    }
+    return;
+  }
+
+  GPUAdvisor gpu_advisor(&prof, &metric_name_prof_map);
+  gpu_advisor.init();
   // Read instruction files
   for (auto &file: instruction_files) {
     if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
@@ -259,16 +288,17 @@ overlayGPUInstructionsMain(const std::vector<std::string> &instruction_files,
     CudaParse::flatCudaInstructionStats(functions, inst_stats);
 
     // Step 3: Find new metric names and insert new mappings between from name to prof metric ids
-    createMetrics(inst_stats, *gpu_advisor.metric_name_prof_map(), *mgr);
+    createMetrics(inst_stats, metric_name_prof_map, *mgr);
 
     // Step 4: Gather all CCT nodes with lm_id and find GPU roots
     std::vector<VMAStmt> vma_stmts;
     std::set<Prof::CCT::ADynNode *> gpu_roots;
+    std::vector<int> gpu_inst_metric_ids = metric_name_prof_map.metric_ids(GPU_INST_METRIC_NAME);
     auto *prof_root = prof.cct()->root();
-    gatherStmts(lm_id, inst_stats, prof_root, vma_stmts, gpu_roots);
+    gatherStmts(lm_id, inst_stats, prof_root, vma_stmts, gpu_inst_metric_ids, gpu_roots);
 
     // Step 5: Lay metrics over prof tree
-    associateInstStmts(vma_stmts, inst_stats, *gpu_advisor.metric_name_prof_map());
+    associateInstStmts(vma_stmts, inst_stats, metric_name_prof_map);
 
     gpu_advisor.configInst(functions);
 
@@ -278,8 +308,14 @@ overlayGPUInstructionsMain(const std::vector<std::string> &instruction_files,
       // Pass current gpu root 
       gpu_advisor.configGPURoot(gpu_root);
 
+      // <mpi_rank, <thread_id, <blames>>>
+      CCTBlames cct_blames;
+
       // Blame latencies
-      gpu_advisor.blame(total_blames);
+      gpu_advisor.blame(cct_blames);
+
+      // Make advise for the calling context and cache result
+      gpu_advisor.advise(cct_blames);
     }
     
     if (DEBUG_CALLPATH_CUDAINSTRUCTION) {

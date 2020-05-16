@@ -17,19 +17,14 @@
 #include <lib/prof/CallPath-Profile.hpp>
 #include <lib/prof/Struct-Tree.hpp>
 
-#include <lib/analysis/MetricNameProfMap.hpp>
-
-#include "GPUOptimizer.hpp"
-#include "GPUAdvisor.hpp"
-
 
 namespace Analysis {
 
 namespace CallPath {
 
 void
-overlayGPUInstructionsMain(const std::vector<std::string> &instruction_files,
-  Prof::CallPath::Profile &prof, TotalBlames &total_blames, GPUAdvisor &gpu_advisor);
+overlayGPUInstructionsMain(Prof::CallPath::Profile &prof,
+  const std::vector<std::string> &instruction_files);
 
 }
 

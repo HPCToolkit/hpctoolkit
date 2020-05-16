@@ -98,20 +98,20 @@ struct KernelStats {
 struct InstructionBlame {
   // Use InstructionStat directly, so that in advisor::advise, we do not need a vma_inst_map again
   CudaParse::InstructionStat *src, *dst;
-  Prof::CCT::ANode *src_node, *dst_node;
-  int metric_id;
+  Prof::Struct::ACodeNode *src_struct, *dst_struct;
+  std::string blame_name;
   double blame;
 
   InstructionBlame(
     CudaParse::InstructionStat *src, CudaParse::InstructionStat *dst,
-    Prof::CCT::ANode *src_node, Prof::CCT::ANode *dst_node,
-    int metric_id, double blame) : src(src), dst(dst),
-    src_node(src_node), dst_node(dst_node),
-    metric_id(metric_id), blame(blame) {}
+    Prof::Struct::ACodeNode *src_struct, Prof::Struct::ACodeNode *dst_struct,
+    std::string &blame_name, double blame) : src(src), dst(dst),
+    src_struct(src_struct), dst_struct(dst_struct),
+    blame_name(blame_name), blame(blame) {}
   InstructionBlame() {}
 
   bool operator < (const InstructionBlame &other) const {
-    return this->src->pc < other.src->pc;
+    return this->blame > other.blame;
   }
 };
 
@@ -121,7 +121,7 @@ struct BlockBlame {
   int function_index;
   CudaParse::Block *block;
   std::vector<InstructionBlame> inst_blames;
-  std::map<int, double> blames;
+  std::map<std::string, double> blames;
   double blame;
 
   BlockBlame(int id, int function_index, CudaParse::Block *block) :
@@ -138,7 +138,7 @@ struct FunctionBlame {
   int index;
   CudaParse::Function *function;
   std::map<int, BlockBlame> block_blames;
-  std::map<int, double> blames;
+  std::map<std::string, double> blames;
   double blame;
 
   FunctionBlame(int index, CudaParse::Function *function) :
@@ -151,10 +151,7 @@ typedef std::vector<InstructionBlame> InstBlames;
 
 typedef std::map<int, FunctionBlame> FunctionBlames;
 
-typedef std::map<Prof::CCT::ANode *, FunctionBlames> CCTBlames;
-
-typedef std::map<int, std::map<int, CCTBlames>> TotalBlames;
-
+typedef std::map<int, std::map<int, FunctionBlames>> CCTBlames;
 
 #define FORALL_OPTIMIZER_TYPES(macro) \
   macro(REGISTER_INCREASE, GPURegisterIncreaseOptimizer, 0) \
@@ -186,7 +183,7 @@ enum GPUOptimizerType {
 
 class GPUOptimizer {
  public:
-  GPUOptimizer() {}
+  GPUOptimizer(const std::string &name) : _name(name) {}
 
   void clear() {
     _match.clear();
@@ -195,6 +192,10 @@ class GPUOptimizer {
 
   void assignKernel(const KernelStats &kernel_stats) {
     _kernel_stats = kernel_stats;
+  }
+
+  std::string name() {
+    return _name;
   }
 
   std::string advise() {
@@ -213,6 +214,9 @@ class GPUOptimizer {
   KernelStats _kernel_stats;
   std::string _match;
   std::string _estimate;
+  std::string _name;
+
+  const int _top_pairs = 3;
 };
 
 
@@ -220,7 +224,7 @@ class GPUOptimizer {
 \
 class CLASS : public GPUOptimizer { \
  public: \
-  CLASS() {} \
+  CLASS(const std::string &name) : GPUOptimizer(name) {} \
   virtual double match(const BlockBlame &block_blame); \
   virtual double estimate(const BlockBlame &block_blame); \
   virtual ~CLASS() {} \
