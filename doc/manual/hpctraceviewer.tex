@@ -13,6 +13,7 @@
 \newcommand{\summaryview}{Summary View}
 \newcommand{\miniview}{Mini Map View}
 \newcommand{\callview}{Call Path View}
+\newcommand{\statview}{Statistic View}
 
 
 % ===========================================================================
@@ -47,6 +48,12 @@ This might indicate that the processes first are observed in an initialization p
 % ===========================================================================
 
 \section{Launching}
+
+Requirements to launch \hpctraceviewer:
+\begin{itemize}
+ \item On all platforms: Java 8. At the moment \hpcviewer{} cannot run with Java 9 or newer.
+ \item On Linux: GTK.
+\end{itemize}
 
 \hpctraceviewer{} can either be launched from a command line (Linux/Unix platform) or by clicking the \hpctraceviewer{} icon (for Windows, Mac OS X and Linux/Unix platform).
 The command line syntax is as follows:
@@ -114,7 +121,7 @@ The annotations highlight \hpctraceviewer{}'s four principal window panes: \trac
   This view shows two things: (1) the current call path depth that defines the hierarchical slice shown in the Trace View; and (2) the actual call path for the point selected by the Trace View's \crosshair{}.
   (To easily coordinate the call path depth value with the call path, the Call Path View currently suppresses details such as loop structure and call sites; we may use indentation or other techniques to display this in the future.)
 
-\item \textbf{Statistic view} (same location as the Call view on the top-right part):
+\item \textbf{\statview} (same location as the \callview on the top-right part):
   The view shows the list of procedures and its estimated time execution percentage for the current display. If users change the region of the Trace view, the statistic view will also updates its list of procedures and the percentage. Similarly, a change in the Depth also reflects the change of the content in the statistic view.
 
 \item \textbf{\miniview} (right, bottom):
@@ -242,8 +249,12 @@ The number of records can be useful to identify blocking procedures (such as I/O
    \item \textbf{Using midpoint painting}: if checked, the trace painting will use \emph{midpoint} painting algorithm. By using the later, for every samples $S_1$ at time $T_1$, $S_2$ at time $T_2$ and $S_3$ at time $T_3$, \hpctraceviewer{} renders a block from $T_1$ to $\frac{T1+T2}{2}$ to sample $S_1$, and a block from from  $\frac{T1+T2}{2}$ to  $\frac{T2+T3}{2}$ for sample $S_2$, and so forth. 
 If the menu is not checked, then a simpler \emph{rightmost} algorithm is used: it will render a block from  $T_1$ to $T_2$ for sample $S_1$, and a block from $T_2$ to  $T3$ for sample $S_2$, and so forth.
    \item \textbf{Show procedure-color mapping}: to open a window which shows customized mapping between a procedure pattern and a color (Figure~\ref{fig:hpctraceviewer-mapping}). \hpctraceviewer{} allows users to customize assignment of a pattern of procedure names with a specific color.
-   \item \textbf{Filter ranks}: to open a window for selecting which ranks should be displayed (Figure~\ref{fig:hpctraceviewer-filter}). Recall that a rank can be a process (e.g. MPI applications), a thread (OpenMP applications) or both (hybrid MPI and OpenMP applications). \hpctraceviewer{} allows two types of filtering: either you specify which ranks \textit{to show} or \textit{to hide} (default is to hide). 
-To add a pattern to filter, you need to click "add" button and type the pattern in the dialog box. To remove a pattern, you have to select the pattern to remove, and click "Remove" button. Finally, clicking to "Remove all" button will clear the list of patterns.
+   \item \textbf{Filter ranks}: to open a window for selecting which ranks and/or threads should be displayed or hidden (Figure~\ref{fig:hpctraceviewer-filter}). 
+Recall that a rank can be a process (e.g. MPI applications), a thread (OpenMP applications) or both (hybrid MPI and OpenMP applications). 
+\hpctraceviewer{} allows two types of filtering: either you specify which ranks \textit{to show} or \textit{to hide} (default is to hide). 
+To add a pattern to filter, you need to click "add" button and type the pattern in the format \texttt{minimum:maximum:stride}. \\
+For instance, \texttt{3:7:2} in the process box with the thread box empty will match all threads of processes 3, 5, and 7.\\
+To remove a pattern, you have to select the pattern to remove, and click "Remove" button. Finally, clicking to "Remove all" button will clear the list of patterns.
  \end{itemize}
  \item \textbf{Window} menu to manage the layout of the application. The menu only provide one sub menu:
  \begin{itemize}

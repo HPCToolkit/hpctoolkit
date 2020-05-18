@@ -122,11 +122,11 @@ Log additional information about plug-in dependency problems.
   The view shows for the whole time range dislayed, the proportion of each subroutine in a certain time.
   Similar to Depth view, the time range in Summary reflects to the time range in the Trace view. 
 
-\item \textbf{Call view} (right, top):
+\item \textbf{Call Path view} (right, top):
   This view shows two things: (1) the current call path depth that defines the hierarchical slice shown in the Trace View; and (2) the actual call path for the point selected by the Trace View's crosshair.
   (To easily coordinate the call path depth value with the call path, the Call Path View currently suppresses details such as loop structure and call sites; we may use indentation or other techniques to display this in the future.)
 
-\item \textbf{Statistic view} (same location as the Call view on the top-right part):
+\item \textbf{Statistic view} (same location as the Call Path view on the top-right part):
   The view shows the list of procedures and its estimated time execution percentage for the current display. If users change the region of the Trace view, the statistic view will also updates its list of procedures and the percentage. Similarly, a change in the Depth also reflects the change of the content in the statistic view.
 
 \item \textbf{Mini map view} (right, bottom):
@@ -228,8 +228,12 @@ The number of records can be useful to identify blocking procedures (such as I/O
    \item \textbf{Using midpoint painting}: if checked, the trace painting will use {midpoint} painting algorithm. By using the later, for every samples $S1$ at time $T1$, $S2$ at time $T2$ and $S3$ at time $T3$, \Prog{hpctraceviewer} renders a block from $T1$ to $(T1+T2)/2$ to sample $S1$, and a block from from  $(T1+T2)/2$ to  $(T2+T3(/2$ for sample $S2$, and so forth. 
 If the menu is not checked, then a simpler {rightmost} algorithm is used: it will render a block from  $T1$ to $T2$ for sample $S1$, and a block from $T2$ to  $T3$ for sample $S2$, and so forth.
    \item \textbf{Show procedure-color mapping}: to open a window which shows customized mapping between a procedure pattern and a color. \Prog{hpctraceviewer} allows users to customize assignment of a pattern of procedure names with a specific color.
-   \item \textbf{Filter ranks}: to open a window for selecting which ranks should be displayed. Recall that a rank can be a process (e.g. MPI applications), a thread (OpenMP applications) or both (hybrid MPI and OpenMP applications). \Prog{hpctraceviewer} allows two types of filtering: either you specify which ranks {to show} or {to hide} (default is to hide). 
-To add a pattern to filter, you need to click "add" button and type the pattern in the dialog box. To remove a pattern, you have to select the pattern to remove, and click "Remove" button. Finally, clicking to "Remove all" button will clear the list of patterns.
+   \item \textbf{Filter ranks}: to open a window for selecting which ranks and/or threads should be displayed or hidden. 
+Recall that a rank can be a process (e.g. MPI applications), a thread (OpenMP applications) or both (hybrid MPI and OpenMP applications). 
+\Prog{hpctraceviewer} allows two types of filtering: either you specify which ranks {to show} or {to hide} (default is to hide). 
+To add a pattern to filter, you need to click "add" button and type the pattern in the format \texttt{minimum:maximum:stride}. \\
+For instance, \texttt{3:7:2} in the process box with the thread box empty will match all threads of processes 3, 5, and 7.\\
+To remove a pattern, you have to select the pattern to remove, and click "Remove" button. Finally, clicking to "Remove all" button will clear the list of patterns.
  \end{itemize}
  \item \textbf{Window} menu to manage the layout of the application. The menu only provide one sub menu:
  \begin{itemize}
