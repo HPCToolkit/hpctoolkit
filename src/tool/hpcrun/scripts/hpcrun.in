@@ -21,7 +21,7 @@ libunwind_dir='@LIBUNWIND_RUN_DIR@'
 papi_libdir='@OPT_PAPI_LIBPATH@'
 perfmon_libdir='@PERFMON_LIB@'
 roctracer_lib_path='@OPT_ROCM@/roctracer/lib'
-gotcha_lib_path='@GOTCHA@/lib64'
+gotcha_lib_path='@GOTCHA_LIBDIR@'
 
 
 prog_name=hpcrun

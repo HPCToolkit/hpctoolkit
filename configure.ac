@@ -1826,6 +1826,7 @@ default_bzip_prefix=no
 default_cuda_prefix=no
 default_dyninst_prefix=no
 default_elfutils_prefix=no
+default_gotcha_prefix=no
 default_libdwarf_prefix=no
 default_libiberty_prefix=no
 default_libmonitor_prefix=no
@@ -1923,6 +1924,9 @@ then
   fi
   if find_spack_pkg elfutils ; then
     default_elfutils_prefix="$spack_ans"
+  fi
+  if find_spack_pkg gotcha ; then
+    default_gotcha_prefix="$spack_ans"
   fi
   if find_spack_pkg libdwarf ; then
     default_libdwarf_prefix="$spack_ans"
@@ -2419,6 +2423,56 @@ AC_MSG_RESULT([$LIBELF])
 AC_SUBST([LIBELF_INC])
 AC_SUBST([LIBELF_LIB])
 AC_SUBST([LIBELF_COPY])
+
+
+#-------------------------------------------------
+# Option: --with-gotcha=PATH
+#-------------------------------------------------
+
+GOTCHA="$default_gotcha_prefix"
+
+GOTCHA_IFLAGS=
+GOTCHA_LDFLAGS=
+GOTCHA_LIBDIR=no
+
+AC_ARG_WITH([gotcha],
+  [AS_HELP_STRING([--with-gotcha=PATH],
+      [path to gotcha install directory])],
+  [GOTCHA="$withval"],
+  [])
+
+AC_MSG_CHECKING([for gotcha])
+
+case "$GOTCHA" in
+  /* )
+    if test ! -f "${GOTCHA}/include/gotcha/gotcha.h" ; then
+      AC_MSG_ERROR([unable to find gotcha.h in: $GOTCHA])
+    fi
+    GOTCHA_IFLAGS="-I${GOTCHA}/include"
+    for lib in $multilib_path ; do
+      if test -f "${GOTCHA}/${lib}/libgotcha.so" ; then
+        GOTCHA_LIBDIR="${GOTCHA}/${lib}"
+	break
+      fi
+    done
+    if test "$GOTCHA_LIBDIR" = no ; then
+      AC_MSG_ERROR([unable to find libgotcha.so in: $GOTCHA])
+    fi
+    GOTCHA_LDFLAGS="-L${GOTCHA_LIBDIR} -lgotcha"
+    num_pkgs=`expr 1 + $num_pkgs`
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([gotcha directory must be absolute path: $GOTCHA])
+    ;;
+esac
+
+AC_MSG_RESULT([$GOTCHA])
+
+AC_SUBST([GOTCHA_IFLAGS])
+AC_SUBST([GOTCHA_LDFLAGS])
+AC_SUBST([GOTCHA_LIBDIR])
 
 
 #-------------------------------------------------
@@ -4646,21 +4700,6 @@ AC_SUBST([OPT_ROCM])
 AC_SUBST([OPT_ROCM_IFLAGS])
 AC_SUBST([OPT_ROCM_LDFLAGS])
 
-#-------------------------------------------------
-# GOTCHA 
-#-------------------------------------------------
-GOTCHA=
-AC_ARG_WITH([gotcha],
-  [AS_HELP_STRING([--with-gotcha=PATH],
-      [path to GOTCHA install directory])],
-  [GOTCHA=${withval}])
-
-AC_MSG_CHECKING([for gotcha])
-GOTCHA_IFLAGS="-I${GOTCHA}/include"
-GOTCHA_LDFLAGS="-L${GOTCHA}/lib64 -lgotcha"
-AC_SUBST([GOTCHA])
-AC_SUBST([GOTCHA_IFLAGS])
-AC_SUBST([GOTCHA_LDFLAGS])
 
 #-------------------------------------------------
 # enable-data-centric-tracing: data-centric tracing
@@ -5018,6 +5057,7 @@ AC_MSG_NOTICE([  bzip:         ${BZIP}])
 AC_MSG_NOTICE([  dyninst:      ${DYNINST}])
 AC_MSG_NOTICE([  dyninst:      ${dyninst_features}])
 AC_MSG_NOTICE([  elfutils:     ${LIBELF}])
+AC_MSG_NOTICE([  gotcha:       ${GOTCHA}])
 AC_MSG_NOTICE([  libdwarf:     ${LIBDWARF}])
 AC_MSG_NOTICE([  libiberty:    ${LIBIBERTY}])
 AC_MSG_NOTICE([  libmonitor:   ${LIBMONITOR}])
