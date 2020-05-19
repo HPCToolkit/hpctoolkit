@@ -931,7 +931,6 @@ if UNW_LIBUNW
 endif
 
 libhpcrun_la_CFLAGS += $(GOTCHA_IFLAGS)
-libhpcrun_o_CFLAGS += $(GOTCHA_IFLAGS)
 libhpcrun_la_LDFLAGS += $(GOTCHA_LDFLAGS)
 libhpcrun_la_SOURCES  +=  $(UNW_SOURCE_FILES)
 libhpcrun_o_SOURCES   +=  $(UNW_SOURCE_FILES)
