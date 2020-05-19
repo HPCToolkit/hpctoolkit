@@ -50,17 +50,18 @@ using std::string;
 #include <vector>
 #include <iostream>
 
-#define INST_LEN 16
+
+#define MIN2(x, y) (x > y ? y : x)
 
 namespace Analysis {
 
-GPUOptimizer *GPUOptimizerFactory(GPUOptimizerType type) {
+GPUOptimizer *GPUOptimizerFactory(GPUOptimizerType type, GPUArchitecture *arch) {
   GPUOptimizer *optimizer = NULL;
 
   switch (type) {
 #define DECLARE_OPTIMIZER_CASE(TYPE, CLASS, VALUE) \
     case TYPE: { \
-      optimizer = new CLASS( #CLASS ); \
+      optimizer = new CLASS( #CLASS , arch); \
       break; \
     }
     FORALL_OPTIMIZER_TYPES(DECLARE_OPTIMIZER_CASE)
@@ -73,98 +74,67 @@ GPUOptimizer *GPUOptimizerFactory(GPUOptimizerType type) {
 }
 
 
-double GPURegisterIncreaseOptimizer::match(const BlockBlame &block_blame) {
+double GPURegisterIncreaseOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
   return 0.0;
 }
 
 
-double GPURegisterIncreaseOptimizer::estimate(const BlockBlame &block_blame) {
+double GPURegisterDecreaseOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
   return 0.0;
 }
 
 
-double GPURegisterDecreaseOptimizer::match(const BlockBlame &block_blame) {
+double GPULoopUnrollOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
   return 0.0;
 }
 
 
-double GPURegisterDecreaseOptimizer::estimate(const BlockBlame &block_blame) {
+double GPULoopNoUnrollOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
   return 0.0;
 }
 
 
-double GPULoopUnrollOptimizer::match(const BlockBlame &block_blame) {
+double GPUStrengthReductionOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
   return 0.0;
 }
 
 
-double GPULoopUnrollOptimizer::estimate(const BlockBlame &block_blame) {
+double GPUWarpBalanceOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
   return 0.0;
 }
 
 
-double GPULoopNoUnrollOptimizer::match(const BlockBlame &block_blame) {
-  return 0.0;
-}
-
-
-double GPULoopNoUnrollOptimizer::estimate(const BlockBlame &block_blame) {
-  return 0.0;
-}
-
-
-double GPUStrengthReductionOptimizer::match(const BlockBlame &block_blame) {
-  return 0.0;
-}
-
-
-double GPUStrengthReductionOptimizer::estimate(const BlockBlame &block_blame) {
-  return 0.0;
-}
-
-
-double GPUWarpBalanceOptimizer::match(const BlockBlame &block_blame) {
-  return 0.0;
-}
-
-
-double GPUWarpBalanceOptimizer::estimate(const BlockBlame &block_blame) {
-  return 0.0;
-}
-
-
-double GPUCodeReorderOptimizer::match(const BlockBlame &block_blame) {
+double GPUCodeReorderOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
   // Match if for memory dep and exec dep
-  std::stringstream ss;
-  double blames = 0.0;
-
-  ss << "Apply " << this->_name << " optimization" << std::endl;
+  std::stringstream output;
+  double speedup = 0.0;
+  double blame = 0.0;
 
   // TODO(Keren): init a template
-  for (auto &blame_iter : block_blame.blames) {
+  for (auto &blame_iter : kernel_blame.blames) {
     auto blame_name = blame_iter.first;
+    auto blame_metric = blame_iter.second;
 
     if (blame_name.find("STL_GMEM_GMEM") != std::string::npos ||
       blame_name.find("STL_IDEP_DEP") != std::string::npos) {
+      blame += blame_metric;
 
       auto pairs = 0;
       // Find top latency pairs
-      for (size_t i = 0; i < block_blame.inst_blames.size(); ++i) {
-        auto &inst_blame = block_blame.inst_blames[i];
+      for (size_t i = 0; i < kernel_blame.inst_blames.size(); ++i) {
+        auto &inst_blame = kernel_blame.inst_blames[i];
         if (inst_blame.blame_name == blame_name) {
           auto src_vma = inst_blame.src->pc;
           auto dst_vma = inst_blame.dst->pc;
           auto *src_struct =inst_blame.src_struct;
           auto *dst_struct =inst_blame.dst_struct;
 
-          blames += inst_blame.blame;
+          output << "Hot " << blame_name << " code (" << inst_blame.blame << "):" << std::endl;
 
-          ss << "Hot " << blame_name << " code (" << inst_blame.blame << "):" << std::endl;
-
-          ss << "From " << src_struct->ancestorFile()->name() << ":" << src_struct->begLine() <<
+          output << "From " << src_struct->ancestorFile()->name() << ":" << src_struct->begLine() <<
             std::hex << " 0x" << src_vma << std::dec << std::endl;
 
-          ss << "To" << dst_struct->ancestorFile()->name() << ":" << dst_struct->begLine() <<
+          output << "To" << dst_struct->ancestorFile()->name() << ":" << dst_struct->begLine() <<
             std::hex << " 0x" << dst_vma << std::dec << std::endl << std::endl;
 
           if (++pairs == _top_pairs) {
@@ -176,106 +146,82 @@ double GPUCodeReorderOptimizer::match(const BlockBlame &block_blame) {
     }
   }
 
-  if (blames != 0.0) {
+  if (blame != 0.0) {
+    std::stringstream ss;
+    double ratio = blame / kernel_stats.total_samples * 100;
+    speedup = kernel_stats.total_samples / (kernel_stats.total_samples -
+      MIN2(kernel_stats.active_warps, blame));
     // If find any match
-    this->_match += ss.str();
+    ss << "Apply " << this->_name << " optimization (" << std::to_string(ratio)
+       << "%), estimate speedup " << speedup << "x" << std::endl;
+    this->_advise += ss.str();
+    this->_advise += output.str();
   }
 
-  return blames;
+  return speedup;
 }
 
 
-double GPUCodeReorderOptimizer::estimate(const BlockBlame &block_blame) {
+double GPUKernelMergeOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
   return 0.0;
 }
 
 
-double GPUKernelMergeOptimizer::match(const BlockBlame &block_blame) {
+double GPUFunctionInlineOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
   return 0.0;
 }
 
 
-double GPUKernelMergeOptimizer::estimate(const BlockBlame &block_blame) {
+double GPUSharedMemoryCoalesceOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
   return 0.0;
 }
 
 
-double GPUFunctionInlineOptimizer::match(const BlockBlame &block_blame) {
+double GPUGlobalMemoryCoalesceOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
   return 0.0;
 }
 
 
-double GPUFunctionInlineOptimizer::estimate(const BlockBlame &block_blame) {
+double GPUOccupancyIncreaseOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
+  double speedup = 0.0;
+  // Match if for memory dep and exec dep
+  std::stringstream output;
+
+  double cur_warps = kernel_stats.active_warps;
+  double max_warps = this->_arch->warps();
+
+  if (kernel_blame.blame != 0.0) {
+    double ratio = cur_warps / max_warps;
+    double issue = kernel_stats.active_samples / static_cast<double>(kernel_stats.total_samples);
+    double new_issue = 1 - pow(1 - issue, max_warps / cur_warps);
+    speedup = new_issue / issue;
+    // If find any match
+    output << "Apply " << this->_name << " optimization (" << std::to_string(ratio)
+       << "%), estimate speedup " << speedup << "x" << std::endl;
+    output << "Increase #active_warps from " << cur_warps << " to " << max_warps << std::endl;
+    this->_advise += output.str();
+  }
+
+  return speedup;
+}
+
+
+double GPUOccupancyDecreaseOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
   return 0.0;
 }
 
 
-double GPUSharedMemoryCoalesceOptimizer::match(const BlockBlame &block_blame) {
+double GPUSMBalanceOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
   return 0.0;
 }
 
 
-double GPUSharedMemoryCoalesceOptimizer::estimate(const BlockBlame &block_blame) {
+double GPUBlockIncreaseOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
   return 0.0;
 }
 
 
-double GPUGlobalMemoryCoalesceOptimizer::match(const BlockBlame &block_blame) {
-  return 0.0;
-}
-
-
-double GPUGlobalMemoryCoalesceOptimizer::estimate(const BlockBlame &block_blame) {
-  return 0.0;
-}
-
-
-double GPUOccupancyIncreaseOptimizer::match(const BlockBlame &block_blame) {
-  return 0.0;
-}
-
-
-double GPUOccupancyIncreaseOptimizer::estimate(const BlockBlame &block_blame) {
-  return 0.0;
-}
-
-
-double GPUOccupancyDecreaseOptimizer::match(const BlockBlame &block_blame) {
-  return 0.0;
-}
-
-
-double GPUOccupancyDecreaseOptimizer::estimate(const BlockBlame &block_blame) {
-  return 0.0;
-}
-
-
-double GPUSMBalanceOptimizer::match(const BlockBlame &block_blame) {
-  return 0.0;
-}
-
-
-double GPUSMBalanceOptimizer::estimate(const BlockBlame &block_blame) {
-  return 0.0;
-}
-
-
-double GPUBlockIncreaseOptimizer::match(const BlockBlame &block_blame) {
-  return 0.0;
-}
-
-
-double GPUBlockIncreaseOptimizer::estimate(const BlockBlame &block_blame) {
-  return 0.0;
-}
-
-
-double GPUBlockDecreaseOptimizer::match(const BlockBlame &block_blame) {
-  return 0.0;
-}
-
-
-double GPUBlockDecreaseOptimizer::estimate(const BlockBlame &block_blame) {
+double GPUBlockDecreaseOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
   return 0.0;
 }
 

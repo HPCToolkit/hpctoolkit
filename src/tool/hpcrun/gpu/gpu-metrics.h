@@ -300,9 +300,11 @@ typedef enum {
 	"GPU kernel: fine-grain parallelism accumulator [internal use only]") \
   macro("GKER:THR_REG_ACUMU",           GPU_KINFO_REGISTERS_ACUMU,	\
 	"GPU kernel: thread register count accumulator [internal use only]") \
+  macro("GKER:BLKS_ACUMU",              GPU_KINFO_BLKS_ACUMU,	\
+	"GPU kernel: block count accumulator [internal use only]")	\
   macro("GKER:BLK_THR_ACUMU",           GPU_KINFO_BLK_THREADS_ACUMU,	\
 	"GPU kernel: thread count accumulator [internal use only]")	\
-  macro("GKER:BLK_SM_ACUMU",            GPU_KINFO_BLK_SMEM_ACUMU,	\
+  macro("GKER:BLK_SMEM_ACUMU",          GPU_KINFO_BLK_SMEM_ACUMU,	\
 	"GPU kernel: block local memory accumulator [internal use only]") \
   macro("GKER:STMEM (B)",         GPU_KINFO_STMEM,			\
 	"GPU kernel: static memory (bytes)")				\
@@ -316,9 +318,11 @@ typedef enum {
 	"GPU kernel: fine-grain parallelism, maximum")			\
   macro("GKER:THR_REG",           GPU_KINFO_REGISTERS,			\
 	"GPU kernel: thread register count")				\
+  macro("GKER:BLKS",              GPU_KINFO_BLKS,		\
+	"GPU kernel: block count")					\
   macro("GKER:BLK_THR",           GPU_KINFO_BLK_THREADS,		\
 	"GPU kernel: thread count")					\
-  macro("GKER:BLK_SM (B)",            GPU_KINFO_BLK_SMEM,		\
+  macro("GKER:BLK_SMEM (B)",      GPU_KINFO_BLK_SMEM,		\
 	"GPU kernel: block local memory (bytes)")			\
   macro("GKER:COUNT",             GPU_KINFO_COUNT,  			\
 	"GPU kernel: launch count")					\

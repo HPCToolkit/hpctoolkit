@@ -342,14 +342,16 @@ convert_kernel
   uint32_t activeWarpsPerSM = 0;
   uint32_t maxActiveWarpsPerSM = 0;
   uint32_t threadRegisters = 0;
+  uint32_t blocks = 0;
   uint32_t blockThreads = 0;
   uint32_t blockSharedMemory = 0;
   cupti_occupancy_analyze(activity, &activeWarpsPerSM, &maxActiveWarpsPerSM,
-			  &threadRegisters, &blockThreads, &blockSharedMemory);
+			  &threadRegisters, &blocks, &blockThreads, &blockSharedMemory);
 
   ga->details.kernel.activeWarpsPerSM = activeWarpsPerSM;
   ga->details.kernel.maxActiveWarpsPerSM = maxActiveWarpsPerSM;
   ga->details.kernel.threadRegisters = threadRegisters;
+  ga->details.kernel.blocks = blocks;
   ga->details.kernel.blockThreads = blockThreads;
   ga->details.kernel.blockSharedMemory = blockSharedMemory;
 }

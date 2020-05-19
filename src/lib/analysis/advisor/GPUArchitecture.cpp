@@ -50,7 +50,7 @@ using std::string;
 namespace Analysis {
 
 // TODO(Keren): add more latency components
-std::pair<int, int> V100::latency(const std::string &opcode) {
+std::pair<int, int> V100::latency(const std::string &opcode) const {
   if (opcode.find("INTEGER") != std::string::npos) {
     if (opcode.find(".MAD") != std::string::npos) {
       return std::pair<int, int>(5, 5);
@@ -91,7 +91,7 @@ std::pair<int, int> V100::latency(const std::string &opcode) {
 
 
 // XXX: not throughput
-int V100::issue(const std::string &opcode) {
+int V100::issue(const std::string &opcode) const {
   if (opcode.find("INTEGER") != std::string::npos) {
     // 32 / 16 = 2
     return 2;

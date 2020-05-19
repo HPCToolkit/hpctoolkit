@@ -70,6 +70,10 @@ void GPUAdvisor::init() {
     return;
   }
 
+  // TODO(Keren): Find device tag under the root and use the corresponding archtecture
+  // Problem: currently we only have device tags for call instructions
+  this->_arch = new V100(); 
+
   // Init individual metrics
   _issue_metric = GPU_INST_METRIC_NAME":STL_NONE";
   _stall_metric = GPU_INST_METRIC_NAME":STL_ANY";
@@ -124,13 +128,14 @@ void GPUAdvisor::init() {
   }
 
   // Init optimizers
-  _loop_unroll_optimizer = GPUOptimizerFactory(LOOP_UNROLL);
-  _strength_reduction_optimizer = GPUOptimizerFactory(STRENGTH_REDUCTION);
-  _code_reorder_optimizer = GPUOptimizerFactory(CODE_REORDER);
+  auto *code_reorder_optimizer = GPUOptimizerFactory(CODE_REORDER, _arch);
+  auto *occupancy_increase_optimizer = GPUOptimizerFactory(OCCUPANCY_INCREASE, _arch);
 
-  _code_optimizers.push_back(_loop_unroll_optimizer);
-  _code_optimizers.push_back(_strength_reduction_optimizer);
-  _code_optimizers.push_back(_code_reorder_optimizer);
+  // Code optimizers
+  _code_optimizers.push_back(code_reorder_optimizer);
+
+  // Parallel optimizers
+  _parallel_optimizers.push_back(occupancy_increase_optimizer);
 
   // Static struct
   auto *struct_root = _prof->structure()->root();
@@ -162,15 +167,20 @@ void GPUAdvisor::configInst(const std::vector<CudaParse::Function *> &functions)
       for (auto *_inst : block->insts) {
         auto *inst = _inst->inst_stat;
 
-        VMAProperty property;
+        VMAProperty prop;
 
-        property.inst = inst;
+        prop.inst = inst;
         // Ensure inst->pc has been relocated
-        property.vma = inst->pc;
-        property.function = function;
-        property.block = block;
+        prop.vma = inst->pc;
+        prop.function = function;
+        prop.block = block;
 
-        _vma_prop_map[property.vma] = property;
+        auto latency = _arch->latency(inst->op);
+        prop.latency_lower = latency.first;
+        prop.latency_upper = latency.second;
+        prop.latency_issue = _arch->issue(inst->op);
+
+        _vma_prop_map[prop.vma] = prop;
       }
     }
   }
@@ -216,26 +226,14 @@ void GPUAdvisor::configInst(const std::vector<CudaParse::Function *> &functions)
 }
 
 
-void GPUAdvisor::configGPURoot(Prof::CCT::ADynNode *gpu_root) {
+void GPUAdvisor::configGPURoot(Prof::CCT::ADynNode *gpu_root, Prof::CCT::ADynNode *gpu_kernel) {
   // Update current root
   this->_gpu_root = gpu_root;
-
-  // TODO(Keren): Update kernel characteristics
-
-  // TODO(Keren): Find device tag under the root and use the corresponding archtecture
-  // Problem: currently we only have device tags for call instructions
-  this->_arch = new V100(); 
+  this->_gpu_kernel = gpu_kernel;
 
   // Update vma->latency mapping
   for (auto &iter : _vma_prop_map) {
     auto &prop = iter.second;
-    auto *inst = prop.inst;
-
-    auto latency = _arch->latency(inst->op);
-    prop.latency_lower = latency.first;
-    prop.latency_upper = latency.second;
-    prop.latency_issue = _arch->issue(inst->op);
-
     // Clear previous vma->prof mapping
     prop.prof_node = NULL;
   }

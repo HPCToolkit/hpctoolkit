@@ -93,6 +93,7 @@ cupti_occupancy_analyze
  uint32_t *active_warps_per_sm,
  uint32_t *max_active_warps_per_sm,
  uint32_t *thread_registers,
+ uint32_t *blocks,
  uint32_t *block_threads,
  uint32_t *block_shared_memory
 )
@@ -111,6 +112,7 @@ cupti_occupancy_analyze
     uint32_t sm_blocks = device_property->sm_blocks;
 
     *thread_registers = kernel->registersPerThread;
+    *blocks = kernel->gridX * kernel->gridY * kernel->gridZ;
     *block_threads = kernel->blockX * kernel->blockY * kernel->blockZ;
     *block_shared_memory = kernel->dynamicSharedMemory + kernel->staticSharedMemory;
 
@@ -134,6 +136,7 @@ cupti_occupancy_analyze
     TMSG(CUDA_CUBIN, "max_blocks_by_shared_memory %u", max_blocks_by_shared_memory);
     TMSG(CUDA_CUBIN, "max_blocks_per_multiprocessor %u", sm_blocks);
     TMSG(CUDA_CUBIN, "active_blocks %u", active_blocks);
+    TMSG(CUDA_CUBIN, "blocks %u", *blocks);
     TMSG(CUDA_CUBIN, "block_threads %u", *block_threads);
     TMSG(CUDA_CUBIN, "num_threads_per_warp %u", num_threads_per_warp);
     TMSG(CUDA_CUBIN, "active_warps_per_sm %u", *active_warps_per_sm);

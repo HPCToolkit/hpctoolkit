@@ -90,12 +90,20 @@ class GPUArchitecture {
   // instruction latency
   // memory instruction latency varies
   // <min, max>
-  virtual std::pair<int, int> latency(const std::string &opcode) = 0;
+  virtual std::pair<int, int> latency(const std::string &opcode) const = 0;
 
   // warp throughput, not block throughput
-  virtual int issue(const std::string &opcode) = 0;
+  virtual int issue(const std::string &opcode) const = 0;
 
-  virtual int inst_size() = 0;
+  virtual int inst_size() const = 0;
+
+  // number of sms per GPU
+  virtual int sms() const = 0;
+
+  // number of warps per sm
+  virtual int warps() const = 0;
+
+  virtual double frequency() const = 0;
 
   virtual ~GPUArchitecture() {}
 
@@ -108,12 +116,24 @@ class V100 : public GPUArchitecture {
  public:
   V100() : GPUArchitecture(VENDOR_NVIDIA) {}
 
-  virtual std::pair<int, int> latency(const std::string &opcode);
+  virtual std::pair<int, int> latency(const std::string &opcode) const;
 
-  virtual int issue(const std::string &opcode);
+  virtual int issue(const std::string &opcode) const;
 
-  virtual int inst_size() {
+  virtual int inst_size() const {
     return 16;
+  }
+
+  virtual int sms() const {
+    return 80;
+  }
+
+  virtual int warps() const {
+    return 64;
+  }
+
+  virtual double frequency() const {
+    return 1.38;
   }
 
   virtual ~V100() {}

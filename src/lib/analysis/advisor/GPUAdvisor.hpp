@@ -107,7 +107,7 @@ class GPUAdvisor {
 
   void configInst(const std::vector<CudaParse::Function *> &functions);
 
-  void configGPURoot(Prof::CCT::ADynNode *gpu_root);
+  void configGPURoot(Prof::CCT::ADynNode *gpu_root, Prof::CCT::ADynNode *gpu_kernel);
 
   void blame(CCTBlames &cct_blames);
 
@@ -124,9 +124,7 @@ class GPUAdvisor {
   }
 
  private:
-  typedef std::priority_queue<BlockBlame> BlockBlameQueue;
-
-  typedef std::map<GPUOptimizer *, double> OptimizerScoreMap;
+  typedef std::map<double, std::vector<GPUOptimizer *>, std::greater<double>> OptimizerRank;
 
   typedef std::map<int, std::map<int, std::vector<std::vector<CudaParse::Block *> > > > CCTEdgePathMap;
 
@@ -195,15 +193,11 @@ class GPUAdvisor {
 
   void detailizeInstBlames(InstBlames &inst_blames);
 
-  void overlayInstBlames(const InstBlames &inst_blames, FunctionBlames &function_blames);
+  void overlayInstBlames(InstBlames &inst_blames, KernelBlame &kernel_blame);
 
-  void summarizeFunctionBlames(const FunctionBlames &function_blames);
+  KernelStats readKernelStats(int mpi_rank, int thread_id);
 
-  void selectTopBlockBlames(const FunctionBlames &function_blames, BlockBlameQueue &top_block_blames);
-
-  void rankOptimizers(BlockBlameQueue &top_block_blames, OptimizerScoreMap &optimizer_scores);
-
-  void concatAdvise(const OptimizerScoreMap &optimizer_scores);
+  void concatAdvise(const OptimizerRank &optimizer_rank);
   
   // Helper functions
   int demandNodeMetric(int mpi_rank, int thread_id, Prof::CCT::ADynNode *node);
@@ -256,6 +250,8 @@ class GPUAdvisor {
   MetricNameProfMap *_metric_name_prof_map;
 
   Prof::CCT::ADynNode *_gpu_root;
+  Prof::CCT::ADynNode *_gpu_kernel;
+
   std::map<int, int> _function_offset;
 
   CCTGraph<CudaParse::InstructionStat *> _inst_dep_graph;
@@ -266,14 +262,9 @@ class GPUAdvisor {
   std::vector<GPUOptimizer *> _parallel_optimizers;
   std::vector<GPUOptimizer *> _binary_optimizers;
 
-  GPUOptimizer *_loop_unroll_optimizer;
-  GPUOptimizer *_code_reorder_optimizer;
-  GPUOptimizer *_memory_layout_optimizer;
-  GPUOptimizer *_strength_reduction_optimizer;
-  GPUOptimizer *_adjust_threads_optimizer;
-  GPUOptimizer *_adjust_registers_optimizer;
-
   GPUArchitecture *_arch;
+
+  KernelStats _kernel_stats;
  
   std::stringstream _output;
  private:

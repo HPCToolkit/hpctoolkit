@@ -60,71 +60,11 @@ using std::string;
 
 namespace Analysis {
 
-void GPUAdvisor::summarizeFunctionBlames(const FunctionBlames &function_blames) {
-  for (auto &function_blame_iter : function_blames) {
-    auto &function_blame = function_blame_iter.second;
-    auto *function = function_blame.function;
-    // First line, total
-    _output << "Summary " << function->name << "," << function_blame.blame << ":" << std::endl;
-    // Following lines, blame metrics 
-    for (auto &blame : function_blame.blames) {
-      _output << blame.first << "," << blame.second << std::endl;
-    }
-    _output << std::endl;
-  }
-}
-
-
-void GPUAdvisor::selectTopBlockBlames(const FunctionBlames &function_blames, BlockBlameQueue &top_block_blames) {
-  // TODO(Keren): Clustering similar blocks?
-  for (auto &function_blame_iter : function_blames) {
-    for (auto &block_iter : function_blame_iter.second.block_blames) {
-      auto &block_blame = block_iter.second;
-      if (top_block_blames.size() >= _top_block_blames) {
-        auto &min_block_blame = top_block_blames.top();
-        if (min_block_blame.blame < block_blame.blame) {
-          top_block_blames.pop();
-          top_block_blames.push(block_blame);
-        }
-      } else {
-        top_block_blames.push(block_blame);
-      }
-    }
-  }
-}
-
-
-void GPUAdvisor::rankOptimizers(BlockBlameQueue &top_block_blames, OptimizerScoreMap &optimizer_scores) {
-  while (top_block_blames.empty() == false) {
-    auto &block_blame = top_block_blames.top();
-    for (auto *optimizer : _code_optimizers) {
-      double score = optimizer->match(block_blame);
-      optimizer_scores[optimizer] += score;
-    }
-    for (auto *optimizer : _parallel_optimizers) {
-      double score = optimizer->match(block_blame);
-      optimizer_scores[optimizer] += score;
-    }
-    top_block_blames.pop();
-  }
-}
-
-
-void GPUAdvisor::concatAdvise(const OptimizerScoreMap &optimizer_scores) {
-  // Descendant order
-  std::map<double, std::vector<GPUOptimizer *>, std::greater<double>> optimizer_rank;
-
-  for (auto &iter : optimizer_scores) {
-    auto *optimizer = iter.first;
-    auto score = iter.second;
-    optimizer_rank[score].push_back(optimizer);
-  }
-
+void GPUAdvisor::concatAdvise(const OptimizerRank &optimizer_rank) {
   size_t rank = 0;
   for (auto &iter : optimizer_rank) {
     for (auto *optimizer : iter.second) {
       ++rank;
-      // TODO(Keren): concat advise for the current gpu_root
       _output << optimizer->advise();
 
       if (rank >= _top_optimizers) {
@@ -133,6 +73,72 @@ void GPUAdvisor::concatAdvise(const OptimizerScoreMap &optimizer_scores) {
       }
     }
   }
+}
+
+
+KernelStats GPUAdvisor::readKernelStats(int mpi_rank, int thread_id) {
+  auto metric_index_blocks = _metric_name_prof_map->metric_id(
+    mpi_rank, thread_id, "GKER:BLKS_ACUMU", false);
+  auto metric_index_block_threads = _metric_name_prof_map->metric_id(
+    mpi_rank, thread_id, "GKER:BLK_THR_ACUMU", false);
+  auto metric_index_block_smem = _metric_name_prof_map->metric_id(
+    mpi_rank, thread_id, "GKER:BLK_SMEM_ACUMU", false);
+  auto metric_index_thread_reg = _metric_name_prof_map->metric_id(
+    mpi_rank, thread_id, "GKER:THR_REG_ACUMU", false);
+  auto metric_index_warps = _metric_name_prof_map->metric_id(
+    mpi_rank, thread_id, "GKER:FGP_ACT_ACUMU", false);
+  auto metric_index_time = _metric_name_prof_map->metric_id(
+    mpi_rank, thread_id, "GKER (sec)", false);
+  auto metric_index_count = _metric_name_prof_map->metric_id(
+    mpi_rank, thread_id, "GKER:COUNT", false);
+  auto metric_index_samples_dropped = _metric_name_prof_map->metric_id(
+    mpi_rank, thread_id, "GSAMP:DRP", false);
+  auto metric_index_samples_expected = _metric_name_prof_map->metric_id(
+    mpi_rank, thread_id, "GSAMP:EXP", false);
+  auto metric_index_samples_total = _metric_name_prof_map->metric_id(
+    mpi_rank, thread_id, "GSAMP:TOT", false);
+  auto metric_index_sample_frequency = _metric_name_prof_map->metric_id(
+    mpi_rank, thread_id, "GSAMP:PER (cyc)", false);
+
+  auto blocks = _gpu_kernel->metric(metric_index_blocks);
+  auto block_threads = _gpu_kernel->metric(metric_index_block_threads);
+  auto block_smem = _gpu_kernel->metric(metric_index_block_smem);
+  auto thread_regs = _gpu_kernel->metric(metric_index_thread_reg);
+  auto warps = _gpu_kernel->metric(metric_index_warps);
+  auto samples_expected = _gpu_kernel->metric(metric_index_samples_expected);
+  auto samples_dropped = _gpu_kernel->metric(metric_index_samples_dropped);
+  auto samples_total = _gpu_kernel->metric(metric_index_samples_total);
+  auto sample_frequency = _gpu_kernel->metric(metric_index_sample_frequency);
+  auto time = _gpu_kernel->metric(metric_index_time);
+  auto count = _gpu_kernel->metric(metric_index_count);
+
+  if (DEBUG_GPUADVISOR) {
+    std::cout << "blocks: " << blocks << std::endl;
+    std::cout << "block_threads: " << block_threads << std::endl;
+    std::cout << "block_smem: " << block_smem << std::endl;
+    std::cout << "thread_regs: " << thread_regs << std::endl;
+    std::cout << "warps: " << warps << std::endl;
+    std::cout << "samples_expected: " << samples_expected << std::endl;
+    std::cout << "samples_dropped: " << samples_dropped << std::endl;
+    std::cout << "samples_total: " << samples_total << std::endl;
+    std::cout << "sample_frequency: " << sample_frequency << std::endl;
+    std::cout << "time: " << time << std::endl;
+    std::cout << "count: " << count << std::endl;
+    std::cout << std::endl;
+  }
+
+  blocks /= count;
+  block_threads /= count;
+  block_smem /= count;
+  thread_regs /= count;
+  warps /= count;
+
+  samples_total = samples_total - samples_dropped;
+  auto util = samples_expected / samples_total;
+  samples_total *= sample_frequency; 
+
+  return KernelStats(blocks, block_threads, block_smem, thread_regs, warps, 
+    0, samples_total, time, util);
 }
 
 
@@ -150,22 +156,56 @@ void GPUAdvisor::advise(const CCTBlames &cct_blames) {
 
       if (cct_blames.find(mpi_rank) != cct_blames.end()) {
         auto &mpi_blames = cct_blames.at(mpi_rank);
+
         if (mpi_blames.find(thread_id) != mpi_blames.end()) {
-          auto &function_blames = mpi_blames.at(thread_id);
+          KernelStats kernel_stats = readKernelStats(mpi_rank, thread_id);
+
+          auto &kernel_blame = mpi_blames.at(thread_id);
 
           // 1. Summarize function statistics
-          summarizeFunctionBlames(function_blames);
+          // First line, total
+          _output << "[" << mpi_rank << "," << thread_id << "] Summary " <<
+            kernel_blame.blame << ":" << std::endl;
 
-          // 2. Pick top N important blocks
-          BlockBlameQueue top_block_blames;
-          selectTopBlockBlames(function_blames, top_block_blames);
+          for (auto &kernel_blame_iter : kernel_blame.blames) {
+            // Following lines, blame metrics 
+            auto &metric = kernel_blame_iter.first;
+            auto blame = kernel_blame_iter.second;
+            _output << metric << ": " << blame / kernel_blame.blame * 100 << "%" << std::endl;
+          }
 
-          // 3. Rank optimizers
-          OptimizerScoreMap optimizer_scores;
-          rankOptimizers(top_block_blames, optimizer_scores);
+          // Calculate active samples
+          kernel_stats.active_samples = kernel_stats.total_samples - kernel_blame.blame;
 
-          // 4. Output top 5 advise to output
-          concatAdvise(optimizer_scores);
+          // 2. Rank optimizers
+          OptimizerRank code_optimizer_rank;
+          OptimizerRank parallel_optimizer_rank;
+          OptimizerRank binary_optimizer_rank;
+
+          for (auto *optimizer : _code_optimizers) {
+            double score = optimizer->match(kernel_blame, kernel_stats);
+            code_optimizer_rank[score].push_back(optimizer);
+          }
+
+          for (auto *optimizer : _parallel_optimizers) {
+            double score = optimizer->match(kernel_blame, kernel_stats);
+            parallel_optimizer_rank[score].push_back(optimizer);
+          }
+
+          for (auto *optimizer : _binary_optimizers) {
+            double score = optimizer->match(kernel_blame, kernel_stats);
+            parallel_optimizer_rank[score].push_back(optimizer);
+          }
+
+          // 3. Output top advises
+          _output << std::endl << "Code Optimizers" << std::endl << std::endl;
+          concatAdvise(code_optimizer_rank);
+
+          _output << std::endl << "Parallel Optimizers" << std::endl << std::endl;
+          concatAdvise(parallel_optimizer_rank);
+
+          _output << std::endl << "Binary Optimizers" << std::endl << std::endl;
+          concatAdvise(binary_optimizer_rank);
         }
       }
     }

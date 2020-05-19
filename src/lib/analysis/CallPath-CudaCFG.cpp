@@ -138,6 +138,9 @@ static std::vector<size_t> gpu_inst_index;
 
 // Static functions
 static void
+normalizeTraceNodes(std::set<Prof::CCT::ANode *> &gpu_roots);
+
+static void
 constructFrame(Prof::Struct::ANode *strct, Prof::CCT::ANode *frame, 
   Prof::CCT::ANode *proc, StructProfMap &struct_cct_map);
 
@@ -322,6 +325,9 @@ transformCudaCFGMain(Prof::CallPath::Profile& prof) {
   std::set<Prof::CCT::ANode *> gpu_roots;
   findGPURoots(prof.cct()->root(), prof.structure()->root(), gpu_roots);
 
+  // If the first prof node has no inst metrics, assign it one
+  normalizeTraceNodes(gpu_roots);
+
   // Find <target_vma, <Struct::Stmt> > mappings
   StructCallMap struct_call_map; 
   constructStructCallMap(prof.structure()->root(), struct_call_map);
@@ -434,6 +440,30 @@ transformCudaCFGMain(Prof::CallPath::Profile& prof) {
             }
             std::cout << std::fixed << last_call_node->demandMetric(gpu_inst_index[0]) << std::endl;
           }
+        }
+      }
+    }
+  }
+}
+
+
+static void
+normalizeTraceNodes(std::set<Prof::CCT::ANode *> &gpu_roots) {
+  for (auto *gpu_root : gpu_roots) {
+    Prof::CCT::ANodeIterator prof_it(gpu_root, NULL/*filter*/, false/*leavesOnly*/,
+      IteratorStack::PreOrder);
+    for (Prof::CCT::ANode *n = NULL; (n = prof_it.current()); ++prof_it) {
+      if (n->isLeaf()) {
+        bool find = false;
+        for (size_t i = 0; i < gpu_inst_index.size(); ++i) {
+          if (n->demandMetric(gpu_inst_index[i]) != 0.0) {
+            find = true;
+            break;
+          }
+        }
+        if (!find) {
+          n->demandMetric(gpu_inst_index[0]) = 1.0;
+          n->demandMetric(gpu_inst_index[0] + 1) = 1.0;
         }
       }
     }

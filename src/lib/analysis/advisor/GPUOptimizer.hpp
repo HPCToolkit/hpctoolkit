@@ -77,6 +77,8 @@
 #include <lib/cuda/DotCFG.hpp>
 #include <lib/cuda/AnalyzeInstruction.hpp>
 
+#include "GPUArchitecture.hpp"
+
 //*************************** Forward Declarations ***************************
 
 //****************************************************************************
@@ -85,11 +87,21 @@ namespace Analysis {
 
 
 struct KernelStats {
-  int shared_memory;
-  int registers;
-  int blocks;
-  double occupancy;
+  uint32_t blocks;
+  uint32_t threads;
+  uint32_t shared_memory; // bytes per block
+  uint32_t registers; // registers per thread
+  uint32_t active_warps; // per sm
+  uint64_t active_samples; // not stalled samples
+  uint64_t total_samples; // total samples
+  double time;
   double sm_efficiency;
+
+  KernelStats(uint32_t blocks, uint32_t threads, uint32_t shared_memory, uint32_t registers,
+    uint32_t active_warps, uint64_t active_samples, uint64_t total_samples, double time,
+    double sm_efficiency) : blocks(blocks), threads(threads), shared_memory(shared_memory),
+    registers(registers), active_warps(active_warps), active_samples(active_samples),
+    total_samples(total_samples), time(time), sm_efficiency(sm_efficiency) {}
 
   KernelStats() {}
 };
@@ -100,6 +112,8 @@ struct InstructionBlame {
   CudaParse::InstructionStat *src, *dst;
   Prof::Struct::ACodeNode *src_struct, *dst_struct;
   std::string blame_name;
+  CudaParse::Function *function;
+  CudaParse::Block *block;
   double blame;
 
   InstructionBlame(
@@ -108,6 +122,14 @@ struct InstructionBlame {
     std::string &blame_name, double blame) : src(src), dst(dst),
     src_struct(src_struct), dst_struct(dst_struct),
     blame_name(blame_name), blame(blame) {}
+
+  InstructionBlame(
+    CudaParse::InstructionStat *src, CudaParse::InstructionStat *dst,
+    Prof::Struct::ACodeNode *src_struct, Prof::Struct::ACodeNode *dst_struct,
+    std::string &blame_name, CudaParse::Function *function, CudaParse::Block *block,
+    double blame) : src(src), dst(dst),
+    src_struct(src_struct), dst_struct(dst_struct),
+    blame_name(blame_name), function(function), block(block), blame(blame) {}
   InstructionBlame() {}
 
   bool operator < (const InstructionBlame &other) const {
@@ -115,43 +137,17 @@ struct InstructionBlame {
   }
 };
 
-
-struct BlockBlame {
-  int id;
-  int function_index;
-  CudaParse::Block *block;
-  std::vector<InstructionBlame> inst_blames;
-  std::map<std::string, double> blames;
-  double blame;
-
-  BlockBlame(int id, int function_index, CudaParse::Block *block) :
-    id(id), function_index(function_index), block(block) {}
-  BlockBlame() : BlockBlame(0, 0, NULL) {}
-
-  bool operator < (const BlockBlame &other) const {
-    return this->blame < other.blame;
-  }
-};
-
-
-struct FunctionBlame {
-  int index;
-  CudaParse::Function *function;
-  std::map<int, BlockBlame> block_blames;
-  std::map<std::string, double> blames;
-  double blame;
-
-  FunctionBlame(int index, CudaParse::Function *function) :
-    index(index), function(function) {}
-  FunctionBlame() : FunctionBlame(0, NULL) {}
-};
-
-
 typedef std::vector<InstructionBlame> InstBlames;
 
-typedef std::map<int, FunctionBlame> FunctionBlames;
+struct KernelBlame {
+  InstBlames inst_blames;
+  std::map<std::string, double> blames;
+  double blame;
 
-typedef std::map<int, std::map<int, FunctionBlames>> CCTBlames;
+  KernelBlame() {}
+};
+
+typedef std::map<int, std::map<int, KernelBlame>> CCTBlames;
 
 #define FORALL_OPTIMIZER_TYPES(macro) \
   macro(REGISTER_INCREASE, GPURegisterIncreaseOptimizer, 0) \
@@ -183,15 +179,11 @@ enum GPUOptimizerType {
 
 class GPUOptimizer {
  public:
-  GPUOptimizer(const std::string &name) : _name(name) {}
+  GPUOptimizer(const std::string &name, const GPUArchitecture *arch) : 
+    _name(name), _arch(arch) {}
 
   void clear() {
-    _match.clear();
-    _estimate.clear();
-  }
-
-  void assignKernel(const KernelStats &kernel_stats) {
-    _kernel_stats = kernel_stats;
+    _advise.clear();
   }
 
   std::string name() {
@@ -199,22 +191,25 @@ class GPUOptimizer {
   }
 
   std::string advise() {
-    return _match + _estimate;
+    return _advise;
   }
 
-  // how many samples match the optimizer
-  virtual double match(const BlockBlame &block_blame) = 0;
-
-  // how many samples we can eliminate
-  virtual double estimate(const BlockBlame &block_blame) = 0;
+  // Code optimizer:
+  // Estimate speedup by supposing all latency samples can be eliminated
+  //
+  // Parallel optimizer:
+  // Estimate speedup by raising parallelism
+  //
+  // @Return speedup
+  virtual double match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) = 0;
 
   virtual ~GPUOptimizer() {}
  
  protected:
-  KernelStats _kernel_stats;
-  std::string _match;
-  std::string _estimate;
+  std::string _advise;
   std::string _name;
+
+  const GPUArchitecture *_arch;
 
   const int _top_pairs = 3;
 };
@@ -224,9 +219,8 @@ class GPUOptimizer {
 \
 class CLASS : public GPUOptimizer { \
  public: \
-  CLASS(const std::string &name) : GPUOptimizer(name) {} \
-  virtual double match(const BlockBlame &block_blame); \
-  virtual double estimate(const BlockBlame &block_blame); \
+  CLASS(const std::string &name, const GPUArchitecture *arch) : GPUOptimizer(name, arch) {} \
+  virtual double match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats); \
   virtual ~CLASS() {} \
 };
 
@@ -235,7 +229,7 @@ FORALL_OPTIMIZER_TYPES(DECLARE_OPTIMIZER_CLASS)
 #undef DECLARE_OPTIMIZER_CLASS
 
 // A factory method
-GPUOptimizer *GPUOptimizerFactory(GPUOptimizerType type);
+GPUOptimizer *GPUOptimizerFactory(GPUOptimizerType type, GPUArchitecture *arch);
 
 
 }  // namespace Analysis

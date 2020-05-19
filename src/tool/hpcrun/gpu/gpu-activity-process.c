@@ -239,8 +239,7 @@ gpu_sample_process
       }
 
       cct_node_t *host_op_node =
-	gpu_host_correlation_map_entry_op_cct_get(host_op_entry, 
-						  gpu_placeholder_type_kernel);
+        gpu_host_correlation_map_entry_op_function_get(host_op_entry);
 
       cct_node_t *cct_child = hpcrun_cct_insert_ip_norm(host_op_node, ip);
       if (cct_child) {
@@ -272,8 +271,7 @@ gpu_sampling_info_process
       gpu_host_correlation_map_lookup(external_id);
     if (host_op_entry != NULL) {
       cct_node_t *host_op_node =
-	gpu_host_correlation_map_entry_op_cct_get(host_op_entry, 
-						  gpu_placeholder_type_kernel);
+        gpu_host_correlation_map_entry_op_function_get(host_op_entry);
 
       attribute_activity(host_op_entry, sri, host_op_node);
     }

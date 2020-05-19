@@ -1167,25 +1167,20 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
 }
 
 
-void GPUAdvisor::overlayInstBlames(const InstBlames &inst_blames, FunctionBlames &function_blames) {
+void GPUAdvisor::overlayInstBlames(InstBlames &inst_blames, KernelBlame &kernel_blame) {
   for (auto &inst_blame : inst_blames) {
     auto *from_inst = inst_blame.src;
     auto *block = _vma_prop_map[from_inst->pc].block;
     auto *function = _vma_prop_map[from_inst->pc].function;
 
-    auto &function_blame = function_blames[function->index];
-    auto &block_blame = function_blame.block_blames[block->id];
+    // Update block and function
+    inst_blame.block = block;
+    inst_blame.function = function;
 
-    // Update block blame
-    block_blame.blames[inst_blame.blame_name] += inst_blame.blame;
-    block_blame.blame += inst_blame.blame;
-    block_blame.inst_blames.push_back(inst_blame);
-    block_blame.block = block;
-
-    // Update function blame
-    function_blame.blames[inst_blame.blame_name] += inst_blame.blame;
-    function_blame.blame += inst_blame.blame;
-    function_blame.function = function;
+    // Update kernel blame
+    kernel_blame.blames[inst_blame.blame_name] += inst_blame.blame;
+    kernel_blame.blame += inst_blame.blame;
+    kernel_blame.inst_blames.push_back(inst_blame);
   }
 }
 
@@ -1294,8 +1289,8 @@ void GPUAdvisor::blame(CCTBlames &cct_blames) {
       // x9. Overlay back
 
       //// 5. Overlay blames
-      auto &function_blames = cct_blames[mpi_rank][thread_id];
-      overlayInstBlames(inst_blames, function_blames);
+      auto &kernel_blame = cct_blames[mpi_rank][thread_id];
+      overlayInstBlames(inst_blames, kernel_blame);
     }
   }
 }
