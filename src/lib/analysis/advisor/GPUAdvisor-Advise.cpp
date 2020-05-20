@@ -112,6 +112,16 @@ KernelStats GPUAdvisor::readKernelStats(int mpi_rank, int thread_id) {
   auto time = _gpu_kernel->metric(metric_index_time);
   auto count = _gpu_kernel->metric(metric_index_count);
 
+  blocks /= count;
+  block_threads /= count;
+  block_smem /= count;
+  thread_regs /= count;
+  warps /= count;
+
+  samples_total = samples_total - samples_dropped;
+  auto util = samples_expected / samples_total;
+  samples_total *= sample_frequency; 
+
   if (DEBUG_GPUADVISOR) {
     std::cout << "blocks: " << blocks << std::endl;
     std::cout << "block_threads: " << block_threads << std::endl;
@@ -126,16 +136,6 @@ KernelStats GPUAdvisor::readKernelStats(int mpi_rank, int thread_id) {
     std::cout << "count: " << count << std::endl;
     std::cout << std::endl;
   }
-
-  blocks /= count;
-  block_threads /= count;
-  block_smem /= count;
-  thread_regs /= count;
-  warps /= count;
-
-  samples_total = samples_total - samples_dropped;
-  auto util = samples_expected / samples_total;
-  samples_total *= sample_frequency; 
 
   return KernelStats(blocks, block_threads, block_smem, thread_regs, warps, 
     0, samples_total, time, util);

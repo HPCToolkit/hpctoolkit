@@ -130,12 +130,18 @@ void GPUAdvisor::init() {
   // Init optimizers
   auto *code_reorder_optimizer = GPUOptimizerFactory(CODE_REORDER, _arch);
   auto *occupancy_increase_optimizer = GPUOptimizerFactory(OCCUPANCY_INCREASE, _arch);
+  auto *warp_balance_optimizer = GPUOptimizerFactory(WARP_BALANCE, _arch);
+  auto *block_increase_optimizer = GPUOptimizerFactory(BLOCK_INCREASE, _arch);
+  auto *strength_reduction_optimizer = GPUOptimizerFactory(STRENGTH_REDUCTION, _arch);
 
   // Code optimizers
   _code_optimizers.push_back(code_reorder_optimizer);
+  _code_optimizers.push_back(warp_balance_optimizer);
+  _code_optimizers.push_back(strength_reduction_optimizer);
 
   // Parallel optimizers
   _parallel_optimizers.push_back(occupancy_increase_optimizer);
+  _parallel_optimizers.push_back(block_increase_optimizer);
 
   // Static struct
   auto *struct_root = _prof->structure()->root();

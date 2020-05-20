@@ -114,7 +114,7 @@ using std::string;
 #define OUTPUT_SCC_FRAME 1
 #define SIMULATE_SCC_WITH_LOOP 1
 
-#define WARP_SIZE 32
+#define WARP_SIZE 1
 
 namespace Analysis {
 

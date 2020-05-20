@@ -56,7 +56,7 @@ using std::string;
 #define DEBUG_GPUADVISOR 1
 #define DEBUG_GPUADVISOR_DETAILS 1
 
-#define WARP_SIZE 32
+#define WARP_SIZE 1
 
 namespace Analysis {
 
@@ -935,9 +935,12 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
         if (from_inst->op.find("MEMORY") != std::string::npos) {
           if (from_inst->op.find(".GLOBAL") != std::string::npos ||
               from_inst->op.find(".LOCAL") != std::string::npos) {
-            // Global and local memory result in memory dependencies or raw dependencies
             latency_prof_nodes[mem_latency_metric_index].push_back(from_node);
-            latency_prof_nodes[exec_latency_metric_index].push_back(from_node);
+
+            // Global and local memory store instructions can result in raw dependencies
+            if (from_inst->op.find(".STORE") != std::string::npos) {
+              latency_prof_nodes[exec_latency_metric_index].push_back(from_node);
+            }
 
             // We must have found a correponding latency, otherwise the edge is removed by pruning
             {
@@ -1003,6 +1006,11 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
           latency_metric = detailizeMemBlame(from_inst);
         }
 
+        if (latency_metric == "") {
+          // Filter memory latency
+          continue;
+        }
+
         auto blame_metric = "BLAME " + latency_metric;
 
         // inclusive and exclusive metrics have the same value
@@ -1014,6 +1022,7 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
         // blame from_node
         from_node->demandMetric(in_blame_metric_index) += latency;
         from_node->demandMetric(ex_blame_metric_index) += latency;
+
         // One metric id is enough for inst blame analysis
         inst_blames.emplace_back(
           InstructionBlame(from_inst, to_inst, from_struct, to_struct, blame_metric, latency));

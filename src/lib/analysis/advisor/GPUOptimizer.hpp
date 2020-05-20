@@ -211,7 +211,7 @@ class GPUOptimizer {
 
   const GPUArchitecture *_arch;
 
-  const int _top_pairs = 3;
+  const int _top_regions = 3;
 };
 
 
