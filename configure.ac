@@ -2470,6 +2470,41 @@ esac
 
 AC_MSG_RESULT([$GOTCHA])
 
+#
+# Test for gotcha_filter_libraries_by_name(), in gotcha >= 1.0.3.
+#
+case "$GOTCHA" in
+  /* )
+    AC_MSG_CHECKING([if gotcha supports gotcha_filter_libraries_by_name])
+
+    ORIG_CFLAGS="$CFLAGS"
+    ORIG_LIBS="$LIBS"
+    CFLAGS="$CFLAGS $GOTCHA_IFLAGS"
+    LIBS="$GOTCHA_LDFLAGS"
+    AC_LANG_PUSH([C])
+
+    AC_LINK_IFELSE([
+    AC_LANG_SOURCE([[
+#include <gotcha/gotcha.h>
+int main(int argc, char **argv)
+{
+  gotcha_filter_libraries_by_name(argv[0]);
+  return 0;
+}
+]])], [gotcha_has_filter=yes], [gotcha_has_filter=no])
+
+    AC_LANG_POP
+    CFLAGS="$ORIG_CFLAGS"
+    LIBS="$ORIG_LIBS"
+
+    AC_MSG_RESULT([$gotcha_has_filter])
+
+    if test "x$gotcha_has_filter" != xyes ; then
+      AC_MSG_ERROR([hpctoolkit needs gotcha 1.0.3 or later])
+    fi
+    ;;
+esac
+
 AC_SUBST([GOTCHA_IFLAGS])
 AC_SUBST([GOTCHA_LDFLAGS])
 AC_SUBST([GOTCHA_LIBDIR])
