@@ -449,6 +449,8 @@ fi
 
 set -- "$@" $upc_libs
 
+set -- "$@" "${ext_libs_dir}/libz.a"
+
 # FIXME: shouldn't always need pthread, and shoudn't ever need dl.
 set -- "$@" -ldl -lrt -lpthread
 set -- "$@" $appl_libs
