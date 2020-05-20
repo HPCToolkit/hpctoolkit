@@ -75,7 +75,8 @@
   macro(GXCOPY, 3)				\
   macro(GSYNC, 4)				\
   macro(GGMEM, 5)				\
-  macro(GLMEM, 6)
+  macro(GLMEM, 6)       \
+  macro(GPU_INST_NOSTALL, 7)
 
 
 #define FORALL_SCALAR_METRIC_KINDS(macro)	\
@@ -160,9 +161,11 @@ name ## _metric_kind
     (APPLY(METRIC_KIND,CURRENT_METRIC), metric_name, metric_desc,	\
      MetricFlags_ValFmt_Real, 1, metric_property_none);
 
-
-#define HIDE_INDEXED_METRIC(name,  index) \
+#define HIDE_INDEXED_METRIC(name, index, desc) \
    hpcrun_set_display(APPLY(METRIC_ID,CURRENT_METRIC)[index], 0);
+
+#define HIDE_METRIC(name) \
+    FORALL_GPU_INST_NOSTALL(HIDE_INDEXED_METRIC)
 
 #define DIVISION_FORMULA(name) \
   hpcrun_set_display(METRIC_ID(name ## _ACUMU), 0); \
@@ -262,24 +265,34 @@ gpu_metrics_attribute_pc_sampling
     metric_data_list_t *stall_metrics = 
       hpcrun_reify_metric_set(cct_node, stall_kind_metric_index);
 
-    if (sinfo->stallReason == GPU_INST_STALL_NONE || sinfo->stallReason == GPU_INST_STALL_NOT_SELECTED) {
-      // sm is not stall
-      int sample_count = sinfo->samples * sample_period;
+    int stall_count = sinfo->latencySamples * sample_period;
 
-      // stall reason specific metric
-      gpu_metrics_attribute_metric_int(stall_metrics, 
-               stall_kind_metric_index, sample_count);
-    } else {
-      int stall_count = sinfo->latencySamples * sample_period;
+    // stall summary metric
+    gpu_metrics_attribute_metric_int(stall_metrics, 
+      stall_summary_metric_index, stall_count);
 
-      // stall summary metric
-      gpu_metrics_attribute_metric_int(stall_metrics, 
-               stall_summary_metric_index, stall_count);
+    // stall reason specific metric
+    gpu_metrics_attribute_metric_int(stall_metrics, 
+      stall_kind_metric_index, stall_count);
 
-      // stall reason specific metric
-      gpu_metrics_attribute_metric_int(stall_metrics, 
-               stall_kind_metric_index, stall_count);
-    }
+    // nostall, internal use only
+    int nostall_summary_metric_index = 
+      METRIC_ID(GPU_INST_NOSTALL)[GPU_INST_STALL_ANY];
+
+    int nostall_kind_metric_index = METRIC_ID(GPU_INST_NOSTALL)[sinfo->stallReason];
+
+    metric_data_list_t *nostall_metrics = 
+      hpcrun_reify_metric_set(cct_node, nostall_kind_metric_index);
+
+    int nostall_count = (sinfo->samples - sinfo->latencySamples) * sample_period;
+
+    // nostall summary metric
+    gpu_metrics_attribute_metric_int(nostall_metrics, 
+      nostall_summary_metric_index, nostall_count);
+
+    // nostall reason specific metric
+    gpu_metrics_attribute_metric_int(nostall_metrics, 
+      nostall_kind_metric_index, nostall_count);
   }
 }
 
@@ -833,6 +846,25 @@ gpu_metrics_GPU_INST_STALL_enable
   INITIALIZE_METRIC_KIND();
 
   FORALL_GPU_INST_STALL(INITIALIZE_INDEXED_METRIC_INT)
+
+  FINALIZE_METRIC_KIND();
+}
+
+
+void
+gpu_metrics_GPU_INST_NOSTALL_enable
+(
+ void
+)
+{
+#undef CURRENT_METRIC 
+#define CURRENT_METRIC GPU_INST_NOSTALL
+
+  INITIALIZE_METRIC_KIND();
+
+  FORALL_GPU_INST_NOSTALL(INITIALIZE_INDEXED_METRIC_INT)
+
+  HIDE_METRIC(GPU_INST_NOSTALL)
 
   FINALIZE_METRIC_KIND();
 }
