@@ -45,55 +45,53 @@
 // system includes
 //******************************************************************************
 #define CL_TARGET_OPENCL_VERSION 120
-#include <CL/cl.h>
+#include <CL/cl.h> //cl_event
 
 //******************************************************************************
 // local includes
 //******************************************************************************
-#include "opencl-intercept.h"
+#include <lib/prof-lean/bistack.h>  //s_element_ptr_t, bistack_t
+
+#include "opencl-api.h" //profilingData_t
+#include "opencl-intercept.h" //cl_kernel_callback_t, cl_memory_callback_t
 
 //******************************************************************************
 // type declarations
 //******************************************************************************
-#ifndef _OPENCL_API_H_
-#define _OPENCL_API_H_
+typedef enum {
+  OPENCL_PROFILING_DATA                      = 0,
+  OPENCL_EVENT                               = 1,
+  OPENCL_KERNEL_CALLBACK                     = 2,
+  OPENCL_MEMORY_CALLBACK                     = 3
+} opencl_object_kind_t;
 
-typedef struct
-profilingData_t
-{
-  cl_ulong queueTime;
-  cl_ulong submitTime;
-  cl_ulong startTime;
-  cl_ulong endTime;
-  size_t size;
-  bool fromHostToDevice;
-  bool fromDeviceToHost;
-} profilingData_t;
-#endif
+typedef struct opencl_object_details_t {
+  union {
+    profilingData_t pd;
+    cl_event event;
+    cl_kernel_callback_t ker_cb;
+    cl_memory_callback_t mem_cb;
+  };
+} opencl_object_details_t;
 
-void
-opencl_subscriber_callback
-(
-  opencl_call,
-  uint64_t
-);
+typedef struct opencl_object_t {
+  s_element_ptr_t next;
+  opencl_object_kind_t kind;
+  opencl_object_details_t details;
+} opencl_object_t;
 
-void
-opencl_buffer_completion_callback
-(
-  cl_event,
-  cl_int,
-  void *
-);
+typedef struct opencl_object_channel_t {
+  bistack_t bistacks[2];
+} opencl_object_channel_t;
 
-void
-initialize_opencl_operation_count
+opencl_object_t*
+hpcrun_opencl_malloc
 (
   void
 );
 
 void
-opencl_finalize
+hpcrun_opencl_free
 (
-  void*
+  opencl_object_t*
 );

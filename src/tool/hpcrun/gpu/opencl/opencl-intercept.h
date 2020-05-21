@@ -44,7 +44,7 @@
 //******************************************************************************
 // system includes
 //******************************************************************************
-#include <stdbool.h> 
+#include <stdbool.h>
 
 //******************************************************************************
 // type declarations
@@ -52,9 +52,25 @@
 #ifndef _OPENCL_INTERCEPT_H_
 #define _OPENCL_INTERCEPT_H_
 typedef enum opencl_call {memcpy_H2D, memcpy_D2H, kernel} opencl_call;
-typedef struct cl_generic_callback {uint64_t correlation_id; opencl_call type;} cl_generic_callback;
-typedef struct cl_kernel_callback {uint64_t correlation_id; opencl_call type;} cl_kernel_callback;
-typedef struct cl_memory_callback {uint64_t correlation_id; opencl_call type; bool fromHostToDevice; bool fromDeviceToHost; size_t size; } cl_memory_callback;
+
+typedef struct cl_generic_callback_t {
+  uint64_t correlation_id;
+  opencl_call type;
+} cl_generic_callback_t;
+
+typedef struct cl_kernel_callback_t{
+  uint64_t correlation_id;
+  opencl_call type;
+} cl_kernel_callback_t;
+
+typedef struct cl_memory_callback_t{
+  uint64_t correlation_id;
+  opencl_call type;
+  bool fromHostToDevice;
+  bool fromDeviceToHost;
+  size_t size;
+} cl_memory_callback_t;
+
 #endif
 
 void

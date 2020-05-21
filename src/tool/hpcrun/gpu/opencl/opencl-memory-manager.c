@@ -44,56 +44,66 @@
 //******************************************************************************
 // system includes
 //******************************************************************************
-#define CL_TARGET_OPENCL_VERSION 120
-#include <CL/cl.h>
+#include <assert.h>   //assert
+#include <string.h>	  //memset
 
 //******************************************************************************
 // local includes
 //******************************************************************************
-#include "opencl-intercept.h"
+#include <hpcrun/memory/hpcrun-malloc.h> //hpcrun_malloc_safe
+#include <hpcrun/gpu/gpu-channel-item-allocator.h>  //channel_item_alloc, channel_item_free
+
+#include "opencl-memory-manager.h"
 
 //******************************************************************************
-// type declarations
+// local data
 //******************************************************************************
-#ifndef _OPENCL_API_H_
-#define _OPENCL_API_H_
+static __thread opencl_object_channel_t *opencl_object_channel;
 
-typedef struct
-profilingData_t
+//******************************************************************************
+// private operations
+//******************************************************************************
+static opencl_object_channel_t *
+opencl_object_channel_alloc
+(
+ void
+)
 {
-  cl_ulong queueTime;
-  cl_ulong submitTime;
-  cl_ulong startTime;
-  cl_ulong endTime;
-  size_t size;
-  bool fromHostToDevice;
-  bool fromDeviceToHost;
-} profilingData_t;
-#endif
+  return hpcrun_malloc_safe(sizeof(opencl_object_channel_t));
+}
 
-void
-opencl_subscriber_callback
+static opencl_object_channel_t *
+opencl_object_channel_get
 (
-  opencl_call,
-  uint64_t
-);
+ void
+)
+{
+  if (opencl_object_channel == NULL) {
+    opencl_object_channel = opencl_object_channel_alloc();
+  }
+  return opencl_object_channel;
+}
 
-void
-opencl_buffer_completion_callback
-(
-  cl_event,
-  cl_int,
-  void *
-);
-
-void
-initialize_opencl_operation_count
+//******************************************************************************
+// interface operations
+//******************************************************************************
+opencl_object_t*
+hpcrun_opencl_malloc
 (
   void
-);
+)
+{
+  opencl_object_channel_t* c = opencl_object_channel_get();
+  return channel_item_alloc(c, opencl_object_t);
+}
 
 void
-opencl_finalize
+hpcrun_opencl_free
 (
-  void*
-);
+  opencl_object_t* o
+)
+{
+  memset(o, 0, sizeof(opencl_object_t));
+  opencl_object_channel_t* c = opencl_object_channel_get();
+  channel_item_free(c, o);
+}

@@ -60,13 +60,14 @@
 #include <hpcrun/gpu/gpu-op-placeholders.h> // gpu_op_placeholder_flags_set, gpu_op_ccts_insert
 #include <hpcrun/gpu/gpu-metrics.h> //gpu_metrics_attribute
 #include <hpcrun/gpu/gpu-monitoring-thread-api.h> //gpu_monitoring_thread_activities_ready
-#include <hpcrun/safe-sampling.h> //hpcrun_safe_enter, hpcrun_safe_exit 
+#include <hpcrun/safe-sampling.h> //hpcrun_safe_enter, hpcrun_safe_exit
 #include <hpcrun/messages/messages.h> //ETMSG
 #include <lib/prof-lean/usec_time.h> //usec_time
 #include <lib/prof-lean/stdatomic.h> //atomic_fetch_add, atomic_store, atomic_load
 
 #include "opencl-api.h"
 #include "opencl-activity-translate.h"
+#include "opencl-memory-manager.h" //opencl_object_t
 
 //******************************************************************************
 // macros
@@ -138,17 +139,17 @@ opencl_subscriber_callback
   cct_node_t *api_node = gpu_application_thread_correlation_callback(correlation_id);
 
   switch (type) {
-	case memcpy_H2D:
-	  gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_copyin);
-	  break;
-	case memcpy_D2H:
-	  gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_copyout);
-	  break;
-	case kernel:
-	  gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_kernel);
-	  break;
-	default:
-	  assert(0);
+    case memcpy_H2D:
+      gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_copyin);
+      break;
+    case memcpy_D2H:
+      gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_copyout);
+      break;
+    case kernel:
+      gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_kernel);
+      break;
+    default:
+      assert(0);
   }
 
   hpcrun_safe_enter();
@@ -169,20 +170,21 @@ opencl_buffer_completion_callback
 )
 {
   cl_int complete_flag = CL_COMPLETE;
-  cl_generic_callback* cb_data = (cl_generic_callback*)user_data;
-  uint64_t correlation_id = cb_data->correlation_id;
-  opencl_call type = cb_data->type;
+  opencl_object_t* o = (opencl_object_t*)user_data;
+  cl_generic_callback_t* act_data = (cl_generic_callback_t*)((o->kind == OPENCL_KERNEL_CALLBACK) ? &(o->details.ker_cb) : &(o->details.mem_cb));
+  uint64_t correlation_id = act_data->correlation_id;
+  opencl_call type = act_data->type;
 
   if (event_command_exec_status == complete_flag) {
-	gpu_correlation_id_map_entry_t *cid_map_entry = gpu_correlation_id_map_lookup(correlation_id);
+	  gpu_correlation_id_map_entry_t *cid_map_entry = gpu_correlation_id_map_lookup(correlation_id);
 	if (cid_map_entry == NULL) {
 	  ETMSG(CL, "completion callback was called before registration callback. type: %d, correlation: %"PRIu64 "", type, correlation_id);
 	}
 	ETMSG(CL, "completion type: %d, correlation: %"PRIu64 "", type, correlation_id);
  	opencl_activity_completion_notify();
-	opencl_activity_process(event, user_data);
+	opencl_activity_process(event, act_data);
   }
-  //free(user_data);
+  hpcrun_opencl_free(o);
   opencl_pending_operations_adjust(-1);
 }
 

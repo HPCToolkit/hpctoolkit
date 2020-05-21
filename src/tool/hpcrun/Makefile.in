@@ -511,7 +511,8 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/amd.c gpu/amd/roctracer-activity-translate.c \
 	gpu/amd/roctracer-api.c sample-sources/opencl.c \
 	gpu/opencl/opencl-setup.c gpu/opencl/opencl-intercept.c \
-	gpu/opencl/opencl-api.c gpu/opencl/opencl-activity-translate.c \
+	gpu/opencl/opencl-api.c gpu/opencl/opencl-memory-manager.c \
+	gpu/opencl/opencl-activity-translate.c \
 	unwind/common/backtrace.c unwind/common/unw-throw.c \
 	unwind/common/binarytree_uwi.c unwind/common/interval_t.c \
 	unwind/common/libunw_intervals.c unwind/common/stack_troll.c \
@@ -704,6 +705,7 @@ am__objects_35 =
 @ENABLE_OPENCL_TRUE@	gpu/opencl/libhpcrun_la-opencl-setup.lo \
 @ENABLE_OPENCL_TRUE@	gpu/opencl/libhpcrun_la-opencl-intercept.lo \
 @ENABLE_OPENCL_TRUE@	gpu/opencl/libhpcrun_la-opencl-api.lo \
+@ENABLE_OPENCL_TRUE@	gpu/opencl/libhpcrun_la-opencl-memory-manager.lo \
 @ENABLE_OPENCL_TRUE@	gpu/opencl/libhpcrun_la-opencl-activity-translate.lo
 @ENABLE_OPENCL_TRUE@am__objects_39 = $(am__objects_38)
 am__objects_40 = unwind/common/libhpcrun_la-backtrace.lo \
@@ -1793,10 +1795,11 @@ MY_AARCH64_FILES = \
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/cupti-gpu-api.c		
 
 @ENABLE_OPENCL_TRUE@MY_OPENCL_FILES = \
-@ENABLE_OPENCL_TRUE@	sample-sources/opencl.c 		\
-@ENABLE_OPENCL_TRUE@	gpu/opencl/opencl-setup.c		\
-@ENABLE_OPENCL_TRUE@	gpu/opencl/opencl-intercept.c	\
-@ENABLE_OPENCL_TRUE@	gpu/opencl/opencl-api.c			\
+@ENABLE_OPENCL_TRUE@	sample-sources/opencl.c 				\
+@ENABLE_OPENCL_TRUE@	gpu/opencl/opencl-setup.c				\
+@ENABLE_OPENCL_TRUE@	gpu/opencl/opencl-intercept.c			\
+@ENABLE_OPENCL_TRUE@	gpu/opencl/opencl-api.c					\
+@ENABLE_OPENCL_TRUE@	gpu/opencl/opencl-memory-manager.c  	\
 @ENABLE_OPENCL_TRUE@	gpu/opencl/opencl-activity-translate.c
 
 @OPT_ENABLE_ROCM_TRUE@MY_ROCM_FILES = \
@@ -2664,6 +2667,9 @@ gpu/opencl/libhpcrun_la-opencl-intercept.lo:  \
 	gpu/opencl/$(am__dirstamp) \
 	gpu/opencl/$(DEPDIR)/$(am__dirstamp)
 gpu/opencl/libhpcrun_la-opencl-api.lo: gpu/opencl/$(am__dirstamp) \
+	gpu/opencl/$(DEPDIR)/$(am__dirstamp)
+gpu/opencl/libhpcrun_la-opencl-memory-manager.lo:  \
+	gpu/opencl/$(am__dirstamp) \
 	gpu/opencl/$(DEPDIR)/$(am__dirstamp)
 gpu/opencl/libhpcrun_la-opencl-activity-translate.lo:  \
 	gpu/opencl/$(am__dirstamp) \
@@ -3560,6 +3566,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/opencl/$(DEPDIR)/libhpcrun_la-opencl-activity-translate.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/opencl/$(DEPDIR)/libhpcrun_la-opencl-api.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/opencl/$(DEPDIR)/libhpcrun_la-opencl-intercept.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/opencl/$(DEPDIR)/libhpcrun_la-opencl-memory-manager.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/opencl/$(DEPDIR)/libhpcrun_la-opencl-setup.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@lush-agents/$(DEPDIR)/libagent_cilk_la-agent-cilk.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@lush-agents/$(DEPDIR)/libagent_pthread_la-agent-pthread.Plo@am__quote@
@@ -5096,6 +5103,13 @@ gpu/opencl/libhpcrun_la-opencl-api.lo: gpu/opencl/opencl-api.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/opencl/opencl-api.c' object='gpu/opencl/libhpcrun_la-opencl-api.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/opencl/libhpcrun_la-opencl-api.lo `test -f 'gpu/opencl/opencl-api.c' || echo '$(srcdir)/'`gpu/opencl/opencl-api.c
+
+gpu/opencl/libhpcrun_la-opencl-memory-manager.lo: gpu/opencl/opencl-memory-manager.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/opencl/libhpcrun_la-opencl-memory-manager.lo -MD -MP -MF gpu/opencl/$(DEPDIR)/libhpcrun_la-opencl-memory-manager.Tpo -c -o gpu/opencl/libhpcrun_la-opencl-memory-manager.lo `test -f 'gpu/opencl/opencl-memory-manager.c' || echo '$(srcdir)/'`gpu/opencl/opencl-memory-manager.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/opencl/$(DEPDIR)/libhpcrun_la-opencl-memory-manager.Tpo gpu/opencl/$(DEPDIR)/libhpcrun_la-opencl-memory-manager.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/opencl/opencl-memory-manager.c' object='gpu/opencl/libhpcrun_la-opencl-memory-manager.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/opencl/libhpcrun_la-opencl-memory-manager.lo `test -f 'gpu/opencl/opencl-memory-manager.c' || echo '$(srcdir)/'`gpu/opencl/opencl-memory-manager.c
 
 gpu/opencl/libhpcrun_la-opencl-activity-translate.lo: gpu/opencl/opencl-activity-translate.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/opencl/libhpcrun_la-opencl-activity-translate.lo -MD -MP -MF gpu/opencl/$(DEPDIR)/libhpcrun_la-opencl-activity-translate.Tpo -c -o gpu/opencl/libhpcrun_la-opencl-activity-translate.lo `test -f 'gpu/opencl/opencl-activity-translate.c' || echo '$(srcdir)/'`gpu/opencl/opencl-activity-translate.c

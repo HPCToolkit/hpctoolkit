@@ -53,13 +53,13 @@
 // local includes
 //******************************************************************************
 #include <hpcrun/messages/messages.h>
-#include <hpcrun/memory/hpcrun-malloc.h> //hpcrun_malloc_safe
 
 #include <lib/prof-lean/hpcrun-gotcha.h> //GOTCHA_GET_TYPED_WRAPPEE
 #include <lib/prof-lean/stdatomic.h> //atomic_fetch_add, atomic_store
 
 #include "opencl-api.h"
 #include "opencl-intercept.h"
+#include "opencl-memory-manager.h" //hpcrun_opencl_malloc, hpcrun_opencl_free
 
 //******************************************************************************
 // type declarations
@@ -93,7 +93,7 @@ getCorrelationId
 static void
 initializeKernelCallBackInfo
 (
-  cl_kernel_callback* kernel_cb,
+  cl_kernel_callback_t* kernel_cb,
   uint64_t correlation_id
 )
 {
@@ -104,7 +104,7 @@ initializeKernelCallBackInfo
 static void
 initializeMemoryCallBackInfo
 (
-  cl_memory_callback* mem_transfer_cb,
+  cl_memory_callback_t* mem_transfer_cb,
   uint64_t correlation_id,
   size_t size,
   bool fromHostToDevice
@@ -115,19 +115,6 @@ initializeMemoryCallBackInfo
   mem_transfer_cb->size = size;
   mem_transfer_cb->fromHostToDevice = fromHostToDevice;
   mem_transfer_cb->fromDeviceToHost = !fromHostToDevice;
-}
-
-static cl_event*
-eventNullCheck
-(
-  cl_event* event
-)
-{
-  if(!event) {
-	cl_event *new_event = (cl_event*) hpcrun_malloc_safe(sizeof(cl_event));
-	return new_event;
-  }
-  return event;
 }
 
 static cl_command_queue
@@ -159,15 +146,21 @@ clEnqueueNDRangeKernel_wrapper
 )
 {
   uint64_t correlation_id = getCorrelationId();
-  cl_kernel_callback *kernel_cb = (cl_kernel_callback*) hpcrun_malloc_safe(sizeof(cl_kernel_callback));
+  opencl_object_t *k = hpcrun_opencl_malloc();
+  k->kind = OPENCL_KERNEL_CALLBACK;
+  cl_kernel_callback_t *kernel_cb = &(k->details.ker_cb);
   initializeKernelCallBackInfo(kernel_cb, correlation_id);
-  event = eventNullCheck(event);
+  opencl_object_t* e;
+  if(!event) {
+    e = hpcrun_opencl_malloc();
+    event = &(e->details.event);
+  }
   clkernel_t clEnqueueNDRangeKernel_wrappee = GOTCHA_GET_TYPED_WRAPPEE(clEnqueueNDRangeKernel_handle, clkernel_t);
   cl_int return_status = clEnqueueNDRangeKernel_wrappee(command_queue, ocl_kernel, work_dim, global_work_offset, global_work_size, local_work_size, num_events_in_wait_list, event_wait_list, event);
   ETMSG(CL, "registering callback for type: kernel");
   opencl_subscriber_callback(kernel_cb->type, kernel_cb->correlation_id);
-  clSetEventCallback(*event, CL_COMPLETE, &opencl_buffer_completion_callback, kernel_cb);
-  //free(event);
+  clSetEventCallback(*event, CL_COMPLETE, &opencl_buffer_completion_callback, k);
+  hpcrun_opencl_free(e);
   return return_status;
 }
 
@@ -186,16 +179,22 @@ clEnqueueReadBuffer_wrapper
 )
 {
   uint64_t correlation_id = getCorrelationId();
-  cl_memory_callback *mem_transfer_cb = (cl_memory_callback*) hpcrun_malloc_safe(sizeof(cl_memory_callback));
+  opencl_object_t *m = hpcrun_opencl_malloc();
+  m->kind = OPENCL_MEMORY_CALLBACK;
+  cl_memory_callback_t *mem_transfer_cb = &(m->details.mem_cb);
   initializeMemoryCallBackInfo(mem_transfer_cb, correlation_id, cb, false);
-  event = eventNullCheck(event);
+  opencl_object_t* e;
+  if(!event) {
+    e = hpcrun_opencl_malloc();
+    event = &(e->details.event);
+  }
   clreadbuffer_t clEnqueueReadBuffer_wrappee = GOTCHA_GET_TYPED_WRAPPEE(clEnqueueReadBuffer_handle, clreadbuffer_t);
   cl_int return_status = clEnqueueReadBuffer_wrappee(command_queue, buffer, blocking_read, offset, cb, ptr, num_events_in_wait_list, event_wait_list, event);
   ETMSG(CL, "registering callback for type: D2H");
   ETMSG(CL, "%d(bytes) of data being transferred from device to host", (long)cb);
   opencl_subscriber_callback(mem_transfer_cb->type, mem_transfer_cb->correlation_id);
-  clSetEventCallback(*event, CL_COMPLETE, &opencl_buffer_completion_callback, mem_transfer_cb);
-  //free(event);
+  clSetEventCallback(*event, CL_COMPLETE, &opencl_buffer_completion_callback, m);
+  hpcrun_opencl_free(e);
   return return_status;
 }
 
@@ -214,16 +213,22 @@ clEnqueueWriteBuffer_wrapper
 )
 {
   uint64_t correlation_id = getCorrelationId();
-  cl_memory_callback *mem_transfer_cb = (cl_memory_callback*) hpcrun_malloc_safe(sizeof(cl_memory_callback));
+  opencl_object_t *m = hpcrun_opencl_malloc();
+  m->kind = OPENCL_MEMORY_CALLBACK;
+  cl_memory_callback_t *mem_transfer_cb = &(m->details.mem_cb);
   initializeMemoryCallBackInfo(mem_transfer_cb, correlation_id, cb, true);
-  event = eventNullCheck(event);
+  opencl_object_t* e;
+  if(!event) {
+    e = hpcrun_opencl_malloc();
+    event = &(e->details.event);
+  }
   clwritebuffer_t clEnqueueWriteBuffer_wrappee = GOTCHA_GET_TYPED_WRAPPEE(clEnqueueWriteBuffer_handle, clwritebuffer_t);
   cl_int return_status = clEnqueueWriteBuffer_wrappee(command_queue, buffer, blocking_write, offset, cb, ptr, num_events_in_wait_list, event_wait_list, event);
   ETMSG(CL, "registering callback for type: H2D");
   ETMSG(CL, "%d(bytes) of data being transferred from host to device", (long)cb);
   opencl_subscriber_callback(mem_transfer_cb->type, mem_transfer_cb->correlation_id);
-  clSetEventCallback(*event, CL_COMPLETE, &opencl_buffer_completion_callback, mem_transfer_cb);
-  //free(event);
+  clSetEventCallback(*event, CL_COMPLETE, &opencl_buffer_completion_callback, m);
+  hpcrun_opencl_free(e);
   return return_status;
 }
 
