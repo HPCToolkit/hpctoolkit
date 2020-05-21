@@ -93,10 +93,14 @@
 // sampling will never be blocked in this case.  But we keep the write
 // locks for the benefit of the fnbounds functions.
 //
+
+#if 0
 static spinlock_t dlopen_lock = SPINLOCK_UNLOCKED;
 static atomic_long dlopen_num_readers = ATOMIC_VAR_INIT(0);
 static volatile long dlopen_num_writers = 0;
 static int  dlopen_writer_tid = -1;
+#endif
+
 static atomic_long num_dlopen_pending = ATOMIC_VAR_INIT(0);
 
 
