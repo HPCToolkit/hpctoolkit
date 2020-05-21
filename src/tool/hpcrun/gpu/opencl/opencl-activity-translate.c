@@ -44,21 +44,28 @@
 //******************************************************************************
 // system includes
 //******************************************************************************
-#include <assert.h>   //assert
-#include <string.h>	  //memset
+
+#include <assert.h>
+#include <string.h>
+
+
 
 //******************************************************************************
 // local includes
 //******************************************************************************
-#include <hpcrun/messages/messages.h> //ETMSG
+
+#include <hpcrun/messages/messages.h>
 
 #include "opencl-activity-translate.h"
-#include "opencl-api.h" //profilingData
-#include "opencl-memory-manager.h" //hpcrun_opencl_malloc, hpcrun_opencl_free
+#include "opencl-api.h"
+#include "opencl-memory-manager.h"
+
+
 
 //******************************************************************************
 // private operations
 //******************************************************************************
+
 static void
 getTimingInfoFromClEvent
 (
@@ -79,16 +86,19 @@ getTimingInfoFromClEvent
   pd->endTime = commandEnd;
 }
 
+
 static void
 getMemoryProfileInfo
 (
   profilingData_t* pd,
-  cl_memory_callback_t* cb_data)
+  cl_memory_callback_t* cb_data
+)
 {
   pd->size = cb_data->size;
   pd->fromHostToDevice = cb_data->fromHostToDevice;
   pd->fromDeviceToHost = cb_data->fromDeviceToHost;
 }
+
 
 static void
 openclKernelDataToGenericKernelData
@@ -100,6 +110,7 @@ openclKernelDataToGenericKernelData
   generic_data->start = (uint64_t)pd->startTime;
   generic_data->end = (uint64_t)pd->endTime;
 }
+
 
 static void
 openclMemDataToGenericMemData
@@ -114,6 +125,7 @@ openclMemDataToGenericMemData
   generic_data->copyKind = (gpu_memcpy_type_t) (pd->fromHostToDevice)? GPU_MEMCPY_H2D: pd->fromDeviceToHost? GPU_MEMCPY_D2H:
 	GPU_MEMCPY_UNK;
 }
+
 
 static void
 convert_kernel_launch
@@ -137,6 +149,7 @@ convert_kernel_launch
   ga->details.kernel.correlation_id = kernel_cb_data->correlation_id;
   hpcrun_opencl_free(p);
 }
+
 
 static void
 convert_memcpy
@@ -162,9 +175,12 @@ convert_memcpy
   hpcrun_opencl_free(p);
 }
 
+
+
 //******************************************************************************
 // interface operations
 //******************************************************************************
+
 void
 opencl_activity_translate
 (

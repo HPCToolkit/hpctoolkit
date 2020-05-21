@@ -41,17 +41,71 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#ifndef _OPENCL_INTERCEPT_H_
+#define _OPENCL_INTERCEPT_H_
+
+
+
 //******************************************************************************
 // system includes
 //******************************************************************************
+
 #include <stdbool.h>
+
+
 
 //******************************************************************************
 // type declarations
 //******************************************************************************
-#ifndef _OPENCL_INTERCEPT_H_
-#define _OPENCL_INTERCEPT_H_
-typedef enum opencl_call {memcpy_H2D, memcpy_D2H, kernel} opencl_call;
+
+typedef cl_command_queue (*clqueue_t)(
+  cl_context,
+  cl_device_id,
+  cl_command_queue_properties,
+  cl_int *
+);
+
+typedef cl_int (*clkernel_t)(
+  cl_command_queue,
+  cl_kernel,
+  cl_uint,
+  const size_t*,
+  const size_t*,
+  const size_t*,
+  cl_uint,
+  const cl_event*,
+  cl_event*
+);
+
+typedef cl_int (*clreadbuffer_t)(
+  cl_command_queue,
+  cl_mem,
+  cl_bool,
+  size_t,
+  size_t,
+  void *,
+  cl_uint,
+  const cl_event *,
+  cl_event *
+);
+
+typedef cl_int (*clwritebuffer_t)(
+  cl_command_queue,
+  cl_mem,
+  cl_bool,
+  size_t,
+  size_t,
+  const void *,
+  cl_uint,
+  const cl_event *,
+  cl_event *
+);
+
+typedef enum {
+  memcpy_H2D,
+  memcpy_D2H,
+  kernel
+} opencl_call;
 
 typedef struct cl_generic_callback_t {
   uint64_t correlation_id;
@@ -71,7 +125,6 @@ typedef struct cl_memory_callback_t{
   size_t size;
 } cl_memory_callback_t;
 
-#endif
 
 void
 initialize_opencl_correlation_id
@@ -79,14 +132,20 @@ initialize_opencl_correlation_id
   void
 );
 
+
 void
 setup_opencl_intercept
 (
   void
 );
 
+
 void
 teardown_opencl_intercept
 (
   void
 );
+
+
+
+#endif  //_OPENCL_INTERCEPT_H_

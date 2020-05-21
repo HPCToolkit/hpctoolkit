@@ -41,17 +41,28 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#ifndef OPENCL_SETUP_H
+#define OPENCL_SETUP_H
+
+
+
 //******************************************************************************
 // type declarations
 //******************************************************************************
+
 void
 opencl_initialize
 (
   void
 );
 
+
 int
 opencl_bind
 (
   void
 );
+
+
+
+#endif  //OPENCL_SETUP_H

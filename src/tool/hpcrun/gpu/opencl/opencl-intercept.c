@@ -44,43 +44,44 @@
 //******************************************************************************
 // system includes
 //******************************************************************************
-#include <gotcha/gotcha.h>
-#include <stdio.h>
+
 #define CL_TARGET_OPENCL_VERSION 120
 #include <CL/cl.h>
+#include <gotcha/gotcha.h>
+#include <stdio.h>
+
+
 
 //******************************************************************************
 // local includes
 //******************************************************************************
-#include <hpcrun/messages/messages.h>
 
-#include <lib/prof-lean/hpcrun-gotcha.h> //GOTCHA_GET_TYPED_WRAPPEE
-#include <lib/prof-lean/stdatomic.h> //atomic_fetch_add, atomic_store
+#include <hpcrun/messages/messages.h>
+#include <lib/prof-lean/hpcrun-gotcha.h>
+#include <lib/prof-lean/stdatomic.h>
 
 #include "opencl-api.h"
 #include "opencl-intercept.h"
-#include "opencl-memory-manager.h" //hpcrun_opencl_malloc, hpcrun_opencl_free
+#include "opencl-memory-manager.h"
 
-//******************************************************************************
-// type declarations
-//******************************************************************************
-typedef cl_command_queue (*clqueue_t)(cl_context, cl_device_id, cl_command_queue_properties, cl_int *);
-typedef cl_int (*clkernel_t)(cl_command_queue, cl_kernel, cl_uint, const size_t*, const size_t*, const size_t*, cl_uint, const cl_event*, cl_event*);
-typedef cl_int (*clreadbuffer_t)(cl_command_queue, cl_mem, cl_bool, size_t, size_t, void *, cl_uint, const cl_event *, cl_event *);
-typedef cl_int (*clwritebuffer_t)(cl_command_queue, cl_mem, cl_bool, size_t, size_t, const void *, cl_uint, const cl_event *, cl_event *);
+
 
 //******************************************************************************
 // local data
 //******************************************************************************
+
 static gotcha_wrappee_handle_t clCreateCommandQueue_handle;
 static gotcha_wrappee_handle_t clEnqueueNDRangeKernel_handle;
 static gotcha_wrappee_handle_t clEnqueueReadBuffer_handle;
 static gotcha_wrappee_handle_t clEnqueueWriteBuffer_handle;
 static atomic_long correlation_id;
 
+
+
 //******************************************************************************
 // private operations
 //******************************************************************************
+
 static uint64_t
 getCorrelationId
 (
@@ -89,6 +90,7 @@ getCorrelationId
 {
   return atomic_fetch_add(&correlation_id, 1);
 }
+
 
 static void
 initializeKernelCallBackInfo
@@ -100,6 +102,7 @@ initializeKernelCallBackInfo
   kernel_cb->correlation_id = correlation_id;
   kernel_cb->type = kernel; 
 }
+
 
 static void
 initializeMemoryCallBackInfo
@@ -117,6 +120,7 @@ initializeMemoryCallBackInfo
   mem_transfer_cb->fromDeviceToHost = !fromHostToDevice;
 }
 
+
 static cl_command_queue
 clCreateCommandQueue_wrapper
 (
@@ -130,6 +134,7 @@ clCreateCommandQueue_wrapper
   clqueue_t clCreateCommandQueue_wrappee = GOTCHA_GET_TYPED_WRAPPEE(clCreateCommandQueue_handle, clqueue_t);
   return clCreateCommandQueue_wrappee(context, device, properties, errcode_ret);
 }
+
 
 static cl_int
 clEnqueueNDRangeKernel_wrapper
@@ -163,6 +168,7 @@ clEnqueueNDRangeKernel_wrapper
   hpcrun_opencl_free(e);
   return return_status;
 }
+
 
 static cl_int
 clEnqueueReadBuffer_wrapper
@@ -198,6 +204,7 @@ clEnqueueReadBuffer_wrapper
   return return_status;
 }
 
+
 static cl_int
 clEnqueueWriteBuffer_wrapper
 (
@@ -232,17 +239,46 @@ clEnqueueWriteBuffer_wrapper
   return return_status;
 }
 
+
+
 //******************************************************************************
 // gotcha variables
 //******************************************************************************
-static gotcha_binding_t queue_wrapper[] = {{"clCreateCommandQueue", (void*) clCreateCommandQueue_wrapper, &clCreateCommandQueue_handle}};
-static gotcha_binding_t kernel_wrapper[] = {{"clEnqueueNDRangeKernel", (void*)clEnqueueNDRangeKernel_wrapper, &clEnqueueNDRangeKernel_handle}};
-static gotcha_binding_t buffer_wrapper[] = {{"clEnqueueReadBuffer", (void*) clEnqueueReadBuffer_wrapper, &clEnqueueReadBuffer_handle},
-  {"clEnqueueWriteBuffer", (void*) clEnqueueWriteBuffer_wrapper, &clEnqueueWriteBuffer_handle}};
+
+static gotcha_binding_t queue_wrapper[] = {
+  {
+    "clCreateCommandQueue",
+    (void*) clCreateCommandQueue_wrapper,
+    &clCreateCommandQueue_handle}
+};
+
+static gotcha_binding_t kernel_wrapper[] = {
+  {
+    "clEnqueueNDRangeKernel",
+    (void*)clEnqueueNDRangeKernel_wrapper,
+    &clEnqueueNDRangeKernel_handle
+  }
+};
+
+static gotcha_binding_t buffer_wrapper[] = {
+  {
+    "clEnqueueReadBuffer",
+    (void*) clEnqueueReadBuffer_wrapper,
+    &clEnqueueReadBuffer_handle
+  },
+  {
+    "clEnqueueWriteBuffer",
+    (void*) clEnqueueWriteBuffer_wrapper,
+    &clEnqueueWriteBuffer_handle
+  }
+};
+
+
 
 //******************************************************************************
 // interface operations
 //******************************************************************************
+
 void
 initialize_opencl_correlation_id
 (
@@ -251,6 +287,7 @@ initialize_opencl_correlation_id
 {
   atomic_store(&correlation_id, 0);
 }
+
 
 void
 setup_opencl_intercept
@@ -262,6 +299,7 @@ setup_opencl_intercept
   gotcha_wrap(kernel_wrapper, 1, "kernel_intercept");
   gotcha_wrap(buffer_wrapper, 2, "memory_intercept");
 }
+
 
 void
 teardown_opencl_intercept

@@ -44,24 +44,30 @@
 //******************************************************************************
 // system includes
 //******************************************************************************
+
 #define CL_TARGET_OPENCL_VERSION 120
 #include <CL/cl.h>
+
+
 
 //******************************************************************************
 // local includes
 //******************************************************************************
-#include <hpcrun/main.h> // hpcrun_force_dlopen
-#include <hpcrun/sample-sources/libdl.h> //CHK_DLOPEN, CHK_DLSYM
-#include <hpcrun/gpu/gpu-metrics.h> // gpu_metrics_default_enable, gpu_metrics_attribute
-#include <hpcrun/messages/messages.h> //ETMSG
 
-#include "opencl-setup.h"
+#include <hpcrun/main.h>
+#include <hpcrun/messages/messages.h>
+#include <hpcrun/sample-sources/libdl.h>
+
 #include "opencl-api.h"
 #include "opencl-intercept.h"
+#include "opencl-setup.h"
+
+
 
 //******************************************************************************
 // macros
 //******************************************************************************
+
 #define FORALL_OPENCL_ROUTINES(macro)	\
   macro(clCreateCommandQueue)   		\
   macro(clEnqueueNDRangeKernel)			\
@@ -93,9 +99,12 @@ OPENCL_FN
   clEnqueueWriteBuffer, (cl_command_queue command_queue, cl_mem buffer, cl_bool blocking_write, size_t offset, size_t cb,														  const void *ptr, cl_uint num_events_in_wait_list, const cl_event *event_wait_list, cl_event *event)
 );
 
+
+
 //******************************************************************************
 // private operations
 //******************************************************************************
+
 static const char*
 opencl_path
 (
@@ -106,9 +115,12 @@ opencl_path
   return path;
 }
 
+
+
 //******************************************************************************
 // interface operations
 //******************************************************************************
+
 void
 opencl_initialize
 (
@@ -120,6 +132,7 @@ opencl_initialize
   initialize_opencl_operation_count();
   initialize_opencl_correlation_id();
 }
+
 
 int
 opencl_bind
@@ -147,6 +160,7 @@ opencl_bind
     return -1;
   #endif // ! HPCRUN_STATIC_LINK  
 }
+
 
 /*
 void opencl_finalize()

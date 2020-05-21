@@ -41,55 +41,68 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-
 //******************************************************************************
 // system includes
 //******************************************************************************
-#include <assert.h>   //assert
-#include <inttypes.h> //PRIu64
+
+#include <assert.h>
+#include <inttypes.h>
+
+
 
 //******************************************************************************
 // local includes
 //******************************************************************************
-#include <hpcrun/gpu/gpu-activity.h> // gpu_activity_t 
-#include <hpcrun/gpu/gpu-activity-process.h> //gpu_activity_process
-#include <hpcrun/gpu/gpu-activity-channel.h> //gpu_activity_channel_consume
-#include <hpcrun/gpu/gpu-correlation-channel.h> //gpu_correlation_channel_produce
-#include <hpcrun/gpu/gpu-correlation-id-map.h> //gpu_correlation_id_map_insert
-#include <hpcrun/gpu/gpu-application-thread-api.h> // gpu_application_thread_correlation_callback
-#include <hpcrun/gpu/gpu-op-placeholders.h> // gpu_op_placeholder_flags_set, gpu_op_ccts_insert
-#include <hpcrun/gpu/gpu-metrics.h> //gpu_metrics_attribute
-#include <hpcrun/gpu/gpu-monitoring-thread-api.h> //gpu_monitoring_thread_activities_ready
-#include <hpcrun/safe-sampling.h> //hpcrun_safe_enter, hpcrun_safe_exit
-#include <hpcrun/messages/messages.h> //ETMSG
-#include <lib/prof-lean/usec_time.h> //usec_time
-#include <lib/prof-lean/stdatomic.h> //atomic_fetch_add, atomic_store, atomic_load
+
+#include <hpcrun/safe-sampling.h>
+#include <hpcrun/gpu/gpu-activity.h>
+#include <hpcrun/gpu/gpu-activity-channel.h>
+#include <hpcrun/gpu/gpu-activity-process.h>
+#include <hpcrun/gpu/gpu-correlation-channel.h>
+#include <hpcrun/gpu/gpu-correlation-id-map.h>
+#include <hpcrun/gpu/gpu-application-thread-api.h>
+#include <hpcrun/gpu/gpu-metrics.h>
+#include <hpcrun/gpu/gpu-monitoring-thread-api.h>
+#include <hpcrun/gpu/gpu-op-placeholders.h>
+#include <hpcrun/messages/messages.h>
+#include <lib/prof-lean/stdatomic.h>
+#include <lib/prof-lean/usec_time.h>
 
 #include "opencl-api.h"
 #include "opencl-activity-translate.h"
-#include "opencl-memory-manager.h" //opencl_object_t
+#include "opencl-memory-manager.h"
+
+
 
 //******************************************************************************
 // macros
 //******************************************************************************
+
 #define CPU_NANOTIME() (usec_time() * 1000)
+
+
 
 //******************************************************************************
 // local data
 //******************************************************************************
-static atomic_ullong pending_opencl_ops;
+
+static atomic_ullong opencl_pending_operations;
+
+
 
 //******************************************************************************
 // private operations
 //******************************************************************************
+
 static void
 opencl_pending_operations_adjust
 (
   int value
 )
 {
-  atomic_fetch_add(&pending_opencl_ops, value);
+  atomic_fetch_add(&opencl_pending_operations, value);
 }
+
 
 static void
 opencl_activity_completion_notify
@@ -99,6 +112,7 @@ opencl_activity_completion_notify
 {
   gpu_monitoring_thread_activities_ready();
 }
+
 
 static void
 opencl_activity_process
@@ -112,19 +126,23 @@ opencl_activity_process
   gpu_activity_process(&gpu_activity);
 }
 
+
 static void
-flush
+opencl_wait_for_pending_operations
 (
   void
 )
 {
-  ETMSG(CL, "pending operations: %lu", atomic_load(&pending_opencl_ops));
-  while (atomic_load(&pending_opencl_ops) != 0);
+  ETMSG(CL, "pending operations: %lu", atomic_load(&opencl_pending_operations));
+  while (atomic_load(&opencl_pending_operations) != 0);
 }
+
+
 
 //******************************************************************************
 // interface operations
 //******************************************************************************
+
 void
 opencl_subscriber_callback
 (
@@ -161,6 +179,7 @@ opencl_subscriber_callback
   gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, cpu_submit_time);
 }
 
+
 void
 opencl_buffer_completion_callback
 (
@@ -188,14 +207,16 @@ opencl_buffer_completion_callback
   opencl_pending_operations_adjust(-1);
 }
 
+
 void
 initialize_opencl_operation_count
 (
   void
 )
 {
-  atomic_store(&pending_opencl_ops, 0);
+  atomic_store(&opencl_pending_operations, 0);
 }
+
 
 void
 opencl_finalize
@@ -203,6 +224,6 @@ opencl_finalize
   void* args
 )
 {
-  flush();
+  opencl_wait_for_pending_operations();
   gpu_application_thread_process_activities();
 }

@@ -41,20 +41,32 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#ifndef _OPENCL_ACTIVITY_TRANSLATE_H_
+#define _OPENCL_ACTIVITY_TRANSLATE_H_
+
+
+
 //******************************************************************************
 // system includes
 //******************************************************************************
+
 #define CL_TARGET_OPENCL_VERSION 120
 #include <CL/cl.h>
+
+
 
 //******************************************************************************
 // local includes
 //******************************************************************************
-#include <hpcrun/gpu/gpu-activity.h> // gpu_activity_t
+
+#include <hpcrun/gpu/gpu-activity.h>
+
+
 
 //******************************************************************************
 // type declarations
 //******************************************************************************
+
 void
 opencl_activity_translate
 (
@@ -62,3 +74,7 @@ opencl_activity_translate
   cl_event,
   void *user_data
 );
+
+
+
+#endif  //_OPENCL_ACTIVITY_TRANSLATE_H_

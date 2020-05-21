@@ -44,25 +44,34 @@
 //******************************************************************************
 // system includes
 //******************************************************************************
-#include <assert.h>   //assert
-#include <string.h>	  //memset
+
+#include <string.h>
+
+
 
 //******************************************************************************
 // local includes
 //******************************************************************************
-#include <hpcrun/memory/hpcrun-malloc.h> //hpcrun_malloc_safe
-#include <hpcrun/gpu/gpu-channel-item-allocator.h>  //channel_item_alloc, channel_item_free
+
+#include <hpcrun/gpu/gpu-channel-item-allocator.h>
+#include <hpcrun/memory/hpcrun-malloc.h>
 
 #include "opencl-memory-manager.h"
+
+
 
 //******************************************************************************
 // local data
 //******************************************************************************
+
 static __thread opencl_object_channel_t *opencl_object_channel;
+
+
 
 //******************************************************************************
 // private operations
 //******************************************************************************
+
 static opencl_object_channel_t *
 opencl_object_channel_alloc
 (
@@ -71,6 +80,7 @@ opencl_object_channel_alloc
 {
   return hpcrun_malloc_safe(sizeof(opencl_object_channel_t));
 }
+
 
 static opencl_object_channel_t *
 opencl_object_channel_get
@@ -84,9 +94,12 @@ opencl_object_channel_get
   return opencl_object_channel;
 }
 
+
+
 //******************************************************************************
 // interface operations
 //******************************************************************************
+
 opencl_object_t*
 hpcrun_opencl_malloc
 (
@@ -96,6 +109,7 @@ hpcrun_opencl_malloc
   opencl_object_channel_t* c = opencl_object_channel_get();
   return channel_item_alloc(c, opencl_object_t);
 }
+
 
 void
 hpcrun_opencl_free

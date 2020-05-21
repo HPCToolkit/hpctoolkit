@@ -41,22 +41,31 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#ifndef _OPENCL_API_H_
+#define _OPENCL_API_H_
+
+
+
 //******************************************************************************
 // system includes
 //******************************************************************************
+
 #define CL_TARGET_OPENCL_VERSION 120
 #include <CL/cl.h>
+
+
 
 //******************************************************************************
 // local includes
 //******************************************************************************
+
 #include "opencl-intercept.h"
+
+
 
 //******************************************************************************
 // type declarations
 //******************************************************************************
-#ifndef _OPENCL_API_H_
-#define _OPENCL_API_H_
 
 typedef struct
 profilingData_t
@@ -69,7 +78,7 @@ profilingData_t
   bool fromHostToDevice;
   bool fromDeviceToHost;
 } profilingData_t;
-#endif
+
 
 void
 opencl_subscriber_callback
@@ -77,6 +86,7 @@ opencl_subscriber_callback
   opencl_call,
   uint64_t
 );
+
 
 void
 opencl_buffer_completion_callback
@@ -86,14 +96,20 @@ opencl_buffer_completion_callback
   void *
 );
 
+
 void
 initialize_opencl_operation_count
 (
   void
 );
 
+
 void
 opencl_finalize
 (
   void*
 );
+
+
+
+#endif  //_OPENCL_API_H_

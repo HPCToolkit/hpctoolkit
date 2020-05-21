@@ -41,23 +41,35 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#ifndef OPENCL_MEMORY_MANAGER_H
+#define OPENCL_MEMORY_MANAGER_H
+
+
+
 //******************************************************************************
 // system includes
 //******************************************************************************
+
 #define CL_TARGET_OPENCL_VERSION 120
-#include <CL/cl.h> //cl_event
+#include <CL/cl.h>
+
+
 
 //******************************************************************************
 // local includes
 //******************************************************************************
-#include <lib/prof-lean/bistack.h>  //s_element_ptr_t, bistack_t
 
-#include "opencl-api.h" //profilingData_t
-#include "opencl-intercept.h" //cl_kernel_callback_t, cl_memory_callback_t
+#include <lib/prof-lean/bistack.h>
+
+#include "opencl-api.h"
+#include "opencl-intercept.h"
+
+
 
 //******************************************************************************
 // type declarations
 //******************************************************************************
+
 typedef enum {
   OPENCL_PROFILING_DATA                      = 0,
   OPENCL_EVENT                               = 1,
@@ -84,14 +96,20 @@ typedef struct opencl_object_channel_t {
   bistack_t bistacks[2];
 } opencl_object_channel_t;
 
+
 opencl_object_t*
 hpcrun_opencl_malloc
 (
   void
 );
 
+
 void
 hpcrun_opencl_free
 (
   opencl_object_t*
 );
+
+
+
+#endif  //OPENCL_MEMORY_MANAGER_H
