@@ -155,6 +155,9 @@ class GPUAdvisor {
   };
 
  private:
+  void attributeBlameMetric(int mpi_rank, int thread_id,
+    Prof::CCT::ANode *node, const std::string &blame_name, double blame);
+
   void initCCTDepGraph(int mpi_rank, int thread_id,
     CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
 
@@ -178,13 +181,17 @@ class GPUAdvisor {
   void trackDepInit(int to_vma, int from_vma,
     int dst, CCTEdgePathMap &cct_edge_path_map, TrackType track_type);
 
-  double computePathNoStall(int mpi_rank, int thread_id, int from_vma, int to_vma,
+  double computePathInsts(int mpi_rank, int thread_id, int from_vma, int to_vma,
     std::vector<CudaParse::Block *> &path);
 
-  std::string detailizeExecBlame(CudaParse::InstructionStat *from_inst,
+  void reversePathInsts(std::map<Prof::CCT::ADynNode *, double> &insts);
+
+  std::pair<std::string, std::string>
+  detailizeExecBlame(CudaParse::InstructionStat *from_inst,
     CudaParse::InstructionStat *to_inst);
     
-  std::string detailizeMemBlame(CudaParse::InstructionStat *from_inst);
+  std::pair<std::string, std::string>
+  detailizeMemBlame(CudaParse::InstructionStat *from_inst);
 
   void blameCCTDepGraph(int mpi_rank, int thread_id,
     CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph,
@@ -223,6 +230,7 @@ class GPUAdvisor {
   std::string _stall_metric;
   std::string _issue_metric;
 
+  // stl
   std::string _invalid_stall_metric;
   std::string _tex_stall_metric;
   std::string _ifetch_stall_metric;
@@ -233,6 +241,18 @@ class GPUAdvisor {
   std::string _sleep_stall_metric;
   std::string _cmem_stall_metric;
 
+  // nostl
+  std::string _invalid_lat_metric;
+  std::string _tex_lat_metric;
+  std::string _ifetch_lat_metric;
+  std::string _pipe_bsy_lat_metric;
+  std::string _mem_thr_lat_metric;
+  std::string _nosel_lat_metric;
+  std::string _other_lat_metric;
+  std::string _sleep_lat_metric;
+  std::string _cmem_lat_metric;
+
+  // stl
   std::string _exec_dep_stall_metric;
   std::string _exec_dep_dep_stall_metric;
   std::string _exec_dep_sche_stall_metric;
@@ -243,8 +263,20 @@ class GPUAdvisor {
   std::string _mem_dep_lmem_stall_metric;
   std::string _sync_stall_metric;
 
-  std::set<std::string> _inst_stall_metrics;
-  std::set<std::string> _dep_stall_metrics;
+  // nostl
+  std::string _exec_dep_lat_metric;
+  std::string _exec_dep_dep_lat_metric;
+  std::string _exec_dep_sche_lat_metric;
+  std::string _exec_dep_smem_lat_metric;
+  std::string _exec_dep_war_lat_metric;
+  std::string _mem_dep_lat_metric;
+  std::string _mem_dep_gmem_lat_metric;
+  std::string _mem_dep_lmem_lat_metric;
+  std::string _sync_lat_metric;
+
+  // [<stl, lat>]
+  std::vector<std::pair<std::string, std::string>> _inst_metrics;
+  std::vector<std::pair<std::string, std::string>> _dep_metrics;
 
   Prof::CallPath::Profile *_prof;
   MetricNameProfMap *_metric_name_prof_map;
@@ -267,6 +299,7 @@ class GPUAdvisor {
   KernelStats _kernel_stats;
  
   std::stringstream _output;
+
  private:
   const int _top_block_blames = 3;
   const int _top_optimizers = 5;

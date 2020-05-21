@@ -114,40 +114,58 @@ struct InstructionBlame {
   std::string blame_name;
   CudaParse::Function *function;
   CudaParse::Block *block;
-  double blame;
+  double stall_blame;
+  double lat_blame;
 
   InstructionBlame(
     CudaParse::InstructionStat *src, CudaParse::InstructionStat *dst,
     Prof::Struct::ACodeNode *src_struct, Prof::Struct::ACodeNode *dst_struct,
-    std::string &blame_name, double blame) : src(src), dst(dst),
-    src_struct(src_struct), dst_struct(dst_struct),
-    blame_name(blame_name), blame(blame) {}
+    std::string &blame_name, double stall_blame, double lat_blame) :
+    src(src), dst(dst), src_struct(src_struct), dst_struct(dst_struct),
+    blame_name(blame_name), stall_blame(stall_blame), lat_blame(lat_blame) {}
 
   InstructionBlame(
     CudaParse::InstructionStat *src, CudaParse::InstructionStat *dst,
     Prof::Struct::ACodeNode *src_struct, Prof::Struct::ACodeNode *dst_struct,
     std::string &blame_name, CudaParse::Function *function, CudaParse::Block *block,
-    double blame) : src(src), dst(dst),
+    double stall_blame, double lat_blame) : src(src), dst(dst),
     src_struct(src_struct), dst_struct(dst_struct),
-    blame_name(blame_name), function(function), block(block), blame(blame) {}
-  InstructionBlame() {}
+    blame_name(blame_name), function(function), block(block),
+    stall_blame(stall_blame), lat_blame(lat_blame) {}
 
-  bool operator < (const InstructionBlame &other) const {
-    return this->blame > other.blame;
+  InstructionBlame() {}
+};
+
+
+struct InstructionBlameStallComparator {
+  bool operator() (const InstructionBlame &l, const InstructionBlame &r) const {
+    return l.stall_blame > r.stall_blame;
   }
 };
 
+
+struct InstructionBlameLatComparator {
+  bool operator() (const InstructionBlame &l, const InstructionBlame &r) const {
+    return l.lat_blame > r.lat_blame;
+  }
+};
+
+
 typedef std::vector<InstructionBlame> InstBlames;
+
 
 struct KernelBlame {
   InstBlames inst_blames;
-  std::map<std::string, double> blames;
-  double blame;
+  std::map<std::string, double> stall_blames;
+  std::map<std::string, double> lat_blames;
+  double stall_blame;
+  double lat_blame;
 
   KernelBlame() {}
 };
 
 typedef std::map<int, std::map<int, KernelBlame>> CCTBlames;
+
 
 #define FORALL_OPTIMIZER_TYPES(macro) \
   macro(REGISTER_INCREASE, GPURegisterIncreaseOptimizer, 0) \
@@ -176,6 +194,7 @@ enum GPUOptimizerType {
 };
 
 #undef DECLARE_OPTIMIZER_TYPE
+
 
 class GPUOptimizer {
  public:

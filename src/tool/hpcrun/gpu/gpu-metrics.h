@@ -173,38 +173,38 @@ typedef enum {
 	"GPU instruction stalls: sleep")
 
 
-#define FORALL_GPU_INST_NOSTALL(macro)					\
-  macro(GPU_INST_METRIC_NAME ":NOSTL_ANY",     GPU_INST_STALL_ANY,	\
+#define FORALL_GPU_INST_LAT(macro)					\
+  macro(GPU_INST_METRIC_NAME ":LAT_ANY",     GPU_INST_STALL_ANY,	\
 	"GPU instruction nostalls: any [internal use only]")					\
-  macro(GPU_INST_METRIC_NAME ":NOSTL_NONE",    GPU_INST_STALL_NONE,	\
+  macro(GPU_INST_METRIC_NAME ":LAT_NONE",    GPU_INST_STALL_NONE,	\
 	"GPU instruction nostalls: no stall [internal use only]")				\
-  macro(GPU_INST_METRIC_NAME ":NOSTL_IFET",    GPU_INST_STALL_IFETCH,	\
+  macro(GPU_INST_METRIC_NAME ":LAT_IFET",    GPU_INST_STALL_IFETCH,	\
 	"GPU instruction nostalls: await availability of next "		\
 	"instruction (fetch or branch delay) [internal use only]")				\
-  macro(GPU_INST_METRIC_NAME ":NOSTL_IDEP",    GPU_INST_STALL_IDEPEND,	\
+  macro(GPU_INST_METRIC_NAME ":LAT_IDEP",    GPU_INST_STALL_IDEPEND,	\
 	"GPU instruction nostalls: await satisfaction of instruction "	\
 	"input dependence [internal use only]")						\
-  macro(GPU_INST_METRIC_NAME ":NOSTL_GMEM",    GPU_INST_STALL_GMEM,	\
+  macro(GPU_INST_METRIC_NAME ":LAT_GMEM",    GPU_INST_STALL_GMEM,	\
 	"GPU instruction nostalls: await completion of global memory "	\
 	"access [internal use only]")							\
-  macro(GPU_INST_METRIC_NAME ":NOSTL_TMEM",    GPU_INST_STALL_TMEM,	\
+  macro(GPU_INST_METRIC_NAME ":LAT_TMEM",    GPU_INST_STALL_TMEM,	\
 	"GPU instruction nostalls: texture memory request queue full [internal use only]")	\
-  macro(GPU_INST_METRIC_NAME ":NOSTL_SYNC",    GPU_INST_STALL_SYNC,	\
+  macro(GPU_INST_METRIC_NAME ":LAT_SYNC",    GPU_INST_STALL_SYNC,	\
 	"GPU instruction nostalls: await completion of thread or "	\
 	"memory synchronization [internal use only]")					\
-  macro(GPU_INST_METRIC_NAME ":NOSTL_CMEM",    GPU_INST_STALL_CMEM,	\
+  macro(GPU_INST_METRIC_NAME ":LAT_CMEM",    GPU_INST_STALL_CMEM,	\
 	"GPU instruction nostalls: await completion of constant or "	\
 	"immediate memory access [internal use only]")					\
-  macro(GPU_INST_METRIC_NAME ":NOSTL_PIPE",    GPU_INST_STALL_PIPE_BUSY,	\
+  macro(GPU_INST_METRIC_NAME ":LAT_PIPE",    GPU_INST_STALL_PIPE_BUSY,	\
 	"GPU instruction nostalls: await completion of required "	\
 	"compute resources [internal use only]")					\
-  macro(GPU_INST_METRIC_NAME ":NOSTL_MTHR",    GPU_INST_STALL_MEM_THROTTLE, \
+  macro(GPU_INST_METRIC_NAME ":LAT_MTHR",    GPU_INST_STALL_MEM_THROTTLE, \
 	"GPU instruction nostalls: global memory request queue full [internal use only]")	\
-  macro(GPU_INST_METRIC_NAME ":NOSTL_NSEL",    GPU_INST_STALL_NOT_SELECTED, \
+  macro(GPU_INST_METRIC_NAME ":LAT_NSEL",    GPU_INST_STALL_NOT_SELECTED, \
 	"GPU instruction nostalls: not selected for issue but ready [internal use only]")	\
-  macro(GPU_INST_METRIC_NAME ":NOSTL_OTHR",    GPU_INST_STALL_OTHER,	\
+  macro(GPU_INST_METRIC_NAME ":LAT_OTHR",    GPU_INST_STALL_OTHER,	\
 	"GPU instruction nostalls: other [internal use only]")				\
-  macro(GPU_INST_METRIC_NAME ":NOSTL_SLP",     GPU_INST_STALL_SLEEP,	\
+  macro(GPU_INST_METRIC_NAME ":LAT_SLP",     GPU_INST_STALL_SLEEP,	\
 	"GPU instruction nostalls: sleep [internal use only]")
 
 
@@ -479,7 +479,7 @@ gpu_metrics_GPU_INST_STALL_enable
 
 
 void
-gpu_metrics_GPU_INST_NOSTALL_enable
+gpu_metrics_GPU_INST_LAT_enable
 (
  void
 );

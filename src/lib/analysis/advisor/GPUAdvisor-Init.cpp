@@ -65,7 +65,7 @@ namespace Analysis {
  */
 
 void GPUAdvisor::init() {
-  if (_inst_stall_metrics.size() != 0) {
+  if (_inst_metrics.size() != 0) {
     // Init already
     return;
   }
@@ -75,10 +75,11 @@ void GPUAdvisor::init() {
   this->_arch = new V100(); 
 
   // Init individual metrics
-  _issue_metric = GPU_INST_METRIC_NAME":STL_NONE";
+  _issue_metric = GPU_INST_METRIC_NAME":LAT_NONE";
   _stall_metric = GPU_INST_METRIC_NAME":STL_ANY";
   _inst_metric = GPU_INST_METRIC_NAME;
 
+  // STL
   _invalid_stall_metric = GPU_INST_METRIC_NAME":STL_INV";
   _tex_stall_metric = GPU_INST_METRIC_NAME":STL_TMEM";
   _ifetch_stall_metric = GPU_INST_METRIC_NAME":STL_IFET";
@@ -88,17 +89,29 @@ void GPUAdvisor::init() {
   _other_stall_metric = GPU_INST_METRIC_NAME":STL_OTHR";
   _sleep_stall_metric = GPU_INST_METRIC_NAME":STL_SLP";
   _cmem_stall_metric = GPU_INST_METRIC_NAME":STL_CMEM";
-  
-  _inst_stall_metrics.insert(_invalid_stall_metric);
-  _inst_stall_metrics.insert(_tex_stall_metric);
-  _inst_stall_metrics.insert(_ifetch_stall_metric);
-  _inst_stall_metrics.insert(_pipe_bsy_stall_metric);
-  _inst_stall_metrics.insert(_mem_thr_stall_metric);
-  _inst_stall_metrics.insert(_nosel_stall_metric);
-  _inst_stall_metrics.insert(_other_stall_metric);
-  _inst_stall_metrics.insert(_sleep_stall_metric);
-  _inst_stall_metrics.insert(_cmem_stall_metric);
 
+  // LAT
+  _invalid_lat_metric = GPU_INST_METRIC_NAME":LAT_INV";
+  _tex_lat_metric = GPU_INST_METRIC_NAME":LAT_TMEM";
+  _ifetch_lat_metric = GPU_INST_METRIC_NAME":LAT_IFET";
+  _pipe_bsy_lat_metric = GPU_INST_METRIC_NAME":LAT_PIPE";
+  _mem_thr_lat_metric = GPU_INST_METRIC_NAME":LAT_MTHR";
+  _nosel_lat_metric = GPU_INST_METRIC_NAME":LAT_NSEL";
+  _other_lat_metric = GPU_INST_METRIC_NAME":LAT_OTHR";
+  _sleep_lat_metric = GPU_INST_METRIC_NAME":LAT_SLP";
+  _cmem_lat_metric = GPU_INST_METRIC_NAME":LAT_CMEM";
+  
+  _inst_metrics.emplace_back(std::make_pair(_invalid_stall_metric, _invalid_lat_metric));
+  _inst_metrics.emplace_back(std::make_pair(_tex_stall_metric, _tex_lat_metric));
+  _inst_metrics.emplace_back(std::make_pair(_ifetch_stall_metric, _ifetch_lat_metric));
+  _inst_metrics.emplace_back(std::make_pair(_pipe_bsy_stall_metric, _pipe_bsy_lat_metric));
+  _inst_metrics.emplace_back(std::make_pair(_mem_thr_stall_metric, _mem_thr_lat_metric));
+  _inst_metrics.emplace_back(std::make_pair(_nosel_stall_metric, _nosel_lat_metric));
+  _inst_metrics.emplace_back(std::make_pair(_other_stall_metric, _other_lat_metric));
+  _inst_metrics.emplace_back(std::make_pair(_sleep_stall_metric, _sleep_lat_metric));
+  _inst_metrics.emplace_back(std::make_pair(_cmem_stall_metric, _cmem_lat_metric));
+
+  // STL
   _exec_dep_stall_metric = GPU_INST_METRIC_NAME":STL_IDEP";
   _exec_dep_dep_stall_metric = GPU_INST_METRIC_NAME":STL_IDEP_DEP";
   _exec_dep_sche_stall_metric = GPU_INST_METRIC_NAME":STL_IDEP_SCHE";
@@ -109,22 +122,35 @@ void GPUAdvisor::init() {
   _mem_dep_lmem_stall_metric = GPU_INST_METRIC_NAME":STL_GMEM_LMEM";
   _sync_stall_metric = GPU_INST_METRIC_NAME":STL_SYNC";
 
-  _dep_stall_metrics.insert(_exec_dep_stall_metric);
-  _dep_stall_metrics.insert(_exec_dep_dep_stall_metric);
-  _dep_stall_metrics.insert(_exec_dep_sche_stall_metric);
-  _dep_stall_metrics.insert(_exec_dep_smem_stall_metric);
-  _dep_stall_metrics.insert(_exec_dep_war_stall_metric);
-  _dep_stall_metrics.insert(_mem_dep_stall_metric);
-  _dep_stall_metrics.insert(_mem_dep_gmem_stall_metric);
-  _dep_stall_metrics.insert(_mem_dep_lmem_stall_metric);
-  _dep_stall_metrics.insert(_sync_stall_metric);
+  // LAT
+  _exec_dep_lat_metric = GPU_INST_METRIC_NAME":LAT_IDEP";
+  _exec_dep_dep_lat_metric = GPU_INST_METRIC_NAME":LAT_IDEP_DEP";
+  _exec_dep_sche_lat_metric = GPU_INST_METRIC_NAME":LAT_IDEP_SCHE";
+  _exec_dep_smem_lat_metric = GPU_INST_METRIC_NAME":LAT_IDEP_SMEM";
+  _exec_dep_war_lat_metric = GPU_INST_METRIC_NAME":LAT_IDEP_WAR";
+  _mem_dep_lat_metric = GPU_INST_METRIC_NAME":LAT_GMEM";
+  _mem_dep_gmem_lat_metric = GPU_INST_METRIC_NAME":LAT_GMEM_GMEM";
+  _mem_dep_lmem_lat_metric = GPU_INST_METRIC_NAME":LAT_GMEM_LMEM";
+  _sync_lat_metric = GPU_INST_METRIC_NAME":LAT_SYNC";
 
-  for (auto &s : _inst_stall_metrics) {
-    _metric_name_prof_map->add("BLAME " + s);
+  _dep_metrics.emplace_back(std::make_pair(_exec_dep_stall_metric, _exec_dep_lat_metric));
+  _dep_metrics.emplace_back(std::make_pair(_exec_dep_dep_stall_metric, _exec_dep_dep_lat_metric));
+  _dep_metrics.emplace_back(std::make_pair(_exec_dep_sche_stall_metric, _exec_dep_sche_lat_metric));
+  _dep_metrics.emplace_back(std::make_pair(_exec_dep_smem_stall_metric, _exec_dep_smem_lat_metric));
+  _dep_metrics.emplace_back(std::make_pair(_exec_dep_war_stall_metric, _exec_dep_war_lat_metric));
+  _dep_metrics.emplace_back(std::make_pair(_mem_dep_stall_metric, _mem_dep_lat_metric));
+  _dep_metrics.emplace_back(std::make_pair(_mem_dep_gmem_stall_metric, _mem_dep_gmem_lat_metric));
+  _dep_metrics.emplace_back(std::make_pair(_mem_dep_lmem_stall_metric, _mem_dep_lmem_lat_metric));
+  _dep_metrics.emplace_back(std::make_pair(_sync_stall_metric, _sync_lat_metric));
+
+  for (auto &s : _inst_metrics) {
+    _metric_name_prof_map->add("BLAME " + s.first);
+    _metric_name_prof_map->add("BLAME " + s.second);
   }
 
-  for (auto &s : _dep_stall_metrics) {
-    _metric_name_prof_map->add("BLAME " + s);
+  for (auto &s : _dep_metrics) {
+    _metric_name_prof_map->add("BLAME " + s.first);
+    _metric_name_prof_map->add("BLAME " + s.second);
   }
 
   // Init optimizers

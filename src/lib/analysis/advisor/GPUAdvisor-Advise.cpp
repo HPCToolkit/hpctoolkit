@@ -165,17 +165,17 @@ void GPUAdvisor::advise(const CCTBlames &cct_blames) {
           // 1. Summarize function statistics
           // First line, total
           _output << "[" << mpi_rank << "," << thread_id << "] Summary " <<
-            kernel_blame.blame << ":" << std::endl;
+            kernel_blame.lat_blame << ":" << std::endl;
 
-          for (auto &kernel_blame_iter : kernel_blame.blames) {
+          for (auto &lat_blame_iter : kernel_blame.lat_blames) {
             // Following lines, blame metrics 
-            auto &metric = kernel_blame_iter.first;
-            auto blame = kernel_blame_iter.second;
-            _output << metric << ": " << blame / kernel_blame.blame * 100 << "%" << std::endl;
+            auto lat = lat_blame_iter.first;
+            auto lat_blame = lat_blame_iter.second;
+            _output << lat << ": " << lat_blame / kernel_blame.lat_blame * 100 << "%" << std::endl;
           }
 
           // Calculate active samples
-          kernel_stats.active_samples = kernel_stats.total_samples - kernel_blame.blame;
+          kernel_stats.active_samples = kernel_blame.lat_blame - kernel_blame.stall_blame;
 
           // 2. Rank optimizers
           OptimizerRank code_optimizer_rank;

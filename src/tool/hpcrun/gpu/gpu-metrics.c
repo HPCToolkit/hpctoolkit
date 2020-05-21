@@ -76,7 +76,7 @@
   macro(GSYNC, 4)				\
   macro(GGMEM, 5)				\
   macro(GLMEM, 6)       \
-  macro(GPU_INST_NOSTALL, 7)
+  macro(GPU_INST_LAT, 7)
 
 
 #define FORALL_SCALAR_METRIC_KINDS(macro)	\
@@ -164,8 +164,6 @@ name ## _metric_kind
 #define HIDE_INDEXED_METRIC(name, index, desc) \
    hpcrun_set_display(APPLY(METRIC_ID,CURRENT_METRIC)[index], 0);
 
-#define HIDE_METRIC(name) \
-    FORALL_GPU_INST_NOSTALL(HIDE_INDEXED_METRIC)
 
 #define DIVISION_FORMULA(name) \
   hpcrun_set_display(METRIC_ID(name ## _ACUMU), 0); \
@@ -275,24 +273,22 @@ gpu_metrics_attribute_pc_sampling
     gpu_metrics_attribute_metric_int(stall_metrics, 
       stall_kind_metric_index, stall_count);
 
-    // nostall, internal use only
-    int nostall_summary_metric_index = 
-      METRIC_ID(GPU_INST_NOSTALL)[GPU_INST_STALL_ANY];
+    // lat, internal use only
+    int lat_summary_metric_index = 
+      METRIC_ID(GPU_INST_LAT)[GPU_INST_STALL_ANY];
 
-    int nostall_kind_metric_index = METRIC_ID(GPU_INST_NOSTALL)[sinfo->stallReason];
+    int lat_kind_metric_index = METRIC_ID(GPU_INST_LAT)[sinfo->stallReason];
 
-    metric_data_list_t *nostall_metrics = 
-      hpcrun_reify_metric_set(cct_node, nostall_kind_metric_index);
+    metric_data_list_t *lat_metrics = 
+      hpcrun_reify_metric_set(cct_node, lat_kind_metric_index);
 
-    int nostall_count = (sinfo->samples - sinfo->latencySamples) * sample_period;
+    int lat_count = (sinfo->samples - sinfo->latencySamples) * sample_period;
 
-    // nostall summary metric
-    gpu_metrics_attribute_metric_int(nostall_metrics, 
-      nostall_summary_metric_index, nostall_count);
+    // lat summary metric
+    gpu_metrics_attribute_metric_int(lat_metrics, lat_summary_metric_index, lat_count);
 
-    // nostall reason specific metric
-    gpu_metrics_attribute_metric_int(nostall_metrics, 
-      nostall_kind_metric_index, nostall_count);
+    // lat reason specific metric
+    gpu_metrics_attribute_metric_int(lat_metrics, lat_kind_metric_index, lat_count);
   }
 }
 
@@ -852,19 +848,19 @@ gpu_metrics_GPU_INST_STALL_enable
 
 
 void
-gpu_metrics_GPU_INST_NOSTALL_enable
+gpu_metrics_GPU_INST_LAT_enable
 (
  void
 )
 {
 #undef CURRENT_METRIC 
-#define CURRENT_METRIC GPU_INST_NOSTALL
+#define CURRENT_METRIC GPU_INST_LAT
 
   INITIALIZE_METRIC_KIND();
 
-  FORALL_GPU_INST_NOSTALL(INITIALIZE_INDEXED_METRIC_INT)
+  FORALL_GPU_INST_LAT(INITIALIZE_INDEXED_METRIC_INT)
 
-  HIDE_METRIC(GPU_INST_NOSTALL)
+  FORALL_GPU_INST_LAT(HIDE_INDEXED_METRIC)
 
   FINALIZE_METRIC_KIND();
 }

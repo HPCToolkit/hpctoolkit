@@ -95,6 +95,7 @@ double GPULoopNoUnrollOptimizer::match(const KernelBlame &kernel_blame, const Ke
 
 
 double GPUStrengthReductionOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
+#if 0
   // Match if for exec dep
   std::stringstream output;
   double speedup = 0.0;
@@ -127,7 +128,7 @@ double GPUStrengthReductionOptimizer::match(const KernelBlame &kernel_blame, con
     auto *src_inst = inst_blame.src;
 
     if (src_insts.find(src_inst) != src_insts.end()) {
-      blame += inst_blame.blame;
+      blame += inst_blame.nostall_blame;
     }
   }
 
@@ -143,10 +144,13 @@ double GPUStrengthReductionOptimizer::match(const KernelBlame &kernel_blame, con
   }
 
   return speedup;
+#endif
+  return 0.0;
 }
 
 
 double GPUWarpBalanceOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
+#if 0
   // Match if sync
   std::stringstream output;
   double speedup = 0.0;
@@ -196,10 +200,13 @@ double GPUWarpBalanceOptimizer::match(const KernelBlame &kernel_blame, const Ker
   }
 
   return speedup;
+#endif
+  return 0.0;
 }
 
 
 double GPUCodeReorderOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
+#if 0
   // Match if for memory dep and exec dep
   std::stringstream output;
   double speedup = 0.0;
@@ -255,6 +262,8 @@ double GPUCodeReorderOptimizer::match(const KernelBlame &kernel_blame, const Ker
   }
 
   return speedup;
+#endif;
+  return 0.0;
 }
 
 
@@ -279,6 +288,7 @@ double GPUGlobalMemoryCoalesceOptimizer::match(const KernelBlame &kernel_blame, 
 
 
 double GPUOccupancyIncreaseOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
+#if 0
   double speedup = 0.0;
   // Match if for memory dep and exec dep
   std::stringstream output;
@@ -299,6 +309,8 @@ double GPUOccupancyIncreaseOptimizer::match(const KernelBlame &kernel_blame, con
   }
 
   return speedup;
+#endif
+  return 0.0;
 }
 
 
@@ -313,6 +325,7 @@ double GPUSMBalanceOptimizer::match(const KernelBlame &kernel_blame, const Kerne
 
 
 double GPUBlockIncreaseOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
+#if 0
   double speedup = 0.0;
   // Match if for memory dep and exec dep
   std::stringstream output;
@@ -331,6 +344,8 @@ double GPUBlockIncreaseOptimizer::match(const KernelBlame &kernel_blame, const K
   this->_advise += output.str();
 
   return speedup;
+#endif
+  return 0.0;
 }
 
 
