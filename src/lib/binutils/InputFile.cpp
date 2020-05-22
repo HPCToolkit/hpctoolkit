@@ -176,3 +176,15 @@ InputFile::openFile
 
   return result;
 }
+
+
+InputFile::~InputFile
+(
+ void
+)
+{
+  for(auto fi = filevector->begin(); fi < filevector->end(); fi++) {
+    delete *fi;
+  }
+  delete filevector;
+}

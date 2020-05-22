@@ -49,14 +49,14 @@ packages:
   # hpctoolkit -- these settings can be specified here or else on the
   # spack install command line.
   #
-  # Use version 'master' for the latest snapshot from master, which
-  # now includes gpu support.
+  # Use version 'master' for the latest snapshot from master.
+  # 2019.12.28 is the last version that runs on Blue Gene.
   #
   # +mpi builds hpcprof-mpi (requires mpi).
   # +papi uses papi instead of perfmon.
   #
   # hpctoolkit:
-  #   version:  [2019.12.28, master]
+  #   version:  [2020.03.01, master]
   #   variants: +mpi
 
 
@@ -150,6 +150,15 @@ packages:
     variants: +bzip2 +xz ~nls
 
 
+  # gotcha -- used in hpcrun to assist libunwind
+  #
+  # Requires version 1.0.3 or later.
+  #
+  gotcha:
+    version:  [1.0.3]
+    variants: build_type=RelWithDebInfo
+
+
   # intel-tbb -- used by dyninst as part of parallel parsing.
   #
   # Dyninst requires >= 2018.6, most anything after that is good.
@@ -233,7 +242,7 @@ packages:
   # +xz is for reading compressed symbol tables.
   #
   libunwind:
-    version:  [1.4-rc1, 2018.10.12]
+    version:  [1.4.0, 1.5-rc1]
     variants: +xz
 
 

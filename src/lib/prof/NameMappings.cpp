@@ -120,7 +120,15 @@ static NameMapping renamingTable[] = {
 };
 
 static const char *fakeProcedures[] = {
-  PROGRAM_ROOT, THREAD_ROOT, GUARD_NAME, NO_ACTIVITY, "<partial call paths>"
+  PROGRAM_ROOT, THREAD_ROOT, GUARD_NAME, NO_ACTIVITY, "<partial call paths>",
+
+  OMP_IDLE, OMP_OVERHEAD, OMP_BARRIER_WAIT, OMP_TASK_WAIT, OMP_MUTEX_WAIT,
+
+  OMP_TGT_ALLOC, OMP_TGT_COPYIN, OMP_TGT_COPYOUT, OMP_TGT_DELETE,
+  OMP_TGT_ALLOC, OMP_TGT_KERNEL,
+
+  GPU_COPY, GPU_COPYIN, GPU_COPYOUT, GPU_ALLOC, GPU_ALLOC, GPU_DELETE,
+  GPU_SYNC, GPU_KERNEL, GPU_TRACE
 };
 
 static NameMappings_t renamingMap;
