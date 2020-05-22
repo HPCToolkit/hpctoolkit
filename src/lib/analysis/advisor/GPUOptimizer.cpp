@@ -214,8 +214,8 @@ double GPUCodeReorderOptimizer::match(const KernelBlame &kernel_blame, const Ker
     auto blame_name = stall_blame_iter.first;
     auto blame_metric = stall_blame_iter.second;
 
-    if (blame_name.find(":STL_GMEM_GMEM") != std::string::npos ||
-      blame_name.find(":STL_IDEP_DEP") != std::string::npos) {
+    if (blame_name.find(":LAT_GMEM_GMEM") != std::string::npos ||
+      blame_name.find(":LAT_IDEP_DEP") != std::string::npos) {
       blame += blame_metric;
     }
   }
@@ -226,8 +226,8 @@ double GPUCodeReorderOptimizer::match(const KernelBlame &kernel_blame, const Ker
   auto pairs = 0;
   // Find top latency pairs
   for (auto &inst_blame : inst_blames) {
-    if (inst_blame.blame_name.find(":STL_GMEM_GMEM") != std::string::npos ||
-      inst_blame.blame_name.find(":STL_IDEP_DEP") != std::string::npos) {
+    if (inst_blame.blame_name.find(":LAT_GMEM_GMEM") != std::string::npos ||
+      inst_blame.blame_name.find(":LAT_IDEP_DEP") != std::string::npos) {
       _inspection.top_regions.push_back(inst_blame);
       if (++pairs >= _top_regions) {
         break;
@@ -236,7 +236,7 @@ double GPUCodeReorderOptimizer::match(const KernelBlame &kernel_blame, const Ker
   }
 
   if (blame != 0.0) {
-    _inspection.ratio = blame / kernel_stats.total_samples * 100;
+    _inspection.ratio = blame / kernel_stats.total_samples;
     _inspection.speedup = kernel_stats.total_samples / (kernel_stats.total_samples -
       MIN2(kernel_stats.active_samples, blame));
   }

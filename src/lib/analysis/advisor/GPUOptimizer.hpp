@@ -78,7 +78,7 @@
 #include <lib/cuda/AnalyzeInstruction.hpp>
 
 #include "GPUArchitecture.hpp"
-#include "GPUInspection.hpp"
+#include "Inspection.hpp"
 
 //*************************** Forward Declarations ***************************
 

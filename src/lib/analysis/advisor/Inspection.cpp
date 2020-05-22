@@ -21,8 +21,8 @@
 #include <include/gcc-attr.h>
 #include <include/gpu-metric-names.h>
 
-#include "GPUInspection.hpp"
 #include "GPUOptimizer.hpp"
+#include "Inspection.hpp"
 
 using std::string;
 

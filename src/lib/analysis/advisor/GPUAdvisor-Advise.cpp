@@ -26,7 +26,7 @@
 #include <include/gpu-metric-names.h>
 
 #include "GPUAdvisor.hpp"
-#include "GPUInspection.hpp"
+#include "Inspection.hpp"
 #include "../MetricNameProfMap.hpp"
 #include "../CCTGraph.hpp"
 
@@ -179,7 +179,7 @@ void GPUAdvisor::advise(const CCTBlames &cct_blames) {
               std::cout << lat << ": " << lat_blame / kernel_blame.lat_blame * 100 << "%" << std::endl;
             }
 
-            std::cout << "Stall: " << kernel_blame.stall_blame << std::endl;
+            std::cout << std::endl << "Stall: " << kernel_blame.stall_blame << std::endl;
 
             for (auto &stall_blame_iter : kernel_blame.stall_blames) {
               // Following lines, blame metrics 

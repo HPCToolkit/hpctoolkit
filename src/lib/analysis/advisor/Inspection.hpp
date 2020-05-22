@@ -59,8 +59,8 @@
 
 
 
-#ifndef Analysis_Advisor_GPUInspection_hpp 
-#define Analysis_Advisor_GPUInspection_hpp
+#ifndef Analysis_Advisor_Inspection_hpp 
+#define Analysis_Advisor_Inspection_hpp
 
 //************************* System Include Files ****************************
 
@@ -134,4 +134,4 @@ class SimpleInspectionFormatter : public InspectionFormatter {
 }  // namespace Analysis
 
 
-#endif  // Analysis_Advisor_GPUInspection_hpp
+#endif  // Analysis_Advisor_Inspection_hpp

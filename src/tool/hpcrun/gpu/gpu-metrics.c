@@ -282,7 +282,7 @@ gpu_metrics_attribute_pc_sampling
     metric_data_list_t *lat_metrics = 
       hpcrun_reify_metric_set(cct_node, lat_kind_metric_index);
 
-    int lat_count = (sinfo->samples - sinfo->latencySamples) * sample_period;
+    int lat_count = sinfo->samples * sample_period;
 
     // lat summary metric
     gpu_metrics_attribute_metric_int(lat_metrics, lat_summary_metric_index, lat_count);
