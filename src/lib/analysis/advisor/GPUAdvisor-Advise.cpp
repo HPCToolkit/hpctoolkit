@@ -26,6 +26,7 @@
 #include <include/gpu-metric-names.h>
 
 #include "GPUAdvisor.hpp"
+#include "GPUInspection.hpp"
 #include "../MetricNameProfMap.hpp"
 #include "../CCTGraph.hpp"
 
@@ -62,10 +63,12 @@ namespace Analysis {
 
 void GPUAdvisor::concatAdvise(const OptimizerRank &optimizer_rank) {
   size_t rank = 0;
+  // TODO(Keren): use other formatters
+  SimpleInspectionFormatter formatter;
   for (auto &iter : optimizer_rank) {
     for (auto *optimizer : iter.second) {
       ++rank;
-      _output << optimizer->advise();
+      _output << optimizer->advise(&formatter);
 
       if (rank >= _top_optimizers) {
         // Reach limit
@@ -120,6 +123,7 @@ KernelStats GPUAdvisor::readKernelStats(int mpi_rank, int thread_id) {
 
   samples_total = samples_total - samples_dropped;
   auto util = samples_expected / samples_total;
+  samples_expected *= sample_frequency;
   samples_total *= sample_frequency; 
 
   if (DEBUG_GPUADVISOR) {
@@ -163,15 +167,26 @@ void GPUAdvisor::advise(const CCTBlames &cct_blames) {
           auto &kernel_blame = mpi_blames.at(thread_id);
 
           // 1. Summarize function statistics
-          // First line, total
-          _output << "[" << mpi_rank << "," << thread_id << "] Summary " <<
-            kernel_blame.lat_blame << ":" << std::endl;
+          if (DEBUG_GPUADVISOR) {
+            std::cout << "[" << mpi_rank << "," << thread_id << "]" << std::endl;
 
-          for (auto &lat_blame_iter : kernel_blame.lat_blames) {
-            // Following lines, blame metrics 
-            auto lat = lat_blame_iter.first;
-            auto lat_blame = lat_blame_iter.second;
-            _output << lat << ": " << lat_blame / kernel_blame.lat_blame * 100 << "%" << std::endl;
+            std::cout << "Lat: " << kernel_blame.lat_blame << std::endl;
+
+            for (auto &lat_blame_iter : kernel_blame.lat_blames) {
+              // Following lines, blame metrics 
+              auto lat = lat_blame_iter.first;
+              auto lat_blame = lat_blame_iter.second;
+              std::cout << lat << ": " << lat_blame / kernel_blame.lat_blame * 100 << "%" << std::endl;
+            }
+
+            std::cout << "Stall: " << kernel_blame.stall_blame << std::endl;
+
+            for (auto &stall_blame_iter : kernel_blame.stall_blames) {
+              // Following lines, blame metrics 
+              auto stall = stall_blame_iter.first;
+              auto stall_blame = stall_blame_iter.second;
+              std::cout << stall << ": " << stall_blame / kernel_blame.stall_blame * 100 << "%" << std::endl;
+            }
           }
 
           // Calculate active samples

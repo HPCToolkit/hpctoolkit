@@ -206,64 +206,42 @@ double GPUWarpBalanceOptimizer::match(const KernelBlame &kernel_blame, const Ker
 
 
 double GPUCodeReorderOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
-#if 0
   // Match if for memory dep and exec dep
-  std::stringstream output;
-  double speedup = 0.0;
-  double blame = 0.0;
+  _inspection.optimization = this->_name;
 
-  // TODO(Keren): init a template
-  for (auto &blame_iter : kernel_blame.blames) {
-    auto blame_name = blame_iter.first;
-    auto blame_metric = blame_iter.second;
+  auto blame = 0.0;
+  for (auto &stall_blame_iter : kernel_blame.stall_blames) {
+    auto blame_name = stall_blame_iter.first;
+    auto blame_metric = stall_blame_iter.second;
 
     if (blame_name.find(":STL_GMEM_GMEM") != std::string::npos ||
       blame_name.find(":STL_IDEP_DEP") != std::string::npos) {
       blame += blame_metric;
+    }
+  }
 
-      auto pairs = 0;
-      // Find top latency pairs
-      for (size_t i = 0; i < kernel_blame.inst_blames.size(); ++i) {
-        auto &inst_blame = kernel_blame.inst_blames[i];
-        if (inst_blame.blame_name == blame_name) {
-          auto src_vma = inst_blame.src->pc;
-          auto dst_vma = inst_blame.dst->pc;
-          auto *src_struct =inst_blame.src_struct;
-          auto *dst_struct =inst_blame.dst_struct;
+  auto inst_blames = kernel_blame.inst_blames;
+  std::sort(inst_blames.begin(), inst_blames.end(), InstructionBlameStallComparator());
 
-          output << "Hot " << blame_name << " code (" << inst_blame.blame << "):" << std::endl;
-
-          output << "From " << src_struct->ancestorFile()->name() << ":" << src_struct->begLine() <<
-            std::hex << " 0x" << src_vma << std::dec << std::endl;
-
-          output << "To" << dst_struct->ancestorFile()->name() << ":" << dst_struct->begLine() <<
-            std::hex << " 0x" << dst_vma << std::dec << std::endl;
-
-          if (++pairs == _top_regions) {
-            // Find all pairs
-            break;
-          }
-        }
+  auto pairs = 0;
+  // Find top latency pairs
+  for (auto &inst_blame : inst_blames) {
+    if (inst_blame.blame_name.find(":STL_GMEM_GMEM") != std::string::npos ||
+      inst_blame.blame_name.find(":STL_IDEP_DEP") != std::string::npos) {
+      _inspection.top_regions.push_back(inst_blame);
+      if (++pairs >= _top_regions) {
+        break;
       }
     }
   }
 
   if (blame != 0.0) {
-    std::stringstream ss;
-    double ratio = blame / kernel_stats.total_samples * 100;
-    speedup = kernel_stats.total_samples / (kernel_stats.total_samples -
+    _inspection.ratio = blame / kernel_stats.total_samples * 100;
+    _inspection.speedup = kernel_stats.total_samples / (kernel_stats.total_samples -
       MIN2(kernel_stats.active_samples, blame));
-    // If find any match
-    ss << "Apply " << this->_name << " optimization (" << std::to_string(ratio)
-       << "%), estimate speedup " << speedup << "x" << std::endl;
-    output << std::endl;
-    this->_advise += ss.str();
-    this->_advise += output.str();
   }
 
-  return speedup;
-#endif;
-  return 0.0;
+  return _inspection.speedup;
 }
 
 

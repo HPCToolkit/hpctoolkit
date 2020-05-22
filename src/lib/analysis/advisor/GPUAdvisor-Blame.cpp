@@ -1073,7 +1073,7 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
 
         // One metric id is enough for inst blame analysis
         inst_blames.emplace_back(
-          InstructionBlame(from_inst, to_inst, from_struct, to_struct, stall_blame_name, stall, lat));
+          InstructionBlame(from_inst, to_inst, from_struct, to_struct, lat_blame_name, stall, lat));
       } else {
         std::map<Prof::CCT::ADynNode *, double> insts;
         std::map<Prof::CCT::ADynNode *, double> issues;
@@ -1352,8 +1352,8 @@ void GPUAdvisor::blame(CCTBlames &cct_blames) {
       //// x9. Overlay back
 
       ////// 5. Overlay blames
-      //auto &kernel_blame = cct_blames[mpi_rank][thread_id];
-      //overlayInstBlames(inst_blames, kernel_blame);
+      auto &kernel_blame = cct_blames[mpi_rank][thread_id];
+      overlayInstBlames(inst_blames, kernel_blame);
     }
   }
 }

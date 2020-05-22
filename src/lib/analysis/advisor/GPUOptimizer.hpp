@@ -78,6 +78,7 @@
 #include <lib/cuda/AnalyzeInstruction.hpp>
 
 #include "GPUArchitecture.hpp"
+#include "GPUInspection.hpp"
 
 //*************************** Forward Declarations ***************************
 
@@ -202,15 +203,15 @@ class GPUOptimizer {
     _name(name), _arch(arch) {}
 
   void clear() {
-    _advise.clear();
+    _inspection.clear();
   }
 
   std::string name() {
     return _name;
   }
 
-  std::string advise() {
-    return _advise;
+  std::string advise(InspectionFormatter *formatter) {
+    return formatter->format(_inspection);
   }
 
   // Code optimizer:
@@ -225,10 +226,11 @@ class GPUOptimizer {
   virtual ~GPUOptimizer() {}
  
  protected:
-  std::string _advise;
   std::string _name;
 
   const GPUArchitecture *_arch;
+
+  Inspection _inspection;
 
   const int _top_regions = 3;
 };
