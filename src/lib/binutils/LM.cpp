@@ -417,9 +417,20 @@ BinUtil::LM::open(const char* filenm)
     // We only relocate individual cubins, with filevector size 1
     ElfFile *elf_file = (*input_file.fileVector())[0];
     if (isCubin(elf_file->getElf())) {
+#if 0
+      // this needs to be fixed in two ways
+      // (1) the path for the relocation file must be relative to the 
+      //     measurements directory
+      // (2) Keren reports that the relocated information is
+      //     incorrect, so it is wrong to use it here
       file_name = elf_file->getFileName() + ".relocate";
       writeElfFile(elf_file, ".relocate");
       filenm = file_name.c_str();
+#else
+      DIAG_Throw("you must run hpcstruct on the HPCToolkit measurement"
+		 " directory to map measurements of NVIDIA"
+		 " GPU binaries to source code");
+#endif
     }
   }
 
