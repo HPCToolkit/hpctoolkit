@@ -240,8 +240,9 @@ class GPUAdvisor {
   std::string _other_stall_metric;
   std::string _sleep_stall_metric;
   std::string _cmem_stall_metric;
+  std::string _none_stall_metric;
 
-  // nostl
+  // lat
   std::string _invalid_lat_metric;
   std::string _tex_lat_metric;
   std::string _ifetch_lat_metric;
@@ -251,6 +252,7 @@ class GPUAdvisor {
   std::string _other_lat_metric;
   std::string _sleep_lat_metric;
   std::string _cmem_lat_metric;
+  std::string _none_lat_metric;
 
   // stl
   std::string _exec_dep_stall_metric;
@@ -263,7 +265,7 @@ class GPUAdvisor {
   std::string _mem_dep_lmem_stall_metric;
   std::string _sync_stall_metric;
 
-  // nostl
+  // lat
   std::string _exec_dep_lat_metric;
   std::string _exec_dep_dep_lat_metric;
   std::string _exec_dep_sche_lat_metric;

@@ -100,6 +100,9 @@ class GPUArchitecture {
   // number of sms per GPU
   virtual int sms() const = 0;
 
+  // number of schedulers per sm
+  virtual int schedulers() const = 0;
+
   // number of warps per sm
   virtual int warps() const = 0;
 
@@ -126,6 +129,10 @@ class V100 : public GPUArchitecture {
 
   virtual int sms() const {
     return 80;
+  }
+
+  virtual int schedulers() const {
+    return 4;
   }
 
   virtual int warps() const {

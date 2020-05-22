@@ -89,6 +89,7 @@ void GPUAdvisor::init() {
   _other_stall_metric = GPU_INST_METRIC_NAME":STL_OTHR";
   _sleep_stall_metric = GPU_INST_METRIC_NAME":STL_SLP";
   _cmem_stall_metric = GPU_INST_METRIC_NAME":STL_CMEM";
+  _none_stall_metric = GPU_INST_METRIC_NAME":STL_NONE";
 
   // LAT
   _invalid_lat_metric = GPU_INST_METRIC_NAME":LAT_INV";
@@ -100,6 +101,7 @@ void GPUAdvisor::init() {
   _other_lat_metric = GPU_INST_METRIC_NAME":LAT_OTHR";
   _sleep_lat_metric = GPU_INST_METRIC_NAME":LAT_SLP";
   _cmem_lat_metric = GPU_INST_METRIC_NAME":LAT_CMEM";
+  _none_lat_metric = GPU_INST_METRIC_NAME":LAT_NONE";
   
   _inst_metrics.emplace_back(std::make_pair(_invalid_stall_metric, _invalid_lat_metric));
   _inst_metrics.emplace_back(std::make_pair(_tex_stall_metric, _tex_lat_metric));
@@ -110,6 +112,7 @@ void GPUAdvisor::init() {
   _inst_metrics.emplace_back(std::make_pair(_other_stall_metric, _other_lat_metric));
   _inst_metrics.emplace_back(std::make_pair(_sleep_stall_metric, _sleep_lat_metric));
   _inst_metrics.emplace_back(std::make_pair(_cmem_stall_metric, _cmem_lat_metric));
+  _inst_metrics.emplace_back(std::make_pair(_none_stall_metric, _none_lat_metric));
 
   // STL
   _exec_dep_stall_metric = GPU_INST_METRIC_NAME":STL_IDEP";

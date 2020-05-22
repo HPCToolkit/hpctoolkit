@@ -1179,52 +1179,54 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
         InstructionBlame(to_inst, to_inst, to_struct, to_struct, lat_blame_name, stall, lat));
     }
 
-    // Sync stall
-    auto sync_stall_metric_index = _metric_name_prof_map->metric_id(
-      mpi_rank, thread_id, _sync_stall_metric);
-    auto sync_lat_metric_index = _metric_name_prof_map->metric_id(
-      mpi_rank, thread_id, _sync_lat_metric);
-    auto sync_stall = to_node->demandMetric(sync_stall_metric_index);
-    auto sync_lat = to_node->demandMetric(sync_lat_metric_index);
+    {
+      // Sync stall
+      auto sync_stall_metric_index = _metric_name_prof_map->metric_id(
+        mpi_rank, thread_id, _sync_stall_metric);
+      auto sync_lat_metric_index = _metric_name_prof_map->metric_id(
+        mpi_rank, thread_id, _sync_lat_metric);
+      auto sync_stall = to_node->demandMetric(sync_stall_metric_index);
+      auto sync_lat = to_node->demandMetric(sync_lat_metric_index);
 
-    if (sync_lat == 0) {
-      continue;
+      if (sync_lat == 0) {
+        continue;
+      }
+
+      // inclusive and exclusive metrics have the same value
+      // blame the previous node
+      auto sync_vma = to_vma - _arch->inst_size();
+      auto *sync_node = _vma_prop_map[sync_vma].prof_node;
+      auto *sync_inst = _vma_prop_map[sync_vma].inst;
+      auto sync_struct_iter = _vma_struct_map.upper_bound(sync_vma);
+      Prof::Struct::ACodeNode *sync_struct = NULL;
+      if (sync_struct_iter != _vma_struct_map.begin()) {
+        --sync_struct_iter;
+        sync_struct = sync_struct_iter->second;
+      }
+
+      assert(sync_inst->op.find(".SYNC") != std::string::npos ||
+        sync_inst->op.find(".BAR") != std::string::npos);
+
+      if (sync_node == NULL) {
+        // Create a new prof node
+        Prof::Metric::IData metric_data(_prof->metricMgr()->size());
+        metric_data.clearMetrics();
+
+        sync_node = new Prof::CCT::Stmt(to_node->parent(), HPCRUN_FMT_CCTNodeId_NULL,
+          lush_assoc_info_NULL, _gpu_root->lmId(), sync_vma, 0, NULL, metric_data);
+      }
+
+      auto stall_blame_name = "BLAME " + _sync_stall_metric;
+      attributeBlameMetric(mpi_rank, thread_id, to_node, stall_blame_name, sync_stall);
+
+      auto lat_blame_name = "BLAME " + _sync_lat_metric;
+      attributeBlameMetric(mpi_rank, thread_id, to_node, lat_blame_name, sync_lat);
+
+      // one metric id is enough for inst blame analysis
+      inst_blames.emplace_back(
+        InstructionBlame(sync_inst, to_inst, sync_struct, to_struct,
+          lat_blame_name, sync_stall, sync_lat));
     }
-
-    // inclusive and exclusive metrics have the same value
-    // blame the previous node
-    auto sync_vma = to_vma - _arch->inst_size();
-    auto *sync_node = _vma_prop_map[sync_vma].prof_node;
-    auto *sync_inst = _vma_prop_map[sync_vma].inst;
-    auto sync_struct_iter = _vma_struct_map.upper_bound(sync_vma);
-    Prof::Struct::ACodeNode *sync_struct = NULL;
-    if (sync_struct_iter != _vma_struct_map.begin()) {
-      --sync_struct_iter;
-      sync_struct = sync_struct_iter->second;
-    }
-
-    assert(sync_inst->op.find(".SYNC") != std::string::npos ||
-      sync_inst->op.find(".BAR") != std::string::npos);
-
-    if (sync_node == NULL) {
-      // Create a new prof node
-      Prof::Metric::IData metric_data(_prof->metricMgr()->size());
-      metric_data.clearMetrics();
-
-      sync_node = new Prof::CCT::Stmt(to_node->parent(), HPCRUN_FMT_CCTNodeId_NULL,
-        lush_assoc_info_NULL, _gpu_root->lmId(), sync_vma, 0, NULL, metric_data);
-    }
-
-    auto stall_blame_name = "BLAME " + _sync_stall_metric;
-    attributeBlameMetric(mpi_rank, thread_id, to_node, stall_blame_name, sync_stall);
-
-    auto lat_blame_name = "BLAME " + _sync_lat_metric;
-    attributeBlameMetric(mpi_rank, thread_id, to_node, lat_blame_name, sync_lat);
-
-    // one metric id is enough for inst blame analysis
-    inst_blames.emplace_back(
-      InstructionBlame(sync_inst, to_inst, sync_struct, to_struct,
-        lat_blame_name, sync_stall, sync_lat));
   }
 }
 
