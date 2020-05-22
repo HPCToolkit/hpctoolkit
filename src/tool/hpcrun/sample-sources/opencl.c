@@ -38,10 +38,10 @@
 
 #include <hpcrun/control-knob.h>
 #include <hpcrun/device-finalizers.h>
-#include <hpcrun/gpu/opencl/opencl-setup.h> // opencl_initialize, opencl_bind
-#include <hpcrun/gpu/opencl/opencl-api.h> //opencl_finalize
 #include <hpcrun/gpu/gpu-activity.h>
 #include <hpcrun/gpu/gpu-metrics.h>
+#include <hpcrun/gpu/opencl/opencl-setup.h>
+#include <hpcrun/gpu/opencl/opencl-api.h>
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/metrics.h>

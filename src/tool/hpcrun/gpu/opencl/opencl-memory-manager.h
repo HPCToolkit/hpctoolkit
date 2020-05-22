@@ -84,7 +84,6 @@ typedef struct opencl_object_channel_t {
 typedef struct opencl_object_details_t {
   union {
     profilingData_t pd;
-    cl_event event;
     cl_kernel_callback_t ker_cb;
     cl_memory_callback_t mem_cb;
   };
@@ -94,6 +93,7 @@ typedef struct opencl_object_t {
   s_element_ptr_t next;
   opencl_object_channel_t channel;
   opencl_object_kind_t kind;
+  cl_event event;
   opencl_object_details_t details;
 } opencl_object_t;
 
