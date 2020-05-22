@@ -250,11 +250,11 @@ The number of records can be useful to identify blocking procedures (such as I/O
 If the menu is not checked, then a simpler \emph{rightmost} algorithm is used: it will render a block from  $T_1$ to $T_2$ for sample $S_1$, and a block from $T_2$ to  $T3$ for sample $S_2$, and so forth.
    \item \textbf{Show procedure-color mapping}: to open a window which shows customized mapping between a procedure pattern and a color (Figure~\ref{fig:hpctraceviewer-mapping}). \hpctraceviewer{} allows users to customize assignment of a pattern of procedure names with a specific color.
    \item \textbf{Filter ranks}: to open a window for selecting which ranks and/or threads should be displayed or hidden (Figure~\ref{fig:hpctraceviewer-filter}). 
-Recall that a rank can be a process (e.g. MPI applications), a thread (OpenMP applications) or both (hybrid MPI and OpenMP applications). 
+Recall that a rank can be a process (e.g. MPI applications), a thread (OpenMP applications) or a process/thread pair (hybrid MPI and OpenMP applications). 
 \hpctraceviewer{} allows two types of filtering: either you specify which ranks \textit{to show} or \textit{to hide} (default is to hide). 
-To add a pattern to filter, you need to click "add" button and type the pattern in the format \texttt{minimum:maximum:stride}. \\
+To add a pattern to filter, you need to click the "Add" button and type the pattern in the format \texttt{minimum:maximum:stride}. \\
 For instance, \texttt{3:7:2} in the process box with the thread box empty will match all threads of processes 3, 5, and 7.\\
-To remove a pattern, you have to select the pattern to remove, and click "Remove" button. Finally, clicking to "Remove all" button will clear the list of patterns.
+To remove a pattern, you have to select the pattern to remove, and click the "Remove" button. Finally, clicking to "Remove all" button will clear the list of patterns.
  \end{itemize}
  \item \textbf{Window} menu to manage the layout of the application. The menu only provide one sub menu:
  \begin{itemize}
