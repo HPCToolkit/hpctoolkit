@@ -142,8 +142,8 @@ METHOD_FN(finalize_event_list)
 	monitor_real_exit(-1);
   }
   #endif
-  opencl_initialize();
-  device_finalizer_shutdown.fn = opencl_finalize;
+  opencl_setup_initialize();
+  device_finalizer_shutdown.fn = opencl_api_finalize;
   device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_shutdown);
 }
 

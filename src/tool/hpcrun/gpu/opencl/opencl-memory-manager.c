@@ -101,23 +101,25 @@ opencl_object_channel_get
 //******************************************************************************
 
 opencl_object_t*
-hpcrun_opencl_malloc
+opencl_malloc
 (
   void
 )
 {
   opencl_object_channel_t* c = opencl_object_channel_get();
-  return channel_item_alloc(c, opencl_object_t);
+  opencl_object_t* cl_obj = channel_item_alloc(c, opencl_object_t);
+  cl_obj->channel = *c;
+  return cl_obj;
 }
 
 
 void
-hpcrun_opencl_free
+opencl_free
 (
   opencl_object_t* o
 )
 {
   memset(o, 0, sizeof(opencl_object_t));
-  opencl_object_channel_t* c = opencl_object_channel_get();
+  opencl_object_channel_t* c = &(o->channel);
   channel_item_free(c, o);
 }

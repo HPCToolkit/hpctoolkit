@@ -127,21 +127,21 @@ typedef struct cl_memory_callback_t{
 
 
 void
-initialize_opencl_correlation_id
+opencl_intercept_initialize
 (
   void
 );
 
 
 void
-setup_opencl_intercept
+opencl_setup_intercept
 (
   void
 );
 
 
 void
-teardown_opencl_intercept
+opencl_teardown_intercept
 (
   void
 );

@@ -122,15 +122,15 @@ opencl_path
 //******************************************************************************
 
 void
-opencl_initialize
+opencl_setup_initialize
 (
   void
 )
 {
   ETMSG(CL, "We are setting up opencl intercepts");
-  setup_opencl_intercept();
-  initialize_opencl_operation_count();
-  initialize_opencl_correlation_id();
+  opencl_setup_intercept();
+  opencl_api_initialize();
+  opencl_intercept_initialize();
 }
 
 
@@ -163,7 +163,7 @@ opencl_bind
 
 
 /*
-void opencl_finalize()
+void opencl_setup_finalize()
 {
-  teardown_opencl_intercept();
+  opencl_teardown_intercept();
 }*/

@@ -70,8 +70,6 @@
 typedef struct
 profilingData_t
 {
-  cl_ulong queueTime;
-  cl_ulong submitTime;
   cl_ulong startTime;
   cl_ulong endTime;
   size_t size;
@@ -98,14 +96,14 @@ opencl_buffer_completion_callback
 
 
 void
-initialize_opencl_operation_count
+opencl_api_initialize
 (
   void
 );
 
 
 void
-opencl_finalize
+opencl_api_finalize
 (
   void*
 );

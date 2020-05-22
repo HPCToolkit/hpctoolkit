@@ -77,6 +77,10 @@ typedef enum {
   OPENCL_MEMORY_CALLBACK                     = 3
 } opencl_object_kind_t;
 
+typedef struct opencl_object_channel_t {
+  bistack_t bistacks[2];
+} opencl_object_channel_t;
+
 typedef struct opencl_object_details_t {
   union {
     profilingData_t pd;
@@ -88,24 +92,21 @@ typedef struct opencl_object_details_t {
 
 typedef struct opencl_object_t {
   s_element_ptr_t next;
+  opencl_object_channel_t channel;
   opencl_object_kind_t kind;
   opencl_object_details_t details;
 } opencl_object_t;
 
-typedef struct opencl_object_channel_t {
-  bistack_t bistacks[2];
-} opencl_object_channel_t;
-
 
 opencl_object_t*
-hpcrun_opencl_malloc
+opencl_malloc
 (
   void
 );
 
 
 void
-hpcrun_opencl_free
+opencl_free
 (
   opencl_object_t*
 );

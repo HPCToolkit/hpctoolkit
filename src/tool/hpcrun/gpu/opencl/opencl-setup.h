@@ -51,7 +51,7 @@
 //******************************************************************************
 
 void
-opencl_initialize
+opencl_setup_initialize
 (
   void
 );

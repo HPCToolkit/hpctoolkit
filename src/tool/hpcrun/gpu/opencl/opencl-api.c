@@ -199,17 +199,17 @@ opencl_buffer_completion_callback
 	if (cid_map_entry == NULL) {
 	  ETMSG(CL, "completion callback was called before registration callback. type: %d, correlation: %"PRIu64 "", type, correlation_id);
 	}
-	ETMSG(CL, "completion type: %d, correlation: %"PRIu64 "", type, correlation_id);
+	ETMSG(CL, "completion type: %d, Correlation id: %"PRIu64 "", type, correlation_id);
  	opencl_activity_completion_notify();
 	opencl_activity_process(event, act_data);
   }
-  hpcrun_opencl_free(o);
+  opencl_free(o);
   opencl_pending_operations_adjust(-1);
 }
 
 
 void
-initialize_opencl_operation_count
+opencl_api_initialize
 (
   void
 )
@@ -219,7 +219,7 @@ initialize_opencl_operation_count
 
 
 void
-opencl_finalize
+opencl_api_finalize
 (
   void* args
 )
