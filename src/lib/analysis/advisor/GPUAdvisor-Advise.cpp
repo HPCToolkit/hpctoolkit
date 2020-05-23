@@ -176,7 +176,8 @@ void GPUAdvisor::advise(const CCTBlames &cct_blames) {
               // Following lines, blame metrics 
               auto lat = lat_blame_iter.first;
               auto lat_blame = lat_blame_iter.second;
-              std::cout << lat << ": " << lat_blame / kernel_blame.lat_blame * 100 << "%" << std::endl;
+              std::cout << lat << ": " << lat_blame << "(" << 
+                lat_blame / kernel_blame.lat_blame * 100 << "%)" << std::endl;
             }
 
             std::cout << std::endl << "Stall: " << kernel_blame.stall_blame << std::endl;
@@ -185,7 +186,8 @@ void GPUAdvisor::advise(const CCTBlames &cct_blames) {
               // Following lines, blame metrics 
               auto stall = stall_blame_iter.first;
               auto stall_blame = stall_blame_iter.second;
-              std::cout << stall << ": " << stall_blame / kernel_blame.stall_blame * 100 << "%" << std::endl;
+              std::cout << stall << ": " << stall_blame << "(" <<
+                stall_blame / kernel_blame.stall_blame * 100 << "%)" << std::endl;
             }
           }
 

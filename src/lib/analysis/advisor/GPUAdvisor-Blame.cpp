@@ -105,11 +105,10 @@ void GPUAdvisor::debugCCTDepGraphSummary(int mpi_rank, int thread_id, CCTGraph<P
     }
   }
 
-  std::cout << "CCT lat summary: " << total << std::endl;
+  std::cout << "Total: " << total << std::endl;
   for (auto &lat_iter : lats) {
     std::cout << lat_iter.first << ": " << lat_iter.second << std::endl;
   }
-  std::cout << std::endl;
 }
 
 
@@ -1045,7 +1044,9 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
           prof_nodes[exec_lat_metric_index].push_back(from_node);
         }
       }
-    } else {
+    }
+    
+    if (prof_nodes.size() == 0 || (prof_nodes.size() == 1 && prof_nodes.begin()->first == mem_lat_metric_index)) {
       // Scheduler stall
       auto stall_blame = to_node->demandMetric(exec_stall_metric_index);
       auto stall_blame_name = "BLAME " + _exec_dep_sche_stall_metric;
@@ -1053,7 +1054,7 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
         attributeBlameMetric(mpi_rank, thread_id, to_node, stall_blame_name, stall_blame);
       }
 
-      // Scheduler
+      // Scheduler lat
       auto lat_blame = to_node->demandMetric(exec_lat_metric_index);
       auto lat_blame_name = "BLAME " + _exec_dep_sche_lat_metric;
       if (lat_blame != 0) {
@@ -1080,41 +1081,9 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
         continue;
       }
 
-      if (from_nodes.size() == 1) {
-        // Only have one path
-        auto *from_node = from_nodes[0];
-        auto from_vma = from_node->lmIP();
-        auto from_struct_iter = _vma_struct_map.upper_bound(from_vma);
-        Prof::Struct::ACodeNode *from_struct = NULL;
-        if (from_struct_iter != _vma_struct_map.begin()) {
-          --from_struct_iter;
-          from_struct = from_struct_iter->second;
-        }
-        auto *from_inst = _vma_prop_map[from_vma].inst;
-
-        std::pair<std::string, std::string> metric_name;
-        if (lat_metric_index == exec_lat_metric_index) {
-          // detailization: smem, reg_dep, or war
-          metric_name = detailizeExecBlame(from_inst, to_inst);
-        } else {
-          // detalization: gmem or lmem
-          metric_name = detailizeMemBlame(from_inst);
-        }
-
-        // blame from_node
-        auto stall_blame_name = "BLAME " + metric_name.first;
-        attributeBlameMetric(mpi_rank, thread_id, from_node, stall_blame_name, stall);
-
-        auto lat_blame_name = "BLAME " + metric_name.second;
-        attributeBlameMetric(mpi_rank, thread_id, from_node, lat_blame_name, lat);
-
-        // One metric id is enough for inst blame analysis
-        inst_blames.emplace_back(
-          InstructionBlame(from_inst, to_inst, from_struct, to_struct, lat_blame_name, stall, lat));
-      } else {
-        std::map<Prof::CCT::ADynNode *, double> insts;
-        std::map<Prof::CCT::ADynNode *, double> issues;
-        double issue_sum = 0.0;
+      std::map<Prof::CCT::ADynNode *, double> insts;
+      std::map<Prof::CCT::ADynNode *, double> issues;
+      double issue_sum = 0.0;
 
         // Give bias to barrier instructions?
         // TODO(Keren): could be removed when CUPTIv2 is available
@@ -1134,58 +1103,65 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
           barrier_from_nodes : from_nodes;
 #endif
         
-        for (auto *from_node : from_nodes) {
-          auto from_vma = from_node->lmIP();
-          auto ps = cct_edge_path_map[from_vma][to_vma];
+      for (auto *from_node : from_nodes) {
+        auto from_vma = from_node->lmIP();
+        auto ps = cct_edge_path_map[from_vma][to_vma];
 
-          for (auto &path : ps) {
-            auto path_insts = computePathInsts(mpi_rank, thread_id, from_vma, to_vma, path);
-            insts[from_node] += path_insts;
-          }
-          auto issue = from_node->demandMetric(issue_metric_index);
-          // Guarantee that issue is not zero
-          issue = issue > 0 ? issue : WARP_SIZE;
-          issues[from_node] = issue;
-          issue_sum += issue;
+        for (auto &path : ps) {
+          auto path_insts = computePathInsts(mpi_rank, thread_id, from_vma, to_vma, path);
+          insts[from_node] += path_insts;
+        }
+        auto issue = from_node->demandMetric(issue_metric_index);
+        // Guarantee that issue is not zero
+        issue = issue > 0 ? issue : WARP_SIZE;
+        issues[from_node] = issue;
+        issue_sum += issue;
+      }
+
+      // More insts, less hiding possibility
+      reversePathInsts(insts);
+
+      auto adjust_sum = 0.0;
+      // Apportion based on issue and stalls
+      for (auto *from_node : from_nodes) {
+        auto inst_ratio = insts[from_node];
+        auto issue_ratio = issues[from_node] / issue_sum;
+        adjust_sum += inst_ratio * issue_ratio;
+      }
+
+      for (auto *from_node : from_nodes) {
+        auto from_vma = from_node->lmIP();
+        auto *from_inst = _vma_prop_map[from_vma].inst;
+        auto from_struct_iter = _vma_struct_map.upper_bound(from_vma);
+        Prof::Struct::ACodeNode *from_struct = NULL;
+        if (from_struct_iter != _vma_struct_map.begin()) {
+          --from_struct_iter;
+          from_struct = from_struct_iter->second;
         }
 
-        reversePathInsts(insts);
+        auto inst_ratio = insts[from_node];
+        auto issue_ratio = issues[from_node] / issue_sum;
+        auto stall_blame = stall * inst_ratio * issue_ratio / adjust_sum;
+        auto lat_blame = lat * inst_ratio * issue_ratio / adjust_sum;
 
-        // Apportion based on issue and stalls
-        for (auto *from_node : from_nodes) {
-          auto from_vma = from_node->lmIP();
-          auto *from_inst = _vma_prop_map[from_vma].inst;
-          auto from_struct_iter = _vma_struct_map.upper_bound(from_vma);
-          Prof::Struct::ACodeNode *from_struct = NULL;
-          if (from_struct_iter != _vma_struct_map.begin()) {
-            --from_struct_iter;
-            from_struct = from_struct_iter->second;
-          }
-
-          auto inst_ratio = insts[from_node];
-          auto issue_ratio = issues[from_node] / issue_sum;
-          auto stall_blame = stall * inst_ratio * issue_ratio;
-          auto lat_blame = lat * inst_ratio * issue_ratio;
-
-          std::pair<std::string, std::string> metric_name;
-          if (stall_metric_index == exec_stall_metric_index) {
-            // detailization: smem, reg_dep, or war
-            metric_name = detailizeExecBlame(from_inst, to_inst);
-          } else {
-            metric_name = detailizeMemBlame(from_inst);
-          }
-
-          auto stall_blame_name = "BLAME " + metric_name.first;
-          attributeBlameMetric(mpi_rank, thread_id, from_node, stall_blame_name, stall_blame);
-
-          auto lat_blame_name = "BLAME " + metric_name.second;
-          attributeBlameMetric(mpi_rank, thread_id, from_node, lat_blame_name, lat_blame);
-
-          // One metric id is enough for inst blame analysis
-          inst_blames.emplace_back(
-            InstructionBlame(from_inst, to_inst, from_struct, to_struct,
-              lat_blame_name, stall_blame, lat_blame));
+        std::pair<std::string, std::string> metric_name;
+        if (stall_metric_index == exec_stall_metric_index) {
+          // detailization: smem, reg_dep, or war
+          metric_name = detailizeExecBlame(from_inst, to_inst);
+        } else {
+          metric_name = detailizeMemBlame(from_inst);
         }
+
+        auto stall_blame_name = "BLAME " + metric_name.first;
+        attributeBlameMetric(mpi_rank, thread_id, from_node, stall_blame_name, stall_blame);
+
+        auto lat_blame_name = "BLAME " + metric_name.second;
+        attributeBlameMetric(mpi_rank, thread_id, from_node, lat_blame_name, lat_blame);
+
+        // One metric id is enough for inst blame analysis
+        inst_blames.emplace_back(
+          InstructionBlame(from_inst, to_inst, from_struct, to_struct,
+            lat_blame_name, stall_blame, lat_blame));
       }
     }
 
@@ -1323,7 +1299,9 @@ void GPUAdvisor::blame(CCTBlames &cct_blames) {
       initCCTDepGraph(mpi_rank, thread_id, cct_dep_graph);
 
       if (DEBUG_GPUADVISOR) {
+        std::cout << "CCT dependency graph summary: " << std::endl;
         debugCCTDepGraphSummary(mpi_rank, thread_id, cct_dep_graph);
+        std::cout << std::endl;
       }
 
       if (DEBUG_GPUADVISOR_DETAILS) {
