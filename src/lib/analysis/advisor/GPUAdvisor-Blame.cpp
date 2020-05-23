@@ -1259,8 +1259,13 @@ void GPUAdvisor::overlayInstBlames(InstBlames &inst_blames, KernelBlame &kernel_
     kernel_blame.lat_blames[inst_blame.blame_name] += inst_blame.lat_blame;
     kernel_blame.stall_blame += inst_blame.stall_blame;
     kernel_blame.lat_blame += inst_blame.lat_blame;
-    kernel_blame.inst_blames.push_back(inst_blame);
   }
+
+  std::sort(inst_blames.begin(), inst_blames.end(), InstructionBlameStallComparator());
+  kernel_blame.stall_inst_blames = inst_blames;
+
+  std::sort(inst_blames.begin(), inst_blames.end(), InstructionBlameLatComparator());
+  kernel_blame.lat_inst_blames = inst_blames;
 }
 
 

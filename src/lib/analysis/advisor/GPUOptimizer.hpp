@@ -156,7 +156,8 @@ typedef std::vector<InstructionBlame> InstBlames;
 
 
 struct KernelBlame {
-  InstBlames inst_blames;
+  InstBlames stall_inst_blames;
+  InstBlames lat_inst_blames;
   std::map<std::string, double> stall_blames;
   std::map<std::string, double> lat_blames;
   double stall_blame;

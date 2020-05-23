@@ -100,12 +100,9 @@ double GPUStrengthReductionOptimizer::match(const KernelBlame &kernel_blame, con
 
   _inspection.optimization = this->_name;
 
-  auto inst_blames = kernel_blame.inst_blames;
-  std::sort(inst_blames.begin(), inst_blames.end(), InstructionBlameLatComparator());
-
   auto insts = 0;
   // Find top latency pairs
-  for (auto &inst_blame : inst_blames) {
+  for (auto &inst_blame : kernel_blame.lat_inst_blames) {
     auto *src_inst = inst_blame.src;
 
     if (_arch->latency(src_inst->op).first >= 10 && src_inst->op.find("MEMORY") == std::string::npos) {
@@ -140,12 +137,9 @@ double GPUWarpBalanceOptimizer::match(const KernelBlame &kernel_blame, const Ker
     }
   }
 
-  auto inst_blames = kernel_blame.inst_blames;
-  std::sort(inst_blames.begin(), inst_blames.end(), InstructionBlameStallComparator());
-
   auto insts = 0;
   // Find top latency pairs
-  for (auto &inst_blame : inst_blames) {
+  for (auto &inst_blame : kernel_blame.stall_inst_blames) {
     if (inst_blame.blame_name.find(":LAT_SYNC") != std::string::npos) {
       _inspection.top_regions.push_back(inst_blame);
       if (++insts >= _top_regions) {
@@ -179,12 +173,9 @@ double GPUCodeReorderOptimizer::match(const KernelBlame &kernel_blame, const Ker
     }
   }
 
-  auto inst_blames = kernel_blame.inst_blames;
-  std::sort(inst_blames.begin(), inst_blames.end(), InstructionBlameStallComparator());
-
   auto insts = 0;
   // Find top latency pairs
-  for (auto &inst_blame : inst_blames) {
+  for (auto &inst_blame : kernel_blame.stall_inst_blames) {
     if (inst_blame.blame_name.find(":LAT_GMEM_GMEM") != std::string::npos ||
       inst_blame.blame_name.find(":LAT_IDEP_DEP") != std::string::npos) {
       _inspection.top_regions.push_back(inst_blame);
