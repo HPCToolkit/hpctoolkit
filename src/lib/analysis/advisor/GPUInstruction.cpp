@@ -50,7 +50,7 @@ using std::string;
 #include <vector>
 #include <iostream>
 
-#define DEBUG_CALLPATH_CUDAINSTRUCTION 1
+#define DEBUG_CALLPATH_CUDAINSTRUCTION 0
 
 namespace Analysis {
 

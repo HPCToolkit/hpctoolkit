@@ -76,6 +76,43 @@ std::string GPUAdvisor::debugInstOffset(int vma) {
 }
 
 
+void GPUAdvisor::debugCCTDepGraphSummary(int mpi_rank, int thread_id, CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph) {
+  // <dep_stalls, <vmas> >
+  std::map<std::string, double> lats;
+  auto total = 0.0;
+
+  for (auto it = cct_dep_graph.nodeBegin(); it != cct_dep_graph.nodeEnd(); ++it) {
+    auto *to_node = *it;
+
+    for (auto &p : _inst_metrics) {
+      auto metric_index = _metric_name_prof_map->metric_id(
+        mpi_rank, thread_id, p.second);
+      if (metric_index != -1) {
+        double lat = to_node->demandMetric(metric_index);
+        lats[p.second] += lat;
+        total += lat;
+      }
+    }
+
+    for (auto &p : _dep_metrics) {
+      auto metric_index = _metric_name_prof_map->metric_id(
+        mpi_rank, thread_id, p.second);
+      if (metric_index != -1) {
+        double lat = to_node->demandMetric(metric_index);
+        lats[p.second] += lat;
+        total += lat;
+      }
+    }
+  }
+
+  std::cout << "CCT lat summary: " << total << std::endl;
+  for (auto &lat_iter : lats) {
+    std::cout << lat_iter.first << ": " << lat_iter.second << std::endl;
+  }
+  std::cout << std::endl;
+}
+
+
 void GPUAdvisor::debugCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph) {
   // Only debug no stall latencies
   std::cout << "Nodes (" << cct_dep_graph.size() << ")" << std::endl;
@@ -1284,6 +1321,10 @@ void GPUAdvisor::blame(CCTBlames &cct_blames) {
       // 1. Init a CCT dependency graph
       CCTGraph<Prof::CCT::ADynNode *> cct_dep_graph;
       initCCTDepGraph(mpi_rank, thread_id, cct_dep_graph);
+
+      if (DEBUG_GPUADVISOR) {
+        debugCCTDepGraphSummary(mpi_rank, thread_id, cct_dep_graph);
+      }
 
       if (DEBUG_GPUADVISOR_DETAILS) {
         std::cout << "CCT dependency graph after propgation: " << std::endl;

@@ -215,6 +215,8 @@ class GPUAdvisor {
 
   void debugCCTDepPaths(CCTEdgePathMap &cct_edge_path_map);
 
+  void debugCCTDepGraphSummary(int mpi_rank, int thread_id, CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
+
   void debugCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
 
   void debugCCTDepGraphNoPath(int mpi_rank, int thread_id, CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
