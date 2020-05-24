@@ -126,6 +126,7 @@ createMetrics(const std::vector<CudaParse::InstructionStat *> &inst_stats,
 static void
 gatherStmts(const Prof::LoadMap::LMId_t lm_id, int inst_pc_front, int inst_pc_back,
   const Prof::CCT::ANode *prof_root, std::vector<VMAStmt> &vma_stmts,
+  std::vector<int> &gpu_inst_index,
   // <module_id, module_ip>
   std::map<Prof::CCT::ANode *, Prof::CCT::ADynNode *> &gpu_roots) {
   if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
@@ -143,6 +144,18 @@ gatherStmts(const Prof::LoadMap::LMId_t lm_id, int inst_pc_front, int inst_pc_ba
       VMA n_lm_ip = n_dyn->lmIP();
       // filter out
       if (n_lm_id != lm_id || n_lm_ip < inst_pc_front || n_lm_ip > inst_pc_back) {
+        continue;
+      }
+
+      // Guarantee that we do not find a trace node
+      bool find = false;
+      for (auto index : gpu_inst_index) {
+        if (n_dyn->demandMetric(index) != 0) {
+          find = true;
+          break;
+        }
+      }
+      if (!find) {
         continue;
       }
 
@@ -277,9 +290,10 @@ overlayGPUInstructionsMain(Prof::CallPath::Profile &prof,
     // Step 4: Gather all CCT nodes with lm_id and find GPU roots
     std::vector<VMAStmt> vma_stmts;
     std::map<Prof::CCT::ANode *, Prof::CCT::ADynNode *> gpu_roots;
+    std::vector<int> gpu_inst_index = metric_name_prof_map.metric_ids(GPU_INST_METRIC_NAME);
     auto *prof_root = prof.cct()->root();
     gatherStmts(lm_id, inst_stats.front()->pc, inst_stats.back()->pc,
-      prof_root, vma_stmts, gpu_roots);
+      prof_root, vma_stmts, gpu_inst_index, gpu_roots);
 
     // Step 5: Lay metrics over prof tree
     associateInstStmts(vma_stmts, inst_stats, metric_name_prof_map);
