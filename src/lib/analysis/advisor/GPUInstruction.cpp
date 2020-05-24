@@ -124,15 +124,10 @@ createMetrics(const std::vector<CudaParse::InstructionStat *> &inst_stats,
 
 
 static void
-gatherStmts(const Prof::LoadMap::LMId_t lm_id, const std::vector<CudaParse::InstructionStat *> &inst_stats,
-  const Prof::CCT::ANode *prof_root, std::vector<VMAStmt> &vma_stmts, std::vector<int> &gpu_inst_index,
+gatherStmts(const Prof::LoadMap::LMId_t lm_id, int inst_pc_front, int inst_pc_back,
+  const Prof::CCT::ANode *prof_root, std::vector<VMAStmt> &vma_stmts,
   // <module_id, module_ip>
-  std::map<std::pair<int, int>, Prof::CCT::ADynNode *> &gpu_roots,
-  // <module_id, module_ip>
-  std::map<std::pair<int, int>, Prof::CCT::ADynNode *> &gpu_kernels) {
-  auto inst_pc_front = inst_stats.front()->pc;
-  auto inst_pc_back = inst_stats.back()->pc;
-
+  std::map<Prof::CCT::ANode *, Prof::CCT::ADynNode *> &gpu_roots) {
   if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
     std::cout << "inst pc range: [0x" << std::hex << inst_pc_front <<
       ", 0x" << inst_pc_back << "]" << std::dec << std::endl;
@@ -151,22 +146,6 @@ gatherStmts(const Prof::LoadMap::LMId_t lm_id, const std::vector<CudaParse::Inst
         continue;
       }
 
-      if (n_lm_ip == inst_pc_front) {
-        // Find place holder nodes
-        bool find = false;
-        for (size_t i = 0; i < gpu_inst_index.size(); ++i) {
-          if (n_dyn->demandMetric(gpu_inst_index[i]) != 0) {
-            find = true;
-            break;
-          }
-        }
-        if (!find) {
-          std::pair<int, int> k(n_lm_id, inst_pc_front);
-          gpu_kernels[k] = n_dyn;
-          continue;
-        }
-      }
-
       if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
         std::cout << "Find CCT node vma: 0x" << std::hex << n_lm_ip << std::dec << std::endl;
       }
@@ -175,8 +154,7 @@ gatherStmts(const Prof::LoadMap::LMId_t lm_id, const std::vector<CudaParse::Inst
 
       // Get the parent of an instruction node as the gpu root node
       Prof::CCT::ADynNode* n_parent = dynamic_cast<Prof::CCT::ADynNode*>(n->parent());
-      std::pair<int, int> k(n_lm_id, inst_pc_front);
-      gpu_roots[k] = n_parent;
+      gpu_roots[n_parent->parent()] = n_parent;
     }
   }
 
@@ -298,11 +276,10 @@ overlayGPUInstructionsMain(Prof::CallPath::Profile &prof,
 
     // Step 4: Gather all CCT nodes with lm_id and find GPU roots
     std::vector<VMAStmt> vma_stmts;
-    std::map<std::pair<int, int>, Prof::CCT::ADynNode *> gpu_roots, gpu_kernels;
-    std::vector<int> gpu_inst_index = metric_name_prof_map.metric_ids(GPU_INST_METRIC_NAME);
+    std::map<Prof::CCT::ANode *, Prof::CCT::ADynNode *> gpu_roots;
     auto *prof_root = prof.cct()->root();
-    gatherStmts(lm_id, inst_stats, prof_root, vma_stmts,
-      gpu_inst_index, gpu_roots, gpu_kernels);
+    gatherStmts(lm_id, inst_stats.front()->pc, inst_stats.back()->pc,
+      prof_root, vma_stmts, gpu_roots);
 
     // Step 5: Lay metrics over prof tree
     associateInstStmts(vma_stmts, inst_stats, metric_name_prof_map);
@@ -312,9 +289,11 @@ overlayGPUInstructionsMain(Prof::CallPath::Profile &prof,
     // Step 6: Make advise
     // Find each GPU calling context, make recommendation for each calling context 
     for (auto &gpu_root_iter : gpu_roots) {
-      auto lm_id_ip = gpu_root_iter.first;
+      auto *gpu_gp  = gpu_root_iter.first;
       auto *gpu_root = gpu_root_iter.second;
-      auto *gpu_kernel = gpu_kernels[lm_id_ip];
+      Prof::CCT::ADynNode *gpu_kernel = gpu_root->NextSibling() == NULL ?
+        dynamic_cast<Prof::CCT::ADynNode *>(gpu_root->NextSibling()) :
+        dynamic_cast<Prof::CCT::ADynNode *>(gpu_root->PrevSibling());
 
       // Pass current gpu root 
       gpu_advisor.configGPURoot(gpu_root, gpu_kernel);

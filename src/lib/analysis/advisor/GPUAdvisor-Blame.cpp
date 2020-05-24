@@ -1206,19 +1206,22 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
       }
 
       // inclusive and exclusive metrics have the same value
-      // blame the previous node
-      auto sync_vma = to_vma - _arch->inst_size();
-      auto *sync_node = _vma_prop_map[sync_vma].prof_node;
+      auto sync_vma = to_vma;
       auto *sync_inst = _vma_prop_map[sync_vma].inst;
+
+      if (sync_inst->op.find(".SYNC") != std::string::npos) {
+        // blame the previous node
+        sync_vma = sync_vma - _arch->inst_size();
+        sync_inst = _vma_prop_map[sync_vma].inst;
+      }
+
+      auto *sync_node = _vma_prop_map[sync_vma].prof_node;
       auto sync_struct_iter = _vma_struct_map.upper_bound(sync_vma);
       Prof::Struct::ACodeNode *sync_struct = NULL;
       if (sync_struct_iter != _vma_struct_map.begin()) {
         --sync_struct_iter;
         sync_struct = sync_struct_iter->second;
       }
-
-      assert(sync_inst->op.find(".SYNC") != std::string::npos ||
-        sync_inst->op.find(".BAR") != std::string::npos);
 
       if (sync_node == NULL) {
         // Create a new prof node
