@@ -269,8 +269,8 @@ double GPUSMBalanceOptimizer::match(const KernelBlame &kernel_blame, const Kerne
 double GPUBlockIncreaseOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
   _inspection.optimization = this->_name;
 
-  double cur_blocks = kernel_stats.blocks;
-  double sms = this->_arch->sms();
+  int cur_blocks = kernel_stats.blocks;
+  int sms = this->_arch->sms();
 
   double balanced_blocks = ((cur_blocks - 1) / sms + 1) * sms;
   _inspection.ratio = cur_blocks / balanced_blocks;
