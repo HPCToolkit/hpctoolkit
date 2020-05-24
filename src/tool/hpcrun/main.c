@@ -165,6 +165,20 @@ extern void hpcrun_set_retain_recursion_mode(bool mode);
 extern void hpcrun_dump_intervals(void* addr);
 #endif // ! USE_LIBUNW
 
+
+
+//***************************************************************************
+// macros
+//***************************************************************************
+
+#define MONITOR_INITIALIZE 0
+
+#if  MONITOR_INITIALIZE == 0
+#define monitor_initialize() \
+    assert(0 && "entry into hpctoolkit prior to initialization");
+#endif
+
+
 //***************************************************************************
 // local data types. Primarily for passing data between pre_PHASE, PHASE, and post_PHASE
 //***************************************************************************
@@ -987,9 +1001,10 @@ static fork_data_t from_fork;
 void*
 monitor_pre_fork(void)
 {
-  if (! hpcrun_is_initialized()) {
-    return NULL;
+  if (!hpcrun_is_initialized()) {
+    monitor_initialize();
   }
+
   hpcrun_safe_enter();
 
   TMSG(PRE_FORK,"pre_fork call");
@@ -1044,6 +1059,10 @@ monitor_post_fork(pid_t child, void* data)
 void
 monitor_mpi_pre_init(void)
 {
+  if (!hpcrun_is_initialized()) {
+    monitor_initialize();
+  }
+
   hpcrun_safe_enter();
 
   TMSG(MPI, "Pre MPI_Init");
@@ -1646,6 +1665,10 @@ MONITOR_EXT_WRAP_NAME(pthread_cond_broadcast)(pthread_cond_t* cond)
 void
 monitor_pre_dlopen(const char* path, int flags)
 {
+  if (!hpcrun_is_initialized()) {
+    monitor_initialize();
+  }
+
   hpcrun_dlfunction_begin();
   hpcrun_safe_enter();
   hpcrun_pre_dlopen(path, flags);
