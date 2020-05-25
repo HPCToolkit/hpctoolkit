@@ -76,6 +76,7 @@
 #include "ompt-region.h"
 #include "ompt-region-debug.h"
 #include "ompt-thread.h"
+#include "ompt-task.h"
 
 
 

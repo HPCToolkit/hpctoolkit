@@ -53,14 +53,18 @@
 //*****************************************************************************
 
 #include "omp-tools.h"
+#include <lib/prof-lean/stacks.h>
 
-typedef struct ompt_task_data_t ompt_task_data_t;
+// ompt_task_data_t stack declaration
+typedef struct ompt_task_data_t typed_stack_elem(task);
+typed_stack_declare_type(task);
+typed_stack_declare(task, sstack);
 
 //*****************************************************************************
 // interface operations
 //*****************************************************************************
 
-ompt_task_data_t*
+typed_stack_elem_ptr(task)
 ompt_task_acquire
 (
  cct_node_t *callpath,

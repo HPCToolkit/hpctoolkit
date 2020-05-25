@@ -67,15 +67,20 @@
 #include "ompt-interface.h"
 #include "ompt-region.h"
 #include "ompt-task.h"
+#include <lib/prof-lean/stacks.h>
 
 
 struct ompt_task_data_t {
+  s_element_ptr_t next;
   ompt_task_flag_t task_type;
   cct_node_t *callpath;
-  struct ompt_task_data_t *next;
-}; 
+};
 
-static __thread ompt_task_data_t *task_free_list = 0;
+// ompt_task_data_t stack implementation
+typed_stack_impl(task, sstack);
+
+// head of the ompt_task_data_t freelist
+static __thread typed_stack_elem_ptr(task) task_free_list = 0;
 
 
 ompt_task_flag_t
@@ -92,63 +97,91 @@ ompt_task_type
 static void 
 ompt_task_init
 (
- ompt_task_data_t *t,
+ typed_stack_elem_ptr(task) t,
  cct_node_t *callpath,
  ompt_task_flag_t task_type
 )
 {
+#if 0
+  // Old implementation
   t->task_type = task_type;
   t->callpath = callpath;
   t->next = 0;
+#endif
+  // FIXME vi3 to jmc:
+  // Need to invalidate t->next.
+  // If using "typed_stack_elem_ptr_set(task, sstack)(&t->next, 0);"
+  // then the following warning occurs.
+  //    "warning: passing argument 1 of ‘task_sstack_ptr_set’
+  //     from incompatible pointer type".
+  // I think that function for setting next pointer is not implemented
+  // inside stack.c. If assume that e is the current element, and that
+  // next_e should be e's successor, then the implementation would look
+  // like this:
+  //     "atomic_store_explicit(&e->Ad(next), next_e, memory_order_relaxed);"
+
+  // If this function is not needed, should we use the above line of code
+  // that produces warning or we may use the following line instead?
+  memset(t, 0, sizeof(typed_stack_elem(task))); // invalidate next pointer
+
+  t->task_type = task_type;
+  t->callpath = callpath;
 }
 
-static ompt_task_data_t* 
+static typed_stack_elem_ptr(task)
 ompt_task_alloc
 (
  void
 )
 {
-  ompt_task_data_t* t = (ompt_task_data_t*) hpcrun_malloc(sizeof(ompt_task_data_t));
+  typed_stack_elem_ptr(task) t =
+      (typed_stack_elem_ptr(task)) hpcrun_malloc(sizeof(typed_stack_elem(task)));
   return t;
 }
 
 
-static ompt_task_data_t* 
+static typed_stack_elem_ptr(task)
 ompt_task_freelist_get
 (
  void
 )
 {
+#if 0
   ompt_task_data_t* t = 0; 
   if (task_free_list) {
     t = task_free_list;
     task_free_list = task_free_list->next;
   }
   return t;
+#endif
+  return typed_stack_pop(task, sstack)(&task_free_list);
 }
 
 
 static void
 ompt_task_freelist_put
 (
- ompt_task_data_t *t 
+  typed_stack_elem_ptr(task) t
 )
 {
   if (t) {
+#if 0
     t->next = task_free_list;
     task_free_list = t;
+#endif
+    typed_stack_push(task, sstack)(&task_free_list, t);
   }
 }
 
 
-ompt_task_data_t*
+typed_stack_elem_ptr(task)
 ompt_task_acquire
 (
  cct_node_t *callpath,
  ompt_task_flag_t task_type
 )
 {
-  ompt_task_data_t* t = ompt_task_freelist_get();
+  typed_stack_elem_ptr(task) t = ompt_task_freelist_get();
   if (t == 0) {
     t = ompt_task_alloc();
   }
@@ -163,7 +196,7 @@ ompt_task_release
  ompt_data_t *t
 )
 {
-  ompt_task_freelist_put((ompt_task_data_t *) t->ptr);
+  ompt_task_freelist_put((typed_stack_elem_ptr(task)) t->ptr);
   t->ptr = 0;
 }
 
@@ -275,7 +308,7 @@ ompt_task_callpath
  ompt_data_t *task_data
 )
 {
-  ompt_task_data_t *t = (ompt_task_data_t *) task_data->ptr;
+  typed_stack_elem_ptr(task) t = (typed_stack_elem_ptr(task)) task_data->ptr;
   return t ? t->callpath : 0;
 }
 
@@ -286,7 +319,7 @@ ompt_task_type
  ompt_data_t *task_data
 )
 {
-  ompt_task_data_t *t = (ompt_task_data_t *) task_data->ptr;
+  typed_stack_elem_ptr(task) t = (typed_stack_elem_ptr(task)) task_data->ptr;
   return t ? t->task_type : 0;
 }
 
