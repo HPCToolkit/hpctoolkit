@@ -62,6 +62,7 @@
 #include "ompt-interface.h"
 #include "ompt-placeholders.h"
 #include "ompt-thread.h"
+#include "ompt-task.h"
 
 #if defined(HOST_CPU_PPC) 
 #include "ompt-gcc4-ppc64.h"
