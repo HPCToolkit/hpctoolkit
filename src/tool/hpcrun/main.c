@@ -171,7 +171,7 @@ extern void hpcrun_dump_intervals(void* addr);
 // macros
 //***************************************************************************
 
-#define MONITOR_INITIALIZE 0
+#define MONITOR_INITIALIZE 1
 
 #if  MONITOR_INITIALIZE == 0
 #define monitor_initialize() \
