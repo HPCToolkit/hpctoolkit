@@ -508,7 +508,8 @@ endif
 if OPT_ENABLE_LEVEL0
 MY_LEVEL0_FILES=\
 	sample-sources/level0.c \	
-	gpu/level0/level0-api.c 	
+	gpu/level0/level0-api.c \
+	gpu/level0/level0-commandlist-map.c
 endif
 
 MY_UPC_FILES = sample-sources/upc.c
