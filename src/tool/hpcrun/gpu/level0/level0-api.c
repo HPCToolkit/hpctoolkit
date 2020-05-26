@@ -46,6 +46,7 @@
 //******************************************************************************
 
 #include "level0-api.h"
+#include "level0-commandlist-map.h"
 
 #include <hpcrun/gpu/gpu-activity-channel.h>
 #include <hpcrun/gpu/gpu-activity-process.h>
@@ -276,6 +277,33 @@ level0_path
   return path;
 }
 
+// Expand this function to crete GPU side cct
+static void
+record_level0_gpu_call_site
+(
+  ze_event_handle_t event
+)
+{
+  gpu_op_placeholder_flags_t gpu_op_placeholder_flags = 0;
+  gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
+        gpu_placeholder_type_kernel);
+
+  uint64_t correlation_id = (uint64_t)event;
+  cct_node_t *api_node =
+    gpu_application_thread_correlation_callback(correlation_id);
+
+  gpu_op_ccts_t gpu_op_ccts;
+  hpcrun_safe_enter();
+  gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
+  hpcrun_safe_exit();
+
+  gpu_activity_channel_consume(gpu_metrics_attribute);
+
+  // Generate notification entry
+  uint64_t cpu_submit_time = CPU_NANOTIME();
+  gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, cpu_submit_time);
+}
+
 void
 get_gpu_driver_and_device
 (
@@ -445,24 +473,14 @@ static void OnEnterCommandListAppendLaunchKernel(
 {
 
   *(params->phSignalEvent) = OnEnterActivitySubmit(*(params->phSignalEvent), instance_data);
-  gpu_op_placeholder_flags_t gpu_op_placeholder_flags = 0;
-  gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
-        gpu_placeholder_type_kernel);
 
-  uint64_t correlation_id = (uint64_t)(*(params->phSignalEvent));
-  cct_node_t *api_node =
-    gpu_application_thread_correlation_callback(correlation_id);
+  ze_kernel_handle_t kernel = *(params->phKernel);
+  ze_command_list_handle_t command_list = *(params->phCommandList);
+  ze_event_handle_t event = *(params->phSignalEvent);
 
-  gpu_op_ccts_t gpu_op_ccts;
-  hpcrun_safe_enter();
-  gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
-  hpcrun_safe_exit();
-
-  gpu_activity_channel_consume(gpu_metrics_attribute);
-
-  // Generate notification entry
-  uint64_t cpu_submit_time = CPU_NANOTIME();
-  gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, cpu_submit_time);
+  // Lookup the command list and append the kernel-event pair to the command list
+  level0_commandlist_map_entry_t * entry = level0_commandlist_map_lookup(command_list);
+  level0_commandlist_map_kernel_list_append(entry, kernel, event);
 }
 
 static void OnEnterCommandListAppendMemoryCopy(
@@ -499,6 +517,55 @@ static void OnExitActivitySubmit(void **instance_data, ze_result_t result) {
   free(info);
 }
 
+static void
+OnExitCommandListCreate
+(
+  ze_command_list_create_params_t* params,
+  ze_result_t result,
+  void* pTracerUserData,
+  void** ppTracerInstanceUserData  
+)
+{
+  ze_command_list_handle_t handle = **params->pphCommandList;
+  // Record the creation of a command list
+  level0_commandlist_map_insert(handle);
+}
+
+static void
+OnEnterCommandListDestroy
+(
+  ze_command_list_destroy_params_t* params,
+  ze_result_t result,
+  void* pTracerUserData,
+  void** ppTracerInstanceUserData
+)
+{
+  ze_command_list_handle_t handle = *params->phCommandList;
+  // Record the deletion of a command list
+  level0_commandlist_map_delete(handle);  
+}
+
+static void
+OnEnterCommandQueueExecuteCommandList
+(
+  ze_command_queue_execute_command_lists_params_t* params,
+  ze_result_t result,
+  void* pTracerUserData,
+  void** ppTracerInstanceUserData
+)
+{
+  uint32_t size = *(params->pnumCommandLists);
+  uint32_t i;
+  for (i = 0; i < size; ++i) {
+    ze_command_list_handle_t command_list_handle = *(params->pphCommandLists[i]);
+    level0_commandlist_map_entry_t * entry = level0_commandlist_map_lookup(command_list_handle);
+    level0_kernel_list_entry_t * kernel_node = level0_commandlist_map_kernel_list_get(entry);
+    for (; kernel_node != NULL; kernel_node = kernel_node->next) {
+      record_level0_gpu_call_site(kernel_node->event);
+    }
+  }
+}
+
 static void OnExitCommandListAppendLaunchKernel(
     ze_command_list_append_launch_kernel_params_t* params,
     ze_result_t result, void* global_data, void** instance_data) {
@@ -529,17 +596,21 @@ void setup_tracer() {
   prologue_callbacks.Event.pfnDestroyCb = OnEnterEventDestroy;
   prologue_callbacks.Event.pfnHostResetCb = OnEnterEventHostReset;
   prologue_callbacks.EventPool.pfnCreateCb = OnEnterEventPoolCreate;
+
   prologue_callbacks.CommandList.pfnAppendLaunchKernelCb =
     OnEnterCommandListAppendLaunchKernel;
   prologue_callbacks.CommandList.pfnAppendMemoryCopyCb =
     OnEnterCommandListAppendMemoryCopy;
   prologue_callbacks.CommandList.pfnAppendBarrierCb =
     OnEnterCommandListAppendBarrier;
+  prologue_callbacks.CommandList.pfnDestroyCb = OnEnterCommandListDestroy;
+  prologue_callbacks.CommandQueue.pfnExecuteCommandListsCb = OnEnterCommandQueueExecuteCommandList;
 
   zet_core_callbacks_t epilogue_callbacks = {};
   //epilogue_callbacks.Kernel.pfnCreateCb = OnExitKernelCreate;
   //epilogue_callbacks.Kernel.pfnDestroyCb = OnExitKernelDestroy;
   epilogue_callbacks.EventPool.pfnCreateCb = OnExitEventPoolCreate;
+  epilogue_callbacks.CommandList.pfnCreateCb = OnExitCommandListCreate;
   epilogue_callbacks.CommandList.pfnAppendLaunchKernelCb =
     OnExitCommandListAppendLaunchKernel;
   epilogue_callbacks.CommandList.pfnAppendMemoryCopyCb =

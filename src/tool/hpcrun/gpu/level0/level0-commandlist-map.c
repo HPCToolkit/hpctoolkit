@@ -56,6 +56,7 @@
 
 #include "lib/prof-lean/splay-uint64.h"
 #include "lib/prof-lean/spinlock.h"
+#include "hpcrun/memory/hpcrun-malloc.h"
 #include "hpcrun/gpu/gpu-splay-allocator.h"
 
 //*****************************************************************************
@@ -147,6 +148,7 @@ level0_commandlist_id_map_entry_new
   return e;
 }
 
+// Allocate a node for the linked list representing a command list
 static level0_kernel_list_entry_t*
 level0_commandlist_map_kernel_list_node_new
 (
@@ -155,7 +157,7 @@ level0_commandlist_map_kernel_list_node_new
   level0_kernel_list_entry_t *first = kernel_list_entry_free_list; 
 
   if (first) { 
-    kernel_list_entry_free_list = firs->next);
+    kernel_list_entry_free_list = first->next;
   } else {
     first = (level0_kernel_list_entry_t *) hpcrun_malloc_safe(sizeof(level0_kernel_list_entry_t));
   }
@@ -165,7 +167,8 @@ level0_commandlist_map_kernel_list_node_new
   return first;  
 }
 
-static level0_kernel_list_entry_t*
+// Return a node for the linked list to the free list
+static void
 level0_commandlist_map_kernel_list_node_free
 (
   level0_kernel_list_entry_t* node

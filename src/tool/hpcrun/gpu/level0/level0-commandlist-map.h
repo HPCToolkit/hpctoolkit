@@ -99,7 +99,7 @@ level0_commandlist_map_delete
 void
 level0_commandlist_map_kernel_list_append
 (
- level0_commandlist_map_entry_t *command_list,
+ level0_commandlist_map_entry_t *entry,
  ze_kernel_handle_t kernel;
  ze_event_handle_t event;
 );
