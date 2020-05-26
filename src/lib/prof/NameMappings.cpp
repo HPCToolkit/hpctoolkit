@@ -52,7 +52,12 @@ const char *GPU_KERNEL  = "<gpu kernel>";
 const char *GPU_TRACE   = "<gpu kernel>";
 
 const char *NO_ACTIVITY = "<no activity>";
+const char *PARTIAL_CALLPATH = "<partial call paths>";
 
+const int  TYPE_NORMAL_PROC  = 0;  // nothing special. Default value
+const int  TYPE_PLACE_FOLDER = 1;  // the proc is just a a place holder
+const int  TYPE_ROOT         = 2;  // the proc is a root tyoe, shown in a separate view in hpcviewer
+const int  TYPE_INVISIBLE    = 3;  // the proc shouldn't be shown in hpcviewer at all
 
 //******************************************************************************
 // types
@@ -67,13 +72,22 @@ public:
 
 
 typedef std::map<const char *, const char *, NameMapCompare> NameMappings_t;
-
+typedef std::map<const char *, int, NameMapCompare>          TypeMappings_t;
 
 typedef struct {
   const char *in;
   const char *out;
 } NameMapping;
 
+/** to map from procedure name to its status  
+ *  0: normal procedure
+ *  1: place folder
+ *  2: invisible 
+ **/
+typedef struct {
+  const char *name;
+  const int   type;
+} ProcedureMapping;
 
 //******************************************************************************
 // private data
@@ -119,21 +133,40 @@ static NameMapping renamingTable[] = {
   { "hpcrun_no_activity",  NO_ACTIVITY           }
 };
 
-static const char *fakeProcedures[] = {
-  PROGRAM_ROOT, THREAD_ROOT, GUARD_NAME, NO_ACTIVITY, "<partial call paths>",
 
-  OMP_IDLE, OMP_OVERHEAD, OMP_BARRIER_WAIT, OMP_TASK_WAIT, OMP_MUTEX_WAIT,
+static ProcedureMapping typeTable[] = {
+  { PROGRAM_ROOT,       TYPE_PLACE_FOLDER }, 
+  { THREAD_ROOT,        TYPE_PLACE_FOLDER }, 
+  { GUARD_NAME,	        TYPE_PLACE_FOLDER }, 
 
-  OMP_TGT_ALLOC, OMP_TGT_COPYIN, OMP_TGT_COPYOUT, OMP_TGT_DELETE,
-  OMP_TGT_ALLOC, OMP_TGT_KERNEL,
+  { NO_ACTIVITY,        TYPE_INVISIBLE    },
+  { PARTIAL_CALLPATH,   TYPE_PLACE_FOLDER },
 
-  GPU_COPY, GPU_COPYIN, GPU_COPYOUT, GPU_ALLOC, GPU_ALLOC, GPU_DELETE,
-  GPU_SYNC, GPU_KERNEL, GPU_TRACE
+  { OMP_IDLE,           TYPE_PLACE_FOLDER }, 
+  { OMP_OVERHEAD,       TYPE_PLACE_FOLDER }, 
+  { OMP_BARRIER_WAIT,   TYPE_PLACE_FOLDER }, 
+  { OMP_TASK_WAIT,      TYPE_PLACE_FOLDER }, 
+  { OMP_MUTEX_WAIT,     TYPE_PLACE_FOLDER },
+
+  { OMP_TGT_ALLOC,      TYPE_PLACE_FOLDER }, 
+  { OMP_TGT_COPYIN,     TYPE_PLACE_FOLDER }, 
+  { OMP_TGT_COPYOUT,    TYPE_PLACE_FOLDER }, 
+  { OMP_TGT_DELETE,     TYPE_PLACE_FOLDER },
+  { OMP_TGT_ALLOC,      TYPE_PLACE_FOLDER }, 
+  { OMP_TGT_KERNEL,     TYPE_PLACE_FOLDER },
+
+  { GPU_COPY,           TYPE_PLACE_FOLDER }, 
+  { GPU_COPYIN,	        TYPE_PLACE_FOLDER }, 
+  { GPU_COPYOUT,        TYPE_PLACE_FOLDER }, 
+  { GPU_ALLOC,          TYPE_PLACE_FOLDER }, 
+  { GPU_DELETE,	        TYPE_PLACE_FOLDER },
+  { GPU_SYNC,           TYPE_PLACE_FOLDER }, 
+  { GPU_KERNEL,	        TYPE_PLACE_FOLDER }, 
+  { GPU_TRACE,          TYPE_PLACE_FOLDER }
 };
 
 static NameMappings_t renamingMap;
-static NameMappings_t fakeProcedureMap;
-
+static TypeMappings_t typeProcedureMap;
 
 //******************************************************************************
 // private operations
@@ -150,14 +183,14 @@ normalize_name_load_renamings()
   for (unsigned int i=0; i < sizeof(renamingTable)/sizeof(NameMapping); i++) {
     renamingMap[renamingTable[i].in] =  renamingTable[i].out;
   }
-  for (unsigned int i=0; i < sizeof(fakeProcedures)/sizeof(const char*); i++) {
-    fakeProcedureMap[fakeProcedures[i]] = "f";
+  for (unsigned int i=0; i < sizeof(typeTable)/sizeof(ProcedureMapping); i++) {
+    typeProcedureMap[typeTable[i].name] = typeTable[i].type;
   }
 }
 
 
 static const char *
-normalize_name_rename(const char *in, bool &fake_procedure)
+normalize_name_rename(const char *in, int &type_procedure)
 {
   // check if the name has to be changed or not
   const char *name_new = in;
@@ -167,9 +200,12 @@ normalize_name_rename(const char *in, bool &fake_procedure)
     // it has to be renamed.
     name_new = it->second;
   }
-  // here we want to mark fake procedures if they match with the list from fakeProcedureMap
-  it = fakeProcedureMap.find(name_new);
-  fake_procedure = (it != fakeProcedureMap.end());
+
+  // here we want to find the type of the procedure 
+  TypeMappings_t::iterator itp = typeProcedureMap.find(name_new);
+  if (itp != typeProcedureMap.end()) {
+    type_procedure = itp->second;
+  }
 
   return name_new;
 }
@@ -181,7 +217,7 @@ normalize_name_rename(const char *in, bool &fake_procedure)
 //******************************************************************************
 
 const char *
-normalize_name(const char *in, bool &fake_procedure)
+normalize_name(const char *in, int &fake_procedure)
 {
   normalize_name_load_renamings();
   return normalize_name_rename(in, fake_procedure);
