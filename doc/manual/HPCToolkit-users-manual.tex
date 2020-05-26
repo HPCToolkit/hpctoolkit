@@ -1352,6 +1352,19 @@ To fix this, set the permission of the library to 0755, and launch again the vie
 % ===========================================================================
 % ===========================================================================
 
+\section{Mac only: \hpcviewer{} runs on Java $X$ instead of ``Java 8"}
+
+If your system has multiple versions of Java and Java 8 is not the newer version, you need to set Java 8 as the default JVM:
+
+\begin{enumerate}
+\item Leave all JDKs at their default location (usually under \texttt{/Library/Java/JavaVirtualMachines}). The system will pick the highest version by default.
+\item To exclude a JDK from being picked by default, rename \texttt{Contents/Info.plist} file to other name like \texttt{Info.plist.disabled}. That JDK can still be used when \texttt{\$JAVA\_HOME} points to it, or explicitly referenced in a script or configuration. It will simply be ignored by system's java command.
+\end{enumerate}
+
+
+% ===========================================================================
+% ===========================================================================
+
 \section{When executing \hpcviewer, it complains cannot create ``Java Virtual Machine"}
 If you use Java 7 or older,
 the error message indicates that your machine cannot instantiate the JVM 
@@ -1364,7 +1377,7 @@ By default, the content of the file is as follows:
 \begin{verbatim}
 -consoleLog
 -vmargs
--Dosgi.requiredJavaVersion=1.6
+-Dosgi.requiredJavaVersion=1.8
 -XX:MaxPermSize=256m
 -Xms40m
 -Xmx2048m
