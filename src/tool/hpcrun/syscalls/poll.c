@@ -58,31 +58,42 @@
 // system includes
 //******************************************************************************
 
-#define _GNU_SOURCE
-#include <poll.h>
-#include <dlfcn.h>
-#include <pthread.h>
+#define _GNU_SOURCE  1
+
+#include <sys/types.h>
 #include <assert.h>
 #include <errno.h>
+#include <poll.h>
+#include <pthread.h>
 #include <stdlib.h>
-#include <stdio.h>
+#include <time.h>
 
+#ifndef HPCRUN_STATIC_LINK
+#include <dlfcn.h>
+#endif
+
+#include <monitor-exts/monitor_ext.h>
+
+#define MILLION     1000000
+#define THOUSAND       1000
 
 
 //******************************************************************************
 // type declarations
 //******************************************************************************
 
-typedef int (*poll_fn)(struct pollfd *fds, nfds_t nfds, int timeout);
-
+typedef int poll_fn (struct pollfd *fds, nfds_t nfds, int timeout);
 
 
 //******************************************************************************
 // local data
 //******************************************************************************
 
-static poll_fn real_poll;
+#ifdef HPCRUN_STATIC_LINK
+extern poll_fn  __real_poll;
+#endif
 
+static poll_fn *real_poll = NULL;
 
 
 //******************************************************************************
@@ -90,15 +101,16 @@ static poll_fn real_poll;
 //******************************************************************************
 
 static void 
-find_poll
-(
-  void
-)
+find_poll(void)
 {
-  real_poll = dlsym(RTLD_NEXT, "poll");
+#ifdef HPCRUN_STATIC_LINK
+  real_poll = __real_poll;
+#else
+  real_poll = (poll_fn *) dlsym(RTLD_NEXT, "poll");
+#endif
+
   assert(real_poll);
 }
-
 
 
 //******************************************************************************
@@ -106,34 +118,48 @@ find_poll
 //******************************************************************************
 
 int 
-poll
-(
-  struct pollfd *fds, 
-  nfds_t nfds, 
-  int timeout
-)
+MONITOR_EXT_WRAP_NAME(poll)
+  (struct pollfd *fds, nfds_t nfds, int init_timeout)
 {
- static pthread_once_t initialized;
+  static pthread_once_t initialized = PTHREAD_ONCE_INIT;
   pthread_once(&initialized, find_poll);
 
-  int retval;
+  struct timespec start, now;
   int incoming_errno = errno; // save incoming errno
+  int ret;
+
+  if (init_timeout > 0) {
+    clock_gettime(CLOCK_REALTIME, &start);
+  }
+
+  int timeout = init_timeout;
 
   for(;;) {
     // call the libc poll operation
-    retval = real_poll(fds, nfds, timeout);
+    ret = (* real_poll) (fds, nfds, timeout);
 
-    if (retval == -1) {
-      if (errno == EINTR) {
-        // restart on EINTR
-        errno = incoming_errno; // restore incoming errno
-        continue;
+    if (! (ret < 0 && errno == EINTR)) {
+      // normal (non-signal) return
+      break;
+    }
+    errno = incoming_errno;
+
+    // adjust timout and restart syscall
+    if (init_timeout > 0) {
+      clock_gettime(CLOCK_REALTIME, &now);
+
+      timeout = init_timeout - THOUSAND * (now.tv_sec - start.tv_sec)
+	  - (now.tv_nsec - start.tv_nsec) / MILLION;
+
+      //
+      // if timeout has expired, then call one more time with timeout
+      // zero so the kernel sets ret and errno correctly.
+      //
+      if (timeout < 0) {
+	timeout = 0;
       }
     }
-
-    // return otherwise
-    break;
   }
 
-  return retval;
+  return ret;
 }

@@ -469,7 +469,7 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	ompt/ompt-queues.c ompt/ompt-region.c ompt/ompt-region-debug.c \
 	ompt/ompt-placeholders.c ompt/ompt-device-map.c \
 	ompt/ompt-task.c ompt/ompt-thread.c syscalls/poll.c \
-	syscalls/select.c utilities/executable-path.h \
+	syscalls/ppoll.c syscalls/select.c utilities/executable-path.h \
 	utilities/executable-path.c utilities/ip-normalized.h \
 	utilities/ip-normalized.c utilities/line_wrapping.c \
 	utilities/timer.c utilities/tokenize.h utilities/tokenize.c \
@@ -634,7 +634,7 @@ am__objects_14 = utilities/libhpcrun_la-first_func.lo \
 	ompt/libhpcrun_la-ompt-device-map.lo \
 	ompt/libhpcrun_la-ompt-task.lo \
 	ompt/libhpcrun_la-ompt-thread.lo syscalls/libhpcrun_la-poll.lo \
-	syscalls/libhpcrun_la-select.lo \
+	syscalls/libhpcrun_la-ppoll.lo syscalls/libhpcrun_la-select.lo \
 	utilities/libhpcrun_la-executable-path.lo \
 	utilities/libhpcrun_la-ip-normalized.lo \
 	utilities/libhpcrun_la-line_wrapping.lo \
@@ -844,7 +844,7 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	ompt/ompt-queues.c ompt/ompt-region.c ompt/ompt-region-debug.c \
 	ompt/ompt-placeholders.c ompt/ompt-device-map.c \
 	ompt/ompt-task.c ompt/ompt-thread.c syscalls/poll.c \
-	syscalls/select.c utilities/executable-path.h \
+	syscalls/ppoll.c syscalls/select.c utilities/executable-path.h \
 	utilities/executable-path.c utilities/ip-normalized.h \
 	utilities/ip-normalized.c utilities/line_wrapping.c \
 	utilities/timer.c utilities/tokenize.h utilities/tokenize.c \
@@ -1018,6 +1018,7 @@ am__objects_51 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-task.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-thread.$(OBJEXT) \
 	syscalls/libhpcrun_o-poll.$(OBJEXT) \
+	syscalls/libhpcrun_o-ppoll.$(OBJEXT) \
 	syscalls/libhpcrun_o-select.$(OBJEXT) \
 	utilities/libhpcrun_o-executable-path.$(OBJEXT) \
 	utilities/libhpcrun_o-ip-normalized.$(OBJEXT) \
@@ -1722,7 +1723,7 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	ompt/ompt-queues.c ompt/ompt-region.c ompt/ompt-region-debug.c \
 	ompt/ompt-placeholders.c ompt/ompt-device-map.c \
 	ompt/ompt-task.c ompt/ompt-thread.c syscalls/poll.c \
-	syscalls/select.c utilities/executable-path.h \
+	syscalls/ppoll.c syscalls/select.c utilities/executable-path.h \
 	utilities/executable-path.c utilities/ip-normalized.h \
 	utilities/ip-normalized.c utilities/line_wrapping.c \
 	utilities/timer.c utilities/tokenize.h utilities/tokenize.c \
@@ -2432,6 +2433,8 @@ syscalls/$(DEPDIR)/$(am__dirstamp):
 	@: > syscalls/$(DEPDIR)/$(am__dirstamp)
 syscalls/libhpcrun_la-poll.lo: syscalls/$(am__dirstamp) \
 	syscalls/$(DEPDIR)/$(am__dirstamp)
+syscalls/libhpcrun_la-ppoll.lo: syscalls/$(am__dirstamp) \
+	syscalls/$(DEPDIR)/$(am__dirstamp)
 syscalls/libhpcrun_la-select.lo: syscalls/$(am__dirstamp) \
 	syscalls/$(DEPDIR)/$(am__dirstamp)
 utilities/libhpcrun_la-executable-path.lo: utilities/$(am__dirstamp) \
@@ -3014,6 +3017,8 @@ ompt/libhpcrun_o-ompt-task.$(OBJEXT): ompt/$(am__dirstamp) \
 ompt/libhpcrun_o-ompt-thread.$(OBJEXT): ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
 syscalls/libhpcrun_o-poll.$(OBJEXT): syscalls/$(am__dirstamp) \
+	syscalls/$(DEPDIR)/$(am__dirstamp)
+syscalls/libhpcrun_o-ppoll.$(OBJEXT): syscalls/$(am__dirstamp) \
 	syscalls/$(DEPDIR)/$(am__dirstamp)
 syscalls/libhpcrun_o-select.$(OBJEXT): syscalls/$(am__dirstamp) \
 	syscalls/$(DEPDIR)/$(am__dirstamp)
@@ -3665,8 +3670,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/perf/$(DEPDIR)/libhpcrun_o-perfmon-util-dummy.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/perf/$(DEPDIR)/libhpcrun_o-perfmon-util.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@syscalls/$(DEPDIR)/libhpcrun_la-poll.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@syscalls/$(DEPDIR)/libhpcrun_la-ppoll.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@syscalls/$(DEPDIR)/libhpcrun_la-select.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@syscalls/$(DEPDIR)/libhpcrun_o-poll.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@syscalls/$(DEPDIR)/libhpcrun_o-ppoll.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@syscalls/$(DEPDIR)/libhpcrun_o-select.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@trampoline/aarch64/$(DEPDIR)/libhpcrun_la-aarch64-tramp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@trampoline/aarch64/$(DEPDIR)/libhpcrun_o-aarch64-tramp.Po@am__quote@
@@ -4706,6 +4713,13 @@ syscalls/libhpcrun_la-poll.lo: syscalls/poll.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='syscalls/poll.c' object='syscalls/libhpcrun_la-poll.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o syscalls/libhpcrun_la-poll.lo `test -f 'syscalls/poll.c' || echo '$(srcdir)/'`syscalls/poll.c
+
+syscalls/libhpcrun_la-ppoll.lo: syscalls/ppoll.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT syscalls/libhpcrun_la-ppoll.lo -MD -MP -MF syscalls/$(DEPDIR)/libhpcrun_la-ppoll.Tpo -c -o syscalls/libhpcrun_la-ppoll.lo `test -f 'syscalls/ppoll.c' || echo '$(srcdir)/'`syscalls/ppoll.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) syscalls/$(DEPDIR)/libhpcrun_la-ppoll.Tpo syscalls/$(DEPDIR)/libhpcrun_la-ppoll.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='syscalls/ppoll.c' object='syscalls/libhpcrun_la-ppoll.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o syscalls/libhpcrun_la-ppoll.lo `test -f 'syscalls/ppoll.c' || echo '$(srcdir)/'`syscalls/ppoll.c
 
 syscalls/libhpcrun_la-select.lo: syscalls/select.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT syscalls/libhpcrun_la-select.lo -MD -MP -MF syscalls/$(DEPDIR)/libhpcrun_la-select.Tpo -c -o syscalls/libhpcrun_la-select.lo `test -f 'syscalls/select.c' || echo '$(srcdir)/'`syscalls/select.c
@@ -6806,6 +6820,20 @@ syscalls/libhpcrun_o-poll.obj: syscalls/poll.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='syscalls/poll.c' object='syscalls/libhpcrun_o-poll.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o syscalls/libhpcrun_o-poll.obj `if test -f 'syscalls/poll.c'; then $(CYGPATH_W) 'syscalls/poll.c'; else $(CYGPATH_W) '$(srcdir)/syscalls/poll.c'; fi`
+
+syscalls/libhpcrun_o-ppoll.o: syscalls/ppoll.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT syscalls/libhpcrun_o-ppoll.o -MD -MP -MF syscalls/$(DEPDIR)/libhpcrun_o-ppoll.Tpo -c -o syscalls/libhpcrun_o-ppoll.o `test -f 'syscalls/ppoll.c' || echo '$(srcdir)/'`syscalls/ppoll.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) syscalls/$(DEPDIR)/libhpcrun_o-ppoll.Tpo syscalls/$(DEPDIR)/libhpcrun_o-ppoll.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='syscalls/ppoll.c' object='syscalls/libhpcrun_o-ppoll.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o syscalls/libhpcrun_o-ppoll.o `test -f 'syscalls/ppoll.c' || echo '$(srcdir)/'`syscalls/ppoll.c
+
+syscalls/libhpcrun_o-ppoll.obj: syscalls/ppoll.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT syscalls/libhpcrun_o-ppoll.obj -MD -MP -MF syscalls/$(DEPDIR)/libhpcrun_o-ppoll.Tpo -c -o syscalls/libhpcrun_o-ppoll.obj `if test -f 'syscalls/ppoll.c'; then $(CYGPATH_W) 'syscalls/ppoll.c'; else $(CYGPATH_W) '$(srcdir)/syscalls/ppoll.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) syscalls/$(DEPDIR)/libhpcrun_o-ppoll.Tpo syscalls/$(DEPDIR)/libhpcrun_o-ppoll.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='syscalls/ppoll.c' object='syscalls/libhpcrun_o-ppoll.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o syscalls/libhpcrun_o-ppoll.obj `if test -f 'syscalls/ppoll.c'; then $(CYGPATH_W) 'syscalls/ppoll.c'; else $(CYGPATH_W) '$(srcdir)/syscalls/ppoll.c'; fi`
 
 syscalls/libhpcrun_o-select.o: syscalls/select.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT syscalls/libhpcrun_o-select.o -MD -MP -MF syscalls/$(DEPDIR)/libhpcrun_o-select.Tpo -c -o syscalls/libhpcrun_o-select.o `test -f 'syscalls/select.c' || echo '$(srcdir)/'`syscalls/select.c

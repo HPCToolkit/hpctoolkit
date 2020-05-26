@@ -51,6 +51,10 @@
 //   wrapper for libc select. if select returns a -1 because it was
 //   interrupted, assume the interrupt was from asynchronous sampling
 //   caused by hpcrun and restart. 
+//
+// Note:
+//   The kernel automatically updates the timout parameter for select(),
+//   but not for poll(), ppoll() or pselect().
 //------------------------------------------------------------------------------
 
 
@@ -58,24 +62,29 @@
 // system includes
 //******************************************************************************
 
-#define _GNU_SOURCE
+#define _GNU_SOURCE  1
 
+#include <sys/types.h>
+#include <sys/time.h>
+#include <sys/select.h>
 #include <assert.h>
-#include <dlfcn.h>
 #include <errno.h>
 #include <pthread.h>
 #include <stdlib.h>
 #include <unistd.h>
 
-#include <sys/select.h>
+#ifndef HPCRUN_STATIC_LINK
+#include <dlfcn.h>
+#endif
 
+#include <monitor-exts/monitor_ext.h>
 
 
 //******************************************************************************
 // type declarations
 //******************************************************************************
 
-typedef int (*select_fn)
+typedef int select_fn
 (
  int nfds,
  fd_set *read_fds,
@@ -85,29 +94,32 @@ typedef int (*select_fn)
 );
 
 
-
 //******************************************************************************
 // local data
 //******************************************************************************
 
-static select_fn real_select;
+#ifdef HPCRUN_STATIC_LINK
+extern select_fn  __real_select;
+#endif
 
+static select_fn *real_select = NULL;
 
 
 //******************************************************************************
 // local operations
 //******************************************************************************
 
-static void 
-find_select
-(
-  void
-)
+static void
+find_select(void)
 {
-  real_select = dlsym(RTLD_NEXT, "select");
+#ifdef HPCRUN_STATIC_LINK
+  real_select = __real_select;
+#else
+  real_select = (select_fn *) dlsym(RTLD_NEXT, "select");
+#endif
+
   assert(real_select);
 }
-
 
 
 //******************************************************************************
@@ -115,7 +127,7 @@ find_select
 //******************************************************************************
 
 int 
-select
+MONITOR_EXT_WRAP_NAME(select)
 (
   int nfds, 
   fd_set *read_fds, 
@@ -124,15 +136,15 @@ select
   struct timeval *timeout
 )
 {
-  static pthread_once_t initialized;
+  static pthread_once_t initialized = PTHREAD_ONCE_INIT;
   pthread_once(&initialized, find_select);
 
   int retval;
-
   int incoming_errno = errno; // save incoming errno
 
   for(;;) {
-    retval = real_select(nfds, read_fds, write_fds, except_fds, timeout);
+    retval = (* real_select) (nfds, read_fds, write_fds, except_fds, timeout);
+
     if (retval == -1) {
       if (errno == EINTR) {
         // restart on EINTR

@@ -390,6 +390,7 @@ MY_BASE_FILES =				\
 	ompt/ompt-thread.c              \
 	\
 	syscalls/poll.c	\
+	syscalls/ppoll.c \
 	syscalls/select.c \
 	\
 	utilities/executable-path.h utilities/executable-path.c \
