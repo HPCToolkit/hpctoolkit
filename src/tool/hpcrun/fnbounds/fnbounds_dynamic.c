@@ -191,8 +191,6 @@ fnbounds_init()
 bool
 fnbounds_enclosing_addr(void* ip, void** start, void** end, load_module_t** lm)
 {
-  FNBOUNDS_LOCK;
-
   bool ret = false; // failure unless otherwise reset to 0 below
   
   load_module_t* lm_ = fnbounds_get_loadModule(ip);
@@ -225,8 +223,6 @@ fnbounds_enclosing_addr(void* ip, void** start, void** end, load_module_t** lm)
     *lm = lm_;
   }
 
-  FNBOUNDS_UNLOCK;
-
   return ret;
 }
 
@@ -241,7 +237,9 @@ fnbounds_enclosing_addr(void* ip, void** start, void** end, load_module_t** lm)
 void
 fnbounds_map_open_dsos()
 {
+  FNBOUNDS_LOCK;
   dylib_map_open_dsos();
+  FNBOUNDS_UNLOCK;
 }
 
 
@@ -332,26 +330,27 @@ fnbounds_dso_exec(void)
 }
 
 bool
-fnbounds_ensure_mapped_dso(const char *module_name, void *start, void *end)
+fnbounds_ensure_mapped_dso(const char *module_name, void *start, void *end, struct dl_phdr_info* info)
 {
   bool isOk = true;
-
-  FNBOUNDS_LOCK;
 
   load_module_t *lm = hpcrun_loadmap_findByAddr(start, end);
   if (!lm) {
     dso_info_t *dso = fnbounds_compute(module_name, start, end);
     if (dso) {
-      hpcrun_loadmap_map(dso);
+      lm = hpcrun_loadmap_map(dso);
+      if (info != NULL) {
+        lm->phdr_info = *info;
+      }
     }
     else {
       EMSG("!! INTERNAL ERROR, not possible to map dso for %s (%p, %p)",
 	   module_name, start, end);
       isOk = false;
     }
+  } else if (lm->phdr_info.dlpi_phdr == NULL) {
+    if (info != NULL) lm->phdr_info = *info;
   }
-
-  FNBOUNDS_UNLOCK;
 
   return isOk;
 }
