@@ -42,28 +42,29 @@
 // ******************************************************* EndRiceCopyright *
 
 //******************************************************************************
+// system includes
+//******************************************************************************
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <assert.h>
+
+//******************************************************************************
 // local includes
 //******************************************************************************
 
 #include "level0-api.h"
-#include "level0-commandlist-map.h"
+#include "level0-command-list-map.h"
+#include "level0-event-map.h"
+#include "level0-command-process.h"
 
-#include <hpcrun/gpu/gpu-activity-channel.h>
-#include <hpcrun/gpu/gpu-activity-process.h>
-#include <hpcrun/gpu/gpu-correlation-channel.h>
-#include <hpcrun/gpu/gpu-correlation-id-map.h>
-#include <hpcrun/gpu/gpu-metrics.h>
+#include <hpcrun/main.h>
+#include <hpcrun/sample-sources/libdl.h>
 #include <hpcrun/gpu/gpu-monitoring-thread-api.h>
 #include <hpcrun/gpu/gpu-application-thread-api.h>
-#include <hpcrun/gpu/gpu-op-placeholders.h>
-#include <hpcrun/safe-sampling.h>
-#include <hpcrun/sample-sources/libdl.h>
-#include <lib/prof-lean/usec_time.h>
-
 
 #include <level_zero/ze_api.h>
 #include <level_zero/zet_api.h>
-
 
 //******************************************************************************
 // macros
@@ -85,7 +86,8 @@
   macro(zeEventPoolCreate) \
   macro(zeEventPoolDestroy) \
   macro(zeEventQueryStatus) \
-  macro(zeEventGetTimestamp)
+  macro(zeEventGetTimestamp) \
+  macro(zeDriverGetMemAllocProperties)
 
 
 #define LEVEL0_FN_NAME(f) DYN_FN_NAME(f)
@@ -100,10 +102,6 @@
     /* use level0_error_string() */ \
   }						\
 }
-
-#define CPU_NANOTIME() (usec_time() * 1000)
-
-
 
 //******************************************************************************
 // local variables
@@ -262,6 +260,17 @@ LEVEL0_FN
  )
 );
 
+LEVEL0_FN
+(
+ zeDriverGetMemAllocProperties,
+ (
+    ze_driver_handle_t,
+    const void* ptr,
+    ze_memory_allocation_properties_t*,
+    ze_device_handle_t*
+  );
+);
+
 //******************************************************************************
 // private operations
 //******************************************************************************
@@ -275,33 +284,6 @@ level0_path
   const char *path = "libze_loader.so";
 
   return path;
-}
-
-// Expand this function to crete GPU side cct
-static void
-record_level0_gpu_call_site
-(
-  ze_event_handle_t event
-)
-{
-  gpu_op_placeholder_flags_t gpu_op_placeholder_flags = 0;
-  gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
-        gpu_placeholder_type_kernel);
-
-  uint64_t correlation_id = (uint64_t)event;
-  cct_node_t *api_node =
-    gpu_application_thread_correlation_callback(correlation_id);
-
-  gpu_op_ccts_t gpu_op_ccts;
-  hpcrun_safe_enter();
-  gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
-  hpcrun_safe_exit();
-
-  gpu_activity_channel_consume(gpu_metrics_attribute);
-
-  // Generate notification entry
-  uint64_t cpu_submit_time = CPU_NANOTIME();
-  gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, cpu_submit_time);
 }
 
 void
@@ -391,29 +373,27 @@ static void OnExitEventPoolCreate(ze_event_pool_create_params_t *params,
 }
 
 static void ProcessEvent(ze_event_handle_t event) {
-  uint64_t correlation_id = (uint64_t)event;
+  level0_data_node_t* data = level0_event_map_lookup(event);  
+  if (data == NULL) return;
+  fprintf(stderr, "ProcessEvent %p %p\n", (void*) event, (void*)(data->event) );  
+
+  // Get ready to query time stamps
   ze_device_properties_t props = {};
   props.version = ZE_DEVICE_PROPERTIES_VERSION_CURRENT;
   HPCRUN_LEVEL0_CALL(zeDeviceGetProperties, (hDevice, &props));
   HPCRUN_LEVEL0_CALL(zeEventQueryStatus, (event));
 
+  // Query start and end time stamp for the event
   uint64_t start = 0;
   HPCRUN_LEVEL0_CALL(zeEventGetTimestamp, (event, ZE_EVENT_TIMESTAMP_CONTEXT_START, &start));
+  start = start * props.timerResolution;
   uint64_t end = 0;
   HPCRUN_LEVEL0_CALL(zeEventGetTimestamp, (event, ZE_EVENT_TIMESTAMP_CONTEXT_END, &end));
+  end = end * props.timerResolution;
 
-  gpu_monitoring_thread_activities_ready();
-  gpu_activity_t gpu_activity;
-  gpu_activity_t* ga = &gpu_activity;
-  memset(ga, 0, sizeof(gpu_activity_t));
-  ga->kind = GPU_ACTIVITY_KERNEL;
-  set_gpu_interval(&ga->details.interval, start * props.timerResolution, end * props.timerResolution);
-  ga->details.kernel.correlation_id = correlation_id;
-  cstack_ptr_set(&(ga->next), 0);
-  if (gpu_correlation_id_map_lookup(correlation_id) == NULL) {
-    gpu_correlation_id_map_insert(correlation_id, correlation_id);
-  }
-  gpu_activity_process(&gpu_activity);
+  level0_command_end(data, start, end);
+
+  level0_event_map_delete(event);
 
   //if (info.event_type == EVENT_TYPE_TOOL) {
     //HPCRUN_LEVEL0_CALL(zeEventDestroy, (event));
@@ -471,7 +451,6 @@ static void OnEnterCommandListAppendLaunchKernel(
     ze_command_list_append_launch_kernel_params_t* params,
     ze_result_t result, void* global_data, void** instance_data)
 {
-
   *(params->phSignalEvent) = OnEnterActivitySubmit(*(params->phSignalEvent), instance_data);
 
   ze_kernel_handle_t kernel = *(params->phKernel);
@@ -479,17 +458,33 @@ static void OnEnterCommandListAppendLaunchKernel(
   ze_event_handle_t event = *(params->phSignalEvent);
 
   // Lookup the command list and append the kernel-event pair to the command list
-  level0_commandlist_map_entry_t * entry = level0_commandlist_map_lookup(command_list);
-  level0_commandlist_map_kernel_list_append(entry, kernel, event);
+  level0_data_node_t ** command_list_data_head = level0_commandlist_map_lookup(command_list);
+  level0_data_node_t * data_for_kernel = level0_commandlist_append_kernel(command_list_data_head, kernel, event);
+  // Associate the data entry with the event
+  level0_event_map_insert(event, data_for_kernel);
 }
 
 static void OnEnterCommandListAppendMemoryCopy(
     ze_command_list_append_memory_copy_params_t* params,
     ze_result_t result, void* global_data, void** instance_data) {
-/*
-  *(params->phEvent) = OnEnterActivitySubmit(
-      "<MemoryCopy>", *(params->phEvent), instance_data);
-*/
+  *(params->phEvent) = OnEnterActivitySubmit(*(params->phEvent), instance_data);
+  
+  ze_command_list_handle_t command_list = *(params->phCommandList);
+  ze_event_handle_t event = *(params->phEvent);
+  fprintf(stderr, "OnEnterCommandListAppendMemoryCopy command_list %p event %p\n", (void*)command_list, (void*) event);  
+  size_t mem_copy_size = *(params->psize);
+  const void* dest_ptr = *(params->pdstptr);
+  const void* src_ptr = *(params->psrcptr);
+  ze_memory_allocation_properties_t dest_property;
+  ze_memory_allocation_properties_t src_property;
+  HPCRUN_LEVEL0_CALL(zeDriverGetMemAllocProperties, (hDriver, dest_ptr, &dest_property, NULL));
+  HPCRUN_LEVEL0_CALL(zeDriverGetMemAllocProperties, (hDriver, src_ptr, &src_property, NULL));
+
+  // Lookup the command list and append the mempcy to the command list
+  level0_data_node_t ** command_list_data_head = level0_commandlist_map_lookup(command_list);
+  level0_data_node_t * data_for_memcpy = level0_commandlist_append_memcpy(command_list_data_head, src_property.type, dest_property.type, mem_copy_size, event);
+  // Associate the data entry with the event
+  level0_event_map_insert(event, data_for_memcpy);
 }
 
 static void OnEnterCommandListAppendBarrier(
@@ -502,17 +497,21 @@ static void OnEnterCommandListAppendBarrier(
 }
 
 static void OnExitActivitySubmit(void **instance_data, ze_result_t result) {
-
+  
   ActivityEventInfo* info = (ActivityEventInfo*)(*instance_data);
+  fprintf(stderr, "Enter ONExitActivitySummit %p, %d\n", info, info->event_type);
   if (info == NULL) {
     return;
   }
 
   if (result != ZE_RESULT_SUCCESS && info != NULL) {
     if (info->event_type == EVENT_TYPE_TOOL) {
+      fprintf(stderr, "call zeEventDestroy in ONExitActivitySummit\n");
       HPCRUN_LEVEL0_CALL(zeEventDestroy, (info->event));
       HPCRUN_LEVEL0_CALL(zeEventPoolDestroy, (info->event_pool));
     }
+  } else {
+    fprintf(stderr, "In ONExitActivitySubmit not handled %p %d\n", info, info->event_type);
   }
   free(info);
 }
@@ -525,8 +524,9 @@ OnExitCommandListCreate
   void* pTracerUserData,
   void** ppTracerInstanceUserData  
 )
-{
+{  
   ze_command_list_handle_t handle = **params->pphCommandList;
+  fprintf(stderr, "OnExitCommandListCreate command_list %p\n", (void*)handle);
   // Record the creation of a command list
   level0_commandlist_map_insert(handle);
 }
@@ -541,6 +541,13 @@ OnEnterCommandListDestroy
 )
 {
   ze_command_list_handle_t handle = *params->phCommandList;
+  fprintf(stderr, "OnEnterCommandListDestroy command_list %p\n", (void*)handle);
+  level0_data_node_t ** command_list_head = level0_commandlist_map_lookup(handle);
+  level0_data_node_t * command_node = *command_list_head;
+  for (; command_node != NULL; command_node = command_node->next) {
+    ProcessEvent(command_node->event);
+  }
+
   // Record the deletion of a command list
   level0_commandlist_map_delete(handle);  
 }
@@ -553,15 +560,15 @@ OnEnterCommandQueueExecuteCommandList
   void* pTracerUserData,
   void** ppTracerInstanceUserData
 )
-{
+{ 
   uint32_t size = *(params->pnumCommandLists);
   uint32_t i;
   for (i = 0; i < size; ++i) {
     ze_command_list_handle_t command_list_handle = *(params->pphCommandLists[i]);
-    level0_commandlist_map_entry_t * entry = level0_commandlist_map_lookup(command_list_handle);
-    level0_kernel_list_entry_t * kernel_node = level0_commandlist_map_kernel_list_get(entry);
-    for (; kernel_node != NULL; kernel_node = kernel_node->next) {
-      record_level0_gpu_call_site(kernel_node->event);
+    level0_data_node_t ** command_list_head = level0_commandlist_map_lookup(command_list_handle);
+    level0_data_node_t * command_node = *command_list_head;
+    for (; command_node != NULL; command_node = command_node->next) {      
+      level0_command_begin(command_node);
     }
   }
 }
@@ -576,7 +583,7 @@ static void OnExitCommandListAppendLaunchKernel(
 static void OnExitCommandListAppendMemoryCopy(
     ze_command_list_append_memory_copy_params_t* params,
     ze_result_t result, void* global_data, void** instance_data) {
-  //OnExitActivitySubmit(instance_data, result);
+  OnExitActivitySubmit(instance_data, result);
 }
 
 static void OnExitCommandListAppendBarrier(
@@ -660,7 +667,7 @@ level0_init
 (
  void
 )
-{  
+{   
   HPCRUN_LEVEL0_CALL(zeInit,(ZE_INIT_FLAG_NONE));
   HPCRUN_LEVEL0_CALL(zetInit, (ZE_INIT_FLAG_NONE));
   get_gpu_driver_and_device();

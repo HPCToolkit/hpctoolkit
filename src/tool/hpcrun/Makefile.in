@@ -510,11 +510,14 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	gpu/nvidia/cupti-gpu-api.c sample-sources/upc.c \
 	sample-sources/amd.c gpu/amd/roctracer-activity-translate.c \
 	gpu/amd/roctracer-api.c sample-sources/level0.c \
-	gpu/level0/level0-api.c gpu/level0/level0-commandlist-map.c \
-	unwind/common/backtrace.c unwind/common/unw-throw.c \
-	unwind/common/binarytree_uwi.c unwind/common/interval_t.c \
-	unwind/common/libunw_intervals.c unwind/common/stack_troll.c \
-	unwind/common/uw_hash.c unwind/common/uw_recipe_map.c \
+	gpu/level0/level0-api.c gpu/level0/level0-command-list-map.c \
+	gpu/level0/level0-command-process.c \
+	gpu/level0/level0-data-node.c gpu/level0/level0-event-map.c \
+	gpu/level0/level0-handle-map.c unwind/common/backtrace.c \
+	unwind/common/unw-throw.c unwind/common/binarytree_uwi.c \
+	unwind/common/interval_t.c unwind/common/libunw_intervals.c \
+	unwind/common/stack_troll.c unwind/common/uw_hash.c \
+	unwind/common/uw_recipe_map.c \
 	unwind/generic-libunwind/libunw-unwind.c \
 	unwind/ppc64/ppc64-unwind.c \
 	unwind/ppc64/ppc64-unwind-interval.c \
@@ -701,7 +704,11 @@ am__objects_35 =
 @OPT_ENABLE_LEVEL0_TRUE@am__objects_38 =  \
 @OPT_ENABLE_LEVEL0_TRUE@	sample-sources/libhpcrun_la-level0.lo \
 @OPT_ENABLE_LEVEL0_TRUE@	gpu/level0/libhpcrun_la-level0-api.lo \
-@OPT_ENABLE_LEVEL0_TRUE@	gpu/level0/libhpcrun_la-level0-commandlist-map.lo
+@OPT_ENABLE_LEVEL0_TRUE@	gpu/level0/libhpcrun_la-level0-command-list-map.lo \
+@OPT_ENABLE_LEVEL0_TRUE@	gpu/level0/libhpcrun_la-level0-command-process.lo \
+@OPT_ENABLE_LEVEL0_TRUE@	gpu/level0/libhpcrun_la-level0-data-node.lo \
+@OPT_ENABLE_LEVEL0_TRUE@	gpu/level0/libhpcrun_la-level0-event-map.lo \
+@OPT_ENABLE_LEVEL0_TRUE@	gpu/level0/libhpcrun_la-level0-handle-map.lo
 @OPT_ENABLE_LEVEL0_TRUE@am__objects_39 = $(am__objects_38)
 am__objects_40 = unwind/common/libhpcrun_la-backtrace.lo \
 	unwind/common/libhpcrun_la-unw-throw.lo
@@ -1796,7 +1803,11 @@ MY_AARCH64_FILES = \
 @OPT_ENABLE_LEVEL0_TRUE@MY_LEVEL0_FILES = \
 @OPT_ENABLE_LEVEL0_TRUE@	sample-sources/level0.c \
 @OPT_ENABLE_LEVEL0_TRUE@	gpu/level0/level0-api.c \
-@OPT_ENABLE_LEVEL0_TRUE@	gpu/level0/level0-commandlist-map.c
+@OPT_ENABLE_LEVEL0_TRUE@	gpu/level0/level0-command-list-map.c \
+@OPT_ENABLE_LEVEL0_TRUE@	gpu/level0/level0-command-process.c \
+@OPT_ENABLE_LEVEL0_TRUE@	gpu/level0/level0-data-node.c \
+@OPT_ENABLE_LEVEL0_TRUE@	gpu/level0/level0-event-map.c \
+@OPT_ENABLE_LEVEL0_TRUE@	gpu/level0/level0-handle-map.c
 
 MY_UPC_FILES = sample-sources/upc.c
 MY_INCLUDE_DIRS = \
@@ -2655,7 +2666,19 @@ gpu/level0/$(DEPDIR)/$(am__dirstamp):
 	@: > gpu/level0/$(DEPDIR)/$(am__dirstamp)
 gpu/level0/libhpcrun_la-level0-api.lo: gpu/level0/$(am__dirstamp) \
 	gpu/level0/$(DEPDIR)/$(am__dirstamp)
-gpu/level0/libhpcrun_la-level0-commandlist-map.lo:  \
+gpu/level0/libhpcrun_la-level0-command-list-map.lo:  \
+	gpu/level0/$(am__dirstamp) \
+	gpu/level0/$(DEPDIR)/$(am__dirstamp)
+gpu/level0/libhpcrun_la-level0-command-process.lo:  \
+	gpu/level0/$(am__dirstamp) \
+	gpu/level0/$(DEPDIR)/$(am__dirstamp)
+gpu/level0/libhpcrun_la-level0-data-node.lo:  \
+	gpu/level0/$(am__dirstamp) \
+	gpu/level0/$(DEPDIR)/$(am__dirstamp)
+gpu/level0/libhpcrun_la-level0-event-map.lo:  \
+	gpu/level0/$(am__dirstamp) \
+	gpu/level0/$(DEPDIR)/$(am__dirstamp)
+gpu/level0/libhpcrun_la-level0-handle-map.lo:  \
 	gpu/level0/$(am__dirstamp) \
 	gpu/level0/$(DEPDIR)/$(am__dirstamp)
 unwind/common/libhpcrun_la-backtrace.lo:  \
@@ -3530,7 +3553,11 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/amd/$(DEPDIR)/libhpcrun_la-roctracer-activity-translate.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/amd/$(DEPDIR)/libhpcrun_la-roctracer-api.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/level0/$(DEPDIR)/libhpcrun_la-level0-api.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@gpu/level0/$(DEPDIR)/libhpcrun_la-level0-commandlist-map.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/level0/$(DEPDIR)/libhpcrun_la-level0-command-list-map.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/level0/$(DEPDIR)/libhpcrun_la-level0-command-process.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/level0/$(DEPDIR)/libhpcrun_la-level0-data-node.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/level0/$(DEPDIR)/libhpcrun_la-level0-event-map.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/level0/$(DEPDIR)/libhpcrun_la-level0-handle-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_la-cubin-hash-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_la-cubin-id-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_la-cubin-symbols.Plo@am__quote@
@@ -5071,12 +5098,40 @@ gpu/level0/libhpcrun_la-level0-api.lo: gpu/level0/level0-api.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/level0/libhpcrun_la-level0-api.lo `test -f 'gpu/level0/level0-api.c' || echo '$(srcdir)/'`gpu/level0/level0-api.c
 
-gpu/level0/libhpcrun_la-level0-commandlist-map.lo: gpu/level0/level0-commandlist-map.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/level0/libhpcrun_la-level0-commandlist-map.lo -MD -MP -MF gpu/level0/$(DEPDIR)/libhpcrun_la-level0-commandlist-map.Tpo -c -o gpu/level0/libhpcrun_la-level0-commandlist-map.lo `test -f 'gpu/level0/level0-commandlist-map.c' || echo '$(srcdir)/'`gpu/level0/level0-commandlist-map.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/level0/$(DEPDIR)/libhpcrun_la-level0-commandlist-map.Tpo gpu/level0/$(DEPDIR)/libhpcrun_la-level0-commandlist-map.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/level0/level0-commandlist-map.c' object='gpu/level0/libhpcrun_la-level0-commandlist-map.lo' libtool=yes @AMDEPBACKSLASH@
+gpu/level0/libhpcrun_la-level0-command-list-map.lo: gpu/level0/level0-command-list-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/level0/libhpcrun_la-level0-command-list-map.lo -MD -MP -MF gpu/level0/$(DEPDIR)/libhpcrun_la-level0-command-list-map.Tpo -c -o gpu/level0/libhpcrun_la-level0-command-list-map.lo `test -f 'gpu/level0/level0-command-list-map.c' || echo '$(srcdir)/'`gpu/level0/level0-command-list-map.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/level0/$(DEPDIR)/libhpcrun_la-level0-command-list-map.Tpo gpu/level0/$(DEPDIR)/libhpcrun_la-level0-command-list-map.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/level0/level0-command-list-map.c' object='gpu/level0/libhpcrun_la-level0-command-list-map.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/level0/libhpcrun_la-level0-commandlist-map.lo `test -f 'gpu/level0/level0-commandlist-map.c' || echo '$(srcdir)/'`gpu/level0/level0-commandlist-map.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/level0/libhpcrun_la-level0-command-list-map.lo `test -f 'gpu/level0/level0-command-list-map.c' || echo '$(srcdir)/'`gpu/level0/level0-command-list-map.c
+
+gpu/level0/libhpcrun_la-level0-command-process.lo: gpu/level0/level0-command-process.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/level0/libhpcrun_la-level0-command-process.lo -MD -MP -MF gpu/level0/$(DEPDIR)/libhpcrun_la-level0-command-process.Tpo -c -o gpu/level0/libhpcrun_la-level0-command-process.lo `test -f 'gpu/level0/level0-command-process.c' || echo '$(srcdir)/'`gpu/level0/level0-command-process.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/level0/$(DEPDIR)/libhpcrun_la-level0-command-process.Tpo gpu/level0/$(DEPDIR)/libhpcrun_la-level0-command-process.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/level0/level0-command-process.c' object='gpu/level0/libhpcrun_la-level0-command-process.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/level0/libhpcrun_la-level0-command-process.lo `test -f 'gpu/level0/level0-command-process.c' || echo '$(srcdir)/'`gpu/level0/level0-command-process.c
+
+gpu/level0/libhpcrun_la-level0-data-node.lo: gpu/level0/level0-data-node.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/level0/libhpcrun_la-level0-data-node.lo -MD -MP -MF gpu/level0/$(DEPDIR)/libhpcrun_la-level0-data-node.Tpo -c -o gpu/level0/libhpcrun_la-level0-data-node.lo `test -f 'gpu/level0/level0-data-node.c' || echo '$(srcdir)/'`gpu/level0/level0-data-node.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/level0/$(DEPDIR)/libhpcrun_la-level0-data-node.Tpo gpu/level0/$(DEPDIR)/libhpcrun_la-level0-data-node.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/level0/level0-data-node.c' object='gpu/level0/libhpcrun_la-level0-data-node.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/level0/libhpcrun_la-level0-data-node.lo `test -f 'gpu/level0/level0-data-node.c' || echo '$(srcdir)/'`gpu/level0/level0-data-node.c
+
+gpu/level0/libhpcrun_la-level0-event-map.lo: gpu/level0/level0-event-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/level0/libhpcrun_la-level0-event-map.lo -MD -MP -MF gpu/level0/$(DEPDIR)/libhpcrun_la-level0-event-map.Tpo -c -o gpu/level0/libhpcrun_la-level0-event-map.lo `test -f 'gpu/level0/level0-event-map.c' || echo '$(srcdir)/'`gpu/level0/level0-event-map.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/level0/$(DEPDIR)/libhpcrun_la-level0-event-map.Tpo gpu/level0/$(DEPDIR)/libhpcrun_la-level0-event-map.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/level0/level0-event-map.c' object='gpu/level0/libhpcrun_la-level0-event-map.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/level0/libhpcrun_la-level0-event-map.lo `test -f 'gpu/level0/level0-event-map.c' || echo '$(srcdir)/'`gpu/level0/level0-event-map.c
+
+gpu/level0/libhpcrun_la-level0-handle-map.lo: gpu/level0/level0-handle-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/level0/libhpcrun_la-level0-handle-map.lo -MD -MP -MF gpu/level0/$(DEPDIR)/libhpcrun_la-level0-handle-map.Tpo -c -o gpu/level0/libhpcrun_la-level0-handle-map.lo `test -f 'gpu/level0/level0-handle-map.c' || echo '$(srcdir)/'`gpu/level0/level0-handle-map.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/level0/$(DEPDIR)/libhpcrun_la-level0-handle-map.Tpo gpu/level0/$(DEPDIR)/libhpcrun_la-level0-handle-map.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/level0/level0-handle-map.c' object='gpu/level0/libhpcrun_la-level0-handle-map.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/level0/libhpcrun_la-level0-handle-map.lo `test -f 'gpu/level0/level0-handle-map.c' || echo '$(srcdir)/'`gpu/level0/level0-handle-map.c
 
 unwind/common/libhpcrun_la-backtrace.lo: unwind/common/backtrace.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT unwind/common/libhpcrun_la-backtrace.lo -MD -MP -MF unwind/common/$(DEPDIR)/libhpcrun_la-backtrace.Tpo -c -o unwind/common/libhpcrun_la-backtrace.lo `test -f 'unwind/common/backtrace.c' || echo '$(srcdir)/'`unwind/common/backtrace.c
