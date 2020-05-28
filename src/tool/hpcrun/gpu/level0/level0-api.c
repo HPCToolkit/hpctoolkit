@@ -95,13 +95,7 @@
 #define LEVEL0_FN(fn, args) \
   static ze_result_t (*LEVEL0_FN_NAME(fn)) args
 
-#define HPCRUN_LEVEL0_CALL(fn, args) \
-{      \
-  ze_result_t status = LEVEL0_FN_NAME(fn) args;	\
-  if (status != ZE_RESULT_SUCCESS) {		\
-    /* use level0_error_string() */ \
-  }						\
-}
+#define HPCRUN_LEVEL0_CALL(fn, args) (LEVEL0_FN_NAME(fn) args)
 
 //******************************************************************************
 // local variables
@@ -375,7 +369,6 @@ static void OnExitEventPoolCreate(ze_event_pool_create_params_t *params,
 static void ProcessEvent(ze_event_handle_t event) {
   level0_data_node_t* data = level0_event_map_lookup(event);  
   if (data == NULL) return;
-  fprintf(stderr, "ProcessEvent %p %p\n", (void*) event, (void*)(data->event) );  
 
   // Get ready to query time stamps
   ze_device_properties_t props = {};
@@ -471,18 +464,27 @@ static void OnEnterCommandListAppendMemoryCopy(
   
   ze_command_list_handle_t command_list = *(params->phCommandList);
   ze_event_handle_t event = *(params->phEvent);
-  fprintf(stderr, "OnEnterCommandListAppendMemoryCopy command_list %p event %p\n", (void*)command_list, (void*) event);  
   size_t mem_copy_size = *(params->psize);
   const void* dest_ptr = *(params->pdstptr);
   const void* src_ptr = *(params->psrcptr);
-  ze_memory_allocation_properties_t dest_property;
-  ze_memory_allocation_properties_t src_property;
-  HPCRUN_LEVEL0_CALL(zeDriverGetMemAllocProperties, (hDriver, dest_ptr, &dest_property, NULL));
-  HPCRUN_LEVEL0_CALL(zeDriverGetMemAllocProperties, (hDriver, src_ptr, &src_property, NULL));
+
+  // Get source and destination type.
+  // Level 0 does not track memory allocated through system allocator such as malloc.
+  // In such case, zeDriverGetMemAllocProperties will return failure.
+  // So, we default the memory type to be HOST.
+  ze_memory_type_t src_type = ZE_MEMORY_TYPE_HOST;
+  ze_memory_allocation_properties_t property;
+  if (HPCRUN_LEVEL0_CALL(zeDriverGetMemAllocProperties, (hDriver, src_ptr, &property, NULL)) == ZE_RESULT_SUCCESS) {
+    src_type = property.type;
+  }
+  ze_memory_type_t dst_type = ZE_MEMORY_TYPE_HOST;
+  if (HPCRUN_LEVEL0_CALL(zeDriverGetMemAllocProperties, (hDriver, dest_ptr, &property, NULL)) == ZE_RESULT_SUCCESS) {
+    dst_type = property.type;
+  }
 
   // Lookup the command list and append the mempcy to the command list
   level0_data_node_t ** command_list_data_head = level0_commandlist_map_lookup(command_list);
-  level0_data_node_t * data_for_memcpy = level0_commandlist_append_memcpy(command_list_data_head, src_property.type, dest_property.type, mem_copy_size, event);
+  level0_data_node_t * data_for_memcpy = level0_commandlist_append_memcpy(command_list_data_head, src_type, dst_type, mem_copy_size, event);
   // Associate the data entry with the event
   level0_event_map_insert(event, data_for_memcpy);
 }
@@ -499,19 +501,16 @@ static void OnEnterCommandListAppendBarrier(
 static void OnExitActivitySubmit(void **instance_data, ze_result_t result) {
   
   ActivityEventInfo* info = (ActivityEventInfo*)(*instance_data);
-  fprintf(stderr, "Enter ONExitActivitySummit %p, %d\n", info, info->event_type);
   if (info == NULL) {
     return;
   }
 
   if (result != ZE_RESULT_SUCCESS && info != NULL) {
     if (info->event_type == EVENT_TYPE_TOOL) {
-      fprintf(stderr, "call zeEventDestroy in ONExitActivitySummit\n");
       HPCRUN_LEVEL0_CALL(zeEventDestroy, (info->event));
       HPCRUN_LEVEL0_CALL(zeEventPoolDestroy, (info->event_pool));
     }
   } else {
-    fprintf(stderr, "In ONExitActivitySubmit not handled %p %d\n", info, info->event_type);
   }
   free(info);
 }
@@ -526,7 +525,6 @@ OnExitCommandListCreate
 )
 {  
   ze_command_list_handle_t handle = **params->pphCommandList;
-  fprintf(stderr, "OnExitCommandListCreate command_list %p\n", (void*)handle);
   // Record the creation of a command list
   level0_commandlist_map_insert(handle);
 }
@@ -541,7 +539,6 @@ OnEnterCommandListDestroy
 )
 {
   ze_command_list_handle_t handle = *params->phCommandList;
-  fprintf(stderr, "OnEnterCommandListDestroy command_list %p\n", (void*)handle);
   level0_data_node_t ** command_list_head = level0_commandlist_map_lookup(handle);
   level0_data_node_t * command_node = *command_list_head;
   for (; command_node != NULL; command_node = command_node->next) {
@@ -680,9 +677,8 @@ level0_fini
  void* args
 )
 {
+  gpu_application_thread_process_activities();
   HPCRUN_LEVEL0_CALL(zetTracerSetEnabled, (hTracer, 0));
   HPCRUN_LEVEL0_CALL(zetTracerDestroy, (hTracer));
-
-  gpu_application_thread_process_activities();
 }
 

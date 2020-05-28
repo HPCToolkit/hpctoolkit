@@ -52,6 +52,7 @@
 #include <hpcrun/gpu/gpu-activity-process.h>
 #include <hpcrun/gpu/gpu-correlation-channel.h>
 #include <hpcrun/gpu/gpu-correlation-id-map.h>
+#include <hpcrun/gpu/gpu-host-correlation-map.h>
 #include <hpcrun/gpu/gpu-metrics.h>
 #include <hpcrun/gpu/gpu-monitoring-thread-api.h>
 #include <hpcrun/gpu/gpu-application-thread-api.h>
@@ -72,14 +73,31 @@
 //*****************************************************************************
 
 static void
+level0_kernel_translate
+(
+  gpu_activity_t* ga,
+  level0_data_node_t* c,
+  uint64_t start,
+  uint64_t end
+)
+{
+  ga->kind = GPU_ACTIVITY_KERNEL;
+  ga->details.kernel.correlation_id = (uint64_t)(c->event);
+  set_gpu_interval(&ga->details.interval, start, end);
+}
+
+static void
 level0_memcpy_translate
 (
   gpu_activity_t* ga,
-  level0_data_node_t* c
+  level0_data_node_t* c,
+  uint64_t start,
+  uint64_t end
 )
 {
   ga->kind = GPU_ACTIVITY_MEMCPY;
   ga->details.memcpy.bytes = c->details.memcpy.copy_size;
+  ga->details.memcpy.correlation_id = (uint64_t)(c->event);
 
   // Switch on memory src and dst types
   ga->details.memcpy.copyKind = GPU_MEMCPY_UNK;
@@ -135,6 +153,8 @@ level0_memcpy_translate
     default:
       break;
   }
+  set_gpu_interval(&ga->details.interval, start, end);
+  fprintf(stderr, "gpu activity memcpy %lu %lu\n", start, end);
 }
 
 //*****************************************************************************
@@ -157,16 +177,16 @@ level0_command_begin
       break;
     }
     case LEVEL0_MEMCPY: {
-      fprintf(stderr, "see a memcpy event in level0_command_begin\n");
       ze_memory_type_t src_type = command_node->details.memcpy.src_type;
       ze_memory_type_t dst_type = command_node->details.memcpy.dst_type;
-      if (src_type == ZE_MEMORY_TYPE_HOST && dst_type != ZE_MEMORY_TYPE_HOST) {        
-        gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_copyout);
-      } else if (src_type != ZE_MEMORY_TYPE_HOST && dst_type == ZE_MEMORY_TYPE_HOST) {        
-        gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_copyin);
-      } else {        
+// TODO: Do we need to distinguish copyin and copyout placeholder? We already have host to host, host to device types to distinguish copyin and copyout
+//      if (src_type == ZE_MEMORY_TYPE_HOST && dst_type != ZE_MEMORY_TYPE_HOST) {
+//        gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_copyout);
+//      } else if (src_type != ZE_MEMORY_TYPE_HOST && dst_type == ZE_MEMORY_TYPE_HOST) {
+//        gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_copyin);
+//      } else {
         gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_copy);
-      }
+//      }
       break;
     }
     default:
@@ -204,23 +224,21 @@ level0_command_end
   memset(ga, 0, sizeof(gpu_activity_t));
   switch (command_node->type) {
     case LEVEL0_KERNEL:
-      fprintf(stderr, "see a kernel event in level0_command_end %lu %lu\n", start, end);
-      ga->kind = GPU_ACTIVITY_KERNEL;
+      level0_kernel_translate(ga, command_node, start, end);
       break;
     case LEVEL0_MEMCPY:
-      fprintf(stderr, "see a memcpy event in level0_command_end %lu %lu\n", start, end);
-      level0_memcpy_translate(ga, command_node);      
+      level0_memcpy_translate(ga, command_node, start, end);
       break;
     default:
       break;
   }
-  
-  set_gpu_interval(&ga->details.interval, start, end);
-  ga->details.kernel.correlation_id = correlation_id;
+
   cstack_ptr_set(&(ga->next), 0);
   if (gpu_correlation_id_map_lookup(correlation_id) == NULL) {
     gpu_correlation_id_map_insert(correlation_id, correlation_id);
   }
   gpu_activity_process(&gpu_activity);
-  gpu_correlation_id_map_delete(correlation_id);
+  // gpu_activity_process will delete items in gpu-correlation-id-map
+  // We will need to delete items in gpu-host-correlation-map
+  gpu_host_correlation_map_delete(correlation_id);
 }
