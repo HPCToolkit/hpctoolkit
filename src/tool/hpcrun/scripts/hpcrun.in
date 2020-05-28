@@ -21,6 +21,8 @@ libunwind_dir='@LIBUNWIND_RUN_DIR@'
 papi_libdir='@OPT_PAPI_LIBPATH@'
 perfmon_libdir='@PERFMON_LIB@'
 roctracer_lib_path='@OPT_ROCM@/roctracer/lib'
+gotcha_lib_path='@GOTCHA_LIBDIR@'
+
 
 prog_name=hpcrun
 
@@ -477,7 +479,7 @@ fi
 ulimit -S -c unlimited >/dev/null 2>&1
 
 # laks 2016.10.06: add perfmon directory
-hpc_ld_library_path="${hpcrun_dir}:${papi_libdir}:${ext_dir}:${perfmon_libdir}:${roctracer_lib}"
+hpc_ld_library_path="${hpcrun_dir}:${papi_libdir}:${ext_dir}:${perfmon_libdir}:${roctracer_lib}:${gotcha_lib_path}"
 preload_list="${libmonitor_dir}/libmonitor.so ${preload_list}"
 preload_list="${hpcrun_dir}/libhpcrun.so ${preload_list}"
 

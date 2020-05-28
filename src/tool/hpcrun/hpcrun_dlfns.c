@@ -93,10 +93,14 @@
 // sampling will never be blocked in this case.  But we keep the write
 // locks for the benefit of the fnbounds functions.
 //
+
+#if 0
 static spinlock_t dlopen_lock = SPINLOCK_UNLOCKED;
 static atomic_long dlopen_num_readers = ATOMIC_VAR_INIT(0);
 static volatile long dlopen_num_writers = 0;
 static int  dlopen_writer_tid = -1;
+#endif
+
 static atomic_long num_dlopen_pending = ATOMIC_VAR_INIT(0);
 
 
@@ -107,135 +111,29 @@ hpcrun_dlopen_pending(void)
   return atomic_load_explicit(&num_dlopen_pending, memory_order_relaxed);
 }
 
-
-// Writers always wait until they acquire the lock.  Now allow writers
-// to lock against themselves, but only in the same thread.
-static void
-hpcrun_dlopen_write_lock(void)
-{
-  int tid = monitor_get_thread_num();
-  int acquire = 0;
-
-  do {
-    spinlock_lock(&dlopen_lock);
-    if (dlopen_num_writers == 0 || tid == dlopen_writer_tid) {
-      dlopen_num_writers++;
-      dlopen_writer_tid = tid;
-      acquire = 1;
-    }
-    spinlock_unlock(&dlopen_lock);
-  } while (! acquire);
-
-  // Wait for any readers to finish.
-  if (! ENABLED(DLOPEN_RISKY)) {
-    while (atomic_load_explicit(&dlopen_num_readers, memory_order_relaxed) > 0) ;
-  }
-}
-
-
-static void
-hpcrun_dlopen_write_unlock(void)
-{
-  dlopen_num_writers--;
-}
-
-
-// Downgrade the dlopen lock from a writers lock to a readers lock.
-// Must already hold the writers lock.
-static void
-hpcrun_dlopen_downgrade_lock(void)
-{
-  atomic_fetch_add_explicit(&dlopen_num_readers, 1L, memory_order_relaxed);
-  dlopen_num_writers = 0;
-}
-
-
-// Readers try to acquire a lock, but they don't wait if that fails.
-// As with write_lock, allow read_lock to succeed if the current
-// thread holds the write log.
-//
-// Returns: 1 if acquired, else 0 if not.
-int
-hpcrun_dlopen_read_lock(void)
-{
-  int acquire = 0;
-
-  spinlock_lock(&dlopen_lock);
-  if (dlopen_num_writers == 0
-      || monitor_get_thread_num() == dlopen_writer_tid
-      || ENABLED(DLOPEN_RISKY))
-  {
-    atomic_fetch_add_explicit(&dlopen_num_readers, 1L, memory_order_relaxed);
-    acquire = 1;
-  }
-  spinlock_unlock(&dlopen_lock);
-
-  return (acquire);
-}
-
-
-void
-hpcrun_dlopen_read_unlock(void)
-{
-  atomic_fetch_add_explicit(&dlopen_num_readers, -1L, memory_order_relaxed);
-}
-
-
 void 
 hpcrun_pre_dlopen(const char *path, int flags)
 {
-  hpcrun_dlopen_write_lock();
-  atomic_fetch_add_explicit(&num_dlopen_pending, 1L, memory_order_relaxed);
-  TD_GET(inside_dlfcn) = true;
+    
 }
 
 
-// It's safe to downgrade the lock during fnbounds_map_open_dsos()
-// because it acquires the dl-iterate lock before the fnbounds lock,
-// and that order is consistent with sampling.  Note: can only
-// downgrade the lock on the last (outermost) dlopen.
-//
 void 
 hpcrun_dlopen(const char *module_name, int flags, void *handle)
 {
-  int outermost = (dlopen_num_writers == 1);
-
-  TMSG(LOADMAP, "dlopen: handle = %p, name = %s", handle, module_name);
-  if (outermost) {
-    hpcrun_dlopen_downgrade_lock();
-  }
   fnbounds_map_open_dsos();
-  atomic_fetch_add_explicit(&num_dlopen_pending, -1L, memory_order_relaxed);
-  if (outermost) {
-    TD_GET(inside_dlfcn) = false;
-    hpcrun_dlopen_read_unlock();
-  } else {
-    hpcrun_dlopen_write_unlock();
-  }
 }
 
 
 void
 hpcrun_dlclose(void *handle)
 {
-  hpcrun_dlopen_write_lock();
-  TD_GET(inside_dlfcn) = true;
+
 }
 
-
-// We can't downgrade the lock during fnbounds_unmap_closed_dsos()
-// because it acquires the fnbounds lock before the dl-iterate lock,
-// and that is a LOR with sampling.
-//
 void
 hpcrun_post_dlclose(void *handle, int ret)
-{
-  int outermost = (dlopen_num_writers == 1);
-
+{  
   TMSG(LOADMAP, "dlclose: handle = %p", handle);
   fnbounds_unmap_closed_dsos();
-  if (outermost) {
-    TD_GET(inside_dlfcn) = false;
-  }
-  hpcrun_dlopen_write_unlock();
 }
