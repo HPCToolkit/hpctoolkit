@@ -49,7 +49,7 @@ const char *GPU_ALLOC   = "<gpu alloc>";
 const char *GPU_DELETE  = "<gpu delete>";
 const char *GPU_SYNC    = "<gpu sync>";
 const char *GPU_KERNEL  = "<gpu kernel>";
-const char *GPU_TRACE   = "<gpu kernel>";
+const char *GPU_TRACE   = "<gpu trace>";
 
 const char *NO_ACTIVITY = "<no activity>";
 const char *PARTIAL_CALLPATH = "<partial call paths>";
@@ -162,7 +162,7 @@ static ProcedureMapping typeTable[] = {
   { GPU_DELETE,	        TYPE_PLACE_FOLDER },
   { GPU_SYNC,           TYPE_PLACE_FOLDER }, 
   { GPU_KERNEL,	        TYPE_PLACE_FOLDER }, 
-  { GPU_TRACE,          TYPE_PLACE_FOLDER }
+  { GPU_TRACE,          TYPE_INVISIBLE    }
 };
 
 static NameMappings_t renamingMap;
