@@ -49,15 +49,14 @@ const char *GPU_ALLOC   = "<gpu alloc>";
 const char *GPU_DELETE  = "<gpu delete>";
 const char *GPU_SYNC    = "<gpu sync>";
 const char *GPU_KERNEL  = "<gpu kernel>";
-const char *GPU_TRACE   = "<gpu trace>";
 
 const char *NO_ACTIVITY = "<no activity>";
 const char *PARTIAL_CALLPATH = "<partial call paths>";
 
 const int  TYPE_NORMAL_PROC  = 0;  // nothing special. Default value
-const int  TYPE_PLACE_FOLDER = 1;  // the proc is just a a place holder
+const int  TYPE_PLACEHOLDER  = 1;  // the proc is just a a place holder
 const int  TYPE_ROOT         = 2;  // the proc is a root tyoe, shown in a separate view in hpcviewer
-const int  TYPE_INVISIBLE    = 3;  // the proc shouldn't be shown in hpcviewer at all
+const int  TYPE_ELIDED       = 3;  // the proc shouldn't be shown in hpcviewer at all
 
 //******************************************************************************
 // types
@@ -70,103 +69,70 @@ public:
   }
 };
 
-
-typedef std::map<const char *, const char *, NameMapCompare> NameMappings_t;
-typedef std::map<const char *, int, NameMapCompare>          TypeMappings_t;
-
 typedef struct {
   const char *in;
   const char *out;
-} NameMapping;
 
 /** to map from procedure name to its status  
  *  0: normal procedure
  *  1: place folder
  *  2: invisible 
  **/
-typedef struct {
-  const char *name;
-  const int   type;
-} ProcedureMapping;
+  const int  type;
+} NameMapping;
+
+
+typedef std::map<const char *, NameMapping*, NameMapCompare> NameMappings_t;
+
 
 //******************************************************************************
 // private data
 //******************************************************************************
 
 static NameMapping renamingTable[] = { 
-  { "monitor_main",            PROGRAM_ROOT          },
-  { "monitor_main_fence1",     PROGRAM_ROOT          },
-  { "monitor_main_fence2",     PROGRAM_ROOT          },
-  { "monitor_main_fence3",     PROGRAM_ROOT          },
-  { "monitor_main_fence4",     PROGRAM_ROOT          },
+  { "monitor_main",            PROGRAM_ROOT,     TYPE_PLACEHOLDER   },
+  { "monitor_main_fence1",     PROGRAM_ROOT,     TYPE_PLACEHOLDER   },
+  { "monitor_main_fence2",     PROGRAM_ROOT,     TYPE_PLACEHOLDER   },
+  { "monitor_main_fence3",     PROGRAM_ROOT,     TYPE_PLACEHOLDER   },
+  { "monitor_main_fence4",     PROGRAM_ROOT,     TYPE_PLACEHOLDER   },
  
-  { "monitor_begin_thread",    THREAD_ROOT           },
-  { "monitor_thread_fence1",   THREAD_ROOT           },
-  { "monitor_thread_fence2",   THREAD_ROOT           },
-  { "monitor_thread_fence3",   THREAD_ROOT           },
-  { "monitor_thread_fence4",   THREAD_ROOT           },
+  { "monitor_begin_thread",    THREAD_ROOT,      TYPE_PLACEHOLDER    },
+  { "monitor_thread_fence1",   THREAD_ROOT,      TYPE_PLACEHOLDER    },
+  { "monitor_thread_fence2",   THREAD_ROOT,      TYPE_PLACEHOLDER    },
+  { "monitor_thread_fence3",   THREAD_ROOT,      TYPE_PLACEHOLDER    },
+ 
+  { "monitor_thread_fence4",   THREAD_ROOT,      TYPE_PLACEHOLDER    },
 
-  { "ompt_idle_state",         OMP_IDLE              },
-  { "ompt_overhead_state",     OMP_OVERHEAD          },
-  { "ompt_barrier_wait_state", OMP_BARRIER_WAIT	     },
-  { "ompt_task_wait_state",    OMP_TASK_WAIT	       },
-  { "ompt_mutex_wait_state",   OMP_MUTEX_WAIT	       },
+  { "ompt_idle_state",         OMP_IDLE        , TYPE_PLACEHOLDER   },
+  { "ompt_overhead_state",     OMP_OVERHEAD    , TYPE_PLACEHOLDER   },
+  { "ompt_barrier_wait_state", OMP_BARRIER_WAIT, TYPE_PLACEHOLDER   },
+  { "ompt_task_wait_state",    OMP_TASK_WAIT   , TYPE_PLACEHOLDER   },
+  { "ompt_mutex_wait_state",   OMP_MUTEX_WAIT  , TYPE_PLACEHOLDER   },
 
-  { "ompt_tgt_alloc",          OMP_TGT_ALLOC         },
-  { "ompt_tgt_copyin",         OMP_TGT_COPYIN        },
-  { "ompt_tgt_copyout",        OMP_TGT_COPYOUT       },
-  { "ompt_tgt_delete",         OMP_TGT_DELETE        },
-  { "ompt_tgt_alloc",          OMP_TGT_ALLOC         },
-  { "ompt_tgt_kernel",         OMP_TGT_KERNEL        },
+  { "ompt_tgt_alloc",          OMP_TGT_ALLOC  , TYPE_PLACEHOLDER    },
+  { "ompt_tgt_copyin",         OMP_TGT_COPYIN , TYPE_PLACEHOLDER    },
+  { "ompt_tgt_copyout",        OMP_TGT_COPYOUT, TYPE_PLACEHOLDER    },
+  { "ompt_tgt_delete",         OMP_TGT_DELETE , TYPE_PLACEHOLDER    },
+  { "ompt_tgt_alloc",          OMP_TGT_ALLOC  , TYPE_PLACEHOLDER    },
+  { "ompt_tgt_kernel",         OMP_TGT_KERNEL , TYPE_PLACEHOLDER    },
 
-  { "ompt_region_unresolved",  OMP_REGION_UNR        },
+  { "ompt_region_unresolved",  OMP_REGION_UNR,  TYPE_PLACEHOLDER    },
 
-  { "gpu_op_copy",         GPU_COPY              },
-  { "gpu_op_copyin",       GPU_COPYIN            },
-  { "gpu_op_copyout",      GPU_COPYOUT           },
-  { "gpu_op_alloc",        GPU_ALLOC             },
-  { "gpu_op_delete",       GPU_DELETE            },
-  { "gpu_op_sync",         GPU_SYNC              },
-  { "gpu_op_kernel",       GPU_KERNEL            },
-  { "gpu_op_trace",        GPU_TRACE             },
+  { "gpu_op_copy",         GPU_COPY          ,  TYPE_PLACEHOLDER    },
+  { "gpu_op_copyin",       GPU_COPYIN        ,  TYPE_PLACEHOLDER    },
+  { "gpu_op_copyout",      GPU_COPYOUT       ,  TYPE_PLACEHOLDER    },
+  { "gpu_op_alloc",        GPU_ALLOC         ,  TYPE_PLACEHOLDER    },
+  { "gpu_op_delete",       GPU_DELETE        ,  TYPE_PLACEHOLDER    },
+  { "gpu_op_sync",         GPU_SYNC          ,  TYPE_PLACEHOLDER    },
+  { "gpu_op_kernel",       GPU_KERNEL        ,  TYPE_PLACEHOLDER    },
+  { "gpu_op_trace",        GPU_KERNEL        ,  TYPE_ELIDED         },
 
-  { "hpcrun_no_activity",  NO_ACTIVITY           }
+  { "hpcrun_no_activity",  NO_ACTIVITY       ,  TYPE_ELIDED         },
+  { PARTIAL_CALLPATH,      PARTIAL_CALLPATH  ,  TYPE_PLACEHOLDER    }
 };
 
-
-static ProcedureMapping typeTable[] = {
-  { PROGRAM_ROOT,       TYPE_PLACE_FOLDER }, 
-  { THREAD_ROOT,        TYPE_PLACE_FOLDER }, 
-  { GUARD_NAME,	        TYPE_PLACE_FOLDER }, 
-
-  { NO_ACTIVITY,        TYPE_INVISIBLE    },
-  { PARTIAL_CALLPATH,   TYPE_PLACE_FOLDER },
-
-  { OMP_IDLE,           TYPE_PLACE_FOLDER }, 
-  { OMP_OVERHEAD,       TYPE_PLACE_FOLDER }, 
-  { OMP_BARRIER_WAIT,   TYPE_PLACE_FOLDER }, 
-  { OMP_TASK_WAIT,      TYPE_PLACE_FOLDER }, 
-  { OMP_MUTEX_WAIT,     TYPE_PLACE_FOLDER },
-
-  { OMP_TGT_ALLOC,      TYPE_PLACE_FOLDER }, 
-  { OMP_TGT_COPYIN,     TYPE_PLACE_FOLDER }, 
-  { OMP_TGT_COPYOUT,    TYPE_PLACE_FOLDER }, 
-  { OMP_TGT_DELETE,     TYPE_PLACE_FOLDER },
-  { OMP_TGT_ALLOC,      TYPE_PLACE_FOLDER }, 
-  { OMP_TGT_KERNEL,     TYPE_PLACE_FOLDER },
-
-  { GPU_COPY,           TYPE_PLACE_FOLDER }, 
-  { GPU_COPYIN,	        TYPE_PLACE_FOLDER }, 
-  { GPU_COPYOUT,        TYPE_PLACE_FOLDER }, 
-  { GPU_ALLOC,          TYPE_PLACE_FOLDER }, 
-  { GPU_DELETE,	        TYPE_PLACE_FOLDER },
-  { GPU_SYNC,           TYPE_PLACE_FOLDER }, 
-  { GPU_KERNEL,	        TYPE_PLACE_FOLDER }, 
-  { GPU_TRACE,          TYPE_INVISIBLE    }
-};
 
 static NameMappings_t renamingMap;
-static TypeMappings_t typeProcedureMap;
 
 //******************************************************************************
 // private operations
@@ -181,10 +147,7 @@ normalize_name_load_renamings()
   initialized = 1;
 
   for (unsigned int i=0; i < sizeof(renamingTable)/sizeof(NameMapping); i++) {
-    renamingMap[renamingTable[i].in] =  renamingTable[i].out;
-  }
-  for (unsigned int i=0; i < sizeof(typeTable)/sizeof(ProcedureMapping); i++) {
-    typeProcedureMap[typeTable[i].name] = typeTable[i].type;
+    renamingMap[renamingTable[i].in] =  &renamingTable[i];
   }
 }
 
@@ -198,13 +161,8 @@ normalize_name_rename(const char *in, int &type_procedure)
     
   if (it != renamingMap.end()) {
     // it has to be renamed.
-    name_new = it->second;
-  }
-
-  // here we want to find the type of the procedure 
-  TypeMappings_t::iterator itp = typeProcedureMap.find(name_new);
-  if (itp != typeProcedureMap.end()) {
-    type_procedure = itp->second;
+    name_new = it->second->out;
+    type_procedure = it->second->type;
   }
 
   return name_new;
@@ -230,14 +188,19 @@ const char * tests[] = {
  "foo",
  "monitor_main_fence2",
  "omp_mutex_wait_state",
+ "hpcrun_no_activity",
+ "gpu_op_trace",
  "bar"
 };
 
 main()
 {
   for(int i = 0; i < (sizeof(tests) / sizeof(const char *)); i++) {
+    int type;
+    const char *out = normalize_name(tests[i], type);
     std::cout << "input name = '" << tests[i] 
-              << "', output name = '" <<  normalize_name(tests[i]) 
+              << "', output name = '" <<  out
+              << "', output type = '" <<  type
               << "'" << std::endl;
   }
 }
