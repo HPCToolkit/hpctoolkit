@@ -203,6 +203,7 @@ opencl_buffer_completion_callback
  	opencl_activity_completion_notify();
 	opencl_activity_process(event, act_data);
   }
+  clReleaseEvent(event);
   opencl_free(o);
   opencl_pending_operations_adjust(-1);
 }
