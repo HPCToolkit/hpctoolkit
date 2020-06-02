@@ -84,6 +84,22 @@ level0_commandlist_map_delete
 );
 
 level0_data_node_t*
+level0_commandlist_alloc_kernel
+(
+ ze_kernel_handle_t kernel,
+ ze_event_handle_t event
+);
+
+level0_data_node_t*
+level0_commandlist_alloc_memcpy
+(
+ ze_memory_type_t src_type,
+ ze_memory_type_t dst_type,
+ size_t copy_size,
+ ze_event_handle_t event
+);
+
+level0_data_node_t*
 level0_commandlist_append_kernel
 (
  level0_data_node_t** command_list,

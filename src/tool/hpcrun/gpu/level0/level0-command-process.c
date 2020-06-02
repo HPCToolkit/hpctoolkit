@@ -64,6 +64,9 @@
 //*****************************************************************************
 // macro declarations
 //*****************************************************************************
+#define DEBUG 0
+
+#include "hpcrun/gpu/gpu-print.h"
 
 
 #define CPU_NANOTIME() (usec_time() * 1000)
@@ -95,6 +98,7 @@ level0_memcpy_translate
   uint64_t end
 )
 {
+  PRINT("level0_memcpy_translate: src_type %d, dst_type %d, size %u\n", c->details.memcpy.src_type, c->details.memcpy.dst_type, c->details.memcpy.copy_size);
   ga->kind = GPU_ACTIVITY_MEMCPY;
   ga->details.memcpy.bytes = c->details.memcpy.copy_size;
   ga->details.memcpy.correlation_id = (uint64_t)(c->event);
@@ -154,7 +158,6 @@ level0_memcpy_translate
       break;
   }
   set_gpu_interval(&ga->details.interval, start, end);
-  fprintf(stderr, "gpu activity memcpy %lu %lu\n", start, end);
 }
 
 //*****************************************************************************

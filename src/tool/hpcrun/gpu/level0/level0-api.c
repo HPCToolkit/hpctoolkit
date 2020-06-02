@@ -57,6 +57,7 @@
 #include "level0-command-list-map.h"
 #include "level0-event-map.h"
 #include "level0-command-process.h"
+#include "level0-data-node.h"
 
 #include <hpcrun/main.h>
 #include <hpcrun/sample-sources/libdl.h>
@@ -69,6 +70,9 @@
 //******************************************************************************
 // macros
 //******************************************************************************
+#define DEBUG 0
+
+#include "hpcrun/gpu/gpu-print.h"
 
 #define FORALL_LEVEL0_ROUTINES(macro)			\
   macro(zeInit)   \
@@ -367,7 +371,7 @@ static void OnExitEventPoolCreate(ze_event_pool_create_params_t *params,
 }
 
 static void ProcessEvent(ze_event_handle_t event) {
-  level0_data_node_t* data = level0_event_map_lookup(event);  
+  level0_data_node_t* data = level0_event_map_lookup(event);
   if (data == NULL) return;
 
   // Get ready to query time stamps
@@ -481,12 +485,22 @@ static void OnEnterCommandListAppendMemoryCopy(
   if (HPCRUN_LEVEL0_CALL(zeDriverGetMemAllocProperties, (hDriver, dest_ptr, &property, NULL)) == ZE_RESULT_SUCCESS) {
     dst_type = property.type;
   }
+  PRINT("OnEnterCommandListAppendMemoryCopy: src_type %d, dst_type %d, size %u, command list %p\n", src_type, dst_type, mem_copy_size, (void*)command_list);
 
   // Lookup the command list and append the mempcy to the command list
   level0_data_node_t ** command_list_data_head = level0_commandlist_map_lookup(command_list);
-  level0_data_node_t * data_for_memcpy = level0_commandlist_append_memcpy(command_list_data_head, src_type, dst_type, mem_copy_size, event);
-  // Associate the data entry with the event
-  level0_event_map_insert(event, data_for_memcpy);
+  if (command_list_data_head != NULL) {
+    level0_data_node_t * data_for_memcpy = level0_commandlist_append_memcpy(command_list_data_head, src_type, dst_type, mem_copy_size, event);
+    // Associate the data entry with the event
+    level0_event_map_insert(event, data_for_memcpy);
+  } else {
+    // Cannot find command list.
+    // Meaning this is an immediate command list
+    level0_data_node_t * data_for_memcpy = level0_commandlist_alloc_memcpy(src_type, dst_type, mem_copy_size, event);
+    // Associate the data entry with the event
+    level0_event_map_insert(event, data_for_memcpy);
+    level0_command_begin(data_for_memcpy);
+  }
 }
 
 static void OnEnterCommandListAppendBarrier(
@@ -525,6 +539,7 @@ OnExitCommandListCreate
 )
 {  
   ze_command_list_handle_t handle = **params->pphCommandList;
+  PRINT("OnExitCommandListCreate: command list %p\n", (void*)handle);
   // Record the creation of a command list
   level0_commandlist_map_insert(handle);
 }
@@ -562,6 +577,7 @@ OnEnterCommandQueueExecuteCommandList
   uint32_t i;
   for (i = 0; i < size; ++i) {
     ze_command_list_handle_t command_list_handle = *(params->pphCommandLists[i]);
+    PRINT("OnEnterCommandQueueExecuteCommandList: command list %p\n", (void*)command_list_handle);
     level0_data_node_t ** command_list_head = level0_commandlist_map_lookup(command_list_handle);
     level0_data_node_t * command_node = *command_list_head;
     for (; command_node != NULL; command_node = command_node->next) {      
@@ -580,6 +596,19 @@ static void OnExitCommandListAppendLaunchKernel(
 static void OnExitCommandListAppendMemoryCopy(
     ze_command_list_append_memory_copy_params_t* params,
     ze_result_t result, void* global_data, void** instance_data) {
+  ze_event_handle_t event = *(params->phEvent);
+  ze_command_list_handle_t command_list = *(params->phCommandList);
+  level0_data_node_t ** command_list_data_head = level0_commandlist_map_lookup(command_list);
+  if (command_list_data_head == NULL) {
+    // This is a memcpy to an immediate command list
+
+    // For command in immediate command list,
+    // the ownership of data node belongs to the user, not the command list
+    level0_data_node_t* data_for_memcpy = level0_event_map_lookup(event);
+    ProcessEvent(event);
+    level0_data_node_return_free_list(data_for_memcpy);
+  }
+
   OnExitActivitySubmit(instance_data, result);
 }
 
@@ -587,6 +616,30 @@ static void OnExitCommandListAppendBarrier(
     ze_command_list_append_barrier_params_t* params,
     ze_result_t result, void* global_data, void** instance_data) {
   //OnExitActivitySubmit(instance_data, result);
+}
+
+static void
+OnExitCommandListAppendMemoryFill
+(
+  ze_command_list_append_memory_fill_params_t* params,
+  ze_result_t result,
+  void* pTracerUserData,
+  void** ppTracerInstanceUserData
+)
+{
+  PRINT("Enter unimplemented OnExitCommandListAPpendMemoryFill\n");
+}
+
+static void
+OnExitCommandListAppendMemoryCopyRegion
+(
+  ze_command_list_append_memory_copy_region_params_t* params,
+  ze_result_t result,
+  void* pTracerUserData,
+  void** ppTracerInstanceUserData
+)
+{
+  PRINT("Enter unimplemented OnExitCommandListAppendMemoryCopyRegion\n");
 }
 
 void setup_tracer() {
@@ -615,12 +668,15 @@ void setup_tracer() {
   //epilogue_callbacks.Kernel.pfnDestroyCb = OnExitKernelDestroy;
   epilogue_callbacks.EventPool.pfnCreateCb = OnExitEventPoolCreate;
   epilogue_callbacks.CommandList.pfnCreateCb = OnExitCommandListCreate;
+  //epilogue_callbacks.CommandList.pfnCreateImmediateCb = OnExitCommandListCreate;
   epilogue_callbacks.CommandList.pfnAppendLaunchKernelCb =
     OnExitCommandListAppendLaunchKernel;
   epilogue_callbacks.CommandList.pfnAppendMemoryCopyCb =
     OnExitCommandListAppendMemoryCopy;
   epilogue_callbacks.CommandList.pfnAppendBarrierCb =
     OnExitCommandListAppendBarrier;
+  epilogue_callbacks.CommandList.pfnAppendMemoryFillCb = OnExitCommandListAppendMemoryFill;
+  epilogue_callbacks.CommandList.pfnAppendMemoryCopyRegionCb = OnExitCommandListAppendMemoryCopyRegion;
   HPCRUN_LEVEL0_CALL(zetTracerSetPrologues, (hTracer, &prologue_callbacks));
   HPCRUN_LEVEL0_CALL(zetTracerSetEpilogues, (hTracer, &epilogue_callbacks));
 
