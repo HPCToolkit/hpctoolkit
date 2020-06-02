@@ -236,6 +236,7 @@ static spinlock_t files_lock = SPINLOCK_UNLOCKED;
 static __thread bool cupti_stop_flag = false;
 static __thread bool cupti_runtime_api_flag = false;
 static __thread cct_node_t *cupti_trace_node = NULL;
+static __thread cct_node_t *cupti_metrics_node = NULL;
 
 static bool cupti_correlation_enabled = false;
 static bool cupti_pc_sampling_enabled = false;
@@ -893,6 +894,8 @@ cupti_subscriber_callback
           gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
             gpu_placeholder_type_kernel);
           gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
+            gpu_placeholder_type_metrics);
+          gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
             gpu_placeholder_type_trace);
           is_valid_op = true;
 
@@ -930,9 +933,17 @@ cupti_subscriber_callback
         gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
 
         if (is_kernel_op) {
-          cct_node_t *trace_node = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace);
-          cct_node_t *cct_func = hpcrun_cct_insert_ip_norm(trace_node, func_ip);
-          hpcrun_cct_retain(cct_func);
+          cct_node_t *trace_node = 
+	    gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace);
+          cct_node_t *trace_leaf = 
+	    hpcrun_cct_insert_ip_norm(trace_node, func_ip);
+          hpcrun_cct_retain(trace_leaf);
+
+          cct_node_t *metrics_node = 
+	    gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_metrics);
+          cct_node_t *metrics_leaf = 
+	    hpcrun_cct_insert_ip_norm(metrics_node, func_ip);
+          hpcrun_cct_retain(metrics_leaf);
         }
 
         hpcrun_safe_exit();
@@ -952,6 +963,10 @@ cupti_subscriber_callback
       CUPTI_API_ENTER) {
       if (cupti_trace_node != NULL) {
         cct_node_t *cct_func = hpcrun_cct_insert_ip_norm(cupti_trace_node, func_ip);
+        hpcrun_cct_retain(cct_func);
+      }
+      if (cupti_metrics_node != NULL) {
+        cct_node_t *cct_func = hpcrun_cct_insert_ip_norm(cupti_metrics_node, func_ip);
         hpcrun_cct_retain(cct_func);
       }
     } else if (is_kernel_op && ompt_runtime_api_flag && cd->callbackSite ==
@@ -1082,7 +1097,10 @@ cupti_subscriber_callback
 
         hpcrun_safe_exit();
 
-        cupti_trace_node = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace);
+        cupti_trace_node = 
+	  gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace);
+        cupti_metrics_node = 
+	  gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_metrics);
 
         // Generate notification entry
         uint64_t cpu_submit_time = CPU_NANOTIME();
@@ -1099,6 +1117,7 @@ cupti_subscriber_callback
         TMSG(CUPTI_TRACE, "Runtime pop externalId %lu (cb_id = %u)", correlation_id, cb_id);
 
         cupti_trace_node = NULL;
+        cupti_metrics_node = NULL;
       }
     } else {
       TMSG(CUPTI_TRACE, "Go through runtime with kernel_op %d, valid_op %d, "

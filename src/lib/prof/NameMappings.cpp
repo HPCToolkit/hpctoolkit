@@ -49,6 +49,7 @@ const char *GPU_ALLOC   = "<gpu alloc>";
 const char *GPU_DELETE  = "<gpu delete>";
 const char *GPU_SYNC    = "<gpu sync>";
 const char *GPU_KERNEL  = "<gpu kernel>";
+const char *GPU_METRICS = "<gpu kernel metrics>";
 
 const char *NO_ACTIVITY = "<no activity>";
 const char *PARTIAL_CALLPATH = "<partial call paths>";
@@ -126,6 +127,7 @@ static NameMapping renamingTable[] = {
   { "gpu_op_sync",         GPU_SYNC          ,  TYPE_PLACEHOLDER    },
   { "gpu_op_kernel",       GPU_KERNEL        ,  TYPE_PLACEHOLDER    },
   { "gpu_op_trace",        GPU_KERNEL        ,  TYPE_ELIDED         },
+  { "gpu_op_metrics",      GPU_METRICS       ,  TYPE_PLACEHOLDER    },
 
   { "hpcrun_no_activity",  NO_ACTIVITY       ,  TYPE_ELIDED         },
   { PARTIAL_CALLPATH,      PARTIAL_CALLPATH  ,  TYPE_PLACEHOLDER    }

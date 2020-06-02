@@ -379,18 +379,23 @@ gpu_kernel_process
       gpu_host_correlation_map_lookup(external_id);
 
     if (host_op_entry != NULL) {
-      cct_node_t *func_node = 
-	gpu_host_correlation_map_entry_op_function_get(host_op_entry);
+      cct_node_t *trace_node = 
+	gpu_host_correlation_map_entry_op_function_get(host_op_entry, 
+	gpu_placeholder_type_trace);
       // do not delete it because it shares external_id with activity samples
 
       gpu_trace_item_t entry_trace;
-      trace_item_set(&entry_trace, activity, host_op_entry, func_node);
+      trace_item_set(&entry_trace, activity, host_op_entry, trace_node);
 
       gpu_context_stream_trace
 	(activity->details.kernel.context_id, activity->details.kernel.stream_id,
 	 &entry_trace);
 
-      attribute_activity(host_op_entry, activity, func_node);
+      cct_node_t *metrics_node = 
+	gpu_host_correlation_map_entry_op_function_get(host_op_entry, 
+	gpu_placeholder_type_metrics);
+
+      attribute_activity(host_op_entry, activity, metrics_node);
     }
   } else {
     PRINT("Kernel execution correlation_id %u cannot be found", correlation_id);
@@ -545,11 +550,11 @@ gpu_instruction_process
     gpu_host_correlation_map_entry_t *host_op_entry = 
       gpu_host_correlation_map_lookup(external_id);
     if (host_op_entry != NULL) {
-      // Function node has the start pc of the function
-      cct_node_t *func_node = 
-	gpu_host_correlation_map_entry_op_function_get(host_op_entry);
+      cct_node_t *kernel_placeholder = 
+	gpu_host_correlation_map_entry_op_function_get
+	(host_op_entry, gpu_placeholder_type_kernel);
 
-      cct_node_t *func_ins = hpcrun_cct_insert_ip_norm(func_node, pc);
+      cct_node_t *func_ins = hpcrun_cct_insert_ip_norm(kernel_placeholder, pc);
       attribute_activity(host_op_entry, activity, func_ins);
     }
   }

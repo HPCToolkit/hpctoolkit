@@ -77,7 +77,8 @@ typedef enum gpu_placeholder_type_t {
   gpu_placeholder_type_memset  = 6,
   gpu_placeholder_type_sync    = 7,
   gpu_placeholder_type_trace   = 8,
-  gpu_placeholder_type_count   = 9 
+  gpu_placeholder_type_metrics = 9,
+  gpu_placeholder_type_count   = 10 
 } gpu_placeholder_type_t;
 
 

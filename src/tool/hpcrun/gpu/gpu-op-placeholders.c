@@ -210,6 +210,17 @@ gpu_op_trace
 }
 
 
+void
+gpu_op_metrics
+(
+ void
+)
+{
+  // this function is not meant to be called
+  assert(0);
+}
+
+
 
 //******************************************************************************
 // private operations
@@ -241,6 +252,7 @@ gpu_op_placeholders_init
   gpu_op_placeholder_init(gpu_placeholder_type_memset,  &gpu_op_memset);
   gpu_op_placeholder_init(gpu_placeholder_type_sync,    &gpu_op_sync);
   gpu_op_placeholder_init(gpu_placeholder_type_trace,   &gpu_op_trace);
+  gpu_op_placeholder_init(gpu_placeholder_type_metrics, &gpu_op_metrics);
 }
 
 

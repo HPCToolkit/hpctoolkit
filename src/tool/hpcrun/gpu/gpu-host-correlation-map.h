@@ -146,7 +146,8 @@ gpu_host_correlation_map_entry_op_cct_get
 cct_node_t *
 gpu_host_correlation_map_entry_op_function_get
 (
- gpu_host_correlation_map_entry_t *entry
+ gpu_host_correlation_map_entry_t *entry,
+ gpu_placeholder_type_t ptype
 );
 
 
