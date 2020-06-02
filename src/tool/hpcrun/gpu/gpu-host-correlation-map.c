@@ -319,19 +319,27 @@ gpu_host_correlation_map_entry_op_function_get
 )
 {
   cct_node_t *node = NULL;
-  // TODO: We should not use the child node of the trace; this only applies to
-  // cupti at this point.
   switch(ptype) {
   case gpu_placeholder_type_trace:
   case gpu_placeholder_type_metrics:
     node = entry->gpu_op_ccts.ccts[ptype];
-    node = hpcrun_cct_children(node);
-    break;
+    if (node) {
+      // there is a trace or "kernel metrics" placeholder
+      cct_node_t *children = hpcrun_cct_children(node);
+      if (children) {
+	// if there is a singleton child, it refers to the function
+	node = children;
+      } else {
+	// if no child, use the placeholder itself
+      }
+      break;
+    } else {
+      // fall through and use the placeholder that represents the kernel itself
+    }
   case gpu_placeholder_type_kernel:
     node = entry->gpu_op_ccts.ccts[ptype];
     break;
   default: 
-    // this function should only be invoked for trace or metrics placeholders
     assert(0);
   }
   return node;

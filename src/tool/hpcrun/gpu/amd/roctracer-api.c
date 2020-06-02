@@ -331,6 +331,10 @@ roctracer_subscriber_callback
 
     gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
 				 gpu_placeholder_type_kernel);
+    gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
+				 gpu_placeholder_type_trace);
+    gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
+				 gpu_placeholder_type_metrics);
     is_valid_op = true;
     break;
 
