@@ -321,7 +321,7 @@ gpu_host_correlation_map_entry_op_function_get
   // cupti at this point.
   cct_node_t *trace_node = entry->gpu_op_ccts.ccts[gpu_placeholder_type_trace];
   if (trace_node != NULL) 
-    return hpcrun_cct_children(trace_node);
+    return trace_node;
   else
     return entry->gpu_op_ccts.ccts[gpu_placeholder_type_kernel];
 }
