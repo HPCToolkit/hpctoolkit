@@ -470,7 +470,8 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	ompt/ompt-placeholders.c ompt/ompt-device-map.c \
 	ompt/ompt-task.c ompt/ompt-thread.c syscalls/poll.c \
 	syscalls/ppoll.c syscalls/select.c utilities/executable-path.h \
-	utilities/executable-path.c utilities/ip-normalized.h \
+	utilities/executable-path.c utilities/hpcrun-nanotime.h \
+	utilities/hpcrun-nanotime.c utilities/ip-normalized.h \
 	utilities/ip-normalized.c utilities/line_wrapping.c \
 	utilities/timer.c utilities/tokenize.h utilities/tokenize.c \
 	utilities/unlink.h utilities/unlink.c \
@@ -636,6 +637,7 @@ am__objects_14 = utilities/libhpcrun_la-first_func.lo \
 	ompt/libhpcrun_la-ompt-thread.lo syscalls/libhpcrun_la-poll.lo \
 	syscalls/libhpcrun_la-ppoll.lo syscalls/libhpcrun_la-select.lo \
 	utilities/libhpcrun_la-executable-path.lo \
+	utilities/libhpcrun_la-hpcrun-nanotime.lo \
 	utilities/libhpcrun_la-ip-normalized.lo \
 	utilities/libhpcrun_la-line_wrapping.lo \
 	utilities/libhpcrun_la-timer.lo \
@@ -845,7 +847,8 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	ompt/ompt-placeholders.c ompt/ompt-device-map.c \
 	ompt/ompt-task.c ompt/ompt-thread.c syscalls/poll.c \
 	syscalls/ppoll.c syscalls/select.c utilities/executable-path.h \
-	utilities/executable-path.c utilities/ip-normalized.h \
+	utilities/executable-path.c utilities/hpcrun-nanotime.h \
+	utilities/hpcrun-nanotime.c utilities/ip-normalized.h \
 	utilities/ip-normalized.c utilities/line_wrapping.c \
 	utilities/timer.c utilities/tokenize.h utilities/tokenize.c \
 	utilities/unlink.h utilities/unlink.c \
@@ -1021,6 +1024,7 @@ am__objects_51 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	syscalls/libhpcrun_o-ppoll.$(OBJEXT) \
 	syscalls/libhpcrun_o-select.$(OBJEXT) \
 	utilities/libhpcrun_o-executable-path.$(OBJEXT) \
+	utilities/libhpcrun_o-hpcrun-nanotime.$(OBJEXT) \
 	utilities/libhpcrun_o-ip-normalized.$(OBJEXT) \
 	utilities/libhpcrun_o-line_wrapping.$(OBJEXT) \
 	utilities/libhpcrun_o-timer.$(OBJEXT) \
@@ -1724,7 +1728,8 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	ompt/ompt-placeholders.c ompt/ompt-device-map.c \
 	ompt/ompt-task.c ompt/ompt-thread.c syscalls/poll.c \
 	syscalls/ppoll.c syscalls/select.c utilities/executable-path.h \
-	utilities/executable-path.c utilities/ip-normalized.h \
+	utilities/executable-path.c utilities/hpcrun-nanotime.h \
+	utilities/hpcrun-nanotime.c utilities/ip-normalized.h \
 	utilities/ip-normalized.c utilities/line_wrapping.c \
 	utilities/timer.c utilities/tokenize.h utilities/tokenize.c \
 	utilities/unlink.h utilities/unlink.c $(am__append_8) \
@@ -2439,6 +2444,8 @@ syscalls/libhpcrun_la-select.lo: syscalls/$(am__dirstamp) \
 	syscalls/$(DEPDIR)/$(am__dirstamp)
 utilities/libhpcrun_la-executable-path.lo: utilities/$(am__dirstamp) \
 	utilities/$(DEPDIR)/$(am__dirstamp)
+utilities/libhpcrun_la-hpcrun-nanotime.lo: utilities/$(am__dirstamp) \
+	utilities/$(DEPDIR)/$(am__dirstamp)
 utilities/libhpcrun_la-ip-normalized.lo: utilities/$(am__dirstamp) \
 	utilities/$(DEPDIR)/$(am__dirstamp)
 utilities/libhpcrun_la-line_wrapping.lo: utilities/$(am__dirstamp) \
@@ -3023,6 +3030,8 @@ syscalls/libhpcrun_o-ppoll.$(OBJEXT): syscalls/$(am__dirstamp) \
 syscalls/libhpcrun_o-select.$(OBJEXT): syscalls/$(am__dirstamp) \
 	syscalls/$(DEPDIR)/$(am__dirstamp)
 utilities/libhpcrun_o-executable-path.$(OBJEXT):  \
+	utilities/$(am__dirstamp) utilities/$(DEPDIR)/$(am__dirstamp)
+utilities/libhpcrun_o-hpcrun-nanotime.$(OBJEXT):  \
 	utilities/$(am__dirstamp) utilities/$(DEPDIR)/$(am__dirstamp)
 utilities/libhpcrun_o-ip-normalized.$(OBJEXT):  \
 	utilities/$(am__dirstamp) utilities/$(DEPDIR)/$(am__dirstamp)
@@ -3747,6 +3756,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-pgi-mp_pexit.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_la-executable-path.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_la-first_func.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_la-hpcrun-nanotime.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_la-ip-normalized.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_la-last_func.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_la-line_wrapping.Plo@am__quote@
@@ -3755,6 +3765,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_la-unlink.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_o-executable-path.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_o-first_func.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_o-hpcrun-nanotime.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_o-ip-normalized.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_o-last_func.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_o-line_wrapping.Po@am__quote@
@@ -4734,6 +4745,13 @@ utilities/libhpcrun_la-executable-path.lo: utilities/executable-path.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='utilities/executable-path.c' object='utilities/libhpcrun_la-executable-path.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o utilities/libhpcrun_la-executable-path.lo `test -f 'utilities/executable-path.c' || echo '$(srcdir)/'`utilities/executable-path.c
+
+utilities/libhpcrun_la-hpcrun-nanotime.lo: utilities/hpcrun-nanotime.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT utilities/libhpcrun_la-hpcrun-nanotime.lo -MD -MP -MF utilities/$(DEPDIR)/libhpcrun_la-hpcrun-nanotime.Tpo -c -o utilities/libhpcrun_la-hpcrun-nanotime.lo `test -f 'utilities/hpcrun-nanotime.c' || echo '$(srcdir)/'`utilities/hpcrun-nanotime.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) utilities/$(DEPDIR)/libhpcrun_la-hpcrun-nanotime.Tpo utilities/$(DEPDIR)/libhpcrun_la-hpcrun-nanotime.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='utilities/hpcrun-nanotime.c' object='utilities/libhpcrun_la-hpcrun-nanotime.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o utilities/libhpcrun_la-hpcrun-nanotime.lo `test -f 'utilities/hpcrun-nanotime.c' || echo '$(srcdir)/'`utilities/hpcrun-nanotime.c
 
 utilities/libhpcrun_la-ip-normalized.lo: utilities/ip-normalized.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT utilities/libhpcrun_la-ip-normalized.lo -MD -MP -MF utilities/$(DEPDIR)/libhpcrun_la-ip-normalized.Tpo -c -o utilities/libhpcrun_la-ip-normalized.lo `test -f 'utilities/ip-normalized.c' || echo '$(srcdir)/'`utilities/ip-normalized.c
@@ -6862,6 +6880,20 @@ utilities/libhpcrun_o-executable-path.obj: utilities/executable-path.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='utilities/executable-path.c' object='utilities/libhpcrun_o-executable-path.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o utilities/libhpcrun_o-executable-path.obj `if test -f 'utilities/executable-path.c'; then $(CYGPATH_W) 'utilities/executable-path.c'; else $(CYGPATH_W) '$(srcdir)/utilities/executable-path.c'; fi`
+
+utilities/libhpcrun_o-hpcrun-nanotime.o: utilities/hpcrun-nanotime.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT utilities/libhpcrun_o-hpcrun-nanotime.o -MD -MP -MF utilities/$(DEPDIR)/libhpcrun_o-hpcrun-nanotime.Tpo -c -o utilities/libhpcrun_o-hpcrun-nanotime.o `test -f 'utilities/hpcrun-nanotime.c' || echo '$(srcdir)/'`utilities/hpcrun-nanotime.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) utilities/$(DEPDIR)/libhpcrun_o-hpcrun-nanotime.Tpo utilities/$(DEPDIR)/libhpcrun_o-hpcrun-nanotime.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='utilities/hpcrun-nanotime.c' object='utilities/libhpcrun_o-hpcrun-nanotime.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o utilities/libhpcrun_o-hpcrun-nanotime.o `test -f 'utilities/hpcrun-nanotime.c' || echo '$(srcdir)/'`utilities/hpcrun-nanotime.c
+
+utilities/libhpcrun_o-hpcrun-nanotime.obj: utilities/hpcrun-nanotime.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT utilities/libhpcrun_o-hpcrun-nanotime.obj -MD -MP -MF utilities/$(DEPDIR)/libhpcrun_o-hpcrun-nanotime.Tpo -c -o utilities/libhpcrun_o-hpcrun-nanotime.obj `if test -f 'utilities/hpcrun-nanotime.c'; then $(CYGPATH_W) 'utilities/hpcrun-nanotime.c'; else $(CYGPATH_W) '$(srcdir)/utilities/hpcrun-nanotime.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) utilities/$(DEPDIR)/libhpcrun_o-hpcrun-nanotime.Tpo utilities/$(DEPDIR)/libhpcrun_o-hpcrun-nanotime.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='utilities/hpcrun-nanotime.c' object='utilities/libhpcrun_o-hpcrun-nanotime.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o utilities/libhpcrun_o-hpcrun-nanotime.obj `if test -f 'utilities/hpcrun-nanotime.c'; then $(CYGPATH_W) 'utilities/hpcrun-nanotime.c'; else $(CYGPATH_W) '$(srcdir)/utilities/hpcrun-nanotime.c'; fi`
 
 utilities/libhpcrun_o-ip-normalized.o: utilities/ip-normalized.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT utilities/libhpcrun_o-ip-normalized.o -MD -MP -MF utilities/$(DEPDIR)/libhpcrun_o-ip-normalized.Tpo -c -o utilities/libhpcrun_o-ip-normalized.o `test -f 'utilities/ip-normalized.c' || echo '$(srcdir)/'`utilities/ip-normalized.c
