@@ -57,6 +57,7 @@ const int  TYPE_NORMAL_PROC  = 0;  // nothing special. Default value
 const int  TYPE_PLACEHOLDER  = 1;  // the proc is just a a place holder
 const int  TYPE_ROOT         = 2;  // the proc is a root tyoe, shown in a separate view in hpcviewer
 const int  TYPE_ELIDED       = 3;  // the proc shouldn't be shown in hpcviewer at all
+const int  TYPE_TOPDOWN_PLACEHOLDER  = 4;  // special place holder for top-down tree only.
 
 //******************************************************************************
 // types
@@ -90,18 +91,18 @@ typedef std::map<const char *, NameMapping*, NameMapCompare> NameMappings_t;
 //******************************************************************************
 
 static NameMapping renamingTable[] = { 
-  { "monitor_main",            PROGRAM_ROOT,     TYPE_PLACEHOLDER   },
-  { "monitor_main_fence1",     PROGRAM_ROOT,     TYPE_PLACEHOLDER   },
-  { "monitor_main_fence2",     PROGRAM_ROOT,     TYPE_PLACEHOLDER   },
-  { "monitor_main_fence3",     PROGRAM_ROOT,     TYPE_PLACEHOLDER   },
-  { "monitor_main_fence4",     PROGRAM_ROOT,     TYPE_PLACEHOLDER   },
+  { "monitor_main",            PROGRAM_ROOT,     TYPE_TOPDOWN_PLACEHOLDER },
+  { "monitor_main_fence1",     PROGRAM_ROOT,     TYPE_TOPDOWN_PLACEHOLDER },
+  { "monitor_main_fence2",     PROGRAM_ROOT,     TYPE_TOPDOWN_PLACEHOLDER },
+  { "monitor_main_fence3",     PROGRAM_ROOT,     TYPE_TOPDOWN_PLACEHOLDER },
+  { "monitor_main_fence4",     PROGRAM_ROOT,     TYPE_TOPDOWN_PLACEHOLDER },
  
-  { "monitor_begin_thread",    THREAD_ROOT,      TYPE_PLACEHOLDER    },
-  { "monitor_thread_fence1",   THREAD_ROOT,      TYPE_PLACEHOLDER    },
-  { "monitor_thread_fence2",   THREAD_ROOT,      TYPE_PLACEHOLDER    },
-  { "monitor_thread_fence3",   THREAD_ROOT,      TYPE_PLACEHOLDER    },
+  { "monitor_begin_thread",    THREAD_ROOT,      TYPE_TOPDOWN_PLACEHOLDER },
+  { "monitor_thread_fence1",   THREAD_ROOT,      TYPE_TOPDOWN_PLACEHOLDER },
+  { "monitor_thread_fence2",   THREAD_ROOT,      TYPE_TOPDOWN_PLACEHOLDER },
+  { "monitor_thread_fence3",   THREAD_ROOT,      TYPE_TOPDOWN_PLACEHOLDER },
  
-  { "monitor_thread_fence4",   THREAD_ROOT,      TYPE_PLACEHOLDER    },
+  { "monitor_thread_fence4",   THREAD_ROOT,      TYPE_TOPDOWN_PLACEHOLDER },
 
   { "ompt_idle_state",         OMP_IDLE        , TYPE_PLACEHOLDER   },
   { "ompt_overhead_state",     OMP_OVERHEAD    , TYPE_PLACEHOLDER   },
