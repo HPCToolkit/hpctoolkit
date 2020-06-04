@@ -377,19 +377,18 @@ gpu_kernel_process
       gpu_host_correlation_map_lookup(external_id);
 
     if (host_op_entry != NULL) {
-      cct_node_t *func_node = 
+      cct_node_t *func_ph = 
         gpu_host_correlation_map_entry_op_function_get(host_op_entry);
       // do not delete it because it shares external_id with activity samples
 
-      cct_node_t *cct_child = hpcrun_cct_children(func_node);
-      if (cct_child == NULL) {
-        // In case the kernel node does not have a child.
-        // e.g. failed to interpret the cubin function address
-        cct_child = func_node;
+      cct_node_t *func_node = hpcrun_leftmost_child(func_ph);
+      if (func_node == NULL) {
+	// in case placeholder doesn't have a child
+        func_node = func_ph;
       }
 
       gpu_trace_item_t entry_trace;
-      trace_item_set(&entry_trace, activity, host_op_entry, cct_child);
+      trace_item_set(&entry_trace, activity, host_op_entry, func_node);
 
       gpu_context_stream_trace
         (activity->details.kernel.context_id, activity->details.kernel.stream_id,
@@ -490,10 +489,14 @@ gpu_cdpkernel_process
     gpu_host_correlation_map_entry_t *host_op_entry =
       gpu_host_correlation_map_lookup(external_id);
     if (host_op_entry != NULL) {
-      cct_node_t *host_op_node =
-        gpu_host_correlation_map_entry_op_cct_get(host_op_entry, 
-          gpu_placeholder_type_trace);
-      cct_node_t *func_node = hpcrun_cct_children(host_op_node);
+      cct_node_t *func_ph =
+        gpu_host_correlation_map_entry_op_function_get(host_op_entry);
+
+      cct_node_t *func_node = hpcrun_leftmost_child(func_ph);
+      if (func_node == NULL) {
+	// in case placeholder doesn't have a child
+	func_node = func_ph;
+      }
 
       gpu_trace_item_t entry_trace;
       trace_item_set(&entry_trace, activity, host_op_entry, func_node);
@@ -550,11 +553,10 @@ gpu_instruction_process
     gpu_host_correlation_map_entry_t *host_op_entry = 
       gpu_host_correlation_map_lookup(external_id);
     if (host_op_entry != NULL) {
-      // Function node has the start pc of the function
-      cct_node_t *func_node = 
+      cct_node_t *func_ph = 
         gpu_host_correlation_map_entry_op_function_get(host_op_entry);
 
-      cct_node_t *func_ins = hpcrun_cct_insert_ip_norm(func_node, pc);
+      cct_node_t *func_ins = hpcrun_cct_insert_ip_norm(func_ph, pc);
       attribute_activity(host_op_entry, activity, func_ins);
     }
   }
