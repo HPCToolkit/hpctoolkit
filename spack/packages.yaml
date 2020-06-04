@@ -17,7 +17,18 @@
 #    https://spack.readthedocs.io/en/latest/basic_usage.html#specs-dependencies
 #    https://spack.readthedocs.io/en/latest/build_settings.html
 #
+#  Last revised: June 3, 2020.
+#
 packages:
+
+  # If you want to build for a generic target instead of a specific
+  # micro-architecture, then you can set that here.  This would be
+  # useful for a shared install acrosss multiple machine types.
+  # generic families: aarch64, ppc64, ppc64le, x86_64
+  #
+  # all:
+  #   target: [x86_64]
+
 
   #------------------------------------------------------------
   # 1 -- HPCToolkit Prerequisite Packages
@@ -217,7 +228,7 @@ packages:
   # Note: add +bgq on blue gene/q.
   #
   libmonitor:
-    version:  [2018.07.18, master]
+    version:  [2019.05.31, master]
     variants: +hpctoolkit
 
 
