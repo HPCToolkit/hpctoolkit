@@ -18,6 +18,14 @@
 // interface operations
 //******************************************************************************
 
-const char *normalize_name(const char *in, bool &fake_procedured);
+
+/**
+ * Get the normalized name, and retrieve the type of the procedure
+ * 
+ * Possible values of Type of procedures:
+    const int  TYPE_PLACE_FOLDER = 1;
+    const int  TYPE_INVISIBLE    = 2;
+ **/ 
+const char *normalize_name(const char *in, int &type_procedure);
 
 #endif

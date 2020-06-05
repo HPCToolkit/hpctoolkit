@@ -165,7 +165,7 @@ name ## _metric_kind
    hpcrun_set_display(APPLY(METRIC_ID,CURRENT_METRIC)[index], 0);
 
 #define DIVISION_FORMULA(name) \
-  hpcrun_set_display(METRIC_ID(name ## _ACUMU), 0); \
+  hpcrun_set_display(METRIC_ID(name ## _ACUMU), HPCRUN_FMT_METRIC_INVISIBLE); \
   hpcrun_set_percent(METRIC_ID(name), 0); \
   hpcrun_set_display(METRIC_ID(name), HPCRUN_FMT_METRIC_SHOW_EXCLUSIVE); \
   reg_metric  = hpcrun_id2metric_linked(METRIC_ID(name)); \
