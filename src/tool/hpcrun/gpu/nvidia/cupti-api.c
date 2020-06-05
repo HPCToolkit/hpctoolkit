@@ -579,8 +579,10 @@ cupti_error_callback_dummy // __attribute__((unused))
  const char *error_string
 )
 {
-  ETMSG(CUPTI, "%s: function %s failed with error %s", type, fn, error_string);
-  exit(-1);
+  
+  EEMSG("FATAL: hpcrun failure: failure type = %s, "
+	"function %s failed with error %s", type, fn, error_string);
+  exit(1);
 }
 
 
