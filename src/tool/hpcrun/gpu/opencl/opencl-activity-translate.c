@@ -139,6 +139,7 @@ convert_kernel_launch
   ETMSG(CL, "Saving kernel data to gpu_activity_t");
   ga->kind = GPU_ACTIVITY_KERNEL;
   opencl_object_t *p = opencl_malloc();
+  p->kind = OPENCL_PROFILING_DATA;
   profilingData_t* pd = &(p->details.pd);
   getTimingInfoFromClEvent(pd, event);
   gpu_kernel_t kernel_data;
@@ -162,6 +163,7 @@ convert_memcpy
 {
   cl_memory_callback_t* memory_cb_data = (cl_memory_callback_t*)user_data;
   opencl_object_t *p = opencl_malloc();
+  p->kind = OPENCL_PROFILING_DATA;
   profilingData_t* pd = &(p->details.pd);
   getTimingInfoFromClEvent(pd, event);
   getMemoryProfileInfo(pd, memory_cb_data);

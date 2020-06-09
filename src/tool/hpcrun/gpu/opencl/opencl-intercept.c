@@ -156,8 +156,11 @@ clEnqueueNDRangeKernel_wrapper
   kernel_info->kind = OPENCL_KERNEL_CALLBACK;
   cl_kernel_callback_t *kernel_cb = &(kernel_info->details.ker_cb);
   initializeKernelCallBackInfo(kernel_cb, correlation_id);
-  if(!event) {
+  if (!event) {
+    kernel_info->isInternalClEvent = true;
     event = &(kernel_info->event);
+  } else {
+    kernel_info->isInternalClEvent = false;
   }
   clkernel_t clEnqueueNDRangeKernel_wrappee = GOTCHA_GET_TYPED_WRAPPEE(clEnqueueNDRangeKernel_handle, clkernel_t);
   cl_int return_status = clEnqueueNDRangeKernel_wrappee(command_queue, ocl_kernel, work_dim, global_work_offset, global_work_size, local_work_size, num_events_in_wait_list, event_wait_list, event);
@@ -187,8 +190,11 @@ clEnqueueReadBuffer_wrapper
   mem_info->kind = OPENCL_MEMORY_CALLBACK;
   cl_memory_callback_t *mem_transfer_cb = &(mem_info->details.mem_cb);
   initializeMemoryCallBackInfo(mem_transfer_cb, correlation_id, cb, false);
-  if(!event) {
+  if (!event) {
+    mem_info->isInternalClEvent = true;
     event = &(mem_info->event);
+  } else {
+    mem_info->isInternalClEvent = false;
   }
   clreadbuffer_t clEnqueueReadBuffer_wrappee = GOTCHA_GET_TYPED_WRAPPEE(clEnqueueReadBuffer_handle, clreadbuffer_t);
   cl_int return_status = clEnqueueReadBuffer_wrappee(command_queue, buffer, blocking_read, offset, cb, ptr, num_events_in_wait_list, event_wait_list, event);
@@ -219,8 +225,11 @@ clEnqueueWriteBuffer_wrapper
   mem_info->kind = OPENCL_MEMORY_CALLBACK;
   cl_memory_callback_t *mem_transfer_cb = &(mem_info->details.mem_cb);
   initializeMemoryCallBackInfo(mem_transfer_cb, correlation_id, cb, true);
-  if(!event) {
+  if (!event) {
+    mem_info->isInternalClEvent = true;
     event = &(mem_info->event);
+  } else {
+    mem_info->isInternalClEvent = false;
   }
   clwritebuffer_t clEnqueueWriteBuffer_wrappee = GOTCHA_GET_TYPED_WRAPPEE(clEnqueueWriteBuffer_handle, clwritebuffer_t);
   cl_int return_status = clEnqueueWriteBuffer_wrappee(command_queue, buffer, blocking_write, offset, cb, ptr, num_events_in_wait_list, event_wait_list, event);
