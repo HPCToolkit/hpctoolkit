@@ -99,7 +99,7 @@ static void
 METHOD_FN(thread_fini_action)
 {
   TMSG(CL, "thread_fini_action");
-  opencl_api_finalize();
+  opencl_api_finalize(NULL);
 }
 
 
