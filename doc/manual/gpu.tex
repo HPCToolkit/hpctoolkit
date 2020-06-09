@@ -23,7 +23,7 @@ HPCToolkit supports two levels of performance monitoring for NVIDIA GPUs: coarse
 While performing coarse-grain GPU monitoring of kernel executions, memory copies, and other GPU activities, HPCToolkit will collect a trace of activity for each GPU stream if tracing is enabled. Table~\ref{nvidia-monitoring-options} shows the possible command-line arguments to \hpcrun{} that will enable different levels of monitoring  for NVIDIA GPUs. When fine-grain monitoring using PC sampling is enabled, coarse-grain profiling is also performed, so tracing is available in this mode as well.
 
 Coarse-grain profiling attributes to each calling context the total time of all GPU operations initiated in that context. Table~\ref
-{table:gtimes} shows the classes of GPU operations for which timings are collected. In addition, HPCToolkit records metrics for  operations performed including memory allocation and deallocation (Table~\ref{table:gmem}), memory set (Table~\ref{table:gmset}), explicit memory copies (Table~\ref{table:gxcopy}), and synchronization (Table~\ref{table:gsync}). In addition, HPCToolkit reports GPU kernel characteristics, including including register usage, as shown in Table~\ref{table:gker}.
+{table:gtimes} shows the classes of GPU operations for which timings are collected. In addition, HPCToolkit records metrics for  operations performed including memory allocation and deallocation (Table~\ref{table:gmem}), memory set (Table~\ref{table:gmset}), explicit memory copies (Table~\ref{table:gxcopy}), and synchronization (Table~\ref{table:gsync}). In addition, HPCToolkit reports GPU kernel characteristics, including including register usage,  thread count per block, and theoretical occupancy as shown in Table~\ref{table:gker}. NVIDIA defines theoretical occupancy as the ratio of the active threads in a streaming multiprocessor to the maximum active threads supported by the hardware in one streaming multiprocessor.
 
 \begin{table}[t]
 \centering
@@ -42,10 +42,10 @@ Argument to \hpcrun{} & What is monitored\\\hline\hline
 \centering
 \begin{tabular}{|l|l|}\hline
 Metric & Description\\\hline\hline
- GKER (sec)  &  GPU time: kernel execution (seconds)  \\\hline 
-  GMEM (sec)  &  GPU time: memory allocation/deallocation (seconds)  \\\hline 
-  GMSET (sec)  &  GPU time: memory set (seconds)  \\\hline 
-  GXCOPY (sec)  &  GPU time: explicit data copy (seconds)  \\\hline 
+ GKER (s)  &  GPU time: kernel execution (seconds)  \\\hline 
+  GMEM (s)  &  GPU time: memory allocation/deallocation (seconds)  \\\hline 
+  GMSET (s)  &  GPU time: memory set (seconds)  \\\hline 
+  GXCOPY (s)  &  GPU time: explicit data copy (seconds)  \\\hline 
 % GICOPY (sec)  &  GPU time: implicit data copy (seconds)  \\\hline 
   GSYNC (sec)  &  GPU time: synchronization (seconds)  \\\hline 
 \end{tabular}
@@ -141,7 +141,7 @@ GKER:THR\_REG & GPU kernel: thread register count    \\\hline
 GKER:BLK\_THR & GPU kernel: thread count   \\\hline
 GKER:BLK\_SM (B) & GPU kernel: block local memory (bytes)   \\\hline
 GKER:COUNT & GPU kernel: launch count   \\\hline
-GKER:OCC & GPU kernel: occupancy    \\\hline
+GKER:OCC\_THR & GPU kernel: theoretical occupancy    \\\hline
 \end{tabular}
 \caption{GPU kernel characteristic metrics.}
 \label{table:gker}
@@ -218,7 +218,7 @@ Metric & Description\\\hline\hline
 
 
 At present, using NVIDIA's CUPTI library adds substantial measurement overhead.  Unlike CPU monitoring based on asynchronous sampling, GPU performance monitoring uses vendor-provided callback interfaces to intercept the initiation of each GPU operation. Accordingly,  the overhead of GPU performance monitoring depends upon how frequently GPU operations are initiated. 
-In our experience to date, profiling (and if requested, tracing) on NVIDIA GPUs using NVIDIA's CUPTI interface roughly doubles the execution time of a GPU-accelerated application. In our experience, we have seen NVIDIA's PC sampling dilate the execution time of a GPU-accelerated program by $30\times$. The overhead of GPU monitoring is principally on the host side. As measured by CUPTI, the time spent in GPU operations or PC samples are expected to be relatively accurate. However, since execution as a whole is slowed while measuring GPU performance, when evaluating GPU activity reported by HPCToolkit, one must be careful.
+In our experience to date, profiling (and if requested, tracing) on NVIDIA GPUs using NVIDIA's CUPTI interface roughly doubles the execution time of a GPU-accelerated application. In our experience, we have seen NVIDIA's PC sampling dilate the execution time of a GPU-accelerated program by $30\times$. The overhead of GPU monitoring is principally on the host side. As measured by CUPTI, the time spent in GPU operations or PC samples is expected to be relatively accurate. However, since execution as a whole is slowed while measuring GPU performance, when evaluating GPU activity reported by HPCToolkit, one must be careful.
 
 For instance, if a GPU-accelerated program runs in 1000 seconds without HPCToolkit monitoring GPU activity but slows to 2000 seconds when GPU profiling and tracing is enabled, then if GPU profiles and traces show that the GPU is active for 25\% of the execution time, one should  re-scale the accurate measurements of GPU activity by considering the $2\times$ dilation when monitoring GPU activity. Without monitoring, one would expect the same level of GPU activity, but the host time would be twice as fast. Thus, without monitoring, the ratio of GPU activity to host activity would be roughly double.
  
@@ -426,6 +426,6 @@ At present, ROC-tracer lacks support for fine-grain performance measurement of G
 
 \section{Intel GPUs}
 
-HPCToolkit does not yet support measurement and analysis of performance on Intel GPUs.
+The released version of HPCToolkit does not yet support measurement and analysis of performance on Intel GPUs. A development branch supports measurement of GPU computations launched on Intel GPUs using OpenCL or Intel's new Level 0 runtime. A release of these capabilities if forthcoming.
 
 
