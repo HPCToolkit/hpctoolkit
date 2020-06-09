@@ -77,7 +77,6 @@
 //***************************************************************************
 
 #include <lib/prof-lean/spinlock.h>
-#include <lib/prof-lean/usec_time.h>
 
 #include <hpcrun/files.h>
 #include <hpcrun/hpcrun_stats.h>
@@ -95,6 +94,8 @@
 
 #include <hpcrun/sample-sources/libdl.h>
 #include <hpcrun/sample-sources/nvidia.h>
+
+#include <hpcrun/utilities/hpcrun-nanotime.h>
 
 #include "cuda-api.h"
 #include "cupti-api.h"
@@ -142,15 +143,12 @@
   macro(cuptiActivityPopExternalCorrelationId)   \
   macro(cuptiActivityPushExternalCorrelationId)  \
   macro(cuptiActivityRegisterCallbacks)          \
-  macro(cuptiDeviceGetTimestamp)                 \
+  macro(cuptiGetTimestamp)                       \
   macro(cuptiEnableDomain)                       \
   macro(cuptiFinalize)                           \
   macro(cuptiGetResultString)                    \
   macro(cuptiSubscribe)                          \
   macro(cuptiUnsubscribe)
-
-#define CPU_NANOTIME() (usec_time() * 1000)
-
 
 
 
@@ -382,9 +380,8 @@ CUPTI_FN
 
 CUPTI_FN
 (
- cuptiDeviceGetTimestamp,
+ cuptiGetTimestamp,
  (
-  CUcontext context,
   uint64_t *timestamp
  )
 );
@@ -938,7 +935,7 @@ cupti_subscriber_callback
         hpcrun_safe_exit();
 
         // Generate notification entry
-        uint64_t cpu_submit_time = CPU_NANOTIME();
+        uint64_t cpu_submit_time = hpcrun_nanotime();
         gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts,
           cpu_submit_time);
 
@@ -1085,7 +1082,7 @@ cupti_subscriber_callback
         cupti_trace_node = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace);
 
         // Generate notification entry
-        uint64_t cpu_submit_time = CPU_NANOTIME();
+        uint64_t cpu_submit_time = hpcrun_nanotime();
         gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts,
           cpu_submit_time);
 
@@ -1120,7 +1117,7 @@ cupti_device_timestamp_get
  uint64_t *time
 )
 {
-  HPCRUN_CUPTI_CALL(cuptiDeviceGetTimestamp, (context, time));
+  HPCRUN_CUPTI_CALL(cuptiGetTimestamp, (time));
 }
 
 

@@ -44,47 +44,45 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+//*****************************************************************************
+// system includes
+//*****************************************************************************
 
-//*********************************************************************
+#include <time.h>
+#include <assert.h>
+
+
+//*****************************************************************************
 // local includes
-//*********************************************************************
+//*****************************************************************************
 
-#include <loadmap.h>
-
-//*********************************************************************
-
-int
-fnbounds_init();
-
-// fnbounds_enclosing_addr(): Given an instruction pointer (IP) 'ip',
-// return the bounds [start, end) of the function that contains 'ip'.
-// Also return the load module that contains 'ip' to make
-// normalization easy.  All IPs are *unnormalized.*
-bool
-fnbounds_enclosing_addr(void *ip, void **start, void **end, load_module_t **lm);
-
-void
-fnbounds_map_open_dsos();
-
-void
-fnbounds_unmap_closed_dsos();
-
-bool
-fnbounds_ensure_mapped_dso(const char *module_name, void *start, void *end, struct dl_phdr_info*);
-
-void
-fnbounds_fini();
-
-void
-fnbounds_release_lock(void);
+#include "hpcrun-nanotime.h"
 
 
-// fnbounds_table_lookup(): Given an instruction pointer (IP) 'ip',
-// return the bounds [start, end) of the function that contains 'ip'.
-// All IPs are *normalized.*
-int
-fnbounds_table_lookup(void **table, int length, void *ip,
-		      void **start, void **end);
+
+//*****************************************************************************
+// macros
+//*****************************************************************************
+
+#define NS_PER_SEC 1000000000
 
 
-#include "fnbounds_table_interface.h"
+//*****************************************************************************
+//*****************************************************************************
+// interface operations
+//*****************************************************************************
+
+uint64_t
+hpcrun_nanotime()
+{
+  struct timespec now;
+
+  int res = clock_gettime(CLOCK_REALTIME, &now);
+
+  assert(res == 0);
+
+  uint64_t now_sec = now.tv_sec;
+  uint64_t now_ns = now_sec * NS_PER_SEC + now.tv_nsec;
+
+  return now_ns;
+}

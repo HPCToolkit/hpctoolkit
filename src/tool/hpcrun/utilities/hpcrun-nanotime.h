@@ -44,47 +44,26 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#ifndef __hpcrun_nanotime_h__
+#define __hpcrun_nanotime_h__
 
-//*********************************************************************
-// local includes
-//*********************************************************************
+//*****************************************************************************
+// system includes
+//*****************************************************************************
 
-#include <loadmap.h>
-
-//*********************************************************************
-
-int
-fnbounds_init();
-
-// fnbounds_enclosing_addr(): Given an instruction pointer (IP) 'ip',
-// return the bounds [start, end) of the function that contains 'ip'.
-// Also return the load module that contains 'ip' to make
-// normalization easy.  All IPs are *unnormalized.*
-bool
-fnbounds_enclosing_addr(void *ip, void **start, void **end, load_module_t **lm);
-
-void
-fnbounds_map_open_dsos();
-
-void
-fnbounds_unmap_closed_dsos();
-
-bool
-fnbounds_ensure_mapped_dso(const char *module_name, void *start, void *end, struct dl_phdr_info*);
-
-void
-fnbounds_fini();
-
-void
-fnbounds_release_lock(void);
+#include <stdint.h>
 
 
-// fnbounds_table_lookup(): Given an instruction pointer (IP) 'ip',
-// return the bounds [start, end) of the function that contains 'ip'.
-// All IPs are *normalized.*
-int
-fnbounds_table_lookup(void **table, int length, void *ip,
-		      void **start, void **end);
+
+//*****************************************************************************
+// interface operations
+//*****************************************************************************
+
+uint64_t
+hpcrun_nanotime
+(
+  void
+);
 
 
-#include "fnbounds_table_interface.h"
+#endif

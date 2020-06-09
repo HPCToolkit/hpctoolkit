@@ -2,6 +2,9 @@
 
 // * BeginRiceCopyright *****************************************************
 //
+// $HeadURL$
+// $Id$
+//
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
 //
@@ -41,295 +44,118 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef cupti_api_h
-#define cupti_api_h
-
-
-
-//******************************************************************************
-// nvidia includes
-//******************************************************************************
-
-#include <cupti.h>
-
-
-
-//******************************************************************************
-// constants
-//******************************************************************************
-
-extern CUpti_ActivityKind
-external_correlation_activities[];
-
-extern CUpti_ActivityKind
-data_motion_explicit_activities[];
-
-extern CUpti_ActivityKind
-data_motion_implicit_activities[];
-
-extern CUpti_ActivityKind
-kernel_invocation_activities[];
-
-extern CUpti_ActivityKind
-kernel_execution_activities[];
-
-extern CUpti_ActivityKind
-driver_activities[];
-
-extern CUpti_ActivityKind
-runtime_activities[];
-
-extern CUpti_ActivityKind
-overhead_activities[];
-
-typedef enum {
-  cupti_set_all = 1,
-  cupti_set_some = 2,
-  cupti_set_none = 3
-} cupti_set_status_t;
+//------------------------------------------------------------------------------
+// File: select.c 
+//  
+// Purpose: 
+//   wrapper for libc select. if select returns a -1 because it was
+//   interrupted, assume the interrupt was from asynchronous sampling
+//   caused by hpcrun and restart. 
+//
+// Note:
+//   The kernel automatically updates the timout parameter for select(),
+//   but not for poll(), ppoll() or pselect().
+//------------------------------------------------------------------------------
 
 
 //******************************************************************************
-// interface functions
+// system includes
 //******************************************************************************
 
-int
-cupti_bind
-(
- void
-);
-
-
-void
-cupti_activity_process
-(
- CUpti_Activity *activity
-);
-
-
-void 
-cupti_buffer_alloc 
-(
- uint8_t **buffer, 
- size_t *buffer_size, 
- size_t *maxNumRecords
-);
-
-
-void
-cupti_callbacks_subscribe
-(
- void
-);
-
-
-void
-cupti_callbacks_unsubscribe
-(
- void
-);
-
-
-void
-cupti_correlation_enable
-(
- void
-);
-
-
-void
-cupti_correlation_disable
-(
- void
-);
-
-
-void
-cupti_pc_sampling_enable
-(
- CUcontext context,
- int frequency 
-);
-
-
-void
-cupti_pc_sampling_disable
-(
- CUcontext context
-);
-
-
-cupti_set_status_t 
-cupti_monitoring_set
-(
- const  CUpti_ActivityKind activity_kinds[],
- bool enable
-);
-
-
-void
-cupti_device_timestamp_get
-(
- CUcontext context,
- uint64_t *time
-);
-
-
-void 
-cupti_init
-(
- void
-);
-
-
-void 
-cupti_start
-(
- void
-);
-
-
-void 
-cupti_pause
-(
- CUcontext context,
- bool begin_pause
-);
-
-
-void 
-cupti_finalize
-(
- void
-);
-
-
-void
-cupti_device_buffer_config
-(
- size_t buf_size,
- size_t sem_size
-);
-
-
-void
-cupti_num_dropped_records_get
-(
- CUcontext context,
- uint32_t streamId,
- size_t* dropped 
-);
-
-
-bool
-cupti_buffer_cursor_advance
-(
-  uint8_t *buffer,
-  size_t size,
-  CUpti_Activity **current
-);
-
-
-void 
-cupti_buffer_completion_callback
-(
- CUcontext ctx,
- uint32_t streamId,
- uint8_t *buffer,
- size_t size,
- size_t validSize
-);
-
-
-void
-cupti_load_callback_cuda
-(
- uint32_t module_id, 
- const void *cubin, 
- size_t cubin_size
-);
-
-
-void
-cupti_unload_callback_cuda
-(
- uint32_t module_id, 
- const void *cubin, 
- size_t cubin_size
-);
-
-
-//******************************************************************************
-// finalizer
-//******************************************************************************
-
-void
-cupti_activity_flush
-(
- void
-);
-
-
-void
-cupti_device_flush
-(
- void *args
-);
-
-
-void
-cupti_device_shutdown
-(
- void *args
-);
-
-
-
-//******************************************************************************
-// cupti status
-//******************************************************************************
-
-void
-cupti_stop_flag_set
-(
- void
-);
-
-
-void
-cupti_stop_flag_unset
-(
- void
-);
-
-
-void
-cupti_runtime_api_flag_unset
-(
- void
-);
-
-
-void
-cupti_runtime_api_flag_set
-(
- void
-);
-
-
-void
-cupti_correlation_id_push
-(
- uint64_t id
-);
-
-
-uint64_t
-cupti_correlation_id_pop
-(
- void
-);
-
-
-
+#define _GNU_SOURCE  1
+
+#include <sys/types.h>
+#include <sys/time.h>
+#include <sys/select.h>
+#include <assert.h>
+#include <errno.h>
+#include <pthread.h>
+#include <stdlib.h>
+#include <unistd.h>
+
+#ifndef HPCRUN_STATIC_LINK
+#include <dlfcn.h>
 #endif
+
+#include <monitor-exts/monitor_ext.h>
+
+
+//******************************************************************************
+// type declarations
+//******************************************************************************
+
+typedef int select_fn
+(
+ int nfds,
+ fd_set *read_fds,
+ fd_set *write_fds,
+ fd_set *except_fds, 
+ struct timeval *timeout
+);
+
+
+//******************************************************************************
+// local data
+//******************************************************************************
+
+#ifdef HPCRUN_STATIC_LINK
+extern select_fn  __real_select;
+#endif
+
+static select_fn *real_select = NULL;
+
+
+//******************************************************************************
+// local operations
+//******************************************************************************
+
+static void
+find_select(void)
+{
+#ifdef HPCRUN_STATIC_LINK
+  real_select = __real_select;
+#else
+  real_select = (select_fn *) dlsym(RTLD_NEXT, "select");
+#endif
+
+  assert(real_select);
+}
+
+
+//******************************************************************************
+// interface operations
+//******************************************************************************
+
+int 
+MONITOR_EXT_WRAP_NAME(select)
+(
+  int nfds, 
+  fd_set *read_fds, 
+  fd_set *write_fds, 
+  fd_set *except_fds, 
+  struct timeval *timeout
+)
+{
+  static pthread_once_t initialized = PTHREAD_ONCE_INIT;
+  pthread_once(&initialized, find_select);
+
+  int retval;
+  int incoming_errno = errno; // save incoming errno
+
+  for(;;) {
+    retval = (* real_select) (nfds, read_fds, write_fds, except_fds, timeout);
+
+    if (retval == -1) {
+      if (errno == EINTR) {
+        // restart on EINTR
+        errno = incoming_errno; // restore incoming errno
+        continue;
+      }
+    }
+
+    // return otherwise
+    break;
+  }
+
+  return retval;
+}

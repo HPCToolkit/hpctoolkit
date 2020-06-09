@@ -784,6 +784,9 @@ LIBMONITOR_INC
 LIBDWARF_COPY
 LIBDWARF_INC
 LIBDWARF_LIB
+GOTCHA_LIBDIR
+GOTCHA_LDFLAGS
+GOTCHA_IFLAGS
 LIBELF_COPY
 LIBELF_LIB
 LIBELF_INC
@@ -1015,6 +1018,7 @@ with_boost
 with_bzip
 with_dyninst
 with_elfutils
+with_gotcha
 with_libdwarf
 with_libiberty
 with_libmonitor
@@ -1776,6 +1780,7 @@ Optional Packages:
   --with-bzip=PATH        path to bzip2 install directory
   --with-dyninst=PATH     path to dyninst install directory
   --with-elfutils=PATH    path to elfutils install directory
+  --with-gotcha=PATH      path to gotcha install directory
   --with-libdwarf=PATH    path to libdwarf install directory
   --with-libiberty=PATH   path to libiberty install directory (only needed if
                           binutils does not contain libiberty.a)
@@ -19991,6 +19996,7 @@ default_bzip_prefix=no
 default_cuda_prefix=no
 default_dyninst_prefix=no
 default_elfutils_prefix=no
+default_gotcha_prefix=no
 default_libdwarf_prefix=no
 default_libiberty_prefix=no
 default_libmonitor_prefix=no
@@ -20090,6 +20096,9 @@ $as_echo "$as_me: checking spack packages ..." >&6;}
   fi
   if find_spack_pkg elfutils ; then
     default_elfutils_prefix="$spack_ans"
+  fi
+  if find_spack_pkg gotcha ; then
+    default_gotcha_prefix="$spack_ans"
   fi
   if find_spack_pkg libdwarf ; then
     default_libdwarf_prefix="$spack_ans"
@@ -20627,6 +20636,116 @@ esac
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $LIBELF" >&5
 $as_echo "$LIBELF" >&6; }
+
+
+
+
+
+
+#-------------------------------------------------
+# Option: --with-gotcha=PATH
+#-------------------------------------------------
+
+GOTCHA="$default_gotcha_prefix"
+
+GOTCHA_IFLAGS=
+GOTCHA_LDFLAGS=
+GOTCHA_LIBDIR=no
+
+
+# Check whether --with-gotcha was given.
+if test "${with_gotcha+set}" = set; then :
+  withval=$with_gotcha; GOTCHA="$withval"
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for gotcha" >&5
+$as_echo_n "checking for gotcha... " >&6; }
+
+case "$GOTCHA" in
+  /* )
+    if test ! -f "${GOTCHA}/include/gotcha/gotcha.h" ; then
+      as_fn_error $? "unable to find gotcha.h in: $GOTCHA" "$LINENO" 5
+    fi
+    GOTCHA_IFLAGS="-I${GOTCHA}/include"
+    for lib in $multilib_path ; do
+      if test -f "${GOTCHA}/${lib}/libgotcha.so" ; then
+        GOTCHA_LIBDIR="${GOTCHA}/${lib}"
+	break
+      fi
+    done
+    if test "$GOTCHA_LIBDIR" = no ; then
+      as_fn_error $? "unable to find libgotcha.so in: $GOTCHA" "$LINENO" 5
+    fi
+    GOTCHA_LDFLAGS="-L${GOTCHA_LIBDIR} -lgotcha"
+    num_pkgs=`expr 1 + $num_pkgs`
+    ;;
+  no )
+    ;;
+  * )
+    as_fn_error $? "gotcha directory must be absolute path: $GOTCHA" "$LINENO" 5
+    ;;
+esac
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $GOTCHA" >&5
+$as_echo "$GOTCHA" >&6; }
+
+#
+# Test for gotcha_filter_libraries_by_name(), in gotcha >= 1.0.3.
+#
+case "$GOTCHA" in
+  /* )
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking if gotcha supports gotcha_filter_libraries_by_name" >&5
+$as_echo_n "checking if gotcha supports gotcha_filter_libraries_by_name... " >&6; }
+
+    ORIG_CFLAGS="$CFLAGS"
+    ORIG_LIBS="$LIBS"
+    CFLAGS="$CFLAGS $GOTCHA_IFLAGS"
+    LIBS="$GOTCHA_LDFLAGS"
+    ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+#include <gotcha/gotcha.h>
+int main(int argc, char **argv)
+{
+  gotcha_filter_libraries_by_name(argv[0]);
+  return 0;
+}
+
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  gotcha_has_filter=yes
+else
+  gotcha_has_filter=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+    ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+    CFLAGS="$ORIG_CFLAGS"
+    LIBS="$ORIG_LIBS"
+
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: $gotcha_has_filter" >&5
+$as_echo "$gotcha_has_filter" >&6; }
+
+    if test "x$gotcha_has_filter" != xyes ; then
+      as_fn_error $? "hpctoolkit needs gotcha 1.0.3 or later" "$LINENO" 5
+    fi
+    ;;
+esac
 
 
 
@@ -26723,6 +26842,8 @@ $as_echo "$as_me:   dyninst:      ${DYNINST}" >&6;}
 $as_echo "$as_me:   dyninst:      ${dyninst_features}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   elfutils:     ${LIBELF}" >&5
 $as_echo "$as_me:   elfutils:     ${LIBELF}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   gotcha:       ${GOTCHA}" >&5
+$as_echo "$as_me:   gotcha:       ${GOTCHA}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   libdwarf:     ${LIBDWARF}" >&5
 $as_echo "$as_me:   libdwarf:     ${LIBDWARF}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   libiberty:    ${LIBIBERTY}" >&5
