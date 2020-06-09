@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{2020/05/15}
+\setDate{2020/06/09}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -79,11 +79,15 @@ produced by \Prog{hpcprof} or \Prog{hpcprof-mpi}.
 
 \begin{Description}
 
-\item[\Opt{-consolelog}]
-Send log entries to a console in addition to a log file.
+\item[\Opt{-h} \Opt{--help}]
+Print a help message.
 
-\item[\Opt{-debug}]
-Log additional information about plugin dependency problems.
+
+\item[\Opt{-jh}, \Opt{--java-heap} <size>]
+  	Set the JVM maximum heap size for this execution of  \Prog{hpcviewer}. The value of \texttt{size} must be 
+	in megabytes (M) or gigabytes (G). For example, one can specify a \texttt{size}  of 3 gigabytes as either 
+	3076M or 3G.
+
 
 \end{Description}
 

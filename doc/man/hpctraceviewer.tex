@@ -24,7 +24,7 @@
 \message{no fancyhdr or fancyheadings package present, discard it}
 }}
 
-\setDate{2020/06/02}
+\setDate{2020/06/09}
 
 \setVersionWord{Version:}  %%% that's the default, no need to set it.
 \setVersion{=PACKAGE_VERSION=}
@@ -71,11 +71,15 @@ Since Experiment databases are self-contained, they may be relocated from a clus
 
 \begin{Description}
 
-\item[\Opt{-consolelog}]
-Send log entries to a console in addition to a log file.
+\item[\Opt{-h} \Opt{--help}]
+Print help.
 
-\item[\Opt{-debug}]
-Log additional information about plug-in dependency problems.
+
+\item[\Opt{-jh}, \Opt{--java-heap} <size>]
+  	Set the JVM maximum heap size for this execution of  \Prog{hpctraceviewer}. The value of \texttt{size} must be 
+	in megabytes (M) or gigabytes (G). For example, one can specify a \texttt{size}  of 3 gigabytes as either 
+	3076M or 3G.
+
 
 \end{Description}
 
@@ -85,7 +89,7 @@ Log additional information about plug-in dependency problems.
 
 \subsection{Views}
 
-\Prog{hpctraceviewer} comprises of three different parts. 
+\Prog{hpctraceviewer} provides several views: 
 
 
 \begin{itemize}
@@ -123,7 +127,7 @@ Log additional information about plug-in dependency problems.
   Whenever the user changes the time interval displayed in the Trace view, the statistics view will update its list of procedures and their execution percentages to 
   reflect the current interval.  Similarly, a change in the selected call path depth will also update the contents of the statistics view.
 
-\item \textbf{Mini map view} (bottom, right pane):
+\item \textbf{Mini Map view} (bottom, right pane):
   The Mini Map shows, relative to the process/time dimensions, the region of the execution shown by the Trace View.
   In the Mini map, dragging the selected region or making a new selection enables one to change the region of the trace that is the current focus for analysis.
 
