@@ -77,6 +77,7 @@ static void
 METHOD_FN(thread_init)
 {
   TMSG(CL, "thread_init");
+  opencl_api_initialize();
 }
 
 
@@ -98,6 +99,7 @@ static void
 METHOD_FN(thread_fini_action)
 {
   TMSG(CL, "thread_fini_action");
+  opencl_api_finalize();
 }
 
 
