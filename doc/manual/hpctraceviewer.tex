@@ -13,7 +13,7 @@
 \newcommand{\summaryview}{Summary View}
 \newcommand{\miniview}{Mini Map View}
 \newcommand{\callview}{Call Path View}
-\newcommand{\statview}{Statistic View}
+\newcommand{\statview}{Statistics View}
 
 
 % ===========================================================================
@@ -55,7 +55,7 @@ Requirements to launch \hpctraceviewer:
  \item On Linux: GTK.
 \end{itemize}
 
-\hpctraceviewer{} can either be launched from a command line (Linux/Unix platform) or by clicking the \hpctraceviewer{} icon (for Windows, Mac OS X and Linux/Unix platform).
+\hpctraceviewer{} can either be launched from a command line (Linux platforms) or by clicking the \hpctraceviewer{} icon (for Windows, Mac OS X, and Linux platforms).
 The command line syntax is as follows:
 \begin{quote}
 \begin{verbatim}
@@ -63,17 +63,21 @@ The command line syntax is as follows:
 \end{verbatim}
 \end{quote}
 Here, \texttt{<hpctoolkit-database>} is an optional argument to load a database automatically.
-Without this argument, \hpctraceviewer{} will prompt for the location of a database.
+Without this argument, \hpctraceviewer{} will prompt for the location of a database. Possible options for \hpctraceviewer{}  are shown in the table below:\\
 
-The possible options are as follows:
-\begin{itemize}
+\begin{centering}
+\begin{tabular}{|l|p{4.1in}|}\hline\hline
+ \verb|-h, --help|   &
+ 	Print a help message. \\\hline
+ \verb|-jh, --java-heap| {\em size}  & 
+  	Set the JVM maximum heap size for this execution of \hpctraceviewer{}. The value of {\em size} must be 
+	in megabytes (M) or gigabytes (G). For example, one can specify a {\em size}  of 3 gigabytes as either 
+	3076M or 3G.\\\hline\hline
+ \end{tabular}
+ \end{centering}
+ \vspace{2ex}
 
- \item \texttt{-consolelog}: Send log entries to a console in addition to a log file.
-   (To get a console window, be sure to use java as the VM instead of javaw.)
-
- \item \texttt{-debug}: Log additional information about plug-in dependency problems.
-\end{itemize}
-
+On Linux, when  \hpctraceviewer{}  is installed using its \verb|install| script, the \verb|install| script chooses a default  maximum size for the Java heap on the current platform. When analyzing traces for large and complex applications, it may be necessary to use the \verb|--java-heap| option to specify a larger heap size for  \hpctraceviewer{}.
 
 % ===========================================================================
 % ===========================================================================
@@ -90,7 +94,7 @@ Figure~\ref{fig:hpctraceviewer-legend} shows an annotated screenshot of \hpctrac
 The annotations highlight \hpctraceviewer{}'s four principal window panes: \traceview, \depthview, \callview{} and \miniview.
 
 \begin{itemize}
-\item \textbf{\traceview} (left, top):
+\item \textbf{\traceview} (top, left pane):
   This is \hpctraceviewer{}'s primary view.
   This view, which is similar to a conventional process/time (or space/time) view, shows time on the horizontal axis and process (or thread) rank on the vertical axis; time moves from left to right.
   Compared to typical process/time views, there is one key difference.
@@ -106,23 +110,24 @@ The annotations highlight \hpctraceviewer{}'s four principal window panes: \trac
   For this selected point, the Call Path View shows the corresponding call path.
   The Depth View shows the selected process.
 
-\item \textbf{\depthview} (left, bottom):
+\item \textbf{\depthview} (tab in bottom, left pane):
   This is a call-path/time view for the process rank selected by the \traceview's \crosshair{}.
   Given a process rank, the view shows for each virtual time along the horizontal axis a stylized call path along the vertical axis, where `main' is at the top and leaves (samples) are at the bottom.
   In other words, this view shows for the whole time range, in qualitative fashion, what the Call Path View shows for a selected point.
   The horizontal time axis is exactly aligned with the Trace View's time axis; and the colors are consistent across both views.
   This view has its own \crosshair{} that corresponds to the currently selected time and call path depth.
 
-\item \textbf{\summaryview} (left, bottom):
+\item \textbf{\summaryview} (tab in bottom, left pane):
   The view shows for the whole time range dislayed, the proportion of each subroutine in a certain time.
   Similar to Depth view, the time range in Summary reflects to the time range in the Trace view. 
 
-\item \textbf{\callview} (right, top):
+\item \textbf{\callview} (tab in top, right pane):
   This view shows two things: (1) the current call path depth that defines the hierarchical slice shown in the Trace View; and (2) the actual call path for the point selected by the Trace View's \crosshair{}.
   (To easily coordinate the call path depth value with the call path, the Call Path View currently suppresses details such as loop structure and call sites; we may use indentation or other techniques to display this in the future.)
 
-\item \textbf{\statview} (same location as the \callview on the top-right part):
-  The view shows the list of procedures and its estimated time execution percentage for the current display. If users change the region of the Trace view, the statistic view will also updates its list of procedures and the percentage. Similarly, a change in the Depth also reflects the change of the content in the statistic view.
+\item \textbf{\statview} (tab in top, right pane):
+  This view shows the list of procedures active  in the  space-time region shown in the Trace View at the current Call Path Depth. Each procedure's percentage in the \statview{} indicates the percentage of pixels in the Trace View pane that are filled with this procedure's color at the current Call Path Depth. When the Trace View is navigated to show a new time-space interval  or the Call Path Depth is  changed, the statistics view will  update its list of procedures and the percentage of execution time to reflect the new space-time interval or depth selection.
+ 
 
 \item \textbf{\miniview} (right, bottom):
   The Mini Map shows, relative to the process/time dimensions, the portion of the execution shown by the Trace View.
@@ -268,7 +273,11 @@ This context menu is available is three views: trace view, depth view and summar
 % ===========================================================================
 % ===========================================================================
 
+\section{GPU Threads}
 
+\hpctraceviewer{} displays activity over time in GPU streams as well as CPU threads. Presently, GPU streams and CPU threads are indexed within a process or MPI rank using a single integer coordinate. To distinguish between GPU threads and CPU threads in this prototype, CPU thread numbers begin at 0 and GPU stream numbers begin at 500. 
+
+Unlike CPU threads, which are sampled, each GPU activity (e.g., a kernel execution or a memory copy)  on a GPU stream or queue is traced. To avoid giving a misleading view of GPU activity on a stream or queue, intervals between GPU activities where the GPU is idle are marked with the placeholder \verb|<no activity>|.
 
 \section{Limitations}
 

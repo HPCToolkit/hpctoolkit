@@ -120,7 +120,7 @@
 % ***************************************************************************
 % ***************************************************************************
 
-\title{\HPCToolkit{} User's Manual\\[.5in]Version 2020.03.01}
+\title{\HPCToolkit{} User's Manual\\[.5in]Version 2020.06.05}
 %\subtitle{}
 
 \author{
@@ -135,7 +135,7 @@ Rice University\\
 %For \HPCToolkit{} 5.3.2 ($Revision$)
 }
 
-\date{March 1, 2020}
+\date{June 10, 2020}
 
 \maketitle
 
@@ -1366,24 +1366,20 @@ If your system has multiple versions of Java and Java 8 is not the newer version
 % ===========================================================================
 
 \section{When executing \hpcviewer, it complains cannot create ``Java Virtual Machine"}
-If you use Java 7 or older,
-the error message indicates that your machine cannot instantiate the JVM 
-with the default size specified for the Java heap. 
 If you encounter this problem, we recommend that you edit the 
 \texttt{hpcviewer.ini} 
 file which is located in HPCToolkit installation directory to reduce the
 Java heap size.
-By default, the content of the file is as follows:
+By default, the content of the file on \verb|ppc64le| is as follows:
 \begin{verbatim}
 -consoleLog
+-clearPersistedState
 -vmargs
--Dosgi.requiredJavaVersion=1.8
--XX:MaxPermSize=256m
--Xms40m
--Xmx2048m
 -Dosgi.locking=none
+-Dosgi.requiredJavaVersion=1.8
+-Xmx2048m
 \end{verbatim}
-You can decrease the maximum size of the Java heap from 2048MB to 4GB
+You can decrease the maximum size of the Java heap from 2048MB to 1GB
  by changing the {\tt Xmx} specification in the \texttt{hpcviewer.ini} file as follows:
 \begin{verbatim}
 -Xmx1024m
@@ -1393,11 +1389,17 @@ You can decrease the maximum size of the Java heap from 2048MB to 4GB
 % ===========================================================================
 % ===========================================================================
 
-\section{\hpcviewer{} fails to launch due to java.lang.NoSuchMethodError exception.}
+\section{\hpcviewer{} fails to launch due to {\tt java.lang.NoSuchMethodError} exception.}
 
 The root cause of the error is due to a mix of old \and new hpcviewer{} binaries. 
 To solve this problem, you need to remove your hpcviewer workspace (usually in \texttt{\$HOME/.hpctoolkit/hpcviewer} directory, and run \hpcviewer{} again.
 
+% ===========================================================================
+% ===========================================================================
+
+\section{\hpcviewer{} fails due to {\tt java.lang.OutOfMemoryError} exception.}
+
+If you see this error, the memory footprint that \hpcviewer{} needs to store and the metrics for your measured program execution exceeds the maximum size for the Java heap specified at program launch.  On Linux, \hpcviewer{} accepts a command-line option \verb|--java-heap| that enables you to specify a larger non-default value for the maximum size of the Java heap. Run \verb|hpcviewer --help| for the details of how to use this option.
 
 % ===========================================================================
 % ===========================================================================
@@ -1451,21 +1453,10 @@ Even so, the performance attribution is usually very informative.
 
 \section{\hpcviewer{} hangs trying to open a large database! Why?}
 
-The most likely problem is that the Java virtual machine is low on memory and thrashing.
-There are three ways to address this problem.
+The most likely problem is that the Java virtual machine is low on memory and thrashing. The memory footprint that \hpcviewer{} needs to store and the metrics for your measured program execution is likely near the maximum size for the Java heap specified at program launch.  
 
-First, make sure you are \emph{not} using \hpcprof{}'s \texttt{--force-metric} option to create a very large number of metrics.
+On Linux, \hpcviewer{} accepts a command-line option \verb|--java-heap| that enables you to specify a larger non-default value for the maximum size of the Java heap. Run \verb|hpcviewer --help| for the details of how to use this option.
 
-Second, increase the resources available to Java.
-\hpcviewer{} uses the initialization file \texttt{hpcviewer.ini} to determine how much memory is allocated to the Java virtual machine.
-To increase this allocation, locate the \texttt{hpcviewer.ini} file within your \hpcviewer{} installation.
-The default maximum sizes for the Java stack and heap, respectively, are given by \texttt{-Xms400m} and \texttt{-Xmx1024m}.
-You should be able to increase these values to \texttt{-Xms800m} and \texttt{-Xmx1800m}.
-
-Third, you can disable \hpcviewer{}'s Bottom-up View by using the \texttt{-n} option as follows:
-\begin{quote}
-  \verb|hpcviewer -n hpctoolkit-database|
-\end{quote}
 
 % ===========================================================================
 % ===========================================================================
@@ -1479,16 +1470,17 @@ The solution is to install \hpcviewer{} on your local system, copy the database 
 We almost always run \hpcviewer{} on our local desktops or laptops for this reason.
 
 Second, \HPCToolkit{}'s database may contain too many metrics.
-This can happen if you use \hpcprof{} to build a database for several threads with several metrics each, resulting in too many metrics total.
+A common reason why this can occur is if rather than analyzing an \HPCToolkit{}  measurements directory, you chose to directly specify a large collection of {\tt .hpcrun} files directly on the command line. When you do this, it treats each {\tt .hpcrun} file as a separate experiment and gives you separate metrics for each.
+
 You can check the number of columns in your database by running
 \begin{quote}
   \verb,grep -e "<Metric" experiment.xml | wc -l,
 \end{quote}
-If that command yields a number greater than 30 or so, \hpcviewer{} is likely slow because you are working with too many columns of metrics.
-In this case, either use \hpcprofmpi{} or run \hpcprof{} to build a database based on fewer profiles.
+If that command yields a number greater than 50 or so, \hpcviewer{} is likely slow because you are working with so many columns of metrics. In this case, you might consider using  \hpcprofmpi{} or run \hpcprof{} to analyze the measurements directory as a whole, so you get one set of metrics, or you can build a database based on fewer separate {\tt .hpcrun} files on the command line to reduce the number of metrics overall.
 
-Third, \HPCToolkit{}'s database may be too large.
-If the \texttt{experiment.xml} file within your database is tens of megabytes or more, the total database size might be the problem.
+Third, \HPCToolkit{}'s database may be very large, which can cause the Java virtual machine to run short on memory and thrash. The memory footprint that \hpcviewer{} needs to store and the metrics for your measured program execution is likely near the maximum size for the Java heap specified at program launch.  
+
+On Linux, \hpcviewer{} accepts a command-line option \verb|--java-heap| that enables you to specify a larger non-default value for the maximum size of the Java heap. Run \verb|hpcviewer --help| for the details of how to use this option.
 
 
 % ===========================================================================

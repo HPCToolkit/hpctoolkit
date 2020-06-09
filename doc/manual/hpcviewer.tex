@@ -19,7 +19,7 @@ Requirements to launch \hpcviewer:
  \item On Linux: GTK.
 \end{itemize}
 
-\hpcviewer{} can either be launched from a command line (Linux/Unix platform) or by clicking the \hpcviewer{} icon (for Windows, Mac OS X and Linux/Unix platform).
+\hpcviewer{} can either be launched from a command line (Linux platforms) or by clicking the \hpcviewer{} icon (for Windows, Mac OS X and Linux platforms).
 The command line syntax is as follows:
 \begin{quote}
 \begin{verbatim}
@@ -27,16 +27,21 @@ The command line syntax is as follows:
 \end{verbatim}
 \end{quote}
 Here, \texttt{<hpctoolkit-database>} is an optional argument to load a database automatically.
-Without this argument, \hpcviewer{} will prompt for the location of a database.
+Without this argument, \hpcviewer{} will prompt for the location of a database. Possible options for \hpcviewer{}  are shown in the table below:\\
 
-The possible options are as follows:
-\begin{itemize}
- \item \texttt{-consolelog}: Send log entries to a console in addition to a log file.
-   (To get a console window, be sure to use java as the VM instead of javaw.)
+\begin{centering}
+\begin{tabular}{|l|p{4.1in}|}\hline\hline
+ \verb|-h, --help|   &
+ 	Print a help message. \\\hline
+ \verb|-jh, --java-heap| {\em size}  & 
+  	Set the JVM maximum heap size for this execution of  \hpcviewer{}. The value of {\em size} must be 
+	in megabytes (M) or gigabytes (G). For example, one can specify a {\em size}  of 3 gigabytes as either 
+	3076M or 3G.\\\hline\hline
+ \end{tabular}
+ \end{centering}
+ \vspace{2ex}
 
- \item \texttt{-debug}: Log additional information about plug-in dependency problems.
-\end{itemize}
-
+On Linux, when  \hpcviewer{}  is installed using its \verb|install| script, the \verb|install| script chooses a default maximum size for the Java heap on the current platform. When analyzing measurements for large and complex applications, it may be necessary to use the \verb|--java-heap| option to specify a larger heap size for  \hpcviewer{}  to accommodate many metrics for many contexts.
 
 % ===========================================================================
 % ===========================================================================
