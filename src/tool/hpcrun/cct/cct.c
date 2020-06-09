@@ -435,6 +435,20 @@ hpcrun_cct_children(cct_node_t* x)
     return x? x->children : NULL;
 }
 
+cct_node_t*
+hpcrun_leftmost_child(cct_node_t* x)
+{
+  cct_node_t *leftmost = x->children;
+  if (leftmost != NULL) {
+    for (;;) {
+      cct_node_t *more_left = leftmost->left;
+      if (more_left == NULL) break;
+      leftmost = more_left;
+    }
+  }
+  return leftmost;
+}
+
 int32_t
 hpcrun_cct_persistent_id(cct_node_t* x)
 {
@@ -1016,8 +1030,6 @@ cct_disjoint_union_cached(cct_node_t* target, cct_node_t* src)
   target->children = src;
   src->parent = target;
 }
-
-
 
 
 // FIXME: only temporary function, until hpcrun_merge is repaired

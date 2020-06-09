@@ -62,7 +62,7 @@
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample-sources/libdl.h>
 
-#include <lib/prof-lean/usec_time.h>
+#include <hpcrun/utilities/hpcrun-nanotime.h>
 
 
 
@@ -93,8 +93,6 @@
     /* use roctracer_error_string() */ \
   }						\
 }
-
-#define CPU_NANOTIME() (usec_time() * 1000)
 
 
 
@@ -363,7 +361,7 @@ roctracer_subscriber_callback
     gpu_activity_channel_consume(gpu_metrics_attribute);
 
     // Generate notification entry
-    uint64_t cpu_submit_time = CPU_NANOTIME();
+    uint64_t cpu_submit_time = hpcrun_nanotime();
     gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, cpu_submit_time);
   }
 }

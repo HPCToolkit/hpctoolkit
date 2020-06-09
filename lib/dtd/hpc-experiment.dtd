@@ -42,22 +42,30 @@
     <!--   ep: average event period (perf_events only) -->
     <!--   (v)alue-type: transient type of values -->
     <!--   (t)ype: persistent type of metric      -->
+    <!--   show: metric visibility type. Possible values: -->
+    <!--        0: hidden -->
+    <!--        1: shown  -->
+    <!--        2: show inclusive metric only -->
+    <!--        3: show exclusive metric only -->
+    <!--        4: invisible, do not show at all -->
+    <!--   show-percent: whether to show the percent (1) or not (0)  -->
+    <!--   partner: the exclusive or inclusive partner ID of this metric -->
     <!--   fmt: format; show; -->
     <!ELEMENT Metric (MetricFormula*, Info?)>
     <!ATTLIST Metric
 	      i            CDATA #REQUIRED
 	      o	           CDATA #IMPLIED
 	      n            CDATA #REQUIRED
-	      md	       CDATA #IMPLIED
-	      mp	       CDATA #IMPLIED
-	      es	       CDATA #IMPLIED
-	      em	       CDATA #IMPLIED
-	      ep	       CDATA #IMPLIED
+	      md           CDATA #IMPLIED
+	      mp           CDATA #IMPLIED
+	      es           CDATA #IMPLIED
+	      em           CDATA #IMPLIED
+	      ep           CDATA #IMPLIED
 	      v            (raw|final|derived-incr|derived) "raw"
 	      t            (inclusive|exclusive|nil) "nil"
 	      partner      CDATA #IMPLIED
 	      fmt          CDATA #IMPLIED
-	      show         (1|0) "1"
+	      show         (1|0|2|3|4) "1"
 	      show-percent (1|0) "1">
 
     <!-- MetricFormula represents derived metrics: (t)ype; (frm): formula -->
@@ -128,10 +136,18 @@
     <!-- ProcedureTable assigns a short name to a procedure -->
     <!ELEMENT ProcedureTable (Procedure)*>
 
+    <!-- Dictionary for procedure: (i)d, (n)ame, (f)eature and (v)alue of the address -->
+    <!-- Possible value of f: -->
+    <!-- 0: normal procedure -->
+    <!-- 1: place holder, do not add anything -->
+    <!-- 2: root-type, has to be shown in a separate view -->
+    <!-- 3: invisible in hpcviewer, but visible in hpctraceviewer  -->
     <!ELEMENT Procedure (Info?)>
     <!ATTLIST Procedure
 	      i CDATA #REQUIRED
-	      n CDATA #REQUIRED>
+	      n CDATA #REQUIRED
+	      f CDATA #IMPLIED
+	      v CDATA #IMPLIED>
 
   <!-- ****************************************************************** -->
   <!-- Section: Call path profile					  -->

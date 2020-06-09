@@ -396,6 +396,7 @@ MY_BASE_FILES =				\
 	syscalls/select.c \
 	\
 	utilities/executable-path.h utilities/executable-path.c \
+	utilities/hpcrun-nanotime.h  utilities/hpcrun-nanotime.c  \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
 	utilities/line_wrapping.c	\
 	utilities/timer.c		\

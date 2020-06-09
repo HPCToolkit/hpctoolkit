@@ -794,10 +794,14 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data) // cct_ctxt_t
 
   td->inside_hpcrun = 1;  // safe enter, disable signals
 
-  if (! thr_ctxt) EMSG("Thread id %d passes null context", id);
   
-  if (ENABLED(THREAD_CTXT))
-    hpcrun_walk_path(thr_ctxt->context, logit, (cct_op_arg_t) (intptr_t) id);
+  if (ENABLED(THREAD_CTXT)) {
+    if (thr_ctxt) {
+      hpcrun_walk_path(thr_ctxt->context, logit, (cct_op_arg_t) (intptr_t) id);
+    } else {
+      EMSG("Thread id %d passes null context", id);
+    }
+  }
 
   epoch_t* epoch = TD_GET(core_profile_trace_data.epoch);
 
