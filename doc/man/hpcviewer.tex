@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{2018/10/26}
+\setDate{2020/06/09}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -79,11 +79,15 @@ produced by \Prog{hpcprof} or \Prog{hpcprof-mpi}.
 
 \begin{Description}
 
-\item[\Opt{-consolelog}]
-Send log entries to a console in addition to a log file.
+\item[\Opt{-h} \Opt{--help}]
+Print a help message.
 
-\item[\Opt{-debug}]
-Log additional information about plugin dependency problems.
+
+\item[\Opt{-jh}, \Opt{--java-heap} <size>]
+  	Set the JVM maximum heap size for this execution of  \Prog{hpcviewer}. The value of \texttt{size} must be 
+	in megabytes (M) or gigabytes (G). For example, one can specify a \texttt{size}  of 3 gigabytes as either 
+	3076M or 3G.
+
 
 \end{Description}
 
@@ -98,12 +102,12 @@ Each view reports both inclusive costs (including callees) and exclusive costs (
 
 \begin{itemize}
 
-\item \textbf{Calling context view.}
+\item \textbf{Top-down view.}
 A top-down view depicting the dynamic calling contexts (call paths) in which costs were incurred.
 With this view one can explore the performance of an application in a top-down manner
 to understand the costs incurred by calls to a procedure in a particular calling context.
 
-\item \textbf{Callers view.}
+\item \textbf{Bottom-up view.}
 This bottom-up view enables one to look upward along call paths.
 It apportions a procedure's costs to its caller and, more generally,
 its calling contexts.
@@ -157,14 +161,14 @@ Which items appear in the outline depend on which view is displayed:
 
 \begin{itemize}
 
-\item In the calling context view, displayed items are
+\item In the Top-down view, displayed items are
 procedure activations, loops, source lines, and inlined code. 
 Most items link to a single location in the source code,
 but a procedure activation item links to two:
 the call site where the procedure was invoked and the procedure body executed in response.
 
-\item In the callers view, displayed items are always procedure activations.
-Unlike the calling context view, where a call site is paired with its called procedure,
+\item In the Bottom-up view, displayed items are always procedure activations.
+Unlike the Top-down view, where a call site is paired with its called procedure,
 in this view a call site is paired with its calling procedure,
 attributing costs for a called procedure among all its call sites (and therefore callers).
 
@@ -193,7 +197,7 @@ by entering a spreadsheet-style formula.
 
 \item \textbf{Filter metrics}. Show or hide specified metrics.
 
-\item \textbf{CSV export}. Write data from the current view to a file
+\item \textbf{CSV export}. Write data from the current table to a file
 in standard CSV (Comma Separated Values) format.
 
 \item \textbf{Bigger text}. Increase the size of displayed text.
@@ -322,7 +326,7 @@ By default, the menu is hidden. Once you open a database, the menu is then shown
 
 \begin{itemize}
  \item \textbf{Show views}
- Display all the list of views (calling context views, callers view and flat view) for each database. If a view was closed, it will be suffixed by a "\texttt{*closed*}" sign and can be reactivated by double-clicking the name of the view in the tree.
+ Display all the list of views (Top-down view, Bottom-up view and flat view) for each database. If a view was closed, it will be suffixed by a "\texttt{*closed*}" sign and can be reactivated by double-clicking the name of the view in the tree.
 
  \item \textbf{Show metric properties}
  Display a list of metrics in a window. From this window, you can modify the name of the metric. For derived metrics, this also allows to modify the formula as well as the format.

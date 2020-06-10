@@ -62,15 +62,18 @@ which creates \File{basename(}\Arg{binary}\File{).hpcstruct}.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Description}
 
-Given an application binary or DSO \Arg{binary},
-\Prog{hpcstruct} recovers the program structure of its object code.
-Program structure is a mapping of a program's static source code structure to its object code.
-By default, \Prog{hpcstruct} writes its results to the file \emph{basename(binary)}\File{.hpcstruct}.
-This file is typically passed to \textbf{HPCToolkit}'s attribution tool \HTMLhref{hpcprof.html}{\Cmd{hpcprof}{1}}.
+\Prog{hpcstruct} analyzes an application binary or shared library for
+its loop structure and inline sequences.
+\Prog{hpcstruct} is designed to handle optimized binaries created from
+C, C++ and Fortran source code, including mixed code.
+Note: although the \Arg{binary} may be optimized, it must also be
+compiled with debug symbols for the results to be useful (normally -g
+flag).
 
-\Prog{hpcstruct} is designed to handle highly optimized binaries created from C, C++ and Fortran source code.
-Because \Prog{hpcstruct}'s algorithms exploit a binary's debugging information,
-\Arg{binary} should be compiled with options to produce as much debugging information as possible.
+By default, \Prog{hpcstruct} writes its results to the file
+\emph{basename(binary)}\File{.hpcstruct}.
+This file is then passed to \Prog{hpcprof} with the -S flag and may be
+used multiple times for several shared libraries.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Arguments}
@@ -99,35 +102,49 @@ Default values for an option's optional arguments are shown in \{\}.
 \subsection{Options: Informational}
 
 \begin{Description}
-\item[\OptoArg{-v}{n}, \OptoArg{--verbose}{n}]
-Verbose: generate progress messages to stderr at verbosity level \Arg{n}.  \{1\}
 
 \item[\Opt{-V}, \Opt{--version}]
 Print version information.
 
 \item[\Opt{-h}, \Opt{--help}]
-Print help.
+Print help message.
 
-\item[\OptoArg{--debug}{n}]
-Print debugging messages at debug level \Arg{n}. \{1\}
-
-\item[\OptArg{--debug-proc}{glob}]
-Print debugging messages for structure recovery of procedures matching the shell glob \Arg{glob}.
 \end{Description}
 
+\subsection{Options: Parallel Usage}
+
+\begin{Description}
+\item[\OptArg{-j}{num}, \OptArg{--jobs}{num}]
+Run \Prog{hpcstruct} with num threads.
+
+\item[\OptArg{--jobs-parse}{num}]
+Use num threads for the parse phase of \Prog{hpcstruct}.
+
+\item[\Opt{--time}]
+Display the time and space usage per phase in \Prog{hpcstruct}.
+
+\end{Description}
 
 \subsection{Options: Structure recovery}
 
 \begin{Description}
 
-\item[\OptArg{--demangle-library}{libpath}]
-Use a function from the library at \emph{libpath} to demangle C++ names.
-By default the library function used is \Prog{__cxa_demangle}.
-A different function may be specified with the \Prog{--demangle-function} option.
+% No longer exist.
+%
+% \item[\OptArg{--demangle-library}{libpath}]
+% Use a function from the library at \emph{libpath} to demangle C++ names.
+% By default the library function used is \Prog{__cxa_demangle}.
+% A different function may be specified with the \Prog{--demangle-function} option.
+% 
+% \item[\OptArg{--demangle-function}{funcname}]
+% Call the function named \emph{funcname} in the specified demangler library to demangle C++ names.
+% This option may only be given if the \Prog{--demangle-library} option is also given.
 
-\item[\OptArg{--demangle-function}{funcname}]
-Call the function named \emph{funcname} in the specified demangler library to demangle C++ names.
-This option may only be given if the \Prog{--demangle-library} option is also given.
+\item[\OptArg{--gpucfg}{yes/no}]
+Compute loop nesting structure for GPU machine code.  Currently,
+this applies only to NVIDIA CUDA binaries (cubins). Loop nesting
+structure is only useful with instruction-level measurements
+collected using PC sampling. \{no\}
 
 \item[\OptArg{-I}{path}, \OptArg{--include}{path}] 
 Use \Arg{path} when resolving source file names. 
@@ -147,24 +164,23 @@ such as might occur with a file system change.
 
 \end{Description}
 
-
 \subsection{Options: Output}
 
 \begin{Description}
 
 \item[\OptArg{-o}{file}, \OptArg{--output}{file}]
-Write results to \Arg{file}.  Use '-' for \File{stdout}. \{\Arg{basename(binary)}\File{.hpcstruct}\}
+Write results to \Arg{file}.  \{\Arg{basename(binary)}\File{.hpcstruct}\}
 
-\item[\Opt{--compact}]
-Generate compact output by eliminating extra white space.
+% \item[\Opt{--compact}]
+% Generate compact output by eliminating extra white space.
 
 \item[\Opt{--show-gaps}]
-Write a text file describing all the "gaps" found by \Prog{hpcstruct},
+Developer option to
+write a text file describing all the "gaps" found by \Prog{hpcstruct},
 i.e. address regions not identified as belonging to a code or data segment
 by the ParseAPI parser used to analyze application executables.
-The file is named \emph{outfile}\File{.gaps}, which by default is \emph{appname}\File{.hpcstruct.gaps}.
-A gaps file can't be written when \emph{outfile} is \Prog{stdout}.
-
+The file is named \emph{outfile}\File{.gaps}, which by default is
+\emph{appname}\File{.hpcstruct.gaps}.
 
 \end{Description}
 
