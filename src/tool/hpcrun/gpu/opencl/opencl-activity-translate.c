@@ -194,17 +194,17 @@ opencl_activity_translate
   cl_generic_callback_t* cb_data = (cl_generic_callback_t*)user_data;
   opencl_call type = cb_data->type;
   switch (type) {
-	case kernel:
-	  convert_kernel_launch(ga, user_data, event);
-	  break;
-	case memcpy_H2D:
-	  convert_memcpy(ga, user_data, event, GPU_MEMCPY_H2D);
-	  break;
-	case memcpy_D2H:
-	  convert_memcpy(ga, user_data, event, GPU_MEMCPY_D2H);
-	  break;
-	default:
-	  assert(0);
+    case kernel:
+      convert_kernel_launch(ga, user_data, event);
+      break;
+    case memcpy_H2D:
+      convert_memcpy(ga, user_data, event, GPU_MEMCPY_H2D);
+      break;
+    case memcpy_D2H:
+      convert_memcpy(ga, user_data, event, GPU_MEMCPY_D2H);
+      break;
+    default:
+      assert(0);
   }
   cstack_ptr_set(&(ga->next), 0);
 }
