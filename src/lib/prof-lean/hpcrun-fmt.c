@@ -951,12 +951,17 @@ hpcrun_fmt_sparse_metrics_free(hpcrun_fmt_sparse_metrics_t* x, hpcfmt_free_fn de
 int
 hpcrun_fmt_footer_fwrite(hpcrun_fmt_footer_t* x, FILE* fs)
 {
-  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->hdr_offset,fs));
-  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->loadmap_offset,fs));
-  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->cct_offset,fs));
-  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->met_tbl_offset,fs));
-  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->sm_offset,fs));
-  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->footer_offset,fs));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->hdr_start,fs));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->hdr_end,fs));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->loadmap_start,fs));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->loadmap_end,fs));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->cct_start,fs));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->cct_end,fs));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->met_tbl_start,fs));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->met_tbl_end,fs));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->sm_start,fs));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->sm_end,fs));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->footer_start,fs));
   HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->HPCRUNsm,fs));
 
   return HPCFMT_OK;
@@ -965,16 +970,21 @@ hpcrun_fmt_footer_fwrite(hpcrun_fmt_footer_t* x, FILE* fs)
 int
 hpcrun_fmt_footer_fread(hpcrun_fmt_footer_t* x, FILE* fs)
 {
-  HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->hdr_offset,fs));
-  HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->loadmap_offset,fs));
-  HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->cct_offset,fs));
-  HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->met_tbl_offset,fs));
-  HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->sm_offset,fs));
-  HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->footer_offset,fs));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->hdr_start,fs));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->hdr_end,fs));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->loadmap_start,fs));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->loadmap_end,fs));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->cct_start,fs));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->cct_end,fs));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->met_tbl_start,fs));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->met_tbl_end,fs));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->sm_start,fs));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->sm_end,fs));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->footer_start,fs));
   HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->HPCRUNsm,fs));
 
   if(x->HPCRUNsm != HPCRUNsm){
-    fprintf(stderr, "ERROR: hpcrun output file is incomplete due to wrong HPCRUNsm! Value read: 0x%" PRIx64 ", expected: 0x%" PRIx64 "\n", x->HPCRUNsm, HPCRUNsm);
+    //fprintf(stderr, "ERROR: hpcrun output file is incomplete due to wrong HPCRUNsm! Value read: 0x%" PRIx64 ", expected: 0x%" PRIx64 "\n", x->HPCRUNsm, HPCRUNsm);
     return HPCFMT_ERR;
   }
 
@@ -985,17 +995,16 @@ int
 hpcrun_fmt_footer_fprint(hpcrun_fmt_footer_t* x, FILE* fs, const char* pre)
 {
   fprintf(fs, "[footer:\n");
-  fprintf(fs, "%s(NOTE: offset means the starting position of the section in this file)\n", pre);
-  fprintf(fs, "%s[hdr offset            : %ld]\n", pre, x->hdr_offset);
-  fprintf(fs, "%s[loadmap offset        : %ld]\n", pre, x->loadmap_offset);
-  fprintf(fs, "%s[cct offset            : %ld]\n", pre, x->cct_offset);
-  fprintf(fs, "%s[metric-tbl offset     : %ld]\n", pre, x->met_tbl_offset);
-  fprintf(fs, "%s[sparse metrics offset : %ld]\n", pre, x->sm_offset);
-  fprintf(fs, "%s[footer offset         : %ld]\n", pre, x->footer_offset);
+  fprintf(fs, "%s[           hdr start: %ld, end: %ld]\n", pre, x->hdr_start, x->hdr_end);
+  fprintf(fs, "%s[       loadmap start: %ld, end: %ld]\n", pre, x->loadmap_start, x->loadmap_end);
+  fprintf(fs, "%s[           cct start: %ld, end: %ld]\n", pre, x->cct_start, x->cct_end);
+  fprintf(fs, "%s[    metric-tbl start: %ld, end: %ld]\n", pre, x->met_tbl_start, x->met_tbl_end);
+  fprintf(fs, "%s[sparse metrics start: %ld, end: %ld]\n", pre, x->sm_start, x->sm_end);
+  fprintf(fs, "%s[        footer start: %ld]\n", pre, x->footer_start);
 
   char* check_magic_num = "NO!";
   if(x->HPCRUNsm == HPCRUNsm) check_magic_num = "YES!"; 
-  fprintf(fs, "%s[MAGIC NUMBER          : equal to the expected? %s]\n", pre, check_magic_num);
+  fprintf(fs, "%s[        MAGIC NUMBER: equal to the expected? %s]\n", pre, check_magic_num);
 
   fprintf(fs,"]\n");
 
@@ -1028,43 +1037,15 @@ hpcrun_sparse_file_t* hpcrun_sparse_open(const char* path)
                                           //(block = a chunk containing value and metric id pairs for one cct node)
 
   //initialize footer
-  /*
-  fseek(fs, 0, SEEK_END);
-  size_t footer_position = ftell(fs) - SF_footer_SIZE;
-  fseek(fs, footer_position, SEEK_SET);
-  uint64_t test[7];
-  for(int i = 0; i < 7; i++){
-    if( hpcfmt_int8_fread(&(test[i]), fs) != HPCFMT_OK) {
-      free(sparse_fs);
-      return NULL;
-    }
-  }
-  for(int i = 0; i<7; i++) printf("%ld ", test[i]);
-  printf("\n");
-  return NULL;*/
-  
- 
   fseek(fs, 0, SEEK_END);
   size_t footer_position = ftell(fs) - SF_footer_SIZE;
   fseek(fs, footer_position, SEEK_SET);
   int ret = hpcrun_fmt_footer_fread(&(sparse_fs->footer), fs);
-  /*
-  printf("footer info: %ld %ld %ld %ld %ld %ld %ld\n",
-    sparse_fs->footer.hdr_offset,
-    sparse_fs->footer.loadmap_offset,
-    sparse_fs->footer.cct_offset,
-    sparse_fs->footer.met_tbl_offset,
-    sparse_fs->footer.sm_offset,
-    sparse_fs->footer.footer_offset,
-    sparse_fs->footer.HPCRUNsm);
-  return NULL;
-*/
-
   if(ret != HPCFMT_OK){
     free(sparse_fs);
     return NULL;
   }
-  fseek(fs, sparse_fs->footer.hdr_offset, SEEK_SET); 
+  fseek(fs, sparse_fs->footer.hdr_start, SEEK_SET); 
 
   return sparse_fs;
 }
@@ -1119,9 +1100,10 @@ int hpcrun_sparse_read_hdr(hpcrun_sparse_file_t* sparse_fs, hpcrun_fmt_hdr_t* hd
   int ret = hpcrun_sparse_check_mode(sparse_fs, OPENED, __func__);
   if(ret != SF_SUCCEED) return SF_ERR;
 
-  fseek(sparse_fs->file, sparse_fs->footer.hdr_offset, SEEK_SET);
+  fseek(sparse_fs->file, sparse_fs->footer.hdr_start, SEEK_SET);
   ret = hpcrun_fmt_hdr_fread(hdr, sparse_fs->file, malloc);
   if(ret != HPCFMT_OK) return SF_ERR;
+  if(ftell(sparse_fs->file) != sparse_fs->footer.hdr_end) return SF_ERR;
   return SF_SUCCEED;
 }
 
@@ -1133,8 +1115,8 @@ int hpcrun_sparse_next_lm(hpcrun_sparse_file_t* sparse_fs, loadmap_entry_t* lm)
 
   if(sparse_fs->lm_bytes_read == 0) sparse_fs->lm_bytes_read = SF_num_lm_SIZE; //the first lm should skip the info about number of lms
 
-  size_t realoffset = sparse_fs->footer.loadmap_offset + sparse_fs->lm_bytes_read;
-  if(realoffset == sparse_fs->footer.cct_offset) return SF_END; // no more next lm
+  size_t realoffset = sparse_fs->footer.loadmap_start + sparse_fs->lm_bytes_read;
+  if(realoffset == sparse_fs->footer.loadmap_end) return SF_END; // no more next lm
   fseek(sparse_fs->file, realoffset, SEEK_SET);
   HPCFMT_ThrowIfError(hpcrun_fmt_loadmapEntry_fread(lm, sparse_fs->file, malloc));
   sparse_fs->lm_bytes_read += ftell(sparse_fs->file) - realoffset;
@@ -1150,8 +1132,8 @@ int hpcrun_sparse_next_metric(hpcrun_sparse_file_t* sparse_fs, metric_desc_t* m,
 
   if(sparse_fs->metric_bytes_read == 0) sparse_fs->metric_bytes_read = SF_num_metric_SIZE; //the first metric should skip the info about number of metrics
 
-  size_t realoffset = sparse_fs->footer.met_tbl_offset + sparse_fs->metric_bytes_read;
-  if(realoffset == sparse_fs->footer.sm_offset) return SF_END; // no more next metric
+  size_t realoffset = sparse_fs->footer.met_tbl_start + sparse_fs->metric_bytes_read;
+  if(realoffset == sparse_fs->footer.met_tbl_end) return SF_END; // no more next metric
   fseek(sparse_fs->file, realoffset, SEEK_SET);
   HPCFMT_ThrowIfError(hpcrun_fmt_metricDesc_fread(m, perf_info, sparse_fs->file, fmtVersion, malloc));
   sparse_fs->cur_metric_id += 1;
@@ -1168,12 +1150,12 @@ int hpcrun_sparse_next_context(hpcrun_sparse_file_t* sparse_fs, hpcrun_fmt_cct_n
   
   //first time initialization
   if(sparse_fs->cct_node_read == 0){ 
-    fseek(sparse_fs->file, sparse_fs->footer.cct_offset, SEEK_SET);
+    fseek(sparse_fs->file, sparse_fs->footer.cct_start, SEEK_SET);
     HPCFMT_ThrowIfError(hpcfmt_int8_fread(&sparse_fs->num_cct, sparse_fs->file));
   }
-  if(sparse_fs->cct_node_read == sparse_fs->num_cct) return SF_END; //no more cct
+  if(sparse_fs->cct_node_read == sparse_fs->num_cct) return SF_END;
 
-  size_t realoffset = sparse_fs->footer.cct_offset + (SF_cct_node_SIZE * sparse_fs->cct_node_read) + SF_num_cct_SIZE; 
+  size_t realoffset = sparse_fs->footer.cct_start + (SF_cct_node_SIZE * sparse_fs->cct_node_read) + SF_num_cct_SIZE; 
   fseek(sparse_fs->file, realoffset, SEEK_SET);
   epoch_flags_t fake = {0};//need to remove in the future
   //node->num_metrics = 0;
@@ -1190,10 +1172,10 @@ int hpcrun_sparse_next_block(hpcrun_sparse_file_t* sparse_fs)
 
   //first time initialization 
   if(sparse_fs->sm_block_touched == 0){
-    fseek(sparse_fs->file, (sparse_fs->footer.sm_offset + SF_tid_SIZE), SEEK_SET);
+    fseek(sparse_fs->file, (sparse_fs->footer.sm_start + SF_tid_SIZE), SEEK_SET);
     HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(sparse_fs->num_nzval),sparse_fs->file));
     HPCFMT_ThrowIfError(hpcfmt_int4_fread(&(sparse_fs->num_nz_cct),sparse_fs->file));
-    sparse_fs->val_mid_offset    = sparse_fs->footer.sm_offset + SF_tid_SIZE + SF_num_val_SIZE + SF_num_nz_cct_SIZE;
+    sparse_fs->val_mid_offset    = sparse_fs->footer.sm_start + SF_tid_SIZE + SF_num_val_SIZE + SF_num_nz_cct_SIZE;
     sparse_fs->cct_offset_offset = sparse_fs->val_mid_offset + (SF_mid_SIZE + SF_val_SIZE) * sparse_fs->num_nzval; 
   }
   if(sparse_fs->sm_block_touched == sparse_fs->num_nz_cct) return SF_END; //no more cct block

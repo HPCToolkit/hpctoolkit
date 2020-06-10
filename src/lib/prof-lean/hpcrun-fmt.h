@@ -630,13 +630,17 @@ hpcrun_fmt_sparse_metrics_free(hpcrun_fmt_sparse_metrics_t* x, hpcfmt_free_fn de
 static const uint64_t HPCRUNsm = 0x48504352554E736D;
 
 typedef struct hpcrun_fmt_footer_t{
-  uint64_t hdr_offset;
-  uint64_t loadmap_offset;
-  uint64_t cct_offset;
-  uint64_t met_tbl_offset;
-  uint64_t sm_offset;
-  uint64_t footer_offset;
-  //uint32_t num_cct;
+  uint64_t hdr_start;
+  uint64_t hdr_end;
+  uint64_t loadmap_start;
+  uint64_t loadmap_end;
+  uint64_t cct_start;
+  uint64_t cct_end;
+  uint64_t met_tbl_start;
+  uint64_t met_tbl_end;
+  uint64_t sm_start;
+  uint64_t sm_end;
+  uint64_t footer_start;
 
   uint64_t HPCRUNsm;
 }hpcrun_fmt_footer_t;
@@ -663,7 +667,7 @@ static const int SF_END     = 0;
 static const int SF_FAIL    = 1;
 static const int SF_ERR     = -1;
 
-static const int SF_footer_SIZE           = 56; 
+static const int SF_footer_SIZE           = 96; 
 /*
 static const int SF_FOOTER_LENGTH         = 7; 
 static const int SF_FOOTER_hdr            = 0; 

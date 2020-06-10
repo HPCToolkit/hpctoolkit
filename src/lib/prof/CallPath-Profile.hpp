@@ -301,7 +301,7 @@ public:
 
   static int
   fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
-		  const hpcrun_fmt_hdr_t& hdr,
+		  const hpcrun_fmt_hdr_t& hdr, const hpcrun_fmt_footer_t& footer,
 		  std::string ctxtStr, const char* filename, FILE* outfs);
 
 #if 0
