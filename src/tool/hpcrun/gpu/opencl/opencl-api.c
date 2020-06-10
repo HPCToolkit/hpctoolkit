@@ -190,20 +190,27 @@ opencl_buffer_completion_callback
 {
   cl_int complete_flag = CL_COMPLETE;
   opencl_object_t* o = (opencl_object_t*)user_data;
-  cl_generic_callback_t* act_data = (cl_generic_callback_t*)((o->kind == OPENCL_KERNEL_CALLBACK) ? &(o->details.ker_cb) : &(o->details.mem_cb));
+  cl_generic_callback_t* act_data;
+  if (o->kind == OPENCL_KERNEL_CALLBACK) {
+    act_data = (cl_generic_callback_t*) &(o->details.ker_cb);
+  } else if (o->kind == OPENCL_MEMORY_CALLBACK) {
+    act_data = (cl_generic_callback_t*) &(o->details.mem_cb);
+  }
   uint64_t correlation_id = act_data->correlation_id;
   opencl_call type = act_data->type;
 
   if (event_command_exec_status == complete_flag) {
-	  gpu_correlation_id_map_entry_t *cid_map_entry = gpu_correlation_id_map_lookup(correlation_id);
-	if (cid_map_entry == NULL) {
-	  ETMSG(CL, "completion callback was called before registration callback. type: %d, correlation: %"PRIu64 "", type, correlation_id);
-	}
-	ETMSG(CL, "completion type: %d, Correlation id: %"PRIu64 "", type, correlation_id);
- 	opencl_activity_completion_notify();
-	opencl_activity_process(event, act_data);
+      gpu_correlation_id_map_entry_t *cid_map_entry = gpu_correlation_id_map_lookup(correlation_id);
+    if (cid_map_entry == NULL) {
+      ETMSG(CL, "completion callback was called before registration callback. type: %d, correlation: %"PRIu64 "", type, correlation_id);
+    }
+    ETMSG(CL, "completion type: %d, Correlation id: %"PRIu64 "", type, correlation_id);
+    opencl_activity_completion_notify();
+    opencl_activity_process(event, act_data);
   }
-  clReleaseEvent(event);
+  if (o->isInternalClEvent) {
+    clReleaseEvent(event);
+  }
   opencl_free(o);
   opencl_pending_operations_adjust(-1);
 }
