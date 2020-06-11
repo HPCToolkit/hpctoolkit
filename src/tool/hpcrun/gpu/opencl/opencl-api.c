@@ -86,7 +86,7 @@
 // local data
 //******************************************************************************
 
-static __thread atomic_ullong opencl_pending_operations;
+static atomic_ullong opencl_pending_operations;
 
 
 

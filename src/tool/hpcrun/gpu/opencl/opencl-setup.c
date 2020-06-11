@@ -129,6 +129,7 @@ opencl_setup_initialize
 {
   ETMSG(CL, "We are setting up opencl intercepts");
   opencl_setup_intercept();
+  opencl_api_initialize();
   opencl_intercept_initialize();
 }
 
