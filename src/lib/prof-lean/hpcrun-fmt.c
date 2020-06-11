@@ -1117,6 +1117,7 @@ int hpcrun_sparse_next_lm(hpcrun_sparse_file_t* sparse_fs, loadmap_entry_t* lm)
 
   size_t realoffset = sparse_fs->footer.loadmap_start + sparse_fs->lm_bytes_read;
   if(realoffset == sparse_fs->footer.loadmap_end) return SF_END; // no more next lm
+  if(realoffset > sparse_fs->footer.loadmap_end)  return SF_ERR;
   fseek(sparse_fs->file, realoffset, SEEK_SET);
   HPCFMT_ThrowIfError(hpcrun_fmt_loadmapEntry_fread(lm, sparse_fs->file, malloc));
   sparse_fs->lm_bytes_read += ftell(sparse_fs->file) - realoffset;
@@ -1134,6 +1135,7 @@ int hpcrun_sparse_next_metric(hpcrun_sparse_file_t* sparse_fs, metric_desc_t* m,
 
   size_t realoffset = sparse_fs->footer.met_tbl_start + sparse_fs->metric_bytes_read;
   if(realoffset == sparse_fs->footer.met_tbl_end) return SF_END; // no more next metric
+  if(realoffset > sparse_fs->footer.met_tbl_end)  return SF_ERR; 
   fseek(sparse_fs->file, realoffset, SEEK_SET);
   HPCFMT_ThrowIfError(hpcrun_fmt_metricDesc_fread(m, perf_info, sparse_fs->file, fmtVersion, malloc));
   sparse_fs->cur_metric_id += 1;
@@ -1156,6 +1158,7 @@ int hpcrun_sparse_next_context(hpcrun_sparse_file_t* sparse_fs, hpcrun_fmt_cct_n
   if(sparse_fs->cct_node_read == sparse_fs->num_cct) return SF_END;
 
   size_t realoffset = sparse_fs->footer.cct_start + (SF_cct_node_SIZE * sparse_fs->cct_node_read) + SF_num_cct_SIZE; 
+  if(realoffset > sparse_fs->footer.cct_end) return SF_ERR;
   fseek(sparse_fs->file, realoffset, SEEK_SET);
   epoch_flags_t fake = {0};//need to remove in the future
   //node->num_metrics = 0;
@@ -1181,7 +1184,9 @@ int hpcrun_sparse_next_block(hpcrun_sparse_file_t* sparse_fs)
   if(sparse_fs->sm_block_touched == sparse_fs->num_nz_cct) return SF_END; //no more cct block
 
   //read the first val_metricID pair position related to this cct
-  fseek(sparse_fs->file,(sparse_fs->cct_offset_offset + (SF_cct_id_SIZE + SF_cct_off_SIZE) * sparse_fs->sm_block_touched), SEEK_SET);
+  size_t realoffset = sparse_fs->cct_offset_offset + (SF_cct_id_SIZE + SF_cct_off_SIZE) * sparse_fs->sm_block_touched;
+  if(realoffset > sparse_fs->footer.sm_end) return SF_ERR;
+  fseek(sparse_fs->file, realoffset, SEEK_SET);
   size_t val_mid_idx;
   uint32_t cct_id;
   HPCFMT_ThrowIfError(hpcfmt_int4_fread(&cct_id,sparse_fs->file));
@@ -1217,6 +1222,7 @@ int hpcrun_sparse_next_entry(hpcrun_sparse_file_t* sparse_fs, hpcrun_metricVal_t
   size_t cur_pos = ftell(sparse_fs->file);
   size_t cur_block_start_pos = sparse_fs->val_mid_offset + (SF_mid_SIZE + SF_val_SIZE) * sparse_fs->cur_block_start;
   size_t cur_block_end_pos   = sparse_fs->val_mid_offset + (SF_mid_SIZE + SF_val_SIZE) * sparse_fs->cur_block_end;
+  if(cur_pos > sparse_fs->footer.sm_end || cur_block_start_pos > sparse_fs->footer.sm_end || cur_block_end_pos > sparse_fs->footer.sm_end) return SF_ERR;
   if((cur_pos < cur_block_start_pos) || (cur_pos > cur_block_end_pos)){
     fprintf(stderr, "ERROR: cannot read next entry for current cct: current position of hpcrun_sparse_file object is not within curren cct block's range.\n");
     return SF_ERR;

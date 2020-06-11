@@ -894,17 +894,33 @@ hpcrun_cct_fwrite(cct2metrics_t* cct2metrics_map, cct_node_t* cct, FILE* fs, epo
   hpcrun_cct_walk_node_1st(cct, lwrite, &write_arg);
 
 
-  //try to make sure the recorded info are correct
+  //YUMENG: try to make sure the recorded info are correct
   if(sparse_metrics->num_nz_cct != num_nzcct) {
-    EEMSG("ERROR: recorded number of non-zeros ccts don't match");
+    hpcrun_cct_fwrite_errmsg_w_fn(fs, sparse_metrics->tid, "recorded number of non-zero cct nodes after walking through the cct don't match");
     return HPCRUN_ERR;
   }
   if(sparse_metrics->cur_cct_offset != sparse_metrics->num_vals){
-    EEMSG("ERROR: number of nzvals and cur_cct_offset are not equal after walking through the cct tree");
+    hpcrun_cct_fwrite_errmsg_w_fn(fs, sparse_metrics->tid, "number of nzvals and cur_cct_offset are not equal after walking through the cct");
     return HPCRUN_ERR;
   } 
     
   return HPCRUN_OK;
+}
+
+//YUMENG: help write error message with profile name
+void hpcrun_cct_fwrite_errmsg_w_fn(FILE* fs, uint32_t tid, char* msg)
+{
+  int MAXSIZE = 128;
+  char proclink[MAXSIZE];
+  char filename[MAXSIZE];
+  sprintf(proclink, "/proc/self/fd/%d", fileno(fs));
+  ssize_t r = readlink(proclink, filename, MAXSIZE);
+  if(r < 0) {
+    EEMSG("ERROR: %s for profile with thread %d", msg, tid);
+  }else{
+    filename[r] = '\0';
+    EEMSG("ERROR: %s for '%s'", msg, filename);
+  }
 }
 
 //

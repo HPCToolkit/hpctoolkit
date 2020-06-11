@@ -277,6 +277,8 @@ int hpcrun_cct_fwrite(cct2metrics_t* cct2metrics_map,
 //YUMENG: add sparse_metrics to collect metric values and info 
 int hpcrun_cct_fwrite(cct2metrics_t* cct2metrics_map,
                       cct_node_t* cct, FILE* fs, epoch_flags_t flags, hpcrun_fmt_sparse_metrics_t* sparse_metrics);
+
+void hpcrun_cct_fwrite_errmsg_w_fn(FILE* fs, uint32_t tid, char* msg);
 #endif
 //
 // Utilities
