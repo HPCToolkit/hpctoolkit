@@ -156,14 +156,20 @@ clEnqueueNDRangeKernel_wrapper
   kernel_info->kind = OPENCL_KERNEL_CALLBACK;
   cl_kernel_callback_t *kernel_cb = &(kernel_info->details.ker_cb);
   initializeKernelCallBackInfo(kernel_cb, correlation_id);
-  if(!event) {
-    event = &(kernel_info->event);
+  cl_event my_event;
+  cl_event *eventp;
+  if (!event) {
+    kernel_info->isInternalClEvent = true;
+    eventp = &my_event;
+  } else {
+    eventp = event;
+    kernel_info->isInternalClEvent = false;
   }
   clkernel_t clEnqueueNDRangeKernel_wrappee = GOTCHA_GET_TYPED_WRAPPEE(clEnqueueNDRangeKernel_handle, clkernel_t);
-  cl_int return_status = clEnqueueNDRangeKernel_wrappee(command_queue, ocl_kernel, work_dim, global_work_offset, global_work_size, local_work_size, num_events_in_wait_list, event_wait_list, event);
+  cl_int return_status = clEnqueueNDRangeKernel_wrappee(command_queue, ocl_kernel, work_dim, global_work_offset, global_work_size, local_work_size, num_events_in_wait_list, event_wait_list, eventp);
   ETMSG(CL, "registering callback for type: kernel. Correlation id: %"PRIu64 "", correlation_id);
   opencl_subscriber_callback(kernel_cb->type, kernel_cb->correlation_id);
-  clSetEventCallback(*event, CL_COMPLETE, &opencl_buffer_completion_callback, kernel_info);
+  clSetEventCallback(*eventp, CL_COMPLETE, &opencl_buffer_completion_callback, kernel_info);
   return return_status;
 }
 
@@ -187,15 +193,21 @@ clEnqueueReadBuffer_wrapper
   mem_info->kind = OPENCL_MEMORY_CALLBACK;
   cl_memory_callback_t *mem_transfer_cb = &(mem_info->details.mem_cb);
   initializeMemoryCallBackInfo(mem_transfer_cb, correlation_id, cb, false);
-  if(!event) {
-    event = &(mem_info->event);
+  cl_event my_event;
+  cl_event *eventp;
+  if (!event) {
+    mem_info->isInternalClEvent = true;
+    eventp = &my_event;
+  } else {
+    eventp = event;
+    mem_info->isInternalClEvent = false;
   }
   clreadbuffer_t clEnqueueReadBuffer_wrappee = GOTCHA_GET_TYPED_WRAPPEE(clEnqueueReadBuffer_handle, clreadbuffer_t);
-  cl_int return_status = clEnqueueReadBuffer_wrappee(command_queue, buffer, blocking_read, offset, cb, ptr, num_events_in_wait_list, event_wait_list, event);
+  cl_int return_status = clEnqueueReadBuffer_wrappee(command_queue, buffer, blocking_read, offset, cb, ptr, num_events_in_wait_list, event_wait_list, eventp);
   ETMSG(CL, "registering callback for type: D2H. Correlation id: %"PRIu64 "", correlation_id);
   ETMSG(CL, "%d(bytes) of data being transferred from device to host", (long)cb);
   opencl_subscriber_callback(mem_transfer_cb->type, mem_transfer_cb->correlation_id);
-  clSetEventCallback(*event, CL_COMPLETE, &opencl_buffer_completion_callback, mem_info);
+  clSetEventCallback(*eventp, CL_COMPLETE, &opencl_buffer_completion_callback, mem_info);
   return return_status;
 }
 
@@ -219,15 +231,21 @@ clEnqueueWriteBuffer_wrapper
   mem_info->kind = OPENCL_MEMORY_CALLBACK;
   cl_memory_callback_t *mem_transfer_cb = &(mem_info->details.mem_cb);
   initializeMemoryCallBackInfo(mem_transfer_cb, correlation_id, cb, true);
-  if(!event) {
-    event = &(mem_info->event);
+  cl_event my_event;
+  cl_event *eventp;
+  if (!event) {
+    mem_info->isInternalClEvent = true;
+    eventp = &my_event;
+  } else {
+    eventp = event;
+    mem_info->isInternalClEvent = false;
   }
   clwritebuffer_t clEnqueueWriteBuffer_wrappee = GOTCHA_GET_TYPED_WRAPPEE(clEnqueueWriteBuffer_handle, clwritebuffer_t);
-  cl_int return_status = clEnqueueWriteBuffer_wrappee(command_queue, buffer, blocking_write, offset, cb, ptr, num_events_in_wait_list, event_wait_list, event);
+  cl_int return_status = clEnqueueWriteBuffer_wrappee(command_queue, buffer, blocking_write, offset, cb, ptr, num_events_in_wait_list, event_wait_list, eventp);
   ETMSG(CL, "registering callback for type: H2D. Correlation id: %"PRIu64 "", correlation_id);
   ETMSG(CL, "%d(bytes) of data being transferred from host to device", (long)cb);
   opencl_subscriber_callback(mem_transfer_cb->type, mem_transfer_cb->correlation_id);
-  clSetEventCallback(*event, CL_COMPLETE, &opencl_buffer_completion_callback, mem_info);
+  clSetEventCallback(*eventp, CL_COMPLETE, &opencl_buffer_completion_callback, mem_info);
   return return_status;
 }
 

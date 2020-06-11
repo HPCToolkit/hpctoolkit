@@ -72,9 +72,8 @@
 
 typedef enum {
   OPENCL_PROFILING_DATA                      = 0,
-  OPENCL_EVENT                               = 1,
-  OPENCL_KERNEL_CALLBACK                     = 2,
-  OPENCL_MEMORY_CALLBACK                     = 3
+  OPENCL_KERNEL_CALLBACK                     = 1,
+  OPENCL_MEMORY_CALLBACK                     = 2
 } opencl_object_kind_t;
 
 typedef struct opencl_object_channel_t {
@@ -93,7 +92,7 @@ typedef struct opencl_object_t {
   s_element_ptr_t next;
   opencl_object_channel_t channel;
   opencl_object_kind_t kind;
-  cl_event event;
+  bool isInternalClEvent;
   opencl_object_details_t details;
 } opencl_object_t;
 
