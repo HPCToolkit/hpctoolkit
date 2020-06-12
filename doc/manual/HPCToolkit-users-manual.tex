@@ -1274,6 +1274,12 @@ or the \hpcrun{} command itself.
 % ===========================================================================
 % ===========================================================================
 
+\section{\hpcrun{} causes my application to abort}
+
+If your application has been compiled with the compiler flag \verb|-pg| to collect performance data with \verb|gprof|, on {\tt ppc64le} this may cause your application to abort with signal 11 (SEGV) if you profile it with \hpcrun{}.  You can check whether your application has been compiled with flag \verb|-pg|  by running {\tt nm}  on the binary and piping the output through {\tt grep} to check for a definition or a reference to the function symbol  \verb|__gmon_start__|.
+
+To avoid a SEGV failure caused by an interaction between \verb|gprof| instrumentation and \hpcrun{}, recompile your application and libraries without the \verb|-pg| compiler flag.
+
 \section{How do I choose \hpcrun{} sampling periods?}
 \label{sec:troubleshooting:hpcrun-sample-periods}
 
