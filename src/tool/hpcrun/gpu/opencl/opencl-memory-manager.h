@@ -76,9 +76,11 @@ typedef enum {
   OPENCL_MEMORY_CALLBACK                     = 2
 } opencl_object_kind_t;
 
+
 typedef struct opencl_object_channel_t {
   bistack_t bistacks[2];
 } opencl_object_channel_t;
+
 
 typedef struct opencl_object_details_t {
   union {
@@ -88,6 +90,7 @@ typedef struct opencl_object_details_t {
   };
 } opencl_object_details_t;
 
+
 typedef struct opencl_object_t {
   s_element_ptr_t next;
   opencl_object_channel_t channel;
@@ -96,6 +99,11 @@ typedef struct opencl_object_t {
   opencl_object_details_t details;
 } opencl_object_t;
 
+
+
+//******************************************************************************
+// interface operations
+//******************************************************************************
 
 opencl_object_t*
 opencl_malloc

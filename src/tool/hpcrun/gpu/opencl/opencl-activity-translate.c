@@ -67,27 +67,6 @@
 //******************************************************************************
 
 static void
-getTimingInfoFromClEvent
-(
-  profilingData_t* pd,
-  cl_event event
-)
-{
-  cl_ulong commandStart = 0;
-  cl_ulong commandEnd = 0;
-  cl_int errorCode = CL_SUCCESS;
-
-  errorCode |= clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, sizeof(commandStart), &commandStart, NULL);
-  errorCode |= clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(commandEnd), &commandEnd, NULL);
-  if (errorCode != CL_SUCCESS) {
-	ETMSG(CL, "error in collecting profiling data");
-  }
-  pd->startTime = commandStart;
-  pd->endTime = commandEnd;
-}
-
-
-static void
 getMemoryProfileInfo
 (
   profilingData_t* pd,
@@ -192,7 +171,7 @@ opencl_activity_translate
 )
 {
   cl_generic_callback_t* cb_data = (cl_generic_callback_t*)user_data;
-  opencl_call type = cb_data->type;
+  opencl_call_t type = cb_data->type;
   switch (type) {
     case kernel:
       convert_kernel_launch(ga, user_data, event);

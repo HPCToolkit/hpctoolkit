@@ -83,6 +83,16 @@ static atomic_long correlation_id;
 // private operations
 //******************************************************************************
 
+static void
+opencl_intercept_initialize
+(
+  void
+)
+{
+  atomic_store(&correlation_id, 0);
+}
+
+
 static uint64_t
 getCorrelationId
 (
@@ -169,7 +179,7 @@ clEnqueueNDRangeKernel_wrapper
   cl_int return_status = clEnqueueNDRangeKernel_wrappee(command_queue, ocl_kernel, work_dim, global_work_offset, global_work_size, local_work_size, num_events_in_wait_list, event_wait_list, eventp);
   ETMSG(CL, "registering callback for type: kernel. Correlation id: %"PRIu64 "", correlation_id);
   opencl_subscriber_callback(kernel_cb->type, kernel_cb->correlation_id);
-  clSetEventCallback(*eventp, CL_COMPLETE, &opencl_buffer_completion_callback, kernel_info);
+  clSetEventCallback_wrapper(*eventp, CL_COMPLETE, &opencl_activity_completion_callback, kernel_info);
   return return_status;
 }
 
@@ -207,7 +217,7 @@ clEnqueueReadBuffer_wrapper
   ETMSG(CL, "registering callback for type: D2H. Correlation id: %"PRIu64 "", correlation_id);
   ETMSG(CL, "%d(bytes) of data being transferred from device to host", (long)cb);
   opencl_subscriber_callback(mem_transfer_cb->type, mem_transfer_cb->correlation_id);
-  clSetEventCallback(*eventp, CL_COMPLETE, &opencl_buffer_completion_callback, mem_info);
+  clSetEventCallback_wrapper(*eventp, CL_COMPLETE, &opencl_activity_completion_callback, mem_info);
   return return_status;
 }
 
@@ -245,7 +255,7 @@ clEnqueueWriteBuffer_wrapper
   ETMSG(CL, "registering callback for type: H2D. Correlation id: %"PRIu64 "", correlation_id);
   ETMSG(CL, "%d(bytes) of data being transferred from host to device", (long)cb);
   opencl_subscriber_callback(mem_transfer_cb->type, mem_transfer_cb->correlation_id);
-  clSetEventCallback(*eventp, CL_COMPLETE, &opencl_buffer_completion_callback, mem_info);
+  clSetEventCallback_wrapper(*eventp, CL_COMPLETE, &opencl_activity_completion_callback, (void*) mem_info);
   return return_status;
 }
 
@@ -255,22 +265,17 @@ clEnqueueWriteBuffer_wrapper
 // gotcha variables
 //******************************************************************************
 
-static gotcha_binding_t queue_wrapper[] = {
+static gotcha_binding_t opencl_bindings[] = {
   {
     "clCreateCommandQueue",
     (void*) clCreateCommandQueue_wrapper,
-    &clCreateCommandQueue_handle}
-};
-
-static gotcha_binding_t kernel_wrapper[] = {
+    &clCreateCommandQueue_handle
+  },
   {
     "clEnqueueNDRangeKernel",
     (void*)clEnqueueNDRangeKernel_wrapper,
     &clEnqueueNDRangeKernel_handle
-  }
-};
-
-static gotcha_binding_t buffer_wrapper[] = {
+  },
   {
     "clEnqueueReadBuffer",
     (void*) clEnqueueReadBuffer_wrapper,
@@ -290,35 +295,23 @@ static gotcha_binding_t buffer_wrapper[] = {
 //******************************************************************************
 
 void
-opencl_intercept_initialize
+opencl_intercept_setup
 (
   void
 )
 {
-  atomic_store(&correlation_id, 0);
+  ETMSG(CL, "We are setting up opencl intercepts");
+  gotcha_wrap(opencl_bindings, 4, "opencl_bindings");
+  opencl_intercept_initialize();
 }
 
 
 void
-opencl_setup_intercept
-(
-  void
-)
-{
-  gotcha_wrap(queue_wrapper, 1, "queue_intercept");
-  gotcha_wrap(kernel_wrapper, 1, "kernel_intercept");
-  gotcha_wrap(buffer_wrapper, 2, "memory_intercept");
-}
-
-
-void
-opencl_teardown_intercept
+opencl_intercept_teardown
 (
   void
 )
 {
   // not sure if this works
-  gotcha_set_priority("queue_intercept", -1);
-  gotcha_set_priority("kernel_intercept", -1);
-  gotcha_set_priority("memory_intercept", -1);
+  gotcha_set_priority("opencl_bindings", -1);
 }

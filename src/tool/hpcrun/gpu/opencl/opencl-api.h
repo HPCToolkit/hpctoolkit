@@ -78,16 +78,21 @@ profilingData_t
 } profilingData_t;
 
 
+
+//******************************************************************************
+// interface operations
+//******************************************************************************
+
 void
 opencl_subscriber_callback
 (
-  opencl_call,
+  opencl_call_t,
   uint64_t
 );
 
 
 void
-opencl_buffer_completion_callback
+opencl_activity_completion_callback
 (
   cl_event,
   cl_int,
@@ -96,7 +101,32 @@ opencl_buffer_completion_callback
 
 
 void
+getTimingInfoFromClEvent
+(
+  profilingData_t*,
+  cl_event
+);
+
+
+void
+clSetEventCallback_wrapper
+(
+  cl_event event,
+  cl_int event_command_status,
+  void (CL_CALLBACK*)(cl_event, cl_int, void *),
+  void* user_data
+);
+
+
+void
 opencl_api_initialize
+(
+  void
+);
+
+
+int
+opencl_bind
 (
   void
 );

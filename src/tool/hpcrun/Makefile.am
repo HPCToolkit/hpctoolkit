@@ -504,9 +504,9 @@ MY_CUPTI_FILES = sample-sources/nvidia.c	\
 endif
 
 if ENABLE_OPENCL
-MY_OPENCL_FILES =\
+#MY_OPENCL_FILES =
+MY_BASE_FILES += \
 	sample-sources/opencl.c 				\
-	gpu/opencl/opencl-setup.c				\
 	gpu/opencl/opencl-intercept.c			\
 	gpu/opencl/opencl-api.c					\
 	gpu/opencl/opencl-memory-manager.c  	\
@@ -939,7 +939,6 @@ if OPT_ENABLE_ROCM
 endif
 
 if ENABLE_OPENCL
-  libhpcrun_la_SOURCES  += $(MY_OPENCL_FILES)
   libhpcrun_la_CFLAGS += $(OPENCL_IFLAGS)
   libhpcrun_la_LDFLAGS += $(GOTCHA_LD_FLGS)
 

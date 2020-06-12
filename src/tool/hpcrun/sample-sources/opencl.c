@@ -2,9 +2,6 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://outreach.scidac.gov/svn/hpctoolkit/trunk/src/tool/hpcrun/sample-sources/papi.c $
-// $Id: papi.c 3328 2010-1/2-23 23:39:09Z tallent $
-//
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
 //
@@ -43,8 +40,6 @@
 // if advised of the possibility of such damage.
 //
 // ******************************************************* EndRiceCopyright *
-
-
 
 //******************************************************************************
 // system includes
@@ -88,7 +83,6 @@
 #include <hpcrun/device-finalizers.h>
 #include <hpcrun/gpu/gpu-activity.h>
 #include <hpcrun/gpu/gpu-metrics.h>
-#include <hpcrun/gpu/opencl/opencl-setup.h>
 #include <hpcrun/gpu/opencl/opencl-api.h>
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
@@ -196,11 +190,11 @@ METHOD_FN(finalize_event_list)
 {
   #ifndef HPCRUN_STATIC_LINK
   if (opencl_bind()) {
-	EEMSG("hpcrun: unable to bind to opencl library %s\n", dlerror());
-	monitor_real_exit(-1);
+    EEMSG("hpcrun: unable to bind to opencl library %s\n", dlerror());
+    monitor_real_exit(-1);
   }
   #endif
-  opencl_setup_initialize();
+  opencl_api_initialize();
   device_finalizer_shutdown.fn = opencl_api_finalize;
   device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_shutdown);
 }

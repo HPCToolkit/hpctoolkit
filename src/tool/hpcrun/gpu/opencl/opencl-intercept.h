@@ -65,6 +65,7 @@ typedef cl_command_queue (*clqueue_t)(
   cl_int *
 );
 
+
 typedef cl_int (*clkernel_t)(
   cl_command_queue,
   cl_kernel,
@@ -76,6 +77,7 @@ typedef cl_int (*clkernel_t)(
   const cl_event*,
   cl_event*
 );
+
 
 typedef cl_int (*clreadbuffer_t)(
   cl_command_queue,
@@ -89,6 +91,7 @@ typedef cl_int (*clreadbuffer_t)(
   cl_event *
 );
 
+
 typedef cl_int (*clwritebuffer_t)(
   cl_command_queue,
   cl_mem,
@@ -101,47 +104,49 @@ typedef cl_int (*clwritebuffer_t)(
   cl_event *
 );
 
+
 typedef enum {
-  memcpy_H2D,
-  memcpy_D2H,
-  kernel
-} opencl_call;
+  memcpy_H2D                      = 0,
+  memcpy_D2H                      = 1,
+  kernel                          = 2
+} opencl_call_t;
+
 
 typedef struct cl_generic_callback_t {
   uint64_t correlation_id;
-  opencl_call type;
+  opencl_call_t type;
 } cl_generic_callback_t;
+
 
 typedef struct cl_kernel_callback_t{
   uint64_t correlation_id;
-  opencl_call type;
+  opencl_call_t type;
 } cl_kernel_callback_t;
+
 
 typedef struct cl_memory_callback_t{
   uint64_t correlation_id;
-  opencl_call type;
+  opencl_call_t type;
   bool fromHostToDevice;
   bool fromDeviceToHost;
   size_t size;
 } cl_memory_callback_t;
 
 
+
+//******************************************************************************
+// interface operations
+//******************************************************************************
+
 void
-opencl_intercept_initialize
+opencl_intercept_setup
 (
   void
 );
 
 
 void
-opencl_setup_intercept
-(
-  void
-);
-
-
-void
-opencl_teardown_intercept
+opencl_intercept_teardown
 (
   void
 );
