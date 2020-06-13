@@ -279,6 +279,7 @@ MY_BASE_FILES =				\
 	env.c				\
 	epoch.c				\
 	files.c				\
+	gprof.c				\
 	handling_sample.c		\
 	hpcrun-initializers.c		\
 	hpcrun_options.c		\
