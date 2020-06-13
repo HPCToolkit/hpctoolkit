@@ -1273,13 +1273,6 @@ or the \hpcrun{} command itself.
 
 % ===========================================================================
 % ===========================================================================
-
-\section{\hpcrun{} causes my application to abort}
-
-If your application has been compiled with the compiler flag \verb|-pg| to collect performance data with \verb|gprof|, on {\tt ppc64le} this may cause your application to abort with signal 11 (SEGV) if you profile it with \hpcrun{}.  You can check whether your application has been compiled with flag \verb|-pg|  by running {\tt nm}  on the binary and piping the output through {\tt grep} to check for a definition or a reference to the function symbol  \verb|__gmon_start__|.
-
-To avoid a SEGV failure caused by an interaction between \verb|gprof| instrumentation and \hpcrun{}, recompile your application and libraries without the \verb|-pg| compiler flag.
-
 \section{How do I choose \hpcrun{} sampling periods?}
 \label{sec:troubleshooting:hpcrun-sample-periods}
 
@@ -1344,6 +1337,18 @@ The most common causes for unusually high overhead are the following:
 
 \end{itemize}
 
+
+\section{\hpcrun{} reports that my application spends a lot of time in C library functions with names that include {\tt mcount}}
+
+If performance measurements with \hpcrun{} show that your
+application is spending a lot of time in C library routines with
+names that include the string {\tt mcount} (e.g., \verb|_mcount| and
+\verb|__mcount_internal|), your code has been compiled with the compiler
+flag \verb|-pg|, which adds instrumentation to collect performance
+measurement data for the \verb|gprof| profiler.  If you are using
+\hpcrun{} to collect performance data, the \verb|gprof| instrumentation
+is needlessly slowing your application. Recompile your code without the
+\verb|-pg| compiler flag and measure again.
 
 % ===========================================================================
 % ===========================================================================
