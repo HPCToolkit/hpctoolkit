@@ -115,19 +115,16 @@ convert_kernel_launch
 )
 {
   cl_kernel_callback_t* kernel_cb_data = (cl_kernel_callback_t*)user_data;
-  ETMSG(CL, "Saving kernel data to gpu_activity_t");
-  ga->kind = GPU_ACTIVITY_KERNEL;
-  opencl_object_t *p = opencl_malloc();
-  p->kind = OPENCL_PROFILING_DATA;
-  profilingData_t* pd = &(p->details.pd);
-  getTimingInfoFromClEvent(pd, event);
+  profilingData_t pd;
+  memset(&pd, 0, sizeof(profilingData_t));
+  getTimingInfoFromClEvent(&pd, event);
   gpu_kernel_t kernel_data;
   memset(&kernel_data, 0, sizeof(gpu_kernel_t));
-  openclKernelDataToGenericKernelData(&kernel_data, pd);
+  openclKernelDataToGenericKernelData(&kernel_data, &pd);
+  ga->kind = GPU_ACTIVITY_KERNEL;
   ga->details.kernel = kernel_data;
-  set_gpu_interval(&ga->details.interval, pd->startTime, pd->endTime);
   ga->details.kernel.correlation_id = kernel_cb_data->correlation_id;
-  opencl_free(p);
+  set_gpu_interval(&ga->details.interval, pd.startTime, pd.endTime);
 }
 
 
@@ -141,19 +138,17 @@ convert_memcpy
 )
 {
   cl_memory_callback_t* memory_cb_data = (cl_memory_callback_t*)user_data;
-  opencl_object_t *p = opencl_malloc();
-  p->kind = OPENCL_PROFILING_DATA;
-  profilingData_t* pd = &(p->details.pd);
-  getTimingInfoFromClEvent(pd, event);
-  getMemoryProfileInfo(pd, memory_cb_data);
-  ga->kind = GPU_ACTIVITY_MEMCPY;
+  profilingData_t pd;
+  memset(&pd, 0, sizeof(profilingData_t));
+  getTimingInfoFromClEvent(&pd, event);
+  getMemoryProfileInfo(&pd, memory_cb_data);
   gpu_memcpy_t memcpy_data;
   memset(&memcpy_data, 0, sizeof(gpu_memcpy_t));
-  openclMemDataToGenericMemData(&memcpy_data, pd);
+  openclMemDataToGenericMemData(&memcpy_data, &pd);
+  ga->kind = GPU_ACTIVITY_MEMCPY;
   ga->details.memcpy = memcpy_data;
   ga->details.memcpy.correlation_id = memory_cb_data->correlation_id;
-  set_gpu_interval(&ga->details.interval, pd->startTime, pd->endTime);
-  opencl_free(p);
+  set_gpu_interval(&ga->details.interval, pd.startTime, pd.endTime);
 }
 
 

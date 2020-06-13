@@ -300,7 +300,7 @@ opencl_intercept_setup
   void
 )
 {
-  ETMSG(CL, "We are setting up opencl intercepts");
+  ETMSG(CL, "setting up opencl intercepts");
   gotcha_wrap(opencl_bindings, 4, "opencl_bindings");
   opencl_intercept_initialize();
 }
