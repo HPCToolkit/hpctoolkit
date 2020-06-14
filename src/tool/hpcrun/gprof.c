@@ -50,5 +50,6 @@
 #define NOOP(name) void name(void) {}
 
 NOOP(__monstartup)
+NOOP(_mcount)
 NOOP(_mcleanup)
 
