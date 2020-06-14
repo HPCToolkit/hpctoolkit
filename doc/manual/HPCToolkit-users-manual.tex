@@ -1338,17 +1338,17 @@ The most common causes for unusually high overhead are the following:
 \end{itemize}
 
 
-\section{\hpcrun{} reports that my application spends a lot of time in C library functions with names that include {\tt mcount}}
+% \section{\hpcrun{} reports that my application spends a lot of time in C library functions with names that include {\tt mcount}}
 
-If performance measurements with \hpcrun{} show that your
-application is spending a lot of time in C library routines with
-names that include the string {\tt mcount} (e.g., \verb|_mcount| and
-\verb|__mcount_internal|), your code has been compiled with the compiler
-flag \verb|-pg|, which adds instrumentation to collect performance
-measurement data for the \verb|gprof| profiler.  If you are using
-\hpcrun{} to collect performance data, the \verb|gprof| instrumentation
-is needlessly slowing your application. Recompile your code without the
-\verb|-pg| compiler flag and measure again.
+% If performance measurements with \hpcrun{} show that your
+% application is spending a lot of time in C library routines with
+% names that include the string {\tt mcount} (e.g., \verb|_mcount| and
+% \verb|__mcount_internal|), your code has been compiled with the compiler
+% flag \verb|-pg|, which adds instrumentation to collect performance
+% measurement data for the \verb|gprof| profiler.  If you are using
+% \hpcrun{} to collect performance data, the \verb|gprof| instrumentation
+% is needlessly slowing your application. Recompile your code without the
+% \verb|-pg| compiler flag and measure again.
 
 % ===========================================================================
 % ===========================================================================
