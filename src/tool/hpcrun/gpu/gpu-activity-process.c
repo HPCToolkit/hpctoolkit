@@ -568,7 +568,7 @@ gpu_activity_process
  gpu_activity_t *ga
 )
 {
-  switch (ga->kind) {
+	switch (ga->kind) {
 
   case GPU_ACTIVITY_PC_SAMPLING:
     gpu_sample_process(ga);

@@ -147,6 +147,7 @@
   macro(cuptiActivityPushExternalCorrelationId)  \
   macro(cuptiActivityRegisterCallbacks)          \
   macro(cuptiDeviceGetTimestamp)                 \
+  macro(cuptiGetTimestamp)                 \
   macro(cuptiEnableDomain)                       \
   macro(cuptiFinalize)                           \
   macro(cuptiGetResultString)                    \
@@ -392,6 +393,15 @@ CUPTI_FN
   CUcontext context,
   uint64_t *timestamp
  )
+);
+
+
+CUPTI_FN
+(
+	cuptiGetTimestamp,
+	(
+		uint64_t* timestamp
+	)
 );
 
 
@@ -703,6 +713,7 @@ cupti_subscriber_callback
  const void *cb_info
 )
 {
+
   if (domain == CUPTI_CB_DOMAIN_RESOURCE) {
     const CUpti_ResourceData *rd = (const CUpti_ResourceData *) cb_info;
     if (cb_id == CUPTI_CBID_RESOURCE_MODULE_LOADED) {
@@ -906,8 +917,16 @@ cupti_subscriber_callback
 
         hpcrun_safe_exit();
 
+				//TODO: DEJAN - get time
+				uint64_t time;
+				cupti_activity_timestamp_get(&time);
+
+
 							// Generate notification entry
 				uint64_t cpu_submit_time = CPU_NANOTIME();
+
+				printf("1 cupti_subscriber_callback:: Activity time = %lu | cpu_submit = %lu\n", time, cpu_submit_time);
+
 				gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts,
 					cpu_submit_time);
 
@@ -1053,9 +1072,18 @@ cupti_subscriber_callback
 
         cupti_trace_node = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace);
 
+
+
+				//TODO: DEJAN - get time
+				uint64_t time;
+				cupti_activity_timestamp_get(&time);
         // Generate notification entry
 				uint64_t cpu_submit_time = CPU_NANOTIME();
-        gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, 
+
+				printf("2 cupti_subscriber_callback:: Activity time = %lu | cpu_submit = %lu\n", time, cpu_submit_time);
+
+
+				gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts,
 					cpu_submit_time);
 
         PRINT("Runtime push externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
@@ -1090,6 +1118,16 @@ cupti_device_timestamp_get
 )
 {
   HPCRUN_CUPTI_CALL(cuptiDeviceGetTimestamp, (context, time));
+}
+
+
+void
+cupti_activity_timestamp_get
+(
+ uint64_t *time
+)
+{
+	HPCRUN_CUPTI_CALL(cuptiGetTimestamp, (time));
 }
 
 
@@ -1153,6 +1191,7 @@ cupti_buffer_completion_callback
  size_t validSize
 )
 {
+
   // handle notifications
   cupti_buffer_completion_notify();
 
@@ -1164,7 +1203,13 @@ cupti_buffer_completion_callback
     do {
       status = cupti_buffer_cursor_advance(buffer, validSize, &cupti_activity);
       if (status) {
-        cupti_activity_process(cupti_activity);
+
+//      	//TODO: DEJAN - get time
+//				uint64_t time;
+//				cupti_activity_timestamp_get(&time);
+//				printf("Activity time = %lu \n", time);
+
+      	cupti_activity_process(cupti_activity);
         ++processed;
       }
     } while (status);
@@ -1179,6 +1224,7 @@ cupti_buffer_completion_callback
 
   free(buffer);
 }
+
 
 //-------------------------------------------------------------
 // event specification

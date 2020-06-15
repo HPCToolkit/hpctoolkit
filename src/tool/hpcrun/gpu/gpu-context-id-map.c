@@ -204,8 +204,8 @@ gpu_context_id_map_adjust_times
     }
   }
 //  if(ti->start < entry->first_time)
-//  	printf("Submit Time = %u | start = %u | end = %u || First_time = %u\n\n", \
-//  					ti->cpu_submit_time, ti->start, ti->end, entry->first_time );
+  	printf("Submit Time = %lu | start = %lu | end = %lu || First_time = %lu\n\n", \
+  					ti->cpu_submit_time, ti->start, ti->end, entry->first_time );
 
   ti->start += entry->time_offset;
   ti->end += entry->time_offset;
