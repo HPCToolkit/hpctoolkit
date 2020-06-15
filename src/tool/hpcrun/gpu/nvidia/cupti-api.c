@@ -608,7 +608,7 @@ cupti_write_cubin
 
 
 void
-cupti_load_callback_cuda
+	cupti_load_callback_cuda
 (
  uint32_t cubin_id, 
  const void *cubin, 
@@ -736,6 +736,7 @@ cupti_subscriber_callback
 
     switch (cb_id) {
       //FIXME(Keren): do not support memory allocate and free for current CUPTI version
+      // FIXME(Dejan): here find #bytes from func argument list and atribute it to node in cct(corr_id)
       //case CUPTI_DRIVER_TRACE_CBID_cuMemAlloc:
       //case CUPTI_DRIVER_TRACE_CBID_cu64MemAlloc:
       //case CUPTI_DRIVER_TRACE_CBID_cuMemAllocPitch:
@@ -895,19 +896,19 @@ cupti_subscriber_callback
 
         hpcrun_safe_enter();
 
-	gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
+				gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
 
-	if (is_kernel_op) {
-	  cct_node_t *trace_node = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace);
-	  cct_node_t *cct_func = hpcrun_cct_insert_ip_norm(trace_node, func_ip);
-	  hpcrun_cct_retain(cct_func);
-	}
+				if (is_kernel_op) {
+					cct_node_t *trace_node = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace);
+					cct_node_t *cct_func = hpcrun_cct_insert_ip_norm(trace_node, func_ip);
+					hpcrun_cct_retain(cct_func);
+				}
 
         hpcrun_safe_exit();
 
-        // Generate notification entry
-	uint64_t cpu_submit_time = CPU_NANOTIME();
-        gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, 
+							// Generate notification entry
+				uint64_t cpu_submit_time = CPU_NANOTIME();
+				gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts,
 					cpu_submit_time);
 
         PRINT("Driver push externalId %lu (cb_id = %u)\n", correlation_id, cb_id);
@@ -1053,7 +1054,7 @@ cupti_subscriber_callback
         cupti_trace_node = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace);
 
         // Generate notification entry
-	uint64_t cpu_submit_time = CPU_NANOTIME();
+				uint64_t cpu_submit_time = CPU_NANOTIME();
         gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, 
 					cpu_submit_time);
 

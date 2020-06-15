@@ -45,12 +45,13 @@
 #define gpu_trace_channel_set_h
 
 
-#define MAX_THREADS_CONSUMERS 256
+
 //******************************************************************************
 // forward type declarations
 //******************************************************************************
 
 typedef struct gpu_trace_channel_t gpu_trace_channel_t;
+
 
 
 //******************************************************************************
@@ -69,19 +70,23 @@ typedef void (*gpu_trace_channel_fn_t)
 //******************************************************************************
 
 void
+gpu_trace_channel_stack_alloc(int size);
+
+
+void
 gpu_trace_channel_set_insert
 (
  gpu_trace_channel_t *channel,
- int thread_num
+ int set_index
 );
 
 
 void
 gpu_trace_channel_set_consume
 (
- int channel_num
+ int set_index
 );
 
-void gpu_trace_channel_set_release(int channel_num);
+void gpu_trace_channel_set_release(int set_index);
 
 #endif

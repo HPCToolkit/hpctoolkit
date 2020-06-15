@@ -53,6 +53,7 @@
 #include <stdint.h>
 
 
+
 //******************************************************************************
 // forward declarations
 //******************************************************************************
@@ -67,7 +68,7 @@ typedef struct gpu_trace_t gpu_trace_t;
 
 typedef struct gpu_trace_item_t gpu_trace_item_t;
 
-//typedef struct thread_trace_data thread_trace_data;
+
 
 //******************************************************************************
 // type declarations
@@ -78,6 +79,7 @@ typedef void (*gpu_trace_fn_t)
  gpu_trace_t *trace,
  gpu_trace_item_t *ti
 );
+
 
 
 //******************************************************************************

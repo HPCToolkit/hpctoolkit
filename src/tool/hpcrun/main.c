@@ -671,9 +671,8 @@ hpcrun_fini_internal()
 
     TMSG(FINI, "process attempting sample shutdown");
 
-    //comment this dejan
-//    SAMPLE_SOURCES(stop);
-//    SAMPLE_SOURCES(shutdown);
+    SAMPLE_SOURCES(stop);
+    SAMPLE_SOURCES(shutdown);
 
     // shutdown LUSH agents
     if (lush_agents) {
@@ -686,11 +685,10 @@ hpcrun_fini_internal()
       return;
     }
 
-    //comment this dejan
-//      // Call all registered auxiliary functions before termination.
-//      // This typically means flushing files that were not done by their creators.
-//      device_finalizer_apply(device_finalizer_type_flush);
-//      device_finalizer_apply(device_finalizer_type_shutdown);
+		// Call all registered auxiliary functions before termination.
+		// This typically means flushing files that were not done by their creators.
+		device_finalizer_apply(device_finalizer_type_flush);
+		device_finalizer_apply(device_finalizer_type_shutdown);
 
     hpcrun_process_aux_cleanup_action();
 
@@ -740,7 +738,7 @@ logit(cct_node_t* n, cct_op_arg_t arg, size_t l)
 }
 
 void*
-hpcrun_thread_init(int id, local_thread_data_t* local_thread_data, bool has_trace) // cct_ctxt_t* thr_ctxt)
+hpcrun_thread_init(int id, local_thread_data_t* local_thread_data, bool has_trace)
 {
   cct_ctxt_t* thr_ctxt = local_thread_data ? local_thread_data->thr_ctxt : NULL;
 
@@ -948,7 +946,7 @@ monitor_init_process(int *argc, char **argv, void* data)
 void
 monitor_fini_process(int how, void* data)
 {
-   if (hpcrun_get_disabled()) {
+	if (hpcrun_get_disabled()) {
     return;
   }
 
@@ -1186,7 +1184,7 @@ monitor_init_thread(int tid, void* data)
   void *thread_begin_address = monitor_get_addr_thread_start();
 
   if (module_ignore_map_inrange_lookup(thread_begin_address)) {
-		hpcrun_thread_suppress_sample = true;
+  	hpcrun_thread_suppress_sample = true;
   }
 
   hpcrun_safe_enter();

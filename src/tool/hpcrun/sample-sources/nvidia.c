@@ -135,7 +135,8 @@ static int cupti_enabled_activities = 0;
 // event name, which is nvidia-cuda
 static char nvidia_name[128];
 
-
+static const size_t DEFAULT_DEVICE_BUFFER_SIZE = 1024 * 1024 * 8;
+static const size_t DEFAULT_DEVICE_SEMAPHORE_SIZE = 65536;
 //******************************************************************************
 // constants
 //******************************************************************************
@@ -392,6 +393,14 @@ METHOD_FN(process_event_list, int lush_metrics)
   int device_semaphore_size = 
     control_knob_value_get_int(HPCRUN_CUDA_DEVICE_SEMAPHORE_SIZE);
 
+
+	if (device_buffer_size == 0) {
+		device_buffer_size = DEFAULT_DEVICE_BUFFER_SIZE;
+	}
+
+	if (device_semaphore_size == 0) {
+		device_semaphore_size = DEFAULT_DEVICE_SEMAPHORE_SIZE;
+	}
 	
   PRINT("Device buffer size %d\n", device_buffer_size);
   PRINT("Device semaphore size %d\n", device_semaphore_size);

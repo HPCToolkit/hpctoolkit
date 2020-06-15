@@ -118,7 +118,6 @@ static module_ignore_entry_t modules[NUM_FNS];
 static pfq_rwlock_t modules_lock;
 
 
-
 //***************************************************************************
 // private operations
 //***************************************************************************
@@ -329,8 +328,10 @@ module_ignore_map_delete
   pfq_rwlock_write_lock(&modules_lock, &me);
   for (i = 0; i < NUM_FNS; ++i) {
     if (modules[i].empty == false &&
+//		  modules[i].module->dso_info != NULL &&
       modules[i].module->dso_info->start_addr <= start &&
       modules[i].module->dso_info->end_addr >= end) {
+
       modules[i].empty = true;
       result = true;
       break;

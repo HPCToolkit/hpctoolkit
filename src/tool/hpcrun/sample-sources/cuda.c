@@ -336,7 +336,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     PAPI_event_code_to_name(self->evl.events[i].event, buffer);
     TMSG(CUDA, "metric for event %d = %s", i, buffer);
     int metric_id = /* weight */
-      hpcrun_set_new_metric_info_and_period(cuda_kind, strdup(buffer),
+      hpcrun_set_new_metric_info_and_period(cuda_kind, strdup(buffer),						//dejan: this is setting metric into hpcviewer column
         MetricFlags_ValFmt_Int, self->evl.events[i].thresh, metric_property_none);
     METHOD_CALL(self, store_metric_id, i, metric_id);
   }

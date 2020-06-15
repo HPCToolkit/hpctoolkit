@@ -5,16 +5,6 @@
 #include <string.h>
 
 
-static char *control_knob_names[] = {
-#define DEFINE_KNOB_NAMES(knob_name) \
-  #knob_name,
-
-  FORALL_KNOBS(DEFINE_KNOB_NAMES) 
-
-#undef DEFINE_KNOB_NAMES
-};
-
-
 typedef struct control_knob {
   char *name;
   char *value;
@@ -22,10 +12,6 @@ typedef struct control_knob {
 
 control_knob_t control_knobs[HPCRUN_NUM_CONTROL_KNOBS];
 
-#define DEFAULT_DEVICE_BUFFER_SIZE "8388608"// 1024 * 1024 * 8;
-#define DEFAULT_DEVICE_SEMAPHORE_SIZE "65536"
-#define DEFAULT_STREAMS_PER_THREAD "65536"
-static char * default_knob[HPCRUN_NUM_CONTROL_KNOBS] = {DEFAULT_DEVICE_BUFFER_SIZE, DEFAULT_DEVICE_SEMAPHORE_SIZE, DEFAULT_STREAMS_PER_THREAD};
 
 static void control_knob_process_string(char *in);
 
@@ -35,11 +21,11 @@ control_knob_init()
 {
   char *s = getenv("HPCRUN_CONTROL_KNOBS");
 
-#define INIT_KNOBS(knob_name) \
-  control_knobs[knob_name].name = control_knob_names[knob_name]; \
-  control_knobs[knob_name].value = default_knob[knob_name];
+#define INIT_KNOBS(knob_name, knob_value) \
+  control_knobs[knob_name].name = #knob_name; \
+  control_knobs[knob_name].value = #knob_value;
 
-  FORALL_KNOBS(INIT_KNOBS) 
+  FORALL_KNOBS(INIT_KNOBS)
 
 #undef INIT_KNOBS
 
@@ -47,8 +33,6 @@ control_knob_init()
     control_knob_process_string(s);
   }
 }
-
-
 
 
 char *
@@ -76,7 +60,7 @@ control_knob_value_get_int(control_category c)
 static int
 control_knob_name_lookup(char *n)
 {
-#define LOOKUP_KNOBS(knob_name)  \
+#define LOOKUP_KNOBS(knob_name, knob_value)  \
   if (strcmp(control_knobs[knob_name].name, n) == 0) {  \
     return knob_name;                                   \
   }
@@ -97,7 +81,6 @@ control_knob_process_string(char *in)
     char *tmp = strdup(f);
     char *name = strtok_r(tmp, "=", &save);
     int i = -1;
-
 
 		if (name != NULL && (i = control_knob_name_lookup(name)) != -1) {
       char *value = strtok_r(NULL, "=", &save);

@@ -60,7 +60,7 @@
 // type declarations
 //******************************************************************************
 
-typedef struct gpu_trace_channel_t gpu_trace_channel_t;
+//typedef struct gpu_trace_channel_t gpu_trace_channel_t;
 
 typedef struct gpu_trace_channel_t {
   bistack_t bistacks[2];

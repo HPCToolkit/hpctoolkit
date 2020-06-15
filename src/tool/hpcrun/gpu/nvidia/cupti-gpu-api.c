@@ -75,6 +75,20 @@ cupti_activity_process
 )
 {
   gpu_activity_t gpu_activity;
-  cupti_activity_translate(&gpu_activity, cupti_activity); 
+
+	//TODO:DEJAN - check cuptiGetTimestamp and time from CUpti_Activity
+	uint64_t timestamp[2];
+
+  cupti_activity_translate(&gpu_activity, cupti_activity);
+
+//	CUptiResult status = cuptiGetTimestamp(&timestamp[0]);
+//	if (status != CUPTI_SUCCESS) {
+//		cupti_error_report(status, cuptiGetTimestamp);
+//	}
+//	printf("| start = %u | end = %u || start_timestamp = %u | end_timestamp = %u >>>>> %s\n\n", \
+//  					gpu_activity.details.interval.start, gpu_activity.details.interval.end, timestamp[0], timestamp[1] );
+
+
+
   gpu_activity_process(&gpu_activity);
 }

@@ -2,19 +2,20 @@
 #define HPCRUN_CONTROL_KNOB_H
 
 #define FORALL_KNOBS(macro)  \
-  macro(HPCRUN_CUDA_DEVICE_BUFFER_SIZE)     \
-  macro(HPCRUN_CUDA_DEVICE_SEMAPHORE_SIZE)  \
-	macro(STREAMS_PER_THREAD)	\
+  macro(HPCRUN_CUDA_DEVICE_BUFFER_SIZE, 8388608)     \
+  macro(HPCRUN_CUDA_DEVICE_SEMAPHORE_SIZE, 65536)  \
+	macro(STREAMS_PER_THREAD, 65536)	\
+	macro(MAX_THREADS_CONSUMERS, 256) \
 
 typedef enum {
-#define DEFINE_ENUM_KNOBS(knob_name)  \
-  knob_name,
+#define DEFINE_ENUM_KNOBS(knob_name, knob_value)  \
+  knob_name ,
 
   FORALL_KNOBS(DEFINE_ENUM_KNOBS) 
 
 #undef DEFINE_ENUM_KNOBS
 
-#define COUNT_FORALL_CLAUSE(a) + 1
+#define COUNT_FORALL_CLAUSE(a,b) + 1
 #define NUM_CLAUSES(forall_macro) 0 forall_macro(COUNT_FORALL_CLAUSE)
 
   HPCRUN_NUM_CONTROL_KNOBS = NUM_CLAUSES(FORALL_KNOBS)

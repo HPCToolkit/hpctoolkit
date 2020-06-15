@@ -47,7 +47,8 @@
 
 #include <string.h>
 #include <pthread.h>
-#include "gpu-print.h"
+
+
 
 //******************************************************************************
 // macros
@@ -68,6 +69,8 @@
 #include "gpu-trace.h"
 #include "gpu-trace-channel.h"
 #include "gpu-trace-item.h"
+#include "gpu-print.h"
+#include "thread_data.h"
 
 
 
@@ -76,7 +79,6 @@
 //******************************************************************************
 
 #define CHANNEL_FILL_COUNT 100
-
 
 #undef typed_bichannel
 #undef typed_stack_elem
@@ -105,6 +107,7 @@
 //******************************************************************************
 // type declarations
 //******************************************************************************
+
 
 
 //******************************************************************************
@@ -159,7 +162,7 @@ gpu_trace_channel_produce
  gpu_trace_item_t *ti
 )
 {
-  gpu_trace_item_t * cti = gpu_trace_item_alloc(channel);
+  gpu_trace_item_t *cti = gpu_trace_item_alloc(channel);
 
   *cti = *ti;
 
@@ -167,7 +170,6 @@ gpu_trace_channel_produce
 
   gpu_trace_channel_signal_consumer_when_full(channel);
 }
-
 
 
 void
@@ -187,7 +189,7 @@ gpu_trace_channel_consume
 
   // consume all elements enqueued before this function was called
   for (;;) {
-    gpu_trace_item_t * ti = channel_pop(channel, bichannel_direction_forward);
+    gpu_trace_item_t *ti = channel_pop(channel, bichannel_direction_forward);
     if (!ti) break;
     gpu_trace_item_consume(consume_one_trace_item, channel->td, ti);
     gpu_trace_item_free(channel, ti);

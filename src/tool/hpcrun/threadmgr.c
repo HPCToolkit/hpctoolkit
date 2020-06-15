@@ -163,8 +163,8 @@ allocate_and_init_thread_data(int id, cct_ctxt_t* thr_ctxt, bool has_trace)
   // ----------------------------------------
   // opening trace file
   // ----------------------------------------
-  if( has_trace ){
-		hpcrun_trace_open(&(data->core_profile_trace_data));
+  if (has_trace) {
+  	hpcrun_trace_open(&(data->core_profile_trace_data));
   }
 
   return data;
