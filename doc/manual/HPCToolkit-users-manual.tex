@@ -13,6 +13,10 @@
 
 \documentclass[11pt,letterpaper]{report}
 
+ \setcounter{topnumber}{4}
+ \setcounter{totalnumber}{4}
+  \renewcommand{\floatpagefraction}{0.7}
+
 
 % ***************************************************************************
 % Standard packages
@@ -116,7 +120,7 @@
 % ***************************************************************************
 % ***************************************************************************
 
-\title{\HPCToolkit{} User's Manual\\[.5in]Version 2019.08}
+\title{\HPCToolkit{} User's Manual\\[.5in]Version 2020.06}
 %\subtitle{}
 
 \author{
@@ -124,14 +128,14 @@ John Mellor-Crummey\\
 Laksono Adhianto,
 Mike Fagan,
 Mark Krentel,
-Nathan Tallent\\
+Nathan Tallent, Keren Zhou\\
 \\
 Rice University\\
 %\\
 %For \HPCToolkit{} 5.3.2 ($Revision$)
 }
 
-%\date{}
+\date{June 10, 2020}
 
 \maketitle
 
@@ -889,9 +893,9 @@ While we have shown how to compute and attribute the fraction of excess work in 
 Scaling losses can be explored in \hpcviewer{} using any of its three views.
 
 \begin{itemize}
-\item {\em Calling context view.} This top-down view represents the dynamic calling contexts (call paths) in which costs were incurred. 
+\item {\em Top-down view.} This view represents the dynamic calling contexts (call paths) in which costs were incurred. 
 
-\item {\em Callers view.} This bottom up view enables one to look upward along call paths. This view is particularly useful for understanding the performance of software components or procedures that are used in more than one context, such as communication library routines.
+\item {\em Bottom-up view.} This view enables one to look upward along call paths. This view is particularly useful for understanding the performance of software components or procedures that are used in more than one context, such as communication library routines.
 
 \item {\em Flat view.} This view organizes performance measurement data according to the static structure of an application. All costs incurred in {\em any} calling context by a procedure are aggregated together in the flat view. 
 \end{itemize}
@@ -900,7 +904,7 @@ Scaling losses can be explored in \hpcviewer{} using any of its three views.
 Typically, one begins analyzing an application's scalability and performance using the top-down calling context tree view.
 Using this view, one can readily see how costs and scalability losses are associated with different calling contexts.
 If costs or scalability losses are associated with only a few calling contexts, then this view suffices for identifying the bottlenecks.
-When scalability losses are spread among many calling contexts, \eg, among different invocations of \mytt{MPI_Wait}, often it is useful to switch to the bottom-up {\em caller's view} of the data to see if many losses are due to the same underlying cause.
+When scalability losses are spread among many calling contexts, \eg, among different invocations of \mytt{MPI_Wait}, often it is useful to switch to the bottom-up of the data to see if many losses are due to the same underlying cause.
 In the bottom-up view, one can sort routines by their exclusive scalability losses and then look upward to see how these losses accumulate from the different calling contexts in which the routine was invoked.
 
 Scaling loss based on excess work is intuitive; perfect scaling corresponds to a excess work value of $0$, sublinear scaling yields positive values, and superlinear scaling yields negative values.
@@ -933,7 +937,44 @@ To isolate code that is an impediment to scalable performance, one can use the {
 % ***************************************************************************
 % ***************************************************************************
 
-\chapter{\hpcviewer{} User Interface}
+\chapter{Measurement and Analysis of GPU-accelerated Applications}
+\label{chpt:gpu}
+
+{
+\centering
+ \fbox{\parbox{\textwidth}{Note: This release contains beta support for monitoring computations offloaded onto  NVIDIA GPUs and alpha support for monitoring computations offloaded onto AMD GPUs.}}
+ \vspace{2ex}
+}
+
+
+\input{gpu}
+
+
+% ***************************************************************************
+% ***************************************************************************
+
+\chapter{Measurement and Analysis of OpenMP Multithreading}
+\label{chpt:gpu}
+
+{
+\centering
+ \fbox{\parbox{\textwidth}{Note: This release contains beta support for monitoring OpenMP computations using the OpenMP 5.0 OpenMP Tools API support known as OMPT.}}
+ \vspace{2ex}
+}
+
+HPCToolkit includes an implementation of the OpenMP 5.0 Tools API known as OMPT. The OMPT interface enables HPCToolkit to extract enough information to reconstruct user-level calling contexts from implementation-level measurements. 
+
+Support for OpenMP 5.0 and OMPT is emerging in OpenMP runtimes. Recent versions of LLVM's OpenMP runtime, IBM's LOMP (Lightweight OpenMP Runtime) and Intel's OpenMP runtime provide emerging support for OMPT. At present, support in these implementations is known to be incomplete, especially with respect to offloading computation onto TARGET devices. 
+
+If an interaction between HPCToolkit's support for the OMPT interface and an OpenMP runtime causes problems, OMPT support may be disabled when using HPCToolkit by setting  OpenMP environment variable {\tt OMP\_TOOL} to {\tt disabled}.
+
+
+
+
+% ***************************************************************************
+% ***************************************************************************
+
+\chapter{The \hpcviewer{} User Interface}
 \label{chpt:hpcviewer-interface}
 
 \input{hpcviewer}
@@ -942,7 +983,7 @@ To isolate code that is an impediment to scalable performance, one can use the {
 % ***************************************************************************
 % ***************************************************************************
 
-\chapter{\hpctraceviewer{} User Interface}
+\chapter{The \hpctraceviewer{} User Interface}
 \label{chpt:hpctraceviewer-interface}
 
 \input{hpctraceviewer}
@@ -1208,8 +1249,36 @@ In cases such as this, you can often specify \texttt{-fast} along with an option
 \chapter{FAQ and Troubleshooting}
 \label{chpt:faq-troubleshooting}
 
+To measure an application's performance with \HPCToolkit, one must add
+\HPCToolkit's measurement subsystem to an application's address
+space.  
+\begin{itemize}
+\item
+For a statically-linked binary, one adds \HPCToolkit's
+measurement subsystem directly into the binary 
+by prefixing your link command
+with \HPCToolkit{}'s \hpclink{} command.  
+\item 
+For a dynamically-linked
+binary, launching your application with \HPCToolkit's \hpcrun{}
+command pre-loads \HPCToolkit's measurement subsystem into your
+application's address space before the application begins to execute. 
+\end{itemize}
+In this Chapter, for convenience, we refer to HPCToolkit's measurement
+system simply as \hpcrun{} since the measurement subsystem is most commonly used
+with dynamically-linked binaries. From the context, it should be clear enough
+whether we are talking about \HPCToolkit's measurement subsystem
+or the \hpcrun{} command itself.
+
+
 % ===========================================================================
 % ===========================================================================
+
+\section{\hpcrun{} causes my application to abort}
+
+If your application has been compiled with the compiler flag \verb|-pg| to collect performance data with \verb|gprof|, on {\tt ppc64le} this may cause your application to abort with signal 11 (SEGV) if you profile it with \hpcrun{}.  You can check whether your application has been compiled with flag \verb|-pg|  by running {\tt nm}  on the binary and piping the output through {\tt grep} to check for a definition or a reference to the function symbol  \verb|__gmon_start__|.
+
+To avoid a SEGV failure caused by an interaction between \verb|gprof| instrumentation and \hpcrun{}, recompile your application and libraries without the \verb|-pg| compiler flag.
 
 \section{How do I choose \hpcrun{} sampling periods?}
 \label{sec:troubleshooting:hpcrun-sample-periods}
@@ -1289,25 +1358,34 @@ To fix this, set the permission of the library to 0755, and launch again the vie
 % ===========================================================================
 % ===========================================================================
 
+\section{Mac only: \hpcviewer{} runs on Java $X$ instead of ``Java 8"}
+
+If your system has multiple versions of Java and Java 8 is not the newer version, you need to set Java 8 as the default JVM:
+
+\begin{enumerate}
+\item Leave all JDKs at their default location (usually under \texttt{/Library/Java/JavaVirtualMachines}). The system will pick the highest version by default.
+\item To exclude a JDK from being picked by default, rename \texttt{Contents/Info.plist} file to other name like \texttt{Info.plist.disabled}. That JDK can still be used when \texttt{\$JAVA\_HOME} points to it, or explicitly referenced in a script or configuration. It will simply be ignored by system's java command.
+\end{enumerate}
+
+
+% ===========================================================================
+% ===========================================================================
+
 \section{When executing \hpcviewer, it complains cannot create ``Java Virtual Machine"}
-If you use Java 7 or older,
-the error message indicates that your machine cannot instantiate the JVM 
-with the default size specified for the Java heap. 
 If you encounter this problem, we recommend that you edit the 
 \texttt{hpcviewer.ini} 
 file which is located in HPCToolkit installation directory to reduce the
 Java heap size.
-By default, the content of the file is as follows:
+By default, the content of the file on \verb|ppc64le| is as follows:
 \begin{verbatim}
 -consoleLog
+-clearPersistedState
 -vmargs
--Dosgi.requiredJavaVersion=1.6
--XX:MaxPermSize=256m
--Xms40m
--Xmx2048m
 -Dosgi.locking=none
+-Dosgi.requiredJavaVersion=1.8
+-Xmx2048m
 \end{verbatim}
-You can decrease the maximum size of the Java heap from 2048MB to 4GB
+You can decrease the maximum size of the Java heap from 2048MB to 1GB
  by changing the {\tt Xmx} specification in the \texttt{hpcviewer.ini} file as follows:
 \begin{verbatim}
 -Xmx1024m
@@ -1317,11 +1395,17 @@ You can decrease the maximum size of the Java heap from 2048MB to 4GB
 % ===========================================================================
 % ===========================================================================
 
-\section{\hpcviewer{} fails to launch due to java.lang.NoSuchMethodError exception.}
+\section{\hpcviewer{} fails to launch due to {\tt java.lang.NoSuchMethodError} exception.}
 
 The root cause of the error is due to a mix of old \and new hpcviewer{} binaries. 
 To solve this problem, you need to remove your hpcviewer workspace (usually in \texttt{\$HOME/.hpctoolkit/hpcviewer} directory, and run \hpcviewer{} again.
 
+% ===========================================================================
+% ===========================================================================
+
+\section{\hpcviewer{} fails due to {\tt java.lang.OutOfMemoryError} exception.}
+
+If you see this error, the memory footprint that \hpcviewer{} needs to store and the metrics for your measured program execution exceeds the maximum size for the Java heap specified at program launch.  On Linux, \hpcviewer{} accepts a command-line option \verb|--java-heap| that enables you to specify a larger non-default value for the maximum size of the Java heap. Run \verb|hpcviewer --help| for the details of how to use this option.
 
 % ===========================================================================
 % ===========================================================================
@@ -1375,21 +1459,10 @@ Even so, the performance attribution is usually very informative.
 
 \section{\hpcviewer{} hangs trying to open a large database! Why?}
 
-The most likely problem is that the Java virtual machine is low on memory and thrashing.
-There are three ways to address this problem.
+The most likely problem is that the Java virtual machine is low on memory and thrashing. The memory footprint that \hpcviewer{} needs to store and the metrics for your measured program execution is likely near the maximum size for the Java heap specified at program launch.  
 
-First, make sure you are \emph{not} using \hpcprof{}'s \texttt{--force-metric} option to create a very large number of metrics.
+On Linux, \hpcviewer{} accepts a command-line option \verb|--java-heap| that enables you to specify a larger non-default value for the maximum size of the Java heap. Run \verb|hpcviewer --help| for the details of how to use this option.
 
-Second, increase the resources available to Java.
-\hpcviewer{} uses the initialization file \texttt{hpcviewer.ini} to determine how much memory is allocated to the Java virtual machine.
-To increase this allocation, locate the \texttt{hpcviewer.ini} file within your \hpcviewer{} installation.
-The default maximum sizes for the Java stack and heap, respectively, are given by \texttt{-Xms400m} and \texttt{-Xmx1024m}.
-You should be able to increase these values to \texttt{-Xms800m} and \texttt{-Xmx1800m}.
-
-Third, you can disable \hpcviewer{}'s Callers View by using the \texttt{-n} option as follows:
-\begin{quote}
-  \verb|hpcviewer -n hpctoolkit-database|
-\end{quote}
 
 % ===========================================================================
 % ===========================================================================
@@ -1403,16 +1476,17 @@ The solution is to install \hpcviewer{} on your local system, copy the database 
 We almost always run \hpcviewer{} on our local desktops or laptops for this reason.
 
 Second, \HPCToolkit{}'s database may contain too many metrics.
-This can happen if you use \hpcprof{} to build a database for several threads with several metrics each, resulting in too many metrics total.
+A common reason why this can occur is if rather than analyzing an \HPCToolkit{}  measurements directory, you chose to directly specify a large collection of {\tt .hpcrun} files directly on the command line. When you do this, it treats each {\tt .hpcrun} file as a separate experiment and gives you separate metrics for each.
+
 You can check the number of columns in your database by running
 \begin{quote}
   \verb,grep -e "<Metric" experiment.xml | wc -l,
 \end{quote}
-If that command yields a number greater than 30 or so, \hpcviewer{} is likely slow because you are working with too many columns of metrics.
-In this case, either use \hpcprofmpi{} or run \hpcprof{} to build a database based on fewer profiles.
+If that command yields a number greater than 50 or so, \hpcviewer{} is likely slow because you are working with so many columns of metrics. In this case, you might consider using  \hpcprofmpi{} or run \hpcprof{} to analyze the measurements directory as a whole, so you get one set of metrics, or you can build a database based on fewer separate {\tt .hpcrun} files on the command line to reduce the number of metrics overall.
 
-Third, \HPCToolkit{}'s database may be too large.
-If the \texttt{experiment.xml} file within your database is tens of megabytes or more, the total database size might be the problem.
+Third, \HPCToolkit{}'s database may be very large, which can cause the Java virtual machine to run short on memory and thrash. The memory footprint that \hpcviewer{} needs to store and the metrics for your measured program execution is likely near the maximum size for the Java heap specified at program launch.  
+
+On Linux, \hpcviewer{} accepts a command-line option \verb|--java-heap| that enables you to specify a larger non-default value for the maximum size of the Java heap. Run \verb|hpcviewer --help| for the details of how to use this option.
 
 
 % ===========================================================================
@@ -1652,16 +1726,18 @@ such as {\tt select()}, {\tt poll()} or {\tt sem\_wait()}.
 % ===========================================================================
 % ===========================================================================
 
-\section{How do I debug \hpcrun{}?}
+\section{How do I debug \HPCToolkit{}'s measurement?}
 
-Assume you want to debug \hpcrun{} when collecting measurements for an application named \texttt{app}.
+Assume you want to debug \HPCToolkit{}'s measurement subsystem when 
+collecting measurements for an application named \texttt{app}.
 
 % ==========================================================
 % ==========================================================
 
 \subsection{Tracing \libmonitor{}}
 
-\hpcrun{} uses \libmonitor{} for process/thread control.
+\HPCToolkit{}'s measurement subsystem
+uses \libmonitor{} for process/thread control.
 To collect a debug trace of \libmonitor{}, use either \texttt{monitor-run} or \texttt{monitor-link}, which are located within:
 %
 \begin{quote}
@@ -1696,7 +1772,7 @@ export MONITOR_DEBUG=1
 % ==========================================================
 % ==========================================================
 
-\subsection{Tracing \hpcrun{}}
+\subsection{Tracing \HPCToolkit{}'s Measurement Subsystem}
 
 Broadly speaking, there are two levels at which a user can test \hpcrun{}.
 The first level is tracing \hpcrun{}'s application control, that is, running \hpcrun{} without an asynchronous sample source.
@@ -1738,12 +1814,33 @@ The \mytt{--dynamic-debug/HPCRUN_DEBUG_FLAGS} flag enables \hpcrun{} tracing.
 % ==========================================================
 % ==========================================================
 
-\subsection{Using \hpcrun{} with a debugger}
+\subsection{Using a debugger to inspect an execution being monitored by \HPCToolkit{}}
 
-To debug hpcrun within a debugger use the following instructions.
-Note that \hpcrun{} is easiest to debug if you configure and build \HPCToolkit{} with \texttt{configure}'s \texttt{--enable-develop} option.
-(It is not necessary to rebuild \HPCToolkit{}'s Externals.)
+If \HPCToolkit{} has trouble monitoring an application, you may find it useful to 
+execute an application being monitored by \HPCToolkit{} under the control 
+of a debugger to observe how \HPCToolkit{}'s measurement subsystem interacts with the application.
+
+\HPCToolkit{}'s measurement subsystem is easiest to debug if you configure and 
+build \HPCToolkit{} by adding the \texttt{--enable-develop} option as an argument to \texttt{configure} when preparing to build \HPCToolkit{}.
+(It is not necessary to rebuild \HPCToolkit{}'s \verb|hpctoolkit-externals|.)
 %
+
+One can debug a statically-linked or a dynamically-linked applications being measured by 
+\HPCToolkit{}'s measurement subsystem. 
+\begin{itemize}
+\item Dynamically-linked applications. When launching an application with \hpcrun{}, add the \verb|--debug| option to \hpcrun{}.
+\item Statically-linked applications. To debug a statically-linked application that has \HPCToolkit{}'s measurement subsystem linked into it, set \verb|HPCRUN_WAIT| in the environment before launching the application, e.g. 
+\begin{verbatim}
+export HPCRUN_WAIT=1
+export HPCRUN_EVENT_LIST="... the metric(s) you want to measure ..."
+app [app-arguments]
+\end{verbatim}
+\end{itemize}
+
+There are two ways to use launch an application with a debugger when using 
+To attach a debugger when monitoring an application using \hpcrun{}, add \hpcrun{}'s \verb|--debug| option 
+
+o debug hpcrun with a debugger use the following approach.
 \begin{enumerate}
 
 \item Launch your application.
@@ -1764,12 +1861,14 @@ app [app-arguments]
 \end{quote}
 
 \item Attach a debugger.
-  The debugger should be spinning in a loop whose exit is conditioned by the \verb|DEBUGGER_WAIT| variable.
+  The debugger should be spinning in a loop whose exit is conditioned by the 
+  \verb|HPCRUN_DEBUGGER_WAIT| variable.
 
 \item Set any desired breakpoints.
   To send a sampling signal at a particular point, make sure to stop at that point with a \emph{one-time} or \emph{temporary} breakpoint (\texttt{tbreak} in GDB).
 
-\item Set the \verb|DEBUGGER_WAIT| variable to 0 and continue.
+\item Call \verb|hpcrun_continue()| or set the \verb|HPCRUN_DEBUGGER_WAIT| variable to 0 
+and continue.
 
 \item To raise a controlled sampling signal, raise a SIGPROF, \eg{}, using GDB's command \verb|signal SIGPROF|.
 
@@ -2045,7 +2144,7 @@ No hpcstruct =
 
 \bibliographystyle{abbrv}
 %\bibliographystyle{acm}
-\bibliography{texmf/bibtex/bib/refs,texmf/bibtex/bib/pubs}
+\bibliography{texmf/bibtex/bib/refs,texmf/bibtex/bib/pubs,texmf/bibtex/bib/gpurefs}
 
 %\thispagestyle{plain}
 

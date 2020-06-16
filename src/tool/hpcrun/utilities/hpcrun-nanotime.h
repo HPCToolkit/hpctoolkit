@@ -44,12 +44,26 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef VALGRIND_H
-#define VALGRIND_H
+#ifndef __hpcrun_nanotime_h__
+#define __hpcrun_nanotime_h__
 
-// comment/uncomment line below to turn on/off valgrind
-// translations of hpcrun_malloc, hpcrun_malloc_freeable
+//*****************************************************************************
+// system includes
+//*****************************************************************************
 
-// #define VALGRIND 1
+#include <stdint.h>
 
-#endif // VALGRIND_H
+
+
+//*****************************************************************************
+// interface operations
+//*****************************************************************************
+
+uint64_t
+hpcrun_nanotime
+(
+  void
+);
+
+
+#endif

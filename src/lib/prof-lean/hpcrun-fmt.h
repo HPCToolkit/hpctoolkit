@@ -166,6 +166,7 @@ hpcrun_fmt_hdr_free(hpcrun_fmt_hdr_t* hdr, hpcfmt_free_fn dealloc);
 #define HPCRUN_FMT_METRIC_SHOW            1
 #define HPCRUN_FMT_METRIC_SHOW_INCLUSIVE  2
 #define HPCRUN_FMT_METRIC_SHOW_EXCLUSIVE  3
+#define HPCRUN_FMT_METRIC_INVISIBLE       4
 
 //***************************************************************************
 // epoch-hdr

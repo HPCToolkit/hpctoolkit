@@ -54,6 +54,7 @@
 //*****************************************************************************
 
 #include <hpcrun/gpu/gpu-correlation-id-map.h>
+#include <hpcrun/messages/messages.h>
 
 #include "cupti-analysis.h"
 #include "cuda-device-map.h"
@@ -63,14 +64,6 @@
 //*****************************************************************************
 // macros
 //*****************************************************************************
-
-#define CUPTI_ANALYSIS_DEBUG 0
-
-#if CUPTI_ANALYSIS_DEBUG
-#define PRINT(...) fprintf(stderr, __VA_ARGS__)
-#else
-#define PRINT(...)
-#endif
 
 #define MIN2(m1, m2) m1 > m2 ? m2 : m1
 #define MIN3(m1, m2, m3) m1 > m2 ? (MIN2(m2, m3)) : (MIN2(m1, m3))
@@ -122,7 +115,7 @@ cupti_occupancy_analyze
     uint32_t max_blocks_by_threads = sm_threads / *block_threads;
     uint32_t max_blocks_by_registers = sm_registers / block_registers;
 
-    uint32_t max_blocks_by_shared_memory = 
+    uint32_t max_blocks_by_shared_memory =
       (*block_shared_memory == 0) ?  UINT32_MAX : sm_shared_memory / *block_shared_memory;
 
     *max_active_warps_per_sm = sm_threads / num_threads_per_warp;
@@ -132,16 +125,16 @@ cupti_occupancy_analyze
 
     *active_warps_per_sm = active_blocks * (UPPER_DIV(*block_threads, num_threads_per_warp));
 
-    PRINT("sm_threads %u\n", sm_threads);
-    PRINT("max_blocks_by_registers %u\n", max_blocks_by_registers);
-    PRINT("max_blocks_by_threads %u\n", max_blocks_by_threads);
-    PRINT("max_blocks_by_shared_memory %u\n", max_blocks_by_shared_memory);
-    PRINT("max_blocks_per_multiprocessor %u\n", sm_blocks);
-    PRINT("active_blocks %u\n", active_blocks);
-    PRINT("block_threads %u\n", *block_threads);
-    PRINT("num_threads_per_warp %u\n", num_threads_per_warp);
-    PRINT("active_warps_per_sm %u\n", *active_warps_per_sm);
-    PRINT("max_active_warps_per_sm %u\n", *max_active_warps_per_sm);
+    TMSG(CUDA_CUBIN, "sm_threads %u", sm_threads);
+    TMSG(CUDA_CUBIN, "max_blocks_by_registers %u", max_blocks_by_registers);
+    TMSG(CUDA_CUBIN, "max_blocks_by_threads %u", max_blocks_by_threads);
+    TMSG(CUDA_CUBIN, "max_blocks_by_shared_memory %u", max_blocks_by_shared_memory);
+    TMSG(CUDA_CUBIN, "max_blocks_per_multiprocessor %u", sm_blocks);
+    TMSG(CUDA_CUBIN, "active_blocks %u", active_blocks);
+    TMSG(CUDA_CUBIN, "block_threads %u", *block_threads);
+    TMSG(CUDA_CUBIN, "num_threads_per_warp %u", num_threads_per_warp);
+    TMSG(CUDA_CUBIN, "active_warps_per_sm %u", *active_warps_per_sm);
+    TMSG(CUDA_CUBIN, "max_active_warps_per_sm %u", *max_active_warps_per_sm);
   }
 }
 
@@ -152,7 +145,7 @@ cupti_occupancy_analyze
 // of samples equals to the sum of samples of each SM.
 // 2. On each SM, active warps are profiled concurrently in a round
 // robin manner, no matter a warp is issuing an instruction or not.
-// This fact can be confirmed in NVIDIA's Volta tuning guide. 
+// This fact can be confirmed in NVIDIA's Volta tuning guide.
 //
 // sm_efficiency = active_cycles / elapsed_cycles
 // estimated sm_efficiency =
@@ -176,7 +169,7 @@ cupti_sm_efficiency_analyze
     uint32_t device_id = gpu_correlation_id_map_entry_device_id_get(corr);
     uint64_t start = gpu_correlation_id_map_entry_start_get(corr);
     uint64_t end = gpu_correlation_id_map_entry_end_get(corr);
-    cuda_device_map_entry_t *device = 
+    cuda_device_map_entry_t *device =
       cuda_device_map_lookup(device_id);
     if (device != NULL) {
       cuda_device_property_t *device_property =
@@ -190,13 +183,13 @@ cupti_sm_efficiency_analyze
       uint64_t kernel_time = end - start;
       *total_samples = pc_sampling_record_info->totalSamples;
       *full_sm_samples = ((uint64_t)(core_clock_rate * kernel_time) / sample_period_in_cycles) * num_multiprocessors;
-      PRINT("sample_period_in_cycles %lu\n", sample_period_in_cycles);
-      PRINT("core_clock_rate %lf\n", core_clock_rate);
-      PRINT("num_multiprocessors %lu\n", num_multiprocessors);
-      PRINT("kernel_time %lu\n", kernel_time);
-      PRINT("total_samples %lu\n", *total_samples);
-      PRINT("full_sm_samples %lu\n", *full_sm_samples);
-      PRINT("dropped_samples %lu\n", pc_sampling_record_info->droppedSamples);
+      TMSG(CUDA_CUBIN, "sample_period_in_cycles %lu", sample_period_in_cycles);
+      TMSG(CUDA_CUBIN, "core_clock_rate %lf", core_clock_rate);
+      TMSG(CUDA_CUBIN, "num_multiprocessors %lu", num_multiprocessors);
+      TMSG(CUDA_CUBIN, "kernel_time %lu", kernel_time);
+      TMSG(CUDA_CUBIN, "total_samples %lu", *total_samples);
+      TMSG(CUDA_CUBIN, "full_sm_samples %lu", *full_sm_samples);
+      TMSG(CUDA_CUBIN, "dropped_samples %lu", pc_sampling_record_info->droppedSamples);
     }
   }
 }

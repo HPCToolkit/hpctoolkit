@@ -884,20 +884,22 @@ METHOD_FN(process_event_list, int lush_metrics)
                                    // since the OS will free it, we don't have to do it in hpcrun
     const char *desc = pfmu_getEventDescription(name);
 
-    // set the metric for this perf event
-    event_desc[i].hpcrun_metric_id = hpcrun_set_new_metric_desc_and_period(lnux_kind, name_dup,
-            desc, MetricFlags_ValFmt_Real, threshold, prop);
-   
     // ------------------------------------------------------------
     // if we use frequency (event_type=1) then the period is not deterministic,
     // it can change dynamically. In this case, the period is 1
     // ------------------------------------------------------------
-    if (!is_period) {
+    int metric_period = 1;
+    if (is_period) {
       // using frequency : the threshold is always 1, 
       //                   since the period is determine dynamically
-      threshold = 1;
+      metric_period = threshold;
     }
-    METHOD_CALL(self, store_event, event_attr->config, threshold);
+
+    // set the metric for this perf event
+    event_desc[i].hpcrun_metric_id = hpcrun_set_new_metric_desc_and_period(lnux_kind, name_dup,
+            desc, MetricFlags_ValFmt_Real, metric_period, prop);
+   
+    METHOD_CALL(self, store_event, event_attr->config, metric_period);
     free(name);
   }
   while (i--) {
@@ -1082,6 +1084,8 @@ perf_event_handler(
   // if sampling disabled explicitly for this thread, skip all processing
   // ----------------------------------------------------------------------------
   if (hpcrun_suppress_sample()) {
+    perf_start_all(nevents, event_thread);
+    hpcrun_safe_exit();
     HPCTOOLKIT_APPLICATION_ERRNO_RESTORE();
 
     return 0; // tell monitor that the signal has been handled
