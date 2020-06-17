@@ -85,6 +85,7 @@ typedef union level0_detail_entry {
 typedef struct level0_data_node {
   level0_command_type_t type;
   ze_event_handle_t event;
+  ze_event_pool_handle_t event_pool;
   level0_detail_entry_t details;
   struct level0_data_node *next;
 } level0_data_node_t;

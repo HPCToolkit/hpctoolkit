@@ -150,13 +150,15 @@ level0_data_node_t*
 level0_commandlist_alloc_kernel
 (
  ze_kernel_handle_t kernel,
- ze_event_handle_t event
+ ze_event_handle_t event,
+ ze_event_pool_handle_t event_pool
 )
 {
   level0_data_node_t* list_entry = level0_data_node_new();
   list_entry->type = LEVEL0_KERNEL;
   list_entry->details.kernel.kernel = kernel;
   list_entry->event = event;
+  list_entry->event_pool = event_pool;
   list_entry->next = NULL;
   return list_entry;
 }
@@ -167,7 +169,8 @@ level0_commandlist_alloc_memcpy
  ze_memory_type_t src_type,
  ze_memory_type_t dst_type,
  size_t copy_size,
- ze_event_handle_t event
+ ze_event_handle_t event,
+ ze_event_pool_handle_t event_pool
 )
 {
   level0_data_node_t* list_entry = level0_data_node_new();
@@ -176,6 +179,7 @@ level0_commandlist_alloc_memcpy
   list_entry->details.memcpy.dst_type = dst_type;
   list_entry->details.memcpy.copy_size = copy_size;
   list_entry->event = event;
+  list_entry->event_pool = event_pool;
   list_entry->next = NULL;
   return list_entry;
 }
@@ -185,10 +189,11 @@ level0_commandlist_append_kernel
 (
  level0_data_node_t** command_list,
  ze_kernel_handle_t kernel,
- ze_event_handle_t event
+ ze_event_handle_t event,
+ ze_event_pool_handle_t event_pool
 )
 {
-  level0_data_node_t* list_entry = level0_commandlist_alloc_kernel(kernel, event);
+  level0_data_node_t* list_entry = level0_commandlist_alloc_kernel(kernel, event, event_pool);
   link_node(command_list, list_entry);
   return list_entry;
 }
@@ -200,10 +205,11 @@ level0_commandlist_append_memcpy
  ze_memory_type_t src_type,
  ze_memory_type_t dst_type,
  size_t copy_size,
- ze_event_handle_t event
+ ze_event_handle_t event,
+ ze_event_pool_handle_t event_pool
 )
 {
-  level0_data_node_t* list_entry = level0_commandlist_alloc_memcpy(src_type, dst_type, copy_size, event);
+  level0_data_node_t* list_entry = level0_commandlist_alloc_memcpy(src_type, dst_type, copy_size, event, event_pool);
   link_node(command_list, list_entry);  
   return list_entry;
 }
