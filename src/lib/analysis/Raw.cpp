@@ -74,9 +74,12 @@ using std::string;
 #include <lib/prof/CallPath-Profile.hpp>
 #include <lib/prof/Flat-ProfileData.hpp>
 
+
 #include <lib/prof-lean/hpcio.h>
 #include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
+#include <lib/prof/tms-format.h>
+#include <lib/prof/cms-format.h>
 
 #include <lib/support/diagnostics.h>
 
@@ -85,13 +88,13 @@ using std::string;
 //****************************************************************************
 
 void 
-Analysis::Raw::writeAsText(/*destination,*/ const char* filenm)
+Analysis::Raw::writeAsText(/*destination,*/ const char* filenm, bool sm_easyToGrep)
 {
   using namespace Analysis::Util;
 
   ProfType_t ty = getProfileType(filenm);
   if (ty == ProfType_Callpath) {
-    writeAsText_callpath(filenm);
+    writeAsText_callpath(filenm, sm_easyToGrep);
   }
   else if (ty == ProfType_CallpathMetricDB) {
     writeAsText_callpathMetricDB(filenm);
@@ -103,13 +106,13 @@ Analysis::Raw::writeAsText(/*destination,*/ const char* filenm)
     writeAsText_flat(filenm);
   }
   else if (ty == ProfType_SparseDBtmp) { //YUMENG
-    writeAsText_sparseDBtmp(filenm);
+    writeAsText_sparseDBtmp(filenm, sm_easyToGrep);
   }
   else if (ty == ProfType_SparseDBthread){ //YUMENG
-    writeAsText_sparseDBthread(filenm);
+    writeAsText_sparseDBthread(filenm, sm_easyToGrep);
   }
   else if (ty == ProfType_SparseDBcct){ //YUMENG
-    writeAsText_sparseDBcct(filenm);
+    writeAsText_sparseDBcct(filenm, sm_easyToGrep);
   }
   else {
     DIAG_Die(DIAG_Unimplemented);
@@ -118,13 +121,12 @@ Analysis::Raw::writeAsText(/*destination,*/ const char* filenm)
 
 
 void
-Analysis::Raw::writeAsText_callpath(const char* filenm)
+Analysis::Raw::writeAsText_callpath(const char* filenm, bool sm_easyToGrep)
 {
   if (!filenm) { return; }
-
   Prof::CallPath::Profile* prof = NULL;
   try {
-    prof = Prof::CallPath::Profile::make(filenm, 0/*rFlags*/, stdout);
+    prof = Prof::CallPath::Profile::make(filenm, 0/*rFlags*/, stdout, sm_easyToGrep);
   }
   catch (...) {
     DIAG_EMsg("While reading '" << filenm << "'...");
@@ -135,7 +137,7 @@ Analysis::Raw::writeAsText_callpath(const char* filenm)
 
 //YUMENG
 void
-Analysis::Raw::writeAsText_sparseDBtmp(const char* filenm)
+Analysis::Raw::writeAsText_sparseDBtmp(const char* filenm, bool sm_easyToGrep)
 {
   if (!filenm) { return; }
 
@@ -150,7 +152,7 @@ Analysis::Raw::writeAsText_sparseDBtmp(const char* filenm)
     if (ret != HPCFMT_OK) {
       DIAG_Throw("error reading tmp sparse-db file '" << filenm << "'");
     }
-    hpcrun_fmt_sparse_metrics_fprint(&sm,stdout,NULL, "  ");
+    hpcrun_fmt_sparse_metrics_fprint(&sm,stdout,NULL, "  ", sm_easyToGrep);
     hpcrun_fmt_sparse_metrics_free(&sm, free);
     hpcio_fclose(fs);
   }
@@ -175,7 +177,7 @@ Analysis::Raw::sortProfileInfo_onOffsets(tms_profile_info_t* x, uint32_t num_pro
 
 //YUMENG
 void
-Analysis::Raw::writeAsText_sparseDBthread(const char* filenm)
+Analysis::Raw::writeAsText_sparseDBthread(const char* filenm, bool easygrep)
 {
   if (!filenm) { return; }
 
@@ -196,13 +198,14 @@ Analysis::Raw::writeAsText_sparseDBthread(const char* filenm)
 
     for(uint i = 0; i<num_prof; i++){
       hpcrun_fmt_sparse_metrics_t sm;
+      sm.tid = x[i].tid;
       sm.num_vals = x[i].num_val;
       sm.num_nz_cct = x[i].num_nzcct;
       ret = tms_sparse_metrics_fread(&sm,fs);
       if (ret != HPCFMT_OK) {
         DIAG_Throw("error reading sparse metrics data from sparse metrics file '" << filenm << "'");
       }
-      tms_sparse_metrics_fprint(&sm,ofs,NULL, "  ");
+      tms_sparse_metrics_fprint(&sm,ofs,NULL, "  ", easygrep);
       tms_sparse_metrics_free(&sm);
     }
 
@@ -219,7 +222,7 @@ Analysis::Raw::writeAsText_sparseDBthread(const char* filenm)
 
 //YUMENG
 void
-Analysis::Raw::writeAsText_sparseDBcct(const char* filenm)
+Analysis::Raw::writeAsText_sparseDBcct(const char* filenm, bool easygrep)
 {
   if (!filenm) { return; }
 
@@ -240,13 +243,14 @@ Analysis::Raw::writeAsText_sparseDBcct(const char* filenm)
     for(uint i = 0; i<num_cct; i++){
       if(x[i].num_val != 0){
         cct_sparse_metrics_t csm;
+        csm.cct_node_id = x[i].cct_id;
         csm.num_vals = x[i].num_val;
         csm.num_nzmid = x[i].num_nzmid;
         ret = cms_sparse_metrics_fread(&csm,fs);
         if (ret != HPCFMT_OK) {
           DIAG_Throw("error reading cct data from sparse metrics file '" << filenm << "'");
         }
-        cms_sparse_metrics_fprint(&csm,ofs, "  ");
+        cms_sparse_metrics_fprint(&csm,ofs, "  ", easygrep);
         cms_sparse_metrics_free(&csm);
       }
       

@@ -593,6 +593,9 @@ hpcrun_fmt_lip_fprint(lush_lip_t* x, FILE* fs, const char* pre);
 // --------------------------------------------------------------------------
 // hpcrun_fmt_sparse_metrics_t
 // --------------------------------------------------------------------------
+static const uint32_t LastNodeEnd = 0x656E6421;
+static const uint16_t LastMidEnd  = 0x6564;
+
 typedef struct hpcrun_fmt_sparse_metrics_t{
   uint32_t tid;
   uint64_t num_vals;
@@ -618,7 +621,11 @@ hpcrun_fmt_sparse_metrics_fwrite(hpcrun_fmt_sparse_metrics_t* x, FILE* fs);
 
 extern int
 hpcrun_fmt_sparse_metrics_fprint(hpcrun_fmt_sparse_metrics_t* x, FILE* fs,
-			   const metric_tbl_t* metricTbl, const char* pre);
+			   const metric_tbl_t* metricTbl, const char* pre, bool easy_grep);
+
+int
+hpcrun_fmt_sparse_metrics_fprint_grep_helper(hpcrun_fmt_sparse_metrics_t* x, FILE* fs,
+          const metric_tbl_t* metricTbl, const char* pre);
 
 void
 hpcrun_fmt_sparse_metrics_free(hpcrun_fmt_sparse_metrics_t* x, hpcfmt_free_fn dealloc);
@@ -668,16 +675,6 @@ static const int SF_FAIL    = 1;
 static const int SF_ERR     = -1;
 
 static const int SF_footer_SIZE           = 96; 
-/*
-static const int SF_FOOTER_LENGTH         = 7; 
-static const int SF_FOOTER_hdr            = 0; 
-static const int SF_FOOTER_lm             = 1; 
-static const int SF_FOOTER_num_cct        = 2; 
-static const int SF_FOOTER_cct            = 3; 
-static const int SF_FOOTER_metric_tbl     = 4; 
-static const int SF_FOOTER_sparse_metrics = 5; 
-static const int SF_FOOTER_footer         = 6; */
-
 static const int SF_num_lm_SIZE           = 4; 
 static const int SF_num_metric_SIZE       = 4;
 static const int SF_num_cct_SIZE          = 8;
@@ -712,7 +709,7 @@ typedef struct hpcrun_sparse_file {
   size_t cur_block_start;//in terms of number of nzvals 
   uint64_t num_nzval;
   uint32_t num_nz_cct;
-  size_t cct_offset_offset;
+  size_t cctn_id_off_offset;
   size_t val_mid_offset;
   
 
@@ -730,56 +727,6 @@ int hpcrun_sparse_next_metric(hpcrun_sparse_file_t* sparse_fs, metric_desc_t* m,
 int hpcrun_sparse_next_context(hpcrun_sparse_file_t* sparse_fs, hpcrun_fmt_cct_node_t* node);
 int hpcrun_sparse_next_block(hpcrun_sparse_file_t* sparse_fs);
 int hpcrun_sparse_next_entry(hpcrun_sparse_file_t* sparse_fs, hpcrun_metricVal_t* val);
-
-
-// --------------------------------------------------------------------------
-// thread_major_sparse.db hpcproftt helper
-// --------------------------------------------------------------------------
-typedef struct tms_profile_info_t{
-  uint32_t tid;
-  uint64_t num_val;
-  uint32_t num_nzcct;
-  uint64_t offset;
-}tms_profile_info_t;
-
-int tms_profile_info_fwrite(uint32_t num_t,tms_profile_info_t* x, FILE* fs);
-int tms_profile_info_fread(tms_profile_info_t** x, uint32_t* num_prof,FILE* fs);
-int tms_profile_info_fprint(uint32_t num_prof,tms_profile_info_t* x, FILE* fs);
-void tms_profile_info_free(tms_profile_info_t** x);
-
-int tms_sparse_metrics_fread(hpcrun_fmt_sparse_metrics_t* x, FILE* fs);
-int tms_sparse_metrics_fprint(hpcrun_fmt_sparse_metrics_t* x, FILE* fs,
-          const metric_tbl_t* metricTbl, const char* pre);
-void tms_sparse_metrics_free(hpcrun_fmt_sparse_metrics_t* x);
-
-// --------------------------------------------------------------------------
-// cct_major_sparse.db hpcproftt helper
-// --------------------------------------------------------------------------
-typedef struct cms_cct_info_t{
-  uint32_t cct_id;
-  uint64_t num_val;
-  uint16_t num_nzmid;
-  uint64_t offset;
-}cms_cct_info_t;
-
-typedef struct cct_sparse_metrics_t{
-  uint64_t num_vals;
-  uint16_t num_nzmid;
-  hpcrun_metricVal_t* values;
-  uint32_t* tids; 
-  uint16_t* mids;
-  uint64_t* m_offsets;
-}cct_sparse_metrics_t;
-
-int cms_cct_info_fread(cms_cct_info_t** x, uint32_t* num_cct,FILE* fs);
-int cms_cct_info_fprint(uint32_t num_cct,cms_cct_info_t* x, FILE* fs);
-void cms_cct_info_free(cms_cct_info_t** x);
-
-int cms_sparse_metrics_fread(cct_sparse_metrics_t* x, FILE* fs);
-int cms_sparse_metrics_fprint(cct_sparse_metrics_t* x, FILE* fs,
-          const char* pre);
-void cms_sparse_metrics_free(cct_sparse_metrics_t* x);
-
 
 
 //***************************************************************************

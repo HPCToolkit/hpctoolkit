@@ -87,8 +87,6 @@ using std::string;
 #include <alloca.h>
 #include <linux/limits.h>
 
-
-
 //*************************** User Include Files ****************************
 
 #include <include/gcc-attr.h>
@@ -995,7 +993,7 @@ Profile::make(uint rFlags)
 
 
 Profile*
-Profile::make(const char* fnm, uint rFlags, FILE* outfs)
+Profile::make(const char* fnm, uint rFlags, FILE* outfs, bool sm_easyToGrep) //YUMENG: last arg change to a struct of flags?
 {
   int ret;
 
@@ -1022,7 +1020,7 @@ Profile::make(const char* fnm, uint rFlags, FILE* outfs)
 
   Profile* prof = NULL;
   
-  ret = fmt_fread(prof, fs, rFlags, fnm, fnm, outfs);
+  ret = fmt_fread(prof, fs, rFlags, fnm, fnm, outfs, sm_easyToGrep);
   
   hpcio_fclose(fs);
 
@@ -1034,7 +1032,7 @@ Profile::make(const char* fnm, uint rFlags, FILE* outfs)
 
 int
 Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
-		   std::string ctxtStr, const char* filename, FILE* outfs)
+		   std::string ctxtStr, const char* filename, FILE* outfs, bool sm_easyToGrep)
 {
   int ret;
 
@@ -1070,7 +1068,7 @@ Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
     prof_abort(-1);
   }
   //YUMENG check if the ending position match the recorded in footer
-  if(ftell(infs) != footer.hdr_end){
+  if((uint64_t)ftell(infs) != footer.hdr_end){
     fprintf(stderr, "ERROR: 'fmt-hdr' is succesfully read but the data seems off the recorded location in '%s'\n",
      filename);
      prof_abort(-1);
@@ -1102,7 +1100,7 @@ Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
 
     try {
       ret = fmt_epoch_fread(myprof, infs, rFlags, hdr, footer, 
-			    ctxtStr, filename, outfs);
+			    ctxtStr, filename, outfs, sm_easyToGrep);
       //if (ret == HPCFMT_EOF) {
 	    //  break; 
       // }
@@ -1157,7 +1155,7 @@ int
 Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 			 const hpcrun_fmt_hdr_t& hdr, const hpcrun_fmt_footer_t& footer,
 			 std::string ctxtStr, const char* filename,
-			 FILE* outfs)
+			 FILE* outfs, bool sm_easyToGrep)
 {
   using namespace Prof;
 
@@ -1203,7 +1201,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     DIAG_Throw("error reading 'loadmap'");
   }
   //YUMENG check if the ending position match the recorded in footer
-  if(ftell(infs) != footer.loadmap_end){
+  if((uint64_t)ftell(infs) != footer.loadmap_end){
     fprintf(stderr, "ERROR: 'loadmap' is succesfully read but the data seems off the recorded location in '%s'\n",
      filename);
      prof_abort(-1);
@@ -1377,7 +1375,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   fseek(infs, footer.cct_start, SEEK_SET);
   fmt_cct_fread(*prof, infs, rFlags, ctxtStr, outfs);
   //check if the ending position match the recorded in footer
-  if(ftell(infs) != footer.cct_end){
+  if((uint64_t)ftell(infs) != footer.cct_end){
     fprintf(stderr, "ERROR: 'cct' is succesfully read but the data seems off the recorded location in '%s'\n",
      filename);
      prof_abort(-1);
@@ -1398,7 +1396,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     DIAG_Throw("error reading 'metric-tbl'");
   }
   //YUMENG check if the ending position match the recorded in footer
-  if(ftell(infs) != footer.met_tbl_end){
+  if((uint64_t)ftell(infs) != footer.met_tbl_end){
     fprintf(stderr, "ERROR: 'metric-tbl' is succesfully read but the data seems off the recorded location in '%s'\n",
      filename);
      prof_abort(-1);
@@ -1562,12 +1560,12 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     DIAG_Throw("error reading 'metric-tbl'");
   }
   //check if the ending position match the recorded in footer
-  if(ftell(infs) != footer.sm_end){
+  if((uint64_t)ftell(infs) != footer.sm_end){
     fprintf(stderr, "ERROR: 'sparse metrics' is succesfully read but the data seems off the recorded location in '%s'\n",
      filename);
      prof_abort(-1);
   }
-  hpcrun_fmt_sparse_metrics_fprint(&sparse_metrics,outfs,&metricTbl,"  ");
+  hpcrun_fmt_sparse_metrics_fprint(&sparse_metrics,outfs, &metricTbl, "  ", sm_easyToGrep);
   hpcrun_fmt_sparse_metrics_free(&sparse_metrics, free);
 
   //YUMENG: no epoch info 

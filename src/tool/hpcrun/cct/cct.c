@@ -851,8 +851,8 @@ hpcrun_cct_fwrite(cct2metrics_t* cct2metrics_map, cct_node_t* cct, FILE* fs, epo
 
   //YUMENG: record cct_id:cct_off pair
   sparse_metrics->cur_cct_offset = 0;
-  sparse_metrics->cct_off = (uint64_t *) hpcrun_malloc((num_nzcct)*sizeof(uint64_t));
-  sparse_metrics->cct_id = (uint32_t *) hpcrun_malloc((num_nzcct)*sizeof(uint32_t));
+  sparse_metrics->cct_off = (uint64_t *) hpcrun_malloc((num_nzcct+1)*sizeof(uint64_t));
+  sparse_metrics->cct_id = (uint32_t *) hpcrun_malloc((num_nzcct+1)*sizeof(uint32_t));
   sparse_metrics->num_nz_cct = 0;
 
   hpcfmt_int8_fwrite((uint64_t) nodes, fs);
@@ -892,6 +892,10 @@ hpcrun_cct_fwrite(cct2metrics_t* cct2metrics_map, cct_node_t* cct, FILE* fs, epo
     hpcrun_cct_walk_child_1st(cct, collapse_dummy_node, &write_arg);
   }
   hpcrun_cct_walk_node_1st(cct, lwrite, &write_arg);
+
+  //one extra entry in cct_id_offset pairs to mark the end index of the last cct node
+  sparse_metrics->cct_id[num_nzcct] = LastNodeEnd;
+  sparse_metrics->cct_off[num_nzcct] = sparse_metrics->cur_cct_offset;
 
 
   //YUMENG: try to make sure the recorded info are correct

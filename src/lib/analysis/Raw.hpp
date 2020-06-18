@@ -68,6 +68,8 @@
 
 #include <include/uint.h> 
 #include <lib/prof-lean/hpcrun-fmt.h> //YUMENG
+#include <lib/prof/tms-format.h> //YUMENG
+#include <lib/prof/cms-format.h>
 
 //*************************** Forward Declarations ***************************
 
@@ -78,17 +80,18 @@ namespace Analysis {
 namespace Raw {
 
 void 
-writeAsText(/*destination,*/ const char* filenm);
+writeAsText(/*destination,*/ const char* filenm, bool sm_easyToGrep);
+//YUMENG: second arg: if more flags, maybe build a struct to include all flags and pass the struct around
 
 static inline void 
 writeAsText(/*destination,*/ const std::string& filenm)
 { writeAsText(filenm.c_str()); }
 
 void
-writeAsText_callpath(/*destination,*/ const char* filenm);
+writeAsText_callpath(/*destination,*/ const char* filenm, bool sm_easyToGrep);
 
 void
-writeAsText_sparseDBtmp(const char* filenm); //YUMENG
+writeAsText_sparseDBtmp(const char* filenm, bool sm_easyToGrep); //YUMENG
 
 bool 
 profileInfoOffsets_sorter(tms_profile_info_t const& lhs, tms_profile_info_t const& rhs);//YUMENG
@@ -97,10 +100,10 @@ void
 sortProfileInfo_onOffsets(tms_profile_info_t* x, uint32_t num_prof);//YUMENG
 
 void
-writeAsText_sparseDBthread(const char* filenm); //YUMENG
+writeAsText_sparseDBthread(const char* filenm, bool sm_easyToGrep); //YUMENG
 
 void
-writeAsText_sparseDBcct(const char* filenm); //YUMENG
+writeAsText_sparseDBcct(const char* filenm, bool sm_easyToGrep); //YUMENG
 
 void
 writeAsText_callpathMetricDB(/*destination,*/ const char* filenm);

@@ -327,7 +327,7 @@ unpackProfile(uint8_t* buffer, size_t bufferSz)
   uint rFlags = Prof::CallPath::Profile::RFlg_VirtualMetrics;
   Prof::CallPath::Profile::fmt_fread(prof, fs, rFlags,
 				     "(ParallelAnalysis::unpackProfile)",
-				     NULL, NULL);
+				     NULL, NULL, false);
 
   fclose(fs);
   return prof;

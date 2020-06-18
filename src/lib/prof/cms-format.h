@@ -1,4 +1,4 @@
-// -*-Mode: C++;-*-
+// -*-Mode: C++;-*- // technically C99
 
 // * BeginRiceCopyright *****************************************************
 //
@@ -46,114 +46,97 @@
 
 //***************************************************************************
 //
-// File:
-//   $HeadURL$
-//
 // Purpose:
-//   [The purpose of this file]
+//   Low-level types and functions for reading/writing cct_major_sparse.db
+//
+//   See cct_major_sparse figure. //TODO change this
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
-#ifndef Args_hpp
-#define Args_hpp
+#ifndef CMS_FORMAT_H
+#define CMS_FORMAT_H
 
 //************************* System Include Files ****************************
 
-#include <iostream>
-#include <string>
-#include <vector>
+#include <stdbool.h>
+#include <limits.h>
 
 //*************************** User Include Files ****************************
 
 #include <include/uint.h>
 
-#include <lib/analysis/Args.hpp>
+#include "../prof-lean/hpcio.h"
+#include "../prof-lean/hpcio-buffer.h"
+#include "../prof-lean/hpcfmt.h"
+#include "../prof-lean/hpcrun-fmt.h"
 
-#include <lib/support/diagnostics.h>
-#include <lib/support/CmdLineParser.hpp>
 
 //*************************** Forward Declarations **************************
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 //***************************************************************************
+// cms_cct_info_t
+//***************************************************************************
+typedef struct cms_cct_info_t{
+  uint32_t cct_id;
+  uint64_t num_val;
+  uint16_t num_nzmid;
+  uint64_t offset;
+}cms_cct_info_t;
 
-class Args : public Analysis::Args {
-public:
+int
+cms_cct_info_fwrite(cms_cct_info_t* x, uint32_t num_cct, FILE* fs);
 
-  class Exception : public Diagnostics::Exception {
-  public:
-    Exception(const char* x,
-	      const char* filenm = NULL, unsigned int lineno = 0)
-      : Diagnostics::Exception(x, filenm, lineno) 
-      { }
+int 
+cms_cct_info_fread(cms_cct_info_t** x, uint32_t* num_cct,FILE* fs);
 
-    Exception(std::string x,
-	      const char* filenm = NULL, unsigned int lineno = 0) 
-      : Diagnostics::Exception(x, filenm, lineno) 
-      { }
+int 
+cms_cct_info_fprint(uint32_t num_cct, cms_cct_info_t* x, FILE* fs);
 
-    ~Exception() { }
-  };
+void 
+cms_cct_info_free(cms_cct_info_t** x);
+
+//***************************************************************************
+// cct_sparse_metrics_t
+//***************************************************************************
+typedef struct cct_sparse_metrics_t{
+  uint32_t cct_node_id;
+
+  uint64_t num_vals;
+  uint16_t num_nzmid;
+  hpcrun_metricVal_t* values;
+  uint32_t* tids; 
+  uint16_t* mids;
+  uint64_t* m_offsets;
+}cct_sparse_metrics_t;
+
+int
+cms_sparse_metrics_fwrite(cct_sparse_metrics_t* x, FILE* fs);
+
+int 
+cms_sparse_metrics_fread(cct_sparse_metrics_t* x, FILE* fs);
+
+int 
+cms_sparse_metrics_fprint(cct_sparse_metrics_t* x, FILE* fs,
+          const char* pre, bool easygrep);
+
+int
+cms_sparse_metrics_fprint_grep_helper(cct_sparse_metrics_t* x, 
+          FILE* fs, const char* pre);
+
+void 
+cms_sparse_metrics_free(cct_sparse_metrics_t* x);
 
 
-public: 
-  Args();
-  Args(int argc, const char* const argv[]);
-  virtual ~Args();
+//***************************************************************************
+#if defined(__cplusplus)
+} /* extern "C" */
+#endif
 
-  // Parse the command line
-  void
-  parse(int argc, const char* const argv[]);
-
-  // Version and Usage information
-  void
-  printVersion(std::ostream& os) const;
-
-  void
-  printUsage(std::ostream& os) const;
-  
-  // Error
-  static void
-  printError(std::ostream& os, const char* msg) /*const*/;
-
-  static void
-  printError(std::ostream& os, const std::string& msg) /*const*/;
-
-  // Dump
-  virtual void
-  dump(std::ostream& os = std::cerr) const;
-
-public:
-  // Parsed Data: Command
-  static const std::string&
-  getCmd() /*const*/;
-
-  static void
-  parseArg_metric(Args* args, const std::string& opts, const char* errTag);
-
-public:
-
-  // Object Correlation args
-  std::vector<std::string> obj_procGlobs;
-  uint64_t obj_procThreshold;
-
-  bool obj_metricsAsPercents;
-  bool obj_showSourceCode;
-
-public:
-
-  // Sparse metrics data format version - YUMENG
-  bool sm_easyToGrep = false; //default
-
-private:
-  void Ctor();
-  void setHPCHome(); 
-
-private:
-  static CmdLineParser::OptArgDesc optArgs[];
-  CmdLineParser parser;
-}; 
-
-#endif // Args_hpp 
+#endif //CMS_FORMAT_H

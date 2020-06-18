@@ -1,4 +1,4 @@
-// -*-Mode: C++;-*-
+// -*-Mode: C++;-*- // technically C99
 
 // * BeginRiceCopyright *****************************************************
 //
@@ -46,114 +46,86 @@
 
 //***************************************************************************
 //
-// File:
-//   $HeadURL$
-//
 // Purpose:
-//   [The purpose of this file]
+//   Low-level types and functions for reading/writing thread_major_sparse.db
+//
+//   See thread_major_sparse figure. //TODO change this
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]
 //
 //***************************************************************************
 
-#ifndef Args_hpp
-#define Args_hpp
+#ifndef TMS_FORMAT_H
+#define TMS_FORMAT_H
 
 //************************* System Include Files ****************************
 
-#include <iostream>
-#include <string>
-#include <vector>
+#include <stdbool.h>
+#include <limits.h>
 
 //*************************** User Include Files ****************************
 
 #include <include/uint.h>
 
-#include <lib/analysis/Args.hpp>
-
-#include <lib/support/diagnostics.h>
-#include <lib/support/CmdLineParser.hpp>
+#include "../prof-lean/hpcio.h"
+#include "../prof-lean/hpcio-buffer.h"
+#include "../prof-lean/hpcfmt.h"
+#include "../prof-lean/hpcrun-fmt.h"
 
 //*************************** Forward Declarations **************************
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
+//***************************************************************************
+// tms_profile_info_t
 //***************************************************************************
 
-class Args : public Analysis::Args {
-public:
+typedef struct tms_profile_info_t{
+  uint32_t tid;
+  uint64_t num_val;
+  uint32_t num_nzcct;
+  uint64_t offset;
+}tms_profile_info_t;
 
-  class Exception : public Diagnostics::Exception {
-  public:
-    Exception(const char* x,
-	      const char* filenm = NULL, unsigned int lineno = 0)
-      : Diagnostics::Exception(x, filenm, lineno) 
-      { }
+int 
+tms_profile_info_fwrite(uint32_t num_t,tms_profile_info_t* x, FILE* fs);
 
-    Exception(std::string x,
-	      const char* filenm = NULL, unsigned int lineno = 0) 
-      : Diagnostics::Exception(x, filenm, lineno) 
-      { }
+int 
+tms_profile_info_fread(tms_profile_info_t** x, uint32_t* num_prof,FILE* fs);
 
-    ~Exception() { }
-  };
+int 
+tms_profile_info_fprint(uint32_t num_prof,tms_profile_info_t* x, FILE* fs);
+
+void 
+tms_profile_info_free(tms_profile_info_t** x);
+
+//***************************************************************************
+// hpcrun_fmt_sparse_metrics_t related, defined in hpcrun-fmt.h
+//***************************************************************************
+int
+tms_sparse_metrics_fwrite(hpcrun_fmt_sparse_metrics_t* x, FILE* fs);
+
+int 
+tms_sparse_metrics_fread(hpcrun_fmt_sparse_metrics_t* x, FILE* fs);
+
+int 
+tms_sparse_metrics_fprint(hpcrun_fmt_sparse_metrics_t* x, FILE* fs,
+          const metric_tbl_t* metricTbl, const char* pre, bool easygrep);
+
+int
+tms_sparse_metrics_fprint_grep_helper(hpcrun_fmt_sparse_metrics_t* x, FILE* fs, 
+          const metric_tbl_t* metricTbl, const char* pre);
+
+void 
+tms_sparse_metrics_free(hpcrun_fmt_sparse_metrics_t* x);
 
 
-public: 
-  Args();
-  Args(int argc, const char* const argv[]);
-  virtual ~Args();
+//***************************************************************************
+#if defined(__cplusplus)
+} /* extern "C" */
+#endif
 
-  // Parse the command line
-  void
-  parse(int argc, const char* const argv[]);
-
-  // Version and Usage information
-  void
-  printVersion(std::ostream& os) const;
-
-  void
-  printUsage(std::ostream& os) const;
-  
-  // Error
-  static void
-  printError(std::ostream& os, const char* msg) /*const*/;
-
-  static void
-  printError(std::ostream& os, const std::string& msg) /*const*/;
-
-  // Dump
-  virtual void
-  dump(std::ostream& os = std::cerr) const;
-
-public:
-  // Parsed Data: Command
-  static const std::string&
-  getCmd() /*const*/;
-
-  static void
-  parseArg_metric(Args* args, const std::string& opts, const char* errTag);
-
-public:
-
-  // Object Correlation args
-  std::vector<std::string> obj_procGlobs;
-  uint64_t obj_procThreshold;
-
-  bool obj_metricsAsPercents;
-  bool obj_showSourceCode;
-
-public:
-
-  // Sparse metrics data format version - YUMENG
-  bool sm_easyToGrep = false; //default
-
-private:
-  void Ctor();
-  void setHPCHome(); 
-
-private:
-  static CmdLineParser::OptArgDesc optArgs[];
-  CmdLineParser parser;
-}; 
-
-#endif // Args_hpp 
+#endif //TMS_FORMAT_H

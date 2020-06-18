@@ -227,6 +227,7 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_
   //
 
   epoch_t* current_epoch = epoch;
+  int ret;
 
 //YUMENG: no epoch info needed
 #if 0
@@ -294,17 +295,19 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_
       lm_entry.name = lm_src->name;
       lm_entry.flags = 0;
       
-      hpcrun_fmt_loadmapEntry_fwrite(&lm_entry, fs);
+      ret = hpcrun_fmt_loadmapEntry_fwrite(&lm_entry, fs);
+      if(ret != HPCFMT_OK){
+        TMSG(DATA_WRITE, "Error writing loadmap entry");
+        goto write_error;
+      }
     }
 
     //YUMENG: set footer  
-    //if(footer) footer[SF_FOOTER_cct] = ftell(fs);
     if(footer) {
       footer->loadmap_end = ftell(fs);
       fseek(fs, MULTIPLE_1024(footer->loadmap_end), SEEK_SET);
     }
     
-
     TMSG(DATA_WRITE, "Done writing loadmap");
 
 
@@ -324,8 +327,8 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_
     hpcrun_fmt_sparse_metrics_t sparse_metrics;
     sparse_metrics.tid = (uint32_t)cptd->id;
 
-    //assign value while writing cct info
-    int ret = hpcrun_cct_bundle_fwrite(fs, epoch_flags, cct, cptd->cct2metrics_map, &sparse_metrics);
+    //assign value to sparse metrics while writing cct info
+    ret = hpcrun_cct_bundle_fwrite(fs, epoch_flags, cct, cptd->cct2metrics_map, &sparse_metrics);
 
     //footer
     if(footer) {
@@ -338,11 +341,8 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_
     if(ret != HPCRUN_OK) {
       TMSG(DATA_WRITE, "Error writing tree %#lx or collecting sparse metrics", cct);
       TMSG(DATA_WRITE, "Number of tree nodes lost: %ld", cct->num_nodes);
-      EMSG("could not save profile data to hpcrun file");
-      perror("write_profile_data");
-      ret = HPCRUN_ERR; // FIXME: return this value now
-    }
-    else {
+      goto write_error;
+    }else {
       TMSG(DATA_WRITE, "saved cct data to hpcrun file and recorded profile data as sparse metrics");
     }
 
@@ -359,12 +359,16 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_
     hpcfmt_int4_fwrite(hpcrun_get_num_kind_metrics(), fs);
     while (curr != NULL) {
       TMSG(DATA_WRITE, "metric tbl len = %d", metric_tbl->len);
-      hpcrun_fmt_metricTbl_fwrite(metric_tbl, cptd->perf_event_info, fs);
+      ret = hpcrun_fmt_metricTbl_fwrite(metric_tbl, cptd->perf_event_info, fs);
       metric_tbl = hpcrun_get_metric_tbl(&curr);
+
+      if(ret != HPCFMT_OK){
+        TMSG(DATA_WRITE, "Error writing metric-tbl");
+        goto write_error;
+      }
     }
 
     //YUMENG: footer
-    //if(footer) footer[SF_FOOTER_sparse_metrics] = ftell(fs);
     if(footer) {
       footer->met_tbl_end = ftell(fs);
       fseek(fs, MULTIPLE_1024(footer->met_tbl_end), SEEK_SET);
@@ -372,7 +376,6 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_
 
     TMSG(DATA_WRITE, "Done writing metric tbl");
 #endif    
-    current_loadmap++;
 
     //
     // ==  sparse_metrics == YUMENG
@@ -380,12 +383,11 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_
 
     //footer
     if(footer) footer->sm_start = ftell(fs);
-   
-    if(ret == HPCFMT_OK) { //if return err previously, no need to check this
-      hpcrun_fmt_sparse_metrics_fwrite(&sparse_metrics,fs);
-      TMSG(DATA_WRITE, "Done writing sparse metrics data");
-    }else{
-      EEMSG("Stopped writing metrics data due to error in recording");
+
+    ret = hpcrun_fmt_sparse_metrics_fwrite(&sparse_metrics,fs);
+    if(ret != HPCFMT_OK){
+      TMSG(DATA_WRITE, "Error writing sparse metrics data");
+      goto write_error;
     }
 
     if(footer) {
@@ -395,19 +397,32 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_
       footer->footer_start = ftell(fs);
     }
 
+    TMSG(DATA_WRITE, "Done writing sparse metrics data");
+
     //
     // == footer == YUMENG
     //
     if(s->next == NULL){
       footer->HPCRUNsm = HPCRUNsm;
-      hpcrun_fmt_footer_fwrite(footer, fs);
+      ret = hpcrun_fmt_footer_fwrite(footer, fs);
+      if(ret != HPCFMT_OK){
+        TMSG(DATA_WRITE, "Error writing footer");
+        goto write_error;
+      }
     }
 
     TMSG(DATA_WRITE, "Done writing footer");
 
+    current_loadmap++;
+
   } // epoch loop
 
   return HPCRUN_OK; //YUMENG question: never return HPCRUN_ERR even if error inside
+
+  write_error:
+    EMSG("could not save profile data to hpcrun file");
+    perror("write_profile_data");
+    return HPCRUN_ERR; 
 }
 
 void
