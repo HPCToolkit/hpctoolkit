@@ -69,40 +69,13 @@
 static void
 getMemoryProfileInfo
 (
-  profilingData_t* pd,
+  gpu_memcpy_t *memcpy,
   cl_memory_callback_t* cb_data
 )
 {
-  pd->size = cb_data->size;
-  pd->fromHostToDevice = cb_data->fromHostToDevice;
-  pd->fromDeviceToHost = cb_data->fromDeviceToHost;
-}
-
-
-static void
-openclKernelDataToGenericKernelData
-(
-  gpu_kernel_t *generic_data,
-  profilingData_t *pd
-)
-{
-  generic_data->start = (uint64_t)pd->startTime;
-  generic_data->end = (uint64_t)pd->endTime;
-}
-
-
-static void
-openclMemDataToGenericMemData
-(
-  gpu_memcpy_t *generic_data,
-  profilingData_t *pd
-)
-{
-  generic_data->start = (uint64_t)pd->startTime;
-  generic_data->end = (uint64_t)pd->endTime;
-  generic_data->bytes = (uint64_t)pd->size;
-  generic_data->copyKind = (gpu_memcpy_type_t) (pd->fromHostToDevice)? GPU_MEMCPY_H2D: pd->fromDeviceToHost? GPU_MEMCPY_D2H:
-	GPU_MEMCPY_UNK;
+  memcpy->correlation_id = cb_data->correlation_id;
+  memcpy->bytes = cb_data->size;
+  memcpy->copyKind = (gpu_memcpy_type_t) (cb_data->fromHostToDevice)? GPU_MEMCPY_H2D: cb_data->fromDeviceToHost? GPU_MEMCPY_D2H:	GPU_MEMCPY_UNK;
 }
 
 
@@ -115,16 +88,10 @@ convert_kernel_launch
 )
 {
   cl_kernel_callback_t* kernel_cb_data = (cl_kernel_callback_t*)user_data;
-  profilingData_t pd;
-  memset(&pd, 0, sizeof(profilingData_t));
-  getTimingInfoFromClEvent(&pd, event);
-  gpu_kernel_t kernel_data;
-  memset(&kernel_data, 0, sizeof(gpu_kernel_t));
-  openclKernelDataToGenericKernelData(&kernel_data, &pd);
+  memset(&ga->details.kernel, 0, sizeof(gpu_kernel_t));
+  getTimingInfoFromClEvent(&ga->details.interval, event);
   ga->kind = GPU_ACTIVITY_KERNEL;
-  ga->details.kernel = kernel_data;
   ga->details.kernel.correlation_id = kernel_cb_data->correlation_id;
-  set_gpu_interval(&ga->details.interval, pd.startTime, pd.endTime);
 }
 
 
@@ -138,17 +105,10 @@ convert_memcpy
 )
 {
   cl_memory_callback_t* memory_cb_data = (cl_memory_callback_t*)user_data;
-  profilingData_t pd;
-  memset(&pd, 0, sizeof(profilingData_t));
-  getTimingInfoFromClEvent(&pd, event);
-  getMemoryProfileInfo(&pd, memory_cb_data);
-  gpu_memcpy_t memcpy_data;
-  memset(&memcpy_data, 0, sizeof(gpu_memcpy_t));
-  openclMemDataToGenericMemData(&memcpy_data, &pd);
+  memset(&ga->details.memcpy, 0, sizeof(gpu_memcpy_t));
+  getTimingInfoFromClEvent(&ga->details.interval, event);
+  getMemoryProfileInfo(&ga->details.memcpy, memory_cb_data);
   ga->kind = GPU_ACTIVITY_MEMCPY;
-  ga->details.memcpy = memcpy_data;
-  ga->details.memcpy.correlation_id = memory_cb_data->correlation_id;
-  set_gpu_interval(&ga->details.interval, pd.startTime, pd.endTime);
 }
 
 

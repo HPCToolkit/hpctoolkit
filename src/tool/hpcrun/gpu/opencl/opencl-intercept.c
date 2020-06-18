@@ -265,6 +265,7 @@ clEnqueueWriteBuffer_wrapper
 // gotcha variables
 //******************************************************************************
 
+#ifndef HPCRUN_STATIC_LINK
 static gotcha_binding_t opencl_bindings[] = {
   {
     "clCreateCommandQueue",
@@ -287,6 +288,7 @@ static gotcha_binding_t opencl_bindings[] = {
     &clEnqueueWriteBuffer_handle
   }
 };
+#endif
 
 
 
@@ -300,9 +302,11 @@ opencl_intercept_setup
   void
 )
 {
+  #ifndef HPCRUN_STATIC_LINK
   ETMSG(CL, "setting up opencl intercepts");
   gotcha_wrap(opencl_bindings, 4, "opencl_bindings");
   opencl_intercept_initialize();
+  #endif
 }
 
 
@@ -312,6 +316,8 @@ opencl_intercept_teardown
   void
 )
 {
+  #ifndef HPCRUN_STATIC_LINK
   // not sure if this works
   gotcha_set_priority("opencl_bindings", -1);
+  #endif
 }

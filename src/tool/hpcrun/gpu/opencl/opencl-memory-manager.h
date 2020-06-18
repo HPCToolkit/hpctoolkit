@@ -84,7 +84,6 @@ typedef struct opencl_object_channel_t {
 
 typedef struct opencl_object_details_t {
   union {
-    profilingData_t pd;
     cl_kernel_callback_t ker_cb;
     cl_memory_callback_t mem_cb;
   };

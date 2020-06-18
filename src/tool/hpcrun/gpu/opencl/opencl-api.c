@@ -381,7 +381,7 @@ opencl_activity_completion_callback
 void
 getTimingInfoFromClEvent
 (
-  profilingData_t* pd,
+  gpu_interval_t *interval,
   cl_event event
 )
 {
@@ -390,8 +390,7 @@ getTimingInfoFromClEvent
 
   HPCRUN_OPENCL_CALL(clGetEventProfilingInfo, (event, CL_PROFILING_COMMAND_START, sizeof(commandStart), &commandStart, NULL));
   HPCRUN_OPENCL_CALL(clGetEventProfilingInfo, (event, CL_PROFILING_COMMAND_END, sizeof(commandEnd), &commandEnd, NULL));
-  pd->startTime = commandStart;
-  pd->endTime = commandEnd;
+  set_gpu_interval(interval, (uint64_t)commandStart, (uint64_t)commandEnd);
 }
 
 

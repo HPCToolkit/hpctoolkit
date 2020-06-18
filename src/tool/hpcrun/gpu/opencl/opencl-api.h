@@ -59,23 +59,9 @@
 // local includes
 //******************************************************************************
 
+#include <hpcrun/gpu/gpu-activity.h>
+
 #include "opencl-intercept.h"
-
-
-
-//******************************************************************************
-// type declarations
-//******************************************************************************
-
-typedef struct
-profilingData_t
-{
-  cl_ulong startTime;
-  cl_ulong endTime;
-  size_t size;
-  bool fromHostToDevice;
-  bool fromDeviceToHost;
-} profilingData_t;
 
 
 
@@ -103,7 +89,7 @@ opencl_activity_completion_callback
 void
 getTimingInfoFromClEvent
 (
-  profilingData_t*,
+  gpu_interval_t *,
   cl_event
 );
 
