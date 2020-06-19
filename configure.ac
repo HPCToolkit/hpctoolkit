@@ -4710,8 +4710,6 @@ AC_SUBST([OPT_CUPTI_LDFLAGS])
 OPENCL=no
 OPT_HAVE_OPENCL=no
 OPT_OPENCL_IFLAGS=
-# we need gotcha libraries for intercepting opencl calls. This can be removed later when gotcha support is available in master branch
-OPT_GOTCHA_LDFLAGS="-lgotcha"
 
 AC_ARG_WITH([opencl],
   [AS_HELP_STRING([--with-opencl=PATH],
@@ -4745,7 +4743,6 @@ fi
 
 AM_CONDITIONAL([ENABLE_OPENCL], [test "$OPT_HAVE_OPENCL" = yes])
 AC_SUBST([OPT_OPENCL_IFLAGS])
-AC_SUBST([OPT_GOTCHA_LDFLAGS])
 
 #-------------------------------------------------
 # Option: --with-rocm=PATH

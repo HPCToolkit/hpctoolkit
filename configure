@@ -652,7 +652,6 @@ OPT_ROCM_IFLAGS
 OPT_ROCM
 OPT_ENABLE_ROCM_FALSE
 OPT_ENABLE_ROCM_TRUE
-OPT_GOTCHA_LDFLAGS
 OPT_OPENCL_IFLAGS
 ENABLE_OPENCL_FALSE
 ENABLE_OPENCL_TRUE
@@ -23575,8 +23574,6 @@ _ACEOF
 OPENCL=no
 OPT_HAVE_OPENCL=no
 OPT_OPENCL_IFLAGS=
-# we need gotcha libraries for intercepting opencl calls. This can be removed later when gotcha support is available in master branch
-OPT_GOTCHA_LDFLAGS="-lgotcha"
 
 
 # Check whether --with-opencl was given.
@@ -23617,7 +23614,6 @@ else
   ENABLE_OPENCL_TRUE='#'
   ENABLE_OPENCL_FALSE=
 fi
-
 
 
 

@@ -62,3 +62,4 @@
 #define GOTCHA_GET_TYPED_WRAPPEE(wrapper, type) (type) 0
 #endif
 #endif
+
