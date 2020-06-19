@@ -71,9 +71,8 @@
 //******************************************************************************
 
 typedef enum {
-  OPENCL_PROFILING_DATA                      = 0,
-  OPENCL_KERNEL_CALLBACK                     = 1,
-  OPENCL_MEMORY_CALLBACK                     = 2
+  OPENCL_KERNEL_CALLBACK                     = 0,
+  OPENCL_MEMORY_CALLBACK                     = 1
 } opencl_object_kind_t;
 
 
