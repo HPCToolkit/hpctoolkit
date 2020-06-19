@@ -478,8 +478,6 @@ hpcrun_init_internal(bool is_child)
   // because mapping of load modules affects the recipe map.
   hpcrun_unw_init();
 
-  hpcrun_save_vdso();
-
   // init callbacks for each device
   hpcrun_initializer_init();
 
@@ -929,10 +927,22 @@ monitor_init_process(int *argc, char **argv, void* data)
   // This is because sample source init (such as PAPI)  may dlopen other libraries,
   // which will trigger our library monitoring code and fnbound queries
   hpcrun_initLoadmap();
+
+  // We need to initialize messages related functions and set up measurement directory,
+  // so that we can write vdso and prevent fnbounds print messages to the terminal.
+  messages_init();
+  if (!hpcrun_get_disabled()) {
+    hpcrun_files_set_directory();
+  }
+  messages_logfile_create();
+
+  // We need to save vdso before initializing fnbounds this
+  // is because fnbounds_init will iterate over the load map 
+  // and will invoke analysis on vdso
+  hpcrun_save_vdso();
   fnbounds_init();
 
   hpcrun_registered_sources_init();
-  messages_init();
 
   control_knob_init();  
 
@@ -955,15 +965,11 @@ monitor_init_process(int *argc, char **argv, void* data)
 
   hpcrun_process_sample_source_none();
 
-  if (!hpcrun_get_disabled()) {
-    hpcrun_files_set_directory();
-  }
 
   TMSG(PROCESS,"hpcrun_files_set_executable called w process name = %s", process_name);
 
   TMSG(PROCESS,"init");
 
-  messages_logfile_create();
   hpcrun_sample_prob_mesg();
 
   TMSG(PROCESS, "I am a %s process", is_child ? "child" : "parent");
