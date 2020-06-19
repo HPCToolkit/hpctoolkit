@@ -88,42 +88,15 @@ public:
   //***************************************************************************
   // thread_major_sparse.db  - YUMENG
   //***************************************************************************
-  const int TMS_total_prof_SIZE   = 4;
-  const int TMS_tid_SIZE          = 4;
-  const int TMS_num_val_SIZE      = 8;
-  const int TMS_num_nzcct_SIZE    = 4;
-  const int TMS_prof_offset_SIZE  = 8;
-  const int TMS_prof_skip_SIZE    = TMS_tid_SIZE + TMS_num_val_SIZE + TMS_num_nzcct_SIZE; 
-  const int TMS_prof_info_SIZE    = TMS_tid_SIZE + TMS_num_val_SIZE + TMS_num_nzcct_SIZE + TMS_prof_offset_SIZE;
-
-  const int TMS_cct_id_SIZE       = 4;
-  const int TMS_cct_offset_SIZE   = 8;
-  const int TMS_cct_pair_SIZE     = TMS_cct_id_SIZE + TMS_cct_offset_SIZE;
-  const int TMS_val_SIZE          = 8;
-  const int TMS_mid_SIZE          = 2;
-
-  void writeThreadMajor(const int threads, const int world_rank, const int world_size, std::vector<uint64_t>& cct_local_sizes,std::vector<std::set<uint16_t>>& cct_nzmids);
+  void writeThreadMajor(const int threads, 
+                        const int world_rank, 
+                        const int world_size, 
+                        std::vector<uint64_t>& cct_local_sizes,
+                        std::vector<std::set<uint16_t>>& cct_nzmids);
 
   //***************************************************************************
   // cct_major_sparse.db  - YUMENG
   //***************************************************************************
-  const int FIRST_CCT_ID          = 1;
-  const uint NEED_NUM_VAL         = -1;
-
-  const int CMS_num_cct_SIZE      = 4;
-  const int CMS_cct_id_SIZE       = 4;
-  const int CMS_num_val_SIZE      = 8;
-  const int CMS_num_nzmid_SIZE    = 2;
-  const int CMS_cct_offset_SIZE   = 8;
-  const int CMS_cct_info_SIZE     = CMS_cct_id_SIZE + CMS_num_val_SIZE + CMS_num_nzmid_SIZE + CMS_cct_offset_SIZE;
-
-  const int CMS_mid_SIZE          = 2;
-  const int CMS_m_offset_SIZE     = 8;
-  const int CMS_m_pair_SIZE       = CMS_mid_SIZE + CMS_m_offset_SIZE;
-  const int CMS_val_SIZE          = 8;
-  const int CMS_tid_SIZE          = 4;
-  const int CMS_val_tid_pair_SIZE = CMS_val_SIZE + CMS_tid_SIZE;
-
   void writeCCTMajor(std::vector<uint64_t>& cct_local_sizes, std::vector<std::set<uint16_t>>& cct_nzmids,
     int ctxcnt, int world_rank, int world_size, int threads);
 
@@ -186,18 +159,67 @@ private:
   //***************************************************************************
   // thread_major_sparse.db  - YUMENG
   //***************************************************************************
-  void getProfileSizes(std::vector<std::pair<const hpctoolkit::Thread*, uint64_t>>& profile_sizes, uint64_t& my_size);
-  void getTotalNumProfiles(const uint32_t my_num_prof, uint32_t& total_prof);
-  void getMyOffset(const uint64_t my_size, uint64_t& my_off, const int rank);
-  void getMyProfOffset(std::vector<std::pair<uint32_t, uint64_t>>& prof_offsets,
-      const std::vector<std::pair<const hpctoolkit::Thread*, uint64_t>>& profile_sizes,
-      const uint32_t total_prof, const uint64_t my_offset, const int threads);
 
-  void collectCctMajorData(std::vector<uint64_t>& cct_local_sizes, std::vector<std::set<uint16_t>>& cct_nzmids, const std::vector<char>& bytes);
-  int writeProfiles(const std::vector<std::pair<uint32_t, uint64_t>>& prof_offsets, 
-    std::vector<uint64_t>& cct_local_sizes,std::vector<std::set<uint16_t>>& cct_nzmids,
-    const std::vector<std::pair<const hpctoolkit::Thread*, uint64_t>>& profile_sizes,  
-    const MPI_File fh, const int threads);
+  //---------------------------------------------------------------------------
+  // get profile's size and corresponding offsets
+  //---------------------------------------------------------------------------
+  void getProfileSizes(std::vector<std::pair<const hpctoolkit::Thread*, uint64_t>>& profile_sizes, 
+                       uint64_t& my_size); 
+
+  void getTotalNumProfiles(const uint32_t my_num_prof, 
+                           uint32_t& total_num_prof);
+
+  void getMyOffset(const uint64_t my_size, 
+                   const int rank, 
+                   uint64_t& my_offset);
+                   
+  void getMyProfOffset(const std::vector<std::pair<const hpctoolkit::Thread*, uint64_t>>& profile_sizes,
+                       const uint32_t total_prof, 
+                       const uint64_t my_offset, 
+                       const int threads, 
+                       std::vector<std::pair<uint32_t, uint64_t>>& prof_offsets);
+
+  //---------------------------------------------------------------------------
+  // get profile's real data (bytes)
+  //---------------------------------------------------------------------------
+  void interpretOneCctNodeMids(const char* input,
+                               const uint64_t cct_node_size,
+                               std::set<uint16_t>& cct_node_nzmids);
+
+  void interpretOneCctNodeSize(const char* input,
+                               uint64_t& cct_node_size,
+                               uint64_t& cct_node_off);
+
+  void interpretOneCctNode(const char* size_input, 
+                           const char* mids_input,
+                           std::vector<std::set<uint16_t>>& cct_nzmids,
+                           uint32_t& cct_node_id, 
+                           uint64_t& cct_node_size);                                                 
+
+  void collectCctMajorData(std::vector<char>& bytes,
+                           std::vector<uint64_t>& cct_local_sizes, 
+                           std::vector<std::set<uint16_t>>& cct_nzmids);
+
+  //---------------------------------------------------------------------------
+  // write profiles 
+  //---------------------------------------------------------------------------
+
+  void writeOneProfInfo(const std::vector<char>& bytes, 
+                        const uint64_t offset, 
+                        const uint32_t tid,
+                        const MPI_File fh);
+
+  void writeOneProfile(const std::vector<char>& bytes, 
+                       const uint64_t offset, 
+                       const uint32_t tid,
+                       const MPI_File fh);
+
+  void writeProfiles(const std::vector<std::pair<uint32_t, uint64_t>>& prof_offsets, 
+                     const std::vector<std::pair<const hpctoolkit::Thread*,uint64_t>>& profile_sizes,
+                     const MPI_File fh, 
+                     const int threads,
+                     std::vector<uint64_t>& cct_local_sizes,
+                     std::vector<std::set<uint16_t>>& cct_nzmids);
 
 
   //***************************************************************************

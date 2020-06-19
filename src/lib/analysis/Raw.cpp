@@ -205,7 +205,7 @@ Analysis::Raw::writeAsText_sparseDBthread(const char* filenm, bool easygrep)
       if (ret != HPCFMT_OK) {
         DIAG_Throw("error reading sparse metrics data from sparse metrics file '" << filenm << "'");
       }
-      tms_sparse_metrics_fprint(&sm,ofs,NULL, "  ", easygrep);
+      tms_sparse_metrics_fprint(&sm,ofs, NULL, "  ", easygrep);
       tms_sparse_metrics_free(&sm);
     }
 
