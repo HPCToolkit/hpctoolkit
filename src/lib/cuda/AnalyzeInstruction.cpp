@@ -12,7 +12,7 @@
 #include "DotCFG.hpp"
 #include "Instruction.hpp"
 
-#define INSTRUCTION_ANALYZER_DEBUG 0
+#define INSTRUCTION_ANALYZER_DEBUG 1
 
 namespace CudaParse {
 
@@ -497,11 +497,38 @@ static int reg_name_to_id(const std::string &name) {
 }
 
 
-class FirstMatchPred : public Dyninst::Slicer::Predicates {
+class IgnoreRegPred : public Dyninst::Slicer::Predicates {
  public:
-  virtual bool endAtPoint(Dyninst::Assignment::Ptr ap) {
+  IgnoreRegPred(std::vector<Dyninst::AbsRegion> &rhs) : _rhs(rhs) {}
+
+  virtual bool modifyCurrentFrame(Dyninst::Slicer::SliceFrame &slice_frame,
+    Dyninst::GraphPtr graph_ptr, Dyninst::Slicer *slicer) {
+    std::vector<Dyninst::AbsRegion> delete_abs_regions;
+
+    for (auto &active_iter : slice_frame.active) {
+      // Filter unmatched regs
+      auto &abs_region = active_iter.first;
+      bool find = false;
+      for (auto &rhs_abs_region : _rhs) {
+        if (abs_region.absloc().reg() == rhs_abs_region.absloc().reg()) {
+          find = true;
+          break;
+        }
+      }
+      if (find == false) {
+        delete_abs_regions.push_back(abs_region);
+      }
+    }
+
+    for (auto &abs_region : delete_abs_regions) {
+      slice_frame.active.erase(abs_region);
+    }
+
     return true;
   }
+
+ private:
+  std::vector<Dyninst::AbsRegion> _rhs;
 };
 
 
@@ -545,18 +572,122 @@ void controlCudaInstructions(const char *cubin, std::vector<Function *> &functio
   }
 }
 
+static void trackDependency(std::map<int, InstructionStat *> &inst_stat_map,
+  Dyninst::Address inst_addr, Dyninst::Address func_addr, std::map<int, int> &predicate_map,
+  Dyninst::NodeIterator exit_node_iter, InstructionStat *inst_stat) {
+  Dyninst::NodeIterator in_begin, in_end;
+  (*exit_node_iter)->ins(in_begin, in_end);
+  for (; in_begin != in_end; ++in_begin) {
+    auto slice_node = boost::dynamic_pointer_cast<Dyninst::SliceNode>(*in_begin);
+    auto addr = slice_node->addr();
+    auto *slice_inst = inst_stat_map[addr];
+
+    if (INSTRUCTION_ANALYZER_DEBUG) {
+      std::cout << "find inst_addr " << inst_addr - func_addr <<
+        " <- addr: " << addr - func_addr;
+    }
+
+    Dyninst::Assignment::Ptr aptr = slice_node->assign();
+    auto reg = aptr->out().absloc().reg();
+    auto reg_id = reg.val() & 0xFF;
+    if (reg.val() & Dyninst::cuda::PR) {
+      if (reg_id == inst_stat->predicate) {
+        auto beg = inst_stat->predicate_assign_pcs.begin();
+        auto end = inst_stat->predicate_assign_pcs.end();
+        if (std::find(beg, end, addr - func_addr) == end) {
+          inst_stat->predicate_assign_pcs.push_back(addr - func_addr);
+        }
+      }
+
+      for (size_t i = 0; i < inst_stat->psrcs.size(); ++i) {
+        if (reg_id == inst_stat->psrcs[i]) {
+          auto beg = inst_stat->passign_pcs[reg_id].begin();
+          auto end = inst_stat->passign_pcs[reg_id].end();
+          if (std::find(beg, end, addr - func_addr) == end) {
+            inst_stat->passign_pcs[reg_id].push_back(addr - func_addr);
+          }
+          break;
+        }
+      }
+
+      if (INSTRUCTION_ANALYZER_DEBUG) {
+        std::cout << " predicate reg " << reg_id << std::endl;
+      }
+    } else if (reg.val() & Dyninst::cuda::BR) {
+      for (size_t i = 0; i < inst_stat->bsrcs.size(); ++i) {
+        if (reg_id == inst_stat->bsrcs[i]) {
+          auto beg = inst_stat->bassign_pcs[reg_id].begin();
+          auto end = inst_stat->bassign_pcs[reg_id].end();
+          if (std::find(beg, end, addr - func_addr) == end) {
+            inst_stat->bassign_pcs[reg_id].push_back(addr - func_addr);
+          }
+          break;
+        }
+      }
+
+      if (INSTRUCTION_ANALYZER_DEBUG) {
+        std::cout << " barrier " << reg_id << std::endl;
+      }
+    } else {
+      for (size_t i = 0; i < inst_stat->srcs.size(); ++i) {
+        if (reg_id == inst_stat->srcs[i]) {
+          auto beg = inst_stat->assign_pcs[reg_id].begin();
+          auto end = inst_stat->assign_pcs[reg_id].end();
+          if (std::find(beg, end, addr - func_addr) == end) {
+            inst_stat->assign_pcs[reg_id].push_back(addr - func_addr);
+          }
+          break;
+        }
+      }
+
+      if (INSTRUCTION_ANALYZER_DEBUG) {
+        std::cout << " reg " << reg_id << std::endl;
+      }
+    }
+
+    if (slice_inst->predicate_flag == InstructionStat::PREDICATE_NONE) {
+      // 1. No predicate, stop immediately
+    } else if (inst_stat->predicate == slice_inst->predicate &&
+      inst_stat->predicate_flag == slice_inst->predicate_flag) {
+      // 2. Find an exact match, stop immediately
+    } else {
+      if (predicate_map[-(slice_inst->predicate + 1)] > 0) {
+        // 3. Stop if find both !@PI and @PI
+        // add one to avoid P0
+      } else {
+        // 4. Continue search
+        if (slice_inst->predicate_flag == InstructionStat::PREDICATE_TRUE) {
+          predicate_map[slice_inst->predicate + 1]++;
+        } else {
+          predicate_map[-(slice_inst->predicate + 1)]++;
+        }
+
+        trackDependency(inst_stat_map, inst_addr, func_addr, predicate_map,
+          in_begin, inst_stat);
+        
+        // Clear
+        if (slice_inst->predicate_flag == InstructionStat::PREDICATE_TRUE) {
+          predicate_map[slice_inst->predicate + 1]--;
+        } else {
+          predicate_map[-(slice_inst->predicate + 1)]--;
+        }
+      }
+    }
+  }
+}
+
 
 void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_set,
   std::vector<Function *> &functions) {
   // Build a instruction map
-  std::map<int, InstructionStat *> inst_stats_map;
+  std::map<int, InstructionStat *> inst_stat_map;
   std::map<int, Block *> inst_block_map;
   for (auto *function : functions) {
     for (auto *block : function->blocks) {
       for (auto *inst : block->insts) {
         if (inst->inst_stat) {
           auto *inst_stat = inst->inst_stat;
-          inst_stats_map[inst->offset] = inst_stat;
+          inst_stat_map[inst->offset] = inst_stat;
           inst_block_map[inst->offset] = block;
         }
       }
@@ -567,9 +698,9 @@ void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_s
     Dyninst::AssignmentConverter ac(true, false);
     auto func_addr = dyn_func->addr();
 
+    // Prepare pass: create instruction cache for slicing
     Dyninst::Slicer::InsnCache dyn_inst_cache;
     for (auto *dyn_block : dyn_func->blocks()) {
-      // Create instruction cache for slicing
       Dyninst::ParseAPI::Block::Insns insns;
       dyn_block->getInsns(insns);
       for (auto &iter : insns) {
@@ -578,14 +709,15 @@ void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_s
       }
     }
 
+    // First pass: slice instructions that have direct def instructions that contain them
     for (auto *dyn_block : dyn_func->blocks()) {
       Dyninst::ParseAPI::Block::Insns insns;
       dyn_block->getInsns(insns);
 
       for (auto &inst_iter : insns) {
-        auto inst = inst_iter.second;
+        auto &inst = inst_iter.second;
         auto inst_addr = inst_iter.first;
-        auto *inst_stat = inst_stats_map[inst_addr];
+        auto *inst_stat = inst_stat_map[inst_addr];
 
         if (INSTRUCTION_ANALYZER_DEBUG) {
           std::cout << "try to find inst_addr " << inst_addr - func_addr << std::endl;
@@ -595,7 +727,7 @@ void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_s
         ac.convert(inst, inst_addr, dyn_func, dyn_block, assignments); 
 
         for (auto a : assignments) {
-          FirstMatchPred p;
+          IgnoreRegPred p(a->inputs());
           Dyninst::Slicer s(a, dyn_block, dyn_func, &ac, &dyn_inst_cache);
           Dyninst::GraphPtr g = s.backwardSlice(p); 
 
@@ -603,79 +735,19 @@ void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_s
           g->exitNodes(exit_begin, exit_end);
 
           for (; exit_begin != exit_end; ++exit_begin) {
-            Dyninst::NodeIterator in_begin, in_end;
-            (*exit_begin)->ins(in_begin, in_end);
-            for (; in_begin != in_end; ++in_begin) {
-              auto slice_node = boost::dynamic_pointer_cast<Dyninst::SliceNode>(*in_begin);
-              auto addr = slice_node->addr();
-
-              if (INSTRUCTION_ANALYZER_DEBUG) {
-                std::cout << "find inst_addr " << inst_addr - func_addr <<
-                  " <- addr: " << addr - func_addr;
-              }
-
-              Dyninst::Assignment::Ptr aptr = slice_node->assign();
-              auto reg = aptr->out().absloc().reg();
-              auto reg_id = reg.val() & 0xFF;
-              if (reg.val() & Dyninst::cuda::PR) {
-                if (reg_id == inst_stat->predicate) {
-                  auto beg = inst_stat->predicate_assign_pcs.begin();
-                  auto end = inst_stat->predicate_assign_pcs.end();
-                  if (std::find(beg, end, addr - func_addr) == end) {
-                    inst_stat->predicate_assign_pcs.push_back(addr - func_addr);
-                  }
-                }
-
-                for (size_t i = 0; i < inst_stat->psrcs.size(); ++i) {
-                  if (reg_id == inst_stat->psrcs[i]) {
-                    auto beg = inst_stat->passign_pcs[reg_id].begin();
-                    auto end = inst_stat->passign_pcs[reg_id].end();
-                    if (std::find(beg, end, addr - func_addr) == end) {
-                      inst_stat->passign_pcs[reg_id].push_back(addr - func_addr);
-                    }
-                    break;
-                  }
-                }
-
-                if (INSTRUCTION_ANALYZER_DEBUG) {
-                  std::cout << " predicate reg " << reg_id << std::endl;
-                }
-              } else if (reg.val() & Dyninst::cuda::BR) {
-                for (size_t i = 0; i < inst_stat->bsrcs.size(); ++i) {
-                  if (reg_id == inst_stat->bsrcs[i]) {
-                    auto beg = inst_stat->bassign_pcs[reg_id].begin();
-                    auto end = inst_stat->bassign_pcs[reg_id].end();
-                    if (std::find(beg, end, addr - func_addr) == end) {
-                      inst_stat->bassign_pcs[reg_id].push_back(addr - func_addr);
-                    }
-                    break;
-                  }
-                }
-
-                if (INSTRUCTION_ANALYZER_DEBUG) {
-                  std::cout << " barrier " << reg_id << std::endl;
-                }
-              } else {
-                for (size_t i = 0; i < inst_stat->srcs.size(); ++i) {
-                  if (reg_id == inst_stat->srcs[i]) {
-                    auto beg = inst_stat->assign_pcs[reg_id].begin();
-                    auto end = inst_stat->assign_pcs[reg_id].end();
-                    if (std::find(beg, end, addr - func_addr) == end) {
-                      inst_stat->assign_pcs[reg_id].push_back(addr - func_addr);
-                    }
-                    break;
-                  }
-                }
-
-                if (INSTRUCTION_ANALYZER_DEBUG) {
-                  std::cout << " reg " << reg_id << std::endl;
-                }
-              }
+            std::map<int, int> predicate_map;
+            // DFS to iterate the whole dependency graph
+            if (inst_stat->predicate_flag == InstructionStat::PREDICATE_TRUE) {
+              predicate_map[inst_stat->predicate + 1]++;
+            } else if (inst_stat->predicate_flag == InstructionStat::PREDICATE_FALSE) {
+              predicate_map[-(inst_stat->predicate + 1)]++;
             }
+            trackDependency(inst_stat_map, inst_addr, func_addr, predicate_map,
+              exit_begin, inst_stat);
           }
         }
       }
-    }   
+    }
   }
 }
 
@@ -890,7 +962,8 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
       std::cout << "Function id: " << function_id << std::endl;
     }
 
-    if (function->unparsable == true) {
+    if (function->unparsable) {
+      // Skip unparsable functions
       continue;
     }
 
