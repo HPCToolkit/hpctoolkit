@@ -470,8 +470,6 @@ hpcrun_init_internal(bool is_child)
   gotcha_restore_library_filter_func();
 #endif
 
-  hpcrun_initLoadmap();
-
   hpcrun_memory_reinit();
   hpcrun_mmap_init();
   hpcrun_thread_data_init(0, NULL, is_child, hpcrun_get_num_sample_sources());
@@ -484,12 +482,6 @@ hpcrun_init_internal(bool is_child)
 
   // init callbacks for each device
   hpcrun_initializer_init();
-
-  // WARNING: a perfmon bug requires us to fork off the fnbounds
-  // server before we call PAPI_init, which is done in argument
-  // processing below. Also, fnbounds_init must be done after the
-  // memory allocator is initialized.
-  fnbounds_init();
 
   main_addr = monitor_get_addr_main();
   setup_main_bounds_check(main_addr);
@@ -933,8 +925,13 @@ monitor_init_process(int *argc, char **argv, void* data)
   copy_execname(process_name);
   hpcrun_files_set_executable(process_name);
 
-  hpcrun_registered_sources_init();
+  // We initialize the load map and fnbounds before registering sample source.
+  // This is because sample source init (such as PAPI)  may dlopen other libraries,
+  // which will trigger our library monitoring code and fnbound queries
+  hpcrun_initLoadmap();
+  fnbounds_init();
 
+  hpcrun_registered_sources_init();
   messages_init();
 
   control_knob_init();  
