@@ -49,7 +49,6 @@
 #include <CL/cl.h>
 #include <gotcha/gotcha.h>
 #include <inttypes.h>
-#include <stdio.h>
 
 
 
@@ -177,7 +176,7 @@ clEnqueueNDRangeKernel_wrapper
   }
   clkernel_t clEnqueueNDRangeKernel_wrappee = GOTCHA_GET_TYPED_WRAPPEE(clEnqueueNDRangeKernel_handle, clkernel_t);
   cl_int return_status = clEnqueueNDRangeKernel_wrappee(command_queue, ocl_kernel, work_dim, global_work_offset, global_work_size, local_work_size, num_events_in_wait_list, event_wait_list, eventp);
-  ETMSG(CL, "registering callback for type: kernel. Correlation id: %"PRIu64 "", correlation_id);
+  ETMSG(OPENCL, "registering callback for type: kernel. Correlation id: %"PRIu64 "", correlation_id);
   opencl_subscriber_callback(kernel_cb->type, kernel_cb->correlation_id);
   clSetEventCallback_wrapper(*eventp, CL_COMPLETE, &opencl_activity_completion_callback, kernel_info);
   return return_status;
@@ -214,8 +213,8 @@ clEnqueueReadBuffer_wrapper
   }
   clreadbuffer_t clEnqueueReadBuffer_wrappee = GOTCHA_GET_TYPED_WRAPPEE(clEnqueueReadBuffer_handle, clreadbuffer_t);
   cl_int return_status = clEnqueueReadBuffer_wrappee(command_queue, buffer, blocking_read, offset, cb, ptr, num_events_in_wait_list, event_wait_list, eventp);
-  ETMSG(CL, "registering callback for type: D2H. Correlation id: %"PRIu64 "", correlation_id);
-  ETMSG(CL, "%d(bytes) of data being transferred from device to host", (long)cb);
+  ETMSG(OPENCL, "registering callback for type: D2H. Correlation id: %"PRIu64 "", correlation_id);
+  ETMSG(OPENCL, "%d(bytes) of data being transferred from device to host", (long)cb);
   opencl_subscriber_callback(mem_transfer_cb->type, mem_transfer_cb->correlation_id);
   clSetEventCallback_wrapper(*eventp, CL_COMPLETE, &opencl_activity_completion_callback, mem_info);
   return return_status;
@@ -252,8 +251,8 @@ clEnqueueWriteBuffer_wrapper
   }
   clwritebuffer_t clEnqueueWriteBuffer_wrappee = GOTCHA_GET_TYPED_WRAPPEE(clEnqueueWriteBuffer_handle, clwritebuffer_t);
   cl_int return_status = clEnqueueWriteBuffer_wrappee(command_queue, buffer, blocking_write, offset, cb, ptr, num_events_in_wait_list, event_wait_list, eventp);
-  ETMSG(CL, "registering callback for type: H2D. Correlation id: %"PRIu64 "", correlation_id);
-  ETMSG(CL, "%d(bytes) of data being transferred from host to device", (long)cb);
+  ETMSG(OPENCL, "registering callback for type: H2D. Correlation id: %"PRIu64 "", correlation_id);
+  ETMSG(OPENCL, "%d(bytes) of data being transferred from host to device", (long)cb);
   opencl_subscriber_callback(mem_transfer_cb->type, mem_transfer_cb->correlation_id);
   clSetEventCallback_wrapper(*eventp, CL_COMPLETE, &opencl_activity_completion_callback, (void*) mem_info);
   return return_status;
@@ -303,7 +302,7 @@ opencl_intercept_setup
 )
 {
   #ifndef HPCRUN_STATIC_LINK
-  ETMSG(CL, "setting up opencl intercepts");
+  ETMSG(OPENCL, "setting up opencl intercepts");
   gotcha_wrap(opencl_bindings, 4, "opencl_bindings");
   opencl_intercept_initialize();
   #endif

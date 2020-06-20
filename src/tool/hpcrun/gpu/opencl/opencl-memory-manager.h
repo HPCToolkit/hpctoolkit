@@ -61,7 +61,6 @@
 
 #include <lib/prof-lean/bistack.h>
 
-#include "opencl-api.h"
 #include "opencl-intercept.h"
 
 
@@ -76,9 +75,7 @@ typedef enum {
 } opencl_object_kind_t;
 
 
-typedef struct opencl_object_channel_t {
-  bistack_t bistacks[2];
-} opencl_object_channel_t;
+typedef struct opencl_object_channel_t opencl_object_channel_t;
 
 
 typedef struct opencl_object_details_t {
@@ -91,7 +88,7 @@ typedef struct opencl_object_details_t {
 
 typedef struct opencl_object_t {
   s_element_ptr_t next;
-  opencl_object_channel_t channel;
+  opencl_object_channel_t *channel;
   opencl_object_kind_t kind;
   bool isInternalClEvent;
   opencl_object_details_t details;

@@ -54,11 +54,11 @@
 // local includes
 //******************************************************************************
 
-#include <hpcrun/messages/messages.h>
+#include <hpcrun/gpu/gpu-activity.h>
 
 #include "opencl-activity-translate.h"
 #include "opencl-api.h"
-#include "opencl-memory-manager.h"
+#include "opencl-intercept.h"
 
 
 
@@ -70,7 +70,7 @@ static void
 getMemoryProfileInfo
 (
   gpu_memcpy_t *memcpy,
-  cl_memory_callback_t* cb_data
+  cl_memory_callback_t *cb_data
 )
 {
   memcpy->correlation_id = cb_data->correlation_id;
@@ -82,12 +82,12 @@ getMemoryProfileInfo
 static void
 convert_kernel_launch
 (
-  gpu_activity_t * ga,
-  void * user_data,
+  gpu_activity_t *ga,
+  void *user_data,
   cl_event event
 )
 {
-  cl_kernel_callback_t* kernel_cb_data = (cl_kernel_callback_t*)user_data;
+  cl_kernel_callback_t *kernel_cb_data = (cl_kernel_callback_t*)user_data;
   memset(&ga->details.kernel, 0, sizeof(gpu_kernel_t));
   getTimingInfoFromClEvent(&ga->details.interval, event);
   ga->kind = GPU_ACTIVITY_KERNEL;
@@ -98,13 +98,13 @@ convert_kernel_launch
 static void
 convert_memcpy
 (
-  gpu_activity_t * ga,
-  void * user_data,
+  gpu_activity_t *ga,
+  void *user_data,
   cl_event event,
   gpu_memcpy_type_t kind
 )
 {
-  cl_memory_callback_t* memory_cb_data = (cl_memory_callback_t*)user_data;
+  cl_memory_callback_t *memory_cb_data = (cl_memory_callback_t*)user_data;
   memset(&ga->details.memcpy, 0, sizeof(gpu_memcpy_t));
   getTimingInfoFromClEvent(&ga->details.interval, event);
   getMemoryProfileInfo(&ga->details.memcpy, memory_cb_data);
@@ -120,12 +120,12 @@ convert_memcpy
 void
 opencl_activity_translate
 (
-  gpu_activity_t * ga,
+  gpu_activity_t *ga,
   cl_event event,
-  void * user_data
+  void *user_data
 )
 {
-  cl_generic_callback_t* cb_data = (cl_generic_callback_t*)user_data;
+  cl_generic_callback_t *cb_data = (cl_generic_callback_t*)user_data;
   opencl_call_t type = cb_data->type;
   switch (type) {
     case kernel:

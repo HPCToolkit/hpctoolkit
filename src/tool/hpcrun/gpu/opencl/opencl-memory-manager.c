@@ -61,6 +61,16 @@
 
 
 //******************************************************************************
+// type declarations
+//******************************************************************************
+
+struct opencl_object_channel_t {
+  bistack_t bistacks[2];
+};
+
+
+
+//******************************************************************************
 // local data
 //******************************************************************************
 
@@ -106,9 +116,9 @@ opencl_malloc
   void
 )
 {
-  opencl_object_channel_t* c = opencl_object_channel_get();
-  opencl_object_t* cl_obj = channel_item_alloc(c, opencl_object_t);
-  cl_obj->channel = *c;
+  opencl_object_channel_t *c = opencl_object_channel_get();
+  opencl_object_t *cl_obj = channel_item_alloc(c, opencl_object_t);
+  cl_obj->channel = c;
   return cl_obj;
 }
 

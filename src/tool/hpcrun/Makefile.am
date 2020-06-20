@@ -122,6 +122,7 @@ endif
 if OPT_ENABLE_HPCRUN_DYNAMIC
   pkglib_LTLIBRARIES += libhpcrun.la
   pkglib_LTLIBRARIES += libhpcrun_ga.la
+  pkglib_LTLIBRARIES += libhpcrun_gprof.la
   pkglib_LTLIBRARIES += libhpcrun_io.la
   pkglib_LTLIBRARIES += libhpcrun_memleak.la
   pkglib_LTLIBRARIES += libhpcrun_pthread.la
@@ -133,6 +134,7 @@ if OPT_ENABLE_HPCRUN_STATIC
   noinst_PROGRAMS  = libhpcrun.o
   pkglib_LIBRARIES += libhpcrun_wrap.a
   pkglib_LIBRARIES += libhpcrun_ga_wrap.a
+  pkglib_LIBRARIES += libhpcrun_gprof_wrap.a
   pkglib_LIBRARIES += libhpcrun_io_wrap.a
   pkglib_LIBRARIES += libhpcrun_memleak_wrap.a
   pkglib_LIBRARIES += libhpcrun_pthread_wrap.a
@@ -280,7 +282,6 @@ MY_BASE_FILES =				\
 	env.c				\
 	epoch.c				\
 	files.c				\
-	gprof.c				\
 	handling_sample.c		\
 	hpcrun-initializers.c		\
 	hpcrun_options.c		\
@@ -583,6 +584,10 @@ libhpcrun_ga_la_SOURCES = 		\
 libhpcrun_ga_wrap_a_SOURCES = 		\
 	sample-sources/ga-overrides.c
 
+libhpcrun_gprof_la_SOURCES = gprof.c
+
+libhpcrun_gprof_wrap_a_SOURCES = gprof.c
+
 libhpcrun_io_la_SOURCES = 		\
 	sample-sources/io-over.c
 
@@ -648,6 +653,15 @@ libhpcrun_ga_wrap_a_CPPFLAGS =		\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
 
+libhpcrun_gprof_la_CPPFLAGS =		\
+	$(MY_CPP_DEFINES)		\
+	$(MY_INCLUDE_DIRS)
+
+libhpcrun_gprof_wrap_a_CPPFLAGS =	\
+	-DHPCRUN_STATIC_LINK		\
+	$(MY_CPP_DEFINES)		\
+	$(MY_INCLUDE_DIRS)
+
 libhpcrun_io_la_CPPFLAGS =		\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
@@ -656,7 +670,6 @@ libhpcrun_io_wrap_a_CPPFLAGS =		\
 	-DHPCRUN_STATIC_LINK		\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
-
 
 libhpcrun_memleak_la_CPPFLAGS =		\
 	$(MY_CPP_DEFINES)		\
@@ -712,6 +725,8 @@ libhpcrun_o_CFLAGS  = $(CFLAGS) $(HOST_CFLAGS) $(PERFMON_CFLAGS)
 libhpcrun_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_ga_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_ga_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
+libhpcrun_gprof_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
+libhpcrun_gprof_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_io_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_io_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_memleak_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
@@ -740,6 +755,8 @@ libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic 	\
 
 libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic
 
+libhpcrun_gprof_la_LDFLAGS = -Wl,-Bsymbolic
+
 libhpcrun_io_la_LDFLAGS = -Wl,-Bsymbolic
 
 libhpcrun_memleak_la_LDFLAGS = -Wl,-Bsymbolic
@@ -750,7 +767,6 @@ libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic
 
 libhpcrun_o_LDFLAGS = $(LIBUNWIND_LDFLAGS_STAT) \
 			$(PERFMON_LDFLAGS_STAT) 
-		 
 
 if OPT_USE_ZLIB
 #  libhpcrun_o_LDFLAGS   += $(ZLIB_HPCLINK_LIB)
@@ -795,6 +811,8 @@ if HOST_CPU_PPC
   libhpcrun_o_CPPFLAGS  += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_ga_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
+  libhpcrun_gprof_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
+  libhpcrun_gprof_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_io_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_io_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_memleak_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
@@ -817,6 +835,8 @@ if HOST_CPU_X86_FAMILY
   libhpcrun_o_LDFLAGS   += $(XED2_HPCLINK_LIBS) 
   libhpcrun_ga_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
+  libhpcrun_gprof_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
+  libhpcrun_gprof_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_io_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_io_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_memleak_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
@@ -852,6 +872,8 @@ if HOST_CPU_AARCH64
   libhpcrun_o_CCASFLAGS  = $(AM_CCASFLAGS)
   libhpcrun_ga_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
   libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
+  libhpcrun_gprof_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
+  libhpcrun_gprof_wrap_a_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
   libhpcrun_io_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
   libhpcrun_io_wrap_a_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
   libhpcrun_memleak_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)

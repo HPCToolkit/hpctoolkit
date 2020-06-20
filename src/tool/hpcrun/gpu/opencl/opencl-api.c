@@ -46,6 +46,8 @@
 //******************************************************************************
 
 #include <assert.h>
+#define CL_TARGET_OPENCL_VERSION 120
+#include <CL/cl.h>
 #include <inttypes.h>
 
 
@@ -71,6 +73,7 @@
 
 #include "opencl-api.h"
 #include "opencl-activity-translate.h"
+#include "opencl-intercept.h"
 #include "opencl-memory-manager.h"
 
 
@@ -193,7 +196,7 @@ opencl_wait_for_pending_operations
   void
 )
 {
-  ETMSG(CL, "pending operations: %lu", atomic_load(&opencl_pending_operations));
+  ETMSG(OPENCL, "pending operations: %lu", atomic_load(&opencl_pending_operations));
   while (atomic_load(&opencl_pending_operations) != 0);
 }
 
@@ -364,9 +367,9 @@ opencl_activity_completion_callback
   if (event_command_exec_status == complete_flag) {
     gpu_correlation_id_map_entry_t *cid_map_entry = gpu_correlation_id_map_lookup(correlation_id);
     if (cid_map_entry == NULL) {
-      ETMSG(CL, "completion callback was called before registration callback. type: %d, correlation: %"PRIu64 "", type, correlation_id);
+      ETMSG(OPENCL, "completion callback was called before registration callback. type: %d, correlation: %"PRIu64 "", type, correlation_id);
     }
-    ETMSG(CL, "completion type: %s, Correlation id: %"PRIu64 "", opencl_call_to_string(type), correlation_id);
+    ETMSG(OPENCL, "completion type: %s, Correlation id: %"PRIu64 "", opencl_call_to_string(type), correlation_id);
     opencl_activity_completion_notify();
     opencl_activity_process(event, act_data);
   }
