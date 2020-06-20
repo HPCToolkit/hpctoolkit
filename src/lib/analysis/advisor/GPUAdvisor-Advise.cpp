@@ -103,17 +103,17 @@ KernelStats GPUAdvisor::readKernelStats(int mpi_rank, int thread_id) {
   auto metric_index_sample_frequency = _metric_name_prof_map->metric_id(
     mpi_rank, thread_id, "GSAMP:PER (cyc)", false);
 
-  auto blocks = _gpu_kernel->metric(metric_index_blocks);
-  auto block_threads = _gpu_kernel->metric(metric_index_block_threads);
-  auto block_smem = _gpu_kernel->metric(metric_index_block_smem);
-  auto thread_regs = _gpu_kernel->metric(metric_index_thread_reg);
-  auto warps = _gpu_kernel->metric(metric_index_warps);
-  auto samples_expected = _gpu_kernel->metric(metric_index_samples_expected);
-  auto samples_dropped = _gpu_kernel->metric(metric_index_samples_dropped);
-  auto samples_total = _gpu_kernel->metric(metric_index_samples_total);
-  auto sample_frequency = _gpu_kernel->metric(metric_index_sample_frequency);
-  auto time = _gpu_kernel->metric(metric_index_time);
-  auto count = _gpu_kernel->metric(metric_index_count);
+  auto blocks = _gpu_root->metric(metric_index_blocks);
+  auto block_threads = _gpu_root->metric(metric_index_block_threads);
+  auto block_smem = _gpu_root->metric(metric_index_block_smem);
+  auto thread_regs = _gpu_root->metric(metric_index_thread_reg);
+  auto warps = _gpu_root->metric(metric_index_warps);
+  auto samples_expected = _gpu_root->metric(metric_index_samples_expected);
+  auto samples_dropped = _gpu_root->metric(metric_index_samples_dropped);
+  auto samples_total = _gpu_root->metric(metric_index_samples_total);
+  auto sample_frequency = _gpu_root->metric(metric_index_sample_frequency);
+  auto time = _gpu_root->metric(metric_index_time);
+  auto count = _gpu_root->metric(metric_index_count);
 
   blocks /= count;
   block_threads /= count;

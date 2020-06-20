@@ -462,8 +462,9 @@ normalizeTraceNodes(std::set<Prof::CCT::ANode *> &gpu_roots) {
           }
         }
         if (!find) {
-          n->demandMetric(gpu_inst_index[0]) = 1.0;
-          n->demandMetric(gpu_inst_index[0] + 1) = 1.0;
+          // Find a pseudo instruction node for tracing
+          n->demandMetric(gpu_inst_index[0]) = WARP_SIZE;
+          n->demandMetric(gpu_inst_index[0] + 1) = WARP_SIZE;
         }
       }
     }

@@ -65,6 +65,8 @@
 
 #include "fnbounds_file_header.h"
 
+#include <link.h>
+
 
 //***************************************************************************
 //
@@ -127,6 +129,7 @@ typedef struct load_module_t
   uint16_t id;
   char* name;
   dso_info_t* dso_info;
+  struct dl_phdr_info phdr_info;
   struct load_module_t* next;
   struct load_module_t* prev;
 
@@ -238,7 +241,7 @@ hpcrun_initLoadmap();
 hpcrun_loadmap_t*
 hpcrun_getLoadmap();
 
-typedef void (*loadmap_notify_range_t)(void *start, void *end);
+typedef void (*loadmap_notify_range_t)(load_module_t*);
 
 typedef struct loadmap_notify_t {
   loadmap_notify_range_t map;
@@ -247,6 +250,14 @@ typedef struct loadmap_notify_t {
 } loadmap_notify_t;
 
 void hpcrun_loadmap_notify_register(loadmap_notify_t *n);
+
+int
+hpcrun_loadmap_iterate
+(
+  int (*cb)(struct dl_phdr_info * info, size_t size, void* data),
+  void *data
+);
+
 
 //***************************************************************************
 

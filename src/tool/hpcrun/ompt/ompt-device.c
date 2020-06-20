@@ -65,6 +65,7 @@
 #include <hpcrun/thread_data.h>
 #include <hpcrun/device-finalizers.h>
 #include <hpcrun/sample_event.h>
+#include <hpcrun/utilities/hpcrun-nanotime.h>
 
 #include "ompt-interface.h"
 #include "ompt-device-map.h"
@@ -197,8 +198,8 @@ hpcrun_ompt_op_id_notify(ompt_scope_endpoint_t endpoint,
     trace_node = gpu_op_ccts.ccts[gpu_placeholder_type_trace];
 
     // Inform the worker about the placeholders
-    uint64_t cpu_gpu_time_offset = cupti_nanotime_offset();
-    gpu_correlation_channel_produce(host_op_id, &gpu_op_ccts, cpu_gpu_time_offset);
+    uint64_t cpu_submit_time = hpcrun_nanotime();
+    gpu_correlation_channel_produce(host_op_id, &gpu_op_ccts, cpu_submit_time);
   } else {
     PRINT("exit ompt runtime op %lu\n", host_op_id);
     // Enter a runtime api

@@ -136,6 +136,7 @@ extern cct_node_t* hpcrun_cct_top_new(uint16_t lmid, uintptr_t lmip);
 
 extern cct_node_t* hpcrun_cct_parent(cct_node_t* node);
 extern cct_node_t* hpcrun_cct_children(cct_node_t* node);
+extern cct_node_t* hpcrun_leftmost_child(cct_node_t* node);
 extern int32_t hpcrun_cct_persistent_id(cct_node_t* node);
 extern cct_addr_t* hpcrun_cct_addr(cct_node_t* node);
 extern bool hpcrun_cct_is_leaf(cct_node_t* node);

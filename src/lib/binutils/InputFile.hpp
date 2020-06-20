@@ -81,6 +81,7 @@ class ElfFileVector;
 class InputFile {
 public:
   InputFile() { filevector = 0; }
+  ~InputFile();
   bool openFile(std::string &filename);
   std::string &fileName() { return filename; }
   const char *CfileName() { return filename.c_str(); }

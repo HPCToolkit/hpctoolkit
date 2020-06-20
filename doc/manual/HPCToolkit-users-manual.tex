@@ -120,7 +120,7 @@
 % ***************************************************************************
 % ***************************************************************************
 
-\title{\HPCToolkit{} User's Manual\\[.5in]Version 2020.03.01}
+\title{\HPCToolkit{} User's Manual\\[.5in]Version 2020.06}
 %\subtitle{}
 
 \author{
@@ -135,7 +135,7 @@ Rice University\\
 %For \HPCToolkit{} 5.3.2 ($Revision$)
 }
 
-\date{March 1, 2020}
+\date{June 10, 2020}
 
 \maketitle
 
@@ -893,9 +893,9 @@ While we have shown how to compute and attribute the fraction of excess work in 
 Scaling losses can be explored in \hpcviewer{} using any of its three views.
 
 \begin{itemize}
-\item {\em Calling context view.} This top-down view represents the dynamic calling contexts (call paths) in which costs were incurred. 
+\item {\em Top-down view.} This view represents the dynamic calling contexts (call paths) in which costs were incurred. 
 
-\item {\em Callers view.} This bottom up view enables one to look upward along call paths. This view is particularly useful for understanding the performance of software components or procedures that are used in more than one context, such as communication library routines.
+\item {\em Bottom-up view.} This view enables one to look upward along call paths. This view is particularly useful for understanding the performance of software components or procedures that are used in more than one context, such as communication library routines.
 
 \item {\em Flat view.} This view organizes performance measurement data according to the static structure of an application. All costs incurred in {\em any} calling context by a procedure are aggregated together in the flat view. 
 \end{itemize}
@@ -904,7 +904,7 @@ Scaling losses can be explored in \hpcviewer{} using any of its three views.
 Typically, one begins analyzing an application's scalability and performance using the top-down calling context tree view.
 Using this view, one can readily see how costs and scalability losses are associated with different calling contexts.
 If costs or scalability losses are associated with only a few calling contexts, then this view suffices for identifying the bottlenecks.
-When scalability losses are spread among many calling contexts, \eg, among different invocations of \mytt{MPI_Wait}, often it is useful to switch to the bottom-up {\em caller's view} of the data to see if many losses are due to the same underlying cause.
+When scalability losses are spread among many calling contexts, \eg, among different invocations of \mytt{MPI_Wait}, often it is useful to switch to the bottom-up of the data to see if many losses are due to the same underlying cause.
 In the bottom-up view, one can sort routines by their exclusive scalability losses and then look upward to see how these losses accumulate from the different calling contexts in which the routine was invoked.
 
 Scaling loss based on excess work is intuitive; perfect scaling corresponds to a excess work value of $0$, sublinear scaling yields positive values, and superlinear scaling yields negative values.
@@ -1274,6 +1274,12 @@ or the \hpcrun{} command itself.
 % ===========================================================================
 % ===========================================================================
 
+\section{\hpcrun{} causes my application to abort}
+
+If your application has been compiled with the compiler flag \verb|-pg| to collect performance data with \verb|gprof|, on {\tt ppc64le} this may cause your application to abort with signal 11 (SEGV) if you profile it with \hpcrun{}.  You can check whether your application has been compiled with flag \verb|-pg|  by running {\tt nm}  on the binary and piping the output through {\tt grep} to check for a definition or a reference to the function symbol  \verb|__gmon_start__|.
+
+To avoid a SEGV failure caused by an interaction between \verb|gprof| instrumentation and \hpcrun{}, recompile your application and libraries without the \verb|-pg| compiler flag.
+
 \section{How do I choose \hpcrun{} sampling periods?}
 \label{sec:troubleshooting:hpcrun-sample-periods}
 
@@ -1352,25 +1358,34 @@ To fix this, set the permission of the library to 0755, and launch again the vie
 % ===========================================================================
 % ===========================================================================
 
+\section{Mac only: \hpcviewer{} runs on Java $X$ instead of ``Java 8"}
+
+If your system has multiple versions of Java and Java 8 is not the newer version, you need to set Java 8 as the default JVM:
+
+\begin{enumerate}
+\item Leave all JDKs at their default location (usually under \texttt{/Library/Java/JavaVirtualMachines}). The system will pick the highest version by default.
+\item To exclude a JDK from being picked by default, rename \texttt{Contents/Info.plist} file to other name like \texttt{Info.plist.disabled}. That JDK can still be used when \texttt{\$JAVA\_HOME} points to it, or explicitly referenced in a script or configuration. It will simply be ignored by system's java command.
+\end{enumerate}
+
+
+% ===========================================================================
+% ===========================================================================
+
 \section{When executing \hpcviewer, it complains cannot create ``Java Virtual Machine"}
-If you use Java 7 or older,
-the error message indicates that your machine cannot instantiate the JVM 
-with the default size specified for the Java heap. 
 If you encounter this problem, we recommend that you edit the 
 \texttt{hpcviewer.ini} 
 file which is located in HPCToolkit installation directory to reduce the
 Java heap size.
-By default, the content of the file is as follows:
+By default, the content of the file on \verb|ppc64le| is as follows:
 \begin{verbatim}
 -consoleLog
+-clearPersistedState
 -vmargs
--Dosgi.requiredJavaVersion=1.6
--XX:MaxPermSize=256m
--Xms40m
--Xmx2048m
 -Dosgi.locking=none
+-Dosgi.requiredJavaVersion=1.8
+-Xmx2048m
 \end{verbatim}
-You can decrease the maximum size of the Java heap from 2048MB to 4GB
+You can decrease the maximum size of the Java heap from 2048MB to 1GB
  by changing the {\tt Xmx} specification in the \texttt{hpcviewer.ini} file as follows:
 \begin{verbatim}
 -Xmx1024m
@@ -1380,11 +1395,17 @@ You can decrease the maximum size of the Java heap from 2048MB to 4GB
 % ===========================================================================
 % ===========================================================================
 
-\section{\hpcviewer{} fails to launch due to java.lang.NoSuchMethodError exception.}
+\section{\hpcviewer{} fails to launch due to {\tt java.lang.NoSuchMethodError} exception.}
 
 The root cause of the error is due to a mix of old \and new hpcviewer{} binaries. 
 To solve this problem, you need to remove your hpcviewer workspace (usually in \texttt{\$HOME/.hpctoolkit/hpcviewer} directory, and run \hpcviewer{} again.
 
+% ===========================================================================
+% ===========================================================================
+
+\section{\hpcviewer{} fails due to {\tt java.lang.OutOfMemoryError} exception.}
+
+If you see this error, the memory footprint that \hpcviewer{} needs to store and the metrics for your measured program execution exceeds the maximum size for the Java heap specified at program launch.  On Linux, \hpcviewer{} accepts a command-line option \verb|--java-heap| that enables you to specify a larger non-default value for the maximum size of the Java heap. Run \verb|hpcviewer --help| for the details of how to use this option.
 
 % ===========================================================================
 % ===========================================================================
@@ -1438,21 +1459,10 @@ Even so, the performance attribution is usually very informative.
 
 \section{\hpcviewer{} hangs trying to open a large database! Why?}
 
-The most likely problem is that the Java virtual machine is low on memory and thrashing.
-There are three ways to address this problem.
+The most likely problem is that the Java virtual machine is low on memory and thrashing. The memory footprint that \hpcviewer{} needs to store and the metrics for your measured program execution is likely near the maximum size for the Java heap specified at program launch.  
 
-First, make sure you are \emph{not} using \hpcprof{}'s \texttt{--force-metric} option to create a very large number of metrics.
+On Linux, \hpcviewer{} accepts a command-line option \verb|--java-heap| that enables you to specify a larger non-default value for the maximum size of the Java heap. Run \verb|hpcviewer --help| for the details of how to use this option.
 
-Second, increase the resources available to Java.
-\hpcviewer{} uses the initialization file \texttt{hpcviewer.ini} to determine how much memory is allocated to the Java virtual machine.
-To increase this allocation, locate the \texttt{hpcviewer.ini} file within your \hpcviewer{} installation.
-The default maximum sizes for the Java stack and heap, respectively, are given by \texttt{-Xms400m} and \texttt{-Xmx1024m}.
-You should be able to increase these values to \texttt{-Xms800m} and \texttt{-Xmx1800m}.
-
-Third, you can disable \hpcviewer{}'s Callers View by using the \texttt{-n} option as follows:
-\begin{quote}
-  \verb|hpcviewer -n hpctoolkit-database|
-\end{quote}
 
 % ===========================================================================
 % ===========================================================================
@@ -1466,16 +1476,17 @@ The solution is to install \hpcviewer{} on your local system, copy the database 
 We almost always run \hpcviewer{} on our local desktops or laptops for this reason.
 
 Second, \HPCToolkit{}'s database may contain too many metrics.
-This can happen if you use \hpcprof{} to build a database for several threads with several metrics each, resulting in too many metrics total.
+A common reason why this can occur is if rather than analyzing an \HPCToolkit{}  measurements directory, you chose to directly specify a large collection of {\tt .hpcrun} files directly on the command line. When you do this, it treats each {\tt .hpcrun} file as a separate experiment and gives you separate metrics for each.
+
 You can check the number of columns in your database by running
 \begin{quote}
   \verb,grep -e "<Metric" experiment.xml | wc -l,
 \end{quote}
-If that command yields a number greater than 30 or so, \hpcviewer{} is likely slow because you are working with too many columns of metrics.
-In this case, either use \hpcprofmpi{} or run \hpcprof{} to build a database based on fewer profiles.
+If that command yields a number greater than 50 or so, \hpcviewer{} is likely slow because you are working with so many columns of metrics. In this case, you might consider using  \hpcprofmpi{} or run \hpcprof{} to analyze the measurements directory as a whole, so you get one set of metrics, or you can build a database based on fewer separate {\tt .hpcrun} files on the command line to reduce the number of metrics overall.
 
-Third, \HPCToolkit{}'s database may be too large.
-If the \texttt{experiment.xml} file within your database is tens of megabytes or more, the total database size might be the problem.
+Third, \HPCToolkit{}'s database may be very large, which can cause the Java virtual machine to run short on memory and thrash. The memory footprint that \hpcviewer{} needs to store and the metrics for your measured program execution is likely near the maximum size for the Java heap specified at program launch.  
+
+On Linux, \hpcviewer{} accepts a command-line option \verb|--java-heap| that enables you to specify a larger non-default value for the maximum size of the Java heap. Run \verb|hpcviewer --help| for the details of how to use this option.
 
 
 % ===========================================================================

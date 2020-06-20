@@ -133,31 +133,31 @@ InputFile::openFile
   int    file_fd = open(filename.c_str(), O_RDONLY);
 
   if (file_fd < 0) {
-    DIAG_Throw("unable to open input file " << filename << 
+    DIAG_EMsg("Unable to open input file: " << filename << 
 	       " (" << strerror(errno) << ")");
-    return false;
+    exit(1);
   }
 
   size_t f_size = file_size(file_fd);
   
   if (f_size == 0) {
-    DIAG_Throw("empty input file " << filename);
-    return false;
+    DIAG_EMsg("Empty input file " << filename);
+    exit(1);
   }
 
   char  *file_buffer = (char *) malloc(f_size);
 
   if (file_buffer == 0) {
-    DIAG_Throw("unable to allocate file buffer of " << f_size << " bytes");
-    return false;
+    DIAG_EMsg("Unable to allocate file buffer of " << f_size << " bytes");
+    exit(1);
   }
 
   size_t bytes = read_all(file_fd, file_buffer, f_size);
 
   if (f_size != bytes) {
-    DIAG_Throw("read only " << bytes << " bytes of "
+    DIAG_EMsg("Read only " << bytes << " bytes of "
 	      << f_size << " bytes from file " << filename);
-    return false;
+    exit(1);
   }
 
   close(file_fd);
@@ -170,9 +170,23 @@ InputFile::openFile
     filevector->push_back(elfFile);
     //findCubins(elfFile, filevector);
   } else {
-    DIAG_Throw("not an ELF binary " << filename);
-    delete elfFile;
+    DIAG_EMsg("Not an ELF binary " << filename);
+    exit(1);
   }
 
   return result;
+}
+
+
+InputFile::~InputFile
+(
+ void
+)
+{
+  if (filevector) {
+    for(auto fi = filevector->begin(); fi < filevector->end(); fi++) {
+      delete *fi;
+    }
+    delete filevector;
+  }
 }
