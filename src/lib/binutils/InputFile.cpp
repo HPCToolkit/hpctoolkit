@@ -135,21 +135,21 @@ InputFile::openFile
   if (file_fd < 0) {
     DIAG_EMsg("Unable to open input file: " << filename << 
 	       " (" << strerror(errno) << ")");
-    exit(1);
+    throw 1;
   }
 
   size_t f_size = file_size(file_fd);
   
   if (f_size == 0) {
     DIAG_EMsg("Empty input file " << filename);
-    exit(1);
+    throw 1;
   }
 
   char  *file_buffer = (char *) malloc(f_size);
 
   if (file_buffer == 0) {
     DIAG_EMsg("Unable to allocate file buffer of " << f_size << " bytes");
-    exit(1);
+    throw 1;
   }
 
   size_t bytes = read_all(file_fd, file_buffer, f_size);
@@ -157,7 +157,7 @@ InputFile::openFile
   if (f_size != bytes) {
     DIAG_EMsg("Read only " << bytes << " bytes of "
 	      << f_size << " bytes from file " << filename);
-    exit(1);
+    throw 1;
   }
 
   close(file_fd);
@@ -171,7 +171,7 @@ InputFile::openFile
     //findCubins(elfFile, filevector);
   } else {
     DIAG_EMsg("Not an ELF binary " << filename);
-    exit(1);
+    throw 1;
   }
 
   return result;
