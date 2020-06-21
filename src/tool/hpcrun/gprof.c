@@ -47,9 +47,20 @@
 // stubs to override gprof support to avoid conflicts with hpcrun
 // NOTE: avoids core dump on ppc64le
 
-#define NOOP(name) void name(void) {}
+#include <monitor-exts/monitor_ext.h>
 
-NOOP(__monstartup)
-NOOP(_mcount)
-NOOP(_mcleanup)
+void
+MONITOR_EXT_WRAP_NAME(__monstartup) (void)
+{ }
 
+void
+MONITOR_EXT_WRAP_NAME(_mcleanup) (void)
+{ }
+
+void
+MONITOR_EXT_WRAP_NAME(mcount) (void)
+{ }
+
+void
+MONITOR_EXT_WRAP_NAME(_mcount) (void)
+{ }

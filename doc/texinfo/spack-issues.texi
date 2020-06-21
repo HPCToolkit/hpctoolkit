@@ -41,7 +41,7 @@ on the hpctoolkit web site.
 @end example
 
 @noindent
-Last revised: June 3, 2020.
+Last revised: June 17, 2020.
 
 @c ------------------------------------------------------------
 
@@ -58,35 +58,33 @@ work.
 @b{Workaround:} If you have a working @code{compiler:} entry for a
 front-end GNU compiler on Cray, then that will continue to work.  If
 not, then you will have to add one manually.  For example, this is an
-entry for the @code{gcc/7.3.0} module on theta at ANL.  Note that the
+entry for the @code{gcc/8.3.0} module on theta at ANL.  Note that the
 front-end operating_system is something like @code{sles12} (not
 @code{cnl6}), and the front-end target is @code{x86_64} (not
-@code{mic_knl}).
+@code{mic_knl}).  Your versions may differ.
 
 @example
 - compiler:
     environment: @{@}
-    extra_rpaths: []
     flags: @{@}
     modules:
-    - PrgEnv-gnu/6.0.4
-    - gcc/7.3.0
-    - cray-mpich/7.7.3
+    - PrgEnv-gnu/6.0.5
+    - gcc/8.3.0
+    - craype/2.6.1
+    - cray-mpich/7.7.10
     operating_system: sles12
     paths:
-      cc:  /opt/gcc/7.3.0/bin/gcc
-      cxx: /opt/gcc/7.3.0/bin/g++
-      f77: /opt/gcc/7.3.0/bin/gfortran
-      fc:  /opt/gcc/7.3.0/bin/gfortran
-    spec: gcc@@7.3.0
+      cc:  /opt/gcc/8.3.0/bin/gcc
+      cxx: /opt/gcc/8.3.0/bin/g++
+      f77: /opt/gcc/8.3.0/bin/gfortran
+      fc:  /opt/gcc/8.3.0/bin/gfortran
+    spec: gcc@@8.3.0
     target: x86_64
 @end example
 
 @noindent
-@b{Workaround:} Alternatively, the last working commit was
-@code{9c1c50fb7632} on 2019-06-07.  You could revert to this commit, run
-@code{spack compiler find} and then return to the current spack head
-(develop).  Be sure to fill in the @code{modules:} field.
+@b{Note:} Be sure to fill in the @code{modules:} field with all four
+modules.
 
 @c ------------------------------------------------------------
 
