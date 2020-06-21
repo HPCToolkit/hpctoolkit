@@ -99,33 +99,37 @@ namespace Struct {
 // <!DOCTYPE HPCToolkitStructure
 //
 #define BUF_SIZE  10
-static void
+static int
 xmlSanityCheck(const char *filenm, string & docType)
 {
   char buf[BUF_SIZE];
 
   int fd = open(filenm, O_RDONLY);
+
   if (fd < 0) {
-    cerr << "unable to open " << docType << " file: '" << filenm << "': "
+    cerr << "WARNING: Unable to open " << docType << " file: '" << filenm << "': "
 	 << strerror(errno) << endl;
-    exit(1);
+    return 1;
   }
 
   memset(buf, 0, BUF_SIZE);
   ssize_t ret = read(fd, buf, 5);
+
   if (ret < 0) {
-    cerr << "unable to read " << docType << " file: '" << filenm << "': "
+    cerr << "WARNING: Unable to read " << docType << " file: '" << filenm << "': "
 	 << strerror(errno) << endl;
-    exit(1);
+    return 1;
   }
 
   if (strncasecmp(buf, "<?xml", 5) != 0) {
-    cerr << "unable to parse " << docType << " file: '" << filenm << "': "
+    cerr << "WARNING: Unable to parse " << docType << " file: '" << filenm << "': "
 	 << "not an xml file" << endl;
-    exit(1);
+    return 1;
   }
 
   close(fd);
+
+  return 0;
 }
 
 
@@ -161,9 +165,11 @@ read_PGM(Struct::Tree& structure,
   string fpath = filenm;
   string docType = PGMDocHandler::ToString(docty);
 
-  xmlSanityCheck(filenm, docType);
 
   if (!fpath.empty()) {
+    if (xmlSanityCheck(filenm, docType)) {
+      return;
+    }
     try {
       SAX2XMLReader* parser = XMLReaderFactory::createXMLReader();
       
