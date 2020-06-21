@@ -149,9 +149,12 @@ Options: Linking
                        of -Wl).  Used to work around problems with the 
                        Berkeley UPC compiler script (rarely needed).
 
-  --disable-gprof      Override and disable gprof functions.  Only needed when
-                       app is built with -pg.  (Can't use hpctoolkit and gprof
-                       in the same run.)
+  --disable-gprof      Override and disable gprof instrumentation  This option
+                       is only useful when using hpclink to add HPCToolkit's
+                       measurement subsystem to a statically-linked application 
+                       that has been compiled with -pg. One can't measure 
+                       performance with HPCToolkit when gprof instrumentation 
+                       is active in the same execution.
 
   -fe <dir>, --front-end <dir>
                        In a cross-compile link, use the current install tree
