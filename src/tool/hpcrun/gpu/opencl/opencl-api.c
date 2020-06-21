@@ -86,22 +86,22 @@
 
 #define opencl_path() "libOpenCL.so"
 
-#define FORALL_OPENCL_ROUTINES(macro)	      \
-  macro(clGetEventProfilingInfo)   		      \
-  macro(clReleaseEvent)                     \
+#define FORALL_OPENCL_ROUTINES(macro)	                                        \
+  macro(clGetEventProfilingInfo)   		                                        \
+  macro(clReleaseEvent)                                                       \
   macro(clSetEventCallback)
 
 #define OPENCL_FN_NAME(f) DYN_FN_NAME(f)
 
-#define OPENCL_FN(fn, args)                 \
+#define OPENCL_FN(fn, args)                                                   \
   cl_int (*OPENCL_FN_NAME(fn)) args
 
-#define HPCRUN_OPENCL_CALL(fn, args)        \
-{                                           \
-  cl_int status = OPENCL_FN_NAME(fn) args;  \
-  if (status != CL_SUCCESS) {               \
-    opencl_error_report(status);            \
-  }                                         \
+#define HPCRUN_OPENCL_CALL(fn, args)                                          \
+{                                                                             \
+  cl_int status = OPENCL_FN_NAME(fn) args;                                    \
+  if (status != CL_SUCCESS) {                                                 \
+    ETMSG(OPENCL, "opencl call failed: %s", opencl_error_report(status));     \
+  }                                                                           \
 }
 
 
@@ -458,4 +458,3 @@ opencl_api_finalize
   opencl_wait_for_pending_operations();
   gpu_application_thread_process_activities();
 }
-
