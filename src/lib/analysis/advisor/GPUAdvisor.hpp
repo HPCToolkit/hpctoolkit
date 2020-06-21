@@ -107,7 +107,7 @@ class GPUAdvisor {
 
   void configInst(const std::vector<CudaParse::Function *> &functions);
 
-  void configGPURoot(Prof::CCT::ADynNode *gpu_root);
+  void configGPURoot(Prof::CCT::ADynNode *gpu_root, Prof::CCT::ADynNode *gpu_kernel);
 
   void blame(CCTBlames &cct_blames);
 
@@ -286,6 +286,7 @@ class GPUAdvisor {
   MetricNameProfMap *_metric_name_prof_map;
 
   Prof::CCT::ADynNode *_gpu_root;
+  Prof::CCT::ADynNode *_gpu_kernel;
 
   std::map<int, int> _function_offset;
 

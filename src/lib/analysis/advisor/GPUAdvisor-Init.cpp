@@ -261,9 +261,10 @@ void GPUAdvisor::configInst(const std::vector<CudaParse::Function *> &functions)
 }
 
 
-void GPUAdvisor::configGPURoot(Prof::CCT::ADynNode *gpu_root) {
+void GPUAdvisor::configGPURoot(Prof::CCT::ADynNode *gpu_root, Prof::CCT::ADynNode *gpu_kernel) {
   // Update current root
   this->_gpu_root = gpu_root;
+  this->_gpu_kernel = gpu_kernel;
 
   // Update vma->latency mapping
   for (auto &iter : _vma_prop_map) {

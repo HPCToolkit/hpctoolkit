@@ -242,6 +242,7 @@ gpu_sample_process
         gpu_host_correlation_map_entry_op_function_get(host_op_entry);
 
       cct_node_t *cct_child = hpcrun_cct_insert_ip_norm(host_op_node, ip);
+
       if (cct_child) {
         PRINT("cct_child %p\n", cct_child);
         attribute_activity(host_op_entry, sample, cct_child);
@@ -270,10 +271,17 @@ gpu_sampling_info_process
     gpu_host_correlation_map_entry_t *host_op_entry =
       gpu_host_correlation_map_lookup(external_id);
     if (host_op_entry != NULL) {
-      cct_node_t *host_op_node =
+      cct_node_t *func_ph = 
         gpu_host_correlation_map_entry_op_function_get(host_op_entry);
+      // do not delete it because it shares external_id with activity samples
 
-      attribute_activity(host_op_entry, sri, host_op_node);
+      cct_node_t *func_node = hpcrun_leftmost_child(func_ph);
+      if (func_node == NULL) {
+        // in case placeholder doesn't have a child
+        func_node = func_ph;
+      }
+
+      attribute_activity(host_op_entry, sri, func_node);
     }
     // sample info is the last record for a given correlation id
     bool more_samples = 
@@ -384,7 +392,7 @@ gpu_kernel_process
 
       cct_node_t *func_node = hpcrun_leftmost_child(func_ph);
       if (func_node == NULL) {
-	// in case placeholder doesn't have a child
+        // in case placeholder doesn't have a child
         func_node = func_ph;
       }
 
