@@ -46,8 +46,6 @@
 //******************************************************************************
 
 #include <assert.h>
-#define CL_TARGET_OPENCL_VERSION 120
-#include <CL/cl.h>
 #include <inttypes.h>
 
 
@@ -68,6 +66,7 @@
 #include <hpcrun/gpu/gpu-op-placeholders.h>
 #include <hpcrun/messages/messages.h>
 #include <hpcrun/sample-sources/libdl.h>
+#include <lib/prof-lean/hpcrun-opencl.h>
 #include <lib/prof-lean/stdatomic.h>
 #include <lib/prof-lean/usec_time.h>
 

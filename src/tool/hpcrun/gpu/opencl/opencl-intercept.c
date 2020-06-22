@@ -45,8 +45,6 @@
 // system includes
 //******************************************************************************
 
-#define CL_TARGET_OPENCL_VERSION 120
-#include <CL/cl.h>
 #include <gotcha/gotcha.h>
 #include <inttypes.h>
 
@@ -58,6 +56,7 @@
 
 #include <hpcrun/messages/messages.h>
 #include <lib/prof-lean/hpcrun-gotcha.h>
+#include <lib/prof-lean/hpcrun-opencl.h>
 #include <lib/prof-lean/stdatomic.h>
 
 #include "opencl-api.h"
