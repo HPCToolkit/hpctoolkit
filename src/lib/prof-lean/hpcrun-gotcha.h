@@ -2,9 +2,6 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
-//
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
 //
@@ -44,14 +41,25 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef REGISTERED_SAMPLE_SOURCES_H
-#define REGISTERED_SAMPLE_SOURCES_H
+#ifndef hpcrun_gotcha_h
+#define hpcrun_gotcha_h
 
-#include <sample-sources/sample_source_obj.h>
 
-void hpcrun_ss_register(sample_source_t *src);
-sample_source_t *hpcrun_source_can_process(char *event);
-void hpcrun_registered_sources_init(void);
-void hpcrun_display_avail_events(void);
+#ifndef HPCRUN_STATIC_LINK
 
-#endif // REGISTERED_SAMPLE_SOURCES_H
+//******************************************************************************
+// system includes
+//******************************************************************************
+#include <gotcha/gotcha.h>
+
+//******************************************************************************
+// macros
+//******************************************************************************
+
+
+#define GOTCHA_GET_TYPED_WRAPPEE(wrapper, type) (type) gotcha_get_wrappee(wrapper)
+#else
+#define GOTCHA_GET_TYPED_WRAPPEE(wrapper, type) (type) 0
+#endif
+#endif
+

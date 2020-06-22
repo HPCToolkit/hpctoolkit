@@ -2,9 +2,6 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
-//
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
 //
@@ -44,14 +41,81 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef REGISTERED_SAMPLE_SOURCES_H
-#define REGISTERED_SAMPLE_SOURCES_H
+#ifndef _OPENCL_API_H_
+#define _OPENCL_API_H_
 
-#include <sample-sources/sample_source_obj.h>
 
-void hpcrun_ss_register(sample_source_t *src);
-sample_source_t *hpcrun_source_can_process(char *event);
-void hpcrun_registered_sources_init(void);
-void hpcrun_display_avail_events(void);
 
-#endif // REGISTERED_SAMPLE_SOURCES_H
+//******************************************************************************
+// local includes
+//******************************************************************************
+
+#include <hpcrun/gpu/gpu-activity.h>
+#include <lib/prof-lean/hpcrun-opencl.h>
+
+#include "opencl-intercept.h"
+
+
+
+//******************************************************************************
+// interface operations
+//******************************************************************************
+
+void
+opencl_subscriber_callback
+(
+  opencl_call_t,
+  uint64_t
+);
+
+
+void
+opencl_activity_completion_callback
+(
+  cl_event,
+  cl_int,
+  void *
+);
+
+
+void
+getTimingInfoFromClEvent
+(
+  gpu_interval_t *,
+  cl_event
+);
+
+
+void
+clSetEventCallback_wrapper
+(
+  cl_event,
+  cl_int,
+  void (CL_CALLBACK*)(cl_event, cl_int, void *),
+  void *
+);
+
+
+void
+opencl_api_initialize
+(
+  void
+);
+
+
+int
+opencl_bind
+(
+  void
+);
+
+
+void
+opencl_api_finalize
+(
+  void *
+);
+
+
+
+#endif  //_OPENCL_API_H_

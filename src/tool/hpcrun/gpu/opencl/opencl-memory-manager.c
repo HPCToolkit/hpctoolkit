@@ -2,9 +2,6 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
-//
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
 //
@@ -44,57 +41,95 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-
 //******************************************************************************
-// File: ss-list.h
-//
-// Purpose: 
-//   This file contains a list of sample sources wrapped by a call to an
-//   unspecified macro. The intended use of this file is to define the
-//   macro, include the file elsewhere one or more times to register the
-//   sample sources. This is not defined as a FORALL macro that applies
-//   a macro to each of the sample source names so that this file can
-//   contain ifdefs if a sample source is unused on a platform.
-//
+// system includes
 //******************************************************************************
 
-SAMPLE_SOURCE_DECL_MACRO(ga)
-SAMPLE_SOURCE_DECL_MACRO(io)  
-SAMPLE_SOURCE_DECL_MACRO(itimer)  
+#include <string.h>
 
-#ifdef HPCRUN_SS_LINUX_PERF
-SAMPLE_SOURCE_DECL_MACRO(linux_perf)  
-#endif
 
-SAMPLE_SOURCE_DECL_MACRO(memleak)  
 
-SAMPLE_SOURCE_DECL_MACRO(none)  
+//******************************************************************************
+// local includes
+//******************************************************************************
 
-#ifdef HPCRUN_SS_PAPI
-SAMPLE_SOURCE_DECL_MACRO(papi)  
-#endif
+#include <hpcrun/gpu/gpu-channel-item-allocator.h>
+#include <hpcrun/memory/hpcrun-malloc.h>
 
-SAMPLE_SOURCE_DECL_MACRO(directed_blame)
+#include "opencl-memory-manager.h"
 
-#ifdef HOST_CPU_x86_64
-SAMPLE_SOURCE_DECL_MACRO(retcnt)
-#endif
 
-#ifdef HPCRUN_SS_PAPI_C_CUPTI
-SAMPLE_SOURCE_DECL_MACRO(papi_c_cupti)
-#endif
 
-#ifdef HPCRUN_SS_NVIDIA
-SAMPLE_SOURCE_DECL_MACRO(nvidia_gpu)
-#endif
+//******************************************************************************
+// type declarations
+//******************************************************************************
 
-#ifdef HPCRUN_SS_AMD
-SAMPLE_SOURCE_DECL_MACRO(amd_gpu)
-#endif
+struct opencl_object_channel_t {
+  bistack_t bistacks[2];
+};
 
-#ifndef HPCRUN_STATIC_LINK
-#ifdef HPCRUN_SS_OPENCL
-SAMPLE_SOURCE_DECL_MACRO(opencl)
-#endif
-#endif
 
+
+//******************************************************************************
+// local data
+//******************************************************************************
+
+static __thread opencl_object_channel_t *opencl_object_channel;
+
+
+
+//******************************************************************************
+// private operations
+//******************************************************************************
+
+static opencl_object_channel_t *
+opencl_object_channel_alloc
+(
+ void
+)
+{
+  return hpcrun_malloc_safe(sizeof(opencl_object_channel_t));
+}
+
+
+static opencl_object_channel_t *
+opencl_object_channel_get
+(
+ void
+)
+{
+  if (opencl_object_channel == NULL) {
+    opencl_object_channel = opencl_object_channel_alloc();
+  }
+  return opencl_object_channel;
+}
+
+
+
+//******************************************************************************
+// interface operations
+//******************************************************************************
+
+opencl_object_t*
+opencl_malloc
+(
+  void
+)
+{
+  opencl_object_channel_t *c = opencl_object_channel_get();
+  opencl_object_t *cl_obj = channel_item_alloc(c, opencl_object_t);
+  cl_obj->channel = c;
+  return cl_obj;
+}
+
+
+void
+opencl_free
+(
+  opencl_object_t *o
+)
+{
+  memset(o, 0, sizeof(opencl_object_t));
+  opencl_object_channel_t *c = &(o->channel);
+  channel_item_free(c, o);
+}

@@ -2,9 +2,6 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
-//
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
 //
@@ -44,14 +41,32 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef REGISTERED_SAMPLE_SOURCES_H
-#define REGISTERED_SAMPLE_SOURCES_H
+#ifndef _OPENCL_ACTIVITY_TRANSLATE_H_
+#define _OPENCL_ACTIVITY_TRANSLATE_H_
 
-#include <sample-sources/sample_source_obj.h>
 
-void hpcrun_ss_register(sample_source_t *src);
-sample_source_t *hpcrun_source_can_process(char *event);
-void hpcrun_registered_sources_init(void);
-void hpcrun_display_avail_events(void);
 
-#endif // REGISTERED_SAMPLE_SOURCES_H
+//******************************************************************************
+// local includes
+//******************************************************************************
+
+#include <hpcrun/gpu/gpu-activity.h>
+#include <lib/prof-lean/hpcrun-opencl.h>
+
+
+
+//******************************************************************************
+// interface operations
+//******************************************************************************
+
+void
+opencl_activity_translate
+(
+  gpu_activity_t *,
+  cl_event,
+  void *
+);
+
+
+
+#endif  //_OPENCL_ACTIVITY_TRANSLATE_H_

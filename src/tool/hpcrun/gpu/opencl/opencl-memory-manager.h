@@ -2,9 +2,6 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
-//
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
 //
@@ -44,14 +41,69 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef REGISTERED_SAMPLE_SOURCES_H
-#define REGISTERED_SAMPLE_SOURCES_H
+#ifndef OPENCL_MEMORY_MANAGER_H
+#define OPENCL_MEMORY_MANAGER_H
 
-#include <sample-sources/sample_source_obj.h>
 
-void hpcrun_ss_register(sample_source_t *src);
-sample_source_t *hpcrun_source_can_process(char *event);
-void hpcrun_registered_sources_init(void);
-void hpcrun_display_avail_events(void);
 
-#endif // REGISTERED_SAMPLE_SOURCES_H
+//******************************************************************************
+// local includes
+//******************************************************************************
+
+#include <lib/prof-lean/bistack.h>
+
+#include "opencl-intercept.h"
+
+
+
+//******************************************************************************
+// type declarations
+//******************************************************************************
+
+typedef enum {
+  OPENCL_KERNEL_CALLBACK                     = 0,
+  OPENCL_MEMORY_CALLBACK                     = 1
+} opencl_object_kind_t;
+
+
+typedef struct opencl_object_channel_t opencl_object_channel_t;
+
+
+typedef struct opencl_object_details_t {
+  union {
+    cl_kernel_callback_t ker_cb;
+    cl_memory_callback_t mem_cb;
+  };
+} opencl_object_details_t;
+
+
+typedef struct opencl_object_t {
+  s_element_ptr_t next;
+  opencl_object_channel_t *channel;
+  opencl_object_kind_t kind;
+  bool isInternalClEvent;
+  opencl_object_details_t details;
+} opencl_object_t;
+
+
+
+//******************************************************************************
+// interface operations
+//******************************************************************************
+
+opencl_object_t*
+opencl_malloc
+(
+  void
+);
+
+
+void
+opencl_free
+(
+  opencl_object_t *
+);
+
+
+
+#endif  //OPENCL_MEMORY_MANAGER_H

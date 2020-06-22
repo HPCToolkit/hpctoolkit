@@ -2,9 +2,6 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
-//
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
 //
@@ -44,57 +41,124 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#ifndef _OPENCL_INTERCEPT_H_
+#define _OPENCL_INTERCEPT_H_
+
+
 
 //******************************************************************************
-// File: ss-list.h
-//
-// Purpose: 
-//   This file contains a list of sample sources wrapped by a call to an
-//   unspecified macro. The intended use of this file is to define the
-//   macro, include the file elsewhere one or more times to register the
-//   sample sources. This is not defined as a FORALL macro that applies
-//   a macro to each of the sample source names so that this file can
-//   contain ifdefs if a sample source is unused on a platform.
-//
+// system includes
 //******************************************************************************
 
-SAMPLE_SOURCE_DECL_MACRO(ga)
-SAMPLE_SOURCE_DECL_MACRO(io)  
-SAMPLE_SOURCE_DECL_MACRO(itimer)  
+#include <stdbool.h>
 
-#ifdef HPCRUN_SS_LINUX_PERF
-SAMPLE_SOURCE_DECL_MACRO(linux_perf)  
-#endif
 
-SAMPLE_SOURCE_DECL_MACRO(memleak)  
 
-SAMPLE_SOURCE_DECL_MACRO(none)  
+//******************************************************************************
+// local includes
+//******************************************************************************
 
-#ifdef HPCRUN_SS_PAPI
-SAMPLE_SOURCE_DECL_MACRO(papi)  
-#endif
+#include <lib/prof-lean/hpcrun-opencl.h>
 
-SAMPLE_SOURCE_DECL_MACRO(directed_blame)
 
-#ifdef HOST_CPU_x86_64
-SAMPLE_SOURCE_DECL_MACRO(retcnt)
-#endif
 
-#ifdef HPCRUN_SS_PAPI_C_CUPTI
-SAMPLE_SOURCE_DECL_MACRO(papi_c_cupti)
-#endif
+//******************************************************************************
+// type declarations
+//******************************************************************************
 
-#ifdef HPCRUN_SS_NVIDIA
-SAMPLE_SOURCE_DECL_MACRO(nvidia_gpu)
-#endif
+typedef cl_command_queue (*clqueue_t)(
+  cl_context,
+  cl_device_id,
+  cl_command_queue_properties,
+  cl_int *
+);
 
-#ifdef HPCRUN_SS_AMD
-SAMPLE_SOURCE_DECL_MACRO(amd_gpu)
-#endif
 
-#ifndef HPCRUN_STATIC_LINK
-#ifdef HPCRUN_SS_OPENCL
-SAMPLE_SOURCE_DECL_MACRO(opencl)
-#endif
-#endif
+typedef cl_int (*clkernel_t)(
+  cl_command_queue,
+  cl_kernel,
+  cl_uint,
+  const size_t *,
+  const size_t *,
+  const size_t *,
+  cl_uint,
+  const cl_event *,
+  cl_event *
+);
 
+
+typedef cl_int (*clreadbuffer_t)(
+  cl_command_queue,
+  cl_mem,
+  cl_bool,
+  size_t,
+  size_t,
+  void *,
+  cl_uint,
+  const cl_event *,
+  cl_event *
+);
+
+
+typedef cl_int (*clwritebuffer_t)(
+  cl_command_queue,
+  cl_mem,
+  cl_bool,
+  size_t,
+  size_t,
+  const void *,
+  cl_uint,
+  const cl_event *,
+  cl_event *
+);
+
+
+typedef enum {
+  memcpy_H2D                      = 0,
+  memcpy_D2H                      = 1,
+  kernel                          = 2
+} opencl_call_t;
+
+
+typedef struct cl_generic_callback_t {
+  uint64_t correlation_id;
+  opencl_call_t type;
+} cl_generic_callback_t;
+
+
+typedef struct cl_kernel_callback_t {
+  uint64_t correlation_id;
+  opencl_call_t type;
+} cl_kernel_callback_t;
+
+
+typedef struct cl_memory_callback_t {
+  uint64_t correlation_id;
+  opencl_call_t type;
+  bool fromHostToDevice;
+  bool fromDeviceToHost;
+  size_t size;
+} cl_memory_callback_t;
+
+
+
+//******************************************************************************
+// interface operations
+//******************************************************************************
+
+void
+opencl_intercept_setup
+(
+  void
+);
+
+
+void
+opencl_intercept_teardown
+(
+  void
+);
+
+
+
+#endif  //_OPENCL_INTERCEPT_H_
