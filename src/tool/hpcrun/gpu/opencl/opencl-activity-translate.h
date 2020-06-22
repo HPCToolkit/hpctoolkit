@@ -64,7 +64,7 @@ opencl_activity_translate
 (
   gpu_activity_t *,
   cl_event,
-  void *user_data
+  void *
 );
 
 

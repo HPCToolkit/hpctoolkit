@@ -89,10 +89,10 @@ getTimingInfoFromClEvent
 void
 clSetEventCallback_wrapper
 (
-  cl_event event,
-  cl_int event_command_status,
+  cl_event,
+  cl_int,
   void (CL_CALLBACK*)(cl_event, cl_int, void *),
-  void* user_data
+  void *
 );
 
 
@@ -113,7 +113,7 @@ opencl_bind
 void
 opencl_api_finalize
 (
-  void*
+  void *
 );
 
 

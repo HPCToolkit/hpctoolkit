@@ -70,12 +70,12 @@ typedef cl_int (*clkernel_t)(
   cl_command_queue,
   cl_kernel,
   cl_uint,
-  const size_t*,
-  const size_t*,
-  const size_t*,
+  const size_t *,
+  const size_t *,
+  const size_t *,
   cl_uint,
-  const cl_event*,
-  cl_event*
+  const cl_event *,
+  cl_event *
 );
 
 
@@ -118,13 +118,13 @@ typedef struct cl_generic_callback_t {
 } cl_generic_callback_t;
 
 
-typedef struct cl_kernel_callback_t{
+typedef struct cl_kernel_callback_t {
   uint64_t correlation_id;
   opencl_call_t type;
 } cl_kernel_callback_t;
 
 
-typedef struct cl_memory_callback_t{
+typedef struct cl_memory_callback_t {
   uint64_t correlation_id;
   opencl_call_t type;
   bool fromHostToDevice;

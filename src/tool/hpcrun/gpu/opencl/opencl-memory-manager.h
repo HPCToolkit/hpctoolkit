@@ -102,7 +102,7 @@ opencl_malloc
 void
 opencl_free
 (
-  opencl_object_t*
+  opencl_object_t *
 );
 
 
