@@ -149,6 +149,14 @@ KernelStats GPUAdvisor::readKernelStats(int mpi_rank, int thread_id) {
 void GPUAdvisor::advise(const CCTBlames &cct_blames) {
   _output.clear();
 
+  auto *gpu_kernel_struct = _vma_struct_map[_gpu_kernel->lmIP()];
+  auto *gpu_proc_struct = gpu_kernel_struct->ancestorProc();
+  auto *gpu_file_struct = gpu_kernel_struct->ancestorFile();
+
+  _output << "----------------------------------------------------------" << std::endl;
+  _output << "Function: " << gpu_proc_struct->name() << " at Line " << gpu_proc_struct->begLine() << " in " << gpu_file_struct->name() << std::endl;
+  _output << "----------------------------------------------------------" << std::endl;
+
   for (auto mpi_rank = 0; mpi_rank < _metric_name_prof_map->num_mpi_ranks(); ++mpi_rank) {
     // For each MPI process
     for (auto thread_id = 0; thread_id < _metric_name_prof_map->num_thread_ids(mpi_rank); ++thread_id) {

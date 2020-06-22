@@ -122,6 +122,9 @@ class InspectionFormatter {
   virtual std::string format(const Inspection &inspection) = 0;
 
   ~InspectionFormatter() {} 
+
+ protected:
+  std::stack<Prof::Struct::Alien *> getInlineStack(Prof::Struct::ACodeNode *stmt);
 };
 
 
@@ -132,7 +135,11 @@ class SimpleInspectionFormatter : public InspectionFormatter {
   virtual std::string format(const Inspection &inspection);
 
   ~SimpleInspectionFormatter() {}
+ 
+ private:
+  std::string formatInlineStack(std::stack<Prof::Struct::Alien *> &st);
 };
+
 
 }  // namespace Analysis
 

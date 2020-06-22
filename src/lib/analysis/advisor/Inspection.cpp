@@ -12,6 +12,7 @@
 #include <typeinfo>
 #include <unordered_map>
 #include <algorithm>
+#include <stack>
 
 #include <sys/stat.h>
 
@@ -50,6 +51,37 @@ using std::string;
 #include <iostream>
 
 namespace Analysis {
+
+std::stack<Prof::Struct::Alien *> InspectionFormatter::getInlineStack(Prof::Struct::ACodeNode *stmt) {
+  std::stack<Prof::Struct::Alien *> st;
+  Prof::Struct::Alien *alien = stmt->ancestorAlien();
+
+  while (alien) {
+    st.push(alien);
+    auto *stmt = alien->parent();
+    if (stmt) {
+      alien = stmt->ancestorAlien(); 
+    } else {
+      break;
+    }
+  };
+
+  return st;
+}
+
+
+std::string SimpleInspectionFormatter::formatInlineStack(std::stack<Prof::Struct::Alien *> &inline_stack) {
+  std::stringstream ss;
+
+  ss << "Inline stack: " << std::endl;
+  while (inline_stack.empty() == false) {
+    auto *inline_struct = inline_stack.top();
+    inline_stack.pop();
+    ss << "Line " << inline_struct->begLine() << " in " << inline_struct->fileName() << std::endl;
+  }
+
+  return ss.str();
+}
 
 
 std::string SimpleInspectionFormatter::format(const Inspection &inspection) {
@@ -95,11 +127,33 @@ std::string SimpleInspectionFormatter::format(const Inspection &inspection) {
     auto src_vma = (inst_blame.src)->pc - src_func->vmaSet().begin()->beg();
     auto dst_vma = (inst_blame.dst)->pc - dst_func->vmaSet().begin()->beg();
 
-    ss << "From " << src_struct->ancestorFile()->name() << ":" << src_struct->begLine() << std::endl;
-    ss << std::hex << "0x" << src_vma << std::dec << " in Function " << src_func->name() << std::endl;
+    // Print inline call stack
+    std::stack<Prof::Struct::Alien *> src_inline_stack = getInlineStack(src_struct);
+    std::stack<Prof::Struct::Alien *> dst_inline_stack = getInlineStack(dst_struct);
 
-    ss << "To " << dst_struct->ancestorFile()->name() << ":" << dst_struct->begLine() << std::endl;
-    ss << std::hex << "0x" << dst_vma << std::dec << " in Function " << src_func->name() << std::endl;
+    ss << "----------------------------------------------------------" << std::endl;
+    ss << "From" << std::endl;
+    if (src_inline_stack.empty() == false) {
+      ss << formatInlineStack(src_inline_stack);
+      ss << std::hex << "0x" << src_vma << std::dec << " at Line " <<
+        src_struct->begLine() << std::endl;
+    } else {
+      auto src_file = src_struct->ancestorFile();
+      ss << std::hex << "0x" << src_vma << std::dec << " at Line " <<
+        src_struct->begLine() << " in " <<  src_file->name() << std::endl;
+    }
+
+    ss << "To" << std::endl;
+    if (dst_inline_stack.empty() == false) {
+      ss << formatInlineStack(dst_inline_stack);
+      ss << std::hex << "0x" << dst_vma << std::dec << " at Line " <<
+        dst_struct->begLine() << std::endl;
+    } else {
+      auto dst_file = dst_struct->ancestorFile();
+      ss << std::hex << "0x" << dst_vma << std::dec << " at Line " <<
+        dst_struct->begLine() << " in " <<  dst_file->name() << std::endl;
+    }
+    ss << "----------------------------------------------------------" << std::endl;
   }
 
   ss << std::endl;
