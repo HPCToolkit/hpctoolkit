@@ -75,7 +75,9 @@ getMemoryProfileInfo
 {
   memcpy->correlation_id = cb_data->correlation_id;
   memcpy->bytes = cb_data->size;
-  memcpy->copyKind = (gpu_memcpy_type_t) (cb_data->fromHostToDevice)? GPU_MEMCPY_H2D: cb_data->fromDeviceToHost? GPU_MEMCPY_D2H:	GPU_MEMCPY_UNK;
+  memcpy->copyKind = (gpu_memcpy_type_t) 
+    (cb_data->fromHostToDevice)? GPU_MEMCPY_H2D: 
+    (cb_data->fromDeviceToHost? GPU_MEMCPY_D2H:	GPU_MEMCPY_UNK);
 }
 
 

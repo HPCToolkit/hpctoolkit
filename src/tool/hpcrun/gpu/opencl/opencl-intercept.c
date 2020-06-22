@@ -139,8 +139,12 @@ clCreateCommandQueue_wrapper
   cl_int *errcode_ret
 )
 {
-  properties |= (cl_command_queue_properties)CL_QUEUE_PROFILING_ENABLE; // enabling profiling
-  clqueue_t clCreateCommandQueue_wrappee = GOTCHA_GET_TYPED_WRAPPEE(clCreateCommandQueue_handle, clqueue_t);
+  // enabling profiling
+  properties |= (cl_command_queue_properties)CL_QUEUE_PROFILING_ENABLE; 
+
+  clqueue_t clCreateCommandQueue_wrappee = 
+    GOTCHA_GET_TYPED_WRAPPEE(clCreateCommandQueue_handle, clqueue_t);
+
   return clCreateCommandQueue_wrappee(context, device, properties, errcode_ret);
 }
 
@@ -173,11 +177,20 @@ clEnqueueNDRangeKernel_wrapper
     eventp = event;
     kernel_info->isInternalClEvent = false;
   }
-  clkernel_t clEnqueueNDRangeKernel_wrappee = GOTCHA_GET_TYPED_WRAPPEE(clEnqueueNDRangeKernel_handle, clkernel_t);
-  cl_int return_status = clEnqueueNDRangeKernel_wrappee(command_queue, ocl_kernel, work_dim, global_work_offset, global_work_size, local_work_size, num_events_in_wait_list, event_wait_list, eventp);
-  ETMSG(OPENCL, "registering callback for type: kernel. Correlation id: %"PRIu64 "", correlation_id);
+  clkernel_t clEnqueueNDRangeKernel_wrappee = 
+    GOTCHA_GET_TYPED_WRAPPEE(clEnqueueNDRangeKernel_handle, clkernel_t);
+  cl_int return_status = 
+    clEnqueueNDRangeKernel_wrappee(command_queue, ocl_kernel, work_dim, 
+				   global_work_offset, global_work_size, 
+				   local_work_size, num_events_in_wait_list, 
+				   event_wait_list, eventp);
+
+  ETMSG(OPENCL, "registering callback for type: kernel. " 
+	"Correlation id: %"PRIu64 "", correlation_id);
+
   opencl_subscriber_callback(kernel_cb->type, kernel_cb->correlation_id);
-  clSetEventCallback_wrapper(*eventp, CL_COMPLETE, &opencl_activity_completion_callback, kernel_info);
+  clSetEventCallback_wrapper(*eventp, CL_COMPLETE, 
+			     &opencl_activity_completion_callback, kernel_info);
   return return_status;
 }
 
@@ -210,12 +223,24 @@ clEnqueueReadBuffer_wrapper
     eventp = event;
     mem_info->isInternalClEvent = false;
   }
-  clreadbuffer_t clEnqueueReadBuffer_wrappee = GOTCHA_GET_TYPED_WRAPPEE(clEnqueueReadBuffer_handle, clreadbuffer_t);
-  cl_int return_status = clEnqueueReadBuffer_wrappee(command_queue, buffer, blocking_read, offset, cb, ptr, num_events_in_wait_list, event_wait_list, eventp);
-  ETMSG(OPENCL, "registering callback for type: D2H. Correlation id: %"PRIu64 "", correlation_id);
-  ETMSG(OPENCL, "%d(bytes) of data being transferred from device to host", (long)cb);
-  opencl_subscriber_callback(mem_transfer_cb->type, mem_transfer_cb->correlation_id);
-  clSetEventCallback_wrapper(*eventp, CL_COMPLETE, &opencl_activity_completion_callback, mem_info);
+  clreadbuffer_t clEnqueueReadBuffer_wrappee = 
+    GOTCHA_GET_TYPED_WRAPPEE(clEnqueueReadBuffer_handle, clreadbuffer_t);
+  cl_int return_status = 
+    clEnqueueReadBuffer_wrappee(command_queue, buffer, blocking_read, offset, 
+				cb, ptr, num_events_in_wait_list, 
+				event_wait_list, eventp);
+
+  ETMSG(OPENCL, "registering callback for type: D2H. " 
+	"Correlation id: %"PRIu64 "", correlation_id);
+  ETMSG(OPENCL, "%d(bytes) of data being transferred from device to host", 
+	(long)cb);
+
+  opencl_subscriber_callback(mem_transfer_cb->type, 
+			     mem_transfer_cb->correlation_id);
+
+  clSetEventCallback_wrapper(*eventp, CL_COMPLETE, 
+			     &opencl_activity_completion_callback, mem_info);
+
   return return_status;
 }
 
@@ -248,12 +273,26 @@ clEnqueueWriteBuffer_wrapper
     eventp = event;
     mem_info->isInternalClEvent = false;
   }
-  clwritebuffer_t clEnqueueWriteBuffer_wrappee = GOTCHA_GET_TYPED_WRAPPEE(clEnqueueWriteBuffer_handle, clwritebuffer_t);
-  cl_int return_status = clEnqueueWriteBuffer_wrappee(command_queue, buffer, blocking_write, offset, cb, ptr, num_events_in_wait_list, event_wait_list, eventp);
-  ETMSG(OPENCL, "registering callback for type: H2D. Correlation id: %"PRIu64 "", correlation_id);
-  ETMSG(OPENCL, "%d(bytes) of data being transferred from host to device", (long)cb);
-  opencl_subscriber_callback(mem_transfer_cb->type, mem_transfer_cb->correlation_id);
-  clSetEventCallback_wrapper(*eventp, CL_COMPLETE, &opencl_activity_completion_callback, (void*) mem_info);
+  clwritebuffer_t clEnqueueWriteBuffer_wrappee = 
+    GOTCHA_GET_TYPED_WRAPPEE(clEnqueueWriteBuffer_handle, clwritebuffer_t);
+  cl_int return_status = 
+    clEnqueueWriteBuffer_wrappee(command_queue, buffer, blocking_write, offset,
+				 cb, ptr, num_events_in_wait_list, 
+				 event_wait_list, eventp);
+
+  ETMSG(OPENCL, "registering callback for type: H2D. " 
+	"Correlation id: %"PRIu64 "", correlation_id);
+
+  ETMSG(OPENCL, "%d(bytes) of data being transferred from host to device", 
+	(long)cb);
+
+  opencl_subscriber_callback(mem_transfer_cb->type, 
+			     mem_transfer_cb->correlation_id);
+
+  clSetEventCallback_wrapper(*eventp, CL_COMPLETE, 
+			     &opencl_activity_completion_callback, 
+			     (void*) mem_info);
+
   return return_status;
 }
 

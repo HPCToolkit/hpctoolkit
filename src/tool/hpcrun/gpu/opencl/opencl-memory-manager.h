@@ -51,7 +51,6 @@
 //******************************************************************************
 
 #include <lib/prof-lean/bistack.h>
-#include <lib/prof-lean/hpcrun-opencl.h>
 
 #include "opencl-intercept.h"
 
