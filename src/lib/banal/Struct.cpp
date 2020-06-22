@@ -578,10 +578,9 @@ makeStructure(string filename,
 #endif
 
   InputFile inputFile;
-  if (! inputFile.openFile(filename)) {
-    // error already printed by openFile
-    exit(1);
-  }
+
+  // failure throws an error up the call chain
+  inputFile.openFile(filename, InputFileError_Error);
 
   ElfFileVector * elfFileVector = inputFile.fileVector();
   string & sfilename = inputFile.fileName();
