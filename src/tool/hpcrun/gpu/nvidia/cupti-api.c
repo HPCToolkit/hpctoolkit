@@ -1542,7 +1542,7 @@ cupti_device_init()
 {
   cupti_stop_flag = false;
   cupti_runtime_api_flag = false;
-  cupti_trace_node = NULL;
+  //cupti_trace_node = NULL;
 }
 
 
