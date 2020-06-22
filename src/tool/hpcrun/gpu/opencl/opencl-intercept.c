@@ -105,7 +105,7 @@ getCorrelationId
 static void
 initializeKernelCallBackInfo
 (
-  cl_kernel_callback_t* kernel_cb,
+  cl_kernel_callback_t *kernel_cb,
   uint64_t correlation_id
 )
 {
@@ -117,7 +117,7 @@ initializeKernelCallBackInfo
 static void
 initializeMemoryCallBackInfo
 (
-  cl_memory_callback_t* mem_transfer_cb,
+  cl_memory_callback_t *mem_transfer_cb,
   uint64_t correlation_id,
   size_t size,
   bool fromHostToDevice
