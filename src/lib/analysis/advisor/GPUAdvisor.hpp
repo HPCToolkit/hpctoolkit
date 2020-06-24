@@ -305,8 +305,7 @@ class GPUAdvisor {
   std::stringstream _output;
 
  private:
-  const int _top_block_blames = 3;
-  const int _top_optimizers = 5;
+  const int _top_optimizers = 6;
 };
 
 

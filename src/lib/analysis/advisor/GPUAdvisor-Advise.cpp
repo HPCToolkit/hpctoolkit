@@ -212,7 +212,7 @@ void GPUAdvisor::advise(const CCTBlames &cct_blames) {
 
           for (auto *optimizer : _binary_optimizers) {
             double score = optimizer->match(kernel_blame, kernel_stats);
-            parallel_optimizer_rank[score].push_back(optimizer);
+            binary_optimizer_rank[score].push_back(optimizer);
           }
 
           // 3. Output top advises
@@ -234,9 +234,9 @@ void GPUAdvisor::advise(const CCTBlames &cct_blames) {
   auto *gpu_file_struct = gpu_kernel_struct->ancestorFile();
 
   if (_output.rdbuf()->in_avail() != 0) {
-    _output << "----------------------------------------------------------" << std::endl;
-    _output << "Function: " << gpu_proc_struct->name() << " at Line " << gpu_proc_struct->begLine() << " in " << gpu_file_struct->name() << std::endl;
-    _output << "----------------------------------------------------------" << std::endl;
+    std::cout << "----------------------------------------------------------" << std::endl;
+    std::cout << "Function: " << gpu_proc_struct->name() << " at Line " << gpu_proc_struct->begLine() << " in " << gpu_file_struct->name() << std::endl;
+    std::cout << "----------------------------------------------------------" << std::endl;
 
     std::cout << _output.str();
   }

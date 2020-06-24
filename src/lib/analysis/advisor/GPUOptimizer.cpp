@@ -75,7 +75,27 @@ GPUOptimizer *GPUOptimizerFactory(GPUOptimizerType type, GPUArchitecture *arch) 
 
 
 double GPURegisterIncreaseOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
-  return 0.0;
+  // Match if for sche dep
+  double blame = 0.0;
+
+  _inspection.optimization = this->_name;
+
+  for (auto &stall_blame_iter : kernel_blame.stall_blames) {
+    auto blame_name = stall_blame_iter.first;
+    auto blame_metric = stall_blame_iter.second;
+
+    if (blame_name.find(":LAT_IDEP_SCHE") != std::string::npos) {
+      blame += blame_metric;
+    }
+  }
+
+  if (blame != 0.0) {
+    _inspection.ratio = blame / kernel_stats.total_samples;
+    _inspection.speedup = kernel_stats.total_samples / (kernel_stats.total_samples -
+      MIN2(kernel_stats.active_samples, blame));
+  }
+
+  return _inspection.speedup;
 }
 
 
