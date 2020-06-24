@@ -147,15 +147,8 @@ KernelStats GPUAdvisor::readKernelStats(int mpi_rank, int thread_id) {
 
 
 void GPUAdvisor::advise(const CCTBlames &cct_blames) {
-  _output.clear();
-
-  auto *gpu_kernel_struct = _vma_struct_map.begin()->second;
-  auto *gpu_proc_struct = gpu_kernel_struct->ancestorProc();
-  auto *gpu_file_struct = gpu_kernel_struct->ancestorFile();
-
-  _output << "----------------------------------------------------------" << std::endl;
-  _output << "Function: " << gpu_proc_struct->name() << " at Line " << gpu_proc_struct->begLine() << " in " << gpu_file_struct->name() << std::endl;
-  _output << "----------------------------------------------------------" << std::endl;
+  // NOTE: stringstream.clear() does not work
+  _output.str("");
 
   for (auto mpi_rank = 0; mpi_rank < _metric_name_prof_map->num_mpi_ranks(); ++mpi_rank) {
     // For each MPI process
@@ -236,7 +229,17 @@ void GPUAdvisor::advise(const CCTBlames &cct_blames) {
     }
   }
 
-  std::cout << _output.str();
+  auto *gpu_kernel_struct = _vma_struct_map.begin()->second;
+  auto *gpu_proc_struct = gpu_kernel_struct->ancestorProc();
+  auto *gpu_file_struct = gpu_kernel_struct->ancestorFile();
+
+  if (_output.rdbuf()->in_avail() != 0) {
+    _output << "----------------------------------------------------------" << std::endl;
+    _output << "Function: " << gpu_proc_struct->name() << " at Line " << gpu_proc_struct->begLine() << " in " << gpu_file_struct->name() << std::endl;
+    _output << "----------------------------------------------------------" << std::endl;
+
+    std::cout << _output.str();
+  }
 
   // Clean advise
   for (auto *optimizer : _code_optimizers) {
