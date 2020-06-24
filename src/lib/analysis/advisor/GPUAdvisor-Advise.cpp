@@ -149,7 +149,7 @@ KernelStats GPUAdvisor::readKernelStats(int mpi_rank, int thread_id) {
 void GPUAdvisor::advise(const CCTBlames &cct_blames) {
   _output.clear();
 
-  auto *gpu_kernel_struct = _vma_struct_map[_gpu_kernel->lmIP()];
+  auto *gpu_kernel_struct = _vma_struct_map.begin()->second;
   auto *gpu_proc_struct = gpu_kernel_struct->ancestorProc();
   auto *gpu_file_struct = gpu_kernel_struct->ancestorFile();
 
