@@ -75,24 +75,30 @@ GPUOptimizer *GPUOptimizerFactory(GPUOptimizerType type, GPUArchitecture *arch) 
 
 
 double GPURegisterIncreaseOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
-  // Match if for sche dep
+  // Match if for local memory dep
   double blame = 0.0;
+
+  if (kernel_blame.lat_blames.find(GPU_INST_METRIC_NAME":LAT_GMEM_LMEM") != kernel_blame.lat_blames.end()) {
+    blame = kernel_blame.lat_blames.at(GPU_INST_METRIC_NAME":LAT_GMEM_LMEM");
+  }
 
   _inspection.optimization = this->_name;
 
-  for (auto &stall_blame_iter : kernel_blame.stall_blames) {
-    auto blame_name = stall_blame_iter.first;
-    auto blame_metric = stall_blame_iter.second;
+  auto insts = 0;
+  // Find top latency pairs
+  for (auto &inst_blame : kernel_blame.lat_inst_blames) {
+    auto &blame_name = inst_blame.blame_name;
 
-    if (blame_name.find(":LAT_IDEP_SCHE") != std::string::npos) {
-      blame += blame_metric;
+    if (blame_name == GPU_INST_METRIC_NAME":LAT_GMEM_LMEM") {
+      if (++insts <= _top_regions) {
+        _inspection.top_regions.push_back(inst_blame);
+      }
     }
   }
 
   if (blame != 0.0) {
     _inspection.ratio = blame / kernel_stats.total_samples;
-    _inspection.speedup = kernel_stats.total_samples / (kernel_stats.total_samples -
-      MIN2(kernel_stats.active_samples, blame));
+    _inspection.speedup = kernel_stats.total_samples / (kernel_stats.total_samples - blame);
   }
 
   return _inspection.speedup;
@@ -100,17 +106,45 @@ double GPURegisterIncreaseOptimizer::match(const KernelBlame &kernel_blame, cons
 
 
 double GPURegisterDecreaseOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
+  // Match if occupancy is low
   return 0.0;
 }
 
 
 double GPULoopUnrollOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
+  // Match if inst_blame->from and inst_blame->to are in the same loop
   return 0.0;
 }
 
 
 double GPULoopNoUnrollOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
-  return 0.0;
+  // Match if instruction fetch latency
+  double blame = 0.0;
+
+  if (kernel_blame.lat_blames.find(GPU_INST_METRIC_NAME":LAT_IFET") != kernel_blame.lat_blames.end()) {
+    blame = kernel_blame.lat_blames.at(GPU_INST_METRIC_NAME":LAT_IFET");
+  }
+
+  _inspection.optimization = this->_name;
+
+  auto insts = 0;
+  // Find top latency pairs
+  for (auto &inst_blame : kernel_blame.lat_inst_blames) {
+    auto &blame_name = inst_blame.blame_name;
+
+    if (blame_name == GPU_INST_METRIC_NAME":LAT_IFET") {
+      if (++insts <= _top_regions) {
+        _inspection.top_regions.push_back(inst_blame);
+      }
+    }
+  }
+
+  if (blame != 0.0) {
+    _inspection.ratio = blame / kernel_stats.total_samples;
+    _inspection.speedup = kernel_stats.total_samples / (kernel_stats.total_samples - blame);
+  }
+
+  return _inspection.speedup;
 }
 
 
@@ -217,21 +251,25 @@ double GPUCodeReorderOptimizer::match(const KernelBlame &kernel_blame, const Ker
 
 
 double GPUKernelMergeOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
+  // Match if ifetch and small kernel
   return 0.0;
 }
 
 
 double GPUFunctionInlineOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
+  // Match if ifetch and device function
   return 0.0;
 }
 
 
 double GPUSharedMemoryCoalesceOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
+  // Match if shared memory latency is high
   return 0.0;
 }
 
 
 double GPUGlobalMemoryCoalesceOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
+  // Match if shared memory latency is high
   return 0.0;
 }
 
@@ -277,11 +315,13 @@ double GPUOccupancyIncreaseOptimizer::match(const KernelBlame &kernel_blame, con
 
 
 double GPUOccupancyDecreaseOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
+  // Match if not selected if high
   return 0.0;
 }
 
 
 double GPUSMBalanceOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
+  // Match if blocks are large while sm efficiency is low
   return 0.0;
 }
 
@@ -304,6 +344,7 @@ double GPUBlockIncreaseOptimizer::match(const KernelBlame &kernel_blame, const K
 
 
 double GPUBlockDecreaseOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
+  // Match if threads are few, increase number of threads per block. i.e. threads coarsen
   return 0.0;
 }
 
