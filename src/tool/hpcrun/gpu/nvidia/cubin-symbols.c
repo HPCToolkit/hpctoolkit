@@ -175,7 +175,8 @@ relocateSymbolsHelper
  GElf_Ehdr *ehdr,
  GElf_Shdr *shdr,
  Elf_SectionVector *sections,
- Elf_Scn *scn
+ Elf_Scn *scn,
+ Elf_Scn *symtab_shndx_section
 )
 {
   Elf_SymbolVector *symbol_values = NULL;
@@ -187,19 +188,40 @@ relocateSymbolsHelper
   } else {
     return NULL;
   }
+
+  // If .symtab_shndx section exists, we need extended numbering
+  // for section index of a symbol
+  Elf_Data *symtab_shndx_data = NULL;
+  if (symtab_shndx_section != NULL) {
+    symtab_shndx_data = elf_getdata(symtab_shndx_section, NULL);
+  }
+
   Elf_Data *datap = elf_getdata(scn, NULL);
   if (datap) {
     symbol_values = newSymbolsVector(nsymbols);
     for (int i = 0; i < nsymbols; i++) {
       GElf_Sym sym;
-      GElf_Sym *symp = gelf_getsym(datap, i, &sym);
+      Elf32_Word xndx;
+      GElf_Sym *symp = NULL;
+      if (symtab_shndx_data != NULL) {
+        symp = gelf_getsymshndx(datap, symtab_shndx_data, i, &sym, &xndx);
+      } else {
+        symp = gelf_getsym(datap, i, &sym);
+      }
+
+      // Handle extended numbering if needed
+      // and store the symbol section index
+      int64_t section_index = sym.st_shndx;
+      if (section_index == SHN_XINDEX) {
+        section_index = xndx;
+      }      
       if (symp) { // symbol properly read
 	      int symtype = GELF_ST_TYPE(sym.st_info);
 	      if (sym.st_shndx == SHN_UNDEF) continue;
 	      switch(symtype) {
 	        case STT_FUNC:
 	          {
-	            symbol_values->symbols[i] = sectionOffset(sections, section_index(sym.st_shndx));
+	            symbol_values->symbols[i] = sectionOffset(sections, section_index(section_index));
 	          }
 	        default: break;
 	      }
@@ -221,12 +243,24 @@ relocateSymbols
   GElf_Ehdr ehdr_v;
   GElf_Ehdr *ehdr = gelf_getehdr(elf, &ehdr_v);
   if (ehdr) {
+    // If .symtab_shndx section exists, the section index of a symbol
+    // needs .symtab_shndx
+    Elf_Scn* symtab_shndx_section = NULL;
+    for (int i = 0; i < sections->nsections; i++) {
+      Elf_Scn *scn = sections->sections[i];
+      GElf_Shdr shdr;
+      if (!gelf_getshdr(scn, &shdr)) continue;
+      if (shdr.sh_type == SHT_SYMTAB_SHNDX) {
+        symtab_shndx_section = scn;
+        break;
+      }
+    }
     for (int i = 0; i < sections->nsections; i++) {
       Elf_Scn *scn = sections->sections[i];
       GElf_Shdr shdr;
       if (!gelf_getshdr(scn, &shdr)) continue;
       if (shdr.sh_type == SHT_SYMTAB) {
-	      symbol_values = relocateSymbolsHelper(elf, ehdr, &shdr, sections, scn);
+	      symbol_values = relocateSymbolsHelper(elf, ehdr, &shdr, sections, scn, symtab_shndx_section);
 	      break; // AFAIK, there can only be one symbol table
       }
     }
