@@ -127,13 +127,15 @@ parseDotCFG
             auto *symbol_function = symbol_map[function->name];
             function->index = symbol_function->getIndex();
             function->address = symbol_function->getOffset();
-            if (symbol_function != symbol &&
-              symbol_function->getType() != Dyninst::SymtabAPI::Symbol::ST_FUNCTION) {
-              // NOTYPE functions' original offsets are relative.
-              // hpcstruct relocates them with absolute offsets.
-              // Allow gaps between a function begining and the first block?
-              //function->blocks[0]->address = symbol->getOffset();
-              function->address += symbol->getOffset();
+            if (symbol_function != symbol) {
+              function->global = false;
+              if (symbol_function->getType() != Dyninst::SymtabAPI::Symbol::ST_FUNCTION) {
+                // NOTYPE functions' original offsets are relative.
+                // hpcstruct relocates them with absolute offsets.
+                // Allow gaps between a function begining and the first block?
+                //function->blocks[0]->address = symbol->getOffset();
+                function->address += symbol->getOffset();
+              }
             }
             function_map[function->name] = function;
           }

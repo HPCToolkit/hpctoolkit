@@ -109,6 +109,8 @@ struct KernelStats {
 
 
 struct InstructionBlame {
+  // TODO(Keren):
+  // Use InstructionBlameDetail pointer to save space and more crystal 
   // Use InstructionStat directly, so that in advisor::advise, we do not need a vma_inst_map again
   CudaParse::InstructionStat *src, *dst;
   Prof::Struct::ACodeNode *src_struct, *dst_struct;

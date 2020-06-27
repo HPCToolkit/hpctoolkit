@@ -75,12 +75,13 @@ struct Function {
   std::string name;
   int address;
   bool unparsable;
+  bool global;
 
-  Function(size_t id, size_t index, const std::string &name, int address, bool unparsable) :
-    id(id), index(index), name(name), address(address), unparsable(unparsable) {}
+  Function(size_t id, size_t index, const std::string &name, int address, bool unparsable, bool global) :
+    id(id), index(index), name(name), address(address), unparsable(unparsable), global(global) {}
 
   Function(size_t id, size_t index, const std::string &name, int address) :
-    Function(id, index, name, address, false) {}
+    Function(id, index, name, address, false, true) {}
 
   Function(size_t id, const std::string &name, int address) : Function(id, 0, name, address) {}
 

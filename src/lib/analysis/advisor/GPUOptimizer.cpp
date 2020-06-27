@@ -78,10 +78,6 @@ double GPURegisterIncreaseOptimizer::match(const KernelBlame &kernel_blame, cons
   // Match if for local memory dep
   double blame = 0.0;
 
-  if (kernel_blame.lat_blames.find(GPU_INST_METRIC_NAME":LAT_GMEM_LMEM") != kernel_blame.lat_blames.end()) {
-    blame = kernel_blame.lat_blames.at(GPU_INST_METRIC_NAME":LAT_GMEM_LMEM");
-  }
-
   _inspection.optimization = this->_name;
 
   auto insts = 0;
@@ -90,8 +86,11 @@ double GPURegisterIncreaseOptimizer::match(const KernelBlame &kernel_blame, cons
     auto &blame_name = inst_blame.blame_name;
 
     if (blame_name == GPU_INST_METRIC_NAME":LAT_GMEM_LMEM") {
-      if (++insts <= _top_regions) {
-        _inspection.top_regions.push_back(inst_blame);
+      _inspection.top_regions.push_back(inst_blame);
+      blame += inst_blame.stall_blame;
+
+      if (++insts >= _top_regions) {
+        break;
       }
     }
   }
@@ -107,12 +106,47 @@ double GPURegisterIncreaseOptimizer::match(const KernelBlame &kernel_blame, cons
 
 double GPURegisterDecreaseOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
   // Match if occupancy is low
+  // Use liveness analysis to find high pressure regions
   return 0.0;
 }
 
 
 double GPULoopUnrollOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
   // Match if inst_blame->from and inst_blame->to are in the same loop
+  double blame = 0.0;
+
+  _inspection.optimization = this->_name;
+
+  auto insts = 0;
+
+  // Find top latency pairs that are in the same loop
+  for (auto &inst_blame : kernel_blame.stall_inst_blames) {
+    auto &blame_name = inst_blame.blame_name;
+
+    if (blame_name.find("LAT_DEP") != std::string::npos ||
+      blame_name.find("LAT_GMEM") != std::string::npos ||
+      blame_name.find("LAT_SYNC") != std::string::npos) {
+      auto *src_struct = inst_blame.src_struct;
+      auto *dst_struct = inst_blame.dst_struct;
+
+      if (src_struct->ancestorLoop() != NULL && dst_struct->ancestorLoop() != NULL &&
+        src_struct->ancestorLoop() == dst_struct->ancestorLoop()) {
+        _inspection.top_regions.push_back(inst_blame);
+        blame += inst_blame.stall_blame;
+
+        if (++insts >= _top_regions) {
+          break;
+        }
+      }
+    }
+  }
+
+  if (blame != 0.0) {
+    _inspection.ratio = blame / kernel_stats.total_samples;
+    _inspection.speedup = kernel_stats.total_samples / (kernel_stats.total_samples -
+      MIN2(kernel_stats.active_samples, blame));
+  }
+
   return 0.0;
 }
 
@@ -121,27 +155,31 @@ double GPULoopNoUnrollOptimizer::match(const KernelBlame &kernel_blame, const Ke
   // Match if instruction fetch latency
   double blame = 0.0;
 
-  if (kernel_blame.lat_blames.find(GPU_INST_METRIC_NAME":LAT_IFET") != kernel_blame.lat_blames.end()) {
-    blame = kernel_blame.lat_blames.at(GPU_INST_METRIC_NAME":LAT_IFET");
+  if (kernel_blame.stall_blames.find(GPU_INST_METRIC_NAME":STL_IFET") != kernel_blame.stall_blames.end()) {
+    blame = kernel_blame.stall_blames.at(GPU_INST_METRIC_NAME":STL_IFET");
   }
 
   _inspection.optimization = this->_name;
 
   auto insts = 0;
   // Find top latency pairs
-  for (auto &inst_blame : kernel_blame.lat_inst_blames) {
+  for (auto &inst_blame : kernel_blame.stall_inst_blames) {
     auto &blame_name = inst_blame.blame_name;
 
     if (blame_name == GPU_INST_METRIC_NAME":LAT_IFET") {
-      if (++insts <= _top_regions) {
-        _inspection.top_regions.push_back(inst_blame);
+      _inspection.top_regions.push_back(inst_blame);
+      blame += inst_blame.stall_blame;
+
+      if (++insts >= _top_regions) {
+        break;
       }
     }
   }
 
   if (blame != 0.0) {
     _inspection.ratio = blame / kernel_stats.total_samples;
-    _inspection.speedup = kernel_stats.total_samples / (kernel_stats.total_samples - blame);
+    _inspection.speedup = kernel_stats.total_samples / (kernel_stats.total_samples -
+      MIN2(kernel_stats.active_samples, blame));
   }
 
   return _inspection.speedup;
@@ -160,10 +198,11 @@ double GPUStrengthReductionOptimizer::match(const KernelBlame &kernel_blame, con
     auto *src_inst = inst_blame.src;
 
     if (_arch->latency(src_inst->op).first >= 10 && src_inst->op.find("MEMORY") == std::string::npos) {
+      _inspection.top_regions.push_back(inst_blame);
       blame += inst_blame.lat_blame;
 
-      if (++insts <= _top_regions) {
-        _inspection.top_regions.push_back(inst_blame);
+      if (++insts >= _top_regions) {
+        break;
       }
     }
   }
@@ -214,25 +253,19 @@ double GPUWarpBalanceOptimizer::match(const KernelBlame &kernel_blame, const Ker
 
 double GPUCodeReorderOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
   // Match if for memory dep and exec dep
+  auto blame = 0.0;
+
   _inspection.optimization = this->_name;
 
-  auto blame = 0.0;
-  for (auto &stall_blame_iter : kernel_blame.stall_blames) {
-    auto blame_name = stall_blame_iter.first;
-    auto blame_metric = stall_blame_iter.second;
-
-    if (blame_name.find(":LAT_GMEM_GMEM") != std::string::npos ||
-      blame_name.find(":LAT_IDEP_DEP") != std::string::npos) {
-      blame += blame_metric;
-    }
-  }
-
   auto insts = 0;
+
   // Find top latency pairs
   for (auto &inst_blame : kernel_blame.stall_inst_blames) {
     if (inst_blame.blame_name.find(":LAT_GMEM_GMEM") != std::string::npos ||
       inst_blame.blame_name.find(":LAT_IDEP_DEP") != std::string::npos) {
       _inspection.top_regions.push_back(inst_blame);
+      blame += inst_blame.stall_blame;
+
       if (++insts >= _top_regions) {
         break;
       }
