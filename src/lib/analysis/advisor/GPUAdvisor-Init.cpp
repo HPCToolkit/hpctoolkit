@@ -163,11 +163,16 @@ void GPUAdvisor::init() {
   auto *block_increase_optimizer = GPUOptimizerFactory(BLOCK_INCREASE, _arch);
   auto *strength_reduction_optimizer = GPUOptimizerFactory(STRENGTH_REDUCTION, _arch);
   auto *register_increase_optimizer = GPUOptimizerFactory(REGISTER_INCREASE, _arch);
+  auto *loop_unroll_optimizer = GPUOptimizerFactory(LOOP_UNROLL, _arch);
+  auto *loop_nounroll_optimizer = GPUOptimizerFactory(LOOP_NOUNROLL, _arch);
 
   // Code optimizers
   _code_optimizers.push_back(code_reorder_optimizer);
   _code_optimizers.push_back(warp_balance_optimizer);
   _code_optimizers.push_back(strength_reduction_optimizer);
+  _code_optimizers.push_back(register_increase_optimizer);
+  _code_optimizers.push_back(loop_unroll_optimizer);
+  _code_optimizers.push_back(loop_nounroll_optimizer);
 
   // Parallel optimizers
   _parallel_optimizers.push_back(occupancy_increase_optimizer);

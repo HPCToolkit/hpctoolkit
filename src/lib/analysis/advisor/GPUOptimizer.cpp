@@ -295,6 +295,12 @@ double GPUFunctionInlineOptimizer::match(const KernelBlame &kernel_blame, const 
 }
 
 
+double GPUFunctionSplitOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
+  // Match if ifetch and device function
+  return 0.0;
+}
+
+
 double GPUSharedMemoryCoalesceOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
   // Match if shared memory latency is high
   return 0.0;
