@@ -161,8 +161,15 @@ getProfileType(const std::string& filenm)
   }
   else if (strncmp(buf, HPCRUNFLAT_FMT_Magic, HPCRUNFLAT_FMT_MagicLen) == 0) {
     ty = ProfType_Flat;
+  }else if(filenm.find(".sparse-db") != std::string::npos){ //YUMENG: is->read didn't work, may need to FIX later
+    ty = ProfType_SparseDBtmp;
+  }else if(filenm.find("thread_major") != std::string::npos){ //YUMENG
+    ty = ProfType_SparseDBthread;
+  }else if(filenm.find("cct_major") != std::string::npos){ //YUMENG
+    ty = ProfType_SparseDBcct;
   }
 
+  
   return ty;
 }
 

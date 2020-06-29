@@ -102,6 +102,15 @@ Analysis::Raw::writeAsText(/*destination,*/ const char* filenm)
   else if (ty == ProfType_Flat) {
     writeAsText_flat(filenm);
   }
+  else if (ty == ProfType_SparseDBtmp) { //YUMENG
+    writeAsText_sparseDBtmp(filenm);
+  }
+  else if (ty == ProfType_SparseDBthread){ //YUMENG
+    writeAsText_sparseDBthread(filenm);
+  }
+  else if (ty == ProfType_SparseDBcct){ //YUMENG
+    writeAsText_sparseDBcct(filenm);
+  }
   else {
     DIAG_Die(DIAG_Unimplemented);
   }
@@ -124,6 +133,135 @@ Analysis::Raw::writeAsText_callpath(const char* filenm)
   delete prof;
 }
 
+//YUMENG
+void
+Analysis::Raw::writeAsText_sparseDBtmp(const char* filenm)
+{
+  if (!filenm) { return; }
+
+  try {
+    FILE* fs = hpcio_fopen_r(filenm);
+    if (!fs) {
+      DIAG_Throw("error opening tmp sparse-db file '" << filenm << "'");
+    }
+
+    hpcrun_fmt_sparse_metrics_t sm;
+    int ret = hpcrun_fmt_sparse_metrics_fread(&sm,fs);
+    if (ret != HPCFMT_OK) {
+      DIAG_Throw("error reading tmp sparse-db file '" << filenm << "'");
+    }
+    hpcrun_fmt_sparse_metrics_fprint(&sm,stdout,NULL, "  ");
+    hpcrun_fmt_sparse_metrics_free(&sm, free);
+    hpcio_fclose(fs);
+  }
+  catch (...) {
+    DIAG_EMsg("While reading '" << filenm << "'...");
+    throw;
+  }
+}
+
+//YUMENG
+bool 
+Analysis::Raw::profileInfoOffsets_sorter(tms_profile_info_t const& lhs, tms_profile_info_t const& rhs) {
+    return lhs.offset< rhs.offset;
+}
+
+//YUMENG
+void
+Analysis::Raw::sortProfileInfo_onOffsets(tms_profile_info_t* x, uint32_t num_prof)
+{
+    std::sort(x,x+num_prof,&profileInfoOffsets_sorter);
+}
+
+//YUMENG
+void
+Analysis::Raw::writeAsText_sparseDBthread(const char* filenm)
+{
+  if (!filenm) { return; }
+
+  try {
+    FILE* fs = hpcio_fopen_r(filenm);
+    FILE* ofs = hpcio_fopen_w("readable_thread_major_sparse.db",1);
+    if (!fs) {
+      DIAG_Throw("error opening thread sparse file '" << filenm << "'");
+    }
+    uint32_t num_prof;
+    tms_profile_info_t* x;
+    int ret = tms_profile_info_fread(&x, &num_prof,fs);
+    if (ret != HPCFMT_OK) {
+      DIAG_Throw("error reading profile information from sparse metrics file '" << filenm << "'");
+    }
+    tms_profile_info_fprint(num_prof,x,ofs);
+    sortProfileInfo_onOffsets(x,num_prof);
+
+    for(uint i = 0; i<num_prof; i++){
+      hpcrun_fmt_sparse_metrics_t sm;
+      sm.num_vals = x[i].num_val;
+      sm.num_nz_cct = x[i].num_nzcct;
+      ret = tms_sparse_metrics_fread(&sm,fs);
+      if (ret != HPCFMT_OK) {
+        DIAG_Throw("error reading sparse metrics data from sparse metrics file '" << filenm << "'");
+      }
+      tms_sparse_metrics_fprint(&sm,ofs,NULL, "  ");
+      tms_sparse_metrics_free(&sm);
+    }
+
+    tms_profile_info_free(&x);
+    
+    hpcio_fclose(fs);
+    hpcio_fclose(ofs);
+  }
+  catch (...) {
+    DIAG_EMsg("While reading '" << filenm << "'...");
+    throw;
+  }
+}
+
+//YUMENG
+void
+Analysis::Raw::writeAsText_sparseDBcct(const char* filenm)
+{
+  if (!filenm) { return; }
+
+  try {
+    FILE* fs = hpcio_fopen_r(filenm);
+    FILE* ofs = hpcio_fopen_w("readable_cct_major_sparse.db",1);
+    if (!fs) {
+      DIAG_Throw("error opening cct sparse file '" << filenm << "'");
+    }
+    uint32_t num_cct;
+    cms_cct_info_t* x;
+    int ret = cms_cct_info_fread(&x, &num_cct,fs);
+    if (ret != HPCFMT_OK) {
+      DIAG_Throw("error reading cct information from sparse metrics file '" << filenm << "'");
+    }
+    cms_cct_info_fprint(num_cct,x,ofs);
+
+    for(uint i = 0; i<num_cct; i++){
+      if(x[i].num_val != 0){
+        cct_sparse_metrics_t csm;
+        csm.num_vals = x[i].num_val;
+        csm.num_nzmid = x[i].num_nzmid;
+        ret = cms_sparse_metrics_fread(&csm,fs);
+        if (ret != HPCFMT_OK) {
+          DIAG_Throw("error reading cct data from sparse metrics file '" << filenm << "'");
+        }
+        cms_sparse_metrics_fprint(&csm,ofs, "  ");
+        cms_sparse_metrics_free(&csm);
+      }
+      
+    }
+
+    cms_cct_info_free(&x);
+   
+    hpcio_fclose(fs);
+    hpcio_fclose(ofs);
+  }
+  catch (...) {
+    DIAG_EMsg("While reading '" << filenm << "'...");
+    throw;
+  }
+}
 
 void
 Analysis::Raw::writeAsText_callpathMetricDB(const char* filenm)

@@ -78,7 +78,7 @@ MYSOURCES = \
 	pipeline.cpp source.cpp context.cpp scope.cpp metric.cpp \
 	module.cpp attributes.cpp dataclass.cpp sink.cpp packedids.cpp \
 	\
-	sources/hpcrun.cpp sources/packed.cpp \
+	sources/hpcrun.cpp sources/packed.cpp sources/hpcrun4.cpp \
 	\
 	sinks/experimentxml.cpp sinks/hpctracedb.cpp sinks/hpcmetricdb.cpp \
 	sinks/packed.cpp \

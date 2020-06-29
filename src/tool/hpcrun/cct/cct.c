@@ -99,18 +99,18 @@ struct cct_node_t {
 
   // ---------------------------------------------------------
   // a persistent node id is assigned for each node. this id
-  // is used both to reassemble a tree when reading it from 
+  // is used both to reassemble a tree when reading it from
   // a file as well as to identify call paths. a call path
   // can simply be represented by the node id of the deepest
   // node in the path.
   // ---------------------------------------------------------
   int32_t persistent_id;
-  
+
  // bundle abstract address components into a data type
   cct_addr_t addr;
 
   bool is_leaf;
-  
+
   // ---------------------------------------------------------
   // tree structure
   // ---------------------------------------------------------
@@ -140,10 +140,10 @@ static struct {
 //
 // ******************* Local Routines ********************
 //
-static uint32_t 
+static uint32_t
 new_persistent_id()
 {
-  // by default, all persistent ids are even; odd ids signify that we need 
+  // by default, all persistent ids are even; odd ids signify that we need
   // to retain them as call path ids associated with a trace.
   // Furthermore, global ids start at 12: 0,1 are special ids, 2-11 are for
   // users (and conceivably hpcrun).
@@ -193,7 +193,7 @@ cct_node_create(cct_addr_t* addr, cct_node_t* parent)
 
 //
 // local comparison macros
-// 
+//
 // NOTE: argument asymmetry due to
 //     type of key value passed in = cct_addr_t*, BUT
 //     type of key in splay tree   = cct_addr_t
@@ -214,13 +214,13 @@ splay(cct_node_t* cct, cct_addr_t* addr)
 
 //
 // helper for walking functions
-// 
+//
 
 //
 // lrs abbreviation for "left-right-self"
 //
 static void
-walk_child_lrs(cct_node_t* cct, 
+walk_child_lrs(cct_node_t* cct,
                cct_op_t op, cct_op_arg_t arg, size_t level,
                void (*wf)(cct_node_t* n, cct_op_t o, cct_op_arg_t a, size_t l))
 {
@@ -246,6 +246,11 @@ walkset_l(cct_node_t* cct, cct_op_t fn, cct_op_arg_t arg, size_t level)
 typedef struct {
   bool count_dummy;
   size_t n;
+
+  //YUMENG: help count number of non-zero values for each cct
+  cct2metrics_t* cct2metrics_map;
+  uint64_t num_nzval;
+  uint32_t num_nzcct;
 } count_arg_t;
 
 static void
@@ -256,6 +261,12 @@ l_count(cct_node_t* n, cct_op_arg_t arg, size_t level)
     return;
   }
 
+  //YUMENG: count the number of non-zero values
+  metric_data_list_t *data_list =
+    hpcrun_get_metric_data_list_specific(&(count_arg->cct2metrics_map), n);
+  uint64_t num_nzval = hpcrun_metric_sparse_count(data_list);
+  (count_arg->num_nzval) += num_nzval;
+  if(num_nzval != 0) (count_arg->num_nzcct)++; 
   (count_arg->n)++;
 }
 
@@ -279,7 +290,12 @@ typedef struct {
   epoch_flags_t flags;
   hpcrun_fmt_cct_node_t* tmp_node;
   cct2metrics_t* cct2metrics_map;
+
+  //YUMENG: get metric values while walking through cct
+  hpcrun_fmt_sparse_metrics_t* sparse_metrics;
+
 } write_arg_t;
+
 
 //
 // Merge the metrics of dummy nodes to their parents
@@ -290,7 +306,7 @@ collapse_dummy_node(cct_node_t *node, cct_op_arg_t arg, size_t level)
   if (!hpcrun_cct_is_dummy(node)) {
     return;
   }
-  
+
   // get thread specific map
   write_arg_t *write_arg = (write_arg_t *)arg;
   cct2metrics_t **map = &(write_arg->cct2metrics_map);
@@ -314,8 +330,31 @@ l_dummy(cct_node_t* n, cct_op_arg_t arg, size_t level)
   bool *dummy = (bool *)arg;
   if (!hpcrun_cct_is_dummy(n)) {
     *dummy = false;
-  } 
+  }
 }
+
+
+#if 0
+//YUMENG: count non_zero values for each cct, already merged with l_count
+static void
+lcount_nzval(cct_node_t* node, cct_op_arg_t arg, size_t level)
+{
+  // avoid writing dummy nodes
+  if (!HPCRUN_CCT_KEEP_DUMMY) {
+    if (hpcrun_cct_is_dummy(node)) {
+      return;
+    }
+  }
+
+  sizes_arg_t* my_arg = (sizes_arg_t*) arg;
+  metric_data_list_t *data_list =
+    hpcrun_get_metric_data_list_specific(&(my_arg->cct2metrics_map), node);
+
+  //count the number of non-zero values
+   uint64_t num_nzval = hpcrun_metric_sparse_count(data_list);
+   (my_arg->num_nzval) += num_nzval;
+}
+#endif
 
 static void
 lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
@@ -345,6 +384,7 @@ lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
   }
 
   write_arg_t* my_arg = (write_arg_t*) arg;
+  hpcrun_fmt_sparse_metrics_t* sparse_metrics = my_arg->sparse_metrics;
   hpcrun_fmt_cct_node_t* tmp = my_arg->tmp_node;
   epoch_flags_t flags = my_arg->flags;
   cct_addr_t* addr    = hpcrun_cct_addr(node);
@@ -352,10 +392,12 @@ lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
   tmp->id = hpcrun_cct_persistent_id(node);
   tmp->id_parent = parent ? hpcrun_cct_persistent_id(parent) : 0;
 
+  //YUMENG: seems no need to inform new prof about being leaf
   // if no children, chg sign of id when written out
-  if (hpcrun_cct_no_children(node) || all_children_dummy) {
-    tmp->id = -tmp->id;
-  }
+  //if (hpcrun_cct_no_children(node) || all_children_dummy) {
+  //  tmp->id = -tmp->id;
+  //}
+
   if (flags.fields.isLogicalUnwind){
     tmp->as_info = addr->as_info;
     lush_lip_init(&tmp->lip);
@@ -365,13 +407,29 @@ lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
   }
   tmp->lm_id = (addr->ip_norm).lm_id;
 
-  // double casts to avoid warnings when pointer is < 64 bits 
+  // double casts to avoid warnings when pointer is < 64 bits
   tmp->lm_ip = (hpcfmt_vma_t) (uintptr_t) (addr->ip_norm).lm_ip;
 
 #if 1
+  // YUMENG's code
+  metric_data_list_t *data_list =
+    hpcrun_get_metric_data_list_specific(&(my_arg->cct2metrics_map), node);
+
+  //set_sparse_copy: copy the values into sparse_metrics
+  uint64_t curr_cct_offset = sparse_metrics->cur_cct_offset; 
+  uint64_t num_nzval = hpcrun_metric_set_sparse_copy(sparse_metrics->values, sparse_metrics->mids, data_list, curr_cct_offset);
+  if(num_nzval != 0){
+    (sparse_metrics->cct_id)[sparse_metrics->num_nz_cct] = tmp->id;
+    (sparse_metrics->cct_off)[sparse_metrics->num_nz_cct] = curr_cct_offset;
+    (sparse_metrics->num_nz_cct)++;
+  }
+  sparse_metrics->cur_cct_offset += num_nzval;
+
+  tmp->num_metrics = 0;
+#elif 0
   // keren's code
   tmp->num_metrics = my_arg->num_kind_metrics;
-  metric_data_list_t *data_list = 
+  metric_data_list_t *data_list =
     hpcrun_get_metric_data_list_specific(&(my_arg->cct2metrics_map), node);
   hpcrun_metric_set_dense_copy(tmp->metrics, data_list, my_arg->num_kind_metrics);
 #else
@@ -381,6 +439,7 @@ lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
 
   hpcrun_metric_set_dense_copy(tmp->metrics, ms, my_arg->num_metrics);
 #endif
+
   hpcrun_fmt_cct_node_fwrite(tmp, flags, my_arg->fs);
 }
 
@@ -392,13 +451,13 @@ lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
 // ********** Constructors
 //
 
-cct_node_t* 
+cct_node_t*
 hpcrun_cct_new(void)
 {
   return cct_node_create(&(ADDR(CCT_ROOT)), NULL);
 }
 
-cct_node_t* 
+cct_node_t*
 hpcrun_cct_new_partial(void)
 {
   return cct_node_create(&(ADDR(PARTIAL_ROOT)), NULL);
@@ -420,9 +479,9 @@ hpcrun_cct_top_new(uint16_t lmid, uintptr_t lmip)
   return cct_node_create(&(ADDR2(lmid, lmip)), NULL);
 }
 
-// 
+//
 // ********** Accessor functions
-// 
+//
 cct_node_t*
 hpcrun_cct_parent(cct_node_t* x)
 {
@@ -535,7 +594,7 @@ hpcrun_cct_insert_addr(cct_node_t* node, cct_addr_t* frm)
     //
 
   node->children = found;
- 
+
   if (found && cct_addr_eq(frm, &(found->addr))){
     return found;
   }
@@ -577,7 +636,7 @@ hpcrun_cct_delete_addr(cct_node_t* node, cct_addr_t* frm)
 
   node->children = found;
 
-  if(!found || !cct_addr_eq(frm, &(found->addr))) 
+  if(!found || !cct_addr_eq(frm, &(found->addr)))
     return NULL;
 
   if(node->children->left == NULL) {
@@ -646,7 +705,7 @@ hpcrun_cct_insert_node(cct_node_t* target, cct_node_t* src)
   if (! found) {
     return src;
   }
-  
+
   // NOTE: Assume equality cannot happen
 
   if (cct_addr_lt(&(src->addr), &(found->addr))){
@@ -663,7 +722,7 @@ hpcrun_cct_insert_node(cct_node_t* target, cct_node_t* src)
 }
 
 // mark a node for retention as the leaf of a traced call path.
-// for marked nodes, hpcprof must preserve the association between 
+// for marked nodes, hpcprof must preserve the association between
 // the node number recorded in the trace and its call path so that
 // hpctraceviewer can recover the call path for a trace record.
 void
@@ -768,29 +827,45 @@ hpcrun_cct_insert_path(cct_node_t ** root, cct_node_t* path)
   hpcrun_walk_path(path, l_insert_path, (cct_op_arg_t) root);
 }
 
-
-//
-// Writing operation
-//
+#if 0
 int
 hpcrun_cct_fwrite(cct2metrics_t* cct2metrics_map, cct_node_t* cct, FILE* fs, epoch_flags_t flags)
+#else
+//YUMENG: add sparse_metrics to collect metric values
+int
+hpcrun_cct_fwrite(cct2metrics_t* cct2metrics_map, cct_node_t* cct, FILE* fs, epoch_flags_t flags, hpcrun_fmt_sparse_metrics_t* sparse_metrics)
+#endif
 {
   if (!fs) return HPCRUN_ERR;
 
+  //YUMENG: count number of nodes & number of non-zero values for all nodes
   size_t nodes = 0;
+  uint64_t num_nzval = 0;
+  uint32_t num_nzcct = 0;
   if (HPCRUN_CCT_KEEP_DUMMY) {
-    nodes = hpcrun_cct_num_nodes(cct, true);
+    nodes = hpcrun_cct_num_nodes(cct, true, &cct2metrics_map, &num_nzval, &num_nzcct);
   } else {
-    nodes = hpcrun_cct_num_nodes(cct, false);
+    nodes = hpcrun_cct_num_nodes(cct, false, &cct2metrics_map, &num_nzval, &num_nzcct);
   }
+  sparse_metrics->num_cct = nodes;
+
+  //YUMENG: record cct_id:cct_off pair
+  sparse_metrics->cur_cct_offset = 0;
+  sparse_metrics->cct_off = (uint64_t *) hpcrun_malloc((num_nzcct)*sizeof(uint64_t));
+  sparse_metrics->cct_id = (uint32_t *) hpcrun_malloc((num_nzcct)*sizeof(uint32_t));
+  sparse_metrics->num_nz_cct = 0;
 
   hpcfmt_int8_fwrite((uint64_t) nodes, fs);
   TMSG(DATA_WRITE, "num cct nodes = %d", nodes);
 
   hpcfmt_uint_t num_kind_metrics = hpcrun_get_num_kind_metrics();
   TMSG(DATA_WRITE, "num metrics in a cct node = %d", num_kind_metrics);
-  
+
   hpcrun_fmt_cct_node_t tmp_node;
+
+  sparse_metrics->num_vals = num_nzval;
+  sparse_metrics->values = (cct_metric_data_t *) hpcrun_malloc(num_nzval * sizeof(cct_metric_data_t));
+  sparse_metrics->mids = (uint16_t *) hpcrun_malloc(num_nzval * sizeof(uint16_t));
 
   write_arg_t write_arg = {
     .num_kind_metrics = num_kind_metrics,
@@ -800,17 +875,35 @@ hpcrun_cct_fwrite(cct2metrics_t* cct2metrics_map, cct_node_t* cct, FILE* fs, epo
 
     // multithreaded code: add personalized cct2metrics_map for multithreading programs
     // this is to allow a thread to write the profile data of another thread.
-    .cct2metrics_map = cct2metrics_map
+    .cct2metrics_map = cct2metrics_map,
+
+    //YUMENG: collect metric values and info while walking through the cct
+    .sparse_metrics = sparse_metrics
   };
-  
+
+
+//YUMENG: no metricTbl info needed to write cct
+#if 0
   hpcrun_metricVal_t metrics[num_kind_metrics];
   tmp_node.metrics = &(metrics[0]);
+#endif
 
   if (!HPCRUN_CCT_KEEP_DUMMY) {
     hpcrun_cct_walk_child_1st(cct, collapse_dummy_node, &write_arg);
   }
   hpcrun_cct_walk_node_1st(cct, lwrite, &write_arg);
 
+
+  //try to make sure the recorded info are correct
+  if(sparse_metrics->num_nz_cct != num_nzcct) {
+    EEMSG("ERROR: recorded number of non-zeros ccts don't match");
+    return HPCRUN_ERR;
+  }
+  if(sparse_metrics->cur_cct_offset != sparse_metrics->num_vals){
+    EEMSG("ERROR: number of nzvals and cur_cct_offset are not equal after walking through the cct tree");
+    return HPCRUN_ERR;
+  } 
+    
   return HPCRUN_OK;
 }
 
@@ -818,13 +911,21 @@ hpcrun_cct_fwrite(cct2metrics_t* cct2metrics_map, cct_node_t* cct, FILE* fs, epo
 // Utilities
 //
 size_t
-hpcrun_cct_num_nodes(cct_node_t* cct, bool count_dummy)
+hpcrun_cct_num_nodes(cct_node_t* cct, bool count_dummy, cct2metrics_t **cct2metrics_map,uint64_t* num_nzval, uint32_t* num_nzcct)
 {
   count_arg_t count_arg = {
     .count_dummy = count_dummy,
     .n = 0,
+
+    //YUMENG: count number of non-zero values
+    .cct2metrics_map = *cct2metrics_map,
+    .num_nzval = *num_nzval,
+    .num_nzcct = *num_nzcct
   };
   hpcrun_cct_walk_node_1st(cct, l_count, &count_arg);
+  *cct2metrics_map = count_arg.cct2metrics_map;
+  *num_nzval = count_arg.num_nzval;
+  *num_nzcct = count_arg.num_nzcct;
   return count_arg.n;
 }
 
@@ -848,7 +949,7 @@ hpcrun_cct_find_addr(cct_node_t* cct, cct_addr_t* addr)
     //
 
   cct->children = found;
- 
+
   if (found && cct_addr_eq(addr, &(found->addr))){
     return found;
   }
@@ -996,12 +1097,12 @@ cct_child_find_cache(cct_node_t* cct, cct_addr_t* addr)
 static void
 cct_disjoint_union_cached(cct_node_t* target, cct_node_t* src)
 {
-  
+
   if ( ! target) {
     if ( src) EMSG("WARNING: cct disjoin union called w null target!!");
     return;
   }
-    
+
   cct_addr_t* addr = hpcrun_cct_addr(src);
   cct_node_t* found    = splay(target->children, addr);  // FIXME: vi3: is it possible that splay returns something which address is not equal to addre
     //
@@ -1118,4 +1219,3 @@ hpcrun_cct_set_parent(cct_node_t* cct, cct_node_t* parent)
     return;
   cct->parent = parent;
 }
-

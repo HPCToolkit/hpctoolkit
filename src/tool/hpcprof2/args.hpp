@@ -130,6 +130,8 @@ public:
   enum class Format {
     // experiment.xml + metric-db + hpctrace, the current database format.
     exmldb,
+    // experiment.xml + sparse thing, the indev database format.
+    sparse,
   };
   /// Requested output format
   Format format;

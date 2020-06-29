@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2019-2020, Rice University
+// Copyright ((c)) 2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,37 +44,66 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#include "source.hpp"
+#ifndef HPCTOOLKIT_PROFILE_SOURCES_HPCRUN4_H
+#define HPCTOOLKIT_PROFILE_SOURCES_HPCRUN4_H
 
-#include "util/log.hpp"
-#include "sources/hpcrun.hpp"
-#include "sources/hpcrun4.hpp"
+#include "../source.hpp"
 
-#include <stdexcept>
+#include <memory>
+#include "../stdshim/filesystem.hpp"
 
-using namespace hpctoolkit;
+// Forward declaration of a structure.
+extern "C" typedef struct hpcrun_sparse_file hpcrun_sparse_file_t;
 
-std::unique_ptr<ProfileSource> ProfileSource::create_for(const stdshim::filesystem::path& p) {
-  // All we do is go down the list and try every file-based source.
-  // If anything goes wrong the constructors will throw.
-  // TODO: Change this API to actually be good. Somehow.
-  std::unique_ptr<ProfileSource> r;
-  try { r.reset(new sources::HpcrunFSv2(p)); } catch(...) {};
-  if(r) return r;
-  try { r.reset(new sources::Hpcrun4(p)); } catch(...) {};
-  if(r) return r;
-  r.reset();
-  return r;
+namespace hpctoolkit::sources {
+
+/// ProfileSource for version 4.0 of the hpcrun file format. Uses the new
+/// sparse format for bits.
+class Hpcrun4 final : public ProfileSource {
+public:
+  ~Hpcrun4();
+
+  // You shouldn't create these directly, use ProfileSource::create_for
+  Hpcrun4() = delete;
+
+  /// Read in enough data to satify a request or until a timeout is reached.
+  /// See `ProfileSource::read(...)`.
+  void read(const DataClass&) override;
+
+  DataClass provides() const noexcept override;
+
+private:
+  // Transfer of attributes from header-open time to read-time.
+  bool attrsValid;
+  ProfileAttributes attrs;
+  bool tattrsValid;
+  ThreadAttributes tattrs;
+
+  // Tracefile setup and arrangements.
+  bool setupTrace() noexcept;
+  Thread::Temporary* thread;
+
+  // The actual file. Details for reading handled in prof-lean.
+  hpcrun_sparse_file_t* file;
+  stdshim::filesystem::path path;
+
+  // The various ID to Object mappings.
+  std::unordered_map<unsigned int, Metric&> metrics;
+  std::unordered_map<unsigned int, bool> metricInt;
+  std::unordered_map<unsigned int, Module&> modules;
+  std::unordered_map<unsigned int, Context*> nodes;  // nullptr = Global Context
+  unsigned int partial_node_id;  // ID for the partial unwind fake root node
+  unsigned int unknown_node_id;  // ID for unwinds that start from "nowhere," but somehow aren't partial.
+
+  // Path to the tracefile, and offset of the actual data blob.
+  stdshim::filesystem::path tracepath;
+  long trace_off;
+
+  // We're all friends here.
+  friend std::unique_ptr<ProfileSource> ProfileSource::create_for(const stdshim::filesystem::path&);
+  Hpcrun4(const stdshim::filesystem::path&);
+};
+
 }
 
-void ProfileSource::bindPipeline(ProfilePipeline::Source&& se) noexcept {
-  sink = std::move(se);
-}
-
-bool ProfileSource::read(const DataClass&, ProfilePipeline::timeout_t) {
-  util::log::fatal() << "Source is not able to handle a timeout!";
-}
-
-void ProfileSource::read(const DataClass& min) {
-  read(min, ProfilePipeline::timeout_forever);
-}
+#endif  // HPCTOOLKIT_PROFILE_SOURCES_HPCRUN4_H

@@ -103,6 +103,7 @@ static const char HPCPROF_MetricDBSfx[] = "metric-db";
 
 static const char HPCPROF_TmpFnmSfx[] = "tmp";
 
+//***************************************************************************
 
 //***************************************************************************
 // hdr
@@ -111,7 +112,7 @@ static const char HPCPROF_TmpFnmSfx[] = "tmp";
 // N.B.: The header string is 24 bytes of character data
 
 static const char HPCRUN_FMT_Magic[]   = "HPCRUN-profile____"; // 18 bytes
-static const char HPCRUN_FMT_Version[] = "03.00";              // 5 bytes
+static const char HPCRUN_FMT_Version[] = "04.00";              // 5 bytes
 static const char HPCRUN_FMT_Endian[]  = "b";                  // 1 byte
 
 static const int HPCRUN_FMT_MagicLen   = (sizeof(HPCRUN_FMT_Magic) - 1);
@@ -376,7 +377,7 @@ typedef struct metric_desc_t {
   hpcrun_metricFlags_t flags;
 
   uint64_t period;
-  
+
   metric_desc_properties_t properties;
 
   char* formula;
@@ -394,6 +395,7 @@ typedef HPCFMT_List(metric_desc_t) metric_tbl_t; // hpcrun_metricTbl_t
 typedef metric_desc_t* metric_desc_p_t;
 HPCFMT_List_declare(metric_desc_p_t);
 typedef HPCFMT_List(metric_desc_p_t) metric_desc_p_tbl_t; // HPCFMT_List of metric_desc_t*
+
 
 extern int
 hpcrun_fmt_metricTbl_fread(metric_tbl_t* metric_tbl, metric_aux_info_t **aux_info, FILE* in,
@@ -426,11 +428,11 @@ hpcrun_fmt_metricDesc_free(metric_desc_t* x, hpcfmt_free_fn dealloc);
 // metric get and set
 // ---------------------------------------------------------
 
-double 
+double
 hpcrun_fmt_metric_get_value(metric_desc_t metric_desc, hpcrun_metricVal_t metric);
 
 void
-hpcrun_fmt_metric_set_value(metric_desc_t metric_desc, 
+hpcrun_fmt_metric_set_value(metric_desc_t metric_desc,
    hpcrun_metricVal_t *metric, double value);
 
 void
@@ -457,10 +459,8 @@ typedef struct loadmap_entry_t {
 
 } loadmap_entry_t;
 
-
 HPCFMT_List_declare(loadmap_entry_t);
 typedef HPCFMT_List(loadmap_entry_t) loadmap_t; // hpcrun_loadmap_t
-
 
 extern int
 hpcrun_fmt_loadmap_fread(loadmap_t* loadmap, FILE* infs, hpcfmt_alloc_fn alloc);
@@ -560,14 +560,20 @@ extern int
 hpcrun_fmt_cct_node_fwrite(hpcrun_fmt_cct_node_t* x,
 			   epoch_flags_t flags, FILE* fs);
 
+#if 0
 extern int
 hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
 			   epoch_flags_t flags, const metric_tbl_t* metricTbl,
 			   const char* pre);
-
+#else
+//YUMENG: no need to parse metricTbl for sparse format
+extern int
+hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
+			   epoch_flags_t flags,const char* pre);
+#endif
 
 // --------------------------------------------------------------------------
-// 
+//
 // --------------------------------------------------------------------------
 
 extern int
@@ -578,6 +584,198 @@ hpcrun_fmt_lip_fwrite(lush_lip_t* x, FILE* fs);
 
 extern int
 hpcrun_fmt_lip_fprint(lush_lip_t* x, FILE* fs, const char* pre);
+
+
+//***************************************************************************
+// sparse metrics - YUMENG
+//***************************************************************************
+
+// --------------------------------------------------------------------------
+// hpcrun_fmt_sparse_metrics_t
+// --------------------------------------------------------------------------
+typedef struct hpcrun_fmt_sparse_metrics_t{
+  uint32_t tid;
+  uint64_t num_vals;
+  uint64_t num_cct;
+  hpcrun_metricVal_t* values;
+  uint16_t* mids;
+
+  uint64_t cur_cct_offset;
+
+  //cct_id : cct_off pair
+  uint32_t *cct_id;
+  uint64_t *cct_off;
+  uint32_t num_nz_cct;
+}hpcrun_fmt_sparse_metrics_t;
+
+typedef struct hpcrun_fmt_sparse_metrics_t hpcrun_fmt_sparse_metrics_t;
+
+extern int
+hpcrun_fmt_sparse_metrics_fread(hpcrun_fmt_sparse_metrics_t* x, FILE* fs);
+
+extern int
+hpcrun_fmt_sparse_metrics_fwrite(hpcrun_fmt_sparse_metrics_t* x, FILE* fs);
+
+extern int
+hpcrun_fmt_sparse_metrics_fprint(hpcrun_fmt_sparse_metrics_t* x, FILE* fs,
+			   const metric_tbl_t* metricTbl, const char* pre);
+
+void
+hpcrun_fmt_sparse_metrics_free(hpcrun_fmt_sparse_metrics_t* x, hpcfmt_free_fn dealloc);
+
+
+// --------------------------------------------------------------------------
+// hpcrun_fmt_footer_t
+// --------------------------------------------------------------------------
+static const uint64_t HPCRUNsm = 0x48504352554E736D;
+
+typedef struct hpcrun_fmt_footer_t{
+  uint64_t hdr_offset;
+  uint64_t loadmap_offset;
+  uint64_t cct_offset;
+  uint64_t met_tbl_offset;
+  uint64_t sm_offset;
+  uint64_t footer_offset;
+  //uint32_t num_cct;
+
+  uint64_t HPCRUNsm;
+}hpcrun_fmt_footer_t;
+
+int
+hpcrun_fmt_footer_fwrite(hpcrun_fmt_footer_t* x, FILE* fs);
+
+int
+hpcrun_fmt_footer_fread(hpcrun_fmt_footer_t* x, FILE* fs);
+
+int
+hpcrun_fmt_footer_fprint(hpcrun_fmt_footer_t* x, FILE* fs, const char* pre);
+
+
+// --------------------------------------------------------------------------
+// hpcrun_sparse_file
+// --------------------------------------------------------------------------
+#define OPENED 0
+#define PAUSED 1
+#define MODE(m) (m == 0) ? "OPENED" : "PAUSED"
+
+static const int SF_SUCCEED = 0;
+static const int SF_END     = 0;
+static const int SF_FAIL    = 1;
+static const int SF_ERR     = -1;
+
+static const int SF_footer_SIZE           = 56; 
+/*
+static const int SF_FOOTER_LENGTH         = 7; 
+static const int SF_FOOTER_hdr            = 0; 
+static const int SF_FOOTER_lm             = 1; 
+static const int SF_FOOTER_num_cct        = 2; 
+static const int SF_FOOTER_cct            = 3; 
+static const int SF_FOOTER_metric_tbl     = 4; 
+static const int SF_FOOTER_sparse_metrics = 5; 
+static const int SF_FOOTER_footer         = 6; */
+
+static const int SF_num_lm_SIZE           = 4; 
+static const int SF_num_metric_SIZE       = 4;
+static const int SF_num_cct_SIZE          = 8;
+static const int SF_cct_node_SIZE         = 18; // id:4 id-parent:4 lm-id:2 im-ip:8
+static const int SF_tid_SIZE              = 4;
+static const int SF_num_val_SIZE          = 8;
+static const int SF_val_SIZE              = 8;
+static const int SF_mid_SIZE              = 2;
+static const int SF_num_nz_cct_SIZE       = 4;
+static const int SF_cct_id_SIZE           = 4;
+static const int SF_cct_off_SIZE          = 8;
+
+typedef struct hpcrun_sparse_file {
+  FILE* file;
+  //size_t footer[7];
+  hpcrun_fmt_footer_t footer;
+
+  //use for Pause, Resume
+  bool mode;
+  size_t cur_pos;
+
+  //keep track for next_xx functions
+  uint64_t num_cct;       //should be 32-bit since cct id is 32-bit, but the original writing in cct section for num_cct is 64-bit
+  uint32_t cct_node_read;
+  size_t metric_bytes_read;
+  uint16_t cur_metric_id; //count the id, metric desc doesn't have it
+  size_t lm_bytes_read;
+  uint32_t sm_block_touched;
+
+  //to read metric values for current block, initialized when hpcrun_sparse_next_block is called
+  size_t cur_block_end; //in terms of number of nzvals 
+  size_t cur_block_start;//in terms of number of nzvals 
+  uint64_t num_nzval;
+  uint32_t num_nz_cct;
+  size_t cct_offset_offset;
+  size_t val_mid_offset;
+  
+
+} hpcrun_sparse_file_t;
+
+hpcrun_sparse_file_t* hpcrun_sparse_open(const char* path);
+int hpcrun_sparse_pause(hpcrun_sparse_file_t* sparse_fs);
+int hpcrun_sparse_resume(hpcrun_sparse_file_t* sparse_fs, const char* path);
+void hpcrun_sparse_close(hpcrun_sparse_file_t* sparse_fs);
+int hpcrun_sparse_check_mode(hpcrun_sparse_file_t* sparse_fs, bool expected, const char* msg);
+
+int hpcrun_sparse_read_hdr(hpcrun_sparse_file_t* sparse_fs, hpcrun_fmt_hdr_t* hdr);
+int hpcrun_sparse_next_lm(hpcrun_sparse_file_t* sparse_fs, loadmap_entry_t* lm);
+int hpcrun_sparse_next_metric(hpcrun_sparse_file_t* sparse_fs, metric_desc_t* m, metric_aux_info_t* perf_info,double fmtVersion);
+int hpcrun_sparse_next_context(hpcrun_sparse_file_t* sparse_fs, hpcrun_fmt_cct_node_t* node);
+int hpcrun_sparse_next_block(hpcrun_sparse_file_t* sparse_fs);
+int hpcrun_sparse_next_entry(hpcrun_sparse_file_t* sparse_fs, hpcrun_metricVal_t* val);
+
+
+// --------------------------------------------------------------------------
+// thread_major_sparse.db hpcproftt helper
+// --------------------------------------------------------------------------
+typedef struct tms_profile_info_t{
+  uint32_t tid;
+  uint64_t num_val;
+  uint32_t num_nzcct;
+  uint64_t offset;
+}tms_profile_info_t;
+
+int tms_profile_info_fwrite(uint32_t num_t,tms_profile_info_t* x, FILE* fs);
+int tms_profile_info_fread(tms_profile_info_t** x, uint32_t* num_prof,FILE* fs);
+int tms_profile_info_fprint(uint32_t num_prof,tms_profile_info_t* x, FILE* fs);
+void tms_profile_info_free(tms_profile_info_t** x);
+
+int tms_sparse_metrics_fread(hpcrun_fmt_sparse_metrics_t* x, FILE* fs);
+int tms_sparse_metrics_fprint(hpcrun_fmt_sparse_metrics_t* x, FILE* fs,
+          const metric_tbl_t* metricTbl, const char* pre);
+void tms_sparse_metrics_free(hpcrun_fmt_sparse_metrics_t* x);
+
+// --------------------------------------------------------------------------
+// cct_major_sparse.db hpcproftt helper
+// --------------------------------------------------------------------------
+typedef struct cms_cct_info_t{
+  uint32_t cct_id;
+  uint64_t num_val;
+  uint16_t num_nzmid;
+  uint64_t offset;
+}cms_cct_info_t;
+
+typedef struct cct_sparse_metrics_t{
+  uint64_t num_vals;
+  uint16_t num_nzmid;
+  hpcrun_metricVal_t* values;
+  uint32_t* tids; 
+  uint16_t* mids;
+  uint64_t* m_offsets;
+}cct_sparse_metrics_t;
+
+int cms_cct_info_fread(cms_cct_info_t** x, uint32_t* num_cct,FILE* fs);
+int cms_cct_info_fprint(uint32_t num_cct,cms_cct_info_t* x, FILE* fs);
+void cms_cct_info_free(cms_cct_info_t** x);
+
+int cms_sparse_metrics_fread(cct_sparse_metrics_t* x, FILE* fs);
+int cms_sparse_metrics_fprint(cct_sparse_metrics_t* x, FILE* fs,
+          const char* pre);
+void cms_sparse_metrics_free(cct_sparse_metrics_t* x);
+
 
 
 //***************************************************************************
@@ -596,7 +794,7 @@ static const char HPCTRACE_FMT_Magic[]   = "HPCRUN-trace______"; // 18 bytes
 static const char HPCTRACE_FMT_Version[] = "01.01";              // 5 bytes
 static const char HPCTRACE_FMT_Endian[]  = "b";                  // 1 byte
 
-// Use of bit fields is not recommended as the order of fields 
+// Use of bit fields is not recommended as the order of fields
 // is compiler and architecture dependent.
 /*
 typedef struct hpctrace_hdr_flags_bitfield {
@@ -670,16 +868,16 @@ hpctrace_fmt_hdr_fprint(hpctrace_fmt_hdr_t* hdr, FILE* fs);
 // Time and dLCA is stored in one 64-bit integer (not true at present)
 
 // Time in nanoseconds is stored in lower HPCTRACE_FMT_TIME_BITS bits.
-#define HPCTRACE_FMT_TIME_BITS 64 
+#define HPCTRACE_FMT_TIME_BITS 64
 #if 0
-#define HPCTRACE_FMT_TIME_MAX ((~(0ULL)) >> (64 - HPCTRACE_FMT_TIME_BITS)) 
+#define HPCTRACE_FMT_TIME_MAX ((~(0ULL)) >> (64 - HPCTRACE_FMT_TIME_BITS))
 #define HPCTRACE_FMT_GET_TIME(bits) \
   (bits & HPCTRACE_FMT_TIME_MAX)
 #define HPCTRACE_FMT_SET_TIME(bits, time) \
   bits = (bits & (~HPCTRACE_FMT_TIME_MAX)) | (time & HPCTRACE_FMT_TIME_MAX)
-// dLCA = distance of previous sample's leaf call frame to 
+// dLCA = distance of previous sample's leaf call frame to
 // the Least Common Ancestor (LCA) with this sample in the CCT.
-// dLCA is only valid when trampoline is used. 
+// dLCA is only valid when trampoline is used.
 // dLCA is stored in higher HPCTRACE_FMT_DLCA_BITS bits, supporting up to 1023.
 #define HPCTRACE_FMT_DLCA_BITS 10 // Use 10 bits to store dLCA.
 #define HPCTRACE_FMT_DLCA_NULL ((1ULL << HPCTRACE_FMT_DLCA_BITS) - 1) // 10 bits of 1s

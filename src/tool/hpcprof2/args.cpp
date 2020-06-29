@@ -91,7 +91,8 @@ Output Options:
   -n, --title=NAME            Specify a title for the output database.
   -f, --format=FORMAT
                               Specify the database output format.
-                              Currently only `exmldb' is supported.
+                              Default is `exmldb` for the usual format,
+                              using `sparse` outputs in the new sparse format.
       --never-merge-lines
                               Always output an instruction-level database, even
                               in cases where the output format is not able to
@@ -231,6 +232,7 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
     case 'f': {
       std::string form(optarg);
       if(form == "exmldb") format = Format::exmldb;
+      else if(form == "sparse") format = Format::sparse;
       else {
         std::cerr << "Unrecognized output format '" << form << "'!\n";
         std::exit(2);

@@ -91,7 +91,6 @@ static epoch_flags_t epoch_flags = {
 static const uint64_t default_measurement_granularity = 1;
 
 
-
 //*****************************************************************************
 // local utilities
 //*****************************************************************************
@@ -199,14 +198,21 @@ lazy_open_data_file(core_profile_trace_data_t * cptd)
 			HPCRUN_FMT_NV_traceMinTime, traceMinTimeStr,
 			HPCRUN_FMT_NV_traceMaxTime, traceMaxTimeStr,
                         NULL);
+  
   return fs;
 }
 
-
+#if 0
 static int
 write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch)
+#else
+//YUMENG: add footer
+static int
+write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_fmt_footer_t* footer)
+#endif
 {
-  uint32_t num_epochs = 0;
+  //YUMENG: no epoch info needed
+  //uint32_t num_epochs = 0;
 
   if (! hpcrun_sample_prob_active())
     return HPCRUN_OK;
@@ -216,6 +222,9 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch)
   //
 
   epoch_t* current_epoch = epoch;
+
+//YUMENG: no epoch info needed
+#if 0
   for(epoch_t* s = current_epoch; s; s = s->next) {
     num_epochs++;
   }
@@ -223,7 +232,7 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch)
   TMSG(EPOCH, "Actual # epochs = %d", num_epochs);
 
   TMSG(DATA_WRITE, "writing # epochs = %d", num_epochs);
-
+#endif
   //
   // for each epoch ...
   //
@@ -238,6 +247,9 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch)
       }
     }
 #endif
+
+//YUMENG: no epoch info needed
+#if 0
     //
     //  == epoch header ==
     //
@@ -255,22 +267,7 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch)
 			       default_measurement_granularity,
 			       "TODO:epoch-name","TODO:epoch-value",
 			       NULL);
-
-    //
-    // == metrics ==
-    //
-
-    kind_info_t *curr = NULL;
-    metric_desc_p_tbl_t *metric_tbl = hpcrun_get_metric_tbl(&curr);
-
-    hpcfmt_int4_fwrite(hpcrun_get_num_kind_metrics(), fs);
-    while (curr != NULL) {
-      TMSG(DATA_WRITE, "metric tbl len = %d", metric_tbl->len);
-      hpcrun_fmt_metricTbl_fwrite(metric_tbl, cptd->perf_event_info, fs);
-      metric_tbl = hpcrun_get_metric_tbl(&curr);
-    }
-
-    TMSG(DATA_WRITE, "Done writing metric data");
+#endif
 
     //
     // == load map ==
@@ -293,31 +290,107 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch)
       hpcrun_fmt_loadmapEntry_fwrite(&lm_entry, fs);
     }
 
+    //YUMENG: set footer  
+   //if(footer) footer[SF_FOOTER_cct] = ftell(fs);
+    if(footer) footer->cct_offset = ftell(fs);
+
+    
+
     TMSG(DATA_WRITE, "Done writing loadmap");
+
 
     //
     // == cct ==
     //
 
     cct_bundle_t* cct      = &(s->csdata);
+  #if 0
     int ret = hpcrun_cct_bundle_fwrite(fs, epoch_flags, cct, cptd->cct2metrics_map);
+  #else
+ //YUMENG: set up sparse_metrics and walk through cct
+ 
+  //initialize the sparse_metrics
+    hpcrun_fmt_sparse_metrics_t sparse_metrics;
+    sparse_metrics.tid = (uint32_t)cptd->id;
+
+  //assign value while writing cct info
+    int ret = hpcrun_cct_bundle_fwrite(fs, epoch_flags, cct, cptd->cct2metrics_map, &sparse_metrics);
+    if(footer){
+      //footer[SF_FOOTER_num_cct] = sparse_metrics.num_cct;
+      //footer[SF_FOOTER_metric_tbl] = ftell(fs);
+      //footer->num_cct        = sparse_metrics.num_cct;
+      footer->met_tbl_offset = ftell(fs);
+    }
+  #endif
+    
     if(ret != HPCRUN_OK) {
-      TMSG(DATA_WRITE, "Error writing tree %#lx", cct);
+      TMSG(DATA_WRITE, "Error writing tree %#lx or collecting sparse metrics", cct);
       TMSG(DATA_WRITE, "Number of tree nodes lost: %ld", cct->num_nodes);
       EMSG("could not save profile data to hpcrun file");
       perror("write_profile_data");
       ret = HPCRUN_ERR; // FIXME: return this value now
     }
     else {
-      TMSG(DATA_WRITE, "saved profile data to hpcrun file ");
+      TMSG(DATA_WRITE, "saved cct data to hpcrun file and recorded profile data as sparse metrics");
     }
+
+#if 1
+    //
+    // == metrics ==
+    //
+
+    kind_info_t *curr = NULL;
+    metric_desc_p_tbl_t *metric_tbl = hpcrun_get_metric_tbl(&curr);
+
+    hpcfmt_int4_fwrite(hpcrun_get_num_kind_metrics(), fs);
+    while (curr != NULL) {
+      TMSG(DATA_WRITE, "metric tbl len = %d", metric_tbl->len);
+      hpcrun_fmt_metricTbl_fwrite(metric_tbl, cptd->perf_event_info, fs);
+      metric_tbl = hpcrun_get_metric_tbl(&curr);
+    }
+
+    //YUMENG: set footer
+    //if(footer) footer[SF_FOOTER_sparse_metrics] = ftell(fs);
+    if(footer) footer->sm_offset = ftell(fs);
+
+    TMSG(DATA_WRITE, "Done writing metric tbl");
+#endif    
     current_loadmap++;
+
+    //
+    // ==  sparse_metrics == YUMENG
+    //
+   
+    if(ret == HPCFMT_OK) { //if return err previously, no need to check this
+      hpcrun_fmt_sparse_metrics_fwrite(&sparse_metrics,fs);
+      TMSG(DATA_WRITE, "Done writing sparse metrics data");
+    }else{
+      EEMSG("Stopped writing metrics data due to error in recording");
+    }
+    //if(footer) footer[SF_FOOTER_footer] = ftell(fs);
+    if(footer) footer->footer_offset = ftell(fs);
+
+    //
+    // == footer == YUMENG
+    //
+    /*
+    if(s->next == NULL){
+      for(int i = 0; i < SF_FOOTER_LENGTH; i++){
+        hpcfmt_int8_fwrite(footer[i],fs);
+      }
+    }
+    */
+    if(s->next == NULL){
+      footer->HPCRUNsm = HPCRUNsm;
+      hpcrun_fmt_footer_fwrite(footer, fs);
+    }
+
+    TMSG(DATA_WRITE, "Done writing footer");
 
   } // epoch loop
 
-  return HPCRUN_OK;
+  return HPCRUN_OK; //YUMENG question: never return HPCRUN_ERR even if error inside
 }
-
 
 void
 hpcrun_flush_epochs(core_profile_trace_data_t * cptd)
@@ -326,7 +399,7 @@ hpcrun_flush_epochs(core_profile_trace_data_t * cptd)
   if (fs == NULL)
     return;
 
-  write_epochs(fs, cptd, cptd->epoch);
+  write_epochs(fs, cptd, cptd->epoch,NULL);
   hpcrun_epoch_reset();
 }
 
@@ -335,12 +408,23 @@ hpcrun_write_profile_data(core_profile_trace_data_t * cptd)
 {
   if(cptd->scale_fn) cptd->scale_fn((void*)cptd);
 
+  //YUMENG: set up footer
+  //size_t footer[SF_FOOTER_LENGTH];
+  //footer[SF_FOOTER_hdr] = 0;
+  hpcrun_fmt_footer_t footer;
+  footer.hdr_offset = 0;
+
   TMSG(DATA_WRITE,"Writing hpcrun profile data");
   FILE* fs = lazy_open_data_file(cptd);
+
+  //YUMENG: set footer
+  //footer[SF_FOOTER_lm] = ftell(fs);
+  footer.loadmap_offset = ftell(fs);
+  
   if (fs == NULL)
     return HPCRUN_ERR;
 
-  write_epochs(fs, cptd, cptd->epoch);
+  write_epochs(fs, cptd, cptd->epoch, &footer);
 
   TMSG(DATA_WRITE,"closing file");
   hpcio_fclose(fs);

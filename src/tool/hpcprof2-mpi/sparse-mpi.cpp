@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2019-2020, Rice University
+// Copyright ((c)) 2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,37 +44,49 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#include "source.hpp"
+#include "sparse.hpp"
+#include <sys/types.h>
+#include <sys/stat.h>
 
-#include "util/log.hpp"
-#include "sources/hpcrun.hpp"
-#include "sources/hpcrun4.hpp"
+#include<cmath>
+#include <omp.h>
 
-#include <stdexcept>
+#include <sstream>
 
 using namespace hpctoolkit;
 
-std::unique_ptr<ProfileSource> ProfileSource::create_for(const stdshim::filesystem::path& p) {
-  // All we do is go down the list and try every file-based source.
-  // If anything goes wrong the constructors will throw.
-  // TODO: Change this API to actually be good. Somehow.
-  std::unique_ptr<ProfileSource> r;
-  try { r.reset(new sources::HpcrunFSv2(p)); } catch(...) {};
-  if(r) return r;
-  try { r.reset(new sources::Hpcrun4(p)); } catch(...) {};
-  if(r) return r;
-  r.reset();
-  return r;
+// Merge function, only called on rank 0. Split since there's the extra
+// argument with all the bits.
+void SparseDB::merge0(int threads, MPI_File& outfile, const std::vector<std::pair<ThreadAttributes,
+    stdshim::filesystem::path>>& inputs) {
+      
+  // At the moment, all we do is write out a series of lines about what files
+  // would have been read in and such.
+  // Since MPI makes this complicated, we stash in a stringstream and then WRITE.
+  std::ostringstream ss;
+  for(const auto& in: inputs) {
+    const auto& attr = in.first;
+    //ss << "Thread [" << attr.mpirank() << "," << attr.threadid() << "] "
+    //   << "written in " << in.second.string() << "\n";
+
+    //YUMENG
+    struct stat buf;
+    stat(in.second.string().c_str(),&buf);
+    ss << "Thread [" << attr.mpirank() << "," << attr.threadid() << "] "
+       << "written in " << in.second.string() << "with size: " << buf.st_size <<"\n";
+  }
+  std::string s = ss.str();
+
+  // Do the actual write
+  MPI_Status stat;
+  MPI_File_write(outfile, s.c_str(), s.size(), MPI_CHAR, &stat);
 }
 
-void ProfileSource::bindPipeline(ProfilePipeline::Source&& se) noexcept {
-  sink = std::move(se);
-}
+// Merge function, only called on rank >0.
+void SparseDB::mergeN(int threads, MPI_File& outfile) {
+  int world_rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
-bool ProfileSource::read(const DataClass&, ProfilePipeline::timeout_t) {
-  util::log::fatal() << "Source is not able to handle a timeout!";
-}
-
-void ProfileSource::read(const DataClass& min) {
-  read(min, ProfilePipeline::timeout_forever);
+  std::vector<std::pair<ThreadAttributes, stdshim::filesystem::path>> my_inputs;
+  
 }

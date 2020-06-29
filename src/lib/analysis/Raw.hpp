@@ -67,6 +67,7 @@
 //*************************** User Include Files ****************************
 
 #include <include/uint.h> 
+#include <lib/prof-lean/hpcrun-fmt.h> //YUMENG
 
 //*************************** Forward Declarations ***************************
 
@@ -85,6 +86,21 @@ writeAsText(/*destination,*/ const std::string& filenm)
 
 void
 writeAsText_callpath(/*destination,*/ const char* filenm);
+
+void
+writeAsText_sparseDBtmp(const char* filenm); //YUMENG
+
+bool 
+profileInfoOffsets_sorter(tms_profile_info_t const& lhs, tms_profile_info_t const& rhs);//YUMENG
+
+void
+sortProfileInfo_onOffsets(tms_profile_info_t* x, uint32_t num_prof);//YUMENG
+
+void
+writeAsText_sparseDBthread(const char* filenm); //YUMENG
+
+void
+writeAsText_sparseDBcct(const char* filenm); //YUMENG
 
 void
 writeAsText_callpathMetricDB(/*destination,*/ const char* filenm);
