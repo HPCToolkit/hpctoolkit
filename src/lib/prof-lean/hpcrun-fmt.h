@@ -599,16 +599,16 @@ static const uint16_t LastMidEnd  = 0x6564;
 typedef struct hpcrun_fmt_sparse_metrics_t{
   uint32_t tid;
   uint64_t num_vals;
-  uint64_t num_cct;
+  uint64_t num_cct_nodes;
   hpcrun_metricVal_t* values;
   uint16_t* mids;
 
-  uint64_t cur_cct_offset;
+  uint64_t cur_cct_node_idx;
 
-  //cct_id : cct_off pair
-  uint32_t *cct_id;
-  uint64_t *cct_off;
-  uint32_t num_nz_cct;
+  //cct_node_id : cct_node_idxs pairs
+  uint32_t *cct_node_ids;
+  uint64_t *cct_node_idxs;
+  uint32_t num_nz_cct_nodes;
 }hpcrun_fmt_sparse_metrics_t;
 
 typedef struct hpcrun_fmt_sparse_metrics_t hpcrun_fmt_sparse_metrics_t;
@@ -683,9 +683,9 @@ static const int SF_tid_SIZE              = 4;
 static const int SF_num_val_SIZE          = 8;
 static const int SF_val_SIZE              = 8;
 static const int SF_mid_SIZE              = 2;
-static const int SF_num_nz_cct_SIZE       = 4;
-static const int SF_cct_id_SIZE           = 4;
-static const int SF_cct_off_SIZE          = 8;
+static const int SF_num_nz_cct_node_SIZE  = 4;
+static const int SF_cct_node_id_SIZE      = 4;
+static const int SF_cct_node_idx_SIZE     = 8;
 
 typedef struct hpcrun_sparse_file {
   FILE* file;
@@ -697,8 +697,8 @@ typedef struct hpcrun_sparse_file {
   size_t cur_pos;
 
   //keep track for next_xx functions
-  uint64_t num_cct;       //should be 32-bit since cct id is 32-bit, but the original writing in cct section for num_cct is 64-bit
-  uint32_t cct_node_read;
+  uint64_t num_cct_nodes;       //should be 32-bit since cct id is 32-bit, but the original writing in cct section for num_cct_nodes is 64-bit
+  uint32_t cct_nodes_read;
   size_t metric_bytes_read;
   uint16_t cur_metric_id; //count the id, metric desc doesn't have it
   size_t lm_bytes_read;
@@ -708,8 +708,8 @@ typedef struct hpcrun_sparse_file {
   size_t cur_block_end; //in terms of number of nzvals 
   size_t cur_block_start;//in terms of number of nzvals 
   uint64_t num_nzval;
-  uint32_t num_nz_cct;
-  size_t cctn_id_off_offset;
+  uint32_t num_nz_cct_nodes;
+  size_t cct_node_id_idx_offset;
   size_t val_mid_offset;
   
 

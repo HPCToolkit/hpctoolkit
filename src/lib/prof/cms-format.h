@@ -81,53 +81,53 @@ extern "C" {
 #endif
 
 //***************************************************************************
-// cms_cct_info_t
+// cms_ctx_info_t
 //***************************************************************************
-const int CMS_num_cct_SIZE      = 4;
-const int CMS_cct_id_SIZE       = 4;
+const int CMS_num_ctx_SIZE      = 4;
+const int CMS_ctx_id_SIZE       = 4;
 const int CMS_num_val_SIZE      = 8;
 const int CMS_num_nzmid_SIZE    = 2;
-const int CMS_cct_offset_SIZE   = 8;
-const int CMS_cct_info_SIZE     = CMS_cct_id_SIZE + CMS_num_val_SIZE + CMS_num_nzmid_SIZE + CMS_cct_offset_SIZE;
+const int CMS_ctx_offset_SIZE   = 8;
+const int CMS_ctx_info_SIZE     = CMS_ctx_id_SIZE + CMS_num_val_SIZE + CMS_num_nzmid_SIZE + CMS_ctx_offset_SIZE;
 
-typedef struct cms_cct_info_t{
-  uint32_t cct_id;
-  uint64_t num_val;
-  uint16_t num_nzmid;
+typedef struct cms_ctx_info_t{
+  uint32_t ctx_id;
+  uint64_t num_vals;
+  uint16_t num_nzmids;
   uint64_t offset;
-}cms_cct_info_t;
+}cms_ctx_info_t;
 
 int
-cms_cct_info_fwrite(cms_cct_info_t* x, uint32_t num_cct, FILE* fs);
+cms_cct_info_fwrite(cms_ctx_info_t* x, uint32_t num_ctx, FILE* fs);
 
 int 
-cms_cct_info_fread(cms_cct_info_t** x, uint32_t* num_cct,FILE* fs);
+cms_cct_info_fread(cms_ctx_info_t** x, uint32_t* num_ctx,FILE* fs);
 
 int 
-cms_cct_info_fprint(uint32_t num_cct, cms_cct_info_t* x, FILE* fs);
+cms_cct_info_fprint(uint32_t num_ctx, cms_ctx_info_t* x, FILE* fs);
 
 void 
-cms_cct_info_free(cms_cct_info_t** x);
+cms_cct_info_free(cms_ctx_info_t** x);
 
 //***************************************************************************
 // cct_sparse_metrics_t
 //***************************************************************************
 const int CMS_mid_SIZE          = 2;
-const int CMS_m_offset_SIZE     = 8;
-const int CMS_m_pair_SIZE       = CMS_mid_SIZE + CMS_m_offset_SIZE;
+const int CMS_m_idx_SIZE        = 8;
+const int CMS_m_pair_SIZE       = CMS_mid_SIZE + CMS_m_idx_SIZE;
 const int CMS_val_SIZE          = 8;
 const int CMS_tid_SIZE          = 4;
 const int CMS_val_tid_pair_SIZE = CMS_val_SIZE + CMS_tid_SIZE;
 
 typedef struct cct_sparse_metrics_t{
-  uint32_t cct_node_id;
+  uint32_t ctx_id;
 
   uint64_t num_vals;
-  uint16_t num_nzmid;
+  uint16_t num_nzmids;
   hpcrun_metricVal_t* values;
   uint32_t* tids; 
   uint16_t* mids;
-  uint64_t* m_offsets;
+  uint64_t* m_idxs;
 }cct_sparse_metrics_t;
 
 int

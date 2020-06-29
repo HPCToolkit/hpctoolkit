@@ -80,17 +80,17 @@
 //***************************************************************************
 
 //***************************************************************************
-// cms_cct_info_t
+// cms_ctx_info_t
 //***************************************************************************
 int
-cms_cct_info_fwrite(cms_cct_info_t* x, uint32_t num_cct, FILE* fs)
+cms_cct_info_fwrite(cms_ctx_info_t* x, uint32_t num_ctx, FILE* fs)
 {
-  HPCFMT_ThrowIfError(hpcfmt_int4_fwrite(num_cct, fs));
+  HPCFMT_ThrowIfError(hpcfmt_int4_fwrite(num_ctx, fs));
 
-  for (uint i = 0; i < num_cct; ++i) {
-    HPCFMT_ThrowIfError(hpcfmt_int4_fwrite(x[i].cct_id, fs));
-    HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x[i].num_val, fs));
-    HPCFMT_ThrowIfError(hpcfmt_int2_fwrite(x[i].num_nzmid, fs));
+  for (uint i = 0; i < num_ctx; ++i) {
+    HPCFMT_ThrowIfError(hpcfmt_int4_fwrite(x[i].ctx_id, fs));
+    HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x[i].num_vals, fs));
+    HPCFMT_ThrowIfError(hpcfmt_int2_fwrite(x[i].num_nzmids, fs));
     HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x[i].offset, fs));
   }
 
@@ -99,16 +99,16 @@ cms_cct_info_fwrite(cms_cct_info_t* x, uint32_t num_cct, FILE* fs)
 
 
 int
-cms_cct_info_fread(cms_cct_info_t** x, uint32_t* num_cct,FILE* fs)
+cms_cct_info_fread(cms_ctx_info_t** x, uint32_t* num_ctx,FILE* fs)
 {
-  HPCFMT_ThrowIfError(hpcfmt_int4_fread(num_cct, fs));
+  HPCFMT_ThrowIfError(hpcfmt_int4_fread(num_ctx, fs));
 
-  cms_cct_info_t * cct_infos = (cms_cct_info_t *) malloc((*num_cct)*sizeof(cms_cct_info_t));
+  cms_ctx_info_t * cct_infos = (cms_ctx_info_t *) malloc((*num_ctx)*sizeof(cms_ctx_info_t));
 
-  for (uint i = 0; i < *num_cct; ++i) {
-    HPCFMT_ThrowIfError(hpcfmt_int4_fread(&(cct_infos[i].cct_id), fs));
-    HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(cct_infos[i].num_val), fs));
-    HPCFMT_ThrowIfError(hpcfmt_int2_fread(&(cct_infos[i].num_nzmid), fs));
+  for (uint i = 0; i < *num_ctx; ++i) {
+    HPCFMT_ThrowIfError(hpcfmt_int4_fread(&(cct_infos[i].ctx_id), fs));
+    HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(cct_infos[i].num_vals), fs));
+    HPCFMT_ThrowIfError(hpcfmt_int2_fread(&(cct_infos[i].num_nzmids), fs));
     HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(cct_infos[i].offset), fs));
   }
 
@@ -118,13 +118,13 @@ cms_cct_info_fread(cms_cct_info_t** x, uint32_t* num_cct,FILE* fs)
 
 
 int
-cms_cct_info_fprint(uint32_t num_cct, cms_cct_info_t* x, FILE* fs)
+cms_cct_info_fprint(uint32_t num_ctx, cms_ctx_info_t* x, FILE* fs)
 {
-  fprintf(fs,"[CCT informations for %d CCTs\n", num_cct);
+  fprintf(fs,"[Context informations for %d Contexts\n", num_ctx);
 
-  for (uint i = 0; i < num_cct; ++i) {
-    fprintf(fs,"  [(node id: %d) (num_nzval: %ld) (num_nzmid: %d) (starting location: %ld)]\n", 
-      x[i].cct_id, x[i].num_val, x[i].num_nzmid, x[i].offset);
+  for (uint i = 0; i < num_ctx; ++i) {
+    fprintf(fs,"  [(context id: %d) (num_vals: %ld) (num_nzmids: %d) (starting location: %ld)]\n", 
+      x[i].ctx_id, x[i].num_vals, x[i].num_nzmids, x[i].offset);
   }
   fprintf(fs,"]\n");
   return HPCFMT_OK;
@@ -132,7 +132,7 @@ cms_cct_info_fprint(uint32_t num_cct, cms_cct_info_t* x, FILE* fs)
 
 
 void
-cms_cct_info_free(cms_cct_info_t** x)
+cms_cct_info_free(cms_ctx_info_t** x)
 {
   free(*x);
   *x = NULL;
@@ -141,7 +141,7 @@ cms_cct_info_free(cms_cct_info_t** x)
 //***************************************************************************
 // cct_sparse_metrics_t
 //***************************************************************************
-/* assume each cct_sparse_metrics_t already got num_vals, num_nzmids, cct_node_id */
+/* assume each cct_sparse_metrics_t already got num_vals, num_nzmids, ctx_id */
 int
 cms_sparse_metrics_fwrite(cct_sparse_metrics_t* x, FILE* fs)
 {
@@ -150,16 +150,16 @@ cms_sparse_metrics_fwrite(cct_sparse_metrics_t* x, FILE* fs)
     HPCFMT_ThrowIfError(hpcfmt_int4_fwrite(x->tids[i], fs));
   }
 
-  for (uint i = 0; i < x->num_nzmid+1; ++i) {
+  for (uint i = 0; i < x->num_nzmids+1; ++i) {
     HPCFMT_ThrowIfError(hpcfmt_int2_fwrite(x->mids[i], fs));
-    HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->m_offsets[i], fs));
+    HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->m_idxs[i], fs));
   }
 
   return HPCFMT_OK;
 
 }
 
-/* assume each cct_sparse_metrics_t already got num_vals, num_nzmids, cct_node_id */
+/* assume each cct_sparse_metrics_t already got num_vals, num_nzmids, ctx_id */
 int
 cms_sparse_metrics_fread(cct_sparse_metrics_t* x, FILE* fs)
 {
@@ -170,11 +170,11 @@ cms_sparse_metrics_fread(cct_sparse_metrics_t* x, FILE* fs)
     HPCFMT_ThrowIfError(hpcfmt_int4_fread(&(x->tids[i]), fs));
   }
 
-  x->mids      = (uint16_t *) malloc((x->num_nzmid+1)*sizeof(uint16_t));
-  x->m_offsets = (uint64_t *) malloc((x->num_nzmid+1)*sizeof(uint64_t));
-  for (uint i = 0; i < x->num_nzmid+1; ++i) {
+  x->mids   = (uint16_t *) malloc((x->num_nzmids+1)*sizeof(uint16_t));
+  x->m_idxs = (uint64_t *) malloc((x->num_nzmids+1)*sizeof(uint64_t));
+  for (uint i = 0; i < x->num_nzmids+1; ++i) {
     HPCFMT_ThrowIfError(hpcfmt_int2_fread(&x->mids[i], fs));
-    HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->m_offsets[i], fs));
+    HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->m_idxs[i], fs));
   }
 
   return HPCFMT_OK;
@@ -187,7 +187,7 @@ cms_sparse_metrics_fprint(cct_sparse_metrics_t* x, FILE* fs, const char* pre, bo
 {
   const char* double_pre = "    ";
 
-  fprintf(fs, "[cct node %d\n", x->cct_node_id);
+  fprintf(fs, "[context %d\n", x->ctx_id);
 
   if(easygrep){
     cms_sparse_metrics_fprint_grep_helper(x, fs, pre);
@@ -199,12 +199,12 @@ cms_sparse_metrics_fprint(cct_sparse_metrics_t* x, FILE* fs, const char* pre, bo
     fprintf(fs, "%s]\n", pre);
   }
 
-  fprintf(fs, "%s[metric offsets:\n",pre);
-  for (uint i = 0; i < x->num_nzmid+1; ++i) {
-    if(i == x->num_nzmid && x->mids[i] == LastMidEnd){
-      fprintf(fs, "%s(metric id: END, offset: %ld)\n%s]\n", double_pre, x->m_offsets[i], pre);
+  fprintf(fs, "%s[metric indices:\n",pre);
+  for (uint i = 0; i < x->num_nzmids+1; ++i) {
+    if(i == x->num_nzmids && x->mids[i] == LastMidEnd){
+      fprintf(fs, "%s(metric id: END, index: %ld)\n%s]\n", double_pre, x->m_idxs[i], pre);
     }else{
-      fprintf(fs, "%s(metric id: %d, offset: %ld)\n", double_pre, x->mids[i],x->m_offsets[i]);
+      fprintf(fs, "%s(metric id: %d, index: %ld)\n", double_pre, x->mids[i],x->m_idxs[i]);
     } 
   }
 
@@ -219,10 +219,10 @@ cms_sparse_metrics_fprint_grep_helper(cct_sparse_metrics_t* x, FILE* fs, const c
   const char* double_pre = "    ";
 
   fprintf(fs, "%s[metrics easy grep version:\n%s(NOTES: metrics for a metric id are printed together, easy to grep)\n", pre, pre);
-  for (uint i = 0; i < x->num_nzmid; ++i) {
+  for (uint i = 0; i < x->num_nzmids; ++i) {
     uint16_t mid = x->mids[i];
-    uint64_t m_off = x->m_offsets[i];
-    uint64_t m_next_off = x->m_offsets[i+1];
+    uint64_t m_off = x->m_idxs[i];
+    uint64_t m_next_off = x->m_idxs[i+1];
 
     fprintf(fs, "%s(metric id: %d) ", double_pre, mid);
 
@@ -244,11 +244,11 @@ cms_sparse_metrics_free(cct_sparse_metrics_t* x)
   free(x->values);
   free(x->tids);
   free(x->mids);
-  free(x->m_offsets);
+  free(x->m_idxs);
 
   x->values    = NULL;
   x->tids      = NULL;
   x->mids      = NULL;
-  x->m_offsets = NULL;
+  x->m_idxs = NULL;
 
 }

@@ -199,8 +199,8 @@ Analysis::Raw::writeAsText_sparseDBthread(const char* filenm, bool easygrep)
     for(uint i = 0; i<num_prof; i++){
       hpcrun_fmt_sparse_metrics_t sm;
       sm.tid = x[i].tid;
-      sm.num_vals = x[i].num_val;
-      sm.num_nz_cct = x[i].num_nzcct;
+      sm.num_vals = x[i].num_vals;
+      sm.num_nz_cct_nodes = x[i].num_nzctxs;
       ret = tms_sparse_metrics_fread(&sm,fs);
       if (ret != HPCFMT_OK) {
         DIAG_Throw("error reading sparse metrics data from sparse metrics file '" << filenm << "'");
@@ -232,20 +232,20 @@ Analysis::Raw::writeAsText_sparseDBcct(const char* filenm, bool easygrep)
     if (!fs) {
       DIAG_Throw("error opening cct sparse file '" << filenm << "'");
     }
-    uint32_t num_cct;
-    cms_cct_info_t* x;
-    int ret = cms_cct_info_fread(&x, &num_cct,fs);
+    uint32_t num_ctx;
+    cms_ctx_info_t* x;
+    int ret = cms_cct_info_fread(&x, &num_ctx,fs);
     if (ret != HPCFMT_OK) {
       DIAG_Throw("error reading cct information from sparse metrics file '" << filenm << "'");
     }
-    cms_cct_info_fprint(num_cct,x,ofs);
+    cms_cct_info_fprint(num_ctx,x,ofs);
 
-    for(uint i = 0; i<num_cct; i++){
-      if(x[i].num_val != 0){
+    for(uint i = 0; i<num_ctx; i++){
+      if(x[i].num_vals != 0){
         cct_sparse_metrics_t csm;
-        csm.cct_node_id = x[i].cct_id;
-        csm.num_vals = x[i].num_val;
-        csm.num_nzmid = x[i].num_nzmid;
+        csm.ctx_id = x[i].ctx_id;
+        csm.num_vals = x[i].num_vals;
+        csm.num_nzmids = x[i].num_nzmids;
         ret = cms_sparse_metrics_fread(&csm,fs);
         if (ret != HPCFMT_OK) {
           DIAG_Throw("error reading cct data from sparse metrics file '" << filenm << "'");

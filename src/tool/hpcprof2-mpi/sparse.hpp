@@ -91,24 +91,30 @@ public:
   void writeThreadMajor(const int threads, 
                         const int world_rank, 
                         const int world_size, 
-                        std::vector<uint64_t>& cct_local_sizes,
-                        std::vector<std::set<uint16_t>>& cct_nzmids);
+                        std::vector<uint64_t>& ctx_nzval_cnts,
+                        std::vector<std::set<uint16_t>>& ctx_nzmids);
 
   //***************************************************************************
   // cct_major_sparse.db  - YUMENG
   //***************************************************************************
-  void writeCCTMajor(std::vector<uint64_t>& cct_local_sizes, std::vector<std::set<uint16_t>>& cct_nzmids,
-    int ctxcnt, int world_rank, int world_size, int threads);
+  void writeCCTMajor(const std::vector<uint64_t>& cct_local_sizes, 
+                     std::vector<std::set<uint16_t>>& cct_nzmids,
+                     const int ctxcnt, 
+                     const int world_rank, 
+                     const int world_size, 
+                     const int threads);
 
   //***************************************************************************
   // General  - YUMENG
   //***************************************************************************
-  #define CCTIDX(c) ((c-1)/2)
-  #define CCTID(c)  (c*2+1)
+  #define CTX_VEC_IDX(c) ((c-1)/2)
+  #define CTXID(c)       (c*2+1)
   
   void merge(int threads, std::size_t ctxcnt);
   template<typename T>
   void exscan(std::vector<T>& data,int threads); 
+  template <typename T, typename MemberT>
+  int struct_member_binary_search(const std::vector<T>& datas, const T target, const MemberT target_type, const int length); 
 
 
   //***************************************************************************
@@ -177,93 +183,275 @@ private:
                        const uint32_t total_prof, 
                        const uint64_t my_offset, 
                        const int threads, 
-                       std::vector<std::pair<uint32_t, uint64_t>>& prof_offsets);
+                       std::vector<uint64_t>& prof_offsets);
 
   //---------------------------------------------------------------------------
   // get profile's real data (bytes)
   //---------------------------------------------------------------------------
-  void interpretOneCctNodeMids(const char* input,
-                               const uint64_t cct_node_size,
-                               std::set<uint16_t>& cct_node_nzmids);
+  void interpretOneCtxMids(const char* input,
+                           const uint64_t ctx_nzval_cnt,
+                           std::set<uint16_t>& ctx_nzmids);
 
-  void interpretOneCctNodeSize(const char* input,
-                               uint64_t& cct_node_size,
-                               uint64_t& cct_node_off);
+  void interpretOneCtxNzvalCnt(const char* input,
+                               uint64_t& ctx_nzval_cnt,
+                               uint64_t& ctx_idx);
 
-  void interpretOneCctNode(const char* size_input, 
-                           const char* mids_input,
-                           std::vector<std::set<uint16_t>>& cct_nzmids,
-                           uint32_t& cct_node_id, 
-                           uint64_t& cct_node_size);                                                 
+  void interpretOneCtxValCntMids(const char* val_cnt_input, 
+                                 const char* mids_input,
+                                 std::vector<std::set<uint16_t>>& ctx_nzmids,
+                                 std::vector<uint64_t>& ctx_nzval_cnts);                                                 
 
   void collectCctMajorData(std::vector<char>& bytes,
-                           std::vector<uint64_t>& cct_local_sizes, 
-                           std::vector<std::set<uint16_t>>& cct_nzmids);
+                           std::vector<uint64_t>& ctx_nzval_cnts, 
+                           std::vector<std::set<uint16_t>>& ctx_nzmids);
 
   //---------------------------------------------------------------------------
   // write profiles 
   //---------------------------------------------------------------------------
 
-  void writeOneProfInfo(const std::vector<char>& bytes, 
-                        const uint64_t offset, 
+  void writeOneProfInfo(const std::vector<char>& info_bytes, 
                         const uint32_t tid,
                         const MPI_File fh);
 
-  void writeOneProfile(const std::vector<char>& bytes, 
-                       const uint64_t offset, 
-                       const uint32_t tid,
-                       const MPI_File fh);
+  void writeOneProfileData(const std::vector<char>& bytes, 
+                           const uint64_t offset, 
+                           const uint32_t tid,
+                           const MPI_File fh);
 
-  void writeProfiles(const std::vector<std::pair<uint32_t, uint64_t>>& prof_offsets, 
+  void writeOneProfile(const hpctoolkit::Thread* threadp,
+                       const MPI_Offset my_prof_offset, 
+                       std::vector<uint64_t>& ctx_nzval_cnts,
+                       std::vector<std::set<uint16_t>>& ctx_nzmids,
+                       MPI_File fh);
+
+  void writeProfiles(const std::vector<uint64_t>& prof_offsets, 
                      const std::vector<std::pair<const hpctoolkit::Thread*,uint64_t>>& profile_sizes,
                      const MPI_File fh, 
                      const int threads,
                      std::vector<uint64_t>& cct_local_sizes,
-                     std::vector<std::set<uint16_t>>& cct_nzmids);
+                     std::vector<std::set<uint16_t>>& ctx_nzmids);
 
 
   //***************************************************************************
   // cct_major_sparse.db  - YUMENG
   //***************************************************************************
-  struct ProfileInfo{
-    uint32_t tid;
-    uint64_t num_val;
-    uint32_t num_nzcct;
-    uint64_t offset;
+  //---------------------------------------------------------------------------
+  // calculate the offset for each cct node's section in cct_major_sparse.db
+  // assign cct nodes to different ranks
+  //---------------------------------------------------------------------------
+  void unionMids(std::vector<std::set<uint16_t>>& ctx_nzmids, 
+                 const int rank, 
+                 const int num_proc, 
+                 const int threads);
+
+  void getLocalCtxOffset(const std::vector<uint64_t>& ctx_val_cnts, 
+                         const std::vector<std::set<uint16_t>>& ctx_nzmids,
+                         const int threads, 
+                         const int rank,
+                         std::vector<uint64_t>& ctx_off);
+  
+  void getGlobalCtxOffset(const std::vector<uint64_t>& local_ctx_off,
+                          std::vector<uint64_t>& global_ctx_off);
+  
+  void getCtxOffset(const std::vector<uint64_t>& ctx_val_cnts, 
+                    const std::vector<std::set<uint16_t>>& ctx_nzmids,
+                    const int threads, 
+                    const int rank,
+                    std::vector<uint64_t>& ctx_off);
+                    
+  void getMyCtxs(const std::vector<uint64_t>& ctx_off,
+                 const int num_ranks, 
+                 const int rank,
+                 std::vector<uint32_t>& my_ctxs);
+                 
+  void updateCtxOffset(const size_t ctxcnt, 
+                       const int threads, 
+                       std::vector<uint64_t>& ctx_off);
+  
+
+  //---------------------------------------------------------------------------
+  // get a list of profile info
+  //---------------------------------------------------------------------------
+  void interpretOneProfInfo(const char *input,
+                            tms_profile_info_t& pi);
+
+  void readProfileInfo(const int threads, 
+                       const MPI_File fh,
+                       std::vector<tms_profile_info_t>& prof_info);
+
+
+  //---------------------------------------------------------------------------
+  // read and interpret one profie - CtxIdIdxPairs
+  //---------------------------------------------------------------------------
+  const int SPARSE_NOT_FOUND = -1;
+  const int SPARSE_END       = -2;
+
+  struct TMS_CtxIdIdxPair{
+    uint32_t ctx_id;  // = cct node id
+    uint64_t ctx_idx; //starting location of the context's values in value array
   };
 
-  //TODO: change names... these are bad...
-  struct DataBlock{
+  void interpretOneCtxIdIdxPair(const char *input,
+                                TMS_CtxIdIdxPair& ctx_pair);
+                        
+  int readCtxIdIdxPairs(const MPI_File fh, 
+                        const MPI_Offset off, 
+                        std::vector<TMS_CtxIdIdxPair>& ctx_id_idx_pairs);
+
+  int findOneCtxIdIdxPair(const uint32_t target_ctx_id,
+                          const std::vector<TMS_CtxIdIdxPair>& profile_ctx_pairs,
+                          const uint length, 
+                          const bool found,
+                          const int found_ctx_idx, 
+                          std::vector<TMS_CtxIdIdxPair>& my_ctx_pairs);
+
+  void findCtxIdIdxPairs(const std::vector<uint32_t>& ctx_ids,
+                         const std::vector<TMS_CtxIdIdxPair>& profile_ctx_pairs,
+                         std::vector<TMS_CtxIdIdxPair>& my_ctx_pairs);
+
+
+  int getMyCtxIdIdxPairs(const tms_profile_info_t& prof_info,
+                         const std::vector<uint32_t>& ctx_ids,
+                         const MPI_File fh,
+                         std::vector<TMS_CtxIdIdxPair>& my_ctx_pairs);
+
+
+  //---------------------------------------------------------------------------
+  // read and interpret one profie - ValMid
+  //---------------------------------------------------------------------------
+  struct MetricValBlock{
     uint16_t mid;
-    uint32_t num_values; // can be set at the end, used as offset for mid
+    uint32_t num_values; // can be set at the end, used as idx for mid
     std::vector<std::pair<hpcrun_metricVal_t,uint32_t>> values_tids;
   };
 
-  struct CCTDataPair{
-    uint32_t cctid;
-    std::vector<DataBlock> datas;
+  struct CtxMetricBlock{
+    uint32_t ctx_id;
+    std::vector<MetricValBlock> metrics;
   };
 
-  void unionMids(std::vector<std::set<uint16_t>>& cct_nzmids, int rank, int num_proc, int threads);
-  void getCctOffset(std::vector<uint64_t>& cct_sizes, std::vector<std::set<uint16_t>>& cct_nzmids,
-    std::vector<std::pair<uint32_t, uint64_t>>& cct_off,int threads, int rank);
-  void getMyCCTs(std::vector<std::pair<uint32_t, uint64_t>>& cct_off,
-    std::vector<uint32_t>& my_ccts, int num_ranks, int rank);
-  void updateCctOffset(std::vector<std::pair<uint32_t, uint64_t>>& cct_off, size_t ctxcnt, int threads);
+  void readValMidsBytes(const std::vector<TMS_CtxIdIdxPair>& my_ctx_pairs,
+                        const tms_profile_info_t& prof_info,
+                        const MPI_File fh,
+                        std::vector<char>& bytes);
+
+  MetricValBlock createNewMetricValBlock(const hpcrun_metricVal_t val, 
+                                         const uint16_t mid,
+                                         const uint32_t tid);
+
+
+  CtxMetricBlock createNewCtxMetricBlock(const hpcrun_metricVal_t val, 
+                                         const uint16_t mid,
+                                         const uint32_t tid,
+                                         const uint32_t ctx_id);
+
+
+  void insertValMidPair2OneCtxMetBlock(const hpcrun_metricVal_t val, 
+                                       const uint16_t mid,
+                                       const uint32_t tid,
+                                       CtxMetricBlock& cmb);
+
+  void insertValMidCtxId2CtxMetBlocks(const hpcrun_metricVal_t val, 
+                                      const uint16_t mid,
+                                      const uint32_t tid,
+                                      const uint32_t ctx_id,
+                                      std::vector<CtxMetricBlock>& ctx_met_blocks);
+
+  void interpretOneValMidPair(const char *input,
+                              hpcrun_metricVal_t& val,
+                              uint16_t& mid);
+
+  void interpretValMidsBytes(char *vminput,
+                             const uint32_t tid,
+                             const std::vector<TMS_CtxIdIdxPair>& my_ctx_pairs,
+                             std::vector<CtxMetricBlock>& ctx_met_blocks);
+
   
-  void readProfileInfo(std::vector<ProfileInfo>& prof_info, int threads, MPI_File fh);
-  int readCCToffsets(std::vector<std::pair<uint32_t,uint64_t>>& cct_offsets,
-    MPI_File fh,MPI_Offset off);
-  void binarySearchCCTid(std::vector<uint32_t>& cct_ids,
-    std::vector<std::pair<uint32_t,uint64_t>>& profile_cct_offsets,
-    std::vector<std::pair<uint32_t,uint64_t>>& my_cct_offsets);
-  void readOneProfile(std::vector<uint32_t>& cct_ids, ProfileInfo& prof_info,
-     std::vector<CCTDataPair>& cct_data_pairs,MPI_File fh);
-  void dataPairs2Bytes(std::vector<CCTDataPair>& cct_data_pairs, 
-    std::vector<std::pair<uint32_t, uint64_t>>& cct_off,std::vector<uint32_t>& cct_ids,
-    std::vector<char>& info_bytes,std::vector<char>& metrics_bytes, int threads);
-  void rwOneCCTgroup(std::vector<uint32_t>& cct_ids, std::vector<ProfileInfo>& prof_info, 
-    std::vector<std::pair<uint32_t, uint64_t>>& cct_off, int threads, MPI_File fh, MPI_File ofh);
+  void readOneProfile(const std::vector<uint32_t>& ctx_ids, 
+                      const tms_profile_info_t& prof_info,
+                      const MPI_File fh,
+                      std::vector<CtxMetricBlock>& ctx_met_blocks);
+
+
+  //---------------------------------------------------------------------------
+  // read and interpret ALL profies 
+  //---------------------------------------------------------------------------
+
+  void mergeCtxMetBlocks(const CtxMetricBlock& source,
+                         CtxMetricBlock& dest);
+
+  void mergeOneCtxAllThreadBlocks(const std::vector<std::vector<CtxMetricBlock> *>& threads_ctx_met_blocks,
+                                  CtxMetricBlock& dest);
+
+  void sortCtxMetBlocks(std::vector<CtxMetricBlock>& ctx_met_blocks);
+
+  void readProfiles(const std::vector<uint32_t>& ctx_ids, 
+                    const std::vector<tms_profile_info_t>& prof_info,
+                    int threads,
+                    MPI_File fh,
+                    std::vector<CtxMetricBlock>& ctx_met_blocks);                    
+
+
+  //---------------------------------------------------------------------------
+  // convert ctx_met_blocks to correct bytes for writing
+  //---------------------------------------------------------------------------
+  int convertOneMetricValBlock(const MetricValBlock& mvb,                                        
+                               char *bytes);
+                                
+  int convertCtxMetrics(const std::vector<MetricValBlock>& metrics,                                        
+                        char *bytes);
+
+  int buildCtxMetIdIdxPairsBytes(const std::vector<MetricValBlock>& metrics,                                        
+                                 char *bytes);
+
+  int convertOneCtxMetricBlock(const CtxMetricBlock& cmb,                                        
+                               char *bytes,
+                               uint16_t& num_nzmids,
+                               uint64_t& num_vals);
+
+  int convertOneCtxInfo(const cms_ctx_info_t& ctx_info,                                        
+                        char *bytes);
+
+  void convertOneCtx(const uint32_t ctx_id, 
+                     const std::vector<uint64_t>& ctx_off,    
+                     const std::vector<CtxMetricBlock>& ctx_met_blocks, 
+                     const uint64_t first_ctx_off,
+                     uint& met_byte_cnt,
+                     uint& info_byte_cnt, 
+                     char* met_bytes,                                 
+                     char* info_bytes);
+
+  void ctxBlocks2Bytes(const std::vector<CtxMetricBlock>& ctx_met_blocks, 
+                       const std::vector<uint64_t>& ctx_off, 
+                       const std::vector<uint32_t>& ctx_ids,
+                       int threads,
+                       std::vector<char>& info_bytes,
+                       std::vector<char>& metrics_bytes);
+
+  void writeCtxGroup(const std::vector<uint32_t>& ctx_ids,
+                             const std::vector<uint64_t>& ctx_off,
+                             const std::vector<CtxMetricBlock>& ctx_met_blocks,
+                             const int threads,
+                             MPI_File ofh);
+
+  //---------------------------------------------------------------------------
+  // read and write for all contexts in this rank's list
+  //---------------------------------------------------------------------------
+
+  void rwOneCtxGroup(const std::vector<uint32_t>& ctx_ids, 
+                     const std::vector<tms_profile_info_t>& prof_info, 
+                     const std::vector<uint64_t>& ctx_off, 
+                     const int threads, 
+                     const MPI_File fh, 
+                     MPI_File ofh);
+
+
+  void rwAllCtxGroup(const std::vector<uint32_t>& my_ctxs, 
+                     const std::vector<tms_profile_info_t>& prof_info, 
+                     const std::vector<uint64_t>& ctx_off, 
+                     const int threads, 
+                     const MPI_File fh, 
+                     MPI_File ofh);
 
 };
 

@@ -417,8 +417,8 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_
 
   } // epoch loop
 
-  return HPCRUN_OK; //YUMENG question: never return HPCRUN_ERR even if error inside
-
+  return HPCRUN_OK; 
+  
   write_error:
     EMSG("could not save profile data to hpcrun file");
     perror("write_profile_data");

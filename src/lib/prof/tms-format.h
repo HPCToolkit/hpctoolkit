@@ -85,16 +85,16 @@ extern "C" {
 const int TMS_total_prof_SIZE   = 4;
 const int TMS_tid_SIZE          = 4;
 const int TMS_num_val_SIZE      = 8;
-const int TMS_num_nzcct_SIZE    = 4;
+const int TMS_num_nzctx_SIZE    = 4;
 const int TMS_prof_offset_SIZE  = 8;
-const int TMS_prof_skip_SIZE    = TMS_tid_SIZE + TMS_num_val_SIZE + TMS_num_nzcct_SIZE; 
-const int TMS_prof_info_SIZE    = TMS_tid_SIZE + TMS_num_val_SIZE + TMS_num_nzcct_SIZE + TMS_prof_offset_SIZE;
+const int TMS_prof_skip_SIZE    = TMS_tid_SIZE + TMS_num_val_SIZE + TMS_num_nzctx_SIZE; 
+const int TMS_prof_info_SIZE    = TMS_tid_SIZE + TMS_num_val_SIZE + TMS_num_nzctx_SIZE + TMS_prof_offset_SIZE;
 
 
 typedef struct tms_profile_info_t{
   uint32_t tid;
-  uint64_t num_val;
-  uint32_t num_nzcct;
+  uint64_t num_vals;
+  uint32_t num_nzctxs;
   uint64_t offset;
 }tms_profile_info_t;
 
@@ -113,11 +113,11 @@ tms_profile_info_free(tms_profile_info_t** x);
 //***************************************************************************
 // hpcrun_fmt_sparse_metrics_t related, defined in hpcrun-fmt.h
 //***************************************************************************
-const int TMS_cct_id_SIZE       = 4;
-const int TMS_cct_offset_SIZE   = 8;
-const int TMS_cct_pair_SIZE     = TMS_cct_id_SIZE + TMS_cct_offset_SIZE;
-const int TMS_val_SIZE          = 8;
-const int TMS_mid_SIZE          = 2;
+const int TMS_ctx_id_SIZE   = 4;
+const int TMS_ctx_idx_SIZE  = 8;
+const int TMS_ctx_pair_SIZE = TMS_ctx_id_SIZE + TMS_ctx_idx_SIZE;
+const int TMS_val_SIZE      = 8;
+const int TMS_mid_SIZE      = 2;
 
 
 int
