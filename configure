@@ -19681,6 +19681,57 @@ fi
 
 
 #-------------------------------------------------
+# Test if linux/futex.h is available
+# TODO: Make this a better test, and/or an --enable option
+#-------------------------------------------------
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if futexes are available" >&5
+$as_echo_n "checking if futexes are available... " >&6; }
+
+ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+#define _GNU_SOURCE
+#include <unistd.h>
+#include <sys/syscall.h>
+#include <linux/futex.h>
+int test() {
+  return syscall(SYS_futex, NULL, FUTEX_WAIT_PRIVATE, 42, NULL, NULL, 0);
+}
+
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  futexes_enabled=yes
+else
+  futexes_enabled=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $futexes_enabled" >&5
+$as_echo "$futexes_enabled" >&6; }
+
+ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+
+if test "$futexes_enabled" = yes; then
+
+$as_echo "#define HAVE_FUTEX_H 1" >>confdefs.h
+
+fi
+
+#-------------------------------------------------
 # Distribute these settings into makefiles
 #-------------------------------------------------
 
@@ -20401,7 +20452,7 @@ BOOST_COPY=no
 # missing library, so it doesn't have to be exact.
 
 BOOST_COPY_LIST='atomic chrono date_time filesystem graph regex system thread timer'
-BOOST_NEEDED_LIST='graph regex system'
+BOOST_NEEDED_LIST='filesystem graph regex system'
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for boost" >&5
 $as_echo_n "checking for boost... " >&6; }
@@ -23859,7 +23910,7 @@ launch_early_options="${srcdir}/config/launch-options"
 ac_config_headers="$ac_config_headers src/include/hpctoolkit-config.h"
 
 
-ac_config_files="$ac_config_files Makefile doc/Makefile doc/man/Makefile doc/man/HPCToolkitVersionInfo.tex doc/manual/Makefile doc/www/Makefile lib/Makefile src/Makefile src/tool/Makefile src/tool/hpcfnbounds/Makefile src/tool/hpcfnbounds2/Makefile src/tool/hpclump/Makefile src/tool/hpcprof/Makefile src/tool/hpcprof-mpi/Makefile src/tool/hpcprof-flat/Makefile src/tool/hpcproftt/Makefile src/tool/hpcrun/Makefile src/tool/hpcrun/utilities/bgq-cnk/Makefile src/tool/hpcrun-flat/Makefile src/tool/hpcserver/Makefile src/tool/hpcserver/mpi/Makefile src/tool/hpcstruct/Makefile src/tool/hpctracedump/Makefile src/tool/misc/Makefile src/tool/xprof/Makefile src/lib/Makefile src/lib/analysis/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/isa/Makefile src/lib/prof/Makefile src/lib/profxml/Makefile src/lib/prof-lean/Makefile src/lib/stubs-gcc_s/Makefile src/lib/support/Makefile src/lib/support-lean/Makefile src/lib/xml/Makefile"
+ac_config_files="$ac_config_files Makefile doc/Makefile doc/man/Makefile doc/man/HPCToolkitVersionInfo.tex doc/manual/Makefile doc/www/Makefile lib/Makefile src/Makefile src/tool/Makefile src/tool/hpcfnbounds/Makefile src/tool/hpcfnbounds2/Makefile src/tool/hpclump/Makefile src/tool/hpcprof/Makefile src/tool/hpcprof-mpi/Makefile src/tool/hpcprof2/Makefile src/tool/hpcprof2-mpi/Makefile src/tool/hpcprof-flat/Makefile src/tool/hpcproftt/Makefile src/tool/hpcrun/Makefile src/tool/hpcrun/utilities/bgq-cnk/Makefile src/tool/hpcrun-flat/Makefile src/tool/hpcserver/Makefile src/tool/hpcserver/mpi/Makefile src/tool/hpcstruct/Makefile src/tool/hpctracedump/Makefile src/tool/misc/Makefile src/tool/xprof/Makefile src/lib/Makefile src/lib/analysis/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/isa/Makefile src/lib/prof/Makefile src/lib/profile/Makefile src/lib/profxml/Makefile src/lib/prof-lean/Makefile src/lib/stubs-gcc_s/Makefile src/lib/support/Makefile src/lib/support-lean/Makefile src/lib/xml/Makefile"
 
 
 
@@ -25221,6 +25272,8 @@ do
     "src/tool/hpclump/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpclump/Makefile" ;;
     "src/tool/hpcprof/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcprof/Makefile" ;;
     "src/tool/hpcprof-mpi/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcprof-mpi/Makefile" ;;
+    "src/tool/hpcprof2/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcprof2/Makefile" ;;
+    "src/tool/hpcprof2-mpi/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcprof2-mpi/Makefile" ;;
     "src/tool/hpcprof-flat/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcprof-flat/Makefile" ;;
     "src/tool/hpcproftt/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcproftt/Makefile" ;;
     "src/tool/hpcrun/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcrun/Makefile" ;;
@@ -25238,6 +25291,7 @@ do
     "src/lib/binutils/Makefile") CONFIG_FILES="$CONFIG_FILES src/lib/binutils/Makefile" ;;
     "src/lib/isa/Makefile") CONFIG_FILES="$CONFIG_FILES src/lib/isa/Makefile" ;;
     "src/lib/prof/Makefile") CONFIG_FILES="$CONFIG_FILES src/lib/prof/Makefile" ;;
+    "src/lib/profile/Makefile") CONFIG_FILES="$CONFIG_FILES src/lib/profile/Makefile" ;;
     "src/lib/profxml/Makefile") CONFIG_FILES="$CONFIG_FILES src/lib/profxml/Makefile" ;;
     "src/lib/prof-lean/Makefile") CONFIG_FILES="$CONFIG_FILES src/lib/prof-lean/Makefile" ;;
     "src/lib/stubs-gcc_s/Makefile") CONFIG_FILES="$CONFIG_FILES src/lib/stubs-gcc_s/Makefile" ;;
