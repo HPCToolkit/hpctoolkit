@@ -95,6 +95,8 @@ double GPURegisterIncreaseOptimizer::match(const KernelBlame &kernel_blame, cons
     }
   }
 
+  // TODO: Reigster is increased to a limit that does not affect occupancy
+
   if (blame != 0.0) {
     _inspection.ratio = blame / kernel_stats.total_samples;
     _inspection.speedup = kernel_stats.total_samples / (kernel_stats.total_samples - blame);
@@ -106,7 +108,10 @@ double GPURegisterIncreaseOptimizer::match(const KernelBlame &kernel_blame, cons
 
 double GPURegisterDecreaseOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
   // Match if occupancy is low
-  // Use liveness analysis to find high pressure regions
+  // TODO: if register is the limitation factor of occupancy
+  // increase it to increase occupancy
+
+  // TODO: Extend use liveness analysis to find high pressure regions
   return 0.0;
 }
 
@@ -147,7 +152,7 @@ double GPULoopUnrollOptimizer::match(const KernelBlame &kernel_blame, const Kern
       MIN2(kernel_stats.active_samples, blame));
   }
 
-  return 0.0;
+  return _inspection.speedup;
 }
 
 
@@ -284,32 +289,168 @@ double GPUCodeReorderOptimizer::match(const KernelBlame &kernel_blame, const Ker
 
 
 double GPUKernelMergeOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
-  // Match if ifetch and small kernel
-  return 0.0;
+  // Match if ifetch and small kernel invoked many times
+  const int KERNEL_COUNT_LIMIT = 10;
+  const double KERNEL_TIME_LIMIT = 100 * 1e-6;  // 100us
+
+  _inspection.optimization = this->_name;
+  auto blame = 0.0;
+  if (kernel_blame.stall_blames.find(GPU_INST_METRIC_NAME":LAT_IFET") != kernel_blame.stall_blames.end()) {
+    blame += kernel_blame.stall_blames.at(GPU_INST_METRIC_NAME":LAT_IFET");
+  }
+
+  if (kernel_stats.time <= KERNEL_TIME_LIMIT && kernel_stats.count >= KERNEL_COUNT_LIMIT) {
+    // TODO(Keren) nest the latency hiding region to a loop
+    _inspection.ratio = blame / kernel_stats.total_samples;
+    _inspection.speedup = kernel_stats.total_samples / (kernel_stats.total_samples -
+      MIN2(kernel_stats.active_samples, blame));
+  }
+
+  return _inspection.speedup;
 }
 
 
 double GPUFunctionInlineOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
   // Match if ifetch and device function
-  return 0.0;
+  auto blame = 0.0;
+
+  _inspection.optimization = this->_name;
+
+  auto insts = 0;
+
+  // Match if latency in function epilogue and prologues, and device function
+  for (auto &inst_blame : kernel_blame.lat_inst_blames) {
+    auto *function = inst_blame.function;
+    if (function->global == false) {
+      auto *src_struct = inst_blame.src_struct;
+      auto *src_inst = inst_blame.src;
+      auto *dst_struct = inst_blame.dst_struct;
+      auto *dst_inst = inst_blame.dst;
+      if (dst_struct->begLine() == dst_struct->ancestorProc()->begLine() ||
+        src_struct->begLine() == src_struct->ancestorProc()->begLine()) {
+        // prologue STL
+        if (dst_inst->op.find("STORE.LOCAL") != std::string::npos) {
+          blame += inst_blame.lat_blame;
+
+          if (++insts >= _top_regions) {
+            break;
+          }
+        }
+      } else if (dst_struct->begLine() == dst_struct->ancestorProc()->endLine()) {
+        // epilogue LD
+        // TODO interprocedural attribution
+        if (dst_inst->op.find("LOAD.LOCAL") != std::string::npos) {
+          blame += inst_blame.lat_blame;
+
+          if (++insts >= _top_regions) {
+            break;
+          }
+        }
+      }
+    }
+  }
+
+  if (blame != 0.0) {
+    _inspection.ratio = blame / kernel_stats.total_samples;
+    _inspection.speedup = kernel_stats.total_samples / (kernel_stats.total_samples - blame);
+  }
+
+  return _inspection.speedup;
 }
 
 
 double GPUFunctionSplitOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
   // Match if ifetch and device function
-  return 0.0;
+  auto blame = 0.0;
+
+  _inspection.optimization = this->_name;
+
+  auto insts = 0;
+  // Find top latency pairs
+  for (auto &inst_blame : kernel_blame.stall_inst_blames) {
+    if (inst_blame.blame_name.find(":LAT_IFET") != std::string::npos) {
+      auto *src_struct = inst_blame.src_struct;
+      if (src_struct->ancestorAlien() != NULL) {
+        _inspection.top_regions.push_back(inst_blame);
+        blame += inst_blame.stall_blame;
+
+        if (++insts >= _top_regions) {
+          break;
+        }
+      }
+    }
+  }
+
+  if (blame != 0.0) {
+    // TODO(Keren) nest the latency hiding region to a loop
+    _inspection.ratio = blame / kernel_stats.total_samples;
+    _inspection.speedup = kernel_stats.total_samples / (kernel_stats.total_samples -
+      MIN2(kernel_stats.active_samples, blame));
+  }
+
+  return _inspection.speedup;
 }
 
 
 double GPUSharedMemoryCoalesceOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
   // Match if shared memory latency is high
-  return 0.0;
+  auto blame = 0.0;
+
+  _inspection.optimization = this->_name;
+
+  auto insts = 0;
+
+  // Find top latency pairs
+  for (auto &inst_blame : kernel_blame.stall_inst_blames) {
+    if (inst_blame.blame_name.find(":LAT_IDEP_SMEM") != std::string::npos) {
+      _inspection.top_regions.push_back(inst_blame);
+      blame += inst_blame.stall_blame;
+
+      if (++insts >= _top_regions) {
+        break;
+      }
+    }
+  }
+
+  if (blame != 0.0) {
+    // TODO(Keren) nest the latency hiding region to a loop
+    _inspection.ratio = blame / kernel_stats.total_samples;
+    _inspection.speedup = kernel_stats.total_samples / (kernel_stats.total_samples -
+      MIN2(kernel_stats.active_samples, blame));
+  }
+
+  return _inspection.speedup;
 }
 
 
 double GPUGlobalMemoryCoalesceOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
-  // Match if shared memory latency is high
-  return 0.0;
+  // Match if global memory latency is high
+  auto blame = 0.0;
+
+  _inspection.optimization = this->_name;
+
+  auto insts = 0;
+
+  // Find top latency pairs
+  for (auto &inst_blame : kernel_blame.stall_inst_blames) {
+    if (inst_blame.blame_name.find(":LAT_GMEM_GMEM") != std::string::npos) {
+      _inspection.top_regions.push_back(inst_blame);
+      blame += inst_blame.stall_blame;
+
+      if (++insts >= _top_regions) {
+        break;
+      }
+    }
+  }
+
+  if (blame != 0.0) {
+    // TODO(Keren) nest the latency hiding region to a loop
+    _inspection.ratio = blame / kernel_stats.total_samples;
+    _inspection.speedup = kernel_stats.total_samples / (kernel_stats.total_samples -
+      MIN2(kernel_stats.active_samples, blame));
+  }
+
+  return _inspection.speedup;
 }
 
 
@@ -355,13 +496,43 @@ double GPUOccupancyIncreaseOptimizer::match(const KernelBlame &kernel_blame, con
 
 double GPUOccupancyDecreaseOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
   // Match if not selected if high
-  return 0.0;
+  auto blame = 0.0;
+
+  _inspection.optimization = this->_name;
+
+  auto insts = 0;
+
+  // Find top latency pairs
+  for (auto &inst_blame : kernel_blame.stall_inst_blames) {
+    if (inst_blame.blame_name.find(":LAT_NSEL") != std::string::npos) {
+      _inspection.top_regions.push_back(inst_blame);
+      blame += inst_blame.stall_blame;
+
+      if (++insts >= _top_regions) {
+        break;
+      }
+    }
+  }
+
+  if (blame != 0.0) {
+    // TODO(Keren) nest the latency hiding region to a loop
+    _inspection.ratio = blame / kernel_stats.total_samples;
+    _inspection.speedup = kernel_stats.total_samples / (kernel_stats.total_samples -
+      MIN2(kernel_stats.active_samples, blame));
+  }
+
+  return _inspection.speedup;
 }
 
 
 double GPUSMBalanceOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
-  // Match if blocks are large while sm efficiency is low
-  return 0.0;
+  // Match if blocks are large while SM efficiency is low
+  _inspection.optimization = this->_name;
+
+  _inspection.ratio = kernel_stats.sm_efficiency;
+  _inspection.speedup = 1 / kernel_stats.sm_efficiency;
+
+  return _inspection.speedup;
 }
 
 
@@ -383,8 +554,31 @@ double GPUBlockIncreaseOptimizer::match(const KernelBlame &kernel_blame, const K
 
 
 double GPUBlockDecreaseOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
+  const int WARP_COUNT_LIMIT = 2;
+
   // Match if threads are few, increase number of threads per block. i.e. threads coarsen
-  return 0.0;
+  auto blame = 0.0;
+
+  _inspection.optimization = this->_name;
+
+  auto warps = (kernel_stats.threads - 1) / _arch->warp_size() + 1;
+  // blocks are enough, while threads are few
+  // Concurrent (not synchronized) blocks may introduce instruction cache latency
+  // Reduce the number of blocks keep warps fetch the same instructions at every cycle
+  if (kernel_stats.blocks > _arch->sms() && warps <= WARP_COUNT_LIMIT) {
+    if (kernel_blame.stall_blames.find(GPU_INST_METRIC_NAME":LAT_IFET") != kernel_blame.stall_blames.end()) {
+      blame += kernel_blame.stall_blames.at(GPU_INST_METRIC_NAME":LAT_IFET");
+    }
+  }
+
+  if (blame != 0.0) {
+    // TODO(Keren) nest the latency hiding region to a loop
+    _inspection.ratio = blame / kernel_stats.total_samples;
+    _inspection.speedup = kernel_stats.total_samples / (kernel_stats.total_samples -
+      MIN2(kernel_stats.active_samples, blame));
+  }
+
+  return _inspection.speedup;
 }
 
 

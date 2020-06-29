@@ -57,8 +57,6 @@ using std::string;
 #define DEBUG_GPUADVISOR 1
 #define DEBUG_GPUADVISOR_DETAILS 1
 
-#define WARP_SIZE 32
-
 namespace Analysis {
 
 void GPUAdvisor::concatAdvise(const OptimizerRank &optimizer_rank) {
@@ -120,6 +118,7 @@ KernelStats GPUAdvisor::readKernelStats(int mpi_rank, int thread_id) {
   block_smem /= count;
   thread_regs /= count;
   warps /= count;
+  time /= count;
 
   samples_total = samples_total - samples_dropped;
   auto util = samples_expected / samples_total;
@@ -142,7 +141,7 @@ KernelStats GPUAdvisor::readKernelStats(int mpi_rank, int thread_id) {
   }
 
   return KernelStats(blocks, block_threads, block_smem, thread_regs, warps, 
-    0, samples_total, time, util);
+    0, samples_total, count, time, util);
 }
 
 

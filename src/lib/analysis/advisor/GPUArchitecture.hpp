@@ -106,6 +106,9 @@ class GPUArchitecture {
   // number of warps per sm
   virtual int warps() const = 0;
 
+  // number of threads per warp
+  virtual int warp_size() const = 0;
+
   virtual double frequency() const = 0;
 
   virtual ~GPUArchitecture() {}
@@ -137,6 +140,10 @@ class V100 : public GPUArchitecture {
 
   virtual int warps() const {
     return 64;
+  }
+
+  virtual int warp_size() const {
+    return 32;
   }
 
   virtual double frequency() const {

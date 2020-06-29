@@ -92,8 +92,6 @@ struct Inspection {
 
   std::string optimization;
 
-  // <blame, ratio, speedup>
-  //std::vector<std::tuple<InstructionBlame, double, double>> top_regions;
   std::vector<InstructionBlame> top_regions;
 
   // <before, after>

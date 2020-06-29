@@ -56,7 +56,6 @@ using std::string;
 #define DEBUG_GPUADVISOR 1
 #define DEBUG_GPUADVISOR_DETAILS 1
 
-#define WARP_SIZE 32
 
 namespace Analysis {
 
