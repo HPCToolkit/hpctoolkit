@@ -113,6 +113,9 @@ int main(int argc, char* const argv[]) {
       pipelineB << make_unique_x<LineMergeTransformer>();
     break;
   }
+  case ProfArgs::Format::sparse:
+    util::log::fatal{} << "Sparse output currently only for Prof2-MPI!";
+    break;
   }
 
   // Create the Pipeline, let the fun begin.

@@ -294,6 +294,7 @@ public:
   // non-null, a textual form of the data is echoed to 'outfs' for
   // human inspection.
 
+
   static int
   fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
 	    std::string ctxtStr, const char* filename, FILE* outfs);
@@ -303,10 +304,17 @@ public:
 		  const hpcrun_fmt_hdr_t& hdr,
 		  std::string ctxtStr, const char* filename, FILE* outfs);
 
+#if 0
   static int
   fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
 		const metric_tbl_t& metricTbl,
 		std::string ctxtStr, FILE* outfs);
+#else
+//YUMENG: No need to parse metricTbl for sparse format
+static int
+  fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
+		std::string ctxtStr, FILE* outfs);
+#endif
 
 
   // fmt_*_fwrite(): Write the appropriate object as hpcrun_fmt to the

@@ -124,29 +124,29 @@
 	ltree_max = rtree_min = &dummy_node;                                         \
 	for (;;) {                                                                   \
             if (lt((key), (root)->lt_field)) {                                       \
-		if ((yy = (root)->left) == NULL)                                     \
-		    break;                                                           \
+		if ((yy = (root)->left) == NULL){                                     \
+		    break;  }                                                         \
 		if (lt((key), yy->lt_field)) {                                       \
 		    (root)->left = yy->right;                                        \
 		    yy->right = (root);                                              \
 		    (root) = yy;                                                     \
-		    if ((yy = (root)->left) == NULL)                                 \
-			break;                                                       \
+		    if ((yy = (root)->left) == NULL){                                 \
+			break;  }                                                     \
 		}                                                                    \
 		rtree_min->left = (root);                                            \
-		rtree_min = (root);                                                  \
+		rtree_min = (root); 												\
 	    } else if (gt((key), (root)->gt_field)) {                                \
-		if ((yy = (root)->right) == NULL)                                    \
-		    break;                                                           \
+		if ((yy = (root)->right) == NULL) {                                   \
+		    break; }                                                          \
 		if (gt((key), yy->gt_field)) {                                       \
 		    (root)->right = yy->left;                                        \
 		    yy->left = (root);                                               \
 		    (root) = yy;                                                     \
-		    if ((yy = (root)->right) == NULL)                                \
-			break;                                                       \
+		    if ((yy = (root)->right) == NULL){                                \
+			break; }                                                      \
 		}                                                                    \
 		ltree_max->right = (root);                                           \
-		ltree_max = (root);                                                  \
+		ltree_max = (root);  												\
 	    } else                                                                   \
 		break;                                                               \
 	    (root) = yy;                                                             \

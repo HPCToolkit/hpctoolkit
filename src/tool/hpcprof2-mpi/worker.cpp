@@ -46,6 +46,7 @@
 
 #include "lib/profile/util/vgannotations.hpp"
 
+#include "sparse.hpp"
 #include "mpi-strings.h"
 #include "../hpcprof2/args.hpp"
 
@@ -116,6 +117,10 @@ int rankN(ProfArgs&& args, int world_rank, int world_size) {
     pipeline.run();
   }
 
+  // Nab the total number of Context from rank 0. Since by now we know.
+  std::size_t ctxcnt;
+  MPI_Bcast(&ctxcnt, 1, mpi_data<std::size_t>::type, 0, MPI_COMM_WORLD);
+
   // Fire off the second pipeline, integrating the new data from rank 0
   {
     // Most of the IDs can be pulled from the void, only the Context IDs
@@ -144,6 +149,7 @@ int rankN(ProfArgs&& args, int world_rank, int world_size) {
     pipelineB2 << msender;
 
     // We only emit our part of the MetricDB and TraceDB.
+    std::unique_ptr<SparseDB> sdb;
     switch(args.format) {
     case ProfArgs::Format::exmldb:
       if(args.include_traces)
@@ -151,10 +157,17 @@ int rankN(ProfArgs&& args, int world_rank, int world_size) {
       if(args.include_thread_local)
         pipelineB2 << make_unique_x<sinks::HPCMetricDB>(args.output);
       break;
+    case ProfArgs::Format::sparse:
+      if(args.include_traces)
+        pipelineB2 << make_unique_x<sinks::HPCTraceDB>(args.output, false);
+      if(args.include_thread_local)
+        pipelineB2 << *(sdb = make_unique_x<SparseDB>(args.output));
+      break;
     }
 
     ProfilePipeline pipeline(std::move(pipelineB2), args.threads);
     pipeline.run();
+    if(sdb) sdb->merge(args.threads, ctxcnt);
   }
 
   return 0;

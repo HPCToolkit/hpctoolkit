@@ -11,7 +11,6 @@
 
 enum perf_ksym_e {PERF_UNDEFINED, PERF_AVAILABLE, PERF_UNAVAILABLE} ;
 
-
 typedef struct core_profile_trace_data_t {
   int id;
   // ----------------------------------------

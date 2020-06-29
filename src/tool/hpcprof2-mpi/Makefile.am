@@ -87,7 +87,7 @@ MY_ELF_DWARF = -L$(LIBDWARF_LIB) -ldwarf -L$(LIBELF_LIB) -lelf
 endif
 
 MYSOURCES = \
-	main.cpp master.cpp worker.cpp ../hpcprof2/args.cpp
+	main.cpp master.cpp worker.cpp sparse.cpp sparse-mpi.cpp ../hpcprof2/args.cpp
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @BINUTILS_IFLAGS@ @VALGRIND_IFLAGS@
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@ @BOOST_IFLAGS@ \

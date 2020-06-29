@@ -46,6 +46,7 @@
 
 #include "lib/profile/util/vgannotations.hpp"
 
+#include "sparse.hpp"
 #include "mpi-strings.h"
 #include "../hpcprof2/args.hpp"
 
@@ -139,8 +140,18 @@ int rank0(ProfArgs&& args, int world_rank, int world_size) {
 
   // When everything is ready, ship off the block to the workers.
   struct Sender : public IdPacker::Sink {
-    Sender(IdPacker& s) : IdPacker::Sink(s) {};
+    Sender(IdPacker& s) : IdPacker::Sink(s), ctxcnt(0) {};
+    std::size_t ctxcnt;
+    void count(const Context& c) {
+      ctxcnt += 1;
+      for(const Context& cc: c.children().citerate()) count(cc);
+    }
     void notifyPacked(std::vector<uint8_t>&& block) override {
+      // We need to know the total number of Contexts in the system.
+      // Easiest way to know is to scan through the Contexts quick
+      count(src.contexts());
+      MPI_Bcast(&ctxcnt, 1, mpi_data<std::size_t>::type, 0, MPI_COMM_WORLD);
+
       Bcast<uint8_t> bc;
       bc.contents = std::move(block);
       bc.bcast0();
@@ -175,6 +186,7 @@ int rank0(ProfArgs&& args, int world_rank, int world_size) {
     pipelineB << make_unique_x<MetricReciever>(peer, cmap);
 
   // Finally, eventually we get to actually write stuff out.
+  std::unique_ptr<SparseDB> sdb;
   switch(args.format) {
   case ProfArgs::Format::exmldb: {
     std::unique_ptr<sinks::HPCTraceDB> tdb;
@@ -194,11 +206,30 @@ int rank0(ProfArgs&& args, int world_rank, int world_size) {
       pipelineB << make_unique_x<LineMergeTransformer>();
     break;
   }
+  case ProfArgs::Format::sparse: {
+    std::unique_ptr<sinks::HPCTraceDB> tdb;
+    if(args.include_traces)
+      tdb = make_unique_x<sinks::HPCTraceDB>(args.output, false);
+    if(args.include_thread_local)
+      sdb = make_unique_x<SparseDB>(args.output);
+    auto exml = make_unique_x<sinks::ExperimentXML>(args.output, args.include_sources,
+                                                    tdb.get());
+    pipelineB << std::move(tdb) << std::move(exml);
+    if(sdb) pipelineB << *sdb;
+
+    // ExperimentXML doesn't support instruction-level metrics, so we need a
+    // line-merging transformer. Since this only changes the Scope, we don't
+    // need to track it.
+    if(!args.instructionGrain)
+      pipelineB << make_unique_x<LineMergeTransformer>();
+    break;
+  }
   }
 
   // Create and drain the Pipeline, that's all we do.
   ProfilePipeline pipeline(std::move(pipelineB), args.threads);
   pipeline.run();
+  if(sdb) sdb->merge(args.threads, spacker.ctxcnt);
 
   return 0;
 }
