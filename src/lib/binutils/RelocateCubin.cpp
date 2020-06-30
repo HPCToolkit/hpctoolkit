@@ -328,7 +328,7 @@ relocateLineMap
             // the relocation section refers to the line map section
 #if DEBUG_CUBIN_RELOCATION
             std::cout << "line map relocations section name: "
-              << elf_strptr(elf, section_string_index, shdr.sh_name)
+              << elf_strptr(elf, eh->section_string_index, shdr.sh_name)
               << std::endl;
 #endif
             //-----------------------------------------------------
@@ -419,7 +419,7 @@ relocateDebugInfo
             // the relocation section refers to the line map section
 #if DEBUG_CUBIN_RELOCATION
             std::cout << "debug info relocations section name: "
-              << elf_strptr(elf, section_string_index, shdr.sh_name)
+              << elf_strptr(elf, eh->section_string_index, shdr.sh_name)
               << std::endl;
 #endif
             //-----------------------------------------------------
