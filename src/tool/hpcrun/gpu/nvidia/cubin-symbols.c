@@ -67,6 +67,7 @@
 #include <hpcrun/messages/messages.h>
 
 #include "cubin-symbols.h"
+#include "lib/prof-lean/elf-helper.h"
 
 //******************************************************************************
 // macros
@@ -176,7 +177,7 @@ relocateSymbolsHelper
  GElf_Shdr *shdr,
  Elf_SectionVector *sections,
  Elf_Scn *scn,
- Elf_Scn *symtab_shndx_section
+ elf_helper_t* eh
 )
 {
   Elf_SymbolVector *symbol_values = NULL;
@@ -188,33 +189,15 @@ relocateSymbolsHelper
   } else {
     return NULL;
   }
-
-  // If .symtab_shndx section exists, we need extended numbering
-  // for section index of a symbol
-  Elf_Data *symtab_shndx_data = NULL;
-  if (symtab_shndx_section != NULL) {
-    symtab_shndx_data = elf_getdata(symtab_shndx_section, NULL);
-  }
-
+  
   Elf_Data *datap = elf_getdata(scn, NULL);
   if (datap) {
     symbol_values = newSymbolsVector(nsymbols);
     for (int i = 0; i < nsymbols; i++) {
-      GElf_Sym sym;
-      Elf32_Word xndx;
+      GElf_Sym sym;      
       GElf_Sym *symp = NULL;
-      if (symtab_shndx_data != NULL) {
-        symp = gelf_getsymshndx(datap, symtab_shndx_data, i, &sym, &xndx);
-      } else {
-        symp = gelf_getsym(datap, i, &sym);
-      }
-
-      // Handle extended numbering if needed
-      // and store the symbol section index
-      int64_t section_index = sym.st_shndx;
-      if (section_index == SHN_XINDEX) {
-        section_index = xndx;
-      }      
+      int section_index;
+      symp = elf_helper_get_symbol(eh, i, &sym, &section_index);
       if (symp) { // symbol properly read
 	      int symtype = GELF_ST_TYPE(sym.st_info);
 	      if (sym.st_shndx == SHN_UNDEF) continue;
@@ -236,31 +219,20 @@ static Elf_SymbolVector *
 relocateSymbols
 (
   Elf *elf,
-  Elf_SectionVector *sections
+  Elf_SectionVector *sections,
+  elf_helper_t* eh
 )
 {
   Elf_SymbolVector *symbol_values = NULL;
   GElf_Ehdr ehdr_v;
   GElf_Ehdr *ehdr = gelf_getehdr(elf, &ehdr_v);
   if (ehdr) {
-    // If .symtab_shndx section exists, the section index of a symbol
-    // needs .symtab_shndx
-    Elf_Scn* symtab_shndx_section = NULL;
-    for (int i = 0; i < sections->nsections; i++) {
-      Elf_Scn *scn = sections->sections[i];
-      GElf_Shdr shdr;
-      if (!gelf_getshdr(scn, &shdr)) continue;
-      if (shdr.sh_type == SHT_SYMTAB_SHNDX) {
-        symtab_shndx_section = scn;
-        break;
-      }
-    }
     for (int i = 0; i < sections->nsections; i++) {
       Elf_Scn *scn = sections->sections[i];
       GElf_Shdr shdr;
       if (!gelf_getshdr(scn, &shdr)) continue;
       if (shdr.sh_type == SHT_SYMTAB) {
-	      symbol_values = relocateSymbolsHelper(elf, ehdr, &shdr, sections, scn, symtab_shndx_section);
+	      symbol_values = relocateSymbolsHelper(elf, ehdr, &shdr, sections, scn, eh);
 	      break; // AFAIK, there can only be one symbol table
       }
     }
@@ -273,13 +245,14 @@ static Elf_SymbolVector *
 computeSymbolOffsets
 (
  char *cubin_ptr,
- Elf *cubin_elf
+ Elf *cubin_elf,
+ elf_helper_t* eh
 )
 {
   Elf_SymbolVector *symbol_values = NULL;
   Elf_SectionVector *sections = elfGetSectionVector(cubin_elf);
   if (sections) {
-    symbol_values = relocateSymbols(cubin_elf, sections);
+    symbol_values = relocateSymbols(cubin_elf, sections, eh);
     free(sections);
   }
   return symbol_values;
@@ -314,12 +287,14 @@ computeCubinFunctionOffsets
   Elf_SymbolVector *symbols = NULL;
   elf_version(EV_CURRENT);
   Elf *elf = elf_memory(cubin_ptr, cubin_len);
+  elf_helper_t eh;
+  elf_helper_initialize(elf, &eh);
   if (elf != 0) {
 	  GElf_Ehdr ehdr_v;
 	  GElf_Ehdr *ehdr = gelf_getehdr(elf, &ehdr_v);
 	  if (ehdr) {
 		  if (ehdr->e_machine == EM_CUDA) {
-			  symbols = computeSymbolOffsets(cubin_ptr, elf);
+			  symbols = computeSymbolOffsets(cubin_ptr, elf, &eh);
 			  if(ENABLED(CUDA_CUBIN))
 				  printSymbols(symbols);
 			  elf_end(elf);

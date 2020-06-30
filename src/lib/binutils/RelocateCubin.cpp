@@ -80,6 +80,8 @@
 #include "ElfHelper.hpp"
 #include "RelocateCubin.hpp"
 
+#include "lib/prof-lean/elf-helper.h"
+
 
 
 //******************************************************************************
@@ -277,7 +279,7 @@ relocateLineMap
  Elf *elf,
  Elf_SectionVector *sections,
  Elf_SymbolVector *symbol_values,
- size_t section_string_index
+ elf_helper_t* eh
 )
 {
   GElf_Ehdr ehdr_v;
@@ -295,7 +297,7 @@ relocateLineMap
       GElf_Shdr shdr;
       if (!gelf_getshdr(scn, &shdr)) continue;
       if (shdr.sh_type == SHT_PROGBITS) {
-        const char *section_name = elf_strptr(elf, section_string_index, shdr.sh_name);
+        const char *section_name = elf_strptr(elf, eh->section_string_index, shdr.sh_name);
         if (strcmp(section_name, DEBUG_LINE_SECTION_NAME) == 0) {
           // remember the index of line map section. we need this index to find
           // the corresponding relocation section.
@@ -369,7 +371,7 @@ relocateDebugInfo
  Elf *elf,
  Elf_SectionVector *sections,
  Elf_SymbolVector *symbol_values,
- size_t section_string_index
+ elf_helper_t* eh
 )
 {
   GElf_Ehdr ehdr_v;
@@ -387,7 +389,7 @@ relocateDebugInfo
       GElf_Shdr shdr;
       if (!gelf_getshdr(scn, &shdr)) continue;
       if (shdr.sh_type == SHT_PROGBITS) {
-        const char *section_name = elf_strptr(elf, section_string_index, shdr.sh_name);
+        const char *section_name = elf_strptr(elf, eh->section_string_index, shdr.sh_name);
         if (strcmp(section_name, DEBUG_INFO_SECTION_NAME) == 0) {
           // remember the index of line map section. we need this index to find
           // the corresponding relocation section.
@@ -451,7 +453,7 @@ relocateSymbolsHelper
  GElf_Shdr *shdr,
  Elf_SectionVector *sections,
  Elf_Scn *scn,
- Elf_Scn *symtab_shndx_section
+ elf_helper_t *eh
 )
 {
   Elf_SymbolVector *symbol_values = NULL;
@@ -465,33 +467,15 @@ relocateSymbolsHelper
 
   Elf_Data *datap = elf_getdata(scn, NULL);
 
-  // If .symtab_shndx section exists, we need extended numbering
-  // for section index of a symbol
-  Elf_Data *symtab_shndx_data = nullptr;
-  if (symtab_shndx_section != nullptr) {
-    symtab_shndx_data = elf_getdata(symtab_shndx_section, NULL);
-  }
-
   if (datap) {
     symbol_values = new Elf_SymbolVector(nsymbols);
     symbol_section_index = new Elf_SymbolSectionIndexVector(nsymbols);
     // Update symbol offsets
     for (int i = 0; i < nsymbols; i++) {
-      GElf_Sym sym;
-      Elf32_Word xndx;
+      GElf_Sym sym;      
+      int section_index;
       GElf_Sym *symp;
-      if (symtab_shndx_data != nullptr) {
-        symp = gelf_getsymshndx(datap, symtab_shndx_data, i, &sym, &xndx);
-      } else {
-        symp = gelf_getsym(datap, i, &sym);
-      }
-
-      // Handle extended numbering if needed
-      // and store the symbol section index
-      int64_t section_index = sym.st_shndx;
-      if (section_index == SHN_XINDEX) {
-        section_index = xndx;
-      }
+      symp = elf_helper_get_symbol(eh, i, &sym, &section_index);
       (*symbol_section_index)[i] = section_index;
       if (symp) { // symbol properly read
         int symtype = GELF_ST_TYPE(sym.st_info);
@@ -564,36 +548,23 @@ relocateSymbols
 (
   Elf *elf,
   Elf_SectionVector *sections,
-  size_t section_string_index
+  elf_helper_t* eh
 )
 {
   Elf_SymbolVector *symbol_values = NULL;
   GElf_Ehdr ehdr_v;
   GElf_Ehdr *ehdr = gelf_getehdr(elf, &ehdr_v);
   if (ehdr) {
-    // If .symtab_shndx section exists, the section index of a symbol
-    // needs .symtab_shndx
-    Elf_Scn* symtab_shndx_section = nullptr;
-    for (auto si = sections->begin(); si != sections->end(); si++) {
-      Elf_Scn *scn = *si;
-      GElf_Shdr shdr;
-      if (!gelf_getshdr(scn, &shdr)) continue;
-      if (shdr.sh_type == SHT_SYMTAB_SHNDX) {
-        symtab_shndx_section = scn;
-        break;
-      }
-    }
-
     for (auto si = sections->begin(); si != sections->end(); si++) {
       Elf_Scn *scn = *si;
       GElf_Shdr shdr;
       if (!gelf_getshdr(scn, &shdr)) continue;
       if (shdr.sh_type == SHT_SYMTAB) {
 #if DEBUG_CUBIN_RELOCATION
-        std::cout << "relocating symbols in section " << elf_strptr(elf, section_string_index, shdr.sh_name)
+        std::cout << "relocating symbols in section " << elf_strptr(elf, eh->section_string_index, shdr.sh_name)
           << std::endl;
 #endif
-        symbol_values = relocateSymbolsHelper(elf, ehdr, &shdr, sections, scn, symtab_shndx_section);
+        symbol_values = relocateSymbolsHelper(elf, ehdr, &shdr, sections, scn, eh);
         break; // AFAIK, there can only be one symbol table
       }
     }
@@ -611,7 +582,7 @@ relocateProgramDataSegments
 (
   Elf *elf,
   Elf_SectionVector *sections,
-  size_t section_string_index
+  elf_helper_t* eh
 )
 {
   GElf_Ehdr ehdr_v;
@@ -623,7 +594,7 @@ relocateProgramDataSegments
       if (!gelf_getshdr(scn, &shdr)) continue;
       if (shdr.sh_type == SHT_PROGBITS) {
 #if DEBUG_CUBIN_RELOCATION
-        std::cout << "relocating section " << elf_strptr(elf, section_string_index, shdr.sh_name)
+        std::cout << "relocating section " << elf_strptr(elf, eh->section_string_index, shdr.sh_name)
         << " to " << std::hex << shdr.sh_offset << std::dec
           << std::endl;
 #endif
@@ -651,21 +622,22 @@ relocateCubin
 )
 {
   bool success = false;
-  size_t section_string_index;
-  elf_getshdrstrndx(cubin_elf, &section_string_index);
+
+  elf_helper_t eh;
+  elf_helper_initialize(cubin_elf, &eh);  
 
   Elf_SectionVector *sections = elfGetSectionVector(cubin_elf);
   if (sections) {
-    relocateProgramDataSegments(cubin_elf, sections, section_string_index);
-    Elf_SymbolVector *symbol_values = relocateSymbols(cubin_elf, sections, section_string_index);
+    relocateProgramDataSegments(cubin_elf, sections, &eh);
+    Elf_SymbolVector *symbol_values = relocateSymbols(cubin_elf, sections, &eh);
     if (symbol_values) {
       // Add function offset with cubin_size
       // to handle the cases in which we have multiple compliation units
       for (auto &symbol : *symbol_values) {
         symbol += cubin_size;
       }
-      relocateLineMap(cubin_ptr, cubin_elf, sections, symbol_values, section_string_index);
-      relocateDebugInfo(cubin_ptr, cubin_elf, sections, symbol_values, section_string_index);
+      relocateLineMap(cubin_ptr, cubin_elf, sections, symbol_values, &eh);
+      relocateDebugInfo(cubin_ptr, cubin_elf, sections, symbol_values, &eh);
       delete symbol_values;
       success = true;
     }
