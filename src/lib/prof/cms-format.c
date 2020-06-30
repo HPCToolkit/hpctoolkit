@@ -83,7 +83,7 @@
 // cms_ctx_info_t
 //***************************************************************************
 int
-cms_cct_info_fwrite(cms_ctx_info_t* x, uint32_t num_ctx, FILE* fs)
+cms_ctx_info_fwrite(cms_ctx_info_t* x, uint32_t num_ctx, FILE* fs)
 {
   HPCFMT_ThrowIfError(hpcfmt_int4_fwrite(num_ctx, fs));
 
@@ -99,7 +99,7 @@ cms_cct_info_fwrite(cms_ctx_info_t* x, uint32_t num_ctx, FILE* fs)
 
 
 int
-cms_cct_info_fread(cms_ctx_info_t** x, uint32_t* num_ctx,FILE* fs)
+cms_ctx_info_fread(cms_ctx_info_t** x, uint32_t* num_ctx,FILE* fs)
 {
   HPCFMT_ThrowIfError(hpcfmt_int4_fread(num_ctx, fs));
 
@@ -118,7 +118,7 @@ cms_cct_info_fread(cms_ctx_info_t** x, uint32_t* num_ctx,FILE* fs)
 
 
 int
-cms_cct_info_fprint(uint32_t num_ctx, cms_ctx_info_t* x, FILE* fs)
+cms_ctx_info_fprint(uint32_t num_ctx, cms_ctx_info_t* x, FILE* fs)
 {
   fprintf(fs,"[Context informations for %d Contexts\n", num_ctx);
 
@@ -132,7 +132,7 @@ cms_cct_info_fprint(uint32_t num_ctx, cms_ctx_info_t* x, FILE* fs)
 
 
 void
-cms_cct_info_free(cms_ctx_info_t** x)
+cms_ctx_info_free(cms_ctx_info_t** x)
 {
   free(*x);
   *x = NULL;

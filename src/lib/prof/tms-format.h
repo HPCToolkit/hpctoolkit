@@ -87,6 +87,7 @@ const int TMS_tid_SIZE          = 4;
 const int TMS_num_val_SIZE      = 8;
 const int TMS_num_nzctx_SIZE    = 4;
 const int TMS_prof_offset_SIZE  = 8;
+//bytes to skip when we only want val_mids and ctx_id_idxs
 const int TMS_prof_skip_SIZE    = TMS_tid_SIZE + TMS_num_val_SIZE + TMS_num_nzctx_SIZE; 
 const int TMS_prof_info_SIZE    = TMS_tid_SIZE + TMS_num_val_SIZE + TMS_num_nzctx_SIZE + TMS_prof_offset_SIZE;
 

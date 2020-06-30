@@ -234,11 +234,11 @@ Analysis::Raw::writeAsText_sparseDBcct(const char* filenm, bool easygrep)
     }
     uint32_t num_ctx;
     cms_ctx_info_t* x;
-    int ret = cms_cct_info_fread(&x, &num_ctx,fs);
+    int ret = cms_ctx_info_fread(&x, &num_ctx,fs);
     if (ret != HPCFMT_OK) {
       DIAG_Throw("error reading cct information from sparse metrics file '" << filenm << "'");
     }
-    cms_cct_info_fprint(num_ctx,x,ofs);
+    cms_ctx_info_fprint(num_ctx,x,ofs);
 
     for(uint i = 0; i<num_ctx; i++){
       if(x[i].num_vals != 0){
@@ -256,7 +256,7 @@ Analysis::Raw::writeAsText_sparseDBcct(const char* filenm, bool easygrep)
       
     }
 
-    cms_cct_info_free(&x);
+    cms_ctx_info_free(&x);
    
     hpcio_fclose(fs);
     hpcio_fclose(ofs);

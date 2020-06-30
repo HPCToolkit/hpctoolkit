@@ -98,16 +98,16 @@ typedef struct cms_ctx_info_t{
 }cms_ctx_info_t;
 
 int
-cms_cct_info_fwrite(cms_ctx_info_t* x, uint32_t num_ctx, FILE* fs);
+cms_ctx_info_fwrite(cms_ctx_info_t* x, uint32_t num_ctx, FILE* fs);
 
 int 
-cms_cct_info_fread(cms_ctx_info_t** x, uint32_t* num_ctx,FILE* fs);
+cms_ctx_info_fread(cms_ctx_info_t** x, uint32_t* num_ctx,FILE* fs);
 
 int 
-cms_cct_info_fprint(uint32_t num_ctx, cms_ctx_info_t* x, FILE* fs);
+cms_ctx_info_fprint(uint32_t num_ctx, cms_ctx_info_t* x, FILE* fs);
 
 void 
-cms_cct_info_free(cms_ctx_info_t** x);
+cms_ctx_info_free(cms_ctx_info_t** x);
 
 //***************************************************************************
 // cct_sparse_metrics_t
