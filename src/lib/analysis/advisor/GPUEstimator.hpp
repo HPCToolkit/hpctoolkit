@@ -57,10 +57,8 @@
 //
 //***************************************************************************
 
-
-
-#ifndef Analysis_Advisor_Inspection_hpp 
-#define Analysis_Advisor_Inspection_hpp
+#ifndef Analysis_Advisor_GPUEstimator_hpp
+#define Analysis_Advisor_GPUEstimator_hpp
 
 //************************* System Include Files ****************************
 
@@ -75,8 +73,10 @@
 #include <lib/prof/CallPath-Profile.hpp>
 #include <lib/prof/Struct-Tree.hpp>
 
-#include <vector>
 #include <tuple>
+#include <vector>
+
+#include "GPUOptimizer.hpp"
 
 //*************************** Forward Declarations ***************************
 
@@ -84,64 +84,66 @@
 
 namespace Analysis {
 
-class InstructionBlame;
+class GPUArchitecture;
 
-struct Inspection {
-  double ratio;
-  double speedup;
+class GPUEstimator {
+public:
+  GPUEstimator(GPUArchitecture *arch) : _arch(arch) {}
 
-  std::string optimization;
+  // <ratio, speedup>
+  virtual std::pair<double, double>
+  estimate(double blame, const KernelStats &kernel_stats) = 0;
 
-  std::vector<InstructionBlame> top_regions;
+  ~GPUEstimator() {}
 
-  // before
-  int active_warp_count;
-  int block_count;
-  int thread_count;
-  int reg_count;
-
-  Inspection() : ratio(-1.0), speedup(-1.0), active_warp_count(-1), block_count(-1),
-    thread_count(-1), reg_count(-1) {}
-
-  void clear() {
-    ratio = -1.0;
-    speedup = -1.0;
-    top_regions.clear();
-    active_warp_count = -1;
-    block_count = -1;
-    thread_count = -1;
-    reg_count = -1;
-  }
+protected:
+  GPUArchitecture *_arch;
 };
 
+class SequentialLatencyGPUEstimator : public GPUEstimator {
+public:
+  SequentialLatencyGPUEstimator(GPUArchitecture *arch) : GPUEstimator(arch) {}
 
-class InspectionFormatter {
- public:
-  InspectionFormatter() {}
+  // <ratio, speedup>
+  virtual std::pair<double, double> estimate(double blame,
+                                             const KernelStats &kernel_stats);
 
-  virtual std::string format(const Inspection &inspection) = 0;
-
-  ~InspectionFormatter() {} 
-
- protected:
-  std::stack<Prof::Struct::Alien *> getInlineStack(Prof::Struct::ACodeNode *stmt);
+  ~SequentialLatencyGPUEstimator() {}
 };
 
+class SequentialGPUEstimator : public GPUEstimator {
+public:
+  SequentialGPUEstimator(GPUArchitecture *arch) : GPUEstimator(arch) {}
 
-class SimpleInspectionFormatter : public InspectionFormatter {
- public:
-  SimpleInspectionFormatter() {}
+  // <ratio, speedup>
+  virtual std::pair<double, double> estimate(double blame,
+                                             const KernelStats &kernel_stats);
 
-  virtual std::string format(const Inspection &inspection);
-
-  ~SimpleInspectionFormatter() {}
- 
- private:
-  std::string formatInlineStack(std::stack<Prof::Struct::Alien *> &st);
+  ~SequentialGPUEstimator() {}
 };
 
+class ParallelLatencyGPUEstimator : public GPUEstimator {
+public:
+  ParallelLatencyGPUEstimator(GPUArchitecture *arch) : GPUEstimator(arch) {}
 
-}  // namespace Analysis
+  // <ratio, speedup>
+  virtual std::pair<double, double> estimate(double blame,
+                                             const KernelStats &kernel_stats);
 
+  ~ParallelLatencyGPUEstimator() {}
+};
 
-#endif  // Analysis_Advisor_Inspection_hpp
+class ParallelGPUEstimator : public GPUEstimator {
+public:
+  ParallelGPUEstimator(GPUArchitecture *arch) : GPUEstimator(arch) {}
+
+  // <ratio, speedup>
+  virtual std::pair<double, double> estimate(double blame,
+                                             const KernelStats &kernel_stats);
+
+  ~ParallelGPUEstimator() {}
+};
+
+} // namespace Analysis
+
+#endif // Analysis_Advisor_Inspection_hpp

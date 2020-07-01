@@ -393,8 +393,8 @@ void GPUAdvisor::debugInstBlames(InstBlames &inst_blames) {
   }
 
   for (auto &inst_blame : inst_blames) {
-    std::cout << debugInstOffset(inst_blame.src->pc) <<
-      " -> " << debugInstOffset(inst_blame.dst->pc) << ", ";
+    std::cout << debugInstOffset(inst_blame.src_inst->pc) <<
+      " -> " << debugInstOffset(inst_blame.dst_inst->pc) << ", ";
     std::cout << inst_blame.blame_name << ": " << inst_blame.lat_blame <<
       "(" << static_cast<double>(inst_blame.lat_blame) /
       lat_blame_sum * 100 << "%" 
@@ -1062,7 +1062,10 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
       }
 
       inst_blames.emplace_back(
-        InstructionBlame(to_inst, to_inst, to_struct, to_struct, lat_blame_name, stall_blame, lat_blame));
+        InstructionBlame(to_inst, to_inst, 
+          to_struct, to_struct,
+          stall_blame, lat_blame,
+          lat_blame_name));
     }
 
     // Dependent latencies
@@ -1160,8 +1163,10 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
 
         // One metric id is enough for inst blame analysis
         inst_blames.emplace_back(
-          InstructionBlame(from_inst, to_inst, from_struct, to_struct,
-            lat_blame_name, stall_blame, lat_blame));
+          InstructionBlame(from_inst, to_inst,
+            from_struct, to_struct,
+            stall_blame, lat_blame,
+            lat_blame_name));
       }
     }
 
@@ -1189,7 +1194,10 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
 
       // one metric id is enough for inst blame analysis
       inst_blames.emplace_back(
-        InstructionBlame(to_inst, to_inst, to_struct, to_struct, lat_blame_name, stall, lat));
+        InstructionBlame(to_inst, to_inst,
+          to_struct, to_struct,
+          stall, lat,
+          lat_blame_name));
     }
 
     {
@@ -1240,8 +1248,10 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
 
       // one metric id is enough for inst blame analysis
       inst_blames.emplace_back(
-        InstructionBlame(sync_inst, to_inst, sync_struct, to_struct,
-          lat_blame_name, sync_stall, sync_lat));
+        InstructionBlame(sync_inst, to_inst,
+          sync_struct, to_struct,
+          sync_stall, sync_lat,
+          lat_blame_name));
     }
   }
 }
@@ -1249,26 +1259,33 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
 
 void GPUAdvisor::overlayInstBlames(InstBlames &inst_blames, KernelBlame &kernel_blame) {
   for (auto &inst_blame : inst_blames) {
-    auto *from_inst = inst_blame.src;
-    auto *block = _vma_prop_map[from_inst->pc].block;
-    auto *function = _vma_prop_map[from_inst->pc].function;
+    auto *from_inst = inst_blame.src_inst;
+    auto *from_block = _vma_prop_map[from_inst->pc].block;
+    auto *from_function = _vma_prop_map[from_inst->pc].function;
+    auto *to_inst = inst_blame.dst_inst;
+    auto *to_block = _vma_prop_map[to_inst->pc].block;
+    auto *to_function = _vma_prop_map[to_inst->pc].function;
 
     // Update block and function
-    inst_blame.block = block;
-    inst_blame.function = function;
+    inst_blame.src_block = from_block;
+    inst_blame.src_function = from_function;
+    inst_blame.dst_block = to_block;
+    inst_blame.dst_function = to_function;
 
     // Update kernel blame
     kernel_blame.stall_blames[inst_blame.blame_name] += inst_blame.stall_blame;
     kernel_blame.lat_blames[inst_blame.blame_name] += inst_blame.lat_blame;
     kernel_blame.stall_blame += inst_blame.stall_blame;
     kernel_blame.lat_blame += inst_blame.lat_blame;
+
+    kernel_blame.lat_inst_blame_ptrs.push_back(&inst_blame);
+    kernel_blame.stall_inst_blame_ptrs.push_back(&inst_blame);
   }
 
-  std::sort(inst_blames.begin(), inst_blames.end(), InstructionBlameStallComparator());
-  kernel_blame.stall_inst_blames = inst_blames;
-
-  std::sort(inst_blames.begin(), inst_blames.end(), InstructionBlameLatComparator());
-  kernel_blame.lat_inst_blames = inst_blames;
+  std::sort(kernel_blame.lat_inst_blame_ptrs.begin(), kernel_blame.lat_inst_blame_ptrs.end(),
+    InstructionBlameLatComparator());
+  std::sort(kernel_blame.stall_inst_blame_ptrs.begin(), kernel_blame.stall_inst_blame_ptrs.end(),
+    InstructionBlameStallComparator());
 }
 
 

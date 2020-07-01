@@ -82,6 +82,7 @@ MYSOURCES = \
 	advisor/GPUOptimizer.hpp advisor/GPUOptimizer.cpp \
 	advisor/GPUInstruction.hpp advisor/GPUInstruction.cpp \
 	advisor/GPUArchitecture.hpp advisor/GPUArchitecture.cpp \
+	advisor/GPUEstimator.hpp advisor/GPUEstimator.cpp \
 	advisor/Inspection.hpp advisor/Inspection.cpp \
 	\
 	MetricNameProfMap.hpp MetricNameProfMap.cpp \

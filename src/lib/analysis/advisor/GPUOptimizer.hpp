@@ -64,6 +64,7 @@
 //************************* System Include Files ****************************
 
 #include <string>
+#include <tuple>
 
 //*************************** User Include Files ****************************
 
@@ -111,57 +112,63 @@ struct KernelStats {
 
 
 struct InstructionBlame {
-  // TODO(Keren):
-  // Use InstructionBlameDetail pointer to save space and more crystal 
-  // Use InstructionStat directly, so that in advisor::advise, we do not need a vma_inst_map again
-  CudaParse::InstructionStat *src, *dst;
+  CudaParse::InstructionStat *src_inst, *dst_inst;
+  CudaParse::Block *src_block, *dst_block;
+  // TODO(Keren): consier only intra procedural optimizations for now
+  CudaParse::Function *src_function, *dst_function;
   Prof::Struct::ACodeNode *src_struct, *dst_struct;
-  std::string blame_name;
-  CudaParse::Function *function;
-  CudaParse::Block *block;
   double stall_blame;
   double lat_blame;
+  std::string blame_name;
 
   InstructionBlame(
-    CudaParse::InstructionStat *src, CudaParse::InstructionStat *dst,
+    CudaParse::InstructionStat *src_inst, CudaParse::InstructionStat *dst_inst,
     Prof::Struct::ACodeNode *src_struct, Prof::Struct::ACodeNode *dst_struct,
-    std::string &blame_name, double stall_blame, double lat_blame) :
-    src(src), dst(dst), src_struct(src_struct), dst_struct(dst_struct),
+    double stall_blame, double lat_blame, const std::string &blame_name) :
+    src_inst(src_inst), dst_inst(dst_inst),
+    src_struct(src_struct), dst_struct(dst_struct),
     blame_name(blame_name), stall_blame(stall_blame), lat_blame(lat_blame) {}
 
   InstructionBlame(
-    CudaParse::InstructionStat *src, CudaParse::InstructionStat *dst,
+    CudaParse::InstructionStat *src_inst, CudaParse::InstructionStat *dst,
+    CudaParse::Block *src_block, CudaParse::Block *dst_block,
+    CudaParse::Function *src_function, CudaParse::Function *dst_function,
     Prof::Struct::ACodeNode *src_struct, Prof::Struct::ACodeNode *dst_struct,
-    std::string &blame_name, CudaParse::Function *function, CudaParse::Block *block,
-    double stall_blame, double lat_blame) : src(src), dst(dst),
+    double stall_blame, double lat_blame,
+    const std::string &blame_name) :
+    src_inst(src_inst), dst_inst(dst_inst),
+    src_block(src_block), dst_block(dst_block),
+    src_function(src_function), dst_function(dst_function),
     src_struct(src_struct), dst_struct(dst_struct),
-    blame_name(blame_name), function(function), block(block),
-    stall_blame(stall_blame), lat_blame(lat_blame) {}
+    stall_blame(stall_blame), lat_blame(lat_blame),
+    blame_name(blame_name) {}
 
   InstructionBlame() {}
 };
 
 
 struct InstructionBlameStallComparator {
-  bool operator() (const InstructionBlame &l, const InstructionBlame &r) const {
-    return l.stall_blame > r.stall_blame;
+  bool operator() (const InstructionBlame *l, const InstructionBlame *r) const {
+    return l->stall_blame > r->stall_blame;
   }
 };
 
 
 struct InstructionBlameLatComparator {
-  bool operator() (const InstructionBlame &l, const InstructionBlame &r) const {
-    return l.lat_blame > r.lat_blame;
+  bool operator() (const InstructionBlame *l, const InstructionBlame *r) const {
+    return l->lat_blame > r->lat_blame;
   }
 };
 
 
 typedef std::vector<InstructionBlame> InstBlames;
+typedef std::vector<InstructionBlame *> InstBlamePtrs;
 
 
 struct KernelBlame {
-  InstBlames stall_inst_blames;
-  InstBlames lat_inst_blames;
+  InstBlames inst_blames;
+  InstBlamePtrs lat_inst_blame_ptrs;
+  InstBlamePtrs stall_inst_blame_ptrs;
   std::map<std::string, double> stall_blames;
   std::map<std::string, double> lat_blames;
   double stall_blame;
@@ -202,6 +209,7 @@ enum GPUOptimizerType {
 
 #undef DECLARE_OPTIMIZER_TYPE
 
+class GPUEstimator;
 
 class GPUOptimizer {
  public:
@@ -220,21 +228,26 @@ class GPUOptimizer {
     return formatter->format(_inspection);
   }
 
-  // Code optimizer:
-  // Estimate speedup by supposing all latency samples can be eliminated
-  //
-  // Parallel optimizer:
-  // Estimate speedup by raising parallelism
-  //
-  // @Return speedup
-  virtual double match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) = 0;
+  void set_estimator(GPUEstimator *estimator) {
+    this->_estimator = estimator;
+  }
 
-  virtual ~GPUOptimizer() {}
+  // @Return blame
+  virtual double match_impl(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) = 0;
+
+  // @Return speedup
+  double match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats);
+
+  virtual ~GPUOptimizer() {
+    delete this->_estimator;
+  }
  
  protected:
   std::string _name;
 
   const GPUArchitecture *_arch;
+
+  GPUEstimator *_estimator;
 
   Inspection _inspection;
 
@@ -247,7 +260,7 @@ class GPUOptimizer {
 class CLASS : public GPUOptimizer { \
  public: \
   CLASS(const std::string &name, const GPUArchitecture *arch) : GPUOptimizer(name, arch) {} \
-  virtual double match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats); \
+  virtual double match_impl(const KernelBlame &kernel_blame, const KernelStats &kernel_stats); \
   virtual ~CLASS() {} \
 };
 
