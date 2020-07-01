@@ -103,7 +103,7 @@
 #include "cubin-hash-map.h"
 #include "cubin-id-map.h"
 
-
+extern bool is_papi_active();
 
 //******************************************************************************
 // macros
@@ -757,6 +757,9 @@ cupti_subscriber_callback
  const void *cb_info
 )
 {
+	TMSG(CUPTI, "papi_active = %d\n", is_papi_active());
+	if (is_papi_active()) return;
+
   if (domain == CUPTI_CB_DOMAIN_RESOURCE) {
     const CUpti_ResourceData *rd = (const CUpti_ResourceData *) cb_info;
     if (cb_id == CUPTI_CBID_RESOURCE_MODULE_LOADED) {
@@ -933,6 +936,7 @@ cupti_subscriber_callback
       default:
         break;
     }
+
     bool is_kernel_op = gpu_op_placeholder_flags_is_set(gpu_op_placeholder_flags,
       gpu_placeholder_type_kernel);
     // If we have a valid operation and is not in the interval of a cuda/ompt runtime api
@@ -1083,6 +1087,7 @@ cupti_subscriber_callback
       default:
         break;
     }
+
     if (is_valid_op) {
       if (cd->callbackSite == CUPTI_API_ENTER) {
         // Enter a CUDA runtime api

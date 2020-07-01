@@ -118,7 +118,6 @@ gpu_application_thread_correlation_callback
     }
   }
 
-
   // skip procedure frames in libhpcrun
   while (libhpcrun_id != 0 && node_addr->ip_norm.lm_id == libhpcrun_id) {
     node = hpcrun_cct_parent(node);

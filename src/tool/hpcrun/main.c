@@ -478,8 +478,8 @@ hpcrun_init_internal(bool is_child)
   // because mapping of load modules affects the recipe map.
   hpcrun_unw_init();
 
-  // init callbacks for each device
-  hpcrun_initializer_init();
+//  // init callbacks for each device
+//  hpcrun_initializer_init();
 
   main_addr = monitor_get_addr_main();
   setup_main_bounds_check(main_addr);
@@ -549,8 +549,9 @@ hpcrun_init_internal(bool is_child)
   //       -all- possible (e.g. registered) sample sources call their own init method
   //       no need to do it twice.
   //
+
   if (! is_child) {
-    SAMPLE_SOURCES(process_event_list, lush_metrics);
+			SAMPLE_SOURCES(process_event_list, lush_metrics);
     SAMPLE_SOURCES(finalize_event_list);
     hpcrun_metrics_data_finalize();
   }
@@ -941,6 +942,9 @@ monitor_init_process(int *argc, char **argv, void* data)
   // and will invoke analysis on vdso
   hpcrun_save_vdso();
   fnbounds_init();
+
+  // init callbacks for each device //Module_ignore_map is here
+  hpcrun_initializer_init();
 
   hpcrun_registered_sources_init();
 

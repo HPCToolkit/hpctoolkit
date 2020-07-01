@@ -135,10 +135,22 @@ static bool disable_papi_cuda = false;
 
 static kind_info_t *papi_kind;
 
+extern __thread bool papi_active;
 
 /******************************************************************************
  * private operations 
  *****************************************************************************/
+static void
+papi_flag_on()
+{
+	papi_active = true;
+}
+
+static void
+papi_flag_off()
+{
+	papi_active = false;
+}
 
 static int
 get_event_index(sample_source_t *self, int event_code)
@@ -223,12 +235,14 @@ strip_papi_prefix(const char *str)
 static void
 METHOD_FN(init)
 {
+	papi_flag_on();
   // PAPI_set_debug(0x3ff);
 
   // **NOTE: some papi components may start threads, so
   //         hpcrun must ignore these threads to ensure that PAPI_library_init
   //         succeeds
   //
+
   monitor_disable_new_threads();
   if (disable_papi_cuda) {
     TMSG(PAPI_C, "Will disable PAPI cuda component (if component is active)");
@@ -273,13 +287,15 @@ METHOD_FN(init)
   }
 
   self->state = INIT;
+  papi_flag_off();
 }
 
 static void
 METHOD_FN(thread_init)
 {
+	papi_flag_on();
   TMSG(PAPI, "thread init");
-  if (papi_unavail) { return; }
+  if (papi_unavail) { goto finish; }
 
   int retval = PAPI_thread_init(pthread_self);
   if (retval != PAPI_OK) {
@@ -287,13 +303,17 @@ METHOD_FN(thread_init)
     monitor_real_abort();
   }
   TMSG(PAPI, "thread init OK");
+
+finish:
+  papi_flag_off();
 }
 
 static void
 METHOD_FN(thread_init_action)
 {
+	papi_flag_on();
   TMSG(PAPI, "register thread");
-  if (papi_unavail) { return; }
+  if (papi_unavail) { goto finish; }
 
   int retval = PAPI_register_thread();
   if (retval != PAPI_OK) {
@@ -301,16 +321,20 @@ METHOD_FN(thread_init_action)
     monitor_real_abort();
   }
   TMSG(PAPI, "register thread ok");
+
+finish:
+	papi_flag_off();
 }
 
 static void
 METHOD_FN(start)
 {
+	papi_flag_on();
   int cidx;
   TMSG(PAPI, "start");
 
-  if (papi_unavail) { 
-    return; 
+  if (papi_unavail) {
+    goto finish;
   }
 
   thread_data_t* td = hpcrun_get_thread_data();
@@ -322,7 +346,7 @@ METHOD_FN(start)
 
   if (my_state == START) {
     TMSG(PAPI,"*NOTE* PAPI start called when already in state START");
-    return;
+		goto finish;
   }
 
   // for each active component, start its event set
@@ -358,27 +382,35 @@ METHOD_FN(start)
     }
   }
   td->ss_state[self->sel_idx] = START;
+
+finish:
+	papi_flag_off();
 }
 
 static void
 METHOD_FN(thread_fini_action)
 {
+	papi_flag_on();
   TMSG(PAPI, "unregister thread");
-  if (papi_unavail) { return; }
+  if (papi_unavail) { goto finish; }
 
   int retval = PAPI_unregister_thread();
   char msg[] = "!!NOT PAPI_OK!! (code = -9999999)\n";
   snprintf(msg, sizeof(msg)-1, "!!NOT PAPI_OK!! (code = %d)", retval);
   TMSG(PAPI, "unregister thread returns %s", retval == PAPI_OK? "PAPI_OK" : msg);
+finish:
+	papi_flag_off();
 }
 
 static void
 METHOD_FN(stop)
 {
-  int cidx;
+	papi_flag_on();
+
+	int cidx;
 
   TMSG(PAPI, "stop");
-  if (papi_unavail) { return; }
+  if (papi_unavail) { goto finish; }
 
   thread_data_t *td = hpcrun_get_thread_data();
   int nevents = self->evl.nevents;
@@ -386,12 +418,12 @@ METHOD_FN(stop)
 
   if (my_state == STOP) {
     TMSG(PAPI,"*NOTE* PAPI stop called when already in state STOP");
-    return;
+    goto finish;
   }
 
   if (my_state != START) {
     TMSG(PAPI,"*WARNING* PAPI stop called when not in state START");
-    return;
+    goto finish;
   }
 
   papi_source_info_t *psi = td->ss_info[self->sel_idx].ptr;
@@ -415,19 +447,24 @@ METHOD_FN(stop)
   }
 
   TD_GET(ss_state)[self->sel_idx] = STOP;
+finish:
+	papi_flag_off();
 }
 
 static void
 METHOD_FN(shutdown)
 {
+	papi_flag_on();
   TMSG(PAPI, "shutdown");
-  if (papi_unavail) { return; }
+  if (papi_unavail) { goto finish; }
 
   METHOD_CALL(self, stop); // make sure stop has been called
   // FIXME: add component shutdown code here
   PAPI_shutdown();
 
   self->state = UNINIT;
+finish:
+	papi_flag_off();
 }
 
 // Return true if PAPI recognizes the name, whether supported or not.
@@ -435,10 +472,12 @@ METHOD_FN(shutdown)
 static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
+	papi_flag_on();
+	bool ret;
   ev_str = strip_papi_prefix(ev_str);
   
   TMSG(PAPI, "supports event");
-  if (papi_unavail) { return false; }
+  if (papi_unavail) { ret = false; goto finish;}
 
   if (self->state == UNINIT){
     METHOD_CALL(self, init);
@@ -449,14 +488,20 @@ METHOD_FN(supports_event, const char *ev_str)
   long th;
 
   hpcrun_extract_ev_thresh(ev_str, sizeof(evtmp), evtmp, &th, DEFAULT_THRESHOLD);
-  return PAPI_event_name_to_code(evtmp, &ec) == PAPI_OK;
+
+  ret = (PAPI_event_name_to_code(evtmp, &ec) == PAPI_OK);
+
+finish:
+	papi_flag_off();
+	return ret;
 }
  
 static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
+	papi_flag_on();
   TMSG(PAPI, "process event list");
-  if (papi_unavail) { return; }
+  if (papi_unavail) { goto finish; }
 
   char *event;
   int i, ret;
@@ -569,6 +614,9 @@ METHOD_FN(process_event_list, int lush_metrics)
   if (! some_overflow) {
     hpcrun_ssfail_all_derived("PAPI");
   }
+
+finish:
+	papi_flag_off();
 }
 
 static void
@@ -579,12 +627,13 @@ METHOD_FN(finalize_event_list)
 static void
 METHOD_FN(gen_event_set, int lush_metrics)
 {
+	papi_flag_on();
   thread_data_t *td = hpcrun_get_thread_data();
   int i;
   int ret;
 
   TMSG(PAPI, "generating all event sets for all components");
-  if (papi_unavail) { return; }
+  if (papi_unavail) { goto finish; }
 
   int num_components = PAPI_num_components();
   int ss_info_size = sizeof(papi_source_info_t) + 
@@ -677,11 +726,15 @@ METHOD_FN(gen_event_set, int lush_metrics)
       }
     }
   }
+
+finish:
+	papi_flag_off();
 }
 
 static void
 METHOD_FN(display_events)
 {
+	papi_flag_on();
   PAPI_event_info_t info;
   int ev, ret, num_total, num_prof;
   int num_components, cidx;
@@ -689,7 +742,7 @@ METHOD_FN(display_events)
   if (papi_unavail) {
     printf("PAPI is not available.  Probably, the kernel doesn't support PAPI,\n"
 	   "or else maybe HPCToolkit is out of sync with PAPI.\n\n");
-    return;
+    goto finish;
   }
 
   cidx = 0; // CPU component
@@ -756,6 +809,9 @@ METHOD_FN(display_events)
 
   printf( "Total events reported: %d\n", num_total);
   printf("\n\n");
+
+finish:
+	papi_flag_off();
 }
 
 
@@ -775,7 +831,9 @@ METHOD_FN(display_events)
 void
 hpcrun_disable_papi_cuda(void)
 {
+	papi_flag_on();
   disable_papi_cuda = true;
+  papi_flag_off();
 }
 
 /******************************************************************************
@@ -787,26 +845,35 @@ hpcrun_disable_papi_cuda(void)
 static int
 event_is_derived(int ev_code)
 {
+	papi_flag_on();
+	int ret;
   PAPI_event_info_t info;
 
   // "Is derived" is kind of a bad thing, so if any unexpected failure
   // occurs, we'll return the "bad" answer.
   if (PAPI_get_event_info(ev_code, &info) != PAPI_OK
       || info.derived == NULL) {
-    return 1;
+    ret = 1;
+    goto finish;
   }
   if (info.count == 1
       || strlen(info.derived) == 0
       || strcmp(info.derived, "NOT_DERIVED") == 0
       || strcmp(info.derived, "DERIVED_CMPD") == 0) {
-    return 0;
+    ret = 0;
+    goto finish;
   }
-  return 1;
+  ret = 1;
+
+finish:
+	papi_flag_off();
+	return ret;
 }
 
 static void
 event_fatal_error(int ev_code, int papi_ret)
 {
+	papi_flag_on();
   char name[1024];
 
   PAPI_event_code_to_name(ev_code, name);
@@ -820,12 +887,15 @@ event_fatal_error(int ev_code, int papi_ret)
     hpcrun_ssfail_conflict("PAPI", name);
   }
   hpcrun_ssfail_unsupported("PAPI", name);
+
+  papi_flag_off();
 }
 
 static void
 papi_event_handler(int event_set, void *pc, long long ovec,
                    void *context)
 {
+	papi_flag_on();
   sample_source_t *self = &obj_name();
   long long values[MAX_EVENTS];
   int my_events[MAX_EVENTS];
@@ -837,19 +907,19 @@ papi_event_handler(int event_set, void *pc, long long ovec,
   int my_event_codes_count = MAX_EVENTS;
 
   // if sampling disabled explicitly for this thread, skip all processing
-  if (hpcrun_suppress_sample() || sample_filters_apply()) return;
+  if (hpcrun_suppress_sample() || sample_filters_apply()) goto finish;
 
   if (!ovec) {
     TMSG(PAPI_SAMPLE, "papi overflow event: event set %d ovec = %ld",
 	 event_set, ovec);
-    return;
+		goto finish;
   }
 
   // If the interrupt came from inside our code, then drop the sample
   // and return and avoid any MSG.
   if (! hpcrun_safe_enter_async(pc)) {
     hpcrun_stats_num_samples_blocked_async_inc();
-    return;
+    goto finish;
   }
 
   int cidx = PAPI_get_eventset_component(event_set);
@@ -941,5 +1011,7 @@ papi_event_handler(int event_set, void *pc, long long ovec,
     }
   }
 
+finish:
+	papi_flag_off();
   hpcrun_safe_exit();
 }
