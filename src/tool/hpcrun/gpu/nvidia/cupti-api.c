@@ -103,7 +103,7 @@
 #include "cubin-hash-map.h"
 #include "cubin-id-map.h"
 
-extern int is_papi_active();
+#include "tool_state.h"
 
 //******************************************************************************
 // macros
@@ -758,7 +758,7 @@ cupti_subscriber_callback
 )
 {
 
-	if (is_papi_active()) {
+	if (is_tool_active()) {
 		TMSG(CUPTI, "PAPI correlation callback");
 		gpu_correlation_channel_produce(PAPI_CORR_ID, NULL, 0);
 		return;

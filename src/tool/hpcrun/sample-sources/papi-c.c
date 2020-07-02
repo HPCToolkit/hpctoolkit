@@ -98,7 +98,7 @@
 #include <lush/lush-backtrace.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 
-
+#include "tool_state.h"
 
 /******************************************************************************
  * macros
@@ -135,22 +135,9 @@ static bool disable_papi_cuda = false;
 
 static kind_info_t *papi_kind;
 
-extern __thread int papi_active;
-
 /******************************************************************************
  * private operations 
  *****************************************************************************/
-static void
-papi_flag_on()
-{
-	papi_active++;
-}
-
-static void
-papi_flag_off()
-{
-	papi_active--;
-}
 
 static int
 get_event_index(sample_source_t *self, int event_code)
@@ -235,7 +222,7 @@ strip_papi_prefix(const char *str)
 static void
 METHOD_FN(init)
 {
-	papi_flag_on();
+	tool_enter();
   // PAPI_set_debug(0x3ff);
 
   // **NOTE: some papi components may start threads, so
@@ -287,13 +274,13 @@ METHOD_FN(init)
   }
 
   self->state = INIT;
-  papi_flag_off();
+  tool_exit();
 }
 
 static void
 METHOD_FN(thread_init)
 {
-	papi_flag_on();
+	tool_enter();
   TMSG(PAPI, "thread init");
   if (papi_unavail) { goto finish; }
 
@@ -305,13 +292,13 @@ METHOD_FN(thread_init)
   TMSG(PAPI, "thread init OK");
 
 finish:
-  papi_flag_off();
+  tool_exit();
 }
 
 static void
 METHOD_FN(thread_init_action)
 {
-	papi_flag_on();
+	tool_enter();
   TMSG(PAPI, "register thread");
   if (papi_unavail) { goto finish; }
 
@@ -323,13 +310,13 @@ METHOD_FN(thread_init_action)
   TMSG(PAPI, "register thread ok");
 
 finish:
-	papi_flag_off();
+	tool_exit();
 }
 
 static void
 METHOD_FN(start)
 {
-	papi_flag_on();
+	tool_enter();
   int cidx;
   TMSG(PAPI, "start");
 
@@ -384,13 +371,13 @@ METHOD_FN(start)
   td->ss_state[self->sel_idx] = START;
 
 finish:
-	papi_flag_off();
+	tool_exit();
 }
 
 static void
 METHOD_FN(thread_fini_action)
 {
-	papi_flag_on();
+	tool_enter();
   TMSG(PAPI, "unregister thread");
   if (papi_unavail) { goto finish; }
 
@@ -399,13 +386,13 @@ METHOD_FN(thread_fini_action)
   snprintf(msg, sizeof(msg)-1, "!!NOT PAPI_OK!! (code = %d)", retval);
   TMSG(PAPI, "unregister thread returns %s", retval == PAPI_OK? "PAPI_OK" : msg);
 finish:
-	papi_flag_off();
+	tool_exit();
 }
 
 static void
 METHOD_FN(stop)
 {
-	papi_flag_on();
+	tool_enter();
 
 	int cidx;
 
@@ -448,13 +435,13 @@ METHOD_FN(stop)
 
   TD_GET(ss_state)[self->sel_idx] = STOP;
 finish:
-	papi_flag_off();
+	tool_exit();
 }
 
 static void
 METHOD_FN(shutdown)
 {
-	papi_flag_on();
+	tool_enter();
   TMSG(PAPI, "shutdown");
   if (papi_unavail) { goto finish; }
 
@@ -464,7 +451,7 @@ METHOD_FN(shutdown)
 
   self->state = UNINIT;
 finish:
-	papi_flag_off();
+	tool_exit();
 }
 
 // Return true if PAPI recognizes the name, whether supported or not.
@@ -472,7 +459,7 @@ finish:
 static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
-	papi_flag_on();
+	tool_enter();
 	bool ret;
   ev_str = strip_papi_prefix(ev_str);
   
@@ -492,14 +479,14 @@ METHOD_FN(supports_event, const char *ev_str)
   ret = (PAPI_event_name_to_code(evtmp, &ec) == PAPI_OK);
 
 finish:
-	papi_flag_off();
+	tool_exit();
 	return ret;
 }
  
 static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
-	papi_flag_on();
+	tool_enter();
   TMSG(PAPI, "process event list");
   if (papi_unavail) { goto finish; }
 
@@ -616,7 +603,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   }
 
 finish:
-	papi_flag_off();
+	tool_exit();
 }
 
 static void
@@ -627,7 +614,7 @@ METHOD_FN(finalize_event_list)
 static void
 METHOD_FN(gen_event_set, int lush_metrics)
 {
-	papi_flag_on();
+	tool_enter();
   thread_data_t *td = hpcrun_get_thread_data();
   int i;
   int ret;
@@ -728,13 +715,13 @@ METHOD_FN(gen_event_set, int lush_metrics)
   }
 
 finish:
-	papi_flag_off();
+	tool_exit();
 }
 
 static void
 METHOD_FN(display_events)
 {
-	papi_flag_on();
+	tool_enter();
   PAPI_event_info_t info;
   int ev, ret, num_total, num_prof;
   int num_components, cidx;
@@ -811,7 +798,7 @@ METHOD_FN(display_events)
   printf("\n\n");
 
 finish:
-	papi_flag_off();
+	tool_exit();
 }
 
 
@@ -831,9 +818,9 @@ finish:
 void
 hpcrun_disable_papi_cuda(void)
 {
-	papi_flag_on();
+	tool_enter();
   disable_papi_cuda = true;
-  papi_flag_off();
+  tool_exit();
 }
 
 /******************************************************************************
@@ -845,7 +832,7 @@ hpcrun_disable_papi_cuda(void)
 static int
 event_is_derived(int ev_code)
 {
-	papi_flag_on();
+	tool_enter();
 	int ret;
   PAPI_event_info_t info;
 
@@ -866,14 +853,14 @@ event_is_derived(int ev_code)
   ret = 1;
 
 finish:
-	papi_flag_off();
+	tool_exit();
 	return ret;
 }
 
 static void
 event_fatal_error(int ev_code, int papi_ret)
 {
-	papi_flag_on();
+	tool_enter();
   char name[1024];
 
   PAPI_event_code_to_name(ev_code, name);
@@ -888,14 +875,14 @@ event_fatal_error(int ev_code, int papi_ret)
   }
   hpcrun_ssfail_unsupported("PAPI", name);
 
-  papi_flag_off();
+  tool_exit();
 }
 
 static void
 papi_event_handler(int event_set, void *pc, long long ovec,
                    void *context)
 {
-	papi_flag_on();
+	tool_enter();
   sample_source_t *self = &obj_name();
   long long values[MAX_EVENTS];
   int my_events[MAX_EVENTS];
@@ -1012,6 +999,6 @@ papi_event_handler(int event_set, void *pc, long long ovec,
   }
 
 finish:
-	papi_flag_off();
+	tool_exit();
   hpcrun_safe_exit();
 }

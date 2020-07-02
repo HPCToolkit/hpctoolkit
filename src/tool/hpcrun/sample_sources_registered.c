@@ -73,7 +73,6 @@
 
 static sample_source_t* registered_sample_sources = NULL;
 
-__thread int papi_active = false;
 
 //------------------------------------------------------------------------------
 // interface operations 
@@ -89,11 +88,6 @@ hpcrun_sample_sources_register(void)
 #include <sample-sources/ss-list.h>
 #undef SAMPLE_SOURCE_DECL_MACRO
 
-}
-
-extern int is_papi_active()
-{
-	return papi_active;
 }
 
 //------------------------------------------------------------------------------
