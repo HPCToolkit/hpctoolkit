@@ -85,6 +85,7 @@
 #include "../CCTGraph.hpp"
 #include "../MetricNameProfMap.hpp"
 #include "GPUOptimizer.hpp"
+#include "GPUEstimator.hpp"
 #include "GPUArchitecture.hpp"
 
 //*************************** Forward Declarations ***************************
@@ -119,6 +120,12 @@ class GPUAdvisor {
     }
     for (auto *optimizer : _parallel_optimizers) {
       delete optimizer;
+    }
+    for (auto *optimizer : _binary_optimizers) {
+      delete optimizer;
+    }
+    for (auto *estimator : _estimators) {
+      delete estimator;
     }
     delete _arch;
   }
@@ -297,6 +304,7 @@ class GPUAdvisor {
   std::vector<GPUOptimizer *> _code_optimizers;
   std::vector<GPUOptimizer *> _parallel_optimizers;
   std::vector<GPUOptimizer *> _binary_optimizers;
+  std::vector<GPUEstimator *> _estimators;
 
   GPUArchitecture *_arch;
 

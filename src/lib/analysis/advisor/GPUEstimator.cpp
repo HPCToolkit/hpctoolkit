@@ -54,9 +54,31 @@ using std::string;
 
 namespace Analysis {
 
+GPUEstimator *GPUEstimatorFactory(GPUArchitecture *arch, GPUEstimatorType type) {
+  GPUEstimator *gpu_estimator = NULL;
+
+  switch (type) {
+    case SEQ:
+      gpu_estimator = new SequentialGPUEstimator(arch);
+      break;
+    case SEQ_LAT:
+      gpu_estimator = new SequentialLatencyGPUEstimator(arch);
+      break;
+    case PARALLEL:
+      gpu_estimator = new ParallelGPUEstimator(arch);
+      break;
+    case PARALLEL_LAT:
+      gpu_estimator = new ParallelLatencyGPUEstimator(arch);
+      break;
+    default:
+      break;
+  }
+
+  return gpu_estimator;
+}
+
 std::pair<double, double>
-SequentialGPUEstimator::estimate(double blame,
-                                 const KernelStats &kernel_stats) {
+SequentialGPUEstimator::estimate(double blame, const KernelStats &kernel_stats) {
   std::pair<double, double> estimate(0.0, 0.0);
 
   if (blame != 0.0) {
@@ -69,8 +91,7 @@ SequentialGPUEstimator::estimate(double blame,
 }
 
 std::pair<double, double>
-SequentialLatencyGPUEstimator::estimate(double blame,
-                                        const KernelStats &kernel_stats) {
+SequentialLatencyGPUEstimator::estimate(double blame, const KernelStats &kernel_stats) {
   std::pair<double, double> estimate(0.0, 0.0);
 
   if (blame != 0.0) {
@@ -96,8 +117,7 @@ ParallelGPUEstimator::estimate(double blame, const KernelStats &kernel_stats) {
 }
 
 std::pair<double, double>
-ParallelLatencyGPUEstimator::estimate(double blame,
-                                      const KernelStats &kernel_stats) {
+ParallelLatencyGPUEstimator::estimate(double blame, const KernelStats &kernel_stats) {
   std::pair<double, double> estimate(0.0, 0.0);
   double cur_warps = kernel_stats.active_warps;
   double max_warps = (kernel_stats.threads - 1) / _arch->warp_size() + 1;

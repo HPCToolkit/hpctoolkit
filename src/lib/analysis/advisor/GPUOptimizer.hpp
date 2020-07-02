@@ -127,10 +127,10 @@ struct InstructionBlame {
     double stall_blame, double lat_blame, const std::string &blame_name) :
     src_inst(src_inst), dst_inst(dst_inst),
     src_struct(src_struct), dst_struct(dst_struct),
-    blame_name(blame_name), stall_blame(stall_blame), lat_blame(lat_blame) {}
+    stall_blame(stall_blame), lat_blame(lat_blame), blame_name(blame_name) {}
 
   InstructionBlame(
-    CudaParse::InstructionStat *src_inst, CudaParse::InstructionStat *dst,
+    CudaParse::InstructionStat *src_inst, CudaParse::InstructionStat *dst_inst,
     CudaParse::Block *src_block, CudaParse::Block *dst_block,
     CudaParse::Function *src_function, CudaParse::Function *dst_function,
     Prof::Struct::ACodeNode *src_struct, Prof::Struct::ACodeNode *dst_struct,
@@ -238,9 +238,7 @@ class GPUOptimizer {
   // @Return speedup
   double match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats);
 
-  virtual ~GPUOptimizer() {
-    delete this->_estimator;
-  }
+  virtual ~GPUOptimizer() {}
  
  protected:
   std::string _name;

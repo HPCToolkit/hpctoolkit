@@ -56,8 +56,7 @@ using std::string;
 
 namespace Analysis {
 
-GPUOptimizer *GPUOptimizerFactory(GPUOptimizerType type,
-                                  GPUArchitecture *arch) {
+GPUOptimizer *GPUOptimizerFactory(GPUOptimizerType type, GPUArchitecture *arch) {
   GPUOptimizer *optimizer = NULL;
 
   switch (type) {
@@ -72,39 +71,9 @@ GPUOptimizer *GPUOptimizerFactory(GPUOptimizerType type,
     break;
   }
 
-  // Select an estimator
-  switch (type) {
-  case REGISTER_INCREASE:
-  case STRENGTH_REDUCTION:
-  case FUNCTION_INLINE:
-    optimizer->set_estimator(new SequentialGPUEstimator(arch));
-    break;
-  case REGISTER_DECREASE:
-  case LOOP_UNROLL:
-  case LOOP_NOUNROLL:
-  case WARP_BALANCE:
-  case CODE_REORDER:
-  case KERNEL_MERGE:
-  case FUNCTION_SPLIT:
-  case SHARED_MEMORY_COALESCE:
-  case GLOBAL_MEMORY_COALESCE:
-  case OCCUPANCY_DECREASE:
-  case BLOCK_DECREASE:
-    optimizer->set_estimator(new SequentialLatencyGPUEstimator(arch));
-    break;
-  case OCCUPANCY_INCREASE:
-    optimizer->set_estimator(new ParallelLatencyGPUEstimator(arch));
-    break;
-  case SM_BALANCE:
-  case BLOCK_INCREASE:
-    optimizer->set_estimator(new ParallelGPUEstimator(arch));
-    break;
-  default:
-    break;
-  }
-
   return optimizer;
 }
+
 
 double GPUOptimizer::match(const KernelBlame &kernel_blame,
                            const KernelStats &kernel_stats) {
@@ -115,6 +84,7 @@ double GPUOptimizer::match(const KernelBlame &kernel_blame,
       _estimator->estimate(blame, kernel_stats);
   return _inspection.speedup;
 }
+
 
 double
 GPURegisterIncreaseOptimizer::match_impl(const KernelBlame &kernel_blame,
@@ -140,6 +110,7 @@ GPURegisterIncreaseOptimizer::match_impl(const KernelBlame &kernel_blame,
   return blame;
 }
 
+
 double
 GPURegisterDecreaseOptimizer::match_impl(const KernelBlame &kernel_blame,
                                          const KernelStats &kernel_stats) {
@@ -150,6 +121,7 @@ GPURegisterDecreaseOptimizer::match_impl(const KernelBlame &kernel_blame,
   // TODO: Extend use liveness analysis to find high pressure regions
   return 0.0;
 }
+
 
 double GPULoopUnrollOptimizer::match_impl(const KernelBlame &kernel_blame,
                                           const KernelStats &kernel_stats) {
@@ -183,6 +155,7 @@ double GPULoopUnrollOptimizer::match_impl(const KernelBlame &kernel_blame,
   return blame;
 }
 
+
 double GPULoopNoUnrollOptimizer::match_impl(const KernelBlame &kernel_blame,
                                             const KernelStats &kernel_stats) {
   // Match if instruction fetch latency
@@ -212,6 +185,7 @@ double GPULoopNoUnrollOptimizer::match_impl(const KernelBlame &kernel_blame,
   return blame;
 }
 
+
 double
 GPUStrengthReductionOptimizer::match_impl(const KernelBlame &kernel_blame,
                                           const KernelStats &kernel_stats) {
@@ -238,6 +212,7 @@ GPUStrengthReductionOptimizer::match_impl(const KernelBlame &kernel_blame,
   return blame;
 }
 
+
 double GPUWarpBalanceOptimizer::match_impl(const KernelBlame &kernel_blame,
                                            const KernelStats &kernel_stats) {
   // Match if sync stall
@@ -263,6 +238,7 @@ double GPUWarpBalanceOptimizer::match_impl(const KernelBlame &kernel_blame,
   return blame;
 }
 
+
 double GPUCodeReorderOptimizer::match_impl(const KernelBlame &kernel_blame,
                                            const KernelStats &kernel_stats) {
   // Match if for memory dep and exec dep
@@ -284,6 +260,7 @@ double GPUCodeReorderOptimizer::match_impl(const KernelBlame &kernel_blame,
 
   return blame;
 }
+
 
 double GPUKernelMergeOptimizer::match_impl(const KernelBlame &kernel_blame,
                                            const KernelStats &kernel_stats) {
@@ -309,6 +286,7 @@ double GPUKernelMergeOptimizer::match_impl(const KernelBlame &kernel_blame,
 
   return blame;
 }
+
 
 double GPUFunctionInlineOptimizer::match_impl(const KernelBlame &kernel_blame,
                                               const KernelStats &kernel_stats) {
@@ -352,6 +330,7 @@ double GPUFunctionInlineOptimizer::match_impl(const KernelBlame &kernel_blame,
   return blame;
 }
 
+
 double GPUFunctionSplitOptimizer::match_impl(const KernelBlame &kernel_blame,
                                              const KernelStats &kernel_stats) {
   // Match if ifetch and device function
@@ -376,6 +355,7 @@ double GPUFunctionSplitOptimizer::match_impl(const KernelBlame &kernel_blame,
   return blame;
 }
 
+
 double
 GPUSharedMemoryCoalesceOptimizer::match_impl(const KernelBlame &kernel_blame,
                                              const KernelStats &kernel_stats) {
@@ -397,6 +377,7 @@ GPUSharedMemoryCoalesceOptimizer::match_impl(const KernelBlame &kernel_blame,
 
   return blame;
 }
+
 
 double
 GPUGlobalMemoryCoalesceOptimizer::match_impl(const KernelBlame &kernel_blame,
@@ -420,6 +401,7 @@ GPUGlobalMemoryCoalesceOptimizer::match_impl(const KernelBlame &kernel_blame,
   return blame;
 }
 
+
 double
 GPUOccupancyIncreaseOptimizer::match_impl(const KernelBlame &kernel_blame,
                                           const KernelStats &kernel_stats) {
@@ -441,6 +423,7 @@ GPUOccupancyIncreaseOptimizer::match_impl(const KernelBlame &kernel_blame,
 
   return blame;
 }
+
 
 double
 GPUOccupancyDecreaseOptimizer::match_impl(const KernelBlame &kernel_blame,
@@ -464,6 +447,7 @@ GPUOccupancyDecreaseOptimizer::match_impl(const KernelBlame &kernel_blame,
   return blame;
 }
 
+
 double GPUSMBalanceOptimizer::match_impl(const KernelBlame &kernel_blame,
                                          const KernelStats &kernel_stats) {
   // Match if blocks are large while SM efficiency is low
@@ -471,6 +455,7 @@ double GPUSMBalanceOptimizer::match_impl(const KernelBlame &kernel_blame,
 
   return _inspection.speedup;
 }
+
 
 double GPUBlockIncreaseOptimizer::match_impl(const KernelBlame &kernel_blame,
                                              const KernelStats &kernel_stats) {
@@ -483,6 +468,7 @@ double GPUBlockIncreaseOptimizer::match_impl(const KernelBlame &kernel_blame,
 
   return blame;
 }
+
 
 double GPUBlockDecreaseOptimizer::match_impl(const KernelBlame &kernel_blame,
                                              const KernelStats &kernel_stats) {

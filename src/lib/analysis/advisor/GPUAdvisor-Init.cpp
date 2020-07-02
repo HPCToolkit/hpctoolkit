@@ -155,15 +155,41 @@ void GPUAdvisor::init() {
     _metric_name_prof_map->add("BLAME " + s.second);
   }
 
+  // Init estimators
+  auto *seq_estimator = GPUEstimatorFactory(_arch, SEQ);
+  auto *seq_lat_estimator = GPUEstimatorFactory(_arch, SEQ_LAT);
+  auto *parallel_estimator = GPUEstimatorFactory(_arch, PARALLEL);
+  auto *parallel_lat_estimator = GPUEstimatorFactory(_arch, PARALLEL_LAT);
+
+  _estimators.push_back(seq_estimator);
+  _estimators.push_back(seq_lat_estimator);
+  _estimators.push_back(parallel_estimator);
+  _estimators.push_back(parallel_lat_estimator);
+
   // Init optimizers
   auto *code_reorder_optimizer = GPUOptimizerFactory(CODE_REORDER, _arch);
+  code_reorder_optimizer->set_estimator(_estimators[SEQ_LAT]);
+
   auto *occupancy_increase_optimizer = GPUOptimizerFactory(OCCUPANCY_INCREASE, _arch);
+  occupancy_increase_optimizer->set_estimator(_estimators[PARALLEL_LAT]);
+
   auto *warp_balance_optimizer = GPUOptimizerFactory(WARP_BALANCE, _arch);
+  warp_balance_optimizer->set_estimator(_estimators[PARALLEL]);
+
   auto *block_increase_optimizer = GPUOptimizerFactory(BLOCK_INCREASE, _arch);
+  block_increase_optimizer->set_estimator(_estimators[PARALLEL]);
+
   auto *strength_reduction_optimizer = GPUOptimizerFactory(STRENGTH_REDUCTION, _arch);
+  strength_reduction_optimizer->set_estimator(_estimators[SEQ]);
+
   auto *register_increase_optimizer = GPUOptimizerFactory(REGISTER_INCREASE, _arch);
+  register_increase_optimizer->set_estimator(_estimators[SEQ]);
+
   auto *loop_unroll_optimizer = GPUOptimizerFactory(LOOP_UNROLL, _arch);
+  loop_unroll_optimizer->set_estimator(_estimators[SEQ_LAT]);
+
   auto *loop_nounroll_optimizer = GPUOptimizerFactory(LOOP_NOUNROLL, _arch);
+  loop_nounroll_optimizer->set_estimator(_estimators[SEQ_LAT]);
 
   // Code optimizers
   _code_optimizers.push_back(code_reorder_optimizer);

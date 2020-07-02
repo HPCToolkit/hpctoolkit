@@ -86,9 +86,16 @@ namespace Analysis {
 
 class GPUArchitecture;
 
+enum GPUEstimatorType {
+  SEQ = 0,
+  SEQ_LAT = 1,
+  PARALLEL = 2,
+  PARALLEL_LAT = 3
+};
+
 class GPUEstimator {
 public:
-  GPUEstimator(GPUArchitecture *arch) : _arch(arch) {}
+  GPUEstimator(GPUArchitecture *arch, GPUEstimatorType type) : _arch(arch), _type(type) {}
 
   // <ratio, speedup>
   virtual std::pair<double, double>
@@ -98,11 +105,12 @@ public:
 
 protected:
   GPUArchitecture *_arch;
+  GPUEstimatorType _type;
 };
 
 class SequentialLatencyGPUEstimator : public GPUEstimator {
 public:
-  SequentialLatencyGPUEstimator(GPUArchitecture *arch) : GPUEstimator(arch) {}
+  SequentialLatencyGPUEstimator(GPUArchitecture *arch) : GPUEstimator(arch, SEQ_LAT) {}
 
   // <ratio, speedup>
   virtual std::pair<double, double> estimate(double blame,
@@ -113,7 +121,7 @@ public:
 
 class SequentialGPUEstimator : public GPUEstimator {
 public:
-  SequentialGPUEstimator(GPUArchitecture *arch) : GPUEstimator(arch) {}
+  SequentialGPUEstimator(GPUArchitecture *arch) : GPUEstimator(arch, SEQ) {}
 
   // <ratio, speedup>
   virtual std::pair<double, double> estimate(double blame,
@@ -124,7 +132,7 @@ public:
 
 class ParallelLatencyGPUEstimator : public GPUEstimator {
 public:
-  ParallelLatencyGPUEstimator(GPUArchitecture *arch) : GPUEstimator(arch) {}
+  ParallelLatencyGPUEstimator(GPUArchitecture *arch) : GPUEstimator(arch, PARALLEL_LAT) {}
 
   // <ratio, speedup>
   virtual std::pair<double, double> estimate(double blame,
@@ -135,7 +143,7 @@ public:
 
 class ParallelGPUEstimator : public GPUEstimator {
 public:
-  ParallelGPUEstimator(GPUArchitecture *arch) : GPUEstimator(arch) {}
+  ParallelGPUEstimator(GPUArchitecture *arch) : GPUEstimator(arch, PARALLEL) {}
 
   // <ratio, speedup>
   virtual std::pair<double, double> estimate(double blame,
@@ -143,6 +151,9 @@ public:
 
   ~ParallelGPUEstimator() {}
 };
+
+// A factory method
+GPUEstimator *GPUEstimatorFactory(GPUArchitecture *arch, GPUEstimatorType type);
 
 } // namespace Analysis
 
