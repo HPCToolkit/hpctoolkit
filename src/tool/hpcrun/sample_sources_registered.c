@@ -73,7 +73,7 @@
 
 static sample_source_t* registered_sample_sources = NULL;
 
-__thread bool papi_active = false;
+__thread int papi_active = false;
 
 //------------------------------------------------------------------------------
 // interface operations 
@@ -91,7 +91,7 @@ hpcrun_sample_sources_register(void)
 
 }
 
-extern bool is_papi_active()
+extern int is_papi_active()
 {
 	return papi_active;
 }

@@ -60,7 +60,7 @@
 
 #define UNIT_TEST_CORRELATION_HEADER 0
 
-
+#define PAPI_CORR_ID -1
 
 //******************************************************************************
 // forward type declarations

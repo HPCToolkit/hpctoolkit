@@ -135,7 +135,7 @@ static bool disable_papi_cuda = false;
 
 static kind_info_t *papi_kind;
 
-extern __thread bool papi_active;
+extern __thread int papi_active;
 
 /******************************************************************************
  * private operations 
@@ -143,13 +143,13 @@ extern __thread bool papi_active;
 static void
 papi_flag_on()
 {
-	papi_active = true;
+	papi_active++;
 }
 
 static void
 papi_flag_off()
 {
-	papi_active = false;
+	papi_active--;
 }
 
 static int

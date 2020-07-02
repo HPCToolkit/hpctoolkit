@@ -102,7 +102,7 @@ gpu_correlation_produce
 )
 {
   c->host_correlation_id = host_correlation_id;
-  c->gpu_op_ccts = *gpu_op_ccts;
+  if (gpu_op_ccts) c->gpu_op_ccts = *gpu_op_ccts;
   c->activity_channel = activity_channel;
   c->cpu_submit_time = cpu_submit_time;
 }
@@ -118,6 +118,8 @@ gpu_correlation_consume
     printf("gpu_correlation_consume(%ld, %ld,%ld)\n", c->host_correlation_id); 
 #else
     PRINT("Insert correlation id %ld\n", c->host_correlation_id);
+    if (c->host_correlation_id == PAPI_CORR_ID) return;
+
     gpu_host_correlation_map_insert(c->host_correlation_id, &(c->gpu_op_ccts), 
 				    c->cpu_submit_time, c->activity_channel);
 #endif

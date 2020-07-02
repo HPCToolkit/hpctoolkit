@@ -103,7 +103,7 @@
 #include "cubin-hash-map.h"
 #include "cubin-id-map.h"
 
-extern bool is_papi_active();
+extern int is_papi_active();
 
 //******************************************************************************
 // macros
@@ -757,8 +757,12 @@ cupti_subscriber_callback
  const void *cb_info
 )
 {
-	TMSG(CUPTI, "papi_active = %d\n", is_papi_active());
-	if (is_papi_active()) return;
+
+	if (is_papi_active()) {
+		TMSG(CUPTI, "PAPI correlation callback");
+		gpu_correlation_channel_produce(PAPI_CORR_ID, NULL, 0);
+		return;
+	}
 
   if (domain == CUPTI_CB_DOMAIN_RESOURCE) {
     const CUpti_ResourceData *rd = (const CUpti_ResourceData *) cb_info;
