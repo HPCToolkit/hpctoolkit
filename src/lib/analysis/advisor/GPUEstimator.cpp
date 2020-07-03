@@ -23,7 +23,6 @@
 
 #include "GPUArchitecture.hpp"
 #include "GPUEstimator.hpp"
-#include "GPUOptimizer.hpp"
 
 using std::string;
 
@@ -77,6 +76,7 @@ GPUEstimator *GPUEstimatorFactory(GPUArchitecture *arch, GPUEstimatorType type) 
   return gpu_estimator;
 }
 
+
 std::pair<double, double>
 SequentialGPUEstimator::estimate(double blame, const KernelStats &kernel_stats) {
   std::pair<double, double> estimate(0.0, 0.0);
@@ -89,6 +89,7 @@ SequentialGPUEstimator::estimate(double blame, const KernelStats &kernel_stats) 
 
   return estimate;
 }
+
 
 std::pair<double, double>
 SequentialLatencyGPUEstimator::estimate(double blame, const KernelStats &kernel_stats) {
@@ -104,6 +105,7 @@ SequentialLatencyGPUEstimator::estimate(double blame, const KernelStats &kernel_
   return estimate;
 }
 
+
 std::pair<double, double>
 ParallelGPUEstimator::estimate(double blame, const KernelStats &kernel_stats) {
   std::pair<double, double> estimate(0.0, 0.0);
@@ -115,6 +117,7 @@ ParallelGPUEstimator::estimate(double blame, const KernelStats &kernel_stats) {
 
   return estimate;
 }
+
 
 std::pair<double, double>
 ParallelLatencyGPUEstimator::estimate(double blame, const KernelStats &kernel_stats) {

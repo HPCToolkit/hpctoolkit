@@ -164,8 +164,7 @@ double GPULoopNoUnrollOptimizer::match_impl(const KernelBlame &kernel_blame,
 
   if (kernel_blame.stall_blames.find(BLAME_GPU_INST_METRIC_NAME ":LAT_IFET") !=
       kernel_blame.stall_blames.end()) {
-    blame =
-        kernel_blame.stall_blames.at(BLAME_GPU_INST_METRIC_NAME ":LAT_IFET");
+    blame = kernel_blame.stall_blames.at(BLAME_GPU_INST_METRIC_NAME ":LAT_IFET");
   }
 
   // Find top latency pairs
@@ -221,8 +220,7 @@ double GPUWarpBalanceOptimizer::match_impl(const KernelBlame &kernel_blame,
 
   if (kernel_blame.stall_blames.find(BLAME_GPU_INST_METRIC_NAME ":LAT_SYNC") !=
       kernel_blame.stall_blames.end()) {
-    blame =
-        kernel_blame.stall_blames.at(BLAME_GPU_INST_METRIC_NAME ":LAT_SYNC");
+    blame = kernel_blame.stall_blames.at(BLAME_GPU_INST_METRIC_NAME ":LAT_SYNC");
   }
 
   // Find top latency pairs
@@ -269,19 +267,12 @@ double GPUKernelMergeOptimizer::match_impl(const KernelBlame &kernel_blame,
   const double KERNEL_TIME_LIMIT = 100 * 1e-6; // 100us
 
   auto blame = 0.0;
-  if (kernel_blame.stall_blames.find(BLAME_GPU_INST_METRIC_NAME ":LAT_IFET") !=
-      kernel_blame.stall_blames.end()) {
-    blame +=
-        kernel_blame.stall_blames.at(BLAME_GPU_INST_METRIC_NAME ":LAT_IFET");
-  }
-
   if (kernel_stats.time <= KERNEL_TIME_LIMIT &&
-      kernel_stats.count >= KERNEL_COUNT_LIMIT) {
-    // TODO(Keren) nest the latency hiding region to a loop
-    _inspection.ratio = blame / kernel_stats.total_samples;
-    _inspection.speedup =
-        kernel_stats.total_samples /
-        (kernel_stats.total_samples - MIN2(kernel_stats.active_samples, blame));
+    kernel_stats.count >= KERNEL_COUNT_LIMIT) {
+    if (kernel_blame.stall_blames.find(BLAME_GPU_INST_METRIC_NAME ":LAT_IFET") !=
+      kernel_blame.stall_blames.end()) {
+      blame += kernel_blame.stall_blames.at(BLAME_GPU_INST_METRIC_NAME ":LAT_IFET");
+    }
   }
 
   return blame;
@@ -312,8 +303,7 @@ double GPUFunctionInlineOptimizer::match_impl(const KernelBlame &kernel_blame,
             break;
           }
         }
-      } else if (dst_struct->begLine() ==
-                 dst_struct->ancestorProc()->endLine()) {
+      } else if (dst_struct->begLine() == dst_struct->ancestorProc()->endLine()) {
         // epilogue LD
         // TODO interprocedural attribution
         if (dst_inst->op.find("LOAD.LOCAL") != std::string::npos) {
@@ -453,7 +443,7 @@ double GPUSMBalanceOptimizer::match_impl(const KernelBlame &kernel_blame,
   // Match if blocks are large while SM efficiency is low
   auto blame = kernel_stats.sm_efficiency;
 
-  return _inspection.speedup;
+  return blame;
 }
 
 
@@ -487,11 +477,9 @@ double GPUBlockDecreaseOptimizer::match_impl(const KernelBlame &kernel_blame,
   // latency Reduce the number of blocks keep warps fetch the same instructions
   // at every cycle
   if (kernel_stats.blocks > _arch->sms() && warps <= WARP_COUNT_LIMIT) {
-    if (kernel_blame.stall_blames.find(BLAME_GPU_INST_METRIC_NAME
-                                       ":LAT_IFET") !=
+    if (kernel_blame.stall_blames.find(BLAME_GPU_INST_METRIC_NAME":LAT_IFET") !=
         kernel_blame.stall_blames.end()) {
-      blame +=
-          kernel_blame.stall_blames.at(BLAME_GPU_INST_METRIC_NAME ":LAT_IFET");
+      blame += kernel_blame.stall_blames.at(BLAME_GPU_INST_METRIC_NAME":LAT_IFET");
     }
   }
 

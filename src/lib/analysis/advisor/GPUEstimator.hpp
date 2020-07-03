@@ -76,7 +76,7 @@
 #include <tuple>
 #include <vector>
 
-#include "GPUOptimizer.hpp"
+#include "GPUKernel.hpp"
 
 //*************************** Forward Declarations ***************************
 
@@ -93,64 +93,70 @@ enum GPUEstimatorType {
   PARALLEL_LAT = 3
 };
 
+
 class GPUEstimator {
-public:
+ public:
   GPUEstimator(GPUArchitecture *arch, GPUEstimatorType type) : _arch(arch), _type(type) {}
 
   // <ratio, speedup>
   virtual std::pair<double, double>
-  estimate(double blame, const KernelStats &kernel_stats) = 0;
+    estimate(double blame, const KernelStats &kernel_stats) = 0;
 
-  ~GPUEstimator() {}
+  virtual ~GPUEstimator() {}
 
-protected:
+ protected:
   GPUArchitecture *_arch;
   GPUEstimatorType _type;
 };
 
+
 class SequentialLatencyGPUEstimator : public GPUEstimator {
-public:
-  SequentialLatencyGPUEstimator(GPUArchitecture *arch) : GPUEstimator(arch, SEQ_LAT) {}
-
-  // <ratio, speedup>
-  virtual std::pair<double, double> estimate(double blame,
-                                             const KernelStats &kernel_stats);
-
-  ~SequentialLatencyGPUEstimator() {}
+ public:
+   SequentialLatencyGPUEstimator(GPUArchitecture *arch) : GPUEstimator(arch, SEQ_LAT) {}
+ 
+   // <ratio, speedup>
+   virtual std::pair<double, double> estimate(double blame,
+                                              const KernelStats &kernel_stats);
+ 
+   virtual ~SequentialLatencyGPUEstimator() {}
 };
+
 
 class SequentialGPUEstimator : public GPUEstimator {
-public:
+ public:
   SequentialGPUEstimator(GPUArchitecture *arch) : GPUEstimator(arch, SEQ) {}
-
+ 
   // <ratio, speedup>
   virtual std::pair<double, double> estimate(double blame,
                                              const KernelStats &kernel_stats);
-
-  ~SequentialGPUEstimator() {}
+ 
+  virtual ~SequentialGPUEstimator() {}
 };
+
 
 class ParallelLatencyGPUEstimator : public GPUEstimator {
-public:
+ public:
   ParallelLatencyGPUEstimator(GPUArchitecture *arch) : GPUEstimator(arch, PARALLEL_LAT) {}
-
+ 
   // <ratio, speedup>
   virtual std::pair<double, double> estimate(double blame,
                                              const KernelStats &kernel_stats);
-
-  ~ParallelLatencyGPUEstimator() {}
+ 
+  virtual ~ParallelLatencyGPUEstimator() {}
 };
+
 
 class ParallelGPUEstimator : public GPUEstimator {
-public:
+ public:
   ParallelGPUEstimator(GPUArchitecture *arch) : GPUEstimator(arch, PARALLEL) {}
-
+ 
   // <ratio, speedup>
   virtual std::pair<double, double> estimate(double blame,
                                              const KernelStats &kernel_stats);
-
-  ~ParallelGPUEstimator() {}
+ 
+  virtual ~ParallelGPUEstimator() {}
 };
+
 
 // A factory method
 GPUEstimator *GPUEstimatorFactory(GPUArchitecture *arch, GPUEstimatorType type);

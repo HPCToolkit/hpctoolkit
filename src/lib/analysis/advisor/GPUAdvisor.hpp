@@ -98,7 +98,8 @@ namespace Analysis {
 class GPUAdvisor {
  public:
   explicit GPUAdvisor(Prof::CallPath::Profile *prof, MetricNameProfMap *metric_name_prof_map) :
-    _prof(prof), _metric_name_prof_map(metric_name_prof_map) {}
+    _prof(prof), _metric_name_prof_map(metric_name_prof_map),
+    _gpu_root(NULL), _gpu_kernel(NULL), _arch(NULL) {}
 
   MetricNameProfMap *metric_name_prof_map() {
     return this->_metric_name_prof_map;
@@ -127,7 +128,9 @@ class GPUAdvisor {
     for (auto *estimator : _estimators) {
       delete estimator;
     }
-    delete _arch;
+    if (_arch) {
+      delete _arch;
+    }
   }
 
  private:

@@ -167,21 +167,6 @@ void GPUAdvisor::init() {
   _estimators.push_back(parallel_lat_estimator);
 
   // Init optimizers
-  auto *code_reorder_optimizer = GPUOptimizerFactory(CODE_REORDER, _arch);
-  code_reorder_optimizer->set_estimator(_estimators[SEQ_LAT]);
-
-  auto *occupancy_increase_optimizer = GPUOptimizerFactory(OCCUPANCY_INCREASE, _arch);
-  occupancy_increase_optimizer->set_estimator(_estimators[PARALLEL_LAT]);
-
-  auto *warp_balance_optimizer = GPUOptimizerFactory(WARP_BALANCE, _arch);
-  warp_balance_optimizer->set_estimator(_estimators[PARALLEL]);
-
-  auto *block_increase_optimizer = GPUOptimizerFactory(BLOCK_INCREASE, _arch);
-  block_increase_optimizer->set_estimator(_estimators[PARALLEL]);
-
-  auto *strength_reduction_optimizer = GPUOptimizerFactory(STRENGTH_REDUCTION, _arch);
-  strength_reduction_optimizer->set_estimator(_estimators[SEQ]);
-
   auto *register_increase_optimizer = GPUOptimizerFactory(REGISTER_INCREASE, _arch);
   register_increase_optimizer->set_estimator(_estimators[SEQ]);
 
@@ -191,20 +176,66 @@ void GPUAdvisor::init() {
   auto *loop_nounroll_optimizer = GPUOptimizerFactory(LOOP_NOUNROLL, _arch);
   loop_nounroll_optimizer->set_estimator(_estimators[SEQ_LAT]);
 
+  auto *strength_reduction_optimizer = GPUOptimizerFactory(STRENGTH_REDUCTION, _arch);
+  strength_reduction_optimizer->set_estimator(_estimators[SEQ]);
+
+  auto *warp_balance_optimizer = GPUOptimizerFactory(WARP_BALANCE, _arch);
+  warp_balance_optimizer->set_estimator(_estimators[PARALLEL]);
+
+  auto *code_reorder_optimizer = GPUOptimizerFactory(CODE_REORDER, _arch);
+  code_reorder_optimizer->set_estimator(_estimators[SEQ_LAT]);
+
+  auto *kernel_merge_optimizer = GPUOptimizerFactory(KERNEL_MERGE, _arch);
+  kernel_merge_optimizer->set_estimator(_estimators[SEQ_LAT]);
+
+  auto *function_inline_optimizer = GPUOptimizerFactory(FUNCTION_INLINE, _arch);
+  function_inline_optimizer->set_estimator(_estimators[SEQ]);
+
+  auto *function_split_optimizer = GPUOptimizerFactory(FUNCTION_SPLIT, _arch);
+  function_split_optimizer->set_estimator(_estimators[SEQ_LAT]);
+
+  auto *shared_memory_optimizer = GPUOptimizerFactory(SHARED_MEMORY_COALESCE, _arch);
+  shared_memory_optimizer->set_estimator(_estimators[SEQ_LAT]);
+
+  auto *global_memory_optimizer = GPUOptimizerFactory(GLOBAL_MEMORY_COALESCE, _arch);
+  global_memory_optimizer->set_estimator(_estimators[SEQ_LAT]);
+
+  auto *occupancy_increase_optimizer = GPUOptimizerFactory(OCCUPANCY_INCREASE, _arch);
+  occupancy_increase_optimizer->set_estimator(_estimators[PARALLEL_LAT]);
+
+  auto *occupancy_decrease_optimizer = GPUOptimizerFactory(OCCUPANCY_DECREASE, _arch);
+  occupancy_decrease_optimizer->set_estimator(_estimators[SEQ_LAT]);
+
+  auto *sm_balance_optimizer = GPUOptimizerFactory(SM_BALANCE, _arch);
+  sm_balance_optimizer->set_estimator(_estimators[PARALLEL]);
+
+  auto *block_increase_optimizer = GPUOptimizerFactory(BLOCK_INCREASE, _arch);
+  block_increase_optimizer->set_estimator(_estimators[PARALLEL]);
+
+  auto *block_decrease_optimizer = GPUOptimizerFactory(BLOCK_DECREASE, _arch);
+  block_decrease_optimizer->set_estimator(_estimators[SEQ_LAT]);
+
   // Code optimizers
+  //_code_optimizers.push_back(loop_unroll_optimizer);
+  //_code_optimizers.push_back(loop_nounroll_optimizer);
+  //_code_optimizers.push_back(strength_reduction_optimizer);
+  //_code_optimizers.push_back(warp_balance_optimizer);
   _code_optimizers.push_back(code_reorder_optimizer);
-  _code_optimizers.push_back(warp_balance_optimizer);
-  _code_optimizers.push_back(strength_reduction_optimizer);
-  _code_optimizers.push_back(register_increase_optimizer);
-  _code_optimizers.push_back(loop_unroll_optimizer);
-  _code_optimizers.push_back(loop_nounroll_optimizer);
+  //_code_optimizers.push_back(kernel_merge_optimizer);
+  //_code_optimizers.push_back(function_inline_optimizer);
+  //_code_optimizers.push_back(function_split_optimizer);
+  //_code_optimizers.push_back(shared_memory_optimizer);
+  //_code_optimizers.push_back(global_memory_optimizer);
 
-  // Parallel optimizers
-  _parallel_optimizers.push_back(occupancy_increase_optimizer);
-  _parallel_optimizers.push_back(block_increase_optimizer);
+  //// Parallel optimizers
+  //_parallel_optimizers.push_back(occupancy_increase_optimizer);
+  //_parallel_optimizers.push_back(occupancy_decrease_optimizer);
+  //_parallel_optimizers.push_back(block_increase_optimizer);
+  //_parallel_optimizers.push_back(block_decrease_optimizer);
+  //_parallel_optimizers.push_back(sm_balance_optimizer);
 
-  // Binary optimizers
-  _binary_optimizers.push_back(register_increase_optimizer);
+  //// Binary optimizers
+  //_binary_optimizers.push_back(register_increase_optimizer);
 
   // Static struct
   auto *struct_root = _prof->structure()->root();

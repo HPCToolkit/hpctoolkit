@@ -1278,6 +1278,10 @@ void GPUAdvisor::overlayInstBlames(InstBlames &inst_blames, KernelBlame &kernel_
     kernel_blame.stall_blame += inst_blame.stall_blame;
     kernel_blame.lat_blame += inst_blame.lat_blame;
 
+    kernel_blame.inst_blames.push_back(inst_blame);
+  }
+
+  for (auto &inst_blame : kernel_blame.inst_blames) {
     kernel_blame.lat_inst_blame_ptrs.push_back(&inst_blame);
     kernel_blame.stall_inst_blame_ptrs.push_back(&inst_blame);
   }
