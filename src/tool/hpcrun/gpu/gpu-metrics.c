@@ -249,7 +249,7 @@ gpu_metrics_attribute_pc_sampling
  gpu_activity_t *activity
 )
 {
-  uint32_t sample_period = 
+  uint64_t sample_period = 
     1 << gpu_monitoring_instruction_sample_frequency_get();
 
   gpu_pc_sampling_t *sinfo = &(activity->details.pc_sampling);
