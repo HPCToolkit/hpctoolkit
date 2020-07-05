@@ -109,8 +109,8 @@
 // macros
 //******************************************************************************
 
-#define CUPTI_LIBRARY_LOCATION "/lib64/libcupti.so"
-#define CUPTI_PATH_FROM_CUDA "extras/CUPTI"
+#define CUPTI_LIBRARY_LOCATION "lib64/libcupti.so"
+#define CUPTI_PATH_FROM_CUDA "extras/CUPTI/"
 
 #define HPCRUN_CUPTI_ACTIVITY_BUFFER_SIZE (16 * 1024 * 1024)
 #define HPCRUN_CUPTI_ACTIVITY_BUFFER_ALIGNMENT (8)
@@ -512,7 +512,7 @@ cupti_path
       path = buffer;
       resolved = 1;
     } else {
-      buffer[zero_index - 1] = 0;
+      buffer[zero_index] = 0;
       strcat(buffer, CUPTI_PATH_FROM_CUDA CUPTI_LIBRARY_LOCATION);
 
       if (library_path_resolves(buffer)) {
