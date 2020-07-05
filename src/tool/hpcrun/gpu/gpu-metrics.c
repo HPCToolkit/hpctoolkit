@@ -209,7 +209,7 @@ gpu_metrics_attribute_metric_int
 (
  metric_data_list_t *metrics, 
  int metric_index,
- int value
+ uint64_t value
 )
 {
   hpcrun_metric_std_inc(metric_index, metrics, (cct_metric_data_t){.i = value});
@@ -255,7 +255,7 @@ gpu_metrics_attribute_pc_sampling
   gpu_pc_sampling_t *sinfo = &(activity->details.pc_sampling);
   cct_node_t *cct_node = activity->cct_node;
 
-  int inst_count = sinfo->samples * sample_period;
+  uint64_t inst_count = sinfo->samples * sample_period;
 
   metric_data_list_t *inst_metric = 
     hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_INST_ALL));
@@ -273,7 +273,7 @@ gpu_metrics_attribute_pc_sampling
     metric_data_list_t *stall_metrics = 
       hpcrun_reify_metric_set(cct_node, stall_kind_metric_index);
 
-    int stall_count = sinfo->latencySamples * sample_period;
+    uint64_t stall_count = sinfo->latencySamples * sample_period;
 
     // stall summary metric
     gpu_metrics_attribute_metric_int(stall_metrics, 
@@ -292,7 +292,7 @@ gpu_metrics_attribute_pc_sampling
     metric_data_list_t *lat_metrics = 
       hpcrun_reify_metric_set(cct_node, lat_kind_metric_index);
 
-    int lat_count = sinfo->samples * sample_period;
+    uint64_t lat_count = sinfo->samples * sample_period;
 
     // lat summary metric
     gpu_metrics_attribute_metric_int(lat_metrics, lat_summary_metric_index, lat_count);
