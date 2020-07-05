@@ -642,6 +642,16 @@ void SparseDB::writeThreadMajor(const int threads,
   uint64_t my_off;
   getMyOffset(my_size, world_rank, my_off);
   getMyProfOffset(profile_sizes, total_prof, my_off, threads/world_size, prof_offsets);
+/*
+  std::cout << "rank " << world_rank << ": ";
+  for(int i = 0; i < prof_offsets.size(); i++){
+    std::cout << "mpi rank " << profile_sizes[i].first->attributes.mpirank();
+    std::cout << ",  proc id " << profile_sizes[i].first->attributes.procid();
+    std::cout << ",  thread id " << profile_sizes[i].first->attributes.threadid();
+    std::cout << ": " << prof_offsets[i] << "\n";
+  }
+  */  
+
 
 
   MPI_File thread_major_f;
@@ -653,6 +663,7 @@ void SparseDB::writeThreadMajor(const int threads,
   writeProfiles(prof_offsets, profile_sizes, thread_major_f, threads/world_size, ctx_nzval_cnts, ctx_nzmids);
 
   MPI_File_close(&thread_major_f);
+
 }
 
 //***************************************************************************
@@ -1476,9 +1487,11 @@ void SparseDB::convertOneCtx(const uint32_t ctx_id,
   }
 
   if(num_nzmids != 0)
-    if(offset + num_vals * CMS_val_tid_pair_SIZE + (num_nzmids+1) * CMS_m_pair_SIZE !=  ctx_off[CTX_VEC_IDX(ctx_id+2)])
-      exitError("collected cct data (num_vals/num_nzmids) were wrong !");
-
+    if(offset + num_vals * CMS_val_tid_pair_SIZE + (num_nzmids+1) * CMS_m_pair_SIZE !=  ctx_off[CTX_VEC_IDX(ctx_id+2)]){
+      printf("ctx_id %d, offset: %d, num_vals: %d, num_nzmids %d, next off %d\n", ctx_id, offset, num_vals, num_nzmids,ctx_off[CTX_VEC_IDX(ctx_id+2)] );
+      exitError("collected cct data (num_vals:" + std::to_string(num_vals) + " /num_nzmids:" + std::to_string(num_nzmids) + ") were wrong !");
+    }
+      
   //INFO_BYTES
   cms_ctx_info_t ci = {ctx_id, num_vals, num_nzmids, offset};
   info_byte_cnt += convertOneCtxInfo(ci, info_bytes);
