@@ -88,6 +88,9 @@ std::string SimpleInspectionFormatter::formatInlineStack(
 std::string SimpleInspectionFormatter::format(const Inspection &inspection) {
   std::stringstream ss;
 
+  std::string sep = "------------------------------------------"
+    "--------------------------------------------------";
+
   // Overview
   ss << "Apply " << inspection.optimization << " optimization,";
 
@@ -99,28 +102,53 @@ std::string SimpleInspectionFormatter::format(const Inspection &inspection) {
     ss << " estimate speedup " << inspection.speedup << "x";
   }
 
-  ss << std::endl;
+  ss << std::endl << std::endl;
 
   // Specific suggestion
-  if (inspection.active_warp_count != -1) {
-    ss << "Adjust #active_warps: " << inspection.active_warp_count << std::endl;
+  if (inspection.active_warp_count.first != -1) {
+    ss << "Adjust #active_warps: " << inspection.active_warp_count.first;
+
+    if (inspection.active_warp_count.second != -1) {
+      ss << " to " << inspection.active_warp_count.second;
+    }
+
+    ss << std::endl;
   }
 
-  if (inspection.thread_count != -1) {
-    ss << "Adjust #threads: " << inspection.thread_count << std::endl;
+  if (inspection.thread_count.first != -1) {
+    ss << "Adjust #threads: " << inspection.thread_count.first;
+
+    if (inspection.thread_count.second != -1) {
+      ss << " to " << inspection.thread_count.second;
+    }
+
+    ss << std::endl;
   }
 
-  if (inspection.block_count != -1) {
-    ss << "Adjust #blocks: " << inspection.block_count << std::endl;
+  if (inspection.block_count.first != -1) {
+    ss << "Adjust #blocks: " << inspection.block_count.first;
+
+    if (inspection.block_count.second != -1) {
+      ss << " to " << inspection.block_count.second;
+    }
+
+    ss << std::endl;
   }
 
-  if (inspection.reg_count != -1) {
-    ss << "Adjust #regs: " << inspection.reg_count << std::endl;
+  if (inspection.reg_count.first != -1) {
+    ss << "Adjust #regs: " << inspection.reg_count.first;
+
+    if (inspection.reg_count.second != -1) {
+      ss << " to " << inspection.reg_count.second;
+    }
+
+    ss << std::endl;
   }
 
+  auto index = 1;
   // Hot regions
   for (auto &inst_blame : inspection.top_regions) {
-    ss << "Hot " << inst_blame.blame_name << " code (" << inst_blame.stall_blame
+    ss << index++ << ". Hot " << inst_blame.blame_name << " code (" << inst_blame.stall_blame
        << "):" << std::endl;
 
     auto *src_struct = inst_blame.src_struct;
@@ -138,8 +166,6 @@ std::string SimpleInspectionFormatter::format(const Inspection &inspection) {
     std::stack<Prof::Struct::Alien *> dst_inline_stack =
         getInlineStack(dst_struct);
 
-    ss << "----------------------------------------------------------"
-       << std::endl;
     ss << "From" << std::endl;
     if (src_inline_stack.empty() == false) {
       ss << formatInlineStack(src_inline_stack);
@@ -161,11 +187,9 @@ std::string SimpleInspectionFormatter::format(const Inspection &inspection) {
       ss << std::hex << "0x" << dst_vma << std::dec << " at Line "
          << dst_struct->begLine() << " in " << dst_file->name() << std::endl;
     }
-    ss << "----------------------------------------------------------"
-       << std::endl;
   }
 
-  ss << std::endl;
+  ss << sep << std::endl;
 
   return ss.str();
 };

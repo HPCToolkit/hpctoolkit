@@ -57,15 +57,26 @@ using std::string;
 #define DEBUG_GPUADVISOR 1
 #define DEBUG_GPUADVISOR_DETAILS 1
 
+#define MIN2(a, b) ((a > b) ? b : a)
+
 namespace Analysis {
 
 void GPUAdvisor::concatAdvise(const OptimizerRank &optimizer_rank) {
   size_t rank = 0;
+
   // TODO(Keren): use other formatters
   SimpleInspectionFormatter formatter;
   for (auto &iter : optimizer_rank) {
+    double score = iter.first;
+
+    if (score == 0.0) {
+      // Do not output not effective optimizers
+      break;
+    }
+
     for (auto *optimizer : iter.second) {
       ++rank;
+
       _output << optimizer->advise(&formatter);
 
       if (rank >= _top_optimizers) {
@@ -120,7 +131,7 @@ KernelStats GPUAdvisor::readKernelStats(int mpi_rank, int thread_id) {
   time /= count;
 
   samples_total = samples_total - samples_dropped;
-  auto util = samples_expected / samples_total;
+  auto util = MIN2(1.0, samples_expected / samples_total);
   samples_expected *= sample_frequency;
   samples_total *= sample_frequency;
 
@@ -242,14 +253,6 @@ void GPUAdvisor::advise(const CCTBlames &cct_blames) {
   auto *gpu_file_struct = gpu_kernel_struct->ancestorFile();
 
   if (_output.rdbuf()->in_avail() != 0) {
-    std::cout << "----------------------------------------------------------"
-              << std::endl;
-    std::cout << "Function: " << gpu_proc_struct->name() << " at Line "
-              << gpu_proc_struct->begLine() << " in " << gpu_file_struct->name()
-              << std::endl;
-    std::cout << "----------------------------------------------------------"
-              << std::endl;
-
     std::cout << _output.str();
   }
 

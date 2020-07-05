@@ -123,13 +123,13 @@ std::pair<double, double>
 ParallelLatencyGPUEstimator::estimate(double blame, const KernelStats &kernel_stats) {
   std::pair<double, double> estimate(0.0, 0.0);
   double cur_warps = kernel_stats.active_warps;
-  double max_warps = (kernel_stats.threads - 1) / _arch->warp_size() + 1;
+  double max_warps = _arch->warps();
 
   if (cur_warps < _arch->schedulers()) {
     estimate.first = cur_warps / _arch->schedulers();
     estimate.second = _arch->schedulers() / cur_warps;
   } else {
-    double issue = blame / static_cast<double>(kernel_stats.total_samples);
+    double issue = (1 - blame) / static_cast<double>(kernel_stats.total_samples);
     double warp_issue = 1 - pow(1 - issue, cur_warps / _arch->schedulers());
     double new_warp_issue = 1 - pow(1 - issue, max_warps / _arch->schedulers());
 

@@ -95,22 +95,22 @@ struct Inspection {
   std::vector<InstructionBlame> top_regions;
 
   // before
-  int active_warp_count;
-  int block_count;
-  int thread_count;
-  int reg_count;
+  std::pair<int, int> active_warp_count;
+  std::pair<int, int> block_count;
+  std::pair<int, int> thread_count;
+  std::pair<int, int> reg_count;
 
-  Inspection() : ratio(-1.0), speedup(-1.0), active_warp_count(-1), block_count(-1),
-    thread_count(-1), reg_count(-1) {}
+  Inspection() : ratio(-1.0), speedup(-1.0), active_warp_count(-1, -1),
+    block_count(-1, -1), thread_count(-1, -1), reg_count(-1, -1) {}
 
   void clear() {
     ratio = -1.0;
     speedup = -1.0;
     top_regions.clear();
-    active_warp_count = -1;
-    block_count = -1;
-    thread_count = -1;
-    reg_count = -1;
+    active_warp_count = std::pair<int, int>(-1, -1);
+    block_count = std::pair<int, int>(-1, -1);
+    thread_count = std::pair<int, int>(-1, -1);
+    reg_count = std::pair<int, int>(-1, -1);
   }
 };
 
