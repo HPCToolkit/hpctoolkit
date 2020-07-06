@@ -551,7 +551,7 @@ hpcrun_init_internal(bool is_child)
   //
 
   if (! is_child) {
-			SAMPLE_SOURCES(process_event_list, lush_metrics);
+  	SAMPLE_SOURCES(process_event_list, lush_metrics);
     SAMPLE_SOURCES(finalize_event_list);
     hpcrun_metrics_data_finalize();
   }
@@ -941,11 +941,11 @@ monitor_init_process(int *argc, char **argv, void* data)
   // is because fnbounds_init will iterate over the load map 
   // and will invoke analysis on vdso
   hpcrun_save_vdso();
-//  fnbounds_init();
 
   // init callbacks for each device //Module_ignore_map is here
   hpcrun_initializer_init();
 
+  // fnbounds must be after module_ignore_map
 	fnbounds_init();
 
   hpcrun_registered_sources_init();

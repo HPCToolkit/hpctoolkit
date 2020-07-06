@@ -256,6 +256,12 @@ roctracer_subscriber_callback
  void* arg
 )
 {
+  if (is_tool_active()) {
+		TMSG(ROCM, "PAPI correlation callback");
+		gpu_correlation_channel_produce(PAPI_CORR_ID, NULL, 0);
+		return;
+  }
+
   gpu_op_placeholder_flags_t gpu_op_placeholder_flags = 0;
   bool is_valid_op = false;
   const hip_api_data_t* data = (const hip_api_data_t*)(callback_data);
