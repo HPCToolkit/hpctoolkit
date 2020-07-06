@@ -372,7 +372,7 @@ GPUGlobalMemoryCoalesceOptimizer::match_impl(const KernelBlame &kernel_blame,
 
   // Find top latency pairs
   for (auto *inst_blame : kernel_blame.stall_inst_blame_ptrs) {
-    if (inst_blame->blame_name.find(":LAT_GMEM_GMEM") != std::string::npos) {
+    if (inst_blame->blame_name.find(":LAT_MTHR") != std::string::npos) {
       blame += inst_blame->stall_blame;
 
       if (insts++ < _top_regions) {

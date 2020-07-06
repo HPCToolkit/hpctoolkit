@@ -972,10 +972,10 @@ GPUAdvisor::detailizeExecBlame(CudaParse::InstructionStat *from_inst,
 std::pair<std::string, std::string>
 GPUAdvisor::detailizeMemBlame(CudaParse::InstructionStat *from_inst) {
   if (from_inst->op.find(".LOCAL") != std::string::npos) {
-    // smem
+    // local mem
     return std::make_pair(_mem_dep_lmem_stall_metric, _mem_dep_lmem_lat_metric);
   } else {
-    // reg
+    // global mem
     return std::make_pair(_mem_dep_gmem_stall_metric, _mem_dep_gmem_lat_metric);
   }
 }
@@ -1391,17 +1391,17 @@ void GPUAdvisor::blame(CCTBlames &cct_blames) {
         std::cout << std::endl;
       }
 
-      //// TODO(Keren):
-      //// x1. Implement sync
-      //// x2. Debug function start
-      //// x3. Implement WAR and Predicate
-      //// x4. Implement scheduler stall
-      //// x6. Implement fake barrier
-      //// x7. blame to local memory
-      //// 8. Debug apportion
-      //// x9. Overlay back
+      // TODO(Keren):
+      // x1. Implement sync
+      // x2. Debug function start
+      // x3. Implement WAR and Predicate
+      // x4. Implement scheduler stall
+      // x6. Implement fake barrier
+      // x7. blame to local memory
+      // 8. Debug apportion
+      // x9. Overlay back
 
-      ////// 5. Overlay blames
+      // 5. Overlay blames
       auto &kernel_blame = cct_blames[mpi_rank][thread_id];
       overlayInstBlames(inst_blames, kernel_blame);
     }
