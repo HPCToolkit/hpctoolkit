@@ -82,12 +82,12 @@ hpcrun_loadmap_notify_register(loadmap_notify_t *n)
 
 
 static void
-hpcrun_loadmap_notify_map(void *start, void *end)
+hpcrun_loadmap_notify_map(load_module_t* lm)
 {
   loadmap_notify_t * n = notification_recipients;
   while (n) { 
     if (n->map) {
-      n->map(start, end);
+      n->map(lm);
     }
     n = n->next;
   }
@@ -95,12 +95,12 @@ hpcrun_loadmap_notify_map(void *start, void *end)
 
 
 static void
-hpcrun_loadmap_notify_unmap(void *start, void *end)
+hpcrun_loadmap_notify_unmap(load_module_t* lm)
 {
   loadmap_notify_t * n = notification_recipients;
   while (n) {
     if (n->unmap) {
-      n->unmap(start, end);
+      n->unmap(lm);
     }
     n = n->next;
   }
@@ -215,6 +215,7 @@ hpcrun_loadModule_new(const char* name)
   x->dso_info = NULL;
   x->next = NULL;
   x->prev = NULL;
+  x->phdr_info.dlpi_phdr = NULL;
 
   return x;
 }
@@ -451,8 +452,7 @@ hpcrun_loadmap_map(dso_info_t* dso)
 
   }
 
-  hpcrun_loadmap_notify_map(lm->dso_info->start_addr, 
-			    lm->dso_info->end_addr);
+  hpcrun_loadmap_notify_map(lm);
 
   TMSG(LOADMAP, "hpcrun_loadmap_map: '%s' size=%d %s",
        dso->name, s_loadmap_ptr->size, msg);
@@ -468,12 +468,12 @@ hpcrun_loadmap_unmap(load_module_t* lm)
 
   dso_info_t* old_dso = lm->dso_info;
 
-  if (old_dso == NULL) return; // nothing to do!
-
-  void *start_addr = old_dso->start_addr;
-  void *end_addr = old_dso->end_addr;
+  if (old_dso == NULL) return; // nothing to do!  
 
   lm->dso_info = NULL;
+
+  // Set dl_phdr_info structure to uninitialized state
+  lm->phdr_info.dlpi_phdr = NULL;
 
   // tallent: For now, do not move the loadmap to the back of the
   //   list.  If we want to enable, this, we could have
@@ -491,15 +491,15 @@ hpcrun_loadmap_unmap(load_module_t* lm)
   TMSG(LOADMAP, "Deleting unw intervals");
 
 #if LOADMAP_DEBUG
-  assert((uintptr_t)end_addr < UINTPTR_MAX) ;
+  assert((uintptr_t)(old_dso->end_addr) < UINTPTR_MAX) ;
 #endif
 
 #if UW_RECIPE_MAP_DEBUG
   fprintf(stderr, "hpcrun_loadmap_unmap: '%s' start=%p end=%p\n", 
-          lm->name, start_addr, end_addr);
+          lm->name, old_dso->start_addr, old_dso->end_addr);
 #endif
 
-  hpcrun_loadmap_notify_unmap(start_addr, end_addr);
+  hpcrun_loadmap_notify_unmap(lm);
 }
 
 
@@ -533,4 +533,21 @@ hpcrun_loadmap_t*
 hpcrun_getLoadmap()
 {
   return s_loadmap_ptr;
+}
+
+int
+hpcrun_loadmap_iterate
+(
+  int (*cb)(struct dl_phdr_info * info, size_t size, void* data),
+  void *data
+)
+{  
+  int ret = 0;
+  for (load_module_t* x = s_loadmap_ptr->lm_head; (x); x = x->next) {
+    // Skip load modules that do not have a valid dl_phdr_info structure
+    if (x->phdr_info.dlpi_phdr == NULL) continue;
+    ret = cb(&(x->phdr_info), sizeof(struct dl_phdr_info), data);
+    if (ret != 0) return ret;    
+  }  
+  return ret;
 }

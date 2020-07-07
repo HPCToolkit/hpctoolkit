@@ -78,10 +78,19 @@ class ElfFileVector;
 // type definitions
 //******************************************************************************
 
+typedef enum InputFileErrorType_t { 
+  InputFileError_WarningNothrow, 
+  InputFileError_Warning, 
+  InputFileError_Error 
+} InputFileErrorType_t;
+
+
 class InputFile {
 public:
   InputFile() { filevector = 0; }
-  bool openFile(std::string &filename);
+  ~InputFile();
+  bool openFile(std::string &filename, InputFileErrorType_t errType);
+
   std::string &fileName() { return filename; }
   const char *CfileName() { return filename.c_str(); }
   ElfFileVector *fileVector() { return filevector; }

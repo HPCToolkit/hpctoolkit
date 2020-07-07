@@ -41,11 +41,54 @@ on the hpctoolkit web site.
 @end example
 
 @noindent
-Last revised: March 27, 2020.
+Last revised: June 17, 2020.
 
 @c ------------------------------------------------------------
 
 @section Current Issues
+
+@subsection (2019-08-28) Cray front-end compilers
+
+@code{Spack compiler find} is currently broken for detecting the
+front-end compilers on Cray that HPCToolkit uses.  Normally, you would
+load a module for gcc and run @code{spack compiler find} and spack would
+add that compiler to @code{compilers.yaml}, but this currently does not
+work.
+
+@b{Workaround:} If you have a working @code{compiler:} entry for a
+front-end GNU compiler on Cray, then that will continue to work.  If
+not, then you will have to add one manually.  For example, this is an
+entry for the @code{gcc/8.3.0} module on theta at ANL.  Note that the
+front-end operating_system is something like @code{sles12} (not
+@code{cnl6}), and the front-end target is @code{x86_64} (not
+@code{mic_knl}).  Your versions may differ.
+
+@example
+- compiler:
+    environment: @{@}
+    flags: @{@}
+    modules:
+    - PrgEnv-gnu/6.0.5
+    - gcc/8.3.0
+    - craype/2.6.1
+    - cray-mpich/7.7.10
+    operating_system: sles12
+    paths:
+      cc:  /opt/gcc/8.3.0/bin/gcc
+      cxx: /opt/gcc/8.3.0/bin/g++
+      f77: /opt/gcc/8.3.0/bin/gfortran
+      fc:  /opt/gcc/8.3.0/bin/gfortran
+    spec: gcc@@8.3.0
+    target: x86_64
+@end example
+
+@noindent
+@b{Note:} Be sure to fill in the @code{modules:} field with all four
+modules.
+
+@c ------------------------------------------------------------
+
+@section Recently Resolved Issues
 
 @subsection (2020-03-27) Intel-TBB checksums don't match
 
@@ -72,212 +115,6 @@ spack install --no-checksum intel-tbb
 
 @c ------------------------------------------------------------
 
-@subsection (2019-09-25) New micro-architecture targets
-
-Spack recently changed how it treats a system's architecture and target
-to allow a hierarchy of fine-grained micro-architectures.  The 'target'
-is now a specific micro-architecture (eg, haswell, ivybridge) instead of
-a generic family (x86_64).  You will see this change in two main places:
-in 'spack spec' and the path for the install directory.  For example,
-@code{linux-rhel7-x86_64} might become @code{linux-rhel7-broadwell}.
-You can use @code{spack arch} to see the list of generic families and
-micro-architecture targets.
-
-@example
-spack arch --known-targets
-@end example
-
-@noindent
-@b{Workaround:} Instead of building for the micro-arch target, you can
-use the @code{target} option to build for a generic architecture
-family (x86_64, ppc64, ppc64le, aarch64).  This is also useful for
-creating a shared install that needs to work across multiple machines
-with different micro-arch types.  For example:
-
-@example
-spack install hpctoolkit ... target=x86_64
-@end example
-
-@noindent
-If you want to use this target for all spack builds, then you can
-specify this in @code{packages.yaml}.  For example:
-
-@example
-packages:
-  all:
-    target: ['x86_64']
-@end example
-
-@c ------------------------------------------------------------
-
-@subsection (2019-08-28) Cray front-end compilers
-
-@code{Spack compiler find} is currently broken for detecting the
-front-end compilers on Cray that HPCToolkit uses.  Normally, you would
-load a module for gcc and run @code{spack compiler find} and spack would
-add that compiler to @code{compilers.yaml}, but this currently does not
-work.
-
-@b{Workaround:} If you have a working @code{compiler:} entry for a
-front-end GNU compiler on Cray, then that will continue to work.  If
-not, then you will have to add one manually.  For example, this is an
-entry for the @code{gcc/7.3.0} module on theta at ANL.  Note that the
-front-end operating_system is something like @code{sles12} (not
-@code{cnl6}), and the front-end target is @code{x86_64} (not
-@code{mic_knl}).
-
-@example
-- compiler:
-    environment: @{@}
-    extra_rpaths: []
-    flags: @{@}
-    modules:
-    - PrgEnv-gnu/6.0.4
-    - gcc/7.3.0
-    - cray-mpich/7.7.3
-    operating_system: sles12
-    paths:
-      cc:  /opt/gcc/7.3.0/bin/gcc
-      cxx: /opt/gcc/7.3.0/bin/g++
-      f77: /opt/gcc/7.3.0/bin/gfortran
-      fc:  /opt/gcc/7.3.0/bin/gfortran
-    spec: gcc@@7.3.0
-    target: x86_64
-@end example
-
-@noindent
-@b{Workaround:} Alternatively, the last working commit was
-@code{9c1c50fb7632} on 2019-06-07.  You could revert to this commit, run
-@code{spack compiler find} and then return to the current spack head
-(develop).  Be sure to fill in the @code{modules:} field.
-
-@c ------------------------------------------------------------
-
-@section Recently Resolved Issues
-
-@subsection (2019-11-19) External perl breaks libunwind
-
-A recent commit (@code{99dfff447509} on 2019-11-04, but merged on
-11-18) modified the treatment of PATH for packages that depend on
-perl.  If you use @code{packages.yaml} to specify an external perl
-from a system directory such as @code{/usr/bin}, then this puts
-@code{/usr/bin} at the front of PATH during the build.  Unfortunately,
-this covers up all of the other build dependencies and can break the
-build.
-
-For example, on systems with an older libtool, this breaks libunwind
-as follows.
-
-@example
-294   libtool: Version mismatch error.  This is libtool 2.4.2, but the
-295   libtool: definition of this LT_INIT comes from libtool 2.4.6.
-296   libtool: You should recreate aclocal.m4 with macros from libtool 2.4.2
-297   libtool: and run autoconf again.
-@end example
-
-@noindent
-@b{Fixed:} This is now fixed in commit
-@uref{https://github.com/spack/spack/pull/13903, cacfc3a6e1c7} on
-2019-11-29.  Or, you can workaround the problem by not using an external
-perl and instead having spack build perl itself.
-
-@c ------------------------------------------------------------
-
-@subsection (2019-10-08) Python 3.x breaks PAPI
-
-Python 2.x is nearing end-of-life and Spack recently changed their
-launch script to look for and use python 3.x if available.  There are
-incompatibilities and some spack packages (including PAPI) currently
-break with python 3.x.  (The papi recipe hangs while patching files with
-@code{filter_file}.)  There are two workarounds, depending on whether
-python 2.x is available on your system.
-
-@noindent
-@b{Fixed:} The filter file problem is now fixed in commit
-@uref{https://github.com/spack/spack/pull/12765, 5cd28847e81b} on
-2019-10-15.
-
-@b{Workaround:} If python 2.x is available on your system, then one
-solution is to remove the test for @code{python3} in the
-@code{bin/spack} launch script.
-
-@example
-# This file is bilingual. The following shell code finds our preferred python.
-# Following line is a shell no-op, and starts a multi-line Python comment.
-# See https://stackoverflow.com/a/47886254
-""":"
-# prefer python3, then python, then python2
-for cmd in python3 python python2; do
-   command -v > /dev/null $cmd && exec $cmd $0 "$@@"
-done
-@end example
-
-@c ------------------------------------------------------------
-
-@subsection (2019-08-28) External cuda modules
-
-Sometimes spack misreads the @code{module:} entry for an external
-package in @code{packages.yaml} and selects the wrong install
-directory.  For example, spack misreads the @code{cuda/10.1.168}
-module on cori at NERSC (incorrectly using /usr) and the build for
-hpctoolkit fails as follows.
-
-@example
-==> cuda@@10.1.168 : has external module in cuda/10.1.168
-==> cuda@@10.1.168 : is actually installed in /usr
-
-.../configure --prefix='...' ... '--with-cuda=/usr'
->> 208    configure: error: '/usr/include/cuda.h' not found
-@end example
-
-@noindent
-@b{Fixed:} This is now fixed in commit
-@uref{https://github.com/spack/spack/pull/12693, b1868f35ec91} on
-2019-09-11.  Or, you can workaround the problem by replacing
-@code{modules:} with a @code{paths:} entry.
-
-@example
-cuda:
-  paths:
-    cuda@@10.1.168:  /usr/common/software/cuda/10.1.168
-@end example
-
-@c ------------------------------------------------------------
-
-@subsection (2019-08-19) Build stage not writable
-
-Spack has reorganized the build directories and the value for
-@code{build_stage} in @code{config.yaml} may not work.
-
-@example
-build_stage:
-  - $tempdir/spack-stage
-@end example
-
-@noindent
-The problem with this value is that the first user to run spack on this
-machine will create the directory, owned by that user and thus not
-writable by any other user.  For every other user, @code{spack install}
-will fail with:
-
-@example
-==> Error: No accessible stage paths in:
-@end example
-
-@noindent
-@b{Fixed:} This is now fixed in commit
-@uref{https://github.com/spack/spack/pull/12516, c141e99e062b} on
-2019-09-03.  Check your @code{build_stage} directory and make sure
-that you have write access.  One solution is to add @code{$user} to
-the path.
-
-@example
-build_stage:
-  - $tempdir/$user/spack-stage
-@end example
-
-@c ------------------------------------------------------------
-
 @section General Problems
 
 These are general problems that arise from time to time.
@@ -296,6 +133,13 @@ and dies with a message similar to this.
 This problem is usually temporary and the solution is to either wait a
 few minutes or an hour and try again, or else download the file manually
 and put it into a spack mirror.
+
+@subsection Connection timeout
+
+Another way fetch can fail is with a connection timeout.  Some sites,
+especially sourceforge are often slow to connect.  If this happens, then
+increase the connection timeout in @code{config.yaml} to 30 or 60
+seconds (default is 10 seconds).
 
 @subsection New version breaks the build
 
