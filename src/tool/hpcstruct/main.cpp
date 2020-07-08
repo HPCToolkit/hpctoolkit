@@ -70,6 +70,7 @@ using std::endl;
 #include <streambuf>
 #include <new>
 #include <vector>
+#include <unistd.h>
 
 #include <include/hpctoolkit-config.h>
 
@@ -295,8 +296,20 @@ realmain(int argc, char* argv[])
     gaps_rdbuf->pubsetbuf(gapsBuf, HPCIO_RWBufferSz);
   }
 
-  BAnal::Struct::makeStructure(args.in_filenm, outFile, gapsFile, gapsName,
-			       args.searchPathStr, opts);
+  try {
+    BAnal::Struct::makeStructure(args.in_filenm, outFile, gapsFile, gapsName,
+			         args.searchPathStr, opts);
+  } catch (int n) {
+    IOUtil::CloseStream(outFile);
+    if (osnm) {
+      unlink(osnm);
+    }
+    if (gapsFile) {
+      IOUtil::CloseStream(gapsFile);
+      unlink(gapsName.c_str());
+    }
+    exit(n);
+  }
 
   IOUtil::CloseStream(outFile);
   delete[] outBuf;

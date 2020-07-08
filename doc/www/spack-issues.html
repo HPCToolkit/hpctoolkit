@@ -47,22 +47,18 @@
 <li><a name="toc-Introduction" href="#Introduction">1 Introduction</a></li>
 <li><a name="toc-Current-Issues" href="#Current-Issues">2 Current Issues</a>
 <ul class="no-bullet">
-  <li><a name="toc-_00282020_002d03_002d27_0029-Intel_002dTBB-checksums-don_0027t-match" href="#g_t_00282020_002d03_002d27_0029-Intel_002dTBB-checksums-don_0027t-match">2.1 (2020-03-27) Intel-TBB checksums don&rsquo;t match</a></li>
-  <li><a name="toc-_00282019_002d09_002d25_0029-New-micro_002darchitecture-targets" href="#g_t_00282019_002d09_002d25_0029-New-micro_002darchitecture-targets">2.2 (2019-09-25) New micro-architecture targets</a></li>
-  <li><a name="toc-_00282019_002d08_002d28_0029-Cray-front_002dend-compilers" href="#g_t_00282019_002d08_002d28_0029-Cray-front_002dend-compilers">2.3 (2019-08-28) Cray front-end compilers</a></li>
+  <li><a name="toc-_00282019_002d08_002d28_0029-Cray-front_002dend-compilers" href="#g_t_00282019_002d08_002d28_0029-Cray-front_002dend-compilers">2.1 (2019-08-28) Cray front-end compilers</a></li>
 </ul></li>
 <li><a name="toc-Recently-Resolved-Issues" href="#Recently-Resolved-Issues">3 Recently Resolved Issues</a>
 <ul class="no-bullet">
-  <li><a name="toc-_00282019_002d11_002d19_0029-External-perl-breaks-libunwind" href="#g_t_00282019_002d11_002d19_0029-External-perl-breaks-libunwind">3.1 (2019-11-19) External perl breaks libunwind</a></li>
-  <li><a name="toc-_00282019_002d10_002d08_0029-Python-3_002ex-breaks-PAPI" href="#g_t_00282019_002d10_002d08_0029-Python-3_002ex-breaks-PAPI">3.2 (2019-10-08) Python 3.x breaks PAPI</a></li>
-  <li><a name="toc-_00282019_002d08_002d28_0029-External-cuda-modules" href="#g_t_00282019_002d08_002d28_0029-External-cuda-modules">3.3 (2019-08-28) External cuda modules</a></li>
-  <li><a name="toc-_00282019_002d08_002d19_0029-Build-stage-not-writable" href="#g_t_00282019_002d08_002d19_0029-Build-stage-not-writable">3.4 (2019-08-19) Build stage not writable</a></li>
+  <li><a name="toc-_00282020_002d03_002d27_0029-Intel_002dTBB-checksums-don_0027t-match" href="#g_t_00282020_002d03_002d27_0029-Intel_002dTBB-checksums-don_0027t-match">3.1 (2020-03-27) Intel-TBB checksums don&rsquo;t match</a></li>
 </ul></li>
 <li><a name="toc-General-Problems" href="#General-Problems">4 General Problems</a>
 <ul class="no-bullet">
   <li><a name="toc-Unable-to-fetch" href="#Unable-to-fetch">4.1 Unable to fetch</a></li>
-  <li><a name="toc-New-version-breaks-the-build" href="#New-version-breaks-the-build">4.2 New version breaks the build</a></li>
-  <li><a name="toc-Spack-core-breaks-the-build" href="#Spack-core-breaks-the-build">4.3 Spack core breaks the build</a></li>
+  <li><a name="toc-Connection-timeout" href="#Connection-timeout">4.2 Connection timeout</a></li>
+  <li><a name="toc-New-version-breaks-the-build" href="#New-version-breaks-the-build">4.3 New version breaks the build</a></li>
+  <li><a name="toc-Spack-core-breaks-the-build" href="#Spack-core-breaks-the-build">4.4 Spack core breaks the build</a></li>
 </ul></li>
 <li><a name="toc-Long-Term-Issues" href="#Long-Term-Issues">5 Long Term Issues</a>
 <ul class="no-bullet">
@@ -96,14 +92,57 @@ on the hpctoolkit web site.
 <pre class="example"><a href="http://hpctoolkit.org/spack-issues.html">http://hpctoolkit.org/spack-issues.html</a>
 </pre></div>
 
-<p>Last revised: March 27, 2020.
+<p>Last revised: June 17, 2020.
 </p>
 
 <a name="Current-Issues"></a>
 <h3 class="section">2 Current Issues</h3>
 
+<a name="g_t_00282019_002d08_002d28_0029-Cray-front_002dend-compilers"></a>
+<h4 class="subsection">2.1 (2019-08-28) Cray front-end compilers</h4>
+
+<p><code>Spack compiler find</code> is currently broken for detecting the
+front-end compilers on Cray that HPCToolkit uses.  Normally, you would
+load a module for gcc and run <code>spack compiler find</code> and spack would
+add that compiler to <code>compilers.yaml</code>, but this currently does not
+work.
+</p>
+<p><b>Workaround:</b> If you have a working <code>compiler:</code> entry for a
+front-end GNU compiler on Cray, then that will continue to work.  If
+not, then you will have to add one manually.  For example, this is an
+entry for the <code>gcc/8.3.0</code> module on theta at ANL.  Note that the
+front-end operating_system is something like <code>sles12</code> (not
+<code>cnl6</code>), and the front-end target is <code>x86_64</code> (not
+<code>mic_knl</code>).  Your versions may differ.
+</p>
+<div class="example">
+<pre class="example">- compiler:
+    environment: {}
+    flags: {}
+    modules:
+    - PrgEnv-gnu/6.0.5
+    - gcc/8.3.0
+    - craype/2.6.1
+    - cray-mpich/7.7.10
+    operating_system: sles12
+    paths:
+      cc:  /opt/gcc/8.3.0/bin/gcc
+      cxx: /opt/gcc/8.3.0/bin/g++
+      f77: /opt/gcc/8.3.0/bin/gfortran
+      fc:  /opt/gcc/8.3.0/bin/gfortran
+    spec: gcc@8.3.0
+    target: x86_64
+</pre></div>
+
+<p><b>Note:</b> Be sure to fill in the <code>modules:</code> field with all four
+modules.
+</p>
+
+<a name="Recently-Resolved-Issues"></a>
+<h3 class="section">3 Recently Resolved Issues</h3>
+
 <a name="g_t_00282020_002d03_002d27_0029-Intel_002dTBB-checksums-don_0027t-match"></a>
-<h4 class="subsection">2.1 (2020-03-27) Intel-TBB checksums don&rsquo;t match</h4>
+<h4 class="subsection">3.1 (2020-03-27) Intel-TBB checksums don&rsquo;t match</h4>
 
 <p>Intel recently moved the TBB project on GitHub to a new repository,
 <code>oneAPI-SRC/oneTBB</code>.  When downloading the intel-tbb tar file,
@@ -122,205 +161,6 @@ need to disable verifying checksums.
 </p>
 <div class="example">
 <pre class="example">spack install --no-checksum intel-tbb
-</pre></div>
-
-
-<a name="g_t_00282019_002d09_002d25_0029-New-micro_002darchitecture-targets"></a>
-<h4 class="subsection">2.2 (2019-09-25) New micro-architecture targets</h4>
-
-<p>Spack recently changed how it treats a system&rsquo;s architecture and target
-to allow a hierarchy of fine-grained micro-architectures.  The &rsquo;target&rsquo;
-is now a specific micro-architecture (eg, haswell, ivybridge) instead of
-a generic family (x86_64).  You will see this change in two main places:
-in &rsquo;spack spec&rsquo; and the path for the install directory.  For example,
-<code>linux-rhel7-x86_64</code> might become <code>linux-rhel7-broadwell</code>.
-You can use <code>spack arch</code> to see the list of generic families and
-micro-architecture targets.
-</p>
-<div class="example">
-<pre class="example">spack arch --known-targets
-</pre></div>
-
-<p><b>Workaround:</b> Instead of building for the micro-arch target, you can
-use the <code>target</code> option to build for a generic architecture
-family (x86_64, ppc64, ppc64le, aarch64).  This is also useful for
-creating a shared install that needs to work across multiple machines
-with different micro-arch types.  For example:
-</p>
-<div class="example">
-<pre class="example">spack install hpctoolkit ... target=x86_64
-</pre></div>
-
-<p>If you want to use this target for all spack builds, then you can
-specify this in <code>packages.yaml</code>.  For example:
-</p>
-<div class="example">
-<pre class="example">packages:
-  all:
-    target: ['x86_64']
-</pre></div>
-
-
-<a name="g_t_00282019_002d08_002d28_0029-Cray-front_002dend-compilers"></a>
-<h4 class="subsection">2.3 (2019-08-28) Cray front-end compilers</h4>
-
-<p><code>Spack compiler find</code> is currently broken for detecting the
-front-end compilers on Cray that HPCToolkit uses.  Normally, you would
-load a module for gcc and run <code>spack compiler find</code> and spack would
-add that compiler to <code>compilers.yaml</code>, but this currently does not
-work.
-</p>
-<p><b>Workaround:</b> If you have a working <code>compiler:</code> entry for a
-front-end GNU compiler on Cray, then that will continue to work.  If
-not, then you will have to add one manually.  For example, this is an
-entry for the <code>gcc/7.3.0</code> module on theta at ANL.  Note that the
-front-end operating_system is something like <code>sles12</code> (not
-<code>cnl6</code>), and the front-end target is <code>x86_64</code> (not
-<code>mic_knl</code>).
-</p>
-<div class="example">
-<pre class="example">- compiler:
-    environment: {}
-    extra_rpaths: []
-    flags: {}
-    modules:
-    - PrgEnv-gnu/6.0.4
-    - gcc/7.3.0
-    - cray-mpich/7.7.3
-    operating_system: sles12
-    paths:
-      cc:  /opt/gcc/7.3.0/bin/gcc
-      cxx: /opt/gcc/7.3.0/bin/g++
-      f77: /opt/gcc/7.3.0/bin/gfortran
-      fc:  /opt/gcc/7.3.0/bin/gfortran
-    spec: gcc@7.3.0
-    target: x86_64
-</pre></div>
-
-<p><b>Workaround:</b> Alternatively, the last working commit was
-<code>9c1c50fb7632</code> on 2019-06-07.  You could revert to this commit, run
-<code>spack compiler find</code> and then return to the current spack head
-(develop).  Be sure to fill in the <code>modules:</code> field.
-</p>
-
-<a name="Recently-Resolved-Issues"></a>
-<h3 class="section">3 Recently Resolved Issues</h3>
-
-<a name="g_t_00282019_002d11_002d19_0029-External-perl-breaks-libunwind"></a>
-<h4 class="subsection">3.1 (2019-11-19) External perl breaks libunwind</h4>
-
-<p>A recent commit (<code>99dfff447509</code> on 2019-11-04, but merged on
-11-18) modified the treatment of PATH for packages that depend on
-perl.  If you use <code>packages.yaml</code> to specify an external perl
-from a system directory such as <code>/usr/bin</code>, then this puts
-<code>/usr/bin</code> at the front of PATH during the build.  Unfortunately,
-this covers up all of the other build dependencies and can break the
-build.
-</p>
-<p>For example, on systems with an older libtool, this breaks libunwind
-as follows.
-</p>
-<div class="example">
-<pre class="example">294   libtool: Version mismatch error.  This is libtool 2.4.2, but the
-295   libtool: definition of this LT_INIT comes from libtool 2.4.6.
-296   libtool: You should recreate aclocal.m4 with macros from libtool 2.4.2
-297   libtool: and run autoconf again.
-</pre></div>
-
-<p><b>Fixed:</b> This is now fixed in commit
-<a href="https://github.com/spack/spack/pull/13903">cacfc3a6e1c7</a> on
-2019-11-29.  Or, you can workaround the problem by not using an external
-perl and instead having spack build perl itself.
-</p>
-
-<a name="g_t_00282019_002d10_002d08_0029-Python-3_002ex-breaks-PAPI"></a>
-<h4 class="subsection">3.2 (2019-10-08) Python 3.x breaks PAPI</h4>
-
-<p>Python 2.x is nearing end-of-life and Spack recently changed their
-launch script to look for and use python 3.x if available.  There are
-incompatibilities and some spack packages (including PAPI) currently
-break with python 3.x.  (The papi recipe hangs while patching files with
-<code>filter_file</code>.)  There are two workarounds, depending on whether
-python 2.x is available on your system.
-</p>
-<p><b>Fixed:</b> The filter file problem is now fixed in commit
-<a href="https://github.com/spack/spack/pull/12765">5cd28847e81b</a> on
-2019-10-15.
-</p>
-<p><b>Workaround:</b> If python 2.x is available on your system, then one
-solution is to remove the test for <code>python3</code> in the
-<code>bin/spack</code> launch script.
-</p>
-<div class="example">
-<pre class="example"># This file is bilingual. The following shell code finds our preferred python.
-# Following line is a shell no-op, and starts a multi-line Python comment.
-# See https://stackoverflow.com/a/47886254
-&quot;&quot;&quot;:&quot;
-# prefer python3, then python, then python2
-for cmd in python3 python python2; do
-   command -v &gt; /dev/null $cmd &amp;&amp; exec $cmd $0 &quot;$@&quot;
-done
-</pre></div>
-
-
-<a name="g_t_00282019_002d08_002d28_0029-External-cuda-modules"></a>
-<h4 class="subsection">3.3 (2019-08-28) External cuda modules</h4>
-
-<p>Sometimes spack misreads the <code>module:</code> entry for an external
-package in <code>packages.yaml</code> and selects the wrong install
-directory.  For example, spack misreads the <code>cuda/10.1.168</code>
-module on cori at NERSC (incorrectly using /usr) and the build for
-hpctoolkit fails as follows.
-</p>
-<div class="example">
-<pre class="example">==&gt; cuda@10.1.168 : has external module in cuda/10.1.168
-==&gt; cuda@10.1.168 : is actually installed in /usr
-
-.../configure --prefix='...' ... '--with-cuda=/usr'
-&gt;&gt; 208    configure: error: '/usr/include/cuda.h' not found
-</pre></div>
-
-<p><b>Fixed:</b> This is now fixed in commit
-<a href="https://github.com/spack/spack/pull/12693">b1868f35ec91</a> on
-2019-09-11.  Or, you can workaround the problem by replacing
-<code>modules:</code> with a <code>paths:</code> entry.
-</p>
-<div class="example">
-<pre class="example">cuda:
-  paths:
-    cuda@10.1.168:  /usr/common/software/cuda/10.1.168
-</pre></div>
-
-
-<a name="g_t_00282019_002d08_002d19_0029-Build-stage-not-writable"></a>
-<h4 class="subsection">3.4 (2019-08-19) Build stage not writable</h4>
-
-<p>Spack has reorganized the build directories and the value for
-<code>build_stage</code> in <code>config.yaml</code> may not work.
-</p>
-<div class="example">
-<pre class="example">build_stage:
-  - $tempdir/spack-stage
-</pre></div>
-
-<p>The problem with this value is that the first user to run spack on this
-machine will create the directory, owned by that user and thus not
-writable by any other user.  For every other user, <code>spack install</code>
-will fail with:
-</p>
-<div class="example">
-<pre class="example">==&gt; Error: No accessible stage paths in:
-</pre></div>
-
-<p><b>Fixed:</b> This is now fixed in commit
-<a href="https://github.com/spack/spack/pull/12516">c141e99e062b</a> on
-2019-09-03.  Check your <code>build_stage</code> directory and make sure
-that you have write access.  One solution is to add <code>$user</code> to
-the path.
-</p>
-<div class="example">
-<pre class="example">build_stage:
-  - $tempdir/$user/spack-stage
 </pre></div>
 
 
@@ -344,8 +184,16 @@ and dies with a message similar to this.
 few minutes or an hour and try again, or else download the file manually
 and put it into a spack mirror.
 </p>
+<a name="Connection-timeout"></a>
+<h4 class="subsection">4.2 Connection timeout</h4>
+
+<p>Another way fetch can fail is with a connection timeout.  Some sites,
+especially sourceforge are often slow to connect.  If this happens, then
+increase the connection timeout in <code>config.yaml</code> to 30 or 60
+seconds (default is 10 seconds).
+</p>
 <a name="New-version-breaks-the-build"></a>
-<h4 class="subsection">4.2 New version breaks the build</h4>
+<h4 class="subsection">4.3 New version breaks the build</h4>
 
 <p>Sometimes the latest version of some package breaks the build.  This has
 happened a couple of times where a new version of Boost has broken the
@@ -353,7 +201,7 @@ build for Dyninst.  The solution is to revert the package to an earlier
 version until the rest of the code catches up.
 </p>
 <a name="Spack-core-breaks-the-build"></a>
-<h4 class="subsection">4.3 Spack core breaks the build</h4>
+<h4 class="subsection">4.4 Spack core breaks the build</h4>
 
 <p>Sometimes but rarely, something in the spack core will change or break
 the code in some <code>package.py</code> file.  The solution is to look

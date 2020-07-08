@@ -345,8 +345,10 @@ hpcrun_threadMgr_data_put( epoch_t *epoch, thread_data_t *data, int no_separator
 
   if (!no_separator) {
     cct_node_t *node  = hpcrun_cct_bundle_get_no_activity_node(&epoch->csdata);
-    hpcrun_trace_append(&(data->core_profile_trace_data), node, 0, 
-			HPCTRACE_FMT_DLCA_NULL);
+    if (node) {
+      hpcrun_trace_append(&(data->core_profile_trace_data), node, 0, 
+			  HPCTRACE_FMT_DLCA_NULL);
+    }
   }
 
   // step 2: enqueue thread data into the free list

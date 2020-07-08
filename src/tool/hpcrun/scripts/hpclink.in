@@ -36,7 +36,10 @@ papi_extra_libs='@papi_extra_libs@'
 
 upc_libs='@OPT_UPC_LDFLAGS@'
 
-hpctk_wrap_names='@LIBMONITOR_WRAP_NAMES@  @hpclink_extra_wrap_names@'
+internal_wrap_names='poll select ppoll pselect'
+external_wrap_names='@LIBMONITOR_WRAP_NAMES@  @hpclink_extra_wrap_names@'
+
+hpctk_wrap_names="${internal_wrap_names}  ${external_wrap_names}"
 
 extra_wrap_names=
 extra_hpc_files=
@@ -448,6 +451,8 @@ if test -d "$papi_dir" ; then
 fi
 
 set -- "$@" $upc_libs
+
+set -- "$@" "${ext_libs_dir}/libz.a"
 
 # FIXME: shouldn't always need pthread, and shoudn't ever need dl.
 set -- "$@" -ldl -lrt -lpthread

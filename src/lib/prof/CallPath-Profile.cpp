@@ -596,7 +596,7 @@ writeXML_help(std::ostream& os, const char* entry_nm,
     std::string pretty_filename;
     const char* nm = NULL;
 
-    bool fake_procedure = false;
+    int type_procedure = 0;
 
     if (type == 1) { // LoadModule
       pretty_filename = Prof::LoadMap::LM::pretty_name(strct->name());
@@ -649,7 +649,7 @@ writeXML_help(std::ostream& os, const char* entry_nm,
     }
     else if (type == 3) { // Proc
       pretty_filename = Prof::LoadMap::LM::pretty_file_name(strct->name());
-      nm = normalize_name(pretty_filename.c_str(), fake_procedure);
+      nm = normalize_name(pretty_filename.c_str(), type_procedure);
 
       if (remove_redundancy && 
           pretty_filename != Prof::Struct::Tree::UnknownProcNm)
@@ -727,8 +727,8 @@ writeXML_help(std::ostream& os, const char* entry_nm,
     os << "    <" << entry_nm << " i" << MakeAttrNum(id)
            << " n" << MakeAttrStr(nm);
 
-    if (fake_procedure) {
-      os << " f" << MakeAttrNum(1); 
+    if (type_procedure != 0) {
+      os << " f" << MakeAttrNum(type_procedure); 
     }
 
     if (type == 3) { // Procedure

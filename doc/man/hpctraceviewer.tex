@@ -24,15 +24,7 @@
 \message{no fancyhdr or fancyheadings package present, discard it}
 }}
 
-%% do we have the `rcsinfo' package?
-\IfFileExists{rcsinfo.sty}{
-\usepackage[nofancy]{rcsinfo}
-\rcsInfo $Id: hpctraceviewer.tex 3428 2011-02-22 21:31:42Z tallent $
-\setDate{\rcsInfoLongDate}
-}{
-\setDate{ 2011/02/22}
-\message{package rcsinfo not present, discard it}
-}
+\setDate{2020/06/09}
 
 \setVersionWord{Version:}  %%% that's the default, no need to set it.
 \setVersion{=PACKAGE_VERSION=}
@@ -79,11 +71,15 @@ Since Experiment databases are self-contained, they may be relocated from a clus
 
 \begin{Description}
 
-\item[\Opt{-consolelog}]
-Send log entries to a console in addition to a log file.
+\item[\Opt{-h} \Opt{--help}]
+Print help.
 
-\item[\Opt{-debug}]
-Log additional information about plug-in dependency problems.
+
+\item[\Opt{-jh}, \Opt{--java-heap} <size>]
+  	Set the JVM maximum heap size for this execution of  \Prog{hpctraceviewer}. The value of \texttt{size} must be 
+	in megabytes (M) or gigabytes (G). For example, one can specify a \texttt{size}  of 3 gigabytes as either 
+	3076M or 3G.
+
 
 \end{Description}
 
@@ -93,11 +89,11 @@ Log additional information about plug-in dependency problems.
 
 \subsection{Views}
 
-\Prog{hpctraceviewer} comprises of three different parts. 
+\Prog{hpctraceviewer} provides several views: 
 
 
 \begin{itemize}
-\item Trace view (left, top):
+\item \textbf{Trace view} (top, left pane):
   This is hpctraceviewer's primary view.
   This view, which is similar to a conventional process/time (or space/time) view, shows time on the horizontal axis and process (or thread) rank on the vertical axis; time moves from left to right.
   Compared to typical process/time views, there is one key difference.
@@ -111,24 +107,29 @@ Log additional information about plug-in dependency problems.
   For this selected point, the Call Path View shows the corresponding call path.
   The Depth View shows the selected process.
 
-\item Depth view (left, bottom):
+\item \textbf{Depth view} (tab in bottom, left pane):
   This is a call-path/time view for the process rank selected by the Trace view's crosshair.
   Given a process rank, the view shows for each virtual time along the horizontal axis a stylized call path along the vertical axis, where `main' is at the top and leaves (samples) are at the bottom.
   In other words, this view shows for the whole time range, in qualitative fashion, what the Call Path View shows for a selected point.
   The horizontal time axis is exactly aligned with the Trace View's time axis; and the colors are consistent across both views.
   This view has its own crosshair that corresponds to the currently selected time and call path depth.
 
-\item Summary view (same location as depth view on the left-bottom part):
+\item \textbf{Summary view} (tab in bottom, left pane):
   The view shows for the whole time range dislayed, the proportion of each subroutine in a certain time.
   Similar to Depth view, the time range in Summary reflects to the time range in the Trace view. 
 
-\item Call view (right, top):
+\item \textbf{Call Path view} (tab in top, right pane):
   This view shows two things: (1) the current call path depth that defines the hierarchical slice shown in the Trace View; and (2) the actual call path for the point selected by the Trace View's crosshair.
   (To easily coordinate the call path depth value with the call path, the Call Path View currently suppresses details such as loop structure and call sites; we may use indentation or other techniques to display this in the future.)
 
-\item Mini map view (right, bottom):
-  The Mini Map shows, relative to the process/time dimensions, the portion of the execution shown by the Trace View.
-  The Mini Map enables one to zoom and to move from one close-up to another quickly.
+\item \textbf{Statistics view} (tab in top, right pane)
+  The view shows a list of procedures and the estimated execution percentage for each for the time interval currently shown in the Trace view. 
+  Whenever the user changes the time interval displayed in the Trace view, the statistics view will update its list of procedures and their execution percentages to 
+  reflect the current interval.  Similarly, a change in the selected call path depth will also update the contents of the statistics view.
+
+\item \textbf{Mini Map view} (bottom, right pane):
+  The Mini Map shows, relative to the process/time dimensions, the region of the execution shown by the Trace View.
+  In the Mini map, dragging the selected region or making a new selection enables one to change the region of the trace that is the current focus for analysis.
 
 \end{itemize}
 
@@ -225,8 +226,12 @@ The number of records can be useful to identify blocking procedures (such as I/O
    \item \textbf{Using midpoint painting}: if checked, the trace painting will use {midpoint} painting algorithm. By using the later, for every samples $S1$ at time $T1$, $S2$ at time $T2$ and $S3$ at time $T3$, \Prog{hpctraceviewer} renders a block from $T1$ to $(T1+T2)/2$ to sample $S1$, and a block from from  $(T1+T2)/2$ to  $(T2+T3(/2$ for sample $S2$, and so forth. 
 If the menu is not checked, then a simpler {rightmost} algorithm is used: it will render a block from  $T1$ to $T2$ for sample $S1$, and a block from $T2$ to  $T3$ for sample $S2$, and so forth.
    \item \textbf{Show procedure-color mapping}: to open a window which shows customized mapping between a procedure pattern and a color. \Prog{hpctraceviewer} allows users to customize assignment of a pattern of procedure names with a specific color.
-   \item \textbf{Filter ranks}: to open a window for selecting which ranks should be displayed. Recall that a rank can be a process (e.g. MPI applications), a thread (OpenMP applications) or both (hybrid MPI and OpenMP applications). \Prog{hpctraceviewer} allows two types of filtering: either you specify which ranks {to show} or {to hide} (default is to hide). 
-To add a pattern to filter, you need to click "add" button and type the pattern in the dialog box. To remove a pattern, you have to select the pattern to remove, and click "Remove" button. Finally, clicking to "Remove all" button will clear the list of patterns.
+   \item \textbf{Filter ranks}: to open a window for selecting which ranks and/or threads should be displayed or hidden. 
+Recall that a rank can be a process (e.g. MPI applications), a thread (OpenMP applications) or a process/thread pair (hybrid MPI and OpenMP applications). 
+\Prog{hpctraceviewer} allows two types of filtering: either you specify which ranks {to show} or {to hide} (default is to hide). 
+To add a pattern to filter, you need to click the "Add" button and type the pattern in the format \texttt{minimum:maximum:stride}. \\
+For instance, \texttt{3:7:2} in the process box with the thread box empty will match all threads of processes 3, 5, and 7.\\
+To remove a pattern, you have to select the pattern to remove, and click the "Remove" button. Finally, clicking to "Remove all" button will clear the list of patterns.
  \end{itemize}
  \item \textbf{Window} menu to manage the layout of the application. The menu only provide one sub menu:
  \begin{itemize}

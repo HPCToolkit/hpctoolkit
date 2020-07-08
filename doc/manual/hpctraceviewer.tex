@@ -13,6 +13,7 @@
 \newcommand{\summaryview}{Summary View}
 \newcommand{\miniview}{Mini Map View}
 \newcommand{\callview}{Call Path View}
+\newcommand{\statview}{Statistics View}
 
 
 % ===========================================================================
@@ -48,7 +49,13 @@ This might indicate that the processes first are observed in an initialization p
 
 \section{Launching}
 
-\hpctraceviewer{} can either be launched from a command line (Linux/Unix platform) or by clicking the \hpctraceviewer{} icon (for Windows, Mac OS X and Linux/Unix platform).
+Requirements to launch \hpctraceviewer:
+\begin{itemize}
+ \item On all platforms: Java 8. At the moment \hpcviewer{} cannot run with Java 9 or newer.
+ \item On Linux: GTK.
+\end{itemize}
+
+\hpctraceviewer{} can either be launched from a command line (Linux platforms) or by clicking the \hpctraceviewer{} icon (for Windows, Mac OS X, and Linux platforms).
 The command line syntax is as follows:
 \begin{quote}
 \begin{verbatim}
@@ -56,17 +63,21 @@ The command line syntax is as follows:
 \end{verbatim}
 \end{quote}
 Here, \texttt{<hpctoolkit-database>} is an optional argument to load a database automatically.
-Without this argument, \hpctraceviewer{} will prompt for the location of a database.
+Without this argument, \hpctraceviewer{} will prompt for the location of a database. Possible options for \hpctraceviewer{}  are shown in the table below:\\
 
-The possible options are as follows:
-\begin{itemize}
+\begin{centering}
+\begin{tabular}{|l|p{4.1in}|}\hline\hline
+ \verb|-h, --help|   &
+ 	Print a help message. \\\hline
+ \verb|-jh, --java-heap| {\em size}  & 
+  	Set the JVM maximum heap size for this execution of \hpctraceviewer{}. The value of {\em size} must be 
+	in megabytes (M) or gigabytes (G). For example, one can specify a {\em size}  of 3 gigabytes as either 
+	3076M or 3G.\\\hline\hline
+ \end{tabular}
+ \end{centering}
+ \vspace{2ex}
 
- \item \texttt{-consolelog}: Send log entries to a console in addition to a log file.
-   (To get a console window, be sure to use java as the VM instead of javaw.)
-
- \item \texttt{-debug}: Log additional information about plug-in dependency problems.
-\end{itemize}
-
+On Linux, when  \hpctraceviewer{}  is installed using its \verb|install| script, the \verb|install| script chooses a default  maximum size for the Java heap on the current platform. When analyzing traces for large and complex applications, it may be necessary to use the \verb|--java-heap| option to specify a larger heap size for  \hpctraceviewer{}.
 
 % ===========================================================================
 % ===========================================================================
@@ -74,16 +85,23 @@ The possible options are as follows:
 \section{Views}
 
 \begin{figure}[t]
-\centering{\includegraphics[width=\textwidth]{fig/hpctraceviewer-legend.png}}
-\caption{An annotated screenshot of \hpctraceviewer{}'s interface.}
+\centering{\includegraphics[width=.8\textwidth]{fig/hpctraceviewer-legend.png}}
+\caption{A screenshot of \hpctraceviewer{}'s interface.}
 \label{fig:hpctraceviewer-legend}
 \end{figure}
 
-Figure~\ref{fig:hpctraceviewer-legend} shows an annotated screenshot of \hpctraceviewer{}'s user interface presenting a call path profile.
-The annotations highlight \hpctraceviewer{}'s four principal window panes: \traceview, \depthview, \callview{} and \miniview.
+\begin{figure}[t]
+\centering{\includegraphics[width=.8\textwidth]{fig/hpctraceviewer-stat.png}}
+\caption{A screenshot of \hpctraceviewer{}'s interface showing the \summaryview{} and \statview.}
+\label{fig:hpctraceviewer-stat}
+\end{figure}
+
+Figures~\ref{fig:hpctraceviewer-legend} and~\ref{fig:hpctraceviewer-stat} show screenshots of \hpctraceviewer{}'s user interface presenting a call path profile.
+Figure~\ref{fig:hpctraceviewer-legend} highlights \hpctraceviewer{}'s four principal window panes: \traceview, \depthview, \callview{} and \miniview, 
+while Figure\ref{fig:hpctraceviewer-stat} shows additional two window panes: \summaryview{} and \statview.
 
 \begin{itemize}
-\item \textbf{\traceview} (left, top):
+\item \textbf{\traceview} (top, left pane):
   This is \hpctraceviewer{}'s primary view.
   This view, which is similar to a conventional process/time (or space/time) view, shows time on the horizontal axis and process (or thread) rank on the vertical axis; time moves from left to right.
   Compared to typical process/time views, there is one key difference.
@@ -99,20 +117,24 @@ The annotations highlight \hpctraceviewer{}'s four principal window panes: \trac
   For this selected point, the Call Path View shows the corresponding call path.
   The Depth View shows the selected process.
 
-\item \textbf{\depthview} (left, bottom):
+\item \textbf{\depthview} (tab in bottom, left pane):
   This is a call-path/time view for the process rank selected by the \traceview's \crosshair{}.
   Given a process rank, the view shows for each virtual time along the horizontal axis a stylized call path along the vertical axis, where `main' is at the top and leaves (samples) are at the bottom.
   In other words, this view shows for the whole time range, in qualitative fashion, what the Call Path View shows for a selected point.
   The horizontal time axis is exactly aligned with the Trace View's time axis; and the colors are consistent across both views.
   This view has its own \crosshair{} that corresponds to the currently selected time and call path depth.
 
-\item \textbf{\summaryview} (left, bottom):
+\item \textbf{\summaryview} (tab in bottom, left pane):
   The view shows for the whole time range dislayed, the proportion of each subroutine in a certain time.
   Similar to Depth view, the time range in Summary reflects to the time range in the Trace view. 
 
-\item \textbf{\callview} (right, top):
+\item \textbf{\callview} (tab in top, right pane):
   This view shows two things: (1) the current call path depth that defines the hierarchical slice shown in the Trace View; and (2) the actual call path for the point selected by the Trace View's \crosshair{}.
   (To easily coordinate the call path depth value with the call path, the Call Path View currently suppresses details such as loop structure and call sites; we may use indentation or other techniques to display this in the future.)
+
+\item \textbf{\statview} (tab in top, right pane):
+  This view shows the list of procedures active  in the  space-time region shown in the Trace View at the current Call Path Depth. Each procedure's percentage in the \statview{} indicates the percentage of pixels in the Trace View pane that are filled with this procedure's color at the current Call Path Depth. When the Trace View is navigated to show a new time-space interval  or the Call Path Depth is  changed, the statistics view will  update its list of procedures and the percentage of execution time to reflect the new space-time interval or depth selection.
+ 
 
 \item \textbf{\miniview} (right, bottom):
   The Mini Map shows, relative to the process/time dimensions, the portion of the execution shown by the Trace View.
@@ -239,8 +261,12 @@ The number of records can be useful to identify blocking procedures (such as I/O
    \item \textbf{Using midpoint painting}: if checked, the trace painting will use \emph{midpoint} painting algorithm. By using the later, for every samples $S_1$ at time $T_1$, $S_2$ at time $T_2$ and $S_3$ at time $T_3$, \hpctraceviewer{} renders a block from $T_1$ to $\frac{T1+T2}{2}$ to sample $S_1$, and a block from from  $\frac{T1+T2}{2}$ to  $\frac{T2+T3}{2}$ for sample $S_2$, and so forth. 
 If the menu is not checked, then a simpler \emph{rightmost} algorithm is used: it will render a block from  $T_1$ to $T_2$ for sample $S_1$, and a block from $T_2$ to  $T3$ for sample $S_2$, and so forth.
    \item \textbf{Show procedure-color mapping}: to open a window which shows customized mapping between a procedure pattern and a color (Figure~\ref{fig:hpctraceviewer-mapping}). \hpctraceviewer{} allows users to customize assignment of a pattern of procedure names with a specific color.
-   \item \textbf{Filter ranks}: to open a window for selecting which ranks should be displayed (Figure~\ref{fig:hpctraceviewer-filter}). Recall that a rank can be a process (e.g. MPI applications), a thread (OpenMP applications) or both (hybrid MPI and OpenMP applications). \hpctraceviewer{} allows two types of filtering: either you specify which ranks \textit{to show} or \textit{to hide} (default is to hide). 
-To add a pattern to filter, you need to click "add" button and type the pattern in the dialog box. To remove a pattern, you have to select the pattern to remove, and click "Remove" button. Finally, clicking to "Remove all" button will clear the list of patterns.
+   \item \textbf{Filter ranks}: to open a window for selecting which ranks and/or threads should be displayed or hidden (Figure~\ref{fig:hpctraceviewer-filter}). 
+Recall that a rank can be a process (e.g. MPI applications), a thread (OpenMP applications) or a process/thread pair (hybrid MPI and OpenMP applications). 
+\hpctraceviewer{} allows two types of filtering: either you specify which ranks \textit{to show} or \textit{to hide} (default is to hide). 
+To add a pattern to filter, you need to click the "Add" button and type the pattern in the format \texttt{minimum:maximum:stride}. \\
+For instance, \texttt{3:7:2} in the process box with the thread box empty will match all threads of processes 3, 5, and 7.\\
+To remove a pattern, you have to select the pattern to remove, and click the "Remove" button. Finally, clicking to "Remove all" button will clear the list of patterns.
  \end{itemize}
  \item \textbf{Window} menu to manage the layout of the application. The menu only provide one sub menu:
  \begin{itemize}
@@ -254,7 +280,11 @@ This context menu is available is three views: trace view, depth view and summar
 % ===========================================================================
 % ===========================================================================
 
+\section{GPU Threads}
 
+\hpctraceviewer{} displays activity over time in GPU streams as well as CPU threads. Presently, GPU streams and CPU threads are indexed within a process or MPI rank using a single integer coordinate. To distinguish between GPU threads and CPU threads in this prototype, CPU thread numbers begin at 0 and GPU stream numbers begin at 500. 
+
+Unlike CPU threads, which are sampled, each GPU activity (e.g., a kernel execution or a memory copy)  on a GPU stream or queue is traced. To avoid giving a misleading view of GPU activity on a stream or queue, intervals between GPU activities where the GPU is idle are marked with the placeholder \verb|<no activity>|.
 
 \section{Limitations}
 

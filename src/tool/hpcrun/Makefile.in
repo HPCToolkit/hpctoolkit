@@ -442,19 +442,19 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/sync.c sample_sources_registered.c \
 	sample-sources/sample-filters.c segv_handler.c start-stop.c \
 	term_handler.c thread_data.c thread_use.c thread_finalize.c \
-	control-knob.c control-knob.h hpcrun_flag_stacks.c \
-	device-finalizers.c device-initializers.c module-ignore-map.c \
-	threadmgr.c trace.c weak.c write_data.c cct/cct_bundle.c \
-	cct/cct_ctxt.c cct/cct.c cct/cct-node-vector.c cct2metrics.c \
-	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
-	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
-	lush/lush-pthread.c lush/lush-support-rt.h \
-	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
-	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
-	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
-	messages/messages-async.c messages/fmt.c hpcrun-placeholders.c \
-	gpu/gpu-activity.c gpu/gpu-activity-channel.c \
-	gpu/gpu-activity-process.c gpu/gpu-application-thread-api.c \
+	control-knob.c control-knob.h device-finalizers.c \
+	device-initializers.c module-ignore-map.c threadmgr.c trace.c \
+	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
+	cct/cct-node-vector.c cct2metrics.c lush/lush-backtrace.h \
+	lush/lush-backtrace.c lush/lush.h lush/lush.c \
+	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
+	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
+	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
+	memory/mem.c memory/mmap.c messages/debug-flag.c \
+	messages/messages-sync.c messages/messages-async.c \
+	messages/fmt.c hpcrun-placeholders.c gpu/gpu-activity.c \
+	gpu/gpu-activity-channel.c gpu/gpu-activity-process.c \
+	gpu/gpu-application-thread-api.c \
 	gpu/gpu-channel-item-allocator.c gpu/gpu-context-id-map.c \
 	gpu/gpu-correlation.c gpu/gpu-correlation-channel.c \
 	gpu/gpu-correlation-channel-set.c gpu/gpu-correlation-id.c \
@@ -468,12 +468,14 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	ompt/ompt-defer-write.c ompt/ompt-interface.c \
 	ompt/ompt-queues.c ompt/ompt-region.c ompt/ompt-region-debug.c \
 	ompt/ompt-placeholders.c ompt/ompt-device-map.c \
-	ompt/ompt-task.c ompt/ompt-thread.c \
-	utilities/executable-path.h utilities/executable-path.c \
-	utilities/ip-normalized.h utilities/ip-normalized.c \
-	utilities/line_wrapping.c utilities/timer.c \
-	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
-	utilities/unlink.c trampoline/common/trampoline_eager.c \
+	ompt/ompt-task.c ompt/ompt-thread.c syscalls/poll.c \
+	syscalls/ppoll.c syscalls/select.c utilities/executable-path.h \
+	utilities/executable-path.c utilities/hpcrun-nanotime.h \
+	utilities/hpcrun-nanotime.c utilities/ip-normalized.h \
+	utilities/ip-normalized.c utilities/line_wrapping.c \
+	utilities/timer.c utilities/tokenize.h utilities/tokenize.c \
+	utilities/unlink.h utilities/unlink.c \
+	trampoline/common/trampoline_eager.c \
 	trampoline/common/trampoline_lazy.c \
 	sample-sources/perf/event_custom.c \
 	sample-sources/perf/linux_perf.c \
@@ -579,9 +581,7 @@ am__objects_14 = utilities/libhpcrun_la-first_func.lo \
 	libhpcrun_la-segv_handler.lo libhpcrun_la-start-stop.lo \
 	libhpcrun_la-term_handler.lo libhpcrun_la-thread_data.lo \
 	libhpcrun_la-thread_use.lo libhpcrun_la-thread_finalize.lo \
-	libhpcrun_la-control-knob.lo \
-	libhpcrun_la-hpcrun_flag_stacks.lo \
-	libhpcrun_la-device-finalizers.lo \
+	libhpcrun_la-control-knob.lo libhpcrun_la-device-finalizers.lo \
 	libhpcrun_la-device-initializers.lo \
 	libhpcrun_la-module-ignore-map.lo libhpcrun_la-threadmgr.lo \
 	libhpcrun_la-trace.lo libhpcrun_la-weak.lo \
@@ -634,8 +634,10 @@ am__objects_14 = utilities/libhpcrun_la-first_func.lo \
 	ompt/libhpcrun_la-ompt-placeholders.lo \
 	ompt/libhpcrun_la-ompt-device-map.lo \
 	ompt/libhpcrun_la-ompt-task.lo \
-	ompt/libhpcrun_la-ompt-thread.lo \
+	ompt/libhpcrun_la-ompt-thread.lo syscalls/libhpcrun_la-poll.lo \
+	syscalls/libhpcrun_la-ppoll.lo syscalls/libhpcrun_la-select.lo \
 	utilities/libhpcrun_la-executable-path.lo \
+	utilities/libhpcrun_la-hpcrun-nanotime.lo \
 	utilities/libhpcrun_la-ip-normalized.lo \
 	utilities/libhpcrun_la-line_wrapping.lo \
 	utilities/libhpcrun_la-timer.lo \
@@ -817,19 +819,19 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/sync.c sample_sources_registered.c \
 	sample-sources/sample-filters.c segv_handler.c start-stop.c \
 	term_handler.c thread_data.c thread_use.c thread_finalize.c \
-	control-knob.c control-knob.h hpcrun_flag_stacks.c \
-	device-finalizers.c device-initializers.c module-ignore-map.c \
-	threadmgr.c trace.c weak.c write_data.c cct/cct_bundle.c \
-	cct/cct_ctxt.c cct/cct.c cct/cct-node-vector.c cct2metrics.c \
-	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
-	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
-	lush/lush-pthread.c lush/lush-support-rt.h \
-	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
-	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
-	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
-	messages/messages-async.c messages/fmt.c hpcrun-placeholders.c \
-	gpu/gpu-activity.c gpu/gpu-activity-channel.c \
-	gpu/gpu-activity-process.c gpu/gpu-application-thread-api.c \
+	control-knob.c control-knob.h device-finalizers.c \
+	device-initializers.c module-ignore-map.c threadmgr.c trace.c \
+	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
+	cct/cct-node-vector.c cct2metrics.c lush/lush-backtrace.h \
+	lush/lush-backtrace.c lush/lush.h lush/lush.c \
+	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
+	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
+	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
+	memory/mem.c memory/mmap.c messages/debug-flag.c \
+	messages/messages-sync.c messages/messages-async.c \
+	messages/fmt.c hpcrun-placeholders.c gpu/gpu-activity.c \
+	gpu/gpu-activity-channel.c gpu/gpu-activity-process.c \
+	gpu/gpu-application-thread-api.c \
 	gpu/gpu-channel-item-allocator.c gpu/gpu-context-id-map.c \
 	gpu/gpu-correlation.c gpu/gpu-correlation-channel.c \
 	gpu/gpu-correlation-channel-set.c gpu/gpu-correlation-id.c \
@@ -843,12 +845,14 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	ompt/ompt-defer-write.c ompt/ompt-interface.c \
 	ompt/ompt-queues.c ompt/ompt-region.c ompt/ompt-region-debug.c \
 	ompt/ompt-placeholders.c ompt/ompt-device-map.c \
-	ompt/ompt-task.c ompt/ompt-thread.c \
-	utilities/executable-path.h utilities/executable-path.c \
-	utilities/ip-normalized.h utilities/ip-normalized.c \
-	utilities/line_wrapping.c utilities/timer.c \
-	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
-	utilities/unlink.c trampoline/common/trampoline_eager.c \
+	ompt/ompt-task.c ompt/ompt-thread.c syscalls/poll.c \
+	syscalls/ppoll.c syscalls/select.c utilities/executable-path.h \
+	utilities/executable-path.c utilities/hpcrun-nanotime.h \
+	utilities/hpcrun-nanotime.c utilities/ip-normalized.h \
+	utilities/ip-normalized.c utilities/line_wrapping.c \
+	utilities/timer.c utilities/tokenize.h utilities/tokenize.c \
+	utilities/unlink.h utilities/unlink.c \
+	trampoline/common/trampoline_eager.c \
 	trampoline/common/trampoline_lazy.c \
 	sample-sources/perf/event_custom.c \
 	sample-sources/perf/linux_perf.c \
@@ -958,7 +962,6 @@ am__objects_51 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	libhpcrun_o-thread_use.$(OBJEXT) \
 	libhpcrun_o-thread_finalize.$(OBJEXT) \
 	libhpcrun_o-control-knob.$(OBJEXT) \
-	libhpcrun_o-hpcrun_flag_stacks.$(OBJEXT) \
 	libhpcrun_o-device-finalizers.$(OBJEXT) \
 	libhpcrun_o-device-initializers.$(OBJEXT) \
 	libhpcrun_o-module-ignore-map.$(OBJEXT) \
@@ -1017,7 +1020,11 @@ am__objects_51 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-device-map.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-task.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-thread.$(OBJEXT) \
+	syscalls/libhpcrun_o-poll.$(OBJEXT) \
+	syscalls/libhpcrun_o-ppoll.$(OBJEXT) \
+	syscalls/libhpcrun_o-select.$(OBJEXT) \
 	utilities/libhpcrun_o-executable-path.$(OBJEXT) \
+	utilities/libhpcrun_o-hpcrun-nanotime.$(OBJEXT) \
 	utilities/libhpcrun_o-ip-normalized.$(OBJEXT) \
 	utilities/libhpcrun_o-line_wrapping.$(OBJEXT) \
 	utilities/libhpcrun_o-timer.$(OBJEXT) \
@@ -1312,6 +1319,9 @@ EGREP = @EGREP@
 EXEEXT = @EXEEXT@
 F77_SYMBOLS = @F77_SYMBOLS@
 FGREP = @FGREP@
+GOTCHA_IFLAGS = @GOTCHA_IFLAGS@
+GOTCHA_LDFLAGS = @GOTCHA_LDFLAGS@
+GOTCHA_LIBDIR = @GOTCHA_LIBDIR@
 GREP = @GREP@
 HOST_AR = @HOST_AR@
 HOST_CFLAGS = @HOST_CFLAGS@
@@ -1690,19 +1700,19 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	sample-sources/sync.c sample_sources_registered.c \
 	sample-sources/sample-filters.c segv_handler.c start-stop.c \
 	term_handler.c thread_data.c thread_use.c thread_finalize.c \
-	control-knob.c control-knob.h hpcrun_flag_stacks.c \
-	device-finalizers.c device-initializers.c module-ignore-map.c \
-	threadmgr.c trace.c weak.c write_data.c cct/cct_bundle.c \
-	cct/cct_ctxt.c cct/cct.c cct/cct-node-vector.c cct2metrics.c \
-	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
-	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
-	lush/lush-pthread.c lush/lush-support-rt.h \
-	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
-	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
-	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
-	messages/messages-async.c messages/fmt.c hpcrun-placeholders.c \
-	gpu/gpu-activity.c gpu/gpu-activity-channel.c \
-	gpu/gpu-activity-process.c gpu/gpu-application-thread-api.c \
+	control-knob.c control-knob.h device-finalizers.c \
+	device-initializers.c module-ignore-map.c threadmgr.c trace.c \
+	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
+	cct/cct-node-vector.c cct2metrics.c lush/lush-backtrace.h \
+	lush/lush-backtrace.c lush/lush.h lush/lush.c \
+	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
+	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
+	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
+	memory/mem.c memory/mmap.c messages/debug-flag.c \
+	messages/messages-sync.c messages/messages-async.c \
+	messages/fmt.c hpcrun-placeholders.c gpu/gpu-activity.c \
+	gpu/gpu-activity-channel.c gpu/gpu-activity-process.c \
+	gpu/gpu-application-thread-api.c \
 	gpu/gpu-channel-item-allocator.c gpu/gpu-context-id-map.c \
 	gpu/gpu-correlation.c gpu/gpu-correlation-channel.c \
 	gpu/gpu-correlation-channel-set.c gpu/gpu-correlation-id.c \
@@ -1716,14 +1726,15 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	ompt/ompt-defer-write.c ompt/ompt-interface.c \
 	ompt/ompt-queues.c ompt/ompt-region.c ompt/ompt-region-debug.c \
 	ompt/ompt-placeholders.c ompt/ompt-device-map.c \
-	ompt/ompt-task.c ompt/ompt-thread.c \
-	utilities/executable-path.h utilities/executable-path.c \
-	utilities/ip-normalized.h utilities/ip-normalized.c \
-	utilities/line_wrapping.c utilities/timer.c \
-	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
-	utilities/unlink.c $(am__append_8) $(am__append_9) \
-	$(am__append_10) $(am__append_12) $(am__append_13) \
-	$(am__append_14) $(am__append_15)
+	ompt/ompt-task.c ompt/ompt-thread.c syscalls/poll.c \
+	syscalls/ppoll.c syscalls/select.c utilities/executable-path.h \
+	utilities/executable-path.c utilities/hpcrun-nanotime.h \
+	utilities/hpcrun-nanotime.c utilities/ip-normalized.h \
+	utilities/ip-normalized.c utilities/line_wrapping.c \
+	utilities/timer.c utilities/tokenize.h utilities/tokenize.c \
+	utilities/unlink.h utilities/unlink.c $(am__append_8) \
+	$(am__append_9) $(am__append_10) $(am__append_12) \
+	$(am__append_13) $(am__append_14) $(am__append_15)
 MY_DYNAMIC_FILES = \
 	fnbounds/fnbounds_client.c	\
 	fnbounds/fnbounds_dynamic.c	\
@@ -1927,7 +1938,7 @@ libhpctoolkit_a_CPPFLAGS = \
 # cflags
 #-----------------------------------------------------------
 libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(PERFMON_CFLAGS) \
-	$(am__append_116) $(am__append_120)
+	$(am__append_116) $(am__append_120) $(GOTCHA_IFLAGS)
 libhpcrun_o_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(PERFMON_CFLAGS)
 libhpcrun_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_ga_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
@@ -1951,7 +1962,7 @@ libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic -L$(LIBMONITOR_LIB) -lmonitor \
 	-lpthread -lrt -lelf -L$(LIBELF_LIB) $(LIBUNWIND_LDFLAGS_DYN) \
 	$(LZMA_LDFLAGS_DYN) $(PERFMON_LDFLAGS_DYN) $(MBEDTLS_LIBS) \
 	$(OPT_ROCM_LDFLAGS) $(am__append_55) $(am__append_95) \
-	$(am__append_111) $(UNW_DYNAMIC_LD_FLAGS)
+	$(am__append_111) $(GOTCHA_LDFLAGS) $(UNW_DYNAMIC_LD_FLAGS)
 libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_io_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_memleak_la_LDFLAGS = -Wl,-Bsymbolic
@@ -2419,7 +2430,21 @@ ompt/libhpcrun_la-ompt-task.lo: ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_la-ompt-thread.lo: ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
+syscalls/$(am__dirstamp):
+	@$(MKDIR_P) syscalls
+	@: > syscalls/$(am__dirstamp)
+syscalls/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) syscalls/$(DEPDIR)
+	@: > syscalls/$(DEPDIR)/$(am__dirstamp)
+syscalls/libhpcrun_la-poll.lo: syscalls/$(am__dirstamp) \
+	syscalls/$(DEPDIR)/$(am__dirstamp)
+syscalls/libhpcrun_la-ppoll.lo: syscalls/$(am__dirstamp) \
+	syscalls/$(DEPDIR)/$(am__dirstamp)
+syscalls/libhpcrun_la-select.lo: syscalls/$(am__dirstamp) \
+	syscalls/$(DEPDIR)/$(am__dirstamp)
 utilities/libhpcrun_la-executable-path.lo: utilities/$(am__dirstamp) \
+	utilities/$(DEPDIR)/$(am__dirstamp)
+utilities/libhpcrun_la-hpcrun-nanotime.lo: utilities/$(am__dirstamp) \
 	utilities/$(DEPDIR)/$(am__dirstamp)
 utilities/libhpcrun_la-ip-normalized.lo: utilities/$(am__dirstamp) \
 	utilities/$(DEPDIR)/$(am__dirstamp)
@@ -2998,7 +3023,15 @@ ompt/libhpcrun_o-ompt-task.$(OBJEXT): ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_o-ompt-thread.$(OBJEXT): ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
+syscalls/libhpcrun_o-poll.$(OBJEXT): syscalls/$(am__dirstamp) \
+	syscalls/$(DEPDIR)/$(am__dirstamp)
+syscalls/libhpcrun_o-ppoll.$(OBJEXT): syscalls/$(am__dirstamp) \
+	syscalls/$(DEPDIR)/$(am__dirstamp)
+syscalls/libhpcrun_o-select.$(OBJEXT): syscalls/$(am__dirstamp) \
+	syscalls/$(DEPDIR)/$(am__dirstamp)
 utilities/libhpcrun_o-executable-path.$(OBJEXT):  \
+	utilities/$(am__dirstamp) utilities/$(DEPDIR)/$(am__dirstamp)
+utilities/libhpcrun_o-hpcrun-nanotime.$(OBJEXT):  \
 	utilities/$(am__dirstamp) utilities/$(DEPDIR)/$(am__dirstamp)
 utilities/libhpcrun_o-ip-normalized.$(OBJEXT):  \
 	utilities/$(am__dirstamp) utilities/$(DEPDIR)/$(am__dirstamp)
@@ -3320,6 +3353,8 @@ mostlyclean-compile:
 	-rm -f sample-sources/blame-shift/*.lo
 	-rm -f sample-sources/perf/*.$(OBJEXT)
 	-rm -f sample-sources/perf/*.lo
+	-rm -f syscalls/*.$(OBJEXT)
+	-rm -f syscalls/*.lo
 	-rm -f trampoline/aarch64/*.$(OBJEXT)
 	-rm -f trampoline/aarch64/*.lo
 	-rm -f trampoline/common/*.$(OBJEXT)
@@ -3370,7 +3405,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-hpcrun-initializers.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-hpcrun-placeholders.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-hpcrun_dlfns.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-hpcrun_flag_stacks.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-hpcrun_options.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-hpcrun_stats.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-loadmap.Plo@am__quote@
@@ -3409,7 +3443,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-handling_sample.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-hpcrun-initializers.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-hpcrun-placeholders.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-hpcrun_flag_stacks.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-hpcrun_options.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-hpcrun_stats.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-loadmap.Po@am__quote@
@@ -3645,6 +3678,12 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/perf/$(DEPDIR)/libhpcrun_o-perf_skid.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/perf/$(DEPDIR)/libhpcrun_o-perfmon-util-dummy.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/perf/$(DEPDIR)/libhpcrun_o-perfmon-util.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@syscalls/$(DEPDIR)/libhpcrun_la-poll.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@syscalls/$(DEPDIR)/libhpcrun_la-ppoll.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@syscalls/$(DEPDIR)/libhpcrun_la-select.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@syscalls/$(DEPDIR)/libhpcrun_o-poll.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@syscalls/$(DEPDIR)/libhpcrun_o-ppoll.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@syscalls/$(DEPDIR)/libhpcrun_o-select.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@trampoline/aarch64/$(DEPDIR)/libhpcrun_la-aarch64-tramp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@trampoline/aarch64/$(DEPDIR)/libhpcrun_o-aarch64-tramp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@trampoline/common/$(DEPDIR)/libhpcrun_la-trampoline_eager.Plo@am__quote@
@@ -3717,6 +3756,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@unwind/x86-family/manual-intervals/$(DEPDIR)/libhpcrun_o-x86-pgi-mp_pexit.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_la-executable-path.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_la-first_func.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_la-hpcrun-nanotime.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_la-ip-normalized.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_la-last_func.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_la-line_wrapping.Plo@am__quote@
@@ -3725,6 +3765,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_la-unlink.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_o-executable-path.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_o-first_func.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_o-hpcrun-nanotime.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_o-ip-normalized.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_o-last_func.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@utilities/$(DEPDIR)/libhpcrun_o-line_wrapping.Po@am__quote@
@@ -4257,13 +4298,6 @@ libhpcrun_la-control-knob.lo: control-knob.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-control-knob.lo `test -f 'control-knob.c' || echo '$(srcdir)/'`control-knob.c
 
-libhpcrun_la-hpcrun_flag_stacks.lo: hpcrun_flag_stacks.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-hpcrun_flag_stacks.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-hpcrun_flag_stacks.Tpo -c -o libhpcrun_la-hpcrun_flag_stacks.lo `test -f 'hpcrun_flag_stacks.c' || echo '$(srcdir)/'`hpcrun_flag_stacks.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libhpcrun_la-hpcrun_flag_stacks.Tpo $(DEPDIR)/libhpcrun_la-hpcrun_flag_stacks.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='hpcrun_flag_stacks.c' object='libhpcrun_la-hpcrun_flag_stacks.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-hpcrun_flag_stacks.lo `test -f 'hpcrun_flag_stacks.c' || echo '$(srcdir)/'`hpcrun_flag_stacks.c
-
 libhpcrun_la-device-finalizers.lo: device-finalizers.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-device-finalizers.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-device-finalizers.Tpo -c -o libhpcrun_la-device-finalizers.lo `test -f 'device-finalizers.c' || echo '$(srcdir)/'`device-finalizers.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libhpcrun_la-device-finalizers.Tpo $(DEPDIR)/libhpcrun_la-device-finalizers.Plo
@@ -4684,12 +4718,40 @@ ompt/libhpcrun_la-ompt-thread.lo: ompt/ompt-thread.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_la-ompt-thread.lo `test -f 'ompt/ompt-thread.c' || echo '$(srcdir)/'`ompt/ompt-thread.c
 
+syscalls/libhpcrun_la-poll.lo: syscalls/poll.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT syscalls/libhpcrun_la-poll.lo -MD -MP -MF syscalls/$(DEPDIR)/libhpcrun_la-poll.Tpo -c -o syscalls/libhpcrun_la-poll.lo `test -f 'syscalls/poll.c' || echo '$(srcdir)/'`syscalls/poll.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) syscalls/$(DEPDIR)/libhpcrun_la-poll.Tpo syscalls/$(DEPDIR)/libhpcrun_la-poll.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='syscalls/poll.c' object='syscalls/libhpcrun_la-poll.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o syscalls/libhpcrun_la-poll.lo `test -f 'syscalls/poll.c' || echo '$(srcdir)/'`syscalls/poll.c
+
+syscalls/libhpcrun_la-ppoll.lo: syscalls/ppoll.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT syscalls/libhpcrun_la-ppoll.lo -MD -MP -MF syscalls/$(DEPDIR)/libhpcrun_la-ppoll.Tpo -c -o syscalls/libhpcrun_la-ppoll.lo `test -f 'syscalls/ppoll.c' || echo '$(srcdir)/'`syscalls/ppoll.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) syscalls/$(DEPDIR)/libhpcrun_la-ppoll.Tpo syscalls/$(DEPDIR)/libhpcrun_la-ppoll.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='syscalls/ppoll.c' object='syscalls/libhpcrun_la-ppoll.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o syscalls/libhpcrun_la-ppoll.lo `test -f 'syscalls/ppoll.c' || echo '$(srcdir)/'`syscalls/ppoll.c
+
+syscalls/libhpcrun_la-select.lo: syscalls/select.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT syscalls/libhpcrun_la-select.lo -MD -MP -MF syscalls/$(DEPDIR)/libhpcrun_la-select.Tpo -c -o syscalls/libhpcrun_la-select.lo `test -f 'syscalls/select.c' || echo '$(srcdir)/'`syscalls/select.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) syscalls/$(DEPDIR)/libhpcrun_la-select.Tpo syscalls/$(DEPDIR)/libhpcrun_la-select.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='syscalls/select.c' object='syscalls/libhpcrun_la-select.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o syscalls/libhpcrun_la-select.lo `test -f 'syscalls/select.c' || echo '$(srcdir)/'`syscalls/select.c
+
 utilities/libhpcrun_la-executable-path.lo: utilities/executable-path.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT utilities/libhpcrun_la-executable-path.lo -MD -MP -MF utilities/$(DEPDIR)/libhpcrun_la-executable-path.Tpo -c -o utilities/libhpcrun_la-executable-path.lo `test -f 'utilities/executable-path.c' || echo '$(srcdir)/'`utilities/executable-path.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) utilities/$(DEPDIR)/libhpcrun_la-executable-path.Tpo utilities/$(DEPDIR)/libhpcrun_la-executable-path.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='utilities/executable-path.c' object='utilities/libhpcrun_la-executable-path.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o utilities/libhpcrun_la-executable-path.lo `test -f 'utilities/executable-path.c' || echo '$(srcdir)/'`utilities/executable-path.c
+
+utilities/libhpcrun_la-hpcrun-nanotime.lo: utilities/hpcrun-nanotime.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT utilities/libhpcrun_la-hpcrun-nanotime.lo -MD -MP -MF utilities/$(DEPDIR)/libhpcrun_la-hpcrun-nanotime.Tpo -c -o utilities/libhpcrun_la-hpcrun-nanotime.lo `test -f 'utilities/hpcrun-nanotime.c' || echo '$(srcdir)/'`utilities/hpcrun-nanotime.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) utilities/$(DEPDIR)/libhpcrun_la-hpcrun-nanotime.Tpo utilities/$(DEPDIR)/libhpcrun_la-hpcrun-nanotime.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='utilities/hpcrun-nanotime.c' object='utilities/libhpcrun_la-hpcrun-nanotime.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o utilities/libhpcrun_la-hpcrun-nanotime.lo `test -f 'utilities/hpcrun-nanotime.c' || echo '$(srcdir)/'`utilities/hpcrun-nanotime.c
 
 utilities/libhpcrun_la-ip-normalized.lo: utilities/ip-normalized.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT utilities/libhpcrun_la-ip-normalized.lo -MD -MP -MF utilities/$(DEPDIR)/libhpcrun_la-ip-normalized.Tpo -c -o utilities/libhpcrun_la-ip-normalized.lo `test -f 'utilities/ip-normalized.c' || echo '$(srcdir)/'`utilities/ip-normalized.c
@@ -5923,20 +5985,6 @@ libhpcrun_o-control-knob.obj: control-knob.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-control-knob.obj `if test -f 'control-knob.c'; then $(CYGPATH_W) 'control-knob.c'; else $(CYGPATH_W) '$(srcdir)/control-knob.c'; fi`
 
-libhpcrun_o-hpcrun_flag_stacks.o: hpcrun_flag_stacks.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-hpcrun_flag_stacks.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-hpcrun_flag_stacks.Tpo -c -o libhpcrun_o-hpcrun_flag_stacks.o `test -f 'hpcrun_flag_stacks.c' || echo '$(srcdir)/'`hpcrun_flag_stacks.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libhpcrun_o-hpcrun_flag_stacks.Tpo $(DEPDIR)/libhpcrun_o-hpcrun_flag_stacks.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='hpcrun_flag_stacks.c' object='libhpcrun_o-hpcrun_flag_stacks.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-hpcrun_flag_stacks.o `test -f 'hpcrun_flag_stacks.c' || echo '$(srcdir)/'`hpcrun_flag_stacks.c
-
-libhpcrun_o-hpcrun_flag_stacks.obj: hpcrun_flag_stacks.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-hpcrun_flag_stacks.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-hpcrun_flag_stacks.Tpo -c -o libhpcrun_o-hpcrun_flag_stacks.obj `if test -f 'hpcrun_flag_stacks.c'; then $(CYGPATH_W) 'hpcrun_flag_stacks.c'; else $(CYGPATH_W) '$(srcdir)/hpcrun_flag_stacks.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libhpcrun_o-hpcrun_flag_stacks.Tpo $(DEPDIR)/libhpcrun_o-hpcrun_flag_stacks.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='hpcrun_flag_stacks.c' object='libhpcrun_o-hpcrun_flag_stacks.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-hpcrun_flag_stacks.obj `if test -f 'hpcrun_flag_stacks.c'; then $(CYGPATH_W) 'hpcrun_flag_stacks.c'; else $(CYGPATH_W) '$(srcdir)/hpcrun_flag_stacks.c'; fi`
-
 libhpcrun_o-device-finalizers.o: device-finalizers.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-device-finalizers.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-device-finalizers.Tpo -c -o libhpcrun_o-device-finalizers.o `test -f 'device-finalizers.c' || echo '$(srcdir)/'`device-finalizers.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libhpcrun_o-device-finalizers.Tpo $(DEPDIR)/libhpcrun_o-device-finalizers.Po
@@ -6777,6 +6825,48 @@ ompt/libhpcrun_o-ompt-thread.obj: ompt/ompt-thread.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_o-ompt-thread.obj `if test -f 'ompt/ompt-thread.c'; then $(CYGPATH_W) 'ompt/ompt-thread.c'; else $(CYGPATH_W) '$(srcdir)/ompt/ompt-thread.c'; fi`
 
+syscalls/libhpcrun_o-poll.o: syscalls/poll.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT syscalls/libhpcrun_o-poll.o -MD -MP -MF syscalls/$(DEPDIR)/libhpcrun_o-poll.Tpo -c -o syscalls/libhpcrun_o-poll.o `test -f 'syscalls/poll.c' || echo '$(srcdir)/'`syscalls/poll.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) syscalls/$(DEPDIR)/libhpcrun_o-poll.Tpo syscalls/$(DEPDIR)/libhpcrun_o-poll.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='syscalls/poll.c' object='syscalls/libhpcrun_o-poll.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o syscalls/libhpcrun_o-poll.o `test -f 'syscalls/poll.c' || echo '$(srcdir)/'`syscalls/poll.c
+
+syscalls/libhpcrun_o-poll.obj: syscalls/poll.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT syscalls/libhpcrun_o-poll.obj -MD -MP -MF syscalls/$(DEPDIR)/libhpcrun_o-poll.Tpo -c -o syscalls/libhpcrun_o-poll.obj `if test -f 'syscalls/poll.c'; then $(CYGPATH_W) 'syscalls/poll.c'; else $(CYGPATH_W) '$(srcdir)/syscalls/poll.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) syscalls/$(DEPDIR)/libhpcrun_o-poll.Tpo syscalls/$(DEPDIR)/libhpcrun_o-poll.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='syscalls/poll.c' object='syscalls/libhpcrun_o-poll.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o syscalls/libhpcrun_o-poll.obj `if test -f 'syscalls/poll.c'; then $(CYGPATH_W) 'syscalls/poll.c'; else $(CYGPATH_W) '$(srcdir)/syscalls/poll.c'; fi`
+
+syscalls/libhpcrun_o-ppoll.o: syscalls/ppoll.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT syscalls/libhpcrun_o-ppoll.o -MD -MP -MF syscalls/$(DEPDIR)/libhpcrun_o-ppoll.Tpo -c -o syscalls/libhpcrun_o-ppoll.o `test -f 'syscalls/ppoll.c' || echo '$(srcdir)/'`syscalls/ppoll.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) syscalls/$(DEPDIR)/libhpcrun_o-ppoll.Tpo syscalls/$(DEPDIR)/libhpcrun_o-ppoll.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='syscalls/ppoll.c' object='syscalls/libhpcrun_o-ppoll.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o syscalls/libhpcrun_o-ppoll.o `test -f 'syscalls/ppoll.c' || echo '$(srcdir)/'`syscalls/ppoll.c
+
+syscalls/libhpcrun_o-ppoll.obj: syscalls/ppoll.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT syscalls/libhpcrun_o-ppoll.obj -MD -MP -MF syscalls/$(DEPDIR)/libhpcrun_o-ppoll.Tpo -c -o syscalls/libhpcrun_o-ppoll.obj `if test -f 'syscalls/ppoll.c'; then $(CYGPATH_W) 'syscalls/ppoll.c'; else $(CYGPATH_W) '$(srcdir)/syscalls/ppoll.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) syscalls/$(DEPDIR)/libhpcrun_o-ppoll.Tpo syscalls/$(DEPDIR)/libhpcrun_o-ppoll.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='syscalls/ppoll.c' object='syscalls/libhpcrun_o-ppoll.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o syscalls/libhpcrun_o-ppoll.obj `if test -f 'syscalls/ppoll.c'; then $(CYGPATH_W) 'syscalls/ppoll.c'; else $(CYGPATH_W) '$(srcdir)/syscalls/ppoll.c'; fi`
+
+syscalls/libhpcrun_o-select.o: syscalls/select.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT syscalls/libhpcrun_o-select.o -MD -MP -MF syscalls/$(DEPDIR)/libhpcrun_o-select.Tpo -c -o syscalls/libhpcrun_o-select.o `test -f 'syscalls/select.c' || echo '$(srcdir)/'`syscalls/select.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) syscalls/$(DEPDIR)/libhpcrun_o-select.Tpo syscalls/$(DEPDIR)/libhpcrun_o-select.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='syscalls/select.c' object='syscalls/libhpcrun_o-select.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o syscalls/libhpcrun_o-select.o `test -f 'syscalls/select.c' || echo '$(srcdir)/'`syscalls/select.c
+
+syscalls/libhpcrun_o-select.obj: syscalls/select.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT syscalls/libhpcrun_o-select.obj -MD -MP -MF syscalls/$(DEPDIR)/libhpcrun_o-select.Tpo -c -o syscalls/libhpcrun_o-select.obj `if test -f 'syscalls/select.c'; then $(CYGPATH_W) 'syscalls/select.c'; else $(CYGPATH_W) '$(srcdir)/syscalls/select.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) syscalls/$(DEPDIR)/libhpcrun_o-select.Tpo syscalls/$(DEPDIR)/libhpcrun_o-select.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='syscalls/select.c' object='syscalls/libhpcrun_o-select.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o syscalls/libhpcrun_o-select.obj `if test -f 'syscalls/select.c'; then $(CYGPATH_W) 'syscalls/select.c'; else $(CYGPATH_W) '$(srcdir)/syscalls/select.c'; fi`
+
 utilities/libhpcrun_o-executable-path.o: utilities/executable-path.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT utilities/libhpcrun_o-executable-path.o -MD -MP -MF utilities/$(DEPDIR)/libhpcrun_o-executable-path.Tpo -c -o utilities/libhpcrun_o-executable-path.o `test -f 'utilities/executable-path.c' || echo '$(srcdir)/'`utilities/executable-path.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) utilities/$(DEPDIR)/libhpcrun_o-executable-path.Tpo utilities/$(DEPDIR)/libhpcrun_o-executable-path.Po
@@ -6790,6 +6880,20 @@ utilities/libhpcrun_o-executable-path.obj: utilities/executable-path.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='utilities/executable-path.c' object='utilities/libhpcrun_o-executable-path.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o utilities/libhpcrun_o-executable-path.obj `if test -f 'utilities/executable-path.c'; then $(CYGPATH_W) 'utilities/executable-path.c'; else $(CYGPATH_W) '$(srcdir)/utilities/executable-path.c'; fi`
+
+utilities/libhpcrun_o-hpcrun-nanotime.o: utilities/hpcrun-nanotime.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT utilities/libhpcrun_o-hpcrun-nanotime.o -MD -MP -MF utilities/$(DEPDIR)/libhpcrun_o-hpcrun-nanotime.Tpo -c -o utilities/libhpcrun_o-hpcrun-nanotime.o `test -f 'utilities/hpcrun-nanotime.c' || echo '$(srcdir)/'`utilities/hpcrun-nanotime.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) utilities/$(DEPDIR)/libhpcrun_o-hpcrun-nanotime.Tpo utilities/$(DEPDIR)/libhpcrun_o-hpcrun-nanotime.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='utilities/hpcrun-nanotime.c' object='utilities/libhpcrun_o-hpcrun-nanotime.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o utilities/libhpcrun_o-hpcrun-nanotime.o `test -f 'utilities/hpcrun-nanotime.c' || echo '$(srcdir)/'`utilities/hpcrun-nanotime.c
+
+utilities/libhpcrun_o-hpcrun-nanotime.obj: utilities/hpcrun-nanotime.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT utilities/libhpcrun_o-hpcrun-nanotime.obj -MD -MP -MF utilities/$(DEPDIR)/libhpcrun_o-hpcrun-nanotime.Tpo -c -o utilities/libhpcrun_o-hpcrun-nanotime.obj `if test -f 'utilities/hpcrun-nanotime.c'; then $(CYGPATH_W) 'utilities/hpcrun-nanotime.c'; else $(CYGPATH_W) '$(srcdir)/utilities/hpcrun-nanotime.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) utilities/$(DEPDIR)/libhpcrun_o-hpcrun-nanotime.Tpo utilities/$(DEPDIR)/libhpcrun_o-hpcrun-nanotime.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='utilities/hpcrun-nanotime.c' object='utilities/libhpcrun_o-hpcrun-nanotime.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o utilities/libhpcrun_o-hpcrun-nanotime.obj `if test -f 'utilities/hpcrun-nanotime.c'; then $(CYGPATH_W) 'utilities/hpcrun-nanotime.c'; else $(CYGPATH_W) '$(srcdir)/utilities/hpcrun-nanotime.c'; fi`
 
 utilities/libhpcrun_o-ip-normalized.o: utilities/ip-normalized.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT utilities/libhpcrun_o-ip-normalized.o -MD -MP -MF utilities/$(DEPDIR)/libhpcrun_o-ip-normalized.Tpo -c -o utilities/libhpcrun_o-ip-normalized.o `test -f 'utilities/ip-normalized.c' || echo '$(srcdir)/'`utilities/ip-normalized.c
@@ -7832,6 +7936,7 @@ clean-libtool:
 	-rm -rf sample-sources/.libs sample-sources/_libs
 	-rm -rf sample-sources/blame-shift/.libs sample-sources/blame-shift/_libs
 	-rm -rf sample-sources/perf/.libs sample-sources/perf/_libs
+	-rm -rf syscalls/.libs syscalls/_libs
 	-rm -rf trampoline/aarch64/.libs trampoline/aarch64/_libs
 	-rm -rf trampoline/common/.libs trampoline/common/_libs
 	-rm -rf trampoline/ia64/.libs trampoline/ia64/_libs
@@ -8092,6 +8197,8 @@ distclean-generic:
 	-rm -f sample-sources/blame-shift/$(am__dirstamp)
 	-rm -f sample-sources/perf/$(DEPDIR)/$(am__dirstamp)
 	-rm -f sample-sources/perf/$(am__dirstamp)
+	-rm -f syscalls/$(DEPDIR)/$(am__dirstamp)
+	-rm -f syscalls/$(am__dirstamp)
 	-rm -f trampoline/aarch64/$(DEPDIR)/$(am__dirstamp)
 	-rm -f trampoline/aarch64/$(am__dirstamp)
 	-rm -f trampoline/common/$(DEPDIR)/$(am__dirstamp)
@@ -8136,7 +8243,7 @@ clean-am: clean-generic clean-libtool clean-noinstPROGRAMS \
 	clean-pkglibexecPROGRAMS mostlyclean-am
 
 distclean: distclean-recursive
-	-rm -rf ./$(DEPDIR) cct/$(DEPDIR) fnbounds/$(DEPDIR) gpu/$(DEPDIR) gpu/amd/$(DEPDIR) gpu/nvidia/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) ompt/$(DEPDIR) os/linux/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) sample-sources/perf/$(DEPDIR) trampoline/aarch64/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/libunwind/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) cct/$(DEPDIR) fnbounds/$(DEPDIR) gpu/$(DEPDIR) gpu/amd/$(DEPDIR) gpu/nvidia/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) ompt/$(DEPDIR) os/linux/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) sample-sources/perf/$(DEPDIR) syscalls/$(DEPDIR) trampoline/aarch64/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/libunwind/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -8186,7 +8293,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-recursive
-	-rm -rf ./$(DEPDIR) cct/$(DEPDIR) fnbounds/$(DEPDIR) gpu/$(DEPDIR) gpu/amd/$(DEPDIR) gpu/nvidia/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) ompt/$(DEPDIR) os/linux/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) sample-sources/perf/$(DEPDIR) trampoline/aarch64/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/libunwind/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) cct/$(DEPDIR) fnbounds/$(DEPDIR) gpu/$(DEPDIR) gpu/amd/$(DEPDIR) gpu/nvidia/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) ompt/$(DEPDIR) os/linux/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) sample-sources/perf/$(DEPDIR) syscalls/$(DEPDIR) trampoline/aarch64/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/libunwind/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
