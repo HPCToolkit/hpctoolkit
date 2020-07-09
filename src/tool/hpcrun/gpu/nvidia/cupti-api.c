@@ -1482,12 +1482,10 @@ cupti_activity_flush
 void
 cupti_device_flush(void *args)
 {
-  if (cupti_stop_flag) {
-    cupti_stop_flag_unset();
-    cupti_activity_flush();
-    // TODO(keren): replace cupti with sth. called device queue
-    gpu_application_thread_process_activities();
-  }
+  cupti_stop_flag_unset();
+  cupti_activity_flush();
+  // TODO(keren): replace cupti with sth. called device queue
+  gpu_application_thread_process_activities();
 }
 
 
@@ -1549,10 +1547,8 @@ cupti_device_init()
 void
 cupti_device_shutdown(void *args)
 {
-  if (cupti_stop_flag) {
-    cupti_callbacks_unsubscribe();
-    cupti_stop_flag_unset();
-    cupti_activity_flush();
-  }
+  cupti_callbacks_unsubscribe();
+  cupti_stop_flag_unset();
+  cupti_activity_flush();
 }
 
