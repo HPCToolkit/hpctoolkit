@@ -1381,7 +1381,6 @@ cupti_callbacks_unsubscribe
 
   HPCRUN_CUPTI_CALL(cuptiUnsubscribe, (cupti_subscriber));
 
-if (0) {
   HPCRUN_CUPTI_CALL(cuptiEnableDomain,
                    (0, cupti_subscriber, CUPTI_CB_DOMAIN_DRIVER_API));
 
@@ -1390,7 +1389,6 @@ if (0) {
 
   HPCRUN_CUPTI_CALL(cuptiEnableDomain,
                    (0, cupti_subscriber, CUPTI_CB_DOMAIN_RESOURCE));
-}
 }
 
 
