@@ -1381,6 +1381,7 @@ cupti_callbacks_unsubscribe
 
   HPCRUN_CUPTI_CALL(cuptiUnsubscribe, (cupti_subscriber));
 
+if (0) {
   HPCRUN_CUPTI_CALL(cuptiEnableDomain,
                    (0, cupti_subscriber, CUPTI_CB_DOMAIN_DRIVER_API));
 
@@ -1389,6 +1390,7 @@ cupti_callbacks_unsubscribe
 
   HPCRUN_CUPTI_CALL(cuptiEnableDomain,
                    (0, cupti_subscriber, CUPTI_CB_DOMAIN_RESOURCE));
+}
 }
 
 
@@ -1542,7 +1544,6 @@ cupti_device_init()
 {
   cupti_stop_flag = false;
   cupti_runtime_api_flag = false;
-  //cupti_trace_node = NULL;
 }
 
 
@@ -1550,7 +1551,6 @@ void
 cupti_device_shutdown(void *args)
 {
   cupti_callbacks_unsubscribe();
-  cupti_stop_flag_unset();
   cupti_activity_flush();
 }
 
