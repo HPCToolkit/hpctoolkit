@@ -1381,7 +1381,6 @@ cupti_callbacks_unsubscribe
 
   HPCRUN_CUPTI_CALL(cuptiUnsubscribe, (cupti_subscriber));
 
-if (0) {
   HPCRUN_CUPTI_CALL(cuptiEnableDomain,
                    (0, cupti_subscriber, CUPTI_CB_DOMAIN_DRIVER_API));
 
@@ -1390,7 +1389,6 @@ if (0) {
 
   HPCRUN_CUPTI_CALL(cuptiEnableDomain,
                    (0, cupti_subscriber, CUPTI_CB_DOMAIN_RESOURCE));
-}
 }
 
 
@@ -1477,19 +1475,19 @@ cupti_activity_flush
 (
 )
 {
-  HPCRUN_CUPTI_CALL(cuptiActivityFlushAll, (CUPTI_ACTIVITY_FLAG_FLUSH_FORCED));
+  if (cupti_stop_flag) {
+    cupti_stop_flag_unset();
+    HPCRUN_CUPTI_CALL(cuptiActivityFlushAll, (CUPTI_ACTIVITY_FLAG_FLUSH_FORCED));
+  }
 }
 
 
 void
 cupti_device_flush(void *args)
 {
-  if (cupti_stop_flag) {
-    cupti_stop_flag_unset();
-    cupti_activity_flush();
-    // TODO(keren): replace cupti with sth. called device queue
-    gpu_application_thread_process_activities();
-  }
+  cupti_activity_flush();
+  // TODO(keren): replace cupti with sth. called device queue
+  gpu_application_thread_process_activities();
 }
 
 
@@ -1551,6 +1549,6 @@ void
 cupti_device_shutdown(void *args)
 {
   cupti_callbacks_unsubscribe();
-  cupti_activity_flush();
+  cupti_device_flush(0);
 }
 
