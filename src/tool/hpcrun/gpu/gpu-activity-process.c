@@ -406,6 +406,47 @@ gpu_kernel_process
 
 
 static void
+gpu_kernel_block_process
+(
+ gpu_activity_t* activity
+)
+{
+  uint32_t correlation_id = activity->details.kernel_block.correlation_id;
+
+  gpu_correlation_id_map_entry_t *cid_map_entry =
+    gpu_correlation_id_map_lookup(correlation_id);
+
+  if (cid_map_entry != NULL) {
+    uint64_t external_id =
+      gpu_correlation_id_map_entry_external_id_get(cid_map_entry);
+
+    ip_normalized_t ip = activity->details.kernel_block.pc;
+
+    gpu_host_correlation_map_entry_t *host_op_entry =
+      gpu_host_correlation_map_lookup(external_id);
+
+    if (host_op_entry != NULL) {
+      PRINT("external_id %lu\n", external_id);
+
+      cct_node_t *host_op_node =
+        gpu_host_correlation_map_entry_op_function_get(host_op_entry);
+
+			// create a child cct node that contains 2 metrics: offset of block head wrt. original binary, dynamic execution count of block
+      cct_node_t *cct_child = hpcrun_cct_insert_ip_norm(host_op_node, ip); // how to set the ip_norm
+      if (cct_child) {
+        PRINT("cct_child %p\n", cct_child);
+        attribute_activity(host_op_entry, activity, cct_child);
+      }
+    } else {
+      PRINT("host_map_entry %lu not found\n", external_id);
+    }
+  } else {
+    PRINT("correlation_id_map_entry %u not found\n", correlation_id);
+  }
+}
+
+
+static void
 gpu_synchronization_process
 (
  gpu_activity_t *activity
@@ -603,6 +644,10 @@ gpu_activity_process
   case GPU_ACTIVITY_KERNEL:
     gpu_kernel_process(ga);
     break;
+
+	case GPU_ACTIVITY_KERNEL_BLOCK:
+		gpu_kernel_block_process(ga);
+		break;
 
   case GPU_ACTIVITY_SYNCHRONIZATION:
     gpu_synchronization_process(ga);

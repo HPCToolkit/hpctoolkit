@@ -507,11 +507,14 @@ endif
 if ENABLE_OPENCL
 #MY_OPENCL_FILES =
 MY_BASE_FILES += \
-	sample-sources/opencl.c 				\
-	gpu/opencl/opencl-intercept.c			\
-	gpu/opencl/opencl-api.c					\
-	gpu/opencl/opencl-memory-manager.c  	\
-	gpu/opencl/opencl-activity-translate.c
+	sample-sources/opencl.c 												\
+	gpu/opencl/opencl-intercept.c										\
+	gpu/opencl/opencl-api.c													\
+	gpu/opencl/opencl-memory-manager.c  						\
+	gpu/opencl/opencl-activity-translate.c					\
+	gpu/instrumentation/gtpin-instrumentation-kernel-data-map.c			\
+	gpu/instrumentation/gtpin-instrumentation-kernel-memory-map.c	\
+	gpu/instrumentation/opencl-instrumentation.c
 endif
 
 
@@ -961,8 +964,9 @@ if OPT_ENABLE_ROCM
 endif
 
 if ENABLE_OPENCL
-  libhpcrun_la_CFLAGS += $(OPENCL_IFLAGS)
-
+	libhpcrun_la_CFLAGS += $(OPENCL_IFLAGS)
+	libhpcrun_la_LDFLAGS += "-L/home/aarontcopal2/Documents/inteloneapi/gtpin/Profilers/Lib/intel64 -lgtpin"
+	libhpcrun_la_LDFLAGS +=	"-Wl,-rpath='/home/aarontcopal2/Documents/inteloneapi/gtpin/Profilers/Lib/intel64'"
   MY_CPP_DEFINES  += -DHPCRUN_SS_OPENCL
 endif 
 

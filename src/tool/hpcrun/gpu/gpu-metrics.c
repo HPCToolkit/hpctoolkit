@@ -84,7 +84,8 @@
   macro(GPU_INST, 9)				\
   macro(GTIMES, 10)				\
   macro(KINFO, 12)				\
-  macro(GSAMP, 13)			
+  macro(GSAMP, 13)				\
+	macro(KER_BLKINFO, 14)
 
 
 #define FORALL_METRIC_KINDS(macro)	\
@@ -443,6 +444,26 @@ gpu_metrics_attribute_kernel
 
 
 static void
+gpu_metrics_attribute_kernel_block
+(
+	gpu_activity_t *activity
+)
+{
+  gpu_kernel_block_t *b = &(activity->details.kernel_block);
+  cct_node_t *cct_node = activity->cct_node;
+
+	metric_data_list_t *metrics = 
+		hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_KINFO_STMEM_ACUMU));	//where will we get metrics from?
+
+	gpu_metrics_attribute_metric_int(metrics, METRIC_ID(KER_BLK_OFFSET), 
+					 b->offset);
+
+	gpu_metrics_attribute_metric_int(metrics, METRIC_ID(KER_BLK_EXECUTION_COUNT),	// need to increment execution count for existing ccts
+					 b->execution_count);
+}
+
+
+static void
 gpu_metrics_attribute_synchronization
 (
  gpu_activity_t *activity
@@ -580,6 +601,10 @@ gpu_metrics_attribute
   case GPU_ACTIVITY_KERNEL:
     gpu_metrics_attribute_kernel(activity);
     break;
+
+	case GPU_ACTIVITY_KERNEL_BLOCK:
+		gpu_metrics_attribute_kernel_block(activity);
+		break;
     
   case GPU_ACTIVITY_SYNCHRONIZATION:
     gpu_metrics_attribute_synchronization(activity);
@@ -698,6 +723,24 @@ gpu_metrics_KINFO_enable
   DIVISION_FORMULA(GPU_KINFO_BLK_THREADS);
   DIVISION_FORMULA(GPU_KINFO_BLK_SMEM);
   OCCUPANCY_FORMULA(GPU_KINFO_OCCUPANCY_THR);
+}
+
+
+void
+gpu_metrics_KER_BLKINFO_enable
+(
+ void
+)
+{
+// kernel block characteristics metrics
+#undef CURRENT_METRIC 
+#define CURRENT_METRIC KER_BLKINFO
+
+  INITIALIZE_METRIC_KIND();
+
+  FORALL_KER_BLKINFO(INITIALIZE_SCALAR_METRIC_INT)
+
+  FINALIZE_METRIC_KIND();
 }
 
 

@@ -80,20 +80,21 @@ typedef struct gpu_activity_channel_t gpu_activity_channel_t;
 typedef enum {    
   GPU_ACTIVITY_UNKNOWN                 = 0,
   GPU_ACTIVITY_KERNEL                  = 1,
-  GPU_ACTIVITY_MEMCPY                  = 2,
-  GPU_ACTIVITY_MEMCPY2                 = 3,
-  GPU_ACTIVITY_MEMSET                  = 4,
-  GPU_ACTIVITY_MEMORY                  = 5,    
-  GPU_ACTIVITY_SYNCHRONIZATION         = 6,
-  GPU_ACTIVITY_GLOBAL_ACCESS           = 7,
-  GPU_ACTIVITY_LOCAL_ACCESS            = 8,
-  GPU_ACTIVITY_BRANCH                  = 9,
-  GPU_ACTIVITY_CDP_KERNEL              = 10,
-  GPU_ACTIVITY_PC_SAMPLING             = 11,
-  GPU_ACTIVITY_PC_SAMPLING_INFO        = 12, 
-  GPU_ACTIVITY_EXTERNAL_CORRELATION    = 13,
-  GPU_ACTIVITY_EVENT                   = 14,
-  GPU_ACTIVITY_FUNCTION                = 15
+	GPU_ACTIVITY_KERNEL_BLOCK						 = 2,	
+  GPU_ACTIVITY_MEMCPY                  = 3,
+  GPU_ACTIVITY_MEMCPY2                 = 4,
+  GPU_ACTIVITY_MEMSET                  = 5,
+  GPU_ACTIVITY_MEMORY                  = 6,    
+  GPU_ACTIVITY_SYNCHRONIZATION         = 7,
+  GPU_ACTIVITY_GLOBAL_ACCESS           = 8,
+  GPU_ACTIVITY_LOCAL_ACCESS            = 9,
+  GPU_ACTIVITY_BRANCH                  = 10,
+  GPU_ACTIVITY_CDP_KERNEL              = 11,
+  GPU_ACTIVITY_PC_SAMPLING             = 12,
+  GPU_ACTIVITY_PC_SAMPLING_INFO        = 13, 
+  GPU_ACTIVITY_EXTERNAL_CORRELATION    = 14,
+  GPU_ACTIVITY_EVENT                   = 15,
+  GPU_ACTIVITY_FUNCTION                = 16
 } gpu_activity_kind_t;
 
 
@@ -258,6 +259,14 @@ typedef struct gpu_kernel_t {
 } gpu_kernel_t;
 
 
+typedef struct gpu_kernel_block_t {
+	uint32_t correlation_id;
+	uint64_t offset;
+	uint64_t execution_count;
+	ip_normalized_t pc;
+} gpu_kernel_block_t;
+
+
 typedef struct gpu_cdpkernel_t {
   uint64_t start;
   uint64_t end;
@@ -351,6 +360,7 @@ typedef struct gpu_activity_details_t {
     gpu_memory_t memory;
     gpu_memset_t memset;
     gpu_kernel_t kernel;
+		gpu_kernel_block_t kernel_block;
     gpu_function_t function;
     gpu_cdpkernel_t cdpkernel;
     gpu_event_t event;

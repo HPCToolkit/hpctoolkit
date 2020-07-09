@@ -54,6 +54,7 @@
 // local includes
 //******************************************************************************
 
+#include <hpcrun/gpu/instrumentation/opencl-instrumentation.h>
 #include <hpcrun/messages/messages.h>
 #include <lib/prof-lean/hpcrun-gotcha.h>
 #include <lib/prof-lean/hpcrun-opencl.h>
@@ -341,6 +342,8 @@ opencl_intercept_setup
 {
   #ifndef HPCRUN_STATIC_LINK
   ETMSG(OPENCL, "setting up opencl intercepts");
+	gpu_metrics_KER_BLKINFO_enable();
+  enableProfiling();
   gotcha_wrap(opencl_bindings, 4, "opencl_bindings");
   opencl_intercept_initialize();
   #endif
