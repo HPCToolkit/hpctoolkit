@@ -1436,15 +1436,20 @@ cupti_pc_sampling_enable
   config.samplingPeriod2 = frequency;
   config.size = sizeof(config);
 
-#if 0  // Does not work on Turing (both calls error)
-  HPCRUN_CUPTI_CALL(cuptiActivityConfigurePCSampling, (context, &config));
+  int required;
+  int retval = cuda_global_pc_sampling_required(&required);
 
-  HPCRUN_CUPTI_CALL(cuptiActivityEnableContext,
-                   (context, CUPTI_ACTIVITY_KIND_PC_SAMPLING));
-#else  // Works for Turing
-  HPCRUN_CUPTI_CALL(cuptiActivityEnable,
-                   (CUPTI_ACTIVITY_KIND_PC_SAMPLING));
-#endif
+  if (retval == 0) { // only turn something on if success determining mode
+
+    if (!required) {
+      HPCRUN_CUPTI_CALL(cuptiActivityConfigurePCSampling, (context, &config));
+
+      HPCRUN_CUPTI_CALL(cuptiActivityEnableContext,
+                        (context, CUPTI_ACTIVITY_KIND_PC_SAMPLING));
+     } else {
+      HPCRUN_CUPTI_CALL(cuptiActivityEnable, (CUPTI_ACTIVITY_KIND_PC_SAMPLING));
+     }
+  }
 
   TMSG(CUPTI, "exit cupti_pc_sampling_enable");
 }
