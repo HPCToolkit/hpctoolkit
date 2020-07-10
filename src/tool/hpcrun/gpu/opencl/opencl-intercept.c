@@ -69,11 +69,13 @@
 // local data
 //******************************************************************************
 
+#ifndef HPCRUN_STATIC_LINK
 static gotcha_wrappee_handle_t clCreateCommandQueue_handle;
 static gotcha_wrappee_handle_t clEnqueueNDRangeKernel_handle;
 static gotcha_wrappee_handle_t clEnqueueReadBuffer_handle;
 static gotcha_wrappee_handle_t clEnqueueWriteBuffer_handle;
 static atomic_long correlation_id;
+#endif
 
 
 
