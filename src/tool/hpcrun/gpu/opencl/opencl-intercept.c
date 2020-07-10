@@ -45,7 +45,6 @@
 // system includes
 //******************************************************************************
 
-#include <gotcha/gotcha.h>
 #include <inttypes.h>
 
 
@@ -54,6 +53,7 @@
 // local includes
 //******************************************************************************
 
+#include <hpcrun/gpu/gpu-metrics.h>
 #include <hpcrun/messages/messages.h>
 #include <lib/prof-lean/hpcrun-gotcha.h>
 #include <lib/prof-lean/hpcrun-opencl.h>
