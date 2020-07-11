@@ -1436,10 +1436,20 @@ cupti_pc_sampling_enable
   config.samplingPeriod2 = frequency;
   config.size = sizeof(config);
 
-  HPCRUN_CUPTI_CALL(cuptiActivityConfigurePCSampling, (context, &config));
+  int required;
+  int retval = cuda_global_pc_sampling_required(&required);
 
-  HPCRUN_CUPTI_CALL(cuptiActivityEnableContext,
-                   (context, CUPTI_ACTIVITY_KIND_PC_SAMPLING));
+  if (retval == 0) { // only turn something on if success determining mode
+
+    if (!required) {
+      HPCRUN_CUPTI_CALL(cuptiActivityConfigurePCSampling, (context, &config));
+
+      HPCRUN_CUPTI_CALL(cuptiActivityEnableContext,
+                        (context, CUPTI_ACTIVITY_KIND_PC_SAMPLING));
+     } else {
+      HPCRUN_CUPTI_CALL(cuptiActivityEnable, (CUPTI_ACTIVITY_KIND_PC_SAMPLING));
+     }
+  }
 
   TMSG(CUPTI, "exit cupti_pc_sampling_enable");
 }
@@ -1470,19 +1480,19 @@ cupti_activity_flush
 (
 )
 {
-  HPCRUN_CUPTI_CALL(cuptiActivityFlushAll, (CUPTI_ACTIVITY_FLAG_FLUSH_FORCED));
+  if (cupti_stop_flag) {
+    cupti_stop_flag_unset();
+    HPCRUN_CUPTI_CALL(cuptiActivityFlushAll, (CUPTI_ACTIVITY_FLAG_FLUSH_FORCED));
+  }
 }
 
 
 void
 cupti_device_flush(void *args)
 {
-  if (cupti_stop_flag) {
-    cupti_stop_flag_unset();
-    cupti_activity_flush();
-    // TODO(keren): replace cupti with sth. called device queue
-    gpu_application_thread_process_activities();
-  }
+  cupti_activity_flush();
+  // TODO(keren): replace cupti with sth. called device queue
+  gpu_application_thread_process_activities();
 }
 
 
@@ -1533,9 +1543,17 @@ cupti_correlation_id_pop()
 
 
 void
+cupti_device_init()
+{
+  cupti_stop_flag = false;
+  cupti_runtime_api_flag = false;
+}
+
+
+void
 cupti_device_shutdown(void *args)
 {
   cupti_callbacks_unsubscribe();
-  cupti_activity_flush();
+  cupti_device_flush(0);
 }
 
