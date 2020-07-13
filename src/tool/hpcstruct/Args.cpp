@@ -117,11 +117,11 @@ Options: General\n\
                        the procedure glob <glob>\n\
 \n\
 Options: Parallel usage\n\
-  -j <num>, --jobs <num>  Use <num> openmp threads (jobs), default 1.\n\
-  --jobs-parse <num>   Use <num> openmp threads for ParseAPI::parse(),\n\
-                       default is same value for --jobs.\n\
-  --jobs-symtab <num>  Use <num> openmp threads for Symtab methods.\n\
-                       (unsafe for num > 1)\n\
+  -j <num>, --jobs <num>  Use <num> openmp threads (jobs) for hpcstruct,\n\
+                       default 1.\n\
+  --jobs-struct <num>  Use <num> threads for the MakeStructure() phase only.\n\
+  --jobs-parse  <num>  Use <num> threads for the ParseAPI::parse() phase only.\n\
+  --jobs-symtab <num>  Use <num> threads for the Symtab phase (if available).\n\
   --time               Display stats on time and space usage.\n\
 \n\
 Options: Structure recovery\n\
@@ -156,6 +156,7 @@ Options: Output files\n\
 // Note: Changing the option name requires changing the name in Parse()
 CmdLineParser::OptArgDesc Args::optArgs[] = {
   { 'j',  "jobs",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
+  {  0 ,  "jobs-struct",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
   {  0 ,  "jobs-parse",   CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
   {  0 ,  "jobs-symtab",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
   {  0 ,  "time",         CLP::ARG_NONE, CLP::DUPOPT_CLOB,  NULL,  NULL },
@@ -212,6 +213,7 @@ void
 Args::Ctor()
 {
   jobs = -1;
+  jobs_struct = -1;
   jobs_parse = -1;
   jobs_symtab = -1;
   show_time = false;
@@ -309,6 +311,10 @@ Args::parse(int argc, const char* const argv[])
     if (parser.isOpt("jobs")) {
       const string & arg = parser.getOptArg("jobs");
       jobs = (int) CmdLineParser::toLong(arg);
+    }
+    if (parser.isOpt("jobs-struct")) {
+      const string & arg = parser.getOptArg("jobs-struct");
+      jobs_struct = (int) CmdLineParser::toLong(arg);
     }
     if (parser.isOpt("jobs-parse")) {
       const string & arg = parser.getOptArg("jobs-parse");

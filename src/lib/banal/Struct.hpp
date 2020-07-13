@@ -62,6 +62,7 @@ namespace Struct {
 class Options {
 public:
   int  jobs;
+  int  jobs_struct;
   int  jobs_parse;
   int  jobs_symtab;
   bool show_time;
@@ -71,9 +72,11 @@ public:
   Options()
   {
     jobs = 1;
+    jobs_struct = 1;
     jobs_parse = 1;
     jobs_symtab = 1;
     show_time = false;
+    compute_gpu_cfg = false;
     ourDemangle = false;
   }
 };

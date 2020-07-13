@@ -110,6 +110,7 @@ public:
   const std::string& getCmd() const;
 
   int jobs;
+  int jobs_struct;
   int jobs_parse;
   int jobs_symtab;
   bool show_time;
