@@ -132,9 +132,9 @@ double GPULoopUnrollOptimizer::match_impl(const KernelBlame &kernel_blame,
   for (auto *inst_blame : kernel_blame.stall_inst_blame_ptrs) {
     auto &blame_name = inst_blame->blame_name;
 
-    if (blame_name.find("LAT_DEP") != std::string::npos ||
-        blame_name.find("LAT_GMEM") != std::string::npos ||
-        blame_name.find("LAT_SYNC") != std::string::npos) {
+    if (blame_name.find(":LAT_IDEP") != std::string::npos ||
+        blame_name.find(":LAT_GMEM") != std::string::npos ||
+        blame_name.find(":LAT_SYNC") != std::string::npos) {
       auto *src_struct = inst_blame->src_struct;
       auto *dst_struct = inst_blame->dst_struct;
 
@@ -259,6 +259,7 @@ double GPUCodeReorderOptimizer::match_impl(const KernelBlame &kernel_blame,
 double GPUKernelMergeOptimizer::match_impl(const KernelBlame &kernel_blame,
                                            const KernelStats &kernel_stats) {
   // Match if ifetch and small kernel invoked many times
+  // TODO(Keren): count number of instructions
   const int KERNEL_COUNT_LIMIT = 10;
   const double KERNEL_TIME_LIMIT = 100 * 1e-6; // 100us
 

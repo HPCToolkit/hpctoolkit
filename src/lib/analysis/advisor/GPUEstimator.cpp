@@ -111,7 +111,7 @@ ParallelGPUEstimator::estimate(double blame, const KernelStats &kernel_stats) {
   std::pair<double, double> estimate(0.0, 0.0);
 
   if (blame != 0.0) {
-    estimate.first = blame;
+    estimate.first = 1 - blame;
     estimate.second = 1 / blame;
   }
 

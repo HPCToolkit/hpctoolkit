@@ -712,7 +712,7 @@ void GPUAdvisor::trackDep(int from_vma, int to_vma, int id,
       paths.push_back(path);
     } else {
       for (auto *target : from_block->targets) {
-        if (target->type != CudaParse::TargetType::CALL && target->type != CudaParse::TargetType::CALL_FT) {
+        if (target->type != CudaParse::TargetType::CALL) {
           // We do not need from_vma anymore
           trackDep(0, to_vma, id, target->block, to_block, latency_issue, latency,
             visited_blocks, path, paths, track_type);
@@ -1217,7 +1217,7 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
       auto sync_vma = to_vma;
       auto *sync_inst = _vma_prop_map[sync_vma].inst;
 
-      if (sync_inst->op.find(".SYNC") != std::string::npos) {
+      if (sync_inst->op.find(".SYNC") == std::string::npos) {
         // blame the previous node
         sync_vma = sync_vma - _arch->inst_size();
         sync_inst = _vma_prop_map[sync_vma].inst;
