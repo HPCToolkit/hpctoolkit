@@ -299,12 +299,13 @@ StmtMap::insert(StmtInfo * sinfo)
 void
 addStmtToTree(TreeNode * root, HPC::StringTable & strTab, RealPathMgr * realPath, 
               VMA vma, int len, string & filenm, SrcFile::ln line, 
-              string & device, bool is_call, bool is_sink, VMA target)
+              string & device, bool debug_info_available, bool is_call, 
+	      bool is_sink, VMA target)
 {
   InlineSeqn path;
   TreeNode *node;
 
-  analyzeAddr(path, vma, realPath);
+  if (debug_info_available) analyzeAddr(path, vma, realPath);
 
   // follow 'path' down the tree and insert any edges that don't exist
   node = root;

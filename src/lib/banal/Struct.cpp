@@ -133,6 +133,9 @@ using namespace std;
 // macros
 //******************************************************************************
 
+#define DEBUG_LINE_SECTION_NAME ".debug_line"
+#define DEBUG_INFO_SECTION_NAME ".debug_info"
+
 #ifdef DYNINST_USE_CUDA
 #define SYMTAB_ARCH_CUDA(symtab) \
   ((symtab)->getArchitecture() == Dyninst::Arch_cuda)
@@ -170,6 +173,9 @@ static const string & unknown_link = UNKNOWN_LINK;
 static Symtab * the_symtab = NULL;
 static int cuda_arch = 0;
 static size_t cubin_size = 0;
+
+static bool debug_line_available = true;
+static bool debug_info_available = true;
 
 static BAnal::Struct::Options opts;
 
@@ -388,28 +394,30 @@ public:
   bool
   getLineInfo(VMA vma, string & filenm, uint & line)
   {
-    // try cache first
-    if (start <= vma && vma < end) {
-      filenm = cache_filenm;
-      line = cache_line;
-      return true;
-    }
+    if (debug_line_available == true) {
+      // try cache first
+      if (start <= vma && vma < end) {
+	filenm = cache_filenm;
+	line = cache_line;
+	return true;
+      }
 
-    // lookup with getStatement() and getSourceLines()
-    StatementVector svec;
-    getStatement(svec, vma, sym_func);
+      // lookup with getStatement() and getSourceLines()
+      StatementVector svec;
+      getStatement(svec, vma, sym_func);
 
-    if (! svec.empty()) {
-      filenm = svec[0]->getFile();
-      line = svec[0]->getLine();
-      realPath->realpath(filenm);
+      if (! svec.empty()) {
+	filenm = svec[0]->getFile();
+	line = svec[0]->getLine();
+	realPath->realpath(filenm);
 
-      cache_filenm = filenm;
-      cache_line = line;
-      start = svec[0]->startAddr();
-      end = svec[0]->endAddr();
+	cache_filenm = filenm;
+	cache_line = line;
+	start = svec[0]->startAddr();
+	end = svec[0]->endAddr();
 
-      return true;
+	return true;
+      }
     }
 
     // no line info available
@@ -617,6 +625,11 @@ makeStructure(string filename,
       continue;
     }
     the_symtab = symtab;
+
+    Region *r;
+    debug_line_available = the_symtab->findRegion(r, DEBUG_LINE_SECTION_NAME); 
+    debug_info_available = the_symtab->findRegion(r, DEBUG_INFO_SECTION_NAME); 
+
     bool cuda_file = SYMTAB_ARCH_CUDA(symtab);
 
     // pre-compute line map info
@@ -646,8 +659,7 @@ makeStructure(string filename,
     // don't run parseapi on cuda binary
     if (! cuda_file) {
       code_src = new SymtabCodeSource(symtab);
-      code_obj = new CodeObject(code_src);
-      code_obj->parse();
+      code_obj = new CodeObject(code_src); // constructor parses binary
       cuda_arch = 0;
       cubin_size = 0;
     } else {
@@ -1824,10 +1836,11 @@ doBlock(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func,
     // a call must be the last instruction in the block
     if (next_it == imap.end() && is_call) {
       addStmtToTree(root, *(env.strTab), env.realPath, vma, len, filenm, line,
-		    device, is_call, is_sink, target);
+		    device, debug_info_available, is_call, is_sink, target);
     }
     else {
-      addStmtToTree(root, *(env.strTab), env.realPath, vma, len, filenm, line, device);
+      addStmtToTree(root, *(env.strTab), env.realPath, vma, len, filenm, line, 
+		    device, debug_info_available);
     }
   }
 
@@ -1877,7 +1890,8 @@ doUnparsableFunction(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func
  
     lmcache.getLineInfo(vma, filenm, line); 
     string device;
-    addStmtToTree(root, *(env.strTab), env.realPath, vma, len, filenm, line, device);
+    addStmtToTree(root, *(env.strTab), env.realPath, vma, len, filenm, line, 
+		  device, debug_info_available);
   }
 }
 
@@ -1921,7 +1935,7 @@ addGaps(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo)
 
         string device;
         addStmtToTree(root, *(env.strTab), env.realPath, vma, end - vma,
-		      filenm, line, device);
+		      filenm, line, device, debug_info_available);
         vma = end;
       }
       else {
@@ -1930,7 +1944,8 @@ addGaps(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo)
 
         string device;
         addStmtToTree(root, *(env.strTab), env.realPath, vma, end - vma,
-		      finfo->fileName, pinfo->line_num, device);
+		      finfo->fileName, pinfo->line_num, device,
+		      debug_info_available);
         vma = end;
       }
     }
