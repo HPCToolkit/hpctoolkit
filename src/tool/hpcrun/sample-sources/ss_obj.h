@@ -97,6 +97,7 @@ sample_source_t obj_name() = {
   .finalize_event_list = finalize_event_list,
   .gen_event_set = gen_event_set,
   .display_events = display_events,
+	.print_counters = print_counters,
 
   // data
   .evl = {

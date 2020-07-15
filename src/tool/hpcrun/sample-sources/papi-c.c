@@ -100,13 +100,14 @@
 
 #include "tool_state.h"
 
+
 /******************************************************************************
  * macros
  *****************************************************************************/
 
 #define OVERFLOW_MODE 0
 #define WEIGHT_METRIC 0
-#define DEFAULT_THRESHOLD  2000000L
+#define DEFAULT_THRESHOLD  1 //2000000L
 
 #include "papi-c.h"
 
@@ -389,6 +390,7 @@ finish:
 	tool_exit();
 }
 
+
 static void
 METHOD_FN(stop)
 {
@@ -423,12 +425,18 @@ METHOD_FN(stop)
       else {
 	TMSG(PAPI,"stop w event set = %d", ci->eventSet);
 	long_long values[nevents+2];
+//for (int i = 0; i < nevents+2; ++i) {
+//	values[i] = 0;
+//	printf("values_prev[%d] = %llu\n", i, values[i]);
+//}
 	//	long_long *values = (long_long *) alloca(sizeof(long_long) * (nevents+2));
 	int ret = PAPI_stop(ci->eventSet, values);
 	if (ret != PAPI_OK){
 	  EMSG("Failed to stop PAPI for eventset %d. Return code = %d ==> %s",
 	       ci->eventSet, ret, PAPI_strerror(ret));
 	}
+
+	METHOD_CALL(self, print_counters, values);
       }
     }
   }
@@ -438,6 +446,7 @@ finish:
 	tool_exit();
 }
 
+
 static void
 METHOD_FN(shutdown)
 {
@@ -445,7 +454,9 @@ METHOD_FN(shutdown)
   TMSG(PAPI, "shutdown");
   if (papi_unavail) { goto finish; }
 
-  METHOD_CALL(self, stop); // make sure stop has been called
+  do{
+		METHOD_CALL(self, stop); // make sure stop has been called
+	}while(0);
   // FIXME: add component shutdown code here
   PAPI_shutdown();
 
@@ -624,7 +635,7 @@ METHOD_FN(gen_event_set, int lush_metrics)
 
   int num_components = PAPI_num_components();
   int ss_info_size = sizeof(papi_source_info_t) + 
-    num_components * sizeof(papi_component_info_t);
+	num_components * sizeof(papi_component_info_t);
 
   TMSG(PAPI, "Num components = %d", num_components);
   papi_source_info_t* psi = hpcrun_malloc(ss_info_size);
@@ -796,11 +807,25 @@ METHOD_FN(display_events)
 
   printf( "Total events reported: %d\n", num_total);
   printf("\n\n");
-
 finish:
 	tool_exit();
 }
 
+static void
+METHOD_FN(print_counters, const long long *values)
+{
+	char* evlist = METHOD_CALL(self, get_event_str);
+	char *event;
+	int evcode;
+	int i;
+
+	for (i = 0, event = start_tok(evlist); more_tok(); i++, event = next_tok()) {
+		PAPI_event_name_to_code(event, &evcode);
+
+		printf("event %s \t-> event code = %x, value = %llu\n", event, evcode, values[i]);
+	}
+
+}
 
 /***************************************************************************
  * object

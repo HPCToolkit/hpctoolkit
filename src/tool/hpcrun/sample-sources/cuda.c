@@ -422,6 +422,11 @@ METHOD_FN(display_events)
   printf("\n");
 }
 
+static void
+METHOD_FN(print_counters, const long long *values)
+{
+}
+
 /***************************************************************************
  * object
  ***************************************************************************/

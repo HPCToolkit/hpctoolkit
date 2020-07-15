@@ -93,7 +93,8 @@ typedef enum {
   GPU_ACTIVITY_PC_SAMPLING_INFO        = 12, 
   GPU_ACTIVITY_EXTERNAL_CORRELATION    = 13,
   GPU_ACTIVITY_EVENT                   = 14,
-  GPU_ACTIVITY_FUNCTION                = 15
+  GPU_ACTIVITY_FUNCTION                = 15,
+	GPU_ACTIVITY_LINK
 } gpu_activity_kind_t;
 
 

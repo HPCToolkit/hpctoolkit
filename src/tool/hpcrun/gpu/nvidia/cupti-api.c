@@ -105,6 +105,8 @@
 
 #include "tool_state.h"
 
+
+#include "sample_sources_all.h"
 //******************************************************************************
 // macros
 //******************************************************************************
@@ -952,6 +954,10 @@ cupti_subscriber_callback
         uint64_t correlation_id = gpu_correlation_id();
         cupti_correlation_id_push(correlation_id);
 
+        printf("Driver API: enter -----------------\n");
+				hpcrun_all_sources_stop();
+				hpcrun_all_sources_start();
+
         cct_node_t *api_node = cupti_correlation_callback(correlation_id);
 
         gpu_op_ccts_t gpu_op_ccts;
@@ -1098,6 +1104,10 @@ cupti_subscriber_callback
         cupti_runtime_api_flag_set();
         uint64_t correlation_id = gpu_correlation_id();
         cupti_correlation_id_push(correlation_id);
+
+				printf("Runtime API: enter -----------------\n");
+				hpcrun_all_sources_stop();
+				hpcrun_all_sources_start();
         // We should make notification records in the api enter callback.
         // A runtime API must be implemented by driver APIs.
         // Though unlikely in most cases,
