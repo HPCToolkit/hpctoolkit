@@ -47,11 +47,16 @@
 
 #include "common.h"
 
+#include <monitor.h> 
+
 #include <hpcrun/device-finalizers.h>
+#include <hpcrun/gpu/gpu-metrics.h>
 #include <hpcrun/gpu/opencl/opencl-api.h>
 #include <hpcrun/thread_data.h>
 
 #include <messages/messages.h>
+
+#include <utilities/tokenize.h>
 
 
 
