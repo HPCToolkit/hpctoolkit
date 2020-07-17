@@ -269,11 +269,11 @@ ilmstat_btuwi_pair_free(ilmstat_btuwi_pair_t* pair, unwinder_t uw)
 // local data
 //---------------------------------------------------------------------
 
-// The concrete representation of the abstract data type unwind recipe map.
-static cskiplist_t *addr2recipe_map[NUM_UNWINDERS];
+// a map from unwinder kind to its recipe skiplist
+static cskiplist_t *unwinder_to_cskiplist[NUM_UNWINDERS];
 
-// memory allocator for creating addr2recipe_map
-// and inserting entries into addr2recipe_map:
+// memory allocator for creating unwinder_to_cskiplist
+// and inserting entries into unwinder_to_cskiplist:
 static mem_alloc my_alloc = hpcrun_malloc;
 
 //******************************************************************************
@@ -435,7 +435,7 @@ uw_recipe_map_report_and_dump(const char *op, void *start, void *end)
     buf[0] = 0;
 
     fprintf(stderr, "********* recipe map for unwinder %d *********\n", uw);
-    cskl_tostr(addr2recipe_map[uw], cskl_ilmstat_btuwi_node_tostr[uw], buf, MAX_CSKIPLIST_STR);
+    cskl_tostr(unwinder_to_cskiplist[uw], cskl_ilmstat_btuwi_node_tostr[uw], buf, MAX_CSKIPLIST_STR);
     fprintf(stderr, "%s", buf);
   }
 }
@@ -450,7 +450,7 @@ uw_recipe_map_poison(uintptr_t start, uintptr_t end, unwinder_t uw)
 
   ilmstat_btuwi_pair_t* itpair =
 	  ilmstat_btuwi_pair_build(start, end, NULL, NEVER, my_alloc);
-  csklnode_t *node = cskl_insert(addr2recipe_map[uw], itpair, my_alloc);
+  csklnode_t *node = cskl_insert(unwinder_to_cskiplist[uw], itpair, my_alloc);
   if (itpair != (ilmstat_btuwi_pair_t*)node->val)
     ilmstat_btuwi_pair_free(itpair, uw);
 }
@@ -463,7 +463,7 @@ uw_recipe_map_poison(uintptr_t start, uintptr_t end, unwinder_t uw)
 static ilmstat_btuwi_pair_t*
 uw_recipe_map_inrange_find(uintptr_t addr, unwinder_t uw)
 {
-  return (ilmstat_btuwi_pair_t*)cskl_inrange_find(addr2recipe_map[uw], (void*)addr);
+  return (ilmstat_btuwi_pair_t*)cskl_inrange_find(unwinder_to_cskiplist[uw], (void*)addr);
 }
 
 static void
@@ -501,7 +501,7 @@ uw_recipe_map_cmp_del_bulk_unsynch(
 	ilmstat_btuwi_pair_t* key,
 	unwinder_t uw)
 {
-  return cskl_cmp_del_bulk_unsynch(addr2recipe_map[uw], key, key, cskl_ilmstat_btuwi_free[uw]);
+  return cskl_cmp_del_bulk_unsynch(unwinder_to_cskiplist[uw], key, key, cskl_ilmstat_btuwi_free[uw]);
 }
 
 static void
@@ -555,8 +555,11 @@ uw_recipe_map_repoison(uintptr_t start, uintptr_t end, unwinder_t uw)
 }
 
 static void
-uw_recipe_map_notify_map(void *start, void *end)
+uw_recipe_map_notify_map(load_module_t* lm)
 {
+  if (lm == NULL || lm->dso_info == NULL) return;
+  void* start = lm->dso_info->start_addr;
+  void* end = lm->dso_info->end_addr;
   uw_recipe_map_report_and_dump("*** map: before unpoisoning", start, end);
 
   unwinder_t uw;
@@ -568,15 +571,18 @@ uw_recipe_map_notify_map(void *start, void *end)
 
 
 static void
-uw_recipe_map_notify_unmap(void *start, void *end)
+uw_recipe_map_notify_unmap(load_module_t* lm)
 {
+  if (lm == NULL || lm->dso_info == NULL) return;
+  void* start = lm->dso_info->start_addr;
+  void* end = lm->dso_info->end_addr;
   uw_recipe_map_report_and_dump("*** unmap: before poisoning", start, end);
 
   // Remove intervals in the range [start, end) from the unwind interval tree.
   TMSG(UW_RECIPE_MAP, "uw_recipe_map_delete_range from %p to %p", start, end);
   unwinder_t uw;
   for (uw = 0; uw < NUM_UNWINDERS; uw++)
-    cskl_inrange_del_bulk_unsynch(addr2recipe_map[uw], start, ((void*)((char *) end) - 1), cskl_ilmstat_btuwi_free[uw]);
+    cskl_inrange_del_bulk_unsynch(unwinder_to_cskiplist[uw], start, ((void*)((char *) end) - 1), cskl_ilmstat_btuwi_free[uw]);
 
   // join poisoned intervals here.
   for (uw = 0; uw < NUM_UNWINDERS; uw++)
@@ -626,7 +632,7 @@ uw_recipe_map_init(void)
 	  ilmstat_btuwi_pair_build(UINTPTR_MAX, UINTPTR_MAX, NULL, NEVER, my_alloc );
   unwinder_t uw;
   for (uw = 0; uw < NUM_UNWINDERS; uw++)
-    addr2recipe_map[uw] =
+    unwinder_to_cskiplist[uw] =
       cskl_new(lsentinel, rsentinel, SKIPLIST_HEIGHT,
 	       ilmstat_btuwi_pair_cmp, ilmstat_btuwi_pair_inrange, my_alloc);
 
@@ -639,10 +645,17 @@ uw_recipe_map_init(void)
 
 
 /*
- *
+ * just look, don't make any modifications, even to the hashtable
  */
-bool
-uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
+static tree_stat_t 
+uw_recipe_map_lookup_helper
+(
+ thread_data_t* td,
+ void *addr, 
+ unwinder_t uw, 
+ unwindr_info_t *unwr_info,
+ ilmstat_btuwi_pair_t **callers_ilm_btui // ptr to caller's ilm_btui
+)
 {
   // fill unwr_info with appropriate values to indicate that the lookup fails and the unwind recipe
   // information is invalid, in case of failure.
@@ -662,7 +675,6 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
   tree_stat_t oldstat = DEFERRED;
   ilmstat_btuwi_pair_t* ilm_btui = NULL;
   uw_hash_entry_t *e = NULL;
-  thread_data_t *td = hpcrun_get_thread_data();
 
   // With -e cputime, sometimes addr is 0
   if (addr != NULL) {
@@ -696,7 +708,49 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
     TMSG(UW_RECIPE_MAP, "BAD fnbounds_enclosing_addr failed: addr %p", addr);
   }
 
+  *callers_ilm_btui = ilm_btui;
+
+  return oldstat;
+}
+
+
+/*
+ *
+ */
+bool
+uw_recipe_map_lookup_noinsert
+(
+ void *addr, 
+ unwinder_t uw, 
+ unwindr_info_t *unwr_info
+)
+{
+  thread_data_t* td    = hpcrun_get_thread_data();
+  ilmstat_btuwi_pair_t *ilm_btui = NULL;
+  tree_stat_t stat = uw_recipe_map_lookup_helper(td, addr, uw, unwr_info, &ilm_btui);
+
+  if (stat == READY) {
+    unwr_info->treestat = READY;
+    unwr_info->lm         = ilm_btui->lm;
+    unwr_info->interval   = ilm_btui->interval;
+  }
+
+  return (unwr_info->btuwi != NULL);
+}
+
+/*
+ *
+ */
+bool
+uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
+{
+  thread_data_t* td    = hpcrun_get_thread_data();
+  ilmstat_btuwi_pair_t *ilm_btui = NULL;
+  tree_stat_t oldstat = uw_recipe_map_lookup_helper(td, addr, uw, unwr_info, &ilm_btui);
+
   if (oldstat != READY) {
+    // unwind recipe currently unavailable, prepare to build recipes for the enclosing
+    // routine 
     if (!ilm_btui) {
     load_module_t *lm;
     void *fcn_start, *fcn_end;
@@ -716,7 +770,7 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
       ilmstat_btuwi_pair_malloc((uintptr_t)fcn_start, (uintptr_t)fcn_end, lm,
         DEFERRED, my_alloc);
     
-    csklnode_t *node = cskl_insert(addr2recipe_map[uw], ilm_btui, my_alloc);
+    csklnode_t *node = cskl_insert(unwinder_to_cskiplist[uw], ilm_btui, my_alloc);
     if (ilm_btui !=  (ilmstat_btuwi_pair_t*)node->val) {
       // interval_ldmod_pair ([fcn_start, fcn_end), lm) is already in the map,
       // so free the unused copy and use the mapped one
@@ -738,7 +792,6 @@ uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info)
       // potentially crash in this statement. need to save the state 
       // ----------------------------------------------------------
 
-      thread_data_t* td    = hpcrun_get_thread_data();
       sigjmp_buf_t *oldjmp = td->current_jmp_buf;       // store the outer sigjmp
 
       td->current_jmp_buf  = &(td->bad_interval);

@@ -165,14 +165,24 @@ name ## _metric_kind
    hpcrun_set_display(APPLY(METRIC_ID,CURRENT_METRIC)[index], 0);
 
 #define DIVISION_FORMULA(name) \
-  hpcrun_set_display(METRIC_ID(name ## _ACUMU), 0); \
+  hpcrun_set_display(METRIC_ID(name ## _ACUMU), HPCRUN_FMT_METRIC_INVISIBLE); \
   hpcrun_set_percent(METRIC_ID(name), 0); \
   hpcrun_set_display(METRIC_ID(name), HPCRUN_FMT_METRIC_SHOW_EXCLUSIVE); \
   reg_metric  = hpcrun_id2metric_linked(METRIC_ID(name)); \
   reg_formula = hpcrun_malloc_safe(sizeof(char) * MAX_CHAR_FORMULA); \
   sprintf(reg_formula, "#%d/#%d", METRIC_ID(name ## _ACUMU), METRIC_ID(GPU_KINFO_COUNT)); \
   reg_metric->formula = reg_formula; \
-  reg_metric->format  = FORMAT_DISPLAY_INT; \
+  reg_metric->format  = FORMAT_DISPLAY_INT
+
+
+#define OCCUPANCY_FORMULA(name) \
+  hpcrun_set_percent(METRIC_ID(name), 0); \
+  hpcrun_set_display(METRIC_ID(name), HPCRUN_FMT_METRIC_SHOW_EXCLUSIVE); \
+  reg_metric  = hpcrun_id2metric_linked(METRIC_ID(name)); \
+  reg_formula = hpcrun_malloc_safe(sizeof(char) * MAX_CHAR_FORMULA); \
+  sprintf(reg_formula, "100*(#%d/#%d)", METRIC_ID(GPU_KINFO_FGP_ACT_ACUMU), METRIC_ID(GPU_KINFO_FGP_MAX_ACUMU)); \
+  reg_metric->formula = reg_formula; \
+  reg_metric->format  = FORMAT_DISPLAY_PERCENTAGE
 
 
 //*****************************************************************************
@@ -198,7 +208,7 @@ gpu_metrics_attribute_metric_int
 (
  metric_data_list_t *metrics, 
  int metric_index,
- int value
+ uint64_t value
 )
 {
   hpcrun_metric_std_inc(metric_index, metrics, (cct_metric_data_t){.i = value});
@@ -238,13 +248,13 @@ gpu_metrics_attribute_pc_sampling
  gpu_activity_t *activity
 )
 {
-  uint32_t sample_period = 
+  uint64_t sample_period = 
     1 << gpu_monitoring_instruction_sample_frequency_get();
 
   gpu_pc_sampling_t *sinfo = &(activity->details.pc_sampling);
   cct_node_t *cct_node = activity->cct_node;
 
-  int inst_count = sinfo->samples * sample_period;
+  uint64_t inst_count = sinfo->samples * sample_period;
 
   metric_data_list_t *inst_metric = 
     hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_INST_ALL));
@@ -262,7 +272,7 @@ gpu_metrics_attribute_pc_sampling
     metric_data_list_t *stall_metrics = 
       hpcrun_reify_metric_set(cct_node, stall_kind_metric_index);
 
-    int stall_count = sinfo->latencySamples * sample_period;
+    uint64_t stall_count = sinfo->latencySamples * sample_period;
 
     if (sinfo->stallReason != GPU_INST_STALL_NONE) {
       // stall summary metric
@@ -687,6 +697,7 @@ gpu_metrics_KINFO_enable
   DIVISION_FORMULA(GPU_KINFO_REGISTERS);
   DIVISION_FORMULA(GPU_KINFO_BLK_THREADS);
   DIVISION_FORMULA(GPU_KINFO_BLK_SMEM);
+  OCCUPANCY_FORMULA(GPU_KINFO_OCCUPANCY_THR);
 }
 
 

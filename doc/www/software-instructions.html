@@ -49,7 +49,11 @@
 <li><a name="toc-Spack-Notation" href="#Spack-Notation">3 Spack Notation</a></li>
 <li><a name="toc-Clone-Spack-and-HPCToolkit" href="#Clone-Spack-and-HPCToolkit">4 Clone Spack and HPCToolkit</a></li>
 <li><a name="toc-Config_002eyaml" href="#Config_002eyaml">5 Config.yaml</a></li>
-<li><a name="toc-Packages_002eyaml" href="#Packages_002eyaml">6 Packages.yaml</a></li>
+<li><a name="toc-Packages_002eyaml" href="#Packages_002eyaml">6 Packages.yaml</a>
+<ul class="no-bullet">
+  <li><a name="toc-External-Packages" href="#External-Packages">6.1 External Packages</a></li>
+  <li><a name="toc-Micro_002dArchitecture-Targets" href="#Micro_002dArchitecture-Targets">6.2 Micro-Architecture Targets</a></li>
+</ul></li>
 <li><a name="toc-Compilers-and-compilers_002eyaml" href="#Compilers-and-compilers_002eyaml">7 Compilers and compilers.yaml</a></li>
 <li><a name="toc-Spack-Install" href="#Spack-Install">8 Spack Install</a></li>
 <li><a name="toc-Manual-Install" href="#Manual-Install">9 Manual Install</a></li>
@@ -141,7 +145,7 @@ your own needs.
 <pre class="example"><a href="http://hpctoolkit.org/spack-issues.html">http://hpctoolkit.org/spack-issues.html</a>
 </pre></div>
 
-<p>Last revised: Feb 28, 2020.
+<p>Last revised: June 17, 2020.
 </p>
 
 <a name="Prerequisites"></a>
@@ -270,7 +274,7 @@ spack would concretize a spec, use <code>spack spec &lt;partial-spec&gt;</code>.
 <h3 class="section">4 Clone Spack and HPCToolkit</h3>
 
 <p>Spack is available via git clone from GitHub.  This includes the core
-spack machinery and recipes for building more than 3,900 packages (and
+spack machinery and recipes for building more than 4,200 packages (and
 growing).  You should also clone HPCToolkit for the
 <code>packages.yaml</code> file which is used to configure the spack build.
 </p>
@@ -298,8 +302,10 @@ support for modules built by spack.
 
 <p><code>config.yaml</code> is the top-level spack config file.  This specifies
 the directory layout for installed files and the top-level spack
-parameters.  There are two or three fields in this file that you should
-set for your local system.
+parameters.  There are two fields that you normally want to set,
+especially if you want to install modules for hpctoolkit in a public
+directory.  For a module to be available, both the <code>install_tree</code>
+and <code>module_roots</code> directories must be accessible.
 </p>
 <ol>
 <li> <code>install_tree</code> &ndash; by default, spack installs packages inside the
@@ -309,11 +315,20 @@ location, then set this.
 </li><li> <code>module_roots</code> &ndash; by default, spack installs module files inside
 the spack repository at <code>spack/share/spack</code>.  If you want to use
 another location, then set this.
+</li></ol>
+
+<p>There are two other fields that you may want to set for you local
+system.
+</p>
+<ol start="3">
+<li> <code>connect_timeout</code> &ndash; some download sites, especially sourceforge
+are often slow to connect.  If you find that connections are timing out,
+then increase this time to 30 or 60 seconds (default is 10 seconds).
 
 </li><li> <code>build_jobs</code> &ndash; by default, spack uses all available hardware
-threads for parallel make.  For machines with many threads, this can
-sometimes overwhelm the system and you should set this to a smaller
-number.  (There is precedent.)
+threads for parallel make, up to a limit of 16.  If you&rsquo;re using a
+shared machine and don&rsquo;t want to use the entire machine, then set this
+to a smaller number.
 </li></ol>
 
 <p>There are also parameters for the locations of the build directories,
@@ -395,6 +410,9 @@ no effect on non-x86 systems.)
 </li><li> <code>libmonitor</code> &ndash; on Blue Gene/Q, add <code>+bgq</code>.
 </li></ol>
 
+<a name="External-Packages"></a>
+<h4 class="subsection">6.1 External Packages</h4>
+
 <p>The second section in <code>packages.yaml</code> specifies a path or module
 for system build tools.  Building hpctoolkit&rsquo;s prerequisites requires
 cmake 3.4 or later, perl 5.x and python 2.7 or 3.4 or later.  There are
@@ -428,6 +446,43 @@ prefix).
   paths:
     perl@5.16.3:  /usr
   buildable: False
+</pre></div>
+
+<a name="Micro_002dArchitecture-Targets"></a>
+<h4 class="subsection">6.2 Micro-Architecture Targets</h4>
+
+<p>Spack implements a hierarchy of micro-architecture targets, where
+&rsquo;target&rsquo; is a specific architecture (eg, haswell, ivybridge) instead of
+a generic family (x86_64).  This allows the compiler to optimize code
+for the specific target.
+</p>
+<p>You will notice this choice in two main places: the &rsquo;spack spec&rsquo; and the
+path for the install directory.  For example, <code>linux-rhel7-x86_64</code>
+might become <code>linux-rhel7-broadwell</code>.  You can use <code>spack
+arch</code> to see the list of generic families and micro-architecture
+targets.
+</p>
+<div class="example">
+<pre class="example">spack arch --known-targets
+</pre></div>
+
+<p>If you prefer a generic install, you can use the <code>target</code> option to
+specify a generic family instead of a micro-architecture target.  This
+would be useful for a shared install that needs to work across multiple
+machines with different micro-arch types.  For example:
+</p>
+<div class="example">
+<pre class="example">spack install hpctoolkit ... target=x86_64
+</pre></div>
+
+<p>If you want to use this target for all spack builds, then you can
+specify this in <code>packages.yaml</code>.  The generic families are: x86_64,
+ppc64, ppc64le and aarch64.  For example:
+</p>
+<div class="example">
+<pre class="example">packages:
+  all:
+    target: [x86_64]
 </pre></div>
 
 <p>See the spack docs on &rsquo;Build Customization&rsquo; and &rsquo;Specs and
@@ -810,7 +865,7 @@ similar to the following.
 
 <p>Cray systems, like Blue Gene, have separate front and back-end
 architecture types.  For example, on theta at ANL, the front-end arch
-is <code>cray-sles12-x86_64</code> (SuSE Linux version 12 for x86_64) and
+is <code>cray-sles12-haswell</code> (SuSE Linux version 12 for haswell) and
 the back-end is <code>cray-cnl6-mic_knl</code> (Compute Node Linux for KNL).
 </p>
 <p>Hpctoolkit needs to be built with the GNU Programming Environment and
@@ -824,71 +879,79 @@ but it conflicts with hpctoolkit.
 module unload darshan
 </pre></div>
 
-<p>By default, spack probably does not recognize the gcc compiler modules
-as front-end compilers.  You have to tell spack to add them
-explicitly.  Check that the latest gcc module is loaded (it probably
-is from <code>PrgEnv-gnu</code>) and run <code>spack compiler find</code> with the
-path to the compiler (one directory up from <code>bin</code>).  For example,
-on theta at ANL,
+<p>By default, spack does not correctly identify the gcc compiler modules
+as front-end compilers.  Start by loading a recent gcc module (eg, 7.x
+or 8.x) and try running <code>spack compiler find</code> and <code>spack
+compiler list</code>.  For example on theta at ANL,
 </p>
 <div class="example">
-<pre class="example">module load gcc/7.3.0
-spack compiler find /opt/gcc/7.3.0
+<pre class="example">module load gcc/8.3.0
+spack compiler find /opt/gcc/8.3.0
+
 spack compiler list
 ==&gt; Available compilers
 -- gcc cnl6-any -------------------------------------------------
-gcc@7.3.0  gcc@7.2.0  gcc@7.1.0  gcc@6.3.0  gcc@6.1.0  gcc@5.3.0
-gcc@4.9.3
+gcc@8.3.0  gcc@8.1.0  gcc@7.2.0  gcc@6.3.0  gcc@5.3.0
+gcc@8.2.0  gcc@7.3.0  gcc@7.1.0  gcc@6.1.0  gcc@4.9.3
 
 -- gcc sles12-x86_64 --------------------------------------------
-gcc@7.3.0  gcc@4.8
+gcc@8.3.0  gcc@4.8
 </pre></div>
 
-<p>Normally, spack does not fill in the <code>modules:</code> field for the new
-compiler, you have to add that manually.  And although we mostly use
-the front-end environment, we also need the <code>CC</code> wrapper to be
-the back-end MPI compiler.
-</p>
-<p>Spack does not support using both front-end and back-end compilers in
-the same build.  But there are two workarounds for Cray.  One option is
-to load the <code>cray-mpich</code> module and run <code>spack install</code> with
-option <code>--dirty</code>.  A better way is to add <code>cray-mpich</code> to the
-list of modules for gcc in <code>compilers.yaml</code>.  Edit the front-end
-gcc entry (operating system sles12 and target x86_64) to add the
-following modules (your versions may differ).
+<p>If spack identifies the compiler (as above), then great.  Note that we
+need spack to accept this as a front-end compiler (sles12-x86_64), not
+just for the back end (cnl6-any).  If spack doesn&rsquo;t find the compiler
+automatically, then you need to add it manually.  Edit
+<code>~/.spack/cray/compilers.yaml</code> and add an entry similer to the
+following (your versions may differ).
 </p>
 <div class="example">
 <pre class="example">- compiler:
+    environment: {}
+    flags: {}
     modules:
-    - PrgEnv-gnu/6.0.4
-    - gcc/7.3.0
-    - cray-mpich/7.7.3
+    - PrgEnv-gnu/6.0.5
+    - gcc/8.3.0
+    - craype/2.6.1
+    - cray-mpich/7.7.10
     operating_system: sles12
     paths:
-      cc: /opt/gcc/7.3.0/bin/gcc
-      cxx: /opt/gcc/7.3.0/bin/g++
-      f77: /opt/gcc/7.3.0/bin/gfortran
-      fc: /opt/gcc/7.3.0/bin/gfortran
-    spec: gcc@7.3.0
+      cc:  /opt/gcc/8.3.0/bin/gcc
+      cxx: /opt/gcc/8.3.0/bin/g++
+      f77: /opt/gcc/8.3.0/bin/gfortran
+      fc:  /opt/gcc/8.3.0/bin/gfortran
+    spec: gcc@8.3.0
     target: x86_64
 </pre></div>
 
-<p>This tells spack to load the above modules when using the gcc 7.3.0
-compiler.  With the cray-mpich module loaded, the <code>CC</code> wrapper
-becomes an MPI C++ compiler, which is what hpctoolkit needs.
+<p>Regardless of whether spack created the entry or you added it, you still
+need to add the <code>modules:</code> field manually (be sure to include all
+four modules).  Although it takes several steps to create the correct
+entry, the good news is that it should continue to work as long as the
+underlying module exists.
 </p>
-<p>Next, review your <code>packages.yaml</code> file.  On Cray systems with
-Xeon Phi back-end nodes (KNL, KNH, etc), add <code>~tm</code> to intel-tbb
-to disable transactional memory.
+<p>Next, review your <code>packages.yaml</code> file.  On Cray systems with Xeon
+Phi back-end nodes (KNL, KNH, etc), add <code>~tm</code> to intel-tbb to
+disable transactional memory.
 </p>
-<p>Finally, build hpctoolkit with the front-end arch type
-(cray-sles12-x86_64) and option <code>+cray</code>.  Normally, you can use OS
+<p>Finally, build hpctoolkit with the front-end arch type (eg,
+cray-sles12-x86_64) and option <code>+cray</code>.  Normally, you can use OS
 type <code>fe</code> (front-end) in place of <code>sles12</code>.  As with Blue
 Gene, the <code>+cray</code> option adds MPI and hpcprof-mpi and supersedes
 the <code>+mpi</code> variant.
 </p>
 <div class="example">
 <pre class="example">spack install hpctoolkit +cray arch=cray-fe-x86_64
+</pre></div>
+
+<p>On some systems, spack fails to properly load the compiler modules
+during the build and fails during hpctoolkit configure with an error
+about, &ldquo;MPICXX is not a valid compiler.&rdquo;  In this case, make sure that
+you have the PrgEnv-gnu and gcc modules loaded and retry the install
+with <code>--dirty</code>.
+</p>
+<div class="example">
+<pre class="example">spack install --dirty hpctoolkit +cray arch=cray-fe-x86_64
 </pre></div>
 
 <p>For developers, if you are building hpctoolkit directly (outside of
@@ -898,7 +961,7 @@ similar to the following.
 <div class="example">
 <pre class="example">configure  \
     --prefix=/path/to/install/prefix  \
-    --with-spack=/path/to/cray-sles12-x86_64/gcc-7.3.0  \
+    --with-spack=/path/to/cray-sles12-x86_64/gcc-8.3.0  \
     --enable-all-static  \
     MPICXX=CC
 </pre></div>

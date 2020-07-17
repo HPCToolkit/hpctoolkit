@@ -81,7 +81,7 @@ m4_include(config/hpc-cxxutils.m4)
 # Initialization:
 #----------------------------------------------------------------------------
 
-AC_INIT([hpctoolkit], [2020.03-develop],
+AC_INIT([hpctoolkit], [2020.06-develop],
         [hpctoolkit-forum@rice.edu],
 	[hpctoolkit],
 	[http://hpctoolkit.org/])
@@ -1826,6 +1826,7 @@ default_bzip_prefix=no
 default_cuda_prefix=no
 default_dyninst_prefix=no
 default_elfutils_prefix=no
+default_gotcha_prefix=no
 default_libdwarf_prefix=no
 default_libiberty_prefix=no
 default_libmonitor_prefix=no
@@ -1923,6 +1924,9 @@ then
   fi
   if find_spack_pkg elfutils ; then
     default_elfutils_prefix="$spack_ans"
+  fi
+  if find_spack_pkg gotcha ; then
+    default_gotcha_prefix="$spack_ans"
   fi
   if find_spack_pkg libdwarf ; then
     default_libdwarf_prefix="$spack_ans"
@@ -2419,6 +2423,91 @@ AC_MSG_RESULT([$LIBELF])
 AC_SUBST([LIBELF_INC])
 AC_SUBST([LIBELF_LIB])
 AC_SUBST([LIBELF_COPY])
+
+
+#-------------------------------------------------
+# Option: --with-gotcha=PATH
+#-------------------------------------------------
+
+GOTCHA="$default_gotcha_prefix"
+
+GOTCHA_IFLAGS=
+GOTCHA_LDFLAGS=
+GOTCHA_LIBDIR=no
+
+AC_ARG_WITH([gotcha],
+  [AS_HELP_STRING([--with-gotcha=PATH],
+      [path to gotcha install directory])],
+  [GOTCHA="$withval"],
+  [])
+
+AC_MSG_CHECKING([for gotcha])
+
+case "$GOTCHA" in
+  /* )
+    if test ! -f "${GOTCHA}/include/gotcha/gotcha.h" ; then
+      AC_MSG_ERROR([unable to find gotcha.h in: $GOTCHA])
+    fi
+    GOTCHA_IFLAGS="-I${GOTCHA}/include"
+    for lib in $multilib_path ; do
+      if test -f "${GOTCHA}/${lib}/libgotcha.so" ; then
+        GOTCHA_LIBDIR="${GOTCHA}/${lib}"
+	break
+      fi
+    done
+    if test "$GOTCHA_LIBDIR" = no ; then
+      AC_MSG_ERROR([unable to find libgotcha.so in: $GOTCHA])
+    fi
+    GOTCHA_LDFLAGS="-L${GOTCHA_LIBDIR} -lgotcha"
+    num_pkgs=`expr 1 + $num_pkgs`
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([gotcha directory must be absolute path: $GOTCHA])
+    ;;
+esac
+
+AC_MSG_RESULT([$GOTCHA])
+
+#
+# Test for gotcha_filter_libraries_by_name(), in gotcha >= 1.0.3.
+#
+case "$GOTCHA" in
+  /* )
+    AC_MSG_CHECKING([if gotcha supports gotcha_filter_libraries_by_name])
+
+    ORIG_CFLAGS="$CFLAGS"
+    ORIG_LIBS="$LIBS"
+    CFLAGS="$CFLAGS $GOTCHA_IFLAGS"
+    LIBS="$GOTCHA_LDFLAGS"
+    AC_LANG_PUSH([C])
+
+    AC_LINK_IFELSE([
+    AC_LANG_SOURCE([[
+#include <gotcha/gotcha.h>
+int main(int argc, char **argv)
+{
+  gotcha_filter_libraries_by_name(argv[0]);
+  return 0;
+}
+]])], [gotcha_has_filter=yes], [gotcha_has_filter=no])
+
+    AC_LANG_POP
+    CFLAGS="$ORIG_CFLAGS"
+    LIBS="$ORIG_LIBS"
+
+    AC_MSG_RESULT([$gotcha_has_filter])
+
+    if test "x$gotcha_has_filter" != xyes ; then
+      AC_MSG_ERROR([hpctoolkit needs gotcha 1.0.3 or later])
+    fi
+    ;;
+esac
+
+AC_SUBST([GOTCHA_IFLAGS])
+AC_SUBST([GOTCHA_LDFLAGS])
+AC_SUBST([GOTCHA_LIBDIR])
 
 
 #-------------------------------------------------
@@ -4483,7 +4572,8 @@ AC_LANG_POP
 #-------------------------------------------------
 
 # CUDA support for CPU-GPU-Blame-shifting.  Also requires CUPTI,
-# either in CUDA/extras/CUPTI or else in a separate install.
+# in CUDA, CUDA/extras/CUPTI, or in a separate install 
+# directory specified using the --with-cupti option.
 
 CUDA="$default_cuda_prefix"
 
@@ -4543,12 +4633,12 @@ AC_SUBST([OPT_CUDA_LDFLAGS])
 # Option: --with-cupti=PATH
 #-------------------------------------------------
 
-# CUPTI is either in CUDA/extras/CUPTI or else specified separately
-# here.
+# CUPTI is either in CUDA, CUDA/extras/CUPTI, or in a directory
+#  specified separately here.
 
 CUPTI=no
 case "$CUDA" in
-  /* ) if test -d "${CUDA}/extras/CUPTI" ; then CUPTI="${CUDA}/extras/CUPTI" ; fi
+  /* ) if test -d "${CUDA}/extras/CUPTI/include" ; then CUPTI="${CUDA}/extras/CUPTI" ; else CUPTI=${CUDA} ; fi
        ;;
 esac
 
@@ -5003,6 +5093,7 @@ AC_MSG_NOTICE([  bzip:         ${BZIP}])
 AC_MSG_NOTICE([  dyninst:      ${DYNINST}])
 AC_MSG_NOTICE([  dyninst:      ${dyninst_features}])
 AC_MSG_NOTICE([  elfutils:     ${LIBELF}])
+AC_MSG_NOTICE([  gotcha:       ${GOTCHA}])
 AC_MSG_NOTICE([  libdwarf:     ${LIBDWARF}])
 AC_MSG_NOTICE([  libiberty:    ${LIBIBERTY}])
 AC_MSG_NOTICE([  libmonitor:   ${LIBMONITOR}])

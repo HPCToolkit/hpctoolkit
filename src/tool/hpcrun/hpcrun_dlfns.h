@@ -47,9 +47,6 @@
 #ifndef _CSPROF_DLFNS_H_
 #define _CSPROF_DLFNS_H_
 
-int  hpcrun_dlopen_read_lock(void);
-void hpcrun_dlopen_read_unlock(void);
-
 void hpcrun_pre_dlopen(const char *path, int flags);
 void hpcrun_dlopen(const char *module_name, int flags, void *handle);
 void hpcrun_dlclose(void *handle);
