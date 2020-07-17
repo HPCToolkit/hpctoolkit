@@ -114,6 +114,7 @@ public:
   int jobs_parse;
   int jobs_symtab;
   bool show_time;
+  long gpu_size;
   bool compute_gpu_cfg;
 
   // Parsed Data: optional arguments

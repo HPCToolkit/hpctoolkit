@@ -88,6 +88,10 @@ using std::string;
 
 //***************************************************************************
 
+// Size in bytes for parallel analysis of gpu binaries
+#define DEFAULT_GPU_SIZE   100000000
+#define GPU_SIZE_STR      "100000000"
+
 static const char* version_info = HPCTOOLKIT_VERSION_STRING;
 
 static const char* usage_summary =
@@ -107,22 +111,17 @@ with standard debugging information.  See the documentation for more\n\
 information.\n\
 \n\
 Options: General\n\
-  -v [<n>], --verbose [<n>]\n\
-                       Verbose: generate progress messages to stderr at\n\
-                       verbosity level <n>. {1}\n\
   -V, --version        Print version information.\n\
-  -h, --help           Print this help.\n\
+  -h, --help           Print this help message.\n\
   --debug=[<n>]        Debug: use debug level <n>. {1}\n\
-  --debug-proc <glob>  Debug structure recovery for procedures matching\n\
-                       the procedure glob <glob>\n\
+  -v [<n>], --verbose [<n>]  Verbose: generate progress messages to stderr\n\
+                       at verbosity level <n>. {1}\n\
 \n\
 Options: Parallel usage\n\
-  -j <num>, --jobs <num>  Use <num> openmp threads (jobs) for hpcstruct,\n\
-                       default 1.\n\
-  --jobs-struct <num>  Use <num> threads for the MakeStructure() phase only.\n\
-  --jobs-parse  <num>  Use <num> threads for the ParseAPI::parse() phase only.\n\
-  --jobs-symtab <num>  Use <num> threads for the Symtab phase (if available).\n\
-  --time               Display stats on time and space usage.\n\
+  -j <num>, --jobs <num>  Use <num> openmp threads (jobs) for all phases in\n\
+                       hpcstruct (default 1).\n\
+  --gpu-size <num>     Size (bytes) to enable internal thread parallelism in\n\
+                       analysis of gpu binaries (default " GPU_SIZE_STR ").\n\
 \n\
 Options: Structure recovery\n\
   --gpucfg <yes/no>    Compute loop nesting structure for GPU machine code.\n\
@@ -141,13 +140,19 @@ Options: Structure recovery\n\
                        for which <old-path> is a prefix.  Use '\\' to escape\n\
                        instances of '=' within a path. May pass multiple\n\
                        times.\n\
-  --show-gaps          Experimental feature to show unclaimed vma ranges (gaps)\n\
-                       in the control-flow graph.\n\
 \n\
 Options: Output files\n\
   -o <file>, --output <file>\n\
                        Write hpcstruct file to <file>.\n\
                        Use '--output=-' to write output to stdout.\n\
+\n\
+Options for Developers:\n\
+  --jobs-struct <num>  Use <num> threads for the MakeStructure() phase only.\n\
+  --jobs-parse  <num>  Use <num> threads for the ParseAPI::parse() phase only.\n\
+  --jobs-symtab <num>  Use <num> threads for the Symtab phase (if available).\n\
+  --show-gaps          Experimental feature to show unclaimed vma ranges (gaps)\n\
+                       in the control-flow graph.\n\
+  --time               Display stats on time and space usage.\n\
 ";
 
 #define CLP CmdLineParser
@@ -159,6 +164,7 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   {  0 ,  "jobs-struct",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
   {  0 ,  "jobs-parse",   CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
   {  0 ,  "jobs-symtab",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
+  {  0 ,  "gpu-size",     CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
   {  0 ,  "time",         CLP::ARG_NONE, CLP::DUPOPT_CLOB,  NULL,  NULL },
 
   // Structure recovery options
@@ -217,6 +223,7 @@ Args::Ctor()
   jobs_parse = -1;
   jobs_symtab = -1;
   show_time = false;
+  gpu_size = DEFAULT_GPU_SIZE;
   searchPathStr = ".";
   show_gaps = false;
   compute_gpu_cfg = false;
@@ -288,8 +295,8 @@ Args::parse(int argc, const char* const argv[])
       Diagnostics_SetDiagnosticFilterLevel(dbg);
     }
     if (parser.isOpt("help")) {
-      printUsage(std::cerr);
-      exit(1);
+      printUsage(std::cout);
+      exit(0);
     }
     if (parser.isOpt("version")) {
       printVersion(std::cerr);
@@ -323,6 +330,10 @@ Args::parse(int argc, const char* const argv[])
     if (parser.isOpt("jobs-symtab")) {
       const string & arg = parser.getOptArg("jobs-symtab");
       jobs_symtab = (int) CmdLineParser::toLong(arg);
+    }
+    if (parser.isOpt("gpu-size")) {
+      const string & arg = parser.getOptArg("gpu-size");
+      gpu_size = CmdLineParser::toLong(arg);
     }
     if (parser.isOpt("gpucfg")) {
       const string & arg = parser.getOptArg("gpucfg");

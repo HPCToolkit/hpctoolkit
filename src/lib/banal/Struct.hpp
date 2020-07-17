@@ -66,6 +66,7 @@ public:
   int  jobs_parse;
   int  jobs_symtab;
   bool show_time;
+  long gpu_size;
   bool compute_gpu_cfg;
   bool ourDemangle;
 
@@ -76,6 +77,7 @@ public:
     jobs_parse = 1;
     jobs_symtab = 1;
     show_time = false;
+    gpu_size = 0;
     compute_gpu_cfg = false;
     ourDemangle = false;
   }

@@ -174,12 +174,14 @@ doMeasurementsDir(string measurements_dir, BAnal::Struct::Options & opts)
 
   makefile << "CUBINS_DIR =  " << cubins_dir << "\n"
 	   << "STRUCTS_DIR = " << structs_dir << "\n"
-	   << "CUBIN_CFG = " << gpucfg << "\n\n"
+	   << "CUBIN_CFG = " << gpucfg << "\n"
+	   << "GPU_SIZE = " << opts.gpu_size << "\n"
+	   << "JOBS = " << opts.jobs << "\n\n"
 	   << cubins_analysis_makefile << endl;
   makefile.close();
 
-  string make_cmd = string("make -C ") + structs_dir + " -k -j " + to_string(opts.jobs)
-    + " --silent --no-print-directory analyze";
+  string make_cmd = string("make -C ") + structs_dir + " -k --silent "
+      + " --no-print-directory all";
 
   if (system(make_cmd.c_str()) != 0) {
     DIAG_EMsg("Make hpcstruct files for cubins failed.");
@@ -265,6 +267,7 @@ realmain(int argc, char* argv[])
 
   opts.show_time = args.show_time;
   opts.compute_gpu_cfg = args.compute_gpu_cfg;
+  opts.gpu_size = args.gpu_size;
 
   // ------------------------------------------------------------
   // If in_filenm is a directory, then analyze separately
