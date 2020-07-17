@@ -287,7 +287,11 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
   int metric_order    = ORDER_ARTIFICIAL_METRIC;
 
   // we copy only the formula if the expression operator is "Sum"
-  std::string formula = "";
+  string formula = "";
+
+  // change the metric's description into: XXX over rank/thread of (inclusive|exclusive) 'real_description'  
+  string metric_type = (mSrc->type() == Metric::ADesc::TyIncl ? " inclusive " : " exclusive ");
+  string description = " over rank/thread of " + metric_type;
 
   // This is a cheesy way of creating the metrics, but it is good
   // enough for now.
@@ -300,6 +304,7 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
     isPercent     = mSrc->isPercent();
 
     formula       = mSrc->formula();
+    description   = "Sum " + description;
 
     // metric order is used to compute formula from hpcrun
     metric_order = mSrc->order();
@@ -307,26 +312,32 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
   else if (mDrvdTy.find("Mean", 0) == 0) {
     expr = new Metric::Mean(opands, mOpands.size());
     doDispPercent = false;
+    description   = "Mean" + description;
   }
   else if (mDrvdTy.find("StdDev", 0) == 0) {
     expr = new Metric::StdDev(opands, mOpands.size());
     doDispPercent = false;
+    description   = "Standard deviation" + description;
   }
   else if (mDrvdTy.find("CfVar", 0) == 0) {
     expr = new Metric::CoefVar(opands, mOpands.size());
     doDispPercent = false;
+    description   = "Covariance" + description;
   }
   else if (mDrvdTy.find("%CfVar", 0) == 0) {
     expr = new Metric::RStdDev(opands, mOpands.size());
     isPercent = true;
+    description   = "Percent covariance" + description;
   }
   else if (mDrvdTy.find("Min", 0) == 0) {
     expr = new Metric::Min(opands, mOpands.size());
     doDispPercent = false;
+    description   = "Minimum" + description;
   }
   else if (mDrvdTy.find("Max", 0) == 0) {
     expr = new Metric::Max(opands, mOpands.size());
     doDispPercent = false;
+    description   = "Maximum" + description;
   }
   else {
     DIAG_Die(DIAG_UnexpectedInput);
@@ -334,7 +345,7 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
   
   string mNmFmt = mSrc->nameToFmt();
   string mNmBase = mSrc->nameBase() + ":" + mDrvdTy;
-  const string& mDesc = mSrc->description();
+  const string& mDesc = description + " '" + mSrc->description() + "'";
 
   DerivedDesc* m =
     new DerivedDesc(mNmFmt, mDesc, expr, visibility, true/*isSortKey*/,
@@ -402,6 +413,10 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
   // we copy only the formula if the expression operator is "Sum"
   std::string formula = "";
 
+  // change the metric's description into: XXX over rank/thread of (inclusive|exclusive) 'real_description'  
+  string metric_type = (mSrc->type() == Metric::ADesc::TyIncl ? " inclusive " : " exclusive ");
+  string description = " over rank/thread of " + metric_type;
+
   // This is a cheesy way of creating the metrics, but it is good
   // enough for now.
 
@@ -413,6 +428,7 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
     isPercent     = mSrc->isPercent();
 
     formula       = mSrc->formula();
+    description   = "Sum " + description;
 
     // metric order is used to compute formula from hpcrun
     metric_order = mSrc->order();
@@ -420,26 +436,32 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
   else if (mDrvdTy.find("Mean", 0) == 0) {
     expr = new Metric::MeanIncr(Metric::IData::npos, mSrc->id());
     doDispPercent = false;
+    description   = "Mean " + description;
   }
   else if (mDrvdTy.find("StdDev", 0) == 0) {
     expr = new Metric::StdDevIncr(Metric::IData::npos, 0, mSrc->id());
     doDispPercent = false;
+    description   = "Standard deviation " + description;
   }
   else if (mDrvdTy.find("CfVar", 0) == 0) {
     expr = new Metric::CoefVarIncr(Metric::IData::npos, 0, mSrc->id());
     doDispPercent = false;
+    description   = "Covariance " + description;
   }
   else if (mDrvdTy.find("%CfVar", 0) == 0) {
     expr = new Metric::RStdDevIncr(Metric::IData::npos, 0, mSrc->id());
     isPercent = true;
+    description   = "Percent covariance " + description;
   }
   else if (mDrvdTy.find("Min", 0) == 0) {
     expr = new Metric::MinIncr(Metric::IData::npos, mSrc->id());
     doDispPercent = false;
+    description   = "Minimum " + description;
   }
   else if (mDrvdTy.find("Max", 0) == 0) {
     expr = new Metric::MaxIncr(Metric::IData::npos, mSrc->id());
     doDispPercent = false;
+    description   = "Maximum " + description;
   }
   else {
     DIAG_Die(DIAG_UnexpectedInput);
@@ -447,7 +469,7 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
   
   string mNmFmt = mSrc->nameToFmt();
   string mNmBase = mSrc->nameBase() + ":" + mDrvdTy;
-  const string& mDesc = mSrc->description();
+  const string& mDesc = description + "'" + mSrc->description() + "'";
 
   DerivedIncrDesc* m =
     new DerivedIncrDesc(mNmFmt, mDesc, expr, visibility,
