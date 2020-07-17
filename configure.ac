@@ -4572,7 +4572,8 @@ AC_LANG_POP
 #-------------------------------------------------
 
 # CUDA support for CPU-GPU-Blame-shifting.  Also requires CUPTI,
-# either in CUDA/extras/CUPTI or else in a separate install.
+# in CUDA, CUDA/extras/CUPTI, or in a separate install 
+# directory specified using the --with-cupti option.
 
 CUDA="$default_cuda_prefix"
 
@@ -4632,12 +4633,12 @@ AC_SUBST([OPT_CUDA_LDFLAGS])
 # Option: --with-cupti=PATH
 #-------------------------------------------------
 
-# CUPTI is either in CUDA/extras/CUPTI or else specified separately
-# here.
+# CUPTI is either in CUDA, CUDA/extras/CUPTI, or in a directory
+#  specified separately here.
 
 CUPTI=no
 case "$CUDA" in
-  /* ) if test -d "${CUDA}/extras/CUPTI" ; then CUPTI="${CUDA}/extras/CUPTI" ; fi
+  /* ) if test -d "${CUDA}/extras/CUPTI/include" ; then CUPTI="${CUDA}/extras/CUPTI" ; else CUPTI=${CUDA} ; fi
        ;;
 esac
 

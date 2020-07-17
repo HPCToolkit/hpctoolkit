@@ -1,9 +1,4 @@
-// -*-Mode: C++;-*- // technically C99
-
 // * BeginRiceCopyright *****************************************************
-//
-// $HeadURL$
-// $Id$
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -44,36 +39,53 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-/*
- * Interface to unwind recipe map.
- *
- */
 
-#ifndef _UW_RECIPE_MAP_H_
-#define _UW_RECIPE_MAP_H_
+//***************************************************************************
+//
+// File: elf-helper.h
+//
+// Purpose:
+//   interface to query ELF binary information and hide the details about 
+//   extended number
+//   
+//***************************************************************************
 
-#include "unwindr_info.h"
+#ifndef ELF_HELPER_H
+#define ELF_HELPER_H
 
-typedef struct ilmstat_btuwi_pair_s ilmstat_btuwi_pair_t;
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
+typedef struct elf_helper {
+  Elf * elf;
+  size_t section_string_index;
+  Elf_Scn* symtab_section;
+  Elf_Data *symtab_data;
+  Elf_Scn* symtab_shndx_section;
+  Elf_Data *symtab_shndx_data;  
+} elf_helper_t;
 
 void
-uw_recipe_map_init(void);
+elf_helper_initialize
+(
+  Elf *elf,
+  elf_helper_t* eh
+);
+
+GElf_Sym*
+elf_helper_get_symbol
+(
+  elf_helper_t* eh,
+  int index,
+  GElf_Sym* sym_ptr,
+  int* section_index_ptr
+);
+
+#ifdef __cplusplus
+};
+#endif
 
 
-/*
- * if addr is found in range in the map, return true and
- *   *unwr_info is the ilmstat_btuwi_pair_t ( ([start, end), ldmod, status), btuwi ),
- *   where the root of btuwi is the uwi_t for addr
- * else return false
- * 
- * NOTE: if using on-the-fly binary analysis, this attempts to build recipes for the 
- *       procedure enclosing addr
- */
-bool
-uw_recipe_map_lookup(void *addr, unwinder_t uw, unwindr_info_t *unwr_info);
-
-
-bool
-uw_recipe_map_lookup_noinsert(void *addr, unwinder_t uw, unwindr_info_t *unwr_info);
-
-#endif  /* !_UW_RECIPE_MAP_H_ */
+#endif

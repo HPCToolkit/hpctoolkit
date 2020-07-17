@@ -600,7 +600,7 @@ makeStructure(string filename,
       cout << "file:  " << elfFile->getFileName() << "\n"
 	   << "symtab threads: " << opts.jobs_symtab
 	   << "  parse: " << opts.jobs_parse
-	   << "  struct: " << opts.jobs << "\n\n";
+	   << "  struct: " << opts.jobs_struct << "\n\n";
       printTime("init:  ", &tv_init, &ru_init, &tv_init, &ru_init);
     }
 
@@ -662,7 +662,7 @@ makeStructure(string filename,
     }
 
 #ifdef ENABLE_OPENMP
-    omp_set_num_threads(opts.jobs);
+    omp_set_num_threads(opts.jobs_struct);
 #endif
 
     string basename = FileUtil::basename(cfilename);
@@ -812,7 +812,7 @@ makeWorkList(FileMap * fileMap, WorkList & wlPrint, WorkList & wlLaunch)
   }
 
   // if single-threaded, then order doesn't matter
-  if (opts.jobs == 1) {
+  if (opts.jobs_struct == 1) {
     wlLaunch = wlPrint;
     return;
   }
@@ -821,7 +821,7 @@ makeWorkList(FileMap * fileMap, WorkList & wlPrint, WorkList & wlLaunch)
   // if the expected cost of one function is more than 5% of the ideal
   // parallel run time, then promote it to start early.
   //
-  double threshold = WORK_LIST_PCT * total_cost / ((double) opts.jobs);
+  double threshold = WORK_LIST_PCT * total_cost / ((double) opts.jobs_struct);
 
   for (auto wit = wlPrint.begin(); wit != wlPrint.end(); ++wit) {
     WorkItem * witem = *wit;
