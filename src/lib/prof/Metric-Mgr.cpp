@@ -290,7 +290,7 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
   string formula = "";
 
   // change the metric's description into: XXX over rank/thread of (inclusive|exclusive) 'real_description'  
-  string metric_type = (mSrc->type() == Metric::ADesc::TyIncl ? " inclusive " : " exclusive ");
+  string metric_type = (mSrc->type() == Metric::ADesc::TyIncl ? "inclusive" : "exclusive");
   string description = " over rank/thread of " + metric_type;
 
   // This is a cheesy way of creating the metrics, but it is good
@@ -304,7 +304,7 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
     isPercent     = mSrc->isPercent();
 
     formula       = mSrc->formula();
-    description   = "Sum " + description;
+    description   = "Sum" + description;
 
     // metric order is used to compute formula from hpcrun
     metric_order = mSrc->order();
@@ -376,6 +376,8 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
     m2->nameBase(m2NmBase);
     m2->nameSfx(""); // clear; cf. Prof::CallPath::Profile::RFlg_NoMetricSfx
     m2->zeroDBInfo(); // clear
+    m2->visibility(HPCRUN_FMT_METRIC_INVISIBLE);
+
     insert(m2);
 
     expr->accumId(k, m2->id());
@@ -391,6 +393,8 @@ Mgr::makeSummaryMetric(const string mDrvdTy, const Metric::ADesc* mSrc,
     m3->nameBase(m3NmBase);
     m3->nameSfx(""); // clear; cf. Prof::CallPath::Profile::RFlg_NoMetricSfx
     m3->zeroDBInfo(); // clear
+    m3->visibility(HPCRUN_FMT_METRIC_INVISIBLE);
+
     insert(m3);
     m3Expr->accumId(0, m3->id());
 
@@ -414,7 +418,7 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
   std::string formula = "";
 
   // change the metric's description into: XXX over rank/thread of (inclusive|exclusive) 'real_description'  
-  string metric_type = (mSrc->type() == Metric::ADesc::TyIncl ? " inclusive " : " exclusive ");
+  string metric_type = (mSrc->type() == Metric::ADesc::TyIncl ? "inclusive" : "exclusive");
   string description = " over rank/thread of " + metric_type;
 
   // This is a cheesy way of creating the metrics, but it is good
@@ -428,7 +432,7 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
     isPercent     = mSrc->isPercent();
 
     formula       = mSrc->formula();
-    description   = "Sum " + description;
+    description   = "Sum" + description;
 
     // metric order is used to compute formula from hpcrun
     metric_order = mSrc->order();
@@ -436,32 +440,32 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
   else if (mDrvdTy.find("Mean", 0) == 0) {
     expr = new Metric::MeanIncr(Metric::IData::npos, mSrc->id());
     doDispPercent = false;
-    description   = "Mean " + description;
+    description   = "Mean" + description;
   }
   else if (mDrvdTy.find("StdDev", 0) == 0) {
     expr = new Metric::StdDevIncr(Metric::IData::npos, 0, mSrc->id());
     doDispPercent = false;
-    description   = "Standard deviation " + description;
+    description   = "Standard deviation" + description;
   }
   else if (mDrvdTy.find("CfVar", 0) == 0) {
     expr = new Metric::CoefVarIncr(Metric::IData::npos, 0, mSrc->id());
     doDispPercent = false;
-    description   = "Covariance " + description;
+    description   = "Covariance" + description;
   }
   else if (mDrvdTy.find("%CfVar", 0) == 0) {
     expr = new Metric::RStdDevIncr(Metric::IData::npos, 0, mSrc->id());
     isPercent = true;
-    description   = "Percent covariance " + description;
+    description   = "Percent covariance" + description;
   }
   else if (mDrvdTy.find("Min", 0) == 0) {
     expr = new Metric::MinIncr(Metric::IData::npos, mSrc->id());
     doDispPercent = false;
-    description   = "Minimum " + description;
+    description   = "Minimum" + description;
   }
   else if (mDrvdTy.find("Max", 0) == 0) {
     expr = new Metric::MaxIncr(Metric::IData::npos, mSrc->id());
     doDispPercent = false;
-    description   = "Maximum " + description;
+    description   = "Maximum" + description;
   }
   else {
     DIAG_Die(DIAG_UnexpectedInput);
@@ -469,7 +473,7 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
   
   string mNmFmt = mSrc->nameToFmt();
   string mNmBase = mSrc->nameBase() + ":" + mDrvdTy;
-  const string& mDesc = description + "'" + mSrc->description() + "'";
+  const string& mDesc = description + " '" + mSrc->description() + "'";
 
   DerivedIncrDesc* m =
     new DerivedIncrDesc(mNmFmt, mDesc, expr, visibility,
@@ -498,6 +502,8 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
 			  false/*isPercent*/);
     m2->nameBase(m2NmBase);
     m2->zeroDBInfo(); // clear
+    m2->visibility(HPCRUN_FMT_METRIC_INVISIBLE);
+
     insert(m2);
 
     expr->accumId(k, m2->id());
@@ -512,6 +518,8 @@ Mgr::makeSummaryMetricIncr(const string mDrvdTy, const Metric::ADesc* mSrc)
 			  false/*isPercent*/);
     m3->nameBase(m3NmBase);
     m3->zeroDBInfo(); // clear
+    m3->visibility(HPCRUN_FMT_METRIC_INVISIBLE);
+
     insert(m3);
     m3Expr->accumId(0, m3->id());
 
