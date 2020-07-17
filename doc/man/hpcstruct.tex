@@ -54,26 +54,58 @@ See \HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}} for an overview of \textbf{H
 \section{Synopsis}
 
 \Prog{hpcstruct} \oOpt{options} \Arg{binary}
+\Prog{hpcstruct} \oOpt{options} \Arg{measurement directory of GPU-accelerated application}
 
 Typical usage:\\ \\
 \SP\SP\SP\Prog{hpcstruct} \Arg{binary} \\ \\
 which creates \File{basename(}\Arg{binary}\File{).hpcstruct}.
+\SP\SP\SP\Prog{hpcstruct} \Arg{measurement directory of GPU-accelerated application} \\ \\
+which analyzes all GPU binaries within the measurement directory and records 
+program structure files within the directory for use by \Prof{hpcprof}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Description}
 
-\Prog{hpcstruct} analyzes an application binary or shared library for
-its loop structure and inline sequences.
-\Prog{hpcstruct} is designed to handle optimized binaries created from
-C, C++ and Fortran source code, including mixed code.
-Note: although the \Arg{binary} may be optimized, it must also be
-compiled with debug symbols for the results to be useful (normally -g
-flag).
+Given an application binary, a shared library, or a GPU binary, \Prog{hpcstruct}
+recovers the program structure of its object code by analyzing available information
+about loop nests, inlined functions, and the mapping between machine instructions and 
+source lines.  Program structure is a
+mapping of a program's object code to its static source-level structure.
 
-By default, \Prog{hpcstruct} writes its results to the file
-\emph{basename(binary)}\File{.hpcstruct}.
-This file is then passed to \Prog{hpcprof} with the -S flag and may be
-used multiple times for several shared libraries.
+When analyzing a CPU binary, by default, 
+\Prog{hpcstruct} writes its results to the file 'basename(<binary>).hpcstruct'.
+To improve attribution of performance measurements to program source code, one can
+pass one or more program structure files (e.g., for an executable and/or 
+one or more shared libraries) to HPCToolkit's analysis tool hpcprof
+along with one or more HPCToolkit performance measurement directories.
+
+During execution of a GPU-accelerated application on an NVIDIA GPU, HPCToolkit
+records NVIDIA 'cubin' GPU binaries in the application's measurement directory.
+To attribute performance to GPU functions in a GPU-accelerated application, one
+should apply hpcstruct to the application's HPCToolkit measurement directory to
+analyze all GPU binaries recorded within. When analyzing a measurement directory
+that includes GPU binaries, any program structure files produced will be recorded
+inside the measurement directory. When hpcprof is applied to a measurement
+directory that contains program structure files for GPU binaries, these program
+structure files will be used to help attribute any GPU performance measurements.
+
+\Prog{hpcstruct} is designed primarily for highly optimized binaries created from
+C, C++, Fortran, and CUDA source code. Because \Prog{hpcstruct}'s algorithms exploit a
+binary's debugging information, for best results, binary should be compiled
+with standard debugging information or, at a minimum, line map information.
+Note: although a CPU or GPU binary may be optimized, it must also be
+compiled with debug symbols for the results to be useful, normally using the -g
+flag when compiling CPU binaries. 
+For NVIDIA GPUs, one can use the -lineinfo flag to generate
+line map information. (Using the -G compiler flag with NVIDIA's 
+compilers to generate full debug information
+inhibits optimization and is not recommended for performance analysis.)
+
+For faster analysis of large binaries or many GPU binaries, we recommend using
+the -j option to employ multithreading. As many as 32 cores can be used profitably
+to analyze large CPU or GPU binaries in the measurements directory for a
+GPU-accelerated application.
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Arguments}
@@ -112,18 +144,14 @@ Print help message.
 \end{Description}
 
 \subsection{Options: Parallel Usage}
-
-\begin{Description}
 \item[\OptArg{-j}{num}, \OptArg{--jobs}{num}]
-Run \Prog{hpcstruct} with num threads.
+Use <num> threads for all phases in hpcstruct. {1}
 
-\item[\OptArg{--jobs-parse}{num}]
-Use num threads for the parse phase of \Prog{hpcstruct}.
-
-\item[\Opt{--time}]
-Display the time and space usage per phase in \Prog{hpcstruct}.
-
-\end{Description}
+\item[\OptArg{--gpu-size}{n}]
+Size (bytes) of a GPU binary that will cause hpcstruct
+to use <num> threads to analyze a binary in parallel.
+GPU binaries with fewer than <n> bytes will be analyzed
+concurrently, <num> at a time.  {100000000}
 
 \subsection{Options: Structure recovery}
 
@@ -174,6 +202,20 @@ Write results to \Arg{file}.  \{\Arg{basename(binary)}\File{.hpcstruct}\}
 % \item[\Opt{--compact}]
 % Generate compact output by eliminating extra white space.
 
+\end{Description}
+
+\subsection{Options for Developers:}
+
+\begin{Description}
+\item[\OptArg{--jobs-struct}{num}]
+Use num threads for the program structure analysis phase of \Prog{hpcstruct}.
+
+\item[\OptArg{--jobs-parse}{num}]
+Use num threads for the parse phase of \Prog{hpcstruct}.
+
+\item[\OptArg{--jobs-symtab}{num}]
+Use num threads for the symbol table analysis phase of \Prog{hpcstruct}.
+
 \item[\Opt{--show-gaps}]
 Developer option to
 write a text file describing all the "gaps" found by \Prog{hpcstruct},
@@ -182,7 +224,12 @@ by the ParseAPI parser used to analyze application executables.
 The file is named \emph{outfile}\File{.gaps}, which by default is
 \emph{appname}\File{.hpcstruct.gaps}.
 
+\item[\Opt{--time}]
+Display the time and space usage per phase in \Prog{hpcstruct}.
+
 \end{Description}
+
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Examples}
