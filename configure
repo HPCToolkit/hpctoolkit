@@ -652,9 +652,6 @@ OPT_ROCM_IFLAGS
 OPT_ROCM
 OPT_ENABLE_ROCM_FALSE
 OPT_ENABLE_ROCM_TRUE
-OPT_OPENCL_IFLAGS
-ENABLE_OPENCL_FALSE
-ENABLE_OPENCL_TRUE
 OPT_CUPTI_LDFLAGS
 OPT_CUPTI_IFLAGS
 OPT_CUPTI
@@ -1053,7 +1050,6 @@ enable_lush_pthreads
 enable_xop
 with_cuda
 with_cupti
-with_opencl
 with_rocm
 enable_data_centric_tracing
 with_objcopy
@@ -1805,7 +1801,6 @@ Optional Packages:
   --with-cuda=PATH        path to cuda install directory
   --with-cupti=PATH       path to cupti install directory, default is from
                           cuda
-  --with-opencl=PATH      path to opencl headers
   --with-rocm=PATH        use given ROCM installation (absolute path) with
                           hpcrun (default is NO)
   --with-objcopy=<obcopy_path>
@@ -23567,57 +23562,6 @@ _ACEOF
 
 
 
-
-#-------------------------------------------------
-# Option: --with-opencl=PATH
-#-------------------------------------------------
-
-OPENCL=no
-OPT_HAVE_OPENCL=no
-OPT_OPENCL_IFLAGS=
-
-
-# Check whether --with-opencl was given.
-if test "${with_opencl+set}" = set; then :
-  withval=$with_opencl; OPENCL="$withval"
-fi
-
-
-case "$OPENCL" in
-  /* )
-    if test ! -f "${OPENCL}/CL/cl.h" ; then
-      as_fn_error $? "unable to find CL/cl.h in: $OPENCL" "$LINENO" 5
-    else
-      OPT_OPENCL_IFLAGS="-I${OPENCL}"
-      OPT_HAVE_OPENCL=yes
-    fi
-    ;;
-  no )
-    ;;
-  * )
-    as_fn_error $? "opencl header path must be absolute: $OPENCL" "$LINENO" 5
-    ;;
-esac
-
-if test "$OPENCL" = yes && test "$OPT_HAVE_OPENCL" = no ; then
-  as_fn_error $? "use --with-opencl to provide path/location of opencl headers" "$LINENO" 5
-fi
-
-if test "$OPT_HAVE_OPENCL" = yes ; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: The <CL/cl.h> header file is available." >&5
-$as_echo "$as_me: The <CL/cl.h> header file is available." >&6;}
-fi
-
- if test "$OPT_HAVE_OPENCL" = yes; then
-  ENABLE_OPENCL_TRUE=
-  ENABLE_OPENCL_FALSE='#'
-else
-  ENABLE_OPENCL_TRUE='#'
-  ENABLE_OPENCL_FALSE=
-fi
-
-
-
 #-------------------------------------------------
 # Option: --with-rocm=PATH
 #-------------------------------------------------
@@ -24269,10 +24213,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_CUPTI_TRUE}" && test -z "${OPT_ENABLE_CUPTI_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_CUPTI\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${ENABLE_OPENCL_TRUE}" && test -z "${ENABLE_OPENCL_FALSE}"; then
-  as_fn_error $? "conditional \"ENABLE_OPENCL\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_ROCM_TRUE}" && test -z "${OPT_ENABLE_ROCM_FALSE}"; then
