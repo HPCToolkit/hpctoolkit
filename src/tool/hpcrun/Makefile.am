@@ -389,6 +389,12 @@ MY_BASE_FILES =				\
 	ompt/ompt-task.c                \
 	ompt/ompt-thread.c              \
 	\
+	real/close.c                    \
+	real/mmap.c                     \
+	real/munmap.c                   \
+	real/open.c                     \
+	real/read.c                     \
+	\
 	syscalls/poll.c	\
 	syscalls/ppoll.c \
 	syscalls/select.c \

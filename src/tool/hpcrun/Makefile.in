@@ -468,7 +468,8 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	ompt/ompt-defer-write.c ompt/ompt-interface.c \
 	ompt/ompt-queues.c ompt/ompt-region.c ompt/ompt-region-debug.c \
 	ompt/ompt-placeholders.c ompt/ompt-device-map.c \
-	ompt/ompt-task.c ompt/ompt-thread.c syscalls/poll.c \
+	ompt/ompt-task.c ompt/ompt-thread.c real/close.c real/mmap.c \
+	real/munmap.c real/open.c real/read.c syscalls/poll.c \
 	syscalls/ppoll.c syscalls/select.c utilities/executable-path.h \
 	utilities/executable-path.c utilities/hpcrun-nanotime.h \
 	utilities/hpcrun-nanotime.c utilities/ip-normalized.h \
@@ -634,8 +635,11 @@ am__objects_14 = utilities/libhpcrun_la-first_func.lo \
 	ompt/libhpcrun_la-ompt-placeholders.lo \
 	ompt/libhpcrun_la-ompt-device-map.lo \
 	ompt/libhpcrun_la-ompt-task.lo \
-	ompt/libhpcrun_la-ompt-thread.lo syscalls/libhpcrun_la-poll.lo \
-	syscalls/libhpcrun_la-ppoll.lo syscalls/libhpcrun_la-select.lo \
+	ompt/libhpcrun_la-ompt-thread.lo real/libhpcrun_la-close.lo \
+	real/libhpcrun_la-mmap.lo real/libhpcrun_la-munmap.lo \
+	real/libhpcrun_la-open.lo real/libhpcrun_la-read.lo \
+	syscalls/libhpcrun_la-poll.lo syscalls/libhpcrun_la-ppoll.lo \
+	syscalls/libhpcrun_la-select.lo \
 	utilities/libhpcrun_la-executable-path.lo \
 	utilities/libhpcrun_la-hpcrun-nanotime.lo \
 	utilities/libhpcrun_la-ip-normalized.lo \
@@ -845,7 +849,8 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	ompt/ompt-defer-write.c ompt/ompt-interface.c \
 	ompt/ompt-queues.c ompt/ompt-region.c ompt/ompt-region-debug.c \
 	ompt/ompt-placeholders.c ompt/ompt-device-map.c \
-	ompt/ompt-task.c ompt/ompt-thread.c syscalls/poll.c \
+	ompt/ompt-task.c ompt/ompt-thread.c real/close.c real/mmap.c \
+	real/munmap.c real/open.c real/read.c syscalls/poll.c \
 	syscalls/ppoll.c syscalls/select.c utilities/executable-path.h \
 	utilities/executable-path.c utilities/hpcrun-nanotime.h \
 	utilities/hpcrun-nanotime.c utilities/ip-normalized.h \
@@ -1020,6 +1025,11 @@ am__objects_51 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-device-map.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-task.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-thread.$(OBJEXT) \
+	real/libhpcrun_o-close.$(OBJEXT) \
+	real/libhpcrun_o-mmap.$(OBJEXT) \
+	real/libhpcrun_o-munmap.$(OBJEXT) \
+	real/libhpcrun_o-open.$(OBJEXT) \
+	real/libhpcrun_o-read.$(OBJEXT) \
 	syscalls/libhpcrun_o-poll.$(OBJEXT) \
 	syscalls/libhpcrun_o-ppoll.$(OBJEXT) \
 	syscalls/libhpcrun_o-select.$(OBJEXT) \
@@ -1726,7 +1736,8 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	ompt/ompt-defer-write.c ompt/ompt-interface.c \
 	ompt/ompt-queues.c ompt/ompt-region.c ompt/ompt-region-debug.c \
 	ompt/ompt-placeholders.c ompt/ompt-device-map.c \
-	ompt/ompt-task.c ompt/ompt-thread.c syscalls/poll.c \
+	ompt/ompt-task.c ompt/ompt-thread.c real/close.c real/mmap.c \
+	real/munmap.c real/open.c real/read.c syscalls/poll.c \
 	syscalls/ppoll.c syscalls/select.c utilities/executable-path.h \
 	utilities/executable-path.c utilities/hpcrun-nanotime.h \
 	utilities/hpcrun-nanotime.c utilities/ip-normalized.h \
@@ -2430,6 +2441,22 @@ ompt/libhpcrun_la-ompt-task.lo: ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_la-ompt-thread.lo: ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
+real/$(am__dirstamp):
+	@$(MKDIR_P) real
+	@: > real/$(am__dirstamp)
+real/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) real/$(DEPDIR)
+	@: > real/$(DEPDIR)/$(am__dirstamp)
+real/libhpcrun_la-close.lo: real/$(am__dirstamp) \
+	real/$(DEPDIR)/$(am__dirstamp)
+real/libhpcrun_la-mmap.lo: real/$(am__dirstamp) \
+	real/$(DEPDIR)/$(am__dirstamp)
+real/libhpcrun_la-munmap.lo: real/$(am__dirstamp) \
+	real/$(DEPDIR)/$(am__dirstamp)
+real/libhpcrun_la-open.lo: real/$(am__dirstamp) \
+	real/$(DEPDIR)/$(am__dirstamp)
+real/libhpcrun_la-read.lo: real/$(am__dirstamp) \
+	real/$(DEPDIR)/$(am__dirstamp)
 syscalls/$(am__dirstamp):
 	@$(MKDIR_P) syscalls
 	@: > syscalls/$(am__dirstamp)
@@ -3023,6 +3050,16 @@ ompt/libhpcrun_o-ompt-task.$(OBJEXT): ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_o-ompt-thread.$(OBJEXT): ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
+real/libhpcrun_o-close.$(OBJEXT): real/$(am__dirstamp) \
+	real/$(DEPDIR)/$(am__dirstamp)
+real/libhpcrun_o-mmap.$(OBJEXT): real/$(am__dirstamp) \
+	real/$(DEPDIR)/$(am__dirstamp)
+real/libhpcrun_o-munmap.$(OBJEXT): real/$(am__dirstamp) \
+	real/$(DEPDIR)/$(am__dirstamp)
+real/libhpcrun_o-open.$(OBJEXT): real/$(am__dirstamp) \
+	real/$(DEPDIR)/$(am__dirstamp)
+real/libhpcrun_o-read.$(OBJEXT): real/$(am__dirstamp) \
+	real/$(DEPDIR)/$(am__dirstamp)
 syscalls/libhpcrun_o-poll.$(OBJEXT): syscalls/$(am__dirstamp) \
 	syscalls/$(DEPDIR)/$(am__dirstamp)
 syscalls/libhpcrun_o-ppoll.$(OBJEXT): syscalls/$(am__dirstamp) \
@@ -3347,6 +3384,8 @@ mostlyclean-compile:
 	-rm -f ompt/*.lo
 	-rm -f os/linux/*.$(OBJEXT)
 	-rm -f os/linux/*.lo
+	-rm -f real/*.$(OBJEXT)
+	-rm -f real/*.lo
 	-rm -f sample-sources/*.$(OBJEXT)
 	-rm -f sample-sources/*.lo
 	-rm -f sample-sources/blame-shift/*.$(OBJEXT)
@@ -3601,6 +3640,16 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-task.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-thread.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@os/linux/$(DEPDIR)/libhpcrun_la-dylib.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@real/$(DEPDIR)/libhpcrun_la-close.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@real/$(DEPDIR)/libhpcrun_la-mmap.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@real/$(DEPDIR)/libhpcrun_la-munmap.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@real/$(DEPDIR)/libhpcrun_la-open.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@real/$(DEPDIR)/libhpcrun_la-read.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@real/$(DEPDIR)/libhpcrun_o-close.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@real/$(DEPDIR)/libhpcrun_o-mmap.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@real/$(DEPDIR)/libhpcrun_o-munmap.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@real/$(DEPDIR)/libhpcrun_o-open.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@real/$(DEPDIR)/libhpcrun_o-read.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_ga_la-ga-overrides.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_ga_wrap_a-ga-overrides.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_io_la-io-over.Plo@am__quote@
@@ -4717,6 +4766,41 @@ ompt/libhpcrun_la-ompt-thread.lo: ompt/ompt-thread.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/ompt-thread.c' object='ompt/libhpcrun_la-ompt-thread.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_la-ompt-thread.lo `test -f 'ompt/ompt-thread.c' || echo '$(srcdir)/'`ompt/ompt-thread.c
+
+real/libhpcrun_la-close.lo: real/close.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT real/libhpcrun_la-close.lo -MD -MP -MF real/$(DEPDIR)/libhpcrun_la-close.Tpo -c -o real/libhpcrun_la-close.lo `test -f 'real/close.c' || echo '$(srcdir)/'`real/close.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) real/$(DEPDIR)/libhpcrun_la-close.Tpo real/$(DEPDIR)/libhpcrun_la-close.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='real/close.c' object='real/libhpcrun_la-close.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o real/libhpcrun_la-close.lo `test -f 'real/close.c' || echo '$(srcdir)/'`real/close.c
+
+real/libhpcrun_la-mmap.lo: real/mmap.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT real/libhpcrun_la-mmap.lo -MD -MP -MF real/$(DEPDIR)/libhpcrun_la-mmap.Tpo -c -o real/libhpcrun_la-mmap.lo `test -f 'real/mmap.c' || echo '$(srcdir)/'`real/mmap.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) real/$(DEPDIR)/libhpcrun_la-mmap.Tpo real/$(DEPDIR)/libhpcrun_la-mmap.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='real/mmap.c' object='real/libhpcrun_la-mmap.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o real/libhpcrun_la-mmap.lo `test -f 'real/mmap.c' || echo '$(srcdir)/'`real/mmap.c
+
+real/libhpcrun_la-munmap.lo: real/munmap.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT real/libhpcrun_la-munmap.lo -MD -MP -MF real/$(DEPDIR)/libhpcrun_la-munmap.Tpo -c -o real/libhpcrun_la-munmap.lo `test -f 'real/munmap.c' || echo '$(srcdir)/'`real/munmap.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) real/$(DEPDIR)/libhpcrun_la-munmap.Tpo real/$(DEPDIR)/libhpcrun_la-munmap.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='real/munmap.c' object='real/libhpcrun_la-munmap.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o real/libhpcrun_la-munmap.lo `test -f 'real/munmap.c' || echo '$(srcdir)/'`real/munmap.c
+
+real/libhpcrun_la-open.lo: real/open.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT real/libhpcrun_la-open.lo -MD -MP -MF real/$(DEPDIR)/libhpcrun_la-open.Tpo -c -o real/libhpcrun_la-open.lo `test -f 'real/open.c' || echo '$(srcdir)/'`real/open.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) real/$(DEPDIR)/libhpcrun_la-open.Tpo real/$(DEPDIR)/libhpcrun_la-open.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='real/open.c' object='real/libhpcrun_la-open.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o real/libhpcrun_la-open.lo `test -f 'real/open.c' || echo '$(srcdir)/'`real/open.c
+
+real/libhpcrun_la-read.lo: real/read.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT real/libhpcrun_la-read.lo -MD -MP -MF real/$(DEPDIR)/libhpcrun_la-read.Tpo -c -o real/libhpcrun_la-read.lo `test -f 'real/read.c' || echo '$(srcdir)/'`real/read.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) real/$(DEPDIR)/libhpcrun_la-read.Tpo real/$(DEPDIR)/libhpcrun_la-read.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='real/read.c' object='real/libhpcrun_la-read.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o real/libhpcrun_la-read.lo `test -f 'real/read.c' || echo '$(srcdir)/'`real/read.c
 
 syscalls/libhpcrun_la-poll.lo: syscalls/poll.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT syscalls/libhpcrun_la-poll.lo -MD -MP -MF syscalls/$(DEPDIR)/libhpcrun_la-poll.Tpo -c -o syscalls/libhpcrun_la-poll.lo `test -f 'syscalls/poll.c' || echo '$(srcdir)/'`syscalls/poll.c
@@ -6825,6 +6909,76 @@ ompt/libhpcrun_o-ompt-thread.obj: ompt/ompt-thread.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_o-ompt-thread.obj `if test -f 'ompt/ompt-thread.c'; then $(CYGPATH_W) 'ompt/ompt-thread.c'; else $(CYGPATH_W) '$(srcdir)/ompt/ompt-thread.c'; fi`
 
+real/libhpcrun_o-close.o: real/close.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT real/libhpcrun_o-close.o -MD -MP -MF real/$(DEPDIR)/libhpcrun_o-close.Tpo -c -o real/libhpcrun_o-close.o `test -f 'real/close.c' || echo '$(srcdir)/'`real/close.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) real/$(DEPDIR)/libhpcrun_o-close.Tpo real/$(DEPDIR)/libhpcrun_o-close.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='real/close.c' object='real/libhpcrun_o-close.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o real/libhpcrun_o-close.o `test -f 'real/close.c' || echo '$(srcdir)/'`real/close.c
+
+real/libhpcrun_o-close.obj: real/close.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT real/libhpcrun_o-close.obj -MD -MP -MF real/$(DEPDIR)/libhpcrun_o-close.Tpo -c -o real/libhpcrun_o-close.obj `if test -f 'real/close.c'; then $(CYGPATH_W) 'real/close.c'; else $(CYGPATH_W) '$(srcdir)/real/close.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) real/$(DEPDIR)/libhpcrun_o-close.Tpo real/$(DEPDIR)/libhpcrun_o-close.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='real/close.c' object='real/libhpcrun_o-close.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o real/libhpcrun_o-close.obj `if test -f 'real/close.c'; then $(CYGPATH_W) 'real/close.c'; else $(CYGPATH_W) '$(srcdir)/real/close.c'; fi`
+
+real/libhpcrun_o-mmap.o: real/mmap.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT real/libhpcrun_o-mmap.o -MD -MP -MF real/$(DEPDIR)/libhpcrun_o-mmap.Tpo -c -o real/libhpcrun_o-mmap.o `test -f 'real/mmap.c' || echo '$(srcdir)/'`real/mmap.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) real/$(DEPDIR)/libhpcrun_o-mmap.Tpo real/$(DEPDIR)/libhpcrun_o-mmap.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='real/mmap.c' object='real/libhpcrun_o-mmap.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o real/libhpcrun_o-mmap.o `test -f 'real/mmap.c' || echo '$(srcdir)/'`real/mmap.c
+
+real/libhpcrun_o-mmap.obj: real/mmap.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT real/libhpcrun_o-mmap.obj -MD -MP -MF real/$(DEPDIR)/libhpcrun_o-mmap.Tpo -c -o real/libhpcrun_o-mmap.obj `if test -f 'real/mmap.c'; then $(CYGPATH_W) 'real/mmap.c'; else $(CYGPATH_W) '$(srcdir)/real/mmap.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) real/$(DEPDIR)/libhpcrun_o-mmap.Tpo real/$(DEPDIR)/libhpcrun_o-mmap.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='real/mmap.c' object='real/libhpcrun_o-mmap.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o real/libhpcrun_o-mmap.obj `if test -f 'real/mmap.c'; then $(CYGPATH_W) 'real/mmap.c'; else $(CYGPATH_W) '$(srcdir)/real/mmap.c'; fi`
+
+real/libhpcrun_o-munmap.o: real/munmap.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT real/libhpcrun_o-munmap.o -MD -MP -MF real/$(DEPDIR)/libhpcrun_o-munmap.Tpo -c -o real/libhpcrun_o-munmap.o `test -f 'real/munmap.c' || echo '$(srcdir)/'`real/munmap.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) real/$(DEPDIR)/libhpcrun_o-munmap.Tpo real/$(DEPDIR)/libhpcrun_o-munmap.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='real/munmap.c' object='real/libhpcrun_o-munmap.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o real/libhpcrun_o-munmap.o `test -f 'real/munmap.c' || echo '$(srcdir)/'`real/munmap.c
+
+real/libhpcrun_o-munmap.obj: real/munmap.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT real/libhpcrun_o-munmap.obj -MD -MP -MF real/$(DEPDIR)/libhpcrun_o-munmap.Tpo -c -o real/libhpcrun_o-munmap.obj `if test -f 'real/munmap.c'; then $(CYGPATH_W) 'real/munmap.c'; else $(CYGPATH_W) '$(srcdir)/real/munmap.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) real/$(DEPDIR)/libhpcrun_o-munmap.Tpo real/$(DEPDIR)/libhpcrun_o-munmap.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='real/munmap.c' object='real/libhpcrun_o-munmap.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o real/libhpcrun_o-munmap.obj `if test -f 'real/munmap.c'; then $(CYGPATH_W) 'real/munmap.c'; else $(CYGPATH_W) '$(srcdir)/real/munmap.c'; fi`
+
+real/libhpcrun_o-open.o: real/open.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT real/libhpcrun_o-open.o -MD -MP -MF real/$(DEPDIR)/libhpcrun_o-open.Tpo -c -o real/libhpcrun_o-open.o `test -f 'real/open.c' || echo '$(srcdir)/'`real/open.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) real/$(DEPDIR)/libhpcrun_o-open.Tpo real/$(DEPDIR)/libhpcrun_o-open.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='real/open.c' object='real/libhpcrun_o-open.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o real/libhpcrun_o-open.o `test -f 'real/open.c' || echo '$(srcdir)/'`real/open.c
+
+real/libhpcrun_o-open.obj: real/open.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT real/libhpcrun_o-open.obj -MD -MP -MF real/$(DEPDIR)/libhpcrun_o-open.Tpo -c -o real/libhpcrun_o-open.obj `if test -f 'real/open.c'; then $(CYGPATH_W) 'real/open.c'; else $(CYGPATH_W) '$(srcdir)/real/open.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) real/$(DEPDIR)/libhpcrun_o-open.Tpo real/$(DEPDIR)/libhpcrun_o-open.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='real/open.c' object='real/libhpcrun_o-open.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o real/libhpcrun_o-open.obj `if test -f 'real/open.c'; then $(CYGPATH_W) 'real/open.c'; else $(CYGPATH_W) '$(srcdir)/real/open.c'; fi`
+
+real/libhpcrun_o-read.o: real/read.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT real/libhpcrun_o-read.o -MD -MP -MF real/$(DEPDIR)/libhpcrun_o-read.Tpo -c -o real/libhpcrun_o-read.o `test -f 'real/read.c' || echo '$(srcdir)/'`real/read.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) real/$(DEPDIR)/libhpcrun_o-read.Tpo real/$(DEPDIR)/libhpcrun_o-read.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='real/read.c' object='real/libhpcrun_o-read.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o real/libhpcrun_o-read.o `test -f 'real/read.c' || echo '$(srcdir)/'`real/read.c
+
+real/libhpcrun_o-read.obj: real/read.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT real/libhpcrun_o-read.obj -MD -MP -MF real/$(DEPDIR)/libhpcrun_o-read.Tpo -c -o real/libhpcrun_o-read.obj `if test -f 'real/read.c'; then $(CYGPATH_W) 'real/read.c'; else $(CYGPATH_W) '$(srcdir)/real/read.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) real/$(DEPDIR)/libhpcrun_o-read.Tpo real/$(DEPDIR)/libhpcrun_o-read.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='real/read.c' object='real/libhpcrun_o-read.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o real/libhpcrun_o-read.obj `if test -f 'real/read.c'; then $(CYGPATH_W) 'real/read.c'; else $(CYGPATH_W) '$(srcdir)/real/read.c'; fi`
+
 syscalls/libhpcrun_o-poll.o: syscalls/poll.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT syscalls/libhpcrun_o-poll.o -MD -MP -MF syscalls/$(DEPDIR)/libhpcrun_o-poll.Tpo -c -o syscalls/libhpcrun_o-poll.o `test -f 'syscalls/poll.c' || echo '$(srcdir)/'`syscalls/poll.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) syscalls/$(DEPDIR)/libhpcrun_o-poll.Tpo syscalls/$(DEPDIR)/libhpcrun_o-poll.Po
@@ -7933,6 +8087,7 @@ clean-libtool:
 	-rm -rf monitor-exts/.libs monitor-exts/_libs
 	-rm -rf ompt/.libs ompt/_libs
 	-rm -rf os/linux/.libs os/linux/_libs
+	-rm -rf real/.libs real/_libs
 	-rm -rf sample-sources/.libs sample-sources/_libs
 	-rm -rf sample-sources/blame-shift/.libs sample-sources/blame-shift/_libs
 	-rm -rf sample-sources/perf/.libs sample-sources/perf/_libs
@@ -8191,6 +8346,8 @@ distclean-generic:
 	-rm -f ompt/$(am__dirstamp)
 	-rm -f os/linux/$(DEPDIR)/$(am__dirstamp)
 	-rm -f os/linux/$(am__dirstamp)
+	-rm -f real/$(DEPDIR)/$(am__dirstamp)
+	-rm -f real/$(am__dirstamp)
 	-rm -f sample-sources/$(DEPDIR)/$(am__dirstamp)
 	-rm -f sample-sources/$(am__dirstamp)
 	-rm -f sample-sources/blame-shift/$(DEPDIR)/$(am__dirstamp)
@@ -8243,7 +8400,7 @@ clean-am: clean-generic clean-libtool clean-noinstPROGRAMS \
 	clean-pkglibexecPROGRAMS mostlyclean-am
 
 distclean: distclean-recursive
-	-rm -rf ./$(DEPDIR) cct/$(DEPDIR) fnbounds/$(DEPDIR) gpu/$(DEPDIR) gpu/amd/$(DEPDIR) gpu/nvidia/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) ompt/$(DEPDIR) os/linux/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) sample-sources/perf/$(DEPDIR) syscalls/$(DEPDIR) trampoline/aarch64/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/libunwind/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) cct/$(DEPDIR) fnbounds/$(DEPDIR) gpu/$(DEPDIR) gpu/amd/$(DEPDIR) gpu/nvidia/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) ompt/$(DEPDIR) os/linux/$(DEPDIR) real/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) sample-sources/perf/$(DEPDIR) syscalls/$(DEPDIR) trampoline/aarch64/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/libunwind/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -8293,7 +8450,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-recursive
-	-rm -rf ./$(DEPDIR) cct/$(DEPDIR) fnbounds/$(DEPDIR) gpu/$(DEPDIR) gpu/amd/$(DEPDIR) gpu/nvidia/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) ompt/$(DEPDIR) os/linux/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) sample-sources/perf/$(DEPDIR) syscalls/$(DEPDIR) trampoline/aarch64/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/libunwind/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) cct/$(DEPDIR) fnbounds/$(DEPDIR) gpu/$(DEPDIR) gpu/amd/$(DEPDIR) gpu/nvidia/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) ompt/$(DEPDIR) os/linux/$(DEPDIR) real/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) sample-sources/perf/$(DEPDIR) syscalls/$(DEPDIR) trampoline/aarch64/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/libunwind/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

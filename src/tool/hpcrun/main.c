@@ -146,6 +146,12 @@
 #include <messages/messages.h>
 #include <messages/debug-flag.h>
 
+#include <real/open.h>
+#include <real/close.h>
+#include <real/mmap.h>
+#include <real/munmap.h>
+#include <real/read.h>
+
 #include <loadmap.h>
 
 // Gotcha only applies to the dynamic case.
@@ -154,13 +160,27 @@
 #include <gotcha/gotcha.h>
 
 static const char* library_to_intercept = "libunwind.so";
+
 static gotcha_wrappee_handle_t wrappee_dl_iterate_phdr_handle;
+static gotcha_wrappee_handle_t wrappee_open;
+static gotcha_wrappee_handle_t wrappee_close;
+static gotcha_wrappee_handle_t wrappee_mmap;
+static gotcha_wrappee_handle_t wrappee_munmap;
+static gotcha_wrappee_handle_t wrappee_read;
+
 struct gotcha_binding_t wrap_actions [] = {
-  { "dl_iterate_phdr", hpcrun_loadmap_iterate, &wrappee_dl_iterate_phdr_handle}    
+  { "dl_iterate_phdr", hpcrun_loadmap_iterate, &wrappee_dl_iterate_phdr_handle},
+  { "open",            hpcrun_real_open,       &wrappee_open},
+  { "close",           hpcrun_real_close,      &wrappee_close},
+  { "mmap",            hpcrun_real_mmap,       &wrappee_mmap},
+  { "munmap",          hpcrun_real_munmap,     &wrappee_munmap},
+  { "read",            hpcrun_real_read,       &wrappee_read}    
 };
+
 #endif
   
 extern void hpcrun_set_retain_recursion_mode(bool mode);
+
 #ifndef USE_LIBUNW
 extern void hpcrun_dump_intervals(void* addr);
 #endif // ! USE_LIBUNW
@@ -213,9 +233,11 @@ struct hpcrun_aux_cleanup_t {
 // forward declarations
 //***************************************************************************
 
+#ifndef USE_LIBUNW
 static int
 dump_interval_handler(int sig, siginfo_t* info, void* ctxt)
 __attribute__ ((unused));
+#endif
 
 //***************************************************************************
 // global variables
@@ -575,7 +597,7 @@ hpcrun_init_internal(bool is_child)
   {
     // temporary debugging code for x86 / ppc64
 
-    extern void hpcrun_dump_intervals(void* addr2);
+    hpcrun_dump_intervals(void* addr2);
     char* addr1 = getenv("ADDR1");
     char* addr2 = getenv("ADDR2");
  
