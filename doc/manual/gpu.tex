@@ -20,7 +20,7 @@ hpcstruct hpctoolkit-<your application>-measurements
 
 HPCToolkit supports two levels of performance monitoring for NVIDIA GPUs: coarse-grain profiling and tracing of GPU activities at the operation level (e.g., kernel launches, data allocations, memory copies, ...) , and fine-grain profiling of GPU computations using PC sampling, which measures GPU computations at a granularity of individual machine instructions. Section~\ref{nvidia-pc-sampling} describes fine-grain GPU performance measurement using PC sampling and the metrics it measures or computes. 
 
-While performing coarse-grain GPU monitoring of kernel executions, memory copies, and other GPU activities, HPCToolkit will collect a trace of activity for each GPU stream if tracing is enabled. Table~\ref{nvidia-monitoring-options} shows the possible command-line arguments to \hpcrun{} that will enable different levels of monitoring  for NVIDIA GPUs. When fine-grain monitoring using PC sampling is enabled, coarse-grain profiling is also performed, so tracing is available in this mode as well.
+While performing coarse-grain GPU monitoring of kernel executions, memory copies, and other GPU activities, HPCToolkit will collect a trace of activity for each GPU stream if tracing is enabled. Table~\ref{nvidia-monitoring-options} shows the possible command-line arguments to \hpcrun{} that will enable different levels of monitoring  for NVIDIA GPUs. When fine-grain monitoring using PC sampling is enabled, coarse-grain profiling is also performed, so tracing is available in this mode as well. However, since PC sampling dilates the CPU overhead of GPU-accelerated codes, tracing is not recommended when PC sampling is enabled.
 
 Coarse-grain profiling attributes to each calling context the total time of all GPU operations initiated in that context. Table~\ref
 {table:gtimes} shows the classes of GPU operations for which timings are collected. In addition, HPCToolkit records metrics for  operations performed including memory allocation and deallocation (Table~\ref{table:gmem}), memory set (Table~\ref{table:gmset}), explicit memory copies (Table~\ref{table:gxcopy}), and synchronization (Table~\ref{table:gsync}). In addition, HPCToolkit reports GPU kernel characteristics, including including register usage,  thread count per block, and theoretical occupancy as shown in Table~\ref{table:gker}. NVIDIA defines theoretical occupancy as the ratio of the active threads in a streaming multiprocessor to the maximum active threads supported by the hardware in one streaming multiprocessor.
@@ -42,10 +42,10 @@ Argument to \hpcrun{} & What is monitored\\\hline\hline
 \centering
 \begin{tabular}{|l|l|}\hline
 Metric & Description\\\hline\hline
- GKER (s)  &  GPU time: kernel execution (seconds)  \\\hline 
-  GMEM (s)  &  GPU time: memory allocation/deallocation (seconds)  \\\hline 
-  GMSET (s)  &  GPU time: memory set (seconds)  \\\hline 
-  GXCOPY (s)  &  GPU time: explicit data copy (seconds)  \\\hline 
+ GKER (sec)  &  GPU time: kernel execution (seconds)  \\\hline 
+  GMEM (sec)  &  GPU time: memory allocation/deallocation (seconds)  \\\hline 
+  GMSET (sec)  &  GPU time: memory set (seconds)  \\\hline 
+  GXCOPY (sec)  &  GPU time: explicit data copy (seconds)  \\\hline 
 % GICOPY (sec)  &  GPU time: implicit data copy (seconds)  \\\hline 
   GSYNC (sec)  &  GPU time: synchronization (seconds)  \\\hline 
 \end{tabular}
@@ -116,11 +116,11 @@ Metric & Description\\\hline\hline
 \centering
 \begin{tabular}{|l|l|}\hline
 Metric & Description\\\hline\hline
- GSYNC:UNK (us)  &  GPU synchronizations: unknown kind  \\\hline 
-  GSYNC:EVT (us)  &  GPU synchronizations: event  \\\hline 
-  GSYNC:STRE (us)  &  GPU synchronizations: stream event wait  \\\hline 
-  GSYNC:STR (us)  &  GPU synchronizations: stream  \\\hline 
-  GSYNC:CTX (us)  &  GPU synchronizations: context  \\\hline 
+ GSYNC:UNK (sec)  &  GPU synchronizations: unknown kind  \\\hline 
+  GSYNC:EVT (sec)  &  GPU synchronizations: event  \\\hline 
+  GSYNC:STRE (sec)  &  GPU synchronizations: stream event wait  \\\hline 
+  GSYNC:STR (sec)  &  GPU synchronizations: stream  \\\hline 
+  GSYNC:CTX (sec)  &  GPU synchronizations: context  \\\hline 
   GSYNC:COUNT  &  GPU synchronizations: count  \\\hline 
 \end{tabular}
 \caption{GPU synchronization metrics.}
@@ -218,7 +218,7 @@ Metric & Description\\\hline\hline
 
 
 At present, using NVIDIA's CUPTI library adds substantial measurement overhead.  Unlike CPU monitoring based on asynchronous sampling, GPU performance monitoring uses vendor-provided callback interfaces to intercept the initiation of each GPU operation. Accordingly,  the overhead of GPU performance monitoring depends upon how frequently GPU operations are initiated. 
-In our experience to date, profiling (and if requested, tracing) on NVIDIA GPUs using NVIDIA's CUPTI interface roughly doubles the execution time of a GPU-accelerated application. In our experience, we have seen NVIDIA's PC sampling dilate the execution time of a GPU-accelerated program by $30\times$. The overhead of GPU monitoring is principally on the host side. As measured by CUPTI, the time spent in GPU operations or PC samples is expected to be relatively accurate. However, since execution as a whole is slowed while measuring GPU performance, when evaluating GPU activity reported by HPCToolkit, one must be careful.
+In our experience to date, profiling (and if requested, tracing) on NVIDIA GPUs using NVIDIA's CUPTI interface roughly doubles the execution time of a GPU-accelerated application. In our experience, we have seen NVIDIA's PC sampling dilate the execution time of a GPU-accelerated program by $30\times$ using CUDA 10 or earlier.  Our early experience with CUDA 11 indicates that overhead using PC sampling is much lower and less than $5\times$. The overhead of GPU monitoring is principally on the host side. As measured by CUPTI, the time spent in GPU operations or PC samples is expected to be relatively accurate. However, since execution as a whole is slowed while measuring GPU performance, when evaluating GPU activity reported by HPCToolkit, one must be careful.
 
 For instance, if a GPU-accelerated program runs in 1000 seconds without HPCToolkit monitoring GPU activity but slows to 2000 seconds when GPU profiling and tracing is enabled, then if GPU profiles and traces show that the GPU is active for 25\% of the execution time, one should  re-scale the accurate measurements of GPU activity by considering the $2\times$ dilation when monitoring GPU activity. Without monitoring, one would expect the same level of GPU activity, but the host time would be twice as fast. Thus, without monitoring, the ratio of GPU activity to host activity would be roughly double.
  
@@ -312,13 +312,15 @@ hpcstruct hpctoolkit-laghos-measurements
 \end{quote}
 
 
-Since there may be many CUBINs inside an HPCToolkit measurements directory for a GPU-accelerated application, it is useful to accelerate the analysis of an execution's CUBINs by employing parallelism. One can analyze the set of CUBINs in an HPCToolkit measurements directory by using \hpcstruct's {\tt -j} option. For instance, one can use 16 threads to analyze the CUBINs in the {\tt hpctoolkit-laghos-measurements} directory with the following command:
+Since there may be many CUBINs inside an HPCToolkit measurements directory for a GPU-accelerated application, it is useful to accelerate the analysis of an execution's CUBINs by employing parallelism. One can analyze large or many CUBINs in an HPCToolkit measurements directory using multiple threads by specifying \hpcstruct's '\verb|-j|~$n$' option. For instance, one can use 16 threads to analyze the CUBINs in the {\tt hpctoolkit-laghos-measurements} directory with the following command:
 
 \begin{quote}
 \begin{verbatim}
 hpcstruct -j 16 hpctoolkit-laghos-measurements
 \end{verbatim}
 \end{quote}
+
+With the default settings of \hpcstruct{}, if the '\verb|-j|~$n$' argument is specified, each CUBIN larger than 100MB will be analyzed using $n$ threads. Smaller CUBINs will be analyzed in parallel by using a pool of $n$ threads to analyze $n$ small CUBINs concurrently. 
 
 By default, when applied to a measurements directory, \hpcstruct{} performs only lightweight analysis of the GPU functions in each CUBIN. When a measurements directory contains fine-grain measurements collected using PC sampling, it is useful to perform a more detailed analysis to recover information about the loops and call sites of GPU functions in an NVIDIA CUBIN. Unfortunately, NVIDIA has refused to provide an API that would enable HPCToolkit to perform instruction-level analysis of CUBINs directly. Instead, HPCToolkit must invoke NVIDIA's {\tt nvdisasm} command line utility to compute control flow graphs for functions in a CUBIN. The version of {\tt nvdisasm} in CUDA 10 is slow and fails to compute control flow graphs for some GPU functions. In such cases, \hpcstruct{} reverts to lightweight analysis of GPU functions that considers only line map information. Because analysis of CUBINs using {\tt nvdisasm} is slow, it is not performed by default. To enable detailed analysis of GPU functions, use the {\tt --gpucfg yes} option to \hpcstruct{}, as shown below:
 
