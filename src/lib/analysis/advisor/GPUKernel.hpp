@@ -83,14 +83,14 @@ struct KernelStats {
   uint32_t shared_memory; // bytes per block
   uint32_t registers; // registers per thread
   uint32_t active_warps; // per sm
-  uint64_t active_samples; // not stalled samples
-  uint64_t total_samples; // total samples
+  double active_samples; // not stalled samples
+  double total_samples; // total samples
   uint64_t count; // kernel invocation times
   double time;
   double sm_efficiency;
 
   KernelStats(uint32_t blocks, uint32_t threads, uint32_t shared_memory, uint32_t registers,
-    uint32_t active_warps, uint64_t active_samples, uint64_t total_samples, double time,
+    uint32_t active_warps, double active_samples, double total_samples, double time,
     uint64_t count, double sm_efficiency) : blocks(blocks), threads(threads),
     shared_memory(shared_memory), registers(registers), active_warps(active_warps),
     active_samples(active_samples), total_samples(total_samples), count(count),

@@ -102,7 +102,7 @@ std::string SimpleInspectionFormatter::format(const Inspection &inspection) {
     ss << " estimate speedup " << inspection.speedup << "x";
   }
 
-  ss << std::endl << std::endl;
+  ss << std::endl << std::endl << inspection.hint << std::endl << std::endl;
 
   // Specific suggestion
   if (inspection.active_warp_count.first != -1) {
@@ -148,8 +148,9 @@ std::string SimpleInspectionFormatter::format(const Inspection &inspection) {
   auto index = 1;
   // Hot regions
   for (auto &inst_blame : inspection.top_regions) {
-    ss << index++ << ". Hot " << inst_blame.blame_name << " code (" << inst_blame.stall_blame
-       << "):" << std::endl;
+    auto metric = inspection.stall ? inst_blame.stall_blame : inst_blame.lat_blame;
+    ss << index++ << ". Hot " << inst_blame.blame_name << " code (" <<
+      metric / inspection.total * 100 << "%):" << std::endl;
 
     auto *src_struct = inst_blame.src_struct;
     auto *dst_struct = inst_blame.dst_struct;
@@ -186,6 +187,10 @@ std::string SimpleInspectionFormatter::format(const Inspection &inspection) {
       auto dst_file = dst_struct->ancestorFile();
       ss << std::hex << "0x" << dst_vma << std::dec << " at Line "
          << dst_struct->begLine() << " in " << dst_file->name() << std::endl;
+    }
+
+    if (inspection.callback != NULL) {
+      ss << inspection.callback(inst_blame) << std::endl;
     }
   }
 

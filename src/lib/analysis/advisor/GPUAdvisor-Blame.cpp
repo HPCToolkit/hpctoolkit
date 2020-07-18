@@ -1391,16 +1391,6 @@ void GPUAdvisor::blame(CCTBlames &cct_blames) {
         std::cout << std::endl;
       }
 
-      // TODO(Keren):
-      // x1. Implement sync
-      // x2. Debug function start
-      // x3. Implement WAR and Predicate
-      // x4. Implement scheduler stall
-      // x6. Implement fake barrier
-      // x7. blame to local memory
-      // 8. Debug apportion
-      // x9. Overlay back
-
       // 5. Overlay blames
       auto &kernel_blame = cct_blames[mpi_rank][thread_id];
       overlayInstBlames(inst_blames, kernel_blame);

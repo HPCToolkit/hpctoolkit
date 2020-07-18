@@ -78,7 +78,7 @@ GPUEstimator *GPUEstimatorFactory(GPUArchitecture *arch, GPUEstimatorType type) 
 
 
 std::pair<double, double>
-SequentialGPUEstimator::estimate(double blame, const KernelStats &kernel_stats) {
+SequentialGPUEstimator::estimate(double blame, const KernelStats &match_stats, const KernelStats &kernel_stats) {
   std::pair<double, double> estimate(0.0, 0.0);
 
   if (blame != 0.0) {
@@ -92,14 +92,14 @@ SequentialGPUEstimator::estimate(double blame, const KernelStats &kernel_stats) 
 
 
 std::pair<double, double>
-SequentialLatencyGPUEstimator::estimate(double blame, const KernelStats &kernel_stats) {
+SequentialLatencyGPUEstimator::estimate(double blame, const KernelStats &match_stats, const KernelStats &kernel_stats) {
   std::pair<double, double> estimate(0.0, 0.0);
 
   if (blame != 0.0) {
     estimate.first = blame / kernel_stats.total_samples;
     estimate.second =
         kernel_stats.total_samples /
-        (kernel_stats.total_samples - MIN2(kernel_stats.active_samples, blame));
+        (kernel_stats.total_samples - MIN2(match_stats.active_samples, blame));
   }
 
   return estimate;
@@ -107,11 +107,11 @@ SequentialLatencyGPUEstimator::estimate(double blame, const KernelStats &kernel_
 
 
 std::pair<double, double>
-ParallelGPUEstimator::estimate(double blame, const KernelStats &kernel_stats) {
+ParallelGPUEstimator::estimate(double blame, const KernelStats &match_stats, const KernelStats &kernel_stats) {
   std::pair<double, double> estimate(0.0, 0.0);
 
   if (blame != 0.0) {
-    estimate.first = 1 - blame;
+    estimate.first = blame;
     estimate.second = 1 / blame;
   }
 
@@ -120,7 +120,7 @@ ParallelGPUEstimator::estimate(double blame, const KernelStats &kernel_stats) {
 
 
 std::pair<double, double>
-ParallelLatencyGPUEstimator::estimate(double blame, const KernelStats &kernel_stats) {
+ParallelLatencyGPUEstimator::estimate(double blame, const KernelStats &match_stats, const KernelStats &kernel_stats) {
   std::pair<double, double> estimate(0.0, 0.0);
   double cur_warps = kernel_stats.active_warps;
   double max_warps = _arch->warps();

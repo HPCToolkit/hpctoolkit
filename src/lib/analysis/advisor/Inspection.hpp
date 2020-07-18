@@ -87,26 +87,40 @@ namespace Analysis {
 class InstructionBlame;
 
 struct Inspection {
+  typedef std::string (*InspectionCallBack)(const InstructionBlame &);
+
   double ratio;
   double speedup;
+  double total;
+
+  bool stall;
 
   std::string optimization;
+  std::string hint;
 
   std::vector<InstructionBlame> top_regions;
 
-  // before
+  // <before, after>
   std::pair<int, int> active_warp_count;
   std::pair<int, int> block_count;
   std::pair<int, int> thread_count;
   std::pair<int, int> reg_count;
 
-  Inspection() : ratio(-1.0), speedup(-1.0), active_warp_count(-1, -1),
-    block_count(-1, -1), thread_count(-1, -1), reg_count(-1, -1) {}
+  InspectionCallBack callback;
+
+  Inspection() : ratio(-1.0), speedup(-1.0), total(-1.0), stall(false),
+    active_warp_count(-1, -1), block_count(-1, -1), thread_count(-1, -1),
+    reg_count(-1, -1), callback(NULL) {}
 
   void clear() {
+    hint.clear();
+    optimization.clear();
+    top_regions.clear();
     ratio = -1.0;
     speedup = -1.0;
-    top_regions.clear();
+    total = -1.0;
+    stall = false;
+    callback = NULL;
     active_warp_count = std::pair<int, int>(-1, -1);
     block_count = std::pair<int, int>(-1, -1);
     thread_count = std::pair<int, int>(-1, -1);

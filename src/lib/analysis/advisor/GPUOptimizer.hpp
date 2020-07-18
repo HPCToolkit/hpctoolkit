@@ -93,7 +93,7 @@ namespace Analysis {
 struct InstructionBlame {
   CudaParse::InstructionStat *src_inst, *dst_inst;
   CudaParse::Block *src_block, *dst_block;
-  // TODO(Keren): consier only intra procedural optimizations for now
+  // TODO(Keren): consider only intra procedural optimizations for now
   CudaParse::Function *src_function, *dst_function;
   Prof::Struct::ACodeNode *src_struct, *dst_struct;
   double stall_blame;
@@ -210,10 +210,24 @@ class GPUOptimizer {
     this->_estimator = estimator;
   }
 
-  // @Return blame
-  virtual double match_impl(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) = 0;
+  /**
+   * @brief
+   *
+   * @param kernel_blame
+   * @param kernel_stats
+   * @param region_stats
+   * @return std::pair<double, KernelStats>
+   */
+  virtual std::pair<double, KernelStats> match_impl(const KernelBlame &kernel_blame,
+                                                    const KernelStats &kernel_stats) = 0;
 
-  // @Return speedup
+  /**
+   * @brief
+   *
+   * @param kernel_blame
+   * @param kernel_stats
+   * @return double
+   */
   double match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats);
 
   virtual ~GPUOptimizer() {}
@@ -228,17 +242,18 @@ class GPUOptimizer {
   Inspection _inspection;
 
   const int _top_regions = 3;
+  const double _top_ratio = 0.7;
 };
 
-
-#define DECLARE_OPTIMIZER_CLASS(TYPE, CLASS, VALUE) \
-\
-class CLASS : public GPUOptimizer { \
- public: \
-  CLASS(const std::string &name, const GPUArchitecture *arch) : GPUOptimizer(name, arch) {} \
-  virtual double match_impl(const KernelBlame &kernel_blame, const KernelStats &kernel_stats); \
-  virtual ~CLASS() {} \
-};
+#define DECLARE_OPTIMIZER_CLASS(TYPE, CLASS, VALUE)                                           \
+                                                                                              \
+  class CLASS : public GPUOptimizer {                                                         \
+   public:                                                                                    \
+    CLASS(const std::string &name, const GPUArchitecture *arch) : GPUOptimizer(name, arch) {} \
+    virtual std::pair<double, KernelStats> match_impl(const KernelBlame &kernel_blame,        \
+                                                      const KernelStats &kernel_stats);       \
+    virtual ~CLASS() {}                                                                       \
+  };
 
 FORALL_OPTIMIZER_TYPES(DECLARE_OPTIMIZER_CLASS)
 
@@ -246,7 +261,6 @@ FORALL_OPTIMIZER_TYPES(DECLARE_OPTIMIZER_CLASS)
 
 // A factory method
 GPUOptimizer *GPUOptimizerFactory(GPUOptimizerType type, GPUArchitecture *arch);
-
 
 }  // namespace Analysis
 

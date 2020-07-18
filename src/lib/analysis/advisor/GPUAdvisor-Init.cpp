@@ -180,7 +180,7 @@ void GPUAdvisor::init() {
   strength_reduction_optimizer->set_estimator(_estimators[SEQ]);
 
   auto *warp_balance_optimizer = GPUOptimizerFactory(WARP_BALANCE, _arch);
-  warp_balance_optimizer->set_estimator(_estimators[SEQ_LAT]);
+  warp_balance_optimizer->set_estimator(_estimators[SEQ]);
 
   auto *code_reorder_optimizer = GPUOptimizerFactory(CODE_REORDER, _arch);
   code_reorder_optimizer->set_estimator(_estimators[SEQ_LAT]);
