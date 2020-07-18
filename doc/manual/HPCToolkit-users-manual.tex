@@ -120,7 +120,7 @@
 % ***************************************************************************
 % ***************************************************************************
 
-\title{\HPCToolkit{} User's Manual\\[.5in]Version 2020.07}
+\title{\HPCToolkit{} User's Manual\\[.5in]Version 2020.07.15}
 %\subtitle{}
 
 \author{
@@ -1265,6 +1265,31 @@ In cases such as this, you can often specify \texttt{-fast} along with an option
 \chapter{Known Issues}
 \label{chpt:known}
 
+\section{A confusing label for GPU theoretical occupancy}
+
+\paragraph{Affected architectures:}  NVIDIA GPUs
+
+\paragraph{Description:} When analyzing a GPU-accelerated application that employs NVIDIA GPUs, HPCToolkit estimates percent GPU theoretical occupancy as the ratio of active GPU threads divided by the maximum number of GPU threads available. In multi-threaded or multi-rank programs, HPCToolkit reports GPU  theoretical occupancy with the label 
+
+\begin{quote}
+Sum over rank/thread of exclusive 'GPU kernel: theoretical occupancy (FGP\_ACT / FGP\_MAX)'
+\end{quote}
+
+\noindent rather than its correct label
+
+\begin{quote}
+GPU kernel: theoretical occupancy (FGP\_ACT / FGP\_MAX)
+\end{quote}
+
+The metric is computed correctly by summing the fine-grain parallelism used in each kernel launch across all threads and ranks and dividing it by the sum of the maximum fine-grain parallelism available to each kernel launch across all threads and ranks, and presenting the value as a percent.
+
+\paragraph{Explanation:} This metric is unlike others computed by HPCToolkit. Rather than being computed by \hpcprof{}, it is computed by having \hpcviewer{} interpret a formula. 
+
+\paragraph{Workaround:} Pay attention to the metric value, which is computed correctly and ignore its awkward label.
+
+
+\paragraph{Development Plan:}  Add additional support to  \hpcrun{} and \hpcprof{} to understand how derived metrics are computed and avoid spoiling their labels.
+
 \section{Deadlock when using Darshan}
 
 \paragraph{Affected architectures:}  \verb|x86_64| and ARM
@@ -1360,6 +1385,17 @@ with dynamically-linked binaries. From the context, it should be clear enough
 whether we are talking about \HPCToolkit's measurement subsystem
 or the \hpcrun{} command itself.
 
+\section{Why do I see partial unwinds?}
+\label{sec:partial}
+
+Under certain circumstances, HPCToolkit can't fully unwind the call stack to determine the full calling context where a sample event occurred. Most often, this occurs when \hpcrun{} tries to unwind through functions in a shared library or executable that has not been compiled with \verb|-g| as one of its options. The \verb|-g| compiler flag can be used in addition to optimization flags. On Power and \verb|x86_64| processors, \hpcrun{} can often compensate the lack of the availability of unwind recipes in a binary by using binary analysis to compute recipes itself. However, since \hpcrun{} lacks binary analysis capabilities for ARM processors, there is a higher likelihood that the lack of a \verb|-g| compiler option for an executable or a shared library will lead to partial unwinds.
+
+There are two ways to deal with this problem:
+\begin{itemize}
+\item Analyze the execution using information from partial unwinds. Often knowing several levels of calling context is enough for analysis without full calling context for sample events.
+\item 
+Recompile the binary or shared library causing the problem and add \verb|-g| to the list of its compiler options.
+\end{itemize}
 
 % ===========================================================================
 % ===========================================================================
