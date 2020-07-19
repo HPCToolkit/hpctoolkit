@@ -78,8 +78,9 @@ std::string SimpleInspectionFormatter::formatInlineStack(
   while (inline_stack.empty() == false) {
     auto *inline_struct = inline_stack.top();
     inline_stack.pop();
-    ss << "Line " << inline_struct->begLine() << " in "
-       << inline_struct->fileName() << std::endl;
+    // Current inline stack line mapping information is not accurate
+    //ss << "Line " << inline_struct->begLine() <<
+    ss << inline_struct->fileName() << std::endl;
   }
 
   return ss.str();
@@ -167,31 +168,29 @@ std::string SimpleInspectionFormatter::format(const Inspection &inspection) {
     std::stack<Prof::Struct::Alien *> dst_inline_stack =
         getInlineStack(dst_struct);
 
-    ss << "From" << std::endl;
+    auto *src_file = src_struct->ancestorFile();
+    ss << "From " << src_func->name() << " at " << src_file->name() << ":" <<
+      src_file->begLine() << std::endl;
     if (src_inline_stack.empty() == false) {
       ss << formatInlineStack(src_inline_stack);
-      ss << std::hex << "0x" << src_vma << std::dec << " at Line "
-         << src_struct->begLine() << std::endl;
-    } else {
-      auto src_file = src_struct->ancestorFile();
-      ss << std::hex << "0x" << src_vma << std::dec << " at Line "
-         << src_struct->begLine() << " in " << src_file->name() << std::endl;
     }
+    ss << std::hex << "0x" << src_vma << std::dec << " at " <<
+      "Line " << src_struct->begLine() << std::endl;
 
-    ss << "To" << std::endl;
+    auto *dst_file = dst_struct->ancestorFile();
+    ss << "To " << dst_func->name() << " at " << dst_file->name() << ":" <<
+      dst_file->begLine() << std::endl;
     if (dst_inline_stack.empty() == false) {
       ss << formatInlineStack(dst_inline_stack);
-      ss << std::hex << "0x" << dst_vma << std::dec << " at Line "
-         << dst_struct->begLine() << std::endl;
-    } else {
-      auto dst_file = dst_struct->ancestorFile();
-      ss << std::hex << "0x" << dst_vma << std::dec << " at Line "
-         << dst_struct->begLine() << " in " << dst_file->name() << std::endl;
     }
+    ss << std::hex << "0x" << dst_vma << std::dec << " at " <<
+      "Line " << dst_struct->begLine() << std::endl;
 
     if (inspection.callback != NULL) {
       ss << inspection.callback(inst_blame) << std::endl;
     }
+
+    ss << std::endl;
   }
 
   ss << sep << std::endl;
