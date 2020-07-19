@@ -107,7 +107,7 @@ class GPUAdvisor {
 
   void init();
 
-  void configInst(const std::vector<CudaParse::Function *> &functions);
+  void configInst(const std::string &lm_name, const std::vector<CudaParse::Function *> &functions);
 
   void configGPURoot(Prof::CCT::ADynNode *gpu_root, Prof::CCT::ADynNode *gpu_kernel);
 

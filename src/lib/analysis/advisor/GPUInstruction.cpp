@@ -291,7 +291,7 @@ overlayGPUInstructionsMain(Prof::CallPath::Profile &prof,
     // Step 5: Lay metrics over prof tree
     associateInstStmts(vma_stmts, inst_stats, metric_name_prof_map);
 
-    gpu_advisor.configInst(functions);
+    gpu_advisor.configInst(lm_name, functions);
 
     // Step 6: Make advise
     // Find each GPU calling context, make recommendation for each calling context 

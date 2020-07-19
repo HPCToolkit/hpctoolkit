@@ -236,25 +236,12 @@ void GPUAdvisor::init() {
 
   // Binary optimizers
   _binary_optimizers.push_back(register_increase_optimizer);
-
-  // Static struct
-  auto *struct_root = _prof->structure()->root();
-  Prof::Struct::ANodeIterator struct_iter(struct_root, NULL/*filter*/, true/*leavesOnly*/,
-    IteratorStack::PreOrder);
-  for (Prof::Struct::ANode *n = NULL; (n = struct_iter.current()); ++struct_iter) {
-    if (n->type() == Prof::Struct::ANode::TyStmt) {
-      auto *stmt = dynamic_cast<Prof::Struct::Stmt *>(n);
-      for (auto &vma_interval : stmt->vmaSet()) {
-        auto vma = vma_interval.beg();
-        _vma_struct_map[vma] = stmt;
-      }
-    }
-  }
 }
 
 // 1. Init static instruction information in vma_prop_map
 // 2. Init an instruction dependency graph
-void GPUAdvisor::configInst(const std::vector<CudaParse::Function *> &functions) {
+void GPUAdvisor::configInst(const std::string &lm_name, const std::vector<CudaParse::Function *> &functions) {
+  _vma_struct_map.clear();
   _vma_prop_map.clear();
   _inst_dep_graph.clear();
   _function_offset.clear();
@@ -322,6 +309,23 @@ void GPUAdvisor::configInst(const std::vector<CudaParse::Function *> &functions)
     std::cout << "Instruction dependency graph: " << std::endl;
     debugInstDepGraph();
     std::cout << std::endl;
+  }
+
+
+  // Static struct
+  auto *struct_root = _prof->structure()->root();
+  Prof::Struct::ANodeIterator struct_iter(struct_root, NULL/*filter*/, true/*leavesOnly*/,
+    IteratorStack::PreOrder);
+  for (Prof::Struct::ANode *n = NULL; (n = struct_iter.current()); ++struct_iter) {
+    if (n->type() == Prof::Struct::ANode::TyStmt) {
+      if (n->ancestorLM()->name() == lm_name) {
+        auto *stmt = dynamic_cast<Prof::Struct::Stmt *>(n);
+        for (auto &vma_interval : stmt->vmaSet()) {
+          auto vma = vma_interval.beg();
+          _vma_struct_map[vma] = stmt;
+        }
+      }
+    }
   }
 }
 
