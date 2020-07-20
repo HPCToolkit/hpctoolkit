@@ -276,6 +276,9 @@ default=yes
 if test "$OPT_ENABLE_DEVELOP" = yes ; then
   default=no
 fi
+case "$host_cpu" in
+  *aarch* | *arm* ) default=no ;;
+esac
 
 AC_ARG_ENABLE([strip-debug],
   [AS_HELP_STRING([--enable-strip-debug],

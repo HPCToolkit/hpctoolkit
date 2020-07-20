@@ -4272,6 +4272,9 @@ default=yes
 if test "$OPT_ENABLE_DEVELOP" = yes ; then
   default=no
 fi
+case "$host_cpu" in
+  *aarch* | *arm* ) default=no ;;
+esac
 
 # Check whether --enable-strip-debug was given.
 if test "${enable_strip_debug+set}" = set; then :
