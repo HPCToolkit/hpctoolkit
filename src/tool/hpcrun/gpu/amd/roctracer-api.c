@@ -50,6 +50,8 @@
 
 #include <roctracer_hip.h>
 
+#include <hpcrun/gpu-monitors.h>
+
 #include <hpcrun/gpu/gpu-activity-channel.h>
 #include <hpcrun/gpu/gpu-activity-process.h>
 #include <hpcrun/gpu/gpu-correlation-channel.h>
@@ -99,6 +101,7 @@
 //******************************************************************************
 // local variables
 //******************************************************************************
+static __thread cct_node_t *cupti_kernel_ph = NULL;
 
 //----------------------------------------------------------
 // roctracer function pointers for late binding
@@ -368,7 +371,14 @@ roctracer_subscriber_callback
 
     // Generate notification entry
     uint64_t cpu_submit_time = hpcrun_nanotime();
-    gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, cpu_submit_time);
+
+		printf("\nRuntime API: enter -----------------| cct = %p | gpu = %d\n", api_node, amd );
+		cupti_kernel_ph = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel); //dejan: added
+		gpu_monitors_apply( &(gpu_monitors_apply_t){.cct_node=cupti_kernel_ph, .gpu_type=amd}, gpu_monitor_type_enter);
+
+		gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, cpu_submit_time);
+  }else{
+		printf("\nRuntime API_PHASE = %d\n", data->phase);
   }
 }
 

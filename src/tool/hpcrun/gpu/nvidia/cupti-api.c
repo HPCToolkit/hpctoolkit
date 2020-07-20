@@ -82,6 +82,7 @@
 #include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/main.h> // hpcrun_force_dlopen
 #include <hpcrun/safe-sampling.h>
+#include <hpcrun/gpu-monitors.h>
 
 #include <hpcrun/gpu/gpu-activity-channel.h>
 #include <hpcrun/gpu/gpu-application-thread-api.h>
@@ -105,8 +106,9 @@
 
 #include "tool_state.h"
 
+//#include "sample_sources_all.h"
 
-#include "sample_sources_all.h"
+
 //******************************************************************************
 // macros
 //******************************************************************************
@@ -954,10 +956,6 @@ cupti_subscriber_callback
         uint64_t correlation_id = gpu_correlation_id();
         cupti_correlation_id_push(correlation_id);
 
-        printf("Driver API: enter -----------------\n");
-				hpcrun_all_sources_stop();
-				hpcrun_all_sources_start();
-
         cct_node_t *api_node = cupti_correlation_callback(correlation_id);
 
         gpu_op_ccts_t gpu_op_ccts;
@@ -971,13 +969,18 @@ cupti_subscriber_callback
 	    gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel);
 
 	  ensure_kernel_ip_present(kernel_ph, kernel_ip);
-        }
+
+					printf("\nDriver API: enter -----------------\n" );
+					gpu_monitors_apply( &(gpu_monitors_apply_t){.cct_node=cupti_kernel_ph,.gpu_type=nvidia}, gpu_monitor_type_enter);
+
+				}
 
         hpcrun_safe_exit();
 
         // Generate notification entry
         uint64_t cpu_submit_time = hpcrun_nanotime();
-        gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts,
+
+				gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts,
           cpu_submit_time);
 
         TMSG(CUPTI_TRACE, "Driver push externalId %lu (cb_id = %u)", correlation_id, cb_id);
@@ -985,7 +988,12 @@ cupti_subscriber_callback
         uint64_t correlation_id __attribute__((unused)); // not used if PRINT omitted
         correlation_id = cupti_correlation_id_pop();
         TMSG(CUPTI_TRACE, "Driver pop externalId %lu (cb_id = %u)", correlation_id, cb_id);
-      }
+
+        printf("\nDriver API: exit -----------------\n" );
+				gpu_monitors_apply( &(gpu_monitors_apply_t){.cct_node=cupti_kernel_ph,.gpu_type=nvidia}, gpu_monitor_type_exit);
+
+
+			}
     } else if (is_kernel_op && cupti_runtime_api_flag && cd->callbackSite ==
       CUPTI_API_ENTER) {
       if (cupti_kernel_ph != NULL) {
@@ -1105,9 +1113,6 @@ cupti_subscriber_callback
         uint64_t correlation_id = gpu_correlation_id();
         cupti_correlation_id_push(correlation_id);
 
-				printf("Runtime API: enter -----------------\n");
-				hpcrun_all_sources_stop();
-				hpcrun_all_sources_start();
         // We should make notification records in the api enter callback.
         // A runtime API must be implemented by driver APIs.
         // Though unlikely in most cases,
@@ -1127,7 +1132,11 @@ cupti_subscriber_callback
 
         // Generate notification entry
         uint64_t cpu_submit_time = hpcrun_nanotime();
-        gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts,
+
+				printf("\nRuntime API: enter -----------------\n" );
+				gpu_monitors_apply( &(gpu_monitors_apply_t){.cct_node=cupti_kernel_ph, .gpu_type=nvidia}, gpu_monitor_type_enter);
+
+				gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts,
           cpu_submit_time);
 
         TMSG(CUPTI_TRACE, "Runtime push externalId %lu (cb_id = %u)", correlation_id, cb_id);
@@ -1139,7 +1148,10 @@ cupti_subscriber_callback
         correlation_id = cupti_correlation_id_pop();
         TMSG(CUPTI_TRACE, "Runtime pop externalId %lu (cb_id = %u)", correlation_id, cb_id);
 
-        cupti_kernel_ph = NULL;
+				printf("\nRuntime API: exit -----------------\n" );
+				gpu_monitors_apply( &(gpu_monitors_apply_t){.cct_node=cupti_kernel_ph, .gpu_type=nvidia}, gpu_monitor_type_exit);
+
+				cupti_kernel_ph = NULL;
       }
     } else {
       TMSG(CUPTI_TRACE, "Go through runtime with kernel_op %d, valid_op %d, "
@@ -1236,7 +1248,7 @@ cupti_buffer_completion_callback
     do {
       status = cupti_buffer_cursor_advance(buffer, validSize, &cupti_activity);
       if (status) {
-        cupti_activity_process(cupti_activity);
+				cupti_activity_process(cupti_activity);
         ++processed;
       }
     } while (status);

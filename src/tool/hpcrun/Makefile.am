@@ -319,6 +319,7 @@ MY_BASE_FILES =				\
 	control-knob.c   \
 	control-knob.h   \
 	device-finalizers.c \
+	gpu-monitors.c		\
 	device-initializers.c \
 	module-ignore-map.c \
 	threadmgr.c			\
