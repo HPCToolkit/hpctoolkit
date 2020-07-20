@@ -75,6 +75,8 @@
 #include "safe-sampling.h"
 
 #include <messages/messages.h>
+#include <real/mmap.h>
+#include <real/open.h>
 
 #define DEFAULT_MEMSIZE   (4 * 1024 * 1024)
 #define MIN_LOW_MEMSIZE  (80 * 1024)
@@ -170,7 +172,7 @@ hpcrun_mmap_anon(size_t size)
   flags = MAP_PRIVATE | MAP_ANONYMOUS;
 #else
   flags = MAP_PRIVATE;
-  fd = open("/dev/zero", O_RDWR);
+  fd = hpcrun_real_open("/dev/zero", O_RDWR);
   if (fd < 0) {
     str = strerror(errno);
     EMSG("%s: open /dev/null failed: %s", __func__, str);
@@ -178,7 +180,7 @@ hpcrun_mmap_anon(size_t size)
   }
 #endif
 
-  addr = mmap(NULL, size, prot, flags, fd, 0);
+  addr = hpcrun_real_mmap(NULL, size, prot, flags, fd, 0);
   if (addr == MAP_FAILED) {
     str = strerror(errno);
     EMSG("%s: mmap failed: %s", __func__, str);

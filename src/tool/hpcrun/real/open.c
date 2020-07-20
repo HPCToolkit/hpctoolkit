@@ -57,9 +57,11 @@
 //******************************************************************************
 
 #include <assert.h>
+#include <fcntl.h>
+#include <pthread.h>
+
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h>
 
 #ifndef HPCRUN_STATIC_LINK
 #include <dlfcn.h>
@@ -71,6 +73,7 @@
 // local includes
 //******************************************************************************
 
+#include <real/libc.h>
 #include <real/open.h>
 
 #include <monitor-exts/monitor_ext.h>
@@ -113,7 +116,7 @@ find_open(void)
   real_open = __real_open;
 #else
   // don't just look for the next symbol, get it from the source
-  void *libc = monitor_real_dlopen("libc.so", RTLD_LAZY);
+  void *libc = hpcrun_real_libc();
   real_open = (open_fn_t *) dlsym(libc, "open");
 #endif
 

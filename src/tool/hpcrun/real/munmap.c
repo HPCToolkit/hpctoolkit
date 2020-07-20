@@ -57,6 +57,8 @@
 //******************************************************************************
 
 #include <assert.h>
+#include <pthread.h>
+
 #include <sys/mman.h>
 
 #ifndef HPCRUN_STATIC_LINK
@@ -69,6 +71,7 @@
 // local includes
 //******************************************************************************
 
+#include <real/libc.h>
 #include <real/munmap.h>
 
 #include <monitor-exts/monitor_ext.h>
@@ -110,7 +113,7 @@ find_munmap(void)
   real_munmap = __real_munmap;
 #else
   // don't just look for the next symbol, get it from the source
-  void *libc = monitor_real_dlopen("libc.so", RTLD_LAZY);
+  void *libc = hpcrun_real_libc();
   real_munmap = (munmap_fn_t *) dlsym(libc, "munmap");
 #endif
 

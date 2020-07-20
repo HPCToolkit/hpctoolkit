@@ -57,6 +57,7 @@
 //******************************************************************************
 
 #include <assert.h>
+#include <pthread.h>
 
 #ifndef HPCRUN_STATIC_LINK
 #include <dlfcn.h>
@@ -68,6 +69,7 @@
 // local includes
 //******************************************************************************
 
+#include <real/libc.h>
 #include <real/read.h>
 
 #include <monitor-exts/monitor_ext.h>
@@ -111,7 +113,7 @@ find_read(void)
   real_read = __real_read;
 #else
   // don't just look for the next symbol, get it from the source
-  void *libc = monitor_real_dlopen("libc.so", RTLD_LAZY);
+  void *libc = hpcrun_real_libc();
   real_read = (read_fn_t *) dlsym(libc, "read");
 #endif
 

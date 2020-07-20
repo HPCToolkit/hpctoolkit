@@ -45,10 +45,11 @@
 // ******************************************************* EndRiceCopyright *
 
 //------------------------------------------------------------------------------
-// File: close.c 
+// File: libc.c 
 //  
 // Purpose: 
-//   wrapper for libc close to avoid interception.
+//   find the real libc so we can arrange to call functions without 
+//   interception.
 //------------------------------------------------------------------------------
 
 
@@ -57,12 +58,12 @@
 //******************************************************************************
 
 #include <assert.h>
-#include <pthread.h>
-#include <unistd.h>
-
-#ifndef HPCRUN_STATIC_LINK
 #include <dlfcn.h>
-#endif
+#include <fcntl.h>
+#include <pthread.h>
+
+#include <sys/types.h>
+#include <sys/stat.h>
 
 
 
@@ -70,19 +71,16 @@
 // local includes
 //******************************************************************************
 
-#include <real/close.h>
-#include <real/libc.h>
+#include <monitor.h>
+#include <monitor-exts/monitor_ext.h>
 
 
 
 //******************************************************************************
-// type declarations
+// macros
 //******************************************************************************
 
-typedef int close_fn_t 
-(
- int fd
-);
+#define LIBC_NAME "libc.so.6"
 
 
 
@@ -90,30 +88,19 @@ typedef int close_fn_t
 // local data
 //******************************************************************************
 
-#ifdef HPCRUN_STATIC_LINK
-extern close_fn_t  __real_close;
-#endif
-
-static close_fn_t *real_close = NULL;
+static void *real_libc = NULL;
 
 
 
 //******************************************************************************
-// local operations
+// interface operations
 //******************************************************************************
 
-static void 
-find_close(void)
+static void
+find_libc(void)
 {
-#ifdef HPCRUN_STATIC_LINK
-  real_close = __real_close;
-#else
-  // don't just look for the next symbol, get it from the source
-  void *libc = hpcrun_real_libc();
-  real_close = (close_fn_t *) dlsym(libc, "close");
-#endif
-
-  assert(real_close);
+  real_libc = monitor_real_dlopen(LIBC_NAME, RTLD_LAZY);
+  assert(real_libc);
 }
 
 
@@ -122,17 +109,14 @@ find_close(void)
 // interface operations
 //******************************************************************************
 
-int 
-hpcrun_real_close
+void * 
+hpcrun_real_libc
 (
- int fd 
+ void
 )
 {
   static pthread_once_t initialized = PTHREAD_ONCE_INIT;
-  pthread_once(&initialized, find_close);
+  pthread_once(&initialized, find_libc);
   
-  // call the real libc close operation without getting intercepted
-  int ret = (* real_close) (fd);
-
-  return ret;
+  return real_libc;
 }

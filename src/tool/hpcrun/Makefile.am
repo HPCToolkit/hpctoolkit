@@ -390,6 +390,7 @@ MY_BASE_FILES =				\
 	ompt/ompt-thread.c              \
 	\
 	real/close.c                    \
+	real/libc.c                     \
 	real/mmap.c                     \
 	real/munmap.c                   \
 	real/open.c                     \

@@ -57,6 +57,8 @@
 //******************************************************************************
 
 #include <assert.h>
+#include <pthread.h>
+
 #include <sys/mman.h>
 
 #ifndef HPCRUN_STATIC_LINK
@@ -69,6 +71,7 @@
 // local includes
 //******************************************************************************
 
+#include <real/libc.h>
 #include <real/mmap.h>
 
 #include <monitor-exts/monitor_ext.h>
@@ -115,7 +118,7 @@ find_mmap(void)
   real_mmap = __real_mmap;
 #else
   // don't just look for the next symbol, get it from the source
-  void *libc = monitor_real_dlopen("libc.so", RTLD_LAZY);
+  void *libc = hpcrun_real_libc();
   real_mmap = (mmap_fn_t *) dlsym(libc, "mmap");
 #endif
 
@@ -139,11 +142,15 @@ hpcrun_real_mmap
  off_t offset
 )
 {
+#if 0
   static pthread_once_t initialized = PTHREAD_ONCE_INIT;
   pthread_once(&initialized, find_mmap);
   
   // call the real libc mmap operation without getting intercepted
   void *ret = (* real_mmap) (addr, length, prot, flags, fd, offset);
+#else
+  void * ret = INLINE_SYSCALL (mmap, 6, addr, len, prot, flags, fd, offset);
+#endif
 
   return ret;
 }
