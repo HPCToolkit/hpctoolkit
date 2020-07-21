@@ -17,7 +17,7 @@
 #    https://spack.readthedocs.io/en/latest/basic_usage.html#specs-dependencies
 #    https://spack.readthedocs.io/en/latest/build_settings.html
 #
-#  Last revised: June 12, 2020.
+#  Last revised: July 21, 2020.
 #
 packages:
 
@@ -63,13 +63,14 @@ packages:
   # spack install command line.
   #
   # Use version 'master' for the latest snapshot from master.
+  # Version 'develop' is for pre-release features.
   # 2019.12.28 is the last version that runs on Blue Gene.
   #
   # +mpi builds hpcprof-mpi (requires mpi).
   # +papi uses papi instead of perfmon.
   #
   # hpctoolkit:
-  #   version:  [2020.06.12, master]
+  #   version:  [2020.07.21, master]
   #   variants: +mpi
 
 
@@ -83,7 +84,7 @@ packages:
   # ~nls is needed to avoid linking with libintl from gettext.
   #
   binutils:
-    version:  [2.33.1]
+    version:  [2.34]
     variants: +libiberty ~nls
 
 
