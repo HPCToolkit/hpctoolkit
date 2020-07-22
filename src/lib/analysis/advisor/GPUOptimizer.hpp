@@ -89,42 +89,55 @@
 
 namespace Analysis {
 
-
 struct InstructionBlame {
   CudaParse::InstructionStat *src_inst, *dst_inst;
   CudaParse::Block *src_block, *dst_block;
   // TODO(Keren): consider only intra procedural optimizations for now
   CudaParse::Function *src_function, *dst_function;
   Prof::Struct::ACodeNode *src_struct, *dst_struct;
+  // src->dst instructions
+  // 0: same instruction
+  // -1: very long distance
+  // >0: xact distance
+  double distance;
   double stall_blame;
   double lat_blame;
   std::string blame_name;
 
-  InstructionBlame(
-    CudaParse::InstructionStat *src_inst, CudaParse::InstructionStat *dst_inst,
-    Prof::Struct::ACodeNode *src_struct, Prof::Struct::ACodeNode *dst_struct,
-    double stall_blame, double lat_blame, const std::string &blame_name) :
-    src_inst(src_inst), dst_inst(dst_inst),
-    src_struct(src_struct), dst_struct(dst_struct),
-    stall_blame(stall_blame), lat_blame(lat_blame), blame_name(blame_name) {}
+  InstructionBlame(CudaParse::InstructionStat *src_inst, CudaParse::InstructionStat *dst_inst,
+                   Prof::Struct::ACodeNode *src_struct, Prof::Struct::ACodeNode *dst_struct,
+                   double distance, double stall_blame, double lat_blame,
+                   const std::string &blame_name)
+      : src_inst(src_inst),
+        dst_inst(dst_inst),
+        src_struct(src_struct),
+        dst_struct(dst_struct),
+        distance(distance),
+        stall_blame(stall_blame),
+        lat_blame(lat_blame),
+        blame_name(blame_name) {}
 
-  InstructionBlame(
-    CudaParse::InstructionStat *src_inst, CudaParse::InstructionStat *dst_inst,
-    CudaParse::Block *src_block, CudaParse::Block *dst_block,
-    CudaParse::Function *src_function, CudaParse::Function *dst_function,
-    Prof::Struct::ACodeNode *src_struct, Prof::Struct::ACodeNode *dst_struct,
-    double stall_blame, double lat_blame,
-    const std::string &blame_name) :
-    src_inst(src_inst), dst_inst(dst_inst),
-    src_block(src_block), dst_block(dst_block),
-    src_function(src_function), dst_function(dst_function),
-    src_struct(src_struct), dst_struct(dst_struct),
-    stall_blame(stall_blame), lat_blame(lat_blame),
-    blame_name(blame_name) {}
+  InstructionBlame(CudaParse::InstructionStat *src_inst, CudaParse::InstructionStat *dst_inst,
+                   CudaParse::Block *src_block, CudaParse::Block *dst_block,
+                   CudaParse::Function *src_function, CudaParse::Function *dst_function,
+                   Prof::Struct::ACodeNode *src_struct, Prof::Struct::ACodeNode *dst_struct,
+                   double distance, double stall_blame, double lat_blame,
+                   const std::string &blame_name)
+      : src_inst(src_inst),
+        dst_inst(dst_inst),
+        src_block(src_block),
+        dst_block(dst_block),
+        src_function(src_function),
+        dst_function(dst_function),
+        src_struct(src_struct),
+        dst_struct(dst_struct),
+        distance(distance),
+        stall_blame(stall_blame),
+        lat_blame(lat_blame),
+        blame_name(blame_name) {}
 
-  InstructionBlame() {}
+  InstructionBlame() : distance(0), stall_blame(0), lat_blame(0) {}
 };
-
 
 struct InstructionBlameStallComparator {
   bool operator() (const InstructionBlame *l, const InstructionBlame *r) const {
@@ -136,6 +149,20 @@ struct InstructionBlameStallComparator {
 struct InstructionBlameLatComparator {
   bool operator() (const InstructionBlame *l, const InstructionBlame *r) const {
     return l->lat_blame > r->lat_blame;
+  }
+};
+
+
+struct InstructionBlameSrcComparator {
+  bool operator() (const InstructionBlame *l, const InstructionBlame *r) const {
+    return l->src_inst->pc < r->src_inst->pc;
+  }
+};
+
+
+struct InstructionBlameDstComparator {
+  bool operator() (const InstructionBlame *l, const InstructionBlame *r) const {
+    return l->dst_inst->pc < r->dst_inst->pc;
   }
 };
 
@@ -153,7 +180,7 @@ struct KernelBlame {
   double stall_blame;
   double lat_blame;
 
-  KernelBlame() {}
+  KernelBlame() : stall_blame(0), lat_blame(0) {}
 };
 
 
@@ -215,11 +242,10 @@ class GPUOptimizer {
    *
    * @param kernel_blame
    * @param kernel_stats
-   * @param region_stats
-   * @return std::pair<double, KernelStats>
+   * @return std::vector<BlameStats>
    */
-  virtual std::pair<double, KernelStats> match_impl(const KernelBlame &kernel_blame,
-                                                    const KernelStats &kernel_stats) = 0;
+  virtual std::vector<BlameStats> match_impl(const KernelBlame &kernel_blame,
+                                             const KernelStats &kernel_stats) = 0;
 
   /**
    * @brief
@@ -241,8 +267,7 @@ class GPUOptimizer {
 
   Inspection _inspection;
 
-  const int _top_regions = 3;
-  const double _top_ratio = 0.7;
+  const size_t _top_regions = 5;
 };
 
 #define DECLARE_OPTIMIZER_CLASS(TYPE, CLASS, VALUE)                                           \
@@ -250,8 +275,8 @@ class GPUOptimizer {
   class CLASS : public GPUOptimizer {                                                         \
    public:                                                                                    \
     CLASS(const std::string &name, const GPUArchitecture *arch) : GPUOptimizer(name, arch) {} \
-    virtual std::pair<double, KernelStats> match_impl(const KernelBlame &kernel_blame,        \
-                                                      const KernelStats &kernel_stats);       \
+    virtual std::vector<BlameStats> match_impl(const KernelBlame &kernel_blame,               \
+                                               const KernelStats &kernel_stats);              \
     virtual ~CLASS() {}                                                                       \
   };
 

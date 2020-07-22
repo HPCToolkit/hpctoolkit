@@ -887,12 +887,14 @@ double GPUAdvisor::computePathInsts(
     if (i == path.size() - 1) {
       end_vma = to_vma;
     }
-    for (auto j = start_vma; j <= end_vma; j += _arch->inst_size()) {
-      auto *prof_node = _vma_prop_map[j].prof_node;
-      if (prof_node != NULL) {
-        insts += prof_node->demandMetric(inst_metric_index);
-      }
-    }
+    insts += (end_vma - start_vma) / _arch->inst_size() + 1;
+    //// XXX(Keren): which is more reasonable?
+    //for (auto j = start_vma; j <= end_vma; j += _arch->inst_size()) {
+    //  auto *prof_node = _vma_prop_map[j].prof_node;
+    //  if (prof_node != NULL) {
+    //    insts += prof_node->demandMetric(inst_metric_index);
+    //  }
+    //}
   }
 
   return insts;
@@ -1061,11 +1063,8 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
         attributeBlameMetric(mpi_rank, thread_id, to_node, lat_blame_name, lat_blame);
       }
 
-      inst_blames.emplace_back(
-        InstructionBlame(to_inst, to_inst, 
-          to_struct, to_struct,
-          stall_blame, lat_blame,
-          lat_blame_name));
+      inst_blames.emplace_back(InstructionBlame(to_inst, to_inst, to_struct, to_struct, 0,
+                                                stall_blame, lat_blame, lat_blame_name));
     }
 
     // Dependent latencies
@@ -1085,6 +1084,7 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
       }
 
       std::map<Prof::CCT::ADynNode *, double> insts;
+      std::map<Prof::CCT::ADynNode *, std::map<Prof::CCT::ADynNode *, double>> path_insts;
       std::map<Prof::CCT::ADynNode *, double> issues;
       double issue_sum = 0.0;
 
@@ -1111,8 +1111,9 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
         auto ps = cct_edge_path_map[from_vma][to_vma];
 
         for (auto &path : ps) {
-          auto path_insts = computePathInsts(mpi_rank, thread_id, from_vma, to_vma, path);
-          insts[from_node] += path_insts;
+          auto path_inst = computePathInsts(mpi_rank, thread_id, from_vma, to_vma, path);
+          insts[from_node] += path_inst;
+          path_insts[from_node][to_node] += path_inst;
         }
         auto issue = from_node->demandMetric(issue_metric_index);
         // Guarantee that issue is not zero
@@ -1162,11 +1163,9 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
         attributeBlameMetric(mpi_rank, thread_id, from_node, lat_blame_name, lat_blame);
 
         // One metric id is enough for inst blame analysis
-        inst_blames.emplace_back(
-          InstructionBlame(from_inst, to_inst,
-            from_struct, to_struct,
-            stall_blame, lat_blame,
-            lat_blame_name));
+        inst_blames.emplace_back(InstructionBlame(from_inst, to_inst, from_struct, to_struct,
+                                                  0, stall_blame,
+                                                  lat_blame, lat_blame_name));
       }
     }
 
@@ -1194,10 +1193,7 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
 
       // one metric id is enough for inst blame analysis
       inst_blames.emplace_back(
-        InstructionBlame(to_inst, to_inst,
-          to_struct, to_struct,
-          stall, lat,
-          lat_blame_name));
+          InstructionBlame(to_inst, to_inst, to_struct, to_struct, 0, stall, lat, lat_blame_name));
     }
 
     {
@@ -1217,8 +1213,10 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
       auto sync_vma = to_vma;
       auto *sync_inst = _vma_prop_map[sync_vma].inst;
 
+      double distance = 0;
       if (sync_inst->op.find(".SYNC") == std::string::npos) {
         // blame the previous node
+        distance = 1;
         sync_vma = sync_vma - _arch->inst_size();
         sync_inst = _vma_prop_map[sync_vma].inst;
       }
@@ -1247,11 +1245,8 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
       attributeBlameMetric(mpi_rank, thread_id, to_node, lat_blame_name, sync_lat);
 
       // one metric id is enough for inst blame analysis
-      inst_blames.emplace_back(
-        InstructionBlame(sync_inst, to_inst,
-          sync_struct, to_struct,
-          sync_stall, sync_lat,
-          lat_blame_name));
+      inst_blames.emplace_back(InstructionBlame(sync_inst, to_inst, sync_struct, to_struct,
+                                                distance, sync_stall, sync_lat, lat_blame_name));
     }
   }
 }

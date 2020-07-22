@@ -99,6 +99,18 @@ struct KernelStats {
   KernelStats() {}
 };
 
+
+struct BlameStats {
+  double blame;
+  double active_samples;
+  double total_samples;
+
+  BlameStats(double blame, double active_samples, double total_samples):
+    blame(blame), active_samples(active_samples), total_samples(total_samples) {}
+
+  BlameStats() {}
+};
+
 }  // namespace Analysis
 
 #endif

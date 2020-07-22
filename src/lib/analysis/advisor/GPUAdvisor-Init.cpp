@@ -79,7 +79,6 @@ void GPUAdvisor::init() {
   _inst_metric = GPU_INST_METRIC_NAME;
 
   // STL
-  _invalid_stall_metric = GPU_INST_METRIC_NAME":STL_INV";
   _tex_stall_metric = GPU_INST_METRIC_NAME":STL_TMEM";
   _ifetch_stall_metric = GPU_INST_METRIC_NAME":STL_IFET";
   _pipe_bsy_stall_metric = GPU_INST_METRIC_NAME":STL_PIPE";
@@ -91,7 +90,6 @@ void GPUAdvisor::init() {
   _none_stall_metric = GPU_INST_METRIC_NAME":STL_NONE";
 
   // LAT
-  _invalid_lat_metric = GPU_INST_METRIC_NAME":LAT_INV";
   _tex_lat_metric = GPU_INST_METRIC_NAME":LAT_TMEM";
   _ifetch_lat_metric = GPU_INST_METRIC_NAME":LAT_IFET";
   _pipe_bsy_lat_metric = GPU_INST_METRIC_NAME":LAT_PIPE";
@@ -102,7 +100,6 @@ void GPUAdvisor::init() {
   _cmem_lat_metric = GPU_INST_METRIC_NAME":LAT_CMEM";
   _none_lat_metric = GPU_INST_METRIC_NAME":LAT_NONE";
   
-  _inst_metrics.emplace_back(std::make_pair(_invalid_stall_metric, _invalid_lat_metric));
   _inst_metrics.emplace_back(std::make_pair(_tex_stall_metric, _tex_lat_metric));
   _inst_metrics.emplace_back(std::make_pair(_ifetch_stall_metric, _ifetch_lat_metric));
   _inst_metrics.emplace_back(std::make_pair(_pipe_bsy_stall_metric, _pipe_bsy_lat_metric));

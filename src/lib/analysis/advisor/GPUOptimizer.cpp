@@ -60,111 +60,98 @@ GPUOptimizer *GPUOptimizerFactory(GPUOptimizerType type, GPUArchitecture *arch) 
   GPUOptimizer *optimizer = NULL;
 
   switch (type) {
-#define DECLARE_OPTIMIZER_CASE(TYPE, CLASS, VALUE)                             \
-  case TYPE: {                                                                 \
-    optimizer = new CLASS(#CLASS, arch);                                       \
-    break;                                                                     \
+#define DECLARE_OPTIMIZER_CASE(TYPE, CLASS, VALUE) \
+  case TYPE: {                                     \
+    optimizer = new CLASS(#CLASS, arch);           \
+    break;                                         \
   }
     FORALL_OPTIMIZER_TYPES(DECLARE_OPTIMIZER_CASE)
 #undef DECLARE_OPTIMIZER_CASE
-  default:
-    break;
+    default:
+      break;
   }
 
   return optimizer;
 }
 
 double GPUOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
-  // Match if for local memory dep
   _inspection.optimization = this->_name;
-  // Regional blame and stats
-  double match_blame = 0.0;
-  KernelStats match_stats;
-
-  std::tie(match_blame, match_stats) = this->match_impl(kernel_blame, kernel_stats);
   _inspection.total = kernel_stats.total_samples;
-
-  std::tie(_inspection.ratio, _inspection.speedup) = _estimator->estimate(match_blame, match_stats, kernel_stats);
-
-  // Clean up call back
   _inspection.callback = NULL;
+
+  // Regional blame and stats
+  std::vector<BlameStats> blame_stats = this->match_impl(kernel_blame, kernel_stats);
+
+  std::tie(_inspection.ratio, _inspection.speedup) =
+      _estimator->estimate(blame_stats, kernel_stats);
+
   return _inspection.speedup;
 }
 
-std::pair<double, KernelStats> GPURegisterIncreaseOptimizer::match_impl(
-    const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
+std::vector<BlameStats> GPURegisterIncreaseOptimizer::match_impl(const KernelBlame &kernel_blame,
+                                                                  const KernelStats &kernel_stats) {
   // Match if for local memory dep
   auto blame = 0.0;
-  auto insts = 0;
 
   // Find top latency pairs
   for (auto *inst_blame : kernel_blame.lat_inst_blame_ptrs) {
     auto &blame_name = inst_blame->blame_name;
 
     if (blame_name == BLAME_GPU_INST_METRIC_NAME ":LAT_GMEM_LMEM") {
-      blame += inst_blame->stall_blame;
+      blame += inst_blame->lat_blame;
 
-      if (insts++ < _top_regions) {
+      if (_inspection.top_regions.size() < _top_regions) {
         _inspection.top_regions.push_back(*inst_blame);
       }
     }
   }
 
-  return std::make_pair(blame, kernel_stats);
+  _inspection.hint =
+      "Too many registers are allocated in the kernel that exceeds the upper bound. Register "
+      "spills to local memory causes extra instruction cycles.\n"
+      "To eliminate these cycles:\n"
+      "1. Increase the upper bound of regster count in a kernel.\n"
+      "2. Simplify computations to reuse registers.";
+  _inspection.stall = false;
+
+  BlameStats blame_stats(blame, kernel_stats.active_samples, kernel_stats.total_samples);
+  return std::vector<BlameStats>{blame_stats};
 }
 
-std::pair<double, KernelStats> GPURegisterDecreaseOptimizer::match_impl(
-    const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
+std::vector<BlameStats> GPURegisterDecreaseOptimizer::match_impl(const KernelBlame &kernel_blame,
+                                                                 const KernelStats &kernel_stats) {
   // Match if occupancy is low
   // TODO: if register is the limitation factor of occupancy
   // increase it to increase occupancy
 
   // TODO: Extend use liveness analysis to find high pressure regions
-  return std::make_pair(0.0, kernel_stats);
+  return std::vector<BlameStats>{BlameStats{}};
 }
 
-std::pair<double, KernelStats> GPULoopUnrollOptimizer::match_impl(const KernelBlame &kernel_blame,
-                                                                  const KernelStats &kernel_stats) {
+std::vector<BlameStats> GPULoopUnrollOptimizer::match_impl(const KernelBlame &kernel_blame,
+                                                           const KernelStats &kernel_stats) {
   // Match if inst_blame->from and inst_blame->to are in the same loop
-  auto blame = 0.0;
-  auto total = 0.0;
-
-  KernelStats match_stats;
+  std::map<Prof::Struct::ACodeNode *, BlameStats> loops;
 
   // Find top latency pairs that are in the same loop
   for (auto *inst_blame : kernel_blame.stall_inst_blame_ptrs) {
-    auto &blame_name = inst_blame->blame_name;
+    auto *src_struct = inst_blame->src_struct;
+    auto *dst_struct = inst_blame->dst_struct;
 
-    if (blame_name.find(":LAT_IDEP") != std::string::npos ||
+    if (src_struct->ancestorLoop() != NULL && dst_struct->ancestorLoop() != NULL &&
+      src_struct->ancestorLoop() == dst_struct->ancestorLoop()) {
+      loops[src_struct->ancestorLoop()].active_samples +=
+        inst_blame->lat_blame - inst_blame->stall_blame;
+      loops[src_struct->ancestorLoop()].total_samples += inst_blame->lat_blame;
+
+      auto &blame_name = inst_blame->blame_name;
+      if (blame_name.find(":LAT_IDEP") != std::string::npos ||
         blame_name.find(":LAT_GMEM") != std::string::npos ||
         blame_name.find(":LAT_SYNC") != std::string::npos) {
-      auto *src_struct = inst_blame->src_struct;
-      auto *dst_struct = inst_blame->dst_struct;
+        loops[src_struct->ancestorLoop()].blame += inst_blame->stall_blame;
 
-      if (src_struct->ancestorLoop() != NULL && dst_struct->ancestorLoop() != NULL &&
-          src_struct->ancestorLoop() == dst_struct->ancestorLoop()) {
-        total += inst_blame->stall_blame;
-      }
-    }
-  }
-
-  for (auto *inst_blame : kernel_blame.stall_inst_blame_ptrs) {
-    auto &blame_name = inst_blame->blame_name;
-
-    if (blame_name.find(":LAT_IDEP") != std::string::npos ||
-        blame_name.find(":LAT_GMEM") != std::string::npos ||
-        blame_name.find(":LAT_SYNC") != std::string::npos) {
-      auto *src_struct = inst_blame->src_struct;
-      auto *dst_struct = inst_blame->dst_struct;
-
-      if (src_struct->ancestorLoop() != NULL && dst_struct->ancestorLoop() != NULL &&
-          src_struct->ancestorLoop() == dst_struct->ancestorLoop()) {
-        match_stats.active_samples += inst_blame->lat_blame - inst_blame->stall_blame;
-        match_stats.total_samples += inst_blame->lat_blame;
-
-        if (blame / total < _top_ratio) {
+        if (_inspection.top_regions.size() < _top_regions) {
           _inspection.top_regions.push_back(*inst_blame);
-          blame += inst_blame->stall_blame;
         }
       }
     }
@@ -180,61 +167,51 @@ std::pair<double, KernelStats> GPULoopUnrollOptimizer::match_impl(const KernelBl
       "operations).";
   _inspection.stall = true;
 
-  return std::make_pair(blame, match_stats);
-}
-
-std::pair<double, KernelStats> GPULoopNoUnrollOptimizer::match_impl(
-    const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
-  // Match if instruction fetch latency
-  auto blame = 0.0;
-  auto insts = 0;
-
-  if (kernel_blame.stall_blames.find(BLAME_GPU_INST_METRIC_NAME ":LAT_IFET") !=
-      kernel_blame.stall_blames.end()) {
-    blame = kernel_blame.stall_blames.at(BLAME_GPU_INST_METRIC_NAME ":LAT_IFET");
+  std::vector<BlameStats> blame_stats_vec;
+  for (auto &iter : loops) {
+    blame_stats_vec.push_back(iter.second);
   }
 
-  // Find top latency pairs
+  return blame_stats_vec;
+}
+
+std::vector<BlameStats> GPULoopNoUnrollOptimizer::match_impl(const KernelBlame &kernel_blame,
+                                                             const KernelStats &kernel_stats) {
+  auto blame = 0.0;
+
+  // Find top instruction fetch latencies
   for (auto *inst_blame : kernel_blame.stall_inst_blame_ptrs) {
     auto &blame_name = inst_blame->blame_name;
 
     if (blame_name == BLAME_GPU_INST_METRIC_NAME ":LAT_IFET") {
-      auto *src_struct = inst_blame->src_struct;
-      auto *dst_struct = inst_blame->dst_struct;
-
-      if (src_struct->ancestorLoop() != NULL && dst_struct->ancestorLoop() != NULL &&
-          src_struct->ancestorLoop() == dst_struct->ancestorLoop()) {
+      if (inst_blame->src_struct->ancestorLoop() != NULL) {
         blame += inst_blame->stall_blame;
 
-        if (insts++ < _top_regions) {
+        if (_inspection.top_regions.size() < _top_regions) {
           _inspection.top_regions.push_back(*inst_blame);
         }
       }
     }
   }
 
-  return std::make_pair(blame, kernel_stats);
+  _inspection.hint =
+      "Large loops are unrolled aggressively.\n"
+      "To eliminate these stalls:\n"
+      "1. Manually unroll loops to reduce redundant instructions.\n"
+      "2. Reduce loop unroll factor.";
+  _inspection.stall = false;
+
+  BlameStats blame_stats(blame, kernel_stats.active_samples, kernel_stats.total_samples);
+  return std::vector<BlameStats>{blame_stats};
 }
 
-
-std::pair<double, KernelStats> GPUStrengthReductionOptimizer::match_impl(
-    const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
+std::vector<BlameStats> GPUStrengthReductionOptimizer::match_impl(const KernelBlame &kernel_blame,
+                                                                  const KernelStats &kernel_stats) {
   // Match if for exec dep
   const int LAT_UPPER = 10;
   auto blame = 0.0;
-  auto insts = 0;
 
   // Find top non-memory latency pairs
-  auto total = 0.0;
-  for (auto *inst_blame : kernel_blame.lat_inst_blame_ptrs) {
-    auto *src_inst = inst_blame->src_inst;
-
-    if (_arch->latency(src_inst->op).first >= LAT_UPPER &&
-        src_inst->op.find("MEMORY") == std::string::npos) {
-      total += inst_blame->lat_blame;
-    }
-  }
-
   for (auto *inst_blame : kernel_blame.lat_inst_blame_ptrs) {
     auto *src_inst = inst_blame->src_inst;
 
@@ -242,10 +219,8 @@ std::pair<double, KernelStats> GPUStrengthReductionOptimizer::match_impl(
         src_inst->op.find("MEMORY") == std::string::npos) {
       blame += inst_blame->lat_blame;
 
-      _inspection.top_regions.push_back(*inst_blame);
-
-      if (blame / total >= _top_ratio) {
-        break;
+      if (_inspection.top_regions.size() < _top_regions) {
+        _inspection.top_regions.push_back(*inst_blame);
       }
     }
   }
@@ -257,30 +232,23 @@ std::pair<double, KernelStats> GPUStrengthReductionOptimizer::match_impl(
       "perform floating point transforming. One can use a multiplication of reciprocal instead.\n"
       "2. Avoid costly math functions. For example, __pow(n, 2) can be replaced by n << 2 as long "
       "as n is an integer";
+  _inspection.stall = false;
 
-  return std::make_pair(blame, kernel_stats);
+  BlameStats blame_stats(blame, kernel_stats.active_samples, kernel_stats.total_samples);
+  return std::vector<BlameStats>{blame_stats};
 }
 
-
-std::pair<double, KernelStats> GPUWarpBalanceOptimizer::match_impl(
-    const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
+std::vector<BlameStats> GPUWarpBalanceOptimizer::match_impl(const KernelBlame &kernel_blame,
+                                                            const KernelStats &kernel_stats) {
   // Match if sync latency
   auto blame = 0.0;
-  auto total = 0.0;
-
-  if (kernel_blame.lat_blames.find(BLAME_GPU_INST_METRIC_NAME ":LAT_SYNC") !=
-      kernel_blame.lat_blames.end()) {
-    total = kernel_blame.lat_blames.at(BLAME_GPU_INST_METRIC_NAME ":LAT_SYNC");
-  }
 
   for (auto *inst_blame : kernel_blame.lat_inst_blame_ptrs) {
     if (inst_blame->blame_name.find(":LAT_SYNC") != std::string::npos) {
       blame += inst_blame->lat_blame;
 
-      _inspection.top_regions.push_back(*inst_blame);
-
-      if (blame / total >= _top_ratio) {
-        break;
+      if (_inspection.top_regions.size() < _top_regions) {
+        _inspection.top_regions.push_back(*inst_blame);
       }
     }
   }
@@ -294,33 +262,63 @@ std::pair<double, KernelStats> GPUWarpBalanceOptimizer::match_impl(
 
   // TODO(Keren): search backward to the first sync block
 
-  return std::make_pair(blame, kernel_stats);
+  BlameStats blame_stats(blame, kernel_stats.active_samples, kernel_stats.total_samples);
+  return std::vector<BlameStats>{blame_stats};
 }
 
-
-std::pair<double, KernelStats> GPUCodeReorderOptimizer::match_impl(
-    const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
+std::vector<BlameStats> GPUCodeReorderOptimizer::match_impl(const KernelBlame &kernel_blame,
+                                                            const KernelStats &kernel_stats) {
   // Match if for memory dep and exec dep
-  auto blame = 0.0;
-  auto insts = 0;
+  std::map<Prof::Struct::ACodeNode *, BlameStats> region_stats;
+  auto kernel_region_blame = 0.0;
 
   // Find top latency pairs
   for (auto *inst_blame : kernel_blame.stall_inst_blame_ptrs) {
-    if (inst_blame->blame_name.find(":LAT_GMEM_GMEM") != std::string::npos ||
-        inst_blame->blame_name.find(":LAT_IDEP_DEP") != std::string::npos) {
-      blame += inst_blame->stall_blame;
+    Prof::Struct::ACodeNode *region = inst_blame->src_struct->ancestorLoop();
+    while (region != NULL) {
+      region_stats[region].total_samples += inst_blame->lat_blame;
+      region_stats[region].active_samples += inst_blame->lat_blame - inst_blame->stall_blame;
+      if (region->parent() != NULL) {
+        region = region->parent()->ancestorLoop();
+      } else {
+        break;
+      }
+    }
+    region = inst_blame->src_struct->ancestorLoop();
 
-      if (insts++ < _top_regions) {
+    if (inst_blame->blame_name.find(":LAT_GMEM_GMEM") != std::string::npos ||
+      inst_blame->blame_name.find(":LAT_IDEP_DEP") != std::string::npos) {
+
+      if (region == NULL) {
+        kernel_region_blame += inst_blame->stall_blame;
+      } else {
+        region_stats[region].blame += inst_blame->stall_blame;
+      }
+
+      if (_inspection.top_regions.size() < _top_regions) {
         _inspection.top_regions.push_back(*inst_blame);
       }
     }
   }
 
-  return std::make_pair(blame, kernel_stats);
+  _inspection.hint =
+      "Compiler fails to schedule instructions properly to hide latencies.\n"
+      "To reduce latency: \n"
+      "1. Reorder statements manually. For example, if a memory load latency is outstanding, the "
+      "load can be put a few lines before the first usage.\n";
+  _inspection.stall = true;
+
+  std::vector<BlameStats> blame_stats_vec;
+  for (auto &iter : region_stats) {
+    blame_stats_vec.push_back(iter.second);
+  }
+  blame_stats_vec.push_back(BlameStats(kernel_region_blame, kernel_stats.active_samples, kernel_stats.total_samples));
+
+  return blame_stats_vec;
 }
 
-std::pair<double, KernelStats> GPUKernelMergeOptimizer::match_impl(
-    const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
+std::vector<BlameStats> GPUKernelMergeOptimizer::match_impl(const KernelBlame &kernel_blame,
+                                                            const KernelStats &kernel_stats) {
   // Match if ifetch and small kernel invoked many times
   // TODO(Keren): count number of instructions
   const int KERNEL_COUNT_LIMIT = 10;
@@ -334,14 +332,16 @@ std::pair<double, KernelStats> GPUKernelMergeOptimizer::match_impl(
     }
   }
 
-  return std::make_pair(blame, kernel_stats);
+  _inspection.stall = true;
+
+  BlameStats blame_stats(blame, kernel_stats.active_samples, kernel_stats.total_samples);
+  return std::vector<BlameStats>{blame_stats};
 }
 
-std::pair<double, KernelStats> GPUFunctionInlineOptimizer::match_impl(
-    const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
+std::vector<BlameStats> GPUFunctionInlineOptimizer::match_impl(const KernelBlame &kernel_blame,
+                                                               const KernelStats &kernel_stats) {
   // Match if ifetch and device function
   auto blame = 0.0;
-  auto insts = 0;
 
   // Match if latency in function epilogue and prologues, and device function
   for (auto *inst_blame : kernel_blame.lat_inst_blame_ptrs) {
@@ -351,14 +351,13 @@ std::pair<double, KernelStats> GPUFunctionInlineOptimizer::match_impl(
       auto *src_inst = inst_blame->src_inst;
       auto *dst_struct = inst_blame->dst_struct;
       auto *dst_inst = inst_blame->dst_inst;
-      if (dst_struct->begLine() == dst_struct->ancestorProc()->begLine() ||
-          src_struct->begLine() == src_struct->ancestorProc()->begLine()) {
+      if (src_struct->begLine() == src_struct->ancestorProc()->begLine()) {
         // prologue STL
-        if (dst_inst->op.find("STORE.LOCAL") != std::string::npos) {
+        if (src_inst->op.find("STORE.LOCAL") != std::string::npos) {
           blame += inst_blame->lat_blame;
 
-          if (++insts >= _top_regions) {
-            break;
+          if (_inspection.top_regions.size() < _top_regions) {
+            _inspection.top_regions.push_back(*inst_blame);
           }
         }
       } else if (dst_struct->begLine() == dst_struct->ancestorProc()->endLine()) {
@@ -367,22 +366,33 @@ std::pair<double, KernelStats> GPUFunctionInlineOptimizer::match_impl(
         if (dst_inst->op.find("LOAD.LOCAL") != std::string::npos) {
           blame += inst_blame->lat_blame;
 
-          if (++insts >= _top_regions) {
-            break;
+          if (_inspection.top_regions.size() < _top_regions) {
+            _inspection.top_regions.push_back(*inst_blame);
+          }
+        }
+      } else {
+        // Or lat fetch
+        if (inst_blame->blame_name.find(":LAT_IFET") != std::string::npos) {
+          blame += inst_blame->lat_blame;
+
+          if (_inspection.top_regions.size() < _top_regions) {
+            _inspection.top_regions.push_back(*inst_blame);
           }
         }
       }
     }
   }
 
-  return std::make_pair(blame, kernel_stats);
+  _inspection.stall = false;
+
+  BlameStats blame_stats(blame, kernel_stats.active_samples, kernel_stats.total_samples);
+  return std::vector<BlameStats>{blame_stats};
 }
 
-std::pair<double, KernelStats> GPUFunctionSplitOptimizer::match_impl(
-    const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
+std::vector<BlameStats> GPUFunctionSplitOptimizer::match_impl(const KernelBlame &kernel_blame,
+                                                              const KernelStats &kernel_stats) {
   // Match if ifetch and device function
   auto blame = 0.0;
-  auto insts = 0;
 
   // Find top latency pairs
   for (auto *inst_blame : kernel_blame.stall_inst_blame_ptrs) {
@@ -391,63 +401,71 @@ std::pair<double, KernelStats> GPUFunctionSplitOptimizer::match_impl(
       if (src_struct->ancestorAlien() != NULL) {
         blame += inst_blame->stall_blame;
 
-        if (insts++ < _top_regions) {
+        if (_inspection.top_regions.size() < _top_regions) {
           _inspection.top_regions.push_back(*inst_blame);
         }
       }
     }
   }
 
-  return std::make_pair(blame, kernel_stats);
+  _inspection.stall = true;
+
+  BlameStats blame_stats(blame, kernel_stats.active_samples, kernel_stats.total_samples);
+  return std::vector<BlameStats>{blame_stats};
 }
 
-std::pair<double, KernelStats> GPUSharedMemoryCoalesceOptimizer::match_impl(
+std::vector<BlameStats> GPUSharedMemoryCoalesceOptimizer::match_impl(
     const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
   // Match if shared memory latency is high
   auto blame = 0.0;
-  auto insts = 0;
 
   // Find top latency pairs
   for (auto *inst_blame : kernel_blame.stall_inst_blame_ptrs) {
     if (inst_blame->blame_name.find(":LAT_IDEP_SMEM") != std::string::npos) {
       blame += inst_blame->stall_blame;
 
-      if (insts++ < _top_regions) {
+      if (_inspection.top_regions.size() < _top_regions) {
         _inspection.top_regions.push_back(*inst_blame);
       }
     }
   }
 
-  return std::make_pair(blame, kernel_stats);
+  _inspection.stall = true;
+
+  BlameStats blame_stats(blame, kernel_stats.active_samples, kernel_stats.total_samples);
+  return std::vector<BlameStats>{blame_stats};
 }
 
-std::pair<double, KernelStats> GPUGlobalMemoryCoalesceOptimizer::match_impl(
+std::vector<BlameStats> GPUGlobalMemoryCoalesceOptimizer::match_impl(
     const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
   // Match if global memory latency is high
   auto blame = 0.0;
-  auto insts = 0;
 
   // Find top latency pairs
   for (auto *inst_blame : kernel_blame.stall_inst_blame_ptrs) {
     if (inst_blame->blame_name.find(":LAT_MTHR") != std::string::npos) {
       blame += inst_blame->stall_blame;
 
-      if (insts++ < _top_regions) {
+      if (_inspection.top_regions.size() < _top_regions) {
         _inspection.top_regions.push_back(*inst_blame);
       }
     }
   }
 
-  return std::make_pair(blame, kernel_stats);
+  _inspection.stall = false;
+
+  BlameStats blame_stats(blame, kernel_stats.active_samples, kernel_stats.total_samples);
+  return std::vector<BlameStats>{blame_stats};
 }
 
-std::pair<double, KernelStats> GPUOccupancyIncreaseOptimizer::match_impl(
-    const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
+std::vector<BlameStats> GPUOccupancyIncreaseOptimizer::match_impl(const KernelBlame &kernel_blame,
+                                                                  const KernelStats &kernel_stats) {
   auto blame = 0.0;
 
   if (kernel_blame.stall_blame != 0.0) {
     _inspection.active_warp_count.first = kernel_stats.active_warps;
     _inspection.active_warp_count.second = _arch->warps();
+    _inspection.stall = true;
 
     for (auto &lat_blame_iter : kernel_blame.lat_blames) {
       auto blame_name = lat_blame_iter.first;
@@ -460,51 +478,59 @@ std::pair<double, KernelStats> GPUOccupancyIncreaseOptimizer::match_impl(
     }
   }
 
-  return std::make_pair(blame, kernel_stats);
+  _inspection.stall = true;
+
+  BlameStats blame_stats(blame, kernel_stats.active_samples, kernel_stats.total_samples);
+  return std::vector<BlameStats>{blame_stats};
 }
 
-std::pair<double, KernelStats> GPUOccupancyDecreaseOptimizer::match_impl(
-    const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
+std::vector<BlameStats> GPUOccupancyDecreaseOptimizer::match_impl(const KernelBlame &kernel_blame,
+                                                                  const KernelStats &kernel_stats) {
   // Match if not selected if high
   auto blame = 0.0;
-  auto insts = 0;
 
   // Find top latency pairs
   for (auto *inst_blame : kernel_blame.stall_inst_blame_ptrs) {
     if (inst_blame->blame_name.find(":LAT_NSEL") != std::string::npos) {
       blame += inst_blame->stall_blame;
 
-      if (insts++ < _top_regions) {
+      if (_inspection.top_regions.size() < _top_regions) {
         _inspection.top_regions.push_back(*inst_blame);
       }
     }
   }
 
-  return std::make_pair(blame, kernel_stats);
+  _inspection.stall = true;
+
+  BlameStats blame_stats(blame, kernel_stats.active_samples, kernel_stats.total_samples);
+  return std::vector<BlameStats>{blame_stats};
 }
 
-std::pair<double, KernelStats> GPUSMBalanceOptimizer::match_impl(const KernelBlame &kernel_blame,
-                                                                 const KernelStats &kernel_stats) {
+std::vector<BlameStats> GPUSMBalanceOptimizer::match_impl(const KernelBlame &kernel_blame,
+                                                          const KernelStats &kernel_stats) {
   // Match if blocks are large while SM efficiency is low
   auto blame = kernel_stats.sm_efficiency;
 
-  return std::make_pair(blame, kernel_stats);
+  BlameStats blame_stats(blame, kernel_stats.active_samples, kernel_stats.total_samples);
+  return std::vector<BlameStats>{blame_stats};
 }
 
-std::pair<double, KernelStats> GPUBlockIncreaseOptimizer::match_impl(
-    const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
+std::vector<BlameStats> GPUBlockIncreaseOptimizer::match_impl(const KernelBlame &kernel_blame,
+                                                              const KernelStats &kernel_stats) {
   int cur_blocks = kernel_stats.blocks;
   int sms = this->_arch->sms();
 
   _inspection.block_count.first = cur_blocks;
   _inspection.block_count.second = ((cur_blocks - 1) / sms + 1) * sms;
-  auto blame = cur_blocks / _inspection.block_count.second;
+  _inspection.stall = true;
 
-  return std::make_pair(blame, kernel_stats);
+  auto blame = cur_blocks / _inspection.block_count.second;
+  BlameStats blame_stats(blame, kernel_stats.active_samples, kernel_stats.total_samples);
+  return std::vector<BlameStats>{blame_stats};
 }
 
-std::pair<double, KernelStats> GPUBlockDecreaseOptimizer::match_impl(
-    const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
+std::vector<BlameStats> GPUBlockDecreaseOptimizer::match_impl(const KernelBlame &kernel_blame,
+                                                              const KernelStats &kernel_stats) {
   // Match if threads are few, increase number of threads per block. i.e.
   // threads coarsen
   const int WARP_COUNT_LIMIT = 2;
@@ -514,6 +540,7 @@ std::pair<double, KernelStats> GPUBlockDecreaseOptimizer::match_impl(
 
   _inspection.block_count.first = kernel_stats.blocks;
   _inspection.thread_count.first = kernel_stats.threads;
+  _inspection.stall = false;
 
   // blocks are enough, while threads are few
   // Concurrent (not synchronized) blocks may introduce instruction cache
@@ -526,7 +553,8 @@ std::pair<double, KernelStats> GPUBlockDecreaseOptimizer::match_impl(
     }
   }
 
-  return std::make_pair(blame, kernel_stats);
+  BlameStats blame_stats(blame, kernel_stats.active_samples, kernel_stats.total_samples);
+  return std::vector<BlameStats>{blame_stats};
 }
 
-} // namespace Analysis
+}  // namespace Analysis

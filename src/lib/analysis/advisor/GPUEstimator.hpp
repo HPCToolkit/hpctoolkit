@@ -100,7 +100,7 @@ class GPUEstimator {
 
   // <ratio, speedup>
   virtual std::pair<double, double>
-    estimate(double blame, const KernelStats &match_stats, const KernelStats &kernel_stats) = 0;
+    estimate(const std::vector<BlameStats> &blame_stats, const KernelStats &kernel_stats) = 0;
 
   virtual ~GPUEstimator() {}
 
@@ -116,7 +116,7 @@ class SequentialLatencyGPUEstimator : public GPUEstimator {
  
    // <ratio, speedup>
   virtual std::pair<double, double>
-    estimate(double blame, const KernelStats &match_stats, const KernelStats &kernel_stats);
+    estimate(const std::vector<BlameStats> &blame_stats, const KernelStats &kernel_stats);
  
    virtual ~SequentialLatencyGPUEstimator() {}
 };
@@ -128,7 +128,7 @@ class SequentialGPUEstimator : public GPUEstimator {
  
   // <ratio, speedup>
   virtual std::pair<double, double>
-    estimate(double blame, const KernelStats &match_stats, const KernelStats &kernel_stats);
+    estimate(const std::vector<BlameStats> &blame_stats, const KernelStats &kernel_stats);
  
   virtual ~SequentialGPUEstimator() {}
 };
@@ -140,7 +140,7 @@ class ParallelLatencyGPUEstimator : public GPUEstimator {
  
   // <ratio, speedup>
   virtual std::pair<double, double>
-    estimate(double blame, const KernelStats &match_stats, const KernelStats &kernel_stats);
+    estimate(const std::vector<BlameStats> &blame_stats, const KernelStats &kernel_stats);
  
   virtual ~ParallelLatencyGPUEstimator() {}
 };
@@ -152,7 +152,7 @@ class ParallelGPUEstimator : public GPUEstimator {
  
   // <ratio, speedup>
   virtual std::pair<double, double>
-    estimate(double blame, const KernelStats &match_stats, const KernelStats &kernel_stats);
+    estimate(const std::vector<BlameStats> &blame_stats, const KernelStats &kernel_stats);
  
   virtual ~ParallelGPUEstimator() {}
 };

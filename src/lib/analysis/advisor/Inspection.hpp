@@ -93,6 +93,7 @@ struct Inspection {
   double speedup;
   double total;
 
+  bool loop;
   bool stall;
 
   std::string optimization;
@@ -108,9 +109,17 @@ struct Inspection {
 
   InspectionCallBack callback;
 
-  Inspection() : ratio(-1.0), speedup(-1.0), total(-1.0), stall(false),
-    active_warp_count(-1, -1), block_count(-1, -1), thread_count(-1, -1),
-    reg_count(-1, -1), callback(NULL) {}
+  Inspection()
+      : ratio(-1.0),
+        speedup(-1.0),
+        total(-1.0),
+        loop(false),
+        stall(false),
+        active_warp_count(-1, -1),
+        block_count(-1, -1),
+        thread_count(-1, -1),
+        reg_count(-1, -1),
+        callback(NULL) {}
 
   void clear() {
     hint.clear();
@@ -120,6 +129,7 @@ struct Inspection {
     speedup = -1.0;
     total = -1.0;
     stall = false;
+    loop = false;
     callback = NULL;
     active_warp_count = std::pair<int, int>(-1, -1);
     block_count = std::pair<int, int>(-1, -1);

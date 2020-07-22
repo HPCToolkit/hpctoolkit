@@ -208,7 +208,9 @@ void GPUAdvisor::advise(const CCTBlames &cct_blames) {
             }
           }
 
+          // XXX(Keren): pc sample total sample info is inaccurate for small kernels
           // Calculate active samples
+          kernel_stats.total_samples = kernel_blame.lat_blame;
           kernel_stats.active_samples =
               kernel_blame.lat_blame - kernel_blame.stall_blame;
 

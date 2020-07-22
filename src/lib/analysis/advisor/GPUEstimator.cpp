@@ -78,13 +78,14 @@ GPUEstimator *GPUEstimatorFactory(GPUArchitecture *arch, GPUEstimatorType type) 
 
 
 std::pair<double, double>
-SequentialGPUEstimator::estimate(double blame, const KernelStats &match_stats, const KernelStats &kernel_stats) {
+SequentialGPUEstimator::estimate(const std::vector<BlameStats> &blame_stats, const KernelStats &kernel_stats) {
   std::pair<double, double> estimate(0.0, 0.0);
+
+  double blame = blame_stats[0].blame;
 
   if (blame != 0.0) {
     estimate.first = blame / kernel_stats.total_samples;
-    estimate.second =
-        kernel_stats.total_samples / (kernel_stats.total_samples - blame);
+    estimate.second = kernel_stats.total_samples / (kernel_stats.total_samples - blame);
   }
 
   return estimate;
@@ -92,14 +93,21 @@ SequentialGPUEstimator::estimate(double blame, const KernelStats &match_stats, c
 
 
 std::pair<double, double>
-SequentialLatencyGPUEstimator::estimate(double blame, const KernelStats &match_stats, const KernelStats &kernel_stats) {
+SequentialLatencyGPUEstimator::estimate(const std::vector<BlameStats> &blame_stats, const KernelStats &kernel_stats) {
   std::pair<double, double> estimate(0.0, 0.0);
 
-  if (blame != 0.0) {
-    estimate.first = blame / kernel_stats.total_samples;
+  auto hidden_samples = 0.0;
+
+  // regional analysis
+  for (auto &stats : blame_stats) {
+    estimate.first += stats.blame / kernel_stats.total_samples;
+    hidden_samples += MIN2(stats.active_samples, stats.blame);
+  }
+
+  if (hidden_samples != 0.0) {
     estimate.second =
-        kernel_stats.total_samples /
-        (kernel_stats.total_samples - MIN2(match_stats.active_samples, blame));
+      kernel_stats.total_samples /
+      (kernel_stats.total_samples - MIN2(kernel_stats.active_samples, hidden_samples));
   }
 
   return estimate;
@@ -107,8 +115,10 @@ SequentialLatencyGPUEstimator::estimate(double blame, const KernelStats &match_s
 
 
 std::pair<double, double>
-ParallelGPUEstimator::estimate(double blame, const KernelStats &match_stats, const KernelStats &kernel_stats) {
+ParallelGPUEstimator::estimate(const std::vector<BlameStats> &blame_stats, const KernelStats &kernel_stats) {
   std::pair<double, double> estimate(0.0, 0.0);
+
+  double blame = blame_stats[0].blame;
 
   if (blame != 0.0) {
     estimate.first = blame;
@@ -120,16 +130,17 @@ ParallelGPUEstimator::estimate(double blame, const KernelStats &match_stats, con
 
 
 std::pair<double, double>
-ParallelLatencyGPUEstimator::estimate(double blame, const KernelStats &match_stats, const KernelStats &kernel_stats) {
+ParallelLatencyGPUEstimator::estimate(const std::vector<BlameStats> &blame_stats, const KernelStats &kernel_stats) {
   std::pair<double, double> estimate(0.0, 0.0);
   double cur_warps = kernel_stats.active_warps;
   double max_warps = _arch->warps();
+  double blame = blame_stats[0].blame;
 
   if (cur_warps < _arch->schedulers()) {
     estimate.first = cur_warps / _arch->schedulers();
     estimate.second = _arch->schedulers() / cur_warps;
   } else {
-    double issue = (1 - blame) / static_cast<double>(kernel_stats.total_samples);
+    double issue = blame / static_cast<double>(kernel_stats.total_samples);
     double warp_issue = 1 - pow(1 - issue, cur_warps / _arch->schedulers());
     double new_warp_issue = 1 - pow(1 - issue, max_warps / _arch->schedulers());
 
