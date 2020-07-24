@@ -79,6 +79,68 @@
 
 //***************************************************************************
 
+//***************************************************************************
+// id tuple
+//***************************************************************************
+int
+tms_id_tuple_fwrite(uint32_t num_tuples,tms_id_tuple_t* x, FILE* fs)
+{
+  for (uint i = 0; i < num_tuples; ++i) {
+    HPCFMT_ThrowIfError(hpcfmt_int2_fwrite(x[i].length, fs));
+    for (uint j = 0; j < x[i].length; ++j) {
+      HPCFMT_ThrowIfError(hpcfmt_int2_fwrite(x[i].ids[j].kind, fs));
+      HPCFMT_ThrowIfError(hpcfmt_int4_fwrite(x[i].ids[j].index, fs));
+    }
+  }
+  return HPCFMT_OK;
+}
+
+int
+tms_id_tuple_fread(tms_id_tuple_t** x, uint32_t num_tuples,FILE* fs)
+{
+  tms_id_tuple_t * id_tuples = (tms_id_tuple_t *) malloc(num_tuples*sizeof(tms_id_tuple_t));
+
+  for (uint i = 0; i < num_tuples; ++i) {
+    HPCFMT_ThrowIfError(hpcfmt_int2_fread(&(id_tuples[i].length), fs));
+    id_tuples[i].ids = (tms_id_t *) malloc(id_tuples[i].length * sizeof(tms_id_t)); 
+    for (uint j = 0; j < id_tuples[i].length; ++j) {
+      HPCFMT_ThrowIfError(hpcfmt_int2_fread(&(id_tuples[i].ids[j].kind), fs));
+      HPCFMT_ThrowIfError(hpcfmt_int4_fread(&(id_tuples[i].ids[j].index), fs));
+    }
+  }
+
+  *x = id_tuples;
+  return HPCFMT_OK;
+}
+
+int
+tms_id_tuple_fprint(uint32_t num_tuples, tms_id_tuple_t* x, FILE* fs)
+{
+  fprintf(fs,"[Id tuples for %d profiles\n", num_tuples);
+
+  for (uint i = 0; i < num_tuples; ++i) {
+    fprintf(fs,"  %d[", i);
+    for (uint j = 0; j < x[i].length; ++j) {
+      fprintf(fs,"(%s: %d) ", KIND(x[i].ids[j].kind), x[i].ids[j].index);
+    }
+    fprintf(fs,"]\n");
+  }
+  fprintf(fs,"]\n");
+  return HPCFMT_OK;
+}
+
+void
+tms_id_tuple_free(tms_id_tuple_t** x, uint32_t num_tuples)
+{
+  for (uint i = 0; i < num_tuples; ++i) {
+    free((*x)[i].ids);
+    (*x)[i].ids = NULL;
+  }
+
+  free(*x);
+  *x = NULL;
+}
+
 
 //***************************************************************************
 // tms_profile_info_t
@@ -87,10 +149,11 @@
 int
 tms_profile_info_fwrite(uint32_t num_t,tms_profile_info_t* x, FILE* fs)
 {
-  HPCFMT_ThrowIfError(hpcfmt_int4_fwrite(num_t, fs));
-
   for (uint i = 0; i < num_t; ++i) {
-    HPCFMT_ThrowIfError(hpcfmt_int4_fwrite(x[i].tid, fs));
+    HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x[i].id_tuple_ptr, fs));
+    HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x[i].metadata_ptr, fs));
+    HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x[i].spare_one, fs));
+    HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x[i].spare_two, fs));
     HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x[i].num_vals, fs));
     HPCFMT_ThrowIfError(hpcfmt_int4_fwrite(x[i].num_nzctxs, fs));
     HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x[i].offset, fs));
@@ -99,17 +162,20 @@ tms_profile_info_fwrite(uint32_t num_t,tms_profile_info_t* x, FILE* fs)
 }
 
 int
-tms_profile_info_fread(tms_profile_info_t** x, uint32_t* num_t,FILE* fs)
+tms_profile_info_fread(tms_profile_info_t** x, uint32_t num_prof,FILE* fs)
 {
-  HPCFMT_ThrowIfError(hpcfmt_int4_fread(num_t, fs));
 
-  tms_profile_info_t * profile_infos = (tms_profile_info_t *) malloc((*num_t)*sizeof(tms_profile_info_t));
+  tms_profile_info_t * profile_infos = (tms_profile_info_t *) malloc(num_prof*sizeof(tms_profile_info_t));
 
-  for (uint i = 0; i < *num_t; ++i) {
-    HPCFMT_ThrowIfError(hpcfmt_int4_fread(&(profile_infos[i].tid), fs));
+  for (uint i = 0; i < num_prof; ++i) {
+    HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(profile_infos[i].id_tuple_ptr), fs));
+    HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(profile_infos[i].metadata_ptr), fs));
+    HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(profile_infos[i].spare_one), fs));
+    HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(profile_infos[i].spare_two), fs));
     HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(profile_infos[i].num_vals), fs));
     HPCFMT_ThrowIfError(hpcfmt_int4_fread(&(profile_infos[i].num_nzctxs), fs));
     HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(profile_infos[i].offset), fs));
+    profile_infos[i].prof_info_idx = i;
   }
 
   *x = profile_infos;
@@ -117,13 +183,13 @@ tms_profile_info_fread(tms_profile_info_t** x, uint32_t* num_t,FILE* fs)
 }
 
 int
-tms_profile_info_fprint(uint32_t num_thread, tms_profile_info_t* x, FILE* fs)
+tms_profile_info_fprint(uint32_t num_prof, tms_profile_info_t* x, FILE* fs)
 {
-  fprintf(fs,"[Profile informations for %d profiles\n", num_thread);
+  fprintf(fs,"[Profile informations for %d profiles\n", num_prof);
 
-  for (uint i = 0; i < num_thread; ++i) {
-    fprintf(fs,"  [(thread id: %d) (num_vals: %ld) (num_nzctxs: %d) (starting location: %ld)]\n", 
-      x[i].tid, x[i].num_vals, x[i].num_nzctxs,x[i].offset);
+  for (uint i = 0; i < num_prof; ++i) {
+    fprintf(fs,"  %d[(id_tuple_ptr: %d) (metadata_ptr: %d) (spare_one: %d) (spare_two: %d) (num_vals: %ld) (num_nzctxs: %d) (starting location: %ld)]\n", 
+      i, x[i].id_tuple_ptr, x[i].metadata_ptr, x[i].spare_one, x[i].spare_two, x[i].num_vals, x[i].num_nzctxs,x[i].offset);
   }
   fprintf(fs,"]\n");
   return HPCFMT_OK;
@@ -182,7 +248,7 @@ tms_sparse_metrics_fprint(hpcrun_fmt_sparse_metrics_t* x, FILE* fs,
 {
   const char* double_pre = "    ";
 
-  fprintf(fs, "[thread %d\n", x->tid);
+  fprintf(fs, "[profile %d\n", x->tid);
 
   if(easygrep){
     tms_sparse_metrics_fprint_grep_helper(x, fs, metricTbl, pre);

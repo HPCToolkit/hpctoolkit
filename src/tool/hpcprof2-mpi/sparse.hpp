@@ -115,7 +115,7 @@ public:
   void exscan(std::vector<T>& data,int threads); 
   template <typename T, typename MemberT>
   int struct_member_binary_search(const std::vector<T>& datas, const T target, const MemberT target_type, const int length); 
-
+  MPI_Datatype createTupleType(const std::vector<MPI_Datatype>& types);
 
   //***************************************************************************
   // Work with bytes  - YUMENG
@@ -153,6 +153,8 @@ private:
   //***************************************************************************
   // general - YUMENG
   //***************************************************************************
+  uint64_t id_tuples_size;
+
   const int SPARSE_ERR = -1;
   const int SPARSE_OK  =  0;
 
@@ -165,25 +167,79 @@ private:
   //***************************************************************************
   // thread_major_sparse.db  - YUMENG
   //***************************************************************************
+  //---------------------------------------------------------------------------
+  // profile id tuples - format conversion with ThreadAttribute and IntPair
+  //---------------------------------------------------------------------------
+  const uint not_assigned = -1;
+
+  tms_id_tuple_t buildIdTuple(const hpctoolkit::ThreadAttributes& ta, const int rank);
+
+  std::vector<tms_id_tuple_t> threadAttr2IdTuples(const int rank);
+  
+  std::vector<std::pair<uint16_t, uint32_t>> tuples2IntPairs(const std::vector<tms_id_tuple_t>& all_tuples);
+
+  std::vector<tms_id_tuple_t> intPairs2Tuples(const std::vector<std::pair<uint16_t, uint32_t>>& all_pairs);
+
+  //---------------------------------------------------------------------------
+  // profile id tuples - organize(communication,sorting,etc)
+  //---------------------------------------------------------------------------
+  std::vector<std::pair<uint16_t, uint32_t>> gatherIdTuplesData(const int world_rank, 
+                                                                const int world_size,
+                                                                const int threads,
+                                                                MPI_Datatype IntPairType,
+                                                                const std::vector<std::pair<uint16_t, uint32_t>>& rank_pairs);
+  
+  void scatterProfIdxOffset(const std::vector<tms_id_tuple_t>& tuples,
+                            const std::vector<uint64_t>& all_tuple_ptrs,
+                            const size_t num_prof,
+                            const int world_size,
+                            const int world_rank,
+                            const int threads);
+
+  void sortIdTuples(std::vector<tms_id_tuple_t>& all_tuples);
+
+  void assignIdTuplesIdx(std::vector<tms_id_tuple_t>& all_tuples,
+                         const int threads);
+
+  std::vector<uint64_t> getIdTuplesOff(std::vector<tms_id_tuple_t>& all_tuples,
+                                       const int threads);
+
+  void freeIdTuples(std::vector<tms_id_tuple_t>& all_tuples,
+                    const int threads);
+
+  //---------------------------------------------------------------------------
+  // profile id tuples -  write it down
+  //--------------------------------------------------------------------------- 
+  std::vector<std::pair<uint32_t, uint64_t>> prof_idx_off_pairs;
+
+  std::vector<char> convertTuple2Bytes(const tms_id_tuple_t& tuple);
+
+  size_t writeAllIdTuples(const std::vector<tms_id_tuple_t>& all_tuples, MPI_File fh);
+
+  uint64_t workIdTuplesSection(const int world_rank,
+                               const int world_size,
+                               const int threads,
+                               MPI_File fh);
 
   //---------------------------------------------------------------------------
   // get profile's size and corresponding offsets
   //---------------------------------------------------------------------------
-  void getProfileSizes(std::vector<std::pair<const hpctoolkit::Thread*, uint64_t>>& profile_sizes, 
-                       uint64_t& my_size); 
+  std::vector<std::pair<const hpctoolkit::Thread*, uint64_t>> profile_sizes;
+  std::vector<uint64_t> prof_offsets;
 
-  void getTotalNumProfiles(const uint32_t my_num_prof, 
-                           uint32_t& total_num_prof);
+  uint64_t getProfileSizes();
 
-  void getMyOffset(const uint64_t my_size, 
-                   const int rank, 
-                   uint64_t& my_offset);
+  uint32_t getTotalNumProfiles(const uint32_t my_num_prof);
+
+  uint64_t getMyOffset(const uint64_t my_size, 
+                       const int rank);
                    
-  void getMyProfOffset(const std::vector<std::pair<const hpctoolkit::Thread*, uint64_t>>& profile_sizes,
-                       const uint32_t total_prof, 
+  void getMyProfOffset(const uint32_t total_prof, 
                        const uint64_t my_offset, 
                        const int threads, 
-                       std::vector<uint64_t>& prof_offsets);
+                       const uint64_t id_tuples_size);
+
+  uint32_t workProfSizesOffsets(const int world_rank, const int threads, const uint64_t id_tuples_size);
 
   //---------------------------------------------------------------------------
   // get profile's real data (bytes)
@@ -201,7 +257,8 @@ private:
                                  std::vector<std::set<uint16_t>>& ctx_nzmids,
                                  std::vector<uint64_t>& ctx_nzval_cnts);                                                 
 
-  void collectCctMajorData(std::vector<char>& bytes,
+  void collectCctMajorData(const uint32_t prof_info_idx,
+                           std::vector<char>& bytes,
                            std::vector<uint64_t>& ctx_nzval_cnts, 
                            std::vector<std::set<uint16_t>>& ctx_nzmids);
 
@@ -209,23 +266,32 @@ private:
   // write profiles 
   //---------------------------------------------------------------------------
 
+  std::vector<char> buildOneProfInfoBytes(const std::vector<char>& partial_info_bytes, 
+                                          const uint64_t id_tuple_ptr,
+                                          const uint64_t metadata_ptr,
+                                          const uint64_t spare_one_ptr,
+                                          const uint64_t spare_two_ptr,
+                                          const uint64_t prof_offset);
+                                       
   void writeOneProfInfo(const std::vector<char>& info_bytes, 
-                        const uint32_t tid,
+                        const uint32_t prof_info_idx,
+                        const uint64_t id_tuples_size,
                         const MPI_File fh);
 
   void writeOneProfileData(const std::vector<char>& bytes, 
                            const uint64_t offset, 
-                           const uint32_t tid,
+                           const uint32_t prof_info_idx,
                            const MPI_File fh);
 
   void writeOneProfile(const hpctoolkit::Thread* threadp,
                        const MPI_Offset my_prof_offset, 
+                       const std::pair<uint32_t,uint64_t>& prof_idx_off_pair,
+                       const uint64_t id_tuples_size,
                        std::vector<uint64_t>& ctx_nzval_cnts,
                        std::vector<std::set<uint16_t>>& ctx_nzmids,
                        MPI_File fh);
 
-  void writeProfiles(const std::vector<uint64_t>& prof_offsets, 
-                     const std::vector<std::pair<const hpctoolkit::Thread*,uint64_t>>& profile_sizes,
+  void writeProfiles(const uint64_t id_tuples_size,
                      const MPI_File fh, 
                      const int threads,
                      std::vector<uint64_t>& cct_local_sizes,
@@ -322,7 +388,7 @@ private:
   struct MetricValBlock{
     uint16_t mid;
     uint32_t num_values; // can be set at the end, used as idx for mid
-    std::vector<std::pair<hpcrun_metricVal_t,uint32_t>> values_tids;
+    std::vector<std::pair<hpcrun_metricVal_t,uint32_t>> values_prof_idxs;
   };
 
   struct CtxMetricBlock{
@@ -337,23 +403,23 @@ private:
 
   MetricValBlock createNewMetricValBlock(const hpcrun_metricVal_t val, 
                                          const uint16_t mid,
-                                         const uint32_t tid);
+                                         const uint32_t prof_idx);
 
 
   CtxMetricBlock createNewCtxMetricBlock(const hpcrun_metricVal_t val, 
                                          const uint16_t mid,
-                                         const uint32_t tid,
+                                         const uint32_t prof_idx,
                                          const uint32_t ctx_id);
 
 
   void insertValMidPair2OneCtxMetBlock(const hpcrun_metricVal_t val, 
                                        const uint16_t mid,
-                                       const uint32_t tid,
+                                       const uint32_t prof_idx,
                                        CtxMetricBlock& cmb);
 
   void insertValMidCtxId2CtxMetBlocks(const hpcrun_metricVal_t val, 
                                       const uint16_t mid,
-                                      const uint32_t tid,
+                                      const uint32_t prof_idx,
                                       const uint32_t ctx_id,
                                       std::vector<CtxMetricBlock>& ctx_met_blocks);
 
@@ -362,7 +428,7 @@ private:
                               uint16_t& mid);
 
   void interpretValMidsBytes(char *vminput,
-                             const uint32_t tid,
+                             const uint32_t prof_idx,
                              const std::vector<TMS_CtxIdIdxPair>& my_ctx_pairs,
                              std::vector<CtxMetricBlock>& ctx_met_blocks);
 

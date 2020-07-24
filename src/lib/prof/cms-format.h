@@ -112,12 +112,12 @@ cms_ctx_info_free(cms_ctx_info_t** x);
 //***************************************************************************
 // cct_sparse_metrics_t
 //***************************************************************************
-const int CMS_mid_SIZE          = 2;
-const int CMS_m_idx_SIZE        = 8;
-const int CMS_m_pair_SIZE       = CMS_mid_SIZE + CMS_m_idx_SIZE;
-const int CMS_val_SIZE          = 8;
-const int CMS_tid_SIZE          = 4;
-const int CMS_val_tid_pair_SIZE = CMS_val_SIZE + CMS_tid_SIZE;
+const int CMS_mid_SIZE               = 2;
+const int CMS_m_idx_SIZE             = 8;
+const int CMS_m_pair_SIZE            = CMS_mid_SIZE + CMS_m_idx_SIZE;
+const int CMS_val_SIZE               = 8;
+const int CMS_prof_idx_SIZE          = 4;
+const int CMS_val_prof_idx_pair_SIZE = CMS_val_SIZE + CMS_prof_idx_SIZE;
 
 typedef struct cct_sparse_metrics_t{
   uint32_t ctx_id;

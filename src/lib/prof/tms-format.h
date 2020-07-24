@@ -80,30 +80,83 @@ extern "C" {
 #endif
 
 //***************************************************************************
+// id tuple
+//***************************************************************************
+#define KIND(k) (k == 0) ? "RANK" : "THREAD"
+
+const uint16_t RANK = 0;
+const uint16_t THREAD = 1;
+
+const int TMS_id_tuple_len_SIZE = 2;
+const int TMS_id_SIZE = 6;
+
+typedef struct tms_id_t{
+  uint16_t kind;
+  uint32_t index;
+}tms_id_t;
+
+typedef struct tms_id_tuple_t{
+  uint16_t length;
+  uint32_t rank; //rank that read/write this profile
+  tms_id_t* ids;
+
+  uint32_t prof_info_idx;
+  uint32_t all_at_root_idx;
+}tms_id_tuple_t;
+
+
+int 
+tms_id_tuple_fwrite(uint32_t num_tuples,tms_id_tuple_t* x, FILE* fs);
+
+int 
+tms_id_tuple_fread(tms_id_tuple_t** x, uint32_t num_tuples,FILE* fs);
+
+int 
+tms_id_tuple_fprint(uint32_t num_tuples,tms_id_tuple_t* x, FILE* fs);
+
+void 
+tms_id_tuple_free(tms_id_tuple_t** x, uint32_t num_tuples);
+
+//***************************************************************************
 // tms_profile_info_t
 //***************************************************************************
-const int TMS_total_prof_SIZE   = 4;
-const int TMS_tid_SIZE          = 4;
-const int TMS_num_val_SIZE      = 8;
-const int TMS_num_nzctx_SIZE    = 4;
-const int TMS_prof_offset_SIZE  = 8;
+const int TMS_total_prof_SIZE     = 4;
+
+const int TMS_prof_info_idx_SIZE  = 4;
+const int TMS_num_val_SIZE        = 8;
+const int TMS_num_nzctx_SIZE      = 4;
+const int TMS_prof_offset_SIZE    = 8;
+const int TMS_id_tuple_ptr_SIZE   = 8;
+const int TMS_metadata_ptr_SIZE   = 8;
+const int TMS_spare_one_SIZE      = 8;
+const int TMS_spare_two_SIZE      = 8;
+const int TMS_ptrs_SIZE           = TMS_id_tuple_ptr_SIZE + TMS_metadata_ptr_SIZE + TMS_spare_one_SIZE + TMS_spare_two_SIZE;
 //bytes to skip when we only want val_mids and ctx_id_idxs
-const int TMS_prof_skip_SIZE    = TMS_tid_SIZE + TMS_num_val_SIZE + TMS_num_nzctx_SIZE; 
-const int TMS_prof_info_SIZE    = TMS_tid_SIZE + TMS_num_val_SIZE + TMS_num_nzctx_SIZE + TMS_prof_offset_SIZE;
+const int TMS_prof_skip_SIZE    = TMS_prof_info_idx_SIZE + TMS_num_val_SIZE + TMS_num_nzctx_SIZE; 
+const int TMS_prof_info_SIZE    = TMS_id_tuple_ptr_SIZE + TMS_metadata_ptr_SIZE + TMS_spare_one_SIZE \
+ + TMS_spare_two_SIZE + TMS_num_val_SIZE + TMS_num_nzctx_SIZE + TMS_prof_offset_SIZE;
+
 
 
 typedef struct tms_profile_info_t{
-  uint32_t tid;
+  uint32_t prof_info_idx; //won't be written in thread_major_sparse.db
+
   uint64_t num_vals;
   uint32_t num_nzctxs;
   uint64_t offset;
+
+  uint64_t id_tuple_ptr;
+  uint64_t metadata_ptr; 
+  uint64_t spare_one;
+  uint64_t spare_two;
 }tms_profile_info_t;
+
 
 int 
 tms_profile_info_fwrite(uint32_t num_t,tms_profile_info_t* x, FILE* fs);
 
 int 
-tms_profile_info_fread(tms_profile_info_t** x, uint32_t* num_prof,FILE* fs);
+tms_profile_info_fread(tms_profile_info_t** x, uint32_t num_prof,FILE* fs);
 
 int 
 tms_profile_info_fprint(uint32_t num_prof,tms_profile_info_t* x, FILE* fs);

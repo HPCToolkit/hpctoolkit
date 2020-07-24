@@ -194,7 +194,7 @@ cms_sparse_metrics_fprint(cct_sparse_metrics_t* x, FILE* fs, const char* pre, bo
   }else{
     fprintf(fs, "%s[metrics:\n%s(NOTES: printed in file order, help checking if the file is correct)\n", pre, pre);
     for (uint i = 0; i < x->num_vals; ++i) {
-      fprintf(fs, "%s(value: %g, thread id: %d)\n", double_pre, x->values[i].r, x->tids[i]); //cct_major_sparse doesn't have metricTbl, so all print as real value for now
+      fprintf(fs, "%s(value: %g, profile idx: %d)\n", double_pre, x->values[i].r, x->tids[i]); //cct_major_sparse doesn't have metricTbl, so all print as real value for now
     }
     fprintf(fs, "%s]\n", pre);
   }
@@ -227,7 +227,7 @@ cms_sparse_metrics_fprint_grep_helper(cct_sparse_metrics_t* x, FILE* fs, const c
     fprintf(fs, "%s(metric id: %d) ", double_pre, mid);
 
     for(uint j = m_off; j < m_next_off; j++){
-      fprintf(fs, "(value: %g, thread id: %d) ", x->values[j].r, x->tids[j]); 
+      fprintf(fs, "(value: %g, profile idx: %d) ", x->values[j].r, x->tids[j]); 
     }
     fprintf(fs, "\n");
   }
