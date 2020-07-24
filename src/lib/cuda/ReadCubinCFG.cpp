@@ -127,8 +127,8 @@ parseDotCFG
             auto *symbol_function = symbol_map[function->name];
             function->index = symbol_function->getIndex();
             function->address = symbol_function->getOffset();
+            function->global = symbol_function->getLinkage() == Dyninst::SymtabAPI::Symbol::SymbolLinkage::SL_GLOBAL;
             if (symbol_function != symbol) {
-              function->global = false;
               if (symbol_function->getType() != Dyninst::SymtabAPI::Symbol::ST_FUNCTION) {
                 // NOTYPE functions' original offsets are relative.
                 // hpcstruct relocates them with absolute offsets.

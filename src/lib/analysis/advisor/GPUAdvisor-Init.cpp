@@ -186,7 +186,7 @@ void GPUAdvisor::init() {
   kernel_merge_optimizer->set_estimator(_estimators[SEQ_LAT]);
 
   auto *function_inline_optimizer = GPUOptimizerFactory(FUNCTION_INLINE, _arch);
-  function_inline_optimizer->set_estimator(_estimators[SEQ]);
+  function_inline_optimizer->set_estimator(_estimators[SEQ_LAT]);
 
   auto *function_split_optimizer = GPUOptimizerFactory(FUNCTION_SPLIT, _arch);
   function_split_optimizer->set_estimator(_estimators[SEQ_LAT]);

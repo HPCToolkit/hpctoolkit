@@ -131,7 +131,6 @@ KernelStats GPUAdvisor::readKernelStats(int mpi_rank, int thread_id) {
   time /= count;
 
   samples_total = samples_total - samples_dropped;
-  auto util = MIN2(1.0, samples_expected / samples_total);
   samples_expected *= sample_frequency;
   samples_total *= sample_frequency;
 
@@ -151,7 +150,7 @@ KernelStats GPUAdvisor::readKernelStats(int mpi_rank, int thread_id) {
   }
 
   return KernelStats(blocks, block_threads, block_smem, thread_regs, warps, 0,
-                     samples_total, count, time, util);
+                     samples_total, samples_expected, count, 0, time);
 }
 
 void GPUAdvisor::advise(const CCTBlames &cct_blames) {
@@ -213,6 +212,7 @@ void GPUAdvisor::advise(const CCTBlames &cct_blames) {
           kernel_stats.total_samples = kernel_blame.lat_blame;
           kernel_stats.active_samples =
               kernel_blame.lat_blame - kernel_blame.stall_blame;
+          kernel_stats.sm_efficiency = kernel_stats.expected_samples / kernel_stats.total_samples;
 
           // 2. Rank optimizers
           OptimizerRank code_optimizer_rank;

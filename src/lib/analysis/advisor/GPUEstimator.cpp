@@ -136,16 +136,19 @@ ParallelLatencyGPUEstimator::estimate(const std::vector<BlameStats> &blame_stats
   double max_warps = _arch->warps();
   double blame = blame_stats[0].blame;
 
+  double expected_threads = (((int)kernel_stats.threads - 1) / _arch->warp_size() + 1) * _arch->warp_size();
+  double thread_balance = expected_threads / kernel_stats.threads;
+
   if (cur_warps < _arch->schedulers()) {
     estimate.first = cur_warps / _arch->schedulers();
-    estimate.second = _arch->schedulers() / cur_warps;
+    estimate.second = _arch->schedulers() / cur_warps * thread_balance;
   } else {
     double issue = blame / static_cast<double>(kernel_stats.total_samples);
     double warp_issue = 1 - pow(1 - issue, cur_warps / _arch->schedulers());
     double new_warp_issue = 1 - pow(1 - issue, max_warps / _arch->schedulers());
 
     estimate.first = 1 - warp_issue;
-    estimate.second = new_warp_issue / warp_issue;
+    estimate.second = new_warp_issue / warp_issue * thread_balance;
   }
 
   return estimate;

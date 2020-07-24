@@ -340,50 +340,49 @@ std::vector<BlameStats> GPUKernelMergeOptimizer::match_impl(const KernelBlame &k
 
 std::vector<BlameStats> GPUFunctionInlineOptimizer::match_impl(const KernelBlame &kernel_blame,
                                                                const KernelStats &kernel_stats) {
-  // Match if ifetch and device function
+  const double IFET_UPPER = 0.2;
+
+  // Both caller and callee can be rescheduled
   auto blame = 0.0;
 
-  // Match if latency in function epilogue and prologues, and device function
-  for (auto *inst_blame : kernel_blame.lat_inst_blame_ptrs) {
+  std::set<CudaParse::Block *> caller_blocks;
+  for (auto *inst_blame : kernel_blame.stall_inst_blame_ptrs) {
     auto *function = inst_blame->src_function;
-    if (function->global == false) {
-      auto *src_struct = inst_blame->src_struct;
-      auto *src_inst = inst_blame->src_inst;
-      auto *dst_struct = inst_blame->dst_struct;
-      auto *dst_inst = inst_blame->dst_inst;
-      if (src_struct->begLine() == src_struct->ancestorProc()->begLine()) {
-        // prologue STL
-        if (src_inst->op.find("STORE.LOCAL") != std::string::npos) {
-          blame += inst_blame->lat_blame;
-
-          if (_inspection.top_regions.size() < _top_regions) {
-            _inspection.top_regions.push_back(*inst_blame);
-          }
-        }
-      } else if (dst_struct->begLine() == dst_struct->ancestorProc()->endLine()) {
-        // epilogue LD
-        // TODO interprocedural attribution
-        if (dst_inst->op.find("LOAD.LOCAL") != std::string::npos) {
-          blame += inst_blame->lat_blame;
-
-          if (_inspection.top_regions.size() < _top_regions) {
-            _inspection.top_regions.push_back(*inst_blame);
-          }
-        }
-      } else {
-        // Or lat fetch
-        if (inst_blame->blame_name.find(":LAT_IFET") != std::string::npos) {
-          blame += inst_blame->lat_blame;
-
-          if (_inspection.top_regions.size() < _top_regions) {
-            _inspection.top_regions.push_back(*inst_blame);
+    if (function->global) {
+      if (inst_blame->dst_inst->op.find("CALL") != std::string::npos) {
+        if (inst_blame->dst_struct->type() == Prof::Struct::ANode::TyStmt) {
+          auto *stmt = dynamic_cast<Prof::Struct::Stmt *>(inst_blame->dst_struct);
+          if (stmt->stmtType() == Prof::Struct::Stmt::STMT_CALL) {
+            caller_blocks.insert(inst_blame->dst_block);
           }
         }
       }
     }
   }
 
-  _inspection.stall = false;
+  auto ifetch_stall = 0.0;
+  if (kernel_blame.stall_blames.find(BLAME_GPU_INST_METRIC_NAME ":LAT_IFET") != kernel_blame.stall_blames.end()) {
+    ifetch_stall = kernel_blame.stall_blames.at(BLAME_GPU_INST_METRIC_NAME ":LAT_IFET");
+  }
+
+  // Match if instruction fetch latency is low
+  if (ifetch_stall / kernel_blame.stall_blame <= IFET_UPPER) {
+    for (auto *inst_blame : kernel_blame.stall_inst_blame_ptrs) {
+      auto *function = inst_blame->src_function;
+      if (function->global == false) {
+        blame += inst_blame->stall_blame;
+        if (_inspection.top_regions.size() < _top_regions) {
+          _inspection.top_regions.push_back(*inst_blame);
+        }
+      } else {
+        if (caller_blocks.find(inst_blame->dst_block) != caller_blocks.end()) {
+          blame += inst_blame->stall_blame;
+        }
+      }
+    }
+  }
+
+  _inspection.stall = true;
 
   BlameStats blame_stats(blame, kernel_stats.active_samples, kernel_stats.total_samples);
   return std::vector<BlameStats>{blame_stats};
