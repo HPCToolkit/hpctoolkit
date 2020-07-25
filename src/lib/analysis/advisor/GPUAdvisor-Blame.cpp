@@ -56,8 +56,6 @@ using std::string;
 #define DEBUG_GPUADVISOR 1
 #define DEBUG_GPUADVISOR_DETAILS 1
 
-#define WARP_SIZE 1
-
 namespace Analysis {
 
 /*
@@ -392,6 +390,8 @@ void GPUAdvisor::debugInstBlames(InstBlames &inst_blames) {
     stall_blame_sum += inst_blame.stall_blame;
   }
 
+  std::cout << "(" << lat_blame_sum << "," << stall_blame_sum << ")" << std::endl;
+
   for (auto &inst_blame : inst_blames) {
     std::cout << debugInstOffset(inst_blame.src_inst->pc) <<
       " -> " << debugInstOffset(inst_blame.dst_inst->pc) << ", ";
@@ -417,10 +417,10 @@ int GPUAdvisor::demandNodeMetric(int mpi_rank, int thread_id, Prof::CCT::ADynNod
   // If instruction issue is not sampled, assign it one issue
   int ret = node->demandMetric(in_issue_metric_index);
   if (ret == 0) {
-    node->demandMetric(in_issue_metric_index) += 1;
-    node->demandMetric(ex_issue_metric_index) += 1;
-    node->demandMetric(in_inst_metric_index) += 1;
-    node->demandMetric(ex_inst_metric_index) += 1;
+    node->demandMetric(in_issue_metric_index) += _arch->warp_size();
+    node->demandMetric(ex_issue_metric_index) += _arch->warp_size();
+    node->demandMetric(in_inst_metric_index) += _arch->warp_size();
+    node->demandMetric(ex_inst_metric_index) += _arch->warp_size();
     ret = 1;
   }
   return ret;
@@ -662,14 +662,16 @@ void GPUAdvisor::trackDep(int from_vma, int to_vma, int id,
     end_vma = to_vma - _arch->inst_size();
   }
 
-  // If from_vma and to_vma are in the same block but from_vma > to_vma
+  // If from_vma and to_vma are in the same block but from_vma >= to_vma
   // It indicates we have a loop
+  bool loop_block = false;
   if (from_vma <= back_vma && from_vma >= front_vma &&
     to_vma <= back_vma && to_vma >= front_vma &&
-    from_vma > to_vma) {
+    from_vma >= to_vma) {
     // It only happens in the first block
     visited_blocks.erase(from_block);
     end_vma = back_vma;
+    loop_block = true;
   }
 
   // Iterate inst until reaching the use inst
@@ -708,7 +710,7 @@ void GPUAdvisor::trackDep(int from_vma, int to_vma, int id,
   if (find_def == false && hidden == false) {
     // Reach the final block
     // [front_vma, to_vma, back_vma]
-    if (to_vma <= back_vma && to_vma >= front_vma) {
+    if (to_vma <= back_vma && to_vma >= front_vma && loop_block == false) {
       paths.push_back(path);
     } else {
       for (auto *target : from_block->targets) {
@@ -1032,11 +1034,9 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
             }
 
             // We must have found a correponding stall, otherwise the edge is removed by pruning
-            {
-              auto mem = to_node->demandMetric(mem_lat_metric_index);
-              auto exec = to_node->demandMetric(exec_lat_metric_index);
-              assert(mem != 0 || exec != 0);
-            }
+            auto mem = to_node->demandMetric(mem_lat_metric_index);
+            auto exec = to_node->demandMetric(exec_lat_metric_index);
+            assert(mem != 0 || exec != 0);
           } else if (from_inst->op.find(".SHARED") != std::string::npos) {
             // Shared memory
             prof_nodes[exec_lat_metric_index].push_back(from_node);
@@ -1049,19 +1049,19 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
     }
     
     if (prof_nodes.size() == 0 || (prof_nodes.size() == 1 && prof_nodes.begin()->first == mem_lat_metric_index)) {
+      // Scheduler lat
+      auto lat_blame = to_node->demandMetric(exec_lat_metric_index);
+      if (lat_blame == 0) {
+        continue;
+      }
+
+      auto lat_blame_name = "BLAME " + _exec_dep_sche_lat_metric;
+      attributeBlameMetric(mpi_rank, thread_id, to_node, lat_blame_name, lat_blame);
+
       // Scheduler stall
       auto stall_blame = to_node->demandMetric(exec_stall_metric_index);
       auto stall_blame_name = "BLAME " + _exec_dep_sche_stall_metric;
-      if (stall_blame != 0) {
-        attributeBlameMetric(mpi_rank, thread_id, to_node, stall_blame_name, stall_blame);
-      }
-
-      // Scheduler lat
-      auto lat_blame = to_node->demandMetric(exec_lat_metric_index);
-      auto lat_blame_name = "BLAME " + _exec_dep_sche_lat_metric;
-      if (lat_blame != 0) {
-        attributeBlameMetric(mpi_rank, thread_id, to_node, lat_blame_name, lat_blame);
-      }
+      attributeBlameMetric(mpi_rank, thread_id, to_node, stall_blame_name, stall_blame);
 
       inst_blames.emplace_back(InstructionBlame(to_inst, to_inst, to_struct, to_struct, 0,
                                                 stall_blame, lat_blame, lat_blame_name));
@@ -1084,7 +1084,6 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
       }
 
       std::map<Prof::CCT::ADynNode *, double> insts;
-      std::map<Prof::CCT::ADynNode *, std::map<Prof::CCT::ADynNode *, double>> path_insts;
       std::map<Prof::CCT::ADynNode *, double> issues;
       double issue_sum = 0.0;
 
@@ -1113,11 +1112,10 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
         for (auto &path : ps) {
           auto path_inst = computePathInsts(mpi_rank, thread_id, from_vma, to_vma, path);
           insts[from_node] += path_inst;
-          path_insts[from_node][to_node] += path_inst;
         }
         auto issue = from_node->demandMetric(issue_metric_index);
         // Guarantee that issue is not zero
-        issue = issue > 0 ? issue : WARP_SIZE;
+        issue = issue > 0 ? issue : _arch->warp_size();
         issues[from_node] = issue;
         issue_sum += issue;
       }
@@ -1196,58 +1194,56 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
           InstructionBlame(to_inst, to_inst, to_struct, to_struct, 0, stall, lat, lat_blame_name));
     }
 
-    {
-      // Sync stall
-      auto sync_stall_metric_index = _metric_name_prof_map->metric_id(
-        mpi_rank, thread_id, _sync_stall_metric);
-      auto sync_lat_metric_index = _metric_name_prof_map->metric_id(
-        mpi_rank, thread_id, _sync_lat_metric);
-      auto sync_stall = to_node->demandMetric(sync_stall_metric_index);
-      auto sync_lat = to_node->demandMetric(sync_lat_metric_index);
+    // Sync stall
+    auto sync_stall_metric_index = _metric_name_prof_map->metric_id(
+      mpi_rank, thread_id, _sync_stall_metric);
+    auto sync_lat_metric_index = _metric_name_prof_map->metric_id(
+      mpi_rank, thread_id, _sync_lat_metric);
+    auto sync_stall = to_node->demandMetric(sync_stall_metric_index);
+    auto sync_lat = to_node->demandMetric(sync_lat_metric_index);
 
-      if (sync_lat == 0) {
-        continue;
-      }
-
-      // inclusive and exclusive metrics have the same value
-      auto sync_vma = to_vma;
-      auto *sync_inst = _vma_prop_map[sync_vma].inst;
-
-      double distance = 0;
-      if (sync_inst->op.find(".SYNC") == std::string::npos) {
-        // blame the previous node
-        distance = 1;
-        sync_vma = sync_vma - _arch->inst_size();
-        sync_inst = _vma_prop_map[sync_vma].inst;
-      }
-
-      auto *sync_node = _vma_prop_map[sync_vma].prof_node;
-      auto sync_struct_iter = _vma_struct_map.upper_bound(sync_vma);
-      Prof::Struct::ACodeNode *sync_struct = NULL;
-      if (sync_struct_iter != _vma_struct_map.begin()) {
-        --sync_struct_iter;
-        sync_struct = sync_struct_iter->second;
-      }
-
-      if (sync_node == NULL) {
-        // Create a new prof node
-        Prof::Metric::IData metric_data(_prof->metricMgr()->size());
-        metric_data.clearMetrics();
-
-        sync_node = new Prof::CCT::Stmt(to_node->parent(), HPCRUN_FMT_CCTNodeId_NULL,
-          lush_assoc_info_NULL, _gpu_root->lmId(), sync_vma, 0, NULL, metric_data);
-      }
-
-      auto stall_blame_name = "BLAME " + _sync_stall_metric;
-      attributeBlameMetric(mpi_rank, thread_id, to_node, stall_blame_name, sync_stall);
-
-      auto lat_blame_name = "BLAME " + _sync_lat_metric;
-      attributeBlameMetric(mpi_rank, thread_id, to_node, lat_blame_name, sync_lat);
-
-      // one metric id is enough for inst blame analysis
-      inst_blames.emplace_back(InstructionBlame(sync_inst, to_inst, sync_struct, to_struct,
-                                                distance, sync_stall, sync_lat, lat_blame_name));
+    if (sync_lat == 0) {
+      continue;
     }
+
+    // inclusive and exclusive metrics have the same value
+    auto sync_vma = to_vma;
+    auto *sync_inst = _vma_prop_map[sync_vma].inst;
+
+    double distance = 0;
+    if (sync_inst->op.find(".SYNC") == std::string::npos) {
+      // blame the previous node
+      distance = 1;
+      sync_vma = sync_vma - _arch->inst_size();
+      sync_inst = _vma_prop_map[sync_vma].inst;
+    }
+
+    auto *sync_node = _vma_prop_map[sync_vma].prof_node;
+    auto sync_struct_iter = _vma_struct_map.upper_bound(sync_vma);
+    Prof::Struct::ACodeNode *sync_struct = NULL;
+    if (sync_struct_iter != _vma_struct_map.begin()) {
+      --sync_struct_iter;
+      sync_struct = sync_struct_iter->second;
+    }
+
+    if (sync_node == NULL) {
+      // Create a new prof node
+      Prof::Metric::IData metric_data(_prof->metricMgr()->size());
+      metric_data.clearMetrics();
+
+      sync_node = new Prof::CCT::Stmt(to_node->parent(), HPCRUN_FMT_CCTNodeId_NULL,
+        lush_assoc_info_NULL, _gpu_root->lmId(), sync_vma, 0, NULL, metric_data);
+    }
+
+    auto stall_blame_name = "BLAME " + _sync_stall_metric;
+    attributeBlameMetric(mpi_rank, thread_id, to_node, stall_blame_name, sync_stall);
+
+    auto lat_blame_name = "BLAME " + _sync_lat_metric;
+    attributeBlameMetric(mpi_rank, thread_id, to_node, lat_blame_name, sync_lat);
+
+    // one metric id is enough for inst blame analysis
+    inst_blames.emplace_back(InstructionBlame(sync_inst, to_inst, sync_struct, to_struct,
+        distance, sync_stall, sync_lat, lat_blame_name));
   }
 }
 
