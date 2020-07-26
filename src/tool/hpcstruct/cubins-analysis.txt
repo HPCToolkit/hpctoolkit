@@ -33,6 +33,9 @@ W := $(patsubst %.hpcstruct,%.warnings,$(S))
 # execute the sequence of commands for each target in a single shell
 #-------------------------------------------------------------------------------
 .ONESHELL:
+.SILENT:
+
+.DEFAULT_GOAL := all
 
 
 #-------------------------------------------------------------------------------
@@ -46,22 +49,36 @@ $(STRUCTS_DIR)/%.hpcstruct: $(CUBINS_DIR)/%
 	@cubin_name=`basename -s x $<`
 	struct_name=$@
 	warn_name=$(STRUCTS_DIR)/$$cubin_name.warnings
-	echo msg: beginning analysis of $$cubin_name
-	hpcstruct --gpucfg $(CUBIN_CFG) -o $$struct_name $< > $$warn_name 2>&1
-	if [ -s $$warn_name ]; then
-		echo WARNING: incomplete analysis of $$cubin_name\\; see $$warn_name for details
-		if test ! -s $$struct_name ; then
-		    rm -f $$struct_name
+	if test `size $< | tail -1 | awk '{ print $$1 }'` -gt $(PAR_SIZE) ; then
+		if test $(THREADS) -gt 1 ; then
+			echo msg: begin parallel analysis of $$cubin_name \\($(THREADS) threads\\)
+		else
+			echo msg: begin serial analysis of $$cubin_name
 		fi
-	else
-		rm -f $$warn_name
+		hpcstruct -j $(THREADS) --gpucfg $(CUBIN_CFG) -o $$struct_name $< > $$warn_name 2>&1
+		if test -s $$warn_name ; then
+			echo WARNING: incomplete analysis of $$cubin_name\\; see $$warn_name for details
+			if test ! -s $$struct_name ; then
+				rm -f $$struct_name
+			fi
+		else
+			rm -f $$warn_name
+		fi
+		if test $(THREADS) -gt 1 ; then
+			echo msg: end parallel analysis of $$cubin_name
+		else
+			echo msg: end serial analysis of $$cubin_name
+		fi
 	fi
-	echo msg: completed analysis of $$cubin_name
 
 
 #-------------------------------------------------------------------------------
 # analyze all cubins to create structure files
 #-------------------------------------------------------------------------------
+all:
+	make -j 1  THREADS=$(JOBS)  PAR_SIZE=$(GPU_SIZE)  analyze
+	make -j $(JOBS)  THREADS=1  PAR_SIZE=0  analyze
+
 analyze: $(S)
 
 
@@ -73,3 +90,4 @@ clean:
 	@rm -f $(S)
 	@echo removing all warnings in $(STRUCTS_DIR)
 	@rm -f $(W)
+

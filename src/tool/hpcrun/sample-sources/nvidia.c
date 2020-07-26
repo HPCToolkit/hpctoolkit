@@ -270,6 +270,12 @@ static void
 METHOD_FN(init)
 {
   self->state = INIT;
+
+  // Reset cupti flags
+  cupti_device_init();
+
+  // Init records
+  gpu_trace_init();
 }
 
 static void
@@ -287,6 +293,7 @@ static void
 METHOD_FN(start)
 {
   TMSG(CUDA, "start");
+  TD_GET(ss_state)[self->sel_idx] = START;
 }
 
 static void
@@ -411,9 +418,6 @@ METHOD_FN(process_event_list, int lush_metrics)
   cupti_enabled_activities |= CUPTI_KERNEL_INVOCATION;
   cupti_enabled_activities |= CUPTI_DATA_MOTION_EXPLICIT;
   cupti_enabled_activities |= CUPTI_OVERHEAD;
-
-  // Init records
-  gpu_trace_init();
 
   // Register shutdown functions to write trace files
   device_trace_finalizer_shutdown.fn = gpu_trace_fini;

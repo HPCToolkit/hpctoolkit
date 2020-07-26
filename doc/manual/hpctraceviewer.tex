@@ -282,9 +282,11 @@ This context menu is available is three views: trace view, depth view and summar
 
 \section{GPU Threads}
 
-\hpctraceviewer{} displays activity over time in GPU streams as well as CPU threads. Presently, GPU streams and CPU threads are indexed within a process or MPI rank using a single integer coordinate. To distinguish between GPU threads and CPU threads in this prototype, CPU thread numbers begin at 0 and GPU stream numbers begin at 500. 
+\hpctraceviewer{} displays activity over time in GPU streams as well as CPU threads. Presently, GPU streams and CPU threads are indexed within a process or MPI rank using a single integer coordinate. To distinguish between GPU threads and CPU threads in this prototype, CPU thread numbers begin at 0 and GPU stream numbers begin at 500.\footnote{A future version of HPCToolkit will clearly distinguish GPU streams from CPU threads. This will require changes to measurement, file formats, post-processing, and the user interfaces. Treating GPU streams like threads with indices beginning at 500 is a workaround until the overhaul is complete.}
 
 Unlike CPU threads, which are sampled, each GPU activity (e.g., a kernel execution or a memory copy)  on a GPU stream or queue is traced. To avoid giving a misleading view of GPU activity on a stream or queue, intervals between GPU activities where the GPU is idle are marked with the placeholder \verb|<no activity>|.
+
+
 
 \section{Limitations}
 

@@ -70,12 +70,14 @@
 //******************************************************************************
 // local includes
 //******************************************************************************
-#include "InputFile.hpp"
 
 #include <lib/support/diagnostics.h>
 
 #include "ElfHelper.hpp"
 #include "Fatbin.hpp"
+#include "InputFile.hpp"
+
+
 
 //******************************************************************************
 // private operations
@@ -125,39 +127,55 @@ read_all(int fd, void *buf, size_t count)
 bool
 InputFile::openFile
 (
- std::string &filename
+ std::string &filename,
+ InputFileErrorType_t errType
 )
 {
+  const char *tag = 
+    (errType == InputFileError_Error) ? "ERROR: " : "WARNING: ";
+
   this->filename = filename;
 
   int    file_fd = open(filename.c_str(), O_RDONLY);
 
   if (file_fd < 0) {
-    DIAG_EMsg("Unable to open input file: " << filename << 
-	       " (" << strerror(errno) << ")");
-    exit(1);
+    DIAG_MsgIf_GENERIC(tag, 1, "Unable to open input file: " 
+		       << filename << " (" << strerror(errno) << ")");
+
+    if (errType != InputFileError_WarningNothrow) throw 1;
+
+    return false;
   }
 
   size_t f_size = file_size(file_fd);
   
   if (f_size == 0) {
-    DIAG_EMsg("Empty input file " << filename);
-    exit(1);
+    DIAG_MsgIf_GENERIC(tag, 1, "Empty input file " << filename);
+
+    if (errType != InputFileError_WarningNothrow) throw 1;
+
+    return false;
   }
 
   char  *file_buffer = (char *) malloc(f_size);
 
   if (file_buffer == 0) {
-    DIAG_EMsg("Unable to allocate file buffer of " << f_size << " bytes");
-    exit(1);
+    DIAG_MsgIf_GENERIC(tag, 1, "Unable to allocate file buffer of " 
+		       << f_size << " bytes");
+    if (errType != InputFileError_WarningNothrow) throw 1;
+
+    return false;
   }
 
   size_t bytes = read_all(file_fd, file_buffer, f_size);
 
   if (f_size != bytes) {
-    DIAG_EMsg("Read only " << bytes << " bytes of "
-	      << f_size << " bytes from file " << filename);
-    exit(1);
+    DIAG_MsgIf_GENERIC(tag, 1, "Read only " << bytes << " bytes of "
+		       << f_size << " bytes from file " << filename);
+
+    if (errType != InputFileError_WarningNothrow) throw 1;
+
+    return false;
   }
 
   close(file_fd);
@@ -170,8 +188,11 @@ InputFile::openFile
     filevector->push_back(elfFile);
     //findCubins(elfFile, filevector);
   } else {
-    DIAG_EMsg("Not an ELF binary " << filename);
-    exit(1);
+    DIAG_MsgIf_GENERIC(tag, 1, "Not an ELF binary " << filename);
+
+    if (errType != InputFileError_WarningNothrow) throw 1;
+
+    return false;
   }
 
   return result;
