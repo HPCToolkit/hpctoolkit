@@ -157,8 +157,9 @@ std::string SimpleInspectionFormatter::format(const Inspection &inspection) {
     ss << index + 1 << ". Hot " << inst_blame.blame_name << " code, ratio " <<
       ratio * 100 << "%, ";
     if (speedup != 0.0) {
-      ss << "speedup " << speedup << "x" << std::endl;
+      ss << "speedup " << speedup << "x";
     }
+    ss << std::endl;
 
     auto *src_struct = inst_blame.src_struct;
     auto *dst_struct = inst_blame.dst_struct;

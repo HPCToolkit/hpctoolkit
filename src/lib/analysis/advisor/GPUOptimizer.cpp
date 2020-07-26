@@ -288,8 +288,9 @@ std::vector<BlameStats> GPUStrengthReductionOptimizer::match_impl(const KernelBl
       "mathematically equivalent but the compiler is not intelligent to do so.\n"
       "1. Avoid type conversion. For example, integer division requires the usage of SFU to "
       "perform floating point transforming. One can use a multiplication of reciprocal instead.\n"
-      "2. Avoid costly math functions. For example, __pow(n, 2) can be replaced by n << 2 as long "
-      "as n is an integer";
+      "Moreover, a float constant by default is 64-bit. If the constant is multiplied by a 32-bit "
+      "float value, the compiler transforms the 32-bit value to a 64-bit value first.\n"
+      "2. Avoid costly math operations such as mod (\%) and division (\/).\n";
   _inspection.stall = false;
 
   BlameStats blame_stats(blame, kernel_stats.active_samples, kernel_stats.total_samples);
