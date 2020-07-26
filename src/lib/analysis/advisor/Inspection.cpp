@@ -95,13 +95,9 @@ std::string SimpleInspectionFormatter::format(const Inspection &inspection) {
   // Overview
   ss << "Apply " << inspection.optimization << " optimization,";
 
-  if (inspection.ratio != -1.0) {
-    ss << " ratio " << inspection.ratio * 100 << "%,";
-  }
+  ss << " ratio " << inspection.ratios.back() * 100 << "%,";
 
-  if (inspection.speedup != -1.0) {
-    ss << " estimate speedup " << inspection.speedup << "x";
-  }
+  ss << " estimate speedup " << inspection.speedups.back() << "x";
 
   ss << std::endl << std::endl << inspection.hint << std::endl << std::endl;
 
@@ -146,20 +142,31 @@ std::string SimpleInspectionFormatter::format(const Inspection &inspection) {
     ss << std::endl;
   }
 
-  auto index = 1;
   // Hot regions
-  for (auto &inst_blame : inspection.top_regions) {
-    auto metric = inspection.stall ? inst_blame.stall_blame : inst_blame.lat_blame;
-    ss << index++ << ". Hot " << inst_blame.blame_name << " code (" <<
-      metric / inspection.total * 100 << "%):" << std::endl;
+  for (auto index = 0; index < inspection.top_regions.size(); ++index) {
+    auto &inst_blame = inspection.top_regions[index];
+    auto ratio = 0.0;
+    auto speedup = 0.0;
+    if (inspection.loop) {
+      ratio = inspection.ratios[index];
+      speedup = inspection.speedups[index];
+    } else {
+      auto metric = inspection.stall ? inst_blame.stall_blame : inst_blame.lat_blame;
+      ratio = metric / inspection.total;
+    }
+    ss << index + 1 << ". Hot " << inst_blame.blame_name << " code, ratio " <<
+      ratio * 100 << "%, ";
+    if (speedup != 0.0) {
+      ss << "speedup " << speedup << "x" << std::endl;
+    }
 
     auto *src_struct = inst_blame.src_struct;
     auto *dst_struct = inst_blame.dst_struct;
     auto *src_func = src_struct->ancestorProc();
     auto *dst_func = dst_struct->ancestorProc();
-    auto src_vma =
+    auto src_vma = inst_blame.src_inst == NULL ? src_struct->vmaSet().begin()->beg() :
         (inst_blame.src_inst)->pc - src_func->vmaSet().begin()->beg();
-    auto dst_vma =
+    auto dst_vma = inst_blame.dst_inst == NULL ? dst_struct->vmaSet().begin()->beg() :
         (inst_blame.dst_inst)->pc - dst_func->vmaSet().begin()->beg();
 
     // Print inline call stack
@@ -175,7 +182,14 @@ std::string SimpleInspectionFormatter::format(const Inspection &inspection) {
       ss << formatInlineStack(src_inline_stack);
     }
     ss << std::hex << "0x" << src_vma << std::dec << " at " <<
-      "Line " << src_struct->begLine() << std::endl;
+      "Line " << src_struct->begLine();
+    if (inspection.loop) {
+      auto *loop = src_struct->ancestorLoop();
+      if (loop) {
+        ss << " in Loop at Line " << loop->begLine();
+      }
+    }
+    ss  << std::endl;
 
     auto *dst_file = dst_struct->ancestorFile();
     ss << "To " << dst_func->name() << " at " << dst_file->name() << ":" <<
@@ -184,7 +198,14 @@ std::string SimpleInspectionFormatter::format(const Inspection &inspection) {
       ss << formatInlineStack(dst_inline_stack);
     }
     ss << std::hex << "0x" << dst_vma << std::dec << " at " <<
-      "Line " << dst_struct->begLine() << std::endl;
+      "Line " << dst_struct->begLine();
+    if (inspection.loop) {
+      auto *loop = dst_struct->ancestorLoop();
+      if (loop) {
+        ss << " in Loop at Line " << loop->begLine();
+      }
+    }
+    ss  << std::endl;
 
     if (inspection.callback != NULL) {
       ss << inspection.callback(inst_blame) << std::endl;

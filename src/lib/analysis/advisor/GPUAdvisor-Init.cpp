@@ -171,7 +171,7 @@ void GPUAdvisor::init() {
   loop_unroll_optimizer->set_estimator(_estimators[SEQ_LAT]);
 
   auto *loop_nounroll_optimizer = GPUOptimizerFactory(LOOP_NOUNROLL, _arch);
-  loop_nounroll_optimizer->set_estimator(_estimators[SEQ_LAT]);
+  loop_nounroll_optimizer->set_estimator(_estimators[SEQ]);
 
   auto *strength_reduction_optimizer = GPUOptimizerFactory(STRENGTH_REDUCTION, _arch);
   strength_reduction_optimizer->set_estimator(_estimators[SEQ]);

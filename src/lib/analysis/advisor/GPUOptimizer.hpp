@@ -136,7 +136,9 @@ struct InstructionBlame {
         lat_blame(lat_blame),
         blame_name(blame_name) {}
 
-  InstructionBlame() : distance(0), stall_blame(0), lat_blame(0) {}
+  InstructionBlame() : src_inst(NULL), dst_inst(NULL), src_block(NULL), dst_block(NULL),
+    src_function(NULL), dst_function(NULL), src_struct(NULL), dst_struct(NULL),
+    distance(0), stall_blame(0), lat_blame(0) {}
 };
 
 struct InstructionBlameStallComparator {

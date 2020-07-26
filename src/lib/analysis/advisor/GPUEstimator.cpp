@@ -77,61 +77,68 @@ GPUEstimator *GPUEstimatorFactory(GPUArchitecture *arch, GPUEstimatorType type) 
 }
 
 
-std::pair<double, double>
+std::pair<std::vector<double>, std::vector<double>>
 SequentialGPUEstimator::estimate(const std::vector<BlameStats> &blame_stats, const KernelStats &kernel_stats) {
-  std::pair<double, double> estimate(0.0, 0.0);
+  std::vector<double> estimate_ratios;
+  std::vector<double> estimate_speedups;
 
   double blame = blame_stats[0].blame;
 
-  if (blame != 0.0) {
-    estimate.first = blame / kernel_stats.total_samples;
-    estimate.second = kernel_stats.total_samples / (kernel_stats.total_samples - blame);
-  }
+  estimate_ratios.push_back(blame / kernel_stats.total_samples);
+  estimate_speedups.push_back(kernel_stats.total_samples / (kernel_stats.total_samples - blame));
 
-  return estimate;
+  return std::make_pair(estimate_ratios, estimate_speedups);
 }
 
 
-std::pair<double, double>
+std::pair<std::vector<double>, std::vector<double>>
 SequentialLatencyGPUEstimator::estimate(const std::vector<BlameStats> &blame_stats, const KernelStats &kernel_stats) {
-  std::pair<double, double> estimate(0.0, 0.0);
+  std::vector<double> estimate_ratios;
+  std::vector<double> estimate_speedups;
 
   auto hidden_samples = 0.0;
+  auto blame = 0.0;
 
   // regional analysis
   for (auto &stats : blame_stats) {
-    estimate.first += stats.blame / kernel_stats.total_samples;
+    estimate_ratios.push_back(stats.blame / kernel_stats.total_samples);
+    estimate_speedups.push_back(
+        kernel_stats.total_samples /
+        (kernel_stats.total_samples - MIN2(stats.active_samples, stats.blame)));
     hidden_samples += MIN2(stats.active_samples, stats.blame);
+    blame += stats.blame;
   }
 
-  if (hidden_samples != 0.0) {
-    estimate.second =
-      kernel_stats.total_samples /
-      (kernel_stats.total_samples - MIN2(kernel_stats.active_samples, hidden_samples));
-  }
+  auto active_samples = blame_stats.back().active_samples;
 
-  return estimate;
+  estimate_ratios.push_back(blame / kernel_stats.total_samples);
+  estimate_speedups.push_back(
+    kernel_stats.total_samples /
+    (kernel_stats.total_samples - MIN2(active_samples, hidden_samples)));
+
+  return std::make_pair(estimate_ratios, estimate_speedups);
 }
 
 
-std::pair<double, double>
+std::pair<std::vector<double>, std::vector<double>>
 ParallelGPUEstimator::estimate(const std::vector<BlameStats> &blame_stats, const KernelStats &kernel_stats) {
-  std::pair<double, double> estimate(0.0, 0.0);
+  std::vector<double> estimate_ratios;
+  std::vector<double> estimate_speedups;
 
   double blame = blame_stats[0].blame;
 
-  if (blame != 0.0) {
-    estimate.first = blame;
-    estimate.second = 1 / blame;
-  }
+  estimate_ratios.push_back(blame);
+  estimate_speedups.push_back(1 / blame);
 
-  return estimate;
+  return std::make_pair(estimate_ratios, estimate_speedups);
 }
 
 
-std::pair<double, double>
+std::pair<std::vector<double>, std::vector<double>>
 ParallelLatencyGPUEstimator::estimate(const std::vector<BlameStats> &blame_stats, const KernelStats &kernel_stats) {
-  std::pair<double, double> estimate(0.0, 0.0);
+  std::vector<double> estimate_ratios;
+  std::vector<double> estimate_speedups;
+
   double cur_warps = kernel_stats.active_warps;
   double max_warps = _arch->warps();
   double blame = blame_stats[0].blame;
@@ -140,18 +147,18 @@ ParallelLatencyGPUEstimator::estimate(const std::vector<BlameStats> &blame_stats
   double thread_balance = expected_threads / kernel_stats.threads;
 
   if (cur_warps < _arch->schedulers()) {
-    estimate.first = cur_warps / _arch->schedulers();
-    estimate.second = _arch->schedulers() / cur_warps * thread_balance;
+    estimate_ratios.push_back(cur_warps / _arch->schedulers());
+    estimate_speedups.push_back(_arch->schedulers() / cur_warps * thread_balance);
   } else {
     double issue = blame / static_cast<double>(kernel_stats.total_samples);
     double warp_issue = 1 - pow(1 - issue, cur_warps / _arch->schedulers());
     double new_warp_issue = 1 - pow(1 - issue, max_warps / _arch->schedulers());
 
-    estimate.first = 1 - warp_issue;
-    estimate.second = new_warp_issue / warp_issue * thread_balance;
+    estimate_ratios.push_back(1 - warp_issue);
+    estimate_speedups.push_back(new_warp_issue / warp_issue * thread_balance);
   }
 
-  return estimate;
+  return std::make_pair(estimate_ratios, estimate_speedups);
 }
 
 } // namespace Analysis

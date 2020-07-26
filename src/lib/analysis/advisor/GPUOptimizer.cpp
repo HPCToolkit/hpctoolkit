@@ -75,6 +75,7 @@ GPUOptimizer *GPUOptimizerFactory(GPUOptimizerType type, GPUArchitecture *arch) 
 }
 
 double GPUOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
+  _inspection.clear();
   _inspection.optimization = this->_name;
   _inspection.total = kernel_stats.total_samples;
   _inspection.callback = NULL;
@@ -82,10 +83,10 @@ double GPUOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &k
   // Regional blame and stats
   std::vector<BlameStats> blame_stats = this->match_impl(kernel_blame, kernel_stats);
 
-  std::tie(_inspection.ratio, _inspection.speedup) =
+  std::tie(_inspection.ratios, _inspection.speedups) =
       _estimator->estimate(blame_stats, kernel_stats);
 
-  return _inspection.speedup;
+  return _inspection.speedups.back();
 }
 
 std::vector<BlameStats> GPURegisterIncreaseOptimizer::match_impl(const KernelBlame &kernel_blame,
@@ -131,7 +132,8 @@ std::vector<BlameStats> GPURegisterDecreaseOptimizer::match_impl(const KernelBla
 std::vector<BlameStats> GPULoopUnrollOptimizer::match_impl(const KernelBlame &kernel_blame,
                                                            const KernelStats &kernel_stats) {
   // Match if inst_blame->from and inst_blame->to are in the same loop
-  std::map<Prof::Struct::ACodeNode *, BlameStats> loops;
+  std::map<Prof::Struct::ACodeNode *, BlameStats> region_stats;
+  auto kernel_active_samples = 0.0;
 
   // Find top latency pairs that are in the same loop
   for (auto *inst_blame : kernel_blame.stall_inst_blame_ptrs) {
@@ -140,19 +142,24 @@ std::vector<BlameStats> GPULoopUnrollOptimizer::match_impl(const KernelBlame &ke
 
     if (src_struct->ancestorLoop() != NULL && dst_struct->ancestorLoop() != NULL &&
       src_struct->ancestorLoop() == dst_struct->ancestorLoop()) {
-      loops[src_struct->ancestorLoop()].active_samples +=
-        inst_blame->lat_blame - inst_blame->stall_blame;
-      loops[src_struct->ancestorLoop()].total_samples += inst_blame->lat_blame;
+      Prof::Struct::ACodeNode *region = inst_blame->src_struct->ancestorLoop();
+      while (region != NULL) {
+        region_stats[region].total_samples += inst_blame->lat_blame;
+        region_stats[region].active_samples += inst_blame->lat_blame - inst_blame->stall_blame;
+        if (region->parent() != NULL) {
+          region = region->parent()->ancestorLoop();
+        } else {
+          break;
+        }
+      }
+      kernel_active_samples += inst_blame->lat_blame - inst_blame->stall_blame;
+      region = inst_blame->src_struct->ancestorLoop();
 
       auto &blame_name = inst_blame->blame_name;
       if (blame_name.find(":LAT_IDEP") != std::string::npos ||
         blame_name.find(":LAT_GMEM") != std::string::npos ||
         blame_name.find(":LAT_SYNC") != std::string::npos) {
-        loops[src_struct->ancestorLoop()].blame += inst_blame->stall_blame;
-
-        if (_inspection.top_regions.size() < _top_regions) {
-          _inspection.top_regions.push_back(*inst_blame);
-        }
+        region_stats[region].blame += inst_blame->stall_blame;
       }
     }
   }
@@ -166,31 +173,61 @@ std::vector<BlameStats> GPULoopUnrollOptimizer::match_impl(const KernelBlame &ke
       "2. Use vector instructions to achieve higher dependency (e.g., float4 load/store, tensor "
       "operations).";
   _inspection.stall = true;
+  _inspection.loop = true;
 
   std::vector<BlameStats> blame_stats_vec;
-  for (auto &iter : loops) {
+  for (auto &iter : region_stats) {
     blame_stats_vec.push_back(iter.second);
+
+    if (_inspection.top_regions.size() < _top_regions) {
+      InstructionBlame region_blame;
+      region_blame.src_struct = iter.first;
+      region_blame.dst_struct = iter.first;
+      region_blame.blame_name = BLAME_GPU_INST_METRIC_NAME ":LAT_DEP";
+      region_blame.stall_blame = iter.second.blame;
+      _inspection.top_regions.push_back(region_blame);
+    }
   }
+
+  std::sort(blame_stats_vec.begin(), blame_stats_vec.end());
+  std::sort(_inspection.top_regions.begin(), _inspection.top_regions.end(),
+    [](const InstructionBlame &l, const InstructionBlame &r) {
+    return l.stall_blame > r.stall_blame;
+    });
+
+  for (auto &blame_stats : blame_stats_vec) {
+    std::cout << "blame_stats.blame: " << blame_stats.blame << std::endl;
+  }
+  for (auto &region : _inspection.top_regions) {
+    std::cout << "region.stall_blame: " << region.stall_blame << std::endl;
+  }
+  blame_stats_vec.push_back(BlameStats(0.0, kernel_active_samples, 0.0));
 
   return blame_stats_vec;
 }
 
 std::vector<BlameStats> GPULoopNoUnrollOptimizer::match_impl(const KernelBlame &kernel_blame,
                                                              const KernelStats &kernel_stats) {
-  auto blame = 0.0;
+  std::map<Prof::Struct::ACodeNode *, BlameStats> region_stats;
 
   // Find top instruction fetch latencies
-  for (auto *inst_blame : kernel_blame.stall_inst_blame_ptrs) {
+  for (auto *inst_blame : kernel_blame.lat_inst_blame_ptrs) {
     auto &blame_name = inst_blame->blame_name;
 
-    if (blame_name == BLAME_GPU_INST_METRIC_NAME ":LAT_IFET") {
-      if (inst_blame->src_struct->ancestorLoop() != NULL) {
-        blame += inst_blame->stall_blame;
-
-        if (_inspection.top_regions.size() < _top_regions) {
-          _inspection.top_regions.push_back(*inst_blame);
-        }
+    Prof::Struct::ACodeNode *region = inst_blame->src_struct->ancestorLoop();
+    while (region != NULL) {
+      region_stats[region].total_samples += inst_blame->lat_blame;
+      region_stats[region].active_samples += inst_blame->lat_blame - inst_blame->stall_blame;
+      if (region->parent() != NULL) {
+        region = region->parent()->ancestorLoop();
+      } else {
+        break;
       }
+    }
+
+    region = inst_blame->src_struct->ancestorLoop();
+    if (region != NULL && blame_name == BLAME_GPU_INST_METRIC_NAME ":LAT_IFET") {
+      region_stats[region].blame += inst_blame->lat_blame;
     }
   }
 
@@ -200,9 +237,30 @@ std::vector<BlameStats> GPULoopNoUnrollOptimizer::match_impl(const KernelBlame &
       "1. Manually unroll loops to reduce redundant instructions.\n"
       "2. Reduce loop unroll factor.";
   _inspection.stall = false;
+  _inspection.loop = true;
 
-  BlameStats blame_stats(blame, kernel_stats.active_samples, kernel_stats.total_samples);
-  return std::vector<BlameStats>{blame_stats};
+  std::vector<BlameStats> blame_stats_vec;
+  for (auto &iter : region_stats) {
+    blame_stats_vec.push_back(iter.second);
+
+    if (_inspection.top_regions.size() < _top_regions) {
+      InstructionBlame region_blame;
+      region_blame.src_struct = iter.first;
+      region_blame.dst_struct = iter.first;
+      region_blame.blame_name = BLAME_GPU_INST_METRIC_NAME ":LAT_IFET";
+      region_blame.lat_blame = iter.second.blame;
+      _inspection.top_regions.push_back(region_blame);
+    }
+  }
+
+  std::sort(blame_stats_vec.begin(), blame_stats_vec.end());
+  std::sort(_inspection.top_regions.begin(), _inspection.top_regions.end(),
+    [](const InstructionBlame &l, const InstructionBlame &r) {
+    return l.lat_blame > r.lat_blame;
+    });
+  
+
+  return blame_stats_vec;
 }
 
 std::vector<BlameStats> GPUStrengthReductionOptimizer::match_impl(const KernelBlame &kernel_blame,
@@ -286,8 +344,8 @@ std::vector<BlameStats> GPUCodeReorderOptimizer::match_impl(const KernelBlame &k
     }
     region = inst_blame->src_struct->ancestorLoop();
 
-    if (inst_blame->blame_name.find(":LAT_GMEM_GMEM") != std::string::npos ||
-      inst_blame->blame_name.find(":LAT_IDEP_DEP") != std::string::npos) {
+    if (inst_blame->blame_name.find(":LAT_GMEM") != std::string::npos ||
+      inst_blame->blame_name.find(":LAT_IDEP") != std::string::npos) {
 
       if (region == NULL) {
         kernel_region_blame += inst_blame->stall_blame;

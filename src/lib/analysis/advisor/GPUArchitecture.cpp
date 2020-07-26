@@ -81,7 +81,7 @@ std::pair<int, int> V100::latency(const std::string &opcode) const {
       // Hard to estimate memory latency
       // Use TLB miss latency
       // TODO(Keren): classify different level latencies
-      return std::pair<int, int>(28, 1024);
+      return std::pair<int, int>(28, 256);
     }
   }
   // Use pipeline latency

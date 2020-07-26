@@ -99,7 +99,7 @@ class GPUEstimator {
   GPUEstimator(GPUArchitecture *arch, GPUEstimatorType type) : _arch(arch), _type(type) {}
 
   // <ratio, speedup>
-  virtual std::pair<double, double>
+  virtual std::pair<std::vector<double>, std::vector<double>>
     estimate(const std::vector<BlameStats> &blame_stats, const KernelStats &kernel_stats) = 0;
 
   virtual ~GPUEstimator() {}
@@ -115,7 +115,7 @@ class SequentialLatencyGPUEstimator : public GPUEstimator {
    SequentialLatencyGPUEstimator(GPUArchitecture *arch) : GPUEstimator(arch, SEQ_LAT) {}
  
    // <ratio, speedup>
-  virtual std::pair<double, double>
+  virtual std::pair<std::vector<double>, std::vector<double>>
     estimate(const std::vector<BlameStats> &blame_stats, const KernelStats &kernel_stats);
  
    virtual ~SequentialLatencyGPUEstimator() {}
@@ -127,7 +127,7 @@ class SequentialGPUEstimator : public GPUEstimator {
   SequentialGPUEstimator(GPUArchitecture *arch) : GPUEstimator(arch, SEQ) {}
  
   // <ratio, speedup>
-  virtual std::pair<double, double>
+  virtual std::pair<std::vector<double>, std::vector<double>>
     estimate(const std::vector<BlameStats> &blame_stats, const KernelStats &kernel_stats);
  
   virtual ~SequentialGPUEstimator() {}
@@ -139,7 +139,7 @@ class ParallelLatencyGPUEstimator : public GPUEstimator {
   ParallelLatencyGPUEstimator(GPUArchitecture *arch) : GPUEstimator(arch, PARALLEL_LAT) {}
  
   // <ratio, speedup>
-  virtual std::pair<double, double>
+  virtual std::pair<std::vector<double>, std::vector<double>>
     estimate(const std::vector<BlameStats> &blame_stats, const KernelStats &kernel_stats);
  
   virtual ~ParallelLatencyGPUEstimator() {}
@@ -151,7 +151,7 @@ class ParallelGPUEstimator : public GPUEstimator {
   ParallelGPUEstimator(GPUArchitecture *arch) : GPUEstimator(arch, PARALLEL) {}
  
   // <ratio, speedup>
-  virtual std::pair<double, double>
+  virtual std::pair<std::vector<double>, std::vector<double>>
     estimate(const std::vector<BlameStats> &blame_stats, const KernelStats &kernel_stats);
  
   virtual ~ParallelGPUEstimator() {}

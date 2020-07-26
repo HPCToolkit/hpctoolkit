@@ -89,8 +89,6 @@ class InstructionBlame;
 struct Inspection {
   typedef std::string (*InspectionCallBack)(const InstructionBlame &);
 
-  double ratio;
-  double speedup;
   double total;
 
   bool loop;
@@ -100,6 +98,10 @@ struct Inspection {
   std::string hint;
 
   std::vector<InstructionBlame> top_regions;
+  // speedups[0..n-1] = overall speedup
+  // speedup[n] = specific speedups
+  std::vector<double> ratios;
+  std::vector<double> speedups;
 
   // <before, after>
   std::pair<int, int> active_warp_count;
@@ -110,9 +112,7 @@ struct Inspection {
   InspectionCallBack callback;
 
   Inspection()
-      : ratio(-1.0),
-        speedup(-1.0),
-        total(-1.0),
+      : total(-1.0),
         loop(false),
         stall(false),
         active_warp_count(-1, -1),
@@ -125,8 +125,8 @@ struct Inspection {
     hint.clear();
     optimization.clear();
     top_regions.clear();
-    ratio = -1.0;
-    speedup = -1.0;
+    speedups.clear();
+    ratios.clear();
     total = -1.0;
     stall = false;
     loop = false;

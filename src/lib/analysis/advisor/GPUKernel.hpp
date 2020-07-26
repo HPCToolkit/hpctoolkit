@@ -110,6 +110,10 @@ struct BlameStats {
     blame(blame), active_samples(active_samples), total_samples(total_samples) {}
 
   BlameStats() {}
+
+  bool operator < (const BlameStats &blame_stats) const {
+    return this->blame > blame_stats.blame;
+  }
 };
 
 }  // namespace Analysis
