@@ -1,3 +1,5 @@
+#include <hpcrun/memory/hpcrun-malloc.h>
+
 #include "control-knob.h"
 #include <utilities/tokenize.h>
 #include <stdio.h>
@@ -6,87 +8,115 @@
 
 
 typedef struct control_knob {
-  char *name;
-  char *value;
+	struct control_knob *next;
+	char *name;
+	char *value;
+	control_knob_type type;
 } control_knob_t;
 
-control_knob_t control_knobs[HPCRUN_NUM_CONTROL_KNOBS];
+
+static control_knob_t *control_knobs = NULL;
 
 
-static void control_knob_process_string(char *in);
+static control_knob_t *
+control_knob_name_lookup(char *in)
+{
+	control_knob_t *iter = control_knobs;
+
+	while (iter != NULL){
+		if(strcmp(iter->name, in) == 0) return iter;
+
+		iter = iter->next;
+	}
+	return NULL;
+}
+
+
+static void
+control_knob_default_register(){
+	control_knob_register("STREAMS_PER_THREAD", "65536", ck_int);
+	control_knob_register("MAX_THREADS_CONSUMERS", "256", ck_int);
+}
+
+
+void
+control_knob_register(char *name, char *value, control_knob_type type)
+{
+	control_knob_t *iter = control_knob_name_lookup(name);
+
+	if (iter == NULL){
+		iter = (control_knob_t*) hpcrun_malloc_safe(sizeof(control_knob_t));
+	}
+
+	iter->name = strdup(name);
+	iter->value = strdup(value);
+	iter->type = type;
+	iter->next = control_knobs;
+
+	control_knobs = iter;
+}
 
 
 void
 control_knob_init()
 {
-  char *s = getenv("HPCRUN_CONTROL_KNOBS");
+	control_knob_default_register();
 
-#define INIT_KNOBS(knob_name, knob_value) \
-  control_knobs[knob_name].name = #knob_name; \
-  control_knobs[knob_name].value = #knob_value;
+	char *in = getenv("HPCRUN_CONTROL_KNOBS");
+	if (in == NULL) return;
 
-  FORALL_KNOBS(INIT_KNOBS)
+	char *save;
+	for (char *f = start_tok(in); more_tok(); f = next_tok()){
+		char *tmp = strdup(f);
+		char *name = strtok_r(tmp, "=", &save);
+		control_knob_t *iter = NULL;
 
-#undef INIT_KNOBS
+		if (name != NULL && (iter = control_knob_name_lookup(name))) {
+			char *value = strtok_r(NULL, "=", &save);
+			iter->value = value;
+		} else {
+			fprintf(stderr, "\tcontrol token %s not recognized\n\n", f);
+		}
+	}
 
-	if (s) {
-    control_knob_process_string(s);
-  }
-}
-
-
-char *
-control_knob_value_get(control_category c)
-{
-  if (c < HPCRUN_NUM_CONTROL_KNOBS) {
-    return control_knobs[c].value;
-  }
-  return NULL;
 }
 
 
 int
-control_knob_value_get_int(control_category c)
+control_knob_value_get_int(char *in)
 {
-  char *ret = NULL;
-  if ((ret = control_knob_value_get(c)) != NULL) {
-    // FIXME(Keren): atoi does not differentiate between zero and failure
-    return atoi(ret);
+	control_knob_t *iter = control_knob_name_lookup(in);
+  if (iter) {
+		if (iter->type == ck_int) {
+			return atoi(iter->value);
+		}
   }
   return 0;
 }
 
 
-static int
-control_knob_name_lookup(char *n)
+float
+control_knob_value_get_float(char *in)
 {
-#define LOOKUP_KNOBS(knob_name, knob_value)  \
-  if (strcmp(control_knobs[knob_name].name, n) == 0) {  \
-    return knob_name;                                   \
-  }
-
-  FORALL_KNOBS(LOOKUP_KNOBS) 
-
-#undef LOOKUP_KNOBS
-
-  return -1;
+	control_knob_t *iter = control_knob_name_lookup(in);
+	if (iter) {
+		if (iter->type == ck_float) {
+			return atof(iter->value);
+		}
+	}
+	return 0;
 }
 
 
-static void
-control_knob_process_string(char *in)
+char *
+control_knob_value_get_string(char *in)
 {
-  char *save;
-  for (char *f = start_tok(in); more_tok(); f = next_tok()){
-    char *tmp = strdup(f);
-    char *name = strtok_r(tmp, "=", &save);
-    int i = -1;
-
-		if (name != NULL && (i = control_knob_name_lookup(name)) != -1) {
-      char *value = strtok_r(NULL, "=", &save);
-      control_knobs[i].value = value;
-    } else {
-      fprintf(stderr, "\tcontrol token %s not recognized\n\n", f);
-    }
-  }
+	control_knob_t *iter = control_knob_name_lookup(in);
+	if (iter) {
+		if (iter->type == ck_string) {
+			return iter->value;
+		}
+	}
+	return 0;
 }
+

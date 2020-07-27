@@ -465,156 +465,144 @@ void
 hpcrun_init_internal(bool is_child)
 {
 #ifndef HPCRUN_STATIC_LINK
-  gotcha_filter_libraries_by_name(library_to_intercept);
-  gotcha_wrap(wrap_actions, sizeof(wrap_actions)/sizeof(struct gotcha_binding_t), "hpctoolkit");
-  gotcha_restore_library_filter_func();
+	gotcha_filter_libraries_by_name(library_to_intercept);
+	gotcha_wrap(wrap_actions, sizeof(wrap_actions)/sizeof(struct gotcha_binding_t), "hpctoolkit");
+	gotcha_restore_library_filter_func();
 #endif
 
-  hpcrun_initLoadmap();
+	hpcrun_memory_reinit();
+	hpcrun_mmap_init();
+	hpcrun_thread_data_init(0, NULL, is_child, hpcrun_get_num_sample_sources());
 
-  hpcrun_memory_reinit();
-  hpcrun_mmap_init();
-  hpcrun_thread_data_init(0, NULL, is_child, hpcrun_get_num_sample_sources());
+	// must initialize unwind recipe map before initializing fnbounds
+	// because mapping of load modules affects the recipe map.
+	hpcrun_unw_init();
 
-  // must initialize unwind recipe map before initializing fnbounds
-  // because mapping of load modules affects the recipe map.
-  hpcrun_unw_init();
+	main_addr = monitor_get_addr_main();
+	setup_main_bounds_check(main_addr);
+	TMSG(MAIN_BOUNDS, "main addr %p ==> lower %p, upper %p", main_addr, main_lower, main_upper);
 
-  hpcrun_save_vdso();
+	hpcrun_options__init(&opts);
+	hpcrun_options__getopts(&opts);
 
-  // init callbacks for each device
-  hpcrun_initializer_init();
+	hpcrun_trace_init(); // this must go after thread initialization
+	hpcrun_trace_open(&(TD_GET(core_profile_trace_data)));
 
-  // WARNING: a perfmon bug requires us to fork off the fnbounds
-  // server before we call PAPI_init, which is done in argument
-  // processing below. Also, fnbounds_init must be done after the
-  // memory allocator is initialized.
-  fnbounds_init();
+	// Decide whether to retain full single recursion, or collapse recursive calls to
+	// first instance of recursive call
+	hpcrun_set_retain_recursion_mode(getenv("HPCRUN_RETAIN_RECURSION") != NULL);
 
-  main_addr = monitor_get_addr_main();
-  setup_main_bounds_check(main_addr);
-  TMSG(MAIN_BOUNDS, "main addr %p ==> lower %p, upper %p", main_addr, main_lower, main_upper);
+	// Initialize logical unwinding agents (LUSH)
+	if (opts.lush_agent_paths[0] != '\0') {
+		epoch_t* epoch = TD_GET(core_profile_trace_data.epoch);
+		TMSG(MALLOC," -init_internal-: lush allocation");
+		lush_agents = (lush_agent_pool_t*)hpcrun_malloc(sizeof(lush_agent_pool_t));
+		hpcrun_logicalUnwind(true);
+		lush_agent_pool__init(lush_agents, opts.lush_agent_paths);
+		EMSG("Logical Unwinding Agent: %s (%p / %p)", opts.lush_agent_paths,
+				 epoch, lush_agents);
+	}
 
-  hpcrun_options__init(&opts);
-  hpcrun_options__getopts(&opts);
+	lush_metrics = (lush_agents) ? 1 : 0;
 
-  hpcrun_trace_init(); // this must go after thread initialization
-  hpcrun_trace_open(&(TD_GET(core_profile_trace_data)));
+	// tallent: this is harmless, but should really only occur for pthread agent
+	lushPthr_processInit();
 
-  // Decide whether to retain full single recursion, or collapse recursive calls to
-  // first instance of recursive call
-  hpcrun_set_retain_recursion_mode(getenv("HPCRUN_RETAIN_RECURSION") != NULL);
-
-  // Initialize logical unwinding agents (LUSH)
-  if (opts.lush_agent_paths[0] != '\0') {
-    epoch_t* epoch = TD_GET(core_profile_trace_data.epoch);
-    TMSG(MALLOC," -init_internal-: lush allocation");
-    lush_agents = (lush_agent_pool_t*)hpcrun_malloc(sizeof(lush_agent_pool_t));
-    hpcrun_logicalUnwind(true);
-    lush_agent_pool__init(lush_agents, opts.lush_agent_paths);
-    EMSG("Logical Unwinding Agent: %s (%p / %p)", opts.lush_agent_paths,
-	 epoch, lush_agents);
-  }
-
-  lush_metrics = (lush_agents) ? 1 : 0;
-
-  // tallent: this is harmless, but should really only occur for pthread agent
-  lushPthr_processInit();
-
-  hpcrun_setup_segv();
+	hpcrun_setup_segv();
 
 
 #ifndef USE_LIBUNW
-  if (getenv("HPCRUN_ONLY_DUMP_INTERVALS")) {
-    fnbounds_table_t table = fnbounds_fetch_executable_table();
-    TMSG(INTERVALS_PRINT, "table data = %p", table.table);
-    TMSG(INTERVALS_PRINT, "table length = %d", table.len);
+	if (getenv("HPCRUN_ONLY_DUMP_INTERVALS")) {
+		fnbounds_table_t table = fnbounds_fetch_executable_table();
+		TMSG(INTERVALS_PRINT, "table data = %p", table.table);
+		TMSG(INTERVALS_PRINT, "table length = %d", table.len);
 
-    if (monitor_sigaction(SIGSEGV, &dump_interval_handler, 0, NULL)) {
-      fprintf(stderr, "Could not install dump interval segv handler\n");
-      monitor_real_exit(1);
-    }
+		if (monitor_sigaction(SIGSEGV, &dump_interval_handler, 0, NULL)) {
+			fprintf(stderr, "Could not install dump interval segv handler\n");
+			monitor_real_exit(1);
+		}
 
-    for (void** e = table.table; e < table.table + table.len - 1; e++) {
-      fprintf(stderr, "======== %p Intervals ========\n", *e);
-      if (e > table.table || ! sigsetjmp(ivd_jb, 1)) 
-	hpcrun_dump_intervals(*e);
-      else
-	fprintf(stderr, "--Error: skipped--\n");
-      fprintf(stderr, "\n");
-      fflush(stderr);
-    }
-    exit(0);
-  }
+		for (void** e = table.table; e < table.table + table.len - 1; e++) {
+			fprintf(stderr, "======== %p Intervals ========\n", *e);
+			if (e > table.table || ! sigsetjmp(ivd_jb, 1))
+				hpcrun_dump_intervals(*e);
+			else
+				fprintf(stderr, "--Error: skipped--\n");
+			fprintf(stderr, "\n");
+			fflush(stderr);
+		}
+		exit(0);
+	}
 #endif // ! USE_LIBUNW
 
-  hpcrun_stats_reinit();
-  hpcrun_start_stop_internal_init();
+	hpcrun_stats_reinit();
+	hpcrun_start_stop_internal_init();
 
-  // sample source setup
+	// sample source setup
 
-  TMSG(PROCESS, "Sample source setup");
-  //
-  // NOTE: init step no longer necessary.
-  //       -all- possible (e.g. registered) sample sources call their own init method
-  //       no need to do it twice.
-  //
-  if (! is_child) {
-    SAMPLE_SOURCES(process_event_list, lush_metrics);
-    SAMPLE_SOURCES(finalize_event_list);
-    hpcrun_metrics_data_finalize();
-  }
-  SAMPLE_SOURCES(gen_event_set, lush_metrics);
+	TMSG(PROCESS, "Sample source setup");
+	//
+	// NOTE: init step no longer necessary.
+	//       -all- possible (e.g. registered) sample sources call their own init method
+	//       no need to do it twice.
+	//
 
-  // set up initial 'epoch' 
-  
-  TMSG(EPOCH,"process init setting up initial epoch/loadmap");
-  hpcrun_epoch_init(NULL);
+	if (! is_child) {
+		SAMPLE_SOURCES(process_event_list, lush_metrics);
+		SAMPLE_SOURCES(finalize_event_list);
+		hpcrun_metrics_data_finalize();
+	}
+	SAMPLE_SOURCES(gen_event_set, lush_metrics);
 
-#ifdef SPECIAL_DUMP_INTERVALS 
-  {
-    // temporary debugging code for x86 / ppc64
+	// set up initial 'epoch'
 
-    extern void hpcrun_dump_intervals(void* addr2);
-    char* addr1 = getenv("ADDR1");
-    char* addr2 = getenv("ADDR2");
- 
-    if (addr1 != NULL) {
-      addr1 = (void*) (uintptr_t) strtol(addr1, NULL, 0);
-      fprintf(stderr,"address 1 = %p\n", addr1);
-      hpcrun_dump_intervals(addr1);
-      fflush(NULL);
-    }
+	TMSG(EPOCH,"process init setting up initial epoch/loadmap");
+	hpcrun_epoch_init(NULL);
 
-    if (addr2 != NULL) {
-      addr2 = (void*) (uintptr_t) strtol(addr2, NULL, 0);
-      fprintf(stderr,"address 2 = %p\n", addr2);
-      hpcrun_dump_intervals(addr2);
-      fflush(NULL);
-    }
-    if (addr1 || addr2) monitor_real_exit(0);
-  }
+#ifdef SPECIAL_DUMP_INTERVALS
+	{
+	    // temporary debugging code for x86 / ppc64
+
+	    extern void hpcrun_dump_intervals(void* addr2);
+	    char* addr1 = getenv("ADDR1");
+	    char* addr2 = getenv("ADDR2");
+
+	    if (addr1 != NULL) {
+	      addr1 = (void*) (uintptr_t) strtol(addr1, NULL, 0);
+	      fprintf(stderr,"address 1 = %p\n", addr1);
+	      hpcrun_dump_intervals(addr1);
+	      fflush(NULL);
+	    }
+
+	    if (addr2 != NULL) {
+	      addr2 = (void*) (uintptr_t) strtol(addr2, NULL, 0);
+	      fprintf(stderr,"address 2 = %p\n", addr2);
+	      hpcrun_dump_intervals(addr2);
+	      fflush(NULL);
+	    }
+	    if (addr1 || addr2) monitor_real_exit(0);
+	  }
 #endif
 
-  hpcrun_initializers_apply();
+	hpcrun_initializers_apply();
 
-  // start the sampling process
+	// start the sampling process
 
-  hpcrun_enable_sampling();
-  hpcrun_set_safe_to_sync();
+	hpcrun_enable_sampling();
+	hpcrun_set_safe_to_sync();
 
-  // release the wallclock handler -for this thread-
-  hpcrun_itimer_wallclock_ok(true);
+	// release the wallclock handler -for this thread-
+	hpcrun_itimer_wallclock_ok(true);
 
-  // NOTE: hack to ensure that sample source start can be delayed until mpi_init
-  if (hpctoolkit_sampling_is_active() && ! getenv("HPCRUN_MPI_ONLY")) {
-      SAMPLE_SOURCES(start);
-  }
+	// NOTE: hack to ensure that sample source start can be delayed until mpi_init
+	if (hpctoolkit_sampling_is_active() && ! getenv("HPCRUN_MPI_ONLY")) {
+		SAMPLE_SOURCES(start);
+	}
 
-  hpcrun_is_initialized_private = true;
+	hpcrun_is_initialized_private = true;
 
-  // FIXME: this isn't in master-gpu-trace. how is it managed?
-  // stream_tracing_init();
+	// FIXME: this isn't in master-gpu-trace. how is it managed?
+	// stream_tracing_init();
 }
 
 #define GET_NEW_AUX_CLEANUP_NODE(node_ptr) do {                               \
@@ -895,94 +883,111 @@ hpcrun_wait()
 void*
 monitor_init_process(int *argc, char **argv, void* data)
 {
-  char* process_name;
-  char  buf[PROC_NAME_LEN];
+	char* process_name;
+	char  buf[PROC_NAME_LEN];
 
-  hpcrun_thread_suppress_sample = false;
+	hpcrun_thread_suppress_sample = false;
 
-  fork_data_t* fork_data = (fork_data_t*) data;
-  bool is_child = data && fork_data->is_child;
+	fork_data_t* fork_data = (fork_data_t*) data;
+	bool is_child = data && fork_data->is_child;
 
-  hpcrun_wait();
+	hpcrun_wait();
 
 #if 0
-  // temporary patch to avoid deadlock within PAMI's optimized implementation 
-  // of all-to-all. a problem was observed when PAMI's optimized all-to-all 
-  // implementation was invoked on behalf of darshan_shutdown 
-  putenv("PAMID_COLLECTIVES=0");
+	// temporary patch to avoid deadlock within PAMI's optimized implementation
+	  // of all-to-all. a problem was observed when PAMI's optimized all-to-all
+	  // implementation was invoked on behalf of darshan_shutdown
+	  putenv("PAMID_COLLECTIVES=0");
 #endif // defined(HOST_SYSTEM_IBM_BLUEGENE)
 
-  hpcrun_sample_prob_init();
+	hpcrun_sample_prob_init();
 
-  // FIXME: if the process fork()s before main, then argc and argv
-  // will be NULL in the child here.  MPT on CNL does this.
-  process_name = "unknown";
-  if (argv != NULL && argv[0] != NULL) {
-    process_name = argv[0];
-  }
-  else {
-    int len = readlink("/proc/self/exe", buf, PROC_NAME_LEN - 1);
-    if (len > 1) {
-      buf[len] = 0;
-      process_name = buf;
-    }
-  }
+	// FIXME: if the process fork()s before main, then argc and argv
+	// will be NULL in the child here.  MPT on CNL does this.
+	process_name = "unknown";
+	if (argv != NULL && argv[0] != NULL) {
+		process_name = argv[0];
+	}
+	else {
+		int len = readlink("/proc/self/exe", buf, PROC_NAME_LEN - 1);
+		if (len > 1) {
+			buf[len] = 0;
+			process_name = buf;
+		}
+	}
 
-  hpcrun_set_using_threads(false);
+	hpcrun_set_using_threads(false);
 
-  copy_execname(process_name);
-  hpcrun_files_set_executable(process_name);
+	copy_execname(process_name);
+	hpcrun_files_set_executable(process_name);
 
+	// We initialize the load map and fnbounds before registering sample source.
+	// This is because sample source init (such as PAPI)  may dlopen other libraries,
+	// which will trigger our library monitoring code and fnbound queries
+	hpcrun_initLoadmap();
+
+	// We need to initialize messages related functions and set up measurement directory,
+	// so that we can write vdso and prevent fnbounds print messages to the terminal.
+	messages_init();
+	if (!hpcrun_get_disabled()) {
+		hpcrun_files_set_directory();
+	}
+	messages_logfile_create();
+
+	// We need to save vdso before initializing fnbounds this
+	// is because fnbounds_init will iterate over the load map
+	// and will invoke analysis on vdso
+	hpcrun_save_vdso();
+
+	// init callbacks for each device //Module_ignore_map is here
+	hpcrun_initializer_init();
+
+	// fnbounds must be after module_ignore_map
+	fnbounds_init();
 
 	hpcrun_registered_sources_init();
 
-  messages_init();
+	control_knob_init();
 
-  control_knob_init();  
+	hpcrun_do_custom_init();
 
-  hpcrun_do_custom_init();
+	// for debugging, limit the life of the execution with an alarm.
+	char* life  = getenv("HPCRUN_LIFETIME");
+	if (life != NULL){
+		int seconds = atoi(life);
+		if (seconds > 0) alarm((unsigned int) seconds);
+	}
 
-  // for debugging, limit the life of the execution with an alarm.
-  char* life  = getenv("HPCRUN_LIFETIME");
-  if (life != NULL){
-    int seconds = atoi(life);
-    if (seconds > 0) alarm((unsigned int) seconds);
-  }
+	char* s = getenv(HPCRUN_EVENT_LIST);
 
-  char* s = getenv(HPCRUN_EVENT_LIST);
+	if (! is_child) {
+		hpcrun_sample_sources_from_eventlist(s);
+	}
 
-  if (! is_child) {
-    hpcrun_sample_sources_from_eventlist(s);
-  }
+	hpcrun_set_abort_timeout();
 
-  hpcrun_set_abort_timeout();
+	hpcrun_process_sample_source_none();
 
-  hpcrun_process_sample_source_none();
+	TMSG(PROCESS,"hpcrun_files_set_executable called w process name = %s", process_name);
 
-  if (!hpcrun_get_disabled()) {
-    hpcrun_files_set_directory();
-  }
-
-  TMSG(PROCESS,"hpcrun_files_set_executable called w process name = %s", process_name);
-
-  TMSG(PROCESS,"init");
-
-  messages_logfile_create();
-  hpcrun_sample_prob_mesg();
-
-  TMSG(PROCESS, "I am a %s process", is_child ? "child" : "parent");
-
-  hpcrun_init_internal(is_child);
-
-  if (ENABLED(TST)){
-    EEMSG("TST debug ctl is active!");
-    STDERR_MSG("Std Err message appears");
-  }
+	TMSG(PROCESS,"init");
 
 
-  hpcrun_safe_exit();
+	hpcrun_sample_prob_mesg();
 
-  return data;
+	TMSG(PROCESS, "I am a %s process", is_child ? "child" : "parent");
+
+	hpcrun_init_internal(is_child);
+
+	if (ENABLED(TST)){
+		EEMSG("TST debug ctl is active!");
+		STDERR_MSG("Std Err message appears");
+	}
+
+
+	hpcrun_safe_exit();
+
+	return data;
 }
 
 

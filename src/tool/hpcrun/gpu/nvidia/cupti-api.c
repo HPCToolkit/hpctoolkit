@@ -971,9 +971,6 @@ cupti_subscriber_callback
 
         hpcrun_safe_exit();
 
-				//TODO: DEJAN - get time
-				uint64_t time;
-				cupti_activity_timestamp_get(&time);
         // Generate notification entry
         uint64_t cpu_submit_time = hpcrun_nanotime();
         gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts,
@@ -1119,14 +1116,8 @@ cupti_subscriber_callback
 
         cupti_kernel_ph = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel);
 
-
-				//TODO: DEJAN - get time
-				uint64_t time;
-				cupti_activity_timestamp_get(&time);
         // Generate notification entry
         uint64_t cpu_submit_time = hpcrun_nanotime();
-
-				printf("2 cupti_subscriber_callback:: Activity time = %lu | cpu_submit = %lu\n", time, cpu_submit_time);
 
         gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts,
           cpu_submit_time);
@@ -1248,12 +1239,6 @@ cupti_buffer_completion_callback
     do {
       status = cupti_buffer_cursor_advance(buffer, validSize, &cupti_activity);
       if (status) {
-
-//      	//TODO: DEJAN - get time
-//				uint64_t time;
-//				cupti_activity_timestamp_get(&time);
-//				printf("Activity time = %lu \n", time);
-
       	cupti_activity_process(cupti_activity);
         ++processed;
       }
