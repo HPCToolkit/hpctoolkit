@@ -80,6 +80,52 @@
 //***************************************************************************
 
 //***************************************************************************
+// hdr
+//***************************************************************************
+int 
+cms_hdr_fwrite(FILE* fs)
+{
+  fwrite(HPCCCTSPARSE_FMT_Magic,    1, HPCCCTSPARSE_FMT_MagicLen,   fs);
+  fwrite(&HPCCCTSPARSE_FMT_Version, 1, HPCCCTSPARSE_FMT_VersionLen, fs);
+  return HPCFMT_OK;
+}
+
+int
+cms_hdr_fread(cms_hdr_t* hdr, FILE* infs)
+{
+  char tag[HPCCCTSPARSE_FMT_MagicLen + 1];
+
+  int nr = fread(tag, 1, HPCCCTSPARSE_FMT_MagicLen, infs);
+  tag[HPCCCTSPARSE_FMT_MagicLen] = '\0';
+
+  if (nr != HPCCCTSPARSE_FMT_MagicLen) {
+    return HPCFMT_ERR;
+  }
+  if (strcmp(tag, HPCCCTSPARSE_FMT_Magic) != 0) {
+    return HPCFMT_ERR;
+  }
+
+  nr = fread(&hdr->version, 1, HPCCCTSPARSE_FMT_VersionLen, infs);
+  if (nr != HPCCCTSPARSE_FMT_VersionLen) {
+    return HPCFMT_ERR;
+  }
+
+  return HPCFMT_OK;
+}
+
+int
+cms_hdr_fprint(cms_hdr_t* hdr, FILE* fs)
+{
+  fprintf(fs, "%s\n", HPCCCTSPARSE_FMT_Magic);
+
+  fprintf(fs, "[hdr:\n");
+  fprintf(fs, "  (version: %d)\n", hdr->version);
+  fprintf(fs, "]\n");
+
+  return HPCFMT_OK;
+}
+
+//***************************************************************************
 // cms_ctx_info_t
 //***************************************************************************
 int

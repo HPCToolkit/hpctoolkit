@@ -80,8 +80,72 @@
 //***************************************************************************
 
 //***************************************************************************
+// hdr
+//***************************************************************************
+int 
+tms_hdr_fwrite(FILE* fs)
+{
+  fwrite(HPCTHREADSPARSE_FMT_Magic,   1, HPCTHREADSPARSE_FMT_MagicLen,   fs);
+  fwrite(&HPCTHREADSPARSE_FMT_Version, 1, HPCTHREADSPARSE_FMT_VersionLen, fs);
+  return HPCFMT_OK;
+}
+
+int
+tms_hdr_fread(tms_hdr_t* hdr, FILE* infs)
+{
+  char tag[HPCTHREADSPARSE_FMT_MagicLen + 1];
+
+  int nr = fread(tag, 1, HPCTHREADSPARSE_FMT_MagicLen, infs);
+  tag[HPCTHREADSPARSE_FMT_MagicLen] = '\0';
+
+  if (nr != HPCTHREADSPARSE_FMT_MagicLen) {
+    return HPCFMT_ERR;
+  }
+  if (strcmp(tag, HPCTHREADSPARSE_FMT_Magic) != 0) {
+    return HPCFMT_ERR;
+  }
+
+  nr = fread(&hdr->version, 1, HPCTHREADSPARSE_FMT_VersionLen, infs);
+  if (nr != HPCTHREADSPARSE_FMT_VersionLen) {
+    return HPCFMT_ERR;
+  }
+
+  return HPCFMT_OK;
+}
+
+int
+tms_hdr_fprint(tms_hdr_t* hdr, FILE* fs)
+{
+  fprintf(fs, "%s\n", HPCTHREADSPARSE_FMT_Magic);
+
+  fprintf(fs, "[hdr:\n");
+  fprintf(fs, "  (version: %d)\n", hdr->version);
+  fprintf(fs, "]\n");
+
+  return HPCFMT_OK;
+}
+
+
+//***************************************************************************
 // id tuple
 //***************************************************************************
+char* kindStr(const uint16_t kind)
+{
+  if(kind == SUMMARY){
+    return "SUMMARY";
+  }
+  else if(kind == RANK){
+    return "RANK";
+  }
+  else if(kind == THREAD){
+    return "THREAD";
+  }
+  else{
+    return "ERROR";
+  }
+}
+
+
 int
 tms_id_tuple_fwrite(uint32_t num_tuples,tms_id_tuple_t* x, FILE* fs)
 {
@@ -121,7 +185,7 @@ tms_id_tuple_fprint(uint32_t num_tuples, tms_id_tuple_t* x, FILE* fs)
   for (uint i = 0; i < num_tuples; ++i) {
     fprintf(fs,"  %d[", i);
     for (uint j = 0; j < x[i].length; ++j) {
-      fprintf(fs,"(%s: %d) ", KIND(x[i].ids[j].kind), x[i].ids[j].index);
+      fprintf(fs,"(%s: %d) ", kindStr(x[i].ids[j].kind), x[i].ids[j].index);
     }
     fprintf(fs,"]\n");
   }
@@ -188,7 +252,7 @@ tms_profile_info_fprint(uint32_t num_prof, tms_profile_info_t* x, FILE* fs)
   fprintf(fs,"[Profile informations for %d profiles\n", num_prof);
 
   for (uint i = 0; i < num_prof; ++i) {
-    fprintf(fs,"  %d[(id_tuple_ptr: %d) (metadata_ptr: %d) (spare_one: %d) (spare_two: %d) (num_vals: %ld) (num_nzctxs: %d) (starting location: %ld)]\n", 
+    fprintf(fs,"  %d[(id_tuple_ptr: %ld) (metadata_ptr: %ld) (spare_one: %ld) (spare_two: %ld) (num_vals: %ld) (num_nzctxs: %d) (starting location: %ld)]\n", 
       i, x[i].id_tuple_ptr, x[i].metadata_ptr, x[i].spare_one, x[i].spare_two, x[i].num_vals, x[i].num_nzctxs,x[i].offset);
   }
   fprintf(fs,"]\n");

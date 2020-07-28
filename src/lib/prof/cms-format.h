@@ -81,6 +81,33 @@ extern "C" {
 #endif
 
 //***************************************************************************
+// hdr
+//***************************************************************************
+static const char HPCCCTSPARSE_FMT_Magic[] = "HPCPROF-cmsdb_____"; //18 bytes
+static const char HPCCCTSPARSE_FMT_Version = 0;                    //1  byte
+
+static const int HPCCCTSPARSE_FMT_MagicLen   = sizeof(HPCCCTSPARSE_FMT_Magic) - 1;
+static const int HPCCCTSPARSE_FMT_VersionLen = 1; 
+
+static const int HPCCCTSPARSE_FMT_HeaderLen = 
+  (HPCCCTSPARSE_FMT_MagicLen + HPCCCTSPARSE_FMT_VersionLen);
+static const int HPCCCTSPARSE_FMT_HeaderOff = 0;
+
+typedef struct cms_hdr_t{
+  uint8_t version;
+}cms_hdr_t;
+
+int 
+cms_hdr_fwrite(FILE* fs);
+
+int
+cms_hdr_fread(cms_hdr_t* hdr, FILE* infs);
+
+int
+cms_hdr_fprint(cms_hdr_t* hdr, FILE* fs);
+
+
+//***************************************************************************
 // cms_ctx_info_t
 //***************************************************************************
 const int CMS_num_ctx_SIZE      = 4;
@@ -88,7 +115,11 @@ const int CMS_ctx_id_SIZE       = 4;
 const int CMS_num_val_SIZE      = 8;
 const int CMS_num_nzmid_SIZE    = 2;
 const int CMS_ctx_offset_SIZE   = 8;
-const int CMS_ctx_info_SIZE     = CMS_ctx_id_SIZE + CMS_num_val_SIZE + CMS_num_nzmid_SIZE + CMS_ctx_offset_SIZE;
+const int CMS_ctx_info_SIZE     = 
+  CMS_ctx_id_SIZE + CMS_num_val_SIZE + CMS_num_nzmid_SIZE + CMS_ctx_offset_SIZE;
+
+static const int HPCCCTSPARSE_FMT_CtxInfoOff = 
+  HPCCCTSPARSE_FMT_HeaderLen + CMS_num_ctx_SIZE;
 
 typedef struct cms_ctx_info_t{
   uint32_t ctx_id;

@@ -188,8 +188,15 @@ Analysis::Raw::writeAsText_sparseDBthread(const char* filenm, bool easygrep)
       DIAG_Throw("error opening thread sparse file '" << filenm << "'");
     }
 
+    tms_hdr_t hdr;
+    int ret = tms_hdr_fread(&hdr, fs);
+    if (ret != HPCFMT_OK) {
+      DIAG_Throw("error reading hdr from sparse metrics file '" << filenm << "'");
+    }
+    tms_hdr_fprint(&hdr, ofs);
+
     uint32_t num_prof;
-    int ret = hpcfmt_int4_fread(&num_prof, fs);
+    ret = hpcfmt_int4_fread(&num_prof, fs);
     if (ret != HPCFMT_OK) {
       DIAG_Throw("error reading num_prof from sparse metrics file '" << filenm << "'");
     }
@@ -222,9 +229,9 @@ Analysis::Raw::writeAsText_sparseDBthread(const char* filenm, bool easygrep)
       tms_sparse_metrics_free(&sm);
     }
    
-    tms_profile_info_free(&x);   
+    tms_profile_info_free(&x);     
     tms_id_tuple_free(&tuples, num_prof);
-  
+
     hpcio_fclose(fs);
     hpcio_fclose(ofs);
   }
@@ -246,9 +253,17 @@ Analysis::Raw::writeAsText_sparseDBcct(const char* filenm, bool easygrep)
     if (!fs) {
       DIAG_Throw("error opening cct sparse file '" << filenm << "'");
     }
+
+    cms_hdr_t hdr;
+    int ret = cms_hdr_fread(&hdr, fs);
+    if (ret != HPCFMT_OK) {
+      DIAG_Throw("error reading hdr from sparse metrics file '" << filenm << "'");
+    }
+    cms_hdr_fprint(&hdr, ofs);
+
     uint32_t num_ctx;
     cms_ctx_info_t* x;
-    int ret = cms_ctx_info_fread(&x, &num_ctx,fs);
+    ret = cms_ctx_info_fread(&x, &num_ctx,fs);
     if (ret != HPCFMT_OK) {
       DIAG_Throw("error reading cct information from sparse metrics file '" << filenm << "'");
     }

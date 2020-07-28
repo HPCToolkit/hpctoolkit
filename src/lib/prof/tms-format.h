@@ -80,15 +80,46 @@ extern "C" {
 #endif
 
 //***************************************************************************
+// hdr
+//***************************************************************************
+static const char HPCTHREADSPARSE_FMT_Magic[] = "HPCPROF-tmsdb_____"; //18 bytes
+static const char HPCTHREADSPARSE_FMT_Version = 0;                    //1  byte
+
+static const int HPCTHREADSPARSE_FMT_MagicLen   = sizeof(HPCTHREADSPARSE_FMT_Magic) - 1;
+static const int HPCTHREADSPARSE_FMT_VersionLen = 1; 
+
+static const int HPCTHREADSPARSE_FMT_HeaderLen = 
+  (HPCTHREADSPARSE_FMT_MagicLen + HPCTHREADSPARSE_FMT_VersionLen);
+static const int HPCTHREADSPARSE_FMT_HeaderOff = 0;
+
+typedef struct tms_hdr_t{
+  uint8_t version;
+}tms_hdr_t;
+
+int 
+tms_hdr_fwrite(FILE* fs);
+
+int
+tms_hdr_fread(tms_hdr_t* hdr, FILE* infs);
+
+int
+tms_hdr_fprint(tms_hdr_t* hdr, FILE* fs);
+
+//***************************************************************************
 // id tuple
 //***************************************************************************
-#define KIND(k) (k == 0) ? "RANK" : "THREAD"
+char* kindStr(const uint16_t kind);
 
-const uint16_t RANK = 0;
-const uint16_t THREAD = 1;
+const uint16_t SUMMARY = 0;
+const uint16_t RANK = 1;
+const uint16_t THREAD = 2;
 
+const int TMS_total_prof_SIZE   = 4;
 const int TMS_id_tuple_len_SIZE = 2;
-const int TMS_id_SIZE = 6;
+const int TMS_id_SIZE           = 6;
+
+static const int HPCTHREADSPARSE_FMT_IdTupleOff = 
+  HPCTHREADSPARSE_FMT_HeaderLen + TMS_total_prof_SIZE;
 
 typedef struct tms_id_t{
   uint16_t kind;
@@ -120,8 +151,6 @@ tms_id_tuple_free(tms_id_tuple_t** x, uint32_t num_tuples);
 //***************************************************************************
 // tms_profile_info_t
 //***************************************************************************
-const int TMS_total_prof_SIZE     = 4;
-
 const int TMS_prof_info_idx_SIZE  = 4;
 const int TMS_num_val_SIZE        = 8;
 const int TMS_num_nzctx_SIZE      = 4;
@@ -135,7 +164,6 @@ const int TMS_ptrs_SIZE           = TMS_id_tuple_ptr_SIZE + TMS_metadata_ptr_SIZ
 const int TMS_prof_skip_SIZE    = TMS_prof_info_idx_SIZE + TMS_num_val_SIZE + TMS_num_nzctx_SIZE; 
 const int TMS_prof_info_SIZE    = TMS_id_tuple_ptr_SIZE + TMS_metadata_ptr_SIZE + TMS_spare_one_SIZE \
  + TMS_spare_two_SIZE + TMS_num_val_SIZE + TMS_num_nzctx_SIZE + TMS_prof_offset_SIZE;
-
 
 
 typedef struct tms_profile_info_t{

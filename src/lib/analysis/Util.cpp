@@ -80,6 +80,9 @@ using std::string;
 
 #include <lib/banal/StructSimple.hpp>
 
+#include <lib/prof/tms-format.h>
+#include <lib/prof/cms-format.h>
+
 #include <lib/prof-lean/hpcio.h>
 #include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
@@ -163,9 +166,9 @@ getProfileType(const std::string& filenm)
     ty = ProfType_Flat;
   }else if(filenm.find(".sparse-db") != std::string::npos){ //YUMENG: is->read didn't work, may need to FIX later
     ty = ProfType_SparseDBtmp;
-  }else if(filenm.find("thread_major") != std::string::npos){ //YUMENG
+  }else if(strncmp(buf, HPCTHREADSPARSE_FMT_Magic, HPCTHREADSPARSE_FMT_MagicLen) == 0){ 
     ty = ProfType_SparseDBthread;
-  }else if(filenm.find("cct_major") != std::string::npos){ //YUMENG
+  }else if(strncmp(buf, HPCCCTSPARSE_FMT_Magic, HPCCCTSPARSE_FMT_MagicLen) == 0){ 
     ty = ProfType_SparseDBcct;
   }
 

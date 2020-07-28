@@ -149,6 +149,9 @@ private:
   hpctoolkit::util::locked_unordered_map<const hpctoolkit::Thread*,
     hpctoolkit::stdshim::filesystem::path> outputs;
   std::atomic<std::size_t> outputCnt;
+  hpctoolkit::stdshim::filesystem::path summaryOut;
+  std::vector<std::pair<const tms_id_tuple_t,
+    std::string>> sparseInputs;
 
   //***************************************************************************
   // general - YUMENG
@@ -174,7 +177,11 @@ private:
 
   tms_id_tuple_t buildIdTuple(const hpctoolkit::ThreadAttributes& ta, const int rank);
 
-  std::vector<tms_id_tuple_t> threadAttr2IdTuples(const int rank);
+  tms_id_tuple_t buildSmryIdTuple();
+
+  void assignSparseInputs(int world_rank);
+
+  std::vector<tms_id_tuple_t> getMyIdTuples();
   
   std::vector<std::pair<uint16_t, uint32_t>> tuples2IntPairs(const std::vector<tms_id_tuple_t>& all_tuples);
 
@@ -224,7 +231,7 @@ private:
   //---------------------------------------------------------------------------
   // get profile's size and corresponding offsets
   //---------------------------------------------------------------------------
-  std::vector<std::pair<const hpctoolkit::Thread*, uint64_t>> profile_sizes;
+  std::vector<uint64_t> profile_sizes;
   std::vector<uint64_t> prof_offsets;
 
   uint64_t getProfileSizes();
@@ -283,7 +290,7 @@ private:
                            const uint32_t prof_info_idx,
                            const MPI_File fh);
 
-  void writeOneProfile(const hpctoolkit::Thread* threadp,
+  void writeOneProfile(const std::pair<tms_id_tuple_t, std::string>& tupleFn,
                        const MPI_Offset my_prof_offset, 
                        const std::pair<uint32_t,uint64_t>& prof_idx_off_pair,
                        const uint64_t id_tuples_size,
