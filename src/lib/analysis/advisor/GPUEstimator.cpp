@@ -82,10 +82,19 @@ SequentialGPUEstimator::estimate(const std::vector<BlameStats> &blame_stats, con
   std::vector<double> estimate_ratios;
   std::vector<double> estimate_speedups;
 
-  double blame = blame_stats[0].blame;
+  double blame = 0.0;
+
+  // regional analysis
+  for (auto &stats : blame_stats) {
+    estimate_ratios.push_back(stats.blame / kernel_stats.total_samples);
+    estimate_speedups.push_back(
+        kernel_stats.total_samples / (kernel_stats.total_samples - stats.blame));
+    blame += stats.blame;
+  }
 
   estimate_ratios.push_back(blame / kernel_stats.total_samples);
-  estimate_speedups.push_back(kernel_stats.total_samples / (kernel_stats.total_samples - blame));
+  estimate_speedups.push_back(
+    kernel_stats.total_samples / (kernel_stats.total_samples - blame));
 
   return std::make_pair(estimate_ratios, estimate_speedups);
 }
@@ -97,7 +106,12 @@ SequentialLatencyGPUEstimator::estimate(const std::vector<BlameStats> &blame_sta
   std::vector<double> estimate_speedups;
 
   auto hidden_samples = 0.0;
+  auto active_samples = 0.0;
   auto blame = 0.0;
+
+  if (blame_stats.size() > 0) {
+    active_samples = blame_stats.back().active_samples;
+  }
 
   // regional analysis
   for (auto &stats : blame_stats) {
@@ -108,8 +122,6 @@ SequentialLatencyGPUEstimator::estimate(const std::vector<BlameStats> &blame_sta
     hidden_samples += MIN2(stats.active_samples, stats.blame);
     blame += stats.blame;
   }
-
-  auto active_samples = blame_stats.back().active_samples;
 
   estimate_ratios.push_back(blame / kernel_stats.total_samples);
   estimate_speedups.push_back(
@@ -125,7 +137,10 @@ ParallelGPUEstimator::estimate(const std::vector<BlameStats> &blame_stats, const
   std::vector<double> estimate_ratios;
   std::vector<double> estimate_speedups;
 
-  double blame = blame_stats[0].blame;
+  double blame = 0.0;
+  if (blame_stats.size() > 0) {
+    blame = blame_stats[0].blame;
+  }
 
   estimate_ratios.push_back(blame);
   estimate_speedups.push_back(1 / blame);
@@ -141,7 +156,11 @@ ParallelLatencyGPUEstimator::estimate(const std::vector<BlameStats> &blame_stats
 
   double cur_warps = kernel_stats.active_warps;
   double max_warps = _arch->warps();
-  double blame = blame_stats[0].blame;
+  double blame = 0.0;
+
+  if (blame_stats.size() > 0) {
+    blame = blame_stats[0].blame;
+  }
 
   double expected_threads = (((int)kernel_stats.threads - 1) / _arch->warp_size() + 1) * _arch->warp_size();
   double thread_balance = expected_threads / kernel_stats.threads;

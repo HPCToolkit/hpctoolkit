@@ -195,12 +195,6 @@ std::vector<BlameStats> GPULoopUnrollOptimizer::match_impl(const KernelBlame &ke
     return l.stall_blame > r.stall_blame;
     });
 
-  for (auto &blame_stats : blame_stats_vec) {
-    std::cout << "blame_stats.blame: " << blame_stats.blame << std::endl;
-  }
-  for (auto &region : _inspection.top_regions) {
-    std::cout << "region.stall_blame: " << region.stall_blame << std::endl;
-  }
   blame_stats_vec.push_back(BlameStats(0.0, kernel_active_samples, 0.0));
 
   return blame_stats_vec;
@@ -208,26 +202,18 @@ std::vector<BlameStats> GPULoopUnrollOptimizer::match_impl(const KernelBlame &ke
 
 std::vector<BlameStats> GPULoopNoUnrollOptimizer::match_impl(const KernelBlame &kernel_blame,
                                                              const KernelStats &kernel_stats) {
-  std::map<Prof::Struct::ACodeNode *, BlameStats> region_stats;
-
+  auto blame = 0.0;
   // Find top instruction fetch latencies
   for (auto *inst_blame : kernel_blame.lat_inst_blame_ptrs) {
     auto &blame_name = inst_blame->blame_name;
 
     Prof::Struct::ACodeNode *region = inst_blame->src_struct->ancestorLoop();
-    while (region != NULL) {
-      region_stats[region].total_samples += inst_blame->lat_blame;
-      region_stats[region].active_samples += inst_blame->lat_blame - inst_blame->stall_blame;
-      if (region->parent() != NULL) {
-        region = region->parent()->ancestorLoop();
-      } else {
-        break;
-      }
-    }
-
-    region = inst_blame->src_struct->ancestorLoop();
     if (region != NULL && blame_name == BLAME_GPU_INST_METRIC_NAME ":LAT_IFET") {
-      region_stats[region].blame += inst_blame->lat_blame;
+      blame += inst_blame->lat_blame;
+
+      if (_inspection.top_regions.size() < _top_regions) {
+        _inspection.top_regions.push_back(*inst_blame);
+      }
     }
   }
 
@@ -237,30 +223,10 @@ std::vector<BlameStats> GPULoopNoUnrollOptimizer::match_impl(const KernelBlame &
       "1. Manually unroll loops to reduce redundant instructions.\n"
       "2. Reduce loop unroll factor.";
   _inspection.stall = false;
-  _inspection.loop = true;
+  _inspection.loop = false;
 
-  std::vector<BlameStats> blame_stats_vec;
-  for (auto &iter : region_stats) {
-    blame_stats_vec.push_back(iter.second);
-
-    if (_inspection.top_regions.size() < _top_regions) {
-      InstructionBlame region_blame;
-      region_blame.src_struct = iter.first;
-      region_blame.dst_struct = iter.first;
-      region_blame.blame_name = BLAME_GPU_INST_METRIC_NAME ":LAT_IFET";
-      region_blame.lat_blame = iter.second.blame;
-      _inspection.top_regions.push_back(region_blame);
-    }
-  }
-
-  std::sort(blame_stats_vec.begin(), blame_stats_vec.end());
-  std::sort(_inspection.top_regions.begin(), _inspection.top_regions.end(),
-    [](const InstructionBlame &l, const InstructionBlame &r) {
-    return l.lat_blame > r.lat_blame;
-    });
-  
-
-  return blame_stats_vec;
+  BlameStats blame_stats(blame, kernel_stats.active_samples, kernel_stats.total_samples);
+  return std::vector<BlameStats>{blame_stats};
 }
 
 std::vector<BlameStats> GPUStrengthReductionOptimizer::match_impl(const KernelBlame &kernel_blame,
@@ -300,11 +266,12 @@ std::vector<BlameStats> GPUStrengthReductionOptimizer::match_impl(const KernelBl
 std::vector<BlameStats> GPUWarpBalanceOptimizer::match_impl(const KernelBlame &kernel_blame,
                                                             const KernelStats &kernel_stats) {
   // Match if sync latency
-  auto blame = 0.0;
+  std::vector<BlameStats> blame_stats_vec;
 
   for (auto *inst_blame : kernel_blame.lat_inst_blame_ptrs) {
     if (inst_blame->blame_name.find(":LAT_SYNC") != std::string::npos) {
-      blame += inst_blame->lat_blame;
+      BlameStats blame_stats(inst_blame->lat_blame, kernel_stats.active_samples, kernel_stats.total_samples);
+      blame_stats_vec.push_back(blame_stats);
 
       if (_inspection.top_regions.size() < _top_regions) {
         _inspection.top_regions.push_back(*inst_blame);
@@ -318,11 +285,9 @@ std::vector<BlameStats> GPUWarpBalanceOptimizer::match_impl(const KernelBlame &k
       "1. Try to balance the work before synchronization points.\n"
       "2. Use warp shuffle operations to reduce synchronization cost.";
   _inspection.stall = false;
+  _inspection.loop = true;
 
-  // TODO(Keren): search backward to the first sync block
-
-  BlameStats blame_stats(blame, kernel_stats.active_samples, kernel_stats.total_samples);
-  return std::vector<BlameStats>{blame_stats};
+  return blame_stats_vec;
 }
 
 std::vector<BlameStats> GPUCodeReorderOptimizer::match_impl(const KernelBlame &kernel_blame,

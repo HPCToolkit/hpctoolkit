@@ -151,7 +151,7 @@ void GPUAdvisor::debugCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::CC
 
   std::cout << std::endl << "Outstanding Latencies:" << std::endl;
 
-  std::cout << "Exec_deps" << std::endl;
+  std::cout << "Exec_deps (" << exec_deps << ")" << std::endl;
   for (auto &iter : exec_dep_vmas) {
     if (iter.first == 0) {
       continue;
@@ -164,7 +164,7 @@ void GPUAdvisor::debugCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::CC
     std::cout << std::endl;
   }
 
-  std::cout << "Mem_deps" << std::endl;
+  std::cout << "Mem_deps (" << mem_deps << ")" << std::endl;
   for (auto &iter : mem_dep_vmas) {
     if (iter.first == 0) {
       continue;
@@ -978,6 +978,9 @@ GPUAdvisor::detailizeMemBlame(CudaParse::InstructionStat *from_inst) {
   if (from_inst->op.find(".LOCAL") != std::string::npos) {
     // local mem
     return std::make_pair(_mem_dep_lmem_stall_metric, _mem_dep_lmem_lat_metric);
+  } else if (from_inst->op.find(".CONSTANT") != std::string::npos) {
+    // constant mem
+    return std::make_pair(_mem_dep_cmem_stall_metric, _mem_dep_cmem_lat_metric);
   } else {
     // global mem
     return std::make_pair(_mem_dep_gmem_stall_metric, _mem_dep_gmem_lat_metric);
@@ -1024,8 +1027,10 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
 
         // Sum up all neighbors' issue count
         if (from_inst->op.find("MEMORY") != std::string::npos) {
-          if (from_inst->op.find(".GLOBAL") != std::string::npos ||
-              from_inst->op.find(".LOCAL") != std::string::npos) {
+          if (from_inst->op.find(".SHARED") != std::string::npos) {
+            // Shared memory
+            prof_nodes[exec_lat_metric_index].push_back(from_node);
+          } else { 
             prof_nodes[mem_lat_metric_index].push_back(from_node);
 
             // Global and local memory store instructions can result in raw dependencies
@@ -1037,11 +1042,7 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
             auto mem = to_node->demandMetric(mem_lat_metric_index);
             auto exec = to_node->demandMetric(exec_lat_metric_index);
             assert(mem != 0 || exec != 0);
-          } else if (from_inst->op.find(".SHARED") != std::string::npos) {
-            // Shared memory
-            prof_nodes[exec_lat_metric_index].push_back(from_node);
-          } 
-          // Constant memory stall is attributed to inst itself
+          }
         } else {
           prof_nodes[exec_lat_metric_index].push_back(from_node);
         }
@@ -1051,10 +1052,6 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
     if (prof_nodes.size() == 0 || (prof_nodes.size() == 1 && prof_nodes.begin()->first == mem_lat_metric_index)) {
       // Scheduler lat
       auto lat_blame = to_node->demandMetric(exec_lat_metric_index);
-      if (lat_blame == 0) {
-        continue;
-      }
-
       auto lat_blame_name = "BLAME " + _exec_dep_sche_lat_metric;
       attributeBlameMetric(mpi_rank, thread_id, to_node, lat_blame_name, lat_blame);
 
@@ -1066,6 +1063,7 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
       inst_blames.emplace_back(InstructionBlame(to_inst, to_inst, to_struct, to_struct, 0,
                                                 stall_blame, lat_blame, lat_blame_name));
     }
+
 
     // Dependent latencies
     for (auto &prof_iter : prof_nodes) {

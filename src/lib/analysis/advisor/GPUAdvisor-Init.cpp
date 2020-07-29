@@ -119,6 +119,7 @@ void GPUAdvisor::init() {
   _mem_dep_stall_metric = GPU_INST_METRIC_NAME":STL_GMEM";
   _mem_dep_gmem_stall_metric = GPU_INST_METRIC_NAME":STL_GMEM_GMEM";
   _mem_dep_lmem_stall_metric = GPU_INST_METRIC_NAME":STL_GMEM_LMEM";
+  _mem_dep_cmem_stall_metric = GPU_INST_METRIC_NAME":STL_GMEM_CMEM";
   _sync_stall_metric = GPU_INST_METRIC_NAME":STL_SYNC";
 
   // LAT
@@ -129,6 +130,7 @@ void GPUAdvisor::init() {
   _exec_dep_war_lat_metric = GPU_INST_METRIC_NAME":LAT_IDEP_WAR";
   _mem_dep_lat_metric = GPU_INST_METRIC_NAME":LAT_GMEM";
   _mem_dep_gmem_lat_metric = GPU_INST_METRIC_NAME":LAT_GMEM_GMEM";
+  _mem_dep_cmem_lat_metric = GPU_INST_METRIC_NAME":LAT_GMEM_CMEM";
   _mem_dep_lmem_lat_metric = GPU_INST_METRIC_NAME":LAT_GMEM_LMEM";
   _sync_lat_metric = GPU_INST_METRIC_NAME":LAT_SYNC";
 
@@ -140,6 +142,7 @@ void GPUAdvisor::init() {
   _dep_metrics.emplace_back(std::make_pair(_mem_dep_stall_metric, _mem_dep_lat_metric));
   _dep_metrics.emplace_back(std::make_pair(_mem_dep_gmem_stall_metric, _mem_dep_gmem_lat_metric));
   _dep_metrics.emplace_back(std::make_pair(_mem_dep_lmem_stall_metric, _mem_dep_lmem_lat_metric));
+  _dep_metrics.emplace_back(std::make_pair(_mem_dep_cmem_stall_metric, _mem_dep_cmem_lat_metric));
   _dep_metrics.emplace_back(std::make_pair(_sync_stall_metric, _sync_lat_metric));
 
   for (auto &s : _inst_metrics) {

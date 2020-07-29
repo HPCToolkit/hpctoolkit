@@ -274,6 +274,7 @@ class GPUAdvisor {
   std::string _exec_dep_war_stall_metric;
   std::string _mem_dep_stall_metric;
   std::string _mem_dep_gmem_stall_metric;
+  std::string _mem_dep_cmem_stall_metric;
   std::string _mem_dep_lmem_stall_metric;
   std::string _sync_stall_metric;
 
@@ -285,6 +286,7 @@ class GPUAdvisor {
   std::string _exec_dep_war_lat_metric;
   std::string _mem_dep_lat_metric;
   std::string _mem_dep_gmem_lat_metric;
+  std::string _mem_dep_cmem_lat_metric;
   std::string _mem_dep_lmem_lat_metric;
   std::string _sync_lat_metric;
 
