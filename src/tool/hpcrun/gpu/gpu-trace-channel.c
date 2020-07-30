@@ -79,7 +79,6 @@
 
 #define CHANNEL_FILL_COUNT 100
 
-
 #undef typed_bichannel
 #undef typed_stack_elem
 
@@ -108,6 +107,14 @@
 // type declarations
 //******************************************************************************
 
+typedef struct gpu_trace_channel_t {
+bistack_t bistacks[2];
+pthread_mutex_t mutex;
+pthread_cond_t cond;
+uint64_t count;
+thread_data_t *td;
+} gpu_trace_channel_t;
+
 
 
 //******************************************************************************
@@ -134,6 +141,20 @@ gpu_trace_channel_signal_consumer_when_full
 //******************************************************************************
 // interface functions
 //******************************************************************************
+
+struct thread_data_t *
+gpu_trace_channel_get_td(gpu_trace_channel_t *ch)
+{
+  return ch->td;
+}
+
+
+void
+gpu_trace_channel_set_td(gpu_trace_channel_t *ch, thread_data_t *td)
+{
+  ch->td = td;
+}
+
 
 gpu_trace_channel_t *
 gpu_trace_channel_alloc

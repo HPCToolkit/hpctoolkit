@@ -287,8 +287,8 @@ consume_one_trace_item
     if (pivot <= cur_end && pivot >= cur_start) {
       // only trace when the pivot is within the range
       PRINT("pivot %" PRIu64 " not in <%" PRIu64 ", %" PRIu64
-        "> with intervals %" PRIu64 ", frequency %" PRIu64 "\n",
-        pivot, cur_start, cur_end, intervals, frequency);
+          "> with intervals %" PRIu64 ", frequency %" PRIu64 "\n",
+           pivot, cur_start, cur_end, intervals, frequency);
       append = true;
     }
   } else {
@@ -305,7 +305,6 @@ consume_one_trace_item
     PRINT("%p Append trace activity [%lu, %lu]\n", td, start, end);
   }
 }
-
 
 
 static void
@@ -368,7 +367,7 @@ gpu_trace_stream_release
  gpu_trace_channel_t *channel
 )
 {
-  thread_data_t *td = channel->td;
+  thread_data_t *td = gpu_trace_channel_get_td(channel);
 
   hpcrun_write_profile_data(&td->core_profile_trace_data);
   hpcrun_trace_close(&td->core_profile_trace_data);
@@ -424,7 +423,7 @@ gpu_trace_fini
 
   gpu_context_stream_map_signal_all();
 
-  while (atomic_load(&stream_counter) != 0);
+  while (atomic_load(&stream_counter));
 }
 
 void *

@@ -60,19 +60,21 @@
 // type declarations
 //******************************************************************************
 
-//typedef struct gpu_trace_channel_t gpu_trace_channel_t;
+typedef struct gpu_trace_channel_t gpu_trace_channel_t;
 
-typedef struct gpu_trace_channel_t {
-  bistack_t bistacks[2];
-  pthread_mutex_t mutex;
-  pthread_cond_t cond;
-  uint64_t count;
-  thread_data_t *td;
-} gpu_trace_channel_t;
+
 
 //******************************************************************************
 // interface operations 
 //******************************************************************************
+
+thread_data_t *
+gpu_trace_channel_get_td(gpu_trace_channel_t *ch);
+
+
+void
+gpu_trace_channel_set_td(gpu_trace_channel_t *ch, thread_data_t *td);
+
 
 gpu_trace_channel_t *
 gpu_trace_channel_alloc

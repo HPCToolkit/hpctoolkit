@@ -203,7 +203,6 @@ gpu_context_id_map_adjust_times
       entry->time_offset = 0;
     }
   }
-
   ti->start += entry->time_offset;
   ti->end += entry->time_offset;
 }

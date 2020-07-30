@@ -496,7 +496,7 @@ gpu_cdpkernel_process
       cct_node_t *func_node = hpcrun_leftmost_child(func_ph);
       if (func_node == NULL) {
 	// in case placeholder doesn't have a child
-  func_node = func_ph;
+        func_node = func_ph;
       }
 
       gpu_trace_item_t entry_trace;
