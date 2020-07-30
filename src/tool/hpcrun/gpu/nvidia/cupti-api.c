@@ -389,10 +389,10 @@ CUPTI_FN
 
 CUPTI_FN
 (
-	cuptiGetTimestamp,
-	(
-		uint64_t* timestamp
-	)
+  cuptiGetTimestamp,
+  (
+    uint64_t* timestamp
+  )
 );
 
 
@@ -590,7 +590,7 @@ cupti_error_callback_dummy // __attribute__((unused))
 {
   
   EEMSG("FATAL: hpcrun failure: failure type = %s, "
-	"function %s failed with error %s", type, fn, error_string);
+  "function %s failed with error %s", type, fn, error_string);
   exit(1);
 }
 
@@ -966,7 +966,7 @@ cupti_subscriber_callback
         if (is_kernel_op) {
           cct_node_t *kernel_ph = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel);
 
-	  			ensure_kernel_ip_present(kernel_ph, kernel_ip);
+          ensure_kernel_ip_present(kernel_ph, kernel_ip);
         }
 
         hpcrun_safe_exit();
@@ -985,14 +985,14 @@ cupti_subscriber_callback
     } else if (is_kernel_op && cupti_runtime_api_flag && cd->callbackSite ==
       CUPTI_API_ENTER) {
       if (cupti_kernel_ph != NULL) {
-				ensure_kernel_ip_present(cupti_kernel_ph, kernel_ip);
+        ensure_kernel_ip_present(cupti_kernel_ph, kernel_ip);
       }
     } else if (is_kernel_op && ompt_runtime_api_flag && cd->callbackSite ==
       CUPTI_API_ENTER) {
-			cct_node_t *ompt_trace_node = ompt_trace_node_get();
-			if (ompt_trace_node != NULL) {
-				ensure_kernel_ip_present(ompt_trace_node, kernel_ip);
-			}
+      cct_node_t *ompt_trace_node = ompt_trace_node_get();
+      if (ompt_trace_node != NULL) {
+        ensure_kernel_ip_present(ompt_trace_node, kernel_ip);
+      }
     }
   } else if (domain == CUPTI_CB_DOMAIN_RUNTIME_API) {
     // stop flag is only set if a driver or runtime api called
@@ -1118,7 +1118,6 @@ cupti_subscriber_callback
 
         // Generate notification entry
         uint64_t cpu_submit_time = hpcrun_nanotime();
-
         gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts,
           cpu_submit_time);
 
@@ -1163,7 +1162,7 @@ cupti_activity_timestamp_get
  uint64_t *time
 )
 {
-	HPCRUN_CUPTI_CALL(cuptiGetTimestamp, (time));
+  HPCRUN_CUPTI_CALL(cuptiGetTimestamp, (time));
 }
 
 
@@ -1239,7 +1238,7 @@ cupti_buffer_completion_callback
     do {
       status = cupti_buffer_cursor_advance(buffer, validSize, &cupti_activity);
       if (status) {
-      	cupti_activity_process(cupti_activity);
+        cupti_activity_process(cupti_activity);
         ++processed;
       }
     } while (status);

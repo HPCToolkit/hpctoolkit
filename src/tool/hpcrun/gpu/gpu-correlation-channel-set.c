@@ -157,7 +157,7 @@ gpu_correlation_channel_set_insert
   channel_stack_elem_ptr_set(e, 0); // clear the entry's next ptr
 
   // add the entry to the channel stack
-		channel_stack_push(&gpu_correlation_channel_stack, e);
+  channel_stack_push(&gpu_correlation_channel_stack, e);
 }
 
 

@@ -293,8 +293,6 @@ load_module_t*
 hpcrun_loadmap_findByAddr(void* begin, void* end)
 {
   TMSG(LOADMAP, "find by address %p -- %p", begin, end);
-
-
   for (load_module_t* x = s_loadmap_ptr->lm_head; (x); x = x->next) {
     TMSG(LOADMAP, "\tload module %s", x->name);
     if (x->dso_info) {

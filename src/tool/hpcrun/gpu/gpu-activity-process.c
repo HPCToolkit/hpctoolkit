@@ -304,7 +304,7 @@ gpu_correlation_process
     gpu_correlation_id_map_external_id_replace(gpu_correlation_id, host_correlation_id);
   }
   PRINT("Correlation: native_correlation %u --> host_correlation %lu\n", 
-	gpu_correlation_id, host_correlation_id);
+  gpu_correlation_id, host_correlation_id);
 }
 
 
@@ -496,7 +496,7 @@ gpu_cdpkernel_process
       cct_node_t *func_node = hpcrun_leftmost_child(func_ph);
       if (func_node == NULL) {
 	// in case placeholder doesn't have a child
-	func_node = func_ph;
+  func_node = func_ph;
       }
 
       gpu_trace_item_t entry_trace;
@@ -575,7 +575,7 @@ gpu_activity_process
  gpu_activity_t *ga
 )
 {
-	switch (ga->kind) {
+  switch (ga->kind) {
 
   case GPU_ACTIVITY_PC_SAMPLING:
     gpu_sample_process(ga);

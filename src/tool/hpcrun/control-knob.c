@@ -1,5 +1,3 @@
-#include <hpcrun/memory/hpcrun-malloc.h>
-
 #include "control-knob.h"
 #include <utilities/tokenize.h>
 #include <stdio.h>
