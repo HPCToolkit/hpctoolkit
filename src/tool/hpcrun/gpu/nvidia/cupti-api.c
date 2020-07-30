@@ -234,6 +234,7 @@ static spinlock_t files_lock = SPINLOCK_UNLOCKED;
 static __thread bool cupti_stop_flag = false;
 static __thread bool cupti_runtime_api_flag = false;
 static __thread cct_node_t *cupti_kernel_ph = NULL;
+static __thread cct_node_t *cupti_trace_ph = NULL;
 
 static bool cupti_correlation_enabled = false;
 static bool cupti_pc_sampling_enabled = false;
@@ -925,6 +926,10 @@ cupti_subscriber_callback
         {
           gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
             gpu_placeholder_type_kernel);
+
+          gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
+            gpu_placeholder_type_trace);
+
           is_valid_op = true;
 
           if (cd->callbackSite == CUPTI_API_ENTER) {
@@ -965,6 +970,11 @@ cupti_subscriber_callback
 	    gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel);
 
 	  ensure_kernel_ip_present(kernel_ph, kernel_ip);
+
+          cct_node_t *trace_ph = 
+	    gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace);
+
+	  ensure_kernel_ip_present(trace_ph, kernel_ip);
         }
 
         hpcrun_safe_exit();
@@ -984,6 +994,9 @@ cupti_subscriber_callback
       CUPTI_API_ENTER) {
       if (cupti_kernel_ph != NULL) {
 	ensure_kernel_ip_present(cupti_kernel_ph, kernel_ip);
+      }
+      if (cupti_trace_ph != NULL) {
+	ensure_kernel_ip_present(cupti_trace_ph, kernel_ip);
       }
     } else if (is_kernel_op && ompt_runtime_api_flag && cd->callbackSite ==
       CUPTI_API_ENTER) {
@@ -1113,6 +1126,7 @@ cupti_subscriber_callback
         hpcrun_safe_exit();
 
         cupti_kernel_ph = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel);
+        cupti_trace_ph = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace);
 
         // Generate notification entry
         uint64_t cpu_submit_time = hpcrun_nanotime();
@@ -1129,6 +1143,7 @@ cupti_subscriber_callback
         TMSG(CUPTI_TRACE, "Runtime pop externalId %lu (cb_id = %u)", correlation_id, cb_id);
 
         cupti_kernel_ph = NULL;
+        cupti_trace_ph = NULL;
       }
     } else {
       TMSG(CUPTI_TRACE, "Go through runtime with kernel_op %d, valid_op %d, "
