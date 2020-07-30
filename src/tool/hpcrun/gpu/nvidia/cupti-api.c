@@ -766,7 +766,6 @@ cupti_subscriber_callback
  const void *cb_info
 )
 {
-
   if (domain == CUPTI_CB_DOMAIN_RESOURCE) {
     const CUpti_ResourceData *rd = (const CUpti_ResourceData *) cb_info;
     if (cb_id == CUPTI_CBID_RESOURCE_MODULE_LOADED) {
@@ -1226,7 +1225,6 @@ cupti_buffer_completion_callback
  size_t validSize
 )
 {
-
   // handle notifications
   cupti_buffer_completion_notify();
 

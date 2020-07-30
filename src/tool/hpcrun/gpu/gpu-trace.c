@@ -212,7 +212,7 @@ gpu_trace_stream_append
 )
 {
   hpcrun_trace_append_stream(&td->core_profile_trace_data, leaf, 0,
-    td->prev_dLCA, time);
+                           td->prev_dLCA, time);
 }
 
 

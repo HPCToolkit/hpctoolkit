@@ -79,6 +79,7 @@
 
 #define CHANNEL_FILL_COUNT 100
 
+
 #undef typed_bichannel
 #undef typed_stack_elem
 
@@ -108,11 +109,11 @@
 //******************************************************************************
 
 typedef struct gpu_trace_channel_t {
-bistack_t bistacks[2];
-pthread_mutex_t mutex;
-pthread_cond_t cond;
-uint64_t count;
-thread_data_t *td;
+  bistack_t bistacks[2];
+  pthread_mutex_t mutex;
+  pthread_cond_t cond;
+  uint64_t count;
+  thread_data_t *td;
 } gpu_trace_channel_t;
 
 
