@@ -32,28 +32,26 @@ control_knob_name_lookup(char *in)
 }
 
 
-static void
-control_knob_default_register(){
-	control_knob_register("STREAMS_PER_THREAD", "65536", ck_int);
-	control_knob_register("MAX_THREADS_CONSUMERS", "256", ck_int);
-}
-
-
 void
 control_knob_register(char *name, char *value, control_knob_type type)
 {
 	control_knob_t *iter = control_knob_name_lookup(name);
 
 	if (iter == NULL){
-		iter = (control_knob_t*) hpcrun_malloc_safe(sizeof(control_knob_t));
+		iter = (control_knob_t*) malloc(sizeof(control_knob_t));
+		iter->name = strdup(name);
+		iter->type = type;
 	}
-
-	iter->name = strdup(name);
 	iter->value = strdup(value);
-	iter->type = type;
 	iter->next = control_knobs;
-
 	control_knobs = iter;
+}
+
+
+static void
+control_knob_default_register(){
+	control_knob_register("STREAMS_PER_THREAD", "65536", ck_int);
+	control_knob_register("MAX_THREADS_CONSUMERS", "256", ck_int);
 }
 
 
@@ -83,40 +81,55 @@ control_knob_init()
 
 
 int
-control_knob_value_get_int(char *in)
+control_knob_value_get_int(char *in, int *value)
 {
 	control_knob_t *iter = control_knob_name_lookup(in);
   if (iter) {
 		if (iter->type == ck_int) {
-			return atoi(iter->value);
+			*value = atoi(iter->value);
+			return 0;
+		}else{
+			fprintf(stderr,"Control register type is not int.\n");
+			return 1;
 		}
   }
-  return 0;
+	fprintf(stderr,"No such name in Control register\n");
+	return 2;
 }
 
 
-float
-control_knob_value_get_float(char *in)
+int
+control_knob_value_get_float(char *in, float *value)
 {
 	control_knob_t *iter = control_knob_name_lookup(in);
 	if (iter) {
 		if (iter->type == ck_float) {
-			return atof(iter->value);
+			*value = atof(iter->value);
+			return 0;
+		}else{
+			fprintf(stderr,"Control register type is not float.\n");
+			return 1;
 		}
 	}
-	return 0;
+	fprintf(stderr,"No such name in Control register\n");
+	return 2;
 }
 
 
-char *
-control_knob_value_get_string(char *in)
+int
+control_knob_value_get_string(char *in, char *value)
 {
 	control_knob_t *iter = control_knob_name_lookup(in);
 	if (iter) {
 		if (iter->type == ck_string) {
-			return iter->value;
+			value = iter->value;
+			return 0;
+		}else{
+			fprintf(stderr,"Control register type is not string.\n");
+			return 1;
 		}
 	}
-	return 0;
+	fprintf(stderr,"No such name in Control register\n");
+	return 2;
 }
 

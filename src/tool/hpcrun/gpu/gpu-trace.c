@@ -433,12 +433,15 @@ schedule_multi_threads
  gpu_trace_t *trace
 )
 {
-  int streams_per_thread = control_knob_value_get_int("STREAMS_PER_THREAD");
+  int streams_per_thread;
+  assert( control_knob_value_get_int("STREAMS_PER_THREAD", &streams_per_thread) == 0 ) ;
+  int max_threads_consumers;
+	assert( control_knob_value_get_int("MAX_THREADS_CONSUMERS", &max_threads_consumers) == 0 ) ;
   static int num_threads = 0;
   static int num_streams = 0;
   volatile bool new_thread = false;
 
-	gpu_trace_channel_stack_alloc(	control_knob_value_get_int("MAX_THREADS_CONSUMERS") );
+	gpu_trace_channel_stack_alloc(max_threads_consumers);
 
   num_streams++;
   atomic_fetch_add(&stream_counter, 1);
@@ -449,7 +452,7 @@ schedule_multi_threads
   }
 
 	assert(streams_per_thread > 0);
-  assert(num_threads < control_knob_value_get_int("MAX_THREADS_CONSUMERS"));
+  assert(num_threads < max_threads_consumers);
 
   trace->channel_set_id = num_threads - 1;
   gpu_trace_channel_set_insert(trace->trace_channel, trace->channel_set_id);
