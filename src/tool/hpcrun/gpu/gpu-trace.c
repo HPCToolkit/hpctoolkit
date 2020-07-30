@@ -263,6 +263,7 @@ consume_one_trace_item
  uint64_t end_time
 )
 {
+
   cct_node_t *leaf = gpu_trace_cct_insert_context(td, call_path);
 
   cct_node_t *no_activity = gpu_trace_cct_no_activity(td);

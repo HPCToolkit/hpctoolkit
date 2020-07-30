@@ -84,6 +84,7 @@
 //----------------------------------------------------------
 // support for a stack of trace channels
 //----------------------------------------------------------
+
 typedef gpu_trace_channel_t* gpu_trace_channel_ptr_t;
 
 
@@ -103,7 +104,6 @@ typed_stack_declare_type(gpu_trace_channel_ptr_t);
 
 static
 typed_stack_elem_ptr(gpu_trace_channel_ptr_t) *gpu_trace_channel_stack;
-
 
 
 
