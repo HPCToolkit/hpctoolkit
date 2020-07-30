@@ -378,10 +378,10 @@ gpu_kernel_process
 
     if (host_op_entry != NULL) {
       cct_node_t *func_ph = 
-        gpu_host_correlation_map_entry_op_function_get(host_op_entry);
-      // do not delete it because it shares external_id with activity samples
+        gpu_host_correlation_map_entry_op_cct_get(host_op_entry,
+						  gpu_placeholder_type_trace);
 
-      cct_node_t *func_node = hpcrun_leftmost_child(func_ph);
+      cct_node_t *func_node = hpcrun_cct_children(func_ph); // only child
       if (func_node == NULL) {
 	// in case placeholder doesn't have a child
         func_node = func_ph;
@@ -394,7 +394,21 @@ gpu_kernel_process
         (activity->details.kernel.context_id, activity->details.kernel.stream_id,
          &entry_trace);
 
-      attribute_activity(host_op_entry, activity, func_node);
+      cct_node_t *kernel_ph = 
+        gpu_host_correlation_map_entry_op_cct_get(host_op_entry,
+						  gpu_placeholder_type_kernel);
+
+      cct_node_t *kernel_node;
+      if (func_node == func_ph) {
+	// in case placeholder doesn't have a child
+        kernel_node = kernel_ph;
+      } else {
+	// find the proper child of kernel_ph
+	cct_addr_t *addr = hpcrun_cct_addr(func_node);
+	kernel_node = hpcrun_cct_insert_ip_norm(kernel_ph, addr->ip_norm);
+      }
+
+      attribute_activity(host_op_entry, activity, kernel_node);
     }
   } else {
     PRINT("Kernel execution correlation_id %u cannot be found", correlation_id);
