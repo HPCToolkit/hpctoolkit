@@ -161,8 +161,21 @@ name ## _metric_kind
      MetricFlags_ValFmt_Real, 1, metric_property_none);
 
 
-#define HIDE_INDEXED_METRIC(name,  index) \
-   hpcrun_set_display(APPLY(METRIC_ID,CURRENT_METRIC)[index], 0);
+#define SET_DISPLAY_INDEXED_METRIC(name, index, val)			\
+  hpcrun_set_display(APPLY(METRIC_ID,CURRENT_METRIC)[index], val);
+
+
+#define SET_DISPLAY_SCALAR_METRIC(name, val)			\
+  hpcrun_set_display(APPLY(METRIC_ID,name), val);
+
+
+#define HIDE_INDEXED_METRIC(string, name, desc)				\
+    SET_DISPLAY_INDEXED_METRIC(name,  name, HPCRUN_FMT_METRIC_HIDE);
+
+
+#define HIDE_SCALAR_METRIC(string, name, desc)				\
+    SET_DISPLAY_SCALAR_METRIC(name,  HPCRUN_FMT_METRIC_HIDE);
+
 
 #define DIVISION_FORMULA(name) \
   hpcrun_set_display(METRIC_ID(name ## _ACUMU), HPCRUN_FMT_METRIC_INVISIBLE); \
@@ -666,6 +679,8 @@ gpu_metrics_default_enable
 
   FORALL_GSYNC(INITIALIZE_INDEXED_METRIC_REAL)
 
+  FORALL_GSYNC(HIDE_INDEXED_METRIC);
+
   FINALIZE_METRIC_KIND();
 }
 
@@ -785,6 +800,8 @@ gpu_metrics_GSAMP_enable
 
   FORALL_GSAMP_INT(INITIALIZE_SCALAR_METRIC_INT);
 
+  FORALL_GSAMP_INT(HIDE_SCALAR_METRIC);
+
   FORALL_GSAMP_REAL(INITIALIZE_SCALAR_METRIC_REAL);
 
   FINALIZE_METRIC_KIND();
@@ -834,6 +851,11 @@ gpu_metrics_GPU_INST_STALL_enable
   INITIALIZE_METRIC_KIND();
 
   FORALL_GPU_INST_STALL(INITIALIZE_INDEXED_METRIC_INT)
+
+  FORALL_GPU_INST_STALL(HIDE_INDEXED_METRIC);
+
+  SET_DISPLAY_INDEXED_METRIC(GPU_INST_STALL_ANY, GPU_INST_STALL_ANY, 
+			     HPCRUN_FMT_METRIC_SHOW);
 
   FINALIZE_METRIC_KIND();
 }
