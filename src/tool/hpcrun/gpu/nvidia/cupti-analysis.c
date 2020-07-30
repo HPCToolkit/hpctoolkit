@@ -71,6 +71,7 @@
 #define MIN2(m1, m2) m1 > m2 ? m2 : m1
 #define MIN3(m1, m2, m3) m1 > m2 ? (MIN2(m2, m3)) : (MIN2(m1, m3))
 #define MIN4(m1, m2, m3, m4) m1 > m2 ? (MIN3(m2, m3, m4)) : (MIN3(m1, m3, m4))
+#define MIN5(m1, m2, m3, m4, m5) m1 > m2 ? (MIN4(m2, m3, m4, m5)) : (MIN4(m1, m3, m4, m5))
 
 #define UPPER_DIV(a, b) a == 0 ? 0 : (a - 1) / b + 1
 
@@ -125,8 +126,8 @@ cupti_occupancy_analyze
 
     *max_active_warps_per_sm = sm_threads / num_threads_per_warp;
 
-    uint32_t active_blocks = MIN4(max_blocks_by_threads, max_blocks_by_registers,
-      max_blocks_by_shared_memory, sm_blocks);
+    uint32_t active_blocks = MIN5(max_blocks_by_threads, max_blocks_by_registers,
+      max_blocks_by_shared_memory, sm_blocks, *blocks);
 
     *active_warps_per_sm = active_blocks * (UPPER_DIV(*block_threads, num_threads_per_warp));
 
@@ -135,8 +136,8 @@ cupti_occupancy_analyze
     TMSG(CUDA_CUBIN, "max_blocks_by_threads %u", max_blocks_by_threads);
     TMSG(CUDA_CUBIN, "max_blocks_by_shared_memory %u", max_blocks_by_shared_memory);
     TMSG(CUDA_CUBIN, "max_blocks_per_multiprocessor %u", sm_blocks);
-    TMSG(CUDA_CUBIN, "active_blocks %u", active_blocks);
     TMSG(CUDA_CUBIN, "blocks %u", *blocks);
+    TMSG(CUDA_CUBIN, "active_blocks %u", active_blocks);
     TMSG(CUDA_CUBIN, "block_threads %u", *block_threads);
     TMSG(CUDA_CUBIN, "num_threads_per_warp %u", num_threads_per_warp);
     TMSG(CUDA_CUBIN, "active_warps_per_sm %u", *active_warps_per_sm);
