@@ -212,7 +212,7 @@ void GPUAdvisor::advise(const CCTBlames &cct_blames) {
           kernel_stats.total_samples = kernel_blame.lat_blame;
           kernel_stats.active_samples =
               kernel_blame.lat_blame - kernel_blame.stall_blame;
-          kernel_stats.sm_efficiency = kernel_stats.expected_samples / kernel_stats.total_samples;
+          kernel_stats.sm_efficiency = kernel_stats.total_samples / kernel_stats.expected_samples;
 
           // 2. Rank optimizers
           OptimizerRank code_optimizer_rank;

@@ -545,9 +545,9 @@ std::vector<BlameStats> GPUBlockIncreaseOptimizer::match_impl(const KernelBlame 
 
   _inspection.block_count.first = cur_blocks;
   _inspection.block_count.second = ((cur_blocks - 1) / sms + 1) * sms;
-  _inspection.stall = true;
+  _inspection.stall = false;
 
-  auto blame = cur_blocks / _inspection.block_count.second;
+  auto blame = static_cast<double>(cur_blocks) / _inspection.block_count.second;
   BlameStats blame_stats(blame, kernel_stats.active_samples, kernel_stats.total_samples);
   return std::vector<BlameStats>{blame_stats};
 }

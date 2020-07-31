@@ -890,7 +890,7 @@ double GPUAdvisor::computePathInsts(
       end_vma = to_vma;
     }
     insts += (end_vma - start_vma) / _arch->inst_size() + 1;
-    //// XXX(Keren): which is more reasonable?
+    // XXX(Keren): which is more reasonable?
     //for (auto j = start_vma; j <= end_vma; j += _arch->inst_size()) {
     //  auto *prof_node = _vma_prop_map[j].prof_node;
     //  if (prof_node != NULL) {
