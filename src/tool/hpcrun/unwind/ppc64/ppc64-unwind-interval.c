@@ -724,17 +724,26 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
 	}
       } 
       //--------------------------------------------------
-      // unconditional branch when return address is in
-      // the link register
+      // unconditional branch when spack pointer for 
+      // the caller in SP
       //--------------------------------------------------
-      else if ((isInsn_B(*cur_insn) || isInsn_BA(*cur_insn)) && 
-	       (UWI_RECIPE(ui)->ra_ty == RATy_Reg && 
-		UWI_RECIPE(ui)->ra_arg == PPC_REG_LR)) {
+      else if ((isInsn_B(*cur_insn) || isInsn_BA(*cur_insn)) &&
+	       ((UWI_RECIPE(ui)->sp_ty == SPTy_Reg) && 
+		UWI_RECIPE(ui)->sp_arg == PPC_REG_SP)) {
 	uint32_t *target = branchTarget(*cur_insn, cur_insn);
-	//--------------------------------------------------
-	// interior tail call if branch target is outside 
-	// the current function 
-	//--------------------------------------------------
+	//-------------------------------------------------- 
+	// recognize an interior tail call if branch target is 
+	// outside the current function.
+	//
+	// note: we don't track when the return address may still be
+	// in the link register after being saved in the stack.  as a
+	// result, we shouldn't demand that we know that the return
+	// address is in the link register to recognize a tail call.
+	// the lack of link register tracking caused a failure to
+	// recognize a tail call in __xlf_malloc.
+	//   ((UWI_RECIPE(ui)->ra_ty == RATy_Reg) &&
+	//    (UWI_RECIPE(ui)->ra_arg == PPC_REG_LR))
+	// --------------------------------------------------
 	if (target >= end_insn || target < (uint32_t *) beg_insn) {
 	  // Restore the canonical interval, if necessary.
 	  if (!ui_cmp(ui, canon_ui)) {
