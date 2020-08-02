@@ -685,13 +685,20 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
     		  PPC_REG_SP, ra_arg);
       ui = nxt_ui;
     }
-    else if (isInsn_MR(*cur_insn, PPC_REG_SP)) {
+    else if (isInsn_MR(*cur_insn, PPC_REG_SP) &&  
+	     PPC_OPND_REG_S(*cur_insn) != PPC_REG_SP) {
+      // Move Register r1 <- rx where rx != r1
       // N.B. To be sure the MR restores SP, we would have to track
       // registers.  As a sanity check, test for a non-zero frame size
-      if (getSPDispFromUI(ui) != 0) {
+      int sp_disp = getSPDispFromUI(ui);
+      if (sp_disp != 0) {
+	// adjust the RA offset by SP offset prior to the restore
+        int ra_arg = ((UWI_RECIPE(ui)->ra_ty == RATy_SPRel) ?
+                      (UWI_RECIPE(ui)->ra_arg - sp_disp) : 
+		      UWI_RECIPE(ui)->ra_arg);
 	nxt_ui =
 		new_ui(nextInsn(cur_insn), SPTy_Reg, UWI_RECIPE(ui)->ra_ty,
-			PPC_REG_SP, UWI_RECIPE(ui)->ra_arg);
+		       PPC_REG_SP, ra_arg);
 	ui = nxt_ui;
       }
     }
