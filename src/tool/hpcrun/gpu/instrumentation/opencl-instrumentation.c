@@ -142,11 +142,11 @@ save_opencl_binary
 	 * - OnKernelComplete
 	 */
   status = GTPin_GetKernelBinary(kernel, kernel_binary_size, (char *)(binary), NULL);
+  assert(status == GTPINTOOL_STATUS_SUCCESS);
 
 	strcat(bin_name, "_kernel.bin");
 	FILE *bin_ptr = fopen(bin_name, "wb");
 	fwrite(binary, kernel_binary_size, 1, bin_ptr);
-  assert(status == GTPINTOOL_STATUS_SUCCESS);
 	return add_opencl_binary_to_loadmap(bin_name);
 }
 
