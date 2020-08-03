@@ -107,16 +107,14 @@ module_ignore_map_id_lookup
 bool
 module_ignore_map_ignore
 (
- void *start, 
- void *end
+ load_module_t* lm
 );
 
 
 bool
 module_ignore_map_delete
 (
- void *start,
- void *end
+ load_module_t* lm
 );
 
 

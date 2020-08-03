@@ -322,8 +322,8 @@ typedef enum {
 	"GPU kernel: block local memory (bytes)")			\
   macro("GKER:COUNT",             GPU_KINFO_COUNT,  			\
 	"GPU kernel: launch count")					\
-  macro("GKER:OCC",               GPU_KINFO_OCCUPANCY,			\
-	"GPU kernel: occupancy")          \
+  macro("GKER:OCC_THR",               GPU_KINFO_OCCUPANCY_THR,		\
+	"GPU kernel: theoretical occupancy (FGP_ACT / FGP_MAX)")          \
   
 
 // gpu implicit copy

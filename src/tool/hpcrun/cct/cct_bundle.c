@@ -153,8 +153,12 @@ hpcrun_cct_bundle_get_no_activity_node
  cct_bundle_t* cct
 )
 {
-  placeholder_t *nap = hpcrun_placeholder_get(hpcrun_placeholder_type_no_activity);
-  cct_node_t *no_activity_cct = 
-    hpcrun_cct_insert_ip_norm(cct->top, nap->pc_norm); 
+  cct_node_t *no_activity_cct = NULL; 
+  if (cct) {
+    placeholder_t *nap = 
+      hpcrun_placeholder_get(hpcrun_placeholder_type_no_activity);
+    no_activity_cct = 
+      hpcrun_cct_insert_ip_norm(cct->top, nap->pc_norm); 
+  }
   return no_activity_cct;
 }

@@ -21,6 +21,7 @@ libunwind_dir='@LIBUNWIND_RUN_DIR@'
 papi_libdir='@OPT_PAPI_LIBPATH@'
 perfmon_libdir='@PERFMON_LIB@'
 roctracer_lib_path='@OPT_ROCM@/roctracer/lib'
+gotcha_lib_path='@GOTCHA_LIBDIR@'
 
 prog_name=hpcrun
 
@@ -140,6 +141,13 @@ Options: Profiling (Defaults shown in curly brackets {})
   -ds, --delay-sampling
                        Delay starting sampling until the application calls
                        hpctoolkit_sampling_start().
+
+  --disable-gprof      Override and disable gprof instrumentation  This option
+                       is only useful when using hpcrun to add HPCToolkit's
+                       measurement subsystem to a dynamically-linked application 
+                       that has been compiled with -pg. One can't measure 
+                       performance with HPCToolkit when gprof instrumentation 
+                       is active in the same execution.
 
   -f <frac>, -fp <frac>, --process-fraction <frac>
                        Measure only a fraction <frac> of the execution's
@@ -315,10 +323,15 @@ do
 
 	# --------------------------------------------------
 
+	--disable-gprof )
+	    preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_gprof.so"
+	    ;;
+
+	# --------------------------------------------------
+
 	--omp-serial-only )
 	    export HPCRUN_OMP_SERIAL_ONLY=1
 	    ;;
-
 
 	# --------------------------------------------------
 
@@ -477,7 +490,7 @@ fi
 ulimit -S -c unlimited >/dev/null 2>&1
 
 # laks 2016.10.06: add perfmon directory
-hpc_ld_library_path="${hpcrun_dir}:${papi_libdir}:${ext_dir}:${perfmon_libdir}:${roctracer_lib}"
+hpc_ld_library_path="${hpcrun_dir}:${papi_libdir}:${ext_dir}:${perfmon_libdir}:${roctracer_lib}:${gotcha_lib_path}"
 preload_list="${libmonitor_dir}/libmonitor.so ${preload_list}"
 preload_list="${hpcrun_dir}/libhpcrun.so ${preload_list}"
 
