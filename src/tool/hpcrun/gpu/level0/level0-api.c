@@ -328,7 +328,7 @@ get_gpu_driver_and_device
 }
 
 static void
-OnEnterEventPoolCreate
+level0_event_pool_create_entry
 (
   ze_event_pool_create_params_t *params,
   ze_result_t result,
@@ -347,16 +347,16 @@ OnEnterEventPoolCreate
   // Here we need to allocate a new event pool descriptor
   // as we cannot directly change the passed in object (declared ad const)
   // This leads to one description per event pool creation.
-  ze_event_pool_desc_t* profiling_desc = (ze_event_pool_desc_t*) hpcrun_malloc_safe(sizeof(ze_event_pool_desc_t));
-  profiling_desc->version = desc->version;
-  profiling_desc->flags = desc->flags;
-  profiling_desc->count = desc->count;
+  ze_event_pool_desc_t* pool_desc = (ze_event_pool_desc_t*) hpcrun_malloc_safe(sizeof(ze_event_pool_desc_t));
+  pool_desc->version = desc->version;
+  pool_desc->flags = desc->flags;
+  pool_desc->count = desc->count;
 
   // We attach the time stamp flag to the event pool,
   // so that we can query time stamps for events in this pool.
-  int flags = profiling_desc->flags | ZE_EVENT_POOL_FLAG_TIMESTAMP;
-  profiling_desc->flags = (ze_event_pool_flag_t)(flags);
-  *(params->pdesc) = profiling_desc;
+  int flags = pool_desc->flags | ZE_EVENT_POOL_FLAG_TIMESTAMP;
+  pool_desc->flags = (ze_event_pool_flag_t)(flags);
+  *(params->pdesc) = pool_desc;
 
 }
 
@@ -398,7 +398,7 @@ attribute_event
 }
 
 static void
-OnEnterEventDestroy
+level0_event_destroy_entry
 (
   ze_event_destroy_params_t *params,
   ze_result_t result,
@@ -410,7 +410,7 @@ OnEnterEventDestroy
 }
 
 static void
-OnEnterEventHostReset
+level0_event_host_reset_entry
 (
   ze_event_host_reset_params_t *params,
   ze_result_t result,
@@ -443,7 +443,7 @@ create_new_event
 }
 
 static void
-OnEnterCommandListAppendLaunchKernel
+level0_command_list_append_launch_kernel_entry
 (
   ze_command_list_append_launch_kernel_params_t* params,
   ze_result_t result,
@@ -463,7 +463,7 @@ OnEnterCommandListAppendLaunchKernel
     *(params->phSignalEvent) = event;
   }
 
-  PRINT("OnEnterCommandListAppendLaunchKernel: kernel handle %p, commmand list handle %p, event handle %p, event pool handle %p\n",
+  PRINT("level0_command_list_append_launch_kernel_entry: kernel handle %p, commmand list handle %p, event handle %p, event pool handle %p\n",
     (void*)kernel, (void*)command_list, (void*)event, (void*)event_pool);
 
   // Lookup the command list and append the kernel launch to the command list
@@ -485,7 +485,7 @@ OnEnterCommandListAppendLaunchKernel
 }
 
 static void
-OnEnterCommandListAppendMemoryCopy
+level0_command_list_append_launch_memcpy_entry
 (
   ze_command_list_append_memory_copy_params_t* params,
   ze_result_t result,
@@ -521,7 +521,7 @@ OnEnterCommandListAppendMemoryCopy
     dst_type = property.type;
   }
 
-  PRINT("OnEnterCommandListAppendMemoryCopy: src_type %d, dst_type %d, size %lu, command list %p, event handle %p, event pool handle %p\n",
+  PRINT("level0_command_list_append_launch_memcpy_entry: src_type %d, dst_type %d, size %lu, command list %p, event handle %p, event pool handle %p\n",
     src_type, dst_type, mem_copy_size, (void*)command_list, (void*)event, (void*)event_pool);
 
   // Lookup the command list and append the mempcy to the command list
@@ -543,7 +543,7 @@ OnEnterCommandListAppendMemoryCopy
 }
 
 static void
-OnEnterCommandListAppendBarrier
+level0_command_list_append_barrier_entry
 (
   ze_command_list_append_barrier_params_t* params,
   ze_result_t result,
@@ -551,11 +551,11 @@ OnEnterCommandListAppendBarrier
   void** instance_data
 )
 {
-  PRINT("Enter unimplemented OnEnterCommandListAppendBarrier\n");
+  PRINT("Enter unimplemented level0_command_list_append_barrier_entry\n");
 }
 
 static void
-OnExitCommandListCreate
+level0_command_list_create_exit
 (
   ze_command_list_create_params_t* params,
   ze_result_t result,
@@ -564,13 +564,13 @@ OnExitCommandListCreate
 )
 {
   ze_command_list_handle_t handle = **params->pphCommandList;
-  PRINT("OnExitCommandListCreate: command list %p\n", (void*)handle);
+  PRINT("level0_command_list_create_exit: command list %p\n", (void*)handle);
   // Record the creation of a command list
   level0_commandlist_map_insert(handle);
 }
 
 static void
-OnEnterCommandListDestroy
+level0_command_list_destroy_entry
 (
   ze_command_list_destroy_params_t* params,
   ze_result_t result,
@@ -590,7 +590,7 @@ OnEnterCommandListDestroy
 }
 
 static void
-OnEnterCommandQueueExecuteCommandList
+level0_command_queue_execute_command_list_entry
 (
   ze_command_queue_execute_command_lists_params_t* params,
   ze_result_t result,
@@ -605,7 +605,7 @@ OnEnterCommandQueueExecuteCommandList
   uint32_t i;
   for (i = 0; i < size; ++i) {
     ze_command_list_handle_t command_list_handle = *(params->pphCommandLists[i]);
-    PRINT("OnEnterCommandQueueExecuteCommandList: command list %p\n", (void*)command_list_handle);
+    PRINT("level0_command_queue_execute_command_list_entry: command list %p\n", (void*)command_list_handle);
     level0_data_node_t ** command_list_head = level0_commandlist_map_lookup(command_list_handle);
     level0_data_node_t * command_node = *command_list_head;
     for (; command_node != NULL; command_node = command_node->next) {
@@ -634,7 +634,7 @@ process_immediate_command_list
 }
 
 static void
-OnExitCommandListAppendLaunchKernel(
+level0_command_list_append_launch_kernel_exit(
   ze_command_list_append_launch_kernel_params_t* params,
   ze_result_t result,
   void* global_data,
@@ -644,7 +644,7 @@ OnExitCommandListAppendLaunchKernel(
 }
 
 static void
-OnExitCommandListAppendMemoryCopy
+level0_command_list_append_memcpy_exit
 (
   ze_command_list_append_memory_copy_params_t* params,
   ze_result_t result,
@@ -656,7 +656,7 @@ OnExitCommandListAppendMemoryCopy
 }
 
 static void
-OnExitCommandListAppendMemoryFill
+level0_command_list_append_memfill_exit
 (
   ze_command_list_append_memory_fill_params_t* params,
   ze_result_t result,
@@ -668,7 +668,7 @@ OnExitCommandListAppendMemoryFill
 }
 
 static void
-OnExitCommandListAppendMemoryCopyRegion
+level0_command_list_append_memcpy_region_exit
 (
   ze_command_list_append_memory_copy_region_params_t* params,
   ze_result_t result,
@@ -676,7 +676,7 @@ OnExitCommandListAppendMemoryCopyRegion
   void** ppTracerInstanceUserData
 )
 {
-  PRINT("Enter unimplemented OnExitCommandListAppendMemoryCopyRegion\n");
+  PRINT("Enter unimplemented level0_command_list_append_memcpy_region_exit\n");
 }
 
 static void
@@ -688,8 +688,7 @@ OnEnterEventHostSignal
   void** ppTracerInstanceUserData
 )
 {
-  ze_event_handle_t event = *(params->phEvent);
-  PRINT("Enter OnEnterEvenHostSignal on event %p\n", (void*)event);
+  PRINT("Enter OnEnterEvenHostSignal on event %p\n");
 }
 
 static void
@@ -701,8 +700,7 @@ OnEnterEventHostSynchronize
   void** ppTracerInstanceUserData
 )
 {
-  ze_event_handle_t event = *(params->phEvent);
-  PRINT("Enter OnEnterEventHostSynchronize on event %p\n", (void*)event);
+  PRINT("Enter OnEnterEventHostSynchronize on event %p\n");
 }
 
 void setup_tracer() {
@@ -713,29 +711,29 @@ void setup_tracer() {
 
   // Set all callbacks
   zet_core_callbacks_t prologue_callbacks = {};
-  prologue_callbacks.Event.pfnDestroyCb = OnEnterEventDestroy;
-  prologue_callbacks.Event.pfnHostResetCb = OnEnterEventHostReset;
+  prologue_callbacks.Event.pfnDestroyCb = level0_event_destroy_entry;
+  prologue_callbacks.Event.pfnHostResetCb = level0_event_host_reset_entry;
   prologue_callbacks.Event.pfnHostSignalCb = OnEnterEventHostSignal;
   prologue_callbacks.Event.pfnHostSynchronizeCb = OnEnterEventHostSynchronize;
-  prologue_callbacks.EventPool.pfnCreateCb = OnEnterEventPoolCreate;
+  prologue_callbacks.EventPool.pfnCreateCb = level0_event_pool_create_entry;
 
   prologue_callbacks.CommandList.pfnAppendLaunchKernelCb =
-    OnEnterCommandListAppendLaunchKernel;
+    level0_command_list_append_launch_kernel_entry;
   prologue_callbacks.CommandList.pfnAppendMemoryCopyCb =
-    OnEnterCommandListAppendMemoryCopy;
+    level0_command_list_append_launch_memcpy_entry;
   prologue_callbacks.CommandList.pfnAppendBarrierCb =
-    OnEnterCommandListAppendBarrier;
-  prologue_callbacks.CommandList.pfnDestroyCb = OnEnterCommandListDestroy;
-  prologue_callbacks.CommandQueue.pfnExecuteCommandListsCb = OnEnterCommandQueueExecuteCommandList;
+    level0_command_list_append_barrier_entry;
+  prologue_callbacks.CommandList.pfnDestroyCb = level0_command_list_destroy_entry;
+  prologue_callbacks.CommandQueue.pfnExecuteCommandListsCb = level0_command_queue_execute_command_list_entry;
 
   zet_core_callbacks_t epilogue_callbacks = {};
-  epilogue_callbacks.CommandList.pfnCreateCb = OnExitCommandListCreate;
+  epilogue_callbacks.CommandList.pfnCreateCb = level0_command_list_create_exit;
   epilogue_callbacks.CommandList.pfnAppendLaunchKernelCb =
-    OnExitCommandListAppendLaunchKernel;
+    level0_command_list_append_launch_kernel_exit;
   epilogue_callbacks.CommandList.pfnAppendMemoryCopyCb =
-    OnExitCommandListAppendMemoryCopy;
-  epilogue_callbacks.CommandList.pfnAppendMemoryFillCb = OnExitCommandListAppendMemoryFill;
-  epilogue_callbacks.CommandList.pfnAppendMemoryCopyRegionCb = OnExitCommandListAppendMemoryCopyRegion;
+    level0_command_list_append_memcpy_exit;
+  epilogue_callbacks.CommandList.pfnAppendMemoryFillCb = level0_command_list_append_memfill_exit;
+  epilogue_callbacks.CommandList.pfnAppendMemoryCopyRegionCb = level0_command_list_append_memcpy_region_exit;
 
   HPCRUN_LEVEL0_CALL(zetTracerSetPrologues, (hTracer, &prologue_callbacks));
   HPCRUN_LEVEL0_CALL(zetTracerSetEpilogues, (hTracer, &epilogue_callbacks));
