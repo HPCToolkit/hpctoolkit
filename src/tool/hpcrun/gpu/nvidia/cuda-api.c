@@ -240,6 +240,7 @@ cuda_device_compute_capability
   int *minor
 )
 {
+#ifndef HPCRUN_STATIC_LINK
   HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
     (major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device_id));
 
@@ -247,6 +248,9 @@ cuda_device_compute_capability
     (minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device_id));
 
   return 0;
+#else
+  return -1;
+#endif
 }
 
 
