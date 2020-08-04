@@ -144,72 +144,83 @@ std::string SimpleInspectionFormatter::format(const Inspection &inspection) {
 
   // Hot regions
   for (auto index = 0; index < inspection.regions.size(); ++index) {
-    auto &inst_blame = inspection.regions[index];
+    auto &region_blame = inspection.regions[index];
     auto ratio = 0.0;
     auto speedup = 0.0;
     if (inspection.loop) {
       ratio = inspection.ratios[index];
       speedup = inspection.speedups[index];
     } else {
-      auto metric = inspection.stall ? inst_blame.stall_blame : inst_blame.lat_blame;
+      auto metric = inspection.stall ? region_blame.stall_blame : region_blame.lat_blame;
       ratio = metric / inspection.total;
     }
-    ss << index + 1 << ". Hot " << inst_blame.blame_name << " code, ratio " <<
+    ss << index + 1 << ". Hot " << region_blame.blame_name << " code, ratio " <<
       ratio * 100 << "%, ";
     if (speedup != 0.0) {
       ss << "speedup " << speedup << "x";
     }
     ss << std::endl;
 
-    auto *src_struct = inst_blame.src_struct;
-    auto *dst_struct = inst_blame.dst_struct;
-    auto *src_func = src_struct->ancestorProc();
-    auto *dst_func = dst_struct->ancestorProc();
-    auto src_vma = inst_blame.src_inst == NULL ? src_struct->vmaSet().begin()->beg() :
+    std::vector<InstructionBlame> inst_blames;
+    if (inspection.hotspots.size() != 0) {
+      inst_blames = inspection.hotspots[index];
+    } else {
+      inst_blames.push_back(region_blame);
+    }
+
+    std::string prefix = "  ";
+    for (auto &inst_blame : inst_blames) {
+      auto inst_blame_ratio = 0.0;
+      auto inst_blame_metric = inspection.stall ? inst_blame.stall_blame : inst_blame.lat_blame;
+      inst_blame_ratio = inst_blame_metric / inspection.total;
+
+      ss << prefix << "Hot " << inst_blame.blame_name << " code, ratio " <<
+        inst_blame_ratio * 100 << "%, distance " << inst_blame.distance << std::endl;
+
+      auto *src_struct = inst_blame.src_struct;
+      auto *dst_struct = inst_blame.dst_struct;
+      auto *src_func = src_struct->ancestorProc();
+      auto *dst_func = dst_struct->ancestorProc();
+      auto src_vma = inst_blame.src_inst == NULL ? src_struct->vmaSet().begin()->beg() :
         (inst_blame.src_inst)->pc - src_func->vmaSet().begin()->beg();
-    auto dst_vma = inst_blame.dst_inst == NULL ? dst_struct->vmaSet().begin()->beg() :
+      auto dst_vma = inst_blame.dst_inst == NULL ? dst_struct->vmaSet().begin()->beg() :
         (inst_blame.dst_inst)->pc - dst_func->vmaSet().begin()->beg();
 
-    // Print inline call stack
-    std::stack<Prof::Struct::Alien *> src_inline_stack =
+      // Print inline call stack
+      std::stack<Prof::Struct::Alien *> src_inline_stack =
         getInlineStack(src_struct);
-    std::stack<Prof::Struct::Alien *> dst_inline_stack =
+      std::stack<Prof::Struct::Alien *> dst_inline_stack =
         getInlineStack(dst_struct);
 
-    auto *src_file = src_struct->ancestorFile();
-    ss << "From " << src_func->name() << " at " << src_file->name() << ":" <<
-      src_file->begLine() << std::endl;
-    if (src_inline_stack.empty() == false) {
-      ss << formatInlineStack(src_inline_stack);
-    }
-    ss << std::hex << "0x" << src_vma << std::dec << " at " <<
-      "Line " << src_struct->begLine();
-    if (inspection.loop) {
-      auto *loop = src_struct->ancestorLoop();
-      if (loop) {
-        ss << " in Loop at Line " << loop->begLine();
-      }
-    }
-    ss  << std::endl;
+      auto *src_file = src_struct->ancestorFile();
 
-    auto *dst_file = dst_struct->ancestorFile();
-    ss << "To " << dst_func->name() << " at " << dst_file->name() << ":" <<
-      dst_file->begLine() << std::endl;
-    if (dst_inline_stack.empty() == false) {
-      ss << formatInlineStack(dst_inline_stack);
-    }
-    ss << std::hex << "0x" << dst_vma << std::dec << " at " <<
-      "Line " << dst_struct->begLine();
-    if (inspection.loop) {
-      auto *loop = dst_struct->ancestorLoop();
-      if (loop) {
-        ss << " in Loop at Line " << loop->begLine();
+      ss << prefix << "From " << src_func->name() << " at " << src_file->name() << ":" <<
+        src_file->begLine()  << std::endl;
+      if (src_inline_stack.empty() == false) {
+        ss << prefix << formatInlineStack(src_inline_stack);
       }
+      ss << prefix << std::hex << "0x" << src_vma << std::dec << " at " <<
+        "Line " << src_struct->begLine();
+      if (inspection.loop) {
+        auto *loop = src_struct->ancestorLoop();
+        if (loop) {
+          ss << " in Loop at Line " << loop->begLine();
+        }
+      }
+      ss  << std::endl;
+
+      auto *dst_file = dst_struct->ancestorFile();
+      ss << prefix << "To " << dst_func->name() << " at " << dst_file->name() << ":" <<
+        dst_file->begLine() << std::endl;
+      if (dst_inline_stack.empty() == false) {
+        ss << prefix << formatInlineStack(dst_inline_stack);
+      }
+      ss << prefix << std::hex << "0x" << dst_vma << std::dec << " at " <<
+        "Line " << dst_struct->begLine() << std::endl;
     }
-    ss  << std::endl;
 
     if (inspection.callback != NULL) {
-      ss << inspection.callback(inst_blame) << std::endl;
+      ss << inspection.callback(region_blame) << std::endl;
     }
 
     ss << std::endl;

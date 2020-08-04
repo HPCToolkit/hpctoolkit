@@ -98,6 +98,7 @@ struct Inspection {
   std::string hint;
 
   std::vector<InstructionBlame> regions;
+  std::vector<std::vector<InstructionBlame>> hotspots;
 
   // speedups[0..n-1] = overall speedup
   // speedup[n] = specific speedups
@@ -126,6 +127,7 @@ struct Inspection {
     hint.clear();
     optimization.clear();
     regions.clear();
+    hotspots.clear();
     speedups.clear();
     ratios.clear();
     total = -1.0;

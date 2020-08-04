@@ -270,6 +270,7 @@ class GPUOptimizer {
   Inspection _inspection;
 
   const size_t _top_regions = 5;
+  const size_t _top_hotspots = 10;
 };
 
 #define DECLARE_OPTIMIZER_CLASS(TYPE, CLASS, VALUE)                                           \

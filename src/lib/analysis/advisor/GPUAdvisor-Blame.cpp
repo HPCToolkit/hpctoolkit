@@ -903,7 +903,7 @@ double GPUAdvisor::computePathInsts(
 }
 
 
-void GPUAdvisor::reversePathInsts(std::map<Prof::CCT::ADynNode *, double> &insts) {
+void GPUAdvisor::reverseDistance(std::map<Prof::CCT::ADynNode *, double> &distance, std::map<Prof::CCT::ADynNode *, double> &insts) {
   Prof::CCT::ADynNode *pivot = NULL;
   double pivot_inst = 0.0;
 
@@ -911,20 +911,20 @@ void GPUAdvisor::reversePathInsts(std::map<Prof::CCT::ADynNode *, double> &insts
   double ratio_sum = 0.0;
 
   // Fill one if zero
-  for (auto &inst_iter : insts) {
-    if (inst_iter.second == 0.0) {
-      inst_iter.second = 1.0;
+  for (auto &dis_iter : distance) {
+    if (dis_iter.second == 0.0) {
+      dis_iter.second = 1.0;
     } 
     double ratio = 1.0;
     if (pivot == NULL) {
-      pivot = inst_iter.first;
-      pivot_inst = inst_iter.second;
+      pivot = dis_iter.first;
+      pivot_inst = dis_iter.second;
     } else {
-      ratio = pivot_inst / inst_iter.second;
+      ratio = pivot_inst / dis_iter.second;
     }
 
     ratio_sum += ratio;
-    ratios[inst_iter.first] = ratio;
+    ratios[dis_iter.first] = ratio;
   }
 
   // Normalize ratio
@@ -1081,6 +1081,7 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
         continue;
       }
 
+      std::map<Prof::CCT::ADynNode *, double> distance;
       std::map<Prof::CCT::ADynNode *, double> insts;
       std::map<Prof::CCT::ADynNode *, double> issues;
       double issue_sum = 0.0;
@@ -1109,7 +1110,7 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
 
         for (auto &path : ps) {
           auto path_inst = computePathInsts(mpi_rank, thread_id, from_vma, to_vma, path);
-          insts[from_node] += path_inst;
+          distance[from_node] += path_inst;
         }
         auto issue = from_node->demandMetric(issue_metric_index);
         // Guarantee that issue is not zero
@@ -1119,7 +1120,7 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
       }
 
       // More insts, less hiding possibility
-      reversePathInsts(insts);
+      reverseDistance(distance, insts);
 
       auto adjust_sum = 0.0;
       // Apportion based on issue and stalls
@@ -1160,7 +1161,7 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
 
         // One metric id is enough for inst blame analysis
         inst_blames.emplace_back(InstructionBlame(from_inst, to_inst, from_struct, to_struct,
-                                                  0, stall_blame,
+                                                  distance[from_node], stall_blame,
                                                   lat_blame, lat_blame_name));
       }
     }

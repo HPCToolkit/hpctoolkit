@@ -339,19 +339,25 @@ std::vector<BlameStats> GPUCodeReorderOptimizer::match_impl(const KernelBlame &k
       "load can be put a few lines before the first usage.\n";
   _inspection.stall = true;
   //TODO(Keren): nested regions
-  //_inspection.loop = false;
   _inspection.loop = true;
 
   std::vector<BlameStats> blame_stats_vec;
   for (auto &iter : region_blames) {
-    auto &region_blame_stats = region_stats[iter.first];
+    auto *region = iter.first;
+    auto &region_blame_stats = region_stats[region];
     std::sort(iter.second.begin(), iter.second.end(), InstructionBlameStallComparator());
 
     blame_stats_vec.push_back(BlameStats(region_blame_stats.blame,
         region_blame_stats.active_samples, region_blame_stats.total_samples));
 
-    auto &inst_blame_vec = iter.second;
-    _inspection.regions.push_back(*inst_blame_vec[0]);
+    // regions
+    InstructionBlame region_blame;
+    region_blame.src_struct = region;
+    region_blame.dst_struct = region;
+    region_blame.blame_name = BLAME_GPU_INST_METRIC_NAME ":LAT_DEP";
+    region_blame.stall_blame = region_blame_stats.blame;
+
+    _inspection.regions.push_back(region_blame);
   }
 
   // Sort by blame
@@ -366,6 +372,19 @@ std::vector<BlameStats> GPUCodeReorderOptimizer::match_impl(const KernelBlame &k
   }
 
   blame_stats_vec.push_back(BlameStats(0.0, kernel_stats.active_samples, kernel_stats.total_samples));
+
+  for (auto &region_blame : _inspection.regions) {
+    auto *region = region_blame.src_struct;
+    auto &inst_blames = region_blames[region];
+    // hotspots
+    std::vector<InstructionBlame> inst_blame_vec;
+    for (auto *inst_blame : inst_blames) {
+      if (inst_blame_vec.size() < _top_hotspots) {
+        inst_blame_vec.push_back(*inst_blame);
+      }
+    }
+    _inspection.hotspots.push_back(inst_blame_vec);
+  }
 
   return blame_stats_vec;
 }
