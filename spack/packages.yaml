@@ -17,7 +17,7 @@
 #    https://spack.readthedocs.io/en/latest/basic_usage.html#specs-dependencies
 #    https://spack.readthedocs.io/en/latest/build_settings.html
 #
-#  Last revised: July 21, 2020.
+#  Last revised: August 3, 2020.
 #
 packages:
 
@@ -70,15 +70,15 @@ packages:
   # +papi uses papi instead of perfmon.
   #
   # hpctoolkit:
-  #   version:  [2020.07.21, master]
+  #   version:  [2020.08.03, master]
   #   variants: +mpi
 
 
   # binutils -- used by hpcprof and struct simple (for functions and
   # line map info) and for VMA types in various places.
   #
-  # Best to use >= 2.32, earlier versions have a bug causing duplicate
-  # function names in the viewer (from hpcprof and struct simple).
+  # Need >= 2.32 for important bug fixes.
+  # Hpctoolkit <= 2020.03.01 requires binutils <= 2.33.1.
   #
   # +libiberty is needed for xmalloc functions in libbfd.
   # ~nls is needed to avoid linking with libintl from gettext.
@@ -134,19 +134,22 @@ packages:
     #  cuda@10.1:  cuda/10.1
     #  buildable: False
     #
-    version:  [10.1.243]
+    version:  [10.2.89]
 
 
   # dyninst -- used in hpcstruct for line map info, inline sequences
-  # and loop analysis.
+  # and loop analysis.  Hpctoolkit and Dyninst work closely together
+  # and Dyninst issues releases infrequently, so often it's necessary
+  # to use master (previously develop) to get the best version.
   #
+  # Need >= 10.2.0 for important bug fixes and features.
   # Need >= 10.1.0 for full cuda CFG support.
   # On Blue Gene, with default gcc 4.4 compilers, use version 9.3.2.
   #
   # +openmp is to support openmp threads in parseapi.
   #
   dyninst:
-    version:  [10.1.0, develop]
+    version:  [10.2.0, master]
     variants: +openmp build_type=RelWithDebInfo
 
 
@@ -160,7 +163,7 @@ packages:
   # ~nls is needed to avoid linking with libintl from gettext.
   #
   elfutils:
-    version:  [0.178]
+    version:  [0.180]
     variants: +bzip2 +xz ~nls
 
 
@@ -181,7 +184,7 @@ packages:
   # support transactional memory (no-op on non-x86).
   #
   intel-tbb:
-    version:  [2020.1]
+    version:  [2020.3]
     variants: +shared +tm
 
 
@@ -304,7 +307,7 @@ packages:
   # Any recent version is good.
   #
   xz:
-    version:  [5.2.4]
+    version:  [5.2.5]
 
 
   # zlib -- used by binutils, elfutils and libdwarf to read compressed
