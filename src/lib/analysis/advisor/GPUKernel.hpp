@@ -97,7 +97,10 @@ struct KernelStats {
     active_samples(active_samples), total_samples(total_samples), expected_samples(expected_samples),
     time(time), sm_efficiency(efficiency), count(count) {}
 
-  KernelStats() {}
+  KernelStats() : blocks(0), threads(0), shared_memory(0),
+    registers(0), active_warps(0), active_samples(0),
+    total_samples(0), expected_samples(0),
+    time(0), sm_efficiency(0), count(0) {}
 };
 
 
@@ -109,7 +112,7 @@ struct BlameStats {
   BlameStats(double blame, double active_samples, double total_samples):
     blame(blame), active_samples(active_samples), total_samples(total_samples) {}
 
-  BlameStats() {}
+  BlameStats() : blame(0.0), active_samples(0.0), total_samples(0.0) {}
 
   bool operator < (const BlameStats &blame_stats) const {
     return this->blame > blame_stats.blame;

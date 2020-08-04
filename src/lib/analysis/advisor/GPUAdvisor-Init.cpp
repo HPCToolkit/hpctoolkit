@@ -192,7 +192,7 @@ void GPUAdvisor::init() {
   function_inline_optimizer->set_estimator(_estimators[SEQ_LAT]);
 
   auto *function_split_optimizer = GPUOptimizerFactory(FUNCTION_SPLIT, _arch);
-  function_split_optimizer->set_estimator(_estimators[SEQ_LAT]);
+  function_split_optimizer->set_estimator(_estimators[SEQ]);
 
   auto *shared_memory_optimizer = GPUOptimizerFactory(SHARED_MEMORY_COALESCE, _arch);
   shared_memory_optimizer->set_estimator(_estimators[SEQ_LAT]);

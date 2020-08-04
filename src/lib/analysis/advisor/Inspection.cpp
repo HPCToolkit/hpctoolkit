@@ -143,8 +143,8 @@ std::string SimpleInspectionFormatter::format(const Inspection &inspection) {
   }
 
   // Hot regions
-  for (auto index = 0; index < inspection.top_regions.size(); ++index) {
-    auto &inst_blame = inspection.top_regions[index];
+  for (auto index = 0; index < inspection.regions.size(); ++index) {
+    auto &inst_blame = inspection.regions[index];
     auto ratio = 0.0;
     auto speedup = 0.0;
     if (inspection.loop) {

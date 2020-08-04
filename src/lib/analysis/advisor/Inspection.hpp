@@ -97,7 +97,8 @@ struct Inspection {
   std::string optimization;
   std::string hint;
 
-  std::vector<InstructionBlame> top_regions;
+  std::vector<InstructionBlame> regions;
+
   // speedups[0..n-1] = overall speedup
   // speedup[n] = specific speedups
   std::vector<double> ratios;
@@ -124,7 +125,7 @@ struct Inspection {
   void clear() {
     hint.clear();
     optimization.clear();
-    top_regions.clear();
+    regions.clear();
     speedups.clear();
     ratios.clear();
     total = -1.0;

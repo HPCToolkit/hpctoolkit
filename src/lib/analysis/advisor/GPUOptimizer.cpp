@@ -75,6 +75,8 @@ GPUOptimizer *GPUOptimizerFactory(GPUOptimizerType type, GPUArchitecture *arch) 
 }
 
 double GPUOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
+  // Debugging
+  //std::cout << "optimizer " << this->_name << std::endl;
   _inspection.clear();
   _inspection.optimization = this->_name;
   _inspection.total = kernel_stats.total_samples;
@@ -90,9 +92,11 @@ double GPUOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &k
 }
 
 std::vector<BlameStats> GPURegisterIncreaseOptimizer::match_impl(const KernelBlame &kernel_blame,
-                                                                  const KernelStats &kernel_stats) {
-  // Match if for local memory dep
+                                                                 const KernelStats &kernel_stats) {
   auto blame = 0.0;
+  // Match if for local memory dep
+  // Function region optimizer
+  std::map<Prof::Struct::ACodeNode, std::vector<InstructionBlame *>> function_blames;
 
   // Find top latency pairs
   for (auto *inst_blame : kernel_blame.lat_inst_blame_ptrs) {
@@ -101,8 +105,8 @@ std::vector<BlameStats> GPURegisterIncreaseOptimizer::match_impl(const KernelBla
     if (blame_name == BLAME_GPU_INST_METRIC_NAME ":LAT_GMEM_LMEM") {
       blame += inst_blame->lat_blame;
 
-      if (_inspection.top_regions.size() < _top_regions) {
-        _inspection.top_regions.push_back(*inst_blame);
+      if (_inspection.regions.size() < _top_regions) {
+        _inspection.regions.push_back(*inst_blame);
       }
     }
   }
@@ -179,21 +183,23 @@ std::vector<BlameStats> GPULoopUnrollOptimizer::match_impl(const KernelBlame &ke
   for (auto &iter : region_stats) {
     blame_stats_vec.push_back(iter.second);
 
-    if (_inspection.top_regions.size() < _top_regions) {
-      InstructionBlame region_blame;
-      region_blame.src_struct = iter.first;
-      region_blame.dst_struct = iter.first;
-      region_blame.blame_name = BLAME_GPU_INST_METRIC_NAME ":LAT_DEP";
-      region_blame.stall_blame = iter.second.blame;
-      _inspection.top_regions.push_back(region_blame);
-    }
+    InstructionBlame region_blame;
+    region_blame.src_struct = iter.first;
+    region_blame.dst_struct = iter.first;
+    region_blame.blame_name = BLAME_GPU_INST_METRIC_NAME ":LAT_DEP";
+    region_blame.stall_blame = iter.second.blame;
+    _inspection.regions.push_back(region_blame);
   }
 
   std::sort(blame_stats_vec.begin(), blame_stats_vec.end());
-  std::sort(_inspection.top_regions.begin(), _inspection.top_regions.end(),
+  std::sort(_inspection.regions.begin(), _inspection.regions.end(),
     [](const InstructionBlame &l, const InstructionBlame &r) {
     return l.stall_blame > r.stall_blame;
     });
+
+  if (_inspection.regions.size() > _top_regions) {
+    _inspection.regions.erase(_inspection.regions.begin() + _top_regions, _inspection.regions.end());
+  }
 
   blame_stats_vec.push_back(BlameStats(0.0, kernel_active_samples, 0.0));
 
@@ -211,8 +217,8 @@ std::vector<BlameStats> GPULoopNoUnrollOptimizer::match_impl(const KernelBlame &
     if (region != NULL && blame_name == BLAME_GPU_INST_METRIC_NAME ":LAT_IFET") {
       blame += inst_blame->lat_blame;
 
-      if (_inspection.top_regions.size() < _top_regions) {
-        _inspection.top_regions.push_back(*inst_blame);
+      if (_inspection.regions.size() < _top_regions) {
+        _inspection.regions.push_back(*inst_blame);
       }
     }
   }
@@ -243,8 +249,8 @@ std::vector<BlameStats> GPUStrengthReductionOptimizer::match_impl(const KernelBl
         src_inst->op.find("MEMORY") == std::string::npos) {
       blame += inst_blame->lat_blame;
 
-      if (_inspection.top_regions.size() < _top_regions) {
-        _inspection.top_regions.push_back(*inst_blame);
+      if (_inspection.regions.size() < _top_regions) {
+        _inspection.regions.push_back(*inst_blame);
       }
     }
   }
@@ -273,8 +279,8 @@ std::vector<BlameStats> GPUWarpBalanceOptimizer::match_impl(const KernelBlame &k
       BlameStats blame_stats(inst_blame->lat_blame, kernel_stats.active_samples, kernel_stats.total_samples);
       blame_stats_vec.push_back(blame_stats);
 
-      if (_inspection.top_regions.size() < _top_regions) {
-        _inspection.top_regions.push_back(*inst_blame);
+      if (_inspection.regions.size() < _top_regions) {
+        _inspection.regions.push_back(*inst_blame);
       }
     }
   }
@@ -294,7 +300,8 @@ std::vector<BlameStats> GPUCodeReorderOptimizer::match_impl(const KernelBlame &k
                                                             const KernelStats &kernel_stats) {
   // Match if for memory dep and exec dep
   std::map<Prof::Struct::ACodeNode *, BlameStats> region_stats;
-  auto kernel_region_blame = 0.0;
+  std::map<Prof::Struct::ACodeNode *, std::vector<InstructionBlame *>> region_blames;
+  auto blame = 0.0;
 
   // Find top latency pairs
   for (auto *inst_blame : kernel_blame.stall_inst_blame_ptrs) {
@@ -308,20 +315,20 @@ std::vector<BlameStats> GPUCodeReorderOptimizer::match_impl(const KernelBlame &k
         break;
       }
     }
+    region = inst_blame->src_struct->ancestorProc();
+    region_stats[region].total_samples += inst_blame->lat_blame;
+    region_stats[region].active_samples += inst_blame->lat_blame - inst_blame->stall_blame;
+
     region = inst_blame->src_struct->ancestorLoop();
+    if (region == NULL) {
+      region = inst_blame->src_struct->ancestorProc();
+    }
 
     if (inst_blame->blame_name.find(":LAT_GMEM") != std::string::npos ||
       inst_blame->blame_name.find(":LAT_IDEP") != std::string::npos) {
-
-      if (region == NULL) {
-        kernel_region_blame += inst_blame->stall_blame;
-      } else {
-        region_stats[region].blame += inst_blame->stall_blame;
-      }
-
-      if (_inspection.top_regions.size() < _top_regions) {
-        _inspection.top_regions.push_back(*inst_blame);
-      }
+      blame += inst_blame->stall_blame;
+      region_stats[region].blame += inst_blame->stall_blame;
+      region_blames[region].push_back(inst_blame);
     }
   }
 
@@ -331,12 +338,34 @@ std::vector<BlameStats> GPUCodeReorderOptimizer::match_impl(const KernelBlame &k
       "1. Reorder statements manually. For example, if a memory load latency is outstanding, the "
       "load can be put a few lines before the first usage.\n";
   _inspection.stall = true;
+  //TODO(Keren): nested regions
+  //_inspection.loop = false;
+  _inspection.loop = true;
 
   std::vector<BlameStats> blame_stats_vec;
-  for (auto &iter : region_stats) {
-    blame_stats_vec.push_back(iter.second);
+  for (auto &iter : region_blames) {
+    auto &region_blame_stats = region_stats[iter.first];
+    std::sort(iter.second.begin(), iter.second.end(), InstructionBlameStallComparator());
+
+    blame_stats_vec.push_back(BlameStats(region_blame_stats.blame,
+        region_blame_stats.active_samples, region_blame_stats.total_samples));
+
+    auto &inst_blame_vec = iter.second;
+    _inspection.regions.push_back(*inst_blame_vec[0]);
   }
-  blame_stats_vec.push_back(BlameStats(kernel_region_blame, kernel_stats.active_samples, kernel_stats.total_samples));
+
+  // Sort by blame
+  std::sort(blame_stats_vec.begin(), blame_stats_vec.end());
+  std::sort(_inspection.regions.begin(), _inspection.regions.end(),
+    [](const InstructionBlame &l, const InstructionBlame &r) {
+    return l.stall_blame > r.stall_blame;
+    });
+
+  if (_inspection.regions.size() > _top_regions) {
+    _inspection.regions.erase(_inspection.regions.begin() + _top_regions, _inspection.regions.end());
+  }
+
+  blame_stats_vec.push_back(BlameStats(0.0, kernel_stats.active_samples, kernel_stats.total_samples));
 
   return blame_stats_vec;
 }
@@ -364,7 +393,7 @@ std::vector<BlameStats> GPUKernelMergeOptimizer::match_impl(const KernelBlame &k
 
 std::vector<BlameStats> GPUFunctionInlineOptimizer::match_impl(const KernelBlame &kernel_blame,
                                                                const KernelStats &kernel_stats) {
-  const double IFET_UPPER = 0.2;
+  const double IFET_UPPER = 0.3;
 
   // Both caller and callee can be rescheduled
   auto blame = 0.0;
@@ -395,8 +424,8 @@ std::vector<BlameStats> GPUFunctionInlineOptimizer::match_impl(const KernelBlame
       auto *function = inst_blame->src_function;
       if (function->global == false) {
         blame += inst_blame->stall_blame;
-        if (_inspection.top_regions.size() < _top_regions) {
-          _inspection.top_regions.push_back(*inst_blame);
+        if (_inspection.regions.size() < _top_regions) {
+          _inspection.regions.push_back(*inst_blame);
         }
       } else {
         if (caller_blocks.find(inst_blame->dst_block) != caller_blocks.end()) {
@@ -417,24 +446,49 @@ std::vector<BlameStats> GPUFunctionSplitOptimizer::match_impl(const KernelBlame 
   // Match if ifetch and device function
   auto blame = 0.0;
 
+  std::map<Prof::Struct::ACodeNode *, BlameStats> inlined_functions;
+
   // Find top latency pairs
-  for (auto *inst_blame : kernel_blame.stall_inst_blame_ptrs) {
+  for (auto *inst_blame : kernel_blame.lat_inst_blame_ptrs) {
     if (inst_blame->blame_name.find(":LAT_IFET") != std::string::npos) {
       auto *src_struct = inst_blame->src_struct;
-      if (src_struct->ancestorAlien() != NULL) {
-        blame += inst_blame->stall_blame;
-
-        if (_inspection.top_regions.size() < _top_regions) {
-          _inspection.top_regions.push_back(*inst_blame);
-        }
+      auto *alien = src_struct->ancestorAlien();
+      if (alien != NULL) {
+        blame += inst_blame->lat_blame;
+        inlined_functions[alien].total_samples += inst_blame->lat_blame;
+        inlined_functions[alien].active_samples += inst_blame->lat_blame - inst_blame->stall_blame;
+        inlined_functions[alien].blame += inst_blame->lat_blame;
       }
     }
   }
 
-  _inspection.stall = true;
+  _inspection.stall = false;
+  _inspection.loop = true;
 
-  BlameStats blame_stats(blame, kernel_stats.active_samples, kernel_stats.total_samples);
-  return std::vector<BlameStats>{blame_stats};
+  std::vector<BlameStats> blame_stats_vec;
+  for (auto &iter : inlined_functions) {
+    blame_stats_vec.push_back(iter.second);
+
+    InstructionBlame region_blame;
+    region_blame.src_struct = iter.first;
+    region_blame.dst_struct = iter.first;
+    region_blame.blame_name = BLAME_GPU_INST_METRIC_NAME ":LAT_IFET";
+    region_blame.lat_blame = iter.second.blame;
+    _inspection.regions.push_back(region_blame);
+  }
+
+
+  std::sort(blame_stats_vec.begin(), blame_stats_vec.end());
+  std::sort(_inspection.regions.begin(), _inspection.regions.end(),
+    [](const InstructionBlame &l, const InstructionBlame &r) {
+    return l.lat_blame > r.lat_blame;
+    });
+
+  if (_inspection.regions.size() > _top_regions) {
+    _inspection.regions.erase(_inspection.regions.begin() + _top_regions, _inspection.regions.end());
+  }
+
+  return blame_stats_vec;
 }
 
 std::vector<BlameStats> GPUSharedMemoryCoalesceOptimizer::match_impl(
@@ -447,8 +501,8 @@ std::vector<BlameStats> GPUSharedMemoryCoalesceOptimizer::match_impl(
     if (inst_blame->blame_name.find(":LAT_IDEP_SMEM") != std::string::npos) {
       blame += inst_blame->stall_blame;
 
-      if (_inspection.top_regions.size() < _top_regions) {
-        _inspection.top_regions.push_back(*inst_blame);
+      if (_inspection.regions.size() < _top_regions) {
+        _inspection.regions.push_back(*inst_blame);
       }
     }
   }
@@ -469,8 +523,8 @@ std::vector<BlameStats> GPUGlobalMemoryCoalesceOptimizer::match_impl(
     if (inst_blame->blame_name.find(":LAT_MTHR") != std::string::npos) {
       blame += inst_blame->stall_blame;
 
-      if (_inspection.top_regions.size() < _top_regions) {
-        _inspection.top_regions.push_back(*inst_blame);
+      if (_inspection.regions.size() < _top_regions) {
+        _inspection.regions.push_back(*inst_blame);
       }
     }
   }
@@ -494,8 +548,7 @@ std::vector<BlameStats> GPUOccupancyIncreaseOptimizer::match_impl(const KernelBl
       auto blame_name = lat_blame_iter.first;
       auto blame_metric = lat_blame_iter.second;
 
-      if (blame_name.find(":LAT_NONE") != std::string::npos ||
-          blame_name.find(":LAT_NSEL") != std::string::npos) {
+      if (blame_name.find(":LAT_NONE") != std::string::npos) {
         blame += blame_metric;
       }
     }
@@ -517,8 +570,8 @@ std::vector<BlameStats> GPUOccupancyDecreaseOptimizer::match_impl(const KernelBl
     if (inst_blame->blame_name.find(":LAT_NSEL") != std::string::npos) {
       blame += inst_blame->stall_blame;
 
-      if (_inspection.top_regions.size() < _top_regions) {
-        _inspection.top_regions.push_back(*inst_blame);
+      if (_inspection.regions.size() < _top_regions) {
+        _inspection.regions.push_back(*inst_blame);
       }
     }
   }
@@ -541,13 +594,43 @@ std::vector<BlameStats> GPUSMBalanceOptimizer::match_impl(const KernelBlame &ker
 std::vector<BlameStats> GPUBlockIncreaseOptimizer::match_impl(const KernelBlame &kernel_blame,
                                                               const KernelStats &kernel_stats) {
   int cur_blocks = kernel_stats.blocks;
-  int sms = this->_arch->sms();
+  int cur_threads = kernel_stats.threads;
+  int cur_warps = kernel_stats.active_warps;
 
-  _inspection.block_count.first = cur_blocks;
-  _inspection.block_count.second = ((cur_blocks - 1) / sms + 1) * sms;
-  _inspection.stall = false;
+  auto blame = 0.0;
+  if (cur_blocks < this->_arch->sms() && cur_threads > _arch->schedulers() * _arch->warp_size()) {
+    double warp_ratio = 1.0 / (static_cast<double>(cur_warps) / _arch->schedulers());
 
-  auto blame = static_cast<double>(cur_blocks) / _inspection.block_count.second;
+    double issue_samples = 0;
+    if (kernel_blame.lat_blames.find(BLAME_GPU_INST_METRIC_NAME ":LAT_NONE") != kernel_blame.lat_blames.end()) {
+      issue_samples = kernel_blame.lat_blames.at(BLAME_GPU_INST_METRIC_NAME ":LAT_NONE");
+    }
+    double issue = issue_samples / static_cast<double>(kernel_stats.total_samples);
+    double warp_issue = 1 - pow(1 - issue, cur_warps / _arch->schedulers());
+    double new_warp_issue = issue;
+
+    double issue_ratio = warp_issue / new_warp_issue;
+
+    double mthr_ratio = 0;
+    double nsel_ratio = 0;
+    double pipe_ratio = 0;
+    if (kernel_blame.lat_blames.find(BLAME_GPU_INST_METRIC_NAME ":LAT_MTHR") != kernel_blame.lat_blames.end()) {
+      mthr_ratio = kernel_blame.lat_blames.at(BLAME_GPU_INST_METRIC_NAME ":LAT_MTHR") / kernel_stats.total_samples;
+    }
+    if (kernel_blame.lat_blames.find(BLAME_GPU_INST_METRIC_NAME ":LAT_NSEL") != kernel_blame.lat_blames.end()) {
+      nsel_ratio = kernel_blame.lat_blames.at(BLAME_GPU_INST_METRIC_NAME ":LAT_NSEL") / kernel_stats.total_samples;
+    }
+    if (kernel_blame.lat_blames.find(BLAME_GPU_INST_METRIC_NAME ":LAT_PIPE") != kernel_blame.lat_blames.end()) {
+      pipe_ratio = kernel_blame.lat_blames.at(BLAME_GPU_INST_METRIC_NAME ":LAT_PIPE") / kernel_stats.total_samples;
+    }
+
+    blame = warp_ratio * issue_ratio * (1 - mthr_ratio - nsel_ratio - pipe_ratio);
+
+    _inspection.block_count.first = cur_blocks;
+    _inspection.block_count.second = cur_threads / (_arch->schedulers() * _arch->warp_size());
+    _inspection.stall = false;
+  }
+
   BlameStats blame_stats(blame, kernel_stats.active_samples, kernel_stats.total_samples);
   return std::vector<BlameStats>{blame_stats};
 }
