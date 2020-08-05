@@ -982,11 +982,6 @@ METHOD_FN(display_events)
 }
 
 
-static void
-METHOD_FN(print_counters, const long long *values)
-{
-}
-
 // --------------------------------------------------------------------------
 // read a counter from the file descriptor,
 //  and returns the value of the counter

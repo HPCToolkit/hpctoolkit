@@ -112,6 +112,8 @@
 //******************************************************************************
 // macros
 //******************************************************************************
+#define DEBUG 1
+#include <hpcrun/gpu/gpu-print.h>
 
 #define CUPTI_LIBRARY_LOCATION "/lib64/libcupti.so"
 #define CUPTI_PATH_FROM_CUDA "extras/CUPTI"
@@ -763,8 +765,11 @@ cupti_subscriber_callback
 {
 
 	if (is_tool_active()) {
-		TMSG(CUPTI, "PAPI correlation callback");
-		gpu_correlation_channel_produce(PAPI_CORR_ID, NULL, 0);
+//		const CUpti_CallbackData *cd = (const CUpti_CallbackData *) cb_info;
+//		PRINT("\nTOOL callback: -----------------%s\n", cd->functionName );
+
+//		TMSG(CUPTI, "PAPI correlation callback");
+//		gpu_correlation_channel_produce(PAPI_CORR_ID, NULL, 0);
 		return;
 	}
 
@@ -795,6 +800,7 @@ cupti_subscriber_callback
     cupti_stop_flag_set();
 
     const CUpti_CallbackData *cd = (const CUpti_CallbackData *) cb_info;
+		printf("\nDriver API:  -----------------%s\n", cd->functionName );
 
     bool ompt_runtime_api_flag = ompt_runtime_status_get();
 
@@ -945,11 +951,14 @@ cupti_subscriber_callback
         break;
     }
 
-    bool is_kernel_op = gpu_op_placeholder_flags_is_set(gpu_op_placeholder_flags,
-      gpu_placeholder_type_kernel);
+    bool is_kernel_op = gpu_op_placeholder_flags_is_set(gpu_op_placeholder_flags,gpu_placeholder_type_kernel);
+
+//		PRINT("DRIVER: is_valid_op = %d \t is_kernel = %d \t cupti_runtime_api_flag = %d \t ompt_runtime_api_flag = %d | callback_site = %d\n",
+//					 is_valid_op, is_kernel_op, cupti_runtime_api_flag, ompt_runtime_api_flag, cd->callbackSite);
+
     // If we have a valid operation and is not in the interval of a cuda/ompt runtime api
     if (is_valid_op && !cupti_runtime_api_flag && !ompt_runtime_api_flag) {
-      if (cd->callbackSite == CUPTI_API_ENTER) {
+			if (cd->callbackSite == CUPTI_API_ENTER) {
         // A driver API cannot be implemented by other driver APIs, so we get an id
         // and unwind when the API is entered
 
@@ -965,20 +974,16 @@ cupti_subscriber_callback
         gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
 
         if (is_kernel_op) {
-          cct_node_t *kernel_ph = 
-	    gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel);
-
-	  ensure_kernel_ip_present(kernel_ph, kernel_ip);
-
-					printf("\nDriver API: enter -----------------\n" );
-					gpu_monitors_apply( &(gpu_monitors_apply_t){.cct_node=cupti_kernel_ph,.gpu_type=nvidia}, gpu_monitor_type_enter);
-
+          cct_node_t *kernel_ph = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel);
+				  ensure_kernel_ip_present(kernel_ph, kernel_ip);
 				}
-
         hpcrun_safe_exit();
 
         // Generate notification entry
         uint64_t cpu_submit_time = hpcrun_nanotime();
+
+//				gpu_monitors_apply( &(gpu_monitors_apply_t){.cct_node=api_node,.gpu_type=nvidia}, gpu_monitor_type_enter);
+
 
 				gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts,
           cpu_submit_time);
@@ -989,8 +994,7 @@ cupti_subscriber_callback
         correlation_id = cupti_correlation_id_pop();
         TMSG(CUPTI_TRACE, "Driver pop externalId %lu (cb_id = %u)", correlation_id, cb_id);
 
-        printf("\nDriver API: exit -----------------\n" );
-				gpu_monitors_apply( &(gpu_monitors_apply_t){.cct_node=cupti_kernel_ph,.gpu_type=nvidia}, gpu_monitor_type_exit);
+//				gpu_monitors_apply( &(gpu_monitors_apply_t){.cct_node=NULL,.gpu_type=nvidia}, gpu_monitor_type_exit);
 
 
 			}
@@ -1011,6 +1015,7 @@ cupti_subscriber_callback
     cupti_stop_flag_set();
 
     const CUpti_CallbackData *cd = (const CUpti_CallbackData *)cb_info;
+		printf("\nRuntime API:  -----------------%s\n", cd->functionName );
 
     bool is_valid_op = false;
     bool is_kernel_op __attribute__((unused)) = false; // used only by PRINT when debugging
@@ -1106,6 +1111,9 @@ cupti_subscriber_callback
         break;
     }
 
+//		PRINT("RUNTIME: is_valid_op = %d \t is_kernel = %d \t cupti_runtime_api_flag = %d \t ompt_runtime_api_flag = %d | callback_site = %d\n",
+//					 is_valid_op, is_kernel_op, cupti_runtime_api_flag, ompt_runtime_status_get(), cd->callbackSite);
+
     if (is_valid_op) {
       if (cd->callbackSite == CUPTI_API_ENTER) {
         // Enter a CUDA runtime api
@@ -1133,7 +1141,6 @@ cupti_subscriber_callback
         // Generate notification entry
         uint64_t cpu_submit_time = hpcrun_nanotime();
 
-				printf("\nRuntime API: enter -----------------\n" );
 				gpu_monitors_apply( &(gpu_monitors_apply_t){.cct_node=cupti_kernel_ph, .gpu_type=nvidia}, gpu_monitor_type_enter);
 
 				gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts,
@@ -1148,7 +1155,6 @@ cupti_subscriber_callback
         correlation_id = cupti_correlation_id_pop();
         TMSG(CUPTI_TRACE, "Runtime pop externalId %lu (cb_id = %u)", correlation_id, cb_id);
 
-				printf("\nRuntime API: exit -----------------\n" );
 				gpu_monitors_apply( &(gpu_monitors_apply_t){.cct_node=cupti_kernel_ph, .gpu_type=nvidia}, gpu_monitor_type_exit);
 
 				cupti_kernel_ph = NULL;

@@ -209,11 +209,6 @@ METHOD_FN(display_events)
 }
 
 
-static void
-METHOD_FN(print_counters, const long long *values)
-{
-}
-
 #define ss_name retcnt
 #define ss_cls SS_SOFTWARE
 #define ss_sort_order 100

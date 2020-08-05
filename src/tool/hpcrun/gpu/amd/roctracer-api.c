@@ -260,8 +260,8 @@ roctracer_subscriber_callback
 )
 {
   if (is_tool_active()) {
-		TMSG(ROCM, "PAPI correlation callback");
-		gpu_correlation_channel_produce(PAPI_CORR_ID, NULL, 0);
+//		TMSG(ROCM, "PAPI correlation callback");
+//		gpu_correlation_channel_produce(PAPI_CORR_ID, NULL, 0);
 		return;
   }
 
@@ -358,28 +358,34 @@ roctracer_subscriber_callback
 
 
   if (data->phase == ACTIVITY_API_PHASE_ENTER) {
-    uint64_t correlation_id = data->correlation_id;
-    cct_node_t *api_node =
-      gpu_application_thread_correlation_callback(correlation_id);
+		uint64_t correlation_id = data->correlation_id;
+		cct_node_t *api_node =
+		gpu_application_thread_correlation_callback(correlation_id);
 
-    gpu_op_ccts_t gpu_op_ccts;
-    hpcrun_safe_enter();
-    gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
-    hpcrun_safe_exit();
+		gpu_op_ccts_t gpu_op_ccts;
+		hpcrun_safe_enter();
+		gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
+		hpcrun_safe_exit();
 
-    gpu_activity_channel_consume(gpu_metrics_attribute);
+		gpu_activity_channel_consume(gpu_metrics_attribute);
 
-    // Generate notification entry
-    uint64_t cpu_submit_time = hpcrun_nanotime();
+		// Generate notification entry
+		uint64_t cpu_submit_time = hpcrun_nanotime();
 
-		printf("\nRuntime API: enter -----------------| cct = %p | gpu = %d\n", api_node, amd );
 		cupti_kernel_ph = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel); //dejan: added
-		gpu_monitors_apply( &(gpu_monitors_apply_t){.cct_node=cupti_kernel_ph, .gpu_type=amd}, gpu_monitor_type_enter);
+
+		printf("\nACTIVITY_API_PHASE_ENTER -----------------| cct = %p | gpu = %d\n", cupti_kernel_ph, amd);
+		gpu_monitors_apply(&(gpu_monitors_apply_t) {.cct_node=cupti_kernel_ph, .gpu_type=amd}, gpu_monitor_type_enter);
 
 		gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, cpu_submit_time);
+  }else if (data->phase == ACTIVITY_API_PHASE_EXIT){
+		printf("\nACTIVITY_API_PHASE_EXIT -----------------| cct = %p | gpu = %d\n", cupti_kernel_ph, amd );
+		cupti_kernel_ph = NULL;
   }else{
-		printf("\nRuntime API_PHASE = %d\n", data->phase);
+  	;
   }
+
+
 }
 
 

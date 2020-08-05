@@ -448,11 +448,6 @@ METHOD_FN(display_events)
 }
 
 
-static void
-METHOD_FN(print_counters, const long long *values)
-{
-}
-
 #define ss_name upc
 #define ss_cls SS_HARDWARE
 

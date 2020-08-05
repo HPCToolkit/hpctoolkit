@@ -102,7 +102,7 @@
 #define PRINT(...)
 #endif
 
-#define NUM_FNS 3
+#define NUM_FNS 4
 
 
 
@@ -122,7 +122,8 @@ typedef struct module_ignore_entry {
 //***************************************************************************
 
 static const char *NVIDIA_FNS[NUM_FNS] = {
-  "cuLaunchKernel", "cudaLaunchKernel", "cuptiActivityEnable"
+  "cuLaunchKernel", "cudaLaunchKernel", "cuptiActivityEnable",
+  "roctracer_start"
 };
 static module_ignore_entry_t modules[NUM_FNS];
 static pfq_rwlock_t modules_lock;

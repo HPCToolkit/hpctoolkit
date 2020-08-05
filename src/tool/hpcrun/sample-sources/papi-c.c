@@ -279,8 +279,8 @@ METHOD_FN(init)
       EMSG("warning: PAPI_set_domain(PAPI_DOM_ALL) failed: %d", ret);
     }
   }
-
-  self->state = INIT;
+  
+	self->state = INIT;
   tool_exit();
 }
 
@@ -432,13 +432,13 @@ METHOD_FN(stop)
 	TMSG(PAPI,"stop w event set = %d", ci->eventSet);
 	long_long values[nevents+2];
 	//	long_long *values = (long_long *) alloca(sizeof(long_long) * (nevents+2));
+
 	int ret = PAPI_stop(ci->eventSet, values);
 	if (ret != PAPI_OK){
 	  EMSG("Failed to stop PAPI for eventset %d. Return code = %d ==> %s",
 	       ci->eventSet, ret, PAPI_strerror(ret));
 	}
 
-//	METHOD_CALL(self, print_counters, values);
       }
     }
   }
@@ -824,21 +824,6 @@ finish:
 	tool_exit();
 }
 
-void
-METHOD_FN(print_counters, const long long *values)
-{
-	char* evlist = METHOD_CALL(self, get_event_str);
-	char *event;
-	int evcode;
-	int i;
-
-	for (i = 0, event = start_tok(evlist); more_tok(); i++, event = next_tok()) {
-		PAPI_event_name_to_code(event, &evcode);
-
-		printf("event %s \t-> event code = %x, value = %llu\n", event, evcode, values[i]);
-	}
-
-}
 
 /***************************************************************************
  * object
@@ -1041,53 +1026,43 @@ finish:
   hpcrun_safe_exit();
 }
 
-//static __thread cct_node_t *cct_node;
+
+static __thread cct_node_t *cct_node;
 static __thread long long prev_values[MAX_EVENTS];
 
 static void
 papi_monitor_enter(void *reg_info, void *args_in)
 {
 	tool_enter();
-	printf("|------->PAPI_MONITOR_ENTER\n");
 	papi_source_info_t *psi = (papi_source_info_t *) reg_info;
 	gpu_monitors_apply_t *args = (gpu_monitors_apply_t *) args_in;
 
 	sample_source_t *self = &obj_name(); /// just for debug
 	int ret;
 
+	printf("|------->PAPI_MONITOR_ENTER | running? %d\n", METHOD_CALL(self, started));
 
 	// if sampling disabled explicitly for this thread, skip all processing
 	if (hpcrun_suppress_sample() || sample_filters_apply()) goto finish;
 
-	if (args->gpu_type == nvidia)
-		cudaDeviceSynchronize();
+	cct_node = args->cct_node;
+
+  if (args->gpu_type == amd)
+    hipDeviceSynchronize();
 
 	// Save counts on the end so we could substract that from next call (we don't want to measure ourselves)
 	for (int cid = 0; cid < psi->num_components; ++cid) {
 		papi_component_info_t *ci = &(psi->component_info[cid]);
 		if (ci->inUse) {
-			printf("Self = %p | Component %d ---> %p \t | cct = %p | gpu = %s\n\n", self, cid, &ci, args->cct_node, gpu_monitors_get_gpu_name(args->gpu_type) );
+			printf("Self = %p | Component %d \t | cct = %p | gpu = %s\n\n", self, cid, args->cct_node, gpu_monitors_get_gpu_name(args->gpu_type) );
 
-//			ret = PAPI_read(ci->eventSet, ci->prev_values);
 			ret = PAPI_read(ci->eventSet, prev_values);
-//			ret = PAPI_start(ci->eventSet);
-//			ret = PAPI_start(ci->eventSet);
+			//			ret = PAPI_start(ci->eventSet);
 
 			if (ret != PAPI_OK) {
 				EMSG("PAPI_read of event set %d for component %d failed with %s (%d)",
 						 ci->eventSet, cid, PAPI_strerror(ret), ret);
 			}
-
-//			printf("%d Event value = %llu\n", 0, ci->prev_values[0]);
-//			printf("%d Event value = %llu\n", 1, ci->prev_values[1]);
-//
-//			ret = PAPI_read(ci->eventSet, ci->prev_values);
-//			printf("%d Event value = %llu\n", 0, ci->prev_values[0]);
-//			printf("%d Event value = %llu\n", 1, ci->prev_values[1]);
-//
-//			ret = PAPI_read(ci->eventSet, ci->prev_values);
-//			printf("%d Event value = %llu\n", 0, ci->prev_values[0]);
-//			printf("%d Event value = %llu\n", 1, ci->prev_values[1]);
 
 		}
 	}
@@ -1100,7 +1075,6 @@ static void
 papi_monitor_exit(void *reg_info, void *args_in)
 {
 	tool_enter();
-	printf("|------->PAPI_MONITOR_EXIT\n");
 	papi_source_info_t *psi = (papi_source_info_t *) reg_info;
 	gpu_monitors_apply_t *args = (gpu_monitors_apply_t *) args_in;
 
@@ -1110,34 +1084,26 @@ papi_monitor_exit(void *reg_info, void *args_in)
 	int my_event_count = MAX_EVENTS;
 	int ret;
 
+	printf("|------->PAPI_MONITOR_EXIT| running? %d\n", METHOD_CALL(self, started));
+
+	if (args->gpu_type == amd)
+    hipDeviceSynchronize();
 
 	// if sampling disabled explicitly for this thread, skip all processing
 	if (hpcrun_suppress_sample() || sample_filters_apply()) goto finish;
-
-	if (args->gpu_type == nvidia)
-		cudaDeviceSynchronize();
-
 
 	// Collect counters for components in use
 	for (int cid = 0; cid < psi->num_components; ++cid) {
 		papi_component_info_t *ci = &(psi->component_info[cid]);
 		if (ci->inUse){
-//			ret = PAPI_read(ci->eventSet, my_event_values);
 			ret = PAPI_read(ci->eventSet, my_event_values);
-//			ret = PAPI_start(ci->eventSet);
+
 			if (ret != PAPI_OK) {
 				EMSG("PAPI_read of event set %d for component %d failed with %s (%d)",
 						 ci->eventSet, cid, PAPI_strerror(ret), ret);
 			}
-		}
-	}
 
-	// Attribute collected metric to cct nodes
-	for (int cid = 0; cid < psi->num_components; ++cid) {
-		papi_component_info_t* ci = &(psi->component_info[cid]);
-		if (ci->inUse){
-			printf("Self = %p | Component %d ---> %p \t | cct = %p | gpu = %s\n\n", self, cid, &ci, args->cct_node, gpu_monitors_get_gpu_name(args->gpu_type) );
-
+			// Attribute collected metric to cct nodes
 			ret = PAPI_list_events(ci->eventSet, my_event_codes, &my_event_count);
 			if (ret != PAPI_OK) {
 				hpcrun_abort("PAPI_list_events failed inside papi_event_handler."
@@ -1148,13 +1114,15 @@ papi_monitor_exit(void *reg_info, void *args_in)
 				int event_index = get_event_index(self, my_event_codes[eid]);
 				int metric_id = hpcrun_event2metric(self, event_index);
 
-				printf("%d Event = %x, event_index = %d, metric_id = %d || value = %llu -> %llu\n",
-							 eid, my_event_codes[eid], event_index, metric_id, ci->prev_values[eid], my_event_values[eid]);
+				printf("%d Event = %x, event_index = %d, metric_id = %d || value = %llu ---> %llu\n",
+							 eid, my_event_codes[eid], event_index, metric_id, prev_values[eid], my_event_values[eid]);
 
-				blame_shift_apply(metric_id, args->cct_node, my_event_values[eid] - ci->prev_values[eid] /*metricIncr*/);
+				blame_shift_apply(metric_id, cct_node, my_event_values[eid] /*metricIncr*/);
 			}
+
 		}
 	}
+	cct_node = NULL;
 
 finish:
 	tool_exit();

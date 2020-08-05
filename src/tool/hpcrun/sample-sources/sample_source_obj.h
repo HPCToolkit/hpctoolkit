@@ -106,7 +106,6 @@ typedef struct sample_source_t {
   VMETHOD_DEF(finalize_event_list);
   VMETHOD_DEF(gen_event_set, int lush_agents);
   VMETHOD_DEF(display_events);
-	VMETHOD_DEF(print_counters, const long long *values);
 
   // data
   evlist_t       	  evl;       	 // event list

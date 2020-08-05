@@ -393,11 +393,6 @@ METHOD_FN(display_events)
 }
 
 
-static void
-METHOD_FN(print_counters, const long long *values)
-{
-}
-
 /*--------------------------------------------------------------------------
  | sample source object
  --------------------------------------------------------------------------*/
