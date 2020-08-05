@@ -229,7 +229,7 @@ strip_papi_prefix(const char *str)
 static void
 METHOD_FN(init)
 {
-	tool_enter();
+  tool_enter();
   // PAPI_set_debug(0x3ff);
 
   // **NOTE: some papi components may start threads, so
@@ -244,10 +244,10 @@ METHOD_FN(init)
     if (cidx) {
       int res = PAPI_disable_component(cidx);
       if (res == PAPI_OK) {
-	TMSG(PAPI, "PAPI cuda component disabled");
+  TMSG(PAPI, "PAPI cuda component disabled");
       }
       else {
-	EMSG("*** PAPI cuda component could not be disabled!!!");
+  EMSG("*** PAPI cuda component could not be disabled!!!");
       }
     }
   }
@@ -279,15 +279,15 @@ METHOD_FN(init)
       EMSG("warning: PAPI_set_domain(PAPI_DOM_ALL) failed: %d", ret);
     }
   }
-  
-	self->state = INIT;
+
+  self->state = INIT;
   tool_exit();
 }
 
 static void
 METHOD_FN(thread_init)
 {
-	tool_enter();
+  tool_enter();
   TMSG(PAPI, "thread init");
   if (papi_unavail) { goto finish; }
 
@@ -305,7 +305,7 @@ finish:
 static void
 METHOD_FN(thread_init_action)
 {
-	tool_enter();
+  tool_enter();
   TMSG(PAPI, "register thread");
   if (papi_unavail) { goto finish; }
 
@@ -317,13 +317,13 @@ METHOD_FN(thread_init_action)
   TMSG(PAPI, "register thread ok");
 
 finish:
-	tool_exit();
+  tool_exit();
 }
 
 static void
 METHOD_FN(start)
 {
-	tool_enter();
+  tool_enter();
   int cidx;
   TMSG(PAPI, "start");
 
@@ -340,7 +340,7 @@ METHOD_FN(start)
 
   if (my_state == START) {
     TMSG(PAPI,"*NOTE* PAPI start called when already in state START");
-		goto finish;
+    goto finish;
   }
 
   // for each active component, start its event set
@@ -349,42 +349,42 @@ METHOD_FN(start)
     papi_component_info_t* ci = &(psi->component_info[cidx]);
     if (ci->inUse) {
       if (component_uses_sync_samples(cidx)) {
-	TMSG(PAPI, "component %d is synchronous, use synchronous start", cidx);
-	ci->sync_start();
+  TMSG(PAPI, "component %d is synchronous, use synchronous start", cidx);
+  ci->sync_start();
       }
       else {
-	TMSG(PAPI,"starting PAPI event set %d for component %d", ci->eventSet, cidx);
-	int ret = PAPI_start(ci->eventSet);
-	if (ret == PAPI_EISRUN) {
-	  // this case should not happen, but maybe it's not fatal
-	  EMSG("PAPI returned EISRUN for event set %d component %d", ci->eventSet, cidx);
-	}
-	else if (ret != PAPI_OK) {
-	  EMSG("PAPI_start failed with %s (%d) for event set %d component %d ",
-	       PAPI_strerror(ret), ret, ci->eventSet, cidx);
-	  hpcrun_ssfail_start("PAPI");
-	}
+  TMSG(PAPI,"starting PAPI event set %d for component %d", ci->eventSet, cidx);
+  int ret = PAPI_start(ci->eventSet);
+  if (ret == PAPI_EISRUN) {
+    // this case should not happen, but maybe it's not fatal
+    EMSG("PAPI returned EISRUN for event set %d component %d", ci->eventSet, cidx);
+  }
+  else if (ret != PAPI_OK) {
+    EMSG("PAPI_start failed with %s (%d) for event set %d component %d ",
+         PAPI_strerror(ret), ret, ci->eventSet, cidx);
+    hpcrun_ssfail_start("PAPI");
+  }
 
-	if (ci->some_derived) {
-	  ret = PAPI_read(ci->eventSet, ci->prev_values);
-	  if (ret != PAPI_OK) {
-	    EMSG("PAPI_read of event set %d for component %d failed with %s (%d)",
-		 ci->eventSet, cidx, PAPI_strerror(ret), ret);
-	  }
-	}
+  if (ci->some_derived) {
+    ret = PAPI_read(ci->eventSet, ci->prev_values);
+    if (ret != PAPI_OK) {
+      EMSG("PAPI_read of event set %d for component %d failed with %s (%d)",
+     ci->eventSet, cidx, PAPI_strerror(ret), ret);
+    }
+  }
       }
     }
   }
   td->ss_state[self->sel_idx] = START;
 
 finish:
-	tool_exit();
+  tool_exit();
 }
 
 static void
 METHOD_FN(thread_fini_action)
 {
-	tool_enter();
+  tool_enter();
   TMSG(PAPI, "unregister thread");
   if (papi_unavail) { goto finish; }
 
@@ -393,16 +393,16 @@ METHOD_FN(thread_fini_action)
   snprintf(msg, sizeof(msg)-1, "!!NOT PAPI_OK!! (code = %d)", retval);
   TMSG(PAPI, "unregister thread returns %s", retval == PAPI_OK? "PAPI_OK" : msg);
 finish:
-	tool_exit();
+  tool_exit();
 }
 
 
 static void
 METHOD_FN(stop)
 {
-	tool_enter();
+  tool_enter();
 
-	int cidx;
+  int cidx;
 
   TMSG(PAPI, "stop");
   if (papi_unavail) { goto finish; }
@@ -426,18 +426,18 @@ METHOD_FN(stop)
     papi_component_info_t *ci = &(psi->component_info[cidx]);
     if (ci->inUse) {
       if (component_uses_sync_samples(cidx)) {
-	TMSG(PAPI, "component %d is synchronous, stop is trivial", cidx);
+  TMSG(PAPI, "component %d is synchronous, stop is trivial", cidx);
       }
       else {
-	TMSG(PAPI,"stop w event set = %d", ci->eventSet);
-	long_long values[nevents+2];
-	//	long_long *values = (long_long *) alloca(sizeof(long_long) * (nevents+2));
+  TMSG(PAPI,"stop w event set = %d", ci->eventSet);
+  long_long values[nevents+2];
+  //  long_long *values = (long_long *) alloca(sizeof(long_long) * (nevents+2));
 
-	int ret = PAPI_stop(ci->eventSet, values);
-	if (ret != PAPI_OK){
-	  EMSG("Failed to stop PAPI for eventset %d. Return code = %d ==> %s",
-	       ci->eventSet, ret, PAPI_strerror(ret));
-	}
+  int ret = PAPI_stop(ci->eventSet, values);
+  if (ret != PAPI_OK){
+    EMSG("Failed to stop PAPI for eventset %d. Return code = %d ==> %s",
+         ci->eventSet, ret, PAPI_strerror(ret));
+  }
 
       }
     }
@@ -445,26 +445,26 @@ METHOD_FN(stop)
 
   TD_GET(ss_state)[self->sel_idx] = STOP;
 finish:
-	tool_exit();
+  tool_exit();
 }
 
 
 static void
 METHOD_FN(shutdown)
 {
-	tool_enter();
+  tool_enter();
   TMSG(PAPI, "shutdown");
   if (papi_unavail) { goto finish; }
 
   do{
-		METHOD_CALL(self, stop); // make sure stop has been called
-	}while(0);
+    METHOD_CALL(self, stop); // make sure stop has been called
+  }while(0);
   // FIXME: add component shutdown code here
   PAPI_shutdown();
 
   self->state = UNINIT;
 finish:
-	tool_exit();
+  tool_exit();
 }
 
 // Return true if PAPI recognizes the name, whether supported or not.
@@ -472,8 +472,8 @@ finish:
 static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
-	tool_enter();
-	bool ret;
+  tool_enter();
+  bool ret;
   ev_str = strip_papi_prefix(ev_str);
 
   TMSG(PAPI, "supports event");
@@ -492,14 +492,14 @@ METHOD_FN(supports_event, const char *ev_str)
   ret = (PAPI_event_name_to_code(evtmp, &ec) == PAPI_OK);
 
 finish:
-	tool_exit();
-	return ret;
+  tool_exit();
+  return ret;
 }
 
 static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
-	tool_enter();
+  tool_enter();
   TMSG(PAPI, "process event list");
   if (papi_unavail) { goto finish; }
 
@@ -522,7 +522,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 #ifdef USE_PAPI_CHECKING
     if (! hpcrun_extract_ev_thresh(event, sizeof(name), name, &thresh, DEFAULT_THRESHOLD)) {
       AMSG("WARNING: %s using default threshold %ld, "
-	   "better to use an explicit threshold.", name, DEFAULT_THRESHOLD);
+     "better to use an explicit threshold.", name, DEFAULT_THRESHOLD);
     }
 #else
     hpcrun_extract_ev_thresh(event, sizeof(name), name, &thresh, DEFAULT_THRESHOLD);
@@ -530,8 +530,8 @@ METHOD_FN(process_event_list, int lush_metrics)
     ret = PAPI_event_name_to_code(name, &evcode);
     if (ret != PAPI_OK) {
       EMSG("unexpected failure in PAPI process_event_list(): "
-	   "PAPI_event_name_to_code() returned %s (%d)",
-	   PAPI_strerror(ret), ret);
+     "PAPI_event_name_to_code() returned %s (%d)",
+     PAPI_strerror(ret), ret);
       hpcrun_ssfail_unsupported("PAPI", name);
     }
     if (PAPI_query_event(evcode) != PAPI_OK) {
@@ -568,7 +568,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     // supports hardware overflow.  use threshold = 0 to force proxy
     // sampling (for testing).
     if (event_is_derived(self->evl.events[i].event)
-	|| self->evl.events[i].thresh == 0) {
+  || self->evl.events[i].thresh == 0) {
       TMSG(PAPI, "using proxy sampling for event %s", buffer);
       strcat(buffer, " (proxy)");
       self->evl.events[i].thresh = 1;
@@ -592,17 +592,17 @@ METHOD_FN(process_event_list, int lush_metrics)
       TMSG(PAPI, "Event %s from synchronous component", buffer);
     int metric_id = /* weight */
       hpcrun_set_new_metric_info_and_period(papi_kind, strdup(buffer),
-					    MetricFlags_ValFmt_Int,
-					    threshold, prop);
+              MetricFlags_ValFmt_Int,
+              threshold, prop);
     METHOD_CALL(self, store_metric_id, i, metric_id);
 
     // FIXME:LUSH: need a more flexible metric interface
     if (num_lush_metrics > 0 && strcmp(buffer, "PAPI_TOT_CYC") == 0) {
       // there should be one lush metric; its source is the last event
       int mid_idleness =
-	hpcrun_set_new_metric_info_and_period(papi_kind, "idleness",
-					      MetricFlags_ValFmt_Real,
-					      self->evl.events[i].thresh, prop);
+  hpcrun_set_new_metric_info_and_period(papi_kind, "idleness",
+                MetricFlags_ValFmt_Real,
+                self->evl.events[i].thresh, prop);
       assert(num_lush_metrics == 1 && (i == (nevents - 1)));
       lush_agents->metric_time = metric_id;
       lush_agents->metric_idleness = mid_idleness;
@@ -616,7 +616,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   }
 
 finish:
-	tool_exit();
+  tool_exit();
 }
 
 static void
@@ -627,7 +627,7 @@ METHOD_FN(finalize_event_list)
 static void
 METHOD_FN(gen_event_set, int lush_metrics)
 {
-	tool_enter();
+  tool_enter();
   thread_data_t *td = hpcrun_get_thread_data();
   int i;
   int ret;
@@ -637,7 +637,7 @@ METHOD_FN(gen_event_set, int lush_metrics)
 
   int num_components = PAPI_num_components();
   int ss_info_size = sizeof(papi_source_info_t) +
-	num_components * sizeof(papi_component_info_t);
+  num_components * sizeof(papi_component_info_t);
 
   TMSG(PAPI, "Num components = %d", num_components);
   papi_source_info_t* psi = hpcrun_malloc(ss_info_size);
@@ -680,12 +680,12 @@ METHOD_FN(gen_event_set, int lush_metrics)
       char buffer[PAPI_MAX_STR_LEN];
       PAPI_event_code_to_name(evcode, buffer);
       TMSG(PAPI,
-	   "PAPI_add_event(eventSet=%%d, event_code=%x (event name %s)) component=%d",
-	   /* eventSet, */ evcode, buffer, cidx);
+     "PAPI_add_event(eventSet=%%d, event_code=%x (event name %s)) component=%d",
+     /* eventSet, */ evcode, buffer, cidx);
     }
     if (ret != PAPI_OK) {
       EMSG("failure in PAPI gen_event_set(): PAPI_add_event() returned: %s (%d)",
-	   PAPI_strerror(ret), ret);
+     PAPI_strerror(ret), ret);
       event_fatal_error(evcode, ret);
     }
   }
@@ -716,43 +716,43 @@ METHOD_FN(gen_event_set, int lush_metrics)
     // ***** Only set overflow if NOT derived event *****
     if (! derived[i]) {
       ret = PAPI_overflow(eventSet, evcode, thresh, OVERFLOW_MODE,
-			  papi_event_handler);
+        papi_event_handler);
       TMSG(PAPI, "PAPI_overflow(eventSet=%d, evcode=%x, thresh=%d) = %d",
-	   eventSet, evcode, thresh, ret);
+     eventSet, evcode, thresh, ret);
       if (ret != PAPI_OK) {
-	EMSG("failure in PAPI gen_event_set(): PAPI_overflow() returned: %s (%d)",
-	     PAPI_strerror(ret), ret);
-	event_fatal_error(evcode, ret);
+  EMSG("failure in PAPI gen_event_set(): PAPI_overflow() returned: %s (%d)",
+       PAPI_strerror(ret), ret);
+  event_fatal_error(evcode, ret);
       }
     }
   }
 
   /// Register papi handler callbacks
   gpu_monitor_enter.reg_info = psi;
-	gpu_monitor_enter.fn = papi_monitor_enter;
-	gpu_monitor_register(gpu_monitor_type_enter,
-														&gpu_monitor_enter);
+  gpu_monitor_enter.fn = papi_monitor_enter;
+  gpu_monitor_register(gpu_monitor_type_enter,
+                            &gpu_monitor_enter);
 
-	gpu_monitor_exit.reg_info = psi;
-	gpu_monitor_exit.fn = papi_monitor_exit;
-	gpu_monitor_register(gpu_monitor_type_exit,
-														&gpu_monitor_exit);
+  gpu_monitor_exit.reg_info = psi;
+  gpu_monitor_exit.fn = papi_monitor_exit;
+  gpu_monitor_register(gpu_monitor_type_exit,
+                            &gpu_monitor_exit);
 
 finish:
-	tool_exit();
+  tool_exit();
 }
 
 static void
 METHOD_FN(display_events)
 {
-	tool_enter();
+  tool_enter();
   PAPI_event_info_t info;
   int ev, ret, num_total, num_prof;
   int num_components, cidx;
 
   if (papi_unavail) {
     printf("PAPI is not available.  Probably, the kernel doesn't support PAPI,\n"
-	   "or else maybe HPCToolkit is out of sync with PAPI.\n\n");
+     "or else maybe HPCToolkit is out of sync with PAPI.\n\n");
     goto finish;
   }
 
@@ -773,14 +773,14 @@ METHOD_FN(display_events)
       char *prof;
       memset(&info, 0, sizeof(info));
       if (PAPI_get_event_info(ev, &info) == PAPI_OK && info.count != 0) {
-	if (event_is_derived(ev)) {
-	  prof = "No";
-	} else {
-	  prof = "Yes";
-	  num_prof++;
-	}
-	num_total++;
-	printf("%-10s\t%s\t%s\n", info.symbol, prof, info.long_descr);
+  if (event_is_derived(ev)) {
+    prof = "No";
+  } else {
+    prof = "Yes";
+    num_prof++;
+  }
+  num_total++;
+  printf("%-10s\t%s\t%s\n", info.symbol, prof, info.long_descr);
       }
       ret = PAPI_enum_cmp_event(&ev, PAPI_ENUM_EVENTS, cidx);
     }
@@ -807,7 +807,7 @@ METHOD_FN(display_events)
     while (ret == PAPI_OK) {
       memset(&info, 0, sizeof(info));
       if (PAPI_get_event_info(ev, &info) == PAPI_OK) {
-	cmp_event_count++;
+  cmp_event_count++;
         display_event_info(stdout, info.symbol, info.long_descr);
         printf("---------------------------------------------------------------------------\n");
       }
@@ -821,7 +821,7 @@ METHOD_FN(display_events)
   printf( "Total events reported: %d\n", num_total);
   printf("\n\n");
 finish:
-	tool_exit();
+  tool_exit();
 }
 
 
@@ -841,7 +841,7 @@ finish:
 void
 hpcrun_disable_papi_cuda(void)
 {
-	tool_enter();
+  tool_enter();
   disable_papi_cuda = true;
   tool_exit();
 }
@@ -855,8 +855,8 @@ hpcrun_disable_papi_cuda(void)
 static int
 event_is_derived(int ev_code)
 {
-	tool_enter();
-	int ret;
+  tool_enter();
+  int ret;
   PAPI_event_info_t info;
 
   // "Is derived" is kind of a bad thing, so if any unexpected failure
@@ -876,14 +876,14 @@ event_is_derived(int ev_code)
   ret = 1;
 
 finish:
-	tool_exit();
-	return ret;
+  tool_exit();
+  return ret;
 }
 
 static void
 event_fatal_error(int ev_code, int papi_ret)
 {
-	tool_enter();
+  tool_enter();
   char name[1024];
 
   PAPI_event_code_to_name(ev_code, name);
@@ -905,7 +905,7 @@ static void
 papi_event_handler(int event_set, void *pc, long long ovec,
                    void *context)
 {
-	tool_enter();
+  tool_enter();
   sample_source_t *self = &obj_name();
   long long values[MAX_EVENTS];
   int my_events[MAX_EVENTS];
@@ -921,8 +921,8 @@ papi_event_handler(int event_set, void *pc, long long ovec,
 
   if (!ovec) {
     TMSG(PAPI_SAMPLE, "papi overflow event: event set %d ovec = %ld",
-	 event_set, ovec);
-		goto finish;
+   event_set, ovec);
+    goto finish;
   }
 
   // If the interrupt came from inside our code, then drop the sample
@@ -945,20 +945,20 @@ papi_event_handler(int event_set, void *pc, long long ovec,
   }
 
   ret = PAPI_get_overflow_event_index(event_set, ovec, my_events,
-				      &my_event_count);
+              &my_event_count);
   if (ret != PAPI_OK) {
     TMSG(PAPI_SAMPLE, "papi_event_handler: event set %d ovec %ld "
-	 "get_overflow_event_index return code = %d ==> %s",
-	 event_set, ovec, ret, PAPI_strerror(ret));
+   "get_overflow_event_index return code = %d ==> %s",
+   event_set, ovec, ret, PAPI_strerror(ret));
 #ifdef DEBUG_PAPI_OVERFLOW
     ret = PAPI_list_events(event_set, my_event_codes, &my_event_codes_count);
     if (ret != PAPI_OK) {
       TMSG(PAPI_SAMPLE, "PAPI_list_events failed inside papi_event_handler."
-	   "Return code = %d ==> %s", ret, PAPI_strerror(ret));
+     "Return code = %d ==> %s", ret, PAPI_strerror(ret));
     } else {
       for (i = 0; i < my_event_codes_count; i++) {
         TMSG(PAPI_SAMPLE, "event set %d event code %d = %x\n",
-	     event_set, i, my_event_codes[i]);
+       event_set, i, my_event_codes[i]);
       }
     }
     TMSG(PAPI_SAMPLE, "get_overflow_event_index failure in papi_event_handler");
@@ -968,7 +968,7 @@ papi_event_handler(int event_set, void *pc, long long ovec,
   ret = PAPI_list_events(event_set, my_event_codes, &my_event_codes_count);
   if (ret != PAPI_OK) {
     hpcrun_abort("PAPI_list_events failed inside papi_event_handler."
-		 "Return code = %d ==> %s", ret, PAPI_strerror(ret));
+     "Return code = %d ==> %s", ret, PAPI_strerror(ret));
   }
 
   for (i = 0; i < my_event_count; i++) {
@@ -976,8 +976,8 @@ papi_event_handler(int event_set, void *pc, long long ovec,
     // This means lush's 'time' metric should be *last*
 
     TMSG(PAPI_SAMPLE,"handling papi overflow event: "
-	"event set %d event index = %d event code = 0x%x",
-	event_set, my_events[i], my_event_codes[my_events[i]]);
+  "event set %d event index = %d event code = 0x%x",
+  event_set, my_events[i], my_event_codes[my_events[i]]);
 
     int event_index = get_event_index(self, my_event_codes[my_events[i]]);
 
@@ -995,8 +995,8 @@ papi_event_handler(int event_set, void *pc, long long ovec,
     }
 
     sample_val_t sv = hpcrun_sample_callpath(context, metric_id,
-			(hpcrun_metricVal_t) {.i=metricIncrement},
-			0/*skipInner*/, 0/*isSync*/, NULL);
+      (hpcrun_metricVal_t) {.i=metricIncrement},
+      0/*skipInner*/, 0/*isSync*/, NULL);
 
     blame_shift_apply(metric_id, sv.sample_node, 1 /*metricIncr*/);
   }
@@ -1009,9 +1009,9 @@ papi_event_handler(int event_set, void *pc, long long ovec,
   if (ci->some_derived) {
     for (i = 0; i < nevents; i++) {
       if (derived[i]) {
-	      hpcrun_sample_callpath(context, hpcrun_event2metric(self, i),
-			(hpcrun_metricVal_t) {.i=values[i] - ci->prev_values[i]},
-			0, 0, NULL);
+        hpcrun_sample_callpath(context, hpcrun_event2metric(self, i),
+      (hpcrun_metricVal_t) {.i=values[i] - ci->prev_values[i]},
+      0, 0, NULL);
       }
     }
 
@@ -1022,7 +1022,7 @@ papi_event_handler(int event_set, void *pc, long long ovec,
   }
 
 finish:
-	tool_exit();
+  tool_exit();
   hpcrun_safe_exit();
 }
 
@@ -1033,97 +1033,97 @@ static __thread long long prev_values[MAX_EVENTS];
 static void
 papi_monitor_enter(void *reg_info, void *args_in)
 {
-	tool_enter();
-	papi_source_info_t *psi = (papi_source_info_t *) reg_info;
-	gpu_monitors_apply_t *args = (gpu_monitors_apply_t *) args_in;
+  tool_enter();
+  papi_source_info_t *psi = (papi_source_info_t *) reg_info;
+  gpu_monitors_apply_t *args = (gpu_monitors_apply_t *) args_in;
 
-	sample_source_t *self = &obj_name(); /// just for debug
-	int ret;
+  sample_source_t *self = &obj_name(); /// just for debug
+  int ret;
 
-	printf("|------->PAPI_MONITOR_ENTER | running? %d\n", METHOD_CALL(self, started));
+  printf("|------->PAPI_MONITOR_ENTER | running? %d\n", METHOD_CALL(self, started));
 
-	// if sampling disabled explicitly for this thread, skip all processing
-	if (hpcrun_suppress_sample() || sample_filters_apply()) goto finish;
+  // if sampling disabled explicitly for this thread, skip all processing
+  if (hpcrun_suppress_sample() || sample_filters_apply()) goto finish;
 
-	cct_node = args->cct_node;
+  cct_node = args->cct_node;
 
   if (args->gpu_type == amd)
     hipDeviceSynchronize();
 
-	// Save counts on the end so we could substract that from next call (we don't want to measure ourselves)
-	for (int cid = 0; cid < psi->num_components; ++cid) {
-		papi_component_info_t *ci = &(psi->component_info[cid]);
-		if (ci->inUse) {
-			printf("Self = %p | Component %d \t | cct = %p | gpu = %s\n\n", self, cid, args->cct_node, gpu_monitors_get_gpu_name(args->gpu_type) );
+  // Save counts on the end so we could substract that from next call (we don't want to measure ourselves)
+  for (int cid = 0; cid < psi->num_components; ++cid) {
+    papi_component_info_t *ci = &(psi->component_info[cid]);
+    if (ci->inUse) {
+      printf("Self = %p | Component %d \t | cct = %p | gpu = %s\n\n", self, cid, args->cct_node, gpu_monitors_get_gpu_name(args->gpu_type) );
 
-			ret = PAPI_read(ci->eventSet, prev_values);
-			//			ret = PAPI_start(ci->eventSet);
+      ret = PAPI_read(ci->eventSet, prev_values);
+      //      ret = PAPI_start(ci->eventSet);
 
-			if (ret != PAPI_OK) {
-				EMSG("PAPI_read of event set %d for component %d failed with %s (%d)",
-						 ci->eventSet, cid, PAPI_strerror(ret), ret);
-			}
+      if (ret != PAPI_OK) {
+        EMSG("PAPI_read of event set %d for component %d failed with %s (%d)",
+             ci->eventSet, cid, PAPI_strerror(ret), ret);
+      }
 
-		}
-	}
+    }
+  }
 
 finish:
-	tool_exit();
+  tool_exit();
 }
 
 static void
 papi_monitor_exit(void *reg_info, void *args_in)
 {
-	tool_enter();
-	papi_source_info_t *psi = (papi_source_info_t *) reg_info;
-	gpu_monitors_apply_t *args = (gpu_monitors_apply_t *) args_in;
+  tool_enter();
+  papi_source_info_t *psi = (papi_source_info_t *) reg_info;
+  gpu_monitors_apply_t *args = (gpu_monitors_apply_t *) args_in;
 
-	sample_source_t *self = &obj_name(); /// just for debug
-	int my_event_codes[MAX_EVENTS];
-	long long my_event_values[MAX_EVENTS];
-	int my_event_count = MAX_EVENTS;
-	int ret;
+  sample_source_t *self = &obj_name(); /// just for debug
+  int my_event_codes[MAX_EVENTS];
+  long long my_event_values[MAX_EVENTS];
+  int my_event_count = MAX_EVENTS;
+  int ret;
 
-	printf("|------->PAPI_MONITOR_EXIT| running? %d\n", METHOD_CALL(self, started));
+  printf("|------->PAPI_MONITOR_EXIT| running? %d\n", METHOD_CALL(self, started));
 
-	if (args->gpu_type == amd)
+  if (args->gpu_type == amd)
     hipDeviceSynchronize();
 
-	// if sampling disabled explicitly for this thread, skip all processing
-	if (hpcrun_suppress_sample() || sample_filters_apply()) goto finish;
+  // if sampling disabled explicitly for this thread, skip all processing
+  if (hpcrun_suppress_sample() || sample_filters_apply()) goto finish;
 
-	// Collect counters for components in use
-	for (int cid = 0; cid < psi->num_components; ++cid) {
-		papi_component_info_t *ci = &(psi->component_info[cid]);
-		if (ci->inUse){
-			ret = PAPI_read(ci->eventSet, my_event_values);
+  // Collect counters for components in use
+  for (int cid = 0; cid < psi->num_components; ++cid) {
+    papi_component_info_t *ci = &(psi->component_info[cid]);
+    if (ci->inUse){
+      ret = PAPI_read(ci->eventSet, my_event_values);
 
-			if (ret != PAPI_OK) {
-				EMSG("PAPI_read of event set %d for component %d failed with %s (%d)",
-						 ci->eventSet, cid, PAPI_strerror(ret), ret);
-			}
+      if (ret != PAPI_OK) {
+        EMSG("PAPI_read of event set %d for component %d failed with %s (%d)",
+             ci->eventSet, cid, PAPI_strerror(ret), ret);
+      }
 
-			// Attribute collected metric to cct nodes
-			ret = PAPI_list_events(ci->eventSet, my_event_codes, &my_event_count);
-			if (ret != PAPI_OK) {
-				hpcrun_abort("PAPI_list_events failed inside papi_event_handler."
-										 "Return code = %d ==> %s", ret, PAPI_strerror(ret));
-			}
+      // Attribute collected metric to cct nodes
+      ret = PAPI_list_events(ci->eventSet, my_event_codes, &my_event_count);
+      if (ret != PAPI_OK) {
+        hpcrun_abort("PAPI_list_events failed inside papi_event_handler."
+                     "Return code = %d ==> %s", ret, PAPI_strerror(ret));
+      }
 
-			for (int eid = 0; eid < my_event_count; ++eid) {
-				int event_index = get_event_index(self, my_event_codes[eid]);
-				int metric_id = hpcrun_event2metric(self, event_index);
+      for (int eid = 0; eid < my_event_count; ++eid) {
+        int event_index = get_event_index(self, my_event_codes[eid]);
+        int metric_id = hpcrun_event2metric(self, event_index);
 
-				printf("%d Event = %x, event_index = %d, metric_id = %d || value = %llu ---> %llu\n",
-							 eid, my_event_codes[eid], event_index, metric_id, prev_values[eid], my_event_values[eid]);
+        printf("%d Event = %x, event_index = %d, metric_id = %d || value = %llu ---> %llu\n",
+               eid, my_event_codes[eid], event_index, metric_id, prev_values[eid], my_event_values[eid]);
 
-				blame_shift_apply(metric_id, cct_node, my_event_values[eid] /*metricIncr*/);
-			}
+        blame_shift_apply(metric_id, cct_node, my_event_values[eid] /*metricIncr*/);
+      }
 
-		}
-	}
-	cct_node = NULL;
+    }
+  }
+  cct_node = NULL;
 
 finish:
-	tool_exit();
+  tool_exit();
 }

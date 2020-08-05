@@ -72,7 +72,7 @@
 // macros
 //******************************************************************************
 
-#define FORALL_ROCTRACER_ROUTINES(macro)			\
+#define FORALL_ROCTRACER_ROUTINES(macro)      \
   macro(roctracer_open_pool_expl)   \
   macro(roctracer_enable_callback)  \
   macro(roctracer_enable_activity_expl)  \
@@ -90,10 +90,10 @@
 
 #define HPCRUN_ROCTRACER_CALL(fn, args) \
 {      \
-  roctracer_status_t status = ROCTRACER_FN_NAME(fn) args;	\
-  if (status != ROCTRACER_STATUS_SUCCESS) {		\
+  roctracer_status_t status = ROCTRACER_FN_NAME(fn) args;  \
+  if (status != ROCTRACER_STATUS_SUCCESS) {    \
     /* use roctracer_error_string() */ \
-  }						\
+  }            \
 }
 
 
@@ -214,35 +214,35 @@ roctracer_kernel_data_set
     {
     case HIP_API_ID_hipModuleLaunchKernel:
       entry_data->kernel.blockSharedMemory =
-	data->args.hipModuleLaunchKernel.sharedMemBytes;
+  data->args.hipModuleLaunchKernel.sharedMemBytes;
 
       entry_data->kernel.blockThreads =
-	data->args.hipModuleLaunchKernel.blockDimX *
-	data->args.hipModuleLaunchKernel.blockDimY *
-	data->args.hipModuleLaunchKernel.blockDimZ;
+  data->args.hipModuleLaunchKernel.blockDimX *
+  data->args.hipModuleLaunchKernel.blockDimY *
+  data->args.hipModuleLaunchKernel.blockDimZ;
       break;
 
     case HIP_API_ID_hipLaunchCooperativeKernel:
       entry_data->kernel.blockSharedMemory =
-	data->args.hipLaunchCooperativeKernel.sharedMemBytes;
+  data->args.hipLaunchCooperativeKernel.sharedMemBytes;
 
       entry_data->kernel.blockThreads =
-	data->args.hipLaunchCooperativeKernel.blockDimX.x *
-	data->args.hipLaunchCooperativeKernel.blockDimX.y *
-	data->args.hipLaunchCooperativeKernel.blockDimX.z;
+  data->args.hipLaunchCooperativeKernel.blockDimX.x *
+  data->args.hipLaunchCooperativeKernel.blockDimX.y *
+  data->args.hipLaunchCooperativeKernel.blockDimX.z;
       break;
 
     case HIP_API_ID_hipHccModuleLaunchKernel:
       entry_data->kernel.blockSharedMemory =
-	data->args.hipHccModuleLaunchKernel.sharedMemBytes;
+  data->args.hipHccModuleLaunchKernel.sharedMemBytes;
 
       entry_data->kernel.blockThreads =
-	(data->args.hipHccModuleLaunchKernel.globalWorkSizeX *
-	 data->args.hipHccModuleLaunchKernel.globalWorkSizeY *
-	 data->args.hipHccModuleLaunchKernel.globalWorkSizeZ) +
-	(data->args.hipHccModuleLaunchKernel.localWorkSizeX *
-	 data->args.hipHccModuleLaunchKernel.localWorkSizeY *
-	 data->args.hipHccModuleLaunchKernel.localWorkSizeZ);
+  (data->args.hipHccModuleLaunchKernel.globalWorkSizeX *
+   data->args.hipHccModuleLaunchKernel.globalWorkSizeY *
+   data->args.hipHccModuleLaunchKernel.globalWorkSizeZ) +
+  (data->args.hipHccModuleLaunchKernel.localWorkSizeX *
+   data->args.hipHccModuleLaunchKernel.localWorkSizeY *
+   data->args.hipHccModuleLaunchKernel.localWorkSizeZ);
       break;
     }
 }
@@ -260,9 +260,9 @@ roctracer_subscriber_callback
 )
 {
   if (is_tool_active()) {
-//		TMSG(ROCM, "PAPI correlation callback");
-//		gpu_correlation_channel_produce(PAPI_CORR_ID, NULL, 0);
-		return;
+//    TMSG(ROCM, "PAPI correlation callback");
+//    gpu_correlation_channel_produce(PAPI_CORR_ID, NULL, 0);
+    return;
   }
 
   gpu_op_placeholder_flags_t gpu_op_placeholder_flags = 0;
@@ -294,7 +294,7 @@ roctracer_subscriber_callback
   case HIP_API_ID_hipMemcpyDtoHAsync:
   case HIP_API_ID_hipMemcpyParam2D:
     gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
-				 gpu_placeholder_type_copy);
+         gpu_placeholder_type_copy);
     is_valid_op = true;
     break;
 
@@ -307,7 +307,7 @@ roctracer_subscriber_callback
   case HIP_API_ID_hipMalloc3D:
   case HIP_API_ID_hipExtMallocWithFlags:
     gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
-				 gpu_placeholder_type_alloc);
+         gpu_placeholder_type_alloc);
     is_valid_op = true;
     break;
 
@@ -320,14 +320,14 @@ roctracer_subscriber_callback
   case HIP_API_ID_hipMemsetAsync:
   case HIP_API_ID_hipMemsetD32Async:
     gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
-				 gpu_placeholder_type_memset);
+         gpu_placeholder_type_memset);
     is_valid_op = true;
     break;
 
   case HIP_API_ID_hipFree:
   case HIP_API_ID_hipFreeArray:
     gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
-				 gpu_placeholder_type_delete);
+         gpu_placeholder_type_delete);
     is_valid_op = true;
     break;
 
@@ -337,7 +337,7 @@ roctracer_subscriber_callback
     //case HIP_API_ID_hipExtModuleLaunchKernel:
 
     gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
-				 gpu_placeholder_type_kernel);
+         gpu_placeholder_type_kernel);
     is_valid_op = true;
     break;
 
@@ -346,7 +346,7 @@ roctracer_subscriber_callback
   case HIP_API_ID_hipDeviceSynchronize:
   case HIP_API_ID_hipEventSynchronize:
     gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
-				 gpu_placeholder_type_sync);
+         gpu_placeholder_type_sync);
     is_valid_op = true;
     break;
 
@@ -358,31 +358,31 @@ roctracer_subscriber_callback
 
 
   if (data->phase == ACTIVITY_API_PHASE_ENTER) {
-		uint64_t correlation_id = data->correlation_id;
-		cct_node_t *api_node =
-		gpu_application_thread_correlation_callback(correlation_id);
+    uint64_t correlation_id = data->correlation_id;
+    cct_node_t *api_node =
+    gpu_application_thread_correlation_callback(correlation_id);
 
-		gpu_op_ccts_t gpu_op_ccts;
-		hpcrun_safe_enter();
-		gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
-		hpcrun_safe_exit();
+    gpu_op_ccts_t gpu_op_ccts;
+    hpcrun_safe_enter();
+    gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
+    hpcrun_safe_exit();
 
-		gpu_activity_channel_consume(gpu_metrics_attribute);
+    gpu_activity_channel_consume(gpu_metrics_attribute);
 
-		// Generate notification entry
-		uint64_t cpu_submit_time = hpcrun_nanotime();
+    // Generate notification entry
+    uint64_t cpu_submit_time = hpcrun_nanotime();
 
-		cupti_kernel_ph = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel); //dejan: added
+    cupti_kernel_ph = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel); //dejan: added
 
-		printf("\nACTIVITY_API_PHASE_ENTER -----------------| cct = %p | gpu = %d\n", cupti_kernel_ph, amd);
-		gpu_monitors_apply(&(gpu_monitors_apply_t) {.cct_node=cupti_kernel_ph, .gpu_type=amd}, gpu_monitor_type_enter);
+    printf("\nACTIVITY_API_PHASE_ENTER -----------------| cct = %p | gpu = %d\n", cupti_kernel_ph, amd);
+    gpu_monitors_apply(&(gpu_monitors_apply_t) {.cct_node=cupti_kernel_ph, .gpu_type=amd}, gpu_monitor_type_enter);
 
-		gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, cpu_submit_time);
+    gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, cpu_submit_time);
   }else if (data->phase == ACTIVITY_API_PHASE_EXIT){
-		printf("\nACTIVITY_API_PHASE_EXIT -----------------| cct = %p | gpu = %d\n", cupti_kernel_ph, amd );
-		cupti_kernel_ph = NULL;
+    printf("\nACTIVITY_API_PHASE_EXIT -----------------| cct = %p | gpu = %d\n", cupti_kernel_ph, amd );
+    cupti_kernel_ph = NULL;
   }else{
-  	;
+    ;
   }
 
 
@@ -409,7 +409,7 @@ roctracer_activity_process
   roctracer_activity_translate(&gpu_activity, roctracer_record);
   if (gpu_correlation_id_map_lookup(roctracer_record->correlation_id) == NULL) {
     gpu_correlation_id_map_insert(roctracer_record->correlation_id,
-				  roctracer_record->correlation_id);
+          roctracer_record->correlation_id);
   }
   gpu_activity_process(&gpu_activity);
 }
@@ -494,7 +494,7 @@ roctracer_init
   properties.buffer_callback_arg = 0;
   HPCRUN_ROCTRACER_CALL(roctracer_open_pool_expl,(&properties, NULL));
   HPCRUN_ROCTRACER_CALL(roctracer_enable_callback,
-			(roctracer_subscriber_callback, NULL));
+      (roctracer_subscriber_callback, NULL));
   HPCRUN_ROCTRACER_CALL(roctracer_enable_activity_expl, (NULL));
 }
 
