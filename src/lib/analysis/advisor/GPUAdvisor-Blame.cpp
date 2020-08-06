@@ -53,8 +53,8 @@ using std::string;
 #include <lib/support/IOUtil.hpp>
 #include <lib/support/StrUtil.hpp>
 
-#define DEBUG_GPUADVISOR 1
-#define DEBUG_GPUADVISOR_DETAILS 1
+#define DEBUG_GPUADVISOR 0
+#define DEBUG_GPUADVISOR_DETAILS 0
 
 namespace Analysis {
 

@@ -54,8 +54,8 @@ using std::string;
 #include <lib/support/StrUtil.hpp>
 #include <lib/support/diagnostics.h>
 
-#define DEBUG_GPUADVISOR 1
-#define DEBUG_GPUADVISOR_DETAILS 1
+#define DEBUG_GPUADVISOR 0
+#define DEBUG_GPUADVISOR_DETAILS 0
 
 #define MIN2(a, b) ((a > b) ? b : a)
 

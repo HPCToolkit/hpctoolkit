@@ -138,10 +138,12 @@ ParallelGPUEstimator::estimate(const std::vector<BlameStats> &blame_stats, const
   std::vector<double> estimate_speedups;
 
   double blame = 0.0;
-  double speedup = 0.0;
+  double speedup = 1.0;
   if (blame_stats.size() > 0) {
     blame = blame_stats[0].blame;
-    speedup = 1 / blame;
+    if (blame != 0) {
+      speedup = 1 / blame;
+    }
   }
 
   estimate_ratios.push_back(blame);
