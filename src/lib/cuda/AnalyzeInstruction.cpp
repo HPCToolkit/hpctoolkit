@@ -572,9 +572,14 @@ void controlCudaInstructions(const char *cubin, std::vector<Function *> &functio
   }
 }
 
+#define TRACK_LIMIT 1024
+
 static void trackDependency(std::map<int, InstructionStat *> &inst_stat_map,
   Dyninst::Address inst_addr, Dyninst::Address func_addr, std::map<int, int> &predicate_map,
-  Dyninst::NodeIterator exit_node_iter, InstructionStat *inst_stat) {
+  Dyninst::NodeIterator exit_node_iter, InstructionStat *inst_stat, int step) {
+  if (step >= TRACK_LIMIT) {
+    return;
+  }
   Dyninst::NodeIterator in_begin, in_end;
   (*exit_node_iter)->ins(in_begin, in_end);
   for (; in_begin != in_end; ++in_begin) {
@@ -663,7 +668,7 @@ static void trackDependency(std::map<int, InstructionStat *> &inst_stat_map,
         }
 
         trackDependency(inst_stat_map, inst_addr, func_addr, predicate_map,
-          in_begin, inst_stat);
+          in_begin, inst_stat, step + 1);
         
         // Clear
         if (slice_inst->predicate_flag == InstructionStat::PREDICATE_TRUE) {
@@ -743,7 +748,7 @@ void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_s
               predicate_map[-(inst_stat->predicate + 1)]++;
             }
             trackDependency(inst_stat_map, inst_addr, func_addr, predicate_map,
-              exit_begin, inst_stat);
+              exit_begin, inst_stat, 0);
           }
         }
       }

@@ -543,6 +543,56 @@ relocateSymbolsHelper
 }
 
 
+static std::vector<int>
+getSymbolsVisibilityHelper
+(
+ Elf *elf,
+ GElf_Ehdr *ehdr,
+ GElf_Shdr *shdr,
+ Elf_SectionVector *sections,
+ Elf_Scn *scn,
+ elf_helper_t *eh
+)
+{
+  std::vector<int> symbol_values;
+  Elf_SymbolSectionIndexVector* symbol_section_index = NULL;
+  int nsymbols = 0;
+  assert (shdr->sh_type == SHT_SYMTAB);
+  if (shdr->sh_entsize > 0) { // avoid divide by 0
+    nsymbols = shdr->sh_size / shdr->sh_entsize;
+  }
+  if (nsymbols <= 0) return symbol_values;
+
+  Elf_Data *datap = elf_getdata(scn, NULL);
+
+  if (datap) {
+    symbol_values.resize(nsymbols);
+    symbol_section_index = new Elf_SymbolSectionIndexVector(nsymbols);
+    // Update symbol offsets
+    for (int i = 0; i < nsymbols; i++) {
+      GElf_Sym sym;      
+      int section_index;
+      GElf_Sym *symp;
+      symp = elf_helper_get_symbol(eh, i, &sym, &section_index);
+      (*symbol_section_index)[i] = section_index;
+      if (symp) { // symbol properly read
+        int symtype = GELF_ST_TYPE(sym.st_info);
+        if (sym.st_shndx == SHN_UNDEF) continue;
+        switch(symtype) {
+          case STT_FUNC:
+            {
+              symbol_values[i] = sym.st_other;
+            }
+          default: break;
+        }
+      }
+    }
+  }
+
+  return symbol_values;
+}
+
+
 static Elf_SymbolVector *
 relocateSymbols
 (
@@ -645,4 +695,38 @@ relocateCubin
   }
 
   return success;
+}
+
+std::vector<int>
+getVisibilityCubin
+(
+ char *cubin_ptr,
+ Elf *cubin_elf
+)
+{
+  std::vector<int> symbol_visibility;
+  bool success = false;
+
+  elf_helper_t eh;
+  elf_helper_initialize(cubin_elf, &eh);  
+
+  Elf_SectionVector *sections = elfGetSectionVector(cubin_elf);
+  if (sections) {
+    GElf_Ehdr ehdr_v;
+    GElf_Ehdr *ehdr = gelf_getehdr(cubin_elf, &ehdr_v);
+    if (ehdr) {
+      for (auto si = sections->begin(); si != sections->end(); si++) {
+        Elf_Scn *scn = *si;
+        GElf_Shdr shdr;
+        if (!gelf_getshdr(scn, &shdr)) continue;
+        if (shdr.sh_type == SHT_SYMTAB) {
+          symbol_visibility = getSymbolsVisibilityHelper(cubin_elf, ehdr, &shdr, sections, scn, &eh);
+          break; // AFAIK, there can only be one symbol table
+        }
+      }
+    }
+    delete sections;
+  }
+
+  return symbol_visibility;
 }

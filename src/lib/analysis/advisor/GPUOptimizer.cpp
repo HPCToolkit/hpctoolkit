@@ -417,19 +417,20 @@ std::vector<BlameStats> GPUFunctionInlineOptimizer::match_impl(const KernelBlame
   // Both caller and callee can be rescheduled
   auto blame = 0.0;
 
-  std::set<CudaParse::Block *> caller_blocks;
+  std::map<VMA, Prof::Struct::ACodeNode*> vma_function;
+  std::map<CudaParse::Block *, std::set<VMA>> caller_blocks;
   for (auto *inst_blame : kernel_blame.stall_inst_blame_ptrs) {
-    auto *function = inst_blame->src_function;
-    if (function->global) {
-      if (inst_blame->dst_inst->op.find("CALL") != std::string::npos) {
-        if (inst_blame->dst_struct->type() == Prof::Struct::ANode::TyStmt) {
-          auto *stmt = dynamic_cast<Prof::Struct::Stmt *>(inst_blame->dst_struct);
-          if (stmt->stmtType() == Prof::Struct::Stmt::STMT_CALL) {
-            caller_blocks.insert(inst_blame->dst_block);
-          }
+    if (inst_blame->dst_inst->op.find("CALL") != std::string::npos) {
+      if (inst_blame->dst_struct->type() == Prof::Struct::ANode::TyStmt) {
+        auto *stmt = dynamic_cast<Prof::Struct::Stmt *>(inst_blame->dst_struct);
+        if (stmt->stmtType() == Prof::Struct::Stmt::STMT_CALL) {
+          caller_blocks[inst_blame->dst_block].insert(stmt->target());
         }
       }
     }
+    Prof::Struct::ACodeNode *proc = inst_blame->src_struct->ancestorProc();
+    auto vma = proc->vmaSet().begin()->beg();
+    vma_function[vma] = proc;
   }
 
   auto ifetch_stall = 0.0;
@@ -438,26 +439,62 @@ std::vector<BlameStats> GPUFunctionInlineOptimizer::match_impl(const KernelBlame
   }
 
   // Match if instruction fetch latency is low
+  std::map<Prof::Struct::ACodeNode*, BlameStats> function_blame;
   if (ifetch_stall / kernel_blame.stall_blame <= IFET_UPPER) {
     for (auto *inst_blame : kernel_blame.stall_inst_blame_ptrs) {
       auto *function = inst_blame->src_function;
+      bool find = false;
+      Prof::Struct::ACodeNode *proc = inst_blame->src_struct->ancestorProc();
       if (function->global == false) {
+        find = true;
         blame += inst_blame->stall_blame;
-        if (_inspection.regions.size() < _top_regions) {
-          _inspection.regions.push_back(*inst_blame);
-        }
-      } else {
-        if (caller_blocks.find(inst_blame->dst_block) != caller_blocks.end()) {
+        function_blame[proc].blame += inst_blame->stall_blame;
+        function_blame[proc].total_samples += inst_blame->lat_blame;
+        function_blame[proc].active_samples += inst_blame->lat_blame - inst_blame->stall_blame;
+      }
+
+      if (caller_blocks.find(inst_blame->dst_block) != caller_blocks.end()) {
+        if (!find) {
+          // Use find to avoid add blame twice
           blame += inst_blame->stall_blame;
+        }
+        for (auto vma : caller_blocks[inst_blame->dst_block]) {
+          auto *caller_proc = vma_function[vma];
+          function_blame[caller_proc].blame += inst_blame->stall_blame;
+          function_blame[caller_proc].total_samples += inst_blame->lat_blame;
+          function_blame[caller_proc].active_samples += inst_blame->lat_blame - inst_blame->stall_blame;
         }
       }
     }
   }
-
+  
   _inspection.stall = true;
+  _inspection.loop = true;
 
-  BlameStats blame_stats(blame, kernel_stats.active_samples, kernel_stats.total_samples);
-  return std::vector<BlameStats>{blame_stats};
+  std::vector<BlameStats> blame_stats_vec;
+  for (auto &iter : function_blame) {
+    blame_stats_vec.push_back(iter.second);
+
+    InstructionBlame region_blame;
+    region_blame.src_struct = iter.first;
+    region_blame.dst_struct = iter.first;
+    region_blame.blame_name = BLAME_GPU_INST_METRIC_NAME ":LAT_DEP";
+    region_blame.stall_blame = iter.second.blame;
+    _inspection.regions.push_back(region_blame);
+  }
+
+  std::sort(blame_stats_vec.begin(), blame_stats_vec.end());
+  std::sort(_inspection.regions.begin(), _inspection.regions.end(),
+    [](const InstructionBlame &l, const InstructionBlame &r) {
+    return l.stall_blame > r.stall_blame;
+    });
+
+  if (_inspection.regions.size() > _top_regions) {
+    _inspection.regions.erase(_inspection.regions.begin() + _top_regions, _inspection.regions.end());
+  }
+
+  blame_stats_vec.push_back(BlameStats(0.0, kernel_stats.active_samples, kernel_stats.total_samples));
+  return blame_stats_vec;
 }
 
 std::vector<BlameStats> GPUFunctionSplitOptimizer::match_impl(const KernelBlame &kernel_blame,

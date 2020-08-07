@@ -107,9 +107,7 @@ private:
 
 class ElfFileVector : public std::vector<ElfFile *> {};
 
-
 class ElfSectionVector : public std::vector<Elf_Scn *> {};
-
 
 
 //******************************************************************************
