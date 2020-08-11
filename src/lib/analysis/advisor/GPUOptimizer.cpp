@@ -93,17 +93,16 @@ double GPUOptimizer::match(const KernelBlame &kernel_blame, const KernelStats &k
 
 std::vector<BlameStats> GPURegisterIncreaseOptimizer::match_impl(const KernelBlame &kernel_blame,
                                                                  const KernelStats &kernel_stats) {
-  auto blame = 0.0;
   // Match if for local memory dep
-  // Function region optimizer
-  std::map<Prof::Struct::ACodeNode, std::vector<InstructionBlame *>> function_blames;
+  std::vector<BlameStats> blame_stats_vec;
 
   // Find top latency pairs
   for (auto *inst_blame : kernel_blame.lat_inst_blame_ptrs) {
     auto &blame_name = inst_blame->blame_name;
 
     if (blame_name == BLAME_GPU_INST_METRIC_NAME ":LAT_GMEM_LMEM") {
-      blame += inst_blame->lat_blame;
+      BlameStats blame_stats(inst_blame->lat_blame, kernel_stats.active_samples, kernel_stats.total_samples);
+      blame_stats_vec.push_back(blame_stats);
 
       if (_inspection.regions.size() < _top_regions) {
         _inspection.regions.push_back(*inst_blame);
@@ -116,11 +115,13 @@ std::vector<BlameStats> GPURegisterIncreaseOptimizer::match_impl(const KernelBla
       "spills to local memory causes extra instruction cycles.\n"
       "To eliminate these cycles:\n"
       "1. Increase the upper bound of regster count in a kernel.\n"
-      "2. Simplify computations to reuse registers.";
-  _inspection.stall = false;
+      "2. Simplify computations to reuse registers.\n";
+      "3. Split loops to reduce register usage.\n";
 
-  BlameStats blame_stats(blame, kernel_stats.active_samples, kernel_stats.total_samples);
-  return std::vector<BlameStats>{blame_stats};
+  _inspection.stall = false;
+  _inspection.loop = true;
+
+  return blame_stats_vec;
 }
 
 std::vector<BlameStats> GPURegisterDecreaseOptimizer::match_impl(const KernelBlame &kernel_blame,
@@ -572,12 +573,13 @@ std::vector<BlameStats> GPUSharedMemoryCoalesceOptimizer::match_impl(
 std::vector<BlameStats> GPUGlobalMemoryCoalesceOptimizer::match_impl(
     const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
   // Match if global memory latency is high
-  auto blame = 0.0;
+  std::vector<BlameStats> blame_stats_vec;
 
   // Find top latency pairs
   for (auto *inst_blame : kernel_blame.stall_inst_blame_ptrs) {
     if (inst_blame->blame_name.find(":LAT_MTHR") != std::string::npos) {
-      blame += inst_blame->stall_blame;
+      BlameStats blame_stats(inst_blame->lat_blame, kernel_stats.active_samples, kernel_stats.total_samples);
+      blame_stats_vec.push_back(blame_stats);
 
       if (_inspection.regions.size() < _top_regions) {
         _inspection.regions.push_back(*inst_blame);
@@ -585,10 +587,16 @@ std::vector<BlameStats> GPUGlobalMemoryCoalesceOptimizer::match_impl(
     }
   }
 
+  _inspection.loop = true;
   _inspection.stall = false;
 
-  BlameStats blame_stats(blame, kernel_stats.active_samples, kernel_stats.total_samples);
-  return std::vector<BlameStats>{blame_stats};
+  _inspection.hint =
+      "Too many global memory requests are issued at the following PCs.\n"
+      "To eliminate abundant memory requests:\n"
+      "1. Coalsece memory access among threads within the same warp.\n"
+      "2. Use constant/texture memory to reduce memory transactions.\n";
+
+  return blame_stats_vec;
 }
 
 std::vector<BlameStats> GPUOccupancyIncreaseOptimizer::match_impl(const KernelBlame &kernel_blame,
