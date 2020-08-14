@@ -60,4 +60,4 @@ void level0_fini();
 int level0_bind();
 
 
-#endif //HPCTOOLKIT_AMD_H
+#endif //HPCTOOLKIT_LEVEL0_H
