@@ -119,51 +119,50 @@ static device_finalizer_fn_entry_t device_finalizer_shutdown;
 static void
 METHOD_FN(init)
 {
-    self->state = INIT;
+  self->state = INIT;
 }
 
 
 static void
 METHOD_FN(thread_init)
 {
-    TMSG(CUDA, "thread_init");
+  TMSG(CUDA, "thread_init");
 }
 
 
 static void
 METHOD_FN(thread_init_action)
 {
-    TMSG(CUDA, "thread_init_action");
+  TMSG(CUDA, "thread_init_action");
 }
 
 
 static void
 METHOD_FN(start)
 {
-    TMSG(CUDA, "start");
+  TMSG(CUDA, "start");
 }
 
 
 static void
 METHOD_FN(thread_fini_action)
 {
-    TMSG(CUDA, "thread_fini_action");
+  TMSG(CUDA, "thread_fini_action");
 }
 
 
 static void
 METHOD_FN(stop)
 {
-    hpcrun_get_thread_data();
-
-    TD_GET(ss_state)[self->sel_idx] = STOP;
+  hpcrun_get_thread_data();
+  TD_GET(ss_state)[self->sel_idx] = STOP;
 }
 
 
 static void
 METHOD_FN(shutdown)
 {
-    self->state = UNINIT;
+  self->state = UNINIT;
 }
 
 
@@ -171,9 +170,9 @@ static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
 #ifndef HPCRUN_STATIC_LINK
-    return hpcrun_ev_is(ev_str, LEVEL0);
+  return hpcrun_ev_is(ev_str, LEVEL0);
 #else
-    return false;
+  return false;
 #endif
 
 
@@ -182,40 +181,30 @@ METHOD_FN(supports_event, const char *ev_str)
 static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
-    int nevents = (self->evl).nevents;
-    gpu_metrics_default_enable();
-    TMSG(CUDA,"nevents = %d", nevents);
+  int nevents = (self->evl).nevents;
+  gpu_metrics_default_enable();
+  TMSG(CUDA,"nevents = %d", nevents);
 }
 
 static void
 METHOD_FN(finalize_event_list)
 {
 #ifndef HPCRUN_STATIC_LINK
-    if (level0_bind()) {
-        EEMSG("hpcrun: unable to bind to Level0 library %s\n", dlerror());
-        monitor_real_exit(-1);
-    }
+  if (level0_bind()) {
+    EEMSG("hpcrun: unable to bind to Level0 library %s\n", dlerror());
+    monitor_real_exit(-1);
+  }
 #endif
 
-#if 0
-    // Fetch the event string for the sample source
-    // only one event is allowed
-    char* evlist = METHOD_CALL(self, get_event_str);
-    char* event = start_tok(evlist);
-#endif
-    level0_init();
-    
-    device_finalizer_shutdown.fn = level0_fini;
-    device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_shutdown);
-
-
+  level0_init();
+  device_finalizer_shutdown.fn = level0_fini;
+  device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_shutdown);
 }
 
 
 static void
 METHOD_FN(gen_event_set,int lush_metrics)
 {
-
 }
 
 

@@ -80,7 +80,7 @@ static spinlock_t commandlist_map_lock = SPINLOCK_UNLOCKED;
 static void
 link_node
 (
- level0_data_node_t** list, 
+ level0_data_node_t** list,
  level0_data_node_t* node
 )
 {
@@ -94,7 +94,7 @@ link_node
 
 level0_data_node_t**
 level0_commandlist_map_lookup
-( 
+(
  ze_command_list_handle_t command_list_handle
 )
 {
@@ -103,8 +103,8 @@ level0_commandlist_map_lookup
   uint64_t key = (uint64_t)command_list_handle;
   level0_handle_map_entry_t *result = level0_handle_map_lookup(&commandlist_map_root, key);
 
-  PRINT("level0 commandlist map lookup: id=0x%lx (record %p)\n", 
-       key, result); 
+  PRINT("level0 commandlist map lookup: id=0x%lx (record %p)\n",
+       key, result);
 
   spinlock_unlock(&commandlist_map_lock);
   if (result == NULL) return NULL;
@@ -121,9 +121,9 @@ level0_commandlist_map_insert
 
   uint64_t key = (uint64_t)command_list_handle;
   level0_handle_map_entry_t *entry = level0_handle_map_entry_new(&commandlist_free_list, key, NULL);
-  level0_handle_map_insert(&commandlist_map_root, entry);  
+  level0_handle_map_insert(&commandlist_map_root, entry);
 
-  PRINT("level0 commandlist map insert: handle=%p (entry=%p)\n", 
+  PRINT("level0 commandlist map insert: handle=%p (entry=%p)\n",
 	 command_list_handle, entry);
 
   spinlock_unlock(&commandlist_map_lock);
@@ -141,7 +141,7 @@ level0_commandlist_map_delete
   spinlock_lock(&commandlist_map_lock);
 
   uint64_t key = (uint64_t)command_list_handle;
-  level0_handle_map_delete(&commandlist_map_root, &commandlist_free_list, key);    
+  level0_handle_map_delete(&commandlist_map_root, &commandlist_free_list, key);
 
   spinlock_unlock(&commandlist_map_lock);
 }
@@ -210,6 +210,6 @@ level0_commandlist_append_memcpy
 )
 {
   level0_data_node_t* list_entry = level0_commandlist_alloc_memcpy(src_type, dst_type, copy_size, event, event_pool);
-  link_node(command_list, list_entry);  
+  link_node(command_list, list_entry);
   return list_entry;
 }

@@ -98,7 +98,11 @@ level0_memcpy_translate
   uint64_t end
 )
 {
-  PRINT("level0_memcpy_translate: src_type %d, dst_type %d, size %u\n", c->details.memcpy.src_type, c->details.memcpy.dst_type, c->details.memcpy.copy_size);
+  PRINT("level0_memcpy_translate: src_type %d, dst_type %d, size %u\n",
+    c->details.memcpy.src_type,
+    c->details.memcpy.dst_type,
+    c->details.memcpy.copy_size);
+
   ga->kind = GPU_ACTIVITY_MEMCPY;
   ga->details.memcpy.bytes = c->details.memcpy.copy_size;
   ga->details.memcpy.correlation_id = (uint64_t)(c->event);
@@ -132,11 +136,11 @@ level0_memcpy_translate
           break;
         case ZE_MEMORY_TYPE_SHARED:
           ga->details.memcpy.copyKind = GPU_MEMCPY_D2A;
-          break;                
+          break;
         default:
           break;
       }
-      break;        
+      break;
     }
     case ZE_MEMORY_TYPE_SHARED: {
       switch (c->details.memcpy.dst_type) {
@@ -152,7 +156,7 @@ level0_memcpy_translate
         default:
           break;
       }
-      break;        
+      break;
     }
     default:
       break;
@@ -165,7 +169,7 @@ level0_memcpy_translate
 //*****************************************************************************
 
 
-// Expand this function to crete GPU side cct
+// Expand this function to create GPU side cct
 void
 level0_command_begin
 (
@@ -182,13 +186,15 @@ level0_command_begin
     case LEVEL0_MEMCPY: {
       ze_memory_type_t src_type = command_node->details.memcpy.src_type;
       ze_memory_type_t dst_type = command_node->details.memcpy.dst_type;
-// TODO: Do we need to distinguish copyin and copyout placeholder? We already have host to host, host to device types to distinguish copyin and copyout
+// TODO: Do we need to distinguish copyin and copyout placeholder?
+//       We already have host to host, host to device types to
+//       distinguish copyin and copyout
 //      if (src_type == ZE_MEMORY_TYPE_HOST && dst_type != ZE_MEMORY_TYPE_HOST) {
 //        gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_copyout);
 //      } else if (src_type != ZE_MEMORY_TYPE_HOST && dst_type == ZE_MEMORY_TYPE_HOST) {
 //        gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_copyin);
 //      } else {
-        gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_copy);
+      gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_copy);
 //      }
       break;
     }
@@ -213,7 +219,7 @@ level0_command_begin
 }
 
 void
-level0_command_end 
+level0_command_end
 (
   level0_data_node_t* command_node,
   uint64_t start,
