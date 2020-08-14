@@ -498,6 +498,70 @@ std::vector<BlameStats> GPUFunctionInlineOptimizer::match_impl(const KernelBlame
   return blame_stats_vec;
 }
 
+
+std::vector<BlameStats> GPUFastMathOptimizer::match_impl(const KernelBlame &kernel_blame,
+                                                         const KernelStats &kernel_stats) {
+  const double IFET_UPPER = 0.3;
+
+  // Both caller and callee can be rescheduled
+  auto blame = 0.0;
+
+  std::map<VMA, Prof::Struct::ACodeNode*> vma_function;
+  for (auto *inst_blame : kernel_blame.stall_inst_blame_ptrs) {
+    Prof::Struct::ACodeNode *proc = inst_blame->src_struct->ancestorProc();
+    auto vma = proc->vmaSet().begin()->beg();
+    vma_function[vma] = proc;
+  }
+
+  auto ifetch_stall = 0.0;
+  if (kernel_blame.stall_blames.find(BLAME_GPU_INST_METRIC_NAME ":LAT_IFET") != kernel_blame.stall_blames.end()) {
+    ifetch_stall = kernel_blame.stall_blames.at(BLAME_GPU_INST_METRIC_NAME ":LAT_IFET");
+  }
+
+  // Match if instruction fetch latency is low
+  std::map<Prof::Struct::ACodeNode*, BlameStats> function_blame;
+  if (ifetch_stall / kernel_blame.stall_blame <= IFET_UPPER) {
+    for (auto *inst_blame : kernel_blame.stall_inst_blame_ptrs) {
+      auto *function = inst_blame->src_function;
+      bool find = false;
+      Prof::Struct::ACodeNode *proc = inst_blame->src_struct->ancestorProc();
+      if (function->global == false && function->name.find("cuda_sm") != std::string::npos) {
+        find = true;
+        blame += inst_blame->lat_blame;
+        function_blame[proc].blame += inst_blame->lat_blame;
+      }
+    }
+  }
+  
+  _inspection.stall = false;
+  _inspection.loop = true;
+
+  std::vector<BlameStats> blame_stats_vec;
+  for (auto &iter : function_blame) {
+    blame_stats_vec.push_back(iter.second);
+
+    InstructionBlame region_blame;
+    region_blame.src_struct = iter.first;
+    region_blame.dst_struct = iter.first;
+    region_blame.blame_name = BLAME_GPU_INST_METRIC_NAME ":LAT_DEP";
+    region_blame.stall_blame = iter.second.blame;
+    _inspection.regions.push_back(region_blame);
+  }
+
+  std::sort(blame_stats_vec.begin(), blame_stats_vec.end());
+  std::sort(_inspection.regions.begin(), _inspection.regions.end(),
+    [](const InstructionBlame &l, const InstructionBlame &r) {
+    return l.stall_blame > r.stall_blame;
+    });
+
+  if (_inspection.regions.size() > _top_regions) {
+    _inspection.regions.erase(_inspection.regions.begin() + _top_regions, _inspection.regions.end());
+  }
+
+  blame_stats_vec.push_back(BlameStats(0.0, kernel_stats.active_samples, kernel_stats.total_samples));
+  return blame_stats_vec;
+}
+
 std::vector<BlameStats> GPUFunctionSplitOptimizer::match_impl(const KernelBlame &kernel_blame,
                                                               const KernelStats &kernel_stats) {
   // Match if ifetch and device function

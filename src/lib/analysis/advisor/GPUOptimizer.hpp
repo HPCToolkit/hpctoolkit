@@ -206,7 +206,8 @@ typedef std::map<int, std::map<int, KernelBlame>> CCTBlames;
   macro(OCCUPANCY_DECREASE, GPUOccupancyDecreaseOptimizer, 13) \
   macro(SM_BALANCE, GPUSMBalanceOptimizer, 14) \
   macro(BLOCK_INCREASE, GPUBlockIncreaseOptimizer, 15) \
-  macro(BLOCK_DECREASE, GPUBlockDecreaseOptimizer, 16)
+  macro(BLOCK_DECREASE, GPUBlockDecreaseOptimizer, 16) \
+  macro(FAST_MATH, GPUFastMathOptimizer, 17)
 
 
 #define DECLARE_OPTIMIZER_TYPE(TYPE, CLASS, VALUE) \
@@ -270,7 +271,7 @@ class GPUOptimizer {
   Inspection _inspection;
 
   const size_t _top_regions = 5;
-  const size_t _top_hotspots = 10;
+  const size_t _top_hotspots = 5;
 };
 
 #define DECLARE_OPTIMIZER_CLASS(TYPE, CLASS, VALUE)                                           \

@@ -215,6 +215,9 @@ void GPUAdvisor::init() {
   auto *block_decrease_optimizer = GPUOptimizerFactory(BLOCK_DECREASE, _arch);
   block_decrease_optimizer->set_estimator(_estimators[SEQ_LAT]);
 
+  auto *fast_math_optimizer = GPUOptimizerFactory(FAST_MATH, _arch);
+  fast_math_optimizer->set_estimator(_estimators[SEQ]);
+
   // Code optimizers
   _code_optimizers.push_back(loop_unroll_optimizer);
   _code_optimizers.push_back(loop_nounroll_optimizer);
@@ -226,6 +229,7 @@ void GPUAdvisor::init() {
   _code_optimizers.push_back(function_split_optimizer);
   _code_optimizers.push_back(shared_memory_optimizer);
   _code_optimizers.push_back(global_memory_optimizer);
+  _code_optimizers.push_back(fast_math_optimizer);
 
   // Parallel optimizers
   _parallel_optimizers.push_back(occupancy_increase_optimizer);
