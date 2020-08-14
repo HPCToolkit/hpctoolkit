@@ -2,9 +2,6 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
-//
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
 //
@@ -45,59 +42,74 @@
 // ******************************************************* EndRiceCopyright *
 
 
+#ifndef level0_data_node_h
+#define level0_data_node_h
+
+//*****************************************************************************
+// system includes
+//*****************************************************************************
+
+#include <stdint.h>
+
+//*****************************************************************************
+// local includes
+//*****************************************************************************
+
+#include <level_zero/ze_api.h>
+#include <level_zero/zet_api.h>
+
 //******************************************************************************
-// File: ss-list.h
-//
-// Purpose: 
-//   This file contains a list of sample sources wrapped by a call to an
-//   unspecified macro. The intended use of this file is to define the
-//   macro, include the file elsewhere one or more times to register the
-//   sample sources. This is not defined as a FORALL macro that applies
-//   a macro to each of the sample source names so that this file can
-//   contain ifdefs if a sample source is unused on a platform.
-//
+// type declarations
 //******************************************************************************
 
-SAMPLE_SOURCE_DECL_MACRO(ga)
-SAMPLE_SOURCE_DECL_MACRO(io)  
-SAMPLE_SOURCE_DECL_MACRO(itimer)  
+typedef enum level0_command_type {
+  LEVEL0_KERNEL,
+  LEVEL0_MEMCPY
+} level0_command_type_t;
 
-#ifdef HPCRUN_SS_LINUX_PERF
-SAMPLE_SOURCE_DECL_MACRO(linux_perf)  
+typedef struct level0_kernel_entry {
+  ze_kernel_handle_t kernel;  
+} level0_kernel_entry_t;
+
+typedef struct level0_memcpy_entry {
+  ze_memory_type_t src_type;
+  ze_memory_type_t dst_type;
+  size_t copy_size;
+} level0_memcpy_entry_t;
+
+typedef union level0_detail_entry {
+  level0_kernel_entry_t kernel;
+  level0_memcpy_entry_t memcpy;
+} level0_detail_entry_t;
+
+typedef struct level0_data_node {
+  level0_command_type_t type;
+  ze_event_handle_t event;
+  ze_event_pool_handle_t event_pool;
+  level0_detail_entry_t details;
+  struct level0_data_node *next;
+} level0_data_node_t;
+
+
+//*****************************************************************************
+// interface operations
+//*****************************************************************************
+
+level0_data_node_t*
+level0_data_node_new
+(
+);
+
+// Return a node for the linked list to the free list
+void
+level0_data_node_return_free_list
+(
+  level0_data_node_t* node
+);
+
+void
+level0_data_list_free
+(
+ level0_data_node_t* head
+);
 #endif
-
-SAMPLE_SOURCE_DECL_MACRO(memleak)  
-
-SAMPLE_SOURCE_DECL_MACRO(none)  
-
-#ifdef HPCRUN_SS_PAPI
-SAMPLE_SOURCE_DECL_MACRO(papi)  
-#endif
-
-SAMPLE_SOURCE_DECL_MACRO(directed_blame)
-
-#ifdef HOST_CPU_x86_64
-SAMPLE_SOURCE_DECL_MACRO(retcnt)
-#endif
-
-#ifdef HPCRUN_SS_PAPI_C_CUPTI
-SAMPLE_SOURCE_DECL_MACRO(papi_c_cupti)
-#endif
-
-#ifdef HPCRUN_SS_NVIDIA
-SAMPLE_SOURCE_DECL_MACRO(nvidia_gpu)
-#endif
-
-#ifdef HPCRUN_SS_AMD
-SAMPLE_SOURCE_DECL_MACRO(amd_gpu)
-#endif
-
-#ifdef HPCRUN_SS_LEVEL0
-SAMPLE_SOURCE_DECL_MACRO(level0)
-#endif
-#ifndef HPCRUN_STATIC_LINK
-#ifdef HPCRUN_SS_OPENCL
-SAMPLE_SOURCE_DECL_MACRO(opencl)
-#endif
-#endif
-

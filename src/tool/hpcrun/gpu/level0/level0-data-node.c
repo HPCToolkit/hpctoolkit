@@ -2,9 +2,6 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL$
-// $Id$
-//
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
 //
@@ -44,60 +41,69 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+//*****************************************************************************
+// system includes
+//*****************************************************************************
+
+#include <string.h>
+
+//*****************************************************************************
+// local includes
+//*****************************************************************************
+
+#include "level0-data-node.h"
+#include "hpcrun/memory/hpcrun-malloc.h"
 
 //******************************************************************************
-// File: ss-list.h
-//
-// Purpose: 
-//   This file contains a list of sample sources wrapped by a call to an
-//   unspecified macro. The intended use of this file is to define the
-//   macro, include the file elsewhere one or more times to register the
-//   sample sources. This is not defined as a FORALL macro that applies
-//   a macro to each of the sample source names so that this file can
-//   contain ifdefs if a sample source is unused on a platform.
-//
+// local data
 //******************************************************************************
 
-SAMPLE_SOURCE_DECL_MACRO(ga)
-SAMPLE_SOURCE_DECL_MACRO(io)  
-SAMPLE_SOURCE_DECL_MACRO(itimer)  
+static level0_data_node_t *free_list = NULL;
 
-#ifdef HPCRUN_SS_LINUX_PERF
-SAMPLE_SOURCE_DECL_MACRO(linux_perf)  
-#endif
+//*****************************************************************************
+// interface operations
+//*****************************************************************************
 
-SAMPLE_SOURCE_DECL_MACRO(memleak)  
+// Allocate a node for the linked list representing a command list
+level0_data_node_t*
+level0_data_node_new
+(
+)
+{
+  level0_data_node_t *first = free_list;
 
-SAMPLE_SOURCE_DECL_MACRO(none)  
+  if (first) {
+    free_list = first->next;
+  } else {
+    first = (level0_data_node_t *) hpcrun_malloc_safe(sizeof(level0_data_node_t));
+  }
 
-#ifdef HPCRUN_SS_PAPI
-SAMPLE_SOURCE_DECL_MACRO(papi)  
-#endif
+  memset(first, 0, sizeof(level0_data_node_t));
 
-SAMPLE_SOURCE_DECL_MACRO(directed_blame)
+  return first;
+}
 
-#ifdef HOST_CPU_x86_64
-SAMPLE_SOURCE_DECL_MACRO(retcnt)
-#endif
+// Return a node for the linked list to the free list
+void
+level0_data_node_return_free_list
+(
+  level0_data_node_t* node
+)
+{
+  node->next = free_list;
+  free_list = node;
+}
 
-#ifdef HPCRUN_SS_PAPI_C_CUPTI
-SAMPLE_SOURCE_DECL_MACRO(papi_c_cupti)
-#endif
 
-#ifdef HPCRUN_SS_NVIDIA
-SAMPLE_SOURCE_DECL_MACRO(nvidia_gpu)
-#endif
-
-#ifdef HPCRUN_SS_AMD
-SAMPLE_SOURCE_DECL_MACRO(amd_gpu)
-#endif
-
-#ifdef HPCRUN_SS_LEVEL0
-SAMPLE_SOURCE_DECL_MACRO(level0)
-#endif
-#ifndef HPCRUN_STATIC_LINK
-#ifdef HPCRUN_SS_OPENCL
-SAMPLE_SOURCE_DECL_MACRO(opencl)
-#endif
-#endif
-
+void
+level0_data_list_free
+(
+ level0_data_node_t* head
+)
+{
+  level0_data_node_t* next;
+  for (; head != NULL; head=next) {
+    next = head->next;
+    level0_data_node_return_free_list(head);
+  }
+}

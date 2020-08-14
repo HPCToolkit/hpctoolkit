@@ -4777,6 +4777,36 @@ AC_SUBST([OPT_ROCM])
 AC_SUBST([OPT_ROCM_IFLAGS])
 AC_SUBST([OPT_ROCM_LDFLAGS])
 
+#-------------------------------------------------
+# Option: --with-level0=PATH
+#-------------------------------------------------
+
+OPT_LEVEL0=
+OPT_LEVEL0_INCPATH=
+OPT_LEVEL0_LDFLAGS=
+OPT_LEVEL0_LIBPATH=
+
+AC_ARG_WITH([level0],
+  AS_HELP_STRING([--with-level0=PATH],
+                 [use given Level Zero installation (absolute path) with hpcrun (default is NO)]),
+  [if test $withval != no; then
+     OPT_HAVE_LEVEL0=yes
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-level0 requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_LEVEL0=${withval}
+   fi])
+
+if test "$OPT_HAVE_LEVEL0" = "yes" ; then
+  AC_DEFINE(USE_LEVEL0, 1, [use Level Zero])
+  OPT_LEVEL0_IFLAGS="-I${OPT_LEVEL0}/include"
+fi
+
+AM_CONDITIONAL([OPT_ENABLE_LEVEL0], [test "$OPT_HAVE_LEVEL0" = yes])
+
+AC_SUBST([OPT_LEVEL0])
+AC_SUBST([OPT_LEVEL0_IFLAGS])
+AC_SUBST([OPT_LEVEL0_LDFLAGS])
 
 #-------------------------------------------------
 # enable-data-centric-tracing: data-centric tracing

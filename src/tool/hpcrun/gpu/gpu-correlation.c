@@ -101,6 +101,7 @@ gpu_correlation_produce
  gpu_activity_channel_t *activity_channel
 )
 {
+  PRINT("Produce correlation id %lu\n", host_correlation_id);
   c->host_correlation_id = host_correlation_id;
   c->gpu_op_ccts = *gpu_op_ccts;
   c->activity_channel = activity_channel;
@@ -117,7 +118,7 @@ gpu_correlation_consume
 #if UNIT_TEST 
     printf("gpu_correlation_consume(%ld, %ld,%ld)\n", c->host_correlation_id); 
 #else
-    PRINT("Insert correlation id %ld\n", c->host_correlation_id);
+    PRINT("Consume correlation id %lu\n", c->host_correlation_id);
     gpu_host_correlation_map_insert(c->host_correlation_id, &(c->gpu_op_ccts), 
 				    c->cpu_submit_time, c->activity_channel);
 #endif
