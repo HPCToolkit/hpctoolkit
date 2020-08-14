@@ -103,7 +103,7 @@ typedef struct typed_splay_node(handle) {
   struct typed_splay_node(handle) *right;
   uint64_t level0_handle; // key
   level0_data_node_t* data;
-} typed_splay_node(handle); 
+} typed_splay_node(handle);
 
 //*****************************************************************************
 // private operations
@@ -128,7 +128,7 @@ level0_handle_map_lookup
  level0_handle_map_entry_t** map_root_ptr,
  uint64_t key
 )
-{      
+{
   level0_handle_map_entry_t *result = st_lookup(map_root_ptr, key);
   return result;
 }
@@ -152,7 +152,7 @@ level0_handle_map_delete
 )
 {
   level0_handle_map_entry_t *node = st_delete(map_root_ptr, key);
-  st_free(free_list_ptr, node);  
+  st_free(free_list_ptr, node);
 }
 
 level0_handle_map_entry_t*
@@ -165,7 +165,7 @@ level0_handle_map_entry_new
 {
   level0_handle_map_entry_t *e = level0_handle_map_entry_alloc(free_list);
 
-  memset(e, 0, sizeof(level0_handle_map_entry_t)); 
+  memset(e, 0, sizeof(level0_handle_map_entry_t));
   e->level0_handle = key;
   e->data = data;
 

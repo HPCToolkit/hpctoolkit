@@ -70,17 +70,17 @@ level0_data_node_new
 (
 )
 {
-  level0_data_node_t *first = free_list; 
+  level0_data_node_t *first = free_list;
 
-  if (first) { 
+  if (first) {
     free_list = first->next;
   } else {
     first = (level0_data_node_t *) hpcrun_malloc_safe(sizeof(level0_data_node_t));
   }
 
-  memset(first, 0, sizeof(level0_data_node_t)); 
+  memset(first, 0, sizeof(level0_data_node_t));
 
-  return first;  
+  return first;
 }
 
 // Return a node for the linked list to the free list

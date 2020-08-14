@@ -61,7 +61,7 @@
 
 level0_data_node_t*
 level0_event_map_lookup
-( 
+(
  ze_event_handle_t event_handle
 );
 
