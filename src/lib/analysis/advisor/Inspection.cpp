@@ -3,6 +3,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <iomanip>
 
 #include <climits>
 #include <cstdio>
@@ -94,6 +95,8 @@ std::string SimpleInspectionFormatter::format(const Inspection &inspection) {
 
   // Overview
   ss << "Apply " << inspection.optimization << " optimization,";
+
+  ss << std::fixed << std::setprecision(2);
 
   ss << " ratio " << inspection.ratios.back() * 100 << "%,";
 
