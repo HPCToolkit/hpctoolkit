@@ -107,7 +107,7 @@
 
 #define OVERFLOW_MODE 0
 #define WEIGHT_METRIC 0
-#define DEFAULT_THRESHOLD  1 //2000000L
+#define DEFAULT_THRESHOLD  2000000L
 
 #include "papi-c.h"
 
@@ -145,6 +145,8 @@ static __thread gpu_monitor_fn_entry_t gpu_monitor_exit;
  *****************************************************************************/
 static void papi_monitor_enter(void *reg_info, void *args_in);
 static void papi_monitor_exit(void *reg_info, void *args_in);
+static void
+gpu_metrics_attribute_papi(int metric_id, cct_node_t *cct_node, long long value);
 
 static int
 get_event_index(sample_source_t *self, int event_code)
@@ -590,6 +592,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     if (component_uses_sync_samples(cidx))
       TMSG(PAPI, "Event %s from synchronous component", buffer);
+
     int metric_id = /* weight */
       hpcrun_set_new_metric_info_and_period(papi_kind, strdup(buffer),
               MetricFlags_ValFmt_Int,
@@ -1040,21 +1043,21 @@ papi_monitor_enter(void *reg_info, void *args_in)
   sample_source_t *self = &obj_name(); /// just for debug
   int ret;
 
-  printf("|------->PAPI_MONITOR_ENTER | running? %d\n", METHOD_CALL(self, started));
+  printf("|------->PAPI_MONITOR_ENTER | cct = %p\n", args->cct_node);
 
   // if sampling disabled explicitly for this thread, skip all processing
   if (hpcrun_suppress_sample() || sample_filters_apply()) goto finish;
 
   cct_node = args->cct_node;
 
-  if (args->gpu_type == amd)
-    hipDeviceSynchronize();
+  if (args->gpu_sync_ptr)  // for amd it seems that there is no default sync like in nvidia case
+    args->gpu_sync_ptr();
 
   // Save counts on the end so we could substract that from next call (we don't want to measure ourselves)
   for (int cid = 0; cid < psi->num_components; ++cid) {
     papi_component_info_t *ci = &(psi->component_info[cid]);
     if (ci->inUse) {
-      printf("Self = %p | Component %d \t | cct = %p | gpu = %s\n\n", self, cid, args->cct_node, gpu_monitors_get_gpu_name(args->gpu_type) );
+      printf("Self = %p | Component %d \t | cct = %p \n\n", self, cid, args->cct_node );
 
       ret = PAPI_read(ci->eventSet, prev_values);
       //      ret = PAPI_start(ci->eventSet);
@@ -1071,6 +1074,7 @@ finish:
   tool_exit();
 }
 
+
 static void
 papi_monitor_exit(void *reg_info, void *args_in)
 {
@@ -1086,8 +1090,8 @@ papi_monitor_exit(void *reg_info, void *args_in)
 
   printf("|------->PAPI_MONITOR_EXIT| running? %d\n", METHOD_CALL(self, started));
 
-  if (args->gpu_type == amd)
-    hipDeviceSynchronize();
+  if (args->gpu_sync_ptr)
+    args->gpu_sync_ptr();
 
   // if sampling disabled explicitly for this thread, skip all processing
   if (hpcrun_suppress_sample() || sample_filters_apply()) goto finish;
@@ -1118,6 +1122,9 @@ papi_monitor_exit(void *reg_info, void *args_in)
                eid, my_event_codes[eid], event_index, metric_id, prev_values[eid], my_event_values[eid]);
 
         blame_shift_apply(metric_id, cct_node, my_event_values[eid] /*metricIncr*/);
+
+
+        gpu_metrics_attribute_papi(metric_id, cct_node, my_event_values[eid]);
       }
 
     }
@@ -1126,4 +1133,23 @@ papi_monitor_exit(void *reg_info, void *args_in)
 
 finish:
   tool_exit();
+}
+
+
+static void
+gpu_metrics_attribute_papi
+(
+ int metric_id,
+ cct_node_t *cct_node,
+ long long value
+)
+{
+  metric_data_list_t* metrics = hpcrun_reify_metric_set(cct_node, metric_id);
+  
+  hpcrun_metric_std_inc(metric_id,
+                        metrics,
+                        (cct_metric_data_t) {.i = value});
+
+
+//  gpu_context_trace(context_id, &entry_trace);
 }

@@ -44,10 +44,10 @@
 //***************************************************************************
 //
 // File:
-//   cuda-api.c
+//   hip-api.c
 //
 // Purpose:
-//   wrapper around NVIDIA CUDA layer
+//   wrapper around AMD HIP layer
 //
 //***************************************************************************
 
@@ -60,7 +60,7 @@
 #include <stdio.h>
 #include <string.h>    // memset
 
-#include <cuda.h>
+#include <roctracer_hip.h>
 
 
 
@@ -71,7 +71,7 @@
 #include <hpcrun/sample-sources/libdl.h>
 #include <hpcrun/messages/messages.h>
 
-#include "cuda-api.h"
+#include "hip-api.h"
 
 
 
@@ -79,67 +79,75 @@
 // macros
 //*****************************************************************************
 
-#define CUDA_FN_NAME(f) DYN_FN_NAME(f)
+#define HIP_FN_NAME(f) DYN_FN_NAME(f)
 
-#define CUDA_FN(fn, args) \
-  static CUresult (*CUDA_FN_NAME(fn)) args
+#define HIP_FN(fn, args) \
+  static hipError_t (*HIP_FN_NAME(fn)) args
 
-#define HPCRUN_CUDA_API_CALL(fn, args)                              \
+#define HPCRUN_HIP_API_CALL(fn, args)                              \
 {                                                                   \
-  CUresult error_result = CUDA_FN_NAME(fn) args;		    \
-  if (error_result != CUDA_SUCCESS) {				    \
-    ETMSG(CUDA, "cuda api %s returned %d", #fn, (int) error_result);    \
+  hipError_t error_result = HIP_FN_NAME(fn) args;		    \
+  if (error_result != hipSuccess) {				    \
+    ETMSG(CUDA, "hip api %s returned %d", #fn, (int) error_result);    \
     exit(-1);							    \
   }								    \
 }
 
-
+#define FORALL_HIP_ROUTINES(macro)             \
+  macro(hipDeviceSynchronize)                  \
+  macro(hipDeviceGetAttribute)                 \
+  macro(hipCtxGetCurrent)
 
 //******************************************************************************
 // static data
 //******************************************************************************
 
 #ifndef HPCRUN_STATIC_LINK
-CUDA_FN
+HIP_FN
 (
- cuDeviceGetAttribute,
+ hipDeviceSynchronize,
+( void )
+);
+
+HIP_FN
+(
+ hipDeviceGetAttribute,
  (
-  int* pi,
-  CUdevice_attribute attrib,
-  CUdevice dev
+ int *pi,
+ hipDeviceAttribute_t attrib,
+ int dev
  )
 );
 
-
-CUDA_FN
+HIP_FN
 (
- cuCtxGetCurrent,
+ hipCtxGetCurrent,
  (
-  CUcontext *ctx
+ hipCtx_t *ctx
  )
 );
+
 #endif
-
 
 //******************************************************************************
 // private operations
 //******************************************************************************
-
+//TODO: Copied from cuda-api.c - check if works for hip
 #ifndef HPCRUN_STATIC_LINK
 static int
-cuda_device_sm_blocks_query
+hip_device_sm_blocks_query
 (
  int major,
  int minor
 )
 {
   switch(major) {
-  case 7:
-  case 6:
-    return 32;
-  default:
-    // TODO(Keren): add more devices
-    return 8;
+    case 7:
+    case 6:
+      return 32;
+    default:
+      // TODO(Keren): add more devices
+      return 8;
   }
 }
 #endif
@@ -150,17 +158,20 @@ cuda_device_sm_blocks_query
 //******************************************************************************
 
 int
-cuda_bind
+hip_bind
 (
- void
+void
 )
 {
 #ifndef HPCRUN_STATIC_LINK
   // dynamic libraries only availabile in non-static case
-  CHK_DLOPEN(cuda, "libcuda.so", RTLD_NOW | RTLD_GLOBAL);
+  CHK_DLOPEN(hip, "libhip_hcc.so", RTLD_NOW | RTLD_GLOBAL);
 
-  CHK_DLSYM(cuda, cuDeviceGetAttribute);
-  CHK_DLSYM(cuda, cuCtxGetCurrent);
+#define HIP_BIND(fn) \
+  CHK_DLSYM(hip, fn);
+
+  FORALL_HIP_ROUTINES(HIP_BIND)
+#undef CUPTI_BIND
 
   return 0;
 #else
@@ -169,13 +180,13 @@ cuda_bind
 }
 
 int
-cuda_context
+hip_context
 (
- CUcontext *ctx
+ hipCtx_t *ctx
 )
 {
 #ifndef HPCRUN_STATIC_LINK
-  HPCRUN_CUDA_API_CALL(cuCtxGetCurrent, (ctx));
+  HPCRUN_HIP_API_CALL(hipCtxGetCurrent, (ctx));
   return 0;
 #else
   return -1;
@@ -183,45 +194,57 @@ cuda_context
 }
 
 int
-cuda_device_property_query
+hip_device_property_query
 (
  int device_id,
- cuda_device_property_t *property
+ hip_device_property_t *property
 )
 {
 #ifndef HPCRUN_STATIC_LINK
-  HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
-    (&property->sm_count, CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, device_id));
+  HPCRUN_HIP_API_CALL(hipDeviceGetAttribute,
+                       (&property->sm_count, hipDeviceAttributeMultiprocessorCount, device_id));
 
-  HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
-    (&property->sm_clock_rate, CU_DEVICE_ATTRIBUTE_CLOCK_RATE, device_id));
+  HPCRUN_HIP_API_CALL(hipDeviceGetAttribute,
+                       (&property->sm_clock_rate, hipDeviceAttributeClockRate, device_id));
 
-  HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
-    (&property->sm_shared_memory,
-     CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_MULTIPROCESSOR, device_id));
+  HPCRUN_HIP_API_CALL(hipDeviceGetAttribute,
+                       (&property->sm_shared_memory,
+                       hipDeviceAttributeMaxSharedMemoryPerMultiprocessor, device_id));
 
-  HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
-    (&property->sm_registers,
-     CU_DEVICE_ATTRIBUTE_MAX_REGISTERS_PER_MULTIPROCESSOR, device_id));
+  HPCRUN_HIP_API_CALL(hipDeviceGetAttribute,
+                       (&property->sm_registers,
+                       hipDeviceAttributeMaxRegistersPerBlock, device_id));//CU_DEVICE_ATTRIBUTE_MAX_REGISTERS_PER_MULTIPROCESSOR
 
-  HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
-    (&property->sm_threads, CU_DEVICE_ATTRIBUTE_MAX_THREADS_PER_MULTIPROCESSOR,
-     device_id));
+  HPCRUN_HIP_API_CALL(hipDeviceGetAttribute,
+                       (&property->sm_threads, hipDeviceAttributeMaxThreadsPerMultiProcessor,
+                       device_id));
 
-  HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
-    (&property->num_threads_per_warp, CU_DEVICE_ATTRIBUTE_WARP_SIZE,
-     device_id));
+  HPCRUN_HIP_API_CALL(hipDeviceGetAttribute,
+                       (&property->num_threads_per_warp, hipDeviceAttributeWarpSize,
+                       device_id));
 
   int major = 0, minor = 0;
 
-  HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
-    (&major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device_id));
+  HPCRUN_HIP_API_CALL(hipDeviceGetAttribute,
+                       (&major, hipDeviceAttributeComputeCapabilityMajor, device_id));
 
-  HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
-    (&minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device_id));
+  HPCRUN_HIP_API_CALL(hipDeviceGetAttribute,
+                       (&minor, hipDeviceAttributeComputeCapabilityMinor, device_id));
 
-  property->sm_blocks = cuda_device_sm_blocks_query(major, minor);
+  property->sm_blocks = hip_device_sm_blocks_query(major, minor);
 
+  return 0;
+#else
+  return -1;
+#endif
+}
+
+int
+hip_dev_sync
+()
+{
+#ifndef HPCRUN_STATIC_LINK
+  HPCRUN_HIP_API_CALL(hipDeviceSynchronize, () );
   return 0;
 #else
   return -1;

@@ -365,6 +365,7 @@ hpcrun_set_new_metric_desc(kind_info_t *kind, const char* name,
   metric_desc_list_t* n = NULL;
 
   // if there are pre-allocated metrics, use them
+  // (default metrics - not alloc, added metrics - prealloc)
   if (pre_alloc) {
     n = pre_alloc;
     pre_alloc = pre_alloc->next;
@@ -372,6 +373,7 @@ hpcrun_set_new_metric_desc(kind_info_t *kind, const char* name,
   else {
     n = (metric_desc_list_t*) hpcrun_malloc(sizeof(metric_desc_list_t));
   }
+  // Add n into the list of metric description - kind->metric_data
   n->next = kind->metric_data;
   kind->metric_data = n;
   n->proc = upd_fn;

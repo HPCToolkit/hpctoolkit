@@ -359,17 +359,17 @@ METHOD_FN(process_event_list, int lush_metrics)
   gpu_metrics_default_enable();
   gpu_metrics_KINFO_enable();
 
-#ifndef HPCRUN_STATIC_LINK
-  if (cuda_bind()) {
-    EEMSG("hpcrun: unable to bind to NVIDIA CUDA library %s\n", dlerror());
-    monitor_real_exit(-1);
-  }
+  #ifndef HPCRUN_STATIC_LINK
+    if (cuda_bind()) {
+      EEMSG("hpcrun: unable to bind to NVIDIA CUDA library %s\n", dlerror());
+      monitor_real_exit(-1);
+    }
 
-  if (cupti_bind()) {
-    EEMSG("hpcrun: unable to bind to NVIDIA CUPTI library %s\n", dlerror());
-    monitor_real_exit(-1);
-  }
-#endif
+    if (cupti_bind()) {
+      EEMSG("hpcrun: unable to bind to NVIDIA CUPTI library %s\n", dlerror());
+      monitor_real_exit(-1);
+    }
+  #endif
 
   // Register hpcrun callbacks
   device_finalizer_flush.fn = cupti_device_flush;

@@ -14,17 +14,10 @@ typedef enum {
 	gpu_monitor_type_exit
 } gpu_monitor_type_t;
 
-typedef enum {
-	unknown,
-	nvidia,
-	amd,
-	intel
-} gpu_type_t;
-
 
 typedef struct gpu_monitors_apply_t {
 	cct_node_t *cct_node;
-	gpu_type_t gpu_type;
+  int (*gpu_sync_ptr)(void);
 } gpu_monitors_apply_t;
 
 
@@ -37,6 +30,6 @@ typedef struct gpu_monitor_fn_entry_t {
 
 extern void gpu_monitor_register(gpu_monitor_type_t type, gpu_monitor_fn_entry_t* entry);
 extern void gpu_monitors_apply(void *args, gpu_monitor_type_t type);
-char * gpu_monitors_get_gpu_name(gpu_type_t t);
+
 
 #endif //HPCTOOLKIT_GPU_MONITORS_H

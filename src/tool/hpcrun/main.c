@@ -474,9 +474,9 @@ hpcrun_init_internal(bool is_child)
   hpcrun_mmap_init();
   hpcrun_thread_data_init(0, NULL, is_child, hpcrun_get_num_sample_sources());
 
-  // must initialize unwind recipe map before initializing fnbounds
-  // because mapping of load modules affects the recipe map.
-  hpcrun_unw_init();
+//  // must initialize unwind recipe map before initializing fnbounds
+//  // because mapping of load modules affects the recipe map.
+//  hpcrun_unw_init();
 
 //  // init callbacks for each device
 //  hpcrun_initializer_init();
@@ -551,7 +551,7 @@ hpcrun_init_internal(bool is_child)
   //
 
   if (! is_child) {
-  	SAMPLE_SOURCES(process_event_list, lush_metrics);
+    SAMPLE_SOURCES(process_event_list, lush_metrics);
     SAMPLE_SOURCES(finalize_event_list);
     hpcrun_metrics_data_finalize();
   }
@@ -937,6 +937,10 @@ monitor_init_process(int *argc, char **argv, void* data)
   }
   messages_logfile_create();
 
+  // must initialize unwind recipe map before initializing fnbounds
+  // because mapping of load modules affects the recipe map.
+  hpcrun_unw_init();
+
   // We need to save vdso before initializing fnbounds this
   // is because fnbounds_init will iterate over the load map 
   // and will invoke analysis on vdso
@@ -946,7 +950,7 @@ monitor_init_process(int *argc, char **argv, void* data)
   hpcrun_initializer_init();
 
   // fnbounds must be after module_ignore_map
-	fnbounds_init();
+  fnbounds_init();
 
   hpcrun_registered_sources_init();
 

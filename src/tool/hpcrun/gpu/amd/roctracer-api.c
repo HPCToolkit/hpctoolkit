@@ -47,6 +47,7 @@
 
 #include "roctracer-api.h"
 #include "roctracer-activity-translate.h"
+#include "hip-api.h"
 
 #include <roctracer_hip.h>
 
@@ -101,7 +102,6 @@
 //******************************************************************************
 // local variables
 //******************************************************************************
-static __thread cct_node_t *cupti_kernel_ph = NULL;
 
 //----------------------------------------------------------
 // roctracer function pointers for late binding
@@ -372,15 +372,16 @@ roctracer_subscriber_callback
     // Generate notification entry
     uint64_t cpu_submit_time = hpcrun_nanotime();
 
-    cupti_kernel_ph = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel); //dejan: added
-
-    printf("\nACTIVITY_API_PHASE_ENTER -----------------| cct = %p | gpu = %d\n", cupti_kernel_ph, amd);
-    gpu_monitors_apply(&(gpu_monitors_apply_t) {.cct_node=cupti_kernel_ph, .gpu_type=amd}, gpu_monitor_type_enter);
+    printf("\nACTIVITY_API_PHASE_ENTER -----------------| cct = %p \n", api_node);
+    int (*hip_gpu_sync_ptr)(void) = hip_dev_sync;
+    gpu_monitors_apply(&(gpu_monitors_apply_t) {.cct_node=api_node, .gpu_sync_ptr=hip_gpu_sync_ptr}, gpu_monitor_type_enter);
 
     gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, cpu_submit_time);
   }else if (data->phase == ACTIVITY_API_PHASE_EXIT){
-    printf("\nACTIVITY_API_PHASE_EXIT -----------------| cct = %p | gpu = %d\n", cupti_kernel_ph, amd );
-    cupti_kernel_ph = NULL;
+    printf("\nACTIVITY_API_PHASE_EXIT -----------------| \n");
+    int (*hip_gpu_sync_ptr)(void) = hip_dev_sync;
+    gpu_monitors_apply(&(gpu_monitors_apply_t) {.cct_node=NULL, .gpu_sync_ptr=hip_gpu_sync_ptr}, gpu_monitor_type_exit);
+
   }else{
     ;
   }

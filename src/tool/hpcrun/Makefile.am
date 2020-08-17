@@ -508,7 +508,8 @@ if OPT_ENABLE_ROCM
 MY_ROCM_FILES=\
 	sample-sources/amd.c \
 	gpu/amd/roctracer-activity-translate.c \
-	gpu/amd/roctracer-api.c 	
+	gpu/amd/roctracer-api.c 	\
+	gpu/amd/hip-api.c
 endif
 
 MY_UPC_FILES = sample-sources/upc.c
