@@ -434,9 +434,9 @@ schedule_multi_threads
 )
 {
   int streams_per_thread;
-  assert( control_knob_value_get_int("STREAMS_PER_THREAD", &streams_per_thread) == 0 ) ;
+  control_knob_value_get_int("STREAMS_PER_THREAD", &streams_per_thread);
   int max_threads_consumers;
-  assert( control_knob_value_get_int("MAX_THREADS_CONSUMERS", &max_threads_consumers) == 0 ) ;
+  control_knob_value_get_int("MAX_THREADS_CONSUMERS", &max_threads_consumers);
   static int num_threads = 0;
   static int num_streams = 0;
   volatile bool new_thread = false;

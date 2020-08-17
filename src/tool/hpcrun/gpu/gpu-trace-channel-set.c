@@ -149,7 +149,6 @@ gpu_trace_channel_set_forall
 // interface operations
 //******************************************************************************
 
-//TODO: SEE HOW TO FREE THE MEMORY
 void gpu_trace_channel_stack_alloc(int size){
 	gpu_trace_channel_stack = hpcrun_malloc_safe( size * sizeof(typed_stack_elem_ptr(gpu_trace_channel_ptr_t)));
 }
@@ -164,11 +163,6 @@ gpu_trace_channel_set_insert
   // allocate and initialize new entry for channel stack
   channel_stack_elem_t *e = 
     (channel_stack_elem_t *) hpcrun_malloc_safe(sizeof(channel_stack_elem_t));
-
-  // Alocate all things needed by stream
-  thread_data_t *td = gpu_trace_stream_acquire();
-  gpu_trace_channel_set_td(channel, td);
-
 
   // initialize the new entry
   e->channel = channel;

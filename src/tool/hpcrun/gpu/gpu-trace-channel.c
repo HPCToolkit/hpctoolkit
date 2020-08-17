@@ -71,8 +71,6 @@
 #include "gpu-print.h"
 #include "thread_data.h"
 
-
-
 //******************************************************************************
 // macros
 //******************************************************************************
@@ -107,6 +105,9 @@
 //******************************************************************************
 // type declarations
 //******************************************************************************
+
+typedef struct thread_data_t thread_data_t;
+
 
 typedef struct gpu_trace_channel_t {
   bistack_t bistacks[2];
@@ -150,13 +151,6 @@ gpu_trace_channel_get_td(gpu_trace_channel_t *ch)
 }
 
 
-void
-gpu_trace_channel_set_td(gpu_trace_channel_t *ch, thread_data_t *td)
-{
-  ch->td = td;
-}
-
-
 gpu_trace_channel_t *
 gpu_trace_channel_alloc
 (
@@ -169,6 +163,8 @@ gpu_trace_channel_alloc
   memset(channel, 0, sizeof(gpu_trace_channel_t));
 
   channel_init(channel);
+
+  channel->td = gpu_trace_stream_acquire();
 
   pthread_mutex_init(&channel->mutex, NULL);
   pthread_cond_init(&channel->cond, NULL);

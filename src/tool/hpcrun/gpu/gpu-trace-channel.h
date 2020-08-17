@@ -45,9 +45,6 @@
 #define gpu_trace_channel_h
 
 
-#include <lib/prof-lean/bichannel.h>
-#include <pthread.h>
-
 
 //******************************************************************************
 // local includes
@@ -70,10 +67,6 @@ typedef struct gpu_trace_channel_t gpu_trace_channel_t;
 
 thread_data_t *
 gpu_trace_channel_get_td(gpu_trace_channel_t *ch);
-
-
-void
-gpu_trace_channel_set_td(gpu_trace_channel_t *ch, thread_data_t *td);
 
 
 gpu_trace_channel_t *
