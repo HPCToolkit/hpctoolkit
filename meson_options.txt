@@ -2,3 +2,5 @@ option('all_static', type: 'boolean', value: false,
        description: 'Output static binaries for MPI-supporting applications.')
 option('dev_tools', type: 'feature',
        description: 'Enable extra tools useful for debugging.')
+option('external_strip', type: 'boolean', value: true,
+       description: 'Strip external libraries as part of installation.')

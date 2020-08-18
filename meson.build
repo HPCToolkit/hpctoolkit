@@ -43,9 +43,64 @@
 # ******************************************************* EndRiceCopyright *
 
 project('hpctoolkit', ['c', 'cpp'],
-        version: '2020.08-develop',
+        version: '2020.08',
         license: 'MIT',
         meson_version: '>=0.54.0',
-        default_options: ['strip=true', 'buildtype=release',
-                          'b_staticpic=false',
+        default_options: ['buildtype=release', 'b_staticpic=false',
+                          'libdir=lib', 'libexecdir=libexec',
                           'c_std=gnu11', 'cpp_std=gnu++11'])
+
+hpctoolkit_config = configuration_data()
+cc = meson.get_compiler('c')
+cpp = meson.get_compiler('cpp')
+
+# The hpc* launch scripts don't work if the libdir or libexecdir are altered from their defaults.
+# FIXME: Configure the scripts with the proper values for these.
+if get_option('libdir') != 'lib' or get_option('libexecdir') != 'libexec'
+  warning('libdir or libexecdir is altered from default, launch scripts will not function!')
+endif
+
+# TODO: Hunt down the Git version and Spack spec. Generally not needed.
+
+# TODO: Autotools issues a whole bunch of sanity checks for headers and types. In particular:
+#  - stdlib.h, stdarg.h, string.h, float.h
+#  - unistd.h, inttypes.h (but only for C++?)
+#  - void* (for C)
+#  - cxxabi.h, cstdlib, cstddef, cstdio, cassert, cerrno, cstdarg, cstring, cmath, csetjmp, csignal,
+#    cctype, climits, cfloat, clocale (for C++)
+#  - sizeof void* (but only for C++?)
+#  - ushort, uint, ulong
+#  - pthread.h (more than preprocessor)
+# None of these are probably nessesary on a modern system.
+
+# TODO: Autotools has a long switch statement configuring the unwinder usage and host flags.
+# Some of it is handled by Meson (host_machine.system() and .cpu_family()), but the rest is tricky.
+
+# If we're running on a little-endian machine, we'll have to swap bytes. Try to use byteswap.h if we can.
+hpctoolkit_config.set('USE_SYSTEM_BYTESWAP', false)
+if host_machine.endian() == 'little'
+  hpctoolkit_config.set('USE_SYSTEM_BYTESWAP', cc.has_header_symbol('byteswap.h', 'bswap_64'))
+elif host_machine.endian() == 'big'
+  # All good, native format will work for output
+else
+  error('Unknown endian: ' + host_machine.endian())
+endif
+
+# Warn if we're not running a GNU compiler with a sufficient version
+if meson.get_compiler('c').get_id() != 'gcc' or meson.get_compiler('cpp').get_id() != 'gcc'
+  warning('Compilers other than GCC are not supported!')
+endif
+# TODO: Handle getting the GCC version and checking that
+
+# TODO: Fix the compiler wrapper thingy for Spack builds
+
+# TODO: Find libstdc++, for hpcfnbounds apparently. Not used for hpcfnbounds2.
+
+# Enable extended C++ alignment if possible, for dyninst
+if cpp.get_argument_syntax() == 'gcc'
+  add_project_arguments(cpp.get_supported_arguments(['-faligned-new']), language: 'cpp')
+endif
+
+# Enable OpenMP.
+openmp = dependency('openmp')
+# TODO: Handle finding the OpenMP directory.
