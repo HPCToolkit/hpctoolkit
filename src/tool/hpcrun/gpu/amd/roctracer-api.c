@@ -72,13 +72,14 @@
 
 #define FORALL_ROCTRACER_ROUTINES(macro)			\
   macro(roctracer_open_pool_expl)   \
-  macro(roctracer_enable_callback)  \
-  macro(roctracer_enable_activity_expl)  \
-  macro(roctracer_disable_callback) \
-  macro(roctracer_disable_activity) \
   macro(roctracer_flush_activity_expl)   \
   macro(roctracer_activity_push_external_correlation_id) \
-  macro(roctracer_activity_pop_external_correlation_id)
+  macro(roctracer_activity_pop_external_correlation_id) \
+  macro(roctracer_enable_domain_callback) \
+  macro(roctracer_enable_domain_activity_expl) \
+  macro(roctracer_disable_domain_callback) \
+  macro(roctracer_disable_domain_activity) \
+  macro(roctracer_set_properties)
 
 
 #define ROCTRACER_FN_NAME(f) DYN_FN_NAME(f)
@@ -115,39 +116,6 @@ ROCTRACER_FN
 
 ROCTRACER_FN
 (
- roctracer_enable_callback,
- (
-  activity_rtapi_callback_t,
-  void*
- )
-);
-
-ROCTRACER_FN
-(
- roctracer_enable_activity_expl,
- (
-  roctracer_pool_t*
- )
-);
-
-ROCTRACER_FN
-(
- roctracer_disable_callback,
- (
-  void
- )
-);
-
-ROCTRACER_FN
-(
- roctracer_disable_activity,
- (
-  void
- )
-);
-
-ROCTRACER_FN
-(
  roctracer_flush_activity_expl,
  (
   roctracer_pool_t*
@@ -170,6 +138,49 @@ ROCTRACER_FN
  )
 );
 
+ROCTRACER_FN
+(
+ roctracer_enable_domain_callback,
+ (
+  activity_domain_t,
+  activity_rtapi_callback_t,
+  void*
+ )
+);
+
+ROCTRACER_FN
+(
+ roctracer_enable_domain_activity_expl,
+ (
+  activity_domain_t,
+  roctracer_pool_t*
+ )
+);
+
+ROCTRACER_FN
+(
+ roctracer_disable_domain_callback,
+ (
+  activity_domain_t
+ )
+);
+
+ROCTRACER_FN
+(
+ roctracer_disable_domain_activity,
+ (
+  activity_domain_t
+ )
+);
+
+ROCTRACER_FN
+(
+ roctracer_set_properties,
+ (
+  activity_domain_t,
+  void*
+ )
+);
 
 
 //******************************************************************************
@@ -437,11 +448,14 @@ roctracer_bind
   // This is a workaround for roctracer to not hang when taking timer interrupts
   // More details: https://github.com/ROCm-Developer-Tools/roctracer/issues/22
   setenv("HSA_ENABLE_INTERRUPT", "0", 1);
-  
+
 #ifndef HPCRUN_STATIC_LINK
   // dynamic libraries only availabile in non-static case
   hpcrun_force_dlopen(true);
   CHK_DLOPEN(roctracer, roctracer_path(), RTLD_NOW | RTLD_GLOBAL);
+  // Somehow roctracter needs libkfdwrapper64.so, but does not really load it.
+  // So, we load it before using any function in roctracter.
+  CHK_DLOPEN(kfd, "libkfdwrapper64.so", RTLD_NOW | RTLD_GLOBAL);
   hpcrun_force_dlopen(false);
 
 #define ROCTRACER_BIND(fn) \
@@ -463,17 +477,25 @@ roctracer_init
  void
 )
 {
+  HPCRUN_ROCTRACER_CALL(roctracer_set_properties, (ACTIVITY_DOMAIN_HIP_API, NULL));
+  // Allocating tracing pool
   roctracer_properties_t properties;
+  memset(&properties, 0, sizeof(roctracer_properties_t));
   properties.buffer_size = 0x1000;
   properties.buffer_callback_fun = roctracer_buffer_completion_callback;
-  properties.mode = 0;
-  properties.alloc_fun = 0;
-  properties.alloc_arg = 0;
-  properties.buffer_callback_arg = 0;
-  HPCRUN_ROCTRACER_CALL(roctracer_open_pool_expl,(&properties, NULL));
-  HPCRUN_ROCTRACER_CALL(roctracer_enable_callback,
-			(roctracer_subscriber_callback, NULL));
-  HPCRUN_ROCTRACER_CALL(roctracer_enable_activity_expl, (NULL));
+  HPCRUN_ROCTRACER_CALL(roctracer_open_pool_expl, (&properties, NULL));
+  // Enable HIP API callbacks
+  HPCRUN_ROCTRACER_CALL(roctracer_enable_domain_callback, (ACTIVITY_DOMAIN_HIP_API, roctracer_subscriber_callback, NULL));
+  // Enable HIP activity tracing
+  HPCRUN_ROCTRACER_CALL(roctracer_enable_domain_activity_expl, (ACTIVITY_DOMAIN_HIP_API, NULL));
+  HPCRUN_ROCTRACER_CALL(roctracer_enable_domain_activity_expl, (ACTIVITY_DOMAIN_HCC_OPS, NULL));
+
+  // Enable PC sampling
+  //HPCRUN_ROCTRACER_CALL(roctracer_enable_op_activity, (ACTIVITY_DOMAIN_HSA_OPS, HSA_OP_ID_PCSAMPLE));
+  // Enable KFD API tracing
+  HPCRUN_ROCTRACER_CALL(roctracer_enable_domain_callback, (ACTIVITY_DOMAIN_KFD_API, roctracer_subscriber_callback, NULL));
+  // Enable rocTX
+  HPCRUN_ROCTRACER_CALL(roctracer_enable_domain_callback, (ACTIVITY_DOMAIN_ROCTX, roctracer_subscriber_callback, NULL));
 }
 
 void
@@ -482,8 +504,12 @@ roctracer_fini
  void* args
 )
 {
-  HPCRUN_ROCTRACER_CALL(roctracer_disable_callback, ());
-  HPCRUN_ROCTRACER_CALL(roctracer_disable_activity, ());
+  HPCRUN_ROCTRACER_CALL(roctracer_disable_domain_callback, (ACTIVITY_DOMAIN_HIP_API));
+  HPCRUN_ROCTRACER_CALL(roctracer_disable_domain_activity, (ACTIVITY_DOMAIN_HIP_API));
+  HPCRUN_ROCTRACER_CALL(roctracer_disable_domain_activity, (ACTIVITY_DOMAIN_HCC_OPS));
+  HPCRUN_ROCTRACER_CALL(roctracer_disable_domain_activity, (ACTIVITY_DOMAIN_HSA_OPS));
+  HPCRUN_ROCTRACER_CALL(roctracer_disable_domain_callback, (ACTIVITY_DOMAIN_KFD_API));
+  HPCRUN_ROCTRACER_CALL(roctracer_disable_domain_callback, (ACTIVITY_DOMAIN_ROCTX));
   HPCRUN_ROCTRACER_CALL(roctracer_flush_activity_expl, (NULL));
 
   gpu_application_thread_process_activities();
