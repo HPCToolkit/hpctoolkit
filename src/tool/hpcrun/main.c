@@ -777,7 +777,7 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data, bool has_trac
   // ----------------------------------------
 
   thread_data_t* td = NULL;
-  hpcrun_threadMgr_data_get(id, thr_ctxt, &td, has_trace);
+  hpcrun_threadMgr_data_get_safe(id, thr_ctxt, &td, has_trace);
   hpcrun_set_thread_data(td);
 
   td->inside_hpcrun = 1;  // safe enter, disable signals
