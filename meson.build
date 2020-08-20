@@ -110,5 +110,13 @@ if cpp.get_argument_syntax() == 'gcc'
 endif
 
 # Enable OpenMP.
-openmp = dependency('openmp')
+openmp = dependency('OpenMP')
 # TODO: Handle finding the OpenMP directory.
+
+# Enable MPI (for C and C++).
+# NOTE: Autotools has a separate search system for Cray and Blue Gene, to get
+# around a Spack bug. We trust Meson's search functionality and ability to
+# override the issue in a Spack recipe.
+mpi_c = dependency('MPI', language: 'c')
+mpi_cpp = dependency('MPI', language: 'cpp')
+

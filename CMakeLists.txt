@@ -110,3 +110,22 @@ endif()
 find_package(OpenMP)
 # TODO: Handle finding the OpenMP directory.
 # OpenMP_C_LIBRARIES is dangerous since it also lists libpthread.so.
+
+# Enable MPI (for C and C++).
+# NOTE: Autotools has a separate search system for Cray and Blue Gene, to get
+# around a Spack bug. We trust Meson's search functionality and ability to
+# override the issue in a Spack recipe.
+find_package(MPI)
+if(MPI_FOUND)
+  # FindMPI.cmake seems to only export the old-style variables for these.
+  # So we stitch them into the interface target manually.
+  foreach(LANG C CXX)
+    target_include_directories(MPI::MPI_${LANG}
+                               INTERFACE ${MPI_${LANG}_INCLUDE_DIRS})
+    target_compile_options(MPI::MPI_${LANG}
+                           INTERFACE ${MPI_${LANG}_COMPILE_OPTIONS})
+    target_compile_definitions(MPI::MPI_${LANG}
+                               INTERFACE ${MPI_${LANG}_COMPILE_DEFINITIONS})
+  endforeach()
+endif()
+
