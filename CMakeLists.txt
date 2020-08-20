@@ -47,6 +47,7 @@ project(hpctoolkit
         VERSION 2020.08
         HOMEPAGE_URL "http://hpctoolkit.org"
         LANGUAGES C CXX)
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules" ${CMAKE_MODULE_PATH})
 
 # TODO: Hunt down the Git version and Spack spec. Generally not needed.
 
@@ -129,3 +130,12 @@ if(MPI_FOUND)
   endforeach()
 endif()
 
+# TODO: Search for Spack and add logic to later stanzas to use it when possible.
+
+# TODO: Sanity-check that Spack's compiler and ours are compatible.
+# Is this really nessesary? The .a, .o and .so formats have been stable
+# for a very long time.
+
+# Search for the binutils bits
+find_package(BFD)
+find_package(Iberty)

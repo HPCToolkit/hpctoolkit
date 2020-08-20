@@ -110,13 +110,25 @@ if cpp.get_argument_syntax() == 'gcc'
 endif
 
 # Enable OpenMP.
-openmp = dependency('OpenMP')
-# TODO: Handle finding the OpenMP directory.
+openmp = dependency('OpenMP', required: false, disabler: true)
+# TODO: Handle finding the OpenMP directory. 00
 
 # Enable MPI (for C and C++).
 # NOTE: Autotools has a separate search system for Cray and Blue Gene, to get
 # around a Spack bug. We trust Meson's search functionality and ability to
 # override the issue in a Spack recipe.
-mpi_c = dependency('MPI', language: 'c')
-mpi_cpp = dependency('MPI', language: 'cpp')
+mpi_c = dependency('MPI', language: 'c', required: false, disabler: true)
+mpi_cpp = dependency('MPI', language: 'cpp', required: false, disabler: true)
+
+# TODO: Search for Spack and override suitable dependencies.
+
+# TODO: Sanity-check that Spack's compiler and ours are compatible.
+# Is this really nessesary? The .a, .o and .so formats have been stable
+# for a very long time.
+
+# Search for the bits from binutils
+libbfd = dependency('BFD', required: false, disabler: true,
+                    cmake_module_path: 'cmake/modules')
+libiberty = dependency('Iberty', required: false, disabler: true,
+                       cmake_module_path: 'cmake/modules')
 
