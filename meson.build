@@ -146,3 +146,16 @@ bzip = dependency('BZip2', required: false, disabler: true,
 dyninst = dependency('Dyninst', required: false, disabler: true,
                      cmake_module_path: 'cmake/modules')
 
+# Search for the Elfutils bits.
+# NOTE: The `cmake_args` hack is a way to get Meson to give the right argument
+# to `find_package`. I don't like it, and should probably file a report, but
+# that's where we're at.
+libelf = dependency('libelf', required: false, disabler: true,
+                    cmake_module_path: 'cmake/modules',
+                    cmake_args: meson.version().version_compare('<=0.55.0')
+                                ? ['-DNAME=LibElf'] : [])
+libdw = dependency('libdw', required: false, disabler: true,
+                    cmake_module_path: 'cmake/modules',
+                    cmake_args: meson.version().version_compare('<=0.55.0')
+                                ? ['-DNAME=LibDw'] : [])
+

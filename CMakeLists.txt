@@ -146,3 +146,8 @@ find_package(Boost OPTIONAL_COMPONENTS atomic chrono date_time filesystem
 
 # Search for Dyninst.
 find_package(Dyninst)
+
+# Search for the Elfutils bits
+find_package(LibElf)
+find_package(LibDw)
+
