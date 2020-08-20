@@ -129,7 +129,7 @@ cupti_occupancy_analyze
     uint32_t active_blocks = MIN5(max_blocks_by_threads, max_blocks_by_registers,
       max_blocks_by_shared_memory, sm_blocks, *blocks);
 
-    if (active_blocks <= device_property->sm_count) {
+    if (*blocks <= device_property->sm_count) {
       active_blocks = 1;
     }
 
