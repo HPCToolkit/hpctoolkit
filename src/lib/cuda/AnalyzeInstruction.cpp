@@ -572,7 +572,7 @@ void controlCudaInstructions(const char *cubin, std::vector<Function *> &functio
   }
 }
 
-#define TRACK_LIMIT 1024
+#define TRACK_LIMIT 8
 
 static void trackDependency(std::map<int, InstructionStat *> &inst_stat_map,
   Dyninst::Address inst_addr, Dyninst::Address func_addr, std::map<int, int> &predicate_map,
@@ -656,7 +656,10 @@ static void trackDependency(std::map<int, InstructionStat *> &inst_stat_map,
       inst_stat->predicate_flag == slice_inst->predicate_flag) {
       // 2. Find an exact match, stop immediately
     } else {
-      if (predicate_map[-(slice_inst->predicate + 1)] > 0) {
+      if ((slice_inst->predicate_flag == InstructionStat::PREDICATE_TRUE && 
+          predicate_map[-(slice_inst->predicate + 1)] > 0) || 
+        (slice_inst->predicate_flag == InstructionStat::PREDICATE_FALSE && 
+         predicate_map[(slice_inst->predicate + 1)] > 0)) {
         // 3. Stop if find both !@PI and @PI
         // add one to avoid P0
       } else {

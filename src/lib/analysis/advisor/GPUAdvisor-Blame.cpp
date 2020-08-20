@@ -56,6 +56,8 @@ using std::string;
 #define DEBUG_GPUADVISOR 0
 #define DEBUG_GPUADVISOR_DETAILS 0
 
+#define MAX2(x, y) (x > y ? x : y)
+
 namespace Analysis {
 
 /*
@@ -320,13 +322,12 @@ void GPUAdvisor::debugCCTDepGraphSinglePath(CCTGraph<Prof::CCT::ADynNode *> &cct
     
     if ((exec_dep_path == 1 && mem_dep_path == 0) ||
         (exec_dep_path == 0 && mem_dep_path == 1) ||
-        (exec_dep_path == 1 && mem_dep_path == 1)) {
+        (exec_dep_path == 1 && mem_dep_path == 1) ||
+        (exec_dep_path == 0 && mem_dep_path == 0)) {
       ++single_path;
     }
 
-    if (exec_dep_path != 0 || mem_dep_path != 0) {
-      ++total_path;
-    }
+    ++total_path;
   }
 
   if (total_path == 0) {
@@ -1110,7 +1111,7 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
 
         for (auto &path : ps) {
           auto path_inst = computePathInsts(mpi_rank, thread_id, from_vma, to_vma, path);
-          distance[from_node] += path_inst;
+          distance[from_node] = MAX2(distance[from_node], path_inst);
         }
         auto issue = from_node->demandMetric(issue_metric_index);
         // Guarantee that issue is not zero

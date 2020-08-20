@@ -303,6 +303,7 @@ std::vector<BlameStats> GPUCodeReorderOptimizer::match_impl(const KernelBlame &k
   std::map<Prof::Struct::ACodeNode *, BlameStats> region_stats;
   std::map<Prof::Struct::ACodeNode *, std::vector<InstructionBlame *>> region_blames;
   auto blame = 0.0;
+  auto DIST_UPPER = 15;
 
   // Find top latency pairs
   for (auto *inst_blame : kernel_blame.stall_inst_blame_ptrs) {
@@ -325,8 +326,9 @@ std::vector<BlameStats> GPUCodeReorderOptimizer::match_impl(const KernelBlame &k
       region = inst_blame->src_struct->ancestorProc();
     }
 
-    if (inst_blame->blame_name.find(":LAT_GMEM") != std::string::npos ||
-      inst_blame->blame_name.find(":LAT_IDEP") != std::string::npos) {
+    if ((inst_blame->blame_name.find(":LAT_GMEM") != std::string::npos ||
+      inst_blame->blame_name.find(":LAT_IDEP") != std::string::npos) &&
+      inst_blame->distance < DIST_UPPER) {
       blame += inst_blame->stall_blame;
       region_stats[region].blame += inst_blame->stall_blame;
       region_blames[region].push_back(inst_blame);
