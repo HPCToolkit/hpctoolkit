@@ -61,31 +61,36 @@ set(CMAKE_C_STANDARD_REQUIRED YES)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
 
-# TODO: Autotools issues a whole bunch of sanity checks for headers and types. In particular:
+# TODO: Autotools issues a whole bunch of sanity checks for headers and types.
+# In particular:
 #  - stdlib.h, stdarg.h, string.h, float.h
 #  - unistd.h, inttypes.h (but only for C++?)
 #  - void* (for C)
-#  - cxxabi.h, cstdlib, cstddef, cstdio, cassert, cerrno, cstdarg, cstring, cmath, csetjmp, csignal,
-#    cctype, climits, cfloat, clocale (for C++)
+#  - cxxabi.h, cstdlib, cstddef, cstdio, cassert, cerrno, cstdarg, cstring,
+#    cmath, csetjmp, csignal, cctype, climits, cfloat, clocale (for C++)
 #  - sizeof void* (but only for C++?)
 #  - ushort, uint, ulong
 #  - pthread.h (more than preprocessor)
 # None of these are probably nessesary on a modern system.
 
-# TODO: Autotools has a long switch statement configuring the unwinder usage and host flags.
-# Some of it is handled by CMake (CMAKE_SYSTEM_NAME and CMAKE_SYSTEM_PROCESSOR), but the rest is tricky.
+# TODO: Autotools has a long switch statement configuring the unwinder usage
+# and host flags. Some of it is handled by CMake
+# (CMAKE_SYSTEM_NAME and CMAKE_SYSTEM_PROCESSOR), but the rest is tricky.
 
-# If we're running on a little-endian machine, we'll have to swap bytes. Try to use byteswap.h if we can.
+# If we're running on a little-endian machine, we'll have to swap bytes.
+# Try to use byteswap.h if we can.
 include(TestBigEndian)
 test_big_endian(big_endian)
 if(NOT big_endian)
-  try_compile(HAS_bswap_64 ${CMAKE_BINARY_DIR}/cmaketest_byteswap_64 ${CMAKE_SOURCE_DIR}/cmake/byteswap-test.c)
+  try_compile(HAS_bswap_64 ${CMAKE_BINARY_DIR}/cmaketest_byteswap_64
+              ${CMAKE_SOURCE_DIR}/cmake/byteswap-test.c)
 endif()
 
 # Warn if we're not running a GNU compiler with a sufficient version
 if(NOT CMAKE_C_COMPILER_ID MATCHES "GNU" OR NOT CMAKE_CXX_COMPILER_ID MATCHES "GNU")
   message(WARNING "Compilers other than GCC are not supported!")
-elseif(CMAKE_C_COMPILER_VERSION VERSION_LESS 5 OR CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5)
+elseif(CMAKE_C_COMPILER_VERSION VERSION_LESS 5
+       OR CMAKE_CXX_COMPILER_VERSION VERSION_LESS 5)
   message(WARNING "GCC before 5.0 is not supported!")
 endif()
 
@@ -103,4 +108,5 @@ endif()
 
 # Enable OpenMP.
 find_package(OpenMP)
-# TODO: Handle finding the OpenMP directory. OpenMP_C_LIBRARIES is dangerous since it also lists libpthread.so.
+# TODO: Handle finding the OpenMP directory.
+# OpenMP_C_LIBRARIES is dangerous since it also lists libpthread.so.
