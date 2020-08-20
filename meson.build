@@ -63,6 +63,7 @@ if get_option('libdir') != 'lib' or get_option('libexecdir') != 'libexec'
 endif
 
 # TODO: Hunt down the Git version and Spack spec. Generally not needed.
+# (For Git, use vcs_tag)
 
 # TODO: Autotools issues a whole bunch of sanity checks for headers and types.
 # In particular:
@@ -111,7 +112,7 @@ endif
 
 # Enable OpenMP.
 openmp = dependency('OpenMP', required: false, disabler: true)
-# TODO: Handle finding the OpenMP directory. 00
+# TODO: Handle finding the OpenMP directory.
 
 # Enable MPI (for C and C++).
 # NOTE: Autotools has a separate search system for Cray and Blue Gene, to get
@@ -138,8 +139,10 @@ boost_all = dependency('Boost', required: false, disabler: true,
                                  'graph', 'regex', 'system', 'thread', 'timer'])
 
 # Search for Bzip. Only used for lib copies (Elfutils prereq).
-bzip = dependency('BZip2', required: false, disabler: true)
+bzip = dependency('BZip2', required: false, disabler: true,
+                  cmake_module_path: 'cmake/modules')
 
 # Search for Dyninst.
-dyninst = dependency('Dyninst', method: 'cmake',
-                     required: false, disabler: true)
+dyninst = dependency('Dyninst', required: false, disabler: true,
+                     cmake_module_path: 'cmake/modules')
+
