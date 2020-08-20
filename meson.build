@@ -132,3 +132,14 @@ libbfd = dependency('BFD', required: false, disabler: true,
 libiberty = dependency('Iberty', required: false, disabler: true,
                        cmake_module_path: 'cmake/modules')
 
+# Search for Boost. This includes all modules, individual deps handled later.
+boost_all = dependency('Boost', required: false, disabler: true,
+                       modules: ['atomic', 'chrono', 'date_time', 'filesystem',
+                                 'graph', 'regex', 'system', 'thread', 'timer'])
+
+# Search for Bzip. Only used for lib copies (Elfutils prereq).
+bzip = dependency('BZip2', required: false, disabler: true)
+
+# Search for Dyninst.
+dyninst = dependency('Dyninst', method: 'cmake',
+                     required: false, disabler: true)

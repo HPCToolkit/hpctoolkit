@@ -139,3 +139,10 @@ endif()
 # Search for the binutils bits
 find_package(BFD)
 find_package(Iberty)
+
+# Search for Boost. Individual dependencies are handled later.
+find_package(Boost OPTIONAL_COMPONENTS atomic chrono date_time filesystem
+                                       graph regex system thread timer)
+
+# Search for Dyninst.
+find_package(Dyninst)
