@@ -127,45 +127,81 @@ mpi_cpp = dependency('MPI', language: 'cpp', required: false, disabler: true)
 # Is this really nessesary? The .a, .o and .so formats have been stable
 # for a very long time.
 
-# Search for the bits from binutils.
-libbfd = dependency('BFD', required: false, disabler: true,
-                    cmake_module_path: 'cmake/modules')
-libiberty = dependency('Iberty', required: false, disabler: true,
-                       cmake_module_path: 'cmake/modules')
+# For the vast majority of our dependencies, the main search logic is handled
+# by CMake or pkg-config, so we can share the common code regarding `*_root`
+# property handling and Spack handling
+_deps = {
+  'libbfd': { 'names': ['BFD'],
+              'propstems': ['bfd', 'binutils'] },
+  'libiberty': { 'names': ['Iberty'],
+                 'propstems': ['iberty', 'binutils'] },
+  'bzip': { 'names': ['BZip2'],
+            'propstems': ['bzip2', 'bzip'] },
+  'dyninst': { 'names': ['Dyninst'],
+               'propstems': ['dyninst']},
+  'libelf': { 'names': ['libelf', 'LibElf'],
+              'propstems': ['libelf', 'elfutils']},
+  'libdw': { 'names': ['libdw', 'LibDw'],
+             'propstems': ['libdw', 'elfutils']},
+  'gotcha': { 'names': ['Gotcha'],
+              'propstems': ['gotcha']},
+  'libdwarf': { 'names': ['LibDwarf'],
+                'propstems': ['libdwarf']},
+}
+foreach var, properties : _deps
+  # Highest priority: explicitly given in *_root
+  foreach pstem : properties['propstems']
+    _explicit_root = meson.get_external_property(pstem + '_root', '')
+    if _explicit_root != ''
+      foreach name : properties['names']
+        set_variable(var, dependency(name, method: 'cmake',
+          required: false,
+          cmake_args: ['-D' + name + '_ROOT=' + _explicit_root,
+                       '-DCMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH=FALSE',
+                       '-DCMAKE_FIND_USE_CMAKE_PATH=FALSE',
+                       '-DCMAKE_FIND_USE_CMAKE_SYSTEM_PATH=FALSE'],
+          cmake_module_path: 'cmake/modules'))
+        if get_variable(var).found()
+          break
+        endif
+      endforeach
+      if not get_variable(var).found()
+        error('Could not find (' + ', '.join(properties['names']) + ') from '
+              + pstem + '_root property: `' + _explicit_root + '\'')
+      endif
+    endif
+  endforeach
+
+  # Middle priority: searchable via Spack
+  if not is_variable(var)
+    # TODO: Try to use a Spack override instead.
+  endif
+
+  # Lowest priority: implicitly available
+  if not is_variable(var)
+    foreach name : properties['names']
+      set_variable(var, dependency(name, required: false,
+                                   cmake_module_path: 'cmake/modules'))
+      if get_variable(var).found()
+        break
+      endif
+    endforeach
+  endif
+endforeach
+
+## Boost is a special case, since Meson overrides its search logic.
+
+# Support for boost_root was added later, so error if you try to use it early.
+if meson.get_external_property('boost_root', '') != '' and \
+   meson.version().version_compare('<0.55.1')
+  error('boost_root as a property is not effective until 0.55.1, upgrade or ' +
+        'use the BOOST_ROOT environment var instead!')
+endif
+
+# TODO: Handle Spack-provided Boost
 
 # Search for Boost. This includes all modules, individual deps handled later.
-boost_all = dependency('Boost', required: false, disabler: true,
+boost_all = dependency('Boost', required: false,
                        modules: ['atomic', 'chrono', 'date_time', 'filesystem',
                                  'graph', 'regex', 'system', 'thread', 'timer'])
 
-# Search for Bzip. Only used for lib copies (Elfutils prereq).
-bzip = dependency('BZip2', required: false, disabler: true,
-                  cmake_module_path: 'cmake/modules')
-
-# Search for Dyninst.
-dyninst = dependency('Dyninst', required: false, disabler: true,
-                     cmake_module_path: 'cmake/modules')
-
-# Search for the Elfutils bits. We use the lowercase name to let Meson try
-# pkg-config first, otherwise we use the name used for CMake.
-# TODO: Send a PR or issue upstream to make this more automagic
-libelf = dependency('libelf', required: false, disabler: true,
-                    cmake_module_path: 'cmake/modules')
-if is_disabler(libelf)
-  libelf = dependency('LibElf', required: false, disabler: true,
-                      cmake_module_path: 'cmake/modules')
-endif
-libdw = dependency('libdw', required: false, disabler: true,
-                    cmake_module_path: 'cmake/modules')
-if is_disabler(libdw)
-  libdw = dependency('LibDw', required: false, disabler: true,
-                      cmake_module_path: 'cmake/modules')
-endif
-
-# Search for Gotcha.
-gotcha = dependency('Gotcha', required: false, disabler: true,
-                    cmake_module_path: 'cmake/modules')
-
-# Search for libdwarf
-libdwarf = dependency('LibDwarf', required: false, disabler: true,
-                      cmake_module_path: 'cmake/modules')
