@@ -178,7 +178,7 @@ _deps = {
             'propstems': ['papi'],
           },
   'perfmon': { 'name': 'PFM',
-               'propstems': ['pfm', 'papi'],
+               'propstems': ['perfmon', 'pfm', 'papi'],
              },
   'tbb': { 'name': 'TBB',
            'propstems': ['tbb'],
@@ -202,6 +202,9 @@ _deps = {
   'valgrind': { 'name': 'valgrind', 'cmake_name': 'Valgrind',
                 'propstems': ['valgrind'],
               },
+  'rocm': { 'name': 'ROCm',
+            'propstems': ['rocm'],
+          },
 }
 foreach var, properties : _deps
   # Highest priority: explicitly given in *_root
