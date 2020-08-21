@@ -174,6 +174,17 @@ _deps = {
   'perfmon': { 'names': ['PFM'],
                'propstems': ['pfm', 'papi'],
              },
+  'tbb': { 'names': ['TBB'],
+           'propstems': ['tbb'],
+           'components': ['tbb', 'tbbmalloc'],
+           'modules': ['TBB::tbb', 'TBB::tbbmalloc'],
+         },
+  'tbb_mproxy': { 'names': ['TBB'],
+                  'propstems': ['tbb'],
+                  'components': ['tbbmalloc_proxy'],
+                  'modules': ['TBB::tbbmalloc_proxy'],
+                },
+         },
 }
 foreach var, properties : _deps
   # Highest priority: explicitly given in *_root
@@ -188,6 +199,7 @@ foreach var, properties : _deps
                        '-DCMAKE_FIND_USE_CMAKE_PATH=FALSE',
                        '-DCMAKE_FIND_USE_CMAKE_SYSTEM_PATH=FALSE'],
           modules: properties.get('modules', []),
+          components: properties.get('components', []),
           cmake_module_path: 'cmake/modules'))
         if get_variable(var).found()
           break
@@ -210,6 +222,7 @@ foreach var, properties : _deps
     foreach name : properties['names']
       set_variable(var, dependency(name, required: false,
                                    modules: properties.get('modules', []),
+                                   components: properties.get('components', []),
                                    cmake_module_path: 'cmake/modules'))
       if get_variable(var).found()
         break
