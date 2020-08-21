@@ -175,3 +175,5 @@ find_package(Xerces)
 find_package(ZLIB)
 
 find_package(CUDAToolkit REQUIRED COMPONENTS cupti)
+
+find_package(Valgrind)

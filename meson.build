@@ -199,6 +199,9 @@ _deps = {
   'zlib': { 'name': 'zlib',
             'propstems': ['zlib'],
           },
+  'valgrind': { 'name': 'valgrind', 'cmake_name': 'Valgrind',
+                'propstems': ['valgrind'],
+              },
 }
 foreach var, properties : _deps
   # Highest priority: explicitly given in *_root
