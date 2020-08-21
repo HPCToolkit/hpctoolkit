@@ -4,3 +4,41 @@ option('dev_tools', type: 'feature',
        description: 'Enable extra tools useful for debugging.')
 option('external_strip', type: 'boolean', value: true,
        description: 'Strip external libraries as part of installation.')
+
+option('spack', type: 'string', value: '',
+       description: 'Use the given Spack to find external dependencies. Must either be an absolute path or a command to search on the PATH')
+option('binutils_spec', type: 'string', value: '',
+       description: 'Additional Spack spec arguments for binutils')
+option('libiberty_spec', type: 'string', value: '',
+       description: 'Additional Spack spec arguments for libiberty')
+option('bzip2_spec', type: 'string', value: '',
+       description: 'Additional Spack spec arguments for bzip2')
+option('dyninst_spec', type: 'string', value: '',
+       description: 'Additional Spack spec arguments for dyninst')
+option('elfutils_spec', type: 'string', value: '',
+       description: 'Additional Spack spec arguments for elfutils')
+option('gotcha_spec', type: 'string', value: '',
+       description: 'Additional Spack spec arguments for gotcha')
+option('libdwarf_spec', type: 'string', value: '',
+       description: 'Additional Spack spec arguments for libdwarf')
+option('libmonitor_spec', type: 'string', value: '',
+       description: 'Additional Spack spec arguments for libmonitor')
+option('libunwind_spec', type: 'string', value: '',
+       description: 'Additional Spack spec arguments for libunwind')
+option('xz_spec', type: 'string', value: '',
+       description: 'Additional Spack spec arguments for xz')
+option('mbedtls_spec', type: 'string', value: '',
+       description: 'Additional Spack spec arguments for mbedtls')
+option('papi_spec', type: 'string', value: '',
+       description: 'Additional Spack spec arguments for papi')
+option('intel-tbb_spec', type: 'string', value: '',
+       description: 'Additional Spack spec arguments for intel-tbb')
+option('intel-xed_spec', type: 'string', value: '',
+       description: 'Additional Spack spec arguments for intel-xed')
+option('xerces-c_spec', type: 'string', value: '',
+       description: 'Additional Spack spec arguments for xerces-c')
+option('zlib_spec', type: 'string', value: '',
+       description: 'Additional Spack spec arguments for zlib')
+option('valgrind_spec', type: 'string', value: '',
+       description: 'Additional Spack spec arguments for valgrind')
+

@@ -53,6 +53,10 @@ project('hpctoolkit', ['c', 'cpp'],
 hpctoolkit_config = configuration_data()
 cc = meson.get_compiler('c')
 cpp = meson.get_compiler('cpp')
+fs = import('fs')
+
+# Various bits we need require the use of Python 3, so get it early
+python = import('python').find_installation('python3')
 
 # The hpc* launch scripts don't work if the libdir or libexecdir are altered
 # from their defaults.
@@ -121,7 +125,24 @@ openmp = dependency('OpenMP', required: false, disabler: true)
 mpi_c = dependency('MPI', language: 'c', required: false, disabler: true)
 mpi_cpp = dependency('MPI', language: 'cpp', required: false, disabler: true)
 
-# TODO: Search for Spack and override suitable dependencies.
+# Handle getting the Spack we'll use for our business
+if get_option('spack') != ''
+  # Getting cross-compiling bits from Spack is very likely a bad idea
+  if meson.is_cross_build()
+    error('Spack doesn\'t support cross-compiling, use explicit *_roots instead!')
+  endif
+
+  spack = fs.expanduser(get_option('spack'))
+  if spack.contains('/')
+    if not fs.is_absolute(spack)
+      error('Spack path `' + spack + '\' must be absolute!')
+    endif
+    if not fs.is_file(spack)
+      error('Spack path `' + spack + '\' must be a file (i.e. .../bin/spack)!')
+    endif
+  endif
+  spack = find_program(spack, version: '>=0.15.0')
+endif
 
 # TODO: Sanity-check that Spack's compiler and ours are compatible.
 # Is this really nessesary? The .a, .o and .so formats have been stable
@@ -137,81 +158,102 @@ _deps = {
   'libbfd': { 'name': 'BFD',
               'propstems': ['bfd', 'binutils'],
               'static_modules': 'BFD::BFD_static',
+              'spack': 'binutils',
             },
   'libiberty': { 'name': 'Iberty',
                  'propstems': ['iberty', 'binutils'],
+                 'spack': 'libiberty',
                },
   'bzip': { 'name': 'BZip2',
             'propstems': ['bzip2', 'bzip'],
+            'spack': 'bzip2',
           },
   'dyninst': { 'name': 'Dyninst',
                'propstems': ['dyninst'],
                'modules': ['parseAPI', 'instructionAPI', 'symtabAPI',
                            'dynDwarf', 'dynElf', 'common'],
+               'spack': 'dyninst',
              },
   'libelf': { 'name': 'libelf', 'cmake_name': 'LibElf',
               'propstems': ['libelf', 'elfutils'],
+              'spack': 'elfutils',
             },
   'libdw': { 'name': 'libdw', 'cmake_name': 'LibDw',
              'propstems': ['libdw', 'elfutils'],
+             'spack': 'elfutils'
            },
   'gotcha': { 'name': 'Gotcha',
               'propstems': ['gotcha'],
+              'spack': 'gotcha',
             },
   'libdwarf': { 'name': 'LibDwarf',
                 'propstems': ['libdwarf'],
+                'spack': 'libdwarf',
               },
   'libmonitor': { 'name': 'Monitor',
                   'propstems': ['libmonitor', 'monitor'],
+                  'spack': 'libmonitor',
                 },
   'libunwind': { 'name': 'libunwind', 'cmake_name': 'LibUnwind',
                  'propstems': ['libunwind'],
+                 'spack': 'libunwind',
                },
   'liblzma': { 'name': 'liblzma', 'cmake_name': 'LibLZMA',
                'propstems': ['liblzma', 'lzma'],
+               'spack': 'xz',
              },
   'mbedtls_crypto': { 'name': 'MbedTLS',
                       'propstems': ['mbedtls'],
                       'modules': ['MbedTLS::Crypto'],
+                      'spack': 'mbedtls',
                     },
   'papi': { 'name': 'PAPI',
             'propstems': ['papi'],
+            'spack': 'papi',
           },
   'perfmon': { 'name': 'PFM',
                'propstems': ['perfmon', 'pfm', 'papi'],
+               'spack': 'papi',
              },
   'tbb': { 'name': 'TBB',
            'propstems': ['tbb'],
            'components': ['tbb', 'tbbmalloc'],
            'modules': ['TBB::tbb', 'TBB::tbbmalloc'],
+           'spack': 'intel-tbb',
          },
   'tbb_mproxy': { 'name': 'TBB',
                   'propstems': ['tbb'],
                   'components': ['tbbmalloc_proxy'],
                   'modules': ['TBB::tbbmalloc_proxy'],
+                  'spack': 'intel-tbb',
                 },
   'xed': { 'name': 'Xed',
            'propstems': ['xed'],
+           'spack': 'intel-xed',
          },
   'xerces': { 'name': 'xerces-c', 'cmake_name': 'Xerces',
               'propstems': ['xerces'],
+              'spack': 'xerces-c',
             },
-  'zlib': { 'name': 'zlib',
+  'zlib': { 'name': 'zlib', 'cmake_name': 'ZLIB',
             'propstems': ['zlib'],
+            'spack': 'zlib',
           },
   'valgrind': { 'name': 'valgrind', 'cmake_name': 'Valgrind',
                 'propstems': ['valgrind'],
+                'spack': 'valgrind',
               },
   'rocm': { 'name': 'ROCm',
             'propstems': ['rocm'],
           },
 }
 foreach var, properties : _deps
+  _cmake_name = properties.get('cmake_name', properties['name'])
+
   # Highest priority: explicitly given in *_root
   foreach pstem : properties['propstems']
     _explicit_root = meson.get_external_property(pstem + '_root', '')
     if _explicit_root != ''
-      _cmake_name = properties.get('cmake_name', properties['name'])
       set_variable(var, dependency(_cmake_name,
         method: 'cmake',
         required: false, static: false,
@@ -223,15 +265,43 @@ foreach var, properties : _deps
         components: properties.get('components', []),
         cmake_module_path: 'cmake/modules'))
       if not get_variable(var).found()
-        error('Could not find (' + ', '.join(properties['names']) + ') from '
+        error('Could not find ' + properties['name'] + ' from '
               + pstem + '_root property: `' + _explicit_root + '\'')
       endif
     endif
   endforeach
 
   # Middle priority: searchable via Spack
-  if not is_variable(var)
-    # TODO: Try to use a Spack override instead.
+  if not is_variable(var) and is_variable('spack') and properties.has_key('spack')
+    # The user can specify the exact spec to use for any particular package
+    _explicit_spec = get_option(properties['spack'] + '_spec')
+
+    # Run our helper script, and do our best with it.
+    _spack_root = run_command(python, 'cmake/spack-parse.py', spack,
+                              properties['spack'] + _explicit_spec,
+                              check: true).stdout().strip()
+    if _spack_root != ''
+      set_variable(var, dependency(_cmake_name,
+        method: 'cmake',
+        required: false, static: false,
+        cmake_args: ['-D' + _cmake_name + '_ROOT=' + _spack_root,
+                     '-DCMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH=FALSE',
+                     '-DCMAKE_FIND_USE_CMAKE_PATH=FALSE',
+                     '-DCMAKE_FIND_USE_CMAKE_SYSTEM_PATH=FALSE'],
+        modules: properties.get('modules', []),
+        components: properties.get('components', []),
+        cmake_module_path: 'cmake/modules'))
+      if not get_variable(var).found()
+        # This could be an error in our bits, or an error in someone else's.
+        # Either way, if we think we have it but don't, error.
+        error('Failed to find ' + properties['name'] + ' from Spack prefix '
+              + '`' + _spack_root + '\'')
+      endif
+    elif _explicit_spec != ''
+      # If a spec was given explicitly, but it didn't match, error.
+      error('No Spack spec matching `' + properties['spack'] + _explicit_spec + '\', '
+            + 'please install or use a *_root explicitly!')
+    endif
   endif
 
   # Lowest priority: implicitly available
