@@ -159,3 +159,6 @@ find_package(LibDwarf)
 
 # Search for libmonitor
 find_package(Monitor)
+
+# Search for libunwind
+find_package(LibUnwind)

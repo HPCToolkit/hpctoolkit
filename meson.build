@@ -158,6 +158,9 @@ _deps = {
   'libmonitor': { 'names': ['LibMonitor'],
                   'propstems': ['libmonitor', 'monitor'],
                 },
+  'libunwind': { 'names': ['libunwind', 'LibUnwind'],
+                 'propstems': ['libunwind'],
+               },
 }
 foreach var, properties : _deps
   # Highest priority: explicitly given in *_root
@@ -205,8 +208,7 @@ endforeach
 # Support for boost_root was added later, so error if you try to use it early.
 if meson.get_external_property('boost_root', '') != '' and \
    meson.version().version_compare('<0.55.1')
-  error('boost_root as a property is not effective until 0.55.1, upgrade or ' +
-        'use the BOOST_ROOT environment var instead!')
+  error('boost_root as a property is not effective until 0.55.1, please upgrade!')
 endif
 
 # TODO: Handle Spack-provided Boost
