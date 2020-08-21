@@ -254,3 +254,19 @@ boost_all = dependency('Boost', required: false,
                        modules: ['atomic', 'chrono', 'date_time', 'filesystem',
                                  'graph', 'regex', 'system', 'thread', 'timer'])
 
+## CUDA is another special case, Meson again overrides the logic.
+
+# There is no support for cuda/cupti_root, so error if anyone tries to use it.
+if meson.get_external_property('cuda_root', '') != ''
+  error('cuda_root as a property is not effective, '
+        + 'use the CUDA_HOME environment variable!')
+endif
+if meson.get_external_property('cupti_root', '') != ''
+  error('cupti_root as a property is not effective, '
+        + 'use the CUDA_HOME environment variable!')
+endif
+
+# TODO: Handle Spack-provided CUDA. Or don't. Decide what to do there.
+
+# Search for the CUDA toolkit
+cuda = dependency('CUDA', required: false, modules: ['cupti'])
