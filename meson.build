@@ -165,3 +165,7 @@ endif
 # Search for Gotcha.
 gotcha = dependency('Gotcha', required: false, disabler: true,
                     cmake_module_path: 'cmake/modules')
+
+# Search for libdwarf
+libdwarf = dependency('LibDwarf', required: false, disabler: true,
+                      cmake_module_path: 'cmake/modules')

@@ -153,3 +153,6 @@ find_package(LibDw)
 
 # Search for Gotcha
 find_package(Gotcha)
+
+# Search for libdwarf
+find_package(LibDwarf)
