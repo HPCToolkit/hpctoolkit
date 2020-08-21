@@ -55,8 +55,8 @@ find_package_handle_standard_args(Monitor
 
 if(Monitor_FOUND)
   if(Monitor_LIBRARY)
-    add_library(Monitor::dynamic UNKNOWN IMPORTED)
-    set_target_properties(Monitor::dynamic PROPERTIES
+    add_library(Monitor::Monitor UNKNOWN IMPORTED)
+    set_target_properties(Monitor::Monitor PROPERTIES
                           IMPORTED_LOCATION "${Monitor_LIBRARY}"
                           INTERFACE_INCLUDE_DIRECTORIES "${Monitor_INCLUDE_DIR}")
   endif()

@@ -53,8 +53,8 @@ endif()
 
 find_library(PFM_LIBRARY NAMES pfm
              DOC "Location of the libpfm library")
-find_path(PFM_INCLUDE_DIR NAMES pfmlib.h
-          DOC "Location of the include directory for libPFM")
+find_path(PFM_INCLUDE_DIR NAMES perfmon/pfmlib.h
+          DOC "Location of the include directory for libpfm")
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(PFM

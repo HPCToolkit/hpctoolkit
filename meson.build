@@ -129,68 +129,74 @@ mpi_cpp = dependency('MPI', language: 'cpp', required: false, disabler: true)
 
 # For the vast majority of our dependencies, the main search logic is handled
 # by CMake or pkg-config, so we can share the common code regarding `*_root`
-# property handling and Spack handling
+# property handling and Spack handling.
+# NOTE: 'name' is the pkg-config or Meson name if supported, otherwise its the
+# CMake name. 'cmake_name' is always the CMake name. This allows us to only
+# use one `dependency` call for each one.
 _deps = {
-  'libbfd': { 'names': ['BFD'],
+  'libbfd': { 'name': 'BFD',
               'propstems': ['bfd', 'binutils'],
+              'static_modules': 'BFD::BFD_static',
             },
-  'libiberty': { 'names': ['Iberty'],
+  'libiberty': { 'name': 'Iberty',
                  'propstems': ['iberty', 'binutils'],
                },
-  'bzip': { 'names': ['BZip2'],
+  'bzip': { 'name': 'BZip2',
             'propstems': ['bzip2', 'bzip'],
           },
-  'dyninst': { 'names': ['Dyninst'],
+  'dyninst': { 'name': 'Dyninst',
                'propstems': ['dyninst'],
+               'modules': ['parseAPI', 'instructionAPI', 'symtabAPI',
+                           'dynDwarf', 'dynElf', 'common'],
              },
-  'libelf': { 'names': ['libelf', 'LibElf'],
+  'libelf': { 'name': 'libelf', 'cmake_name': 'LibElf',
               'propstems': ['libelf', 'elfutils'],
             },
-  'libdw': { 'names': ['libdw', 'LibDw'],
+  'libdw': { 'name': 'libdw', 'cmake_name': 'LibDw',
              'propstems': ['libdw', 'elfutils'],
            },
-  'gotcha': { 'names': ['Gotcha'],
+  'gotcha': { 'name': 'Gotcha',
               'propstems': ['gotcha'],
             },
-  'libdwarf': { 'names': ['LibDwarf'],
+  'libdwarf': { 'name': 'LibDwarf',
                 'propstems': ['libdwarf'],
               },
-  'libmonitor': { 'names': ['LibMonitor'],
+  'libmonitor': { 'name': 'Monitor',
                   'propstems': ['libmonitor', 'monitor'],
                 },
-  'libunwind': { 'names': ['libunwind', 'LibUnwind'],
+  'libunwind': { 'name': 'libunwind', 'cmake_name': 'LibUnwind',
                  'propstems': ['libunwind'],
                },
-  'liblzma': { 'names': ['liblzma', 'LibLZMA'],
+  'liblzma': { 'name': 'liblzma', 'cmake_name': 'LibLZMA',
                'propstems': ['liblzma', 'lzma'],
              },
-  'mbedtls_crypto': { 'names': ['MbedTLS'],
+  'mbedtls_crypto': { 'name': 'MbedTLS',
                       'propstems': ['mbedtls'],
                       'modules': ['MbedTLS::Crypto'],
                     },
-  'papi': { 'names': ['PAPI'],
+  'papi': { 'name': 'PAPI',
             'propstems': ['papi'],
           },
-  'perfmon': { 'names': ['PFM'],
+  'perfmon': { 'name': 'PFM',
                'propstems': ['pfm', 'papi'],
              },
-  'tbb': { 'names': ['TBB'],
+  'tbb': { 'name': 'TBB',
            'propstems': ['tbb'],
            'components': ['tbb', 'tbbmalloc'],
            'modules': ['TBB::tbb', 'TBB::tbbmalloc'],
          },
-  'tbb_mproxy': { 'names': ['TBB'],
+  'tbb_mproxy': { 'name': 'TBB',
                   'propstems': ['tbb'],
                   'components': ['tbbmalloc_proxy'],
                   'modules': ['TBB::tbbmalloc_proxy'],
                 },
-  'xed': { 'names': ['Xed'],
+  'xed': { 'name': 'Xed',
            'propstems': ['xed'],
          },
-  'xerces': { 'names': ['xerces-c', 'Xerces'],
+  'xerces': { 'name': 'xerces-c', 'cmake_name': 'Xerces',
               'propstems': ['xerces'],
             },
-  'zlib': { 'names': ['zlib'],
+  'zlib': { 'name': 'zlib',
             'propstems': ['zlib'],
           },
 }
@@ -199,20 +205,17 @@ foreach var, properties : _deps
   foreach pstem : properties['propstems']
     _explicit_root = meson.get_external_property(pstem + '_root', '')
     if _explicit_root != ''
-      foreach name : properties['names']
-        set_variable(var, dependency(name, method: 'cmake',
-          required: false,
-          cmake_args: ['-D' + name + '_ROOT=' + _explicit_root,
-                       '-DCMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH=FALSE',
-                       '-DCMAKE_FIND_USE_CMAKE_PATH=FALSE',
-                       '-DCMAKE_FIND_USE_CMAKE_SYSTEM_PATH=FALSE'],
-          modules: properties.get('modules', []),
-          components: properties.get('components', []),
-          cmake_module_path: 'cmake/modules'))
-        if get_variable(var).found()
-          break
-        endif
-      endforeach
+      _cmake_name = properties.get('cmake_name', properties['name'])
+      set_variable(var, dependency(_cmake_name,
+        method: 'cmake',
+        required: false, static: false,
+        cmake_args: ['-D' + _cmake_name + '_ROOT=' + _explicit_root,
+                     '-DCMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH=FALSE',
+                     '-DCMAKE_FIND_USE_CMAKE_PATH=FALSE',
+                     '-DCMAKE_FIND_USE_CMAKE_SYSTEM_PATH=FALSE'],
+        modules: properties.get('modules', []),
+        components: properties.get('components', []),
+        cmake_module_path: 'cmake/modules'))
       if not get_variable(var).found()
         error('Could not find (' + ', '.join(properties['names']) + ') from '
               + pstem + '_root property: `' + _explicit_root + '\'')
@@ -227,15 +230,25 @@ foreach var, properties : _deps
 
   # Lowest priority: implicitly available
   if not is_variable(var)
-    foreach name : properties['names']
-      set_variable(var, dependency(name, required: false,
-                                   modules: properties.get('modules', []),
-                                   components: properties.get('components', []),
-                                   cmake_module_path: 'cmake/modules'))
-      if get_variable(var).found()
-        break
-      endif
-    endforeach
+    set_variable(var, dependency(properties['name'],
+      required: false, static: false,
+      modules: properties.get('modules', []),
+      components: properties.get('components', []),
+      cmake_module_path: 'cmake/modules'))
+  endif
+
+  # Because Meson saves the CMake cache, we can get the static side by repeating
+  # the process but with static set.
+  if properties.has_key('static_modules')
+    if get_variable(var).found()
+      set_variable(var + '_static', dependency(get_variable(var).name(),
+        required: false, static: true,
+        modules: properties['static_modules'],
+        components: properties.get('components', []),
+        cmake_module_path: 'cmake/modules'))
+    else
+      set_variable(var + '_static', dependency('', required: false))
+    endif
   endif
 endforeach
 
@@ -270,3 +283,4 @@ endif
 
 # Search for the CUDA toolkit
 cuda = dependency('CUDA', required: false, modules: ['cupti'])
+
