@@ -187,7 +187,7 @@ _deps = {
   'xed': { 'names': ['Xed'],
            'propstems': ['xed'],
          },
-  'xerces': { 'names': ['Xerces'],
+  'xerces': { 'names': ['xerces-c', 'Xerces'],
               'propstems': ['xerces'],
             },
   'zlib': { 'names': ['zlib'],
