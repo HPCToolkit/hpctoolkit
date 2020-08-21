@@ -165,3 +165,5 @@ find_package(LibUnwind)
 find_package(LibLZMA)
 
 find_package(MbedTLS)
+find_package(PAPI)
+find_package(PFM)

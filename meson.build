@@ -168,6 +168,12 @@ _deps = {
                       'propstems': ['mbedtls'],
                       'modules': ['MbedTLS::Crypto'],
                     },
+  'papi': { 'names': ['PAPI'],
+            'propstems': ['papi'],
+          },
+  'perfmon': { 'names': ['PFM'],
+               'propstems': ['pfm', 'papi'],
+             },
 }
 foreach var, properties : _deps
   # Highest priority: explicitly given in *_root
