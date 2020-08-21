@@ -474,9 +474,9 @@ hpcrun_init_internal(bool is_child)
   hpcrun_mmap_init();
   hpcrun_thread_data_init(0, NULL, is_child, hpcrun_get_num_sample_sources());
 
-  // must initialize unwind recipe map before initializing fnbounds
-  // because mapping of load modules affects the recipe map.
-  hpcrun_unw_init();
+//  // must initialize unwind recipe map before initializing fnbounds
+//  // because mapping of load modules affects the recipe map.
+//  hpcrun_unw_init();
 
   main_addr = monitor_get_addr_main();
   setup_main_bounds_check(main_addr);
@@ -934,6 +934,10 @@ monitor_init_process(int *argc, char **argv, void* data)
   }
   messages_logfile_create();
 
+  // must initialize unwind recipe map before initializing fnbounds
+  // because mapping of load modules affects the recipe map.
+  hpcrun_unw_init();
+  
   // We need to save vdso before initializing fnbounds this
   // is because fnbounds_init will iterate over the load map
   // and will invoke analysis on vdso
