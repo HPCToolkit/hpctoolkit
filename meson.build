@@ -155,6 +155,9 @@ _deps = {
   'libdwarf': { 'names': ['LibDwarf'],
                 'propstems': ['libdwarf'],
               },
+  'libmonitor': { 'names': ['LibMonitor'],
+                  'propstems': ['libmonitor', 'monitor'],
+                },
 }
 foreach var, properties : _deps
   # Highest priority: explicitly given in *_root

@@ -156,3 +156,6 @@ find_package(Gotcha)
 
 # Search for libdwarf
 find_package(LibDwarf)
+
+# Search for libmonitor
+find_package(Monitor)
