@@ -127,7 +127,7 @@ mpi_cpp = dependency('MPI', language: 'cpp', required: false, disabler: true)
 # Is this really nessesary? The .a, .o and .so formats have been stable
 # for a very long time.
 
-# Search for the bits from binutils
+# Search for the bits from binutils.
 libbfd = dependency('BFD', required: false, disabler: true,
                     cmake_module_path: 'cmake/modules')
 libiberty = dependency('Iberty', required: false, disabler: true,
@@ -146,16 +146,19 @@ bzip = dependency('BZip2', required: false, disabler: true,
 dyninst = dependency('Dyninst', required: false, disabler: true,
                      cmake_module_path: 'cmake/modules')
 
-# Search for the Elfutils bits.
-# NOTE: The `cmake_args` hack is a way to get Meson to give the right argument
-# to `find_package`. I don't like it, and should probably file a report, but
-# that's where we're at.
+# Search for the Elfutils bits. We use the lowercase name to let Meson try
+# pkg-config first, otherwise we use the name used for CMake.
+# TODO: Send a PR or issue upstream to make this more automagic
 libelf = dependency('libelf', required: false, disabler: true,
-                    cmake_module_path: 'cmake/modules',
-                    cmake_args: meson.version().version_compare('<=0.55.0')
-                                ? ['-DNAME=LibElf'] : [])
+                    cmake_module_path: 'cmake/modules')
+if is_disabler(libelf)
+  libelf = dependency('LibElf', required: false, disabler: true,
+                      cmake_module_path: 'cmake/modules')
+endif
 libdw = dependency('libdw', required: false, disabler: true,
-                    cmake_module_path: 'cmake/modules',
-                    cmake_args: meson.version().version_compare('<=0.55.0')
-                                ? ['-DNAME=LibDw'] : [])
+                    cmake_module_path: 'cmake/modules')
+if is_disabler(libdw)
+  libdw = dependency('LibDw', required: false, disabler: true,
+                      cmake_module_path: 'cmake/modules')
+endif
 
