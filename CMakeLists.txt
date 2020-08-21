@@ -178,3 +178,4 @@ find_package(CUDAToolkit REQUIRED COMPONENTS cupti)
 
 find_package(Valgrind)
 find_package(ROCm)
+
