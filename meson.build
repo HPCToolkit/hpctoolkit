@@ -184,6 +184,8 @@ _deps = {
                   'components': ['tbbmalloc_proxy'],
                   'modules': ['TBB::tbbmalloc_proxy'],
                 },
+  'xed': { 'names': ['Xed'],
+           'propstems': ['xed'],
          },
 }
 foreach var, properties : _deps

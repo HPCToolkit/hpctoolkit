@@ -169,3 +169,4 @@ find_package(PAPI)
 find_package(PFM)
 
 find_package(TBB)
+find_package(Xed)
