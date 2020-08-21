@@ -187,6 +187,9 @@ _deps = {
   'xed': { 'names': ['Xed'],
            'propstems': ['xed'],
          },
+  'xerces': { 'names': ['Xerces'],
+              'propstems': ['xerces'],
+            },
 }
 foreach var, properties : _deps
   # Highest priority: explicitly given in *_root

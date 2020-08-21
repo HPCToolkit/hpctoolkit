@@ -170,3 +170,5 @@ find_package(PFM)
 
 find_package(TBB)
 find_package(Xed)
+
+find_package(Xerces)
