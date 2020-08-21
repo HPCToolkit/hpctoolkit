@@ -190,6 +190,9 @@ _deps = {
   'xerces': { 'names': ['Xerces'],
               'propstems': ['xerces'],
             },
+  'zlib': { 'names': ['zlib'],
+            'propstems': ['zlib'],
+          },
 }
 foreach var, properties : _deps
   # Highest priority: explicitly given in *_root

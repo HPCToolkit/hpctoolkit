@@ -172,3 +172,4 @@ find_package(TBB)
 find_package(Xed)
 
 find_package(Xerces)
+find_package(ZLIB)
