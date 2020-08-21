@@ -162,3 +162,6 @@ if is_disabler(libdw)
                       cmake_module_path: 'cmake/modules')
 endif
 
+# Search for Gotcha.
+gotcha = dependency('Gotcha', required: false, disabler: true,
+                    cmake_module_path: 'cmake/modules')

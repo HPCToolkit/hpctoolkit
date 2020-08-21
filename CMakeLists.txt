@@ -151,3 +151,5 @@ find_package(Dyninst)
 find_package(LibElf)
 find_package(LibDw)
 
+# Search for Gotcha
+find_package(Gotcha)
