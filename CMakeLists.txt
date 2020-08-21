@@ -162,3 +162,4 @@ find_package(Monitor)
 
 # Search for libunwind
 find_package(LibUnwind)
+find_package(LibLZMA)

@@ -161,6 +161,9 @@ _deps = {
   'libunwind': { 'names': ['libunwind', 'LibUnwind'],
                  'propstems': ['libunwind'],
                },
+  'liblzma': { 'names': ['liblzma', 'LibLZMA'],
+               'propstems': ['liblzma', 'lzma'],
+             },
 }
 foreach var, properties : _deps
   # Highest priority: explicitly given in *_root
