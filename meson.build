@@ -164,6 +164,10 @@ _deps = {
   'liblzma': { 'names': ['liblzma', 'LibLZMA'],
                'propstems': ['liblzma', 'lzma'],
              },
+  'mbedtls_crypto': { 'names': ['MbedTLS'],
+                      'propstems': ['mbedtls'],
+                      'modules': ['MbedTLS::Crypto'],
+                    },
 }
 foreach var, properties : _deps
   # Highest priority: explicitly given in *_root
@@ -177,6 +181,7 @@ foreach var, properties : _deps
                        '-DCMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH=FALSE',
                        '-DCMAKE_FIND_USE_CMAKE_PATH=FALSE',
                        '-DCMAKE_FIND_USE_CMAKE_SYSTEM_PATH=FALSE'],
+          modules: properties.get('modules', []),
           cmake_module_path: 'cmake/modules'))
         if get_variable(var).found()
           break
@@ -198,6 +203,7 @@ foreach var, properties : _deps
   if not is_variable(var)
     foreach name : properties['names']
       set_variable(var, dependency(name, required: false,
+                                   modules: properties.get('modules', []),
                                    cmake_module_path: 'cmake/modules'))
       if get_variable(var).found()
         break
