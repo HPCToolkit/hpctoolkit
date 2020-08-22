@@ -412,8 +412,10 @@ BinUtil::LM::open(const char* filenm)
 
   // Write relocated cubins and reopen them
   InputFile input_file;
+
   std::string file_name = std::string(filenm);
-  if (input_file.openFile(file_name)) {
+
+  if (input_file.openFile(file_name, InputFileError_WarningNothrow)) {
     // We only relocate individual cubins, with filevector size 1
     ElfFile *elf_file = (*input_file.fileVector())[0];
     if (isCubin(elf_file->getElf())) {
@@ -432,6 +434,8 @@ BinUtil::LM::open(const char* filenm)
 		 " GPU binaries to source code");
 #endif
     }
+  } else {
+    DIAG_Throw("binary file not found");
   }
 
   // -------------------------------------------------------

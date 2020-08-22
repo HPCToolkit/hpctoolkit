@@ -81,7 +81,7 @@ m4_include(config/hpc-cxxutils.m4)
 # Initialization:
 #----------------------------------------------------------------------------
 
-AC_INIT([hpctoolkit], [2020.06-develop],
+AC_INIT([hpctoolkit], [2020.08-develop],
         [hpctoolkit-forum@rice.edu],
 	[hpctoolkit],
 	[http://hpctoolkit.org/])
@@ -276,6 +276,9 @@ default=yes
 if test "$OPT_ENABLE_DEVELOP" = yes ; then
   default=no
 fi
+case "$host_cpu" in
+  *aarch* | *arm* ) default=no ;;
+esac
 
 AC_ARG_ENABLE([strip-debug],
   [AS_HELP_STRING([--enable-strip-debug],
@@ -4572,7 +4575,8 @@ AC_LANG_POP
 #-------------------------------------------------
 
 # CUDA support for CPU-GPU-Blame-shifting.  Also requires CUPTI,
-# either in CUDA/extras/CUPTI or else in a separate install.
+# in CUDA, CUDA/extras/CUPTI, or in a separate install 
+# directory specified using the --with-cupti option.
 
 CUDA="$default_cuda_prefix"
 
@@ -4632,12 +4636,12 @@ AC_SUBST([OPT_CUDA_LDFLAGS])
 # Option: --with-cupti=PATH
 #-------------------------------------------------
 
-# CUPTI is either in CUDA/extras/CUPTI or else specified separately
-# here.
+# CUPTI is either in CUDA, CUDA/extras/CUPTI, or in a directory
+#  specified separately here.
 
 CUPTI=no
 case "$CUDA" in
-  /* ) if test -d "${CUDA}/extras/CUPTI" ; then CUPTI="${CUDA}/extras/CUPTI" ; fi
+  /* ) if test -d "${CUDA}/extras/CUPTI/include" ; then CUPTI="${CUDA}/extras/CUPTI" ; else CUPTI=${CUDA} ; fi
        ;;
 esac
 
