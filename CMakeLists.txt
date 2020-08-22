@@ -78,15 +78,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED YES)
 # and host flags. Some of it is handled by CMake
 # (CMAKE_SYSTEM_NAME and CMAKE_SYSTEM_PROCESSOR), but the rest is tricky.
 
-# If we're running on a little-endian machine, we'll have to swap bytes.
-# Try to use byteswap.h if we can.
-include(TestBigEndian)
-test_big_endian(big_endian)
-if(NOT big_endian)
-  try_compile(HAS_bswap_64 ${CMAKE_BINARY_DIR}/cmaketest_byteswap_64
-              ${CMAKE_SOURCE_DIR}/cmake/byteswap-test.c)
-endif()
-
 # Warn if we're not running a GNU compiler with a sufficient version
 if(NOT CMAKE_C_COMPILER_ID MATCHES "GNU" OR NOT CMAKE_CXX_COMPILER_ID MATCHES "GNU")
   message(WARNING "Compilers other than GCC are not supported!")

@@ -42,6 +42,16 @@
 #
 # ******************************************************* EndRiceCopyright *
 
+hpctoolkit_config.set('USE_SYSTEM_BYTESWAP', false)
+if host_machine.endian() == 'little'
+  hpctoolkit_config.set('USE_SYSTEM_BYTESWAP',
+                        cc.has_header_symbol('byteswap.h', 'bswap_64'))
+elif host_machine.endian() == 'big'
+  # All good, native format will work for output
+else
+  error('Unknown endian: ' + host_machine.endian())
+endif
+
 hpctoolkit_config.set('BINUTILS_234', libbfd_dep.version().version_compare('>=2.34'))
 hpctoolkit_config.set('DATACENTRIC_TRACE', false)  # TODO: Change to get_option
 if dyninst_dep.found()
@@ -106,7 +116,7 @@ hpctoolkit_config.set('ENABLE_OPENMP_SYMTAB', true)
 # TODO: This should be set based on a get_option
 hpctoolkit_config.set('ENABLE_VG_ANNOTATIONS', false)
 
-# TODO: I've never used this one, probably nobody should
+# TODO: I've never used this one, maybe nobody should?
 hpctoolkit_config.set('ENABLE_XOP', false)
 
 if cuda_dep.found()
@@ -139,7 +149,7 @@ hpctoolkit_config.set('HOST_CPU_x86', host_machine.cpu_family() == 'x86')
 hpctoolkit_config.set('HOST_CPU_x86_64', host_machine.cpu_family() == 'x86_64')
 hpctoolkit_config.set('HOST_OS_IRIX', false)  # TODO: What's an IRIX machine?
 hpctoolkit_config.set('HOST_OS_LINUX', host_machine.system() == 'linux')
-hpctoolkit_config.set('HOST_OS_MAXOS', host_machine.system() == 'dwarwin')
+hpctoolkit_config.set('HOST_OS_MAXOS', host_machine.system() == 'darwin')
 hpctoolkit_config.set('HOST_OS_SOLARIS', host_machine.system() == 'sunos')
 hpctoolkit_config.set('HOST_OS_Tru64', false)  # TODO: What's a Tru64 machine?
 hpctoolkit_config.set('HOST_PLATFORM_MIPS64LE_LINUX',

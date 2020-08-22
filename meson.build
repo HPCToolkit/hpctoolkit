@@ -85,18 +85,6 @@ endif
 # and host flags. Some of it is handled by Meson
 # (host_machine.system() and .cpu_family()), but the rest is tricky.
 
-# If we're running on a little-endian machine, we'll have to swap bytes.
-# Try to use byteswap.h if we can.
-hpctoolkit_config.set('USE_SYSTEM_BYTESWAP', false)
-if host_machine.endian() == 'little'
-  hpctoolkit_config.set('USE_SYSTEM_BYTESWAP',
-                        cc.has_header_symbol('byteswap.h', 'bswap_64'))
-elif host_machine.endian() == 'big'
-  # All good, native format will work for output
-else
-  error('Unknown endian: ' + host_machine.endian())
-endif
-
 # Warn if we're not running a GNU compiler with a sufficient version
 if meson.get_compiler('c').get_id() != 'gcc' \
    or meson.get_compiler('cpp').get_id() != 'gcc'

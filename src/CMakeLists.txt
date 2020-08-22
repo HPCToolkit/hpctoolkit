@@ -45,6 +45,9 @@
 set(MAIN_INCLUDES
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/include
+  ${CMAKE_CURRENT_BINARY_DIR}
+  ${CMAKE_CURRENT_BINARY_DIR}/include
 )
 
+add_subdirectory(include)
 add_subdirectory(lib)
