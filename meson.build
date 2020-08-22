@@ -368,12 +368,65 @@ if meson.get_external_property('boost_root', '') != '' and \
   error('boost_root as a property is not effective until 0.55.1, please upgrade!')
 endif
 
-# TODO: Handle Spack-provided Boost
+_boost_our_modules = ['graph', 'regex', 'system']
+_boost_other_modules = ['atomic', 'chrono', 'date_time', 'filesystem', 'thread',
+                        'timer']
+if meson.get_external_property('boost_root', '') == '' and is_variable('spack') \
+   and meson.get_external_property('boost_spec', '').strip().to_lower() != 'system'
+  # We can't use Meson's search functionality in this case, so we just
+  # assume all the bits are in very particular locations for our usage.
+  _spack_root = run_command(python, 'cmake/spack-parse.py', spack,
+                            'boost', meson.get_external_property('boost_spec', ''))
+  if _spack_root.returncode() != 0
+    error(_spack_root.stderr().strip())
+  elif _spack_root.stdout().strip() == ''
+    warning('Spack package boost not found, '
+            + 'please install: ' + spack.path() + ' install '
+            + 'boost ' + _explicit_spec)
+    warning('Set the property boost_spec '
+            + 'to \'system\' to use the system/environment instead.')
+    boost_all_dep = dependency('', required: false)
+    boost_our_dep = dependency('', required: false)
+  else
+    _spack_root = _spack_root.stdout().strip()
+    assert(_spack_root != '')
+    _spack_root = _spack_root.split('\n')
+    _dirs = [_spack_root[0] / 'lib', _spack_root[0] / 'lib64', _spack_root[0] / 'lib32']
 
-# Search for Boost. This includes all modules, individual deps handled later.
-boost_all = dependency('Boost', required: false,
-                       modules: ['atomic', 'chrono', 'date_time', 'filesystem',
-                                 'graph', 'regex', 'system', 'thread', 'timer'])
+    _deps = []
+    foreach m : _boost_our_modules
+      message(_dirs)
+      _deps += cpp.find_library('boost_'+m, dirs: _dirs)
+    endforeach
+    boost_our_dep = declare_dependency(
+      include_directories: include_directories(_spack_root[0] / 'include'),
+      dependencies: _deps,
+    )
+    foreach m : _boost_other_modules
+      _deps += cpp.find_library('boost_'+m, dirs: _dirs)
+    endforeach
+    boost_all_dep = declare_dependency(
+      include_directories: include_directories(_spack_root[0] / 'include'),
+      dependencies: _deps,
+    )
+    summary('boost', _spack_root[1], section: 'Dependencies')
+  endif
+else
+  # Search using the usual methods
+  boost_all_dep = dependency('Boost', required: false,
+                             modules: _boost_our_modules + _boost_other_modules)
+  boost_our_dep = dependency('Boost', required: false, modules: _boost_our_modules)
+
+  if meson.get_external_property('boost_root', '') != ''
+    summary('boost', meson.get_external_property('boost_root', ''),
+            section: 'Dependencies')
+    assert(boost_all_dep.found() and boost_our_dep.found(),
+           'Could not find Boost from boost_root property: '
+            + '`' + meson.get_external_property('boost_root', '') + '\'')
+  else
+    summary('boost', '(system)', section: 'Dependencies')
+  endif
+endif
 
 ## CUDA is another special case, Meson again overrides the logic.
 
