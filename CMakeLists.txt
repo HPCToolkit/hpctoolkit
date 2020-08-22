@@ -179,3 +179,8 @@ find_package(CUDAToolkit REQUIRED COMPONENTS cupti)
 find_package(Valgrind)
 find_package(ROCm)
 
+# Install the READMEs to the documentation directory, {datadir}/doc/hpctoolkit
+include(GNUInstallDirs)
+install(FILES
+  README README.License README.ReleaseNotes README.Acknowledgments
+  TYPE DOC)

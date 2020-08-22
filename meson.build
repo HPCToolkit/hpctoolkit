@@ -381,3 +381,7 @@ endif
 # Search for the CUDA toolkit
 cuda = dependency('CUDA', required: false, modules: ['cupti'])
 
+# Install the READMEs to the documentation directory, {datadir}/doc/hpctoolkit
+install_data(files(
+  'README', 'README.License', 'README.ReleaseNotes', 'README.Acknowledgments'
+), install_dir: get_option('datadir') / 'doc' / meson.project_name())
