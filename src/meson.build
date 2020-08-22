@@ -42,6 +42,7 @@
 #
 # ******************************************************* EndRiceCopyright *
 
-main_includes = include_directories('.', 'include')
+main_includes = [include_directories('.')]
 
+subdir('include')
 subdir('lib')

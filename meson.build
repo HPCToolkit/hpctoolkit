@@ -360,6 +360,14 @@ foreach var, properties : _deps
   endif
 endforeach
 
+## Fixup Dyninst's dependency to actually work properly
+
+# The Dyninst config file doesn't list include directories, so the dependency
+# can't be used directly. Half the fix is in the Find-script, but up here
+# we stitch the Dyninst dependency to its dependencies.
+dyninst_all_deps = [dyninst_dep, tbb_dep]
+dyninst_dep = declare_dependency(dependencies: dyninst_all_deps)
+
 ## Boost is a special case, since Meson overrides its search logic.
 
 # Support for boost_root was added later, so error if you try to use it early.
@@ -443,7 +451,7 @@ endif
 # TODO: Handle Spack-provided CUDA. Or don't. Decide what to do there.
 
 # Search for the CUDA toolkit
-cuda = dependency('CUDA', required: false, modules: ['cupti'])
+cuda_dep = dependency('CUDA', required: false, modules: ['cupti'])
 
 # Install the READMEs to the documentation directory, {datadir}/doc/hpctoolkit
 install_data(files(

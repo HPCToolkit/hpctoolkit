@@ -47,3 +47,19 @@
 find_package(Dyninst QUIET CONFIG)
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Dyninst CONFIG_MODE)
+
+if(Dyninst_FOUND)
+  # However, the file isn't exactly properly modernized, so we make some adjustments.
+  # We can't do everything, but we can do this much.
+
+  find_path(Dyninst_INCLUDE_DIR NAMES Symtab.h
+            DOC "Location of the Dyninst include directory")
+  if(NOT Dyninst_INCLUDE_DIR)
+    message(FATAL_ERROR "CMake could only find the config!")
+  endif()
+
+  set_property(TARGET common dynElf dynDwarf symLite instructionAPI symtabAPI
+                      parseAPI pcontrol stackwalk patchAPI dyninstAPI dynC_API
+    APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${Dyninst_INCLUDE_DIR}
+  )
+endif()
