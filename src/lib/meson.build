@@ -44,3 +44,4 @@
 
 # This is just a springboard for the subdirectories
 subdir('prof-lean')
+subdir('support-lean')

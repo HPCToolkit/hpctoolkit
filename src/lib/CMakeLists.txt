@@ -44,3 +44,4 @@
 
 # This is just a springboard for the subdirectories
 add_subdirectory(prof-lean)
+add_subdirectory(support-lean)

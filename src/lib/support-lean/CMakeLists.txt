@@ -42,42 +42,14 @@
 #
 # ******************************************************* EndRiceCopyright *
 
-_srcs = files(
-  'hpcrun-fmt.c',
-
-  'hpcfmt.c',
-  'hpcio.c',
-  'hpcio-buffer.c',
-
-  # 'atomic-op.i',
-  'mcs-lock.c',
-  'pfq-rwlock.c',
-  'spinlock.c',
-  'urand.c',
-  'usec_time.c',
-
-  'BalancedTree.c',
-
-  'placeholders.c',
-
-  'lush/lush-support.c',
-
-  'binarytree.c',
-  'cskiplist.c',
-  'crypto-hash.c',
-  'queues.c',
-  'stacks.c',
-  'bistack.c',
-  'bichannel.c',
-  'producer_wfq.c',
-  'generic_pair.c',
-  'procmaps.c',
-  'vdso.c',
-  'randomizer.c',
-  'splay-uint64.c',
-  'elf-helper.c',
+set(SRCS
+  timer.c
+  OSUtil.c
+  compress_lzma.c
+  demangle.c
 )
 
-prof_lean_lib = static_library('prof_lean', _srcs, pic: true,
-  include_directories: main_includes,
-  dependencies: [libelf_dep, mbedtls_crypto_dep])
+add_library(support_lean STATIC ${SRCS})
+target_include_directories(support_lean PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}
+                           PRIVATE ${MAIN_INCLUDES})
+set_target_properties(support_lean PROPERTIES POSITION_INDEPENDENT_CODE ON)
