@@ -128,9 +128,8 @@ mpi_cpp = dependency('MPI', language: 'cpp', required: false, disabler: true)
 # Handle getting the Spack we'll use for our business
 if get_option('spack') != '' or meson.get_external_property('spack', '') != ''
   # Getting cross-compiling bits from Spack is very likely a bad idea
-  if meson.is_cross_build()
-    error('Spack doesn\'t support cross-compiling, use explicit *_roots instead!')
-  endif
+  assert(not meson.is_cross_build(),
+    'Spack doesn\'t support cross-compiling, use explicit *_roots instead!')
 
   # Warn if both the option and property are set, and error if they differ
   if get_option('spack') != '' and meson.get_external_property('spack', '') != ''
@@ -149,12 +148,9 @@ if get_option('spack') != '' or meson.get_external_property('spack', '') != ''
     spack = fs.expanduser(meson.get_external_property('spack', ''))
   endif
   if spack.contains('/')
-    if not fs.is_absolute(spack)
-      error('Spack path `' + spack + '\' must be absolute!')
-    endif
-    if not fs.is_file(spack)
-      error('Spack path `' + spack + '\' must be a file (i.e. .../bin/spack)!')
-    endif
+    assert(fs.is_absolute(spack), 'Spack path `' + spack + '\' must be absolute!')
+    assert(fs.is_file(spack),
+           'Spack path `' + spack + '\' must be a file (i.e. .../bin/spack)!')
   endif
   spack = find_program(spack, version: '>=0.15.0')
 endif
@@ -269,7 +265,7 @@ foreach var, properties : _deps
   foreach pstem : properties['propstems']
     _explicit_root = meson.get_external_property(pstem + '_root', '')
     if _explicit_root != ''
-      set_variable(var, dependency(_cmake_name,
+      set_variable(var + '_dep', dependency(_cmake_name,
         method: 'cmake',
         required: false, static: false,
         cmake_args: ['-D' + _cmake_name + '_ROOT=' + _explicit_root,
@@ -279,15 +275,15 @@ foreach var, properties : _deps
         modules: properties.get('modules', []),
         components: properties.get('components', []),
         cmake_module_path: 'cmake/modules'))
-      if not get_variable(var).found()
-        error('Could not find ' + properties['name'] + ' from '
-              + pstem + '_root property: `' + _explicit_root + '\'')
-      endif
+      assert(get_variable(var + '_dep').found(),
+        'Could not find ' + properties['name'] + ' from '
+        + pstem + '_root property: `' + _explicit_root + '\'')
     endif
   endforeach
 
   # Middle priority: searchable via Spack
-  if not is_variable(var) and is_variable('spack') and properties.has_key('spack')
+  if not is_variable(var + '_dep') and is_variable('spack') \
+     and properties.has_key('spack')
     # The user can specify the exact spec to use for any particular package
     _explicit_spec = meson.get_external_property(properties['spack'] + '_spec', '')
 
@@ -299,32 +295,38 @@ foreach var, properties : _deps
       _spack_root = run_command(python, 'cmake/spack-parse.py', spack,
                                 properties['spack'], _explicit_spec)
       if _spack_root.returncode() != 0
-        error(_spack_root.stderr())
-      endif
-      _spack_root = _spack_root.stdout().strip()
+        error(_spack_root.stderr().strip())
+      elif _spack_root.stdout().strip() == ''
+        warning('Spack package ' + properties['spack'] + ' not found, '
+                + 'please install: ' + spack.path() + ' install '
+                + properties['spack'] + ' ' + _explicit_spec)
+        warning('Set the property ' + properties['spack'] + '_spec '
+                + 'to \'system\' to use the system/environment instead.')
+        set_variable(var + '_dep', dependency('', required: false))
+      else
+        _spack_root = _spack_root.stdout().strip()
+        assert(_spack_root != '')
 
-      set_variable(var, dependency(_cmake_name,
-        method: 'cmake',
-        required: false, static: false,
-        cmake_args: ['-D' + _cmake_name + '_ROOT=' + _spack_root,
-                     '-DCMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH=FALSE',
-                     '-DCMAKE_FIND_USE_CMAKE_PATH=FALSE',
-                     '-DCMAKE_FIND_USE_CMAKE_SYSTEM_PATH=FALSE'],
-        modules: properties.get('modules', []),
-        components: properties.get('components', []),
-        cmake_module_path: 'cmake/modules'))
-      if not get_variable(var).found()
-        # This could be an error in our bits, or an error in someone else's.
-        # Either way, if we think we have it but don't, error.
-        error('Failed to find ' + properties['name'] + ' from Spack prefix '
-              + '`' + _spack_root + '\'')
+        set_variable(var + '_dep', dependency(_cmake_name,
+          method: 'cmake',
+          required: false, static: false,
+          cmake_args: ['-D' + _cmake_name + '_ROOT=' + _spack_root,
+                       '-DCMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH=FALSE',
+                       '-DCMAKE_FIND_USE_CMAKE_PATH=FALSE',
+                       '-DCMAKE_FIND_USE_CMAKE_SYSTEM_PATH=FALSE'],
+          modules: properties.get('modules', []),
+          components: properties.get('components', []),
+          cmake_module_path: 'cmake/modules'))
+        assert(get_variable(var + '_dep').found(),
+               'Failed to find ' + properties['name'] + ' from Spack prefix '
+               + '`' + _spack_root + '\'')
       endif
     endif
   endif
 
   # Lowest priority: implicitly available
-  if not is_variable(var)
-    set_variable(var, dependency(properties['name'],
+  if not is_variable(var + '_dep')
+    set_variable(var + '_dep', dependency(properties['name'],
       required: false, static: false,
       modules: properties.get('modules', []),
       components: properties.get('components', []),
@@ -334,14 +336,15 @@ foreach var, properties : _deps
   # Because Meson saves the CMake cache, we can get the static side by repeating
   # the process but with static set.
   if properties.has_key('static_modules')
-    if get_variable(var).found()
-      set_variable(var + '_static', dependency(get_variable(var).name(),
+    if get_variable(var + '_dep').found()
+      set_variable(var + '_static_dep', dependency(
+        get_variable(var + '_dep').name(),
         required: false, static: true,
         modules: properties['static_modules'],
         components: properties.get('components', []),
         cmake_module_path: 'cmake/modules'))
     else
-      set_variable(var + '_static', dependency('', required: false))
+      set_variable(var + '_static_dep', dependency('', required: false))
     endif
   endif
 endforeach
