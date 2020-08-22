@@ -126,13 +126,28 @@ mpi_c = dependency('MPI', language: 'c', required: false, disabler: true)
 mpi_cpp = dependency('MPI', language: 'cpp', required: false, disabler: true)
 
 # Handle getting the Spack we'll use for our business
-if get_option('spack') != ''
+if get_option('spack') != '' or meson.get_external_property('spack', '') != ''
   # Getting cross-compiling bits from Spack is very likely a bad idea
   if meson.is_cross_build()
     error('Spack doesn\'t support cross-compiling, use explicit *_roots instead!')
   endif
 
-  spack = fs.expanduser(get_option('spack'))
+  # Warn if both the option and property are set, and error if they differ
+  if get_option('spack') != '' and meson.get_external_property('spack', '') != ''
+    if get_option('spack') == meson.get_external_property('spack', '')
+      warning('Both the option and the property `spack\' are set, '
+              + 'propably only the property should be set.')
+    else
+      error('Both the option and the property `spack\' are set and differ, '
+            + 'which Spack did you want?')
+    endif
+  endif
+
+  if get_option('spack') != ''
+    spack = fs.expanduser(get_option('spack'))
+  else
+    spack = fs.expanduser(meson.get_external_property('spack', ''))
+  endif
   if spack.contains('/')
     if not fs.is_absolute(spack)
       error('Spack path `' + spack + '\' must be absolute!')
@@ -274,13 +289,20 @@ foreach var, properties : _deps
   # Middle priority: searchable via Spack
   if not is_variable(var) and is_variable('spack') and properties.has_key('spack')
     # The user can specify the exact spec to use for any particular package
-    _explicit_spec = get_option(properties['spack'] + '_spec')
+    _explicit_spec = meson.get_external_property(properties['spack'] + '_spec', '')
 
-    # Run our helper script, and do our best with it.
-    _spack_root = run_command(python, 'cmake/spack-parse.py', spack,
-                              properties['spack'] + _explicit_spec,
-                              check: true).stdout().strip()
-    if _spack_root != ''
+    # ...But we only use it if its not "system" (or some variant thereof)
+    # If spack is being used the system should never be checked unless the
+    # user explicitly states. The user should be very explicit about this stuff.
+    if _explicit_spec.strip().to_lower() != 'system'
+      # Run our helper script, and do our best with it.
+      _spack_root = run_command(python, 'cmake/spack-parse.py', spack,
+                                properties['spack'], _explicit_spec)
+      if _spack_root.returncode() != 0
+        error(_spack_root.stderr())
+      endif
+      _spack_root = _spack_root.stdout().strip()
+
       set_variable(var, dependency(_cmake_name,
         method: 'cmake',
         required: false, static: false,
@@ -297,10 +319,6 @@ foreach var, properties : _deps
         error('Failed to find ' + properties['name'] + ' from Spack prefix '
               + '`' + _spack_root + '\'')
       endif
-    elif _explicit_spec != ''
-      # If a spec was given explicitly, but it didn't match, error.
-      error('No Spack spec matching `' + properties['spack'] + _explicit_spec + '\', '
-            + 'please install or use a *_root explicitly!')
     endif
   endif
 
