@@ -184,3 +184,6 @@ include(GNUInstallDirs)
 install(FILES
   README README.License README.ReleaseNotes README.Acknowledgments
   TYPE DOC)
+
+# Recurse into subdirectories
+add_subdirectory(src)

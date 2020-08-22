@@ -449,3 +449,6 @@ cuda = dependency('CUDA', required: false, modules: ['cupti'])
 install_data(files(
   'README', 'README.License', 'README.ReleaseNotes', 'README.Acknowledgments'
 ), install_dir: get_option('datadir') / 'doc' / meson.project_name())
+
+# Recurse into subdirectories
+subdir('src')
