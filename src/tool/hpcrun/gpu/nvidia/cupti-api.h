@@ -174,11 +174,6 @@ cupti_device_timestamp_get
  uint64_t *time
 );
 
-void cupti_activity_timestamp_get
-(
- uint64_t *time
-);
-
 
 void 
 cupti_init
