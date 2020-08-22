@@ -176,6 +176,7 @@ gpu_memcpy_process
           gpu_placeholder_type_copy);
       }
 
+      assert(host_op_node != NULL);
       gpu_trace_item_t entry_trace;
       trace_item_set(&entry_trace, activity, host_op_entry, host_op_node);
 
@@ -303,7 +304,7 @@ gpu_correlation_process
     gpu_correlation_id_map_external_id_replace(gpu_correlation_id, host_correlation_id);
   }
   PRINT("Correlation: native_correlation %u --> host_correlation %lu\n", 
-	gpu_correlation_id, host_correlation_id);
+      gpu_correlation_id, host_correlation_id);
 }
 
 
@@ -509,7 +510,7 @@ gpu_cdpkernel_process
       cct_node_t *func_node = hpcrun_leftmost_child(func_ph);
       if (func_node == NULL) {
 	// in case placeholder doesn't have a child
-	func_node = func_ph;
+        func_node = func_ph;
       }
 
       gpu_trace_item_t entry_trace;

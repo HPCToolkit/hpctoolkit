@@ -128,12 +128,6 @@ static int cupti_enabled_activities = 0;
 // event name, which is nvidia-cuda
 static char nvidia_name[128];
 
-
-static const size_t DEFAULT_DEVICE_BUFFER_SIZE = 1024 * 1024 * 8;
-static const size_t DEFAULT_DEVICE_SEMAPHORE_SIZE = 65536;
-
-
-
 //******************************************************************************
 // constants
 //******************************************************************************
@@ -268,6 +262,9 @@ METHOD_FN(init)
 {
   self->state = INIT;
 
+  control_knob_register("HPCRUN_CUDA_DEVICE_BUFFER_SIZE", "8388608", ck_int);
+  control_knob_register("HPCRUN_CUDA_DEVICE_SEMAPHORE_SIZE", "65536", ck_int);
+
   // Reset cupti flags
   cupti_device_init();
 
@@ -382,19 +379,12 @@ METHOD_FN(process_event_list, int lush_metrics)
 			    &device_finalizer_shutdown);
 
   // Get control knobs
-  int device_buffer_size =
-    control_knob_value_get_int(HPCRUN_CUDA_DEVICE_BUFFER_SIZE);
+  int device_buffer_size;
+  assert(control_knob_value_get_int("HPCRUN_CUDA_DEVICE_BUFFER_SIZE", &device_buffer_size) == 0);
 
-  int device_semaphore_size =
-    control_knob_value_get_int(HPCRUN_CUDA_DEVICE_SEMAPHORE_SIZE);
+  int device_semaphore_size;
+  assert(control_knob_value_get_int("HPCRUN_CUDA_DEVICE_SEMAPHORE_SIZE", &device_semaphore_size) == 0);
 
-  if (device_buffer_size == 0) {
-    device_buffer_size = DEFAULT_DEVICE_BUFFER_SIZE;
-  }
-
-  if (device_semaphore_size == 0) {
-    device_semaphore_size = DEFAULT_DEVICE_SEMAPHORE_SIZE;
-  }
 
   TMSG(CUDA, "Device buffer size %d", device_buffer_size);
   TMSG(CUDA, "Device semaphore size %d", device_semaphore_size);
