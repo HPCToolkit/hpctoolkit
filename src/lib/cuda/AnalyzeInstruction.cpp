@@ -702,7 +702,14 @@ void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_s
     }
   }
 
-  for (auto *dyn_func : func_set) {
+  std::vector<Dyninst::ParseAPI::Function*> func_vec;
+  for (auto dyn_func : func_set) {
+    func_vec.emplace_back(dyn_func);
+  }
+
+  #pragma omp parallel for schedule(dynamic)
+  for (size_t i = 0; i < func_vec.size(); ++i) {
+    Dyninst::ParseAPI::Function* dyn_func = func_vec[i];
     Dyninst::AssignmentConverter ac(true, false);
     auto func_addr = dyn_func->addr();
 
