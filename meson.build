@@ -275,6 +275,7 @@ foreach var, properties : _deps
         modules: properties.get('modules', []),
         components: properties.get('components', []),
         cmake_module_path: 'cmake/modules'))
+      summary(var, _explicit_root, section: 'Dependencies')
       assert(get_variable(var + '_dep').found(),
         'Could not find ' + properties['name'] + ' from '
         + pstem + '_root property: `' + _explicit_root + '\'')
@@ -306,11 +307,12 @@ foreach var, properties : _deps
       else
         _spack_root = _spack_root.stdout().strip()
         assert(_spack_root != '')
+        _spack_root = _spack_root.split('\n')
 
         set_variable(var + '_dep', dependency(_cmake_name,
           method: 'cmake',
           required: false, static: false,
-          cmake_args: ['-D' + _cmake_name + '_ROOT=' + _spack_root,
+          cmake_args: ['-D' + _cmake_name + '_ROOT=' + _spack_root[0].strip(),
                        '-DCMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH=FALSE',
                        '-DCMAKE_FIND_USE_CMAKE_PATH=FALSE',
                        '-DCMAKE_FIND_USE_CMAKE_SYSTEM_PATH=FALSE'],
@@ -319,7 +321,8 @@ foreach var, properties : _deps
           cmake_module_path: 'cmake/modules'))
         assert(get_variable(var + '_dep').found(),
                'Failed to find ' + properties['name'] + ' from Spack prefix '
-               + '`' + _spack_root + '\'')
+               + '`' + _spack_root[0].strip() + '\'')
+      summary(var, _spack_root[1].strip(), section: 'Dependencies')
       endif
     endif
   endif
@@ -331,6 +334,14 @@ foreach var, properties : _deps
       modules: properties.get('modules', []),
       components: properties.get('components', []),
       cmake_module_path: 'cmake/modules'))
+    if get_variable(var + '_dep').found()
+      summary(var, get_variable(var + '_dep').get_variable(
+        cmake: _cmake_name + '_INCLUDE_DIR',
+        pkgconfig: 'prefix',
+        default_value: '(system)'), section: 'Dependencies')
+    else
+      summary(var, '-', section: 'Dependencies')
+    endif
   endif
 
   # Because Meson saves the CMake cache, we can get the static side by repeating
