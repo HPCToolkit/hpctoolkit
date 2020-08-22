@@ -46,15 +46,10 @@
 //******************************************************************************
 
 #define UNIT_TEST 0
+
 #define DEBUG 0
 
-
-
-//******************************************************************************
-// system includes
-//******************************************************************************
-
-#include <assert.h>
+#include "gpu-print.h"
 
 
 
@@ -64,7 +59,6 @@
 
 #include "gpu-channel-item-allocator.h"
 #include "gpu-trace-item.h"
-#include "gpu-print.h"
 
 
 
@@ -86,7 +80,6 @@ gpu_trace_item_produce
   ti->start = start;
   ti->end = end;
   ti->call_path_leaf = call_path_leaf;
-  assert(call_path_leaf != NULL);
   cstack_ptr_set(&(ti->next), 0);
 }
 

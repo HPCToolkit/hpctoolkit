@@ -42,20 +42,11 @@
 // ******************************************************* EndRiceCopyright *
 
 //******************************************************************************
-// system includes
+// local includes
 //******************************************************************************
 
-#include <lib/prof-lean/stdatomic.h>
 #include <pthread.h>
 
-#include <hpcrun/cct/cct.h>
-#include <hpcrun/thread_data.h>
-#include <hpcrun/threadmgr.h>
-#include <hpcrun/trace.h>
-#include <hpcrun/write_data.h>
-#include <hpcrun/control-knob.h>
-
-#include <assert.h>
 
 
 //******************************************************************************
@@ -70,13 +61,18 @@
 // local includes
 //******************************************************************************
 
+#include <lib/prof-lean/stdatomic.h>
+
+#include <hpcrun/cct/cct.h>
+#include <hpcrun/thread_data.h>
+#include <hpcrun/threadmgr.h>
+#include <hpcrun/trace.h>
+
 #include "gpu-context-id-map.h"
 #include "gpu-monitoring.h"
+#include "gpu-trace.h"
 #include "gpu-trace-channel.h"
 #include "gpu-trace-item.h"
-#include "gpu-trace-channel-set.h"
-#include "gpu-trace.h"
-#include "gpu-print.h"
 
 
 
@@ -85,6 +81,8 @@
 //******************************************************************************
 
 #define DEBUG 0
+
+#include "gpu-print.h"
 
 
 
@@ -95,12 +93,10 @@
 typedef struct gpu_trace_t {
   pthread_t thread;
   gpu_trace_channel_t *trace_channel;
-  unsigned int channel_set_id;
 } gpu_trace_t;
 
-
-
 typedef void *(*pthread_start_routine_t)(void *);
+
 
 
 //******************************************************************************
@@ -113,8 +109,8 @@ static atomic_ullong stream_counter;
 
 static atomic_ullong stream_id;
 
-
 static __thread uint64_t stream_start = 0;
+
 
 
 //******************************************************************************
@@ -169,7 +165,7 @@ gpu_trace_cct_no_activity
  thread_data_t* td
 )
 {
-  cct_node_t *no_activity =
+  cct_node_t *no_activity = 
     hpcrun_cct_bundle_get_no_activity_node(&(td->core_profile_trace_data.epoch->csdata));
 
   return no_activity;
@@ -183,7 +179,7 @@ gpu_trace_cct_insert_context
  cct_node_t *path
 )
 {
-  cct_node_t *leaf =
+  cct_node_t *leaf = 
     hpcrun_cct_insert_path_return_leaf(gpu_trace_cct_root(td), path);
 
   return leaf;
@@ -197,7 +193,7 @@ gpu_trace_time
 )
 {
   // return time in ns
-  uint64_t time = gpu_time;
+  uint64_t time = gpu_time; 
 
   return time;
 }
@@ -211,8 +207,8 @@ gpu_trace_stream_append
  uint64_t time
 )
 {
-  hpcrun_trace_append_stream(&td->core_profile_trace_data, leaf, 0,
-                           td->prev_dLCA, time);
+  hpcrun_trace_append_stream(&td->core_profile_trace_data, leaf, 0, 
+			     td->prev_dLCA, time); 
 }
 
 
@@ -254,7 +250,7 @@ gpu_trace_start_adjust
 }
 
 
-void
+static void
 consume_one_trace_item
 (
  thread_data_t* td,
@@ -287,9 +283,9 @@ consume_one_trace_item
 
     if (pivot <= cur_end && pivot >= cur_start) {
       // only trace when the pivot is within the range
-      PRINT("pivot %" PRIu64 " not in <%" PRIu64 ", %" PRIu64
-          "> with intervals %" PRIu64 ", frequency %" PRIu64 "\n",
-           pivot, cur_start, cur_end, intervals, frequency);
+      PRINT("pivot %" PRIu64 " not in <%" PRIu64 ", %" PRIu64 
+	    "> with intervals %" PRIu64 ", frequency %" PRIu64 "\n",
+        pivot, cur_start, cur_end, intervals, frequency);
       append = true;
     }
   } else {
@@ -298,11 +294,11 @@ consume_one_trace_item
 
   if (append) {
     gpu_trace_first(td, no_activity, start);
-
+    
     gpu_trace_stream_append(td, leaf, start);
-
+    
     gpu_trace_stream_append(td, no_activity, end + 1);
-
+    
     PRINT("%p Append trace activity [%lu, %lu]\n", td, start, end);
   }
 }
@@ -311,10 +307,12 @@ consume_one_trace_item
 static void
 gpu_trace_activities_process
 (
- int set_index
+ thread_data_t *td,
+ gpu_trace_t *thread_args
 )
 {
-  gpu_trace_channel_set_consume(set_index);
+  gpu_trace_channel_consume(thread_args->trace_channel, td, 
+			    consume_one_trace_item);
 }
 
 
@@ -334,50 +332,52 @@ gpu_trace_stream_id
  void
 )
 {
-  // FIXME: this is a bad way to compute a stream id
+  // FIXME: this is a bad way to compute a stream id 
   int id = 500 + atomic_fetch_add(&stream_id, 1);
 
   return id;
 }
 
 
-thread_data_t *
+static thread_data_t *
 gpu_trace_stream_acquire
 (
  void
 )
 {
-  thread_data_t *td = NULL;
+  thread_data_t* td = NULL;
 
   int id = gpu_trace_stream_id();
 
-  // XXX(Keren): This API calls allocate_and_init_thread_data to bind td with the current thread
-  hpcrun_threadMgr_data_get_safe(id, NULL, &td, true);
+  hpcrun_threadMgr_non_compact_data_get(id, NULL, &td);
+
+  hpcrun_set_thread_data(td);
 
   return td;
 }
 
 
-void
+static void
 gpu_trace_stream_release
 (
- gpu_trace_channel_t *channel
+ thread_data_t *td
 )
 {
-  thread_data_t *td = gpu_trace_channel_get_td(channel);
+  epoch_t *epoch = TD_GET(core_profile_trace_data.epoch);
 
-  hpcrun_write_profile_data(&td->core_profile_trace_data);
-  hpcrun_trace_close(&td->core_profile_trace_data);
+  int no_separator = 1;
+  hpcrun_threadMgr_data_put(epoch, td, no_separator);
+
   atomic_fetch_add(&stream_counter, -1);
-
 }
+
 
 
 //******************************************************************************
 // interface operations
 //******************************************************************************
 
-void
+void 
 gpu_trace_init
 (
  void
@@ -395,14 +395,16 @@ gpu_trace_record
  gpu_trace_t *thread_args
 )
 {
+  thread_data_t* td = gpu_trace_stream_acquire();
 
   while (!atomic_load(&stop_trace_flag)) {
-    //getting data from a trace channel
-    gpu_trace_activities_process(thread_args->channel_set_id);
+    gpu_trace_activities_process(td, thread_args);
     gpu_trace_activities_await(thread_args);
   }
-  gpu_trace_activities_process(thread_args->channel_set_id);
-  gpu_trace_channel_set_release(thread_args->channel_set_id);
+
+  gpu_trace_activities_process(td, thread_args);
+
+  gpu_trace_stream_release(td);
 
   return NULL;
 }
@@ -423,45 +425,6 @@ gpu_trace_fini
   while (atomic_load(&stream_counter));
 }
 
-void *
-schedule_multi_threads
-(
- gpu_trace_t *trace
-)
-{
-  int streams_per_thread;
-  control_knob_value_get_int("STREAMS_PER_THREAD", &streams_per_thread);
-  int max_threads_consumers;
-  control_knob_value_get_int("MAX_THREADS_CONSUMERS", &max_threads_consumers);
-  static int num_threads = 0;
-  static int num_streams = 0;
-  volatile bool new_thread = false;
-
-  gpu_trace_channel_stack_alloc(max_threads_consumers);
-
-  num_streams++;
-  atomic_fetch_add(&stream_counter, 1);
-
-  if (num_streams >= (streams_per_thread * num_threads)) {
-    num_threads++;
-    new_thread = true;
-  }
-
-  assert(streams_per_thread > 0);
-  assert(num_threads < max_threads_consumers);
-
-  trace->channel_set_id = num_threads - 1;
-  gpu_trace_channel_set_insert(trace->trace_channel, trace->channel_set_id);
-
-  if (new_thread) {
-    pthread_create(&trace->thread, NULL, (pthread_start_routine_t) gpu_trace_record, trace);
-  }
-
-  PRINT("set_index = %d -> stream = %u\n", num_threads, num_streams);
-
-  return NULL;
-}
-
 
 gpu_trace_t *
 gpu_trace_create
@@ -475,7 +438,10 @@ gpu_trace_create
   // Create a new thread for the stream without libmonitor watching
   monitor_disable_new_threads();
 
-  schedule_multi_threads(trace);
+  atomic_fetch_add(&stream_counter, 1);
+
+  pthread_create(&trace->thread, NULL, (pthread_start_routine_t) gpu_trace_record, 
+		 trace);
 
   monitor_enable_new_threads();
 
@@ -483,7 +449,7 @@ gpu_trace_create
 }
 
 
-void
+void 
 gpu_trace_produce
 (
  gpu_trace_t *t,
@@ -494,7 +460,7 @@ gpu_trace_produce
 }
 
 
-void
+void 
 gpu_trace_signal_consumer
 (
  gpu_trace_t *t
