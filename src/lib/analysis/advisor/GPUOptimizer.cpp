@@ -239,7 +239,7 @@ std::vector<BlameStats> GPUStrengthReductionOptimizer::match_impl(const KernelBl
                                                                   const KernelStats &kernel_stats) {
   // Match if for exec dep
   const int LAT_UPPER = 10;
-  auto blame = 0.0;
+  std::vector<BlameStats> blame_stats_vec;
 
   // Find top non-memory latency pairs
   for (auto *inst_blame : kernel_blame.lat_inst_blame_ptrs) {
@@ -247,7 +247,8 @@ std::vector<BlameStats> GPUStrengthReductionOptimizer::match_impl(const KernelBl
 
     if (_arch->latency(src_inst->op).first >= LAT_UPPER &&
         src_inst->op.find("MEMORY") == std::string::npos) {
-      blame += inst_blame->lat_blame;
+      BlameStats blame_stats(inst_blame->lat_blame, kernel_stats.active_samples, kernel_stats.total_samples);
+      blame_stats_vec.push_back(blame_stats);
 
       if (_inspection.regions.size() < _top_regions) {
         _inspection.regions.push_back(*inst_blame);
@@ -258,15 +259,14 @@ std::vector<BlameStats> GPUStrengthReductionOptimizer::match_impl(const KernelBl
   _inspection.hint =
       "Long latency non-memory instructions are used. Look for improvements that are "
       "mathematically equivalent but the compiler is not intelligent to do so.\n"
-      "1. Avoid type conversion. For example, integer division requires the usage of SFU to "
+      "1. Avoid integer division. An integer division requires the usage of SFU to "
       "perform floating point transforming. One can use a multiplication of reciprocal instead.\n"
-      "Moreover, a float constant by default is 64-bit. If the constant is multiplied by a 32-bit "
-      "float value, the compiler transforms the 32-bit value to a 64-bit value first.\n"
-      "2. Avoid costly math operations such as mod (\%) and division (\/).\n";
+      "2. Avoid conversion. A float constant by default is 64-bit. If the constant is multiplied by a 32-bit "
+      "float value, the compiler transforms the 32-bit value to a 64-bit value first.\n";
   _inspection.stall = false;
+  _inspection.loop = true;
 
-  BlameStats blame_stats(blame, kernel_stats.active_samples, kernel_stats.total_samples);
-  return std::vector<BlameStats>{blame_stats};
+  return blame_stats_vec;
 }
 
 std::vector<BlameStats> GPUWarpBalanceOptimizer::match_impl(const KernelBlame &kernel_blame,
@@ -628,7 +628,7 @@ std::vector<BlameStats> GPUSharedMemoryCoalesceOptimizer::match_impl(
     }
   }
 
-  _inspection.stall = true;
+  _inspection.stall = false;
 
   BlameStats blame_stats(blame, kernel_stats.active_samples, kernel_stats.total_samples);
   return std::vector<BlameStats>{blame_stats};

@@ -96,7 +96,7 @@ std::string SimpleInspectionFormatter::format(const Inspection &inspection) {
   // Overview
   ss << "Apply " << inspection.optimization << " optimization,";
 
-  ss << std::fixed << std::setprecision(2);
+  ss << std::fixed << std::setprecision(3);
 
   ss << " ratio " << inspection.ratios.back() * 100 << "%,";
 

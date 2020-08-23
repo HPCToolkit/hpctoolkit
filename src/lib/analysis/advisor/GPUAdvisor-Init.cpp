@@ -195,10 +195,10 @@ void GPUAdvisor::init() {
   function_split_optimizer->set_estimator(_estimators[SEQ]);
 
   auto *shared_memory_optimizer = GPUOptimizerFactory(SHARED_MEMORY_COALESCE, _arch);
-  shared_memory_optimizer->set_estimator(_estimators[SEQ_LAT]);
+  shared_memory_optimizer->set_estimator(_estimators[SEQ]);
 
   auto *global_memory_optimizer = GPUOptimizerFactory(GLOBAL_MEMORY_COALESCE, _arch);
-  global_memory_optimizer->set_estimator(_estimators[SEQ_LAT]);
+  global_memory_optimizer->set_estimator(_estimators[SEQ]);
 
   auto *occupancy_increase_optimizer = GPUOptimizerFactory(OCCUPANCY_INCREASE, _arch);
   occupancy_increase_optimizer->set_estimator(_estimators[PARALLEL_LAT]);
