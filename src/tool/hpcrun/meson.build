@@ -197,6 +197,10 @@ _common_cflags = [
   '-D__HIP_PLATFORM_HCC__=1',
 ]
 
+if false  # TODO: Change out for a Blue Gene option
+  _common_cflags += ['-DUSE_HW_THREAD_ID', '-DNONZERO_THRESHOLD']
+endif
+
 if true  # TODO: Change to perf non-paranoid test/option
   _common_srcs += [files(
     'sample-sources/perf/event_custom.c',
@@ -245,7 +249,10 @@ if papi_dep.found()
     _dynamic_srcs += [files(
       'sample-sources/papi-c-cupti.c',
     )]
+    _dynamic_cflags += ['-DHPCRUN_SS_PAPI_C_CUPTI']
   endif
+
+  _dynamic_cflags += ['-DHPCRUN_SS_PAPI']
 endif
 
 if cuda_dep.found()
@@ -260,7 +267,7 @@ if cuda_dep.found()
     'gpu/nvidia/cupti-api.c',
     'gpu/nvidia/cupti-gpu-api.c',
   )]
-  _dynamic_cflags += ['-DENABLE_CUDA']
+  _dynamic_cflags += ['-DENABLE_CUDA', '-DHPCRUN_SS_NVIDIA']
 endif
 
 if rocm_dep.found()
@@ -269,7 +276,7 @@ if rocm_dep.found()
     'gpu/amd/roctracer-activity-translate.c',
     'gpu/amd/roctracer-api.c',
   )]
-  _dynamic_cflags += ['-DENABLE_ROCM']
+  _dynamic_cflags += ['-DENABLE_ROCM', '-DHPCRUN_SS_AMD']
 endif
 
 if host_machine.cpu_family() == 'mips64'
