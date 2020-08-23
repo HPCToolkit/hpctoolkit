@@ -372,11 +372,12 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   // Get control knobs
   int device_buffer_size;
-  assert(control_knob_value_get_int("HPCRUN_CUDA_DEVICE_BUFFER_SIZE", &device_buffer_size) == 0);
+  if (control_knob_value_get_int("HPCRUN_CUDA_DEVICE_BUFFER_SIZE", &device_buffer_size) != 0)
+    monitor_real_exit(-1);
 
   int device_semaphore_size;
-  assert(control_knob_value_get_int("HPCRUN_CUDA_DEVICE_SEMAPHORE_SIZE", &device_semaphore_size) == 0);
-
+  if(control_knob_value_get_int("HPCRUN_CUDA_DEVICE_SEMAPHORE_SIZE", &device_semaphore_size) != 0)
+    monitor_real_exit(-1);
 
   TMSG(CUDA, "Device buffer size %d", device_buffer_size);
   TMSG(CUDA, "Device semaphore size %d", device_semaphore_size);
