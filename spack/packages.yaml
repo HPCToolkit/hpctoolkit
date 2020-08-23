@@ -17,7 +17,7 @@
 #    https://spack.readthedocs.io/en/latest/basic_usage.html#specs-dependencies
 #    https://spack.readthedocs.io/en/latest/build_settings.html
 #
-#  Last revised: June 12, 2020.
+#  Last revised: August 17, 2020.
 #
 packages:
 
@@ -63,27 +63,28 @@ packages:
   # spack install command line.
   #
   # Use version 'master' for the latest snapshot from master.
+  # Version 'develop' is for pre-release features.
   # 2019.12.28 is the last version that runs on Blue Gene.
   #
   # +mpi builds hpcprof-mpi (requires mpi).
   # +papi uses papi instead of perfmon.
   #
   # hpctoolkit:
-  #   version:  [2020.06.12, master]
+  #   version:  [2020.08.03, master]
   #   variants: +mpi
 
 
   # binutils -- used by hpcprof and struct simple (for functions and
   # line map info) and for VMA types in various places.
   #
-  # Best to use >= 2.32, earlier versions have a bug causing duplicate
-  # function names in the viewer (from hpcprof and struct simple).
+  # Need >= 2.32 for important bug fixes.
+  # Hpctoolkit <= 2020.03.01 requires binutils <= 2.33.1.
   #
   # +libiberty is needed for xmalloc functions in libbfd.
   # ~nls is needed to avoid linking with libintl from gettext.
   #
   binutils:
-    version:  [2.33.1]
+    version:  [2.34]
     variants: +libiberty ~nls
 
 
@@ -123,29 +124,28 @@ packages:
   # cuda -- nvidia cuda, now used in master.
   #
   # If there is a pre-built cuda for the system, then it may be better
-  # to use that with a 'paths:' or 'modules:' entry.
+  # to use that with an 'externals:' entry (see cmake below).
   #
   # If installing here, then use >= 10.1 and check that the cuda
   # system drivers are installed.
   #
   cuda:
-    # modules:
-    #  cuda@10.1:  cuda/10.1
-    #  buildable: False
-    #
-    version:  [10.1.243]
+    version:  [10.2.89]
 
 
   # dyninst -- used in hpcstruct for line map info, inline sequences
-  # and loop analysis.
+  # and loop analysis.  Hpctoolkit and Dyninst work closely together
+  # and Dyninst issues releases infrequently, so often it's necessary
+  # to use master (previously develop) to get the best version.
   #
+  # Need >= 10.2.0 for important bug fixes and features.
   # Need >= 10.1.0 for full cuda CFG support.
   # On Blue Gene, with default gcc 4.4 compilers, use version 9.3.2.
   #
   # +openmp is to support openmp threads in parseapi.
   #
   dyninst:
-    version:  [10.1.0, develop]
+    version:  [10.2.0, master]
     variants: +openmp build_type=RelWithDebInfo
 
 
@@ -159,7 +159,7 @@ packages:
   # ~nls is needed to avoid linking with libintl from gettext.
   #
   elfutils:
-    version:  [0.178]
+    version:  [0.180]
     variants: +bzip2 +xz ~nls
 
 
@@ -180,7 +180,7 @@ packages:
   # support transactional memory (no-op on non-x86).
   #
   intel-tbb:
-    version:  [2020.1]
+    version:  [2020.3]
     variants: +shared +tm
 
 
@@ -274,7 +274,7 @@ packages:
   # counters.
   #
   # If there is a pre-built PAPI for the compute nodes, then it may be
-  # better to use that and replace this with a 'paths:' or 'modules:'
+  # better to use that and replace this with a 'prefix:' or 'modules:'
   # entry (see the section on cmake).  But make sure that the PAPI
   # include directory contains the perfmon headers, or else you can't
   # use both PAPI and perfmon.
@@ -303,7 +303,7 @@ packages:
   # Any recent version is good.
   #
   xz:
-    version:  [5.2.4]
+    version:  [5.2.5]
 
 
   # zlib -- used by binutils, elfutils and libdwarf to read compressed
@@ -335,26 +335,39 @@ packages:
   # Note: these three are all build tools.  They are needed to build
   # hpctoolkit, but we don't need them at run time or link with any
   # libraries.  (Not counting hpcsummary which is a python script.)
+  # Note:
   #
-  #------------------------------------------------------------
+  #  1. the 'prefix:' entry is the parent directory of 'bin', not the
+  #  bin directory itself.
+  #
+  #  2. the 'spec' entry may be a full spec, including dependency specs.
+  #
+  #  3. a given package may have multiple spec, module and version
+  #  entries.
+  #
+  #  4. 'buildable: False' is optional.  It tells spack that it must use
+  #  a 'prefix' or 'modules' entry, or else fail the build.
 
+  #------------------------------------------------------------
 
   # cmake -- dyninst requires cmake >= 3.4.x.
 
   # Example for a system install.  This example says that cmake 3.11.0
-  # is available at /usr/bin/cmake.  Note: the 'paths:' entry is the
-  # parent directory of 'bin', not the bin directory itself (similar
-  # to prefix).
+  # is available at /usr/bin/cmake.
   # cmake:
-  #   paths:
-  #     cmake@3.11.0:  /usr
+  #   externals:
+  #   - spec: cmake@3.11.0
+  #     prefix: /usr
   #   buildable: False
 
   # Example for a module.  This example says that cmake 3.7.2 is
-  # available from module 'CMake/3.7.2'.
+  # available from module 'CMake/3.7.2'.  You may specify multiple
+  # modules, if needed.
   # cmake:
-  #   modules:
-  #     cmake@3.7.2:  CMake/3.7.2
+  #   externals:
+  #   - spec: cmake@3.7.2
+  #     modules:
+  #     - CMake/3.7.2
   #   buildable: False
 
   # Example spec to build cmake from scratch.
@@ -369,8 +382,9 @@ packages:
 
   # Example for system perl.
   # perl:
-  #   paths:
-  #     perl@5.16.3:  /usr
+  #   externals:
+  #   - spec: perl@5.16.3
+  #     prefix: /usr
   #   buildable: False
 
   # Example spec to build perl.
@@ -384,14 +398,17 @@ packages:
 
   # Example for system python.
   # python:
-  #   paths:
-  #     python@2.7.5:  /usr
+  #   externals:
+  #   - spec: python@2.7.5
+  #     prefix: /usr
   #   buildable: False
 
   # Example for python module.
   # python:
-  #   modules:
-  #     python@2.7.15:  Python/2.7.15
+  #   externals:
+  #   - spec: python@2.7.15
+  #     modules:
+  #     - Python/2.7.15
   #   buildable: False
 
   # Example spec to build python.
@@ -413,8 +430,10 @@ packages:
   # C++ libraries in sync).
   #
   # openmpi:
-  #   modules:
-  #     openmpi@2.1.3:  OpenMPI/2.1.3
+  #   externals:
+  #   - spec: openmpi@2.1.3
+  #     modules:
+  #     - OpenMPI/2.1.3
   #   buildable: False
 
   #------------------------------------------------------------

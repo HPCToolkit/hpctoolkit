@@ -99,6 +99,7 @@ static void
 METHOD_FN(start)
 {
     TMSG(CUDA, "start");
+    TD_GET(ss_state)[self->sel_idx] = START;
 }
 
 

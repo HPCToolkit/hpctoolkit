@@ -1,9 +1,4 @@
-// -*-Mode: C++;-*-
-
 // * BeginRiceCopyright *****************************************************
-//
-// $HeadURL$
-// $Id$
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -44,98 +39,97 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+
 //***************************************************************************
 //
-// File:
-//   $HeadURL$
+// File: elf-helper.c
 //
 // Purpose:
-//   [The purpose of this file]
-//
-// Description:
-//   [The set of functions, macros, etc. defined in the file]
-//
+//   interface implementation for querying ELF binary information and 
+//   hiding the details about extended number
+//   
 //***************************************************************************
 
-#ifndef Args_hpp
-#define Args_hpp
 
-//************************* System Include Files ****************************
+//******************************************************************************
+// system includes
+//******************************************************************************
 
-#include <iostream>
-#include <string>
+#include <libelf.h>
+#include <gelf.h>
+#include <stddef.h>
 
-//*************************** User Include Files ****************************
 
-#include <include/uint.h>
-#include <lib/support/CmdLineParser.hpp>
 
-//*************************** Forward Declarations **************************
+//******************************************************************************
+// local includes
+//******************************************************************************
 
-//***************************************************************************
+#include "elf-helper.h"
 
-class Args {
-public: 
-  Args(); 
-  Args(int argc, const char* const argv[]);
-  ~Args(); 
+//******************************************************************************
+// interface functions
+//******************************************************************************
 
-  // Parse the command line
-  void
-  parse(int argc, const char* const argv[]);
 
-  // Version and Usage information
-  void
-  printVersion(std::ostream& os) const;
-
-  void
-  printUsage(std::ostream& os) const;
+void
+elf_helper_initialize
+(
+  Elf *elf,
+  elf_helper_t* eh
+)
+{
+  eh->elf = elf;
+  elf_getshdrstrndx(elf, &(eh->section_string_index));
+  eh->symtab_section = NULL;
+  eh->symtab_data = NULL;
+  eh->symtab_shndx_section = NULL;
+  eh->symtab_shndx_data = NULL;
   
-  // Error
-  void
-  printError(std::ostream& os, const char* msg) const;
+  // Find .symtab and .symtab_shndx
+  Elf_Scn *scn = NULL;  
+  while ((scn = elf_nextscn(elf, scn)) != NULL) {
+    GElf_Shdr shdr;
+    if (!gelf_getshdr(scn, &shdr)) continue;
+    if (shdr.sh_type == SHT_SYMTAB_SHNDX) {
+      // If .symtab_shndx section exists, we need extended numbering
+      // for section index of a symbol
+      eh->symtab_shndx_section = scn;    
+      eh->symtab_shndx_data = elf_getdata(scn, NULL);
+    }
+    if (shdr.sh_type == SHT_SYMTAB) {
+      eh->symtab_section = scn;
+      eh->symtab_data = elf_getdata(scn, NULL);
+    }
+  }
+}
 
-  void
-  printError(std::ostream& os, const std::string& msg) const;
 
-  // Dump
-  void
-  dump(std::ostream& os = std::cerr) const;
+GElf_Sym*
+elf_helper_get_symbol
+(
+  elf_helper_t* eh,
+  int index,
+  GElf_Sym* sym_ptr,
+  int* section_index_ptr
+)
+{
+  GElf_Sym* symp;
+  Elf32_Word xndx;
+  if (eh->symtab_shndx_data != NULL) {
+    symp = gelf_getsymshndx(eh->symtab_data, eh->symtab_shndx_data, index, sym_ptr, &xndx);
+  } else {
+    symp = gelf_getsym(eh->symtab_data, index, sym_ptr);
+  }
 
-  void
-  ddump() const;
+  // Handle extended numbering if needed
+  // and store the symbol section index
+  *section_index_ptr = symp->st_shndx;
+  if (*section_index_ptr == SHN_XINDEX) {
+    *section_index_ptr = xndx;
+  }
+  return symp;
+}
 
-public:
-  // Parsed Data: Command
-  const std::string& getCmd() const;
 
-  int jobs;
-  int jobs_struct;
-  int jobs_parse;
-  int jobs_symtab;
-  bool show_time;
-  long gpu_size;
-  bool compute_gpu_cfg;
-
-  // Parsed Data: optional arguments
-  std::string searchPathStr;          // default: "."
-  std::string dbgProcGlob;
-
-  bool prettyPrintOutput;         // default: true
-  bool useBinutils;		  // default: false
-  bool show_gaps;                 // default: false
-
-  // Parsed Data: arguments
-  std::string in_filenm;
-  std::string out_filenm;
-
-private:
-  void
-  Ctor();
-
-private:
-  static CmdLineParser::OptArgDesc optArgs[];
-  CmdLineParser parser;
-}; 
-
-#endif // Args_hpp 
+      

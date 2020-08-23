@@ -145,7 +145,7 @@ your own needs.
 <pre class="example"><a href="http://hpctoolkit.org/spack-issues.html">http://hpctoolkit.org/spack-issues.html</a>
 </pre></div>
 
-<p>Last revised: June 17, 2020.
+<p>Last revised: August 17, 2020.
 </p>
 
 <a name="Prerequisites"></a>
@@ -427,22 +427,40 @@ Hpctoolkit does not link with any of their libraries.
 </p>
 <p>For example, this entry says that cmake 3.7.2 is available from module
 <code>CMake/3.7.2</code> and that spack should use this instead of building
-its own copy.
+its own copy.  You may include more than one module, if needed.
+</p>
+<div class="example">
+<pre class="example">cmake:
+  externals:
+  - spec: cmake@3.7.2
+    modules:
+    - CMake/3.7.2
+  buildable: False
+</pre></div>
+
+<p>This example says that perl v5.16.3 is installed at
+<code>/usr/bin/perl</code>.  Note that the <code>prefix</code> entry is the parent
+directory of <code>bin</code>, not the bin directory itself.
+</p>
+<div class="example">
+<pre class="example">perl:
+  externals:
+  - spec: perl@5.16.3
+    prefix: /usr
+  buildable: False
+</pre></div>
+
+<p>Note: the syntax for the <code>externals:</code> declaration has changed in
+spack develop as of Aug 10-11, 2020 (commit 193e8333fa23).  Prior to Aug
+10, the old syntax was:
 </p>
 <div class="example">
 <pre class="example">cmake:
   modules:
     cmake@3.7.2:  CMake/3.7.2
   buildable: False
-</pre></div>
 
-<p>This example says that perl v5.16.3 is installed at
-<code>/usr/bin/perl</code>.  Note that the <code>paths:</code> entry is the parent
-directory of <code>bin</code>, not the bin directory itself (similar to
-prefix).
-</p>
-<div class="example">
-<pre class="example">perl:
+perl:
   paths:
     perl@5.16.3:  /usr
   buildable: False

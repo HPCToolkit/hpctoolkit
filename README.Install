@@ -80,7 +80,7 @@ The current status of using Spack for HPCToolkit is at:
 
      <http://hpctoolkit.org/spack-issues.html>
 
-Last revised: June 17, 2020.
+Last revised: August 17, 2020.
 
 2 Prerequisites
 ===============
@@ -320,16 +320,33 @@ not link with any of their libraries.
 
    For example, this entry says that cmake 3.7.2 is available from
 module 'CMake/3.7.2' and that spack should use this instead of building
-its own copy.
+its own copy.  You may include more than one module, if needed.
+
+     cmake:
+       externals:
+       - spec: cmake@3.7.2
+         modules:
+         - CMake/3.7.2
+       buildable: False
+
+This example says that perl v5.16.3 is installed at '/usr/bin/perl'.
+Note that the 'prefix' entry is the parent directory of 'bin', not the
+bin directory itself.
+
+     perl:
+       externals:
+       - spec: perl@5.16.3
+         prefix: /usr
+       buildable: False
+
+Note: the syntax for the 'externals:' declaration has changed in spack
+develop as of Aug 10-11, 2020 (commit 193e8333fa23).  Prior to Aug 10,
+the old syntax was:
 
      cmake:
        modules:
          cmake@3.7.2:  CMake/3.7.2
        buildable: False
-
-This example says that perl v5.16.3 is installed at '/usr/bin/perl'.
-Note that the 'paths:' entry is the parent directory of 'bin', not the
-bin directory itself (similar to prefix).
 
      perl:
        paths:

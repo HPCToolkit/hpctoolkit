@@ -126,7 +126,7 @@ init_server (DiscoverFnTy fn_discovery, int fd1, int fd2)
   fdout = fd2;
 
   // write version into output (.log file in the measurements directory)
-  fprintf(stderr, "FNB2: Begin hpcfnbounds2 server, DiscoverFnTy = %d\n", fn_discovery);
+  // fprintf(stderr, "FNB2: Begin hpcfnbounds2 server, DiscoverFnTy = %d\n", fn_discovery);
 
   inbuf_size = INIT_INBUF_SIZE;
   inbuf = (char *) malloc(inbuf_size);
