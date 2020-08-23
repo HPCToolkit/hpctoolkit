@@ -42,8 +42,7 @@
 #
 # ******************************************************* EndRiceCopyright *
 
-main_includes = [include_directories('.')]
+# TODO: Front-end scripts (hpcsummary + hpclog)
+# TODO: MPI wrapper
 
-subdir('include')
-subdir('lib')
-subdir('tool')
+

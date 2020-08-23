@@ -42,8 +42,4 @@
 #
 # ******************************************************* EndRiceCopyright *
 
-main_includes = [include_directories('.')]
-
-subdir('include')
-subdir('lib')
-subdir('tool')
+add_subdirectory(hpcrun)

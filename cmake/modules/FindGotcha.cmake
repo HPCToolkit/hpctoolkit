@@ -47,3 +47,18 @@
 find_package(Gotcha QUIET CONFIG)
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Gotcha CONFIG_MODE)
+
+if(Gotcha_FOUND)
+  # However, the file isn't exactly properly modernized, so we make some adjustments.
+  # We can't do everything, but we can do this much.
+
+  find_path(Gotcha_INCLUDE_DIR NAMES gotcha/gotcha.h
+            DOC "Location of the Gotcha include directory")
+  if(NOT Gotcha_INCLUDE_DIR)
+    message(FATAL_ERROR "CMake could only find the config!")
+  endif()
+
+  set_property(TARGET gotcha
+    APPEND PROPERTY INTERFACE_INCLUDE_DIRECTORIES ${Gotcha_INCLUDE_DIR}
+  )
+endif()
