@@ -574,7 +574,7 @@ void controlCudaInstructions(const char *cubin, std::vector<Function *> &functio
 
 #define TRACK_LIMIT 8
 
-static void trackDependency(std::map<int, InstructionStat *> &inst_stat_map,
+static void trackDependency(const std::map<int, InstructionStat *> &inst_stat_map,
   Dyninst::Address inst_addr, Dyninst::Address func_addr, std::map<int, int> &predicate_map,
   Dyninst::NodeIterator exit_node_iter, InstructionStat *inst_stat, int step) {
   if (step >= TRACK_LIMIT) {
@@ -585,7 +585,7 @@ static void trackDependency(std::map<int, InstructionStat *> &inst_stat_map,
   for (; in_begin != in_end; ++in_begin) {
     auto slice_node = boost::dynamic_pointer_cast<Dyninst::SliceNode>(*in_begin);
     auto addr = slice_node->addr();
-    auto *slice_inst = inst_stat_map[addr];
+    auto *slice_inst = inst_stat_map.at(addr);
 
     if (INSTRUCTION_ANALYZER_DEBUG) {
       std::cout << "find inst_addr " << inst_addr - func_addr <<
@@ -732,7 +732,7 @@ void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_s
       for (auto &inst_iter : insns) {
         auto &inst = inst_iter.second;
         auto inst_addr = inst_iter.first;
-        auto *inst_stat = inst_stat_map[inst_addr];
+        auto *inst_stat = inst_stat_map.at(inst_addr);
 
         if (INSTRUCTION_ANALYZER_DEBUG) {
           std::cout << "try to find inst_addr " << inst_addr - func_addr << std::endl;

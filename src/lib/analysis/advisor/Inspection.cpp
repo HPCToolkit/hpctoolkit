@@ -93,6 +93,9 @@ std::string SimpleInspectionFormatter::format(const Inspection &inspection) {
   std::string sep = "------------------------------------------"
     "--------------------------------------------------";
 
+  // Debug
+  //std::cout << "Apply " << inspection.optimization << " optimization," << std::endl;
+
   // Overview
   ss << "Apply " << inspection.optimization << " optimization,";
 

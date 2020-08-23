@@ -460,10 +460,12 @@ std::vector<BlameStats> GPUFunctionInlineOptimizer::match_impl(const KernelBlame
           blame += inst_blame->stall_blame;
         }
         for (auto vma : caller_blocks[inst_blame->dst_block]) {
-          auto *caller_proc = vma_function[vma];
-          function_blame[caller_proc].blame += inst_blame->stall_blame;
-          function_blame[caller_proc].total_samples += inst_blame->lat_blame;
-          function_blame[caller_proc].active_samples += inst_blame->lat_blame - inst_blame->stall_blame;
+          if (vma_function.find(vma) != vma_function.end()) {
+            auto *caller_proc = vma_function.at(vma);
+            function_blame[caller_proc].blame += inst_blame->stall_blame;
+            function_blame[caller_proc].total_samples += inst_blame->lat_blame;
+            function_blame[caller_proc].active_samples += inst_blame->lat_blame - inst_blame->stall_blame;
+          }
         }
       }
     }
@@ -755,7 +757,7 @@ std::vector<BlameStats> GPUBlockIncreaseOptimizer::match_impl(const KernelBlame 
     blame = warp_ratio * issue_ratio * (1 - mthr_ratio - nsel_ratio - pipe_ratio);
 
     _inspection.block_count.first = cur_blocks;
-    _inspection.block_count.second = cur_threads / (_arch->schedulers() * _arch->warp_size());
+    _inspection.thread_count.first = cur_threads;
     _inspection.stall = false;
   }
 

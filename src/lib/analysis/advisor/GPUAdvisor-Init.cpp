@@ -284,27 +284,27 @@ void GPUAdvisor::configInst(const std::string &lm_name, const std::vector<CudaPa
     // Add latency dependencies
     for (auto &inst_iter : inst->assign_pcs) {
       for (auto pc : inst_iter.second) {
-        auto *dep_inst = _vma_prop_map[pc].inst;
+        auto *dep_inst = _vma_prop_map.at(pc).inst;
         _inst_dep_graph.addEdge(dep_inst, inst);
       }
     }
 
     for (auto &inst_iter : inst->passign_pcs) {
       for (auto pc : inst_iter.second) {
-        auto *dep_inst = _vma_prop_map[pc].inst;
+        auto *dep_inst = _vma_prop_map.at(pc).inst;
         _inst_dep_graph.addEdge(dep_inst, inst);
       }
     }
 
     for (auto &inst_iter : inst->bassign_pcs) {
       for (auto pc : inst_iter.second) {
-        auto *dep_inst = _vma_prop_map[pc].inst;
+        auto *dep_inst = _vma_prop_map.at(pc).inst;
         _inst_dep_graph.addEdge(dep_inst, inst);
       }
     }
 
     for (auto pc : inst->predicate_assign_pcs) {
-      auto *dep_inst = _vma_prop_map[pc].inst;
+      auto *dep_inst = _vma_prop_map.at(pc).inst;
       _inst_dep_graph.addEdge(dep_inst, inst);
     }
   }

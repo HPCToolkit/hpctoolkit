@@ -260,7 +260,7 @@ void GPUAdvisor::debugCCTDepGraphStallExec(int mpi_rank, int thread_id,
   for (auto it = cct_dep_graph.nodeBegin(); it != cct_dep_graph.nodeEnd(); ++it) {
     auto *node = *it;
     auto node_vma = node->lmIP();
-    auto *inst = _vma_prop_map[node_vma].inst;
+    auto *inst = _vma_prop_map.at(node_vma).inst;
     auto exec_dep_metric_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _exec_dep_lat_metric);
     auto exec_dep = node->demandMetric(exec_dep_metric_index);
 
@@ -303,7 +303,7 @@ void GPUAdvisor::debugCCTDepGraphSinglePath(CCTGraph<Prof::CCT::ADynNode *> &cct
     if (innode_iter != cct_dep_graph.incoming_nodes_end()) {
       for (auto *from_node : innode_iter->second) {
         auto from_vma = from_node->lmIP();
-        auto *from_inst = _vma_prop_map[from_vma].inst;
+        auto *from_inst = _vma_prop_map.at(from_vma).inst;
 
         if (from_inst->op.find("MEMORY") != std::string::npos) {
           if (from_inst->op.find(".SHARED") != std::string::npos) {
@@ -460,7 +460,7 @@ void GPUAdvisor::initCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::CCT
     auto node_vma = node->lmIP();
 
     // Find its dependent instructions
-    auto *node_inst = _vma_prop_map[node_vma].inst;
+    auto *node_inst = _vma_prop_map.at(node_vma).inst;
     auto inst_iter = _inst_dep_graph.incoming_nodes(node_inst);
 
     if (inst_iter != _inst_dep_graph.incoming_nodes_end()) {
@@ -513,7 +513,7 @@ void GPUAdvisor::pruneCCTDepGraphOpcode(int mpi_rank, int thread_id,
     auto edge = *iter;
     auto *from = edge.from;
     auto from_vma = from->lmIP();
-    auto *from_inst = _vma_prop_map[from_vma].inst;
+    auto *from_inst = _vma_prop_map.at(from_vma).inst;
     auto *to = edge.to;
 
     if (from_inst->op.find("MEMORY") != std::string::npos) {
@@ -580,10 +580,10 @@ void GPUAdvisor::pruneCCTDepGraphBarrier(int mpi_rank, int thread_id,
     auto edge = *iter;
     auto *from = edge.from;
     auto from_vma = from->lmIP();
-    auto *from_inst = _vma_prop_map[from_vma].inst;
+    auto *from_inst = _vma_prop_map.at(from_vma).inst;
     auto *to = edge.to;
     auto to_vma = to->lmIP();
-    auto *to_inst = _vma_prop_map[to_vma].inst;
+    auto *to_inst = _vma_prop_map.at(to_vma).inst;
 
     // No barrier, we prune it by path analysis
     if (from_inst->control.read == CudaParse::InstructionStat::BARRIER_NONE ||
@@ -603,10 +603,10 @@ void GPUAdvisor::pruneCCTDepGraphBarrier(int mpi_rank, int thread_id,
       auto edge = *iter;
       auto *from = edge.from;
       auto from_vma = from->lmIP();
-      auto *from_inst = _vma_prop_map[from_vma].inst;
+      auto *from_inst = _vma_prop_map.at(from_vma).inst;
       auto *to = edge.to;
       auto to_vma = to->lmIP();
-      auto *to_inst = _vma_prop_map[to_vma].inst;
+      auto *to_inst = _vma_prop_map.at(to_vma).inst;
       auto mem_deps = to->demandMetric(mem_dep_index);
       auto exec_deps = to->demandMetric(exec_dep_index);
       std::cout << "Remove " << debugInstOffset(from_vma) << " -> " <<
@@ -677,7 +677,7 @@ void GPUAdvisor::trackDep(int from_vma, int to_vma, int id,
 
   // Iterate inst until reaching the use inst
   while (start_vma <= end_vma) {
-    auto *inst = _vma_prop_map[start_vma].inst;
+    auto *inst = _vma_prop_map.at(start_vma).inst;
     // 1: instruction issue
     latency_issue += 1;
 
@@ -1008,7 +1008,7 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
   for (auto iter = cct_dep_graph.nodeBegin(); iter != cct_dep_graph.nodeEnd(); ++iter) {
     auto *to_node = *iter;
     auto to_vma = to_node->lmIP();
-    auto *to_inst = _vma_prop_map[to_vma].inst;
+    auto *to_inst = _vma_prop_map.at(to_vma).inst;
     auto to_struct_iter = _vma_struct_map.upper_bound(to_vma);
     Prof::Struct::ACodeNode *to_struct = NULL;
     if (to_struct_iter != _vma_struct_map.begin()) {
@@ -1024,7 +1024,7 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
         demandNodeMetric(mpi_rank, thread_id, from_node);
 
         auto from_vma = from_node->lmIP();
-        auto *from_inst = _vma_prop_map[from_vma].inst;
+        auto *from_inst = _vma_prop_map.at(from_vma).inst;
 
         // Sum up all neighbors' issue count
         if (from_inst->op.find("MEMORY") != std::string::npos) {
@@ -1133,7 +1133,7 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
 
       for (auto *from_node : from_nodes) {
         auto from_vma = from_node->lmIP();
-        auto *from_inst = _vma_prop_map[from_vma].inst;
+        auto *from_inst = _vma_prop_map.at(from_vma).inst;
         auto from_struct_iter = _vma_struct_map.upper_bound(from_vma);
         Prof::Struct::ACodeNode *from_struct = NULL;
         if (from_struct_iter != _vma_struct_map.begin()) {
@@ -1189,6 +1189,10 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
       auto lat_blame_name = "BLAME " + lat_metric;
       attributeBlameMetric(mpi_rank, thread_id, to_node, lat_blame_name, lat);
 
+      if (to_struct == NULL) {
+        std::cout << "here3" << std::endl;
+      }
+
       // one metric id is enough for inst blame analysis
       inst_blames.emplace_back(
           InstructionBlame(to_inst, to_inst, to_struct, to_struct, 0, stall, lat, lat_blame_name));
@@ -1208,17 +1212,17 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
 
     // inclusive and exclusive metrics have the same value
     auto sync_vma = to_vma;
-    auto *sync_inst = _vma_prop_map[sync_vma].inst;
+    auto *sync_inst = _vma_prop_map.at(sync_vma).inst;
 
     double distance = 0;
     if (sync_inst->op.find(".SYNC") == std::string::npos) {
       // blame the previous node
       distance = 1;
       sync_vma = sync_vma - _arch->inst_size();
-      sync_inst = _vma_prop_map[sync_vma].inst;
+      sync_inst = _vma_prop_map.at(sync_vma).inst;
     }
 
-    auto *sync_node = _vma_prop_map[sync_vma].prof_node;
+    auto *sync_node = _vma_prop_map.at(sync_vma).prof_node;
     auto sync_struct_iter = _vma_struct_map.upper_bound(sync_vma);
     Prof::Struct::ACodeNode *sync_struct = NULL;
     if (sync_struct_iter != _vma_struct_map.begin()) {
@@ -1251,11 +1255,11 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
 void GPUAdvisor::overlayInstBlames(InstBlames &inst_blames, KernelBlame &kernel_blame) {
   for (auto &inst_blame : inst_blames) {
     auto *from_inst = inst_blame.src_inst;
-    auto *from_block = _vma_prop_map[from_inst->pc].block;
-    auto *from_function = _vma_prop_map[from_inst->pc].function;
+    auto *from_block = _vma_prop_map.at(from_inst->pc).block;
+    auto *from_function = _vma_prop_map.at(from_inst->pc).function;
     auto *to_inst = inst_blame.dst_inst;
-    auto *to_block = _vma_prop_map[to_inst->pc].block;
-    auto *to_function = _vma_prop_map[to_inst->pc].function;
+    auto *to_block = _vma_prop_map.at(to_inst->pc).block;
+    auto *to_function = _vma_prop_map.at(to_inst->pc).function;
 
     // Update block and function
     inst_blame.src_block = from_block;
