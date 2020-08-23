@@ -209,9 +209,9 @@ if true  # TODO: Change to perf non-paranoid test/option
     perfmon_dep.found() ? 'sample-sources/perf/perfmon-util.c'
                         : 'sample-sources/perf/perfmon-util-dummy.c',
 
-    # TODO: Swap out for a linux <4.3 test/opion
-    false ? 'sample-sources/perf/kernel_blocking.c'
-          : 'sample-sources/perf/kernel_blocking_stub.c',
+    # TODO: Swap out for a linux >=4.3 test/option
+    true ? 'sample-sources/perf/kernel_blocking.c'
+         : 'sample-sources/perf/kernel_blocking_stub.c',
   )]
   _common_cflags += ['-DHPCRUN_SS_LINUX_PERF']
 endif
@@ -287,7 +287,6 @@ elif host_machine.cpu_family() == 'x86' or host_machine.cpu_family() == 'x86_64'
   _common_srcs += [files(
     'trampoline/x86-family/x86-tramp.S',
     'utilities/arch/x86-family/x86-context-pc.c',
-    'unwind/x86-family/x86-decoder.c',  # NOTE: Not sure why default can link without this
   )]
   _include_dirs += [include_directories('utilities/arch/x86-family')]
 elif host_machine.cpu_family() == 'ia64'
@@ -305,7 +304,7 @@ elif host_machine.cpu_family() == 'aarch64'
 endif
 
 # TODO: Adjust this to vaugely match the unwinder logic in the configure.ac
-if false  # UNW_X86
+if true  # UNW_X86
   _common_srcs += [files(
     'unwind/x86-family/x86-all.c',
     'unwind/x86-family/amd-xop.c',
@@ -335,7 +334,7 @@ elif false  # UNW_PPC64
     'unwind/common/default_validation_summary.c',
   )]
   _include_dirs += [include_directories('unwind/ppc64')]
-elif true  # UNW_LIBUNW
+elif false  # UNW_LIBUNW
   _common_srcs += [files(
     'unwind/generic-libunwind/libunw-unwind.c',
     'unwind/common/default_validation_summary.c',
@@ -343,7 +342,8 @@ elif true  # UNW_LIBUNW
   _include_dirs += [include_directories('unwind/generic-libunwind')]
 endif  # NOTE: Dead UNW_MIPS files
 
-libhpcrun_lib = shared_library('hpcrun', _common_srcs, _dynamic_srcs,
+libhpcrun_lib = shared_library('hpcrun',
+  _common_srcs, _dynamic_srcs, 'utilities/last_func.c',
   include_directories: _include_dirs,
   c_args: _common_cflags + _dynamic_cflags,
   dependencies: [libunwind_dep, libelf_dep, libmonitor_dep, gotcha_dep,
