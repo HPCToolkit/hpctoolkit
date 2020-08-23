@@ -196,6 +196,7 @@ _common_cflags = [
   '-DLOCAL_BUILD=1',
   '-D__HIP_PLATFORM_HCC__=1',
 ]
+_common_deps = []
 
 if false  # TODO: Change out for a Blue Gene option
   _common_cflags += ['-DUSE_HW_THREAD_ID', '-DNONZERO_THRESHOLD']
@@ -218,6 +219,7 @@ if true  # TODO: Change to perf non-paranoid test/option
          : 'sample-sources/perf/kernel_blocking_stub.c',
   )]
   _common_cflags += ['-DHPCRUN_SS_LINUX_PERF']
+  _common_cflags += perfmon_dep.found() ? ['-DENABLE_PERFMON'] : []
 endif
 
 _dynamic_srcs = [files(
@@ -348,6 +350,13 @@ elif false  # UNW_LIBUNW
   )]
   _include_dirs += [include_directories('unwind/generic-libunwind')]
 endif  # NOTE: Dead UNW_MIPS files
+
+if libunwind_dep.found()
+  _dynamic_cflags += ['-DUSE_LIBUNWIND']
+endif
+#if libunwind_static_dep.found()
+  # XXX
+#endif
 
 libhpcrun_lib = shared_library('hpcrun',
   _common_srcs, _dynamic_srcs, 'utilities/last_func.c',
