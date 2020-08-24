@@ -73,7 +73,7 @@ The current status of using Spack for HPCToolkit is at:
 @end example
 
 @noindent
-Last revised: June 3, 2020.
+Last revised: August 17, 2020.
 
 @c ------------------------------------------------------------
 
@@ -383,22 +383,41 @@ Hpctoolkit does not link with any of their libraries.
 
 For example, this entry says that cmake 3.7.2 is available from module
 @code{CMake/3.7.2} and that spack should use this instead of building
-its own copy.
+its own copy.  You may include more than one module, if needed.
+
+@example
+cmake:
+  externals:
+  - spec: cmake@@3.7.2
+    modules:
+    - CMake/3.7.2
+  buildable: False
+@end example
+
+@noindent
+This example says that perl v5.16.3 is installed at
+@code{/usr/bin/perl}.  Note that the @code{prefix} entry is the parent
+directory of @code{bin}, not the bin directory itself.
+
+@example
+perl:
+  externals:
+  - spec: perl@@5.16.3
+    prefix: /usr
+  buildable: False
+@end example
+
+@noindent
+Note: the syntax for the @code{externals:} declaration has changed in
+spack develop as of Aug 10-11, 2020 (commit 193e8333fa23).  Prior to Aug
+10, the old syntax was:
 
 @example
 cmake:
   modules:
     cmake@@3.7.2:  CMake/3.7.2
   buildable: False
-@end example
 
-@noindent
-This example says that perl v5.16.3 is installed at
-@code{/usr/bin/perl}.  Note that the @code{paths:} entry is the parent
-directory of @code{bin}, not the bin directory itself (similar to
-prefix).
-
-@example
 perl:
   paths:
     perl@@5.16.3:  /usr
@@ -844,7 +863,7 @@ configure  \
 
 Cray systems, like Blue Gene, have separate front and back-end
 architecture types.  For example, on theta at ANL, the front-end arch
-is @code{cray-sles12-x86_64} (SuSE Linux version 12 for x86_64) and
+is @code{cray-sles12-haswell} (SuSE Linux version 12 for haswell) and
 the back-end is @code{cray-cnl6-mic_knl} (Compute Node Linux for KNL).
 
 Hpctoolkit needs to be built with the GNU Programming Environment and
@@ -859,73 +878,82 @@ module unload darshan
 @end example
 
 @noindent
-By default, spack probably does not recognize the gcc compiler modules
-as front-end compilers.  You have to tell spack to add them
-explicitly.  Check that the latest gcc module is loaded (it probably
-is from @code{PrgEnv-gnu}) and run @code{spack compiler find} with the
-path to the compiler (one directory up from @code{bin}).  For example,
-on theta at ANL,
+By default, spack does not correctly identify the gcc compiler modules
+as front-end compilers.  Start by loading a recent gcc module (eg, 7.x
+or 8.x) and try running @code{spack compiler find} and @code{spack
+compiler list}.  For example on theta at ANL,
 
 @example
-module load gcc/7.3.0
-spack compiler find /opt/gcc/7.3.0
+module load gcc/8.3.0
+spack compiler find /opt/gcc/8.3.0
+
 spack compiler list
 ==> Available compilers
 -- gcc cnl6-any -------------------------------------------------
-gcc@@7.3.0  gcc@@7.2.0  gcc@@7.1.0  gcc@@6.3.0  gcc@@6.1.0  gcc@@5.3.0
-gcc@@4.9.3
+gcc@@8.3.0  gcc@@8.1.0  gcc@@7.2.0  gcc@@6.3.0  gcc@@5.3.0
+gcc@@8.2.0  gcc@@7.3.0  gcc@@7.1.0  gcc@@6.1.0  gcc@@4.9.3
 
 -- gcc sles12-x86_64 --------------------------------------------
-gcc@@7.3.0  gcc@@4.8
+gcc@@8.3.0  gcc@@4.8
 @end example
 
 @noindent
-Normally, spack does not fill in the @code{modules:} field for the new
-compiler, you have to add that manually.  And although we mostly use
-the front-end environment, we also need the @code{CC} wrapper to be
-the back-end MPI compiler.
-
-Spack does not support using both front-end and back-end compilers in
-the same build.  But there are two workarounds for Cray.  One option is
-to load the @code{cray-mpich} module and run @code{spack install} with
-option @code{--dirty}.  A better way is to add @code{cray-mpich} to the
-list of modules for gcc in @code{compilers.yaml}.  Edit the front-end
-gcc entry (operating system sles12 and target x86_64) to add the
-following modules (your versions may differ).
+If spack identifies the compiler (as above), then great.  Note that we
+need spack to accept this as a front-end compiler (sles12-x86_64), not
+just for the back end (cnl6-any).  If spack doesn't find the compiler
+automatically, then you need to add it manually.  Edit
+@code{~/.spack/cray/compilers.yaml} and add an entry similer to the
+following (your versions may differ).
 
 @example
 - compiler:
+    environment: @{@}
+    flags: @{@}
     modules:
-    - PrgEnv-gnu/6.0.4
-    - gcc/7.3.0
-    - cray-mpich/7.7.3
+    - PrgEnv-gnu/6.0.5
+    - gcc/8.3.0
+    - craype/2.6.1
+    - cray-mpich/7.7.10
     operating_system: sles12
     paths:
-      cc: /opt/gcc/7.3.0/bin/gcc
-      cxx: /opt/gcc/7.3.0/bin/g++
-      f77: /opt/gcc/7.3.0/bin/gfortran
-      fc: /opt/gcc/7.3.0/bin/gfortran
-    spec: gcc@@7.3.0
+      cc:  /opt/gcc/8.3.0/bin/gcc
+      cxx: /opt/gcc/8.3.0/bin/g++
+      f77: /opt/gcc/8.3.0/bin/gfortran
+      fc:  /opt/gcc/8.3.0/bin/gfortran
+    spec: gcc@@8.3.0
     target: x86_64
 @end example
 
 @noindent
-This tells spack to load the above modules when using the gcc 7.3.0
-compiler.  With the cray-mpich module loaded, the @code{CC} wrapper
-becomes an MPI C++ compiler, which is what hpctoolkit needs.
+Regardless of whether spack created the entry or you added it, you still
+need to add the @code{modules:} field manually (be sure to include all
+four modules).  Although it takes several steps to create the correct
+entry, the good news is that it should continue to work as long as the
+underlying module exists.
 
-Next, review your @code{packages.yaml} file.  On Cray systems with
-Xeon Phi back-end nodes (KNL, KNH, etc), add @code{~tm} to intel-tbb
-to disable transactional memory.
+Next, review your @code{packages.yaml} file.  On Cray systems with Xeon
+Phi back-end nodes (KNL, KNH, etc), add @code{~tm} to intel-tbb to
+disable transactional memory.
 
-Finally, build hpctoolkit with the front-end arch type
-(cray-sles12-x86_64) and option @code{+cray}.  Normally, you can use OS
+Finally, build hpctoolkit with the front-end arch type (eg,
+cray-sles12-x86_64) and option @code{+cray}.  Normally, you can use OS
 type @code{fe} (front-end) in place of @code{sles12}.  As with Blue
 Gene, the @code{+cray} option adds MPI and hpcprof-mpi and supersedes
 the @code{+mpi} variant.
 
 @example
 spack install hpctoolkit +cray arch=cray-fe-x86_64
+@end example
+
+@noindent
+On some systems, spack fails to properly load the compiler modules
+during the build and fails during hpctoolkit configure with an error
+about, ``MPICXX is not a valid compiler.''  In this case, make sure that
+you have the PrgEnv-gnu and gcc modules loaded and retry the install
+with @code{--dirty}.
+
+@example
+spack install --dirty hpctoolkit +cray arch=cray-fe-x86_64
 @end example
 
 @noindent
@@ -936,7 +964,7 @@ similar to the following.
 @example
 configure  \
     --prefix=/path/to/install/prefix  \
-    --with-spack=/path/to/cray-sles12-x86_64/gcc-7.3.0  \
+    --with-spack=/path/to/cray-sles12-x86_64/gcc-8.3.0  \
     --enable-all-static  \
     MPICXX=CC
 @end example

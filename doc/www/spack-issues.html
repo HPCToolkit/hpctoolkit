@@ -92,7 +92,7 @@ on the hpctoolkit web site.
 <pre class="example"><a href="http://hpctoolkit.org/spack-issues.html">http://hpctoolkit.org/spack-issues.html</a>
 </pre></div>
 
-<p>Last revised: June 3, 2020.
+<p>Last revised: June 17, 2020.
 </p>
 
 <a name="Current-Issues"></a>
@@ -110,34 +110,32 @@ work.
 <p><b>Workaround:</b> If you have a working <code>compiler:</code> entry for a
 front-end GNU compiler on Cray, then that will continue to work.  If
 not, then you will have to add one manually.  For example, this is an
-entry for the <code>gcc/7.3.0</code> module on theta at ANL.  Note that the
+entry for the <code>gcc/8.3.0</code> module on theta at ANL.  Note that the
 front-end operating_system is something like <code>sles12</code> (not
 <code>cnl6</code>), and the front-end target is <code>x86_64</code> (not
-<code>mic_knl</code>).
+<code>mic_knl</code>).  Your versions may differ.
 </p>
 <div class="example">
 <pre class="example">- compiler:
     environment: {}
-    extra_rpaths: []
     flags: {}
     modules:
-    - PrgEnv-gnu/6.0.4
-    - gcc/7.3.0
-    - cray-mpich/7.7.3
+    - PrgEnv-gnu/6.0.5
+    - gcc/8.3.0
+    - craype/2.6.1
+    - cray-mpich/7.7.10
     operating_system: sles12
     paths:
-      cc:  /opt/gcc/7.3.0/bin/gcc
-      cxx: /opt/gcc/7.3.0/bin/g++
-      f77: /opt/gcc/7.3.0/bin/gfortran
-      fc:  /opt/gcc/7.3.0/bin/gfortran
-    spec: gcc@7.3.0
+      cc:  /opt/gcc/8.3.0/bin/gcc
+      cxx: /opt/gcc/8.3.0/bin/g++
+      f77: /opt/gcc/8.3.0/bin/gfortran
+      fc:  /opt/gcc/8.3.0/bin/gfortran
+    spec: gcc@8.3.0
     target: x86_64
 </pre></div>
 
-<p><b>Workaround:</b> Alternatively, the last working commit was
-<code>9c1c50fb7632</code> on 2019-06-07.  You could revert to this commit, run
-<code>spack compiler find</code> and then return to the current spack head
-(develop).  Be sure to fill in the <code>modules:</code> field.
+<p><b>Note:</b> Be sure to fill in the <code>modules:</code> field with all four
+modules.
 </p>
 
 <a name="Recently-Resolved-Issues"></a>

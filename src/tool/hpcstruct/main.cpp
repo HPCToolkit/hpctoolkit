@@ -70,6 +70,7 @@ using std::endl;
 #include <streambuf>
 #include <new>
 #include <vector>
+#include <unistd.h>
 
 #include <include/hpctoolkit-config.h>
 
@@ -173,12 +174,14 @@ doMeasurementsDir(string measurements_dir, BAnal::Struct::Options & opts)
 
   makefile << "CUBINS_DIR =  " << cubins_dir << "\n"
 	   << "STRUCTS_DIR = " << structs_dir << "\n"
-	   << "CUBIN_CFG = " << gpucfg << "\n\n"
+	   << "CUBIN_CFG = " << gpucfg << "\n"
+	   << "GPU_SIZE = " << opts.gpu_size << "\n"
+	   << "JOBS = " << opts.jobs << "\n\n"
 	   << cubins_analysis_makefile << endl;
   makefile.close();
 
-  string make_cmd = string("make -C ") + structs_dir + " -k -j " + to_string(opts.jobs)
-    + " --silent --no-print-directory analyze";
+  string make_cmd = string("make -C ") + structs_dir + " -k --silent "
+      + " --no-print-directory all";
 
   if (system(make_cmd.c_str()) != 0) {
     DIAG_EMsg("Make hpcstruct files for cubins failed.");
@@ -227,33 +230,44 @@ realmain(int argc, char* argv[])
   // ------------------------------------------------------------
 
 #ifdef ENABLE_OPENMP
-  opts.jobs = args.jobs;
-  opts.jobs_parse = args.jobs_parse;
-  opts.jobs_symtab = args.jobs_symtab;
+  //
+  // Translate the args jobs to the struct opts jobs.  The specific
+  // overrides the general: for example, -j sets all three phases,
+  // --jobs-parse overrides just that one phase.
+  //
+  int jobs = (args.jobs >= 1) ? args.jobs : 1;
 
-  // default is to run serial (for correctness), unless --jobs is
-  // specified.
-  if (opts.jobs < 1) {
-    opts.jobs = 1;
+  opts.jobs = jobs;
+  opts.jobs_struct = jobs;
+  opts.jobs_parse = jobs;
+  opts.jobs_symtab = jobs;
+
+  if (args.jobs_struct >= 1) {
+    opts.jobs_struct = args.jobs_struct;
   }
-  if (opts.jobs_parse < 1) {
-    opts.jobs_parse = opts.jobs;
+  if (args.jobs_parse >= 1) {
+    opts.jobs_parse = args.jobs_parse;
+  }
+  if (args.jobs_symtab >= 1) {
+    opts.jobs_symtab = args.jobs_symtab;
   }
 
-  // libdw is not yet thread-safe, so run symtab serial unless
-  // specifically requested.
-  if (opts.jobs_symtab < 1) {
-    opts.jobs_symtab = 1;
-  }
+#ifndef ENABLE_OPENMP_SYMTAB
+  opts.jobs_symtab = 1;
+#endif
+
   omp_set_num_threads(1);
+
 #else
   opts.jobs = 1;
+  opts.jobs_struct = 1;
   opts.jobs_parse = 1;
   opts.jobs_symtab = 1;
 #endif
 
   opts.show_time = args.show_time;
   opts.compute_gpu_cfg = args.compute_gpu_cfg;
+  opts.gpu_size = args.gpu_size;
 
   // ------------------------------------------------------------
   // If in_filenm is a directory, then analyze separately
@@ -295,8 +309,20 @@ realmain(int argc, char* argv[])
     gaps_rdbuf->pubsetbuf(gapsBuf, HPCIO_RWBufferSz);
   }
 
-  BAnal::Struct::makeStructure(args.in_filenm, outFile, gapsFile, gapsName,
-			       args.searchPathStr, opts);
+  try {
+    BAnal::Struct::makeStructure(args.in_filenm, outFile, gapsFile, gapsName,
+			         args.searchPathStr, opts);
+  } catch (int n) {
+    IOUtil::CloseStream(outFile);
+    if (osnm) {
+      unlink(osnm);
+    }
+    if (gapsFile) {
+      IOUtil::CloseStream(gapsFile);
+      unlink(gapsName.c_str());
+    }
+    exit(n);
+  }
 
   IOUtil::CloseStream(outFile);
   delete[] outBuf;

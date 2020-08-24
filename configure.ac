@@ -81,7 +81,7 @@ m4_include(config/hpc-cxxutils.m4)
 # Initialization:
 #----------------------------------------------------------------------------
 
-AC_INIT([hpctoolkit], [2020.06-develop],
+AC_INIT([hpctoolkit], [2020.08-develop],
         [hpctoolkit-forum@rice.edu],
 	[hpctoolkit],
 	[http://hpctoolkit.org/])
@@ -276,6 +276,9 @@ default=yes
 if test "$OPT_ENABLE_DEVELOP" = yes ; then
   default=no
 fi
+case "$host_cpu" in
+  *aarch* | *arm* ) default=no ;;
+esac
 
 AC_ARG_ENABLE([strip-debug],
   [AS_HELP_STRING([--enable-strip-debug],
@@ -4572,7 +4575,8 @@ AC_LANG_POP
 #-------------------------------------------------
 
 # CUDA support for CPU-GPU-Blame-shifting.  Also requires CUPTI,
-# either in CUDA/extras/CUPTI or else in a separate install.
+# in CUDA, CUDA/extras/CUPTI, or in a separate install 
+# directory specified using the --with-cupti option.
 
 CUDA="$default_cuda_prefix"
 
@@ -4632,12 +4636,12 @@ AC_SUBST([OPT_CUDA_LDFLAGS])
 # Option: --with-cupti=PATH
 #-------------------------------------------------
 
-# CUPTI is either in CUDA/extras/CUPTI or else specified separately
-# here.
+# CUPTI is either in CUDA, CUDA/extras/CUPTI, or in a directory
+#  specified separately here.
 
 CUPTI=no
 case "$CUDA" in
-  /* ) if test -d "${CUDA}/extras/CUPTI" ; then CUPTI="${CUDA}/extras/CUPTI" ; fi
+  /* ) if test -d "${CUDA}/extras/CUPTI/include" ; then CUPTI="${CUDA}/extras/CUPTI" ; else CUPTI=${CUDA} ; fi
        ;;
 esac
 
@@ -4702,6 +4706,48 @@ AC_SUBST([OPT_CUPTI_IFLAGS])
 AC_SUBST([OPT_CUPTI_LDFLAGS])
 
 
+
+#-------------------------------------------------
+# Option: --with-opencl=PATH
+#-------------------------------------------------
+
+OPENCL=no
+OPT_HAVE_OPENCL=no
+OPT_OPENCL_IFLAGS=
+
+AC_ARG_WITH([opencl],
+  [AS_HELP_STRING([--with-opencl=PATH],
+      [path to opencl headers])],
+  [OPENCL="$withval"],
+  [])
+
+case "$OPENCL" in
+  /* )
+    if test ! -f "${OPENCL}/CL/cl.h" ; then
+      AC_MSG_ERROR([unable to find CL/cl.h in: $OPENCL])
+    else
+      OPT_OPENCL_IFLAGS="-I${OPENCL}"
+      OPT_HAVE_OPENCL=yes
+    fi
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([opencl header path must be absolute: $OPENCL])
+    ;;
+esac
+
+if test "$OPENCL" = yes && test "$OPT_HAVE_OPENCL" = no ; then
+  AC_MSG_ERROR([use --with-opencl to provide path/location of opencl headers])
+fi
+
+if test "$OPT_HAVE_OPENCL" = yes ; then
+  AC_MSG_NOTICE([The <CL/cl.h> header file is available.])
+fi
+
+AM_CONDITIONAL([ENABLE_OPENCL], [test "$OPT_HAVE_OPENCL" = yes])
+AC_SUBST([OPT_OPENCL_IFLAGS])
+
 #-------------------------------------------------
 # Option: --with-rocm=PATH
 #-------------------------------------------------
@@ -4735,6 +4781,36 @@ AC_SUBST([OPT_ROCM])
 AC_SUBST([OPT_ROCM_IFLAGS])
 AC_SUBST([OPT_ROCM_LDFLAGS])
 
+#-------------------------------------------------
+# Option: --with-level0=PATH
+#-------------------------------------------------
+
+OPT_LEVEL0=
+OPT_LEVEL0_INCPATH=
+OPT_LEVEL0_LDFLAGS=
+OPT_LEVEL0_LIBPATH=
+
+AC_ARG_WITH([level0],
+  AS_HELP_STRING([--with-level0=PATH],
+                 [use given Level Zero installation (absolute path) with hpcrun (default is NO)]),
+  [if test $withval != no; then
+     OPT_HAVE_LEVEL0=yes
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-level0 requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_LEVEL0=${withval}
+   fi])
+
+if test "$OPT_HAVE_LEVEL0" = "yes" ; then
+  AC_DEFINE(USE_LEVEL0, 1, [use Level Zero])
+  OPT_LEVEL0_IFLAGS="-I${OPT_LEVEL0}/include"
+fi
+
+AM_CONDITIONAL([OPT_ENABLE_LEVEL0], [test "$OPT_HAVE_LEVEL0" = yes])
+
+AC_SUBST([OPT_LEVEL0])
+AC_SUBST([OPT_LEVEL0_IFLAGS])
+AC_SUBST([OPT_LEVEL0_LDFLAGS])
 
 #-------------------------------------------------
 # enable-data-centric-tracing: data-centric tracing
