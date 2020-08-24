@@ -181,7 +181,7 @@ hpctoolkit_config.set('SIZEOF_VOIDP', cc.sizeof('void*'))
 # TODO: Make this an option instead
 hpctoolkit_config.set('USE_LIBUNW', libunwind_dep.found())
 
-hpctoolkit_config.set('USE_ROCM', rocm_dep.found())
+hpctoolkit_config.set('USE_ROCM', rocm_headers_dep.found())
 
 configure_file(configuration: hpctoolkit_config, output: 'hpctoolkit-config.h')
 main_includes += include_directories('.')

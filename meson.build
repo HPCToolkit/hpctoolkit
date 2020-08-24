@@ -357,11 +357,11 @@ foreach var, properties : _deps
     endif
     if get_variable(var + '_dep').found()
       summary(var, get_variable(var + '_dep').get_variable(
-        cmake: _cmake_name + '_INCLUDE_DIR',
+        cmake: _cmake_name + '_LIBRARY',
         pkgconfig: 'prefix',
         default_value: '(system)'), section: 'Dependencies')
     else
-      summary(var, '-', section: 'Dependencies')
+      summary(var, false, section: 'Dependencies', bool_yn: true)
     endif
   endif
 endforeach

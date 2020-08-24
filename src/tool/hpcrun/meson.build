@@ -272,7 +272,7 @@ if cuda_dep.found()
   _dynamic_cflags += ['-DENABLE_CUDA', '-DHPCRUN_SS_NVIDIA']
 endif
 
-if rocm_dep.found()
+if rocm_headers_dep.found()
   _dynamic_srcs += [files(
     'sample-sources/amd.c',
     'gpu/amd/roctracer-activity-translate.c',
@@ -368,4 +368,5 @@ libhpcrun_lib = shared_library('hpcrun',
   link_with: [prof_lean_lib, support_lean_lib],
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
+summary('hpcrun', not is_disabler(libhpcrun_lib), section: 'Applications', bool_yn: true)
 
