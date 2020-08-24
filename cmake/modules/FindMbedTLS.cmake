@@ -44,9 +44,12 @@
 
 find_library(MbedTLS_CRYPTO_LIBRARY NAMES mbedcrypto
              DOC "Location of the libmbedcrypto library")
+set(_all_library_suffixes ${CMAKE_FIND_LIBRARY_SUFFIXES})
 set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_STATIC_LIBRARY_SUFFIX})
 find_library(MbedTLS_CRYPTO_LIBRARY_STATIC NAMES mbedcrypto
              DOC "Location of the libmbedcrypto static library")
+set(CMAKE_FIND_LIBRARY_SUFFIXES ${_all_library_suffixes})
+unset(_all_library_suffixes)
 find_path(MbedTLS_INCLUDE_DIR NAMES mbedtls/md5.h
           DOC "Location of the include directory for libmbedtls")
 
@@ -59,8 +62,10 @@ if(MbedTLS_FOUND)
   set_target_properties(MbedTLS::Crypto PROPERTIES
                         IMPORTED_LOCATION "${MbedTLS_CRYPTO_LIBRARY}"
                         INTERFACE_INCLUDE_DIRECTORIES "${MbedTLS_INCLUDE_DIR}")
-  add_library(MbedTLS::Crypto_static UNKNOWN IMPORTED)
-  set_target_properties(MbedTLS::Crypto_static PROPERTIES
-                        IMPORTED_LOCATION "${MbedTLS_CRYPTO_LIBRARY_STATIC}"
-                        INTERFACE_INCLUDE_DIRECTORIES "${MbedTLS_INCLUDE_DIR}")
+  if(MbedTLS_CRYPTO_LIBRARY_STATIC)
+    add_library(MbedTLS::Crypto_static UNKNOWN IMPORTED)
+    set_target_properties(MbedTLS::Crypto_static PROPERTIES
+                          IMPORTED_LOCATION "${MbedTLS_CRYPTO_LIBRARY_STATIC}"
+                          INTERFACE_INCLUDE_DIRECTORIES "${MbedTLS_INCLUDE_DIR}")
+  endif()
 endif()

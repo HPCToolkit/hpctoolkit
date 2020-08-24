@@ -169,8 +169,9 @@ _deps = {
           },
   'dyninst': { 'name': 'Dyninst',
                'propstems': ['dyninst'],
-               'modules': ['parseAPI', 'instructionAPI', 'symtabAPI',
-                           'dynDwarf', 'dynElf', 'common'],
+               'modules': ['Dyninst::parseAPI', 'Dyninst::instructionAPI',
+                           'Dyninst::symtabAPI', 'Dyninst::dynDwarf',
+                           'Dyninst::dynElf', 'Dyninst::common'],
                'spack': 'dyninst',
              },
   'libelf': { 'name': 'libelf', 'cmake_name': 'LibElf',
@@ -238,14 +239,23 @@ _deps = {
             'propstems': ['zlib'],
             'spack': 'zlib',
           },
-  'valgrind': { 'name': 'valgrind', 'cmake_name': 'Valgrind',
-                'propstems': ['valgrind'],
-                'spack': 'valgrind',
-              },
-  'rocm': { 'name': 'ROCm',
+  'valgrind_headers': { 'name': 'valgrind', 'cmake_name': 'Valgrind',
+                        'propstems': ['valgrind'],
+                        'spack': 'valgrind',
+                        'modules': 'Valgrind::headers',
+                      },
+  'rocm_headers': { 'name': 'ROCm',
             'propstems': ['rocm'],
+            'modules': 'ROCm::headers',
           },
 }
+
+_cmake_force_root_args = [
+  '-DCMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH=FALSE',
+  '-DCMAKE_FIND_USE_CMAKE_PATH=FALSE',
+  '-DCMAKE_FIND_USE_CMAKE_SYSTEM_PATH=FALSE',
+]
+
 foreach var, properties : _deps
   _cmake_name = properties.get('cmake_name', properties['name'])
 
@@ -255,14 +265,22 @@ foreach var, properties : _deps
     if _explicit_root != ''
       set_variable(var + '_dep', dependency(_cmake_name,
         method: 'cmake',
-        required: false, static: false,
-        cmake_args: ['-D' + _cmake_name + '_ROOT=' + _explicit_root,
-                     '-DCMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH=FALSE',
-                     '-DCMAKE_FIND_USE_CMAKE_PATH=FALSE',
-                     '-DCMAKE_FIND_USE_CMAKE_SYSTEM_PATH=FALSE'],
+        required: false, static: false, disabler: true,
+        cmake_args: ['-D' + _cmake_name + '_ROOT=' + _explicit_root]
+                    + _cmake_force_root_args,
         modules: properties.get('modules', []),
         components: properties.get('components', []),
         cmake_module_path: 'cmake/modules'))
+      if properties.has_key('static_modules')
+        set_variable(var + '_static_dep', dependency(_cmake_name,
+          method: 'cmake',
+          required: false, static: true, disabler: true,
+          cmake_args: ['-D' + _cmake_name + '_ROOT=' + _explicit_root]
+                      + _cmake_force_root_args,
+          modules: properties.get('static_modules', []),
+          components: properties.get('components', []),
+          cmake_module_path: 'cmake/modules'))
+      endif
       summary(var, _explicit_root, section: 'Dependencies')
       assert(get_variable(var + '_dep').found(),
         'Could not find ' + properties['name'] + ' from '
@@ -291,7 +309,7 @@ foreach var, properties : _deps
                 + properties['spack'] + ' ' + _explicit_spec)
         warning('Set the property ' + properties['spack'] + '_spec '
                 + 'to \'system\' to use the system/environment instead.')
-        set_variable(var + '_dep', dependency('', required: false))
+        set_variable(var + '_dep', disabler())
       else
         _spack_root = _spack_root.stdout().strip()
         assert(_spack_root != '')
@@ -299,14 +317,22 @@ foreach var, properties : _deps
 
         set_variable(var + '_dep', dependency(_cmake_name,
           method: 'cmake',
-          required: false, static: false,
-          cmake_args: ['-D' + _cmake_name + '_ROOT=' + _spack_root[0].strip(),
-                       '-DCMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH=FALSE',
-                       '-DCMAKE_FIND_USE_CMAKE_PATH=FALSE',
-                       '-DCMAKE_FIND_USE_CMAKE_SYSTEM_PATH=FALSE'],
+          required: false, static: false, disabler: true,
+          cmake_args: ['-D' + _cmake_name + '_ROOT=' + _spack_root[0].strip()]
+                      + _cmake_force_root_args,
           modules: properties.get('modules', []),
           components: properties.get('components', []),
           cmake_module_path: 'cmake/modules'))
+        if properties.has_key('static_modules')
+          set_variable(var + '_static_dep', dependency(_cmake_name,
+            method: 'cmake',
+            required: false, static: true, disabler: true,
+            cmake_args: ['-D' + _cmake_name + '_ROOT=' + _spack_root[0].strip()]
+                        + _cmake_force_root_args,
+            modules: properties.get('static_modules', []),
+            components: properties.get('components', []),
+            cmake_module_path: 'cmake/modules'))
+        endif
         assert(get_variable(var + '_dep').found(),
                'Failed to find ' + properties['name'] + ' from Spack prefix '
                + '`' + _spack_root[0].strip() + '\'')
@@ -318,10 +344,17 @@ foreach var, properties : _deps
   # Lowest priority: implicitly available
   if not is_variable(var + '_dep')
     set_variable(var + '_dep', dependency(properties['name'],
-      required: false, static: false,
+      required: false, static: false, disabler: true,
       modules: properties.get('modules', []),
       components: properties.get('components', []),
       cmake_module_path: 'cmake/modules'))
+    if properties.has_key('static_modules')
+      set_variable(var + '_static_dep', dependency(properties['name'],
+        required: false, static: true, disabler: true,
+        modules: properties.get('static_modules', []),
+        components: properties.get('components', []),
+        cmake_module_path: 'cmake/modules'))
+    endif
     if get_variable(var + '_dep').found()
       summary(var, get_variable(var + '_dep').get_variable(
         cmake: _cmake_name + '_INCLUDE_DIR',
@@ -329,21 +362,6 @@ foreach var, properties : _deps
         default_value: '(system)'), section: 'Dependencies')
     else
       summary(var, '-', section: 'Dependencies')
-    endif
-  endif
-
-  # Because Meson saves the CMake cache, we can get the static side by repeating
-  # the process but with static set.
-  if properties.has_key('static_modules')
-    if get_variable(var + '_dep').found()
-      set_variable(var + '_static_dep', dependency(
-        get_variable(var + '_dep').name(),
-        required: false, static: true,
-        modules: properties['static_modules'],
-        components: properties.get('components', []),
-        cmake_module_path: 'cmake/modules'))
-    else
-      set_variable(var + '_static_dep', dependency('', required: false))
     endif
   endif
 endforeach
@@ -391,7 +409,6 @@ if meson.get_external_property('boost_root', '') == '' and is_variable('spack') 
 
     _deps = []
     foreach m : _boost_our_modules
-      message(_dirs)
       _deps += cpp.find_library('boost_'+m, dirs: _dirs)
     endforeach
     boost_our_dep = declare_dependency(

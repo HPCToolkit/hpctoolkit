@@ -44,16 +44,28 @@
 
 find_library(Xed_LIBRARY NAMES xed
              DOC "Location of the libxed library")
+set(_all_library_suffixes ${CMAKE_FIND_LIBRARY_SUFFIXES})
+set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_STATIC_LIBRARY_SUFFIX})
+find_library(Xed_LIBRARY_STATIC NAMES xed
+             DOC "Location of the libxed static library")
+set(CMAKE_FIND_LIBRARY_SUFFIXES ${_all_library_suffixes})
+unset(_all_library_suffixes)
 find_path(Xed_INCLUDE_DIR NAMES xed-interface.h
           DOC "Location of the include directory for libxed")
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Xed
-                                  REQUIRED_VARS Xed_LIBRARY Xed_INCLUDE_DIR)
+  REQUIRED_VARS Xed_LIBRARY Xed_INCLUDE_DIR)
 
 if(Xed_FOUND)
   add_library(Xed::Xed UNKNOWN IMPORTED)
   set_target_properties(Xed::Xed PROPERTIES
                         IMPORTED_LOCATION "${Xed_LIBRARY}"
                         INTERFACE_INCLUDE_DIRECTORIES "${Xed_INCLUDE_DIR}")
+  if(Xed_LIBRARY_STATIC)
+    add_library(Xed::Xed_static UNKNOWN IMPORTED)
+    set_target_properties(Xed::Xed_static PROPERTIES
+                          IMPORTED_LOCATION "${Xed_LIBRARY_STATIC}"
+                          INTERFACE_INCLUDE_DIRECTORIES "${Xed_INCLUDE_DIR}")
+  endif()
 endif()

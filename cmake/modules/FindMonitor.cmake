@@ -51,19 +51,15 @@ find_path(Monitor_INCLUDE_DIR NAMES monitor.h
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Monitor
-                                  REQUIRED_VARS Monitor_INCLUDE_DIR)
+  REQUIRED_VARS Monitor_LIBRARY Monitor_WRAP_LIBRARY Monitor_INCLUDE_DIR)
 
 if(Monitor_FOUND)
-  if(Monitor_LIBRARY)
-    add_library(Monitor::Monitor UNKNOWN IMPORTED)
-    set_target_properties(Monitor::Monitor PROPERTIES
-                          IMPORTED_LOCATION "${Monitor_LIBRARY}"
-                          INTERFACE_INCLUDE_DIRECTORIES "${Monitor_INCLUDE_DIR}")
-  endif()
-  if(Monitor_WRAP_LIBRARY)
-    add_library(Monitor::wrap UNKNOWN IMPORTED)
-    set_target_properties(Monitor::wrap PROPERTIES
-                          IMPORTED_LOCATION "${Monitor_WRAP_LIBRARY}"
-                          INTERFACE_INCLUDE_DIRECTORIES "${Monitor_INCLUDE_DIR}")
-  endif()
+  add_library(Monitor::Monitor UNKNOWN IMPORTED)
+  set_target_properties(Monitor::Monitor PROPERTIES
+                        IMPORTED_LOCATION "${Monitor_LIBRARY}"
+                        INTERFACE_INCLUDE_DIRECTORIES "${Monitor_INCLUDE_DIR}")
+  add_library(Monitor::wrap UNKNOWN IMPORTED)
+  set_target_properties(Monitor::wrap PROPERTIES
+                        IMPORTED_LOCATION "${Monitor_WRAP_LIBRARY}"
+                        INTERFACE_INCLUDE_DIRECTORIES "${Monitor_INCLUDE_DIR}")
 endif()

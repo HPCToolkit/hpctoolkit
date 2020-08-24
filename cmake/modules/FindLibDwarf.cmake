@@ -44,17 +44,29 @@
 
 find_library(LibDwarf_LIBRARY NAMES dwarf
              DOC "Location of the libdwarf library")
+set(_all_library_suffixes ${CMAKE_FIND_LIBRARY_SUFFIXES})
+set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_STATIC_LIBRARY_SUFFIX})
+find_library(LibDwarf_LIBRARY_STATIC NAMES dwarf
+             DOC "Location of the libdwarf static library")
+set(CMAKE_FIND_LIBRARY_SUFFIXES ${_all_library_suffixes})
+unset(_all_library_suffixes)
 find_path(LibDwarf_INCLUDE_DIR NAMES libdwarf.h
           PATH_SUFFIXES libdwarf
-          DOC "Location of the include directory for libbfd")
+          DOC "Location of the include directory for libdwarf")
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(LibDwarf
-                                  REQUIRED_VARS LibDwarf_LIBRARY LibDwarf_INCLUDE_DIR)
+  REQUIRED_VARS LibDwarf_LIBRARY LibDwarf_INCLUDE_DIR)
 
 if(LibDwarf_FOUND)
   add_library(LibDwarf::LibDwarf UNKNOWN IMPORTED)
   set_target_properties(LibDwarf::LibDwarf PROPERTIES
                         IMPORTED_LOCATION "${LibDwarf_LIBRARY}"
                         INTERFACE_INCLUDE_DIRECTORIES "${LibDwarf_INCLUDE_DIR}")
+  if(LibDwarf_LIBRARY_STATIC)
+    add_library(LibDwarf::LibDwarf_static UNKNOWN IMPORTED)
+    set_target_properties(LibDwarf::LibDwarf_static PROPERTIES
+                          IMPORTED_LOCATION "${LibDwarf_LIBRARY_STATIC}"
+                          INTERFACE_INCLUDE_DIRECTORIES "${LibDwarf_INCLUDE_DIR}")
+  endif()
 endif()

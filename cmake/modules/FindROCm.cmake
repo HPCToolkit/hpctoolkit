@@ -52,7 +52,7 @@ find_package_handle_standard_args(ROCm
   REQUIRED_VARS ROCm_HIP_INCLUDE_DIR ROCm_TRACER_INCLUDE_DIR)
 
 if(ROCm_FOUND)
-  add_library(ROCm::ROCm UNKNOWN IMPORTED)
-  set_target_properties(ROCm::ROCm PROPERTIES
+  add_library(ROCm::headers UNKNOWN IMPORTED)
+  set_target_properties(ROCm::headers PROPERTIES
                         INTERFACE_INCLUDE_DIRECTORIES "${ROCm_INCLUDE_DIR}")
 endif()

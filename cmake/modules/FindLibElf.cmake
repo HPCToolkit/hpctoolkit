@@ -51,17 +51,31 @@ if(PKG_CONFIG_FOUND)
   endif()
 endif()
 
-find_path(LibElf_INCLUDE_DIR NAMES libelf.h HINTS ${PC_LibElf_INCLUDE_DIRS})
-find_library(LibElf_LIBRARY NAMES elf HINTS ${PC_LibElf_LIBRARY_DIRS})
+find_path(LibElf_INCLUDE_DIR NAMES libelf.h
+          HINTS ${PC_LibElf_INCLUDE_DIRS})
+find_library(LibElf_LIBRARY NAMES elf
+             HINTS ${PC_LibElf_LIBRARY_DIRS})
+set(_all_library_suffixes ${CMAKE_FIND_LIBRARY_SUFFIXES})
+set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_STATIC_LIBRARY_SUFFIX})
+find_library(LibElf_LIBRARY_STATIC NAMES elf
+             HINTS ${PC_LibElf_LIBRARY_DIRS})
+set(CMAKE_FIND_LIBRARY_SUFFIXES ${_all_library_suffixes})
+unset(_all_library_suffixes)
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(LibElf
-                                  REQUIRED_VARS LibElf_LIBRARY LibElf_INCLUDE_DIR
-                                  VERSION_VAR LibElf_VERSION)
+  REQUIRED_VARS LibElf_LIBRARY LibElf_INCLUDE_DIR
+  VERSION_VAR LibElf_VERSION)
 
 if(LibElf_FOUND)
   add_library(LibElf::LibElf UNKNOWN IMPORTED)
   set_target_properties(LibElf::LibElf PROPERTIES
                         IMPORTED_LOCATION "${LibElf_LIBRARY}"
                         INTERFACE_INCLUDE_DIRECTORIES "${LibElf_INCLUDE_DIR}")
+  if(LibElf_LIBRARY_STATIC)
+    add_library(LibElf::LibElf_static UNKNOWN IMPORTED)
+    set_target_properties(LibElf::LibElf_static PROPERTIES
+                          IMPORTED_LOCATION "${LibElf_LIBRARY_STATIC}"
+                          INTERFACE_INCLUDE_DIRECTORIES "${LibElf_INCLUDE_DIR}")
+  endif()
 endif()

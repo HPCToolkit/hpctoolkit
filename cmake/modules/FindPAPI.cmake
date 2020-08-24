@@ -51,17 +51,31 @@ if(PKG_CONFIG_FOUND)
   endif()
 endif()
 
-find_path(PAPI_INCLUDE_DIR NAMES papi.h HINTS ${PC_PAPI_INCLUDE_DIRS})
-find_library(PAPI_LIBRARY NAMES papi HINTS ${PC_PAPI_LIBRARY_DIRS})
+find_path(PAPI_INCLUDE_DIR NAMES papi.h
+          HINTS ${PC_PAPI_INCLUDE_DIRS})
+find_library(PAPI_LIBRARY NAMES papi
+             HINTS ${PC_PAPI_LIBRARY_DIRS})
+set(_all_library_suffixes ${CMAKE_FIND_LIBRARY_SUFFIXES})
+set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_STATIC_LIBRARY_SUFFIX})
+find_library(PAPI_LIBRARY_STATIC NAMES papi
+             HINTS ${PC_PAPI_LIBRARY_DIRS})
+set(CMAKE_FIND_LIBRARY_SUFFIXES ${_all_library_suffixes})
+unset(_all_library_suffixes)
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(PAPI
-                                  REQUIRED_VARS PAPI_LIBRARY PAPI_INCLUDE_DIR
-                                  VERSION_VAR PAPI_VERSION)
+  REQUIRED_VARS PAPI_LIBRARY PAPI_INCLUDE_DIR
+  VERSION_VAR PAPI_VERSION)
 
 if(PAPI_FOUND)
   add_library(PAPI::PAPI UNKNOWN IMPORTED)
   set_target_properties(PAPI::PAPI PROPERTIES
                         IMPORTED_LOCATION "${PAPI_LIBRARY}"
                         INTERFACE_INCLUDE_DIRECTORIES "${PAPI_INCLUDE_DIR}")
+  if(PAPI_LIBRARY_STATIC)
+    add_library(PAPI::PAPI_static UNKNOWN IMPORTED)
+    set_target_properties(PAPI::PAPI_static PROPERTIES
+                          IMPORTED_LOCATION "${PAPI_LIBRARY_STATIC}"
+                          INTERFACE_INCLUDE_DIRECTORIES "${PAPI_INCLUDE_DIR}")
+  endif()
 endif()

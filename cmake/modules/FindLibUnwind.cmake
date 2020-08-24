@@ -51,17 +51,31 @@ if(PKG_CONFIG_FOUND)
   endif()
 endif()
 
-find_path(LibUnwind_INCLUDE_DIR NAMES libunwind.h HINTS ${PC_LibUnwind_INCLUDE_DIRS})
-find_library(LibUnwind_LIBRARY NAMES unwind HINTS ${PC_LibUnwind_LIBRARY_DIRS})
+find_path(LibUnwind_INCLUDE_DIR NAMES libunwind.h
+          HINTS ${PC_LibUnwind_INCLUDE_DIRS})
+find_library(LibUnwind_LIBRARY NAMES unwind
+             HINTS ${PC_LibUnwind_LIBRARY_DIRS})
+set(_all_library_suffixes ${CMAKE_FIND_LIBRARY_SUFFIXES})
+set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_STATIC_LIBRARY_SUFFIX})
+find_library(LibUnwind_LIBRARY NAMES unwind
+             HINTS ${PC_LibUnwind_LIBRARY_DIRS})
+set(CMAKE_FIND_LIBRARY_SUFFIXES ${_all_library_suffixes})
+unset(_all_library_suffixes)
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(LibUnwind
-                                  REQUIRED_VARS LibUnwind_LIBRARY LibUnwind_INCLUDE_DIR
-                                  VERSION_VAR LibUnwind_VERSION)
+  REQUIRED_VARS LibUnwind_LIBRARY LibUnwind_INCLUDE_DIR
+  VERSION_VAR LibUnwind_VERSION)
 
 if(LibUnwind_FOUND)
   add_library(LibUnwind::LibUnwind UNKNOWN IMPORTED)
   set_target_properties(LibUnwind::LibUnwind PROPERTIES
                         IMPORTED_LOCATION "${LibUnwind_LIBRARY}"
                         INTERFACE_INCLUDE_DIRECTORIES "${LibUnwind_INCLUDE_DIR}")
+  if(LibUnwind_LIBRARY_STATIC)
+    add_library(LibUnwind::LibUnwind_static UNKNOWN IMPORTED)
+    set_target_properties(LibUnwind::LibUnwind_static PROPERTIES
+                          IMPORTED_LOCATION "${LibUnwind_LIBRARY_STATIC}"
+                          INTERFACE_INCLUDE_DIRECTORIES "${LibUnwind_INCLUDE_DIR}")
+  endif()
 endif()

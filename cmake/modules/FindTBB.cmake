@@ -63,19 +63,18 @@ endif()
 find_library(TBB_LIBRARY NAMES tbb
              DOC "Location of the TBB main library")
 find_library(TBB_MALLOC_LIBRARY NAMES tbbmalloc
-             DOC "Location of the TBB main library")
+             DOC "Location of the TBB malloc library")
 find_library(TBB_MPROXY_LIBRARY NAMES tbbmalloc_proxy
-             DOC "Location of the TBB main library")
+             DOC "Location of the TBB malloc proxy library")
 find_path(TBB_INCLUDE_DIR NAMES tbb/concurrent_hash_map.h
           DOC "Location of the include directory for TBB")
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(TBB
-                                  REQUIRED_VARS TBB_LIBRARY TBB_MALLOC_LIBRARY
-                                    TBB_MPROXY_LIBRARY TBB_INCLUDE_DIR)
+  REQUIRED_VARS TBB_LIBRARY TBB_MALLOC_LIBRARY TBB_MPROXY_LIBRARY
+                TBB_INCLUDE_DIR)
 
 if(TBB_FOUND)
-  # These names are slightly off to match TBB's config output
   add_library(TBB::tbb UNKNOWN IMPORTED)
   set_target_properties(TBB::tbb PROPERTIES
                         IMPORTED_LOCATION "${TBB_LIBRARY}"

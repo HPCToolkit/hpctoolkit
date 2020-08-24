@@ -51,15 +51,16 @@ if(PKG_CONFIG_FOUND)
   endif()
 endif()
 
-find_path(Valgrind_INCLUDE_DIR NAMES valgrind.h HINTS ${PC_Valgrind_INCLUDE_DIRS})
+find_path(Valgrind_INCLUDE_DIR NAMES valgrind.h
+          HINTS ${PC_Valgrind_INCLUDE_DIRS})
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Valgrind
-                                  REQUIRED_VARS Valgrind_INCLUDE_DIR
-                                  VERSION_VAR Valgrind_VERSION)
+  REQUIRED_VARS Valgrind_INCLUDE_DIR
+  VERSION_VAR Valgrind_VERSION)
 
 if(Valgrind_FOUND)
-  add_library(Valgrind::Valgrind UNKNOWN IMPORTED)
-  set_target_properties(Valgrind::Valgrind PROPERTIES
+  add_library(Valgrind::headers UNKNOWN IMPORTED)
+  set_target_properties(Valgrind::headers PROPERTIES
                         INTERFACE_INCLUDE_DIRECTORIES "${Valgrind_INCLUDE_DIR}")
 endif()
