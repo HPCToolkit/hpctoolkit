@@ -636,7 +636,7 @@ void GPUAdvisor::trackDep(int from_vma, int to_vma, int id,
   std::set<CudaParse::Block *> &visited_blocks,
   std::vector<CudaParse::Block *> &path,
   std::vector<std::vector<CudaParse::Block *>> &paths,
-  TrackType track_type) {
+  TrackType track_type, bool fixed) {
   // The current block has been visited
   if (visited_blocks.find(from_block) != visited_blocks.end()) {
     return;
@@ -679,7 +679,11 @@ void GPUAdvisor::trackDep(int from_vma, int to_vma, int id,
   while (start_vma <= end_vma) {
     auto *inst = _vma_prop_map.at(start_vma).inst;
     // 1: instruction issue
-    latency_issue += 1;
+    if (fixed) {
+      latency_issue += 1;
+    } else {
+      latency_issue += inst->control.stall + 1;
+    }
 
     // 1. id on path constraint
     bool find = false;
@@ -718,7 +722,7 @@ void GPUAdvisor::trackDep(int from_vma, int to_vma, int id,
         if (target->type != CudaParse::TargetType::CALL) {
           // We do not need from_vma anymore
           trackDep(0, to_vma, id, target->block, to_block, latency_issue, latency,
-            visited_blocks, path, paths, track_type);
+            visited_blocks, path, paths, track_type, fixed);
         }
       }
     }
@@ -730,7 +734,7 @@ void GPUAdvisor::trackDep(int from_vma, int to_vma, int id,
 
 
 void GPUAdvisor::trackDepInit(int to_vma, int from_vma,
-  int dst, CCTEdgePathMap &cct_edge_path_map, TrackType track_type) {
+  int dst, CCTEdgePathMap &cct_edge_path_map, TrackType track_type, bool fixed) {
   // Search for all possible paths from dst to src.
   // Since the single path rate here is expected to be high,
   // The following code section only executes few times.
@@ -744,7 +748,7 @@ void GPUAdvisor::trackDepInit(int to_vma, int from_vma,
   std::vector<std::vector<CudaParse::Block *>> paths;
   auto latency = _vma_prop_map.at(from_vma).latency_upper;
   trackDep(from_vma, to_vma, dst, from_block, to_block,
-    0, latency, visited_blocks, path, paths, track_type);
+    0, latency, visited_blocks, path, paths, track_type, fixed);
 
   // Merge paths
   for (auto &path : paths) {
@@ -796,13 +800,14 @@ void GPUAdvisor::pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
     auto to_vma = to->lmIP();
     auto *to_inst = _vma_prop_map.at(to_vma).inst;
     auto *from_inst = _vma_prop_map.at(from_vma).inst;
+    bool fixed = from_inst->control.read == 0 && from_inst->control.write == 0;
 
     // Regular regs
     for (auto dst : from_inst->dsts) {
       // Find the dst reg that causes dependency
       auto assign_iter = to_inst->assign_pcs.find(dst);
       if (assign_iter != to_inst->assign_pcs.end()) {
-        trackDepInit(to_vma, from_vma, dst, cct_edge_path_map, TRACK_REG);
+        trackDepInit(to_vma, from_vma, dst, cct_edge_path_map, TRACK_REG, fixed);
       }
     }
 
@@ -810,7 +815,7 @@ void GPUAdvisor::pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
     for (auto pdst : from_inst->pdsts) {
       auto passign_iter = to_inst->passign_pcs.find(pdst);
       if (passign_iter != to_inst->passign_pcs.end()) {
-        trackDepInit(to_vma, from_vma, pdst, cct_edge_path_map, TRACK_PRED_REG);
+        trackDepInit(to_vma, from_vma, pdst, cct_edge_path_map, TRACK_PRED_REG, fixed);
       }
     }
 
@@ -819,7 +824,7 @@ void GPUAdvisor::pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
       // Find the dst barrier that causes dependency
       auto bassign_iter = to_inst->bassign_pcs.find(bdst);
       if (bassign_iter != to_inst->bassign_pcs.end()) {
-        trackDepInit(to_vma, from_vma, bdst, cct_edge_path_map, TRACK_BARRIER);
+        trackDepInit(to_vma, from_vma, bdst, cct_edge_path_map, TRACK_BARRIER, fixed);
       }
     }
 
@@ -827,7 +832,7 @@ void GPUAdvisor::pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
     for (auto pred_dst : from_inst->pdsts) {
       // Find the dst barrier that causes dependency
       if (to_inst->predicate == pred_dst) {
-        trackDepInit(to_vma, from_vma, pred_dst, cct_edge_path_map, TRACK_PREDICATE);
+        trackDepInit(to_vma, from_vma, pred_dst, cct_edge_path_map, TRACK_PREDICATE, fixed);
       }
     }
 
