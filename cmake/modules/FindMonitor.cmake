@@ -44,6 +44,12 @@
 
 find_library(Monitor_LIBRARY NAMES monitor
              DOC "Location of the libmonitor library")
+set(_all_library_suffixes ${CMAKE_FIND_LIBRARY_SUFFIXES})
+set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_STATIC_LIBRARY_SUFFIX})
+find_library(Monitor_LIBRARY_STATIC NAMES monitor
+             DOC "Location of the libmonitor static library")
+set(CMAKE_FIND_LIBRARY_SUFFIXES ${_all_library_suffixes})
+unset(_all_library_suffixes)
 find_library(Monitor_WRAP_LIBRARY NAMES monitor_wrap
              DOC "Location of the libmonitor wrap library")
 find_path(Monitor_INCLUDE_DIR NAMES monitor.h
@@ -58,6 +64,12 @@ if(Monitor_FOUND)
   set_target_properties(Monitor::Monitor PROPERTIES
                         IMPORTED_LOCATION "${Monitor_LIBRARY}"
                         INTERFACE_INCLUDE_DIRECTORIES "${Monitor_INCLUDE_DIR}")
+  if(Monitor_LIBRARY_STATIC)
+    add_library(Monitor::Monitor_static UNKNOWN IMPORTED)
+    set_target_properties(Monitor::Monitor_static PROPERTIES
+                          IMPORTED_LOCATION "${Monitor_LIBRARY_STATIC}"
+                          INTERFACE_INCLUDE_DIRECTORIES "${Monitor_INCLUDE_DIR}")
+  endif()
   add_library(Monitor::wrap UNKNOWN IMPORTED)
   set_target_properties(Monitor::wrap PROPERTIES
                         IMPORTED_LOCATION "${Monitor_WRAP_LIBRARY}"

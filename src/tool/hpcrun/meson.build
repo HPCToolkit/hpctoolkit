@@ -196,7 +196,23 @@ _common_cflags = [
   '-DLOCAL_BUILD=1',
   '-D__HIP_PLATFORM_HCC__=1',
 ]
-_common_deps = []
+
+_dynamic_srcs = [files(
+  'fnbounds/fnbounds_client.c',
+  'fnbounds/fnbounds_dynamic.c',
+  'monitor-exts/openmp.c',
+  'hpcrun_dlfns.c',
+  'custom-init-dynamic.c',
+)] + (host_machine.system() == 'linux' ? [files('os/linux/dylib.c')] : [])
+_dynamic_cflags = []
+_dynamic_deps = [libelf_dep, libmonitor_dep, gotcha_dep]
+
+_static_srcs = [files(
+  'fnbounds/fnbounds_static.c',
+  'custom-init-static.c',
+)]
+_static_cflags = ['-DHPCRUN_STATIC_LINK']
+_static_deps = [libelf_static_dep, zlib_dep, libmonitor_dep]
 
 if false  # TODO: Change out for a Blue Gene option
   _common_cflags += ['-DUSE_HW_THREAD_ID', '-DNONZERO_THRESHOLD']
@@ -211,51 +227,45 @@ if true  # TODO: Change to perf non-paranoid test/option
     'sample-sources/perf/perf_mmap.c',
     'sample-sources/perf/perf_skid.c',
 
-    perfmon_dep.found() ? 'sample-sources/perf/perfmon-util.c'
-                        : 'sample-sources/perf/perfmon-util-dummy.c',
-
     # TODO: Swap out for a linux >=4.3 test/option
     true ? 'sample-sources/perf/kernel_blocking.c'
          : 'sample-sources/perf/kernel_blocking_stub.c',
   )]
   _common_cflags += ['-DHPCRUN_SS_LINUX_PERF']
   _common_cflags += perfmon_dep.found() ? ['-DENABLE_PERFMON'] : []
+
+  _dynamic_srcs += [perfmon_dep.found() ? 'sample-sources/perf/perfmon-util.c'
+                                        : 'sample-sources/perf/perfmon-util-dummy.c']
+  _dynamic_deps += perfmon_dep.found() ? [perfmon_dep] : []
+
+  _static_srcs += [perfmon_static_dep.found() ? 'sample-sources/perf/perfmon-util.c'
+                                              : 'sample-sources/perf/perfmon-util-dummy.c']
+  _static_deps += perfmon_static_dep.found() ? [perfmon_static_dep] : []
 endif
 
-_dynamic_srcs = [files(
-  'fnbounds/fnbounds_client.c',
-  'fnbounds/fnbounds_dynamic.c',
-  'monitor-exts/openmp.c',
-  'hpcrun_dlfns.c',
-  'custom-init-dynamic.c',
-)] + (host_machine.system() == 'linux' ? [files('os/linux/dylib.c')] : [])
-_dynamic_cflags = []
-
-if libunwind_dep.found()
-  _dynamic_cflags += ['-DUSE_LIBUNWIND']
-endif
-
-if papi_dep.found()
-  if true  # TODO: Change this to match --enable-papi-c
-    _dynamic_srcs += [files(
-      'sample-sources/papi-c.c',
-      'sample-sources/papi-c-extended-info.c',
-    )]
-  else
-    _dynamic_srcs += [files(
-      'sample-sources/papi.c',
-    )]
-  endif
-
-  if false  # TODO: OPT_PAPI_CUPTI
-    _dynamic_srcs += [files(
+_papi_cflags = []
+if true  # TODO: Change this to match --enable-papi-c
+  _papi_srcs = [files(
+    'sample-sources/papi-c.c',
+    'sample-sources/papi-c-extended-info.c',
+  )]
+  if false  # TODO: --enable-papi-c-cupti
+    _papi_srcs += [files(
       'sample-sources/papi-c-cupti.c',
     )]
-    _dynamic_cflags += ['-DHPCRUN_SS_PAPI_C_CUPTI']
+    _papi_cflags += ['-DHPCRUN_SS_PAPI_C_CUPTI']
   endif
-
-  _dynamic_cflags += ['-DHPCRUN_SS_PAPI']
+else
+  _papi_srcs = [files(
+    'sample-sources/papi.c',
+  )]
 endif
+_dynamic_srcs += papi_dep.found() ? _papi_srcs : []
+_dynamic_cflags += papi_dep.found() ? _papi_cflags : []
+_dynamic_deps += papi_dep.found() ? [papi_dep] : []
+_static_srcs += papi_static_dep.found() ? _papi_srcs : []
+_static_cflags += papi_static_dep.found() ? _papi_cflags : []
+_static_deps += papi_static_dep.found() ? [papi_static_dep] : []
 
 if cuda_dep.found()
   _common_srcs += [files(
@@ -279,6 +289,7 @@ if rocm_headers_dep.found()
     'gpu/amd/roctracer-api.c',
   )]
   _dynamic_cflags += ['-DENABLE_ROCM', '-DHPCRUN_SS_AMD']
+  _dynamic_deps += [rocm_headers_dep]
 endif
 
 if host_machine.cpu_family() == 'mips64'
@@ -336,6 +347,8 @@ if true  # UNW_X86
     'unwind/x86-family/manual-intervals/x86-pgi-mp_pexit.c',
   )]
   _include_dirs += [include_directories('unwind/x86-family')]
+  _dynamic_deps += [xed_dep]
+  _static_deps += [xed_static_dep]
 elif false  # UNW_PPC64
   _common_srcs += [files(
     'unwind/ppc64/ppc64-unwind.c',
@@ -352,21 +365,33 @@ elif false  # UNW_LIBUNW
 endif  # NOTE: Dead UNW_MIPS files
 
 if libunwind_dep.found()
+  _dynamic_deps += [libunwind_dep]
   _dynamic_cflags += ['-DUSE_LIBUNWIND']
 endif
-#if libunwind_static_dep.found()
-  # XXX
-#endif
+if libunwind_static_dep.found()
+  _static_deps += [libunwind_static_dep]
+  _static_cflags += ['-DUSE_LIBUNWIND']
+endif
 
 libhpcrun_lib = shared_library('hpcrun',
   _common_srcs, _dynamic_srcs, 'utilities/last_func.c',
   include_directories: _include_dirs,
   c_args: _common_cflags + _dynamic_cflags,
-  dependencies: [libunwind_dep, libelf_dep, libmonitor_dep, gotcha_dep,
-                 xed_dep, papi_dep, perfmon_dep,
-                 cc.find_library('dl'), cc.find_library('rt'), dependency('threads')],
+  dependencies: _dynamic_deps
+    + [cc.find_library('dl'), cc.find_library('rt'), dependency('threads')],
   link_with: [prof_lean_lib, support_lean_lib],
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
 summary('hpcrun', not is_disabler(libhpcrun_lib), section: 'Applications', bool_yn: true)
 
+libhpcrun_static_lib = executable('hpcrun_static',
+  _common_srcs, _static_srcs, 'utilities/last_func.c',
+  name_suffix: 'o', link_args: ['-Wl,-relocatable'],
+  include_directories: _include_dirs,
+  c_args: _common_cflags + _static_cflags,
+  dependencies: _static_deps
+    + [cc.find_library('dl'), dependency('threads')],
+  link_with: [prof_lean_static_lib, support_lean_static_lib],
+  install: true, install_dir: get_option('libdir') / meson.project_name(),
+)
+summary('hpclink', not is_disabler(libhpcrun_static_lib), section: 'Applications', bool_yn: true)

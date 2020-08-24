@@ -57,7 +57,7 @@ find_library(LibUnwind_LIBRARY NAMES unwind
              HINTS ${PC_LibUnwind_LIBRARY_DIRS})
 set(_all_library_suffixes ${CMAKE_FIND_LIBRARY_SUFFIXES})
 set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_STATIC_LIBRARY_SUFFIX})
-find_library(LibUnwind_LIBRARY NAMES unwind
+find_library(LibUnwind_LIBRARY_STATIC NAMES unwind
              HINTS ${PC_LibUnwind_LIBRARY_DIRS})
 set(CMAKE_FIND_LIBRARY_SUFFIXES ${_all_library_suffixes})
 unset(_all_library_suffixes)
