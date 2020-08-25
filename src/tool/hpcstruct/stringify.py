@@ -4,5 +4,7 @@ import sys
 import re
 
 end = re.compile('\n')
-for line in sys.stdin:
-    print('"' + end.sub(r'\\n"', line))
+with open(sys.argv[1], 'r') as infile:
+    with open(sys.argv[2], 'w') as outfile:
+        for line in infile:
+            print('"' + end.sub(r'\\n"', line), file=outfile)
