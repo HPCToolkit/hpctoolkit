@@ -177,7 +177,8 @@ void analyze_instruction<INS_TYPE_CONTROL>(const Instruction &inst, std::string 
   const std::string &opcode = inst.opcode;
 
   if (opcode.find("MEMBAR") != std::string::npos ||
-    opcode.find("DEPBAR") != std::string::npos) {
+    opcode.find("DEPBAR") != std::string::npos ||
+    opcode.find("ERRBAR") != std::string::npos) {
     type = ".BAR";
   } else if (opcode.find("BAR") != std::string::npos) {
     type = ".SYNC";
@@ -463,6 +464,7 @@ void relocateCudaInstructionStats(std::vector<Function *> &functions) {
           // Calculate absolute address
           auto *inst_stat = inst->inst_stat;
           inst_stat->pc += function->address;
+
           for (auto &iter : inst_stat->assign_pcs) {
             for (auto piter = iter.second.begin(); piter != iter.second.end(); ++piter) {
               *piter += function->address;
@@ -472,6 +474,14 @@ void relocateCudaInstructionStats(std::vector<Function *> &functions) {
             for (auto piter = iter.second.begin(); piter != iter.second.end(); ++piter) {
               *piter += function->address;
             }
+          }
+          for (auto &iter : inst_stat->bassign_pcs) {
+            for (auto biter = iter.second.begin(); biter != iter.second.end(); ++biter) {
+              *biter += function->address;
+            }
+          }
+          for (auto &predicate_assign_pc : inst_stat->predicate_assign_pcs) {
+            predicate_assign_pc += function->address;
           }
         }
       }
@@ -487,11 +497,38 @@ static int reg_name_to_id(const std::string &name) {
 }
 
 
-class FirstMatchPred : public Dyninst::Slicer::Predicates {
+class IgnoreRegPred : public Dyninst::Slicer::Predicates {
  public:
-  virtual bool endAtPoint(Dyninst::Assignment::Ptr ap) {
+  IgnoreRegPred(std::vector<Dyninst::AbsRegion> &rhs) : _rhs(rhs) {}
+
+  virtual bool modifyCurrentFrame(Dyninst::Slicer::SliceFrame &slice_frame,
+    Dyninst::GraphPtr graph_ptr, Dyninst::Slicer *slicer) {
+    std::vector<Dyninst::AbsRegion> delete_abs_regions;
+
+    for (auto &active_iter : slice_frame.active) {
+      // Filter unmatched regs
+      auto &abs_region = active_iter.first;
+      bool find = false;
+      for (auto &rhs_abs_region : _rhs) {
+        if (abs_region.absloc().reg() == rhs_abs_region.absloc().reg()) {
+          find = true;
+          break;
+        }
+      }
+      if (find == false) {
+        delete_abs_regions.push_back(abs_region);
+      }
+    }
+
+    for (auto &abs_region : delete_abs_regions) {
+      slice_frame.active.erase(abs_region);
+    }
+
     return true;
   }
+
+ private:
+  std::vector<Dyninst::AbsRegion> _rhs;
 };
 
 
@@ -512,6 +549,135 @@ void controlCudaInstructions(const char *cubin, std::vector<Function *> &functio
           inst_stat->control.write = ((bits & (0x0001c00000000000)) >> 46);
           inst_stat->control.yield = ((bits & (0x0000200000000000)) >> 45);
           inst_stat->control.stall = ((bits & (0x00001e0000000000)) >> 41);
+          
+          auto wait = inst_stat->control.wait;
+          for (auto i = 0; i < InstructionStat::WAIT_BITS; ++i) {
+            if (wait & (1 << i)) {
+              inst_stat->bsrcs.push_back(i);
+            }
+          }
+
+          auto read = inst_stat->control.read;
+          if (read != InstructionStat::BARRIER_NONE) {
+            inst_stat->bdsts.push_back(read);
+          }
+
+          auto write = inst_stat->control.write;
+          if (write != InstructionStat::BARRIER_NONE) {
+            inst_stat->bdsts.push_back(write);
+          }
+        }
+      }
+    }
+  }
+}
+
+#define TRACK_LIMIT 8
+
+static void trackDependency(const std::map<int, InstructionStat *> &inst_stat_map,
+  Dyninst::Address inst_addr, Dyninst::Address func_addr, std::map<int, int> &predicate_map,
+  Dyninst::NodeIterator exit_node_iter, InstructionStat *inst_stat, int step) {
+  if (step >= TRACK_LIMIT) {
+    return;
+  }
+  Dyninst::NodeIterator in_begin, in_end;
+  (*exit_node_iter)->ins(in_begin, in_end);
+  for (; in_begin != in_end; ++in_begin) {
+    auto slice_node = boost::dynamic_pointer_cast<Dyninst::SliceNode>(*in_begin);
+    auto addr = slice_node->addr();
+    auto *slice_inst = inst_stat_map.at(addr);
+
+    if (INSTRUCTION_ANALYZER_DEBUG) {
+      std::cout << "find inst_addr " << inst_addr - func_addr <<
+        " <- addr: " << addr - func_addr;
+    }
+
+    Dyninst::Assignment::Ptr aptr = slice_node->assign();
+    auto reg = aptr->out().absloc().reg();
+    auto reg_id = reg.val() & 0xFF;
+    if (reg.val() & Dyninst::cuda::PR) {
+      if (reg_id == inst_stat->predicate) {
+        auto beg = inst_stat->predicate_assign_pcs.begin();
+        auto end = inst_stat->predicate_assign_pcs.end();
+        if (std::find(beg, end, addr - func_addr) == end) {
+          inst_stat->predicate_assign_pcs.push_back(addr - func_addr);
+        }
+      }
+
+      for (size_t i = 0; i < inst_stat->psrcs.size(); ++i) {
+        if (reg_id == inst_stat->psrcs[i]) {
+          auto beg = inst_stat->passign_pcs[reg_id].begin();
+          auto end = inst_stat->passign_pcs[reg_id].end();
+          if (std::find(beg, end, addr - func_addr) == end) {
+            inst_stat->passign_pcs[reg_id].push_back(addr - func_addr);
+          }
+          break;
+        }
+      }
+
+      if (INSTRUCTION_ANALYZER_DEBUG) {
+        std::cout << " predicate reg " << reg_id << std::endl;
+      }
+    } else if (reg.val() & Dyninst::cuda::BR) {
+      for (size_t i = 0; i < inst_stat->bsrcs.size(); ++i) {
+        if (reg_id == inst_stat->bsrcs[i]) {
+          auto beg = inst_stat->bassign_pcs[reg_id].begin();
+          auto end = inst_stat->bassign_pcs[reg_id].end();
+          if (std::find(beg, end, addr - func_addr) == end) {
+            inst_stat->bassign_pcs[reg_id].push_back(addr - func_addr);
+          }
+          break;
+        }
+      }
+
+      if (INSTRUCTION_ANALYZER_DEBUG) {
+        std::cout << " barrier " << reg_id << std::endl;
+      }
+    } else {
+      for (size_t i = 0; i < inst_stat->srcs.size(); ++i) {
+        if (reg_id == inst_stat->srcs[i]) {
+          auto beg = inst_stat->assign_pcs[reg_id].begin();
+          auto end = inst_stat->assign_pcs[reg_id].end();
+          if (std::find(beg, end, addr - func_addr) == end) {
+            inst_stat->assign_pcs[reg_id].push_back(addr - func_addr);
+          }
+          break;
+        }
+      }
+
+      if (INSTRUCTION_ANALYZER_DEBUG) {
+        std::cout << " reg " << reg_id << std::endl;
+      }
+    }
+
+    if (slice_inst->predicate_flag == InstructionStat::PREDICATE_NONE) {
+      // 1. No predicate, stop immediately
+    } else if (inst_stat->predicate == slice_inst->predicate &&
+      inst_stat->predicate_flag == slice_inst->predicate_flag) {
+      // 2. Find an exact match, stop immediately
+    } else {
+      if ((slice_inst->predicate_flag == InstructionStat::PREDICATE_TRUE && 
+          predicate_map[-(slice_inst->predicate + 1)] > 0) || 
+        (slice_inst->predicate_flag == InstructionStat::PREDICATE_FALSE && 
+         predicate_map[(slice_inst->predicate + 1)] > 0)) {
+        // 3. Stop if find both !@PI and @PI
+        // add one to avoid P0
+      } else {
+        // 4. Continue search
+        if (slice_inst->predicate_flag == InstructionStat::PREDICATE_TRUE) {
+          predicate_map[slice_inst->predicate + 1]++;
+        } else {
+          predicate_map[-(slice_inst->predicate + 1)]++;
+        }
+
+        trackDependency(inst_stat_map, inst_addr, func_addr, predicate_map,
+          in_begin, inst_stat, step + 1);
+        
+        // Clear
+        if (slice_inst->predicate_flag == InstructionStat::PREDICATE_TRUE) {
+          predicate_map[slice_inst->predicate + 1]--;
+        } else {
+          predicate_map[-(slice_inst->predicate + 1)]--;
         }
       }
     }
@@ -522,27 +688,34 @@ void controlCudaInstructions(const char *cubin, std::vector<Function *> &functio
 void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_set,
   std::vector<Function *> &functions) {
   // Build a instruction map
-  std::map<int, InstructionStat *> inst_stats_map;
+  std::map<int, InstructionStat *> inst_stat_map;
   std::map<int, Block *> inst_block_map;
   for (auto *function : functions) {
     for (auto *block : function->blocks) {
       for (auto *inst : block->insts) {
         if (inst->inst_stat) {
           auto *inst_stat = inst->inst_stat;
-          inst_stats_map[inst->offset] = inst_stat;
+          inst_stat_map[inst->offset] = inst_stat;
           inst_block_map[inst->offset] = block;
         }
       }
     }
   }
 
-  for (auto *dyn_func : func_set) {
+  std::vector<Dyninst::ParseAPI::Function*> func_vec;
+  for (auto dyn_func : func_set) {
+    func_vec.emplace_back(dyn_func);
+  }
+
+  #pragma omp parallel for schedule(dynamic)
+  for (size_t i = 0; i < func_vec.size(); ++i) {
+    Dyninst::ParseAPI::Function* dyn_func = func_vec[i];
     Dyninst::AssignmentConverter ac(true, false);
     auto func_addr = dyn_func->addr();
 
+    // Prepare pass: create instruction cache for slicing
     Dyninst::Slicer::InsnCache dyn_inst_cache;
     for (auto *dyn_block : dyn_func->blocks()) {
-      // Create instruction cache for slicing
       Dyninst::ParseAPI::Block::Insns insns;
       dyn_block->getInsns(insns);
       for (auto &iter : insns) {
@@ -551,14 +724,15 @@ void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_s
       }
     }
 
+    // First pass: slice instructions that have direct def instructions that contain them
     for (auto *dyn_block : dyn_func->blocks()) {
       Dyninst::ParseAPI::Block::Insns insns;
       dyn_block->getInsns(insns);
 
       for (auto &inst_iter : insns) {
-        auto inst = inst_iter.second;
+        auto &inst = inst_iter.second;
         auto inst_addr = inst_iter.first;
-        auto *inst_stat = inst_stats_map[inst_addr];
+        auto *inst_stat = inst_stat_map.at(inst_addr);
 
         if (INSTRUCTION_ANALYZER_DEBUG) {
           std::cout << "try to find inst_addr " << inst_addr - func_addr << std::endl;
@@ -568,7 +742,7 @@ void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_s
         ac.convert(inst, inst_addr, dyn_func, dyn_block, assignments); 
 
         for (auto a : assignments) {
-          FirstMatchPred p;
+          IgnoreRegPred p(a->inputs());
           Dyninst::Slicer s(a, dyn_block, dyn_func, &ac, &dyn_inst_cache);
           Dyninst::GraphPtr g = s.backwardSlice(p); 
 
@@ -576,64 +750,19 @@ void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_s
           g->exitNodes(exit_begin, exit_end);
 
           for (; exit_begin != exit_end; ++exit_begin) {
-            Dyninst::NodeIterator in_begin, in_end;
-            (*exit_begin)->ins(in_begin, in_end);
-            for (; in_begin != in_end; ++in_begin) {
-              auto slice_node = boost::dynamic_pointer_cast<Dyninst::SliceNode>(*in_begin);
-              auto addr = slice_node->addr();
-
-              if (INSTRUCTION_ANALYZER_DEBUG) {
-                std::cout << "find inst_addr " << inst_addr - func_addr <<
-                  " <- addr: " << addr - func_addr;
-              }
-
-              Dyninst::Assignment::Ptr aptr = slice_node->assign();
-              auto reg = aptr->out().absloc().reg();
-              auto reg_id = reg.val() & 0xFF;
-              if (reg.val() & Dyninst::cuda::PR) {
-                if (reg_id == inst_stat->predicate) {
-                  auto beg = inst_stat->predicate_assign_pcs.begin();
-                  auto end = inst_stat->predicate_assign_pcs.end();
-                  if (std::find(beg, end, addr - func_addr) == end) {
-                    inst_stat->predicate_assign_pcs.push_back(addr - func_addr);
-                  }
-                }
-
-                for (size_t i = 0; i < inst_stat->psrcs.size(); ++i) {
-                  if (reg_id == inst_stat->psrcs[i]) {
-                    auto beg = inst_stat->passign_pcs[reg_id].begin();
-                    auto end = inst_stat->passign_pcs[reg_id].end();
-                    if (std::find(beg, end, addr - func_addr) == end) {
-                      inst_stat->passign_pcs[reg_id].push_back(addr - func_addr);
-                    }
-                    break;
-                  }
-                }
-
-                if (INSTRUCTION_ANALYZER_DEBUG) {
-                  std::cout << " predicate reg " << reg_id << std::endl;
-                }
-              } else {
-                for (size_t i = 0; i < inst_stat->srcs.size(); ++i) {
-                  if (reg_id == inst_stat->srcs[i]) {
-                    auto beg = inst_stat->assign_pcs[reg_id].begin();
-                    auto end = inst_stat->assign_pcs[reg_id].end();
-                    if (std::find(beg, end, addr - func_addr) == end) {
-                      inst_stat->assign_pcs[reg_id].push_back(addr - func_addr);
-                    }
-                    break;
-                  }
-                }
-
-                if (INSTRUCTION_ANALYZER_DEBUG) {
-                  std::cout << " reg " << reg_id << std::endl;
-                }
-              }
+            std::map<int, int> predicate_map;
+            // DFS to iterate the whole dependency graph
+            if (inst_stat->predicate_flag == InstructionStat::PREDICATE_TRUE) {
+              predicate_map[inst_stat->predicate + 1]++;
+            } else if (inst_stat->predicate_flag == InstructionStat::PREDICATE_FALSE) {
+              predicate_map[-(inst_stat->predicate + 1)]++;
             }
+            trackDependency(inst_stat_map, inst_addr, func_addr, predicate_map,
+              exit_begin, inst_stat, 0);
           }
         }
       }
-    }   
+    }
   }
 }
 
@@ -654,6 +783,12 @@ bool dumpCudaInstructions(const std::string &file_path,
     ptree_function.put("index", function->index);
     ptree_function.put("name", function->name);
     ptree_function.put("address", function->address);
+    ptree_function.put("global", function->global);
+    ptree_function.put("unparsable", function->unparsable);
+
+    if (function->unparsable == true) {
+      continue;
+    }
 
     for (auto *block : function->blocks) {
       boost::property_tree::ptree ptree_block;
@@ -681,6 +816,8 @@ bool dumpCudaInstructions(const std::string &file_path,
         boost::property_tree::ptree ptree_dsts;
         boost::property_tree::ptree ptree_psrcs;
         boost::property_tree::ptree ptree_pdsts;
+        boost::property_tree::ptree ptree_bsrcs;
+        boost::property_tree::ptree ptree_bdsts;
 
         // Instruction offsets have been relocated
         if (inst->inst_stat == NULL) {
@@ -691,19 +828,16 @@ bool dumpCudaInstructions(const std::string &file_path,
           // Append Normal instructions
           ptree_inst.put("pc", inst->offset - function->address);
           ptree_inst.put("op", inst->inst_stat->op);
-          if (inst->inst_stat->predicate != -1) {
-            ptree_inst.put("pred", inst->inst_stat->predicate);
+          ptree_inst.put("pred", inst->inst_stat->predicate);
 
-            boost::property_tree::ptree ptree_predicate_assign_pcs;
-            for (auto predicate_assign_pc : inst->inst_stat->predicate_assign_pcs) {
-              boost::property_tree::ptree tt;
-              tt.put("", predicate_assign_pc);
-              ptree_predicate_assign_pcs.push_back(std::make_pair("", tt));
-            }
-            ptree_inst.add_child("pred_assign_pcs", ptree_predicate_assign_pcs);
-          } else {
-            ptree_inst.put("pred", "");
+          boost::property_tree::ptree ptree_predicate_assign_pcs;
+          for (auto predicate_assign_pc : inst->inst_stat->predicate_assign_pcs) {
+            boost::property_tree::ptree tt;
+            tt.put("", predicate_assign_pc);
+            ptree_predicate_assign_pcs.push_back(std::make_pair("", tt));
           }
+
+          ptree_inst.add_child("pred_assign_pcs", ptree_predicate_assign_pcs);
           ptree_inst.put("pred_flag", inst->inst_stat->predicate_flag);
 
           // Control info
@@ -716,7 +850,7 @@ bool dumpCudaInstructions(const std::string &file_path,
           control.put("stall", inst->inst_stat->control.stall);
           ptree_inst.add_child("control", control);
 
-          // Dest operands and dest predicate operands
+          // Dest operands, dest predicate operands, and dest barriers
           for (auto dst : inst->inst_stat->dsts) {
             boost::property_tree::ptree t;
             t.put("", dst);
@@ -731,7 +865,14 @@ bool dumpCudaInstructions(const std::string &file_path,
           }
           ptree_inst.add_child("pdsts", ptree_pdsts);
 
-          // Source operands and source predicate operands
+          for (auto bdst : inst->inst_stat->bdsts) {
+            boost::property_tree::ptree t;
+            t.put("", bdst);
+            ptree_bdsts.push_back(std::make_pair("", t));
+          }
+          ptree_inst.add_child("bdsts", ptree_bdsts);
+
+          // Source operands, source predicate operands, and dest barriers
           for (auto src : inst->inst_stat->srcs) {
             boost::property_tree::ptree t;
             t.put("id", src);
@@ -771,6 +912,26 @@ bool dumpCudaInstructions(const std::string &file_path,
           }
 
           ptree_inst.add_child("psrcs", ptree_psrcs);
+
+          for (auto bsrc : inst->inst_stat->bsrcs) {
+            boost::property_tree::ptree t;
+            t.put("id", bsrc);
+
+            boost::property_tree::ptree ptree_bassign_pcs;
+            auto iter = inst->inst_stat->bassign_pcs.find(bsrc);
+            if (iter != inst->inst_stat->bassign_pcs.end()) {
+              for (auto bassign_pc : iter->second) {
+                boost::property_tree::ptree tt;
+                tt.put("", bassign_pc);
+                ptree_bassign_pcs.push_back(std::make_pair("", tt));
+              }
+            }
+            t.add_child("bassign_pcs", ptree_bassign_pcs);
+
+            ptree_bsrcs.push_back(std::make_pair("", t));
+          }
+
+          ptree_inst.add_child("bsrcs", ptree_bsrcs);
         }
 
         ptree_insts.push_back(std::make_pair("", ptree_inst));
@@ -810,10 +971,17 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
     int function_index = ptree_function.second.get<int>("index", 0);
     int function_address = ptree_function.second.get<int>("address", 0);
     std::string name = ptree_function.second.get<std::string>("name", "");
-    auto *function = new Function(function_id, function_index, name, function_address);
+    bool unparsable = ptree_function.second.get<bool>("unparsable", "");
+    bool global = ptree_function.second.get<bool>("global", "");
+    auto *function = new Function(function_id, function_index, name, function_address, unparsable, global);
 
     if (INSTRUCTION_ANALYZER_DEBUG) {
       std::cout << "Function id: " << function_id << std::endl;
+    }
+
+    if (function->unparsable) {
+      // Skip unparsable functions
+      continue;
     }
 
     auto &ptree_blocks = ptree_function.second.get_child("blocks");
@@ -875,6 +1043,13 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
           pdsts.push_back(pdst);
         }
 
+        std::vector<int> bdsts;
+        auto &ptree_bdsts = ptree_inst.second.get_child("bdsts");
+        for (auto &ptree_bdst : ptree_bdsts) {
+          int bdst = boost::lexical_cast<int>(ptree_bdst.second.data());
+          bdsts.push_back(bdst);
+        }
+
         std::vector<int> srcs; 
         std::map<int, std::vector<int> > assign_pcs;
         auto &ptree_srcs = ptree_inst.second.get_child("srcs");
@@ -901,8 +1076,21 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
           }
         }
 
+        std::vector<int> bsrcs;
+        std::map<int, std::vector<int> > bassign_pcs;
+        auto &ptree_bsrcs = ptree_inst.second.get_child("bsrcs");
+        for (auto &ptree_bsrc : ptree_bsrcs) {
+          int bsrc = ptree_bsrc.second.get<int>("id", 0);
+          bsrcs.push_back(bsrc);
+          auto &ptree_bassign_pcs = ptree_bsrc.second.get_child("bassign_pcs");
+          for (auto &ptree_bassign_pc : ptree_bassign_pcs) {
+            int bassign_pc = boost::lexical_cast<int>(ptree_bassign_pc.second.data());
+            bassign_pcs[bsrc].push_back(bassign_pc);
+          }
+        }
+
         auto *inst_stat = new InstructionStat(op, pc, pred, pred_flag, pred_assign_pcs, dsts, srcs,
-          pdsts, psrcs, assign_pcs, passign_pcs, control);
+          pdsts, psrcs, bdsts, bsrcs, assign_pcs, passign_pcs, bassign_pcs, control);
         auto *inst = new Instruction(inst_stat);
         inst_map[pc] = inst;
 
@@ -916,33 +1104,55 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
             std::cout << dst << ", ";
           }
           std::cout << std::endl;
-          std::cout << "     srcs: ";
+          std::cout << "     srcs: " << std::endl;
           for (auto src : srcs) {
-            std::cout << src << ": ";
-            auto iter = assign_pcs.find(src);
-            if (iter != assign_pcs.end()) {
-              for (auto assign_pc : iter->second) {
-                std::cout << assign_pc << std::endl;
+            if (src != -1) {
+              std::cout << "     " << src << "-> ";
+              auto iter = assign_pcs.find(src);
+              if (iter != assign_pcs.end()) {
+                for (auto assign_pc : iter->second) {
+                  std::cout << "0x" << std::hex << assign_pc << std::dec << ", ";
+                }
               }
+              std::cout << std::endl;
             }
           }
-          std::cout << std::endl;
           std::cout << "     pdsts: ";
           for (auto pdst : pdsts) {
             std::cout << pdst << ", ";
           }
           std::cout << std::endl;
-          std::cout << "     psrcs: ";
+          std::cout << "     psrcs: " << std::endl;
           for (auto psrc : psrcs) {
-            std::cout << psrc << ": ";
-            auto iter = passign_pcs.find(psrc);
-            if (iter != passign_pcs.end()) {
-              for (auto passign_pc : iter->second) {
-                std::cout << passign_pc << std::endl;
+            if (psrc != -1) {
+              std::cout << "     " << psrc << ", ";
+              auto iter = passign_pcs.find(psrc);
+              if (iter != passign_pcs.end()) {
+                for (auto passign_pc : iter->second) {
+                  std::cout << "0x" << std::hex << passign_pc << std::dec << ", ";
+                }
               }
+              std::cout << std::endl;
             }
           }
+          std::cout << "     bdsts: ";
+          for (auto bdst : bdsts) {
+            std::cout << bdst << ", ";
+          }
           std::cout << std::endl;
+          std::cout << "     bsrcs: " << std::endl;
+          for (auto bsrc : bsrcs) {
+            if (bsrc != -1) {
+              std::cout << "     " << bsrc << ", ";
+              auto iter = bassign_pcs.find(bsrc);
+              if (iter != bassign_pcs.end()) {
+                for (auto bassign_pc : iter->second) {
+                  std::cout << "0x" << std::hex << bassign_pc << std::dec << ", ";
+                }
+              }
+              std::cout << std::endl;
+            }
+          }
         }
 
         block->insts.emplace_back(inst);

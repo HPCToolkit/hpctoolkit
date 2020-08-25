@@ -44,12 +44,45 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef VALGRIND_H
-#define VALGRIND_H
+//*****************************************************************************
+// system includes
+//*****************************************************************************
 
-// comment/uncomment line below to turn on/off valgrind
-// translations of hpcrun_malloc, hpcrun_malloc_freeable
+#include <time.h>
+#include <assert.h>
 
-// #define VALGRIND 1
 
-#endif // VALGRIND_H
+//*****************************************************************************
+// local includes
+//*****************************************************************************
+
+#include "hpcrun-nanotime.h"
+
+
+
+//*****************************************************************************
+// macros
+//*****************************************************************************
+
+#define NS_PER_SEC 1000000000
+
+
+//*****************************************************************************
+//*****************************************************************************
+// interface operations
+//*****************************************************************************
+
+uint64_t
+hpcrun_nanotime()
+{
+  struct timespec now;
+
+  int res = clock_gettime(CLOCK_REALTIME, &now);
+
+  assert(res == 0);
+
+  uint64_t now_sec = now.tv_sec;
+  uint64_t now_ns = now_sec * NS_PER_SEC + now.tv_nsec;
+
+  return now_ns;
+}

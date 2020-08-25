@@ -74,15 +74,18 @@ struct Function {
   size_t index;
   std::string name;
   int address;
+  bool unparsable;
+  bool global;
 
-  Function(size_t id, const std::string &name) : id(id), index(0), name(name),
-    address(0) {}
-
-  Function(size_t id, const std::string &name, int address) : id(id), index(0), name(name),
-    address(address) {}
+  Function(size_t id, size_t index, const std::string &name, int address, bool unparsable, bool global) :
+    id(id), index(index), name(name), address(address), unparsable(unparsable), global(global) {}
 
   Function(size_t id, size_t index, const std::string &name, int address) :
-    id(id), index(index), name(name), address(address) {}
+    Function(id, index, name, address, false, false) {}
+
+  Function(size_t id, const std::string &name, int address) : Function(id, 0, name, address) {}
+
+  Function(size_t id, const std::string &name) : Function(id, 0, name, 0) {}
 
   ~Function() {
     for (auto *block : blocks) {

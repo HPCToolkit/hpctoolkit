@@ -52,4 +52,6 @@
 
 #define GPU_INST_METRIC_NAME "GINS"
 
+#define GPU_KERNEL_METRIC_NAME "GKER (sec)"
+
 #endif

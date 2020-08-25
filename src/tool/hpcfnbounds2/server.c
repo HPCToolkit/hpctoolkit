@@ -104,7 +104,6 @@ static int fdout;
 static uint64_t  addr_buf[ADDR_SIZE];
 static long  num_addrs;
 static long  total_num_addrs;
-// static long  max_num_addrs;
 
 static char *inbuf;
 static long  inbuf_size;
@@ -114,9 +113,11 @@ static struct syserv_fnbounds_info fnb_info;
 static int jmpbuf_ok = 0;
 static sigjmp_buf jmpbuf;
 
-// static int sent_ok_mesg;
-
-void
+// 
+// Although init_server only returns 0 for now (errors don't interrupt)
+// we could return 1 in case of a problem
+//
+uint64_t 
 init_server (DiscoverFnTy fn_discovery, int fd1, int fd2)
 {
   struct syserv_mesg mesg;
@@ -124,8 +125,8 @@ init_server (DiscoverFnTy fn_discovery, int fd1, int fd2)
   fdin = fd1;
   fdout = fd2;
 
-// write version into output (.log file in the measurements directory)
-  fprintf(stderr, "Begin hpcfnbounds2 server, DiscoverFnTy = %d\n", fn_discovery);
+  // write version into output (.log file in the measurements directory)
+  // fprintf(stderr, "FNB2: Begin hpcfnbounds2 server, DiscoverFnTy = %d\n", fn_discovery);
 
   inbuf_size = INIT_INBUF_SIZE;
   inbuf = (char *) malloc(inbuf_size);
@@ -164,7 +165,11 @@ init_server (DiscoverFnTy fn_discovery, int fd1, int fd2)
     }
   }
 
-  exit(0);
+  //
+  // if we've finished, return
+  //
+  return 0;
+//   exit(0);
 }
 
 
@@ -172,7 +177,7 @@ init_server (DiscoverFnTy fn_discovery, int fd1, int fd2)
 // fnbounds server
 //*****************************************************************
 
-static void
+void
 do_query(DiscoverFnTy fn_discovery, struct syserv_mesg *mesg)
 {
   char *ret;
@@ -192,10 +197,12 @@ do_query(DiscoverFnTy fn_discovery, struct syserv_mesg *mesg)
     err(1, "read from fdin failed");
   }
 
-  fprintf(stderr, "newfnb begin processing %s -- %s\n", strrchr(inbuf, '/'), inbuf );
+  if (verbose) {
+    fprintf(stderr, "FNB2: begin processing %s -- %s\n", strrchr(inbuf, '/'), inbuf );
+  }
   ret = get_funclist(inbuf);
   if ( ret != NULL) {
-    fprintf(stderr, "\nServer failure processing %s: %s\n", inbuf, ret );
+    fprintf(stderr, "\nFNB2: Server failure processing %s: %s\n", inbuf, ret );
 
     // send the error message to the server
     int rets = write_mesg(SYSERV_ERR, 0);
@@ -224,7 +231,9 @@ send_funcs ()
       lastaddr = farray[i].fadd;
     }
   }
-  fprintf(stderr, "newfnb %s = %d -- %s\n", strrchr(inbuf, '/'), np, inbuf );
+  if (verbose) {
+    fprintf(stderr, "FNB2: %s = %d (%ld) -- %s\n", strrchr(inbuf, '/'), np, (uint64_t)nfunc, inbuf );
+  }
 
   // send the OK mesg with the count of addresses
   ret = write_mesg(SYSERV_OK, np+1);
@@ -246,10 +255,12 @@ send_funcs ()
       ret = write_all(fdout, addr_buf, num_addrs * sizeof(void *));
       if (ret != SUCCESS) {
         errx(1, "Server write_all to fdout failed");
+#if DEBUG
       } else {
         if (verbose) {
-          fprintf(stderr, "Server write_all %ld\n", num_addrs * sizeof(void *) );
+          fprintf(stderr, "FNB2: Server write_all %ld\n", num_addrs * sizeof(void *) );
 	}
+#endif
       }
       num_addrs = 0;
     }
@@ -263,10 +274,12 @@ send_funcs ()
     ret = write_all(fdout, addr_buf, num_addrs * sizeof(void *));
     if (ret != SUCCESS) {
       errx(1, "Server write_all to fdout failed");
+#if DEBUG
     } else {
       if (verbose) {
-        fprintf(stderr, "Server write_all %ld\n", num_addrs * sizeof(void *) );
+        fprintf(stderr, "FNB2: Server write_all %ld\n", num_addrs * sizeof(void *) );
       }
+#endif
     }
     num_addrs = 0;
   }
@@ -279,10 +292,12 @@ send_funcs ()
   ret = write_all(fdout, addr_buf, num_addrs * sizeof(void *));
   if (ret != SUCCESS) {
     errx(1, "Server flush write_all to fdout failed");
+#if DEBUG
   } else {
     if (verbose) {
-      fprintf(stderr, "Server flush write_all %ld bytes\n", num_addrs * sizeof(void *) );
+      fprintf(stderr, "FNB2: Server flush write_all %ld bytes\n", num_addrs * sizeof(void *) );
     }
+#endif
   }
 
   // now send the fnb end record
@@ -302,9 +317,11 @@ send_funcs ()
   if (ret != SUCCESS) {
     err(1, "Server fnb_into write_all to fdout failed");
   } else {
+#if DEBUG
     if (verbose) {
-      fprintf(stderr, "Server fnb_info write_all %ld bytes\n", sizeof(fnb_info) );
+      fprintf(stderr, "FNB2: Server fnb_info write_all %ld bytes\n", sizeof(fnb_info) );
     }
+#endif
   }
 }
 
@@ -315,7 +332,7 @@ send_funcs ()
 // Automatically restart short reads over a pipe.
 // Returns: SUCCESS, FAILURE or END_OF_FILE.
 //
-static int
+int
 read_all(int fd, void *buf, size_t count)
 {
   ssize_t ret;
@@ -342,7 +359,7 @@ read_all(int fd, void *buf, size_t count)
 // Automatically restart short writes over a pipe.
 // Returns: SUCCESS or FAILURE.
 //
-static int
+int
 write_all(int fd, const void *buf, size_t count)
 {
   ssize_t ret;
@@ -366,7 +383,7 @@ write_all(int fd, const void *buf, size_t count)
 // Read a single syserv mesg from incoming pipe.
 // Returns: SUCCESS, FAILURE or END_OF_FILE.
 //
-static int
+int
 read_mesg(struct syserv_mesg *mesg)
 {
   int ret;
@@ -376,10 +393,12 @@ read_mesg(struct syserv_mesg *mesg)
   if (ret == SUCCESS && mesg->magic != SYSERV_MAGIC) {
     ret = FAILURE;
   }
+#if DEBUG
   if (verbose) {
-	fprintf(stderr, "Server read  message, type = %d, len = %ld\n",
+	fprintf(stderr, "FNB2: Server read  message, type = %d, len = %ld\n",
 	    mesg->type, mesg->len);
   }
+#endif
 
   return ret;
 }
@@ -388,7 +407,7 @@ read_mesg(struct syserv_mesg *mesg)
 // Write a single syserv mesg to outgoing pipe.
 // Returns: SUCCESS or FAILURE.
 //
-static int
+int
 write_mesg(int32_t type, int64_t len)
 {
   struct syserv_mesg mesg;
@@ -397,10 +416,12 @@ write_mesg(int32_t type, int64_t len)
   mesg.type = type;
   mesg.len = len;
 
+#if DEBUG
   if (verbose) {
-	fprintf(stderr, "Server write  message, type = %d, len = %ld\n",
+	fprintf(stderr, "FNB2: Server write  message, type = %d, len = %ld\n",
 	    type, len);
   }
+#endif
   return write_all(fdout, &mesg, sizeof(mesg));
 }
 
@@ -409,7 +430,7 @@ write_mesg(int32_t type, int64_t len)
 // signal handlers
 //*****************************************************************
 
-static void
+void
 signal_handler(int sig)
 {
   // SIGPIPE means that hpcrun has exited, probably prematurely.
@@ -426,7 +447,7 @@ signal_handler(int sig)
 
 
 // Catch segfaults, abort and SIGPIPE.
-static void
+void
 signal_handler_init(void)
 {
   struct sigaction act;

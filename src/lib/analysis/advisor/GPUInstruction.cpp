@@ -20,8 +20,8 @@
 #include <include/gcc-attr.h>
 #include <include/gpu-metric-names.h>
 
-#include "CallPath-CudaInstruction.hpp"
-#include "CallPath-CudaAdvisor.hpp"
+#include "GPUInstruction.hpp"
+#include "GPUAdvisor.hpp"
 
 using std::string;
 
@@ -124,11 +124,10 @@ createMetrics(const std::vector<CudaParse::InstructionStat *> &inst_stats,
 
 
 static void
-gatherStmts(const Prof::LoadMap::LMId_t lm_id, const std::vector<CudaParse::InstructionStat *> &inst_stats,
-  const Prof::CCT::ANode *prof_root, std::vector<VMAStmt> &vma_stmts, std::set<Prof::CCT::ADynNode *> &gpu_roots) {
-  auto inst_pc_front = inst_stats.front()->pc;
-  auto inst_pc_back = inst_stats.back()->pc;
-
+gatherStmts(const Prof::LoadMap::LMId_t lm_id, int inst_pc_front, int inst_pc_back,
+  const Prof::CCT::ANode *prof_root, std::vector<VMAStmt> &vma_stmts,
+  std::vector<int> &gpu_kernel_index,
+  std::set<Prof::CCT::ADynNode *> &gpu_kernels) {
   if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
     std::cout << "inst pc range: [0x" << std::hex << inst_pc_front <<
       ", 0x" << inst_pc_back << "]" << std::dec << std::endl;
@@ -147,15 +146,21 @@ gatherStmts(const Prof::LoadMap::LMId_t lm_id, const std::vector<CudaParse::Inst
         continue;
       }
 
+      // Use the first pc as the gpu_kernel node
+      bool find = false;
+      for (auto index : gpu_kernel_index) {
+        if (n_dyn->demandMetric(index) != 0) {
+          find = true;
+          gpu_kernels.insert(n_dyn);
+          break;
+        }
+      }
+
       if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
         std::cout << "Find CCT node vma: 0x" << std::hex << n_lm_ip << std::dec << std::endl;
       }
 
       vma_stmts.emplace_back(n_lm_ip, n);
-
-      // Get the parent of an instruction node as the gpu root node
-      Prof::CCT::ADynNode* n_parent = dynamic_cast<Prof::CCT::ADynNode*>(n->parent());
-      gpu_roots.insert(n_parent);
     }
   }
 
@@ -169,6 +174,7 @@ associateInstStmts(const std::vector<VMAStmt> &vma_stmts,
   const std::vector<CudaParse::InstructionStat *> &inst_stats,
   MetricNameProfMap &metric_name_prof_map) {
   size_t cur_stmt_index = 0;
+  auto issue_metric_ids = metric_name_prof_map.metric_ids(GPU_INST_METRIC_NAME":STL_NONE");
 
   // Lay metrics over prof tree O(n)
   for (auto *inst_stat : inst_stats) {
@@ -189,7 +195,6 @@ associateInstStmts(const std::vector<VMAStmt> &vma_stmts,
 
     auto cur_vma = vma_stmts[cur_stmt_index].lm_ip;
     auto *node = vma_stmts[cur_stmt_index].node;
-    auto issue_metric_ids = metric_name_prof_map.metric_ids(GPU_INST_METRIC_NAME":STL_NONE");
     auto in_metric_ids = metric_name_prof_map.metric_ids(inst_stat->op, true);
     auto ex_metric_ids = metric_name_prof_map.metric_ids(inst_stat->op, false);
     if (in_metric_ids.size() != ex_metric_ids.size()) {
@@ -223,7 +228,7 @@ associateInstStmts(const std::vector<VMAStmt> &vma_stmts,
 
 
 void
-overlayCudaInstructionsMain(Prof::CallPath::Profile &prof,
+overlayGPUInstructionsMain(Prof::CallPath::Profile &prof,
   const std::vector<std::string> &instruction_files) {
   auto *mgr = prof.metricMgr(); 
   MetricNameProfMap metric_name_prof_map(mgr);
@@ -238,8 +243,8 @@ overlayCudaInstructionsMain(Prof::CallPath::Profile &prof,
     return;
   }
 
-  CudaAdvisor cuda_advisor(&prof, &metric_name_prof_map);
-  cuda_advisor.init();
+  GPUAdvisor gpu_advisor(&prof, &metric_name_prof_map);
+  gpu_advisor.init();
   // Read instruction files
   for (auto &file: instruction_files) {
     if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
@@ -277,34 +282,34 @@ overlayCudaInstructionsMain(Prof::CallPath::Profile &prof,
 
     // Step 4: Gather all CCT nodes with lm_id and find GPU roots
     std::vector<VMAStmt> vma_stmts;
-    std::set<Prof::CCT::ADynNode *> gpu_roots;
+    std::set<Prof::CCT::ADynNode *> gpu_kernels;
+    std::vector<int> gpu_kernel_index = metric_name_prof_map.metric_ids(GPU_KERNEL_METRIC_NAME);
     auto *prof_root = prof.cct()->root();
-    gatherStmts(lm_id, inst_stats, prof_root, vma_stmts, gpu_roots);
+    gatherStmts(lm_id, inst_stats.front()->pc, inst_stats.back()->pc,
+      prof_root, vma_stmts, gpu_kernel_index, gpu_kernels);
 
     // Step 5: Lay metrics over prof tree
     associateInstStmts(vma_stmts, inst_stats, metric_name_prof_map);
 
-    cuda_advisor.configInst(functions);
+    gpu_advisor.configInst(lm_name, functions);
 
     // Step 6: Make advise
     // Find each GPU calling context, make recommendation for each calling context 
-    for (auto *gpu_root : gpu_roots) {
+    for (auto *gpu_kernel : gpu_kernels) {
+      auto *gpu_root = dynamic_cast<Prof::CCT::ADynNode *>(gpu_kernel->parent());
+
       // Pass current gpu root 
-      cuda_advisor.configGPURoot(gpu_root);
+      gpu_advisor.configGPURoot(gpu_root, gpu_kernel);
 
       // <mpi_rank, <thread_id, <blames>>>
-      FunctionBlamesMap function_blames_map;
+      CCTBlames cct_blames;
 
       // Blame latencies
-      cuda_advisor.blame(function_blames_map);
+      gpu_advisor.blame(cct_blames);
 
       // Make advise for the calling context and cache result
-      //cuda_advisor.advise(function_blames_map);
+      gpu_advisor.advise(cct_blames);
     }
-
-    // TODO(Keren): output advise using this file other than cuda_advisor
-    // Save advise for this file and clear cache
-    cuda_advisor.save(file + ".advise");
     
     if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
       std::cout << "Finish reading instruction file " << file << std::endl;

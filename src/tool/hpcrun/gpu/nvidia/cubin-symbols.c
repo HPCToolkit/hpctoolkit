@@ -65,7 +65,10 @@
 // local includes
 //******************************************************************************
 
+#include <hpcrun/messages/messages.h>
+
 #include "cubin-symbols.h"
+#include "lib/prof-lean/elf-helper.h"
 
 //******************************************************************************
 // macros
@@ -78,8 +81,6 @@
 #define section_index(n) (n-1)
 
 #define EM_CUDA 190
-
-#define CUDA_SYMBOL_DEBUG 0
 
 //******************************************************************************
 // type definitions
@@ -177,7 +178,8 @@ relocateSymbolsHelper
  GElf_Ehdr *ehdr,
  GElf_Shdr *shdr,
  Elf_SectionVector *sections,
- Elf_Scn *scn
+ Elf_Scn *scn,
+ elf_helper_t* eh
 )
 {
   Elf_SymbolVector *symbol_values = NULL;
@@ -189,6 +191,7 @@ relocateSymbolsHelper
   } else {
     return NULL;
   }
+  
   Elf_Data *datap = elf_getdata(scn, NULL);
   if (datap) {
     symbol_values = newSymbolsVector(nsymbols);
@@ -203,15 +206,15 @@ relocateSymbolsHelper
 	        case STT_FUNC:
 	          {
 	            int64_t s_offset = sectionOffset(sections, section_index(sym.st_shndx));
-	            // update each function symbol's offset to match the new offset of the
-	            // text section that contains it.
-		    sym.st_value = (Elf64_Addr) s_offset;
-		    //gelf_update_sym(datap, i, &sym);
-		    symbol_values->symbols[i] = s_offset;
-		    char *s_name = elf_strptr(elf, shdr->sh_link, sym.st_name);
-		    int s_len = strlen(s_name);
-		    symbol_values->names[i] = (char *)hpcrun_malloc_safe((s_len + 1) * sizeof(char));
-		    strncpy(symbol_values->names[i], s_name, s_len);
+              // update each function symbol's offset to match the new offset of the
+              // text section that contains it.
+              sym.st_value = (Elf64_Addr) s_offset;
+              //gelf_update_sym(datap, i, &sym);
+              symbol_values->symbols[i] = s_offset;
+              char *s_name = elf_strptr(elf, shdr->sh_link, sym.st_name);
+              int s_len = strlen(s_name);
+              symbol_values->names[i] = (char *)hpcrun_malloc_safe((s_len + 1) * sizeof(char));
+              strncpy(symbol_values->names[i], s_name, s_len);
 	          }
 	        default: break;
 	      }
@@ -226,7 +229,8 @@ static Elf_SymbolVector *
 relocateSymbols
 (
   Elf *elf,
-  Elf_SectionVector *sections
+  Elf_SectionVector *sections,
+  elf_helper_t* eh
 )
 {
   Elf_SymbolVector *symbol_values = NULL;
@@ -238,7 +242,7 @@ relocateSymbols
       GElf_Shdr shdr;
       if (!gelf_getshdr(scn, &shdr)) continue;
       if (shdr.sh_type == SHT_SYMTAB) {
-	      symbol_values = relocateSymbolsHelper(elf, ehdr, &shdr, sections, scn);
+	      symbol_values = relocateSymbolsHelper(elf, ehdr, &shdr, sections, scn, eh);
 	      break; // AFAIK, there can only be one symbol table
       }
     }
@@ -251,13 +255,15 @@ static Elf_SymbolVector *
 computeSymbolOffsets
 (
  char *cubin_ptr,
- Elf *cubin_elf
+ Elf *cubin_elf,
+ elf_helper_t* eh
 )
 {
   Elf_SymbolVector *symbol_values = NULL;
   Elf_SectionVector *sections = elfGetSectionVector(cubin_elf);
   if (sections) {
-    symbol_values = relocateSymbols(cubin_elf, sections);
+    symbol_values = relocateSymbols(cubin_elf, sections, eh);
+    free(sections);
   }
   return symbol_values;
 }
@@ -271,7 +277,7 @@ printSymbols
 )
 {
   for (int i=0; i < symbols->nsymbols; i++) {
-    printf("symbol %d: 0x%lx\n", i, symbols->symbols[i]);
+    TMSG(CUDA_CUBIN, "symbol %d: 0x%lx", i, symbols->symbols[i]);
   }
 }
 
@@ -291,15 +297,16 @@ computeCubinFunctionOffsets
   Elf_SymbolVector *symbols = NULL;
   elf_version(EV_CURRENT);
   Elf *elf = elf_memory(cubin_ptr, cubin_len);
+  elf_helper_t eh;
+  elf_helper_initialize(elf, &eh);
   if (elf != 0) {
 	  GElf_Ehdr ehdr_v;
 	  GElf_Ehdr *ehdr = gelf_getehdr(elf, &ehdr_v);
 	  if (ehdr) {
 		  if (ehdr->e_machine == EM_CUDA) {
-			  symbols = computeSymbolOffsets(cubin_ptr, elf);
-#if CUDA_SYMBOL_DEBUG
-        printSymbols(symbols);
-#endif
+			  symbols = computeSymbolOffsets(cubin_ptr, elf, &eh);
+			  if(ENABLED(CUDA_CUBIN))
+				  printSymbols(symbols);
 			  elf_end(elf);
 		  }
 	  }

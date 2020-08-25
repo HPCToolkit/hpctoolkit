@@ -240,7 +240,7 @@ copy(const char* dst, ...)
   int dstFd = open(dst, O_WRONLY | O_CREAT | O_TRUNC,
 		   S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
   if (dstFd < 0) {
-    DIAG_Throw("[FileUtil::copy] could not open destination file '"
+    DIAG_Throw("Unable to write file in hpctoolkit database '"
 	       << dst << "' (" << strerror(errno) << ")");
   }
 
@@ -250,7 +250,7 @@ copy(const char* dst, ...)
   while ( (srcFnm = va_arg(srcFnmList, char*)) ) {
     int srcFd = open(srcFnm, O_RDONLY);
     if ((srcFd < 0) || (dstFd < 0)) {
-      errorMsg += (string("could not open '") + srcFnm + "' (" 
+      errorMsg += (string("unable to open '") + srcFnm + "' (" 
 		   + strerror(errno) + ")");
     }
     else {
@@ -263,7 +263,8 @@ copy(const char* dst, ...)
   close(dstFd);
 
   if (!errorMsg.empty()) {
-    DIAG_Throw("[FileUtil::copy] could not open source files: " << errorMsg);
+    DIAG_Msg(1, "Unable to copy file into hpctoolkit database: " << 
+	      errorMsg);
   }
 }
 

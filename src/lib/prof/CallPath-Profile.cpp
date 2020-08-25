@@ -596,10 +596,11 @@ writeXML_help(std::ostream& os, const char* entry_nm,
     std::string pretty_filename;
     const char* nm = NULL;
 
-    bool fake_procedure = false;
+    int type_procedure = 0;
 
     if (type == 1) { // LoadModule
-      nm = Prof::LoadMap::LM::pretty_name(strct->name()).c_str(); 
+      pretty_filename = Prof::LoadMap::LM::pretty_name(strct->name());
+      nm = pretty_filename.c_str(); 
       // check load module duplicates
       std::map<std::string, uint>::iterator it = m_mapLoadModules.find(nm);
 
@@ -647,11 +648,11 @@ writeXML_help(std::ostream& os, const char* entry_nm,
       }
     }
     else if (type == 3) { // Proc
-      const char *proc_name = strct->name().c_str();
-      nm = normalize_name(proc_name, fake_procedure);
+      pretty_filename = Prof::LoadMap::LM::pretty_file_name(strct->name());
+      nm = normalize_name(pretty_filename.c_str(), type_procedure);
 
       if (remove_redundancy && 
-          proc_name != Prof::Struct::Tree::UnknownProcNm)
+          pretty_filename != Prof::Struct::Tree::UnknownProcNm)
       {  
         // -------------------------------------------------------
         // avoid redundancy in XML procedure dictionary
@@ -669,6 +670,16 @@ writeXML_help(std::ostream& os, const char* entry_nm,
         completProcName.append(file_key);
         completProcName.append(":");
 
+        if ((strct->type() == Prof::Struct::ANode::TyAlien) &&
+            strct->name().compare("<inline>")==0) {
+          Prof::Struct::ANode *parent = strct->parent();
+          if (parent) {
+            char buffer[128];
+            sprintf(buffer, "%d:", parent->id());
+            completProcName.append(buffer);
+          }
+        }
+
         const char *lnm;
 
         // a procedure name within the same file has to be unique.
@@ -679,7 +690,7 @@ writeXML_help(std::ostream& os, const char* entry_nm,
         {
           if (proc->linkName().empty()) {
             // the proc has no mangled name
-            lnm = proc_name;
+            lnm = pretty_filename.c_str();
           } else
           { // get the mangled name
             lnm = proc->linkName().c_str();
@@ -716,8 +727,8 @@ writeXML_help(std::ostream& os, const char* entry_nm,
     os << "    <" << entry_nm << " i" << MakeAttrNum(id)
            << " n" << MakeAttrStr(nm);
 
-    if (fake_procedure) {
-      os << " f" << MakeAttrNum(1); 
+    if (type_procedure != 0) {
+      os << " f" << MakeAttrNum(type_procedure); 
     }
 
     if (type == 3) { // Procedure

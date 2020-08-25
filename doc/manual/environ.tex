@@ -206,17 +206,15 @@ flag, the flag will be enabled, it will cause HPCToolkit's measurement
 subsystem to log messages guarded with that flag as an application
 executes. The complete list of dynamic debugging flags can be found
 in HPCToolkit's source code in the file
-src/tool/hpcrun/messages/messages.flag-defns. A special flag value
-“ALL” will enable all flags. 
-
+src/tool/hpcrun/messages/messages.flag-defns. A special flag value ``ALL'' enables all flags. 
 \parg
 Note: not all debugging flags are
 meaningful on all architectures. 
 
 \parg 
 Caution: turning on debugging flags
-will typically result in voluminous log messages, which will may
-dramatically slow measurement and the execution under study.
+will typically result in voluminous log messages, which will typically will 
+dramatically slow measurement of the execution under study.
 
 \parg
 Flags to set debug flags with \hpcrun: \verb|-dd/--dynamic-debug| $flag$
@@ -240,7 +238,6 @@ system. Be careful!
 
 For dynamically-linked executables, this environment variable must
 be set to the full path of a copy of HPCToolkit's hpcfnbounds
-utility. This utility is available at
-\verb|/path/to/hpctoolkit/libexec/hpctoolkit/hpcfnbounds|.
+utility. There are presently two versions of this utility. One, known as \verb|hpcfnbounds|, analyzes program load modules (the executable and shared libraries) using Dyninst to recover a table of addresses that represent the beginning of each function. A second version of the tool, known as \verb|hpcfnbounds2|, was designed to compute  the same set of addresses for a load module using only a lightweight inspection of the load module's symbol table and DWARF information. \verb|hpcfnbounds2| is over a factor of ten faster and uses over a factor of 10 less memory than the original. \verb|hpcfnbounds2|  is the default. If \verb|hpcfnbounds2| delivers an unsatisfactory result, a user can employ \verb|hpcfnbounds| instead by setting this environment variable using the \verb|--fnbounds| command line argument to \hpcrun{}.
 
 

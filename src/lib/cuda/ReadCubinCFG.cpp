@@ -19,6 +19,7 @@
 
 
 #include <lib/binutils/VMAInterval.hpp>
+#include <lib/binutils/RelocateCubin.hpp>
 #include <lib/support/FileUtil.hpp>
 
 #include "CudaCFGFactory.hpp"
@@ -37,7 +38,7 @@ using namespace SymtabAPI;
 using namespace InstructionAPI;
 
 #define DEBUG_CFG_PARSE  0
-
+#define CUDA_GLOBAL 16
 
 static bool
 test_nvdisasm() 
@@ -79,7 +80,8 @@ parseDotCFG
  const std::string &cubin,
  int cuda_arch,
  Dyninst::SymtabAPI::Symtab *the_symtab,
- std::vector<CudaParse::Function *> &functions
+ std::vector<CudaParse::Function *> &functions,
+ std::vector<int> symbol_visibility
 ) 
 {
   CudaParse::CFGParser cfg_parser;
@@ -123,17 +125,36 @@ parseDotCFG
         // Local functions inside a global function cannot be independently parsed
         for (auto *function : functions) {
           if (function_map.find(function->name) == function_map.end()) {
+            auto iter = symbol_map.find(function->name);
+            if (iter == symbol_map.end()) {
+              // If nvcc-11 has special suffix, remove it
+              auto function_name = function->name;
+              auto pos = function_name.rfind("__");
+              if (pos == std::string::npos) {
+                // cannot find
+                continue;
+              }
+              function_name.erase(pos);
+              iter = symbol_map.find(function_name);
+              if (iter == symbol_map.end()) {
+                // cannot find
+                continue;
+              }
+              function->name = function_name;
+            }
             // Assign symbol index to function
-            auto *symbol_function = symbol_map[function->name];
+            auto *symbol_function = iter->second;
             function->index = symbol_function->getIndex();
             function->address = symbol_function->getOffset();
-            if (symbol_function != symbol &&
-              symbol_function->getType() != Dyninst::SymtabAPI::Symbol::ST_FUNCTION) {
-              // NOTYPE functions' original offsets are relative.
-              // hpcstruct relocates them with absolute offsets.
-              // Allow gaps between a function begining and the first block?
-              //function->blocks[0]->address = symbol->getOffset();
-              function->address += symbol->getOffset();
+            function->global = symbol_visibility[function->index] == CUDA_GLOBAL ? true : false;
+            if (symbol_function != symbol) {
+              if (symbol_function->getType() != Dyninst::SymtabAPI::Symbol::ST_FUNCTION) {
+                // NOTYPE functions' original offsets are relative.
+                // hpcstruct relocates them with absolute offsets.
+                // Allow gaps between a function begining and the first block?
+                //function->blocks[0]->address = symbol->getOffset();
+                function->address += symbol->getOffset();
+              }
             }
             function_map[function->name] = function;
           }
@@ -186,6 +207,7 @@ parseDotCFG
   for (auto *symbol : unparsable_function_symbols) {
     auto function_name = symbol->getMangledName();
     auto *function = new CudaParse::Function(max_function_id++, std::move(function_name));
+    function->unparsable = true;
     // Assign symbol index to function
     function->index = symbol->getIndex();
     function->address = symbol->getOffset();
@@ -205,6 +227,9 @@ parseDotCFG
 
   // Step4: add compensate blocks that only contains nop instructions
   for (auto *function : functions) {
+    if (symbol_map.find(function->name) == symbol_map.end()) {
+      continue;
+    }
     auto *symbol = symbol_map[function->name];
     int len = cuda_arch >= 70 ? 16 : 8;
     int function_size = function->blocks.back()->insts.back()->offset + len - function->address;
@@ -315,7 +340,8 @@ readCubinCFG
     } else {
       // Get raw dot functions
       std::vector<CudaParse::Function *> functions;
-      parseDotCFG(dot, cubin, elfFile->getArch(), the_symtab, functions);
+      std::vector<int> symbol_visibility = getVisibilityCubin(elfFile->getMemoryOriginal(), elfFile->getElf());
+      parseDotCFG(dot, cubin, elfFile->getArch(), the_symtab, functions, symbol_visibility);
 
       // Dyninst adapters
       // First construct dyninst functions, blocks, and instructions

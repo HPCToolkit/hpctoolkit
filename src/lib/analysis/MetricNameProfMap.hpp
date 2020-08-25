@@ -92,10 +92,7 @@ class MetricNameProfMap {
   }
 
   int num_thread_ids(size_t mpi_rank) {
-    if (mpi_rank < _metric_name_prof_maps.size()) {
-      return _metric_name_prof_maps[mpi_rank].size();
-    }
-    return -1;
+    return _metric_name_prof_maps[mpi_rank].size();
   }
 
   bool add(const std::string &metric_name);

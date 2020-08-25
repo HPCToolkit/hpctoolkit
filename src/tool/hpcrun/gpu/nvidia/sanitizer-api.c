@@ -498,10 +498,6 @@ sanitizer_path
  void
 )
 {
-  // TODO(Keren): change it back after 10.2 public release
-  const char *path = "/home/kz21/Codes/Sanitizer/libsanitizer-public.so";
-
-#if 0
   static char buffer[PATH_MAX];
   buffer[0] = 0;
 
@@ -513,12 +509,11 @@ sanitizer_path
 
   if (dl_iterate_phdr(cuda_path, buffer)) {
     // invariant: buffer contains CUDA home 
-    strcat(buffer, "extras/Sanitizer/libsanitizer-public.so");
+    strcat(buffer, "../Sanitizer/libsanitizer-public.so");
     path = buffer;
   }
 
   if (h) monitor_real_dlclose(h);
-#endif
 
   return path;
 }

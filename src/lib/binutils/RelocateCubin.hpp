@@ -75,4 +75,12 @@ relocateCubin
  Elf *cubin_elf
 );
 
+std::vector<int>
+getVisibilityCubin
+(
+ char *cubin_ptr,
+ Elf *cubin_elf
+);
+
+
 #endif

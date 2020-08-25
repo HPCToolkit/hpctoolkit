@@ -54,7 +54,7 @@ struct event_thread_s;
 struct perf_mmap_data_s;
 
 // callback functions
-typedef void (*register_event_t)(struct event_info_s *);
+typedef void (*register_event_t)(kind_info_t *kb_kind, struct event_info_s *);
 typedef void (*event_handler_t)(struct event_thread_s*, sample_val_t , struct perf_mmap_data_s* );
 
 

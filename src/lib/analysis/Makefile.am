@@ -58,7 +58,7 @@
 #############################################################################
 
 # We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)
-AUTOMAKE_OPTIONS = foreign
+AUTOMAKE_OPTIONS = subdir-objects foreign
 
 #############################################################################
 # Common settings
@@ -77,12 +77,15 @@ MYSOURCES = \
 	CallPath.hpp CallPath.cpp \
 	CallPath-MetricComponentsFact.hpp CallPath-MetricComponentsFact.cpp \
 	CallPath-CudaCFG.hpp CallPath-CudaCFG.cpp \
-	CallPath-CudaAdvisor.hpp CallPath-CudaAdvisor.cpp \
-	CallPath-CudaOptimizer.hpp CallPath-CudaOptimizer.cpp \
-	CallPath-CudaInstruction.hpp CallPath-CudaInstruction.cpp \
-	GPUArchitecture.hpp GPUArchitecture.cpp \
+	advisor/GPUAdvisor.hpp advisor/GPUAdvisor-Blame.cpp \
+  advisor/GPUAdvisor-Advise.cpp advisor/GPUAdvisor-Init.cpp \
+	advisor/GPUOptimizer.hpp advisor/GPUOptimizer.cpp \
+	advisor/GPUInstruction.hpp advisor/GPUInstruction.cpp \
+	advisor/GPUArchitecture.hpp advisor/GPUArchitecture.cpp \
+	advisor/GPUEstimator.hpp advisor/GPUEstimator.cpp \
+	advisor/Inspection.hpp advisor/Inspection.cpp \
 	\
-	MetricNameProfMap.cpp \
+	MetricNameProfMap.hpp MetricNameProfMap.cpp \
 	Flat-SrcCorrelation.hpp Flat-SrcCorrelation.cpp \
 	Flat-ObjCorrelation.hpp Flat-ObjCorrelation.cpp \
 	\

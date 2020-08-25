@@ -73,6 +73,14 @@ void CudaBlock::getInsns(Insns &insns) const {
       }
     } 
 
+    for (auto bdst : inst->inst_stat->bdsts) {
+      if (bdst != -1) {
+        MachRegister r(bdst | cuda::BR | Arch_cuda);
+        InstructionAPI::RegisterAST::Ptr reg_ptr(new InstructionAPI::RegisterAST(r));
+        instruction.appendOperand(reg_ptr, false, true);
+      }
+    }
+
     for (auto src : inst->inst_stat->srcs) {
       if (src != -1) {
         MachRegister r(src | cuda::GPR | Arch_cuda);
@@ -84,6 +92,14 @@ void CudaBlock::getInsns(Insns &insns) const {
     for (auto psrc : inst->inst_stat->psrcs) {
       if (psrc != -1) {
         MachRegister r(psrc | cuda::PR | Arch_cuda);
+        InstructionAPI::RegisterAST::Ptr reg_ptr(new InstructionAPI::RegisterAST(r));
+        instruction.appendOperand(reg_ptr, true, false);
+      }
+    }
+
+    for (auto bsrc : inst->inst_stat->bsrcs) {
+      if (bsrc != -1) {
+        MachRegister r(bsrc | cuda::BR | Arch_cuda);
         InstructionAPI::RegisterAST::Ptr reg_ptr(new InstructionAPI::RegisterAST(r));
         instruction.appendOperand(reg_ptr, true, false);
       }

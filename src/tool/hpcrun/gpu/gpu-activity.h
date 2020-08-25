@@ -267,6 +267,7 @@ typedef struct gpu_kernel_t {
   uint32_t activeWarpsPerSM;
   uint32_t maxActiveWarpsPerSM;
   uint32_t threadRegisters;
+  uint32_t blocks;
   uint32_t blockThreads;
   uint32_t blockSharedMemory;
 } gpu_kernel_t;

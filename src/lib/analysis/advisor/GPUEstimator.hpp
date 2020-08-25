@@ -57,9 +57,8 @@
 //
 //***************************************************************************
 
-
-#ifndef Analysis_CallPath_CallPath_CudaOptimizer_hpp 
-#define Analysis_CallPath_CallPath_CudaOptimizer_hpp
+#ifndef Analysis_Advisor_GPUEstimator_hpp
+#define Analysis_Advisor_GPUEstimator_hpp
 
 //************************* System Include Files ****************************
 
@@ -74,7 +73,10 @@
 #include <lib/prof/CallPath-Profile.hpp>
 #include <lib/prof/Struct-Tree.hpp>
 
-#include <lib/cuda/AnalyzeInstruction.hpp>
+#include <tuple>
+#include <vector>
+
+#include "GPUKernel.hpp"
 
 //*************************** Forward Declarations ***************************
 
@@ -82,145 +84,83 @@
 
 namespace Analysis {
 
-namespace CallPath {
+class GPUArchitecture;
 
-
-struct KernelStat {
-  int shared_memory;
-  int registers;
-  int blocks;
-  double occupancy;
-  double sm_efficiency;
-
-  KernelStat() {}
+enum GPUEstimatorType {
+  SEQ = 0,
+  SEQ_LAT = 1,
+  PARALLEL = 2,
+  PARALLEL_LAT = 3
 };
 
 
-struct InstructionBlame {
-  // Use InstructionStat directly, so that in advisor::advise, we do not need a vma_inst_map again
-  CudaParse::InstructionStat *src, *dst;
-  int metric_id;
-  double value;
-
-  InstructionBlame(CudaParse::InstructionStat *src, CudaParse::InstructionStat *dst,
-    int metric_id, double value) : src(src), dst(dst), metric_id(metric_id), value(value) {}
-  InstructionBlame() {}
-
-  bool operator < (const InstructionBlame &other) const {
-    return this->src->pc < other.src->pc;
-  }
-};
-
-
-struct BlockBlame {
-  int id;
-  VMA start, end;
-  std::vector<InstructionBlame> inst_blames;
-  std::map<int, double> blames;
-  double blame;
-
-  BlockBlame(int id, VMA start, VMA end) : id(id), start(start), end(end), blame(0.0) {}
-  BlockBlame(int id) : BlockBlame(id, 0, 0) {}
-  BlockBlame() : BlockBlame(0) {}
-
-  bool operator < (const BlockBlame &other) const {
-    return this->blame < other.blame;
-  }
-};
-
-
-struct FunctionBlame {
-  int id;
-  VMA start, end;
-  std::map<int, BlockBlame> block_blames;
-  std::map<int, double> blames;
-  double blame;
-
-  FunctionBlame(int id) : id(id), start(0), end(0), blame(0.0) {}
-  FunctionBlame() : FunctionBlame(0) {}
-};
-
-// This type is shared with CallPath-CudaInstruction.hpp
-typedef std::map<int, std::map<int, std::vector<FunctionBlame>>> FunctionBlamesMap;
-
-
-enum CudaOptimizerType {
-  LOOP_UNROLL,
-  MEMORY_LAYOUT,
-  STRENGTH_REDUCTION,
-  ADJUST_THREADS,
-  ADJUST_REGISTERS
-};
-
-
-class CudaOptimizer {
+class GPUEstimator {
  public:
-  CudaOptimizer() {}
+  GPUEstimator(GPUArchitecture *arch, GPUEstimatorType type) : _arch(arch), _type(type) {}
 
-  virtual double match(const BlockBlame &block_blame) = 0;
+  // <ratio, speedup>
+  virtual std::pair<std::vector<double>, std::vector<double>>
+    estimate(const std::vector<BlameStats> &blame_stats, const KernelStats &kernel_stats) = 0;
 
-  virtual std::string advise() = 0;
+  virtual ~GPUEstimator() {}
 
-  virtual ~CudaOptimizer() {}
+ protected:
+  GPUArchitecture *_arch;
+  GPUEstimatorType _type;
 };
 
 
-class CudaLoopUnrollOptimizer : public CudaOptimizer {
+class SequentialLatencyGPUEstimator : public GPUEstimator {
  public:
-  CudaLoopUnrollOptimizer() {}
-
-  virtual double match(const BlockBlame &block_blame);
-
-  virtual std::string advise();
+   SequentialLatencyGPUEstimator(GPUArchitecture *arch) : GPUEstimator(arch, SEQ_LAT) {}
+ 
+   // <ratio, speedup>
+  virtual std::pair<std::vector<double>, std::vector<double>>
+    estimate(const std::vector<BlameStats> &blame_stats, const KernelStats &kernel_stats);
+ 
+   virtual ~SequentialLatencyGPUEstimator() {}
 };
 
 
-class CudaMemoryLayoutOptimizer : public CudaOptimizer {
+class SequentialGPUEstimator : public GPUEstimator {
  public:
-  CudaMemoryLayoutOptimizer() {}
-
-  virtual double match(const BlockBlame &block_blame);
-
-  virtual std::string advise();
+  SequentialGPUEstimator(GPUArchitecture *arch) : GPUEstimator(arch, SEQ) {}
+ 
+  // <ratio, speedup>
+  virtual std::pair<std::vector<double>, std::vector<double>>
+    estimate(const std::vector<BlameStats> &blame_stats, const KernelStats &kernel_stats);
+ 
+  virtual ~SequentialGPUEstimator() {}
 };
 
 
-class CudaStrengthReductionOptimizer : public CudaOptimizer {
+class ParallelLatencyGPUEstimator : public GPUEstimator {
  public:
-  CudaStrengthReductionOptimizer() {}
-
-  virtual double match(const BlockBlame &block_blame);
-
-  virtual std::string advise();
+  ParallelLatencyGPUEstimator(GPUArchitecture *arch) : GPUEstimator(arch, PARALLEL_LAT) {}
+ 
+  // <ratio, speedup>
+  virtual std::pair<std::vector<double>, std::vector<double>>
+    estimate(const std::vector<BlameStats> &blame_stats, const KernelStats &kernel_stats);
+ 
+  virtual ~ParallelLatencyGPUEstimator() {}
 };
 
 
-class CudaAdjustRegistersOptimizer : public CudaOptimizer {
+class ParallelGPUEstimator : public GPUEstimator {
  public:
-  CudaAdjustRegistersOptimizer() {}
-
-  virtual double match(const BlockBlame &block_blame);
-
-  virtual std::string advise();
-};
-
-
-class CudaAdjustThreadsOptimizer : public CudaOptimizer {
- public:
-  CudaAdjustThreadsOptimizer() {}
-
-  virtual double match(const BlockBlame &block_blame);
-
-  virtual std::string advise();
+  ParallelGPUEstimator(GPUArchitecture *arch) : GPUEstimator(arch, PARALLEL) {}
+ 
+  // <ratio, speedup>
+  virtual std::pair<std::vector<double>, std::vector<double>>
+    estimate(const std::vector<BlameStats> &blame_stats, const KernelStats &kernel_stats);
+ 
+  virtual ~ParallelGPUEstimator() {}
 };
 
 
 // A factory method
-CudaOptimizer *CudaOptimizerFactory(CudaOptimizerType type);
+GPUEstimator *GPUEstimatorFactory(GPUArchitecture *arch, GPUEstimatorType type);
 
+} // namespace Analysis
 
-}  // namespace CallPath
-
-}  // namespace Analysis
-
-#endif  // Analysis_CallPath_CallPath_CudaOptimizer_hpp
+#endif // Analysis_Advisor_Inspection_hpp

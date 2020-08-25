@@ -412,15 +412,30 @@ BinUtil::LM::open(const char* filenm)
 
   // Write relocated cubins and reopen them
   InputFile input_file;
+
   std::string file_name = std::string(filenm);
-  if (input_file.openFile(file_name)) {
+
+  if (input_file.openFile(file_name, InputFileError_WarningNothrow)) {
     // We only relocate individual cubins, with filevector size 1
     ElfFile *elf_file = (*input_file.fileVector())[0];
     if (isCubin(elf_file->getElf())) {
+#if 0
+      // this needs to be fixed in two ways
+      // (1) the path for the relocation file must be relative to the 
+      //     measurements directory
+      // (2) Keren reports that the relocated information is
+      //     incorrect, so it is wrong to use it here
       file_name = elf_file->getFileName() + ".relocate";
       writeElfFile(elf_file, ".relocate");
       filenm = file_name.c_str();
+#else
+      DIAG_Throw("you must run hpcstruct on the HPCToolkit measurement"
+		 " directory to map measurements of NVIDIA"
+		 " GPU binaries to source code");
+#endif
     }
+  } else {
+    DIAG_Throw("binary file not found");
   }
 
   // -------------------------------------------------------
@@ -562,7 +577,11 @@ BinUtil::LM::findSrcCodeInfo(VMA vma, ushort opIndex,
   Seg* seg = findSeg(opVMA);
   if (seg) {
     bfdSeg = bfd_get_section_by_name(m_bfd, seg->name().c_str());
+#ifdef BINUTILS_234
+    base = bfd_section_vma(bfdSeg);
+#else
     base = bfd_section_vma(m_bfd, bfdSeg);
+#endif
   }
 
   if (!bfdSeg) {
@@ -931,9 +950,15 @@ BinUtil::LM::readSegs()
   for (asection* sec = m_bfd->sections; (sec); sec = sec->next) {
 
     // 1. Determine initial section attributes
+#ifdef BINUTILS_234
+    string segnm(bfd_section_name(sec));
+    bfd_vma segBeg = bfd_section_vma(sec);
+    uint64_t segSz = bfd_section_size(sec) / bfd_octets_per_byte(m_bfd, sec);
+#else
     string segnm(bfd_section_name(m_bfd, sec));
     bfd_vma segBeg = bfd_section_vma(m_bfd, sec);
     uint64_t segSz = bfd_section_size(m_bfd, sec) / bfd_octets_per_byte(m_bfd);
+#endif
     bfd_vma segEnd = segBeg + segSz;
     
     // 2. Create section

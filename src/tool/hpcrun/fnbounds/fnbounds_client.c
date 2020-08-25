@@ -120,10 +120,12 @@ char	*outfile;
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <sys/wait.h>
 #include <err.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <sched.h>
 #include <signal.h>
 #include <stdbool.h>
 #include <stdint.h>
@@ -145,9 +147,9 @@ char	*outfile;
 #include "fnbounds_file_header.h"
 #endif
 
-// Limit on memory use at which we restart the server in Meg.
-#define SERVER_MEM_LIMIT  140
-#define MIN_NUM_QUERIES   12
+
+// Size to allocate for the stack of the server setup function, in KiB.
+#define SERVER_STACK_SIZE 1024
 
 #define SUCCESS   0
 #define FAILURE  -1
@@ -160,6 +162,7 @@ enum {
 
 static int client_status = SYSERV_INACTIVE;
 static char *server;
+static char *server_stack;
 
 static int fdout = -1;
 static int fdin = -1;
@@ -167,12 +170,30 @@ static int fdin = -1;
 static pid_t my_pid;
 static pid_t server_pid = 0;
 
+#if 0
+// Limit on memory use at which we restart the server in Meg.
+#define SERVER_MEM_LIMIT  140
+#define MIN_NUM_QUERIES   12
+
 // rusage units are Kbytes.
 static long mem_limit = SERVER_MEM_LIMIT * 1024;
 static int  num_queries = 0;
 static int  mem_warning = 0;
+#endif
 
 extern char **environ;
+
+
+//*****************************************************************
+// Miscellaneous helper function
+//*****************************************************************
+
+// Returns: micro-seconds from start to now
+static long
+tdiff(struct timeval start, struct timeval now)
+{
+  return 1000000 * (now.tv_sec - start.tv_sec) + (now.tv_usec - start.tv_usec);
+}
 
 
 //*****************************************************************
@@ -339,7 +360,7 @@ mmap_anon(size_t size)
 static int
 hpcrun_sigpipe_handler(int sig, siginfo_t *info, void *context)
 {
-  TMSG(SYSTEM_SERVER, "caught SIGPIPE: system server must have exited");
+  TMSG(FNBOUNDS_CLIENT, "caught SIGPIPE: system server must have exited");
   return 0;
 }
 
@@ -363,22 +384,79 @@ shutdown_server(void)
   client_status = SYSERV_INACTIVE;
 
   // collect the server's exit status to reduce zombies.  but we must
-  // do it non-blocking and only for the fnbounds server, not any
-  // application child.
+  // do it only for the fnbounds server, not any application child.
   if (server_pid > 0) {
-    waitpid(server_pid, NULL, WNOHANG);
+    waitpid(server_pid, NULL, 0);
   }
   server_pid = 0;
 
-  TMSG(SYSTEM_SERVER, "syserv shutdown");
+  TMSG(FNBOUNDS_CLIENT, "syserv shutdown");
 }
 
+static int
+hpcfnbounds_child(void* fds_vp)
+{
+  //
+  // child process: disable profiling, dup the log file fd onto
+  // stderr and exec hpcfnbounds in server mode.
+  //
+  hpcrun_set_disabled();
+
+  struct {
+    int sendfd[2], recvfd[2];
+  }* fds = fds_vp;
+
+  close(fds->sendfd[1]);
+  close(fds->recvfd[0]);
+
+  // dup the hpcrun log file fd onto stdout and stderr.
+  if (dup2(messages_logfile_fd(), 1) < 0) {
+    warn("dup of log fd onto stdout failed");
+  }
+  if (dup2(messages_logfile_fd(), 2) < 0) {
+    warn("dup of log fd onto stderr failed");
+  }
+
+  // make the command line and exec
+  char *arglist[15];
+  char fdin_str[10], fdout_str[10];
+  sprintf(fdin_str,  "%d", fds->sendfd[0]);
+  sprintf(fdout_str, "%d", fds->recvfd[1]);
+
+  int j = 0;
+  arglist[j++] = server;
+#ifdef STAND_ALONE_CLIENT
+  if (serv_verbose) {
+    arglist[j++] = "-v";
+  }
+  if (noscan) {
+    arglist[j++] = "-d";
+  }
+#else
+  // verbose options from hpcrun -dd vars
+  if (ENABLED(FNBOUNDS)) {
+    arglist[j++] = "-v";
+  }
+  if (ENABLED(FNBOUNDS_EXT)) {
+    arglist[j++] = "-v2";
+  }
+#endif
+  arglist[j++] = "-s";
+  arglist[j++] = fdin_str;
+  arglist[j++] = fdout_str;
+  arglist[j++] = NULL;
+
+  monitor_real_execve(server, arglist, environ);
+  err(1, "hpcrun system server: exec(%s) failed", server);
+}
 
 // Returns: 0 on success, else -1 on failure.
 static int
 launch_server(void)
 {
-  int sendfd[2], recvfd[2];
+  struct {
+    int sendfd[2], recvfd[2];
+  } fds;
   bool sampling_is_running;
   pid_t pid;
 
@@ -392,8 +470,8 @@ launch_server(void)
     shutdown_server();
   }
 
-  if (pipe(sendfd) != 0 || pipe(recvfd) != 0) {
-    EMSG("SYSTEM_SERVER ERROR: syserv launch failed: pipe failed");
+  if (pipe(fds.sendfd) != 0 || pipe(fds.recvfd) != 0) {
+    EMSG("FNBOUNDS_CLIENT ERROR: syserv launch failed: pipe failed");
     return -1;
   }
 
@@ -403,77 +481,30 @@ launch_server(void)
   if (sampling_is_running) {
     SAMPLE_SOURCES(stop);
   }
-  pid = monitor_real_fork();
+
+  // For safety, we don't assume the direction of stack growth
+  pid = clone(hpcfnbounds_child, &server_stack[SERVER_STACK_SIZE * 1024], SIGCHLD, &fds);
 
   if (pid < 0) {
     //
     // fork failed
     //
-    EMSG("SYSTEM_SERVER ERROR: syserv launch failed: fork failed");
+    EMSG("FNBOUNDS_CLIENT ERROR: syserv launch failed: fork failed");
     return -1;
-  }
-  else if (pid == 0) {
-    //
-    // child process: disable profiling, dup the log file fd onto
-    // stderr and exec hpcfnbounds in server mode.
-    //
-    hpcrun_set_disabled();
-
-    close(sendfd[1]);
-    close(recvfd[0]);
-
-    // dup the hpcrun log file fd onto stdout and stderr.
-    if (dup2(messages_logfile_fd(), 1) < 0) {
-      warn("dup of log fd onto stdout failed");
-    }
-    if (dup2(messages_logfile_fd(), 2) < 0) {
-      warn("dup of log fd onto stderr failed");
-    }
-
-    // make the command line and exec
-    char *arglist[10];
-    char fdin_str[10], fdout_str[10];
-    sprintf(fdin_str,  "%d", sendfd[0]);
-    sprintf(fdout_str, "%d", recvfd[1]);
-
-    int j = 0;
-    arglist[j++] = server;
-#ifdef STAND_ALONE_CLIENT
-    if (serv_verbose) {
-      arglist[j++] = "-v";
-    }
-    if (noscan) {
-      arglist[j++] = "-d";
-    }
-#else
-    // verbose from hpcrun -dd var
-    if (ENABLED(FNBOUNDS_SERVER)) {
-      arglist[j++] = "-v";
-    }
-#endif
-    arglist[j++] = "-s";
-    arglist[j++] = fdin_str;
-    arglist[j++] = fdout_str;
-    arglist[j++] = NULL;
-
-    monitor_real_execve(server, arglist, environ);
-    err(1, "hpcrun system server: exec(%s) failed", server);
   }
 
   //
   // parent process: return and wait for queries.
   //
-  close(sendfd[0]);
-  close(recvfd[1]);
-  fdout = sendfd[1];
-  fdin = recvfd[0];
+  close(fds.sendfd[0]);
+  close(fds.recvfd[1]);
+  fdout = fds.sendfd[1];
+  fdin = fds.recvfd[0];
   my_pid = getpid();
   server_pid = pid;
   client_status = SYSERV_ACTIVE;
-  num_queries = 0;
-  mem_warning = 0;
 
-  TMSG(SYSTEM_SERVER, "syserv launch: success, server: %d", (int) server_pid);
+  TMSG(FNBOUNDS_CLIENT, "syserv launch: success, server: %d", (int) server_pid);
 
   // restart sample sources
   if (sampling_is_running) {
@@ -488,14 +519,15 @@ launch_server(void)
 int
 hpcrun_syserv_init(void)
 {
-  TMSG(SYSTEM_SERVER, "syserv init");
-
   server = getenv("HPCRUN_FNBOUNDS_CMD");
   if (server == NULL) {
-    EMSG("SYSTEM_SERVER ERROR: unable to get HPCRUN_FNBOUNDS_CMD");
+    EMSG("FNBOUNDS_CLIENT ERROR: unable to get HPCRUN_FNBOUNDS_CMD");
     return -1;
   }
 
+  AMSG("fnbounds: %s", server);
+
+#if 0
   // limit on server memory usage in Meg
   char *str = getenv("HPCRUN_SERVER_MEMSIZE");
   long size;
@@ -503,9 +535,14 @@ hpcrun_syserv_init(void)
     size = SERVER_MEM_LIMIT;
   }
   mem_limit = size * 1024;
+#endif
+
+  // Allocate enough space for fnbounds summoning.
+  // Twice as much to allow for growth in either direction.
+  server_stack = mmap_anon(SERVER_STACK_SIZE * 1024 * 2);
 
   if (monitor_sigaction(SIGPIPE, &hpcrun_sigpipe_handler, 0, NULL) != 0) {
-    EMSG("SYSTEM_SERVER ERROR: unable to install handler for SIGPIPE");
+    EMSG("FNBOUNDS_CLIENT ERROR: unable to install handler for SIGPIPE");
   }
 
   launch_server();
@@ -544,8 +581,6 @@ hpcrun_syserv_fini(void)
     write_mesg(SYSERV_EXIT, 0);
   }
   shutdown_server();
-
-  TMSG(SYSTEM_SERVER, "syserv fini");
 }
 
 
@@ -559,11 +594,12 @@ hpcrun_syserv_fini(void)
 void *
 hpcrun_syserv_query(const char *fname, struct fnbounds_file_header *fh)
 {
+  struct timeval start, now;
   struct syserv_mesg mesg;
   void *addr;
 
   if (fname == NULL || fh == NULL) {
-    EMSG("SYSTEM_SERVER ERROR: passed NULL pointer to %s", __func__);
+    EMSG("FNBOUNDS_CLIENT ERROR: passed NULL pointer to %s", __func__);
     return NULL;
   }
 
@@ -571,7 +607,11 @@ hpcrun_syserv_query(const char *fname, struct fnbounds_file_header *fh)
     launch_server();
   }
 
-  TMSG(SYSTEM_SERVER, "query: %s", fname);
+  TMSG(FNBOUNDS_CLIENT, "query: %s", fname);
+
+  if (ENABLED(FNBOUNDS_CLIENT)) {
+    gettimeofday(&start, NULL);
+  }
 
   // Send the file name length (including \0) to the server and look
   // for the initial ACK.  If the server has died, then make one
@@ -581,13 +621,13 @@ hpcrun_syserv_query(const char *fname, struct fnbounds_file_header *fh)
   if (write_mesg(SYSERV_QUERY, len) != SUCCESS
       || read_mesg(&mesg) != SUCCESS || mesg.type != SYSERV_ACK)
   {
-    TMSG(SYSTEM_SERVER, "restart server");
+    TMSG(FNBOUNDS_CLIENT, "restart server");
     shutdown_server();
     launch_server();
     if (write_mesg(SYSERV_QUERY, len) != SUCCESS
 	|| read_mesg(&mesg) != SUCCESS || mesg.type != SYSERV_ACK)
     {
-      EMSG("SYSTEM_SERVER ERROR: unable to restart system server");
+      EMSG("FNBOUNDS_CLIENT ERROR: unable to restart system server");
       shutdown_server();
       return NULL;
     }
@@ -597,17 +637,17 @@ hpcrun_syserv_query(const char *fname, struct fnbounds_file_header *fh)
   // (OK or ERR).  At this point, errors are pretty much fatal.
   //
   if (write_all(fdout, fname, len) != SUCCESS) {
-    EMSG("SYSTEM_SERVER ERROR: lost contact with server");
+    EMSG("FNBOUNDS_CLIENT ERROR: lost contact with server");
     shutdown_server();
     return NULL;
   }
   if (read_mesg(&mesg) != SUCCESS) {
-    EMSG("SYSTEM_SERVER ERROR: lost contact with server");
+    EMSG("FNBOUNDS_CLIENT ERROR: lost contact with server");
     shutdown_server();
     return NULL;
   }
   if (mesg.type != SYSERV_OK) {
-    EMSG("SYSTEM_SERVER ERROR: query failed: %s", fname);
+    EMSG("FNBOUNDS_CLIENT ERROR: query failed: %s", fname);
     return NULL;
   }
 
@@ -621,12 +661,12 @@ hpcrun_syserv_query(const char *fname, struct fnbounds_file_header *fh)
     // Technically, we could keep the server alive in this case.
     // But we would have to read all the data to stay in sync with
     // the server.
-    EMSG("SYSTEM_SERVER ERROR: mmap failed");
+    EMSG("FNBOUNDS_CLIENT ERROR: mmap failed");
     shutdown_server();
     return NULL;
   }
   if (read_all(fdin, addr, num_bytes) != SUCCESS) {
-    EMSG("SYSTEM_SERVER ERROR: lost contact with server");
+    EMSG("FNBOUNDS_CLIENT ERROR: lost contact with server");
     shutdown_server();
     return NULL;
   }
@@ -635,12 +675,12 @@ hpcrun_syserv_query(const char *fname, struct fnbounds_file_header *fh)
   struct syserv_fnbounds_info fnb_info;
   int ret = read_all(fdin, &fnb_info, sizeof(fnb_info));
   if (ret != SUCCESS || fnb_info.magic != FNBOUNDS_MAGIC) {
-    EMSG("SYSTEM_SERVER ERROR: lost contact with server");
+    EMSG("FNBOUNDS_CLIENT ERROR: lost contact with server");
     shutdown_server();
     return NULL;
   }
   if (fnb_info.status != SYSERV_OK) {
-    EMSG("SYSTEM_SERVER ERROR: query failed: %s", fname);
+    EMSG("FNBOUNDS_CLIENT ERROR: query failed: %s", fname);
     return NULL;
   }
   fh->num_entries = fnb_info.num_entries;
@@ -648,24 +688,31 @@ hpcrun_syserv_query(const char *fname, struct fnbounds_file_header *fh)
   fh->is_relocatable = fnb_info.is_relocatable;
   fh->mmap_size = mmap_size;
 
-  TMSG(SYSTEM_SERVER, "addr: %p, symbols: %ld, offset: 0x%lx, reloc: %d",
+  if (ENABLED(FNBOUNDS_CLIENT)) {
+    gettimeofday(&now, NULL);
+  }
+
+  TMSG(FNBOUNDS_CLIENT, "addr: %p, symbols: %ld, offset: 0x%lx, reloc: %d",
        addr, (long) fh->num_entries, (long) fh->reference_offset,
        (int) fh->is_relocatable);
-  TMSG(SYSTEM_SERVER, "server memsize: %ld Meg", fnb_info.memsize / 1024);
+  TMSG(FNBOUNDS_CLIENT, "server memsize: %ld Meg,  time: %ld usec",
+       fnb_info.memsize / 1024, tdiff(start, now));
 
+#if 0
   // Restart the server if it's done a minimum number of queries and
   // has exceeded its memory limit.  Issue a warning at 60%.
   num_queries++;
   if (!mem_warning && fnb_info.memsize > (6 * mem_limit)/10) {
-    EMSG("SYSTEM_SERVER: warning: memory usage: %ld Meg",
+    EMSG("FNBOUNDS_CLIENT: warning: memory usage: %ld Meg",
 	 fnb_info.memsize / 1024);
     mem_warning = 1;
   }
   if (num_queries >= MIN_NUM_QUERIES && fnb_info.memsize > mem_limit) {
-    EMSG("SYSTEM_SERVER: warning: memory usage: %ld Meg, restart server",
+    EMSG("FNBOUNDS_CLIENT: warning: memory usage: %ld Meg, restart server",
 	 fnb_info.memsize / 1024);
     shutdown_server();
   }
+#endif
 
   return addr;
 }

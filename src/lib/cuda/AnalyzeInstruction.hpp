@@ -19,6 +19,9 @@ struct InstructionStat {
     PREDICATE_FALSE = 2,
   };
 
+  static int const WAIT_BITS = 6;
+  static int const BARRIER_NONE = 7;
+
   struct Control {
     uint8_t reuse;
     uint8_t wait;
@@ -39,8 +42,11 @@ struct InstructionStat {
   std::vector<int> srcs;  // R0-R255: only records normal registers
   std::vector<int> pdsts;  // P0-P6: only records predicate registers
   std::vector<int> psrcs;  // P0-P6: only records predicate registers
+  std::vector<int> bdsts;  // B1-B6: only records barriers
+  std::vector<int> bsrcs;  // B1-B6: only records barriers
   std::map<int, std::vector<int> > assign_pcs;
   std::map<int, std::vector<int> > passign_pcs;
+  std::map<int, std::vector<int> > bassign_pcs;
   Control control;
 
   InstructionStat() {}
@@ -49,40 +55,61 @@ struct InstructionStat {
 
   InstructionStat(const std::string &op,
     int pc, int predicate, PredicateFlag predicate_flag,
-    std::vector<int> predicate_assign_pcs,
-    std::vector<int> &dsts, std::vector<int> &srcs,
-    std::vector<int> &pdsts, std::vector<int> &psrcs) :
-    op(op), pc(pc), predicate(predicate), predicate_flag(predicate_flag),
-    predicate_assign_pcs(predicate_assign_pcs),
-    dsts(dsts), srcs(srcs), pdsts(pdsts), psrcs(psrcs) {}
-
-  InstructionStat(const std::string &op,
-    int pc, int predicate, PredicateFlag predicate_flag,
-    std::vector<int> predicate_assign_pcs,
+    std::vector<int> &predicate_assign_pcs,
     std::vector<int> &dsts, std::vector<int> &srcs,
     std::vector<int> &pdsts, std::vector<int> &psrcs,
-    std::map<int, std::vector<int> > &assign_pcs,
-    std::map<int, std::vector<int> > &passign_pcs) :
+    std::vector<int> &bdsts, std::vector<int> &bsrcs) :
     op(op), pc(pc), predicate(predicate), predicate_flag(predicate_flag),
     predicate_assign_pcs(predicate_assign_pcs),
     dsts(dsts), srcs(srcs), pdsts(pdsts), psrcs(psrcs),
-    assign_pcs(assign_pcs), passign_pcs(passign_pcs) {}
+    bdsts(bdsts), bsrcs(bsrcs) {}
 
   InstructionStat(const std::string &op,
     int pc, int predicate, PredicateFlag predicate_flag,
-    std::vector<int> predicate_assign_pcs,
+    std::vector<int> &predicate_assign_pcs,
     std::vector<int> &dsts, std::vector<int> &srcs,
     std::vector<int> &pdsts, std::vector<int> &psrcs,
+    std::vector<int> &bdsts, std::vector<int> &bsrcs,
     std::map<int, std::vector<int> > &assign_pcs,
     std::map<int, std::vector<int> > &passign_pcs,
+    std::map<int, std::vector<int> > &bassign_pcs) :
+    op(op), pc(pc), predicate(predicate), predicate_flag(predicate_flag),
+    predicate_assign_pcs(predicate_assign_pcs),
+    dsts(dsts), srcs(srcs), pdsts(pdsts), psrcs(psrcs),
+    bdsts(bdsts), bsrcs(bsrcs),
+    assign_pcs(assign_pcs), passign_pcs(passign_pcs), bassign_pcs(bassign_pcs) {}
+
+  InstructionStat(const std::string &op,
+    int pc, int predicate, PredicateFlag predicate_flag,
+    std::vector<int> &predicate_assign_pcs,
+    std::vector<int> &dsts, std::vector<int> &srcs,
+    std::vector<int> &pdsts, std::vector<int> &psrcs,
+    std::vector<int> &bdsts, std::vector<int> &bsrcs,
+    std::map<int, std::vector<int> > &assign_pcs,
+    std::map<int, std::vector<int> > &passign_pcs,
+    std::map<int, std::vector<int> > &bassign_pcs,
     Control &control) :
     op(op), pc(pc), predicate(predicate), predicate_flag(predicate_flag),
     predicate_assign_pcs(predicate_assign_pcs),
-    dsts(dsts), srcs(srcs), pdsts(dsts), psrcs(srcs), 
-    assign_pcs(assign_pcs), passign_pcs(passign_pcs), control(control) {}
+    dsts(dsts), srcs(srcs), pdsts(pdsts), psrcs(psrcs), 
+    bdsts(bdsts), bsrcs(bsrcs),
+    assign_pcs(assign_pcs), passign_pcs(passign_pcs), bassign_pcs(bassign_pcs),
+    control(control) {}
 
   bool operator < (const InstructionStat &other) const {
     return this->pc < other.pc;
+  }
+
+  bool find_src_reg(int reg) {
+    return std::find(srcs.begin(), srcs.end(), reg) != srcs.end();
+  }
+
+  bool find_src_pred_reg(int pred_reg) {
+    return std::find(psrcs.begin(), psrcs.end(), pred_reg) != psrcs.end();
+  }
+
+  bool find_src_barrier(int barrier) {
+    return std::find(bsrcs.begin(), bsrcs.end(), barrier) != bsrcs.end();
   }
 };
 

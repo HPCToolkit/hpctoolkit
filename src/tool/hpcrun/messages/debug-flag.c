@@ -145,7 +145,6 @@ static pmsg_category all_list_entries [] = {
  // E(POST_FORK),
  E(EVENTS),
  // E(SYSTEM_SERVER),
- // E(SYSTEM_COMMAND),
  // E(AS_add_source),
  // E(AS_started),
  // E(AS_MAP),

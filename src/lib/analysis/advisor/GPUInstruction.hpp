@@ -1,5 +1,5 @@
-#ifndef Analysis_CallPath_CallPath_CudaInstruction_hpp 
-#define Analysis_CallPath_CallPath_CudaInstruction_hpp
+#ifndef Analysis_Advisor_GPUInstruction_hpp 
+#define Analysis_Advisor_GPUInstruction_hpp
 
 //************************* System Include Files ****************************
 
@@ -23,11 +23,11 @@ namespace Analysis {
 namespace CallPath {
 
 void
-overlayCudaInstructionsMain(Prof::CallPath::Profile &prof,
+overlayGPUInstructionsMain(Prof::CallPath::Profile &prof,
   const std::vector<std::string> &instruction_files);
 
 }
 
 }
 
-#endif  // Analysis_CallPath_CallPath_CudaInstruction_hpp
+#endif  // Analysis_Advisor_GPUInstruction_hpp

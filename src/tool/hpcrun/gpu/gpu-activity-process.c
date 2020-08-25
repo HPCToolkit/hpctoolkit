@@ -231,21 +231,21 @@ gpu_sample_process
       PRINT("external_id %lu\n", external_id);
 
       bool more_samples = 
-	gpu_host_correlation_map_samples_increase
-	(external_id, sample->details.pc_sampling.samples);
+        gpu_host_correlation_map_samples_increase
+        (external_id, sample->details.pc_sampling.samples);
 
       if (!more_samples) {
-	gpu_correlation_id_map_delete(correlation_id);
+        gpu_correlation_id_map_delete(correlation_id);
       }
 
       cct_node_t *host_op_node =
-	gpu_host_correlation_map_entry_op_cct_get(host_op_entry, 
-						  gpu_placeholder_type_kernel);
+        gpu_host_correlation_map_entry_op_function_get(host_op_entry);
 
       cct_node_t *cct_child = hpcrun_cct_insert_ip_norm(host_op_node, ip);
+
       if (cct_child) {
-	PRINT("cct_child %p\n", cct_child);
-	attribute_activity(host_op_entry, sample, cct_child);
+        PRINT("cct_child %p\n", cct_child);
+        attribute_activity(host_op_entry, sample, cct_child);
       }
     } else {
       PRINT("host_map_entry %lu not found\n", external_id);
@@ -271,11 +271,17 @@ gpu_sampling_info_process
     gpu_host_correlation_map_entry_t *host_op_entry =
       gpu_host_correlation_map_lookup(external_id);
     if (host_op_entry != NULL) {
-      cct_node_t *host_op_node =
-	gpu_host_correlation_map_entry_op_cct_get(host_op_entry, 
-						  gpu_placeholder_type_kernel);
+      cct_node_t *func_ph = 
+        gpu_host_correlation_map_entry_op_function_get(host_op_entry);
+      // do not delete it because it shares external_id with activity samples
 
-      attribute_activity(host_op_entry, sri, host_op_node);
+      cct_node_t *func_node = hpcrun_leftmost_child(func_ph);
+      if (func_node == NULL) {
+        // in case placeholder doesn't have a child
+        func_node = func_ph;
+      }
+
+      attribute_activity(host_op_entry, sri, func_node);
     }
     // sample info is the last record for a given correlation id
     bool more_samples = 
@@ -380,16 +386,22 @@ gpu_kernel_process
       gpu_host_correlation_map_lookup(external_id);
 
     if (host_op_entry != NULL) {
-      cct_node_t *func_node = 
-	gpu_host_correlation_map_entry_op_function_get(host_op_entry);
+      cct_node_t *func_ph = 
+        gpu_host_correlation_map_entry_op_function_get(host_op_entry);
       // do not delete it because it shares external_id with activity samples
+
+      cct_node_t *func_node = hpcrun_leftmost_child(func_ph);
+      if (func_node == NULL) {
+        // in case placeholder doesn't have a child
+        func_node = func_ph;
+      }
 
       gpu_trace_item_t entry_trace;
       trace_item_set(&entry_trace, activity, host_op_entry, func_node);
 
       gpu_context_stream_trace
-	(activity->details.kernel.context_id, activity->details.kernel.stream_id,
-	 &entry_trace);
+        (activity->details.kernel.context_id, activity->details.kernel.stream_id,
+         &entry_trace);
 
       attribute_activity(host_op_entry, activity, func_node);
     }
@@ -486,17 +498,21 @@ gpu_cdpkernel_process
     gpu_host_correlation_map_entry_t *host_op_entry =
       gpu_host_correlation_map_lookup(external_id);
     if (host_op_entry != NULL) {
-      cct_node_t *host_op_node =
-	gpu_host_correlation_map_entry_op_cct_get(host_op_entry, 
-						  gpu_placeholder_type_trace);
-      cct_node_t *func_node = hpcrun_cct_children(host_op_node);
+      cct_node_t *func_ph =
+        gpu_host_correlation_map_entry_op_function_get(host_op_entry);
+
+      cct_node_t *func_node = hpcrun_leftmost_child(func_ph);
+      if (func_node == NULL) {
+	// in case placeholder doesn't have a child
+	func_node = func_ph;
+      }
 
       gpu_trace_item_t entry_trace;
       trace_item_set(&entry_trace, activity, host_op_entry, func_node);
 
       gpu_context_stream_trace
-	(activity->details.cdpkernel.context_id, activity->details.cdpkernel.stream_id,
-	 &entry_trace);
+        (activity->details.cdpkernel.context_id, activity->details.cdpkernel.stream_id,
+         &entry_trace);
     }
     gpu_correlation_id_map_delete(correlation_id);
   }
@@ -571,11 +587,10 @@ gpu_instruction_process
     gpu_host_correlation_map_entry_t *host_op_entry = 
       gpu_host_correlation_map_lookup(external_id);
     if (host_op_entry != NULL) {
-      // Function node has the start pc of the function
-      cct_node_t *func_node = 
-	gpu_host_correlation_map_entry_op_function_get(host_op_entry);
+      cct_node_t *func_ph = 
+        gpu_host_correlation_map_entry_op_function_get(host_op_entry);
 
-      cct_node_t *func_ins = hpcrun_cct_insert_ip_norm(func_node, pc);
+      cct_node_t *func_ins = hpcrun_cct_insert_ip_norm(func_ph, pc);
       attribute_activity(host_op_entry, activity, func_ins);
     }
   }

@@ -1,4 +1,4 @@
-// -*-Mode: C++;-*-
+// -*-Mode: C++;-*- // technically C99
 
 // * BeginRiceCopyright *****************************************************
 //
@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2018, Rice University
+// Copyright ((c)) 2002-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,84 +44,26 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//***************************************************************************
-//
-// File:
-//   $HeadURL$
-//
-// Purpose:
-//   [The purpose of this file]
-//
-// Description:
-//   [The set of functions, macros, etc. defined in the file]
-//
-//***************************************************************************
+#ifndef __hpcrun_nanotime_h__
+#define __hpcrun_nanotime_h__
 
-#ifndef Analysis_GPUArchitecture_hpp 
-#define Analysis_GPUArchitecture_hpp
+//*****************************************************************************
+// system includes
+//*****************************************************************************
 
-//************************* System Include Files ****************************
-
-#include <iostream>
-#include <vector>
-#include <stack>
-#include <string>
-
-//*************************** User Include Files ****************************
-
-#include <include/uint.h>
-
-#include <lib/prof/CallPath-Profile.hpp>
-#include <lib/prof/Struct-Tree.hpp>
+#include <stdint.h>
 
 
-namespace Analysis {
 
-class GPUArchitecture {
- public:
-  enum Vendor {
-    VENDOR_NVIDIA = 0,
-    VENDOR_AMD = 1,
-    VENDOR_UNKNOWN = 2
-  };
+//*****************************************************************************
+// interface operations
+//*****************************************************************************
 
-  GPUArchitecture(Vendor vendor) : _vendor(vendor) {}
-
-  // instruction latency
-  // memory instruction latency varies
-  // <min, max>
-  virtual std::pair<int, int> latency(const std::string &opcode) = 0;
-
-  // warp throughput, not block throughput
-  virtual int issue(const std::string &opcode) = 0;
-
-  virtual int inst_size() = 0;
-
-  virtual ~GPUArchitecture() {}
-
- protected:
-  Vendor _vendor;
-};
+uint64_t
+hpcrun_nanotime
+(
+  void
+);
 
 
-class SM70 : public GPUArchitecture {
- public:
-  SM70() : GPUArchitecture(VENDOR_NVIDIA) {}
-
-  virtual std::pair<int, int> latency(const std::string &opcode);
-
-  virtual int issue(const std::string &opcode);
-
-  virtual int inst_size() {
-    return 16;
-  }
-
- protected:
-  Vendor _vendor;
-};
-
-
-}  // Analysis
-
-#endif  // Analysis_GPUArchitecture_hpp
-
+#endif

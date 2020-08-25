@@ -50,13 +50,19 @@ using std::string;
 namespace Analysis {
 
 // TODO(Keren): add more latency components
-std::pair<int, int> SM70::latency(const std::string &opcode) {
+std::pair<int, int> V100::latency(const std::string &opcode) const {
   if (opcode.find("INTEGER") != std::string::npos) {
     if (opcode.find(".MAD") != std::string::npos) {
       return std::pair<int, int>(5, 5);
+    } else if (opcode.find(".POPC") != std::string::npos) {
+      return std::pair<int, int>(10, 10);
     } else {
       return std::pair<int, int>(4, 4);
     }
+  } else if (opcode.find("PREDICATE") != std::string::npos) {
+    return std::pair<int, int>(5, 5);
+  } else if (opcode.find("CONVERT") != std::string::npos) {
+    return std::pair<int, int>(14, 14);
   } else if (opcode.find("FLOAT") != std::string::npos) {
     if (opcode.find(".MUFU") != std::string::npos) {
       return std::pair<int, int>(14, 14);
@@ -70,7 +76,7 @@ std::pair<int, int> SM70::latency(const std::string &opcode) {
     }
   } else if (opcode.find("MEMORY") != std::string::npos) {
     if (opcode.find(".SHARED") != std::string::npos) {
-      return std::pair<int, int>(19, 19 + 31);
+      return std::pair<int, int>(19, 80);
     } else {
       // Hard to estimate memory latency
       // Use TLB miss latency
@@ -84,8 +90,8 @@ std::pair<int, int> SM70::latency(const std::string &opcode) {
 }
 
 
-// XXX: throughput latency, not throughput
-int SM70::issue(const std::string &opcode) {
+// XXX: not throughput
+int V100::issue(const std::string &opcode) const {
   if (opcode.find("INTEGER") != std::string::npos) {
     // 32 / 16 = 2
     return 2;

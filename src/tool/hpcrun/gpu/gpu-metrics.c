@@ -76,7 +76,8 @@
   macro(GSYNC, 4)				\
   macro(GGMEM, 5)				\
   macro(GLMEM, 6)       \
-  macro(GRED,  7)
+  macro(GRED,  7)       \
+  macro(GPU_INST_LAT, 8)
 
 
 #define FORALL_SCALAR_METRIC_KINDS(macro)	\
@@ -161,19 +162,29 @@ name ## _metric_kind
     (APPLY(METRIC_KIND,CURRENT_METRIC), metric_name, metric_desc,	\
      MetricFlags_ValFmt_Real, 1, metric_property_none);
 
-
-#define HIDE_INDEXED_METRIC(name,  index) \
+#define HIDE_INDEXED_METRIC(name, index, desc) \
    hpcrun_set_display(APPLY(METRIC_ID,CURRENT_METRIC)[index], 0);
 
+
 #define DIVISION_FORMULA(name) \
-  hpcrun_set_display(METRIC_ID(name ## _ACUMU), 0); \
+  hpcrun_set_display(METRIC_ID(name ## _ACUMU), HPCRUN_FMT_METRIC_INVISIBLE); \
   hpcrun_set_percent(METRIC_ID(name), 0); \
   hpcrun_set_display(METRIC_ID(name), HPCRUN_FMT_METRIC_SHOW_EXCLUSIVE); \
   reg_metric  = hpcrun_id2metric_linked(METRIC_ID(name)); \
   reg_formula = hpcrun_malloc_safe(sizeof(char) * MAX_CHAR_FORMULA); \
   sprintf(reg_formula, "#%d/#%d", METRIC_ID(name ## _ACUMU), METRIC_ID(GPU_KINFO_COUNT)); \
   reg_metric->formula = reg_formula; \
-  reg_metric->format  = FORMAT_DISPLAY_INT; \
+  reg_metric->format  = FORMAT_DISPLAY_INT
+
+
+#define OCCUPANCY_FORMULA(name) \
+  hpcrun_set_percent(METRIC_ID(name), 0); \
+  hpcrun_set_display(METRIC_ID(name), HPCRUN_FMT_METRIC_SHOW_EXCLUSIVE); \
+  reg_metric  = hpcrun_id2metric_linked(METRIC_ID(name)); \
+  reg_formula = hpcrun_malloc_safe(sizeof(char) * MAX_CHAR_FORMULA); \
+  sprintf(reg_formula, "100*(#%d/#%d)", METRIC_ID(GPU_KINFO_FGP_ACT_ACUMU), METRIC_ID(GPU_KINFO_FGP_MAX_ACUMU)); \
+  reg_metric->formula = reg_formula; \
+  reg_metric->format  = FORMAT_DISPLAY_PERCENTAGE
 
 
 //*****************************************************************************
@@ -199,7 +210,7 @@ gpu_metrics_attribute_metric_int
 (
  metric_data_list_t *metrics, 
  int metric_index,
- int value
+ uint64_t value
 )
 {
   hpcrun_metric_std_inc(metric_index, metrics, (cct_metric_data_t){.i = value});
@@ -239,13 +250,13 @@ gpu_metrics_attribute_pc_sampling
  gpu_activity_t *activity
 )
 {
-  uint32_t sample_period = 
+  uint64_t sample_period = 
     1 << gpu_monitoring_instruction_sample_frequency_get();
 
   gpu_pc_sampling_t *sinfo = &(activity->details.pc_sampling);
   cct_node_t *cct_node = activity->cct_node;
 
-  int inst_count = sinfo->samples * sample_period;
+  uint64_t inst_count = sinfo->samples * sample_period;
 
   metric_data_list_t *inst_metric = 
     hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_INST_ALL));
@@ -263,24 +274,32 @@ gpu_metrics_attribute_pc_sampling
     metric_data_list_t *stall_metrics = 
       hpcrun_reify_metric_set(cct_node, stall_kind_metric_index);
 
-    if (sinfo->stallReason == GPU_INST_STALL_NONE || sinfo->stallReason == GPU_INST_STALL_NOT_SELECTED) {
-      // sm is not stall
-      int sample_count = sinfo->samples * sample_period;
+    uint64_t stall_count = sinfo->latencySamples * sample_period;
 
-      // stall reason specific metric
-      gpu_metrics_attribute_metric_int(stall_metrics, 
-               stall_kind_metric_index, sample_count);
-    } else {
-      int stall_count = sinfo->latencySamples * sample_period;
+    // stall summary metric
+    gpu_metrics_attribute_metric_int(stall_metrics, 
+      stall_summary_metric_index, stall_count);
 
-      // stall summary metric
-      gpu_metrics_attribute_metric_int(stall_metrics, 
-               stall_summary_metric_index, stall_count);
+    // stall reason specific metric
+    gpu_metrics_attribute_metric_int(stall_metrics, 
+      stall_kind_metric_index, stall_count);
 
-      // stall reason specific metric
-      gpu_metrics_attribute_metric_int(stall_metrics, 
-               stall_kind_metric_index, stall_count);
-    }
+    // lat, internal use only
+    int lat_summary_metric_index = 
+      METRIC_ID(GPU_INST_LAT)[GPU_INST_STALL_ANY];
+
+    int lat_kind_metric_index = METRIC_ID(GPU_INST_LAT)[sinfo->stallReason];
+
+    metric_data_list_t *lat_metrics = 
+      hpcrun_reify_metric_set(cct_node, lat_kind_metric_index);
+
+    uint64_t lat_count = sinfo->samples * sample_period;
+
+    // lat summary metric
+    gpu_metrics_attribute_metric_int(lat_metrics, lat_summary_metric_index, lat_count);
+
+    // lat reason specific metric
+    gpu_metrics_attribute_metric_int(lat_metrics, lat_kind_metric_index, lat_count);
   }
 }
 
@@ -423,6 +442,8 @@ gpu_metrics_attribute_kernel
   
     gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_REGISTERS_ACUMU), 
 				     k->threadRegisters);
+
+    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_BLKS_ACUMU), k->blocks);
 
     gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_BLK_THREADS_ACUMU), 
 				     k->blockThreads);
@@ -722,6 +743,8 @@ gpu_metrics_KINFO_enable
   DIVISION_FORMULA(GPU_KINFO_REGISTERS);
   DIVISION_FORMULA(GPU_KINFO_BLK_THREADS);
   DIVISION_FORMULA(GPU_KINFO_BLK_SMEM);
+  DIVISION_FORMULA(GPU_KINFO_BLKS);
+  OCCUPANCY_FORMULA(GPU_KINFO_OCCUPANCY_THR);
 }
 
 
@@ -858,6 +881,24 @@ gpu_metrics_GPU_INST_STALL_enable
   INITIALIZE_METRIC_KIND();
 
   FORALL_GPU_INST_STALL(INITIALIZE_INDEXED_METRIC_INT)
+
+  FINALIZE_METRIC_KIND();
+}
+
+
+void
+gpu_metrics_GPU_INST_LAT_enable
+(
+ void
+)
+{
+#undef CURRENT_METRIC 
+#define CURRENT_METRIC GPU_INST_LAT
+  INITIALIZE_METRIC_KIND();
+
+  FORALL_GPU_INST_LAT(INITIALIZE_INDEXED_METRIC_INT)
+
+  FORALL_GPU_INST_LAT(HIDE_INDEXED_METRIC)
 
   FINALIZE_METRIC_KIND();
 }

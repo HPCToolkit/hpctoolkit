@@ -13,7 +13,13 @@ It can present an arbitrary collection of performance metrics gathered during on
 
 \section{Launching}
 
-\hpcviewer{} can either be launched from a command line (Linux/Unix platform) or by clicking the \hpcviewer{} icon (for Windows, Mac OS X and Linux/Unix platform).
+Requirements to launch \hpcviewer:
+\begin{itemize}
+ \item On all platforms: Java 8. At the moment \hpcviewer{} cannot run with Java 9 or newer.
+ \item On Linux: GTK.
+\end{itemize}
+
+\hpcviewer{} can either be launched from a command line (Linux platforms) or by clicking the \hpcviewer{} icon (for Windows, Mac OS X and Linux platforms).
 The command line syntax is as follows:
 \begin{quote}
 \begin{verbatim}
@@ -21,16 +27,21 @@ The command line syntax is as follows:
 \end{verbatim}
 \end{quote}
 Here, \texttt{<hpctoolkit-database>} is an optional argument to load a database automatically.
-Without this argument, \hpcviewer{} will prompt for the location of a database.
+Without this argument, \hpcviewer{} will prompt for the location of a database. Possible options for \hpcviewer{}  are shown in the table below:\\
 
-The possible options are as follows:
-\begin{itemize}
- \item \texttt{-consolelog}: Send log entries to a console in addition to a log file.
-   (To get a console window, be sure to use java as the VM instead of javaw.)
+\begin{centering}
+\begin{tabular}{|l|p{4.1in}|}\hline\hline
+ \verb|-h, --help|   &
+ 	Print a help message. \\\hline
+ \verb|-jh, --java-heap| {\em size}  & 
+  	Set the JVM maximum heap size for this execution of  \hpcviewer{}. The value of {\em size} must be 
+	in megabytes (M) or gigabytes (G). For example, one can specify a {\em size}  of 3 gigabytes as either 
+	3076M or 3G.\\\hline\hline
+ \end{tabular}
+ \end{centering}
+ \vspace{2ex}
 
- \item \texttt{-debug}: Log additional information about plug-in dependency problems.
-\end{itemize}
-
+On Linux, when  \hpcviewer{}  is installed using its \verb|install| script, the \verb|install| script chooses a default maximum size for the Java heap on the current platform. When analyzing measurements for large and complex applications, it may be necessary to use the \verb|--java-heap| option to specify a larger heap size for  \hpcviewer{}  to accommodate many metrics for many contexts.
 
 % ===========================================================================
 % ===========================================================================
@@ -164,7 +175,7 @@ The nature of the entities in the navigation pane's tree structure depends upon 
   While most entities link to a single location in source code, procedure activations link to two: the call site from which a procedure was called and the procedure itself.
 
 \item In the \textbf{Bottom-up View}, entities in the navigation tree are procedure activations.
-  Unlike procedure activations in the calling context tree view in which call sites are paired with the called procedure, in the caller's view, call sites are paired with the calling procedure to facilitate attribution of costs for a called procedure to multiple different call sites and callers.
+  Unlike procedure activations in the top-down view in which call sites are paired with the called procedure, in the bottom-up view, call sites are paired with the calling procedure to facilitate attribution of costs for a called procedure to multiple different call sites and callers.
 
 \item In the \textbf{Flat View}, entities in the navigation tree correspond to source files, procedure call sites (which are rendered the same way as procedure activations), loops, and source lines.
 \end{itemize}
@@ -381,7 +392,7 @@ We do not attribute the cost of \texttt{g$_2$} here since it is a descendant of 
 
 Inclusive costs need to be computed similarly in the Flat View.
 The inclusive cost of a recursive routine is the sum of the highest cost for each branch in calling context tree.
-For instance, in Figure~\ref{fig:metrics-flat}, The inclusive cost of \texttt{g$_x$}, defined as the total cost of all instances of \texttt{g}, is \texttt{9}, and this is consistently the same as the cost in caller tree.
+For instance, in Figure~\ref{fig:metrics-flat}, The inclusive cost of \texttt{g$_x$}, defined as the total cost of all instances of \texttt{g}, is \texttt{9}, and this is consistently the same as the cost in the bottom-up tree.
 The advantage of attributing different costs for each instance of \texttt{g} is that it enables a user to identify which instance of the call to \texttt{g} is responsible for performance losses.
 
 
@@ -656,7 +667,7 @@ The table comprises of two columns: the left column is to display a filter's swi
 If a checkbox is checked, it signifies the filter is enabled; otherwise the filter is disabled.
 
 Cautious is needed when using filter feature since it can change the shape of the tree, thus affects different interpretation of performance analysis.
-Furthermore, if the filtered nodes are children of a ``fake'' procedures (such as \texttt{<program root>} and \texttt{<thread root>}), the exclusive metrics in callers view and flat view can be misleading. 
+Furthermore, if the filtered nodes are children of a ``fake'' procedures (such as \texttt{<program root>} and \texttt{<thread root>}), the exclusive metrics in Bottom-up view and flat view can be misleading. 
 This occurs since these views do not show ``fake'' procedures.
 %Furthermore, \hpcviewer{} does not verify if the filter will remove all the entire tree or not.
 
@@ -808,7 +819,7 @@ By default, the menu is hidden. Once you open a database, the menu is then shown
 
 \begin{itemize}
  \item \textbf{Show views}
- Display all the list of views (calling context views, callers view and flat view) for each database. If a view was closed, it will be suffixed by a "\texttt{*closed*}" sign and can be reactivated by double-clicking the name of the view in the tree.
+ Display all the list of views (Top-down view, Bottom-up view and flat view) for each database. If a view was closed, it will be suffixed by a "\texttt{*closed*}" sign and can be reactivated by double-clicking the name of the view in the tree.
 
  \item \textbf{Show metric properties}
  Display a list of metrics in a window. From this window, you can modify the name of the metric. For derived metrics, this also allows to modify the formula as well as the format.

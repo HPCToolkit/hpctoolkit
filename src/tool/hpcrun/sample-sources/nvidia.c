@@ -112,7 +112,7 @@
 
 
 /******************************************************************************
- * local variables 
+ * local variables
  *****************************************************************************/
 
 // finalizers
@@ -124,6 +124,7 @@ static device_finalizer_fn_entry_t device_trace_finalizer_shutdown;
 // default trace all the activities
 // -1: disabled, >0: x ms per activity
 // static long trace_frequency = -1;
+static long trace_frequency = -1;
 static long trace_frequency_default = -1;
 
 
@@ -160,17 +161,17 @@ static const int DEFAULT_KERNEL_SAMPLING_FREQUENCY = 1;
 //******************************************************************************
 
 CUpti_ActivityKind
-external_correlation_activities[] = { 
-  CUPTI_ACTIVITY_KIND_EXTERNAL_CORRELATION, 
+external_correlation_activities[] = {
+  CUPTI_ACTIVITY_KIND_EXTERNAL_CORRELATION,
   CUPTI_ACTIVITY_KIND_INVALID
 };
 
 
 CUpti_ActivityKind
-data_motion_explicit_activities[] = { 
+data_motion_explicit_activities[] = {
   CUPTI_ACTIVITY_KIND_MEMCPY2,
-  CUPTI_ACTIVITY_KIND_MEMCPY, 
-  CUPTI_ACTIVITY_KIND_MEMSET, 
+  CUPTI_ACTIVITY_KIND_MEMCPY,
+  CUPTI_ACTIVITY_KIND_MEMSET,
 // FIXME(keren): memory activity does not have a correlation id
 // CUPTI_ACTIVITY_KIND_MEMORY,
   CUPTI_ACTIVITY_KIND_INVALID
@@ -178,14 +179,14 @@ data_motion_explicit_activities[] = {
 
 
 CUpti_ActivityKind
-data_motion_implicit_activities[] = { 
+data_motion_implicit_activities[] = {
   CUPTI_ACTIVITY_KIND_UNIFIED_MEMORY_COUNTER,
   CUPTI_ACTIVITY_KIND_INVALID
 };
 
 
 CUpti_ActivityKind
-kernel_invocation_activities[] = { 
+kernel_invocation_activities[] = {
   CUPTI_ACTIVITY_KIND_KERNEL,
   CUPTI_ACTIVITY_KIND_SYNCHRONIZATION,
   CUPTI_ACTIVITY_KIND_INVALID
@@ -201,7 +202,7 @@ kernel_execution_activities[] = {
 // CUPTI_ACTIVITY_KIND_SHARED_ACCESS,
 // CUPTI_ACTIVITY_KIND_BRANCH,
   CUPTI_ACTIVITY_KIND_INVALID
-};                                   
+};
 
 
 CUpti_ActivityKind
@@ -237,7 +238,7 @@ typedef enum cupti_activities_flags {
   CUPTI_OVERHEAD	     = 64
 } cupti_activities_flags_t;
 
-#if 0
+
 int
 cupti_pc_sampling_frequency_get()
 {
@@ -251,7 +252,6 @@ cupti_trace_frequency_get()
   return trace_frequency;
 }
 
-#endif
 
 int
 sanitizer_block_sampling_frequency_get()
@@ -270,39 +270,32 @@ sanitizer_kernel_sampling_frequency_get()
 void
 cupti_enable_activities
 (
- CUcontext context
 )
 {
-  PRINT("Enter cupti_enable_activities\n");
-
-  #define FORALL_ACTIVITIES(macro, context)                                      \
-    macro(context, CUPTI_DATA_MOTION_EXPLICIT, data_motion_explicit_activities)  \
-    macro(context, CUPTI_KERNEL_INVOCATION, kernel_invocation_activities)        \
-    macro(context, CUPTI_KERNEL_EXECUTION, kernel_execution_activities)          \
-    macro(context, CUPTI_DRIVER, driver_activities)                              \
-    macro(context, CUPTI_RUNTIME, runtime_activities)                            \
-    macro(context, CUPTI_OVERHEAD, overhead_activities)
-
-  #define CUPTI_SET_ACTIVITIES(context, activity_kind, activity)  \
-    if (cupti_enabled_activities & activity_kind) {               \
-      cupti_monitoring_set(context, activity, true);              \
-    }
-
-  FORALL_ACTIVITIES(CUPTI_SET_ACTIVITIES, context);
-
-  if (pc_sampling_frequency != -1) {
-    PRINT("pc sampling enabled\n");
-    cupti_pc_sampling_enable(context, pc_sampling_frequency);
-  }
+  TMSG(CUPTI, "Enter cupti_enable_activities");
 
   cupti_correlation_enable();
+
+  #define FORALL_ACTIVITIES(macro)                                      \
+    macro(CUPTI_DATA_MOTION_EXPLICIT, data_motion_explicit_activities)  \
+    macro(CUPTI_KERNEL_INVOCATION, kernel_invocation_activities)        \
+    macro(CUPTI_KERNEL_EXECUTION, kernel_execution_activities)          \
+    macro(CUPTI_DRIVER, driver_activities)                              \
+    macro(CUPTI_RUNTIME, runtime_activities)                            \
+    macro(CUPTI_OVERHEAD, overhead_activities)
+
+  #define CUPTI_SET_ACTIVITIES(activity_kind, activity)  \
+    if (cupti_enabled_activities & activity_kind) {      \
+      cupti_monitoring_set(activity, true);     \
+    }
+
+  FORALL_ACTIVITIES(CUPTI_SET_ACTIVITIES)
 
   // XXX(keren): CUpti_Environment is only supported on x86, not powerpc
   //cupti_environment_enable();
 
-  PRINT("Exit cupti_enable_activities\n");
+  TMSG(CUPTI, "Exit cupti_enable_activities");
 }
-
 
 
 //******************************************************************************
@@ -313,6 +306,12 @@ static void
 METHOD_FN(init)
 {
   self->state = INIT;
+
+  // Reset cupti flags
+  cupti_device_init();
+
+  // Init records
+  gpu_trace_init();
 }
 
 static void
@@ -330,6 +329,7 @@ static void
 METHOD_FN(start)
 {
   TMSG(CUDA, "start");
+  TD_GET(ss_state)[self->sel_idx] = START;
 }
 
 static void
@@ -363,7 +363,7 @@ METHOD_FN(supports_event, const char *ev_str)
   return false;
 #endif
 }
- 
+
 static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
@@ -377,7 +377,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   int nevents = (self->evl).nevents;
 
   TMSG(CUDA,"nevents = %d", nevents);
-  
+
   // Fetch the event string for the sample source
   // only one event is allowed
   char* evlist = METHOD_CALL(self, get_event_str);
@@ -564,6 +564,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 static void
 METHOD_FN(finalize_event_list)
 {
+  cupti_enable_activities();
 }
 
 static void

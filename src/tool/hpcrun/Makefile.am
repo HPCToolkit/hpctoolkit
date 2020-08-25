@@ -325,7 +325,6 @@ MY_BASE_FILES =				\
 	thread_finalize.c		\
 	control-knob.c   \
 	control-knob.h   \
-	hpcrun_flag_stacks.c \
 	device-finalizers.c \
 	device-initializers.c \
 	module-ignore-map.c \
@@ -399,7 +398,12 @@ MY_BASE_FILES =				\
 	ompt/ompt-task.c                \
 	ompt/ompt-thread.c              \
 	\
+	syscalls/poll.c	\
+	syscalls/ppoll.c \
+	syscalls/select.c \
+	\
 	utilities/executable-path.h utilities/executable-path.c \
+	utilities/hpcrun-nanotime.h  utilities/hpcrun-nanotime.c  \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
 	utilities/line_wrapping.c	\
 	utilities/timer.c		\
@@ -968,6 +972,8 @@ if UNW_LIBUNW
   UNW_STATIC_LD_FLAGS =  $(UNW_LIBUNW_LD_FLAGS)
 endif
 
+libhpcrun_la_CFLAGS += $(GOTCHA_IFLAGS)
+libhpcrun_la_LDFLAGS += $(GOTCHA_LDFLAGS)
 libhpcrun_la_SOURCES  +=  $(UNW_SOURCE_FILES)
 libhpcrun_o_SOURCES   +=  $(UNW_SOURCE_FILES)
 libhpcrun_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)

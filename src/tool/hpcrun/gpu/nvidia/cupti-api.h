@@ -93,13 +93,6 @@ typedef enum {
 // interface functions
 //******************************************************************************
 
-uint64_t 
-cupti_nanotime_offset
-(
- void
-);
-
-
 int
 cupti_bind
 (
@@ -181,7 +174,6 @@ cupti_environment_disable
 cupti_set_status_t 
 cupti_monitoring_set
 (
- CUcontext context,
  const  CUpti_ActivityKind activity_kinds[],
  bool enable
 );
@@ -280,7 +272,7 @@ cupti_unload_callback_cuda
 
 
 //******************************************************************************
-// finalizer
+// finalizer and initializer
 //******************************************************************************
 
 void
@@ -303,6 +295,11 @@ cupti_device_shutdown
  void *args
 );
 
+
+void
+cupti_device_init
+(
+);
 
 
 //******************************************************************************
