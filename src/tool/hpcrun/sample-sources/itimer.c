@@ -546,7 +546,8 @@ METHOD_FN(process_event_list, int lush_metrics)
   }
 
   // extract event threshold
-  hpcrun_extract_ev_thresh(event, sizeof(name), name, &period, DEFAULT_PERIOD);
+  int samplingType = hpcrun_extract_ev_thresh(event, sizeof(name), name, &period, DEFAULT_PERIOD);
+  CHECK_THRESHOLD(samplingType);
 
   // store event threshold
   METHOD_CALL(self, store_event, ITIMER_EVENT, period);

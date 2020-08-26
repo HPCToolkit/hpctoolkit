@@ -56,7 +56,11 @@
 #define THRESH_VALUE   1
 #define THRESH_FREQ    2
 
-
+#define CHECK_THRESHOLD(type) 						        \
+  if ((type) == THRESH_FREQ) {  					        \
+    printf("Error: Frequency-based sampling is not supported in this sample-source.\n\n"); \
+    exit(1); 	 		  					        \
+  }
 
 extern char *start_tok(char *l);
 extern int   more_tok(void);

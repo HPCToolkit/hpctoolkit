@@ -475,12 +475,17 @@ METHOD_FN(process_event_list, int lush_metrics)
     TMSG(PAPI,"checking event spec = %s",event);
     // FIXME: restore checking will require deciding if the event is synchronous or not
 #ifdef USE_PAPI_CHECKING
-    if (! hpcrun_extract_ev_thresh(event, sizeof(name), name, &thresh, DEFAULT_THRESHOLD)) {
+    int sample_type = hpcrun_extract_ev_thresh(event, sizeof(name), name, &thresh, DEFAULT_THRESHOLD);
+    CHECK_THRESHOLD(sample_type);
+
+    if (sample_type == THRESH_DEFAULT) {
       AMSG("WARNING: %s using default threshold %ld, "
 	   "better to use an explicit threshold.", name, DEFAULT_THRESHOLD);
     }
 #else
-    hpcrun_extract_ev_thresh(event, sizeof(name), name, &thresh, DEFAULT_THRESHOLD);
+    int sample_type = hpcrun_extract_ev_thresh(event, sizeof(name), name, &thresh, DEFAULT_THRESHOLD);
+    CHECK_THRESHOLD(sample_type);
+
 #endif // USE_PAPI_CHECKING
     ret = PAPI_event_name_to_code(name, &evcode);
     if (ret != PAPI_OK) {
