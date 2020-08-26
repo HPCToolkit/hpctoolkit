@@ -707,7 +707,7 @@ void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_s
     func_vec.emplace_back(dyn_func);
   }
 
-  #pragma omp parallel for schedule(dynamic)
+  #pragma omp parallel for schedule(dynamic) num_threads(16)
   for (size_t i = 0; i < func_vec.size(); ++i) {
     Dyninst::ParseAPI::Function* dyn_func = func_vec[i];
     Dyninst::AssignmentConverter ac(true, false);
@@ -784,6 +784,7 @@ bool dumpCudaInstructions(const std::string &file_path,
     ptree_function.put("name", function->name);
     ptree_function.put("address", function->address);
     ptree_function.put("global", function->global);
+    ptree_function.put("size", function->size);
     ptree_function.put("unparsable", function->unparsable);
 
     if (function->unparsable == true) {
@@ -970,10 +971,11 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
     int function_id = ptree_function.second.get<int>("id", 0);
     int function_index = ptree_function.second.get<int>("index", 0);
     int function_address = ptree_function.second.get<int>("address", 0);
+    int size = ptree_function.second.get<int>("size", 0);
     std::string name = ptree_function.second.get<std::string>("name", "");
     bool unparsable = ptree_function.second.get<bool>("unparsable", "");
     bool global = ptree_function.second.get<bool>("global", "");
-    auto *function = new Function(function_id, function_index, name, function_address, unparsable, global);
+    auto *function = new Function(function_id, function_index, name, function_address, unparsable, global, size);
 
     if (INSTRUCTION_ANALYZER_DEBUG) {
       std::cout << "Function id: " << function_id << std::endl;

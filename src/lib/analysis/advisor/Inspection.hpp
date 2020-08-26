@@ -98,6 +98,8 @@ struct Inspection {
   std::string hint;
 
   std::vector<InstructionBlame> regions;
+  // How many the hotspots account for the total blames for each region
+  std::vector<double> density;
   std::vector<std::vector<InstructionBlame>> hotspots;
 
   // speedups[0..n-1] = overall speedup
@@ -130,6 +132,7 @@ struct Inspection {
     hotspots.clear();
     speedups.clear();
     ratios.clear();
+    density.clear();
     total = -1.0;
     stall = false;
     loop = false;

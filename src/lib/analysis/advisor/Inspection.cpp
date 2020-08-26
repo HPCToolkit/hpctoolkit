@@ -165,6 +165,9 @@ std::string SimpleInspectionFormatter::format(const Inspection &inspection) {
     if (speedup != 0.0) {
       ss << "speedup " << speedup << "x";
     }
+    if (inspection.density.size() != 0.0) {
+      ss << ", density " << inspection.density[index] * 100 << "%";
+    }
     ss << std::endl;
 
     std::vector<InstructionBlame> inst_blames;

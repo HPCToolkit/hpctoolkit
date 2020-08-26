@@ -147,6 +147,7 @@ parseDotCFG
             function->index = symbol_function->getIndex();
             function->address = symbol_function->getOffset();
             function->global = symbol_visibility[function->index] == CUDA_GLOBAL ? true : false;
+            function->size = symbol_function->getSize();
             if (symbol_function != symbol) {
               if (symbol_function->getType() != Dyninst::SymtabAPI::Symbol::ST_FUNCTION) {
                 // NOTYPE functions' original offsets are relative.
