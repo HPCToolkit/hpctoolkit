@@ -176,10 +176,8 @@ MOSTLYCLEANFILES = $(MYCLEAN)
 # Other rules
 #############################################################################
 
-PYTHON ?= $(shell which python3 || which python2 || which python)
-
 %.h : $(srcdir)/%.txt
-	$(PYTHON) $(srcdir)/stringify.py $< $@
+	$(srcdir)/stringify.sh < $<  > $@
 
 
 #############################################################################
