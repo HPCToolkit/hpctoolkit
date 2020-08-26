@@ -128,7 +128,6 @@ cuda_device_property_query
 );
 
 
-<<<<<<< HEAD
 CUstream
 cuda_priority_stream_create
 (
@@ -156,7 +155,8 @@ cuda_unload_callback
 (
  uint32_t cubin_id
 );
-=======
+
+
 // returns 0 on success
 int
 cuda_global_pc_sampling_required
@@ -164,6 +164,12 @@ cuda_global_pc_sampling_required
   int *required
 );
 
->>>>>>> fb591a1a14700cd20e5ef55b011316b99e344799
+
+int
+cuda_path
+(
+ char *buffer
+);
+
 
 #endif

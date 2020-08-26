@@ -185,21 +185,6 @@ typedef struct {
   CUpti_BuffersCallbackCompleteFunc buffer_complete;
 } cupti_activity_buffer_state_t;
 
-
-// DRIVER_UPDATE_CHECK(Keren): cufunc and cumod fields are reverse engineered
-typedef struct {
-  uint32_t unknown_field1[4];
-  uint32_t function_index;
-  uint32_t unknown_field2[3];
-  CUmodule cumod;
-} hpctoolkit_cufunc_st_t;
-
-
-typedef struct {
-  uint32_t cubin_id;
-} hpctoolkit_cumod_st_t;
-
-
 //******************************************************************************
 // forward declarations
 //******************************************************************************
@@ -434,32 +419,6 @@ CUPTI_FN
 //******************************************************************************
 
 #ifndef HPCRUN_STATIC_LINK
-int
-cuda_path
-(
- struct dl_phdr_info *info,
- size_t size,
- void *data
-)
-{
-  char *buffer = (char *) data;
-  const char *suffix = strstr(info->dlpi_name, "libcudart");
-  if (suffix) {
-    // CUDA library organization after 9.0
-    suffix = strstr(info->dlpi_name, "targets");
-    if (!suffix) {
-      // CUDA library organization in 9.0 or earlier
-      suffix = strstr(info->dlpi_name, "lib64");
-    }
-  }
-  if (suffix){
-    int len = suffix - info->dlpi_name;
-    strncpy(buffer, info->dlpi_name, len);
-    buffer[len] = 0;
-    return 1;
-  }
-  return 0;
-}
 
 
 static void
@@ -494,7 +453,7 @@ cupti_path
   // dl_iterate_phdr.
   void *h = monitor_real_dlopen("libcudart.so", RTLD_LOCAL | RTLD_LAZY);
 
-  if (dl_iterate_phdr(cuda_path, buffer)) {
+  if (cuda_path(buffer)) {
     // invariant: buffer contains CUDA home
     int zero_index = strlen(buffer);
     strcat(buffer, CUPTI_LIBRARY_LOCATION);
@@ -631,65 +590,6 @@ cupti_write_cubin
     // Failure to open is a fatal error.
     hpcrun_abort("hpctoolkit: unable to open file: '%s'", file_name);
     return false;
-  }
-}
-
-
-void
-cupti_load_callback_cuda
-(
- uint32_t cubin_id,
- const void *cubin,
- size_t cubin_size
-)
-{
-  // Compute hash for cubin and store it into a map
-  cubin_hash_map_entry_t *entry = cubin_hash_map_lookup(cubin_id);
-  unsigned char *hash;
-  unsigned int hash_len;
-  if (entry == NULL) {
-    cubin_hash_map_insert(cubin_id, cubin, cubin_size);
-    entry = cubin_hash_map_lookup(cubin_id);
-  }
-  hash = cubin_hash_map_entry_hash_get(entry, &hash_len);
-
-  // Create file name
-  char file_name[PATH_MAX];
-  size_t i;
-  size_t used = 0;
-  used += sprintf(&file_name[used], "%s", hpcrun_files_output_directory());
-  used += sprintf(&file_name[used], "%s", "/cubins/");
-  mkdir(file_name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-  for (i = 0; i < hash_len; ++i) {
-    used += sprintf(&file_name[used], "%02x", hash[i]);
-  }
-  used += sprintf(&file_name[used], "%s", ".cubin");
-  TMSG(CUPTI, "cubin_id %d hash %s", cubin_id, file_name);
-
-  // Write a file if does not exist
-  bool file_flag;
-  spinlock_lock(&files_lock);
-  file_flag = cupti_write_cubin(file_name, cubin, cubin_size);
-  spinlock_unlock(&files_lock);
-
-  if (file_flag) {
-    char device_file[PATH_MAX];
-    sprintf(device_file, "%s", file_name);
-    uint32_t hpctoolkit_module_id;
-    load_module_t *module = NULL;
-    hpcrun_loadmap_lock();
-    if ((module = hpcrun_loadmap_findByName(device_file)) == NULL) {
-      hpctoolkit_module_id = hpcrun_loadModule_add(device_file);
-    } else {
-      hpctoolkit_module_id = module->id;
-    }
-    hpcrun_loadmap_unlock();
-    TMSG(CUPTI, "cubin_id %d -> hpctoolkit_module_id %d", cubin_id, hpctoolkit_module_id);
-    cubin_id_map_entry_t *entry = cubin_id_map_lookup(cubin_id);
-    if (entry == NULL) {
-      Elf_SymbolVector *vector = computeCubinFunctionOffsets(cubin, cubin_size);
-      cubin_id_map_insert(cubin_id, hpctoolkit_module_id, vector);
-    }
   }
 }
 
@@ -1569,10 +1469,6 @@ cupti_device_init()
 
   cupti_activity_enabled.buffer_request = 0;
   cupti_activity_enabled.buffer_complete = 0;
-
-  cupti_load_callback = 0;
-
-  cupti_unload_callback = 0;
 }
 
 

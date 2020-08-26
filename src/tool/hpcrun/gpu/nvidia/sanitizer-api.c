@@ -145,6 +145,7 @@
   macro(sanitizerEnableDomain)             \
   macro(sanitizerAlloc)                    \
   macro(sanitizerMemset)                   \
+  macro(sanitizerStreamSynchronize)        \
   macro(sanitizerMemcpyDeviceToHost)       \
   macro(sanitizerMemcpyHostToDeviceAsync)  \
   macro(sanitizerSetCallbackData)          \
@@ -297,6 +298,15 @@ SANITIZER_FN
 
 SANITIZER_FN
 (
+ sanitizerStreamSynchronize,
+ (
+  CUstream stream
+ )
+);
+
+
+SANITIZER_FN
+(
  sanitizerMemcpyDeviceToHost,
  (
   void* dst,
@@ -323,7 +333,7 @@ SANITIZER_FN
 (
  sanitizerSetCallbackData,
  (
-  CUstream stream,
+  CUfunction function,
   const void* userdata
  ) 
 );
@@ -498,6 +508,8 @@ sanitizer_path
  void
 )
 {
+  const char *path = "libsanitizer-public.so";
+    
   static char buffer[PATH_MAX];
   buffer[0] = 0;
 
@@ -507,9 +519,9 @@ sanitizer_path
   // dl_iterate_phdr.
   void *h = monitor_real_dlopen("libcudart.so", RTLD_LOCAL | RTLD_LAZY);
 
-  if (dl_iterate_phdr(cuda_path, buffer)) {
+  if (cuda_path(buffer)) {
     // invariant: buffer contains CUDA home 
-    strcat(buffer, "../Sanitizer/libsanitizer-public.so");
+    strcat(buffer, "Sanitizer/libsanitizer-public.so");
     path = buffer;
   }
 
@@ -645,7 +657,6 @@ sanitizer_load_callback
   }
   hpcrun_loadmap_unlock();
   PRINT("cubin_id %d -> hpctoolkit_module_id %d\n", cubin_id, hpctoolkit_module_id);
-  cubin_id_map_entry_t *entry = cubin_id_map_lookup(cubin_id);
 
   // Compute elf vector
   Elf_SymbolVector *elf_vector = computeCubinFunctionOffsets(cubin, cubin_size);
@@ -825,6 +836,7 @@ static void
 sanitizer_kernel_launch_callback
 (
  CUstream stream,
+ CUfunction function,
  dim3 grid_size,
  dim3 block_size,
  bool kernel_sampling
@@ -843,7 +855,7 @@ sanitizer_kernel_launch_callback
     void *gpu_patch_records = NULL;
 
     // gpu_patch_buffer
-    HPCRUN_SANITIZER_CALL(sanitizerAlloc, (&(gpu_patch_buffer_device), sizeof(gpu_patch_buffer_t)));
+    HPCRUN_SANITIZER_CALL(sanitizerAlloc, ((void **)(&(gpu_patch_buffer_device)), sizeof(gpu_patch_buffer_t)));
     HPCRUN_SANITIZER_CALL(sanitizerMemset, (gpu_patch_buffer_device, 0, sizeof(gpu_patch_buffer_t), stream));
 
     PRINT("Allocate gpu_patch_buffer %p, size %zu\n", gpu_patch_buffer_device, sizeof(gpu_patch_buffer_t));
@@ -875,7 +887,7 @@ sanitizer_kernel_launch_callback
        sizeof(gpu_patch_buffer_t), stream));
   }
 
-  HPCRUN_SANITIZER_CALL(sanitizerSetCallbackData, (stream, gpu_patch_buffer_device));
+  HPCRUN_SANITIZER_CALL(sanitizerSetCallbackData, (function, gpu_patch_buffer_device));
 }
 
 //-------------------------------------------------------------
@@ -957,7 +969,7 @@ sanitizer_subscribe_callback
           redshow_memory_register(md->address, md->address + md->size, correlation_id, (uint64_t)api_node);
 
           PRINT("Allocate memory address %p, size %zu, op %lu, id %lu\n",
-            md->address, md->size, correlation_id, api_node);
+            (void *)md->address, md->size, correlation_id, (uint64_t)api_node);
           break;
         }
       case SANITIZER_CBID_RESOURCE_DEVICE_MEMORY_FREE:
@@ -967,7 +979,7 @@ sanitizer_subscribe_callback
           Sanitizer_ResourceMemoryData *md = (Sanitizer_ResourceMemoryData *)cbdata;
           redshow_memory_unregister(md->address, md->address + md->size, correlation_id);
 
-          PRINT("Free memory address %p, size %zu, op %lu\n", md->address, md->size, correlation_id);
+          PRINT("Free memory address %p, size %zu, op %lu\n", (void *)md->address, md->size, correlation_id);
           break;
         }
       default:
@@ -1032,10 +1044,10 @@ sanitizer_subscribe_callback
 
       priority_stream = sanitizer_context_map_entry_priority_stream_get(entry);
 
-      sanitizer_kernel_launch_callback(ld->stream, grid_size, block_size, kernel_sampling);
+      sanitizer_kernel_launch_callback(ld->stream, ld->function, grid_size, block_size, kernel_sampling);
 
       // Ensure data is sync
-      cuda_stream_synchronize(ld->stream);
+      HPCRUN_SANITIZER_CALL(sanitizerStreamSynchronize, (ld->stream));
     } else if (cbid == SANITIZER_CBID_LAUNCH_END) {
       if (kernel_sampling) {
         sanitizer_kernel_launch_sync(api_node, correlation_id,
@@ -1044,7 +1056,7 @@ sanitizer_subscribe_callback
       }
 
       // XXX(Keren): For safety conern only, could be removed
-      cuda_stream_synchronize(ld->stream);
+      HPCRUN_SANITIZER_CALL(sanitizerStreamSynchronize, (ld->stream));
 
       sanitizer_context_map_stream_unlock(ld->context, ld->stream);
 

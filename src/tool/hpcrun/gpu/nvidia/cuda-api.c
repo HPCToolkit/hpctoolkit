@@ -56,22 +56,23 @@
 // system include files
 //*****************************************************************************
 
-#include <dlfcn.h>
-#include <string.h>    // memset
-
-<<<<<<< HEAD
 #include <errno.h>     // errno
 #include <fcntl.h>     // open
-#include <limits.h>    // PATH_MAX
 #include <stdio.h>     // sprintf
 #include <unistd.h>
 #include <sys/stat.h>  // mkdir
-=======
-#include <cuda.h>
-#include <cuda_runtime.h>
->>>>>>> fb591a1a14700cd20e5ef55b011316b99e344799
+
+#ifndef HPCRUN_STATIC_LINK
+#include <dlfcn.h>
+#undef _GNU_SOURCE
+#define _GNU_SOURCE
+#include <link.h>          // dl_iterate_phdr
+#include <linux/limits.h>  // PATH_MAX
+#include <string.h>        // strstr
+#endif
 
 #include <cuda.h>
+#include <cuda_runtime.h>
 
 
 //*****************************************************************************
@@ -81,12 +82,9 @@
 #include <lib/prof-lean/spinlock.h>
 
 #include <hpcrun/sample-sources/libdl.h>
-<<<<<<< HEAD
 #include <hpcrun/files.h>
 #include <hpcrun/hpcrun_stats.h>
-=======
 #include <hpcrun/messages/messages.h>
->>>>>>> fb591a1a14700cd20e5ef55b011316b99e344799
 
 #include "cuda-api.h"
 #include "cubin-hash-map.h"
@@ -100,24 +98,6 @@
 
 #define CUDA_FN(fn, args) \
   static CUresult (*CUDA_FN_NAME(fn)) args
-
-<<<<<<< HEAD
-#if CUDA_API_DEBUG
-#define PRINT(...) fprintf(stderr, __VA_ARGS__)
-#else
-#define PRINT(...)
-#endif
-
-#define HPCRUN_CUDA_API_CALL(fn, args) \
-{ \
-  CUresult error_result = CUDA_FN_NAME(fn) args; \
-  if (error_result != CUDA_SUCCESS) { \
-    PRINT("cuda api %s returned %d\n", #fn, (int) error_result); \
-    exit(-1); \
-  } \
-}
-
-=======
 
 #define CUDA_RUNTIME_FN(fn, args) \
   static cudaError_t (*CUDA_FN_NAME(fn)) args
@@ -168,7 +148,6 @@
 #define RUNTIME_MINOR_VERSION(rt_version) (rt_version % 10) 
 
 
->>>>>>> fb591a1a14700cd20e5ef55b011316b99e344799
 //******************************************************************************
 // static data
 //******************************************************************************
@@ -194,8 +173,6 @@ CUDA_FN
   CUcontext *ctx
  )
 );
-<<<<<<< HEAD
-=======
 
 
 CUDA_RUNTIME_FN
@@ -215,8 +192,6 @@ CUDA_RUNTIME_FN
  )
 );
 
-#endif
->>>>>>> fb591a1a14700cd20e5ef55b011316b99e344799
 
 CUDA_FN
 (
@@ -264,19 +239,13 @@ cuda_bind
   // dynamic libraries only availabile in non-static case
   CHK_DLOPEN(cuda, "libcuda.so", RTLD_NOW | RTLD_GLOBAL);
 
-<<<<<<< HEAD
   CHK_DLSYM(cuda, cuDeviceGetAttribute); 
-
   CHK_DLSYM(cuda, cuCtxGetCurrent); 
-=======
-  CHK_DLSYM(cuda, cuDeviceGetAttribute);
-  CHK_DLSYM(cuda, cuCtxGetCurrent);
 
   CHK_DLOPEN(cudart, "libcudart.so", RTLD_NOW | RTLD_GLOBAL);
 
   CHK_DLSYM(cudart, cudaGetDevice);
   CHK_DLSYM(cudart, cudaRuntimeGetVersion);
->>>>>>> fb591a1a14700cd20e5ef55b011316b99e344799
 
   CHK_DLSYM(cuda, cuCtxGetStreamPriorityRange);
 
@@ -296,15 +265,17 @@ cuda_priority_stream_create
 (
 )
 {
+#ifndef HPCRUN_STATIC_LINK
   int priority_high, priority_low;
   CUstream stream;
-#ifndef HPCRUN_STATIC_LINK
   HPCRUN_CUDA_API_CALL(cuCtxGetStreamPriorityRange,
     (&priority_low, &priority_high));
   HPCRUN_CUDA_API_CALL(cuStreamCreateWithPriority,
     (&stream, CU_STREAM_NON_BLOCKING, priority_high));
-#endif
   return stream;
+#else
+  return NULL;
+#endif
 }
 
 
@@ -315,16 +286,12 @@ cuda_stream_synchronize
 )
 {
 #ifndef HPCRUN_STATIC_LINK
-<<<<<<< HEAD
   HPCRUN_CUDA_API_CALL(cuStreamSynchronize, (stream));
 #endif
 }
 
 
 static int 
-=======
-static int
->>>>>>> fb591a1a14700cd20e5ef55b011316b99e344799
 cuda_device_sm_blocks_query
 (
  int major,
@@ -369,11 +336,13 @@ cuda_device_compute_capability
   int *minor
 )
 {
+#ifndef HPCRUN_STATIC_LINK
   HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
     (major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device_id));
 
   HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
     (minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device_id));
+#endif
 
   return 0;
 }
@@ -479,7 +448,6 @@ cuda_device_property_query
 }
 
 
-<<<<<<< HEAD
 static bool
 cuda_write_cubin
 (
@@ -541,7 +509,6 @@ cuda_load_callback
     used += sprintf(&file_name[used], "%02x", hash[i]);
   }
   used += sprintf(&file_name[used], "%s", ".cubin");
-  PRINT("cubin_id %d hash %s\n", cubin_id, file_name);
 
   // Write a file if does not exist
   bool file_flag;
@@ -561,7 +528,6 @@ cuda_load_callback
       hpctoolkit_module_id = module->id;
     }
     hpcrun_loadmap_unlock();
-    PRINT("cubin_id %d -> hpctoolkit_module_id %d\n", cubin_id, hpctoolkit_module_id);
     cubin_id_map_entry_t *entry = cubin_id_map_lookup(cubin_id);
     if (entry == NULL) {
       Elf_SymbolVector *vector = computeCubinFunctionOffsets(cubin, cubin_size);
@@ -577,8 +543,9 @@ cuda_unload_callback
  uint32_t cubin_id
 )
 {
-=======
-// return 0 on success
+}
+
+
 int
 cuda_global_pc_sampling_required
 (
@@ -604,5 +571,42 @@ cuda_global_pc_sampling_required
                (RUNTIME_MAJOR_VERSION(rt_version) < CUDA11));
 
   return 0;
->>>>>>> fb591a1a14700cd20e5ef55b011316b99e344799
+}
+
+
+static int
+cuda_path_exist
+(
+ struct dl_phdr_info *info,
+ size_t size,
+ void *data
+)
+{
+  char *buffer = (char *) data;
+  const char *suffix = strstr(info->dlpi_name, "libcudart");
+  if (suffix) {
+    // CUDA library organization after 9.0
+    suffix = strstr(info->dlpi_name, "targets");
+    if (!suffix) {
+      // CUDA library organization in 9.0 or earlier
+      suffix = strstr(info->dlpi_name, "lib64");
+    }
+  }
+  if (suffix){
+    int len = suffix - info->dlpi_name;
+    strncpy(buffer, info->dlpi_name, len);
+    buffer[len] = 0;
+    return 1;
+  }
+  return 0;
+}
+
+
+int
+cuda_path
+(
+ char *buffer
+)
+{
+  return dl_iterate_phdr(cuda_path_exist, buffer);
 }

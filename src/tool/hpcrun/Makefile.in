@@ -2012,11 +2012,7 @@ libhpctoolkit_a_CPPFLAGS = \
 # cflags
 #-----------------------------------------------------------
 libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(PERFMON_CFLAGS) \
-<<<<<<< HEAD
-	$(am__append_123) $(am__append_127)
-=======
-	$(am__append_116) $(am__append_120) $(GOTCHA_IFLAGS)
->>>>>>> fb591a1a14700cd20e5ef55b011316b99e344799
+	$(am__append_123) $(am__append_127) $(GOTCHA_IFLAGS)
 libhpcrun_o_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(PERFMON_CFLAGS)
 libhpcrun_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_ga_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
@@ -2040,11 +2036,8 @@ libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic -L$(LIBMONITOR_LIB) -lmonitor \
 	-lpthread -lrt -lelf -L$(LIBELF_LIB) $(LIBUNWIND_LDFLAGS_DYN) \
 	$(LZMA_LDFLAGS_DYN) $(PERFMON_LDFLAGS_DYN) $(MBEDTLS_LIBS) \
 	$(OPT_ROCM_LDFLAGS) $(am__append_55) $(am__append_95) \
-<<<<<<< HEAD
-	$(am__append_106) $(am__append_118) $(UNW_DYNAMIC_LD_FLAGS)
-=======
-	$(am__append_111) $(GOTCHA_LDFLAGS) $(UNW_DYNAMIC_LD_FLAGS)
->>>>>>> fb591a1a14700cd20e5ef55b011316b99e344799
+	$(am__append_106) $(am__append_118) $(GOTCHA_LDFLAGS) \
+	$(UNW_DYNAMIC_LD_FLAGS)
 libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_io_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_memleak_la_LDFLAGS = -Wl,-Bsymbolic

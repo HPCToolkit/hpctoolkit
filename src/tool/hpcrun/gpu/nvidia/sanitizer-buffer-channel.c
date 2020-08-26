@@ -92,7 +92,7 @@ typedef struct sanitizer_buffer_channel_t {
   bistack_t bistacks[2];
   atomic_bool flush;
   atomic_bool finish;
-  atomic_int balance;
+  atomic_uint balance;
 } sanitizer_buffer_channel_t;
 
 //******************************************************************************

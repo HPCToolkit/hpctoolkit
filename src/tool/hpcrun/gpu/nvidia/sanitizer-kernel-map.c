@@ -31,7 +31,6 @@ struct sanitizer_kernel_map_entry_s {
  *****************************************************************************/
 
 static __thread sanitizer_kernel_map_entry_t *sanitizer_kernel_map_root = NULL;
-static spinlock_t sanitizer_kernel_map_lock = SPINLOCK_UNLOCKED;
 
 
 /******************************************************************************
