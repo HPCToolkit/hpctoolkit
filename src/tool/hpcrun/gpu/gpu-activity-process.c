@@ -385,12 +385,6 @@ gpu_kernel_process
       cct_node_t *func_node = hpcrun_cct_children(func_ph); // only child
 
       if (func_node == NULL) {
-        func_ph = gpu_host_correlation_map_entry_op_cct_get(host_op_entry,
-						  gpu_placeholder_type_kernel);
-        func_node = hpcrun_cct_children(func_ph);
-      }
-
-      if (func_node == NULL) {
 	// in case placeholder doesn't have a child
         func_node = func_ph;
       }

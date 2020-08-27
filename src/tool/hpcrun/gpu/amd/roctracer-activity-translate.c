@@ -60,7 +60,7 @@
 // HSA_OP_ID_COPY is defined in hcc/include/hc_prof_runtime.h.
 // However, this file will include C++ code, making it impossible
 // to compile with a C compiler.
-// HSA_OP_ID_COPY is a constant with value 1 at the moment. 
+// HSA_OP_ID_COPY is a constant with value 1 at the moment.
 
 // FIXME: when amd fixes their header files, include the header file rather than
 // replicating the declaration here
@@ -148,13 +148,13 @@ void
 roctracer_activity_translate
 (
  gpu_activity_t *ga,
- roctracer_record_t *record   
+ roctracer_record_t *record
 )
 {
 #if DEBUG
   const char * name = roctracer_op_string(record->domain, record->op, record->kind);
 #endif
-
+  memset(ga, sizeof(gpu_activity_t), 0);
   if (record->domain == ACTIVITY_DOMAIN_HIP_API) {
     switch(record->op){
     case HIP_API_ID_hipMemcpyDtoD:

@@ -483,7 +483,7 @@ parse_amd_gpu_binary
   }
 
   // Create file name
-  char file_name[PATH_MAX];  
+  char file_name[PATH_MAX];
   size_t used = 0;
   used += sprintf(&file_name[used], "%s", hpcrun_files_output_directory());
   used += sprintf(&file_name[used], "%s", "/amd/");
@@ -500,7 +500,7 @@ lookup_amd_function
 (
   const char *kernel_name
 )
-{  
+{
   for (size_t i = 0; i < function_table.size; ++i) {
     if (strcmp(kernel_name, function_table.names[i]) == 0) {
       return (uintptr_t)(function_table.addrs[i]);
@@ -612,6 +612,8 @@ roctracer_subscriber_callback
     //case HIP_API_ID_hipExtModuleLaunchKernel:
     gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
 				 gpu_placeholder_type_kernel);
+    gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
+				 gpu_placeholder_type_trace);
     is_valid_op = true;
     is_kernel_op = true;
     break;
@@ -647,10 +649,14 @@ roctracer_subscriber_callback
     hpcrun_safe_enter();
     gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
     if (is_kernel_op) {
-      cct_node_t *kernel_ph = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel);
       hipFunction_t f = data->args.hipModuleLaunchKernel.f;
       ip_normalized_t kernel_ip = hip_function_lookup(f);
+
+      cct_node_t *kernel_ph = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel);
       ensure_kernel_ip_present(kernel_ph, kernel_ip);
+
+      cct_node_t *trace_ph = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace);
+      ensure_kernel_ip_present(trace_ph, kernel_ip);
     }
 
     hpcrun_safe_exit();

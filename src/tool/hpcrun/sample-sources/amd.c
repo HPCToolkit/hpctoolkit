@@ -43,6 +43,7 @@
 #include <hpcrun/gpu/amd/roctracer-api.h>
 #include <hpcrun/gpu/gpu-activity.h>
 #include <hpcrun/gpu/gpu-metrics.h>
+#include <hpcrun/gpu/gpu-trace.h>
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/metrics.h>
@@ -69,6 +70,8 @@
 #define AMD_ROCM "gpu=amd"
 
 static device_finalizer_fn_entry_t device_finalizer_shutdown;
+static device_finalizer_fn_entry_t device_trace_finalizer_shutdown;
+
 
 //******************************************************************************
 // interface operations
@@ -163,11 +166,16 @@ METHOD_FN(finalize_event_list)
     char* event = start_tok(evlist);
 #endif
     roctracer_init();
-    
+
+    // Init records
+    gpu_trace_init();
+
     device_finalizer_shutdown.fn = roctracer_fini;
     device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_shutdown);
 
-
+    // Register shutdown functions to write trace files
+    device_trace_finalizer_shutdown.fn = gpu_trace_fini;
+    device_finalizer_register(device_finalizer_type_shutdown, &device_trace_finalizer_shutdown);
 }
 
 
