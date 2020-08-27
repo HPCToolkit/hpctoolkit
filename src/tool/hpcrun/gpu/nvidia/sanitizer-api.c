@@ -145,7 +145,6 @@
   macro(sanitizerEnableDomain)             \
   macro(sanitizerAlloc)                    \
   macro(sanitizerMemset)                   \
-  macro(sanitizerStreamSynchronize)        \
   macro(sanitizerMemcpyDeviceToHost)       \
   macro(sanitizerMemcpyHostToDeviceAsync)  \
   macro(sanitizerSetCallbackData)          \
@@ -296,6 +295,7 @@ SANITIZER_FN
 );
 
 
+#if 0
 SANITIZER_FN
 (
  sanitizerStreamSynchronize,
@@ -303,6 +303,7 @@ SANITIZER_FN
   CUstream stream
  )
 );
+#endif
 
 
 SANITIZER_FN
@@ -1047,7 +1048,7 @@ sanitizer_subscribe_callback
       sanitizer_kernel_launch_callback(ld->stream, ld->function, grid_size, block_size, kernel_sampling);
 
       // Ensure data is sync
-      HPCRUN_SANITIZER_CALL(sanitizerStreamSynchronize, (ld->stream));
+      cuda_stream_synchronize(ld->stream);
     } else if (cbid == SANITIZER_CBID_LAUNCH_END) {
       if (kernel_sampling) {
         sanitizer_kernel_launch_sync(api_node, correlation_id,
@@ -1056,7 +1057,7 @@ sanitizer_subscribe_callback
       }
 
       // XXX(Keren): For safety conern only, could be removed
-      HPCRUN_SANITIZER_CALL(sanitizerStreamSynchronize, (ld->stream));
+      cuda_stream_synchronize(ld->stream);
 
       sanitizer_context_map_stream_unlock(ld->context, ld->stream);
 
@@ -1073,7 +1074,7 @@ sanitizer_subscribe_callback
 // interfaces
 //******************************************************************************
 
-bool
+int
 sanitizer_bind()
 {
 #ifndef HPCRUN_STATIC_LINK

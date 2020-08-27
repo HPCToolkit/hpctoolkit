@@ -564,7 +564,9 @@ METHOD_FN(process_event_list, int lush_metrics)
 static void
 METHOD_FN(finalize_event_list)
 {
-  cupti_enable_activities();
+  if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA) || hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_PC_SAMPLING)) {
+    cupti_enable_activities();
+  }
 }
 
 static void

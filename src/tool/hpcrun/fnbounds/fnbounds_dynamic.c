@@ -239,7 +239,7 @@ fnbounds_map_open_dsos()
 {
   FNBOUNDS_LOCK;
   dylib_map_open_dsos();
-  hpcrun_syserv_fini();
+  //hpcrun_syserv_fini();
   FNBOUNDS_UNLOCK;
 }
 

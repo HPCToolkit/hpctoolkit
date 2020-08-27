@@ -1,7 +1,7 @@
 #ifndef _HPCTOOLKIT_GPU_NVIDIA_SANITIZER_API_H_
 #define _HPCTOOLKIT_GPU_NVIDIA_SANITIZER_API_H_
 
-bool
+int
 sanitizer_bind();
 
 void
