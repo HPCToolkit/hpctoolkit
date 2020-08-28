@@ -61,6 +61,7 @@
 #include <string.h>    // memset
 
 #include <cuda.h>
+#include <cuda_runtime.h>
 
 
 
@@ -84,15 +85,54 @@
 #define CUDA_FN(fn, args) \
   static CUresult (*CUDA_FN_NAME(fn)) args
 
+
+#define CUDA_RUNTIME_FN(fn, args) \
+  static cudaError_t (*CUDA_FN_NAME(fn)) args
+
 #define HPCRUN_CUDA_API_CALL(fn, args)                              \
 {                                                                   \
   CUresult error_result = CUDA_FN_NAME(fn) args;		    \
   if (error_result != CUDA_SUCCESS) {				    \
-    ETMSG(CUDA, "cuda api %s returned %d", #fn, (int) error_result);    \
+    ETMSG(CUDA, "cuda api %s returned %d", #fn,                     \
+          (int) error_result);                                      \
     exit(-1);							    \
   }								    \
 }
 
+
+#define HPCRUN_CUDA_RUNTIME_CALL(fn, args)                          \
+{                                                                   \
+  cudaError_t error_result = CUDA_FN_NAME(fn) args;		    \
+  if (error_result != cudaSuccess) {				    \
+    ETMSG(CUDA, "cuda runtime %s returned %d", #fn,                 \
+          (int) error_result);                                      \
+    exit(-1);							    \
+  }								    \
+}
+
+
+//----------------------------------------------------------------------
+// device capability
+//----------------------------------------------------------------------
+
+#define COMPUTE_MAJOR_TURING 	7
+#define COMPUTE_MINOR_TURING 	5
+
+#define DEVICE_IS_TURING(major, minor)      \
+  ((major == COMPUTE_MAJOR_TURING) && (minor == COMPUTE_MINOR_TURING))
+
+
+//----------------------------------------------------------------------
+// runtime version
+//----------------------------------------------------------------------
+
+#define CUDA11 11
+
+// according to https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART____VERSION.html,
+// CUDA encodes the runtime version number as (1000 * major + 10 * minor)
+
+#define RUNTIME_MAJOR_VERSION(rt_version) (rt_version / 1000) 
+#define RUNTIME_MINOR_VERSION(rt_version) (rt_version % 10) 
 
 
 //******************************************************************************
@@ -118,7 +158,27 @@ CUDA_FN
   CUcontext *ctx
  )
 );
+
+
+CUDA_RUNTIME_FN
+(
+ cudaGetDevice,
+ (
+  int *device_id
+ )
+);
+
+
+CUDA_RUNTIME_FN
+(
+ cudaRuntimeGetVersion,
+ ( 
+  int* runtimeVersion
+ )
+);
+
 #endif
+
 
 
 //******************************************************************************
@@ -137,6 +197,11 @@ cuda_bind
 
   CHK_DLSYM(cuda, cuDeviceGetAttribute);
   CHK_DLSYM(cuda, cuCtxGetCurrent);
+
+  CHK_DLOPEN(cudart, "libcudart.so", RTLD_NOW | RTLD_GLOBAL);
+
+  CHK_DLSYM(cudart, cudaGetDevice);
+  CHK_DLSYM(cudart, cudaRuntimeGetVersion);
 
   return 0;
 #else
@@ -163,6 +228,63 @@ cuda_device_sm_blocks_query
   }
 }
 #endif
+
+
+
+// returns 0 on success
+static int
+cuda_device_compute_capability
+(
+  int device_id,
+  int *major,
+  int *minor
+)
+{
+#ifndef HPCRUN_STATIC_LINK
+  HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
+    (major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device_id));
+
+  HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
+    (minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device_id));
+
+  return 0;
+#else
+  return -1;
+#endif
+}
+
+
+// returns 0 on success
+static int 
+cuda_device_id
+(
+  int *device_id
+)
+{
+#ifndef HPCRUN_STATIC_LINK
+  HPCRUN_CUDA_RUNTIME_CALL(cudaGetDevice, (device_id));
+  return 0;
+#else
+  return -1;
+#endif
+}
+
+
+// returns 0 on success
+static int
+cuda_runtime_version
+(
+  int *rt_version
+)
+{
+#ifndef HPCRUN_STATIC_LINK
+  HPCRUN_CUDA_RUNTIME_CALL(cudaRuntimeGetVersion, (rt_version));
+  return 0;
+#else
+  return -1;
+#endif
+}
+
 
 
 //******************************************************************************
@@ -227,4 +349,33 @@ cuda_device_property_query
 #else
   return -1;
 #endif
+}
+
+
+// return 0 on success
+int
+cuda_global_pc_sampling_required
+(
+  int *required
+)
+{
+  int device_id;
+  if (cuda_device_id(&device_id)) return -1;
+
+  int dev_major, dev_minor;
+  if (cuda_device_compute_capability(device_id, &dev_major, &dev_minor)) return -1;
+
+  int rt_version;
+  if (cuda_runtime_version(&rt_version)) return -1;
+
+#ifdef DEBUG
+  printf("cuda_global_pc_sampling_required: "
+         "device major = %d minor = %d cuda major = %d\n", 
+         dev_major, dev_minor, RUNTIME_MAJOR_VERSION(rt_version));
+#endif
+
+  *required = ((DEVICE_IS_TURING(dev_major, dev_minor)) && 
+               (RUNTIME_MAJOR_VERSION(rt_version) < CUDA11));
+
+  return 0;
 }

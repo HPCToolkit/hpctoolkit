@@ -120,6 +120,7 @@ char	*outfile;
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <sys/wait.h>
 #include <err.h>
 #include <errno.h>
@@ -146,11 +147,9 @@ char	*outfile;
 #include "fnbounds_file_header.h"
 #endif
 
-// Limit on memory use at which we restart the server in Meg.
-#define SERVER_MEM_LIMIT  140
+
 // Size to allocate for the stack of the server setup function, in KiB.
 #define SERVER_STACK_SIZE 1024
-#define MIN_NUM_QUERIES   12
 
 #define SUCCESS   0
 #define FAILURE  -1
@@ -171,12 +170,30 @@ static int fdin = -1;
 static pid_t my_pid;
 static pid_t server_pid = 0;
 
+#if 0
+// Limit on memory use at which we restart the server in Meg.
+#define SERVER_MEM_LIMIT  140
+#define MIN_NUM_QUERIES   12
+
 // rusage units are Kbytes.
 static long mem_limit = SERVER_MEM_LIMIT * 1024;
 static int  num_queries = 0;
 static int  mem_warning = 0;
+#endif
 
 extern char **environ;
+
+
+//*****************************************************************
+// Miscellaneous helper function
+//*****************************************************************
+
+// Returns: micro-seconds from start to now
+static long
+tdiff(struct timeval start, struct timeval now)
+{
+  return 1000000 * (now.tv_sec - start.tv_sec) + (now.tv_usec - start.tv_usec);
+}
 
 
 //*****************************************************************
@@ -367,10 +384,9 @@ shutdown_server(void)
   client_status = SYSERV_INACTIVE;
 
   // collect the server's exit status to reduce zombies.  but we must
-  // do it non-blocking and only for the fnbounds server, not any
-  // application child.
+  // do it only for the fnbounds server, not any application child.
   if (server_pid > 0) {
-    waitpid(server_pid, NULL, WNOHANG);
+    waitpid(server_pid, NULL, 0);
   }
   server_pid = 0;
 
@@ -465,6 +481,7 @@ launch_server(void)
   if (sampling_is_running) {
     SAMPLE_SOURCES(stop);
   }
+
   // For safety, we don't assume the direction of stack growth
   pid = clone(hpcfnbounds_child, &server_stack[SERVER_STACK_SIZE * 1024], SIGCHLD, &fds);
 
@@ -486,8 +503,6 @@ launch_server(void)
   my_pid = getpid();
   server_pid = pid;
   client_status = SYSERV_ACTIVE;
-  num_queries = 0;
-  mem_warning = 0;
 
   TMSG(FNBOUNDS_CLIENT, "syserv launch: success, server: %d", (int) server_pid);
 
@@ -504,14 +519,15 @@ launch_server(void)
 int
 hpcrun_syserv_init(void)
 {
-  TMSG(FNBOUNDS_CLIENT, "syserv init");
-
   server = getenv("HPCRUN_FNBOUNDS_CMD");
   if (server == NULL) {
     EMSG("FNBOUNDS_CLIENT ERROR: unable to get HPCRUN_FNBOUNDS_CMD");
     return -1;
   }
 
+  AMSG("fnbounds: %s", server);
+
+#if 0
   // limit on server memory usage in Meg
   char *str = getenv("HPCRUN_SERVER_MEMSIZE");
   long size;
@@ -519,6 +535,7 @@ hpcrun_syserv_init(void)
     size = SERVER_MEM_LIMIT;
   }
   mem_limit = size * 1024;
+#endif
 
   // Allocate enough space for fnbounds summoning.
   // Twice as much to allow for growth in either direction.
@@ -564,8 +581,6 @@ hpcrun_syserv_fini(void)
     write_mesg(SYSERV_EXIT, 0);
   }
   shutdown_server();
-
-  TMSG(FNBOUNDS_CLIENT, "syserv fini");
 }
 
 
@@ -579,6 +594,7 @@ hpcrun_syserv_fini(void)
 void *
 hpcrun_syserv_query(const char *fname, struct fnbounds_file_header *fh)
 {
+  struct timeval start, now;
   struct syserv_mesg mesg;
   void *addr;
 
@@ -592,6 +608,10 @@ hpcrun_syserv_query(const char *fname, struct fnbounds_file_header *fh)
   }
 
   TMSG(FNBOUNDS_CLIENT, "query: %s", fname);
+
+  if (ENABLED(FNBOUNDS_CLIENT)) {
+    gettimeofday(&start, NULL);
+  }
 
   // Send the file name length (including \0) to the server and look
   // for the initial ACK.  If the server has died, then make one
@@ -668,11 +688,17 @@ hpcrun_syserv_query(const char *fname, struct fnbounds_file_header *fh)
   fh->is_relocatable = fnb_info.is_relocatable;
   fh->mmap_size = mmap_size;
 
+  if (ENABLED(FNBOUNDS_CLIENT)) {
+    gettimeofday(&now, NULL);
+  }
+
   TMSG(FNBOUNDS_CLIENT, "addr: %p, symbols: %ld, offset: 0x%lx, reloc: %d",
        addr, (long) fh->num_entries, (long) fh->reference_offset,
        (int) fh->is_relocatable);
-  TMSG(FNBOUNDS_CLIENT, "server memsize: %ld Meg", fnb_info.memsize / 1024);
+  TMSG(FNBOUNDS_CLIENT, "server memsize: %ld Meg,  time: %ld usec",
+       fnb_info.memsize / 1024, tdiff(start, now));
 
+#if 0
   // Restart the server if it's done a minimum number of queries and
   // has exceeded its memory limit.  Issue a warning at 60%.
   num_queries++;
@@ -686,6 +712,7 @@ hpcrun_syserv_query(const char *fname, struct fnbounds_file_header *fh)
 	 fnb_info.memsize / 1024);
     shutdown_server();
   }
+#endif
 
   return addr;
 }

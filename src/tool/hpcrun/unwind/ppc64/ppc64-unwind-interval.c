@@ -414,6 +414,40 @@ branchTarget(uint32_t insn, uint32_t *insnAddr)
 
 //***************************************************************************
 
+static inline bool 
+isInsn_BCL(uint32_t insn)
+{ 
+  uint32_t bop = insn & PPC_B_MASK; 
+  return (bop == PPC_OP_BCL);
+}
+
+
+static inline bool 
+isInsn_BCLA(uint32_t insn)
+{ 
+  uint32_t bop = insn & PPC_B_MASK; 
+  return (bop == PPC_OP_BCLA);
+}
+
+
+static inline bool 
+isInsn_BCLRL(uint32_t insn)
+{ 
+  uint32_t xlop = insn & PPC_XL_MASK; 
+  return (xlop == PPC_OP_BCLRL);
+}
+
+
+static inline bool 
+isInsn_BCCTRL(uint32_t insn)
+{ 
+  uint32_t xlop = insn & PPC_XL_MASK; 
+  return (xlop == PPC_OP_BCCTRL);
+}
+
+
+//***************************************************************************
+
 static inline int 
 getRADispFromSPDisp(int sp_disp) 
 { 
@@ -439,6 +473,13 @@ static inline char*
 nextInsn(uint32_t* insn) 
 { 
   return INSN(insn + 1); 
+}
+
+
+static inline char*
+currentInsn(uint32_t* insn) 
+{ 
+  return INSN(insn); 
 }
 
 
@@ -685,13 +726,20 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
     		  PPC_REG_SP, ra_arg);
       ui = nxt_ui;
     }
-    else if (isInsn_MR(*cur_insn, PPC_REG_SP)) {
+    else if (isInsn_MR(*cur_insn, PPC_REG_SP) &&  
+	     PPC_OPND_REG_S(*cur_insn) != PPC_REG_SP) {
+      // Move Register r1 <- rx where rx != r1
       // N.B. To be sure the MR restores SP, we would have to track
       // registers.  As a sanity check, test for a non-zero frame size
-      if (getSPDispFromUI(ui) != 0) {
+      int sp_disp = getSPDispFromUI(ui);
+      if (sp_disp != 0) {
+	// adjust the RA offset by SP offset prior to the restore
+        int ra_arg = ((UWI_RECIPE(ui)->ra_ty == RATy_SPRel) ?
+                      (UWI_RECIPE(ui)->ra_arg - sp_disp) : 
+		      UWI_RECIPE(ui)->ra_arg);
 	nxt_ui =
 		new_ui(nextInsn(cur_insn), SPTy_Reg, UWI_RECIPE(ui)->ra_ty,
-			PPC_REG_SP, UWI_RECIPE(ui)->ra_arg);
+		       PPC_REG_SP, ra_arg);
 	ui = nxt_ui;
       }
     }
@@ -717,17 +765,57 @@ ppc64_build_intervals(char *beg_insn, unsigned int len)
 	}
       } 
       //--------------------------------------------------
-      // unconditional branch when return address is in
-      // the link register
+      // branch that sets the LR: must revert to canonical
+      // interval where RA is in the stack
       //--------------------------------------------------
-      else if ((isInsn_B(*cur_insn) || isInsn_BA(*cur_insn)) && 
-	       (UWI_RECIPE(ui)->ra_ty == RATy_Reg && 
-		UWI_RECIPE(ui)->ra_arg == PPC_REG_LR)) {
+      else if ((isInsn_BCL(*cur_insn) || isInsn_BCLA(*cur_insn) ||
+		isInsn_BCLRL(*cur_insn) || isInsn_BCCTRL(*cur_insn)) &&
+	       ((UWI_RECIPE(ui)->ra_ty == RATy_Reg) &&
+		(UWI_RECIPE(ui)->ra_arg == PPC_REG_LR))) {
+	// Restore the canonical interval beginning at the current instruction
+	// if necessary
+	//
+	// note: when construction the interval below, our use of the
+	// address of the current instruction rather than that of the
+	// next instruction is unusual. we do this because the current
+	// instruction clobbers LR. when we do unwinds, we use the
+	// unwind recipe that covers the address 1 byte before the
+	// return address. this means that for a return address of the
+	// next instruction, we will use the recipe that begins with
+	// the address of this instruction. thus, for this
+	// instruction, we must make sure that the unwinder uses the
+	// RA in the stack and not the LR because that is the right thing to
+	// do after this instruction has executed.
+	if (!ui_cmp(ui, canon_ui)) {
+	  nxt_ui =
+	    new_ui(currentInsn(cur_insn), UWI_RECIPE(canon_ui)->sp_ty, 
+		   UWI_RECIPE(canon_ui)->ra_ty, 
+		   UWI_RECIPE(canon_ui)->sp_arg, 
+		   UWI_RECIPE(canon_ui)->ra_arg);
+	  ui = nxt_ui;
+	}
+      }
+      //--------------------------------------------------
+      // unconditional branch when stack pointer for 
+      // the caller in SP
+      //--------------------------------------------------
+      else if ((isInsn_B(*cur_insn) || isInsn_BA(*cur_insn)) &&
+	       ((UWI_RECIPE(ui)->sp_ty == SPTy_Reg) && 
+		UWI_RECIPE(ui)->sp_arg == PPC_REG_SP)) {
 	uint32_t *target = branchTarget(*cur_insn, cur_insn);
-	//--------------------------------------------------
-	// interior tail call if branch target is outside 
-	// the current function 
-	//--------------------------------------------------
+	//-------------------------------------------------- 
+	// recognize an interior tail call if branch target is 
+	// outside the current function.
+	//
+	// note: we don't track when the return address may still be
+	// in the link register after being saved in the stack.  as a
+	// result, we shouldn't demand that we know that the return
+	// address is in the link register to recognize a tail call.
+	// the lack of link register tracking caused a failure to
+	// recognize a tail call in __xlf_malloc.
+	//   ((UWI_RECIPE(ui)->ra_ty == RATy_Reg) &&
+	//    (UWI_RECIPE(ui)->ra_arg == PPC_REG_LR))
+	// --------------------------------------------------
 	if (target >= end_insn || target < (uint32_t *) beg_insn) {
 	  // Restore the canonical interval, if necessary.
 	  if (!ui_cmp(ui, canon_ui)) {

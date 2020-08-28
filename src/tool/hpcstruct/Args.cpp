@@ -88,41 +88,59 @@ using std::string;
 
 //***************************************************************************
 
+// Size in bytes for parallel analysis of gpu binaries
+#define DEFAULT_GPU_SIZE   100000000
+#define GPU_SIZE_STR      "100000000"
+
 static const char* version_info = HPCTOOLKIT_VERSION_STRING;
 
 static const char* usage_summary =
-"[options] <binary>\n";
+"hpcstruct [options] <binary>\n\
+   or: hpcstruct [options] <measurement directory for GPU-accelerated application>\n";
 
 static const char* usage_details = "\
-Given an application binary or DSO <binary>, hpcstruct recovers the program\n\
-structure of its object code.  Program structure is a mapping of a program's\n\
-static source-level structure to its object code.  By default, hpcstruct\n\
-writes its results to the file 'basename(<binary>).hpcstruct'.  This file\n\
-is typically passed to HPCToolkit's correlation tool hpcprof.\n\
+Given an application binary, a shared library, or a GPU binary, hpcstruct\n\
+recovers the program structure of its object code.  Program structure is a\n\
+mapping of a program's object code to its static source-level structure.\n\
+By default, hpcstruct writes its results to the file 'basename(<binary>).hpcstruct'.\n\
+To improve attribution of performance measurements to program source code, one can\n\
+pass one or more program structure files to HPCToolkit's analysis tool hpcprof\n\
+along with one or more HPCToolkit performance measurement directories.\n\
+\n\
+During execution of a GPU-accelerated application on an NVIDIA GPU, HPCToolkit\n\
+records NVIDIA 'cubin' GPU binaries in the application's measurement directory.\n\
+To attribute performance to GPU functions in a GPU-accelerated application, one\n\
+should apply hpcstruct to the application's HPCToolkit measurement directory to\n\
+analyze all GPU binaries recorded within. When analyzing a measurement directory\n\
+that includes GPU binaries, any program structure files produced will be recorded\n\
+inside the measurement directory. When hpcprof is applied to a measurement\n\
+directory that contains program structure files for GPU binaries, these program\n\
+structure files will be used to help attribute any GPU performance measurements.\n\
 \n\
 hpcstruct is designed primarily for highly optimized binaries created from\n\
-C, C++ and Fortran source code. Because hpcstruct's algorithms exploit a\n\
+C, C++, Fortran, and CUDA source code. Because hpcstruct's algorithms exploit a\n\
 binary's debugging information, for best results, binary should be compiled\n\
-with standard debugging information.  See the documentation for more\n\
-information.\n\
+with standard debugging information or at a minimum, line map information.\n\
+See the HPCToolkit manual for more information.\n\
+\n\
+For faster analysis of large binaries or many GPU binaries, we recommend using\n\
+the -j option to employ multithreading. As many as 32 cores can be used profitably\n\
+to analyze large CPU or GPU binaries in the measurements directory for a\n\
+GPU-accelerated application.\n\
 \n\
 Options: General\n\
-  -v [<n>], --verbose [<n>]\n\
-                       Verbose: generate progress messages to stderr at\n\
-                       verbosity level <n>. {1}\n\
   -V, --version        Print version information.\n\
-  -h, --help           Print this help.\n\
+  -h, --help           Print this help message.\n\
   --debug=[<n>]        Debug: use debug level <n>. {1}\n\
-  --debug-proc <glob>  Debug structure recovery for procedures matching\n\
-                       the procedure glob <glob>\n\
+  -v [<n>], --verbose [<n>]  Verbose: generate progress messages to stderr\n\
+                       at verbosity level <n>. {1}\n\
 \n\
 Options: Parallel usage\n\
-  -j <num>, --jobs <num>  Use <num> openmp threads (jobs), default 1.\n\
-  --jobs-parse <num>   Use <num> openmp threads for ParseAPI::parse(),\n\
-                       default is same value for --jobs.\n\
-  --jobs-symtab <num>  Use <num> openmp threads for Symtab methods.\n\
-                       (unsafe for num > 1)\n\
-  --time               Display stats on time and space usage.\n\
+  -j <num>, --jobs <num>  Use <num> threads for all phases in hpcstruct. {1}\n\
+  --gpu-size <n>       Size (bytes) of a GPU binary that will cause hpcstruct\n\
+                       to use <num> threads to analyze a binary in parallel.\n\
+                       GPU binaries with fewer than <n> bytes will be analyzed\n\
+                       concurrently, <num> at a time.  {" GPU_SIZE_STR "}\n\
 \n\
 Options: Structure recovery\n\
   --gpucfg <yes/no>    Compute loop nesting structure for GPU machine code.\n\
@@ -141,13 +159,19 @@ Options: Structure recovery\n\
                        for which <old-path> is a prefix.  Use '\\' to escape\n\
                        instances of '=' within a path. May pass multiple\n\
                        times.\n\
-  --show-gaps          Experimental feature to show unclaimed vma ranges (gaps)\n\
-                       in the control-flow graph.\n\
 \n\
 Options: Output files\n\
   -o <file>, --output <file>\n\
                        Write hpcstruct file to <file>.\n\
                        Use '--output=-' to write output to stdout.\n\
+\n\
+Options for Developers:\n\
+  --jobs-struct <num>  Use <num> threads for the MakeStructure() phase only.\n\
+  --jobs-parse  <num>  Use <num> threads for the ParseAPI::parse() phase only.\n\
+  --jobs-symtab <num>  Use <num> threads for the Symtab phase (if possible).\n\
+  --show-gaps          Feature to show unclaimed vma ranges (gaps)\n\
+                       in the control-flow graph.\n\
+  --time               Display stats on hpcstruct's time and space usage.\n\
 ";
 
 #define CLP CmdLineParser
@@ -156,8 +180,10 @@ Options: Output files\n\
 // Note: Changing the option name requires changing the name in Parse()
 CmdLineParser::OptArgDesc Args::optArgs[] = {
   { 'j',  "jobs",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
+  {  0 ,  "jobs-struct",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
   {  0 ,  "jobs-parse",   CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
   {  0 ,  "jobs-symtab",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
+  {  0 ,  "gpu-size",     CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
   {  0 ,  "time",         CLP::ARG_NONE, CLP::DUPOPT_CLOB,  NULL,  NULL },
 
   // Structure recovery options
@@ -212,9 +238,11 @@ void
 Args::Ctor()
 {
   jobs = -1;
+  jobs_struct = -1;
   jobs_parse = -1;
   jobs_symtab = -1;
   show_time = false;
+  gpu_size = DEFAULT_GPU_SIZE;
   searchPathStr = ".";
   show_gaps = false;
   compute_gpu_cfg = false;
@@ -236,7 +264,7 @@ Args::printVersion(std::ostream& os) const
 void
 Args::printUsage(std::ostream& os) const
 {
-  os << "Usage: " << getCmd() << " " << usage_summary << endl
+  os << "Usage: " << usage_summary << endl
      << usage_details << endl;
 }
 
@@ -286,8 +314,8 @@ Args::parse(int argc, const char* const argv[])
       Diagnostics_SetDiagnosticFilterLevel(dbg);
     }
     if (parser.isOpt("help")) {
-      printUsage(std::cerr);
-      exit(1);
+      printUsage(std::cout);
+      exit(0);
     }
     if (parser.isOpt("version")) {
       printVersion(std::cerr);
@@ -310,6 +338,10 @@ Args::parse(int argc, const char* const argv[])
       const string & arg = parser.getOptArg("jobs");
       jobs = (int) CmdLineParser::toLong(arg);
     }
+    if (parser.isOpt("jobs-struct")) {
+      const string & arg = parser.getOptArg("jobs-struct");
+      jobs_struct = (int) CmdLineParser::toLong(arg);
+    }
     if (parser.isOpt("jobs-parse")) {
       const string & arg = parser.getOptArg("jobs-parse");
       jobs_parse = (int) CmdLineParser::toLong(arg);
@@ -317,6 +349,10 @@ Args::parse(int argc, const char* const argv[])
     if (parser.isOpt("jobs-symtab")) {
       const string & arg = parser.getOptArg("jobs-symtab");
       jobs_symtab = (int) CmdLineParser::toLong(arg);
+    }
+    if (parser.isOpt("gpu-size")) {
+      const string & arg = parser.getOptArg("gpu-size");
+      gpu_size = CmdLineParser::toLong(arg);
     }
     if (parser.isOpt("gpucfg")) {
       const string & arg = parser.getOptArg("gpucfg");

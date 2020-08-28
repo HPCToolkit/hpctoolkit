@@ -108,5 +108,12 @@ cuda_device_property_query
 );
 
 
+// returns 0 on success
+int
+cuda_global_pc_sampling_required
+(
+  int *required
+);
+
 
 #endif
