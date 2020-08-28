@@ -117,6 +117,8 @@
 
 #include "cuda/ReadCubinCFG.hpp"
 
+#include "intel/IntelGPUbanal.hpp"
+
 #ifdef ENABLE_OPENMP
 #include <omp.h>
 #endif
@@ -141,7 +143,7 @@ using namespace std;
 #endif
 
 #define DEBUG_CFG_SOURCE  0
-#define DEBUG_MAKE_SKEL   0
+#define DEBUG_MAKE_SKEL   1 //0
 #define DEBUG_SHOW_GAPS   0
 #define DEBUG_SKEL_SUMMARY  0
 
@@ -550,6 +552,21 @@ printTime(const char *label, struct timeval *tv_prev, struct rusage *ru_prev,
   cout << endl;
 }
 
+static string
+getFileNameFromAbsolutePath(string str)
+{
+	vector <string> tokens; 
+	stringstream str_stream(str); 
+	string intermediate; 
+
+	// Tokenizing w.r.t. '/'
+	while(getline(str_stream, intermediate, '/')) { 
+		tokens.push_back(intermediate); 
+	} 
+	return tokens[tokens.size() - 1];
+}
+
+
 //
 // makeStructure -- the main entry point for hpcstruct realmain().
 //
@@ -581,7 +598,7 @@ makeStructure(string filename,
 
   // failure throws an error up the call chain
   inputFile.openFile(filename, InputFileError_Error);
-
+	
   ElfFileVector * elfFileVector = inputFile.fileVector();
   string & sfilename = inputFile.fileName();
   const char * cfilename = inputFile.CfileName();
@@ -591,9 +608,10 @@ makeStructure(string filename,
   }
 
   Output::printStructFileBegin(outFile, gapsFile, sfilename);
-
+	
   for (uint i = 0; i < elfFileVector->size(); i++) {
     bool parsable = true;
+    parsable = false; // aaron
     ElfFile *elfFile = (*elfFileVector)[i];
 
     if (opts.show_time) {
@@ -614,8 +632,8 @@ makeStructure(string filename,
 
     Symtab * symtab = Inline::openSymtab(elfFile);
     if (symtab == NULL) {
-      continue;
-    }
+			continue;
+		}
     the_symtab = symtab;
     bool cuda_file = SYMTAB_ARCH_CUDA(symtab);
 
@@ -643,8 +661,17 @@ makeStructure(string filename,
     omp_set_num_threads(opts.jobs_parse);
 #endif
 
-    // don't run parseapi on cuda binary
-    if (! cuda_file) {
+		bool isIntelArch = true;
+		bool cfgNotPresent = true;
+		if (isIntelArch && cfgNotPresent) {
+			//std::cerr << "executing intel-gen9 specific code." << std::endl;
+			add_custom_function_object(symtab, getFileNameFromAbsolutePath(elfFile->getFileName())); //adds a dummy function object
+			code_src = new SymtabCodeSource(symtab);
+		  code_obj = new CodeObject(code_src, NULL, NULL, false, true); //last param is bool ignoreParse
+      //code_obj->parse();
+			parsable = false;
+		}
+    else if (! cuda_file) { // don't run parseapi on cuda binary
       code_src = new SymtabCodeSource(symtab);
       code_obj = new CodeObject(code_src);
       code_obj->parse();

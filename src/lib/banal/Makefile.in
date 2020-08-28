@@ -142,7 +142,8 @@ am__objects_1 = cuda/libHPCbanal_la-CFGParser.lo \
 	cuda/libHPCbanal_la-GraphReader.lo \
 	cuda/libHPCbanal_la-CudaBlock.lo \
 	cuda/libHPCbanal_la-CudaCodeSource.lo \
-	cuda/libHPCbanal_la-ReadCubinCFG.lo libHPCbanal_la-Struct.lo \
+	cuda/libHPCbanal_la-ReadCubinCFG.lo \
+	intel/libHPCbanal_la-IntelGPUbanal.lo libHPCbanal_la-Struct.lo \
 	libHPCbanal_la-Struct-Inline.lo \
 	libHPCbanal_la-Struct-Output.lo
 am_libHPCbanal_la_OBJECTS = $(am__objects_1)
@@ -521,6 +522,7 @@ MYSOURCES = \
 	cuda/CudaBlock.cpp  \
 	cuda/CudaCodeSource.cpp  \
 	cuda/ReadCubinCFG.cpp \
+	intel/IntelGPUbanal.cpp \
 	Struct.cpp  \
 	Struct-Inline.cpp  \
 	Struct-Output.cpp
@@ -620,6 +622,14 @@ cuda/libHPCbanal_la-CudaCodeSource.lo: cuda/$(am__dirstamp) \
 	cuda/$(DEPDIR)/$(am__dirstamp)
 cuda/libHPCbanal_la-ReadCubinCFG.lo: cuda/$(am__dirstamp) \
 	cuda/$(DEPDIR)/$(am__dirstamp)
+intel/$(am__dirstamp):
+	@$(MKDIR_P) intel
+	@: > intel/$(am__dirstamp)
+intel/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) intel/$(DEPDIR)
+	@: > intel/$(DEPDIR)/$(am__dirstamp)
+intel/libHPCbanal_la-IntelGPUbanal.lo: intel/$(am__dirstamp) \
+	intel/$(DEPDIR)/$(am__dirstamp)
 
 libHPCbanal.la: $(libHPCbanal_la_OBJECTS) $(libHPCbanal_la_DEPENDENCIES) $(EXTRA_libHPCbanal_la_DEPENDENCIES) 
 	$(AM_V_CXXLD)$(libHPCbanal_la_LINK)  $(libHPCbanal_la_OBJECTS) $(libHPCbanal_la_LIBADD) $(LIBS)
@@ -631,6 +641,8 @@ mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 	-rm -f cuda/*.$(OBJEXT)
 	-rm -f cuda/*.lo
+	-rm -f intel/*.$(OBJEXT)
+	-rm -f intel/*.lo
 
 distclean-compile:
 	-rm -f *.tab.c
@@ -646,6 +658,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@cuda/$(DEPDIR)/libHPCbanal_la-CudaFunction.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@cuda/$(DEPDIR)/libHPCbanal_la-GraphReader.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@cuda/$(DEPDIR)/libHPCbanal_la-ReadCubinCFG.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@intel/$(DEPDIR)/libHPCbanal_la-IntelGPUbanal.Plo@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
@@ -720,6 +733,13 @@ cuda/libHPCbanal_la-ReadCubinCFG.lo: cuda/ReadCubinCFG.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -c -o cuda/libHPCbanal_la-ReadCubinCFG.lo `test -f 'cuda/ReadCubinCFG.cpp' || echo '$(srcdir)/'`cuda/ReadCubinCFG.cpp
 
+intel/libHPCbanal_la-IntelGPUbanal.lo: intel/IntelGPUbanal.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -MT intel/libHPCbanal_la-IntelGPUbanal.lo -MD -MP -MF intel/$(DEPDIR)/libHPCbanal_la-IntelGPUbanal.Tpo -c -o intel/libHPCbanal_la-IntelGPUbanal.lo `test -f 'intel/IntelGPUbanal.cpp' || echo '$(srcdir)/'`intel/IntelGPUbanal.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) intel/$(DEPDIR)/libHPCbanal_la-IntelGPUbanal.Tpo intel/$(DEPDIR)/libHPCbanal_la-IntelGPUbanal.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='intel/IntelGPUbanal.cpp' object='intel/libHPCbanal_la-IntelGPUbanal.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -c -o intel/libHPCbanal_la-IntelGPUbanal.lo `test -f 'intel/IntelGPUbanal.cpp' || echo '$(srcdir)/'`intel/IntelGPUbanal.cpp
+
 libHPCbanal_la-Struct.lo: Struct.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbanal_la-Struct.lo -MD -MP -MF $(DEPDIR)/libHPCbanal_la-Struct.Tpo -c -o libHPCbanal_la-Struct.lo `test -f 'Struct.cpp' || echo '$(srcdir)/'`Struct.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCbanal_la-Struct.Tpo $(DEPDIR)/libHPCbanal_la-Struct.Plo
@@ -754,6 +774,7 @@ mostlyclean-libtool:
 clean-libtool:
 	-rm -rf .libs _libs
 	-rm -rf cuda/.libs cuda/_libs
+	-rm -rf intel/.libs intel/_libs
 
 ID: $(am__tagged_files)
 	$(am__define_uniq_tagged_files); mkid -fID $$unique
@@ -870,6 +891,8 @@ distclean-generic:
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
 	-rm -f cuda/$(DEPDIR)/$(am__dirstamp)
 	-rm -f cuda/$(am__dirstamp)
+	-rm -f intel/$(DEPDIR)/$(am__dirstamp)
+	-rm -f intel/$(am__dirstamp)
 
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
@@ -880,7 +903,7 @@ clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
 	mostlyclean-am
 
 distclean: distclean-am
-	-rm -rf ./$(DEPDIR) cuda/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) cuda/$(DEPDIR) intel/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -926,7 +949,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-	-rm -rf ./$(DEPDIR) cuda/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) cuda/$(DEPDIR) intel/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

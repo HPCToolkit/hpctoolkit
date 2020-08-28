@@ -75,6 +75,7 @@
 
 #include "ElfHelper.hpp"
 #include "Fatbin.hpp"
+#include "IntelGPUbinutils.hpp"
 #include "InputFile.hpp"
 
 
@@ -182,10 +183,16 @@ InputFile::openFile
 
   ElfFile *elfFile = new ElfFile;
   bool result = elfFile->open(file_buffer, f_size, filename);
+	bool isIntelGPUFile = true;
 
   if (result) {
     filevector = new ElfFileVector;
-    filevector->push_back(elfFile);
+		if (isIntelGPUFile) {
+			findIntelGPUbins(elfFile, filevector);
+		}
+		else {
+			filevector->push_back(elfFile);
+		}
     //findCubins(elfFile, filevector);
   } else {
     DIAG_MsgIf_GENERIC(tag, 1, "Not an ELF binary " << filename);
