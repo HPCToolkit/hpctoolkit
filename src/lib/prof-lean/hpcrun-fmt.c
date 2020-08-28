@@ -1074,6 +1074,7 @@ hpcrun_sparse_file_t* hpcrun_sparse_open(const char* path)
   fseek(fs, footer_position, SEEK_SET);
   int ret = hpcrun_fmt_footer_fread(&(sparse_fs->footer), fs);
   if(ret != HPCFMT_OK){
+    hpcio_fclose(fs);
     free(sparse_fs);
     return NULL;
   }
