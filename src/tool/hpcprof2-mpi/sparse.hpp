@@ -158,8 +158,8 @@ private:
   //***************************************************************************
   uint64_t id_tuples_size;
 
-  const int SPARSE_ERR = -1;
-  const int SPARSE_OK  =  0;
+  #define SPARSE_ERR -1
+  #define SPARSE_OK  0
 
   void exitMPIError(int error_code, std::string info);
   void exitError(std::string info);
@@ -173,7 +173,7 @@ private:
   //---------------------------------------------------------------------------
   // profile id tuples - format conversion with ThreadAttribute and IntPair
   //---------------------------------------------------------------------------
-  const uint not_assigned = -1;
+  #define not_assigned (uint)-1
 
   tms_id_tuple_t buildIdTuple(const hpctoolkit::ThreadAttributes& ta, const int rank);
 
@@ -360,8 +360,8 @@ private:
   //---------------------------------------------------------------------------
   // read and interpret one profie - CtxIdIdxPairs
   //---------------------------------------------------------------------------
-  const int SPARSE_NOT_FOUND = -1;
-  const int SPARSE_END       = -2;
+  #define SPARSE_NOT_FOUND -1
+  #define SPARSE_END       -2
 
   void interpretOneCtxIdIdxPair(const char *input,
                                 TMS_CtxIdIdxPair& ctx_pair);
@@ -407,7 +407,6 @@ private:
 
   struct CtxMetricBlock{
     uint32_t ctx_id;
-    //std::vector<MetricValBlock> metrics;
     std::map<uint16_t, MetricValBlock> metrics;
   };
 

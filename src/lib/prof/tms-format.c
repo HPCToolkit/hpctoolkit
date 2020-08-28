@@ -86,7 +86,8 @@ int
 tms_hdr_fwrite(FILE* fs)
 {
   fwrite(HPCTHREADSPARSE_FMT_Magic,   1, HPCTHREADSPARSE_FMT_MagicLen,   fs);
-  fwrite(&HPCTHREADSPARSE_FMT_Version, 1, HPCTHREADSPARSE_FMT_VersionLen, fs);
+  int version = HPCTHREADSPARSE_FMT_Version;
+  fwrite(&version, 1, HPCTHREADSPARSE_FMT_VersionLen, fs);
   return HPCFMT_OK;
 }
 

@@ -86,7 +86,8 @@ int
 cms_hdr_fwrite(FILE* fs)
 {
   fwrite(HPCCCTSPARSE_FMT_Magic,    1, HPCCCTSPARSE_FMT_MagicLen,   fs);
-  fwrite(&HPCCCTSPARSE_FMT_Version, 1, HPCCCTSPARSE_FMT_VersionLen, fs);
+  int version = HPCCCTSPARSE_FMT_Version;
+  fwrite(&version, 1, HPCCCTSPARSE_FMT_VersionLen, fs);
   return HPCFMT_OK;
 }
 
