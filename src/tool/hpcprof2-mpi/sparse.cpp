@@ -55,6 +55,7 @@
 
 #include <sstream>
 #include <iomanip>
+#include <iostream>
 
 #include <sys/types.h>
 #include <sys/stat.h>
