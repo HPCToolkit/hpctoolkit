@@ -397,9 +397,19 @@ void SparseDB::convertToByte8(uint64_t val, char* bytes){
 // thread_major_sparse.db  - YUMENG
 //
 /*EXAMPLE
+HPCPROF-tmsdb_____
+[hdr:
+  (version: 0)
+]
+[Id tuples for 121 profiles
+  0[(SUMMARY: 0) ]
+  1[(RANK: 0) (THREAD: 0) ]
+  2[(RANK: 0) (THREAD: 1) ]
+  ...
+]
 [Profile informations for 72 profiles
-  [(thread id: 0) (num_vals: 170) (num_nzctxs: 98) (starting location: 78144)]
-  [(thread id: 1) (num_vals: 117) (num_nzctxs: 64) (starting location: 83270)]
+  0[(id_tuple_ptr: 23) (metadata_ptr: 0) (spare_one: 0) (spare_two: 0) (num_vals: 12984) (num_nzctxs: 8353) (starting location: 489559)]
+  1[(id_tuple_ptr: 31) (metadata_ptr: 0) (spare_one: 0) (spare_two: 0) (num_vals: 4422) (num_nzctxs: 3117) (starting location: 886225)]
   ...
 ]
 [thread 36
@@ -469,6 +479,7 @@ tms_id_tuple_t SparseDB::buildSmryIdTuple()
   return tuple;
 }
 
+//transfer from outputs(ThreadAttributes:filename) to sparseInputs(id_tuple:filename)
 void SparseDB::assignSparseInputs(int world_rank)
 {
   for(const auto& tp : outputs.citerate()){
@@ -1339,7 +1350,9 @@ void SparseDB::getMyCtxs(const std::vector<uint64_t>& ctx_off,
                          std::vector<uint32_t>& my_ctxs)
 {
   assert(ctx_off.size() > 0);
-/*
+
+  /* 
+  //split work among ranks by volume of ctxs
   uint64_t total_size = ctx_off.back();
   uint64_t max_size_per_rank = round(total_size/num_ranks);
   uint64_t my_start = rank * max_size_per_rank;
@@ -1348,8 +1361,9 @@ void SparseDB::getMyCtxs(const std::vector<uint64_t>& ctx_off,
   for(uint i = 1; i<ctx_off.size(); i++){
     if(ctx_off[i] > my_start && ctx_off[i] <= my_end) my_ctxs.emplace_back(CTXID((i-1)));
   }
-*/
+  */
 
+  //split work among ranks by number of ctxs
   size_t num_ctxs_per_rank = round(ctx_off.size()/num_ranks);
   uint64_t my_start = rank * num_ctxs_per_rank;
   uint64_t my_end = (rank == num_ranks - 1) ? ctx_off.size()-1 : (rank + 1) * num_ctxs_per_rank;
@@ -1479,13 +1493,13 @@ int SparseDB::readCtxIdIdxPairs(const MPI_File fh,
 int SparseDB::findOneCtxIdIdxPair(const uint32_t target_ctx_id,
                                   const std::vector<TMS_CtxIdIdxPair>& profile_ctx_pairs,
                                   const uint length, 
-                                  const bool found,
+                                  const bool notfirst,
                                   const int found_ctx_idx, 
                                   std::map<uint32_t, uint64_t>& my_ctx_pairs)
 {
   int idx;
 
-  if(found){
+  if(notfirst){
     idx = 1 + found_ctx_idx;
 
     //the profile_ctx_pairs has been searched through
@@ -1494,7 +1508,6 @@ int SparseDB::findOneCtxIdIdxPair(const uint32_t target_ctx_id,
     //the ctx_id at idx
     uint32_t prof_ctx_id = profile_ctx_pairs[idx].ctx_id;
     if(prof_ctx_id == target_ctx_id){
-      //my_ctx_pairs.emplace_back(profile_ctx_pairs[idx]);
       my_ctx_pairs.emplace(profile_ctx_pairs[idx].ctx_id,profile_ctx_pairs[idx].ctx_idx);
       return idx;
     }else if(prof_ctx_id > target_ctx_id){
@@ -1513,7 +1526,6 @@ int SparseDB::findOneCtxIdIdxPair(const uint32_t target_ctx_id,
     idx = struct_member_binary_search(profile_ctx_pairs, target_ciip, &TMS_CtxIdIdxPair::ctx_id, length);
     //if(idx != SPARSE_NOT_FOUND) my_ctx_pairs.emplace_back(profile_ctx_pairs[idx]);
     if(idx >= 0){
-      //my_ctx_pairs.emplace_back(profile_ctx_pairs[idx]);
       my_ctx_pairs.emplace(profile_ctx_pairs[idx].ctx_id, profile_ctx_pairs[idx].ctx_idx);
     }
     else if(idx == -1){
@@ -1537,26 +1549,20 @@ void SparseDB::findCtxIdIdxPairs(const std::vector<uint32_t>& ctx_ids,
 
   uint n = profile_ctx_pairs.size() - 1; //since the last is LastNodeEnd
   int idx = -1; //index of current pair in profile_ctx_pairs
-  bool found = false;
+  bool notfirst = false;
   uint32_t target;
 
   for(uint i = 0; i<ctx_ids.size(); i++){
     target = ctx_ids[i];
-    int ret = findOneCtxIdIdxPair(target, profile_ctx_pairs, n, found, idx, my_ctx_pairs);
+    int ret = findOneCtxIdIdxPair(target, profile_ctx_pairs, n, notfirst, idx, my_ctx_pairs);
     if(ret == SPARSE_END) break;
     if(ret != SPARSE_NOT_FOUND){
       idx = ret;
-      found = true;
+      notfirst = true;
     } 
   }
 
   //add one extra context pair for later use
-  /*
-  TMS_CtxIdIdxPair end_pair;
-  end_pair.ctx_id = LastNodeEnd;
-  end_pair.ctx_idx = profile_ctx_pairs[idx + 1].ctx_idx;
-  my_ctx_pairs.emplace_back(end_pair);
-  */
   my_ctx_pairs.emplace(LastNodeEnd,profile_ctx_pairs[idx + 1].ctx_idx);
   
   assert(my_ctx_pairs.size() <= ctx_ids.size() + 1);
@@ -1571,16 +1577,9 @@ int SparseDB::getMyCtxIdIdxPairs(const tms_profile_info_t& prof_info,
                                  const std::vector<TMS_CtxIdIdxPair>& prof_ctx_pairs,
                                  const MPI_File fh,
                                  std::map<uint32_t, uint64_t>& my_ctx_pairs)
+                                 //std::vector<uint64_t>& my_ctx_pairs)
 {
   if(prof_ctx_pairs.size() == 1) return SPARSE_ERR;
-  /*
-  MPI_Offset ctx_pairs_offset = prof_info.offset + prof_info.num_vals * (TMS_val_SIZE + TMS_mid_SIZE);
-  std::vector<TMS_CtxIdIdxPair> prof_ctx_pairs (prof_info.num_nzctxs + 1);
-  if(prof_ctx_pairs.size() == 1) return SPARSE_ERR;
-
-  SPARSE_exitIfMPIError(readCtxIdIdxPairs(fh, ctx_pairs_offset, prof_ctx_pairs), 
-                          __FUNCTION__ + std::string(": cannot read context pairs for profile ") + std::to_string(prof_info.prof_info_idx));
-  */
 
   findCtxIdIdxPairs(ctx_ids, prof_ctx_pairs, my_ctx_pairs);
   if(my_ctx_pairs.size() == 1) return SPARSE_ERR;
@@ -1625,9 +1624,7 @@ void SparseDB::readValMidsBytes(const std::vector<uint32_t>& ctx_ids,
                                 const MPI_File fh,
                                 std::vector<char>& bytes)
 {
-/*
-  uint64_t first_ctx_idx = my_ctx_pairs.front().ctx_idx;
-  uint64_t last_ctx_idx  = my_ctx_pairs.back().ctx_idx;*/
+
   uint64_t first_ctx_idx = my_ctx_pairs.begin()->second;
   uint64_t last_ctx_idx  = my_ctx_pairs.rbegin()->second;
 
@@ -1665,7 +1662,6 @@ SparseDB::CtxMetricBlock SparseDB::createNewCtxMetricBlock(const hpcrun_metricVa
   MetricValBlock mvb = createNewMetricValBlock(val, mid, prof_idx);
 
   //create a vector of MetricValBlock for this context
-  //std::vector<MetricValBlock> mvbs;
   std::map<uint16_t, MetricValBlock> mvbs;
   mvbs.emplace(mid,mvb);
 
@@ -1681,21 +1677,12 @@ void SparseDB::insertValMidPair2OneCtxMetBlock(const hpcrun_metricVal_t val,
                                                CtxMetricBlock& cmb)
 {
   //find if this mid exists
-  //std::vector<MetricValBlock>& metric_blocks = cmb.metrics;
-  std::map<uint16_t, MetricValBlock>& metric_blocks = cmb.metrics;
-  
-  /*
-  std::vector<MetricValBlock>::iterator it = std::find_if(metric_blocks.begin(), metric_blocks.end(), 
-                  [&mid] (const MetricValBlock& mvb) { 
-                    return mvb.mid == mid; 
-                  });
-  */
+  std::map<uint16_t, MetricValBlock>& metric_blocks = cmb.metrics; 
   auto it = metric_blocks.find(mid);
 
   if(it != metric_blocks.end()){ //found mid
     it->second.values_prof_idxs.emplace_back(val, prof_idx);
   }else{ 
-    //metric_blocks.emplace_back(createNewMetricValBlock(val, mid, prof_idx));
     metric_blocks.emplace(mid, createNewMetricValBlock(val, mid, prof_idx));
   }
 }
@@ -1708,33 +1695,24 @@ void SparseDB::insertValMidCtxId2CtxMetBlocks(const hpcrun_metricVal_t val,
                                               const uint32_t ctx_id,
                                               CtxMetricBlock& cmb)
 {
+  
   /*
-  std::vector<CtxMetricBlock>::iterator got = std::find_if(ctx_met_blocks.begin(), ctx_met_blocks.end(), 
-                    [&ctx_id] (const CtxMetricBlock& cmb) { 
-                      return cmb.ctx_id == ctx_id; 
-                    });
-  */
- /*
+  // for ctx_met_blocks not single CtxMextricBlock
   std::map<uint32_t, CtxMetricBlock>::iterator got = ctx_met_blocks.find(ctx_id);
 
   
   if (got != ctx_met_blocks.end()){ //ctx_id found
-    if(ctx_met_blocks.size() > 1 ) printf("SHOULD NEVER BE HERE|\n");
     insertValMidPair2OneCtxMetBlock(val, mid, prof_idx, got->second);
   }else{
     CtxMetricBlock newcmb = createNewCtxMetricBlock(val, mid, prof_idx, ctx_id);
-    //ctx_met_blocks.emplace_back(newcmb);
     ctx_met_blocks.emplace(ctx_id, newcmb);
   }
-*/
+  */
 
+  //for single CtxMextricBlock
   assert(cmb.ctx_id == ctx_id);
-
-  //if(cmb.metrics.size() == 0){
-   // CtxMetricBlock newcmb = createNewCtxMetricBlock(val, mid, prof_idx, ctx_id);
-  //}else{
-    insertValMidPair2OneCtxMetBlock(val, mid, prof_idx, cmb);
-  //}
+  insertValMidPair2OneCtxMetBlock(val, mid, prof_idx, cmb);
+  
 
 }
 
@@ -1754,13 +1732,14 @@ void SparseDB::interpretValMidsBytes(char *vminput,
                                      const uint32_t ctx_id,
                                      const uint64_t next_ctx_idx,
                                      const uint64_t first_ctx_idx,
-                                    std::map<uint32_t, uint64_t>& my_ctx_pairs,
+                                     std::map<uint32_t, uint64_t>& my_ctx_pairs,
                                      CtxMetricBlock& cmb)
 {
+  // for ctx_met_blocks not single CtxMetricBlock
   /*
   char* ctx_met_input = vminput;
   //for each context, keep track of the values, metric ids, and thread ids
-  for(uint c = 0; c < my_ctx_pairs.size() - 1; c++) 
+  for(uint c = 0; c < my_ctx_pairs.size() - 1; c++) //change this to map iterator
   {
     uint32_t ctx_id  = my_ctx_pairs[c].ctx_id;
     uint64_t ctx_idx = my_ctx_pairs[c].ctx_idx;
@@ -1778,6 +1757,7 @@ void SparseDB::interpretValMidsBytes(char *vminput,
   }
   */
 
+  // for single CtxMetricBlock
   uint64_t ctx_idx = my_ctx_pairs[ctx_id];
   uint64_t num_val_this_ctx = next_ctx_idx - ctx_idx;
 
@@ -1790,10 +1770,6 @@ void SparseDB::interpretValMidsBytes(char *vminput,
     insertValMidCtxId2CtxMetBlocks(val, mid, prof_idx, ctx_id, cmb);
     ctx_met_input += (TMS_val_SIZE + TMS_mid_SIZE);
   }
-
-
-
-
 
 }
 
@@ -1832,21 +1808,13 @@ void SparseDB::mergeCtxMetBlocks(const CtxMetricBlock& source,
 {
   assert(source.ctx_id == dest.ctx_id);
 
-  //std::vector<MetricValBlock>& dest_metrics = dest.metrics;
   std::map<uint16_t, MetricValBlock>& dest_metrics = dest.metrics;
-  //for(MetricValBlock source_m : source.metrics){
+
   for(auto it = source.metrics.begin(); it != source.metrics.end(); it++){
     MetricValBlock source_m = it->second;
     const uint16_t& mid = source_m.mid;
     
-    /*
-    std::vector<MetricValBlock>::iterator mvb_i = std::find_if(dest_metrics.begin(), dest_metrics.end(), 
-                [&mid] (const MetricValBlock& mvb) { 
-                  return mvb.mid == mid; 
-                });
-    */
     auto mvb_i = dest_metrics.find(mid);
-
     if(mvb_i == dest_metrics.end()){
       dest_metrics.emplace(mid,source_m);
     }else{
@@ -1865,14 +1833,7 @@ void SparseDB::mergeOneCtxAllThreadBlocks(const std::vector<std::map<uint32_t, C
   for(uint i = 0; i < threads_ctx_met_blocks.size(); i++){
     std::map<uint32_t, CtxMetricBlock>& thread_cmb = *threads_ctx_met_blocks[i];
     
-    /*
-    std::vector<CtxMetricBlock>::iterator cmb_i = std::find_if(thread_cmb.begin(), thread_cmb.end(), 
-                    [&ctx_id] (const CtxMetricBlock& cmb) { 
-                      return cmb.ctx_id == ctx_id; 
-                    });
-    */    
-    std::map<uint32_t, CtxMetricBlock>::iterator cmb_i = thread_cmb.find(ctx_id);
-   
+    std::map<uint32_t, CtxMetricBlock>::iterator cmb_i = thread_cmb.find(ctx_id);   
     if(cmb_i != thread_cmb.end()){
       mergeCtxMetBlocks(cmb_i->second, dest);
     }
@@ -1883,15 +1844,11 @@ void SparseDB::mergeOneCtxAllThreadBlocks(const std::vector<std::map<uint32_t, C
 void SparseDB::sortCtxMetBlocks(std::map<uint32_t, CtxMetricBlock>& ctx_met_blocks)
 {
 
-  //#pragma omp for
-  //for(uint i = 0; i < ctx_met_blocks.size(); i++){   
+  //#pragma omp for  
   for(auto i = ctx_met_blocks.begin(); i != ctx_met_blocks.end(); i++){
-    //CtxMetricBlock& hcmb = ctx_met_blocks[i];
     CtxMetricBlock& hcmb = i->second;
 
-    //for(uint j = 0; j < hcmb.metrics.size(); j++){
     for(auto j = hcmb.metrics.begin(); j != hcmb.metrics.end(); j++){
-      //MetricValBlock& mvb = hcmb.metrics[j];
       MetricValBlock& mvb = j->second;
 
       std::sort(mvb.values_prof_idxs.begin(), mvb.values_prof_idxs.end(), 
@@ -1900,17 +1857,13 @@ void SparseDB::sortCtxMetBlocks(std::map<uint32_t, CtxMetricBlock>& ctx_met_bloc
         });  
       mvb.num_values = mvb.values_prof_idxs.size(); //update each mid's num_values
     }
-/*
-    std::sort(hcmb.metrics.begin(), hcmb.metrics.end(), [](const MetricValBlock& lhs, const MetricValBlock& rhs) {
-        return lhs.mid < rhs.mid;
-    });    */
-    
   }
 
 }
 
 //read all the profiles and convert data to appropriate bytes for a group of contexts
 std::vector<std::pair<std::map<uint32_t, uint64_t>, std::vector<char>>>
+//std::vector<std::pair<std::vector<uint64_t>, std::vector<char>>>
 SparseDB::readProfiles(const std::vector<uint32_t>& ctx_ids, 
                             const std::vector<tms_profile_info_t>& prof_info,
                             int threads,
@@ -1918,57 +1871,39 @@ SparseDB::readProfiles(const std::vector<uint32_t>& ctx_ids,
                             MPI_File fh,
                             std::map<uint32_t, CtxMetricBlock>& ctx_met_blocks)
 {
+  
   /*
+  //old design
   std::map<uint32_t, CtxMetricBlock> empty;
   std::vector<std::map<uint32_t, CtxMetricBlock> * > threads_ctx_met_blocks(threads, &empty);
-  
-  //ctx_met_blocks.resize(ctx_ids.size());
 
   for(auto id : ctx_ids){
     CtxMetricBlock cmb;
     cmb.ctx_id = id;
     ctx_met_blocks.emplace(id, cmb);
-  }*/
-
-  std::vector<std::pair<std::map<uint32_t, uint64_t>, std::vector<char>>> profiles_data (prof_info.size());
+  }
 
   #pragma omp parallel num_threads(threads) 
   {
-    //std::map<uint32_t, CtxMetricBlock> thread_cmb;
-    //threads_ctx_met_blocks[omp_get_thread_num()] = &thread_cmb;
+    std::map<uint32_t, CtxMetricBlock> thread_cmb;
+    threads_ctx_met_blocks[omp_get_thread_num()] = &thread_cmb;
 
-    //read all profiles for this ctx_ids group
     #pragma omp for 
     for(uint i = 0; i < prof_info.size(); i++){
       tms_profile_info_t pi = prof_info[i];
       std::vector<TMS_CtxIdIdxPair> prof_ctx_pairs = all_prof_ctx_pairs[i];
-      //readOneProfile(ctx_ids, pi, prof_ctx_pairs, fh, thread_cmb);
-      
-      std::map<uint32_t, uint64_t> my_ctx_pairs;
-      int ret = getMyCtxIdIdxPairs(pi, ctx_ids, prof_ctx_pairs, fh, my_ctx_pairs);
-    
-      std::vector<char> vmbytes;
-      if(ret == SPARSE_OK){
-        readValMidsBytes(ctx_ids, my_ctx_pairs, pi, fh, vmbytes);
-      }
-
-      profiles_data[i] = {my_ctx_pairs, vmbytes};
-  
+      readOneProfile(ctx_ids, pi, prof_ctx_pairs, fh, thread_cmb);
     }
 
-/*
     //merge all threads_ctx_met_blocks to global transpose_helper_cmbs
     #pragma omp for
     for(uint c = 0; c < ctx_ids.size(); c++){
-      //ctx_met_blocks[c].ctx_id = ctx_ids[c];
       mergeOneCtxAllThreadBlocks(threads_ctx_met_blocks,ctx_met_blocks[ctx_ids[c]]);
     }
-*/
-  }
 
-/*
-  //sort ctx_met_blocks
-  sortCtxMetBlocks(ctx_met_blocks);
+    //sort ctx_met_blocks(if it's still serial, should be outside of parallel region)
+    sortCtxMetBlocks(ctx_met_blocks);
+  }
 
   for (auto i = ctx_met_blocks.begin(); i != ctx_met_blocks.end(); ) {
     if (i->second.metrics.size() == 0) {
@@ -1976,8 +1911,29 @@ SparseDB::readProfiles(const std::vector<uint32_t>& ctx_ids,
     } else {
       i++;
     }
-  }   
-*/      
+  }
+  */
+
+  //new design
+  std::vector<std::pair<std::map<uint32_t, uint64_t>, std::vector<char>>> profiles_data (prof_info.size());
+
+  //read all profiles for this ctx_ids group
+  #pragma omp parallel for num_threads(threads) 
+  for(uint i = 0; i < prof_info.size(); i++){
+    tms_profile_info_t pi = prof_info[i];
+    std::vector<TMS_CtxIdIdxPair> prof_ctx_pairs = all_prof_ctx_pairs[i];
+    
+    std::map<uint32_t, uint64_t> my_ctx_pairs;
+    int ret = getMyCtxIdIdxPairs(pi, ctx_ids, prof_ctx_pairs, fh, my_ctx_pairs);
+  
+    std::vector<char> vmbytes;
+    if(ret == SPARSE_OK){
+      readValMidsBytes(ctx_ids, my_ctx_pairs, pi, fh, vmbytes);
+    }
+
+    profiles_data[i] = {my_ctx_pairs, vmbytes};
+  }
+  
   return profiles_data;
 }
 
@@ -2009,21 +1965,16 @@ int SparseDB::convertCtxMetrics(std::map<uint16_t, MetricValBlock>& metrics,
   uint64_t num_vals = 0;
 
   char* mvb_pos = bytes; 
-  //for(uint i = 0; i < metrics.size(); i++){
   for(auto i = metrics.begin(); i != metrics.end(); i++){
-    //MetricValBlock mvb = metrics[i];
     MetricValBlock mvb = i->second;
-    i->second.num_values = mvb.values_prof_idxs.size();
+    i->second.num_values = mvb.values_prof_idxs.size(); //if we use sort in readProfiles, we don't need this
     num_vals += mvb.values_prof_idxs.size();
 
     int bytes_converted = convertOneMetricValBlock(mvb, mvb_pos);
     mvb_pos += bytes_converted;
   }
 
-  if(num_vals != (uint)(mvb_pos - bytes)/CMS_val_prof_idx_pair_SIZE)
-    printf("%d != (%d - %d)/%d\n" ,num_vals, mvb_pos, bytes, CMS_val_prof_idx_pair_SIZE);
-
-  //assert(num_vals == (uint)(mvb_pos - bytes)/CMS_val_prof_idx_pair_SIZE);
+  assert(num_vals == (uint)(mvb_pos - bytes)/CMS_val_prof_idx_pair_SIZE);
 
   return (mvb_pos - bytes);
 }
@@ -2035,7 +1986,6 @@ int SparseDB::buildCtxMetIdIdxPairsBytes(const std::map<uint16_t, MetricValBlock
 {
   char* bytes_pos = bytes;
   uint64_t m_idx = 0;
-  //for(uint i =0; i < metrics.size() + 1; i++){   
   for(auto i = metrics.begin(); i != metrics.end(); i++){
     uint16_t mid = i->first;
     convertToByte2(mid,   bytes_pos);
@@ -2060,7 +2010,6 @@ int SparseDB::convertOneCtxMetricBlock(const CtxMetricBlock& cmb,
                                        uint16_t& num_nzmids,
                                        uint64_t& num_vals)
 {
-  //std::vector<MetricValBlock> metrics = cmb.metrics;
   std::map<uint16_t, MetricValBlock> metrics = cmb.metrics;
   num_nzmids = metrics.size();
 
@@ -2106,25 +2055,7 @@ void SparseDB::convertOneCtx(const uint32_t ctx_id,
                              uint& met_byte_cnt,
                              char* met_bytes)
 {
-  /*
-  //INFO_BYTES
-  uint64_t num_vals = 0;
-  uint16_t num_nzmids = 0;
-  uint64_t offset = ctx_off[CTX_VEC_IDX(ctx_id)]; 
-  */
 
-  //METRIC_BYTES (also update num_vals, num_nzmids)
-  /*
-  auto cmb_i = std::find_if(ctx_met_blocks.begin(), ctx_met_blocks.end(), 
-                      [&ctx_id] (const CtxMetricBlock& cmb) { 
-                        return cmb.ctx_id == ctx_id; 
-                      });
-  
-
-  if(cmb_i != ctx_met_blocks.end()){ //ctx_met_blocks has the ctx_id
-    met_byte_cnt += convertOneCtxMetricBlock(*cmb_i, met_bytes + offset - first_ctx_off, num_nzmids, num_vals);
-  }
-*/
   met_byte_cnt += convertOneCtxMetricBlock(cmb, met_bytes + ci.offset - first_ctx_off, ci.num_nzmids, ci.num_vals);
 
   if(ci.num_nzmids != 0)
@@ -2132,10 +2063,7 @@ void SparseDB::convertOneCtx(const uint32_t ctx_id,
       printf("ctx_id %d, offset: %ld, num_vals: %ld, num_nzmids %d, next off %ld\n", ctx_id, ci.offset, ci.num_vals, ci.num_nzmids, next_ctx_off );
       exitError("collected cct data (num_vals:" + std::to_string(ci.num_vals) + " /num_nzmids:" + std::to_string(ci.num_nzmids) + ") were wrong !");
     }
-      
-  //INFO_BYTES
-  //cms_ctx_info_t ci = {ctx_id, num_vals, num_nzmids, offset};
-  //info_byte_cnt += convertOneCtxInfo(ci, info_bytes);
+
 }
 
 //convert a group of contexts to appropriate bytes 
@@ -2155,7 +2083,8 @@ void SparseDB::ctxBlocks2Bytes(const CtxMetricBlock& cmb,
   uint info_byte_cnt = 0;
   uint met_byte_cnt  = 0;
 
-/*
+  /*
+  //for ctx_met_blocks, not single cmb
   auto it = ctx_met_blocks.begin();
   for(uint i = 0; i<ctx_ids.size(); i++){
     //INFO BYTES
@@ -2178,7 +2107,9 @@ void SparseDB::ctxBlocks2Bytes(const CtxMetricBlock& cmb,
     info_byte_cnt += convertOneCtxInfo(ci, info_bytes.data() + i * CMS_ctx_info_SIZE );
 
   }
-*/
+  */
+
+  //for single cmb
   cms_ctx_info_t ci = {ctx_id, 0, 0, ctx_off[CTX_VEC_IDX(ctx_id)]};
 
   if(cmb.metrics.size() > 0)
@@ -2186,14 +2117,8 @@ void SparseDB::ctxBlocks2Bytes(const CtxMetricBlock& cmb,
 
   info_byte_cnt += convertOneCtxInfo(ci, info_bytes.data());
 
-/*
-  #pragma omp parallel for num_threads(threads) reduction(+:info_byte_cnt, met_byte_cnt)
-  for(uint i = 0; i<ctx_ids.size(); i++ ){
-    uint32_t ctx_id = ctx_ids[i];
-    convertOneCtx(ctx_id, ctx_off, ctx_met_blocks, first_ctx_off, met_byte_cnt, info_byte_cnt, metrics_bytes.data(), info_bytes.data() + i * CMS_ctx_info_SIZE );
-  } 
-*/
 
+  //same for both versions
   if(info_byte_cnt != info_bytes.size())    exitError("the count of info_bytes converted is not as expected"
     + std::to_string(info_byte_cnt) + " != " + std::to_string(info_bytes.size()));
  
@@ -2215,7 +2140,7 @@ void SparseDB::writeCtxGroup(const uint32_t& ctx_id,
   //std::vector<char> info_bytes (CMS_ctx_info_SIZE * ctx_ids.size());
   std::vector<char> info_bytes (CMS_ctx_info_SIZE);
 
-/*
+  /*
   uint32_t first_ctx_id = ctx_ids.front();
   uint32_t last_ctx_id  = ctx_ids.back();
   int metric_bytes_size = ctx_off[CTX_VEC_IDX(last_ctx_id) + 1] - ctx_off[CTX_VEC_IDX(first_ctx_id)];
@@ -2226,7 +2151,7 @@ void SparseDB::writeCtxGroup(const uint32_t& ctx_id,
   
   ctxBlocks2Bytes(cmb, ctx_off, ctx_id, threads, info_bytes, metrics_bytes);
 
-/*
+  /*
   MPI_Status stat;
   MPI_Offset info_off = HPCCCTSPARSE_FMT_CtxInfoOff + CTX_VEC_IDX(first_ctx_id) * CMS_ctx_info_SIZE;
   SPARSE_exitIfMPIError(MPI_File_write_at(ofh, info_off, info_bytes.data(), info_bytes.size(), MPI_BYTE, &stat),
@@ -2235,7 +2160,7 @@ void SparseDB::writeCtxGroup(const uint32_t& ctx_id,
   MPI_Offset metrics_off = ctx_off[CTX_VEC_IDX(first_ctx_id)];
   SPARSE_exitIfMPIError(MPI_File_write_at(ofh, metrics_off, metrics_bytes.data(), metrics_bytes.size(), MPI_BYTE, &stat),
                   __FUNCTION__ + std::string(": write Metrics Bytes for ctx ") + std::to_string(first_ctx_id) + " to ctx " + std::to_string(last_ctx_id));
-*/
+  */
   MPI_Status stat;
   MPI_Offset info_off = HPCCCTSPARSE_FMT_CtxInfoOff + CTX_VEC_IDX(ctx_id) * CMS_ctx_info_SIZE;
   SPARSE_exitIfMPIError(MPI_File_write_at(ofh, info_off, info_bytes.data(), info_bytes.size(), MPI_BYTE, &stat),
@@ -2266,47 +2191,38 @@ void SparseDB::rwOneCtxGroup(const std::vector<uint32_t>& ctx_ids,
   std::vector<std::pair<std::map<uint32_t, uint64_t>, std::vector<char>>> profiles_data =
     readProfiles(ctx_ids, prof_info, threads, all_prof_ctx_pairs, fh, fake_ctx_met_blocks);
 
+  //find a small unit (number of ctxs) to be one task
+  //int ctx_unit = round(ctx_ids.size()/(threads*5));
 
   //for each ctx, find corresponding ctx_id_idx and bytes, and interpret
-  #pragma omp parallel num_threads(threads)
-  {
-    //std::map<uint32_t, CtxMetricBlock> ctx_met_blocks;
+  #pragma omp parallel for num_threads(threads)
+  for(uint i = 0; i < ctx_ids.size(); i++){
+    uint32_t ctx_id = ctx_ids[i];
 
-    #pragma omp for 
-    for(uint i = 0; i < ctx_ids.size(); i++){
-      uint32_t ctx_id = ctx_ids[i];
-      //uint32_t next_ctx_id = (i == ctx_ids.size()-1) ? LastNodeEnd : ctx_ids[i+1];
-
-      //TEMP USE
-      CtxMetricBlock cmb;
-      cmb.ctx_id = ctx_id;
+    //a new CtxMetricBlock
+    CtxMetricBlock cmb;
+    cmb.ctx_id = ctx_id;
+    
+    //interpret all profiles' data about this ctx_id
+    for(uint j = 0; j < profiles_data.size(); j++){
+      std::vector<char>& vmbytes = profiles_data[j].second;
+      std::map<uint32_t, uint64_t>& ctx_id_idx_pairs = profiles_data[j].first;
       
-      //interpret all profiles' data about this ctx_id
-      for(uint j = 0; j < profiles_data.size(); j++){
-        //auto pd = profiles_data[j];
-        std::vector<char>& vmbytes = profiles_data[j].second;
-        std::map<uint32_t, uint64_t>& ctx_id_idx_pairs = profiles_data[j].first;
-        
-        //confirm if this profile has this ctx_id
-        auto ciipi = ctx_id_idx_pairs.find(ctx_id);
-        if(ciipi != ctx_id_idx_pairs.end()){
-          uint64_t next_ctx_idx = std::next(ciipi, 1)->second;
-          uint64_t first_ctx_idx = ctx_id_idx_pairs.begin()->second;
-          interpretValMidsBytes(vmbytes.data(), prof_info[j].prof_info_idx, ctx_id, next_ctx_idx, first_ctx_idx, ctx_id_idx_pairs, cmb);
-        }
-          
+      //confirm if this profile has this ctx_id
+      auto ciipi = ctx_id_idx_pairs.find(ctx_id);
+      if(ciipi != ctx_id_idx_pairs.end()){
+        uint64_t next_ctx_idx = std::next(ciipi, 1)->second;
+        uint64_t first_ctx_idx = ctx_id_idx_pairs.begin()->second;
+        interpretValMidsBytes(vmbytes.data(), prof_info[j].prof_info_idx, ctx_id, next_ctx_idx, first_ctx_idx, ctx_id_idx_pairs, cmb);
       }
+    }
 
-      //write for ctx_met_blocks     
-      //std::vector<uint32_t> fake_ctx_ids;
-      //fake_ctx_ids.emplace_back(ctx_id);
-      //if(ctx_met_blocks.size() > 0){
-        writeCtxGroup(ctx_id, ctx_off, cmb, threads, ofh);
-      //}
+    //write for ctx_met_blocks     
+    //if(ctx_met_blocks.size() > 0){
+      writeCtxGroup(ctx_id, ctx_off, cmb, threads, ofh);
+    //}
 
-    } // END of for loop
-  } //END of parallel region
-
+  } // END of parallel for loop
    
 }
 

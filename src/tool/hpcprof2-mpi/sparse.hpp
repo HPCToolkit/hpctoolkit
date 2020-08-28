@@ -373,13 +373,15 @@ private:
   int findOneCtxIdIdxPair(const uint32_t target_ctx_id,
                           const std::vector<TMS_CtxIdIdxPair>& profile_ctx_pairs,
                           const uint length, 
-                          const bool found,
+                          const bool notfirst,
                           const int found_ctx_idx, 
                           std::map<uint32_t, uint64_t>& my_ctx_pairs);
+                          //std::vector<uint64_t>& my_ctx_pairs);
 
   void findCtxIdIdxPairs(const std::vector<uint32_t>& ctx_ids,
                          const std::vector<TMS_CtxIdIdxPair>& profile_ctx_pairs,
                          std::map<uint32_t, uint64_t>& my_ctx_pairs);
+                         //std::vector<uint64_t>& my_ctx_pairs);
 
 
   int getMyCtxIdIdxPairs(const tms_profile_info_t& prof_info,
@@ -387,6 +389,7 @@ private:
                          const std::vector<TMS_CtxIdIdxPair>& prof_ctx_pairs,
                          const MPI_File fh,
                          std::map<uint32_t, uint64_t>& my_ctx_pairs);
+                         //std::vector<uint64_t>& my_ctx_pairs);
 
   std::vector<std::vector<TMS_CtxIdIdxPair>> 
   getProfileCtxIdIdxPairs(const MPI_File fh,
@@ -469,6 +472,7 @@ private:
   void sortCtxMetBlocks(std::map<uint32_t, CtxMetricBlock>& ctx_met_blocks);
 
   std::vector<std::pair<std::map<uint32_t, uint64_t>, std::vector<char>>>
+  //std::vector<std::pair<std::vector<uint64_t>, std::vector<char>>>
   readProfiles(const std::vector<uint32_t>& ctx_ids, 
                     const std::vector<tms_profile_info_t>& prof_info,
                     int threads,
