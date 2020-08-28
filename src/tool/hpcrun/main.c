@@ -226,8 +226,8 @@ int lush_metrics = 0; // FIXME: global variable for now
 /******************************************************************************
  * (public declaration) thread-local variables
  *****************************************************************************/
- static __thread bool hpcrun_thread_suppress_sample = true;
- static __thread int hpcrun_thread_dl_operation = 0;
+static __thread bool hpcrun_thread_suppress_sample = true;
+static __thread int hpcrun_thread_dl_operation = 0;
 
 
 //***************************************************************************
@@ -470,26 +470,9 @@ hpcrun_init_internal(bool is_child)
   gotcha_restore_library_filter_func();
 #endif
 
-  hpcrun_initLoadmap();
-
   hpcrun_memory_reinit();
   hpcrun_mmap_init();
   hpcrun_thread_data_init(0, NULL, is_child, hpcrun_get_num_sample_sources());
-
-  // must initialize unwind recipe map before initializing fnbounds
-  // because mapping of load modules affects the recipe map.
-  hpcrun_unw_init();
-
-  hpcrun_save_vdso();
-
-  // init callbacks for each device
-  hpcrun_initializer_init();
-
-  // WARNING: a perfmon bug requires us to fork off the fnbounds
-  // server before we call PAPI_init, which is done in argument
-  // processing below. Also, fnbounds_init must be done after the
-  // memory allocator is initialized.
-  fnbounds_init();
 
   main_addr = monitor_get_addr_main();
   setup_main_bounds_check(main_addr);
@@ -513,7 +496,7 @@ hpcrun_init_internal(bool is_child)
     hpcrun_logicalUnwind(true);
     lush_agent_pool__init(lush_agents, opts.lush_agent_paths);
     EMSG("Logical Unwinding Agent: %s (%p / %p)", opts.lush_agent_paths,
-	 epoch, lush_agents);
+         epoch, lush_agents);
   }
 
   lush_metrics = (lush_agents) ? 1 : 0;
@@ -537,10 +520,10 @@ hpcrun_init_internal(bool is_child)
 
     for (void** e = table.table; e < table.table + table.len - 1; e++) {
       fprintf(stderr, "======== %p Intervals ========\n", *e);
-      if (e > table.table || ! sigsetjmp(ivd_jb, 1)) 
-	hpcrun_dump_intervals(*e);
+      if (e > table.table || ! sigsetjmp(ivd_jb, 1))
+        hpcrun_dump_intervals(*e);
       else
-	fprintf(stderr, "--Error: skipped--\n");
+        fprintf(stderr, "--Error: skipped--\n");
       fprintf(stderr, "\n");
       fflush(stderr);
     }
@@ -559,6 +542,7 @@ hpcrun_init_internal(bool is_child)
   //       -all- possible (e.g. registered) sample sources call their own init method
   //       no need to do it twice.
   //
+
   if (! is_child) {
     SAMPLE_SOURCES(process_event_list, lush_metrics);
     SAMPLE_SOURCES(finalize_event_list);
@@ -566,34 +550,34 @@ hpcrun_init_internal(bool is_child)
   }
   SAMPLE_SOURCES(gen_event_set, lush_metrics);
 
-  // set up initial 'epoch' 
-  
+  // set up initial 'epoch'
+
   TMSG(EPOCH,"process init setting up initial epoch/loadmap");
   hpcrun_epoch_init(NULL);
 
-#ifdef SPECIAL_DUMP_INTERVALS 
+#ifdef SPECIAL_DUMP_INTERVALS
   {
-    // temporary debugging code for x86 / ppc64
+      // temporary debugging code for x86 / ppc64
 
-    extern void hpcrun_dump_intervals(void* addr2);
-    char* addr1 = getenv("ADDR1");
-    char* addr2 = getenv("ADDR2");
- 
-    if (addr1 != NULL) {
-      addr1 = (void*) (uintptr_t) strtol(addr1, NULL, 0);
-      fprintf(stderr,"address 1 = %p\n", addr1);
-      hpcrun_dump_intervals(addr1);
-      fflush(NULL);
-    }
+      extern void hpcrun_dump_intervals(void* addr2);
+      char* addr1 = getenv("ADDR1");
+      char* addr2 = getenv("ADDR2");
 
-    if (addr2 != NULL) {
-      addr2 = (void*) (uintptr_t) strtol(addr2, NULL, 0);
-      fprintf(stderr,"address 2 = %p\n", addr2);
-      hpcrun_dump_intervals(addr2);
-      fflush(NULL);
+      if (addr1 != NULL) {
+        addr1 = (void*) (uintptr_t) strtol(addr1, NULL, 0);
+        fprintf(stderr,"address 1 = %p\n", addr1);
+        hpcrun_dump_intervals(addr1);
+        fflush(NULL);
+      }
+
+      if (addr2 != NULL) {
+        addr2 = (void*) (uintptr_t) strtol(addr2, NULL, 0);
+        fprintf(stderr,"address 2 = %p\n", addr2);
+        hpcrun_dump_intervals(addr2);
+        fflush(NULL);
+      }
+      if (addr1 || addr2) monitor_real_exit(0);
     }
-    if (addr1 || addr2) monitor_real_exit(0);
-  }
 #endif
 
   hpcrun_initializers_apply();
@@ -608,7 +592,7 @@ hpcrun_init_internal(bool is_child)
 
   // NOTE: hack to ensure that sample source start can be delayed until mpi_init
   if (hpctoolkit_sampling_is_active() && ! getenv("HPCRUN_MPI_ONLY")) {
-      SAMPLE_SOURCES(start);
+    SAMPLE_SOURCES(start);
   }
 
   hpcrun_is_initialized_private = true;
@@ -776,7 +760,7 @@ logit(cct_node_t* n, cct_op_arg_t arg, size_t l)
 }
 
 void*
-hpcrun_thread_init(int id, local_thread_data_t* local_thread_data) // cct_ctxt_t* thr_ctxt)
+hpcrun_thread_init(int id, local_thread_data_t* local_thread_data, bool has_trace)
 {
   cct_ctxt_t* thr_ctxt = local_thread_data ? local_thread_data->thr_ctxt : NULL;
 
@@ -789,7 +773,7 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data) // cct_ctxt_t
   // ----------------------------------------
 
   thread_data_t* td = NULL;
-  hpcrun_threadMgr_data_get(id, thr_ctxt, &td);
+  hpcrun_threadMgr_data_get_safe(id, thr_ctxt, &td, has_trace);
   hpcrun_set_thread_data(td);
 
   td->inside_hpcrun = 1;  // safe enter, disable signals
@@ -847,16 +831,16 @@ hpcrun_thread_fini(epoch_t *epoch)
 
     int is_process = 0;
     thread_finalize(is_process);
-  }
-    
-  // inform thread manager that we are terminating the thread
-  // thread manager may enqueue the thread_data (in compact mode)
-  // or flush the data into hpcrun file
-  int add_separator = 0;
-  thread_data_t* td = hpcrun_get_thread_data();
-  hpcrun_threadMgr_data_put(epoch, td, add_separator);
 
-  TMSG(PROCESS, "End of thread");
+    // inform thread manager that we are terminating the thread
+    // thread manager may enqueue the thread_data (in compact mode)
+    // or flush the data into hpcrun file
+    int add_separator = 0;
+    thread_data_t* td = hpcrun_get_thread_data();
+    hpcrun_threadMgr_data_put(epoch, td, add_separator);
+
+    TMSG(PROCESS, "End of thread");
+  }
 }
 
 //***************************************************************************
@@ -906,10 +890,10 @@ monitor_init_process(int *argc, char **argv, void* data)
   hpcrun_wait();
 
 #if 0
-  // temporary patch to avoid deadlock within PAMI's optimized implementation 
-  // of all-to-all. a problem was observed when PAMI's optimized all-to-all 
-  // implementation was invoked on behalf of darshan_shutdown 
-  putenv("PAMID_COLLECTIVES=0");
+  // temporary patch to avoid deadlock within PAMI's optimized implementation
+    // of all-to-all. a problem was observed when PAMI's optimized all-to-all
+    // implementation was invoked on behalf of darshan_shutdown
+    putenv("PAMID_COLLECTIVES=0");
 #endif // defined(HOST_SYSTEM_IBM_BLUEGENE)
 
   hpcrun_sample_prob_init();
@@ -933,11 +917,37 @@ monitor_init_process(int *argc, char **argv, void* data)
   copy_execname(process_name);
   hpcrun_files_set_executable(process_name);
 
+  // We initialize the load map and fnbounds before registering sample source.
+  // This is because sample source init (such as PAPI)  may dlopen other libraries,
+  // which will trigger our library monitoring code and fnbound queries
+  hpcrun_initLoadmap();
+
+  // We need to initialize messages related functions and set up measurement directory,
+  // so that we can write vdso and prevent fnbounds print messages to the terminal.
+  messages_init();
+  if (!hpcrun_get_disabled()) {
+    hpcrun_files_set_directory();
+  }
+  messages_logfile_create();
+
+  // must initialize unwind recipe map before initializing fnbounds
+  // because mapping of load modules affects the recipe map.
+  hpcrun_unw_init();
+
+  // We need to save vdso before initializing fnbounds this
+  // is because fnbounds_init will iterate over the load map
+  // and will invoke analysis on vdso
+  hpcrun_save_vdso();
+
+  // init callbacks for each device //Module_ignore_map is here
+  hpcrun_initializer_init();
+
+  // fnbounds must be after module_ignore_map
+  fnbounds_init();
+
   hpcrun_registered_sources_init();
 
-  messages_init();
-
-  control_knob_init();  
+  control_knob_init();
 
   hpcrun_do_custom_init();
 
@@ -958,15 +968,11 @@ monitor_init_process(int *argc, char **argv, void* data)
 
   hpcrun_process_sample_source_none();
 
-  if (!hpcrun_get_disabled()) {
-    hpcrun_files_set_directory();
-  }
-
   TMSG(PROCESS,"hpcrun_files_set_executable called w process name = %s", process_name);
 
   TMSG(PROCESS,"init");
 
-  messages_logfile_create();
+
   hpcrun_sample_prob_mesg();
 
   TMSG(PROCESS, "I am a %s process", is_child ? "child" : "parent");
@@ -999,6 +1005,31 @@ monitor_fini_process(int how, void* data)
   hpcrun_safe_exit();
 }
 
+void
+monitor_begin_process_exit(int how)
+{
+  if (hpcrun_get_disabled()) {
+    return;
+  }
+
+
+  hpcrun_safe_enter();
+
+  if (hpcrun_is_initialized()) {
+    TMSG(FINI, "process attempting sample shutdown");
+
+    SAMPLE_SOURCES(stop);
+    SAMPLE_SOURCES(shutdown);
+
+    // Call all registered auxiliary functions before termination.
+    // This typically means flushing files that were not done by their creators.
+    device_finalizer_apply(device_finalizer_type_flush);
+    device_finalizer_apply(device_finalizer_type_shutdown);
+  }
+
+
+  hpcrun_safe_exit();
+}
 
 static fork_data_t from_fork;
 
@@ -1197,11 +1228,11 @@ monitor_init_thread(int tid, void* data)
   // Do nothing if ignoring thread
   //
   Token_iterate(tok, getenv("HPCRUN_IGNORE_THREAD"), " ,",
-		{
-		  if (atoi(tok) == tid) {
-		    hpcrun_thread_suppress_sample = true;
-		  }
-		});
+    {
+      if (atoi(tok) == tid) {
+        hpcrun_thread_suppress_sample = true;
+      }
+    });
 
   void *thread_begin_address = monitor_get_addr_thread_start();
 
@@ -1212,7 +1243,7 @@ monitor_init_thread(int tid, void* data)
   hpcrun_safe_enter();
 
   TMSG(THREAD,"init thread %d",tid);
-  void* thread_data = hpcrun_thread_init(tid, (local_thread_data_t*) data);
+  void* thread_data = hpcrun_thread_init(tid, (local_thread_data_t*) data, ! hpcrun_thread_suppress_sample);
   TMSG(THREAD,"back from init thread %d",tid);
 
   hpcrun_threadmgr_thread_new();

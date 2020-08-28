@@ -390,6 +390,15 @@ CUPTI_FN
 
 CUPTI_FN
 (
+  cuptiGetTimestamp,
+  (
+    uint64_t* timestamp
+  )
+);
+
+
+CUPTI_FN
+(
  cuptiEnableDomain,
  (
   uint32_t enable,
@@ -590,7 +599,7 @@ cupti_error_callback_dummy // __attribute__((unused))
 {
   
   EEMSG("FATAL: hpcrun failure: failure type = %s, "
-	"function %s failed with error %s", type, fn, error_string);
+      "function %s failed with error %s", type, fn, error_string);
   exit(1);
 }
 
@@ -802,6 +811,7 @@ cupti_subscriber_callback
 
     switch (cb_id) {
       //FIXME(Keren): do not support memory allocate and free for current CUPTI version
+      // FIXME(Dejan): here find #bytes from func argument list and atribute it to node in cct(corr_id)
       //case CUPTI_DRIVER_TRACE_CBID_cuMemAlloc:
       //case CUPTI_DRIVER_TRACE_CBID_cu64MemAlloc:
       //case CUPTI_DRIVER_TRACE_CBID_cuMemAllocPitch:
@@ -966,8 +976,7 @@ cupti_subscriber_callback
         gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
 
         if (is_kernel_op) {
-          cct_node_t *kernel_ph = 
-	    gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel);
+          cct_node_t *kernel_ph = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel);
 
 	  ensure_kernel_ip_present(kernel_ph, kernel_ip);
 
@@ -993,7 +1002,7 @@ cupti_subscriber_callback
     } else if (is_kernel_op && cupti_runtime_api_flag && cd->callbackSite ==
       CUPTI_API_ENTER) {
       if (cupti_kernel_ph != NULL) {
-	ensure_kernel_ip_present(cupti_kernel_ph, kernel_ip);
+        ensure_kernel_ip_present(cupti_kernel_ph, kernel_ip);
       }
       if (cupti_trace_ph != NULL) {
 	ensure_kernel_ip_present(cupti_trace_ph, kernel_ip);
@@ -1002,7 +1011,7 @@ cupti_subscriber_callback
       CUPTI_API_ENTER) {
       cct_node_t *ompt_trace_node = ompt_trace_node_get();
       if (ompt_trace_node != NULL) {
-	ensure_kernel_ip_present(ompt_trace_node, kernel_ip);
+        ensure_kernel_ip_present(ompt_trace_node, kernel_ip);
       }
     }
   } else if (domain == CUPTI_CB_DOMAIN_RUNTIME_API) {
@@ -1170,6 +1179,16 @@ cupti_device_timestamp_get
 
 
 void
+cupti_activity_timestamp_get
+(
+ uint64_t *time
+)
+{
+  HPCRUN_CUPTI_CALL(cuptiGetTimestamp, (time));
+}
+
+
+void
 cupti_device_buffer_config
 (
  size_t buf_size,
@@ -1255,6 +1274,7 @@ cupti_buffer_completion_callback
 
   free(buffer);
 }
+
 
 //-------------------------------------------------------------
 // event specification

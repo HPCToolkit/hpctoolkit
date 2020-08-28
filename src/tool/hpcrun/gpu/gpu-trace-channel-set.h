@@ -41,16 +41,27 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#ifndef gpu_trace_channel_set_h
+#define gpu_trace_channel_set_h
+
+
+
 //******************************************************************************
-// local includes
+// forward type declarations
 //******************************************************************************
 
-#include <hpcrun/gpu/gpu-monitoring-thread-api.h>
+typedef struct gpu_trace_channel_t gpu_trace_channel_t;
 
-#include <hpcrun/gpu/gpu-activity.h>
-#include <hpcrun/gpu/gpu-activity-process.h>
 
-#include "cupti-activity-translate.h"
+
+//******************************************************************************
+// type declarations
+//******************************************************************************
+
+typedef void (*gpu_trace_channel_fn_t)
+(
+ gpu_trace_channel_t *channel
+);
 
 
 
@@ -59,22 +70,23 @@
 //******************************************************************************
 
 void
-cupti_buffer_completion_notify
-(
- void
-)
-{
-  gpu_monitoring_thread_activities_ready();
-}
+gpu_trace_channel_stack_alloc(int size);
 
 
 void
-cupti_activity_process
+gpu_trace_channel_set_insert
 (
- CUpti_Activity *cupti_activity
-)
-{
-  gpu_activity_t gpu_activity;
-  cupti_activity_translate(&gpu_activity, cupti_activity);
-  gpu_activity_process(&gpu_activity);
-}
+ gpu_trace_channel_t *channel,
+ int set_index
+);
+
+
+void
+gpu_trace_channel_set_consume
+(
+ int set_index
+);
+
+void gpu_trace_channel_set_release(int set_index);
+
+#endif
