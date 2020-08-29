@@ -1066,8 +1066,10 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
       auto stall_blame_name = "BLAME " + _exec_dep_sche_stall_metric;
       attributeBlameMetric(mpi_rank, thread_id, to_node, stall_blame_name, stall_blame);
 
-      inst_blames.emplace_back(InstructionBlame(to_inst, to_inst, to_struct, to_struct, 0,
-                                                stall_blame, lat_blame, lat_blame_name));
+      if (lat_blame != 0) {
+        inst_blames.emplace_back(InstructionBlame(to_inst, to_inst, to_struct, to_struct, 0,
+            stall_blame, lat_blame, lat_blame_name));
+      }
     }
 
 
