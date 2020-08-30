@@ -328,6 +328,9 @@ opencl_subscriber_callback
     case kernel:
       gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
 				   gpu_placeholder_type_kernel);
+
+      gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
+				   gpu_placeholder_type_trace);
       break;
     default:
       assert(0);
