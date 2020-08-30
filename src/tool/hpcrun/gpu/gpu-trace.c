@@ -224,10 +224,8 @@ gpu_trace_first
  uint64_t start
 )
 {
-  static __thread bool first = true;
-
-  if (first) {
-    first = false;
+  if (td->gpu_trace_first_time == 0) {
+    td->gpu_trace_first_time = start - 1;
     gpu_trace_stream_append(td, no_activity, start - 1);
   }
 }
@@ -236,19 +234,19 @@ gpu_trace_first
 static uint64_t
 gpu_trace_start_adjust
 (
+ thread_data_t* td,
  uint64_t start,
  uint64_t end
 )
 {
-  static __thread uint64_t last_end = 0;
-
+  uint64_t last_end = td->gpu_trace_prev_time;
   if (start < last_end) {
     // If we have a hardware measurement error (Power9),
     // set the offset as the end of the last activity
     start = last_end + 1;
   }
 
-  last_end = end;
+  td->gpu_trace_prev_time = end;
 
   return start;
 }
@@ -273,7 +271,7 @@ consume_one_trace_item
 
   stream_start_set(start_time);
 
-  start = gpu_trace_start_adjust(start, end);
+  start = gpu_trace_start_adjust(td, start, end);
 
   int frequency = gpu_monitoring_trace_sample_frequency_get();
 
@@ -301,7 +299,7 @@ consume_one_trace_item
 
     gpu_trace_stream_append(td, leaf, start);
 
-    gpu_trace_stream_append(td, no_activity, end + 1);
+    gpu_trace_stream_append(td, no_activity, end);
 
     PRINT("%p Append trace activity [%lu, %lu]\n", td, start, end);
   }
