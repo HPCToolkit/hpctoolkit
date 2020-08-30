@@ -75,7 +75,6 @@ static gotcha_wrappee_handle_t clEnqueueNDRangeKernel_handle;
 static gotcha_wrappee_handle_t clEnqueueReadBuffer_handle;
 static gotcha_wrappee_handle_t clEnqueueWriteBuffer_handle;
 static atomic_long correlation_id;
-#endif
 
 
 
@@ -298,6 +297,8 @@ clEnqueueWriteBuffer_wrapper
   return return_status;
 }
 
+#endif
+
 
 
 //******************************************************************************
@@ -341,11 +342,11 @@ opencl_intercept_setup
   void
 )
 {
-  #ifndef HPCRUN_STATIC_LINK
+#ifndef HPCRUN_STATIC_LINK
   ETMSG(OPENCL, "setting up opencl intercepts");
   gotcha_wrap(opencl_bindings, 4, "opencl_bindings");
   opencl_intercept_initialize();
-  #endif
+#endif
 }
 
 
@@ -355,8 +356,8 @@ opencl_intercept_teardown
   void
 )
 {
-  #ifndef HPCRUN_STATIC_LINK
+#ifndef HPCRUN_STATIC_LINK
   // not sure if this works
   gotcha_set_priority("opencl_bindings", -1);
-  #endif
+#endif
 }
