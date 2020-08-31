@@ -152,6 +152,15 @@ void ThreadAttributes::procid(unsigned long pid) {
   m_procid = pid;
 }
 
+const stdshim::optional<unsigned long long>& ThreadAttributes::timepointCnt() const noexcept {
+  return m_timepointCnt;
+}
+void ThreadAttributes::timepointCnt(unsigned long long cnt) {
+  if(m_timepointCnt)
+    util::log::fatal() << "Attempt to reset a timepoint count!";
+  m_timepointCnt = cnt;
+}
+
 bool ProfileAttributes::merge(const ProfileAttributes& o) {
   bool ok = true;
   if(m_name.empty()) m_name = o.m_name;

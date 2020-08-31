@@ -73,6 +73,7 @@ void ProfileSource::bindPipeline(ProfilePipeline::Source&& se) noexcept {
 
 bool ProfileSource::read(const DataClass&, ProfilePipeline::timeout_t) {
   util::log::fatal() << "Source is not able to handle a timeout!";
+  return false;
 }
 
 void ProfileSource::read(const DataClass& min) {

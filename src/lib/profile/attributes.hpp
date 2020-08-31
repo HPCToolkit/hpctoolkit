@@ -52,6 +52,7 @@
 #include <functional>
 #include <unordered_map>
 #include "stdshim/filesystem.hpp"
+#include "stdshim/optional.hpp"
 
 namespace hpctoolkit {
 
@@ -62,9 +63,7 @@ class ThreadAttributes {
 public:
   /// Default (empty) constructor. No news is no news.
   ThreadAttributes();
-  ThreadAttributes(const ThreadAttributes& o)
-    : m_hostid(o.m_hostid), m_mpirank(o.m_mpirank), m_threadid(o.m_threadid),
-      m_procid(o.m_procid) {};
+  ThreadAttributes(const ThreadAttributes& o) = default;
   ~ThreadAttributes() = default;
 
   /// Get or set the ID of the host that ran this Thread.
@@ -91,11 +90,17 @@ public:
   unsigned long procid() const;
   void procid(unsigned long);
 
+  /// Get or set the number of timepoints emitted that are local to this Thread.
+  // MT: Safe (const), Unstable (before `threads`)
+  const stdshim::optional<unsigned long long>& timepointCnt() const noexcept;
+  void timepointCnt(unsigned long long);
+
 private:
   uint32_t m_hostid;
   unsigned long m_mpirank;
   unsigned long m_threadid;
   unsigned long m_procid;
+  stdshim::optional<unsigned long long> m_timepointCnt;
 };
 
 /// A single Thread within a Profile. Or something like that.
@@ -123,22 +128,24 @@ public:
   class Temporary {
   public:
     // Access to the backing thread.
-    Thread& thread;
-    operator Thread&() noexcept { return thread; }
-    operator const Thread&() const noexcept { return thread; }
+    operator Thread&() noexcept { return m_thread; }
+    operator const Thread&() const noexcept { return m_thread; }
+    Thread& thread() noexcept { return m_thread; }
+    const Thread& thread() const noexcept { return m_thread; }
 
     // Movable, not copyable
     Temporary(const Temporary&) = delete;
     Temporary(Temporary&&) = default;
 
   private:
+    Thread& m_thread;
+
     friend class ProfilePipeline;
-    Temporary(Thread& t, met_t::struct_t& ms) : thread(t), data(ms) {};
+    Temporary(Thread& t, met_t::struct_t& ms) : m_thread(t), data(ms) {};
 
     friend class Metric;
     met_t data;
   };
-
 };
 
 /// Attributes unique to a particular profile. Since a profile represents an

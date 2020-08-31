@@ -130,7 +130,7 @@ void HPCTraceDB::notifyTimepoint(const Thread& t, const Context& c, std::chrono:
 }
 
 void HPCTraceDB::notifyThreadFinal(const Thread::Temporary& tt) {
-  auto& ud = tt.thread.userdata[uds.thread];
+  auto& ud = tt.thread().userdata[uds.thread];
   if(ud.file) std::fclose(ud.file);
   ud.file = nullptr;
 }

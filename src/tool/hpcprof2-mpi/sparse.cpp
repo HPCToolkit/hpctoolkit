@@ -101,7 +101,7 @@ void SparseDB::prepContexts() noexcept {
 }
 
 void SparseDB::notifyThreadFinal(const Thread::Temporary& tt) {
-  const auto& t = tt.thread;
+  const auto& t = tt.thread();
 
   // Make sure the Context list is ready to go
   contextPrep.call([this]{ prepContexts(); });

@@ -52,6 +52,7 @@ using namespace hpctoolkit;
 
 bool ProfileSink::write(ProfilePipeline::timeout_t) {
   util::log::fatal() << "Sink cannot handle a timeout!";
+  return false;
 }
 
 void ProfileSink::write() {

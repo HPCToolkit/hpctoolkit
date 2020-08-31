@@ -132,6 +132,16 @@ bool Hpcrun4::setupTrace() noexcept {
   }
   // The file is now placed right at the start of the data.
   trace_off = std::ftell(file);
+
+  // Count the number of timepoints in the file, and save it for later.
+  std::fseek(file, 0, SEEK_END);
+  auto trace_end = std::ftell(file);
+  if((trace_end - trace_off) % (8+4) != 0) {
+    std::fclose(file);
+    return false;
+  }
+  tattrs.timepointCnt((trace_end - trace_off) / (8+4));
+
   std::fclose(file);
   return true;
 }

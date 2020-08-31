@@ -472,11 +472,11 @@ void Source::timepoint(Thread::Temporary& tt, Context& c, std::chrono::nanosecon
   for(auto& s: pipe->sinks) {
     if(!s.dataLimit.hasTimepoints()) continue;
     if(s.dataLimit.allOf(DataClass::threads + DataClass::contexts))
-      s().notifyTimepoint(tt.thread, c, tm);
+      s().notifyTimepoint(tt.thread(), c, tm);
     else if(s.dataLimit.hasContexts())
       s().notifyTimepoint(c, tm);
     else if(s.dataLimit.hasThreads())
-      s().notifyTimepoint(tt.thread, tm);
+      s().notifyTimepoint(tt.thread(), tm);
     else
       s().notifyTimepoint(tm);
   }
@@ -488,7 +488,7 @@ void Source::timepoint(Thread::Temporary& tt, std::chrono::nanoseconds tm) {
   for(auto& s: pipe->sinks) {
     if(!s.dataLimit.hasTimepoints()) continue;
     if(s.dataLimit.hasThreads())
-      s().notifyTimepoint(tt.thread, tm);
+      s().notifyTimepoint(tt.thread(), tm);
     else
       s().notifyTimepoint(tm);
   }

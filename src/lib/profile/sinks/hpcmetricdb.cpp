@@ -161,7 +161,7 @@ void HPCMetricDB::prepContexts() noexcept {
 }
 
 void HPCMetricDB::notifyThreadFinal(const Thread::Temporary& tt) {
-  const auto& t = tt.thread;
+  const auto& t = tt.thread();
 
   bool dry = dir.empty();
 
