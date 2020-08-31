@@ -198,6 +198,7 @@ roctracer_activity_translate
     case HIP_API_ID_hipLaunchCooperativeKernel:
     case HIP_API_ID_hipHccModuleLaunchKernel:
     case HIP_API_ID_hipExtModuleLaunchKernel:
+    case HIP_API_ID_hipLaunchKernel:
       convert_kernel_launch(ga, record);
       break;
     case HIP_API_ID_hipCtxSynchronize:

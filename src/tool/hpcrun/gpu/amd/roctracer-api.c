@@ -112,6 +112,9 @@
 typedef const char* (*hip_kernel_name_fnt)(const hipFunction_t f);
 static hip_kernel_name_fnt hip_kernel_name_fn;
 
+typedef const char* (*hip_kernel_name_ref_fnt)(const void* hostFunction, hipStream_t stream);
+static hip_kernel_name_ref_fnt hip_kernel_name_ref_fn;
+
 typedef int (*hiprtc_fnt)(uint64_t, void*);
 static hiprtc_fnt hiprtc_get_code;
 static hiprtc_fnt hiprtc_get_code_size;
@@ -466,7 +469,7 @@ parse_amd_gpu_binary
   hipFunction_t f
 )
 {
-  amd_hip_function_t* amd_hip_function = (amd_hip_function_t*)f;
+  amd_hip_function_t* amd_hip_function = (amd_hip_function_t*)((uint64_t)f + 0x88);
   amd_kernel_internal_t* amd_internal = amd_hip_function->amd_kernel;
   uint64_t amd_program = amd_internal->amd_program_internal;
   amd_program += 0x10;
@@ -530,6 +533,23 @@ hip_function_lookup
   return nip;
 }
 
+static hipFunction_t
+get_hip_function_t
+(
+  const void* host_address,
+  hipStream_t stream
+)
+{
+  hipFunction_t handle;
+  const char* name = hip_kernel_name_ref_fn(host_address, stream);
+
+  asm ( "mov %%rdi, %0"
+    : "=r" (handle)
+  );
+
+  return handle;
+}
+
 static void
 roctracer_subscriber_callback
 (
@@ -543,6 +563,7 @@ roctracer_subscriber_callback
   bool is_valid_op = false;
   bool is_kernel_op = false;
   const hip_api_data_t* data = (const hip_api_data_t*)(callback_data);
+  hipFunction_t f = NULL;
 
   switch (callback_id) {
   case HIP_API_ID_hipMemcpy:
@@ -616,6 +637,17 @@ roctracer_subscriber_callback
 				 gpu_placeholder_type_trace);
     is_valid_op = true;
     is_kernel_op = true;
+    f = data->args.hipModuleLaunchKernel.f;
+    break;
+  }
+  case HIP_API_ID_hipLaunchKernel: {
+    gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
+				 gpu_placeholder_type_kernel);
+    gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
+				 gpu_placeholder_type_trace);
+    is_valid_op = true;
+    is_kernel_op = true;
+    f = get_hip_function_t(data->args.hipLaunchKernel.function_address, data->args.hipLaunchKernel.stream);
     break;
   }
   case HIP_API_ID_hipCtxSynchronize:
@@ -633,7 +665,6 @@ roctracer_subscriber_callback
     PRINT("hipMOoduleLoad %p\n", data->args.hipModuleLoad.module);
     break;
   default:
-    PRINT("unhandled %u\n", callback_id);
     break;
   }
 
@@ -649,7 +680,7 @@ roctracer_subscriber_callback
     hpcrun_safe_enter();
     gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
     if (is_kernel_op) {
-      hipFunction_t f = data->args.hipModuleLaunchKernel.f;
+
       ip_normalized_t kernel_ip = hip_function_lookup(f);
 
       cct_node_t *kernel_ph = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel);
@@ -767,6 +798,12 @@ roctracer_bind
   }
 
   dlerror();
+  hip_kernel_name_ref_fn = (hip_kernel_name_ref_fnt) dlsym(hip, "hipKernelNameRefByPtr");
+  if (hip_kernel_name_ref_fn == 0) {
+    return -1;
+  }
+
+  dlerror();
   hiprtc_get_code = (hiprtc_fnt) dlsym(hip, "hiprtcGetCode");
   if (hiprtc_get_code == 0) {
     return -1;
@@ -799,6 +836,7 @@ roctracer_init
   HPCRUN_ROCTRACER_CALL(roctracer_open_pool_expl, (&properties, NULL));
   // Enable HIP API callbacks
   HPCRUN_ROCTRACER_CALL(roctracer_enable_domain_callback, (ACTIVITY_DOMAIN_HIP_API, roctracer_subscriber_callback, NULL));
+  HPCRUN_ROCTRACER_CALL(roctracer_enable_domain_callback, (ACTIVITY_DOMAIN_HSA_API, roctracer_subscriber_callback, NULL));
   // Enable HIP activity tracing
   HPCRUN_ROCTRACER_CALL(roctracer_enable_domain_activity_expl, (ACTIVITY_DOMAIN_HIP_API, NULL));
   HPCRUN_ROCTRACER_CALL(roctracer_enable_domain_activity_expl, (ACTIVITY_DOMAIN_HCC_OPS, NULL));
