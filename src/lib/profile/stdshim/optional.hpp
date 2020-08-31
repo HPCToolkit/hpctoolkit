@@ -44,39 +44,50 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef HPCTOOLKIT_STDSHIM_VERSION_H
-#define HPCTOOLKIT_STDSHIM_VERSION_H
+#ifndef HPCTOOLKIT_STDSHIM_OPTIONAL_H
+#define HPCTOOLKIT_STDSHIM_OPTIONAL_H
 
 // This file is one of multiple "stdshim" headers, which act as a seamless
 // transition library across versions of the STL. Mostly all this does is
-// backport features into C++11, sometimes by using class inheritence tricks,
-// and sometimes by importing implementations from Boost or ourselves.
+// backport features from C++17 into C++11, sometimes by using class inheritence
+// tricks, and sometimes by importing implementations from Boost or ourselves.
 // Also see Google's Abseil project.
 
-// This file provides the compile-time checks for the various features.
+// This is the shim for <optional>.
 
-// If the compiler claims a version of the C++ spec, we'll assume its correct.
-// For now. Change later when things break on some compiler in the future.
-#if __cplusplus >= 201903L
-#define _HPCTOOLKIT_STDSHIM_HAS_atomic_wait
-#endif
-#if __cplusplus >= 201703L
-#define _HPCTOOLKIT_STDSHIM_HAS_filesystem
-#define _HPCTOOLKIT_STDSHIM_HAS_optional
-#ifndef HPCTOOLKIT_SLOW_LIBC
-#define _HPCTOOLKIT_STDSHIM_HAS_shared_mutex
-#endif
-#endif
-#if __cplusplus >= 201402L
-#ifndef HPCTOOLKIT_SLOW_LIBC
-#define _HPCTOOLKIT_STDSHIM_HAS_shared_timed_mutex
-#endif
-#define _HPCTOOLKIT_STDSHIM_HAS_shared_lock
+#include "version.hpp"
+
+#if STD_HAS(optional)
+#include <optional>
+
+namespace hpctoolkit {
+namespace stdshim {
+template<class T>
+using optional = std::optional<T>;
+
+using nullopt_t = std::nullopt_t;
+inline constexpr nullopt_t nullopt = std::nullopt;
+}
+}
+
+#else  // STD_HAS(filesystem)
+#include <boost/optional.hpp>
+#include <boost/none.hpp>
+
+namespace hpctoolkit {
+namespace stdshim {
+template<class T>
+using optional = boost::optional<T>;
+
+using nullopt_t = boost::none_t;
+const nullopt_t nullopt = boost::none;
+}
+}
+
+#endif  // STD_HAS(filesystem)
+
+#ifndef STDSHIM_DONT_UNDEF
+#undef STD_HAS
 #endif
 
-#define _HPCTOOLKIT_STDSHIM_STD_HAS(X) defined(_HPCTOOLKIT_STDSHIM_HAS_ ## X)
-
-#endif  // HPCTOOLKIT_STDSHIM_VERSION_H
-
-// Easier macro for #if clauses, should be undef'd at the end of files.
-#define STD_HAS(X) _HPCTOOLKIT_STDSHIM_STD_HAS(X)
+#endif  // HPCTOOLKIT_STDSHIM_FILESYSTEM_H
