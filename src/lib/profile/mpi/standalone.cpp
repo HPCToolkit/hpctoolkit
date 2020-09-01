@@ -52,19 +52,26 @@ using namespace hpctoolkit::mpi;
 using namespace detail;
 
 struct detail::Datatype {};
-static detail::Datatype type = {};
+static Datatype type = {};
 
-template<> const Datatype& detail::asDatatype<char>() { return type; }
-template<> const Datatype& detail::asDatatype<int8_t>() { return type; }
-template<> const Datatype& detail::asDatatype<int16_t>() { return type; }
-template<> const Datatype& detail::asDatatype<int32_t>() { return type; }
-template<> const Datatype& detail::asDatatype<int64_t>() { return type; }
-template<> const Datatype& detail::asDatatype<uint8_t>() { return type; }
-template<> const Datatype& detail::asDatatype<uint16_t>() { return type; }
-template<> const Datatype& detail::asDatatype<uint32_t>() { return type; }
-template<> const Datatype& detail::asDatatype<uint64_t>() { return type; }
-template<> const Datatype& detail::asDatatype<float>() { return type; }
-template<> const Datatype& detail::asDatatype<double>() { return type; }
+template<class T> const Datatype& detail::asDatatype() { return type; }
+template const Datatype& detail::asDatatype<char>();
+template const Datatype& detail::asDatatype<int8_t>();
+template const Datatype& detail::asDatatype<int16_t>();
+template const Datatype& detail::asDatatype<int32_t>();
+template const Datatype& detail::asDatatype<int64_t>();
+template const Datatype& detail::asDatatype<uint8_t>();
+template const Datatype& detail::asDatatype<uint16_t>();
+template const Datatype& detail::asDatatype<uint32_t>();
+template const Datatype& detail::asDatatype<uint64_t>();
+template const Datatype& detail::asDatatype<float>();
+template const Datatype& detail::asDatatype<double>();
+
+struct BaseOp : hpctoolkit::mpi::Op {};
+static BaseOp op = {};
+const Op& Op::max() noexcept { return op; }
+const Op& Op::min() noexcept { return op; }
+const Op& Op::sum() noexcept { return op; }
 
 std::size_t World::m_rank = 0;
 std::size_t World::m_size = 1;
@@ -73,6 +80,6 @@ void World::initialize() noexcept {};
 void World::finalize() noexcept {};
 
 void detail::bcast(void*, std::size_t, const Datatype&, std::size_t) {};
-void detail::reduce(void*, std::size_t, const Datatype&, std::size_t, const ReductionOp&) {};
-void detail::allreduce(void*, std::size_t, const Datatype&, std::size_t, const ReductionOp&) {};
+void detail::reduce(void*, std::size_t, const Datatype&, std::size_t, const Op&) {};
+void detail::allreduce(void*, std::size_t, const Datatype&, const Op&) {};
 

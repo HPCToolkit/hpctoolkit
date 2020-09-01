@@ -76,8 +76,14 @@ public:
     return es::identifier;
   }
 
+  DataClass wavefronts() const noexcept override {
+    using namespace literals::data;
+    return threads;
+  }
+
   void notifyPipeline() noexcept override;
 
+  void notifyWavefront(DataClass::singleton_t) override;
   void notifyThread(const Thread&) override;
   void notifyTimepoint(std::chrono::nanoseconds);
   void notifyTimepoint(const Thread&, const Context&, std::chrono::nanoseconds) override;

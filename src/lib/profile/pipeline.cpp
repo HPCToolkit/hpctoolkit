@@ -173,11 +173,12 @@ ProfilePipeline::ProfilePipeline(Settings&& b, std::size_t team_sz)
     s().bindPipeline(Sink(*this, s.dataLimit, s.extensionLimit, i));
     all_requested |= s.dataLimit;
     scheduledWaves |= s.waveLimit;
-    if(!(attributes + references + contexts).allOf(s.waveLimit))
+    if(!(attributes + references + contexts + DataClass::threads).allOf(s.waveLimit))
       util::log::fatal() << "Early wavefronts for non-global data currently not supported!";
     if(s.waveLimit.hasAttributes()) sinkwaves.attributes.emplace_back(s());
     if(s.waveLimit.hasReferences()) sinkwaves.references.emplace_back(s());
     if(s.waveLimit.hasContexts()) sinkwaves.contexts.emplace_back(s());
+    if(s.waveLimit.hasThreads()) sinkwaves.threads.emplace_back(s());
   }
   structs.file.freeze();
   structs.context.freeze();
@@ -217,6 +218,7 @@ void ProfilePipeline::run() {
   char barrier_arc_1;
   char barrier_arc_2;
   char barrier_arc_3;
+  char barrier_arc_4;
   char barrier_arc;
   char end_arc;
 #endif
@@ -259,6 +261,17 @@ void ProfilePipeline::run() {
       #pragma omp for schedule(dynamic) nowait
       for(std::size_t idx = 0; idx < sinks.size(); ++idx)
         sinks[idx]().notifyWavefront(DataClass::contexts);
+    }
+    if(scheduledWaves.hasThreads()) {
+      #pragma omp for schedule(dynamic)
+      for(std::size_t idx = 0; idx < sources.size(); ++idx) {
+        sources[idx].get().read(DataClass::threads);
+        ANNOTATE_HAPPENS_BEFORE(&barrier_arc_4);
+      }
+      ANNOTATE_HAPPENS_AFTER(&barrier_arc_4);
+      #pragma omp for schedule(dynamic) nowait
+      for(std::size_t idx = 0; idx < sinks.size(); ++idx)
+        sinks[idx]().notifyWavefront(DataClass::threads);
     }
 
     // Now for the finishing wave

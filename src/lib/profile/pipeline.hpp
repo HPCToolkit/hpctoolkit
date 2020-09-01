@@ -364,6 +364,7 @@ private:
     std::vector<std::reference_wrapper<ProfileSink>> attributes;
     std::vector<std::reference_wrapper<ProfileSink>> references;
     std::vector<std::reference_wrapper<ProfileSink>> contexts;
+    std::vector<std::reference_wrapper<ProfileSink>> threads;
   } sinkwaves;
 
   // Storage for the pointers to the SourceLocals.

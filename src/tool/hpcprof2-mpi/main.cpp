@@ -46,6 +46,8 @@
 
 #include "../hpcprof2/args.hpp"
 
+#include "lib/profile/mpi/core.hpp"
+
 #include <mpi.h>
 #include <iostream>
 
@@ -58,23 +60,13 @@ using namespace hpctoolkit;
 int rank0(ProfArgs&&, int, int);
 int rankN(ProfArgs&&, int, int);
 
-static bool done = false;
-void escape() {
-  // We use std::exit when things go south, but MPI doesn't react very quickly
-  // to that. So we issue an Abort ourselves.
-  if(!done) MPI_Abort(MPI_COMM_WORLD, 0);
-}
-
 int main(int argc, char* const argv[]) {
   // Read in the arguments.
   ProfArgs args(argc, argv);
 
   // Fire up MPI. We just use the WORLD communicator for everything.
-  int available;
-  MPI_Init_thread(NULL, NULL, MPI_THREAD_MULTIPLE, &available);
-  std::atexit(escape);
-  if(available < MPI_THREAD_MULTIPLE)
-    util::log::fatal{} << "MPI does not have full thread support!";
+  mpi::World::initialize();
+
   int world_rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
   int world_size;
@@ -91,7 +83,6 @@ int main(int argc, char* const argv[]) {
     ret = rankN(std::move(args), world_rank, world_size);
 
   // Clean up and close up.
-  MPI_Finalize();
-  done = true;
+  mpi::World::finalize();
   return ret;
 }

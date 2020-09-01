@@ -57,26 +57,25 @@
 namespace hpctoolkit::mpi {
 
 /// Operation handle. Represents a reuduction that can be done.
-class ReductionOp {
+class Op {
 public:
-  static const ReductionOp& max() noexcept;
-  static const ReductionOp& min() noexcept;
-  static const ReductionOp& sum() noexcept;
+  static const Op& max() noexcept;
+  static const Op& min() noexcept;
+  static const Op& sum() noexcept;
 };
 
 namespace detail {
 // NOTE: These are in-place operations, for efficiency.
 void reduce(void* data, std::size_t cnt, const Datatype&,
-            std::size_t rootRank, const ReductionOp&);
-void allreduce(void* data, std::size_t cnt, const Datatype&,
-               std::size_t rootRank, const ReductionOp&);
+            std::size_t rootRank, const Op&);
+void allreduce(void* data, std::size_t cnt, const Datatype&, const Op&);
 }  // namespace detail
 
 /// Reduction operation. Reduces the given data from all processes in the team
 /// to the root rank, using the given reduction operation. Returns the reduced
 /// value in the root, returns the given data in all others.
 template<class T>
-T reduce(T&& data, std::size_t root, const ReductionOp& op) {
+T reduce(T&& data, std::size_t root, const Op& op) {
   detail::reduce(&data, 1, detail::asDatatype<T>(), root, op);
   return data;
 }
@@ -84,28 +83,18 @@ T reduce(T&& data, std::size_t root, const ReductionOp& op) {
 /// Broadcast reduction operation. Equivalent to a reduction operation followed
 /// by a broadcast. Returns the reduced value in all processes.
 template<class T>
-T allreduce(T&& data, std::size_t root, const ReductionOp& op) {
-  detail::allreduce(&data, 1, detail::asDatatype<T>(), root, op);
+T allreduce(T&& data, const Op& op) {
+  detail::allreduce(&data, 1, detail::asDatatype<T>(), op);
   return data;
 }
 
-/// Reduction operation. Variant to skip the first argument, when you know
-/// you're not the root. Relies on default initialization.
-template<class T>
-T reduce(std::size_t root, const ReductionOp& op) { return reduce<T>(T{}, root, op); }
-
-/// Broadcast reduction operation. Variant to skip the first argument, when you
-/// know you're not the root. Relies on default initialization.
-template<class T>
-T allreduce(std::size_t root, const ReductionOp& op) { return allreduce<T>(T{}, root, op); }
-
 /// Reduction operation. Variant to allow for copy semantics.
 template<class T>
-T reduce(const T& data, std::size_t root, const ReductionOp& op) { return reduce<T>(T(data), root, op); }
+T reduce(const T& data, std::size_t root, const Op& op) { return reduce<T>(T(data), root, op); }
 
 /// Broadcast reduction operation. Variant to allow for copy semantics.
 template<class T>
-T allreduce(const T& data, std::size_t root, const ReductionOp& op) { return allreduce<T>(T(data), root, op); }
+T allreduce(const T& data, const Op& op) { return allreduce<T>(T(data), op); }
 
 /// Reduction operation. Variant to disable the usage of pointers.
 template<class T>
@@ -124,8 +113,8 @@ std::array<T, N> reduce(std::array<T, N>&& data, std::size_t root) {
 
 /// Broadcast reduction operation. Variant to allow for the usage of std::array.
 template<class T, std::size_t N>
-std::array<T, N> allreduce(std::array<T, N>&& data, std::size_t root) {
-  detail::allreduce(data.data(), N, detail::asDatatype<T>(), root);
+std::array<T, N> allreduce(std::array<T, N>&& data) {
+  detail::allreduce(data.data(), N, detail::asDatatype<T>());
   return data;
 }
 

@@ -56,26 +56,7 @@ namespace detail {
 struct Datatype;
 
 // Conversion from C++ types to MPI type handles.
-template<class T> const Datatype& asDatatype() = delete;
-template<> const Datatype& asDatatype<char>();
-template<> const Datatype& asDatatype<short>();
-template<> const Datatype& asDatatype<int>();
-template<> const Datatype& asDatatype<long>();
-template<> const Datatype& asDatatype<long long>();
-template<> const Datatype& asDatatype<unsigned short>();
-template<> const Datatype& asDatatype<unsigned int>();
-template<> const Datatype& asDatatype<unsigned long>();
-template<> const Datatype& asDatatype<unsigned long long>();
-template<> const Datatype& asDatatype<int8_t>();
-template<> const Datatype& asDatatype<int16_t>();
-template<> const Datatype& asDatatype<int32_t>();
-template<> const Datatype& asDatatype<int64_t>();
-template<> const Datatype& asDatatype<uint8_t>();
-template<> const Datatype& asDatatype<uint16_t>();
-template<> const Datatype& asDatatype<uint32_t>();
-template<> const Datatype& asDatatype<uint64_t>();
-template<> const Datatype& asDatatype<float>();
-template<> const Datatype& asDatatype<double>();
+template<class T> const Datatype& asDatatype();
 
 }  // namespace detail
 

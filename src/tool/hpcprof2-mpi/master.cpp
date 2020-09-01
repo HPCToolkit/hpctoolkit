@@ -100,7 +100,7 @@ int rank0(ProfArgs&& args, int world_rank, int world_size) {
     Receiver(int p) : peer(p), done(false) {};
     DataClass provides() const noexcept override {
       return data::references + data::attributes + data::contexts
-             + data::timepoints;
+             + data::timepoints + data::threads;
     }
     void read(const DataClass&) override {
       if(done) return;

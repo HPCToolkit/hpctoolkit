@@ -63,9 +63,9 @@ void bcast(void* data, std::size_t cnt, const Datatype&, std::size_t rootRank);
 /// Broadcast operation. Copies the given data from the root rank to all other
 /// processes in the team. Returns the given data.
 template<class T>
-T bcast(T&& data, std::size_t root) {
-  detail::bcast(&data, 1, detail::asDatatype<T>(), root);
-  return std::move(data);
+T bcast(typename std::remove_reference<T>::type&& data, std::size_t root) {
+  detail::bcast(&data, 1, detail::asDatatype<typename std::remove_reference<T>::type>(), root);
+  return data;
 }
 
 /// Broadcast operation. Variant to skip the first argument, when you know
@@ -85,7 +85,7 @@ T* bcast(T*, std::size_t) = delete;
 template<class T, std::size_t N>
 std::array<T, N> bcast(std::array<T, N>&& data, std::size_t root) {
   detail::bcast(data.data(), N, detail::asDatatype<T>(), root);
-  return std::move(data);
+  return data;
 }
 
 /// Broadcast operation. Variant to allow for the usage of std::vector.
@@ -95,7 +95,7 @@ std::vector<T, A> bcast(std::vector<T, A>&& data, std::size_t root) {
   detail::bcast(&sz, 1, detail::asDatatype<unsigned long long>(), root);
   data.resize(sz);
   bcast(data.data(), sz, detail::asDatatype<T>(), root);
-  return std::move(data);
+  return data;
 }
 
 /// Broadcast operation. Variant to allow for the usage of std::string.
@@ -105,7 +105,7 @@ std::basic_string<C,T,A> bcast(std::basic_string<C,T,A>&& data, std::size_t root
   detail::bcast(&sz, 1, detail::asDatatype<unsigned long long>(), root);
   data.resize(sz);
   bcast(data.data(), sz, detail::asDatatype<C>(), root);
-  return std::move(data);
+  return data;
 }
 
 /// Broadcast operation. Variant to allow for the usage of std::vector<std::string>
@@ -125,11 +125,11 @@ std::vector<std::basic_string<C,T,AS>,AV> bcast(std::vector<std::basic_string<C,
     for(const auto& s: data) buffer.insert(buffer.end(), s.begin(), s.end());
   } else buffer.resize(ends.back());
   bcast(buffer.data(), buffer.size(), detail::asDatatype<C>(), root);
-  if(World::rank() == root) return std::move(data);
+  if(World::rank() == root) return data;
   data.resize(sizes.size());
   for(std::size_t i = 0; i < sizes.size(); i++)
     data[i] = std::basic_string<C,T,AS>(&buffer[ends[i] - sizes[i]], sizes[i]);
-  return std::move(data);
+  return data;
 }
 
 }  // namespace hpctoolkit::mpi

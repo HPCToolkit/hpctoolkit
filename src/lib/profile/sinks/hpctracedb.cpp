@@ -50,6 +50,8 @@
 
 #include "../util/log.hpp"
 #include "lib/prof-lean/hpcrun-fmt.h"
+#include "../mpi/bcast.hpp"
+#include "../mpi/reduce.hpp"
 
 #include <iomanip>
 #include <sstream>
@@ -95,6 +97,15 @@ HPCTraceDB::udThread::udThread(const Thread& t, HPCTraceDB& tdb)
 
 void HPCTraceDB::notifyThread(const Thread& t) {
   t.userdata[uds.thread].has_trace = false;
+}
+
+void HPCTraceDB::notifyWavefront(DataClass::singleton_t wave) {
+  if(!((DataClass)wave).hasThreads()) return;
+  auto total = mpi::reduce(src.threads().size(), 0, mpi::Op::sum());
+  total = mpi::bcast(total, 0);
+  auto total2 = mpi::allreduce(src.threads().size(), mpi::Op::sum());
+  util::log::debug{true} << "Threads wavefront, " << src.threads().size()
+    << " < " << total << " = " << total2 << " threads!";
 }
 
 void HPCTraceDB::notifyTimepoint(const Thread& t, const Context& c, std::chrono::nanoseconds tm) {
