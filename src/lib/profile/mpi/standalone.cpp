@@ -53,8 +53,17 @@ using namespace detail;
 struct detail::Datatype {};
 static detail::Datatype type = {};
 
-template<class T> const Datatype& detail::asDatatype() { return type; }
-template const Datatype& detail::asDatatype<unsigned long long>();
+template<> const Datatype& detail::asDatatype<char>() { return type; }
+template<> const Datatype& detail::asDatatype<int8_t>() { return type; }
+template<> const Datatype& detail::asDatatype<int16_t>() { return type; }
+template<> const Datatype& detail::asDatatype<int32_t>() { return type; }
+template<> const Datatype& detail::asDatatype<int64_t>() { return type; }
+template<> const Datatype& detail::asDatatype<uint8_t>() { return type; }
+template<> const Datatype& detail::asDatatype<uint16_t>() { return type; }
+template<> const Datatype& detail::asDatatype<uint32_t>() { return type; }
+template<> const Datatype& detail::asDatatype<uint64_t>() { return type; }
+template<> const Datatype& detail::asDatatype<float>() { return type; }
+template<> const Datatype& detail::asDatatype<double>() { return type; }
 
 std::size_t World::m_rank = 0;
 std::size_t World::m_size = 1;
