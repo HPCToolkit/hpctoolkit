@@ -64,9 +64,8 @@ void bcast(void* data, std::size_t cnt, const Datatype&, std::size_t rootRank);
 /// processes in the team. Returns the given data.
 template<class T>
 T bcast(T&& data, std::size_t root) {
-  T buffer = std::move(data);
-  detail::bcast(&buffer, 1, detail::asDatatype<T>(), root);
-  return buffer;
+  detail::bcast(&data, 1, detail::asDatatype<T>(), root);
+  return std::move(data);
 }
 
 /// Broadcast operation. Variant to skip the first argument, when you know
@@ -85,9 +84,8 @@ T* bcast(T*, std::size_t) = delete;
 /// Broadcast operation. Variant to allow for the usage of std::array.
 template<class T, std::size_t N>
 std::array<T, N> bcast(std::array<T, N>&& data, std::size_t root) {
-  std::array<T, N> buffer = std::move(data);
-  detail::bcast(buffer.data(), N, detail::asDatatype<T>(), root);
-  return buffer;
+  detail::bcast(data.data(), N, detail::asDatatype<T>(), root);
+  return std::move(data);
 }
 
 /// Broadcast operation. Variant to allow for the usage of std::vector.
@@ -95,10 +93,9 @@ template<class T, class A>
 std::vector<T, A> bcast(std::vector<T, A>&& data, std::size_t root) {
   unsigned long long sz = data.size();
   detail::bcast(&sz, 1, detail::asDatatype<unsigned long long>(), root);
-  std::vector<T, A> buffer = std::move(data);
-  buffer.resize(sz);
-  bcast(buffer.data(), sz, detail::asDatatype<T>(), root);
-  return buffer;
+  data.resize(sz);
+  bcast(data.data(), sz, detail::asDatatype<T>(), root);
+  return std::move(data);
 }
 
 /// Broadcast operation. Variant to allow for the usage of std::string.
@@ -106,10 +103,9 @@ template<class C, class T, class A>
 std::basic_string<C,T,A> bcast(std::basic_string<C,T,A>&& data, std::size_t root) {
   unsigned long long sz = data.size();
   detail::bcast(&sz, 1, detail::asDatatype<unsigned long long>(), root);
-  std::basic_string<C,T,A> buffer = std::move(data);
-  buffer.resize(sz);
-  bcast(buffer.data(), sz, detail::asDatatype<C>(), root);
-  return buffer;
+  data.resize(sz);
+  bcast(data.data(), sz, detail::asDatatype<C>(), root);
+  return std::move(data);
 }
 
 /// Broadcast operation. Variant to allow for the usage of std::vector<std::string>
@@ -130,11 +126,10 @@ std::vector<std::basic_string<C,T,AS>,AV> bcast(std::vector<std::basic_string<C,
   } else buffer.resize(ends.back());
   bcast(buffer.data(), buffer.size(), detail::asDatatype<C>(), root);
   if(World::rank() == root) return std::move(data);
-  std::vector<std::basic_string<C,T,AS>,AV> output = std::move(data);
-  output.resize(sizes.size());
+  data.resize(sizes.size());
   for(std::size_t i = 0; i < sizes.size(); i++)
-    output[i] = std::basic_string<C,T,AS>(&buffer[ends[i] - sizes[i]], sizes[i]);
-  return output;
+    data[i] = std::basic_string<C,T,AS>(&buffer[ends[i] - sizes[i]], sizes[i]);
+  return std::move(data);
 }
 
 }  // namespace hpctoolkit::mpi

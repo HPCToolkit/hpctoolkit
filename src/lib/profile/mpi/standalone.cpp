@@ -46,6 +46,7 @@
 
 #include "core.hpp"
 #include "bcast.hpp"
+#include "reduce.hpp"
 
 using namespace hpctoolkit::mpi;
 using namespace detail;
@@ -71,5 +72,7 @@ std::size_t World::m_size = 1;
 void World::initialize() noexcept {};
 void World::finalize() noexcept {};
 
-void bcast(void*, std::size_t, const Datatype&, std::size_t) {};
+void detail::bcast(void*, std::size_t, const Datatype&, std::size_t) {};
+void detail::reduce(void*, std::size_t, const Datatype&, std::size_t, const ReductionOp&) {};
+void detail::allreduce(void*, std::size_t, const Datatype&, std::size_t, const ReductionOp&) {};
 
