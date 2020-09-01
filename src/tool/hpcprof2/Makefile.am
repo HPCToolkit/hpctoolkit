@@ -102,7 +102,7 @@ MYLDFLAGS = \
 
 MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
-	$(HPCLIB_Profile) \
+	$(HPCLIB_ProfileStandalone) \
 	$(HPCLIB_ProfLean) \
 	$(HPCLIB_SupportLean) \
 	$(MY_ELF_DWARF) \

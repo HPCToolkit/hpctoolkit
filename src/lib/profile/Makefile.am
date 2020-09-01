@@ -86,6 +86,7 @@ MYSOURCES = \
 	finalizers/struct.cpp finalizers/directclassification.cpp \
 	finalizers/denseids.cpp
 
+MYMPISHIMSOURCES = mpi/standalone.cpp
 
 # GNU binutils flags are needed for HPCLIB_ISA.
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @VALGRIND_IFLAGS@ -I@LIBELF_INC@
@@ -111,13 +112,19 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 # Automake rules
 #############################################################################
 
-noinst_LTLIBRARIES = libHPCprofile.la
+noinst_LTLIBRARIES = libHPCprofile.la libHPCprofile_standalone.la
 
 libHPCprofile_la_SOURCES  = $(MYSOURCES)
 libHPCprofile_la_CFLAGS   = $(MYCFLAGS)
 libHPCprofile_la_CXXFLAGS = $(MYCXXFLAGS)
 libHPCprofile_la_AR       = $(MYAR)
 libHPCprofile_la_LIBADD   = $(MYLIBADD)
+
+libHPCprofile_standalone_la_SOURCES  = $(MYSOURCES) $(MYMPISHIMSOURCES)
+libHPCprofile_standalone_la_CFLAGS   = $(MYCFLAGS)
+libHPCprofile_standalone_la_CXXFLAGS = $(MYCXXFLAGS)
+libHPCprofile_standalone_la_AR       = $(MYAR)
+libHPCprofile_standalone_la_LIBADD   = $(MYLIBADD)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
 
