@@ -68,38 +68,34 @@ public:
 
   /// Get or set the ID of the host that ran this Thread.
   // MT: Externally Synchronized
-  bool has_hostid() const noexcept;
-  uint32_t hostid() const;
+  const stdshim::optional<uint32_t>& hostid() const noexcept { return m_hostid; }
   void hostid(uint32_t);
 
   /// Get or set the MPI rank of this Thread.
   // MT: Externally Synchronized
-  bool has_mpirank() const noexcept;
-  unsigned long mpirank() const;
+  const stdshim::optional<unsigned long>& mpirank() const noexcept { return m_mpirank; }
   void mpirank(unsigned long);
 
   /// Get or set the thread id of this Thread.
   // MT: Externally Synchronized
-  bool has_threadid() const noexcept;
-  unsigned long threadid() const;
+  const stdshim::optional<unsigned long>& threadid() const noexcept { return m_threadid; }
   void threadid(unsigned long);
 
   /// Get or set the process id of this Thread.
   // MT: Externally Synchronized
-  bool has_procid() const noexcept;
-  unsigned long procid() const;
+  const stdshim::optional<unsigned long>& procid() const noexcept { return m_procid; }
   void procid(unsigned long);
 
   /// Get or set the number of timepoints emitted that are local to this Thread.
-  // MT: Safe (const), Unstable (before `threads`)
-  const stdshim::optional<unsigned long long>& timepointCnt() const noexcept;
+  // MT: Externally Synchronized
+  const stdshim::optional<unsigned long long>& timepointCnt() const noexcept { return m_timepointCnt; }
   void timepointCnt(unsigned long long);
 
 private:
-  uint32_t m_hostid;
-  unsigned long m_mpirank;
-  unsigned long m_threadid;
-  unsigned long m_procid;
+  stdshim::optional<uint32_t> m_hostid;
+  stdshim::optional<unsigned long> m_mpirank;
+  stdshim::optional<unsigned long> m_threadid;
+  stdshim::optional<unsigned long> m_procid;
   stdshim::optional<unsigned long long> m_timepointCnt;
 };
 
@@ -160,13 +156,13 @@ public:
   /// Get or set the name of the program being executed. Usually this is the
   /// basename of the path, but just in case it isn't always...
   // MT: Externally Synchronized
-  const std::string& name() const noexcept { return m_name; }
+  const stdshim::optional<std::string>& name() const noexcept { return m_name; }
   void name(const std::string& s) { name(std::string(s)); };
   void name(std::string&&);
 
   /// Get or set the path to the program that was profiled.
   // MT: Externally Synchronized
-  const stdshim::filesystem::path& path() const noexcept { return m_path; }
+  const stdshim::optional<stdshim::filesystem::path>& path() const noexcept { return m_path; }
   void path(const stdshim::filesystem::path& p) {
     path(stdshim::filesystem::path(p));
   }
@@ -176,14 +172,13 @@ public:
   /// If the job number is not known, has_job() will return false and job()
   /// will throw an error.
   // MT: Externally Synchronized
-  bool has_job() const noexcept;
-  unsigned long job() const;
+  const stdshim::optional<unsigned long>& job() const noexcept { return m_job; }
   void job(unsigned long);
 
   /// Get or set individual environment variables. Note that the getter may
-  /// return nullptr if the variable is not known to be set.
+  /// return stdshim::nullopt if the variable is not known to be set.
   // MT: Externally Synchronized
-  const std::string* environment(const std::string& var) const noexcept;
+  const stdshim::optional<const std::string&> environment(const std::string& var) const noexcept;
   void environment(const std::string& var, const std::string& val);
 
   /// Access the entire environment for this profile.
@@ -199,9 +194,9 @@ public:
   bool merge(const ProfileAttributes&);
 
 private:
-  std::string m_name;
-  unsigned long m_job;
-  stdshim::filesystem::path m_path;
+  stdshim::optional<std::string> m_name;
+  stdshim::optional<unsigned long> m_job;
+  stdshim::optional<stdshim::filesystem::path> m_path;
   std::unordered_map<std::string, std::string> m_env;
 };
 

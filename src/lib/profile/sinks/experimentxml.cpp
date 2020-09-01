@@ -373,7 +373,7 @@ void ExperimentXML::notifyPipeline() noexcept {
 }
 
 void ExperimentXML::write() {
-  const auto& name = src.attributes().name();
+  const auto& name = src.attributes().name().value();
   of << "<?xml version=\"1.0\"?>"
         "<HPCToolkitExperiment version=\"2.2\">"
         "<Header n=" << util::xmlquoted(name) << ">"

@@ -151,7 +151,7 @@ void SparseDB::notifyThreadFinal(const Thread::Temporary& tt) {
 
   // Put together the sparse_metrics structure
   hpcrun_fmt_sparse_metrics_t sm;
-  sm.tid = t.attributes.has_threadid() ? t.attributes.threadid() : 0;
+  sm.tid = t.attributes.threadid().value_or(0);
   sm.num_vals = values.size();
   sm.num_cct_nodes = contexts.size();
   sm.num_nz_cct_nodes = coffsets.size() - 1; //since there is an extra end node YUMENG
@@ -439,11 +439,11 @@ tms_id_tuple_t SparseDB::buildIdTuple(const hpctoolkit::ThreadAttributes& ta,
 {
   tms_id_t rank_idx;
   rank_idx.kind = RANK;
-  rank_idx.index = ta.mpirank();
+  rank_idx.index = ta.mpirank().value();
 
   tms_id_t thread_idx;
   thread_idx.kind = THREAD;
-  thread_idx.index = ta.threadid();
+  thread_idx.index = ta.threadid().value();
 
   tms_id_t* ids = (tms_id_t*)malloc(2 * sizeof(tms_id_t));
   ids[0] = rank_idx;

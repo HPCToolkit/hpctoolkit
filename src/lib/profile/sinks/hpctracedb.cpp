@@ -85,10 +85,10 @@ HPCTraceDB::udThread::udThread(const Thread& t, HPCTraceDB& tdb)
     maxTime(std::chrono::nanoseconds::min()) {
   std::ostringstream ss;
   ss << std::setfill('0') << "experiment"
-        "-" << std::setw(6) << t.attributes.mpirank()
-     << "-" << std::setw(3) << t.attributes.threadid()
-     << "-" << std::setw(8) << std::hex << t.attributes.hostid() << std::dec
-     << "-" << t.attributes.procid()
+        "-" << std::setw(6) << t.attributes.mpirank().value()
+     << "-" << std::setw(3) << t.attributes.threadid().value()
+     << "-" << std::setw(8) << std::hex << t.attributes.hostid().value() << std::dec
+     << "-" << t.attributes.procid().value()
      << "-0." << HPCRUN_TraceFnmSfx;
   path = tdb.dir / ss.str();
 }

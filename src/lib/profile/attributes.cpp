@@ -59,43 +59,35 @@ using namespace hpctoolkit;
 static constexpr auto max_ulong = std::numeric_limits<unsigned long>::max();
 static constexpr auto max_uint32 = std::numeric_limits<uint32_t>::max();
 
-ProfileAttributes::ProfileAttributes()
-  : m_name(), m_job(max_ulong), m_path(), m_env() {};
-
-ThreadAttributes::ThreadAttributes()
-  : m_hostid(max_uint32), m_mpirank(max_ulong), m_threadid(max_ulong), m_procid(max_ulong) {};
+ProfileAttributes::ProfileAttributes() = default;
+ThreadAttributes::ThreadAttributes() = default;
 
 void ProfileAttributes::name(std::string&& s) {
   if(s.empty())
     util::log::fatal() << "Attempt to give a Profile an empty name!";
-  if(!m_name.empty())
-    util::log::fatal() << "Attempt to directly give a Profile a name twice!";
+  if(m_name)
+    util::log::fatal() << "Attempt to reset a Profile's name!";
   m_name = std::move(s);
 }
 
 void ProfileAttributes::path(stdshim::filesystem::path&& p) {
   if(p.empty())
     util::log::fatal() << "Attempt to give a Profile an empty path!";
-  if(!m_path.empty())
-    util::log::fatal() << "Attempt to directly give a Profile a path twice!";
+  if(m_path)
+    util::log::fatal() << "Attempt to reset a Profile's path!";
   m_path = std::move(p);
 }
 
-bool ProfileAttributes::has_job() const noexcept { return m_job != max_ulong; }
-unsigned long ProfileAttributes::job() const {
-  if(!has_job())
-    util::log::fatal() << "Attempt to get an unset job id value!";
-  return m_job;
-}
 void ProfileAttributes::job(unsigned long j) {
-  if(has_job())
-    util::log::fatal() << "Attempt to directly give a Profile a job id twice!";
+  if(m_job)
+    util::log::fatal() << "Attempt to reset a Profile's job id!";
   m_job = j;
 }
 
-const std::string* ProfileAttributes::environment(const std::string& v) const noexcept {
+const stdshim::optional<const std::string&> ProfileAttributes::environment(const std::string& v) const noexcept {
   auto it = m_env.find(v);
-  return it != m_env.end() ? &it->second : nullptr;
+  if(it == m_env.end()) return {};
+  return it->second;
 }
 void ProfileAttributes::environment(const std::string& var,
                                     const std::string& val) {
@@ -104,57 +96,30 @@ void ProfileAttributes::environment(const std::string& var,
   m_env.emplace(var, val);
 }
 
-bool ThreadAttributes::has_hostid() const noexcept { return m_hostid != max_uint32; }
-uint32_t ThreadAttributes::hostid() const {
-  if(!has_hostid())
-    util::log::fatal() << "Attempt to get an unset host id value!";
-  return m_hostid;
-}
-void ThreadAttributes::hostid(uint32_t hid) {
-  if(has_hostid())
-    util::log::fatal() << "Attempt to directly give a Thread a host id twice!";
-  m_hostid = hid;
+void ThreadAttributes::hostid(uint32_t id) {
+  if(m_hostid)
+    util::log::fatal() << "Attempt to reset a host id value!";
+  m_hostid = id;
 }
 
-bool ThreadAttributes::has_mpirank() const noexcept { return m_mpirank != max_ulong; }
-unsigned long ThreadAttributes::mpirank() const {
-  if(!has_mpirank())
-    util::log::fatal() << "Attempt to get an unset MPI rank value!";
-  return m_mpirank;
-}
 void ThreadAttributes::mpirank(unsigned long rank) {
-  if(has_mpirank())
-    util::log::fatal() << "Attempt to directly give a Thread an MPI rank twice!";
+  if(m_mpirank)
+    util::log::fatal() << "Attempt to reset an MPI rank value!";
   m_mpirank = rank;
 }
 
-bool ThreadAttributes::has_threadid() const noexcept { return m_threadid != max_ulong; }
-unsigned long ThreadAttributes::threadid() const {
-  if(!has_threadid())
-    util::log::fatal() << "Attempt to get an unset thread id value!";
-  return m_threadid;
-}
 void ThreadAttributes::threadid(unsigned long id) {
-  if(has_threadid())
-    util::log::fatal() << "Attempt to directly give a Thread a thread id twice!";
+  if(m_threadid)
+    util::log::fatal() << "Attempt to reset a thread id value!";
   m_threadid = id;
 }
 
-bool ThreadAttributes::has_procid() const noexcept { return m_procid != max_ulong; }
-unsigned long ThreadAttributes::procid() const {
-  if(!has_procid())
-    util::log::fatal() << "Attempt to get an unset process id value!";
-  return m_procid;
-}
 void ThreadAttributes::procid(unsigned long pid) {
-  if(has_procid())
-    util::log::fatal() << "Attempt to directly give a Thread a process id twice!";
+  if(m_procid)
+    util::log::fatal() << "Attempt to reset a process id value!";
   m_procid = pid;
 }
 
-const stdshim::optional<unsigned long long>& ThreadAttributes::timepointCnt() const noexcept {
-  return m_timepointCnt;
-}
 void ThreadAttributes::timepointCnt(unsigned long long cnt) {
   if(m_timepointCnt)
     util::log::fatal() << "Attempt to reset a timepoint count!";
@@ -163,24 +128,24 @@ void ThreadAttributes::timepointCnt(unsigned long long cnt) {
 
 bool ProfileAttributes::merge(const ProfileAttributes& o) {
   bool ok = true;
-  if(m_name.empty()) m_name = o.m_name;
-  else if(!o.m_name.empty() && m_name != o.m_name) {
+  if(!m_name) m_name = o.m_name;
+  else if(o.m_name && m_name != o.m_name) {
     util::log::warning() << "Merging profiles with different names: `"
-      << m_name << "' and `" << o.m_name << "'!";
+      << *m_name << "' and `" << *o.m_name << "'!";
     ok = false;
   }
 
-  if(m_job == max_ulong) m_job = o.m_job;
-  else if(o.m_job != max_ulong && m_job != o.m_job) {
+  if(!m_job) m_job = o.m_job;
+  else if(o.m_job && m_job != o.m_job) {
     util::log::warning() << "Merging profiles with different job ids: "
-      << m_job << " and " << o.m_job << "!";
+      << *m_job << " and " << *o.m_job << "!";
     ok = false;
   }
 
-  if(m_path.empty()) m_path = o.m_path;
-  else if(!o.m_path.empty() && m_path != o.m_path) {
+  if(!m_path) m_path = o.m_path;
+  else if(o.m_path && m_path != o.m_path) {
     util::log::warning() << "Merging profiles with different paths: `"
-      << m_path.string() << "' and `" << o.m_path.string() << "'!";
+      << m_path->string() << "' and `" << o.m_path->string() << "'!";
     ok = false;
   }
 

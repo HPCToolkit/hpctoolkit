@@ -77,7 +77,42 @@ inline constexpr nullopt_t nullopt = std::nullopt;
 namespace hpctoolkit {
 namespace stdshim {
 template<class T>
-using optional = boost::optional<T>;
+class optional : private boost::optional<T> {
+public:
+  template<class U>
+  optional(U& a) : boost::optional<T>(std::forward<U&>(a)) {};
+  template<class... Args>
+  optional(Args... args) : boost::optional<T>(std::forward<Args>(args)...) {};
+
+  using boost::optional<T>::operator=;
+  using boost::optional<T>::operator->;
+  using boost::optional<T>::operator*;
+  using boost::optional<T>::operator bool;
+  using boost::optional<T>::operator!;
+  using boost::optional<T>::has_value;
+
+  template<class U>
+  constexpr bool operator==(const optional<U>& o) {
+    if(!*this || !o) return (bool)*this == (bool)o;
+    return **this == *o;
+  }
+  template<class U>
+  constexpr bool operator!=(const optional<U>& o) { return !(*this == o); }
+
+  constexpr T& value() & { return boost::optional<T>::get(); }
+  constexpr const T& value() const& { return boost::optional<T>::get(); }
+  constexpr T&& value() && { return boost::optional<T>::get(); }
+  constexpr const T&& value() const&& { return boost::optional<T>::get(); }
+
+  template<class U>
+  constexpr T value_or(U&& d) const& {
+    return (bool)*this ? **this : static_cast<T>(std::forward<U>(d));
+  }
+  template<class U>
+  constexpr T value_or(U&& d) && {
+    (bool)*this ? std::move(**this) : static_cast<T>(std::forward<U>(d));
+  }
+};
 
 using nullopt_t = boost::none_t;
 const nullopt_t nullopt = boost::none;

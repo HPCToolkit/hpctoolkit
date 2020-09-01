@@ -72,7 +72,7 @@ void SparseDB::merge0(int threads, MPI_File& outfile, const std::vector<std::pai
     //YUMENG
     struct stat buf;
     stat(in.second.string().c_str(),&buf);
-    ss << "Thread [" << attr.mpirank() << "," << attr.threadid() << "] "
+    ss << "Thread [" << attr.mpirank().value() << "," << attr.threadid().value() << "] "
        << "written in " << in.second.string() << "with size: " << buf.st_size <<"\n";
   }
   std::string s = ss.str();
