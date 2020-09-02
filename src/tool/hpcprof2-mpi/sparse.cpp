@@ -48,6 +48,7 @@
 
 #include "mpi-strings.h"
 #include <lib/profile/util/log.hpp>
+#include <lib/profile/mpi/all.hpp>
 
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <lib/prof/tms-format.h>
@@ -98,6 +99,8 @@ void SparseDB::prepContexts() noexcept {
 
   contexts.reserve(cs.size());
   for(const auto& ic: cs) contexts.emplace_back(ic.second);
+
+  ctxcnt = contexts.size();
 }
 
 void SparseDB::notifyThreadFinal(const Thread::Temporary& tt) {
@@ -2318,11 +2321,13 @@ void SparseDB::writeCCTMajor(const std::vector<uint64_t>& ctx_nzval_cnts,
 // general - YUMENG
 //***************************************************************************
 
-void SparseDB::merge(int threads, std::size_t ctxcnt) {
+void SparseDB::merge(int threads) {
   int world_rank;
   int world_size;
   MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
   MPI_Comm_size(MPI_COMM_WORLD, &world_size);
+
+  ctxcnt = mpi::bcast(ctxcnt, 0);
 
   {
     util::log::debug msg{false};  // Switch to true for CTX id printouts

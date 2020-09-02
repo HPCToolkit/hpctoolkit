@@ -155,18 +155,8 @@ int rank0(ProfArgs&& args, int world_rank, int world_size) {
 
   // When everything is ready, ship off the block to the workers.
   struct Sender : public IdPacker::Sink {
-    Sender(IdPacker& s) : IdPacker::Sink(s), ctxcnt(0) {};
-    std::size_t ctxcnt;
-    void count(const Context& c) {
-      ctxcnt += 1;
-      for(const Context& cc: c.children().citerate()) count(cc);
-    }
+    Sender(IdPacker& s) : IdPacker::Sink(s) {};
     void notifyPacked(std::vector<uint8_t>&& block) override {
-      // We need to know the total number of Contexts in the system.
-      // Easiest way to know is to scan through the Contexts quick
-      count(src.contexts());
-      MPI_Bcast(&ctxcnt, 1, mpi_data<std::size_t>::type, 0, MPI_COMM_WORLD);
-
       Bcast<uint8_t> bc;
       bc.contents = std::move(block);
       bc.bcast0();
@@ -244,7 +234,7 @@ int rank0(ProfArgs&& args, int world_rank, int world_size) {
   // Create and drain the Pipeline, that's all we do.
   ProfilePipeline pipeline(std::move(pipelineB), args.threads);
   pipeline.run();
-  if(sdb) sdb->merge(args.threads, spacker.ctxcnt);
+  if(sdb) sdb->merge(args.threads);
 
   return 0;
 }

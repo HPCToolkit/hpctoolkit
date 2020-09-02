@@ -110,7 +110,7 @@ public:
   #define CTX_VEC_IDX(c) ((c-1)/2)
   #define CTXID(c)       (c*2+1)
   
-  void merge(int threads, std::size_t ctxcnt);
+  void merge(int threads);
   template<typename T>
   void exscan(std::vector<T>& data,int threads); 
   template <typename T, typename MemberT>
@@ -137,6 +137,7 @@ public:
 
 private:
   hpctoolkit::stdshim::filesystem::path dir;
+  std::size_t ctxcnt;
   void merge0(int, MPI_File&, const std::vector<std::pair<hpctoolkit::ThreadAttributes,
     hpctoolkit::stdshim::filesystem::path>>&);
   void mergeN(int, MPI_File&);
