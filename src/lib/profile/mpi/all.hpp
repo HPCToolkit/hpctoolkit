@@ -44,50 +44,12 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef HPCTOOLKIT_PROFILE_MPI_CORE_H
-#define HPCTOOLKIT_PROFILE_MPI_CORE_H
+#ifndef HPCTOOLKIT_PROFILE_MPI_ALL_H
+#define HPCTOOLKIT_PROFILE_MPI_ALL_H
 
-#include <cstdint>
+#include "core.hpp"
+#include "bcast.hpp"
+#include "reduce.hpp"
+#include "scan.hpp"
 
-namespace hpctoolkit::mpi {
-
-namespace detail {
-
-struct Datatype;
-
-// Conversion from C++ types to MPI type handles.
-template<class T> const Datatype& asDatatype();
-
-}  // namespace detail
-
-/// Operation handle. Represents a single binary operation.
-class Op {
-public:
-  static const Op& max() noexcept;
-  static const Op& min() noexcept;
-  static const Op& sum() noexcept;
-};
-
-/// Singlton class representing the current MPI global communicator.
-class World {
-public:
-  /// Fire up MPI. Needed before calling anything else.
-  static void initialize() noexcept;
-
-  /// Close down MPI. Needed after everything else is done.
-  static void finalize() noexcept;
-
-  /// Get the rank of the current process within the global communicator.
-  static std::size_t rank() noexcept { return m_rank; }
-
-  /// Get the number of processes within the global communicator.
-  static std::size_t size() noexcept { return m_size; }
-
-private:
-  static std::size_t m_rank;
-  static std::size_t m_size;
-};
-
-}  // namespace hpctoolkit::mpi
-
-#endif  // HPCTOOLKIT_PROFILE_MPI_CORE_H
+#endif  // HPCTOOLKIT_PROFILE_MPI_ALL_H

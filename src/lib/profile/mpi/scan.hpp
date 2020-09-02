@@ -44,10 +44,12 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef HPCTOOLKIT_PROFILE_MPI_REDUCE_H
-#define HPCTOOLKIT_PROFILE_MPI_REDUCE_H
+#ifndef HPCTOOLKIT_PROFILE_MPI_SCAN_H
+#define HPCTOOLKIT_PROFILE_MPI_SCAN_H
 
 #include "core.hpp"
+
+#include "../stdshim/optional.hpp"
 
 #include <array>
 
@@ -55,55 +57,58 @@ namespace hpctoolkit::mpi {
 
 namespace detail {
 // NOTE: These are in-place operations, for efficiency.
-void reduce(void* data, std::size_t cnt, const Datatype&,
-            std::size_t rootRank, const Op&);
-void allreduce(void* data, std::size_t cnt, const Datatype&, const Op&);
+void scan(void* data, std::size_t cnt, const Datatype&, const Op&);
+void exscan(void* data, std::size_t cnt, const Datatype&, const Op&);
 }  // namespace detail
 
-/// Reduction operation. Reduces the given data from all processes in the team
-/// to the root rank, using the given reduction operation. Returns the reduced
-/// value in the root, returns the given data in all others.
+/// Inclusive scan operation. Returns the accumulation of the values given
+/// here and in all other lesser rank indices. Returns the resulting value.
 template<class T>
-T reduce(T&& data, std::size_t root, const Op& op) {
-  detail::reduce(&data, 1, detail::asDatatype<T>(), root, op);
+T scan(T&& data, const Op& op) {
+  detail::scan(&data, 1, detail::asDatatype<T>(), op);
   return data;
 }
 
-/// Broadcast reduction operation. Equivalent to a reduction operation followed
-/// by a broadcast. Returns the reduced value in all processes.
+/// Exclusive scan operation. Effectively the inclusive scan without including
+/// the current process's contribution. Note that no value is returned in rank
+/// 0, thus the need for an optional return value.
 template<class T>
-T allreduce(T&& data, const Op& op) {
-  detail::allreduce(&data, 1, detail::asDatatype<T>(), op);
+stdshim::optional<T> exscan(T&& data, const Op& op) {
+  detail::exscan(&data, 1, detail::asDatatype<T>(), op);
+  if(World::rank() == 0) return {};
   return data;
 }
 
 /// Reduction operation. Variant to allow for copy semantics.
 template<class T>
-T reduce(const T& data, std::size_t root, const Op& op) { return reduce<T>(T(data), root, op); }
+T scan(const T& data, const Op& op) { return scan<T>(T(data), op); }
 
 /// Broadcast reduction operation. Variant to allow for copy semantics.
 template<class T>
-T allreduce(const T& data, const Op& op) { return allreduce<T>(T(data), op); }
+stdshim::optional<T> exscan(const T& data, const Op& op) {
+  return exscan<T>(T(data), op);
+}
 
 /// Reduction operation. Variant to disable the usage of pointers.
 template<class T>
-T* reduce(T*, std::size_t, const Op&) = delete;
+T* scan(T*, const Op&) = delete;
 
 /// Broadcast reduction operation. Variant to disable the usage of pointers.
 template<class T>
-T* allreduce(T*, const Op&) = delete;
+T* exscan(T*, const Op&) = delete;
 
 /// Reduction operation. Variant to allow for the usage of std::array.
 template<class T, std::size_t N>
-std::array<T, N> reduce(std::array<T, N>&& data, std::size_t root) {
-  detail::reduce(data.data(), N, detail::asDatatype<T>(), root);
+std::array<T, N> scan(std::array<T, N>&& data, const Op& op) {
+  detail::scan(data.data(), N, detail::asDatatype<T>(), op);
   return data;
 }
 
 /// Broadcast reduction operation. Variant to allow for the usage of std::array.
 template<class T, std::size_t N>
-std::array<T, N> allreduce(std::array<T, N>&& data) {
-  detail::allreduce(data.data(), N, detail::asDatatype<T>());
+stdshim::optional<std::array<T, N>> exscan(std::array<T, N>&& data, const Op& op) {
+  detail::exscan(data.data(), N, detail::asDatatype<T>(), op);
+  if(World::rank() == 0) return {};
   return data;
 }
 

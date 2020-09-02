@@ -110,7 +110,7 @@ public:
   }
   template<class U>
   constexpr T value_or(U&& d) && {
-    (bool)*this ? std::move(**this) : static_cast<T>(std::forward<U>(d));
+    return (bool)*this ? std::move(**this) : static_cast<T>(std::forward<U>(d));
   }
 };
 

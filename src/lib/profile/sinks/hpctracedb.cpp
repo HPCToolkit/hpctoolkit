@@ -52,6 +52,7 @@
 #include "lib/prof-lean/hpcrun-fmt.h"
 #include "../mpi/bcast.hpp"
 #include "../mpi/reduce.hpp"
+#include "../mpi/scan.hpp"
 
 #include <iomanip>
 #include <sstream>
@@ -106,6 +107,10 @@ void HPCTraceDB::notifyWavefront(DataClass::singleton_t wave) {
   auto total2 = mpi::allreduce(src.threads().size(), mpi::Op::sum());
   util::log::debug{true} << "Threads wavefront, " << src.threads().size()
     << " < " << total << " = " << total2 << " threads!";
+
+  auto iscan = mpi::scan(src.threads().size(), mpi::Op::sum());
+  auto escan = mpi::exscan(src.threads().size(), mpi::Op::sum()).value_or(0);
+  util::log::debug{true} << "  Allocated " << escan << " - " << iscan;
 }
 
 void HPCTraceDB::notifyTimepoint(const Thread& t, const Context& c, std::chrono::nanoseconds tm) {

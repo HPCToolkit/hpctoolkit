@@ -44,11 +44,9 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#include "../../lib/profile/mpi/core.hpp"
-#include "../../lib/profile/mpi/bcast.hpp"
-#include "../../lib/profile/mpi/reduce.hpp"
+#include "lib/profile/mpi/all.hpp"
 
-#include "../../lib/profile/util/log.hpp"
+#include "lib/profile/util/log.hpp"
 
 #include <mpi.h>
 
@@ -144,4 +142,15 @@ void detail::allreduce(void* data, std::size_t cnt, const Datatype& ty,
      != MPI_SUCCESS)
     util::log::fatal{} << "Error while performing an MPI all-reduction!";
 }
-
+void detail::scan(void* data, std::size_t cnt, const Datatype& ty,
+                  const Op& op) {
+  if(MPI_Scan(MPI_IN_PLACE, data, cnt, ty.value,
+              static_cast<const BaseOp&>(op).op, MPI_COMM_WORLD) != MPI_SUCCESS)
+    util::log::fatal{} << "Error while performing an MPI inclusive scan!";
+}
+void detail::exscan(void* data, std::size_t cnt, const Datatype& ty,
+                    const Op& op) {
+  if(MPI_Exscan(MPI_IN_PLACE, data, cnt, ty.value,
+              static_cast<const BaseOp&>(op).op, MPI_COMM_WORLD) != MPI_SUCCESS)
+    util::log::fatal{} << "Error while performing an MPI exclusive scan!";
+}

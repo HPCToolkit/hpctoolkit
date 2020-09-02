@@ -44,9 +44,7 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#include "core.hpp"
-#include "bcast.hpp"
-#include "reduce.hpp"
+#include "all.hpp"
 
 using namespace hpctoolkit::mpi;
 using namespace detail;
@@ -82,4 +80,5 @@ void World::finalize() noexcept {};
 void detail::bcast(void*, std::size_t, const Datatype&, std::size_t) {};
 void detail::reduce(void*, std::size_t, const Datatype&, std::size_t, const Op&) {};
 void detail::allreduce(void*, std::size_t, const Datatype&, const Op&) {};
-
+void detail::scan(void*, std::size_t, const Datatype&, const Op&) {};
+void detail::exscan(void*, std::size_t, const Datatype&, const Op&) {};
