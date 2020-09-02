@@ -99,8 +99,10 @@ private:
   bool is_omniocular;
   stdshim::filesystem::path dir;
   std::atomic<bool> has_traces;
-  std::chrono::nanoseconds min;
-  std::chrono::nanoseconds max;
+  std::atomic<std::chrono::nanoseconds> min;
+  std::atomic<std::chrono::nanoseconds> max;
+
+  void mmupdate(std::chrono::nanoseconds min, std::chrono::nanoseconds max);
 
   struct uds;
 

@@ -164,27 +164,36 @@ bool HPCTraceDB::seen(const Context& c) {
   return true;
 }
 
+void HPCTraceDB::mmupdate(std::chrono::nanoseconds tmin, std::chrono::nanoseconds tmax) {
+  while(1) {
+    auto val = min.load(std::memory_order_relaxed);
+    if(min.compare_exchange_weak(val, std::min(val, tmin), std::memory_order_relaxed))
+      break;
+  }
+  while(1) {
+    auto val = max.load(std::memory_order_relaxed);
+    if(max.compare_exchange_weak(val, std::max(val, tmax), std::memory_order_relaxed))
+      break;
+  }
+}
+
 void HPCTraceDB::notifyTimepoint(std::chrono::nanoseconds tm) {
   has_traces.exchange(true, std::memory_order_relaxed);
-  if(tm < min) min = tm;
-  if(max < tm) max = tm;
+  mmupdate(tm, tm);
 }
 
 std::string HPCTraceDB::exmlTag() {
   if(!has_traces.load(std::memory_order_relaxed)) return "";
   for(const auto& t: src.threads().iterate()) {
     auto& ud = t->userdata[uds.thread];
-    if(ud.has_trace) {
-      if(ud.minTime < min) min = ud.minTime;
-      if(ud.maxTime > max) max = ud.maxTime;
-    }
+    if(ud.has_trace) mmupdate(ud.minTime, ud.maxTime);
   }
   std::ostringstream ss;
   ss << "<TraceDB"
         " i=\"0\""
         " db-glob=\"*." << HPCRUN_TraceFnmSfx << "\""
-        " db-min-time=\"" << min.count() << "\""
-        " db-max-time=\"" << max.count() << "\""
+        " db-min-time=\"" << min.load(std::memory_order_relaxed).count() << "\""
+        " db-max-time=\"" << max.load(std::memory_order_relaxed).count() << "\""
         " db-header-sz=\"" << HPCTRACE_FMT_HeaderLen << "\""
         " u=\"1000000000\"/>";
   return ss.str();
