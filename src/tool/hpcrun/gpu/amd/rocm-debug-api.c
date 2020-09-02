@@ -47,6 +47,9 @@
 
 #include "amd-dbgapi.h"
 
+#include <sys/types.h>
+#include <unistd.h>
+
 //******************************************************************************
 // local includes
 //******************************************************************************
@@ -55,6 +58,7 @@
 
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample-sources/libdl.h>
+#include <hpcrun/memory/hpcrun-malloc.h>
 
 //******************************************************************************
 // macros
@@ -151,6 +155,15 @@ ROCM_DEBUG_FN
 // private operations
 //******************************************************************************
 
+static void
+hpcrun_free
+(
+  void* data
+)
+{
+  return;
+}
+
 static amd_dbgapi_status_t
 hpcrun_self_process
 (
@@ -189,7 +202,7 @@ hpcrun_disable_notify_shared_library
 }
 
 static amd_dbgapi_status_t
-hpcun_get_symbol_address
+hpcrun_get_symbol_address
 (
   amd_dbgapi_client_process_id_t client_process_id,
   amd_dbgapi_shared_library_id_t shared_library_id,
@@ -202,7 +215,7 @@ hpcun_get_symbol_address
 }
 
 static amd_dbgapi_status_t
-hpcurn_insert_breakpoint
+hpcrun_insert_breakpoint
 (
   amd_dbgapi_client_process_id_t client_process_id,
   amd_dbgapi_shared_library_id_t shared_library_id,
@@ -298,15 +311,15 @@ rocm_debug_api_init
 )
 {
   // Fill in call back functions for rocm debug api
-  callbacks.allocate_memory = malloc;
-  callbacks.deallocate_memory = free;
+  callbacks.allocate_memory = hpcrun_malloc;
+  callbacks.deallocate_memory = hpcrun_free;
   callbacks.get_os_pid = hpcrun_self_process;
   callbacks.enable_notify_shared_library = hpcrun_enable_notify_shared_library;
   callbacks.disable_notify_shared_library = hpcrun_disable_notify_shared_library;
   callbacks.get_symbol_address = hpcrun_get_symbol_address;
-  callbacks.insert_breakpoint = insert_breakpoint_empty;
-  callbacks.remove_breakpoint = remove_breakpoint_empty;
-  callbacks.log_message = log_message_empty;
+  callbacks.insert_breakpoint = hpcrun_insert_breakpoint;
+  callbacks.remove_breakpoint = hpcrun_remove_breakpoint;
+  callbacks.log_message = hpcrun_log_message;
 
   HPCRUN_ROCM_DEBUG_CALL(amd_dbgapi_initialize, (&callbacks));
   HPCRUN_ROCM_DEBUG_CALL(amd_dbgapi_process_attach,
@@ -325,7 +338,7 @@ rocm_debug_api_fini
 void
 rocm_debug_api_query_code_object
 (
-  size_t* code_obejct_count_ptr,
+  size_t* code_object_count_ptr
 )
 {
   HPCRUN_ROCM_DEBUG_CALL(amd_dbgapi_code_object_list,
@@ -341,7 +354,8 @@ rocm_debug_api_query_uri
 {
   char* uri;
   HPCRUN_ROCM_DEBUG_CALL(amd_dbgapi_code_object_get_info,
-    (self, code_objects_id[index], AMD_DBGAPI_CODE_OBJECT_INFO_URI_NAME,
-        sizeof(char*), (void*)(&uri)));
+    (self, code_objects_id[code_object_index],
+      AMD_DBGAPI_CODE_OBJECT_INFO_URI_NAME,
+      sizeof(char*), (void*)(&uri)));
   return uri;
 }

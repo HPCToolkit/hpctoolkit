@@ -224,7 +224,7 @@ parse_amd_gpu_binary_uri
   size_t used = 0;
   used += sprintf(&gpu_file_path[used], "%s", hpcrun_files_output_directory());
   used += sprintf(&gpu_file_path[used], "%s", "/amd/");
-  mkdir(file_name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+  mkdir(gpu_file_path, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
   used += sprintf(&gpu_file_path[used], "%s.rocm-gpu", filename);
 
   // We directly return if we have write down this URI
@@ -269,7 +269,6 @@ parse_amd_gpu_binary
   char* gpu_binary_uri = NULL;
   for (size_t i = 0; i < code_object_count; ++i) {
     char* uri = rocm_debug_api_query_uri(i);
-    parse_amd_uri(uri);
     // Ignore memory URI as it points to amd's gpu runtime
 	if (strncmp(uri, "memory://", strlen("memory://")) == 0) {
         continue;

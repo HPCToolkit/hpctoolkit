@@ -69,7 +69,7 @@ rocm_debug_api_fini
 void
 rocm_debug_api_query_code_object
 (
-  size_t* code_obejct_count_ptr,
+  size_t* code_obejct_count_ptr
 );
 
 char*

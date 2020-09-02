@@ -59,3 +59,5 @@ rocm_binary_function_lookup
 (
   const char* kernel_name
 );
+
+#endif
