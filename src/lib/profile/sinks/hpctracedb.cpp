@@ -100,19 +100,6 @@ void HPCTraceDB::notifyThread(const Thread& t) {
   t.userdata[uds.thread].has_trace = false;
 }
 
-void HPCTraceDB::notifyWavefront(DataClass::singleton_t wave) {
-  if(!((DataClass)wave).hasThreads()) return;
-  auto total = mpi::reduce(src.threads().size(), 0, mpi::Op::sum());
-  total = mpi::bcast(total, 0);
-  auto total2 = mpi::allreduce(src.threads().size(), mpi::Op::sum());
-  util::log::debug{true} << "Threads wavefront, " << src.threads().size()
-    << " < " << total << " = " << total2 << " threads!";
-
-  auto iscan = mpi::scan(src.threads().size(), mpi::Op::sum());
-  auto escan = mpi::exscan(src.threads().size(), mpi::Op::sum()).value_or(0);
-  util::log::debug{true} << "  Allocated " << escan << " - " << iscan;
-}
-
 void HPCTraceDB::notifyTimepoint(const Thread& t, const Context& c, std::chrono::nanoseconds tm) {
   auto& ud = t.userdata[uds.thread];
   if(!ud.has_trace) {
