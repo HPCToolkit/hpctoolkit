@@ -50,9 +50,6 @@
 
 #include "../util/log.hpp"
 #include "lib/prof-lean/hpcrun-fmt.h"
-#include "../mpi/bcast.hpp"
-#include "../mpi/reduce.hpp"
-#include "../mpi/scan.hpp"
 
 #include <iomanip>
 #include <sstream>
