@@ -42,24 +42,13 @@
 // ******************************************************* EndRiceCopyright *
 
 //******************************************************************************
-// system includes
-//******************************************************************************
-
-#include <gelf.h>
-
-#include <errno.h>     // errno
-#include <fcntl.h>     // open
-#include <sys/stat.h>  // mkdir
-#include <sys/types.h>
-#include <unistd.h>
-#include <linux/limits.h>  // PATH_MAX
-
-//******************************************************************************
 // local includes
 //******************************************************************************
 
 #include "roctracer-api.h"
 #include "roctracer-activity-translate.h"
+#include "rocm-debug-api.h"
+#include "rocm-binary-processing.h"
 
 #include <roctracer_hip.h>
 
@@ -76,9 +65,6 @@
 #include <hpcrun/sample-sources/libdl.h>
 
 #include <hpcrun/utilities/hpcrun-nanotime.h>
-#include <hpcrun/files.h>
-#include "lib/prof-lean/elf-helper.h"
-
 
 //******************************************************************************
 // macros
@@ -110,51 +96,18 @@
 }
 
 typedef const char* (*hip_kernel_name_fnt)(const hipFunction_t f);
-static hip_kernel_name_fnt hip_kernel_name_fn;
-
 typedef const char* (*hip_kernel_name_ref_fnt)(const void* hostFunction, hipStream_t stream);
-static hip_kernel_name_ref_fnt hip_kernel_name_ref_fn;
-
-typedef int (*hiprtc_fnt)(uint64_t, void*);
-static hiprtc_fnt hiprtc_get_code;
-static hiprtc_fnt hiprtc_get_code_size;
 
 #define DEBUG 0
 
 #include "hpcrun/gpu/gpu-print.h"
 
 //******************************************************************************
-// type declaration
-//******************************************************************************
-
-typedef struct amd_kernel_internal {
-  uint64_t opaque[3];
-  uint64_t amd_program_internal;
-} amd_kernel_internal_t;
-
-typedef struct amd_hip_function {
-  amd_kernel_internal_t * amd_kernel;
-} amd_hip_function_t;
-
-typedef struct amd_gpu_binary {
-  size_t size;
-  char* buf;
-} amd_gpu_binary_t;
-
-typedef struct amd_function_table {
-  size_t size;
-  char** names;
-  uint64_t* addrs;
-} amd_function_table_t;
-
-
-//******************************************************************************
 // local variables
 //******************************************************************************
 
-amd_gpu_binary_t binary;
-amd_function_table_t function_table;
-static uint32_t amd_gpu_module_id;
+static hip_kernel_name_fnt hip_kernel_name_fn;
+static hip_kernel_name_ref_fnt hip_kernel_name_ref_fn;
 
 //----------------------------------------------------------
 // roctracer function pointers for late binding
@@ -337,220 +290,6 @@ ensure_kernel_ip_present
 }
 
 static void
-construct_amd_gpu_symbols
-(
- Elf *elf
-)
-{
-  // Initialize elf_help_t to handle extended numbering
-  elf_helper_t eh;
-  elf_helper_initialize(elf, &eh);
-
-  // Get section name section index to find ".strtab"
-  size_t shstrndx;
-  if (elf_getshdrstrndx(elf, &shstrndx) != 0) return;
-
-  // Find .symtab and .strtab sections
-  Elf_Scn *scn = NULL;
-  Elf_Scn *symtab_scn = NULL;
-  Elf_Scn *strtab_scn = NULL;
-  while ((scn = elf_nextscn(elf, scn)) != NULL) {
-    GElf_Shdr shdr;
-    if (!gelf_getshdr(scn, &shdr)) continue;
-    if (shdr.sh_type == SHT_SYMTAB) {
-      symtab_scn = scn;
-      continue;
-    }
-    char *name = elf_strptr(elf, shstrndx , shdr.sh_name);
-    if (name == NULL) continue;
-    if (strcmp(name, ".strtab") == 0) {
-      strtab_scn = scn;
-    }
-	}
-
-  // Get total number of symbols in .symtab
-  GElf_Shdr symtab;
-  gelf_getshdr(symtab_scn, &symtab);
-
-  int nsymbols = 0;
-  if (symtab.sh_entsize > 0) { // avoid divide by 0
-    nsymbols = symtab.sh_size / symtab.sh_entsize;
-    if (nsymbols <= 0) return;
-  } else {
-    return;
-  }
-
-  Elf_Data *symtab_data = elf_getdata(symtab_scn, NULL);
-  if (symtab_data == NULL) return;
-
-  // Get total number of function symbols in .symtab
-  size_t nfuncs = 0;
-  for (int i = 0; i < nsymbols; i++) {
-    GElf_Sym sym;
-    GElf_Sym *symp = NULL;
-    int section_index;
-    symp = elf_helper_get_symbol(&eh, i, &sym, &section_index);
-    if (symp) { // symbol properly read
-      int symtype = GELF_ST_TYPE(sym.st_info);
-      if (sym.st_shndx == SHN_UNDEF) continue;
-      if (symtype != STT_FUNC) continue;
-      nfuncs++;
-    }
-  }
-
-  // Get symbol name string table
-  Elf_Data *strtab_data = elf_getdata(strtab_scn, NULL);
-  if (strtab_data == NULL) return;
-  char* symbol_name_buf = (char*)(strtab_data->d_buf);
-
-  // Initialize our function table
-  function_table.size = nfuncs;
-  function_table.names = (char**)hpcrun_malloc(sizeof(char*) * function_table.size);
-  function_table.addrs = (uint64_t*)hpcrun_malloc(sizeof(uint64_t) * function_table.size);
-  int index = 0;
-
-  // Put each function symbol into our function table
-  for (int i = 0; i < nsymbols; i++) {
-    GElf_Sym sym;
-    GElf_Sym *symp = NULL;
-    int section_index;
-    symp = elf_helper_get_symbol(&eh, i, &sym, &section_index);
-    if (symp) { // symbol properly read
-      int symtype = GELF_ST_TYPE(sym.st_info);
-      if (sym.st_shndx == SHN_UNDEF) continue;
-      if (symtype != STT_FUNC) continue;
-      function_table.names[index] = symbol_name_buf + sym.st_name;
-      function_table.addrs[index] = sym.st_value;
-      ++index;
-    }
-  }
-#if DEBUG != 0
-  printf("Dump AMD GPU functions\n");
-  for (size_t i = 0; i < function_table.size; ++i) {
-    printf("Function %s, at address %lx\n", function_table.names[i], function_table.addrs[i]);
-  }
-#endif
-}
-
-static bool
-cupti_write_cubin
-(
- const char *file_name,
- const void *cubin,
- size_t cubin_size
-)
-{
-  int fd;
-  errno = 0;
-  fd = open(file_name, O_WRONLY | O_CREAT | O_EXCL, 0644);
-  if (errno == EEXIST) {
-    close(fd);
-    return true;
-  }
-  if (fd >= 0) {
-    // Success
-    if (write(fd, cubin, cubin_size) != cubin_size) {
-      close(fd);
-      return false;
-    } else {
-      close(fd);
-      return true;
-    }
-  } else {
-    // Failure to open is a fatal error.
-    hpcrun_abort("hpctoolkit: unable to open file: '%s'", file_name);
-    return false;
-  }
-}
-
-static void
-parse_amd_gpu_binary
-(
-  hipFunction_t f
-)
-{
-  amd_hip_function_t* amd_hip_function = (amd_hip_function_t*)((uint64_t)f + 0x88);
-  amd_kernel_internal_t* amd_internal = amd_hip_function->amd_kernel;
-  uint64_t amd_program = amd_internal->amd_program_internal;
-  amd_program += 0x10;
-
-  hiprtc_get_code_size(amd_program, (void*)(&(binary.size)));
-  binary.buf = hpcrun_malloc(binary.size);
-  hiprtc_get_code(amd_program, (void*)(binary.buf));
-
-  elf_version(EV_CURRENT);
-  Elf *elf = elf_memory(binary.buf, binary.size);
-  if (elf != 0) {
-	  construct_amd_gpu_symbols(elf);
-	  elf_end(elf);
-  }
-
-  // Create file name
-  char file_name[PATH_MAX];
-  size_t used = 0;
-  used += sprintf(&file_name[used], "%s", hpcrun_files_output_directory());
-  used += sprintf(&file_name[used], "%s", "/amd/");
-  mkdir(file_name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-  used += sprintf(&file_name[used], "%s", "amd_gpu_binary");
-
-  cupti_write_cubin(file_name, binary.buf, binary.size);
-
-  amd_gpu_module_id = hpcrun_loadModule_add(file_name);
-}
-
-static uintptr_t
-lookup_amd_function
-(
-  const char *kernel_name
-)
-{
-  for (size_t i = 0; i < function_table.size; ++i) {
-    if (strcmp(kernel_name, function_table.names[i]) == 0) {
-      return (uintptr_t)(function_table.addrs[i]);
-    }
-  }
-  return 0;
-}
-
-static ip_normalized_t
-hip_function_lookup
-(
-  hipFunction_t f
-)
-{
-  // TODO: Handle multi-threaded case
-  if (binary.size == 0) {
-    parse_amd_gpu_binary(f);
-  }
-
-  const char * kernel_name = hip_kernel_name_fn(f);
-
-  ip_normalized_t nip;
-  nip.lm_id = amd_gpu_module_id;
-  nip.lm_ip = lookup_amd_function(kernel_name);
-
-  PRINT("HIP launch kernel %s, lm_ip %lx\n", kernel_name, nip.lm_ip);
-  return nip;
-}
-
-static hipFunction_t
-get_hip_function_t
-(
-  const void* host_address,
-  hipStream_t stream
-)
-{
-  hipFunction_t handle;
-  const char* name = hip_kernel_name_ref_fn(host_address, stream);
-
-  asm ( "mov %%rdi, %0"
-    : "=r" (handle)
-  );
-
-  return handle;
-}
-
-static void
 roctracer_subscriber_callback
 (
  uint32_t domain,
@@ -563,7 +302,7 @@ roctracer_subscriber_callback
   bool is_valid_op = false;
   bool is_kernel_op = false;
   const hip_api_data_t* data = (const hip_api_data_t*)(callback_data);
-  hipFunction_t f = NULL;
+  const char* kernel_name = NULL;  
 
   switch (callback_id) {
   case HIP_API_ID_hipMemcpy:
@@ -637,7 +376,7 @@ roctracer_subscriber_callback
 				 gpu_placeholder_type_trace);
     is_valid_op = true;
     is_kernel_op = true;
-    f = data->args.hipModuleLaunchKernel.f;
+    kernel_name = hip_kernel_name_fn(data->args.hipModuleLaunchKernel.f);
     break;
   }
   case HIP_API_ID_hipLaunchKernel: {
@@ -647,7 +386,8 @@ roctracer_subscriber_callback
 				 gpu_placeholder_type_trace);
     is_valid_op = true;
     is_kernel_op = true;
-    f = get_hip_function_t(data->args.hipLaunchKernel.function_address, data->args.hipLaunchKernel.stream);
+    kernel_name = hip_kernel_name_ref_fn(data->args.hipLaunchKernel.function_address, 
+      data->args.hipLaunchKernel.stream);
     break;
   }
   case HIP_API_ID_hipCtxSynchronize:
@@ -679,9 +419,9 @@ roctracer_subscriber_callback
     gpu_op_ccts_t gpu_op_ccts;
     hpcrun_safe_enter();
     gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
-    if (is_kernel_op) {
+    if (is_kernel_op && kernel_name != NULL) {
 
-      ip_normalized_t kernel_ip = hip_function_lookup(f);
+      ip_normalized_t kernel_ip = rocm_binary_function_lookup(kernel_name);
 
       cct_node_t *kernel_ph = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel);
       ensure_kernel_ip_present(kernel_ph, kernel_ip);
@@ -790,7 +530,6 @@ roctracer_bind
   FORALL_ROCTRACER_ROUTINES(ROCTRACER_BIND)
 
 #undef ROCTRACER_BIND
-
   dlerror();
   hip_kernel_name_fn = (hip_kernel_name_fnt) dlsym(hip, "hipKernelNameRef");
   if (hip_kernel_name_fn == 0) {
@@ -803,17 +542,7 @@ roctracer_bind
     return -1;
   }
 
-  dlerror();
-  hiprtc_get_code = (hiprtc_fnt) dlsym(hip, "hiprtcGetCode");
-  if (hiprtc_get_code == 0) {
-    return -1;
-  }
-
-  dlerror();
-  hiprtc_get_code_size = (hiprtc_fnt) dlsym(hip, "hiprtcGetCodeSize");
-  if (hiprtc_get_code_size == 0) {
-    return -1;
-  }
+  rocm_debug_api_bind();
 
   return 0;
 #else
