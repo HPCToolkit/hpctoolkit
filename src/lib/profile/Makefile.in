@@ -173,36 +173,8 @@ libHPCprofile_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(libHPCprofile_la_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
 libHPCprofile_standalone_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
-am__objects_2 = stdshim/libHPCprofile_standalone_la-shared_mutex.lo \
-	stdshim/libHPCprofile_standalone_la-atomic.lo \
-	stdshim/libHPCprofile_standalone_la-futex-detail.lo \
-	util/libHPCprofile_standalone_la-ragged_vector.lo \
-	util/libHPCprofile_standalone_la-once.lo \
-	util/libHPCprofile_standalone_la-xml.lo \
-	util/libHPCprofile_standalone_la-log.lo \
-	libHPCprofile_standalone_la-pipeline.lo \
-	libHPCprofile_standalone_la-source.lo \
-	libHPCprofile_standalone_la-context.lo \
-	libHPCprofile_standalone_la-scope.lo \
-	libHPCprofile_standalone_la-metric.lo \
-	libHPCprofile_standalone_la-module.lo \
-	libHPCprofile_standalone_la-attributes.lo \
-	libHPCprofile_standalone_la-dataclass.lo \
-	libHPCprofile_standalone_la-sink.lo \
-	libHPCprofile_standalone_la-packedids.lo \
-	sources/libHPCprofile_standalone_la-hpcrun.lo \
-	sources/libHPCprofile_standalone_la-packed.lo \
-	sources/libHPCprofile_standalone_la-hpcrun4.lo \
-	sinks/libHPCprofile_standalone_la-experimentxml.lo \
-	sinks/libHPCprofile_standalone_la-hpctracedb.lo \
-	sinks/libHPCprofile_standalone_la-hpcmetricdb.lo \
-	sinks/libHPCprofile_standalone_la-packed.lo \
-	finalizers/libHPCprofile_standalone_la-struct.lo \
-	finalizers/libHPCprofile_standalone_la-directclassification.lo \
-	finalizers/libHPCprofile_standalone_la-denseids.lo
-am__objects_3 = mpi/libHPCprofile_standalone_la-standalone.lo
-am_libHPCprofile_standalone_la_OBJECTS = $(am__objects_2) \
-	$(am__objects_3)
+am__objects_2 = mpi/libHPCprofile_standalone_la-standalone.lo
+am_libHPCprofile_standalone_la_OBJECTS = $(am__objects_2)
 libHPCprofile_standalone_la_OBJECTS =  \
 	$(am_libHPCprofile_standalone_la_OBJECTS)
 libHPCprofile_standalone_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
@@ -599,7 +571,7 @@ MYSOURCES = \
 	finalizers/struct.cpp finalizers/directclassification.cpp \
 	finalizers/denseids.cpp
 
-MYMPISHIMSOURCES = mpi/standalone.cpp
+MYSTANDALONESOURCES = mpi/standalone.cpp
 
 # GNU binutils flags are needed for HPCLIB_ISA.
 MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) @VALGRIND_IFLAGS@ \
@@ -621,7 +593,7 @@ libHPCprofile_la_CFLAGS = $(MYCFLAGS)
 libHPCprofile_la_CXXFLAGS = $(MYCXXFLAGS)
 libHPCprofile_la_AR = $(MYAR)
 libHPCprofile_la_LIBADD = $(MYLIBADD)
-libHPCprofile_standalone_la_SOURCES = $(MYSOURCES) $(MYMPISHIMSOURCES)
+libHPCprofile_standalone_la_SOURCES = $(MYSTANDALONESOURCES)
 libHPCprofile_standalone_la_CFLAGS = $(MYCFLAGS)
 libHPCprofile_standalone_la_CXXFLAGS = $(MYCXXFLAGS)
 libHPCprofile_standalone_la_AR = $(MYAR)
@@ -748,43 +720,6 @@ finalizers/libHPCprofile_la-denseids.lo: finalizers/$(am__dirstamp) \
 
 libHPCprofile.la: $(libHPCprofile_la_OBJECTS) $(libHPCprofile_la_DEPENDENCIES) $(EXTRA_libHPCprofile_la_DEPENDENCIES) 
 	$(AM_V_CXXLD)$(libHPCprofile_la_LINK)  $(libHPCprofile_la_OBJECTS) $(libHPCprofile_la_LIBADD) $(LIBS)
-stdshim/libHPCprofile_standalone_la-shared_mutex.lo:  \
-	stdshim/$(am__dirstamp) stdshim/$(DEPDIR)/$(am__dirstamp)
-stdshim/libHPCprofile_standalone_la-atomic.lo:  \
-	stdshim/$(am__dirstamp) stdshim/$(DEPDIR)/$(am__dirstamp)
-stdshim/libHPCprofile_standalone_la-futex-detail.lo:  \
-	stdshim/$(am__dirstamp) stdshim/$(DEPDIR)/$(am__dirstamp)
-util/libHPCprofile_standalone_la-ragged_vector.lo:  \
-	util/$(am__dirstamp) util/$(DEPDIR)/$(am__dirstamp)
-util/libHPCprofile_standalone_la-once.lo: util/$(am__dirstamp) \
-	util/$(DEPDIR)/$(am__dirstamp)
-util/libHPCprofile_standalone_la-xml.lo: util/$(am__dirstamp) \
-	util/$(DEPDIR)/$(am__dirstamp)
-util/libHPCprofile_standalone_la-log.lo: util/$(am__dirstamp) \
-	util/$(DEPDIR)/$(am__dirstamp)
-sources/libHPCprofile_standalone_la-hpcrun.lo:  \
-	sources/$(am__dirstamp) sources/$(DEPDIR)/$(am__dirstamp)
-sources/libHPCprofile_standalone_la-packed.lo:  \
-	sources/$(am__dirstamp) sources/$(DEPDIR)/$(am__dirstamp)
-sources/libHPCprofile_standalone_la-hpcrun4.lo:  \
-	sources/$(am__dirstamp) sources/$(DEPDIR)/$(am__dirstamp)
-sinks/libHPCprofile_standalone_la-experimentxml.lo:  \
-	sinks/$(am__dirstamp) sinks/$(DEPDIR)/$(am__dirstamp)
-sinks/libHPCprofile_standalone_la-hpctracedb.lo:  \
-	sinks/$(am__dirstamp) sinks/$(DEPDIR)/$(am__dirstamp)
-sinks/libHPCprofile_standalone_la-hpcmetricdb.lo:  \
-	sinks/$(am__dirstamp) sinks/$(DEPDIR)/$(am__dirstamp)
-sinks/libHPCprofile_standalone_la-packed.lo: sinks/$(am__dirstamp) \
-	sinks/$(DEPDIR)/$(am__dirstamp)
-finalizers/libHPCprofile_standalone_la-struct.lo:  \
-	finalizers/$(am__dirstamp) \
-	finalizers/$(DEPDIR)/$(am__dirstamp)
-finalizers/libHPCprofile_standalone_la-directclassification.lo:  \
-	finalizers/$(am__dirstamp) \
-	finalizers/$(DEPDIR)/$(am__dirstamp)
-finalizers/libHPCprofile_standalone_la-denseids.lo:  \
-	finalizers/$(am__dirstamp) \
-	finalizers/$(DEPDIR)/$(am__dirstamp)
 mpi/$(am__dirstamp):
 	@$(MKDIR_P) mpi
 	@: > mpi/$(am__dirstamp)
@@ -825,51 +760,24 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprofile_la-scope.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprofile_la-sink.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprofile_la-source.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprofile_standalone_la-attributes.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprofile_standalone_la-context.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprofile_standalone_la-dataclass.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprofile_standalone_la-metric.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprofile_standalone_la-module.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprofile_standalone_la-packedids.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprofile_standalone_la-pipeline.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprofile_standalone_la-scope.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprofile_standalone_la-sink.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprofile_standalone_la-source.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@finalizers/$(DEPDIR)/libHPCprofile_la-denseids.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@finalizers/$(DEPDIR)/libHPCprofile_la-directclassification.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@finalizers/$(DEPDIR)/libHPCprofile_la-struct.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@finalizers/$(DEPDIR)/libHPCprofile_standalone_la-denseids.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@finalizers/$(DEPDIR)/libHPCprofile_standalone_la-directclassification.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@finalizers/$(DEPDIR)/libHPCprofile_standalone_la-struct.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@mpi/$(DEPDIR)/libHPCprofile_standalone_la-standalone.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sinks/$(DEPDIR)/libHPCprofile_la-experimentxml.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sinks/$(DEPDIR)/libHPCprofile_la-hpcmetricdb.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sinks/$(DEPDIR)/libHPCprofile_la-hpctracedb.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sinks/$(DEPDIR)/libHPCprofile_la-packed.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@sinks/$(DEPDIR)/libHPCprofile_standalone_la-experimentxml.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@sinks/$(DEPDIR)/libHPCprofile_standalone_la-hpcmetricdb.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@sinks/$(DEPDIR)/libHPCprofile_standalone_la-hpctracedb.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@sinks/$(DEPDIR)/libHPCprofile_standalone_la-packed.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sources/$(DEPDIR)/libHPCprofile_la-hpcrun.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sources/$(DEPDIR)/libHPCprofile_la-hpcrun4.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sources/$(DEPDIR)/libHPCprofile_la-packed.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@sources/$(DEPDIR)/libHPCprofile_standalone_la-hpcrun.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@sources/$(DEPDIR)/libHPCprofile_standalone_la-hpcrun4.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@sources/$(DEPDIR)/libHPCprofile_standalone_la-packed.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@stdshim/$(DEPDIR)/libHPCprofile_la-atomic.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@stdshim/$(DEPDIR)/libHPCprofile_la-futex-detail.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@stdshim/$(DEPDIR)/libHPCprofile_la-shared_mutex.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@stdshim/$(DEPDIR)/libHPCprofile_standalone_la-atomic.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@stdshim/$(DEPDIR)/libHPCprofile_standalone_la-futex-detail.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@stdshim/$(DEPDIR)/libHPCprofile_standalone_la-shared_mutex.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@util/$(DEPDIR)/libHPCprofile_la-log.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@util/$(DEPDIR)/libHPCprofile_la-once.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@util/$(DEPDIR)/libHPCprofile_la-ragged_vector.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@util/$(DEPDIR)/libHPCprofile_la-xml.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@util/$(DEPDIR)/libHPCprofile_standalone_la-log.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@util/$(DEPDIR)/libHPCprofile_standalone_la-once.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@util/$(DEPDIR)/libHPCprofile_standalone_la-ragged_vector.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@util/$(DEPDIR)/libHPCprofile_standalone_la-xml.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
@@ -901,13 +809,6 @@ stdshim/libHPCprofile_la-futex-detail.lo: stdshim/futex-detail.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='stdshim/futex-detail.c' object='stdshim/libHPCprofile_la-futex-detail.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_la_CFLAGS) $(CFLAGS) -c -o stdshim/libHPCprofile_la-futex-detail.lo `test -f 'stdshim/futex-detail.c' || echo '$(srcdir)/'`stdshim/futex-detail.c
-
-stdshim/libHPCprofile_standalone_la-futex-detail.lo: stdshim/futex-detail.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CFLAGS) $(CFLAGS) -MT stdshim/libHPCprofile_standalone_la-futex-detail.lo -MD -MP -MF stdshim/$(DEPDIR)/libHPCprofile_standalone_la-futex-detail.Tpo -c -o stdshim/libHPCprofile_standalone_la-futex-detail.lo `test -f 'stdshim/futex-detail.c' || echo '$(srcdir)/'`stdshim/futex-detail.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) stdshim/$(DEPDIR)/libHPCprofile_standalone_la-futex-detail.Tpo stdshim/$(DEPDIR)/libHPCprofile_standalone_la-futex-detail.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='stdshim/futex-detail.c' object='stdshim/libHPCprofile_standalone_la-futex-detail.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CFLAGS) $(CFLAGS) -c -o stdshim/libHPCprofile_standalone_la-futex-detail.lo `test -f 'stdshim/futex-detail.c' || echo '$(srcdir)/'`stdshim/futex-detail.c
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
@@ -1114,188 +1015,6 @@ finalizers/libHPCprofile_la-denseids.lo: finalizers/denseids.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='finalizers/denseids.cpp' object='finalizers/libHPCprofile_la-denseids.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_la_CXXFLAGS) $(CXXFLAGS) -c -o finalizers/libHPCprofile_la-denseids.lo `test -f 'finalizers/denseids.cpp' || echo '$(srcdir)/'`finalizers/denseids.cpp
-
-stdshim/libHPCprofile_standalone_la-shared_mutex.lo: stdshim/shared_mutex.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -MT stdshim/libHPCprofile_standalone_la-shared_mutex.lo -MD -MP -MF stdshim/$(DEPDIR)/libHPCprofile_standalone_la-shared_mutex.Tpo -c -o stdshim/libHPCprofile_standalone_la-shared_mutex.lo `test -f 'stdshim/shared_mutex.cpp' || echo '$(srcdir)/'`stdshim/shared_mutex.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) stdshim/$(DEPDIR)/libHPCprofile_standalone_la-shared_mutex.Tpo stdshim/$(DEPDIR)/libHPCprofile_standalone_la-shared_mutex.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='stdshim/shared_mutex.cpp' object='stdshim/libHPCprofile_standalone_la-shared_mutex.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -c -o stdshim/libHPCprofile_standalone_la-shared_mutex.lo `test -f 'stdshim/shared_mutex.cpp' || echo '$(srcdir)/'`stdshim/shared_mutex.cpp
-
-stdshim/libHPCprofile_standalone_la-atomic.lo: stdshim/atomic.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -MT stdshim/libHPCprofile_standalone_la-atomic.lo -MD -MP -MF stdshim/$(DEPDIR)/libHPCprofile_standalone_la-atomic.Tpo -c -o stdshim/libHPCprofile_standalone_la-atomic.lo `test -f 'stdshim/atomic.cpp' || echo '$(srcdir)/'`stdshim/atomic.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) stdshim/$(DEPDIR)/libHPCprofile_standalone_la-atomic.Tpo stdshim/$(DEPDIR)/libHPCprofile_standalone_la-atomic.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='stdshim/atomic.cpp' object='stdshim/libHPCprofile_standalone_la-atomic.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -c -o stdshim/libHPCprofile_standalone_la-atomic.lo `test -f 'stdshim/atomic.cpp' || echo '$(srcdir)/'`stdshim/atomic.cpp
-
-util/libHPCprofile_standalone_la-ragged_vector.lo: util/ragged_vector.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -MT util/libHPCprofile_standalone_la-ragged_vector.lo -MD -MP -MF util/$(DEPDIR)/libHPCprofile_standalone_la-ragged_vector.Tpo -c -o util/libHPCprofile_standalone_la-ragged_vector.lo `test -f 'util/ragged_vector.cpp' || echo '$(srcdir)/'`util/ragged_vector.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) util/$(DEPDIR)/libHPCprofile_standalone_la-ragged_vector.Tpo util/$(DEPDIR)/libHPCprofile_standalone_la-ragged_vector.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='util/ragged_vector.cpp' object='util/libHPCprofile_standalone_la-ragged_vector.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -c -o util/libHPCprofile_standalone_la-ragged_vector.lo `test -f 'util/ragged_vector.cpp' || echo '$(srcdir)/'`util/ragged_vector.cpp
-
-util/libHPCprofile_standalone_la-once.lo: util/once.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -MT util/libHPCprofile_standalone_la-once.lo -MD -MP -MF util/$(DEPDIR)/libHPCprofile_standalone_la-once.Tpo -c -o util/libHPCprofile_standalone_la-once.lo `test -f 'util/once.cpp' || echo '$(srcdir)/'`util/once.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) util/$(DEPDIR)/libHPCprofile_standalone_la-once.Tpo util/$(DEPDIR)/libHPCprofile_standalone_la-once.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='util/once.cpp' object='util/libHPCprofile_standalone_la-once.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -c -o util/libHPCprofile_standalone_la-once.lo `test -f 'util/once.cpp' || echo '$(srcdir)/'`util/once.cpp
-
-util/libHPCprofile_standalone_la-xml.lo: util/xml.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -MT util/libHPCprofile_standalone_la-xml.lo -MD -MP -MF util/$(DEPDIR)/libHPCprofile_standalone_la-xml.Tpo -c -o util/libHPCprofile_standalone_la-xml.lo `test -f 'util/xml.cpp' || echo '$(srcdir)/'`util/xml.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) util/$(DEPDIR)/libHPCprofile_standalone_la-xml.Tpo util/$(DEPDIR)/libHPCprofile_standalone_la-xml.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='util/xml.cpp' object='util/libHPCprofile_standalone_la-xml.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -c -o util/libHPCprofile_standalone_la-xml.lo `test -f 'util/xml.cpp' || echo '$(srcdir)/'`util/xml.cpp
-
-util/libHPCprofile_standalone_la-log.lo: util/log.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -MT util/libHPCprofile_standalone_la-log.lo -MD -MP -MF util/$(DEPDIR)/libHPCprofile_standalone_la-log.Tpo -c -o util/libHPCprofile_standalone_la-log.lo `test -f 'util/log.cpp' || echo '$(srcdir)/'`util/log.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) util/$(DEPDIR)/libHPCprofile_standalone_la-log.Tpo util/$(DEPDIR)/libHPCprofile_standalone_la-log.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='util/log.cpp' object='util/libHPCprofile_standalone_la-log.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -c -o util/libHPCprofile_standalone_la-log.lo `test -f 'util/log.cpp' || echo '$(srcdir)/'`util/log.cpp
-
-libHPCprofile_standalone_la-pipeline.lo: pipeline.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprofile_standalone_la-pipeline.lo -MD -MP -MF $(DEPDIR)/libHPCprofile_standalone_la-pipeline.Tpo -c -o libHPCprofile_standalone_la-pipeline.lo `test -f 'pipeline.cpp' || echo '$(srcdir)/'`pipeline.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCprofile_standalone_la-pipeline.Tpo $(DEPDIR)/libHPCprofile_standalone_la-pipeline.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='pipeline.cpp' object='libHPCprofile_standalone_la-pipeline.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprofile_standalone_la-pipeline.lo `test -f 'pipeline.cpp' || echo '$(srcdir)/'`pipeline.cpp
-
-libHPCprofile_standalone_la-source.lo: source.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprofile_standalone_la-source.lo -MD -MP -MF $(DEPDIR)/libHPCprofile_standalone_la-source.Tpo -c -o libHPCprofile_standalone_la-source.lo `test -f 'source.cpp' || echo '$(srcdir)/'`source.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCprofile_standalone_la-source.Tpo $(DEPDIR)/libHPCprofile_standalone_la-source.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='source.cpp' object='libHPCprofile_standalone_la-source.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprofile_standalone_la-source.lo `test -f 'source.cpp' || echo '$(srcdir)/'`source.cpp
-
-libHPCprofile_standalone_la-context.lo: context.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprofile_standalone_la-context.lo -MD -MP -MF $(DEPDIR)/libHPCprofile_standalone_la-context.Tpo -c -o libHPCprofile_standalone_la-context.lo `test -f 'context.cpp' || echo '$(srcdir)/'`context.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCprofile_standalone_la-context.Tpo $(DEPDIR)/libHPCprofile_standalone_la-context.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='context.cpp' object='libHPCprofile_standalone_la-context.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprofile_standalone_la-context.lo `test -f 'context.cpp' || echo '$(srcdir)/'`context.cpp
-
-libHPCprofile_standalone_la-scope.lo: scope.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprofile_standalone_la-scope.lo -MD -MP -MF $(DEPDIR)/libHPCprofile_standalone_la-scope.Tpo -c -o libHPCprofile_standalone_la-scope.lo `test -f 'scope.cpp' || echo '$(srcdir)/'`scope.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCprofile_standalone_la-scope.Tpo $(DEPDIR)/libHPCprofile_standalone_la-scope.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='scope.cpp' object='libHPCprofile_standalone_la-scope.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprofile_standalone_la-scope.lo `test -f 'scope.cpp' || echo '$(srcdir)/'`scope.cpp
-
-libHPCprofile_standalone_la-metric.lo: metric.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprofile_standalone_la-metric.lo -MD -MP -MF $(DEPDIR)/libHPCprofile_standalone_la-metric.Tpo -c -o libHPCprofile_standalone_la-metric.lo `test -f 'metric.cpp' || echo '$(srcdir)/'`metric.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCprofile_standalone_la-metric.Tpo $(DEPDIR)/libHPCprofile_standalone_la-metric.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='metric.cpp' object='libHPCprofile_standalone_la-metric.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprofile_standalone_la-metric.lo `test -f 'metric.cpp' || echo '$(srcdir)/'`metric.cpp
-
-libHPCprofile_standalone_la-module.lo: module.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprofile_standalone_la-module.lo -MD -MP -MF $(DEPDIR)/libHPCprofile_standalone_la-module.Tpo -c -o libHPCprofile_standalone_la-module.lo `test -f 'module.cpp' || echo '$(srcdir)/'`module.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCprofile_standalone_la-module.Tpo $(DEPDIR)/libHPCprofile_standalone_la-module.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='module.cpp' object='libHPCprofile_standalone_la-module.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprofile_standalone_la-module.lo `test -f 'module.cpp' || echo '$(srcdir)/'`module.cpp
-
-libHPCprofile_standalone_la-attributes.lo: attributes.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprofile_standalone_la-attributes.lo -MD -MP -MF $(DEPDIR)/libHPCprofile_standalone_la-attributes.Tpo -c -o libHPCprofile_standalone_la-attributes.lo `test -f 'attributes.cpp' || echo '$(srcdir)/'`attributes.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCprofile_standalone_la-attributes.Tpo $(DEPDIR)/libHPCprofile_standalone_la-attributes.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='attributes.cpp' object='libHPCprofile_standalone_la-attributes.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprofile_standalone_la-attributes.lo `test -f 'attributes.cpp' || echo '$(srcdir)/'`attributes.cpp
-
-libHPCprofile_standalone_la-dataclass.lo: dataclass.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprofile_standalone_la-dataclass.lo -MD -MP -MF $(DEPDIR)/libHPCprofile_standalone_la-dataclass.Tpo -c -o libHPCprofile_standalone_la-dataclass.lo `test -f 'dataclass.cpp' || echo '$(srcdir)/'`dataclass.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCprofile_standalone_la-dataclass.Tpo $(DEPDIR)/libHPCprofile_standalone_la-dataclass.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='dataclass.cpp' object='libHPCprofile_standalone_la-dataclass.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprofile_standalone_la-dataclass.lo `test -f 'dataclass.cpp' || echo '$(srcdir)/'`dataclass.cpp
-
-libHPCprofile_standalone_la-sink.lo: sink.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprofile_standalone_la-sink.lo -MD -MP -MF $(DEPDIR)/libHPCprofile_standalone_la-sink.Tpo -c -o libHPCprofile_standalone_la-sink.lo `test -f 'sink.cpp' || echo '$(srcdir)/'`sink.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCprofile_standalone_la-sink.Tpo $(DEPDIR)/libHPCprofile_standalone_la-sink.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='sink.cpp' object='libHPCprofile_standalone_la-sink.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprofile_standalone_la-sink.lo `test -f 'sink.cpp' || echo '$(srcdir)/'`sink.cpp
-
-libHPCprofile_standalone_la-packedids.lo: packedids.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprofile_standalone_la-packedids.lo -MD -MP -MF $(DEPDIR)/libHPCprofile_standalone_la-packedids.Tpo -c -o libHPCprofile_standalone_la-packedids.lo `test -f 'packedids.cpp' || echo '$(srcdir)/'`packedids.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCprofile_standalone_la-packedids.Tpo $(DEPDIR)/libHPCprofile_standalone_la-packedids.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='packedids.cpp' object='libHPCprofile_standalone_la-packedids.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprofile_standalone_la-packedids.lo `test -f 'packedids.cpp' || echo '$(srcdir)/'`packedids.cpp
-
-sources/libHPCprofile_standalone_la-hpcrun.lo: sources/hpcrun.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -MT sources/libHPCprofile_standalone_la-hpcrun.lo -MD -MP -MF sources/$(DEPDIR)/libHPCprofile_standalone_la-hpcrun.Tpo -c -o sources/libHPCprofile_standalone_la-hpcrun.lo `test -f 'sources/hpcrun.cpp' || echo '$(srcdir)/'`sources/hpcrun.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) sources/$(DEPDIR)/libHPCprofile_standalone_la-hpcrun.Tpo sources/$(DEPDIR)/libHPCprofile_standalone_la-hpcrun.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='sources/hpcrun.cpp' object='sources/libHPCprofile_standalone_la-hpcrun.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -c -o sources/libHPCprofile_standalone_la-hpcrun.lo `test -f 'sources/hpcrun.cpp' || echo '$(srcdir)/'`sources/hpcrun.cpp
-
-sources/libHPCprofile_standalone_la-packed.lo: sources/packed.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -MT sources/libHPCprofile_standalone_la-packed.lo -MD -MP -MF sources/$(DEPDIR)/libHPCprofile_standalone_la-packed.Tpo -c -o sources/libHPCprofile_standalone_la-packed.lo `test -f 'sources/packed.cpp' || echo '$(srcdir)/'`sources/packed.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) sources/$(DEPDIR)/libHPCprofile_standalone_la-packed.Tpo sources/$(DEPDIR)/libHPCprofile_standalone_la-packed.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='sources/packed.cpp' object='sources/libHPCprofile_standalone_la-packed.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -c -o sources/libHPCprofile_standalone_la-packed.lo `test -f 'sources/packed.cpp' || echo '$(srcdir)/'`sources/packed.cpp
-
-sources/libHPCprofile_standalone_la-hpcrun4.lo: sources/hpcrun4.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -MT sources/libHPCprofile_standalone_la-hpcrun4.lo -MD -MP -MF sources/$(DEPDIR)/libHPCprofile_standalone_la-hpcrun4.Tpo -c -o sources/libHPCprofile_standalone_la-hpcrun4.lo `test -f 'sources/hpcrun4.cpp' || echo '$(srcdir)/'`sources/hpcrun4.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) sources/$(DEPDIR)/libHPCprofile_standalone_la-hpcrun4.Tpo sources/$(DEPDIR)/libHPCprofile_standalone_la-hpcrun4.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='sources/hpcrun4.cpp' object='sources/libHPCprofile_standalone_la-hpcrun4.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -c -o sources/libHPCprofile_standalone_la-hpcrun4.lo `test -f 'sources/hpcrun4.cpp' || echo '$(srcdir)/'`sources/hpcrun4.cpp
-
-sinks/libHPCprofile_standalone_la-experimentxml.lo: sinks/experimentxml.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -MT sinks/libHPCprofile_standalone_la-experimentxml.lo -MD -MP -MF sinks/$(DEPDIR)/libHPCprofile_standalone_la-experimentxml.Tpo -c -o sinks/libHPCprofile_standalone_la-experimentxml.lo `test -f 'sinks/experimentxml.cpp' || echo '$(srcdir)/'`sinks/experimentxml.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) sinks/$(DEPDIR)/libHPCprofile_standalone_la-experimentxml.Tpo sinks/$(DEPDIR)/libHPCprofile_standalone_la-experimentxml.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='sinks/experimentxml.cpp' object='sinks/libHPCprofile_standalone_la-experimentxml.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -c -o sinks/libHPCprofile_standalone_la-experimentxml.lo `test -f 'sinks/experimentxml.cpp' || echo '$(srcdir)/'`sinks/experimentxml.cpp
-
-sinks/libHPCprofile_standalone_la-hpctracedb.lo: sinks/hpctracedb.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -MT sinks/libHPCprofile_standalone_la-hpctracedb.lo -MD -MP -MF sinks/$(DEPDIR)/libHPCprofile_standalone_la-hpctracedb.Tpo -c -o sinks/libHPCprofile_standalone_la-hpctracedb.lo `test -f 'sinks/hpctracedb.cpp' || echo '$(srcdir)/'`sinks/hpctracedb.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) sinks/$(DEPDIR)/libHPCprofile_standalone_la-hpctracedb.Tpo sinks/$(DEPDIR)/libHPCprofile_standalone_la-hpctracedb.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='sinks/hpctracedb.cpp' object='sinks/libHPCprofile_standalone_la-hpctracedb.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -c -o sinks/libHPCprofile_standalone_la-hpctracedb.lo `test -f 'sinks/hpctracedb.cpp' || echo '$(srcdir)/'`sinks/hpctracedb.cpp
-
-sinks/libHPCprofile_standalone_la-hpcmetricdb.lo: sinks/hpcmetricdb.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -MT sinks/libHPCprofile_standalone_la-hpcmetricdb.lo -MD -MP -MF sinks/$(DEPDIR)/libHPCprofile_standalone_la-hpcmetricdb.Tpo -c -o sinks/libHPCprofile_standalone_la-hpcmetricdb.lo `test -f 'sinks/hpcmetricdb.cpp' || echo '$(srcdir)/'`sinks/hpcmetricdb.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) sinks/$(DEPDIR)/libHPCprofile_standalone_la-hpcmetricdb.Tpo sinks/$(DEPDIR)/libHPCprofile_standalone_la-hpcmetricdb.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='sinks/hpcmetricdb.cpp' object='sinks/libHPCprofile_standalone_la-hpcmetricdb.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -c -o sinks/libHPCprofile_standalone_la-hpcmetricdb.lo `test -f 'sinks/hpcmetricdb.cpp' || echo '$(srcdir)/'`sinks/hpcmetricdb.cpp
-
-sinks/libHPCprofile_standalone_la-packed.lo: sinks/packed.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -MT sinks/libHPCprofile_standalone_la-packed.lo -MD -MP -MF sinks/$(DEPDIR)/libHPCprofile_standalone_la-packed.Tpo -c -o sinks/libHPCprofile_standalone_la-packed.lo `test -f 'sinks/packed.cpp' || echo '$(srcdir)/'`sinks/packed.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) sinks/$(DEPDIR)/libHPCprofile_standalone_la-packed.Tpo sinks/$(DEPDIR)/libHPCprofile_standalone_la-packed.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='sinks/packed.cpp' object='sinks/libHPCprofile_standalone_la-packed.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -c -o sinks/libHPCprofile_standalone_la-packed.lo `test -f 'sinks/packed.cpp' || echo '$(srcdir)/'`sinks/packed.cpp
-
-finalizers/libHPCprofile_standalone_la-struct.lo: finalizers/struct.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -MT finalizers/libHPCprofile_standalone_la-struct.lo -MD -MP -MF finalizers/$(DEPDIR)/libHPCprofile_standalone_la-struct.Tpo -c -o finalizers/libHPCprofile_standalone_la-struct.lo `test -f 'finalizers/struct.cpp' || echo '$(srcdir)/'`finalizers/struct.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) finalizers/$(DEPDIR)/libHPCprofile_standalone_la-struct.Tpo finalizers/$(DEPDIR)/libHPCprofile_standalone_la-struct.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='finalizers/struct.cpp' object='finalizers/libHPCprofile_standalone_la-struct.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -c -o finalizers/libHPCprofile_standalone_la-struct.lo `test -f 'finalizers/struct.cpp' || echo '$(srcdir)/'`finalizers/struct.cpp
-
-finalizers/libHPCprofile_standalone_la-directclassification.lo: finalizers/directclassification.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -MT finalizers/libHPCprofile_standalone_la-directclassification.lo -MD -MP -MF finalizers/$(DEPDIR)/libHPCprofile_standalone_la-directclassification.Tpo -c -o finalizers/libHPCprofile_standalone_la-directclassification.lo `test -f 'finalizers/directclassification.cpp' || echo '$(srcdir)/'`finalizers/directclassification.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) finalizers/$(DEPDIR)/libHPCprofile_standalone_la-directclassification.Tpo finalizers/$(DEPDIR)/libHPCprofile_standalone_la-directclassification.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='finalizers/directclassification.cpp' object='finalizers/libHPCprofile_standalone_la-directclassification.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -c -o finalizers/libHPCprofile_standalone_la-directclassification.lo `test -f 'finalizers/directclassification.cpp' || echo '$(srcdir)/'`finalizers/directclassification.cpp
-
-finalizers/libHPCprofile_standalone_la-denseids.lo: finalizers/denseids.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -MT finalizers/libHPCprofile_standalone_la-denseids.lo -MD -MP -MF finalizers/$(DEPDIR)/libHPCprofile_standalone_la-denseids.Tpo -c -o finalizers/libHPCprofile_standalone_la-denseids.lo `test -f 'finalizers/denseids.cpp' || echo '$(srcdir)/'`finalizers/denseids.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) finalizers/$(DEPDIR)/libHPCprofile_standalone_la-denseids.Tpo finalizers/$(DEPDIR)/libHPCprofile_standalone_la-denseids.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='finalizers/denseids.cpp' object='finalizers/libHPCprofile_standalone_la-denseids.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -c -o finalizers/libHPCprofile_standalone_la-denseids.lo `test -f 'finalizers/denseids.cpp' || echo '$(srcdir)/'`finalizers/denseids.cpp
 
 mpi/libHPCprofile_standalone_la-standalone.lo: mpi/standalone.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -MT mpi/libHPCprofile_standalone_la-standalone.lo -MD -MP -MF mpi/$(DEPDIR)/libHPCprofile_standalone_la-standalone.Tpo -c -o mpi/libHPCprofile_standalone_la-standalone.lo `test -f 'mpi/standalone.cpp' || echo '$(srcdir)/'`mpi/standalone.cpp
