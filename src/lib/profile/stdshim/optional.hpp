@@ -101,8 +101,8 @@ public:
 
   constexpr T& value() & { return boost::optional<T>::get(); }
   constexpr const T& value() const& { return boost::optional<T>::get(); }
-  constexpr T&& value() && { return boost::optional<T>::get(); }
-  constexpr const T&& value() const&& { return boost::optional<T>::get(); }
+  constexpr T&& value() && { return std::move(boost::optional<T>::get()); }
+  constexpr const T&& value() const&& { return std::move(boost::optional<T>::get()); }
 
   template<class U>
   constexpr T value_or(U&& d) const& {
