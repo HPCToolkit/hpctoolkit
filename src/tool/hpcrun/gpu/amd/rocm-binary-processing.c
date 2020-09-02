@@ -216,7 +216,7 @@ parse_amd_gpu_binary_uri
 
   PRINT("Parsing URI, filepath %s\n", filepath);
   PRINT("\toffset %lx, size %lx\n", offset, size);
-  
+
   char* filename = strrchr(filepath, '/') + 1;
 
   // Create file name
@@ -226,14 +226,14 @@ parse_amd_gpu_binary_uri
   used += sprintf(&gpu_file_path[used], "%s", "/amd/");
   mkdir(file_name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
   used += sprintf(&gpu_file_path[used], "%s.rocm-gpu", filename);
-	
+
   // We directly return if we have write down this URI
   int wfd;
   wfd = open(gpu_file_path, O_WRONLY | O_CREAT | O_EXCL, 0644);
-  if (wfd < 0) {   
+  if (wfd < 0) {
     return;
   }
-  
+
   int rfd = open(filepath, O_RDONLY);
   if (rfd < 0) {
     PRINT("\tcannot open the file specified in the file URI\n");
@@ -272,7 +272,7 @@ parse_amd_gpu_binary
     parse_amd_uri(uri);
     // Ignore memory URI as it points to amd's gpu runtime
 	if (strncmp(uri, "memory://", strlen("memory://")) == 0) {
-        continue;		
+        continue;
 	}
 
     // Assume we have only one code object
@@ -288,7 +288,7 @@ parse_amd_gpu_binary
   if (elf != 0) {
 	  construct_amd_gpu_symbols(elf);
 	  elf_end(elf);
-  }  
+  }
 }
 
 static uintptr_t
