@@ -240,6 +240,17 @@ void ProfilePipeline::run() {
       for(std::size_t idx = 0; idx < sinks.size(); ++idx)
         sinks[idx]().notifyWavefront(DataClass::attributes);
     }
+    if(scheduledWaves.hasThreads()) {
+      #pragma omp for schedule(dynamic)
+      for(std::size_t idx = 0; idx < sources.size(); ++idx) {
+        sources[idx].get().read(DataClass::threads);
+        ANNOTATE_HAPPENS_BEFORE(&barrier_arc_4);
+      }
+      ANNOTATE_HAPPENS_AFTER(&barrier_arc_4);
+      #pragma omp for schedule(dynamic) nowait
+      for(std::size_t idx = 0; idx < sinks.size(); ++idx)
+        sinks[idx]().notifyWavefront(DataClass::threads);
+    }
     if(scheduledWaves.hasReferences()) {
       #pragma omp for schedule(dynamic)
       for(std::size_t idx = 0; idx < sources.size(); ++idx) {
@@ -261,17 +272,6 @@ void ProfilePipeline::run() {
       #pragma omp for schedule(dynamic) nowait
       for(std::size_t idx = 0; idx < sinks.size(); ++idx)
         sinks[idx]().notifyWavefront(DataClass::contexts);
-    }
-    if(scheduledWaves.hasThreads()) {
-      #pragma omp for schedule(dynamic)
-      for(std::size_t idx = 0; idx < sources.size(); ++idx) {
-        sources[idx].get().read(DataClass::threads);
-        ANNOTATE_HAPPENS_BEFORE(&barrier_arc_4);
-      }
-      ANNOTATE_HAPPENS_AFTER(&barrier_arc_4);
-      #pragma omp for schedule(dynamic) nowait
-      for(std::size_t idx = 0; idx < sinks.size(); ++idx)
-        sinks[idx]().notifyWavefront(DataClass::threads);
     }
 
     // Now for the finishing wave

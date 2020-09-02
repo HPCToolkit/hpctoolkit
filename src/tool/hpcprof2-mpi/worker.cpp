@@ -62,6 +62,7 @@
 #include "lib/profile/finalizers/lambda.hpp"
 #include "lib/profile/transformer.hpp"
 #include "lib/profile/util/log.hpp"
+#include "lib/profile/mpi/all.hpp"
 
 #include <mpi.h>
 #include <iostream>
@@ -94,6 +95,8 @@ int rankN(ProfArgs&& args, int world_rank, int world_size) {
     pipelineB2 << ProfileSource::create_for(p);
   }
 
+  std::size_t threadIdOffset;
+
   // Fire off the first Pipeline, let rank 0 know all about our data.
   {
     struct Sender : public sinks::Packed {
@@ -112,6 +115,12 @@ int rankN(ProfArgs&& args, int world_rank, int world_size) {
       }
     } sender;
     pipelineB1 << sender;
+
+    sinks::Lambda tidsink(data::threads, {},
+                          [&threadIdOffset](ProfilePipeline::Sink& src) {
+      threadIdOffset = mpi::exscan(src.threads().size(), mpi::Op::sum()).value();
+    });
+    pipelineB1 << tidsink;
 
     ProfilePipeline pipeline(std::move(pipelineB1), args.threads);
     pipeline.run();
@@ -133,6 +142,13 @@ int rankN(ProfArgs&& args, int world_rank, int world_size) {
     IdUnpacker::Expander eunpacker(unpacker);
     IdUnpacker::Finalizer funpacker(unpacker);
     pipelineB2 << eunpacker << funpacker;
+
+    // Adjust the Thread ids to be unique among the team.
+    finalizers::Lambda tidfinal(ExtensionClass::identifier,
+      [threadIdOffset](ProfilePipeline::Source&, const Thread&, unsigned int& id) {
+        id += threadIdOffset;
+      });
+    pipelineB2 << tidfinal;
 
     // When we're done, we need to send the final metrics up to rank 0
     struct MetricSender : public sinks::Packed {

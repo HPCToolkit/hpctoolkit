@@ -62,6 +62,7 @@
 #include "lib/profile/finalizers/directclassification.hpp"
 #include "lib/profile/transformer.hpp"
 #include "lib/profile/util/log.hpp"
+#include "lib/profile/mpi/all.hpp"
 
 #include <iostream>
 #include <stack>
@@ -100,7 +101,7 @@ int rank0(ProfArgs&& args, int world_rank, int world_size) {
     Receiver(int p) : peer(p), done(false) {};
     DataClass provides() const noexcept override {
       return data::references + data::attributes + data::contexts
-             + data::timepoints + data::threads;
+             + data::timepoints;
     }
     void read(const DataClass&) override {
       if(done) return;
@@ -137,6 +138,20 @@ int rank0(ProfArgs&& args, int world_rank, int world_size) {
   // Ids for everything are pulled from the void. We call the shots here.
   finalizers::DenseIds dids;
   pipelineB << dids;
+
+  // Ensure that our Thread ids are unique with respect to the workers.
+  // Since this is rank 0, we don't need to adjust our ids.
+  struct ThreadIDUniquer : public ProfileSink {
+    void write() override {}
+    DataClass accepts() const noexcept override { return DataClass::threads; }
+    ExtensionClass requires() const noexcept override { return {}; }
+    DataClass wavefronts() const noexcept override { return DataClass::threads; }
+    void notifyWavefront(DataClass::singleton_t wave) {
+      if(!((DataClass)wave).hasThreads()) return;
+      mpi::exscan(src.threads().size(), mpi::Op::sum());
+    }
+  } tiduniquer;
+  pipelineB << tiduniquer;
 
   // When everything is ready, ship off the block to the workers.
   struct Sender : public IdPacker::Sink {
