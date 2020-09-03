@@ -42,15 +42,19 @@
 #
 # ******************************************************* EndRiceCopyright *
 
-# This is just a springboard for the subdirectories
-subdir('prof-lean')
-subdir('support-lean')
+_srcs = files(
+  'xml.cpp',
+)
 
-subdir('support')
-subdir('xml')
-subdir('isa')
-subdir('binutils')
-subdir('prof')
-subdir('profxml')
-subdir('banal')
-subdir('analysis')
+_dtdgen = generator(find_program('makedtdstring', native: true),
+  arguments: ['@INPUT@'],
+  output: '@BASENAME@.h', capture: true)
+_srcs += _dtdgen.process(
+  meson.source_root() / 'lib' / 'dtd' / 'hpc-experiment.dtd',
+  meson.source_root() / 'lib' / 'dtd' / 'hpc-structure.dtd',
+)
+
+xml_lib = static_library('xml', _srcs, pic: true,
+  include_directories: main_includes,
+  link_with: [support_lib])
+

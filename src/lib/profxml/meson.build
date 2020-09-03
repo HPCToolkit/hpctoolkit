@@ -42,15 +42,19 @@
 #
 # ******************************************************* EndRiceCopyright *
 
-# This is just a springboard for the subdirectories
-subdir('prof-lean')
-subdir('support-lean')
+_srcs = files(
+  'XercesUtil.cpp',
+  'XercesSAX2.cpp',
+  'XercesErrorHandler.cpp',
 
-subdir('support')
-subdir('xml')
-subdir('isa')
-subdir('binutils')
-subdir('prof')
-subdir('profxml')
-subdir('banal')
-subdir('analysis')
+  'PGMReader.cpp',
+  'PGMDocHandler.cpp',
+
+  'MathMLExprParser.cpp',
+)
+
+profxml_lib = static_library('profxml', _srcs, pic: true,
+  include_directories: main_includes,
+  link_with: [prof_lib],
+  dependencies: [xerces_dep])
+

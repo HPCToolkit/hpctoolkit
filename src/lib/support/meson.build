@@ -42,15 +42,48 @@
 #
 # ******************************************************* EndRiceCopyright *
 
-# This is just a springboard for the subdirectories
-subdir('prof-lean')
-subdir('support-lean')
+_srcs = files(
+  'CmdLineParser.cpp',
 
-subdir('support')
-subdir('xml')
-subdir('isa')
-subdir('binutils')
-subdir('prof')
-subdir('profxml')
-subdir('banal')
-subdir('analysis')
+  'diagnostics.cpp',
+  'Exception.cpp',
+  'Trace.cpp',
+
+  'Logic.cpp',
+  'NaN.c',
+  'CStrUtil.cpp',
+  'StrUtil.cpp',
+
+  'IOUtil.cpp',
+  'FileNameMap.cpp',
+  'FileUtil.cpp',
+  'SrcFile.cpp',
+  'RealPathMgr.cpp',
+  'PathReplacementMgr.cpp',
+  'findinstall.c',
+  'pathfind.cpp',
+  'PathFindMgr.cpp',
+  'realpath.c',
+
+  'ProcNameMgr.cpp',
+
+  'NonUniformDegreeTree.cpp',
+  'IteratorStack.cpp',
+  'StackableIterator.cpp',
+
+  'WordSet.cpp',
+  'HashTable.cpp',
+  'HashTableSortedIterator.cpp',
+
+  'PointerStack.cpp',
+  'QuickSort.cpp',
+  'Unique.cpp',
+
+  'VarMap.cpp',
+  'ExprEval.cpp',
+)
+
+support_lib = static_library('support', _srcs, pic: true,
+  include_directories: main_includes,
+  link_with: [support_lean_lib, prof_lean_lib])
+

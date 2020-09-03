@@ -42,15 +42,34 @@
 #
 # ******************************************************* EndRiceCopyright *
 
-# This is just a springboard for the subdirectories
-subdir('prof-lean')
-subdir('support-lean')
+_srcs = files(
+  'Metric-Mgr.cpp',
+  'Metric-ADesc.cpp',
+  'Metric-IData.cpp',
+  'Metric-AExpr.cpp',
+  'Metric-AExprIncr.cpp',
+  'Metric-IDBExpr.cpp',
 
-subdir('support')
-subdir('xml')
-subdir('isa')
-subdir('binutils')
-subdir('prof')
-subdir('profxml')
-subdir('banal')
-subdir('analysis')
+  'FileError.cpp',
+
+  'LoadMap.cpp',
+
+  'Struct-Tree.cpp',
+  'Struct-TreeIterator.cpp',
+
+  'CCT-Tree.cpp',
+  'CCT-TreeIterator.cpp',
+  'CCT-Merge.cpp',
+
+  'Flat-ProfileData.cpp',
+
+  'CallPath-Profile.cpp',
+
+  'StringSet.cpp',
+  'NameMappings.cpp',
+)
+
+prof_lib = static_library('prof', _srcs, pic: true,
+  include_directories: main_includes,
+  link_with: [support_lib, xml_lib, binutils_lib])
+

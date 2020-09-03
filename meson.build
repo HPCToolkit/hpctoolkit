@@ -397,7 +397,7 @@ if meson.get_external_property('boost_root', '') == '' and is_variable('spack') 
     warning('Set the property boost_spec '
             + 'to \'system\' to use the system/environment instead.')
     boost_all_dep = dependency('', required: false)
-    boost_our_dep = dependency('', required: false)
+    boost_dep = dependency('', required: false)
   else
     _spack_root = _spack_root.stdout().strip()
     assert(_spack_root != '')
@@ -408,7 +408,7 @@ if meson.get_external_property('boost_root', '') == '' and is_variable('spack') 
     foreach m : _boost_our_modules
       _deps += cpp.find_library('boost_'+m, dirs: _dirs)
     endforeach
-    boost_our_dep = declare_dependency(
+    boost_dep = declare_dependency(
       include_directories: include_directories(_spack_root[0] / 'include'),
       dependencies: _deps,
     )
@@ -425,12 +425,12 @@ else
   # Search using the usual methods
   boost_all_dep = dependency('Boost', required: false,
                              modules: _boost_our_modules + _boost_other_modules)
-  boost_our_dep = dependency('Boost', required: false, modules: _boost_our_modules)
+  boost_dep = dependency('Boost', required: false, modules: _boost_our_modules)
 
   if meson.get_external_property('boost_root', '') != ''
     summary('boost', meson.get_external_property('boost_root', ''),
             section: 'Dependencies')
-    assert(boost_all_dep.found() and boost_our_dep.found(),
+    assert(boost_all_dep.found() and boost_dep.found(),
            'Could not find Boost from boost_root property: '
             + '`' + meson.get_external_property('boost_root', '') + '\'')
   else

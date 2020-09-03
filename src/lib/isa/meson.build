@@ -42,15 +42,11 @@
 #
 # ******************************************************* EndRiceCopyright *
 
-# This is just a springboard for the subdirectories
-subdir('prof-lean')
-subdir('support-lean')
+_srcs = files(
+  'ISA.cpp',
+)
 
-subdir('support')
-subdir('xml')
-subdir('isa')
-subdir('binutils')
-subdir('prof')
-subdir('profxml')
-subdir('banal')
-subdir('analysis')
+isa_lib = static_library('isa', _srcs, pic: true,
+  include_directories: main_includes,
+  link_with: [support_lib])
+

@@ -42,15 +42,30 @@
 #
 # ******************************************************* EndRiceCopyright *
 
-# This is just a springboard for the subdirectories
-subdir('prof-lean')
-subdir('support-lean')
+_srcs = files(
+  'cuda/CFGParser.cpp',
+  'cuda/CudaCFGFactory.cpp',
+  'cuda/CudaFunction.cpp',
+  'cuda/GraphReader.cpp',
+  'cuda/CudaBlock.cpp',
+  'cuda/CudaCodeSource.cpp',
+  'cuda/ReadCubinCFG.cpp',
+  'Struct.cpp',
+  'Struct-Inline.cpp',
+  'Struct-Output.cpp',
+)
 
-subdir('support')
-subdir('xml')
-subdir('isa')
-subdir('binutils')
-subdir('prof')
-subdir('profxml')
-subdir('banal')
-subdir('analysis')
+_simple_srcs = files(
+  'StructSimple.cpp',
+)
+
+banal_lib = static_library('banal', _srcs, pic: true,
+  include_directories: main_includes,
+  link_with: [xml_lib, support_lib, binutils_lib],
+  dependencies: [dyninst_dep, libelf_dep, boost_dep]
+    # TODO: Swap the following for an --enable-openmp option
+    + (true ? [dependency('OpenMP', disabler: true)] : []))
+banal_simple_lib = static_library('banal_simple', _simple_srcs, pic: true,
+  include_directories: main_includes,
+  link_with: [binutils_lib, support_lib, prof_lib])
+

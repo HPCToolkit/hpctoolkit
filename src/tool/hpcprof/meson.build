@@ -42,15 +42,14 @@
 #
 # ******************************************************* EndRiceCopyright *
 
-# This is just a springboard for the subdirectories
-subdir('prof-lean')
-subdir('support-lean')
+_srcs = files(
+  'main.cpp',
+  'Args.cpp',
+)
 
-subdir('support')
-subdir('xml')
-subdir('isa')
-subdir('binutils')
-subdir('prof')
-subdir('profxml')
-subdir('banal')
-subdir('analysis')
+hpcprof_exe = executable('hpcprof', _srcs,
+  include_directories: main_includes,
+  link_with: [support_lib, binutils_lib, prof_lib, analysis_lib],
+  install: true)
+summary('hpcprof', not is_disabler(hpcprof_exe), section: 'Applications', bool_yn: true)
+

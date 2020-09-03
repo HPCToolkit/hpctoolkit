@@ -42,15 +42,25 @@
 #
 # ******************************************************* EndRiceCopyright *
 
-# This is just a springboard for the subdirectories
-subdir('prof-lean')
-subdir('support-lean')
+_srcs = files(
+  'CallPath.cpp',
+  'CallPath-MetricComponentsFact.cpp',
+  'CallPath-CudaCFG.cpp',
 
-subdir('support')
-subdir('xml')
-subdir('isa')
-subdir('binutils')
-subdir('prof')
-subdir('profxml')
-subdir('banal')
-subdir('analysis')
+  'Flat-SrcCorrelation.cpp',
+  'Flat-ObjCorrelation.cpp',
+
+  'Raw.cpp',
+
+  'Args.cpp',
+  'ArgsHPCProf.cpp',
+
+  'Util.cpp',
+  'TextUtil.cpp',
+)
+
+analysis_lib = static_library('analysis', _srcs, pic: true,
+  include_directories: main_includes,
+  link_with: [support_lib, xml_lib, prof_lib, profxml_lib, banal_simple_lib],
+  dependencies: [libbfd_dep, xerces_dep, boost_dep])
+

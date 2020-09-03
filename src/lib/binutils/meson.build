@@ -42,15 +42,29 @@
 #
 # ******************************************************* EndRiceCopyright *
 
-# This is just a springboard for the subdirectories
-subdir('prof-lean')
-subdir('support-lean')
+_srcs = files(
+  'LM.cpp',
+  'Seg.cpp',
+  'Proc.cpp',
+  'Insn.cpp',
 
-subdir('support')
-subdir('xml')
-subdir('isa')
-subdir('binutils')
-subdir('prof')
-subdir('profxml')
-subdir('banal')
-subdir('analysis')
+  'LinuxKernelSymbols.cpp',
+  'SimpleSymbols.cpp',
+  'SimpleSymbolsFactories.cpp',
+
+  'Dbg-LM.cpp',
+  'Dbg-Proc.cpp',
+
+  'BinUtils.cpp',
+  'VMAInterval.cpp',
+  'Fatbin.cpp',
+  'ElfHelper.cpp',
+  'InputFile.cpp',
+  'RelocateCubin.cpp',
+)
+
+binutils_lib = static_library('binutils', _srcs, pic: true,
+  include_directories: main_includes,
+  link_with: [support_lib, prof_lean_lib, support_lean_lib, isa_lib],
+  dependencies: [libbfd_dep, libelf_dep, dyninst_dep])
+

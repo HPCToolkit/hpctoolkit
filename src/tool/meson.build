@@ -45,3 +45,4 @@
 tool_includes = main_includes + [include_directories('.')]
 
 subdir('hpcrun')
+subdir('hpcprof')
