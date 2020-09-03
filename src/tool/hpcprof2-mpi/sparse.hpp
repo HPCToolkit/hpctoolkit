@@ -376,21 +376,21 @@ private:
                           const uint length, 
                           const bool notfirst,
                           const int found_ctx_idx, 
-                          std::map<uint32_t, uint64_t>& my_ctx_pairs);
-                          //std::vector<uint64_t>& my_ctx_pairs);
+                          //std::map<uint32_t, uint64_t>& my_ctx_pairs);
+                          std::vector<std::pair<uint32_t, uint64_t>>& my_ctx_pairs);
 
   void findCtxIdIdxPairs(const std::vector<uint32_t>& ctx_ids,
                          const std::vector<TMS_CtxIdIdxPair>& profile_ctx_pairs,
-                         std::map<uint32_t, uint64_t>& my_ctx_pairs);
-                         //std::vector<uint64_t>& my_ctx_pairs);
+                         //std::map<uint32_t, uint64_t>& my_ctx_pairs);
+                         std::vector<std::pair<uint32_t, uint64_t>>& my_ctx_pairs);
 
 
   int getMyCtxIdIdxPairs(const tms_profile_info_t& prof_info,
                          const std::vector<uint32_t>& ctx_ids,
                          const std::vector<TMS_CtxIdIdxPair>& prof_ctx_pairs,
                          const MPI_File fh,
-                         std::map<uint32_t, uint64_t>& my_ctx_pairs);
-                         //std::vector<uint64_t>& my_ctx_pairs);
+                         //std::map<uint32_t, uint64_t>& my_ctx_pairs);
+                         std::vector<std::pair<uint32_t, uint64_t>>& my_ctx_pairs);
 
   std::vector<std::vector<TMS_CtxIdIdxPair>> 
   getProfileCtxIdIdxPairs(const MPI_File fh,
@@ -412,7 +412,8 @@ private:
   };
 
   void readValMidsBytes(const std::vector<uint32_t>& ctx_ids,
-                        std::map<uint32_t, uint64_t>& my_ctx_pairs,
+                        //std::map<uint32_t, uint64_t>& my_ctx_pairs,
+                        std::vector<std::pair<uint32_t, uint64_t>>& my_ctx_pairs,
                         const tms_profile_info_t& prof_info,
                         const MPI_File fh,
                         std::vector<char>& bytes);
@@ -445,10 +446,11 @@ private:
 
   void interpretValMidsBytes(char *vminput,
                              const uint32_t prof_idx,
-                             const uint32_t ctx_id,
+                             const std::pair<uint32_t,uint64_t>& ctx_pair,
                              const uint64_t next_ctx_idx,
                              const uint64_t first_ctx_idx,
-                             std::map<uint32_t, uint64_t>& my_ctx_pairs,
+                             //std::map<uint32_t, uint64_t>& my_ctx_pairs,
+                             std::vector<std::pair<uint32_t, uint64_t>>& my_ctx_pairs,
                              CtxMetricBlock& cmb);
 
   
@@ -471,8 +473,8 @@ private:
 
   void sortCtxMetBlocks(std::map<uint32_t, CtxMetricBlock>& ctx_met_blocks);
 
-  std::vector<std::pair<std::map<uint32_t, uint64_t>, std::vector<char>>>
-  //std::vector<std::pair<std::vector<uint64_t>, std::vector<char>>>
+  //std::vector<std::pair<std::map<uint32_t, uint64_t>, std::vector<char>>>
+  std::vector<std::pair<std::vector<std::pair<uint32_t,uint64_t>>, std::vector<char>>>
   readProfiles(const std::vector<uint32_t>& ctx_ids, 
                     const std::vector<tms_profile_info_t>& prof_info,
                     int threads,
