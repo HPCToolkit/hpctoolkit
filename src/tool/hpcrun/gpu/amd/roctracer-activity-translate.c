@@ -154,7 +154,7 @@ roctracer_activity_translate
 #if DEBUG
   const char * name = roctracer_op_string(record->domain, record->op, record->kind);
 #endif
-  memset(ga, sizeof(gpu_activity_t), 0);
+  memset(ga, 0, sizeof(gpu_activity_t));
   if (record->domain == ACTIVITY_DOMAIN_HIP_API) {
     switch(record->op){
     case HIP_API_ID_hipMemcpyDtoD:
