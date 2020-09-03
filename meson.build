@@ -277,7 +277,7 @@ foreach var, properties : _deps
                     + _cmake_force_root_args,
         modules: properties.get('modules', []),
         components: properties.get('components', []),
-        cmake_module_path: 'cmake/modules'))
+        cmake_module_path: 'meson/modules'))
       if properties.has_key('static_modules')
         set_variable(var + '_static_dep', dependency(_cmake_name,
           method: 'cmake',
@@ -286,7 +286,7 @@ foreach var, properties : _deps
                       + _cmake_force_root_args,
           modules: properties.get('static_modules', []),
           components: properties.get('components', []),
-          cmake_module_path: 'cmake/modules'))
+          cmake_module_path: 'meson/modules'))
       endif
       summary(var, _explicit_root, section: 'Dependencies')
       assert(get_variable(var + '_dep').found(),
@@ -306,7 +306,7 @@ foreach var, properties : _deps
     # user explicitly states. The user should be very explicit about this stuff.
     if _explicit_spec.strip().to_lower() != 'system'
       # Run our helper script, and do our best with it.
-      _spack_root = run_command(python, 'cmake/spack-parse.py', spack,
+      _spack_root = run_command(python, 'meson/spack-parse.py', spack,
                                 properties['spack'], _explicit_spec)
       if _spack_root.returncode() != 0
         error(_spack_root.stderr().strip())
@@ -329,7 +329,7 @@ foreach var, properties : _deps
                       + _cmake_force_root_args,
           modules: properties.get('modules', []),
           components: properties.get('components', []),
-          cmake_module_path: 'cmake/modules'))
+          cmake_module_path: 'meson/modules'))
         if properties.has_key('static_modules')
           set_variable(var + '_static_dep', dependency(_cmake_name,
             method: 'cmake',
@@ -338,7 +338,7 @@ foreach var, properties : _deps
                         + _cmake_force_root_args,
             modules: properties.get('static_modules', []),
             components: properties.get('components', []),
-            cmake_module_path: 'cmake/modules'))
+            cmake_module_path: 'meson/modules'))
         endif
         assert(get_variable(var + '_dep').found(),
                'Failed to find ' + properties['name'] + ' from Spack prefix '
@@ -354,13 +354,13 @@ foreach var, properties : _deps
       required: false, static: false, disabler: true,
       modules: properties.get('modules', []),
       components: properties.get('components', []),
-      cmake_module_path: 'cmake/modules'))
+      cmake_module_path: 'meson/modules'))
     if properties.has_key('static_modules')
       set_variable(var + '_static_dep', dependency(properties['name'],
         required: false, static: true, disabler: true,
         modules: properties.get('static_modules', []),
         components: properties.get('components', []),
-        cmake_module_path: 'cmake/modules'))
+        cmake_module_path: 'meson/modules'))
     endif
     if get_variable(var + '_dep').found()
       summary(var, get_variable(var + '_dep').get_variable(
@@ -396,7 +396,7 @@ if meson.get_external_property('boost_root', '') == '' and is_variable('spack') 
    and meson.get_external_property('boost_spec', '').strip().to_lower() != 'system'
   # We can't use Meson's search functionality in this case, so we just
   # assume all the bits are in very particular locations for our usage.
-  _spack_root = run_command(python, 'cmake/spack-parse.py', spack,
+  _spack_root = run_command(python, 'meson/spack-parse.py', spack,
                             'boost', meson.get_external_property('boost_spec', ''))
   if _spack_root.returncode() != 0
     error(_spack_root.stderr().strip())
