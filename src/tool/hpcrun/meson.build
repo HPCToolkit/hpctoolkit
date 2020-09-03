@@ -212,7 +212,9 @@ _static_srcs = [files(
   'custom-init-static.c',
 )]
 _static_cflags = ['-DHPCRUN_STATIC_LINK']
-_static_deps = [libelf_static_dep, zlib_dep, libmonitor_dep]
+_static_deps = [libelf_dep.partial_dependency(includes: true),
+                zlib_dep.partial_dependency(includes: true),
+                libmonitor_static_dep]
 
 if false  # TODO: Change out for a Blue Gene option
   _common_cflags += ['-DUSE_HW_THREAD_ID', '-DNONZERO_THRESHOLD']

@@ -44,12 +44,6 @@
 
 find_library(Gotcha_LIBRARY NAMES gotcha
              DOC "Location of the Gotcha library")
-set(_all_library_suffixes ${CMAKE_FIND_LIBRARY_SUFFIXES})
-set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_STATIC_LIBRARY_SUFFIX})
-find_library(Gotcha_LIBRARY_STATIC NAMES gotcha
-             DOC "Location of the Gotcha static library")
-set(CMAKE_FIND_LIBRARY_SUFFIXES ${_all_library_suffixes})
-unset(_all_library_suffixes)
 find_path(Gotcha_INCLUDE_DIR NAMES gotcha/gotcha.h
           DOC "Location of the include directory for Gotcha")
 
@@ -62,10 +56,4 @@ if(Gotcha_FOUND)
   set_target_properties(Gotcha::Gotcha PROPERTIES
                         IMPORTED_LOCATION "${Gotcha_LIBRARY}"
                         INTERFACE_INCLUDE_DIRECTORIES "${Gotcha_INCLUDE_DIR}")
-  if(Gotcha_LIBRARY_STATIC)
-    add_library(Gotcha::Gotcha_static UNKNOWN IMPORTED)
-    set_target_properties(Gotcha::Gotcha_static PROPERTIES
-                          IMPORTED_LOCATION "${Gotcha_LIBRARY_STATIC}"
-                          INTERFACE_INCLUDE_DIRECTORIES "${Gotcha_INCLUDE_DIR}")
-  endif()
 endif()

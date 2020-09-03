@@ -55,12 +55,6 @@ find_path(Xerces_INCLUDE_DIR NAMES xercesc/sax2/SAX2XMLReader.hpp
           HINTS ${PC_Xerces_INCLUDE_DIRS})
 find_library(Xerces_LIBRARY NAMES xerces-c
              HINTS ${PC_Xerces_LIBRARY_DIRS})
-set(_all_library_suffixes ${CMAKE_FIND_LIBRARY_SUFFIXES})
-set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_STATIC_LIBRARY_SUFFIX})
-find_library(Xerces_LIBRARY_STATIC NAMES xerces-c
-             HINTS ${PC_Xerces_LIBRARY_DIRS})
-set(CMAKE_FIND_LIBRARY_SUFFIXES ${_all_library_suffixes})
-unset(_all_library_suffixes)
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Xerces
@@ -72,10 +66,4 @@ if(Xerces_FOUND)
   set_target_properties(Xerces::Xerces PROPERTIES
                         IMPORTED_LOCATION "${Xerces_LIBRARY}"
                         INTERFACE_INCLUDE_DIRECTORIES "${Xerces_INCLUDE_DIR}")
-  if(Xerces_LIBRARY_STATIC)
-    add_library(Xerces::Xerces_static UNKNOWN IMPORTED)
-    set_target_properties(Xerces::Xerces_static PROPERTIES
-                          IMPORTED_LOCATION "${Xerces_LIBRARY_STATIC}"
-                          INTERFACE_INCLUDE_DIRECTORIES "${Xerces_INCLUDE_DIR}")
-  endif()
 endif()

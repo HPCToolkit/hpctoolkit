@@ -53,12 +53,6 @@ endif()
 
 find_library(BFD_LIBRARY NAMES bfd
              DOC "Location of the libbfd library")
-set(_all_library_suffixes ${CMAKE_FIND_LIBRARY_SUFFIXES})
-set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_STATIC_LIBRARY_SUFFIX})
-find_library(BFD_LIBRARY_STATIC NAMES bfd
-             DOC "Location of the libbfd static library")
-set(CMAKE_FIND_LIBRARY_SUFFIXES ${_all_library_suffixes})
-unset(_all_library_suffixes)
 find_path(BFD_INCLUDE_DIR NAMES bfd.h
           DOC "Location of the include directory for libbfd")
 
@@ -94,10 +88,4 @@ if(BFD_FOUND)
   set_target_properties(BFD::BFD PROPERTIES
                         IMPORTED_LOCATION "${BFD_LIBRARY}"
                         INTERFACE_INCLUDE_DIRECTORIES "${BFD_INCLUDE_DIR}")
-  if(BFD_LIBRARY_STATIC)
-    add_library(BFD::BFD_static UNKNOWN IMPORTED)
-    set_target_properties(BFD::BFD_static PROPERTIES
-                          IMPORTED_LOCATION "${BFD_LIBRARY_STATIC}"
-                          INTERFACE_INCLUDE_DIRECTORIES "${BFD_INCLUDE_DIR}")
-  endif()
 endif()

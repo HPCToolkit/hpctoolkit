@@ -156,7 +156,6 @@ endif
 _deps = {
   'libbfd': { 'name': 'BFD',
               'propstems': ['bfd', 'binutils'],
-              'static_modules': 'BFD::BFD_static',
               'spack': 'binutils',
             },
   'libiberty': { 'name': 'Iberty',
@@ -176,12 +175,11 @@ _deps = {
              },
   'libelf': { 'name': 'libelf', 'cmake_name': 'LibElf',
               'propstems': ['libelf', 'elfutils'],
-              'static_modules': 'LibElf::LibElf_static',
               'spack': 'elfutils',
             },
   'libdw': { 'name': 'libdw', 'cmake_name': 'LibDw',
              'propstems': ['libdw', 'elfutils'],
-             'spack': 'elfutils'
+             'spack': 'elfutils',
            },
   'gotcha': { 'name': 'Gotcha',
               'propstems': ['gotcha'],
@@ -193,14 +191,22 @@ _deps = {
               },
   'libmonitor': { 'name': 'Monitor',
                   'propstems': ['libmonitor', 'monitor'],
-                  'static_modules': 'Monitor::Monitor_static',
                   'spack': 'libmonitor',
                 },
+  'libmonitor_static': { 'name': 'Monitor',
+                         'propstems': ['libmonitor', 'monitor'],
+                         'modules': ['Monitor::wrap'],
+                         'spack': 'libmonitor',
+                       },
   'libunwind': { 'name': 'libunwind', 'cmake_name': 'LibUnwind',
                  'propstems': ['libunwind'],
-                 'static_modules': 'LibUnwind::LibUnwind_static',
                  'spack': 'libunwind',
                },
+  'libunwind_static': { 'name': 'libunwind', 'cmake_name': 'LibUnwind',
+                        'propstems': ['libunwind'],
+                        'modules': ['LibUnwind::LibUnwind_static'],
+                        'spack': 'libunwind',
+                      },
   'liblzma': { 'name': 'liblzma', 'cmake_name': 'LibLZMA',
                'propstems': ['liblzma', 'lzma'],
                'spack': 'xz',
@@ -208,19 +214,26 @@ _deps = {
   'mbedtls_crypto': { 'name': 'MbedTLS',
                       'propstems': ['mbedtls'],
                       'modules': 'MbedTLS::Crypto',
-                      'static_modules': 'MbedTLS::Crypto_static',
                       'spack': 'mbedtls',
                     },
   'papi': { 'name': 'PAPI',
             'propstems': ['papi'],
-            'static_modules': 'PAPI::PAPI_static',
             'spack': 'papi',
           },
+  'papi_static': { 'name': 'PAPI',
+                   'propstems': ['papi'],
+                   'modules': ['PAPI::PAPI_static'],
+                   'spack': 'papi',
+                 },
   'perfmon': { 'name': 'PFM',
                'propstems': ['perfmon', 'pfm', 'papi'],
-               'static_modules': 'PFM::PFM_static',
                'spack': 'papi',
              },
+  'perfmon_static': { 'name': 'PFM',
+                      'propstems': ['perfmon', 'pfm', 'papi'],
+                      'modules': ['PFM::PFM_static'],
+                      'spack': 'papi',
+                    },
   'tbb': { 'name': 'TBB',
            'propstems': ['tbb'],
            'components': ['tbb', 'tbbmalloc'],
@@ -235,9 +248,13 @@ _deps = {
                 },
   'xed': { 'name': 'Xed',
            'propstems': ['xed'],
-           'static_modules': 'Xed::Xed_static',
            'spack': 'intel-xed',
          },
+  'xed_static': { 'name': 'Xed',
+                  'propstems': ['xed'],
+                  'modules': ['Xed::Xed_static'],
+                  'spack': 'intel-xed',
+                },
   'xerces': { 'name': 'xerces-c', 'cmake_name': 'Xerces',
               'propstems': ['xerces'],
               'spack': 'xerces-c',
@@ -252,9 +269,9 @@ _deps = {
                         'modules': 'Valgrind::headers',
                       },
   'rocm_headers': { 'name': 'ROCm',
-            'propstems': ['rocm'],
-            'modules': 'ROCm::headers',
-          },
+                    'propstems': ['rocm'],
+                    'modules': 'ROCm::headers',
+                  },
 }
 
 _cmake_force_root_args = [
@@ -278,16 +295,6 @@ foreach var, properties : _deps
         modules: properties.get('modules', []),
         components: properties.get('components', []),
         cmake_module_path: 'meson/modules'))
-      if properties.has_key('static_modules')
-        set_variable(var + '_static_dep', dependency(_cmake_name,
-          method: 'cmake',
-          required: false, static: true, disabler: true,
-          cmake_args: ['-D' + _cmake_name + '_ROOT=' + _explicit_root]
-                      + _cmake_force_root_args,
-          modules: properties.get('static_modules', []),
-          components: properties.get('components', []),
-          cmake_module_path: 'meson/modules'))
-      endif
       summary(var, _explicit_root, section: 'Dependencies')
       assert(get_variable(var + '_dep').found(),
         'Could not find ' + properties['name'] + ' from '
@@ -330,16 +337,6 @@ foreach var, properties : _deps
           modules: properties.get('modules', []),
           components: properties.get('components', []),
           cmake_module_path: 'meson/modules'))
-        if properties.has_key('static_modules')
-          set_variable(var + '_static_dep', dependency(_cmake_name,
-            method: 'cmake',
-            required: false, static: true, disabler: true,
-            cmake_args: ['-D' + _cmake_name + '_ROOT=' + _spack_root[0].strip()]
-                        + _cmake_force_root_args,
-            modules: properties.get('static_modules', []),
-            components: properties.get('components', []),
-            cmake_module_path: 'meson/modules'))
-        endif
         assert(get_variable(var + '_dep').found(),
                'Failed to find ' + properties['name'] + ' from Spack prefix '
                + '`' + _spack_root[0].strip() + '\'')
@@ -355,13 +352,6 @@ foreach var, properties : _deps
       modules: properties.get('modules', []),
       components: properties.get('components', []),
       cmake_module_path: 'meson/modules'))
-    if properties.has_key('static_modules')
-      set_variable(var + '_static_dep', dependency(properties['name'],
-        required: false, static: true, disabler: true,
-        modules: properties.get('static_modules', []),
-        components: properties.get('components', []),
-        cmake_module_path: 'meson/modules'))
-    endif
     if get_variable(var + '_dep').found()
       summary(var, get_variable(var + '_dep').get_variable(
         cmake: _cmake_name + '_LIBRARY',

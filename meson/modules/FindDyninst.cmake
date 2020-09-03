@@ -71,14 +71,9 @@ find_path(Dyninst_INCLUDE_DIR NAMES Symtab.h
           DOC "Location of the Dyninst include directory")
 
 # Search for each of the bits. Let the standard code handle the usual bits.
-set(_all_library_suffixes ${CMAKE_FIND_LIBRARY_SUFFIXES})
 foreach(C ${_all_components})
   find_library(Dyninst_${C}_LIBRARY NAMES ${C}
                DOC "Location of the Dyninst ${C} component")
-  set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_STATIC_LIBRARY_SUFFIX})
-  find_library(Dyninst_${C}_STATIC_LIBRARY NAMES ${C}
-               DOC "Location of the Dyninst ${C} static component")
-  set(CMAKE_FIND_LIBRARY_SUFFIXES ${_all_library_suffixes})
 
   if(Dyninst_${C}_LIBRARY)
     set(Dyninst_${C}_FOUND TRUE)
@@ -98,18 +93,9 @@ foreach(C ${_all_components})
                           IMPORTED_LOCATION "${Dyninst_${C}_LIBRARY}"
                           INTERFACE_INCLUDE_DIRECTORIES "${Dyninst_INCLUDE_DIR}"
                           INTERFACE_LINK_LIBRARIES "${_link_deps}")
-    if(Dyninst_${C}_STATIC_LIBRARY)
-      list(TRANSFORM _link_deps APPEND "_static")
-      add_library(Dyninst::${C}_static UNKNOWN IMPORTED)
-      set_target_properties(Dyninst::${C}_static PROPERTIES
-                            IMPORTED_LOCATION "${Dyninst_${C}_STATIC_LIBRARY}"
-                            INTERFACE_INCLUDE_DIRECTORIES "${Dyninst_INCLUDE_DIR}"
-                            INTERFACE_LINK_LIBRARIES "${_link_deps}")
-    endif()
     unset(_link_deps)
   endif()
 endforeach()
-unset(_all_library_suffixes)
 
 # Finish up with the final status message from the common code
 find_package_handle_standard_args(Dyninst

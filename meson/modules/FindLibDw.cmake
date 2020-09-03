@@ -55,12 +55,6 @@ find_path(LibDw_INCLUDE_DIR NAMES elfutils/libdw.h
           HINTS ${PC_LibDw_INCLUDE_DIRS})
 find_library(LibDw_LIBRARY NAMES dw
              HINTS ${PC_LibDw_LIBRARY_DIRS})
-set(_all_library_suffixes ${CMAKE_FIND_LIBRARY_SUFFIXES})
-set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_STATIC_LIBRARY_SUFFIX})
-find_library(LibDw_LIBRARY_STATIC NAMES dw
-             HINTS ${PC_LibDw_LIBRARY_DIRS})
-set(CMAKE_FIND_LIBRARY_SUFFIXES ${_all_library_suffixes})
-unset(_all_library_suffixes)
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(LibDw
@@ -72,10 +66,4 @@ if(LibDw_FOUND)
   set_target_properties(LibDw::LibDw PROPERTIES
                         IMPORTED_LOCATION "${LibDw_LIBRARY}"
                         INTERFACE_INCLUDE_DIRECTORIES "${LibDw_INCLUDE_DIR}")
-  if(LibDw_LIBRARY_STATIC)
-    add_library(LibDw::LibDw_static UNKNOWN IMPORTED)
-    set_target_properties(LibDw::LibDw_static PROPERTIES
-                          IMPORTED_LOCATION "${LibDw_LIBRARY_STATIC}"
-                          INTERFACE_INCLUDE_DIRECTORIES "${LibDw_INCLUDE_DIR}")
-  endif()
 endif()
