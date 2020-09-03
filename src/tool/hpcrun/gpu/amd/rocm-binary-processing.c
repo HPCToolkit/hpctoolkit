@@ -67,7 +67,7 @@
 //******************************************************************************
 
 typedef struct amd_gpu_binary {
-  size_t size;
+  int size;
   char* buf;
 } amd_gpu_binary_t;
 
@@ -257,9 +257,10 @@ parse_amd_gpu_binary_uri
   amd_gpu_module_id = hpcrun_loadModule_add(gpu_file_path);
 }
 
-static void
+static int
 parse_amd_gpu_binary
 (
+  void
 )
 {
   rocm_debug_api_init();
@@ -269,6 +270,7 @@ parse_amd_gpu_binary
   char* gpu_binary_uri = NULL;
   for (size_t i = 0; i < code_object_count; ++i) {
     char* uri = rocm_debug_api_query_uri(i);
+
     // Ignore memory URI as it points to amd's gpu runtime
 	if (strncmp(uri, "memory://", strlen("memory://")) == 0) {
         continue;
@@ -281,6 +283,10 @@ parse_amd_gpu_binary
 	}
   }
 
+  if (gpu_binary_uri == NULL) {
+    return -1;
+  }
+
   parse_amd_gpu_binary_uri(gpu_binary_uri);
   elf_version(EV_CURRENT);
   Elf *elf = elf_memory(binary.buf, binary.size);
@@ -288,6 +294,7 @@ parse_amd_gpu_binary
 	  construct_amd_gpu_symbols(elf);
 	  elf_end(elf);
   }
+  return 0;
 }
 
 static uintptr_t
@@ -316,12 +323,20 @@ rocm_binary_function_lookup
 {
   // TODO: Handle multi-threaded case
   if (binary.size == 0) {
-    parse_amd_gpu_binary();
+    if (parse_amd_gpu_binary() < 0) {
+      binary.size = -1;
+    }
   }
   ip_normalized_t nip;
-  nip.lm_id = amd_gpu_module_id;
-  nip.lm_ip = lookup_amd_function(kernel_name);
-
-  PRINT("HIP launch kernel %s, lm_ip %lx\n", kernel_name, nip.lm_ip);
+  if (binary.size < 0) {
+    // This can happen when we failed to get URI
+    nip.lm_id = 0;
+    nip.lm_ip = 0;
+    PRINT("Failed to get amd gpu binary");
+  } else {
+    nip.lm_id = amd_gpu_module_id;
+    nip.lm_ip = lookup_amd_function(kernel_name);
+    PRINT("HIP launch kernel %s, lm_ip %lx\n", kernel_name, nip.lm_ip);
+  }
   return nip;
 }
