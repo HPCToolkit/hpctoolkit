@@ -184,18 +184,18 @@ private:
 
   std::vector<tms_id_tuple_t> getMyIdTuples();
   
-  std::vector<std::pair<uint16_t, uint32_t>> tuples2IntPairs(const std::vector<tms_id_tuple_t>& all_tuples);
+  std::vector<std::pair<uint16_t, uint64_t>> tuples2IntPairs(const std::vector<tms_id_tuple_t>& all_tuples);
 
-  std::vector<tms_id_tuple_t> intPairs2Tuples(const std::vector<std::pair<uint16_t, uint32_t>>& all_pairs);
+  std::vector<tms_id_tuple_t> intPairs2Tuples(const std::vector<std::pair<uint16_t, uint64_t>>& all_pairs);
 
   //---------------------------------------------------------------------------
   // profile id tuples - organize(communication,sorting,etc)
   //---------------------------------------------------------------------------
-  std::vector<std::pair<uint16_t, uint32_t>> gatherIdTuplesData(const int world_rank, 
+  std::vector<std::pair<uint16_t, uint64_t>> gatherIdTuplesData(const int world_rank, 
                                                                 const int world_size,
                                                                 const int threads,
                                                                 MPI_Datatype IntPairType,
-                                                                const std::vector<std::pair<uint16_t, uint32_t>>& rank_pairs);
+                                                                const std::vector<std::pair<uint16_t, uint64_t>>& rank_pairs);
   
   void scatterProfIdxOffset(const std::vector<tms_id_tuple_t>& tuples,
                             const std::vector<uint64_t>& all_tuple_ptrs,

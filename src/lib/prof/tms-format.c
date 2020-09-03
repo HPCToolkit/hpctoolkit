@@ -154,7 +154,7 @@ tms_id_tuple_fwrite(uint32_t num_tuples,tms_id_tuple_t* x, FILE* fs)
     HPCFMT_ThrowIfError(hpcfmt_int2_fwrite(x[i].length, fs));
     for (uint j = 0; j < x[i].length; ++j) {
       HPCFMT_ThrowIfError(hpcfmt_int2_fwrite(x[i].ids[j].kind, fs));
-      HPCFMT_ThrowIfError(hpcfmt_int4_fwrite(x[i].ids[j].index, fs));
+      HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x[i].ids[j].index, fs));
     }
   }
   return HPCFMT_OK;
@@ -170,7 +170,7 @@ tms_id_tuple_fread(tms_id_tuple_t** x, uint32_t num_tuples,FILE* fs)
     id_tuples[i].ids = (tms_id_t *) malloc(id_tuples[i].length * sizeof(tms_id_t)); 
     for (uint j = 0; j < id_tuples[i].length; ++j) {
       HPCFMT_ThrowIfError(hpcfmt_int2_fread(&(id_tuples[i].ids[j].kind), fs));
-      HPCFMT_ThrowIfError(hpcfmt_int4_fread(&(id_tuples[i].ids[j].index), fs));
+      HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(id_tuples[i].ids[j].index), fs));
     }
   }
 
@@ -186,7 +186,7 @@ tms_id_tuple_fprint(uint32_t num_tuples, tms_id_tuple_t* x, FILE* fs)
   for (uint i = 0; i < num_tuples; ++i) {
     fprintf(fs,"  %d[", i);
     for (uint j = 0; j < x[i].length; ++j) {
-      fprintf(fs,"(%s: %d) ", kindStr(x[i].ids[j].kind), x[i].ids[j].index);
+      fprintf(fs,"(%s: %ld) ", kindStr(x[i].ids[j].kind), x[i].ids[j].index);
     }
     fprintf(fs,"]\n");
   }

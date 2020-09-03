@@ -115,13 +115,13 @@ char* kindStr(const uint16_t kind);
 
 #define TMS_total_prof_SIZE    4
 #define TMS_id_tuple_len_SIZE  2
-#define TMS_id_SIZE            6
+#define TMS_id_SIZE            10
 
 #define HPCTHREADSPARSE_FMT_IdTupleOff (HPCTHREADSPARSE_FMT_HeaderLen + TMS_total_prof_SIZE)
 
 typedef struct tms_id_t{
   uint16_t kind;
-  uint32_t index;
+  uint64_t index;
 }tms_id_t;
 
 typedef struct tms_id_tuple_t{

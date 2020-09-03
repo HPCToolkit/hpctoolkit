@@ -442,11 +442,11 @@ tms_id_tuple_t SparseDB::buildIdTuple(const hpctoolkit::ThreadAttributes& ta,
 {
   tms_id_t rank_idx;
   rank_idx.kind = RANK;
-  rank_idx.index = ta.mpirank().value();
+  rank_idx.index = (uint64_t)ta.mpirank().value();
 
   tms_id_t thread_idx;
   thread_idx.kind = THREAD;
-  thread_idx.index = ta.threadid().value();
+  thread_idx.index = (uint64_t)ta.threadid().value();
 
   tms_id_t* ids = (tms_id_t*)malloc(2 * sizeof(tms_id_t));
   ids[0] = rank_idx;
@@ -468,7 +468,7 @@ tms_id_tuple_t SparseDB::buildSmryIdTuple()
 {
   tms_id_t summary_idx;
   summary_idx.kind = SUMMARY;
-  summary_idx.index = 0;
+  summary_idx.index = (uint64_t)0;
 
   tms_id_t* ids = (tms_id_t*)malloc(1 * sizeof(tms_id_t));
   ids[0] = summary_idx;
@@ -513,12 +513,12 @@ std::vector<tms_id_tuple_t> SparseDB::getMyIdTuples()
 
 
 //convert a vector of tuples to a vector of uint16 and uint32 pairs
-std::vector<std::pair<uint16_t, uint32_t>> 
+std::vector<std::pair<uint16_t, uint64_t>> 
 SparseDB::tuples2IntPairs(const std::vector<tms_id_tuple_t>& all_tuples)
 {
-  std::vector<std::pair<uint16_t, uint32_t>> pairs;
+  std::vector<std::pair<uint16_t, uint64_t>> pairs;
   for(auto& tuple : all_tuples){
-    pairs.emplace_back(tuple.length, tuple.rank);
+    pairs.emplace_back(tuple.length, (uint64_t)tuple.rank);
     for(uint i = 0; i < tuple.length; i++){
       pairs.emplace_back(tuple.ids[i].kind,tuple.ids[i].index);
     }
@@ -530,14 +530,14 @@ SparseDB::tuples2IntPairs(const std::vector<tms_id_tuple_t>& all_tuples)
 
 //convert a vector of uint16 and uint32 pairs to a vector of tuples 
 std::vector<tms_id_tuple_t>
-SparseDB::intPairs2Tuples(const std::vector<std::pair<uint16_t, uint32_t>>& all_pairs)
+SparseDB::intPairs2Tuples(const std::vector<std::pair<uint16_t, uint64_t>>& all_pairs)
 {
   std::vector<tms_id_tuple_t> tuples;
   uint i = 0;
   uint idx = 0;
   uint cur_rank = 0; //root rank
   while(i < all_pairs.size()){
-    std::pair<uint16_t, uint32_t> p = all_pairs[i];
+    std::pair<uint16_t, uint64_t> p = all_pairs[i];
     tms_id_tuple_t t;
     t.length = p.first;
     t.rank = p.second;
@@ -568,11 +568,11 @@ SparseDB::intPairs2Tuples(const std::vector<std::pair<uint16_t, uint32_t>>& all_
 // profile id tuples - organize(communication,sorting,etc)
 //---------------------------------------------------------------------------
 //rank 0 gather all the tuples as pairs format from other ranks
-std::vector<std::pair<uint16_t, uint32_t>> SparseDB::gatherIdTuplesData(const int world_rank, 
+std::vector<std::pair<uint16_t, uint64_t>> SparseDB::gatherIdTuplesData(const int world_rank, 
                                                                         const int world_size,
                                                                         const int threads,
                                                                         MPI_Datatype IntPairType, 
-                                                                        const std::vector<std::pair<uint16_t, uint32_t>>& rank_pairs)
+                                                                        const std::vector<std::pair<uint16_t, uint64_t>>& rank_pairs)
 {
   //get the size of each ranks' pairs
   int rank_pairs_size = rank_pairs.size();
@@ -583,7 +583,7 @@ std::vector<std::pair<uint16_t, uint32_t>> SparseDB::gatherIdTuplesData(const in
   //get the displacement of all ranks' pairs
   int total_size = 0;
   std::vector<int> all_rank_pairs_disps; 
-  std::vector<std::pair<uint16_t, uint32_t>> all_rank_pairs;
+  std::vector<std::pair<uint16_t, uint64_t>> all_rank_pairs;
   if(world_rank == 0){
     all_rank_pairs_disps.resize(world_size);
 
@@ -735,7 +735,7 @@ std::vector<char> SparseDB::convertTuple2Bytes(const tms_id_tuple_t& tuple)
   for(uint i = 0; i < tuple.length; i++){
     auto& id = tuple.ids[i];
     convertToByte2(id.kind, byte_pos);
-    convertToByte4(id.index, byte_pos+2);
+    convertToByte8(id.index, byte_pos+2);
     byte_pos += TMS_id_SIZE;
   }
   return bytes;
@@ -766,13 +766,13 @@ uint64_t SparseDB::workIdTuplesSection(const int world_rank,
   //assign sparseInputs based on outputs
   assignSparseInputs(world_rank);
 
-  std::vector<MPI_Datatype> types {MPI_UINT16_T, MPI_UINT32_T};
+  std::vector<MPI_Datatype> types {MPI_UINT16_T, MPI_UINT64_T};
   MPI_Datatype IntPairType = createTupleType(types);
 
   std::vector<tms_id_tuple_t> tuples = getMyIdTuples();
-  std::vector<std::pair<uint16_t, uint32_t>> pairs = tuples2IntPairs(tuples);
+  std::vector<std::pair<uint16_t, uint64_t>> pairs = tuples2IntPairs(tuples);
   std::vector<tms_id_tuple_t> all_rank_tuples;
-  std::vector<std::pair<uint16_t, uint32_t>> all_rank_pairs = gatherIdTuplesData(world_rank, world_size, threads, IntPairType, pairs);
+  std::vector<std::pair<uint16_t, uint64_t>> all_rank_pairs = gatherIdTuplesData(world_rank, world_size, threads, IntPairType, pairs);
   std::vector<uint64_t> all_tuple_ptrs;
 
   uint64_t all_id_tuples_size;
@@ -2282,8 +2282,8 @@ void SparseDB::rwAllCtxGroup(const std::vector<uint32_t>& my_ctxs,
     uint32_t ctx_id = my_ctxs[i];
     size_t cur_ctx_size = ctx_off[CTX_VEC_IDX(ctx_id) + 1] - ctx_off[CTX_VEC_IDX(ctx_id)];
 
-    //if((cur_size + cur_ctx_size) <= pow(10,6)) { //temp 10^4 TODO: user-defined memory limit
-    if(cur_cnt <= 1000){
+    if((cur_size + cur_ctx_size) <= pow(10,6)) { //temp 10^4 TODO: user-defined memory limit
+    //if(cur_cnt <= 1000){
       ctx_ids.emplace_back(ctx_id);
       cur_size += cur_ctx_size;
       cur_cnt++;
