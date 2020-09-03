@@ -60,6 +60,7 @@
 #include "rocm-debug-api.h"
 #include "rocm-binary-processing.h"
 #include <hpcrun/files.h>
+#include <hpcrun/memory/hpcrun-malloc.h>
 #include "lib/prof-lean/elf-helper.h"
 
 //******************************************************************************
@@ -247,8 +248,10 @@ parse_amd_gpu_binary_uri
 
   binary.size = size;
   binary.buf = (char*)hpcrun_malloc(size);
-  if (read(rfd, binary.buf, size) != size) {
-    PRINT("\tfail to read file\n");
+  ssize_t read_bytes = read(rfd, binary.buf, size);
+  if (read_bytes != size) {
+    PRINT("\tfail to read file, read %d\n", read_bytes);
+    perror(NULL);
 	return;
   }
   write(wfd, (const void*)(binary.buf), binary.size);
@@ -284,6 +287,7 @@ parse_amd_gpu_binary
   }
 
   if (gpu_binary_uri == NULL) {
+    rocm_debug_api_fini();
     return -1;
   }
 
@@ -294,6 +298,7 @@ parse_amd_gpu_binary
 	  construct_amd_gpu_symbols(elf);
 	  elf_end(elf);
   }
+  rocm_debug_api_fini();
   return 0;
 }
 
@@ -327,12 +332,13 @@ rocm_binary_function_lookup
       binary.size = -1;
     }
   }
+  PRINT("binary size %lx\n", binary.size);
   ip_normalized_t nip;
-  if (binary.size < 0) {
+  if (binary.size <= 0) {
     // This can happen when we failed to get URI
     nip.lm_id = 0;
     nip.lm_ip = 0;
-    PRINT("Failed to get amd gpu binary");
+    PRINT("Failed to get amd gpu binary\n");
   } else {
     nip.lm_id = amd_gpu_module_id;
     nip.lm_ip = lookup_amd_function(kernel_name);

@@ -210,7 +210,9 @@ hpcrun_get_symbol_address
   amd_dbgapi_global_address_t *address
 )
 {
-  *address = 0;
+  // It is necessary to allow rocm debug library to call dlsym through this function.
+  // We need to ensure that this code will not be called in a signal handler
+  *address = (amd_dbgapi_global_address_t) dlsym(RTLD_DEFAULT, symbol_name);
   return AMD_DBGAPI_STATUS_SUCCESS;
 }
 
@@ -257,15 +259,19 @@ check_rocm_debug_status
     return;
   }
 
-#define CHECK_RET(x) if (ret == x) { PRINT(#x); }
-
-  CHECK_RET(AMD_DBGAPI_STATUS_FATAL);
-  CHECK_RET(AMD_DBGAPI_STATUS_ERROR_NOT_INITIALIZED);
-  CHECK_RET(AMD_DBGAPI_STATUS_ERROR_INVALID_PROCESS_ID);
-  CHECK_RET(AMD_DBGAPI_STATUS_ERROR_INVALID_ARGUMENT);
-  CHECK_RET(AMD_DBGAPI_STATUS_ERROR_CLIENT_CALLBACK);
-  CHECK_RET(AMD_DBGAPI_STATUS_ERROR_INVALID_CODE_OBJECT_ID);
-  CHECK_RET(AMD_DBGAPI_STATUS_ERROR_INVALID_ARGUMENT_SIZE);
+#define CHECK_RET(x) case x: { PRINT("%s", #x); break; }
+  switch(ret) {
+    CHECK_RET(AMD_DBGAPI_STATUS_FATAL)
+    CHECK_RET(AMD_DBGAPI_STATUS_ERROR_NOT_INITIALIZED)
+    CHECK_RET(AMD_DBGAPI_STATUS_ERROR_INVALID_PROCESS_ID)
+    CHECK_RET(AMD_DBGAPI_STATUS_ERROR_INVALID_ARGUMENT)
+    CHECK_RET(AMD_DBGAPI_STATUS_ERROR_CLIENT_CALLBACK)
+    CHECK_RET(AMD_DBGAPI_STATUS_ERROR_INVALID_CODE_OBJECT_ID)
+    CHECK_RET(AMD_DBGAPI_STATUS_ERROR_INVALID_ARGUMENT_SIZE)
+    default:
+      PRINT("unknown rocm debug return value");
+      break;
+  } 
 
 #undef CHECK_RET
 

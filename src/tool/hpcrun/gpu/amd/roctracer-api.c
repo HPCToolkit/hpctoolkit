@@ -513,6 +513,8 @@ roctracer_bind
   // More details: https://github.com/ROCm-Developer-Tools/roctracer/issues/22
   setenv("HSA_ENABLE_INTERRUPT", "0", 1);
 
+  rocm_debug_api_bind();
+
 #ifndef HPCRUN_STATIC_LINK
   // dynamic libraries only availabile in non-static case
   hpcrun_force_dlopen(true);
@@ -541,8 +543,6 @@ roctracer_bind
   if (hip_kernel_name_ref_fn == 0) {
     return -1;
   }
-
-  rocm_debug_api_bind();
 
   return 0;
 #else
