@@ -212,8 +212,7 @@ _static_srcs = [files(
   'custom-init-static.c',
 )]
 _static_cflags = ['-DHPCRUN_STATIC_LINK']
-_static_deps = [libelf_dep.partial_dependency(includes: true),
-                zlib_dep.partial_dependency(includes: true),
+_static_deps = [libelf_dep.partial_dependency(compile_args: true, includes: true),
                 libmonitor_static_dep]
 
 if false  # TODO: Change out for a Blue Gene option
@@ -386,9 +385,8 @@ libhpcrun_lib = shared_library('hpcrun',
 )
 summary('hpcrun', not is_disabler(libhpcrun_lib), section: 'Applications', bool_yn: true)
 
-libhpcrun_static_lib = executable('hpcrun_static',
+libhpcrun_static_lib = static_library('hpcrun_static',
   _common_srcs, _static_srcs, 'utilities/last_func.c',
-  name_suffix: 'o', link_args: ['-Wl,-relocatable'],
   include_directories: _include_dirs,
   c_args: _common_cflags + _static_cflags,
   dependencies: _static_deps
