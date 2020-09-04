@@ -123,7 +123,7 @@ ExperimentXML::udModule::udModule(const Module& m, ExperimentXML& exml)
 void ExperimentXML::udModule::incr(const Module& mod, ExperimentXML&) {
   if(!used.exchange(true, std::memory_order_relaxed)) {
     std::ostringstream ss;
-    ss << "<LoadModule i=\"" << id << "\" n=" << util::xmlquoted(mod.path().string()) << "/>";
+    ss << "<LoadModule i=\"" << id << "\" n=" << util::xmlquoted(mod.path().string()) << "/>\n";
     tag = ss.str();
   }
 }
@@ -150,7 +150,7 @@ void ExperimentXML::udFile::incr(ExperimentXML& exml) {
     if(fl == nullptr) {
       ss << "<File i=\"" << id << "\" n=\"&lt;unknown file&gt;";
       if(m != nullptr) ss << " [" << util::xmlquoted(m->path().filename().string(), false) << "]";
-      ss << "\"/>";
+      ss << "\"/>\n";
     } else {
       ss << "<File i=\"" << id << "\" n=";
       const fs::path& rp = fl->userdata[exml.src.resolvedPath()];
@@ -163,7 +163,7 @@ void ExperimentXML::udFile::incr(ExperimentXML& exml) {
           fs::copy_file(rp, p, fsx::copy_options::overwrite_existing);
         }
       } else ss << util::xmlquoted(fl->path().string());
-      ss << "/>";
+      ss << "/>\n";
     }
     tag = ss.str();
   }
@@ -186,21 +186,21 @@ ExperimentXML::udMetric::udMetric(const Metric& m, ExperimentXML& exml) {
                     "md=" << util::xmlquoted(m.description()) << " "
                     "v=\"derived-incr\" "
                     "t=\"inclusive\" partner=\"" << ex_id << "\" "
-                    "show=\"1\" show-percent=\"1\">"
-        "<MetricFormula t=\"combine\" frm=\"sum($" << inc_id << ", $" << inc_id << ")\"/>"
-        "<MetricFormula t=\"finalize\" frm=\"$" << inc_id << "\"/>"
-        "<Info><NV n=\"units\" v=\"events\"/></Info>"
-        "</Metric>"
+                    "show=\"1\" show-percent=\"1\">\n"
+        "<MetricFormula t=\"combine\" frm=\"sum($" << inc_id << ", $" << inc_id << ")\"/>\n"
+        "<MetricFormula t=\"finalize\" frm=\"$" << inc_id << "\"/>\n"
+        "<Info><NV n=\"units\" v=\"events\"/></Info>\n"
+        "</Metric>\n"
         "<Metric i=\"" << ex_id << "\" o=\"" << ex_id << "\" "
                     "n=" << util::xmlquoted(m.name() + ":Sum (E)") << " "
                     "md=" << util::xmlquoted(m.description()) << " "
                     "v=\"derived-incr\" "
                     "t=\"exclusive\" partner=\"" << inc_id << "\" "
-                    "show=\"1\" show-percent=\"1\">"
-        "<MetricFormula t=\"combine\" frm=\"sum($" << ex_id << ", $" << ex_id << ")\"/>"
-        "<MetricFormula t=\"finalize\" frm=\"$" << ex_id << "\"/>"
-        "<Info><NV n=\"units\" v=\"events\"/></Info>"
-        "</Metric>";
+                    "show=\"1\" show-percent=\"1\">\n"
+        "<MetricFormula t=\"combine\" frm=\"sum($" << ex_id << ", $" << ex_id << ")\"/>\n"
+        "<MetricFormula t=\"finalize\" frm=\"$" << ex_id << "\"/>\n"
+        "<Info><NV n=\"units\" v=\"events\"/></Info>\n"
+        "</Metric>\n";
   tag = ss.str();
 }
 
@@ -221,7 +221,7 @@ ExperimentXML::udContext::udContext(const Context& c, ExperimentXML& exml)
              " f=\"" << exml.file_unknown.id << "\""
              " l=\"0\"";
     open = ss.str();
-    close = "</PF>";
+    close = "</PF>\n";
     break;
   }
   case Scope::Type::loop: {
@@ -231,12 +231,12 @@ ExperimentXML::udContext::udContext(const Context& c, ExperimentXML& exml)
              " l=\"" << fl.second << "\""
              " f=\"" << fl.first.userdata[exml.ud].id << "\"";
     open = ss.str();
-    close = "</L>";
+    close = "</L>\n";
     break;
   }
   case Scope::Type::global:
     open = "<SecCallPathProfileData";
-    close = "</SecCallPathProfileData>";
+    close = "</SecCallPathProfileData>\n";
     break;
   case Scope::Type::point: {
     const auto& mo = s.point_data();
@@ -257,11 +257,11 @@ ExperimentXML::udContext::udContext(const Context& c, ExperimentXML& exml)
                " lm=\"" << udm.id << "\""
                " n=\"" << proc.id << "\" s=\"" << proc.id << "\""
                " l=\"" << fl.second << "\""
-               " f=\"" << udf.id << "\">";
+               " f=\"" << udf.id << "\">\n";
       id++;  // Switch to our other id
       pre = ss.str();
       premetrics = true;
-      post = "</PF>";
+      post = "</PF>\n";
     }
     open = "<";
     std::ostringstream ss;
@@ -276,11 +276,11 @@ ExperimentXML::udContext::udContext(const Context& c, ExperimentXML& exml)
     std::ostringstream ss;
     ss << "<C i=\"" << id << "\" s=\"" << proc.id << "\""
             " v=\"0\""
-            " l=\"" << fl.second << "\">";
+            " l=\"" << fl.second << "\">\n";
     id++;  // Switch to our other id
     pre = ss.str();
     premetrics = true;
-    post = "</C>";
+    post = "</C>\n";
     (s.line_data().first).userdata[exml.ud].incr(exml);
     // fallthrough
   }
@@ -310,7 +310,7 @@ ExperimentXML::udContext::udContext(const Context& c, ExperimentXML& exml)
              " n=\"" << proc.id << "\" s=\"" << proc.id << "\""
              " lm=\"" << udm.id << "\"";
     open = ss.str();
-    close = "</PF>";
+    close = "</PF>\n";
     partial = false;  // If we have a Function, we're not lost. Probably.
     break;
   }
@@ -355,7 +355,7 @@ void ExperimentXML::Proc::setTag(std::string n, std::size_t v, bool fake) {
   ss << "<Procedure i=\"" << id << "\" n=" << util::xmlquoted(n)
      << " v=\"" << std::hex << (v == 0 ? "" : "0x") << v << "\"";
   if(fake) ss << " f=\"1\"";
-  ss << "/>";
+  ss << "/>\n";
   tag = ss.str();
 }
 
@@ -374,34 +374,34 @@ void ExperimentXML::notifyPipeline() noexcept {
 
 void ExperimentXML::write() {
   const auto& name = src.attributes().name().value();
-  of << "<?xml version=\"1.0\"?>"
-        "<HPCToolkitExperiment version=\"2.2\">"
-        "<Header n=" << util::xmlquoted(name) << ">"
-        "<Info/>"
-        "</Header>"
-        "<SecCallPathProfile i=\"0\" n=" << util::xmlquoted(name) << ">"
-        "<SecHeader>";
+  of << "<?xml version=\"1.0\"?>\n"
+        "<HPCToolkitExperiment version=\"4.0\">\n"
+        "<Header n=" << util::xmlquoted(name) << ">\n"
+        "<Info/>\n"
+        "</Header>\n"
+        "<SecCallPathProfile i=\"0\" n=" << util::xmlquoted(name) << ">\n"
+        "<SecHeader>\n";
 
   // MetricTable: from the Metrics
-  of << "<MetricTable>";
+  of << "<MetricTable>\n";
   for(const auto& m: src.metrics().iterate()) of << m().userdata[ud].tag;
-  of << "</MetricTable>";
+  of << "</MetricTable>\n";
 
   if(metricdb != nullptr)
     of << metricdb->exmlTag();
   else
-    of << "<MetricDBTable/>";
+    of << "<MetricDBTable/>\n";
   if(tracedb != nullptr)
-    of << "<TraceDBTable>" << tracedb->exmlTag() << "</TraceDBTable>";
-  of << "<LoadModuleTable>";
+    of << "<TraceDBTable>\n" << tracedb->exmlTag() << "</TraceDBTable>\n";
+  of << "<LoadModuleTable>\n";
   // LoadModuleTable: from the Modules
   for(const auto& m: src.modules().iterate()) {
     auto& udm = m().userdata[ud];
     if(!udm) continue;
     of << udm.tag;
   }
-  of << "</LoadModuleTable>"
-        "<FileTable>";
+  of << "</LoadModuleTable>\n"
+        "<FileTable>\n";
   // FileTable: from the Files
   if(file_unknown) of << file_unknown.tag;
   for(const auto& f: src.files().iterate()) {
@@ -414,22 +414,22 @@ void ExperimentXML::write() {
     if(!udm) continue;
     of << udm.tag;
   }
-  of << "</FileTable>"
-        "<ProcedureTable>";
+  of << "</FileTable>\n"
+        "<ProcedureTable>\n";
   // ProcedureTable: from the Functions for each Module.
   for(const auto& sp: procs.iterate()) of << sp.second.tag;
   if(proc_unknown_flag.query()) of << proc_unknown_proc.tag;
   if(proc_partial_flag.query()) of << proc_partial_proc.tag;
-  of << "</ProcedureTable>"
+  of << "</ProcedureTable>\n"
 
-        "<Info/>"
-        "</SecHeader>";
+        "<Info/>\n"
+        "</SecHeader>\n";
 
   // Spit out the CCT
   emit(src.contexts());
 
-  of << "</SecCallPathProfile>"
-        "</HPCToolkitExperiment>" << std::flush;
+  of << "</SecCallPathProfile>\n"
+        "</HPCToolkitExperiment>\n" << std::flush;
 }
 
 void ExperimentXML::emitMetrics(const Context& c, bool ex) {
@@ -439,11 +439,11 @@ void ExperimentXML::emitMetrics(const Context& c, bool ex) {
     if(v.first != 0 && ex)
       of << "<M n=\"" << udm.ex_id << "\" v=\""
         << std::scientific << v.first << std::defaultfloat
-        << "\"/>";
+        << "\"/>\n";
     if(v.second != 0)
       of << "<M n=\"" << udm.inc_id << "\" v=\""
         << std::scientific << v.second << std::defaultfloat
-        << "\"/>";
+        << "\"/>\n";
   }
 }
 
@@ -475,10 +475,10 @@ void ExperimentXML::emit(const Context& c) {
 
   // If this is an empty tag, use the shorter form, otherwise close the tag.
   if(c.children().empty() && !emitmetrics) {
-    of << "/>" << udc.post;
+    of << "/>\n" << udc.post;
     return;
   }
-  of << ">";
+  of << ">\n";
 
   // Emit the metrics (if we're emitting metrics) above the other contents.
   if(emitmetrics) emitMetrics(c);
@@ -495,7 +495,7 @@ void ExperimentXML::emit(const Context& c) {
   case Scope::Type::loop:
     break;
   case Scope::Type::point:
-    of << "</" << (c.children().empty() ? 'S' : 'C') << ">";
+    of << "</" << (c.children().empty() ? 'S' : 'C') << ">\n";
     break;
   }
   of << udc.close << udc.post;

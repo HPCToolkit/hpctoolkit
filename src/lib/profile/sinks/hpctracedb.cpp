@@ -179,7 +179,7 @@ std::string HPCTraceDB::exmlTag() {
         " db-min-time=\"" << min.load(std::memory_order_relaxed).count() << "\""
         " db-max-time=\"" << max.load(std::memory_order_relaxed).count() << "\""
         " db-header-sz=\"" << HPCTRACE_FMT_HeaderLen << "\""
-        " u=\"1000000000\"/>";
+        " u=\"1000000000\"/>\n";
   return ss.str();
 }
 
