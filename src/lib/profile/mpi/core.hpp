@@ -48,6 +48,7 @@
 #define HPCTOOLKIT_PROFILE_MPI_CORE_H
 
 #include <cstdint>
+#include <type_traits>
 
 namespace hpctoolkit::mpi {
 
@@ -56,7 +57,12 @@ namespace detail {
 struct Datatype;
 
 // Conversion from C++ types to MPI type handles.
-template<class T> const Datatype& asDatatype();
+template<class T, typename std::enable_if<
+    std::is_arithmetic<T>::value && std::is_same<
+      typename std::remove_cv<typename std::remove_reference<T>::type>::type,
+      T>::value
+  >::type* = nullptr>
+const Datatype& asDatatype();
 
 }  // namespace detail
 
