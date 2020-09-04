@@ -51,5 +51,6 @@
 #include "bcast.hpp"
 #include "reduce.hpp"
 #include "scan.hpp"
+#include "all2all.hpp"
 
 #endif  // HPCTOOLKIT_PROFILE_MPI_ALL_H

@@ -87,3 +87,10 @@ void detail::reduce(void*, std::size_t, const Datatype&, std::size_t, const Op&)
 void detail::allreduce(void*, std::size_t, const Datatype&, const Op&) {};
 void detail::scan(void*, std::size_t, const Datatype&, const Op&) {};
 void detail::exscan(void*, std::size_t, const Datatype&, const Op&) {};
+void detail::gather(void* data, std::size_t cnt, const Datatype&, std::size_t rootRank) {};
+void detail::gatherv(void* data, std::size_t cnt, const Datatype&, std::size_t rootRank) {};
+void detail::gatherv(void* data, const std::size_t* cnts, const Datatype&, std::size_t rootRank) {};
+void detail::scatter(void* data, std::size_t cnt, const Datatype&, std::size_t rootRank) {};
+void detail::scatterv(void* data, std::size_t cnt, const Datatype&, std::size_t rootRank) {};
+void detail::scatterv(void* data, const std::size_t* cnts, const Datatype&, std::size_t rootRank) {};
+

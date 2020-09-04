@@ -151,6 +151,66 @@ void detail::scan(void* data, std::size_t cnt, const Datatype& ty,
 void detail::exscan(void* data, std::size_t cnt, const Datatype& ty,
                     const Op& op) {
   if(MPI_Exscan(MPI_IN_PLACE, data, cnt, ty.value,
-              static_cast<const BaseOp&>(op).op, MPI_COMM_WORLD) != MPI_SUCCESS)
+     static_cast<const BaseOp&>(op).op, MPI_COMM_WORLD) != MPI_SUCCESS)
     util::log::fatal{} << "Error while performing an MPI exclusive scan!";
+}
+void detail::gather(void* data, std::size_t cnt, const Datatype& ty,
+                    std::size_t rootRank) {
+  if(MPI_Gather(MPI_IN_PLACE, 0, ty.value, data, cnt, ty.value, rootRank,
+                MPI_COMM_WORLD) != MPI_SUCCESS)
+    util::log::fatal{} << "Error while performing an MPI gather!";
+}
+void detail::gatherv(void* data, const std::size_t* cnts, const Datatype& ty,
+                     std::size_t rootRank) {
+  if(World::rank() != rootRank) util::log::fatal{} << "Only valid at root!";
+  std::vector<int> icnts(World::size());
+  std::vector<int> ioffsets(World::size());
+  for(std::size_t i = 0, idx = 0; i < World::size(); i++) {
+    icnts[i] = cnts[i];
+    ioffsets[i] = idx;
+    idx += cnts[i];
+  }
+  if(MPI_Gatherv(MPI_IN_PLACE, 0, 0, data, icnts.data(), ioffsets.data(),
+                 ty.value, rootRank, MPI_COMM_WORLD) != MPI_SUCCESS)
+    util::log::fatal{} << "Error while performing an MPI vectorized gather (root)!";
+}
+void detail::gatherv(void* data, std::size_t cnt, const Datatype& ty,
+                     std::size_t rootRank) {
+  if(World::rank() == rootRank) util::log::fatal{} << "Not valid at root!";
+  if(MPI_Gatherv(data, cnt, ty.value, nullptr, nullptr, nullptr, 0,
+                 rootRank, MPI_COMM_WORLD) != MPI_SUCCESS)
+    util::log::fatal{} << "Error while performing an MPI vectorized gather (non-root)!";
+}
+void detail::scatter(void* data, std::size_t cnt, const Datatype& ty,
+                    std::size_t rootRank) {
+  if(World::rank() == rootRank) {
+    if(MPI_Scatter(data, cnt, ty.value, MPI_IN_PLACE, 0, 0, rootRank,
+                   MPI_COMM_WORLD) != MPI_SUCCESS)
+      util::log::fatal{} << "Error while performing an MPI scatter!";
+  } else {
+    if(MPI_Scatter(nullptr, 0, 0, data, cnt, ty.value, rootRank,
+                   MPI_COMM_WORLD) != MPI_SUCCESS)
+      util::log::fatal{} << "Error while performing an MPI scatter!";
+  }
+}
+void detail::scatterv(void* data, const std::size_t* cnts, const Datatype& ty,
+                      std::size_t rootRank) {
+  if(World::rank() != rootRank) util::log::fatal{} << "Only valid at root!";
+  std::vector<int> icnts(World::size());
+  std::vector<int> ioffsets(World::size());
+  for(std::size_t i = 0, idx = 0; i < World::size(); i++) {
+    icnts[i] = cnts[i];
+    ioffsets[i] = idx;
+    idx += cnts[i];
+  }
+  if(MPI_Scatterv(data, icnts.data(), ioffsets.data(), ty.value,
+                  MPI_IN_PLACE, 0, 0, rootRank, MPI_COMM_WORLD) != MPI_SUCCESS)
+    util::log::fatal{} << "Error while performing an MPI vectorized scatter (root)!";
+}
+void detail::scatterv(void* data, std::size_t cnt, const Datatype& ty,
+                      std::size_t rootRank) {
+  if(World::rank() == rootRank) util::log::fatal{} << "Only valid at root!";
+  if(MPI_Scatterv(nullptr, nullptr, nullptr, 0,
+                  data, cnt, ty.value, rootRank, MPI_COMM_WORLD) != MPI_SUCCESS)
+    util::log::fatal{} << "Error while performing an MPI vectorized scatter (non-root)!";
 }
