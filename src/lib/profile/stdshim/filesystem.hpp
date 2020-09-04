@@ -59,10 +59,12 @@
 
 #if STD_HAS(filesystem)
 #include <filesystem>
+#include <system_error>
 
 namespace hpctoolkit::stdshim {
 namespace filesystem = std::filesystem;
 namespace filesystemx {
+  using error_code = std::error_code;
   using copy_options = std::filesystem::copy_options;
 }
 }
@@ -85,6 +87,7 @@ namespace filesystemx {
 namespace hpctoolkit::stdshim {
 namespace filesystem = boost::filesystem;
 namespace filesystemx {
+  using error_code = boost::system::error_code;
   namespace copy_options {
     static constexpr auto none = boost::filesystem::copy_option::none;
     static constexpr auto overwrite_existing = boost::filesystem::copy_option::overwrite_if_exists;

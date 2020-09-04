@@ -350,14 +350,15 @@ static std::pair<bool, fs::path> remove_prefix(const fs::path& path, const fs::p
 
 static fs::path search(const std::unordered_map<fs::path, fs::path>& prefixes,
                        const fs::path& p) noexcept {
+  stdshim::filesystemx::error_code ec;
   for(const auto& ft: prefixes) {
     auto xp = remove_prefix(p, ft.first);
     if(xp.first) {
       fs::path rp = ft.second / xp.second;
-      if(fs::exists(rp)) return rp;
+      if(fs::is_regular_file(rp, ec)) return rp;
     }
   }
-  if(fs::exists(p)) return p;  // If all else fails;
+  if(fs::is_regular_file(p, ec)) return p;  // If all else fails;
   return fs::path();
 }
 
