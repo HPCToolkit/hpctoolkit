@@ -47,9 +47,9 @@
 //***************************************************************************
 //
 // Purpose:
-//   Low-level types and functions for reading/writing thread_major_sparse.db
+//   Low-level types and functions for reading/writing thread.db
 //
-//   See thread_major_sparse figure. //TODO change this
+//   See thread.db figure.
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]
@@ -165,7 +165,7 @@ tms_id_tuple_free(tms_id_tuple_t** x, uint32_t num_tuples);
 
 
 typedef struct tms_profile_info_t{
-  uint32_t prof_info_idx; //won't be written in thread_major_sparse.db
+  uint32_t prof_info_idx; //won't be written in thread.db
 
   uint64_t num_vals;
   uint32_t num_nzctxs;

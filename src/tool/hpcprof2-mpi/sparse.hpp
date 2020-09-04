@@ -86,7 +86,7 @@ public:
   void notifyThreadFinal(const hpctoolkit::Thread::Temporary&) override;
 
   //***************************************************************************
-  // thread_major_sparse.db  - YUMENG
+  // thread.db  - YUMENG
   //***************************************************************************
   void writeThreadMajor(const int threads, 
                         const int world_rank, 
@@ -95,7 +95,7 @@ public:
                         std::vector<std::set<uint16_t>>& ctx_nzmids);
 
   //***************************************************************************
-  // cct_major_sparse.db  - YUMENG
+  // cct.db  - YUMENG
   //***************************************************************************
   void writeCCTMajor(const std::vector<uint64_t>& cct_local_sizes, 
                      std::vector<std::set<uint16_t>>& cct_nzmids,
@@ -169,7 +169,7 @@ private:
   #define SPARSE_exitIfMPIError(r,info) if(r != MPI_SUCCESS) {exitMPIError(r, info);}
 
   //***************************************************************************
-  // thread_major_sparse.db  - YUMENG
+  // thread.db  - YUMENG
   //***************************************************************************
   //---------------------------------------------------------------------------
   // profile id tuples - format conversion with ThreadAttribute and IntPair
@@ -307,14 +307,14 @@ private:
 
 
   //***************************************************************************
-  // cct_major_sparse.db  - YUMENG
+  // cct.db  - YUMENG
   //***************************************************************************
   struct TMS_CtxIdIdxPair{
     uint32_t ctx_id;  // = cct node id
     uint64_t ctx_idx; //starting location of the context's values in value array
   };
   //---------------------------------------------------------------------------
-  // calculate the offset for each cct node's section in cct_major_sparse.db
+  // calculate the offset for each cct node's section in cct.db
   // assign cct nodes to different ranks
   //---------------------------------------------------------------------------
   void unionMids(std::vector<std::set<uint16_t>>& ctx_nzmids, 

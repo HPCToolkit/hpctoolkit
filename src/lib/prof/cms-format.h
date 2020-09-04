@@ -47,9 +47,9 @@
 //***************************************************************************
 //
 // Purpose:
-//   Low-level types and functions for reading/writing cct_major_sparse.db
+//   Low-level types and functions for reading/writing cct.db
 //
-//   See cct_major_sparse figure. //TODO change this
+//   See cct.db figure. //TODO change this
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]

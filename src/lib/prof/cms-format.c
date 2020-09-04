@@ -47,9 +47,9 @@
 //***************************************************************************
 //
 // Purpose:
-//   Low-level types and functions for reading/writing cct_major_sparse.db
+//   Low-level types and functions for reading/writing cct.db
 //
-//   See cct_major_sparse figure. //TODO change this
+//   See cct.db figure. //TODO change this
 //
 // Description:
 //   [The set of functions, macros, etc. defined in the file]
@@ -241,7 +241,7 @@ cms_sparse_metrics_fprint(cct_sparse_metrics_t* x, FILE* fs, const char* pre, bo
   }else{
     fprintf(fs, "%s[metrics:\n%s(NOTES: printed in file order, help checking if the file is correct)\n", pre, pre);
     for (uint i = 0; i < x->num_vals; ++i) {
-      fprintf(fs, "%s(value: %g, profile idx: %d)\n", double_pre, x->values[i].r, x->tids[i]); //cct_major_sparse doesn't have metricTbl, so all print as real value for now
+      fprintf(fs, "%s(value: %g, profile idx: %d)\n", double_pre, x->values[i].r, x->tids[i]); //cct doesn't have metricTbl, so all print as real value for now
     }
     fprintf(fs, "%s]\n", pre);
   }

@@ -398,7 +398,7 @@ void SparseDB::convertToByte8(uint64_t val, char* bytes){
 
 
 //***************************************************************************
-// thread_major_sparse.db  - YUMENG
+// thread.db  - YUMENG
 //
 /*EXAMPLE
 HPCPROF-tmsdb_____
@@ -674,7 +674,7 @@ void SparseDB::sortIdTuples(std::vector<tms_id_tuple_t>& all_tuples)
 }
 
 
-//assign the prof_info_idx of each tuple (index in prof_info section of thread_major_sparse.db)
+//assign the prof_info_idx of each tuple (index in prof_info section of thread.db)
 void SparseDB::assignIdTuplesIdx(std::vector<tms_id_tuple_t>& all_tuples,
                                  const int threads)
 {
@@ -686,7 +686,7 @@ void SparseDB::assignIdTuplesIdx(std::vector<tms_id_tuple_t>& all_tuples,
 }
 
 
-//exscan to get the writing offset for each tuple in the thread_major_sparse.db
+//exscan to get the writing offset for each tuple in the thread.db
 std::vector<uint64_t> SparseDB::getIdTuplesOff(std::vector<tms_id_tuple_t>& all_tuples,
                                                const int threads)
 {
@@ -823,7 +823,7 @@ uint32_t SparseDB::getTotalNumProfiles(const uint32_t my_num_prof)
 }
 
 
-// get the offset for this rank's start in thread_major_sparse.db
+// get the offset for this rank's start in thread.db
 // input: my_size as the total size of all profiles belong to this rank, rank number
 // output: calculated my_offset
 uint64_t SparseDB::getMyOffset(const uint64_t my_size, 
@@ -988,7 +988,7 @@ std::vector<char> SparseDB::buildOneProfInfoBytes(const std::vector<char>& parti
   return info_bytes;
 }
 
-// write one profile information at the top of thread_major_sparse.db
+// write one profile information at the top of thread.db
 // input: bytes of the profile, calculated offset, thread id, file handle
 void SparseDB::writeOneProfInfo(const std::vector<char>& info_bytes, 
                                 const uint32_t prof_info_idx,
@@ -1001,7 +1001,7 @@ void SparseDB::writeOneProfInfo(const std::vector<char>& info_bytes,
     __FUNCTION__ +  std::to_string(prof_info_idx) + std::string("th profile"));
 }
 
-// write one profile data at the <offset> of thread_major_sparse.db
+// write one profile data at the <offset> of thread.db
 // input: bytes of the profile, calculated offset, thread id, file handle
 void SparseDB::writeOneProfileData(const std::vector<char>& bytes, 
                                    const uint64_t offset, 
@@ -1013,7 +1013,7 @@ void SparseDB::writeOneProfileData(const std::vector<char>& bytes,
     __FUNCTION__ + std::to_string(prof_info_idx) + std::string("th profile"));
 }
 
-// write one profile in thread_major_sparse.db
+// write one profile in thread.db
 // input: one profile's thread attributes, profile's offset, file handle
 // output: assigned ctx_nzval_cnts and ctx_nzmids
 void SparseDB::writeOneProfile(const std::pair<tms_id_tuple_t, std::string>& tupleFn,
@@ -1050,7 +1050,7 @@ void SparseDB::writeOneProfile(const std::pair<tms_id_tuple_t, std::string>& tup
   writeOneProfileData(bytes, my_prof_offset, prof_idx_off_pair.first, fh);
 }
 
-// write all the profiles at the correct place, and collect data needed for cct_major_sparse.db 
+// write all the profiles at the correct place, and collect data needed for cct.db 
 // input: calculated prof_offsets, calculated profile_sizes, file handle, number of available threads
 void SparseDB::writeProfiles(const uint64_t id_tuples_size,
                              const MPI_File fh, 
@@ -1114,7 +1114,7 @@ void SparseDB::writeThreadMajor(const int threads,
   //
 
   MPI_File thread_major_f;
-  MPI_File_open(MPI_COMM_WORLD, (dir / "thread_major_sparse.db").c_str(),
+  MPI_File_open(MPI_COMM_WORLD, (dir / "thread.db").c_str(),
                   MPI_MODE_CREATE | MPI_MODE_RDWR, MPI_INFO_NULL, &thread_major_f);
 
   id_tuples_size = workIdTuplesSection(world_rank, world_size, threads, thread_major_f);
@@ -1137,7 +1137,7 @@ void SparseDB::writeThreadMajor(const int threads,
 }
 
 //***************************************************************************
-// cct_major_sparse.db  - YUMENG
+// cct.db  - YUMENG
 //
 /*EXAMPLE
 [Context informations for 220 Contexts
@@ -1162,12 +1162,12 @@ void SparseDB::writeThreadMajor(const int threads,
 //***************************************************************************
 
 //---------------------------------------------------------------------------
-// calculate the offset for each context's section in cct_major_sparse.db
+// calculate the offset for each context's section in cct.db
 // assign contexts to different ranks
 //---------------------------------------------------------------------------
 
 // union ctx_nzmids from all ranks to root, in order to avoid double counting for offset calculation
-// input: each rank's own ctx_nzmids (collected while writing thread_major_sparse.db), rank number, number of processes/ranks, available threads
+// input: each rank's own ctx_nzmids (collected while writing thread.db), rank number, number of processes/ranks, available threads
 // output: rank 0's ctx_nzmids becomes global version
 void SparseDB::unionMids(std::vector<std::set<uint16_t>>& ctx_nzmids, 
                          const int rank, 
@@ -1415,7 +1415,7 @@ void SparseDB::interpretOneProfInfo(const char *input,
 }
 
 
-//read the Profile Information section of thread_major_sparse.db to get the list of profiles 
+//read the Profile Information section of thread.db to get the list of profiles 
 //input: available threads, MPI_File handle
 //output: (last argument) assigned prof_info (a vector of tms_profile_info_t)
 void SparseDB::readProfileInfo(const int threads, 
@@ -2311,7 +2311,7 @@ void SparseDB::writeCCTMajor(const std::vector<uint64_t>& ctx_nzval_cnts,
   //Prepare a union ctx_nzmids
   unionMids(ctx_nzmids,world_rank,world_size, threads);
 
-  //Get context global final offsets for cct_major_sparse.db
+  //Get context global final offsets for cct.db
   std::vector<uint64_t> ctx_off (ctxcnt + 1);
   getCtxOffset(ctx_nzval_cnts, ctx_nzmids, threads, world_rank, ctx_off);
   std::vector<uint32_t> my_ctxs;
@@ -2321,10 +2321,10 @@ void SparseDB::writeCCTMajor(const std::vector<uint64_t>& ctx_nzval_cnts,
 
   //Prepare files to read and write, get the list of profiles
   MPI_File thread_major_f;
-  MPI_File_open(MPI_COMM_WORLD, (dir / "thread_major_sparse.db").c_str(),
+  MPI_File_open(MPI_COMM_WORLD, (dir / "thread.db").c_str(),
                   MPI_MODE_RDONLY, MPI_INFO_NULL, &thread_major_f);
   MPI_File cct_major_f;
-  MPI_File_open(MPI_COMM_WORLD, (dir / "cct_major_sparse.db").c_str(),
+  MPI_File_open(MPI_COMM_WORLD, (dir / "cct.db").c_str(),
                   MPI_MODE_CREATE | MPI_MODE_RDWR, MPI_INFO_NULL, &cct_major_f);
   
   if(world_rank == 0){
