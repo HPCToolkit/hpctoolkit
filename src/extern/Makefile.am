@@ -44,69 +44,25 @@
 ##
 ## ******************************************************* EndRiceCopyright *
 
-#############################################################################
-##
-## File:
-##   $HeadURL$
-##
-## Description:
-##   *Process with automake to produce Makefile.in*
-##
-##   Note: All local variables are prefixed with MY to prevent name
-##   clashes with automatic automake variables.
-##
-#############################################################################
+# The src/extern directory is for modifying 3rd-party libraries for
+# hpcrun: libunwind, lzma, etc.  This is for renaming symbols,
+# stripping debug sections, etc.
+#
+# We copy the original library into the build directory, unpack the
+# archive, use objcopy to modify the members, repack the archive and
+# then leave it for linking into hpcrun.
 
-# We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)
+#----------------------------------------------------------------------
+
 AUTOMAKE_OPTIONS = foreign
 
-#############################################################################
-# Common settings
-#############################################################################
+SUBDIRS =
 
-include $(top_srcdir)/src/Makeinclude.config
-
-BINUTILS_IFLAGS = @BINUTILS_IFLAGS@
-
-#############################################################################
-# Local settings
-#############################################################################
-
-MYSOURCES = \
-	timer.h timer.c \
-	OSUtil.h OSUtil.c \
-	compress_lzma.c  \
-	demangle.c
-
-MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) $(BINUTILS_IFLAGS) $(LZMA_IFLAGS)
-
-if IS_HOST_AR
-  MYAR = @HOST_AR@
-else
-  MYAR = $(AR) cru
+if OPT_LIBUNWIND_STATIC
+    SUBDIRS += libunwind
 endif
 
-MYLIBADD = 
-
-MYCLEAN = 
-
-
-#############################################################################
-# Automake rules
-#############################################################################
-
-noinst_LTLIBRARIES = libHPCsupport-lean.la
-
-libHPCsupport_lean_la_SOURCES  = $(MYSOURCES)
-libHPCsupport_lean_la_CFLAGS   = $(MYCFLAGS)
-libHPCsupport_lean_la_AR       = $(MYAR)
-libHPCsupport_lean_la_LIBADD   = $(MYLIBADD)
-
-MOSTLYCLEANFILES = $(MYCLEAN)
-
-#############################################################################
-# Common rules
-#############################################################################
-
-include $(top_srcdir)/src/Makeinclude.rules
+if OPT_LZMA_STATIC
+    SUBDIRS += lzma
+endif
 

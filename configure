@@ -754,27 +754,30 @@ OPT_PAPI
 MBEDTLS_LIBS
 MBEDTLS_IFLAGS
 MBEDTLS_LIB
-MBEDTLS_COPY
-LZMA_LIB
-LZMA_INC
+OPT_LZMA_STATIC_FPIC_FALSE
+OPT_LZMA_STATIC_FPIC_TRUE
+OPT_LZMA_STATIC_FALSE
+OPT_LZMA_STATIC_TRUE
+LZMA_LIB_DIR
 LZMA_COPY
 LZMA_PROF_MPI_LIBS
 LZMA_LDFLAGS_STAT
 LZMA_LDFLAGS_DYN
+LZMA_IFLAGS
+OPT_LIBUNWIND_STATIC_FPIC_FALSE
+OPT_LIBUNWIND_STATIC_FPIC_TRUE
+OPT_LIBUNWIND_STATIC_FALSE
+OPT_LIBUNWIND_STATIC_TRUE
 UNW_LIBUNW_FALSE
 UNW_LIBUNW_TRUE
-UNW_MIPS_FALSE
-UNW_MIPS_TRUE
 UNW_PPC64_FALSE
 UNW_PPC64_TRUE
 UNW_X86_FALSE
 UNW_X86_TRUE
-LIBUNWIND_LIB
+LIBUNWIND_LIB_DIR
 LIBUNWIND_COPY
 LIBUNWIND_LDFLAGS_STAT
 LIBUNWIND_LDFLAGS_DYN
-LIBUNWIND_CPPFLAGS_STAT
-LIBUNWIND_CPPFLAGS_DYN
 LIBUNWIND_IFLAGS
 LIBMONITOR_WRAP_NAMES
 LIBMONITOR_RUN_DIR
@@ -1023,7 +1026,6 @@ with_libdwarf
 with_libiberty
 with_libmonitor
 with_libunwind
-enable_libunwind_primary
 with_lzma
 with_mbedtls
 with_papi
@@ -1724,9 +1726,6 @@ Optional Features:
                           spack build)
   --enable-bgq            configure for blue gene/q back end, disable posix
                           timers and perf events (default auto-detect)
-  --enable-libunwind-primary
-                          use libunwind as primary unwinder for hpcrun
-                          (default no)
   --enable-force-papi     force using both papi and perf events, if configure
                           can't verify that papi and perfmon match
   --enable-papi-c         use component papi, if available (default yes)
@@ -20912,26 +20911,34 @@ echo "$LIBMONITOR_WRAP_NAMES" >&5
 
 
 #-------------------------------------------------
-# Option: --with-libunwind=PATH, --enable-libunwind-primary
+# Option: --with-libunwind=PATH
 #-------------------------------------------------
+#
+# Now required on all platforms for hpcrun.
+# Test for three things:
+#
+#  1. libunwind exists (headers + .so) for dynamic case.
+#  2. static archive libunwind.a exists for static case.
+#  3. archive compiled with -fPIC for link into libhpcrun.so.
+#
+# Note: we only use local (first-party) unwinding, so we only need
+# libunwind.so, not libunwind-PLATFORM.so, but code must be compiled
+# with UNW_LOCAL_ONLY.
+#
 
-# Libunwind can be the primary unwinder (any platform), the secondary
-# unwinder or not used at all.  So, keep it optional and test static
-# and dynamic versions separately.  But if libunwind is the primary
-# unwinder, then can't build hpcrun or hpclink without it.
-
-LIBUNWIND_STAT=no
+LIBUNWIND="$default_libunwind_prefix"
 
 LIBUNWIND_IFLAGS=
-LIBUNWIND_CPPFLAGS_DYN=
-LIBUNWIND_CPPFLAGS_STAT=
 LIBUNWIND_LDFLAGS_DYN=
 LIBUNWIND_LDFLAGS_STAT=
 
 LIBUNWIND_COPY=no
-LIBUNWIND_LIB=
+LIBUNWIND_LIB_DIR=
 
-LIBUNWIND="$default_libunwind_prefix"
+libunwind_exists=no
+libunwind_dynamic=no
+libunwind_static=no
+libunwind_fpic=no
 
 
 # Check whether --with-libunwind was given.
@@ -20940,21 +20947,12 @@ if test "${with_libunwind+set}" = set; then :
 fi
 
 
-# Check whether --enable-libunwind-primary was given.
-if test "${enable_libunwind_primary+set}" = set; then :
-  enableval=$enable_libunwind_primary;
-else
-  enable_libunwind_primary=no
-fi
-
-
-# If libunwind is available, require dynamic (.so) version, and make
-# static (.a) optional.  On powerpc, libunwind installs libs into
-# lib64, so test for multilib here.
-
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for libunwind" >&5
 $as_echo_n "checking for libunwind... " >&6; }
 
+#
+# Test if libunwind.h, libunwind.so and libunwind.a exist.
+#
 case "$LIBUNWIND" in
   /* )
     if test ! -f "${LIBUNWIND}/include/libunwind.h" ; then
@@ -20963,19 +20961,25 @@ case "$LIBUNWIND" in
     LIBUNWIND_IFLAGS="-I${LIBUNWIND}/include"
 
     for lib in $multilib_path ; do
-      unw_libdir="${LIBUNWIND}/$lib"
-      if test -f "$unw_libdir/libunwind.so" ; then
-        LIBUNWIND_LDFLAGS_DYN="-L${unw_libdir} -lunwind"
+      ldir="${LIBUNWIND}/$lib"
+      if test -f "${ldir}/libunwind.so" ; then
+        LIBUNWIND_LDFLAGS_DYN="-L${ldir} -lunwind"
     	LIBUNWIND_COPY=yes
-	LIBUNWIND_LIB="$unw_libdir"
-	if test -f "${unw_libdir}/libunwind.a" ; then
-	  LIBUNWIND_STAT=yes
-      	  LIBUNWIND_LDFLAGS_STAT="${unw_libdir}/libunwind.a"
-	fi
-	break
+	LIBUNWIND_LIB_DIR="$ldir"
+	libunwind_exists=yes
+	libunwind_dynamic=yes
+      fi
+      if test -f "${ldir}/libunwind.a" ; then
+        LIBUNWIND_LDFLAGS_STAT="${ldir}/libunwind.a"
+	LIBUNWIND_LIB_DIR="$ldir"
+	libunwind_exists=yes
+	libunwind_static=yes
+      fi
+      if test "$libunwind_exists" = yes ; then
+        break
       fi
     done
-    if test "x$LIBUNWIND_LIB" = x ; then
+    if test "$libunwind_exists" != yes ; then
       as_fn_error $? "invalid libunwind directory: $LIBUNWIND" "$LINENO" 5
     fi
     num_pkgs=`expr 1 + $num_pkgs`
@@ -20989,59 +20993,92 @@ esac
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $LIBUNWIND" >&5
 $as_echo "$LIBUNWIND" >&6; }
-{ $as_echo "$as_me:${as_lineno-$LINENO}: libunwind static: $LIBUNWIND_STAT" >&5
-$as_echo "$as_me: libunwind static: $LIBUNWIND_STAT" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: libunwind.a static archive: $libunwind_static" >&5
+$as_echo "$as_me: libunwind.a static archive: $libunwind_static" >&6;}
 
-case "$enable_libunwind_primary" in
-  yes | Yes | YES )
-    if test "$LIBUNWIND" = no ; then
-      as_fn_error $? "enable libunwind primary requires libunwind" "$LINENO" 5
-    fi
-    UNWINDER=libunw
-    ;;
-esac
+#
+# Test if libunwind.a was compiled with -fPIC.
+# If yes, then use for both static and dynamic.
+#
+if test "x$libunwind_static" = xyes
+then
+  ORIG_CFLAGS="$CFLAGS"
+  ORIG_LIBS="$LIBS"
+  CFLAGS="-shared -fPIC $LIBUNWIND_IFLAGS"
+  LIBS="$LIBUNWIND_LDFLAGS_STAT"
 
-no_unwind_for_hpcrun=no
-no_unwind_for_hpclink=no
-unwinder_mesg="$UNWINDER"
+  ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
-if test "$UNWINDER" = libunw ; then
-  #
-  # libunwind is the primary unwinder.  must have libunwind or else
-  # can't build hpcrun or hpclink.  don't need CPPFLAGS in this case.
-  #
-  if test "$LIBUNWIND" = no ; then
-    no_unwind_for_hpcrun=yes
-  fi
-  if test "$LIBUNWIND_STAT" = no ; then
-    no_unwind_for_hpclink=yes
-  fi
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+#define UNW_LOCAL_ONLY
+#include <sys/types.h>
+#include <libunwind.h>
+unw_word_t
+my_get_ip_addr(unw_context_t *context)
+{
+  unw_cursor_t cursor;
+  unw_word_t ip;
+  unw_init_local(&cursor, context);
+  unw_step(&cursor);
+  unw_get_reg(&cursor, UNW_REG_IP, &ip);
+  return ip;
+}
+
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  libunwind_fpic=yes
 else
-  #
-  # libunwind is the secondary unwinder or not available.  can build
-  # hpcrun without libunwind, but set CPPFLAGS when available.
-  #
-  if test "$LIBUNWIND" != no ; then
-    LIBUNWIND_CPPFLAGS_DYN='-DUSE_LIBUNWIND'
-    unwinder_mesg="$UNWINDER + libunw"
-  fi
-  if test "$LIBUNWIND_STAT" = yes ; then
-    LIBUNWIND_CPPFLAGS_STAT='-DUSE_LIBUNWIND'
-  fi
+  libunwind_fpic=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+  ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+  CFLAGS="$ORIG_CFLAGS"
+  LIBS="$ORIG_LIBS"
 fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: hpcrun unwinder: $unwinder_mesg" >&5
-$as_echo "$as_me: hpcrun unwinder: $unwinder_mesg" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: libunwind.a compiled with -fPIC: $libunwind_fpic" >&5
+$as_echo "$as_me: libunwind.a compiled with -fPIC: $libunwind_fpic" >&6;}
+
+# libunwind is only used in hpcrun, so if fpic exists, then don't need
+# to copy.
+if test "$libunwind_fpic" = yes ; then
+  LIBUNWIND_COPY=no
+fi
+
+#
+# Report a warning if not using an fpic archive.
+#
+missing_fpic=
+if test "$libunwind_fpic" != yes ; then
+  missing_fpic="$missing_fpic libunwind"
+fi
+
+unwinder_mesg="$UNWINDER"
+if test "$UNWINDER" != libunw && test "$libunwind_exists" = yes ; then
+  unwinder_mesg="$unwinder_mesg + libunw"
+fi
 
 # fixme: only used in hpcrun/main.c because we don't have a libunwind
 # version of hpcrun_dump_intervals().
-if test "$UNWINDER" = "libunw"; then
+if test "$UNWINDER" != "libunw"; then
 
-$as_echo "#define USE_LIBUNW 1" >>confdefs.h
+$as_echo "#define HPCRUN_HAVE_CUSTOM_UNWINDER 1" >>confdefs.h
 
 fi
-
-
 
 
 
@@ -21069,14 +21106,6 @@ else
   UNW_PPC64_FALSE=
 fi
 
- if test "$UNWINDER" = mips; then
-  UNW_MIPS_TRUE=
-  UNW_MIPS_FALSE='#'
-else
-  UNW_MIPS_TRUE='#'
-  UNW_MIPS_FALSE=
-fi
-
  if test "$UNWINDER" = libunw; then
   UNW_LIBUNW_TRUE=
   UNW_LIBUNW_FALSE='#'
@@ -21086,27 +21115,53 @@ else
 fi
 
 
+ if test "$libunwind_static" = yes; then
+  OPT_LIBUNWIND_STATIC_TRUE=
+  OPT_LIBUNWIND_STATIC_FALSE='#'
+else
+  OPT_LIBUNWIND_STATIC_TRUE='#'
+  OPT_LIBUNWIND_STATIC_FALSE=
+fi
+
+ if test "$libunwind_fpic" = yes; then
+  OPT_LIBUNWIND_STATIC_FPIC_TRUE=
+  OPT_LIBUNWIND_STATIC_FPIC_FALSE='#'
+else
+  OPT_LIBUNWIND_STATIC_FPIC_TRUE='#'
+  OPT_LIBUNWIND_STATIC_FPIC_FALSE=
+fi
+
+
 
 #-------------------------------------------------
 # Option: --with-lzma=PATH
 #-------------------------------------------------
-
-# Test for lzma libraries and add to the build system if available.
-# New libunwind (aug 2017) uses liblzma to read compressed sections.
-# But allow for older externals that doesn't build them.
 #
-# Dynamically, add -llzma to libhpcrun.so and copy libs.
-# Statically, link liblzma.a into libhpcrun.o at build time.
-
-LZMA_STATIC=no
-LZMA_LDFLAGS_DYN=
-LZMA_LDFLAGS_STAT=
-LZMA_INC=no
-LZMA_COPY=no
-LZMA_LIB=
-LZMA_PROF_MPI_LIBS=
+# Test for three things:
+#
+#  1. liblzma exists (headers + .so) for dynamic case.
+#  2. static archive liblzma.a exists for static case.
+#  3. archive compiled with -fPIC for link into libhpcrun.so.
+#
+# Note: lzma is also used in prof-mpi (via support-lean), not just in
+# hpcrun, so we also need "normal" usage, not just fPIC archive for
+# hiding.
+#
 
 LZMA="$default_lzma_prefix"
+
+LZMA_IFLAGS=
+LZMA_LDFLAGS_DYN=
+LZMA_LDFLAGS_STAT=
+LZMA_PROF_MPI_LIBS=
+
+LZMA_COPY=no
+LZMA_LIB_DIR=
+
+lzma_exists=no
+lzma_dynamic=no
+lzma_static=no
+lzma_fpic=no
 
 
 # Check whether --with-lzma was given.
@@ -21118,34 +21173,37 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for lzma" >&5
 $as_echo_n "checking for lzma... " >&6; }
 
+#
+# Test if lzma.h, liblzma.so and/or liblzma.a exist.
+#
 case "$LZMA" in
   /* )
+    if test ! -f "${LZMA}/include/lzma.h" ; then
+      as_fn_error $? "invalid lzma directory: $LZMA" "$LINENO" 5
+    fi
+    LZMA_IFLAGS="-I${LZMA}/include"
+
     for lib in $multilib_path ; do
-      lzma_libdir="${LZMA}/$lib"
-      if test -f "${lzma_libdir}/liblzma.so" ; then
-        LZMA_LDFLAGS_DYN="-L${lzma_libdir} -llzma"
+      ldir="${LZMA}/$lib"
+      if test -f "${ldir}/liblzma.so" ; then
+        LZMA_LDFLAGS_DYN="-L${ldir} -llzma"
 	LZMA_COPY=yes
-	LZMA_LIB="$lzma_libdir"
-        LZMA_INC="${LZMA}/include"
-	if test -f "${lzma_libdir}/liblzma.a" ; then
-	  LZMA_STATIC=yes
-	  LZMA_LDFLAGS_STAT="${lzma_libdir}/liblzma.a"
-	fi
-	break
+	LZMA_LIB_DIR="$ldir"
+        lzma_exists=yes
+	lzma_dynamic=yes
+      fi
+      if test -f "${ldir}/liblzma.a" ; then
+        LZMA_LDFLAGS_STAT="${ldir}/liblzma.a"
+	LZMA_LIB_DIR="$ldir"
+        lzma_exists=yes
+	lzma_static=yes
+      fi
+      if test "$lzma_exists" = yes ; then
+        break
       fi
     done
-    if test "x$LZMA_LIB" = x ; then
+    if test "$lzma_exists" != yes ; then
       as_fn_error $? "invalid lzma directory: $LZMA" "$LINENO" 5
-    else
-      #
-      # hpcprof-mpi: same as hpclink if fully static, else default
-      #
-      echo "x$HPCPROFMPI_LT_LDFLAGS" | grep -e all-static >/dev/null 2>&1
-      if test $? = 0 ; then
-        LZMA_PROF_MPI_LIBS="$LZMA_LDFLAGS_DYN"
-      else
-        LZMA_PROF_MPI_LIBS="$LZMA_LDFLAGS_STAT"
-      fi
     fi
     num_pkgs=`expr 1 + $num_pkgs`
     ;;
@@ -21158,14 +21216,105 @@ esac
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $LZMA" >&5
 $as_echo "$LZMA" >&6; }
-{ $as_echo "$as_me:${as_lineno-$LINENO}: lzma static: $LZMA_STATIC" >&5
-$as_echo "$as_me: lzma static: $LZMA_STATIC" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: lzma.a static archive: $lzma_static" >&5
+$as_echo "$as_me: lzma.a static archive: $lzma_static" >&6;}
+
+#
+# Test if liblzma.a was compiled with -fPIC.
+# If yes, then use for both static and dynamic.
+#
+if test "$lzma_static" = yes
+then
+  ORIG_CFLAGS="$CFLAGS"
+  ORIG_LIBS="$LIBS"
+  CFLAGS="-shared -fPIC $LZMA_IFLAGS"
+  LIBS="$LZMA_LDFLAGS_STAT"
+
+  ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+#include <sys/types.h>
+#include <inttypes.h>
+#include <lzma.h>
+long
+myencode(uint8_t *in_buf, uint8_t *out_buf)
+{
+  lzma_stream stream = LZMA_STREAM_INIT;
+  stream.next_in = in_buf;
+  stream.next_out = out_buf;
+  lzma_code(&stream, LZMA_FINISH);
+  return (long) stream.avail_out;
+}
+
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  lzma_fpic=yes
+else
+  lzma_fpic=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+  ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+  CFLAGS="$ORIG_CFLAGS"
+  LIBS="$ORIG_LIBS"
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: lzma.a compiled with -fPIC: $lzma_fpic" >&5
+$as_echo "$as_me: lzma.a compiled with -fPIC: $lzma_fpic" >&6;}
+
+if test "$lzma_fpic" != yes ; then
+  missing_fpic="$missing_fpic lzma"
+fi
+
+#
+# hpcprof-mpi: same as hpclink if fully static, else default
+#
+echo "x$HPCPROFMPI_LT_LDFLAGS" | grep -e all-static >/dev/null 2>&1
+if test $? = 0 ; then
+  LZMA_PROF_MPI_LIBS="$LZMA_LDFLAGS_DYN"
+else
+  LZMA_PROF_MPI_LIBS="$LZMA_LDFLAGS_STAT"
+fi
 
 
 
 
 
 
+
+
+# Libunwind calls lzma.  If we statically link lzma int hpcrun but
+# dynamically link libuwnind, then we get two copies of lzma.  So,
+# linking lzma requires linking libunwind.
+
+ if test "$lzma_static" = yes; then
+  OPT_LZMA_STATIC_TRUE=
+  OPT_LZMA_STATIC_FALSE='#'
+else
+  OPT_LZMA_STATIC_TRUE='#'
+  OPT_LZMA_STATIC_FALSE=
+fi
+
+ if test "$lzma_fpic" = yes && test "$libunwind_fpic" = yes; then
+  OPT_LZMA_STATIC_FPIC_TRUE=
+  OPT_LZMA_STATIC_FPIC_FALSE='#'
+else
+  OPT_LZMA_STATIC_FPIC_TRUE='#'
+  OPT_LZMA_STATIC_FPIC_FALSE=
+fi
 
 
 
@@ -21178,7 +21327,6 @@ $as_echo "$as_me: lzma static: $LZMA_STATIC" >&6;}
 #
 # Note: we require libmbedcrypto.a to be compiled with -fPIC.
 
-MBEDTLS_COPY=no
 MBEDTLS="$default_mbedtls_prefix"
 MBEDTLS_IFLAGS=
 MBEDTLS_LIBS=
@@ -21202,7 +21350,6 @@ case "$MBEDTLS" in
     MBEDTLS_IFLAGS="-I ${MBEDTLS}/include"
     for lib in $multilib_path ; do
       if test -f "${MBEDTLS}/lib/libmbedcrypto.a" ; then
-	MBEDTLS_COPY=yes
 	MBEDTLS_LIB="${MBEDTLS}/lib"
         MBEDTLS_LIBS="${MBEDTLS}/lib/libmbedcrypto.a"
 	break
@@ -21281,7 +21428,6 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
     fi
     ;;
 esac
-
 
 
 
@@ -22710,7 +22856,7 @@ if test "$enable_hpcrun" = no ; then
   enable_hpcrun_mesg='no (disabled)'
 elif test "$LIBDWARF" = no   || test "$LIBELF" = no ||  \
      test "$LIBMONITOR" = no || test "$DYNINST" = no || \
-     test "$no_xed_for_hpcrun" = yes || test "$no_unwind_for_hpcrun" = yes
+     test "$no_xed_for_hpcrun" = yes || test "$libunwind_exists" = no
 then
   OPT_ENABLE_HPCRUN=no
   enable_hpcrun_mesg='no (missing prerequisites)'
@@ -22772,7 +22918,7 @@ fi
 
 
 if test "$OPT_LIBMONITOR_STATIC" = no || test "$no_xed_for_hpclink" = yes \
-   || test "$no_unwind_for_hpclink" = yes
+   || test "$libunwind_static" = no
 then
   OPT_ENABLE_HPCRUN_STATIC=no
 fi
@@ -23859,7 +24005,7 @@ launch_early_options="${srcdir}/config/launch-options"
 ac_config_headers="$ac_config_headers src/include/hpctoolkit-config.h"
 
 
-ac_config_files="$ac_config_files Makefile doc/Makefile doc/man/Makefile doc/man/HPCToolkitVersionInfo.tex doc/manual/Makefile doc/www/Makefile lib/Makefile src/Makefile src/tool/Makefile src/tool/hpcfnbounds/Makefile src/tool/hpcfnbounds2/Makefile src/tool/hpclump/Makefile src/tool/hpcprof/Makefile src/tool/hpcprof-mpi/Makefile src/tool/hpcprof-flat/Makefile src/tool/hpcproftt/Makefile src/tool/hpcrun/Makefile src/tool/hpcrun/utilities/bgq-cnk/Makefile src/tool/hpcrun-flat/Makefile src/tool/hpcserver/Makefile src/tool/hpcserver/mpi/Makefile src/tool/hpcstruct/Makefile src/tool/hpctracedump/Makefile src/tool/misc/Makefile src/tool/xprof/Makefile src/lib/Makefile src/lib/analysis/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/isa/Makefile src/lib/prof/Makefile src/lib/profxml/Makefile src/lib/prof-lean/Makefile src/lib/stubs-gcc_s/Makefile src/lib/support/Makefile src/lib/support-lean/Makefile src/lib/xml/Makefile"
+ac_config_files="$ac_config_files Makefile doc/Makefile doc/man/Makefile doc/man/HPCToolkitVersionInfo.tex doc/manual/Makefile doc/www/Makefile lib/Makefile src/Makefile src/extern/Makefile src/extern/libunwind/Makefile src/extern/lzma/Makefile src/tool/Makefile src/tool/hpcfnbounds/Makefile src/tool/hpcfnbounds2/Makefile src/tool/hpclump/Makefile src/tool/hpcprof/Makefile src/tool/hpcprof-mpi/Makefile src/tool/hpcprof-flat/Makefile src/tool/hpcproftt/Makefile src/tool/hpcrun/Makefile src/tool/hpcrun/utilities/bgq-cnk/Makefile src/tool/hpcrun-flat/Makefile src/tool/hpcserver/Makefile src/tool/hpcserver/mpi/Makefile src/tool/hpcstruct/Makefile src/tool/hpctracedump/Makefile src/tool/misc/Makefile src/tool/xprof/Makefile src/lib/Makefile src/lib/analysis/Makefile src/lib/banal/Makefile src/lib/binutils/Makefile src/lib/isa/Makefile src/lib/prof/Makefile src/lib/profxml/Makefile src/lib/prof-lean/Makefile src/lib/stubs-gcc_s/Makefile src/lib/support/Makefile src/lib/support-lean/Makefile src/lib/xml/Makefile"
 
 
 
@@ -24106,12 +24252,24 @@ if test -z "${UNW_PPC64_TRUE}" && test -z "${UNW_PPC64_FALSE}"; then
   as_fn_error $? "conditional \"UNW_PPC64\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
-if test -z "${UNW_MIPS_TRUE}" && test -z "${UNW_MIPS_FALSE}"; then
-  as_fn_error $? "conditional \"UNW_MIPS\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
 if test -z "${UNW_LIBUNW_TRUE}" && test -z "${UNW_LIBUNW_FALSE}"; then
   as_fn_error $? "conditional \"UNW_LIBUNW\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_LIBUNWIND_STATIC_TRUE}" && test -z "${OPT_LIBUNWIND_STATIC_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_LIBUNWIND_STATIC\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_LIBUNWIND_STATIC_FPIC_TRUE}" && test -z "${OPT_LIBUNWIND_STATIC_FPIC_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_LIBUNWIND_STATIC_FPIC\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_LZMA_STATIC_TRUE}" && test -z "${OPT_LZMA_STATIC_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_LZMA_STATIC\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_LZMA_STATIC_FPIC_TRUE}" && test -z "${OPT_LZMA_STATIC_FPIC_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_LZMA_STATIC_FPIC\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_PERFMON_TRUE}" && test -z "${OPT_PERFMON_FALSE}"; then
@@ -25215,6 +25373,9 @@ do
     "doc/www/Makefile") CONFIG_FILES="$CONFIG_FILES doc/www/Makefile" ;;
     "lib/Makefile") CONFIG_FILES="$CONFIG_FILES lib/Makefile" ;;
     "src/Makefile") CONFIG_FILES="$CONFIG_FILES src/Makefile" ;;
+    "src/extern/Makefile") CONFIG_FILES="$CONFIG_FILES src/extern/Makefile" ;;
+    "src/extern/libunwind/Makefile") CONFIG_FILES="$CONFIG_FILES src/extern/libunwind/Makefile" ;;
+    "src/extern/lzma/Makefile") CONFIG_FILES="$CONFIG_FILES src/extern/lzma/Makefile" ;;
     "src/tool/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/Makefile" ;;
     "src/tool/hpcfnbounds/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcfnbounds/Makefile" ;;
     "src/tool/hpcfnbounds2/Makefile") CONFIG_FILES="$CONFIG_FILES src/tool/hpcfnbounds2/Makefile" ;;
@@ -26913,6 +27074,23 @@ $as_echo "$as_me: Note: HPCToolkit is configured for Blue Gene/Q back end." >&6;
 $as_echo "$as_me: If you wanted to build for the front end (regular powerpc)," >&6;}
   { $as_echo "$as_me:${as_lineno-$LINENO}: then re-run configure with '--disable-bgq'." >&5
 $as_echo "$as_me: then re-run configure with '--disable-bgq'." >&6;}
+fi
+
+if test "x$missing_fpic" != x ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
+$as_echo "$as_me: " >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: The following prereqs are missing an archive (.a) compiled with -fPIC." >&5
+$as_echo "$as_me: WARNING: The following prereqs are missing an archive (.a) compiled with -fPIC." >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING:   $missing_fpic" >&5
+$as_echo "$as_me: WARNING:   $missing_fpic" >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: " >&5
+$as_echo "$as_me: WARNING: " >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: hpcrun is unable to properly hide these libraries from the" >&5
+$as_echo "$as_me: WARNING: hpcrun is unable to properly hide these libraries from the" >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: application and this may cause deadlock or segfault." >&5
+$as_echo "$as_me: WARNING: application and this may cause deadlock or segfault." >&2;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Recompile the above libraries with -fPIC (+pic in spack)." >&5
+$as_echo "$as_me: WARNING: Recompile the above libraries with -fPIC (+pic in spack)." >&2;}
 fi
 
 if test "$warn_papi_mismatch" = yes ; then
