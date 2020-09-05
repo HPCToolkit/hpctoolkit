@@ -74,6 +74,8 @@ inline constexpr nullopt_t nullopt = std::nullopt;
 #include <boost/optional.hpp>
 #include <boost/none.hpp>
 
+#include "../util/log.hpp"
+
 namespace hpctoolkit {
 namespace stdshim {
 template<class T>
@@ -99,10 +101,22 @@ public:
   template<class U>
   constexpr bool operator!=(const optional<U>& o) { return !(*this == o); }
 
-  constexpr T& value() & { return boost::optional<T>::get(); }
-  constexpr const T& value() const& { return boost::optional<T>::get(); }
-  constexpr T&& value() && { return std::move(boost::optional<T>::get()); }
-  constexpr const T&& value() const&& { return std::move(boost::optional<T>::get()); }
+  constexpr T& value() & {
+    if(!(bool)*this) util::log::fatal() << "Attempt to call value() on empty optional!";
+    return boost::optional<T>::get();
+  }
+  constexpr const T& value() const& {
+    if(!(bool)*this) util::log::fatal() << "Attempt to call value() on empty optional!";
+    return boost::optional<T>::get();
+  }
+  constexpr T&& value() && {
+    if(!(bool)*this) util::log::fatal() << "Attempt to call value() on empty optional!";
+    return std::move(boost::optional<T>::get());
+  }
+  constexpr const T&& value() const&& {
+    if(!(bool)*this) util::log::fatal() << "Attempt to call value() on empty optional!";
+    return std::move(boost::optional<T>::get());
+  }
 
   template<class U>
   constexpr T value_or(U&& d) const& {
