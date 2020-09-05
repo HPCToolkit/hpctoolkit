@@ -4,7 +4,7 @@
 
 namespace CudaParse {
 
-// include sm_50-sm_70 instructions
+// include sm_50-sm_75 instructions
 std::map<std::string, InstructionType> Instruction::opcode_types = {
   // sm_60 
   { "FCMP", INS_TYPE_FLOAT },
@@ -38,6 +38,7 @@ std::map<std::string, InstructionType> Instruction::opcode_types = {
   { "DFMA", INS_TYPE_FLOAT },
   { "DMUL", INS_TYPE_FLOAT },
   { "DSETP", INS_TYPE_FLOAT },
+  // sm_75
   // sm_60
   { "BFE", INS_TYPE_INTEGER },
   { "BFI", INS_TYPE_INTEGER },
@@ -72,6 +73,8 @@ std::map<std::string, InstructionType> Instruction::opcode_types = {
   { "SHR", INS_TYPE_INTEGER },
   { "VABSDIFF", INS_TYPE_INTEGER },
   { "VABSDIFF4", INS_TYPE_INTEGER },
+  // sm_75
+  { "BMMA", INS_TYPE_INTEGER },
   // sm_70
   { "LD", INS_TYPE_MEMORY },
   { "LDC", INS_TYPE_MEMORY },
@@ -91,6 +94,8 @@ std::map<std::string, InstructionType> Instruction::opcode_types = {
   { "CCTL", INS_TYPE_MEMORY },
   { "CCTLL", INS_TYPE_MEMORY },
   { "CCTLT", INS_TYPE_MEMORY },
+  // sm_75
+  { "LDSM", INS_TYPE_MEMORY },
   // sm_60
   { "TEXS", INS_TYPE_TEXTRUE },
   { "TLD4S", INS_TYPE_TEXTRUE },
@@ -136,6 +141,9 @@ std::map<std::string, InstructionType> Instruction::opcode_types = {
   { "DEPBAR", INS_TYPE_CONTROL },
   { "ERRBAR", INS_TYPE_CONTROL },
   { "MEMBAR", INS_TYPE_CONTROL },
+  // sm_75
+  { "BRXU", INS_TYPE_CONTROL },
+  { "JMXU", INS_TYPE_CONTROL },
   // sm_60
   { "CSET", INS_TYPE_PREDICATE },
   { "CSETP", INS_TYPE_PREDICATE },
@@ -175,7 +183,38 @@ std::map<std::string, InstructionType> Instruction::opcode_types = {
   { "SUATOM", INS_TYPE_MISC },
   { "SULD", INS_TYPE_MISC },
   { "SURED", INS_TYPE_MISC },
-  { "SUST", INS_TYPE_MISC }
+  { "SUST", INS_TYPE_MISC },
+  // sm_75
+  { "MOVM", INS_TYPE_MISC },
+  // sm_75
+  { "R2UR", INS_TYPE_UNIFORM }, 
+  { "REDUX", INS_TYPE_UNIFORM },
+  { "S2UR", INS_TYPE_UNIFORM }, 
+  { "UBMSK", INS_TYPE_UNIFORM },
+  { "UBREV", INS_TYPE_UNIFORM },
+  { "UCLEA", INS_TYPE_UNIFORM },
+  { "UFLO", INS_TYPE_UNIFORM }, 
+  { "UIADD3", INS_TYPE_UNIFORM }, 
+  { "UIMAD", INS_TYPE_UNIFORM },
+  { "UISETP", INS_TYPE_UNIFORM }, 
+  { "ULDC", INS_TYPE_UNIFORM }, 
+  { "ULEA", INS_TYPE_UNIFORM }, 
+  { "ULOP", INS_TYPE_UNIFORM }, 
+  { "ULOP3", INS_TYPE_UNIFORM },
+  { "ULOP32I", INS_TYPE_UNIFORM },
+  { "UMOV", INS_TYPE_UNIFORM }, 
+  { "UP2UR", INS_TYPE_UNIFORM },
+  { "UPLOP3", INS_TYPE_UNIFORM }, 
+  { "UPOPC", INS_TYPE_UNIFORM },
+  { "UPRMT", INS_TYPE_UNIFORM },
+  { "UPSETP", INS_TYPE_UNIFORM }, 
+  { "UR2UP", INS_TYPE_UNIFORM },
+  { "USEL", INS_TYPE_UNIFORM }, 
+  { "USGXT", INS_TYPE_UNIFORM },
+  { "USHF", INS_TYPE_UNIFORM }, 
+  { "USHL", INS_TYPE_UNIFORM }, 
+  { "USHR", INS_TYPE_UNIFORM }, 
+  { "VOTEU", INS_TYPE_UNIFORM }
 };
 
 

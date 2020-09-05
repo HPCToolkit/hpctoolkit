@@ -80,6 +80,11 @@ void analyze_instruction<INS_TYPE_MEMORY>(const Instruction &inst, std::string &
 
 
 template <>
+void analyze_instruction<INS_TYPE_UNIFORM>(const Instruction &inst, std::string &op) {
+}
+
+
+template <>
 void analyze_instruction<INS_TYPE_FLOAT>(const Instruction &inst, std::string &op) {
   op = "FLOAT";
 
