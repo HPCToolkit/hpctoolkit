@@ -44,14 +44,64 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef HPCTOOLKIT_PROFILE_MPI_ALL_H
-#define HPCTOOLKIT_PROFILE_MPI_ALL_H
+#ifndef HPCTOOLKIT_PROFILE_MPI_ONE2ONE_H
+#define HPCTOOLKIT_PROFILE_MPI_ONE2ONE_H
 
 #include "core.hpp"
-#include "bcast.hpp"
-#include "reduce.hpp"
-#include "scan.hpp"
-#include "all2all.hpp"
-#include "one2one.hpp"
 
-#endif  // HPCTOOLKIT_PROFILE_MPI_ALL_H
+#include <array>
+#include <vector>
+
+namespace hpctoolkit::mpi {
+
+namespace detail {
+// NOTE: These are in-place operations, for efficiency.
+void send(const void* data, std::size_t cnt, const Datatype&,
+          std::size_t tag, std::size_t dst);
+void recv(void* data, std::size_t cnt, const Datatype&,
+          std::size_t tag, std::size_t src);
+}  // namespace detail
+
+/// Reduction operation. Reduces the given data from all processes in the team
+/// to the root rank, using the given reduction operation. Returns the reduced
+/// value in the root, returns the given data in all others.
+
+/// Single send operation. Sends a message to a matching receive on another
+/// process within the team.
+template<class T>
+void send(const T& data, std::size_t dst, std::size_t tag) {
+  detail::send(&data, 1, detail::asDatatype<T>(), tag, dst);
+}
+
+/// Single receive operation. Waits for and receives a message from a matching
+/// send on another process within the team. Returns the resulting value.
+template<class T>
+T receive(std::size_t src, std::size_t tag) {
+  T data;
+  detail::recv(&data, 1, detail::asDatatype<T>(), tag, src);
+  return data;
+}
+
+/// Single send operation. Variant to disable the usage of pointers.
+template<class T>
+void send(T*, std::size_t, std::size_t) = delete;
+
+/// Single send operation. Variant to allow for the usage of std::vector.
+template<class T, class A>
+void send(const std::vector<T, A>& data, std::size_t dst, std::size_t tag) {
+  send(data.size(), dst, tag);
+  detail::send(data.data(), data.size(), detail::asDatatype<T>(), tag, dst);
+}
+
+/// Single receive operation. Variant to allow for the usage of std::vector.
+template<class T>
+std::vector<T> receive_vector(std::size_t src, std::size_t tag) {
+  auto sz = receive<std::size_t>(src, tag);
+  std::vector<T> result(sz);
+  detail::recv(result.data(), sz, detail::asDatatype<T>(), tag, src);
+  return result;
+}
+
+}  // namespace hpctoolkit::mpi
+
+#endif  // HPCTOOLKIT_PROFILE_MPI_ONE2ONE_H

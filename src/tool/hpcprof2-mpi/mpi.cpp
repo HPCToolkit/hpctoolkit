@@ -218,3 +218,14 @@ void detail::scatterv(void* data, std::size_t cnt, const Datatype& ty,
                   data, cnt, ty.value, rootRank, MPI_COMM_WORLD) != MPI_SUCCESS)
     util::log::fatal{} << "Error while performing an MPI vectorized scatter (non-root)!";
 }
+void detail::send(const void* data, std::size_t cnt, const Datatype& ty,
+                  std::size_t tag, std::size_t dst) {
+  if(MPI_Send(data, cnt, ty.value, dst, tag, MPI_COMM_WORLD) != MPI_SUCCESS)
+    util::log::fatal{} << "Error while performing an MPI send!";
+}
+void detail::recv(void* data, std::size_t cnt, const Datatype& ty,
+                  std::size_t tag, std::size_t src) {
+  if(MPI_Recv(data, cnt, ty.value, src, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE)
+     != MPI_SUCCESS)
+    util::log::fatal{} << "Error while performing an MPI recieve!";
+}
