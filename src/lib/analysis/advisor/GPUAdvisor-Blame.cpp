@@ -53,8 +53,8 @@ using std::string;
 #include <lib/support/IOUtil.hpp>
 #include <lib/support/StrUtil.hpp>
 
-#define DEBUG_GPUADVISOR 0
-#define DEBUG_GPUADVISOR_DETAILS 0
+#define DEBUG_GPUADVISOR 1
+#define DEBUG_GPUADVISOR_DETAILS 1
 
 #define MAX2(x, y) (x > y ? x : y)
 
@@ -973,8 +973,22 @@ GPUAdvisor::detailizeExecBlame(CudaParse::InstructionStat *from_inst,
       return std::make_pair(_exec_dep_dep_stall_metric, _exec_dep_dep_lat_metric);
     }
   } else {
-    // war
-    return std::make_pair(_exec_dep_war_stall_metric, _exec_dep_war_lat_metric);
+    // war only when barrier is set, otherwise sche
+    // XXX(keren): interestingly, sometimes a barrier may not be associated with from_inst,
+    // but instead another (dominant) instruction on the path before the use instruction.
+    // Can we tune the barriers to optimize on GPU binaries?
+    bool find_barrier = false;
+    for (auto bdst : from_inst->bdsts) {
+      if (to_inst->find_src_barrier(bdst)) {
+        find_barrier = true;  
+        break;
+      }
+    }
+    if (find_barrier) {
+      return std::make_pair(_exec_dep_war_stall_metric, _exec_dep_war_lat_metric);
+    } else {
+      return std::make_pair(_exec_dep_sche_stall_metric, _exec_dep_sche_lat_metric);
+    }
   }
 }
 
