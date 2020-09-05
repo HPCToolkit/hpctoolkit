@@ -429,13 +429,8 @@ done
 libhpcrun="${libhpcrun_dir}/libhpcrun.o"
 test -f "$libhpcrun" || die "no such file: $libhpcrun"
 
-# FIXME: add LZMA static library at the end of libhpcrun.o
-# Ideally the library is included in libhpcrun.o, but somwehow not all
-# routines are included
-liblzma="${ext_libs_dir}/liblzma.a"
-libmbedtls="${ext_libs_dir}/libmbedcrypto.a"
 libelf="${ext_libs_dir}/libelf.a"
-set -- $undef_args $wrap_args $libhpcrun "$liblzma" "$libmbedtls" "$libelf" "$@" 
+set -- $undef_args $wrap_args $libhpcrun "$libelf" "$@" 
 set -- "$@" "${nm_addrs}.o"
 
 libhpcrun_wrap="${libhpcrun_dir}/libhpcrun_wrap.a"

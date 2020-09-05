@@ -44,69 +44,34 @@
 ##
 ## ******************************************************* EndRiceCopyright *
 
-#############################################################################
-##
-## File:
-##   $HeadURL$
-##
-## Description:
-##   *Process with automake to produce Makefile.in*
-##
-##   Note: All local variables are prefixed with MY to prevent name
-##   clashes with automatic automake variables.
-##
-#############################################################################
+# Modify libunwind.a for use inside libhpcrun.
+#
+#  1. Redefine symbol names so that hpcrun can provide a better real
+#  version.  For example: mmap --> hpcrun_real_mmap
 
-# We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)
+#----------------------------------------------------------------------
+
 AUTOMAKE_OPTIONS = foreign
 
-#############################################################################
-# Common settings
-#############################################################################
+EXTERN_LIB = @LIBUNWIND_LIB_DIR@/libunwind.a
+ORIG_LIB = libunwind-orig.a
+NEW_LIB = libunwind.a
 
-include $(top_srcdir)/src/Makeinclude.config
+OBJCOPY = objcopy
 
-BINUTILS_IFLAGS = @BINUTILS_IFLAGS@
+SYMBOL_NAMES = mmap munmap
 
-#############################################################################
-# Local settings
-#############################################################################
+REDEFINE_ARGS = $(foreach name,$(SYMBOL_NAMES),--redefine-sym $(name)=hpcrun_real_$(name))
 
-MYSOURCES = \
-	timer.h timer.c \
-	OSUtil.h OSUtil.c \
-	compress_lzma.c  \
-	demangle.c
+#----------------------------------------------------------------------
 
-MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) $(BINUTILS_IFLAGS) $(LZMA_IFLAGS)
+all-local:
+	@echo "libunwind: make all ..."
+	@echo "symbols:" $(SYMBOL_NAMES)
+	rm -f $(ORIG_LIB) $(NEW_LIB)
+	cp $(EXTERN_LIB) $(ORIG_LIB)
+	$(OBJCOPY) $(REDEFINE_ARGS) $(ORIG_LIB) $(NEW_LIB)
+	ls -l $(ORIG_LIB) $(NEW_LIB)
 
-if IS_HOST_AR
-  MYAR = @HOST_AR@
-else
-  MYAR = $(AR) cru
-endif
-
-MYLIBADD = 
-
-MYCLEAN = 
-
-
-#############################################################################
-# Automake rules
-#############################################################################
-
-noinst_LTLIBRARIES = libHPCsupport-lean.la
-
-libHPCsupport_lean_la_SOURCES  = $(MYSOURCES)
-libHPCsupport_lean_la_CFLAGS   = $(MYCFLAGS)
-libHPCsupport_lean_la_AR       = $(MYAR)
-libHPCsupport_lean_la_LIBADD   = $(MYLIBADD)
-
-MOSTLYCLEANFILES = $(MYCLEAN)
-
-#############################################################################
-# Common rules
-#############################################################################
-
-include $(top_srcdir)/src/Makeinclude.rules
-
+clean-local:
+	rm -f $(ORIG_LIB) $(NEW_LIB)

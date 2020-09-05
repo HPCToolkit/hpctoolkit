@@ -141,6 +141,9 @@
 /* IBM Blue Gene support */
 #undef HOST_SYSTEM_IBM_BLUEGENE
 
+/* have custom unwinder for this platform */
+#undef HPCRUN_HAVE_CUSTOM_UNWINDER
+
 /* Git branch and commit hash, if known. */
 #undef HPCTOOLKIT_GIT_VERSION
 
@@ -191,9 +194,6 @@
 
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
-
-/* libunwind is the specified unwinder */
-#undef USE_LIBUNW
 
 /* use ROCM */
 #undef USE_ROCM

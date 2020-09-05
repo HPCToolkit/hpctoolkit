@@ -161,10 +161,10 @@ struct gotcha_binding_t wrap_actions [] = {
 #endif
   
 extern void hpcrun_set_retain_recursion_mode(bool mode);
-#ifndef USE_LIBUNW
-extern void hpcrun_dump_intervals(void* addr);
-#endif // ! USE_LIBUNW
 
+#ifdef HPCRUN_HAVE_CUSTOM_UNWINDER
+extern void hpcrun_dump_intervals(void* addr);
+#endif
 
 
 //***************************************************************************
@@ -446,7 +446,7 @@ hpcrun_set_abort_timeout()
 
 siglongjmp_fcn* hpcrun_get_real_siglongjmp(void);
 
-#ifndef USE_LIBUNW
+#ifdef HPCRUN_HAVE_CUSTOM_UNWINDER
 static sigjmp_buf ivd_jb;
 
 static int
@@ -524,7 +524,7 @@ hpcrun_init_internal(bool is_child)
   hpcrun_setup_segv();
 
 
-#ifndef USE_LIBUNW
+#ifdef HPCRUN_HAVE_CUSTOM_UNWINDER
   if (getenv("HPCRUN_ONLY_DUMP_INTERVALS")) {
     fnbounds_table_t table = fnbounds_fetch_executable_table();
     TMSG(INTERVALS_PRINT, "table data = %p", table.table);
@@ -546,7 +546,7 @@ hpcrun_init_internal(bool is_child)
     }
     exit(0);
   }
-#endif // ! USE_LIBUNW
+#endif  // HPCRUN_HAVE_CUSTOM_UNWINDER
 
   hpcrun_stats_reinit();
   hpcrun_start_stop_internal_init();
