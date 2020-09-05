@@ -79,9 +79,9 @@ Packed::Packed()
 void Packed::packAttributes(std::vector<std::uint8_t>& out) noexcept {
   // Format: [job or magic] [name] [path] [env cnt] ([env key] [env val]...)
   const auto& attr = src.attributes();
-  pack(out, (std::uint64_t)(attr.job() ? *attr.job() : 0xFEF1F0F3ULL << 32));
-  pack(out, attr.name().value());
-  pack(out, attr.path()->string());
+  pack(out, (std::uint64_t)attr.job().value_or(0xFEF1F0F3ULL << 32));
+  pack(out, attr.name().value_or(""));
+  pack(out, attr.path() ? attr.path()->string() : "");
   pack(out, attr.environment().size());
   for(const auto& kv: attr.environment()) {
     pack(out, kv.first);
