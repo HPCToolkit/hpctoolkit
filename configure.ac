@@ -2681,8 +2681,6 @@ LIBUNWIND="$default_libunwind_prefix"
 LIBUNWIND_IFLAGS=
 LIBUNWIND_LDFLAGS_DYN=
 LIBUNWIND_LDFLAGS_STAT=
-
-LIBUNWIND_COPY=no
 LIBUNWIND_LIB_DIR=
 
 libunwind_exists=no
@@ -2712,7 +2710,6 @@ case "$LIBUNWIND" in
       ldir="${LIBUNWIND}/$lib"
       if test -f "${ldir}/libunwind.so" ; then
         LIBUNWIND_LDFLAGS_DYN="-L${ldir} -lunwind"
-    	LIBUNWIND_COPY=yes
 	LIBUNWIND_LIB_DIR="$ldir"
 	libunwind_exists=yes
 	libunwind_dynamic=yes
@@ -2778,9 +2775,14 @@ fi
 
 AC_MSG_NOTICE([libunwind.a compiled with -fPIC: $libunwind_fpic])
 
-# libunwind is only used in hpcrun, so if fpic exists, then don't need
-# to copy.
-if test "$libunwind_fpic" = yes ; then
+#
+# Libunwind is only used in hpcrun.  But if libunwind.a has fpic, then
+# we link at build time.  So, only need to copy if .so exists and .a
+# does not have fpic.
+#
+if test "$libunwind_dynamic" = yes && test "$libunwind_fpic" = no ; then
+  LIBUNWIND_COPY=yes
+else
   LIBUNWIND_COPY=no
 fi
 
