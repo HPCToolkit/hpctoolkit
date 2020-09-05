@@ -64,8 +64,8 @@ void exscan(void* data, std::size_t cnt, const Datatype&, const Op&);
 /// Inclusive scan operation. Returns the accumulation of the values given
 /// here and in all other lesser rank indices. Returns the resulting value.
 template<class T>
-T scan(T&& data, const Op& op) {
-  detail::scan(&data, 1, detail::asDatatype<T>(), op);
+T scan(typename std::remove_reference<T>::type&& data, const Op& op) {
+  detail::scan(&data, 1, detail::asDatatype<typename std::remove_reference<T>::type>(), op);
   return data;
 }
 
@@ -73,20 +73,10 @@ T scan(T&& data, const Op& op) {
 /// the current process's contribution. Note that no value is returned in rank
 /// 0, thus the need for an optional return value.
 template<class T>
-stdshim::optional<T> exscan(T&& data, const Op& op) {
-  detail::exscan(&data, 1, detail::asDatatype<T>(), op);
+stdshim::optional<typename std::remove_reference<T>::type> exscan(typename std::remove_reference<T>::type&& data, const Op& op) {
+  detail::exscan(&data, 1, detail::asDatatype<typename std::remove_reference<T>::type>(), op);
   if(World::rank() == 0) return {};
   return data;
-}
-
-/// Reduction operation. Variant to allow for copy semantics.
-template<class T>
-T scan(const T& data, const Op& op) { return scan<T>(T(data), op); }
-
-/// Broadcast reduction operation. Variant to allow for copy semantics.
-template<class T>
-stdshim::optional<T> exscan(const T& data, const Op& op) {
-  return exscan<T>(T(data), op);
 }
 
 /// Reduction operation. Variant to disable the usage of pointers.
@@ -110,6 +100,16 @@ stdshim::optional<std::array<T, N>> exscan(std::array<T, N>&& data, const Op& op
   detail::exscan(data.data(), N, detail::asDatatype<T>(), op);
   if(World::rank() == 0) return {};
   return data;
+}
+
+/// Reduction operation. Variant to allow for copy semantics.
+template<class T>
+T scan(const T& data, const Op& op) { return scan(T(data), op); }
+
+/// Broadcast reduction operation. Variant to allow for copy semantics.
+template<class T>
+stdshim::optional<T> exscan(const T& data, const Op& op) {
+  return exscan(T(data), op);
 }
 
 }  // namespace hpctoolkit::mpi

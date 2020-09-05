@@ -68,15 +68,6 @@ T bcast(typename std::remove_reference<T>::type&& data, std::size_t root) {
   return data;
 }
 
-/// Broadcast operation. Variant to skip the first argument, when you know
-/// you're not the root. Relies on default initialization.
-template<class T>
-T bcast(std::size_t root) { return bcast<T>(T{}, root); }
-
-/// Broadcast operation. Variant to allow for copy semantics.
-template<class T>
-T bcast(const T& data, std::size_t root) { return bcast<T>(T(data), root); }
-
 /// Broadcast operation. Variant to disable the usage of pointers.
 template<class T>
 T* bcast(T*, std::size_t) = delete;
@@ -116,7 +107,7 @@ std::vector<std::basic_string<C,T,AS>,AV> bcast(std::vector<std::basic_string<C,
     sizes.reserve(data.size());
     for(const auto& s: data) sizes.push_back(s.size());
   }
-  sizes = bcast(sizes, root);
+  sizes = bcast(std::vector<unsigned long long>{sizes}, root);
   std::vector<unsigned long long> ends(sizes.size(), 0);
   std::partial_sum(sizes.begin(), sizes.end(), ends.begin());
   std::vector<C> buffer;
@@ -131,6 +122,15 @@ std::vector<std::basic_string<C,T,AS>,AV> bcast(std::vector<std::basic_string<C,
     data[i] = std::basic_string<C,T,AS>(&buffer[ends[i] - sizes[i]], sizes[i]);
   return data;
 }
+
+/// Broadcast operation. Variant to skip the first argument, when you know
+/// you're not the root. Relies on default initialization.
+template<class T>
+T bcast(std::size_t root) { return bcast(T{}, root); }
+
+/// Broadcast operation. Variant to allow for copy semantics.
+template<class T>
+T bcast(const T& data, std::size_t root) { return bcast(T(data), root); }
 
 }  // namespace hpctoolkit::mpi
 

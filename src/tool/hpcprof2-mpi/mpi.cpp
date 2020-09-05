@@ -66,6 +66,8 @@ static Datatype d_int16 = MPI_INT16_T;
 template<> const Datatype& detail::asDatatype<int16_t>() { return d_int16; }
 static Datatype d_int32 = MPI_INT32_T;
 template<> const Datatype& detail::asDatatype<int32_t>() { return d_int32; }
+static Datatype d_ll = MPI_LONG_LONG;
+template<> const Datatype& detail::asDatatype<long long>() { return d_ll; }
 static Datatype d_int64 = MPI_INT64_T;
 template<> const Datatype& detail::asDatatype<int64_t>() { return d_int64; }
 static Datatype d_uint8 = MPI_UINT8_T;
@@ -74,6 +76,8 @@ static Datatype d_uint16 = MPI_UINT16_T;
 template<> const Datatype& detail::asDatatype<uint16_t>() { return d_uint16; }
 static Datatype d_uint32 = MPI_UINT32_T;
 template<> const Datatype& detail::asDatatype<uint32_t>() { return d_uint32; }
+static Datatype d_ull = MPI_UNSIGNED_LONG_LONG;
+template<> const Datatype& detail::asDatatype<unsigned long long>() { return d_ull; }
 static Datatype d_uint64 = MPI_UINT64_T;
 template<> const Datatype& detail::asDatatype<uint64_t>() { return d_uint64; }
 static Datatype d_float = MPI_FLOAT;

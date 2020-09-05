@@ -77,14 +77,6 @@ T allreduce(T&& data, const Op& op) {
   return data;
 }
 
-/// Reduction operation. Variant to allow for copy semantics.
-template<class T>
-T reduce(const T& data, std::size_t root, const Op& op) { return reduce<T>(T(data), root, op); }
-
-/// Broadcast reduction operation. Variant to allow for copy semantics.
-template<class T>
-T allreduce(const T& data, const Op& op) { return allreduce<T>(T(data), op); }
-
 /// Reduction operation. Variant to disable the usage of pointers.
 template<class T>
 T* reduce(T*, std::size_t, const Op&) = delete;
@@ -106,6 +98,14 @@ std::array<T, N> allreduce(std::array<T, N>&& data) {
   detail::allreduce(data.data(), N, detail::asDatatype<T>());
   return data;
 }
+
+/// Reduction operation. Variant to allow for copy semantics.
+template<class T>
+T reduce(const T& data, std::size_t root, const Op& op) { return reduce(T(data), root, op); }
+
+/// Broadcast reduction operation. Variant to allow for copy semantics.
+template<class T>
+T allreduce(const T& data, const Op& op) { return allreduce(T(data), op); }
 
 }  // namespace hpctoolkit::mpi
 
