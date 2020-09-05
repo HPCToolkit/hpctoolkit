@@ -46,7 +46,6 @@
 
 #include "sparse.hpp"
 
-#include "mpi-strings.h"
 #include <lib/profile/util/log.hpp>
 #include <lib/profile/mpi/all.hpp>
 
@@ -786,7 +785,7 @@ uint64_t SparseDB::workIdTuplesSection(const int world_rank,
     assert(HPCTHREADSPARSE_FMT_IdTupleOff + all_id_tuples_size == all_tuple_ptrs.back());
   }
 
-  MPI_Bcast(&all_id_tuples_size, 1, mpi_data<uint64_t>::type, 0, MPI_COMM_WORLD);
+  MPI_Bcast(&all_id_tuples_size, 1, MPI_UINT64_T, 0, MPI_COMM_WORLD);
   scatterProfIdxOffset(all_rank_tuples, all_tuple_ptrs, tuples.size(), world_size, world_rank, threads);
 
   freeIdTuples(all_rank_tuples, threads);
@@ -818,7 +817,7 @@ uint64_t SparseDB::getProfileSizes()
 uint32_t SparseDB::getTotalNumProfiles(const uint32_t my_num_prof)
 {
   uint32_t total_num_prof;
-  MPI_Allreduce(&my_num_prof, &total_num_prof, 1, mpi_data<uint32_t>::type, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Allreduce(&my_num_prof, &total_num_prof, 1, MPI_UINT32_T, MPI_SUM, MPI_COMM_WORLD);
   return total_num_prof;
 }
 
@@ -830,7 +829,7 @@ uint64_t SparseDB::getMyOffset(const uint64_t my_size,
                                const int rank)
 {
   uint64_t my_offset;
-  MPI_Exscan(&my_size, &my_offset, 1, mpi_data<uint64_t>::type, MPI_SUM, MPI_COMM_WORLD);
+  MPI_Exscan(&my_size, &my_offset, 1, MPI_UINT64_T, MPI_SUM, MPI_COMM_WORLD);
   if(rank == 0) my_offset = 0;
   return my_offset;
 }
@@ -1246,8 +1245,8 @@ void SparseDB::unionMids(std::vector<std::set<uint16_t>>& ctx_nzmids,
   }
 
   //  gather all the rank_all_mids (i.e. ctx_nzmids) to root
-  MPI_Gatherv(rank_all_mids.data(),rank_all_mids_size, mpi_data<uint16_t>::type, \
-    global_all_mids.data(), all_rank_mids_sizes.data(), all_rank_mids_disps.data(), mpi_data<uint16_t>::type, 0, MPI_COMM_WORLD);
+  MPI_Gatherv(rank_all_mids.data(),rank_all_mids_size, MPI_UINT16_T,
+    global_all_mids.data(), all_rank_mids_sizes.data(), all_rank_mids_disps.data(), MPI_UINT16_T, 0, MPI_COMM_WORLD);
 
 
   //STEP 3: turn the long vector global_all_mids back to rank 0's ctx_nzmids
@@ -1320,7 +1319,7 @@ void SparseDB::getGlobalCtxOffset(const std::vector<uint64_t>& local_ctx_off,
   //sum up local offsets to get global offsets
   MPI_Op vectorSum;
   MPI_Op_create((MPI_User_function *)vSum, 1, &vectorSum);
-  MPI_Allreduce(local_ctx_off.data(), global_ctx_off.data(), local_ctx_off.size(), mpi_data<uint64_t>::type, vectorSum, MPI_COMM_WORLD);
+  MPI_Allreduce(local_ctx_off.data(), global_ctx_off.data(), local_ctx_off.size(), MPI_UINT64_T, vectorSum, MPI_COMM_WORLD);
   MPI_Op_free(&vectorSum);
 
 }

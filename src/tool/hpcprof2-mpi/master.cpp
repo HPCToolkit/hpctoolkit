@@ -47,7 +47,6 @@
 #include "lib/profile/util/vgannotations.hpp"
 
 #include "sparse.hpp"
-#include "mpi-strings.h"
 #include "../hpcprof2/args.hpp"
 
 #include "lib/profile/pipeline.hpp"
@@ -76,22 +75,21 @@ static std::unique_ptr<T> make_unique_x(Args&&... args) {
   return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
 }
 
-int rank0(ProfArgs&& args, int world_rank, int world_size) {
+int rank0(ProfArgs&& args) {
   // We only have one Pipeline, this is its builder.
   ProfilePipeline::Settings pipelineB;
 
   // Divvy up the inputs across the WORLD.
   {
-    ScatterStrings paths;
-    int rank = world_size == 1 ? 0 : 1;  // Allocate to rank 1 first.
-    for(auto& sp: args.sources) {
-      auto src = std::move(sp.first);
+    std::vector<std::vector<std::string>> paths(mpi::World::size());
+    std::size_t rank = 1;  // Allocate to rank 1 first.
+    for(auto& sp: args.sources) {      auto src = std::move(sp.first);
+      if(rank >= mpi::World::size()) rank = 0;
       if(rank == 0) pipelineB << std::move(src);
-      else paths.add(rank, sp.second.string());
+      else paths[rank].push_back(sp.second.string());
       rank++;
-      if(rank >= world_size) rank = 0;
     }
-    paths.scatter0(0);
+    mpi::scatter(std::move(paths), 0);
   }
 
   // When time, gather up the data from all our friends and emit it.
@@ -105,7 +103,7 @@ int rank0(ProfArgs&& args, int world_rank, int world_size) {
     }
     void read(const DataClass&) override {
       if(done) return;
-      auto block = Receive<std::uint8_t>(peer, 1);
+      auto block = mpi::receive_vector<std::uint8_t>(peer, 1);
       iter_t it = block.begin();
       it = unpackAttributes(it);
       it = unpackReferences(it);
@@ -114,7 +112,7 @@ int rank0(ProfArgs&& args, int world_rank, int world_size) {
       done = true;
     }
   };
-  for(int peer = 1; peer < world_size; peer++)
+  for(std::size_t peer = 1; peer < mpi::World::size(); peer++)
     pipelineB << make_unique_x<Receiver>(peer);
 
   // Load in the Finalizers for Structfiles.
@@ -157,9 +155,7 @@ int rank0(ProfArgs&& args, int world_rank, int world_size) {
   struct Sender : public IdPacker::Sink {
     Sender(IdPacker& s) : IdPacker::Sink(s) {};
     void notifyPacked(std::vector<uint8_t>&& block) override {
-      Bcast<uint8_t> bc;
-      bc.contents = std::move(block);
-      bc.bcast0();
+      mpi::bcast(std::move(block), 0);
     }
   } spacker(packer);
   pipelineB << spacker;
@@ -180,14 +176,14 @@ int rank0(ProfArgs&& args, int world_rank, int world_size) {
     DataClass provides() const noexcept override { return data::attributes + data::metrics; }
     void read(const DataClass& d) override {
       if(!d.hasMetrics() || done) return;
-      auto block = Receive<std::uint8_t>(peer, 3);
+      auto block = mpi::receive_vector<std::uint8_t>(peer, 3);
       iter_t it = block.begin();
       it = unpackAttributes(it);
       it = unpackMetrics(it, cmap);
       done = true;
     }
   };
-  for(int peer = 1; peer < world_size; peer++)
+  for(std::size_t peer = 1; peer < mpi::World::size(); peer++)
     pipelineB << make_unique_x<MetricReciever>(peer, cmap);
 
   // Finally, eventually we get to actually write stuff out.

@@ -57,8 +57,8 @@ using namespace hpctoolkit;
 
 // The code for rank 0 and all other ranks are separated due to their
 // overall difference.
-int rank0(ProfArgs&&, int, int);
-int rankN(ProfArgs&&, int, int);
+int rank0(ProfArgs&&);
+int rankN(ProfArgs&&);
 
 int main(int argc, char* const argv[]) {
   // Read in the arguments.
@@ -67,20 +67,15 @@ int main(int argc, char* const argv[]) {
   // Fire up MPI. We just use the WORLD communicator for everything.
   mpi::World::initialize();
 
-  int world_rank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
-  int world_size;
-  MPI_Comm_size(MPI_COMM_WORLD, &world_size);
-
   // Because rank 0 is acts so differently from the others, its easier to
   // split the program into two copies that handle their own bits.
   // It also helps ensure MPI_Finalize is called at the end like it should.
   // Any complex common bits are factored out into individual functions.
   int ret;
-  if(world_rank == 0)
-    ret = rank0(std::move(args), world_rank, world_size);
+  if(mpi::World::rank() == 0)
+    ret = rank0(std::move(args));
   else
-    ret = rankN(std::move(args), world_rank, world_size);
+    ret = rankN(std::move(args));
 
   // Clean up and close up.
   mpi::World::finalize();

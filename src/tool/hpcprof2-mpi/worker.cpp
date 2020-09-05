@@ -47,7 +47,6 @@
 #include "lib/profile/util/vgannotations.hpp"
 
 #include "sparse.hpp"
-#include "mpi-strings.h"
 #include "../hpcprof2/args.hpp"
 
 #include "lib/profile/pipeline.hpp"
@@ -83,8 +82,8 @@ static std::unique_ptr<T> make_unique_x(Args&&... args) {
   return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
 }
 
-int rankN(ProfArgs&& args, int world_rank, int world_size) {
-  auto srcs = ScatterStrings::scatterN(0);
+int rankN(ProfArgs&& args) {
+  auto srcs = mpi::scatter<std::vector<std::string>>(0);
 
   ProfilePipeline::Settings pipelineB1;
   ProfilePipeline::Settings pipelineB2;
@@ -111,7 +110,7 @@ int rankN(ProfArgs&& args, int world_rank, int world_size) {
         packReferences(block);
         packContexts(block);
         packTimepoints(block);
-        Send(block, 0, 1);
+        mpi::send(block, 0, 1);
       }
     } sender;
     pipelineB1 << sender;
@@ -134,7 +133,7 @@ int rankN(ProfArgs&& args, int world_rank, int world_size) {
     pipelineB2 << dids;
 
     // Get the actual Context ids from rank 0, and unpack them into our space.
-    IdUnpacker unpacker(Bcast<uint8_t>::bcastN());
+    IdUnpacker unpacker(mpi::bcast<std::vector<uint8_t>>(0));
     IdUnpacker::Expander eunpacker(unpacker);
     IdUnpacker::Finalizer funpacker(unpacker);
     pipelineB2 << eunpacker << funpacker;
@@ -155,7 +154,7 @@ int rankN(ProfArgs&& args, int world_rank, int world_size) {
         std::vector<std::uint8_t> block;
         packAttributes(block);
         packMetrics(block);
-        Send(block, 0, 3);
+        mpi::send(block, 0, 3);
       }
     } msender;
     pipelineB2 << msender;
