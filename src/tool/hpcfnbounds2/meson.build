@@ -42,11 +42,15 @@
 #
 # ******************************************************* EndRiceCopyright *
 
-tool_includes = main_includes + [include_directories('.')]
+_srcs = files(
+  'fnbounds.c',
+  'debug_fn.c',
+  'scan.c',
+  'server.c',
+)
 
-subdir('hpcprof')
-
-subdir('hpcfnbounds')
-subdir('hpcfnbounds2')
-subdir('hpcrun')
-
+hpcfnbounds2_exe = executable('hpcfnbounds2', _srcs,
+  include_directories: tool_includes,
+  dependencies: [libelf_d_dep],
+  install: true, install_dir: get_option('prefix') / get_option('libexecdir') / 'hpctoolkit')
+summary('hpcfnbounds2', not is_disabler(hpcfnbounds2_exe), section: 'Applications', bool_yn: true)

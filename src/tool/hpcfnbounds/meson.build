@@ -42,11 +42,32 @@
 #
 # ******************************************************* EndRiceCopyright *
 
-tool_includes = main_includes + [include_directories('.')]
+_srcs = [files(
+  'main.cpp',
+  'code-ranges.cpp',
+  'function-entries.cpp',
+  'intervals.cpp',
+  'sections.cpp',
+  'server.cpp',
+  'eh-frames.cpp',
+)]
+_deps = []
 
-subdir('hpcprof')
+if host_machine.cpu_family() == 'x86' or host_machine.cpu_family() == 'x86_64'
+  _srcs += files('x86-process-ranges.cpp', 'amd-xop.c')
+  _deps += xed_d_dep
+elif host_machine.cpu_family() == 'aarch64'
+  _srcs += files('arm-process-ranges.cpp')
+else
+  _srcs += files('generic-process-ranges.cpp')
+endif
 
-subdir('hpcfnbounds')
-subdir('hpcfnbounds2')
-subdir('hpcrun')
+hpcfnbounds_exe = executable('hpcfnbounds', _srcs,
+  include_directories: tool_includes,
+  link_with: [prof_lean_lib],
+  dependencies: [dyninst_d_dep, openmp_d_dep,
+    libdwarf_d_dep.partial_dependency(compile_args: true, link_args: true, includes: true)]
+    + _deps + [cc.find_library('dl')],
+  install: true, install_dir: get_option('prefix') / get_option('libexecdir') / 'hpctoolkit')
+summary('hpcfnbounds', not is_disabler(hpcfnbounds_exe), section: 'Applications', bool_yn: true)
 

@@ -372,6 +372,9 @@ _s_srcset.add_all(when: libunwind_static_dep, if_true: _libunwind_srcset)
 
 _srcset.add(files('utilities/last_func.c'))
 
+# hpcrun requires an hpcfnbounds in order to function. Make sure we have one.
+_has_hpcfnbounds = not is_disabler(hpcfnbounds_exe) or not is_disabler(hpcfnbounds2_exe)
+
 _d_srcset.add_all(_srcset)
 _d_srcs = _d_srcset.apply(_config)
 _d_ddep = []
@@ -387,7 +390,7 @@ libhpcrun_lib = shared_library('hpcrun', _d_srcs.sources(),
   link_with: [prof_lean_lib, support_lean_lib],
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
-summary('hpcrun', not is_disabler(libhpcrun_lib), section: 'Applications', bool_yn: true)
+summary('hpcrun', not is_disabler(libhpcrun_lib) and _has_hpcfnbounds, section: 'Applications', bool_yn: true)
 
 _s_srcset.add_all(_srcset)
 _s_srcs = _s_srcset.apply(_config)
@@ -404,4 +407,4 @@ libhpcrun_static_lib = static_library('hpcrun_static', _s_srcs.sources(),
   link_with: [prof_lean_static_lib, support_lean_static_lib],
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
-summary('hpclink', not is_disabler(libhpcrun_static_lib), section: 'Applications', bool_yn: true)
+summary('hpclink', not is_disabler(libhpcrun_static_lib) and _has_hpcfnbounds, section: 'Applications', bool_yn: true)
