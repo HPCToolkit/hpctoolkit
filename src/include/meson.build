@@ -69,14 +69,14 @@ if dyninst_dep.found()
       ((Block*)NULL)->getInsns(imap);
       std::cout << imap.begin()->second->size();
     }
-  ''', dependencies: dyninst_all_deps))
+  ''', include_directories: dyninst_dep_idirs, dependencies: dyninst_dep_ex))
   hpctoolkit_config.set('DYNINST_USE_CUDA', cpp.compiles('''
     #include <iostream>
     #include <Symtab.h>
     int main() {
       std::cout << (long) Dyninst::Arch_cuda;
     }
-  ''', dependencies: dyninst_all_deps))
+  ''', include_directories: dyninst_dep_idirs, dependencies: dyninst_dep_ex))
   # TODO: Change this out for an actual test
   hpctoolkit_config.set('DYNINST_USE_LIBDW', true)
 endif

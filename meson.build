@@ -147,214 +147,337 @@ endif
 # Is this really nessesary? The .a, .o and .so formats have been stable
 # for a very long time.
 
-# For the vast majority of our dependencies, the main search logic is handled
-# by CMake or pkg-config, so we can share the common code regarding `*_root`
-# property handling and Spack handling.
-# NOTE: 'name' is the pkg-config or Meson name if supported, otherwise its the
-# CMake name. 'cmake_name' is always the CMake name. This allows us to only
-# use one `dependency` call for each one.
+# Get all the bits for our dependencies, hunt down the parts and construct
+# the dependency objects. We do the searches within Meson to allow the automatic
+# addition into the build_rpath (not the install_rpath, as per the usual).
+_spack_cache = {}
 _deps = {
-  'libbfd': { 'name': 'BFD',
-              'propstems': ['bfd', 'binutils'],
-              'spack': 'binutils',
+  'libbfd': { 'propstems': ['bfd', 'binutils'], 'spack': 'binutils',
+              'libs': ['bfd'], 'headers': ['bfd.h'],
             },
-  'libiberty': { 'name': 'Iberty',
-                 'propstems': ['iberty', 'binutils'],
-                 'spack': 'libiberty',
+  'libunwind': { 'propstems': ['libunwind'], 'spack': 'libunwind', 'dependency': 'libunwind',
+                 'libs': ['unwind'], 'headers': ['libunwind.h'],
                },
-  'bzip': { 'name': 'BZip2',
-            'propstems': ['bzip2', 'bzip'],
-            'spack': 'bzip2',
-          },
-  'dyninst': { 'name': 'Dyninst',
-               'propstems': ['dyninst'],
-               'modules': ['Dyninst::parseAPI', 'Dyninst::instructionAPI',
-                           'Dyninst::symtabAPI', 'Dyninst::dynDwarf',
-                           'Dyninst::dynElf', 'Dyninst::common'],
-               'spack': 'dyninst',
-             },
-  'libelf': { 'name': 'libelf', 'cmake_name': 'LibElf',
-              'propstems': ['libelf', 'elfutils'],
-              'spack': 'elfutils',
+  'libunwind_static': { 'propstems': ['libunwind'], 'spack': 'libunwind', 'dependency': 'libunwind',
+                        'libs': ['unwind'], 'headers': ['libunwind.h'],
+                        'static': true,
+                      },
+  'libelf': { 'propstems': ['libelf', 'elfutils'], 'spack': 'elfutils', 'dependency': 'libelf',
+              'libs': ['elf'], 'headers': ['libelf.h'],
             },
-  'libdw': { 'name': 'libdw', 'cmake_name': 'LibDw',
-             'propstems': ['libdw', 'elfutils'],
-             'spack': 'elfutils',
+  'libdw': { 'propstems': ['libdw', 'elfutils'], 'spack': 'elfutils', 'dependency': 'libdw',
+             'libs': ['dw'], 'headers': ['elfutils/libdw.h'],
            },
-  'gotcha': { 'name': 'Gotcha',
-              'propstems': ['gotcha'],
-              'spack': 'gotcha',
-            },
-  'libdwarf': { 'name': 'LibDwarf',
-                'propstems': ['libdwarf'],
-                'spack': 'libdwarf',
-              },
-  'libmonitor': { 'name': 'Monitor',
-                  'propstems': ['libmonitor', 'monitor'],
-                  'spack': 'libmonitor',
-                },
-  'libmonitor_static': { 'name': 'Monitor',
-                         'propstems': ['libmonitor', 'monitor'],
-                         'modules': ['Monitor::wrap'],
-                         'spack': 'libmonitor',
-                       },
-  'libunwind': { 'name': 'libunwind', 'cmake_name': 'LibUnwind',
-                 'propstems': ['libunwind'],
-                 'spack': 'libunwind',
-               },
-  'libunwind_static': { 'name': 'libunwind', 'cmake_name': 'LibUnwind',
-                        'propstems': ['libunwind'],
-                        'modules': ['LibUnwind::LibUnwind_static'],
-                        'spack': 'libunwind',
-                      },
-  'liblzma': { 'name': 'liblzma', 'cmake_name': 'LibLZMA',
-               'propstems': ['liblzma', 'lzma'],
-               'spack': 'xz',
+  'liblzma': { 'propstems': ['liblzma', 'lzma'], 'spack': 'xz', 'dependency': 'liblzma',
+               'libs': ['lzma'], 'headers': ['lzma.h'],
              },
-  'mbedtls_crypto': { 'name': 'MbedTLS',
-                      'propstems': ['mbedtls'],
-                      'modules': 'MbedTLS::Crypto',
-                      'spack': 'mbedtls',
+  'mbedtls_crypto': { 'propstems': ['mbedtls'], 'spack': 'mbedtls',
+                      'libs': ['mbedcrypto'], 'headers': ['mbedtls/md5.h'],
+                      'static': true,
                     },
-  'papi': { 'name': 'PAPI',
-            'propstems': ['papi'],
-            'spack': 'papi',
+  'gotcha': { 'propstems': ['gotcha'], 'spack': 'gotcha',
+              'libs': ['gotcha'], 'headers': ['gotcha/gotcha.h'],
+            },
+  'papi': { 'propstems': ['papi'], 'spack': 'papi', 'dependency': 'papi',
+            'libs': ['papi'], 'headers': ['papi.h'],
           },
-  'papi_static': { 'name': 'PAPI',
-                   'propstems': ['papi'],
-                   'modules': ['PAPI::PAPI_static'],
-                   'spack': 'papi',
+  'papi_static': { 'propstems': ['papi'], 'spack': 'papi', 'dependency': 'papi',
+                   'libs': ['papi'], 'headers': ['papi.h'],
+                   'static': true,
                  },
-  'perfmon': { 'name': 'PFM',
-               'propstems': ['perfmon', 'pfm', 'papi'],
-               'spack': 'papi',
+  'perfmon': { 'propstems': ['perfmon', 'pfm', 'papi'], 'spack': 'papi',
+               'libs': ['pfm'], 'headers': ['perfmon/pfmlib.h'],
              },
-  'perfmon_static': { 'name': 'PFM',
-                      'propstems': ['perfmon', 'pfm', 'papi'],
-                      'modules': ['PFM::PFM_static'],
-                      'spack': 'papi',
+  'perfmon_static': { 'propstems': ['perfmon', 'pfm', 'papi'], 'spack': 'papi',
+                      'libs': ['pfm'], 'headers': ['perfmon/pfmlib.h'],
+                      'static': true,
                     },
-  'tbb': { 'name': 'TBB',
-           'propstems': ['tbb'],
-           'components': ['tbb', 'tbbmalloc'],
-           'modules': ['TBB::tbb', 'TBB::tbbmalloc'],
-           'spack': 'intel-tbb',
+  'xed': { 'propstems': ['xed'], 'spack': 'intel-xed',
+           'libs': ['xed'], 'headers': ['xed-interface.h'],
          },
-  'tbb_mproxy': { 'name': 'TBB',
-                  'propstems': ['tbb'],
-                  'components': ['tbbmalloc_proxy'],
-                  'modules': ['TBB::tbbmalloc_proxy'],
-                  'spack': 'intel-tbb',
+  'xed_static': { 'propstems': ['xed'], 'spack': 'intel-xed',
+                  'libs': ['xed'], 'headers': ['xed-interface.h'],
+                  'static': true,
                 },
-  'xed': { 'name': 'Xed',
-           'propstems': ['xed'],
-           'spack': 'intel-xed',
-         },
-  'xed_static': { 'name': 'Xed',
-                  'propstems': ['xed'],
-                  'modules': ['Xed::Xed_static'],
-                  'spack': 'intel-xed',
-                },
-  'xerces': { 'name': 'xerces-c', 'cmake_name': 'Xerces',
-              'propstems': ['xerces'],
-              'spack': 'xerces-c',
-            },
-  'zlib': { 'name': 'zlib', 'cmake_name': 'ZLIB',
-            'propstems': ['zlib'],
-            'spack': 'zlib',
-          },
-  'valgrind_headers': { 'name': 'valgrind', 'cmake_name': 'Valgrind',
-                        'propstems': ['valgrind'],
-                        'spack': 'valgrind',
-                        'modules': 'Valgrind::headers',
-                      },
-  'rocm_headers': { 'name': 'ROCm',
-                    'propstems': ['rocm'],
-                    'modules': 'ROCm::headers',
+  'rocm_headers': { 'propstems': ['rocm'],
+                    'libs': [], 'headers': ['hip/hip_runtime.h', 'roctracer/roctracer.h'],
                   },
+
+  'libmonitor': { 'propstems': ['libmonitor', 'monitor'], 'spack': 'libmonitor',
+                  'libs': ['monitor'], 'headers': ['monitor.h'],
+                },
+  'libmonitor_static': { 'propstems': ['libmonitor', 'monitor'], 'spack': 'libmonitor',
+                         'libs': ['monitor_wrap'], 'headers': ['monitor.h'],
+                         'static': true,
+                       },
+
+  'tbb': { 'propstems': ['tbb'], 'spack': 'intel-tbb',
+           'libs': ['tbb', 'tbbmalloc'], 'headers': ['tbb/concurrent_hash_map.h'],
+           'cc': cpp,
+         },
+  'tbb_mproxy': { 'propstems': ['tbb'], 'spack': 'intel-tbb',
+                  'libs': ['tbbmalloc_proxy'], 'headers': ['tbb/concurrent_hash_map.h'],
+                  'cc': cpp,
+                },
+  'boost': { 'propstems': ['boost'], 'spack': 'boost', 'dependency': 'boost',
+             'libs': ['boost_graph', 'boost_regex', 'boost_system'],
+             'headers': ['boost/shared_ptr.hpp'],
+             'components': ['graph', 'regex', 'system'],
+             'cc': cpp, 'root_min_ver': '0.56', 'root_use_dep': true,
+           },
+  'dyninst': { 'propstems': ['dyninst'], 'spack': 'dyninst',
+               'libs': ['parseAPI', 'instructionAPI', 'symtabAPI', 'dynDwarf',
+                        'dynElf', 'common'],
+               'headers': ['Symtab.h'], 'cc': cpp,
+               'extra_incdeps': ['tbb_dep', 'boost_dep'],
+             },
+  'xerces': { 'propstems': ['xerces'], 'spack': 'xerces-c', 'dependency': 'xerces-c',
+              'libs': ['xerces-c'], 'headers': ['xercesc/sax2/SAX2XMLReader.hpp'],
+              'cc': cpp,
+            },
+
+  # NOTE: BEGIN the ones that currently aren't referenced anywhere.
+  # Remove the x_ tag and move above this line when these are in use.
+  'x_libiberty': { 'propstems': ['iberty', 'binutils'], 'spack': 'libiberty',
+                   'libs': ['iberty'], 'headers': ['libiberty/libiberty.h'],
+                 },
+  'x_bzip': { 'propstems': ['bzip2', 'bzip'], 'spack': 'bzip2', 'dependency': 'BZip2',
+              'libs': ['bz2'], 'headers': ['bzlib.h'],
+            },
+  'x_libdwarf': { 'propstems': ['libdwarf'], 'spack': 'libdwarf',
+                  'libs': ['dwarf'], 'headers': ['libdwarf.h'],
+                },
+  'x_zlib': { 'propstems': ['zlib'], 'spack': 'zlib', 'dependency': 'zlib',
+              'libs': ['z'], 'headers': ['zlib.h'],
+            },
+  'x_valgrind_headers': { 'propstems': ['valgrind'], 'spack': 'valgrind', 'dependency': 'valgrind',
+                          'libs': [], 'headers': ['valgrind.h', 'helgrind.h'],
+                        },
+  # NOTE: END the ones that currently aren't referenced anywhere.
 }
+foreach var, dep : _deps
+  # If an explicit *_enabled property is set to false, don't do anything more.
+  # We use the first explicitly set property we find.
+  _dep_enabled = true
+  foreach stem : dep['propstems']
+    if meson.get_external_property(stem+'_enabled', '') != ''
+      _dep_enabled = meson.get_external_property(stem+'_enabled')
+      break
+    endif
+  endforeach
+  if not _dep_enabled
+    set_variable(var+'_dep', disabler())
+    summary(var, false, section: 'Dependencies', bool_yn: true)
+    continue
+  endif
 
-_cmake_force_root_args = [
-  '-DCMAKE_FIND_USE_CMAKE_ENVIRONMENT_PATH=FALSE',
-  '-DCMAKE_FIND_USE_CMAKE_PATH=FALSE',
-  '-DCMAKE_FIND_USE_CMAKE_SYSTEM_PATH=FALSE',
-]
+  # If an explicit *_root or *_librarydir/*_includedir property is set, search there.
+  # Boost is a special case, its _root variable is handled by Meson.
+  foreach stem : dep['propstems']
+    if meson.get_external_property(stem+'_librarydir', '') != '' \
+       and meson.get_external_property(stem+'_includedir', '') != ''
+      if not dep.get('root_use_dep', false)
+        _dep_ldirs = [fs.expanduser(meson.get_external_property(stem+'_librarydir'))]
+        if not fs.is_absolute(_dep_ldirs[0])
+          error(stem+'_librarydir must be an absolute path')
+        elif not fs.is_dir(_dep_ldirs[0])
+          error(stem+'_librarydir must exist and be a directory')
+        endif
+        _dep_idirs = [fs.expanduser(meson.get_external_property(stem+'_includedir'))]
+        if not fs.is_absolute(_dep_idirs[0])
+          error(stem+'_includedir must be an absolute path')
+        elif not fs.is_dir(_dep_idirs[0])
+          error(stem+'_librarydir must exist and be a directory')
+        endif
+      endif
+    elif meson.get_external_property(stem+'_librarydir', '') != '' \
+         or meson.get_external_property(stem+'_includedir', '') != ''
+      if not dep.get('root_use_dep', false)
+        error('Both of '+stem+'_librarydir and '+stem+'_includedir must be specified')
+      endif  # It'll be a hard error later down
+    elif meson.get_external_property(stem+'_root', '') != ''
+      if not dep.get('root_use_dep', false)
+        _dep_root = fs.expanduser(meson.get_external_property(stem+'_root'))
+        if not fs.is_absolute(_dep_root)
+          error(stem+'_root must be an absolute path')
+        endif
+        # Generate a set of configurable gueses, if we don't have the full answer.
+        _dep_ldirs = []
+        foreach suffix : meson.get_external_property('library_path_suffixes', ['lib64', 'lib'])
+          if fs.is_dir(_dep_root / suffix)
+            _dep_ldirs += [_dep_root / suffix]
+          endif
+        endforeach
+        if _dep_ldirs.length() == 0
+          error(stem+'_root has no existing library path canidates, check it and library_path_suffixes')
+        endif
+        _dep_idirs = []
+        foreach suffix : meson.get_external_property('include_path_suffixes', ['include'])
+          if fs.is_dir(_dep_root / suffix)
+            _dep_idirs += [_dep_root / suffix]
+          endif
+        endforeach
+        if _dep_idirs.length() == 0
+          error(stem+'_root has no existing include path canidates, check it and include_path_suffixes')
+        endif
+      endif
+    else
+      continue
+    endif
+    if dep.has_key('root_min_ver') and meson.version().version_compare('<'+dep['root_min_ver'])
+      error(stem+'_root as a property is not effective until '+dep['root_min_ver']+', please upgrade!')
+    endif
+    set_variable(var+'_dep', dep.get('root_use_dep', false) ? {'skip_to_dep': true} : {
+      'summary': meson.get_external_property(stem+'_root', _dep_ldirs[0]),
+      'idirs': _dep_idirs, 'ldirs': _dep_ldirs,
+    })
+    break
+  endforeach
 
-foreach var, properties : _deps
-  _cmake_name = properties.get('cmake_name', properties['name'])
+  # If a Spack is available and usable for this dependency, use it to scare up some paths
+  if not is_variable(var+'_dep') and is_variable('spack') and dep.has_key('spack') \
+     and meson.get_external_property(dep['spack']+'_spec', '') != 'system'
+    # To reduce the amount of times we have to fire up Spack, check the cache.
+    if not _spack_cache.has_key(dep['spack'])
+      # Run our helper script, and do our best with it.
+      _spack_paths = run_command(python, 'meson/spack-paths.py', spack,
+                                 dep['spack'], meson.get_external_property(dep['spack']+'_spec', ''))
+      if _spack_paths.returncode() != 0
+        error(_spack_paths.stderr().strip())
+      elif _spack_paths.stdout().strip() == ''
+        warning(_spack_paths.stderr().strip())
+        set_variable(var + '_dep', disabler())
+        summary(var, false, section: 'Dependencies', bool_yn: true)
+        continue
+      else
+        _spack_paths = _spack_paths.stdout().strip().split('\0')
+        _dep_summary = ''
+        _dep_idirs = []
+        _dep_ldirs = []
+        foreach part : _spack_paths
+          if _dep_summary == ''
+            _dep_summary = part
+          elif part.startswith('L')
+            _dep_ldirs += (part / '').strip('L')
+          elif part.startswith('I')
+            _dep_idirs += (part / '').strip('I')
+          else
+            error('Invalid output from spack-paths.py: ' + part)
+          endif
+        endforeach
+        if _dep_idirs.length() == 0 or _dep_ldirs.length() == 0
+          error('Invalid output from spack-paths.py, missing elements')
+        endif
+      endif
 
-  # Highest priority: explicitly given in *_root
-  foreach pstem : properties['propstems']
-    _explicit_root = meson.get_external_property(pstem + '_root', '')
-    if _explicit_root != ''
-      set_variable(var + '_dep', dependency(_cmake_name,
-        method: 'cmake',
-        required: false, static: false, disabler: true,
-        cmake_args: ['-D' + _cmake_name + '_ROOT=' + _explicit_root]
-                    + _cmake_force_root_args,
-        modules: properties.get('modules', []),
-        components: properties.get('components', []),
-        cmake_module_path: 'meson/modules'))
-      summary(var, _explicit_root, section: 'Dependencies')
-      assert(get_variable(var + '_dep').found(),
-        'Could not find ' + properties['name'] + ' from '
-        + pstem + '_root property: `' + _explicit_root + '\'')
+      # Throw the variables in the cache for later
+      _spack_cache += { dep['spack']: {
+        'summary': _dep_summary, 'idirs': _dep_idirs, 'ldirs': _dep_ldirs,
+      }}
+    endif
+    set_variable(var+'_dep', _spack_cache[dep['spack']])
+  endif
+
+  # Fetch the other dependencies that will have to be added to make this work.
+  _dep_exdeps = []
+  _dep_exincs = []
+  foreach exdep : dep.get('extra_incdeps', [])
+    if is_variable(exdep+'_idirs')
+      _dep_exincs += get_variable(exdep+'_idirs')
+    else
+      _dep_exdeps += get_variable(exdep).partial_dependency(compile_args: true, includes: true)
     endif
   endforeach
 
-  # Middle priority: searchable via Spack
-  if not is_variable(var + '_dep') and is_variable('spack') \
-     and properties.has_key('spack')
-    # The user can specify the exact spec to use for any particular package
-    _explicit_spec = meson.get_external_property(properties['spack'] + '_spec', '')
+  # If we reach this point, we may have to do the actual search.
+  _dep_cc = dep.get('cc', cc)
+  if is_variable(var+'_dep') and not get_variable(var+'_dep').get('skip_to_dep', false)
+    _dep_paths = get_variable(var+'_dep')
 
-    # ...But we only use it if its not "system" (or some variant thereof)
-    # If spack is being used the system should never be checked unless the
-    # user explicitly states. The user should be very explicit about this stuff.
-    if _explicit_spec.strip().to_lower() != 'system'
-      # Run our helper script, and do our best with it.
-      _spack_root = run_command(python, 'meson/spack-parse.py', spack,
-                                properties['spack'], _explicit_spec)
-      if _spack_root.returncode() != 0
-        error(_spack_root.stderr().strip())
-      elif _spack_root.stdout().strip() == ''
-        warning('Spack package ' + properties['spack'] + ' not found, '
-                + 'please install: ' + spack.path() + ' install '
-                + properties['spack'] + ' ' + _explicit_spec)
-        warning('Set the property ' + properties['spack'] + '_spec '
-                + 'to \'system\' to use the system/environment instead.')
-        set_variable(var + '_dep', disabler())
+    # Hunt down the libraries on the given paths.
+    _dep_libs = []
+    foreach lib : dep['libs']
+      if dep.get('static', false)
+        _dep_libs += _dep_cc.find_library(lib, dirs: _dep_paths['ldirs'], required: true, static: true)
       else
-        _spack_root = _spack_root.stdout().strip()
-        assert(_spack_root != '')
-        _spack_root = _spack_root.split('\n')
-
-        set_variable(var + '_dep', dependency(_cmake_name,
-          method: 'cmake',
-          required: false, static: false, disabler: true,
-          cmake_args: ['-D' + _cmake_name + '_ROOT=' + _spack_root[0].strip()]
-                      + _cmake_force_root_args,
-          modules: properties.get('modules', []),
-          components: properties.get('components', []),
-          cmake_module_path: 'meson/modules'))
-        assert(get_variable(var + '_dep').found(),
-               'Failed to find ' + properties['name'] + ' from Spack prefix '
-               + '`' + _spack_root[0].strip() + '\'')
-      summary(var, _spack_root[1].strip(), section: 'Dependencies')
+        _dep_libs += _dep_cc.find_library(lib, dirs: _dep_paths['ldirs'], required: true)
       endif
-    endif
-  endif
+    endforeach
 
-  # Lowest priority: implicitly available
-  if not is_variable(var + '_dep')
-    set_variable(var + '_dep', dependency(properties['name'],
-      required: false, static: false, disabler: true,
-      modules: properties.get('modules', []),
-      components: properties.get('components', []),
-      cmake_module_path: 'meson/modules'))
-    if get_variable(var + '_dep').found()
-      summary(var, get_variable(var + '_dep').get_variable(
-        cmake: _cmake_name + '_LIBRARY',
+    # Check for the headers, and error if we don't find them. They both must
+    # actually exist on a path and work when compiled.
+    _dep_idirs = [include_directories(_dep_paths['idirs'])] + _dep_exincs
+    foreach inc : dep['headers']
+      _has_it = false
+      foreach idir : _dep_paths['idirs']
+        if fs.is_file(idir / inc)
+          _has_it = true
+          break
+        endif
+      endforeach
+      assert(_has_it, var+' does not provide `'+inc+'\'')
+      _dep_cc.check_header(inc, include_directories: _dep_idirs,
+                           required: true, dependencies: _dep_exdeps)
+    endforeach
+
+    # Finally, stitch together the final dependency and set it.
+    set_variable(var+'_dep', declare_dependency(
+      dependencies: _dep_libs + _dep_exdeps, include_directories: _dep_idirs,
+    ))
+    set_variable(var+'_dep_idirs', _dep_idirs)
+    set_variable(var+'_dep_ex', dependency('', required: false))
+    summary(var, _dep_paths['summary'], section: 'Dependencies')
+  elif not dep.has_key('dependency')
+    # Repeat of the above, but with system paths instead.
+    _dep_libs = []
+    _dep_allfound = true
+    foreach lib : dep['libs']
+      if dep.get('static', false)
+        _dep_libs += _dep_cc.find_library(lib, disabler: true, static: true, required: false)
+      else
+        _dep_libs += _dep_cc.find_library(lib, disabler: true, required: false)
+      endif
+      _dep_allfound = _dep_allfound and _dep_libs[-1].found()
+      if not _dep_allfound
+        break
+      endif
+    endforeach
+    # Ensure the headers are usable. Last thing we want is problems there.
+    if _dep_allfound
+      foreach inc : dep['headers']
+        _dep_allfound = _dep_allfound and _dep_cc.check_header(inc, dependencies: _dep_exdeps)
+        if not _dep_allfound
+          break
+        endif
+      endforeach
+    endif
+    if _dep_allfound
+      set_variable(var+'_dep', declare_dependency(dependencies: _dep_libs + _dep_exdeps))
+      set_variable(var+'_dep_ex', dependency('', required: false))
+      summary(var, '(system)', section: 'Dependencies')
+    else
+      set_variable(var+'_dep', disabler())
+      set_variable(var+'_dep_ex', disabler())
+      summary(var, false, section: 'Dependencies', bool_yn: true)
+    endif
+    set_variable(var+'_dep_idirs', include_directories())
+  else
+    # Use the standard dependency logic to pull from the system
+    if dep.get('static', false)
+      set_variable(var+'_dep', dependency(dep['dependency'],
+        required: is_variable(var+'_dep'), disabler: true, static: true,
+        modules: dep.get('modules', []),
+        components: dep.get('components', [])))
+    else
+      set_variable(var+'_dep', dependency(dep['dependency'],
+        required: is_variable(var+'_dep'), disabler: true,
+        modules: dep.get('modules', []),
+        components: dep.get('components', [])))
+    endif
+    set_variable(var+'_dep_ex', get_variable(var+'_dep'))
+    if get_variable(var+'_dep').found()
+      summary(var, get_variable(var+'_dep').get_variable(
+        cmake: get_variable(var+'_dep').name() + '_LIBRARY',
         pkgconfig: 'prefix',
         default_value: '(system)'), section: 'Dependencies')
     else
@@ -363,82 +486,11 @@ foreach var, properties : _deps
   endif
 endforeach
 
-## Fixup Dyninst's dependency to actually work properly
+# The Valgrind dependency should only reference the headers, so remove any
+# of its other bits.
+x_valgrind_headers_dep = x_valgrind_headers_dep.partial_dependency(compile_args: true, includes: true)
 
-# The Dyninst config file doesn't list include directories, so the dependency
-# can't be used directly. Half the fix is in the Find-script, but up here
-# we stitch the Dyninst dependency to its dependencies.
-dyninst_all_deps = [dyninst_dep, tbb_dep]
-dyninst_dep = declare_dependency(dependencies: dyninst_all_deps)
-
-## Boost is a special case, since Meson overrides its search logic.
-
-# Support for boost_root was added later, so error if you try to use it early.
-if meson.get_external_property('boost_root', '') != '' and \
-   meson.version().version_compare('<0.55.1')
-  error('boost_root as a property is not effective until 0.55.1, please upgrade!')
-endif
-
-_boost_our_modules = ['graph', 'regex', 'system']
-_boost_other_modules = ['atomic', 'chrono', 'date_time', 'filesystem', 'thread',
-                        'timer']
-if meson.get_external_property('boost_root', '') == '' and is_variable('spack') \
-   and meson.get_external_property('boost_spec', '').strip().to_lower() != 'system'
-  # We can't use Meson's search functionality in this case, so we just
-  # assume all the bits are in very particular locations for our usage.
-  _spack_root = run_command(python, 'meson/spack-parse.py', spack,
-                            'boost', meson.get_external_property('boost_spec', ''))
-  if _spack_root.returncode() != 0
-    error(_spack_root.stderr().strip())
-  elif _spack_root.stdout().strip() == ''
-    warning('Spack package boost not found, '
-            + 'please install: ' + spack.path() + ' install '
-            + 'boost ' + _explicit_spec)
-    warning('Set the property boost_spec '
-            + 'to \'system\' to use the system/environment instead.')
-    boost_all_dep = dependency('', required: false)
-    boost_dep = dependency('', required: false)
-  else
-    _spack_root = _spack_root.stdout().strip()
-    assert(_spack_root != '')
-    _spack_root = _spack_root.split('\n')
-    _dirs = [_spack_root[0] / 'lib', _spack_root[0] / 'lib64', _spack_root[0] / 'lib32']
-
-    _deps = []
-    foreach m : _boost_our_modules
-      _deps += cpp.find_library('boost_'+m, dirs: _dirs)
-    endforeach
-    boost_dep = declare_dependency(
-      include_directories: include_directories(_spack_root[0] / 'include'),
-      dependencies: _deps,
-    )
-    foreach m : _boost_other_modules
-      _deps += cpp.find_library('boost_'+m, dirs: _dirs)
-    endforeach
-    boost_all_dep = declare_dependency(
-      include_directories: include_directories(_spack_root[0] / 'include'),
-      dependencies: _deps,
-    )
-    summary('boost', _spack_root[1], section: 'Dependencies')
-  endif
-else
-  # Search using the usual methods
-  boost_all_dep = dependency('Boost', required: false,
-                             modules: _boost_our_modules + _boost_other_modules)
-  boost_dep = dependency('Boost', required: false, modules: _boost_our_modules)
-
-  if meson.get_external_property('boost_root', '') != ''
-    summary('boost', meson.get_external_property('boost_root', ''),
-            section: 'Dependencies')
-    assert(boost_all_dep.found() and boost_dep.found(),
-           'Could not find Boost from boost_root property: '
-            + '`' + meson.get_external_property('boost_root', '') + '\'')
-  else
-    summary('boost', '(system)', section: 'Dependencies')
-  endif
-endif
-
-## CUDA is another special case, Meson again overrides the logic.
+## CUDA a special case, Meson again overrides the logic, and we don't need everything.
 
 # There is no support for cuda/cupti_root, so error if anyone tries to use it.
 if meson.get_external_property('cuda_root', '') != ''
