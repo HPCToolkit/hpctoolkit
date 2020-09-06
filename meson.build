@@ -54,6 +54,7 @@ hpctoolkit_config = configuration_data()
 cc = meson.get_compiler('c')
 cpp = meson.get_compiler('cpp')
 fs = import('fs')
+sourceset = import('sourceset')
 
 # Various bits we need require the use of Python 3, so get it early
 python = import('python').find_installation('python3')
