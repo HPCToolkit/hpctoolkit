@@ -223,7 +223,7 @@ _deps = {
              'libs': ['boost_graph', 'boost_regex', 'boost_system'],
              'headers': ['boost/shared_ptr.hpp'],
              'components': ['graph', 'regex', 'system'],
-             'cc': cpp, 'root_min_ver': '0.56', 'root_use_dep': true,
+             'cc': cpp,
            },
   'dyninst': { 'propstems': ['dyninst'], 'spack': 'dyninst',
                'libs': ['parseAPI', 'instructionAPI', 'symtabAPI', 'dynDwarf',
@@ -425,7 +425,7 @@ foreach var, dep : _deps
       dependencies: _dep_libs + _dep_exdeps, include_directories: _dep_idirs,
     ))
     set_variable(var+'_dep_idirs', _dep_idirs)
-    set_variable(var+'_dep_ex', dependency('', required: false))
+    set_variable(var+'_dep_ex', _dep_exdeps)
     summary(var, _dep_paths['summary'], section: 'Dependencies')
   elif not dep.has_key('dependency')
     # Repeat of the above, but with system paths instead.
@@ -453,7 +453,7 @@ foreach var, dep : _deps
     endif
     if _dep_allfound
       set_variable(var+'_dep', declare_dependency(dependencies: _dep_libs + _dep_exdeps))
-      set_variable(var+'_dep_ex', dependency('', required: false))
+      set_variable(var+'_dep_ex', _dep_exdeps)
       summary(var, '(system)', section: 'Dependencies')
     else
       set_variable(var+'_dep', disabler())
