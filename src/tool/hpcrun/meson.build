@@ -409,3 +409,8 @@ libhpcrun_static_lib = static_library('hpcrun_static', _s_srcs.sources(),
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
 summary('hpclink', not is_disabler(libhpcrun_static_lib) and _has_hpcfnbounds, section: 'Applications', bool_yn: true)
+
+# Check that the static case is actually linkable by compiling a small
+# hello-world style application with it linked in.
+executable('hpcrun_static_test', files('hello-world.c'),
+  link_with: [libhpcrun_static_lib])
