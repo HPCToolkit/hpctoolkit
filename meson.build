@@ -517,6 +517,7 @@ endif
 
 # Search for the CUDA toolkit
 cuda_dep = dependency('CUDA', required: false, modules: ['cupti'])
+cuda_d_dep = cuda_dep.found() ? cuda_dep : disabler()
 
 # Install the READMEs to the documentation directory, {datadir}/doc/hpctoolkit
 install_data(files(

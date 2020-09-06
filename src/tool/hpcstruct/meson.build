@@ -42,12 +42,18 @@
 #
 # ******************************************************* EndRiceCopyright *
 
-tool_includes = main_includes + [include_directories('.')]
+_srcs = [files(
+  'main.cpp',
+  'Args.cpp',
+)]
 
-subdir('hpcstruct')
-subdir('hpcprof')
+_gen = generator(find_program('stringify.sh'), arguments: ['@INPUT@'],
+                 output: '@BASENAME@.h', capture: true)
+_srcs += _gen.process(files('cubins-analysis.txt'))
 
-subdir('hpcfnbounds')
-subdir('hpcfnbounds2')
-subdir('hpcrun')
-
+hpcstruct_exe = executable('hpcstruct', _srcs,
+  include_directories: tool_includes,
+  link_with: [support_lib, banal_lib, analysis_lib],
+  dependencies: [openmp_d_dep],
+  install: true)
+summary('hpcstruct', not is_disabler(hpcstruct_exe), section: 'Applications', bool_yn: true)

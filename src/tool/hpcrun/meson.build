@@ -281,6 +281,7 @@ _srcset.add(when: cuda_dep, if_true: [
     files(
       'sample-sources/nvidia.c',
       'gpu/nvidia/cubin-hash-map.c',
+      'gpu/nvidia/cubin-id-map.c',
       'gpu/nvidia/cubin-symbols.c',
       'gpu/nvidia/cuda-api.c',
       'gpu/nvidia/cuda-device-map.c',

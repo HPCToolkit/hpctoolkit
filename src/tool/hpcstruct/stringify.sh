@@ -6,6 +6,8 @@
 #   all:  --->  "all:\n"
 #
 
+if ! test -z "$1"; then exec "$0" < "$1"; fi
+
 quote='"'
 newline='\n'
 
