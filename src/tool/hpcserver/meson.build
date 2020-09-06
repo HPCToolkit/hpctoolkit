@@ -42,17 +42,29 @@
 #
 # ******************************************************* EndRiceCopyright *
 
-tool_includes = main_includes + [include_directories('.')]
+_srcs = files(
+  'Args.cpp',
+  'BaseDataFile.cpp',
+  'Communication-SingleThreaded.cpp',
+  'DataCompressionLayer.cpp',
+  'DataOutputFileStream.cpp',
+  'DataSocketStream.cpp',
+  'DBOpener.cpp',
+  'FilteredBaseData.cpp',
+  'LargeByteBuffer.cpp',
+  'MergeDataFiles.cpp',
+  'ProcessTimeline.cpp',
+  'ProgressBar.cpp',
+  'Server.cpp',
+  'SpaceTimeDataController.cpp',
+  'TraceDataByRank.cpp',
+  'VersatileMemoryPage.cpp',
+  'main.cpp',
+)
 
-subdir('hpcstruct')
-subdir('hpcprof')
-subdir('hpcproftt')
-subdir('hpclump')
-subdir('hpctracedump')
-
-subdir('hpcserver')
-
-subdir('hpcfnbounds')
-subdir('hpcfnbounds2')
-subdir('hpcrun')
-
+hpcserver_exe = executable('hpcserver', _srcs,
+  include_directories: tool_includes,
+  link_with: [support_lib],
+  dependencies: [zlib_d_dep],
+  install: true)
+summary('hpcserver', not is_disabler(hpcserver_exe), section: 'Applications', bool_yn: true)
