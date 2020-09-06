@@ -319,7 +319,7 @@ class GPUAdvisor {
   std::stringstream _output;
 
  private:
-  const int _top_optimizers = 5;
+  const size_t _top_optimizers = 5;
 };
 
 

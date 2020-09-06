@@ -115,7 +115,7 @@ std::vector<BlameStats> GPURegisterIncreaseOptimizer::match_impl(const KernelBla
       "spills to local memory causes extra instruction cycles.\n"
       "To eliminate these cycles:\n"
       "1. Increase the upper bound of regster count in a kernel.\n"
-      "2. Simplify computations to reuse registers.\n";
+      "2. Simplify computations to reuse registers.\n"
       "3. Split loops to reduce register usage.\n";
 
   _inspection.stall = false;
@@ -400,7 +400,7 @@ std::vector<BlameStats> GPUKernelMergeOptimizer::match_impl(const KernelBlame &k
                                                             const KernelStats &kernel_stats) {
   // Match if ifetch and small kernel invoked many times
   // TODO(Keren): count number of instructions
-  const int KERNEL_COUNT_LIMIT = 10;
+  const size_t KERNEL_COUNT_LIMIT = 10;
   const double KERNEL_TIME_LIMIT = 100 * 1e-6;  // 100us
 
   auto blame = 0.0;
@@ -528,10 +528,8 @@ std::vector<BlameStats> GPUFastMathOptimizer::match_impl(const KernelBlame &kern
   if (ifetch_stall / kernel_blame.stall_blame <= IFET_UPPER) {
     for (auto *inst_blame : kernel_blame.stall_inst_blame_ptrs) {
       auto *function = inst_blame->src_function;
-      bool find = false;
       Prof::Struct::ACodeNode *proc = inst_blame->src_struct->ancestorProc();
       if (function->global == false && function->name.find("cuda_sm") != std::string::npos) {
-        find = true;
         blame += inst_blame->lat_blame;
         function_blame[proc].blame += inst_blame->lat_blame;
       }
@@ -772,7 +770,7 @@ std::vector<BlameStats> GPUBlockDecreaseOptimizer::match_impl(const KernelBlame 
                                                               const KernelStats &kernel_stats) {
   // Match if threads are few, increase number of threads per block. i.e.
   // threads coarsen
-  const int WARP_COUNT_LIMIT = 2;
+  const size_t WARP_COUNT_LIMIT = 2;
 
   auto blame = 0.0;
   auto warps = (kernel_stats.threads - 1) / _arch->warp_size() + 1;
@@ -785,7 +783,7 @@ std::vector<BlameStats> GPUBlockDecreaseOptimizer::match_impl(const KernelBlame 
   // Concurrent (not synchronized) blocks may introduce instruction cache
   // latency Reduce the number of blocks keep warps fetch the same instructions
   // at every cycle
-  if (kernel_stats.blocks > _arch->sms() && warps <= WARP_COUNT_LIMIT) {
+  if (static_cast<int>(kernel_stats.blocks) > _arch->sms() && warps <= WARP_COUNT_LIMIT) {
     if (kernel_blame.stall_blames.find(BLAME_GPU_INST_METRIC_NAME ":LAT_IFET") !=
         kernel_blame.stall_blames.end()) {
       blame += kernel_blame.stall_blames.at(BLAME_GPU_INST_METRIC_NAME ":LAT_IFET");

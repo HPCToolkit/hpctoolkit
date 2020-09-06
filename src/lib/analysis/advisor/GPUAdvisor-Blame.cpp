@@ -879,10 +879,9 @@ double GPUAdvisor::computePathInsts(
   std::vector<CudaParse::Block *> &path) {
   double insts = 0.0;
 
-  auto inst_metric_index = _metric_name_prof_map->metric_id(
-    mpi_rank, thread_id, _inst_metric, true);
+  _metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_metric, true);
 
-  for (auto i = 0; i < path.size(); ++i) {
+  for (size_t i = 0; i < path.size(); ++i) {
     auto *block = path[i];
     auto front_vma = block->insts.front()->inst_stat->pc;
     auto back_vma = block->insts.back()->inst_stat->pc;

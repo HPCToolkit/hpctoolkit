@@ -155,7 +155,7 @@ bool MetricNameProfMap::add(const std::string &metric_name) {
       }
     }
   }
-  return true;
+  return res;
 }
 
 }  // namespace Analysis

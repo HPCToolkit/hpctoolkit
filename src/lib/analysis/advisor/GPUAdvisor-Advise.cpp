@@ -250,10 +250,6 @@ void GPUAdvisor::advise(const CCTBlames &cct_blames) {
     }
   }
 
-  auto *gpu_kernel_struct = _vma_struct_map.begin()->second;
-  auto *gpu_proc_struct = gpu_kernel_struct->ancestorProc();
-  auto *gpu_file_struct = gpu_kernel_struct->ancestorFile();
-
   if (_output.rdbuf()->in_avail() != 0) {
     std::cout << _output.str();
   }

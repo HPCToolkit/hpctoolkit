@@ -495,7 +495,7 @@ void relocateCudaInstructionStats(std::vector<Function *> &functions) {
 }
 
 
-static int reg_name_to_id(const std::string &name) {
+static int __attribute__((unused)) reg_name_to_id(const std::string &name) {
   // first 7 letters cuda::r
   auto str = name.substr(7);
   return std::stoi(str);
