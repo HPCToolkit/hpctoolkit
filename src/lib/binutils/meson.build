@@ -66,5 +66,5 @@ _srcs = files(
 binutils_lib = static_library('binutils', _srcs, pic: true,
   include_directories: main_includes,
   link_with: [support_lib, prof_lean_lib, support_lean_lib, isa_lib],
-  dependencies: [libbfd_dep, libelf_dep, dyninst_dep])
+  dependencies: [libbfd_d_dep, libelf_d_dep, dyninst_d_dep])
 

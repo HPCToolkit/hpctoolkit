@@ -103,15 +103,16 @@ if cpp.get_argument_syntax() == 'gcc'
 endif
 
 # Enable OpenMP.
-openmp = dependency('OpenMP', required: false, disabler: true)
+# TODO: Control using an --enable-openmp option
+openmp_dep = dependency('OpenMP', required: false)
 # TODO: Handle finding the OpenMP directory.
 
 # Enable MPI (for C and C++).
 # NOTE: Autotools has a separate search system for Cray and Blue Gene, to get
 # around a Spack bug. We trust Meson's search functionality and ability to
 # override the issue in a Spack recipe.
-mpi_c = dependency('MPI', language: 'c', required: false, disabler: true)
-mpi_cpp = dependency('MPI', language: 'cpp', required: false, disabler: true)
+mpi_c_dep = dependency('MPI', language: 'c', required: false)
+mpi_cpp_dep = dependency('MPI', language: 'cpp', required: false)
 
 # Handle getting the Spack we'll use for our business
 if get_option('spack') != '' or meson.get_external_property('spack', '') != ''
@@ -266,7 +267,7 @@ foreach var, dep : _deps
     endif
   endforeach
   if not _dep_enabled
-    set_variable(var+'_dep', disabler())
+    set_variable(var+'_dep', dependency('', required: false))
     summary(var, false, section: 'Dependencies', bool_yn: true)
     continue
   endif
@@ -346,7 +347,7 @@ foreach var, dep : _deps
         error(_spack_paths.stderr().strip())
       elif _spack_paths.stdout().strip() == ''
         warning(_spack_paths.stderr().strip())
-        set_variable(var + '_dep', disabler())
+        set_variable(var + '_dep', dependency('', required: false))
         summary(var, false, section: 'Dependencies', bool_yn: true)
         continue
       else
@@ -433,9 +434,9 @@ foreach var, dep : _deps
     _dep_allfound = true
     foreach lib : dep['libs']
       if dep.get('static', false)
-        _dep_libs += _dep_cc.find_library(lib, disabler: true, static: true, required: false)
+        _dep_libs += _dep_cc.find_library(lib, static: true, required: false)
       else
-        _dep_libs += _dep_cc.find_library(lib, disabler: true, required: false)
+        _dep_libs += _dep_cc.find_library(lib, required: false)
       endif
       _dep_allfound = _dep_allfound and _dep_libs[-1].found()
       if not _dep_allfound
@@ -456,8 +457,8 @@ foreach var, dep : _deps
       set_variable(var+'_dep_ex', _dep_exdeps)
       summary(var, '(system)', section: 'Dependencies')
     else
-      set_variable(var+'_dep', disabler())
-      set_variable(var+'_dep_ex', disabler())
+      set_variable(var+'_dep', dependency('', required: false))
+      set_variable(var+'_dep_ex', dependency('', required: false))
       summary(var, false, section: 'Dependencies', bool_yn: true)
     endif
     set_variable(var+'_dep_idirs', include_directories())
@@ -465,12 +466,12 @@ foreach var, dep : _deps
     # Use the standard dependency logic to pull from the system
     if dep.get('static', false)
       set_variable(var+'_dep', dependency(dep['dependency'],
-        required: is_variable(var+'_dep'), disabler: true, static: true,
+        required: is_variable(var+'_dep'), static: true,
         modules: dep.get('modules', []),
         components: dep.get('components', [])))
     else
       set_variable(var+'_dep', dependency(dep['dependency'],
-        required: is_variable(var+'_dep'), disabler: true,
+        required: is_variable(var+'_dep'),
         modules: dep.get('modules', []),
         components: dep.get('components', [])))
     endif
@@ -489,6 +490,15 @@ endforeach
 # The Valgrind dependency should only reference the headers, so remove any
 # of its other bits.
 x_valgrind_headers_dep = x_valgrind_headers_dep.partial_dependency(compile_args: true, includes: true)
+
+# For every dependency (_dep) variable, add an additional _d_dep variable that
+# is a disabler when the dependency is not found. Because disablers are handy.
+openmp_d_dep = openmp_dep.found() ? openmp_dep : disabler()
+mpi_c_d_dep = openmp_dep.found() ? openmp_dep : disabler()
+mpi_cpp_d_dep = openmp_dep.found() ? openmp_dep : disabler()
+foreach var, _ : _deps
+  set_variable(var+'_d_dep', get_variable(var+'_dep').found() ? get_variable(var+'_dep') : disabler())
+endforeach
 
 ## CUDA a special case, Meson again overrides the logic, and we don't need everything.
 

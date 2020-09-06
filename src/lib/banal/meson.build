@@ -62,9 +62,7 @@ _simple_srcs = files(
 banal_lib = static_library('banal', _srcs, pic: true,
   include_directories: main_includes,
   link_with: [xml_lib, support_lib, binutils_lib],
-  dependencies: [dyninst_dep, libelf_dep, boost_dep]
-    # TODO: Swap the following for an --enable-openmp option
-    + (true ? [dependency('OpenMP', disabler: true)] : []))
+  dependencies: [dyninst_d_dep, libelf_d_dep, boost_d_dep, openmp_d_dep])
 banal_simple_lib = static_library('banal_simple', _simple_srcs, pic: true,
   include_directories: main_includes,
   link_with: [binutils_lib, support_lib, prof_lib])
