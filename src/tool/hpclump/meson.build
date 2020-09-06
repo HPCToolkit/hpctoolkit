@@ -42,15 +42,13 @@
 #
 # ******************************************************* EndRiceCopyright *
 
-tool_includes = main_includes + [include_directories('.')]
+_srcs = files(
+  'main.cpp',
+  'Args.cpp',
+)
 
-subdir('hpcstruct')
-subdir('hpcprof')
-subdir('hpcproftt')
-subdir('hpclump')
-subdir('hpctracedump')
-
-subdir('hpcfnbounds')
-subdir('hpcfnbounds2')
-subdir('hpcrun')
-
+hpclump_exe = executable('hpclump', _srcs,
+  include_directories: tool_includes,
+  link_with: [support_lib, binutils_lib],
+  install: true, install_dir: get_option('libexecdir') / 'hpctoolkit')
+summary('hpclump', not is_disabler(hpclump_exe), section: 'Applications', bool_yn: true)

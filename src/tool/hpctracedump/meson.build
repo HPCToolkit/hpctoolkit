@@ -42,15 +42,12 @@
 #
 # ******************************************************* EndRiceCopyright *
 
-tool_includes = main_includes + [include_directories('.')]
+_srcs = files(
+  'main.cpp',
+)
 
-subdir('hpcstruct')
-subdir('hpcprof')
-subdir('hpcproftt')
-subdir('hpclump')
-subdir('hpctracedump')
-
-subdir('hpcfnbounds')
-subdir('hpcfnbounds2')
-subdir('hpcrun')
-
+hpctracedump_exe = executable('hpctracedump', _srcs,
+  include_directories: tool_includes,
+  link_with: [prof_lean_lib],
+  install: true, install_dir: get_option('libexecdir') / 'hpctoolkit')
+summary('hpctracedump', not is_disabler(hpctracedump_exe), section: 'Applications', bool_yn: true)

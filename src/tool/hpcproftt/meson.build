@@ -42,15 +42,14 @@
 #
 # ******************************************************* EndRiceCopyright *
 
-tool_includes = main_includes + [include_directories('.')]
+_srcs = files(
+  'main.cpp',
+  'Args.cpp',
+)
 
-subdir('hpcstruct')
-subdir('hpcprof')
-subdir('hpcproftt')
-subdir('hpclump')
-subdir('hpctracedump')
-
-subdir('hpcfnbounds')
-subdir('hpcfnbounds2')
-subdir('hpcrun')
-
+hpcproftt_exe = executable('hpcproftt', _srcs,
+  include_directories: tool_includes,
+  link_with: [support_lib, analysis_lib],
+  dependencies: [xerces_d_dep],
+  install: true, install_dir: get_option('libexecdir') / 'hpctoolkit')
+summary('hpcproftt', not is_disabler(hpcproftt_exe), section: 'Applications', bool_yn: true)
