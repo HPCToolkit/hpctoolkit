@@ -42,18 +42,15 @@
 #
 # ******************************************************* EndRiceCopyright *
 
-tool_includes = main_includes + [include_directories('.')]
+_srcs = files(
+  'main.cpp',
+  'Args.cpp',
+  'ParallelAnalysis.cpp',
+)
 
-subdir('hpcstruct')
-subdir('hpcprof')
-subdir('hpcprof-mpi')
-subdir('hpcproftt')
-subdir('hpclump')
-subdir('hpctracedump')
-
-subdir('hpcserver')
-
-subdir('hpcfnbounds')
-subdir('hpcfnbounds2')
-subdir('hpcrun')
-
+hpcprof_mpi_exe = executable('hpcprof-mpi', _srcs,
+  include_directories: tool_includes,
+  link_with: [analysis_lib, support_lib, prof_lib, prof_lean_lib],
+  dependencies: [mpi_cpp_d_dep],
+  install: true)
+summary('hpcprof-mpi', not is_disabler(hpcprof_mpi_exe), section: 'Applications', bool_yn: true)

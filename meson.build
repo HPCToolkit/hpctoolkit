@@ -495,8 +495,8 @@ x_valgrind_headers_dep = x_valgrind_headers_dep.partial_dependency(compile_args:
 # For every dependency (_dep) variable, add an additional _d_dep variable that
 # is a disabler when the dependency is not found. Because disablers are handy.
 openmp_d_dep = openmp_dep.found() ? openmp_dep : disabler()
-mpi_c_d_dep = openmp_dep.found() ? openmp_dep : disabler()
-mpi_cpp_d_dep = openmp_dep.found() ? openmp_dep : disabler()
+mpi_c_d_dep = mpi_c_dep.found() ? mpi_c_dep : disabler()
+mpi_cpp_d_dep = mpi_cpp_dep.found() ? mpi_cpp_dep : disabler()
 foreach var, _ : _deps
   set_variable(var+'_d_dep', get_variable(var+'_dep').found() ? get_variable(var+'_dep') : disabler())
 endforeach
