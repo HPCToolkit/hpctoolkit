@@ -44,7 +44,7 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#include "experimentxml.hpp"
+#include "experimentxml4.hpp"
 
 #include "hpctracedb.hpp"
 #include "hpcmetricdb.hpp"
@@ -116,11 +116,11 @@ static const std::unordered_map<std::string, const std::string&> nametrans = {
 
 // ud Module bits
 
-ExperimentXML::udModule::udModule(const Module& m, ExperimentXML& exml)
+ExperimentXML4::udModule::udModule(const Module& m, ExperimentXML4& exml)
   : id(m.userdata[exml.src.identifier()]), unknown_file(exml, m),
     used(false) {};
 
-void ExperimentXML::udModule::incr(const Module& mod, ExperimentXML&) {
+void ExperimentXML4::udModule::incr(const Module& mod, ExperimentXML4&) {
   if(!used.exchange(true, std::memory_order_relaxed)) {
     std::ostringstream ss;
     ss << "<LoadModule i=\"" << id << "\" n=" << util::xmlquoted(mod.path().string()) << "/>\n";
@@ -130,19 +130,19 @@ void ExperimentXML::udModule::incr(const Module& mod, ExperimentXML&) {
 
 // ud File bits
 
-ExperimentXML::udFile::udFile(const File& f, ExperimentXML& exml)
+ExperimentXML4::udFile::udFile(const File& f, ExperimentXML4& exml)
   : id(f.userdata[exml.src.identifier()]), used(false), fl(&f),
     m(nullptr) {};
 
-ExperimentXML::udFile::udFile(ExperimentXML& exml, const Module& mm)
+ExperimentXML4::udFile::udFile(ExperimentXML4& exml, const Module& mm)
   : id(exml.next_id.fetch_sub(1, std::memory_order_relaxed)), used(false),
     fl(nullptr), m(&mm) {};
 
-ExperimentXML::udFile::udFile(ExperimentXML& exml)
+ExperimentXML4::udFile::udFile(ExperimentXML4& exml)
   : id(exml.next_id.fetch_sub(1, std::memory_order_relaxed)), used(false),
     fl(nullptr), m(nullptr) {};
 
-void ExperimentXML::udFile::incr(ExperimentXML& exml) {
+void ExperimentXML4::udFile::incr(ExperimentXML4& exml) {
   namespace fs = stdshim::filesystem;
   namespace fsx = stdshim::filesystemx;
   if(!used.exchange(true, std::memory_order_relaxed)) {
@@ -171,7 +171,7 @@ void ExperimentXML::udFile::incr(ExperimentXML& exml) {
 
 // ud Metric bits
 
-ExperimentXML::udMetric::udMetric(const Metric& m, ExperimentXML& exml) {
+ExperimentXML4::udMetric::udMetric(const Metric& m, ExperimentXML4& exml) {
   const auto& ids = m.userdata[exml.src.identifier()];
   inc_id = ids.first;
   ex_id = ids.second;
@@ -206,7 +206,7 @@ ExperimentXML::udMetric::udMetric(const Metric& m, ExperimentXML& exml) {
 
 // ud Context bits
 
-ExperimentXML::udContext::udContext(const Context& c, ExperimentXML& exml)
+ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
   : id(c.userdata[exml.src.identifier()]*2 + 1), premetrics(false) {
   const auto& s = c.scope();
   auto& proc = exml.getProc(s);
@@ -317,40 +317,40 @@ ExperimentXML::udContext::udContext(const Context& c, ExperimentXML& exml)
   }
 }
 
-// ExperimentXML bits
+// ExperimentXML4 bits
 
-ExperimentXML::ExperimentXML(const fs::path& out, bool srcs, HPCTraceDB* db,
+ExperimentXML4::ExperimentXML4(const fs::path& out, bool srcs, HPCTraceDB* db,
                              HPCMetricDB* mdb)
   : ProfileSink(), dir(out), of(), next_id(0x7FFFFFFF), tracedb(db),
     metricdb(mdb), include_sources(srcs), file_unknown(*this), next_procid(2),
     proc_unknown_proc(0), proc_partial_proc(1), next_cid(0x7FFFFFFF) {
   if(dir.empty()) {  // Dry run
-    util::log::info() << "ExperimentXML issuing a dry run!";
+    util::log::info() << "ExperimentXML4 issuing a dry run!";
   } else {
     stdshim::filesystem::create_directory(dir);
     of.open((dir / "experiment.xml").native());
   }
 }
 
-ExperimentXML::Proc& ExperimentXML::getProc(const Scope& k) {
+ExperimentXML4::Proc& ExperimentXML4::getProc(const Scope& k) {
   return procs.emplace(k, next_procid.fetch_add(1, std::memory_order_relaxed)).first;
 }
 
-const ExperimentXML::Proc& ExperimentXML::proc_unknown() {
+const ExperimentXML4::Proc& ExperimentXML4::proc_unknown() {
   proc_unknown_flag.call_nowait([&](){
     proc_unknown_proc.setTag(fancynames::unknown_proc, 0, true);
   });
   return proc_unknown_proc;
 }
 
-const ExperimentXML::Proc& ExperimentXML::proc_partial() {
+const ExperimentXML4::Proc& ExperimentXML4::proc_partial() {
   proc_partial_flag.call_nowait([&](){
     proc_partial_proc.setTag(fancynames::partial_unwind, 0, true);
   });
   return proc_partial_proc;
 }
 
-void ExperimentXML::Proc::setTag(std::string n, std::size_t v, bool fake) {
+void ExperimentXML4::Proc::setTag(std::string n, std::size_t v, bool fake) {
   std::ostringstream ss;
   ss << "<Procedure i=\"" << id << "\" n=" << util::xmlquoted(n)
      << " v=\"" << std::hex << (v == 0 ? "" : "0x") << v << "\"";
@@ -359,12 +359,12 @@ void ExperimentXML::Proc::setTag(std::string n, std::size_t v, bool fake) {
   tag = ss.str();
 }
 
-bool ExperimentXML::Proc::prep() {
+bool ExperimentXML4::Proc::prep() {
   bool x = false;
   return done.compare_exchange_strong(x, true, std::memory_order_relaxed);
 }
 
-void ExperimentXML::notifyPipeline() noexcept {
+void ExperimentXML4::notifyPipeline() noexcept {
   auto& ss = src.structs();
   ud.file = ss.file.add<udFile>(std::ref(*this));
   ud.context = ss.context.add<udContext>(std::ref(*this));
@@ -372,10 +372,10 @@ void ExperimentXML::notifyPipeline() noexcept {
   ud.metric = ss.metric.add<udMetric>(std::ref(*this));
 }
 
-void ExperimentXML::write() {
+void ExperimentXML4::write() {
   const auto& name = src.attributes().name().value();
   of << "<?xml version=\"1.0\"?>\n"
-        "<HPCToolkitExperiment version=\"2.2\">\n"
+        "<HPCToolkitExperiment version=\"4.0\">\n"
         "<Header n=" << util::xmlquoted(name) << ">\n"
         "<Info/>\n"
         "</Header>\n"
@@ -432,7 +432,7 @@ void ExperimentXML::write() {
         "</HPCToolkitExperiment>\n" << std::flush;
 }
 
-void ExperimentXML::emitMetrics(const Context& c, bool ex) {
+void ExperimentXML4::emitMetrics(const Context& c, bool ex) {
   for(const auto& met: src.metrics().iterate()) {
     auto& udm = met().userdata[ud];
     auto v = met().getFor(c);
@@ -447,7 +447,7 @@ void ExperimentXML::emitMetrics(const Context& c, bool ex) {
   }
 }
 
-void ExperimentXML::emit(const Context& c) {
+void ExperimentXML4::emit(const Context& c) {
   const auto& s = c.scope();
   auto& udc = c.userdata[ud];
 
