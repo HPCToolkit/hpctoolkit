@@ -709,7 +709,8 @@ makeStructure(string filename,
     mutex output_mtx;
 
     makeWorkList(fileMap, wlPrint, wlLaunch);
-
+		
+		std::cerr << elfFile->getArch() << std::endl;
 		char *elfFileRealPath = realpath(elfFile->getFileName().c_str(), NULL);
 		std::cerr << elfFileRealPath << std::endl;
     Output::printLoadModuleBegin(outFile, elfFileRealPath);

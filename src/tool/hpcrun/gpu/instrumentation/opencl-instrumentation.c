@@ -98,7 +98,7 @@ createKernelNode
 }
 
 
-uint32_t
+static void
 findKernelAndInsertToLoadMap
 (
 	uint8_t *debuginfo,
@@ -138,7 +138,6 @@ findKernelAndInsertToLoadMap
 			}
 			hpcrun_loadmap_unlock();
 			fclose(fptr);
-			return hpctoolkit_module_id;
 		}
 		// Should be zero for newest drivers
 		assert(kernel_header->SizeGenIsaDbgInBytes == 0);
@@ -146,7 +145,6 @@ findKernelAndInsertToLoadMap
 		ptr += kernel_header->SizeVisaDbgInBytes;
 		ptr += kernel_header->SizeGenIsaDbgInBytes;
 	}
-	return -1;
 }
 
 
@@ -258,6 +256,7 @@ onKernelBuild
 			isHeadNull = false;
 		} else {
 			current->next = m;
+			current = current->next;
 		}
   }
 	if (h != NULL) {

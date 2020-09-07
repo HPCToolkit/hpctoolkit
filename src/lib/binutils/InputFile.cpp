@@ -119,6 +119,25 @@ read_all(int fd, void *buf, size_t count)
   return len;
 }
 
+static bool
+isIntelGPUFile
+(
+	ElfFile *elfFile
+)
+{
+  Elf *elf = elfFile->getElf();
+  GElf_Ehdr ehdr_v;
+  GElf_Ehdr *ehdr = gelf_getehdr(elf, &ehdr_v);
+
+	int intelGPUType = 0xff04;
+	std::cerr << "ehdr->e_type: " << ehdr->e_type << std::endl;
+	std::cerr << "ehdr->e_type == intelGPUType: " << (ehdr->e_type == intelGPUType) << std::endl;
+  if (ehdr && ehdr->e_type == intelGPUType) {
+		return true;
+	}
+	return false;
+}
+
 
 //******************************************************************************
 // interface oeprations
@@ -183,11 +202,10 @@ InputFile::openFile
 
   ElfFile *elfFile = new ElfFile;
   bool result = elfFile->open(file_buffer, f_size, filename);
-	bool isIntelGPUFile = true;
 
   if (result) {
     filevector = new ElfFileVector;
-		if (isIntelGPUFile) {
+		if (isIntelGPUFile(elfFile)) {
 			findIntelGPUbins(elfFile, filevector);
 		}
 		else {

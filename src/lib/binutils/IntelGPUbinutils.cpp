@@ -257,7 +257,7 @@ findIntelGPUbins
 			if (!shdr) continue;
 			char *sectionData = elfSectionGetData(file_buffer, shdr);
 			const char *section_name = elf_strptr(elf, ehdr->e_shstrndx, shdr->sh_name);
-			std::cerr << "section name: " << section_name << ". section type: " << openclElfSectionType(shdr->sh_type) << std::endl;
+			//std::cerr << "section name: " << section_name << ". section type: " << openclElfSectionType(shdr->sh_type) << std::endl;
 
 			// extract debug section
 			if ((shdr->sh_type == SHT_OPENCL_DEV_DEBUG && strcmp(section_name, INTEL_GPU_DEBUG_SECTION_NAME) == 0)
@@ -274,6 +274,17 @@ findIntelGPUbins
 			}*/
     }
   }
+	FILE *fptr;
+	if (!fileHasDebugSection && (fptr = fopen("opencl_main.debuginfo", "rb"))) {
+		fileHasDebugSection = true;
+		fseek(fptr, 0L, SEEK_END);
+		size_t debug_info_size = ftell(fptr);
+		printf("debug_info_size: %zu\n", debug_info_size);
+		rewind(fptr);
+		std::vector<uint8_t> debug_info(debug_info_size);
+		fread(debug_info.data(), debug_info_size, 1, fptr);
+		extractSuccess = extract_kernelelfs(debug_info, filevector);
+	}
   bool success = fileHasDebugSection && extractSuccess;
   return success; 
 }
