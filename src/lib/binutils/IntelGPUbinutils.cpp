@@ -266,12 +266,12 @@ findIntelGPUbins
 				std::vector<uint8_t> debug_info(reinterpret_cast<uint8_t*>(sectionData), reinterpret_cast<uint8_t*>(sectionData) + shdr->sh_size);
 				extractSuccess = extract_kernelelfs(debug_info, filevector);
 				break;
-			} else if (strcmp(section_name, ".text") == 0) {
+			} /*else if (strcmp(section_name, ".text") == 0) {
 				FILE *bin_ptr;
 				bin_ptr = fopen("switch.text", "wb");
 				fwrite(sectionData, shdr->sh_size, 1, bin_ptr);
 				fclose(bin_ptr);
-			}
+			}*/
     }
   }
   bool success = fileHasDebugSection && extractSuccess;

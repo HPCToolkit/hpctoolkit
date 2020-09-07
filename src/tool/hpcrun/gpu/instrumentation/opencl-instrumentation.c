@@ -5,9 +5,9 @@
 
 #include <assert.h>
 #include <stdlib.h>
-#include <gen_symbols_decoder.h>
-#include <igc_binary_decoder.h>
-#include <utils.h>
+//#include <gen_symbols_decoder.h>
+//#include <igc_binary_decoder.h>
+//#include <utils.h>
 #include <gtpin.h>
 
 
@@ -27,8 +27,10 @@
 #include <hpcrun/gpu/gpu-op-placeholders.h>
 #include <hpcrun/gpu/gpu-metrics.h>
 #include <hpcrun/gpu/gpu-monitoring-thread-api.h>
+#include <hpcrun/memory/hpcrun-malloc.h>
 #include <hpcrun/utilities/hpcrun-nanotime.h>
-
+#include <hpcrun/gpu/opencl/opencl-intercept.h>
+#include "gen_symbols_decoder_wrapper.h"
 #include "opencl-instrumentation.h"
 
 
@@ -107,34 +109,34 @@ findKernelAndInsertToLoadMap
 	const SProgramDebugDataHeaderIGC* header = (const SProgramDebugDataHeaderIGC*)(ptr);
 	ptr += sizeof(SProgramDebugDataHeaderIGC);
 
-	printf("header->NumberOfKernels: %d\n", header->NumberOfKernels);
+	ETMSG(OPENCL, "Number of kernels: %d", header->NumberOfKernels);
 	for (uint32_t i = 0; i < header->NumberOfKernels; ++i) {
 		const SKernelDebugDataHeaderIGC* kernel_header = (const SKernelDebugDataHeaderIGC*)(ptr);
 		ptr += sizeof(SKernelDebugDataHeaderIGC);
 
 		const char* kernel_name = (const char*)(ptr);
-		char *file_name = (char*) kernel_name;
-		std::cerr << file_name <<std::endl;
+		char *file_name = (char*)hpcrun_malloc(sizeof(kernel_name));
+		strcpy(file_name, kernel_name);
+		strcat(file_name, ".gpubin");
 
 		unsigned kernel_name_size_aligned = sizeof(uint32_t) *
 			(1 + (kernel_header->KernelNameSize - 1) / sizeof(uint32_t));
 		ptr += kernel_name_size_aligned;
 
 		if (kernel_header->SizeVisaDbgInBytes > 0 && strcmp(kernel_name, input_kernel_name) == 0) {
-			file_name = strcat(file_name, ".gpbin");
 			FILE *fptr = fopen(file_name, "wb");
 			fwrite(ptr, kernel_header->SizeVisaDbgInBytes, 1, fptr);
 
 			uint32_t hpctoolkit_module_id;
 			load_module_t *module = NULL;
 			hpcrun_loadmap_lock();
-			if ((module = hpcrun_loadmap_findByName(file_name)) == NULL) {
-				hpctoolkit_module_id = hpcrun_loadModule_add(file_name);
+			char *absoluteKernelName = realpath(file_name, NULL); 
+			if ((module = hpcrun_loadmap_findByName(absoluteKernelName)) == NULL) {
+				hpctoolkit_module_id = hpcrun_loadModule_add(absoluteKernelName);
 			} else {
 				hpctoolkit_module_id = module->id;
 			}
 			hpcrun_loadmap_unlock();
-			printf("dumped debug file size: %zu\n", kernel_header->SizeVisaDbgInBytes);
 			fclose(fptr);
 			return hpctoolkit_module_id;
 		}
@@ -154,38 +156,15 @@ add_opencl_binary_to_loadmap
 	char *kernel_name
 )
 {
-	// we need to remove this hardcoding
-	FILE *fptr = fopen("opencl_main.debug_info", "rb");
+	char *debuginfoFileName = getDebugInfoFullFileName();
+	FILE *fptr = fopen(debuginfoFileName, "rb");
 	fseek(fptr, 0L, SEEK_END);
 	size_t debug_info_size = ftell(fptr);
-	printf("debug_info_size: %zu\n", debug_info_size);
 	rewind(fptr);
-	uint8_t *debug_info = (uint8_t*)malloc(debug_info_size);
+	uint8_t *debug_info = (uint8_t*)hpcrun_malloc(debug_info_size);
 	fread(debug_info, debug_info_size, 1, fptr);
 	findKernelAndInsertToLoadMap(debug_info, kernel_name);
 }
-
-
-/*
-static uint32_t
-add_opencl_binary_to_loadmap
-(
-	char *bin_filename
-)
-{
-	uint32_t hpctoolkit_module_id;
-	load_module_t *module = NULL;
-
-	hpcrun_loadmap_lock();
-	if ((module = hpcrun_loadmap_findByName(bin_filename)) == NULL) {
-		hpctoolkit_module_id = hpcrun_loadModule_add(bin_filename);
-	} else {
-		hpctoolkit_module_id = module->id;
-	}
-	hpcrun_loadmap_unlock();
-	return hpctoolkit_module_id;
-}
-*/
 
 
 static void
@@ -268,7 +247,7 @@ onKernelBuild
     status = GTPin_OpcodeprofInstrument(head, mem);
     assert(status == GTPINTOOL_STATUS_SUCCESS);
 
-		mem_pair_node *m = malloc(sizeof(mem_pair_node));
+		mem_pair_node *m = hpcrun_malloc(sizeof(mem_pair_node));
 		m->offset = offset;
 		m->mem = mem;
 		m->next = NULL;

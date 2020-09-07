@@ -710,7 +710,9 @@ makeStructure(string filename,
 
     makeWorkList(fileMap, wlPrint, wlLaunch);
 
-    Output::printLoadModuleBegin(outFile, elfFile->getFileName());
+		char *elfFileRealPath = realpath(elfFile->getFileName().c_str(), NULL);
+		std::cerr << elfFileRealPath << std::endl;
+    Output::printLoadModuleBegin(outFile, elfFileRealPath);
 
 #pragma omp parallel  default(none)				\
     shared(wlPrint, wlLaunch, num_done, output_mtx)		\

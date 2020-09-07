@@ -55,6 +55,7 @@
 
 #include <hpcrun/gpu/instrumentation/opencl-instrumentation.h>
 #include <hpcrun/gpu/gpu-metrics.h>
+#include <hpcrun/memory/hpcrun-malloc.h>
 #include <hpcrun/messages/messages.h>
 #include <lib/prof-lean/hpcrun-gotcha.h>
 #include <lib/prof-lean/hpcrun-opencl.h>
@@ -325,13 +326,13 @@ static char*
 dumpIntelGPUBinary(cl_program program) {
 	int device_count = 1;
 	cl_int status = CL_SUCCESS;
-	size_t *binary_size = (size_t*)malloc(sizeof(size_t) * device_count);
+	size_t *binary_size = (size_t*)hpcrun_malloc(sizeof(size_t) * device_count);
 
 	status = clGetProgramInfo(program, CL_PROGRAM_BINARY_SIZES,	sizeof(size_t), binary_size, NULL);
 	assert(status == CL_SUCCESS);
-	uint8_t **binary = (uint8_t**)malloc(device_count * sizeof(uint8_t*));
+	uint8_t **binary = (uint8_t**)hpcrun_malloc(device_count * sizeof(uint8_t*));
 	for (size_t i = 0; i < device_count; ++i) {
-		binary[i] = (uint8_t*)malloc(binary_size[i] * sizeof(uint8_t));
+		binary[i] = (uint8_t*)hpcrun_malloc(binary_size[i] * sizeof(uint8_t));
 	}
 
 	status = clGetProgramInfo(program, CL_PROGRAM_BINARIES, device_count * sizeof(uint8_t*), binary, NULL);
@@ -342,13 +343,13 @@ dumpIntelGPUBinary(cl_program program) {
 	fwrite(binary[0], binary_size[0], 1, bin_ptr);
 
   // SECOND
-	size_t *debug_info_size = (size_t*)malloc(sizeof(size_t) * device_count);
+	size_t *debug_info_size = (size_t*)hpcrun_malloc(sizeof(size_t) * device_count);
 
 	status = clGetProgramInfo(program, CL_PROGRAM_DEBUG_INFO_SIZES_INTEL,	sizeof(size_t), debug_info_size, NULL);
 	assert(status == CL_SUCCESS);
-	uint8_t **debug_info = (uint8_t**)malloc(device_count * sizeof(uint8_t*));
+	uint8_t **debug_info = (uint8_t**)hpcrun_malloc(device_count * sizeof(uint8_t*));
 	for (size_t i = 0; i < device_count; ++i) {
-		debug_info[i] = (uint8_t*)malloc(debug_info_size[i] * sizeof(uint8_t));
+		debug_info[i] = (uint8_t*)hpcrun_malloc(debug_info_size[i] * sizeof(uint8_t));
 	}
 
 	status = clGetProgramInfo(program, CL_PROGRAM_DEBUG_INFO_INTEL, device_count * sizeof(uint8_t*), debug_info, NULL);
@@ -391,12 +392,9 @@ clBuildProgram_wrapper
     GOTCHA_GET_TYPED_WRAPPEE(clBuildProgram_handle, clbuildprogram_t);
 
 	char optionsWithDebugFlag[] = " -gline-tables-only ";
-	printf("%s\n", optionsWithDebugFlag);
 	if (options != NULL) {
 		strcat(optionsWithDebugFlag, options);
 	}
-	printf("%s\n", optionsWithDebugFlag);
-
   return clBuildProgram_wrappee(program, num_devices, device_list, (const char*)optionsWithDebugFlag, clBuildProgramCallback, user_data);
 }
 
