@@ -68,6 +68,16 @@ T bcast(typename std::remove_reference<T>::type&& data, std::size_t root) {
   return data;
 }
 
+/// Broadcast operation. Variant to handle simple types.
+template<class T>
+typename std::enable_if<
+  std::is_trivially_copy_constructible<T>::value,
+  T>::type
+bcast(T data, std::size_t root) {
+  detail::bcast(&data, 1, detail::asDatatype<T>(), root);
+  return data;
+}
+
 /// Broadcast operation. Variant to disable the usage of pointers.
 template<class T>
 T* bcast(T*, std::size_t) = delete;
@@ -130,7 +140,10 @@ T bcast(std::size_t root) { return bcast(T{}, root); }
 
 /// Broadcast operation. Variant to allow for copy semantics.
 template<class T>
-T bcast(const T& data, std::size_t root) { return bcast(T(data), root); }
+typename std::enable_if<
+  !std::is_trivially_copy_constructible<T>::value,
+  T>::type
+bcast(const T& data, std::size_t root) { return bcast(T(data), root); }
 
 }  // namespace hpctoolkit::mpi
 

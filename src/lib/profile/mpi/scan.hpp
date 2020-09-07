@@ -79,22 +79,45 @@ stdshim::optional<typename std::remove_reference<T>::type> exscan(typename std::
   return data;
 }
 
-/// Reduction operation. Variant to disable the usage of pointers.
+/// Inclusive scan operation. Variant to handle simple types.
+template<class T>
+typename std::enable_if<
+  std::is_trivially_copy_constructible<T>::value,
+  T>::type
+scan(T&& data, const Op& op) {
+  detail::scan(&data, 1, detail::asDatatype<T>(), op);
+  return data;
+}
+
+/// Exclusive scan operation. Effectively the inclusive scan without including
+/// the current process's contribution. Note that no value is returned in rank
+/// 0, thus the need for an optional return value.
+template<class T>
+typename std::enable_if<
+  std::is_trivially_copy_constructible<T>::value,
+  stdshim::optional<T>>::type
+exscan(T data, const Op& op) {
+  detail::exscan(&data, 1, detail::asDatatype<T>(), op);
+  if(World::rank() == 0) return {};
+  return data;
+}
+
+/// Inclusive scan operation. Variant to disable the usage of pointers.
 template<class T>
 T* scan(T*, const Op&) = delete;
 
-/// Broadcast reduction operation. Variant to disable the usage of pointers.
+/// Exclusive scan operation. Variant to disable the usage of pointers.
 template<class T>
 T* exscan(T*, const Op&) = delete;
 
-/// Reduction operation. Variant to allow for the usage of std::array.
+/// Inclusive scan operation. Variant to allow for the usage of std::array.
 template<class T, std::size_t N>
 std::array<T, N> scan(std::array<T, N>&& data, const Op& op) {
   detail::scan(data.data(), N, detail::asDatatype<T>(), op);
   return data;
 }
 
-/// Broadcast reduction operation. Variant to allow for the usage of std::array.
+/// Exclusive scan operation. Variant to allow for the usage of std::array.
 template<class T, std::size_t N>
 stdshim::optional<std::array<T, N>> exscan(std::array<T, N>&& data, const Op& op) {
   detail::exscan(data.data(), N, detail::asDatatype<T>(), op);
@@ -102,13 +125,19 @@ stdshim::optional<std::array<T, N>> exscan(std::array<T, N>&& data, const Op& op
   return data;
 }
 
-/// Reduction operation. Variant to allow for copy semantics.
+/// Inclusive scan operation. Variant to allow for copy semantics.
 template<class T>
-T scan(const T& data, const Op& op) { return scan(T(data), op); }
+typename std::enable_if<
+  !std::is_trivially_copy_constructible<T>::value,
+  T>::type
+scan(const T& data, const Op& op) { return scan(T(data), op); }
 
-/// Broadcast reduction operation. Variant to allow for copy semantics.
+/// Exclusive scan operation. Variant to allow for copy semantics.
 template<class T>
-stdshim::optional<T> exscan(const T& data, const Op& op) {
+typename std::enable_if<
+  !std::is_trivially_copy_constructible<T>::value,
+  stdshim::optional<T>>::type
+exscan(const T& data, const Op& op) {
   return exscan(T(data), op);
 }
 

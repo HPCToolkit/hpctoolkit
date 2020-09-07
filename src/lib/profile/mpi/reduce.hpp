@@ -64,15 +64,35 @@ void allreduce(void* data, std::size_t cnt, const Datatype&, const Op&);
 /// to the root rank, using the given reduction operation. Returns the reduced
 /// value in the root, returns the given data in all others.
 template<class T>
-T reduce(T&& data, std::size_t root, const Op& op) {
-  detail::reduce(&data, 1, detail::asDatatype<T>(), root, op);
+T reduce(typename std::remove_reference<T>::type&& data, std::size_t root, const Op& op) {
+  detail::reduce(&data, 1, detail::asDatatype<typename std::remove_reference<T>::type>(), root, op);
   return data;
 }
 
 /// Broadcast reduction operation. Equivalent to a reduction operation followed
 /// by a broadcast. Returns the reduced value in all processes.
 template<class T>
-T allreduce(T&& data, const Op& op) {
+T allreduce(typename std::remove_reference<T>::type&& data, const Op& op) {
+  detail::allreduce(&data, 1, detail::asDatatype<typename std::remove_reference<T>::type>(), op);
+  return data;
+}
+
+/// Reduction operation. Variant to handle simple types.
+template<class T>
+typename std::enable_if<
+  std::is_trivially_copy_constructible<T>::value,
+  T>::type
+reduce(T data, std::size_t root, const Op& op) {
+  detail::reduce(&data, 1, detail::asDatatype<T>(), root, op);
+  return data;
+}
+
+/// Broadcast reduction operation. Variant to handle simple types.
+template<class T>
+typename std::enable_if<
+  std::is_trivially_copy_constructible<T>::value,
+  T>::type
+allreduce(T data, const Op& op) {
   detail::allreduce(&data, 1, detail::asDatatype<T>(), op);
   return data;
 }
@@ -101,11 +121,17 @@ std::array<T, N> allreduce(std::array<T, N>&& data) {
 
 /// Reduction operation. Variant to allow for copy semantics.
 template<class T>
-T reduce(const T& data, std::size_t root, const Op& op) { return reduce(T(data), root, op); }
+typename std::enable_if<
+  !std::is_trivially_copy_constructible<T>::value,
+  T>::type
+reduce(const T& data, std::size_t root, const Op& op) { return reduce(T(data), root, op); }
 
 /// Broadcast reduction operation. Variant to allow for copy semantics.
 template<class T>
-T allreduce(const T& data, const Op& op) { return allreduce(T(data), op); }
+typename std::enable_if<
+  !std::is_trivially_copy_constructible<T>::value,
+  T>::type
+allreduce(const T& data, const Op& op) { return allreduce(T(data), op); }
 
 }  // namespace hpctoolkit::mpi
 
