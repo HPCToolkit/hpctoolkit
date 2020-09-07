@@ -96,7 +96,6 @@ private:
   bool include_sources;
 
   void emit(const Context& c);
-  void emitMetrics(const Context&, bool = true);
 
   struct uds;
 

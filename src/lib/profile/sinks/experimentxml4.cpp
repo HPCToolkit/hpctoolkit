@@ -432,31 +432,12 @@ void ExperimentXML4::write() {
         "</HPCToolkitExperiment>\n" << std::flush;
 }
 
-void ExperimentXML4::emitMetrics(const Context& c, bool ex) {
-  for(const auto& met: src.metrics().iterate()) {
-    auto& udm = met().userdata[ud];
-    auto v = met().getFor(c);
-    if(v.first != 0 && ex)
-      of << "<M n=\"" << udm.ex_id << "\" v=\""
-        << std::scientific << v.first << std::defaultfloat
-        << "\"/>\n";
-    if(v.second != 0)
-      of << "<M n=\"" << udm.inc_id << "\" v=\""
-        << std::scientific << v.second << std::defaultfloat
-        << "\"/>\n";
-  }
-}
-
 void ExperimentXML4::emit(const Context& c) {
   const auto& s = c.scope();
   auto& udc = c.userdata[ud];
 
-  bool emitmetrics = true;
-
   // First emit our tags, and whatever extensions are nessesary.
-  of << udc.pre;
-  if(udc.premetrics && emitmetrics) emitMetrics(c, false);
-  of << udc.open;
+  of << udc.pre << udc.open;
   switch(s.type()) {
   case Scope::Type::unknown:
   case Scope::Type::global:
@@ -466,22 +447,17 @@ void ExperimentXML4::emit(const Context& c) {
     break;
   case Scope::Type::point:
     of << (c.children().empty() ? 'S' : 'C') << udc.attr;
-    // C nodes don't emit metrics, but S nodes do.
-    emitmetrics = emitmetrics && c.children().empty();
     break;
   }
   if(s.type() != Scope::Type::global && tracedb != nullptr && tracedb->seen(c))
     of << " it=\"" << c.userdata[src.identifier()] << "\"";
 
   // If this is an empty tag, use the shorter form, otherwise close the tag.
-  if(c.children().empty() && !emitmetrics) {
+  if(c.children().empty()) {
     of << "/>\n" << udc.post;
     return;
   }
   of << ">\n";
-
-  // Emit the metrics (if we're emitting metrics) above the other contents.
-  if(emitmetrics) emitMetrics(c);
 
   // Recurse through the children.
   for(const auto& cc: c.children().iterate()) emit(cc());
