@@ -4,8 +4,11 @@
 //******************************************************************************
 
 #include <assert.h>
-#include <gtpin.h>
 #include <stdlib.h>
+#include <gen_symbols_decoder.h>
+#include <igc_binary_decoder.h>
+#include <utils.h>
+#include <gtpin.h>
 
 
 
@@ -93,6 +96,77 @@ createKernelNode
 }
 
 
+uint32_t
+findKernelAndInsertToLoadMap
+(
+	uint8_t *debuginfo,
+	char *input_kernel_name
+)
+{
+	const uint8_t* ptr = debuginfo;
+	const SProgramDebugDataHeaderIGC* header = (const SProgramDebugDataHeaderIGC*)(ptr);
+	ptr += sizeof(SProgramDebugDataHeaderIGC);
+
+	printf("header->NumberOfKernels: %d\n", header->NumberOfKernels);
+	for (uint32_t i = 0; i < header->NumberOfKernels; ++i) {
+		const SKernelDebugDataHeaderIGC* kernel_header = (const SKernelDebugDataHeaderIGC*)(ptr);
+		ptr += sizeof(SKernelDebugDataHeaderIGC);
+
+		const char* kernel_name = (const char*)(ptr);
+		char *file_name = (char*) kernel_name;
+		std::cerr << file_name <<std::endl;
+
+		unsigned kernel_name_size_aligned = sizeof(uint32_t) *
+			(1 + (kernel_header->KernelNameSize - 1) / sizeof(uint32_t));
+		ptr += kernel_name_size_aligned;
+
+		if (kernel_header->SizeVisaDbgInBytes > 0 && strcmp(kernel_name, input_kernel_name) == 0) {
+			file_name = strcat(file_name, ".gpbin");
+			FILE *fptr = fopen(file_name, "wb");
+			fwrite(ptr, kernel_header->SizeVisaDbgInBytes, 1, fptr);
+
+			uint32_t hpctoolkit_module_id;
+			load_module_t *module = NULL;
+			hpcrun_loadmap_lock();
+			if ((module = hpcrun_loadmap_findByName(file_name)) == NULL) {
+				hpctoolkit_module_id = hpcrun_loadModule_add(file_name);
+			} else {
+				hpctoolkit_module_id = module->id;
+			}
+			hpcrun_loadmap_unlock();
+			printf("dumped debug file size: %zu\n", kernel_header->SizeVisaDbgInBytes);
+			fclose(fptr);
+			return hpctoolkit_module_id;
+		}
+		// Should be zero for newest drivers
+		assert(kernel_header->SizeGenIsaDbgInBytes == 0);
+
+		ptr += kernel_header->SizeVisaDbgInBytes;
+		ptr += kernel_header->SizeGenIsaDbgInBytes;
+	}
+	return -1;
+}
+
+
+static uint32_t
+add_opencl_binary_to_loadmap 
+(
+	char *kernel_name
+)
+{
+	// we need to remove this hardcoding
+	FILE *fptr = fopen("opencl_main.debug_info", "rb");
+	fseek(fptr, 0L, SEEK_END);
+	size_t debug_info_size = ftell(fptr);
+	printf("debug_info_size: %zu\n", debug_info_size);
+	rewind(fptr);
+	uint8_t *debug_info = (uint8_t*)malloc(debug_info_size);
+	fread(debug_info, debug_info_size, 1, fptr);
+	findKernelAndInsertToLoadMap(debug_info, kernel_name);
+}
+
+
+/*
 static uint32_t
 add_opencl_binary_to_loadmap
 (
@@ -111,44 +185,7 @@ add_opencl_binary_to_loadmap
 	hpcrun_loadmap_unlock();
 	return hpctoolkit_module_id;
 }
-
-
-static uint32_t
-save_opencl_binary
-(
-	GTPinKernel kernel,
-	char *bin_name
-)
-{
-	// dump the binary to files for using it at inside hpcprof 
-	uint32_t kernel_binary_size = 0;
-  GTPINTOOL_STATUS status = GTPin_GetKernelBinary(kernel, 0, NULL, &kernel_binary_size);
-  assert(status == GTPINTOOL_STATUS_SUCCESS);
-
-	uint8_t *binary = (uint8_t*) malloc(sizeof(uint8_t) * kernel_binary_size);
-
-	/*!
-	 * Copy original kernel's binary into specified buffer
-	 * @ingroup KERNEL
-	 * @param[in]        kernel         the target kernel.
-	 * @param[in]        buffer_size    size of the buffer in bytes.Ignored,
-	 *                                  if buffer is not provided('buf' is NULL)
-	 * @param[out, opt]  buf            buffer that receives the requested binary code. NULL pointer can be used to
-	 *                                  check actual size of the string without copying it into a client's buffer.
-	 * @param[out, opt]  binary_size    If specified(not NULL), receives the actual size of the requested binary in
-	 *                                  bytes, including terminating NULL.
-	 *
-	 * @par Availability:
-	 * - OnKernelComplete
-	 */
-  status = GTPin_GetKernelBinary(kernel, kernel_binary_size, (char *)(binary), NULL);
-  assert(status == GTPINTOOL_STATUS_SUCCESS);
-
-	strcat(bin_name, "_kernel.bin");
-	FILE *bin_ptr = fopen(bin_name, "wb");
-	fwrite(binary, kernel_binary_size, 1, bin_ptr);
-	return add_opencl_binary_to_loadmap(bin_name);
-}
+*/
 
 
 static void
@@ -222,38 +259,12 @@ onKernelBuild
     GTPinINS head = GTPin_InsHead(block);
     assert(GTPin_InsValid(head));
     
-		/*!
-		 * @return the offset of the instruction relative to the beginning of the original kernel's binary
-		 * -1 is returned in case of an error
-		 * @ingroup INS
-		 * @param[in]   ins the instruction handle.
-		 *
-		 * @par Availability:
-		 * - OnKernelBuild
-		 */
 		int32_t offset =  GTPin_InsOffset(head);
 
     GTPinMem mem = NULL;
     status = GTPin_MemClaim(kernel, sizeof(uint32_t), &mem);
     assert(status == GTPINTOOL_STATUS_SUCCESS);
 
-		/*!
-		* Insert instrumentaion (Opcodeprof) that counts the number of dynamic executions of basic block
-		* *countSlot++
-		*
-		* @ingroup INSTRUMENTATION
-		*
-		* @param[in]       ins         instruction to be instrumented. The instrumentation code will be inserted
-		*                              BEFORE this instruction
-		*
-		* @param[in]       countSlot   memory slot to store the resulting counter in. The slot should be allocate
-		*                              by the GTPin_MemClaim() function, prior to this function call
-		*
-		* @return  Success/failure status
-		*
-		* @par Availability:
-		* - OnKernelBuild
-		*/
     status = GTPin_OpcodeprofInstrument(head, mem);
     assert(status == GTPINTOOL_STATUS_SUCCESS);
 
@@ -285,7 +296,7 @@ onKernelBuild
 	// add these details to cct_node. If thats not needed, we can create the kernel_cct in onKernelComplete
   data.name = kernel_name;
   data.call_count = 0;
-	data.loadmap_module_id = save_opencl_binary(kernel, kernel_name);
+	data.loadmap_module_id = add_opencl_binary_to_loadmap(kernel_name);
 	
 	kernel_data_map_insert1((uint64_t)kernel, data);
   ETMSG(OPENCL, "onKernelBuild complete. Inserted key: %"PRIu64 "",(uint64_t)kernel);

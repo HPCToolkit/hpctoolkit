@@ -218,6 +218,16 @@ extract_kernelelfs
 }
 
 
+static bool
+isCustomOpenCLBinary
+(
+	const char *section_name
+)
+{
+  return (strcmp(section_name, ".SHT_OPENCL_DEV_DEBUG") == 0);
+}
+
+
 
 //******************************************************************************
 // interface operations
@@ -247,14 +257,20 @@ findIntelGPUbins
 			if (!shdr) continue;
 			char *sectionData = elfSectionGetData(file_buffer, shdr);
 			const char *section_name = elf_strptr(elf, ehdr->e_shstrndx, shdr->sh_name);
-			//std::cerr << "section name: " << section_name << ". section type: " << openclElfSectionType(shdr->sh_type) << std::endl;
+			std::cerr << "section name: " << section_name << ". section type: " << openclElfSectionType(shdr->sh_type) << std::endl;
 
 			// extract debug section
-			if (shdr->sh_type == SHT_OPENCL_DEV_DEBUG && strcmp(section_name, INTEL_GPU_DEBUG_SECTION_NAME) == 0) {
+			if ((shdr->sh_type == SHT_OPENCL_DEV_DEBUG && strcmp(section_name, INTEL_GPU_DEBUG_SECTION_NAME) == 0)
+					|| isCustomOpenCLBinary(section_name)) {
 				fileHasDebugSection = true;
 				std::vector<uint8_t> debug_info(reinterpret_cast<uint8_t*>(sectionData), reinterpret_cast<uint8_t*>(sectionData) + shdr->sh_size);
 				extractSuccess = extract_kernelelfs(debug_info, filevector);
 				break;
+			} else if (strcmp(section_name, ".text") == 0) {
+				FILE *bin_ptr;
+				bin_ptr = fopen("switch.text", "wb");
+				fwrite(sectionData, shdr->sh_size, 1, bin_ptr);
+				fclose(bin_ptr);
 			}
     }
   }

@@ -71,11 +71,17 @@
 //******************************************************************************
 
 #ifndef HPCRUN_STATIC_LINK
+static gotcha_wrappee_handle_t clBuildProgram_handle;
 static gotcha_wrappee_handle_t clCreateCommandQueue_handle;
 static gotcha_wrappee_handle_t clEnqueueNDRangeKernel_handle;
 static gotcha_wrappee_handle_t clEnqueueReadBuffer_handle;
 static gotcha_wrappee_handle_t clEnqueueWriteBuffer_handle;
 static atomic_long correlation_id;
+static char *debugInfoFullFileName;
+
+
+#define CL_PROGRAM_DEBUG_INFO_SIZES_INTEL 0x4101
+#define CL_PROGRAM_DEBUG_INFO_INTEL       0x4100
 
 
 
@@ -100,6 +106,20 @@ getCorrelationId
 )
 {
   return atomic_fetch_add(&correlation_id, 1);
+}
+
+
+static void
+setDebugInfoFullFileName
+(
+	char *fileName
+)
+{
+	if (fileName != NULL) {
+		debugInfoFullFileName = fileName;	
+	} else {
+		debugInfoFullFileName = "opencl_main.debuginfo";	
+	}
 }
 
 
@@ -298,6 +318,88 @@ clEnqueueWriteBuffer_wrapper
   return return_status;
 }
 
+
+// we are dunping the debuginfo temporarily since the binary does not have debugsection
+// poorly written code: FIXME
+static char*
+dumpIntelGPUBinary(cl_program program) {
+	int device_count = 1;
+	cl_int status = CL_SUCCESS;
+	size_t *binary_size = (size_t*)malloc(sizeof(size_t) * device_count);
+
+	status = clGetProgramInfo(program, CL_PROGRAM_BINARY_SIZES,	sizeof(size_t), binary_size, NULL);
+	assert(status == CL_SUCCESS);
+	uint8_t **binary = (uint8_t**)malloc(device_count * sizeof(uint8_t*));
+	for (size_t i = 0; i < device_count; ++i) {
+		binary[i] = (uint8_t*)malloc(binary_size[i] * sizeof(uint8_t));
+	}
+
+	status = clGetProgramInfo(program, CL_PROGRAM_BINARIES, device_count * sizeof(uint8_t*), binary, NULL);
+	assert(status == CL_SUCCESS);
+
+	FILE *bin_ptr;
+	bin_ptr = fopen("opencl_main.gpubin", "wb");
+	fwrite(binary[0], binary_size[0], 1, bin_ptr);
+
+  // SECOND
+	size_t *debug_info_size = (size_t*)malloc(sizeof(size_t) * device_count);
+
+	status = clGetProgramInfo(program, CL_PROGRAM_DEBUG_INFO_SIZES_INTEL,	sizeof(size_t), debug_info_size, NULL);
+	assert(status == CL_SUCCESS);
+	uint8_t **debug_info = (uint8_t**)malloc(device_count * sizeof(uint8_t*));
+	for (size_t i = 0; i < device_count; ++i) {
+		debug_info[i] = (uint8_t*)malloc(debug_info_size[i] * sizeof(uint8_t));
+	}
+
+	status = clGetProgramInfo(program, CL_PROGRAM_DEBUG_INFO_INTEL, device_count * sizeof(uint8_t*), debug_info, NULL);
+	assert(status == CL_SUCCESS);
+
+	bin_ptr = fopen("opencl_main.debuginfo", "wb");
+	fwrite(debug_info[0], debug_info_size[0], 1, bin_ptr);
+	fclose(bin_ptr);
+  ETMSG(OPENCL, "Intel GPU files dumped successfully");
+	return realpath("opencl_main.debuginfo", NULL);
+}
+
+
+static void
+clBuildProgramCallback
+(
+	cl_program program,
+	void* user_data
+)
+{
+	char* debugInfoFullPath = dumpIntelGPUBinary(program);
+	setDebugInfoFullFileName(debugInfoFullPath);
+}
+
+
+// one downside of this appproach is that we may override the callback provided by user
+static cl_int
+clBuildProgram_wrapper
+(
+ cl_program program,
+ cl_uint num_devices,
+ const cl_device_id* device_list,
+ const char* options,
+ void (CL_CALLBACK* pfn_notify)(cl_program program, void* user_data),
+ void* user_data
+)
+{
+  ETMSG(OPENCL, "inside clBuildProgram_wrapper");
+  clbuildprogram_t clBuildProgram_wrappee = 
+    GOTCHA_GET_TYPED_WRAPPEE(clBuildProgram_handle, clbuildprogram_t);
+
+	char optionsWithDebugFlag[] = " -gline-tables-only ";
+	printf("%s\n", optionsWithDebugFlag);
+	if (options != NULL) {
+		strcat(optionsWithDebugFlag, options);
+	}
+	printf("%s\n", optionsWithDebugFlag);
+
+  return clBuildProgram_wrappee(program, num_devices, device_list, (const char*)optionsWithDebugFlag, clBuildProgramCallback, user_data);
+}
+
 #endif
 
 
@@ -308,6 +410,11 @@ clEnqueueWriteBuffer_wrapper
 
 #ifndef HPCRUN_STATIC_LINK
 static gotcha_binding_t opencl_bindings[] = {
+  {
+    "clBuildProgram",
+    (void*) clBuildProgram_wrapper,
+    &clBuildProgram_handle
+  },
   {
     "clCreateCommandQueue",
     (void*) clCreateCommandQueue_wrapper,
@@ -336,6 +443,16 @@ static gotcha_binding_t opencl_bindings[] = {
 //******************************************************************************
 // interface operations
 //******************************************************************************
+
+char*
+getDebugInfoFullFileName
+(
+	void
+)
+{
+	return debugInfoFullFileName;
+}
+
 
 void
 opencl_intercept_setup

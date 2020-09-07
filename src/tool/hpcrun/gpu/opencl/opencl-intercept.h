@@ -113,6 +113,17 @@ typedef cl_int (*clwritebuffer_t)(
 );
 
 
+typedef cl_int (*clbuildprogram_t)
+(
+ cl_program program,
+ cl_uint num_devices,
+ const cl_device_id* device_list,
+ const char* options,
+ void (CL_CALLBACK* pfn_notify)(cl_program program, void* user_data),
+ void* user_data
+);
+
+
 typedef enum {
   memcpy_H2D                      = 0,
   memcpy_D2H                      = 1,
@@ -145,6 +156,13 @@ typedef struct cl_memory_callback_t {
 //******************************************************************************
 // interface operations
 //******************************************************************************
+
+char*
+getDebugInfoFullFileName
+(
+	void
+);
+
 
 void
 opencl_intercept_setup
