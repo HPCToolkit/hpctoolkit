@@ -117,14 +117,10 @@ Context& IdPacker::Classifier::context(Context& c, Scope& s) {
   return cc;
 }
 
-IdPacker::Sink::Sink(IdPacker& s) : shared(s), wave(2) {};
+IdPacker::Sink::Sink(IdPacker& s) : shared(s) {};
 
-void IdPacker::Sink::notifyWavefront(DataClass::singleton_t ds) {
-  DataClass d = ds;
-  int val = 2;
-  if(d.hasReferences()) val = wave.fetch_sub(1, std::memory_order_acquire) - 1;
-  if(d.hasContexts()) val = wave.fetch_sub(1, std::memory_order_acquire) - 1;
-  if(val == 0) {  // This is it!
+void IdPacker::Sink::notifyWavefront(DataClass ds) {
+  if(ds.hasReferences() && ds.hasContexts()) {  // This is it!
     std::vector<uint8_t> ct;
     // Format: [global id] [mod cnt] (modules) [map cnt] (map entries...)
     pack(ct, (std::uint64_t)src.contexts().userdata[src.identifier()]);

@@ -347,6 +347,8 @@ private:
   DataClass scheduled;
   // Scheduled early wavefronts. Minimal requested and available set.
   DataClass scheduledWaves;
+  // Requested but not scheduled early wavefronts.
+  DataClass unscheduledWaves;
   // Size of the worker thread teams for doing things.
   std::size_t team_size;
 

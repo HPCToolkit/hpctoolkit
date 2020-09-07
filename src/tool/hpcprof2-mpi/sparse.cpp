@@ -79,8 +79,8 @@ SparseDB::SparseDB(stdshim::filesystem::path&& p) : dir(std::move(p)), ctxMaxId(
     stdshim::filesystem::create_directory(dir);
 }
 
-void SparseDB::notifyWavefront(DataClass::singleton_t ds) noexcept {
-  if(((DataClass)ds).hasContexts())
+void SparseDB::notifyWavefront(DataClass ds) noexcept {
+  if(ds.hasContexts())
     contextPrep.call_nowait([this]{ prepContexts(); });
 }
 

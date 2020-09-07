@@ -94,9 +94,10 @@ public:
   // MT: Safe (const)
   virtual ExtensionClass requires() const noexcept = 0;
 
-  /// Notify the Sink that a requested wavefront has passed.
+  /// Notify the Sink that a requested wavefront has passed. The argument
+  /// specifies the set of currently passed wavefronts.
   // MT: Internally Synchronized
-  virtual void notifyWavefront(DataClass::singleton_t);
+  virtual void notifyWavefront(DataClass);
 
   /// Notify the Sink that a new Module has been created.
   // MT: Internally Synchronized

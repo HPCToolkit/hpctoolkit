@@ -84,7 +84,7 @@ public:
       return DataClass::references + DataClass::contexts;
     }
 
-    void notifyWavefront(DataClass::singleton_t) override;
+    void notifyWavefront(DataClass) override;
     void write() override {};
 
   protected:
@@ -92,7 +92,6 @@ public:
 
   private:
     IdPacker& shared;
-    std::atomic<int> wave;
   };
 
 private:

@@ -209,6 +209,7 @@ ProfilePipeline::ProfilePipeline(Settings&& b, std::size_t team_sz)
     idx++;
   }
   scheduled &= all_requested;
+  unscheduledWaves = scheduledWaves - scheduled;
   scheduledWaves &= scheduled;
 }
 
@@ -227,7 +228,13 @@ void ProfilePipeline::run() {
   {
     ANNOTATE_HAPPENS_AFTER(&start_arc);
 
-    // First handle the early wavefronts.
+    // First deliver an notification for the waves that will not be occuring.
+    DataClass currentWaves = unscheduledWaves;
+    #pragma omp for schedule(dynamic) nowait
+    for(std::size_t idx = 0; idx < sinks.size(); ++idx)
+      sinks[idx]().notifyWavefront(currentWaves);
+
+    // Then handle the early wavefronts.
     // TODO: Make this more of a task-loop structure
     if(scheduledWaves.hasAttributes()) {
       #pragma omp for schedule(dynamic)
@@ -236,10 +243,11 @@ void ProfilePipeline::run() {
         ANNOTATE_HAPPENS_BEFORE(&barrier_arc_1);
       }
       ANNOTATE_HAPPENS_AFTER(&barrier_arc_1);
+      currentWaves += DataClass::attributes;
     }
     #pragma omp for schedule(dynamic) nowait
     for(std::size_t idx = 0; idx < sinks.size(); ++idx)
-      sinks[idx]().notifyWavefront(DataClass::attributes);
+      sinks[idx]().notifyWavefront(currentWaves);
 
     if(scheduledWaves.hasThreads()) {
       #pragma omp for schedule(dynamic)
@@ -248,10 +256,11 @@ void ProfilePipeline::run() {
         ANNOTATE_HAPPENS_BEFORE(&barrier_arc_4);
       }
       ANNOTATE_HAPPENS_AFTER(&barrier_arc_4);
+      currentWaves += DataClass::threads;
     }
     #pragma omp for schedule(dynamic) nowait
     for(std::size_t idx = 0; idx < sinks.size(); ++idx)
-      sinks[idx]().notifyWavefront(DataClass::threads);
+      sinks[idx]().notifyWavefront(currentWaves);
 
     if(scheduledWaves.hasReferences()) {
       #pragma omp for schedule(dynamic)
@@ -260,10 +269,11 @@ void ProfilePipeline::run() {
         ANNOTATE_HAPPENS_BEFORE(&barrier_arc_2);
       }
       ANNOTATE_HAPPENS_AFTER(&barrier_arc_2);
+      currentWaves += DataClass::references;
     }
     #pragma omp for schedule(dynamic) nowait
     for(std::size_t idx = 0; idx < sinks.size(); ++idx)
-      sinks[idx]().notifyWavefront(DataClass::references);
+      sinks[idx]().notifyWavefront(currentWaves);
 
     if(scheduledWaves.hasContexts()) {
       #pragma omp for schedule(dynamic)
@@ -272,10 +282,11 @@ void ProfilePipeline::run() {
         ANNOTATE_HAPPENS_BEFORE(&barrier_arc_3);
       }
       ANNOTATE_HAPPENS_AFTER(&barrier_arc_3);
+      currentWaves += DataClass::contexts;
     }
     #pragma omp for schedule(dynamic) nowait
     for(std::size_t idx = 0; idx < sinks.size(); ++idx)
-      sinks[idx]().notifyWavefront(DataClass::contexts);
+      sinks[idx]().notifyWavefront(currentWaves);
 
     // Now for the finishing wave
     #pragma omp for schedule(dynamic)

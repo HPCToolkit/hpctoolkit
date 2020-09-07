@@ -85,7 +85,7 @@ public:
   }
 
   void notifyPipeline() noexcept override;
-  void notifyWavefront(DataClass::singleton_t) noexcept override;
+  void notifyWavefront(DataClass) noexcept override;
   void notifyThreadFinal(const Thread::Temporary&) override;
 
   /// Return the tag for the experiment.xml, or an empty tag if empty.

@@ -126,10 +126,10 @@ std::string HPCMetricDB::exmlTag() {
   return ss.str();
 }
 
-void HPCMetricDB::notifyWavefront(DataClass::singleton_t ds) noexcept {
-  if(((DataClass)ds).hasAttributes())
+void HPCMetricDB::notifyWavefront(DataClass ds) noexcept {
+  if(ds.hasAttributes())
     metricPrep.call_nowait([this]{ prepMetrics(); });
-  if(((DataClass)ds).hasContexts())
+  if(ds.hasContexts())
     contextPrep.call_nowait([this]{ prepContexts(); });
 }
 

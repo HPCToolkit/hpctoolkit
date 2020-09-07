@@ -82,7 +82,7 @@ public:
     return ExtensionClass::identifier;
   }
 
-  void notifyWavefront(hpctoolkit::DataClass::singleton_t) noexcept override;
+  void notifyWavefront(hpctoolkit::DataClass) noexcept override;
   void notifyThreadFinal(const hpctoolkit::Thread::Temporary&) override;
 
   //***************************************************************************

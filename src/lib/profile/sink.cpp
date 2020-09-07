@@ -72,7 +72,7 @@ DataClass ProfileSink::wavefronts() const noexcept { return {}; }
 
 void ProfileSink::notifyPipeline() noexcept {};
 
-void ProfileSink::notifyWavefront(DataClass::singleton_t) {};
+void ProfileSink::notifyWavefront(DataClass) {};
 void ProfileSink::notifyModule(const Module&) {};
 void ProfileSink::notifyFile(const File&) {};
 void ProfileSink::notifyMetric(const Metric&) {};
