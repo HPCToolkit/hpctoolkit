@@ -49,9 +49,10 @@
 
 # This part handles the support libraries needed for the front-end scripts.
 
-foreach exe : all_applibs
-  custom_target('bin/libs/' + exe.name(),
-    command: [find_program('cp', '/bin/cp'), '@INPUT@', '@OUTPUT@'],
-    input: exe, output: '@PLAINNAME@',
+foreach lib : all_applibs
+  custom_target('in-tree copy of ' + fs.name('@0@'.format(lib)).split()[-1].strip('>'),
+    command: ['cp', '@INPUT@', '@OUTPUT@'],
+    input: lib, output: '@PLAINNAME@',
     build_by_default: true)
 endforeach
+

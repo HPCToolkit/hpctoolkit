@@ -403,7 +403,7 @@ foreach dep : _s_srcs.dependencies()
   endif
 endforeach
 
-libhpcrun_static_lib = static_library('hpcrun_wrap', _s_srcs.sources(),
+libhpcrun_static_lib = static_library('hpcrun_static', _s_srcs.sources(),
   dependencies: _s_srcs.dependencies() + _s_ddep
     + [cc.find_library('dl'), dependency('threads')],
   link_with: [prof_lean_static_lib, support_lean_static_lib],
@@ -416,3 +416,18 @@ all_applibs += libhpcrun_static_lib
 # hello-world style application with it linked in.
 executable('hpcrun_static_test', files('hello-world.c'),
   link_with: [libhpcrun_static_lib])
+
+# If the front-end bits have been requested, use them.
+# TODO: Swap out for a !--enable-backend option
+if true
+  all_apps += configure_file(
+    input: files('scripts/hpclog'), output: '@PLAINNAME@', copy: true,
+    install: true, install_dir: get_option('libexecdir') / 'hpctoolkit',
+    install_mode: 'rwxr-xr-x')
+  all_apps += configure_file(
+    input: files('scripts/hpcsummary.in'), output: '@BASENAME@',
+    configuration: {'PACKAGE_VERSION': meson.project_version()},
+    install: true, install_dir: get_option('libexecdir') / 'hpctoolkit',
+    install_mode: 'rwxr-xr-x')
+  install_headers(files('hpctoolkit.h'))
+endif

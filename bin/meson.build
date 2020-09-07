@@ -49,9 +49,11 @@
 
 # This part handles the front-end executables and scripts
 
+_cp_exec = find_program('cp-exec.sh')
+
 foreach exe : all_apps
-  custom_target('bin/' + exe.name(),
-    command: [find_program('cp', '/bin/cp'), '@INPUT@', '@OUTPUT@'],
+  custom_target('in-tree copy of ' + fs.name('@0@'.format(exe)),
+    command: [_cp_exec, '@INPUT@', '@OUTPUT@'],
     input: exe, output: '@PLAINNAME@',
     build_by_default: true)
 endforeach
