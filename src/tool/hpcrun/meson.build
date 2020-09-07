@@ -392,6 +392,7 @@ libhpcrun_lib = shared_library('hpcrun', _d_srcs.sources(),
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
 summary('hpcrun', not is_disabler(libhpcrun_lib) and _has_hpcfnbounds, section: 'Applications', bool_yn: true)
+all_applibs += libhpcrun_lib
 
 _s_srcset.add_all(_srcset)
 _s_srcs = _s_srcset.apply(_config)
@@ -402,13 +403,14 @@ foreach dep : _s_srcs.dependencies()
   endif
 endforeach
 
-libhpcrun_static_lib = static_library('hpcrun_static', _s_srcs.sources(),
+libhpcrun_static_lib = static_library('hpcrun_wrap', _s_srcs.sources(),
   dependencies: _s_srcs.dependencies() + _s_ddep
     + [cc.find_library('dl'), dependency('threads')],
   link_with: [prof_lean_static_lib, support_lean_static_lib],
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
 summary('hpclink', not is_disabler(libhpcrun_static_lib) and _has_hpcfnbounds, section: 'Applications', bool_yn: true)
+all_applibs += libhpcrun_static_lib
 
 # Check that the static case is actually linkable by compiling a small
 # hello-world style application with it linked in.

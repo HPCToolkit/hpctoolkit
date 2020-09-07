@@ -53,3 +53,5 @@ hpcproftt_exe = executable('hpcproftt', _srcs,
   dependencies: [xerces_d_dep],
   install: true, install_dir: get_option('libexecdir') / 'hpctoolkit')
 summary('hpcproftt', not is_disabler(hpcproftt_exe), section: 'Applications', bool_yn: true)
+all_apps += hpcproftt_exe
+

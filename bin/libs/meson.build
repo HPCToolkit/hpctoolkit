@@ -42,33 +42,16 @@
 #
 # ******************************************************* EndRiceCopyright *
 
-_srcs = [files(
-  'main.cpp',
-  'code-ranges.cpp',
-  'function-entries.cpp',
-  'intervals.cpp',
-  'sections.cpp',
-  'server.cpp',
-  'eh-frames.cpp',
-)]
-_deps = []
+# While we go to some lengths to ensure the build_rpath is set, we don't
+# bother with the install_rpath, which means a normal install (probably)
+# won't be functional. So instead, we make it easier to run bits from the build
+# tree by copying everything here into bin/.
 
-if host_machine.cpu_family() == 'x86' or host_machine.cpu_family() == 'x86_64'
-  _srcs += files('x86-process-ranges.cpp', 'amd-xop.c')
-  _deps += xed_d_dep
-elif host_machine.cpu_family() == 'aarch64'
-  _srcs += files('arm-process-ranges.cpp')
-else
-  _srcs += files('generic-process-ranges.cpp')
-endif
+# This part handles the support libraries needed for the front-end scripts.
 
-hpcfnbounds_exe = executable('hpcfnbounds', _srcs,
-  include_directories: tool_includes,
-  link_with: [prof_lean_lib],
-  dependencies: [dyninst_d_dep, openmp_d_dep,
-    libdwarf_d_dep.partial_dependency(compile_args: true, link_args: true, includes: true)]
-    + _deps + [cc.find_library('dl')],
-  install: true, install_dir: get_option('prefix') / get_option('libexecdir') / 'hpctoolkit')
-summary('hpcfnbounds', not is_disabler(hpcfnbounds_exe), section: 'Applications', bool_yn: true)
-all_apps += hpcfnbounds_exe
-
+foreach exe : all_applibs
+  custom_target('bin/libs/' + exe.name(),
+    command: [find_program('cp', '/bin/cp'), '@INPUT@', '@OUTPUT@'],
+    input: exe, output: '@PLAINNAME@',
+    build_by_default: true)
+endforeach

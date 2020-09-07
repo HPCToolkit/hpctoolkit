@@ -54,3 +54,5 @@ hpcfnbounds2_exe = executable('hpcfnbounds2', _srcs,
   dependencies: [libelf_d_dep],
   install: true, install_dir: get_option('libexecdir') / 'hpctoolkit')
 summary('hpcfnbounds2', not is_disabler(hpcfnbounds2_exe), section: 'Applications', bool_yn: true)
+all_apps += hpcfnbounds2_exe
+

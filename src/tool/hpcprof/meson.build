@@ -52,4 +52,5 @@ hpcprof_exe = executable('hpcprof', _srcs,
   link_with: [support_lib, binutils_lib, prof_lib, analysis_lib],
   install: true)
 summary('hpcprof', not is_disabler(hpcprof_exe), section: 'Applications', bool_yn: true)
+all_apps += hpcprof_exe
 

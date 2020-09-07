@@ -44,6 +44,9 @@
 
 tool_includes = main_includes + [include_directories('.')]
 
+all_apps = []
+all_applibs = []
+
 subdir('hpcstruct')
 subdir('hpcprof')
 subdir('hpcprof-mpi')

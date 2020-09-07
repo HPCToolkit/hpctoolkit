@@ -57,9 +57,11 @@ hpcstruct_exe = executable('hpcstruct', _srcs,
   dependencies: [openmp_d_dep],
   install: true)
 summary('hpcstruct', not is_disabler(hpcstruct_exe), section: 'Applications', bool_yn: true)
+all_apps += hpcstruct_exe
 
 dotgraph_exe = executable('dotgraph', files('DotGraph.cpp'),
   include_directories: tool_includes,
   dependencies: [dyninst_d_dep, openmp_d_dep],
   install: true)
 summary('dotgraph', not is_disabler(dotgraph_exe), section: 'Applications', bool_yn: true)
+all_apps += dotgraph_exe

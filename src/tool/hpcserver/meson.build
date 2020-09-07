@@ -69,6 +69,7 @@ hpcserver_exe = executable('hpcserver', _srcs, files(
   dependencies: [zlib_d_dep],
   install: true)
 summary('hpcserver', not is_disabler(hpcserver_exe), section: 'Applications', bool_yn: true)
+all_apps += hpcserver_exe
 
 hpcserver_mpi_exe = executable('hpcserver-mpi', _srcs, files(
     'Communication-MPI.cpp',
@@ -80,4 +81,5 @@ hpcserver_mpi_exe = executable('hpcserver-mpi', _srcs, files(
   dependencies: [zlib_d_dep, mpi_cpp_d_dep],
   install: true)
 summary('hpcserver-mpi', not is_disabler(hpcserver_mpi_exe), section: 'Applications', bool_yn: true)
+all_apps += hpcserver_mpi_exe
 

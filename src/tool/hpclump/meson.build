@@ -52,3 +52,5 @@ hpclump_exe = executable('hpclump', _srcs,
   link_with: [support_lib, binutils_lib],
   install: true, install_dir: get_option('libexecdir') / 'hpctoolkit')
 summary('hpclump', not is_disabler(hpclump_exe), section: 'Applications', bool_yn: true)
+all_apps += hpclump_exe
+

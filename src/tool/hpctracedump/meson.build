@@ -51,3 +51,4 @@ hpctracedump_exe = executable('hpctracedump', _srcs,
   link_with: [prof_lean_lib],
   install: true, install_dir: get_option('libexecdir') / 'hpctoolkit')
 summary('hpctracedump', not is_disabler(hpctracedump_exe), section: 'Applications', bool_yn: true)
+all_apps += hpctracedump_exe
