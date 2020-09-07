@@ -124,10 +124,11 @@ Current Obsolete Options:
 ProfArgs::ProfArgs(int argc, char* const argv[])
   : title(), threads(1), instructionGrain(false), output("hpctoolkit-database"),
     include_sources(true), include_traces(true), include_thread_local(true),
-    format(Format::exmldb) {
+    format(Format::exmldb), sparse_debug(false) {
   int arg_instructionGrain = instructionGrain;
   int arg_includeSources = include_sources;
   int arg_includeTraces = include_traces;
+  int arg_sparseDebug = sparse_debug;
   struct option longopts[] = {
     // These first ones are more special and must be in this order.
     {"version", no_argument, NULL, 0},
@@ -145,6 +146,7 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
     {"no-traces", no_argument, &arg_includeTraces, 0},
     {"no-source", no_argument, &arg_includeSources, 0},
     {"name", required_argument, NULL, 'n'},
+    {"sparse-debug", no_argument, &arg_sparseDebug, 1},
     {0, 0, 0, 0}
   };
 
@@ -285,6 +287,7 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
   instructionGrain = arg_instructionGrain;
   include_sources = arg_includeSources;
   include_traces = arg_includeTraces;
+  sparse_debug = arg_sparseDebug;
 
   // Now that the arguments have been munged, we can do the inputs.
   for(int idx = optind; idx < argc; idx++) {

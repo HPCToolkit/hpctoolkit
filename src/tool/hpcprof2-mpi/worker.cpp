@@ -178,7 +178,7 @@ int rankN(ProfArgs&& args) {
 
     ProfilePipeline pipeline(std::move(pipelineB2), args.threads);
     pipeline.run();
-    if(sdb) sdb->merge(args.threads);
+    if(sdb) sdb->merge(args.threads, args.sparse_debug);
   }
 
   return 0;

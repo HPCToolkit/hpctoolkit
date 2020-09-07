@@ -136,6 +136,10 @@ public:
   /// Requested output format
   Format format;
 
+  /// Whether to enable debugging options for sparse output, such as retaining temporaries.
+  /// Temporary option until SparseDB is pushed into the Pipeline proper.
+  bool sparse_debug;
+
 private:
   std::unordered_map<stdshim::filesystem::path, std::vector<stdshim::filesystem::path>> structheads;
 };

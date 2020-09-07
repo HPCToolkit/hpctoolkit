@@ -2355,7 +2355,7 @@ void SparseDB::writeCCTMajor(const std::vector<uint64_t>& ctx_nzval_cnts,
 // general - YUMENG
 //***************************************************************************
 
-void SparseDB::merge(int threads) {
+void SparseDB::merge(int threads, bool debug) {
   int world_rank;
   int world_size;
   MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
@@ -2375,6 +2375,12 @@ void SparseDB::merge(int threads) {
   writeThreadMajor(threads,world_rank,world_size, ctx_nzval_cnts,ctx_nzmids);
   writeCCTMajor(ctx_nzval_cnts,ctx_nzmids, ctxcnt, world_rank, world_size, threads);
   
+  if(!debug) {
+    MPI_Barrier(MPI_COMM_WORLD);
+    for(const auto& tp: outputs.citerate())
+      stdshim::filesystem::remove(tp.second);
+    stdshim::filesystem::remove(summaryOut);
+  }
 }
 
 

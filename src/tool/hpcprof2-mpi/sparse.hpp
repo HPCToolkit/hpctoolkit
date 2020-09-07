@@ -110,7 +110,7 @@ public:
   #define CTX_VEC_IDX(c) ((c-1)/2)
   #define CTXID(c)       (c*2+1)
   
-  void merge(int threads);
+  void merge(int threads, bool debug);
   template<typename T>
   void exscan(std::vector<T>& data,int threads); 
   template <typename T, typename MemberT>
