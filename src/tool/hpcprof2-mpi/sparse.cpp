@@ -2241,11 +2241,8 @@ void SparseDB::rwOneCtxGroup(const std::vector<uint32_t>& ctx_ids,
                 { return lhs.first < rhs.first ;}) - ctx_id_idx_pairs.begin());     
         }
   
+        
         if(ctx_id_idx_pairs[profiles_cursor[j]].first == ctx_id){
-        //auto ciipi = ctx_id_idx_pairs.find(ctx_id);
-        //if(ciipi != ctx_id_idx_pairs.end()){
-          //uint64_t next_ctx_idx = std::next(ciipi, 1)->second;
-          //uint64_t first_ctx_idx = ctx_id_idx_pairs.begin()->second;
           uint64_t next_ctx_idx = ctx_id_idx_pairs[profiles_cursor[j]+1].second;
           uint64_t first_ctx_idx = ctx_id_idx_pairs[0].second;
           interpretValMidsBytes(vmbytes.data(), prof_info[j].prof_info_idx, ctx_id_idx_pairs[profiles_cursor[j]], next_ctx_idx, first_ctx_idx, ctx_id_idx_pairs, cmb);
