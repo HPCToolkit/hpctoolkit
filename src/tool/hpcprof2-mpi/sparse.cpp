@@ -2231,6 +2231,7 @@ void SparseDB::rwOneCtxGroup(const std::vector<uint32_t>& ctx_ids,
         std::vector<char>& vmbytes = profiles_data[j].second;
         //std::map<uint32_t, uint64_t>& ctx_id_idx_pairs = profiles_data[j].first;
         std::vector<std::pair<uint32_t, uint64_t>>& ctx_id_idx_pairs = profiles_data[j].first;
+        if(ctx_id_idx_pairs.size() == 0) continue;
         
         //set up the profile cursor if first time for this thread, otherwise just use it
         if(profiles_cursor[j] == SPARSE_NOT_FOUND){
