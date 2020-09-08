@@ -309,7 +309,7 @@ cuda_device_sm_blocks_query
 }
 
 
-static int 
+static int __attribute__((unused))
 cuda_device_sm_schedulers_query
 (
  int major, 
@@ -342,9 +342,10 @@ cuda_device_compute_capability
 
   HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
     (minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device_id));
-#endif
-
   return 0;
+#else
+  return -1;
+#endif 
 }
 
 

@@ -142,15 +142,13 @@ gatherStmts(const Prof::LoadMap::LMId_t lm_id, int inst_pc_front, int inst_pc_ba
       Prof::LoadMap::LMId_t n_lm_id = n_dyn->lmId(); // ok if LoadMap::LMId_NULL
       VMA n_lm_ip = n_dyn->lmIP();
       // filter out
-      if (n_lm_id != lm_id || n_lm_ip < inst_pc_front || n_lm_ip > inst_pc_back) {
+      if (n_lm_id != lm_id || n_lm_ip < static_cast<VMA>(inst_pc_front) || n_lm_ip > static_cast<VMA>(inst_pc_back)) {
         continue;
       }
 
       // Use the first pc as the gpu_kernel node
-      bool find = false;
       for (auto index : gpu_kernel_index) {
         if (n_dyn->demandMetric(index) != 0) {
-          find = true;
           gpu_kernels.insert(n_dyn);
           break;
         }
@@ -179,7 +177,7 @@ associateInstStmts(const std::vector<VMAStmt> &vma_stmts,
   // Lay metrics over prof tree O(n)
   for (auto *inst_stat : inst_stats) {
     // while lm_ip < inst_stat->pc
-    while (cur_stmt_index < vma_stmts.size() && inst_stat->pc > vma_stmts[cur_stmt_index].lm_ip) {
+    while (cur_stmt_index < vma_stmts.size() && static_cast<VMA>(inst_stat->pc) > vma_stmts[cur_stmt_index].lm_ip) {
       if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
         std::cout << "inst_stat->pc: 0x" << std::hex << inst_stat->pc << ", vma: 0x" <<
           vma_stmts[cur_stmt_index].lm_ip << std::dec << std::endl;
@@ -189,7 +187,7 @@ associateInstStmts(const std::vector<VMAStmt> &vma_stmts,
     if (cur_stmt_index == vma_stmts.size()) {
       break;
     }
-    if (inst_stat->pc != vma_stmts[cur_stmt_index].lm_ip) {
+    if (static_cast<VMA>(inst_stat->pc) != vma_stmts[cur_stmt_index].lm_ip) {
       continue;
     }
 

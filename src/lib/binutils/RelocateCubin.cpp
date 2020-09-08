@@ -705,7 +705,6 @@ getVisibilityCubin
 )
 {
   std::vector<int> symbol_visibility;
-  bool success = false;
 
   elf_helper_t eh;
   elf_helper_initialize(cubin_elf, &eh);  

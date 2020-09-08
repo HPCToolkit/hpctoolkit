@@ -149,7 +149,7 @@ std::string SimpleInspectionFormatter::format(const Inspection &inspection) {
   }
 
   // Hot regions
-  for (auto index = 0; index < inspection.regions.size(); ++index) {
+  for (size_t index = 0; index < inspection.regions.size(); ++index) {
     auto &region_blame = inspection.regions[index];
     auto ratio = 0.0;
     auto speedup = 0.0;
@@ -164,6 +164,9 @@ std::string SimpleInspectionFormatter::format(const Inspection &inspection) {
       ratio * 100 << "%, ";
     if (speedup != 0.0) {
       ss << "speedup " << speedup << "x";
+    }
+    if (inspection.density.size() != 0.0) {
+      ss << ", density " << inspection.density[index] * 100 << "%";
     }
     ss << std::endl;
 

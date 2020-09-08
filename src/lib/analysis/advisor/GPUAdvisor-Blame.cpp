@@ -53,8 +53,8 @@ using std::string;
 #include <lib/support/IOUtil.hpp>
 #include <lib/support/StrUtil.hpp>
 
-#define DEBUG_GPUADVISOR 0
-#define DEBUG_GPUADVISOR_DETAILS 0
+#define DEBUG_GPUADVISOR 1
+#define DEBUG_GPUADVISOR_DETAILS 1
 
 #define MAX2(x, y) (x > y ? x : y)
 
@@ -879,10 +879,9 @@ double GPUAdvisor::computePathInsts(
   std::vector<CudaParse::Block *> &path) {
   double insts = 0.0;
 
-  auto inst_metric_index = _metric_name_prof_map->metric_id(
-    mpi_rank, thread_id, _inst_metric, true);
+  _metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_metric, true);
 
-  for (auto i = 0; i < path.size(); ++i) {
+  for (size_t i = 0; i < path.size(); ++i) {
     auto *block = path[i];
     auto front_vma = block->insts.front()->inst_stat->pc;
     auto back_vma = block->insts.back()->inst_stat->pc;
@@ -973,8 +972,22 @@ GPUAdvisor::detailizeExecBlame(CudaParse::InstructionStat *from_inst,
       return std::make_pair(_exec_dep_dep_stall_metric, _exec_dep_dep_lat_metric);
     }
   } else {
-    // war
-    return std::make_pair(_exec_dep_war_stall_metric, _exec_dep_war_lat_metric);
+    // war only when barrier is set, otherwise sche
+    // XXX(keren): interestingly, sometimes a barrier may not be associated with from_inst,
+    // but instead another (dominant) instruction on the path before the use instruction.
+    // Can we tune the barriers to optimize on GPU binaries?
+    bool find_barrier = false;
+    for (auto bdst : from_inst->bdsts) {
+      if (to_inst->find_src_barrier(bdst)) {
+        find_barrier = true;  
+        break;
+      }
+    }
+    if (find_barrier) {
+      return std::make_pair(_exec_dep_war_stall_metric, _exec_dep_war_lat_metric);
+    } else {
+      return std::make_pair(_exec_dep_sche_stall_metric, _exec_dep_sche_lat_metric);
+    }
   }
 }
 
@@ -1066,8 +1079,10 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
       auto stall_blame_name = "BLAME " + _exec_dep_sche_stall_metric;
       attributeBlameMetric(mpi_rank, thread_id, to_node, stall_blame_name, stall_blame);
 
-      inst_blames.emplace_back(InstructionBlame(to_inst, to_inst, to_struct, to_struct, 0,
-                                                stall_blame, lat_blame, lat_blame_name));
+      if (lat_blame != 0) {
+        inst_blames.emplace_back(InstructionBlame(to_inst, to_inst, to_struct, to_struct, 0,
+            stall_blame, lat_blame, lat_blame_name));
+      }
     }
 
 
