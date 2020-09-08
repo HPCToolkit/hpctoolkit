@@ -173,8 +173,8 @@ void ExperimentXML4::udFile::incr(ExperimentXML4& exml) {
 
 ExperimentXML4::udMetric::udMetric(const Metric& m, ExperimentXML4& exml) {
   const auto& ids = m.userdata[exml.src.identifier()];
-  inc_id = ids.first;
-  ex_id = ids.second;
+  inc_id = ids.second;
+  ex_id = ids.first;
   // Every (for now, later will be most) metrics have an inclusive and
   // exclusive side. So we write out two metrics as if that were still the
   // case.
