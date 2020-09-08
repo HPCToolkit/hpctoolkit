@@ -94,6 +94,18 @@ static uint32_t amd_gpu_module_id;
 // private operations
 //******************************************************************************
 
+// TODO:
+// construct_amd_gpu_symbols parses the ELF symbol and extract
+// the string names of functions.
+//
+// We have similar code in different places that iterate over
+// the ELF symbol table, and doing slightly different things.
+// At least, NVIDIA support code iterates over symbol table
+// to relocate functions, and hpcfnbounds code iterates over
+// symbol table to find function starts.
+// It would be good to refactor these ELF operations into commond
+// code.
+
 static void
 construct_amd_gpu_symbols
 (
@@ -189,6 +201,12 @@ construct_amd_gpu_symbols
   }
 #endif
 }
+
+// TODO:
+// Eventually, we want to write the URI into our load map rather than copying the binary into a file.
+// To handle this long-term goal, the URI parsing would have to be code shared by hpcrun, hpcprof,
+// and hpcstruct. We can move function parse_amd_gpu_binary_uri to prof-lean direcotry and refactor
+// the function to return something that can help identifies the GPU binary specified by the URI.
 
 static void
 parse_amd_gpu_binary_uri
@@ -302,6 +320,16 @@ parse_amd_gpu_binary
   return 0;
 }
 
+// TODO:
+// lookup_amd_function is currently implemented as a linear search.
+// We would hope to get help from AMD that roctracer will directly
+// tell us the offset of a launched kernel, so that we do not have
+// to do name matching.
+//
+// If we got no help, then we would need to refactor the code to
+// to handle large GPU binaries. We will need to use more efficient
+// lookup data structure, a splay tree or a trie.
+
 static uintptr_t
 lookup_amd_function
 (
@@ -326,7 +354,14 @@ rocm_binary_function_lookup
   const char* kernel_name
 )
 {
-  // TODO: Handle multi-threaded case
+  // TODO:
+  // 1. Handle multi-threaded case. Currently, this function is called when the first
+  //    HIP kernel launch is done. So multiple threads can enter this concurrently.
+  // 2. Handle the case of multiple GPU binaries. Currently, this code assuems there is
+  //    only one AMD GPU binary. We will need to both assign different names to AMD GPU
+  //    binaries and also handle the possibility of one kernel name appearing in different
+  //    GPU binaries.
+
   if (binary.size == 0) {
     if (parse_amd_gpu_binary() < 0) {
       binary.size = -1;
