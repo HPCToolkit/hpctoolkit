@@ -65,9 +65,25 @@ void CudaBlock::getInsns(Insns &insns) const {
       } 
     }   
 
+    for (auto udst : inst->inst_stat->udsts) {
+      if (udst != -1) {
+        MachRegister r(udst | cuda::UR | Arch_cuda);
+        InstructionAPI::RegisterAST::Ptr reg_ptr(new InstructionAPI::RegisterAST(r));
+        instruction.appendOperand(reg_ptr, false, true);
+      }
+    }
+
     for (auto pdst : inst->inst_stat->pdsts) {
       if (pdst != -1) {
         MachRegister r(pdst | cuda::PR | Arch_cuda);
+        InstructionAPI::RegisterAST::Ptr reg_ptr(new InstructionAPI::RegisterAST(r));
+        instruction.appendOperand(reg_ptr, false, true);
+      }
+    } 
+
+    for (auto updst : inst->inst_stat->pdsts) {
+      if (updst != -1) {
+        MachRegister r(updst | cuda::UPR | Arch_cuda);
         InstructionAPI::RegisterAST::Ptr reg_ptr(new InstructionAPI::RegisterAST(r));
         instruction.appendOperand(reg_ptr, false, true);
       }
@@ -89,9 +105,25 @@ void CudaBlock::getInsns(Insns &insns) const {
       }
     }
 
+    for (auto usrc : inst->inst_stat->usrcs) {
+      if (usrc != -1) {
+        MachRegister r(usrc | cuda::UR | Arch_cuda);
+        InstructionAPI::RegisterAST::Ptr reg_ptr(new InstructionAPI::RegisterAST(r));
+        instruction.appendOperand(reg_ptr, true, false);
+      }
+    }
+
     for (auto psrc : inst->inst_stat->psrcs) {
       if (psrc != -1) {
         MachRegister r(psrc | cuda::PR | Arch_cuda);
+        InstructionAPI::RegisterAST::Ptr reg_ptr(new InstructionAPI::RegisterAST(r));
+        instruction.appendOperand(reg_ptr, true, false);
+      }
+    }
+
+    for (auto upsrc : inst->inst_stat->upsrcs) {
+      if (upsrc != -1) {
+        MachRegister r(upsrc | cuda::UPR | Arch_cuda);
         InstructionAPI::RegisterAST::Ptr reg_ptr(new InstructionAPI::RegisterAST(r));
         instruction.appendOperand(reg_ptr, true, false);
       }
