@@ -538,7 +538,8 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	gpu/nvidia/cupti-analysis.c gpu/nvidia/cupti-api.c \
 	gpu/nvidia/cupti-gpu-api.c sample-sources/upc.c \
 	sample-sources/amd.c gpu/amd/roctracer-activity-translate.c \
-	gpu/amd/roctracer-api.c sample-sources/level0.c \
+	gpu/amd/roctracer-api.c gpu/amd/rocm-debug-api.c \
+	gpu/amd/rocm-binary-processing.c sample-sources/level0.c \
 	gpu/level0/level0-api.c gpu/level0/level0-command-list-map.c \
 	gpu/level0/level0-command-process.c \
 	gpu/level0/level0-data-node.c gpu/level0/level0-event-map.c \
@@ -736,7 +737,9 @@ am__objects_36 =
 @OPT_ENABLE_ROCM_TRUE@am__objects_37 =  \
 @OPT_ENABLE_ROCM_TRUE@	sample-sources/libhpcrun_la-amd.lo \
 @OPT_ENABLE_ROCM_TRUE@	gpu/amd/libhpcrun_la-roctracer-activity-translate.lo \
-@OPT_ENABLE_ROCM_TRUE@	gpu/amd/libhpcrun_la-roctracer-api.lo
+@OPT_ENABLE_ROCM_TRUE@	gpu/amd/libhpcrun_la-roctracer-api.lo \
+@OPT_ENABLE_ROCM_TRUE@	gpu/amd/libhpcrun_la-rocm-debug-api.lo \
+@OPT_ENABLE_ROCM_TRUE@	gpu/amd/libhpcrun_la-rocm-binary-processing.lo
 @OPT_ENABLE_ROCM_TRUE@am__objects_38 = $(am__objects_37)
 @OPT_ENABLE_LEVEL0_TRUE@am__objects_39 =  \
 @OPT_ENABLE_LEVEL0_TRUE@	sample-sources/libhpcrun_la-level0.lo \
@@ -1870,7 +1873,9 @@ MY_AARCH64_FILES = \
 @OPT_ENABLE_ROCM_TRUE@MY_ROCM_FILES = \
 @OPT_ENABLE_ROCM_TRUE@	sample-sources/amd.c \
 @OPT_ENABLE_ROCM_TRUE@	gpu/amd/roctracer-activity-translate.c \
-@OPT_ENABLE_ROCM_TRUE@	gpu/amd/roctracer-api.c 	
+@OPT_ENABLE_ROCM_TRUE@	gpu/amd/roctracer-api.c \
+@OPT_ENABLE_ROCM_TRUE@	gpu/amd/rocm-debug-api.c \
+@OPT_ENABLE_ROCM_TRUE@	gpu/amd/rocm-binary-processing.c
 
 @OPT_ENABLE_LEVEL0_TRUE@MY_LEVEL0_FILES = \
 @OPT_ENABLE_LEVEL0_TRUE@	sample-sources/level0.c \
@@ -2781,6 +2786,10 @@ gpu/amd/libhpcrun_la-roctracer-activity-translate.lo:  \
 	gpu/amd/$(am__dirstamp) gpu/amd/$(DEPDIR)/$(am__dirstamp)
 gpu/amd/libhpcrun_la-roctracer-api.lo: gpu/amd/$(am__dirstamp) \
 	gpu/amd/$(DEPDIR)/$(am__dirstamp)
+gpu/amd/libhpcrun_la-rocm-debug-api.lo: gpu/amd/$(am__dirstamp) \
+	gpu/amd/$(DEPDIR)/$(am__dirstamp)
+gpu/amd/libhpcrun_la-rocm-binary-processing.lo:  \
+	gpu/amd/$(am__dirstamp) gpu/amd/$(DEPDIR)/$(am__dirstamp)
 sample-sources/libhpcrun_la-level0.lo: sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
 gpu/level0/$(am__dirstamp):
@@ -3709,6 +3718,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_o-gpu-trace-channel.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_o-gpu-trace-item.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_o-gpu-trace.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/amd/$(DEPDIR)/libhpcrun_la-rocm-binary-processing.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/amd/$(DEPDIR)/libhpcrun_la-rocm-debug-api.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/amd/$(DEPDIR)/libhpcrun_la-roctracer-activity-translate.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/amd/$(DEPDIR)/libhpcrun_la-roctracer-api.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/level0/$(DEPDIR)/libhpcrun_la-level0-api.Plo@am__quote@
@@ -5337,6 +5348,20 @@ gpu/amd/libhpcrun_la-roctracer-api.lo: gpu/amd/roctracer-api.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/amd/roctracer-api.c' object='gpu/amd/libhpcrun_la-roctracer-api.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/amd/libhpcrun_la-roctracer-api.lo `test -f 'gpu/amd/roctracer-api.c' || echo '$(srcdir)/'`gpu/amd/roctracer-api.c
+
+gpu/amd/libhpcrun_la-rocm-debug-api.lo: gpu/amd/rocm-debug-api.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/amd/libhpcrun_la-rocm-debug-api.lo -MD -MP -MF gpu/amd/$(DEPDIR)/libhpcrun_la-rocm-debug-api.Tpo -c -o gpu/amd/libhpcrun_la-rocm-debug-api.lo `test -f 'gpu/amd/rocm-debug-api.c' || echo '$(srcdir)/'`gpu/amd/rocm-debug-api.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/amd/$(DEPDIR)/libhpcrun_la-rocm-debug-api.Tpo gpu/amd/$(DEPDIR)/libhpcrun_la-rocm-debug-api.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/amd/rocm-debug-api.c' object='gpu/amd/libhpcrun_la-rocm-debug-api.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/amd/libhpcrun_la-rocm-debug-api.lo `test -f 'gpu/amd/rocm-debug-api.c' || echo '$(srcdir)/'`gpu/amd/rocm-debug-api.c
+
+gpu/amd/libhpcrun_la-rocm-binary-processing.lo: gpu/amd/rocm-binary-processing.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/amd/libhpcrun_la-rocm-binary-processing.lo -MD -MP -MF gpu/amd/$(DEPDIR)/libhpcrun_la-rocm-binary-processing.Tpo -c -o gpu/amd/libhpcrun_la-rocm-binary-processing.lo `test -f 'gpu/amd/rocm-binary-processing.c' || echo '$(srcdir)/'`gpu/amd/rocm-binary-processing.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/amd/$(DEPDIR)/libhpcrun_la-rocm-binary-processing.Tpo gpu/amd/$(DEPDIR)/libhpcrun_la-rocm-binary-processing.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/amd/rocm-binary-processing.c' object='gpu/amd/libhpcrun_la-rocm-binary-processing.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/amd/libhpcrun_la-rocm-binary-processing.lo `test -f 'gpu/amd/rocm-binary-processing.c' || echo '$(srcdir)/'`gpu/amd/rocm-binary-processing.c
 
 sample-sources/libhpcrun_la-level0.lo: sample-sources/level0.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_la-level0.lo -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_la-level0.Tpo -c -o sample-sources/libhpcrun_la-level0.lo `test -f 'sample-sources/level0.c' || echo '$(srcdir)/'`sample-sources/level0.c

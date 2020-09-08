@@ -521,7 +521,9 @@ if OPT_ENABLE_ROCM
 MY_ROCM_FILES=\
 	sample-sources/amd.c \
 	gpu/amd/roctracer-activity-translate.c \
-	gpu/amd/roctracer-api.c 	
+	gpu/amd/roctracer-api.c \
+	gpu/amd/rocm-debug-api.c \
+	gpu/amd/rocm-binary-processing.c
 endif
 
 if OPT_ENABLE_LEVEL0
