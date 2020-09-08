@@ -102,7 +102,7 @@
 #define PRINT(...)
 #endif
 
-#define NUM_FNS 3
+#define NUM_FNS 6
 
 
 
@@ -121,8 +121,13 @@ typedef struct module_ignore_entry {
 // static data
 //***************************************************************************
 
-static const char *NVIDIA_FNS[NUM_FNS] = {
-  "cuLaunchKernel", "cudaLaunchKernel", "cuptiActivityEnable"
+static const char *IGNORE_FNS[NUM_FNS] = {
+  "cuLaunchKernel",
+  "cudaLaunchKernel",
+  "cuptiActivityEnable",
+  "roctracer_set_properties",  // amd roctracer library
+  "amd_dbgapi_initialize",     // amd debug library
+  "hipKernelNameRefByPtr",     // amd hip runtime
 };
 static module_ignore_entry_t modules[NUM_FNS];
 static pfq_rwlock_t modules_lock;
@@ -259,7 +264,7 @@ serach_functions_in_module(Elf *e, GElf_Shdr* secHead, Elf_Scn *section)
     // We need to find functions defined in the module.
     if ( (symType == STT_FUNC) && (symBind == STB_GLOBAL) && (curSym.st_value != 0)) {
       for (i = 0; i < NUM_FNS; ++i) {
-        if (modules[i].empty && (strcmp(symName, NVIDIA_FNS[i]) == 0)) {
+        if (modules[i].empty && (strcmp(symName, IGNORE_FNS[i]) == 0)) {
           return i;          
         }
       }
