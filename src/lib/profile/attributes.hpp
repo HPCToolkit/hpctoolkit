@@ -48,6 +48,7 @@
 #define HPCTOOLKIT_PROFILE_ATTRIBUTES_H
 
 #include "util/ragged_vector.hpp"
+#include "lib/prof/tms-format.h"
 
 #include <functional>
 #include <unordered_map>
@@ -91,12 +92,22 @@ public:
   const stdshim::optional<unsigned long long>& timepointCnt() const noexcept { return m_timepointCnt; }
   void timepointCnt(unsigned long long);
 
+  /// Get the hierarchical tuple assigned to this Thread.
+  // MT: Externally Synchronized
+  const std::vector<tms_id_t>& idTuple() const noexcept;
+
 private:
+  // TODO: Remove these 4 fields and replace the bits above with functions that
+  // scan m_idTuple for the relevant fields. Also make idTuples mandatory and
+  // set once, probably during construction. All after the the other kind
+  // constants are set up.
+  // Then, later, remove those shims and just use idTuples moving forward.
   stdshim::optional<uint32_t> m_hostid;
   stdshim::optional<unsigned long> m_mpirank;
   stdshim::optional<unsigned long> m_threadid;
   stdshim::optional<unsigned long> m_procid;
   stdshim::optional<unsigned long long> m_timepointCnt;
+  mutable std::vector<tms_id_t> m_idTuple;
 };
 
 /// A single Thread within a Profile. Or something like that.

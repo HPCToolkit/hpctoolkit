@@ -126,6 +126,18 @@ void ThreadAttributes::timepointCnt(unsigned long long cnt) {
   m_timepointCnt = cnt;
 }
 
+const std::vector<tms_id_t>& ThreadAttributes::idTuple() const noexcept {
+  if(m_idTuple.size() == 0) {
+    // For now, we try to reconstruct the tuple based on the other fields.
+    // Eventually the other fields will search m_idTuple instead.
+    if(m_mpirank) m_idTuple.push_back({RANK, *m_mpirank});
+    if(m_threadid) m_idTuple.push_back({THREAD, *m_threadid});
+    if(m_idTuple.size() == 0)
+      util::log::fatal() << "Reconstructed idTuple is empty!";
+  }
+  return m_idTuple;
+}
+
 bool ProfileAttributes::merge(const ProfileAttributes& o) {
   bool ok = true;
   if(!m_name) m_name = o.m_name;
