@@ -44,9 +44,15 @@ struct InstructionStat {
   std::vector<int> psrcs;  // P0-P6: only records predicate registers
   std::vector<int> bdsts;  // B1-B6: only records barriers
   std::vector<int> bsrcs;  // B1-B6: only records barriers
+  std::vector<int> udsts;  // UR0-UR63: only records uniform regsters
+  std::vector<int> usrcs;  // UR0-UR63: only records uniform regsters
+  std::vector<int> updsts;  // UP0-UP?: only records uniform predicate regsters
+  std::vector<int> upsrcs;  // UP0-UP?: only records uniform predicate regsters
   std::map<int, std::vector<int> > assign_pcs;
   std::map<int, std::vector<int> > passign_pcs;
   std::map<int, std::vector<int> > bassign_pcs;
+  std::map<int, std::vector<int> > uassign_pcs;
+  std::map<int, std::vector<int> > upassign_pcs;
   Control control;
 
   InstructionStat() {}
@@ -70,14 +76,20 @@ struct InstructionStat {
     std::vector<int> &dsts, std::vector<int> &srcs,
     std::vector<int> &pdsts, std::vector<int> &psrcs,
     std::vector<int> &bdsts, std::vector<int> &bsrcs,
+    std::vector<int> &udsts, std::vector<int> &usrcs,
+    std::vector<int> &updsts, std::vector<int> &upsrcs,
     std::map<int, std::vector<int> > &assign_pcs,
     std::map<int, std::vector<int> > &passign_pcs,
-    std::map<int, std::vector<int> > &bassign_pcs) :
+    std::map<int, std::vector<int> > &bassign_pcs,
+    std::map<int, std::vector<int> > &uassign_pcs,
+    std::map<int, std::vector<int> > &upassign_pcs) :
     op(op), pc(pc), predicate(predicate), predicate_flag(predicate_flag),
     predicate_assign_pcs(predicate_assign_pcs),
     dsts(dsts), srcs(srcs), pdsts(pdsts), psrcs(psrcs),
-    bdsts(bdsts), bsrcs(bsrcs),
-    assign_pcs(assign_pcs), passign_pcs(passign_pcs), bassign_pcs(bassign_pcs) {}
+    bdsts(bdsts), bsrcs(bsrcs), udsts(udsts), usrcs(usrcs),
+    updsts(updsts), upsrcs(upsrcs), 
+    assign_pcs(assign_pcs), passign_pcs(passign_pcs), bassign_pcs(bassign_pcs),
+    uassign_pcs(uassign_pcs), upassign_pcs(upassign_pcs) {}
 
   InstructionStat(const std::string &op,
     int pc, int predicate, PredicateFlag predicate_flag,
@@ -85,16 +97,21 @@ struct InstructionStat {
     std::vector<int> &dsts, std::vector<int> &srcs,
     std::vector<int> &pdsts, std::vector<int> &psrcs,
     std::vector<int> &bdsts, std::vector<int> &bsrcs,
+    std::vector<int> &udsts, std::vector<int> &usrcs,
+    std::vector<int> &updsts, std::vector<int> &upsrcs,
     std::map<int, std::vector<int> > &assign_pcs,
     std::map<int, std::vector<int> > &passign_pcs,
     std::map<int, std::vector<int> > &bassign_pcs,
+    std::map<int, std::vector<int> > &uassign_pcs,
+    std::map<int, std::vector<int> > &upassign_pcs,
     Control &control) :
     op(op), pc(pc), predicate(predicate), predicate_flag(predicate_flag),
     predicate_assign_pcs(predicate_assign_pcs),
     dsts(dsts), srcs(srcs), pdsts(pdsts), psrcs(psrcs), 
-    bdsts(bdsts), bsrcs(bsrcs),
+    bdsts(bdsts), bsrcs(bsrcs), udsts(udsts), usrcs(usrcs),
+    updsts(updsts), upsrcs(upsrcs),
     assign_pcs(assign_pcs), passign_pcs(passign_pcs), bassign_pcs(bassign_pcs),
-    control(control) {}
+    uassign_pcs(uassign_pcs), upassign_pcs(upassign_pcs), control(control) {}
 
   bool operator < (const InstructionStat &other) const {
     return this->pc < other.pc;

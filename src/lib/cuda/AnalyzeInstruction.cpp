@@ -315,6 +315,11 @@ InstructionStat::InstructionStat(const Instruction *inst) {
     }
   }
 
+  if (inst->is_call || inst->is_jump) {
+    // Do not parse operands of call and jump
+    return;
+  }
+
   if (inst->operands.size() != 0) {
     if (INSTRUCTION_ANALYZER_DEBUG) {
       std::cout << inst->operands[0] << " ";
@@ -326,35 +331,42 @@ InstructionStat::InstructionStat(const Instruction *inst) {
     // IMAD.WIDE R1, R2, R3
     auto pos = inst->operands[0].find("R");
     bool store = false;
+    bool uniform = false;
     if (pos != std::string::npos) {
       if (inst->operands[0].find("\[") != std::string::npos) {  // store instruction
         store = true;
       }
 
+      if (inst->operands[0].find("UR") != std::string::npos) {  // uniform register
+        uniform = true;
+      }
+
+      auto &srcs = uniform ? this->usrcs : this->srcs;
+      auto &dsts = uniform ? this->udsts : this->dsts;
       auto reg = convert_reg(inst->operands[0], pos + 1);
       if (store) {
         if (this->op.find(".SHARED") != std::string::npos ||
           this->op.find(".LOCAL") != std::string::npos) {
           // memory 32-bit
-          this->srcs.push_back(reg);
+          srcs.push_back(reg);
         } else {
           // memory 64-bit
-          this->srcs.push_back(reg);
-          this->srcs.push_back(reg + 1);
+          srcs.push_back(reg);
+          srcs.push_back(reg + 1);
         }
       } else {
         // load or arithmetic
         if (this->op.find(".64") != std::string::npos ||
           this->op.find("._32_TO_64") != std::string::npos) {  // vec 64
-          this->dsts.push_back(reg);
-          this->dsts.push_back(reg + 1);
+          dsts.push_back(reg);
+          dsts.push_back(reg + 1);
         } else if (this->op.find(".128") != std::string::npos) {  // vec 128
-          this->dsts.push_back(reg);
-          this->dsts.push_back(reg + 1);
-          this->dsts.push_back(reg + 2);
-          this->dsts.push_back(reg + 3);
+          dsts.push_back(reg);
+          dsts.push_back(reg + 1);
+          dsts.push_back(reg + 2);
+          dsts.push_back(reg + 3);
         } else {  // vec 32, 16, 8
-          this->dsts.push_back(reg);
+          dsts.push_back(reg);
         }
       }
     }
@@ -363,7 +375,12 @@ InstructionStat::InstructionStat(const Instruction *inst) {
     pos = inst->operands[0].find("P");
     if (pos != std::string::npos) {
       auto reg = convert_reg(inst->operands[0], pos + 1);
-      this->pdsts.push_back(reg);
+      if (inst->operands[0].find("UP")) {
+        // uniform predicate register
+        this->updsts.push_back(reg);
+      } else {
+        this->pdsts.push_back(reg);
+      }
     }
 
     for (size_t i = 1; i < inst->operands.size(); ++i) {
@@ -373,47 +390,53 @@ InstructionStat::InstructionStat(const Instruction *inst) {
 
       pos = inst->operands[i].find("R");
       if (pos != std::string::npos) {
+        bool uniform = false;
+        if (inst->operands[i].find("UR") != std::string::npos) {  // uniform register
+          uniform = true;
+        }
+
+        auto &srcs = uniform ? this->usrcs : this->srcs;
         auto reg = convert_reg(inst->operands[i], pos + 1);
         if (this->op.find(".LOAD") != std::string::npos) {
           // load
           if (this->op.find(".SHARED") != std::string::npos ||
             this->op.find(".LOCAL") != std::string::npos) {
             // memory 32-bit
-            this->srcs.push_back(reg);
+            srcs.push_back(reg);
           } else {
             // memory 64-bit
-            this->srcs.push_back(reg);
-            this->srcs.push_back(reg + 1);
+            srcs.push_back(reg);
+            srcs.push_back(reg + 1);
           }
         } else {
           if (this->op.find("INTEGER") != std::string::npos) {
             // integer source only have 32
-            this->srcs.push_back(reg);
+            srcs.push_back(reg);
           } else {
             // arithmetic or store
             if (this->op.find(".64") != std::string::npos ||
               this->op.find("._64_TO_32") != std::string::npos) {  // vec 64
               if (reg == -1) {  // rz
-                this->srcs.push_back(reg);
-                this->srcs.push_back(reg);
+                srcs.push_back(reg);
+                srcs.push_back(reg);
               } else {
-                this->srcs.push_back(reg);
-                this->srcs.push_back(reg + 1);
+                srcs.push_back(reg);
+                srcs.push_back(reg + 1);
               }
             } else if (this->op.find(".128") != std::string::npos) {  // vec 128
               if (reg == -1) {
-                this->srcs.push_back(-1);
-                this->srcs.push_back(-1);
-                this->srcs.push_back(-1);
-                this->srcs.push_back(-1);
+                srcs.push_back(-1);
+                srcs.push_back(-1);
+                srcs.push_back(-1);
+                srcs.push_back(-1);
               } else {
-                this->srcs.push_back(reg);
-                this->srcs.push_back(reg + 1);
-                this->srcs.push_back(reg + 2);
-                this->srcs.push_back(reg + 3);
+                srcs.push_back(reg);
+                srcs.push_back(reg + 1);
+                srcs.push_back(reg + 2);
+                srcs.push_back(reg + 3);
               }
             } else {  // vec 32, 16, 8
-              this->srcs.push_back(reg);
+              srcs.push_back(reg);
             }
           }
         }
@@ -424,7 +447,11 @@ InstructionStat::InstructionStat(const Instruction *inst) {
         auto reg = convert_reg(inst->operands[i], pos + 1);
         if (reg != -1) {
           // Preventing PT
-          this->psrcs.push_back(reg);
+          if (inst->operands[i].find("UP") != std::string::npos) {
+            this->upsrcs.push_back(reg);
+          } else {
+            this->psrcs.push_back(reg);
+          }
         }
       }
     }
@@ -638,6 +665,36 @@ static void trackDependency(const std::map<int, InstructionStat *> &inst_stat_ma
       if (INSTRUCTION_ANALYZER_DEBUG) {
         std::cout << " barrier " << reg_id << std::endl;
       }
+    } else if (reg.val() & Dyninst::cuda::UR) {
+      for (size_t i = 0; i < inst_stat->usrcs.size(); ++i) {
+        if (reg_id == inst_stat->usrcs[i]) {
+          auto beg = inst_stat->uassign_pcs[reg_id].begin();
+          auto end = inst_stat->uassign_pcs[reg_id].end();
+          if (std::find(beg, end, addr - func_addr) == end) {
+            inst_stat->uassign_pcs[reg_id].push_back(addr - func_addr);
+          }
+          break;
+        }
+      }
+
+      if (INSTRUCTION_ANALYZER_DEBUG) {
+        std::cout << " barrier " << reg_id << std::endl;
+      }
+    } else if (reg.val() & Dyninst::cuda::UPR) {
+      for (size_t i = 0; i < inst_stat->upsrcs.size(); ++i) {
+        if (reg_id == inst_stat->upsrcs[i]) {
+          auto beg = inst_stat->upassign_pcs[reg_id].begin();
+          auto end = inst_stat->upassign_pcs[reg_id].end();
+          if (std::find(beg, end, addr - func_addr) == end) {
+            inst_stat->upassign_pcs[reg_id].push_back(addr - func_addr);
+          }
+          break;
+        }
+      }
+
+      if (INSTRUCTION_ANALYZER_DEBUG) {
+        std::cout << " barrier " << reg_id << std::endl;
+      }
     } else {
       for (size_t i = 0; i < inst_stat->srcs.size(); ++i) {
         if (reg_id == inst_stat->srcs[i]) {
@@ -820,8 +877,12 @@ bool dumpCudaInstructions(const std::string &file_path,
         boost::property_tree::ptree ptree_inst;
         boost::property_tree::ptree ptree_srcs;
         boost::property_tree::ptree ptree_dsts;
+        boost::property_tree::ptree ptree_usrcs;
+        boost::property_tree::ptree ptree_udsts;
         boost::property_tree::ptree ptree_psrcs;
         boost::property_tree::ptree ptree_pdsts;
+        boost::property_tree::ptree ptree_upsrcs;
+        boost::property_tree::ptree ptree_updsts;
         boost::property_tree::ptree ptree_bsrcs;
         boost::property_tree::ptree ptree_bdsts;
 
@@ -857,87 +918,51 @@ bool dumpCudaInstructions(const std::string &file_path,
           ptree_inst.add_child("control", control);
 
           // Dest operands, dest predicate operands, and dest barriers
-          for (auto dst : inst->inst_stat->dsts) {
-            boost::property_tree::ptree t;
-            t.put("", dst);
-            ptree_dsts.push_back(std::make_pair("", t));
-          }
-          ptree_inst.add_child("dsts", ptree_dsts);
+          std::function<void(const std::string &, boost::property_tree::ptree &, std::vector<int> &)> output_dsts =
+            [&ptree_inst](const std::string &dst_name, boost::property_tree::ptree &ptree_dsts, std::vector<int> &dsts) {
+              for (auto dst : dsts) {
+                boost::property_tree::ptree t;
+                t.put("", dst);
+                ptree_dsts.push_back(std::make_pair("", t));
+              }
+              ptree_inst.add_child(dst_name, ptree_dsts);
+            };
 
-          for (auto pdst : inst->inst_stat->pdsts) {
-            boost::property_tree::ptree t;
-            t.put("", pdst);
-            ptree_pdsts.push_back(std::make_pair("", t));
-          }
-          ptree_inst.add_child("pdsts", ptree_pdsts);
-
-          for (auto bdst : inst->inst_stat->bdsts) {
-            boost::property_tree::ptree t;
-            t.put("", bdst);
-            ptree_bdsts.push_back(std::make_pair("", t));
-          }
-          ptree_inst.add_child("bdsts", ptree_bdsts);
+          output_dsts("dsts", ptree_dsts, inst->inst_stat->dsts);
+          output_dsts("udsts", ptree_udsts, inst->inst_stat->udsts);
+          output_dsts("pdsts", ptree_pdsts, inst->inst_stat->pdsts);
+          output_dsts("updsts", ptree_updsts, inst->inst_stat->updsts);
+          output_dsts("bdsts", ptree_bdsts, inst->inst_stat->bdsts);
 
           // Source operands, source predicate operands, and dest barriers
-          for (auto src : inst->inst_stat->srcs) {
-            boost::property_tree::ptree t;
-            t.put("id", src);
+          std::function<void(const std::string &, const std::string &, boost::property_tree::ptree &, std::vector<int> &, std::map<int, std::vector<int>> &)> output_srcs =
+            [&ptree_inst](const std::string &src_name, const std::string &assign_name, boost::property_tree::ptree &ptree_srcs, std::vector<int> &srcs, std::map<int, std::vector<int>> &assign_pcs) {
+              for (auto src : srcs) {
+                boost::property_tree::ptree t;
+                t.put("id", src);
 
-            boost::property_tree::ptree ptree_assign_pcs;
-            auto iter = inst->inst_stat->assign_pcs.find(src);
-            if (iter != inst->inst_stat->assign_pcs.end()) {
-              for (auto assign_pc : iter->second) {
-                boost::property_tree::ptree tt;
-                tt.put("", assign_pc);
-                ptree_assign_pcs.push_back(std::make_pair("", tt));
+                boost::property_tree::ptree ptree_assign_pcs;
+                auto iter = assign_pcs.find(src);
+                if (iter != assign_pcs.end()) {
+                  for (auto assign_pc : iter->second) {
+                    boost::property_tree::ptree tt;
+                    tt.put("", assign_pc);
+                    ptree_assign_pcs.push_back(std::make_pair("", tt));
+                  }
+                }
+                t.add_child(assign_name, ptree_assign_pcs);
+
+                ptree_srcs.push_back(std::make_pair("", t));
               }
-            }
-            t.add_child("assign_pcs", ptree_assign_pcs);
 
-            ptree_srcs.push_back(std::make_pair("", t));
-          }
-
-          ptree_inst.add_child("srcs", ptree_srcs);
-
-          for (auto psrc : inst->inst_stat->psrcs) {
-            boost::property_tree::ptree t;
-            t.put("id", psrc);
-
-            boost::property_tree::ptree ptree_passign_pcs;
-            auto iter = inst->inst_stat->passign_pcs.find(psrc);
-            if (iter != inst->inst_stat->passign_pcs.end()) {
-              for (auto passign_pc : iter->second) {
-                boost::property_tree::ptree tt;
-                tt.put("", passign_pc);
-                ptree_passign_pcs.push_back(std::make_pair("", tt));
-              }
-            }
-            t.add_child("passign_pcs", ptree_passign_pcs);
-
-            ptree_psrcs.push_back(std::make_pair("", t));
-          }
-
-          ptree_inst.add_child("psrcs", ptree_psrcs);
-
-          for (auto bsrc : inst->inst_stat->bsrcs) {
-            boost::property_tree::ptree t;
-            t.put("id", bsrc);
-
-            boost::property_tree::ptree ptree_bassign_pcs;
-            auto iter = inst->inst_stat->bassign_pcs.find(bsrc);
-            if (iter != inst->inst_stat->bassign_pcs.end()) {
-              for (auto bassign_pc : iter->second) {
-                boost::property_tree::ptree tt;
-                tt.put("", bassign_pc);
-                ptree_bassign_pcs.push_back(std::make_pair("", tt));
-              }
-            }
-            t.add_child("bassign_pcs", ptree_bassign_pcs);
-
-            ptree_bsrcs.push_back(std::make_pair("", t));
-          }
-
-          ptree_inst.add_child("bsrcs", ptree_bsrcs);
+              ptree_inst.add_child(src_name, ptree_srcs);
+            };
+          
+          output_srcs("srcs", "assign_pcs", ptree_srcs, inst->inst_stat->srcs, inst->inst_stat->assign_pcs);
+          output_srcs("usrcs", "uassign_pcs", ptree_usrcs, inst->inst_stat->usrcs, inst->inst_stat->uassign_pcs);
+          output_srcs("psrcs", "passign_pcs", ptree_psrcs, inst->inst_stat->psrcs, inst->inst_stat->passign_pcs);
+          output_srcs("upsrcs", "upassign_pcs", ptree_upsrcs, inst->inst_stat->upsrcs, inst->inst_stat->upassign_pcs);
+          output_srcs("bsrcs", "bassign_pcs", ptree_bsrcs, inst->inst_stat->bsrcs, inst->inst_stat->bassign_pcs);
         }
 
         ptree_insts.push_back(std::make_pair("", ptree_inst));
@@ -1036,68 +1061,67 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
         control.yield = ptree_control.get<int>("yield", 0);
         control.stall = ptree_control.get<int>("stall", 0);
 
+        std::function<void(const std::string &, std::vector<int> &)> fill_dsts =
+          [&ptree_inst](const std::string &dst_name, std::vector<int> &dsts) {
+            auto &ptree_dsts = ptree_inst.second.get_child(dst_name);
+            for (auto &ptree_dst : ptree_dsts) {
+              int dst = boost::lexical_cast<int>(ptree_dst.second.data());
+              dsts.push_back(dst);
+            }
+          };
+
         std::vector<int> dsts;
-        auto &ptree_dsts = ptree_inst.second.get_child("dsts");
-        for (auto &ptree_dst : ptree_dsts) {
-          int dst = boost::lexical_cast<int>(ptree_dst.second.data());
-          dsts.push_back(dst);
-        }
+        fill_dsts("dsts", dsts);
+
+        std::vector<int> udsts;
+        fill_dsts("udsts", udsts);
 
         std::vector<int> pdsts;
-        auto &ptree_pdsts = ptree_inst.second.get_child("pdsts");
-        for (auto &ptree_pdst : ptree_pdsts) {
-          int pdst = boost::lexical_cast<int>(ptree_pdst.second.data());
-          pdsts.push_back(pdst);
-        }
+        fill_dsts("pdsts" ,pdsts);
+
+        std::vector<int> updsts;
+        fill_dsts("updsts", updsts);
 
         std::vector<int> bdsts;
-        auto &ptree_bdsts = ptree_inst.second.get_child("bdsts");
-        for (auto &ptree_bdst : ptree_bdsts) {
-          int bdst = boost::lexical_cast<int>(ptree_bdst.second.data());
-          bdsts.push_back(bdst);
-        }
+        fill_dsts("bdsts", bdsts);
+
+        std::function<void(const std::string &, const std::string &, std::vector<int> &, std::map<int, std::vector<int>> &)> fill_srcs =
+          [&ptree_inst](const std::string &src_name, const std::string &assign_name, std::vector<int> &srcs, std::map<int, std::vector<int>> &assign_pcs) {
+            auto &ptree_srcs = ptree_inst.second.get_child(src_name);
+            for (auto &ptree_src : ptree_srcs) {
+              int src = ptree_src.second.get<int>("id", 0);
+              srcs.push_back(src);
+              auto &ptree_assign_pcs = ptree_src.second.get_child(assign_name);
+              for (auto &ptree_assign_pc : ptree_assign_pcs) {
+                int assign_pc = boost::lexical_cast<int>(ptree_assign_pc.second.data());
+                assign_pcs[src].push_back(assign_pc);
+              }
+            }
+          };
 
         std::vector<int> srcs; 
         std::map<int, std::vector<int> > assign_pcs;
-        auto &ptree_srcs = ptree_inst.second.get_child("srcs");
-        for (auto &ptree_src : ptree_srcs) {
-          int src = ptree_src.second.get<int>("id", 0);
-          srcs.push_back(src);
-          auto &ptree_assign_pcs = ptree_src.second.get_child("assign_pcs");
-          for (auto &ptree_assign_pc : ptree_assign_pcs) {
-            int assign_pc = boost::lexical_cast<int>(ptree_assign_pc.second.data());
-            assign_pcs[src].push_back(assign_pc);
-          }
-        }
+        fill_srcs("srcs", "assign_pcs", srcs, assign_pcs); 
+
+        std::vector<int> usrcs; 
+        std::map<int, std::vector<int> > uassign_pcs;
+        fill_srcs("usrcs", "uassign_pcs", usrcs, uassign_pcs); 
 
         std::vector<int> psrcs; 
         std::map<int, std::vector<int> > passign_pcs;
-        auto &ptree_psrcs = ptree_inst.second.get_child("psrcs");
-        for (auto &ptree_psrc : ptree_psrcs) {
-          int psrc = ptree_psrc.second.get<int>("id", 0);
-          psrcs.push_back(psrc);
-          auto &ptree_passign_pcs = ptree_psrc.second.get_child("passign_pcs");
-          for (auto &ptree_passign_pc : ptree_passign_pcs) {
-            int passign_pc = boost::lexical_cast<int>(ptree_passign_pc.second.data());
-            passign_pcs[psrc].push_back(passign_pc);
-          }
-        }
+        fill_srcs("psrcs", "passign_pcs", psrcs, passign_pcs); 
+
+        std::vector<int> upsrcs; 
+        std::map<int, std::vector<int> > upassign_pcs;
+        fill_srcs("upsrcs", "upassign_pcs", upsrcs, upassign_pcs); 
 
         std::vector<int> bsrcs;
         std::map<int, std::vector<int> > bassign_pcs;
-        auto &ptree_bsrcs = ptree_inst.second.get_child("bsrcs");
-        for (auto &ptree_bsrc : ptree_bsrcs) {
-          int bsrc = ptree_bsrc.second.get<int>("id", 0);
-          bsrcs.push_back(bsrc);
-          auto &ptree_bassign_pcs = ptree_bsrc.second.get_child("bassign_pcs");
-          for (auto &ptree_bassign_pc : ptree_bassign_pcs) {
-            int bassign_pc = boost::lexical_cast<int>(ptree_bassign_pc.second.data());
-            bassign_pcs[bsrc].push_back(bassign_pc);
-          }
-        }
+        fill_srcs("bsrcs", "bassign_pcs", bsrcs, bassign_pcs); 
 
         auto *inst_stat = new InstructionStat(op, pc, pred, pred_flag, pred_assign_pcs, dsts, srcs,
-          pdsts, psrcs, bdsts, bsrcs, assign_pcs, passign_pcs, bassign_pcs, control);
+          pdsts, psrcs, bdsts, bsrcs, udsts, usrcs, updsts, upsrcs,
+          assign_pcs, passign_pcs, bassign_pcs, uassign_pcs, upassign_pcs, control);
         auto *inst = new Instruction(inst_stat);
         inst_map[pc] = inst;
 
@@ -1124,6 +1148,24 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
               std::cout << std::endl;
             }
           }
+          std::cout << "     udsts: ";
+          for (auto udst : udsts) {
+            std::cout << udst << ", ";
+          }
+          std::cout << std::endl;
+          std::cout << "     usrcs: " << std::endl;
+          for (auto usrc : usrcs) {
+            if (usrc != -1) {
+              std::cout << "     " << usrc << "-> ";
+              auto iter = uassign_pcs.find(usrc);
+              if (iter != uassign_pcs.end()) {
+                for (auto uassign_pc : iter->second) {
+                  std::cout << "0x" << std::hex << uassign_pc << std::dec << ", ";
+                }
+              }
+              std::cout << std::endl;
+            }
+          }
           std::cout << "     pdsts: ";
           for (auto pdst : pdsts) {
             std::cout << pdst << ", ";
@@ -1137,6 +1179,24 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
               if (iter != passign_pcs.end()) {
                 for (auto passign_pc : iter->second) {
                   std::cout << "0x" << std::hex << passign_pc << std::dec << ", ";
+                }
+              }
+              std::cout << std::endl;
+            }
+          }
+          std::cout << "     updsts: ";
+          for (auto updst : updsts) {
+            std::cout << updst << ", ";
+          }
+          std::cout << std::endl;
+          std::cout << "     upsrcs: " << std::endl;
+          for (auto upsrc : upsrcs) {
+            if (upsrc != -1) {
+              std::cout << "     " << upsrc << ", ";
+              auto iter = upassign_pcs.find(upsrc);
+              if (iter != upassign_pcs.end()) {
+                for (auto upassign_pc : iter->second) {
+                  std::cout << "0x" << std::hex << upassign_pc << std::dec << ", ";
                 }
               }
               std::cout << std::endl;
