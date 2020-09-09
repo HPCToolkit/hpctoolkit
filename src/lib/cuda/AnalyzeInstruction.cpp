@@ -81,6 +81,33 @@ void analyze_instruction<INS_TYPE_MEMORY>(const Instruction &inst, std::string &
 
 template <>
 void analyze_instruction<INS_TYPE_UNIFORM>(const Instruction &inst, std::string &op) {
+  op = "UNIFORM";
+
+  std::string width;
+  std::string ldst;
+
+  const std::string &opcode = inst.opcode;
+
+  if (opcode.find("LD") != std::string::npos) {
+    ldst = ".LOAD";
+  }
+
+  width = ".32";
+  for (auto &modifier : inst.modifiers) {
+    if (modifier == "8" || modifier == "U8" || modifier == "S8") {
+      width = ".8";
+    } else if (modifier == "16" || modifier == "U16" || modifier == "S16") {
+      width = ".16";
+    } else if (modifier == "32" || modifier == "U32" || modifier == "S32") {
+      width = ".32";
+    } else if (modifier == "64" || modifier == "U64" || modifier == "S64") {
+      width = ".64";
+    } else if (modifier == "128" || modifier == "U128" || modifier == "S128") {
+      width = ".128";
+    }
+  }
+
+  op += ldst + width;
 }
 
 
@@ -678,7 +705,7 @@ static void trackDependency(const std::map<int, InstructionStat *> &inst_stat_ma
       }
 
       if (INSTRUCTION_ANALYZER_DEBUG) {
-        std::cout << " barrier " << reg_id << std::endl;
+        std::cout << " uniform " << reg_id << std::endl;
       }
     } else if (reg.val() & Dyninst::cuda::UPR) {
       for (size_t i = 0; i < inst_stat->upsrcs.size(); ++i) {
@@ -693,7 +720,7 @@ static void trackDependency(const std::map<int, InstructionStat *> &inst_stat_ma
       }
 
       if (INSTRUCTION_ANALYZER_DEBUG) {
-        std::cout << " barrier " << reg_id << std::endl;
+        std::cout << " uniform predicate " << reg_id << std::endl;
       }
     } else {
       for (size_t i = 0; i < inst_stat->srcs.size(); ++i) {
