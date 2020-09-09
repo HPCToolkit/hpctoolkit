@@ -58,5 +58,32 @@ foreach exe : all_apps
     build_by_default: true)
 endforeach
 
-subdir('libs')
+# The hpcrun and hpclink scripts are also handled here, because they require
+# a bit of extra tuning to be useful.
+if is_variable('hpcrun_script')
+  _hpcrun_intree_launch_config = configuration_data()
+  _hpcrun_intree_launch_config.merge_from(launch_config)
+  _hpcrun_intree_launch_config.set('export_hpctoolkit', '''
+  hpcrun_dir='src/tool/hpcrun'
+  hpcfnbounds_dir='bin'
+  HPCTOOLKIT="$(dirname "$0")/.."
+  ''')
+  custom_target('in-tree copy of hpcrun',
+    command: [_cp_exec, '@INPUT@', '@OUTPUT@'],
+    input: configure_file(input: hpcrun_script, output: 'hpcrun.sh',
+                          configuration: _hpcrun_intree_launch_config),
+    output: 'hpcrun', build_by_default: true)
+endif
 
+if is_variable('hpclink_script')
+  _hpclink_intree_launch_config = configuration_data()
+  _hpclink_intree_launch_config.merge_from(launch_config)
+  _hpclink_intree_launch_config.set('export_hpctoolkit', '''
+  HPCTOOLKIT="$(dirname "$0")/.."
+  ''')
+  custom_target('in-tree copy of hpclink',
+    command: [_cp_exec, '@INPUT@', '@OUTPUT@'],
+    input: configure_file(input: hpclink_script, output: 'hpclink.sh',
+                          configuration: _hpcrun_intree_launch_config),
+    output: 'hpcrun', build_by_default: true)
+endif

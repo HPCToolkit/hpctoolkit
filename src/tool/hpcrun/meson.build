@@ -221,7 +221,7 @@ _s_srcset.add(
   ),
   declare_dependency(compile_args: '-DHPCRUN_STATIC_LINK'),
   libelf_dep.partial_dependency(compile_args: true, includes: true),
-  libmonitor_static_dep,
+  libmonitor_dep.partial_dependency(compile_args: true, includes: true),
 )
 
 if host_machine.system() == 'linux'
@@ -277,7 +277,7 @@ _papi_srcset.add(when: ['PAPI_C', 'PAPI_C_CUPTI'],
 _d_srcset.add_all(when: papi_dep, if_true: _papi_srcset)
 _s_srcset.add_all(when: papi_static_dep, if_true: _papi_srcset)
 
-_srcset.add(when: cuda_dep, if_true: [
+_d_srcset.add(when: cuda_dep, if_true: [
     files(
       'sample-sources/nvidia.c',
       'gpu/nvidia/cubin-hash-map.c',
@@ -394,6 +394,15 @@ libhpcrun_lib = shared_library('hpcrun', _d_srcs.sources(),
 summary('hpcrun', not is_disabler(libhpcrun_lib) and _has_hpcfnbounds, section: 'Applications', bool_yn: true)
 all_applibs += libhpcrun_lib
 
+if not is_disabler(libhpcrun_lib)
+  # Set for bin/meson.build
+  hpcrun_script = files('scripts/hpcrun.meson.in')
+  configure_file(input: hpcrun_script, output: 'hpcrun',
+    configuration: launch_config,
+    install: true, install_dir: get_option('bindir'),
+    install_mode: 'rwxr-xr-x')
+endif
+
 _s_srcset.add_all(_srcset)
 _s_srcs = _s_srcset.apply(_config)
 _s_ddep = []
@@ -410,7 +419,17 @@ libhpcrun_static_lib = static_library('hpcrun_static', _s_srcs.sources(),
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
 summary('hpclink', not is_disabler(libhpcrun_static_lib) and _has_hpcfnbounds, section: 'Applications', bool_yn: true)
-all_applibs += libhpcrun_static_lib
+pkgconfig.generate(libhpcrun_static_lib)
+
+if not is_disabler(libhpcrun_static_lib)
+  # Set for bin/meson.build
+  hpcrun_script = files('scripts/hpclink.meson.in')
+  configure_file(input: hpcrun_script, output: 'hpclink',
+    configuration: launch_config,
+    install: true, install_dir: get_option('bindir'),
+    install_mode: 'rwxr-xr-x')
+endif
+
 
 # Check that the static case is actually linkable by compiling a small
 # hello-world style application with it linked in.
