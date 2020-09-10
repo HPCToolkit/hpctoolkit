@@ -145,8 +145,8 @@ int rank0(ProfArgs&& args) {
     DataClass accepts() const noexcept override { return DataClass::threads; }
     ExtensionClass requires() const noexcept override { return {}; }
     DataClass wavefronts() const noexcept override { return DataClass::threads; }
-    void notifyWavefront(DataClass::singleton_t wave) {
-      if(!((DataClass)wave).hasThreads()) return;
+    void notifyWavefront(DataClass wave) override {
+      if(!wave.hasThreads()) return;
       mpi::exscan(src.threads().size(), mpi::Op::sum());
     }
   } tiduniquer;
