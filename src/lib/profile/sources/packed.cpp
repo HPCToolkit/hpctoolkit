@@ -103,9 +103,11 @@ std::vector<uint8_t>::const_iterator Packed::unpackAttributes(iter_t it) noexcep
   metrics.clear();
   cnt = unpack<std::uint64_t>(it);
   for(std::size_t i = 0; i < cnt; i++) {
-    auto name = unpack<std::string>(it);
-    auto description = unpack<std::string>(it);
-    metrics.emplace_back(sink.metric(name, description, Metric::Type::linear));
+    Metric::Settings s;
+    s.name = unpack<std::string>(it);
+    s.description = unpack<std::string>(it);
+    s.type = Metric::Type::linear;
+    metrics.emplace_back(sink.metric(s));
   }
   return it;
 }

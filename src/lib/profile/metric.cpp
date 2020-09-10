@@ -79,7 +79,7 @@ void Metric::add(Context& c, std::pair<double, double> ei) const noexcept {
 }
 
 void Metric::add(Thread::Temporary& t, Context& c, double v) const noexcept {
-  if(type == Type::artifical)
+  if(type() == Type::artifical)
     util::log::fatal{} << "Attempt to emit data for an artifical Metric!";
   if(v != 0) atomic_add(t.data[tmember].exclusive[&c], v);
 }
@@ -109,7 +109,7 @@ std::pair<double, double> Metric::getFor(const Thread::Temporary& t, const Conte
 
 void Metric::finalize(Thread::Temporary& t) noexcept {
   // Artifical metrics go directly into the tree, so we don't need anything.
-  if(type == Type::artifical) return;
+  if(type() == Type::artifical) return;
 
   auto* local_p = t.data.find(tmember);
   if(!local_p) return;  // We have no data for this.
@@ -162,8 +162,8 @@ void Metric::finalize(Thread::Temporary& t) noexcept {
   propagate(global);
 }
 
-std::size_t std::hash<Metric::ident>::operator()(const Metric::ident &m) const noexcept {
-  const auto h1 = std::hash<std::string>{}(m.name);
-  const auto h2 = std::hash<std::string>{}(m.description);
+std::size_t std::hash<Metric::Settings>::operator()(const Metric::Settings &s) const noexcept {
+  const auto h1 = std::hash<std::string>{}(s.name);
+  const auto h2 = std::hash<std::string>{}(s.description);
   return h1 ^ ((h2 << 1) | (h2 >> (-1 + 8 * sizeof h2)));
 }

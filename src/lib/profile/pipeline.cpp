@@ -419,12 +419,12 @@ File& Source::file(const stdshim::filesystem::path& p) {
   return *r;
 }
 
-Metric& Source::metric(const std::string& n, const std::string& d, Metric::Type t) {
+Metric& Source::metric(const Metric::Settings& s) {
   if(!limit().hasAttributes())
     util::log::fatal() << "Source did not register for `attributes` emission!";
-  auto x = pipe->mets.emplace(pipe->structs.metric, pipe->metstruct, pipe->tmetstruct, n, d, t);
+  auto x = pipe->mets.emplace(pipe->structs.metric, pipe->metstruct, pipe->tmetstruct, s);
   auto r = &x.first();
-  if(r->type != t)
+  if(r->type() != s.type)
     util::log::fatal() << "Identical Metrics with different types!";
   if(x.second) {
     for(auto& s: pipe->sinks) {
@@ -437,7 +437,7 @@ Metric& Source::metric(const std::string& n, const std::string& d, Metric::Type 
       if(i != tskip)
         r = &pipe->transformers[i].get().metric(*r);
     } catch(std::exception& e) {
-      util::log::fatal() << "Exception caught while processing metric " << n
+      util::log::fatal() << "Exception caught while processing metric " << s.name
                          << " through transformer " << i << "\n"
                          << "  what(): " << e.what();
     }

@@ -94,35 +94,35 @@ public:
     linear,
   };
 
-  Metric(ud_t::struct_t& rs, Context::met_t::struct_t& ms,
-         Thread::met_t::struct_t& ts, const std::string& n,
-         const std::string& d, Type t)
-    : Metric(rs, ms, ts, std::string(n), std::string(d), t) {};
-  Metric(ud_t::struct_t& rs, Context::met_t::struct_t& ms,
-         Thread::met_t::struct_t& ts, std::string&& n, std::string&& d, Type t)
-    : userdata(rs, std::cref(*this)), type(t), u_ident(std::move(n), std::move(d)),
-      member(ms.add<Accumulator>()), tmember(ts.add<ThreadLocal>()) {};
-  Metric(Metric&& m)
-    : userdata(std::move(m.userdata), std::cref(*this)), type(m.type),
-      u_ident(std::move(m.u_ident)), member(std::move(m.member)),
-      tmember(std::move(m.tmember)) {};
-
-  const std::string& name() const { return u_ident().name; }
-  const std::string& description() const { return u_ident().description; }
-
-  struct ident {
-    ident(const std::string& n, const std::string& d) : name(n), description(d) {};
-    ident(std::string&& n, std::string&& d) : name(std::move(n)), description(std::move(d)) {};
+  /// Structure to be used for creating new Metrics. Encapsulates a number of
+  /// smaller settings into a convienent structure.
+  struct Settings final {
     std::string name;
     std::string description;
-    bool operator==(const ident& o) const noexcept {
+    Type type;
+
+    bool operator==(const Settings& o) const noexcept {
       return name == o.name && description == o.description;
     }
   };
 
-  mutable ud_t userdata;
+  Metric(ud_t::struct_t& rs, Context::met_t::struct_t& ms,
+         Thread::met_t::struct_t& ts, const Settings& s)
+    : Metric(rs, ms, ts, Settings(s)) {};
+  Metric(ud_t::struct_t& rs, Context::met_t::struct_t& ms,
+         Thread::met_t::struct_t& ts, Settings&& s)
+    : userdata(rs, std::cref(*this)), u_settings(std::move(s)),
+      member(ms.add<Accumulator>()), tmember(ts.add<ThreadLocal>()) {};
+  Metric(Metric&& m)
+    : userdata(std::move(m.userdata), std::cref(*this)),
+      u_settings(std::move(m.u_settings)), member(std::move(m.member)),
+      tmember(std::move(m.tmember)) {};
 
-  const Type type;
+  Type type() const noexcept { return u_settings().type; }
+  const std::string& name() const { return u_settings().name; }
+  const std::string& description() const { return u_settings().description; }
+
+  mutable ud_t userdata;
 
   // Accumulate this Metric on a Context for a particular Thread.
   // MT: Internally Synchronized
@@ -148,21 +148,21 @@ public:
   std::pair<double, double> getFor(const Thread::Temporary& t, const Context&) const noexcept;
 
 private:
-  util::uniqable_key<ident> u_ident;
+  util::uniqable_key<Settings> u_settings;
 
   Context::met_t::typed_member_t<Accumulator> member;
   Thread::met_t::typed_member_t<ThreadLocal> tmember;
 
   friend class util::uniqued<Metric>;
-  util::uniqable_key<ident>& uniqable_key() { return u_ident; }
+  util::uniqable_key<Settings>& uniqable_key() { return u_settings; }
 };
 
 }
 
 namespace std {
   using namespace hpctoolkit;
-  template<> struct hash<Metric::ident> {
-    std::size_t operator()(const Metric::ident&) const noexcept;
+  template<> struct hash<Metric::Settings> {
+    std::size_t operator()(const Metric::Settings&) const noexcept;
   };
 }
 

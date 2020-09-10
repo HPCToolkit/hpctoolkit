@@ -248,7 +248,7 @@ public:
     /// Emit a new Metric into the Pipeline.
     /// DataClass: `attributes`
     // MT: Externally Synchronized (this), Internally Synchronized
-    Metric& metric(const std::string&, const std::string&, Metric::Type);
+    Metric& metric(const Metric::Settings&);
 
     /// Emit a new Context into the Pipeline.
     /// DataClass: `contexts`
