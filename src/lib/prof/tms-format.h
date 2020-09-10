@@ -104,55 +104,14 @@ tms_hdr_fread(tms_hdr_t* hdr, FILE* infs);
 int
 tms_hdr_fprint(tms_hdr_t* hdr, FILE* fs);
 
-//***************************************************************************
-// id tuple
-//***************************************************************************
-/*
-char* kindStr(const uint16_t kind);
 
-#define IDTUPLE_SUMMARY (uint16_t)0
-#define IDTUPLE_RANK    (uint16_t)1
-#define IDTUPLE_THREAD  (uint16_t)2
-
-#define TMS_id_tuple_len_SIZE  2
-#define TMS_id_SIZE            10
-*/
-
-#define TMS_total_prof_SIZE     4
-#define HPCTHREADSPARSE_FMT_IdTupleOff (HPCTHREADSPARSE_FMT_HeaderLen + TMS_total_prof_SIZE)
-#define TMS_id_tuples_size_SIZE 8
-/*
-typedef struct tms_id_t{
-  uint16_t kind;
-  uint64_t index;
-}tms_id_t;
-
-typedef struct tms_id_tuple_t{
-  uint16_t length;
-  uint32_t rank; //rank that read/write this profile
-  tms_id_t* ids;
-
-  uint32_t prof_info_idx;
-  uint32_t all_at_root_idx;
-}tms_id_tuple_t;
-
-
-int 
-id_tuples_tms_fwrite(uint32_t num_tuples,tms_id_tuple_t* x, FILE* fs);
-
-int 
-id_tuples_tms_fread(tms_id_tuple_t** x, uint32_t num_tuples,FILE* fs);
-
-int 
-id_tuples_tms_fprint(uint32_t num_tuples,tms_id_tuple_t* x, FILE* fs);
-
-void 
-id_tuples_tms_free(tms_id_tuple_t** x, uint32_t num_tuples);
-*/
 //***************************************************************************
 // tms_profile_info_t
 //***************************************************************************
 #define TMS_fake_id_tuple_SIZE   2 //length = 0
+#define TMS_total_prof_SIZE      4
+#define HPCTHREADSPARSE_FMT_ProfInfoOff (HPCTHREADSPARSE_FMT_HeaderLen + TMS_total_prof_SIZE)
+
 #define TMS_num_val_SIZE         8
 #define TMS_num_nzctx_SIZE       4
 #define TMS_prof_offset_SIZE     8
@@ -192,6 +151,11 @@ tms_profile_info_fprint(uint32_t num_prof,tms_profile_info_t* x, FILE* fs);
 
 void 
 tms_profile_info_free(tms_profile_info_t** x);
+
+//***************************************************************************
+// id tuple
+//***************************************************************************
+#define TMS_id_tuples_size_SIZE 8
 
 //***************************************************************************
 // hpcrun_fmt_sparse_metrics_t related, defined in hpcrun-fmt.h

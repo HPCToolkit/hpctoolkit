@@ -202,6 +202,13 @@ Analysis::Raw::writeAsText_sparseDBthread(const char* filenm, bool easygrep)
       DIAG_Throw("error reading num_prof from sparse metrics file '" << filenm << "'");
     }
 
+    tms_profile_info_t* x;
+    ret = tms_profile_info_fread(&x,num_prof,fs);
+    if (ret != HPCFMT_OK) {
+      DIAG_Throw("error reading profile information from sparse metrics file '" << filenm << "'");
+    }
+    tms_profile_info_fprint(num_prof,x,ofs);
+
     tms_id_tuple_t* tuples;
     uint64_t tuples_size;
     ret = id_tuples_tms_fread(&tuples, &tuples_size, num_prof,fs);
@@ -209,13 +216,6 @@ Analysis::Raw::writeAsText_sparseDBthread(const char* filenm, bool easygrep)
       DIAG_Throw("error reading profile identifier tuples from sparse metrics file '" << filenm << "'");
     }
     id_tuples_tms_fprint(num_prof,tuples_size,tuples,ofs);
-
-    tms_profile_info_t* x;
-    ret = tms_profile_info_fread(&x,num_prof,fs);
-    if (ret != HPCFMT_OK) {
-      DIAG_Throw("error reading profile information from sparse metrics file '" << filenm << "'");
-    }
-    tms_profile_info_fprint(num_prof,x,ofs);
 
     sortProfileInfo_onOffsets(x,num_prof);
     for(uint i = 0; i<num_prof; i++){
