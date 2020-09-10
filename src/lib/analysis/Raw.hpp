@@ -67,8 +67,9 @@
 //*************************** User Include Files ****************************
 
 #include <include/uint.h> 
-#include <lib/prof-lean/hpcrun-fmt.h> //YUMENG
-#include <lib/prof/tms-format.h> //YUMENG
+#include <lib/prof-lean/hpcrun-fmt.h> 
+#include <lib/prof-lean/id-tuple.h>
+#include <lib/prof/tms-format.h> 
 #include <lib/prof/cms-format.h>
 
 //*************************** Forward Declarations ***************************

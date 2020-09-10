@@ -78,6 +78,7 @@ using std::string;
 #include <lib/prof-lean/hpcio.h>
 #include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
+#include <lib/prof-lean/id-tuple.h>
 #include <lib/prof/tms-format.h>
 #include <lib/prof/cms-format.h>
 

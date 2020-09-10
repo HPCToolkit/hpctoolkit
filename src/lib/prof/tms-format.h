@@ -107,18 +107,20 @@ tms_hdr_fprint(tms_hdr_t* hdr, FILE* fs);
 //***************************************************************************
 // id tuple
 //***************************************************************************
+/*
 char* kindStr(const uint16_t kind);
 
 #define SUMMARY (uint16_t)0
 #define RANK    (uint16_t)1
 #define THREAD  (uint16_t)2
 
-#define TMS_total_prof_SIZE    4
 #define TMS_id_tuple_len_SIZE  2
 #define TMS_id_SIZE            10
+*/
 
+#define TMS_total_prof_SIZE    4
 #define HPCTHREADSPARSE_FMT_IdTupleOff (HPCTHREADSPARSE_FMT_HeaderLen + TMS_total_prof_SIZE)
-
+/*
 typedef struct tms_id_t{
   uint16_t kind;
   uint64_t index;
@@ -145,7 +147,7 @@ tms_id_tuple_fprint(uint32_t num_tuples,tms_id_tuple_t* x, FILE* fs);
 
 void 
 tms_id_tuple_free(tms_id_tuple_t** x, uint32_t num_tuples);
-
+*/
 //***************************************************************************
 // tms_profile_info_t
 //***************************************************************************

@@ -49,6 +49,7 @@
 
 #include "util/ragged_vector.hpp"
 #include "lib/prof/tms-format.h"
+#include "lib/prof-lean/id-tuple.h"
 
 #include <functional>
 #include <unordered_map>
