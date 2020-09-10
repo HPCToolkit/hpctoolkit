@@ -132,13 +132,13 @@ tms_hdr_fprint(tms_hdr_t* hdr, FILE* fs)
 //***************************************************************************
 char* kindStr(const uint16_t kind)
 {
-  if(kind == SUMMARY){
+  if(kind == IDTUPLE_SUMMARY){
     return "SUMMARY";
   }
-  else if(kind == RANK){
+  else if(kind == IDTUPLE_RANK){
     return "RANK";
   }
-  else if(kind == THREAD){
+  else if(kind == IDTUPLE_THREAD){
     return "THREAD";
   }
   else{
@@ -148,7 +148,7 @@ char* kindStr(const uint16_t kind)
 
 
 int
-tms_id_tuple_fwrite(uint32_t num_tuples,tms_id_tuple_t* x, FILE* fs)
+id_tuples_tms_fwrite(uint32_t num_tuples,tms_id_tuple_t* x, FILE* fs)
 {
   for (uint i = 0; i < num_tuples; ++i) {
     HPCFMT_ThrowIfError(hpcfmt_int2_fwrite(x[i].length, fs));
@@ -161,7 +161,7 @@ tms_id_tuple_fwrite(uint32_t num_tuples,tms_id_tuple_t* x, FILE* fs)
 }
 
 int
-tms_id_tuple_fread(tms_id_tuple_t** x, uint32_t num_tuples,FILE* fs)
+id_tuples_tms_fread(tms_id_tuple_t** x, uint32_t num_tuples,FILE* fs)
 {
   tms_id_tuple_t * id_tuples = (tms_id_tuple_t *) malloc(num_tuples*sizeof(tms_id_tuple_t));
 
@@ -179,7 +179,7 @@ tms_id_tuple_fread(tms_id_tuple_t** x, uint32_t num_tuples,FILE* fs)
 }
 
 int
-tms_id_tuple_fprint(uint32_t num_tuples, tms_id_tuple_t* x, FILE* fs)
+id_tuples_tms_fprint(uint32_t num_tuples, tms_id_tuple_t* x, FILE* fs)
 {
   fprintf(fs,"[Id tuples for %d profiles\n", num_tuples);
 
@@ -195,7 +195,7 @@ tms_id_tuple_fprint(uint32_t num_tuples, tms_id_tuple_t* x, FILE* fs)
 }
 
 void
-tms_id_tuple_free(tms_id_tuple_t** x, uint32_t num_tuples)
+id_tuples_tms_free(tms_id_tuple_t** x, uint32_t num_tuples)
 {
   for (uint i = 0; i < num_tuples; ++i) {
     free((*x)[i].ids);
@@ -309,11 +309,11 @@ tms_sparse_metrics_fread(hpcrun_fmt_sparse_metrics_t* x, FILE* fs)
 
 int
 tms_sparse_metrics_fprint(hpcrun_fmt_sparse_metrics_t* x, FILE* fs,
-          const metric_tbl_t* metricTbl, const char* pre, bool easygrep)
+          const metric_tbl_t* metricTbl, const int prof_info_idx, const char* pre, bool easygrep)
 {
   const char* double_pre = "    ";
 
-  fprintf(fs, "[profile %d\n", x->tid);
+  fprintf(fs, "[profile %d\n", prof_info_idx);
 
   if(easygrep){
     tms_sparse_metrics_fprint_grep_helper(x, fs, metricTbl, pre);

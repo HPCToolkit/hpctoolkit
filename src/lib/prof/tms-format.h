@@ -110,9 +110,9 @@ tms_hdr_fprint(tms_hdr_t* hdr, FILE* fs);
 /*
 char* kindStr(const uint16_t kind);
 
-#define SUMMARY (uint16_t)0
-#define RANK    (uint16_t)1
-#define THREAD  (uint16_t)2
+#define IDTUPLE_SUMMARY (uint16_t)0
+#define IDTUPLE_RANK    (uint16_t)1
+#define IDTUPLE_THREAD  (uint16_t)2
 
 #define TMS_id_tuple_len_SIZE  2
 #define TMS_id_SIZE            10
@@ -137,21 +137,21 @@ typedef struct tms_id_tuple_t{
 
 
 int 
-tms_id_tuple_fwrite(uint32_t num_tuples,tms_id_tuple_t* x, FILE* fs);
+id_tuples_tms_fwrite(uint32_t num_tuples,tms_id_tuple_t* x, FILE* fs);
 
 int 
-tms_id_tuple_fread(tms_id_tuple_t** x, uint32_t num_tuples,FILE* fs);
+id_tuples_tms_fread(tms_id_tuple_t** x, uint32_t num_tuples,FILE* fs);
 
 int 
-tms_id_tuple_fprint(uint32_t num_tuples,tms_id_tuple_t* x, FILE* fs);
+id_tuples_tms_fprint(uint32_t num_tuples,tms_id_tuple_t* x, FILE* fs);
 
 void 
-tms_id_tuple_free(tms_id_tuple_t** x, uint32_t num_tuples);
+id_tuples_tms_free(tms_id_tuple_t** x, uint32_t num_tuples);
 */
 //***************************************************************************
 // tms_profile_info_t
 //***************************************************************************
-#define TMS_prof_info_idx_SIZE   4
+#define TMS_fake_id_tuple_SIZE   2 //length = 0
 #define TMS_num_val_SIZE         8
 #define TMS_num_nzctx_SIZE       4
 #define TMS_prof_offset_SIZE     8
@@ -161,7 +161,7 @@ tms_id_tuple_free(tms_id_tuple_t** x, uint32_t num_tuples);
 #define TMS_spare_two_SIZE       8
 #define TMS_ptrs_SIZE            (TMS_id_tuple_ptr_SIZE + TMS_metadata_ptr_SIZE + TMS_spare_one_SIZE + TMS_spare_two_SIZE)
 //bytes to skip when we only want val_mids and ctx_id_idxs
-#define TMS_prof_skip_SIZE       (TMS_prof_info_idx_SIZE + TMS_num_val_SIZE + TMS_num_nzctx_SIZE) 
+#define TMS_prof_skip_SIZE       (TMS_fake_id_tuple_SIZE + TMS_num_val_SIZE + TMS_num_nzctx_SIZE) 
 #define TMS_prof_info_SIZE       (TMS_id_tuple_ptr_SIZE + TMS_metadata_ptr_SIZE + TMS_spare_one_SIZE \
   + TMS_spare_two_SIZE + TMS_num_val_SIZE + TMS_num_nzctx_SIZE + TMS_prof_offset_SIZE)
 
@@ -210,7 +210,7 @@ tms_sparse_metrics_fread(hpcrun_fmt_sparse_metrics_t* x, FILE* fs);
 
 int 
 tms_sparse_metrics_fprint(hpcrun_fmt_sparse_metrics_t* x, FILE* fs,
-          const metric_tbl_t* metricTbl, const char* pre, bool easygrep);
+          const metric_tbl_t* metricTbl, const int prof_info_idx, const char* pre, bool easygrep);
 
 int
 tms_sparse_metrics_fprint_grep_helper(hpcrun_fmt_sparse_metrics_t* x, FILE* fs, 

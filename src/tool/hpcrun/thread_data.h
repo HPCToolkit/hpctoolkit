@@ -71,6 +71,7 @@
 
 #include <lib/prof-lean/hpcio.h>
 #include <lib/prof-lean/hpcio-buffer.h>
+#include <lib/prof-lean/id-tuple.h>
 
 typedef struct {
   sigjmp_buf jb;
@@ -280,7 +281,7 @@ typedef struct thread_data_t {
   bool inside_dlfcn;
 
   //tms_id_tuple
-
+  tms_id_tuple_t id_tuple;
 
 
 #ifdef ENABLE_CUDA

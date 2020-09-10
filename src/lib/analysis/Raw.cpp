@@ -203,11 +203,11 @@ Analysis::Raw::writeAsText_sparseDBthread(const char* filenm, bool easygrep)
     }
 
     tms_id_tuple_t* tuples;
-    ret = tms_id_tuple_fread(&tuples,num_prof,fs);
+    ret = id_tuples_tms_fread(&tuples,num_prof,fs);
     if (ret != HPCFMT_OK) {
       DIAG_Throw("error reading profile identifier tuples from sparse metrics file '" << filenm << "'");
     }
-    tms_id_tuple_fprint(num_prof,tuples,ofs);
+    id_tuples_tms_fprint(num_prof,tuples,ofs);
 
     tms_profile_info_t* x;
     ret = tms_profile_info_fread(&x,num_prof,fs);
@@ -219,19 +219,18 @@ Analysis::Raw::writeAsText_sparseDBthread(const char* filenm, bool easygrep)
     sortProfileInfo_onOffsets(x,num_prof);
     for(uint i = 0; i<num_prof; i++){
       hpcrun_fmt_sparse_metrics_t sm;
-      sm.tid = x[i].prof_info_idx;
       sm.num_vals = x[i].num_vals;
       sm.num_nz_cct_nodes = x[i].num_nzctxs;
       ret = tms_sparse_metrics_fread(&sm,fs);
       if (ret != HPCFMT_OK) {
         DIAG_Throw("error reading sparse metrics data from sparse metrics file '" << filenm << "'");
       }
-      tms_sparse_metrics_fprint(&sm,ofs, NULL, "  ", easygrep);
+      tms_sparse_metrics_fprint(&sm,ofs, NULL, x[i].prof_info_idx, "  ", easygrep);
       tms_sparse_metrics_free(&sm);
     }
    
     tms_profile_info_free(&x);     
-    tms_id_tuple_free(&tuples, num_prof);
+    id_tuples_tms_free(&tuples, num_prof);
 
     hpcio_fclose(fs);
     hpcio_fclose(ofs);

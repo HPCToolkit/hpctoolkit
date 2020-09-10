@@ -818,7 +818,8 @@ int
 hpcrun_fmt_sparse_metrics_fread(hpcrun_fmt_sparse_metrics_t* x, FILE* fs)
 {
 
-  HPCFMT_ThrowIfError(hpcfmt_int4_fread(&(x->tid), fs));
+  //HPCFMT_ThrowIfError(hpcfmt_int4_fread(&(x->tid), fs));
+  HPCFMT_ThrowIfError(id_tuple_fread(&(x->id_tuple), fs));
   HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(x->num_vals), fs));
   HPCFMT_ThrowIfError(hpcfmt_int4_fread(&(x->num_nz_cct_nodes), fs));
 
@@ -843,7 +844,8 @@ hpcrun_fmt_sparse_metrics_fread(hpcrun_fmt_sparse_metrics_t* x, FILE* fs)
 int
 hpcrun_fmt_sparse_metrics_fwrite(hpcrun_fmt_sparse_metrics_t* x,FILE* fs)
 {
-  HPCFMT_ThrowIfError(hpcfmt_int4_fwrite(x->tid, fs));
+  //HPCFMT_ThrowIfError(hpcfmt_int4_fwrite(x->tid, fs));
+  HPCFMT_ThrowIfError(id_tuple_fwrite(&(x->id_tuple), fs));
   HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->num_vals, fs));
   HPCFMT_ThrowIfError(hpcfmt_int4_fwrite(x->num_nz_cct_nodes, fs));
 
@@ -869,8 +871,10 @@ hpcrun_fmt_sparse_metrics_fprint(hpcrun_fmt_sparse_metrics_t* x, FILE* fs,
   char* double_pre = "    ";
   fprintf(fs, "[sparse metrics:\n");
   fprintf(fs, "%s[basic information:\n", pre);
-  fprintf(fs, "%s(thread id: %d)\n%s(number of non-zero metrics: %ld)\n%s(number of non-zero cct nodes: %d)\n%s]\n",
-	  double_pre, x->tid, double_pre, x->num_vals, double_pre, x->num_nz_cct_nodes, pre);
+  fprintf(fs, "%s id tuple:", double_pre);
+  id_tuple_fprint(&(x->id_tuple),fs);
+  fprintf(fs, "%s(number of non-zero metrics: %ld)\n%s(number of non-zero cct nodes: %d)\n%s]\n",
+	  double_pre, x->num_vals, double_pre, x->num_nz_cct_nodes, pre);
 
   if(easy_grep){
     HPCFMT_ThrowIfError(hpcrun_fmt_sparse_metrics_fprint_grep_helper(x, fs, metricTbl, pre));
@@ -970,6 +974,7 @@ hpcrun_fmt_sparse_metrics_free(hpcrun_fmt_sparse_metrics_t* x, hpcfmt_free_fn de
   dealloc(x->cct_node_idxs);
   dealloc(x->values);
   dealloc(x->mids);
+  id_tuple_free(&(x->id_tuple));
 
   x->cct_node_ids  = NULL;
   x->cct_node_idxs = NULL;
@@ -1200,6 +1205,20 @@ int hpcrun_sparse_next_context(hpcrun_sparse_file_t* sparse_fs, hpcrun_fmt_cct_n
   return node->id;
 }
 
+/* succeed: returns 0; error while reading: returns -1 */
+int hpcrun_sparse_read_id_tuple(hpcrun_sparse_file_t* sparse_fs, tms_id_tuple_t* id_tuple)
+{
+  int ret = hpcrun_sparse_check_mode(sparse_fs, OPENED, __func__);
+  if(ret != SF_SUCCEED) return SF_ERR;
+
+  fseek(sparse_fs->file, sparse_fs->footer.sm_start, SEEK_SET);
+  ret = id_tuple_fread(id_tuple, sparse_fs->file);
+  if(ret != HPCFMT_OK) return SF_ERR;
+
+  return SF_SUCCEED;
+}
+
+
 /* succeed: returns a cct ID that we can read next_entry for; end of list: returns 0; error: returns -1 */
 int hpcrun_sparse_next_block(hpcrun_sparse_file_t* sparse_fs)
 {
@@ -1208,10 +1227,15 @@ int hpcrun_sparse_next_block(hpcrun_sparse_file_t* sparse_fs)
 
   //first time initialization 
   if(sparse_fs->sm_block_touched == 0){
-    fseek(sparse_fs->file, (sparse_fs->footer.sm_start + SF_tid_SIZE), SEEK_SET);
+    int id_tuple_size;
+    uint16_t id_tuple_length;
+    fseek(sparse_fs->file, sparse_fs->footer.sm_start, SEEK_SET);
+    HPCFMT_ThrowIfError(hpcfmt_int2_fread(&id_tuple_length, sparse_fs->file));
+    id_tuple_size = TMS_id_tuple_len_SIZE + TMS_id_SIZE * id_tuple_length;
+    fseek(sparse_fs->file, (sparse_fs->footer.sm_start + id_tuple_size), SEEK_SET);
     HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(sparse_fs->num_nzval),sparse_fs->file));
     HPCFMT_ThrowIfError(hpcfmt_int4_fread(&(sparse_fs->num_nz_cct_nodes),sparse_fs->file));
-    sparse_fs->val_mid_offset     = sparse_fs->footer.sm_start + SF_tid_SIZE + SF_num_val_SIZE + SF_num_nz_cct_node_SIZE;
+    sparse_fs->val_mid_offset     = sparse_fs->footer.sm_start + id_tuple_size + SF_num_val_SIZE + SF_num_nz_cct_node_SIZE;
     sparse_fs->cct_node_id_idx_offset = sparse_fs->val_mid_offset + (SF_mid_SIZE + SF_val_SIZE) * sparse_fs->num_nzval; 
   }
   if(sparse_fs->sm_block_touched == sparse_fs->num_nz_cct_nodes) return SF_END; //no more cct block

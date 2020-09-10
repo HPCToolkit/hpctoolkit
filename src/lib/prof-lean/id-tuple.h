@@ -78,9 +78,12 @@ extern "C" {
 #endif
 
 //***************************************************************************
-#define SUMMARY (uint16_t)0
-#define RANK    (uint16_t)1
-#define THREAD  (uint16_t)2
+#define IDTUPLE_SUMMARY   (uint16_t)0
+#define IDTUPLE_NODE      (uint16_t)1
+#define IDTUPLE_RANK      (uint16_t)2
+#define IDTUPLE_THREAD    (uint16_t)3
+#define IDTUPLE_GPUDEVICE (uint16_t)4
+#define IDTUPLE_GPUSTREAM (uint16_t)5
 
 #define TMS_id_tuple_len_SIZE  2
 #define TMS_id_SIZE            10
@@ -101,17 +104,36 @@ typedef struct tms_id_tuple_t{
 
 char* kindStr(const uint16_t kind);
 
+//***************************************************************************
+// Single id_tuple
+//***************************************************************************
 int 
-tms_id_tuple_fwrite(uint32_t num_tuples,tms_id_tuple_t* x, FILE* fs);
+id_tuple_fwrite(tms_id_tuple_t* x, FILE* fs);
 
 int 
-tms_id_tuple_fread(tms_id_tuple_t** x, uint32_t num_tuples,FILE* fs);
+id_tuple_fread(tms_id_tuple_t* x, FILE* fs);
 
 int 
-tms_id_tuple_fprint(uint32_t num_tuples,tms_id_tuple_t* x, FILE* fs);
+id_tuple_fprint(tms_id_tuple_t* x, FILE* fs);
 
 void 
-tms_id_tuple_free(tms_id_tuple_t** x, uint32_t num_tuples);
+id_tuple_free(tms_id_tuple_t* x);
+
+
+//***************************************************************************
+// for thread.db (thread major sparse)
+//***************************************************************************
+int 
+id_tuples_tms_fwrite(uint32_t num_tuples,tms_id_tuple_t* x, FILE* fs);
+
+int 
+id_tuples_tms_fread(tms_id_tuple_t** x, uint32_t num_tuples,FILE* fs);
+
+int 
+id_tuples_tms_fprint(uint32_t num_tuples,tms_id_tuple_t* x, FILE* fs);
+
+void 
+id_tuples_tms_free(tms_id_tuple_t** x, uint32_t num_tuples);
 
 //***************************************************************************
 #if defined(__cplusplus)

@@ -154,10 +154,11 @@ void SparseDB::notifyThreadFinal(const Thread::Temporary& tt) {
 
   // Put together the sparse_metrics structure
   hpcrun_fmt_sparse_metrics_t sm;
-  sm.tid = t.attributes.threadid().value_or(0);
+  //sm.tid = t.attributes.threadid().value_or(0);
+  sm.id_tuple.length = 0; //always 0 here
   sm.num_vals = values.size();
   sm.num_cct_nodes = contexts.size();
-  sm.num_nz_cct_nodes = coffsets.size() - 1; //since there is an extra end node YUMENG
+  sm.num_nz_cct_nodes = coffsets.size() - 1; //since there is an extra end node 
   sm.values = values.data();
   sm.mids = mids.data();
   sm.cct_node_ids = cids.data();
@@ -239,7 +240,8 @@ void SparseDB::write()
 
   // Put together the sparse_metrics structure
   hpcrun_fmt_sparse_metrics_t sm;
-  sm.tid = 0;
+  //sm.tid = 0;
+  sm.id_tuple.length = 0;
   sm.num_vals = values.size();
   sm.num_cct_nodes = contexts.size();
   sm.num_nz_cct_nodes = coffsets.size() - 1; //since there is an extra end node 
@@ -441,11 +443,11 @@ tms_id_tuple_t SparseDB::buildIdTuple(const hpctoolkit::ThreadAttributes& ta,
                                       const int rank)
 {
   tms_id_t rank_idx;
-  rank_idx.kind = RANK;
+  rank_idx.kind = IDTUPLE_RANK;
   rank_idx.index = (uint64_t)ta.mpirank().value();
 
   tms_id_t thread_idx;
-  thread_idx.kind = THREAD;
+  thread_idx.kind = IDTUPLE_THREAD;
   thread_idx.index = (uint64_t)ta.threadid().value();
 
   tms_id_t* ids = (tms_id_t*)malloc(2 * sizeof(tms_id_t));
@@ -467,7 +469,7 @@ tms_id_tuple_t SparseDB::buildIdTuple(const hpctoolkit::ThreadAttributes& ta,
 tms_id_tuple_t SparseDB::buildSmryIdTuple()
 {
   tms_id_t summary_idx;
-  summary_idx.kind = SUMMARY;
+  summary_idx.kind = IDTUPLE_SUMMARY;
   summary_idx.index = (uint64_t)0;
 
   tms_id_t* ids = (tms_id_t*)malloc(1 * sizeof(tms_id_t));
@@ -951,8 +953,8 @@ void SparseDB::collectCctMajorData(const uint32_t prof_info_idx,
 
   uint64_t num_vals;
   uint32_t num_nzctxs;
-  interpretByte8(num_vals,   bytes.data() + TMS_prof_info_idx_SIZE);
-  interpretByte4(num_nzctxs, bytes.data() + TMS_prof_info_idx_SIZE + TMS_num_val_SIZE);
+  interpretByte8(num_vals,   bytes.data() + TMS_fake_id_tuple_SIZE);
+  interpretByte4(num_nzctxs, bytes.data() + TMS_fake_id_tuple_SIZE + TMS_num_val_SIZE);
   uint64_t ctx_end_idx;
   interpretByte8(ctx_end_idx, bytes.data() + bytes.size() - TMS_ctx_idx_SIZE);
   if(num_vals != ctx_end_idx) {
@@ -1035,14 +1037,14 @@ void SparseDB::writeOneProfile(const std::pair<tms_id_tuple_t, std::string>& tup
   input.close();
 
   //collect context local nonzero value counts and nz_mids from this profile
-  if(tupleFn.first.ids[0].kind != SUMMARY){
+  if(tupleFn.first.ids[0].kind != IDTUPLE_SUMMARY){
     collectCctMajorData(prof_idx_off_pair.first, bytes, ctx_nzval_cnts, ctx_nzmids);
   }
    
 
   //write profile info
   std::vector<char> partial_info (TMS_num_val_SIZE + TMS_num_nzctx_SIZE);
-  std::copy(bytes.begin()+TMS_prof_info_idx_SIZE, bytes.begin() + TMS_prof_skip_SIZE, partial_info.begin());
+  std::copy(bytes.begin()+TMS_fake_id_tuple_SIZE, bytes.begin() + TMS_prof_skip_SIZE, partial_info.begin());
   std::vector<char> info = buildOneProfInfoBytes(partial_info, prof_idx_off_pair.second, 0, 0, 0, my_prof_offset);
   writeOneProfInfo(info, prof_idx_off_pair.first, id_tuples_size,fh);
 

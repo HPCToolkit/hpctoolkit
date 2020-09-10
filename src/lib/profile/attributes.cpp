@@ -130,8 +130,8 @@ const std::vector<tms_id_t>& ThreadAttributes::idTuple() const noexcept {
   if(m_idTuple.size() == 0) {
     // For now, we try to reconstruct the tuple based on the other fields.
     // Eventually the other fields will search m_idTuple instead.
-    if(m_mpirank) m_idTuple.push_back({RANK, *m_mpirank});
-    if(m_threadid) m_idTuple.push_back({THREAD, *m_threadid});
+    if(m_mpirank) m_idTuple.push_back({IDTUPLE_RANK, *m_mpirank});
+    if(m_threadid) m_idTuple.push_back({IDTUPLE_THREAD, *m_threadid});
     if(m_idTuple.size() == 0)
       util::log::fatal() << "Reconstructed idTuple is empty!";
   }

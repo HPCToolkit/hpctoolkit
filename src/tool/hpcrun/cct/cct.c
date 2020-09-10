@@ -899,12 +899,13 @@ hpcrun_cct_fwrite(cct2metrics_t* cct2metrics_map, cct_node_t* cct, FILE* fs, epo
 
 
   //YUMENG: try to make sure the recorded info are correct
+  //sparse_metrics->id_tuple.length should be changed to something else that represents a file
   if(sparse_metrics->num_nz_cct_nodes != num_nz_cct_nodes) {
-    hpcrun_cct_fwrite_errmsg_w_fn(fs, sparse_metrics->tid, "recorded number of non-zero cct nodes after walking through the cct don't match");
+    hpcrun_cct_fwrite_errmsg_w_fn(fs, sparse_metrics->id_tuple.length, "recorded number of non-zero cct nodes after walking through the cct don't match");
     return HPCRUN_ERR;
   }
   if(sparse_metrics->cur_cct_node_idx != sparse_metrics->num_vals){
-    hpcrun_cct_fwrite_errmsg_w_fn(fs, sparse_metrics->tid, "number of nzvals and cur_cct_node_idx are not equal after walking through the cct");
+    hpcrun_cct_fwrite_errmsg_w_fn(fs, sparse_metrics->id_tuple.length, "number of nzvals and cur_cct_node_idx are not equal after walking through the cct");
     return HPCRUN_ERR;
   } 
     
