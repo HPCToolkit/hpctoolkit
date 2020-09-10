@@ -124,13 +124,13 @@ id_tuple_free(tms_id_tuple_t* x);
 // for thread.db (thread major sparse)
 //***************************************************************************
 int 
-id_tuples_tms_fwrite(uint32_t num_tuples,tms_id_tuple_t* x, FILE* fs);
+id_tuples_tms_fwrite(uint32_t num_tuples, uint64_t id_tuples_size, tms_id_tuple_t* x, FILE* fs);
 
 int 
-id_tuples_tms_fread(tms_id_tuple_t** x, uint32_t num_tuples,FILE* fs);
+id_tuples_tms_fread(tms_id_tuple_t** x, uint64_t* id_tuples_size, uint32_t num_tuples,FILE* fs);
 
 int 
-id_tuples_tms_fprint(uint32_t num_tuples,tms_id_tuple_t* x, FILE* fs);
+id_tuples_tms_fprint(uint32_t num_tuples,uint64_t id_tuples_size, tms_id_tuple_t* x, FILE* fs);
 
 void 
 id_tuples_tms_free(tms_id_tuple_t** x, uint32_t num_tuples);

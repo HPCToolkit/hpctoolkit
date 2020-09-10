@@ -158,7 +158,7 @@ private:
   //***************************************************************************
   // general - YUMENG
   //***************************************************************************
-  uint64_t id_tuples_size;
+  uint64_t id_tuples_sec_size;
 
   #define SPARSE_ERR -1
   #define SPARSE_OK  0
@@ -246,9 +246,9 @@ private:
   void getMyProfOffset(const uint32_t total_prof, 
                        const uint64_t my_offset, 
                        const int threads, 
-                       const uint64_t id_tuples_size);
+                       const uint64_t id_tuples_sec_size);
 
-  uint32_t workProfSizesOffsets(const int world_rank, const int threads, const uint64_t id_tuples_size);
+  uint32_t workProfSizesOffsets(const int world_rank, const int threads, const uint64_t id_tuples_sec_size);
 
   //---------------------------------------------------------------------------
   // get profile's real data (bytes)
@@ -284,7 +284,7 @@ private:
                                        
   void writeOneProfInfo(const std::vector<char>& info_bytes, 
                         const uint32_t prof_info_idx,
-                        const uint64_t id_tuples_size,
+                        const uint64_t id_tuples_sec_size,
                         const MPI_File fh);
 
   void writeOneProfileData(const std::vector<char>& bytes, 
@@ -295,12 +295,12 @@ private:
   void writeOneProfile(const std::pair<tms_id_tuple_t, std::string>& tupleFn,
                        const MPI_Offset my_prof_offset, 
                        const std::pair<uint32_t,uint64_t>& prof_idx_off_pair,
-                       const uint64_t id_tuples_size,
+                       const uint64_t id_tuples_sec_size,
                        std::vector<uint64_t>& ctx_nzval_cnts,
                        std::vector<std::set<uint16_t>>& ctx_nzmids,
                        MPI_File fh);
 
-  void writeProfiles(const uint64_t id_tuples_size,
+  void writeProfiles(const uint64_t id_tuples_sec_size,
                      const MPI_File fh, 
                      const int threads,
                      std::vector<uint64_t>& cct_local_sizes,

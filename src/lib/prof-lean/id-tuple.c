@@ -142,46 +142,48 @@ id_tuple_free(tms_id_tuple_t* x)
 // id tuple in thread.db
 //***************************************************************************
 int
-id_tuples_tms_fwrite(uint32_t num_tuples,tms_id_tuple_t* x, FILE* fs)
+id_tuples_tms_fwrite(uint32_t num_tuples, uint64_t id_tuples_size, tms_id_tuple_t* x, FILE* fs)
 {
-  for (uint i = 0; i < num_tuples; ++i) {
-    /*
-    HPCFMT_ThrowIfError(hpcfmt_int2_fwrite(x[i].length, fs));
-    for (uint j = 0; j < x[i].length; ++j) {
-      HPCFMT_ThrowIfError(hpcfmt_int2_fwrite(x[i].ids[j].kind, fs));
-      HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x[i].ids[j].index, fs));
+    HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(id_tuples_size, fs));
+    for (uint i = 0; i < num_tuples; ++i) {
+        /*
+        HPCFMT_ThrowIfError(hpcfmt_int2_fwrite(x[i].length, fs));
+        for (uint j = 0; j < x[i].length; ++j) {
+        HPCFMT_ThrowIfError(hpcfmt_int2_fwrite(x[i].ids[j].kind, fs));
+        HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x[i].ids[j].index, fs));
+        }
+        */
+        HPCFMT_ThrowIfError(id_tuple_fwrite(x+i,fs));
     }
-    */
-   HPCFMT_ThrowIfError(id_tuple_fwrite(x+i,fs));
-  }
-  return HPCFMT_OK;
+    return HPCFMT_OK;
 }
 
 int
-id_tuples_tms_fread(tms_id_tuple_t** x, uint32_t num_tuples,FILE* fs)
+id_tuples_tms_fread(tms_id_tuple_t** x, uint64_t* id_tuples_size, uint32_t num_tuples,FILE* fs)
 {
-  tms_id_tuple_t * id_tuples = (tms_id_tuple_t *) malloc(num_tuples*sizeof(tms_id_tuple_t));
+    HPCFMT_ThrowIfError(hpcfmt_int8_fread(id_tuples_size, fs));
+    tms_id_tuple_t * id_tuples = (tms_id_tuple_t *) malloc(num_tuples*sizeof(tms_id_tuple_t));
 
-  for (uint i = 0; i < num_tuples; ++i) {
-      /*
-    HPCFMT_ThrowIfError(hpcfmt_int2_fread(&(id_tuples[i].length), fs));
-    id_tuples[i].ids = (tms_id_t *) malloc(id_tuples[i].length * sizeof(tms_id_t)); 
-    for (uint j = 0; j < id_tuples[i].length; ++j) {
-      HPCFMT_ThrowIfError(hpcfmt_int2_fread(&(id_tuples[i].ids[j].kind), fs));
-      HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(id_tuples[i].ids[j].index), fs));
+    for (uint i = 0; i < num_tuples; ++i) {
+        /*
+        HPCFMT_ThrowIfError(hpcfmt_int2_fread(&(id_tuples[i].length), fs));
+        id_tuples[i].ids = (tms_id_t *) malloc(id_tuples[i].length * sizeof(tms_id_t)); 
+        for (uint j = 0; j < id_tuples[i].length; ++j) {
+        HPCFMT_ThrowIfError(hpcfmt_int2_fread(&(id_tuples[i].ids[j].kind), fs));
+        HPCFMT_ThrowIfError(hpcfmt_int8_fread(&(id_tuples[i].ids[j].index), fs));
+        }
+        */
+        HPCFMT_ThrowIfError(id_tuple_fread(id_tuples+i, fs));
     }
-    */
-   HPCFMT_ThrowIfError(id_tuple_fread(id_tuples+i, fs));
-  }
 
-  *x = id_tuples;
-  return HPCFMT_OK;
+    *x = id_tuples;
+    return HPCFMT_OK;
 }
 
 int
-id_tuples_tms_fprint(uint32_t num_tuples, tms_id_tuple_t* x, FILE* fs)
+id_tuples_tms_fprint(uint32_t num_tuples, uint64_t id_tuples_size, tms_id_tuple_t* x, FILE* fs)
 {
-  fprintf(fs,"[Id tuples for %d profiles\n", num_tuples);
+  fprintf(fs,"[Id tuples for %d profiles, total size %ld\n", num_tuples, id_tuples_size);
 
   for (uint i = 0; i < num_tuples; ++i) {
     fprintf(fs,"  %d[", i);
