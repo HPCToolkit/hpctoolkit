@@ -56,7 +56,7 @@ public:
   using moda_t = std::function<void(ProfilePipeline::Source&, const Module&, Classification&)>;
   using modb_t = std::function<void(ProfilePipeline::Source&, const Module&, unsigned int&)>;
   using file_t = std::function<void(ProfilePipeline::Source&, const File&, unsigned int&)>;
-  using met_t = std::function<void(ProfilePipeline::Source&, const Metric&, std::pair<unsigned int, unsigned int>&)>;
+  using met_t = std::function<void(ProfilePipeline::Source&, const Metric&, unsigned int&)>;
   using ctx_t = std::function<void(ProfilePipeline::Source&, const Context&, unsigned int&)>;
   using thread_t = std::function<void(ProfilePipeline::Source&, const Thread&, unsigned int&)>;
 
@@ -82,7 +82,7 @@ public:
   void module(const Module& m, Classification& c) override { if(f_moda) f_moda(sink, m, c); }
   void module(const Module& m, unsigned int& i) override { if(f_modb) f_modb(sink, m, i); }
   void file(const File& f, unsigned int& i) override { if(f_file) f_file(sink, f, i); }
-  void metric(const Metric& m, std::pair<unsigned int, unsigned int>& ip) override { if(f_met) f_met(sink, m, ip); }
+  void metric(const Metric& m, unsigned int& i) override { if(f_met) f_met(sink, m, i); }
   void context(const Context& c, unsigned int& i) override { if(f_ctx) f_ctx(sink, c, i); }
   void thread(const Thread& t, unsigned int& i) override { if(f_thread) f_thread(sink, t, i); }
 

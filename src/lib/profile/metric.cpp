@@ -71,6 +71,21 @@ static bool pullsExclusive(Context& c) {
   return false;
 }
 
+unsigned int Metric::ScopedIdentifiers::get(Metric::Scope s) const noexcept {
+  switch(s) {
+  case Scope::point: return point;
+  case Scope::exclusive: return exclusive;
+  case Scope::inclusive: return inclusive;
+  default: util::log::fatal{} << "Invalid Metric::scope value!";
+  }
+  std::abort();  // unreachable
+}
+
+Metric::ScopeSet Metric::scopes() const noexcept {
+  // For now, its always exclusive/inclusive
+  return ScopeSet(Scope::exclusive) + ScopeSet(Scope::inclusive);
+}
+
 void Metric::AccumulatorRef::add(Metric::Scope s, double v) noexcept {
   if(v == 0) return;
   switch(s) {

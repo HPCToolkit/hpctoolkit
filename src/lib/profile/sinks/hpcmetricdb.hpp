@@ -81,7 +81,7 @@ public:
   }
 
   ExtensionClass requires() const noexcept override {
-    return ExtensionClass::identifier;
+    return ExtensionClass::identifier + ExtensionClass::mscopeIdentifiers;
   }
 
   void notifyPipeline() noexcept override;

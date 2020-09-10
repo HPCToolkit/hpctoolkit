@@ -56,6 +56,7 @@
 
 #include <map>
 #include <bitset>
+#include "stdshim/optional.hpp"
 #include <memory>
 #include <chrono>
 #include <stdexcept>
@@ -101,6 +102,7 @@ protected:
   struct {
     std::vector<std::reference_wrapper<ProfileFinalizer>> classification;
     std::vector<std::reference_wrapper<ProfileFinalizer>> identifier;
+    std::vector<std::reference_wrapper<ProfileFinalizer>> mscopeIdentifiers;
     std::vector<std::reference_wrapper<ProfileFinalizer>> resolvedPath;
     std::vector<std::reference_wrapper<ProfileFinalizer>> all;
   } finalizers;
@@ -192,11 +194,16 @@ public:
       const auto& operator()(Context::ud_t&) const noexcept { return context; }
       Module::ud_t::typed_member_t<unsigned int> module;
       const auto& operator()(Module::ud_t&) const noexcept { return module; }
-      Metric::ud_t::typed_member_t<std::pair<unsigned int,unsigned int>> metric;
+      Metric::ud_t::typed_member_t<unsigned int> metric;
       const auto& operator()(Metric::ud_t&) const noexcept { return metric; }
       Thread::ud_t::typed_member_t<unsigned int> thread;
       const auto& operator()(Thread::ud_t&) const noexcept { return thread; }
     } identifier;
+
+    struct {
+      Metric::ud_t::typed_member_t<Metric::ScopedIdentifiers> metric;
+      const auto& operator()(Metric::ud_t&) const noexcept { return metric; }
+    } mscopeIdentifiers;
 
     struct {
       File::ud_t::typed_member_t<stdshim::filesystem::path> file;
@@ -225,6 +232,7 @@ public:
     // MT: Safe (const)
     const decltype(Extensions::classification)& classification() const;
     const decltype(Extensions::identifier)& identifier() const;
+    const decltype(Extensions::mscopeIdentifiers)& mscopeIdentifiers() const;
     const decltype(Extensions::resolvedPath)& resolvedPath() const;
 
     /// Get the limits on this Source's emissions.
@@ -315,6 +323,7 @@ public:
     /// Access the Extensions available within the Pipeline.
     const decltype(Extensions::classification)& classification() const;
     const decltype(Extensions::identifier)& identifier() const;
+    const decltype(Extensions::mscopeIdentifiers)& mscopeIdentifiers() const;
     const decltype(Extensions::resolvedPath)& resolvedPath() const;
 
     /// Allow registration of Userdata for Sinks.

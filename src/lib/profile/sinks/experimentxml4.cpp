@@ -174,14 +174,16 @@ void ExperimentXML4::udFile::incr(ExperimentXML4& exml) {
 // ud Metric bits
 
 ExperimentXML4::udMetric::udMetric(const Metric& m, ExperimentXML4& exml) {
-  const auto& ids = m.userdata[exml.src.identifier()];
-  inc_id = ids.second;
-  ex_id = ids.first;
+  const auto& ids = m.userdata[exml.src.mscopeIdentifiers()];
+  inc_id = ids.inclusive;
+  ex_id = ids.exclusive;
   // Every (for now, later will be most) metrics have an inclusive and
   // exclusive side. So we write out two metrics as if that were still the
   // case.
   // A lot of this is still very indev as more data is ferried through the
   // system as a whole.
+  if(!m.scopes().has(Metric::Scope::exclusive) || !m.scopes().has(Metric::Scope::inclusive))
+    util::log::fatal{} << "Metric isn't exclusive/inclusive!";
   std::ostringstream ss;
   ss << "<Metric i=\"" << inc_id << "\" o=\"" << inc_id << "\" "
                     "n=" << util::xmlquoted(m.name() + ":Sum (I)") << " "

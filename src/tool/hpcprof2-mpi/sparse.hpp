@@ -80,7 +80,7 @@ public:
 
   hpctoolkit::ExtensionClass requires() const noexcept override {
     using namespace hpctoolkit;
-    return ExtensionClass::identifier;
+    return ExtensionClass::identifier + ExtensionClass::mscopeIdentifiers;
   }
 
   void notifyWavefront(hpctoolkit::DataClass) noexcept override;

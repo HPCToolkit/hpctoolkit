@@ -106,14 +106,26 @@ public:
     ScopeSet(const base& b) : base(b) {};
   public:
     ScopeSet() = default;
-    ScopeSet(Scope s) : base(s) {};
+    ScopeSet(Scope s) : base(1<<s) {};
 
     bool has(Scope s) { return base::operator[](s); }
 
-    ScopeSet operator|(const ScopeSet& o) { return *this | o; }
-    ScopeSet operator&(const ScopeSet& o) { return *this & o; }
+    ScopeSet operator|(const ScopeSet& o) { return (base)*this | (base)o; }
+    ScopeSet operator+(const ScopeSet& o) { return (base)*this | (base)o; }
+    ScopeSet operator&(const ScopeSet& o) { return (base)*this & (base)o; }
     ScopeSet& operator|=(const ScopeSet& o) { base::operator|=(o); return *this; }
+    ScopeSet& operator+=(const ScopeSet& o) { base::operator|=(o); return *this; }
     ScopeSet& operator&=(const ScopeSet& o) { base::operator&=(o); return *this; }
+
+    using base::count;
+  };
+
+  /// Set of identifiers unique to each Scope that a Metric may have.
+  struct ScopedIdentifiers final {
+    unsigned int point;
+    unsigned int exclusive;
+    unsigned int inclusive;
+    unsigned int get(Metric::Scope s) const noexcept;
   };
 
   /// Structure to be used for creating new Metrics. Encapsulates a number of

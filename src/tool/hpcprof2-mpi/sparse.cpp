@@ -126,19 +126,21 @@ void SparseDB::notifyThreadFinal(const Thread::Temporary& tt) {
     bool any = false;
     std::size_t offset = values.size();
     for(const Metric& m: metrics) {
-      const auto& ids = m.userdata[src.identifier()];
+      if(!m.scopes().has(Metric::Scope::exclusive) || !m.scopes().has(Metric::Scope::inclusive))
+        util::log::fatal{} << "Metric isn't exclusive/inclusive!";
+      const auto& ids = m.userdata[src.mscopeIdentifiers()];
       auto vv = m.getFor(tt, c);
       hpcrun_metricVal_t v;
       if(auto vex = vv.get(Metric::Scope::exclusive)) {
         v.r = *vex;
         any = true;
-        mids.push_back(ids.first);
+        mids.push_back(ids.exclusive);
         values.push_back(v);
       }
       if(auto vinc = vv.get(Metric::Scope::inclusive)) {
         v.r = *vinc;
         any = true;
-        mids.push_back(ids.second);
+        mids.push_back(ids.inclusive);
         values.push_back(v);
       }
     }
@@ -212,19 +214,21 @@ void SparseDB::write()
     bool any = false;
     std::size_t offset = values.size();
     for(const Metric& m: metrics) {
-      const auto& ids = m.userdata[src.identifier()];
+      if(!m.scopes().has(Metric::Scope::exclusive) || !m.scopes().has(Metric::Scope::inclusive))
+        util::log::fatal{} << "Metric isn't exclusive/inclusive!";
+      const auto& ids = m.userdata[src.mscopeIdentifiers()];
       auto vv = m.getFor(c);
       hpcrun_metricVal_t v;
       if(auto vex = vv.get(Metric::Scope::exclusive)) {
         v.r = *vex;
         any = true;
-        mids.push_back(ids.first);
+        mids.push_back(ids.exclusive);
         values.push_back(v);
       }
       if(auto vinc = vv.get(Metric::Scope::inclusive)) {
         v.r = *vinc;
         any = true;
-        mids.push_back(ids.second);
+        mids.push_back(ids.inclusive);
         values.push_back(v);
       }
     }

@@ -78,7 +78,7 @@ public:
 
   ExtensionClass requires() const noexcept override {
     using namespace hpctoolkit::literals::extensions;
-    Class ret = classification + identifier;
+    Class ret = classification + identifier + mscopeIdentifiers;
     if(include_sources) ret += resolvedPath;
     return ret;
   }

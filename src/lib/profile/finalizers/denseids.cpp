@@ -50,7 +50,7 @@ using namespace hpctoolkit;
 using namespace finalizers;
 
 DenseIds::DenseIds()
-  : mod_id(0), file_id(0), met_id(0), ctx_id(0), t_id(0) {};
+  : mod_id(0), file_id(0), met_id(0), smet_id(0), ctx_id(0), t_id(0) {};
 
 void DenseIds::module(const Module&, unsigned int& id) {
   id = mod_id.fetch_add(1, std::memory_order_relaxed);
@@ -60,9 +60,16 @@ void DenseIds::file(const File&, unsigned int& id) {
   id = file_id.fetch_add(1, std::memory_order_relaxed);
 }
 
-void DenseIds::metric(const Metric&, std::pair<unsigned int, unsigned int>& ids) {
-  ids.first = met_id.fetch_add(2, std::memory_order_relaxed);
-  ids.second = ids.first + 1;
+void DenseIds::metric(const Metric&, unsigned int& id) {
+  id = met_id.fetch_add(1, std::memory_order_relaxed);
+}
+
+void DenseIds::metric(const Metric& m, Metric::ScopedIdentifiers& ids) {
+  auto scopes = m.scopes();
+  auto id = smet_id.fetch_add(scopes.count(), std::memory_order_relaxed);
+  if(scopes.has(Metric::Scope::point)) ids.point = id++;
+  if(scopes.has(Metric::Scope::exclusive)) ids.exclusive = id++;
+  if(scopes.has(Metric::Scope::inclusive)) ids.inclusive = id++;
 }
 
 void DenseIds::context(const Context&, unsigned int& id) {

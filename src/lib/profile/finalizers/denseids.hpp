@@ -57,11 +57,12 @@ public:
   DenseIds();
   ~DenseIds() = default;
 
-  ExtensionClass provides() const noexcept { return ExtensionClass::identifier; }
+  ExtensionClass provides() const noexcept { return ExtensionClass::identifier + ExtensionClass::mscopeIdentifiers; }
   ExtensionClass requires() const noexcept { return {}; }
   void module(const Module&, unsigned int& id) override;
   void file(const File&, unsigned int& id) override;
-  void metric(const Metric&, std::pair<unsigned int, unsigned int>& ids) override;
+  void metric(const Metric&, unsigned int& ids) override;
+  void metric(const Metric&, Metric::ScopedIdentifiers& ids) override;
   void context(const Context&, unsigned int& id) override;
   void thread(const Thread&, unsigned int& id) override;
 
@@ -69,6 +70,7 @@ private:
   std::atomic<unsigned int> mod_id;
   std::atomic<unsigned int> file_id;
   std::atomic<unsigned int> met_id;
+  std::atomic<unsigned int> smet_id;
   std::atomic<unsigned int> ctx_id;
   std::atomic<unsigned int> t_id;
 };

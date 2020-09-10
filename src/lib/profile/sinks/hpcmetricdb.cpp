@@ -64,19 +64,21 @@ using namespace sinks;
 // udMetric bits
 
 HPCMetricDB::udMetric::udMetric(const Metric& m, HPCMetricDB& mdb) {
-  auto ids = m.userdata[mdb.src.identifier()];
+  if(!m.scopes().has(Metric::Scope::exclusive) || !m.scopes().has(Metric::Scope::inclusive))
+    util::log::fatal{} << "Metric isn't exclusive/inclusive!";
+  auto ids = m.userdata[mdb.src.mscopeIdentifiers()];
   std::ostringstream si;
   std::ostringstream se;
-  si << "<MetricDB i=\"" << ids.second << "\" n=" << util::xmlquoted(m.name() + " (I)")
-              << " t=\"inclusive\" partner=\"" << ids.first << "\""
+  si << "<MetricDB i=\"" << ids.inclusive << "\" n=" << util::xmlquoted(m.name() + " (I)")
+              << " t=\"inclusive\" partner=\"" << ids.exclusive << "\""
               << " db-glob=\"*." << HPCPROF_MetricDBSfx << "\""
-              << " db-id=\"" << ids.second << "\""
+              << " db-id=\"" << ids.inclusive << "\""
               << " db-header-sz=\"" << HPCMETRICDB_FMT_HeaderLen << "\"";
   inc_open = si.str();
-  se << "<MetricDB i=\"" << ids.first << "\" n=" << util::xmlquoted(m.name() + " (E)")
-              << " t=\"exclusive\" partner=\"" << ids.second << "\""
+  se << "<MetricDB i=\"" << ids.exclusive << "\" n=" << util::xmlquoted(m.name() + " (E)")
+              << " t=\"exclusive\" partner=\"" << ids.inclusive << "\""
               << " db-glob=\"*." << HPCPROF_MetricDBSfx << "\""
-              << " db-id=\"" << ids.first << "\""
+              << " db-id=\"" << ids.exclusive << "\""
               << " db-header-sz=\"" << HPCMETRICDB_FMT_HeaderLen << "\"";
   ex_open = se.str();
 }
@@ -115,9 +117,9 @@ std::string HPCMetricDB::exmlTag() {
   std::vector<const std::string*> strs(src.metrics().size() * 2, nullptr);
   for(const auto& m: src.metrics().iterate()) {
     auto& ud = m().userdata[ud_metric];
-    const auto& ids = m().userdata[src.identifier()];
-    strs.at(ids.first) = &ud.ex_open;
-    strs.at(ids.second) = &ud.inc_open;
+    const auto& ids = m().userdata[src.mscopeIdentifiers()];
+    strs.at(ids.exclusive) = &ud.ex_open;
+    strs.at(ids.inclusive) = &ud.inc_open;
   }
   for(const auto& sp: strs)
     ss << *sp << " db-num-metrics=\"" << nmets << "\"/>";
@@ -135,11 +137,11 @@ void HPCMetricDB::notifyWavefront(DataClass ds) noexcept {
 
 void HPCMetricDB::prepMetrics() noexcept {
   for(const Metric& m: src.metrics().iterate()) {
-    const auto& ids = m.userdata[src.identifier()];
-    auto max = std::max(ids.first, ids.second);
+    const auto& ids = m.userdata[src.mscopeIdentifiers()];
+    auto max = std::max(ids.exclusive, ids.inclusive);
     if(max >= metrics.size()) metrics.resize(max+1, {false, nullptr});
-    metrics.at(ids.first) = {true, &m};
-    metrics.at(ids.second) = {false, &m};
+    metrics.at(ids.exclusive) = {true, &m};
+    metrics.at(ids.inclusive) = {false, &m};
   }
   metrics.shrink_to_fit();
 }

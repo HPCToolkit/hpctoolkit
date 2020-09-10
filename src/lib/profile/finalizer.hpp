@@ -91,7 +91,11 @@ public:
 
   /// Assign a (unique, dense) ID to the given Metric.
   // MT: Internally Synchronized
-  virtual void metric(const Metric&, std::pair<unsigned int, unsigned int>&) {};
+  virtual void metric(const Metric&, unsigned int&) {};
+
+  /// Assign a set of (unique, dense) IDs to the given Metric.
+  // MT: Internally Synchronized
+  virtual void metric(const Metric&, Metric::ScopedIdentifiers&) {};
 
   /// Assign a (unique, dense) ID to the given Context.
   // MT: Internally Synchronized

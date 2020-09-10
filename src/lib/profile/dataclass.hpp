@@ -182,37 +182,43 @@ private:
   ExtensionClass operator&(const ExtensionClass& o) const noexcept \
     { return ExtensionClass(*this) & o; }                     \
 }
-  struct classification_c : public singleton_c CONTENTS;
-  struct identifier_c     : public singleton_c CONTENTS;
-  struct resolvedPath_c   : public singleton_c CONTENTS;
+  struct classification_c    : public singleton_c CONTENTS;
+  struct identifier_c        : public singleton_c CONTENTS;
+  struct mscopeIdentifiers_c : public singleton_c CONTENTS;
+  struct resolvedPath_c      : public singleton_c CONTENTS;
 #undef CONTENTS
 
 public:
-  using singleton_t      = const singleton_c&;
-  using classification_t = const classification_c&;
-  using identifier_t     = const identifier_c&;
-  using resolvedPath_t   = const resolvedPath_c&;
+  using singleton_t         = const singleton_c&;
+  using classification_t    = const classification_c&;
+  using identifier_t        = const identifier_c&;
+  using mscopeIdentifiers_t = const mscopeIdentifiers_c&;
+  using resolvedPath_t      = const resolvedPath_c&;
 
   /// Extends Modules with information on source lines and Functions.
-  static constexpr classification_c classification = {};
+  static constexpr classification_c    classification    = {};
   /// Extends most data with unique numerical identifiers.
-  static constexpr identifier_c     identifier     = {};
+  static constexpr identifier_c        identifier        = {};
+  /// Extends Metrics with extra Scope-specific identifiers.
+  static constexpr mscopeIdentifiers_c mscopeIdentifiers = {};
   /// Extends Files and Modules with the real path in the current filesystem.
-  static constexpr resolvedPath_c   resolvedPath   = {};
+  static constexpr resolvedPath_c      resolvedPath      = {};
 
   constexpr ExtensionClass(const singleton_t& o) : mask(
-    &o == &classification ? 1<<0 :
-    &o == &identifier     ? 1<<1 :
-    &o == &resolvedPath   ? 1<<2 : 0) {};
+    &o == &classification    ? 1<<0 :
+    &o == &identifier        ? 1<<1 :
+    &o == &resolvedPath      ? 1<<2 :
+    &o == &mscopeIdentifiers ? 1<<3 : 0) {};
 
   // Universal set
-  static ExtensionClass constexpr all() { return ExtensionClass((1<<3) - 1); }
+  static ExtensionClass constexpr all() { return ExtensionClass((1<<4) - 1); }
 
   // Named queries for particular elements
-  bool hasAny()            const noexcept { return mask.any(); }
-  bool hasClassification() const noexcept { return mask[0]; }
-  bool hasIdentifier()     const noexcept { return mask[1]; }
-  bool hasResolvedPath()   const noexcept { return mask[2]; }
+  bool hasAny()               const noexcept { return mask.any(); }
+  bool hasClassification()    const noexcept { return mask[0]; }
+  bool hasIdentifier()        const noexcept { return mask[1]; }
+  bool hasResolvedPath()      const noexcept { return mask[2]; }
+  bool hasMScopeIdentifiers() const noexcept { return mask[3]; }
 
   // Query for whether there are any of such and so
   bool anyOf(const ExtensionClass& o) const noexcept { return operator&(o).hasAny(); }
@@ -235,15 +241,16 @@ public:
   bool operator!=(const ExtensionClass& o) const noexcept { return !(operator==(o)); }
 private:
   constexpr ExtensionClass(unsigned long long v) : mask(v) {};
-  std::bitset<3> mask;
+  std::bitset<4> mask;
   constexpr ExtensionClass(const decltype(mask)& m) : mask(m) {};
 };
 
 namespace literals::extensions {
 using Class = ExtensionClass;
-static constexpr Class::classification_t classification = Class::classification;
-static constexpr Class::identifier_t     identifier     = Class::identifier;
-static constexpr Class::resolvedPath_t   resolvedPath   = Class::resolvedPath;
+static constexpr Class::classification_t    classification    = Class::classification;
+static constexpr Class::identifier_t        identifier        = Class::identifier;
+static constexpr Class::mscopeIdentifiers_t mscopeIdentifiers = Class::mscopeIdentifiers;
+static constexpr Class::resolvedPath_t      resolvedPath      = Class::resolvedPath;
 }
 }  // namespace hpctoolkit
 
