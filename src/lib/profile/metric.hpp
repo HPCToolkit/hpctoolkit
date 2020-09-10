@@ -185,7 +185,7 @@ public:
 
   /// Obtain the AccumulatorRef for a particular Context.
   // MT: Internally Synchronized
-  AccumulatorRef getFor(Context&) const noexcept;
+  AccumulatorRef getFor(Context&) noexcept;
 
   /// Obtain a read-only AccumulatorRef for a particular Context.
   // MT: Safe (const), Unstable (before `metrics` wavefront)
@@ -238,7 +238,7 @@ public:
 
   /// Obtain the ThreadAccumulatorRef for a particular Context.
   // MT: Internally Synchronized
-  ThreadAccumulatorRef getFor(Thread::Temporary&, Context&) const noexcept;
+  ThreadAccumulatorRef getFor(Thread::Temporary&, Context&) noexcept;
 
   /// Obtain a read-only ThreadAccumulatorRef for a particular Context.
   // MT: Safe (const), Unstable (before `metrics` wavefront)

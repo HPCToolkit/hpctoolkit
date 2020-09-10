@@ -467,13 +467,13 @@ Context& Source::context(Context& p, const Scope& s) {
   return x.first;
 }
 
-void Source::add(Context& c, Thread::Temporary& t, const Metric& m, double v) {
+void Source::add(Context& c, Thread::Temporary& t, Metric& m, double v) {
   if(!limit().hasMetrics())
     util::log::fatal() << "Source did not register for `metrics` emission!";
   m.getFor(t, c).add(v);
 }
 
-void Source::add(Context& c, const Metric& m, std::pair<double, double> v) {
+void Source::add(Context& c, Metric& m, std::pair<double, double> v) {
   if(!limit().hasMetrics())
     util::log::fatal() << "Source did not register for `metrics` emission!";
   auto ar = m.getFor(c);
@@ -481,13 +481,13 @@ void Source::add(Context& c, const Metric& m, std::pair<double, double> v) {
   ar.add(Metric::Scope::inclusive, v.first);
 }
 
-void Source::add(Thread::Temporary& t, const Metric& m, double v) {
+void Source::add(Thread::Temporary& t, Metric& m, double v) {
   if(!limit().hasMetrics())
     util::log::fatal() << "Source did not register for `metrics` emission!";
   m.getFor(t, *pipe->cct).add(v);
 }
 
-void Source::add(const Metric& m, std::pair<double, double> v) {
+void Source::add(Metric& m, std::pair<double, double> v) {
   if(!limit().hasMetrics())
     util::log::fatal() << "Source did not register for `metrics` emission!";
   auto ar = m.getFor(*pipe->cct);

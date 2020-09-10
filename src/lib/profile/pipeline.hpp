@@ -272,22 +272,22 @@ public:
     /// Emit some Thread-local metric data into the Pipeline.
     /// DataClass: `metrics`
     // MT: Externally Synchronized (this), Internally Synchronized
-    void add(Context&, Thread::Temporary&, const Metric&, double v);
+    void add(Context&, Thread::Temporary&, Metric&, double v);
 
     /// Emit some unlocalized accumulator data into the Pipeline.
     /// DataClass: `metrics`
     // MT: Externally Synchronized (this), Internally Synchronized
-    void add(Context&, const Metric&, std::pair<double, double>);
+    void add(Context&, Metric&, std::pair<double, double>);
 
     /// Emit some uncontextualized metric data into the Pipeline.
     /// DataClass: `metrics`
     // MT: Externally Synchronized (this), Internally Synchronized
-    void add(Thread::Temporary&, const Metric&, double v);
+    void add(Thread::Temporary&, Metric&, double v);
 
     /// Emit some fully ambiguous metric data into the Pipeline.
     /// DataClass: `metrics`
     // MT: Externally Synchronized (this), Internally Synchronized
-    void add(const Metric&, std::pair<double, double>);
+    void add(Metric&, std::pair<double, double>);
 
     // Disable copy-assignment, and allow move assignment.
     Source& operator=(const Source&) = delete;

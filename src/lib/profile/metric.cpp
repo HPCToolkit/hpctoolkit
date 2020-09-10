@@ -84,7 +84,7 @@ void Metric::AccumulatorRef::add(Metric::Scope s, double v) noexcept {
   }
 }
 
-Metric::AccumulatorRef Metric::getFor(Context& c) const noexcept {
+Metric::AccumulatorRef Metric::getFor(Context& c) noexcept {
   return c.data[member];
 }
 
@@ -92,7 +92,7 @@ void Metric::ThreadAccumulatorRef::add(double v) noexcept {
   if(v != 0) atomic_add(*exclusive, v);
 }
 
-Metric::ThreadAccumulatorRef Metric::getFor(Thread::Temporary& t, Context& c) const noexcept {
+Metric::ThreadAccumulatorRef Metric::getFor(Thread::Temporary& t, Context& c) noexcept {
   auto& td = t.data[tmember];
   return {td.exclusive[&c], td.inclusive[&c]};
 }

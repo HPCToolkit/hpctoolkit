@@ -111,7 +111,7 @@ private:
   bool epochs_final;
 
   std::size_t metric_cnt;
-  std::vector<const Metric*> metric_order;
+  std::vector<Metric*> metric_order;
   std::vector<bool> metric_int;
 
   stdshim::filesystem::path tracepath;
