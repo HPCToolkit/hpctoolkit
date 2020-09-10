@@ -169,7 +169,7 @@ void Hpcrun4::read(const DataClass& needed) {
       if(m.flags.fields.valFmt == MetricFlags_ValFmt_Real) isInt = false;
       else if(m.flags.fields.valFmt == MetricFlags_ValFmt_Int) isInt = true;
       else util::log::fatal() << "Invalid metric value format!";
-      metrics.emplace(id, sink.metric({m.name, m.description, Metric::Type::linear}));
+      metrics.emplace(id, sink.metric({m.name, m.description}));
       metricInt.emplace(id, isInt);
       hpcrun_fmt_metricDesc_free(&m, std::free);
     }

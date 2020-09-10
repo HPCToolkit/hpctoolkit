@@ -71,46 +71,77 @@ static bool pullsExclusive(Context& c) {
   return false;
 }
 
-void Metric::add(Context& c, std::pair<double, double> ei) const noexcept {
-  if(ei.first == 0 && ei.second == 0) return;
-  auto& accum = c.data[member];
-  if(ei.first != 0) atomic_add(accum.exclusive, ei.first);
-  if(ei.second != 0) atomic_add(accum.inclusive, ei.second);
+void Metric::AccumulatorRef::add(Metric::Scope s, double v) noexcept {
+  if(v == 0) return;
+  switch(s) {
+  case Scope::point: util::log::fatal{} << "TODO: Support point Metric::Scope!";
+  case Scope::exclusive:
+    atomic_add(accum->exclusive, v);
+    break;
+  case Scope::inclusive:
+    atomic_add(accum->inclusive, v);
+    break;
+  }
 }
 
-void Metric::add(Thread::Temporary& t, Context& c, double v) const noexcept {
-  if(type() == Type::artifical)
-    util::log::fatal{} << "Attempt to emit data for an artifical Metric!";
-  if(v != 0) atomic_add(t.data[tmember].exclusive[&c], v);
+Metric::AccumulatorRef Metric::getFor(Context& c) const noexcept {
+  return c.data[member];
 }
 
-std::pair<double, double> Metric::getFor(const Context& c) const noexcept {
-  std::pair<double, double> x{0, 0};
+void Metric::ThreadAccumulatorRef::add(double v) noexcept {
+  if(v != 0) atomic_add(*exclusive, v);
+}
+
+Metric::ThreadAccumulatorRef Metric::getFor(Thread::Temporary& t, Context& c) const noexcept {
+  auto& td = t.data[tmember];
+  return {td.exclusive[&c], td.inclusive[&c]};
+}
+
+static stdshim::optional<double> opt0(double d) {
+  return d == 0 ? stdshim::optional<double>{} : d;
+}
+
+stdshim::optional<double> Metric::CAccumulatorRef::get(Metric::Scope s) const noexcept {
+  if(accum == nullptr) return {};
+  switch(s) {
+  case Scope::point: util::log::fatal{} << "TODO: Support point Metric::Scope!";
+  case Scope::exclusive: return opt0(accum->exclusive.load(std::memory_order_relaxed));
+  case Scope::inclusive: return opt0(accum->inclusive.load(std::memory_order_relaxed));
+  default: util::log::fatal{} << "Invalid Scope value!";
+  };
+  std::abort();  // unreachable
+}
+
+Metric::CAccumulatorRef Metric::cgetFor(const Context& c) const noexcept {
   auto* a = c.data.find(member);
-  if(a) {
-    x.first = a->exclusive.load(std::memory_order_relaxed);
-    x.second = a->inclusive.load(std::memory_order_relaxed);
-  }
-  return x;
+  if(a == nullptr) return {};
+  return *a;
 }
 
-std::pair<double, double> Metric::getFor(const Thread::Temporary& t, const Context& c) const noexcept {
-  std::pair<double, double> ei{0, 0};
-  auto* local = t.data.find(tmember);
-  if(local) {
-    auto* exc = local->exclusive.find(const_cast<Context*>(&c));
-    if(exc) ei.first = exc->load(std::memory_order_relaxed);
-
-    auto inc = local->inclusive.find(const_cast<Context*>(&c));
-    if(inc != local->inclusive.end()) ei.second = inc->second;
+stdshim::optional<double> Metric::CThreadAccumulatorRef::get(Metric::Scope s) const noexcept {
+  switch(s) {
+  case Scope::point: util::log::fatal{} << "TODO: Support point Metric::Scope!";
+  case Scope::exclusive:
+    return exclusive != nullptr ? opt0(exclusive->load(std::memory_order_relaxed))
+                                : stdshim::optional<double>{};
+  case Scope::inclusive:
+    return inclusive != nullptr ? opt0(*inclusive) : stdshim::optional<double>{};
+  default: util::log::fatal{} << "Invalid Scope value!";
   }
-  return ei;
+  std::abort();  // unreachable
+}
+
+Metric::CThreadAccumulatorRef Metric::cgetFor(const Thread::Temporary& t, const Context& c) const noexcept {
+  auto* td = t.data.find(tmember);
+  if(td == nullptr) return {};
+  auto iit = td->inclusive.find(const_cast<Context*>(&c));
+  if(iit == td->inclusive.end()) return {};
+  auto* e = td->exclusive.find(const_cast<Context*>(&c));
+  if(e) return {*e, iit->second};
+  return {nullptr, iit->second};
 }
 
 void Metric::finalize(Thread::Temporary& t) noexcept {
-  // Artifical metrics go directly into the tree, so we don't need anything.
-  if(type() == Type::artifical) return;
-
   auto* local_p = t.data.find(tmember);
   if(!local_p) return;  // We have no data for this.
   auto& local = *local_p;

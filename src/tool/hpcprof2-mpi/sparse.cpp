@@ -129,14 +129,14 @@ void SparseDB::notifyThreadFinal(const Thread::Temporary& tt) {
       const auto& ids = m.userdata[src.identifier()];
       auto vv = m.getFor(tt, c);
       hpcrun_metricVal_t v;
-      if(vv.first != 0) {
-        v.r = vv.first;
+      if(auto vex = vv.get(Metric::Scope::exclusive)) {
+        v.r = *vex;
         any = true;
         mids.push_back(ids.first);
         values.push_back(v);
       }
-      if(vv.second != 0) {
-        v.r = vv.second;
+      if(auto vinc = vv.get(Metric::Scope::inclusive)) {
+        v.r = *vinc;
         any = true;
         mids.push_back(ids.second);
         values.push_back(v);
@@ -215,14 +215,14 @@ void SparseDB::write()
       const auto& ids = m.userdata[src.identifier()];
       auto vv = m.getFor(c);
       hpcrun_metricVal_t v;
-      if(vv.first != 0) {
-        v.r = vv.first;
+      if(auto vex = vv.get(Metric::Scope::exclusive)) {
+        v.r = *vex;
         any = true;
         mids.push_back(ids.first);
         values.push_back(v);
       }
-      if(vv.second != 0) {
-        v.r = vv.second;
+      if(auto vinc = vv.get(Metric::Scope::inclusive)) {
+        v.r = *vinc;
         any = true;
         mids.push_back(ids.second);
         values.push_back(v);

@@ -106,7 +106,6 @@ std::vector<uint8_t>::const_iterator Packed::unpackAttributes(iter_t it) noexcep
     Metric::Settings s;
     s.name = unpack<std::string>(it);
     s.description = unpack<std::string>(it);
-    s.type = Metric::Type::linear;
     metrics.emplace_back(sink.metric(s));
   }
   return it;

@@ -436,13 +436,16 @@ void ExperimentXML::emitMetrics(const Context& c, bool ex) {
   for(const auto& met: src.metrics().iterate()) {
     auto& udm = met().userdata[ud];
     auto v = met().getFor(c);
-    if(v.first != 0 && ex)
-      of << "<M n=\"" << udm.ex_id << "\" v=\""
-        << std::scientific << v.first << std::defaultfloat
-        << "\"/>\n";
-    if(v.second != 0)
+    if(ex) {
+      auto vex = v.get(Metric::Scope::exclusive);
+      if(vex)
+        of << "<M n=\"" << udm.ex_id << "\" v=\""
+          << std::scientific << *vex << std::defaultfloat
+          << "\"/>\n";
+    }
+    if(auto vinc = v.get(Metric::Scope::inclusive))
       of << "<M n=\"" << udm.inc_id << "\" v=\""
-        << std::scientific << v.second << std::defaultfloat
+        << std::scientific << *vinc << std::defaultfloat
         << "\"/>\n";
   }
 }

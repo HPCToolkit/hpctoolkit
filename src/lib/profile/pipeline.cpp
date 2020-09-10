@@ -424,8 +424,6 @@ Metric& Source::metric(const Metric::Settings& s) {
     util::log::fatal() << "Source did not register for `attributes` emission!";
   auto x = pipe->mets.emplace(pipe->structs.metric, pipe->metstruct, pipe->tmetstruct, s);
   auto r = &x.first();
-  if(r->type() != s.type)
-    util::log::fatal() << "Identical Metrics with different types!";
   if(x.second) {
     for(auto& s: pipe->sinks) {
       if(s.dataLimit.hasAttributes()) s().notifyMetric(*r);
@@ -472,25 +470,29 @@ Context& Source::context(Context& p, const Scope& s) {
 void Source::add(Context& c, Thread::Temporary& t, const Metric& m, double v) {
   if(!limit().hasMetrics())
     util::log::fatal() << "Source did not register for `metrics` emission!";
-  m.add(t, c, v);
+  m.getFor(t, c).add(v);
 }
 
 void Source::add(Context& c, const Metric& m, std::pair<double, double> v) {
   if(!limit().hasMetrics())
     util::log::fatal() << "Source did not register for `metrics` emission!";
-  m.add(c, v);
+  auto ar = m.getFor(c);
+  ar.add(Metric::Scope::exclusive, v.first);
+  ar.add(Metric::Scope::inclusive, v.first);
 }
 
 void Source::add(Thread::Temporary& t, const Metric& m, double v) {
   if(!limit().hasMetrics())
     util::log::fatal() << "Source did not register for `metrics` emission!";
-  m.add(t, *pipe->cct, v);
+  m.getFor(t, *pipe->cct).add(v);
 }
 
 void Source::add(const Metric& m, std::pair<double, double> v) {
   if(!limit().hasMetrics())
     util::log::fatal() << "Source did not register for `metrics` emission!";
-  m.add(*pipe->cct, v);
+  auto ar = m.getFor(*pipe->cct);
+  ar.add(Metric::Scope::exclusive, v.first);
+  ar.add(Metric::Scope::inclusive, v.first);
 }
 
 Thread::Temporary& Source::thread(const ThreadAttributes& o) {

@@ -263,8 +263,7 @@ void HpcrunFSv2::read(const DataClass& needed) {
               metric_int.emplace_back(true);
             else
               util::log::fatal() << "Invalid metric value format!";
-            metric_order.emplace_back(&sink.metric({m.name, m.description,
-                                                    Metric::Type::linear}));
+            metric_order.emplace_back(&sink.metric({m.name, m.description}));
           }
         }
         if(sink.limit().hasReferences()) {

@@ -219,7 +219,8 @@ void HPCMetricDB::notifyThreadFinal(const Thread::Temporary& tt) {
       byte8 v(0);
       if(fm.second) {
         auto vv = fm.second->getFor(tt, c);
-        v.d = fm.first ? vv.first : vv.second;
+        v.d = fm.first ? vv.get(Metric::Scope::exclusive).value_or(0)
+                       : vv.get(Metric::Scope::inclusive).value_or(0);
       }
       if(v.d != 0) any = true;
 
