@@ -178,7 +178,6 @@ private:
     udContext(const Context&, ExperimentXML4&);
     ~udContext() = default;
 
-    unsigned int id;
     std::string pre;
     std::string open;
     std::string attr;

@@ -207,7 +207,7 @@ ExperimentXML4::udMetric::udMetric(const Metric& m, ExperimentXML4& exml) {
 // ud Context bits
 
 ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
-  : id(c.userdata[exml.src.identifier()]*2 + 1), premetrics(false) {
+  : premetrics(false) {
   const auto& s = c.scope();
   auto& proc = exml.getProc(s);
   switch(s.type()) {
@@ -216,7 +216,7 @@ ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
                    ? exml.proc_partial() : exml.proc_unknown();
     exml.file_unknown.incr(exml);
     std::ostringstream ss;
-    ss << "<PF i=\"" << id << "\""
+    ss << "<PF i=\"" << c.userdata[exml.src.identifier()] << "\""
              " n=\"" << uproc.id << "\" s=\"" << uproc.id << "\""
              " f=\"" << exml.file_unknown.id << "\""
              " l=\"0\"";
@@ -227,7 +227,8 @@ ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
   case Scope::Type::loop: {
     auto fl = s.line_data();
     std::ostringstream ss;
-    ss << "<L i=\"" << id << "\" s=\"" << proc.id << "\" v=\"0\""
+    ss << "<L i=\"" << c.userdata[exml.src.identifier()] << "\""
+             " s=\"" << proc.id << "\" v=\"0\""
              " l=\"" << fl.second << "\""
              " f=\"" << fl.first.userdata[exml.ud].id << "\"";
     open = ss.str();
@@ -253,19 +254,19 @@ ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
       auto& udf = fl.first ? fl.first->userdata[exml.ud] : udm.unknown_file;
       udf.incr(exml);
       std::ostringstream ss;
-      ss << "<PF i=\"" << id << "\""
+      ss << "<PF i=\"" << c.userdata[exml.src.identifier()] << "\""
                " lm=\"" << udm.id << "\""
                " n=\"" << proc.id << "\" s=\"" << proc.id << "\""
                " l=\"" << fl.second << "\""
                " f=\"" << udf.id << "\">\n";
-      id++;  // Switch to our other id
       pre = ss.str();
       premetrics = true;
       post = "</PF>\n";
     }
     open = "<";
     std::ostringstream ss;
-    ss << " i=\"" << id << "\" s=\"" << proc.id << "\""
+    ss << " i=\"" << c.userdata[exml.src.identifier()] << "\""
+          " s=\"" << proc.id << "\""
           " l=\"" << fl.second << "\"";
     attr = ss.str();
     mo.first.userdata[exml.ud].incr(mo.first, exml);
@@ -274,10 +275,10 @@ ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
   case Scope::Type::inlined_function: {
     auto fl = s.line_data();
     std::ostringstream ss;
-    ss << "<C i=\"" << id << "\" s=\"" << proc.id << "\""
+    ss << "<C i=\"" << c.userdata[exml.src.identifier()] << "\""
+            " s=\"" << proc.id << "\""
             " v=\"0\""
             " l=\"" << fl.second << "\">\n";
-    id++;  // Switch to our other id
     pre = ss.str();
     premetrics = true;
     post = "</C>\n";
@@ -304,7 +305,7 @@ ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
     udm.incr(f.module(), exml);
     udf.incr(exml);
     std::ostringstream ss;
-    ss << "<PF i=\"" << id << "\""
+    ss << "<PF i=\"" << c.userdata[exml.src.identifier()] << "\""
              " l=\"" << f.line << "\""
              " f=\"" << udf.id << "\""
              " n=\"" << proc.id << "\" s=\"" << proc.id << "\""
@@ -424,6 +425,12 @@ void ExperimentXML4::write() {
 
         "<Info/>\n"
         "</SecHeader>\n";
+
+  // Early check: the global Context must have id 0
+  if(src.contexts().userdata[src.identifier()] != 0)
+    util::log::fatal{} << "Global Context id "
+                       << src.contexts().userdata[src.identifier()]
+                       << " != 0!";
 
   // Spit out the CCT
   emit(src.contexts());

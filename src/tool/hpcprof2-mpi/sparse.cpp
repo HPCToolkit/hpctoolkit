@@ -143,7 +143,7 @@ void SparseDB::notifyThreadFinal(const Thread::Temporary& tt) {
       }
     }
     if(any) {
-      cids.push_back(c.userdata[src.identifier()]*2 + 1);  // Convert to EXML id
+      cids.push_back(c.userdata[src.identifier()]);
       coffsets.push_back(offset);
     }
   }
@@ -229,7 +229,7 @@ void SparseDB::write()
       }
     }
     if(any) {
-      cids.push_back(c.userdata[src.identifier()]*2 + 1);  // Convert to EXML id
+      cids.push_back(c.userdata[src.identifier()]);
       coffsets.push_back(offset);
     }
   }
