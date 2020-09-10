@@ -280,9 +280,6 @@ typedef struct thread_data_t {
   // sample or else deadlock on the dlopen lock.
   bool inside_dlfcn;
 
-  //tms_id_tuple
-  tms_id_tuple_t id_tuple;
-
 
 #ifdef ENABLE_CUDA
   gpu_data_t gpu_data;

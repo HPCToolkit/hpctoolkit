@@ -78,12 +78,13 @@ extern "C" {
 #endif
 
 //***************************************************************************
-#define IDTUPLE_SUMMARY   (uint16_t)0
-#define IDTUPLE_NODE      (uint16_t)1
-#define IDTUPLE_RANK      (uint16_t)2
-#define IDTUPLE_THREAD    (uint16_t)3
-#define IDTUPLE_GPUDEVICE (uint16_t)4
-#define IDTUPLE_GPUSTREAM (uint16_t)5
+#define IDTUPLE_SUMMARY    (uint16_t)0
+#define IDTUPLE_NODE       (uint16_t)1
+#define IDTUPLE_RANK       (uint16_t)2
+#define IDTUPLE_THREAD     (uint16_t)3
+#define IDTUPLE_GPUDEVICE  (uint16_t)4
+#define IDTUPLE_GPUSTREAM  (uint16_t)5
+#define IDTUPLE_GPUCONTEXT (uint16_t)6
 
 #define TMS_id_tuple_len_SIZE  2
 #define TMS_id_SIZE            10
@@ -95,9 +96,9 @@ typedef struct tms_id_t{
 
 typedef struct tms_id_tuple_t{
   uint16_t length;
-  uint32_t rank; //rank that read/write this profile
   tms_id_t* ids;
 
+  uint32_t rank; //rank that read/write this profile
   uint32_t prof_info_idx;
   uint32_t all_at_root_idx;
 }tms_id_tuple_t;

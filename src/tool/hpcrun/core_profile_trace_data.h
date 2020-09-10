@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <lib/prof-lean/hpcio-buffer.h>
 #include <lib/prof-lean/hpcfmt.h> // for metric_aux_info_t
+#include <lib/prof-lean/id-tuple.h>
 
 #include "epoch.h"
 #include "cct2metrics.h"
@@ -13,6 +14,7 @@ enum perf_ksym_e {PERF_UNDEFINED, PERF_AVAILABLE, PERF_UNAVAILABLE} ;
 
 typedef struct core_profile_trace_data_t {
   int id;
+  tms_id_tuple_t id_tuple;
   // ----------------------------------------
   // epoch: loadmap + cct + cct_ctxt
   // ----------------------------------------
