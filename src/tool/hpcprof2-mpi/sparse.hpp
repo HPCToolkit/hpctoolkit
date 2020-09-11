@@ -108,8 +108,10 @@ public:
   //***************************************************************************
   // General  - YUMENG
   //***************************************************************************
-  #define CTX_VEC_IDX(c) ((c-1)/2)
-  #define CTXID(c)       (c*2+1)
+  //#define CTX_VEC_IDX(c) ((c-1)/2)
+  //#define CTXID(c)       (c*2+1)
+  #define CTX_VEC_IDX(c) c
+  #define CTXID(c)       c
   
   void merge(int threads, bool debug);
   template<typename T>

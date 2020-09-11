@@ -1381,7 +1381,7 @@ void SparseDB::getMyCtxs(const std::vector<uint64_t>& ctx_off,
   uint64_t my_end = (rank == num_ranks - 1) ? ctx_off.size()-1 : (rank + 1) * num_ctxs_per_rank;
 
   for(uint i = my_start; i<my_end; i++){
-    my_ctxs.emplace_back(CTXID((i)));
+    my_ctxs.emplace_back(CTXID(i));
   }
 }
 
@@ -2137,7 +2137,7 @@ void SparseDB::ctxBlocks2Bytes(const CtxMetricBlock& cmb,
   cms_ctx_info_t ci = {ctx_id, 0, 0, ctx_off[CTX_VEC_IDX(ctx_id)]};
 
   if(cmb.metrics.size() > 0)
-    convertOneCtx(ctx_id, ctx_off[CTX_VEC_IDX(ctx_id+2)], cmb, first_ctx_off, ci, met_byte_cnt, metrics_bytes.data());
+    convertOneCtx(ctx_id, ctx_off[CTX_VEC_IDX(ctx_id)+1], cmb, first_ctx_off, ci, met_byte_cnt, metrics_bytes.data());
 
   info_byte_cnt += convertOneCtxInfo(ci, info_bytes.data());
 
@@ -2324,7 +2324,6 @@ void SparseDB::writeCCTMajor(const std::vector<uint64_t>& ctx_nzval_cnts,
   getMyCtxs(ctx_off, world_size, world_rank, my_ctxs);
   updateCtxOffset(ctxcnt, threads, ctx_off);
 
-
   //Prepare files to read and write, get the list of profiles
   MPI_File thread_major_f;
   MPI_File_open(MPI_COMM_WORLD, (dir / "thread.db").c_str(),
@@ -2353,7 +2352,6 @@ void SparseDB::writeCCTMajor(const std::vector<uint64_t>& ctx_nzval_cnts,
   //Close both files
   MPI_File_close(&thread_major_f);
   MPI_File_close(&cct_major_f);
-
 
 }
 
