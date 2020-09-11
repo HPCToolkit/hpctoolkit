@@ -490,11 +490,13 @@ void SparseDB::assignSparseInputs(int world_rank)
 {
   for(const auto& tp : outputs.citerate()){
     tms_id_tuple_t tuple = buildIdTuple(tp.first->attributes, world_rank);
+    if(tuple.length == 0) continue; //skip this profile
     sparseInputs.emplace_back(tuple, tp.second.string());
   }
 
   if(world_rank == 0){
     tms_id_tuple_t tuple = buildSmryIdTuple();
+    assert(tuple.length == 1);
     sparseInputs.emplace_back(tuple, summaryOut.string());
   }
 

@@ -1206,7 +1206,7 @@ int hpcrun_sparse_next_context(hpcrun_sparse_file_t* sparse_fs, hpcrun_fmt_cct_n
   return node->id;
 }
 
-/* succeed: returns 0; error while reading: returns -1 */
+/* succeed: returns 0; error while reading, or length == 0: returns -1 */
 int hpcrun_sparse_read_id_tuple(hpcrun_sparse_file_t* sparse_fs, tms_id_tuple_t* id_tuple)
 {
   int ret = hpcrun_sparse_check_mode(sparse_fs, OPENED, __func__);
@@ -1214,6 +1214,7 @@ int hpcrun_sparse_read_id_tuple(hpcrun_sparse_file_t* sparse_fs, tms_id_tuple_t*
 
   fseek(sparse_fs->file, sparse_fs->footer.sm_start, SEEK_SET);
   ret = id_tuple_fread(id_tuple, sparse_fs->file);
+  if(id_tuple->length == 0) return SF_ERR;
   if(ret != HPCFMT_OK) return SF_ERR;
 
   return SF_SUCCEED;
