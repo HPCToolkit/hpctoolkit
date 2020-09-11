@@ -373,8 +373,27 @@ _s_srcset.add_all(when: libunwind_static_dep, if_true: _libunwind_srcset)
 
 _srcset.add(files('utilities/last_func.c'))
 
-# hpcrun requires an hpcfnbounds in order to function. Make sure we have one.
-_has_hpcfnbounds = not is_disabler(hpcfnbounds_exe) or not is_disabler(hpcfnbounds2_exe)
+# If the front-end bits have been requested, use them.
+# TODO: Swap out for a !--enable-backend option
+if true
+  all_apps += configure_file(
+    input: files('scripts/hpclog'), output: '@PLAINNAME@', copy: true,
+    install: true, install_dir: get_option('libexecdir') / 'hpctoolkit',
+    install_mode: 'rwxr-xr-x')
+  all_apps += configure_file(
+    input: files('scripts/hpcsummary.in'), output: '@BASENAME@',
+    configuration: {'PACKAGE_VERSION': meson.project_version()},
+    install: true, install_dir: get_option('libexecdir') / 'hpctoolkit',
+    install_mode: 'rwxr-xr-x')
+  install_headers(files('hpctoolkit.h'))
+endif
+
+# hpcrun/link require an hpcfnbounds in order to function. Make sure we have one.
+if is_disabler(hpcfnbounds_exe) and is_disabler(hpcfnbounds2_exe)
+  summary('hpcrun', false, section: 'Applications', bool_yn: true)
+  summary('hpclink', false, section: 'Applications', bool_yn: true)
+  subdir_done()
+endif
 
 _d_srcset.add_all(_srcset)
 _d_srcs = _d_srcset.apply(_config)
@@ -391,7 +410,7 @@ libhpcrun_lib = shared_library('hpcrun', _d_srcs.sources(),
   link_with: [prof_lean_lib, support_lean_lib],
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
-summary('hpcrun', not is_disabler(libhpcrun_lib) and _has_hpcfnbounds, section: 'Applications', bool_yn: true)
+summary('hpcrun', not is_disabler(libhpcrun_lib), section: 'Applications', bool_yn: true)
 all_applibs += libhpcrun_lib
 
 if not is_disabler(libhpcrun_lib)
@@ -414,39 +433,35 @@ endforeach
 
 libhpcrun_static_lib = static_library('hpcrun_static', _s_srcs.sources(),
   dependencies: _s_srcs.dependencies() + _s_ddep
-    + [cc.find_library('dl'), dependency('threads')],
+    + [libmonitor_wrap_dep.partial_dependency()]
+    + [libelf_static_d_dep, liblzma_static_d_dep, mbedtls_crypto_d_dep]
+    + [cc.find_library('dl'), cc.find_library('rt'), dependency('threads')],
   link_with: [prof_lean_static_lib, support_lean_static_lib],
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
-summary('hpclink', not is_disabler(libhpcrun_static_lib) and _has_hpcfnbounds, section: 'Applications', bool_yn: true)
+libhpcrun_wrap_lib = static_library('hpcrun_wrap', files('monitor-exts/openmp.c'),
+  dependencies: _s_ddep + [libmonitor_wrap_dep.partial_dependency()],
+  install: true, install_dir: get_option('libdir') / meson.project_name(),
+)
+summary('hpclink', not is_disabler(libhpcrun_static_lib)
+  and not is_disabler(libhpcrun_wrap_lib),
+  section: 'Applications', bool_yn: true)
 pkgconfig.generate(libhpcrun_static_lib)
+pkgconfig.generate(libhpcrun_wrap_lib)
 
-if not is_disabler(libhpcrun_static_lib)
+# The hpclink script needs an explicit pkgconfig for libmonitor as well.
+# Since libmonitor doesn't generate one, we handle that part.
+pkgconfig.generate(
+  name: 'monitor_wrap', description: 'libmonitor: wrap library',
+  libraries: libmonitor_wrap_libs,
+)
+
+if not is_disabler(libhpcrun_static_lib) and not is_disabler(libhpcrun_wrap_lib)
   # Set for bin/meson.build
-  hpcrun_script = files('scripts/hpclink.meson.in')
-  configure_file(input: hpcrun_script, output: 'hpclink',
+  hpclink_script = files('scripts/hpclink.meson.in')
+  configure_file(input: hpclink_script, output: 'hpclink',
     configuration: launch_config,
     install: true, install_dir: get_option('bindir'),
     install_mode: 'rwxr-xr-x')
 endif
 
-
-# Check that the static case is actually linkable by compiling a small
-# hello-world style application with it linked in.
-executable('hpcrun_static_test', files('hello-world.c'),
-  link_with: [libhpcrun_static_lib])
-
-# If the front-end bits have been requested, use them.
-# TODO: Swap out for a !--enable-backend option
-if true
-  all_apps += configure_file(
-    input: files('scripts/hpclog'), output: '@PLAINNAME@', copy: true,
-    install: true, install_dir: get_option('libexecdir') / 'hpctoolkit',
-    install_mode: 'rwxr-xr-x')
-  all_apps += configure_file(
-    input: files('scripts/hpcsummary.in'), output: '@BASENAME@',
-    configuration: {'PACKAGE_VERSION': meson.project_version()},
-    install: true, install_dir: get_option('libexecdir') / 'hpctoolkit',
-    install_mode: 'rwxr-xr-x')
-  install_headers(files('hpctoolkit.h'))
-endif

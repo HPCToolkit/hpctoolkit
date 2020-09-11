@@ -220,6 +220,13 @@ git_version='(Git TODO)'
 spack_spec='(Spack TODO)'
 ''')
 
+# These are pretty much exclusively for hpclink
+launch_config.set('HPCLINK_CC', ' '.join(meson.get_compiler('c').cmd_array()))
+launch_config.set('CFLAGS', '')
+
+# TODO: Should be based on lush-pthreads, I think
+launch_config.set('hpclink_extra_wrap_names', '')
+
 subdir('hpcstruct')
 subdir('hpcprof')
 subdir('hpcprof-mpi')

@@ -79,11 +79,14 @@ if is_variable('hpclink_script')
   _hpclink_intree_launch_config = configuration_data()
   _hpclink_intree_launch_config.merge_from(launch_config)
   _hpclink_intree_launch_config.set('export_hpctoolkit', '''
+  hpcfnbounds_dir='bin'
+  plugin_dir='src/tool/hpcrun'
+  pc_dir='meson-uninstalled'
   HPCTOOLKIT="$(dirname "$0")/.."
   ''')
   custom_target('in-tree copy of hpclink',
     command: [_cp_exec, '@INPUT@', '@OUTPUT@'],
     input: configure_file(input: hpclink_script, output: 'hpclink.sh',
-                          configuration: _hpcrun_intree_launch_config),
-    output: 'hpcrun', build_by_default: true)
+                          configuration: _hpclink_intree_launch_config),
+    output: 'hpclink', build_by_default: true)
 endif

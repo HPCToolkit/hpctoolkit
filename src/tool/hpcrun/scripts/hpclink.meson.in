@@ -30,7 +30,7 @@ plugin_dir='lib/hpctoolkit/plugins'
 pc_dir='lib/hpctoolkit/pkgconfig'
 
 internal_wrap_names='poll select ppoll pselect'
-external_wrap_names='@LIBMONITOR_WRAP_NAMES@  @hpclink_extra_wrap_names@'
+external_wrap_names='@hpclink_extra_wrap_names@'
 
 hpctk_wrap_names="${internal_wrap_names}  ${external_wrap_names}"
 
@@ -376,6 +376,13 @@ do
     prev_arg="$arg"
 done
 
+# Step 2.-1, generate the extra wrap names needed by libmonitor
+libmonitor_wrap_names="$( \
+    nm "$(PKG_CONFIG_PATH="${pc_dir}" pkg-config --libs monitor_wrap)" \
+    | grep __wrap_ | sed -e 's/.*__wrap_//' | tr '\n' ' ')"
+
+hpctk_wrap_names="${internal_wrap_names}  ${external_wrap_names}  ${libmonitor_wrap_names}"
+
 #------------------------------------------------------------
 # Step 2 -- Build the new compile line.
 #------------------------------------------------------------
@@ -416,13 +423,26 @@ do
     wrap_args="${wrap_args} ${linker_prefix},--wrap=${name}"
 done
 
-set -- $undef_args $wrap_args $(PKG_CONFIG_PATH="${pc_dir}" --libs hpcrun_static) "$@"
+prelib_args=
+lib_args=
+for arg in $(PKG_CONFIG_PATH="${pc_dir}" pkg-config --libs hpcrun_static)
+do
+    if test "${arg}" = "-lhpcrun_static"
+    then
+        prelib_args="${lib_args} ${linker_prefix},--whole-archive ${arg} ${linker_prefix},--no-whole-archive"
+        lib_args=
+    else
+        lib_args="${lib_args} ${arg}"
+    fi
+done
+
+set -- $undef_args $wrap_args $prelib_args "$@"
 set -- "$@" "${nm_addrs}.o"
 
 PKG_CONFIG_PATH="${pc_dir}" pkg-config --exists hpcrun_wrap || die "unable to find: hpcrun_wrap"
 PKG_CONFIG_PATH="${pc_dir}" pkg-config --exists monitor_wrap || die "unable to find: monitor_wrap"
-set -- "$@" $(PKG_CONFIG_PATH="${pc_dir}" --libs hpcrun_wrap $extra_hpc_libs monitor_wrap)
-set -- "$@" $extra_plugin_files $appl_libs
+set -- "$@" $(PKG_CONFIG_PATH="${pc_dir}" pkg-config --libs hpcrun_wrap $extra_hpc_libs monitor_wrap)
+set -- "$@" $lib_args $extra_plugin_files $appl_libs
 
 #------------------------------------------------------------
 # Step 3 -- Link with dummy nm file.

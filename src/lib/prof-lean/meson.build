@@ -83,5 +83,5 @@ prof_lean_lib = static_library('prof_lean', _srcs, pic: true,
   dependencies: [libelf_d_dep, mbedtls_crypto_d_dep])
 prof_lean_static_lib = static_library('prof_lean_static', _srcs, pic: true,
   include_directories: main_includes,
-  dependencies: [libelf_d_dep.partial_dependency(compile_args: true, includes: true)])
+  dependencies: [libelf_static_d_dep, mbedtls_crypto_d_dep])
 

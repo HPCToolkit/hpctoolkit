@@ -165,9 +165,18 @@ _deps = {
                         'libs': ['unwind'], 'headers': ['libunwind.h'],
                         'static': true,
                       },
+  'zlib': { 'propstems': ['zlib'], 'spack': 'zlib', 'dependency': 'zlib',
+            'libs': ['z'], 'headers': ['zlib.h'],
+          },
+  'zlib_static': { 'propstems': ['zlib'], 'spack': 'zlib', 'dependency': 'zlib',
+                   'libs': ['z'], 'headers': ['zlib.h'], 'static': true,
+                 },
   'libelf': { 'propstems': ['libelf', 'elfutils'], 'spack': 'elfutils', 'dependency': 'libelf',
               'libs': ['elf'], 'headers': ['libelf.h'],
             },
+  'libelf_static': { 'propstems': ['libelf', 'elfutils'], 'spack': 'elfutils', 'dependency': 'libelf',
+                     'libs': ['elf'], 'headers': ['libelf.h'], 'static': true,
+                   },
   'libdw': { 'propstems': ['libdw', 'elfutils'], 'spack': 'elfutils', 'dependency': 'libdw',
              'libs': ['dw'], 'headers': ['elfutils/libdw.h'],
            },
@@ -177,6 +186,9 @@ _deps = {
   'liblzma': { 'propstems': ['liblzma', 'lzma'], 'spack': 'xz', 'dependency': 'liblzma',
                'libs': ['lzma'], 'headers': ['lzma.h'],
              },
+  'liblzma_static': { 'propstems': ['liblzma', 'lzma'], 'spack': 'xz', 'dependency': 'liblzma',
+                      'libs': ['lzma'], 'headers': ['lzma.h'], 'static': true,
+                    },
   'mbedtls_crypto': { 'propstems': ['mbedtls'], 'spack': 'mbedtls',
                       'libs': ['mbedcrypto'], 'headers': ['mbedtls/md5.h'],
                       'static': true,
@@ -212,13 +224,10 @@ _deps = {
   'libmonitor': { 'propstems': ['libmonitor', 'monitor'], 'spack': 'libmonitor',
                   'libs': ['monitor'], 'headers': ['monitor.h'],
                 },
-  'libmonitor_static': { 'propstems': ['libmonitor', 'monitor'], 'spack': 'libmonitor',
-                         'libs': ['monitor_wrap'], 'headers': ['monitor.h'],
-                         'static': true,
-                       },
-  'zlib': { 'propstems': ['zlib'], 'spack': 'zlib', 'dependency': 'zlib',
-            'libs': ['z'], 'headers': ['zlib.h'],
-          },
+  'libmonitor_wrap': { 'propstems': ['libmonitor', 'monitor'], 'spack': 'libmonitor',
+                       'libs': ['monitor_wrap'], 'headers': ['monitor.h'],
+                       'static': true, 'rawlibs': true,
+                     },
 
   'tbb': { 'propstems': ['tbb'], 'spack': 'intel-tbb',
            'libs': ['tbb', 'tbbmalloc'], 'headers': ['tbb/concurrent_hash_map.h'],
@@ -427,6 +436,9 @@ foreach var, dep : _deps
     set_variable(var+'_dep', declare_dependency(
       dependencies: _dep_libs + _dep_exdeps, include_directories: _dep_idirs,
     ))
+    if dep.get('rawlibs', false)
+      set_variable(var+'_libs', get_variable(var+'_dep').found() ? _dep_libs : disabler())
+    endif
     set_variable(var+'_dep_idirs', _dep_idirs)
     set_variable(var+'_dep_ex', _dep_exdeps)
     summary(var, _dep_paths['summary'], section: 'Dependencies')
@@ -456,10 +468,16 @@ foreach var, dep : _deps
     endif
     if _dep_allfound
       set_variable(var+'_dep', declare_dependency(dependencies: _dep_libs + _dep_exdeps))
+      if dep.get('rawlibs', false)
+        set_variable(var+'_libs', _dep_libs)
+      endif
       set_variable(var+'_dep_ex', _dep_exdeps)
       summary(var, '(system)', section: 'Dependencies')
     else
       set_variable(var+'_dep', dependency('', required: false))
+      if dep.get('rawlibs', false)
+        set_variable(var+'_libs', disabler())
+      endif
       set_variable(var+'_dep_ex', dependency('', required: false))
       summary(var, false, section: 'Dependencies', bool_yn: true)
     endif
@@ -492,6 +510,9 @@ endforeach
 # The Valgrind dependency should only reference the headers, so remove any
 # of its other bits.
 x_valgrind_headers_dep = x_valgrind_headers_dep.partial_dependency(compile_args: true, includes: true)
+
+# The libelf_static dependency also requires zlib
+libelf_static_dep = declare_dependency(dependencies: [libelf_static_dep, zlib_static_dep])
 
 # For every dependency (_dep) variable, add an additional _d_dep variable that
 # is a disabler when the dependency is not found. Because disablers are handy.
