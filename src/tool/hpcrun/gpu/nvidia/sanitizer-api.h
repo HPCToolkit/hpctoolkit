@@ -5,7 +5,10 @@ int
 sanitizer_bind();
 
 void
-sanitizer_analysis_enable();
+sanitizer_redundancy_analysis_enable();
+
+void
+sanitizer_value_flow_analysis_enable();
 
 void
 sanitizer_callbacks_subscribe();
@@ -30,6 +33,9 @@ sanitizer_process_init();
 
 void
 sanitizer_process_signal();
+
+void
+sanitizer_async_config(bool async);
 
 void
 sanitizer_buffer_config(int gpu_patch_record_num, int buffer_pool_size);

@@ -108,7 +108,8 @@
 
 #define NVIDIA_CUDA "gpu=nvidia" 
 #define NVIDIA_CUDA_PC_SAMPLING "gpu=nvidia,pc" 
-#define NVIDIA_CUDA_SANITIZER "gpu=nvidia,sanitizer"
+#define NVIDIA_CUDA_REDUNDANCY "gpu=nvidia,redundancy"
+#define NVIDIA_CUDA_VALUE_FLOW "gpu=nvidia,valueflow"
 
 
 /******************************************************************************
@@ -358,7 +359,7 @@ METHOD_FN(supports_event, const char *ev_str)
 {
 #ifndef HPCRUN_STATIC_LINK
   return hpcrun_ev_is(ev_str, NVIDIA_CUDA) || hpcrun_ev_is(ev_str, NVIDIA_CUDA_PC_SAMPLING) ||
-    hpcrun_ev_is(ev_str, NVIDIA_CUDA_SANITIZER);
+    hpcrun_ev_is(ev_str, NVIDIA_CUDA_VALUE_FLOW) || hpcrun_ev_is(ev_str, NVIDIA_CUDA_REDUNDANCY);
 #else
   return false;
 #endif
@@ -466,7 +467,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     device_trace_finalizer_shutdown.fn = gpu_trace_fini;
     device_finalizer_register(device_finalizer_type_shutdown, 
             &device_trace_finalizer_shutdown);
-  } else if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_SANITIZER)) {
+  } else if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_REDUNDANCY) || hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_VALUE_FLOW)) {
 #ifndef HPCRUN_STATIC_LINK
     if (sanitizer_bind()) {
       EEMSG("hpcrun: unable to bind to NVIDIA SANITIZER library %s\n", dlerror());
@@ -548,10 +549,13 @@ METHOD_FN(process_event_list, int lush_metrics)
     device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_shutdown);
     
     // Register redshow analysis
-    sanitizer_analysis_enable();
-
-    // Enable metrics
-    gpu_metrics_GPU_REDUNDANCY_enable();
+    if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_REDUNDANCY)) {
+      sanitizer_redundancy_analysis_enable();
+      // Enable metrics
+      gpu_metrics_GPU_REDUNDANCY_enable();
+    } else if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_VALUE_FLOW)) {
+      sanitizer_value_flow_analysis_enable();
+    }
 
     // Register sanitizer callbacks
     sanitizer_callbacks_subscribe();

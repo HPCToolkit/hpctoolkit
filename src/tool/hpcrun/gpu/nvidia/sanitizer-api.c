@@ -204,6 +204,8 @@ static int sanitizer_mem_views = 0;
 static redshow_approx_level_t sanitizer_approx_level = REDSHOW_APPROX_NONE;
 static redshow_data_type_t sanitizer_data_type = REDSHOW_DATA_FLOAT;
 
+static bool sanitizer_analysis_async = false;
+
 static __thread bool sanitizer_stop_flag = false;
 static __thread uint32_t sanitizer_thread_id_self = (1 << 30);
 static __thread uint32_t sanitizer_thread_id_local = 0;
@@ -710,7 +712,7 @@ sanitizer_unload_callback
 // record handlers
 //******************************************************************************
 
-static void
+static void __attribute__((unused))
 dim3_id_transform
 (
  dim3 dim,
@@ -816,16 +818,45 @@ sanitizer_kernel_launch_sync
     
     sanitizer_buffer_channel_push(sanitizer_buffer);
 
-    // Awake background thread
-    // If multiple application threads are created, it might miss a signal,
-    // but we finally still process all the records
-    sanitizer_process_signal(); 
+    if (sanitizer_analysis_async) {
+      // Awake background thread
+      // If multiple application threads are created, it might miss a signal,
+      // but we finally still process all the records
+      sanitizer_process_signal(); 
+    }
     
     // Finish all the threads
     if (gpu_patch_buffer->num_threads == num_left_threads) {
       break;
     }
   }
+
+  if (!sanitizer_analysis_async) {
+    sanitizer_buffer_channel_set_consume();
+  }
+}
+
+
+static void
+sanitizer_copy_to_host_sync
+(
+ CUcontext context,
+ CUstream stream,
+ uint64_t host_addr,
+ uint64_t dev_addr,
+ uint64_t size
+)
+{
+  sanitizer_context_map_entry_t *entry = sanitizer_context_map_init(context);
+
+  sanitizer_context_map_stream_lock(context, stream);
+
+  CUstream priority_stream = sanitizer_context_map_entry_priority_stream_get(entry);
+
+  // Update shadow memory only for dst
+  HPCRUN_SANITIZER_CALL(sanitizerMemcpyDeviceToHost, ((void *)host_addr, (void *)dev_addr, size, priority_stream));
+
+  sanitizer_context_map_stream_unlock(context, stream);
 }
 
 
@@ -1047,24 +1078,74 @@ sanitizer_subscribe_callback
 
       sanitizer_kernel_launch_callback(ld->stream, ld->function, grid_size, block_size, kernel_sampling);
 
-      // Ensure data is sync
-      cuda_stream_synchronize(ld->stream);
+      // Ensure data is sync XXX(Keren): no need
+      //cuda_stream_synchronize(ld->stream);
     } else if (cbid == SANITIZER_CBID_LAUNCH_END) {
       if (kernel_sampling) {
         sanitizer_kernel_launch_sync(api_node, correlation_id,
           ld->context, ld->module, ld->function, ld->stream,
           priority_stream, grid_size, block_size);
-      }
 
-      // XXX(Keren): For safety conern only, could be removed
-      cuda_stream_synchronize(ld->stream);
+        cuda_stream_synchronize(ld->stream);
+      }
 
       sanitizer_context_map_stream_unlock(ld->context, ld->stream);
 
       kernel_sampling = false;
     }
   } else if (domain == SANITIZER_CB_DOMAIN_MEMCPY) {
-    // TODO(keren): variable correaltion and sync data
+    Sanitizer_MemcpyData *md = (Sanitizer_MemcpyData *)cbdata;
+
+    uint64_t correlation_id = gpu_correlation_id();
+
+    bool src_host = false;
+    bool dst_host = false;
+
+    if (md->direction == SANITIZER_MEMCPY_DIRECTION_HOST_TO_DEVICE) {
+      src_host = true;
+    } else if (md->direction == SANITIZER_MEMCPY_DIRECTION_HOST_TO_HOST) {
+      src_host = true;
+      dst_host = true;
+    } else if (md->direction == SANITIZER_MEMCPY_DIRECTION_DEVICE_TO_HOST) {
+      dst_host = true;
+    }
+
+    uint64_t src_addr = 0;
+    uint64_t dst_addr = 0;
+    uint64_t src_mem_id = 0;
+    uint64_t dst_mem_id = 0;
+    uint64_t size = 0;
+
+    if (src_host) {
+      src_addr = md->srcAddress;
+      src_mem_id = REDSHOW_MEMORY_HOST;
+    } else {
+      redshow_memory_query(correlation_id, md->srcAddress, &src_mem_id, &src_addr, &size);
+      // src shadow memory does not need to be updated
+    }
+
+    if (dst_host) {
+      dst_addr = md->dstAddress;
+      dst_mem_id = REDSHOW_MEMORY_HOST;
+    } else {
+      redshow_memory_query(correlation_id, md->dstAddress, &dst_mem_id, &dst_addr, &size);
+      sanitizer_copy_to_host_sync(md->dstContext, md->stream, dst_addr, md->dstAddress, md->size);
+    }
+
+    redshow_memcpy_register(correlation_id, src_mem_id, dst_mem_id, md->size);
+  } else if (domain == SANITIZER_CB_DOMAIN_MEMSET) {
+    Sanitizer_MemsetData *md = (Sanitizer_MemsetData *)cbdata;
+
+    uint64_t correlation_id = gpu_correlation_id();
+
+    uint64_t mem_id = 0;
+    uint64_t addr = 0;
+    uint64_t size = 0;
+
+    redshow_memory_query(correlation_id, md->address, &mem_id, &addr, &size);
+    sanitizer_copy_to_host_sync(md->context, md->stream, addr, md->address, md->width);
+
+    redshow_memset_register(correlation_id, mem_id, md->width);
   } else if (domain == SANITIZER_CB_DOMAIN_SYNCHRONIZE) {
     // TODO(Keren): sync data
   }
@@ -1098,10 +1179,19 @@ sanitizer_bind()
 
 
 void
-sanitizer_analysis_enable()
+sanitizer_redundancy_analysis_enable()
 {
   redshow_analysis_enable(REDSHOW_ANALYSIS_SPATIAL_REDUNDANCY);
   redshow_analysis_enable(REDSHOW_ANALYSIS_TEMPORAL_REDUNDANCY);
+}
+
+
+void
+sanitizer_value_flow_analysis_enable()
+{
+  redshow_analysis_enable(REDSHOW_ANALYSIS_VALUE_FLOW);
+  // XXX(Keren): value flow analysis must be sync
+  sanitizer_analysis_async = false;
 }
 
 
@@ -1150,6 +1240,17 @@ sanitizer_callbacks_unsubscribe()
   HPCRUN_SANITIZER_CALL(sanitizerEnableDomain,
     (0, sanitizer_subscriber_handle, SANITIZER_CB_DOMAIN_MEMSET));
 }
+
+
+void
+sanitizer_async_config
+(
+ bool async
+)
+{
+  sanitizer_analysis_async = async;
+}
+
 
 void
 sanitizer_buffer_config
@@ -1234,10 +1335,12 @@ sanitizer_device_flush(void *args)
   if (sanitizer_stop_flag) {
     sanitizer_stop_flag_unset();
 
-    // Spin wait
-    sanitizer_buffer_channel_flush();
-    sanitizer_process_signal(); 
-    while (sanitizer_buffer_channel_finish() == false) {}
+    if (sanitizer_analysis_async) {
+      // Spin wait
+      sanitizer_buffer_channel_flush();
+      sanitizer_process_signal(); 
+      while (sanitizer_buffer_channel_finish() == false) {}
+    }
 
     // Attribute performance metrics to CCTs
     redshow_flush(sanitizer_thread_id_local);
@@ -1250,12 +1353,14 @@ sanitizer_device_shutdown(void *args)
 {
   sanitizer_callbacks_unsubscribe();
 
-  atomic_store(&sanitizer_process_stop_flag, true);
+  if (sanitizer_analysis_async) {
+    atomic_store(&sanitizer_process_stop_flag, true);
 
-  // Spin wait
-  sanitizer_buffer_channel_flush();
-  sanitizer_process_signal(); 
-  while (sanitizer_buffer_channel_finish() == false) {}
+    // Spin wait
+    sanitizer_buffer_channel_flush();
+    sanitizer_process_signal(); 
+    while (sanitizer_buffer_channel_finish() == false) {}
+  }
 
   // Attribute performance metrics to CCTs
   redshow_flush(sanitizer_thread_id_local);
@@ -1273,14 +1378,16 @@ sanitizer_process_init
   pthread_mutex_t *mutex = &(sanitizer_thread.mutex);
   pthread_cond_t *cond = &(sanitizer_thread.cond);
 
-  // Create a new thread for the context without libmonitor watching
-  monitor_disable_new_threads();
+  if (sanitizer_analysis_async) {
+    // Create a new thread for the context without libmonitor watching
+    monitor_disable_new_threads();
 
-  atomic_fetch_add(&sanitizer_process_thread_counter, 1);
+    atomic_fetch_add(&sanitizer_process_thread_counter, 1);
 
-  pthread_mutex_init(mutex, NULL);
-  pthread_cond_init(cond, NULL);
-  pthread_create(thread, NULL, sanitizer_process_thread, NULL);
+    pthread_mutex_init(mutex, NULL);
+    pthread_cond_init(cond, NULL);
+    pthread_create(thread, NULL, sanitizer_process_thread, NULL);
 
-  monitor_enable_new_threads();
+    monitor_enable_new_threads();
+  }
 }
