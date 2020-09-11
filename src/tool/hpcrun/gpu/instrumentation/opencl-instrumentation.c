@@ -1,3 +1,45 @@
+// -*-Mode: C++;-*- // technically C99
+
+// * BeginRiceCopyright *****************************************************
+//
+// --------------------------------------------------------------------------
+// Part of HPCToolkit (hpctoolkit.org)
+//
+// Information about sources of support for research and development of
+// HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
+// --------------------------------------------------------------------------
+//
+// Copyright ((c)) 2002-2020, Rice University
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright
+//   notice, this list of conditions and the following disclaimer.
+//
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+//
+// * Neither the name of Rice University (RICE) nor the names of its
+//   contributors may be used to endorse or promote products derived from
+//   this software without specific prior written permission.
+//
+// This software is provided by RICE and contributors "as is" and any
+// express or implied warranties, including, but not limited to, the
+// implied warranties of merchantability and fitness for a particular
+// purpose are disclaimed. In no event shall RICE or contributors be
+// liable for any direct, indirect, incidental, special, exemplary, or
+// consequential damages (including, but not limited to, procurement of
+// substitute goods or services; loss of use, data, or profits; or
+// business interruption) however caused and on any theory of liability,
+// whether in contract, strict liability, or tort (including negligence
+// or otherwise) arising in any way out of the use of this software, even
+// if advised of the possibility of such damage.
+//
+// ******************************************************* EndRiceCopyright *
 
 //******************************************************************************
 // system includes
@@ -5,9 +47,6 @@
 
 #include <assert.h>
 #include <stdlib.h>
-//#include <gen_symbols_decoder.h>
-//#include <igc_binary_decoder.h>
-//#include <utils.h>
 #include <gtpin.h>
 
 
@@ -30,7 +69,6 @@
 #include <hpcrun/memory/hpcrun-malloc.h>
 #include <hpcrun/utilities/hpcrun-nanotime.h>
 #include <hpcrun/gpu/opencl/opencl-intercept.h>
-#include "gen_symbols_decoder_wrapper.h"
 #include "opencl-instrumentation.h"
 
 
@@ -98,7 +136,7 @@ createKernelNode
 }
 
 
-static void
+static uint32_t
 findKernelAndInsertToLoadMap
 (
 	uint8_t *debuginfo,
@@ -138,6 +176,7 @@ findKernelAndInsertToLoadMap
 			}
 			hpcrun_loadmap_unlock();
 			fclose(fptr);
+			return hpctoolkit_module_id;
 		}
 		// Should be zero for newest drivers
 		assert(kernel_header->SizeGenIsaDbgInBytes == 0);
@@ -145,6 +184,7 @@ findKernelAndInsertToLoadMap
 		ptr += kernel_header->SizeVisaDbgInBytes;
 		ptr += kernel_header->SizeGenIsaDbgInBytes;
 	}
+	return -1;
 }
 
 
@@ -155,13 +195,17 @@ add_opencl_binary_to_loadmap
 )
 {
 	char *debuginfoFileName = getDebugInfoFullFileName();
+	if (debuginfoFileName == NULL) {
+		ETMSG(OPENCL, "debug file not found");
+		return -1;	
+	}
 	FILE *fptr = fopen(debuginfoFileName, "rb");
 	fseek(fptr, 0L, SEEK_END);
 	size_t debug_info_size = ftell(fptr);
 	rewind(fptr);
 	uint8_t *debug_info = (uint8_t*)hpcrun_malloc(debug_info_size);
 	fread(debug_info, debug_info_size, 1, fptr);
-	findKernelAndInsertToLoadMap(debug_info, kernel_name);
+	return findKernelAndInsertToLoadMap(debug_info, kernel_name);
 }
 
 
@@ -192,6 +236,8 @@ opencl_kernel_block_activity_translate
 	ga->details.kernel_block.offset = offset;
 	ga->details.kernel_block.execution_count = execution_count;
 	ga->kind = GPU_ACTIVITY_KERNEL_BLOCK;
+
+  cstack_ptr_set(&(ga->next), 0);
 }
 
 

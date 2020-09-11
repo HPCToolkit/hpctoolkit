@@ -143,7 +143,7 @@ using namespace std;
 #endif
 
 #define DEBUG_CFG_SOURCE  0
-#define DEBUG_MAKE_SKEL   1 //0
+#define DEBUG_MAKE_SKEL   0 //1
 #define DEBUG_SHOW_GAPS   0
 #define DEBUG_SKEL_SUMMARY  0
 

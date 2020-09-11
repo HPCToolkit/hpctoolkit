@@ -73,6 +73,7 @@
 
 #ifndef HPCRUN_STATIC_LINK
 static gotcha_wrappee_handle_t clBuildProgram_handle;
+static gotcha_wrappee_handle_t clCreateProgramWithSource_handle;
 static gotcha_wrappee_handle_t clCreateCommandQueue_handle;
 static gotcha_wrappee_handle_t clEnqueueNDRangeKernel_handle;
 static gotcha_wrappee_handle_t clEnqueueReadBuffer_handle;
@@ -116,10 +117,10 @@ setDebugInfoFullFileName
 	char *fileName
 )
 {
-	if (fileName != NULL) {
+	if (debugInfoFullFileName == NULL) {
+		//size_t fileNameLength = strlen(fileName);
+		//debugInfoFullFileName = (char*) malloc(sizeof(fileNameLength));
 		debugInfoFullFileName = fileName;	
-	} else {
-		debugInfoFullFileName = "opencl_main.debuginfo";	
 	}
 }
 
@@ -150,6 +151,137 @@ initializeMemoryCallBackInfo
   mem_transfer_cb->size = size;
   mem_transfer_cb->fromHostToDevice = fromHostToDevice;
   mem_transfer_cb->fromDeviceToHost = !fromHostToDevice;
+}
+
+static char*
+getKernelNameFromSourceCode
+(
+	const char *kernelSourceCode
+)
+{
+	char *kernelCode_copy = (char*)hpcrun_malloc(sizeof(kernelSourceCode));
+	strcpy(kernelCode_copy, kernelSourceCode);
+	char *token = strtok(kernelCode_copy, " ");
+	while (token != NULL) {
+		if (strcmp(token, "void") == 0) { // not searching for kernel because "supported\n#endif\nkernel"
+			token = strtok(NULL, " ");
+			printf("kernel name: %s", token);
+			return token;
+		}
+		token = strtok(NULL, " ");
+	}
+	return NULL;
+}
+
+
+static cl_program
+clCreateProgramWithSource_wrapper
+(
+ cl_context context,
+ cl_uint count,
+ const char** strings,
+ const size_t* lengths,
+ cl_int* errcode_ret
+)
+{
+	clcreateprogramwithsource_t clCreateProgramWithSource_wrappee =
+		GOTCHA_GET_TYPED_WRAPPEE(clCreateProgramWithSource_handle, clcreateprogramwithsource_t);
+	return clCreateProgramWithSource_wrappee(context, count, strings, lengths, errcode_ret);
+	/*
+	ETMSG(OPENCL, "inside clCreateProgramWithSource_wrapper");
+
+	FILE *f_ptr;
+	for (int i = 0; i < (int)count; i++) {
+		// what if a single file has multiple kernels?
+		char *filename = "add.src"; // we need to add logic to get filenames by reading the strings contents
+		//char *filename = getKernelNameFromSourceCode(strings[i]);
+		f_ptr = fopen(filename, "w");
+		fwrite(strings[i], lengths[i], 1, f_ptr);
+	}
+	fclose(f_ptr);
+	*/
+}
+
+
+// we are dumping the debuginfo temporarily since the binary does not have debugsection
+// poorly written code: FIXME
+static char*
+dumpIntelGPUBinary(cl_program program, size_t *fileNameSize) {
+	int device_count = 1;
+	cl_int status = CL_SUCCESS;
+	size_t *binary_size = (size_t*)hpcrun_malloc(sizeof(size_t) * device_count);
+
+	status = clGetProgramInfo(program, CL_PROGRAM_BINARY_SIZES,	sizeof(size_t), binary_size, NULL);
+	assert(status == CL_SUCCESS);
+	uint8_t **binary = (uint8_t**)hpcrun_malloc(device_count * sizeof(uint8_t*));
+	for (size_t i = 0; i < device_count; ++i) {
+		binary[i] = (uint8_t*)hpcrun_malloc(binary_size[i] * sizeof(uint8_t));
+	}
+
+	status = clGetProgramInfo(program, CL_PROGRAM_BINARIES, device_count * sizeof(uint8_t*), binary, NULL);
+	assert(status == CL_SUCCESS);
+
+	FILE *bin_ptr;
+	bin_ptr = fopen("opencl_main.gpubin", "wb");
+	fwrite(binary[0], binary_size[0], 1, bin_ptr);
+
+  // SECOND
+	size_t *debug_info_size = (size_t*)hpcrun_malloc(sizeof(size_t) * device_count);
+
+	status = clGetProgramInfo(program, CL_PROGRAM_DEBUG_INFO_SIZES_INTEL,	sizeof(size_t), debug_info_size, NULL);
+	assert(status == CL_SUCCESS);
+	uint8_t **debug_info = (uint8_t**)hpcrun_malloc(device_count * sizeof(uint8_t*));
+	for (size_t i = 0; i < device_count; ++i) {
+		debug_info[i] = (uint8_t*)hpcrun_malloc(debug_info_size[i] * sizeof(uint8_t));
+	}
+
+	status = clGetProgramInfo(program, CL_PROGRAM_DEBUG_INFO_INTEL, device_count * sizeof(uint8_t*), debug_info, NULL);
+	assert(status == CL_SUCCESS);
+
+	char *debuginfoFileName = "opencl_main.debuginfo";
+	*fileNameSize = strlen(debuginfoFileName);
+	bin_ptr = fopen(debuginfoFileName, "wb");
+	fwrite(debug_info[0], debug_info_size[0], 1, bin_ptr);
+	fclose(bin_ptr);
+  ETMSG(OPENCL, "Intel GPU files dumped successfully");
+	return realpath(debuginfoFileName, NULL);
+}
+
+
+static void
+clBuildProgramCallback
+(
+	cl_program program,
+	void* user_data
+)
+{
+	size_t fileNameSize;
+	char* debugInfoFullFileName = dumpIntelGPUBinary(program, &fileNameSize);
+	setDebugInfoFullFileName(debugInfoFullFileName);
+}
+
+
+// one downside of this appproach is that we may override the callback provided by user
+static cl_int
+clBuildProgram_wrapper
+(
+ cl_program program,
+ cl_uint num_devices,
+ const cl_device_id* device_list,
+ const char* options,
+ void (CL_CALLBACK* pfn_notify)(cl_program program, void* user_data),
+ void* user_data
+)
+{
+  ETMSG(OPENCL, "inside clBuildProgram_wrapper");
+  clbuildprogram_t clBuildProgram_wrappee = 
+    GOTCHA_GET_TYPED_WRAPPEE(clBuildProgram_handle, clbuildprogram_t);
+
+	char optionsWithDebugFlag[] = " -gline-tables-only ";
+	if (options != NULL) {
+		strcat(optionsWithDebugFlag, options);
+	}
+  return clBuildProgram_wrappee(program, num_devices, device_list, (const char*)optionsWithDebugFlag, clBuildProgramCallback, user_data);
 }
 
 
@@ -319,85 +451,6 @@ clEnqueueWriteBuffer_wrapper
   return return_status;
 }
 
-
-// we are dunping the debuginfo temporarily since the binary does not have debugsection
-// poorly written code: FIXME
-static char*
-dumpIntelGPUBinary(cl_program program) {
-	int device_count = 1;
-	cl_int status = CL_SUCCESS;
-	size_t *binary_size = (size_t*)hpcrun_malloc(sizeof(size_t) * device_count);
-
-	status = clGetProgramInfo(program, CL_PROGRAM_BINARY_SIZES,	sizeof(size_t), binary_size, NULL);
-	assert(status == CL_SUCCESS);
-	uint8_t **binary = (uint8_t**)hpcrun_malloc(device_count * sizeof(uint8_t*));
-	for (size_t i = 0; i < device_count; ++i) {
-		binary[i] = (uint8_t*)hpcrun_malloc(binary_size[i] * sizeof(uint8_t));
-	}
-
-	status = clGetProgramInfo(program, CL_PROGRAM_BINARIES, device_count * sizeof(uint8_t*), binary, NULL);
-	assert(status == CL_SUCCESS);
-
-	FILE *bin_ptr;
-	bin_ptr = fopen("opencl_main.gpubin", "wb");
-	fwrite(binary[0], binary_size[0], 1, bin_ptr);
-
-  // SECOND
-	size_t *debug_info_size = (size_t*)hpcrun_malloc(sizeof(size_t) * device_count);
-
-	status = clGetProgramInfo(program, CL_PROGRAM_DEBUG_INFO_SIZES_INTEL,	sizeof(size_t), debug_info_size, NULL);
-	assert(status == CL_SUCCESS);
-	uint8_t **debug_info = (uint8_t**)hpcrun_malloc(device_count * sizeof(uint8_t*));
-	for (size_t i = 0; i < device_count; ++i) {
-		debug_info[i] = (uint8_t*)hpcrun_malloc(debug_info_size[i] * sizeof(uint8_t));
-	}
-
-	status = clGetProgramInfo(program, CL_PROGRAM_DEBUG_INFO_INTEL, device_count * sizeof(uint8_t*), debug_info, NULL);
-	assert(status == CL_SUCCESS);
-
-	bin_ptr = fopen("opencl_main.debuginfo", "wb");
-	fwrite(debug_info[0], debug_info_size[0], 1, bin_ptr);
-	fclose(bin_ptr);
-  ETMSG(OPENCL, "Intel GPU files dumped successfully");
-	return realpath("opencl_main.debuginfo", NULL);
-}
-
-
-static void
-clBuildProgramCallback
-(
-	cl_program program,
-	void* user_data
-)
-{
-	char* debugInfoFullPath = dumpIntelGPUBinary(program);
-	setDebugInfoFullFileName(debugInfoFullPath);
-}
-
-
-// one downside of this appproach is that we may override the callback provided by user
-static cl_int
-clBuildProgram_wrapper
-(
- cl_program program,
- cl_uint num_devices,
- const cl_device_id* device_list,
- const char* options,
- void (CL_CALLBACK* pfn_notify)(cl_program program, void* user_data),
- void* user_data
-)
-{
-  ETMSG(OPENCL, "inside clBuildProgram_wrapper");
-  clbuildprogram_t clBuildProgram_wrappee = 
-    GOTCHA_GET_TYPED_WRAPPEE(clBuildProgram_handle, clbuildprogram_t);
-
-	char optionsWithDebugFlag[] = " -gline-tables-only ";
-	if (options != NULL) {
-		strcat(optionsWithDebugFlag, options);
-	}
-  return clBuildProgram_wrappee(program, num_devices, device_list, (const char*)optionsWithDebugFlag, clBuildProgramCallback, user_data);
-}
-
 #endif
 
 
@@ -412,6 +465,11 @@ static gotcha_binding_t opencl_bindings[] = {
     "clBuildProgram",
     (void*) clBuildProgram_wrapper,
     &clBuildProgram_handle
+  },
+  {
+    "clCreateProgramWithSource",
+    (void*) clCreateProgramWithSource_wrapper,
+    &clCreateProgramWithSource_handle
   },
   {
     "clCreateCommandQueue",

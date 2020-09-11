@@ -124,6 +124,16 @@ typedef cl_int (*clbuildprogram_t)
 );
 
 
+typedef cl_program (*clcreateprogramwithsource_t)
+(
+ cl_context context,
+ cl_uint count,
+ const char** strings,
+ const size_t* lengths,
+ cl_int* errcode_ret
+);
+
+
 typedef enum {
   memcpy_H2D                      = 0,
   memcpy_D2H                      = 1,

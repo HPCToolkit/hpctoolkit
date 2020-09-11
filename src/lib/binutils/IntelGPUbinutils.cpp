@@ -184,19 +184,18 @@ extract_kernelelfs
 		ptr += sizeof(SKernelDebugDataHeaderIGC);
 
 		const char* kernel_name = reinterpret_cast<const char*>(ptr);
-		char *file_name = (char*) kernel_name;
+		char *file_name = (char*)malloc(sizeof(kernel_name));
+		strcpy(file_name, kernel_name);
+		strcat(file_name, ".gpubin");
 
 		unsigned kernel_name_size_aligned = sizeof(uint32_t) *
 			(1 + (kernel_header->KernelNameSize - 1) / sizeof(uint32_t));
 		ptr += kernel_name_size_aligned;
 
 		if (kernel_header->SizeVisaDbgInBytes > 0) {
-			// Parse the binary block [ptr, ptr + kernel_header->SizeVisaDbgInBytes)
-			// as a blob in standard ELF/DWARF format
-	
-			FILE *f_ptr = fopen(kernel_name, "wb");
+			/*FILE *f_ptr = fopen(kernel_name, "wb");
 			fwrite(ptr, kernel_header->SizeVisaDbgInBytes, 1, f_ptr);
-			fclose(f_ptr);
+			fclose(f_ptr);*/
 			std::ifstream in(kernel_name);
 			std::string file_contents((std::istreambuf_iterator<char>(in)), 
 			    std::istreambuf_iterator<char>());
