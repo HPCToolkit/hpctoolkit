@@ -184,7 +184,6 @@ Analysis::Raw::writeAsText_sparseDBthread(const char* filenm, bool easygrep)
 
   try {
     FILE* fs = hpcio_fopen_r(filenm);
-    FILE* ofs = hpcio_fopen_w("readable_thread_major_sparse.db",1);
     if (!fs) {
       DIAG_Throw("error opening thread sparse file '" << filenm << "'");
     }
@@ -194,7 +193,7 @@ Analysis::Raw::writeAsText_sparseDBthread(const char* filenm, bool easygrep)
     if (ret != HPCFMT_OK) {
       DIAG_Throw("error reading hdr from sparse metrics file '" << filenm << "'");
     }
-    tms_hdr_fprint(&hdr, ofs);
+    tms_hdr_fprint(&hdr, stdout);
 
     uint32_t num_prof;
     ret = hpcfmt_int4_fread(&num_prof, fs);
@@ -207,7 +206,7 @@ Analysis::Raw::writeAsText_sparseDBthread(const char* filenm, bool easygrep)
     if (ret != HPCFMT_OK) {
       DIAG_Throw("error reading profile information from sparse metrics file '" << filenm << "'");
     }
-    tms_profile_info_fprint(num_prof,x,ofs);
+    tms_profile_info_fprint(num_prof,x,stdout);
 
     tms_id_tuple_t* tuples;
     uint64_t tuples_size;
@@ -215,7 +214,7 @@ Analysis::Raw::writeAsText_sparseDBthread(const char* filenm, bool easygrep)
     if (ret != HPCFMT_OK) {
       DIAG_Throw("error reading profile identifier tuples from sparse metrics file '" << filenm << "'");
     }
-    id_tuples_tms_fprint(num_prof,tuples_size,tuples,ofs);
+    id_tuples_tms_fprint(num_prof,tuples_size,tuples,stdout);
 
     sortProfileInfo_onOffsets(x,num_prof);
     for(uint i = 0; i<num_prof; i++){
@@ -226,7 +225,7 @@ Analysis::Raw::writeAsText_sparseDBthread(const char* filenm, bool easygrep)
       if (ret != HPCFMT_OK) {
         DIAG_Throw("error reading sparse metrics data from sparse metrics file '" << filenm << "'");
       }
-      tms_sparse_metrics_fprint(&sm,ofs, NULL, x[i].prof_info_idx, "  ", easygrep);
+      tms_sparse_metrics_fprint(&sm,stdout, NULL, x[i].prof_info_idx, "  ", easygrep);
       tms_sparse_metrics_free(&sm);
     }
    
@@ -234,7 +233,6 @@ Analysis::Raw::writeAsText_sparseDBthread(const char* filenm, bool easygrep)
     id_tuples_tms_free(&tuples, num_prof);
 
     hpcio_fclose(fs);
-    hpcio_fclose(ofs);
   }
   catch (...) {
     DIAG_EMsg("While reading '" << filenm << "'...");
@@ -250,7 +248,6 @@ Analysis::Raw::writeAsText_sparseDBcct(const char* filenm, bool easygrep)
 
   try {
     FILE* fs = hpcio_fopen_r(filenm);
-    FILE* ofs = hpcio_fopen_w("readable_cct_major_sparse.db",1);
     if (!fs) {
       DIAG_Throw("error opening cct sparse file '" << filenm << "'");
     }
@@ -260,7 +257,7 @@ Analysis::Raw::writeAsText_sparseDBcct(const char* filenm, bool easygrep)
     if (ret != HPCFMT_OK) {
       DIAG_Throw("error reading hdr from sparse metrics file '" << filenm << "'");
     }
-    cms_hdr_fprint(&hdr, ofs);
+    cms_hdr_fprint(&hdr, stdout);
 
     uint32_t num_ctx;
     cms_ctx_info_t* x;
@@ -268,7 +265,7 @@ Analysis::Raw::writeAsText_sparseDBcct(const char* filenm, bool easygrep)
     if (ret != HPCFMT_OK) {
       DIAG_Throw("error reading cct information from sparse metrics file '" << filenm << "'");
     }
-    cms_ctx_info_fprint(num_ctx,x,ofs);
+    cms_ctx_info_fprint(num_ctx,x,stdout);
 
     for(uint i = 0; i<num_ctx; i++){
       if(x[i].num_vals != 0){
@@ -280,7 +277,7 @@ Analysis::Raw::writeAsText_sparseDBcct(const char* filenm, bool easygrep)
         if (ret != HPCFMT_OK) {
           DIAG_Throw("error reading cct data from sparse metrics file '" << filenm << "'");
         }
-        cms_sparse_metrics_fprint(&csm,ofs, "  ", easygrep);
+        cms_sparse_metrics_fprint(&csm,stdout, "  ", easygrep);
         cms_sparse_metrics_free(&csm);
       }
       
@@ -289,7 +286,6 @@ Analysis::Raw::writeAsText_sparseDBcct(const char* filenm, bool easygrep)
     cms_ctx_info_free(&x);
    
     hpcio_fclose(fs);
-    hpcio_fclose(ofs);
   }
   catch (...) {
     DIAG_EMsg("While reading '" << filenm << "'...");

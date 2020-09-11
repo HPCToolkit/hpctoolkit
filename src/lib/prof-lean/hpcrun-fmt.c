@@ -82,6 +82,7 @@
 #include "hpcio-buffer.h"
 #include "hpcfmt.h"
 #include "hpcrun-fmt.h"
+#include "id-tuple.h"
 
 //***************************************************************************
 
