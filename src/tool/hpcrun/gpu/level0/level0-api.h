@@ -74,26 +74,4 @@ level0_bind
   void
 );
 
-void
-level0_create_new_event
-(
-  ze_event_handle_t* event_ptr,
-  ze_event_pool_handle_t* event_pool_ptr
-);
-
-void
-level0_attribute_event
-(
-  ze_event_handle_t event
-);
-
-void
-level0_get_memory_types
-(
-  const void* src_ptr,
-  const void* dest_ptr,
-  ze_memory_type_t *src_type_ptr,
-  ze_memory_type_t *dst_type_ptr
-);
-
 #endif

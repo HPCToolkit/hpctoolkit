@@ -536,8 +536,7 @@ MY_LEVEL0_FILES=\
 	gpu/level0/level0-command-process.c \
 	gpu/level0/level0-data-node.c \
 	gpu/level0/level0-event-map.c \
-	gpu/level0/level0-handle-map.c \
-	gpu/level0/level0-intercept.c
+	gpu/level0/level0-handle-map.c
 endif
 
 MY_UPC_FILES = sample-sources/upc.c

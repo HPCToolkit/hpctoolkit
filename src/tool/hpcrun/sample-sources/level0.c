@@ -189,7 +189,6 @@ METHOD_FN(process_event_list, int lush_metrics)
 static void
 METHOD_FN(finalize_event_list)
 {
-  //level0_intercept_setup();
 #ifndef HPCRUN_STATIC_LINK
   if (level0_bind()) {
     EEMSG("hpcrun: unable to bind to Level0 library %s\n", dlerror());
