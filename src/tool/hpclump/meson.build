@@ -53,4 +53,3 @@ hpclump_exe = executable('hpclump', _srcs,
   install: true, install_dir: get_option('libexecdir') / meson.project_name())
 summary('hpclump', not is_disabler(hpclump_exe), section: 'Applications', bool_yn: true)
 all_apps += hpclump_exe
-

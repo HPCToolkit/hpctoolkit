@@ -72,4 +72,3 @@ _srcs = files(
 prof_lib = static_library('prof', _srcs, pic: true,
   include_directories: main_includes,
   link_with: [support_lib, xml_lib, binutils_lib])
-

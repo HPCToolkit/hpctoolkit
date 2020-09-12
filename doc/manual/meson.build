@@ -45,4 +45,3 @@
 install_data(files('HPCToolkit-users-manual.pdf'),
   install_dir: get_option('datadir') / 'doc' / meson.project_name() / 'manual',
   install_mode: 'rw-r--r--')
-

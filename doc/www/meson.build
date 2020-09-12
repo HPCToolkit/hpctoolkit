@@ -106,4 +106,3 @@ install_data(_figsrcs,
 install_data(_stylesrcs,
   install_dir: get_option('datadir') / 'doc' / meson.project_name() / 'style',
   install_mode: 'rw-r--r--')
-

@@ -55,4 +55,3 @@ hpcfnbounds2_exe = executable('hpcfnbounds2', _srcs,
   install: true, install_dir: get_option('libexecdir') / meson.project_name())
 summary('hpcfnbounds2', not is_disabler(hpcfnbounds2_exe), section: 'Applications', bool_yn: true)
 all_apps += hpcfnbounds2_exe
-

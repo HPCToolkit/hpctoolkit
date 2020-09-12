@@ -54,4 +54,3 @@ hpcproftt_exe = executable('hpcproftt', _srcs,
   install: true, install_dir: get_option('libexecdir') / meson.project_name())
 summary('hpcproftt', not is_disabler(hpcproftt_exe), section: 'Applications', bool_yn: true)
 all_apps += hpcproftt_exe
-

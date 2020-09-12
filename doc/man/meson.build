@@ -87,4 +87,3 @@ foreach s : _srcs
     install: true, install_dir: get_option('datadir') / 'doc' / meson.project_name() / 'man',
     install_mode: 'rw-r--r--')
 endforeach
-

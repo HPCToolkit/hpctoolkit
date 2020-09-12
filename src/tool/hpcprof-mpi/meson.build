@@ -55,4 +55,3 @@ hpcprof_mpi_exe = executable('hpcprof-mpi', _srcs,
   install: true)
 summary('hpcprof-mpi', not is_disabler(hpcprof_mpi_exe), section: 'Applications', bool_yn: true)
 all_apps += hpcprof_mpi_exe
-

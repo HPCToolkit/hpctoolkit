@@ -66,4 +66,3 @@ banal_lib = static_library('banal', _srcs, pic: true,
 banal_simple_lib = static_library('banal_simple', _simple_srcs, pic: true,
   include_directories: main_includes,
   link_with: [binutils_lib, support_lib, prof_lib])
-

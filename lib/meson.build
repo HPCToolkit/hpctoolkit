@@ -78,4 +78,3 @@ install_data(_dtdsrcs, install_dir: get_option('datadir') / meson.project_name()
   install_mode: 'rw-r--r--')
 install_data(_mmlsrcs, install_dir: get_option('datadir') / meson.project_name() / 'dtd/mathml',
   install_mode: 'rw-r--r--')
-

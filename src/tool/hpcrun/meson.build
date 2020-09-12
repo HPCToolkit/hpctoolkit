@@ -588,4 +588,3 @@ pkgconfig.generate(libhpcrun_pthread_wrap_lib,
   variables: _vars, uninstalled_variables: _vars)
 summary('PThread Blame Shifting (hpclink)', not is_disabler(libhpcrun_pthread_wrap_lib),
         section: 'Plugins', bool_yn: true)
-

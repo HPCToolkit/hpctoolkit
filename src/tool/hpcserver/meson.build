@@ -82,4 +82,3 @@ hpcserver_mpi_exe = executable('hpcserver-mpi', _srcs, files(
   install: true)
 summary('hpcserver-mpi', not is_disabler(hpcserver_mpi_exe), section: 'Applications', bool_yn: true)
 all_apps += hpcserver_mpi_exe
-
