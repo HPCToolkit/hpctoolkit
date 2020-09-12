@@ -386,6 +386,10 @@ if true
     install: true, install_dir: get_option('libexecdir') / meson.project_name(),
     install_mode: 'rwxr-xr-x')
   install_headers(files('hpctoolkit.h'))
+  libhpctoolkit_lib = both_libraries('hpctoolkit',
+    files('hpctoolkit.c'),
+    install: true, install_dir: get_option('libdir') / meson.project_name(),
+  )
 endif
 
 # hpcrun/link require an hpcfnbounds in order to function. Make sure we have one.

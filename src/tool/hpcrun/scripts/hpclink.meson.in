@@ -26,7 +26,6 @@
 
 # Relative paths are relative to HPCTOOLKIT.
 hpcfnbounds_dir='libexec/hpctoolkit'
-plugin_dir='lib/hpctoolkit/plugins'
 pc_dir='lib/hpctoolkit/pkgconfig'
 
 internal_wrap_names='poll select ppoll pselect'
@@ -181,10 +180,6 @@ case "$hpcfnbounds_dir" in
     /* ) ;;
     * )  hpcfnbounds_dir="${HPCTOOLKIT}/${hpcfnbounds_dir}" ;;
 esac
-case "$plugin_dir" in
-    /* ) ;;
-    * )  plugin_dir="${HPCTOOLKIT}/${plugin_dir}" ;;
-esac
 case "$pc_dir" in
     /* ) ;;
     * )  pc_dir="${HPCTOOLKIT}/${pc_dir}" ;;
@@ -202,7 +197,6 @@ export LD_LIBRARY_PATH
 double_wrap=no
 front_end_dir=no
 alt_fnbounds=
-my_plugin_list=
 verbose=no
 verb=:
 
