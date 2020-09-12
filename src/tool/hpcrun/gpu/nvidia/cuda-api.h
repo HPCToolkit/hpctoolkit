@@ -142,6 +142,26 @@ cuda_stream_synchronize
 
 
 void
+cuda_memcpy_dtoh
+(
+ void *dst,
+ CUdeviceptr src,
+ size_t byteCount,
+ CUstream stream
+);
+
+
+void
+cuda_memcpy_htod
+(
+ CUdeviceptr dst,
+ void *src,
+ size_t byteCount,
+ CUstream stream
+);
+
+
+void
 cuda_load_callback
 (
  uint32_t cubin_id, 

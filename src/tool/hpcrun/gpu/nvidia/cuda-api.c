@@ -205,21 +205,45 @@ CUDA_FN
 
 CUDA_FN
 (
-  cuStreamCreateWithPriority,
-  (
-   CUstream *phStream,
-   unsigned int flags,
-   int priority
-  );
+ cuStreamCreateWithPriority,
+ (
+  CUstream *phStream,
+  unsigned int flags,
+  int priority
+ );
+ );
+
+
+CUDA_FN
+(
+ cuStreamSynchronize,
+ (
+  CUstream hStream
+ );
 );
 
 
 CUDA_FN
 (
-  cuStreamSynchronize,
-  (
-   CUstream hStream
-  );
+ cuMemcpyDtoHAsync,
+ (
+  void *dst,
+  CUdeviceptr src,
+  size_t byteCount,
+  CUstream stream
+ );
+);
+
+
+CUDA_FN
+(
+ cuMemcpyHtoDAsync,
+ (
+  CUdeviceptr dst,
+  void *src,
+  size_t byteCount,
+  CUstream stream
+ );
 );
 
 #endif
@@ -252,6 +276,10 @@ cuda_bind
   CHK_DLSYM(cuda, cuStreamCreateWithPriority);
 
   CHK_DLSYM(cuda, cuStreamSynchronize);
+
+  CHK_DLSYM(cuda, cuMemcpyDtoHAsync);
+
+  CHK_DLSYM(cuda, cuMemcpyHtoDAsync);
 
   return 0;
 #else
@@ -287,6 +315,36 @@ cuda_stream_synchronize
 {
 #ifndef HPCRUN_STATIC_LINK
   HPCRUN_CUDA_API_CALL(cuStreamSynchronize, (stream));
+#endif
+}
+
+
+void
+cuda_memcpy_dtoh
+(
+ void *dst,
+ CUdeviceptr src,
+ size_t byteCount,
+ CUstream stream
+)
+{
+#ifndef HPCRUN_STATIC_LINK
+  HPCRUN_CUDA_API_CALL(cuMemcpyDtoHAsync, (dst, src, byteCount, stream));
+#endif
+}
+
+
+void
+cuda_memcpy_htod
+(
+ CUdeviceptr dst,
+ void *src,
+ size_t byteCount,
+ CUstream stream
+)
+{
+#ifndef HPCRUN_STATIC_LINK
+  HPCRUN_CUDA_API_CALL(cuMemcpyHtoDAsync, (dst, src, byteCount, stream));
 #endif
 }
 

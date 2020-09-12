@@ -68,6 +68,14 @@ sanitizer_context_map_stream_unlock
 );
 
 
+void
+sanitizer_context_map_priority_stream_update
+(
+ CUcontext context,
+ void *priority_stream
+);
+
+
 CUstream
 sanitizer_context_map_entry_priority_stream_get
 (

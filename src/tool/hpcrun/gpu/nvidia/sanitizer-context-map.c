@@ -24,7 +24,7 @@
 
 struct sanitizer_context_map_entry_s {
   CUcontext context;
-  CUstream priority_stream;
+  void *priority_stream;
   sanitizer_stream_map_entry_t *streams;
   struct sanitizer_context_map_entry_s *left;
   struct sanitizer_context_map_entry_s *right;
@@ -49,7 +49,7 @@ sanitizer_context_map_entry_new(CUcontext context)
   e = (sanitizer_context_map_entry_t *)
     hpcrun_malloc(sizeof(sanitizer_context_map_entry_t));
   e->context = context;
-  e->priority_stream = cuda_priority_stream_create(context);
+  e->priority_stream = NULL;
   e->streams = NULL;
   e->left = NULL;
   e->right = NULL;
@@ -185,6 +185,19 @@ sanitizer_context_map_insert(CUcontext context, CUstream stream)
   spinlock_lock(&sanitizer_context_map_lock);
 
   sanitizer_stream_map_insert(&sanitizer_context_map_root->streams, stream);
+
+  spinlock_unlock(&sanitizer_context_map_lock);
+}
+
+
+void
+sanitizer_context_map_priority_stream_update(CUcontext context, void *priority_stream)
+{
+  spinlock_lock(&sanitizer_context_map_lock);
+
+  sanitizer_context_map_entry_t *result = sanitizer_context_map_lookup_internal(context);
+
+  result->priority_stream = priority_stream;
 
   spinlock_unlock(&sanitizer_context_map_lock);
 }

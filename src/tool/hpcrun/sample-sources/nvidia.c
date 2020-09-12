@@ -98,7 +98,7 @@
  * macros
  *****************************************************************************/
 
-#define NVIDIA_DEBUG 0
+#define NVIDIA_DEBUG 1
 
 #if NVIDIA_DEBUG
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)

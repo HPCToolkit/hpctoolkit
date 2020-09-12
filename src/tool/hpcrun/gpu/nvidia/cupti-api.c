@@ -562,7 +562,7 @@ cupti_error_report
 // private operations
 //******************************************************************************
 
-static bool
+static bool __attribute__((unused))
 cupti_write_cubin
 (
  const char *file_name,
