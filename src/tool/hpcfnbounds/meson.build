@@ -68,7 +68,7 @@ hpcfnbounds_exe = executable('hpcfnbounds', _srcs,
   dependencies: [dyninst_d_dep, openmp_d_dep,
     libdwarf_d_dep.partial_dependency(compile_args: true, link_args: true, includes: true)]
     + _deps + [cc.find_library('dl')],
-  install: true, install_dir: get_option('prefix') / get_option('libexecdir') / 'hpctoolkit')
+  install: true, install_dir: get_option('libexecdir') / meson.project_name())
 summary('hpcfnbounds', not is_disabler(hpcfnbounds_exe), section: 'Applications', bool_yn: true)
 all_apps += hpcfnbounds_exe
 

@@ -52,7 +52,7 @@ _srcs = files(
 hpcfnbounds2_exe = executable('hpcfnbounds2', _srcs,
   include_directories: tool_includes,
   dependencies: [libelf_d_dep],
-  install: true, install_dir: get_option('libexecdir') / 'hpctoolkit')
+  install: true, install_dir: get_option('libexecdir') / meson.project_name())
 summary('hpcfnbounds2', not is_disabler(hpcfnbounds2_exe), section: 'Applications', bool_yn: true)
 all_apps += hpcfnbounds2_exe
 

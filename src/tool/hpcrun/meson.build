@@ -378,12 +378,12 @@ _srcset.add(files('utilities/last_func.c'))
 if true
   all_apps += configure_file(
     input: files('scripts/hpclog'), output: '@PLAINNAME@', copy: true,
-    install: true, install_dir: get_option('libexecdir') / 'hpctoolkit',
+    install: true, install_dir: get_option('libexecdir') / meson.project_name(),
     install_mode: 'rwxr-xr-x')
   all_apps += configure_file(
     input: files('scripts/hpcsummary.in'), output: '@BASENAME@',
     configuration: {'PACKAGE_VERSION': meson.project_version()},
-    install: true, install_dir: get_option('libexecdir') / 'hpctoolkit',
+    install: true, install_dir: get_option('libexecdir') / meson.project_name(),
     install_mode: 'rwxr-xr-x')
   install_headers(files('hpctoolkit.h'))
 endif
@@ -454,6 +454,7 @@ pkgconfig.generate(libhpcrun_wrap_lib)
 pkgconfig.generate(
   name: 'monitor_wrap', description: 'libmonitor: wrap library',
   libraries: libmonitor_wrap_libs,
+  install_dir: get_option('libdir') / meson.project_name() / 'pkgconfig',
 )
 
 if not is_disabler(libhpcrun_static_lib) and not is_disabler(libhpcrun_wrap_lib)

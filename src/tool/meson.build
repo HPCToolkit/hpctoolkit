@@ -202,6 +202,7 @@ fi
 
 export HPCTOOLKIT
 ''')
+_launch_hash_value = run_command(find_program('date'), check: true).stdout().strip()
 launch_config.set('launch_script_vars', '''
 # If this script can't find its install directory, then set 'prefix'
 # here.  This should only be necessary if you've moved both the script
@@ -213,12 +214,15 @@ launch_config.set('launch_script_vars', '''
 # configure, then the hashes won't match.
 
 prefix=''' + '\'' + get_option('prefix') + '\'' + '''
-hash_value=''
+hash_value=''' + '\'' + _launch_hash_value + '\'' + '''
 
 VERSION=''' + '\'' + meson.project_version() + '\'' + '''
 git_version='(Git TODO)'
 spack_spec='(Spack TODO)'
 ''')
+configure_file(input: '../../meson/hash-file.in', output: 'hash-file',
+  configuration: {'HASH': _launch_hash_value},
+  install: true, install_dir: get_option('libdir')/meson.project_name())
 
 # These are pretty much exclusively for hpclink
 launch_config.set('HPCLINK_CC', ' '.join(meson.get_compiler('c').cmd_array()))
