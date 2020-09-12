@@ -65,10 +65,11 @@ AUTOMAKE_OPTIONS = foreign no-dist
 #############################################################################
 
 MYDATA = \
-	README \
+	README.md \
+	README.Acknowledgments \
+	README.Install \
 	README.License \
-	README.ReleaseNotes \
-	README.Acknowledgments
+	README.ReleaseNotes
 
 MYSCRIPTS = \
 	config/hpcguess \
