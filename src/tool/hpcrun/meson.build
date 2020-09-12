@@ -395,6 +395,10 @@ if is_disabler(hpcfnbounds_exe) and is_disabler(hpcfnbounds2_exe)
   subdir_done()
 endif
 
+##
+## Dynamic case (hpcrun)
+##
+
 _d_srcset.add_all(_srcset)
 _d_srcs = _d_srcset.apply(_config)
 _d_ddep = []
@@ -421,6 +425,42 @@ if not is_disabler(libhpcrun_lib)
     install: true, install_dir: get_option('bindir'),
     install_mode: 'rwxr-xr-x')
 endif
+
+libhpcrun_ga_lib = shared_module('hpcrun_ga',
+  files('sample-sources/ga-overrides.c'),
+  dependencies: _d_srcs.dependencies() + _d_ddep,
+  install: true, install_dir: get_option('libdir') / meson.project_name(),
+)
+summary('Global Arrays (hpcrun)', not is_disabler(libhpcrun_ga_lib),
+        section: 'Plugins', bool_yn: true)
+
+libhpcrun_io_lib = shared_module('hpcrun_io',
+  files('sample-sources/io-over.c'),
+  dependencies: _d_srcs.dependencies() + _d_ddep,
+  install: true, install_dir: get_option('libdir') / meson.project_name(),
+)
+summary('I/O Counters (hpcrun)', not is_disabler(libhpcrun_io_lib),
+        section: 'Plugins', bool_yn: true)
+
+libhpcrun_memleak_lib = shared_module('hpcrun_memleak',
+  files('sample-sources/memleak-overrides.c'),
+  dependencies: _d_srcs.dependencies() + _d_ddep,
+  install: true, install_dir: get_option('libdir') / meson.project_name(),
+)
+summary('Memory Leak Detection (hpcrun)', not is_disabler(libhpcrun_memleak_lib),
+        section: 'Plugins', bool_yn: true)
+
+libhpcrun_pthread_lib = shared_module('hpcrun_pthread',
+  files('sample-sources/pthread-blame-overrides.c'),
+  dependencies: _d_srcs.dependencies() + _d_ddep,
+  install: true, install_dir: get_option('libdir') / meson.project_name(),
+)
+summary('PThread Blame Shifting (hpcrun)', not is_disabler(libhpcrun_pthread_lib),
+        section: 'Plugins', bool_yn: true)
+
+##
+## Static case (hpclink)
+##
 
 _s_srcset.add_all(_srcset)
 _s_srcs = _s_srcset.apply(_config)
@@ -450,7 +490,8 @@ libhpcrun_static_lib = static_library('hpcrun_static', _s_srcs.sources(),
   link_with: [prof_lean_static_lib, support_lean_static_lib],
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
-libhpcrun_wrap_lib = static_library('hpcrun_wrap', files('monitor-exts/openmp.c'),
+libhpcrun_wrap_lib = static_library('hpcrun_wrap',
+  files('monitor-exts/openmp.c'),
   dependencies: _s_partial_ddeps,
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
@@ -483,4 +524,63 @@ if not is_disabler(libhpcrun_static_lib) and not is_disabler(libhpcrun_wrap_lib)
     install: true, install_dir: get_option('bindir'),
     install_mode: 'rwxr-xr-x')
 endif
+
+libhpcrun_ga_wrap_lib = static_library('hpcrun_ga_wrap',
+  files('sample-sources/ga-overrides.c'),
+  dependencies: _s_partial_ddeps,
+  install: true, install_dir: get_option('libdir') / meson.project_name(),
+)
+_vars = [
+  'wrapnames=pnga_create:pnga_brdcst:pnga_gop:pnga_sync:pnga_zero'
+  + ':pnga_get:pnga_put:pnga_acc:pnga_nbget:pnga_nbput:pnga_nbacc',
+  'undefnames=pnga_put',
+]
+pkgconfig.generate(libhpcrun_ga_wrap_lib,
+  variables: _vars, uninstalled_variables: _vars)
+summary('Global Arrays (hpclink)', not is_disabler(libhpcrun_ga_wrap_lib),
+        section: 'Plugins', bool_yn: true)
+
+libhpcrun_io_wrap_lib = static_library('hpcrun_io_wrap',
+  files('sample-sources/io-over.c'),
+  dependencies: _s_partial_ddeps,
+  install: true, install_dir: get_option('libdir') / meson.project_name(),
+)
+_vars = [
+  'wrapnames=read:write:fread:fwrite',
+  'undefnames=fwrite',
+]
+pkgconfig.generate(libhpcrun_io_wrap_lib,
+  variables: _vars, uninstalled_variables: _vars)
+summary('I/O Counters (hpclink)', not is_disabler(libhpcrun_io_wrap_lib),
+        section: 'Plugins', bool_yn: true)
+
+libhpcrun_memleak_wrap_lib = static_library('hpcrun_memleak_wrap',
+  files('sample-sources/memleak-overrides.c'),
+  dependencies: _s_partial_ddeps,
+  install: true, install_dir: get_option('libdir') / meson.project_name(),
+)
+_vars = [
+  'wrapnames=malloc:calloc:free:realloc:memalign:posix_memalign:valloc',
+  'undefnames=malloc',
+]
+pkgconfig.generate(libhpcrun_memleak_wrap_lib,
+  variables: _vars, uninstalled_variables: _vars)
+summary('Memory Leak Detection (hpclink)', not is_disabler(libhpcrun_memleak_wrap_lib),
+        section: 'Plugins', bool_yn: true)
+
+libhpcrun_pthread_wrap_lib = static_library('hpcrun_pthread_wrap',
+  files('sample-sources/pthread-blame-overrides.c'),
+  dependencies: _s_partial_ddeps,
+  install: true, install_dir: get_option('libdir') / meson.project_name(),
+)
+_vars = [
+  'wrapnames=pthread_cond_timedwait:pthread_cond_wait:pthread_cond_broadcast'
+  + ':pthread_cond_signal:pthread_mutex_lock:pthread_mutex_unlock'
+  + ':pthread_mutex_timedlock:pthread_spin_lock:pthread_spin_unlock:sched_yield'
+  + ':sem_wait:sem_post:sem_timedwait',
+]
+pkgconfig.generate(libhpcrun_pthread_wrap_lib,
+  variables: _vars, uninstalled_variables: _vars)
+summary('PThread Blame Shifting (hpclink)', not is_disabler(libhpcrun_pthread_wrap_lib),
+        section: 'Plugins', bool_yn: true)
 
