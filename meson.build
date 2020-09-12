@@ -548,4 +548,5 @@ install_data(files(
 
 # Recurse into subdirectories
 subdir('src')
+subdir('doc')
 subdir('bin')
