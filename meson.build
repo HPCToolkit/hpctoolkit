@@ -547,6 +547,7 @@ install_data(files(
 ), install_dir: get_option('datadir') / 'doc' / meson.project_name())
 
 # Recurse into subdirectories
+subdir('lib')
 subdir('src')
 subdir('doc')
 subdir('bin')
