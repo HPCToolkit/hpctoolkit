@@ -424,40 +424,58 @@ endif
 
 _s_srcset.add_all(_srcset)
 _s_srcs = _s_srcset.apply(_config)
-_s_ddep = []
-foreach dep : _s_srcs.dependencies()
+_s_deps = _s_srcs.dependencies()
+# These are needed to since pkgconfig doesn't recursively search deps for static libs
+_s_deps += [libelf_static_d_dep, liblzma_static_d_dep, mbedtls_crypto_d_dep]
+# This is used to ensure we only generate bits if libmonitor_wrap is available
+_s_deps += [libmonitor_wrap_dep.partial_dependency()]
+# These are required by hpcrun_static or libmonitor
+_s_deps += [cc.find_library('dl'), cc.find_library('rt'), dependency('threads')]
+
+_s_partial_ddeps = []
+_s_full_ddeps = []
+foreach dep : _s_deps
   if not dep.found()
-    _s_ddep = [disabler()]
+    _s_partial_ddeps = [disabler()]
+    _s_full_ddeps = [disabler()]
+    break
+  else
+    _s_partial_ddeps += dep.partial_dependency(compile_args: true, includes: true, sources: true)
+    _s_full_ddeps += dep
   endif
 endforeach
 
 libhpcrun_static_lib = static_library('hpcrun_static', _s_srcs.sources(),
-  dependencies: _s_srcs.dependencies() + _s_ddep
-    + [libmonitor_wrap_dep.partial_dependency()]
-    + [libelf_static_d_dep, liblzma_static_d_dep, mbedtls_crypto_d_dep]
-    + [cc.find_library('dl'), cc.find_library('rt'), dependency('threads')],
+  dependencies: _s_partial_ddeps,
   link_with: [prof_lean_static_lib, support_lean_static_lib],
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
 libhpcrun_wrap_lib = static_library('hpcrun_wrap', files('monitor-exts/openmp.c'),
-  dependencies: _s_ddep + [libmonitor_wrap_dep.partial_dependency()],
+  dependencies: _s_partial_ddeps,
+  install: true, install_dir: get_option('libdir') / meson.project_name(),
+)
+libhpcrun_deps_lib = static_library('hpcrun_deps',
+  dependencies: _s_full_ddeps,
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
 summary('hpclink', not is_disabler(libhpcrun_static_lib)
-  and not is_disabler(libhpcrun_wrap_lib),
+  and not is_disabler(libhpcrun_wrap_lib)
+  and not is_disabler(libhpcrun_deps_lib),
   section: 'Applications', bool_yn: true)
-pkgconfig.generate(libhpcrun_static_lib)
-pkgconfig.generate(libhpcrun_wrap_lib)
-
-# The hpclink script needs an explicit pkgconfig for libmonitor as well.
-# Since libmonitor doesn't generate one, we handle that part.
-pkgconfig.generate(
-  name: 'monitor_wrap', description: 'libmonitor: wrap library',
-  libraries: libmonitor_wrap_libs,
-  install_dir: get_option('libdir') / meson.project_name() / 'pkgconfig',
-)
 
 if not is_disabler(libhpcrun_static_lib) and not is_disabler(libhpcrun_wrap_lib)
+  pkgconfig.generate(libhpcrun_static_lib)
+  pkgconfig.generate(libhpcrun_wrap_lib)
+  pkgconfig.generate(libhpcrun_deps_lib)
+
+  # The hpclink script needs an explicit pkgconfig for libmonitor as well.
+  # Since libmonitor doesn't generate one, we handle that part.
+  pkgconfig.generate(
+    name: 'monitor_wrap', description: 'libmonitor: wrap library',
+    libraries: libmonitor_wrap_libs,
+    install_dir: get_option('libdir') / meson.project_name() / 'pkgconfig',
+  )
+
   # Set for bin/meson.build
   hpclink_script = files('scripts/hpclink.meson.in')
   configure_file(input: hpclink_script, output: 'hpclink',

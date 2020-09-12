@@ -423,25 +423,13 @@ do
     wrap_args="${wrap_args} ${linker_prefix},--wrap=${name}"
 done
 
-prelib_args=
-lib_args=
-for arg in $(PKG_CONFIG_PATH="${pc_dir}" pkg-config --libs hpcrun_static)
-do
-    if test "${arg}" = "-lhpcrun_static"
-    then
-        prelib_args="${lib_args} ${linker_prefix},--whole-archive ${arg} ${linker_prefix},--no-whole-archive"
-        lib_args=
-    else
-        lib_args="${lib_args} ${arg}"
-    fi
-done
-
-set -- $undef_args $wrap_args $prelib_args "$@"
+set -- "${linker_prefix},--whole-archive" $(PKG_CONFIG_PATH="${pc_dir}" pkg-config --libs hpcrun_static) "${linker_prefix},--no-whole-archive" "$@"
+set -- $undef_args $wrap_args "$@"
 set -- "$@" "${nm_addrs}.o"
 
 PKG_CONFIG_PATH="${pc_dir}" pkg-config --exists hpcrun_wrap || die "unable to find: hpcrun_wrap"
 PKG_CONFIG_PATH="${pc_dir}" pkg-config --exists monitor_wrap || die "unable to find: monitor_wrap"
-set -- "$@" $(PKG_CONFIG_PATH="${pc_dir}" pkg-config --libs hpcrun_wrap $extra_hpc_libs monitor_wrap)
+set -- "$@" $(PKG_CONFIG_PATH="${pc_dir}" pkg-config --libs hpcrun_wrap $extra_hpc_libs monitor_wrap hpcrun_deps)
 set -- "$@" $lib_args $extra_plugin_files $appl_libs
 
 #------------------------------------------------------------
