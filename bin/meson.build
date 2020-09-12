@@ -49,7 +49,7 @@
 
 # This part handles the front-end executables and scripts
 
-_cp_exec = find_program('cp-exec.sh')
+_cp_exec = find_program('cp-exec.sh', native: true)
 
 foreach exe : all_apps
   custom_target('in-tree copy of ' + fs.name('@0@'.format(exe)),

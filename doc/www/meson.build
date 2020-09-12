@@ -74,11 +74,11 @@ _stylesrcs = [files(
 )]
 
 # If we have bib2xhtml, we can generate publications.html
-_bib2xhtml = find_program('bib2xhtml', required: false)
+_bib2xhtml = find_program('bib2xhtml', native: true, required: false)
 if _bib2xhtml.found()
-  _gen = find_program('pubgen.sh')
-  _gen2 = find_program('pub2gen.sh')
-  _awk = find_program('awk')
+  _awk = find_program('awk', native: true)
+  _gen = find_program('pubgen.sh', native: true)
+  _gen2 = find_program('pub2gen.sh', native: true)
   _tmp = configure_file(
     input: files('../manual/texmf/bibtex/bib/pubs.bib'),
     output: 'publications.html.in',

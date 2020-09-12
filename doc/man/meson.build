@@ -42,6 +42,49 @@
 #
 # ******************************************************* EndRiceCopyright *
 
-subdir('www')
-subdir('man')
-subdir('manual')
+_srcs = [
+  {'src': files('hpctoolkit.tex'), 'stem': 'hpctoolkit'},
+
+  {'src': files('hpcrun.tex'), 'ifvar': 'hpcrun_script', 'stem': 'hpcrun'},
+  {'src': files('hpclink.tex'), 'ifvar': 'hpclink_script', 'stem': 'hpclink'},
+
+  {'src': files('hpcstruct.tex'), 'if': hpcstruct_exe},
+
+  {'src': files('hpcprof.tex'), 'if': hpcprof_exe},
+  {'src': files('hpcprof-mpi.tex'), 'if': hpcprof_mpi_exe},
+  {'src': files('hpcproftt.tex'), 'if': hpcproftt_exe},
+  {'src': files('hpcsummary.tex'), 'ifvar': 'hpcsummary_script', 'stem': 'hpcsummary'},
+
+  {'src': files('hpctraceviewer.tex'), 'stem': 'hpctraceviewer'},
+  {'src': files('hpcviewer.tex'), 'stem': 'hpcviewer'},
+]
+
+_latex2man = find_program(files('../../tools/latex2man/latex2man'), native: true)
+_latex2man_t = files('hpctoolkit-latex2man.trans')
+
+_gen_tmp = generator(find_program('sed', native: true),
+  arguments: ['-e', 's/=PACKAGE_VERSION=/@PACKAGE_VERSION@/g', '@INPUT@'],
+  capture: true, output: '@BASENAME@.tex_pp')
+
+foreach s : _srcs
+  if s.has_key('if') and is_disabler(s['if'])
+    continue
+  elif s.has_key('ifvar') and not is_variable(s['ifvar'])
+    continue
+  endif
+
+  _stem = s.has_key('stem') ? s['stem'] : s['if'].name()
+  custom_target('man page for @0@'.format(_stem),
+    command: [_latex2man, '-t', _latex2man_t, '@INPUT@', '@OUTPUT@'],
+    output: '@BASENAME@.1hpctoolkit',
+    input: _gen_tmp.process(s['src']),
+    install: true, install_dir: get_option('mandir') / 'man1',
+    install_mode: 'rw-r--r--')
+  custom_target('html documentation for @0@'.format(_stem),
+    command: [_latex2man, '-H', '-t', _latex2man_t, '@INPUT@', '@OUTPUT@'],
+    output: '@BASENAME@.html',
+    input: _gen_tmp.process(s['src']),
+    install: true, install_dir: get_option('datadir') / 'doc' / meson.project_name() / 'man',
+    install_mode: 'rw-r--r--')
+endforeach
+

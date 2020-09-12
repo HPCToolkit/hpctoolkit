@@ -42,7 +42,6 @@
 #
 # ******************************************************* EndRiceCopyright *
 
-# TODO: Front-end scripts (hpcsummary + hpclog)
 # TODO: MPI wrapper
 
 _d_srcset = sourceset.source_set()
@@ -380,8 +379,10 @@ if true
     input: files('scripts/hpclog'), output: '@PLAINNAME@', copy: true,
     install: true, install_dir: get_option('libexecdir') / meson.project_name(),
     install_mode: 'rwxr-xr-x')
+  # For the man page generation
+  hpcsummary_script = files('scripts/hpcsummary.in')
   all_apps += configure_file(
-    input: files('scripts/hpcsummary.in'), output: '@BASENAME@',
+    input: hpcsummary_script, output: '@BASENAME@',
     configuration: {'PACKAGE_VERSION': meson.project_version()},
     install: true, install_dir: get_option('libexecdir') / meson.project_name(),
     install_mode: 'rwxr-xr-x')

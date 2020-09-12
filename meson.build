@@ -143,7 +143,7 @@ if get_option('spack') != '' or meson.get_external_property('spack', '') != ''
     assert(fs.is_file(spack),
            'Spack path `' + spack + '\' must be a file (i.e. .../bin/spack)!')
   endif
-  spack = find_program(spack, version: '>=0.15.0')
+  spack = find_program(spack, version: '>=0.15.0', native: true)
 endif
 
 # TODO: Sanity-check that Spack's compiler and ours are compatible.

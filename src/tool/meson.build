@@ -202,7 +202,7 @@ fi
 
 export HPCTOOLKIT
 ''')
-_launch_hash_value = run_command(find_program('date'), check: true).stdout().strip()
+_launch_hash_value = run_command(find_program('date', native: true), check: true).stdout().strip()
 launch_config.set('launch_script_vars', '''
 # If this script can't find its install directory, then set 'prefix'
 # here.  This should only be necessary if you've moved both the script
