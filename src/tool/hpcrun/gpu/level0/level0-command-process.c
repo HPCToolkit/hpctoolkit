@@ -181,6 +181,7 @@ level0_command_begin
   switch (command_node->type) {
     case LEVEL0_KERNEL: {
       gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_kernel);
+      gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_trace);
       break;
     }
     case LEVEL0_MEMCPY: {

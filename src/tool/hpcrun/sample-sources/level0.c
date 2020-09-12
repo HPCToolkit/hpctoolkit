@@ -195,8 +195,11 @@ METHOD_FN(finalize_event_list)
     monitor_real_exit(-1);
   }
 #endif
-
   level0_init();
+
+  // Init records
+  gpu_trace_init();
+
   device_finalizer_shutdown.fn = level0_fini;
   device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_shutdown);
 }

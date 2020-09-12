@@ -70,7 +70,7 @@
 //******************************************************************************
 // macros
 //******************************************************************************
-#define DEBUG 1
+#define DEBUG 0
 
 #include "hpcrun/gpu/gpu-print.h"
 
@@ -284,13 +284,35 @@ LEVEL0_FN
 // private operations
 //******************************************************************************
 
+static void
+level0_check_result
+(
+  ze_result_t ret,
+  int lineNo
+)
+{
+  if (ret == ZE_RESULT_SUCCESS) return;
+  fprintf(stderr, "Level API at line %d failed:", lineNo - 1);
+  #define LEVEL0_ERROR_CASE(x) case x: { fprintf(stderr, " %s", #x); break; }
+  switch (ret) {
+    LEVEL0_ERROR_CASE(ZE_RESULT_ERROR_UNINITIALIZED);
+    LEVEL0_ERROR_CASE(ZE_RESULT_ERROR_DEVICE_LOST);
+    LEVEL0_ERROR_CASE(ZE_RESULT_ERROR_INVALID_ENUMERATION);
+    LEVEL0_ERROR_CASE(ZE_RESULT_ERROR_OUT_OF_HOST_MEMORY);
+    default:
+      fprintf(stderr, " unknown return code");
+  }
+  fprintf(stderr, "\n");
+  exit(1);
+}
+
 static const char *
 level0_path
 (
   void
 )
 {
-  const char *path = "libze_loader.so";
+  static const char *path = "libze_loader.so";
 
   return path;
 }
@@ -301,6 +323,7 @@ get_gpu_driver_and_device
   void
 )
 {
+  if (hDevice != NULL) return;
   uint32_t driverCount = 0;
   uint32_t i, d;
   HPCRUN_LEVEL0_CALL(zeDriverGet, (&driverCount, NULL));
@@ -600,7 +623,23 @@ level0_process_immediate_command_list
 //******************************************************************************
 
 ze_result_t
-zeCommandListAppendLaunchKernel(
+zeInit
+(
+  ze_init_flag_t flag
+)
+{
+  // Entry action
+  // Execute the real level0 API
+  ze_result_t ret = HPCRUN_LEVEL0_CALL(zeInit,(flag));
+  level0_check_result(ret, __LINE__);
+  // Exit action
+  get_gpu_driver_and_device();
+  return ret;
+}
+
+ze_result_t
+zeCommandListAppendLaunchKernel
+(
   ze_command_list_handle_t hCommandList,          ///< [in] handle of the command list
   ze_kernel_handle_t hKernel,                     ///< [in] handle of the kernel object
   const ze_group_count_t* pLaunchFuncArgs,        ///< [in] thread group launch arguments
@@ -629,7 +668,8 @@ zeCommandListAppendLaunchKernel(
 }
 
 ze_result_t
-zeCommandListAppendMemoryCopy(
+zeCommandListAppendMemoryCopy
+(
   ze_command_list_handle_t hCommandList,          ///< [in] handle of command list
   void* dstptr,                                   ///< [in] pointer to destination memory to copy to
   const void* srcptr,                             ///< [in] pointer to source memory to copy from
@@ -637,6 +677,7 @@ zeCommandListAppendMemoryCopy(
   ze_event_handle_t hEvent                        ///< [in][optional] handle of the event to signal on completion
 )
 {
+  PRINT("Enter zeCommandListAppendMemoryCopy wrapper\n");
   // Entry action:
   // We need to create a new event for querying time stamps
   // if the user appends the kernel with an empty event parameter
@@ -654,7 +695,8 @@ zeCommandListAppendMemoryCopy(
 
 
 ze_result_t
-zeCommandListCreate(
+zeCommandListCreate
+(
   ze_device_handle_t hDevice,                     ///< [in] handle of the device object
   const ze_command_list_desc_t* desc,             ///< [in] pointer to command list descriptor
   ze_command_list_handle_t* phCommandList         ///< [out] pointer to handle of command list object created
@@ -671,7 +713,8 @@ zeCommandListCreate(
 }
 
 ze_result_t
-zeCommandListDestroy(
+zeCommandListDestroy
+(
   ze_command_list_handle_t hCommandList           ///< [in][release] handle of command list object to destroy
 )
 {
@@ -684,7 +727,8 @@ zeCommandListDestroy(
 }
 
 ze_result_t
-zeCommandQueueExecuteCommandLists(
+zeCommandQueueExecuteCommandLists
+(
   ze_command_queue_handle_t hCommandQueue,        ///< [in] handle of the command queue
   uint32_t numCommandLists,                       ///< [in] number of command lists to execute
   ze_command_list_handle_t* phCommandLists,       ///< [in][range(0, numCommandLists)] list of handles of the command lists
@@ -703,7 +747,8 @@ zeCommandQueueExecuteCommandLists(
 }
 
 ze_result_t
-zeEventPoolCreate(
+zeEventPoolCreate
+(
   ze_driver_handle_t hDriver,                     ///< [in] handle of the driver instance
   const ze_event_pool_desc_t* desc,               ///< [in] pointer to event pool descriptor
   uint32_t numDevices,                            ///< [in][optional] number of device handles; must be 0 if `nullptr ==
@@ -732,7 +777,8 @@ zeEventPoolCreate(
 }
 
 ze_result_t
-zeEventDestroy(
+zeEventDestroy
+(
   ze_event_handle_t hEvent                        ///< [in][release] handle of event object to destroy
 )
 {
@@ -745,7 +791,8 @@ zeEventDestroy(
 }
 
 ze_result_t
-zeEventHostReset(
+zeEventHostReset
+(
   ze_event_handle_t hEvent                        ///< [in] handle of the event
 )
 {
@@ -793,8 +840,7 @@ level0_init
  void
 )
 {
-  HPCRUN_LEVEL0_CALL(zeInit,(ZE_INIT_FLAG_NONE));
-  get_gpu_driver_and_device();
+
 }
 
 void
