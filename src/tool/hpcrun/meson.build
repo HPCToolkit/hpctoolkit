@@ -294,10 +294,10 @@ _d_srcset.add_all(when: 'PERF_AVAILABLE', if_true: _perf_d_srcset)
 _s_srcset.add_all(when: 'PERF_AVAILABLE', if_true: _perf_s_srcset)
 
 _papi_srcset = sourceset.source_set()
-_config.set('PAPI_C', get_option('papi-c').auto() ? cc.compiles('''
-  #include <papi.h>
-  int main() { return PAPI_get_eventset_component(0); }
-''', dependencies: papi_dep) : get_option('papi-c').enabled())
+_config.set('PAPI_C', get_option('papi-c').auto()
+  ? cc.has_header_symbol('papi.h', 'PAPI_get_eventset_component',
+                         include_directories: papi_dep_idirs)
+  : get_option('papi-c').enabled())
 _papi_srcset.add(when: 'PAPI_C',
   if_true: files(
       'sample-sources/papi-c.c',
@@ -305,11 +305,9 @@ _papi_srcset.add(when: 'PAPI_C',
   ), if_false: files(
     'sample-sources/papi.c',
   ))
-_config.set('PAPI_C_CUPTI', get_option('papi-c-cupti').auto() ? cc.compiles('''
-  #include <papi.h>
-  extern void CUDA_init_component();
-  int main() { CUDA_init_component(); }
-''', dependencies: papi_dep) : get_option('papi-c-cupti').enabled())
+_config.set('PAPI_C_CUPTI', get_option('papi-c-cupti').auto()
+  ? cc.has_function('CUDA_init_component', dependencies: papi_libs)
+  : get_option('papi-c-cupti').enabled())
 _papi_srcset.add(when: ['PAPI_C', 'PAPI_C_CUPTI'],
   if_true: [
     files('sample-sources/papi-c-cupti.c'),

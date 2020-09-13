@@ -47,7 +47,7 @@ _srcs = [files(
   'Args.cpp',
 )]
 
-_gen = generator(find_program('stringify.sh'), native: true,
+_gen = generator(find_program('stringify.sh', native: true),
                  arguments: ['@INPUT@'],
                  output: '@BASENAME@.h', capture: true)
 _srcs += _gen.process(files('cubins-analysis.txt'))

@@ -199,7 +199,7 @@ _deps = {
               'libs': ['gotcha'], 'headers': ['gotcha/gotcha.h'],
             },
   'papi': { 'propstems': ['papi'], 'spack': 'papi', 'dependency': 'papi',
-            'libs': ['papi'], 'headers': ['papi.h'],
+            'libs': ['papi'], 'headers': ['papi.h'], 'rawlibs': true,
           },
   'papi_static': { 'propstems': ['papi'], 'spack': 'papi', 'dependency': 'papi',
                    'libs': ['papi'], 'headers': ['papi.h'],
