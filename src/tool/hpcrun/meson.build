@@ -242,7 +242,26 @@ _perf_srcset.add(files(
   'sample-sources/perf/perf_mmap.c',
   'sample-sources/perf/perf_skid.c',
 ), declare_dependency(compile_args: ['-DHPCRUN_SS_LINUX_PERF']))
-_config.set('LINUX_4_3', true)  # TODO: Swap out for a linux >=4.3 test/option
+if get_option('kernel-blocking') == 'true'
+  _config.set('LINUX_4_3', true)
+elif get_option('kernel-blocking') == 'false'
+  _config.set('LINUX_4_3', false)
+elif get_option('kernel-blocking') == 'auto'
+  _config.set('LINUX_4_3', cc.compiles('''
+    #include <linux/perf_event.h>
+    #include <linux/version.h>
+    static struct perf_event_attr attr;
+    int main() {
+      #if LINUX_VERSION_CODE >= KERNEL_VERSION(4,3,0)
+        attr.context_switch = 1;
+      #else
+        #error Kernel is too old!
+      #endif
+    }
+  '''))
+else
+  error('Option kernel-blocking must be boolean or auto, not `@0@\''.format(get_option('kernel-blocking')))
+endif
 _perf_srcset.add(when: 'LINUX_4_3',
   if_true: files('sample-sources/perf/kernel_blocking.c'),
   if_false: files('sample-sources/perf/kernel_blocking_stub.c'))
@@ -255,13 +274,30 @@ _perf_d_srcset = sourceset.source_set()
 _perf_d_srcset.add(when: perfmon_dep, if_true: _perfmon_true, if_false: _perfmon_false)
 _perf_s_srcset = sourceset.source_set()
 _perf_s_srcset.add(when: perfmon_static_dep, if_true: _perfmon_true, if_false: _perfmon_false)
-_config.set('PERF_AVAILABLE', true)  # TODO: Change to perf non-paranoid test/option
+if get_option('perf-events') == 'true'
+  _config.set('PERF_AVAILABLE', true)
+elif get_option('perf-events') == 'false'
+  _config.set('PERF_AVAILABLE', false)
+elif get_option('perf-events') == 'auto'
+  _config.set('PERF_AVAILABLE', cc.compiles('''
+    #include <linux/perf_event.h>
+    static struct perf_event_attr attr;
+    int main() {
+      attr.sample_id_all = 1;
+    }
+  '''))
+else
+  error('Option perf-events must be boolean or auto, not `@0@\''.format(get_option('perf-events')))
+endif
 _srcset.add_all(when: 'PERF_AVAILABLE', if_true: _perf_srcset)
 _d_srcset.add_all(when: 'PERF_AVAILABLE', if_true: _perf_d_srcset)
 _s_srcset.add_all(when: 'PERF_AVAILABLE', if_true: _perf_s_srcset)
 
 _papi_srcset = sourceset.source_set()
-_config.set('PAPI_C', true)  # TODO: Change this to match --enable-papi-c
+_config.set('PAPI_C', get_option('papi-c').auto() ? cc.compiles('''
+  #include <papi.h>
+  int main() { return PAPI_get_eventset_component(0); }
+''', dependencies: papi_dep) : get_option('papi-c').enabled())
 _papi_srcset.add(when: 'PAPI_C',
   if_true: files(
       'sample-sources/papi-c.c',
@@ -269,7 +305,11 @@ _papi_srcset.add(when: 'PAPI_C',
   ), if_false: files(
     'sample-sources/papi.c',
   ))
-_config.set('PAPI_C_CUPTI', false)  # TODO: --enable-papi-c-cupti
+_config.set('PAPI_C_CUPTI', get_option('papi-c-cupti').auto() ? cc.compiles('''
+  #include <papi.h>
+  extern void CUDA_init_component();
+  int main() { CUDA_init_component(); }
+''', dependencies: papi_dep) : get_option('papi-c-cupti').enabled())
 _papi_srcset.add(when: ['PAPI_C', 'PAPI_C_CUPTI'],
   if_true: [
     files('sample-sources/papi-c-cupti.c'),

@@ -7,10 +7,17 @@ option('openmp', type: 'feature',
 option('valgrind-annotations', type: 'feature',
        description: 'Enable Valgrind annotations where applicable.')
 
+option('spack', type: 'string', value: '',
+       description: 'Use the given Spack to find external dependencies. Must either be an absolute path or a command to search on the PATH.')
+
 option('lush-pthreads', type: 'feature', value: 'disabled',
        description: 'Enable LUSH Pthread logical unwind support.')
 option('datacentric', type: 'feature',
        description: 'Enable data-centric profiling.')
+option('papi-c', type: 'feature',
+       description: 'Enable the use of the new component API for PAPI.')
+option('papi-c-cupti', type: 'feature',
+       description: 'Enable CUDA support via PAPI.')
 
 option('xop', type: 'feature',
        description: 'Enable support for decoding AMD XOP instructions (for x86-64).')
@@ -18,6 +25,8 @@ option('xop', type: 'feature',
 option('libunwind-primary', type: 'boolean', value: false,
        description: 'Use libunwind as the primary unwinder, even if alternative implementations exist.')
 
-option('spack', type: 'string', value: '',
-       description: 'Use the given Spack to find external dependencies. Must either be an absolute path or a command to search on the PATH.')
+option('kernel-blocking', type: 'string', value: 'auto',
+       description: '[true, false, auto] force enable or disable kernel blocking support in perf events (Linux >=4.3).')
+option('perf-events', type: 'string', value: 'auto',
+       description: '[true, false, auto] force enable or disable perf event sample sources (Linux >=2.6.32).')
 
