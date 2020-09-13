@@ -118,8 +118,6 @@ setDebugInfoFullFileName
 )
 {
 	if (debugInfoFullFileName == NULL) {
-		//size_t fileNameLength = strlen(fileName);
-		//debugInfoFullFileName = (char*) malloc(sizeof(fileNameLength));
 		debugInfoFullFileName = fileName;	
 	}
 }
@@ -184,29 +182,31 @@ clCreateProgramWithSource_wrapper
  cl_int* errcode_ret
 )
 {
-	clcreateprogramwithsource_t clCreateProgramWithSource_wrappee =
-		GOTCHA_GET_TYPED_WRAPPEE(clCreateProgramWithSource_handle, clcreateprogramwithsource_t);
-	return clCreateProgramWithSource_wrappee(context, count, strings, lengths, errcode_ret);
-	/*
 	ETMSG(OPENCL, "inside clCreateProgramWithSource_wrapper");
 
 	FILE *f_ptr;
 	for (int i = 0; i < (int)count; i++) {
 		// what if a single file has multiple kernels?
-		char *filename = "add.src"; // we need to add logic to get filenames by reading the strings contents
-		//char *filename = getKernelNameFromSourceCode(strings[i]);
+		// we need to add logic to get filenames by reading the strings contents
+		char fileno = '0' + (i + 1); // right now we are naming the files as index numbers
+		// using malloc instead of hpcrun_malloc gives extra garbage characters in file name
+		char *filename = (char*)hpcrun_malloc(sizeof(fileno) + 1);
+		*filename = fileno + '\0';
 		f_ptr = fopen(filename, "w");
 		fwrite(strings[i], lengths[i], 1, f_ptr);
 	}
 	fclose(f_ptr);
-	*/
+	
+	clcreateprogramwithsource_t clCreateProgramWithSource_wrappee =
+		GOTCHA_GET_TYPED_WRAPPEE(clCreateProgramWithSource_handle, clcreateprogramwithsource_t);
+	return clCreateProgramWithSource_wrappee(context, count, strings, lengths, errcode_ret);
 }
 
 
 // we are dumping the debuginfo temporarily since the binary does not have debugsection
 // poorly written code: FIXME
 static char*
-dumpIntelGPUBinary(cl_program program, size_t *fileNameSize) {
+dumpIntelGPUBinary(cl_program program) {
 	int device_count = 1;
 	cl_int status = CL_SUCCESS;
 	size_t *binary_size = (size_t*)hpcrun_malloc(sizeof(size_t) * device_count);
@@ -239,7 +239,6 @@ dumpIntelGPUBinary(cl_program program, size_t *fileNameSize) {
 	assert(status == CL_SUCCESS);
 
 	char *debuginfoFileName = "opencl_main.debuginfo";
-	*fileNameSize = strlen(debuginfoFileName);
 	bin_ptr = fopen(debuginfoFileName, "wb");
 	fwrite(debug_info[0], debug_info_size[0], 1, bin_ptr);
 	fclose(bin_ptr);
@@ -255,8 +254,7 @@ clBuildProgramCallback
 	void* user_data
 )
 {
-	size_t fileNameSize;
-	char* debugInfoFullFileName = dumpIntelGPUBinary(program, &fileNameSize);
+	char* debugInfoFullFileName = dumpIntelGPUBinary(program);
 	setDebugInfoFullFileName(debugInfoFullFileName);
 }
 
