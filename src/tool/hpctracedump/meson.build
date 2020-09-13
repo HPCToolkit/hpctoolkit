@@ -49,6 +49,7 @@ _srcs = files(
 hpctracedump_exe = executable('hpctracedump', _srcs,
   include_directories: tool_includes,
   link_with: [prof_lean_lib],
+  dependencies: get_option('devtools').enabled() ? [] : disabler(),
   install: true, install_dir: get_option('libexecdir') / meson.project_name())
 summary('hpctracedump', not is_disabler(hpctracedump_exe), section: 'Applications', bool_yn: true)
 all_apps += hpctracedump_exe

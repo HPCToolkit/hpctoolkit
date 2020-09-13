@@ -69,7 +69,7 @@ if get_option('libdir') != 'lib' or get_option('libexecdir') != 'libexec'
 endif
 
 # TODO: Hunt down the Git version and Spack spec. Generally not needed.
-# (For Git, use vcs_tag)
+# (For Git, use vcs_tag, probably. Might not work for all cases.)
 
 # TODO: Autotools issues a whole bunch of sanity checks for headers and types.
 # In particular:
@@ -105,7 +105,9 @@ if cpp.get_argument_syntax() == 'gcc'
 endif
 
 # Enable OpenMP.
-# TODO: Control using an --enable-openmp option
+# TODO: Figure out how to handle this properly. The original controls its usage
+# via a test for Dyninst support, but it doesn't appear to compile here without
+# having it enabled. Maybe something to do with the library?
 openmp_dep = dependency('OpenMP', required: false)
 # TODO: Handle finding the OpenMP directory.
 

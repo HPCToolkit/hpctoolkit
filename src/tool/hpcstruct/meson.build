@@ -62,7 +62,8 @@ all_apps += hpcstruct_exe
 
 dotgraph_exe = executable('dotgraph', files('DotGraph.cpp'),
   include_directories: tool_includes,
-  dependencies: [dyninst_d_dep, openmp_d_dep],
+  dependencies: [dyninst_d_dep, openmp_d_dep]
+    + (get_option('devtools').enabled() ? [] : [disabler()]),
   install: true, install_dir: get_option('libexecdir') / meson.project_name())
 summary('dotgraph', not is_disabler(dotgraph_exe), section: 'Applications', bool_yn: true)
 all_apps += dotgraph_exe

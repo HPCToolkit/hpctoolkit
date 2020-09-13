@@ -1,9 +1,7 @@
-option('all_static', type: 'boolean', value: false,
-       description: 'Output static binaries for MPI-supporting applications.')
-option('dev_tools', type: 'feature',
+option('devtools', type: 'feature',
        description: 'Enable extra tools useful for debugging.')
-option('external_strip', type: 'boolean', value: true,
-       description: 'Strip external libraries as part of installation.')
+option('hpcserver', type: 'feature',
+       description: 'Enable the (old and experimental) hpcserver application.')
 
 option('spack', type: 'string', value: '',
        description: 'Use the given Spack to find external dependencies. Must either be an absolute path or a command to search on the PATH.')

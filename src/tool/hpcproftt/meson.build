@@ -50,7 +50,8 @@ _srcs = files(
 hpcproftt_exe = executable('hpcproftt', _srcs,
   include_directories: tool_includes,
   link_with: [support_lib, analysis_lib],
-  dependencies: [xerces_d_dep],
+  dependencies: [xerces_d_dep]
+    + (get_option('devtools').enabled() ? [] : [disabler()]),
   install: true, install_dir: get_option('libexecdir') / meson.project_name())
 summary('hpcproftt', not is_disabler(hpcproftt_exe), section: 'Applications', bool_yn: true)
 all_apps += hpcproftt_exe
