@@ -357,8 +357,8 @@ foreach var, dep : _deps
     # To reduce the amount of times we have to fire up Spack, check the cache.
     if not _spack_cache.has_key(dep['spack'])
       # Run our helper script, and do our best with it.
-      _spack_paths = run_command(python, 'meson/spack-paths.py', spack,
-                                 dep['spack'], meson.get_external_property(dep['spack']+'_spec', ''))
+      _spack_paths = run_command(spack, 'python', files('meson/spack-query.py'),
+        spack, dep['spack'], meson.get_external_property(dep['spack']+'_spec', ''))
       if _spack_paths.returncode() != 0
         error(_spack_paths.stderr().strip())
       elif _spack_paths.stdout().strip() == ''
