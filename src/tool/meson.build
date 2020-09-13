@@ -228,8 +228,12 @@ configure_file(input: '../../meson/hash-file.in', output: 'hash-file',
 launch_config.set('HPCLINK_CC', ' '.join(meson.get_compiler('c').cmd_array()))
 launch_config.set('CFLAGS', '')
 
-# TODO: Should be based on lush-pthreads, I think
-launch_config.set('hpclink_extra_wrap_names', '')
+launch_config.set('hpclink_extra_wrap_names', get_option('lush-pthreads').enabled()
+  ? 'pthread_mutex_lock pthread_mutex_trylock pthread_mutex_unlock'
+  + 'pthread_spin_lock pthread_spin_trylock pthread_spin_unlock pthread_spin_destroy'
+  + 'pthread_cond_init pthread_cond_destroy pthread_cond_wait'
+  + 'pthread_cond_timedwait pthread_cond_signal pthread_cond_broadcast'
+  : '')
 
 subdir('hpcstruct')
 subdir('hpcprof')

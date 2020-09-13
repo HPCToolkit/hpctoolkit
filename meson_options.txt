@@ -2,6 +2,21 @@ option('devtools', type: 'feature',
        description: 'Enable extra tools useful for debugging.')
 option('hpcserver', type: 'feature',
        description: 'Enable the (old and experimental) hpcserver application.')
+option('openmp', type: 'feature',
+       description: 'Accelerate applications using OpenMP where applicable.')
+option('valgrind-annotations', type: 'feature',
+       description: 'Enable Valgrind annotations where applicable.')
+
+option('lush-pthreads', type: 'feature', value: 'disabled',
+       description: 'Enable LUSH Pthread logical unwind support.')
+option('datacentric', type: 'feature',
+       description: 'Enable data-centric profiling.')
+
+option('xop', type: 'feature',
+       description: 'Enable support for decoding AMD XOP instructions (for x86-64).')
+
+option('libunwind-primary', type: 'boolean', value: false,
+       description: 'Use libunwind as the primary unwinder, even if alternative implementations exist.')
 
 option('spack', type: 'string', value: '',
        description: 'Use the given Spack to find external dependencies. Must either be an absolute path or a command to search on the PATH.')

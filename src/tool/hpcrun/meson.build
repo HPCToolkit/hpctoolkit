@@ -42,8 +42,6 @@
 #
 # ******************************************************* EndRiceCopyright *
 
-# TODO: MPI wrapper
-
 _d_srcset = sourceset.source_set()
 _s_srcset = sourceset.source_set()
 _srcset = sourceset.source_set()
@@ -227,6 +225,10 @@ if host_machine.system() == 'linux'
   _d_srcset.add(files('os/linux/dylib.c'))
 endif
 
+_config.set('LUSH_PTHREADS', get_option('lush-pthreads').enabled())
+_srcset.add(when: 'LUSH_PTHREADS', if_true: declare_dependency(
+  compile_args: ['-DLUSH_PTHREADS']))
+
 _config.set('BLUE_GENE', false)  # TODO: Change out for a Blue Gene option
 _srcset.add(when: 'BLUE_GENE', if_true: declare_dependency(
   compile_args: ['-DUSE_HW_THREAD_ID', '-DNONZERO_THRESHOLD']))
@@ -327,8 +329,8 @@ elif host_machine.cpu_family() == 'aarch64'
   ), declare_dependency(include_directories: include_directories('utilities/arch/aarch64')))
 endif
 
-# TODO: Adjust this to vaugely match the unwinder logic in the configure.ac
-if true  # UNW_X86
+if not get_option('libunwind-primary') \
+   and (host_machine.cpu_family() == 'x86' or host_machine.cpu_family() == 'x86_64')
   _srcset.add(files(
     'unwind/x86-family/x86-all.c',
     'unwind/x86-family/amd-xop.c',
@@ -352,18 +354,21 @@ if true  # UNW_X86
   ), declare_dependency(include_directories: include_directories('unwind/x86-family')))
   _d_srcset.add(xed_dep)
   _s_srcset.add(xed_static_dep)
-elif false  # UNW_PPC64
+elif not get_option('libunwind-primary') and host_machine.cpu_family() == 'ppc64'
   _srcset.add(files(
     'unwind/ppc64/ppc64-unwind.c',
     'unwind/ppc64/ppc64-unwind-interval.c',
     'unwind/common/default_validation_summary.c',
   ), declare_dependency(include_directories: include_directories('unwind/ppc64')))
-elif false  # UNW_LIBUNW
+else  # NOTE: Dead UNW_MIPS case and files
   _srcset.add(files(
     'unwind/generic-libunwind/libunw-unwind.c',
     'unwind/common/default_validation_summary.c',
-  ), declare_dependency(include_directories: include_directories('unwind/generic-libunwind')))
-endif  # NOTE: Dead UNW_MIPS files
+  ), declare_dependency(
+    include_directories: include_directories('unwind/generic-libunwind'),
+    compile_args: ['-DUSE_LIBUNW=1'],
+  ))
+endif
 
 _libunwind_srcset = sourceset.source_set()
 _libunwind_srcset.add(declare_dependency(compile_args: '-DUSE_LIBUNWIND'))
@@ -462,6 +467,8 @@ libhpcrun_pthread_lib = shared_module('hpcrun_pthread',
 )
 summary('PThread Blame Shifting (hpcrun)', not is_disabler(libhpcrun_pthread_lib),
         section: 'Plugins', bool_yn: true)
+
+# TODO: libhpcrun_mpi
 
 ##
 ## Static case (hpclink)

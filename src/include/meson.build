@@ -59,7 +59,7 @@ hpctoolkit_config.set('BINUTILS_234', cc.compiles('''
     }
   ''', include_directories: libbfd_dep_idirs, dependencies: libbfd_dep_ex)
   ? 1 : false)
-hpctoolkit_config.set('DATACENTRIC_TRACE', false ? 1 : false)  # TODO: Change to get_option
+hpctoolkit_config.set('DATACENTRIC_TRACE', get_option('datacentric').enabled() ? 1 : false)
 if dyninst_dep.found()
   hpctoolkit_config.set('DYNINST_INSTRUCTION_PTR', cpp.compiles('''
     #include <map>
@@ -117,15 +117,13 @@ hpctoolkit_config.set('ENABLE_CLOCK_CPUTIME',
     }
   ''')) ? 1 : false)
 
-# TODO: This should depend on a get_option and some tests for Dyninst
-hpctoolkit_config.set('ENABLE_OPENMP', true ? 1 : false)
-hpctoolkit_config.set('ENABLE_OPENMP_SYMTAB', true ? 1 : false)
+# TODO: This should also require some tests for Dyninst
+hpctoolkit_config.set('ENABLE_OPENMP', get_option('openmp').enabled() ? 1 : false)
+hpctoolkit_config.set('ENABLE_OPENMP_SYMTAB', get_option('openmp').enabled() ? 1 : false)
 
-# TODO: This should be set based on a get_option
-hpctoolkit_config.set('ENABLE_VG_ANNOTATIONS', false ? 1 : false)
+hpctoolkit_config.set('ENABLE_VG_ANNOTATIONS', get_option('valgrind-annotations').enabled() ? 1 : false)
 
-# TODO: I've never used this one, maybe nobody should?
-hpctoolkit_config.set('ENABLE_XOP', false ? 1 : false)
+hpctoolkit_config.set('ENABLE_XOP', get_option('xop').enabled() ? 1 : false)
 
 if cuda_dep.found()
   # CUDA is weird, for now just stick with a compile test
@@ -179,7 +177,7 @@ hpctoolkit_config.set_quoted('HPCTOOLKIT_VERSION', meson.project_version())
 hpctoolkit_config.set_quoted('HPCTOOLKIT_VERSION_STRING',
   'A member of ' + meson.project_name() + ', version ' + meson.project_version())
 
-# TODO: Make this a test of some kind, eventually
+# TODO: Again, modern systems should be fine.
 hpctoolkit_config.set('NO_STD_CHEADERS', false ? 1 : false)
 
 hpctoolkit_config.set('OPT_HAVE_CUDA', cuda_dep.found() ? 1 : false)
@@ -191,9 +189,6 @@ hpctoolkit_config.set_quoted('CUDA_INSTALL_PREFIX', '/nonexistant/')
 hpctoolkit_config.set_quoted('CUPTI_INSTALL_PREFIX', '/nonexistant/')
 
 hpctoolkit_config.set('SIZEOF_VOIDP', cc.sizeof('void*'))
-
-# TODO: Make this an option instead
-hpctoolkit_config.set('USE_LIBUNW', libunwind_dep.found() ? 1 : false)
 
 hpctoolkit_config.set('USE_ROCM', rocm_headers_dep.found() ? 1 : false)
 
