@@ -57,7 +57,7 @@ hpctoolkit_config.set('BINUTILS_234', cc.compiles('''
     int main() {
       return bfd_section_vma((asection*)0);
     }
-  ''', include_directories: libbfd_dep_idirs, dependencies: libbfd_dep_ex)
+  ''', include_directories: libbfd_dep_idirs, dependencies: libbfd_dep_libs)
   ? 1 : false)
 hpctoolkit_config.set('DATACENTRIC_TRACE', get_option('datacentric').enabled() ? 1 : false)
 if dyninst_dep.found()
@@ -75,7 +75,7 @@ if dyninst_dep.found()
       ((Block*)NULL)->getInsns(imap);
       std::cout << imap.begin()->second->size();
     }
-  ''', include_directories: dyninst_dep_idirs, dependencies: dyninst_dep_ex)
+  ''', include_directories: dyninst_dep_idirs, dependencies: dyninst_dep_libs)
   ? 1 : false)
   hpctoolkit_config.set('DYNINST_USE_CUDA', cpp.compiles('''
     #include <iostream>
@@ -83,7 +83,7 @@ if dyninst_dep.found()
     int main() {
       std::cout << (long) Dyninst::Arch_cuda;
     }
-  ''', include_directories: dyninst_dep_idirs, dependencies: dyninst_dep_ex)
+  ''', include_directories: dyninst_dep_idirs, dependencies: dyninst_dep_libs)
   ? 1 : false)
   # TODO: Change this out for an actual test
   hpctoolkit_config.set('DYNINST_USE_LIBDW', true ? 1 : false)

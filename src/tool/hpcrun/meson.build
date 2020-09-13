@@ -306,7 +306,7 @@ _papi_srcset.add(when: 'PAPI_C',
     'sample-sources/papi.c',
   ))
 _config.set('PAPI_C_CUPTI', get_option('papi-c-cupti').auto()
-  ? cc.has_function('CUDA_init_component', dependencies: papi_libs)
+  ? cc.has_function('CUDA_init_component', dependencies: papi_dep_libs)
   : get_option('papi-c-cupti').enabled())
 _papi_srcset.add(when: ['PAPI_C', 'PAPI_C_CUPTI'],
   if_true: [
@@ -418,13 +418,13 @@ _srcset.add(files('utilities/last_func.c'))
 # If the front-end bits have been requested, use them.
 # TODO: Swap out for a !--enable-backend option
 if true
-  all_apps += configure_file(
+  all_scripts += configure_file(
     input: files('scripts/hpclog'), output: '@PLAINNAME@', copy: true,
     install: true, install_dir: get_option('libexecdir') / meson.project_name(),
     install_mode: 'rwxr-xr-x')
   # For the man page generation
   hpcsummary_script = files('scripts/hpcsummary.in')
-  all_apps += configure_file(
+  all_scripts += configure_file(
     input: hpcsummary_script, output: '@BASENAME@',
     configuration: {'PACKAGE_VERSION': meson.project_version()},
     install: true, install_dir: get_option('libexecdir') / meson.project_name(),
@@ -463,7 +463,6 @@ libhpcrun_lib = shared_library('hpcrun', _d_srcs.sources(),
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
 summary('hpcrun', not is_disabler(libhpcrun_lib), section: 'Applications', bool_yn: true)
-all_applibs += libhpcrun_lib
 
 if not is_disabler(libhpcrun_lib)
   # Set for bin/meson.build
@@ -515,7 +514,7 @@ summary('PThread Blame Shifting (hpcrun)', not is_disabler(libhpcrun_pthread_lib
 _s_srcset.add_all(_srcset)
 _s_srcs = _s_srcset.apply(_config)
 _s_deps = _s_srcs.dependencies()
-# These are needed to since pkgconfig doesn't recursively search deps for static libs
+# These are needed to since the pkgconfig module doesn't recursively search deps for static libs
 _s_deps += [libelf_static_d_dep, liblzma_static_d_dep, mbedtls_crypto_d_dep]
 # This is used to ensure we only generate bits if libmonitor_wrap is available
 _s_deps += [libmonitor_wrap_dep.partial_dependency()]
@@ -563,7 +562,7 @@ if not is_disabler(libhpcrun_static_lib) and not is_disabler(libhpcrun_wrap_lib)
   # Since libmonitor doesn't generate one, we handle that part.
   pkgconfig.generate(
     name: 'monitor_wrap', description: 'libmonitor: wrap library',
-    libraries: libmonitor_wrap_libs,
+    libraries: libmonitor_wrap_dep_libs,
     install_dir: get_option('libdir') / meson.project_name() / 'pkgconfig',
   )
 

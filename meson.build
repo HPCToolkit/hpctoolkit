@@ -178,6 +178,7 @@ _deps = {
             },
   'libelf_static': { 'propstems': ['libelf', 'elfutils'], 'spack': 'elfutils', 'dependency': 'libelf',
                      'libs': ['elf'], 'headers': ['libelf.h'], 'static': true,
+                     'extra_deps': ['zlib_static_dep'],
                    },
   'libdw': { 'propstems': ['libdw', 'elfutils'], 'spack': 'elfutils', 'dependency': 'libdw',
              'libs': ['dw'], 'headers': ['elfutils/libdw.h'],
@@ -199,7 +200,7 @@ _deps = {
               'libs': ['gotcha'], 'headers': ['gotcha/gotcha.h'],
             },
   'papi': { 'propstems': ['papi'], 'spack': 'papi', 'dependency': 'papi',
-            'libs': ['papi'], 'headers': ['papi.h'], 'rawlibs': true,
+            'libs': ['papi'], 'headers': ['papi.h'],
           },
   'papi_static': { 'propstems': ['papi'], 'spack': 'papi', 'dependency': 'papi',
                    'libs': ['papi'], 'headers': ['papi.h'],
@@ -228,7 +229,7 @@ _deps = {
                 },
   'libmonitor_wrap': { 'propstems': ['libmonitor', 'monitor'], 'spack': 'libmonitor',
                        'libs': ['monitor_wrap'], 'headers': ['monitor.h'],
-                       'static': true, 'rawlibs': true,
+                       'static': true,
                      },
 
   'tbb': { 'propstems': ['tbb'], 'spack': 'intel-tbb',
@@ -281,6 +282,8 @@ foreach var, dep : _deps
   endforeach
   if not _dep_enabled
     set_variable(var+'_dep', dependency('', required: false))
+    set_variable(var+'_dep_libs', [])
+    set_variable(var+'_dep_idirs', [])
     summary(var, false, section: 'Dependencies', bool_yn: true)
     continue
   endif
@@ -392,103 +395,87 @@ foreach var, dep : _deps
     set_variable(var+'_dep', _spack_cache[dep['spack']])
   endif
 
-  # Fetch the other dependencies that will have to be added to make this work.
-  _dep_exdeps = []
-  _dep_exincs = []
+  # Fetch the base dependencies needed to make this all work
+  _dep_idirs = []
+  _dep_xlibs = []
+  foreach exdep : dep.get('extra_deps', [])
+    _dep_idirs += get_variable(exdep+'_idirs')
+    _dep_xlibs += get_variable(exdep+'_libs')
+  endforeach
   foreach exdep : dep.get('extra_incdeps', [])
-    if is_variable(exdep+'_idirs')
-      _dep_exincs += get_variable(exdep+'_idirs')
-    else
-      _dep_exdeps += get_variable(exdep).partial_dependency(compile_args: true, includes: true)
-    endif
+    _dep_idirs += get_variable(exdep+'_idirs')
+    foreach d : get_variable(exdep+'_libs')
+      _dep_xlibs += d.partial_dependency(compile_args: true, includes: true)
+    endforeach
   endforeach
 
   # If we reach this point, we may have to do the actual search.
   _dep_cc = dep.get('cc', cc)
+  _dep_libs = []
   if is_variable(var+'_dep') and not get_variable(var+'_dep').get('skip_to_dep', false)
     _dep_paths = get_variable(var+'_dep')
 
-    # Hunt down the libraries on the given paths.
-    _dep_libs = []
+    # In the end, these are the include directories that we will depend on.
+    _dep_idirs += include_directories(_dep_paths['idirs'])
+    set_variable(var+'_dep_idirs', _dep_idirs)
+
+    # Hunt down the libraries on the given paths. Also check for the headers.
     foreach lib : dep['libs']
-      if dep.get('static', false)
-        _dep_libs += _dep_cc.find_library(lib, dirs: _dep_paths['ldirs'], required: true, static: true)
+      if dep.has_key('static')
+        _dep_libs += _dep_cc.find_library(lib,
+          dirs: _dep_paths['ldirs'], required: true, static: dep['static'],
+          has_headers: dep['headers'], header_include_directories: _dep_idirs)
       else
-        _dep_libs += _dep_cc.find_library(lib, dirs: _dep_paths['ldirs'], required: true)
+        _dep_libs += _dep_cc.find_library(lib,
+          dirs: _dep_paths['ldirs'], required: true,
+          has_headers: dep['headers'], header_include_directories: _dep_idirs)
       endif
     endforeach
-
-    # Check for the headers, and error if we don't find them. They both must
-    # actually exist on a path and work when compiled.
-    _dep_idirs = [include_directories(_dep_paths['idirs'])] + _dep_exincs
-    foreach inc : dep['headers']
-      _has_it = false
-      foreach idir : _dep_paths['idirs']
-        if fs.is_file(idir / inc)
-          _has_it = true
-          break
-        endif
+    if dep['libs'].length() == 0
+      foreach h : dep['headers']
+        _dep_libs += cc.has_header(h, include_directories: _dep_idirs) ? [] : disabler()
       endforeach
-      assert(_has_it, var+' does not provide `'+inc+'\'')
-      _dep_cc.check_header(inc, include_directories: _dep_idirs,
-                           required: true, dependencies: _dep_exdeps)
-    endforeach
-
-    # Finally, stitch together the final dependency and set it.
-    set_variable(var+'_dep', declare_dependency(
-      dependencies: _dep_libs + _dep_exdeps, include_directories: _dep_idirs,
-    ))
-    if dep.get('rawlibs', false)
-      set_variable(var+'_libs', get_variable(var+'_dep').found() ? _dep_libs : disabler())
     endif
-    set_variable(var+'_dep_idirs', _dep_idirs)
-    set_variable(var+'_dep_ex', _dep_exdeps)
+    _dep_libs += _dep_xlibs
+    set_variable(var+'_dep_libs', _dep_libs)
+
+    # Stitch together a final dependency to represent the entire mess.
+    set_variable(var+'_dep', declare_dependency(
+      dependencies: _dep_libs, include_directories: _dep_idirs,
+    ))
     summary(var, _dep_paths['summary'], section: 'Dependencies')
   elif not dep.has_key('dependency')
-    # Repeat of the above, but with system paths instead.
-    _dep_libs = []
-    _dep_allfound = true
+    # Repeat of the above, but only using the system paths.
+    set_variable(var+'_dep_idirs', _dep_idirs)
     foreach lib : dep['libs']
-      if dep.get('static', false)
-        _dep_libs += _dep_cc.find_library(lib, static: true, required: false)
+      if dep.has_key('static')
+        _dep_libs += _dep_cc.find_library(lib,
+          static: dep['static'],
+          has_headers: dep['headers'], header_include_directories: _dep_idirs)
       else
-        _dep_libs += _dep_cc.find_library(lib, required: false)
-      endif
-      _dep_allfound = _dep_allfound and _dep_libs[-1].found()
-      if not _dep_allfound
-        break
+        _dep_libs += _dep_cc.find_library(lib,
+          has_headers: dep['headers'], header_include_directories: _dep_idirs)
       endif
     endforeach
-    # Ensure the headers are usable. Last thing we want is problems there.
-    if _dep_allfound
-      foreach inc : dep['headers']
-        _dep_allfound = _dep_allfound and _dep_cc.check_header(inc, dependencies: _dep_exdeps)
-        if not _dep_allfound
-          break
-        endif
+    if dep['libs'].length() == 0
+      foreach h : dep['headers']
+        _dep_libs += cc.has_header(h, include_directories: _dep_idirs) ? [] : disabler()
       endforeach
     endif
-    if _dep_allfound
-      set_variable(var+'_dep', declare_dependency(dependencies: _dep_libs + _dep_exdeps))
-      if dep.get('rawlibs', false)
-        set_variable(var+'_libs', _dep_libs)
-      endif
-      set_variable(var+'_dep_ex', _dep_exdeps)
-      summary(var, '(system)', section: 'Dependencies')
-    else
-      set_variable(var+'_dep', dependency('', required: false))
-      if dep.get('rawlibs', false)
-        set_variable(var+'_libs', disabler())
-      endif
-      set_variable(var+'_dep_ex', dependency('', required: false))
-      summary(var, false, section: 'Dependencies', bool_yn: true)
-    endif
-    set_variable(var+'_dep_idirs', include_directories())
+    _dep_libs += _dep_xlibs
+    set_variable(var+'_dep_libs', _dep_libs)
+    set_variable(var+'_dep', declare_dependency(
+      dependencies: _dep_libs, include_directories: _dep_idirs,
+    ))
+    summary(var, get_variable(var+'_dep').found() ? '(system)' : false,
+            section: 'Dependencies', bool_yn: true)
   else
-    # Use the standard dependency logic to pull from the system
-    if dep.get('static', false)
+    # Use the standard dependency logic to pull from the system.
+    # Unlike the other paths, we assume the standard logic can handle the
+    # internal dependencies without our help.
+    if dep.has_key('static')
       set_variable(var+'_dep', dependency(dep['dependency'],
-        required: is_variable(var+'_dep'), static: true,
+        required: is_variable(var+'_dep'), static: dep['static'],
         modules: dep.get('modules', []),
         components: dep.get('components', [])))
     else
@@ -497,7 +484,8 @@ foreach var, dep : _deps
         modules: dep.get('modules', []),
         components: dep.get('components', [])))
     endif
-    set_variable(var+'_dep_ex', get_variable(var+'_dep'))
+    set_variable(var+'_dep_idirs', [])
+    set_variable(var+'_dep_libs', [get_variable(var+'_dep')])
     if get_variable(var+'_dep').found()
       summary(var, get_variable(var+'_dep').get_variable(
         cmake: get_variable(var+'_dep').name() + '_LIBRARY',
@@ -512,9 +500,6 @@ endforeach
 # The Valgrind dependency should only reference the headers, so remove any
 # of its other bits.
 x_valgrind_headers_dep = x_valgrind_headers_dep.partial_dependency(compile_args: true, includes: true)
-
-# The libelf_static dependency also requires zlib
-libelf_static_dep = declare_dependency(dependencies: [libelf_static_dep, zlib_static_dep])
 
 # For every dependency (_dep) variable, add an additional _d_dep variable that
 # is a disabler when the dependency is not found. Because disablers are handy.

@@ -52,6 +52,12 @@
 _cp_exec = find_program('cp-exec.sh', native: true)
 
 foreach exe : all_apps
+  custom_target('in-tree copy of ' + exe.name(),
+    command: [_cp_exec, '@INPUT@', '@OUTPUT@'],
+    input: exe, output: '@PLAINNAME@',
+    build_by_default: true)
+endforeach
+foreach exe : all_scripts
   custom_target('in-tree copy of ' + fs.name('@0@'.format(exe)),
     command: [_cp_exec, '@INPUT@', '@OUTPUT@'],
     input: exe, output: '@PLAINNAME@',

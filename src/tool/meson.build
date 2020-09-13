@@ -45,7 +45,7 @@
 tool_includes = main_includes + [include_directories('.')]
 
 all_apps = []
-all_applibs = []
+all_scripts = []
 
 # Common strings used for generating the launch scripts. Many of these are
 # long and copied from config/.
