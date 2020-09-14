@@ -106,7 +106,8 @@ MYSOURCES = \
 	ElfHelper.cpp \
 	InputFile.cpp \
 	RelocateCubin.cpp \
-	intel/IntelGPUbinutils.cpp
+	intel/IntelGPUbinutils.cpp \
+	intel/CreateCFG.cpp
 
 
 #############################################################################

@@ -4776,15 +4776,31 @@ case "$IGC" in
     fi
     OPT_IGC_IFLAGS="-I${IGC}/include"
 
+    IGC_LDFLAGS = 
+    IGA_LDFLAGS =
+
     for lib in $multilib_path ; do
       if test -f "${IGC}/${lib}/libigc.so" ; then
-        OPT_IGC_LDFLAGS="-L${IGC}/$lib -Wl,-rpath=${IGC}/$lib -ligc"
+        IGC_LDFLAGS="-L${IGC}/$lib -Wl,-rpath=${IGC}/$lib -ligc"
         break
       fi
     done
-    if test "x$OPT_IGC_LDFLAGS" = x ; then
+    if test "x$IGC_LDFLAGS" = x ; then
       AC_MSG_ERROR([unable to find libigc.so in: $IGC])
     fi
+
+    for lib in $multilib_path ; do
+      if test -f "${IGC}/${lib}/libiga64.so" ; then
+        IGA_LDFLAGS="-L${IGC}/$lib -Wl,-rpath=${IGC}/$lib -liga64"
+        break
+      fi
+    done
+    if test "x$IGA_LDFLAGS" = x ; then
+      AC_MSG_ERROR([unable to find libiga.so in: $IGC])
+    fi
+
+    OPT_IGC_LDFLAGS="${IGC_LDFLAGS} ${IGA_LDFLAGS}"
+
     OPT_HAVE_IGC=yes
     ;;
   no )

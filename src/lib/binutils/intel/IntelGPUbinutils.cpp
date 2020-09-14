@@ -61,6 +61,7 @@
 #include "gen_symbols_decoder.h"
 
 
+
 //******************************************************************************
 // local includes
 //******************************************************************************
@@ -69,6 +70,7 @@
 #include <lib/support/diagnostics.h>
 #include <lib/support/RealPathMgr.cpp>
 #include "IntelGPUbinutils.hpp"
+#include "CreateCFG.hpp"
 
 
 
@@ -209,6 +211,30 @@ extract_kernelelfs
 			bool result = elfFile->open(file_buffer, f_size, file_name);
 
 			filevector->push_back(elfFile);
+			
+			// start cfg generation
+			Elf *elf = elfFile->getElf();
+			file_buffer = elfFile->getMemory();
+			ElfSectionVector *sections = elfGetSectionVector(elf);
+			GElf_Ehdr ehdr_v;
+			GElf_Ehdr *ehdr = gelf_getehdr(elf, &ehdr_v);
+
+			if (ehdr) {
+				for (auto si = sections->begin(); si != sections->end(); si++) {
+					Elf_Scn *scn = *si;
+					GElf_Shdr shdr_v;
+					GElf_Shdr *shdr = gelf_getshdr(scn, &shdr_v);
+					if (!shdr) continue;
+					char *sectionData = elfSectionGetData(file_buffer, shdr);
+					const char *section_name = elf_strptr(elf, ehdr->e_shstrndx, shdr->sh_name);
+					if (strcmp(section_name, ".text") == 0) {
+						std::vector<uint8_t> intelRawGenBinary(reinterpret_cast<uint8_t*>(sectionData), 
+								reinterpret_cast<uint8_t*>(sectionData) + kernel_header->SizeVisaDbgInBytes);
+						printCFGInDotGraph(intelRawGenBinary);
+					}
+				}
+			}
+			//end cfg generation
 		} else {
 			extractSuccess = false;
 		}

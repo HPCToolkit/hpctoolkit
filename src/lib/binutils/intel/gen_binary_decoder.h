@@ -14,7 +14,7 @@
 
 #include <iga/kv.hpp>
 
-#include "utils.h"
+#define MAX_STR_SIZE 1024
 
 using InstructionList = std::vector< std::pair<uint32_t, std::string> >;
 

@@ -165,7 +165,7 @@ am__DEPENDENCIES_4 = $(HPCLIB_Analysis) $(HPCLIB_Banal) \
 	$(HPCLIB_XML) $(HPCLIB_Support) $(HPCLIB_SupportLean) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 hpcstruct_bin_DEPENDENCIES = $(am__DEPENDENCIES_4)
 hpcstruct_bin_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
@@ -566,6 +566,7 @@ HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
 HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
 SYMTABAPI_LIB = @SYMTABAPI_LIB@
 SYMTABAPI_LIB_LIST = @SYMTABAPI_LIB_LIST@
+@OPT_ENABLE_IGC_TRUE@IGC_LDFLGS = @OPT_IGC_LDFLAGS@
 MYSOURCES = main.cpp Args.cpp
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@ \
 	$(am__append_2)
@@ -594,6 +595,7 @@ MYLDADD = \
 	$(MY_ELF_DWARF) \
 	@BINUTILS_LIBS@ \
 	$(LZMA_LDFLAGS_DYN) \
+	$(IGC_LDFLGS) \
 	$(TBB_LFLAGS)
 
 DOT_LDADD = \

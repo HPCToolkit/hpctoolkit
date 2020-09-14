@@ -149,7 +149,8 @@ am__objects_1 = libHPCbinutils_la-LM.lo libHPCbinutils_la-Seg.lo \
 	libHPCbinutils_la-Fatbin.lo libHPCbinutils_la-ElfHelper.lo \
 	libHPCbinutils_la-InputFile.lo \
 	libHPCbinutils_la-RelocateCubin.lo \
-	intel/libHPCbinutils_la-IntelGPUbinutils.lo
+	intel/libHPCbinutils_la-IntelGPUbinutils.lo \
+	intel/libHPCbinutils_la-CreateCFG.lo
 am_libHPCbinutils_la_OBJECTS = $(am__objects_1)
 libHPCbinutils_la_OBJECTS = $(am_libHPCbinutils_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -565,7 +566,8 @@ MYSOURCES = \
 	ElfHelper.cpp \
 	InputFile.cpp \
 	RelocateCubin.cpp \
-	intel/IntelGPUbinutils.cpp
+	intel/IntelGPUbinutils.cpp \
+	intel/CreateCFG.cpp
 
 
 #############################################################################
@@ -654,6 +656,8 @@ intel/$(DEPDIR)/$(am__dirstamp):
 	@: > intel/$(DEPDIR)/$(am__dirstamp)
 intel/libHPCbinutils_la-IntelGPUbinutils.lo: intel/$(am__dirstamp) \
 	intel/$(DEPDIR)/$(am__dirstamp)
+intel/libHPCbinutils_la-CreateCFG.lo: intel/$(am__dirstamp) \
+	intel/$(DEPDIR)/$(am__dirstamp)
 
 libHPCbinutils.la: $(libHPCbinutils_la_OBJECTS) $(libHPCbinutils_la_DEPENDENCIES) $(EXTRA_libHPCbinutils_la_DEPENDENCIES) 
 	$(AM_V_CXXLD)$(libHPCbinutils_la_LINK)  $(libHPCbinutils_la_OBJECTS) $(libHPCbinutils_la_LIBADD) $(LIBS)
@@ -681,6 +685,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-SimpleSymbols.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-SimpleSymbolsFactories.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-VMAInterval.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@intel/$(DEPDIR)/libHPCbinutils_la-CreateCFG.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@intel/$(DEPDIR)/libHPCbinutils_la-IntelGPUbinutils.Plo@am__quote@
 
 .cpp.o:
@@ -818,6 +823,13 @@ intel/libHPCbinutils_la-IntelGPUbinutils.lo: intel/IntelGPUbinutils.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='intel/IntelGPUbinutils.cpp' object='intel/libHPCbinutils_la-IntelGPUbinutils.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o intel/libHPCbinutils_la-IntelGPUbinutils.lo `test -f 'intel/IntelGPUbinutils.cpp' || echo '$(srcdir)/'`intel/IntelGPUbinutils.cpp
+
+intel/libHPCbinutils_la-CreateCFG.lo: intel/CreateCFG.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT intel/libHPCbinutils_la-CreateCFG.lo -MD -MP -MF intel/$(DEPDIR)/libHPCbinutils_la-CreateCFG.Tpo -c -o intel/libHPCbinutils_la-CreateCFG.lo `test -f 'intel/CreateCFG.cpp' || echo '$(srcdir)/'`intel/CreateCFG.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) intel/$(DEPDIR)/libHPCbinutils_la-CreateCFG.Tpo intel/$(DEPDIR)/libHPCbinutils_la-CreateCFG.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='intel/CreateCFG.cpp' object='intel/libHPCbinutils_la-CreateCFG.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o intel/libHPCbinutils_la-CreateCFG.lo `test -f 'intel/CreateCFG.cpp' || echo '$(srcdir)/'`intel/CreateCFG.cpp
 
 mostlyclean-libtool:
 	-rm -f *.lo

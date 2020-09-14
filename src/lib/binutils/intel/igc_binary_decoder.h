@@ -4,7 +4,8 @@
 // SPDX-License-Identifier: MIT
 // =============================================================
 
-#pragma once
+#ifndef PTI_SAMPLES_UTILS_IGC_BINARY_DECODER_H_
+#define PTI_SAMPLES_UTILS_IGC_BINARY_DECODER_H_
 
 #include <memory.h>
 
@@ -96,3 +97,5 @@ class IgcBinaryDecoder {
 private:
     std::vector<uint8_t> binary_;
 };
+
+#endif
