@@ -135,10 +135,12 @@ if get_option('spack') != '' or meson.get_external_property('spack', '') != ''
     endif
   endif
 
-  if get_option('spack') != ''
-    spack = fs.expanduser(get_option('spack'))
-  else
+  if meson.get_external_property('spack', '') != ''
     spack = fs.expanduser(meson.get_external_property('spack', ''))
+    _spack_mode = '--unique'
+  else
+    spack = fs.expanduser(get_option('spack'))
+    _spack_mode = '--any'
   endif
   if spack.contains('/')
     assert(fs.is_absolute(spack), 'Spack path `' + spack + '\' must be absolute!')
@@ -225,9 +227,11 @@ _deps = {
                   },
 
   'libmonitor': { 'propstems': ['libmonitor', 'monitor'], 'spack': 'libmonitor',
+                  'spack_spec': '+hpctoolkit',
                   'libs': ['monitor'], 'headers': ['monitor.h'],
                 },
   'libmonitor_wrap': { 'propstems': ['libmonitor', 'monitor'], 'spack': 'libmonitor',
+                       'spack_spec': '+hpctoolkit',
                        'libs': ['monitor_wrap'], 'headers': ['monitor.h'],
                        'static': true,
                      },
@@ -241,6 +245,7 @@ _deps = {
                   'cc': cpp,
                 },
   'boost': { 'propstems': ['boost'], 'spack': 'boost', 'dependency': 'boost',
+             'spack_spec': 'visibility=global',
              'libs': ['boost_graph', 'boost_regex', 'boost_system'],
              'headers': ['boost/shared_ptr.hpp'],
              'components': ['graph', 'regex', 'system'],
@@ -358,33 +363,41 @@ foreach var, dep : _deps
     if not _spack_cache.has_key(dep['spack'])
       # Run our helper script, and do our best with it.
       _spack_paths = run_command(spack, 'python', files('meson/spack-query.py'),
-        spack, dep['spack'], meson.get_external_property(dep['spack']+'_spec', ''))
-      if _spack_paths.returncode() != 0
-        error(_spack_paths.stderr().strip())
-      elif _spack_paths.stdout().strip() == ''
-        warning(_spack_paths.stderr().strip())
+        spack, _spack_mode, dep['spack'], dep.get('spack_spec', ''),
+        meson.get_external_property(dep['spack']+'_spec', meson.get_external_property('default_spec', '')), check: true)
+      if _spack_paths.stdout() == ''
+        if _spack_paths.stderr().strip() != ''
+          error(_spack_paths.stderr().strip())
+        else
+          error('Failure during Spack lookup!')
+        endif
+      endif
+      if _spack_paths.stdout().strip() == 'SKIP'
+        if _spack_paths.stderr().strip() != ''
+          warning(_spack_paths.stderr().strip())
+        endif
         set_variable(var + '_dep', dependency('', required: false))
         summary(var, false, section: 'Dependencies', bool_yn: true)
         continue
-      else
-        _spack_paths = _spack_paths.stdout().strip().split('\0')
-        _dep_summary = ''
-        _dep_idirs = []
-        _dep_ldirs = []
-        foreach part : _spack_paths
-          if _dep_summary == ''
-            _dep_summary = part
-          elif part.startswith('L')
-            _dep_ldirs += (part / '').strip('L')
-          elif part.startswith('I')
-            _dep_idirs += (part / '').strip('I')
-          else
-            error('Invalid output from spack-paths.py: ' + part)
-          endif
-        endforeach
-        if _dep_idirs.length() == 0 or _dep_ldirs.length() == 0
-          error('Invalid output from spack-paths.py, missing elements')
+      endif
+
+      _spack_paths = _spack_paths.stdout().strip().split('\0')
+      _dep_summary = ''
+      _dep_idirs = []
+      _dep_ldirs = []
+      foreach part : _spack_paths
+        if _dep_summary == ''
+          _dep_summary = part
+        elif part.startswith('L')
+          _dep_ldirs += (part / '').strip('L')
+        elif part.startswith('I')
+          _dep_idirs += (part / '').strip('I')
+        else
+          error('Invalid output from spack-paths.py: ' + part)
         endif
+      endforeach
+      if _dep_idirs.length() == 0 or _dep_ldirs.length() == 0
+        error('Invalid output from spack-paths.py, missing elements')
       endif
 
       # Throw the variables in the cache for later
@@ -449,11 +462,11 @@ foreach var, dep : _deps
     set_variable(var+'_dep_idirs', _dep_idirs)
     foreach lib : dep['libs']
       if dep.has_key('static')
-        _dep_libs += _dep_cc.find_library(lib,
+        _dep_libs += _dep_cc.find_library(lib, required: false,
           static: dep['static'],
           has_headers: dep['headers'], header_include_directories: _dep_idirs)
       else
-        _dep_libs += _dep_cc.find_library(lib,
+        _dep_libs += _dep_cc.find_library(lib, required: false,
           has_headers: dep['headers'], header_include_directories: _dep_idirs)
       endif
     endforeach

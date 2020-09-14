@@ -1,8 +1,17 @@
 import sys
 assert(sys.version_info > (3,0))
-spack = sys.argv[1]
-package = sys.argv[2]
-spec = ' '.join(sys.argv[3:])
+spackpath = sys.argv[1]
+mode = sys.argv[2]
+package = sys.argv[3]
+force_spec = sys.argv[4]
+if len(force_spec) > 0:
+  force_spec = ' '+force_spec
+user_spec = sys.argv[5]
+if len(user_spec) > 0:
+  user_spec = ' '+user_spec
+
+assert(len(sys.argv) == 6)
+assert(mode == '--unique' or mode == '--any')
 
 import shlex
 import spack
@@ -10,39 +19,44 @@ import spack
 db = spack.database.Database(spack.paths.prefix)
 
 # Get the list of all the specs that match our arguments
-specs = db.query(package + spec)
+specs = db.query(package + force_spec + user_spec)
 if len(specs) == 0:
   # There are no matching specs. So try with just the package name.
-  specs = db.query(package)
-  if len(specs) == 0:
+  specs = db.query(package + force_spec)
+  if len(specs) > 0:
     # The package is installed, but the spec is wrong. Report this.
     print('''
-No package matching `{0}{1}\' but {0} is installed. Suggestions:
-  1. Adjust {0}_spec to match an installed spec (see `{2} find {0}`)
-  2. Install the specific spec (`{2} install {0}{1}`)'''
-      .format(package, ' '.join(spec), spack), file=sys.stderr)
-    sys.exit(1)
+No package matching `{0}{1}{2}\' but {0} is installed. Suggestions:
+  1. Adjust {0}_spec to match an installed spec (see `{3} find {0}{1}`)
+  2. Install the specific spec (`{3} install {0}{1}{2}`)'''
+      .format(package, force_spec, user_spec, spackpath), file=sys.stderr)
+    sys.exit()
   else:
     # The package isn't even installed. Report this.
     print('''
-Package {0} is not installed. Suggestions:
-  1. Install the requested spec (`{2} install {0}{1}`)
+No valid variant of package {0} is installed. Suggestions:
+  1. Install the requested spec (`{3} install {0}{1}{2}`)
   2. Set {0}_spec to \'system\' to search the system and current environment
   3. Set the relevant *_root property to an installation for {0}.'''
-      .format(package, ' '.join(spec), spack), file=sys.stderr)
-    sys.exit(0)  # "Soft" error, warn the user but don't force the issue.
+      .format(package, force_spec, user_spec, spackpath), file=sys.stderr)
+    print('SKIP')  # Not a fatal error, so just skip it
+    sys.exit()
 elif len(specs) > 1:
   # There are multiple matching packages. Report this.
+  print(specs, file=sys.stderr)
   print('''
-Multiple packages match `{0}{1}\'. Suggestions:
-  1. Adjust {0}_spec to be more specific (usually `/<hash>`, see `{2} find {0}{1}`)
-  2. Remove the conficting packages (`{2} uninstall {0}`)'''
-    .format(package, ' '.join(spec), spack), file=sys.stderr)
-  sys.exit(1)
+Multiple packages match `{0}{1}{2}\'. Suggestions:
+  1. Adjust {0}_spec to be more specific (usually `/<hash>`, see `{3} find {0}{1}{2}`)
+  2. Remove the conficting packages (`{3} uninstall {0}{1}{2}`)'''
+    .format(package, force_spec, user_spec, spackpath), file=sys.stderr)
+  if mode == '--unique':
+    sys.exit()
 spec = specs[0]
 
 # Build our summary string
 summary = spec.format('{name}{@version} /{hash:7}')
+if len(specs) > 1:
+  summary += ' (multiple match)'
 
 # Parse each fragment of the environment modifications, clean and save them
 shellcode = spack.user_environment.environment_modifications_for_spec(spec).shell_modifications()

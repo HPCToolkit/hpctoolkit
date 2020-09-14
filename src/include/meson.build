@@ -57,7 +57,8 @@ hpctoolkit_config.set('BINUTILS_234', cc.compiles('''
     int main() {
       return bfd_section_vma((asection*)0);
     }
-  ''', include_directories: libbfd_dep_idirs, dependencies: libbfd_dep_libs)
+  ''', name: 'libbfd >=2.34 syntax',
+  include_directories: libbfd_dep_idirs, dependencies: libbfd_dep_libs)
   ? 1 : false)
 hpctoolkit_config.set('DATACENTRIC_TRACE', get_option('datacentric').enabled() ? 1 : false)
 if dyninst_dep.found()
@@ -75,7 +76,8 @@ if dyninst_dep.found()
       ((Block*)NULL)->getInsns(imap);
       std::cout << imap.begin()->second->size();
     }
-  ''', include_directories: dyninst_dep_idirs, dependencies: dyninst_dep_libs)
+  ''', name: 'Dyninst Instruction::Ptr syntax',
+  include_directories: dyninst_dep_idirs, dependencies: dyninst_dep_libs)
   ? 1 : false)
   hpctoolkit_config.set('DYNINST_USE_CUDA', cpp.compiles('''
     #include <iostream>
@@ -83,7 +85,8 @@ if dyninst_dep.found()
     int main() {
       std::cout << (long) Dyninst::Arch_cuda;
     }
-  ''', include_directories: dyninst_dep_idirs, dependencies: dyninst_dep_libs)
+  ''', name: 'Dyninst CUDA support',
+  include_directories: dyninst_dep_idirs, dependencies: dyninst_dep_libs)
   ? 1 : false)
   # TODO: Change this out for an actual test
   hpctoolkit_config.set('DYNINST_USE_LIBDW', true ? 1 : false)
@@ -106,7 +109,7 @@ hpctoolkit_config.set('ENABLE_CLOCK_REALTIME', cc.compiles('''
     sigev.sigev_notify_thread_id = syscall(SYS_gettid);
     return timer_create(CLOCK_REALTIME, &sigev, &timerid);
   }
-'''))
+''', name: 'REALTIME timer support'))
 hpctoolkit_config.set('ENABLE_CLOCK_CPUTIME',
   (hpctoolkit_config.get('ENABLE_CLOCK_REALTIME', false) and cc.compiles('''
     #include <sys/time.h>
@@ -115,7 +118,7 @@ hpctoolkit_config.set('ENABLE_CLOCK_CPUTIME',
       clockid_t clock = CLOCK_THREAD_CPUTIME_ID;
       return 0;
     }
-  ''')) ? 1 : false)
+  ''', name: 'CPUTIME timer support')) ? 1 : false)
 
 # TODO: This should also require some tests for Dyninst
 hpctoolkit_config.set('ENABLE_OPENMP', get_option('openmp').enabled() ? 1 : false)

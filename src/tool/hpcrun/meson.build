@@ -258,7 +258,7 @@ elif get_option('kernel-blocking') == 'auto'
         #error Kernel is too old!
       #endif
     }
-  '''))
+  ''', name: 'kernel blocking perf event support'))
 else
   error('Option kernel-blocking must be boolean or auto, not `@0@\''.format(get_option('kernel-blocking')))
 endif
@@ -285,7 +285,7 @@ elif get_option('perf-events') == 'auto'
     int main() {
       attr.sample_id_all = 1;
     }
-  '''))
+  ''', name: 'kernel perf event support'))
 else
   error('Option perf-events must be boolean or auto, not `@0@\''.format(get_option('perf-events')))
 endif
