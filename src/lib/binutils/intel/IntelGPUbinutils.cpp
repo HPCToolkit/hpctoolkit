@@ -57,8 +57,8 @@
 #include <unistd.h>
 #include <libelf.h>
 
-#include <igc_binary_decoder.h>
-#include <gen_symbols_decoder.h>
+#include "igc_binary_decoder.h"
+#include "gen_symbols_decoder.h"
 
 
 

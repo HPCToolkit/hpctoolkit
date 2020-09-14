@@ -46,6 +46,10 @@
 // type definitions
 //*****************************************************************************
 
+
+#ifndef BINUTILS_INTEL_INTEL_GPU_BINUTILS
+#define BINUTILS_INTEL_INTEL_GPU_BINUTILS
+
 enum SHT_OPENCL : uint32_t {
     SHT_OPENCL_SOURCE = 0xff000000,                  // CL source to link into LLVM binary
     SHT_OPENCL_HEADER = 0xff000001,                  // CL header to link into LLVM binary
@@ -74,3 +78,5 @@ findIntelGPUbins
 	ElfFile *elfFile,
 	ElfFileVector *filevector
 );
+
+#endif

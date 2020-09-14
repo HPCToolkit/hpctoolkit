@@ -58,7 +58,7 @@
 #############################################################################
 
 # We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)
-AUTOMAKE_OPTIONS = foreign
+AUTOMAKE_OPTIONS = foreign subdir-objects
 
 #############################################################################
 # Common settings
@@ -73,6 +73,14 @@ LIBELF_INC = @LIBELF_INC@
 
 if OPT_DYNINST_LIBDWARF
 DWARF_IFLAGS = -I$(LIBDWARF_INC)
+endif
+
+if OPT_ENABLE_IGC
+IGC_IFLAGS = @OPT_IGC_IFLAGS@
+endif
+
+if OPT_ENABLE_METRICS_DISCOVERY
+MD_IFLAGS = @OPT_METRICS_DISCOVERY_IFLAGS@
 endif
 
 #############################################################################
@@ -95,11 +103,11 @@ MYSOURCES = \
 	BinUtils.hpp BinUtils.cpp \
 	VMAInterval.hpp VMAInterval.cpp \
 	Fatbin.cpp \
-	intel/IntelGPUbinutils.cpp \
-	intel/CreateCFG.cpp \
 	ElfHelper.cpp \
 	InputFile.cpp \
-	RelocateCubin.cpp 
+	RelocateCubin.cpp \
+	intel/IntelGPUbinutils.cpp \
+	intel/CreateCFG.cpp
 
 
 #############################################################################
@@ -108,7 +116,9 @@ MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@ \
 	$(BOOST_IFLAGS)  \
 	$(DWARF_IFLAGS)  \
 	-I$(LIBELF_INC)  \
-	$(DYNINST_IFLAGS)
+	$(DYNINST_IFLAGS) \
+	$(IGC_IFLAGS) \
+	$(MD_IFLAGS)
 
 if IS_HOST_AR
   MYAR = @HOST_AR@

@@ -46,7 +46,6 @@
 //******************************************************************************
 
 #include <iga/kv.hpp>
-#include "igc_binary_decoder.h"
 
 #include <iostream>
 #include <stack>
@@ -57,14 +56,13 @@
 #include <map> 
 
 
-
 //******************************************************************************
 // local includes
 //******************************************************************************
 
-#include "CreateCFG.hpp"
+#include <lib/binutils/intel/igc_binary_decoder.h>
 
-
+#include "IntelCreateCFG.hpp"
 
 //******************************************************************************
 // local data

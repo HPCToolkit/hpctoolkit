@@ -45,8 +45,8 @@
 // system includes
 //******************************************************************************
 
-#ifndef BINUTILS_INTEL_CREATE_CFG
-#define BINUTILS_INTEL_CREATE_CFG
+#ifndef BANAL_INTEL_INTEL_CREATE_CFG
+#define BANAL_INTEL_INTEL_CREATE_CFG
 
 #include <vector>
 
