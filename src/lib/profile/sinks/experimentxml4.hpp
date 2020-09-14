@@ -122,6 +122,7 @@ private:
     udMetric(const Metric&, ExperimentXML4&);
     ~udMetric() = default;
 
+    std::string tags;
     std::string tag;
     unsigned int inc_id;
     unsigned int ex_id;

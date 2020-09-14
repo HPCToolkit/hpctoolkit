@@ -205,7 +205,12 @@ ExperimentXML4::udMetric::udMetric(const Metric& m, ExperimentXML4& exml) {
         "<MetricFormula t=\"finalize\" frm=\"$" << ex_id << "\"/>\n"
         "<Info><NV n=\"units\" v=\"events\"/></Info>\n"
         "</Metric>\n";
-  tag = ss.str();
+  tags = ss.str();
+
+  std::ostringstream ss2;
+  ss2 << "<MetricDB i=\"" << m.userdata[exml.src.identifier()] << "\""
+                  " n=" << util::xmlquoted(m.name()) << "/>\n";
+  tag = ss2.str();
 }
 
 // ud Context bits
@@ -388,12 +393,14 @@ void ExperimentXML4::write() {
 
   // MetricTable: from the Metrics
   of << "<MetricTable>\n";
-  for(const auto& m: src.metrics().iterate()) of << m().userdata[ud].tag;
+  for(const auto& m: src.metrics().iterate()) of << m().userdata[ud].tags;
   of << "</MetricTable>\n";
 
+  of << "<MetricDBTable>\n";
+  for(const auto& m: src.metrics().iterate()) of << m().userdata[ud].tag;
+  of << "</MetricDBTable>\n";
   if(tracedb != nullptr)
     of << "<TraceDBTable>\n" << tracedb->exmlTag() << "</TraceDBTable>\n";
-  of << "<MetricDBTable/>\n";
   of << "<LoadModuleTable>\n";
   // LoadModuleTable: from the Modules
   for(const auto& m: src.modules().iterate()) {
