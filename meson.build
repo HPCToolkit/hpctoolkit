@@ -543,7 +543,8 @@ cuda_d_dep = cuda_dep.found() ? cuda_dep : disabler()
 
 # Install the READMEs to the documentation directory, {datadir}/doc/hpctoolkit
 install_data(files(
-  'README', 'README.License', 'README.ReleaseNotes', 'README.Acknowledgments'
+  'README.md', 'README.Install', 'README.License',
+  'README.ReleaseNotes', 'README.Acknowledgments',
 ), install_dir: get_option('datadir') / 'doc' / meson.project_name())
 
 # Recurse into subdirectories
