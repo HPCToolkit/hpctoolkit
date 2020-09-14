@@ -85,34 +85,57 @@ foreach v : _victims
     # the pkgconfig module writes it out (for static libs) during configure-time.
     # Its a hack and a half, and only works for static libs.
     _pkgconfig = find_program('pkg-config', native: true)
-    pkgconfig.generate(name: 'externalization_'+v['name'],
+    pkgconfig.generate(name: 'external_'+v['name'],
       description: 'temporary externalization shim for '+v['name'],
-      libraries: get_variable(v['name']+'_static_dep_libs'))
+      libraries: get_variable(v['name']+'_static_dep_libs'),
+      install_dir: get_option('libdir') / 'hpctoolkit/extern')
 
-    _new_libs = []
+    _new_lib_names = []
     foreach _ : get_variable(v['name']+'_static_dep_libs')
-      _new_libs += 'internalized_@0@_@1@.a'.format(v['name'], _new_libs.length())
+      _new_lib_names += 'internalized_@0@_@1@.a'.format(v['name'], _new_lib_names.length())
     endforeach
     _new_libs = custom_target('internalized '+v['name'],
       command: [_redef, _objcopy, _pkgconfig,
-        meson.build_root() / 'meson-uninstalled', 'externalization_'+v['name'],
+        meson.build_root() / 'meson-uninstalled', 'external_'+v['name'],
         '@OUTPUT@'],
-      output: _new_libs)
-    _new_lib_paths = []
-    foreach l : _new_libs.to_list()
-      _new_lib_paths += l.full_path()
-    endforeach
+      output: _new_lib_names,
+      install: true, install_dir: get_option('libdir') / 'hpctoolkit/extern')
 
-    foreach var : [v['name']+'_static', v['name']]
-      set_variable(var+'_dep_libs', _new_libs.to_list())
-      set_variable(var+'_dep', declare_dependency(
-        link_args: _new_lib_paths,
-        dependencies: get_variable(var+'_dep').partial_dependency(compile_args: true, includes: true),
-      ))
-      set_variable(var+'_d_dep', get_variable(var+'_dep').found() ? get_variable(var+'_dep') : disabler())
-      set_variable(var+'_dep_linkdeps', get_variable(var+'_dep').found() ? _new_libs : [])
+    # In the dynamic case we can just let Meson handle it. It gets it right in the end.
+    set_variable(v['name']+'_dep_libs', _new_libs.to_list())
+    set_variable(v['name']+'_dep', declare_dependency(
+      link_with: _new_libs,
+      dependencies: get_variable(v['name']+'_dep').partial_dependency(compile_args: true, includes: true),
+    ))
+    set_variable(v['name']+'_d_dep', get_variable(v['name']+'_dep').found()
+      ? get_variable(v['name']+'_dep') : disabler())
+
+    # In the static case things are more difficult. We create an empty static
+    # library to act as a target, and then edit the pkgconfig output to ensure
+    # the paths end up right in the end.
+    _shim_lib = static_library('internalized_'+v['name'],
+      install: true, install_dir: get_option('libdir') / 'hpctoolkit/extern')
+    _shim_paths = []
+    foreach n : _new_lib_names
+      _shim_paths += '${extprefix}/' + n
     endforeach
+    pkgconfig.generate(_shim_lib,
+      libraries: _shim_paths,
+      variables: 'extprefix=' + ('${prefix}' / get_option('libdir')) / 'hpctoolkit/extern',
+      uninstalled_variables: 'extprefix='+meson.current_build_dir(),
+      install_dir: get_option('libdir') / 'hpctoolkit/pkgconfig')
+    set_variable(v['name']+'_static_dep_libs', [_shim_lib])
+    set_variable(v['name']+'_static_dep', declare_dependency(
+      link_with: _shim_lib,
+      dependencies: get_variable(v['name']+'_static_dep').partial_dependency(compile_args: true, includes: true),
+    ))
+    set_variable(v['name']+'_static_d_dep', get_variable(v['name']+'_static_dep').found()
+      ? get_variable(v['name']+'_static_dep') : disabler())
   else
-    error('foo!')
+    warning('''
+The dependency @0@ does not provide an archive (.a) compiled with -fPIC.
+hpcrun is unable to properly hide this libraries from the application which
+may cause deadlocks or segfaults. Please recompile with -fPIC (+pic for Spack).
+'''.strip().format(v['name']))
   endif
 endforeach

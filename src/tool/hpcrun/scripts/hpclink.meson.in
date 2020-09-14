@@ -176,10 +176,6 @@ hpc_path_to_root=..
 @export_hpctoolkit@
 
 # Relative paths are relative to HPCTOOLKIT.
-case "$hpcfnbounds_dir" in
-    /* ) ;;
-    * )  hpcfnbounds_dir="${HPCTOOLKIT}/${hpcfnbounds_dir}" ;;
-esac
 case "$pc_dir" in
     /* ) ;;
     * )  pc_dir="${HPCTOOLKIT}/${pc_dir}" ;;

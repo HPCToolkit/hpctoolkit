@@ -466,7 +466,6 @@ libhpcrun_lib = shared_library('hpcrun', _d_srcs.sources(),
   dependencies: _d_srcs.dependencies() + _d_ddep
     + [cc.find_library('dl'), cc.find_library('rt'), dependency('threads')],
   link_with: [prof_lean_lib, support_lean_lib],
-  link_depends: libunwind_dep_linkdeps,
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
 summary('hpcrun', not is_disabler(libhpcrun_lib), section: 'Applications', bool_yn: true)
@@ -483,7 +482,6 @@ endif
 libhpcrun_ga_lib = shared_module('hpcrun_ga',
   files('sample-sources/ga-overrides.c'),
   dependencies: _d_srcs.dependencies() + _d_ddep,
-  link_depends: libunwind_dep_linkdeps,
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
 summary('Global Arrays (hpcrun)', not is_disabler(libhpcrun_ga_lib),
@@ -492,7 +490,6 @@ summary('Global Arrays (hpcrun)', not is_disabler(libhpcrun_ga_lib),
 libhpcrun_io_lib = shared_module('hpcrun_io',
   files('sample-sources/io-over.c'),
   dependencies: _d_srcs.dependencies() + _d_ddep,
-  link_depends: libunwind_dep_linkdeps,
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
 summary('I/O Counters (hpcrun)', not is_disabler(libhpcrun_io_lib),
@@ -501,7 +498,6 @@ summary('I/O Counters (hpcrun)', not is_disabler(libhpcrun_io_lib),
 libhpcrun_memleak_lib = shared_module('hpcrun_memleak',
   files('sample-sources/memleak-overrides.c'),
   dependencies: _d_srcs.dependencies() + _d_ddep,
-  link_depends: libunwind_dep_linkdeps,
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
 summary('Memory Leak Detection (hpcrun)', not is_disabler(libhpcrun_memleak_lib),
@@ -510,7 +506,6 @@ summary('Memory Leak Detection (hpcrun)', not is_disabler(libhpcrun_memleak_lib)
 libhpcrun_pthread_lib = shared_module('hpcrun_pthread',
   files('sample-sources/pthread-blame-overrides.c'),
   dependencies: _d_srcs.dependencies() + _d_ddep,
-  link_depends: libunwind_dep_linkdeps,
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
 summary('PThread Blame Shifting (hpcrun)', not is_disabler(libhpcrun_pthread_lib),
@@ -557,7 +552,6 @@ libhpcrun_wrap_lib = static_library('hpcrun_wrap',
 )
 libhpcrun_deps_lib = static_library('hpcrun_deps',
   dependencies: _s_full_ddeps,
-  link_depends: libunwind_dep_linkdeps,
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
 summary('hpclink', not is_disabler(libhpcrun_static_lib)
