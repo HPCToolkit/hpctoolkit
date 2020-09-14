@@ -22,9 +22,6 @@ option('papi-c-cupti', type: 'feature',
 option('xop', type: 'feature',
        description: 'Enable support for decoding AMD XOP instructions (for x86-64).')
 
-option('libunwind-primary', type: 'boolean', value: false,
-       description: 'Use libunwind as the primary unwinder, even if alternative implementations exist.')
-
 option('kernel-blocking', type: 'string', value: 'auto',
        description: '[true, false, auto] force enable or disable kernel blocking support in perf events (Linux >=4.3).')
 option('perf-events', type: 'string', value: 'auto',

@@ -42,6 +42,8 @@
 #
 # ******************************************************* EndRiceCopyright *
 
+subdir('extern')
+
 main_includes = [include_directories('.')]
 
 subdir('include')
