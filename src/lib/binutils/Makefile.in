@@ -147,7 +147,8 @@ am__objects_1 = libHPCbinutils_la-LM.lo libHPCbinutils_la-Seg.lo \
 	libHPCbinutils_la-BinUtils.lo libHPCbinutils_la-VMAInterval.lo \
 	libHPCbinutils_la-Fatbin.lo \
 	libHPCbinutils_la-IntelGPUbinutils.lo \
-	libHPCbinutils_la-ElfHelper.lo libHPCbinutils_la-InputFile.lo \
+	libHPCbinutils_la-CreateCFG.lo libHPCbinutils_la-ElfHelper.lo \
+	libHPCbinutils_la-InputFile.lo \
 	libHPCbinutils_la-RelocateCubin.lo
 am_libHPCbinutils_la_OBJECTS = $(am__objects_1)
 libHPCbinutils_la_OBJECTS = $(am_libHPCbinutils_la_OBJECTS)
@@ -550,7 +551,8 @@ MYSOURCES = \
 	BinUtils.hpp BinUtils.cpp \
 	VMAInterval.hpp VMAInterval.cpp \
 	Fatbin.cpp \
-	IntelGPUbinutils.cpp \
+	intel/IntelGPUbinutils.cpp \
+	intel/CreateCFG.cpp \
 	ElfHelper.cpp \
 	InputFile.cpp \
 	RelocateCubin.cpp 
@@ -643,6 +645,7 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-BinUtils.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-CreateCFG.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-Dbg-LM.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-Dbg-Proc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-ElfHelper.Plo@am__quote@
@@ -764,12 +767,19 @@ libHPCbinutils_la-Fatbin.lo: Fatbin.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-Fatbin.lo `test -f 'Fatbin.cpp' || echo '$(srcdir)/'`Fatbin.cpp
 
-libHPCbinutils_la-IntelGPUbinutils.lo: IntelGPUbinutils.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-IntelGPUbinutils.lo -MD -MP -MF $(DEPDIR)/libHPCbinutils_la-IntelGPUbinutils.Tpo -c -o libHPCbinutils_la-IntelGPUbinutils.lo `test -f 'IntelGPUbinutils.cpp' || echo '$(srcdir)/'`IntelGPUbinutils.cpp
+libHPCbinutils_la-IntelGPUbinutils.lo: intel/IntelGPUbinutils.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-IntelGPUbinutils.lo -MD -MP -MF $(DEPDIR)/libHPCbinutils_la-IntelGPUbinutils.Tpo -c -o libHPCbinutils_la-IntelGPUbinutils.lo `test -f 'intel/IntelGPUbinutils.cpp' || echo '$(srcdir)/'`intel/IntelGPUbinutils.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCbinutils_la-IntelGPUbinutils.Tpo $(DEPDIR)/libHPCbinutils_la-IntelGPUbinutils.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='IntelGPUbinutils.cpp' object='libHPCbinutils_la-IntelGPUbinutils.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='intel/IntelGPUbinutils.cpp' object='libHPCbinutils_la-IntelGPUbinutils.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-IntelGPUbinutils.lo `test -f 'IntelGPUbinutils.cpp' || echo '$(srcdir)/'`IntelGPUbinutils.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-IntelGPUbinutils.lo `test -f 'intel/IntelGPUbinutils.cpp' || echo '$(srcdir)/'`intel/IntelGPUbinutils.cpp
+
+libHPCbinutils_la-CreateCFG.lo: intel/CreateCFG.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-CreateCFG.lo -MD -MP -MF $(DEPDIR)/libHPCbinutils_la-CreateCFG.Tpo -c -o libHPCbinutils_la-CreateCFG.lo `test -f 'intel/CreateCFG.cpp' || echo '$(srcdir)/'`intel/CreateCFG.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCbinutils_la-CreateCFG.Tpo $(DEPDIR)/libHPCbinutils_la-CreateCFG.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='intel/CreateCFG.cpp' object='libHPCbinutils_la-CreateCFG.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-CreateCFG.lo `test -f 'intel/CreateCFG.cpp' || echo '$(srcdir)/'`intel/CreateCFG.cpp
 
 libHPCbinutils_la-ElfHelper.lo: ElfHelper.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbinutils_la-ElfHelper.lo -MD -MP -MF $(DEPDIR)/libHPCbinutils_la-ElfHelper.Tpo -c -o libHPCbinutils_la-ElfHelper.lo `test -f 'ElfHelper.cpp' || echo '$(srcdir)/'`ElfHelper.cpp

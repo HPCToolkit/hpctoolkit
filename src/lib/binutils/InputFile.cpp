@@ -75,7 +75,7 @@
 
 #include "ElfHelper.hpp"
 #include "Fatbin.hpp"
-#include "IntelGPUbinutils.hpp"
+#include <intel/IntelGPUbinutils.hpp>
 #include "InputFile.hpp"
 
 

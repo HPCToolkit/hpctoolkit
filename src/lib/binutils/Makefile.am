@@ -95,7 +95,8 @@ MYSOURCES = \
 	BinUtils.hpp BinUtils.cpp \
 	VMAInterval.hpp VMAInterval.cpp \
 	Fatbin.cpp \
-	IntelGPUbinutils.cpp \
+	intel/IntelGPUbinutils.cpp \
+	intel/CreateCFG.cpp \
 	ElfHelper.cpp \
 	InputFile.cpp \
 	RelocateCubin.cpp 
