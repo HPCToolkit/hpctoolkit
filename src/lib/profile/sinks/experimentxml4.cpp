@@ -61,27 +61,29 @@ namespace fs = stdshim::filesystem;
 
 // Function name transformation table
 namespace fancynames {
-  static const std::string program_root     = "<program root>";
-  static const std::string thread_root      = "<thread root>";
-  static const std::string omp_idle         = "<omp idle>";
-  static const std::string omp_overhead     = "<omp overhead>";
-  static const std::string omp_barrier_wait = "<omp barrier wait>";
-  static const std::string omp_task_wait    = "<omp task wait>";
-  static const std::string omp_mutex_wait   = "<omp mutex wait>";
-  static const std::string no_thread        = "<no thread>";
-  static const std::string partial_unwind   = "<partial call paths>";
-  static const std::string no_activity      = "<no activity>";
-  static const std::string gpu_copy         = "<gpu copy>";
-  static const std::string gpu_copyin       = "<gpu copyin>";
-  static const std::string gpu_copyout      = "<gpu copyout>";
-  static const std::string gpu_alloc        = "<gpu alloc>";
-  static const std::string gpu_delete       = "<gpu delete>";
-  static const std::string gpu_sync         = "<gpu sync>";
-  static const std::string gpu_kernel       = "<gpu kernel>";
+  using type = std::pair<std::string, int>;
 
-  static const std::string unknown_proc     = "<unknown procedure>";
+  static const type program_root     = {"<program root>", 4};
+  static const type thread_root      = {"<thread root>", 4};
+  static const type omp_idle         = {"<omp idle>", 1};
+  static const type omp_overhead     = {"<omp overhead>", 1};
+  static const type omp_barrier_wait = {"<omp barrier wait>", 1};
+  static const type omp_task_wait    = {"<omp task wait>", 1};
+  static const type omp_mutex_wait   = {"<omp mutex wait>", 1};
+  static const type no_thread        = {"<no thread>", 1};
+  static const type partial_unwind   = {"<partial call paths>", 4};
+  static const type no_activity      = {"<no activity>", 1};
+  static const type gpu_copy         = {"<gpu copy>", 1};
+  static const type gpu_copyin       = {"<gpu copyin>", 1};
+  static const type gpu_copyout      = {"<gpu copyout>", 1};
+  static const type gpu_alloc        = {"<gpu alloc>", 1};
+  static const type gpu_delete       = {"<gpu delete>", 1};
+  static const type gpu_sync         = {"<gpu sync>", 1};
+  static const type gpu_kernel       = {"<gpu kernel>", 1};
+
+  static const type unknown_proc     = {"<unknown procedure>", 0};
 }
-static const std::unordered_map<std::string, const std::string&> nametrans = {
+static const std::unordered_map<std::string, const fancynames::type&> nametrans = {
   {"monitor_main", fancynames::program_root},
   {"monitor_main_fence1", fancynames::program_root},
   {"monitor_main_fence2", fancynames::program_root},
@@ -111,7 +113,7 @@ static const std::unordered_map<std::string, const std::string&> nametrans = {
   {"gpu_op_sync", fancynames::gpu_sync},
   {"gpu_op_kernel", fancynames::gpu_kernel},
   {"gpu_op_trace", fancynames::gpu_kernel},
-  {"hpcrun_no_activity", fancynames::no_activity}
+  {"hpcrun_no_activity", fancynames::no_activity},
 };
 
 // ud Module bits
@@ -245,10 +247,10 @@ ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
     if(c.direct_parent()->scope().type() == Scope::Type::point) {
       if(proc.prep()) {  // We're in charge of the tag, and this is a tag we want.
         std::ostringstream ss;
-        ss << fancynames::unknown_proc << " "
+        ss << fancynames::unknown_proc.first << " "
               "0x" << std::hex << mo.second << " "
               "[" << mo.first.path().filename().string() << "]";
-        proc.setTag(ss.str(), mo.second, true);
+        proc.setTag(ss.str(), mo.second, fancynames::unknown_proc.second);
       }
       auto& udm = mo.first.userdata[exml.ud];
       auto& udf = fl.first ? fl.first->userdata[exml.ud] : udm.unknown_file;
@@ -290,14 +292,14 @@ ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
     if(proc.prep()) {  // Our job to do the tag
       if(f.name.empty()) { // Anonymous function, write as an <unknown proc>
         std::ostringstream ss;
-        ss << fancynames::unknown_proc << " "
+        ss << fancynames::unknown_proc.first << " "
               "0x" << std::hex << f.offset << " "
               "[" << f.module().path().string() << "]";
-        proc.setTag(ss.str(), f.offset, true);
+        proc.setTag(ss.str(), f.offset, fancynames::unknown_proc.second);
       } else {  // Normal function, but might have a name translation
         auto it = nametrans.find(f.name);
-        if(it != nametrans.end()) proc.setTag(it->second, 0, true);
-        else proc.setTag(f.name, f.offset, false);
+        if(it != nametrans.end()) proc.setTag(it->second.first, 0, it->second.second);
+        else proc.setTag(f.name, f.offset, 0);
       }
     }
     auto& udm = f.module().userdata[exml.ud];
@@ -320,10 +322,9 @@ ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
 
 // ExperimentXML4 bits
 
-ExperimentXML4::ExperimentXML4(const fs::path& out, bool srcs, HPCTraceDB* db,
-                             HPCMetricDB* mdb)
-  : ProfileSink(), dir(out), of(), next_id(0x7FFFFFFF), tracedb(db),
-    metricdb(mdb), include_sources(srcs), file_unknown(*this), next_procid(2),
+ExperimentXML4::ExperimentXML4(const fs::path& out, bool srcs)
+  : ProfileSink(), dir(out), of(), next_id(0x7FFFFFFF),
+    include_sources(srcs), file_unknown(*this), next_procid(2),
     proc_unknown_proc(0), proc_partial_proc(1), next_cid(0x7FFFFFFF) {
   if(dir.empty()) {  // Dry run
     util::log::info() << "ExperimentXML4 issuing a dry run!";
@@ -339,23 +340,23 @@ ExperimentXML4::Proc& ExperimentXML4::getProc(const Scope& k) {
 
 const ExperimentXML4::Proc& ExperimentXML4::proc_unknown() {
   proc_unknown_flag.call_nowait([&](){
-    proc_unknown_proc.setTag(fancynames::unknown_proc, 0, true);
+    proc_unknown_proc.setTag(fancynames::unknown_proc.first, 0, fancynames::unknown_proc.second);
   });
   return proc_unknown_proc;
 }
 
 const ExperimentXML4::Proc& ExperimentXML4::proc_partial() {
   proc_partial_flag.call_nowait([&](){
-    proc_partial_proc.setTag(fancynames::partial_unwind, 0, true);
+    proc_partial_proc.setTag(fancynames::partial_unwind.first, 0, fancynames::partial_unwind.second);
   });
   return proc_partial_proc;
 }
 
-void ExperimentXML4::Proc::setTag(std::string n, std::size_t v, bool fake) {
+void ExperimentXML4::Proc::setTag(std::string n, std::size_t v, int fake) {
   std::ostringstream ss;
   ss << "<Procedure i=\"" << id << "\" n=" << util::xmlquoted(n)
      << " v=\"" << std::hex << (v == 0 ? "" : "0x") << v << "\"";
-  if(fake) ss << " f=\"1\"";
+  if(fake > 0) ss << " f=\"" << fake << "\"";
   ss << "/>\n";
   tag = ss.str();
 }
@@ -388,12 +389,7 @@ void ExperimentXML4::write() {
   for(const auto& m: src.metrics().iterate()) of << m().userdata[ud].tag;
   of << "</MetricTable>\n";
 
-  if(metricdb != nullptr)
-    of << metricdb->exmlTag();
-  else
-    of << "<MetricDBTable/>\n";
-  if(tracedb != nullptr)
-    of << "<TraceDBTable>\n" << tracedb->exmlTag() << "</TraceDBTable>\n";
+  of << "<MetricDBTable/>\n";
   of << "<LoadModuleTable>\n";
   // LoadModuleTable: from the Modules
   for(const auto& m: src.modules().iterate()) {
@@ -456,7 +452,7 @@ void ExperimentXML4::emit(const Context& c) {
     of << (c.children().empty() ? 'S' : 'C') << udc.attr;
     break;
   }
-  if(s.type() != Scope::Type::global && tracedb != nullptr && tracedb->seen(c))
+  if(s.type() != Scope::Type::global)
     of << " it=\"" << c.userdata[src.identifier()] << "\"";
 
   // If this is an empty tag, use the shorter form, otherwise close the tag.

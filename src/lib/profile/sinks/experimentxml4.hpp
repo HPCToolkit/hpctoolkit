@@ -57,9 +57,6 @@
 
 namespace hpctoolkit::sinks {
 
-class HPCTraceDB;
-class HPCMetricDB;
-
 /// ProfileSink for the current experiment.xml format. Just so we can spit
 /// something out.
 class ExperimentXML4 final : public ProfileSink {
@@ -67,8 +64,7 @@ public:
   ~ExperimentXML4() = default;
 
   /// Constructor, with a reference to the output database directory.
-  ExperimentXML4(const stdshim::filesystem::path&, bool, HPCTraceDB* = nullptr,
-                HPCMetricDB* = nullptr);
+  ExperimentXML4(const stdshim::filesystem::path&, bool);
 
   /// Write out as much data as possible. See ProfileSink::write.
   void write() override;
@@ -91,8 +87,6 @@ private:
   stdshim::filesystem::path dir;
   std::ofstream of;
   std::atomic<unsigned int> next_id;
-  HPCTraceDB* tracedb;
-  HPCMetricDB* metricdb;
   bool include_sources;
 
   void emit(const Context& c);
@@ -139,7 +133,7 @@ private:
     std::string tag;
     std::atomic<bool> done;
 
-    void setTag(std::string n, std::size_t v, bool f);
+    void setTag(std::string n, std::size_t v, int f);
     bool prep();
   };
 
