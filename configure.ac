@@ -4920,7 +4920,7 @@ case "$VALGRIND" in
   /* )
     # valgrind/valgrind.h must exist on the include path
     if test -f "$VALGRIND"/include/valgrind/valgrind.h; then
-      VALGRIND_IFLAGS=-I"$VALGRIND"/include
+      VALGRIND_IFLAGS=-I"$VALGRIND"/include/valgrind
     else
       AC_MSG_ERROR([unable to find valgrind.h in: $VALGRIND])
     fi
