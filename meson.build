@@ -528,22 +528,30 @@ foreach var, _ : _deps
   set_variable(var+'_d_dep', get_variable(var+'_dep').found() ? get_variable(var+'_dep') : disabler())
 endforeach
 
-## CUDA a special case, Meson again overrides the logic, and we don't need everything.
+## CUDA a special case, we use Meson's logic to handle differences between
+## versions smoothly. Downside is that cuda_root doesn't function as expected.
 
-# There is no support for cuda/cupti_root, so error if anyone tries to use it.
-if meson.get_external_property('cuda_root', '') != ''
-  error('cuda_root as a property is not effective, '
-        + 'use the CUDA_HOME environment variable!')
+# Only proceed if CUDA is enabled at all
+if meson.get_external_property('cuda_enabled', true)
+  # There is no support for cuda/cupti_root, so error if anyone tries to use it.
+  if meson.get_external_property('cuda_root', '') != ''
+    error('cuda_root as a property is not effective, '
+          + 'use the CUDA_HOME environment variable!')
+  endif
+  if meson.get_external_property('cupti_root', '') != ''
+    error('cupti_root as a property is not effective, '
+          + 'use the CUDA_HOME environment variable!')
+  endif
+
+  # TODO: Handle Spack-provided CUDA. Or don't. Decide what to do there.
+
+  # Search for the CUDA toolkit
+  cuda_dep = dependency('CUDA', required: false, modules: ['cupti'])
+else
+  cuda_dep = dependency('', required: false)
 endif
-if meson.get_external_property('cupti_root', '') != ''
-  error('cupti_root as a property is not effective, '
-        + 'use the CUDA_HOME environment variable!')
-endif
-
-# TODO: Handle Spack-provided CUDA. Or don't. Decide what to do there.
-
-# Search for the CUDA toolkit
-cuda_dep = dependency('CUDA', required: false, modules: ['cupti'])
+summary('CUDA/CUPTI', cuda_dep.found() ? '(system)' : false,
+        section: 'Dependencies', bool_yn: true)
 cuda_d_dep = cuda_dep.found() ? cuda_dep : disabler()
 
 # Install the READMEs to the documentation directory, {datadir}/doc/hpctoolkit
