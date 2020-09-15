@@ -64,7 +64,7 @@ using namespace sinks;
 // udMetric bits
 
 HPCMetricDB::udMetric::udMetric(const Metric& m, HPCMetricDB& mdb) {
-  if(!m.scopes().has(Metric::Scope::exclusive) || !m.scopes().has(Metric::Scope::inclusive))
+  if(!m.scopes().has(MetricScope::exclusive) || !m.scopes().has(MetricScope::inclusive))
     util::log::fatal{} << "Metric isn't exclusive/inclusive!";
   auto ids = m.userdata[mdb.src.mscopeIdentifiers()];
   std::ostringstream si;
@@ -221,8 +221,8 @@ void HPCMetricDB::notifyThreadFinal(const Thread::Temporary& tt) {
       byte8 v(0);
       if(fm.second) {
         auto vv = fm.second->getFor(tt, c);
-        v.d = fm.first ? vv.get(Metric::Scope::exclusive).value_or(0)
-                       : vv.get(Metric::Scope::inclusive).value_or(0);
+        v.d = fm.first ? vv.get(MetricScope::exclusive).value_or(0)
+                       : vv.get(MetricScope::inclusive).value_or(0);
       }
       if(v.d != 0) any = true;
 

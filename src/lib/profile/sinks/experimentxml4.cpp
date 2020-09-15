@@ -182,7 +182,7 @@ ExperimentXML4::udMetric::udMetric(const Metric& m, ExperimentXML4& exml) {
   // case.
   // A lot of this is still very indev as more data is ferried through the
   // system as a whole.
-  if(!m.scopes().has(Metric::Scope::exclusive) || !m.scopes().has(Metric::Scope::inclusive))
+  if(!m.scopes().has(MetricScope::exclusive) || !m.scopes().has(MetricScope::inclusive))
     util::log::fatal{} << "Metric isn't exclusive/inclusive!";
   std::ostringstream ss;
   ss << "<Metric i=\"" << inc_id << "\" o=\"" << inc_id << "\" "

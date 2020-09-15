@@ -67,9 +67,9 @@ void DenseIds::metric(const Metric&, unsigned int& id) {
 void DenseIds::metric(const Metric& m, Metric::ScopedIdentifiers& ids) {
   auto scopes = m.scopes();
   auto id = smet_id.fetch_add(scopes.count(), std::memory_order_relaxed);
-  if(scopes.has(Metric::Scope::point)) ids.point = id++;
-  if(scopes.has(Metric::Scope::exclusive)) ids.exclusive = id++;
-  if(scopes.has(Metric::Scope::inclusive)) ids.inclusive = id++;
+  if(scopes.has(MetricScope::point)) ids.point = id++;
+  if(scopes.has(MetricScope::exclusive)) ids.exclusive = id++;
+  if(scopes.has(MetricScope::inclusive)) ids.inclusive = id++;
 }
 
 void DenseIds::context(const Context&, unsigned int& id) {

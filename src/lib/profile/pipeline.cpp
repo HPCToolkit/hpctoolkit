@@ -483,29 +483,29 @@ Context& Source::context(Context& p, const Scope& s) {
 void Source::add(Context& c, Thread::Temporary& t, Metric& m, double v) {
   if(!limit().hasMetrics())
     util::log::fatal() << "Source did not register for `metrics` emission!";
-  m.getFor(t, c).add(v);
+  m.addTo(t, c).add(v);
 }
 
 void Source::add(Context& c, Metric& m, std::pair<double, double> v) {
   if(!limit().hasMetrics())
     util::log::fatal() << "Source did not register for `metrics` emission!";
-  auto ar = m.getFor(c);
-  ar.add(Metric::Scope::exclusive, v.first);
-  ar.add(Metric::Scope::inclusive, v.first);
+  auto ar = m.addTo(c);
+  ar.add(MetricScope::exclusive, v.first);
+  ar.add(MetricScope::inclusive, v.first);
 }
 
 void Source::add(Thread::Temporary& t, Metric& m, double v) {
   if(!limit().hasMetrics())
     util::log::fatal() << "Source did not register for `metrics` emission!";
-  m.getFor(t, *pipe->cct).add(v);
+  m.addTo(t, *pipe->cct).add(v);
 }
 
 void Source::add(Metric& m, std::pair<double, double> v) {
   if(!limit().hasMetrics())
     util::log::fatal() << "Source did not register for `metrics` emission!";
-  auto ar = m.getFor(*pipe->cct);
-  ar.add(Metric::Scope::exclusive, v.first);
-  ar.add(Metric::Scope::inclusive, v.first);
+  auto ar = m.addTo(*pipe->cct);
+  ar.add(MetricScope::exclusive, v.first);
+  ar.add(MetricScope::inclusive, v.first);
 }
 
 Thread::Temporary& Source::thread(const ThreadAttributes& o) {

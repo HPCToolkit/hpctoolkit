@@ -136,8 +136,8 @@ void Packed::packMetrics(std::vector<std::uint8_t>& out) noexcept {
     pack(out, (std::uint64_t)c.userdata[src.identifier()]);
     for(const Metric& m: metrics) {
       auto v = m.getFor(c);
-      pack(out, v.get(Metric::Scope::exclusive).value_or(0));
-      pack(out, v.get(Metric::Scope::inclusive).value_or(0));
+      pack(out, v.get(MetricScope::exclusive).value_or(0));
+      pack(out, v.get(MetricScope::inclusive).value_or(0));
     }
     cnt++;
     for(const auto& cc: c.children().iterate()) handle(cc());

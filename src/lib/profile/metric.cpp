@@ -71,43 +71,43 @@ static bool pullsExclusive(Context& c) {
   return false;
 }
 
-unsigned int Metric::ScopedIdentifiers::get(Metric::Scope s) const noexcept {
+unsigned int Metric::ScopedIdentifiers::get(MetricScope s) const noexcept {
   switch(s) {
-  case Scope::point: return point;
-  case Scope::exclusive: return exclusive;
-  case Scope::inclusive: return inclusive;
+  case MetricScope::point: return point;
+  case MetricScope::exclusive: return exclusive;
+  case MetricScope::inclusive: return inclusive;
   default: util::log::fatal{} << "Invalid Metric::scope value!";
   }
   std::abort();  // unreachable
 }
 
-Metric::ScopeSet Metric::scopes() const noexcept {
+MetricScopeSet Metric::scopes() const noexcept {
   // For now, its always exclusive/inclusive
-  return ScopeSet(Scope::exclusive) + ScopeSet(Scope::inclusive);
+  return MetricScopeSet(MetricScope::exclusive) + MetricScopeSet(MetricScope::inclusive);
 }
 
-void Metric::AccumulatorRef::add(Metric::Scope s, double v) noexcept {
+void AccumulatorRef::add(MetricScope s, double v) noexcept {
   if(v == 0) return;
   switch(s) {
-  case Scope::point: util::log::fatal{} << "TODO: Support point Metric::Scope!";
-  case Scope::exclusive:
+  case MetricScope::point: util::log::fatal{} << "TODO: Support point Metric::Scope!";
+  case MetricScope::exclusive:
     atomic_add(accum->exclusive, v);
     break;
-  case Scope::inclusive:
+  case MetricScope::inclusive:
     atomic_add(accum->inclusive, v);
     break;
   }
 }
 
-Metric::AccumulatorRef Metric::getFor(Context& c) noexcept {
+AccumulatorRef Metric::addTo(Context& c) noexcept {
   return c.data[member];
 }
 
-void Metric::ThreadAccumulatorRef::add(double v) noexcept {
+void ThreadAccumulatorRef::add(double v) noexcept {
   if(v != 0) atomic_add(*exclusive, v);
 }
 
-Metric::ThreadAccumulatorRef Metric::getFor(Thread::Temporary& t, Context& c) noexcept {
+ThreadAccumulatorRef Metric::addTo(Thread::Temporary& t, Context& c) noexcept {
   auto& td = t.data[tmember];
   return {td.exclusive[&c], td.inclusive[&c]};
 }
@@ -116,37 +116,37 @@ static stdshim::optional<double> opt0(double d) {
   return d == 0 ? stdshim::optional<double>{} : d;
 }
 
-stdshim::optional<double> Metric::CAccumulatorRef::get(Metric::Scope s) const noexcept {
+stdshim::optional<double> AccumulatorCRef::get(MetricScope s) const noexcept {
   if(accum == nullptr) return {};
   switch(s) {
-  case Scope::point: util::log::fatal{} << "TODO: Support point Metric::Scope!";
-  case Scope::exclusive: return opt0(accum->exclusive.load(std::memory_order_relaxed));
-  case Scope::inclusive: return opt0(accum->inclusive.load(std::memory_order_relaxed));
+  case MetricScope::point: util::log::fatal{} << "TODO: Support point Metric::Scope!";
+  case MetricScope::exclusive: return opt0(accum->exclusive.load(std::memory_order_relaxed));
+  case MetricScope::inclusive: return opt0(accum->inclusive.load(std::memory_order_relaxed));
   default: util::log::fatal{} << "Invalid Scope value!";
   };
   std::abort();  // unreachable
 }
 
-Metric::CAccumulatorRef Metric::cgetFor(const Context& c) const noexcept {
+AccumulatorCRef Metric::getFor(const Context& c) const noexcept {
   auto* a = c.data.find(member);
   if(a == nullptr) return {};
   return *a;
 }
 
-stdshim::optional<double> Metric::CThreadAccumulatorRef::get(Metric::Scope s) const noexcept {
+stdshim::optional<double> ThreadAccumulatorCRef::get(MetricScope s) const noexcept {
   switch(s) {
-  case Scope::point: util::log::fatal{} << "TODO: Support point Metric::Scope!";
-  case Scope::exclusive:
+  case MetricScope::point: util::log::fatal{} << "TODO: Support point Metric::Scope!";
+  case MetricScope::exclusive:
     return exclusive != nullptr ? opt0(exclusive->load(std::memory_order_relaxed))
                                 : stdshim::optional<double>{};
-  case Scope::inclusive:
+  case MetricScope::inclusive:
     return inclusive != nullptr ? opt0(*inclusive) : stdshim::optional<double>{};
   default: util::log::fatal{} << "Invalid Scope value!";
   }
   std::abort();  // unreachable
 }
 
-Metric::CThreadAccumulatorRef Metric::cgetFor(const Thread::Temporary& t, const Context& c) const noexcept {
+ThreadAccumulatorCRef Metric::getFor(const Thread::Temporary& t, const Context& c) const noexcept {
   auto* td = t.data.find(tmember);
   if(td == nullptr) return {};
   auto iit = td->inclusive.find(const_cast<Context*>(&c));

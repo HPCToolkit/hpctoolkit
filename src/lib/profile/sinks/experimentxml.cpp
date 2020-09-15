@@ -180,7 +180,7 @@ ExperimentXML::udMetric::udMetric(const Metric& m, ExperimentXML& exml) {
   // case.
   // A lot of this is still very indev as more data is ferried through the
   // system as a whole.
-  if(!m.scopes().has(Metric::Scope::exclusive) || !m.scopes().has(Metric::Scope::inclusive))
+  if(!m.scopes().has(MetricScope::exclusive) || !m.scopes().has(MetricScope::inclusive))
     util::log::fatal{} << "Metric isn't exclusive/inclusive!";
   std::ostringstream ss;
   ss << "<Metric i=\"" << inc_id << "\" o=\"" << inc_id << "\" "
@@ -439,13 +439,13 @@ void ExperimentXML::emitMetrics(const Context& c, bool ex) {
     auto& udm = met().userdata[ud];
     auto v = met().getFor(c);
     if(ex) {
-      auto vex = v.get(Metric::Scope::exclusive);
+      auto vex = v.get(MetricScope::exclusive);
       if(vex)
         of << "<M n=\"" << udm.ex_id << "\" v=\""
           << std::scientific << *vex << std::defaultfloat
           << "\"/>\n";
     }
-    if(auto vinc = v.get(Metric::Scope::inclusive))
+    if(auto vinc = v.get(MetricScope::inclusive))
       of << "<M n=\"" << udm.inc_id << "\" v=\""
         << std::scientific << *vinc << std::defaultfloat
         << "\"/>\n";
