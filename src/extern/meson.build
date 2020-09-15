@@ -85,7 +85,7 @@ foreach v : _victims
     # the pkgconfig module writes it out (for static libs) during configure-time.
     # Its a hack and a half, and only works for static libs.
     _pkgconfig = find_program('pkg-config', native: true)
-    pkgconfig.generate(name: 'external_'+v['name'],
+    pkgconfig.generate(name: 'hpctoolkit_external_'+v['name'],
       description: 'temporary externalization shim for '+v['name'],
       libraries: get_variable(v['name']+'_static_dep_libs'),
       install_dir: get_option('libdir') / 'hpctoolkit/extern')
@@ -96,7 +96,7 @@ foreach v : _victims
     endforeach
     _new_libs = custom_target('internalized '+v['name'],
       command: [_redef, _objcopy, _pkgconfig,
-        meson.build_root() / 'meson-uninstalled', 'external_'+v['name'],
+        meson.build_root() / 'meson-uninstalled', 'hpctoolkit_external_'+v['name'],
         '@OUTPUT@'],
       output: _new_lib_names,
       install: true, install_dir: get_option('libdir') / 'hpctoolkit/extern')
@@ -113,7 +113,7 @@ foreach v : _victims
     # In the static case things are more difficult. We create an empty static
     # library to act as a target, and then edit the pkgconfig output to ensure
     # the paths end up right in the end.
-    _shim_lib = static_library('internalized_'+v['name'],
+    _shim_lib = static_library('hpctoolkit_internalized_'+v['name'],
       install: true, install_dir: get_option('libdir') / 'hpctoolkit/extern')
     _shim_paths = []
     foreach n : _new_lib_names
