@@ -398,13 +398,8 @@ roctracer_subscriber_callback
 				 gpu_placeholder_type_sync);
     is_valid_op = true;
     break;
-  case HIP_API_ID_hipModuleGetFunction:
-    PRINT("hipModuleGetFunction %s\n", data->args.hipModuleGetFunction.kname);
-    break;
-  case HIP_API_ID_hipModuleLoad:
-    PRINT("hipMOoduleLoad %p\n", data->args.hipModuleLoad.module);
-    break;
   default:
+    PRINT("HIP API tracing: Unhandled op %u, domain %u\n", callback_id, domain);
     break;
   }
 

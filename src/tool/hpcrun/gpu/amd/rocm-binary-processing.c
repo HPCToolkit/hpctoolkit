@@ -67,16 +67,20 @@
 // type declarations
 //******************************************************************************
 
-typedef struct amd_gpu_binary {
-  int size;
-  char* buf;
-} amd_gpu_binary_t;
-
 typedef struct amd_function_table {
   size_t size;
   char** names;
   uint64_t* addrs;
 } amd_function_table_t;
+
+typedef struct amd_gpu_binary {
+  int size;
+  amd_function_table_t function_table;
+  uint32_t amd_gpu_module_id;
+  char* buf;
+  char* uri;
+  struct amd_gpu_binary* next;
+} amd_gpu_binary_t;
 
 #define DEBUG 0
 
@@ -86,9 +90,7 @@ typedef struct amd_function_table {
 // local variables
 //******************************************************************************
 
-amd_gpu_binary_t binary;
-amd_function_table_t function_table;
-static uint32_t amd_gpu_module_id;
+amd_gpu_binary_t* binary_list = NULL;
 
 //******************************************************************************
 // private operations
@@ -109,7 +111,8 @@ static uint32_t amd_gpu_module_id;
 static void
 construct_amd_gpu_symbols
 (
-  Elf *elf
+  Elf *elf,
+  amd_function_table_t * ft
 )
 {
   // Initialize elf_help_t to handle extended numbering
@@ -174,9 +177,9 @@ construct_amd_gpu_symbols
   char* symbol_name_buf = (char*)(strtab_data->d_buf);
 
   // Initialize our function table
-  function_table.size = nfuncs;
-  function_table.names = (char**)hpcrun_malloc(sizeof(char*) * function_table.size);
-  function_table.addrs = (uint64_t*)hpcrun_malloc(sizeof(uint64_t) * function_table.size);
+  ft->size = nfuncs;
+  ft->names = (char**)malloc(sizeof(char*) * ft->size);
+  ft->addrs = (uint64_t*)malloc(sizeof(uint64_t) * ft->size);
   int index = 0;
 
   // Put each function symbol into our function table
@@ -189,15 +192,15 @@ construct_amd_gpu_symbols
       int symtype = GELF_ST_TYPE(sym.st_info);
       if (sym.st_shndx == SHN_UNDEF) continue;
       if (symtype != STT_FUNC) continue;
-      function_table.names[index] = symbol_name_buf + sym.st_name;
-      function_table.addrs[index] = sym.st_value;
+      ft->names[index] = symbol_name_buf + sym.st_name;
+      ft->addrs[index] = sym.st_value;
       ++index;
     }
   }
 #if DEBUG != 0
-  printf("Dump AMD GPU functions\n");
-  for (size_t i = 0; i < function_table.size; ++i) {
-    printf("Function %s, at address %lx\n", function_table.names[i], function_table.addrs[i]);
+  fprintf(stderr, "Dump AMD GPU functions\n");
+  for (size_t i = 0; i < ft->size; ++i) {
+    fprintf(stderr, "Function %s, at address %lx\n", ft->names[i], ft->addrs[i]);
   }
 #endif
 }
@@ -211,7 +214,8 @@ construct_amd_gpu_symbols
 static void
 parse_amd_gpu_binary_uri
 (
-  char *uri
+  char *uri,
+  amd_gpu_binary_t *bin
 )
 {
   // File URI example: file:///home/users/coe0173/HIP-Examples/HIP-Examples-Applications/FloydWarshall/FloydWarshall#offset=26589&size=31088
@@ -244,7 +248,7 @@ parse_amd_gpu_binary_uri
   used += sprintf(&gpu_file_path[used], "%s", hpcrun_files_output_directory());
   used += sprintf(&gpu_file_path[used], "%s", "/amd/");
   mkdir(gpu_file_path, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-  used += sprintf(&gpu_file_path[used], "%s.rocm-gpu", filename);
+  used += sprintf(&gpu_file_path[used], "%s.%llx.rocm-gpu", filename, offset);
 
   // We directly return if we have write down this URI
   int wfd;
@@ -264,18 +268,32 @@ parse_amd_gpu_binary_uri
 	return;
   }
 
-  binary.size = size;
-  binary.buf = (char*)hpcrun_malloc(size);
-  ssize_t read_bytes = read(rfd, binary.buf, size);
+  bin->size = size;
+  bin->buf = (char*)malloc(size);
+  ssize_t read_bytes = read(rfd, bin->buf, size);
   if (read_bytes != size) {
     PRINT("\tfail to read file, read %d\n", read_bytes);
     perror(NULL);
-	return;
+    return;
   }
-  write(wfd, (const void*)(binary.buf), binary.size);
+  write(wfd, (const void*)(bin->buf), bin->size);
   close(wfd);
 
-  amd_gpu_module_id = hpcrun_loadModule_add(gpu_file_path);
+  bin->amd_gpu_module_id = hpcrun_loadModule_add(gpu_file_path);
+}
+
+static int
+file_uri_exists
+(
+  char* uri
+)
+{
+  for (amd_gpu_binary_t * bin = binary_list; bin != NULL; bin = bin->next) {
+    if (strcmp(uri, bin->uri) == 0) {
+      return 1;
+    }
+  }
+  return 0;
 }
 
 static int
@@ -288,34 +306,33 @@ parse_amd_gpu_binary
   size_t code_object_count;
   rocm_debug_api_query_code_object(&code_object_count);
 
-  char* gpu_binary_uri = NULL;
   for (size_t i = 0; i < code_object_count; ++i) {
     char* uri = rocm_debug_api_query_uri(i);
+    PRINT("uri %d, %s\n", i, uri);
 
-    // Ignore memory URI as it points to amd's gpu runtime
-	if (strncmp(uri, "memory://", strlen("memory://")) == 0) {
-        continue;
-	}
+    // Handle file URIs 
+    if (strncmp(uri, "file://", strlen("file://")) == 0) {
+      if (file_uri_exists(uri)) continue;
+      
+      // Handle a new AMD GPU binary
+      amd_gpu_binary_t* bin = (amd_gpu_binary_t*) malloc(sizeof(amd_gpu_binary_t));
+      bin->uri = strdup(uri);
+      bin->next = binary_list;
+      binary_list = bin;
 
-    // Assume we have only one code object
-	if (strncmp(uri, "file://", strlen("file://")) == 0) {
-        gpu_binary_uri = uri;
-		break;
-	}
+      // Parse URI to extract the binary
+      parse_amd_gpu_binary_uri(uri, bin);
+
+      // Parse the ELF symbol table
+      elf_version(EV_CURRENT);
+      Elf *elf = elf_memory(bin->buf, bin->size);
+      if (elf != 0) {
+        construct_amd_gpu_symbols(elf, &(bin->function_table));
+        elf_end(elf);
+      }
+    }
   }
 
-  if (gpu_binary_uri == NULL) {
-    rocm_debug_api_fini();
-    return -1;
-  }
-
-  parse_amd_gpu_binary_uri(gpu_binary_uri);
-  elf_version(EV_CURRENT);
-  Elf *elf = elf_memory(binary.buf, binary.size);
-  if (elf != 0) {
-	  construct_amd_gpu_symbols(elf);
-	  elf_end(elf);
-  }
   rocm_debug_api_fini();
   return 0;
 }
@@ -330,18 +347,27 @@ parse_amd_gpu_binary
 // to handle large GPU binaries. We will need to use more efficient
 // lookup data structure, a splay tree or a trie.
 
-static uintptr_t
+static ip_normalized_t
 lookup_amd_function
 (
   const char *kernel_name
 )
 {
-  for (size_t i = 0; i < function_table.size; ++i) {
-    if (strcmp(kernel_name, function_table.names[i]) == 0) {
-      return (uintptr_t)(function_table.addrs[i]);
+  ip_normalized_t nip;
+  nip.lm_id = 0;
+  nip.lm_ip = 0;
+
+  for (amd_gpu_binary_t* bin = binary_list; bin != NULL; bin = bin->next) {
+    amd_function_table_t* ft = &(bin->function_table);
+    for (size_t i = 0; i < ft->size; ++i) {
+      if (strcmp(kernel_name, ft->names[i]) == 0) {
+        nip.lm_id = bin->amd_gpu_module_id;
+        nip.lm_ip = (uintptr_t)(ft->addrs[i]);
+        return nip;
+      }
     }
   }
-  return 0;
+  return nip;
 }
 
 //******************************************************************************
@@ -357,27 +383,17 @@ rocm_binary_function_lookup
   // TODO:
   // 1. Handle multi-threaded case. Currently, this function is called when the first
   //    HIP kernel launch is done. So multiple threads can enter this concurrently.
-  // 2. Handle the case of multiple GPU binaries. Currently, this code assuems there is
-  //    only one AMD GPU binary. We will need to both assign different names to AMD GPU
-  //    binaries and also handle the possibility of one kernel name appearing in different
-  //    GPU binaries.
-
-  if (binary.size == 0) {
+  // 2. Currently we support multiple GPU binaries, but assume that kernel is unique
+  //    across GPU binaries.
+  if (binary_list == NULL) {
     if (parse_amd_gpu_binary() < 0) {
-      binary.size = -1;
+      // Allocate a placeholder binary
+      binary_list = (amd_gpu_binary_t*)malloc(sizeof(amd_gpu_binary_t));
+      binary_list->next = NULL;
+      binary_list->function_table.size = 0;
     }
   }
-  PRINT("binary size %lx\n", binary.size);
-  ip_normalized_t nip;
-  if (binary.size <= 0) {
-    // This can happen when we failed to get URI
-    nip.lm_id = 0;
-    nip.lm_ip = 0;
-    PRINT("Failed to get amd gpu binary\n");
-  } else {
-    nip.lm_id = amd_gpu_module_id;
-    nip.lm_ip = lookup_amd_function(kernel_name);
-    PRINT("HIP launch kernel %s, lm_ip %lx\n", kernel_name, nip.lm_ip);
-  }
+  ip_normalized_t nip = lookup_amd_function(kernel_name);
+  PRINT("HIP launch kernel %s, lm_ip %lx\n", kernel_name, nip.lm_ip);
   return nip;
 }
