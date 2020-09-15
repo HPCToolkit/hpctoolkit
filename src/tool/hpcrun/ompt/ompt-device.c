@@ -47,7 +47,7 @@
 
 #include "ompt-device.h"
 
-#if HAVE_CUPTI_H
+#if HPCRUN_SS_NVIDIA
 
 /******************************************************************************
  * global include files
