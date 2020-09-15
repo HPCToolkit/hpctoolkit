@@ -261,6 +261,10 @@ _deps = {
               'libs': ['xerces-c'], 'headers': ['xercesc/sax2/SAX2XMLReader.hpp'],
               'cc': cpp,
             },
+  'valgrind_headers': { 'propstems': ['valgrind'], 'spack': 'valgrind', 'dependency': 'valgrind',
+                        'libs': [], 'headers': ['valgrind.h', 'helgrind.h'],
+                        'spack_include_suffix': 'valgrind',
+                      },
 
   # NOTE: BEGIN the ones that currently aren't referenced anywhere.
   # Remove the x_ tag and move above this line when these are in use.
@@ -270,9 +274,6 @@ _deps = {
   'x_bzip': { 'propstems': ['bzip2', 'bzip'], 'spack': 'bzip2', 'dependency': 'BZip2',
               'libs': ['bz2'], 'headers': ['bzlib.h'],
             },
-  'x_valgrind_headers': { 'propstems': ['valgrind'], 'spack': 'valgrind', 'dependency': 'valgrind',
-                          'libs': [], 'headers': ['valgrind.h', 'helgrind.h'],
-                        },
   # NOTE: END the ones that currently aren't referenced anywhere.
 }
 foreach var, dep : _deps
@@ -391,7 +392,7 @@ foreach var, dep : _deps
         elif part.startswith('L')
           _dep_ldirs += (part / '').strip('L')
         elif part.startswith('I')
-          _dep_idirs += (part / '').strip('I')
+          _dep_idirs += (part / '').strip('I') / dep.get('spack_include_suffix', '')
         else
           error('Invalid output from spack-paths.py: ' + part)
         endif
@@ -446,7 +447,7 @@ foreach var, dep : _deps
     endforeach
     if dep['libs'].length() == 0
       foreach h : dep['headers']
-        _dep_libs += cc.has_header(h, include_directories: _dep_idirs) ? [] : disabler()
+        cc.has_header(h, include_directories: _dep_idirs, required: true)
       endforeach
     endif
     _dep_libs += _dep_xlibs
@@ -472,7 +473,8 @@ foreach var, dep : _deps
     endforeach
     if dep['libs'].length() == 0
       foreach h : dep['headers']
-        _dep_libs += cc.has_header(h, include_directories: _dep_idirs) ? [] : disabler()
+        _dep_libs += cc.has_header(h, include_directories: _dep_idirs) ? [] \
+                     : [disabler()]
       endforeach
     endif
     _dep_libs += _dep_xlibs
@@ -480,6 +482,9 @@ foreach var, dep : _deps
     set_variable(var+'_dep', declare_dependency(
       dependencies: _dep_libs, include_directories: _dep_idirs,
     ))
+    if is_disabler(get_variable(var+'_dep'))
+      set_variable(var+'_dep', dependency('', required: false))
+    endif
     summary(var, get_variable(var+'_dep').found() ? '(system)' : false,
             section: 'Dependencies', bool_yn: true)
   else
@@ -512,7 +517,7 @@ endforeach
 
 # The Valgrind dependency should only reference the headers, so remove any
 # of its other bits.
-x_valgrind_headers_dep = x_valgrind_headers_dep.partial_dependency(compile_args: true, includes: true)
+valgrind_headers_dep = valgrind_headers_dep.partial_dependency(compile_args: true, includes: true)
 
 # For every dependency (_dep) variable, add an additional _d_dep variable that
 # is a disabler when the dependency is not found. Because disablers are handy.

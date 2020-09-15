@@ -16,7 +16,7 @@ assert(mode == '--unique' or mode == '--any')
 import shlex
 import spack
 
-db = spack.database.Database(spack.paths.prefix)
+db = spack.store.store.db
 
 # Get the list of all the specs that match our arguments
 specs = db.query(package + force_spec + user_spec)
