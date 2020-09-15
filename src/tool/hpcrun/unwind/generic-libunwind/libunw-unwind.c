@@ -173,6 +173,11 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
 step_state
 hpcrun_unw_step(hpcrun_unw_cursor_t* cursor, int *steps_taken)
 {
+  static bool msg_sent = false;
+  if (msg_sent == false) {
+    TMSG(NU, "hpcrun_unw_step from libunw_unwind.c" );
+    msg_sent = true;
+  }
   step_state state = STEP_ERROR;
   state = libunw_unw_step(cursor, steps_taken);
   if (state == STEP_ERROR) {

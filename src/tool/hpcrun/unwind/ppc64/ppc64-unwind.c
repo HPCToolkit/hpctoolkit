@@ -253,6 +253,12 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
   cursor->ra_loc    = NULL;
 
   bitree_uwi_t* intvl = NULL;
+
+  if (hpcrun_no_unwind == true ) {
+    // no need to initialize
+    return;
+  }
+
   bool found = uw_recipe_map_lookup(cursor->pc_unnorm, NATIVE_UNWINDER, &(cursor->unwr_info));
   if (found) {
 	intvl = cursor->unwr_info.btuwi;
@@ -291,6 +297,12 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor, int *steps_taken)
   void** sp = cursor->sp;
   void** fp = cursor->bp; // unused
   unwind_interval* intvl = (unwind_interval*)(cursor->unwr_info.btuwi);
+
+  static bool msg_sent = false;
+  if (msg_sent == false) {
+    TMSG(NU, "hpcrun_unw_step from ppc64_unwind.c" );
+    msg_sent = true;
+  }
 
   bool isInteriorFrm = (cursor->flags != UnwFlg_StackTop);
   

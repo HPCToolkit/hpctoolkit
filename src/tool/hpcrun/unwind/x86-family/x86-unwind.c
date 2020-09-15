@@ -253,6 +253,9 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
   if (cursor->libunw_status == LIBUNW_READY)
     return;
 
+  if (hpcrun_no_unwind == true) {
+    return;
+  }
   bool found = uw_recipe_map_lookup(pc, NATIVE_UNWINDER, &cursor->unwr_info);
 
   if (!found) {
@@ -414,6 +417,12 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor, int *steps_taken)
 {
   step_state unw_res;
   int decrement_pc = 0;
+
+  static bool msg_sent = false;
+  if (msg_sent == false) {
+    TMSG(NU, "hpcrun_unw_step from x86_unwind.c" );
+    msg_sent = true;
+  }
 
   if ((*steps_taken)++ > 0 && cursor->pc_unnorm != 0) {
     DECREMENT_PC(cursor->pc_unnorm);

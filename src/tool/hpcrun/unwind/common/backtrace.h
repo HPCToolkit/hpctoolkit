@@ -117,4 +117,6 @@ bool hpcrun_generate_backtrace(backtrace_info_t* bt,
 bool hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
 					     ucontext_t* context, int skipInner);
 
+extern bool hpcrun_no_unwind;
+
 #endif // hpcrun_backtrace_h
