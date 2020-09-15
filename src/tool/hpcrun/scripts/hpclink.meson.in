@@ -217,44 +217,44 @@ do
             shift ; shift
             ;;
 	-io | --io )
-	    PKG_CONFIG_PATH="${pc_dir}" pkg-config --exists hpcrun_io_wrap || die "unable to find: hpcrun_io_wrap"
+	    PKG_CONFIG_PATH="${pc_dir}:${PKG_CONFIG_PATH}" pkg-config --exists hpcrun_io_wrap || die "unable to find: hpcrun_io_wrap"
 	    extra_hpc_libs="$extra_hpc_libs hpcrun_io_wrap"
 	    extra_wrap_names="$extra_wrap_names \
-	      $(PKG_CONFIG_PATH="${pc_dir}" pkg-config --variable=wrapnames hpcrun_io_wrap | tr ':' ' ')"
+	      $(PKG_CONFIG_PATH="${pc_dir}:${PKG_CONFIG_PATH}" pkg-config --variable=wrapnames hpcrun_io_wrap | tr ':' ' ')"
 	    undef_names="$undef_names \
-	      $(PKG_CONFIG_PATH="${pc_dir}" pkg-config --variable=undefnames hpcrun_io_wrap | tr ':' ' ')"
+	      $(PKG_CONFIG_PATH="${pc_dir}:${PKG_CONFIG_PATH}" pkg-config --variable=undefnames hpcrun_io_wrap | tr ':' ' ')"
 	    shift
 	    ;;
 	-ga | --ga )
-	    PKG_CONFIG_PATH="${pc_dir}" pkg-config --exists hpcrun_ga_wrap || die "unable to find: hpcrun_ga_wrap"
+	    PKG_CONFIG_PATH="${pc_dir}:${PKG_CONFIG_PATH}" pkg-config --exists hpcrun_ga_wrap || die "unable to find: hpcrun_ga_wrap"
 	    extra_hpc_libs="$extra_hpc_libs hpcrun_ga_wrap"
 	    extra_wrap_names="$extra_wrap_names \
-	      $(PKG_CONFIG_PATH="${pc_dir}" pkg-config --variable=wrapnames hpcrun_ga_wrap | tr ':' ' ')"
+	      $(PKG_CONFIG_PATH="${pc_dir}:${PKG_CONFIG_PATH}" pkg-config --variable=wrapnames hpcrun_ga_wrap | tr ':' ' ')"
 	    undef_names="$undef_names \
-	      $(PKG_CONFIG_PATH="${pc_dir}" pkg-config --variable=undefnames hpcrun_ga_wrap | tr ':' ' ')"
+	      $(PKG_CONFIG_PATH="${pc_dir}:${PKG_CONFIG_PATH}" pkg-config --variable=undefnames hpcrun_ga_wrap | tr ':' ' ')"
 	    shift
 	    ;;
 	-memleak | --memleak )
-	    PKG_CONFIG_PATH="${pc_dir}" pkg-config --exists hpcrun_memleak_wrap || die "unable to find: hpcrun_memleak_wrap"
+	    PKG_CONFIG_PATH="${pc_dir}:${PKG_CONFIG_PATH}" pkg-config --exists hpcrun_memleak_wrap || die "unable to find: hpcrun_memleak_wrap"
 	    extra_hpc_libs="$extra_hpc_libs hpcrun_memleak_wrap"
 	    extra_wrap_names="$extra_wrap_names \
-	      $(PKG_CONFIG_PATH="${pc_dir}" pkg-config --variable=wrapnames hpcrun_memleak_wrap | tr ':' ' ')"
+	      $(PKG_CONFIG_PATH="${pc_dir}:${PKG_CONFIG_PATH}" pkg-config --variable=wrapnames hpcrun_memleak_wrap | tr ':' ' ')"
 	    undef_names="$undef_names \
-	      $(PKG_CONFIG_PATH="${pc_dir}" pkg-config --variable=undefnames hpcrun_memleak_wrap | tr ':' ' ')"
+	      $(PKG_CONFIG_PATH="${pc_dir}:${PKG_CONFIG_PATH}" pkg-config --variable=undefnames hpcrun_memleak_wrap | tr ':' ' ')"
 	    shift
 	    ;;
 	-plugin | --plugin )
 	    test "x$2" != x || die "missing argument for --plugin"
 	    plugin_lib="hpcrun_$2_wrap"
-	    if ! PKG_CONFIG_PATH="${pc_dir}" pkg-config --exists "$plugin_lib"; then
+	    if ! PKG_CONFIG_PATH="${pc_dir}:${PKG_CONFIG_PATH}" pkg-config --exists "$plugin_lib"; then
 		plugin_lib="$2"
-		PKG_CONFIG_PATH="${pc_dir}" pkg-config --exists "$plugin_lib" || die "unable to find: $2"
+		PKG_CONFIG_PATH="${pc_dir}:${PKG_CONFIG_PATH}" pkg-config --exists "$plugin_lib" || die "unable to find: $2"
 	    fi
 	    extra_hpc_libs="$extra_hpc_libs $plugin_lib"
 	    extra_wrap_names="$extra_wrap_names \
-	      $(PKG_CONFIG_PATH="${pc_dir}" pkg-config --variable=wrapnames "$plugin_lib" | tr ':' ' ')"
+	      $(PKG_CONFIG_PATH="${pc_dir}:${PKG_CONFIG_PATH}" pkg-config --variable=wrapnames "$plugin_lib" | tr ':' ' ')"
 	    undef_names="$undef_names \
-	      $(PKG_CONFIG_PATH="${pc_dir}" pkg-config --variable=undefnames "$plugin_lib" | tr ':' ' ')"
+	      $(PKG_CONFIG_PATH="${pc_dir}:${PKG_CONFIG_PATH}" pkg-config --variable=undefnames "$plugin_lib" | tr ':' ' ')"
 	    shift ; shift
 	    ;;
 	-u | --undefined )
@@ -342,7 +342,7 @@ done
 
 # Step 2.-1, generate the extra wrap names needed by libmonitor
 libmonitor_wrap_names="$( \
-    nm "$(PKG_CONFIG_PATH="${pc_dir}" pkg-config --libs monitor_wrap)" \
+    nm "$(PKG_CONFIG_PATH="${pc_dir}:${PKG_CONFIG_PATH}" pkg-config --libs monitor_wrap)" \
     | grep __wrap_ | sed -e 's/.*__wrap_//' | tr '\n' ' ')"
 
 hpctk_wrap_names="${internal_wrap_names}  ${external_wrap_names}  ${libmonitor_wrap_names}"
@@ -387,13 +387,13 @@ do
     wrap_args="${wrap_args} ${linker_prefix},--wrap=${name}"
 done
 
-set -- "${linker_prefix},--whole-archive" $(PKG_CONFIG_PATH="${pc_dir}" pkg-config --libs hpcrun_static) "${linker_prefix},--no-whole-archive" "$@"
+set -- "${linker_prefix},--whole-archive" $(PKG_CONFIG_PATH="${pc_dir}:${PKG_CONFIG_PATH}" pkg-config --libs hpcrun_static) "${linker_prefix},--no-whole-archive" "$@"
 set -- $undef_args $wrap_args "$@"
 set -- "$@" "${nm_addrs}.o"
 
-PKG_CONFIG_PATH="${pc_dir}" pkg-config --exists hpcrun_wrap || die "unable to find: hpcrun_wrap"
-PKG_CONFIG_PATH="${pc_dir}" pkg-config --exists monitor_wrap || die "unable to find: monitor_wrap"
-set -- "$@" $(PKG_CONFIG_PATH="${pc_dir}" pkg-config --libs hpcrun_wrap $extra_hpc_libs monitor_wrap hpcrun_deps)
+PKG_CONFIG_PATH="${pc_dir}:${PKG_CONFIG_PATH}" pkg-config --exists hpcrun_wrap || die "unable to find: hpcrun_wrap"
+PKG_CONFIG_PATH="${pc_dir}:${PKG_CONFIG_PATH}" pkg-config --exists monitor_wrap || die "unable to find: monitor_wrap"
+set -- "$@" $(PKG_CONFIG_PATH="${pc_dir}:${PKG_CONFIG_PATH}" pkg-config --libs hpcrun_wrap $extra_hpc_libs monitor_wrap hpcrun_deps)
 set -- "$@" $lib_args $appl_libs
 
 #------------------------------------------------------------
