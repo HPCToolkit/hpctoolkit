@@ -158,6 +158,23 @@ public:
     friend class Metric;
     util::locked_unordered_map<const Context*,
       util::locked_unordered_map<const Metric*, MetricAccumulator>> data;
+
+  public:
+    /// Reference to the Metric data for a particular Context in this Thread.
+    /// Returns an empty optional if none is present.
+    // MT: Safe (const), Unstable (before notifyThreadFinal)
+    stdshim::optional<const util::locked_unordered_map<const Metric*, MetricAccumulator>&>
+    accumulatorsFor(const Context& c) const noexcept {
+      auto* d = data.find(&c);
+      if(d == nullptr) return {};
+      return *d;
+    }
+
+    /// Reference to all of the Metric data on Thread.
+    // MT: Safe (const), Unstable (before notifyThreadFinal)
+    const util::locked_unordered_map<const Context*,
+      util::locked_unordered_map<const Metric*, MetricAccumulator>>&
+    accumulators() const noexcept { return data; }
   };
 };
 
