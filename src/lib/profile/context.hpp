@@ -47,6 +47,8 @@
 #ifndef HPCTOOLKIT_PROFILE_CONTEXT_H
 #define HPCTOOLKIT_PROFILE_CONTEXT_H
 
+#include "metric.hpp"
+
 #include "util/locked_unordered.hpp"
 #include "util/atomic_unordered.hpp"
 #include "scope.hpp"
@@ -54,17 +56,14 @@
 
 namespace hpctoolkit {
 
-class Metric;
-
 // A single calling Context.
 class Context {
 public:
   using ud_t = util::ragged_vector<const Context&>;
-  using met_t = util::ragged_map<>;
 
-  Context(ud_t::struct_t& rs, met_t::struct_t& ms) : userdata(rs, std::ref(*this)), data(ms) {};
-  Context(ud_t::struct_t& rs, met_t::struct_t& ms, const Scope& l) : Context(rs, ms, nullptr, l) {};
-  Context(ud_t::struct_t& rs, met_t::struct_t& ms, Scope&& l) : Context(rs, ms, nullptr, l) {};
+  Context(ud_t::struct_t& rs) : userdata(rs, std::ref(*this)) {};
+  Context(ud_t::struct_t& rs, const Scope& l) : Context(rs, nullptr, l) {};
+  Context(ud_t::struct_t& rs, Scope&& l) : Context(rs, nullptr, l) {};
   ~Context() = default;
 
 private:
@@ -92,13 +91,13 @@ public:
 private:
   std::unique_ptr<children_t> children_p;
 
-  Context(ud_t::struct_t& rs, met_t::struct_t& ms, Context* p, const Scope& l)
-    : Context(rs, ms, p, Scope(l)) {};
-  Context(ud_t::struct_t&m, met_t::struct_t&, Context*, Scope&&);
+  Context(ud_t::struct_t& rs, Context* p, const Scope& l)
+    : Context(rs, p, Scope(l)) {};
+  Context(ud_t::struct_t&, Context*, Scope&&);
   Context(Context&& c);
 
   friend class Metric;
-  met_t data;
+  util::locked_unordered_map<const Metric*, StatisticAccumulator> data;
 
   friend class ProfilePipeline;
   /// Get the child Context for a given Scope, creating one if none exists.

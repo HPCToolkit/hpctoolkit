@@ -58,6 +58,24 @@
 
 namespace hpctoolkit {
 
+class Context;
+
+// TODO: Move the following to metric.hpp where it belongs
+class Metric;
+/// Accumulator structure for the data implicitly bound to a Thread and Context.
+class MetricAccumulator final {
+public:
+  MetricAccumulator() : exclusive(0), inclusive(0) {};
+
+private:
+  friend class Metric;
+  friend class ThreadAccumulatorCRef;
+  friend class ThreadAccumulatorRef;
+  // Currently only for :Sum Statistics
+  std::atomic<double> exclusive;
+  double inclusive;
+};
+
 /// Attributes unique to a particular thread within a profile. Whether this is
 /// a thread (as in thd_create) or a process (as in an MPI process), this
 /// roughly represents a single serial execution within the profile.
@@ -115,7 +133,6 @@ private:
 class Thread {
 public:
   using ud_t = util::ragged_vector<const Thread&>;
-  using met_t = util::ragged_map<>;
 
   Thread(ud_t::struct_t& rs)
     : Thread(rs, ThreadAttributes()) {};
@@ -149,10 +166,11 @@ public:
     Thread& m_thread;
 
     friend class ProfilePipeline;
-    Temporary(Thread& t, met_t::struct_t& ms) : m_thread(t), data(ms) {};
+    Temporary(Thread& t) : m_thread(t) {};
 
     friend class Metric;
-    met_t data;
+    util::locked_unordered_map<const Context*,
+      util::locked_unordered_map<const Metric*, MetricAccumulator>> data;
   };
 };
 

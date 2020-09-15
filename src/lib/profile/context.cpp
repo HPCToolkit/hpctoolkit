@@ -53,15 +53,15 @@
 
 using namespace hpctoolkit;
 
-Context::Context(ud_t::struct_t& rs, met_t::struct_t& ms, Context* p, Scope&& s)
-  : userdata(rs, std::ref(*this)), children_p(new children_t()), data(ms),
+Context::Context(ud_t::struct_t& rs, Context* p, Scope&& s)
+  : userdata(rs, std::ref(*this)), children_p(new children_t()),
     u_parent(p), u_scope(s) {};
 Context::Context(Context&& c)
   : userdata(std::move(c.userdata), std::ref(*this)),
-    children_p(new children_t()), data(std::move(c.data)),
+    children_p(new children_t()),
     u_parent(c.direct_parent()), u_scope(c.scope()) {};
 
 std::pair<Context&,bool> Context::ensure(Scope&& s) {
-  auto x = children_p->emplace(userdata.base(), data.base(), this, std::move(s));
+  auto x = children_p->emplace(userdata.base(), this, std::move(s));
   return {x.first(), x.second};
 }

@@ -46,29 +46,42 @@
 
 #include "metric.hpp"
 
+#include "context.hpp"
+#include "attributes.hpp"
+
 #include <thread>
 #include <ostream>
 
 using namespace hpctoolkit;
 
-static double atomic_add(std::atomic<double>& a, const double& v) noexcept {
+static double atomic_add(std::atomic<double>& a, const double v) noexcept {
   double old = a.load(std::memory_order_relaxed);
   while(!a.compare_exchange_weak(old, old+v, std::memory_order_relaxed));
   return old;
 }
 
-static bool pullsExclusive(Context& c) {
-  switch(c.scope().type()) {
+static bool pullsExclusive(const Context& parent, const Context& child) {
+  switch(child.scope().type()) {
   case Scope::Type::function:
   case Scope::Type::inlined_function:
   case Scope::Type::loop:
-    return true;
+    return false;
   case Scope::Type::unknown:
   case Scope::Type::point:
+    switch(parent.scope().type()) {
+    case Scope::Type::function:
+    case Scope::Type::inlined_function:
+    case Scope::Type::loop:
+      return true;
+    case Scope::Type::unknown:
+    case Scope::Type::point:
+    case Scope::Type::global:
+      return false;
+    }
   case Scope::Type::global:
-    return false;
+    util::log::fatal{} << "Operation invalid for the global Context!";
   }
-  return false;
+  std::abort();  // unreachable
 }
 
 unsigned int Metric::ScopedIdentifiers::get(MetricScope s) const noexcept {
@@ -100,16 +113,15 @@ void AccumulatorRef::add(MetricScope s, double v) noexcept {
 }
 
 AccumulatorRef Metric::addTo(Context& c) noexcept {
-  return c.data[member];
+  return c.data[this];
 }
 
 void ThreadAccumulatorRef::add(double v) noexcept {
-  if(v != 0) atomic_add(*exclusive, v);
+  if(v != 0) atomic_add(accum->exclusive, v);
 }
 
 ThreadAccumulatorRef Metric::addTo(Thread::Temporary& t, Context& c) noexcept {
-  auto& td = t.data[tmember];
-  return {td.exclusive[&c], td.inclusive[&c]};
+  return t.data[&c][this];
 }
 
 static stdshim::optional<double> opt0(double d) {
@@ -128,82 +140,98 @@ stdshim::optional<double> AccumulatorCRef::get(MetricScope s) const noexcept {
 }
 
 AccumulatorCRef Metric::getFor(const Context& c) const noexcept {
-  auto* a = c.data.find(member);
+  auto* a = c.data.find(this);
   if(a == nullptr) return {};
   return *a;
 }
 
 stdshim::optional<double> ThreadAccumulatorCRef::get(MetricScope s) const noexcept {
+  if(accum == nullptr) return {};
   switch(s) {
   case MetricScope::point: util::log::fatal{} << "TODO: Support point Metric::Scope!";
   case MetricScope::exclusive:
-    return exclusive != nullptr ? opt0(exclusive->load(std::memory_order_relaxed))
-                                : stdshim::optional<double>{};
+    return opt0(accum->exclusive.load(std::memory_order_relaxed));
   case MetricScope::inclusive:
-    return inclusive != nullptr ? opt0(*inclusive) : stdshim::optional<double>{};
+    return opt0(accum->inclusive);
   default: util::log::fatal{} << "Invalid Scope value!";
   }
   std::abort();  // unreachable
 }
 
 ThreadAccumulatorCRef Metric::getFor(const Thread::Temporary& t, const Context& c) const noexcept {
-  auto* td = t.data.find(tmember);
-  if(td == nullptr) return {};
-  auto iit = td->inclusive.find(const_cast<Context*>(&c));
-  if(iit == td->inclusive.end()) return {};
-  auto* e = td->exclusive.find(const_cast<Context*>(&c));
-  if(e) return {*e, iit->second};
-  return {nullptr, iit->second};
+  auto* cd = t.data.find(&c);
+  if(cd == nullptr) return {};
+  auto* md = cd->find(this);
+  if(md == nullptr) return {};
+  return *md;
 }
 
 void Metric::finalize(Thread::Temporary& t) noexcept {
-  auto* local_p = t.data.find(tmember);
-  if(!local_p) return;  // We have no data for this.
-  auto& local = *local_p;
-
-  // For each Context, we need to know what its children are. But we only care
-  // about ones that have decendants with exclusive data.
-  // So we take a pre-processing step to build a subtree map.
-  Context* global = nullptr;
-  std::unordered_map<Context*, std::vector<Context*>> childMap;
-  std::vector<Context*> newContexts;
-  for(const auto& cei: local.exclusive.citerate())
-    newContexts.emplace_back(cei.first);
-  while(!newContexts.empty()) {
-    std::vector<Context*> nextNew;
-    for(Context* cp: newContexts) {
-      if(!cp->direct_parent()) {
-        if(global) util::log::fatal() << "Multiple root Contexts???";
-        global = cp;
-        continue;
+  // For each Context we need to know what its children are. But we only care
+  // about ones that have decendants with actual data. So we construct a
+  // temporary subtree with all the bits.
+  const Context* global = nullptr;
+  std::unordered_map<const Context*, std::vector<const Context*>> children;
+  {
+    std::vector<const Context*> newContexts;
+    newContexts.reserve(t.data.size());
+    for(const auto& cx: t.data.citerate()) newContexts.emplace_back(cx.first);
+    while(!newContexts.empty()) {
+      decltype(newContexts) next;
+      next.reserve(newContexts.size());
+      for(const Context* cp: newContexts) {
+        if(!cp->direct_parent()) {
+          if(global != nullptr) util::log::fatal{} << "Multiple root contexts???";
+          global = cp;
+          continue;
+        }
+        auto x = children.emplace(cp->direct_parent(), std::vector<const Context*>{cp});
+        if(x.second) next.push_back(cp->direct_parent());
+        else x.first->second.push_back(cp);
       }
-      auto x = childMap.emplace(cp->direct_parent(), 0);
-      if(x.second) nextNew.emplace_back(cp->direct_parent());
-      x.first->second.emplace_back(cp);
+      next.shrink_to_fit();
+      newContexts = std::move(next);
     }
-    newContexts = std::move(nextNew);
   }
 
-  // Now that we have the map, recursively propagate up, and accumulate.
-  std::function<double(Context*)> propagate = [&](Context* c) -> double{
-    auto* exc = local.exclusive.find(c);
-    auto& inc = local.inclusive[c];
-    inc = exc ? exc->load(std::memory_order_relaxed) : 0;
-    auto it = childMap.find(c);
-    if(it != childMap.end()) {
-      for(Context* cc: it->second) {
-        if(pullsExclusive(*c)) {
-          if(!exc) exc = &local.exclusive[c];
-          auto* excc = local.exclusive.find(cc);
-          if(excc) atomic_add(*exc, excc->load(std::memory_order_relaxed));
+  // Now that the critical subtree is built, recursively propagate up.
+  using md_t = util::locked_unordered_map<const Metric*, MetricAccumulator>;
+  std::function<const md_t&(const Context*)> propagate = [&](const Context* c) -> const md_t&{
+    md_t& data = t.data[c];
+    // Handle the internal propagation first, so we don't get mixed up.
+    for(auto& mx: data.iterate()) {
+      mx.second.inclusive = mx.second.exclusive.load(std::memory_order_relaxed);
+    }
+
+    auto ccit = children.find(c);
+    if(ccit != children.end()) {
+      // First recurse and ensure the values for our children are prepped.
+      // Remember the pointer for each child's metric data.
+      std::vector<std::reference_wrapper<const md_t>> submds;
+      submds.reserve(ccit->second.size());
+      for(const Context* cc: ccit->second) submds.push_back(propagate(cc));
+
+      // Then go through each and sum into our bits
+      for(std::size_t i = 0; i < submds.size(); i++) {
+        const Context* cc = ccit->second[i];
+        const md_t& ccmd = submds[i];
+        const bool pullex = pullsExclusive(*c, *cc);
+        for(const auto& mx: ccmd.citerate()) {
+          auto& accum = data[mx.first];
+          if(pullex) atomic_add(accum.exclusive, mx.second.exclusive.load(std::memory_order_relaxed));
+          accum.inclusive += mx.second.inclusive;
         }
-        inc += propagate(cc);
       }
     }
-    auto& accum = c->data[member];
-    if(exc) atomic_add(accum.exclusive, exc->load(std::memory_order_relaxed));
-    atomic_add(accum.inclusive, inc);
-    return inc;
+
+    // Now that our bits are stable, accumulate back into the Statistics
+    auto& cdata = const_cast<Context*>(c)->data;
+    for(const auto& mx: data.citerate()) {
+      auto& accum = cdata[mx.first];
+      atomic_add(accum.exclusive, mx.second.exclusive.load(std::memory_order_relaxed));
+      atomic_add(accum.inclusive, mx.second.inclusive);
+    }
+    return data;
   };
   propagate(global);
 }

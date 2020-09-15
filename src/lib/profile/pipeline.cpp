@@ -201,7 +201,7 @@ ProfilePipeline::ProfilePipeline(Settings&& b, std::size_t team_sz)
     transformers[i].get().bindPipeline(Source(*this, DataClass::all(), ExtensionClass::all(), i));
 
   // Make sure the global Context is ready before letting any data in.
-  cct.reset(new Context(structs.context, metstruct, Scope(*this)));
+  cct.reset(new Context(structs.context, Scope(*this)));
   for(auto& s: sinks) {
     if(s.dataLimit.hasContexts()) s().notifyContext(*cct);
   }
@@ -435,7 +435,7 @@ File& Source::file(const stdshim::filesystem::path& p) {
 Metric& Source::metric(const Metric::Settings& s) {
   if(!limit().hasAttributes())
     util::log::fatal() << "Source did not register for `attributes` emission!";
-  auto x = pipe->mets.emplace(pipe->structs.metric, pipe->metstruct, pipe->tmetstruct, s);
+  auto x = pipe->mets.emplace(pipe->structs.metric, s);
   auto r = &x.first();
   if(x.second) {
     for(auto& s: pipe->sinks) {
@@ -508,7 +508,7 @@ Thread::Temporary& Source::thread(const ThreadAttributes& o) {
     if(s.dataLimit.hasThreads()) s().notifyThread(t);
   }
   t.userdata.initialize();
-  slocal->threads.emplace_back(Thread::Temporary(t, pipe->tmetstruct));
+  slocal->threads.emplace_back(Thread::Temporary(t));
   return slocal->threads.back();
 }
 

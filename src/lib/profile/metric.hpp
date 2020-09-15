@@ -47,7 +47,6 @@
 #ifndef HPCTOOLKIT_PROFILE_METRIC_H
 #define HPCTOOLKIT_PROFILE_METRIC_H
 
-#include "context.hpp"
 #include "attributes.hpp"
 
 #include "util/atomic_unordered.hpp"
@@ -61,6 +60,8 @@
 #include <vector>
 
 namespace hpctoolkit {
+
+class Context;
 
 /// Every Metric can have values at multiple Scopes pertaining to the subtree
 /// rooted at a particular Context with Metric data.
@@ -101,6 +102,20 @@ public:
   using base::count;
 };
 
+/// Accumulator structure for the Statistics implicitly bound to a Context.
+class StatisticAccumulator final {
+public:
+  StatisticAccumulator() : exclusive(0), inclusive(0) {};
+
+private:
+  friend class Metric;
+  friend class AccumulatorCRef;
+  friend class AccumulatorRef;
+  // Currently only for :Sum Statistics
+  std::atomic<double> exclusive;
+  std::atomic<double> inclusive;
+};
+
 class AccumulatorCRef;
 class AccumulatorRef;
 class ThreadAccumulatorCRef;
@@ -111,18 +126,6 @@ class Metric final {
 private:
   friend class AccumulatorCRef;
   friend class AccumulatorRef;
-  struct Accumulator {
-    Accumulator() : exclusive(0), inclusive(0) {};
-    ~Accumulator() = default;
-    std::atomic<double> exclusive;
-    std::atomic<double> inclusive;
-  };
-  struct ThreadLocal {
-    ThreadLocal() = default;
-    ~ThreadLocal() = default;
-    util::locked_unordered_map<Context*, std::atomic<double>> exclusive;
-    std::unordered_map<Context*, double> inclusive;
-  };
 
 public:
   using ud_t = util::ragged_vector<const Metric&>;
@@ -146,17 +149,13 @@ public:
     }
   };
 
-  Metric(ud_t::struct_t& rs, Context::met_t::struct_t& ms,
-         Thread::met_t::struct_t& ts, const Settings& s)
-    : Metric(rs, ms, ts, Settings(s)) {};
-  Metric(ud_t::struct_t& rs, Context::met_t::struct_t& ms,
-         Thread::met_t::struct_t& ts, Settings&& s)
-    : userdata(rs, std::cref(*this)), u_settings(std::move(s)),
-      member(ms.add<Accumulator>()), tmember(ts.add<ThreadLocal>()) {};
+  Metric(ud_t::struct_t& rs, const Settings& s)
+    : Metric(rs, Settings(s)) {};
+  Metric(ud_t::struct_t& rs, Settings&& s)
+    : userdata(rs, std::cref(*this)), u_settings(std::move(s)) {};
   Metric(Metric&& m)
     : userdata(std::move(m.userdata), std::cref(*this)),
-      u_settings(std::move(m.u_settings)), member(std::move(m.member)),
-      tmember(std::move(m.tmember)) {};
+      u_settings(std::move(m.u_settings)) {};
 
   const std::string& name() const { return u_settings().name; }
   const std::string& description() const { return u_settings().description; }
@@ -189,13 +188,10 @@ public:
 private:
   util::uniqable_key<Settings> u_settings;
 
-  Context::met_t::typed_member_t<Accumulator> member;
-  Thread::met_t::typed_member_t<ThreadLocal> tmember;
-
   friend class ProfilePipeline;
-  // Finalize this Metric's Thread-local data. Non-destructive.
+  // Finalize the MetricAccumulators for a Thread.
   // MT: Internally Synchronized
-  void finalize(Thread::Temporary& t) noexcept;
+  static void finalize(Thread::Temporary& t) noexcept;
 
   friend class util::uniqued<Metric>;
   util::uniqable_key<Settings>& uniqable_key() { return u_settings; }
@@ -212,11 +208,11 @@ public:
   stdshim::optional<double> get(MetricScope) const noexcept;
 
 private:
-  const Metric::Accumulator* accum;
+  const StatisticAccumulator* accum;
 
   friend class Metric;
   AccumulatorCRef() : accum(nullptr) {};
-  AccumulatorCRef(const Metric::Accumulator& a) : accum(&a) {};
+  AccumulatorCRef(const StatisticAccumulator& a) : accum(&a) {};
 };
 
 /// Reference to the Metric accumulators on a particular Context.
@@ -231,10 +227,10 @@ public:
   void add(MetricScope, double) noexcept;
 
 private:
-  Metric::Accumulator* accum;
+  StatisticAccumulator* accum;
 
   friend class Metric;
-  AccumulatorRef(Metric::Accumulator& a) : accum(&a) {};
+  AccumulatorRef(StatisticAccumulator& a) : accum(&a) {};
 };
 
 /// Constant reference to the thread-local Metric accumulators on a particular Context.
@@ -248,16 +244,11 @@ public:
   stdshim::optional<double> get(MetricScope) const noexcept;
 
 private:
-  const std::atomic<double>* exclusive;
-  const double* inclusive;
+  const MetricAccumulator* accum;
 
   friend class Metric;
-  ThreadAccumulatorCRef()
-    : exclusive(nullptr), inclusive(nullptr) {};
-  ThreadAccumulatorCRef(std::nullptr_t, const double& i)
-    : exclusive(nullptr), inclusive(&i) {};
-  ThreadAccumulatorCRef(const std::atomic<double>& e, const double& i)
-    : exclusive(&e), inclusive(&i) {};
+  ThreadAccumulatorCRef() : accum(nullptr) {};
+  ThreadAccumulatorCRef(const MetricAccumulator& a) : accum(&a) {};
 };
 
 /// Reference to the thread-local Metric accumulators on a particular Context.
@@ -273,12 +264,10 @@ public:
   void add(double) noexcept;
 
 private:
-  std::atomic<double>* exclusive;
-  double* inclusive;
+  MetricAccumulator* accum;
 
   friend class Metric;
-  ThreadAccumulatorRef(std::atomic<double>& e, double& i)
-    : exclusive(&e), inclusive(&i) {};
+  ThreadAccumulatorRef(MetricAccumulator& a) : accum(&a) {};
 };
 
 }

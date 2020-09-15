@@ -411,8 +411,6 @@ private:
   // Userdata structures for the various bits. Must be above the data itself.
   Structs structs;
   Extensions uds;
-  Context::met_t::struct_t metstruct;
-  Thread::met_t::struct_t tmetstruct;
 
   // Storage for the canonical copies of everything. Because keeping track of
   // reference counts is a downright pain.
