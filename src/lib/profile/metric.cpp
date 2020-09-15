@@ -123,6 +123,7 @@ static stdshim::optional<double> opt0(double d) {
 }
 
 stdshim::optional<double> StatisticAccumulator::get(MetricScope s) const noexcept {
+  validate();
   switch(s) {
   case MetricScope::point: util::log::fatal{} << "TODO: Support point MetricScope!";
   case MetricScope::exclusive: return opt0(exclusive.load(std::memory_order_relaxed));
@@ -141,11 +142,11 @@ void StatisticAccumulator::validate() const noexcept {
 stdshim::optional<const StatisticAccumulator&> Metric::getFor(const Context& c) const noexcept {
   auto* a = c.data.find(this);
   if(a == nullptr) return {};
-  a->validate();
   return *a;
 }
 
 stdshim::optional<double> MetricAccumulator::get(MetricScope s) const noexcept {
+  validate();
   switch(s) {
   case MetricScope::point: util::log::fatal{} << "TODO: Support point Metric::Scope!";
   case MetricScope::exclusive: return opt0(exclusive.load(std::memory_order_relaxed));
@@ -166,7 +167,6 @@ stdshim::optional<const MetricAccumulator&> Metric::getFor(const Thread::Tempora
   if(cd == nullptr) return {};
   auto* md = cd->find(this);
   if(md == nullptr) return {};
-  md->validate();
   return *md;
 }
 

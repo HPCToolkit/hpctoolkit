@@ -111,11 +111,11 @@ public:
   stdshim::optional<double> get(MetricScope) const noexcept;
 
 private:
+  void validate() const noexcept;
+
   friend class Metric;
-  // Currently only for :Sum Statistics
   std::atomic<double> exclusive;
   double inclusive;
-  void validate() const noexcept;
 };
 
 /// Accumulator structure for the Statistics implicitly bound to a Context.
@@ -137,13 +137,12 @@ public:
   stdshim::optional<double> get(MetricScope) const noexcept;
 
 private:
+  void validate() const noexcept;
+
   friend class Metric;
-  friend class AccumulatorCRef;
-  friend class AccumulatorRef;
   // Currently only for :Sum Statistics
   std::atomic<double> exclusive;
   std::atomic<double> inclusive;
-  void validate() const noexcept;
 };
 
 }
