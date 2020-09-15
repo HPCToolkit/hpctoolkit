@@ -314,8 +314,7 @@ void ProfilePipeline::run() {
 
       auto& sl = sourceLocals[idx];
       // Done first to set the stage for the Sinks to do things.
-      for(auto& t: sl.threads)
-        for(Metric& m: mets.citerate()) m.finalize(t);
+      for(auto& t: sl.threads) Metric::finalize(t);
       // Let the Sinks know that the Threads have finished.
       for(auto& s: sinks)
         if(s.dataLimit.hasThreads())
