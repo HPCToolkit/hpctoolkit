@@ -455,7 +455,7 @@ Metric& Source::metric(const Metric::Settings& s) {
   return *r;
 }
 
-Context& Source::context(const Scope& s) { return context(*pipe->cct, s); }
+Context& Source::global() { return *pipe->cct; }
 Context& Source::context(Context& p, const Scope& s) {
   if(!limit().hasContexts())
     util::log::fatal() << "Source did not register for `contexts` emission!";
@@ -480,32 +480,24 @@ Context& Source::context(Context& p, const Scope& s) {
   return x.first;
 }
 
-void Source::add(Context& c, Thread::Temporary& t, Metric& m, double v) {
+Source::AccumulatorsRef Source::accumulateTo(Context& c, Thread::Temporary& t) {
   if(!limit().hasMetrics())
     util::log::fatal() << "Source did not register for `metrics` emission!";
+  return {c, t};
+}
+
+void Source::AccumulatorsRef::add(Metric& m, double v) {
   m.addTo(t, c).add(v);
 }
 
-void Source::add(Context& c, Metric& m, std::pair<double, double> v) {
+Source::StatisticsRef Source::accumulateTo(Context& c) {
   if(!limit().hasMetrics())
     util::log::fatal() << "Source did not register for `metrics` emission!";
-  auto ar = m.addTo(c);
-  ar.add(MetricScope::exclusive, v.first);
-  ar.add(MetricScope::inclusive, v.first);
+  return {c};
 }
 
-void Source::add(Thread::Temporary& t, Metric& m, double v) {
-  if(!limit().hasMetrics())
-    util::log::fatal() << "Source did not register for `metrics` emission!";
-  m.addTo(t, *pipe->cct).add(v);
-}
-
-void Source::add(Metric& m, std::pair<double, double> v) {
-  if(!limit().hasMetrics())
-    util::log::fatal() << "Source did not register for `metrics` emission!";
-  auto ar = m.addTo(*pipe->cct);
-  ar.add(MetricScope::exclusive, v.first);
-  ar.add(MetricScope::inclusive, v.first);
+void Source::StatisticsRef::add(Metric& m, MetricScope ms, double v) {
+  m.addTo(c).add(ms, v);
 }
 
 Thread::Temporary& Source::thread(const ThreadAttributes& o) {

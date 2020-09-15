@@ -92,6 +92,7 @@ public:
   using boost::optional<T>::operator bool;
   using boost::optional<T>::operator!;
   using boost::optional<T>::has_value;
+  using boost::optional<T>::emplace;
 
   template<class U>
   constexpr bool operator==(const optional<U>& o) {

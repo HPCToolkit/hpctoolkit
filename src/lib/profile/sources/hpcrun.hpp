@@ -102,7 +102,7 @@ private:
     std::unordered_map<uint16_t, Module&> module_ids;
     uint32_t partial_node_id;
     uint32_t unknown_node_id;
-    std::unordered_map<uint32_t, Context*> node_ids;
+    std::unordered_map<uint32_t, Context&> node_ids;
     epoch_off() : epoch_off(0) {};
     epoch_off(long h) : header(h), cct(0), read_cct(false), read_met(false),
                         passed(false), partial_node_id(0), unknown_node_id(0) {};

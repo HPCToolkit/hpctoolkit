@@ -258,10 +258,13 @@ public:
     // MT: Externally Synchronized (this), Internally Synchronized
     Metric& metric(const Metric::Settings&);
 
-    /// Emit a new Context into the Pipeline.
+    /// Reference the global Context.
+    // MT: Externally Synchronized (this), Internally Synchronized
+    Context& global();
+
+    /// Emit a new Context into the Pipeline, as a child of another.
     /// DataClass: `contexts`
     // MT: Externally Synchronized (this), Internally Synchronized
-    Context& context(const Scope&);
     Context& context(Context&, const Scope&);
 
     /// Emit a new Thread into the Pipeline.
@@ -277,25 +280,48 @@ public:
     void timepoint(Context&, std::chrono::nanoseconds);
     void timepoint(std::chrono::nanoseconds);
 
-    /// Emit some Thread-local metric data into the Pipeline.
-    /// DataClass: `metrics`
-    // MT: Externally Synchronized (this), Internally Synchronized
-    void add(Context&, Thread::Temporary&, Metric&, double v);
+    /// Reference to the Thread-local metric data for a particular Context.
+    /// Allows for efficient emmission of multiple Metrics' data to one location.
+    class AccumulatorsRef final {
+    public:
+      AccumulatorsRef() = delete;
 
-    /// Emit some unlocalized accumulator data into the Pipeline.
-    /// DataClass: `metrics`
-    // MT: Externally Synchronized (this), Internally Synchronized
-    void add(Context&, Metric&, std::pair<double, double>);
+      /// Emit some Thread-local metric data into the Pipeline.
+      // MT: Externally Synchronized (this, Source), Internally Synchronized
+      void add(Metric&, double);
 
-    /// Emit some uncontextualized metric data into the Pipeline.
-    /// DataClass: `metrics`
-    // MT: Externally Synchronized (this), Internally Synchronized
-    void add(Thread::Temporary&, Metric&, double v);
+    private:
+      friend class ProfilePipeline::Source;
+      Context& c;
+      Thread::Temporary& t;
+      AccumulatorsRef(Context& ctx, Thread::Temporary& tt) : c(ctx), t(tt) {};
+    };
 
-    /// Emit some fully ambiguous metric data into the Pipeline.
+    /// Obtain a AccumulatorsRef for the given Thread and Context.
     /// DataClass: `metrics`
     // MT: Externally Synchronized (this), Internally Synchronized
-    void add(Metric&, std::pair<double, double>);
+    AccumulatorsRef accumulateTo(Context& c, Thread::Temporary& t);
+
+    /// Reference to the Statistic data for a particular Context.
+    /// Allows for efficient emmission of multiple Statistics' data to one location.
+    class StatisticsRef final {
+    public:
+      StatisticsRef() = delete;
+
+      /// Emit some (:Sum) Statistic data into the Pipeline.
+      // MT: Externally Synchronized (this, Source), Internally Synchronized
+      void add(Metric&, MetricScope, double);
+
+    private:
+      friend class ProfilePipeline::Source;
+      Context& c;
+      StatisticsRef(Context& ctx) : c(ctx) {};
+    };
+
+    /// Obtain a StatisticsRef for the given Context.
+    /// DataClass: `metrics`
+    // MT: Externally Synchronized (this), Internally Synchronized
+    StatisticsRef accumulateTo(Context& c);
 
     // Disable copy-assignment, and allow move assignment.
     Source& operator=(const Source&) = delete;

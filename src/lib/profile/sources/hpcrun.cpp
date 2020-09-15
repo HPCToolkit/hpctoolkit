@@ -312,8 +312,8 @@ void HpcrunFSv2::read(const DataClass& needed) {
                 auto it = epoch.node_ids.find(n.id);
                 if(it == epoch.node_ids.end())
                   util::log::fatal() << "Unknown node ID " << n.id << "!";
-                here = it->second;
-                if(here == nullptr) continue;  // Global
+                here = &it->second;
+                if(here->scope().type() == Scope::Type::global) continue;  // Global
               } else {
                 // Figure out the parent of this node, if it has one.
                 Context* par;
@@ -321,7 +321,7 @@ void HpcrunFSv2::read(const DataClass& needed) {
                   if(n.lm_id == 0) {  // Synthetic root, remap to something useful.
                     if(n.lm_ip == HPCRUN_FMT_LMIp_NULL) {
                       // Global Scope, for full or "normal" unwinds. No actual node.
-                      epoch.node_ids.emplace(n.id, nullptr);
+                      epoch.node_ids.emplace(n.id, sink.global());
                       continue;
                     } else if(n.lm_ip == HPCRUN_FMT_LMIp_Flag1) {
                       // Global unknown Scope, for "partial" unwinds.
@@ -336,17 +336,17 @@ void HpcrunFSv2::read(const DataClass& needed) {
                   } else {
                     // If it looks like a sample but doesn't have a parent,
                     // stitch it to the global unknown (a la /lost+found).
-                    par = &sink.context({});
+                    par = &sink.context(sink.global(), {});
                   }
                 } else if(n.id_parent == epoch.partial_node_id ||
                           n.id_parent == epoch.unknown_node_id) {
                   // Global unknown Scope, emitted lazily.
-                  par = &sink.context({});
+                  par = &sink.context(sink.global(), {});
                 } else {  // Just nab its parent.
                   auto ppar = epoch.node_ids.find(n.id_parent);
                   if(ppar == epoch.node_ids.end())
                     util::log::fatal() << "CCT nodes not in a preorder!";
-                  par = ppar->second;
+                  par = &ppar->second;
                 }
 
                 // Figure out the Scope for this node, if it has one.
@@ -356,7 +356,7 @@ void HpcrunFSv2::read(const DataClass& needed) {
                   if(mod == epoch.module_ids.end())
                     util::log::fatal() << "CCT node references unknown module!";
                   scope = {mod->second, n.lm_ip};
-                } else if(par == nullptr) {
+                } else if(par->scope().type() == Scope::Type::global) {
                   // Special case: if its written in the .hpcrun file as
                   // global -> unknown, merge with the global unknown.
                   epoch.unknown_node_id = n.id;
@@ -364,24 +364,21 @@ void HpcrunFSv2::read(const DataClass& needed) {
                 }
 
                 // Emit the Context and record it for later
-                here = &(par ? sink.context(*par, scope) : sink.context(scope));
-                epoch.node_ids.emplace(n.id, here);
+                here = &sink.context(*par, scope);
+                epoch.node_ids.emplace(n.id, *here);
               }
             }
 
             if(epoch.read_met) continue;  // We don't need to repeat ourselves
             if(needed.hasMetrics()) {
               // At this point, here == nullptr iff !sink.limit().hasContexts()
-              if(sink.limit().hasContexts()) {
-                for(std::size_t i = 0; i < ms.size(); i++) {
-                  auto val = metric_int[i] ? (double)ms[i].i : ms[i].r;
-                  sink.add(*here, *thread, *metric_order[i], val);
-                }
-              } else {
-                for(std::size_t i = 0; i < ms.size(); i++) {
-                  auto val = metric_int[i] ? (double)ms[i].i : ms[i].r;
-                  sink.add(*thread, *metric_order[i], val);
-                }
+              stdshim::optional<ProfilePipeline::Source::AccumulatorsRef> accum;
+              for(std::size_t i = 0; i < ms.size(); i++) {
+                auto val = metric_int[i] ? (double)ms[i].i : ms[i].r;
+                if(val == 0) continue;
+                if(!accum) accum.emplace(sink.accumulateTo(
+                  sink.limit().hasContexts() ? *here : sink.global(), *thread));
+                accum->add(*metric_order[i], val);
               }
             }
           }
@@ -413,9 +410,9 @@ void HpcrunFSv2::read(const DataClass& needed) {
       if(it != epoch_offsets[0].node_ids.end()) {
         std::chrono::nanoseconds tp(HPCTRACE_FMT_GET_TIME(tpoint.comp));
         if(thread)
-          sink.timepoint(*thread, *it->second, tp);
+          sink.timepoint(*thread, it->second, tp);
         else
-          sink.timepoint(*it->second, tp);
+          sink.timepoint(it->second, tp);
       }
     }
   }

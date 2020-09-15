@@ -166,18 +166,22 @@ public:
   /// Get the set of Scopes that this Metric supports.
   MetricScopeSet scopes() const noexcept;
 
+private:
   /// Obtain the AccumulatorRef for a particular Context.
   // MT: Internally Synchronized
   AccumulatorRef addTo(Context&) noexcept;
 
+public:
   /// Obtain a read-only AccumulatorRef for a particular Context.
   // MT: Safe (const), Unstable (before `metrics` wavefront)
   AccumulatorCRef getFor(const Context& c) const noexcept;
 
+private:
   /// Obtain the ThreadAccumulatorRef for a particular Context.
   // MT: Internally Synchronized
   ThreadAccumulatorRef addTo(Thread::Temporary&, Context&) noexcept;
 
+public:
   /// Obtain a read-only ThreadAccumulatorRef for a particular Context.
   // MT: Safe (const), Unstable (before `metrics` wavefront)
   ThreadAccumulatorCRef getFor(const Thread::Temporary&, const Context& c) const noexcept;

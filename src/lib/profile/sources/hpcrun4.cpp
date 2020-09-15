@@ -194,7 +194,7 @@ void Hpcrun4::read(const DataClass& needed) {
         if(n.lm_id == 0) {  // Synthetic root, remap to something useful.
           if(n.lm_ip == HPCRUN_FMT_LMIp_NULL) {
             // Global Scope, for full or "normal" unwinds. No actual node.
-            nodes.emplace(id, nullptr);
+            nodes.emplace(id, sink.global());
             continue;
           } else if(n.lm_ip == HPCRUN_FMT_LMIp_Flag1) {
             // Global unknown Scope, for "partial" unwinds.
@@ -207,16 +207,16 @@ void Hpcrun4::read(const DataClass& needed) {
         } else {
           // If it looks like a sample but doesn't have a parent,
           // stitch it to the global unknown.
-          par = &sink.context({});
+          par = &sink.context(sink.global(), {});
         }
       } else if(n.id_parent == partial_node_id || n.id_parent == unknown_node_id) {
         // Global unknown Scope, emitted lazily.
-        par = &sink.context({});
+        par = &sink.context(sink.global(), {});
       } else {  // Just nab its parent
         auto ppar = nodes.find(n.id_parent);
         if(ppar == nodes.end())
           util::log::fatal() << "CCT nodes not in a preorder!";
-        par = ppar->second;
+        par = &ppar->second;
       }
 
       // Figure out the Scope for this node, if it has one.
@@ -233,32 +233,26 @@ void Hpcrun4::read(const DataClass& needed) {
       }
 
       // Emit the Context and record for later.
-      nodes.emplace(id, &(par ? sink.context(*par, scope) : sink.context(scope)));
+      nodes.emplace(id, sink.context(*par, scope));
     }
     if(id < 0) util::log::fatal() << "Hpcrun4: Error reading context entry!";
   }
   if(needed.hasMetrics()) {
     int cid;
     while((cid = hpcrun_sparse_next_block(file)) > 0) {
-      int mid;
       hpcrun_metricVal_t val;
-      if(sink.limit().hasContexts()) {
-        int mid = hpcrun_sparse_next_entry(file, &val);
-        if(mid == 0) continue;
+      int mid = hpcrun_sparse_next_entry(file, &val);
+      if(mid == 0) continue;
+      auto& here = !sink.limit().hasContexts() ? sink.global() : *({
         auto it = nodes.find(cid);
         if(it == nodes.end())
           util::log::fatal() << "Erroneous CCT id " << cid << " in " << path.string() << "!";
-        auto& here = *it->second;
-        while(mid > 0) {
-          auto v = metricInt.at(mid) ? (double)val.i : val.r;
-          sink.add(here, *thread, metrics.at(mid), v);
-          mid = hpcrun_sparse_next_entry(file, &val);
-        }
-      } else {
-        while((mid = hpcrun_sparse_next_entry(file, &val)) > 0) {
-          auto v = metricInt.at(mid) ? (double)val.i : val.r;
-          sink.add(*thread, metrics.at(mid), v);
-        }
+        &it->second;
+      });
+      auto accum = sink.accumulateTo(here, *thread);
+      while(mid > 0) {
+        accum.add(metrics.at(mid), metricInt.at(mid) ? (double)val.i : val.r);
+        mid = hpcrun_sparse_next_entry(file, &val);
       }
     }
   }
@@ -279,9 +273,9 @@ void Hpcrun4::read(const DataClass& needed) {
       if(it != nodes.end()) {
         std::chrono::nanoseconds tp(HPCTRACE_FMT_GET_TIME(tpoint.comp));
         if(thread)
-          sink.timepoint(*thread, *it->second, tp);
+          sink.timepoint(*thread, it->second, tp);
         else
-          sink.timepoint(*it->second, tp);
+          sink.timepoint(it->second, tp);
       }
     }
     std::fclose(f);

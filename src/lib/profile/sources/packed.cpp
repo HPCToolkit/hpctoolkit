@@ -143,7 +143,7 @@ std::vector<uint8_t>::const_iterator Packed::unpackContexts(iter_t it) noexcept 
       auto off = unpack<std::uint64_t>(it);
       s = Scope{modules.at(next), off};  // Module scope
     }
-    auto& c = tip.empty() ? sink.context(s) : sink.context(tip.top(), s);
+    auto& c = sink.context(tip.empty() ? sink.global() : tip.top().get(), s);
     tip.push(c);
   }
   return it;
@@ -157,11 +157,10 @@ std::vector<uint8_t>::const_iterator Packed::unpackMetrics(iter_t it, const ctx_
   // Format: [cnt] ([context ID] ([metrics]...)...)
   auto cnt = unpack<std::uint64_t>(it);
   for(std::size_t i = 0; i < cnt; i++) {
-    Context& c = cs.at(unpack<std::uint64_t>(it));
+    auto accum = sink.accumulateTo(cs.at(unpack<std::uint64_t>(it)));
     for(Metric& m: metrics) {
-      auto a = unpack<double>(it);
-      auto b = unpack<double>(it);
-      sink.add(c, m, {a, b});
+      accum.add(m, MetricScope::exclusive, unpack<double>(it));
+      accum.add(m, MetricScope::inclusive, unpack<double>(it));
     }
   }
   return it;
