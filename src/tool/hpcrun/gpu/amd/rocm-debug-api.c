@@ -317,8 +317,8 @@ rocm_debug_api_init
 )
 {
   // Fill in call back functions for rocm debug api
-  callbacks.allocate_memory = hpcrun_malloc;
-  callbacks.deallocate_memory = hpcrun_free;
+  callbacks.allocate_memory = malloc;
+  callbacks.deallocate_memory = free;
   callbacks.get_os_pid = hpcrun_self_process;
   callbacks.enable_notify_shared_library = hpcrun_enable_notify_shared_library;
   callbacks.disable_notify_shared_library = hpcrun_disable_notify_shared_library;
