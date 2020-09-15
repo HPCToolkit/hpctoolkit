@@ -129,19 +129,20 @@ void SparseDB::notifyThreadFinal(const Thread::Temporary& tt) {
       if(!m.scopes().has(MetricScope::exclusive) || !m.scopes().has(MetricScope::inclusive))
         util::log::fatal{} << "Metric isn't exclusive/inclusive!";
       const auto& ids = m.userdata[src.mscopeIdentifiers()];
-      auto vv = m.getFor(tt, c);
-      hpcrun_metricVal_t v;
-      if(auto vex = vv.get(MetricScope::exclusive)) {
-        v.r = *vex;
-        any = true;
-        mids.push_back(ids.exclusive);
-        values.push_back(v);
-      }
-      if(auto vinc = vv.get(MetricScope::inclusive)) {
-        v.r = *vinc;
-        any = true;
-        mids.push_back(ids.inclusive);
-        values.push_back(v);
+      if(auto vv = m.getFor(tt, c)) {
+        hpcrun_metricVal_t v;
+        if(auto vex = vv->get(MetricScope::exclusive)) {
+          v.r = *vex;
+          any = true;
+          mids.push_back(ids.exclusive);
+          values.push_back(v);
+        }
+        if(auto vinc = vv->get(MetricScope::inclusive)) {
+          v.r = *vinc;
+          any = true;
+          mids.push_back(ids.inclusive);
+          values.push_back(v);
+        }
       }
     }
     if(any) {
@@ -217,19 +218,20 @@ void SparseDB::write()
       if(!m.scopes().has(MetricScope::exclusive) || !m.scopes().has(MetricScope::inclusive))
         util::log::fatal{} << "Metric isn't exclusive/inclusive!";
       const auto& ids = m.userdata[src.mscopeIdentifiers()];
-      auto vv = m.getFor(c);
-      hpcrun_metricVal_t v;
-      if(auto vex = vv.get(MetricScope::exclusive)) {
-        v.r = *vex;
-        any = true;
-        mids.push_back(ids.exclusive);
-        values.push_back(v);
-      }
-      if(auto vinc = vv.get(MetricScope::inclusive)) {
-        v.r = *vinc;
-        any = true;
-        mids.push_back(ids.inclusive);
-        values.push_back(v);
+      if(auto vv = m.getFor(c)) {
+        hpcrun_metricVal_t v;
+        if(auto vex = vv->get(MetricScope::exclusive)) {
+          v.r = *vex;
+          any = true;
+          mids.push_back(ids.exclusive);
+          values.push_back(v);
+        }
+        if(auto vinc = vv->get(MetricScope::inclusive)) {
+          v.r = *vinc;
+          any = true;
+          mids.push_back(ids.inclusive);
+          values.push_back(v);
+        }
       }
     }
     if(any) {

@@ -220,9 +220,9 @@ void HPCMetricDB::notifyThreadFinal(const Thread::Temporary& tt) {
     for(const auto& fm: metrics) {
       byte8 v(0);
       if(fm.second) {
-        auto vv = fm.second->getFor(tt, c);
-        v.d = fm.first ? vv.get(MetricScope::exclusive).value_or(0)
-                       : vv.get(MetricScope::inclusive).value_or(0);
+        if(auto vv = fm.second->getFor(tt, c))
+          v.d = fm.first ? vv->get(MetricScope::exclusive).value_or(0)
+                         : vv->get(MetricScope::inclusive).value_or(0);
       }
       if(v.d != 0) any = true;
 

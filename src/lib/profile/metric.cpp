@@ -89,8 +89,8 @@ unsigned int Metric::ScopedIdentifiers::get(MetricScope s) const noexcept {
   case MetricScope::point: return point;
   case MetricScope::exclusive: return exclusive;
   case MetricScope::inclusive: return inclusive;
-  default: util::log::fatal{} << "Invalid Metric::scope value!";
   }
+  util::log::fatal{} << "Invalid Metric::scope value!";
   std::abort();  // unreachable
 }
 
@@ -109,8 +109,8 @@ void StatisticAccumulator::add(MetricScope s, double v) noexcept {
   case MetricScope::inclusive:
     atomic_add(inclusive, v);
     break;
-  default: util::log::fatal{} << "Invalid MetricScope!";
   }
+  util::log::fatal{} << "Invalid MetricScope!";
 }
 
 void MetricAccumulator::add(double v) noexcept {
@@ -122,41 +122,51 @@ static stdshim::optional<double> opt0(double d) {
   return d == 0 ? stdshim::optional<double>{} : d;
 }
 
-stdshim::optional<double> AccumulatorCRef::get(MetricScope s) const noexcept {
-  if(accum == nullptr) return {};
+stdshim::optional<double> StatisticAccumulator::get(MetricScope s) const noexcept {
   switch(s) {
   case MetricScope::point: util::log::fatal{} << "TODO: Support point MetricScope!";
-  case MetricScope::exclusive: return opt0(accum->exclusive.load(std::memory_order_relaxed));
-  case MetricScope::inclusive: return opt0(accum->inclusive.load(std::memory_order_relaxed));
-  default: util::log::fatal{} << "Invalid Scope value!";
+  case MetricScope::exclusive: return opt0(exclusive.load(std::memory_order_relaxed));
+  case MetricScope::inclusive: return opt0(inclusive.load(std::memory_order_relaxed));
   };
+  util::log::fatal{} << "Invalid MetricScope value!";
   std::abort();  // unreachable
 }
 
-AccumulatorCRef Metric::getFor(const Context& c) const noexcept {
+void StatisticAccumulator::validate() const noexcept {
+  if(exclusive.load(std::memory_order_relaxed) != 0) return;
+  if(inclusive.load(std::memory_order_relaxed) != 0) return;
+  util::log::warning{} << "Returning a Statistic accumulator with no value!";
+}
+
+stdshim::optional<const StatisticAccumulator&> Metric::getFor(const Context& c) const noexcept {
   auto* a = c.data.find(this);
   if(a == nullptr) return {};
+  a->validate();
   return *a;
 }
 
-stdshim::optional<double> ThreadAccumulatorCRef::get(MetricScope s) const noexcept {
-  if(accum == nullptr) return {};
+stdshim::optional<double> MetricAccumulator::get(MetricScope s) const noexcept {
   switch(s) {
   case MetricScope::point: util::log::fatal{} << "TODO: Support point Metric::Scope!";
-  case MetricScope::exclusive:
-    return opt0(accum->exclusive.load(std::memory_order_relaxed));
-  case MetricScope::inclusive:
-    return opt0(accum->inclusive);
-  default: util::log::fatal{} << "Invalid Scope value!";
+  case MetricScope::exclusive: return opt0(exclusive.load(std::memory_order_relaxed));
+  case MetricScope::inclusive: return opt0(inclusive);
   }
+  util::log::fatal{} << "Invalid MetricScope value!";
   std::abort();  // unreachable
 }
 
-ThreadAccumulatorCRef Metric::getFor(const Thread::Temporary& t, const Context& c) const noexcept {
+void MetricAccumulator::validate() const noexcept {
+  if(exclusive.load(std::memory_order_relaxed) != 0) return;
+  if(inclusive != 0) return;
+  util::log::warning{} << "Returning a Metric accumulator with no value!";
+}
+
+stdshim::optional<const MetricAccumulator&> Metric::getFor(const Thread::Temporary& t, const Context& c) const noexcept {
   auto* cd = t.data.find(&c);
   if(cd == nullptr) return {};
   auto* md = cd->find(this);
   if(md == nullptr) return {};
+  md->validate();
   return *md;
 }
 

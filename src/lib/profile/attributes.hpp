@@ -47,6 +47,8 @@
 #ifndef HPCTOOLKIT_PROFILE_ATTRIBUTES_H
 #define HPCTOOLKIT_PROFILE_ATTRIBUTES_H
 
+#include "accumulators.hpp"
+
 #include "util/ragged_vector.hpp"
 #include "lib/prof/tms-format.h"
 #include "lib/prof-lean/id-tuple.h"
@@ -59,31 +61,7 @@
 namespace hpctoolkit {
 
 class Context;
-
-// TODO: Move the following to metric.hpp where it belongs
 class Metric;
-/// Accumulator structure for the data implicitly bound to a Thread and Context.
-class MetricAccumulator final {
-public:
-  MetricAccumulator() : exclusive(0), inclusive(0) {};
-
-  MetricAccumulator(const MetricAccumulator&) = delete;
-  MetricAccumulator& operator=(const MetricAccumulator&) = delete;
-  MetricAccumulator(MetricAccumulator&&) = default;
-  MetricAccumulator& operator=(MetricAccumulator&&) = delete;
-
-  /// Add some value to this Accumulator. Only point-Scope is allowed.
-  // MT: Internally Synchronized
-  void add(double) noexcept;
-
-private:
-  friend class Metric;
-  friend class ThreadAccumulatorCRef;
-  friend class ThreadAccumulatorRef;
-  // Currently only for :Sum Statistics
-  std::atomic<double> exclusive;
-  double inclusive;
-};
 
 /// Attributes unique to a particular thread within a profile. Whether this is
 /// a thread (as in thd_create) or a process (as in an MPI process), this

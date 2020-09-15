@@ -47,6 +47,7 @@
 #ifndef HPCTOOLKIT_PROFILE_METRIC_H
 #define HPCTOOLKIT_PROFILE_METRIC_H
 
+#include "accumulators.hpp"
 #include "attributes.hpp"
 
 #include "util/atomic_unordered.hpp"
@@ -63,77 +64,8 @@ namespace hpctoolkit {
 
 class Context;
 
-/// Every Metric can have values at multiple Scopes pertaining to the subtree
-/// rooted at a particular Context with Metric data.
-enum MetricScope {
-  /// Encapsulates the current Context, and no other nodes. This references
-  /// exactly where the data arose, and is the smallest Scope.
-  point,
-
-  /// Encapsulates the current Context and any direct children generated from
-  /// the same source code location. This represents the rough "cause" of the
-  /// data, and provides useful information on non-`point` Contexts.
-  exclusive,
-
-  /// Encapsulates the current Context and its entire subtree. This represents
-  /// the entire execution contained within a single function call (or other
-  /// source code construct).
-  inclusive,
-};
-
-/// Bitset-like object used as a set of Scope values.
-class MetricScopeSet final : private std::bitset<3> {
-private:
-  using base = std::bitset<3>;
-  MetricScopeSet(const base& b) : base(b) {};
-public:
-  MetricScopeSet() = default;
-  MetricScopeSet(MetricScope s) : base(1<<s) {};
-
-  bool has(MetricScope s) { return base::operator[](s); }
-
-  MetricScopeSet operator|(const MetricScopeSet& o) { return (base)*this | (base)o; }
-  MetricScopeSet operator+(const MetricScopeSet& o) { return (base)*this | (base)o; }
-  MetricScopeSet operator&(const MetricScopeSet& o) { return (base)*this & (base)o; }
-  MetricScopeSet& operator|=(const MetricScopeSet& o) { base::operator|=(o); return *this; }
-  MetricScopeSet& operator+=(const MetricScopeSet& o) { base::operator|=(o); return *this; }
-  MetricScopeSet& operator&=(const MetricScopeSet& o) { base::operator&=(o); return *this; }
-
-  using base::count;
-};
-
-/// Accumulator structure for the Statistics implicitly bound to a Context.
-class StatisticAccumulator final {
-public:
-  StatisticAccumulator() : exclusive(0), inclusive(0) {};
-
-  StatisticAccumulator(const StatisticAccumulator&) = delete;
-  StatisticAccumulator& operator=(const StatisticAccumulator&) = delete;
-  StatisticAccumulator(StatisticAccumulator&&) = default;
-  StatisticAccumulator& operator=(StatisticAccumulator&&) = delete;
-
-  /// Add some Statistic value to this Accumulator, for the given Scope.
-  // MT: Internally Synchronized
-  void add(MetricScope, double) noexcept;
-
-private:
-  friend class Metric;
-  friend class AccumulatorCRef;
-  friend class AccumulatorRef;
-  // Currently only for :Sum Statistics
-  std::atomic<double> exclusive;
-  std::atomic<double> inclusive;
-};
-
-class AccumulatorCRef;
-class ThreadAccumulatorCRef;
-
 // Just a simple metric class, nothing to see here
 class Metric final {
-private:
-  friend class AccumulatorCRef;
-  friend class AccumulatorRef;
-
 public:
   using ud_t = util::ragged_vector<const Metric&>;
 
@@ -172,13 +104,15 @@ public:
   /// Get the set of Scopes that this Metric supports.
   MetricScopeSet scopes() const noexcept;
 
-  /// Obtain a read-only AccumulatorRef for a particular Context.
+  /// Obtain a reference to the Statistic Accumulators for a particular Context.
+  /// Returns an empty optional if no Statistic data exists for the given Context.
   // MT: Safe (const), Unstable (before `metrics` wavefront)
-  AccumulatorCRef getFor(const Context& c) const noexcept;
+  stdshim::optional<const StatisticAccumulator&> getFor(const Context& c) const noexcept;
 
-  /// Obtain a read-only ThreadAccumulatorRef for a particular Context.
-  // MT: Safe (const), Unstable (before `metrics` wavefront)
-  ThreadAccumulatorCRef getFor(const Thread::Temporary&, const Context& c) const noexcept;
+  /// Obtain a reference to the Thread-local Accumulator for a particular Context.
+  /// Returns an empty optional if no metric data exists for the given Context.
+  // MT: Safe (const), Unstable (before notifyThreadFinal)
+  stdshim::optional<const MetricAccumulator&> getFor(const Thread::Temporary&, const Context& c) const noexcept;
 
 private:
   util::uniqable_key<Settings> u_settings;
@@ -190,42 +124,6 @@ private:
 
   friend class util::uniqued<Metric>;
   util::uniqable_key<Settings>& uniqable_key() { return u_settings; }
-};
-
-/// Constant reference to the Metric accumulators on a particular Context.
-class AccumulatorCRef final {
-public:
-  AccumulatorCRef(AccumulatorCRef&&) = default;
-  AccumulatorCRef& operator=(AccumulatorCRef&&) = default;
-
-  /// Get the (:Sum) Statistic accumulation, for a particular Scope.
-  // MT: Safe (const), Unstable (before `metrics` wavefront)
-  stdshim::optional<double> get(MetricScope) const noexcept;
-
-private:
-  const StatisticAccumulator* accum;
-
-  friend class Metric;
-  AccumulatorCRef() : accum(nullptr) {};
-  AccumulatorCRef(const StatisticAccumulator& a) : accum(&a) {};
-};
-
-/// Constant reference to the thread-local Metric accumulators on a particular Context.
-class ThreadAccumulatorCRef final {
-public:
-  ThreadAccumulatorCRef(ThreadAccumulatorCRef&&) = default;
-  ThreadAccumulatorCRef& operator=(ThreadAccumulatorCRef&&) = default;
-
-  /// Get the Thread-local (:Sum) Statistic accumulation, for a particular Metric Scope.
-  // MT: Safe (const), Unstable (before ThreadFinal wavefront)
-  stdshim::optional<double> get(MetricScope) const noexcept;
-
-private:
-  const MetricAccumulator* accum;
-
-  friend class Metric;
-  ThreadAccumulatorCRef() : accum(nullptr) {};
-  ThreadAccumulatorCRef(const MetricAccumulator& a) : accum(&a) {};
 };
 
 }
