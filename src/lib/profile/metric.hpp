@@ -107,6 +107,15 @@ class StatisticAccumulator final {
 public:
   StatisticAccumulator() : exclusive(0), inclusive(0) {};
 
+  StatisticAccumulator(const StatisticAccumulator&) = delete;
+  StatisticAccumulator& operator=(const StatisticAccumulator&) = delete;
+  StatisticAccumulator(StatisticAccumulator&&) = default;
+  StatisticAccumulator& operator=(StatisticAccumulator&&) = delete;
+
+  /// Add some Statistic value to this Accumulator, for the given Scope.
+  // MT: Internally Synchronized
+  void add(MetricScope, double) noexcept;
+
 private:
   friend class Metric;
   friend class AccumulatorCRef;
@@ -117,9 +126,7 @@ private:
 };
 
 class AccumulatorCRef;
-class AccumulatorRef;
 class ThreadAccumulatorCRef;
-class ThreadAccumulatorRef;
 
 // Just a simple metric class, nothing to see here
 class Metric final {
@@ -165,22 +172,10 @@ public:
   /// Get the set of Scopes that this Metric supports.
   MetricScopeSet scopes() const noexcept;
 
-private:
-  /// Obtain the AccumulatorRef for a particular Context.
-  // MT: Internally Synchronized
-  AccumulatorRef addTo(Context&) noexcept;
-
-public:
   /// Obtain a read-only AccumulatorRef for a particular Context.
   // MT: Safe (const), Unstable (before `metrics` wavefront)
   AccumulatorCRef getFor(const Context& c) const noexcept;
 
-private:
-  /// Obtain the ThreadAccumulatorRef for a particular Context.
-  // MT: Internally Synchronized
-  ThreadAccumulatorRef addTo(Thread::Temporary&, Context&) noexcept;
-
-public:
   /// Obtain a read-only ThreadAccumulatorRef for a particular Context.
   // MT: Safe (const), Unstable (before `metrics` wavefront)
   ThreadAccumulatorCRef getFor(const Thread::Temporary&, const Context& c) const noexcept;
@@ -215,24 +210,6 @@ private:
   AccumulatorCRef(const StatisticAccumulator& a) : accum(&a) {};
 };
 
-/// Reference to the Metric accumulators on a particular Context.
-class AccumulatorRef final {
-public:
-  AccumulatorRef(AccumulatorRef&&) = default;
-  AccumulatorRef& operator=(AccumulatorRef&&) = default;
-
-  /// Accumulate some extra (:Sum) Statistic value, for a particular Metric Scope.
-  /// May invalidate other (C)AccumulatorRefs for the same Metric and Context.
-  // MT: Internally Synchronized.
-  void add(MetricScope, double) noexcept;
-
-private:
-  StatisticAccumulator* accum;
-
-  friend class Metric;
-  AccumulatorRef(StatisticAccumulator& a) : accum(&a) {};
-};
-
 /// Constant reference to the thread-local Metric accumulators on a particular Context.
 class ThreadAccumulatorCRef final {
 public:
@@ -249,25 +226,6 @@ private:
   friend class Metric;
   ThreadAccumulatorCRef() : accum(nullptr) {};
   ThreadAccumulatorCRef(const MetricAccumulator& a) : accum(&a) {};
-};
-
-/// Reference to the thread-local Metric accumulators on a particular Context.
-class ThreadAccumulatorRef final {
-public:
-  ThreadAccumulatorRef(ThreadAccumulatorRef&&) = default;
-  ThreadAccumulatorRef& operator=(ThreadAccumulatorRef&&) = default;
-
-  /// Accumulate some thread-local Metric data on the referenced Context.
-  /// This is always point-Scope accumulation, there is no alternative.
-  /// May invalidate other (C)ThreadAccumulatorRefs for the same Thread, Metric and Context.
-  // MT: Internally Synchronized
-  void add(double) noexcept;
-
-private:
-  MetricAccumulator* accum;
-
-  friend class Metric;
-  ThreadAccumulatorRef(MetricAccumulator& a) : accum(&a) {};
 };
 
 }

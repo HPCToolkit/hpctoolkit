@@ -99,29 +99,23 @@ MetricScopeSet Metric::scopes() const noexcept {
   return MetricScopeSet(MetricScope::exclusive) + MetricScopeSet(MetricScope::inclusive);
 }
 
-void AccumulatorRef::add(MetricScope s, double v) noexcept {
-  if(v == 0) return;
+void StatisticAccumulator::add(MetricScope s, double v) noexcept {
+  if(v == 0) util::log::warning{} << "Adding a 0-metric value!";
   switch(s) {
-  case MetricScope::point: util::log::fatal{} << "TODO: Support point Metric::Scope!";
+  case MetricScope::point: util::log::fatal{} << "TODO: Support point MetricScope!";
   case MetricScope::exclusive:
-    atomic_add(accum->exclusive, v);
+    atomic_add(exclusive, v);
     break;
   case MetricScope::inclusive:
-    atomic_add(accum->inclusive, v);
+    atomic_add(inclusive, v);
     break;
+  default: util::log::fatal{} << "Invalid MetricScope!";
   }
 }
 
-AccumulatorRef Metric::addTo(Context& c) noexcept {
-  return c.data[this];
-}
-
-void ThreadAccumulatorRef::add(double v) noexcept {
-  if(v != 0) atomic_add(accum->exclusive, v);
-}
-
-ThreadAccumulatorRef Metric::addTo(Thread::Temporary& t, Context& c) noexcept {
-  return t.data[&c][this];
+void MetricAccumulator::add(double v) noexcept {
+  if(v == 0) util::log::warning{} << "Adding a 0-metric value!";
+  atomic_add(exclusive, v);
 }
 
 static stdshim::optional<double> opt0(double d) {
@@ -131,7 +125,7 @@ static stdshim::optional<double> opt0(double d) {
 stdshim::optional<double> AccumulatorCRef::get(MetricScope s) const noexcept {
   if(accum == nullptr) return {};
   switch(s) {
-  case MetricScope::point: util::log::fatal{} << "TODO: Support point Metric::Scope!";
+  case MetricScope::point: util::log::fatal{} << "TODO: Support point MetricScope!";
   case MetricScope::exclusive: return opt0(accum->exclusive.load(std::memory_order_relaxed));
   case MetricScope::inclusive: return opt0(accum->inclusive.load(std::memory_order_relaxed));
   default: util::log::fatal{} << "Invalid Scope value!";

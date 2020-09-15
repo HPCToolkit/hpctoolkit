@@ -67,6 +67,15 @@ class MetricAccumulator final {
 public:
   MetricAccumulator() : exclusive(0), inclusive(0) {};
 
+  MetricAccumulator(const MetricAccumulator&) = delete;
+  MetricAccumulator& operator=(const MetricAccumulator&) = delete;
+  MetricAccumulator(MetricAccumulator&&) = default;
+  MetricAccumulator& operator=(MetricAccumulator&&) = delete;
+
+  /// Add some value to this Accumulator. Only point-Scope is allowed.
+  // MT: Internally Synchronized
+  void add(double) noexcept;
+
 private:
   friend class Metric;
   friend class ThreadAccumulatorCRef;

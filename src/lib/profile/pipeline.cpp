@@ -483,11 +483,11 @@ Context& Source::context(Context& p, const Scope& s) {
 Source::AccumulatorsRef Source::accumulateTo(Context& c, Thread::Temporary& t) {
   if(!limit().hasMetrics())
     util::log::fatal() << "Source did not register for `metrics` emission!";
-  return {c, t};
+  return t.data[&c];
 }
 
 void Source::AccumulatorsRef::add(Metric& m, double v) {
-  m.addTo(t, c).add(v);
+  map[&m].add(v);
 }
 
 Source::StatisticsRef Source::accumulateTo(Context& c) {
@@ -497,7 +497,7 @@ Source::StatisticsRef Source::accumulateTo(Context& c) {
 }
 
 void Source::StatisticsRef::add(Metric& m, MetricScope ms, double v) {
-  m.addTo(c).add(ms, v);
+  c.data[&m].add(ms, v);
 }
 
 Thread::Temporary& Source::thread(const ThreadAttributes& o) {

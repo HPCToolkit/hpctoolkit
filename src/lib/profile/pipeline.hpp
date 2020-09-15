@@ -292,9 +292,9 @@ public:
 
     private:
       friend class ProfilePipeline::Source;
-      Context& c;
-      Thread::Temporary& t;
-      AccumulatorsRef(Context& ctx, Thread::Temporary& tt) : c(ctx), t(tt) {};
+      util::locked_unordered_map<const Metric*, MetricAccumulator>& map;
+      AccumulatorsRef(util::locked_unordered_map<const Metric*, MetricAccumulator>& m)
+        : map(m) {};
     };
 
     /// Obtain a AccumulatorsRef for the given Thread and Context.
