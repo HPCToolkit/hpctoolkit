@@ -119,7 +119,7 @@ void SparseDB::notifyThreadFinal(const Thread::Temporary& tt) {
   std::vector<uint16_t> mids;
   std::vector<uint32_t> cids;
   std::vector<uint64_t> coffsets;
-  coffsets.reserve(1 + (ctxMaxId+1)*2 + 1);  // To match up with EXML ids.
+  coffsets.reserve(contexts.size() + 1);
 
   // Now stitch together each Context's results
   for(const Context& c: contexts) {
@@ -207,7 +207,7 @@ void SparseDB::write()
   std::vector<uint16_t> mids;
   std::vector<uint32_t> cids;
   std::vector<uint64_t> coffsets;
-  coffsets.reserve(1 + (ctxMaxId+1)*2 + 1);  // To match up with EXML ids.
+  coffsets.reserve(contexts.size() + 1);
 
   // Now stitch together each Context's results
   for(const Context& c: contexts) {
@@ -1548,7 +1548,7 @@ int SparseDB::findOneCtxIdIdxPair(const uint32_t target_ctx_id,
       my_ctx_pairs.emplace_back(profile_ctx_pairs[idx].ctx_id, profile_ctx_pairs[idx].ctx_idx);
     }
     else if(idx == -1){
-      idx = 0;
+      idx = -1;  // JMA: Start future searches at idx 0
     }else if(idx < -1){
       idx = -2 - idx;
     }
