@@ -322,8 +322,8 @@ ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
 
 // ExperimentXML4 bits
 
-ExperimentXML4::ExperimentXML4(const fs::path& out, bool srcs)
-  : ProfileSink(), dir(out), of(), next_id(0x7FFFFFFF),
+ExperimentXML4::ExperimentXML4(const fs::path& out, bool srcs, HPCTraceDB* db)
+  : ProfileSink(), dir(out), of(), next_id(0x7FFFFFFF), tracedb(db),
     include_sources(srcs), file_unknown(*this), next_procid(2),
     proc_unknown_proc(0), proc_partial_proc(1), next_cid(0x7FFFFFFF) {
   if(dir.empty()) {  // Dry run
@@ -389,6 +389,8 @@ void ExperimentXML4::write() {
   for(const auto& m: src.metrics().iterate()) of << m().userdata[ud].tag;
   of << "</MetricTable>\n";
 
+  if(tracedb != nullptr)
+    of << "<TraceDBTable>\n" << tracedb->exmlTag() << "</TraceDBTable>\n";
   of << "<MetricDBTable/>\n";
   of << "<LoadModuleTable>\n";
   // LoadModuleTable: from the Modules
