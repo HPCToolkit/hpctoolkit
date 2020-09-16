@@ -105,10 +105,10 @@ void StatisticAccumulator::add(MetricScope s, double v) noexcept {
   case MetricScope::point: util::log::fatal{} << "TODO: Support point MetricScope!";
   case MetricScope::exclusive:
     atomic_add(exclusive, v);
-    break;
+    return;
   case MetricScope::inclusive:
     atomic_add(inclusive, v);
-    break;
+    return;
   }
   util::log::fatal{} << "Invalid MetricScope!";
 }
