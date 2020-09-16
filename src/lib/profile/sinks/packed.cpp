@@ -138,6 +138,9 @@ void Packed::packMetrics(std::vector<std::uint8_t>& out) noexcept {
       if(auto v = m.getFor(c)) {
         pack(out, v->get(MetricScope::exclusive).value_or(0));
         pack(out, v->get(MetricScope::inclusive).value_or(0));
+      } else {
+        pack(out, (double)0);
+        pack(out, (double)0);
       }
     }
     cnt++;
