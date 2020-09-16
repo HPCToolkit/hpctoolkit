@@ -66,7 +66,7 @@
 
 #define GPU_STRING "gpu=opencl"
 static device_finalizer_fn_entry_t device_finalizer_shutdown;
-
+static device_finalizer_fn_entry_t device_trace_finalizer_shutdown;
 
 
 //******************************************************************************
@@ -156,6 +156,10 @@ METHOD_FN(finalize_event_list)
   opencl_api_initialize();
   device_finalizer_shutdown.fn = opencl_api_finalize;
   device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_shutdown);
+
+  // Register shutdown functions to write trace files
+  device_trace_finalizer_shutdown.fn = gpu_trace_fini;
+  device_finalizer_register(device_finalizer_type_shutdown, &device_trace_finalizer_shutdown);
 }
 
 
