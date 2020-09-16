@@ -159,8 +159,11 @@ std::vector<uint8_t>::const_iterator Packed::unpackMetrics(iter_t it, const ctx_
   for(std::size_t i = 0; i < cnt; i++) {
     auto accum = sink.accumulateTo(cs.at(unpack<std::uint64_t>(it)));
     for(Metric& m: metrics) {
-      accum.add(m, MetricScope::exclusive, unpack<double>(it));
-      accum.add(m, MetricScope::inclusive, unpack<double>(it));
+      double v;
+      if((v = unpack<double>(it)) != 0)
+        accum.add(m, MetricScope::exclusive, v);
+      if((v = unpack<double>(it)) != 0)
+        accum.add(m, MetricScope::inclusive, v);
     }
   }
   return it;
