@@ -435,21 +435,20 @@ void ExperimentXML::write() {
 }
 
 void ExperimentXML::emitMetrics(const Context& c, bool ex) {
-  for(const auto& met: src.metrics().iterate()) {
-    auto& udm = met().userdata[ud];
-    if(auto v = met().getFor(c)) {
-      if(ex) {
-        auto vex = v->get(MetricScope::exclusive);
-        if(vex)
-          of << "<M n=\"" << udm.ex_id << "\" v=\""
-            << std::scientific << *vex << std::defaultfloat
-            << "\"/>\n";
-      }
-      if(auto vinc = v->get(MetricScope::inclusive))
-        of << "<M n=\"" << udm.inc_id << "\" v=\""
-          << std::scientific << *vinc << std::defaultfloat
+  for(const auto& mx: c.statistics().citerate()) {
+    auto& udm = mx.first->userdata[ud];
+    const auto& v = mx.second;
+    if(ex) {
+      auto vex = v.get(MetricScope::exclusive);
+      if(vex)
+        of << "<M n=\"" << udm.ex_id << "\" v=\""
+          << std::scientific << *vex << std::defaultfloat
           << "\"/>\n";
     }
+    if(auto vinc = v.get(MetricScope::inclusive))
+      of << "<M n=\"" << udm.inc_id << "\" v=\""
+        << std::scientific << *vinc << std::defaultfloat
+        << "\"/>\n";
   }
 }
 

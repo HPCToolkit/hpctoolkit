@@ -88,6 +88,11 @@ public:
   // MT: See ragged_vector.
   mutable ud_t userdata;
 
+  /// Reference to the Statistic data for this Context.
+  // MT: Safe (const), Unstable (before `metrics` wavefront)
+  const util::locked_unordered_map<const Metric*, StatisticAccumulator>&
+  statistics() const noexcept { return data; }
+
 private:
   std::unique_ptr<children_t> children_p;
 

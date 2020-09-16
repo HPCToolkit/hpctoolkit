@@ -149,17 +149,6 @@ public:
     Temporary(const Temporary&) = delete;
     Temporary(Temporary&&) = default;
 
-  private:
-    Thread& m_thread;
-
-    friend class ProfilePipeline;
-    Temporary(Thread& t) : m_thread(t) {};
-
-    friend class Metric;
-    util::locked_unordered_map<const Context*,
-      util::locked_unordered_map<const Metric*, MetricAccumulator>> data;
-
-  public:
     /// Reference to the Metric data for a particular Context in this Thread.
     /// Returns an empty optional if none is present.
     // MT: Safe (const), Unstable (before notifyThreadFinal)
@@ -175,6 +164,16 @@ public:
     const util::locked_unordered_map<const Context*,
       util::locked_unordered_map<const Metric*, MetricAccumulator>>&
     accumulators() const noexcept { return data; }
+
+  private:
+    Thread& m_thread;
+
+    friend class ProfilePipeline;
+    Temporary(Thread& t) : m_thread(t) {};
+
+    friend class Metric;
+    util::locked_unordered_map<const Context*,
+      util::locked_unordered_map<const Metric*, MetricAccumulator>> data;
   };
 };
 

@@ -208,31 +208,28 @@ void SparseDB::write()
 
   // Now stitch together each Context's results
   for(const Context& c: contexts) {
-    bool any = false;
-    std::size_t offset = values.size();
-    for(const Metric& m: metrics) {
+    const auto& stats = c.statistics();
+    if(stats.size() > 0) {
+      cids.push_back(c.userdata[src.identifier()]);
+      coffsets.push_back(values.size());
+    }
+    for(const auto& mx: stats.citerate()) {
+      const auto& m = *mx.first;
       if(!m.scopes().has(MetricScope::exclusive) || !m.scopes().has(MetricScope::inclusive))
         util::log::fatal{} << "Metric isn't exclusive/inclusive!";
       const auto& ids = m.userdata[src.mscopeIdentifiers()];
-      if(auto vv = m.getFor(c)) {
-        hpcrun_metricVal_t v;
-        if(auto vex = vv->get(MetricScope::exclusive)) {
-          v.r = *vex;
-          any = true;
-          mids.push_back(ids.exclusive);
-          values.push_back(v);
-        }
-        if(auto vinc = vv->get(MetricScope::inclusive)) {
-          v.r = *vinc;
-          any = true;
-          mids.push_back(ids.inclusive);
-          values.push_back(v);
-        }
+      const auto& vv = mx.second;
+      hpcrun_metricVal_t v;
+      if(auto vex = vv.get(MetricScope::exclusive)) {
+        v.r = *vex;
+        mids.push_back(ids.exclusive);
+        values.push_back(v);
       }
-    }
-    if(any) {
-      cids.push_back(c.userdata[src.identifier()]);
-      coffsets.push_back(offset);
+      if(auto vinc = vv.get(MetricScope::inclusive)) {
+        v.r = *vinc;
+        mids.push_back(ids.inclusive);
+        values.push_back(v);
+      }
     }
   }
 
