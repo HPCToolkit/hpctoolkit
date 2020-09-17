@@ -599,7 +599,7 @@ static const uint16_t LastMidEnd  = 0x6564;
 
 typedef struct hpcrun_fmt_sparse_metrics_t{
   //uint32_t tid; 
-  tms_id_tuple_t id_tuple;
+  id_tuple_t id_tuple;
   uint64_t num_vals;
   uint64_t num_cct_nodes;
   hpcrun_metricVal_t* values;
@@ -727,7 +727,7 @@ int hpcrun_sparse_read_hdr(hpcrun_sparse_file_t* sparse_fs, hpcrun_fmt_hdr_t* hd
 int hpcrun_sparse_next_lm(hpcrun_sparse_file_t* sparse_fs, loadmap_entry_t* lm);
 int hpcrun_sparse_next_metric(hpcrun_sparse_file_t* sparse_fs, metric_desc_t* m, metric_aux_info_t* perf_info,double fmtVersion);
 int hpcrun_sparse_next_context(hpcrun_sparse_file_t* sparse_fs, hpcrun_fmt_cct_node_t* node);
-int hpcrun_sparse_read_id_tuple(hpcrun_sparse_file_t* sparse_fs, tms_id_tuple_t* id_tuple);
+int hpcrun_sparse_read_id_tuple(hpcrun_sparse_file_t* sparse_fs, id_tuple_t* id_tuple);
 int hpcrun_sparse_next_block(hpcrun_sparse_file_t* sparse_fs);
 int hpcrun_sparse_next_entry(hpcrun_sparse_file_t* sparse_fs, hpcrun_metricVal_t* val);
 

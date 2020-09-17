@@ -13,7 +13,7 @@ enum perf_ksym_e {PERF_UNDEFINED, PERF_AVAILABLE, PERF_UNAVAILABLE} ;
 
 typedef struct core_profile_trace_data_t {
   int id;
-  tms_id_tuple_t id_tuple;
+  id_tuple_t id_tuple;
   // ----------------------------------------
   // epoch: loadmap + cct + cct_ctxt
   // ----------------------------------------

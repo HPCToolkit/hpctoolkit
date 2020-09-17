@@ -157,6 +157,14 @@ tms_profile_info_free(tms_profile_info_t** x);
 //***************************************************************************
 #define TMS_id_tuples_size_SIZE 8
 
+typedef struct tms_id_tuple_t{
+  id_tuple_t idtuple;
+
+  uint32_t rank; //rank that read/write this profile
+  uint32_t prof_info_idx;
+  uint32_t all_at_root_idx;
+}tms_id_tuple_t;
+
 //***************************************************************************
 // hpcrun_fmt_sparse_metrics_t related, defined in hpcrun-fmt.h
 //***************************************************************************

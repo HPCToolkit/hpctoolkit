@@ -453,10 +453,13 @@ tms_id_tuple_t SparseDB::buildIdTuple(const hpctoolkit::ThreadAttributes& ta,
   ids[0] = rank_idx;
   ids[1] = thread_idx;
 
+  id_tuple_t idtuple;
+  idtuple.length = 2;
+  idtuple.ids = ids;
+
   tms_id_tuple_t tuple;
-  tuple.length = 2;
+  tuple.idtuple = idtuple;
   tuple.rank = rank;
-  tuple.ids = ids;
   tuple.prof_info_idx = not_assigned; 
   tuple.all_at_root_idx = not_assigned;
 
@@ -474,10 +477,13 @@ tms_id_tuple_t SparseDB::buildSmryIdTuple()
   tms_id_t* ids = (tms_id_t*)malloc(1 * sizeof(tms_id_t));
   ids[0] = summary_idx;
 
+  id_tuple_t idtuple;
+  idtuple.length = 1;
+  idtuple.ids = ids;
+
   tms_id_tuple_t tuple;
-  tuple.length = 1;
+  tuple.idtuple = idtuple;
   tuple.rank = 0; //summary tuple is always at root rank
-  tuple.ids = ids;
   tuple.prof_info_idx = not_assigned; 
   tuple.all_at_root_idx = not_assigned;
 
@@ -489,13 +495,13 @@ void SparseDB::assignSparseInputs(int world_rank)
 {
   for(const auto& tp : outputs.citerate()){
     tms_id_tuple_t tuple = buildIdTuple(tp.first->attributes, world_rank);
-    if(tuple.length == 0) continue; //skip this profile
+    if(tuple.idtuple.length == 0) continue; //skip this profile
     sparseInputs.emplace_back(tuple, tp.second.string());
   }
 
   if(world_rank == 0){
     tms_id_tuple_t tuple = buildSmryIdTuple();
-    assert(tuple.length == 1);
+    assert(tuple.idtuple.length == 1);
     sparseInputs.emplace_back(tuple, summaryOut.string());
   }
 
@@ -521,9 +527,10 @@ SparseDB::tuples2IntPairs(const std::vector<tms_id_tuple_t>& all_tuples)
 {
   std::vector<std::pair<uint16_t, uint64_t>> pairs;
   for(auto& tuple : all_tuples){
-    pairs.emplace_back(tuple.length, (uint64_t)tuple.rank);
-    for(uint i = 0; i < tuple.length; i++){
-      pairs.emplace_back(tuple.ids[i].kind,tuple.ids[i].index);
+    pairs.emplace_back(tuple.idtuple.length, (uint64_t)tuple.rank);
+    auto& idtuple = tuple.idtuple;
+    for(uint i = 0; i < idtuple.length; i++){
+      pairs.emplace_back(idtuple.ids[i].kind, idtuple.ids[i].index);
     }
   }
 
@@ -541,25 +548,27 @@ SparseDB::intPairs2Tuples(const std::vector<std::pair<uint16_t, uint64_t>>& all_
   uint cur_rank = 0; //root rank
   while(i < all_pairs.size()){
     std::pair<uint16_t, uint64_t> p = all_pairs[i];
+    id_tuple_t it;
     tms_id_tuple_t t;
-    t.length = p.first;
+    it.length = p.first;
     t.rank = p.second;
     if(t.rank != cur_rank){
       cur_rank = t.rank;
     }
 
-    t.ids = (tms_id_t*)malloc(t.length * sizeof(tms_id_t));
-    for(uint j = 0; j < t.length; j++){
-      t.ids[j].kind = all_pairs[i+j+1].first;
-      t.ids[j].index = all_pairs[i+j+1].second;
+    it.ids = (tms_id_t*)malloc(it.length * sizeof(tms_id_t));
+    for(uint j = 0; j < it.length; j++){
+      it.ids[j].kind = all_pairs[i+j+1].first;
+      it.ids[j].index = all_pairs[i+j+1].second;
     }
 
     t.all_at_root_idx = idx;
     t.prof_info_idx = not_assigned;
+    t.idtuple = it;
     
     tuples.emplace_back(t);
     idx += 1;
-    i += (1 + t.length);
+    i += (1 + t.idtuple.length);
   }
 
   return tuples;
@@ -656,9 +665,11 @@ void SparseDB::scatterProfIdxOffset(const std::vector<tms_id_tuple_t>& tuples,
 void SparseDB::sortIdTuples(std::vector<tms_id_tuple_t>& all_tuples)
 {
   struct {
-    bool operator()(tms_id_tuple_t a_tuple, 
-                    tms_id_tuple_t b_tuple) const
+    bool operator()(tms_id_tuple_t a, 
+                    tms_id_tuple_t b) const
     {   
+      id_tuple_t& a_tuple = a.idtuple;
+      id_tuple_t& b_tuple = b.idtuple;
       uint16_t len = std::min(a_tuple.length, b_tuple.length);
       for(uint i = 0; i<len; i++){
         if(a_tuple.ids[i].kind != b_tuple.ids[i].kind){
@@ -699,7 +710,7 @@ std::vector<uint64_t> SparseDB::getIdTuplesOff(std::vector<tms_id_tuple_t>& all_
   //notice the last entry in tupleSizes is still 0
   #pragma omp parallel for num_threads(threads)
   for(uint i = 0; i < all_tuples.size(); i++){
-    tupleSizes[i] = TMS_id_tuple_len_SIZE + all_tuples[i].length * TMS_id_SIZE;
+    tupleSizes[i] = TMS_id_tuple_len_SIZE + all_tuples[i].idtuple.length * TMS_id_SIZE;
   }
 
   exscan<uint64_t>(tupleSizes,threads);
@@ -720,8 +731,8 @@ void SparseDB::freeIdTuples(std::vector<tms_id_tuple_t>& all_tuples,
 {
   #pragma omp parallel for num_threads(threads)
   for(uint i = 0; i < all_tuples.size(); i++){
-    free(all_tuples[i].ids);
-    all_tuples[i].ids = NULL;
+    free(all_tuples[i].idtuple.ids);
+    all_tuples[i].idtuple.ids = NULL;
   }
 }
 
@@ -732,11 +743,12 @@ void SparseDB::freeIdTuples(std::vector<tms_id_tuple_t>& all_tuples,
 //convert one tms_id_tuple_t to a vector of bytes
 std::vector<char> SparseDB::convertTuple2Bytes(const tms_id_tuple_t& tuple)
 {
-  std::vector<char> bytes(TMS_id_tuple_len_SIZE + tuple.length * TMS_id_SIZE);
-  convertToByte2(tuple.length, bytes.data());
+  uint16_t len = tuple.idtuple.length;
+  std::vector<char> bytes(TMS_id_tuple_len_SIZE + len * TMS_id_SIZE);
+  convertToByte2(len, bytes.data());
   char* byte_pos = bytes.data() + 2;
-  for(uint i = 0; i < tuple.length; i++){
-    auto& id = tuple.ids[i];
+  for(uint i = 0; i < len; i++){
+    auto& id = tuple.idtuple.ids[i];
     convertToByte2(id.kind, byte_pos);
     convertToByte8(id.index, byte_pos+2);
     byte_pos += TMS_id_SIZE;
@@ -1042,7 +1054,7 @@ void SparseDB::writeOneProfile(const std::pair<tms_id_tuple_t, std::string>& tup
   input.close();
 
   //collect context local nonzero value counts and nz_mids from this profile
-  if(tupleFn.first.ids[0].kind != IDTUPLE_SUMMARY){
+  if(tupleFn.first.idtuple.ids[0].kind != IDTUPLE_SUMMARY){
     collectCctMajorData(prof_idx_off_pair.first, bytes, ctx_nzval_cnts, ctx_nzmids);
   }
    
@@ -1083,7 +1095,7 @@ void SparseDB::writeProfiles(const MPI_File fh,
 
     #pragma omp for reduction(vectorSum : ctx_nzval_cnts)
     for(uint i = 0; i<prof_offsets.size();i++){
-      const std::pair<tms_id_tuple_t, std::string> tupleFn = sparseInputs[i];
+      const std::pair<tms_id_tuple_t, std::string>& tupleFn = sparseInputs[i];
       MPI_Offset my_prof_offset = prof_offsets[i];
       writeOneProfile(tupleFn, my_prof_offset, prof_idx_off_pairs[i], ctx_nzval_cnts, thread_ctx_nzmids, fh);
     }

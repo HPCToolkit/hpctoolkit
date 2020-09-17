@@ -208,7 +208,7 @@ Analysis::Raw::writeAsText_sparseDBthread(const char* filenm, bool easygrep)
     }
     tms_profile_info_fprint(num_prof,x,stdout);
 
-    tms_id_tuple_t* tuples;
+    id_tuple_t* tuples;
     uint64_t tuples_size;
     ret = id_tuples_tms_fread(&tuples, &tuples_size, num_prof,fs);
     if (ret != HPCFMT_OK) {

@@ -148,7 +148,7 @@ char* kindStr(const uint16_t kind)
 
 
 int
-id_tuples_tms_fwrite(uint32_t num_tuples,tms_id_tuple_t* x, FILE* fs)
+id_tuples_tms_fwrite(uint32_t num_tuples,id_tuple_t* x, FILE* fs)
 {
   for (uint i = 0; i < num_tuples; ++i) {
     HPCFMT_ThrowIfError(hpcfmt_int2_fwrite(x[i].length, fs));
@@ -161,9 +161,9 @@ id_tuples_tms_fwrite(uint32_t num_tuples,tms_id_tuple_t* x, FILE* fs)
 }
 
 int
-id_tuples_tms_fread(tms_id_tuple_t** x, uint32_t num_tuples,FILE* fs)
+id_tuples_tms_fread(id_tuple_t** x, uint32_t num_tuples,FILE* fs)
 {
-  tms_id_tuple_t * id_tuples = (tms_id_tuple_t *) malloc(num_tuples*sizeof(tms_id_tuple_t));
+  id_tuple_t * id_tuples = (id_tuple_t *) malloc(num_tuples*sizeof(id_tuple_t));
 
   for (uint i = 0; i < num_tuples; ++i) {
     HPCFMT_ThrowIfError(hpcfmt_int2_fread(&(id_tuples[i].length), fs));
@@ -179,7 +179,7 @@ id_tuples_tms_fread(tms_id_tuple_t** x, uint32_t num_tuples,FILE* fs)
 }
 
 int
-id_tuples_tms_fprint(uint32_t num_tuples, tms_id_tuple_t* x, FILE* fs)
+id_tuples_tms_fprint(uint32_t num_tuples, id_tuple_t* x, FILE* fs)
 {
   fprintf(fs,"[Id tuples for %d profiles\n", num_tuples);
 
@@ -195,7 +195,7 @@ id_tuples_tms_fprint(uint32_t num_tuples, tms_id_tuple_t* x, FILE* fs)
 }
 
 void
-id_tuples_tms_free(tms_id_tuple_t** x, uint32_t num_tuples)
+id_tuples_tms_free(id_tuple_t** x, uint32_t num_tuples)
 {
   for (uint i = 0; i < num_tuples; ++i) {
     free((*x)[i].ids);
