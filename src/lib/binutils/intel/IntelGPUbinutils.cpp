@@ -70,8 +70,6 @@
 #include <lib/support/diagnostics.h>
 #include <lib/support/RealPathMgr.cpp>
 #include "IntelGPUbinutils.hpp"
-#include "CreateCFG.hpp"
-
 
 
 //******************************************************************************
@@ -166,7 +164,7 @@ openclElfSectionType
 static bool
 extract_kernelelfs
 (
-	std::vector<uint8_t> symbols,
+	std::vector<uint8_t> &symbols,
 	ElfFileVector *filevector
 )
 {
@@ -178,6 +176,7 @@ extract_kernelelfs
 
 	if (header->NumberOfKernels == 0) {
 		extractSuccess = false;
+    return extractSuccess;
 	}
 	
 	for (uint32_t i = 0; i < header->NumberOfKernels; ++i) {
@@ -186,9 +185,7 @@ extract_kernelelfs
 		ptr += sizeof(SKernelDebugDataHeaderIGC);
 
 		const char* kernel_name = reinterpret_cast<const char*>(ptr);
-		char *file_name = (char*)malloc(sizeof(kernel_name));
-		strcpy(file_name, kernel_name);
-		strcat(file_name, ".gpubin");
+    std::string file_name = std::string(kernel_name) + ".gpubin";
 
 		unsigned kernel_name_size_aligned = sizeof(uint32_t) *
 			(1 + (kernel_header->KernelNameSize - 1) / sizeof(uint32_t));
@@ -202,16 +199,21 @@ extract_kernelelfs
 			std::string file_contents((std::istreambuf_iterator<char>(in)), 
 			    std::istreambuf_iterator<char>());
 
+      ElfFile *elfFile = new ElfFile;
+      int file_fd = open(file_name.c_str(), O_RDONLY);
+      size_t f_size = file_size(file_fd);
+      char *file_buffer = (char *)malloc(f_size);
+      size_t bytes = read_all(file_fd, file_buffer, f_size);
 
-			ElfFile *elfFile = new ElfFile;
-			int file_fd = open(file_name, O_RDONLY);
-			size_t f_size = file_size(file_fd);
-			char  *file_buffer = (char *) malloc(f_size);
-			size_t bytes = read_all(file_fd, file_buffer, f_size);
-			bool result = elfFile->open(file_buffer, f_size, file_name);
-
-			filevector->push_back(elfFile);
+      if (elfFile->open(file_buffer, f_size, file_name)) {
+        extractSuccess = true;
+        filevector->push_back(elfFile);
+      } else {
+        extractSuccess = false;
+        break;
+      }
 			
+      /*
 			// start cfg generation
 			Elf *elf = elfFile->getElf();
 			file_buffer = elfFile->getMemory();
@@ -230,15 +232,18 @@ extract_kernelelfs
 					if (strcmp(section_name, ".text") == 0) {
 						std::vector<uint8_t> intelRawGenBinary(reinterpret_cast<uint8_t*>(sectionData), 
 								reinterpret_cast<uint8_t*>(sectionData) + kernel_header->SizeVisaDbgInBytes);
-						printCFGInDotGraph(intelRawGenBinary);
+						printCFGInDotGraph(kernel_name, intelRawGenBinary);
 					}
 				}
 			}
+      */
 			//end cfg generation
 		} else {
 			extractSuccess = false;
+      break;
 		}
 	}
+
 	return extractSuccess;
 }
 
@@ -251,8 +256,6 @@ isCustomOpenCLBinary
 {
   return (strcmp(section_name, ".SHT_OPENCL_DEV_DEBUG") == 0);
 }
-
-
 
 //******************************************************************************
 // interface operations
@@ -299,7 +302,8 @@ findIntelGPUbins
 			}*/
     }
   }
-	FILE *fptr;
+  // TODO(Aaron): why put this section here?
+  FILE *fptr;
 	if (!fileHasDebugSection && (fptr = fopen("opencl_main.debuginfo", "rb"))) {
 		fileHasDebugSection = true;
 		fseek(fptr, 0L, SEEK_END);

@@ -95,6 +95,7 @@ public:
   char *getMemoryOriginal() { return origPtr; }
   size_t getLength() { return memLen; }
   std::string getFileName() { return fileName; }
+  size_t getTextSection(char *text_section);
 private:
   int arch;
   char *origPtr;
@@ -104,13 +105,9 @@ private:
   std::string fileName;
 };
 
-
 class ElfFileVector : public std::vector<ElfFile *> {};
 
-
 class ElfSectionVector : public std::vector<Elf_Scn *> {};
-
-
 
 //******************************************************************************
 // interface functions
