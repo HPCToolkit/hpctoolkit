@@ -70,8 +70,6 @@
 #include <lib/support/diagnostics.h>
 #include <lib/support/RealPathMgr.cpp>
 #include "IntelGPUbinutils.hpp"
-#include "CreateCFG.hpp"
-
 
 
 //******************************************************************************
@@ -127,132 +125,137 @@ read_all(int fd, void *buf, size_t count)
 static const char*
 openclElfSectionType
 (
-	Elf64_Word sh_type
+  Elf64_Word sh_type
 )
 {
-	switch (sh_type) {
+  switch (sh_type) {
     case SHT_OPENCL_SOURCE:
-			return "SHT_OPENCL_SOURCE";
+      return "SHT_OPENCL_SOURCE";
     case SHT_OPENCL_HEADER:
-			return "SHT_OPENCL_HEADER";
+      return "SHT_OPENCL_HEADER";
     case SHT_OPENCL_LLVM_TEXT:
-			return "SHT_OPENCL_LLVM_TEXT";
+      return "SHT_OPENCL_LLVM_TEXT";
     case SHT_OPENCL_LLVM_BINARY:
-			return "SHT_OPENCL_LLVM_BINARY";
+      return "SHT_OPENCL_LLVM_BINARY";
     case SHT_OPENCL_LLVM_ARCHIVE:
-			return "SHT_OPENCL_LLVM_ARCHIVE";
+      return "SHT_OPENCL_LLVM_ARCHIVE";
     case SHT_OPENCL_DEV_BINARY:
-			return "SHT_OPENCL_DEV_BINARY";
+      return "SHT_OPENCL_DEV_BINARY";
     case SHT_OPENCL_OPTIONS:
-			return "SHT_OPENCL_OPTIONS";
+      return "SHT_OPENCL_OPTIONS";
     case SHT_OPENCL_PCH:
-			return "SHT_OPENCL_PCH";
+      return "SHT_OPENCL_PCH";
     case SHT_OPENCL_DEV_DEBUG:
-			return "SHT_OPENCL_DEV_DEBUG";
+      return "SHT_OPENCL_DEV_DEBUG";
     case SHT_OPENCL_SPIRV:
-			return "SHT_OPENCL_SPIRV";
+      return "SHT_OPENCL_SPIRV";
     case SHT_OPENCL_NON_COHERENT_DEV_BINARY:
-			return "SHT_OPENCL_NON_COHERENT_DEV_BINARY";
+      return "SHT_OPENCL_NON_COHERENT_DEV_BINARY";
     case SHT_OPENCL_SPIRV_SC_IDS:
-			return "SHT_OPENCL_SPIRV_SC_IDS";
+      return "SHT_OPENCL_SPIRV_SC_IDS";
     case SHT_OPENCL_SPIRV_SC_VALUES:
-			return "SHT_OPENCL_SPIRV_SC_VALUES";
-		default:
-			return "unknown type";
-	}
+      return "SHT_OPENCL_SPIRV_SC_VALUES";
+    default:
+      return "unknown type";
+  }
 }
 
 
 static bool
 extract_kernelelfs
 (
-	std::vector<uint8_t> symbols,
-	ElfFileVector *filevector
+  std::vector<uint8_t> &symbols,
+  ElfFileVector *filevector
 )
 {
-	bool extractSuccess = true;
-	const uint8_t* ptr = symbols.data();
-	const SProgramDebugDataHeaderIGC* header =
-		reinterpret_cast<const SProgramDebugDataHeaderIGC*>(ptr);
-	ptr += sizeof(SProgramDebugDataHeaderIGC);
+  bool extractSuccess = true;
+  const uint8_t* ptr = symbols.data();
+  const SProgramDebugDataHeaderIGC* header =
+    reinterpret_cast<const SProgramDebugDataHeaderIGC*>(ptr);
+  ptr += sizeof(SProgramDebugDataHeaderIGC);
 
-	if (header->NumberOfKernels == 0) {
-		extractSuccess = false;
-	}
-	
-	for (uint32_t i = 0; i < header->NumberOfKernels; ++i) {
-		const SKernelDebugDataHeaderIGC* kernel_header =
-			reinterpret_cast<const SKernelDebugDataHeaderIGC*>(ptr);
-		ptr += sizeof(SKernelDebugDataHeaderIGC);
+  if (header->NumberOfKernels == 0) {
+    extractSuccess = false;
+    return extractSuccess;
+  }
+  
+  for (uint32_t i = 0; i < header->NumberOfKernels; ++i) {
+    const SKernelDebugDataHeaderIGC* kernel_header =
+      reinterpret_cast<const SKernelDebugDataHeaderIGC*>(ptr);
+    ptr += sizeof(SKernelDebugDataHeaderIGC);
 
-		const char* kernel_name = reinterpret_cast<const char*>(ptr);
-		char *file_name = (char*)malloc(sizeof(kernel_name));
-		strcpy(file_name, kernel_name);
-		strcat(file_name, ".gpubin");
+    const char* kernel_name = reinterpret_cast<const char*>(ptr);
+    std::string file_name = std::string(kernel_name) + ".gpubin";
 
-		unsigned kernel_name_size_aligned = sizeof(uint32_t) *
-			(1 + (kernel_header->KernelNameSize - 1) / sizeof(uint32_t));
-		ptr += kernel_name_size_aligned;
+    unsigned kernel_name_size_aligned = sizeof(uint32_t) *
+      (1 + (kernel_header->KernelNameSize - 1) / sizeof(uint32_t));
+    ptr += kernel_name_size_aligned;
 
-		if (kernel_header->SizeVisaDbgInBytes > 0) {
-			/*FILE *f_ptr = fopen(kernel_name, "wb");
-			fwrite(ptr, kernel_header->SizeVisaDbgInBytes, 1, f_ptr);
-			fclose(f_ptr);*/
-			std::ifstream in(kernel_name);
-			std::string file_contents((std::istreambuf_iterator<char>(in)), 
-			    std::istreambuf_iterator<char>());
+    if (kernel_header->SizeVisaDbgInBytes > 0) {
+      /*FILE *f_ptr = fopen(kernel_name, "wb");
+      fwrite(ptr, kernel_header->SizeVisaDbgInBytes, 1, f_ptr);
+      fclose(f_ptr);*/
+      std::ifstream in(kernel_name);
+      std::string file_contents((std::istreambuf_iterator<char>(in)), 
+          std::istreambuf_iterator<char>());
 
+      ElfFile *elfFile = new ElfFile;
+      int file_fd = open(file_name.c_str(), O_RDONLY);
+      size_t f_size = file_size(file_fd);
+      char *file_buffer = (char *)malloc(f_size);
+      size_t bytes = read_all(file_fd, file_buffer, f_size);
 
-			ElfFile *elfFile = new ElfFile;
-			int file_fd = open(file_name, O_RDONLY);
-			size_t f_size = file_size(file_fd);
-			char  *file_buffer = (char *) malloc(f_size);
-			size_t bytes = read_all(file_fd, file_buffer, f_size);
-			bool result = elfFile->open(file_buffer, f_size, file_name);
+      if (elfFile->open(file_buffer, f_size, file_name)) {
+        extractSuccess = true;
+        filevector->push_back(elfFile);
+      } else {
+        extractSuccess = false;
+        break;
+      }
+      
+      /*
+      // start cfg generation
+      Elf *elf = elfFile->getElf();
+      file_buffer = elfFile->getMemory();
+      ElfSectionVector *sections = elfGetSectionVector(elf);
+      GElf_Ehdr ehdr_v;
+      GElf_Ehdr *ehdr = gelf_getehdr(elf, &ehdr_v);
 
-			filevector->push_back(elfFile);
-			
-			// start cfg generation
-			Elf *elf = elfFile->getElf();
-			file_buffer = elfFile->getMemory();
-			ElfSectionVector *sections = elfGetSectionVector(elf);
-			GElf_Ehdr ehdr_v;
-			GElf_Ehdr *ehdr = gelf_getehdr(elf, &ehdr_v);
+      if (ehdr) {
+        for (auto si = sections->begin(); si != sections->end(); si++) {
+          Elf_Scn *scn = *si;
+          GElf_Shdr shdr_v;
+          GElf_Shdr *shdr = gelf_getshdr(scn, &shdr_v);
+          if (!shdr) continue;
+          char *sectionData = elfSectionGetData(file_buffer, shdr);
+          const char *section_name = elf_strptr(elf, ehdr->e_shstrndx, shdr->sh_name);
+          if (strcmp(section_name, ".text") == 0) {
+            std::vector<uint8_t> intelRawGenBinary(reinterpret_cast<uint8_t*>(sectionData), 
+                reinterpret_cast<uint8_t*>(sectionData) + kernel_header->SizeVisaDbgInBytes);
+            printCFGInDotGraph(kernel_name, intelRawGenBinary);
+          }
+        }
+      }
+      */
+      //end cfg generation
+    } else {
+      extractSuccess = false;
+      break;
+    }
+  }
 
-			if (ehdr) {
-				for (auto si = sections->begin(); si != sections->end(); si++) {
-					Elf_Scn *scn = *si;
-					GElf_Shdr shdr_v;
-					GElf_Shdr *shdr = gelf_getshdr(scn, &shdr_v);
-					if (!shdr) continue;
-					char *sectionData = elfSectionGetData(file_buffer, shdr);
-					const char *section_name = elf_strptr(elf, ehdr->e_shstrndx, shdr->sh_name);
-					if (strcmp(section_name, ".text") == 0) {
-						std::vector<uint8_t> intelRawGenBinary(reinterpret_cast<uint8_t*>(sectionData), 
-								reinterpret_cast<uint8_t*>(sectionData) + kernel_header->SizeVisaDbgInBytes);
-						printCFGInDotGraph(intelRawGenBinary);
-					}
-				}
-			}
-			//end cfg generation
-		} else {
-			extractSuccess = false;
-		}
-	}
-	return extractSuccess;
+  return extractSuccess;
 }
 
 
 static bool
 isCustomOpenCLBinary
 (
-	const char *section_name
+  const char *section_name
 )
 {
   return (strcmp(section_name, ".SHT_OPENCL_DEV_DEBUG") == 0);
 }
-
-
 
 //******************************************************************************
 // interface operations
@@ -261,55 +264,56 @@ isCustomOpenCLBinary
 bool
 findIntelGPUbins
 (
-	ElfFile *elfFile,
-	ElfFileVector *filevector
+  ElfFile *elfFile,
+  ElfFileVector *filevector
 )
 {
-	bool fileHasDebugSection = false;
-	bool extractSuccess = false;
+  bool fileHasDebugSection = false;
+  bool extractSuccess = false;
 
   Elf *elf = elfFile->getElf();
-	char *file_buffer = elfFile->getMemory();
+  char *file_buffer = elfFile->getMemory();
   ElfSectionVector *sections = elfGetSectionVector(elf);
   GElf_Ehdr ehdr_v;
   GElf_Ehdr *ehdr = gelf_getehdr(elf, &ehdr_v);
 
   if (ehdr) {
     for (auto si = sections->begin(); si != sections->end(); si++) {
-			Elf_Scn *scn = *si;
-			GElf_Shdr shdr_v;
-			GElf_Shdr *shdr = gelf_getshdr(scn, &shdr_v);
-			if (!shdr) continue;
-			char *sectionData = elfSectionGetData(file_buffer, shdr);
-			const char *section_name = elf_strptr(elf, ehdr->e_shstrndx, shdr->sh_name);
-			//std::cerr << "section name: " << section_name << ". section type: " << openclElfSectionType(shdr->sh_type) << std::endl;
+      Elf_Scn *scn = *si;
+      GElf_Shdr shdr_v;
+      GElf_Shdr *shdr = gelf_getshdr(scn, &shdr_v);
+      if (!shdr) continue;
+      char *sectionData = elfSectionGetData(file_buffer, shdr);
+      const char *section_name = elf_strptr(elf, ehdr->e_shstrndx, shdr->sh_name);
+      //std::cerr << "section name: " << section_name << ". section type: " << openclElfSectionType(shdr->sh_type) << std::endl;
 
-			// extract debug section
-			if ((shdr->sh_type == SHT_OPENCL_DEV_DEBUG && strcmp(section_name, INTEL_GPU_DEBUG_SECTION_NAME) == 0)
-					|| isCustomOpenCLBinary(section_name)) {
-				fileHasDebugSection = true;
-				std::vector<uint8_t> debug_info(reinterpret_cast<uint8_t*>(sectionData), reinterpret_cast<uint8_t*>(sectionData) + shdr->sh_size);
-				extractSuccess = extract_kernelelfs(debug_info, filevector);
-				break;
-			} /*else if (strcmp(section_name, ".text") == 0) {
-				FILE *bin_ptr;
-				bin_ptr = fopen("switch.text", "wb");
-				fwrite(sectionData, shdr->sh_size, 1, bin_ptr);
-				fclose(bin_ptr);
-			}*/
+      // extract debug section
+      if ((shdr->sh_type == SHT_OPENCL_DEV_DEBUG && strcmp(section_name, INTEL_GPU_DEBUG_SECTION_NAME) == 0)
+          || isCustomOpenCLBinary(section_name)) {
+        fileHasDebugSection = true;
+        std::vector<uint8_t> debug_info(reinterpret_cast<uint8_t*>(sectionData), reinterpret_cast<uint8_t*>(sectionData) + shdr->sh_size);
+        extractSuccess = extract_kernelelfs(debug_info, filevector);
+        break;
+      } /*else if (strcmp(section_name, ".text") == 0) {
+        FILE *bin_ptr;
+        bin_ptr = fopen("switch.text", "wb");
+        fwrite(sectionData, shdr->sh_size, 1, bin_ptr);
+        fclose(bin_ptr);
+      }*/
     }
   }
-	FILE *fptr;
-	if (!fileHasDebugSection && (fptr = fopen("opencl_main.debuginfo", "rb"))) {
-		fileHasDebugSection = true;
-		fseek(fptr, 0L, SEEK_END);
-		size_t debug_info_size = ftell(fptr);
-		printf("debug_info_size: %zu\n", debug_info_size);
-		rewind(fptr);
-		std::vector<uint8_t> debug_info(debug_info_size);
-		fread(debug_info.data(), debug_info_size, 1, fptr);
-		extractSuccess = extract_kernelelfs(debug_info, filevector);
-	}
+  // TODO(Aaron): why put this section here?
+  FILE *fptr;
+  if (!fileHasDebugSection && (fptr = fopen("opencl_main.debuginfo", "rb"))) {
+    fileHasDebugSection = true;
+    fseek(fptr, 0L, SEEK_END);
+    size_t debug_info_size = ftell(fptr);
+    printf("debug_info_size: %zu\n", debug_info_size);
+    rewind(fptr);
+    std::vector<uint8_t> debug_info(debug_info_size);
+    fread(debug_info.data(), debug_info_size, 1, fptr);
+    extractSuccess = extract_kernelelfs(debug_info, filevector);
+  }
   bool success = fileHasDebugSection && extractSuccess;
   return success; 
 }

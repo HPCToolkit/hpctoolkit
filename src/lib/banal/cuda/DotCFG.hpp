@@ -15,6 +15,7 @@ namespace CudaParse {
 
 struct Inst {
   int offset;
+  int size;
   bool dual_first;
   bool dual_second;
   bool is_call;
@@ -26,10 +27,13 @@ struct Inst {
   std::string target;
   std::vector<std::string> operands;
 
-  // constructor for dummy inst
-  explicit Inst(int offset) : offset(offset), dual_first(false), dual_second(false),
+  // Constructor for dummy inst
+  Inst(int offset, int size) : offset(offset), size(size), dual_first(false), dual_second(false),
     is_call(false), is_jump(false), is_sync(false) {}
 
+  explicit Inst(int offset) : Inst(offset, 0) {}
+
+  // Cuda instruction constructor
   Inst(std::string &inst_str) : offset(0), dual_first(false), dual_second(false),
     is_call(false), is_jump(false), is_sync(false) {
     if (inst_str.find("{") != std::string::npos) {  // Dual first
@@ -146,7 +150,9 @@ struct Block {
   size_t id;
   std::string name;
 
-  Block(size_t id, const std::string &name) : id(id), name(name) {}
+  Block(size_t id, int address, const std::string &name) : id(id), address(address), name(name) {}
+
+  Block(size_t id, const std::string &name) : Block(id, 0, name) {}
 
   bool operator<(const Block &other) const {
     if (this->insts.size() == 0) {

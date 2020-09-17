@@ -122,20 +122,20 @@ read_all(int fd, void *buf, size_t count)
 static bool
 isIntelGPUFile
 (
-	ElfFile *elfFile
+  ElfFile *elfFile
 )
 {
   Elf *elf = elfFile->getElf();
   GElf_Ehdr ehdr_v;
   GElf_Ehdr *ehdr = gelf_getehdr(elf, &ehdr_v);
 
-	int intelGPUType = 0xff04;
-	std::cerr << "ehdr->e_type: " << ehdr->e_type << std::endl;
-	std::cerr << "ehdr->e_type == intelGPUType: " << (ehdr->e_type == intelGPUType) << std::endl;
+  int intelGPUType = 0xff04;
+  std::cerr << "ehdr->e_type: " << ehdr->e_type << std::endl;
+  std::cerr << "ehdr->e_type == intelGPUType: " << (ehdr->e_type == intelGPUType) << std::endl;
   if (ehdr && ehdr->e_type == intelGPUType) {
-		return true;
-	}
-	return false;
+    return true;
+  }
+  return false;
 }
 
 
@@ -160,7 +160,7 @@ InputFile::openFile
 
   if (file_fd < 0) {
     DIAG_MsgIf_GENERIC(tag, 1, "Unable to open input file: " 
-		       << filename << " (" << strerror(errno) << ")");
+           << filename << " (" << strerror(errno) << ")");
 
     if (errType != InputFileError_WarningNothrow) throw 1;
 
@@ -181,7 +181,7 @@ InputFile::openFile
 
   if (file_buffer == 0) {
     DIAG_MsgIf_GENERIC(tag, 1, "Unable to allocate file buffer of " 
-		       << f_size << " bytes");
+           << f_size << " bytes");
     if (errType != InputFileError_WarningNothrow) throw 1;
 
     return false;
@@ -191,7 +191,7 @@ InputFile::openFile
 
   if (f_size != bytes) {
     DIAG_MsgIf_GENERIC(tag, 1, "Read only " << bytes << " bytes of "
-		       << f_size << " bytes from file " << filename);
+           << f_size << " bytes from file " << filename);
 
     if (errType != InputFileError_WarningNothrow) throw 1;
 
@@ -205,12 +205,12 @@ InputFile::openFile
 
   if (result) {
     filevector = new ElfFileVector;
-		if (isIntelGPUFile(elfFile)) {
-			findIntelGPUbins(elfFile, filevector);
-		}
-		else {
-			filevector->push_back(elfFile);
-		}
+    if (isIntelGPUFile(elfFile)) {
+      findIntelGPUbins(elfFile, filevector);
+    }
+    else {
+      filevector->push_back(elfFile);
+    }
     //findCubins(elfFile, filevector);
   } else {
     DIAG_MsgIf_GENERIC(tag, 1, "Not an ELF binary " << filename);

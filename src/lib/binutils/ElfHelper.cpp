@@ -175,3 +175,34 @@ elfSectionGetData
   char *sectionData = obj_ptr + shdr->sh_offset;
   return sectionData;
 }
+
+
+size_t
+ElfFile::getTextSection
+(
+ char **text_section
+)
+{
+  // start cfg generation
+  ElfSectionVector *sections = elfGetSectionVector(elf);
+  GElf_Ehdr ehdr_v;
+  GElf_Ehdr *ehdr = gelf_getehdr(elf, &ehdr_v);
+
+  if (ehdr) {
+    for (auto si = sections->begin(); si != sections->end(); si++) {
+      Elf_Scn *scn = *si;
+      GElf_Shdr shdr_v;
+      GElf_Shdr *shdr = gelf_getshdr(scn, &shdr_v);
+      if (!shdr) continue;
+      char *sectionData = elfSectionGetData(memPtr, shdr);
+      const char *section_name = elf_strptr(elf, ehdr->e_shstrndx, shdr->sh_name);
+      if (strcmp(section_name, ".text") == 0) {
+        // TODO(Aaron): can a intel GPU binary has two text sections?
+        *text_section = sectionData;
+        return shdr->sh_size;
+      }
+    }
+  }
+
+  return 0;
+}

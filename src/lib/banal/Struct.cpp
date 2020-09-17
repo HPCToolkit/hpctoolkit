@@ -116,8 +116,7 @@
 #include "Struct-Skel.hpp"
 
 #include "cuda/ReadCubinCFG.hpp"
-
-#include "intel/IntelGPUbanal.hpp"
+#include "intel/ReadIntelCFG.hpp"
 
 #ifdef ENABLE_OPENMP
 #include <omp.h>
@@ -172,6 +171,10 @@ static const string & unknown_link = UNKNOWN_LINK;
 static Symtab * the_symtab = NULL;
 static int cuda_arch = 0;
 static size_t cubin_size = 0;
+
+// FIXME: temporary until instruction size problem is fixed
+static int intel_arch = 0;
+static std::map<int, int> inst_size;
 
 static BAnal::Struct::Options opts;
 
@@ -552,20 +555,6 @@ printTime(const char *label, struct timeval *tv_prev, struct rusage *ru_prev,
   cout << endl;
 }
 
-static string
-getFileNameFromAbsolutePath(string str)
-{
-	vector <string> tokens; 
-	stringstream str_stream(str); 
-	string intermediate; 
-
-	// Tokenizing w.r.t. '/'
-	while(getline(str_stream, intermediate, '/')) { 
-		tokens.push_back(intermediate); 
-	} 
-	return tokens[tokens.size() - 1];
-}
-
 
 //
 // makeStructure -- the main entry point for hpcstruct realmain().
@@ -661,17 +650,17 @@ makeStructure(string filename,
     omp_set_num_threads(opts.jobs_parse);
 #endif
 
+    // TODO(Aaron): determine these variables
 		bool isIntelArch = true;
 		bool cfgNotPresent = true;
 		if (isIntelArch && cfgNotPresent) {
 			//std::cerr << "executing intel-gen9 specific code." << std::endl;
-			add_custom_function_object(symtab, getFileNameFromAbsolutePath(elfFile->getFileName())); //adds a dummy function object
-			code_src = new SymtabCodeSource(symtab);
-		  code_obj = new CodeObject(code_src, NULL, NULL, false, true); //last param is bool ignoreParse
-      //code_obj->parse();
-			parsable = false;
-		}
-    else if (! cuda_file) { // don't run parseapi on cuda binary
+      // TODO(Aaron): does instruction size change with different generations?
+      inst_size.clear();
+      intel_arch = 1;
+      parsable = readIntelCFG(search_path, elfFile, the_symtab, inst_size,
+        structOpts.compute_gpu_cfg, &code_src, &code_obj);
+		} else if (! cuda_file) { // don't run parseapi on cuda binary
       code_src = new SymtabCodeSource(symtab);
       code_obj = new CodeObject(code_src);
       code_obj->parse();
@@ -710,9 +699,7 @@ makeStructure(string filename,
 
     makeWorkList(fileMap, wlPrint, wlLaunch);
 		
-		std::cerr << elfFile->getArch() << std::endl;
 		char *elfFileRealPath = realpath(elfFile->getFileName().c_str(), NULL);
-		std::cerr << elfFileRealPath << std::endl;
     Output::printLoadModuleBegin(outFile, elfFileRealPath);
 
 #pragma omp parallel  default(none)				\
@@ -1829,6 +1816,8 @@ doBlock(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func,
   if (cuda_arch > 0) {
     device = "NVIDIA sm_" + std::to_string(cuda_arch);
     len = (cuda_arch >= 70) ? 16 : 8;
+  } else if (intel_arch > 0) {
+    device = "INTEL GPU";
   }
   
   for (auto iit = imap.begin(); iit != imap.end(); ++iit) {
@@ -1837,13 +1826,15 @@ doBlock(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func,
     string filenm = "";
     uint line = 0;
 
-    if (cuda_arch == 0) {
+    if (intel_arch > 0) {
+      len = inst_size.at(vma);
+    } else if (cuda_arch == 0) {
 #ifdef DYNINST_INSTRUCTION_PTR
       len = iit->second->size();
 #else
       len = iit->second.size();
 #endif
-    }
+    } 
 
     lmcache.getLineInfo(vma, filenm, line);
 

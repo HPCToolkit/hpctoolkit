@@ -78,8 +78,11 @@ MYSOURCES = \
 	cuda/CudaBlock.cpp  \
 	cuda/CudaCodeSource.cpp  \
 	cuda/ReadCubinCFG.cpp \
-	intel/IntelGPUbanal.cpp \
-	intel/IntelCreateCFG.cpp \
+	intel/IntelCFGFactory.cpp  \
+	intel/IntelFunction.cpp  \
+	intel/IntelBlock.cpp  \
+	intel/IntelCodeSource.cpp  \
+	intel/ReadIntelCFG.cpp \
 	Struct.cpp  \
 	Struct-Inline.cpp  \
 	Struct-Output.cpp
