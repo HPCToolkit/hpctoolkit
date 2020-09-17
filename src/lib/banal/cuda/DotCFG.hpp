@@ -150,7 +150,9 @@ struct Block {
   size_t id;
   std::string name;
 
-  Block(size_t id, const std::string &name) : id(id), name(name) {}
+  Block(size_t id, int address, const std::string &name) : id(id), address(address), name(name) {}
+
+  Block(size_t id, const std::string &name) : Block(id, 0, name) {}
 
   bool operator<(const Block &other) const {
     if (this->insts.size() == 0) {

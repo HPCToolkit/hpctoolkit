@@ -157,7 +157,9 @@ parseIntelCFG
 
   // Construct basic blocks
   while (offset < text_section_size) {
-    auto *block = new CudaParse::Block(block_id, function.name + "_" + std::to_string(block_id)); 
+    auto *block = new CudaParse::Block(block_id, offset, function.name + "_" + std::to_string(block_id)); 
+    block_id++;
+
     function.blocks.push_back(block);
     block_offset_map[offset] = block;
 
@@ -177,38 +179,52 @@ parseIntelCFG
       block->insts.push_back(inst);
     }
 
-    offset = block->insts.back()->offset;
     if (kv.getOpcode(offset) == iga::Op::CALL || kv.getOpcode(offset) == iga::Op::CALLA) {
       inst->is_call = true;
     } else {
       inst->is_jump = true;
     }
+    offset += size;
   }
 
   // Construct targets
-  std::array<int, KV_MAX_TARGETS_PER_INSTRUCTION> jump_targets;
+  std::array<int, KV_MAX_TARGETS_PER_INSTRUCTION + 1> jump_targets;
   for (size_t i = 0; i < function.blocks.size(); ++i) {
     auto *block = function.blocks[i];
     auto *inst = block->insts.back();
     size_t jump_targets_count = kv.getInstTargets(inst->offset, jump_targets.data());
+    
+    // Add fall through edge
     int next_block_start_offset = 0;
     if (i != function.blocks.size() - 1) {
       next_block_start_offset = function.blocks[i + 1]->insts.front()->offset;
     }
+    jump_targets[jump_targets_count] = next_block_start_offset;
 
-    for (size_t i = 0; i < jump_targets_count; i++) {
-      auto *target_block = block_offset_map.at(jump_targets[i]);
-      if (jump_targets[i] == next_block_start_offset) {
-        // Fall through
-        if (inst->is_call) {
-          block->targets.push_back(new CudaParse::Target(inst, target_block, CudaParse::TargetType::CALL_FT));
-        } else {
-          block->targets.push_back(new CudaParse::Target(inst, target_block, CudaParse::TargetType::FALLTHROUGH));
+    for (size_t j = 0; j < jump_targets_count + 1; j++) {
+      auto *target_block = block_offset_map.at(jump_targets[j]);
+      auto type = CudaParse::TargetType::DIRECT;
+      // Jump
+      bool added = false;
+      for (auto *target : block->targets) {
+        if (target->block == target_block) {
+          added = true;
         }
-      } else {
-        // Jump
-        block->targets.push_back(new CudaParse::Target(inst, target_block, CudaParse::TargetType::DIRECT));
       }
+      if (!added) {
+        block->targets.push_back(new CudaParse::Target(inst, target_block, type));
+      }
+    }
+  }
+
+  if (DEBUG) {
+    for (auto *block : function.blocks) {
+      std::cout << std::hex;
+      std::cout << block->name << ": [" << block->insts.front()->offset << ", " << block->insts.back()->offset << "]" << std::endl;
+      for (auto *target : block->targets) {
+        std::cout << "\t" << block->name << "->" << target->block->name << std::endl;
+      }
+      std::cout << std::dec;
     }
   }
 }

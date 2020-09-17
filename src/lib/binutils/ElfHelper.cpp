@@ -180,7 +180,7 @@ elfSectionGetData
 size_t
 ElfFile::getTextSection
 (
- char *text_section
+ char **text_section
 )
 {
   // start cfg generation
@@ -198,7 +198,7 @@ ElfFile::getTextSection
       const char *section_name = elf_strptr(elf, ehdr->e_shstrndx, shdr->sh_name);
       if (strcmp(section_name, ".text") == 0) {
         // TODO(Aaron): can a intel GPU binary has two text sections?
-        text_section = sectionData;
+        *text_section = sectionData;
         return shdr->sh_size;
       }
     }

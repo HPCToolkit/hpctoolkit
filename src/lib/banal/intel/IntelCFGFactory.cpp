@@ -2,7 +2,7 @@
 #include "IntelFunction.hpp"
 #include <iostream>
 
-#define DEBUG_CUDA_CFGFACTORY 0
+#define DEBUG_INTEL_CFGFACTORY 0
 
 namespace Dyninst {
 namespace ParseAPI {
@@ -16,7 +16,7 @@ Function *IntelCFGFactory::mkfunc(Address addr, FuncSource src,
       IntelFunction *ret_func = new IntelFunction(function->address, name, obj, region, isrc);
 
       bool first_entry = true;
-      if (DEBUG_CUDA_CFGFACTORY) {
+      if (DEBUG_INTEL_CFGFACTORY) {
         std::cout << "Function: " << function->name << " addr: 0x" <<
           std::hex << addr << std::dec << std::endl;
       }
@@ -25,7 +25,7 @@ Function *IntelCFGFactory::mkfunc(Address addr, FuncSource src,
         // If a block has not been created by callers, create it
         // Otherwise get the block from _block_filter
         if (_block_filter.find(block->id) == _block_filter.end()) {
-          if (DEBUG_CUDA_CFGFACTORY) {
+          if (DEBUG_INTEL_CFGFACTORY) {
             std::cout << "New block: " << block->name << " id: " << block->id << std::endl;
           }
           std::vector<Offset> inst_offsets;
@@ -36,7 +36,7 @@ Function *IntelCFGFactory::mkfunc(Address addr, FuncSource src,
           _block_filter[block->id] = ret_block;
           blocks_.add(ret_block);
         } else {
-          if (DEBUG_CUDA_CFGFACTORY) {
+          if (DEBUG_INTEL_CFGFACTORY) {
             std::cout << "Old block: " << block->name << " id: " << block->id << std::endl;
           }
           ret_block = _block_filter[block->id];
@@ -52,7 +52,7 @@ Function *IntelCFGFactory::mkfunc(Address addr, FuncSource src,
         for (auto *target : block->targets) {
           IntelBlock *ret_target_block = NULL;
           if (_block_filter.find(target->block->id) == _block_filter.end()) {
-            if (DEBUG_CUDA_CFGFACTORY) {
+            if (DEBUG_INTEL_CFGFACTORY) {
               std::cout << "New block: " << target->block->name << " id: " << target->block->id << std::endl;
             }
             std::vector<Offset> inst_offsets;
@@ -63,7 +63,7 @@ Function *IntelCFGFactory::mkfunc(Address addr, FuncSource src,
             _block_filter[target->block->id] = ret_target_block;
             blocks_.add(ret_target_block);
           } else {
-            if (DEBUG_CUDA_CFGFACTORY) {
+            if (DEBUG_INTEL_CFGFACTORY) {
               std::cout << "Old block: " << target->block->name << " id: " << target->block->id << std::endl;
             }
             ret_target_block = _block_filter[target->block->id];
@@ -71,7 +71,7 @@ Function *IntelCFGFactory::mkfunc(Address addr, FuncSource src,
 
           Edge *ret_edge = new Edge(ret_block, ret_target_block, target->type);
           ret_edge->ignore_index();
-          if (DEBUG_CUDA_CFGFACTORY) {
+          if (DEBUG_INTEL_CFGFACTORY) {
             std::cout << "Edge: "<< " -> " << target->block->name << std::endl;
           }
           ret_edge->install();

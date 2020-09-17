@@ -95,7 +95,7 @@ public:
   char *getMemoryOriginal() { return origPtr; }
   size_t getLength() { return memLen; }
   std::string getFileName() { return fileName; }
-  size_t getTextSection(char *text_section);
+  size_t getTextSection(char **text_section);
 private:
   int arch;
   char *origPtr;
