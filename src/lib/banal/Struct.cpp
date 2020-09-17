@@ -656,6 +656,7 @@ makeStructure(string filename,
 		if (isIntelArch && cfgNotPresent) {
 			//std::cerr << "executing intel-gen9 specific code." << std::endl;
       // TODO(Aaron): does instruction size change with different generations?
+      inst_size.clear();
       intel_arch = 1;
       parsable = readIntelCFG(search_path, elfFile, the_symtab, inst_size,
         structOpts.compute_gpu_cfg, &code_src, &code_obj);
@@ -1825,15 +1826,15 @@ doBlock(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func,
     string filenm = "";
     uint line = 0;
 
-    if (cuda_arch == 0) {
+    if (intel_arch > 0) {
+      len = inst_size.at(vma);
+    } else if (cuda_arch == 0) {
 #ifdef DYNINST_INSTRUCTION_PTR
       len = iit->second->size();
 #else
       len = iit->second.size();
 #endif
-    } else if (intel_arch) {
-      len = inst_size.at(vma);
-    }
+    } 
 
     lmcache.getLineInfo(vma, filenm, line);
 

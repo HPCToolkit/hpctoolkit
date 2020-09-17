@@ -203,6 +203,7 @@ parseIntelCFG
 
     for (size_t j = 0; j < jump_targets_count + 1; j++) {
       auto *target_block = block_offset_map.at(jump_targets[j]);
+      // TODO(Aaron): call edge
       auto type = CudaParse::TargetType::DIRECT;
       // Jump
       bool added = false;
