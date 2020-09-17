@@ -98,30 +98,30 @@ addCustomFunctionObject
  Symtab *symtab
 )
 {
-	Region *reg = NULL;
-	bool status = symtab->findRegion(reg, ".text");
-	assert(status == true);
+  Region *reg = NULL;
+  bool status = symtab->findRegion(reg, ".text");
+  assert(status == true);
 
-	unsigned long reg_size = reg->getMemSize();
-	Symbol *custom_symbol = new Symbol(
-			func_obj_name, 
-			SymtabAPI::Symbol::ST_FUNCTION, // SymbolType
-			Symbol::SL_LOCAL, //SymbolLinkage
-			SymtabAPI::Symbol::SV_DEFAULT, //SymbolVisibility
-			0, //Offset,
-			NULL, //Module *module 
-			reg, //Region *r
-			reg_size, //unsigned s
-			false, //bool d
-			false, //bool a
-			-1, //int index
-			-1, //int strindex
-			false //bool cs
-	);
-	
-	//adding the custom symbol into the symtab object
-	status = symtab->addSymbol(custom_symbol); //(Symbol *newsym)
-	assert(status == true);
+  unsigned long reg_size = reg->getMemSize();
+  Symbol *custom_symbol = new Symbol(
+      func_obj_name, 
+      SymtabAPI::Symbol::ST_FUNCTION, // SymbolType
+      Symbol::SL_LOCAL, //SymbolLinkage
+      SymtabAPI::Symbol::SV_DEFAULT, //SymbolVisibility
+      0, //Offset,
+      NULL, //Module *module 
+      reg, //Region *r
+      reg_size, //unsigned s
+      false, //bool d
+      false, //bool a
+      -1, //int index
+      -1, //int strindex
+      false //bool cs
+  );
+  
+  //adding the custom symbol into the symtab object
+  status = symtab->addSymbol(custom_symbol); //(Symbol *newsym)
+  assert(status == true);
 }
 
 
@@ -132,11 +132,11 @@ getFileNameFromAbsolutePath(const std::string &str) {
   std::stringstream str_stream(str); 
   std::string intermediate; 
 
-	// Tokenizing w.r.t. '/'
-	while(std::getline(str_stream, intermediate, '/')) { 
-		tokens.push_back(intermediate); 
-	} 
-	return tokens[tokens.size() - 1];
+  // Tokenizing w.r.t. '/'
+  while(std::getline(str_stream, intermediate, '/')) { 
+    tokens.push_back(intermediate); 
+  } 
+  return tokens[tokens.size() - 1];
 }
 
 
@@ -148,34 +148,34 @@ parseIntelCFG
  CudaParse::Function &function
 )
 {
-	KernelView kv(IGA_GEN9, text_section, text_section_size, iga::SWSB_ENCODE_MODE::SingleDistPipe);
+  KernelView kv(IGA_GEN9, text_section, text_section_size, iga::SWSB_ENCODE_MODE::SingleDistPipe);
   std::map<int, CudaParse::Block *> block_offset_map;
 
-	int offset = 0;
-	int size = 0;
+  int offset = 0;
+  int size = 0;
   int block_id = 0;
 
   // Construct basic blocks
-	while (offset < text_section_size) {
+  while (offset < text_section_size) {
     auto *block = new CudaParse::Block(block_id, function.name + "_" + std::to_string(block_id)); 
     function.blocks.push_back(block);
     block_offset_map[offset] = block;
 
-		size = kv.getInstSize(offset);
+    size = kv.getInstSize(offset);
     auto *inst = new CudaParse::Inst(offset, size);
     block->insts.push_back(inst);
 
-		while (!kv.isInstTarget(offset + size) && (offset + size < text_section_size)) {
-			offset += size;	
-			size = kv.getInstSize(offset);
-			if (size == 0) {
-				// this is a weird edge case, what to do?
-				break;
-			}
+    while (!kv.isInstTarget(offset + size) && (offset + size < text_section_size)) {
+      offset += size;  
+      size = kv.getInstSize(offset);
+      if (size == 0) {
+        // this is a weird edge case, what to do?
+        break;
+      }
 
       inst = new CudaParse::Inst(offset, size);
       block->insts.push_back(inst);
-		}
+    }
 
     offset = block->insts.back()->offset;
     if (kv.getOpcode(offset) == iga::Op::CALL || kv.getOpcode(offset) == iga::Op::CALLA) {
@@ -190,27 +190,27 @@ parseIntelCFG
   for (size_t i = 0; i < function.blocks.size(); ++i) {
     auto *block = function.blocks[i];
     auto *inst = block->insts.back();
-		size_t jump_targets_count = kv.getInstTargets(inst->offset, jump_targets.data());
-		int next_block_start_offset = 0;
+    size_t jump_targets_count = kv.getInstTargets(inst->offset, jump_targets.data());
+    int next_block_start_offset = 0;
     if (i != function.blocks.size() - 1) {
       next_block_start_offset = function.blocks[i + 1]->insts.front()->offset;
     }
 
-		for (size_t i = 0; i < jump_targets_count; i++) {
+    for (size_t i = 0; i < jump_targets_count; i++) {
       auto *target_block = block_offset_map.at(jump_targets[i]);
-			if (jump_targets[i] == next_block_start_offset) {
+      if (jump_targets[i] == next_block_start_offset) {
         // Fall through
         if (inst->is_call) {
           block->targets.push_back(new CudaParse::Target(inst, target_block, CudaParse::TargetType::CALL_FT));
         } else {
           block->targets.push_back(new CudaParse::Target(inst, target_block, CudaParse::TargetType::FALLTHROUGH));
         }
-			} else {
+      } else {
         // Jump
         block->targets.push_back(new CudaParse::Target(inst, target_block, CudaParse::TargetType::DIRECT));
-			}
-		}
-	}
+      }
+    }
+  }
 }
 
 
@@ -230,7 +230,7 @@ readIntelCFG
   addCustomFunctionObject(function_name, the_symtab); //adds a dummy function object
 
   char *text_section = NULL;
-  auto text_section_size = elfFile->getTextSection(text_section);
+  auto text_section_size = elfFile->getTextSection(&text_section);
   if (text_section_size == 0) {
     return false;
   }
