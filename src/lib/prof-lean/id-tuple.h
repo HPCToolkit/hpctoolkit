@@ -57,12 +57,18 @@
 #ifndef ID_TUPLE_H
 #define ID_TUPLE_H
 
-//************************* System Include Files ****************************
+//***************************************************************************
+// system includes
+//***************************************************************************
 
 #include <stdbool.h>
 #include <limits.h>
 
-//*************************** User Include Files ****************************
+
+
+//***************************************************************************
+// local includes
+//***************************************************************************
 
 #include <include/uint.h>
 
@@ -71,13 +77,12 @@
 #include "../prof-lean/hpcfmt.h"
 #include "../prof-lean/hpcrun-fmt.h"
 
-//*************************** Forward Declarations **************************
 
-#if defined(__cplusplus)
-extern "C" {
-#endif
 
 //***************************************************************************
+// macros
+//***************************************************************************
+
 #define IDTUPLE_SUMMARY    (uint16_t)0
 #define IDTUPLE_NODE       (uint16_t)1
 #define IDTUPLE_RANK       (uint16_t)2
@@ -86,24 +91,83 @@ extern "C" {
 #define IDTUPLE_GPUSTREAM  (uint16_t)5
 #define IDTUPLE_GPUCONTEXT (uint16_t)6
 
+#define IDTUPLE_MAXTYPES   (uint16_t)7
+
 #define TMS_id_tuple_len_SIZE  2
 #define TMS_id_SIZE            10
 
-typedef struct tms_id_t{
+
+
+//***************************************************************************
+// types
+//***************************************************************************
+
+typedef struct tms_id_t {
   uint16_t kind;
   uint64_t index;
-}tms_id_t;
+} tms_id_t;
 
-typedef struct id_tuple_t{
-  uint16_t length;
+
+typedef struct id_tuple_t {
+  uint16_t length; // number of valid ids
+
+  uint16_t ids_length; // number of id slots allocated
   tms_id_t* ids;
-}id_tuple_t;
+} id_tuple_t;
 
-char* kindStr(const uint16_t kind);
+
+typedef void* (id_tuple_allocator_fn_t)(size_t bytes);
+
+
 
 //***************************************************************************
+// interface operations
+//***************************************************************************
+
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
+
+
+const char *kindStr(const uint16_t kind);
+
+
+//---------------------------------------------------------------------------
+// tuple initialization
+//---------------------------------------------------------------------------
+
+void
+id_tuple_constructor
+(
+ id_tuple_t *tuple, 
+ tms_id_t *ids, 
+ int ids_length
+);
+
+
+void 
+id_tuple_push_back
+(
+ id_tuple_t *tuple, 
+ uint16_t kind, 
+ uint64_t index
+);
+
+
+void
+id_tuple_copy
+(
+ id_tuple_t *dest, 
+ id_tuple_t *src, 
+ id_tuple_allocator_fn_t alloc
+);
+
+
+//---------------------------------------------------------------------------
 // Single id_tuple
-//***************************************************************************
+//---------------------------------------------------------------------------
+
 int 
 id_tuple_fwrite(id_tuple_t* x, FILE* fs);
 
@@ -114,12 +178,16 @@ int
 id_tuple_fprint(id_tuple_t* x, FILE* fs);
 
 void 
+id_tuple_dump(id_tuple_t* x);
+
+void 
 id_tuple_free(id_tuple_t* x);
 
 
-//***************************************************************************
+//---------------------------------------------------------------------------
 // for thread.db (thread major sparse)
-//***************************************************************************
+//---------------------------------------------------------------------------
+
 int 
 id_tuples_tms_fwrite(uint32_t num_tuples, uint64_t id_tuples_size, id_tuple_t* x, FILE* fs);
 
@@ -132,7 +200,8 @@ id_tuples_tms_fprint(uint32_t num_tuples,uint64_t id_tuples_size, id_tuple_t* x,
 void 
 id_tuples_tms_free(id_tuple_t** x, uint32_t num_tuples);
 
-//***************************************************************************
+//---------------------------------------------------------------------------
+
 #if defined(__cplusplus)
 } /* extern "C" */
 #endif

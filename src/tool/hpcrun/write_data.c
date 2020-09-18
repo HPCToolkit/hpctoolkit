@@ -51,6 +51,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <setjmp.h>
+#include <unistd.h>
+
+
 
 //*****************************************************************************
 // local includes
@@ -137,6 +140,31 @@ static const uint64_t default_measurement_granularity = 1;
 //
 //***************************************************************************
 
+
+static void
+compute_profile_name
+(
+ int rank, 
+ core_profile_trace_data_t * cptd
+)
+{
+  tms_id_t ids[IDTUPLE_MAXTYPES];
+  id_tuple_t id_tuple;
+
+  id_tuple_constructor(&id_tuple, ids, IDTUPLE_MAXTYPES);
+
+  id_tuple_push_back(&id_tuple, IDTUPLE_NODE, gethostid()); 
+
+  if (rank >= 0) {
+    id_tuple_push_back(&id_tuple, IDTUPLE_RANK, rank); 
+  }
+
+  id_tuple_push_back(&id_tuple, IDTUPLE_THREAD, cptd->id); 
+
+  id_tuple_copy(&cptd->id_tuple, &id_tuple, hpcrun_malloc);
+}
+
+
 static FILE *
 lazy_open_data_file(core_profile_trace_data_t * cptd)
 {
@@ -146,9 +174,13 @@ lazy_open_data_file(core_profile_trace_data_t * cptd)
   }
 
   int rank = hpcrun_get_rank();
+
+  compute_profile_name(rank, cptd);
+
   if (rank < 0) {
     rank = 0;
   }
+  
   int fd = hpcrun_open_profile_file(rank, cptd->id);
   fs = fdopen(fd, "w");
   if (fs == NULL) {

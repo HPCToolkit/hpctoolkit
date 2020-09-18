@@ -56,6 +56,7 @@
 
 //************************* System Include Files ****************************
 
+#include <assert.h>
 #include <stdio.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -76,16 +77,30 @@
 #include "id-tuple.h"
 
 //***************************************************************************
-char* kindStr(const uint16_t kind)
+
+const char* 
+kindStr(const uint16_t kind)
 {
   if(kind == IDTUPLE_SUMMARY){
     return "SUMMARY";
+  }
+  else if(kind == IDTUPLE_NODE){
+    return "NODE";
   }
   else if(kind == IDTUPLE_RANK){
     return "RANK";
   }
   else if(kind == IDTUPLE_THREAD){
     return "THREAD";
+  }
+  else if(kind == IDTUPLE_GPUDEVICE){
+    return "GPUDEVICE";
+  }
+  else if(kind == IDTUPLE_GPUCONTEXT){
+    return "GPUCONTEXT";
+  }
+  else if(kind == IDTUPLE_GPUSTREAM){
+    return "GPUSTREAM";
   }
   else{
     return "ERROR";
@@ -95,6 +110,54 @@ char* kindStr(const uint16_t kind)
 //***************************************************************************
 // single id tuple
 //***************************************************************************
+
+void
+id_tuple_constructor
+(
+ id_tuple_t *tuple, 
+ tms_id_t *ids, 
+ int ids_length
+)
+{
+  tuple->length = 0;
+  tuple->ids_length = ids_length;
+  tuple->ids = ids;
+}
+
+
+void 
+id_tuple_push_back
+(
+ id_tuple_t *tuple, 
+ uint16_t kind, 
+ uint64_t index
+)
+{
+  int pos = tuple->length++;
+
+  assert(tuple->length <= tuple->ids_length);
+  tuple->ids[pos].kind = kind;
+  tuple->ids[pos].index = index;
+}
+
+
+void
+id_tuple_copy
+(
+ id_tuple_t *dest, 
+ id_tuple_t *src, 
+ id_tuple_allocator_fn_t alloc
+)
+{
+  int len = src->length;
+  int ids_bytes = len * sizeof(tms_id_t);
+
+  dest->ids_length = dest->length = len;
+  dest->ids = (tms_id_t *) alloc(ids_bytes);
+  memcpy(dest->ids, src->ids, ids_bytes); 
+}
+
+
 
 int 
 id_tuple_fwrite(id_tuple_t* x, FILE* fs)
@@ -129,6 +192,14 @@ id_tuple_fprint(id_tuple_t* x, FILE* fs)
     fprintf(fs,"]\n");
     return HPCFMT_OK;
 }
+
+
+void 
+id_tuple_dump(id_tuple_t* x)
+{
+  id_tuple_fprint(x, stderr);
+}
+
 
 void 
 id_tuple_free(id_tuple_t* x)
