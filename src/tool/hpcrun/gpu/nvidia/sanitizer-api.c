@@ -711,7 +711,11 @@ sanitizer_unload_callback
 {
   hpctoolkit_cumod_st_t *cumod = (hpctoolkit_cumod_st_t *)module;
   cuda_unload_callback(cumod->cubin_id);
-  //redshow_cubin_unregister(cumod->cubin_id);
+
+  if (!sanitizer_analysis_async) {
+    // We can unregister cubins in the async mode
+    redshow_cubin_unregister(cumod->cubin_id);
+  }
 }
 
 //******************************************************************************
@@ -1146,7 +1150,8 @@ sanitizer_subscribe_callback
       }
     }
 
-    redshow_memcpy_register((uint64_t)api_node, src_mem_id, src_mem_addr, dst_mem_id, dst_mem_addr, md->size);
+    redshow_memcpy_register((uint64_t)api_node, correlation_id, src_mem_id, src_mem_addr,
+      dst_mem_id, dst_mem_addr, md->size);
   } else if (domain == SANITIZER_CB_DOMAIN_MEMSET) {
     Sanitizer_MemsetData *md = (Sanitizer_MemsetData *)cbdata;
 
@@ -1159,7 +1164,7 @@ sanitizer_subscribe_callback
 
     redshow_memory_query(correlation_id, md->address, &mem_id, &addr, &size);
 
-    redshow_memset_register((uint64_t)api_node, mem_id, md->value, md->width);
+    redshow_memset_register((uint64_t)api_node, correlation_id, mem_id, addr, md->value, md->width);
     
     memset((void *)addr, md->value, md->width);
   } else if (domain == SANITIZER_CB_DOMAIN_SYNCHRONIZE) {
