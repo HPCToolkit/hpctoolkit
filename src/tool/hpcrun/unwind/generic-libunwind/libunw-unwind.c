@@ -115,6 +115,11 @@
 void
 hpcrun_unw_init(void)
 {
+  static bool msg_sent = false;
+  if (msg_sent == false) {
+    TMSG(NU, "hpcrun_unw_init from libunw_unwind.c" );
+    msg_sent = true;
+  }
   uw_recipe_map_init();
 }
 

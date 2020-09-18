@@ -185,6 +185,11 @@ compute_normalized_ips(hpcrun_unw_cursor_t* cursor)
 void
 hpcrun_unw_init(void)
 {
+  static bool msg_sent = false;
+  if (msg_sent == false) {
+    TMSG(NU, "hpcrun_unw_init from x86_unwind.c" );
+    msg_sent = true;
+  }
   x86_family_decoder_init();
   uw_recipe_map_init();
 }
@@ -253,9 +258,6 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
   if (cursor->libunw_status == LIBUNW_READY)
     return;
 
-  if (hpcrun_no_unwind == true) {
-    return;
-  }
   bool found = uw_recipe_map_lookup(pc, NATIVE_UNWINDER, &cursor->unwr_info);
 
   if (!found) {

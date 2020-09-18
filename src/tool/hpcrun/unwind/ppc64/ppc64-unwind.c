@@ -196,6 +196,12 @@ hpcrun_unw_get_norm_reg(hpcrun_unw_cursor_t* cursor, unw_reg_code_t reg_id,
 void
 hpcrun_unw_init(void)
 {
+  static bool msg_sent = false;
+  if (msg_sent == false) {
+    TMSG(NU, "hpcrun_unw_init from ppc64_unwind.c" );
+    msg_sent = true;
+  }
+
   uw_recipe_map_init();
 }
 
@@ -253,11 +259,6 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
   cursor->ra_loc    = NULL;
 
   bitree_uwi_t* intvl = NULL;
-
-  if (hpcrun_no_unwind == true ) {
-    // no need to initialize
-    return;
-  }
 
   bool found = uw_recipe_map_lookup(cursor->pc_unnorm, NATIVE_UNWINDER, &(cursor->unwr_info));
   if (found) {
