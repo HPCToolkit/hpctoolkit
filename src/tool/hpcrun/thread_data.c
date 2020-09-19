@@ -70,6 +70,7 @@
 #include <messages/messages.h>
 #include <trampoline/common/trampoline.h>
 #include <memory/mmap.h>
+#include <lib/prof-lean/id-tuple.h>
 
 //***************************************************************************
 
@@ -218,6 +219,11 @@ core_profile_trace_data_init(core_profile_trace_data_t * cptd, int id, cct_ctxt_
   // id
   // ----------------------------------------
   cptd->id = id;
+  // ----------------------------------------
+  // id_tuple
+  // ----------------------------------------
+  cptd->id_tuple.length = 0;
+  cptd->id_tuple.ids_length = 0;
   // ----------------------------------------
   // epoch: loadmap + cct + cct_ctxt
   // ----------------------------------------
@@ -397,6 +403,9 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child, size_t n_sou
   // miscellaneous
   // ----------------------------------------
   td->inside_dlfcn = false;
+
+
+
 
 #ifdef ENABLE_CUDA
   gpu_data_init(&(td->gpu_data));

@@ -90,9 +90,16 @@
 // type declarations
 //******************************************************************************
 
+typedef struct gpu_tag_t {
+  uint32_t device_id;
+  uint32_t context_id;
+  uint32_t stream_id;
+}gpu_tag_t;
+
 typedef struct gpu_trace_t {
   pthread_t thread;
   gpu_trace_channel_t *trace_channel;
+  gpu_tag_t tag;
 } gpu_trace_t;
 
 typedef void *(*pthread_start_routine_t)(void *);
@@ -140,11 +147,17 @@ stream_start_get
 static gpu_trace_t *
 gpu_trace_alloc
 (
- void
+ uint32_t device_id,
+ uint32_t context_id,
+ uint32_t stream_id
 )
 {
   gpu_trace_t *trace = hpcrun_malloc_safe(sizeof(gpu_trace_t));
   trace->trace_channel = gpu_trace_channel_alloc();
+
+  trace->tag.device_id = device_id;
+  trace->tag.context_id = context_id;
+  trace->tag.stream_id = stream_id;
   return trace;
 }
 
@@ -308,10 +321,10 @@ static void
 gpu_trace_activities_process
 (
  thread_data_t *td,
- gpu_trace_t *thread_args
+ gpu_trace_t *gpu_trace
 )
 {
-  gpu_trace_channel_consume(thread_args->trace_channel, td, 
+  gpu_trace_channel_consume(gpu_trace->trace_channel, td,
 			    consume_one_trace_item);
 }
 
@@ -339,10 +352,36 @@ gpu_trace_stream_id
 }
 
 
+static void
+gpu_compute_profile_name
+(
+ gpu_tag_t tag,
+ core_profile_trace_data_t * cptd
+)
+{
+  tms_id_t ids[IDTUPLE_MAXTYPES];
+  id_tuple_t id_tuple;
+
+  id_tuple_constructor(&id_tuple, ids, IDTUPLE_MAXTYPES);
+
+  int rank = hpcrun_get_rank();
+  if (rank >= 0) id_tuple_push_back(&id_tuple, IDTUPLE_RANK, rank);
+  id_tuple_push_back(&id_tuple, IDTUPLE_NODE, gethostid());
+  id_tuple_push_back(&id_tuple, IDTUPLE_THREAD, cptd->id);
+
+  // GPU metrics
+  if (tag.device_id != (uint32_t) -1 ) id_tuple_push_back(&id_tuple, IDTUPLE_GPUDEVICE, tag.device_id);
+  id_tuple_push_back(&id_tuple, IDTUPLE_GPUCONTEXT, tag.context_id);
+  id_tuple_push_back(&id_tuple, IDTUPLE_GPUSTREAM, tag.stream_id);
+
+  id_tuple_copy(&cptd->id_tuple, &id_tuple, hpcrun_malloc);
+}
+
+
 static thread_data_t *
 gpu_trace_stream_acquire
 (
- void
+ gpu_tag_t tag
 )
 {
   thread_data_t* td = NULL;
@@ -350,6 +389,8 @@ gpu_trace_stream_acquire
   int id = gpu_trace_stream_id();
 
   hpcrun_threadMgr_non_compact_data_get(id, NULL, &td);
+
+  gpu_compute_profile_name(tag, &td->core_profile_trace_data);
 
   hpcrun_set_thread_data(td);
 
@@ -392,23 +433,25 @@ gpu_trace_init
 void *
 gpu_trace_record
 (
- gpu_trace_t *thread_args
+ gpu_trace_t *trace
 )
 {
-  thread_data_t* td = gpu_trace_stream_acquire();
+  thread_data_t* td = gpu_trace_stream_acquire(trace->tag);
 
   while (!atomic_load(&stop_trace_flag)) {
-    gpu_trace_activities_process(td, thread_args);
-    gpu_trace_activities_await(thread_args);
+    gpu_trace_activities_process(td, trace);
+    gpu_trace_activities_await(trace);
   }
 
-  gpu_trace_activities_process(td, thread_args);
+  gpu_trace_activities_process(td, trace);
 
   gpu_trace_stream_release(td);
 
   return NULL;
 }
 
+typedef struct thread_data_t thread_data_t;
+typedef struct core_profile_trace_data_t core_profile_trace_data_t;
 
 void
 gpu_trace_fini
@@ -429,19 +472,21 @@ gpu_trace_fini
 gpu_trace_t *
 gpu_trace_create
 (
- void
+ uint32_t device_id,
+ uint32_t context_id,
+ uint32_t stream_id
 )
 {
   // Init variables
-  gpu_trace_t *trace = gpu_trace_alloc();
+  gpu_trace_t *trace = gpu_trace_alloc(device_id, context_id, stream_id);
 
   // Create a new thread for the stream without libmonitor watching
   monitor_disable_new_threads();
 
   atomic_fetch_add(&stream_counter, 1);
 
-  pthread_create(&trace->thread, NULL, (pthread_start_routine_t) gpu_trace_record, 
-		 trace);
+  pthread_create(&trace->thread, NULL, (pthread_start_routine_t) gpu_trace_record, \
+                 trace);
 
   monitor_enable_new_threads();
 

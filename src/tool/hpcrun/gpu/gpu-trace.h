@@ -96,14 +96,16 @@ gpu_trace_init
 gpu_trace_t *
 gpu_trace_create
 (
- void
+ uint32_t device_id,
+ uint32_t context_id,
+ uint32_t stream_id
 );
 
 
 void *
 gpu_trace_record
 (
- gpu_trace_t *thread_args
+ gpu_trace_t *gpu_trace
 );
 
 

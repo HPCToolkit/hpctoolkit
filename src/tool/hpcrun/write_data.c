@@ -165,6 +165,7 @@ compute_profile_name
 }
 
 
+
 static FILE *
 lazy_open_data_file(core_profile_trace_data_t * cptd)
 {
@@ -175,7 +176,9 @@ lazy_open_data_file(core_profile_trace_data_t * cptd)
 
   int rank = hpcrun_get_rank();
 
-  compute_profile_name(rank, cptd);
+  if ( is_id_tuple_empty(&cptd->id_tuple) ){
+    compute_profile_name(rank, cptd);
+  }
 
   if (rank < 0) {
     rank = 0;
@@ -358,7 +361,6 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_
     //initialize the sparse_metrics
     hpcrun_fmt_sparse_metrics_t sparse_metrics;
     sparse_metrics.id_tuple = cptd->id_tuple;
-    sparse_metrics.id_tuple.length = 0; //TEMP
 
     //assign value to sparse metrics while writing cct info
     ret = hpcrun_cct_bundle_fwrite(fs, epoch_flags, cct, cptd->cct2metrics_map, &sparse_metrics);

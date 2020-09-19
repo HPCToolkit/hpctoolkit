@@ -211,6 +211,7 @@ typedef struct gpu_memcpy_t {
   uint64_t end;
   uint64_t bytes;
   uint32_t correlation_id;
+  uint32_t device_id;
   uint32_t context_id;
   uint32_t stream_id;
   gpu_memcpy_type_t copyKind;
@@ -223,6 +224,8 @@ typedef struct gpu_memory_t {
   uint64_t start;
   uint64_t end;
   uint64_t bytes;
+  uint32_t device_id;
+  uint32_t context_id;
   gpu_mem_kind_t memKind;
 } gpu_memory_t;
 
@@ -233,6 +236,7 @@ typedef struct gpu_memset_t {
   uint64_t end;
   uint64_t bytes;
   uint32_t correlation_id;
+  uint32_t device_id;
   uint32_t context_id;
   uint32_t stream_id;
   gpu_mem_kind_t memKind;
@@ -262,6 +266,7 @@ typedef struct gpu_cdpkernel_t {
   uint64_t start;
   uint64_t end;
   uint32_t correlation_id;
+  uint32_t device_id;
   uint32_t context_id;
   uint32_t stream_id;
 } gpu_cdpkernel_t;
