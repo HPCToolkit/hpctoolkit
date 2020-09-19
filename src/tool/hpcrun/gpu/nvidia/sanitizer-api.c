@@ -113,7 +113,7 @@
 #include "sanitizer-buffer-channel.h"
 #include "sanitizer-buffer-channel-set.h"
 
-#define SANITIZER_API_DEBUG 1
+#define SANITIZER_API_DEBUG 0
 
 #if SANITIZER_API_DEBUG
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)
@@ -632,6 +632,7 @@ sanitizer_load_callback
 {
   hpctoolkit_cumod_st_t *cumod = (hpctoolkit_cumod_st_t *)module;
   uint32_t cubin_id = cumod->cubin_id;
+  uint32_t mod_id = cumod->mod_id;
 
   // Compute hash for cubin and store it into a map
   cubin_hash_map_entry_t *cubin_hash_entry = cubin_hash_map_lookup(cubin_id);
@@ -665,7 +666,7 @@ sanitizer_load_callback
     hpctoolkit_module_id = load_module->id;
   }
   hpcrun_loadmap_unlock();
-  PRINT("cubin_id %d -> hpctoolkit_module_id %d\n", cubin_id, hpctoolkit_module_id);
+  PRINT("<cubin_id %d, mod_id %d> -> hpctoolkit_module_id %d\n", cubin_id, mod_id, hpctoolkit_module_id);
 
   // Compute elf vector
   Elf_SymbolVector *elf_vector = computeCubinFunctionOffsets(cubin, cubin_size);
@@ -683,9 +684,10 @@ sanitizer_load_callback
       // do not check error
       HPCRUN_SANITIZER_CALL_NO_CHECK(sanitizerGetFunctionPcAndSize, (module, elf_vector->names[i], &pc, &size));
       addrs[i] = pc;
+      PRINT("Symbol %u, addr %p\n", i, pc);
     }
   }
-  redshow_cubin_cache_register(cubin_id, elf_vector->nsymbols, addrs, file_name);
+  redshow_cubin_cache_register(cubin_id, mod_id, elf_vector->nsymbols, addrs, file_name);
 
   PRINT("Patch CUBIN: \n");
   PRINT("%s\n", HPCTOOLKIT_GPU_PATCH);
@@ -714,7 +716,7 @@ sanitizer_unload_callback
 
   if (!sanitizer_analysis_async) {
     // We can unregister cubins in the async mode
-    redshow_cubin_unregister(cumod->cubin_id);
+    redshow_cubin_unregister(cumod->cubin_id, cumod->mod_id);
   }
 }
 
@@ -778,6 +780,7 @@ sanitizer_kernel_launch_sync
   // Look up module id
   hpctoolkit_cumod_st_t *cumod = (hpctoolkit_cumod_st_t *)module;
   uint32_t cubin_id = cumod->cubin_id;
+  uint32_t mod_id = cumod->mod_id;
 
   // TODO(Keren): correlate metrics with api_node
 
@@ -807,8 +810,8 @@ sanitizer_kernel_launch_sync
   }
 
   // Reserve for debugging correctness
-  PRINT("head_index %u, tail_index %u, num_left_threads %lu\n",
-    gpu_patch_buffer_host->head_index, gpu_patch_buffer_host->tail_index, num_threads);
+  //PRINT("head_index %u, tail_index %u, num_left_threads %lu\n",
+  //  gpu_patch_buffer_host->head_index, gpu_patch_buffer_host->tail_index, num_threads);
 
   while (true) {
     // Copy buffer
@@ -818,8 +821,8 @@ sanitizer_kernel_launch_sync
     size_t num_records = gpu_patch_buffer_host->head_index;
 
     // Reserve for debugging correctness
-    PRINT("head_index %u, tail_index %u, num_left_threads %u expected %zu\n",
-      gpu_patch_buffer_host->head_index, gpu_patch_buffer_host->tail_index, gpu_patch_buffer_host->num_threads, num_left_threads);
+    //PRINT("head_index %u, tail_index %u, num_left_threads %u expected %zu\n",
+    //  gpu_patch_buffer_host->head_index, gpu_patch_buffer_host->tail_index, gpu_patch_buffer_host->num_threads, num_left_threads);
 
     // Wait until the buffer is full or the kernel is finished
     if (!(gpu_patch_buffer_host->num_threads == num_left_threads || gpu_patch_buffer_host->full) || num_records == 0) {
@@ -831,8 +834,15 @@ sanitizer_kernel_launch_sync
 
     // Allocate memory
     sanitizer_buffer_t *sanitizer_buffer = sanitizer_buffer_channel_produce(
-      sanitizer_thread_id_local, cubin_id, (uint64_t)api_node, correlation_id, sanitizer_gpu_patch_record_num);
+      sanitizer_thread_id_local, cubin_id, mod_id, (uint64_t)api_node, correlation_id,
+      sanitizer_gpu_patch_record_num, sanitizer_analysis_async);
     gpu_patch_buffer_t *gpu_patch_buffer = sanitizer_buffer_entry_gpu_patch_buffer_get(sanitizer_buffer);
+
+    // If sync mode and not enough buffer, empty current buffer
+    if (gpu_patch_buffer == NULL && !sanitizer_analysis_async) {
+      sanitizer_buffer_channel_t *channel = sanitizer_buffer_channel_get();
+      sanitizer_buffer_channel_consume(channel);
+    }
 
     // Move host buffer to a cache
     memcpy(gpu_patch_buffer, gpu_patch_buffer_host, offsetof(gpu_patch_buffer_t, records));
@@ -852,8 +862,8 @@ sanitizer_kernel_launch_sync
     
     sanitizer_buffer_channel_push(sanitizer_buffer);
 
+    // Awake background thread
     if (sanitizer_analysis_async) {
-      // Awake background thread
       // If multiple application threads are created, it might miss a signal,
       // but we finally still process all the records
       sanitizer_process_signal(); 
@@ -866,7 +876,9 @@ sanitizer_kernel_launch_sync
   }
 
   if (!sanitizer_analysis_async) {
-    sanitizer_buffer_channel_set_consume();
+    // Empty current buffer
+    sanitizer_buffer_channel_t *channel = sanitizer_buffer_channel_get();
+    sanitizer_buffer_channel_consume(channel);
   }
 }
 
@@ -1082,12 +1094,13 @@ sanitizer_subscribe_callback
       block_size.y = ld->blockDim_y;
       block_size.z = ld->blockDim_z;
 
-      PRINT("Launch kernel %s <%d, %d, %d>:<%d, %d, %d>, op %lu, id %lu\n", ld->functionName,
+      PRINT("Launch kernel %s <%d, %d, %d>:<%d, %d, %d>, op %lu, id %lu, mod_id %u\n", ld->functionName,
         ld->gridDim_x, ld->gridDim_y, ld->gridDim_z, ld->blockDim_x, ld->blockDim_y, ld->blockDim_z,
-        correlation_id, (uint64_t)api_node);
+        correlation_id, (uint64_t)api_node, ((hpctoolkit_cumod_st_t *)ld->module)->mod_id);
 
       // thread-safe
       // Create a high priority stream for the context at the first time
+      // TODO(Keren): change stream->hstream
       sanitizer_context_map_stream_lock(ld->context, ld->stream);
 
       sanitizer_kernel_launch_callback(ld->context, ld->hStream, ld->function, grid_size, block_size, kernel_sampling);

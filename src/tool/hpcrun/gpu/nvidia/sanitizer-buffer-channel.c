@@ -129,7 +129,11 @@ sanitizer_buffer_channel_alloc
 }
 
 
-static sanitizer_buffer_channel_t *
+//******************************************************************************
+// interface functions
+//******************************************************************************
+
+sanitizer_buffer_channel_t *
 sanitizer_buffer_channel_get
 (
  void
@@ -142,26 +146,23 @@ sanitizer_buffer_channel_get
   return sanitizer_buffer_channel;
 }
 
-
-//******************************************************************************
-// interface functions
-//******************************************************************************
-
 sanitizer_buffer_t *
 sanitizer_buffer_channel_produce
 (
  uint32_t thread_id,
  uint32_t cubin_id,
+ uint32_t mod_id,
  uint64_t kernel_id,
  uint64_t host_op_id,
- size_t num_records
+ size_t num_records,
+ bool async
 )
 {
   sanitizer_buffer_channel_t *buf_channel = sanitizer_buffer_channel_get();
 
   sanitizer_buffer_t *b = sanitizer_buffer_alloc(buf_channel);
 
-  sanitizer_buffer_produce(b, thread_id, cubin_id, kernel_id, host_op_id, num_records, &buf_channel->balance);
+  sanitizer_buffer_produce(b, thread_id, cubin_id, mod_id, kernel_id, host_op_id, num_records, &buf_channel->balance, async);
 
   return b;
 }
@@ -231,4 +232,14 @@ FLUSH:
   if (do_flush == true) {
     atomic_store(&channel->finish, true);
   }
+}
+
+
+uint32_t
+sanitizer_buffer_channel_balance_get
+(
+ sanitizer_buffer_channel_t *channel
+)
+{
+  return atomic_load(&channel->balance);
 }

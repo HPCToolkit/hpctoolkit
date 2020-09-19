@@ -47,7 +47,7 @@
 
 #define UNIT_TEST 0
 
-#define DEBUG 1
+#define DEBUG 0
 
 #include "../gpu-print.h"
 
@@ -77,6 +77,7 @@ typedef struct sanitizer_buffer_t {
 
   uint32_t thread_id;
   uint32_t cubin_id;
+  uint32_t mod_id;
   uint64_t kernel_id;
   uint64_t host_op_id;
   gpu_patch_buffer_t *gpu_patch_buffer;
@@ -94,12 +95,13 @@ sanitizer_buffer_process
 {
   uint32_t thread_id = b->thread_id;
   uint32_t cubin_id = b->cubin_id;
+  uint32_t mod_id = b->mod_id;
   uint64_t kernel_id = b->kernel_id;
   uint64_t host_op_id = b->host_op_id;
 
   gpu_patch_buffer_t *gpu_patch_buffer = b->gpu_patch_buffer;
   
-  redshow_analyze(thread_id, cubin_id, kernel_id, host_op_id, gpu_patch_buffer);
+  redshow_analyze(thread_id, cubin_id, mod_id, kernel_id, host_op_id, gpu_patch_buffer);
 }
 
 
@@ -119,14 +121,17 @@ sanitizer_buffer_produce
  sanitizer_buffer_t *b,
  uint32_t thread_id,
  uint32_t cubin_id,
+ uint32_t mod_id,
  uint64_t kernel_id,
  uint64_t host_op_id,
  size_t num_records,
- atomic_uint *balance
+ atomic_uint *balance,
+ bool async
 )
 {
   b->thread_id = thread_id;
   b->cubin_id = cubin_id;
+  b->mod_id = mod_id;
   b->kernel_id = kernel_id;
   b->host_op_id = host_op_id;
 
@@ -135,6 +140,10 @@ sanitizer_buffer_produce
   if (b->gpu_patch_buffer == NULL) {
     // Spin waiting
     while (atomic_load(balance) >= sanitizer_buffer_pool_size_get()) {
+      if (!async) {
+        b->gpu_patch_buffer = NULL;
+        return ;
+      }
       sanitizer_process_signal();
     }
     PRINT("Allocate buffer size %lu\n", num_records * sizeof(gpu_patch_record_t));

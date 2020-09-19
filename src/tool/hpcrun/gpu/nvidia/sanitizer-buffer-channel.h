@@ -66,9 +66,11 @@ sanitizer_buffer_channel_produce
 (
  uint32_t thread_id,
  uint32_t cubin_id,
+ uint32_t mod_id,
  uint64_t kernel_id,
  uint64_t host_op_id,
- size_t num_records
+ size_t num_records,
+ bool async
 );
 
 
@@ -95,6 +97,20 @@ sanitizer_buffer_channel_finish
 // consume from a channel that another thread created
 void
 sanitizer_buffer_channel_consume
+(
+ sanitizer_buffer_channel_t *channel
+);
+
+
+sanitizer_buffer_channel_t *
+sanitizer_buffer_channel_get
+(
+ void
+);
+
+
+uint32_t
+sanitizer_buffer_channel_balance_get
 (
  sanitizer_buffer_channel_t *channel
 );
