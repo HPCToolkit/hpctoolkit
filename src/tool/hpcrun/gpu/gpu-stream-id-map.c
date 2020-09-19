@@ -128,9 +128,9 @@ static void
 gpu_stream_id_map_insert
 (
  gpu_stream_id_map_entry_t **root,
- int device_id,
- int context_id,
- int stream_id
+ uint32_t device_id,
+ uint32_t context_id,
+ uint32_t stream_id
 )
 {
   if (st_lookup(root, stream_id) == NULL) {
@@ -202,9 +202,9 @@ void
 gpu_stream_id_map_stream_process
 (
  gpu_stream_id_map_entry_t **root,
-  int device_id,
-  int context_id,
-  int stream_id,
+ uint32_t device_id,
+ uint32_t context_id,
+ uint32_t stream_id,
  gpu_trace_fn_t fn,
  gpu_trace_item_t *ti
 )
@@ -217,9 +217,9 @@ gpu_stream_id_map_stream_process
 gpu_stream_id_map_entry_t *
 gpu_stream_id_map_entry_new
 (
- int device_id,
- int context_id,
- int stream_id
+ uint32_t device_id,
+ uint32_t context_id,
+ uint32_t stream_id
 )
 {
   PRINT("Create a new trace with stream id %u\n", stream_id);

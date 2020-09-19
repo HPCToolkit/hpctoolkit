@@ -96,9 +96,9 @@ gpu_trace_init
 gpu_trace_t *
 gpu_trace_create
 (
- int device_id,
- int context_id,
- int stream_id
+ uint32_t device_id,
+ uint32_t context_id,
+ uint32_t stream_id
 );
 
 

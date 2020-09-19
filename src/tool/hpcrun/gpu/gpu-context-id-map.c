@@ -134,9 +134,9 @@ typed_splay_impl(context_id)
 
 static gpu_context_id_map_entry_t *
 gpu_context_id_map_entry_new(
- int device_id,
- int context_id,
- int stream_id
+ uint32_t device_id,
+ uint32_t context_id,
+ uint32_t stream_id
 )
 {
   gpu_context_id_map_entry_t *e;
@@ -154,9 +154,9 @@ gpu_context_id_map_entry_new(
 static void
 gpu_context_id_map_insert
 (
- int device_id,
- int context_id,
- int stream_id
+ uint32_t device_id,
+ uint32_t context_id,
+ uint32_t stream_id
 )
 {
   gpu_context_id_map_entry_t *entry = st_lookup(&map_root, context_id);
@@ -261,9 +261,9 @@ gpu_context_id_map_stream_delete
 void
 gpu_context_id_map_stream_process
 (
- int device_id,
- int context_id,
- int stream_id,
+ uint32_t device_id,
+ uint32_t context_id,
+ uint32_t stream_id,
  gpu_trace_fn_t fn,
  gpu_trace_item_t *ti
 )

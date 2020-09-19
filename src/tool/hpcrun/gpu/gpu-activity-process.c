@@ -86,9 +86,9 @@
 static void
 gpu_context_stream_trace
 (
- int device_id,
- int context_id,
- int stream_id,
+ uint32_t device_id,
+ uint32_t context_id,
+ uint32_t stream_id,
  gpu_trace_item_t *ti
 )
 {

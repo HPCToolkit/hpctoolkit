@@ -91,9 +91,9 @@
 //******************************************************************************
 
 typedef struct gpu_tag {
- int device_id;
- int context_id;
- int stream_id;
+  uint32_t device_id;
+  uint32_t context_id;
+  uint32_t stream_id;
 }gpu_tag;
 
 typedef struct gpu_trace_t {
@@ -147,9 +147,9 @@ stream_start_get
 static gpu_trace_t *
 gpu_trace_alloc
 (
- int device_id,
- int context_id,
- int stream_id
+ uint32_t device_id,
+ uint32_t context_id,
+ uint32_t stream_id
 )
 {
   gpu_trace_t *trace = hpcrun_malloc_safe(sizeof(gpu_trace_t));
@@ -370,7 +370,7 @@ gpu_compute_profile_name
   id_tuple_push_back(&id_tuple, IDTUPLE_THREAD, cptd->id);
 
   // GPU metrics
-  if (tag.device_id >= 0) id_tuple_push_back(&id_tuple, IDTUPLE_GPUDEVICE, tag.device_id);
+  if (tag.device_id != (uint32_t) -1 ) id_tuple_push_back(&id_tuple, IDTUPLE_GPUDEVICE, tag.device_id);
   id_tuple_push_back(&id_tuple, IDTUPLE_GPUCONTEXT, tag.context_id);
   id_tuple_push_back(&id_tuple, IDTUPLE_GPUSTREAM, tag.stream_id);
 
@@ -472,9 +472,9 @@ gpu_trace_fini
 gpu_trace_t *
 gpu_trace_create
 (
- int device_id,
- int context_id,
- int stream_id
+ uint32_t device_id,
+ uint32_t context_id,
+ uint32_t stream_id
 )
 {
   // Init variables
