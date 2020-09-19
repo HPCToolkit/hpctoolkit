@@ -99,7 +99,8 @@ decodeDwarfAddress(uint8_t *streamPtr, ehDecodeRecord_t *decodeRecord, uint64_t 
 
 	switch (fdeAddrDecodeType) {
 		case DW_EH_PE_absptr:
-      unsignedFunctionAddr = unalignedEndianRead(streamPtr,sizeof(uint64_t),EHF_UER_UNSIGNED);
+      unsignedRelAddr = unalignedEndianRead(streamPtr,sizeof(uint64_t),EHF_UER_UNSIGNED);
+      unsignedFunctionAddr = unsignedBaseAddr + unsignedRelAddr;
       advance += sizeof(uint64_t);
 			break;
 		case DW_EH_PE_uleb128:
