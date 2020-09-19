@@ -138,7 +138,7 @@
 
 #define HPCRUN_SANITIZER_CALL_NO_CHECK(fn, args) \
 { \
-  SanitizerResult status = SANITIZER_FN_NAME(fn) args; \
+  SANITIZER_FN_NAME(fn) args; \
 }
 
 #define DISPATCH_CALLBACK(fn, args) if (fn) fn args
@@ -263,7 +263,7 @@ SANITIZER_FN
 
 SANITIZER_FN
 (
- sanitizerEnableAllDomains,
+ __attribute__((unused)) sanitizerEnableAllDomains,
  (
   uint32_t enable,
   Sanitizer_SubscriberHandle subscriber
@@ -380,7 +380,7 @@ SANITIZER_FN
 
 SANITIZER_FN
 (
- sanitizerUnpatchModule,
+ __attribute__((unused)) sanitizerUnpatchModule,
  (
   CUmodule module
  )
