@@ -714,10 +714,8 @@ sanitizer_unload_callback
   hpctoolkit_cumod_st_t *cumod = (hpctoolkit_cumod_st_t *)module;
   cuda_unload_callback(cumod->cubin_id);
 
-  if (!sanitizer_analysis_async) {
-    // We can unregister cubins in the async mode
-    redshow_cubin_unregister(cumod->cubin_id, cumod->mod_id);
-  }
+  // We cannot unregister cubins
+  //redshow_cubin_unregister(cumod->cubin_id, cumod->mod_id);
 }
 
 //******************************************************************************
