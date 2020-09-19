@@ -105,7 +105,7 @@ gpu_trace_create
 void *
 gpu_trace_record
 (
- struct gpu_trace_t *gpu_trace
+ gpu_trace_t *gpu_trace
 );
 
 

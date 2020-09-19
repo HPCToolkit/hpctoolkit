@@ -176,7 +176,7 @@ lazy_open_data_file(core_profile_trace_data_t * cptd)
 
   int rank = hpcrun_get_rank();
 
-  if (cptd->id < 500){
+  if ( is_id_tuple_empty(&cptd->id_tuple) ){
     compute_profile_name(rank, cptd);
   }
 

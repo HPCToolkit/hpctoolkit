@@ -90,16 +90,16 @@
 // type declarations
 //******************************************************************************
 
-typedef struct gpu_tag {
+typedef struct gpu_tag_t {
   uint32_t device_id;
   uint32_t context_id;
   uint32_t stream_id;
-}gpu_tag;
+}gpu_tag_t;
 
 typedef struct gpu_trace_t {
   pthread_t thread;
   gpu_trace_channel_t *trace_channel;
-  gpu_tag tag;
+  gpu_tag_t tag;
 } gpu_trace_t;
 
 typedef void *(*pthread_start_routine_t)(void *);
@@ -355,7 +355,7 @@ gpu_trace_stream_id
 static void
 gpu_compute_profile_name
 (
- gpu_tag tag,
+ gpu_tag_t tag,
  core_profile_trace_data_t * cptd
 )
 {
@@ -381,7 +381,7 @@ gpu_compute_profile_name
 static thread_data_t *
 gpu_trace_stream_acquire
 (
- gpu_tag tag
+ gpu_tag_t tag
 )
 {
   thread_data_t* td = NULL;
@@ -433,7 +433,7 @@ gpu_trace_init
 void *
 gpu_trace_record
 (
- struct gpu_trace_t *trace
+ gpu_trace_t *trace
 )
 {
   thread_data_t* td = gpu_trace_stream_acquire(trace->tag);
