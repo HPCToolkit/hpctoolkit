@@ -283,6 +283,7 @@ convert_memcpy
 
   ga->kind = GPU_ACTIVITY_MEMCPY;
   ga->details.memcpy.correlation_id = activity->correlationId;
+  ga->details.memcpy.device_id = activity->deviceId;
   ga->details.memcpy.context_id = activity->contextId;
   ga->details.memcpy.stream_id = activity->streamId;
   ga->details.memcpy.copyKind = convert_memcpy_type(activity->copyKind);
@@ -305,6 +306,7 @@ convert_memcpy2
 
   ga->kind = GPU_ACTIVITY_MEMCPY;
   ga->details.memcpy.correlation_id = activity->correlationId;
+  ga->details.memcpy.device_id = activity->deviceId;
   ga->details.memcpy.context_id = activity->contextId;
   ga->details.memcpy.stream_id = activity->streamId;
   ga->details.memcpy.copyKind = convert_memcpy_type(activity->copyKind);
@@ -481,6 +483,9 @@ convert_memory
   ga->kind = GPU_ACTIVITY_MEMORY;
   ga->details.memory.memKind = activity_mem->memoryKind;
   ga->details.memory.bytes = activity_mem->bytes;
+  ga->details.memory.device_id = activity_mem->deviceId;
+  ga->details.memory.context_id = activity_mem->contextId;
+
 
   set_gpu_interval(&ga->details.interval, activity_mem->start, activity_mem->end);
 }
@@ -495,6 +500,7 @@ convert_memset
 {
   ga->kind = GPU_ACTIVITY_MEMSET;
   ga->details.memset.correlation_id = activity->correlationId;
+  ga->details.memset.device_id = activity->deviceId;
   ga->details.memset.context_id = activity->contextId;
   ga->details.memset.stream_id = activity->streamId;
   ga->details.memset.memKind = activity->memoryKind;
@@ -528,8 +534,10 @@ convert_cdpkernel
   ga->kind = GPU_ACTIVITY_CDP_KERNEL;
 
   ga->details.cdpkernel.correlation_id = activity->correlationId;
+  ga->details.cdpkernel.device_id = activity->deviceId;
   ga->details.cdpkernel.context_id = activity->contextId;
   ga->details.cdpkernel.stream_id = activity->streamId;
+
 
   set_gpu_interval(&ga->details.interval, activity->start, activity->end);
 }
