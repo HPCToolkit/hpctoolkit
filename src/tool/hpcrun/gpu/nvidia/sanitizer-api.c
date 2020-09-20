@@ -832,6 +832,11 @@ sanitizer_kernel_launch_sync
       continue;
     }
 
+    // Wait until the buffer is sync
+    if (!gpu_patch_buffer_host->full && gpu_patch_buffer_host->tail_index != num_records) {
+      continue;
+    }
+
     // Reserve for debugging correctness
     //PRINT("num_records %zu\n", num_records);
 
