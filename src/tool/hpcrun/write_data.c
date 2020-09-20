@@ -91,7 +91,10 @@ static epoch_flags_t epoch_flags = {
   .bits = 0
 };
 
+//YUMENG: no epoch info needed
+#if 0
 static const uint64_t default_measurement_granularity = 1;
+#endif
 
 //*****************************************************************************
 // macro
@@ -140,32 +143,6 @@ static const uint64_t default_measurement_granularity = 1;
 //
 //***************************************************************************
 
-
-static void
-compute_profile_name
-(
- int rank, 
- core_profile_trace_data_t * cptd
-)
-{
-  tms_id_t ids[IDTUPLE_MAXTYPES];
-  id_tuple_t id_tuple;
-
-  id_tuple_constructor(&id_tuple, ids, IDTUPLE_MAXTYPES);
-
-  id_tuple_push_back(&id_tuple, IDTUPLE_NODE, gethostid()); 
-
-  if (rank >= 0) {
-    id_tuple_push_back(&id_tuple, IDTUPLE_RANK, rank); 
-  }
-
-  id_tuple_push_back(&id_tuple, IDTUPLE_THREAD, cptd->id); 
-
-  id_tuple_copy(&cptd->id_tuple, &id_tuple, hpcrun_malloc);
-}
-
-
-
 static FILE *
 lazy_open_data_file(core_profile_trace_data_t * cptd)
 {
@@ -175,11 +152,6 @@ lazy_open_data_file(core_profile_trace_data_t * cptd)
   }
 
   int rank = hpcrun_get_rank();
-
-  if ( is_id_tuple_empty(&cptd->id_tuple) ){
-    compute_profile_name(rank, cptd);
-  }
-
   if (rank < 0) {
     rank = 0;
   }

@@ -46,6 +46,7 @@
 //******************************************************************************
 
 #include <pthread.h>
+#include <unistd.h>
 
 
 
@@ -64,6 +65,7 @@
 #include <lib/prof-lean/stdatomic.h>
 
 #include <hpcrun/cct/cct.h>
+#include <hpcrun/rank.h>
 #include <hpcrun/thread_data.h>
 #include <hpcrun/threadmgr.h>
 #include <hpcrun/trace.h>
@@ -364,14 +366,17 @@ gpu_compute_profile_name
 
   id_tuple_constructor(&id_tuple, ids, IDTUPLE_MAXTYPES);
 
+  id_tuple_push_back(&id_tuple, IDTUPLE_NODE, gethostid());
+
+  if (tag.device_id != IDTUPLE_INVALID) {
+    id_tuple_push_back(&id_tuple, IDTUPLE_GPUDEVICE, tag.device_id);
+  }
+
   int rank = hpcrun_get_rank();
   if (rank >= 0) id_tuple_push_back(&id_tuple, IDTUPLE_RANK, rank);
-  id_tuple_push_back(&id_tuple, IDTUPLE_NODE, gethostid());
-  id_tuple_push_back(&id_tuple, IDTUPLE_THREAD, cptd->id);
 
-  // GPU metrics
-  if (tag.device_id != (uint32_t) -1 ) id_tuple_push_back(&id_tuple, IDTUPLE_GPUDEVICE, tag.device_id);
   id_tuple_push_back(&id_tuple, IDTUPLE_GPUCONTEXT, tag.context_id);
+
   id_tuple_push_back(&id_tuple, IDTUPLE_GPUSTREAM, tag.stream_id);
 
   id_tuple_copy(&cptd->id_tuple, &id_tuple, hpcrun_malloc);

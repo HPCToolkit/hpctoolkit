@@ -157,15 +157,6 @@ id_tuple_copy
   memcpy(dest->ids, src->ids, ids_bytes); 
 }
 
-bool
-is_id_tuple_empty
-(
- id_tuple_t *tuple
-)
-{
-  return (tuple->ids_length == 0);
-}
-
 
 int 
 id_tuple_fwrite(id_tuple_t* x, FILE* fs)

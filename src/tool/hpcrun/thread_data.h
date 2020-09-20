@@ -318,6 +318,8 @@ void     hpcrun_ensure_btbuf_avail(void);
 void           hpcrun_thread_data_reuse_init(cct_ctxt_t* thr_ctxt);
 void           hpcrun_cached_bt_adjust_size(size_t n);
 
+void hpcrun_id_tuple_cputhread(thread_data_t *td);
+
 // utilities to match previous api
 #define hpcrun_get_thread_epoch()  TD_GET(core_profile_trace_data.epoch)
 

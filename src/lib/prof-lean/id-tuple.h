@@ -83,15 +83,17 @@
 // macros
 //***************************************************************************
 
-#define IDTUPLE_SUMMARY    (uint16_t)0
-#define IDTUPLE_NODE       (uint16_t)1
-#define IDTUPLE_RANK       (uint16_t)2
-#define IDTUPLE_THREAD     (uint16_t)3
-#define IDTUPLE_GPUDEVICE  (uint16_t)4
-#define IDTUPLE_GPUSTREAM  (uint16_t)5
-#define IDTUPLE_GPUCONTEXT (uint16_t)6
+#define IDTUPLE_INVALID       -1
 
-#define IDTUPLE_MAXTYPES   (uint16_t)7
+#define IDTUPLE_SUMMARY        0
+#define IDTUPLE_NODE           1
+#define IDTUPLE_RANK           2
+#define IDTUPLE_THREAD         3
+#define IDTUPLE_GPUDEVICE      4
+#define IDTUPLE_GPUCONTEXT     5
+#define IDTUPLE_GPUSTREAM      6
+
+#define IDTUPLE_MAXTYPES       7
 
 #define TMS_id_tuple_len_SIZE  2
 #define TMS_id_SIZE            10
@@ -162,14 +164,6 @@ id_tuple_copy
  id_tuple_t *src, 
  id_tuple_allocator_fn_t alloc
 );
-
-
-bool
-is_id_tuple_empty
-(
- id_tuple_t *tuple
-);
-
 
 
 //---------------------------------------------------------------------------

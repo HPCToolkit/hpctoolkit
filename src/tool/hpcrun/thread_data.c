@@ -50,7 +50,15 @@
 //************************* System Include Files ****************************
 
 #include <assert.h>
+
+#ifndef _GNU_SOURCE
+// needed for pthread_getaffinity_np
+#define _GNU_SOURCE
+#endif
+
 #include <pthread.h>
+#include <sched.h>
+
 #include <stdlib.h>
 
 //************************ libmonitor Include Files *************************
@@ -481,3 +489,52 @@ hpcrun_ensure_btbuf_avail(void)
   }
 }
 
+
+void
+hpcrun_id_tuple_cputhread
+(
+ thread_data_t *td
+)
+{
+  int rank = hpcrun_get_rank();
+  core_profile_trace_data_t *cptd = &(td->core_profile_trace_data);
+
+  tms_id_t ids[IDTUPLE_MAXTYPES];
+  id_tuple_t id_tuple;
+
+  id_tuple_constructor(&id_tuple, ids, IDTUPLE_MAXTYPES);
+
+  id_tuple_push_back(&id_tuple, IDTUPLE_NODE, gethostid()); 
+
+  if (rank >= 0) {
+    id_tuple_push_back(&id_tuple, IDTUPLE_RANK, rank); 
+  }
+
+  id_tuple_push_back(&id_tuple, IDTUPLE_THREAD, cptd->id); 
+
+  id_tuple_copy(&cptd->id_tuple, &id_tuple, hpcrun_malloc);
+}
+
+
+#ifdef CORE_BINDING_INFO
+// preliminary sketch for core information
+// FIXME: currently causes memory corruption
+int
+core_bindings
+(
+ void
+)
+{
+  int core_id = -1;
+  pthread_t self = pthread_self();
+
+  cpu_set_t *cpuset = CPU_ALLOC(CPU_SETSIZE);
+  if (pthread_getaffinity_np(self, CPU_SETSIZE, cpuset) == 0) {
+    printf("cpu count = %d\n", CPU_COUNT(cpuset));
+  }
+
+  // CPU_FREE(cpuset);
+
+  return core_id;
+}
+#endif
