@@ -1,5 +1,5 @@
-#ifndef _HPCTOOLKIT_GPU_NVIDIA_SANITIZER_KERNEL_MAP_H_
-#define _HPCTOOLKIT_GPU_NVIDIA_SANITIZER_KERNEL_MAP_H_
+#ifndef _HPCTOOLKIT_GPU_NVIDIA_SANITIZER_OP_MAP_H_
+#define _HPCTOOLKIT_GPU_NVIDIA_SANITIZER_OP_MAP_H_
 
 /******************************************************************************
  * system includes
@@ -17,30 +17,38 @@
  * type definitions 
  *****************************************************************************/
 
-typedef struct sanitizer_kernel_map_entry_s sanitizer_kernel_map_entry_t;
+typedef struct sanitizer_op_map_entry_s sanitizer_op_map_entry_t;
 
 /******************************************************************************
  * interface operations
  *****************************************************************************/
 
-sanitizer_kernel_map_entry_t *
-sanitizer_kernel_map_lookup
+sanitizer_op_map_entry_t *
+sanitizer_op_map_lookup
 (
- cct_node_t *kernel
+ int32_t persistent_id
 );
 
 
-sanitizer_kernel_map_entry_t *
-sanitizer_kernel_map_init
+sanitizer_op_map_entry_t *
+sanitizer_op_map_init
 (
- cct_node_t *kernel
+ int32_t persistent_id,
+ cct_node_t *op
 );
 
 
 void
-sanitizer_kernel_map_delete
+sanitizer_op_map_delete
 (
- cct_node_t *kernel
+ int32_t persistent_id
+);
+
+
+cct_node_t *
+sanitizer_op_map_op_get
+(
+ sanitizer_op_map_entry_t *
 );
 
 

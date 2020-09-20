@@ -517,7 +517,7 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	gpu/nvidia/sanitizer-buffer-channel-set.c \
 	gpu/nvidia/sanitizer-context-map.c \
 	gpu/nvidia/sanitizer-stream-map.c \
-	gpu/nvidia/sanitizer-kernel-map.c sample-sources/upc.c \
+	gpu/nvidia/sanitizer-op-map.c sample-sources/upc.c \
 	sample-sources/nvidia.c gpu/nvidia/cuda-api.c \
 	gpu/nvidia/cubin-hash-map.c gpu/nvidia/cubin-id-map.c \
 	gpu/nvidia/cubin-symbols.c gpu/nvidia/cuda-device-map.c \
@@ -702,7 +702,7 @@ am__objects_26 = trampoline/aarch64/libhpcrun_la-aarch64-tramp.lo \
 @OPT_ENABLE_SANITIZER_TRUE@	gpu/nvidia/libhpcrun_la-sanitizer-buffer-channel-set.lo \
 @OPT_ENABLE_SANITIZER_TRUE@	gpu/nvidia/libhpcrun_la-sanitizer-context-map.lo \
 @OPT_ENABLE_SANITIZER_TRUE@	gpu/nvidia/libhpcrun_la-sanitizer-stream-map.lo \
-@OPT_ENABLE_SANITIZER_TRUE@	gpu/nvidia/libhpcrun_la-sanitizer-kernel-map.lo
+@OPT_ENABLE_SANITIZER_TRUE@	gpu/nvidia/libhpcrun_la-sanitizer-op-map.lo
 @OPT_ENABLE_SANITIZER_TRUE@am__objects_34 = $(am__objects_33)
 am__objects_35 = sample-sources/libhpcrun_la-upc.lo
 @OPT_ENABLE_UPC_TRUE@am__objects_36 = $(am__objects_35)
@@ -907,7 +907,7 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	gpu/nvidia/sanitizer-buffer-channel-set.c \
 	gpu/nvidia/sanitizer-context-map.c \
 	gpu/nvidia/sanitizer-stream-map.c \
-	gpu/nvidia/sanitizer-kernel-map.c sample-sources/papi.c \
+	gpu/nvidia/sanitizer-op-map.c sample-sources/papi.c \
 	sample-sources/papi-c-cupti.c sample-sources/papi-c.c \
 	sample-sources/papi-c-extended-info.c sample-sources/upc.c \
 	sample-sources/nvidia.c gpu/nvidia/cuda-api.c \
@@ -1093,7 +1093,7 @@ am__objects_64 =  \
 @OPT_ENABLE_SANITIZER_TRUE@	gpu/nvidia/libhpcrun_o-sanitizer-buffer-channel-set.$(OBJEXT) \
 @OPT_ENABLE_SANITIZER_TRUE@	gpu/nvidia/libhpcrun_o-sanitizer-context-map.$(OBJEXT) \
 @OPT_ENABLE_SANITIZER_TRUE@	gpu/nvidia/libhpcrun_o-sanitizer-stream-map.$(OBJEXT) \
-@OPT_ENABLE_SANITIZER_TRUE@	gpu/nvidia/libhpcrun_o-sanitizer-kernel-map.$(OBJEXT)
+@OPT_ENABLE_SANITIZER_TRUE@	gpu/nvidia/libhpcrun_o-sanitizer-op-map.$(OBJEXT)
 @OPT_ENABLE_SANITIZER_TRUE@am__objects_69 = $(am__objects_68)
 @OPT_PAPI_CUPTI_TRUE@am__objects_70 = sample-sources/libhpcrun_o-papi-c-cupti.$(OBJEXT)
 @OPT_PAPI_COMPONENT_FALSE@am__objects_71 = sample-sources/libhpcrun_o-papi.$(OBJEXT) \
@@ -1850,7 +1850,7 @@ MY_AARCH64_FILES = \
 @OPT_ENABLE_SANITIZER_TRUE@										 gpu/nvidia/sanitizer-buffer-channel-set.c \
 @OPT_ENABLE_SANITIZER_TRUE@										 gpu/nvidia/sanitizer-context-map.c \
 @OPT_ENABLE_SANITIZER_TRUE@										 gpu/nvidia/sanitizer-stream-map.c \
-@OPT_ENABLE_SANITIZER_TRUE@										 gpu/nvidia/sanitizer-kernel-map.c
+@OPT_ENABLE_SANITIZER_TRUE@										 gpu/nvidia/sanitizer-op-map.c
 
 @OPT_ENABLE_CUPTI_TRUE@MY_CUPTI_FILES = gpu/nvidia/cupti-activity-translate.c	\
 @OPT_ENABLE_CUPTI_TRUE@								 gpu/nvidia/cupti-analysis.c \
@@ -2718,7 +2718,7 @@ gpu/nvidia/libhpcrun_la-sanitizer-context-map.lo:  \
 gpu/nvidia/libhpcrun_la-sanitizer-stream-map.lo:  \
 	gpu/nvidia/$(am__dirstamp) \
 	gpu/nvidia/$(DEPDIR)/$(am__dirstamp)
-gpu/nvidia/libhpcrun_la-sanitizer-kernel-map.lo:  \
+gpu/nvidia/libhpcrun_la-sanitizer-op-map.lo:  \
 	gpu/nvidia/$(am__dirstamp) \
 	gpu/nvidia/$(DEPDIR)/$(am__dirstamp)
 sample-sources/libhpcrun_la-upc.lo: sample-sources/$(am__dirstamp) \
@@ -3237,7 +3237,7 @@ gpu/nvidia/libhpcrun_o-sanitizer-context-map.$(OBJEXT):  \
 gpu/nvidia/libhpcrun_o-sanitizer-stream-map.$(OBJEXT):  \
 	gpu/nvidia/$(am__dirstamp) \
 	gpu/nvidia/$(DEPDIR)/$(am__dirstamp)
-gpu/nvidia/libhpcrun_o-sanitizer-kernel-map.$(OBJEXT):  \
+gpu/nvidia/libhpcrun_o-sanitizer-op-map.$(OBJEXT):  \
 	gpu/nvidia/$(am__dirstamp) \
 	gpu/nvidia/$(DEPDIR)/$(am__dirstamp)
 sample-sources/libhpcrun_o-papi.$(OBJEXT):  \
@@ -3664,7 +3664,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_la-sanitizer-buffer-channel.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_la-sanitizer-buffer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_la-sanitizer-context-map.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_la-sanitizer-kernel-map.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_la-sanitizer-op-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_la-sanitizer-stream-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_o-cubin-hash-map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_o-cubin-id-map.Po@am__quote@
@@ -3680,7 +3680,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_o-sanitizer-buffer-channel.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_o-sanitizer-buffer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_o-sanitizer-context-map.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_o-sanitizer-kernel-map.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_o-sanitizer-op-map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/nvidia/$(DEPDIR)/libhpcrun_o-sanitizer-stream-map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@lush-agents/$(DEPDIR)/libagent_cilk_la-agent-cilk.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@lush-agents/$(DEPDIR)/libagent_pthread_la-agent-pthread.Plo@am__quote@
@@ -5197,12 +5197,12 @@ gpu/nvidia/libhpcrun_la-sanitizer-stream-map.lo: gpu/nvidia/sanitizer-stream-map
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/nvidia/libhpcrun_la-sanitizer-stream-map.lo `test -f 'gpu/nvidia/sanitizer-stream-map.c' || echo '$(srcdir)/'`gpu/nvidia/sanitizer-stream-map.c
 
-gpu/nvidia/libhpcrun_la-sanitizer-kernel-map.lo: gpu/nvidia/sanitizer-kernel-map.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/nvidia/libhpcrun_la-sanitizer-kernel-map.lo -MD -MP -MF gpu/nvidia/$(DEPDIR)/libhpcrun_la-sanitizer-kernel-map.Tpo -c -o gpu/nvidia/libhpcrun_la-sanitizer-kernel-map.lo `test -f 'gpu/nvidia/sanitizer-kernel-map.c' || echo '$(srcdir)/'`gpu/nvidia/sanitizer-kernel-map.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/nvidia/$(DEPDIR)/libhpcrun_la-sanitizer-kernel-map.Tpo gpu/nvidia/$(DEPDIR)/libhpcrun_la-sanitizer-kernel-map.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/nvidia/sanitizer-kernel-map.c' object='gpu/nvidia/libhpcrun_la-sanitizer-kernel-map.lo' libtool=yes @AMDEPBACKSLASH@
+gpu/nvidia/libhpcrun_la-sanitizer-op-map.lo: gpu/nvidia/sanitizer-op-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/nvidia/libhpcrun_la-sanitizer-op-map.lo -MD -MP -MF gpu/nvidia/$(DEPDIR)/libhpcrun_la-sanitizer-op-map.Tpo -c -o gpu/nvidia/libhpcrun_la-sanitizer-op-map.lo `test -f 'gpu/nvidia/sanitizer-op-map.c' || echo '$(srcdir)/'`gpu/nvidia/sanitizer-op-map.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/nvidia/$(DEPDIR)/libhpcrun_la-sanitizer-op-map.Tpo gpu/nvidia/$(DEPDIR)/libhpcrun_la-sanitizer-op-map.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/nvidia/sanitizer-op-map.c' object='gpu/nvidia/libhpcrun_la-sanitizer-op-map.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/nvidia/libhpcrun_la-sanitizer-kernel-map.lo `test -f 'gpu/nvidia/sanitizer-kernel-map.c' || echo '$(srcdir)/'`gpu/nvidia/sanitizer-kernel-map.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/nvidia/libhpcrun_la-sanitizer-op-map.lo `test -f 'gpu/nvidia/sanitizer-op-map.c' || echo '$(srcdir)/'`gpu/nvidia/sanitizer-op-map.c
 
 sample-sources/libhpcrun_la-upc.lo: sample-sources/upc.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_la-upc.lo -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_la-upc.Tpo -c -o sample-sources/libhpcrun_la-upc.lo `test -f 'sample-sources/upc.c' || echo '$(srcdir)/'`sample-sources/upc.c
@@ -7591,19 +7591,19 @@ gpu/nvidia/libhpcrun_o-sanitizer-stream-map.obj: gpu/nvidia/sanitizer-stream-map
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/nvidia/libhpcrun_o-sanitizer-stream-map.obj `if test -f 'gpu/nvidia/sanitizer-stream-map.c'; then $(CYGPATH_W) 'gpu/nvidia/sanitizer-stream-map.c'; else $(CYGPATH_W) '$(srcdir)/gpu/nvidia/sanitizer-stream-map.c'; fi`
 
-gpu/nvidia/libhpcrun_o-sanitizer-kernel-map.o: gpu/nvidia/sanitizer-kernel-map.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT gpu/nvidia/libhpcrun_o-sanitizer-kernel-map.o -MD -MP -MF gpu/nvidia/$(DEPDIR)/libhpcrun_o-sanitizer-kernel-map.Tpo -c -o gpu/nvidia/libhpcrun_o-sanitizer-kernel-map.o `test -f 'gpu/nvidia/sanitizer-kernel-map.c' || echo '$(srcdir)/'`gpu/nvidia/sanitizer-kernel-map.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/nvidia/$(DEPDIR)/libhpcrun_o-sanitizer-kernel-map.Tpo gpu/nvidia/$(DEPDIR)/libhpcrun_o-sanitizer-kernel-map.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/nvidia/sanitizer-kernel-map.c' object='gpu/nvidia/libhpcrun_o-sanitizer-kernel-map.o' libtool=no @AMDEPBACKSLASH@
+gpu/nvidia/libhpcrun_o-sanitizer-op-map.o: gpu/nvidia/sanitizer-op-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT gpu/nvidia/libhpcrun_o-sanitizer-op-map.o -MD -MP -MF gpu/nvidia/$(DEPDIR)/libhpcrun_o-sanitizer-op-map.Tpo -c -o gpu/nvidia/libhpcrun_o-sanitizer-op-map.o `test -f 'gpu/nvidia/sanitizer-op-map.c' || echo '$(srcdir)/'`gpu/nvidia/sanitizer-op-map.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/nvidia/$(DEPDIR)/libhpcrun_o-sanitizer-op-map.Tpo gpu/nvidia/$(DEPDIR)/libhpcrun_o-sanitizer-op-map.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/nvidia/sanitizer-op-map.c' object='gpu/nvidia/libhpcrun_o-sanitizer-op-map.o' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/nvidia/libhpcrun_o-sanitizer-kernel-map.o `test -f 'gpu/nvidia/sanitizer-kernel-map.c' || echo '$(srcdir)/'`gpu/nvidia/sanitizer-kernel-map.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/nvidia/libhpcrun_o-sanitizer-op-map.o `test -f 'gpu/nvidia/sanitizer-op-map.c' || echo '$(srcdir)/'`gpu/nvidia/sanitizer-op-map.c
 
-gpu/nvidia/libhpcrun_o-sanitizer-kernel-map.obj: gpu/nvidia/sanitizer-kernel-map.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT gpu/nvidia/libhpcrun_o-sanitizer-kernel-map.obj -MD -MP -MF gpu/nvidia/$(DEPDIR)/libhpcrun_o-sanitizer-kernel-map.Tpo -c -o gpu/nvidia/libhpcrun_o-sanitizer-kernel-map.obj `if test -f 'gpu/nvidia/sanitizer-kernel-map.c'; then $(CYGPATH_W) 'gpu/nvidia/sanitizer-kernel-map.c'; else $(CYGPATH_W) '$(srcdir)/gpu/nvidia/sanitizer-kernel-map.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/nvidia/$(DEPDIR)/libhpcrun_o-sanitizer-kernel-map.Tpo gpu/nvidia/$(DEPDIR)/libhpcrun_o-sanitizer-kernel-map.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/nvidia/sanitizer-kernel-map.c' object='gpu/nvidia/libhpcrun_o-sanitizer-kernel-map.obj' libtool=no @AMDEPBACKSLASH@
+gpu/nvidia/libhpcrun_o-sanitizer-op-map.obj: gpu/nvidia/sanitizer-op-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT gpu/nvidia/libhpcrun_o-sanitizer-op-map.obj -MD -MP -MF gpu/nvidia/$(DEPDIR)/libhpcrun_o-sanitizer-op-map.Tpo -c -o gpu/nvidia/libhpcrun_o-sanitizer-op-map.obj `if test -f 'gpu/nvidia/sanitizer-op-map.c'; then $(CYGPATH_W) 'gpu/nvidia/sanitizer-op-map.c'; else $(CYGPATH_W) '$(srcdir)/gpu/nvidia/sanitizer-op-map.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/nvidia/$(DEPDIR)/libhpcrun_o-sanitizer-op-map.Tpo gpu/nvidia/$(DEPDIR)/libhpcrun_o-sanitizer-op-map.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/nvidia/sanitizer-op-map.c' object='gpu/nvidia/libhpcrun_o-sanitizer-op-map.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/nvidia/libhpcrun_o-sanitizer-kernel-map.obj `if test -f 'gpu/nvidia/sanitizer-kernel-map.c'; then $(CYGPATH_W) 'gpu/nvidia/sanitizer-kernel-map.c'; else $(CYGPATH_W) '$(srcdir)/gpu/nvidia/sanitizer-kernel-map.c'; fi`
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/nvidia/libhpcrun_o-sanitizer-op-map.obj `if test -f 'gpu/nvidia/sanitizer-op-map.c'; then $(CYGPATH_W) 'gpu/nvidia/sanitizer-op-map.c'; else $(CYGPATH_W) '$(srcdir)/gpu/nvidia/sanitizer-op-map.c'; fi`
 
 sample-sources/libhpcrun_o-papi.o: sample-sources/papi.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_o-papi.o -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_o-papi.Tpo -c -o sample-sources/libhpcrun_o-papi.o `test -f 'sample-sources/papi.c' || echo '$(srcdir)/'`sample-sources/papi.c

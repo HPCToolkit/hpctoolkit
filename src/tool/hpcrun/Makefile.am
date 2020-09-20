@@ -513,7 +513,7 @@ MY_SANITIZER_FILES = gpu/nvidia/sanitizer-api.c \
 										 gpu/nvidia/sanitizer-buffer-channel-set.c \
 										 gpu/nvidia/sanitizer-context-map.c \
 										 gpu/nvidia/sanitizer-stream-map.c \
-										 gpu/nvidia/sanitizer-kernel-map.c
+										 gpu/nvidia/sanitizer-op-map.c
 endif
 
 if OPT_ENABLE_CUPTI

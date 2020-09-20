@@ -108,7 +108,7 @@
 #include "sanitizer-api.h"
 #include "sanitizer-context-map.h"
 #include "sanitizer-stream-map.h"
-#include "sanitizer-kernel-map.h"
+#include "sanitizer-op-map.h"
 #include "sanitizer-buffer.h"
 #include "sanitizer-buffer-channel.h"
 #include "sanitizer-buffer-channel-set.h"
@@ -454,7 +454,7 @@ sanitizer_error_report
 static void
 sanitizer_log_data_callback
 (
- uint64_t kernel_id,
+ int32_t kernel_id,
  gpu_patch_buffer_t *trace_data
 )
 {
@@ -465,7 +465,7 @@ static void
 sanitizer_record_data_callback
 (
  uint32_t cubin_id,
- uint64_t kernel_id,
+ int32_t kernel_id,
  redshow_record_data_t *record_data
 )
 {
@@ -499,12 +499,17 @@ sanitizer_record_data_callback
     uint64_t access_count = record_data->views[i].access_count;
 
     ip_normalized_t ip = cubin_id_transform(cubin_id, function_index, pc_offset);
-    cct_node_t *host_op_node = (cct_node_t *)(void *)kernel_id;
-    ga.cct_node = hpcrun_cct_insert_ip_norm(host_op_node, ip);
-    ga.details.redundancy.red_count = red_count;
-    ga.details.redundancy.access_count = access_count;
-    // Associate record_data with calling context (kernel_id)
-    gpu_metrics_attribute(&ga);
+    sanitizer_op_map_entry_t *entry = sanitizer_op_map_lookup(kernel_id);
+    if (entry != NULL) {
+      cct_node_t *host_op_node = sanitizer_op_map_op_get(entry);
+      ga.cct_node = hpcrun_cct_insert_ip_norm(host_op_node, ip);
+      ga.details.redundancy.red_count = red_count;
+      ga.details.redundancy.access_count = access_count;
+      // Associate record_data with calling context (kernel_id)
+      gpu_metrics_attribute(&ga);
+    } else {
+      PRINT("NULL cct_node with kernel_id %d\n", kernel_id);
+    }
   }
 }
 
@@ -831,8 +836,9 @@ sanitizer_kernel_launch_sync
     //PRINT("num_records %zu\n", num_records);
 
     // Allocate memory
+    int32_t persistent_id = hpcrun_cct_persistent_id(api_node);
     sanitizer_buffer_t *sanitizer_buffer = sanitizer_buffer_channel_produce(
-      sanitizer_thread_id_local, cubin_id, mod_id, (uint64_t)api_node, correlation_id,
+      sanitizer_thread_id_local, cubin_id, mod_id, persistent_id, correlation_id,
       sanitizer_gpu_patch_record_num, sanitizer_analysis_async);
     gpu_patch_buffer_t *gpu_patch_buffer = sanitizer_buffer_entry_gpu_patch_buffer_get(sanitizer_buffer);
 
@@ -1025,11 +1031,12 @@ sanitizer_subscribe_callback
 
           hpcrun_safe_exit();
 
+          int32_t persistent_id = hpcrun_cct_persistent_id(api_node);
           Sanitizer_ResourceMemoryData *md = (Sanitizer_ResourceMemoryData *)cbdata;
-          redshow_memory_register(md->address, md->address + md->size, correlation_id, (uint64_t)api_node);
+          redshow_memory_register(correlation_id, persistent_id, md->address, md->address + md->size);
 
-          PRINT("Allocate memory address %p, size %zu, op %lu, id %lu\n",
-            (void *)md->address, md->size, correlation_id, (uint64_t)api_node);
+          PRINT("Allocate memory address %p, size %zu, op %lu, id %d\n",
+            (void *)md->address, md->size, correlation_id, persistent_id);
           break;
         }
       case SANITIZER_CBID_RESOURCE_DEVICE_MEMORY_FREE:
@@ -1037,7 +1044,7 @@ sanitizer_subscribe_callback
           uint64_t correlation_id = gpu_correlation_id();
 
           Sanitizer_ResourceMemoryData *md = (Sanitizer_ResourceMemoryData *)cbdata;
-          redshow_memory_unregister(md->address, md->address + md->size, correlation_id);
+          redshow_memory_unregister(correlation_id, md->address, md->address + md->size);
 
           PRINT("Free memory address %p, size %zu, op %lu\n", (void *)md->address, md->size, correlation_id);
           break;
@@ -1057,17 +1064,6 @@ sanitizer_subscribe_callback
     static __thread cct_node_t *api_node = NULL;
 
     if (cbid == SANITIZER_CBID_LAUNCH_BEGIN) {
-      // Kernel 
-      int kernel_sampling_frequency = sanitizer_kernel_sampling_frequency_get();
-      // TODO(Keren): thread safe rand
-      kernel_sampling = rand() % kernel_sampling_frequency == 0;
-
-      // First time must be sampled
-      if (sanitizer_kernel_map_lookup(api_node) == NULL) {
-        kernel_sampling = true;
-        sanitizer_kernel_map_init(api_node);
-      }
-
       // Get a place holder cct node
       correlation_id = gpu_correlation_id();
       // TODO(Keren): why two extra layers?
@@ -1085,6 +1081,20 @@ sanitizer_subscribe_callback
 
       hpcrun_safe_exit();
 
+      // Kernel 
+      int kernel_sampling_frequency = sanitizer_kernel_sampling_frequency_get();
+      // TODO(Keren): thread safe rand
+      kernel_sampling = rand() % kernel_sampling_frequency == 0;
+
+      // Look persisitent id
+      int32_t persistent_id = hpcrun_cct_persistent_id(api_node);
+
+      // First time must be sampled
+      if (sanitizer_op_map_lookup(persistent_id) == NULL) {
+        kernel_sampling = true;
+        sanitizer_op_map_init(persistent_id, api_node);
+      }
+
       grid_size.x = ld->gridDim_x;
       grid_size.y = ld->gridDim_y;
       grid_size.z = ld->gridDim_z;
@@ -1092,9 +1102,9 @@ sanitizer_subscribe_callback
       block_size.y = ld->blockDim_y;
       block_size.z = ld->blockDim_z;
 
-      PRINT("Launch kernel %s <%d, %d, %d>:<%d, %d, %d>, op %lu, id %lu, mod_id %u\n", ld->functionName,
+      PRINT("Launch kernel %s <%d, %d, %d>:<%d, %d, %d>, op %lu, id %d, mod_id %u\n", ld->functionName,
         ld->gridDim_x, ld->gridDim_y, ld->gridDim_z, ld->blockDim_x, ld->blockDim_y, ld->blockDim_z,
-        correlation_id, (uint64_t)api_node, ((hpctoolkit_cumod_st_t *)ld->module)->mod_id);
+        correlation_id, persistent_id, ((hpctoolkit_cumod_st_t *)ld->module)->mod_id);
 
       // thread-safe
       // Create a high priority stream for the context at the first time
@@ -1121,6 +1131,11 @@ sanitizer_subscribe_callback
     uint64_t correlation_id = gpu_correlation_id();
     cct_node_t *api_node = sanitizer_correlation_callback(correlation_id, 0);
 
+    int32_t persistent_id = hpcrun_cct_persistent_id(api_node);
+    if (sanitizer_op_map_lookup(persistent_id) == NULL) {
+      sanitizer_op_map_init(persistent_id, api_node);
+    }
+
     bool src_host = false;
     bool dst_host = false;
 
@@ -1135,8 +1150,8 @@ sanitizer_subscribe_callback
 
     uint64_t src_mem_addr = 0;
     uint64_t dst_mem_addr = 0;
-    uint64_t src_mem_id = 0;
-    uint64_t dst_mem_id = 0;
+    int32_t src_mem_id = 0;
+    int32_t dst_mem_id = 0;
     uint64_t size = 0;
 
     if (src_host) {
@@ -1161,7 +1176,7 @@ sanitizer_subscribe_callback
       }
     }
 
-    redshow_memcpy_register((uint64_t)api_node, correlation_id, src_mem_id, src_mem_addr,
+    redshow_memcpy_register(persistent_id, correlation_id, src_mem_id, src_mem_addr,
       dst_mem_id, dst_mem_addr, md->size);
   } else if (domain == SANITIZER_CB_DOMAIN_MEMSET) {
     Sanitizer_MemsetData *md = (Sanitizer_MemsetData *)cbdata;
@@ -1169,13 +1184,14 @@ sanitizer_subscribe_callback
     uint64_t correlation_id = gpu_correlation_id();
     cct_node_t *api_node = sanitizer_correlation_callback(correlation_id, 0);
 
-    uint64_t mem_id = 0;
+    int32_t mem_id = 0;
     uint64_t addr = 0;
     uint64_t size = 0;
 
     redshow_memory_query(correlation_id, md->address, &mem_id, &addr, &size);
 
-    redshow_memset_register((uint64_t)api_node, correlation_id, mem_id, addr, md->value, md->width);
+    int32_t persistent_id = hpcrun_cct_persistent_id(api_node);
+    redshow_memset_register(persistent_id, correlation_id, mem_id, addr, md->value, md->width);
     
     memset((void *)addr, md->value, md->width);
   } else if (domain == SANITIZER_CB_DOMAIN_SYNCHRONIZE) {
