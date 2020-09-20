@@ -102,6 +102,9 @@ kindStr(const uint16_t kind)
   else if(kind == IDTUPLE_GPUSTREAM){
     return "GPUSTREAM";
   }
+  else if(kind == IDTUPLE_CORE){
+    return "CORE";
+  }
   else{
     return "ERROR";
   }

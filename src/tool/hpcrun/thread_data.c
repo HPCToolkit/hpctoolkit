@@ -60,6 +60,7 @@
 #include <sched.h>
 
 #include <stdlib.h>
+#include <unistd.h>
 
 //************************ libmonitor Include Files *************************
 
@@ -71,6 +72,7 @@
 #include "epoch.h"
 #include "handling_sample.h"
 
+#include "rank.h"
 #include "thread_data.h"
 #include "trace.h"
 
@@ -81,6 +83,16 @@
 #include <lib/prof-lean/id-tuple.h>
 
 //***************************************************************************
+// macros
+//***************************************************************************
+
+#define DEBUG_CPUSET 0
+
+
+
+//***************************************************************************
+// types
+//***************************************************************************
 
 enum _local_int_const {
   BACKTRACE_INIT_SZ     = 32,
@@ -88,8 +100,21 @@ enum _local_int_const {
 };
 
 
+
 //***************************************************************************
-// 
+// forward declarations
+//***************************************************************************
+
+static int
+hpcrun_thread_core_bindings
+(
+ void
+);
+
+
+
+//***************************************************************************
+// data 
 //***************************************************************************
 
 #ifdef USE_GCC_THREAD
@@ -506,6 +531,11 @@ hpcrun_id_tuple_cputhread
 
   id_tuple_push_back(&id_tuple, IDTUPLE_NODE, gethostid()); 
 
+  int core = hpcrun_thread_core_bindings();
+  if (core >= 0) {
+    id_tuple_push_back(&id_tuple, IDTUPLE_CORE, core); 
+  }
+
   if (rank >= 0) {
     id_tuple_push_back(&id_tuple, IDTUPLE_RANK, rank); 
   }
@@ -516,11 +546,48 @@ hpcrun_id_tuple_cputhread
 }
 
 
-#ifdef CORE_BINDING_INFO
-// preliminary sketch for core information
-// FIXME: currently causes memory corruption
-int
-core_bindings
+static void
+__attribute__((unused))
+dump_cpuset
+(
+ cpu_set_t *cpuset
+)
+{
+  int count = CPU_COUNT(cpuset);
+  printf("cpu set count = %d\n", count);
+  if (count > 0) {
+    printf("cpu set ={ ");
+    int i; 
+    for (i = 0; i < CPU_SETSIZE; i++) {
+      if (CPU_ISSET(i, cpuset)) {
+	printf("%d ", i);
+      }
+    }
+    printf("}\n");
+  }
+}
+
+
+static bool
+cpuset_dense_region
+(
+ cpu_set_t *cpuset,
+ int first,
+ int remaining_count
+)
+{
+  int i; 
+  for (i = first+1; i < CPU_SETSIZE && remaining_count--; i++) {
+    if (!CPU_ISSET(i, cpuset)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+
+static int
+hpcrun_thread_core_bindings
 (
  void
 )
@@ -528,13 +595,25 @@ core_bindings
   int core_id = -1;
   pthread_t self = pthread_self();
 
-  cpu_set_t *cpuset = CPU_ALLOC(CPU_SETSIZE);
-  if (pthread_getaffinity_np(self, CPU_SETSIZE, cpuset) == 0) {
-    printf("cpu count = %d\n", CPU_COUNT(cpuset));
+  cpu_set_t cpuset;
+  if (pthread_getaffinity_np(self, sizeof (cpuset), &cpuset) == 0) {
+    // FIXME: this returns the first HW thread id for a dense set of bindings. 
+    // this isn't always the right thing. one case that needs special handling is 
+    // when HW threads on a core aren't adjacent. there are other cases as well.
+    // the right way to do this is to compare with info from hwloc.
+    int count = CPU_COUNT(&cpuset);
+    if (count < 8) { // no CPU currently supports more than 8 SMT threads
+      int i; 
+      for (i = 0; i < CPU_SETSIZE; i++) {
+	if (CPU_ISSET(i, &cpuset)) {
+	  if (cpuset_dense_region(&cpuset, i, count - 1)) {
+	    core_id = i;
+	  } 
+	  break;
+	}
+      }
+    }
   }
-
-  // CPU_FREE(cpuset);
 
   return core_id;
 }
-#endif

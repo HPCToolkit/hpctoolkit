@@ -83,7 +83,7 @@
 // macros
 //***************************************************************************
 
-#define IDTUPLE_INVALID       -1
+#define IDTUPLE_INVALID        UINT16_MAX
 
 #define IDTUPLE_SUMMARY        0
 #define IDTUPLE_NODE           1
@@ -92,8 +92,9 @@
 #define IDTUPLE_GPUDEVICE      4
 #define IDTUPLE_GPUCONTEXT     5
 #define IDTUPLE_GPUSTREAM      6
+#define IDTUPLE_CORE           7
 
-#define IDTUPLE_MAXTYPES       7
+#define IDTUPLE_MAXTYPES       8
 
 #define TMS_id_tuple_len_SIZE  2
 #define TMS_id_SIZE            10
