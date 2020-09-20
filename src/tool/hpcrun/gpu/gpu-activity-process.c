@@ -453,7 +453,7 @@ gpu_synchronization_process
           case GPU_SYNC_STREAM_EVENT_WAIT:
             // Insert a event for a specific stream
             PRINT("Add context %u stream %u sync\n", context_id, stream_id);
-            gpu_context_stream_trace(-1, context_id, stream_id, &entry_trace);
+            gpu_context_stream_trace(IDTUPLE_INVALID, context_id, stream_id, &entry_trace);
             break;
           case GPU_SYNC_CONTEXT:
             // Insert events for all current active streams
@@ -469,7 +469,7 @@ gpu_synchronization_process
                 context_id = gpu_event_id_map_entry_context_id_get(event_id_entry);
                 stream_id = gpu_event_id_map_entry_stream_id_get(event_id_entry);
                 PRINT("Add context %u stream %u event %u sync\n", context_id, stream_id, event_id);
-                gpu_context_stream_trace(-1, context_id, stream_id, &entry_trace);
+                gpu_context_stream_trace(IDTUPLE_INVALID, context_id, stream_id, &entry_trace);
               }
               break;
             }
