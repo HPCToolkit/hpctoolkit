@@ -71,18 +71,14 @@ MD_IFLAGS = @OPT_METRICS_DISCOVERY_IFLAGS@
 endif
 
 MYSOURCES = \
-	cuda/CFGParser.cpp  \
-	cuda/CudaCFGFactory.cpp  \
-	cuda/CudaFunction.cpp  \
-	cuda/GraphReader.cpp \
-	cuda/CudaBlock.cpp  \
-	cuda/CudaCodeSource.cpp  \
-	cuda/ReadCubinCFG.cpp \
-	intel/IntelCFGFactory.cpp  \
-	intel/IntelFunction.cpp  \
-	intel/IntelBlock.cpp  \
-	intel/IntelCodeSource.cpp  \
-	intel/ReadIntelCFG.cpp \
+	gpu/GPUCFGFactory.cpp  \
+	gpu/GPUFunction.cpp  \
+	gpu/GPUBlock.cpp  \
+	gpu/GPUCodeSource.cpp  \
+	gpu/GraphReader.cpp \
+	gpu/CudaCFGParser.cpp  \
+	gpu/ReadCudaCFG.cpp \
+	gpu/ReadIntelCFG.cpp \
 	Struct.cpp  \
 	Struct-Inline.cpp  \
 	Struct-Output.cpp

@@ -5,7 +5,7 @@
 #define FUNC_LABEL "@function"
 #define TYPE_LABEL ".type"
 
-namespace CudaParse {
+namespace GPUParse {
 
 void GraphReader::read(Graph &graph) {
   // Read dot graph

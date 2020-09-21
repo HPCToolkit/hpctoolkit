@@ -1,5 +1,5 @@
-#ifndef _GRAPH_READER_H_
-#define _GRAPH_READER_H_
+#ifndef BANAL_GPU_GRAPH_READER_H
+#define BANAL_GPU_GRAPH_READER_H
 
 #include <unordered_map>
 #include <string>
@@ -7,7 +7,7 @@
 #include <boost/graph/detail/read_graphviz_new.hpp>
 #include "Graph.hpp"
 
-namespace CudaParse {
+namespace GPUParse {
 
 class GraphReader {
  public:

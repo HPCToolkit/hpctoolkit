@@ -46,10 +46,9 @@
 // system includes
 //******************************************************************************
 
-#ifndef BANAL_INTEL_READ_INTEL_CFG_HPP
-#define BANAL_INTEL_READ_INTEL_CFG_HPP
+#ifndef BANAL_GPU_READ_INTEL_CFG_HPP
+#define BANAL_GPU_READ_INTEL_CFG_HPP
 
-#include <iostream>
 #include <string>
 #include <Symtab.h>
 #include <CodeSource.h>

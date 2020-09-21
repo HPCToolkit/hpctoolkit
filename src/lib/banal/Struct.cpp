@@ -115,8 +115,8 @@
 #include "Struct-Output.hpp"
 #include "Struct-Skel.hpp"
 
-#include "cuda/ReadCubinCFG.hpp"
-#include "intel/ReadIntelCFG.hpp"
+#include "gpu/ReadCudaCFG.hpp"
+#include "gpu/ReadIntelCFG.hpp"
 
 #ifdef ENABLE_OPENMP
 #include <omp.h>

@@ -1,11 +1,11 @@
-#include "CudaBlock.hpp"
+#include "GPUBlock.hpp"
 #include <Instruction.h>
 
 
 namespace Dyninst {
 namespace ParseAPI {
 
-CudaBlock::CudaBlock(CodeObject * o, CodeRegion * r,
+GPUBlock::GPUBlock(CodeObject * o, CodeRegion * r,
   Address start, std::vector<Offset> &offsets) : Block(o, r, start) {
   for (auto offset : offsets) {
     _inst_offsets.push_back(offset);
@@ -13,12 +13,12 @@ CudaBlock::CudaBlock(CodeObject * o, CodeRegion * r,
 }
 
 
-Address CudaBlock::last() const {
+Address GPUBlock::last() const {
   return this->_inst_offsets.back();
 }
 
 
-void CudaBlock::getInsns(Insns &insns) const {
+void GPUBlock::getInsns(Insns &insns) const {
   for (auto offset : _inst_offsets) {
 #ifdef DYNINST_INSTRUCTION_PTR
     insns.insert(std::pair<long unsigned int, 

@@ -22,13 +22,13 @@
 #include <lib/support/FileUtil.hpp>
 
 
-#include "CudaCFGFactory.hpp"
-#include "CudaFunction.hpp"
-#include "CudaBlock.hpp"
-#include "CudaCodeSource.hpp"
-#include "CFGParser.hpp"
+#include "GPUCFGFactory.hpp"
+#include "GPUFunction.hpp"
+#include "GPUBlock.hpp"
+#include "GPUCodeSource.hpp"
+#include "CudaCFGParser.hpp"
 #include "GraphReader.hpp"
-#include "ReadCubinCFG.hpp"
+#include "ReadCudaCFG.hpp"
 
 using namespace Dyninst;
 using namespace ParseAPI;
@@ -80,10 +80,10 @@ parseDotCFG
  const std::string &cubin,
  int cuda_arch,
  Dyninst::SymtabAPI::Symtab *the_symtab,
- std::vector<CudaParse::Function *> &functions
+ std::vector<GPUParse::Function *> &functions
 ) 
 {
-  CudaParse::CFGParser cfg_parser;
+  GPUParse::CudaCFGParser cfg_parser;
   // Step 1: parse all function symbols
   std::vector<Symbol *> symbols;
   the_symtab->getAllSymbols(symbols);
@@ -103,7 +103,7 @@ parseDotCFG
   // Store functions that are parsed by nvdisasm
   std::vector<Symbol *> parsed_function_symbols;
   // Remove functions that share the same names
-  std::map<std::string, CudaParse::Function *> function_map;
+  std::map<std::string, GPUParse::Function *> function_map;
   // Test valid symbols
   for (auto *symbol : symbols) {
     if (symbol->getType() == Dyninst::SymtabAPI::Symbol::ST_FUNCTION) {
@@ -113,9 +113,9 @@ parseDotCFG
       if (system(cmd.c_str()) == 0) {
         parsed_function_symbols.push_back(symbol);
         // Only parse valid symbols
-        CudaParse::GraphReader graph_reader(dot_filename);
-        CudaParse::Graph graph;
-        std::vector<CudaParse::Function *> funcs;
+        GPUParse::GraphReader graph_reader(dot_filename);
+        GPUParse::Graph graph;
+        std::vector<GPUParse::Function *> funcs;
         graph_reader.read(graph);
         cfg_parser.parse(graph, funcs);
         // Local functions inside a global function cannot be independently parsed
@@ -179,16 +179,16 @@ parseDotCFG
   // For functions that cannot be parsed
   for (auto *symbol : unparsable_function_symbols) {
     auto function_name = symbol->getMangledName();
-    auto *function = new CudaParse::Function(max_function_id++, std::move(function_name));
+    auto *function = new GPUParse::Function(max_function_id++, std::move(function_name));
     function->address = symbol->getOffset();
     auto block_name = symbol->getMangledName() + "_0";
-    auto *block = new CudaParse::Block(max_block_id++, std::move(block_name));
+    auto *block = new GPUParse::Block(max_block_id++, std::move(block_name));
     block->begin_offset = cuda_arch >= 70 ? 0 : 8;
     block->address = symbol->getOffset() + block->begin_offset;
     int len = cuda_arch >= 70 ? 16 : 8;
     // Add dummy insts
     for (size_t i = block->address; i < block->address + symbol->getSize(); i += len) {
-      block->insts.push_back(new CudaParse::Inst(i));
+      block->insts.push_back(new GPUParse::CudaInst(i));
     }
     function->blocks.push_back(block);
     functions.push_back(function);
@@ -207,18 +207,18 @@ parseDotCFG
             std::cout << function->name << " append nop instructions" << std::endl;
             std::cout << "function_size: " << function_size << " < " << "symbol_size: " << symbol_size << std::endl;
           }
-          auto *block = new CudaParse::Block(max_block_id, ".L_" + std::to_string(max_block_id));
+          auto *block = new GPUParse::Block(max_block_id, ".L_" + std::to_string(max_block_id));
           block->address = function_size + function->address;
           block->begin_offset = cuda_arch >= 70 ? 16 : 8;
           max_block_id++;
           while (function_size < symbol_size) {
-            block->insts.push_back(new CudaParse::Inst(function_size + function->address));
+            block->insts.push_back(new GPUParse::Inst(function_size + function->address));
             function_size += len;
           } 
           if (function->blocks.size() > 0) {
             auto *last_block = function->blocks.back();
             last_block->targets.push_back(
-              new CudaParse::Target(last_block->insts.back(), block, CudaParse::TargetType::DIRECT));
+              new GPUParse::Target(last_block->insts.back(), block, GPUParse::TargetType::DIRECT));
           }
           function->blocks.push_back(block);
         }
@@ -301,10 +301,10 @@ readCubinCFG
     if (!dump_cubin_success) {
       std::cout << "WARNING: unable to write a cubin to the file system to analyze its CFG" << std::endl; 
     } else {
-      std::vector<CudaParse::Function *> functions;
+      std::vector<GPUParse::Function *> functions;
       parseDotCFG(search_path, elfFile->getFileName(), dot, cubin, elfFile->getArch(), the_symtab, functions);
-      CFGFactory *cfg_fact = new CudaCFGFactory(functions);
-      *code_src = new CudaCodeSource(functions, the_symtab); 
+      CFGFactory *cfg_fact = new GPUCFGFactory(functions);
+      *code_src = new GPUCodeSource(functions, the_symtab); 
       *code_obj = new CodeObject(*code_src, cfg_fact);
       (*code_obj)->parse();
       unlink(dot.c_str());

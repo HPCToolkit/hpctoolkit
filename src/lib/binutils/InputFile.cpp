@@ -75,7 +75,7 @@
 
 #include "ElfHelper.hpp"
 #include "Fatbin.hpp"
-#include "intel/IntelGPUbinutils.hpp"
+#include "intel/IntelGPUBinutils.hpp"
 #include "InputFile.hpp"
 
 
@@ -206,9 +206,8 @@ InputFile::openFile
   if (result) {
     filevector = new ElfFileVector;
     if (isIntelGPUFile(elfFile)) {
-      findIntelGPUbins(elfFile, filevector);
-    }
-    else {
+      findIntelGPUBins(elfFile, filevector);
+    } else {
       filevector->push_back(elfFile);
     }
     //findCubins(elfFile, filevector);

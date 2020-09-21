@@ -73,7 +73,7 @@ enum SHT_OPENCL : uint32_t {
 //******************************************************************************
 
 bool
-findIntelGPUbins
+findIntelGPUBins
 (
 	ElfFile *elfFile,
 	ElfFileVector *filevector

@@ -70,11 +70,11 @@
 #include <lib/binutils/ElfHelper.hpp>
 #include <lib/support/diagnostics.h>
 
-#include "../cuda/DotCFG.hpp"
-#include "IntelCFGFactory.hpp"
-#include "IntelFunction.hpp"
-#include "IntelBlock.hpp"
-#include "IntelCodeSource.hpp"
+#include "DotCFG.hpp"
+#include "GPUCFGFactory.hpp"
+#include "GPUFunction.hpp"
+#include "GPUBlock.hpp"
+#include "GPUCodeSource.hpp"
 #include "ReadIntelCFG.hpp"
 
 //******************************************************************************
@@ -145,11 +145,11 @@ parseIntelCFG
 (
  char *text_section,
  int text_section_size,
- CudaParse::Function &function
+ GPUParse::Function &function
 )
 {
   KernelView kv(IGA_GEN9, text_section, text_section_size, iga::SWSB_ENCODE_MODE::SingleDistPipe);
-  std::map<int, CudaParse::Block *> block_offset_map;
+  std::map<int, GPUParse::Block *> block_offset_map;
 
   int offset = 0;
   int size = 0;
@@ -157,14 +157,14 @@ parseIntelCFG
 
   // Construct basic blocks
   while (offset < text_section_size) {
-    auto *block = new CudaParse::Block(block_id, offset, function.name + "_" + std::to_string(block_id)); 
+    auto *block = new GPUParse::Block(block_id, offset, function.name + "_" + std::to_string(block_id)); 
     block_id++;
 
     function.blocks.push_back(block);
     block_offset_map[offset] = block;
 
     size = kv.getInstSize(offset);
-    auto *inst = new CudaParse::Inst(offset, size);
+    auto *inst = new GPUParse::Inst(offset, size);
     block->insts.push_back(inst);
 
     while (!kv.isInstTarget(offset + size) && (offset + size < text_section_size)) {
@@ -175,7 +175,7 @@ parseIntelCFG
         break;
       }
 
-      inst = new CudaParse::Inst(offset, size);
+      inst = new GPUParse::Inst(offset, size);
       block->insts.push_back(inst);
     }
 
@@ -204,7 +204,7 @@ parseIntelCFG
     for (size_t j = 0; j < jump_targets_count + 1; j++) {
       auto *target_block = block_offset_map.at(jump_targets[j]);
       // TODO(Aaron): call edge
-      auto type = CudaParse::TargetType::DIRECT;
+      auto type = GPUParse::TargetType::DIRECT;
       // Jump
       bool added = false;
       for (auto *target : block->targets) {
@@ -213,7 +213,7 @@ parseIntelCFG
         }
       }
       if (!added) {
-        block->targets.push_back(new CudaParse::Target(inst, target_block, type));
+        block->targets.push_back(new GPUParse::Target(inst, target_block, type));
       }
     }
   }
@@ -252,12 +252,12 @@ readIntelCFG
     return false;
   }
 
-  CudaParse::Function function(0, function_name);
+  GPUParse::Function function(0, function_name);
   parseIntelCFG(text_section, text_section_size, function);
-  std::vector<CudaParse::Function *> functions = {&function};
+  std::vector<GPUParse::Function *> functions = {&function};
 
-  CFGFactory *cfg_fact = new IntelCFGFactory(functions);
-  *code_src = new IntelCodeSource(functions, the_symtab); 
+  CFGFactory *cfg_fact = new GPUCFGFactory(functions);
+  *code_src = new GPUCodeSource(functions, the_symtab); 
   *code_obj = new CodeObject(*code_src, cfg_fact);
   (*code_obj)->parse();
 

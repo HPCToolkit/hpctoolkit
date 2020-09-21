@@ -1,11 +1,11 @@
-#include "CFGParser.hpp"
+#include "CudaCFGParser.hpp"
 #include <cctype>
 #include <iostream>
 
 #define DEBUG_CUDA_CFGPARSER 0
 
 
-namespace CudaParse {
+namespace GPUParse {
 
 static void debug_blocks(const std::vector<Block *> &blocks) {
   for (auto *block : blocks) {
@@ -22,7 +22,7 @@ static void debug_blocks(const std::vector<Block *> &blocks) {
 }
 
 
-TargetType CFGParser::get_target_type(const Inst *inst) {
+TargetType CudaCFGParser::get_target_type(const Inst *inst) {
   TargetType type;
   if (inst->predicate.find("@") != std::string::npos) {
     type = TargetType::COND_TAKEN;
@@ -35,7 +35,7 @@ TargetType CFGParser::get_target_type(const Inst *inst) {
 }
 
 
-TargetType CFGParser::get_fallthrough_type(const Inst *inst) {
+TargetType CudaCFGParser::get_fallthrough_type(const Inst *inst) {
   TargetType type;
   if (inst->is_call) {
     type = TargetType::CALL_FT;
@@ -46,7 +46,7 @@ TargetType CFGParser::get_fallthrough_type(const Inst *inst) {
 }
 
 
-void CFGParser::parse_inst_strings(
+void CudaCFGParser::parse_inst_strings(
   const std::string &label,
   std::deque<std::string> &inst_strings) {
   std::regex e("\\\\l([|]*)");
@@ -91,7 +91,7 @@ void CFGParser::parse_inst_strings(
 }
 
 
-void CFGParser::link_dangling_blocks(
+void CudaCFGParser::link_dangling_blocks(
   std::set<Block *> &dangling_blocks,
   std::vector<Function *> &functions) {
   for (auto *function : functions) {
@@ -142,7 +142,7 @@ void CFGParser::link_dangling_blocks(
 }
 
 
-void CFGParser::parse_calls(std::vector<Function *> &functions) {
+void CudaCFGParser::parse_calls(std::vector<Function *> &functions) {
   for (auto *function : functions) {
     for (auto *block : function->blocks) {
       for (auto *inst : block->insts) {
@@ -188,7 +188,7 @@ void CFGParser::parse_calls(std::vector<Function *> &functions) {
 }
 
 
-void CFGParser::find_block_parent(const std::vector<Block *> &blocks) {
+void CudaCFGParser::find_block_parent(const std::vector<Block *> &blocks) {
   bool incoming_nodes[blocks.size()];
   std::fill(incoming_nodes, incoming_nodes + blocks.size(), false);
   for (auto *block : blocks) {
@@ -210,7 +210,7 @@ void CFGParser::find_block_parent(const std::vector<Block *> &blocks) {
 }
 
 
-void CFGParser::unite_blocks(const Block *block, bool *visited, size_t parent) {
+void CudaCFGParser::unite_blocks(const Block *block, bool *visited, size_t parent) {
   for (auto *target : block->targets) {
     if (visited[target->block->id] == false) {
       visited[target->block->id] = true;
@@ -231,7 +231,7 @@ static bool compare_target_ptr(Target *l, Target *r) {
 }
 
 
-void CFGParser::parse(const Graph &graph, std::vector<Function *> &functions) {
+void CudaCFGParser::parse(const Graph &graph, std::vector<Function *> &functions) {
   std::unordered_map<size_t, Block *> block_id_map;
   std::unordered_map<std::string, Block *> block_name_map;
   std::vector<Block *> blocks;
@@ -243,7 +243,7 @@ void CFGParser::parse(const Graph &graph, std::vector<Function *> &functions) {
     std::deque<std::string> inst_strings;
     parse_inst_strings(vertex->label, inst_strings);
     for (auto &inst_string : inst_strings) {
-      block->insts.push_back(new Inst(inst_string));
+      block->insts.push_back(new CudaInst(inst_string));
     }
 
     blocks.push_back(block);
@@ -349,7 +349,7 @@ void CFGParser::parse(const Graph &graph, std::vector<Function *> &functions) {
 }
 
 
-void CFGParser::link_fallthrough_edges(
+void CudaCFGParser::link_fallthrough_edges(
   const Graph &graph,
   const std::vector<Block *> &blocks,
   std::unordered_map<size_t, Block *> &block_id_map) {
@@ -381,7 +381,7 @@ void CFGParser::link_fallthrough_edges(
 }
 
 
-void CFGParser::split_blocks(
+void CudaCFGParser::split_blocks(
   std::vector<Block *> &blocks,
   std::unordered_map<size_t, Block *> &block_id_map) {
   size_t extra_block_id = blocks.size();
