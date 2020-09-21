@@ -321,6 +321,20 @@ METHOD_FN(supports_event, const char *ev_str)
 #endif
 }
 
+// FIXME: The contents of this function (and potentially the entire sample source
+//        callback set) should be rearranged to better handle fork().
+// As part of fork() handling, the CUPTI sample source is shut down nearly
+// completely, and doesn't get started again upon a call to gen_event_set below.
+// As such, after a fork() no CUPTI data is processed even though CUPTI activities
+// are delivered, resulting in (at best) mysteriously blank trace lines.
+//
+// The current hotfix is to not zero out as much in cupti_device_init (called
+// by init above, called by the post-fork() hook in main.c). For PyTorch it
+// functions sufficiently for testing purposes.
+//
+// A proper fix will require investigation and reevaluation of the design for
+// sample sources' lifetimes.
+
 static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
