@@ -832,11 +832,6 @@ sanitizer_kernel_launch_sync
       continue;
     }
 
-    // Wait until the buffer is sync
-    if (!gpu_patch_buffer_host->full && gpu_patch_buffer_host->tail_index != num_records) {
-      continue;
-    }
-
     // Reserve for debugging correctness
     //PRINT("num_records %zu\n", num_records);
 
@@ -864,10 +859,11 @@ sanitizer_kernel_launch_sync
     // Tell gpu copy is finished
     gpu_patch_buffer_host->full = 0;
     // Do not need to sync stream.
-    // The function will return once the pageable buffer has been copied to the staging memory
+    // The function will return once the pageable buffer has been copied to the staging memory.
     // for DMA transfer to device memory, but the DMA to final destination may not have completed.
+    // Only copy the first field because other fields are being updated by the GPU.
     HPCRUN_SANITIZER_CALL(sanitizerMemcpyHostToDeviceAsync,
-      (gpu_patch_buffer_device, gpu_patch_buffer_host, sizeof(gpu_patch_buffer_t), priority_stream));
+      (gpu_patch_buffer_device, gpu_patch_buffer_host, sizeof(gpu_patch_buffer_host->full), priority_stream));
     
     sanitizer_buffer_channel_push(sanitizer_buffer);
 
