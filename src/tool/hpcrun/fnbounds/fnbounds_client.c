@@ -142,11 +142,11 @@ char	*outfile;
 #include "messages.h"
 #include "sample_sources_all.h"
 #include "monitor.h"
+#include "audit/audit-api.h"
 #else
 #include "syserv-mesg.h"
 #include "fnbounds_file_header.h"
 #endif
-
 
 // Size to allocate for the stack of the server setup function, in KiB.
 #define SERVER_STACK_SIZE 1024
@@ -377,8 +377,8 @@ hpcrun_sigpipe_handler(int sig, siginfo_t *info, void *context)
 static void
 shutdown_server(void)
 {
-  close(fdout);
-  close(fdin);
+  auditor_exports->close(fdout);
+  auditor_exports->close(fdin);
   fdout = -1;
   fdin = -1;
   client_status = SYSERV_INACTIVE;
@@ -386,7 +386,7 @@ shutdown_server(void)
   // collect the server's exit status to reduce zombies.  but we must
   // do it only for the fnbounds server, not any application child.
   if (server_pid > 0) {
-    waitpid(server_pid, NULL, 0);
+    auditor_exports->waitpid(server_pid, NULL, 0);
   }
   server_pid = 0;
 
@@ -406,8 +406,8 @@ hpcfnbounds_child(void* fds_vp)
     int sendfd[2], recvfd[2];
   }* fds = fds_vp;
 
-  close(fds->sendfd[1]);
-  close(fds->recvfd[0]);
+  auditor_exports->close(fds->sendfd[1]);
+  auditor_exports->close(fds->recvfd[0]);
 
   // dup the hpcrun log file fd onto stdout and stderr.
   if (dup2(messages_logfile_fd(), 1) < 0) {
@@ -446,7 +446,8 @@ hpcfnbounds_child(void* fds_vp)
   arglist[j++] = fdout_str;
   arglist[j++] = NULL;
 
-  monitor_real_execve(server, arglist, environ);
+  // Exec with the purified environment, so we don't have recursion.
+  auditor_exports->execve(server, arglist, auditor_exports->pure_environ);
   err(1, "hpcrun system server: exec(%s) failed", server);
 }
 
@@ -470,7 +471,7 @@ launch_server(void)
     shutdown_server();
   }
 
-  if (pipe(fds.sendfd) != 0 || pipe(fds.recvfd) != 0) {
+  if (auditor_exports->pipe(fds.sendfd) != 0 || auditor_exports->pipe(fds.recvfd) != 0) {
     EMSG("FNBOUNDS_CLIENT ERROR: syserv launch failed: pipe failed");
     return -1;
   }
@@ -483,7 +484,8 @@ launch_server(void)
   }
 
   // For safety, we don't assume the direction of stack growth
-  pid = clone(hpcfnbounds_child, &server_stack[SERVER_STACK_SIZE * 1024], SIGCHLD, &fds);
+  pid = auditor_exports->clone(hpcfnbounds_child,
+    &server_stack[SERVER_STACK_SIZE * 1024], SIGCHLD, &fds);
 
   if (pid < 0) {
     //
@@ -496,8 +498,8 @@ launch_server(void)
   //
   // parent process: return and wait for queries.
   //
-  close(fds.sendfd[0]);
-  close(fds.recvfd[1]);
+  auditor_exports->close(fds.sendfd[0]);
+  auditor_exports->close(fds.recvfd[1]);
   fdout = fds.sendfd[1];
   fdin = fds.recvfd[0];
   my_pid = getpid();

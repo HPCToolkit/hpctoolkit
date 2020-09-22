@@ -95,7 +95,6 @@
 #include "dylib.h"
 
 #include <hpcrun/main.h>
-#include <hpcrun_dlfns.h>
 #include <hpcrun_stats.h>
 #include <disabled.h>
 #include <files.h>
@@ -149,14 +148,8 @@ static spinlock_t fnbounds_lock = SPINLOCK_UNLOCKED;
 // forward declarations
 //*********************************************************************
 
-static load_module_t *
-fnbounds_get_loadModule(void *ip);
-
 static dso_info_t *
 fnbounds_compute(const char *filename, void *start, void *end);
-
-static void
-fnbounds_map_executable();
 
 
 //*********************************************************************
@@ -182,8 +175,6 @@ fnbounds_init()
   if (hpcrun_get_disabled()) return 0;
 
   hpcrun_syserv_init();
-  fnbounds_map_executable();
-  fnbounds_map_open_dsos();
 
   return 0;
 }
@@ -193,7 +184,7 @@ fnbounds_enclosing_addr(void* ip, void** start, void** end, load_module_t** lm)
 {
   bool ret = false; // failure unless otherwise reset to 0 below
   
-  load_module_t* lm_ = fnbounds_get_loadModule(ip);
+  load_module_t* lm_ = hpcrun_loadmap_findByAddr(ip, ip);
   dso_info_t* dso = (lm_) ? lm_->dso_info : NULL;
   
   if (dso && dso->nsymbols > 0) {
@@ -226,164 +217,20 @@ fnbounds_enclosing_addr(void* ip, void** start, void** end, load_module_t** lm)
   return ret;
 }
 
-
-//---------------------------------------------------------------------
-// Function: fnbounds_map_open_dsos
-// Purpose:  
-//     identify any new dsos that have been mapped.
-//     analyze them and add their information to the open list.
-//---------------------------------------------------------------------
-
-void
-fnbounds_map_open_dsos()
+load_module_t*
+fnbounds_map_dso(const char *module_name, void *start, void *end, struct dl_phdr_info* info)
 {
-  FNBOUNDS_LOCK;
-  dylib_map_open_dsos();
-  hpcrun_syserv_fini();
-  FNBOUNDS_UNLOCK;
+  dso_info_t *dso = fnbounds_compute(module_name, start, end);
+  if (dso) {
+    load_module_t* lm = hpcrun_loadmap_map(dso);
+    lm->phdr_info = *info;
+    return lm;
+  }
+
+  EMSG("!! INTERNAL ERROR, not possible to map dso for %s (%p, %p)",
+       module_name, start, end);
+  return NULL;
 }
-
-
-//
-// Find start and end of executable from /proc/self/maps
-//
-static void
-fnbounds_find_exec_bounds_proc_maps(char* exename, void**start, void** end)
-{
-  *start = NULL; *end = NULL;
-  FILE* loadmap = fopen("/proc/self/maps", "r");
-  if (! loadmap) {
-    EMSG("Could not open /proc/self/maps");
-    return;
-  }
-  char linebuf[1024 + 1];
-  char tmpname[PATH_MAX];
-  char* addr = NULL;
-  for(;;) {
-    char* l = fgets(linebuf, sizeof(linebuf), loadmap);
-    if (feof(loadmap)) break;
-    char* save = NULL;
-    const char delim[] = " \n";
-    addr = strtok_r(l, delim, &save);
-    char* perms = strtok_r(NULL, delim, &save);
-    // skip 3 tokens
-    for (int i=0; i < 3; i++) { (void) strtok_r(NULL, delim, &save);}
-    char* name = strtok_r(NULL, delim, &save);
-    realpath(name, tmpname); 
-    if ((strncmp(perms, "r-x", 3) == 0) && (strcmp(tmpname, exename) == 0)) break;
-  }
-  fclose(loadmap);
-  char* save = NULL;
-  const char dash[] = "-";
-  char* start_str = strtok_r(addr, dash, &save);
-  char* end_str   = strtok_r(NULL, dash, &save);
-  *start = (void*) (uintptr_t) strtol(start_str, NULL, 16);
-  *end   = (void*) (uintptr_t) strtol(end_str, NULL, 16);
-}
-
-dso_info_t*
-fnbounds_dso_exec(void)
-{
-  char filename[PATH_MAX];
-  struct fnbounds_file_header fh;
-  void* start = NULL;
-  void* end   = NULL;
-
-  TMSG(MAP_EXEC, "Entry");
-  realpath("/proc/self/exe", filename);
-  void** nm_table = (void**) hpcrun_syserv_query(filename, &fh);
-  if (! nm_table) {
-    EMSG("No nm_table for executable %s", filename);
-    dylib_find_executable_bounds(&start, &end);
-    return hpcrun_dso_make(filename, NULL, NULL, start, end, 0);
-  }
-  if (fh.num_entries < 1) {
-    EMSG("fnbounds returns no symbols for file %s, (all intervals poisoned)", filename);
-    dylib_find_executable_bounds(&start, &end);
-    return hpcrun_dso_make(filename, NULL, NULL, start, end, 0);
-  }
-  TMSG(MAP_EXEC, "Relocatable exec");
-  if (fh.is_relocatable) {
-    if (nm_table[0] >= start && nm_table[0] <= end) {
-      // segment loaded at its preferred address
-      fh.is_relocatable = 0;
-    }
-    // Use loadmap to find start, end for a relocatable executable
-    fnbounds_find_exec_bounds_proc_maps(filename, &start, &end);
-    TMSG(MAP_EXEC, "Bounds for relocatable exec = %p, %p", start, end);
-  }
-  else {
-    TMSG(MAP_EXEC, "NON relocatable exec");
-    char executable_name[PATH_MAX];
-    void* mstart; 
-    void* mend;
-    if (dylib_find_module_containing_addr(nm_table[0],
-					  executable_name, &mstart, &mend)) {
-      start = (void*) mstart;
-      end = (void*) mend;
-    }
-    else {
-      start = nm_table[0];
-      end = nm_table[fh.num_entries - 1];
-    }
-  }
-  return hpcrun_dso_make(filename, nm_table, &fh, start, end, fh.mmap_size);
-}
-
-bool
-fnbounds_ensure_mapped_dso(const char *module_name, void *start, void *end, struct dl_phdr_info* info)
-{
-  bool isOk = true;
-
-  load_module_t *lm = hpcrun_loadmap_findByAddr(start, end);
-  if (!lm) {
-    dso_info_t *dso = fnbounds_compute(module_name, start, end);
-    if (dso) {
-      lm = hpcrun_loadmap_map(dso);
-      if (info != NULL) {
-        lm->phdr_info = *info;
-      }
-    }
-    else {
-      EMSG("!! INTERNAL ERROR, not possible to map dso for %s (%p, %p)",
-	   module_name, start, end);
-      isOk = false;
-    }
-  } else if (lm->phdr_info.dlpi_phdr == NULL) {
-    if (info != NULL) lm->phdr_info = *info;
-  }
-
-  return isOk;
-}
-
-
-//---------------------------------------------------------------------
-// Function: fnbounds_unmap_closed_dsos
-// Purpose:  
-//     identify any dsos that are no longer mapped.
-//     move them from the open to the closed list.
-//---------------------------------------------------------------------
-
-void
-fnbounds_unmap_closed_dsos()
-{
-  FNBOUNDS_LOCK;
-
-  TMSG(LOADMAP, "Unmapping closed dsos");
-  load_module_t *current = hpcrun_getLoadmap()->lm_head;
-  while (current) {
-    if (current->dso_info) {
-      if (!dylib_addr_is_mapped(current->dso_info->start_addr)) {
-        TMSG(LOADMAP, "Unmapping %s", current->name);
-        hpcrun_loadmap_unmap(current);
-      }
-    }
-    current = current->next;
-  }
-
-  FNBOUNDS_UNLOCK;
-}
-
 
 //---------------------------------------------------------------------
 // function fnbounds_fini: 
@@ -485,61 +332,8 @@ fnbounds_compute(const char* incoming_filename, void* start, void* end)
       fh.is_relocatable = 0;
     }
   }
-  else {
-    char executable_name[PATH_MAX];
-    void *mstart; 
-    void *mend;
-    if (dylib_find_module_containing_addr(nm_table[0],
-					  executable_name, &mstart, &mend)) {
-      start = (void*) mstart;
-      end = (void*) mend;
-    }
-    else {
-      start = nm_table[0];
-      end = nm_table[fh.num_entries - 1];
-    }
-  }
 
   return hpcrun_dso_make(filename, nm_table, &fh, start, end, map_size);
 }
 
 
-// fnbounds_get_loadModule(): Given the (unnormalized) IP 'ip',
-// attempt to return the enclosing load module.  Note that the
-// function may fail.
-static load_module_t *
-fnbounds_get_loadModule(void *ip)
-{
-  load_module_t* lm = hpcrun_loadmap_findByAddr(ip, ip);
-  dso_info_t* dso = (lm) ? lm->dso_info : NULL;
-
-  // We can't call dl_iterate_phdr() in general because catching a
-  // sample at just the wrong point inside dlopen() will segfault or
-  // deadlock.
-  //
-  // However, the risk is small, and if we're willing to take the
-  // risk, then analyzing the new DSO here allows us to sample inside
-  // an init constructor.
-  if (!dso && ENABLED(DLOPEN_RISKY) && hpcrun_dlopen_pending() > 0) {
-    char module_name[PATH_MAX];
-    void *mstart, *mend;
-    
-    if (dylib_find_module_containing_addr(ip, module_name, &mstart, &mend)) {
-      dso = fnbounds_compute(module_name, mstart, mend);
-      if (dso) {
-        lm = hpcrun_loadmap_map(dso);
-      }
-    }
-  }
-  
-  return lm;
-}
-
-
-static void
-fnbounds_map_executable()
-{
-  FNBOUNDS_LOCK;
-  hpcrun_loadmap_map(fnbounds_dso_exec());
-  FNBOUNDS_UNLOCK;
-}
