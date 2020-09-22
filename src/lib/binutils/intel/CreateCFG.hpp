@@ -89,6 +89,17 @@ class Edge {
 // interface operations
 //******************************************************************************
 
-void printCFGInDotGraph(std::vector<uint8_t> intelRawGenBinary);
+void
+printCFGInDotGraph
+(
+	std::vector<uint8_t> intelRawGenBinary
+);
+
+
+std::string
+getBlockAndInstructionOffsets
+(
+ std::vector<uint8_t> intelRawGenBinary
+);
 
 #endif

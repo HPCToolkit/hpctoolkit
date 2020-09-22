@@ -72,8 +72,11 @@
 #include <map>
 #include <ostream>
 #include <string>
+#include <fcntl.h>
 
 #include <lib/binutils/VMAInterval.hpp>
+#include <lib/binutils/ElfHelper.hpp>
+#include <lib/binutils/intel/CreateCFG.hpp>
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/StringTable.hpp>
 #include <lib/support/dictionary.h>
@@ -179,6 +182,7 @@ StmtLessThan(StmtInfo * s1, StmtInfo * s2)
   return s1->vma < s2->vma;
 }
 
+
 //----------------------------------------------------------------------
 
 // DOCTYPE header and <HPCToolkitStructure> tag.
@@ -248,6 +252,43 @@ printLoadModuleEnd(ostream * os)
 
   *os << "</LM>\n";
 }
+
+//----------------------------------------------------------------------
+void
+printBlockAndInstructionOffset(ostream * os, string file_name)
+{
+	ElfFile *elfFile = new ElfFile;
+	int file_fd = open(file_name.c_str(), O_RDONLY);
+	size_t f_size = file_size(file_fd);
+	char  *file_buffer = (char *) malloc(f_size);
+	size_t bytes = read_all(file_fd, file_buffer, f_size);
+	bool result = elfFile->open(file_buffer, f_size, file_name);
+
+	Elf *elf = elfFile->getElf();
+	file_buffer = elfFile->getMemory();
+	ElfSectionVector *sections = elfGetSectionVector(elf);
+	GElf_Ehdr ehdr_v;
+	GElf_Ehdr *ehdr = gelf_getehdr(elf, &ehdr_v);
+
+	if (ehdr) {
+		for (auto si = sections->begin(); si != sections->end(); si++) {
+			Elf_Scn *scn = *si;
+			GElf_Shdr shdr_v;
+			GElf_Shdr *shdr = gelf_getshdr(scn, &shdr_v);
+			if (!shdr) continue;
+			char *sectionData = elfSectionGetData(file_buffer, shdr);
+			const char *section_name = elf_strptr(elf, ehdr->e_shstrndx, shdr->sh_name);
+			if (strcmp(section_name, ".text") == 0) {
+				std::vector<uint8_t> intelRawGenBinary(reinterpret_cast<uint8_t*>(sectionData), 
+						reinterpret_cast<uint8_t*>(sectionData) + shdr->sh_size);
+				std::string blockAndInstOffsets = getBlockAndInstructionOffsets(intelRawGenBinary);
+				*os << blockAndInstOffsets;
+			}
+		}
+	}
+
+}
+
 
 //----------------------------------------------------------------------
 

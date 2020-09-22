@@ -567,6 +567,20 @@ getFileNameFromAbsolutePath(string str)
 }
 
 
+static bool
+isIntelGPUFile
+(
+	std::string inputFileType
+)
+{
+	const std::string intelGPUType = "IntelGPU";
+	if (inputFileType.compare(intelGPUType) == 0) {
+		return true;	
+	}
+	return false;
+}
+
+
 //
 // makeStructure -- the main entry point for hpcstruct realmain().
 //
@@ -595,10 +609,10 @@ makeStructure(string filename,
 #endif
 
   InputFile inputFile;
+	std::string inputFileType;
 
   // failure throws an error up the call chain
-  inputFile.openFile(filename, InputFileError_Error);
-	
+  inputFile.openFile(filename, InputFileError_Error, &inputFileType);
   ElfFileVector * elfFileVector = inputFile.fileVector();
   string & sfilename = inputFile.fileName();
   const char * cfilename = inputFile.CfileName();
@@ -661,10 +675,9 @@ makeStructure(string filename,
     omp_set_num_threads(opts.jobs_parse);
 #endif
 
-		bool isIntelArch = true;
+		bool isIntelArch = isIntelGPUFile(inputFileType);
 		bool cfgNotPresent = true;
 		if (isIntelArch && cfgNotPresent) {
-			//std::cerr << "executing intel-gen9 specific code." << std::endl;
 			add_custom_function_object(symtab, getFileNameFromAbsolutePath(elfFile->getFileName())); //adds a dummy function object
 			code_src = new SymtabCodeSource(symtab);
 		  code_obj = new CodeObject(code_src, NULL, NULL, false, true); //last param is bool ignoreParse
@@ -709,11 +722,14 @@ makeStructure(string filename,
     mutex output_mtx;
 
     makeWorkList(fileMap, wlPrint, wlLaunch);
-		
-		std::cerr << elfFile->getArch() << std::endl;
-		char *elfFileRealPath = realpath(elfFile->getFileName().c_str(), NULL);
-		std::cerr << elfFileRealPath << std::endl;
-    Output::printLoadModuleBegin(outFile, elfFileRealPath);
+	
+		char *elfFileRealPath;
+		if (isIntelArch) {
+			elfFileRealPath = realpath(elfFile->getFileName().c_str(), NULL);
+			Output::printLoadModuleBegin(outFile, elfFileRealPath);
+		} else {
+			Output::printLoadModuleBegin(outFile, elfFile->getFileName());
+		}
 
 #pragma omp parallel  default(none)				\
     shared(wlPrint, wlLaunch, num_done, output_mtx)		\
@@ -734,6 +750,11 @@ makeStructure(string filename,
     // with try_lock(), there are interleavings where not all items
     // have been printed.
     printWorkList(wlPrint, num_done, outFile, gapsFile, gaps_filenm);
+	
+		// custom code for intel GPU elfs
+		if (isIntelArch) {
+    	Output::printBlockAndInstructionOffset(outFile, elfFileRealPath);
+		}
 
     Output::printLoadModuleEnd(outFile);
 

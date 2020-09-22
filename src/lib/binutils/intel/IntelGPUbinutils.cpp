@@ -230,7 +230,7 @@ extract_kernelelfs
 					if (strcmp(section_name, ".text") == 0) {
 						std::vector<uint8_t> intelRawGenBinary(reinterpret_cast<uint8_t*>(sectionData), 
 								reinterpret_cast<uint8_t*>(sectionData) + kernel_header->SizeVisaDbgInBytes);
-						printCFGInDotGraph(intelRawGenBinary);
+						//printCFGInDotGraph(intelRawGenBinary);
 					}
 				}
 			}
@@ -304,7 +304,6 @@ findIntelGPUbins
 		fileHasDebugSection = true;
 		fseek(fptr, 0L, SEEK_END);
 		size_t debug_info_size = ftell(fptr);
-		printf("debug_info_size: %zu\n", debug_info_size);
 		rewind(fptr);
 		std::vector<uint8_t> debug_info(debug_info_size);
 		fread(debug_info.data(), debug_info_size, 1, fptr);

@@ -71,8 +71,8 @@
 //******************************************************************************
 
 #define MAX_STR_SIZE 1024
+#define INDENT  "  "
 
-std::vector<int32_t> block_offsets;
 std::map<int32_t, bool> visitedBlockOffsets;
 
 
@@ -84,14 +84,15 @@ std::map<int32_t, bool> visitedBlockOffsets;
 static std::set<Edge>
 get_cfg_edges
 (
-	std::vector<uint8_t> binary,
-	size_t binary_size
+	std::vector<uint8_t> binary
 )
 {
 	KernelView kv(IGA_GEN9, binary.data(), binary.size(),
 			iga::SWSB_ENCODE_MODE::SingleDistPipe);
+	size_t binary_size = binary.size();
 	std::set<Edge> cfg_edges;
 
+	std::vector<int32_t> block_offsets;
 	int32_t offset = 0;
 	int32_t size;
 	while (offset < binary_size) {
@@ -198,6 +199,39 @@ printBasicBlocks
 }
 
 
+static std::vector<int32_t>
+getBlockOffsets
+(
+	std::vector<uint8_t> binary
+)
+{
+	std::vector<int32_t> block_offsets;
+	int32_t offset = 0;
+	int32_t size = 0;
+	KernelView kv(IGA_GEN9, binary.data(), binary.size(),
+			iga::SWSB_ENCODE_MODE::SingleDistPipe);
+
+	while (offset < binary.size()) {
+		bool isStartOfBasicBlock = kv.isInstTarget(offset);
+		if (isStartOfBasicBlock) {
+			block_offsets.push_back(offset);
+		}
+		size = kv.getInstSize(offset);
+		offset += size;	
+	}
+	return block_offsets;
+}
+
+
+static void
+doIndent(std::stringstream *ss, int depth)
+{
+  for (int n = 1; n <= depth; n++) {
+    *ss << INDENT;
+  }
+}
+
+
 
 //******************************************************************************
 // interface operations
@@ -206,10 +240,45 @@ printBasicBlocks
 // pass Intel kernel's raw gen binary
 // kernel's text region is a raw gen binary
 // you  can find kernel nested in [debug section of GPU binary/separate debug section dump]
-void printCFGInDotGraph(std::vector<uint8_t> intelRawGenBinary) {
+void
+printCFGInDotGraph
+(
+	std::vector<uint8_t> intelRawGenBinary
+)
+{
 	std::cout << "digraph GEMM_iga {" << std::endl;
-	std::set<Edge> edges = get_cfg_edges(intelRawGenBinary, intelRawGenBinary.size());
+	std::set<Edge> edges = get_cfg_edges(intelRawGenBinary);
 	printBasicBlocks(intelRawGenBinary, edges);
 	printCFGEdges(edges);
 	std::cout << "}" << std::endl;
+}
+
+
+std::string
+getBlockAndInstructionOffsets
+(
+ std::vector<uint8_t> intelRawGenBinary
+)
+{
+	std::stringstream ss;
+	std::vector<int32_t> block_offsets = getBlockOffsets(intelRawGenBinary);
+	KernelView kv(IGA_GEN9, intelRawGenBinary.data(), intelRawGenBinary.size(),
+			iga::SWSB_ENCODE_MODE::SingleDistPipe);
+	int32_t offset, size;
+
+	for(auto i = 0; i < block_offsets.size()-1; i++) {
+		offset = block_offsets[i];
+		doIndent(&ss, 1);
+		ss << "<B o=\"0x" << std::hex << offset << "\">\n"; 
+		doIndent(&ss, 2);
+		while (offset != block_offsets[i+1]) {
+			ss << "<I o=\"0x" << std::hex << offset << "\"/>";
+			size = kv.getInstSize(offset);
+			offset += size;
+		}
+		ss << "\n"; 
+		doIndent(&ss, 1);
+		ss << "</B>\n"; 
+	}
+	return ss.str();
 }
