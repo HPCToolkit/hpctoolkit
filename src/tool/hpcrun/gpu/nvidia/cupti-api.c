@@ -1583,19 +1583,22 @@ cupti_device_init()
   cupti_stop_flag = false;
   cupti_runtime_api_flag = false;
 
-  cupti_correlation_enabled = false;
-  cupti_pc_sampling_enabled = false;
+  // FIXME: Callback shutdown currently disabled to handle issues with fork()
+  // See the comment preceeding sample-sources/nvidia.c:process_event_list for details.
 
-  cupti_correlation_callback = cupti_correlation_callback_dummy;
+  // cupti_correlation_enabled = false;
+  // cupti_pc_sampling_enabled = false;
 
-  cupti_error_callback = cupti_error_callback_dummy;
+  // cupti_correlation_callback = cupti_correlation_callback_dummy;
 
-  cupti_activity_enabled.buffer_request = 0;
-  cupti_activity_enabled.buffer_complete = 0;
+  // cupti_error_callback = cupti_error_callback_dummy;
 
-  cupti_load_callback = 0;
+  // cupti_activity_enabled.buffer_request = 0;
+  // cupti_activity_enabled.buffer_complete = 0;
 
-  cupti_unload_callback = 0;
+  // cupti_load_callback = 0;
+
+  // cupti_unload_callback = 0;
 }
 
 
