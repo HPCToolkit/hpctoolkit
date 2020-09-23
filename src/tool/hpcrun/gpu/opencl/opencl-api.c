@@ -178,6 +178,8 @@
 // local data
 //******************************************************************************
 
+static atomic_long correlation_id_counter;
+
 //----------------------------------------------------------
 // opencl function pointers for late binding
 //----------------------------------------------------------
@@ -225,6 +227,16 @@ static atomic_ullong opencl_pending_operations;
 //******************************************************************************
 // private operations
 //******************************************************************************
+
+static uint64_t
+getCorrelationId
+(
+void
+)
+{
+  return atomic_fetch_add(&correlation_id_counter, 1);
+}
+
 
 static void
 opencl_pending_operations_adjust
@@ -297,12 +309,23 @@ opencl_error_report
 //******************************************************************************
 
 void
-opencl_subscriber_callback
+opencl_initialize_correlation_id
 (
-  opencl_call_t type,
-  uint64_t correlation_id
+ void
 )
 {
+  atomic_store(&correlation_id_counter, 0);
+}
+
+void
+opencl_subscriber_callback
+(
+  opencl_object_t *cb_info
+)
+{
+
+  uint64_t correlation_id = getCorrelationId();
+
   opencl_pending_operations_adjust(1);
   gpu_op_placeholder_flags_t gpu_op_placeholder_flags = 0;
   gpu_op_ccts_t gpu_op_ccts;
@@ -310,16 +333,21 @@ opencl_subscriber_callback
   cct_node_t *api_node = 
     gpu_application_thread_correlation_callback(correlation_id);
 
-  switch (type) {
-    case memcpy_H2D:
-      gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
-				   gpu_placeholder_type_copyin);
+
+  switch (cb_info->kind) {
+
+    case OPENCL_MEMORY_CALLBACK:
+      if (cb_info->details.mem_cb.type == memcpy_H2D){
+        gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
+                                       gpu_placeholder_type_copyin);
+
+      }else if (cb_info->details.mem_cb.type == memcpy_D2H){
+        gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
+                                       gpu_placeholder_type_copyout);
+      }
       break;
-    case memcpy_D2H:
-      gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
-				   gpu_placeholder_type_copyout);
-      break;
-    case kernel:
+
+    case OPENCL_KERNEL_CALLBACK:
       gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
 				   gpu_placeholder_type_kernel);
 
@@ -334,11 +362,12 @@ opencl_subscriber_callback
   gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
   hpcrun_safe_exit();
 
-  gpu_activity_channel_consume(gpu_metrics_attribute);	
-//  uint64_t cpu_submit_time = CPU_NANOTIME();
-//
-//  gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts,
-//				  cpu_submit_time);
+  gpu_activity_channel_consume(gpu_metrics_attribute);
+
+  cb_info->details.cct_node = api_node;
+  cb_info->details.initiator_channel = gpu_activity_channel_get();
+  cb_info->details.submit_time = CPU_NANOTIME();
+
 }
 
 

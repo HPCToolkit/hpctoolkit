@@ -154,7 +154,7 @@ void
 void
 gpu_activity_multiplexer_push
 (
-gpu_activity_channel_t *gpu_channel,
+gpu_activity_channel_t *initiator_channel,
 gpu_activity_t *gpu_activity
 )
 {
@@ -167,7 +167,7 @@ gpu_activity_t *gpu_activity
     gpu_operation_channel_set_insert(gpu_operation_channel, my_operation_set_id);
   }
 
-  gpu_operation_item_t item = (gpu_operation_item_t){.channel=gpu_channel, .activity=gpu_activity};
+  gpu_operation_item_t item = (gpu_operation_item_t){.channel=initiator_channel, .activity=gpu_activity};
   gpu_operation_channel_produce(gpu_operation_channel, &item);
 
 //  atomic_fetch_add(&operation_stream_counter, +1);

@@ -71,14 +71,13 @@
 // local data
 //******************************************************************************
 
-#define CPU_NANOTIME() (usec_time() * 1000)
+
 
 #ifndef HPCRUN_STATIC_LINK
 static gotcha_wrappee_handle_t clCreateCommandQueue_handle;
 static gotcha_wrappee_handle_t clEnqueueNDRangeKernel_handle;
 static gotcha_wrappee_handle_t clEnqueueReadBuffer_handle;
 static gotcha_wrappee_handle_t clEnqueueWriteBuffer_handle;
-static atomic_long correlation_id;
 
 
 
@@ -87,53 +86,31 @@ static atomic_long correlation_id;
 //******************************************************************************
 
 static void
-opencl_intercept_initialize
-(
-  void
-)
-{
-  atomic_store(&correlation_id, 0);
-}
-
-
-static uint64_t
-getCorrelationId
-(
-  void
-)
-{
-  return atomic_fetch_add(&correlation_id, 1);
-}
-
-
-static void
 initializeKernelCallBackInfo
 (
-  cl_kernel_callback_t *kernel_cb,
-  uint64_t correlation_id
+ opencl_object_t *kernel_info
 )
 {
-  kernel_cb->correlation_id = correlation_id;
-  kernel_cb->type = kernel;
-  kernel_cb->submit_time = CPU_NANOTIME();
+  kernel_info->kind = OPENCL_KERNEL_CALLBACK;
+  kernel_info->details.ker_cb.type = kernel;
+
 }
 
 
 static void
 initializeMemoryCallBackInfo
 (
-  cl_memory_callback_t *mem_transfer_cb,
-  uint64_t correlation_id,
-  size_t size,
-  bool fromHostToDevice
+  opencl_object_t *mem_info,
+  opencl_call_t type,
+  size_t size
 )
 {
-  mem_transfer_cb->correlation_id = correlation_id;
-  mem_transfer_cb->type = (fromHostToDevice) ? memcpy_H2D: memcpy_D2H; 
-  mem_transfer_cb->size = size;
-  mem_transfer_cb->fromHostToDevice = fromHostToDevice;
-  mem_transfer_cb->fromDeviceToHost = !fromHostToDevice;
-  mem_transfer_cb->submit_time = CPU_NANOTIME();
+  mem_info->kind = OPENCL_MEMORY_CALLBACK;
+  mem_info->details.mem_cb.type = type;
+  mem_info->details.mem_cb.fromHostToDevice = (type == memcpy_H2D);
+  mem_info->details.mem_cb.fromDeviceToHost = (type == memcpy_D2H);
+  mem_info->details.mem_cb.size = size;
+
 }
 
 
@@ -170,13 +147,11 @@ clEnqueueNDRangeKernel_wrapper
   cl_event *event
 )
 {
-  uint64_t correlation_id = getCorrelationId();
   opencl_object_t *kernel_info = opencl_malloc();
-  kernel_info->kind = OPENCL_KERNEL_CALLBACK;
-  kernel_info->details.initiator_channel = gpu_activity_channel_get();
+  initializeKernelCallBackInfo(kernel_info);
 
-  cl_kernel_callback_t *kernel_cb = &(kernel_info->details.ker_cb);
-  initializeKernelCallBackInfo(kernel_cb, correlation_id);
+  opencl_subscriber_callback(kernel_info);
+
   cl_event my_event;
   cl_event *eventp;
   if (!event) {
@@ -195,10 +170,9 @@ clEnqueueNDRangeKernel_wrapper
 				   event_wait_list, eventp);
 
   ETMSG(OPENCL, "registering callback for type: kernel. " 
-	"Correlation id: %"PRIu64 "", correlation_id);
+	"Correlation id: %"PRIu64 "", kernel_info->details.ker_cb.correlation_id);
 
-  opencl_subscriber_callback(kernel_cb->type, kernel_cb->correlation_id);
-  clSetEventCallback_wrapper(*eventp, CL_COMPLETE, 
+  clSetEventCallback_wrapper(*eventp, CL_COMPLETE,
 			     &opencl_activity_completion_callback, kernel_info);
   return return_status;
 }
@@ -218,13 +192,11 @@ clEnqueueReadBuffer_wrapper
   cl_event *event
 )
 {
-  uint64_t correlation_id = getCorrelationId();
   opencl_object_t *mem_info = opencl_malloc();
-  mem_info->kind = OPENCL_MEMORY_CALLBACK;
-  mem_info->details.initiator_channel = gpu_activity_channel_get();
+  initializeMemoryCallBackInfo(mem_info, memcpy_D2H, cb);
 
-  cl_memory_callback_t *mem_transfer_cb = &(mem_info->details.mem_cb);
-  initializeMemoryCallBackInfo(mem_transfer_cb, correlation_id, cb, false);
+  opencl_subscriber_callback(mem_info);
+
   cl_event my_event;
   cl_event *eventp;
   if (!event) {
@@ -243,12 +215,10 @@ clEnqueueReadBuffer_wrapper
 				event_wait_list, eventp);
 
   ETMSG(OPENCL, "registering callback for type: D2H. " 
-	"Correlation id: %"PRIu64 "", correlation_id);
+	"Correlation id: %"PRIu64 "", mem_info->details.mem_cb.correlation_id);
   ETMSG(OPENCL, "%d(bytes) of data being transferred from device to host", 
 	(long)cb);
 
-  opencl_subscriber_callback(mem_transfer_cb->type, 
-			     mem_transfer_cb->correlation_id);
 
   clSetEventCallback_wrapper(*eventp, CL_COMPLETE, 
 			     &opencl_activity_completion_callback, mem_info);
@@ -271,13 +241,12 @@ clEnqueueWriteBuffer_wrapper
   cl_event *event
 )
 {
-  uint64_t correlation_id = getCorrelationId();
-  opencl_object_t *mem_info = opencl_malloc();
-  mem_info->kind = OPENCL_MEMORY_CALLBACK;
-  mem_info->details.initiator_channel = gpu_activity_channel_get();
 
-  cl_memory_callback_t *mem_transfer_cb = &(mem_info->details.mem_cb);
-  initializeMemoryCallBackInfo(mem_transfer_cb, correlation_id, cb, true);
+  opencl_object_t *mem_info = opencl_malloc();
+  initializeMemoryCallBackInfo(mem_info, memcpy_H2D, cb);
+
+  opencl_subscriber_callback(mem_info);
+
   cl_event my_event;
   cl_event *eventp;
   if (!event) {
@@ -297,13 +266,11 @@ clEnqueueWriteBuffer_wrapper
 				 event_wait_list, eventp);
 
   ETMSG(OPENCL, "registering callback for type: H2D. " 
-	"Correlation id: %"PRIu64 "", correlation_id);
+	"Correlation id: %"PRIu64 "", mem_info->details.mem_cb.correlation_id);
 
   ETMSG(OPENCL, "%d(bytes) of data being transferred from host to device", 
 	(long)cb);
 
-  opencl_subscriber_callback(mem_transfer_cb->type, 
-			     mem_transfer_cb->correlation_id);
 
   clSetEventCallback_wrapper(*eventp, CL_COMPLETE, 
 			     &opencl_activity_completion_callback, 
@@ -360,7 +327,7 @@ opencl_intercept_setup
 #ifndef HPCRUN_STATIC_LINK
   ETMSG(OPENCL, "setting up opencl intercepts");
   gotcha_wrap(opencl_bindings, 4, "opencl_bindings");
-  opencl_intercept_initialize();
+  opencl_initialize_correlation_id();
 #endif
 }
 

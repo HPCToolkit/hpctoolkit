@@ -83,7 +83,7 @@ typedef struct gpu_operation_item_t{
 }gpu_operation_item_t;
 
 
-typedef void (*gpu_operation_fn_t)
+typedef void (*gpu_operation_channel_fn_t)
 (
  gpu_operation_channel_t *channel
 );

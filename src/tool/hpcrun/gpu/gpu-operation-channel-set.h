@@ -53,7 +53,7 @@
 
 typedef struct gpu_operation_channel_t gpu_operation_channel_t;
 
-//typedef struct gpu_operation_fn_t gpu_operation_fn_t;
+//typedef struct gpu_operation_channel_fn_t gpu_operation_channel_fn_t;
 
 //******************************************************************************
 // type declarations
@@ -64,10 +64,6 @@ typedef void (*gpu_operation_channel_fn_t)
  gpu_operation_channel_t *channel
 );
 
-//typedef void (*gpu_operation_fn_t)
-//(
-// gpu_operation_t *a
-//);
 
 
 //******************************************************************************

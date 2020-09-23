@@ -59,9 +59,8 @@
 #include <hpcrun/gpu/gpu-trace-item.h>
 #include <hpcrun/gpu/gpu-context-id-map.h>
 
-#include "gpu-operation-item-process.h"
 #include "gpu-operation-item.h"
-
+#include "gpu-operation-item-process.h"
 
 
 //******************************************************************************
@@ -79,8 +78,6 @@
 //******************************************************************************
 // private operations
 //******************************************************************************
-
-
 
 static void
 gpu_context_stream_trace

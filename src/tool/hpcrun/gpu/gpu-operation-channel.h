@@ -50,7 +50,6 @@
 
 #include <lib/prof-lean/bichannel.h>
 
-//#include "gpu-operation-item.h"
 
 
 //******************************************************************************
@@ -60,6 +59,7 @@
 typedef struct gpu_operation_item_t gpu_operation_item_t;
 
 typedef struct gpu_operation_channel_t gpu_operation_channel_t;
+
 
 
 //******************************************************************************

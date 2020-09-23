@@ -127,7 +127,7 @@ channel_forone
 {
   gpu_operation_channel_t *channel = se->channel;
 
-  gpu_operation_fn_t channel_fn = (gpu_operation_fn_t) arg;
+  gpu_operation_channel_fn_t channel_fn = (gpu_operation_channel_fn_t) arg;
 
   channel_fn(channel);
 }
@@ -136,7 +136,7 @@ channel_forone
 static void
 gpu_operation_channel_set_forall
 (
- gpu_operation_fn_t channel_fn,
+ gpu_operation_channel_fn_t channel_fn,
  int set_index
 )
 {

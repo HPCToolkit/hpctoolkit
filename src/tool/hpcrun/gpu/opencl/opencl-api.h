@@ -57,15 +57,26 @@
 
 
 
+//************************ Forward Declarations ******************************
+
+typedef struct opencl_object_t opencl_object_t;
+
+
+
 //******************************************************************************
 // interface operations
 //******************************************************************************
 
 void
+opencl_initialize_correlation_id
+(
+  void
+);
+
+void
 opencl_subscriber_callback
 (
-  opencl_call_t,
-  uint64_t
+  opencl_object_t *cb_info
 );
 
 

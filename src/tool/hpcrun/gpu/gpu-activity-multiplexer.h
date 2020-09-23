@@ -73,7 +73,7 @@ gpu_activity_multiplexer_fini(void);
 void
 gpu_activity_multiplexer_push
 (
-gpu_activity_channel_t *gpu_channel,
+gpu_activity_channel_t *initiator_channel,
 gpu_activity_t *gpu_activity
 );
 

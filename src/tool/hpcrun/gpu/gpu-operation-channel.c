@@ -79,11 +79,6 @@
 #define channel_steal \
   typed_bichannel_steal(gpu_operation_item_t)
 
-#define gpu_operation_item_alloc(channel)		\
-  channel_item_alloc(channel, gpu_operation_item_t)
-
-#define gpu_operation_item_free(channel, item)	\
-  channel_item_free(channel, item)
 
 
 //******************************************************************************
