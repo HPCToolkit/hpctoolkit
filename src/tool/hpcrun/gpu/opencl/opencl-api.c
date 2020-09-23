@@ -58,6 +58,7 @@
 #include <hpcrun/gpu/gpu-activity.h>
 #include <hpcrun/gpu/gpu-activity-channel.h>
 #include <hpcrun/gpu/gpu-activity-process.h>
+#include <hpcrun/gpu/gpu-activity-multiplexer.h>
 #include <hpcrun/gpu/gpu-correlation-channel.h>
 #include <hpcrun/gpu/gpu-correlation-id-map.h>
 #include <hpcrun/gpu/gpu-application-thread-api.h>
@@ -236,25 +237,18 @@ opencl_pending_operations_adjust
 
 
 static void
-opencl_activity_completion_notify
-(
-  void
-)
-{
-  gpu_monitoring_thread_activities_ready();
-}
-
-
-static void
 opencl_activity_process
 (
   cl_event event,
-  void *user_data
+  cl_generic_callback_t *act_data,
+  gpu_activity_channel_t *initiator_channel
 )
 {
   gpu_activity_t gpu_activity;
-  opencl_activity_translate(&gpu_activity, event, user_data);
-  gpu_activity_process(&gpu_activity);
+  opencl_activity_translate(&gpu_activity, event, act_data);
+
+  gpu_activity_multiplexer_push(initiator_channel, &gpu_activity);
+//  gpu_activity_process(&gpu_activity);
 }
 
 
@@ -341,9 +335,10 @@ opencl_subscriber_callback
   hpcrun_safe_exit();
 
   gpu_activity_channel_consume(gpu_metrics_attribute);	
-  uint64_t cpu_submit_time = CPU_NANOTIME();
-  gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, 
-				  cpu_submit_time);
+//  uint64_t cpu_submit_time = CPU_NANOTIME();
+//
+//  gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts,
+//				  cpu_submit_time);
 }
 
 
@@ -356,12 +351,13 @@ opencl_activity_completion_callback
 )
 {
   cl_int complete_flag = CL_COMPLETE;
-  opencl_object_t *o = (opencl_object_t*)user_data;
+  opencl_object_t *cl_obj = (opencl_object_t*)user_data;
   cl_generic_callback_t *act_data;
-  if (o->kind == OPENCL_KERNEL_CALLBACK) {
-    act_data = (cl_generic_callback_t*) &(o->details.ker_cb);
-  } else if (o->kind == OPENCL_MEMORY_CALLBACK) {
-    act_data = (cl_generic_callback_t*) &(o->details.mem_cb);
+
+  if (cl_obj->kind == OPENCL_KERNEL_CALLBACK) {
+    act_data = (cl_generic_callback_t*) &(cl_obj->details.ker_cb);
+  } else if (cl_obj->kind == OPENCL_MEMORY_CALLBACK) {
+    act_data = (cl_generic_callback_t*) &(cl_obj->details.mem_cb);
   }
   uint64_t correlation_id = act_data->correlation_id;
   opencl_call_t type = act_data->type;
@@ -376,13 +372,13 @@ opencl_activity_completion_callback
     }
     ETMSG(OPENCL, "completion type: %s, Correlation id: %"PRIu64 "", 
 	  opencl_call_to_string(type), correlation_id);
-    opencl_activity_completion_notify();
-    opencl_activity_process(event, act_data);
+
+    opencl_activity_process(event, act_data, cl_obj->details.initiator_channel);
   }
-  if (o->isInternalClEvent) {
+  if (cl_obj->isInternalClEvent) {
     HPCRUN_OPENCL_CALL(clReleaseEvent, (event));
   }
-  opencl_free(o);
+  opencl_free(cl_obj);
   opencl_pending_operations_adjust(-1);
 }
 

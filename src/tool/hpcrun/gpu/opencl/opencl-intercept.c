@@ -54,10 +54,12 @@
 //******************************************************************************
 
 #include <hpcrun/gpu/gpu-metrics.h>
+#include <hpcrun/gpu/gpu-activity-channel.h>
 #include <hpcrun/messages/messages.h>
 #include <lib/prof-lean/hpcrun-gotcha.h>
 #include <lib/prof-lean/hpcrun-opencl.h>
 #include <lib/prof-lean/stdatomic.h>
+#include <lib/prof-lean/usec_time.h>
 
 #include "opencl-api.h"
 #include "opencl-intercept.h"
@@ -68,6 +70,8 @@
 //******************************************************************************
 // local data
 //******************************************************************************
+
+#define CPU_NANOTIME() (usec_time() * 1000)
 
 #ifndef HPCRUN_STATIC_LINK
 static gotcha_wrappee_handle_t clCreateCommandQueue_handle;
@@ -110,7 +114,8 @@ initializeKernelCallBackInfo
 )
 {
   kernel_cb->correlation_id = correlation_id;
-  kernel_cb->type = kernel; 
+  kernel_cb->type = kernel;
+  kernel_cb->submit_time = CPU_NANOTIME();
 }
 
 
@@ -128,6 +133,7 @@ initializeMemoryCallBackInfo
   mem_transfer_cb->size = size;
   mem_transfer_cb->fromHostToDevice = fromHostToDevice;
   mem_transfer_cb->fromDeviceToHost = !fromHostToDevice;
+  mem_transfer_cb->submit_time = CPU_NANOTIME();
 }
 
 
@@ -167,6 +173,8 @@ clEnqueueNDRangeKernel_wrapper
   uint64_t correlation_id = getCorrelationId();
   opencl_object_t *kernel_info = opencl_malloc();
   kernel_info->kind = OPENCL_KERNEL_CALLBACK;
+  kernel_info->details.initiator_channel = gpu_activity_channel_get();
+
   cl_kernel_callback_t *kernel_cb = &(kernel_info->details.ker_cb);
   initializeKernelCallBackInfo(kernel_cb, correlation_id);
   cl_event my_event;
@@ -213,6 +221,8 @@ clEnqueueReadBuffer_wrapper
   uint64_t correlation_id = getCorrelationId();
   opencl_object_t *mem_info = opencl_malloc();
   mem_info->kind = OPENCL_MEMORY_CALLBACK;
+  mem_info->details.initiator_channel = gpu_activity_channel_get();
+
   cl_memory_callback_t *mem_transfer_cb = &(mem_info->details.mem_cb);
   initializeMemoryCallBackInfo(mem_transfer_cb, correlation_id, cb, false);
   cl_event my_event;
@@ -224,6 +234,7 @@ clEnqueueReadBuffer_wrapper
     eventp = event;
     mem_info->isInternalClEvent = false;
   }
+
   clreadbuffer_t clEnqueueReadBuffer_wrappee = 
     GOTCHA_GET_TYPED_WRAPPEE(clEnqueueReadBuffer_handle, clreadbuffer_t);
   cl_int return_status = 
@@ -263,6 +274,8 @@ clEnqueueWriteBuffer_wrapper
   uint64_t correlation_id = getCorrelationId();
   opencl_object_t *mem_info = opencl_malloc();
   mem_info->kind = OPENCL_MEMORY_CALLBACK;
+  mem_info->details.initiator_channel = gpu_activity_channel_get();
+
   cl_memory_callback_t *mem_transfer_cb = &(mem_info->details.mem_cb);
   initializeMemoryCallBackInfo(mem_transfer_cb, correlation_id, cb, true);
   cl_event my_event;
@@ -274,6 +287,8 @@ clEnqueueWriteBuffer_wrapper
     eventp = event;
     mem_info->isInternalClEvent = false;
   }
+
+
   clwritebuffer_t clEnqueueWriteBuffer_wrappee = 
     GOTCHA_GET_TYPED_WRAPPEE(clEnqueueWriteBuffer_handle, clwritebuffer_t);
   cl_int return_status = 

@@ -41,16 +41,24 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef _OPENCL_INTERCEPT_H_
-#define _OPENCL_INTERCEPT_H_
-
-
 
 //******************************************************************************
 // system includes
 //******************************************************************************
 
-#include <stdbool.h>
+#include <assert.h>
+
+
+
+//******************************************************************************
+// macros
+//******************************************************************************
+
+#define UNIT_TEST 0
+
+#define DEBUG 0
+
+#include "gpu-print.h"
 
 
 
@@ -58,110 +66,55 @@
 // local includes
 //******************************************************************************
 
-#include <lib/prof-lean/hpcrun-opencl.h>
+#include "gpu-activity.h"
+#include "gpu-channel-item-allocator.h"
+#include "gpu-operation.h"
+#include "gpu-operation-channel.h"
 
 
 
 //******************************************************************************
-// type declarations
-//******************************************************************************
-
-typedef cl_command_queue (*clqueue_t)(
-  cl_context,
-  cl_device_id,
-  cl_command_queue_properties,
-  cl_int *
-);
-
-
-typedef cl_int (*clkernel_t)(
-  cl_command_queue,
-  cl_kernel,
-  cl_uint,
-  const size_t *,
-  const size_t *,
-  const size_t *,
-  cl_uint,
-  const cl_event *,
-  cl_event *
-);
-
-
-typedef cl_int (*clreadbuffer_t)(
-  cl_command_queue,
-  cl_mem,
-  cl_bool,
-  size_t,
-  size_t,
-  void *,
-  cl_uint,
-  const cl_event *,
-  cl_event *
-);
-
-
-typedef cl_int (*clwritebuffer_t)(
-  cl_command_queue,
-  cl_mem,
-  cl_bool,
-  size_t,
-  size_t,
-  const void *,
-  cl_uint,
-  const cl_event *,
-  cl_event *
-);
-
-
-typedef enum {
-  memcpy_H2D                      = 0,
-  memcpy_D2H                      = 1,
-  kernel                          = 2
-} opencl_call_t;
-
-
-typedef struct cl_generic_callback_t {
-  uint64_t correlation_id;
-  opencl_call_t type;
-  uint64_t submit_time;
-} cl_generic_callback_t;
-
-
-typedef struct cl_kernel_callback_t {
-  uint64_t correlation_id;
-  opencl_call_t type;
-  uint64_t submit_time;
-} cl_kernel_callback_t;
-
-
-typedef struct cl_memory_callback_t {
-  uint64_t correlation_id;
-  opencl_call_t type;
-  bool fromHostToDevice;
-  bool fromDeviceToHost;
-  size_t size;
-  uint64_t submit_time;
-} cl_memory_callback_t;
-
-
-
-//******************************************************************************
-// interface operations
+// interface functions
 //******************************************************************************
 
 void
-opencl_intercept_setup
+gpu_operation_dump
 (
-  void
-);
+ gpu_operation_item_t *it
+)
+{
+  PRINT("gpu operation item: activity_channel %p, activity = %p\n", it->channel, it->activity);
+}
 
 
 void
-opencl_intercept_teardown
+gpu_operation_item_consume
 (
-  void
-);
+ gpu_operation_item_fn_t ap_fn,
+ gpu_operation_item_t *it,
+)
+{
+  gpu_context_activity_dump(&it->activity, "CONSUME");
+  ap_fn(it);
+}
 
 
+gpu_operation_item_t *
+gpu_operation_alloc
+(
+ gpu_operation_channel_t *channel
+)
+{
+  return channel_item_alloc(channel, gpu_operation_item_t);
+}
 
-#endif  //_OPENCL_INTERCEPT_H_
+
+void
+gpu_operation_free
+(
+ gpu_operation_channel_t *channel,
+ gpu_operation_item_t *it
+)
+{
+  channel_item_free(channel, it);
+}

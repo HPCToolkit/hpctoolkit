@@ -68,12 +68,14 @@ typedef enum {
 
 typedef struct opencl_object_channel_t opencl_object_channel_t;
 
+typedef struct gpu_activity_channel_t gpu_activity_channel_t;
 
 typedef struct opencl_object_details_t {
   union {
     cl_kernel_callback_t ker_cb;
     cl_memory_callback_t mem_cb;
   };
+  gpu_activity_channel_t *initiator_channel;
 } opencl_object_details_t;
 
 

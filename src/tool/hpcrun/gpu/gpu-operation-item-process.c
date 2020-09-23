@@ -46,7 +46,6 @@
 //******************************************************************************
 
 #include <assert.h>
-#include <string.h>
 
 
 
@@ -54,11 +53,26 @@
 // local includes
 //******************************************************************************
 
+#include <hpcrun/cct/cct.h>
 #include <hpcrun/gpu/gpu-activity.h>
+#include <hpcrun/gpu/gpu-activity-channel.h>
+#include <hpcrun/gpu/gpu-trace-item.h>
+#include <hpcrun/gpu/gpu-context-id-map.h>
 
-#include "opencl-activity-translate.h"
-#include "opencl-api.h"
-#include "opencl-intercept.h"
+#include "gpu-operation-item-process.h"
+#include "gpu-operation-item.h"
+
+
+
+//******************************************************************************
+// macros
+//******************************************************************************
+
+#define UNIT_TEST 0
+
+#define DEBUG 0
+
+#include "gpu-print.h"
 
 
 
@@ -66,53 +80,97 @@
 // private operations
 //******************************************************************************
 
+
+
 static void
-getMemoryProfileInfo
+gpu_context_stream_trace
 (
-  gpu_memcpy_t *memcpy,
-  cl_memory_callback_t *cb_data
+ uint32_t context_id,
+ uint32_t stream_id,
+ gpu_trace_item_t *ti
 )
 {
-  memcpy->correlation_id = cb_data->correlation_id;
-  memcpy->submit_time = cb_data->submit_time;
-  memcpy->bytes = cb_data->size;
-  memcpy->copyKind = (gpu_memcpy_type_t) 
-    (cb_data->fromHostToDevice)? GPU_MEMCPY_H2D: 
-    (cb_data->fromDeviceToHost? GPU_MEMCPY_D2H:	GPU_MEMCPY_UNK);
+  gpu_context_id_map_stream_process(context_id, stream_id, gpu_trace_produce, ti);
 }
 
 
 static void
-convert_kernel_launch
+trace_item_set
 (
-  gpu_activity_t *ga,
-  void *user_data,
-  cl_event event
+ gpu_trace_item_t *ti,
+ uint64_t submit_time,
+ uint64_t start_time,
+ uint64_t end_time,
+ gpu_activity_t *ga
 )
 {
-  cl_kernel_callback_t *kernel_cb_data = (cl_kernel_callback_t*)user_data;
-  memset(&ga->details.kernel, 0, sizeof(gpu_kernel_t));
-  getTimingInfoFromClEvent(&ga->details.interval, event);
-  ga->kind = GPU_ACTIVITY_KERNEL;
-  ga->details.kernel.correlation_id = kernel_cb_data->correlation_id;
-  ga->details.kernel.submit_time = kernel_cb_data->submit_time;
+  gpu_trace_item_produce(ti, submit_time, start_time, end_time, ga->cct_node);
+}
+
+
+
+//******************************************************************************
+// gpu operations process
+//******************************************************************************
+
+static void
+gpu_memcpy_process
+(
+gpu_operation_item_t *it
+)
+{
+  gpu_activity_t *activity = it->activity;
+  gpu_activity_channel_t *channel = it->channel;
+
+  assert(activity->cct_node != NULL);
+
+  gpu_trace_item_t entry_trace;
+  trace_item_set(&entry_trace, activity->details.memcpy.submit_time,
+                 activity->details.memcpy.start, activity->details.memcpy.end, activity);
+
+  gpu_context_stream_trace
+    (activity->details.memcpy.context_id, activity->details.memcpy.stream_id,
+     &entry_trace);
+
+  gpu_activity_channel_produce(channel, activity);
+
+  PRINT("Memcpy copy cct_node %p\n", activity->cct_node);
+  PRINT("Memcpy copy kind %u\n", activity->details.memcpy.copyKind);
+  PRINT("Memcpy copy bytes %lu\n", activity->details.memcpy.bytes);
 }
 
 
 static void
-convert_memcpy
+gpu_kernel_process
 (
-  gpu_activity_t *ga,
-  void *user_data,
-  cl_event event,
-  gpu_memcpy_type_t kind
+gpu_operation_item_t *it
 )
 {
-  cl_memory_callback_t *memory_cb_data = (cl_memory_callback_t*)user_data;
-  memset(&ga->details.memcpy, 0, sizeof(gpu_memcpy_t));
-  getTimingInfoFromClEvent(&ga->details.interval, event);
-  getMemoryProfileInfo(&ga->details.memcpy, memory_cb_data);
-  ga->kind = GPU_ACTIVITY_MEMCPY;
+  gpu_activity_t *activity = it->activity;
+  gpu_activity_channel_t *channel = it->channel;
+
+  gpu_trace_item_t entry_trace;
+  trace_item_set(&entry_trace, activity->details.kernel.submit_time,
+                 activity->details.kernel.start, activity->details.kernel.end, activity);
+
+  gpu_context_stream_trace
+    (activity->details.kernel.context_id, activity->details.kernel.stream_id,
+     &entry_trace);
+
+  gpu_activity_channel_produce(channel, activity);
+
+  PRINT("Kernel execution cct_node %p\n", activity->cct_node);
+  PRINT("Kernel execution deviceId %u\n", activity->details.kernel.device_id);
+}
+
+
+static void
+gpu_unknown_process
+(
+gpu_operation_item_t *it
+)
+{
+  PRINT("Unknown activity kind %d\n", it->activity->kind);
 }
 
 
@@ -122,27 +180,25 @@ convert_memcpy
 //******************************************************************************
 
 void
-opencl_activity_translate
+gpu_operation_item_process
 (
-  gpu_activity_t *ga,
-  cl_event event,
-  void *act_data
+gpu_operation_item_t *it
 )
 {
-  cl_generic_callback_t *cb_data = (cl_generic_callback_t*)act_data;
-  opencl_call_t type = cb_data->type;
-  switch (type) {
-    case kernel:
-      convert_kernel_launch(ga, act_data, event);
-      break;
-    case memcpy_H2D:
-      convert_memcpy(ga, act_data, event, GPU_MEMCPY_H2D);
-      break;
-    case memcpy_D2H:
-      convert_memcpy(ga, act_data, event, GPU_MEMCPY_D2H);
-      break;
-    default:
-      assert(0);
+
+  switch (it->activity->kind) {
+
+  case GPU_ACTIVITY_MEMCPY:
+    gpu_memcpy_process(it);
+    break;
+
+  case GPU_ACTIVITY_KERNEL:
+    gpu_kernel_process(it);
+    break;
+
+  default:
+    gpu_unknown_process(it);
+    break;
   }
-  cstack_ptr_set(&(ga->next), 0);
 }
+
