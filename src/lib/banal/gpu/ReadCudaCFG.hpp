@@ -10,7 +10,7 @@
 #include <CodeObject.h>
 
 bool
-readCubinCFG
+readCudaCFG
 (
  const std::string &search_path,
  ElfFile *elfFile,

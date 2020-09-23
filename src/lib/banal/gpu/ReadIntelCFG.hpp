@@ -86,7 +86,6 @@ readIntelCFG
  const std::string &search_path,
  ElfFile *elfFile,
  Dyninst::SymtabAPI::Symtab *the_symtab, 
- std::map<int, int> &inst_size,
  bool cfg_wanted,
  Dyninst::ParseAPI::CodeSource **code_src, 
  Dyninst::ParseAPI::CodeObject **code_obj

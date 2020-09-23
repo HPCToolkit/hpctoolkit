@@ -170,11 +170,11 @@ static const string & unknown_link = UNKNOWN_LINK;
 // FIXME: temporary until the line map problems are resolved
 static Symtab * the_symtab = NULL;
 static int cuda_arch = 0;
+static int intel_gpu_arch = 0;
+// We relocate the symbols and line maps of cubins to 'original_offset+cubin_size'
+// to handle the cases in which relocated offsets conflicts with original information
 static size_t cubin_size = 0;
 
-// FIXME: temporary until instruction size problem is fixed
-static int intel_arch = 0;
-static std::map<int, int> inst_size;
 
 static BAnal::Struct::Options opts;
 
@@ -650,27 +650,26 @@ makeStructure(string filename,
     omp_set_num_threads(opts.jobs_parse);
 #endif
 
-    // TODO(Aaron): determine these variables
-		bool isIntelArch = true;
-		bool cfgNotPresent = true;
-		if (isIntelArch && cfgNotPresent) {
-			//std::cerr << "executing intel-gen9 specific code." << std::endl;
-      // TODO(Aaron): does instruction size change with different generations?
-      inst_size.clear();
-      intel_arch = 1;
-      parsable = readIntelCFG(search_path, elfFile, the_symtab, inst_size,
+    // TODO(Aaron): determine the variables
+		bool intel_file = true;
+
+    if (cuda_file) { // don't run parseapi on cuda binary
+      cuda_arch = elfFile->getArch();
+      cubin_size = elfFile->getLength();
+      parsable = readCudaCFG(search_path, elfFile, the_symtab, 
+			      structOpts.compute_gpu_cfg, &code_src, &code_obj);
+    } else if (intel_file) { // don't run parseapi on intel binary
+      // TODO(Aaron): determine which generation of intel gpu it is
+      intel_gpu_arch = 1;
+      parsable = readIntelCFG(search_path, elfFile, the_symtab,
         structOpts.compute_gpu_cfg, &code_src, &code_obj);
-		} else if (! cuda_file) { // don't run parseapi on cuda binary
+    } else {
       code_src = new SymtabCodeSource(symtab);
       code_obj = new CodeObject(code_src);
       code_obj->parse();
+      intel_gpu_arch = 0;
       cuda_arch = 0;
       cubin_size = 0;
-    } else {
-      cuda_arch = elfFile->getArch();
-      cubin_size = elfFile->getLength();
-      parsable = readCubinCFG(search_path, elfFile, the_symtab, 
-			      structOpts.compute_gpu_cfg, &code_src, &code_obj);
     }
 
     if (opts.show_time) {
@@ -997,6 +996,8 @@ getProcLineMap(StatementVector & svec, Offset vma, Offset end,
   svec.clear();
 
   if (cuda_arch > 0) {
+    // TODO(Keren): Use the same method below and remove magic numbers for instruction length
+    // mod->getSourceLines(svec, next + cubin_size);
     int len = (cuda_arch >= 70) ? 16 : 8;
 
     StatementVector tmp;
@@ -1008,7 +1009,7 @@ getProcLineMap(StatementVector & svec, Offset vma, Offset end,
         if (svec.empty()) {
           svec.push_back(tmp[0]);
         } else if (tmp[0]->getFile() == svec[0]->getFile() &&
-		   tmp[0]->getLine() < svec[0]->getLine()) {
+          tmp[0]->getLine() < svec[0]->getLine()) {
           svec[0] = tmp[0];
         }
       }
@@ -1803,11 +1804,14 @@ doBlock(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func,
   LineMapCache lmcache (ginfo->sym_func, env.realPath);
 
   // iterate through the instructions in this block
+#if 0
+// no longer support this path
 #ifdef DYNINST_INSTRUCTION_PTR
   map <Offset, Instruction::Ptr> imap;
 #else
-  map <Offset, Instruction> imap;
 #endif
+#endif
+  map <Offset, Instruction> imap;
   block->getInsns(imap);
 
   int len = 0;
@@ -1815,8 +1819,7 @@ doBlock(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func,
 
   if (cuda_arch > 0) {
     device = "NVIDIA sm_" + std::to_string(cuda_arch);
-    len = (cuda_arch >= 70) ? 16 : 8;
-  } else if (intel_arch > 0) {
+  } else if (intel_gpu_arch > 0) {
     device = "INTEL GPU";
   }
   
@@ -1826,15 +1829,13 @@ doBlock(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func,
     string filenm = "";
     uint line = 0;
 
-    if (intel_arch > 0) {
-      len = inst_size.at(vma);
-    } else if (cuda_arch == 0) {
+#if 0
 #ifdef DYNINST_INSTRUCTION_PTR
       len = iit->second->size();
 #else
-      len = iit->second.size();
 #endif
-    } 
+#endif
+    len = iit->second.size();
 
     lmcache.getLineInfo(vma, filenm, line);
 

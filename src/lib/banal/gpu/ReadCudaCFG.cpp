@@ -144,6 +144,7 @@ parseDotCFG
         for (auto *block : function->blocks) {
           for (auto *inst : block->insts) {
             inst->offset = (inst->offset - begin_offset) + symbol->getOffset();
+            inst->size = cuda_arch >= 70 ? 16 : 8;
           }
           block->address = block->insts[0]->offset;
         }
@@ -188,7 +189,7 @@ parseDotCFG
     int len = cuda_arch >= 70 ? 16 : 8;
     // Add dummy insts
     for (size_t i = block->address; i < block->address + symbol->getSize(); i += len) {
-      block->insts.push_back(new GPUParse::CudaInst(i));
+      block->insts.push_back(new GPUParse::CudaInst(i, len));
     }
     function->blocks.push_back(block);
     functions.push_back(function);
@@ -212,7 +213,7 @@ parseDotCFG
           block->begin_offset = cuda_arch >= 70 ? 16 : 8;
           max_block_id++;
           while (function_size < symbol_size) {
-            block->insts.push_back(new GPUParse::Inst(function_size + function->address));
+            block->insts.push_back(new GPUParse::Inst(function_size + function->address, len));
             function_size += len;
           } 
           if (function->blocks.size() > 0) {
@@ -279,7 +280,7 @@ getFilename
 
 
 bool
-readCubinCFG
+readCudaCFG
 (
  const std::string &search_path,
  ElfFile *elfFile,

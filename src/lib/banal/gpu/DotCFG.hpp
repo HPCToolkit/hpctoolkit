@@ -13,6 +13,8 @@
 
 namespace GPUParse {
 
+typedef Dyninst::Architecture Arch;
+
 struct Inst {
   int offset;
   int size;
@@ -26,10 +28,13 @@ struct Inst {
   std::string port;
   std::string target;
   std::vector<std::string> operands;
+  Arch arch;
 
   // Constructor for dummy inst
-  Inst(int offset, int size) : offset(offset), size(size), dual_first(false), dual_second(false),
-    is_call(false), is_jump(false), is_sync(false) {}
+  Inst(int offset, int size, Arch arch) : offset(offset), size(size), dual_first(false), dual_second(false),
+    is_call(false), is_jump(false), is_sync(false), arch(arch) {}
+
+  Inst(int offset, int size) : Inst(offset, size, Dyninst::Arch_none) {}
 
   explicit Inst(int offset) : Inst(offset, 0) {}
 };
@@ -37,9 +42,9 @@ struct Inst {
 
 struct CudaInst : public Inst {
   // Constructor for dummy inst
-  CudaInst(int offset, int size) : Inst(offset, size) {}
+  CudaInst(int offset, int size) : Inst(offset, size, Dyninst::Arch_cuda) {}
 
-  explicit CudaInst(int offset) : Inst(offset) {}
+  explicit CudaInst(int offset) : Inst(offset, 0, Dyninst::Arch_cuda) {}
 
   // Cuda instruction constructor
   CudaInst(std::string &inst_str) : Inst(0, 0) {

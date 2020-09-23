@@ -28,9 +28,9 @@ Function *GPUCFGFactory::mkfunc(Address addr, FuncSource src,
           if (DEBUG_GPU_CFGFACTORY) {
             std::cout << "New block: " << block->name << " id: " << block->id << std::endl;
           }
-          std::vector<Offset> inst_offsets;
+          std::vector<std::pair<Offset, size_t>> inst_offsets;
           for (auto *inst : block->insts) {
-            inst_offsets.push_back(inst->offset);
+            inst_offsets.emplace_back(std::make_pair(inst->offset, inst->size));
           }
           ret_block = new GPUBlock(obj, region, block->address, inst_offsets);
           _block_filter[block->id] = ret_block;
@@ -55,9 +55,9 @@ Function *GPUCFGFactory::mkfunc(Address addr, FuncSource src,
             if (DEBUG_GPU_CFGFACTORY) {
               std::cout << "New block: " << target->block->name << " id: " << target->block->id << std::endl;
             }
-            std::vector<Offset> inst_offsets;
+            std::vector<std::pair<Offset, size_t>> inst_offsets;
             for (auto *inst : target->block->insts) {
-              inst_offsets.push_back(inst->offset);
+              inst_offsets.push_back(std::make_pair(inst->offset, inst->size));
             }
             ret_target_block = new GPUBlock(obj, region, target->block->address, inst_offsets);
             _block_filter[target->block->id] = ret_target_block;

@@ -237,7 +237,6 @@ readIntelCFG
  const std::string &search_path,
  ElfFile *elfFile,
  Dyninst::SymtabAPI::Symtab *the_symtab, 
- std::map<int, int> &inst_size,
  bool cfg_wanted,
  Dyninst::ParseAPI::CodeSource **code_src, 
  Dyninst::ParseAPI::CodeObject **code_obj
@@ -260,12 +259,6 @@ readIntelCFG
   *code_src = new GPUCodeSource(functions, the_symtab); 
   *code_obj = new CodeObject(*code_src, cfg_fact);
   (*code_obj)->parse();
-
-  for (auto *block : function.blocks) {
-    for (auto *inst : block->insts) {
-      inst_size[inst->offset] = inst->size;
-    }
-  }
 
   return true;
 }
