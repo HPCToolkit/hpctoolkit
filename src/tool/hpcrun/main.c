@@ -870,6 +870,8 @@ monitor_init_process(int *argc, char **argv, void* data)
 
   hpcrun_wait();
 
+  hpcrun_init_auditor();
+
 #if 0
   // temporary patch to avoid deadlock within PAMI's optimized implementation
     // of all-to-all. a problem was observed when PAMI's optimized all-to-all

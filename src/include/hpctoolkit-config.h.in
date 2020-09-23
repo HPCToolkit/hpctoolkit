@@ -33,6 +33,9 @@
 /* Symtab supports openmp (for fnbounds) */
 #undef ENABLE_OPENMP_SYMTAB
 
+/* Using the LD_AUDIT interface */
+#undef ENABLE_RTLD_AUDIT
+
 /* Add extra annotations for debugging with Valgrind */
 #undef ENABLE_VG_ANNOTATIONS
 
