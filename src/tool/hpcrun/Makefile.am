@@ -532,6 +532,7 @@ if OPT_ENABLE_LEVEL0
 MY_LEVEL0_FILES=\
 	sample-sources/level0.c \
 	gpu/level0/level0-api.c \
+	gpu/level0/level0-command-list-context-map.c \
 	gpu/level0/level0-command-list-map.c \
 	gpu/level0/level0-command-process.c \
 	gpu/level0/level0-data-node.c \

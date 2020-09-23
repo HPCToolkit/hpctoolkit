@@ -41,22 +41,46 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef HPCTOOLKIT_LEVEL0_H
-#define HPCTOOLKIT_LEVEL0_H
 
-//******************************************************************************
-// forward type declarations
-//******************************************************************************
+#ifndef level0_commandlist_context_map_h
+#define level0_commandlist_context_map_h
 
-typedef struct gpu_activity_t gpu_activity_t;
-typedef struct cct_node_t cct_node_t;
+//*****************************************************************************
+// system includes
+//*****************************************************************************
 
-//******************************************************************************
+#include <stdint.h>
+
+//*****************************************************************************
+// local includes
+//*****************************************************************************
+
+
+#include <level_zero/ze_api.h>
+#include <level_zero/zet_api.h>
+#include "level0-handle-map.h"
+#include "level0-data-node.h"
+
+//*****************************************************************************
 // interface operations
-//******************************************************************************
+//*****************************************************************************
 
-void level0_init();
-void level0_fini();
-int level0_bind();
+ze_context_handle_t
+level0_commandlist_context_map_lookup
+(
+ ze_command_list_handle_t command_list_handle
+);
 
-#endif //HPCTOOLKIT_LEVEL0_H
+void
+level0_commandlist_context_map_insert
+(
+ ze_command_list_handle_t command_list_handle,
+ ze_context_handle_t hContext
+);
+
+void
+level0_commandlist_context_map_delete
+(
+ ze_command_list_handle_t command_list_handle
+);
+#endif
