@@ -153,6 +153,12 @@
 #define opencl_path() "libOpenCL.so"
 
 #define FORALL_OPENCL_ROUTINES(macro)					\
+  macro(clBuildProgram)					\
+  macro(clCreateProgramWithSource)					\
+  macro(clCreateCommandQueue)					\
+  macro(clEnqueueNDRangeKernel)					\
+  macro(clEnqueueReadBuffer)					\
+  macro(clEnqueueWriteBuffer)					\
   macro(clGetEventProfilingInfo)					\
   macro(clReleaseEvent)							\
   macro(clSetEventCallback)
@@ -162,15 +168,18 @@
 #define OPENCL_FN(fn, args)			\
   static cl_int (*OPENCL_FN_NAME(fn)) args
 
-#define HPCRUN_OPENCL_CALL(fn, args)					\
-  {									\
-    cl_int status = OPENCL_FN_NAME(fn) args;				\
-    if (status != CL_SUCCESS) {						\
-      ETMSG(OPENCL, "opencl call failed: %s",				\
-	    opencl_error_report(status));				\
-    }									\
-  }
+#define HPCRUN_OPENCL_CALL(fn, args) (OPENCL_FN_NAME(fn) args)
 
+/*
+#define HPCRUN_OPENCL_CALL(fn, args)								\
+  {																									\
+    cl_int status = OPENCL_FN_NAME(fn) args;				\
+    if (status != CL_SUCCESS) {											\
+      ETMSG(OPENCL, "opencl call failed: %s",				\
+	    opencl_error_report(status));									\
+    }																								\
+  }
+*/
 
 
 //******************************************************************************
@@ -180,6 +189,96 @@
 //----------------------------------------------------------
 // opencl function pointers for late binding
 //----------------------------------------------------------
+
+OPENCL_FN
+(
+  clBuildProgram, 
+  (
+	 cl_program program,
+	 cl_uint num_devices,
+	 const cl_device_id* device_list,
+	 const char* options,
+	 void (CL_CALLBACK* pfn_notify)(cl_program program, void* user_data),
+	 void* user_data
+  )
+);
+
+
+OPENCL_FN
+(
+  clCreateProgramWithSource, 
+  (
+	 cl_context context,
+	 cl_uint count,
+	 const char** strings,
+	 const size_t* lengths,
+	 cl_int* errcode_ret
+  )
+);
+
+
+OPENCL_FN
+(
+  clCreateCommandQueue, 
+	(
+	 cl_context,
+	 cl_device_id,
+	 cl_command_queue_properties,
+	 cl_int*
+	)
+);
+
+
+OPENCL_FN
+(
+  clEnqueueNDRangeKernel, 
+  (
+	 cl_command_queue,
+	 cl_kernel,
+	 cl_uint,
+	 const size_t *, 
+	 const size_t *,
+	 const size_t *,
+	 cl_uint,
+	 const cl_event *,
+	 cl_event *
+  )
+);
+
+
+OPENCL_FN
+(
+  clEnqueueReadBuffer, 
+  (
+	 cl_command_queue,
+	 cl_mem,
+	 cl_bool,
+	 size_t,
+	 size_t,
+	 void *,
+	 cl_uint,
+	 const cl_event *,
+	 cl_event *
+  )
+);
+
+
+OPENCL_FN
+(
+  clEnqueueWriteBuffer, 
+  (
+	 cl_command_queue,
+	 cl_mem,
+	 cl_bool,
+	 size_t,
+	 size_t,
+	 const void *,
+	 cl_uint,
+	 const cl_event *,
+	 cl_event *
+  )
+);
+
 
 OPENCL_FN
 (
@@ -216,14 +315,146 @@ OPENCL_FN
 );
 
 
-
 static atomic_ullong opencl_pending_operations;
+static char *debugInfoFullFileName;
+static atomic_long correlation_id;
+
+
+#define CL_PROGRAM_DEBUG_INFO_SIZES_INTEL 0x4101
+#define CL_PROGRAM_DEBUG_INFO_INTEL       0x4100
 
 
 
 //******************************************************************************
 // private operations
 //******************************************************************************
+
+static uint64_t
+getCorrelationId
+(
+  void
+)
+{
+  return atomic_fetch_add(&correlation_id, 1);
+}
+
+
+static void
+setDebugInfoFullFileName
+(
+	char *fileName
+)
+{
+	if (debugInfoFullFileName == NULL) {
+		debugInfoFullFileName = fileName;	
+	}
+}
+
+
+static void
+initializeKernelCallBackInfo
+(
+  cl_kernel_callback_t *kernel_cb,
+  uint64_t correlation_id
+)
+{
+  kernel_cb->correlation_id = correlation_id;
+  kernel_cb->type = kernel; 
+}
+
+
+static void
+initializeMemoryCallBackInfo
+(
+  cl_memory_callback_t *mem_transfer_cb,
+  uint64_t correlation_id,
+  size_t size,
+  bool fromHostToDevice
+)
+{
+  mem_transfer_cb->correlation_id = correlation_id;
+  mem_transfer_cb->type = (fromHostToDevice) ? memcpy_H2D: memcpy_D2H; 
+  mem_transfer_cb->size = size;
+  mem_transfer_cb->fromHostToDevice = fromHostToDevice;
+  mem_transfer_cb->fromDeviceToHost = !fromHostToDevice;
+}
+
+static char*
+getKernelNameFromSourceCode
+(
+	const char *kernelSourceCode
+)
+{
+	char *kernelCode_copy = (char*)hpcrun_malloc(sizeof(kernelSourceCode));
+	strcpy(kernelCode_copy, kernelSourceCode);
+	char *token = strtok(kernelCode_copy, " ");
+	while (token != NULL) {
+		if (strcmp(token, "void") == 0) { // not searching for kernel because "supported\n#endif\nkernel"
+			token = strtok(NULL, " ");
+			printf("kernel name: %s", token);
+			return token;
+		}
+		token = strtok(NULL, " ");
+	}
+	return NULL;
+}
+
+
+// we are dumping the debuginfo temporarily since the binary does not have debugsection
+// poorly written code: FIXME
+static char*
+dumpIntelGPUBinary(cl_program program) {
+	int device_count = 1;
+	cl_int status = CL_SUCCESS;
+	size_t *binary_size = (size_t*)hpcrun_malloc(sizeof(size_t) * device_count);
+
+	status = clGetProgramInfo(program, CL_PROGRAM_BINARY_SIZES,	sizeof(size_t), binary_size, NULL);
+	assert(status == CL_SUCCESS);
+	uint8_t **binary = (uint8_t**)hpcrun_malloc(device_count * sizeof(uint8_t*));
+	for (size_t i = 0; i < device_count; ++i) {
+		binary[i] = (uint8_t*)hpcrun_malloc(binary_size[i] * sizeof(uint8_t));
+	}
+
+	status = clGetProgramInfo(program, CL_PROGRAM_BINARIES, device_count * sizeof(uint8_t*), binary, NULL);
+	assert(status == CL_SUCCESS);
+
+	FILE *bin_ptr;
+	bin_ptr = fopen("opencl_main.gpubin", "wb");
+	fwrite(binary[0], binary_size[0], 1, bin_ptr);
+
+  // SECOND
+	size_t *debug_info_size = (size_t*)hpcrun_malloc(sizeof(size_t) * device_count);
+
+	status = clGetProgramInfo(program, CL_PROGRAM_DEBUG_INFO_SIZES_INTEL,	sizeof(size_t), debug_info_size, NULL);
+	assert(status == CL_SUCCESS);
+	uint8_t **debug_info = (uint8_t**)hpcrun_malloc(device_count * sizeof(uint8_t*));
+	for (size_t i = 0; i < device_count; ++i) {
+		debug_info[i] = (uint8_t*)hpcrun_malloc(debug_info_size[i] * sizeof(uint8_t));
+	}
+
+	status = clGetProgramInfo(program, CL_PROGRAM_DEBUG_INFO_INTEL, device_count * sizeof(uint8_t*), debug_info, NULL);
+	assert(status == CL_SUCCESS);
+
+	char *debuginfoFileName = "opencl_main.debuginfo";
+	bin_ptr = fopen(debuginfoFileName, "wb");
+	fwrite(debug_info[0], debug_info_size[0], 1, bin_ptr);
+	fclose(bin_ptr);
+  ETMSG(OPENCL, "Intel GPU files dumped successfully");
+	return realpath(debuginfoFileName, NULL);
+}
+
+
+static void
+clBuildProgramCallback
+(
+	cl_program program,
+	void* user_data
+)
+{
+	char* debugInfoFullFileName = dumpIntelGPUBinary(program);
+	setDebugInfoFullFileName(debugInfoFullFileName);
+}
+
 
 static void
 opencl_pending_operations_adjust
@@ -301,6 +532,16 @@ opencl_error_report
 //******************************************************************************
 // interface operations
 //******************************************************************************
+
+char*
+getDebugInfoFullFileName
+(
+	void
+)
+{
+	return debugInfoFullFileName;
+}
+
 
 void
 opencl_subscriber_callback
@@ -431,6 +672,7 @@ opencl_api_initialize
 )
 {
   opencl_intercept_setup();
+  atomic_store(&correlation_id, 0);
   atomic_store(&opencl_pending_operations, 0);
 }
 
@@ -458,6 +700,216 @@ opencl_bind
 #else
   return -1;
 #endif // ! HPCRUN_STATIC_LINK  
+}
+
+
+cl_program
+clCreateProgramWithSource
+(
+ cl_context context,
+ cl_uint count,
+ const char** strings,
+ const size_t* lengths,
+ cl_int* errcode_ret
+)
+{
+	ETMSG(OPENCL, "inside clCreateProgramWithSource_wrapper");
+
+	FILE *f_ptr;
+	for (int i = 0; i < (int)count; i++) {
+		// what if a single file has multiple kernels?
+		// we need to add logic to get filenames by reading the strings contents
+		char fileno = '0' + (i + 1); // right now we are naming the files as index numbers
+		// using malloc instead of hpcrun_malloc gives extra garbage characters in file name
+		char *filename = (char*)hpcrun_malloc(sizeof(fileno) + 1);
+		*filename = fileno + '\0';
+		f_ptr = fopen(filename, "w");
+		fwrite(strings[i], lengths[i], 1, f_ptr);
+	}
+	fclose(f_ptr);
+	
+	return HPCRUN_OPENCL_CALL(clCreateProgramWithSource, (context, count, strings, lengths, errcode_ret));
+}
+
+
+// one downside of this appproach is that we may override the callback provided by user
+cl_int
+clBuildProgram
+(
+ cl_program program,
+ cl_uint num_devices,
+ const cl_device_id* device_list,
+ const char* options,
+ void (CL_CALLBACK* pfn_notify)(cl_program program, void* user_data),
+ void* user_data
+)
+{
+  ETMSG(OPENCL, "inside clBuildProgram_wrapper");
+
+	char optionsWithDebugFlag[] = " -gline-tables-only ";
+	if (options != NULL) {
+		strcat(optionsWithDebugFlag, options);
+	}
+  return HPCRUN_OPENCL_CALL(clBuildProgram, (program, num_devices, device_list, (const char*)optionsWithDebugFlag, clBuildProgramCallback, user_data));
+}
+
+
+cl_command_queue
+clCreateCommandQueue
+(
+  cl_context context,
+  cl_device_id device,
+  cl_command_queue_properties properties,
+  cl_int *errcode_ret
+)
+{
+  // enabling profiling
+  properties |= (cl_command_queue_properties)CL_QUEUE_PROFILING_ENABLE; 
+
+	return HPCRUN_OPENCL_CALL(clCreateCommandQueue, (context, device,
+				properties,errcode_ret));	
+}
+
+
+cl_int
+clEnqueueNDRangeKernel
+(
+  cl_command_queue command_queue,
+  cl_kernel ocl_kernel,
+  cl_uint work_dim,
+  const size_t *global_work_offset, 
+  const size_t *global_work_size,
+  const size_t *local_work_size,
+  cl_uint num_events_in_wait_list,
+  const cl_event *event_wait_list,
+  cl_event *event
+)
+{
+  uint64_t correlation_id = getCorrelationId();
+  opencl_object_t *kernel_info = opencl_malloc();
+  kernel_info->kind = OPENCL_KERNEL_CALLBACK;
+  cl_kernel_callback_t *kernel_cb = &(kernel_info->details.ker_cb);
+  initializeKernelCallBackInfo(kernel_cb, correlation_id);
+  cl_event my_event;
+  cl_event *eventp;
+  if (!event) {
+    kernel_info->isInternalClEvent = true;
+    eventp = &my_event;
+  } else {
+    eventp = event;
+    kernel_info->isInternalClEvent = false;
+  }
+  cl_int return_status = 
+    HPCRUN_OPENCL_CALL(clEnqueueNDRangeKernel, (command_queue, ocl_kernel, work_dim, 
+				   global_work_offset, global_work_size, 
+				   local_work_size, num_events_in_wait_list, 
+				   event_wait_list, eventp));
+
+  ETMSG(OPENCL, "registering callback for type: kernel. " 
+	"Correlation id: %"PRIu64 "", correlation_id);
+
+  opencl_subscriber_callback(kernel_cb->type, kernel_cb->correlation_id);
+  clSetEventCallback_wrapper(*eventp, CL_COMPLETE, 
+			     &opencl_activity_completion_callback, kernel_info);
+  return return_status;
+}
+
+
+cl_int
+clEnqueueReadBuffer
+(
+  cl_command_queue command_queue,
+  cl_mem buffer,
+  cl_bool blocking_read,
+  size_t offset,
+  size_t cb,
+  void *ptr,
+  cl_uint num_events_in_wait_list,
+  const cl_event *event_wait_list,
+  cl_event *event
+)
+{
+  uint64_t correlation_id = getCorrelationId();
+  opencl_object_t *mem_info = opencl_malloc();
+  mem_info->kind = OPENCL_MEMORY_CALLBACK;
+  cl_memory_callback_t *mem_transfer_cb = &(mem_info->details.mem_cb);
+  initializeMemoryCallBackInfo(mem_transfer_cb, correlation_id, cb, false);
+  cl_event my_event;
+  cl_event *eventp;
+  if (!event) {
+    mem_info->isInternalClEvent = true;
+    eventp = &my_event;
+  } else {
+    eventp = event;
+    mem_info->isInternalClEvent = false;
+  }
+  cl_int return_status = 
+    HPCRUN_OPENCL_CALL(clEnqueueReadBuffer, (command_queue, buffer, blocking_read, offset, 
+				cb, ptr, num_events_in_wait_list, 
+				event_wait_list, eventp));
+
+  ETMSG(OPENCL, "registering callback for type: D2H. " 
+	"Correlation id: %"PRIu64 "", correlation_id);
+  ETMSG(OPENCL, "%d(bytes) of data being transferred from device to host", 
+	(long)cb);
+
+  opencl_subscriber_callback(mem_transfer_cb->type, 
+			     mem_transfer_cb->correlation_id);
+
+  clSetEventCallback_wrapper(*eventp, CL_COMPLETE, 
+			     &opencl_activity_completion_callback, mem_info);
+
+  return return_status;
+}
+
+
+cl_int
+clEnqueueWriteBuffer
+(
+  cl_command_queue command_queue,
+  cl_mem buffer,
+  cl_bool blocking_write,
+  size_t offset,
+  size_t cb,
+  const void *ptr,
+  cl_uint num_events_in_wait_list,
+  const cl_event *event_wait_list,
+  cl_event *event
+)
+{
+  uint64_t correlation_id = getCorrelationId();
+  opencl_object_t *mem_info = opencl_malloc();
+  mem_info->kind = OPENCL_MEMORY_CALLBACK;
+  cl_memory_callback_t *mem_transfer_cb = &(mem_info->details.mem_cb);
+  initializeMemoryCallBackInfo(mem_transfer_cb, correlation_id, cb, true);
+  cl_event my_event;
+  cl_event *eventp;
+  if (!event) {
+    mem_info->isInternalClEvent = true;
+    eventp = &my_event;
+  } else {
+    eventp = event;
+    mem_info->isInternalClEvent = false;
+  }
+  cl_int return_status = 
+    HPCRUN_OPENCL_CALL(clEnqueueWriteBuffer, (command_queue, buffer, blocking_write, offset,
+				 cb, ptr, num_events_in_wait_list, 
+				 event_wait_list, eventp));
+
+  ETMSG(OPENCL, "registering callback for type: H2D. " 
+	"Correlation id: %"PRIu64 "", correlation_id);
+
+  ETMSG(OPENCL, "%d(bytes) of data being transferred from host to device", 
+	(long)cb);
+
+  opencl_subscriber_callback(mem_transfer_cb->type, 
+			     mem_transfer_cb->correlation_id);
+
+  clSetEventCallback_wrapper(*eventp, CL_COMPLETE, 
+			     &opencl_activity_completion_callback, 
+			     (void*) mem_info);
+
+  return return_status;
 }
 
 

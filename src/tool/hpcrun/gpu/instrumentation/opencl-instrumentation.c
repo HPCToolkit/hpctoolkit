@@ -68,7 +68,7 @@
 #include <hpcrun/gpu/gpu-monitoring-thread-api.h>
 #include <hpcrun/memory/hpcrun-malloc.h>
 #include <hpcrun/utilities/hpcrun-nanotime.h>
-#include <hpcrun/gpu/opencl/opencl-intercept.h>
+#include <hpcrun/gpu/opencl/opencl-api.h>
 #include "opencl-instrumentation.h"
 
 

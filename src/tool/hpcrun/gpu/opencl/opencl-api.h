@@ -61,6 +61,13 @@
 // interface operations
 //******************************************************************************
 
+char*
+getDebugInfoFullFileName
+(
+	void
+);
+
+
 void
 opencl_subscriber_callback
 (
