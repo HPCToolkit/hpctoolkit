@@ -41,49 +41,23 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//******************************************************************************
-// system includes
-//******************************************************************************
-
-#include <inttypes.h>
+#ifndef rocm_binary_processing_h
+#define rocm_binary_processing_h
 
 //******************************************************************************
 // local includes
 //******************************************************************************
 
-#include <hpcrun/gpu/instrumentation/opencl-instrumentation.h>
-#include <hpcrun/gpu/gpu-metrics.h>
-#include <hpcrun/memory/hpcrun-malloc.h>
-#include <hpcrun/messages/messages.h>
-#include <hpcrun/files.h>
-#include <hpcrun/sample-sources/libdl.h>
-#include <lib/prof-lean/hpcrun-gotcha.h>
-#include <lib/prof-lean/hpcrun-opencl.h>
-#include <lib/prof-lean/stdatomic.h>
-#include <lib/prof-lean/spinlock.h>
-#include <lib/prof-lean/crypto-hash.h>
+#include "hpcrun/utilities/ip-normalized.h"
 
-#include "opencl-intercept.h"
+//******************************************************************************
+// interface operations
+//******************************************************************************
 
-
-void
-opencl_intercept_setup
+ip_normalized_t
+rocm_binary_function_lookup
 (
- void
-)
-{
-#ifndef HPCRUN_STATIC_LINK
-  ETMSG(OPENCL, "setting up opencl intercepts");
-	gpu_metrics_KER_BLKINFO_enable();
-  opencl_enable_profiling();
+  const char* kernel_name
+);
+
 #endif
-}
-
-
-void
-opencl_intercept_teardown
-(
- void
-)
-{
-}

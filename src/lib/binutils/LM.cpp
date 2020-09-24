@@ -415,7 +415,7 @@ BinUtil::LM::open(const char* filenm)
 
   std::string file_name = std::string(filenm);
 
-  if (input_file.openFile(file_name, InputFileError_WarningNothrow)) {
+  if (input_file.openFile(file_name, InputFileError_WarningNothrow, NULL)) {
     // We only relocate individual cubins, with filevector size 1
     ElfFile *elf_file = (*input_file.fileVector())[0];
     if (isCubin(elf_file->getElf())) {

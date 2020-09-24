@@ -41,49 +41,41 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//******************************************************************************
-// system includes
-//******************************************************************************
-
-#include <inttypes.h>
+#ifndef rocm_debug_api_h
+#define rocm_debug_api_h
 
 //******************************************************************************
-// local includes
+// interface operations
 //******************************************************************************
 
-#include <hpcrun/gpu/instrumentation/opencl-instrumentation.h>
-#include <hpcrun/gpu/gpu-metrics.h>
-#include <hpcrun/memory/hpcrun-malloc.h>
-#include <hpcrun/messages/messages.h>
-#include <hpcrun/files.h>
-#include <hpcrun/sample-sources/libdl.h>
-#include <lib/prof-lean/hpcrun-gotcha.h>
-#include <lib/prof-lean/hpcrun-opencl.h>
-#include <lib/prof-lean/stdatomic.h>
-#include <lib/prof-lean/spinlock.h>
-#include <lib/prof-lean/crypto-hash.h>
-
-#include "opencl-intercept.h"
-
+int
+rocm_debug_api_bind
+(
+  void
+);
 
 void
-opencl_intercept_setup
+rocm_debug_api_init
 (
- void
-)
-{
-#ifndef HPCRUN_STATIC_LINK
-  ETMSG(OPENCL, "setting up opencl intercepts");
-	gpu_metrics_KER_BLKINFO_enable();
-  opencl_enable_profiling();
+  void
+);
+
+void
+rocm_debug_api_fini
+(
+  void
+);
+
+void
+rocm_debug_api_query_code_object
+(
+  size_t* code_obejct_count_ptr
+);
+
+char*
+rocm_debug_api_query_uri
+(
+  size_t code_object_index
+);
+
 #endif
-}
-
-
-void
-opencl_intercept_teardown
-(
- void
-)
-{
-}

@@ -167,13 +167,6 @@ typedef struct cl_memory_callback_t {
 // interface operations
 //******************************************************************************
 
-char*
-getDebugInfoFullFileName
-(
-	void
-);
-
-
 void
 opencl_intercept_setup
 (

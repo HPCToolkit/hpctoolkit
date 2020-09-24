@@ -127,6 +127,248 @@ opencl_elf_section_type
 }
 
 
+#define MAX_STR_SIZE 1024
+#define INDENT  "  "
+
+std::map<int32_t, bool> visitedBlockOffsets;
+
+
+
+//******************************************************************************
+// private operations
+//******************************************************************************
+
+class Edge {
+  public:
+    int32_t from; 
+    int32_t to;
+    int32_t from_blockEndOffset;
+
+    Edge(int32_t f, int32_t t, int32_t from_b) {
+      from = f;
+      to = t;
+      from_blockEndOffset = from_b;
+    }
+
+    bool operator == (const Edge &that) const 
+    {
+      return((this->from == that.from) && (this->to == that.to));
+    }
+    
+    bool operator<(const Edge& that) const 
+    {
+      if (this->from == that.from) {
+        return (this->to < that.to);
+      } else {
+        return (this->from < that.from);
+      }
+    }
+};
+
+
+static std::set<Edge>
+get_cfg_edges
+(
+  std::vector<uint8_t> &binary
+)
+{
+  KernelView kv(IGA_GEN9, binary.data(), binary.size(),
+      iga::SWSB_ENCODE_MODE::SingleDistPipe);
+  size_t binary_size = binary.size();
+  std::set<Edge> cfg_edges;
+
+  std::vector<int32_t> block_offsets;
+  int32_t offset = 0;
+  int32_t size;
+  while (offset < binary_size) {
+    int32_t prev_block_start_offset;
+    int32_t prev_block_end_offset;
+    int32_t block_start_offset;
+    bool isStartOfBasicBlock = kv.isInstTarget(offset);
+    if (isStartOfBasicBlock) {
+      block_offsets.push_back(offset);
+      visitedBlockOffsets.insert({offset, false});
+      block_start_offset = offset;  
+    }
+    size = kv.getInstSize(offset);
+    while (!kv.isInstTarget(offset + size) && (offset + size < binary_size)) {
+      offset += size; 
+      size = kv.getInstSize(offset);
+      if (size == 0) {
+        // this is a weird edge case, what to do?
+        break;
+      }
+    }
+
+    int32_t *jump_targets = new int32_t[KV_MAX_TARGETS_PER_INSTRUCTION];
+    size_t jump_targets_count = kv.getInstTargets(offset, jump_targets);
+    int32_t next_block_start_offset = offset + size;
+    bool isFallThroughEdgeAdded = false;
+
+    for (size_t i = 0; i < jump_targets_count; i++) {
+      if (jump_targets[i] == next_block_start_offset) {
+        isFallThroughEdgeAdded = true;
+      } else if (jump_targets[i] == block_start_offset) {
+        if (block_offsets.size() >= 2) {
+          int32_t from = block_offsets[block_offsets.size() - 2];
+          int32_t from_blockEndOffset;
+          for (Edge edge: cfg_edges) {
+            if (edge.from == from && edge.to == block_start_offset) {
+              from_blockEndOffset  = edge.from_blockEndOffset;
+            }
+          } 
+          cfg_edges.insert(Edge(block_offsets[block_offsets.size() - 2], block_start_offset, from_blockEndOffset));
+        }
+      }
+      cfg_edges.insert(Edge(block_start_offset, jump_targets[i], next_block_start_offset - size));
+    }
+    if(!isFallThroughEdgeAdded) {
+      cfg_edges.insert(Edge(block_start_offset, next_block_start_offset, next_block_start_offset - size));
+    }
+    prev_block_start_offset = block_start_offset;
+    prev_block_end_offset = offset; 
+    offset += size;
+  }
+  cfg_edges.insert(Edge(block_offsets[block_offsets.size() - 1], binary_size, binary_size - size));
+  return cfg_edges;
+}
+
+
+static void
+printCFGEdges
+(
+  std::set<Edge> &cfg_edges
+)
+{
+  for (Edge edge: cfg_edges) {
+    std::cout << edge.from << "->" << edge.to << std::endl; 
+  } 
+}
+
+
+static void
+printBasicBlocks
+(
+  std::vector<uint8_t> &binary,
+  std::set<Edge> &cfg_edges
+)
+{
+  KernelView kv(IGA_GEN9, binary.data(), binary.size(), iga::SWSB_ENCODE_MODE::SingleDistPipe);
+  int32_t offset;
+  char text[MAX_STR_SIZE] = { 0 };
+  size_t length;
+  int32_t size;
+
+  for (Edge edge: cfg_edges) {
+    offset = edge.from;
+    if(edge.from == edge.to) {
+      // skip self-loops
+      continue;
+    }
+    auto it = visitedBlockOffsets.find(offset);
+    if (it->second) {
+      continue;
+    } else {
+      it->second = true;
+    }
+    std::cout << offset << " [ label=\"\\\n"; 
+    while (offset < edge.to) {
+      size = kv.getInstSize(offset);
+      length = kv.getInstSyntax(offset, text, MAX_STR_SIZE);
+      assert(length > 0);
+      std::cout << offset << ": " << text << "\\\l";
+      offset += size;
+    }
+    std::cout << "\" shape=\"box\"]; \n" << std::endl;
+  } 
+}
+
+
+static std::vector<int32_t>
+getBlockOffsets
+(
+  std::vector<uint8_t> &binary
+)
+{
+  std::vector<int32_t> block_offsets;
+  int32_t offset = 0;
+  int32_t size = 0;
+  KernelView kv(IGA_GEN9, binary.data(), binary.size(),
+      iga::SWSB_ENCODE_MODE::SingleDistPipe);
+
+  while (offset < binary.size()) {
+    bool isStartOfBasicBlock = kv.isInstTarget(offset);
+    if (isStartOfBasicBlock) {
+      block_offsets.push_back(offset);
+    }
+    size = kv.getInstSize(offset);
+    offset += size; 
+  }
+  return block_offsets;
+}
+
+
+static void
+doIndent(std::stringstream *ss, int depth)
+{
+  for (int n = 1; n <= depth; n++) {
+    *ss << INDENT;
+  }
+}
+
+
+
+//******************************************************************************
+// interface operations
+//******************************************************************************
+
+// pass Intel kernel's raw gen binary
+// kernel's text region is a raw gen binary
+// you  can find kernel nested in [debug section of GPU binary/separate debug section dump]
+void
+printCFGInDotGraph
+(
+  std::vector<uint8_t> intelRawGenBinary
+)
+{
+  std::cout << "digraph GEMM_iga {" << std::endl;
+  std::set<Edge> edges = get_cfg_edges(intelRawGenBinary);
+  printBasicBlocks(intelRawGenBinary, edges);
+  printCFGEdges(edges);
+  std::cout << "}" << std::endl;
+}
+
+
+std::string
+getBlockAndInstructionOffsets
+(
+ std::vector<uint8_t> &intelRawGenBinary
+)
+{
+  std::stringstream ss;
+  std::vector<int32_t> block_offsets = getBlockOffsets(intelRawGenBinary);
+  KernelView kv(IGA_GEN9, intelRawGenBinary.data(), intelRawGenBinary.size(),
+      iga::SWSB_ENCODE_MODE::SingleDistPipe);
+  int32_t offset, size;
+
+  for(auto i = 0; i < block_offsets.size()-1; i++) {
+    offset = block_offsets[i];
+    doIndent(&ss, 1);
+    ss << "<B o=\"0x" << std::hex << offset << "\">\n"; 
+    doIndent(&ss, 2);
+    while (offset != block_offsets[i+1]) {
+      ss << "<I o=\"0x" << std::hex << offset << "\"/>";
+      size = kv.getInstSize(offset);
+      offset += size;
+    }
+    ss << "\n"; 
+    doIndent(&ss, 1);
+    ss << "</B>\n"; 
+  }
+  return ss.str();
+}
+
+
 //******************************************************************************
 // interface operations
 //******************************************************************************
@@ -180,6 +422,7 @@ findIntelGPUBins
         fwrite(kernel_buffer, sizeof(char), kernel_size, fptr);
         fclose(fptr);
 
+        elf_file->setIntelGPUFile(true);
         filevector->push_back(elf_file);
       } else {
         // kernel_buffer is released with elf_file

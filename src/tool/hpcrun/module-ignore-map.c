@@ -52,8 +52,8 @@
 // Purpose:
 //   implementation of a map of load modules that should be omitted
 //   from call paths for synchronous samples
-//   
-//  
+//
+//
 //***************************************************************************
 
 //***************************************************************************
@@ -81,7 +81,7 @@
 // local includes
 //***************************************************************************
 
-#include <monitor.h>  
+#include <monitor.h>
 
 #include <lib/prof-lean/pfq-rwlock.h>
 #include <hpcrun/loadmap.h>
@@ -102,7 +102,13 @@
 #define PRINT(...)
 #endif
 
-#define NUM_FNS 3
+// TODO:
+// We will need to refactor this code to make the NUM_FNS a variable
+// and the table of functions to be looked up can be a linked list,
+// where any GPU can indicate that its functions should be added to
+// the module ignore map when that type of GPU is being monitored.
+
+#define NUM_FNS 6
 
 
 
@@ -121,8 +127,13 @@ typedef struct module_ignore_entry {
 // static data
 //***************************************************************************
 
-static const char *NVIDIA_FNS[NUM_FNS] = {
-  "cuLaunchKernel", "cudaLaunchKernel", "cuptiActivityEnable"
+static const char *IGNORE_FNS[NUM_FNS] = {
+  "cuLaunchKernel",
+  "cudaLaunchKernel",
+  "cuptiActivityEnable",
+  "roctracer_set_properties",  // amd roctracer library
+  "amd_dbgapi_initialize",     // amd debug library
+  "hipKernelNameRefByPtr",     // amd hip runtime
 };
 static module_ignore_entry_t modules[NUM_FNS];
 static pfq_rwlock_t modules_lock;
@@ -145,7 +156,7 @@ pseudo_module_p
     // because we store [vdso] in hpctooolkit's measurement directory,
     // it actually has the name /path/to/measurement/directory/[vdso].
     // checking the last character tells us it is a virtual shared library.
-    return lastchar == ']'; 
+    return lastchar == ']';
 }
 
 
@@ -197,7 +208,7 @@ module_ignore_map_module_lookup
  load_module_t *module
 )
 {
-  return module_ignore_map_lookup(module->dso_info->start_addr, 
+  return module_ignore_map_lookup(module->dso_info->start_addr,
 				  module->dso_info->end_addr);
 }
 
@@ -215,7 +226,7 @@ module_ignore_map_inrange_lookup
 bool
 module_ignore_map_lookup
 (
- void *start, 
+ void *start,
  void *end
 )
 {
@@ -242,10 +253,10 @@ serach_functions_in_module(Elf *e, GElf_Shdr* secHead, Elf_Scn *section)
   Elf_Data *data;
   char *symName;
   uint64_t count;
-  GElf_Sym curSym;  
+  GElf_Sym curSym;
   uint64_t i, ii,symType, symBind;
   // char *marmite;
-  
+
   data = elf_getdata(section, NULL);           // use it to get the data
   if (data == NULL || secHead->sh_entsize == 0) return -1;
   count = (secHead->sh_size)/(secHead->sh_entsize);
@@ -259,8 +270,8 @@ serach_functions_in_module(Elf *e, GElf_Shdr* secHead, Elf_Scn *section)
     // We need to find functions defined in the module.
     if ( (symType == STT_FUNC) && (symBind == STB_GLOBAL) && (curSym.st_value != 0)) {
       for (i = 0; i < NUM_FNS; ++i) {
-        if (modules[i].empty && (strcmp(symName, NVIDIA_FNS[i]) == 0)) {
-          return i;          
+        if (modules[i].empty && (strcmp(symName, IGNORE_FNS[i]) == 0)) {
+          return i;
         }
       }
     }
@@ -276,7 +287,7 @@ module_ignore_map_ignore
 {
   // Update path
   // Only one thread could update the flag,
-  // Guarantee dlopen modules before notification are updated.  
+  // Guarantee dlopen modules before notification are updated.
   bool result = false;
   pfq_rwlock_node_t me;
   pfq_rwlock_write_lock(&modules_lock, &me);

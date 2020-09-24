@@ -584,10 +584,10 @@ makeStructure(string filename,
 #endif
 
   InputFile inputFile;
+	std::string inputFileType;
 
   // failure throws an error up the call chain
-  inputFile.openFile(filename, InputFileError_Error);
-	
+  inputFile.openFile(filename, InputFileError_Error, &inputFileType);
   ElfFileVector * elfFileVector = inputFile.fileVector();
   string & sfilename = inputFile.fileName();
   const char * cfilename = inputFile.CfileName();
@@ -650,8 +650,7 @@ makeStructure(string filename,
     omp_set_num_threads(opts.jobs_parse);
 #endif
 
-    // TODO(Aaron): determine the variables
-		bool intel_file = true;
+		bool intel_file = elfFile->isIntelGPUFile();
 
     if (cuda_file) { // don't run parseapi on cuda binary
       cuda_arch = elfFile->getArch();
@@ -720,6 +719,12 @@ makeStructure(string filename,
     // with try_lock(), there are interleavings where not all items
     // have been printed.
     printWorkList(wlPrint, num_done, outFile, gapsFile, gaps_filenm);
+	
+		// custom code for intel GPU elfs
+		if (intel_gpu_arch > 0) {
+      // TODO(Aaron): is it necessary to read binary again?
+    	Output::printBlockAndInstructionOffset(outFile, elfFileRealPath);
+		}
 
     Output::printLoadModuleEnd(outFile);
 

@@ -79,4 +79,10 @@ findIntelGPUBins
  ElfFileVector *filevector
 );
 
+std::string
+getBlockAndInstructionOffsets
+(
+ std::vector<uint8_t> &intelRawGenBinary
+);
+
 #endif

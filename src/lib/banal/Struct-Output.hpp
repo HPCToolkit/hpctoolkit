@@ -78,6 +78,43 @@ void printFileEnd(ostream *, FileInfo *);
 void printProc(ostream *, ostream *, string, FileInfo *, GroupInfo *,
 	       ProcInfo *, HPC::StringTable & strTab);
 
+void printBlockAndInstructionOffset(ostream * os, string file_name);
+
+static size_t
+file_size(int fd)
+{
+  struct stat sb;
+  int retval = fstat(fd, &sb);
+  if (retval == 0 && S_ISREG(sb.st_mode)) {
+    return sb.st_size;
+  }
+  return 0;
+}
+
+
+// Automatically restart short reads.
+// This protects against EINTR.
+//
+static size_t
+read_all(int fd, void *buf, size_t count)
+{
+  ssize_t ret;
+  size_t len;
+
+  len = 0;
+  while (len < count) {
+    ret = read(fd, ((char *) buf) + len, count - len);
+    if (ret == 0 || (ret < 0 && errno != EINTR)) {
+      break;
+    }
+    if (ret > 0) {
+      len += ret;
+    }
+  }
+
+  return len;
+}
+
 }  // namespace Output
 }  // namespace BAnal
 

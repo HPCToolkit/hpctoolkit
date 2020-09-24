@@ -76,6 +76,7 @@
 #include <hpcrun/utilities/hpcrun-nanotime.h>
 #include <hpcrun/gpu/opencl/opencl-intercept.h>
 #include <hpcrun/files.h>
+#include <hpcrun/gpu/opencl/opencl-api.h>
 #include "opencl-instrumentation.h"
 
 
