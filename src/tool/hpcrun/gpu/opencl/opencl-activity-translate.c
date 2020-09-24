@@ -67,35 +67,21 @@
 //******************************************************************************
 
 static void
-getMemoryProfileInfo
-(
-  gpu_memcpy_t *memcpy,
-  cl_memory_callback_t *cb_data
-)
-{
-  memcpy->correlation_id = cb_data->correlation_id;
-  memcpy->submit_time = cb_data->submit_time;
-  memcpy->bytes = cb_data->size;
-  memcpy->copyKind = (gpu_memcpy_type_t) 
-    (cb_data->fromHostToDevice)? GPU_MEMCPY_H2D: 
-    (cb_data->fromDeviceToHost? GPU_MEMCPY_D2H:	GPU_MEMCPY_UNK);
-}
-
-
-static void
 convert_kernel_launch
 (
   gpu_activity_t *ga,
-  void *user_data,
+  opencl_object_t *cb_data,
   cl_event event
 )
 {
-  cl_kernel_callback_t *kernel_cb_data = (cl_kernel_callback_t*)user_data;
   memset(&ga->details.kernel, 0, sizeof(gpu_kernel_t));
   getTimingInfoFromClEvent(&ga->details.interval, event);
-  ga->kind = GPU_ACTIVITY_KERNEL;
-  ga->details.kernel.correlation_id = kernel_cb_data->correlation_id;
-  ga->details.kernel.submit_time = kernel_cb_data->submit_time;
+
+  ga->kind     = cb_data->kind;
+  ga->cct_node = cb_data->details.cct_node;
+
+  ga->details.kernel.correlation_id = cb_data->details.ker_cb.correlation_id;
+  ga->details.kernel.submit_time    = cb_data->details.submit_time;
 }
 
 
@@ -103,16 +89,20 @@ static void
 convert_memcpy
 (
   gpu_activity_t *ga,
-  void *user_data,
-  cl_event event,
-  gpu_memcpy_type_t kind
+  opencl_object_t *cb_data,
+  cl_event event
 )
 {
-  cl_memory_callback_t *memory_cb_data = (cl_memory_callback_t*)user_data;
   memset(&ga->details.memcpy, 0, sizeof(gpu_memcpy_t));
   getTimingInfoFromClEvent(&ga->details.interval, event);
-  getMemoryProfileInfo(&ga->details.memcpy, memory_cb_data);
-  ga->kind = GPU_ACTIVITY_MEMCPY;
+
+  ga->kind     = cb_data->kind;
+  ga->cct_node = cb_data->details.cct_node;
+
+  ga->details.memcpy.correlation_id  = cb_data->details.mem_cb.correlation_id;
+  ga->details.memcpy.submit_time     = cb_data->details.submit_time;
+  ga->details.memcpy.bytes           = cb_data->details.mem_cb.size;
+  ga->details.memcpy.copyKind        = cb_data->kind;
 }
 
 
@@ -126,21 +116,18 @@ opencl_activity_translate
 (
   gpu_activity_t *ga,
   cl_event event,
-  void *act_data
+  opencl_object_t *cb_data
 )
 {
-  cl_generic_callback_t *cb_data = (cl_generic_callback_t*)act_data;
-  opencl_call_t type = cb_data->type;
-  switch (type) {
-    case kernel:
-      convert_kernel_launch(ga, act_data, event);
+  switch (cb_data->kind) {
+    case OPENCL_MEMORY_CALLBACK:
+      convert_memcpy(ga, cb_data, event);
       break;
-    case memcpy_H2D:
-      convert_memcpy(ga, act_data, event, GPU_MEMCPY_H2D);
+
+    case OPENCL_KERNEL_CALLBACK:
+      convert_kernel_launch(ga, cb_data, event);
       break;
-    case memcpy_D2H:
-      convert_memcpy(ga, act_data, event, GPU_MEMCPY_D2H);
-      break;
+
     default:
       assert(0);
   }

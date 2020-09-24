@@ -123,24 +123,22 @@ typedef enum {
 typedef struct cl_generic_callback_t {
   uint64_t correlation_id;
   opencl_call_t type;
-  uint64_t submit_time;
 } cl_generic_callback_t;
 
 
 typedef struct cl_kernel_callback_t {
   uint64_t correlation_id;
   opencl_call_t type;
-  uint64_t submit_time;
 } cl_kernel_callback_t;
 
 
 typedef struct cl_memory_callback_t {
   uint64_t correlation_id;
   opencl_call_t type;
+  uint64_t submit_time;
   bool fromHostToDevice;
   bool fromDeviceToHost;
   size_t size;
-  uint64_t submit_time;
 } cl_memory_callback_t;
 
 

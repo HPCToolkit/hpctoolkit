@@ -252,14 +252,13 @@ static void
 opencl_activity_process
 (
   cl_event event,
-  cl_generic_callback_t *act_data,
-  gpu_activity_channel_t *initiator_channel
+  opencl_object_t *cb_data
 )
 {
   gpu_activity_t gpu_activity;
-  opencl_activity_translate(&gpu_activity, event, act_data);
+  opencl_activity_translate(&gpu_activity, event, cb_data);
 
-  gpu_activity_multiplexer_push(initiator_channel, &gpu_activity);
+  gpu_activity_multiplexer_push(cb_data->details.initiator_channel, &gpu_activity);
 //  gpu_activity_process(&gpu_activity);
 }
 
@@ -380,13 +379,13 @@ opencl_activity_completion_callback
 )
 {
   cl_int complete_flag = CL_COMPLETE;
-  opencl_object_t *cl_obj = (opencl_object_t*)user_data;
+  opencl_object_t *cb_data = (opencl_object_t*)user_data;
   cl_generic_callback_t *act_data;
 
-  if (cl_obj->kind == OPENCL_KERNEL_CALLBACK) {
-    act_data = (cl_generic_callback_t*) &(cl_obj->details.ker_cb);
-  } else if (cl_obj->kind == OPENCL_MEMORY_CALLBACK) {
-    act_data = (cl_generic_callback_t*) &(cl_obj->details.mem_cb);
+  if (cb_data->kind == OPENCL_KERNEL_CALLBACK) {
+    act_data = (cl_generic_callback_t*) &(cb_data->details.ker_cb);
+  } else if (cb_data->kind == OPENCL_MEMORY_CALLBACK) {
+    act_data = (cl_generic_callback_t*) &(cb_data->details.mem_cb);
   }
   uint64_t correlation_id = act_data->correlation_id;
   opencl_call_t type = act_data->type;
@@ -402,12 +401,12 @@ opencl_activity_completion_callback
     ETMSG(OPENCL, "completion type: %s, Correlation id: %"PRIu64 "", 
 	  opencl_call_to_string(type), correlation_id);
 
-    opencl_activity_process(event, act_data, cl_obj->details.initiator_channel);
+    opencl_activity_process(event, cb_data);
   }
-  if (cl_obj->isInternalClEvent) {
+  if (cb_data->isInternalClEvent) {
     HPCRUN_OPENCL_CALL(clReleaseEvent, (event));
   }
-  opencl_free(cl_obj);
+  opencl_free(cb_data);
   opencl_pending_operations_adjust(-1);
 }
 

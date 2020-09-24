@@ -54,12 +54,12 @@
 #include <lib/prof-lean/hpcrun-opencl.h>
 
 #include "opencl-intercept.h"
-
+#include "opencl-memory-manager.h"
 
 
 //************************ Forward Declarations ******************************
 
-typedef struct opencl_object_t opencl_object_t;
+//typedef struct opencl_object_t opencl_object_t;
 
 
 
