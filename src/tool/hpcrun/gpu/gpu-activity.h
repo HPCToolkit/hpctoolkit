@@ -207,9 +207,9 @@ typedef struct gpu_mem_t {
 
 // gpu_mem_t is a prefix 
 typedef struct gpu_memcpy_t {
-  uint64_t submit_time;
   uint64_t start;
   uint64_t end;
+  uint64_t submit_time;
   uint64_t bytes;
   uint32_t correlation_id;
   uint32_t context_id;
@@ -242,9 +242,9 @@ typedef struct gpu_memset_t {
 
 // gpu kernel execution
 typedef struct gpu_kernel_t {
-  uint64_t submit_time;
   uint64_t start;
   uint64_t end;
+  uint64_t submit_time;
   uint32_t correlation_id;
   uint32_t device_id;
   uint32_t context_id;

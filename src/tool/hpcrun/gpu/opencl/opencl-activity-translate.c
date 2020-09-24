@@ -82,6 +82,7 @@ convert_kernel_launch
 
   ga->details.kernel.correlation_id = cb_data->details.ker_cb.correlation_id;
   ga->details.kernel.submit_time    = cb_data->details.submit_time;
+
 }
 
 
@@ -120,11 +121,11 @@ opencl_activity_translate
 )
 {
   switch (cb_data->kind) {
-    case OPENCL_MEMORY_CALLBACK:
+    case GPU_ACTIVITY_MEMCPY:
       convert_memcpy(ga, cb_data, event);
       break;
 
-    case OPENCL_KERNEL_CALLBACK:
+    case GPU_ACTIVITY_KERNEL:
       convert_kernel_launch(ga, cb_data, event);
       break;
 

@@ -51,6 +51,7 @@
 //******************************************************************************
 
 #include <lib/prof-lean/bistack.h>
+#include <hpcrun/gpu/gpu-activity.h>
 
 #include "opencl-intercept.h"
 
@@ -68,10 +69,11 @@ typedef struct cct_node_t cct_node_t;
 // type declarations
 //******************************************************************************
 
-typedef enum {
-  OPENCL_KERNEL_CALLBACK                     = 0,
-  OPENCL_MEMORY_CALLBACK                     = 1
-} opencl_object_kind_t;
+//This must be the same as gpu_activity_kind_t
+//typedef enum {
+//  GPU_ACTIVITY_KERNEL                     = 1,
+//  GPU_ACTIVITY_MEMCPY                     = 2
+//} gpu_activity_kind_t;
 
 
 typedef struct opencl_object_channel_t opencl_object_channel_t;
@@ -92,7 +94,7 @@ typedef struct opencl_object_details_t {
 typedef struct opencl_object_t {
   s_element_ptr_t next;
   opencl_object_channel_t *channel;
-  opencl_object_kind_t kind;
+  gpu_activity_kind_t kind;
   bool isInternalClEvent;
   opencl_object_details_t details;
 } opencl_object_t;

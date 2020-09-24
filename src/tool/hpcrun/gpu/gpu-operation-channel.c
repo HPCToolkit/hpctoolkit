@@ -42,6 +42,12 @@
 // ******************************************************* EndRiceCopyright *
 
 //******************************************************************************
+// system includes
+//******************************************************************************
+
+#include <pthread.h>
+
+//******************************************************************************
 // local includes
 //******************************************************************************
 
@@ -79,6 +85,8 @@
 #define channel_steal \
   typed_bichannel_steal(gpu_operation_item_t)
 
+#define SECONDS_UNTIL_WAKEUP 2
+
 
 
 //******************************************************************************
@@ -87,6 +95,8 @@
 
 typedef struct gpu_operation_channel_t {
   bistack_t bistacks[2];
+  pthread_mutex_t mutex;
+  pthread_cond_t cond;
 } gpu_operation_channel_t;
 
 
@@ -150,6 +160,8 @@ gpu_operation_channel_produce
   gpu_operation_item_t *channel_op = gpu_operation_item_alloc(channel);
   *channel_op = *it;
 
+  printf("\nPRODUCE: channel = %p || return_channel = %p -> activity = %p\n\n", channel, it->channel, it->activity);
+
   channel_push(channel, bichannel_direction_forward, channel_op);
 }
 
@@ -170,8 +182,28 @@ gpu_operation_channel_consume
   // consume all elements enqueued before this function was called
   for (;;) {
     gpu_operation_item_t *it = channel_pop(channel, bichannel_direction_forward);
-    if (!it) break;
+    printf("\n---------CONSUME: op_channel = %p || channel = %p , activity = %p\n", channel, it->channel, it->activity);
+
+    if (!it || !it->activity || !it->channel) {
+      break;
+    }
     gpu_operation_item_consume(gpu_operation_item_process, it);
     gpu_operation_item_free(channel, it);
   }
+}
+
+
+void
+gpu_operation_channel_wait
+(
+gpu_operation_channel_t *channel
+)
+{
+  struct timespec time;
+  clock_gettime(CLOCK_REALTIME, &time); // get current time
+  time.tv_sec += SECONDS_UNTIL_WAKEUP;
+
+  // wait for a signal or for a few seconds. periodically waking
+  // up avoids missing a signal.
+  pthread_cond_timedwait(&channel->cond, &channel->mutex, &time);
 }

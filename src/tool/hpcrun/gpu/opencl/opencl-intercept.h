@@ -113,29 +113,21 @@ typedef cl_int (*clwritebuffer_t)(
 );
 
 
-typedef enum {
-  memcpy_H2D                      = 0,
-  memcpy_D2H                      = 1,
-  kernel                          = 2
-} opencl_call_t;
-
-
 typedef struct cl_generic_callback_t {
   uint64_t correlation_id;
-  opencl_call_t type;
+  gpu_memcpy_type_t type;
 } cl_generic_callback_t;
 
 
 typedef struct cl_kernel_callback_t {
   uint64_t correlation_id;
-  opencl_call_t type;
+  gpu_memcpy_type_t type;
 } cl_kernel_callback_t;
 
 
 typedef struct cl_memory_callback_t {
   uint64_t correlation_id;
-  opencl_call_t type;
-  uint64_t submit_time;
+  gpu_memcpy_type_t type;
   bool fromHostToDevice;
   bool fromDeviceToHost;
   size_t size;

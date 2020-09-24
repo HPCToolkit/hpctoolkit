@@ -91,9 +91,7 @@ initializeKernelCallBackInfo
  opencl_object_t *kernel_info
 )
 {
-  kernel_info->kind = OPENCL_KERNEL_CALLBACK;
-  kernel_info->details.ker_cb.type = kernel;
-
+  kernel_info->kind = GPU_ACTIVITY_KERNEL;
 }
 
 
@@ -101,14 +99,14 @@ static void
 initializeMemoryCallBackInfo
 (
   opencl_object_t *mem_info,
-  opencl_call_t type,
+  gpu_memcpy_type_t type,
   size_t size
 )
 {
-  mem_info->kind = OPENCL_MEMORY_CALLBACK;
+  mem_info->kind = GPU_ACTIVITY_MEMCPY;
   mem_info->details.mem_cb.type = type;
-  mem_info->details.mem_cb.fromHostToDevice = (type == memcpy_H2D);
-  mem_info->details.mem_cb.fromDeviceToHost = (type == memcpy_D2H);
+  mem_info->details.mem_cb.fromHostToDevice = (type == GPU_MEMCPY_H2D);
+  mem_info->details.mem_cb.fromDeviceToHost = (type == GPU_MEMCPY_D2H);
   mem_info->details.mem_cb.size = size;
 
 }
@@ -193,7 +191,7 @@ clEnqueueReadBuffer_wrapper
 )
 {
   opencl_object_t *mem_info = opencl_malloc();
-  initializeMemoryCallBackInfo(mem_info, memcpy_D2H, cb);
+  initializeMemoryCallBackInfo(mem_info, GPU_MEMCPY_D2H, cb);
 
   opencl_subscriber_callback(mem_info);
 
@@ -243,7 +241,7 @@ clEnqueueWriteBuffer_wrapper
 {
 
   opencl_object_t *mem_info = opencl_malloc();
-  initializeMemoryCallBackInfo(mem_info, memcpy_H2D, cb);
+  initializeMemoryCallBackInfo(mem_info, GPU_MEMCPY_H2D, cb);
 
   opencl_subscriber_callback(mem_info);
 

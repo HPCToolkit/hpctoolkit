@@ -77,6 +77,7 @@
 
 
 
+
 //******************************************************************************
 // macros
 //******************************************************************************
@@ -145,9 +146,8 @@
   macro(CL_INVALID_DEVICE_PARTITION_COUNT)
 
 #define FORALL_OPENCL_CALLS(macro)					\
-  macro(memcpy_H2D)							\
-  macro(memcpy_D2H)							\
-  macro(kernel)
+  macro(GPU_MEMCPY_H2D)							\
+  macro(GPU_MEMCPY_D2H)
 
 #define CODE_TO_STRING(e) case e: return #e;
 
@@ -278,7 +278,7 @@ opencl_wait_for_pending_operations
 static const char*
 opencl_call_to_string
 (
-  opencl_call_t type
+  gpu_memcpy_type_t type
 )
 {
   switch (type)
@@ -335,18 +335,20 @@ opencl_subscriber_callback
 
   switch (cb_info->kind) {
 
-    case OPENCL_MEMORY_CALLBACK:
-      if (cb_info->details.mem_cb.type == memcpy_H2D){
+    case GPU_ACTIVITY_MEMCPY:
+      cb_info->details.mem_cb.correlation_id = correlation_id;
+      if (cb_info->details.mem_cb.type == GPU_MEMCPY_H2D){
         gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
                                        gpu_placeholder_type_copyin);
 
-      }else if (cb_info->details.mem_cb.type == memcpy_D2H){
+      }else if (cb_info->details.mem_cb.type == GPU_MEMCPY_D2H){
         gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
                                        gpu_placeholder_type_copyout);
       }
       break;
 
-    case OPENCL_KERNEL_CALLBACK:
+    case GPU_ACTIVITY_KERNEL:
+      cb_info->details.ker_cb.correlation_id = correlation_id;
       gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
 				   gpu_placeholder_type_kernel);
 
@@ -362,6 +364,7 @@ opencl_subscriber_callback
   hpcrun_safe_exit();
 
   gpu_activity_channel_consume(gpu_metrics_attribute);
+
 
   cb_info->details.cct_node = api_node;
   cb_info->details.initiator_channel = gpu_activity_channel_get();
@@ -382,13 +385,13 @@ opencl_activity_completion_callback
   opencl_object_t *cb_data = (opencl_object_t*)user_data;
   cl_generic_callback_t *act_data;
 
-  if (cb_data->kind == OPENCL_KERNEL_CALLBACK) {
+  if (cb_data->kind == GPU_ACTIVITY_KERNEL) {
     act_data = (cl_generic_callback_t*) &(cb_data->details.ker_cb);
-  } else if (cb_data->kind == OPENCL_MEMORY_CALLBACK) {
+  } else if (cb_data->kind == GPU_ACTIVITY_MEMCPY) {
     act_data = (cl_generic_callback_t*) &(cb_data->details.mem_cb);
   }
   uint64_t correlation_id = act_data->correlation_id;
-  opencl_call_t type = act_data->type;
+  gpu_memcpy_type_t type = act_data->type;
 
   if (event_command_exec_status == complete_flag) {
     gpu_correlation_id_map_entry_t *cid_map_entry = 
@@ -492,5 +495,8 @@ opencl_api_finalize
 )
 {
   opencl_wait_for_pending_operations();
+  gpu_activity_multiplexer_fini();
+
   gpu_application_thread_process_activities();
+
 }

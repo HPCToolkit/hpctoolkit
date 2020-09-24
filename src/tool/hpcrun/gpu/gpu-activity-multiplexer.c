@@ -93,14 +93,11 @@ void
     for (int set_index = 0; set_index < atomic_load(&operation_set_id) ; ++set_index) {
       gpu_operation_channel_set_consume(set_index);
     }
-//    pthread_cond_timedwait
   }
 
-
-//  for (int set_index = 0; set_index < atomic_load(&operation_set_id) ; ++set_index) {
-//    gpu_trace_operation_set_release(set_index);
-//  }
-
+  for (int set_index = 0; set_index < atomic_load(&operation_set_id) ; ++set_index) {
+    gpu_operation_channel_set_consume(set_index);
+  }
 
   return NULL;
 }

@@ -183,6 +183,7 @@ gpu_operation_channel_set_consume
 )
 {
   gpu_operation_channel_set_forall(gpu_operation_channel_consume, set_index);
+  gpu_operation_channel_set_forall(gpu_operation_channel_wait, set_index);
 }
 
 
