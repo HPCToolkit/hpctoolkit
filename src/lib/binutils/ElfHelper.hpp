@@ -87,7 +87,7 @@
 class ElfFile {
 public:
   ElfFile() { origPtr = 0; memPtr = 0; elf = 0; memLen = 0; }
-  bool open(char *_memPtr, size_t _memLen, std::string _fileName);
+  bool open(char *_memPtr, size_t _memLen, const std::string &_fileName);
   ~ElfFile();
   int getArch() { return arch; }
   Elf *getElf() { return elf; }

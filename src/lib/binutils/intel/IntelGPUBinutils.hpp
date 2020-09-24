@@ -66,8 +66,6 @@ enum SHT_OPENCL : uint32_t {
     SHT_OPENCL_SPIRV_SC_VALUES = 0xff00000c          // Specialization Constants values
 };
 
-
-
 //******************************************************************************
 // interface functions
 //******************************************************************************
@@ -75,8 +73,10 @@ enum SHT_OPENCL : uint32_t {
 bool
 findIntelGPUBins
 (
-	ElfFile *elfFile,
-	ElfFileVector *filevector
+ const std::string &file_name, 
+ const char *file_buffer,
+ size_t file_size,
+ ElfFileVector *filevector
 );
 
 #endif

@@ -50,6 +50,8 @@
 //******************************************************************************
 
 #include <iostream>
+#include <sstream>
+#include <iomanip>
 #include <string>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -86,43 +88,7 @@
 // private operations
 //******************************************************************************
 
-static size_t
-file_size(int fd)
-{
-  struct stat sb;
-  int retval = fstat(fd, &sb);
-  if (retval == 0 && S_ISREG(sb.st_mode)) {
-    return sb.st_size;
-  }
-  return 0;
-}
-
-
-// Automatically restart short reads.
-// This protects against EINTR.
-//
-static size_t
-read_all(int fd, void *buf, size_t count)
-{
-  ssize_t ret;
-  size_t len;
-
-  len = 0;
-  while (len < count) {
-    ret = read(fd, ((char *) buf) + len, count - len);
-    if (ret == 0 || (ret < 0 && errno != EINTR)) {
-      break;
-    }
-    if (ret > 0) {
-      len += ret;
-    }
-  }
-
-  return len;
-}
-
-
-static const char*
+static __attribute__((unused)) const char *
 opencl_elf_section_type
 (
   Elf64_Word sh_type
@@ -161,68 +127,6 @@ opencl_elf_section_type
 }
 
 
-static bool
-extract_kernelelfs
-(
- char *section_data,
- size_t section_size,
- ElfFileVector *filevector
-)
-{
-  const char *ptr = section_data;
-  const SProgramDebugDataHeaderIGC* header =
-    reinterpret_cast<const SProgramDebugDataHeaderIGC*>(ptr);
-  ptr += sizeof(SProgramDebugDataHeaderIGC);
-
-  if (header->NumberOfKernels == 0) {
-    return false;
-  }
-  
-  for (uint32_t i = 0; i < header->NumberOfKernels; ++i) {
-    const SKernelDebugDataHeaderIGC *kernel_header =
-      reinterpret_cast<const SKernelDebugDataHeaderIGC*>(ptr);
-    ptr += sizeof(SKernelDebugDataHeaderIGC);
-
-    const char *kernel_name = reinterpret_cast<const char*>(ptr);
-    std::string file_name = std::string(kernel_name) + ".gpubin";
-    std::cout << "intel " << file_name << std::endl;
-
-    unsigned kernel_name_size_aligned = sizeof(uint32_t) *
-      (1 + (kernel_header->KernelNameSize - 1) / sizeof(uint32_t));
-    ptr += kernel_name_size_aligned;
-
-    if (kernel_header->SizeVisaDbgInBytes > 0) {
-      ElfFile *elf_file = new ElfFile;
-      int file_fd = open(file_name.c_str(), O_RDONLY);
-      size_t f_size = file_size(file_fd);
-      char *file_buffer = (char *)malloc(f_size);
-      size_t bytes = read_all(file_fd, file_buffer, f_size);
-
-      if (elf_file->open(file_buffer, f_size, file_name)) {
-        filevector->push_back(elf_file);
-      } else {
-        // Cannot handle a kernel
-        return false;
-      }
-    } else {
-      // Kernel does not have debug info
-      return false;
-    }
-  }
-
-  return true;
-}
-
-
-static bool
-is_custom_opencl_binary
-(
- const std::string &section_name
-)
-{
-  return section_name == ".SHT_OPENCL_DEV_DEBUG";
-}
-
 //******************************************************************************
 // interface operations
 //******************************************************************************
@@ -230,50 +134,65 @@ is_custom_opencl_binary
 bool
 findIntelGPUBins
 (
- ElfFile *elfFile,
+ const std::string &file_name,
+ const char *file_buffer,
+ size_t file_size,
  ElfFileVector *filevector
 )
 {
-  bool has_debug_section = false;
-  bool extract_file = false;
+  const char *ptr = file_buffer;
+  const SProgramDebugDataHeaderIGC* header =
+    reinterpret_cast<const SProgramDebugDataHeaderIGC*>(ptr);
+  ptr += sizeof(SProgramDebugDataHeaderIGC);
 
-  Elf *elf = elfFile->getElf();
-  char *file_buffer = elfFile->getMemory();
-  ElfSectionVector *sections = elfGetSectionVector(elf);
-  GElf_Ehdr ehdr_v;
-  GElf_Ehdr *ehdr = gelf_getehdr(elf, &ehdr_v);
-
-  if (ehdr) {
-    for (auto si = sections->begin(); si != sections->end(); si++) {
-      Elf_Scn *scn = *si;
-      GElf_Shdr shdr_v;
-      GElf_Shdr *shdr = gelf_getshdr(scn, &shdr_v);
-      if (!shdr) continue;
-      char *section_data = elfSectionGetData(file_buffer, shdr);
-      std::string section_name = std::string(elf_strptr(elf, ehdr->e_shstrndx, shdr->sh_name));
-      std::cout << "section name: " << section_name << ". section type: " << opencl_elf_section_type(shdr->sh_type) << std::endl;
-
-      // extract debug section
-      if ((shdr->sh_type == SHT_OPENCL_DEV_DEBUG && section_name == INTEL_GPU_DEBUG_SECTION_NAME)
-        || is_custom_opencl_binary(section_name)) {
-        has_debug_section = true;
-        extract_file = extract_kernelelfs(section_data, shdr->sh_size, filevector);
-        break;
-      }
-    }
+  if (header->NumberOfKernels == 0) {
+    return false;
   }
-  //// TODO(Aaron): why put this section here?
-  //FILE *fptr;
-  //if (!fileHasDebugSection && (fptr = fopen("opencl_main.debuginfo", "rb"))) {
-  //  fileHasDebugSection = true;
-  //  fseek(fptr, 0L, SEEK_END);
-  //  size_t debug_info_size = ftell(fptr);
-  //  printf("debug_info_size: %zu\n", debug_info_size);
-  //  rewind(fptr);
-  //  std::vector<uint8_t> debug_info(debug_info_size);
-  //  fread(debug_info.data(), debug_info_size, 1, fptr);
-  //  extractSuccess = extract_kernelelfs(debug_info, filevector);
-  //}
-  //bool success = fileHasDebugSection && extractSuccess;
-  return extract_file && has_debug_section; 
+
+  auto iter = file_name.rfind("/");
+  if (iter == std::string::npos) {
+    return false;
+  }
+  std::string dir_name = file_name.substr(0, iter + 1);
+  
+  for (uint32_t i = 0; i < header->NumberOfKernels; ++i) {
+    const SKernelDebugDataHeaderIGC *kernel_header =
+      reinterpret_cast<const SKernelDebugDataHeaderIGC*>(ptr);
+    ptr += sizeof(SKernelDebugDataHeaderIGC);
+    std::string kernel_name(ptr);
+
+    unsigned kernel_name_size_aligned = sizeof(uint32_t) *
+      (1 + (kernel_header->KernelNameSize - 1) / sizeof(uint32_t));
+    ptr += kernel_name_size_aligned;
+
+    if (kernel_header->SizeVisaDbgInBytes > 0) {
+      std::stringstream ss;
+      ss << dir_name << kernel_name << ".gpubin";
+
+      size_t kernel_size = kernel_header->SizeVisaDbgInBytes;
+      char *kernel_buffer = (char *)malloc(kernel_size);
+      memcpy(kernel_buffer, ptr, kernel_size);
+
+      auto elf_file = new ElfFile;
+      if (elf_file->open(kernel_buffer, kernel_size, ss.str())) {
+        // TODO(Keren): Dump binaries or not?
+        FILE *fptr = fopen(ss.str().c_str(), "wb");
+        fwrite(kernel_buffer, sizeof(char), kernel_size, fptr);
+        fclose(fptr);
+
+        filevector->push_back(elf_file);
+      } else {
+        // kernel_buffer is released with elf_file
+        delete elf_file;
+      }
+    } else {
+      // Kernel does not have debug info
+      return false;
+    }
+
+    ptr += kernel_header->SizeVisaDbgInBytes;
+    ptr += kernel_header->SizeGenIsaDbgInBytes;
+  }
+
+  return true;
 }

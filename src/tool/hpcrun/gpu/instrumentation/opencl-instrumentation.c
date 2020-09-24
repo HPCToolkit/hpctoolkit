@@ -47,6 +47,12 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <errno.h>     // errno
+#include <fcntl.h>     // open
+#include <sys/stat.h>  // mkdir
+#include <dirent.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include <gtpin.h>
 
 
@@ -69,6 +75,7 @@
 #include <hpcrun/memory/hpcrun-malloc.h>
 #include <hpcrun/utilities/hpcrun-nanotime.h>
 #include <hpcrun/gpu/opencl/opencl-intercept.h>
+#include <hpcrun/files.h>
 #include "opencl-instrumentation.h"
 
 
@@ -79,6 +86,7 @@
 
 #define MAX_STR_SIZE 1024
 
+// TODO(Aaron): Why there are so many correlation ids
 static atomic_long correlation_id;
 
 
@@ -100,6 +108,16 @@ knobAddBool
   knob_value.type = KNOB_TYPE_BOOL;
   KNOB_STATUS status = KNOB_AddValue(knob, &knob_value);
   assert(status == KNOB_STATUS_SUCCESS);
+}
+
+
+void
+initializeInstrumentation
+(
+ void
+)
+{
+  atomic_store(&correlation_id, 5000);  // to avoid conflict with opencl operation correlation ids, we start instrumentation ids with 5000 (TODO(Aaron):FIX)
 }
 
 
@@ -136,85 +154,104 @@ createKernelNode
 }
 
 
-static uint32_t
-findKernelAndInsertToLoadMap
+static int32_t
+findOrAddKernelModule
 (
- uint8_t *debuginfo,
- char *input_kernel_name
+ const char *input_kernel_name
 )
 {
-  const uint8_t* ptr = debuginfo;
-  const SProgramDebugDataHeaderIGC* header = (const SProgramDebugDataHeaderIGC*)(ptr);
-  ptr += sizeof(SProgramDebugDataHeaderIGC);
+  char path_name[PATH_MAX];
+  size_t used = 0;
+  used += sprintf(&path_name[used], "%s", hpcrun_files_output_directory());
+  used += sprintf(&path_name[used], "%s", "/intel/");
 
-  ETMSG(OPENCL, "Number of kernels: %d", header->NumberOfKernels);
-  for (uint32_t i = 0; i < header->NumberOfKernels; ++i) {
-    const SKernelDebugDataHeaderIGC* kernel_header = (const SKernelDebugDataHeaderIGC*)(ptr);
-    ptr += sizeof(SKernelDebugDataHeaderIGC);
+  DIR *FD;
+  if (NULL == (FD = opendir(path_name))) {
+    return -1;
+  }
 
-    const char* kernel_name = (const char*)(ptr);
-    char *file_name = (char*)hpcrun_malloc(sizeof(kernel_name));
-    strcpy(file_name, kernel_name);
-    strcat(file_name, ".gpubin");
-
-    unsigned kernel_name_size_aligned = sizeof(uint32_t) *
-      (1 + (kernel_header->KernelNameSize - 1) / sizeof(uint32_t));
-    ptr += kernel_name_size_aligned;
-
-    if (kernel_header->SizeVisaDbgInBytes > 0 && strcmp(kernel_name, input_kernel_name) == 0) {
-      FILE *fptr = fopen(file_name, "wb");
-      fwrite(ptr, kernel_header->SizeVisaDbgInBytes, 1, fptr);
-
-      uint32_t hpctoolkit_module_id;
-      load_module_t *module = NULL;
-      char *absoluteKernelName = realpath(file_name, NULL); 
-
-      hpcrun_loadmap_lock();
-      if ((module = hpcrun_loadmap_findByName(absoluteKernelName)) == NULL) {
-        hpctoolkit_module_id = hpcrun_loadModule_add(absoluteKernelName);
-      } else {
-        hpctoolkit_module_id = module->id;
-      }
-      hpcrun_loadmap_unlock();
-
-      fclose(fptr);
-      return hpctoolkit_module_id;
+  int module_id = -1;
+  struct dirent *in_file;
+  while ((in_file = readdir(FD))) {
+    if (!strstr(in_file->d_name, ".debuginfo")) {
+      continue;
     }
-    // Should be zero for newest drivers
-    assert(kernel_header->SizeGenIsaDbgInBytes == 0);
 
-    ptr += kernel_header->SizeVisaDbgInBytes;
-    ptr += kernel_header->SizeGenIsaDbgInBytes;
+    char buffer[PATH_MAX];
+    used = 0;
+    used = sprintf(&buffer[used], "%s", path_name);
+    used = sprintf(&buffer[used], "%s", in_file->d_name);
+
+    FILE *fptr = fopen(buffer, "rb");
+    fseek(fptr, 0L, SEEK_END);
+    size_t debug_info_size = ftell(fptr);
+    rewind(fptr);
+    char *debug_info = (char *)malloc(debug_info_size);
+    fread(debug_info, debug_info_size, 1, fptr);
+
+    const char *ptr = debug_info;
+    const SProgramDebugDataHeaderIGC *header = (const SProgramDebugDataHeaderIGC *)(ptr);
+    ptr += sizeof(SProgramDebugDataHeaderIGC);
+
+    ETMSG(OPENCL, "Number of kernels: %d", header->NumberOfKernels);
+    for (uint32_t i = 0; i < header->NumberOfKernels; ++i) {
+      const SKernelDebugDataHeaderIGC* kernel_header = (const SKernelDebugDataHeaderIGC*)(ptr);
+      ptr += sizeof(SKernelDebugDataHeaderIGC);
+
+      const char *kernel_name = (const char *)(ptr);
+      if (kernel_header->SizeVisaDbgInBytes > 0 && strcmp(kernel_name, input_kernel_name) == 0) {
+        // Create file name
+        char file_name[PATH_MAX];
+        size_t i;
+        size_t used = 0;
+        used += sprintf(&file_name[used], "%s", hpcrun_files_output_directory());
+        used += sprintf(&file_name[used], "%s", "/intel/");
+        used += sprintf(&file_name[used], "%s", kernel_name);
+        used += sprintf(&file_name[used], "%s", ".gpubin");
+
+        #if 0
+        // Write a file if does not exist
+        bool file_flag;
+        spinlock_lock(&files_lock);
+        file_flag = writeBinary(file_name, binary, binary_size);
+        spinlock_unlock(&files_lock);
+        #endif
+
+        hpcrun_loadmap_lock();
+        load_module_t *module = hpcrun_loadmap_findByName(file_name);
+        if (module == NULL) {
+          module_id = hpcrun_loadModule_add(file_name);
+        } else {
+          // Find module
+          module_id = module->id;
+        }
+        hpcrun_loadmap_unlock();
+
+        break;
+      }
+
+      // TODO(Aaron): Should be zero for newest drivers (what does it mean?)
+      assert(kernel_header->SizeGenIsaDbgInBytes == 0);
+
+      ptr += kernel_header->SizeVisaDbgInBytes;
+      ptr += kernel_header->SizeGenIsaDbgInBytes;
+    }
+
+    free(debug_info);
+    fclose(fptr);
+
+    if (module_id != -1) {
+      // Find module
+      break;
+    }
   }
-  return -1;
-}
 
-
-static uint32_t
-add_opencl_binary_to_loadmap 
-(
- char *kernel_name
-)
-{
-  char *debuginfoFileName = getDebugInfoFullFileName();
-  ETMSG(OPENCL, "OpenCL binary name %s", debuginfoFileName);
-
-  if (debuginfoFileName == NULL) {
-    ETMSG(OPENCL, "debug file not found");
-    return -1;  
-  }
-  FILE *fptr = fopen(debuginfoFileName, "rb");
-  fseek(fptr, 0L, SEEK_END);
-  size_t debug_info_size = ftell(fptr);
-  rewind(fptr);
-  uint8_t *debug_info = (uint8_t*)hpcrun_malloc(debug_info_size);
-  fread(debug_info, debug_info_size, 1, fptr);
-  return findKernelAndInsertToLoadMap(debug_info, kernel_name);
+  return module_id;
 }
 
 
 static void
-opencl_activity_notify
+activityNotify
 (
  void
 )
@@ -224,7 +261,7 @@ opencl_activity_notify
 
 
 static void
-opencl_kernel_block_activity_translate
+kernelBlockActivityTranslate
 (
  gpu_activity_t *ga,
  uint32_t correlation_id,
@@ -246,7 +283,7 @@ opencl_kernel_block_activity_translate
 
 
 static void
-opencl_kernel_block_activity_process
+kernelBlockActivityProcess
 (
  gpu_activity_t *ga,
  uint32_t correlation_id,
@@ -255,7 +292,7 @@ opencl_kernel_block_activity_process
  uint64_t execution_count
 )
 {
-  opencl_kernel_block_activity_translate(ga, correlation_id, loadmap_module_id, offset, execution_count);
+  kernelBlockActivityTranslate(ga, correlation_id, loadmap_module_id, offset, execution_count);
   gpu_activity_process(ga);
 }
 
@@ -295,6 +332,7 @@ onKernelBuild
     status = GTPin_OpcodeprofInstrument(head, mem);
     assert(status == GTPINTOOL_STATUS_SUCCESS);
 
+    // TODO(Aaron): when using hpcrun_malloc, find a way to recycle memory
     mem_pair_node *m = hpcrun_malloc(sizeof(mem_pair_node));
     m->offset = offset;
     m->mem = mem;
@@ -310,6 +348,7 @@ onKernelBuild
     }
   }
   if (h != NULL) {
+    // TODO(Aaron): naming insert1/insert2 is confusing
     kernel_memory_map_insert1((uint64_t)kernel, h);
   }
 
@@ -318,13 +357,19 @@ onKernelBuild
   char kernel_name[MAX_STR_SIZE];
   status = GTPin_KernelGetName(kernel, MAX_STR_SIZE, kernel_name, NULL);
   assert(status == GTPINTOOL_STATUS_SUCCESS);
-
   // 
   // m->next = NULL;
   // add these details to cct_node. If thats not needed, we can create the kernel_cct in onKernelComplete
-  data.name = kernel_name;
+  // XXX(Aaron): what is this for?
+  //data.name = kernel_name;
   data.call_count = 0;
-  data.loadmap_module_id = add_opencl_binary_to_loadmap(kernel_name);
+
+  int32_t module_id = findOrAddKernelModule(kernel_name);
+  if (module_id != -1) {
+    data.loadmap_module_id = module_id;
+  } else {
+    ETMSG(OPENCL, "onKernelComplete cannot find kernel %d\n", kernel_name);
+  }
 
   kernel_data_map_insert1((uint64_t)kernel, data);
   ETMSG(OPENCL, "onKernelBuild complete. Inserted key: %"PRIu64 "",(uint64_t)kernel);
@@ -332,11 +377,11 @@ onKernelBuild
 
 
 static void
-  onKernelRun
+onKernelRun
 (
  GTPinKernelExec kernelExec,
  void *v
- )
+)
 {
   GTPINTOOL_STATUS status = GTPINTOOL_STATUS_SUCCESS;
   GTPin_KernelProfilingActive(kernelExec, 1);
@@ -345,11 +390,11 @@ static void
 
 
 static void
-  onKernelComplete
+onKernelComplete
 (
  GTPinKernelExec kernelExec,
  void *v
- )
+)
 {
   GTPINTOOL_STATUS status = GTPINTOOL_STATUS_SUCCESS;
   GTPinKernel kernel = GTPin_KernelExec_GetKernel(kernelExec);
@@ -357,6 +402,7 @@ static void
   assert(kernel_data_map_lookup1((uint64_t)kernel) != 0);
   assert(kernel_memory_map_lookup1((uint64_t)kernel) != 0);
 
+  // TODO(Aaron): rename lookup methods, do not use magic numbers
   kernel_data_map_t *kernel_data_list = kernel_data_map_lookup1((uint64_t)kernel);
   KernelData data = kernel_data_list->data;
   kernel_memory_map_t *kernel_memory_list = kernel_memory_map_lookup1((uint64_t)kernel);
@@ -389,9 +435,9 @@ static void
     uint64_t execution_count = total; // + bm->val 
     //block_map_insert1(data.block_map_root, block->offset, execution_count);
 
-    opencl_activity_notify();  
+    activityNotify();  
     gpu_activity_t gpu_activity;
-    opencl_kernel_block_activity_process(&gpu_activity, correlation_id, data.loadmap_module_id, block->offset, execution_count);
+    kernelBlockActivityProcess(&gpu_activity, correlation_id, data.loadmap_module_id, block->offset, execution_count);
     block = block->next;
     //how to make offset the primary key within the cct and += the execution value for existing ccts?
   }
@@ -405,23 +451,15 @@ static void
 // interface operations
 //******************************************************************************
 
+
 void
-opencl_instrumentation_initialize
-(
- void
-)
-{
-  atomic_store(&correlation_id, 5000);  // to avoid conflict with opencl operation correlation ids, we start instrumentation ids with 5000 (TODO:FIX)
-}
-
-
-void enableProfiling
+opencl_enable_profiling
 (
  void
 )
 {
   ETMSG(OPENCL, "inside enableProfiling");
-  opencl_instrumentation_initialize();
+  initializeInstrumentation();
   knobAddBool("silent_warnings", true);
 
   /*if (utils::GetEnv("PTI_GEN12") != nullptr) {

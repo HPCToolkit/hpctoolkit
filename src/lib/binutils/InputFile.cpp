@@ -200,22 +200,19 @@ InputFile::openFile
 
   close(file_fd);
 
+  filevector = new ElfFileVector;
   ElfFile *elfFile = new ElfFile;
+
   bool result = elfFile->open(file_buffer, f_size, filename);
-
   if (result) {
-    filevector = new ElfFileVector;
-    if (isIntelGPUFile(elfFile)) {
-      findIntelGPUBins(elfFile, filevector);
-    } else {
-      filevector->push_back(elfFile);
-    }
+    filevector->push_back(elfFile);
     //findCubins(elfFile, filevector);
-  } else {
+  } else if (!findIntelGPUBins(filename, file_buffer, f_size, filevector)) { // Check if the file is a intel debug binary
+    // Release memory
+    delete(elfFile);
     DIAG_MsgIf_GENERIC(tag, 1, "Not an ELF binary " << filename);
-
     if (errType != InputFileError_WarningNothrow) throw 1;
-
+    // Not a standard elf file
     return false;
   }
 

@@ -96,7 +96,7 @@ ElfFile::open
 (
  char *_memPtr,
  size_t _memLen,
- std::string _fileName
+ const std::string &_fileName
 )
 {
   origPtr = _memPtr;
@@ -107,36 +107,44 @@ ElfFile::open
   elf_version(EV_CURRENT);
   elf = elf_memory(memPtr, memLen);
   if (elf == 0 || elf_kind(elf) != ELF_K_ELF) {
+    memPtr = 0;
     return false;
   }
+
   GElf_Ehdr ehdr_v; 
   GElf_Ehdr *ehdr = gelf_getehdr(elf, &ehdr_v);
   if (!ehdr) {
+    memPtr = 0;
     return false;
   }
-#ifdef EM_CUDA
 
+  bool result = true;
+#ifdef EM_CUDA
   if (ehdr->e_machine == EM_CUDA) {
     this->arch = ehdr->e_flags & 0xFF;
 #ifdef DYNINST_USE_CUDA
     origPtr = (char *) malloc(memLen);
     memcpy(origPtr, memPtr, memLen);
     relocateCubin(memPtr, memLen, elf);
+    // Prevent memory leak
+    free(memPtr);
 #else
-    elf_end(elf);
-    return false;
+    result = false;
 #endif
+    // If we cannot open the binary, release memPtr's memory
+    // If we opened the binary, we've copied memPtr to origPtr, also release memory
+    memPtr = 0;
   }
-
 #endif
 
-  return true;
+  return result;
 }
 
 
 ElfFile::~ElfFile() 
 {
-  if (origPtr != memPtr) free(origPtr);
+  // TODO(Keren): prevent memory leak
+  if (origPtr != memPtr && origPtr != 0) free(origPtr);
   elf_end(elf);
 }
 

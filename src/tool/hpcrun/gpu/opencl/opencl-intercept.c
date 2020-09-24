@@ -46,7 +46,11 @@
 //******************************************************************************
 
 #include <inttypes.h>
-
+#include <errno.h>     // errno
+#include <fcntl.h>     // open
+#include <sys/stat.h>  // mkdir
+#include <sys/types.h>
+#include <unistd.h>
 
 
 //******************************************************************************
@@ -57,9 +61,12 @@
 #include <hpcrun/gpu/gpu-metrics.h>
 #include <hpcrun/memory/hpcrun-malloc.h>
 #include <hpcrun/messages/messages.h>
+#include <hpcrun/files.h>
 #include <lib/prof-lean/hpcrun-gotcha.h>
 #include <lib/prof-lean/hpcrun-opencl.h>
 #include <lib/prof-lean/stdatomic.h>
+#include <lib/prof-lean/spinlock.h>
+#include <lib/prof-lean/crypto-hash.h>
 
 #include "opencl-api.h"
 #include "opencl-intercept.h"
@@ -71,7 +78,11 @@
 // local data
 //******************************************************************************
 
+static spinlock_t files_lock = SPINLOCK_UNLOCKED;
+
+// TODO(Aaron): this endif is so far from ifndef
 #ifndef HPCRUN_STATIC_LINK
+
 static gotcha_wrappee_handle_t clBuildProgram_handle;
 static gotcha_wrappee_handle_t clCreateProgramWithSource_handle;
 static gotcha_wrappee_handle_t clCreateCommandQueue_handle;
@@ -79,22 +90,20 @@ static gotcha_wrappee_handle_t clEnqueueNDRangeKernel_handle;
 static gotcha_wrappee_handle_t clEnqueueReadBuffer_handle;
 static gotcha_wrappee_handle_t clEnqueueWriteBuffer_handle;
 static atomic_long correlation_id;
-static char *debugInfoFullFileName;
-
 
 #define CL_PROGRAM_DEBUG_INFO_SIZES_INTEL 0x4101
 #define CL_PROGRAM_DEBUG_INFO_INTEL       0x4100
 
-
+#define LINE_TABLE_FLAG " -gline-tables-only "
 
 //******************************************************************************
 // private operations
 //******************************************************************************
 
 static void
-opencl_intercept_initialize
+initializeIntercept
 (
-  void
+ void
 )
 {
   atomic_store(&correlation_id, 0);
@@ -104,7 +113,7 @@ opencl_intercept_initialize
 static uint64_t
 getCorrelationId
 (
-  void
+ void
 )
 {
   return atomic_fetch_add(&correlation_id, 1);
@@ -112,22 +121,10 @@ getCorrelationId
 
 
 static void
-setDebugInfoFullFileName
-(
-	char *fileName
-)
-{
-	if (debugInfoFullFileName == NULL) {
-		debugInfoFullFileName = fileName;	
-	}
-}
-
-
-static void
 initializeKernelCallBackInfo
 (
-  cl_kernel_callback_t *kernel_cb,
-  uint64_t correlation_id
+ cl_kernel_callback_t *kernel_cb,
+ uint64_t correlation_id
 )
 {
   kernel_cb->correlation_id = correlation_id;
@@ -138,10 +135,10 @@ initializeKernelCallBackInfo
 static void
 initializeMemoryCallBackInfo
 (
-  cl_memory_callback_t *mem_transfer_cb,
-  uint64_t correlation_id,
-  size_t size,
-  bool fromHostToDevice
+ cl_memory_callback_t *mem_transfer_cb,
+ uint64_t correlation_id,
+ size_t size,
+ bool fromHostToDevice
 )
 {
   mem_transfer_cb->correlation_id = correlation_id;
@@ -151,25 +148,96 @@ initializeMemoryCallBackInfo
   mem_transfer_cb->fromDeviceToHost = !fromHostToDevice;
 }
 
+
+static bool
+writeBinary
+(
+ const char *file_name,
+ const void *binary,
+ size_t binary_size
+)
+{
+  int fd;
+  errno = 0;
+  fd = open(file_name, O_WRONLY | O_CREAT | O_EXCL, 0644);
+  if (errno == EEXIST) {
+    close(fd);
+    return true;
+  }
+  if (fd >= 0) {
+    // Success
+    if (write(fd, binary, binary_size) != binary_size) {
+      close(fd);
+      return false;
+    } else {
+      close(fd);
+      return true;
+    }
+  } else {
+    // Failure to open is a fatal error.
+    hpcrun_abort("hpctoolkit: unable to open file: '%s'", file_name);
+    return false;
+  }
+}
+
+
+void
+writeHashBinary
+(
+ const void *binary,
+ size_t binary_size,
+ bool is_debug_info
+)
+{
+  // Compute hash for the binary
+  unsigned char hash[HASH_LENGTH];
+  crypto_hash_compute(binary, binary_size, hash, HASH_LENGTH);
+
+  // Create file name
+  char file_name[PATH_MAX];
+  size_t i;
+  size_t used = 0;
+  used += sprintf(&file_name[used], "%s", hpcrun_files_output_directory());
+  used += sprintf(&file_name[used], "%s", "/intel/");
+  mkdir(file_name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+  for (i = 0; i < HASH_LENGTH; ++i) {
+    used += sprintf(&file_name[used], "%02x", hash[i]);
+  }
+  if (is_debug_info) {
+    used += sprintf(&file_name[used], "%s", ".debuginfo");
+  } else {
+    // XXX(Aaron): we do not use this file for now
+    used += sprintf(&file_name[used], "%s", ".gpumain");
+  }
+
+  // Write a file if does not exist
+  spinlock_lock(&files_lock);
+  writeBinary(file_name, binary, binary_size);
+  spinlock_unlock(&files_lock);
+}
+
+
+#if 0
 static char*
 getKernelNameFromSourceCode
 (
-	const char *kernelSourceCode
+  const char *kernelSourceCode
 )
 {
-	char *kernelCode_copy = (char*)hpcrun_malloc(sizeof(kernelSourceCode));
-	strcpy(kernelCode_copy, kernelSourceCode);
-	char *token = strtok(kernelCode_copy, " ");
-	while (token != NULL) {
-		if (strcmp(token, "void") == 0) { // not searching for kernel because "supported\n#endif\nkernel"
-			token = strtok(NULL, " ");
-			printf("kernel name: %s", token);
-			return token;
-		}
-		token = strtok(NULL, " ");
-	}
-	return NULL;
+  char *kernelCode_copy = (char*)hpcrun_malloc(sizeof(kernelSourceCode));
+  strcpy(kernelCode_copy, kernelSourceCode);
+  char *token = strtok(kernelCode_copy, " ");
+  while (token != NULL) {
+    if (strcmp(token, "void") == 0) { // not searching for kernel because "supported\n#endif\nkernel"
+      token = strtok(NULL, " ");
+      printf("kernel name: %s", token);
+      return token;
+    }
+    token = strtok(NULL, " ");
+  }
+  return NULL;
 }
+#endif
 
 
 static cl_program
@@ -182,80 +250,84 @@ clCreateProgramWithSource_wrapper
  cl_int* errcode_ret
 )
 {
-	ETMSG(OPENCL, "inside clCreateProgramWithSource_wrapper");
+  ETMSG(OPENCL, "inside clCreateProgramWithSource_wrapper");
 
-	FILE *f_ptr;
-	for (int i = 0; i < (int)count; i++) {
-		// what if a single file has multiple kernels?
-		// we need to add logic to get filenames by reading the strings contents
-		char fileno = '0' + (i + 1); // right now we are naming the files as index numbers
-		// using malloc instead of hpcrun_malloc gives extra garbage characters in file name
-		char *filename = (char*)hpcrun_malloc(sizeof(fileno) + 1);
-		*filename = fileno + '\0';
-		f_ptr = fopen(filename, "w");
-		fwrite(strings[i], lengths[i], 1, f_ptr);
-	}
-	fclose(f_ptr);
-	
-	clcreateprogramwithsource_t clCreateProgramWithSource_wrappee =
-		GOTCHA_GET_TYPED_WRAPPEE(clCreateProgramWithSource_handle, clcreateprogramwithsource_t);
-	return clCreateProgramWithSource_wrappee(context, count, strings, lengths, errcode_ret);
+#if 0
+  FILE *f_ptr;
+  for (int i = 0; i < (int)count; i++) {
+    // what if a single file has multiple kernels?
+    // we need to add logic to get filenames by reading the strings contents
+    char fileno = '0' + (i + 1); // right now we are naming the files as index numbers
+    // using malloc instead of hpcrun_malloc gives extra garbage characters in file name
+    char *filename = (char*)hpcrun_malloc(sizeof(fileno) + 1);
+    *filename = fileno + '\0';
+    f_ptr = fopen(filename, "w");
+    fwrite(strings[i], lengths[i], 1, f_ptr);
+  }
+  fclose(f_ptr);
+#endif
+  
+  clcreateprogramwithsource_t clCreateProgramWithSource_wrappee =
+    GOTCHA_GET_TYPED_WRAPPEE(clCreateProgramWithSource_handle, clcreateprogramwithsource_t);
+  return clCreateProgramWithSource_wrappee(context, count, strings, lengths, errcode_ret);
 }
 
 
 // we are dumping the debuginfo temporarily since the binary does not have debugsection
-// poorly written code: FIXME
-static char*
-dumpIntelGPUBinary(cl_program program) {
-	int device_count = 1;
-	cl_int status = CL_SUCCESS;
-	size_t *binary_size = (size_t*)hpcrun_malloc(sizeof(size_t) * device_count);
-
-	status = clGetProgramInfo(program, CL_PROGRAM_BINARY_SIZES,	sizeof(size_t), binary_size, NULL);
-	assert(status == CL_SUCCESS);
-	uint8_t **binary = (uint8_t**)hpcrun_malloc(device_count * sizeof(uint8_t*));
-	for (size_t i = 0; i < device_count; ++i) {
-		binary[i] = (uint8_t*)hpcrun_malloc(binary_size[i] * sizeof(uint8_t));
-	}
-
-	status = clGetProgramInfo(program, CL_PROGRAM_BINARIES, device_count * sizeof(uint8_t*), binary, NULL);
-	assert(status == CL_SUCCESS);
-
-	FILE *bin_ptr;
-	bin_ptr = fopen("opencl_main.gpubin", "wb");
-	fwrite(binary[0], binary_size[0], 1, bin_ptr);
-
-  // SECOND
-	size_t *debug_info_size = (size_t*)hpcrun_malloc(sizeof(size_t) * device_count);
-
-	status = clGetProgramInfo(program, CL_PROGRAM_DEBUG_INFO_SIZES_INTEL,	sizeof(size_t), debug_info_size, NULL);
-	assert(status == CL_SUCCESS);
-	uint8_t **debug_info = (uint8_t**)hpcrun_malloc(device_count * sizeof(uint8_t*));
-	for (size_t i = 0; i < device_count; ++i) {
-		debug_info[i] = (uint8_t*)hpcrun_malloc(debug_info_size[i] * sizeof(uint8_t));
-	}
-
-	status = clGetProgramInfo(program, CL_PROGRAM_DEBUG_INFO_INTEL, device_count * sizeof(uint8_t*), debug_info, NULL);
-	assert(status == CL_SUCCESS);
-
-	char *debuginfoFileName = "opencl_main.debuginfo";
-	bin_ptr = fopen(debuginfoFileName, "wb");
-	fwrite(debug_info[0], debug_info_size[0], 1, bin_ptr);
-	fclose(bin_ptr);
-  ETMSG(OPENCL, "Intel GPU files dumped successfully");
-	return realpath(debuginfoFileName, NULL);
-}
-
-
+// poorly written code: FIXME(Aaron)
 static void
 clBuildProgramCallback
 (
-	cl_program program,
-	void* user_data
+ cl_program program,
+ void* user_data
 )
 {
-	char* debugInfoFullFileName = dumpIntelGPUBinary(program);
-	setDebugInfoFullFileName(debugInfoFullFileName);
+  // TODO(Aaron): where do you get device_count?
+  int device_count = 1;
+  cl_int status = CL_SUCCESS;
+
+  // binary
+  size_t *binary_size = (size_t *)malloc(device_count * sizeof(size_t));
+  status = clGetProgramInfo(program, CL_PROGRAM_BINARY_SIZES, device_count * sizeof(size_t), binary_size, NULL);
+  assert(status == CL_SUCCESS);
+
+  char **binary = (char **)malloc(device_count * sizeof(char *));
+  for (size_t i = 0; i < device_count; ++i) {
+    binary[i] = (char *)malloc(binary_size[i] * sizeof(char));
+  }
+
+  status = clGetProgramInfo(program, CL_PROGRAM_BINARIES, device_count * sizeof(char *), binary, NULL);
+  assert(status == CL_SUCCESS);
+
+  // debug info
+  size_t *debug_info_size = (size_t *)malloc(device_count * sizeof(size_t));
+  status = clGetProgramInfo(program, CL_PROGRAM_DEBUG_INFO_SIZES_INTEL, device_count * sizeof(size_t), debug_info_size, NULL);
+  assert(status == CL_SUCCESS);
+
+  char **debug_info = (char **)malloc(device_count * sizeof(char *));
+  for (size_t i = 0; i < device_count; ++i) {
+    debug_info[i] = (char *)malloc(debug_info_size[i] * sizeof(char));
+  }
+
+  status = clGetProgramInfo(program, CL_PROGRAM_DEBUG_INFO_INTEL, device_count * sizeof(char *), debug_info, NULL);
+  assert(status == CL_SUCCESS);
+
+  // TODO(Aaron): Is it ok to only write binary 0?
+  // write binaries and add them to load map
+  for (size_t i = 0; i < device_count; ++i) {
+    writeHashBinary(binary[i], binary_size[i], false);
+    writeHashBinary(debug_info[i], debug_info_size[i], true); 
+  }
+
+  // free memory
+  for (size_t i = 0; i < device_count; ++i) {
+    free(binary[i]);
+    free(debug_info[i]);
+  }
+  free(binary_size);
+  free(debug_info_size);
+
+  ETMSG(OPENCL, "Intel GPU files dumped successfully");
 }
 
 
@@ -265,31 +337,38 @@ clBuildProgram_wrapper
 (
  cl_program program,
  cl_uint num_devices,
- const cl_device_id* device_list,
- const char* options,
+ const cl_device_id *device_list,
+ const char *options,
  void (CL_CALLBACK* pfn_notify)(cl_program program, void* user_data),
- void* user_data
+ void *user_data
 )
 {
   ETMSG(OPENCL, "inside clBuildProgram_wrapper");
   clbuildprogram_t clBuildProgram_wrappee = 
     GOTCHA_GET_TYPED_WRAPPEE(clBuildProgram_handle, clbuildprogram_t);
 
-	char optionsWithDebugFlag[] = " -gline-tables-only ";
-	if (options != NULL) {
-		strcat(optionsWithDebugFlag, options);
-	}
-  return clBuildProgram_wrappee(program, num_devices, device_list, (const char*)optionsWithDebugFlag, clBuildProgramCallback, user_data);
+  // XXX(Aaron): Caution, what's the maximum length of options?
+  int len_options = options == NULL ? 0 : strlen(options);
+  int len_flag = strlen(LINE_TABLE_FLAG);
+  char *options_with_debug_flags = (char *)malloc((len_options + len_flag + 1) * sizeof(char));
+  memset(options_with_debug_flags, 0, (len_options + len_flag + 1));
+  if (len_options != 0) {
+    strncat(options_with_debug_flags, options, len_options);
+  }
+  strcat(options_with_debug_flags, LINE_TABLE_FLAG);
+  cl_int ret = clBuildProgram_wrappee(program, num_devices, device_list, options_with_debug_flags, clBuildProgramCallback, user_data);
+  free(options_with_debug_flags);
+  return ret;
 }
 
 
 static cl_command_queue
 clCreateCommandQueue_wrapper
 (
-  cl_context context,
-  cl_device_id device,
-  cl_command_queue_properties properties,
-  cl_int *errcode_ret
+ cl_context context,
+ cl_device_id device,
+ cl_command_queue_properties properties,
+ cl_int *errcode_ret
 )
 {
   // enabling profiling
@@ -305,15 +384,15 @@ clCreateCommandQueue_wrapper
 static cl_int
 clEnqueueNDRangeKernel_wrapper
 (
-  cl_command_queue command_queue,
-  cl_kernel ocl_kernel,
-  cl_uint work_dim,
-  const size_t *global_work_offset, 
-  const size_t *global_work_size,
-  const size_t *local_work_size,
-  cl_uint num_events_in_wait_list,
-  const cl_event *event_wait_list,
-  cl_event *event
+ cl_command_queue command_queue,
+ cl_kernel ocl_kernel,
+ cl_uint work_dim,
+ const size_t *global_work_offset, 
+ const size_t *global_work_size,
+ const size_t *local_work_size,
+ cl_uint num_events_in_wait_list,
+ const cl_event *event_wait_list,
+ cl_event *event
 )
 {
   uint64_t correlation_id = getCorrelationId();
@@ -334,16 +413,16 @@ clEnqueueNDRangeKernel_wrapper
     GOTCHA_GET_TYPED_WRAPPEE(clEnqueueNDRangeKernel_handle, clkernel_t);
   cl_int return_status = 
     clEnqueueNDRangeKernel_wrappee(command_queue, ocl_kernel, work_dim, 
-				   global_work_offset, global_work_size, 
-				   local_work_size, num_events_in_wait_list, 
-				   event_wait_list, eventp);
+           global_work_offset, global_work_size, 
+           local_work_size, num_events_in_wait_list, 
+           event_wait_list, eventp);
 
   ETMSG(OPENCL, "registering callback for type: kernel. " 
-	"Correlation id: %"PRIu64 "", correlation_id);
+  "Correlation id: %"PRIu64 "", correlation_id);
 
   opencl_subscriber_callback(kernel_cb->type, kernel_cb->correlation_id);
   clSetEventCallback_wrapper(*eventp, CL_COMPLETE, 
-			     &opencl_activity_completion_callback, kernel_info);
+           &opencl_activity_completion_callback, kernel_info);
   return return_status;
 }
 
@@ -351,15 +430,15 @@ clEnqueueNDRangeKernel_wrapper
 static cl_int
 clEnqueueReadBuffer_wrapper
 (
-  cl_command_queue command_queue,
-  cl_mem buffer,
-  cl_bool blocking_read,
-  size_t offset,
-  size_t cb,
-  void *ptr,
-  cl_uint num_events_in_wait_list,
-  const cl_event *event_wait_list,
-  cl_event *event
+ cl_command_queue command_queue,
+ cl_mem buffer,
+ cl_bool blocking_read,
+ size_t offset,
+ size_t cb,
+ void *ptr,
+ cl_uint num_events_in_wait_list,
+ const cl_event *event_wait_list,
+ cl_event *event
 )
 {
   uint64_t correlation_id = getCorrelationId();
@@ -380,19 +459,19 @@ clEnqueueReadBuffer_wrapper
     GOTCHA_GET_TYPED_WRAPPEE(clEnqueueReadBuffer_handle, clreadbuffer_t);
   cl_int return_status = 
     clEnqueueReadBuffer_wrappee(command_queue, buffer, blocking_read, offset, 
-				cb, ptr, num_events_in_wait_list, 
-				event_wait_list, eventp);
+        cb, ptr, num_events_in_wait_list, 
+        event_wait_list, eventp);
 
   ETMSG(OPENCL, "registering callback for type: D2H. " 
-	"Correlation id: %"PRIu64 "", correlation_id);
+  "Correlation id: %"PRIu64 "", correlation_id);
   ETMSG(OPENCL, "%d(bytes) of data being transferred from device to host", 
-	(long)cb);
+  (long)cb);
 
   opencl_subscriber_callback(mem_transfer_cb->type, 
-			     mem_transfer_cb->correlation_id);
+           mem_transfer_cb->correlation_id);
 
   clSetEventCallback_wrapper(*eventp, CL_COMPLETE, 
-			     &opencl_activity_completion_callback, mem_info);
+           &opencl_activity_completion_callback, mem_info);
 
   return return_status;
 }
@@ -401,15 +480,15 @@ clEnqueueReadBuffer_wrapper
 static cl_int
 clEnqueueWriteBuffer_wrapper
 (
-  cl_command_queue command_queue,
-  cl_mem buffer,
-  cl_bool blocking_write,
-  size_t offset,
-  size_t cb,
-  const void *ptr,
-  cl_uint num_events_in_wait_list,
-  const cl_event *event_wait_list,
-  cl_event *event
+ cl_command_queue command_queue,
+ cl_mem buffer,
+ cl_bool blocking_write,
+ size_t offset,
+ size_t cb,
+ const void *ptr,
+ cl_uint num_events_in_wait_list,
+ const cl_event *event_wait_list,
+ cl_event *event
 )
 {
   uint64_t correlation_id = getCorrelationId();
@@ -430,21 +509,21 @@ clEnqueueWriteBuffer_wrapper
     GOTCHA_GET_TYPED_WRAPPEE(clEnqueueWriteBuffer_handle, clwritebuffer_t);
   cl_int return_status = 
     clEnqueueWriteBuffer_wrappee(command_queue, buffer, blocking_write, offset,
-				 cb, ptr, num_events_in_wait_list, 
-				 event_wait_list, eventp);
+         cb, ptr, num_events_in_wait_list, 
+         event_wait_list, eventp);
 
   ETMSG(OPENCL, "registering callback for type: H2D. " 
-	"Correlation id: %"PRIu64 "", correlation_id);
+  "Correlation id: %"PRIu64 "", correlation_id);
 
   ETMSG(OPENCL, "%d(bytes) of data being transferred from host to device", 
-	(long)cb);
+  (long)cb);
 
   opencl_subscriber_callback(mem_transfer_cb->type, 
-			     mem_transfer_cb->correlation_id);
+           mem_transfer_cb->correlation_id);
 
   clSetEventCallback_wrapper(*eventp, CL_COMPLETE, 
-			     &opencl_activity_completion_callback, 
-			     (void*) mem_info);
+           &opencl_activity_completion_callback, 
+           (void*) mem_info);
 
   return return_status;
 }
@@ -498,28 +577,19 @@ static gotcha_binding_t opencl_bindings[] = {
 // interface operations
 //******************************************************************************
 
-char*
-getDebugInfoFullFileName
-(
-	void
-)
-{
-	return debugInfoFullFileName;
-}
-
 
 void
 opencl_intercept_setup
 (
-  void
+ void
 )
 {
 #ifndef HPCRUN_STATIC_LINK
   ETMSG(OPENCL, "setting up opencl intercepts");
-	gpu_metrics_KER_BLKINFO_enable();
-  enableProfiling();
+  gpu_metrics_KER_BLKINFO_enable();
+  opencl_enable_profiling();
   gotcha_wrap(opencl_bindings, 4, "opencl_bindings");
-  opencl_intercept_initialize();
+  initializeIntercept();
 #endif
 }
 
@@ -527,7 +597,7 @@ opencl_intercept_setup
 void
 opencl_intercept_teardown
 (
-  void
+ void
 )
 {
 #ifndef HPCRUN_STATIC_LINK

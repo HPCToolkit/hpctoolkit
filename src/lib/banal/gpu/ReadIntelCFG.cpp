@@ -81,7 +81,7 @@
 // macros
 //******************************************************************************
 
-#define DEBUG 1
+#define DEBUG 0
 
 #define MAX_STR_SIZE 1024
 #define INTEL_GPU_DEBUG_SECTION_NAME "Intel(R) OpenCL Device Debug"
@@ -242,23 +242,30 @@ readIntelCFG
  Dyninst::ParseAPI::CodeObject **code_obj
 )
 {
-  auto function_name = getFileNameFromAbsolutePath(elfFile->getFileName());
-  addCustomFunctionObject(function_name, the_symtab); //adds a dummy function object
+  if (cfg_wanted) {
+    auto function_name = getFileNameFromAbsolutePath(elfFile->getFileName());
+    addCustomFunctionObject(function_name, the_symtab); //adds a dummy function object
 
-  char *text_section = NULL;
-  auto text_section_size = elfFile->getTextSection(&text_section);
-  if (text_section_size == 0) {
-    return false;
+    char *text_section = NULL;
+    auto text_section_size = elfFile->getTextSection(&text_section);
+    if (text_section_size == 0) {
+      return false;
+    }
+
+    GPUParse::Function function(0, function_name);
+    parseIntelCFG(text_section, text_section_size, function);
+    std::vector<GPUParse::Function *> functions = {&function};
+
+    CFGFactory *cfg_fact = new GPUCFGFactory(functions);
+    *code_src = new GPUCodeSource(functions, the_symtab); 
+    *code_obj = new CodeObject(*code_src, cfg_fact);
+    (*code_obj)->parse();
+
+    return true;
   }
 
-  GPUParse::Function function(0, function_name);
-  parseIntelCFG(text_section, text_section_size, function);
-  std::vector<GPUParse::Function *> functions = {&function};
+  *code_src = new SymtabCodeSource(the_symtab);
+  *code_obj = new CodeObject(*code_src, NULL, NULL, false, true);
 
-  CFGFactory *cfg_fact = new GPUCFGFactory(functions);
-  *code_src = new GPUCodeSource(functions, the_symtab); 
-  *code_obj = new CodeObject(*code_src, cfg_fact);
-  (*code_obj)->parse();
-
-  return true;
+  return false;
 }
