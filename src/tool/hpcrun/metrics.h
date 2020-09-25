@@ -128,6 +128,8 @@ void hpcrun_set_display(int metric_id, uint8_t show);
 
 void hpcrun_set_percent(int metric_id, uint8_t show_percent);
 
+void hpcrun_set_scope(int metric_id, uint8_t scope);
+
 metric_desc_p_tbl_t* hpcrun_get_metric_tbl(kind_info_t**);
 
 metric_upd_proc_t* hpcrun_get_metric_proc(int metric_id);

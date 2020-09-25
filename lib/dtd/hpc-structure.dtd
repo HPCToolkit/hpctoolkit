@@ -15,7 +15,7 @@
   <!--   (v)ma-range-set: "{[beg-end), [beg-end)...}" -->
   <!--   (t)arget: target function address -->
   <!--   (d)evice: device name -->
-  <!ELEMENT LM (F|P)*>
+  <!ELEMENT LM (F|P|B)*>
   <!ATTLIST LM
 	i CDATA #REQUIRED
 	n CDATA #REQUIRED
@@ -34,6 +34,14 @@
 	l  CDATA #IMPLIED
 	s  CDATA #IMPLIED
 	v  CDATA #IMPLIED>
+  <!-- Basic Block: -->
+  <!ELEMENT B (I)*>
+  <!ATTLIST B
+	o CDATA #REQUIRED>
+  <!-- Instruction: -->
+  <!ELEMENT I EMPTY>
+  <!ATTLIST I
+	o CDATA #REQUIRED>
   <!-- Alien: (f)ilename -->
   <!ELEMENT A (A|L|S|C)*>
   <!ATTLIST A

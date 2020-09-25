@@ -303,10 +303,17 @@ void hpcrun_set_display(int metric_id, uint8_t show) {
   mdesc->flags.fields.show = show;
 }
 
+
 // non finalizing
 void hpcrun_set_percent(int metric_id, uint8_t show_percent) {
   metric_desc_t* mdesc = hpcrun_id2metric_linked(metric_id);
   mdesc->flags.fields.showPercent = show_percent;
+}
+
+
+void hpcrun_set_scope(int metric_id, uint8_t scope) {
+  metric_desc_t* mdesc = hpcrun_id2metric_linked(metric_id);
+  mdesc->flags.fields.scope = scope;
 }
 
 
