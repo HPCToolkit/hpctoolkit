@@ -75,7 +75,7 @@ static auditor_hooks_t hooks;
 static auditor_attach_pfn_t pfn_init = NULL;
 static uintptr_t* mainlib_cookie = NULL;
 
-static void mainlib_connected();
+static void mainlib_connected(const char*);
 static auditor_exports_t exports = {
   .mainlib_connected = mainlib_connected,
   .pipe = pipe, .close = close, .waitpid = waitpid,
@@ -122,7 +122,6 @@ unsigned int la_version(unsigned int version) {
 static void hook_open(uintptr_t* cookie, struct link_map* map) {
   // Allocate some space for our extra bits, and fill it.
   auditor_map_entry_t* entry = malloc(sizeof *entry);
-  entry->map = map;
 
   // Normally the path is map->l_name, but sometimes that string is empty
   // which indicates the main executable. So we get it the other way.
@@ -288,7 +287,7 @@ unsigned int la_objopen(struct link_map* map, Lmid_t lmid, uintptr_t* cookie) {
 }
 
 // Transition from connecting to connected, once the mainlib is ready.
-static void mainlib_connected(const char* vdso_path) {
+void mainlib_connected(const char* vdso_path) {
   if(state != state_connecting) return;
 
   // Reverse the stack of buffered notifications, so they get reported in order.

@@ -50,6 +50,8 @@
 #include <link.h>
 #include <stdbool.h>
 
+#include "include/hpctoolkit-config.h"
+
 // The entirety of this file only makes sense in the dynamic case, so
 // error if someone tries to use it in the static case.
 #ifdef HPCRUN_STATIC_LINK
@@ -59,9 +61,6 @@
 // Structure used to represent an active link map entry. Most informational
 // fields are filled by the auditor.
 typedef struct auditor_map_entry_t {
-  // Link map structure used by ld.so.
-  const struct link_map* map;
-
   // Full path to the mapped library, after passing through realpath and
   // handling the main application name.
   char* path;
@@ -121,5 +120,13 @@ typedef void (*auditor_attach_pfn_t)(const auditor_exports_t*, auditor_hooks_t*)
 extern void hpcrun_auditor_attach(const auditor_exports_t*, auditor_hooks_t*);
 
 extern const auditor_exports_t* auditor_exports;
+
+// Called by the mainlib to initialize the auditor in the event that
+// one of the other interfaces has been called already.
+#ifdef ENABLE_RTLD_AUDIT
+#define hpcrun_init_auditor() ({})
+#else
+extern void hpcrun_init_auditor();
+#endif
 
 #endif  // AUDIT_AUDITAPI_H
