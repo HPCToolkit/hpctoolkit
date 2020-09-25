@@ -47,6 +47,11 @@
 
 #include <assert.h>
 #include <inttypes.h>
+#include <errno.h>     // errno
+#include <fcntl.h>     // open
+#include <sys/stat.h>  // mkdir
+#include <sys/types.h>
+#include <unistd.h>
 
 
 
@@ -66,8 +71,11 @@
 #include <hpcrun/gpu/gpu-op-placeholders.h>
 #include <hpcrun/messages/messages.h>
 #include <hpcrun/sample-sources/libdl.h>
+#include <hpcrun/files.h>
 #include <lib/prof-lean/hpcrun-opencl.h>
 #include <lib/prof-lean/stdatomic.h>
+#include <lib/prof-lean/spinlock.h>
+#include <lib/prof-lean/crypto-hash.h>
 #include <lib/prof-lean/usec_time.h>
 
 #include "opencl-api.h"
@@ -168,7 +176,13 @@
 #define OPENCL_FN(fn, args)			\
   static cl_int (*OPENCL_FN_NAME(fn)) args
 
+#define OPENCL_PROGRAM_FN(fn, args)			\
+  static cl_program (*OPENCL_FN_NAME(fn)) args
+
 #define HPCRUN_OPENCL_CALL(fn, args) (OPENCL_FN_NAME(fn) args)
+
+#define LINE_TABLE_FLAG " -gline-tables-only "
+
 
 /*
 #define HPCRUN_OPENCL_CALL(fn, args)								\
@@ -204,7 +218,7 @@ OPENCL_FN
 );
 
 
-OPENCL_FN
+OPENCL_PROGRAM_FN
 (
   clCreateProgramWithSource, 
   (
@@ -229,7 +243,7 @@ OPENCL_FN
 );
 
 
-OPENCL_FN
+OPENCL_PROGRAM_FN
 (
   clEnqueueNDRangeKernel, 
   (
@@ -316,9 +330,9 @@ OPENCL_FN
 
 
 static atomic_ullong opencl_pending_operations;
-static char *debugInfoFullFileName;
 static atomic_long correlation_id;
 
+static spinlock_t files_lock = SPINLOCK_UNLOCKED;
 
 #define CL_PROGRAM_DEBUG_INFO_SIZES_INTEL 0x4101
 #define CL_PROGRAM_DEBUG_INFO_INTEL       0x4100
@@ -336,18 +350,6 @@ getCorrelationId
 )
 {
   return atomic_fetch_add(&correlation_id, 1);
-}
-
-
-static void
-setDebugInfoFullFileName
-(
-	char *fileName
-)
-{
-	if (debugInfoFullFileName == NULL) {
-		debugInfoFullFileName = fileName;	
-	}
 }
 
 
@@ -379,6 +381,75 @@ initializeMemoryCallBackInfo
   mem_transfer_cb->fromDeviceToHost = !fromHostToDevice;
 }
 
+
+static bool
+writeBinary
+(
+ const char *file_name,
+ const void *binary,
+ size_t binary_size
+)
+{
+  int fd;
+  errno = 0;
+  fd = open(file_name, O_WRONLY | O_CREAT | O_EXCL, 0644);
+  if (errno == EEXIST) {
+    close(fd);
+    return true;
+  }
+  if (fd >= 0) {
+    // Success
+    if (write(fd, binary, binary_size) != binary_size) {
+      close(fd);
+      return false;
+    } else {
+      close(fd);
+      return true;
+    }
+  } else {
+    // Failure to open is a fatal error.
+    hpcrun_abort("hpctoolkit: unable to open file: '%s'", file_name);
+    return false;
+  }
+}
+
+
+void
+writeHashBinary
+(
+ const void *binary,
+ size_t binary_size,
+ bool is_debug_info
+)
+{
+  // Compute hash for the binary
+  unsigned char hash[HASH_LENGTH];
+  crypto_hash_compute(binary, binary_size, hash, HASH_LENGTH);
+
+  // Create file name
+  char file_name[PATH_MAX];
+  size_t i;
+  size_t used = 0;
+  used += sprintf(&file_name[used], "%s", hpcrun_files_output_directory());
+  used += sprintf(&file_name[used], "%s", "/intel/");
+  mkdir(file_name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+  for (i = 0; i < HASH_LENGTH; ++i) {
+    used += sprintf(&file_name[used], "%02x", hash[i]);
+  }
+  if (is_debug_info) {
+    used += sprintf(&file_name[used], "%s", ".debuginfo");
+  } else {
+    // XXX(Aaron): we do not use this file for now
+    used += sprintf(&file_name[used], "%s", ".gpumain");
+  }
+
+  // Write a file if does not exist
+  spinlock_lock(&files_lock);
+  writeBinary(file_name, binary, binary_size);
+  spinlock_unlock(&files_lock);
+}
+
+#if 0
 static char*
 getKernelNameFromSourceCode
 (
@@ -398,52 +469,10 @@ getKernelNameFromSourceCode
 	}
 	return NULL;
 }
+#endif
 
 
-// we are dumping the debuginfo temporarily since the binary does not have debugsection
-// poorly written code: FIXME
-static char*
-dumpIntelGPUBinary(cl_program program) {
-	int device_count = 1;
-	cl_int status = CL_SUCCESS;
-	size_t *binary_size = (size_t*)hpcrun_malloc(sizeof(size_t) * device_count);
-
-	status = clGetProgramInfo(program, CL_PROGRAM_BINARY_SIZES,	sizeof(size_t), binary_size, NULL);
-	assert(status == CL_SUCCESS);
-	uint8_t **binary = (uint8_t**)hpcrun_malloc(device_count * sizeof(uint8_t*));
-	for (size_t i = 0; i < device_count; ++i) {
-		binary[i] = (uint8_t*)hpcrun_malloc(binary_size[i] * sizeof(uint8_t));
-	}
-
-	status = clGetProgramInfo(program, CL_PROGRAM_BINARIES, device_count * sizeof(uint8_t*), binary, NULL);
-	assert(status == CL_SUCCESS);
-
-	FILE *bin_ptr;
-	bin_ptr = fopen("opencl_main.gpubin", "wb");
-	fwrite(binary[0], binary_size[0], 1, bin_ptr);
-
-  // SECOND
-	size_t *debug_info_size = (size_t*)hpcrun_malloc(sizeof(size_t) * device_count);
-
-	status = clGetProgramInfo(program, CL_PROGRAM_DEBUG_INFO_SIZES_INTEL,	sizeof(size_t), debug_info_size, NULL);
-	assert(status == CL_SUCCESS);
-	uint8_t **debug_info = (uint8_t**)hpcrun_malloc(device_count * sizeof(uint8_t*));
-	for (size_t i = 0; i < device_count; ++i) {
-		debug_info[i] = (uint8_t*)hpcrun_malloc(debug_info_size[i] * sizeof(uint8_t));
-	}
-
-	status = clGetProgramInfo(program, CL_PROGRAM_DEBUG_INFO_INTEL, device_count * sizeof(uint8_t*), debug_info, NULL);
-	assert(status == CL_SUCCESS);
-
-	char *debuginfoFileName = "opencl_main.debuginfo";
-	bin_ptr = fopen(debuginfoFileName, "wb");
-	fwrite(debug_info[0], debug_info_size[0], 1, bin_ptr);
-	fclose(bin_ptr);
-  ETMSG(OPENCL, "Intel GPU files dumped successfully");
-	return realpath(debuginfoFileName, NULL);
-}
-
-
+// we are dumping the debuginfo since the binary does not have debugsection
 static void
 clBuildProgramCallback
 (
@@ -451,8 +480,52 @@ clBuildProgramCallback
 	void* user_data
 )
 {
-	char* debugInfoFullFileName = dumpIntelGPUBinary(program);
-	setDebugInfoFullFileName(debugInfoFullFileName);
+  // TODO(Aaron): where do you get device_count?
+  int device_count = 1;
+  cl_int status = CL_SUCCESS;
+
+  // binary
+  size_t *binary_size = (size_t *)malloc(device_count * sizeof(size_t));
+  status = clGetProgramInfo(program, CL_PROGRAM_BINARY_SIZES, device_count * sizeof(size_t), binary_size, NULL);
+  assert(status == CL_SUCCESS);
+
+  char **binary = (char **)malloc(device_count * sizeof(char *));
+  for (size_t i = 0; i < device_count; ++i) {
+    binary[i] = (char *)malloc(binary_size[i] * sizeof(char));
+  }
+
+  status = clGetProgramInfo(program, CL_PROGRAM_BINARIES, device_count * sizeof(char *), binary, NULL);
+  assert(status == CL_SUCCESS);
+
+  // debug info
+  size_t *debug_info_size = (size_t *)malloc(device_count * sizeof(size_t));
+  status = clGetProgramInfo(program, CL_PROGRAM_DEBUG_INFO_SIZES_INTEL, device_count * sizeof(size_t), debug_info_size, NULL);
+  assert(status == CL_SUCCESS);
+
+  char **debug_info = (char **)malloc(device_count * sizeof(char *));
+  for (size_t i = 0; i < device_count; ++i) {
+    debug_info[i] = (char *)malloc(debug_info_size[i] * sizeof(char));
+  }
+
+  status = clGetProgramInfo(program, CL_PROGRAM_DEBUG_INFO_INTEL, device_count * sizeof(char *), debug_info, NULL);
+  assert(status == CL_SUCCESS);
+
+  // TODO(Aaron): Is it ok to only write binary 0?
+  // write binaries and add them to load map
+  for (size_t i = 0; i < device_count; ++i) {
+    writeHashBinary(binary[i], binary_size[i], false);
+    writeHashBinary(debug_info[i], debug_info_size[i], true); 
+  }
+
+  // free memory
+  for (size_t i = 0; i < device_count; ++i) {
+    free(binary[i]);
+    free(debug_info[i]);
+  }
+  free(binary_size);
+  free(debug_info_size);
+
+  ETMSG(OPENCL, "Intel GPU files dumped successfully");
 }
 
 
@@ -532,16 +605,6 @@ opencl_error_report
 //******************************************************************************
 // interface operations
 //******************************************************************************
-
-char*
-getDebugInfoFullFileName
-(
-	void
-)
-{
-	return debugInfoFullFileName;
-}
-
 
 void
 opencl_subscriber_callback
@@ -745,12 +808,18 @@ clBuildProgram
 )
 {
   ETMSG(OPENCL, "inside clBuildProgram_wrapper");
-
-	char optionsWithDebugFlag[] = " -gline-tables-only ";
-	if (options != NULL) {
-		strcat(optionsWithDebugFlag, options);
-	}
-  return HPCRUN_OPENCL_CALL(clBuildProgram, (program, num_devices, device_list, (const char*)optionsWithDebugFlag, clBuildProgramCallback, user_data));
+  // XXX(Aaron): Caution, what's the maximum length of options?
+  int len_options = options == NULL ? 0 : strlen(options);
+  int len_flag = strlen(LINE_TABLE_FLAG);
+  char *options_with_debug_flags = (char *)malloc((len_options + len_flag + 1) * sizeof(char));
+  memset(options_with_debug_flags, 0, (len_options + len_flag + 1));
+  if (len_options != 0) {
+    strncat(options_with_debug_flags, options, len_options);
+  }
+  strcat(options_with_debug_flags, LINE_TABLE_FLAG);
+  cl_int ret = HPCRUN_OPENCL_CALL(clBuildProgram, (program, num_devices, device_list, options_with_debug_flags, clBuildProgramCallback, user_data));
+  free(options_with_debug_flags);
+  return ret;
 }
 
 

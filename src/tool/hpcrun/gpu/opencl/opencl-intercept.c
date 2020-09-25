@@ -47,8 +47,6 @@
 
 #include <inttypes.h>
 
-
-
 //******************************************************************************
 // local includes
 //******************************************************************************
@@ -57,31 +55,27 @@
 #include <hpcrun/gpu/gpu-metrics.h>
 #include <hpcrun/memory/hpcrun-malloc.h>
 #include <hpcrun/messages/messages.h>
+#include <hpcrun/files.h>
 #include <hpcrun/sample-sources/libdl.h>
 #include <lib/prof-lean/hpcrun-gotcha.h>
 #include <lib/prof-lean/hpcrun-opencl.h>
 #include <lib/prof-lean/stdatomic.h>
+#include <lib/prof-lean/spinlock.h>
+#include <lib/prof-lean/crypto-hash.h>
 
-#include "opencl-api.h"
 #include "opencl-intercept.h"
-#include "opencl-memory-manager.h"
 
-
-
-//******************************************************************************
-// interface operations
-//******************************************************************************
 
 void
 opencl_intercept_setup
 (
-  void
+ void
 )
 {
 #ifndef HPCRUN_STATIC_LINK
   ETMSG(OPENCL, "setting up opencl intercepts");
 	gpu_metrics_KER_BLKINFO_enable();
-  enableProfiling();
+  opencl_enable_profiling();
 #endif
 }
 
@@ -89,7 +83,7 @@ opencl_intercept_setup
 void
 opencl_intercept_teardown
 (
-  void
+ void
 )
 {
 }

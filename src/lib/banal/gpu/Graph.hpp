@@ -1,11 +1,11 @@
-#ifndef _GRAPH_H_
-#define _GRAPH_H_
+#ifndef BANAL_GPU_GRAPH_H
+#define BANAL_GPU_GRAPH_H
 
 #include <string>
 #include <unordered_map>
 #include <vector>
 
-namespace CudaParse {
+namespace GPUParse {
 
 struct Vertex {
   size_t id;

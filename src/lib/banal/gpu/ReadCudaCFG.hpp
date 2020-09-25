@@ -1,4 +1,7 @@
-#include <set>
+#ifndef BANAL_GPU_READ_CUDA_CFG_HPP
+#define BANAL_GPU_READ_CUDA_CFG_HPP
+
+#include <string>
 
 #include <lib/binutils/VMAInterval.hpp>
 #include <lib/binutils/ElfHelper.hpp>
@@ -7,7 +10,7 @@
 #include <CodeObject.h>
 
 bool
-readCubinCFG
+readCudaCFG
 (
  const std::string &search_path,
  ElfFile *elfFile,
@@ -16,3 +19,5 @@ readCubinCFG
  Dyninst::ParseAPI::CodeSource **code_src, 
  Dyninst::ParseAPI::CodeObject **code_obj
 );
+
+#endif

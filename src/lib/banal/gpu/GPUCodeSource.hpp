@@ -1,5 +1,5 @@
-#ifndef _CUDA_CODE_SOURCE_H_
-#define _CUDA_CODE_SOURCE_H_
+#ifndef BANAL_GPU_GPU_CODE_SOURCE_H
+#define BANAL_GPU_GPU_CODE_SOURCE_H
 
 #include <dyn_regs.h>
 #include <CodeSource.h>
@@ -9,11 +9,11 @@
 
 namespace Dyninst {
 namespace ParseAPI {
-  class PARSER_EXPORT CudaCodeSource : public /*Symtab */ CodeSource {
+  class PARSER_EXPORT GPUCodeSource : public /*Symtab */ CodeSource {
  public:
-  CudaCodeSource(std::vector<CudaParse::Function *> &functions, 
+  GPUCodeSource(std::vector<GPUParse::Function *> &functions, 
 		Dyninst::SymtabAPI::Symtab *s);
-  ~CudaCodeSource() {}
+  ~GPUCodeSource() {}
 
  public:
   /** InstructionSource implementation **/

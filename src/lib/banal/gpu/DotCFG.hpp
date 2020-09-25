@@ -1,5 +1,5 @@
-#ifndef _DOT_CFG_H_
-#define _DOT_CFG_H_
+#ifndef BANAL_GPU_DOT_CFG_H
+#define BANAL_GPU_DOT_CFG_H
 
 #include <algorithm>
 #include <iostream>
@@ -11,10 +11,13 @@
 // dyninst
 #include <CFG.h>
 
-namespace CudaParse {
+namespace GPUParse {
+
+typedef Dyninst::Architecture Arch;
 
 struct Inst {
   int offset;
+  int size;
   bool dual_first;
   bool dual_second;
   bool is_call;
@@ -25,13 +28,26 @@ struct Inst {
   std::string port;
   std::string target;
   std::vector<std::string> operands;
+  Arch arch;
 
-  // constructor for dummy inst
-  explicit Inst(int offset) : offset(offset), dual_first(false), dual_second(false),
-    is_call(false), is_jump(false), is_sync(false) {}
+  // Constructor for dummy inst
+  Inst(int offset, int size, Arch arch) : offset(offset), size(size), dual_first(false), dual_second(false),
+    is_call(false), is_jump(false), is_sync(false), arch(arch) {}
 
-  Inst(std::string &inst_str) : offset(0), dual_first(false), dual_second(false),
-    is_call(false), is_jump(false), is_sync(false) {
+  Inst(int offset, int size) : Inst(offset, size, Dyninst::Arch_none) {}
+
+  explicit Inst(int offset) : Inst(offset, 0) {}
+};
+
+
+struct CudaInst : public Inst {
+  // Constructor for dummy inst
+  CudaInst(int offset, int size) : Inst(offset, size, Dyninst::Arch_cuda) {}
+
+  explicit CudaInst(int offset) : Inst(offset, 0, Dyninst::Arch_cuda) {}
+
+  // Cuda instruction constructor
+  CudaInst(std::string &inst_str) : Inst(0, 0) {
     if (inst_str.find("{") != std::string::npos) {  // Dual first
       auto pos = inst_str.find("{");
       inst_str.replace(pos, 1, " ");
@@ -49,6 +65,7 @@ struct Inst {
     std::string s;
     if (std::getline(*iss, s, ':')) {
       if (s.find("<") != std::string::npos) {
+        // Port notation in dot graph to link basic blocks
         auto pos = s.find(">");
         this->port = s.substr(1, pos - 1);
         s = s.substr(pos + 1); 
@@ -88,12 +105,13 @@ struct Inst {
                 } else if (opcode.find("SYNC") != std::string::npos) {
                   // avoid Barrier Set Convergence Synchronization Point
                   //opcode.find("SSY") != std::string::npos ||
-                  //opcode.find("BSSY") != std::string::npos) {
+                  //opcode.find("BSSY") != std::string::npos)
                   // TODO(Keren): add more sync instructions
                   this->is_sync = true;
                 }
               }
             } else {
+              // Target
               operands.push_back(s);
               if (is_jump || is_sync) {
                 auto pos = s.find(".L_");
@@ -139,14 +157,16 @@ struct Target {
 
 
 struct Block {
-  int begin_offset;
+  size_t id;
   int address;
+  int begin_offset;
   std::vector<Inst *> insts;
   std::vector<Target *> targets;
-  size_t id;
   std::string name;
 
-  Block(size_t id, const std::string &name) : id(id), name(name) {}
+  Block(size_t id, int address, const std::string &name) : id(id), address(address), name(name) {}
+
+  Block(size_t id, const std::string &name) : Block(id, 0, name) {}
 
   bool operator<(const Block &other) const {
     if (this->insts.size() == 0) {

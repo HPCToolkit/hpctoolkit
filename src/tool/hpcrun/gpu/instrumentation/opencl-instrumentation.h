@@ -54,23 +54,24 @@
 // type declarations
 //******************************************************************************
 
+// TODO(Aaron): Why it starts with a _? 
 typedef struct _SProgramDebugDataHeaderIGC
 {
-    uint32_t         Magic;
-    uint32_t         Version;
-    uint32_t         Size;
-    uint32_t         Device;
-    uint32_t         SteppingId;
-    uint32_t         GPUPointerSizeInBytes;
-    uint32_t         NumberOfKernels;
+ uint32_t Magic;
+ uint32_t Version;
+ uint32_t Size;
+ uint32_t Device;
+ uint32_t SteppingId;
+ uint32_t GPUPointerSizeInBytes;
+ uint32_t NumberOfKernels;
 } SProgramDebugDataHeaderIGC;
 
 
 typedef struct _SKernelDebugDataHeaderIGC
 {
-    uint32_t         KernelNameSize;
-    uint32_t         SizeVisaDbgInBytes;
-    uint32_t         SizeGenIsaDbgInBytes;
+ uint32_t KernelNameSize;
+ uint32_t SizeVisaDbgInBytes;
+ uint32_t SizeGenIsaDbgInBytes;
 } SKernelDebugDataHeaderIGC;
 
 
@@ -79,7 +80,8 @@ typedef struct _SKernelDebugDataHeaderIGC
 // interface operations
 //******************************************************************************
 
-void enableProfiling
+void
+opencl_enable_profiling
 (
-  void
+ void
 );

@@ -76,7 +76,7 @@
 
 #include <lib/binutils/VMAInterval.hpp>
 #include <lib/binutils/ElfHelper.hpp>
-#include <lib/binutils/intel/CreateCFG.hpp>
+#include <lib/binutils/intel/IntelGPUBinutils.hpp>
 #include <lib/support/FileUtil.hpp>
 #include <lib/support/StringTable.hpp>
 #include <lib/support/dictionary.h>

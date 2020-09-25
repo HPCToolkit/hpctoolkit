@@ -8,17 +8,17 @@
 #include "DotCFG.hpp"
 #include "Graph.hpp"
 
-namespace CudaParse {
+namespace GPUParse {
 
-class CFGParser {
+class CudaCFGParser {
  public:
-  CFGParser() : _block_parent(0) {}
+  CudaCFGParser() : _block_parent(0) {}
 
   void parse(const Graph &graph, std::vector<Function *> &functions);
 
   void parse_calls(std::vector<Function *> &functions);
 
-  ~CFGParser() {}
+  ~CudaCFGParser() {}
 
  private:
   void parse_inst_strings(const std::string &label, std::deque<std::string> &inst_strings);

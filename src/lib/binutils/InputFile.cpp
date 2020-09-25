@@ -75,7 +75,7 @@
 
 #include "ElfHelper.hpp"
 #include "Fatbin.hpp"
-#include "intel/IntelGPUbinutils.hpp"
+#include "intel/IntelGPUBinutils.hpp"
 #include "InputFile.hpp"
 
 
@@ -119,23 +119,6 @@ read_all(int fd, void *buf, size_t count)
   return len;
 }
 
-static bool
-isIntelGPUFile
-(
-	ElfFile *elfFile
-)
-{
-  Elf *elf = elfFile->getElf();
-  GElf_Ehdr ehdr_v;
-  GElf_Ehdr *ehdr = gelf_getehdr(elf, &ehdr_v);
-
-	int intelGPUType = 0xff04;
-  if (ehdr && ehdr->e_type == intelGPUType) {
-		return true;
-	}
-	return false;
-}
-
 
 //******************************************************************************
 // interface oeprations
@@ -159,7 +142,7 @@ InputFile::openFile
 
   if (file_fd < 0) {
     DIAG_MsgIf_GENERIC(tag, 1, "Unable to open input file: " 
-		       << filename << " (" << strerror(errno) << ")");
+           << filename << " (" << strerror(errno) << ")");
 
     if (errType != InputFileError_WarningNothrow) throw 1;
 
@@ -180,7 +163,7 @@ InputFile::openFile
 
   if (file_buffer == 0) {
     DIAG_MsgIf_GENERIC(tag, 1, "Unable to allocate file buffer of " 
-		       << f_size << " bytes");
+           << f_size << " bytes");
     if (errType != InputFileError_WarningNothrow) throw 1;
 
     return false;
@@ -190,7 +173,7 @@ InputFile::openFile
 
   if (f_size != bytes) {
     DIAG_MsgIf_GENERIC(tag, 1, "Read only " << bytes << " bytes of "
-		       << f_size << " bytes from file " << filename);
+           << f_size << " bytes from file " << filename);
 
     if (errType != InputFileError_WarningNothrow) throw 1;
 
@@ -199,26 +182,19 @@ InputFile::openFile
 
   close(file_fd);
 
+  filevector = new ElfFileVector;
   ElfFile *elfFile = new ElfFile;
+
   bool result = elfFile->open(file_buffer, f_size, filename);
-
   if (result) {
-    filevector = new ElfFileVector;
-		if (isIntelGPUFile(elfFile)) {
-			if (fileType != NULL) {
-				*fileType = "IntelGPU";
-			}
-			findIntelGPUbins(elfFile, filevector);
-		}
-		else {
-			filevector->push_back(elfFile);
-		}
+    filevector->push_back(elfFile);
     //findCubins(elfFile, filevector);
-  } else {
+  } else if (!findIntelGPUBins(filename, file_buffer, f_size, filevector)) { // Check if the file is a intel debug binary
+    // Release memory
+    delete(elfFile);
     DIAG_MsgIf_GENERIC(tag, 1, "Not an ELF binary " << filename);
-
     if (errType != InputFileError_WarningNothrow) throw 1;
-
+    // Not a standard elf file
     return false;
   }
 

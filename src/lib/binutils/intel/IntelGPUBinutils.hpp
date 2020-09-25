@@ -42,81 +42,47 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+//******************************************************************************
+// type definitions
+//*****************************************************************************
 
-//***************************************************************************
+
+#ifndef BINUTILS_INTEL_INTEL_GPU_BINUTILS
+#define BINUTILS_INTEL_INTEL_GPU_BINUTILS
+
+enum SHT_OPENCL : uint32_t {
+    SHT_OPENCL_SOURCE = 0xff000000,                  // CL source to link into LLVM binary
+    SHT_OPENCL_HEADER = 0xff000001,                  // CL header to link into LLVM binary
+    SHT_OPENCL_LLVM_TEXT = 0xff000002,               // LLVM text
+    SHT_OPENCL_LLVM_BINARY = 0xff000003,             // LLVM byte code
+    SHT_OPENCL_LLVM_ARCHIVE = 0xff000004,            // LLVM archives(s)
+    SHT_OPENCL_DEV_BINARY = 0xff000005,              // Device binary (coherent by default)
+    SHT_OPENCL_OPTIONS = 0xff000006,                 // CL Options
+    SHT_OPENCL_PCH = 0xff000007,                     // PCH (pre-compiled headers)
+    SHT_OPENCL_DEV_DEBUG = 0xff000008,               // Device debug
+    SHT_OPENCL_SPIRV = 0xff000009,                   // SPIRV
+    SHT_OPENCL_NON_COHERENT_DEV_BINARY = 0xff00000a, // Non-coherent Device binary
+    SHT_OPENCL_SPIRV_SC_IDS = 0xff00000b,            // Specialization Constants IDs
+    SHT_OPENCL_SPIRV_SC_VALUES = 0xff00000c          // Specialization Constants values
+};
 
 //******************************************************************************
-// system includes
+// interface functions
 //******************************************************************************
 
-#include <iostream>
-#include <string>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <libelf.h>
-
-#include <Symtab.h>
-
-using namespace Dyninst;
-using namespace SymtabAPI;
-
-
-//******************************************************************************
-// local includes
-//******************************************************************************
-
-#include <lib/support/diagnostics.h>
-#include "IntelGPUbanal.hpp"
-
-
-
-//******************************************************************************
-// macros
-//******************************************************************************
-
-#define DBG 1
-
-#define INTEL_GPU_DEBUG_SECTION_NAME "Intel(R) OpenCL Device Debug"
-
-
-
-//******************************************************************************
-// interface operations
-//******************************************************************************
-
-void 
-add_custom_function_object
+bool
+findIntelGPUBins
 (
-	Symtab* symtab,
-	std::string func_obj_name
-)
-{
-	const std::string& name = func_obj_name;
+ const std::string &file_name, 
+ const char *file_buffer,
+ size_t file_size,
+ ElfFileVector *filevector
+);
 
-	Region *reg = NULL;
-	bool status = symtab->findRegion(reg, ".text");
-	assert(status == true);
-	unsigned long reg_size = reg->getMemSize();
+std::string
+getBlockAndInstructionOffsets
+(
+ std::vector<uint8_t> &intelRawGenBinary
+);
 
-	Symbol *custom_symbol = new Symbol(
-			name, 
-			SymtabAPI::Symbol::ST_FUNCTION, // SymbolType
-			Symbol::SL_LOCAL, //SymbolLinkage
-			SymtabAPI::Symbol::SV_DEFAULT, //SymbolVisibility
-			0, //Offset,
-			NULL, //Module *module 
-			reg, //Region *r
-			reg_size, //unsigned s
-			false, //bool d
-			false, //bool a
-			-1, //int index
-			-1, //int strindex
-			false //bool cs
-	);
-	
-	//adding the custom symbol into the symtab object
-	status = symtab->addSymbol(custom_symbol); //(Symbol *newsym)
-	assert(status == true);
-}
+#endif

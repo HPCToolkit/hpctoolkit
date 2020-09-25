@@ -1,10 +1,10 @@
-#include "CudaCodeSource.hpp"
+#include "GPUCodeSource.hpp"
 
 namespace Dyninst {
 namespace ParseAPI {
 
-CudaCodeSource::CudaCodeSource(
-  std::vector<CudaParse::Function *> &functions, Dyninst::SymtabAPI::Symtab *s) {
+GPUCodeSource::GPUCodeSource(
+  std::vector<GPUParse::Function *> &functions, Dyninst::SymtabAPI::Symtab *s) {
   for (auto *function : functions) {
     Address address = function->address;
     _hints.push_back(Hint(address, 0, 0, function->name));
