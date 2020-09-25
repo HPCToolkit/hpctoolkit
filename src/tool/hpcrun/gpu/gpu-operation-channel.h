@@ -87,11 +87,18 @@ gpu_operation_channel_consume
  gpu_operation_channel_t *channel
 );
 
+
 void
-gpu_operation_channel_wait
+gpu_operation_channel_await
 (
  gpu_operation_channel_t *channel
 );
 
+
+void
+gpu_operation_channel_signal_consumer
+(
+ gpu_operation_channel_t *channel
+);
 
 #endif

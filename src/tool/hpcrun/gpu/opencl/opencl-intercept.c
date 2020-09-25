@@ -167,7 +167,7 @@ clEnqueueNDRangeKernel_wrapper
 				   local_work_size, num_events_in_wait_list, 
 				   event_wait_list, eventp);
 
-  ETMSG(OPENCL, "registering callback for type: kernel. " 
+  ETMSG(OPENCL, "Registering callback for kind: Kernel. "
 	"Correlation id: %"PRIu64 "", kernel_info->details.ker_cb.correlation_id);
 
   clSetEventCallback_wrapper(*eventp, CL_COMPLETE,
@@ -212,7 +212,7 @@ clEnqueueReadBuffer_wrapper
 				cb, ptr, num_events_in_wait_list, 
 				event_wait_list, eventp);
 
-  ETMSG(OPENCL, "registering callback for type: D2H. " 
+  ETMSG(OPENCL, "Registering callback for kind MEMCPY, type: D2H. "
 	"Correlation id: %"PRIu64 "", mem_info->details.mem_cb.correlation_id);
   ETMSG(OPENCL, "%d(bytes) of data being transferred from device to host", 
 	(long)cb);
@@ -263,7 +263,7 @@ clEnqueueWriteBuffer_wrapper
 				 cb, ptr, num_events_in_wait_list, 
 				 event_wait_list, eventp);
 
-  ETMSG(OPENCL, "registering callback for type: H2D. " 
+  ETMSG(OPENCL, "Registering callback for kind MEMCPY, type: H2D. "
 	"Correlation id: %"PRIu64 "", mem_info->details.mem_cb.correlation_id);
 
   ETMSG(OPENCL, "%d(bytes) of data being transferred from host to device", 

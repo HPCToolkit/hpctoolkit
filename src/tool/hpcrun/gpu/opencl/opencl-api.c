@@ -145,9 +145,16 @@
   macro(CL_INVALID_LINKER_OPTIONS)					\
   macro(CL_INVALID_DEVICE_PARTITION_COUNT)
 
-#define FORALL_OPENCL_CALLS(macro)					\
-  macro(GPU_MEMCPY_H2D)							\
+#define FORALL_OPENCL_KINDS(macro)					\
+  macro(GPU_ACTIVITY_UNKNOWN)							\
+  macro(GPU_ACTIVITY_KERNEL)           \
+  macro(GPU_ACTIVITY_MEMCPY)
+
+#define FORALL_OPENCL_MEM_TYPES(macro)					\
+  macro(GPU_MEMCPY_UNK)							\
+  macro(GPU_MEMCPY_H2D)           \
   macro(GPU_MEMCPY_D2H)
+
 
 #define CODE_TO_STRING(e) case e: return #e;
 
@@ -276,18 +283,31 @@ opencl_wait_for_pending_operations
 
 
 static const char*
-opencl_call_to_string
+opencl_kind_to_string
 (
-  gpu_memcpy_type_t type
+ gpu_activity_kind_t kind
 )
 {
-  switch (type)
+  switch (kind)
   {
-    FORALL_OPENCL_CALLS(CODE_TO_STRING)
-    default: return "CL_unknown_call";
+    FORALL_OPENCL_KINDS(CODE_TO_STRING)
+    default: return "CL_unknown_kind";
   }
 }
 
+
+static const char*
+opencl_type_to_string
+(
+gpu_memcpy_type_t kind
+)
+{
+  switch (kind)
+  {
+    FORALL_OPENCL_MEM_TYPES(CODE_TO_STRING)
+    default: return "CL_unknown_type";
+  }
+}
 
 static const char*
 opencl_error_report
@@ -302,10 +322,59 @@ opencl_error_report
 }
 
 
+static bool
+opencl_in_correlation_map(cl_basic_callback_t cb_basic){
+  gpu_correlation_id_map_entry_t *cid_map_entry = gpu_correlation_id_map_lookup(cb_basic.correlation_id);
+  if (cid_map_entry == NULL) {
+    ETMSG(OPENCL, "Activity not in correlation map \n");
+    opencl_cb_basic_print(cb_basic, "NOT in Correlation map");
+    return false;
+  }
+  return true;
+}
 
 //******************************************************************************
 // interface operations
 //******************************************************************************
+
+cl_basic_callback_t
+opencl_cb_basic_get
+(
+opencl_object_t *cb_data
+)
+{
+  cl_basic_callback_t cb_basic;
+
+  if (cb_data->kind == GPU_ACTIVITY_KERNEL) {
+    cb_basic.correlation_id = cb_data->details.ker_cb.correlation_id;
+    cb_basic.kind = cb_data->kind;
+    cb_basic.type = 0; // not valid
+
+  } else if (cb_data->kind == GPU_ACTIVITY_MEMCPY) {
+    cb_basic.correlation_id = cb_data->details.mem_cb.correlation_id;
+    cb_basic.kind = cb_data->kind;
+    cb_basic.type = cb_data->details.mem_cb.type;
+  }
+
+  return cb_basic;
+}
+
+void
+opencl_cb_basic_print
+(
+ cl_basic_callback_t cb_basic,
+ char *title
+)
+{
+
+  ETMSG(OPENCL, " %s | Activity kind: %s | type: %s | correlation id: %"PRIu64 "",
+        title,
+        opencl_kind_to_string(cb_basic.kind),
+        opencl_type_to_string(cb_basic.type),
+        cb_basic.correlation_id);
+
+}
+
 
 void
 opencl_initialize_correlation_id
@@ -381,28 +450,13 @@ opencl_activity_completion_callback
   void *user_data
 )
 {
-  cl_int complete_flag = CL_COMPLETE;
   opencl_object_t *cb_data = (opencl_object_t*)user_data;
-  cl_generic_callback_t *act_data;
+  cl_basic_callback_t cb_basic = opencl_cb_basic_get(cb_data);
 
-  if (cb_data->kind == GPU_ACTIVITY_KERNEL) {
-    act_data = (cl_generic_callback_t*) &(cb_data->details.ker_cb);
-  } else if (cb_data->kind == GPU_ACTIVITY_MEMCPY) {
-    act_data = (cl_generic_callback_t*) &(cb_data->details.mem_cb);
-  }
-  uint64_t correlation_id = act_data->correlation_id;
-  gpu_memcpy_type_t type = act_data->type;
+  if (event_command_exec_status == CL_COMPLETE) {
+    opencl_in_correlation_map(cb_basic);
 
-  if (event_command_exec_status == complete_flag) {
-    gpu_correlation_id_map_entry_t *cid_map_entry = 
-      gpu_correlation_id_map_lookup(correlation_id);
-    if (cid_map_entry == NULL) {
-      ETMSG(OPENCL, "completion callback was called before registration " 
-	    "callback. type: %d, correlation: %"PRIu64 "", type, 
-	    correlation_id);
-    }
-    ETMSG(OPENCL, "completion type: %s, Correlation id: %"PRIu64 "", 
-	  opencl_call_to_string(type), correlation_id);
+    opencl_cb_basic_print(cb_basic, "Completion_Callback");
 
     opencl_activity_process(event, cb_data);
   }

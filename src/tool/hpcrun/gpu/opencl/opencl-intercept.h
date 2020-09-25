@@ -113,15 +113,15 @@ typedef cl_int (*clwritebuffer_t)(
 );
 
 
-typedef struct cl_generic_callback_t {
+typedef struct cl_basic_callback_t {
   uint64_t correlation_id;
+  gpu_activity_kind_t kind;
   gpu_memcpy_type_t type;
-} cl_generic_callback_t;
+} cl_basic_callback_t;
 
 
 typedef struct cl_kernel_callback_t {
   uint64_t correlation_id;
-  gpu_memcpy_type_t type;
 } cl_kernel_callback_t;
 
 

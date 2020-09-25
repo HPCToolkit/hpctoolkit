@@ -79,6 +79,14 @@ static pthread_once_t is_initialized = PTHREAD_ONCE_INIT;
 // private operations
 //******************************************************************************
 
+static void
+gpu_init_operation_channel(){
+  // Create operation channel
+  my_operation_set_id = atomic_fetch_add(&operation_set_id, 1);
+  gpu_operation_channel = gpu_operation_channel_get();
+  gpu_operation_channel_set_insert(gpu_operation_channel, my_operation_set_id);
+}
+
 
 static void *
 gpu_activity_record
@@ -103,19 +111,6 @@ void
 }
 
 
-void
-gpu_operation_release
-(
-gpu_operation_channel_t *channel
-)
-{
-  atomic_fetch_add(&operation_stream_counter, -1);
-}
-
-//******************************************************************************
-// interface operations
-//******************************************************************************
-
 static void
 gpu_activity_multiplexer_init
 (
@@ -130,6 +125,21 @@ void
   // You are the first to create monitor thread
   pthread_create(&thread, NULL, (pthread_start_routine_t) gpu_activity_record,
                  NULL);
+}
+
+
+
+//******************************************************************************
+// interface operations
+//******************************************************************************
+
+void
+gpu_operation_release
+(
+gpu_operation_channel_t *channel
+)
+{
+  atomic_fetch_add(&operation_stream_counter, -1);
 }
 
 
@@ -148,6 +158,8 @@ void
 //  while (atomic_load(&operation_stream_counter));
 }
 
+
+
 void
 gpu_activity_multiplexer_push
 (
@@ -155,17 +167,15 @@ gpu_activity_channel_t *initiator_channel,
 gpu_activity_t *gpu_activity
 )
 {
+
   pthread_once(&is_initialized, gpu_activity_multiplexer_init);
 
   if (my_operation_set_id == -1){
-    // Create operation channel
-    my_operation_set_id = atomic_fetch_add(&operation_set_id, 1);
-    gpu_operation_channel = gpu_operation_channel_get();
-    gpu_operation_channel_set_insert(gpu_operation_channel, my_operation_set_id);
+    gpu_init_operation_channel();
   }
 
   gpu_operation_item_t item = (gpu_operation_item_t){.channel=initiator_channel, .activity=gpu_activity};
-  gpu_operation_channel_produce(gpu_operation_channel, &item);
+  gpu_operation_channel_produce(gpu_operation_channel_get(), &item);
 
 //  atomic_fetch_add(&operation_stream_counter, +1);
 

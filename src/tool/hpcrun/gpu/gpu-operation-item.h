@@ -80,7 +80,7 @@ typedef struct gpu_operation_channel_t gpu_operation_channel_t;
 typedef struct gpu_operation_item_t{
   gpu_activity_channel_t *channel;
   gpu_activity_t *activity;
-}gpu_operation_item_t;
+} gpu_operation_item_t;
 
 
 typedef void (*gpu_operation_channel_fn_t)

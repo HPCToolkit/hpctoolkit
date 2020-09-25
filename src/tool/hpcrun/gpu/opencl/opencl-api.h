@@ -67,11 +67,27 @@
 // interface operations
 //******************************************************************************
 
+cl_basic_callback_t
+opencl_cb_basic_get
+(
+  opencl_object_t *cb_data
+);
+
+
+void
+opencl_cb_basic_print
+(
+  cl_basic_callback_t cb_basic,
+  char *title
+);
+
+
 void
 opencl_initialize_correlation_id
 (
   void
 );
+
 
 void
 opencl_subscriber_callback

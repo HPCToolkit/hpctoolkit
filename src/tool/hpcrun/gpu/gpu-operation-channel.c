@@ -63,6 +63,9 @@
 // macros
 //******************************************************************************
 
+#define CHANNEL_FILL_COUNT 100
+
+
 #undef typed_bichannel
 #undef typed_stack_elem
 
@@ -97,6 +100,7 @@ typedef struct gpu_operation_channel_t {
   bistack_t bistacks[2];
   pthread_mutex_t mutex;
   pthread_cond_t cond;
+  uint64_t count;
 } gpu_operation_channel_t;
 
 
@@ -116,17 +120,36 @@ static __thread gpu_operation_channel_t *gpu_operation_channel = NULL;
 typed_bichannel_impl(gpu_operation_item_t)
 
 
+static void
+gpu_operation_channel_signal_consumer_when_full
+(
+ gpu_operation_channel_t *channel
+)
+{
+  if (channel->count++ > CHANNEL_FILL_COUNT) {
+    channel->count = 0;
+    gpu_operation_channel_signal_consumer(channel);
+  }
+}
+
+
 static gpu_operation_channel_t *
 gpu_operation_channel_alloc
 (
 void
 )
 {
-  gpu_operation_channel_t *c = hpcrun_malloc_safe(sizeof(gpu_operation_channel_t));
+  gpu_operation_channel_t *channel = hpcrun_malloc_safe(sizeof(gpu_operation_channel_t));
 
-  channel_init(c);
+  memset(channel, 0, sizeof(gpu_operation_channel_t));
 
-  return c;
+  channel_init(channel);
+
+
+  pthread_mutex_init(&channel->mutex, NULL);
+  pthread_cond_init(&channel->cond, NULL);
+
+  return channel;
 }
 
 
@@ -157,12 +180,17 @@ gpu_operation_channel_produce
  gpu_operation_item_t *it
 )
 {
-  gpu_operation_item_t *channel_op = gpu_operation_item_alloc(channel);
-  *channel_op = *it;
+  gpu_operation_item_t *channel_it = gpu_operation_item_alloc(channel);
+//  channel_it->channel = it->channel;
+//  channel_it->activity = it->activity;
+  *channel_it = *it;
 
-  printf("\nPRODUCE: channel = %p || return_channel = %p -> activity = %p\n\n", channel, it->channel, it->activity);
+  printf("\nPRODUCE: channel = %p || return_channel = %p -> activity = %p\n\n", channel, channel_it->channel, channel_it->activity);
 
-  channel_push(channel, bichannel_direction_forward, channel_op);
+  channel_push(channel, bichannel_direction_forward, channel_it);
+
+  gpu_operation_channel_signal_consumer_when_full(channel);
+
 }
 
 
@@ -182,11 +210,11 @@ gpu_operation_channel_consume
   // consume all elements enqueued before this function was called
   for (;;) {
     gpu_operation_item_t *it = channel_pop(channel, bichannel_direction_forward);
-    printf("\n---------CONSUME: op_channel = %p || channel = %p , activity = %p\n", channel, it->channel, it->activity);
 
-    if (!it || !it->activity || !it->channel) {
+    if (!it) {
       break;
     }
+    printf("\n---------CONSUME: op_channel = %p || channel = %p , activity = %p\n", channel, it->channel, it->activity);
     gpu_operation_item_consume(gpu_operation_item_process, it);
     gpu_operation_item_free(channel, it);
   }
@@ -194,7 +222,7 @@ gpu_operation_channel_consume
 
 
 void
-gpu_operation_channel_wait
+gpu_operation_channel_await
 (
 gpu_operation_channel_t *channel
 )
@@ -206,4 +234,14 @@ gpu_operation_channel_t *channel
   // wait for a signal or for a few seconds. periodically waking
   // up avoids missing a signal.
   pthread_cond_timedwait(&channel->cond, &channel->mutex, &time);
+}
+
+
+void
+gpu_operation_channel_signal_consumer
+(
+gpu_operation_channel_t *channel
+)
+{
+  pthread_cond_signal(&channel->cond);
 }
