@@ -63,6 +63,8 @@
 
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/cct/cct.h>
+#include <hpcrun/memory/hpcrun-malloc.h>
+#include <hpcrun/files.h>
 #include <hpcrun/gpu/gpu-activity-process.h>
 #include <hpcrun/gpu/gpu-activity-channel.h>
 #include <hpcrun/gpu/gpu-application-thread-api.h>
@@ -72,11 +74,13 @@
 #include <hpcrun/gpu/gpu-op-placeholders.h>
 #include <hpcrun/gpu/gpu-metrics.h>
 #include <hpcrun/gpu/gpu-monitoring-thread-api.h>
-#include <hpcrun/memory/hpcrun-malloc.h>
-#include <hpcrun/utilities/hpcrun-nanotime.h>
-#include <hpcrun/gpu/opencl/opencl-intercept.h>
-#include <hpcrun/files.h>
 #include <hpcrun/gpu/opencl/opencl-api.h>
+#include <hpcrun/gpu/opencl/opencl-intercept.h>
+#include <hpcrun/utilities/hpcrun-nanotime.h>
+
+#include <lib/prof-lean/crypto-hash.h>
+#include <lib/prof-lean/spinlock.h>
+
 #include "opencl-instrumentation.h"
 
 
@@ -90,6 +94,7 @@
 // TODO(Aaron): Why there are so many correlation ids
 static atomic_long correlation_id;
 
+static spinlock_t files_lock = SPINLOCK_UNLOCKED;
 
 //******************************************************************************
 // private operations
@@ -155,97 +160,108 @@ createKernelNode
 }
 
 
-static int32_t
-findOrAddKernelModule
+static bool
+writeBinary
 (
- const char *input_kernel_name
+ const char *file_name,
+ const void *binary,
+ size_t binary_size
 )
 {
-  char path_name[PATH_MAX];
+  int fd;
+  errno = 0;
+  fd = open(file_name, O_WRONLY | O_CREAT | O_EXCL, 0644);
+  if (errno == EEXIST) {
+    close(fd);
+    return true;
+  }
+  if (fd >= 0) {
+    // Success
+    if (write(fd, binary, binary_size) != binary_size) {
+      close(fd);
+      return false;
+    } else {
+      close(fd);
+      return true;
+    }
+  } else {
+    // Failure to open is a fatal error.
+    hpcrun_abort("hpctoolkit: unable to open file: '%s'", file_name);
+    return false;
+  }
+}
+
+
+void
+computeBinaryHash
+(
+ const char *binary,
+ size_t binary_size,
+ char *file_name
+)
+{
+  // Compute hash for the binary
+  unsigned char hash[HASH_LENGTH];
+  crypto_hash_compute(binary, binary_size, hash, HASH_LENGTH);
+
+  size_t i;
   size_t used = 0;
-  used += sprintf(&path_name[used], "%s", hpcrun_files_output_directory());
-  used += sprintf(&path_name[used], "%s", "/intel/");
-
-  DIR *FD;
-  if (NULL == (FD = opendir(path_name))) {
-    return -1;
+  used += sprintf(&file_name[used], "%s", hpcrun_files_output_directory());
+  used += sprintf(&file_name[used], "%s", "/intel/");
+  mkdir(file_name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+  for (i = 0; i < HASH_LENGTH; ++i) {
+    used += sprintf(&file_name[used], "%02x", hash[i]);
   }
+  used += sprintf(&file_name[used], "%s", ".gpubin");
+}
 
-  int module_id = -1;
-  struct dirent *in_file;
-  while ((in_file = readdir(FD))) {
-    if (!strstr(in_file->d_name, ".debuginfo")) {
-      continue;
-    }
 
-    char buffer[PATH_MAX];
-    used = 0;
-    used = sprintf(&buffer[used], "%s", path_name);
-    used = sprintf(&buffer[used], "%s", in_file->d_name);
+static uint32_t
+findOrAddKernelModule
+(
+ GTPinKernel kernel
+)
+{
+  char kernel_name[MAX_STR_SIZE];
+  GTPINTOOL_STATUS status;
 
-    FILE *fptr = fopen(buffer, "rb");
-    fseek(fptr, 0L, SEEK_END);
-    size_t debug_info_size = ftell(fptr);
-    rewind(fptr);
-    char *debug_info = (char *)malloc(debug_info_size);
-    fread(debug_info, debug_info_size, 1, fptr);
+  status = GTPin_KernelGetName(kernel, MAX_STR_SIZE, kernel_name, NULL);
+  assert(status == GTPINTOOL_STATUS_SUCCESS);
 
-    const char *ptr = debug_info;
-    const SProgramDebugDataHeaderIGC *header = (const SProgramDebugDataHeaderIGC *)(ptr);
-    ptr += sizeof(SProgramDebugDataHeaderIGC);
+  uint32_t kernel_elf_size = 0;
+  status = GTPin_GetElf(kernel, 0, NULL, &kernel_elf_size);
+  assert(status == GTPINTOOL_STATUS_SUCCESS);
 
-    ETMSG(OPENCL, "Number of kernels: %d", header->NumberOfKernels);
-    for (uint32_t i = 0; i < header->NumberOfKernels; ++i) {
-      const SKernelDebugDataHeaderIGC* kernel_header = (const SKernelDebugDataHeaderIGC*)(ptr);
-      ptr += sizeof(SKernelDebugDataHeaderIGC);
+  char *kernel_elf = (char *)malloc(sizeof(char) * kernel_elf_size);
+  status = GTPin_GetElf(kernel, kernel_elf_size, kernel_elf, NULL);
+  assert(status == GTPINTOOL_STATUS_SUCCESS);
 
-      const char *kernel_name = (const char *)(ptr);
-      if (kernel_header->SizeVisaDbgInBytes > 0 && strcmp(kernel_name, input_kernel_name) == 0) {
-        // Create file name
-        char file_name[PATH_MAX];
-        size_t i;
-        size_t used = 0;
-        used += sprintf(&file_name[used], "%s", hpcrun_files_output_directory());
-        used += sprintf(&file_name[used], "%s", "/intel/");
-        used += sprintf(&file_name[used], "%s", kernel_name);
-        used += sprintf(&file_name[used], "%s", ".gpubin");
+  // Create file name
+  char file_name[PATH_MAX];
+  memset(file_name, 0, PATH_MAX);
+  computeBinaryHash(kernel_elf, kernel_elf_size, file_name);
 
-        #if 0
-        // Write a file if does not exist
-        bool file_flag;
-        spinlock_lock(&files_lock);
-        file_flag = writeBinary(file_name, binary, binary_size);
-        spinlock_unlock(&files_lock);
-        #endif
+  // Write a file if does not exist
+  spinlock_lock(&files_lock);
+  writeBinary(file_name, kernel_elf, kernel_elf_size);
+  spinlock_unlock(&files_lock);
 
-        hpcrun_loadmap_lock();
-        load_module_t *module = hpcrun_loadmap_findByName(file_name);
-        if (module == NULL) {
-          module_id = hpcrun_loadModule_add(file_name);
-        } else {
-          // Find module
-          module_id = module->id;
-        }
-        hpcrun_loadmap_unlock();
+  free(kernel_elf);
 
-        break;
-      }
+  strncat(file_name, ".", 1);
+  strncat(file_name, kernel_name, strlen(kernel_name));
 
-      // TODO(Aaron): Should be zero for newest drivers (what does it mean?)
-      assert(kernel_header->SizeGenIsaDbgInBytes == 0);
+  uint32_t module_id = 0;
 
-      ptr += kernel_header->SizeVisaDbgInBytes;
-      ptr += kernel_header->SizeGenIsaDbgInBytes;
-    }
-
-    free(debug_info);
-    fclose(fptr);
-
-    if (module_id != -1) {
-      // Find module
-      break;
-    }
+  hpcrun_loadmap_lock();
+  load_module_t *module = hpcrun_loadmap_findByName(file_name);
+  if (module == NULL) {
+    module_id = hpcrun_loadModule_add(file_name);
+  } else {
+    // Find module
+    module_id = module->id;
   }
+  hpcrun_loadmap_unlock();
 
   return module_id;
 }
@@ -316,6 +332,11 @@ onKernelBuild
   data.kernel_cct_correlation_id = correlation_id;
   createKernelNode(correlation_id);
 
+  data.call_count = 0;
+  data.loadmap_module_id = findOrAddKernelModule(kernel);
+
+  kernel_data_map_insert1((uint64_t)kernel, data);
+
   mem_pair_node *h;
   mem_pair_node *current;
   bool isHeadNull = true;
@@ -354,25 +375,11 @@ onKernelBuild
   }
 
   gpu_activity_channel_consume(gpu_metrics_attribute);
-
-  char kernel_name[MAX_STR_SIZE];
-  status = GTPin_KernelGetName(kernel, MAX_STR_SIZE, kernel_name, NULL);
-  assert(status == GTPINTOOL_STATUS_SUCCESS);
   // 
   // m->next = NULL;
   // add these details to cct_node. If thats not needed, we can create the kernel_cct in onKernelComplete
   // XXX(Aaron): what is this for?
   //data.name = kernel_name;
-  data.call_count = 0;
-
-  int32_t module_id = findOrAddKernelModule(kernel_name);
-  if (module_id != -1) {
-    data.loadmap_module_id = module_id;
-  } else {
-    ETMSG(OPENCL, "onKernelComplete cannot find kernel %d\n", kernel_name);
-  }
-
-  kernel_data_map_insert1((uint64_t)kernel, data);
   ETMSG(OPENCL, "onKernelBuild complete. Inserted key: %"PRIu64 "",(uint64_t)kernel);
 }
 

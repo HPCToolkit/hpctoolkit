@@ -74,8 +74,6 @@
 #include <hpcrun/files.h>
 #include <lib/prof-lean/hpcrun-opencl.h>
 #include <lib/prof-lean/stdatomic.h>
-#include <lib/prof-lean/spinlock.h>
-#include <lib/prof-lean/crypto-hash.h>
 #include <lib/prof-lean/usec_time.h>
 
 #include "opencl-api.h"
@@ -332,7 +330,6 @@ OPENCL_FN
 static atomic_ullong opencl_pending_operations;
 static atomic_long correlation_id;
 
-static spinlock_t files_lock = SPINLOCK_UNLOCKED;
 
 #define CL_PROGRAM_DEBUG_INFO_SIZES_INTEL 0x4101
 #define CL_PROGRAM_DEBUG_INFO_INTEL       0x4100
@@ -382,73 +379,6 @@ initializeMemoryCallBackInfo
 }
 
 
-static bool
-writeBinary
-(
- const char *file_name,
- const void *binary,
- size_t binary_size
-)
-{
-  int fd;
-  errno = 0;
-  fd = open(file_name, O_WRONLY | O_CREAT | O_EXCL, 0644);
-  if (errno == EEXIST) {
-    close(fd);
-    return true;
-  }
-  if (fd >= 0) {
-    // Success
-    if (write(fd, binary, binary_size) != binary_size) {
-      close(fd);
-      return false;
-    } else {
-      close(fd);
-      return true;
-    }
-  } else {
-    // Failure to open is a fatal error.
-    hpcrun_abort("hpctoolkit: unable to open file: '%s'", file_name);
-    return false;
-  }
-}
-
-
-void
-writeHashBinary
-(
- const void *binary,
- size_t binary_size,
- bool is_debug_info
-)
-{
-  // Compute hash for the binary
-  unsigned char hash[HASH_LENGTH];
-  crypto_hash_compute(binary, binary_size, hash, HASH_LENGTH);
-
-  // Create file name
-  char file_name[PATH_MAX];
-  size_t i;
-  size_t used = 0;
-  used += sprintf(&file_name[used], "%s", hpcrun_files_output_directory());
-  used += sprintf(&file_name[used], "%s", "/intel/");
-  mkdir(file_name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-  for (i = 0; i < HASH_LENGTH; ++i) {
-    used += sprintf(&file_name[used], "%02x", hash[i]);
-  }
-  if (is_debug_info) {
-    used += sprintf(&file_name[used], "%s", ".debuginfo");
-  } else {
-    // XXX(Aaron): we do not use this file for now
-    used += sprintf(&file_name[used], "%s", ".gpumain");
-  }
-
-  // Write a file if does not exist
-  spinlock_lock(&files_lock);
-  writeBinary(file_name, binary, binary_size);
-  spinlock_unlock(&files_lock);
-}
-
 #if 0
 static char*
 getKernelNameFromSourceCode
@@ -480,6 +410,7 @@ clBuildProgramCallback
 	void* user_data
 )
 {
+#if 0
   // TODO(Aaron): where do you get device_count?
   int device_count = 1;
   cl_int status = CL_SUCCESS;
@@ -526,6 +457,7 @@ clBuildProgramCallback
   free(debug_info_size);
 
   ETMSG(OPENCL, "Intel GPU files dumped successfully");
+#endif
 }
 
 

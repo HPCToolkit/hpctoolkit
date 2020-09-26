@@ -391,12 +391,6 @@ findIntelGPUBins
     return false;
   }
 
-  auto iter = file_name.rfind("/");
-  if (iter == std::string::npos) {
-    return false;
-  }
-  std::string dir_name = file_name.substr(0, iter + 1);
-  
   for (uint32_t i = 0; i < header->NumberOfKernels; ++i) {
     const SKernelDebugDataHeaderIGC *kernel_header =
       reinterpret_cast<const SKernelDebugDataHeaderIGC*>(ptr);
@@ -409,7 +403,7 @@ findIntelGPUBins
 
     if (kernel_header->SizeVisaDbgInBytes > 0) {
       std::stringstream ss;
-      ss << dir_name << kernel_name << ".gpubin";
+      ss << file_name << "." << kernel_name;
 
       size_t kernel_size = kernel_header->SizeVisaDbgInBytes;
       char *kernel_buffer = (char *)malloc(kernel_size);
