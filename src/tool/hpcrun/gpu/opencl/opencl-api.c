@@ -145,16 +145,6 @@
   macro(CL_INVALID_LINKER_OPTIONS)					\
   macro(CL_INVALID_DEVICE_PARTITION_COUNT)
 
-#define FORALL_OPENCL_KINDS(macro)					\
-  macro(GPU_ACTIVITY_UNKNOWN)							\
-  macro(GPU_ACTIVITY_KERNEL)           \
-  macro(GPU_ACTIVITY_MEMCPY)
-
-#define FORALL_OPENCL_MEM_TYPES(macro)					\
-  macro(GPU_MEMCPY_UNK)							\
-  macro(GPU_MEMCPY_H2D)           \
-  macro(GPU_MEMCPY_D2H)
-
 
 #define CODE_TO_STRING(e) case e: return #e;
 
@@ -265,6 +255,9 @@ opencl_activity_process
   gpu_activity_t gpu_activity;
   opencl_activity_translate(&gpu_activity, event, cb_data);
 
+  if (gpu_activity_is_multiplexer_initialized() == false){
+    gpu_activity_multiplexer_init();
+  }
   gpu_activity_multiplexer_push(cb_data->details.initiator_channel, &gpu_activity);
 //  gpu_activity_process(&gpu_activity);
 }
@@ -281,33 +274,6 @@ opencl_wait_for_pending_operations
   while (atomic_load(&opencl_pending_operations) != 0);
 }
 
-
-static const char*
-opencl_kind_to_string
-(
- gpu_activity_kind_t kind
-)
-{
-  switch (kind)
-  {
-    FORALL_OPENCL_KINDS(CODE_TO_STRING)
-    default: return "CL_unknown_kind";
-  }
-}
-
-
-static const char*
-opencl_type_to_string
-(
-gpu_memcpy_type_t kind
-)
-{
-  switch (kind)
-  {
-    FORALL_OPENCL_MEM_TYPES(CODE_TO_STRING)
-    default: return "CL_unknown_type";
-  }
-}
 
 static const char*
 opencl_error_report
@@ -369,8 +335,8 @@ opencl_cb_basic_print
 
   ETMSG(OPENCL, " %s | Activity kind: %s | type: %s | correlation id: %"PRIu64 "",
         title,
-        opencl_kind_to_string(cb_basic.kind),
-        opencl_type_to_string(cb_basic.type),
+        gpu_kind_to_string(cb_basic.kind),
+        gpu_type_to_string(cb_basic.type),
         cb_basic.correlation_id);
 
 }
@@ -457,7 +423,6 @@ opencl_activity_completion_callback
     opencl_in_correlation_map(cb_basic);
 
     opencl_cb_basic_print(cb_basic, "Completion_Callback");
-
     opencl_activity_process(event, cb_data);
   }
   if (cb_data->isInternalClEvent) {

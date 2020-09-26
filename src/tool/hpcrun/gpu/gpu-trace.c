@@ -421,8 +421,8 @@ gpu_trace_fini
   while (atomic_load(&stream_counter));
 }
 
-void *
-schedule_multi_threads
+static void
+gpu_trace_channel_set_append
 (
  gpu_trace_t *trace
 )
@@ -457,7 +457,6 @@ schedule_multi_threads
 
   PRINT("set_index = %d -> stream = %u\n", num_threads, num_streams);
 
-  return NULL;
 }
 
 
@@ -473,7 +472,7 @@ gpu_trace_create
   // Create a new thread for the stream without libmonitor watching
   monitor_disable_new_threads();
 
-  schedule_multi_threads(trace);
+  gpu_trace_channel_set_append(trace);
 
   monitor_enable_new_threads();
 

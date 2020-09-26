@@ -103,7 +103,7 @@ convert_memcpy
   ga->details.memcpy.correlation_id  = cb_data->details.mem_cb.correlation_id;
   ga->details.memcpy.submit_time     = cb_data->details.submit_time;
   ga->details.memcpy.bytes           = cb_data->details.mem_cb.size;
-  ga->details.memcpy.copyKind        = cb_data->kind;
+  ga->details.memcpy.copyKind        = cb_data->details.mem_cb.type;
 }
 
 

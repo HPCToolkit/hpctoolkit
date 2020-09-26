@@ -52,6 +52,7 @@
 // type declarations
 //******************************************************************************
 typedef struct gpu_activity_channel_t gpu_activity_channel_t;
+typedef struct gpu_activity_t gpu_activity_t;
 
 //******************************************************************************
 // local variables
@@ -62,13 +63,32 @@ typedef struct gpu_activity_channel_t gpu_activity_channel_t;
 // private operations
 //******************************************************************************
 
-void
-gpu_activity_multiplexer_fini(void);
-
 
 //******************************************************************************
 // interface operations
 //******************************************************************************
+
+
+bool
+gpu_activity_is_multiplexer_initialized
+(
+void
+);
+
+
+void
+gpu_activity_multiplexer_init
+(
+void
+);
+
+
+void
+gpu_activity_multiplexer_fini
+(
+void
+);
+
 
 void
 gpu_activity_multiplexer_push
@@ -79,11 +99,17 @@ gpu_activity_t *gpu_activity
 
 
 void
-gpu_activity_multiplexer_release(void);
+gpu_activity_multiplexer_release
+(
+void
+);
 
 
 void
-gpu_operation_release(gpu_operation_channel_t *channel);
+gpu_operation_release
+(
+gpu_operation_channel_t *channel
+);
 
 
 

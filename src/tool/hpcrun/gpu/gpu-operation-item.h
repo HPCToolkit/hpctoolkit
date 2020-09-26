@@ -78,8 +78,9 @@ typedef struct gpu_operation_channel_t gpu_operation_channel_t;
 //******************************************************************************
 
 typedef struct gpu_operation_item_t{
+  s_element_t next;
   gpu_activity_channel_t *channel;
-  gpu_activity_t *activity;
+  gpu_activity_t activity;
 } gpu_operation_item_t;
 
 

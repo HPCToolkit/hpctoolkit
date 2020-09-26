@@ -75,6 +75,8 @@ static __thread uint32_t my_operation_set_id = -1;
 static __thread gpu_operation_channel_t *gpu_operation_channel = NULL;
 static pthread_once_t is_initialized = PTHREAD_ONCE_INIT;
 
+
+
 //******************************************************************************
 // private operations
 //******************************************************************************
@@ -95,16 +97,17 @@ void
 )
 {
 
-
   while (!atomic_load(&stop_activity_flag)){
 
     for (int set_index = 0; set_index < atomic_load(&operation_set_id) ; ++set_index) {
-      gpu_operation_channel_set_consume(set_index);
+      gpu_operation_channel_set_apply(gpu_operation_channel_consume, set_index);
+      gpu_operation_channel_set_apply(gpu_operation_channel_await, set_index);
     }
   }
 
   for (int set_index = 0; set_index < atomic_load(&operation_set_id) ; ++set_index) {
-    gpu_operation_channel_set_consume(set_index);
+    gpu_operation_channel_set_apply(gpu_operation_channel_consume, set_index);
+    gpu_operation_channel_set_apply(gpu_operation_channel_await, set_index);
   }
 
   return NULL;
@@ -112,7 +115,7 @@ void
 
 
 static void
-gpu_activity_multiplexer_init
+gpu_activity_multiplexer_create
 (
 void
 )
@@ -133,13 +136,24 @@ void
 // interface operations
 //******************************************************************************
 
-void
-gpu_operation_release
+bool
+gpu_activity_is_multiplexer_initialized
 (
-gpu_operation_channel_t *channel
+ void
 )
 {
-  atomic_fetch_add(&operation_stream_counter, -1);
+  return (my_operation_set_id != -1);
+}
+
+
+void
+gpu_activity_multiplexer_init
+(
+ void
+)
+{
+  pthread_once(&is_initialized, gpu_activity_multiplexer_create);
+  gpu_init_operation_channel();
 }
 
 
@@ -153,11 +167,13 @@ void
 
   atomic_store(&stop_activity_flag, true);
 
-//  gpu_context_stream_map_signal_all();
+  for (int set_index = 0; set_index < atomic_load(&operation_set_id) ; ++set_index) {
+    gpu_operation_channel_set_apply(gpu_operation_channel_signal_consumer, set_index);
+  }
+
 
 //  while (atomic_load(&operation_stream_counter));
 }
-
 
 
 void
@@ -167,19 +183,23 @@ gpu_activity_channel_t *initiator_channel,
 gpu_activity_t *gpu_activity
 )
 {
-
-  pthread_once(&is_initialized, gpu_activity_multiplexer_init);
-
-  if (my_operation_set_id == -1){
-    gpu_init_operation_channel();
-  }
-
-  gpu_operation_item_t item = (gpu_operation_item_t){.channel=initiator_channel, .activity=gpu_activity};
-  gpu_operation_channel_produce(gpu_operation_channel_get(), &item);
+  gpu_operation_item_t item = (gpu_operation_item_t){.channel=initiator_channel, .activity=*gpu_activity};
+  gpu_operation_channel_produce(gpu_operation_channel, &item);
 
 //  atomic_fetch_add(&operation_stream_counter, +1);
 
 }
+
+
+void
+gpu_operation_release
+(
+gpu_operation_channel_t *channel
+)
+{
+  atomic_fetch_add(&operation_stream_counter, -1);
+}
+
 
 void
 gpu_activity_multiplexer_release

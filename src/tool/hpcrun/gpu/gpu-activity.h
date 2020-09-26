@@ -434,5 +434,17 @@ gpu_context_activity_dump
 );
 
 
+const char*
+gpu_kind_to_string
+(
+gpu_activity_kind_t kind
+);
+
+
+const char*
+gpu_type_to_string
+(
+gpu_memcpy_type_t type
+);
 
 #endif

@@ -116,7 +116,7 @@ gpu_memcpy_process
 gpu_operation_item_t *it
 )
 {
-  gpu_activity_t *activity = it->activity;
+  gpu_activity_t *activity = &it->activity;
   gpu_activity_channel_t *channel = it->channel;
 
   assert(activity->cct_node != NULL);
@@ -143,7 +143,7 @@ gpu_kernel_process
 gpu_operation_item_t *it
 )
 {
-  gpu_activity_t *activity = it->activity;
+  gpu_activity_t *activity = &it->activity;
   gpu_activity_channel_t *channel = it->channel;
 
   gpu_trace_item_t entry_trace;
@@ -183,7 +183,7 @@ gpu_operation_item_t *it
 )
 {
 
-  switch (it->activity->kind) {
+  switch (it->activity.kind) {
 
   case GPU_ACTIVITY_MEMCPY:
     gpu_memcpy_process(it);

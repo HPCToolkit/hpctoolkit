@@ -88,7 +88,8 @@
 #define channel_steal \
   typed_bichannel_steal(gpu_operation_item_t)
 
-#define SECONDS_UNTIL_WAKEUP 2
+
+#define SECONDS_UNTIL_WAKEUP 1
 
 
 
@@ -180,14 +181,16 @@ gpu_operation_channel_produce
  gpu_operation_item_t *it
 )
 {
-  gpu_operation_item_t *channel_it = gpu_operation_item_alloc(channel);
-//  channel_it->channel = it->channel;
-//  channel_it->activity = it->activity;
-  *channel_it = *it;
+  gpu_operation_item_t *new_item = gpu_operation_item_alloc(channel);
+  *new_item = *it;
 
-  printf("\nPRODUCE: channel = %p || return_channel = %p -> activity = %p\n\n", channel, channel_it->channel, channel_it->activity);
+  printf("\nPRODUCE: channel = %p || return_channel = %p -> activity = %p | corr = %u kind = %s, type = %s\n\n",
+         channel, new_item->channel, &new_item->activity,
+         (new_item->activity.kind == GPU_ACTIVITY_MEMCPY)?new_item->activity.details.memcpy.correlation_id:new_item->activity.details.kernel.correlation_id,
+         gpu_kind_to_string(new_item->activity.kind),
+         gpu_type_to_string(new_item->activity.details.memcpy.copyKind));
 
-  channel_push(channel, bichannel_direction_forward, channel_it);
+  channel_push(channel, bichannel_direction_forward, new_item);
 
   gpu_operation_channel_signal_consumer_when_full(channel);
 
@@ -211,10 +214,14 @@ gpu_operation_channel_consume
   for (;;) {
     gpu_operation_item_t *it = channel_pop(channel, bichannel_direction_forward);
 
-    if (!it) {
-      break;
-    }
-    printf("\n---------CONSUME: op_channel = %p || channel = %p , activity = %p\n", channel, it->channel, it->activity);
+    if (!it) break;
+
+    printf("\n---------CONSUME: op_channel = %p || channel = %p , activity = %p | corr = %u, kind = %s, type = %s\n",
+           channel, it->channel, &it->activity,
+           (it->activity.kind == GPU_ACTIVITY_MEMCPY)?it->activity.details.memcpy.correlation_id:it->activity.details.kernel.correlation_id,
+           gpu_kind_to_string(it->activity.kind),
+           gpu_type_to_string(it->activity.details.memcpy.copyKind));
+
     gpu_operation_item_consume(gpu_operation_item_process, it);
     gpu_operation_item_free(channel, it);
   }

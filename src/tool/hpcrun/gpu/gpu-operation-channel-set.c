@@ -177,13 +177,13 @@ gpu_operation_channel_set_insert
 
 
 void
-gpu_operation_channel_set_consume
+gpu_operation_channel_set_apply
 (
+ gpu_operation_channel_fn_t channel_fn,
  int set_index
 )
 {
-  gpu_operation_channel_set_forall(gpu_operation_channel_consume, set_index);
-  gpu_operation_channel_set_forall(gpu_operation_channel_await, set_index);
+  gpu_operation_channel_set_forall(channel_fn, set_index);
 }
 
 

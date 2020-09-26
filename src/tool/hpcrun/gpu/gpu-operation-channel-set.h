@@ -83,8 +83,9 @@ gpu_operation_channel_set_insert
 
 
 void
-gpu_operation_channel_set_consume
+gpu_operation_channel_set_apply
 (
+ gpu_operation_channel_fn_t channel_fn,
  int set_index
 );
 

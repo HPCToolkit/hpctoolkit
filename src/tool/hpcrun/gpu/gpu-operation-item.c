@@ -94,7 +94,7 @@ gpu_operation_item_consume
  gpu_operation_item_t *it
 )
 {
-  gpu_context_activity_dump(it->activity, "CONSUME");
+  gpu_context_activity_dump(&it->activity, "CONSUME");
   ap_fn(it);
 }
 
