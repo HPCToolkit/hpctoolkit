@@ -129,8 +129,7 @@ bool
 InputFile::openFile
 (
  std::string &filename,
- InputFileErrorType_t errType,
- std::string *fileType
+ InputFileErrorType_t errType
 )
 {
   const char *tag = 

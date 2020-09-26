@@ -584,10 +584,9 @@ makeStructure(string filename,
 #endif
 
   InputFile inputFile;
-	std::string inputFileType;
 
   // failure throws an error up the call chain
-  inputFile.openFile(filename, InputFileError_Error, &inputFileType);
+  inputFile.openFile(filename, InputFileError_Error);
   ElfFileVector * elfFileVector = inputFile.fileVector();
   string & sfilename = inputFile.fileName();
   const char * cfilename = inputFile.CfileName();
@@ -600,7 +599,6 @@ makeStructure(string filename,
 	
   for (uint i = 0; i < elfFileVector->size(); i++) {
     bool parsable = true;
-    parsable = false; // aaron
     ElfFile *elfFile = (*elfFileVector)[i];
 
     if (opts.show_time) {
@@ -621,8 +619,8 @@ makeStructure(string filename,
 
     Symtab * symtab = Inline::openSymtab(elfFile);
     if (symtab == NULL) {
-			continue;
-		}
+      continue;
+    }
     the_symtab = symtab;
     bool cuda_file = SYMTAB_ARCH_CUDA(symtab);
 
@@ -634,8 +632,8 @@ makeStructure(string filename,
     {
 #pragma omp for  schedule(dynamic, 1)
       for (uint i = 0; i < modVec.size(); i++) {
-	Module * mod = modVec[i];
-	mod->parseLineInformation();
+        Module * mod = modVec[i];
+        mod->parseLineInformation();
       }
     }  // end parallel
 
@@ -650,13 +648,13 @@ makeStructure(string filename,
     omp_set_num_threads(opts.jobs_parse);
 #endif
 
-		bool intel_file = elfFile->isIntelGPUFile();
+    bool intel_file = elfFile->isIntelGPUFile();
 
     if (cuda_file) { // don't run parseapi on cuda binary
       cuda_arch = elfFile->getArch();
       cubin_size = elfFile->getLength();
-      parsable = readCudaCFG(search_path, elfFile, the_symtab, 
-			      structOpts.compute_gpu_cfg, &code_src, &code_obj);
+      parsable = readCudaCFG(search_path, elfFile, the_symtab,
+        structOpts.compute_gpu_cfg, &code_src, &code_obj);
     } else if (intel_file) { // don't run parseapi on intel binary
       // TODO(Aaron): determine which generation of intel gpu it is
       intel_gpu_arch = 1;
@@ -719,12 +717,6 @@ makeStructure(string filename,
     // with try_lock(), there are interleavings where not all items
     // have been printed.
     printWorkList(wlPrint, num_done, outFile, gapsFile, gaps_filenm);
-	
-		// custom code for intel GPU elfs
-		if (intel_gpu_arch > 0) {
-      // TODO(Aaron): is it necessary to read binary again?
-    	Output::printBlockAndInstructionOffset(outFile, elfFileRealPath);
-		}
 
     Output::printLoadModuleEnd(outFile);
 
