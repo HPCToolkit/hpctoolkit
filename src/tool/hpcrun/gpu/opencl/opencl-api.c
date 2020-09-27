@@ -88,111 +88,98 @@
 
 #define CPU_NANOTIME() (usec_time() * 1000)
 
-#define FORALL_OPENCL_ERRORS(macro)					\
-  macro(CL_SUCCESS)							\
-  macro(CL_DEVICE_NOT_FOUND)						\
-  macro(CL_DEVICE_NOT_AVAILABLE)					\
-  macro(CL_COMPILER_NOT_AVAILABLE)					\
-  macro(CL_MEM_OBJECT_ALLOCATION_FAILURE)				\
-  macro(CL_OUT_OF_RESOURCES)						\
-  macro(CL_OUT_OF_HOST_MEMORY)						\
-  macro(CL_PROFILING_INFO_NOT_AVAILABLE)				\
-  macro(CL_MEM_COPY_OVERLAP)						\
-  macro(CL_IMAGE_FORMAT_MISMATCH)					\
-  macro(CL_IMAGE_FORMAT_NOT_SUPPORTED)					\
-  macro(CL_BUILD_PROGRAM_FAILURE)					\
-  macro(CL_MAP_FAILURE)							\
-  macro(CL_MISALIGNED_SUB_BUFFER_OFFSET)				\
-  macro(CL_EXEC_STATUS_ERROR_FOR_EVENTS_IN_WAIT_LIST)			\
-  macro(CL_COMPILE_PROGRAM_FAILURE)					\
-  macro(CL_LINKER_NOT_AVAILABLE)					\
-  macro(CL_LINK_PROGRAM_FAILURE)					\
-  macro(CL_DEVICE_PARTITION_FAILED)					\
-  macro(CL_KERNEL_ARG_INFO_NOT_AVAILABLE)				\
-  macro(CL_INVALID_VALUE)						\
-  macro(CL_INVALID_DEVICE_TYPE)						\
-  macro(CL_INVALID_PLATFORM)						\
-  macro(CL_INVALID_DEVICE)						\
-  macro(CL_INVALID_CONTEXT)						\
-  macro(CL_INVALID_QUEUE_PROPERTIES)					\
-  macro(CL_INVALID_COMMAND_QUEUE)					\
-  macro(CL_INVALID_HOST_PTR)						\
-  macro(CL_INVALID_MEM_OBJECT)						\
-  macro(CL_INVALID_IMAGE_FORMAT_DESCRIPTOR)				\
-  macro(CL_INVALID_IMAGE_SIZE)						\
-  macro(CL_INVALID_SAMPLER)						\
-  macro(CL_INVALID_BINARY)						\
-  macro(CL_INVALID_BUILD_OPTIONS)					\
-  macro(CL_INVALID_PROGRAM)						\
-  macro(CL_INVALID_PROGRAM_EXECUTABLE)					\
-  macro(CL_INVALID_KERNEL_NAME)						\
-  macro(CL_INVALID_KERNEL_DEFINITION)					\
-  macro(CL_INVALID_KERNEL)						\
-  macro(CL_INVALID_ARG_INDEX)						\
-  macro(CL_INVALID_ARG_VALUE)						\
-  macro(CL_INVALID_ARG_SIZE)						\
-  macro(CL_INVALID_KERNEL_ARGS)						\
-  macro(CL_INVALID_WORK_DIMENSION)					\
-  macro(CL_INVALID_WORK_GROUP_SIZE)					\
-  macro(CL_INVALID_WORK_ITEM_SIZE)					\
-  macro(CL_INVALID_GLOBAL_OFFSET)					\
-  macro(CL_INVALID_EVENT_WAIT_LIST)					\
-  macro(CL_INVALID_EVENT)						\
-  macro(CL_INVALID_OPERATION)						\
-  macro(CL_INVALID_GL_OBJECT)						\
-  macro(CL_INVALID_BUFFER_SIZE)						\
-  macro(CL_INVALID_MIP_LEVEL)						\
-  macro(CL_INVALID_GLOBAL_WORK_SIZE)					\
-  macro(CL_INVALID_PROPERTY)						\
-  macro(CL_INVALID_IMAGE_DESCRIPTOR)					\
-  macro(CL_INVALID_COMPILER_OPTIONS)					\
-  macro(CL_INVALID_LINKER_OPTIONS)					\
+#define FORALL_OPENCL_ERRORS(macro)          \
+  macro(CL_SUCCESS)              \
+  macro(CL_DEVICE_NOT_FOUND)            \
+  macro(CL_DEVICE_NOT_AVAILABLE)          \
+  macro(CL_COMPILER_NOT_AVAILABLE)          \
+  macro(CL_MEM_OBJECT_ALLOCATION_FAILURE)        \
+  macro(CL_OUT_OF_RESOURCES)            \
+  macro(CL_OUT_OF_HOST_MEMORY)            \
+  macro(CL_PROFILING_INFO_NOT_AVAILABLE)        \
+  macro(CL_MEM_COPY_OVERLAP)            \
+  macro(CL_IMAGE_FORMAT_MISMATCH)          \
+  macro(CL_IMAGE_FORMAT_NOT_SUPPORTED)          \
+  macro(CL_BUILD_PROGRAM_FAILURE)          \
+  macro(CL_MAP_FAILURE)              \
+  macro(CL_MISALIGNED_SUB_BUFFER_OFFSET)        \
+  macro(CL_EXEC_STATUS_ERROR_FOR_EVENTS_IN_WAIT_LIST)      \
+  macro(CL_COMPILE_PROGRAM_FAILURE)          \
+  macro(CL_LINKER_NOT_AVAILABLE)          \
+  macro(CL_LINK_PROGRAM_FAILURE)          \
+  macro(CL_DEVICE_PARTITION_FAILED)          \
+  macro(CL_KERNEL_ARG_INFO_NOT_AVAILABLE)        \
+  macro(CL_INVALID_VALUE)            \
+  macro(CL_INVALID_DEVICE_TYPE)            \
+  macro(CL_INVALID_PLATFORM)            \
+  macro(CL_INVALID_DEVICE)            \
+  macro(CL_INVALID_CONTEXT)            \
+  macro(CL_INVALID_QUEUE_PROPERTIES)          \
+  macro(CL_INVALID_COMMAND_QUEUE)          \
+  macro(CL_INVALID_HOST_PTR)            \
+  macro(CL_INVALID_MEM_OBJECT)            \
+  macro(CL_INVALID_IMAGE_FORMAT_DESCRIPTOR)        \
+  macro(CL_INVALID_IMAGE_SIZE)            \
+  macro(CL_INVALID_SAMPLER)            \
+  macro(CL_INVALID_BINARY)            \
+  macro(CL_INVALID_BUILD_OPTIONS)          \
+  macro(CL_INVALID_PROGRAM)            \
+  macro(CL_INVALID_PROGRAM_EXECUTABLE)          \
+  macro(CL_INVALID_KERNEL_NAME)            \
+  macro(CL_INVALID_KERNEL_DEFINITION)          \
+  macro(CL_INVALID_KERNEL)            \
+  macro(CL_INVALID_ARG_INDEX)            \
+  macro(CL_INVALID_ARG_VALUE)            \
+  macro(CL_INVALID_ARG_SIZE)            \
+  macro(CL_INVALID_KERNEL_ARGS)            \
+  macro(CL_INVALID_WORK_DIMENSION)          \
+  macro(CL_INVALID_WORK_GROUP_SIZE)          \
+  macro(CL_INVALID_WORK_ITEM_SIZE)          \
+  macro(CL_INVALID_GLOBAL_OFFSET)          \
+  macro(CL_INVALID_EVENT_WAIT_LIST)          \
+  macro(CL_INVALID_EVENT)            \
+  macro(CL_INVALID_OPERATION)            \
+  macro(CL_INVALID_GL_OBJECT)            \
+  macro(CL_INVALID_BUFFER_SIZE)            \
+  macro(CL_INVALID_MIP_LEVEL)            \
+  macro(CL_INVALID_GLOBAL_WORK_SIZE)          \
+  macro(CL_INVALID_PROPERTY)            \
+  macro(CL_INVALID_IMAGE_DESCRIPTOR)          \
+  macro(CL_INVALID_COMPILER_OPTIONS)          \
+  macro(CL_INVALID_LINKER_OPTIONS)          \
   macro(CL_INVALID_DEVICE_PARTITION_COUNT)
 
-#define FORALL_OPENCL_CALLS(macro)					\
-  macro(memcpy_H2D)							\
-  macro(memcpy_D2H)							\
+#define FORALL_OPENCL_CALLS(macro)          \
+  macro(memcpy_H2D)              \
+  macro(memcpy_D2H)              \
   macro(kernel)
 
 #define CODE_TO_STRING(e) case e: return #e;
 
 #define opencl_path() "libOpenCL.so"
 
-#define FORALL_OPENCL_ROUTINES(macro)					\
-  macro(clBuildProgram)					\
-  macro(clCreateProgramWithSource)					\
-  macro(clCreateCommandQueue)					\
-  macro(clEnqueueNDRangeKernel)					\
-  macro(clEnqueueReadBuffer)					\
-  macro(clEnqueueWriteBuffer)					\
-  macro(clGetEventProfilingInfo)					\
-  macro(clReleaseEvent)							\
+#define FORALL_OPENCL_ROUTINES(macro)          \
+  macro(clBuildProgram)          \
+  macro(clCreateProgramWithSource)          \
+  macro(clCreateCommandQueue)          \
+  macro(clEnqueueNDRangeKernel)          \
+  macro(clEnqueueReadBuffer)          \
+  macro(clEnqueueWriteBuffer)          \
+  macro(clGetEventProfilingInfo)          \
+  macro(clReleaseEvent)              \
   macro(clSetEventCallback)
 
 #define OPENCL_FN_NAME(f) DYN_FN_NAME(f)
 
-#define OPENCL_FN(fn, args)			\
+#define OPENCL_FN(fn, args)      \
   static cl_int (*OPENCL_FN_NAME(fn)) args
 
-#define OPENCL_PROGRAM_FN(fn, args)			\
+#define OPENCL_PROGRAM_FN(fn, args)      \
   static cl_program (*OPENCL_FN_NAME(fn)) args
 
 #define HPCRUN_OPENCL_CALL(fn, args) (OPENCL_FN_NAME(fn) args)
 
 #define LINE_TABLE_FLAG " -gline-tables-only "
-
-
-/*
-#define HPCRUN_OPENCL_CALL(fn, args)								\
-  {																									\
-    cl_int status = OPENCL_FN_NAME(fn) args;				\
-    if (status != CL_SUCCESS) {											\
-      ETMSG(OPENCL, "opencl call failed: %s",				\
-	    opencl_error_report(status));									\
-    }																								\
-  }
-*/
-
 
 //******************************************************************************
 // local data
@@ -206,12 +193,12 @@ OPENCL_FN
 (
   clBuildProgram, 
   (
-	 cl_program program,
-	 cl_uint num_devices,
-	 const cl_device_id* device_list,
-	 const char* options,
-	 void (CL_CALLBACK* pfn_notify)(cl_program program, void* user_data),
-	 void* user_data
+   cl_program program,
+   cl_uint num_devices,
+   const cl_device_id* device_list,
+   const char* options,
+   void (CL_CALLBACK* pfn_notify)(cl_program program, void* user_data),
+   void* user_data
   )
 );
 
@@ -220,11 +207,11 @@ OPENCL_PROGRAM_FN
 (
   clCreateProgramWithSource, 
   (
-	 cl_context context,
-	 cl_uint count,
-	 const char** strings,
-	 const size_t* lengths,
-	 cl_int* errcode_ret
+   cl_context context,
+   cl_uint count,
+   const char** strings,
+   const size_t* lengths,
+   cl_int* errcode_ret
   )
 );
 
@@ -232,12 +219,12 @@ OPENCL_PROGRAM_FN
 OPENCL_FN
 (
   clCreateCommandQueue, 
-	(
-	 cl_context,
-	 cl_device_id,
-	 cl_command_queue_properties,
-	 cl_int*
-	)
+  (
+   cl_context,
+   cl_device_id,
+   cl_command_queue_properties,
+   cl_int*
+  )
 );
 
 
@@ -245,15 +232,15 @@ OPENCL_PROGRAM_FN
 (
   clEnqueueNDRangeKernel, 
   (
-	 cl_command_queue,
-	 cl_kernel,
-	 cl_uint,
-	 const size_t *, 
-	 const size_t *,
-	 const size_t *,
-	 cl_uint,
-	 const cl_event *,
-	 cl_event *
+   cl_command_queue,
+   cl_kernel,
+   cl_uint,
+   const size_t *, 
+   const size_t *,
+   const size_t *,
+   cl_uint,
+   const cl_event *,
+   cl_event *
   )
 );
 
@@ -262,15 +249,15 @@ OPENCL_FN
 (
   clEnqueueReadBuffer, 
   (
-	 cl_command_queue,
-	 cl_mem,
-	 cl_bool,
-	 size_t,
-	 size_t,
-	 void *,
-	 cl_uint,
-	 const cl_event *,
-	 cl_event *
+   cl_command_queue,
+   cl_mem,
+   cl_bool,
+   size_t,
+   size_t,
+   void *,
+   cl_uint,
+   const cl_event *,
+   cl_event *
   )
 );
 
@@ -279,15 +266,15 @@ OPENCL_FN
 (
   clEnqueueWriteBuffer, 
   (
-	 cl_command_queue,
-	 cl_mem,
-	 cl_bool,
-	 size_t,
-	 size_t,
-	 const void *,
-	 cl_uint,
-	 const cl_event *,
-	 cl_event *
+   cl_command_queue,
+   cl_mem,
+   cl_bool,
+   size_t,
+   size_t,
+   const void *,
+   cl_uint,
+   const cl_event *,
+   cl_event *
   )
 );
 
@@ -296,11 +283,11 @@ OPENCL_FN
 (
   clGetEventProfilingInfo,
   (
-    cl_event event,
-    cl_profiling_info param_name,
-    size_t param_value_size,
-    void *param_value,
-    size_t *param_value_size_ret
+   cl_event event,
+   cl_profiling_info param_name,
+   size_t param_value_size,
+   void *param_value,
+   size_t *param_value_size_ret
   )
 );
 
@@ -309,7 +296,7 @@ OPENCL_FN
 (
   clReleaseEvent, 
   (
-    cl_event event
+   cl_event event
   )
 );
 
@@ -318,11 +305,11 @@ OPENCL_FN
 (
   clSetEventCallback,
   (
-    cl_event event,
-    cl_int command_exec_callback_type,
-    void (CL_CALLBACK *pfn_notify)
-    (cl_event event, cl_int event_command_status, void *user_data),
-    void *user_data
+   cl_event event,
+   cl_int command_exec_callback_type,
+   void (CL_CALLBACK *pfn_notify)
+   (cl_event event, cl_int event_command_status, void *user_data),
+   void *user_data
   )
 );
 
@@ -330,11 +317,8 @@ OPENCL_FN
 static atomic_ullong opencl_pending_operations;
 static atomic_long correlation_id;
 
-
 #define CL_PROGRAM_DEBUG_INFO_SIZES_INTEL 0x4101
 #define CL_PROGRAM_DEBUG_INFO_INTEL       0x4100
-
-
 
 //******************************************************************************
 // private operations
@@ -343,7 +327,7 @@ static atomic_long correlation_id;
 static uint64_t
 getCorrelationId
 (
-  void
+ void
 )
 {
   return atomic_fetch_add(&correlation_id, 1);
@@ -353,8 +337,8 @@ getCorrelationId
 static void
 initializeKernelCallBackInfo
 (
-  cl_kernel_callback_t *kernel_cb,
-  uint64_t correlation_id
+ cl_kernel_callback_t *kernel_cb,
+ uint64_t correlation_id
 )
 {
   kernel_cb->correlation_id = correlation_id;
@@ -365,10 +349,10 @@ initializeKernelCallBackInfo
 static void
 initializeMemoryCallBackInfo
 (
-  cl_memory_callback_t *mem_transfer_cb,
-  uint64_t correlation_id,
-  size_t size,
-  bool fromHostToDevice
+ cl_memory_callback_t *mem_transfer_cb,
+ uint64_t correlation_id,
+ size_t size,
+ bool fromHostToDevice
 )
 {
   mem_transfer_cb->correlation_id = correlation_id;
@@ -379,92 +363,21 @@ initializeMemoryCallBackInfo
 }
 
 
-#if 0
-static char*
-getKernelNameFromSourceCode
-(
-	const char *kernelSourceCode
-)
-{
-	char *kernelCode_copy = (char*)hpcrun_malloc(sizeof(kernelSourceCode));
-	strcpy(kernelCode_copy, kernelSourceCode);
-	char *token = strtok(kernelCode_copy, " ");
-	while (token != NULL) {
-		if (strcmp(token, "void") == 0) { // not searching for kernel because "supported\n#endif\nkernel"
-			token = strtok(NULL, " ");
-			printf("kernel name: %s", token);
-			return token;
-		}
-		token = strtok(NULL, " ");
-	}
-	return NULL;
-}
-#endif
-
-
 // we are dumping the debuginfo since the binary does not have debugsection
 static void
 clBuildProgramCallback
 (
-	cl_program program,
-	void* user_data
+ cl_program program,
+ void* user_data
 )
 {
-#if 0
-  // TODO(Aaron): where do you get device_count?
-  int device_count = 1;
-  cl_int status = CL_SUCCESS;
-
-  // binary
-  size_t *binary_size = (size_t *)malloc(device_count * sizeof(size_t));
-  status = clGetProgramInfo(program, CL_PROGRAM_BINARY_SIZES, device_count * sizeof(size_t), binary_size, NULL);
-  assert(status == CL_SUCCESS);
-
-  char **binary = (char **)malloc(device_count * sizeof(char *));
-  for (size_t i = 0; i < device_count; ++i) {
-    binary[i] = (char *)malloc(binary_size[i] * sizeof(char));
-  }
-
-  status = clGetProgramInfo(program, CL_PROGRAM_BINARIES, device_count * sizeof(char *), binary, NULL);
-  assert(status == CL_SUCCESS);
-
-  // debug info
-  size_t *debug_info_size = (size_t *)malloc(device_count * sizeof(size_t));
-  status = clGetProgramInfo(program, CL_PROGRAM_DEBUG_INFO_SIZES_INTEL, device_count * sizeof(size_t), debug_info_size, NULL);
-  assert(status == CL_SUCCESS);
-
-  char **debug_info = (char **)malloc(device_count * sizeof(char *));
-  for (size_t i = 0; i < device_count; ++i) {
-    debug_info[i] = (char *)malloc(debug_info_size[i] * sizeof(char));
-  }
-
-  status = clGetProgramInfo(program, CL_PROGRAM_DEBUG_INFO_INTEL, device_count * sizeof(char *), debug_info, NULL);
-  assert(status == CL_SUCCESS);
-
-  // TODO(Aaron): Is it ok to only write binary 0?
-  // write binaries and add them to load map
-  for (size_t i = 0; i < device_count; ++i) {
-    writeHashBinary(binary[i], binary_size[i], false);
-    writeHashBinary(debug_info[i], debug_info_size[i], true); 
-  }
-
-  // free memory
-  for (size_t i = 0; i < device_count; ++i) {
-    free(binary[i]);
-    free(debug_info[i]);
-  }
-  free(binary_size);
-  free(debug_info_size);
-
-  ETMSG(OPENCL, "Intel GPU files dumped successfully");
-#endif
 }
 
 
 static void
 opencl_pending_operations_adjust
 (
-  int value
+ int value
 )
 {
   atomic_fetch_add(&opencl_pending_operations, value);
@@ -474,7 +387,7 @@ opencl_pending_operations_adjust
 static void
 opencl_activity_completion_notify
 (
-  void
+ void
 )
 {
   gpu_monitoring_thread_activities_ready();
@@ -484,8 +397,8 @@ opencl_activity_completion_notify
 static void
 opencl_activity_process
 (
-  cl_event event,
-  void *user_data
+ cl_event event,
+ void *user_data
 )
 {
   gpu_activity_t gpu_activity;
@@ -501,7 +414,7 @@ opencl_wait_for_pending_operations
 )
 {
   ETMSG(OPENCL, "pending operations: %lu", 
-	atomic_load(&opencl_pending_operations));
+  atomic_load(&opencl_pending_operations));
   while (atomic_load(&opencl_pending_operations) != 0);
 }
 
@@ -541,8 +454,8 @@ opencl_error_report
 void
 opencl_subscriber_callback
 (
-  opencl_call_t type,
-  uint64_t correlation_id
+ opencl_call_t type,
+ uint64_t correlation_id
 )
 {
   opencl_pending_operations_adjust(1);
@@ -555,18 +468,18 @@ opencl_subscriber_callback
   switch (type) {
     case memcpy_H2D:
       gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
-				   gpu_placeholder_type_copyin);
+           gpu_placeholder_type_copyin);
       break;
     case memcpy_D2H:
       gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
-				   gpu_placeholder_type_copyout);
+           gpu_placeholder_type_copyout);
       break;
     case kernel:
       gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
-				   gpu_placeholder_type_kernel);
+           gpu_placeholder_type_kernel);
 
       gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
-				   gpu_placeholder_type_trace);
+           gpu_placeholder_type_trace);
       break;
     default:
       assert(0);
@@ -576,19 +489,19 @@ opencl_subscriber_callback
   gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
   hpcrun_safe_exit();
 
-  gpu_activity_channel_consume(gpu_metrics_attribute);	
+  gpu_activity_channel_consume(gpu_metrics_attribute);  
   uint64_t cpu_submit_time = CPU_NANOTIME();
   gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, 
-				  cpu_submit_time);
+          cpu_submit_time);
 }
 
 
 void
 opencl_activity_completion_callback
 (
-  cl_event event,
-  cl_int event_command_exec_status,
-  void *user_data
+ cl_event event,
+ cl_int event_command_exec_status,
+ void *user_data
 )
 {
   cl_int complete_flag = CL_COMPLETE;
@@ -607,11 +520,11 @@ opencl_activity_completion_callback
       gpu_correlation_id_map_lookup(correlation_id);
     if (cid_map_entry == NULL) {
       ETMSG(OPENCL, "completion callback was called before registration " 
-	    "callback. type: %d, correlation: %"PRIu64 "", type, 
-	    correlation_id);
+      "callback. type: %d, correlation: %"PRIu64 "", type, 
+      correlation_id);
     }
     ETMSG(OPENCL, "completion type: %s, Correlation id: %"PRIu64 "", 
-	  opencl_call_to_string(type), correlation_id);
+    opencl_call_to_string(type), correlation_id);
     opencl_activity_completion_notify();
     opencl_activity_process(event, act_data);
   }
@@ -624,22 +537,22 @@ opencl_activity_completion_callback
 
 
 void
-getTimingInfoFromClEvent
+opencl_timing_info_get
 (
-  gpu_interval_t *interval,
-  cl_event event
+ gpu_interval_t *interval,
+ cl_event event
 )
 {
   cl_ulong commandStart = 0;
   cl_ulong commandEnd = 0;
 
   HPCRUN_OPENCL_CALL(clGetEventProfilingInfo, 
-		     (event, CL_PROFILING_COMMAND_START, 
-		      sizeof(commandStart), &commandStart, NULL));
+         (event, CL_PROFILING_COMMAND_START, 
+          sizeof(commandStart), &commandStart, NULL));
 
   HPCRUN_OPENCL_CALL(clGetEventProfilingInfo, 
-		     (event, CL_PROFILING_COMMAND_END, 
-		      sizeof(commandEnd), &commandEnd, NULL));
+         (event, CL_PROFILING_COMMAND_END, 
+          sizeof(commandEnd), &commandEnd, NULL));
 
   set_gpu_interval(interval, (uint64_t)commandStart, (uint64_t)commandEnd);
 }
@@ -648,22 +561,22 @@ getTimingInfoFromClEvent
 void
 clSetEventCallback_wrapper
 (
-  cl_event event,
-  cl_int event_command_status,
-  void (CL_CALLBACK *pfn_notify)
-  (cl_event event, cl_int event_command_status, void *user_data),
-  void *user_data
+ cl_event event,
+ cl_int event_command_status,
+ void (CL_CALLBACK *pfn_notify)
+ (cl_event event, cl_int event_command_status, void *user_data),
+ void *user_data
 )
 {
   HPCRUN_OPENCL_CALL(clSetEventCallback, 
-		     (event, event_command_status, pfn_notify, user_data));
+         (event, event_command_status, pfn_notify, user_data));
 }
 
 
 void
 opencl_api_initialize
 (
-  void
+ void
 )
 {
   opencl_intercept_setup();
@@ -684,7 +597,7 @@ opencl_bind
   CHK_DLOPEN(opencl, opencl_path(), RTLD_NOW | RTLD_GLOBAL);
   hpcrun_force_dlopen(false);
   
-#define OPENCL_BIND(fn)				\
+#define OPENCL_BIND(fn)        \
   CHK_DLSYM(opencl, fn);
   
   FORALL_OPENCL_ROUTINES(OPENCL_BIND)
@@ -708,22 +621,22 @@ clCreateProgramWithSource
  cl_int* errcode_ret
 )
 {
-	ETMSG(OPENCL, "inside clCreateProgramWithSource_wrapper");
+  ETMSG(OPENCL, "inside clCreateProgramWithSource_wrapper");
 
-	FILE *f_ptr;
-	for (int i = 0; i < (int)count; i++) {
-		// what if a single file has multiple kernels?
-		// we need to add logic to get filenames by reading the strings contents
-		char fileno = '0' + (i + 1); // right now we are naming the files as index numbers
-		// using malloc instead of hpcrun_malloc gives extra garbage characters in file name
-		char *filename = (char*)hpcrun_malloc(sizeof(fileno) + 1);
-		*filename = fileno + '\0';
-		f_ptr = fopen(filename, "w");
-		fwrite(strings[i], lengths[i], 1, f_ptr);
-	}
-	fclose(f_ptr);
-	
-	return HPCRUN_OPENCL_CALL(clCreateProgramWithSource, (context, count, strings, lengths, errcode_ret));
+  FILE *f_ptr;
+  for (int i = 0; i < (int)count; i++) {
+    // what if a single file has multiple kernels?
+    // we need to add logic to get filenames by reading the strings contents
+    char fileno = '0' + (i + 1); // right now we are naming the files as index numbers
+    // using malloc instead of hpcrun_malloc gives extra garbage characters in file name
+    char *filename = (char*)hpcrun_malloc(sizeof(fileno) + 1);
+    *filename = fileno + '\0';
+    f_ptr = fopen(filename, "w");
+    fwrite(strings[i], lengths[i], 1, f_ptr);
+  }
+  fclose(f_ptr);
+  
+  return HPCRUN_OPENCL_CALL(clCreateProgramWithSource, (context, count, strings, lengths, errcode_ret));
 }
 
 
@@ -758,32 +671,32 @@ clBuildProgram
 cl_command_queue
 clCreateCommandQueue
 (
-  cl_context context,
-  cl_device_id device,
-  cl_command_queue_properties properties,
-  cl_int *errcode_ret
+ cl_context context,
+ cl_device_id device,
+ cl_command_queue_properties properties,
+ cl_int *errcode_ret
 )
 {
   // enabling profiling
   properties |= (cl_command_queue_properties)CL_QUEUE_PROFILING_ENABLE; 
 
-	return HPCRUN_OPENCL_CALL(clCreateCommandQueue, (context, device,
-				properties,errcode_ret));	
+  return HPCRUN_OPENCL_CALL(clCreateCommandQueue, (context, device,
+        properties,errcode_ret));  
 }
 
 
 cl_int
 clEnqueueNDRangeKernel
 (
-  cl_command_queue command_queue,
-  cl_kernel ocl_kernel,
-  cl_uint work_dim,
-  const size_t *global_work_offset, 
-  const size_t *global_work_size,
-  const size_t *local_work_size,
-  cl_uint num_events_in_wait_list,
-  const cl_event *event_wait_list,
-  cl_event *event
+ cl_command_queue command_queue,
+ cl_kernel ocl_kernel,
+ cl_uint work_dim,
+ const size_t *global_work_offset, 
+ const size_t *global_work_size,
+ const size_t *local_work_size,
+ cl_uint num_events_in_wait_list,
+ const cl_event *event_wait_list,
+ cl_event *event
 )
 {
   uint64_t correlation_id = getCorrelationId();
@@ -802,16 +715,16 @@ clEnqueueNDRangeKernel
   }
   cl_int return_status = 
     HPCRUN_OPENCL_CALL(clEnqueueNDRangeKernel, (command_queue, ocl_kernel, work_dim, 
-				   global_work_offset, global_work_size, 
-				   local_work_size, num_events_in_wait_list, 
-				   event_wait_list, eventp));
+           global_work_offset, global_work_size, 
+           local_work_size, num_events_in_wait_list, 
+           event_wait_list, eventp));
 
   ETMSG(OPENCL, "registering callback for type: kernel. " 
-	"Correlation id: %"PRIu64 "", correlation_id);
+  "Correlation id: %"PRIu64 "", correlation_id);
 
   opencl_subscriber_callback(kernel_cb->type, kernel_cb->correlation_id);
   clSetEventCallback_wrapper(*eventp, CL_COMPLETE, 
-			     &opencl_activity_completion_callback, kernel_info);
+           &opencl_activity_completion_callback, kernel_info);
   return return_status;
 }
 
@@ -819,15 +732,15 @@ clEnqueueNDRangeKernel
 cl_int
 clEnqueueReadBuffer
 (
-  cl_command_queue command_queue,
-  cl_mem buffer,
-  cl_bool blocking_read,
-  size_t offset,
-  size_t cb,
-  void *ptr,
-  cl_uint num_events_in_wait_list,
-  const cl_event *event_wait_list,
-  cl_event *event
+ cl_command_queue command_queue,
+ cl_mem buffer,
+ cl_bool blocking_read,
+ size_t offset,
+ size_t cb,
+ void *ptr,
+ cl_uint num_events_in_wait_list,
+ const cl_event *event_wait_list,
+ cl_event *event
 )
 {
   uint64_t correlation_id = getCorrelationId();
@@ -846,19 +759,19 @@ clEnqueueReadBuffer
   }
   cl_int return_status = 
     HPCRUN_OPENCL_CALL(clEnqueueReadBuffer, (command_queue, buffer, blocking_read, offset, 
-				cb, ptr, num_events_in_wait_list, 
-				event_wait_list, eventp));
+        cb, ptr, num_events_in_wait_list, 
+        event_wait_list, eventp));
 
   ETMSG(OPENCL, "registering callback for type: D2H. " 
-	"Correlation id: %"PRIu64 "", correlation_id);
+  "Correlation id: %"PRIu64 "", correlation_id);
   ETMSG(OPENCL, "%d(bytes) of data being transferred from device to host", 
-	(long)cb);
+  (long)cb);
 
   opencl_subscriber_callback(mem_transfer_cb->type, 
-			     mem_transfer_cb->correlation_id);
+           mem_transfer_cb->correlation_id);
 
   clSetEventCallback_wrapper(*eventp, CL_COMPLETE, 
-			     &opencl_activity_completion_callback, mem_info);
+           &opencl_activity_completion_callback, mem_info);
 
   return return_status;
 }
@@ -867,15 +780,15 @@ clEnqueueReadBuffer
 cl_int
 clEnqueueWriteBuffer
 (
-  cl_command_queue command_queue,
-  cl_mem buffer,
-  cl_bool blocking_write,
-  size_t offset,
-  size_t cb,
-  const void *ptr,
-  cl_uint num_events_in_wait_list,
-  const cl_event *event_wait_list,
-  cl_event *event
+ cl_command_queue command_queue,
+ cl_mem buffer,
+ cl_bool blocking_write,
+ size_t offset,
+ size_t cb,
+ const void *ptr,
+ cl_uint num_events_in_wait_list,
+ const cl_event *event_wait_list,
+ cl_event *event
 )
 {
   uint64_t correlation_id = getCorrelationId();
@@ -894,21 +807,19 @@ clEnqueueWriteBuffer
   }
   cl_int return_status = 
     HPCRUN_OPENCL_CALL(clEnqueueWriteBuffer, (command_queue, buffer, blocking_write, offset,
-				 cb, ptr, num_events_in_wait_list, 
-				 event_wait_list, eventp));
+         cb, ptr, num_events_in_wait_list, 
+         event_wait_list, eventp));
 
   ETMSG(OPENCL, "registering callback for type: H2D. " 
-	"Correlation id: %"PRIu64 "", correlation_id);
+  "Correlation id: %"PRIu64 "", correlation_id);
 
   ETMSG(OPENCL, "%d(bytes) of data being transferred from host to device", 
-	(long)cb);
+  (long)cb);
 
   opencl_subscriber_callback(mem_transfer_cb->type, 
-			     mem_transfer_cb->correlation_id);
+           mem_transfer_cb->correlation_id);
 
-  clSetEventCallback_wrapper(*eventp, CL_COMPLETE, 
-			     &opencl_activity_completion_callback, 
-			     (void*) mem_info);
+  clSetEventCallback_wrapper(*eventp, CL_COMPLETE, &opencl_activity_completion_callback, (void *)mem_info);
 
   return return_status;
 }
@@ -917,7 +828,7 @@ clEnqueueWriteBuffer
 void
 opencl_api_finalize
 (
-  void *args
+ void *args
 )
 {
   opencl_wait_for_pending_operations();
