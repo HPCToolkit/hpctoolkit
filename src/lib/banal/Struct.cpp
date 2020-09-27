@@ -142,7 +142,7 @@ using namespace std;
 #endif
 
 #define DEBUG_CFG_SOURCE  0
-#define DEBUG_MAKE_SKEL   0 //1
+#define DEBUG_MAKE_SKEL   0
 #define DEBUG_SHOW_GAPS   0
 #define DEBUG_SKEL_SUMMARY  0
 
@@ -695,8 +695,7 @@ makeStructure(string filename,
 
     makeWorkList(fileMap, wlPrint, wlLaunch);
 		
-		char *elfFileRealPath = realpath(elfFile->getFileName().c_str(), NULL);
-    Output::printLoadModuleBegin(outFile, elfFileRealPath);
+    Output::printLoadModuleBegin(outFile, elfFile->getFileName());
 
 #pragma omp parallel  default(none)				\
     shared(wlPrint, wlLaunch, num_done, output_mtx)		\
@@ -1801,13 +1800,6 @@ doBlock(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func,
   LineMapCache lmcache (ginfo->sym_func, env.realPath);
 
   // iterate through the instructions in this block
-#if 0
-// no longer support this path
-#ifdef DYNINST_INSTRUCTION_PTR
-  map <Offset, Instruction::Ptr> imap;
-#else
-#endif
-#endif
   map <Offset, Instruction> imap;
   block->getInsns(imap);
 
@@ -1826,12 +1818,6 @@ doBlock(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func,
     string filenm = "";
     uint line = 0;
 
-#if 0
-#ifdef DYNINST_INSTRUCTION_PTR
-      len = iit->second->size();
-#else
-#endif
-#endif
     len = iit->second.size();
 
     lmcache.getLineInfo(vma, filenm, line);
