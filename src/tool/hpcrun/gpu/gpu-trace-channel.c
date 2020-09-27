@@ -150,6 +150,12 @@ gpu_trace_channel_get_td(gpu_trace_channel_t *ch)
   return ch->td;
 }
 
+int
+gpu_trace_channel_get_stream_id(gpu_trace_channel_t *ch)
+{
+  return ch->td->core_profile_trace_data.id;
+}
+
 
 gpu_trace_channel_t *
 gpu_trace_channel_alloc
@@ -184,6 +190,13 @@ gpu_trace_channel_produce
 
   *cti = *ti;
 
+  printf("\n===========TRACE_PRODUCE: ti = %p || submit = %lu, start = %lu, end = %lu, cct_node = %p\n\n",
+         ti,
+         ti->cpu_submit_time,
+         ti->start,
+         ti->end,
+         ti->call_path_leaf);
+
   channel_push(channel, bichannel_direction_forward, cti);
 
   gpu_trace_channel_signal_consumer_when_full(channel);
@@ -209,6 +222,13 @@ gpu_trace_channel_consume
   for (;;) {
     gpu_trace_item_t *ti = channel_pop(channel, bichannel_direction_forward);
     if (!ti) break;
+
+    printf("\n===========TRACE_CONSUME: ti = %p || submit = %lu, start = %lu, end = %lu, cct_node = %p\n\n",
+           ti,
+           ti->cpu_submit_time,
+           ti->start,
+           ti->end,
+           ti->call_path_leaf);
     gpu_trace_item_consume(consume_one_trace_item, channel->td, ti);
     gpu_trace_item_free(channel, ti);
   }

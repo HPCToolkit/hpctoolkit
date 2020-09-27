@@ -167,6 +167,7 @@ gpu_trace_channel_set_insert
   // initialize the new entry
   e->channel = channel;
 
+
   // clear the entry's next ptr
   channel_stack_elem_ptr_set(e, 0);
 
@@ -176,20 +177,11 @@ gpu_trace_channel_set_insert
 
 
 void
-gpu_trace_channel_set_consume
+gpu_trace_channel_set_apply
 (
+ gpu_trace_channel_fn_t channel_fn,
  int set_index
 )
 {
-  gpu_trace_channel_set_forall(gpu_trace_channel_consume, set_index);
-}
-
-
-void
-gpu_trace_channel_set_release
-(
- int set_index
-)
-{
-  gpu_trace_channel_set_forall(gpu_trace_stream_release, set_index);
+  gpu_trace_channel_set_forall(channel_fn, set_index);
 }

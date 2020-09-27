@@ -184,7 +184,7 @@ gpu_operation_channel_produce
   gpu_operation_item_t *new_item = gpu_operation_item_alloc(channel);
   *new_item = *it;
 
-  printf("\nPRODUCE: channel = %p || return_channel = %p -> activity = %p | corr = %u kind = %s, type = %s\n\n",
+  printf("\nOPERATION_PRODUCE: channel = %p || return_channel = %p -> activity = %p | corr = %u kind = %s, type = %s\n\n",
          channel, new_item->channel, &new_item->activity,
          (new_item->activity.kind == GPU_ACTIVITY_MEMCPY)?new_item->activity.details.memcpy.correlation_id:new_item->activity.details.kernel.correlation_id,
          gpu_kind_to_string(new_item->activity.kind),
@@ -216,7 +216,7 @@ gpu_operation_channel_consume
 
     if (!it) break;
 
-    printf("\n---------CONSUME: op_channel = %p || channel = %p , activity = %p | corr = %u, kind = %s, type = %s\n",
+    printf("\nOPERATION_CONSUME: op_channel = %p || channel = %p , activity = %p | corr = %u, kind = %s, type = %s\n",
            channel, it->channel, &it->activity,
            (it->activity.kind == GPU_ACTIVITY_MEMCPY)?it->activity.details.memcpy.correlation_id:it->activity.details.kernel.correlation_id,
            gpu_kind_to_string(it->activity.kind),

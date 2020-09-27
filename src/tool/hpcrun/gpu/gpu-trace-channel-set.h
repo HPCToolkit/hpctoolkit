@@ -82,11 +82,12 @@ gpu_trace_channel_set_insert
 
 
 void
-gpu_trace_channel_set_consume
+gpu_trace_channel_set_apply
 (
+ gpu_trace_channel_fn_t channel_fn,
  int set_index
 );
 
-void gpu_trace_channel_set_release(int set_index);
+
 
 #endif

@@ -68,6 +68,8 @@ typedef struct gpu_trace_channel_t gpu_trace_channel_t;
 thread_data_t *
 gpu_trace_channel_get_td(gpu_trace_channel_t *ch);
 
+int
+gpu_trace_channel_get_stream_id(gpu_trace_channel_t *ch);
 
 gpu_trace_channel_t *
 gpu_trace_channel_alloc

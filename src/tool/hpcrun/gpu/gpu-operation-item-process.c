@@ -91,20 +91,6 @@ gpu_context_stream_trace
 }
 
 
-static void
-trace_item_set
-(
- gpu_trace_item_t *ti,
- uint64_t submit_time,
- uint64_t start_time,
- uint64_t end_time,
- gpu_activity_t *ga
-)
-{
-  gpu_trace_item_produce(ti, submit_time, start_time, end_time, ga->cct_node);
-}
-
-
 
 //******************************************************************************
 // gpu operations process
@@ -122,12 +108,16 @@ gpu_operation_item_t *it
   assert(activity->cct_node != NULL);
 
   gpu_trace_item_t entry_trace;
-  trace_item_set(&entry_trace, activity->details.memcpy.submit_time,
-                 activity->details.memcpy.start, activity->details.memcpy.end, activity);
 
-  gpu_context_stream_trace
-    (activity->details.memcpy.context_id, activity->details.memcpy.stream_id,
-     &entry_trace);
+  gpu_trace_item_produce(&entry_trace,
+                         activity->details.memcpy.submit_time,
+                         activity->details.memcpy.start,
+                         activity->details.memcpy.end,
+                         activity->cct_node);
+
+  gpu_context_stream_trace(activity->details.memcpy.context_id,
+                           activity->details.memcpy.stream_id,
+                           &entry_trace);
 
   gpu_activity_channel_produce(channel, activity);
 
@@ -147,12 +137,16 @@ gpu_operation_item_t *it
   gpu_activity_channel_t *channel = it->channel;
 
   gpu_trace_item_t entry_trace;
-  trace_item_set(&entry_trace, activity->details.kernel.submit_time,
-                 activity->details.kernel.start, activity->details.kernel.end, activity);
 
-  gpu_context_stream_trace
-    (activity->details.kernel.context_id, activity->details.kernel.stream_id,
-     &entry_trace);
+  gpu_trace_item_produce(&entry_trace,
+                         activity->details.kernel.submit_time,
+                         activity->details.kernel.start,
+                         activity->details.kernel.end,
+                         activity->cct_node);
+
+  gpu_context_stream_trace(activity->details.kernel.context_id,
+                           activity->details.kernel.stream_id,
+                           &entry_trace);
 
   gpu_activity_channel_produce(channel, activity);
 

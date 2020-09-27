@@ -95,7 +95,6 @@
 typedef struct gpu_trace_t {
   pthread_t thread;
   gpu_trace_channel_t *trace_channel;
-  unsigned int channel_set_id;
 } gpu_trace_t;
 
 
@@ -109,9 +108,12 @@ typedef void *(*pthread_start_routine_t)(void *);
 
 static _Atomic(bool) stop_trace_flag;
 
-static atomic_ullong stream_counter;
+static atomic_ullong active_streams_counter;
 
 static atomic_ullong stream_id;
+
+
+static __thread uint32_t my_trace_set_id = -1;
 
 
 static __thread uint64_t stream_start = 0;
@@ -312,17 +314,37 @@ gpu_trace_activities_process
  int set_index
 )
 {
-  gpu_trace_channel_set_consume(set_index);
+  gpu_trace_channel_set_apply(gpu_trace_channel_consume, set_index);
 }
 
 
 static void
-gpu_trace_activities_await
+gpu_trace_channel_set_release
 (
- gpu_trace_t* thread_args
+int set_index
 )
 {
-  gpu_trace_channel_await(thread_args->trace_channel);
+  gpu_trace_channel_set_apply(gpu_trace_stream_release, set_index);
+}
+
+
+static void
+gpu_trace_channel_set_notify
+(
+int set_index
+)
+{
+  gpu_trace_channel_set_apply(gpu_trace_channel_signal_consumer, set_index);
+}
+
+
+static void
+gpu_trace_channel_set_await
+(
+int set_index
+)
+{
+  gpu_trace_channel_set_apply(gpu_trace_channel_await, set_index);
 }
 
 
@@ -366,7 +388,7 @@ gpu_trace_stream_release
 
   hpcrun_write_profile_data(&td->core_profile_trace_data);
   hpcrun_trace_close(&td->core_profile_trace_data);
-  atomic_fetch_add(&stream_counter, -1);
+  atomic_fetch_add(&active_streams_counter, -1);
 
 }
 
@@ -382,7 +404,7 @@ gpu_trace_init
 )
 {
   atomic_store(&stop_trace_flag, false);
-  atomic_store(&stream_counter, 0);
+  atomic_store(&active_streams_counter, 0);
   atomic_store(&stream_id, 0);
 }
 
@@ -390,17 +412,28 @@ gpu_trace_init
 void *
 gpu_trace_record
 (
- gpu_trace_t *thread_args
+ void
 )
 {
 
   while (!atomic_load(&stop_trace_flag)) {
     //getting data from a trace channel
-    gpu_trace_activities_process(thread_args->channel_set_id);
-    gpu_trace_activities_await(thread_args);
+
+    int current_stream_id = atomic_load(&stream_id);
+
+    for (int set_index = 0; set_index < current_stream_id; ++set_index) {
+      gpu_trace_activities_process(set_index);
+      gpu_trace_channel_set_await(set_index);
+    }
+
   }
-  gpu_trace_activities_process(thread_args->channel_set_id);
-  gpu_trace_channel_set_release(thread_args->channel_set_id);
+
+  int current_stream_id = atomic_load(&stream_id);
+  for (int set_index = 0; set_index < current_stream_id; ++set_index) {
+    gpu_trace_activities_process(set_index);
+    gpu_trace_channel_set_await(set_index);
+    gpu_trace_channel_set_release(set_index);
+  }
 
   return NULL;
 }
@@ -416,9 +449,15 @@ gpu_trace_fini
 
   atomic_store(&stop_trace_flag, true);
 
-  gpu_context_stream_map_signal_all();
+  int current_stream_id = atomic_load(&stream_id);
+  for (int set_index = 0; set_index < current_stream_id; ++set_index) {
+    gpu_trace_channel_set_notify(set_index);
+  }
 
-  while (atomic_load(&stream_counter));
+//  gpu_context_stream_map_signal_all();
+
+
+  while (atomic_load(&active_streams_counter));
 }
 
 static void
@@ -435,25 +474,27 @@ gpu_trace_channel_set_append
   static int num_streams = 0;
   volatile bool new_thread = false;
 
-  gpu_trace_channel_stack_alloc(max_threads_consumers);
-
   num_streams++;
-  atomic_fetch_add(&stream_counter, 1);
+  atomic_fetch_add(&active_streams_counter, 1);
 
   if (num_streams >= (streams_per_thread * num_threads)) {
     num_threads++;
     new_thread = true;
+    gpu_trace_channel_stack_alloc(max_threads_consumers);
   }
 
   assert(streams_per_thread > 0);
   assert(num_threads < max_threads_consumers);
 
-  trace->channel_set_id = num_threads - 1;
-  gpu_trace_channel_set_insert(trace->trace_channel, trace->channel_set_id);
-
   if (new_thread) {
-    pthread_create(&trace->thread, NULL, (pthread_start_routine_t) gpu_trace_record, trace);
+    pthread_create(&trace->thread, NULL, (pthread_start_routine_t) gpu_trace_record, NULL);
   }
+
+  my_trace_set_id = num_threads - 1;
+
+  my_trace_set_id = gpu_trace_channel_get_stream_id(trace->trace_channel) - 500;
+
+  gpu_trace_channel_set_insert(trace->trace_channel, my_trace_set_id);
 
   PRINT("set_index = %d -> stream = %u\n", num_threads, num_streams);
 

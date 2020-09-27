@@ -103,7 +103,7 @@ gpu_trace_create
 void *
 gpu_trace_record
 (
- gpu_trace_t *thread_args
+ void
 );
 
 
