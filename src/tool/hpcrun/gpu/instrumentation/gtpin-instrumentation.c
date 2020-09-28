@@ -81,8 +81,7 @@
 #include <lib/prof-lean/crypto-hash.h>
 #include <lib/prof-lean/spinlock.h>
 
-#include "opencl-instrumentation.h"
-
+#include "gtpin-instrumentation.h"
 
 
 //******************************************************************************
@@ -467,7 +466,7 @@ onKernelComplete
     }
     uint64_t execution_count = total; // + bm->val 
 
-    activityNotify();
+    gpu_activity_t gpu_activity;
 		printf("correlation_id: %d. ptr: %d\n", correlation_id, kco_curr->offset);
 		while(kco_curr->offset != block->endOffset) {
 			gpu_activity_t gpu_activity;
@@ -478,6 +477,7 @@ onKernelComplete
     block = block->next;
     //how to make offset the primary key within the cct and += the execution value for existing ccts?
   }
+  activityNotify();  
 }
 
 
@@ -488,7 +488,7 @@ onKernelComplete
 
 
 void
-opencl_enable_profiling
+gtpin_enable_profiling
 (
  void
 )
@@ -497,10 +497,11 @@ opencl_enable_profiling
   initializeInstrumentation();
   knobAddBool("silent_warnings", true);
 
-  /*if (utils::GetEnv("PTI_GEN12") != nullptr) {
-    std::cout << "[INFO] Experimental GTPin mode: GEN12" << std::endl;
+#if 0
+  if (utils::GetEnv("PTI_GEN12") != nullptr) {
     KnobAddBool("gen12_1", true);
-    }*/
+  }
+#endif
 
   GTPin_OnKernelBuild(onKernelBuild, NULL);
   GTPin_OnKernelRun(onKernelRun, NULL);

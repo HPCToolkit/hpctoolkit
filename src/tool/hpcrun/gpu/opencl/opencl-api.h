@@ -44,8 +44,6 @@
 #ifndef _OPENCL_API_H_
 #define _OPENCL_API_H_
 
-
-
 //******************************************************************************
 // local includes
 //******************************************************************************
@@ -55,72 +53,63 @@
 
 #include "opencl-intercept.h"
 
-
-
 //******************************************************************************
 // interface operations
 //******************************************************************************
 
-char*
-getDebugInfoFullFileName
-(
-	void
-);
-
-
 void
 opencl_subscriber_callback
 (
-  opencl_call_t,
-  uint64_t
+ opencl_call_t,
+ uint64_t
 );
 
 
 void
 opencl_activity_completion_callback
 (
-  cl_event,
-  cl_int,
-  void *
+ cl_event,
+ cl_int,
+ void *
 );
 
 
 void
-getTimingInfoFromClEvent
+opencl_timing_info_get
 (
-  gpu_interval_t *,
-  cl_event
+ gpu_interval_t *,
+ cl_event
 );
 
 
 void
 clSetEventCallback_wrapper
 (
-  cl_event,
-  cl_int,
-  void (CL_CALLBACK*)(cl_event, cl_int, void *),
-  void *
+ cl_event,
+ cl_int,
+ void (CL_CALLBACK*)(cl_event, cl_int, void *),
+ void *
 );
 
 
 void
 opencl_api_initialize
 (
-  void
+ void
 );
 
 
 int
 opencl_bind
 (
-  void
+ void
 );
 
 
 void
 opencl_api_finalize
 (
-  void *
+ void *
 );
 
 

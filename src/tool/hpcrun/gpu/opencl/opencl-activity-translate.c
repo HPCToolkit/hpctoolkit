@@ -91,7 +91,7 @@ convert_kernel_launch
 {
   cl_kernel_callback_t *kernel_cb_data = (cl_kernel_callback_t*)user_data;
   memset(&ga->details.kernel, 0, sizeof(gpu_kernel_t));
-  getTimingInfoFromClEvent(&ga->details.interval, event);
+  opencl_timing_info_get(&ga->details.interval, event);
   ga->kind = GPU_ACTIVITY_KERNEL;
   ga->details.kernel.correlation_id = kernel_cb_data->correlation_id;
 }
@@ -108,7 +108,7 @@ convert_memcpy
 {
   cl_memory_callback_t *memory_cb_data = (cl_memory_callback_t*)user_data;
   memset(&ga->details.memcpy, 0, sizeof(gpu_memcpy_t));
-  getTimingInfoFromClEvent(&ga->details.interval, event);
+  opencl_timing_info_get(&ga->details.interval, event);
   getMemoryProfileInfo(&ga->details.memcpy, memory_cb_data);
   ga->kind = GPU_ACTIVITY_MEMCPY;
 }

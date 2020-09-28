@@ -507,8 +507,8 @@ endif
 
 if OPT_ENABLE_OPENCL
 MY_OPENCL_FILES = sample-sources/opencl.c \
-	gpu/opencl/opencl-intercept.c \
 	gpu/opencl/opencl-api.c \
+	gpu/opencl/opencl-intercept.c \
 	gpu/opencl/opencl-memory-manager.c \
 	gpu/opencl/opencl-activity-translate.c 
 endif
@@ -518,7 +518,7 @@ MY_GTPIN_FILES = \
 	gpu/instrumentation/gtpin-instrumentation-kernel-data-map.c \
 	gpu/instrumentation/gtpin-instrumentation-kernel-memory-map.c \
 	gpu/instrumentation/kernel_runs_correlation_offset_map.c \
-	gpu/instrumentation/opencl-instrumentation.c
+	gpu/instrumentation/gtpin-instrumentation.c
 endif
 
 if OPT_ENABLE_ROCM

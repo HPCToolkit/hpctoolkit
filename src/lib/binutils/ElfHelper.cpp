@@ -143,7 +143,6 @@ ElfFile::open
 
 ElfFile::~ElfFile() 
 {
-  // TODO(Keren): prevent memory leak
   if (origPtr != memPtr && origPtr != 0) free(origPtr);
   elf_end(elf);
 }

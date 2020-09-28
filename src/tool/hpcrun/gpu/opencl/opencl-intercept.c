@@ -51,7 +51,7 @@
 // local includes
 //******************************************************************************
 
-#include <hpcrun/gpu/instrumentation/opencl-instrumentation.h>
+#include <hpcrun/gpu/instrumentation/gtpin-instrumentation.h>
 #include <hpcrun/gpu/gpu-metrics.h>
 #include <hpcrun/memory/hpcrun-malloc.h>
 #include <hpcrun/messages/messages.h>
@@ -74,8 +74,8 @@ opencl_intercept_setup
 {
 #ifndef HPCRUN_STATIC_LINK
   ETMSG(OPENCL, "setting up opencl intercepts");
-	gpu_metrics_KER_BLKINFO_enable();
-  opencl_enable_profiling();
+  gpu_metrics_KER_BLKINFO_enable();
+  gtpin_enable_profiling();
 #endif
 }
 
