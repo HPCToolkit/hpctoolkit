@@ -311,9 +311,9 @@ void hpcrun_set_percent(int metric_id, uint8_t show_percent) {
 }
 
 
-void hpcrun_set_scope(int metric_id, uint8_t scope) {
+void hpcrun_set_relocation_type(int metric_id, uint8_t relocation_type) {
   metric_desc_t* mdesc = hpcrun_id2metric_linked(metric_id);
-  mdesc->flags.fields.scope = scope;
+  mdesc->flags.fields.relocation_type = relocation_type;
 }
 
 

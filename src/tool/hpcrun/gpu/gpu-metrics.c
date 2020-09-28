@@ -199,8 +199,8 @@ name ## _metric_kind
   reg_metric->format  = FORMAT_DISPLAY_PERCENTAGE
 
 
-#define SET_SCOPE_FOR_BASIC_BLOCKS(name) \
-  hpcrun_set_scope(METRIC_ID(name), HPCRUN_FMT_METRIC_MOVE_TO_ENCLOSING_PROCEDURE); \
+#define COPY_METRIC_TO_SIBLINGS_IN_BBLOCK(name) \
+  hpcrun_set_relocation_type(METRIC_ID(name), HPCRUN_FMT_METRIC_COPY_TO_INST_SIBLINGS_IN_BBLOCK); \
 
 
 
@@ -471,10 +471,7 @@ gpu_metrics_attribute_kernel_block
   cct_node_t *cct_node = activity->cct_node;
 
 	metric_data_list_t *metrics = 
-		hpcrun_reify_metric_set(cct_node, METRIC_ID(KER_BLK_OFFSET));
-
-	gpu_metrics_attribute_metric_int(metrics, METRIC_ID(KER_BLK_OFFSET), 
-					 b->offset);
+		hpcrun_reify_metric_set(cct_node, METRIC_ID(KER_BLK_EXECUTION_COUNT));
 
 	gpu_metrics_attribute_metric_int(metrics, METRIC_ID(KER_BLK_EXECUTION_COUNT),	// need to increment execution count for existing ccts
 					 b->execution_count);
@@ -754,13 +751,13 @@ gpu_metrics_KER_BLKINFO_enable
 {
 // kernel block characteristics metrics
 #undef CURRENT_METRIC 
-#define CURRENT_METRIC KER_BLKINFO
+#define CURRENT_METRIC GPU_INST // we are copying from gpu_metrics_GPU_INST_enable(). confirm 
 
   INITIALIZE_METRIC_KIND();
 
-	SET_SCOPE_FOR_BASIC_BLOCKS(KER_BLK_EXECUTION_COUNT);
+	COPY_METRIC_TO_SIBLINGS_IN_BBLOCK(GPU_INST_ALL);
 
-  FORALL_KER_BLKINFO(INITIALIZE_SCALAR_METRIC_INT)
+  FORALL_GPU_INST(INITIALIZE_SCALAR_METRIC_INT)
 
   FINALIZE_METRIC_KIND();
 }

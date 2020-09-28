@@ -168,10 +168,10 @@ hpcrun_fmt_hdr_free(hpcrun_fmt_hdr_t* hdr, hpcfmt_free_fn dealloc);
 #define HPCRUN_FMT_METRIC_SHOW_EXCLUSIVE  3
 #define HPCRUN_FMT_METRIC_INVISIBLE       4
 
-// changing the scope of metrics
+// relocating the metrics
 #define HPCRUN_FMT_METRIC_MOVE_TO_ENCLOSING_PROCEDURE       5
 #define HPCRUN_FMT_METRIC_KEEP_HERE													6
-#define HPCRUN_FMT_METRIC_PROPOGATE_TO_BASIC_BLOCKS					7
+#define HPCRUN_FMT_METRIC_COPY_TO_INST_SIBLINGS_IN_BBLOCK		7
 
 
 
@@ -277,7 +277,7 @@ typedef struct hpcrun_metricFlags_fields {
   uint16_t             partner;
   uint8_t /*bool*/     show;
   uint8_t /*bool*/     showPercent;
-  uint8_t 						 scope;
+  uint8_t 						 relocation_type;
 
   uint64_t unused1;
 } hpcrun_metricFlags_fields;
