@@ -4,7 +4,6 @@
 //******************************************************************************
 
 #include <stdint.h>
-//#include <gtpin.h>
 
 
 
@@ -12,12 +11,15 @@
 // type declarations
 //******************************************************************************
 
+typedef struct kernel_offset {
+	uint32_t offset;
+	struct kernel_offset *next;
+} kernel_offset;
+
+
 typedef struct KernelData {
-	uint64_t kernel_cct_correlation_id;
-  char *name;
-  uint32_t call_count;
 	uint32_t loadmap_module_id;
-	//block_map_t *block_map_root;
+	kernel_offset *offset_head;
 } KernelData;
 
 

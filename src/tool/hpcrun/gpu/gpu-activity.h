@@ -261,7 +261,6 @@ typedef struct gpu_kernel_t {
 
 typedef struct gpu_kernel_block_t {
 	uint32_t correlation_id;
-	uint64_t offset;
 	uint64_t execution_count;
 	ip_normalized_t pc;
 } gpu_kernel_block_t;

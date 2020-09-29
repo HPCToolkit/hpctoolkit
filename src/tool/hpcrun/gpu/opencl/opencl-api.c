@@ -69,6 +69,7 @@
 #include <hpcrun/gpu/gpu-metrics.h>
 #include <hpcrun/gpu/gpu-monitoring-thread-api.h>
 #include <hpcrun/gpu/gpu-op-placeholders.h>
+#include <hpcrun/gpu/instrumentation/gtpin-instrumentation.h>
 #include <hpcrun/messages/messages.h>
 #include <hpcrun/sample-sources/libdl.h>
 #include <hpcrun/files.h>
@@ -579,7 +580,8 @@ opencl_api_initialize
  void
 )
 {
-  opencl_intercept_setup();
+  gpu_metrics_GPU_INST_enable();
+  gtpin_enable_profiling();
   atomic_store(&correlation_id, 0);
   atomic_store(&opencl_pending_operations, 0);
 }

@@ -13,6 +13,7 @@
 
 typedef struct mem_pair_node {
 	int32_t offset;
+	int32_t endOffset;
 	GTPinMem mem;
 	struct mem_pair_node *next;
 } mem_pair_node;
