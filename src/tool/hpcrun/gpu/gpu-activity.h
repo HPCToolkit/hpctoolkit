@@ -80,7 +80,7 @@ typedef struct gpu_activity_channel_t gpu_activity_channel_t;
 typedef enum {    
   GPU_ACTIVITY_UNKNOWN                 = 0,
   GPU_ACTIVITY_KERNEL                  = 1,
-	GPU_ACTIVITY_KERNEL_BLOCK						 = 2,	
+  GPU_ACTIVITY_KERNEL_BLOCK             = 2,  
   GPU_ACTIVITY_MEMCPY                  = 3,
   GPU_ACTIVITY_MEMCPY2                 = 4,
   GPU_ACTIVITY_MEMSET                  = 5,
@@ -260,9 +260,9 @@ typedef struct gpu_kernel_t {
 
 
 typedef struct gpu_kernel_block_t {
-	uint32_t correlation_id;
-	uint64_t execution_count;
-	ip_normalized_t pc;
+  uint64_t external_id;
+  uint64_t execution_count;
+  ip_normalized_t pc;
 } gpu_kernel_block_t;
 
 
@@ -359,7 +359,7 @@ typedef struct gpu_activity_details_t {
     gpu_memory_t memory;
     gpu_memset_t memset;
     gpu_kernel_t kernel;
-		gpu_kernel_block_t kernel_block;
+    gpu_kernel_block_t kernel_block;
     gpu_function_t function;
     gpu_cdpkernel_t cdpkernel;
     gpu_event_t event;

@@ -515,9 +515,7 @@ endif
 
 if OPT_ENABLE_GTPIN
 MY_GTPIN_FILES = \
-	gpu/instrumentation/gtpin-instrumentation-kernel-data-map.c \
-	gpu/instrumentation/gtpin-instrumentation-kernel-memory-map.c \
-	gpu/instrumentation/kernel_runs_correlation_offset_map.c \
+	gpu/instrumentation/kernel-data-map.c \
 	gpu/instrumentation/gtpin-instrumentation.c
 endif
 

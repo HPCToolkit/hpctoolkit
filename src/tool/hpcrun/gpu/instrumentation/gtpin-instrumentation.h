@@ -41,13 +41,12 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#ifndef gpu_instrumentation_gtpin_instrumentation_h
+#define gpu_instrumentation_gtpin_instrumentation_h
+
 //******************************************************************************
 // local includes
 //******************************************************************************
-
-#include "gtpin-instrumentation-kernel-memory-map.h"
-#include "gtpin-instrumentation-kernel-data-map.h"
-#include "kernel_runs_correlation_offset_map.h"
 
 //******************************************************************************
 // interface operations
@@ -58,3 +57,5 @@ gtpin_enable_profiling
 (
  void
 );
+
+#endif

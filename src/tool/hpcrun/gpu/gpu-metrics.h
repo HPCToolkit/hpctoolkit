@@ -414,17 +414,6 @@ gpu_metrics_KINFO_enable
 
 
 //--------------------------------------------------
-// record INTEL GTPIN kernel instrumentation info
-//--------------------------------------------------
-
-void
-gpu_metrics_KER_BLKINFO_enable
-(
- void
-);
-
-
-//--------------------------------------------------
 // record implicit copy metrics for unified memory
 //--------------------------------------------------
 

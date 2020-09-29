@@ -80,7 +80,8 @@
 #include <lib/prof-lean/spinlock.h>
 
 #include "gtpin-instrumentation.h"
-
+#include "kernel-data.h"
+#include "kernel-data-map.h"
 
 //******************************************************************************
 // local data
@@ -89,7 +90,7 @@
 #define MAX_STR_SIZE 1024
 
 // TODO(Aaron): Why there are so many correlation ids
-static atomic_long correlation_id;
+static atomic_ullong correlation_id;
 
 static spinlock_t files_lock = SPINLOCK_UNLOCKED;
 
@@ -120,11 +121,11 @@ initializeInstrumentation
  void
 )
 {
-  atomic_store(&correlation_id, 5000);  // to avoid conflict with opencl operation correlation ids, we start instrumentation ids with 5000 (TODO(Aaron):FIX)
+  atomic_store(&correlation_id, 100000000);  // to avoid conflict with opencl operation correlation ids, we start instrumentation ids with 5000 (TODO(Aaron):FIX)
 }
 
 
-static uint32_t
+static uint64_t
 getCorrelationId
 (
  void
@@ -141,7 +142,6 @@ createKernelNode
 )
 {
   cct_node_t *api_node = gpu_application_thread_correlation_callback(correlation_id);
-  gpu_correlation_id_map_insert(correlation_id, correlation_id);
 
   gpu_op_ccts_t gpu_op_ccts;
   gpu_op_placeholder_flags_t gpu_op_placeholder_flags = 0;
@@ -199,7 +199,7 @@ computeBinaryHash
 {
   // Compute hash for the binary
   unsigned char hash[HASH_LENGTH];
-  crypto_hash_compute(binary, binary_size, hash, HASH_LENGTH);
+  crypto_hash_compute((const unsigned char *)binary, binary_size, hash, HASH_LENGTH);
 
   size_t i;
   size_t used = 0;
@@ -278,14 +278,14 @@ static void
 kernelBlockActivityTranslate
 (
  gpu_activity_t *ga,
- uint32_t correlation_id,
+ uint64_t correlation_id,
  uint32_t loadmap_module_id,
  uint64_t offset,
  uint64_t execution_count
 )
 {
   memset(&ga->details.kernel_block, 0, sizeof(gpu_kernel_block_t));
-  ga->details.kernel_block.correlation_id = correlation_id;
+  ga->details.kernel_block.external_id = correlation_id;
   ga->details.kernel_block.pc.lm_id = (uint16_t)loadmap_module_id;
   ga->details.kernel_block.pc.lm_ip = (uintptr_t)offset;
   ga->details.kernel_block.execution_count = execution_count;
@@ -298,15 +298,15 @@ kernelBlockActivityTranslate
 static void
 kernelBlockActivityProcess
 (
- gpu_activity_t *ga,
- uint32_t correlation_id,
+ uint64_t correlation_id,
  uint32_t loadmap_module_id,
  uint64_t offset,
  uint64_t execution_count
 )
 {
-  kernelBlockActivityTranslate(ga, correlation_id, loadmap_module_id, offset, execution_count);
-  gpu_activity_process(ga);
+  gpu_activity_t ga;
+  kernelBlockActivityTranslate(&ga, correlation_id, loadmap_module_id, offset, execution_count);
+  gpu_activity_process(&ga);
 }
 
 
@@ -319,17 +319,14 @@ onKernelBuild
 {
   GTPINTOOL_STATUS status = GTPINTOOL_STATUS_SUCCESS;
 
-  assert(kernel_memory_map_lookup1((uint64_t)kernel) == 0);
-  assert(kernel_data_map_lookup1((uint64_t)kernel) == 0);
+  assert(kernel_data_map_lookup((uint64_t)kernel) == 0);
 
-  KernelData data;
-  data.loadmap_module_id = findOrAddKernelModule(kernel);
-	
-	kernel_offset *offset_head = NULL;
-  mem_pair_node *h;
-  mem_pair_node *m_current;
-  kernel_offset *k_current;
-  bool isHeadNull = true;
+  kernel_data_t kernel_data;
+  kernel_data.loadmap_module_id = findOrAddKernelModule(kernel);
+  kernel_data.kind = KERNEL_DATA_GTPIN;
+
+  kernel_data_gtpin_block_t *gtpin_block_head = NULL;
+  kernel_data_gtpin_block_t *gtpin_block_curr = NULL;
 
   for (GTPinBBL block = GTPin_BBLHead(kernel); GTPin_BBLValid(block); block = GTPin_BBLNext(block)) {
     GTPinINS head = GTPin_InsHead(block);
@@ -344,47 +341,45 @@ onKernelBuild
     status = GTPin_OpcodeprofInstrument(head, mem);
     assert(status == GTPINTOOL_STATUS_SUCCESS);
 
-    // TODO(Aaron): when using hpcrun_malloc, find a way to recycle memory
-    mem_pair_node *m = hpcrun_malloc(sizeof(mem_pair_node));
-    m->offset = head_offset;
-    m->endOffset = tail_offset;
-    m->mem = mem;
-    m->next = NULL;
+    kernel_data_gtpin_block_t *gtpin_block = (kernel_data_gtpin_block_t *)hpcrun_malloc(sizeof(kernel_data_gtpin_block_t));
+    gtpin_block->head_offset = head_offset;
+    gtpin_block->tail_offset = tail_offset;
+    gtpin_block->mem = mem;
+    gtpin_block->next = NULL;
 
-    if (isHeadNull == true) {
-      h = m;
-      m_current = m;
-      isHeadNull = false;
+    if (gtpin_block_head == NULL) {
+      gtpin_block_head = gtpin_block;
     } else {
-      m_current->next = m;
-      m_current = m_current->next;
+      gtpin_block_curr->next = gtpin_block;
     }
-		
-		// while loop that iterates for each instruction in the block and adds an offset entry in map
-		int32_t offset = head_offset;
-		GTPinINS inst = GTPin_InsHead(block);
-		int count = 0;
-		while (offset <= tail_offset && offset != -1) {
-			kernel_offset *ko = hpcrun_malloc(sizeof(kernel_offset));
-			ko->offset = offset;
-			if (offset_head == NULL) {
-				offset_head = ko;	
-				k_current = ko;
-			} else {
-				k_current->next = ko;
-				k_current = k_current->next;
-			}
-			inst = GTPin_InsNext(inst);
-			offset = GTPin_InsOffset(inst);
-		}
+    gtpin_block_curr = gtpin_block;
+    
+    // while loop that iterates for each instruction in the block and adds an offset entry in map
+    int32_t offset = head_offset;
+    GTPinINS inst = GTPin_InsHead(block);
+    kernel_data_gtpin_inst_t *gtpin_inst_curr = NULL;
+    while (offset <= tail_offset && offset != -1) {
+      kernel_data_gtpin_inst_t *gtpin_inst = (kernel_data_gtpin_inst_t *)hpcrun_malloc(sizeof(kernel_data_gtpin_inst_t));
+      gtpin_inst->offset = offset;
+      if (gtpin_inst_curr == NULL) {
+        gtpin_block_curr->inst = gtpin_inst;
+      } else {
+        gtpin_inst_curr->next = gtpin_inst;
+      }
+      gtpin_inst_curr = gtpin_inst;
+      inst = GTPin_InsNext(inst);
+      offset = GTPin_InsOffset(inst);
+    }
   }
-	data.offset_head = offset_head;
-  if (h != NULL) {
-    // TODO(Aaron): naming insert1/insert2 is confusing
-    kernel_memory_map_insert1((uint64_t)kernel, h);
-		kernel_data_map_insert1((uint64_t)kernel, data);
+
+  if (gtpin_block_head != NULL) {
+    kernel_data_gtpin_t *kernel_data_gtpin = (kernel_data_gtpin_t *)hpcrun_malloc(sizeof(kernel_data_gtpin_t));
+    kernel_data_gtpin->kernel_id = (uint64_t)kernel;
+    kernel_data_gtpin->block = gtpin_block_head;
+    kernel_data.data = kernel_data_gtpin; 
+    kernel_data_map_insert((uint64_t)kernel, kernel_data);
   }
-  // m->next = NULL;
+
   // add these details to cct_node. If thats not needed, we can create the kernel_cct in onKernelComplete
   ETMSG(OPENCL, "onKernelBuild complete. Inserted key: %"PRIu64 "",(uint64_t)kernel);
 }
@@ -401,30 +396,7 @@ onKernelRun
   GTPin_KernelProfilingActive(kernelExec, 1);
   assert(status == GTPINTOOL_STATUS_SUCCESS);
 
-  GTPinKernel kernel = GTPin_KernelExec_GetKernel(kernelExec);
-  kernel_offset *offset_head = kernel_data_map_lookup1((uint64_t)kernel)->data.offset_head;
-	kernel_offset *current = offset_head;
-
-	kernel_runs_correlation_offset *kco_head, *co_current;
-	kco_head = hpcrun_malloc(sizeof(kernel_runs_correlation_offset));
-	co_current = kco_head;
-	uint32_t correlation_id = getCorrelationId();
-	createKernelNode(correlation_id);
-	kco_head->correlation_id = correlation_id;
-	kco_head->offset = offset_head->offset;
-
-	while (current->next != NULL) {
-		current = current->next;
-		correlation_id = getCorrelationId();
-		createKernelNode(correlation_id);
-		// save id=GTPinKernelExec and value=correlation_id in another map
-		kernel_runs_correlation_offset *kco = hpcrun_malloc(sizeof(kernel_runs_correlation_offset));
-		kco->correlation_id = correlation_id;
-		kco->offset = current->offset;
-		co_current->next = kco;
-		co_current = co_current->next;
-	}
-	kernel_correlation_offset_map_insert1((uint64_t)kernelExec, kco_head);
+  createKernelNode((uint64_t)kernelExec);
 }
 
 
@@ -435,21 +407,22 @@ onKernelComplete
  void *v
 )
 {
+  // Receive correlations from the host thread
+  activityNotify();  
+
   GTPINTOOL_STATUS status = GTPINTOOL_STATUS_SUCCESS;
   GTPinKernel kernel = GTPin_KernelExec_GetKernel(kernelExec);
   ETMSG(OPENCL, "onKernelComplete starting. Lookup: key: %"PRIu64 "",(uint64_t)kernel);
-  assert(kernel_data_map_lookup1((uint64_t)kernel) != 0);
-  assert(kernel_memory_map_lookup1((uint64_t)kernel) != 0);
+  assert(kernel_data_map_lookup((uint64_t)kernel) != 0);
 
-  // TODO(Aaron): rename lookup methods, do not use magic numbers
-  kernel_data_map_t *kernel_data_list = kernel_data_map_lookup1((uint64_t)kernel);
-  KernelData data = kernel_data_list->data;
-  kernel_memory_map_t *kernel_memory_list = kernel_memory_map_lookup1((uint64_t)kernel);
-  mem_pair_node *block = kernel_memory_list->head;
+  kernel_data_map_entry_t *kernel_data_map_entry = kernel_data_map_lookup((uint64_t)kernel);
+  assert(kernel_data_map_entry != NULL);
 
-	kernel_runs_correlation_offset *kco_head = kernel_correlation_offset_map_lookup1((uint64_t)kernelExec)->head;
-	kernel_runs_correlation_offset *kco_curr = kco_head;
-  uint32_t correlation_id = kco_curr->correlation_id;
+  kernel_data_t kernel_data = kernel_data_map_entry_kernel_data_get(kernel_data_map_entry);
+  assert(kernel_data.kind == KERNEL_DATA_GTPIN);
+
+  kernel_data_gtpin_t *kernel_data_gtpin = (kernel_data_gtpin_t *)kernel_data.data; 
+  kernel_data_gtpin_block_t *block = kernel_data_gtpin->block;
 
   while (block != NULL) {
     uint32_t thread_count = GTPin_MemSampleLength(block->mem);
@@ -463,25 +436,20 @@ onKernelComplete
     }
     uint64_t execution_count = total; // + bm->val 
 
-    gpu_activity_t gpu_activity;
-		activityNotify();  
-		while(kco_curr->offset != block->endOffset) {
-			gpu_activity_t gpu_activity;
-	    kernelBlockActivityProcess(&gpu_activity, kco_curr->correlation_id,
-						data.loadmap_module_id, kco_curr->offset, execution_count);
-			kco_curr = kco_curr->next;
-		}
+    kernel_data_gtpin_inst_t *inst = block->inst;
+    while (inst != NULL) {
+      kernelBlockActivityProcess((uint64_t)kernelExec, kernel_data.loadmap_module_id,
+        inst->offset, execution_count);
+      inst = inst->next;
+    }
     block = block->next;
     //how to make offset the primary key within the cct and += the execution value for existing ccts?
   }
 }
 
-
-
 //******************************************************************************
 // interface operations
 //******************************************************************************
-
 
 void
 gtpin_enable_profiling

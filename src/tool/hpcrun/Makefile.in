@@ -542,9 +542,7 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	gpu/opencl/opencl-api.c gpu/opencl/opencl-intercept.c \
 	gpu/opencl/opencl-memory-manager.c \
 	gpu/opencl/opencl-activity-translate.c \
-	gpu/instrumentation/gtpin-instrumentation-kernel-data-map.c \
-	gpu/instrumentation/gtpin-instrumentation-kernel-memory-map.c \
-	gpu/instrumentation/kernel_runs_correlation_offset_map.c \
+	gpu/instrumentation/kernel-data-map.c \
 	gpu/instrumentation/gtpin-instrumentation.c \
 	unwind/common/backtrace.c unwind/common/unw-throw.c \
 	unwind/common/binarytree_uwi.c unwind/common/interval_t.c \
@@ -752,9 +750,7 @@ am__objects_35 =
 @OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/libhpcrun_la-opencl-memory-manager.lo \
 @OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/libhpcrun_la-opencl-activity-translate.lo
 @OPT_ENABLE_OPENCL_TRUE@am__objects_41 = $(am__objects_40)
-@OPT_ENABLE_GTPIN_TRUE@am__objects_42 = gpu/instrumentation/libhpcrun_la-gtpin-instrumentation-kernel-data-map.lo \
-@OPT_ENABLE_GTPIN_TRUE@	gpu/instrumentation/libhpcrun_la-gtpin-instrumentation-kernel-memory-map.lo \
-@OPT_ENABLE_GTPIN_TRUE@	gpu/instrumentation/libhpcrun_la-kernel_runs_correlation_offset_map.lo \
+@OPT_ENABLE_GTPIN_TRUE@am__objects_42 = gpu/instrumentation/libhpcrun_la-kernel-data-map.lo \
 @OPT_ENABLE_GTPIN_TRUE@	gpu/instrumentation/libhpcrun_la-gtpin-instrumentation.lo
 @OPT_ENABLE_GTPIN_TRUE@am__objects_43 = $(am__objects_42)
 am__objects_44 = unwind/common/libhpcrun_la-backtrace.lo \
@@ -1885,9 +1881,7 @@ MY_AARCH64_FILES = \
 @OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/opencl-activity-translate.c 
 
 @OPT_ENABLE_GTPIN_TRUE@MY_GTPIN_FILES = \
-@OPT_ENABLE_GTPIN_TRUE@	gpu/instrumentation/gtpin-instrumentation-kernel-data-map.c \
-@OPT_ENABLE_GTPIN_TRUE@	gpu/instrumentation/gtpin-instrumentation-kernel-memory-map.c \
-@OPT_ENABLE_GTPIN_TRUE@	gpu/instrumentation/kernel_runs_correlation_offset_map.c \
+@OPT_ENABLE_GTPIN_TRUE@	gpu/instrumentation/kernel-data-map.c \
 @OPT_ENABLE_GTPIN_TRUE@	gpu/instrumentation/gtpin-instrumentation.c
 
 @OPT_ENABLE_ROCM_TRUE@MY_ROCM_FILES = \
@@ -2843,13 +2837,7 @@ gpu/instrumentation/$(am__dirstamp):
 gpu/instrumentation/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) gpu/instrumentation/$(DEPDIR)
 	@: > gpu/instrumentation/$(DEPDIR)/$(am__dirstamp)
-gpu/instrumentation/libhpcrun_la-gtpin-instrumentation-kernel-data-map.lo:  \
-	gpu/instrumentation/$(am__dirstamp) \
-	gpu/instrumentation/$(DEPDIR)/$(am__dirstamp)
-gpu/instrumentation/libhpcrun_la-gtpin-instrumentation-kernel-memory-map.lo:  \
-	gpu/instrumentation/$(am__dirstamp) \
-	gpu/instrumentation/$(DEPDIR)/$(am__dirstamp)
-gpu/instrumentation/libhpcrun_la-kernel_runs_correlation_offset_map.lo:  \
+gpu/instrumentation/libhpcrun_la-kernel-data-map.lo:  \
 	gpu/instrumentation/$(am__dirstamp) \
 	gpu/instrumentation/$(DEPDIR)/$(am__dirstamp)
 gpu/instrumentation/libhpcrun_la-gtpin-instrumentation.lo:  \
@@ -3749,10 +3737,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/amd/$(DEPDIR)/libhpcrun_la-rocm-debug-api.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/amd/$(DEPDIR)/libhpcrun_la-roctracer-activity-translate.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/amd/$(DEPDIR)/libhpcrun_la-roctracer-api.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@gpu/instrumentation/$(DEPDIR)/libhpcrun_la-gtpin-instrumentation-kernel-data-map.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@gpu/instrumentation/$(DEPDIR)/libhpcrun_la-gtpin-instrumentation-kernel-memory-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/instrumentation/$(DEPDIR)/libhpcrun_la-gtpin-instrumentation.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@gpu/instrumentation/$(DEPDIR)/libhpcrun_la-kernel_runs_correlation_offset_map.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/instrumentation/$(DEPDIR)/libhpcrun_la-kernel-data-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/level0/$(DEPDIR)/libhpcrun_la-level0-api.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/level0/$(DEPDIR)/libhpcrun_la-level0-command-list-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/level0/$(DEPDIR)/libhpcrun_la-level0-command-process.Plo@am__quote@
@@ -5438,26 +5424,12 @@ gpu/opencl/libhpcrun_la-opencl-activity-translate.lo: gpu/opencl/opencl-activity
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/opencl/libhpcrun_la-opencl-activity-translate.lo `test -f 'gpu/opencl/opencl-activity-translate.c' || echo '$(srcdir)/'`gpu/opencl/opencl-activity-translate.c
 
-gpu/instrumentation/libhpcrun_la-gtpin-instrumentation-kernel-data-map.lo: gpu/instrumentation/gtpin-instrumentation-kernel-data-map.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/instrumentation/libhpcrun_la-gtpin-instrumentation-kernel-data-map.lo -MD -MP -MF gpu/instrumentation/$(DEPDIR)/libhpcrun_la-gtpin-instrumentation-kernel-data-map.Tpo -c -o gpu/instrumentation/libhpcrun_la-gtpin-instrumentation-kernel-data-map.lo `test -f 'gpu/instrumentation/gtpin-instrumentation-kernel-data-map.c' || echo '$(srcdir)/'`gpu/instrumentation/gtpin-instrumentation-kernel-data-map.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/instrumentation/$(DEPDIR)/libhpcrun_la-gtpin-instrumentation-kernel-data-map.Tpo gpu/instrumentation/$(DEPDIR)/libhpcrun_la-gtpin-instrumentation-kernel-data-map.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/instrumentation/gtpin-instrumentation-kernel-data-map.c' object='gpu/instrumentation/libhpcrun_la-gtpin-instrumentation-kernel-data-map.lo' libtool=yes @AMDEPBACKSLASH@
+gpu/instrumentation/libhpcrun_la-kernel-data-map.lo: gpu/instrumentation/kernel-data-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/instrumentation/libhpcrun_la-kernel-data-map.lo -MD -MP -MF gpu/instrumentation/$(DEPDIR)/libhpcrun_la-kernel-data-map.Tpo -c -o gpu/instrumentation/libhpcrun_la-kernel-data-map.lo `test -f 'gpu/instrumentation/kernel-data-map.c' || echo '$(srcdir)/'`gpu/instrumentation/kernel-data-map.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/instrumentation/$(DEPDIR)/libhpcrun_la-kernel-data-map.Tpo gpu/instrumentation/$(DEPDIR)/libhpcrun_la-kernel-data-map.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/instrumentation/kernel-data-map.c' object='gpu/instrumentation/libhpcrun_la-kernel-data-map.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/instrumentation/libhpcrun_la-gtpin-instrumentation-kernel-data-map.lo `test -f 'gpu/instrumentation/gtpin-instrumentation-kernel-data-map.c' || echo '$(srcdir)/'`gpu/instrumentation/gtpin-instrumentation-kernel-data-map.c
-
-gpu/instrumentation/libhpcrun_la-gtpin-instrumentation-kernel-memory-map.lo: gpu/instrumentation/gtpin-instrumentation-kernel-memory-map.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/instrumentation/libhpcrun_la-gtpin-instrumentation-kernel-memory-map.lo -MD -MP -MF gpu/instrumentation/$(DEPDIR)/libhpcrun_la-gtpin-instrumentation-kernel-memory-map.Tpo -c -o gpu/instrumentation/libhpcrun_la-gtpin-instrumentation-kernel-memory-map.lo `test -f 'gpu/instrumentation/gtpin-instrumentation-kernel-memory-map.c' || echo '$(srcdir)/'`gpu/instrumentation/gtpin-instrumentation-kernel-memory-map.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/instrumentation/$(DEPDIR)/libhpcrun_la-gtpin-instrumentation-kernel-memory-map.Tpo gpu/instrumentation/$(DEPDIR)/libhpcrun_la-gtpin-instrumentation-kernel-memory-map.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/instrumentation/gtpin-instrumentation-kernel-memory-map.c' object='gpu/instrumentation/libhpcrun_la-gtpin-instrumentation-kernel-memory-map.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/instrumentation/libhpcrun_la-gtpin-instrumentation-kernel-memory-map.lo `test -f 'gpu/instrumentation/gtpin-instrumentation-kernel-memory-map.c' || echo '$(srcdir)/'`gpu/instrumentation/gtpin-instrumentation-kernel-memory-map.c
-
-gpu/instrumentation/libhpcrun_la-kernel_runs_correlation_offset_map.lo: gpu/instrumentation/kernel_runs_correlation_offset_map.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/instrumentation/libhpcrun_la-kernel_runs_correlation_offset_map.lo -MD -MP -MF gpu/instrumentation/$(DEPDIR)/libhpcrun_la-kernel_runs_correlation_offset_map.Tpo -c -o gpu/instrumentation/libhpcrun_la-kernel_runs_correlation_offset_map.lo `test -f 'gpu/instrumentation/kernel_runs_correlation_offset_map.c' || echo '$(srcdir)/'`gpu/instrumentation/kernel_runs_correlation_offset_map.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/instrumentation/$(DEPDIR)/libhpcrun_la-kernel_runs_correlation_offset_map.Tpo gpu/instrumentation/$(DEPDIR)/libhpcrun_la-kernel_runs_correlation_offset_map.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/instrumentation/kernel_runs_correlation_offset_map.c' object='gpu/instrumentation/libhpcrun_la-kernel_runs_correlation_offset_map.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/instrumentation/libhpcrun_la-kernel_runs_correlation_offset_map.lo `test -f 'gpu/instrumentation/kernel_runs_correlation_offset_map.c' || echo '$(srcdir)/'`gpu/instrumentation/kernel_runs_correlation_offset_map.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/instrumentation/libhpcrun_la-kernel-data-map.lo `test -f 'gpu/instrumentation/kernel-data-map.c' || echo '$(srcdir)/'`gpu/instrumentation/kernel-data-map.c
 
 gpu/instrumentation/libhpcrun_la-gtpin-instrumentation.lo: gpu/instrumentation/gtpin-instrumentation.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/instrumentation/libhpcrun_la-gtpin-instrumentation.lo -MD -MP -MF gpu/instrumentation/$(DEPDIR)/libhpcrun_la-gtpin-instrumentation.Tpo -c -o gpu/instrumentation/libhpcrun_la-gtpin-instrumentation.lo `test -f 'gpu/instrumentation/gtpin-instrumentation.c' || echo '$(srcdir)/'`gpu/instrumentation/gtpin-instrumentation.c
