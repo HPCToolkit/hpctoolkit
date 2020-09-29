@@ -1152,14 +1152,16 @@ sanitizer_subscribe_callback
     uint64_t src_mem_addr = 0;
     uint64_t dst_mem_addr = 0;
     int32_t src_mem_id = 0;
+    uint64_t src_mem_op_id = 0;
     int32_t dst_mem_id = 0;
+    uint64_t dst_mem_op_id = 0;
     uint64_t size = 0;
 
     if (src_host) {
       src_mem_addr = md->srcAddress;
       src_mem_id = REDSHOW_MEMORY_HOST;
     } else {
-      redshow_memory_query(correlation_id, md->srcAddress, &src_mem_id, &src_mem_addr, &size);
+      redshow_memory_query(correlation_id, md->srcAddress, &src_mem_id, &src_mem_op_id, &src_mem_addr, &size);
       // src shadow memory does not need to be updated
     }
 
@@ -1167,7 +1169,7 @@ sanitizer_subscribe_callback
       dst_mem_addr = md->dstAddress;
       dst_mem_id = REDSHOW_MEMORY_HOST;
     } else {
-      redshow_memory_query(correlation_id, md->dstAddress, &dst_mem_id, &dst_mem_addr, &size);
+      redshow_memory_query(correlation_id, md->dstAddress, &dst_mem_id, &dst_mem_op_id, &dst_mem_addr, &size);
       if (src_host) {
         memcpy((void *)dst_mem_addr, (void *)src_mem_addr, md->size);
       } else {
@@ -1186,10 +1188,11 @@ sanitizer_subscribe_callback
     cct_node_t *api_node = sanitizer_correlation_callback(correlation_id, 0);
 
     int32_t mem_id = 0;
+    uint64_t mem_op_id = 0;
     uint64_t addr = 0;
     uint64_t size = 0;
 
-    redshow_memory_query(correlation_id, md->address, &mem_id, &addr, &size);
+    redshow_memory_query(correlation_id, md->address, &mem_id, &mem_op_id, &addr, &size);
 
     int32_t persistent_id = hpcrun_cct_persistent_id(api_node);
     redshow_memset_register(persistent_id, correlation_id, mem_id, addr, md->value, md->width);
@@ -1392,7 +1395,7 @@ sanitizer_device_flush(void *args)
     }
 
     // Attribute performance metrics to CCTs
-    redshow_flush(sanitizer_thread_id_local);
+    redshow_flush_thread(sanitizer_thread_id_local);
   }
 }
 
@@ -1412,7 +1415,7 @@ sanitizer_device_shutdown(void *args)
   }
 
   // Attribute performance metrics to CCTs
-  redshow_flush(sanitizer_thread_id_local);
+  redshow_flush();
 
   while (atomic_load(&sanitizer_process_thread_counter));
 }
