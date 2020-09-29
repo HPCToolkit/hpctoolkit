@@ -66,6 +66,8 @@
 #include "opencl-intercept.h"
 
 
+// TODO: This file is no longer needed. To be deleted
+
 void
 opencl_intercept_setup
 (
@@ -74,7 +76,7 @@ opencl_intercept_setup
 {
 #ifndef HPCRUN_STATIC_LINK
   ETMSG(OPENCL, "setting up opencl intercepts");
-  gpu_metrics_KER_BLKINFO_enable();
+  gpu_metrics_GPU_INST_enable();
   gtpin_enable_profiling();
 #endif
 }

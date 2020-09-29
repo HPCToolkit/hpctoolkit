@@ -74,8 +74,6 @@
 #include <hpcrun/gpu/gpu-op-placeholders.h>
 #include <hpcrun/gpu/gpu-metrics.h>
 #include <hpcrun/gpu/gpu-monitoring-thread-api.h>
-#include <hpcrun/gpu/opencl/opencl-api.h>
-#include <hpcrun/gpu/opencl/opencl-intercept.h>
 #include <hpcrun/utilities/hpcrun-nanotime.h>
 
 #include <lib/prof-lean/crypto-hash.h>
@@ -449,10 +447,9 @@ onKernelComplete
   kernel_memory_map_t *kernel_memory_list = kernel_memory_map_lookup1((uint64_t)kernel);
   mem_pair_node *block = kernel_memory_list->head;
 
-	kernel_runs_correlation_offset *kco_head = kernel_correlation_offset_map_lookup1((uint64_t)kernelExec);
+	kernel_runs_correlation_offset *kco_head = kernel_correlation_offset_map_lookup1((uint64_t)kernelExec)->head;
 	kernel_runs_correlation_offset *kco_curr = kco_head;
   uint32_t correlation_id = kco_curr->correlation_id;
-	printf("correlation_id: %d. ptr: %p\n", correlation_id, kco_curr);
 
   while (block != NULL) {
     uint32_t thread_count = GTPin_MemSampleLength(block->mem);
@@ -467,7 +464,7 @@ onKernelComplete
     uint64_t execution_count = total; // + bm->val 
 
     gpu_activity_t gpu_activity;
-		printf("correlation_id: %d. ptr: %d\n", correlation_id, kco_curr->offset);
+		activityNotify();  
 		while(kco_curr->offset != block->endOffset) {
 			gpu_activity_t gpu_activity;
 	    kernelBlockActivityProcess(&gpu_activity, kco_curr->correlation_id,
@@ -477,7 +474,6 @@ onKernelComplete
     block = block->next;
     //how to make offset the primary key within the cct and += the execution value for existing ccts?
   }
-  activityNotify();  
 }
 
 

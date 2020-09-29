@@ -47,7 +47,6 @@
 
 #include "gtpin-instrumentation-kernel-memory-map.h"
 #include "gtpin-instrumentation-kernel-data-map.h"
-//#include "kernel_offset_map.h"
 #include "kernel_runs_correlation_offset_map.h"
 
 //******************************************************************************
