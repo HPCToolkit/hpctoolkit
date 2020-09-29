@@ -271,7 +271,8 @@ hpcrun_threadMgr_data_get_safe
  int id,
  cct_ctxt_t *thr_ctxt,
  thread_data_t **data,
- bool has_trace
+ bool has_trace,
+ bool demand_new_thread
 )
 {
   thread_data_t *td_self;
@@ -279,11 +280,11 @@ hpcrun_threadMgr_data_get_safe
 
   if (hpcrun_td_avail()) {
     td_self = hpcrun_get_thread_data();
-    res = hpcrun_threadMgr_data_get(id, thr_ctxt, data, has_trace);
+    res = hpcrun_threadMgr_data_get(id, thr_ctxt, data, has_trace, demand_new_thread);
     hpcrun_set_thread_data(td_self);
   }
   else{
-    res = hpcrun_threadMgr_data_get(id, thr_ctxt, data, has_trace);
+    res = hpcrun_threadMgr_data_get(id, thr_ctxt, data, has_trace, demand_new_thread);
   }
   return res;
 }
@@ -303,13 +304,13 @@ hpcrun_threadMgr_data_get_safe
  *   Side effect: Overwrites pthread_specific data
  *****/
 bool
-hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data, bool has_trace)
+hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data, bool has_trace, bool demand_new_thread)
 {
   // -----------------------------------------------------------------
   // if we don't want coalesce threads, just allocate it and return
   // -----------------------------------------------------------------
 
-  if (!is_compact_thread()) {
+  if (!is_compact_thread() || demand_new_thread) {
     *data = allocate_and_init_thread_data(id, thr_ctxt, has_trace);
     return true;
   }
