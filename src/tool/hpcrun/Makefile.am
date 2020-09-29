@@ -748,18 +748,9 @@ libhpcrun_la_LIBADD =  \
 	-L$(LIBELF_LIB) -lelf  \
 	$(PERFMON_LDFLAGS_DYN)  \
 	$(OPT_ROCM_LDFLAGS)  \
-	$(MBEDTLS_LIBS)
-
-if OPT_LIBUNWIND_STATIC_FPIC
-    libhpcrun_la_LIBADD += $(OUR_LIBUNWIND_A)
-else
-    libhpcrun_la_LIBADD += $(LIBUNWIND_LDFLAGS_DYN)
-endif
-if OPT_LZMA_STATIC_FPIC
-    libhpcrun_la_LIBADD += $(OUR_LZMA_A)
-else
-    libhpcrun_la_LIBADD += $(LZMA_LDFLAGS_DYN)
-endif
+	$(MBEDTLS_LIBS)  \
+	$(OUR_LIBUNWIND_A)  \
+	$(OUR_LZMA_A)
 
 libhpcrun_o_LDADD =  \
 	$(PROF_LEAN_A)  \
