@@ -743,6 +743,7 @@ logit(cct_node_t* n, cct_op_arg_t arg, size_t l)
 void*
 hpcrun_thread_init(int id, local_thread_data_t* local_thread_data, bool has_trace)
 {
+  bool demand_new_thread = false;
   cct_ctxt_t* thr_ctxt = local_thread_data ? local_thread_data->thr_ctxt : NULL;
 
   hpcrun_mmap_init();
@@ -754,7 +755,7 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data, bool has_trac
   // ----------------------------------------
 
   thread_data_t* td = NULL;
-  hpcrun_threadMgr_data_get_safe(id, thr_ctxt, &td, has_trace);
+  hpcrun_threadMgr_data_get_safe(id, thr_ctxt, &td, has_trace, demand_new_thread);
   hpcrun_set_thread_data(td);
 
   td->inside_hpcrun = 1;  // safe enter, disable signals
