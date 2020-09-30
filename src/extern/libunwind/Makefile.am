@@ -59,7 +59,7 @@ NEW_LIB = libunwind.a
 
 OBJCOPY = objcopy
 
-SYMBOL_NAMES = mmap munmap
+SYMBOL_NAMES = mmap munmap dl_iterate_phdr
 
 REDEFINE_ARGS = $(foreach name,$(SYMBOL_NAMES),--redefine-sym $(name)=hpcrun_real_$(name))
 
