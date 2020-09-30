@@ -76,7 +76,6 @@
 #include "gpu-trace-item.h"
 #include "gpu-trace-channel-set.h"
 #include "gpu-trace.h"
-#include "gpu-print.h"
 
 
 
@@ -85,6 +84,7 @@
 //******************************************************************************
 
 #define DEBUG 0
+#include "gpu-print.h"
 
 
 
@@ -454,10 +454,8 @@ gpu_trace_fini
     gpu_trace_channel_set_notify(set_index);
   }
 
-//  gpu_context_stream_map_signal_all();
-
-
   while (atomic_load(&active_streams_counter));
+
 }
 
 static void

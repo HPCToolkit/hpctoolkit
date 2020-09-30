@@ -58,10 +58,15 @@
 #include "gpu-operation-item.h"
 #include "gpu-operation-item-process.h"
 
+#define DEBUG 0
+#include "gpu-print.h"
+
 
 //******************************************************************************
 // macros
 //******************************************************************************
+
+
 
 #define CHANNEL_FILL_COUNT 100
 
@@ -184,7 +189,7 @@ gpu_operation_channel_produce
   gpu_operation_item_t *new_item = gpu_operation_item_alloc(channel);
   *new_item = *it;
 
-  printf("\nOPERATION_PRODUCE: channel = %p || return_channel = %p -> activity = %p | corr = %u kind = %s, type = %s\n\n",
+  PRINT("\nOPERATION_PRODUCE: channel = %p || return_channel = %p -> activity = %p | corr = %u kind = %s, type = %s\n\n",
          channel, new_item->channel, &new_item->activity,
          (new_item->activity.kind == GPU_ACTIVITY_MEMCPY)?new_item->activity.details.memcpy.correlation_id:new_item->activity.details.kernel.correlation_id,
          gpu_kind_to_string(new_item->activity.kind),
@@ -216,7 +221,7 @@ gpu_operation_channel_consume
 
     if (!it) break;
 
-    printf("\nOPERATION_CONSUME: op_channel = %p || channel = %p , activity = %p | corr = %u, kind = %s, type = %s\n",
+    PRINT("\nOPERATION_CONSUME: op_channel = %p || channel = %p , activity = %p | corr = %u, kind = %s, type = %s\n",
            channel, it->channel, &it->activity,
            (it->activity.kind == GPU_ACTIVITY_MEMCPY)?it->activity.details.memcpy.correlation_id:it->activity.details.kernel.correlation_id,
            gpu_kind_to_string(it->activity.kind),

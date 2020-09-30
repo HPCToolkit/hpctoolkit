@@ -55,7 +55,7 @@
 
 #define SECONDS_UNTIL_WAKEUP 2
 
-
+#define DEBUG 0
 
 //******************************************************************************
 // local includes
@@ -190,7 +190,7 @@ gpu_trace_channel_produce
 
   *cti = *ti;
 
-  printf("\n===========TRACE_PRODUCE: ti = %p || submit = %lu, start = %lu, end = %lu, cct_node = %p\n\n",
+  PRINT("\n===========TRACE_PRODUCE: ti = %p || submit = %lu, start = %lu, end = %lu, cct_node = %p\n\n",
          ti,
          ti->cpu_submit_time,
          ti->start,
@@ -223,7 +223,7 @@ gpu_trace_channel_consume
     gpu_trace_item_t *ti = channel_pop(channel, bichannel_direction_forward);
     if (!ti) break;
 
-    printf("\n===========TRACE_CONSUME: ti = %p || submit = %lu, start = %lu, end = %lu, cct_node = %p\n\n",
+    PRINT("\n===========TRACE_CONSUME: ti = %p || submit = %lu, start = %lu, end = %lu, cct_node = %p\n\n",
            ti,
            ti->cpu_submit_time,
            ti->start,

@@ -70,6 +70,7 @@ typedef void *(*pthread_start_routine_t)(void *);
 //******************************************************************************
 
 static _Atomic(bool) stop_activity_flag;
+static _Atomic(bool) gpu_trace_finished;
 
 static atomic_uint stream_id;
 static __thread uint32_t my_operation_set_id = -1;
@@ -116,6 +117,7 @@ void
   }
 
   gpu_trace_fini(NULL);
+  atomic_store(&gpu_trace_finished, true);
 
   return NULL;
 }
@@ -129,6 +131,7 @@ void
 {
   pthread_t thread;
   atomic_store(&stop_activity_flag, false);
+  atomic_store(&gpu_trace_finished, false);
   atomic_store(&stream_id, 0);
 
   gpu_operation_channel_stack_alloc(max_threads_consumers);
@@ -179,7 +182,7 @@ void
     gpu_operation_channel_set_apply(gpu_operation_channel_signal_consumer, set_index);
   }
 
-
+  while (!atomic_load(&gpu_trace_finished));
 }
 
 

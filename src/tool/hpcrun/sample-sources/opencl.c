@@ -157,7 +157,7 @@ METHOD_FN(finalize_event_list)
   opencl_api_initialize();
 
 
-//  // Register shutdown functions to write trace files
+//  gpu_trace_fini - finalized from opencl_api_finalize -> gpu_activity_multiplexer_fini
 //  device_trace_finalizer_shutdown.fn = gpu_trace_fini;
 //  device_finalizer_register(device_finalizer_type_shutdown, &device_trace_finalizer_shutdown);
 
