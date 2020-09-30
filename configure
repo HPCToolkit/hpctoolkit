@@ -1774,7 +1774,7 @@ Optional Packages:
   --with-bzip=PATH        path to bzip2 install directory
   --with-dyninst=PATH     path to dyninst install directory
   --with-elfutils=PATH    path to elfutils install directory
-  --with-gotcha=PATH      path to gotcha install directory
+  --with-gotcha=PATH      path to gotcha install directory (ignored)
   --with-libdwarf=PATH    path to libdwarf install directory
   --with-libiberty=PATH   path to libiberty install directory (only needed if
                           binutils does not contain libiberty.a)
@@ -20643,6 +20643,9 @@ $as_echo "$LIBELF" >&6; }
 # Option: --with-gotcha=PATH
 #-------------------------------------------------
 
+# NOTE: currently not used, but there's a non-trivial chance that it
+# may come back.
+
 GOTCHA="$default_gotcha_prefix"
 
 GOTCHA_IFLAGS=
@@ -20655,6 +20658,11 @@ if test "${with_gotcha+set}" = set; then :
   withval=$with_gotcha; GOTCHA="$withval"
 fi
 
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: skipping gotcha ..." >&5
+$as_echo "$as_me: skipping gotcha ..." >&6;}
+
+if false ; then
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for gotcha" >&5
 $as_echo_n "checking for gotcha... " >&6; }
@@ -20743,6 +20751,8 @@ $as_echo "$gotcha_has_filter" >&6; }
     fi
     ;;
 esac
+
+fi  # skip test for gotcha
 
 
 
@@ -26968,8 +26978,6 @@ $as_echo "$as_me:   dyninst:      ${DYNINST}" >&6;}
 $as_echo "$as_me:   dyninst:      ${dyninst_features}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   elfutils:     ${LIBELF}" >&5
 $as_echo "$as_me:   elfutils:     ${LIBELF}" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   gotcha:       ${GOTCHA}" >&5
-$as_echo "$as_me:   gotcha:       ${GOTCHA}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   libdwarf:     ${LIBDWARF}" >&5
 $as_echo "$as_me:   libdwarf:     ${LIBDWARF}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   libiberty:    ${LIBIBERTY}" >&5
