@@ -108,7 +108,7 @@
 // where any GPU can indicate that its functions should be added to
 // the module ignore map when that type of GPU is being monitored.
 
-#define NUM_FNS 6
+#define NUM_FNS 7
 
 
 
@@ -134,6 +134,7 @@ static const char *IGNORE_FNS[NUM_FNS] = {
   "roctracer_set_properties",  // amd roctracer library
   "amd_dbgapi_initialize",     // amd debug library
   "hipKernelNameRefByPtr",     // amd hip runtime
+  "hsa_queue_create",          // amd hsa runtime
 };
 static module_ignore_entry_t modules[NUM_FNS];
 static pfq_rwlock_t modules_lock;
