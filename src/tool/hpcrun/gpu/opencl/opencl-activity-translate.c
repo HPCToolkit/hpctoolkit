@@ -58,7 +58,6 @@
 
 #include "opencl-activity-translate.h"
 #include "opencl-api.h"
-#include "opencl-intercept.h"
 
 
 

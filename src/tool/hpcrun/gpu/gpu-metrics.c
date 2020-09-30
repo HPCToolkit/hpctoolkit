@@ -84,8 +84,7 @@
   macro(GPU_INST, 9)  \
   macro(GTIMES, 10)  \
   macro(KINFO, 12)  \
-  macro(GSAMP, 13)  \
-  macro(KER_BLKINFO, 14)
+  macro(GSAMP, 13)
 
 
 #define FORALL_METRIC_KINDS(macro)  \
@@ -197,10 +196,6 @@ name ## _metric_kind
   sprintf(reg_formula, "100*(#%d/#%d)", METRIC_ID(GPU_KINFO_FGP_ACT_ACUMU), METRIC_ID(GPU_KINFO_FGP_MAX_ACUMU)); \
   reg_metric->formula = reg_formula; \
   reg_metric->format  = FORMAT_DISPLAY_PERCENTAGE
-
-
-#define COPY_METRIC_TO_SIBLINGS_IN_BBLOCK(name) \
-  hpcrun_set_relocation_type(METRIC_ID(name), HPCRUN_FMT_METRIC_COPY_TO_INST_SIBLINGS_IN_BBLOCK); \
 
 
 

@@ -311,12 +311,6 @@ void hpcrun_set_percent(int metric_id, uint8_t show_percent) {
 }
 
 
-void hpcrun_set_relocation_type(int metric_id, uint8_t relocation_type) {
-  metric_desc_t* mdesc = hpcrun_id2metric_linked(metric_id);
-  mdesc->flags.fields.relocation_type = relocation_type;
-}
-
-
 metric_desc_p_tbl_t*
 hpcrun_get_metric_tbl(kind_info_t **curr)
 {

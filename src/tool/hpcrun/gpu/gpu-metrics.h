@@ -381,10 +381,6 @@ typedef enum {
   FORALL_GSAMP_INT(macro)			\
   FORALL_GSAMP_REAL(macro)				
 
-#define FORALL_KER_BLKINFO(macro)		\
-  macro("KER:BLK_EXEC_COUNT",            KER_BLK_EXECUTION_COUNT,		\
-	"count of number of dynamic executions of block")
-
 
 
 //******************************************************************************

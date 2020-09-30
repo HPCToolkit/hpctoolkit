@@ -51,7 +51,40 @@
 #include <hpcrun/gpu/gpu-activity.h>
 #include <lib/prof-lean/hpcrun-opencl.h>
 
-#include "opencl-intercept.h"
+
+
+//******************************************************************************
+// type declarations
+//******************************************************************************
+
+typedef enum {
+  memcpy_H2D                      = 0,
+  memcpy_D2H                      = 1,
+  kernel                          = 2
+} opencl_call_t;
+
+
+typedef struct cl_generic_callback_t {
+  uint64_t correlation_id;
+  opencl_call_t type;
+} cl_generic_callback_t;
+
+
+typedef struct cl_kernel_callback_t {
+  uint64_t correlation_id;
+  opencl_call_t type;
+} cl_kernel_callback_t;
+
+
+typedef struct cl_memory_callback_t {
+  uint64_t correlation_id;
+  opencl_call_t type;
+  bool fromHostToDevice;
+  bool fromDeviceToHost;
+  size_t size;
+} cl_memory_callback_t;
+
+
 
 //******************************************************************************
 // interface operations

@@ -52,7 +52,7 @@
 
 #include <lib/prof-lean/bistack.h>
 
-#include "opencl-intercept.h"
+#include "opencl-api.h"
 
 
 
