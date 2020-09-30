@@ -70,7 +70,7 @@
 #include <hpcrun/gpu/gpu-application-thread-api.h>
 #include <hpcrun/gpu/gpu-correlation.h>
 #include <hpcrun/gpu/gpu-correlation-channel.h>
-#include <hpcrun/gpu/gpu-correlation-id-map.h>
+#include <hpcrun/gpu/gpu-host-correlation-map.h>
 #include <hpcrun/gpu/gpu-op-placeholders.h>
 #include <hpcrun/gpu/gpu-metrics.h>
 #include <hpcrun/gpu/gpu-monitoring-thread-api.h>
@@ -93,6 +93,11 @@
 static atomic_ullong correlation_id;
 
 static spinlock_t files_lock = SPINLOCK_UNLOCKED;
+
+static bool gtpin_use_runtime_callstack = false;
+
+static __thread uint64_t gtpin_correlation_id = 0;
+static __thread uint64_t gtpin_cpu_submit_time = 0;
 
 //******************************************************************************
 // private operations
@@ -141,19 +146,26 @@ createKernelNode
  uint64_t correlation_id
 )
 {
-  cct_node_t *api_node = gpu_application_thread_correlation_callback(correlation_id);
-
-  gpu_op_ccts_t gpu_op_ccts;
-  gpu_op_placeholder_flags_t gpu_op_placeholder_flags = 0;
-  gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_kernel);
-
-  hpcrun_safe_enter();
-  gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
-  hpcrun_safe_exit();
-
-  gpu_activity_channel_consume(gpu_metrics_attribute);
   uint64_t cpu_submit_time = hpcrun_nanotime();
-  gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, cpu_submit_time);
+
+  if (gtpin_use_runtime_callstack) {
+    // XXX(Keren): gtpin's call stack is a mass, better to use opencl's call path
+    // onKernelRun->clEnqueueNDRangeKernel_wrapper->opencl_subscriber_callback
+    gtpin_correlation_id = correlation_id;
+    gtpin_cpu_submit_time = cpu_submit_time;
+  } else {
+    cct_node_t *api_node = gpu_application_thread_correlation_callback(correlation_id);
+
+    gpu_op_ccts_t gpu_op_ccts;
+    gpu_op_placeholder_flags_t gpu_op_placeholder_flags = 0;
+    gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_kernel);
+
+    hpcrun_safe_enter();
+    gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
+    hpcrun_safe_exit();
+
+    gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, cpu_submit_time);
+  }
 }
 
 
@@ -270,6 +282,9 @@ activityNotify
  void
 )
 {
+  // Once you attribute this kernel, you want to update the host_correlation_id entry.
+  // Otherwise, the same memory might be reclaimed
+  // gpu_monitoring_thread_activities_ready(allow_update);
   gpu_monitoring_thread_activities_ready();
 }
 
@@ -392,6 +407,8 @@ onKernelRun
  void *v
 )
 {
+  gpu_activity_channel_consume(gpu_metrics_attribute);
+
   GTPINTOOL_STATUS status = GTPINTOOL_STATUS_SUCCESS;
   GTPin_KernelProfilingActive(kernelExec, 1);
   assert(status == GTPINTOOL_STATUS_SUCCESS);
@@ -407,7 +424,9 @@ onKernelComplete
  void *v
 )
 {
-  // Receive correlations from the host thread
+  // Receive correlations from the host thread.
+  // XXX(Keren): This is done usually at the monitor thread, but not guaranteed.
+  // For safety concern, we need to adopt the multiplexer framework.
   activityNotify();  
 
   GTPINTOOL_STATUS status = GTPINTOOL_STATUS_SUCCESS;
@@ -467,6 +486,9 @@ gtpin_enable_profiling
   }
 #endif
 
+  // Use opencl/level zero runtime stack
+  gtpin_use_runtime_callstack = true;
+
   GTPin_OnKernelBuild(onKernelBuild, NULL);
   GTPin_OnKernelRun(onKernelRun, NULL);
   GTPin_OnKernelComplete(onKernelComplete, NULL);
@@ -474,3 +496,14 @@ gtpin_enable_profiling
   GTPIN_Start();
 }
 
+
+void
+gtpin_produce_runtime_callstack
+(
+ gpu_op_ccts_t *gpu_op_ccts
+)
+{
+  if (gtpin_use_runtime_callstack) {
+    gpu_correlation_channel_produce(gtpin_correlation_id, gpu_op_ccts, gtpin_cpu_submit_time);
+  }
+}

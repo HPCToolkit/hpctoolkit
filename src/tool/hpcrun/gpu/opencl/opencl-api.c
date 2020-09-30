@@ -490,6 +490,11 @@ opencl_subscriber_callback
   gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
   hpcrun_safe_exit();
 
+  if (type == kernel) {
+    // Callback to produce gtpin correlation
+    gtpin_produce_runtime_callstack(&gpu_op_ccts);
+  }
+
   gpu_activity_channel_consume(gpu_metrics_attribute);  
   uint64_t cpu_submit_time = CPU_NANOTIME();
   gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, 

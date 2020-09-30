@@ -82,6 +82,13 @@ opencl_timing_info_get
 );
 
 
+cct_node_t *
+opencl_api_node_get
+(
+ void
+);
+
+
 void
 clSetEventCallback_wrapper
 (

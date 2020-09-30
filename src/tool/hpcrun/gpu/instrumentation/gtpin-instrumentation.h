@@ -52,10 +52,20 @@
 // interface operations
 //******************************************************************************
 
+typedef struct gpu_op_ccts_t gpu_op_ccts_t;
+
 void
 gtpin_enable_profiling
 (
  void
 );
+
+
+void
+gtpin_produce_runtime_callstack
+(
+ gpu_op_ccts_t *
+);
+
 
 #endif
