@@ -63,6 +63,8 @@
 #include <hpcrun/memory/hpcrun-malloc.h>
 #include "lib/prof-lean/elf-helper.h"
 
+#include <monitor.h> // enable and disable threads
+
 //******************************************************************************
 // type declarations
 //******************************************************************************
@@ -302,6 +304,11 @@ parse_amd_gpu_binary
   void
 )
 {
+  // rocm debug api library creates a new thread through std::thread.
+  // This breaks automatic thread ignoring code because we only check
+  // the caller of pthread_create. So, we manually ignore the new thread.
+  monitor_disable_new_threads();
+
   rocm_debug_api_init();
   size_t code_object_count;
   rocm_debug_api_query_code_object(&code_object_count);
@@ -334,6 +341,11 @@ parse_amd_gpu_binary
   }
 
   rocm_debug_api_fini();
+
+  // Now we are done with the rocm debug api.
+  // we enable tracing threads
+  monitor_enable_new_threads();
+
   return 0;
 }
 

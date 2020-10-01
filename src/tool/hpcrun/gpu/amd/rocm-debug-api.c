@@ -60,8 +60,6 @@
 #include <hpcrun/sample-sources/libdl.h>
 #include <hpcrun/memory/hpcrun-malloc.h>
 
-#include <monitor.h> // enable and disable threads
-
 //******************************************************************************
 // macros
 //******************************************************************************
@@ -309,10 +307,6 @@ rocm_debug_api_init
   void
 )
 {
-  // rocm debug api library creates a new thread through std::thread.
-  // This breaks automatic thread ignoring code because we only check
-  // the caller of pthread_create. So, we manually ignore the new thread.
-  monitor_disable_new_threads();
   // Fill in call back functions for rocm debug api
   callbacks.allocate_memory = malloc;
   callbacks.deallocate_memory = free;
@@ -336,7 +330,6 @@ rocm_debug_api_fini
 )
 {
   HPCRUN_ROCM_DEBUG_CALL(amd_dbgapi_process_detach, (self));
-  monitor_enable_new_threads();
 }
 
 void
