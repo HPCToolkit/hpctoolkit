@@ -1034,7 +1034,7 @@ sanitizer_subscribe_callback
 
           int32_t persistent_id = hpcrun_cct_persistent_id(api_node);
           Sanitizer_ResourceMemoryData *md = (Sanitizer_ResourceMemoryData *)cbdata;
-          redshow_memory_register(correlation_id, persistent_id, md->address, md->address + md->size);
+          redshow_memory_register(persistent_id, correlation_id, md->address, md->address + md->size);
 
           PRINT("Allocate memory address %p, size %zu, op %lu, id %d\n",
             (void *)md->address, md->size, correlation_id, persistent_id);

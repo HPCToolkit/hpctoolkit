@@ -109,7 +109,7 @@
 #define NVIDIA_CUDA "gpu=nvidia" 
 #define NVIDIA_CUDA_PC_SAMPLING "gpu=nvidia,pc" 
 #define NVIDIA_CUDA_REDUNDANCY "gpu=nvidia,redundancy"
-#define NVIDIA_CUDA_VALUE_FLOW "gpu=nvidia,valueflow"
+#define NVIDIA_CUDA_VALUE_FLOW "gpu=nvidia,value_flow"
 
 
 /******************************************************************************
