@@ -53,8 +53,6 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-
-
 //******************************************************************************
 // local includes
 //******************************************************************************
@@ -159,15 +157,16 @@
 
 #define opencl_path() "libOpenCL.so"
 
-#define FORALL_OPENCL_ROUTINES(macro)          \
-  macro(clBuildProgram)          \
-  macro(clCreateProgramWithSource)          \
-  macro(clCreateCommandQueue)          \
-  macro(clEnqueueNDRangeKernel)          \
-  macro(clEnqueueReadBuffer)          \
-  macro(clEnqueueWriteBuffer)          \
-  macro(clGetEventProfilingInfo)          \
-  macro(clReleaseEvent)              \
+#define FORALL_OPENCL_ROUTINES(macro)  \
+  macro(clBuildProgram)  \
+  macro(clCreateProgramWithSource)  \
+  macro(clCreateCommandQueue)  \
+  macro(clCreateCommandQueueWithProperties)  \
+  macro(clEnqueueNDRangeKernel)  \
+  macro(clEnqueueReadBuffer)  \
+  macro(clEnqueueWriteBuffer)  \
+  macro(clGetEventProfilingInfo)  \
+  macro(clReleaseEvent)  \
   macro(clSetEventCallback)
 
 #define OPENCL_FN_NAME(f) DYN_FN_NAME(f)
@@ -177,6 +176,9 @@
 
 #define OPENCL_PROGRAM_FN(fn, args)      \
   static cl_program (*OPENCL_FN_NAME(fn)) args
+
+#define OPENCL_QUEUE_FN(fn, args)      \
+  static cl_command_queue (*OPENCL_FN_NAME(fn)) args
 
 #define HPCRUN_OPENCL_CALL(fn, args) (OPENCL_FN_NAME(fn) args)
 
@@ -217,7 +219,7 @@ OPENCL_PROGRAM_FN
 );
 
 
-OPENCL_FN
+OPENCL_QUEUE_FN
 (
   clCreateCommandQueue, 
   (
@@ -229,7 +231,19 @@ OPENCL_FN
 );
 
 
-OPENCL_PROGRAM_FN
+OPENCL_QUEUE_FN
+(
+  clCreateCommandQueueWithProperties, 
+  (
+   cl_context,
+   cl_device_id,
+   const cl_bitfield *,
+   cl_int*
+  )
+);
+
+
+OPENCL_FN
 (
   clEnqueueNDRangeKernel, 
   (
@@ -434,6 +448,7 @@ opencl_call_to_string
 }
 
 
+__attribute__((unused))
 static const char*
 opencl_error_report
 (
@@ -559,6 +574,8 @@ opencl_timing_info_get
   HPCRUN_OPENCL_CALL(clGetEventProfilingInfo, 
          (event, CL_PROFILING_COMMAND_END, 
           sizeof(commandEnd), &commandEnd, NULL));
+
+  ETMSG(OPENCL, "duration [%lu, %lu]", commandStart, commandEnd);
 
   set_gpu_interval(interval, (uint64_t)commandStart, (uint64_t)commandEnd);
 }
@@ -689,6 +706,59 @@ clCreateCommandQueue
 
   return HPCRUN_OPENCL_CALL(clCreateCommandQueue, (context, device,
         properties,errcode_ret));  
+}
+
+
+cl_command_queue
+clCreateCommandQueueWithProperties
+(
+ cl_context context,
+ cl_device_id device,
+ const cl_bitfield* properties,
+ cl_int* errcode_ret
+)
+{
+  cl_bitfield *queue_properties = (cl_bitfield *)properties;
+  if (properties == NULL) {
+    queue_properties = (cl_bitfield *)malloc(sizeof(cl_bitfield) * 3);
+    queue_properties[0] = CL_QUEUE_PROPERTIES;
+    queue_properties[1] = CL_QUEUE_PROFILING_ENABLE;
+    queue_properties[2] = 0;
+  } else {
+    int queue_props_id = -1;
+    int props_count = 0;
+    while (properties[props_count] != 0) {
+      if (properties[props_count] == CL_QUEUE_PROPERTIES) {
+        queue_props_id = props_count;
+      }
+      ++props_count;
+    }
+
+    if (queue_props_id >= 0 && queue_props_id + 1 < props_count) {
+      queue_properties = (cl_bitfield *)malloc(sizeof(cl_bitfield) * (props_count + 1));
+      for (int i = 0; i < props_count; ++i) {
+        queue_properties[i] = properties[i];
+      }
+      // We do have a queue property entry, just enable profiling
+      queue_properties[queue_props_id + 1] |= CL_QUEUE_PROFILING_ENABLE;
+      queue_properties[props_count] = 0;
+    } else {
+      // We do not have a queue property entry, need to allocate a queue property entry and set up
+      queue_properties = (cl_bitfield *)malloc(sizeof(cl_bitfield) * (props_count + 3));
+      for (int i = 0; i < props_count; ++i) {
+        queue_properties[i] = properties[i];
+      }
+      queue_properties[props_count] = CL_QUEUE_PROPERTIES;
+      queue_properties[props_count + 1] = CL_QUEUE_PROFILING_ENABLE;
+      queue_properties[props_count + 2] = 0;
+    }
+  }
+  cl_command_queue queue = HPCRUN_OPENCL_CALL(clCreateCommandQueueWithProperties, (context, device, queue_properties, errcode_ret));
+  if (queue_properties != NULL) {
+    // The property is created by us
+    free(queue_properties);
+  }
+  return queue;
 }
 
 
