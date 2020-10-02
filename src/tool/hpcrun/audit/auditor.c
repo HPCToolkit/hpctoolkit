@@ -286,9 +286,13 @@ unsigned int la_objopen(struct link_map* map, Lmid_t lmid, uintptr_t* cookie) {
   abort();  // unreachable
 }
 
-// Transition from connecting to connected, once the mainlib is ready.
+// Transition to connected, once the mainlib is ready.
 void mainlib_connected(const char* vdso_path) {
-  if(state != state_connecting) return;
+  if(state >= state_connected) return;
+  if(state < state_attached) {
+    fprintf(stderr, "[audit] Attempt to connect before attached!\n");
+    abort();
+  }
 
   // Reverse the stack of buffered notifications, so they get reported in order.
   struct buffered_entry_t* queue = NULL;
@@ -350,7 +354,6 @@ void la_activity(uintptr_t* cookie, unsigned int flag) {
         fprintf(stderr, "[audit] Beginning early initialization\n");
       state = state_connecting;
       hooks.initialize();
-      mainlib_connected(NULL);
       break;
     }
     case state_connecting:
@@ -375,7 +378,6 @@ void la_preinit(uintptr_t* cookie) {
       fprintf(stderr, "[audit] Beginning late initialization\n");
     state = state_connecting;
     hooks.initialize();
-    mainlib_connected(NULL);
   }
 }
 
