@@ -486,6 +486,8 @@ gtpin_enable_profiling
   }
 #endif
 
+  gpu_metrics_GPU_INST_enable();
+
   // Use opencl/level zero runtime stack
   gtpin_use_runtime_callstack = true;
 

@@ -602,7 +602,6 @@ opencl_api_initialize
  void
 )
 {
-  gpu_metrics_GPU_INST_enable();
   gtpin_enable_profiling();
   atomic_store(&correlation_id, 0);
   atomic_store(&opencl_pending_operations, 0);
