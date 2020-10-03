@@ -730,6 +730,10 @@ clCreateCommandQueueWithProperties
     while (properties[props_count] != 0) {
       if (properties[props_count] == CL_QUEUE_PROPERTIES) {
         queue_props_id = props_count;
+        ++props_count;
+      } else if (properties[props_count] == 0x1094) {
+        // TODO(Keren): A temporay hack
+        ++props_count;
       }
       ++props_count;
     }

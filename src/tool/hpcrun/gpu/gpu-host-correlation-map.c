@@ -129,7 +129,7 @@ static gpu_host_correlation_map_entry_t *map_root = NULL;
 
 static gpu_host_correlation_map_entry_t *free_list = NULL;
 
-
+static bool allow_replace = false;
 
 //******************************************************************************
 // private operations
@@ -215,10 +215,17 @@ gpu_host_correlation_map_insert
  gpu_activity_channel_t *activity_channel
 )
 {
-  if (st_lookup(&map_root, host_correlation_id)) { 
-    // fatal error: host_correlation id already present; a
-    // correlation should be inserted only once.
-    assert(0);
+  gpu_host_correlation_map_entry_t *entry = st_lookup(&map_root, host_correlation_id);
+  if (entry) {
+    if (allow_replace) {
+      entry->gpu_op_ccts = *gpu_op_ccts;
+      entry->cpu_submit_time = cpu_submit_time;
+      entry->activity_channel = activity_channel;
+    } else {
+      // fatal error: host_correlation id already present; a
+      // correlation should be inserted only once.
+      assert(0);
+    }
   } else {
     gpu_host_correlation_map_entry_t *entry = 
       gpu_host_correlation_map_entry_new(host_correlation_id, gpu_op_ccts, 
@@ -330,6 +337,15 @@ gpu_host_correlation_map_entry_cpu_submit_time
   return entry->cpu_submit_time;
 }
 
+
+void
+gpu_host_correlation_map_replace_set
+(
+ bool replace
+)
+{
+  allow_replace = replace;
+}
 
 
 //*****************************************************************************

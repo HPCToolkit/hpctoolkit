@@ -99,6 +99,23 @@ gpu_host_correlation_map_insert
 );
 
 
+void
+gpu_host_correlation_map_replace
+(
+ uint64_t host_correlation_id,
+ gpu_op_ccts_t *gpu_op_ccts,
+ uint64_t cpu_gpu_time_offset,
+ gpu_activity_channel_t *activity_channel
+);
+
+
+void
+gpu_host_correlation_map_replace_set
+(
+ bool replace
+);
+
+
 // samples == total_samples remove the node and return false
 bool
 gpu_host_correlation_map_samples_increase

@@ -489,6 +489,9 @@ gtpin_enable_profiling
   // Use opencl/level zero runtime stack
   gtpin_use_runtime_callstack = true;
 
+  // Enable host correlation id replace
+  gpu_host_correlation_map_replace_set(true);
+
   GTPin_OnKernelBuild(onKernelBuild, NULL);
   GTPin_OnKernelRun(onKernelRun, NULL);
   GTPin_OnKernelComplete(onKernelComplete, NULL);
