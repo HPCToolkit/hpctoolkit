@@ -44,7 +44,7 @@
 #ifndef gpu_trace_channel_set_h
 #define gpu_trace_channel_set_h
 
-
+#include <lib/prof-lean/stacks.h>
 
 //******************************************************************************
 // forward type declarations
@@ -69,8 +69,19 @@ typedef void (*gpu_trace_channel_fn_t)
 // interface operations
 //******************************************************************************
 
+
 void
-gpu_trace_channel_stack_alloc(int size);
+gpu_trace_channel_stack_init
+(
+ void *trace_channel_set_ptr
+);
+
+
+void *
+gpu_trace_channel_stack_alloc
+(
+ int size
+);
 
 
 void

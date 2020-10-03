@@ -55,7 +55,7 @@
 
 #define SECONDS_UNTIL_WAKEUP 2
 
-#define DEBUG 0
+#define DEBUG 1
 
 //******************************************************************************
 // local includes
