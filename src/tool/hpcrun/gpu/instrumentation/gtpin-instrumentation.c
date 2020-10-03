@@ -407,6 +407,8 @@ onKernelRun
  void *v
 )
 {
+  ETMSG(OPENCL, "onKernelRun starting. Inserted: correlation %llu", (uint64_t)kernelExec);
+
   gpu_activity_channel_consume(gpu_metrics_attribute);
 
   GTPINTOOL_STATUS status = GTPINTOOL_STATUS_SUCCESS;
@@ -431,7 +433,7 @@ onKernelComplete
 
   GTPINTOOL_STATUS status = GTPINTOOL_STATUS_SUCCESS;
   GTPinKernel kernel = GTPin_KernelExec_GetKernel(kernelExec);
-  ETMSG(OPENCL, "onKernelComplete starting. Lookup: key: %"PRIu64 "",(uint64_t)kernel);
+  ETMSG(OPENCL, "onKernelComplete starting. Lookup: correlation %llu, kernel: %llu", (uint64_t)kernelExec, (uint64_t)kernel);
   assert(kernel_data_map_lookup((uint64_t)kernel) != 0);
 
   kernel_data_map_entry_t *kernel_data_map_entry = kernel_data_map_lookup((uint64_t)kernel);
