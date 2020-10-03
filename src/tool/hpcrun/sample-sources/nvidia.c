@@ -268,8 +268,8 @@ METHOD_FN(init)
   // Reset cupti flags
   cupti_device_init();
 
-//  // Init records
-//  gpu_trace_init();
+  // Init records
+  gpu_trace_init();
 }
 
 static void
@@ -414,9 +414,6 @@ METHOD_FN(process_event_list, int lush_metrics)
 static void
 METHOD_FN(finalize_event_list)
 {
-  // Init records
-  gpu_trace_init();
-
   cupti_enable_activities();
 }
 

@@ -502,7 +502,7 @@ gpu_trace_channel_set_append
  gpu_trace_t *trace
 )
 {
-  int num_threads_loc;
+  static int num_threads_loc;
   static int stream_id = 0;
 
   if (stream_id == 0) {

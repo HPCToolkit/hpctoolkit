@@ -945,9 +945,9 @@ monitor_init_process(int *argc, char **argv, void* data)
   // fnbounds must be after module_ignore_map
   fnbounds_init();
 
-  hpcrun_registered_sources_init();
-
   control_knob_init();
+
+  hpcrun_registered_sources_init();
 
   hpcrun_do_custom_init();
 
