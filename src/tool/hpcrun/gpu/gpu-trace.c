@@ -242,7 +242,14 @@ gpu_trace_start_adjust
 )
 {
   uint64_t last_end = td->gpu_trace_prev_time;
-  if (start < last_end) {
+
+  if (end < last_end){
+    // If stream becomes unordered, mark it (it will be sorted in prof)
+    td->core_profile_trace_data.traceOrdered = false;
+    return start;
+  }
+
+  if(start < last_end) {
     // If we have a hardware measurement error (Power9),
     // set the offset as the end of the last activity
     start = last_end + 1;
