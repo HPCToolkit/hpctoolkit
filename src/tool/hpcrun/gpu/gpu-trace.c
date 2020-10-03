@@ -83,7 +83,7 @@
 // macros
 //******************************************************************************
 
-#define DEBUG 1
+#define DEBUG 0
 #include "gpu-print.h"
 
 #define MIN(a,b)  (((a)<=(b))?(a):(b))
@@ -430,7 +430,8 @@ get_num_my_streams(int thread_id){
   int num_streams_loc = atomic_load(&num_streams);
   int num_threads_loc = atomic_load(&num_threads);
   if (num_threads_loc - 1 == thread_id){
-    return num_streams_loc % streams_per_thread;
+    int my_streams = num_streams_loc % streams_per_thread;
+    return my_streams?my_streams:streams_per_thread;
   } else{
     return streams_per_thread;
   }
@@ -494,6 +495,8 @@ gpu_trace_fini
 
   while (atomic_load(&active_streams_counter));
 
+  printf("NUM_TRACE_THREADS = %d\n", atomic_load(&num_threads));
+
 }
 
 static void
@@ -502,10 +505,10 @@ gpu_trace_channel_set_append
  gpu_trace_t *trace
 )
 {
-  static int num_threads_loc;
-  static int stream_id = 0;
+  int num_threads_loc;
+  static __thread int stream_id_loc = 0;
 
-  if (stream_id == 0) {
+  if (stream_id_loc == 0) {
 
     num_threads_loc = atomic_fetch_add(&num_threads, 1);
     PRINT("gpu-trace: Create new thread (num = %u)\n", num_threads_loc);
@@ -521,12 +524,12 @@ gpu_trace_channel_set_append
                    stream_set);
   }
 
-  gpu_trace_channel_set_insert(trace->trace_channel, stream_id);
+  gpu_trace_channel_set_insert(trace->trace_channel, stream_id_loc);
 
-  PRINT("gpu-trace:Thread_id = %d -> stream = %u\n", num_threads_loc, stream_id);
+  PRINT("gpu-trace:Thread_id = %d -> stream = %u\n", num_threads_loc, stream_id_loc);
 
   atomic_fetch_add(&active_streams_counter, 1);
-  stream_id = (stream_id+1) % streams_per_thread;
+  stream_id_loc = (stream_id_loc+1) % streams_per_thread;
 }
 
 
