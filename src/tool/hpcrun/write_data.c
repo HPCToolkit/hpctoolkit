@@ -198,6 +198,7 @@ lazy_open_data_file(core_profile_trace_data_t * cptd)
                         HPCRUN_FMT_NV_pid, pidStr,
                         HPCRUN_FMT_NV_traceMinTime, traceMinTimeStr,
                         HPCRUN_FMT_NV_traceMaxTime, traceMaxTimeStr,
+                        HPCRUN_FMT_NV_traceOrdered, cptd->traceOrdered?"1":"0",
                         NULL);
   return fs;
 }
