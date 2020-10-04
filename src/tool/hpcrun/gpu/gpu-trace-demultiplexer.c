@@ -40,6 +40,7 @@
 // if advised of the possibility of such damage.
 //
 // ******************************************************* EndRiceCopyright *
+
 #include <hpcrun/control-knob.h>
 #include <lib/prof-lean/stdatomic.h>
 #include <memory/hpcrun-malloc.h>
@@ -65,9 +66,9 @@ typedef struct gpu_trace_channel_set_t{
   void *channel_set_ptr;
   gpu_trace_channel_set_t *next;
   pthread_t thread;
-  int channel_set_index;
   atomic_uint channel_index;
 }gpu_trace_channel_set_t;
+
 
 
 //******************************************************************************
@@ -78,7 +79,7 @@ static gpu_trace_channel_set_t *trace_channel_set_list_head = NULL;
 static gpu_trace_channel_set_t *trace_channel_set_list_tail = NULL;
 
 static int streams_per_thread;
-static uint32_t channel_set_index_count;
+
 
 
 //******************************************************************************
@@ -88,13 +89,12 @@ static uint32_t channel_set_index_count;
 static gpu_trace_channel_set_t *
 gpu_trace_channel_set_create
 (
-void
+ void
 )
 {
   gpu_trace_channel_set_t *new_channel_set= hpcrun_malloc(sizeof(gpu_trace_channel_set_t));
   new_channel_set->next = NULL;
   new_channel_set->channel_set_ptr = gpu_trace_channel_stack_alloc(streams_per_thread);
-  new_channel_set->channel_set_index = channel_set_index_count++;
   atomic_store(&new_channel_set->channel_index, 0);
 
   pthread_create(&new_channel_set->thread, NULL, (pthread_start_routine_t) gpu_trace_record,
@@ -107,11 +107,10 @@ void
 static void
 gpu_trace_channel_set_init
 (
-void
+ void
 )
 {
   control_knob_value_get_int("STREAMS_PER_THREAD", &streams_per_thread);
-  channel_set_index_count = 0;
   trace_channel_set_list_head = gpu_trace_channel_set_create();
   trace_channel_set_list_tail = trace_channel_set_list_head;
 
@@ -127,7 +126,7 @@ void
 void *
 gpu_trace_channel_set_get_ptr
 (
-gpu_trace_channel_set_t *channel_set
+ gpu_trace_channel_set_t *channel_set
 )
 {
   return channel_set->channel_set_ptr;
@@ -137,7 +136,7 @@ gpu_trace_channel_set_t *channel_set
 int
 gpu_trace_channel_set_get_channel_num
 (
-gpu_trace_channel_set_t *channel_set
+ gpu_trace_channel_set_t *channel_set
 )
 {
   return atomic_load(&channel_set->channel_index);
@@ -147,7 +146,7 @@ gpu_trace_channel_set_t *channel_set
 pthread_t
 gpu_trace_demultiplexer_push
 (
-gpu_trace_channel_t *trace_channel
+ gpu_trace_channel_t *trace_channel
 )
 {
 
@@ -165,8 +164,8 @@ gpu_trace_channel_t *trace_channel
                                trace_channel_set_list_tail->channel_set_ptr,
                                atomic_fetch_add(&trace_channel_set_list_tail->channel_index,1));
 
-  PRINT("gpu_trace_demultiplexer_push: channel_set_ptr = %p, channel_set_index = %d | channel = %p\n",
-        trace_channel_set_list_tail->channel_set_ptr, trace_channel_set_list_tail->channel_set_index,
+  PRINT("gpu_trace_demultiplexer_push: channel_set_ptr = %p | channel = %p\n",
+        trace_channel_set_list_tail->channel_set_ptr,
         trace_channel);
 
   return trace_channel_set_list_tail->thread;
@@ -185,8 +184,6 @@ gpu_trace_demultiplexer_notify
     gpu_trace_channel_set_notify(iter);
   }
 }
-
-
 
 
 void

@@ -54,6 +54,7 @@ typedef struct gpu_trace_channel_t gpu_trace_channel_t;
 typedef struct gpu_trace_channel_set_t gpu_trace_channel_set_t;
 
 
+
 //******************************************************************************
 // type declarations
 //******************************************************************************
@@ -68,13 +69,6 @@ typedef void (*gpu_trace_channel_fn_t)
 //******************************************************************************
 // interface operations
 //******************************************************************************
-
-void
-gpu_trace_channel_stack_init
-(
-gpu_trace_channel_set_t *channel_set
-);
-
 
 void *
 gpu_trace_channel_stack_alloc
@@ -95,28 +89,28 @@ gpu_trace_channel_set_insert
 void
 gpu_trace_channel_set_process
 (
-gpu_trace_channel_set_t *channel_set
+ gpu_trace_channel_set_t *channel_set
 );
 
 
 void
 gpu_trace_channel_set_await
 (
-gpu_trace_channel_set_t *channel_set
+ gpu_trace_channel_set_t *channel_set
 );
 
 
 void
 gpu_trace_channel_set_release
 (
-gpu_trace_channel_set_t *channel_set
+ gpu_trace_channel_set_t *channel_set
 );
 
 
 void
 gpu_trace_channel_set_notify
 (
-gpu_trace_channel_set_t *channel_set
+ gpu_trace_channel_set_t *channel_set
 );
 
 

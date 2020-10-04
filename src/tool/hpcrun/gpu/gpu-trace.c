@@ -88,7 +88,6 @@
 #define DEBUG 0
 #include "gpu-print.h"
 
-#define MIN(a,b)  (((a)<=(b))?(a):(b))
 
 
 //******************************************************************************
@@ -258,60 +257,6 @@ gpu_trace_start_adjust
 }
 
 
-void
-consume_one_trace_item
-(
- thread_data_t* td,
- cct_node_t *call_path,
- uint64_t start_time,
- uint64_t end_time
-)
-{
-
-  cct_node_t *leaf = gpu_trace_cct_insert_context(td, call_path);
-
-  cct_node_t *no_activity = gpu_trace_cct_no_activity(td);
-
-  uint64_t start = gpu_trace_time(start_time);
-  uint64_t end   = gpu_trace_time(end_time);
-
-  stream_start_set(start_time);
-
-  start = gpu_trace_start_adjust(td, start, end);
-
-  int frequency = gpu_monitoring_trace_sample_frequency_get();
-
-  bool append = false;
-
-  if (frequency != -1) {
-    uint64_t cur_start = start_time;
-    uint64_t cur_end = end_time;
-    uint64_t intervals = (cur_start - stream_start_get() - 1) / frequency + 1;
-    uint64_t pivot = intervals * frequency + stream_start;
-
-    if (pivot <= cur_end && pivot >= cur_start) {
-      // only trace when the pivot is within the range
-      PRINT("pivot %" PRIu64 " not in <%" PRIu64 ", %" PRIu64
-          "> with intervals %" PRIu64 ", frequency %" PRIu64 "\n",
-           pivot, cur_start, cur_end, intervals, frequency);
-      append = true;
-    }
-  } else {
-    append = true;
-  }
-
-  if (append) {
-    gpu_trace_first(td, no_activity, start);
-
-    gpu_trace_stream_append(td, leaf, start);
-
-    gpu_trace_stream_append(td, no_activity, end);
-
-    PRINT("%p Append trace activity [%lu, %lu]\n", td, start, end);
-  }
-}
-
-
 static int
 gpu_trace_stream_id
 (
@@ -324,37 +269,6 @@ gpu_trace_stream_id
   return id;
 }
 
-
-thread_data_t *
-gpu_trace_stream_acquire
-(
- void
-)
-{
-  thread_data_t *td = NULL;
-
-  int id = gpu_trace_stream_id();
-
-  // XXX(Keren): This API calls allocate_and_init_thread_data to bind td with the current thread
-  hpcrun_threadMgr_data_get_safe(id, NULL, &td, true);
-
-  return td;
-}
-
-
-void
-gpu_trace_stream_release
-(
- gpu_trace_channel_t *channel
-)
-{
-  thread_data_t *td = gpu_trace_channel_get_td(channel);
-
-  hpcrun_write_profile_data(&td->core_profile_trace_data);
-  hpcrun_trace_close(&td->core_profile_trace_data);
-  atomic_fetch_add(&active_streams_counter, -1);
-
-}
 
 
 //******************************************************************************
@@ -372,28 +286,6 @@ gpu_trace_init
   atomic_store(&num_streams, 0);
 }
 
-void *
-gpu_trace_record
-(
-void * args
-)
-{
-  gpu_trace_channel_set_t *channel_set = (gpu_trace_channel_set_t *) args;
-  gpu_trace_channel_stack_init(channel_set);
-
-  while (!atomic_load(&stop_trace_flag)) {
-    //getting data from a trace channel
-    gpu_trace_channel_set_process(channel_set);
-    gpu_trace_channel_set_await(channel_set);
-  }
-
-  gpu_trace_channel_set_process(channel_set);
-  gpu_trace_channel_set_await(channel_set);
-
-  gpu_trace_channel_set_release(channel_set);
-  return NULL;
-}
-
 
 void
 gpu_trace_fini
@@ -408,6 +300,28 @@ gpu_trace_fini
   gpu_trace_demultiplexer_notify();
 
   while (atomic_load(&active_streams_counter));
+}
+
+
+void *
+gpu_trace_record
+(
+ void * args
+)
+{
+  gpu_trace_channel_set_t *channel_set = (gpu_trace_channel_set_t *) args;
+
+  while (!atomic_load(&stop_trace_flag)) {
+    //getting data from a trace channel
+    gpu_trace_channel_set_process(channel_set);
+    gpu_trace_channel_set_await(channel_set);
+  }
+
+  gpu_trace_channel_set_process(channel_set);
+  gpu_trace_channel_set_await(channel_set);
+
+  gpu_trace_channel_set_release(channel_set);
+  return NULL;
 }
 
 
@@ -450,4 +364,89 @@ gpu_trace_signal_consumer
 )
 {
   gpu_trace_channel_signal_consumer(t->trace_channel);
+}
+
+
+void
+consume_one_trace_item
+(
+ thread_data_t* td,
+ cct_node_t *call_path,
+ uint64_t start_time,
+ uint64_t end_time
+)
+{
+
+  cct_node_t *leaf = gpu_trace_cct_insert_context(td, call_path);
+
+  cct_node_t *no_activity = gpu_trace_cct_no_activity(td);
+
+  uint64_t start = gpu_trace_time(start_time);
+  uint64_t end   = gpu_trace_time(end_time);
+
+  stream_start_set(start_time);
+
+  start = gpu_trace_start_adjust(td, start, end);
+
+  int frequency = gpu_monitoring_trace_sample_frequency_get();
+
+  bool append = false;
+
+  if (frequency != -1) {
+    uint64_t cur_start = start_time;
+    uint64_t cur_end = end_time;
+    uint64_t intervals = (cur_start - stream_start_get() - 1) / frequency + 1;
+    uint64_t pivot = intervals * frequency + stream_start;
+
+    if (pivot <= cur_end && pivot >= cur_start) {
+      // only trace when the pivot is within the range
+      PRINT("pivot %" PRIu64 " not in <%" PRIu64 ", %" PRIu64
+            "> with intervals %" PRIu64 ", frequency %" PRIu64 "\n",
+            pivot, cur_start, cur_end, intervals, frequency);
+      append = true;
+    }
+  } else {
+    append = true;
+  }
+
+  if (append) {
+    gpu_trace_first(td, no_activity, start);
+
+    gpu_trace_stream_append(td, leaf, start);
+
+    gpu_trace_stream_append(td, no_activity, end);
+
+    PRINT("%p Append trace activity [%lu, %lu]\n", td, start, end);
+  }
+}
+
+
+thread_data_t *
+gpu_trace_stream_acquire
+(
+ void
+)
+{
+  thread_data_t *td = NULL;
+
+  int id = gpu_trace_stream_id();
+
+  // XXX(Keren): This API calls allocate_and_init_thread_data to bind td with the current thread
+  hpcrun_threadMgr_data_get_safe(id, NULL, &td, true);
+
+  return td;
+}
+
+
+void
+gpu_trace_stream_release
+(
+ gpu_trace_channel_t *channel
+)
+{
+  thread_data_t *td = gpu_trace_channel_get_td(channel);
+
+  hpcrun_write_profile_data(&td->core_profile_trace_data);
+  hpcrun_trace_close(&td->core_profile_trace_data);
+  atomic_fetch_add(&active_streams_counter, -1);
 }

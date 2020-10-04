@@ -145,13 +145,20 @@ gpu_trace_channel_signal_consumer_when_full
 //******************************************************************************
 
 struct thread_data_t *
-gpu_trace_channel_get_td(gpu_trace_channel_t *ch)
+gpu_trace_channel_get_td
+(
+ gpu_trace_channel_t *ch
+)
 {
   return ch->td;
 }
 
+
 int
-gpu_trace_channel_get_stream_id(gpu_trace_channel_t *ch)
+gpu_trace_channel_get_stream_id
+(
+ gpu_trace_channel_t *ch
+)
 {
   return ch->td->core_profile_trace_data.id;
 }
