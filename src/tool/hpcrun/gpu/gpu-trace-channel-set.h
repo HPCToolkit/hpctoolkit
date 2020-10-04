@@ -69,14 +69,6 @@ typedef void (*gpu_trace_channel_fn_t)
 // interface operations
 //******************************************************************************
 
-
-void
-gpu_trace_channel_stack_init
-(
- void *trace_channel_set_ptr
-);
-
-
 void *
 gpu_trace_channel_stack_alloc
 (
@@ -88,16 +80,42 @@ void
 gpu_trace_channel_set_insert
 (
  gpu_trace_channel_t *channel,
+ void *gpu_trace_channel_stack,
  int set_index
 );
 
 
 void
-gpu_trace_channel_set_apply
+gpu_trace_channel_set_process
 (
- gpu_trace_channel_fn_t channel_fn,
- int set_index
+void *gpu_trace_channel_stack,
+int set_index
 );
+
+
+void
+gpu_trace_channel_set_release
+(
+void *gpu_trace_channel_stack,
+int set_index
+);
+
+
+void
+gpu_trace_channel_set_notify
+(
+void *gpu_trace_channel_stack,
+int set_index
+);
+
+void
+gpu_trace_channel_set_await
+(
+void *gpu_trace_channel_stack,
+int set_index
+);
+
+
 
 
 

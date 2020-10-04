@@ -42,18 +42,17 @@
 // ******************************************************* EndRiceCopyright *
 
 
-#ifndef gpu_activity_multiplexer_h
-#define gpu_activity_multiplexer_h
+#ifndef gpu_trace_demultiplexer_h
+#define gpu_trace_demultiplexer_h
 
-#include <hpcrun/thread_data.h>
-#include "gpu-operation-channel.h"
+//#include <hpcrun/thread_data.h>
 
 //******************************************************************************
 // type declarations
 //******************************************************************************
-typedef struct gpu_activity_channel_t gpu_activity_channel_t;
-typedef struct gpu_activity_t gpu_activity_t;
-
+typedef struct gpu_trace_channel_set_t gpu_trace_channel_set_t;
+typedef struct gpu_trace_channel_t gpu_trace_channel_t;
+typedef struct gpu_trace_t gpu_trace_t;
 //******************************************************************************
 // local variables
 //******************************************************************************
@@ -69,48 +68,44 @@ typedef struct gpu_activity_t gpu_activity_t;
 //******************************************************************************
 
 
-bool
-gpu_activity_is_multiplexer_initialized
+void *
+gpu_trace_channel_set_get_ptr
+(
+gpu_trace_channel_set_t *channel_set
+);
+
+int
+gpu_trace_channel_set_get_channel_num
+(
+gpu_trace_channel_set_t *channel_set
+);
+
+void
+gpu_trace_demultiplexer_fini
+(
+void
+);
+
+
+pthread_t
+gpu_trace_demultiplexer_push
+(
+gpu_trace_channel_t *trace_channel
+);
+
+
+void
+gpu_trace_demultiplexer_notify
 (
 void
 );
 
 
 void
-gpu_activity_multiplexer_init
+gpu_trace_demultiplexer_release
 (
 void
 );
-
-
-void
-gpu_activity_multiplexer_fini
-(
-void
-);
-
-
-void
-gpu_activity_multiplexer_push
-(
-gpu_activity_channel_t *initiator_channel,
-gpu_activity_t *gpu_activity
-);
-
-
-void
-gpu_activity_multiplexer_release
-(
-void
-);
-
-
-void
-gpu_operation_release
-(
-gpu_operation_channel_t *channel
-);
-
 
 
 

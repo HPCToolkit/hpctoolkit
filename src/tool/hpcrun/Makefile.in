@@ -494,18 +494,19 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	gpu/gpu-operation-channel.c gpu/gpu-operation-channel-set.c \
 	gpu/gpu-splay-allocator.c gpu/gpu-stream-id-map.c \
 	gpu/gpu-trace.c gpu/gpu-trace-channel.c gpu/gpu-trace-item.c \
-	gpu/gpu-trace-channel-set.c ompt/ompt-callstack.c \
-	ompt/ompt-defer.c ompt/ompt-device.c ompt/ompt-defer-write.c \
-	ompt/ompt-interface.c ompt/ompt-queues.c ompt/ompt-region.c \
-	ompt/ompt-region-debug.c ompt/ompt-placeholders.c \
-	ompt/ompt-device-map.c ompt/ompt-task.c ompt/ompt-thread.c \
-	syscalls/poll.c syscalls/ppoll.c syscalls/select.c \
-	utilities/executable-path.h utilities/executable-path.c \
-	utilities/hpcrun-nanotime.h utilities/hpcrun-nanotime.c \
-	utilities/ip-normalized.h utilities/ip-normalized.c \
-	utilities/line_wrapping.c utilities/timer.c \
-	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
-	utilities/unlink.c trampoline/common/trampoline_eager.c \
+	gpu/gpu-trace-channel-set.c gpu/gpu-trace-demultiplexer.c \
+	ompt/ompt-callstack.c ompt/ompt-defer.c ompt/ompt-device.c \
+	ompt/ompt-defer-write.c ompt/ompt-interface.c \
+	ompt/ompt-queues.c ompt/ompt-region.c ompt/ompt-region-debug.c \
+	ompt/ompt-placeholders.c ompt/ompt-device-map.c \
+	ompt/ompt-task.c ompt/ompt-thread.c syscalls/poll.c \
+	syscalls/ppoll.c syscalls/select.c utilities/executable-path.h \
+	utilities/executable-path.c utilities/hpcrun-nanotime.h \
+	utilities/hpcrun-nanotime.c utilities/ip-normalized.h \
+	utilities/ip-normalized.c utilities/line_wrapping.c \
+	utilities/timer.c utilities/tokenize.h utilities/tokenize.c \
+	utilities/unlink.h utilities/unlink.c \
+	trampoline/common/trampoline_eager.c \
 	trampoline/common/trampoline_lazy.c \
 	sample-sources/perf/event_custom.c \
 	sample-sources/perf/linux_perf.c \
@@ -673,6 +674,7 @@ am__objects_15 = utilities/libhpcrun_la-first_func.lo \
 	gpu/libhpcrun_la-gpu-trace-channel.lo \
 	gpu/libhpcrun_la-gpu-trace-item.lo \
 	gpu/libhpcrun_la-gpu-trace-channel-set.lo \
+	gpu/libhpcrun_la-gpu-trace-demultiplexer.lo \
 	ompt/libhpcrun_la-ompt-callstack.lo \
 	ompt/libhpcrun_la-ompt-defer.lo \
 	ompt/libhpcrun_la-ompt-device.lo \
@@ -914,18 +916,19 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	gpu/gpu-operation-channel.c gpu/gpu-operation-channel-set.c \
 	gpu/gpu-splay-allocator.c gpu/gpu-stream-id-map.c \
 	gpu/gpu-trace.c gpu/gpu-trace-channel.c gpu/gpu-trace-item.c \
-	gpu/gpu-trace-channel-set.c ompt/ompt-callstack.c \
-	ompt/ompt-defer.c ompt/ompt-device.c ompt/ompt-defer-write.c \
-	ompt/ompt-interface.c ompt/ompt-queues.c ompt/ompt-region.c \
-	ompt/ompt-region-debug.c ompt/ompt-placeholders.c \
-	ompt/ompt-device-map.c ompt/ompt-task.c ompt/ompt-thread.c \
-	syscalls/poll.c syscalls/ppoll.c syscalls/select.c \
-	utilities/executable-path.h utilities/executable-path.c \
-	utilities/hpcrun-nanotime.h utilities/hpcrun-nanotime.c \
-	utilities/ip-normalized.h utilities/ip-normalized.c \
-	utilities/line_wrapping.c utilities/timer.c \
-	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
-	utilities/unlink.c trampoline/common/trampoline_eager.c \
+	gpu/gpu-trace-channel-set.c gpu/gpu-trace-demultiplexer.c \
+	ompt/ompt-callstack.c ompt/ompt-defer.c ompt/ompt-device.c \
+	ompt/ompt-defer-write.c ompt/ompt-interface.c \
+	ompt/ompt-queues.c ompt/ompt-region.c ompt/ompt-region-debug.c \
+	ompt/ompt-placeholders.c ompt/ompt-device-map.c \
+	ompt/ompt-task.c ompt/ompt-thread.c syscalls/poll.c \
+	syscalls/ppoll.c syscalls/select.c utilities/executable-path.h \
+	utilities/executable-path.c utilities/hpcrun-nanotime.h \
+	utilities/hpcrun-nanotime.c utilities/ip-normalized.h \
+	utilities/ip-normalized.c utilities/line_wrapping.c \
+	utilities/timer.c utilities/tokenize.h utilities/tokenize.c \
+	utilities/unlink.h utilities/unlink.c \
+	trampoline/common/trampoline_eager.c \
 	trampoline/common/trampoline_lazy.c \
 	sample-sources/perf/event_custom.c \
 	sample-sources/perf/linux_perf.c \
@@ -1095,6 +1098,7 @@ am__objects_55 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	gpu/libhpcrun_o-gpu-trace-channel.$(OBJEXT) \
 	gpu/libhpcrun_o-gpu-trace-item.$(OBJEXT) \
 	gpu/libhpcrun_o-gpu-trace-channel-set.$(OBJEXT) \
+	gpu/libhpcrun_o-gpu-trace-demultiplexer.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-callstack.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-defer.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-device.$(OBJEXT) \
@@ -1821,20 +1825,21 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	gpu/gpu-operation-channel.c gpu/gpu-operation-channel-set.c \
 	gpu/gpu-splay-allocator.c gpu/gpu-stream-id-map.c \
 	gpu/gpu-trace.c gpu/gpu-trace-channel.c gpu/gpu-trace-item.c \
-	gpu/gpu-trace-channel-set.c ompt/ompt-callstack.c \
-	ompt/ompt-defer.c ompt/ompt-device.c ompt/ompt-defer-write.c \
-	ompt/ompt-interface.c ompt/ompt-queues.c ompt/ompt-region.c \
-	ompt/ompt-region-debug.c ompt/ompt-placeholders.c \
-	ompt/ompt-device-map.c ompt/ompt-task.c ompt/ompt-thread.c \
-	syscalls/poll.c syscalls/ppoll.c syscalls/select.c \
-	utilities/executable-path.h utilities/executable-path.c \
-	utilities/hpcrun-nanotime.h utilities/hpcrun-nanotime.c \
-	utilities/ip-normalized.h utilities/ip-normalized.c \
-	utilities/line_wrapping.c utilities/timer.c \
-	utilities/tokenize.h utilities/tokenize.c utilities/unlink.h \
-	utilities/unlink.c $(am__append_8) $(am__append_9) \
-	$(am__append_10) $(am__append_12) $(am__append_13) \
-	$(am__append_14) $(am__append_15) $(am__append_17)
+	gpu/gpu-trace-channel-set.c gpu/gpu-trace-demultiplexer.c \
+	ompt/ompt-callstack.c ompt/ompt-defer.c ompt/ompt-device.c \
+	ompt/ompt-defer-write.c ompt/ompt-interface.c \
+	ompt/ompt-queues.c ompt/ompt-region.c ompt/ompt-region-debug.c \
+	ompt/ompt-placeholders.c ompt/ompt-device-map.c \
+	ompt/ompt-task.c ompt/ompt-thread.c syscalls/poll.c \
+	syscalls/ppoll.c syscalls/select.c utilities/executable-path.h \
+	utilities/executable-path.c utilities/hpcrun-nanotime.h \
+	utilities/hpcrun-nanotime.c utilities/ip-normalized.h \
+	utilities/ip-normalized.c utilities/line_wrapping.c \
+	utilities/timer.c utilities/tokenize.h utilities/tokenize.c \
+	utilities/unlink.h utilities/unlink.c $(am__append_8) \
+	$(am__append_9) $(am__append_10) $(am__append_12) \
+	$(am__append_13) $(am__append_14) $(am__append_15) \
+	$(am__append_17)
 MY_DYNAMIC_FILES = \
 	fnbounds/fnbounds_client.c	\
 	fnbounds/fnbounds_dynamic.c	\
@@ -2542,6 +2547,8 @@ gpu/libhpcrun_la-gpu-trace-item.lo: gpu/$(am__dirstamp) \
 	gpu/$(DEPDIR)/$(am__dirstamp)
 gpu/libhpcrun_la-gpu-trace-channel-set.lo: gpu/$(am__dirstamp) \
 	gpu/$(DEPDIR)/$(am__dirstamp)
+gpu/libhpcrun_la-gpu-trace-demultiplexer.lo: gpu/$(am__dirstamp) \
+	gpu/$(DEPDIR)/$(am__dirstamp)
 ompt/$(am__dirstamp):
 	@$(MKDIR_P) ompt
 	@: > ompt/$(am__dirstamp)
@@ -3204,6 +3211,8 @@ gpu/libhpcrun_o-gpu-trace-item.$(OBJEXT): gpu/$(am__dirstamp) \
 	gpu/$(DEPDIR)/$(am__dirstamp)
 gpu/libhpcrun_o-gpu-trace-channel-set.$(OBJEXT): gpu/$(am__dirstamp) \
 	gpu/$(DEPDIR)/$(am__dirstamp)
+gpu/libhpcrun_o-gpu-trace-demultiplexer.$(OBJEXT):  \
+	gpu/$(am__dirstamp) gpu/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_o-ompt-callstack.$(OBJEXT): ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_o-ompt-defer.$(OBJEXT): ompt/$(am__dirstamp) \
@@ -3733,6 +3742,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_la-gpu-stream-id-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_la-gpu-trace-channel-set.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_la-gpu-trace-channel.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_la-gpu-trace-demultiplexer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_la-gpu-trace-item.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_la-gpu-trace.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_o-gpu-activity-channel.Po@am__quote@
@@ -3762,6 +3772,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_o-gpu-stream-id-map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_o-gpu-trace-channel-set.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_o-gpu-trace-channel.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_o-gpu-trace-demultiplexer.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_o-gpu-trace-item.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_o-gpu-trace.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/amd/$(DEPDIR)/libhpcrun_la-rocm-binary-processing.Plo@am__quote@
@@ -4946,6 +4957,13 @@ gpu/libhpcrun_la-gpu-trace-channel-set.lo: gpu/gpu-trace-channel-set.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/gpu-trace-channel-set.c' object='gpu/libhpcrun_la-gpu-trace-channel-set.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/libhpcrun_la-gpu-trace-channel-set.lo `test -f 'gpu/gpu-trace-channel-set.c' || echo '$(srcdir)/'`gpu/gpu-trace-channel-set.c
+
+gpu/libhpcrun_la-gpu-trace-demultiplexer.lo: gpu/gpu-trace-demultiplexer.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/libhpcrun_la-gpu-trace-demultiplexer.lo -MD -MP -MF gpu/$(DEPDIR)/libhpcrun_la-gpu-trace-demultiplexer.Tpo -c -o gpu/libhpcrun_la-gpu-trace-demultiplexer.lo `test -f 'gpu/gpu-trace-demultiplexer.c' || echo '$(srcdir)/'`gpu/gpu-trace-demultiplexer.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/$(DEPDIR)/libhpcrun_la-gpu-trace-demultiplexer.Tpo gpu/$(DEPDIR)/libhpcrun_la-gpu-trace-demultiplexer.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/gpu-trace-demultiplexer.c' object='gpu/libhpcrun_la-gpu-trace-demultiplexer.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/libhpcrun_la-gpu-trace-demultiplexer.lo `test -f 'gpu/gpu-trace-demultiplexer.c' || echo '$(srcdir)/'`gpu/gpu-trace-demultiplexer.c
 
 ompt/libhpcrun_la-ompt-callstack.lo: ompt/ompt-callstack.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_la-ompt-callstack.lo -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_la-ompt-callstack.Tpo -c -o ompt/libhpcrun_la-ompt-callstack.lo `test -f 'ompt/ompt-callstack.c' || echo '$(srcdir)/'`ompt/ompt-callstack.c
@@ -7158,6 +7176,20 @@ gpu/libhpcrun_o-gpu-trace-channel-set.obj: gpu/gpu-trace-channel-set.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/gpu-trace-channel-set.c' object='gpu/libhpcrun_o-gpu-trace-channel-set.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/libhpcrun_o-gpu-trace-channel-set.obj `if test -f 'gpu/gpu-trace-channel-set.c'; then $(CYGPATH_W) 'gpu/gpu-trace-channel-set.c'; else $(CYGPATH_W) '$(srcdir)/gpu/gpu-trace-channel-set.c'; fi`
+
+gpu/libhpcrun_o-gpu-trace-demultiplexer.o: gpu/gpu-trace-demultiplexer.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT gpu/libhpcrun_o-gpu-trace-demultiplexer.o -MD -MP -MF gpu/$(DEPDIR)/libhpcrun_o-gpu-trace-demultiplexer.Tpo -c -o gpu/libhpcrun_o-gpu-trace-demultiplexer.o `test -f 'gpu/gpu-trace-demultiplexer.c' || echo '$(srcdir)/'`gpu/gpu-trace-demultiplexer.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/$(DEPDIR)/libhpcrun_o-gpu-trace-demultiplexer.Tpo gpu/$(DEPDIR)/libhpcrun_o-gpu-trace-demultiplexer.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/gpu-trace-demultiplexer.c' object='gpu/libhpcrun_o-gpu-trace-demultiplexer.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/libhpcrun_o-gpu-trace-demultiplexer.o `test -f 'gpu/gpu-trace-demultiplexer.c' || echo '$(srcdir)/'`gpu/gpu-trace-demultiplexer.c
+
+gpu/libhpcrun_o-gpu-trace-demultiplexer.obj: gpu/gpu-trace-demultiplexer.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT gpu/libhpcrun_o-gpu-trace-demultiplexer.obj -MD -MP -MF gpu/$(DEPDIR)/libhpcrun_o-gpu-trace-demultiplexer.Tpo -c -o gpu/libhpcrun_o-gpu-trace-demultiplexer.obj `if test -f 'gpu/gpu-trace-demultiplexer.c'; then $(CYGPATH_W) 'gpu/gpu-trace-demultiplexer.c'; else $(CYGPATH_W) '$(srcdir)/gpu/gpu-trace-demultiplexer.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/$(DEPDIR)/libhpcrun_o-gpu-trace-demultiplexer.Tpo gpu/$(DEPDIR)/libhpcrun_o-gpu-trace-demultiplexer.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/gpu-trace-demultiplexer.c' object='gpu/libhpcrun_o-gpu-trace-demultiplexer.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/libhpcrun_o-gpu-trace-demultiplexer.obj `if test -f 'gpu/gpu-trace-demultiplexer.c'; then $(CYGPATH_W) 'gpu/gpu-trace-demultiplexer.c'; else $(CYGPATH_W) '$(srcdir)/gpu/gpu-trace-demultiplexer.c'; fi`
 
 ompt/libhpcrun_o-ompt-callstack.o: ompt/ompt-callstack.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_o-ompt-callstack.o -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_o-ompt-callstack.Tpo -c -o ompt/libhpcrun_o-ompt-callstack.o `test -f 'ompt/ompt-callstack.c' || echo '$(srcdir)/'`ompt/ompt-callstack.c

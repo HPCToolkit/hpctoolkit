@@ -102,7 +102,7 @@ typed_stack_declare_type(gpu_trace_channel_ptr_t);
 // local data
 //******************************************************************************
 
-static __thread
+//static __thread
 typed_stack_elem_ptr(gpu_trace_channel_ptr_t) *gpu_trace_channel_stack;
 
 
@@ -135,10 +135,13 @@ static void
 gpu_trace_channel_set_forall
 (
  gpu_trace_channel_fn_t channel_fn,
+ void *gpu_trace_channel_stack_ptr,
  int set_index
 
 )
 {
+  gpu_trace_channel_stack = gpu_trace_channel_stack_ptr;
+
   channel_stack_forall(&gpu_trace_channel_stack[set_index], channel_forone,
     channel_fn);
 }
@@ -149,25 +152,17 @@ gpu_trace_channel_set_forall
 // interface operations
 //******************************************************************************
 
-void
-gpu_trace_channel_stack_init
-(
- void *trace_channel_set_ptr
-)
-{
-  gpu_trace_channel_stack = trace_channel_set_ptr;
-}
-
 void *
 gpu_trace_channel_stack_alloc(int size){
-	gpu_trace_channel_stack = hpcrun_malloc_safe( size * sizeof(typed_stack_elem_ptr(gpu_trace_channel_ptr_t)));
-  return gpu_trace_channel_stack;
+//	gpu_trace_channel_stack = hpcrun_malloc_safe( size * sizeof(typed_stack_elem_ptr(gpu_trace_channel_ptr_t)));
+  return hpcrun_malloc_safe( size * sizeof(typed_stack_elem_ptr(gpu_trace_channel_ptr_t)));
 }
 
 void
 gpu_trace_channel_set_insert
 (
  gpu_trace_channel_t *channel,
+ void *gpu_trace_channel_stack_ptr,
  int set_index
 )
 {
@@ -183,16 +178,62 @@ gpu_trace_channel_set_insert
   channel_stack_elem_ptr_set(e, 0);
 
 	  // add the entry to the channel stack
+  gpu_trace_channel_stack =  gpu_trace_channel_stack_ptr;
   channel_stack_push(&gpu_trace_channel_stack[set_index], e);
 }
 
 
 void
-gpu_trace_channel_set_apply
+gpu_trace_channel_set_process
 (
- gpu_trace_channel_fn_t channel_fn,
- int set_index
+void *gpu_trace_channel_stack_ptr,
+int set_index
 )
 {
-  gpu_trace_channel_set_forall(channel_fn, set_index);
+  gpu_trace_channel_stack =  gpu_trace_channel_stack_ptr;
+  gpu_trace_channel_set_forall(gpu_trace_channel_consume,
+                               gpu_trace_channel_stack,
+                               set_index);
+}
+
+
+void
+gpu_trace_channel_set_release
+(
+void *gpu_trace_channel_stack_ptr,
+int set_index
+)
+{
+  gpu_trace_channel_stack =  gpu_trace_channel_stack_ptr;
+  gpu_trace_channel_set_forall(gpu_trace_stream_release,
+                               gpu_trace_channel_stack,
+                               set_index);
+}
+
+
+void
+gpu_trace_channel_set_notify
+(
+void *gpu_trace_channel_stack_ptr,
+int set_index
+)
+{
+  gpu_trace_channel_stack =  gpu_trace_channel_stack_ptr;
+  gpu_trace_channel_set_forall(gpu_trace_channel_signal_consumer,
+                               gpu_trace_channel_stack,
+                               set_index);
+}
+
+
+void
+gpu_trace_channel_set_await
+(
+void *gpu_trace_channel_stack_ptr,
+int set_index
+)
+{
+  gpu_trace_channel_stack =  gpu_trace_channel_stack_ptr;
+  gpu_trace_channel_set_forall(gpu_trace_channel_await,
+                               gpu_trace_channel_stack,
+                               set_index);
 }

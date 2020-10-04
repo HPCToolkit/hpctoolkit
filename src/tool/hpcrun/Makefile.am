@@ -384,6 +384,7 @@ MY_BASE_FILES =				\
 	gpu/gpu-trace-channel.c		\
 	gpu/gpu-trace-item.c		\
 	gpu/gpu-trace-channel-set.c	\
+	gpu/gpu-trace-demultiplexer.c	\
 	\
 	ompt/ompt-callstack.c           \
 	ompt/ompt-defer.c               \
