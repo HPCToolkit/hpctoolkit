@@ -62,11 +62,11 @@
 typedef void *(*pthread_start_routine_t)(void *);
 
 typedef struct gpu_trace_channel_set_t{
-void *next;
-pthread_t thread;
-void *channel_set_ptr;
-int channel_set_index;
-atomic_uint channel_index;
+  void *channel_set_ptr;
+  gpu_trace_channel_set_t *next;
+  pthread_t thread;
+  int channel_set_index;
+  atomic_uint channel_index;
 }gpu_trace_channel_set_t;
 
 
@@ -93,7 +93,7 @@ void
 {
   gpu_trace_channel_set_t *new_channel_set= hpcrun_malloc(sizeof(gpu_trace_channel_set_t));
   new_channel_set->next = NULL;
-  new_channel_set->channel_set_ptr = gpu_trace_channel_stack_alloc(1);
+  new_channel_set->channel_set_ptr = gpu_trace_channel_stack_alloc(streams_per_thread);
   new_channel_set->channel_set_index = channel_set_index_count++;
   atomic_store(&new_channel_set->channel_index, 0);
 
@@ -115,9 +115,7 @@ void
   trace_channel_set_list_head = gpu_trace_channel_set_create();
   trace_channel_set_list_tail = trace_channel_set_list_head;
 
-  PRINT("streams_per_thread = %d %d\n", streams_per_thread);
-
-
+  PRINT("streams_per_thread = %d \n", streams_per_thread);
 }
 
 
@@ -145,14 +143,6 @@ gpu_trace_channel_set_t *channel_set
   return atomic_load(&channel_set->channel_index);
 }
 
-void
-gpu_trace_demultiplexer_fini
-(
-void
-)
-{
-}
-
 
 pthread_t
 gpu_trace_demultiplexer_push
@@ -175,6 +165,10 @@ gpu_trace_channel_t *trace_channel
                                trace_channel_set_list_tail->channel_set_ptr,
                                atomic_fetch_add(&trace_channel_set_list_tail->channel_index,1));
 
+  PRINT("gpu_trace_demultiplexer_push: channel_set_ptr = %p, channel_set_index = %d | channel = %p\n",
+        trace_channel_set_list_tail->channel_set_ptr, trace_channel_set_list_tail->channel_set_index,
+        trace_channel);
+
   return trace_channel_set_list_tail->thread;
 }
 
@@ -187,7 +181,7 @@ gpu_trace_demultiplexer_notify
 {
   gpu_trace_channel_set_t *iter;
 
-  for (iter = trace_channel_set_list_head; iter != NULL; iter = iter->next){
+  for (iter = trace_channel_set_list_head; iter != trace_channel_set_list_tail; iter = iter->next){
     gpu_trace_channel_set_notify(iter);
   }
 }
@@ -201,6 +195,7 @@ gpu_trace_demultiplexer_release
  void
 )
 {
+  PRINT("gpu_trace_demultiplexer_release: NOT IMPLEMENTED\n");
 }
 
 

@@ -69,6 +69,13 @@ typedef void (*gpu_trace_channel_fn_t)
 // interface operations
 //******************************************************************************
 
+void
+gpu_trace_channel_stack_init
+(
+gpu_trace_channel_set_t *channel_set
+);
+
+
 void *
 gpu_trace_channel_stack_alloc
 (

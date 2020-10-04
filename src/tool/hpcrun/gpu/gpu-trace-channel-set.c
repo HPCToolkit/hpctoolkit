@@ -51,6 +51,9 @@
 #include <hpcrun/thread_data.h>
 #include <hpcrun/control-knob.h>
 
+
+#define DEBUG 0
+
 #include "gpu-print.h"
 #include "gpu-trace.h"
 #include "gpu-trace-channel.h"
@@ -134,13 +137,11 @@ static void
 gpu_trace_channel_set_forall
 (
  gpu_trace_channel_fn_t channel_fn,
- void *gpu_trace_channel_stack_ptr,
+ typed_stack_elem_ptr(gpu_trace_channel_ptr_t) *gpu_trace_channel_stack,
  int set_index
 
 )
 {
-  gpu_trace_channel_stack = gpu_trace_channel_stack_ptr;
-
   channel_stack_forall(&gpu_trace_channel_stack[set_index], channel_forone,
     channel_fn);
 }
@@ -150,6 +151,16 @@ gpu_trace_channel_set_forall
 //******************************************************************************
 // interface operations
 //******************************************************************************
+
+void
+gpu_trace_channel_stack_init
+(
+gpu_trace_channel_set_t *channel_set
+)
+{
+  gpu_trace_channel_stack = (typed_stack_elem_ptr(gpu_trace_channel_ptr_t) *)gpu_trace_channel_set_get_ptr(channel_set);
+}
+
 
 void *
 gpu_trace_channel_stack_alloc(int size){
@@ -171,7 +182,6 @@ gpu_trace_channel_set_insert
   // initialize the new entry
   e->channel = channel;
 
-
   // clear the entry's next ptr
   channel_stack_elem_ptr_set(e, 0);
 
@@ -187,10 +197,10 @@ gpu_trace_channel_fn_t channel_fn,
 gpu_trace_channel_set_t *channel_set
 )
 {
-  gpu_trace_channel_stack =  gpu_trace_channel_set_get_ptr(channel_set);
-  int num_streams = gpu_trace_channel_set_get_channel_num(channel_set);
+  int channel_count = gpu_trace_channel_set_get_channel_num(channel_set);
+  gpu_trace_channel_stack = (typed_stack_elem_ptr(gpu_trace_channel_ptr_t) *) gpu_trace_channel_set_get_ptr(channel_set);
 
-  for (int channel_idx = 0; channel_idx < num_streams; ++channel_idx) {
+  for (int channel_idx = 0; channel_idx < channel_count; ++channel_idx) {
     gpu_trace_channel_set_forall(channel_fn,
                                  gpu_trace_channel_stack,
                                  channel_idx);

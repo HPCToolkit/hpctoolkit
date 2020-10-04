@@ -80,12 +80,6 @@ gpu_trace_channel_set_get_channel_num
 gpu_trace_channel_set_t *channel_set
 );
 
-void
-gpu_trace_demultiplexer_fini
-(
-void
-);
-
 
 pthread_t
 gpu_trace_demultiplexer_push

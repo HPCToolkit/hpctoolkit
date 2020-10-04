@@ -379,6 +379,7 @@ void * args
 )
 {
   gpu_trace_channel_set_t *channel_set = (gpu_trace_channel_set_t *) args;
+  gpu_trace_channel_stack_init(channel_set);
 
   while (!atomic_load(&stop_trace_flag)) {
     //getting data from a trace channel
@@ -410,17 +411,6 @@ gpu_trace_fini
 }
 
 
-static void
-gpu_trace_channel_set_append
-(
- gpu_trace_t *trace
-)
-{
-  trace->thread = gpu_trace_demultiplexer_push(trace->trace_channel);
-  atomic_fetch_add(&active_streams_counter, 1);
-}
-
-
 gpu_trace_t *
 gpu_trace_create
 (
@@ -433,7 +423,8 @@ gpu_trace_create
   // Create a new thread for the stream without libmonitor watching
   monitor_disable_new_threads();
 
-  gpu_trace_channel_set_append(trace);
+  trace->thread = gpu_trace_demultiplexer_push(trace->trace_channel);
+  atomic_fetch_add(&active_streams_counter, 1);
 
   monitor_enable_new_threads();
 
