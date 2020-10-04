@@ -40,7 +40,7 @@
 // if advised of the possibility of such damage.
 //
 // ******************************************************* EndRiceCopyright *
-
+#include <hpcrun/control-knob.h>
 #include <lib/prof-lean/stdatomic.h>
 #include <memory/hpcrun-malloc.h>
 #include <pthread.h>

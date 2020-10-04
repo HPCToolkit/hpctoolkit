@@ -101,7 +101,7 @@ typed_stack_declare_type(gpu_trace_channel_ptr_t);
 // local data
 //******************************************************************************
 
-//static __thread
+static __thread
 typed_stack_elem_ptr(gpu_trace_channel_ptr_t) *gpu_trace_channel_stack;
 
 
@@ -153,7 +153,6 @@ gpu_trace_channel_set_forall
 
 void *
 gpu_trace_channel_stack_alloc(int size){
-//	gpu_trace_channel_stack = hpcrun_malloc_safe( size * sizeof(typed_stack_elem_ptr(gpu_trace_channel_ptr_t)));
   return hpcrun_malloc_safe( size * sizeof(typed_stack_elem_ptr(gpu_trace_channel_ptr_t)));
 }
 
