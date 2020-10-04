@@ -375,32 +375,21 @@ gpu_trace_init
 void *
 gpu_trace_record
 (
-// void *trace_channel_set_ptr
 void * args
 )
 {
   gpu_trace_channel_set_t *channel_set = (gpu_trace_channel_set_t *) args;
-  void *channel_set_ptr = gpu_trace_channel_set_get_ptr(channel_set);
-  int channel_num;
 
   while (!atomic_load(&stop_trace_flag)) {
     //getting data from a trace channel
-
-    channel_num = gpu_trace_channel_set_get_channel_num(channel_set);
-    for (int channel_idx = 0; channel_idx < channel_num; ++channel_idx) {
-      gpu_trace_channel_set_process(channel_set_ptr, channel_idx);
-      gpu_trace_channel_set_await(channel_set_ptr, channel_idx);
-    }
-
+    gpu_trace_channel_set_process(channel_set);
+    gpu_trace_channel_set_await(channel_set);
   }
 
-  channel_num = gpu_trace_channel_set_get_channel_num(channel_set);
-  for (int channel_idx = 0; channel_idx < channel_num; ++channel_idx) {
-    gpu_trace_channel_set_process(channel_set_ptr, channel_idx);
-    gpu_trace_channel_set_await(channel_set_ptr, channel_idx);
-    gpu_trace_channel_set_release(channel_set_ptr, channel_idx);
-  }
+  gpu_trace_channel_set_process(channel_set);
+  gpu_trace_channel_set_await(channel_set);
 
+  gpu_trace_channel_set_release(channel_set);
   return NULL;
 }
 

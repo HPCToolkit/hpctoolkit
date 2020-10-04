@@ -48,9 +48,9 @@
 
 #define DEBUG 0
 
-
-#include "gpu-trace-demultiplexer.h"
+#include "gpu-trace-channel-set.h"
 #include "gpu-trace.h"
+#include "gpu-trace-demultiplexer.h"
 #include "gpu-print.h"
 
 
@@ -188,11 +188,7 @@ gpu_trace_demultiplexer_notify
   gpu_trace_channel_set_t *iter;
 
   for (iter = trace_channel_set_list_head; iter != NULL; iter = iter->next){
-
-    int channel_num = atomic_load(&iter->channel_index);
-    for (int channel_idx = 0; channel_idx < channel_num; ++channel_idx) {
-      gpu_trace_channel_set_notify(iter->channel_set_ptr, channel_idx);
-    }
+    gpu_trace_channel_set_notify(iter);
   }
 }
 

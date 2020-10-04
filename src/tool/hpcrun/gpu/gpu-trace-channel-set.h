@@ -51,7 +51,7 @@
 //******************************************************************************
 
 typedef struct gpu_trace_channel_t gpu_trace_channel_t;
-
+typedef struct gpu_trace_channel_set_t gpu_trace_channel_set_t;
 
 
 //******************************************************************************
@@ -88,33 +88,29 @@ gpu_trace_channel_set_insert
 void
 gpu_trace_channel_set_process
 (
-void *gpu_trace_channel_stack,
-int set_index
+gpu_trace_channel_set_t *channel_set
+);
+
+
+void
+gpu_trace_channel_set_await
+(
+gpu_trace_channel_set_t *channel_set
 );
 
 
 void
 gpu_trace_channel_set_release
 (
-void *gpu_trace_channel_stack,
-int set_index
+gpu_trace_channel_set_t *channel_set
 );
 
 
 void
 gpu_trace_channel_set_notify
 (
-void *gpu_trace_channel_stack,
-int set_index
+gpu_trace_channel_set_t *channel_set
 );
-
-void
-gpu_trace_channel_set_await
-(
-void *gpu_trace_channel_stack,
-int set_index
-);
-
 
 
 
