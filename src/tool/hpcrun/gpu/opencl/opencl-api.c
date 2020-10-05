@@ -237,7 +237,7 @@ OPENCL_QUEUE_FN
   (
    cl_context,
    cl_device_id,
-   const cl_bitfield *,
+   const cl_queue_properties *,
    cl_int*
   )
 );
@@ -605,10 +605,11 @@ opencl_api_initialize
  void
 )
 {
-	if (instrumentation) {
-  	gpu_metrics_GPU_INST_enable();
-  	gtpin_enable_profiling();
-	}
+  ETMSG(OPENCL, "CL_TARGET_OPENCL_VERSION: %d", CL_TARGET_OPENCL_VERSION);
+  if (instrumentation) {
+	gpu_metrics_GPU_INST_enable();
+	gtpin_enable_profiling();
+  }
   atomic_store(&correlation_id, 0);
   atomic_store(&opencl_pending_operations, 0);
 }
@@ -719,13 +720,13 @@ clCreateCommandQueueWithProperties
 (
  cl_context context,
  cl_device_id device,
- const cl_bitfield* properties,
+ const cl_queue_properties* properties,
  cl_int* errcode_ret
 )
 {
-  cl_bitfield *queue_properties = (cl_bitfield *)properties;
+  cl_queue_properties *queue_properties = (cl_queue_properties *)properties;
   if (properties == NULL) {
-    queue_properties = (cl_bitfield *)malloc(sizeof(cl_bitfield) * 3);
+    queue_properties = (cl_queue_properties *)malloc(sizeof(cl_queue_properties) * 3);
     queue_properties[0] = CL_QUEUE_PROPERTIES;
     queue_properties[1] = CL_QUEUE_PROFILING_ENABLE;
     queue_properties[2] = 0;
@@ -736,7 +737,7 @@ clCreateCommandQueueWithProperties
       if (properties[props_count] == CL_QUEUE_PROPERTIES) {
         queue_props_id = props_count;
         ++props_count;
-      } else if (properties[props_count] == 0x1094) {
+      } else if (properties[props_count] == CL_QUEUE_SIZE) {
         // TODO(Keren): A temporay hack
         ++props_count;
       }
@@ -744,7 +745,7 @@ clCreateCommandQueueWithProperties
     }
 
     if (queue_props_id >= 0 && queue_props_id + 1 < props_count) {
-      queue_properties = (cl_bitfield *)malloc(sizeof(cl_bitfield) * (props_count + 1));
+      queue_properties = (cl_queue_properties *)malloc(sizeof(cl_queue_properties) * (props_count + 1));
       for (int i = 0; i < props_count; ++i) {
         queue_properties[i] = properties[i];
       }
@@ -753,7 +754,7 @@ clCreateCommandQueueWithProperties
       queue_properties[props_count] = 0;
     } else {
       // We do not have a queue property entry, need to allocate a queue property entry and set up
-      queue_properties = (cl_bitfield *)malloc(sizeof(cl_bitfield) * (props_count + 3));
+      queue_properties = (cl_queue_properties *)malloc(sizeof(cl_queue_properties) * (props_count + 3));
       for (int i = 0; i < props_count; ++i) {
         queue_properties[i] = properties[i];
       }
