@@ -71,7 +71,7 @@ typedef void (*gpu_trace_channel_fn_t)
 //******************************************************************************
 
 void *
-gpu_trace_channel_stack_alloc
+gpu_trace_channel_set_alloc
 (
  int size
 );

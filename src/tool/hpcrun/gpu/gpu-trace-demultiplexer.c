@@ -94,7 +94,7 @@ gpu_trace_channel_set_create
 {
   gpu_trace_channel_set_t *new_channel_set= hpcrun_malloc(sizeof(gpu_trace_channel_set_t));
   new_channel_set->next = NULL;
-  new_channel_set->channel_set_ptr = gpu_trace_channel_stack_alloc(streams_per_thread);
+  new_channel_set->channel_set_ptr = gpu_trace_channel_set_alloc(streams_per_thread);
   atomic_store(&new_channel_set->channel_index, 0);
 
   pthread_create(&new_channel_set->thread, NULL, (pthread_start_routine_t) gpu_trace_record,
@@ -105,7 +105,7 @@ gpu_trace_channel_set_create
 
 
 static void
-gpu_trace_channel_set_init
+gpu_trace_demultiplexer_init
 (
  void
 )
@@ -151,7 +151,7 @@ gpu_trace_demultiplexer_push
 {
 
   if (trace_channel_set_list_head == NULL){
-    gpu_trace_channel_set_init();
+    gpu_trace_demultiplexer_init();
   }
 
   if (atomic_load(&trace_channel_set_list_tail->channel_index) == streams_per_thread){

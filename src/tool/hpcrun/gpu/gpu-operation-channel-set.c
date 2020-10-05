@@ -150,7 +150,7 @@ gpu_operation_channel_set_forall
 // interface operations
 //******************************************************************************
 
-void gpu_operation_channel_stack_alloc(int size){
+void gpu_operation_channel_set_alloc(int size){
   gpu_operation_channel_stack = hpcrun_malloc_safe( size * sizeof(typed_stack_elem_ptr(gpu_operation_channel_ptr_t)));
 }
 

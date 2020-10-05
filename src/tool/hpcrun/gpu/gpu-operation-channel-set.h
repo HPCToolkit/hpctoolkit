@@ -71,7 +71,7 @@ typedef void (*gpu_operation_channel_fn_t)
 //******************************************************************************
 
 void
-gpu_operation_channel_stack_alloc(int size);
+gpu_operation_channel_set_alloc(int size);
 
 
 void

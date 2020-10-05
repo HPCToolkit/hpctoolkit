@@ -138,7 +138,7 @@ gpu_activity_multiplexer_create
   int max_completion_cb_threads;
   control_knob_value_get_int("MAX_COMPLETION_CALLBACK_THREADS", &max_completion_cb_threads);
 
-  gpu_operation_channel_stack_alloc(max_completion_cb_threads);
+  gpu_operation_channel_set_alloc(max_completion_cb_threads);
   // You are the first to create monitor thread
   pthread_create(&thread, NULL, (pthread_start_routine_t) gpu_activity_record,
                  NULL);
