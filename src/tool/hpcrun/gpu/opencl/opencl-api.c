@@ -915,10 +915,10 @@ clEnqueueWriteBuffer
 void
 opencl_enable_instrumentation
 (
-	void
+ void
 )
 {
-	instrumentation = true;
+  instrumentation = true;
 }
 
 

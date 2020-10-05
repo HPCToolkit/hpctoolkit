@@ -154,15 +154,15 @@ METHOD_FN(process_event_list, int lush_metrics)
   TMSG(OPENCL,"nevents = %d", nevents);
   gpu_metrics_default_enable();
 
-	char* evlist = METHOD_CALL(self, get_event_str);
+  char* evlist = METHOD_CALL(self, get_event_str);
   char* event = start_tok(evlist);
-	long th;
+  long th;
   hpcrun_extract_ev_thresh(event, sizeof(opencl_name), opencl_name,
     &th, NO_THRESHOLD);
 
   if (hpcrun_ev_is(opencl_name, GPU_STRING)) {
   } else if (hpcrun_ev_is(opencl_name, ENABLE_INSTRUMENTATION)) {
-		opencl_enable_instrumentation();
+    opencl_enable_instrumentation();
   }
 }
 
@@ -202,9 +202,9 @@ METHOD_FN(display_events)
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
   printf("%s\t\tOperation-level monitoring for opencl on a GPU.\n"
-	  "\t\tCollect timing information on GPU kernel invocations,\n"
-	  "\t\tmemory copies, etc.\n",
-	  GPU_STRING);
+    "\t\tCollect timing information on GPU kernel invocations,\n"
+    "\t\tmemory copies, etc.\n",
+    GPU_STRING);
   printf("\n");
 }
 
