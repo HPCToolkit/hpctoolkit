@@ -331,9 +331,12 @@ OPENCL_FN
 
 static atomic_ullong opencl_pending_operations;
 static atomic_long correlation_id;
+static bool instrumentation = false;
 
 #define CL_PROGRAM_DEBUG_INFO_SIZES_INTEL 0x4101
 #define CL_PROGRAM_DEBUG_INFO_INTEL       0x4100
+
+
 
 //******************************************************************************
 // private operations
@@ -505,7 +508,7 @@ opencl_subscriber_callback
   gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
   hpcrun_safe_exit();
 
-  if (type == kernel) {
+  if (instrumentation && type == kernel) {
     // Callback to produce gtpin correlation
     gtpin_produce_runtime_callstack(&gpu_op_ccts);
   }
@@ -602,8 +605,10 @@ opencl_api_initialize
  void
 )
 {
-  gpu_metrics_GPU_INST_enable();
-  gtpin_enable_profiling();
+	if (instrumentation) {
+  	gpu_metrics_GPU_INST_enable();
+  	gtpin_enable_profiling();
+	}
   atomic_store(&correlation_id, 0);
   atomic_store(&opencl_pending_operations, 0);
 }
@@ -899,6 +904,16 @@ clEnqueueWriteBuffer
   clSetEventCallback_wrapper(*eventp, CL_COMPLETE, &opencl_activity_completion_callback, (void *)mem_info);
 
   return return_status;
+}
+
+
+void
+opencl_enable_instrumentation
+(
+	void
+)
+{
+	instrumentation = true;
 }
 
 

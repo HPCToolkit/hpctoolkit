@@ -66,8 +66,19 @@
 //******************************************************************************
 
 #define GPU_STRING "gpu=opencl"
+#define ENABLE_INSTRUMENTATION "gpu=opencl,inst"
+#define NO_THRESHOLD  1L
 static device_finalizer_fn_entry_t device_finalizer_shutdown;
 static device_finalizer_fn_entry_t device_trace_finalizer_shutdown;
+
+
+
+//******************************************************************************
+// type declarations
+//******************************************************************************
+
+static char opencl_name[128];
+
 
 
 //******************************************************************************
@@ -129,7 +140,7 @@ static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
   #ifndef HPCRUN_STATIC_LINK
-  return hpcrun_ev_is(ev_str, GPU_STRING);
+  return (hpcrun_ev_is(ev_str, GPU_STRING) || hpcrun_ev_is(ev_str, ENABLE_INSTRUMENTATION));
   #else
   return false;
   #endif
@@ -140,8 +151,19 @@ static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
   int nevents = (self->evl).nevents;
-  gpu_metrics_default_enable();
   TMSG(OPENCL,"nevents = %d", nevents);
+  gpu_metrics_default_enable();
+
+	char* evlist = METHOD_CALL(self, get_event_str);
+  char* event = start_tok(evlist);
+	long th;
+  hpcrun_extract_ev_thresh(event, sizeof(opencl_name), opencl_name,
+    &th, NO_THRESHOLD);
+
+  if (hpcrun_ev_is(opencl_name, GPU_STRING)) {
+  } else if (hpcrun_ev_is(opencl_name, ENABLE_INSTRUMENTATION)) {
+		opencl_enable_instrumentation();
+  }
 }
 
 

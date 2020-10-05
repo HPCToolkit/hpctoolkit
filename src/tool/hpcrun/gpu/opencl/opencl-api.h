@@ -147,6 +147,13 @@ opencl_bind
 
 
 void
+opencl_enable_instrumentation
+(
+	void
+);
+
+
+void
 opencl_api_finalize
 (
  void *
