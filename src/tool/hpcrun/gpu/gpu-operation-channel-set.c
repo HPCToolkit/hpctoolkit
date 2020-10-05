@@ -187,14 +187,3 @@ gpu_operation_channel_set_apply
 }
 
 
-
-void
-gpu_operation_stream_release
-(
- int set_index
-)
-{
-  gpu_operation_channel_set_forall(gpu_operation_release, set_index);
-}
-
-

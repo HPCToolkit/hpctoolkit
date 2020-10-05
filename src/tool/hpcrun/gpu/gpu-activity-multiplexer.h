@@ -70,47 +70,32 @@ typedef struct gpu_activity_t gpu_activity_t;
 
 
 bool
-gpu_activity_is_multiplexer_initialized
+gpu_activity_multiplexer_my_channel_initialized
 (
-void
+ void
 );
 
 
 void
-gpu_activity_multiplexer_init
+gpu_activity_multiplexer_my_channel_init
 (
-void
+ void
 );
 
 
 void
 gpu_activity_multiplexer_fini
 (
-void
+ void
 );
 
 
 void
 gpu_activity_multiplexer_push
 (
-gpu_activity_channel_t *initiator_channel,
-gpu_activity_t *gpu_activity
+ gpu_activity_channel_t *initiator_channel,
+ gpu_activity_t *gpu_activity
 );
-
-
-void
-gpu_activity_multiplexer_release
-(
-void
-);
-
-
-void
-gpu_operation_release
-(
-gpu_operation_channel_t *channel
-);
-
 
 
 

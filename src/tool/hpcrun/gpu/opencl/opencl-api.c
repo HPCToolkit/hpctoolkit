@@ -255,8 +255,8 @@ opencl_activity_process
   gpu_activity_t gpu_activity;
   opencl_activity_translate(&gpu_activity, event, cb_data);
 
-  if (gpu_activity_is_multiplexer_initialized() == false){
-    gpu_activity_multiplexer_init();
+  if (gpu_activity_multiplexer_my_channel_initialized() == false){
+    gpu_activity_multiplexer_my_channel_init();
   }
   gpu_activity_multiplexer_push(cb_data->details.initiator_channel, &gpu_activity);
 //  gpu_activity_process(&gpu_activity);

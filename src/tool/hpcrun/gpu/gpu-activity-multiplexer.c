@@ -42,9 +42,9 @@
 // ******************************************************* EndRiceCopyright *
 
 
-#include <pthread.h>
-
+#include <hpcrun/control-knob.h>
 #include <lib/prof-lean/stdatomic.h>
+#include <pthread.h>
 
 
 #define DEBUG 0
@@ -60,9 +60,6 @@
 
 
 
-//TODO: Figure out how to get max number of application threads
-#define max_threads_consumers 1000
-
 //******************************************************************************
 // type declarations
 //******************************************************************************
@@ -76,8 +73,8 @@ typedef void *(*pthread_start_routine_t)(void *);
 static _Atomic(bool) stop_activity_flag;
 static _Atomic(bool) gpu_trace_finished;
 
-static atomic_uint stream_id;
-static __thread uint32_t my_operation_set_id = -1;
+static atomic_uint operation_channels_count;
+static __thread uint32_t my_operation_channel_id = -1;
 static __thread gpu_operation_channel_t *gpu_operation_channel = NULL;
 static pthread_once_t is_initialized = PTHREAD_ONCE_INIT;
 
@@ -90,23 +87,23 @@ static pthread_once_t is_initialized = PTHREAD_ONCE_INIT;
 static void
 gpu_init_operation_channel(){
   // Create operation channel
-  my_operation_set_id = atomic_fetch_add(&stream_id, 1);
+  my_operation_channel_id = atomic_fetch_add(&operation_channels_count, 1);
   gpu_operation_channel = gpu_operation_channel_get();
-  gpu_operation_channel_set_insert(gpu_operation_channel, my_operation_set_id);
+  gpu_operation_channel_set_insert(gpu_operation_channel, my_operation_channel_id);
 }
 
 
 static void *
 gpu_activity_record
 (
-void
+ void
 )
 {
 
   while (!atomic_load(&stop_activity_flag)){
-    int current_stream_id = atomic_load(&stream_id);
+    int current_operation_channels_count = atomic_load(&operation_channels_count);
 
-    for (int set_index = 0; set_index < current_stream_id ; ++set_index) {
+    for (int set_index = 0; set_index < current_operation_channels_count ; ++set_index) {
       gpu_operation_channel_set_apply(gpu_operation_channel_consume, set_index);
 
       // TODO: change waiting policy to getting items when full
@@ -114,8 +111,8 @@ void
     }
   }
 
-  int current_stream_id = atomic_load(&stream_id);
-  for (int set_index = 0; set_index < current_stream_id; ++set_index) {
+  int current_operation_channels_count = atomic_load(&operation_channels_count);
+  for (int set_index = 0; set_index < current_operation_channels_count; ++set_index) {
     gpu_operation_channel_set_apply(gpu_operation_channel_consume, set_index);
     gpu_operation_channel_set_apply(gpu_operation_channel_await, set_index);
   }
@@ -130,15 +127,18 @@ void
 static void
 gpu_activity_multiplexer_create
 (
-void
+ void
 )
 {
   pthread_t thread;
   atomic_store(&stop_activity_flag, false);
   atomic_store(&gpu_trace_finished, false);
-  atomic_store(&stream_id, 0);
+  atomic_store(&operation_channels_count, 0);
 
-  gpu_operation_channel_stack_alloc(max_threads_consumers);
+  int max_completion_cb_threads;
+  control_knob_value_get_int("MAX_COMPLETION_CALLBACK_THREADS", &max_completion_cb_threads);
+
+  gpu_operation_channel_stack_alloc(max_completion_cb_threads);
   // You are the first to create monitor thread
   pthread_create(&thread, NULL, (pthread_start_routine_t) gpu_activity_record,
                  NULL);
@@ -151,17 +151,17 @@ void
 //******************************************************************************
 
 bool
-gpu_activity_is_multiplexer_initialized
+gpu_activity_multiplexer_my_channel_initialized
 (
  void
 )
 {
-  return (my_operation_set_id != -1);
+  return (my_operation_channel_id != -1);
 }
 
 
 void
-gpu_activity_multiplexer_init
+gpu_activity_multiplexer_my_channel_init
 (
  void
 )
@@ -174,15 +174,15 @@ gpu_activity_multiplexer_init
 void
 gpu_activity_multiplexer_fini
 (
-void
+ void
 )
 {
   PRINT("gpu_activity_multiplexer_fini called\n");
 
   atomic_store(&stop_activity_flag, true);
 
-  int current_stream_id = atomic_load(&stream_id);
-  for (int set_index = 0; set_index < current_stream_id; ++set_index) {
+  int current_operation_channels_count = atomic_load(&operation_channels_count);
+  for (int set_index = 0; set_index < current_operation_channels_count; ++set_index) {
     gpu_operation_channel_set_apply(gpu_operation_channel_signal_consumer, set_index);
   }
 
@@ -193,31 +193,12 @@ void
 void
 gpu_activity_multiplexer_push
 (
-gpu_activity_channel_t *initiator_channel,
-gpu_activity_t *gpu_activity
+ gpu_activity_channel_t *initiator_channel,
+ gpu_activity_t *gpu_activity
 )
 {
   gpu_operation_item_t item = (gpu_operation_item_t){.channel=initiator_channel, .activity=*gpu_activity};
   gpu_operation_channel_produce(gpu_operation_channel, &item);
-
-}
-
-
-void
-gpu_operation_release
-(
-gpu_operation_channel_t *channel
-)
-{
-}
-
-
-void
-gpu_activity_multiplexer_release
-(
- void
-)
-{
 }
 
 
