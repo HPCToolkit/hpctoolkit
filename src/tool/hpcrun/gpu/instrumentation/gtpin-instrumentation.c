@@ -79,6 +79,7 @@
 #include <lib/prof-lean/crypto-hash.h>
 #include <lib/prof-lean/spinlock.h>
 
+#include "gtpin-correlation-id-map.h"
 #include "gtpin-instrumentation.h"
 #include "kernel-data.h"
 #include "kernel-data-map.h"
@@ -164,7 +165,8 @@ createKernelNode
     gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
     hpcrun_safe_exit();
 
-    gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, cpu_submit_time);
+    gpu_activity_channel_t *activity_channel = gpu_activity_channel_get();
+    gtpin_correlation_id_map_insert(correlation_id, &gpu_op_ccts, activity_channel, cpu_submit_time);
   }
 }
 
@@ -282,9 +284,6 @@ activityNotify
  void
 )
 {
-  // Once you attribute this kernel, you want to update the host_correlation_id entry.
-  // Otherwise, the same memory might be reclaimed
-  // gpu_monitoring_thread_activities_ready(allow_update);
   gpu_monitoring_thread_activities_ready();
 }
 
@@ -316,12 +315,20 @@ kernelBlockActivityProcess
  uint64_t correlation_id,
  uint32_t loadmap_module_id,
  uint64_t offset,
- uint64_t execution_count
+ uint64_t execution_count,
+ gpu_activity_channel_t *activity_channel,
+ cct_node_t *host_op_node
 )
 {
   gpu_activity_t ga;
   kernelBlockActivityTranslate(&ga, correlation_id, loadmap_module_id, offset, execution_count);
-  gpu_activity_process(&ga);
+
+  ip_normalized_t ip = ga.details.kernel_block.pc;
+  cct_node_t *cct_child = hpcrun_cct_insert_ip_norm(host_op_node, ip); // how to set the ip_norm
+  if (cct_child) {
+    ga.cct_node = cct_child;
+    gpu_activity_channel_produce(activity_channel, &ga);
+  }
 }
 
 
@@ -407,9 +414,7 @@ onKernelRun
  void *v
 )
 {
-  ETMSG(OPENCL, "onKernelRun starting. Inserted: correlation %llu", (uint64_t)kernelExec);
-
-  gpu_activity_channel_consume(gpu_metrics_attribute);
+  ETMSG(OPENCL, "onKernelRun starting. Inserted: correlation %"PRIu64"", (uint64_t)kernelExec);
 
   GTPINTOOL_STATUS status = GTPINTOOL_STATUS_SUCCESS;
   GTPin_KernelProfilingActive(kernelExec, 1);
@@ -429,11 +434,27 @@ onKernelComplete
   // Receive correlations from the host thread.
   // XXX(Keren): This is done usually at the monitor thread, but not guaranteed.
   // For safety concern, we need to adopt the multiplexer framework.
-  activityNotify();  
+  //activityNotify();  
+  
+  uint64_t correlation_id = (uint64_t)kernelExec;
+
+  gtpin_correlation_id_map_entry_t *entry =
+    gtpin_correlation_id_map_lookup(correlation_id);
+
+  ETMSG(OPENCL, "onKernelComplete starting. Lookup: correlation %"PRIu64", result %p", correlation_id, entry);
+
+  if (entry == NULL) {
+    // XXX(Keren): the opencl/level zero api's kernel launch is not wrapped
+    return;
+  }
+
+  gpu_activity_channel_t *activity_channel = gtpin_correlation_id_map_entry_activity_channel_get(entry);
+  gpu_op_ccts_t gpu_op_ccts = gtpin_correlation_id_map_entry_op_ccts_get(entry);
+  cct_node_t *host_op_node = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel);
 
   GTPINTOOL_STATUS status = GTPINTOOL_STATUS_SUCCESS;
   GTPinKernel kernel = GTPin_KernelExec_GetKernel(kernelExec);
-  ETMSG(OPENCL, "onKernelComplete starting. Lookup: correlation %llu, kernel: %llu", (uint64_t)kernelExec, (uint64_t)kernel);
+  ETMSG(OPENCL, "onKernelComplete starting. Lookup: kernel: %"PRIu64"", (uint64_t)kernel);
   assert(kernel_data_map_lookup((uint64_t)kernel) != 0);
 
   kernel_data_map_entry_t *kernel_data_map_entry = kernel_data_map_lookup((uint64_t)kernel);
@@ -459,8 +480,8 @@ onKernelComplete
 
     kernel_data_gtpin_inst_t *inst = block->inst;
     while (inst != NULL) {
-      kernelBlockActivityProcess((uint64_t)kernelExec, kernel_data.loadmap_module_id,
-        inst->offset, execution_count);
+      kernelBlockActivityProcess(correlation_id, kernel_data.loadmap_module_id,
+        inst->offset, execution_count, activity_channel, host_op_node);
       inst = inst->next;
     }
     block = block->next;
@@ -493,9 +514,6 @@ gtpin_enable_profiling
   // Use opencl/level zero runtime stack
   gtpin_use_runtime_callstack = true;
 
-  // Enable host correlation id replace
-  gpu_host_correlation_map_replace_set(true);
-
   GTPin_OnKernelBuild(onKernelBuild, NULL);
   GTPin_OnKernelRun(onKernelRun, NULL);
   GTPin_OnKernelComplete(onKernelComplete, NULL);
@@ -511,6 +529,7 @@ gtpin_produce_runtime_callstack
 )
 {
   if (gtpin_use_runtime_callstack) {
-    gpu_correlation_channel_produce(gtpin_correlation_id, gpu_op_ccts, gtpin_cpu_submit_time);
+    gpu_activity_channel_t *activity_channel = gpu_activity_channel_get();
+    gtpin_correlation_id_map_insert(gtpin_correlation_id, gpu_op_ccts, activity_channel, gtpin_cpu_submit_time);
   }
 }
