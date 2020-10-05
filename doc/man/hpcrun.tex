@@ -218,6 +218,12 @@ If this option is given, \Prog{hpcrun} will record all elements of a recursive c
 Note: When you use the \Prog{RETCNT} sample source this option is enabled automatically
 to gather accurate counts.
 
+ \item[\Opt{-nu}, \Opt{--no-unwind}]
+Suppress unwinding of callstacks.
+Normally as \Prog{hpcrun} collects data against full callstacks at the time of each event.
+If this option is given, \Prog{hpcrun} will skip unwinding, and generate data with only
+the leafPC's.
+
 \item[\Opt{-t}, \Opt{--trace}]
 Generate a call path trace in addition to a call path profile.
 

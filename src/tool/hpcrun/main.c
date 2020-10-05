@@ -211,6 +211,8 @@ __attribute__ ((unused));
 
 int lush_metrics = 0; // FIXME: global variable for now
 
+bool hpcrun_no_unwind = false;
+
 /******************************************************************************
  * (public declaration) thread-local variables
  *****************************************************************************/
@@ -928,6 +930,13 @@ monitor_init_process(int *argc, char **argv, void* data)
   if (life != NULL){
     int seconds = atoi(life);
     if (seconds > 0) alarm((unsigned int) seconds);
+  }
+
+  // see if unwinding has been turned off
+  // the same setting governs whether or not fnbounds is needed or used.
+  char *foo = getenv("HPCRUN_NO_UNWIND");
+  if (foo != NULL){
+    hpcrun_no_unwind = true;
   }
 
   char* s = getenv(HPCRUN_EVENT_LIST);

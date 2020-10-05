@@ -79,6 +79,7 @@ extern bool hpcrun_get_retain_recursion_mode();
 // local constants & macros
 //***************************************************************************
 
+
 //***************************************************************************
 // forward declarations 
 //***************************************************************************
@@ -183,7 +184,8 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
 					ucontext_t* context,
 					int skipInner)
 {
-  TMSG(BT, "Generate backtrace (no tramp), skip inner = %d", skipInner);
+  TMSG(BT, "Generate backtrace (no tramp), skip inner = %d, hpcrun_no_unwind = %s",
+    skipInner, (hpcrun_no_unwind == true ? "true" : "false") );
   bt->has_tramp = false;
   bt->n_trolls = 0;
   bt->fence = FENCE_BAD;
@@ -207,10 +209,11 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
   hpcrun_unw_init_cursor(&cursor, context);
 
   int steps_taken = 0;
-  do {
+  do {	// loop over frames in the callstack
     void* ip;
     hpcrun_unw_get_ip_unnorm_reg(&cursor, &ip);
 
+    // check for trampoline interactions
     if (hpcrun_trampoline_interior(ip)) {
       // bail; we shouldn't be unwinding here. hpcrun is in the midst of 
       // counting a return from a sampled frame using a trampoline.
@@ -237,7 +240,7 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
 	ret = STEP_STOP;
 	break;
       }
-    }
+    } // end the check for trampoline interactions
     
     hpcrun_ensure_btbuf_avail();
 
@@ -251,7 +254,18 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
 
     frame_t* prev = td->btbuf_cur++;
 
-    ret = hpcrun_unw_step(&cursor, &steps_taken);
+    // Implementation of --no-unwind
+    //    If set, do not unwind from the leaf PC
+
+    if (hpcrun_no_unwind == true) {
+      ret = STEP_STOP;	// force the unwind to be stopped
+      // But replicate the side effects of calling hpcrun_unw_step
+      bt->fence = cursor.fence;
+
+    } else {
+      ret = hpcrun_unw_step ( &cursor, &steps_taken);
+    }
+
     switch (ret) {
     case STEP_TROLL:
       bt->n_trolls++;
@@ -427,7 +441,6 @@ hpcrun_generate_backtrace(backtrace_info_t* bt,
 
   return true;
 }
-
 
 //***************************************************************************
 // private operations 

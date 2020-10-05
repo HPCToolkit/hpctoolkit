@@ -613,6 +613,12 @@ uw_recipe_map_notify_init()
 void
 uw_recipe_map_init(void)
 {
+  static bool msg_sent = false;
+  if (msg_sent == false) {
+    TMSG(NU, "uw_recipe_map_init from uw_recipe_map.c" );
+    msg_sent = true;
+  }
+
   hpcrun_set_real_siglongjmp();
 #if UW_RECIPE_MAP_DEBUG
   fprintf(stderr, "uw_recipe_map_init: call a2r_map_init(my_alloc) ... \n");
