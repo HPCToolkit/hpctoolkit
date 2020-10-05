@@ -120,7 +120,7 @@ gpu_correlation_consume
 #else
     PRINT("Consume correlation id %lu\n", c->host_correlation_id);
     gpu_host_correlation_map_insert(c->host_correlation_id, &(c->gpu_op_ccts), 
-				    c->cpu_submit_time, c->activity_channel);
+      c->cpu_submit_time, c->activity_channel);
 #endif
 }
 

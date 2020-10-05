@@ -4728,7 +4728,7 @@ case "$OPENCL" in
     if test ! -f "${OPENCL}/include/CL/cl.h" ; then
       AC_MSG_ERROR([unable to find CL/cl.h in: $OPENCL])
     else
-      OPT_OPENCL_IFLAGS="-I${OPENCL}"
+      OPT_OPENCL_IFLAGS="-I${OPENCL}/include"
       OPT_HAVE_OPENCL=yes
     fi
     ;;

@@ -407,6 +407,8 @@ onKernelRun
  void *v
 )
 {
+  ETMSG(OPENCL, "onKernelRun starting. Inserted: correlation %llu", (uint64_t)kernelExec);
+
   gpu_activity_channel_consume(gpu_metrics_attribute);
 
   GTPINTOOL_STATUS status = GTPINTOOL_STATUS_SUCCESS;
@@ -431,7 +433,7 @@ onKernelComplete
 
   GTPINTOOL_STATUS status = GTPINTOOL_STATUS_SUCCESS;
   GTPinKernel kernel = GTPin_KernelExec_GetKernel(kernelExec);
-  ETMSG(OPENCL, "onKernelComplete starting. Lookup: key: %"PRIu64 "",(uint64_t)kernel);
+  ETMSG(OPENCL, "onKernelComplete starting. Lookup: correlation %llu, kernel: %llu", (uint64_t)kernelExec, (uint64_t)kernel);
   assert(kernel_data_map_lookup((uint64_t)kernel) != 0);
 
   kernel_data_map_entry_t *kernel_data_map_entry = kernel_data_map_lookup((uint64_t)kernel);
@@ -486,8 +488,13 @@ gtpin_enable_profiling
   }
 #endif
 
+  gpu_metrics_GPU_INST_enable();
+
   // Use opencl/level zero runtime stack
   gtpin_use_runtime_callstack = true;
+
+  // Enable host correlation id replace
+  gpu_host_correlation_map_replace_set(true);
 
   GTPin_OnKernelBuild(onKernelBuild, NULL);
   GTPin_OnKernelRun(onKernelRun, NULL);

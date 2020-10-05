@@ -86,7 +86,7 @@
 
 class ElfFile {
 public:
-  ElfFile() : origPtr(0), memPtr(0), elf(0), memLen(0), intelGPU(false) {}
+  ElfFile() : origPtr(0), memPtr(0), memLen(0), elf(0), intelGPU(false) {}
   bool open(char *_memPtr, size_t _memLen, const std::string &_fileName);
   ~ElfFile();
   int getArch() { return arch; }
@@ -103,8 +103,8 @@ private:
   char *origPtr;
   char *memPtr;
   size_t memLen;
-  bool intelGPU;
   Elf *elf;
+  bool intelGPU;
   std::string fileName;
 };
 

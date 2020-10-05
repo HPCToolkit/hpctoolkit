@@ -23624,7 +23624,7 @@ case "$OPENCL" in
     if test ! -f "${OPENCL}/include/CL/cl.h" ; then
       as_fn_error $? "unable to find CL/cl.h in: $OPENCL" "$LINENO" 5
     else
-      OPT_OPENCL_IFLAGS="-I${OPENCL}"
+      OPT_OPENCL_IFLAGS="-I${OPENCL}/include"
       OPT_HAVE_OPENCL=yes
     fi
     ;;
