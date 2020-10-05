@@ -605,10 +605,9 @@ opencl_api_initialize
  void
 )
 {
-	if (instrumentation) {
-  	gpu_metrics_GPU_INST_enable();
-  	gtpin_enable_profiling();
-	}
+  if (instrumentation) {
+    gtpin_enable_profiling();
+  }
   atomic_store(&correlation_id, 0);
   atomic_store(&opencl_pending_operations, 0);
 }
@@ -914,10 +913,10 @@ clEnqueueWriteBuffer
 void
 opencl_enable_instrumentation
 (
-	void
+ void
 )
 {
-	instrumentation = true;
+  instrumentation = true;
 }
 
 
