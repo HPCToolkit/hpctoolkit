@@ -138,11 +138,17 @@ opencl_bind
 
 
 void
-opencl_api_finalize
+opencl_api_thread_finalize
 (
   void *
 );
 
+
+void
+opencl_api_process_finalize
+(
+void *
+);
 
 
 #endif  //_OPENCL_API_H_

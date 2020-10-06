@@ -99,23 +99,16 @@ gpu_activity_record
  void
 )
 {
+  int current_operation_channels_count;
 
   while (!atomic_load(&stop_activity_flag)){
-    int current_operation_channels_count = atomic_load(&operation_channels_count);
-
-    for (int set_index = 0; set_index < current_operation_channels_count ; ++set_index) {
-      gpu_operation_channel_set_apply(gpu_operation_channel_consume, set_index);
-
-      // TODO: change waiting policy to getting items when full
-      gpu_operation_channel_set_apply(gpu_operation_channel_await, set_index);
-    }
+    current_operation_channels_count = atomic_load(&operation_channels_count);
+    gpu_operation_channel_set_process(current_operation_channels_count);
   }
 
-  int current_operation_channels_count = atomic_load(&operation_channels_count);
-  for (int set_index = 0; set_index < current_operation_channels_count; ++set_index) {
-    gpu_operation_channel_set_apply(gpu_operation_channel_consume, set_index);
-    gpu_operation_channel_set_apply(gpu_operation_channel_await, set_index);
-  }
+  current_operation_channels_count = atomic_load(&operation_channels_count);
+  gpu_operation_channel_set_process(current_operation_channels_count);
+  gpu_operation_channel_set_await(current_operation_channels_count);
 
   gpu_trace_fini(NULL);
   atomic_store(&gpu_trace_finished, true);
@@ -181,10 +174,7 @@ gpu_activity_multiplexer_fini
 
   atomic_store(&stop_activity_flag, true);
 
-  int current_operation_channels_count = atomic_load(&operation_channels_count);
-  for (int set_index = 0; set_index < current_operation_channels_count; ++set_index) {
-    gpu_operation_channel_set_apply(gpu_operation_channel_signal_consumer, set_index);
-  }
+  gpu_operation_channel_set_notify(atomic_load(&operation_channels_count));
 
   while (!atomic_load(&gpu_trace_finished));
 }

@@ -145,6 +145,18 @@ gpu_operation_channel_set_forall
 }
 
 
+static void
+gpu_operation_channel_set_apply
+(
+gpu_operation_channel_fn_t channel_fn,
+int channel_num
+)
+{
+  for (int channel_idx = 0; channel_idx < channel_num; ++channel_idx) {
+    gpu_operation_channel_set_forall(channel_fn, channel_idx);
+  }
+}
+
 
 //******************************************************************************
 // interface operations
@@ -177,13 +189,30 @@ gpu_operation_channel_set_insert
 
 
 void
-gpu_operation_channel_set_apply
+gpu_operation_channel_set_process
 (
- gpu_operation_channel_fn_t channel_fn,
- int set_index
+ int channel_num
 )
 {
-  gpu_operation_channel_set_forall(channel_fn, set_index);
+  gpu_operation_channel_set_apply(gpu_operation_channel_consume, channel_num);
 }
 
 
+void
+gpu_operation_channel_set_await
+(
+ int channel_num
+)
+{
+  gpu_operation_channel_set_apply(gpu_operation_channel_await, channel_num);
+}
+
+
+void
+gpu_operation_channel_set_notify
+(
+ int channel_num
+)
+{
+  gpu_operation_channel_set_apply(gpu_operation_channel_signal_consumer, channel_num);
+}

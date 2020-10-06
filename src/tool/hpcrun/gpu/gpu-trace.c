@@ -322,7 +322,7 @@ gpu_trace_record
   while (!atomic_load(&stop_trace_flag)) {
     //getting data from a trace channel
     gpu_trace_channel_set_process(channel_set);
-    gpu_trace_channel_set_await(channel_set);
+
     PRINT("TraceRecord_processed: thread: %ld, set_index = %d\n",
            gpu_trace_channel_set_get_thread(channel_set),
            gpu_trace_channel_set_get_channel_num(channel_set));

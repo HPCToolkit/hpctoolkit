@@ -106,7 +106,7 @@ static void
 METHOD_FN(thread_fini_action)
 {
   TMSG(OPENCL, "thread_fini_action");
-//  opencl_api_finalize(NULL);
+  opencl_api_thread_finalize(NULL);
 }
 
 
@@ -161,7 +161,7 @@ METHOD_FN(finalize_event_list)
 //  device_trace_finalizer_shutdown.fn = gpu_trace_fini;
 //  device_finalizer_register(device_finalizer_type_shutdown, &device_trace_finalizer_shutdown);
 
-  device_finalizer_shutdown.fn = opencl_api_finalize;
+  device_finalizer_shutdown.fn = opencl_api_process_finalize;
   device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_shutdown);
 
 }

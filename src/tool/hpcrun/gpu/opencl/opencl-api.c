@@ -519,14 +519,21 @@ opencl_bind
 
 
 void
-opencl_api_finalize
+opencl_api_thread_finalize
 (
   void *args
 )
 {
   opencl_wait_for_pending_operations();
-  gpu_activity_multiplexer_fini();
-
   gpu_application_thread_process_activities();
+}
 
+void
+opencl_api_process_finalize
+(
+void *args
+)
+{
+  opencl_api_thread_finalize(NULL);
+  gpu_activity_multiplexer_fini();
 }
