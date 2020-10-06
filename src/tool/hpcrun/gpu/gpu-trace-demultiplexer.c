@@ -130,16 +130,26 @@ gpu_trace_channel_set_get_ptr
 )
 {
   return channel_set->channel_set_ptr;
-};
+}
 
 
-int
+uint32_t
 gpu_trace_channel_set_get_channel_num
 (
  gpu_trace_channel_set_t *channel_set
 )
 {
   return atomic_load(&channel_set->channel_index);
+}
+
+
+pthread_t
+gpu_trace_channel_set_get_thread
+(
+gpu_trace_channel_set_t *channel_set
+)
+{
+  return channel_set->thread;
 }
 
 

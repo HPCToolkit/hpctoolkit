@@ -45,17 +45,9 @@
 // system includes
 //******************************************************************************
 
-#include <lib/prof-lean/stdatomic.h>
+#include <assert.h>
 #include <pthread.h>
 
-#include <hpcrun/cct/cct.h>
-#include <hpcrun/control-knob.h>
-#include <hpcrun/thread_data.h>
-#include <hpcrun/threadmgr.h>
-#include <hpcrun/trace.h>
-#include <hpcrun/write_data.h>
-
-#include <assert.h>
 
 
 //******************************************************************************
@@ -69,6 +61,15 @@
 //******************************************************************************
 // local includes
 //******************************************************************************
+
+#include <lib/prof-lean/stdatomic.h>
+
+#include <hpcrun/cct/cct.h>
+#include <hpcrun/control-knob.h>
+#include <hpcrun/thread_data.h>
+#include <hpcrun/threadmgr.h>
+#include <hpcrun/trace.h>
+#include <hpcrun/write_data.h>
 
 #include "gpu-context-id-map.h"
 #include "gpu-monitoring.h"
@@ -248,6 +249,7 @@ gpu_trace_start_adjust
 
   if (end < last_end){
     // If stream becomes unordered, mark it (it will be sorted in prof)
+    PRINT("TRACE NOT ORDERED: Trace_id = %u\n", td->core_profile_trace_data.id);
     td->core_profile_trace_data.traceOrdered = false;
     return start;
   }
@@ -321,6 +323,9 @@ gpu_trace_record
     //getting data from a trace channel
     gpu_trace_channel_set_process(channel_set);
     gpu_trace_channel_set_await(channel_set);
+    PRINT("TraceRecord_processed: thread: %ld, set_index = %d\n",
+           gpu_trace_channel_set_get_thread(channel_set),
+           gpu_trace_channel_set_get_channel_num(channel_set));
   }
 
   gpu_trace_channel_set_process(channel_set);

@@ -321,6 +321,7 @@ opencl_object_t *cb_data
     cb_basic.kind = cb_data->kind;
     cb_basic.type = cb_data->details.mem_cb.type;
   }
+  cb_basic.cct_node = cb_data->details.cct_node;
 
   return cb_basic;
 }
@@ -333,11 +334,12 @@ opencl_cb_basic_print
 )
 {
 
-  ETMSG(OPENCL, " %s | Activity kind: %s | type: %s | correlation id: %"PRIu64 "",
+  ETMSG(OPENCL, " %s | Activity kind: %s | type: %s | correlation id: %"PRIu64 "| cct_node = %p",
         title,
         gpu_kind_to_string(cb_basic.kind),
         gpu_type_to_string(cb_basic.type),
-        cb_basic.correlation_id);
+        cb_basic.correlation_id,
+        cb_basic.cct_node);
 
 }
 
@@ -358,15 +360,11 @@ opencl_subscriber_callback
 )
 {
 
+  gpu_placeholder_type_t placeholder_type;
   uint64_t correlation_id = getCorrelationId();
 
   opencl_pending_operations_adjust(1);
   gpu_op_placeholder_flags_t gpu_op_placeholder_flags = 0;
-  gpu_op_ccts_t gpu_op_ccts;
-  gpu_correlation_id_map_insert(correlation_id, correlation_id);
-  cct_node_t *api_node = 
-    gpu_application_thread_correlation_callback(correlation_id);
-
 
   switch (cb_info->kind) {
 
@@ -376,9 +374,13 @@ opencl_subscriber_callback
         gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
                                        gpu_placeholder_type_copyin);
 
+        placeholder_type = gpu_placeholder_type_copyin;
+
       }else if (cb_info->details.mem_cb.type == GPU_MEMCPY_D2H){
         gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
                                        gpu_placeholder_type_copyout);
+
+        placeholder_type = gpu_placeholder_type_copyout;
       }
       break;
 
@@ -389,19 +391,28 @@ opencl_subscriber_callback
 
       gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
 				   gpu_placeholder_type_trace);
+
+      placeholder_type = gpu_placeholder_type_kernel;
       break;
     default:
       assert(0);
   }
 
+
+  gpu_correlation_id_map_insert(correlation_id, correlation_id);
+  cct_node_t *api_node =
+  gpu_application_thread_correlation_callback(correlation_id);
+
+  gpu_op_ccts_t gpu_op_ccts;
+
   hpcrun_safe_enter();
   gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
+  cct_node_t *cct_ph = gpu_op_ccts_get(&gpu_op_ccts, placeholder_type);
   hpcrun_safe_exit();
 
   gpu_activity_channel_consume(gpu_metrics_attribute);
 
-
-  cb_info->details.cct_node = api_node;
+  cb_info->details.cct_node = cct_ph;
   cb_info->details.initiator_channel = gpu_activity_channel_get();
   cb_info->details.submit_time = CPU_NANOTIME();
 

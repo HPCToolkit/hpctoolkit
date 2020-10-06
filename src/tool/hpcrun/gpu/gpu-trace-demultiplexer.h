@@ -78,7 +78,15 @@ gpu_trace_channel_set_get_ptr
  gpu_trace_channel_set_t *channel_set
 );
 
-int
+
+pthread_t
+gpu_trace_channel_set_get_thread
+(
+ gpu_trace_channel_set_t *channel_set
+);
+
+
+uint32_t
 gpu_trace_channel_set_get_channel_num
 (
  gpu_trace_channel_set_t *channel_set
