@@ -76,6 +76,8 @@
 // local includes
 //***************************************************************************
 
+#include <include/gpu-binary.h>
+
 #include <lib/prof-lean/spinlock.h>
 
 #include <hpcrun/files.h>
@@ -676,12 +678,12 @@ cupti_load_callback_cuda
   size_t i;
   size_t used = 0;
   used += sprintf(&file_name[used], "%s", hpcrun_files_output_directory());
-  used += sprintf(&file_name[used], "%s", "/cubins/");
+  used += sprintf(&file_name[used], "%s", "/" GPU_BINARY_DIRECTORY "/");
   mkdir(file_name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
   for (i = 0; i < hash_len; ++i) {
     used += sprintf(&file_name[used], "%02x", hash[i]);
   }
-  used += sprintf(&file_name[used], "%s", ".cubin");
+  used += sprintf(&file_name[used], "%s", GPU_BINARY_SUFFIX);
   TMSG(CUPTI, "cubin_id %d hash %s", cubin_id, file_name);
 
   // Write a file if does not exist

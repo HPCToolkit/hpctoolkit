@@ -57,6 +57,8 @@
 // local includes
 //******************************************************************************
 
+#include <include/gpu-binary.h>
+
 #include "rocm-debug-api.h"
 #include "rocm-binary-processing.h"
 #include <hpcrun/files.h>
@@ -248,9 +250,10 @@ parse_amd_gpu_binary_uri
   char gpu_file_path[PATH_MAX];
   size_t used = 0;
   used += sprintf(&gpu_file_path[used], "%s", hpcrun_files_output_directory());
-  used += sprintf(&gpu_file_path[used], "%s", "/amd/");
+  used += sprintf(&gpu_file_path[used], "%s", "/" GPU_BINARY_DIRECTORY "/");
   mkdir(gpu_file_path, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-  used += sprintf(&gpu_file_path[used], "%s.%llx.rocm-gpu", filename, offset);
+  used += sprintf(&gpu_file_path[used], "%s.%llx" GPU_BINARY_SUFFIX, 
+		  filename, offset);
 
   // We directly return if we have write down this URI
   int wfd;

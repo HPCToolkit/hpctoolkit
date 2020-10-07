@@ -107,10 +107,10 @@ To improve attribution of performance measurements to program source code, one c
 pass one or more program structure files to HPCToolkit's analysis tool hpcprof\n\
 along with one or more HPCToolkit performance measurement directories.\n\
 \n\
-During execution of a GPU-accelerated application on an NVIDIA GPU, HPCToolkit\n\
-records NVIDIA 'cubin' GPU binaries in the application's measurement directory.\n\
-To attribute performance to GPU functions in a GPU-accelerated application, one\n\
-should apply hpcstruct to the application's HPCToolkit measurement directory to\n\
+During execution of a GPU-accelerated application, HPCToolkit records\n\
+GPU binaries in the application's measurement directory. To attribute\n\
+performance to GPU functions in a GPU-accelerated application, one should \n\
+apply hpcstruct to the application's HPCToolkit measurement directory to\n\
 analyze all GPU binaries recorded within. When analyzing a measurement directory\n\
 that includes GPU binaries, any program structure files produced will be recorded\n\
 inside the measurement directory. When hpcprof is applied to a measurement\n\
@@ -118,7 +118,7 @@ directory that contains program structure files for GPU binaries, these program\
 structure files will be used to help attribute any GPU performance measurements.\n\
 \n\
 hpcstruct is designed primarily for highly optimized binaries created from\n\
-C, C++, Fortran, and CUDA source code. Because hpcstruct's algorithms exploit a\n\
+C, C++, Fortran, CUDA, and HIP source code. Because hpcstruct's algorithms exploit a\n\
 binary's debugging information, for best results, binary should be compiled\n\
 with standard debugging information or at a minimum, line map information.\n\
 See the HPCToolkit manual for more information.\n\
@@ -144,10 +144,9 @@ Options: Parallel usage\n\
 \n\
 Options: Structure recovery\n\
   --gpucfg <yes/no>    Compute loop nesting structure for GPU machine code.\n\
-                       Currently, this applies only to NVIDIA CUDA binaries\n\
-                       (cubins). Loop nesting structure is only useful with\n\
+                       Loop nesting structure is only useful with\n\
                        instruction-level measurements collected using PC\n\
-                       sampling. {no} \n\
+                       sampling or instrumentation. {no} \n\
   -I <path>, --include <path>\n\
                        Use <path> when resolving source file names. For a\n\
                        recursive search, append a '*' after the last slash,\n\
