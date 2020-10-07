@@ -71,13 +71,16 @@
 #include <hpcrun/messages/messages.h>
 #include <hpcrun/sample-sources/libdl.h>
 #include <hpcrun/files.h>
+#include <hpcrun/utilities/hpcrun-nanotime.h>
 #include <lib/prof-lean/hpcrun-opencl.h>
+#include <lib/prof-lean/splay-uint64.h>
 #include <lib/prof-lean/stdatomic.h>
 #include <lib/prof-lean/usec_time.h>
 
 #include "opencl-api.h"
 #include "opencl-activity-translate.h"
 #include "opencl-memory-manager.h"
+#include "opencl-h2d-map.h"
 
 
 
@@ -165,6 +168,8 @@
   macro(clEnqueueNDRangeKernel)  \
   macro(clEnqueueReadBuffer)  \
   macro(clEnqueueWriteBuffer)  \
+  macro(clCreateBuffer)  \
+  macro(clSetKernelArg)  \
   macro(clGetEventProfilingInfo)  \
   macro(clReleaseEvent)  \
   macro(clSetEventCallback)
@@ -179,6 +184,9 @@
 
 #define OPENCL_QUEUE_FN(fn, args)      \
   static cl_command_queue (*OPENCL_FN_NAME(fn)) args
+
+#define OPENCL_CREATEBUFFER_FN(fn, args)      \
+  static cl_mem (*OPENCL_FN_NAME(fn)) args
 
 #define HPCRUN_OPENCL_CALL(fn, args) (OPENCL_FN_NAME(fn) args)
 
@@ -294,6 +302,31 @@ OPENCL_FN
 );
 
 
+OPENCL_CREATEBUFFER_FN
+(
+  clCreateBuffer,
+  (
+    cl_context,
+    cl_mem_flags,
+    size_t,
+    void *,
+    cl_int *
+  )
+);
+
+
+OPENCL_FN
+(
+  clSetKernelArg,
+  (
+    cl_kernel kernel,
+    cl_uint arg_index,
+    size_t arg_size,
+    const void* arg_value
+  )
+);
+
+
 OPENCL_FN
 (
   clGetEventProfilingInfo,
@@ -330,6 +363,7 @@ OPENCL_FN
 
 
 static atomic_ullong opencl_pending_operations;
+static atomic_ullong opencl_h2d_pending_operations;
 static atomic_long correlation_id;
 static bool instrumentation = false;
 
@@ -393,6 +427,16 @@ clBuildProgramCallback
 
 
 static void
+opencl_h2d_pending_operations_adjust
+(
+ int value
+)
+{
+  atomic_fetch_add(&opencl_h2d_pending_operations, value);
+}
+
+
+static void
 opencl_pending_operations_adjust
 (
  int value
@@ -426,7 +470,108 @@ opencl_activity_process
 
 
 static void
-opencl_wait_for_pending_operations
+opencl_clSetKernelArg_activity_process
+(
+ uint64_t correlation_id,
+ opencl_h2d_map_entry_t *entry
+)
+{
+  gpu_activity_t gpu_activity;
+	size_t size = opencl_h2d_map_entry_size_get(entry); 
+	uint64_t start_time = opencl_h2d_map_entry_start_time_get(entry); 
+	uint64_t end_time = opencl_h2d_map_entry_end_time_get(entry); 
+  opencl_clSetKernelArg_activity_translate(&gpu_activity, correlation_id, size, start_time, end_time);
+  gpu_activity_process(&gpu_activity);
+}
+
+
+static uint64_t
+opencl_get_buffer_id
+(
+  const void *arg
+)
+{
+  cl_mem buffer = *(cl_mem*)arg;
+  return (uint64_t)buffer;
+}
+
+
+static bool
+opencl_isClArgBuffer
+(
+  const void *arg
+)
+{
+	/*
+	 * There are 2 scenarios in which opencl_isClArgBuffer will return false
+	 * 1. When clCreateBuffer was not called for arg before calling clSetKernelArg
+	 * 2. clEnqueueWriteBuffer is being called for arg. We shouldnt be recording duplicate H2D calls
+	 * */
+  uint64_t buffer_id = opencl_get_buffer_id(arg);
+	opencl_h2d_map_entry_t *entry = opencl_h2d_map_lookup(buffer_id);
+	bool isBuffer = entry ? true : false;
+	//ETMSG(OPENCL, "opencl_isClArgBuffer. buffer_id: %"PRIu64". isBuffer: %d",	buffer_id, isBuffer);
+	return isBuffer;
+}
+
+
+static void
+add_H2D_metrics_to_cct_node
+(
+	opencl_h2d_map_entry_t *entry,
+	splay_visit_t visit_type,
+	void *arg
+)
+{
+	uint64_t correlation_id = opencl_h2d_map_entry_correlation_get(entry); 
+	gpu_correlation_id_map_entry_t *cid_map_entry = 
+		gpu_correlation_id_map_lookup(correlation_id);
+	if (cid_map_entry == NULL) {
+		ETMSG(OPENCL, "cid_map_entry for correlation_id: %"PRIu64 " (clSetKernelArg H2D) not found", correlation_id);
+		return;
+	}
+	ETMSG(OPENCL, "completion type: %s, Correlation id: %"PRIu64 "", 
+			"memcpy_H2D", correlation_id);
+
+	uint64_t start_time = opencl_h2d_map_entry_start_time_get(entry); 
+	uint64_t end_time = opencl_h2d_map_entry_end_time_get(entry); 
+	ETMSG(OPENCL, "duration [%"PRIu64", %"PRIu64"]",start_time, end_time); 
+	opencl_activity_completion_notify();
+	opencl_clSetKernelArg_activity_process(correlation_id, entry);
+	uint64_t buffer_id = opencl_h2d_map_entry_buffer_id_get(entry);
+	//opencl_h2d_map_delete(buffer_id);
+  opencl_h2d_pending_operations_adjust(-1);
+  opencl_pending_operations_adjust(-1);
+}
+
+
+static void
+opencl_add_ccts_for_setClKernelArg
+(
+	void
+)
+{
+  uint64_t count = opencl_h2d_map_count();
+	if (atomic_load(&opencl_h2d_pending_operations) > 0) {
+		opencl_update_ccts_for_h2d_nodes(add_H2D_metrics_to_cct_node);
+	}
+}
+
+
+static void
+opencl_wait_for_non_clSetKernelArg_pending_operations
+(
+  void
+)
+{
+  ETMSG(OPENCL, "pending h2D operations: %lu", 
+	  atomic_load(&opencl_h2d_pending_operations));
+  while (atomic_load(&opencl_pending_operations) != atomic_load(&opencl_h2d_pending_operations));
+}
+
+
+static void
+opencl_wait_for_all_pending_operations
 (
   void
 )
@@ -612,6 +757,7 @@ opencl_api_initialize
   }
   atomic_store(&correlation_id, 0);
   atomic_store(&opencl_pending_operations, 0);
+  atomic_store(&opencl_h2d_pending_operations, 0);
 }
 
 
@@ -830,6 +976,8 @@ clEnqueueReadBuffer
  cl_event *event
 )
 {
+  ETMSG(OPENCL, "inside clEnqueueReadBuffer wrapper");
+
   uint64_t correlation_id = getCorrelationId();
   opencl_object_t *mem_info = opencl_malloc();
   mem_info->kind = OPENCL_MEMORY_CALLBACK;
@@ -878,7 +1026,13 @@ clEnqueueWriteBuffer
  cl_event *event
 )
 {
-  uint64_t correlation_id = getCorrelationId();
+  ETMSG(OPENCL, "inside clEnqueueWriteBuffer wrapper. cl_mem buffer: %p", buffer);
+	
+	opencl_h2d_map_delete((uint64_t)buffer);
+	opencl_h2d_pending_operations_adjust(-1);
+  //opencl_pending_operations_adjust(-1);
+  
+	uint64_t correlation_id = getCorrelationId();
   opencl_object_t *mem_info = opencl_malloc();
   mem_info->kind = OPENCL_MEMORY_CALLBACK;
   cl_memory_callback_t *mem_transfer_cb = &(mem_info->details.mem_cb);
@@ -912,6 +1066,63 @@ clEnqueueWriteBuffer
 }
 
 
+cl_mem
+clCreateBuffer
+(
+ cl_context context,
+ cl_mem_flags flags,
+ size_t size,
+ void* host_ptr,
+ cl_int* errcode_ret
+)
+{
+	uint64_t correlation_id = getCorrelationId();
+	opencl_h2d_pending_operations_adjust(1);
+  cl_mem buffer = 
+    HPCRUN_OPENCL_CALL(clCreateBuffer, (context, flags, size, host_ptr, errcode_ret));
+  uint64_t buffer_id = (uint64_t)buffer; 
+  //ETMSG(OPENCL, "inside clCreateBuffer wrapper. cl_mem buffer: %p. buffer_id: %"PRIu64"", buffer, buffer_id);
+	opencl_h2d_map_insert(buffer_id, correlation_id, size, 0, 0);
+  
+  return buffer;
+}
+
+
+cl_int
+clSetKernelArg
+(
+ cl_kernel kernel,
+ cl_uint arg_index,
+ size_t arg_size,
+ const void* arg_value
+)
+{
+	uint64_t start_time;
+	bool isClBuffer = opencl_isClArgBuffer(arg_value);
+  //ETMSG(OPENCL, "inside clSetKernelArg wrapper. isClBuffer: %d. *(cl_mem*)arg_value: %p",isClBuffer, *(cl_mem*)arg_value);
+	if (isClBuffer) {
+		start_time = hpcrun_nanotime();
+	}
+  cl_int return_status = 
+    HPCRUN_OPENCL_CALL(clSetKernelArg, (kernel, arg_index, arg_size, arg_value));
+	if (!isClBuffer) {
+		return return_status;	
+	}
+  uint64_t end_time = hpcrun_nanotime();
+  uint64_t buffer_id = opencl_get_buffer_id(arg_value);
+	opencl_h2d_map_entry_t *entry = opencl_h2d_map_lookup(buffer_id);
+	if (entry) {
+		size_t size = opencl_h2d_map_entry_size_get(entry);
+		uint64_t correlation_id = opencl_h2d_map_entry_correlation_get(entry);
+		opencl_subscriber_callback(memcpy_H2D, correlation_id);
+  	opencl_h2d_map_insert(buffer_id,correlation_id, size, start_time, end_time);
+	} else {
+		// there is no clCreateBuffer being invoked for this call. dont create map entries	
+	}
+  return return_status;
+}
+
+
 void
 opencl_enable_instrumentation
 (
@@ -928,6 +1139,8 @@ opencl_api_finalize
  void *args
 )
 {
-  opencl_wait_for_pending_operations();
+	opencl_wait_for_non_clSetKernelArg_pending_operations();
+	opencl_add_ccts_for_setClKernelArg();
+  opencl_wait_for_all_pending_operations();
   gpu_application_thread_process_activities();
 }

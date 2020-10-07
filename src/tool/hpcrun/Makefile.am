@@ -509,7 +509,8 @@ if OPT_ENABLE_OPENCL
 MY_OPENCL_FILES = sample-sources/opencl.c \
 	gpu/opencl/opencl-api.c \
 	gpu/opencl/opencl-memory-manager.c \
-	gpu/opencl/opencl-activity-translate.c 
+	gpu/opencl/opencl-activity-translate.c \
+	gpu/opencl/opencl-h2d-map.c 
 endif
 
 if OPT_ENABLE_GTPIN

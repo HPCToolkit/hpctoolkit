@@ -41,40 +41,109 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef _OPENCL_ACTIVITY_TRANSLATE_H_
-#define _OPENCL_ACTIVITY_TRANSLATE_H_
+#ifndef opencl_h2d_map_h
+#define opencl_h2d_map_h
+
+
+//*****************************************************************************
+// system includes
+//*****************************************************************************
+
+#include <stdint.h>
+
+
+//*****************************************************************************
+// type definitions 
+//*****************************************************************************
+
+typedef struct opencl_h2d_map_entry_t opencl_h2d_map_entry_t;
+
+
+typedef void (*opencl_splay_fn_t)
+(
+	opencl_h2d_map_entry_t *,
+	splay_visit_t,
+	void *
+);
 
 
 
-//******************************************************************************
-// local includes
-//******************************************************************************
-
-#include <hpcrun/gpu/gpu-activity.h>
-#include <lib/prof-lean/hpcrun-opencl.h>
-
-
-
-//******************************************************************************
+//*****************************************************************************
 // interface operations
-//******************************************************************************
+//*****************************************************************************
 
-void
-opencl_activity_translate
+opencl_h2d_map_entry_t *
+opencl_h2d_map_lookup
 (
-  gpu_activity_t *,
-  cl_event,
-  void *
+ uint64_t
 );
 
 
 void
-opencl_clSetKernelArg_activity_translate
+opencl_h2d_map_insert
 (
-	gpu_activity_t *,
-	uint64_t,
-	size_t,
-	uint64_t,
-	uint64_t
+ uint64_t, 
+ uint64_t, 
+ size_t,
+ uint64_t,
+ uint64_t
 );
-#endif  //_OPENCL_ACTIVITY_TRANSLATE_H_
+
+
+void
+opencl_h2d_map_delete
+(
+ uint64_t
+);
+
+
+uint64_t
+opencl_h2d_map_entry_buffer_id_get
+(
+ opencl_h2d_map_entry_t *entry
+);
+
+
+uint64_t
+opencl_h2d_map_entry_correlation_get
+(
+ opencl_h2d_map_entry_t *
+);
+
+
+size_t
+opencl_h2d_map_entry_size_get
+(
+ opencl_h2d_map_entry_t *
+);
+
+
+uint64_t
+opencl_h2d_map_entry_start_time_get
+(
+ opencl_h2d_map_entry_t *
+);
+
+
+uint64_t
+opencl_h2d_map_entry_end_time_get
+(
+ opencl_h2d_map_entry_t *
+);
+
+
+void
+opencl_update_ccts_for_h2d_nodes
+(
+ opencl_splay_fn_t fn	
+);
+
+
+uint64_t
+opencl_h2d_map_count
+(
+ void
+);
+
+#endif
+

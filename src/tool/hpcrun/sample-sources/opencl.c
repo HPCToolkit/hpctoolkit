@@ -181,8 +181,8 @@ METHOD_FN(finalize_event_list)
   device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_shutdown);
 
   // Register shutdown functions to write trace files
-  device_trace_finalizer_shutdown.fn = gpu_trace_fini;
-  device_finalizer_register(device_finalizer_type_shutdown, &device_trace_finalizer_shutdown);
+  //device_trace_finalizer_shutdown.fn = gpu_trace_fini;
+  //device_finalizer_register(device_finalizer_type_shutdown, &device_trace_finalizer_shutdown);
 }
 
 

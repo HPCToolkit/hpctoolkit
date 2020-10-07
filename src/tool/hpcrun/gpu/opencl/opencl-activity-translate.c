@@ -143,3 +143,22 @@ opencl_activity_translate
   }
   cstack_ptr_set(&(ga->next), 0);
 }
+
+
+void
+opencl_clSetKernelArg_activity_translate
+(
+	gpu_activity_t *ga,
+	uint64_t correlation_id,
+	size_t size,
+	uint64_t start_time,
+	uint64_t end_time
+)
+{
+  ga->details.memcpy.correlation_id = correlation_id;
+  ga->details.memcpy.bytes = size;
+  ga->details.memcpy.copyKind = GPU_MEMCPY_H2D;
+  ga->kind = GPU_ACTIVITY_MEMCPY;
+  set_gpu_interval(&ga->details.interval, start_time, end_time);
+  cstack_ptr_set(&(ga->next), 0);
+}
