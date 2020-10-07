@@ -41,44 +41,101 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef opencl_activity_translate_h
-#define opencl_activity_translate_h
+#ifndef gtpin_correlation_id_map_h
+#define gtpin_correlation_id_map_h
 
 
+//*****************************************************************************
+// system includes
+//*****************************************************************************
 
-//******************************************************************************
-// local includes
-//******************************************************************************
-
-#include <hpcrun/gpu/gpu-activity.h>
-#include <lib/prof-lean/hpcrun-opencl.h>
+#include <stdint.h>
 
 
+//*****************************************************************************
+// type definitions 
+//*****************************************************************************
 
-//*************************** Forward Declarations **************************
+typedef struct gtpin_correlation_id_map_entry_t gtpin_correlation_id_map_entry_t;
 
-typedef struct opencl_object_t opencl_object_t;
+typedef struct gpu_op_ccts_t gpu_op_ccts_t;
+
+typedef struct gpu_activity_channel_t gpu_activity_channel_t;
+
+//*****************************************************************************
+// interface operations
+//*****************************************************************************
+
+gtpin_correlation_id_map_entry_t *
+gtpin_correlation_id_map_lookup
+(
+ uint64_t gtpin_correlation_id
+);
+
+
+void
+gtpin_correlation_id_map_insert
+(
+ uint64_t gtpin_correlation_id,
+ gpu_op_ccts_t *op_ccts,
+ gpu_activity_channel_t *activity_channel,
+ uint64_t submit_time
+);
+
+
+void
+gtpin_correlation_id_map_delete
+(
+ uint64_t gtpin_correlation_id
+);
+
+
+gpu_op_ccts_t
+gtpin_correlation_id_map_entry_op_ccts_get
+(
+ gtpin_correlation_id_map_entry_t *entry
+);
+
+
+typedef struct cl_basic_callback_t {
+  uint64_t correlation_id;
+  gpu_activity_kind_t kind;
+  gpu_memcpy_type_t type;
+  cct_node_t *cct_node;
+} cl_basic_callback_t;
+
+
+typedef struct cl_kernel_callback_t {
+  uint64_t correlation_id;
+} cl_kernel_callback_t;
+
+
+typedef struct cl_memory_callback_t {
+  uint64_t correlation_id;
+  gpu_memcpy_type_t type;
+  bool fromHostToDevice;
+  bool fromDeviceToHost;
+  size_t size;
+} cl_memory_callback_t;
+
+
 
 //******************************************************************************
 // interface operations
 //******************************************************************************
 
-void
-opencl_activity_translate
+gpu_activity_channel_t *
+gtpin_correlation_id_map_entry_activity_channel_get
 (
-  gpu_activity_t *ga,
-  cl_event event,
-  opencl_object_t *cb_data
+ gtpin_correlation_id_map_entry_t *entry
 );
 
 
-void
-opencl_clSetKernelArg_activity_translate
+uint64_t 
+gtpin_correlation_id_map_entry_submit_time_get
 (
-	gpu_activity_t *,
-	uint64_t,
-	size_t,
-	uint64_t,
-	uint64_t
+ gtpin_correlation_id_map_entry_t *entry
 );
-#endif  //_OPENCL_ACTIVITY_TRANSLATE_H_
+
+
+#endif

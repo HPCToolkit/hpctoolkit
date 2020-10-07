@@ -41,115 +41,31 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-//******************************************************************************
-// system includes
-//******************************************************************************
-
-#include <assert.h>
-#include <string.h>
-
-
+#ifndef gpu_instrumentation_gtpin_instrumentation_h
+#define gpu_instrumentation_gtpin_instrumentation_h
 
 //******************************************************************************
 // local includes
 //******************************************************************************
 
-#include <hpcrun/gpu/gpu-activity.h>
-
-#include "opencl-activity-translate.h"
-#include "opencl-api.h"
-
-
-
-//******************************************************************************
-// private operations
-//******************************************************************************
-
-static void
-convert_kernel_launch
-(
-  gpu_activity_t *ga,
-  opencl_object_t *cb_data,
-  cl_event event
-)
-{
-  memset(&ga->details.kernel, 0, sizeof(gpu_kernel_t));
-
-  opencl_timing_info_get(&ga->details.interval, event);
-
-  ga->kind     = cb_data->kind;
-  ga->cct_node = cb_data->details.cct_node;
-
-  ga->details.kernel.correlation_id = cb_data->details.ker_cb.correlation_id;
-  ga->details.kernel.submit_time    = cb_data->details.submit_time;
-}
-
-
-static void
-convert_memcpy
-(
-  gpu_activity_t *ga,
-  opencl_object_t *cb_data,
-  cl_event event
-)
-{
-  memset(&ga->details.memcpy, 0, sizeof(gpu_memcpy_t));
-
-  opencl_timing_info_get(&ga->details.interval, event);
-
-  ga->kind     = cb_data->kind;
-  ga->cct_node = cb_data->details.cct_node;
-
-  ga->details.memcpy.correlation_id  = cb_data->details.mem_cb.correlation_id;
-  ga->details.memcpy.submit_time     = cb_data->details.submit_time;
-  ga->details.memcpy.bytes           = cb_data->details.mem_cb.size;
-  ga->details.memcpy.copyKind        = cb_data->details.mem_cb.type;
-}
-
-
-
 //******************************************************************************
 // interface operations
 //******************************************************************************
 
+typedef struct gpu_op_ccts_t gpu_op_ccts_t;
+
 void
-opencl_activity_translate
+gtpin_enable_profiling
 (
-  gpu_activity_t *ga,
-  cl_event event,
-  opencl_object_t *cb_data
-)
-{
-  switch (cb_data->kind) {
-    case GPU_ACTIVITY_MEMCPY:
-      convert_memcpy(ga, cb_data, event);
-      break;
-
-    case GPU_ACTIVITY_KERNEL:
-      convert_kernel_launch(ga, cb_data, event);
-      break;
-
-    default:
-      assert(0);
-  }
-  cstack_ptr_set(&(ga->next), 0);
-}
+ void
+);
 
 
 void
-opencl_clSetKernelArg_activity_translate
+gtpin_produce_runtime_callstack
 (
-	gpu_activity_t *ga,
-	uint64_t correlation_id,
-	size_t size,
-	uint64_t start_time,
-	uint64_t end_time
-)
-{
-  ga->details.memcpy.correlation_id = correlation_id;
-  ga->details.memcpy.bytes = size;
-  ga->details.memcpy.copyKind = GPU_MEMCPY_H2D;
-  ga->kind = GPU_ACTIVITY_MEMCPY;
-  set_gpu_interval(&ga->details.interval, start_time, end_time);
-  cstack_ptr_set(&(ga->next), 0);
-}
+ gpu_op_ccts_t *
+);
+
+
+#endif

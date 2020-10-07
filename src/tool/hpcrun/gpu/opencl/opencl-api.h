@@ -44,8 +44,6 @@
 #ifndef _OPENCL_API_H_
 #define _OPENCL_API_H_
 
-
-
 //******************************************************************************
 // local includes
 //******************************************************************************
@@ -60,6 +58,13 @@
 //************************ Forward Declarations ******************************
 
 //typedef struct opencl_object_t opencl_object_t;
+
+
+//******************************************************************************
+// type declarations
+//******************************************************************************
+
+//TODO: move cl_basic_callback_t...
 
 
 
@@ -99,48 +104,62 @@ opencl_subscriber_callback
 void
 opencl_activity_completion_callback
 (
-  cl_event,
-  cl_int,
-  void *
+ cl_event,
+ cl_int,
+ void *
 );
 
 
 void
-getTimingInfoFromClEvent
+opencl_timing_info_get
 (
-  gpu_interval_t *,
-  cl_event
+ gpu_interval_t *,
+ cl_event
+);
+
+
+cct_node_t *
+opencl_api_node_get
+(
+ void
 );
 
 
 void
 clSetEventCallback_wrapper
 (
-  cl_event,
-  cl_int,
-  void (CL_CALLBACK*)(cl_event, cl_int, void *),
-  void *
+ cl_event,
+ cl_int,
+ void (CL_CALLBACK*)(cl_event, cl_int, void *),
+ void *
 );
 
 
 void
 opencl_api_initialize
 (
-  void
+ void
 );
 
 
 int
 opencl_bind
 (
-  void
+ void
+);
+
+
+void
+opencl_enable_instrumentation
+(
+	void
 );
 
 
 void
 opencl_api_thread_finalize
 (
-  void *
+ void *
 );
 
 

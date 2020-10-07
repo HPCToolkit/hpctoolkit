@@ -132,7 +132,7 @@ clCreateCommandQueue_wrapper
 
 
 static cl_int
-clEnqueueNDRangeKernel_wrapper
+clEnqueueNDRangeKernel
 (
   cl_command_queue command_queue,
   cl_kernel ocl_kernel,
@@ -146,7 +146,7 @@ clEnqueueNDRangeKernel_wrapper
 )
 {
   opencl_object_t *kernel_info = opencl_malloc();
-  initializeKernelCallBackInfo(kernel_info);
+  initializeKernelCallBackInfo(kernel_info, -1);
 
   opencl_subscriber_callback(kernel_info);
 
@@ -191,7 +191,7 @@ clEnqueueReadBuffer_wrapper
 )
 {
   opencl_object_t *mem_info = opencl_malloc();
-  initializeMemoryCallBackInfo(mem_info, GPU_MEMCPY_D2H, cb);
+  initializeMemoryCallBackInfo(mem_info, GPU_MEMCPY_D2H, cb, CORRELATION_ID_INVALID);
 
   opencl_subscriber_callback(mem_info);
 
@@ -241,7 +241,7 @@ clEnqueueWriteBuffer_wrapper
 {
 
   opencl_object_t *mem_info = opencl_malloc();
-  initializeMemoryCallBackInfo(mem_info, GPU_MEMCPY_H2D, cb);
+  initializeMemoryCallBackInfo(mem_info, GPU_MEMCPY_H2D, cb, CORRELATION_ID_INVALID);
 
   opencl_subscriber_callback(mem_info);
 

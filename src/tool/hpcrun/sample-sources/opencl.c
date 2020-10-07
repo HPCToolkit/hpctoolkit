@@ -50,6 +50,7 @@
 #include <monitor.h> 
 
 #include <hpcrun/device-finalizers.h>
+#include <hpcrun/gpu/gpu-trace.h>
 #include <hpcrun/gpu/gpu-metrics.h>
 #include <hpcrun/gpu/gpu-trace.h>
 #include <hpcrun/gpu/opencl/opencl-api.h>
@@ -66,8 +67,19 @@
 //******************************************************************************
 
 #define GPU_STRING "gpu=opencl"
+#define ENABLE_INSTRUMENTATION "gpu=opencl,inst"
+#define NO_THRESHOLD  1L
 static device_finalizer_fn_entry_t device_finalizer_shutdown;
 static device_finalizer_fn_entry_t device_trace_finalizer_shutdown;
+
+
+
+//******************************************************************************
+// type declarations
+//******************************************************************************
+
+static char opencl_name[128];
+
 
 
 //******************************************************************************
@@ -129,7 +141,7 @@ static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
   #ifndef HPCRUN_STATIC_LINK
-  return hpcrun_ev_is(ev_str, GPU_STRING);
+  return (hpcrun_ev_is(ev_str, GPU_STRING) || hpcrun_ev_is(ev_str, ENABLE_INSTRUMENTATION));
   #else
   return false;
   #endif
@@ -140,8 +152,19 @@ static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
   int nevents = (self->evl).nevents;
-  gpu_metrics_default_enable();
   TMSG(OPENCL,"nevents = %d", nevents);
+  gpu_metrics_default_enable();
+
+  char* evlist = METHOD_CALL(self, get_event_str);
+  char* event = start_tok(evlist);
+  long th;
+  hpcrun_extract_ev_thresh(event, sizeof(opencl_name), opencl_name,
+    &th, NO_THRESHOLD);
+
+  if (hpcrun_ev_is(opencl_name, GPU_STRING)) {
+  } else if (hpcrun_ev_is(opencl_name, ENABLE_INSTRUMENTATION)) {
+    opencl_enable_instrumentation();
+  }
 }
 
 
@@ -155,11 +178,6 @@ METHOD_FN(finalize_event_list)
   }
   #endif
   opencl_api_initialize();
-
-
-//  gpu_trace_fini - finalized from opencl_api_finalize -> gpu_activity_multiplexer_fini
-//  device_trace_finalizer_shutdown.fn = gpu_trace_fini;
-//  device_finalizer_register(device_finalizer_type_shutdown, &device_trace_finalizer_shutdown);
 
   device_finalizer_shutdown.fn = opencl_api_process_finalize;
   device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_shutdown);
@@ -183,9 +201,9 @@ METHOD_FN(display_events)
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
   printf("%s\t\tOperation-level monitoring for opencl on a GPU.\n"
-	  "\t\tCollect timing information on GPU kernel invocations,\n"
-	  "\t\tmemory copies, etc.\n",
-	  GPU_STRING);
+    "\t\tCollect timing information on GPU kernel invocations,\n"
+    "\t\tmemory copies, etc.\n",
+    GPU_STRING);
   printf("\n");
 }
 
