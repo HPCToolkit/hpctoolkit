@@ -118,7 +118,7 @@ directory that contains program structure files for GPU binaries, these program\
 structure files will be used to help attribute any GPU performance measurements.\n\
 \n\
 hpcstruct is designed primarily for highly optimized binaries created from\n\
-C, C++, Fortran, and CUDA source code. Because hpcstruct's algorithms exploit a\n\
+C, C++, Fortran, CUDA, and HIP source code. Because hpcstruct's algorithms exploit a\n\
 binary's debugging information, for best results, binary should be compiled\n\
 with standard debugging information or at a minimum, line map information.\n\
 See the HPCToolkit manual for more information.\n\
