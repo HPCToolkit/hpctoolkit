@@ -2,8 +2,8 @@
 # a helper template makefile used by hpcstruct at runtime
 #
 # if hpcstruct is passed the name of a measurements directory that contains
-# a gpubin subdirectory, this makefile will be used to orchestrate parallel
-# analysis of all gpubin within the subdirectory.
+# a gpubins subdirectory, this makefile will be used to orchestrate parallel
+# analysis of all gpubins within the subdirectory.
 #
 # to simplify things at execution time, this makefile will be incorporated
 # into hpcstruct as a string and written to a temporary file if it is needed.
@@ -18,13 +18,13 @@ C := $(wildcard $(GPUBIN_DIR)/*.gpubin)
 
 
 #-------------------------------------------------------------------------------
-# $(S): hpcstruct files for gpubin
+# $(S): hpcstruct files for gpubins
 #-------------------------------------------------------------------------------
 S := $(patsubst $(GPUBIN_DIR)/%,$(STRUCTS_DIR)/%.hpcstruct,$(C))
 
 
 #-------------------------------------------------------------------------------
-# $(W): warning files that may be generated during structure analysis of gpubin
+# $(W): warning files that may be generated during structure analysis of gpubins
 #-------------------------------------------------------------------------------
 W := $(patsubst %.hpcstruct,%.warnings,$(S))
 
@@ -73,7 +73,7 @@ $(STRUCTS_DIR)/%.hpcstruct: $(GPUBIN_DIR)/%
 
 
 #-------------------------------------------------------------------------------
-# analyze all gpubin to create structure files
+# analyze all gpubins to create structure files
 #-------------------------------------------------------------------------------
 all:
 	make -j 1  THREADS=$(JOBS)  PAR_SIZE=$(GPU_SIZE)  analyze
