@@ -514,6 +514,24 @@ hpcrun_new_metric_data_list(int metric_id)
 }
 
 metric_data_list_t *
+hpcrun_reify_metric_data_list_kind(metric_data_list_t* rv, int metric_id)
+{
+  kind_info_t *kind = metric_data[metric_id].kind;
+  metric_data_list_t *curr = NULL;
+  metric_data_list_t *prev = NULL;
+  for (curr = rv; curr != NULL && curr->kind != kind; curr = curr->next) {
+    prev = curr;
+  }
+  if (curr == NULL) {
+    curr = hpcrun_new_metric_data_list(metric_id);
+    if (prev != NULL) {
+      prev->next = curr;
+    }
+  }
+  return curr;
+}
+
+metric_data_list_t *
 hpcrun_new_metric_data_list_kind(kind_info_t *kind)
 {
   metric_data_list_t *curr = hpcrun_malloc(sizeof(metric_data_list_t));

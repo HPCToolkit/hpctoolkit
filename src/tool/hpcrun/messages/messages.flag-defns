@@ -172,3 +172,4 @@
  E(TRACE3),
  E(TRACE4),
  E(CHECK_MAIN),
+ E(NU),

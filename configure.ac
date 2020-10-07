@@ -2432,6 +2432,9 @@ AC_SUBST([LIBELF_COPY])
 # Option: --with-gotcha=PATH
 #-------------------------------------------------
 
+# NOTE: currently not used, but there's a non-trivial chance that it
+# may come back.
+
 GOTCHA="$default_gotcha_prefix"
 
 GOTCHA_IFLAGS=
@@ -2440,9 +2443,13 @@ GOTCHA_LIBDIR=no
 
 AC_ARG_WITH([gotcha],
   [AS_HELP_STRING([--with-gotcha=PATH],
-      [path to gotcha install directory])],
+      [path to gotcha install directory (ignored)])],
   [GOTCHA="$withval"],
   [])
+
+AC_MSG_NOTICE([skipping gotcha ...])
+
+if false ; then
 
 AC_MSG_CHECKING([for gotcha])
 
@@ -2507,6 +2514,8 @@ int main(int argc, char **argv)
     fi
     ;;
 esac
+
+fi  # skip test for gotcha
 
 AC_SUBST([GOTCHA_IFLAGS])
 AC_SUBST([GOTCHA_LDFLAGS])
@@ -2776,22 +2785,12 @@ fi
 AC_MSG_NOTICE([libunwind.a compiled with -fPIC: $libunwind_fpic])
 
 #
-# Libunwind is only used in hpcrun.  But if libunwind.a has fpic, then
-# we link at build time.  So, only need to copy if .so exists and .a
-# does not have fpic.
+# Now require libunwind static archive with fpic for both static and
+# dynamic cases, or else not at all, same as mbedtls.  (The nothing
+# case is for just building documentation.)  And never need to copy.
 #
-if test "$libunwind_dynamic" = yes && test "$libunwind_fpic" = no ; then
-  LIBUNWIND_COPY=yes
-else
-  LIBUNWIND_COPY=no
-fi
-
-#
-# Report a warning if not using an fpic archive.
-#
-missing_fpic=
-if test "$libunwind_fpic" != yes ; then
-  missing_fpic="$missing_fpic libunwind"
+if test "$libunwind_exists" = yes && test "$libunwind_fpic" = no ; then
+  AC_MSG_ERROR([libunwind.a must be compiled with -fPIC])
 fi
 
 unwinder_mesg="$UNWINDER"
@@ -2809,8 +2808,6 @@ fi
 AC_SUBST(LIBUNWIND_IFLAGS)
 AC_SUBST(LIBUNWIND_LDFLAGS_DYN)
 AC_SUBST(LIBUNWIND_LDFLAGS_STAT)
-
-AC_SUBST(LIBUNWIND_COPY)
 AC_SUBST(LIBUNWIND_LIB_DIR)
 
 #
@@ -2821,7 +2818,6 @@ AM_CONDITIONAL([UNW_PPC64], [test "$UNWINDER" = ppc64])
 AM_CONDITIONAL([UNW_LIBUNW], [test "$UNWINDER" = libunw])
 
 AM_CONDITIONAL(OPT_LIBUNWIND_STATIC, [test "$libunwind_static" = yes])
-AM_CONDITIONAL(OPT_LIBUNWIND_STATIC_FPIC, [test "$libunwind_fpic" = yes])
 
 
 #-------------------------------------------------
@@ -2941,8 +2937,12 @@ fi
 
 AC_MSG_NOTICE([lzma.a compiled with -fPIC: $lzma_fpic])
 
-if test "$lzma_fpic" != yes ; then
-  missing_fpic="$missing_fpic lzma"
+#
+# Now require lzma static archive with fpic, or else nothing at all
+# (for docs), same as libunwind and mbedtls.
+#
+if test "$lzma_exists" = yes && test "$lzma_fpic" = no ; then
+  AC_MSG_ERROR([liblzma.a must be compiled with -fPIC])
 fi
 
 #
@@ -2962,13 +2962,7 @@ AC_SUBST([LZMA_PROF_MPI_LIBS])
 AC_SUBST([LZMA_COPY])
 AC_SUBST([LZMA_LIB_DIR])
 
-# Libunwind calls lzma.  If we statically link lzma int hpcrun but
-# dynamically link libuwnind, then we get two copies of lzma.  So,
-# linking lzma requires linking libunwind.
-
 AM_CONDITIONAL(OPT_LZMA_STATIC, [test "$lzma_static" = yes])
-AM_CONDITIONAL(OPT_LZMA_STATIC_FPIC,
-    [test "$lzma_fpic" = yes && test "$libunwind_fpic" = yes])
 
 
 #-------------------------------------------------
@@ -5302,7 +5296,6 @@ AC_MSG_NOTICE([  bzip:         ${BZIP}])
 AC_MSG_NOTICE([  dyninst:      ${DYNINST}])
 AC_MSG_NOTICE([  dyninst:      ${dyninst_features}])
 AC_MSG_NOTICE([  elfutils:     ${LIBELF}])
-AC_MSG_NOTICE([  gotcha:       ${GOTCHA}])
 AC_MSG_NOTICE([  libdwarf:     ${LIBDWARF}])
 AC_MSG_NOTICE([  libiberty:    ${LIBIBERTY}])
 AC_MSG_NOTICE([  libmonitor:   ${LIBMONITOR}])
@@ -5340,16 +5333,6 @@ if test "$warn_bgq_backend" = yes ; then
   AC_MSG_NOTICE([Note: HPCToolkit is configured for Blue Gene/Q back end.])
   AC_MSG_NOTICE([If you wanted to build for the front end (regular powerpc),])
   AC_MSG_NOTICE([then re-run configure with '--disable-bgq'.])
-fi
-
-if test "x$missing_fpic" != x ; then
-  AC_MSG_NOTICE([])
-  AC_MSG_WARN([The following prereqs are missing an archive (.a) compiled with -fPIC.])
-  AC_MSG_WARN([  $missing_fpic])
-  AC_MSG_WARN([])
-  AC_MSG_WARN([hpcrun is unable to properly hide these libraries from the])
-  AC_MSG_WARN([application and this may cause deadlock or segfault.])
-  AC_MSG_WARN([Recompile the above libraries with -fPIC (+pic in spack).])
 fi
 
 if test "$warn_papi_mismatch" = yes ; then

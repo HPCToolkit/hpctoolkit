@@ -148,21 +148,10 @@
 
 #include <loadmap.h>
 
-// Gotcha only applies to the dynamic case.
-// If this grows, then move to a separate file.
+// The auditor only applies to the dynamic case.
 #ifndef HPCRUN_STATIC_LINK
-#include <gotcha/gotcha.h>
-
-static const char* library_to_intercept = "libunwind.so";
-static gotcha_wrappee_handle_t wrappee_dl_iterate_phdr_handle;
-struct gotcha_binding_t wrap_actions [] = {
-  { "dl_iterate_phdr", hpcrun_loadmap_iterate, &wrappee_dl_iterate_phdr_handle}    
-};
-
-// The auditor also only applies to the dynamic case.
 #include "audit/audit-api.h"
 #endif
-
 extern void hpcrun_set_retain_recursion_mode(bool mode);
 
 #ifdef HPCRUN_HAVE_CUSTOM_UNWINDER
@@ -225,6 +214,8 @@ __attribute__ ((unused));
 //***************************************************************************
 
 int lush_metrics = 0; // FIXME: global variable for now
+
+bool hpcrun_no_unwind = false;
 
 /******************************************************************************
  * (public declaration) thread-local variables
@@ -445,12 +436,6 @@ dump_interval_handler(int sig, siginfo_t* info, void* ctxt)
 void
 hpcrun_init_internal(bool is_child)
 {
-#ifndef HPCRUN_STATIC_LINK
-  gotcha_filter_libraries_by_name(library_to_intercept);
-  gotcha_wrap(wrap_actions, sizeof(wrap_actions)/sizeof(struct gotcha_binding_t), "hpctoolkit");
-  gotcha_restore_library_filter_func();
-#endif
-
   hpcrun_memory_reinit();
   hpcrun_mmap_init();
   hpcrun_thread_data_init(0, NULL, is_child, hpcrun_get_num_sample_sources());
@@ -943,6 +928,13 @@ monitor_init_process(int *argc, char **argv, void* data)
   if (life != NULL){
     int seconds = atoi(life);
     if (seconds > 0) alarm((unsigned int) seconds);
+  }
+
+  // see if unwinding has been turned off
+  // the same setting governs whether or not fnbounds is needed or used.
+  char *foo = getenv("HPCRUN_NO_UNWIND");
+  if (foo != NULL){
+    hpcrun_no_unwind = true;
   }
 
   char* s = getenv(HPCRUN_EVENT_LIST);
