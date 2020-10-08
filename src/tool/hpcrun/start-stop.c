@@ -69,6 +69,7 @@
 
 #include <stdlib.h>
 
+#include "env.h"
 #include "sample_sources_all.h"
 #include "start-stop.h"
 
@@ -89,9 +90,8 @@ hpcrun_start_stop_internal_init(void)
   if (dont_reinit) {
     return;
   }
-  if (getenv("HPCRUN_DELAY_SAMPLING") != NULL) {
-    sampling_is_active = 0;
-  }
+
+  sampling_is_active = ! hpcrun_get_env_bool("HPCRUN_DELAY_SAMPLING");
   dont_reinit = 1;
 }
 

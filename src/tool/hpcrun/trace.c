@@ -113,10 +113,8 @@ hpcrun_trace_isactive()
 void
 hpcrun_trace_init()
 {
-  if (getenv(HPCRUN_TRACE)) {
-      tracing = 1;
-      TMSG(TRACE, "Tracing is ON");
-  }
+  tracing = hpcrun_get_env_bool(HPCRUN_TRACE);
+  TMSG(TRACE, "Tracing is %s", (tracing ? "ON" : "OFF"));
 }
 
 
