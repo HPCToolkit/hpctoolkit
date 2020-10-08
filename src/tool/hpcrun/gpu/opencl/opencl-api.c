@@ -128,6 +128,8 @@
 
 #define CORRELATION_ID_INVALID -1
 
+#define BUFFER_ID_INVALID -1
+
 
 
 //******************************************************************************
@@ -436,8 +438,13 @@ opencl_get_buffer_id
   const void *arg
 )
 {
-  cl_mem buffer = *(cl_mem*)arg;
-  return (uint64_t)buffer;
+  if (arg != NULL) {
+    cl_mem buffer = *(cl_mem*)arg;
+    return (uint64_t)buffer;
+  } else {
+    return BUFFER_ID_INVALID;
+  }
+
 }
 
 
@@ -453,8 +460,13 @@ opencl_isClArgBuffer
 	 * 2. clEnqueueWriteBuffer is being called for arg. We shouldnt be recording duplicate H2D calls
 	 * */
   uint64_t buffer_id = opencl_get_buffer_id(arg);
-	opencl_h2d_map_entry_t *entry = opencl_h2d_map_lookup(buffer_id);
-	bool isBuffer = entry ? true : false;
+  bool isBuffer;
+  if (buffer_id == BUFFER_ID_INVALID) {
+    isBuffer = false;
+  } else {
+	  opencl_h2d_map_entry_t *entry = opencl_h2d_map_lookup(buffer_id);
+	  isBuffer = entry ? true : false;
+  }
 	//ETMSG(OPENCL, "opencl_isClArgBuffer. buffer_id: %"PRIu64". isBuffer: %d",	buffer_id, isBuffer);
 	return isBuffer;
 }
@@ -787,19 +799,21 @@ clCreateProgramWithSource
 {
   ETMSG(OPENCL, "inside clCreateProgramWithSource_wrapper");
 
-  FILE *f_ptr;
-  for (int i = 0; i < (int)count; i++) {
-    // what if a single file has multiple kernels?
-    // we need to add logic to get filenames by reading the strings contents
-    char fileno = '0' + (i + 1); // right now we are naming the files as index numbers
-    // using malloc instead of hpcrun_malloc gives extra garbage characters in file name
-    char *filename = (char*)hpcrun_malloc(sizeof(fileno) + 1);
-    *filename = fileno + '\0';
-    f_ptr = fopen(filename, "w");
-    fwrite(strings[i], lengths[i], 1, f_ptr);
+  if (strings != NULL && lengths != NULL) {
+    FILE *f_ptr;
+    for (int i = 0; i < (int)count; i++) {
+      // what if a single file has multiple kernels?
+      // we need to add logic to get filenames by reading the strings contents
+      char fileno = '0' + (i + 1); // right now we are naming the files as index numbers
+      // using malloc instead of hpcrun_malloc gives extra garbage characters in file name
+      char *filename = (char *)hpcrun_malloc(sizeof(fileno) + 1);
+      *filename = fileno + '\0';
+      f_ptr = fopen(filename, "w");
+      fwrite(strings[i], lengths[i], 1, f_ptr);
+    }
+    fclose(f_ptr);
   }
-  fclose(f_ptr);
-  
+
   return HPCRUN_OPENCL_CALL(clCreateProgramWithSource, (context, count, strings, lengths, errcode_ret));
 }
 
@@ -1078,7 +1092,7 @@ clSetKernelArg
 )
 {
 	bool isClBuffer = opencl_isClArgBuffer(arg_value);
-  ETMSG(OPENCL, "inside clSetKernelArg wrapper. isClBuffer: %d. *(cl_mem*)arg_value: %p",isClBuffer, *(cl_mem*)arg_value);
+  ETMSG(OPENCL, "inside clSetKernelArg wrapper."); //isClBuffer: %d. *(cl_mem*)arg_value: %p",isClBuffer, *(cl_mem*)arg_value
 	uint64_t start_time = hpcrun_nanotime();
 
   cl_int return_status = 
