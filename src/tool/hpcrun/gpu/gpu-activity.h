@@ -210,6 +210,7 @@ typedef struct gpu_mem_t {
 typedef struct gpu_memcpy_t {
   uint64_t start;
   uint64_t end;
+  uint64_t submit_time;
   uint64_t bytes;
   uint32_t correlation_id;
   uint32_t context_id;
@@ -244,6 +245,7 @@ typedef struct gpu_memset_t {
 typedef struct gpu_kernel_t {
   uint64_t start;
   uint64_t end;
+  uint64_t submit_time;
   uint32_t correlation_id;
   uint32_t device_id;
   uint32_t context_id;
@@ -441,5 +443,17 @@ gpu_context_activity_dump
 );
 
 
+const char*
+gpu_kind_to_string
+(
+gpu_activity_kind_t kind
+);
+
+
+const char*
+gpu_type_to_string
+(
+gpu_memcpy_type_t type
+);
 
 #endif

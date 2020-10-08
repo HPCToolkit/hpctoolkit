@@ -50,39 +50,13 @@
 
 #include <hpcrun/gpu/gpu-activity.h>
 #include <lib/prof-lean/hpcrun-opencl.h>
+#include "opencl-memory-manager.h"
 
 
 
-//******************************************************************************
-// type declarations
-//******************************************************************************
+//************************ Forward Declarations ******************************
 
-typedef enum {
-  memcpy_H2D                      = 0,
-  memcpy_D2H                      = 1,
-  kernel                          = 2
-} opencl_call_t;
-
-
-typedef struct cl_generic_callback_t {
-  uint64_t correlation_id;
-  opencl_call_t type;
-} cl_generic_callback_t;
-
-
-typedef struct cl_kernel_callback_t {
-  uint64_t correlation_id;
-  opencl_call_t type;
-} cl_kernel_callback_t;
-
-
-typedef struct cl_memory_callback_t {
-  uint64_t correlation_id;
-  opencl_call_t type;
-  bool fromHostToDevice;
-  bool fromDeviceToHost;
-  size_t size;
-} cl_memory_callback_t;
+typedef struct opencl_object_t opencl_object_t;
 
 
 
@@ -90,11 +64,32 @@ typedef struct cl_memory_callback_t {
 // interface operations
 //******************************************************************************
 
+cl_basic_callback_t
+opencl_cb_basic_get
+(
+  opencl_object_t *cb_data
+);
+
+
+void
+opencl_cb_basic_print
+(
+  cl_basic_callback_t cb_basic,
+  char *title
+);
+
+
+void
+opencl_initialize_correlation_id
+(
+  void
+);
+
+
 void
 opencl_subscriber_callback
 (
- opencl_call_t,
- uint64_t
+  opencl_object_t *cb_info
 );
 
 
@@ -154,11 +149,17 @@ opencl_enable_instrumentation
 
 
 void
-opencl_api_finalize
+opencl_api_thread_finalize
 (
  void *
 );
 
+
+void
+opencl_api_process_finalize
+(
+void *
+);
 
 
 #endif  //_OPENCL_API_H_

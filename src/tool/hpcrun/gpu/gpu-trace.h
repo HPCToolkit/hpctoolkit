@@ -44,6 +44,7 @@
 #ifndef gpu_trace_h
 #define gpu_trace_h
 
+#include <stdbool.h>
 
 
 //******************************************************************************
@@ -93,17 +94,24 @@ gpu_trace_init
 );
 
 
-gpu_trace_t *
-gpu_trace_create
+void
+gpu_trace_fini
 (
- void
+void *arg
 );
 
 
 void *
 gpu_trace_record
 (
- gpu_trace_t *thread_args
+void *args
+);
+
+
+gpu_trace_t *
+gpu_trace_create
+(
+ void
 );
 
 
@@ -123,9 +131,12 @@ gpu_trace_signal_consumer
 
 
 void
-gpu_trace_fini
+consume_one_trace_item
 (
- void *arg
+thread_data_t* td,
+cct_node_t *call_path,
+uint64_t start_time,
+uint64_t end_time
 );
 
 
@@ -143,13 +154,6 @@ gpu_trace_stream_release
 );
 
 
-void
-consume_one_trace_item
-(
- thread_data_t* td,
- cct_node_t *call_path,
- uint64_t start_time,
- uint64_t end_time
-);
+
 
 #endif 

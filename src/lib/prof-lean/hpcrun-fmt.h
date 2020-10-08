@@ -161,6 +161,7 @@ hpcrun_fmt_hdr_free(hpcrun_fmt_hdr_t* hdr, hpcfmt_free_fn dealloc);
 
 #define HPCRUN_FMT_NV_traceMinTime "trace-min-time"
 #define HPCRUN_FMT_NV_traceMaxTime "trace-max-time"
+#define HPCRUN_FMT_NV_traceOrdered "trace-time-ordered"
 
 #define HPCRUN_FMT_METRIC_HIDE            0
 #define HPCRUN_FMT_METRIC_SHOW            1

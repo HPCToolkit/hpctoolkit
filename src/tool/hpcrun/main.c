@@ -945,9 +945,9 @@ monitor_init_process(int *argc, char **argv, void* data)
   // fnbounds must be after module_ignore_map
   fnbounds_init();
 
-  hpcrun_registered_sources_init();
-
   control_knob_init();
+
+  hpcrun_registered_sources_init();
 
   hpcrun_do_custom_init();
 
@@ -1008,6 +1008,8 @@ monitor_fini_process(int how, void* data)
 void
 monitor_begin_process_exit(int how)
 {
+//TODO:Check with John if we should delete this or adjust hpcrun_fini_internal
+#if 0
   if (hpcrun_get_disabled()) {
     return;
   }
@@ -1029,6 +1031,7 @@ monitor_begin_process_exit(int how)
 
 
   hpcrun_safe_exit();
+#endif
 }
 
 static fork_data_t from_fork;

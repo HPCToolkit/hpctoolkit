@@ -52,6 +52,7 @@
 #include <hpcrun/device-finalizers.h>
 #include <hpcrun/gpu/gpu-trace.h>
 #include <hpcrun/gpu/gpu-metrics.h>
+#include <hpcrun/gpu/gpu-trace.h>
 #include <hpcrun/gpu/opencl/opencl-api.h>
 #include <hpcrun/thread_data.h>
 
@@ -117,7 +118,7 @@ static void
 METHOD_FN(thread_fini_action)
 {
   TMSG(OPENCL, "thread_fini_action");
-  opencl_api_finalize(NULL);
+  opencl_api_thread_finalize(NULL);
 }
 
 
@@ -177,12 +178,9 @@ METHOD_FN(finalize_event_list)
   }
   #endif
   opencl_api_initialize();
-  device_finalizer_shutdown.fn = opencl_api_finalize;
-  device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_shutdown);
 
-  // Register shutdown functions to write trace files
-  //device_trace_finalizer_shutdown.fn = gpu_trace_fini;
-  //device_finalizer_register(device_finalizer_type_shutdown, &device_trace_finalizer_shutdown);
+  device_finalizer_shutdown.fn = opencl_api_process_finalize;
+  device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_shutdown);
 }
 
 

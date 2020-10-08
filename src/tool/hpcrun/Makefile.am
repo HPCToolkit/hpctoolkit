@@ -357,6 +357,7 @@ MY_BASE_FILES =				\
 	hpcrun-placeholders.c 		\
 	gpu/gpu-activity.c 		\
 	gpu/gpu-activity-channel.c 	\
+	gpu/gpu-activity-multiplexer.c 	\
 	gpu/gpu-activity-process.c 	\
 	gpu/gpu-application-thread-api.c \
 	gpu/gpu-channel-item-allocator.c \
@@ -373,12 +374,17 @@ MY_BASE_FILES =				\
 	gpu/gpu-monitoring.c 		\
 	gpu/gpu-monitoring-thread-api.c \
 	gpu/gpu-op-placeholders.c 	\
+	gpu/gpu-operation-item.c			\
+	gpu/gpu-operation-item-process.c   \
+	gpu/gpu-operation-channel.c \
+	gpu/gpu-operation-channel-set.c \
 	gpu/gpu-splay-allocator.c	\
 	gpu/gpu-stream-id-map.c		\
 	gpu/gpu-trace.c			\
 	gpu/gpu-trace-channel.c		\
 	gpu/gpu-trace-item.c		\
 	gpu/gpu-trace-channel-set.c	\
+	gpu/gpu-trace-demultiplexer.c	\
 	\
 	ompt/ompt-callstack.c           \
 	ompt/ompt-defer.c               \

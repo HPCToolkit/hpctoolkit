@@ -45,35 +45,28 @@
 // system includes
 //******************************************************************************
 
-#include <string.h>
 #include <pthread.h>
-
-
-//******************************************************************************
-// macros
-//******************************************************************************
-
-#define SECONDS_UNTIL_WAKEUP 2
-
-#define DEBUG 0
 
 //******************************************************************************
 // local includes
 //******************************************************************************
 
-#include <lib/prof-lean/bichannel.h>
-
 #include <hpcrun/memory/hpcrun-malloc.h>
 
-#include "gpu-trace.h"
-#include "gpu-trace-channel.h"
-#include "gpu-trace-item.h"
+#include "gpu-channel-item-allocator.h"
+#include "gpu-operation-channel.h"
+#include "gpu-operation-item.h"
+#include "gpu-operation-item-process.h"
+
+#define DEBUG 0
 #include "gpu-print.h"
-#include "thread_data.h"
+
 
 //******************************************************************************
 // macros
 //******************************************************************************
+
+
 
 #define CHANNEL_FILL_COUNT 100
 
@@ -81,24 +74,27 @@
 #undef typed_bichannel
 #undef typed_stack_elem
 
-#define typed_bichannel(x) gpu_trace_channel_t
-#define typed_stack_elem(x) gpu_trace_item_t
+#define typed_bichannel(x) gpu_operation_channel_t
+#define typed_stack_elem(x) gpu_operation_item_t
 
-// define macros that simplify use of trace channel API 
+// define macros that simplify use of operation channel API
 #define channel_init  \
-  typed_bichannel_init(gpu_trace_item_t)
+  typed_bichannel_init(gpu_operation_item_t)
 
 #define channel_pop   \
-  typed_bichannel_pop(gpu_trace_item_t)
+  typed_bichannel_pop(gpu_operation_item_t)
 
 #define channel_push  \
-  typed_bichannel_push(gpu_trace_item_t)
+  typed_bichannel_push(gpu_operation_item_t)
 
 #define channel_reverse \
-  typed_bichannel_reverse(gpu_trace_item_t)
+  typed_bichannel_reverse(gpu_operation_item_t)
 
 #define channel_steal \
-  typed_bichannel_steal(gpu_trace_item_t)
+  typed_bichannel_steal(gpu_operation_item_t)
+
+
+#define SECONDS_UNTIL_WAKEUP 1
 
 
 
@@ -106,78 +102,55 @@
 // type declarations
 //******************************************************************************
 
-typedef struct thread_data_t thread_data_t;
-
-
-typedef struct gpu_trace_channel_t {
+typedef struct gpu_operation_channel_t {
   bistack_t bistacks[2];
   pthread_mutex_t mutex;
   pthread_cond_t cond;
   uint64_t count;
-  thread_data_t *td;
-} gpu_trace_channel_t;
+} gpu_operation_channel_t;
 
+
+
+//******************************************************************************
+// local data
+//******************************************************************************
+
+static __thread gpu_operation_channel_t *gpu_operation_channel = NULL;
 
 
 //******************************************************************************
 // private functions
 //******************************************************************************
 
-// implement bidirectional channels for traces
-typed_bichannel_impl(gpu_trace_item_t)
+// implement bidirectional channels for activities
+typed_bichannel_impl(gpu_operation_item_t)
+
 
 static void
-gpu_trace_channel_signal_consumer_when_full
+gpu_operation_channel_signal_consumer_when_full
 (
- gpu_trace_channel_t *trace_channel
+ gpu_operation_channel_t *channel
 )
 {
-  if (trace_channel->count++ > CHANNEL_FILL_COUNT) {
-    trace_channel->count = 0;
-    gpu_trace_channel_signal_consumer(trace_channel);
+  if (channel->count++ > CHANNEL_FILL_COUNT) {
+    channel->count = 0;
+    gpu_operation_channel_signal_consumer(channel);
   }
 }
 
 
-
-//******************************************************************************
-// interface functions
-//******************************************************************************
-
-struct thread_data_t *
-gpu_trace_channel_get_td
+static gpu_operation_channel_t *
+gpu_operation_channel_alloc
 (
- gpu_trace_channel_t *ch
+void
 )
 {
-  return ch->td;
-}
+  gpu_operation_channel_t *channel = hpcrun_malloc_safe(sizeof(gpu_operation_channel_t));
 
-
-int
-gpu_trace_channel_get_stream_id
-(
- gpu_trace_channel_t *ch
-)
-{
-  return ch->td->core_profile_trace_data.id;
-}
-
-
-gpu_trace_channel_t *
-gpu_trace_channel_alloc
-(
- void
-)
-{
-  gpu_trace_channel_t *channel =
-    hpcrun_malloc_safe(sizeof(gpu_trace_channel_t));
-
-  memset(channel, 0, sizeof(gpu_trace_channel_t));
+  memset(channel, 0, sizeof(gpu_operation_channel_t));
 
   channel_init(channel);
 
-  channel->td = gpu_trace_stream_acquire();
 
   pthread_mutex_init(&channel->mutex, NULL);
   pthread_cond_init(&channel->cond, NULL);
@@ -186,41 +159,55 @@ gpu_trace_channel_alloc
 }
 
 
-void
-gpu_trace_channel_produce
+
+//******************************************************************************
+// interface operations 
+//******************************************************************************
+
+
+gpu_operation_channel_t *
+gpu_operation_channel_get
 (
- gpu_trace_channel_t *channel,
- gpu_trace_item_t *ti
+ void
 )
 {
-  gpu_trace_item_t *cti = gpu_trace_item_alloc(channel);
+  if (gpu_operation_channel == NULL) {
+    gpu_operation_channel = gpu_operation_channel_alloc();
+  }
 
-  *cti = *ti;
-
-  PRINT("\n===========TRACE_PRODUCE: ti = %p || submit = %lu, start = %lu, end = %lu, cct_node = %p\n\n",
-         ti,
-         ti->cpu_submit_time,
-         ti->start,
-         ti->end,
-         ti->call_path_leaf);
-
-  channel_push(channel, bichannel_direction_forward, cti);
-
-  gpu_trace_channel_signal_consumer_when_full(channel);
+  return gpu_operation_channel;
 }
 
 
 void
-gpu_trace_channel_consume
+gpu_operation_channel_produce
 (
- gpu_trace_channel_t *channel
+ gpu_operation_channel_t *channel,
+ gpu_operation_item_t *it
 )
 {
-  PRINT("gpu_trace_channel_consume:: channel_count = %u, channel_td = %p, last_time = %lu\n", channel->count,
-        channel->td, channel->td->last_time_us);
+  gpu_operation_item_t *new_item = gpu_operation_item_alloc(channel);
+  *new_item = *it;
+
+  PRINT("\nOPERATION_PRODUCE: channel = %p || return_channel = %p -> activity = %p | corr = %u kind = %s, type = %s\n\n",
+         channel, new_item->channel, &new_item->activity,
+         (new_item->activity.kind == GPU_ACTIVITY_MEMCPY)?new_item->activity.details.memcpy.correlation_id:new_item->activity.details.kernel.correlation_id,
+         gpu_kind_to_string(new_item->activity.kind),
+         gpu_type_to_string(new_item->activity.details.memcpy.copyKind));
+
+  channel_push(channel, bichannel_direction_forward, new_item);
+
+  gpu_operation_channel_signal_consumer_when_full(channel);
+
+}
 
 
-  hpcrun_set_thread_data(channel->td);
+void
+gpu_operation_channel_consume
+(
+ gpu_operation_channel_t *channel
+)
+{
 
   // steal elements previously pushed by the producer
   channel_steal(channel, bichannel_direction_forward);
@@ -230,25 +217,26 @@ gpu_trace_channel_consume
 
   // consume all elements enqueued before this function was called
   for (;;) {
-    gpu_trace_item_t *ti = channel_pop(channel, bichannel_direction_forward);
-    if (!ti) break;
+    gpu_operation_item_t *it = channel_pop(channel, bichannel_direction_forward);
 
-    PRINT("\n===========TRACE_CONSUME: ti = %p || submit = %lu, start = %lu, end = %lu, cct_node = %p\n\n",
-           ti,
-           ti->cpu_submit_time,
-           ti->start,
-           ti->end,
-           ti->call_path_leaf);
-    gpu_trace_item_consume(consume_one_trace_item, channel->td, ti);
-    gpu_trace_item_free(channel, ti);
+    if (!it) break;
+
+    PRINT("\nOPERATION_CONSUME: op_channel = %p || channel = %p , activity = %p | corr = %u, kind = %s, type = %s\n",
+           channel, it->channel, &it->activity,
+           (it->activity.kind == GPU_ACTIVITY_MEMCPY)?it->activity.details.memcpy.correlation_id:it->activity.details.kernel.correlation_id,
+           gpu_kind_to_string(it->activity.kind),
+           gpu_type_to_string(it->activity.details.memcpy.copyKind));
+
+    gpu_operation_item_consume(gpu_operation_item_process, it);
+    gpu_operation_item_free(channel, it);
   }
 }
 
 
 void
-gpu_trace_channel_await
+gpu_operation_channel_await
 (
- gpu_trace_channel_t *channel
+gpu_operation_channel_t *channel
 )
 {
   struct timespec time;
@@ -262,11 +250,10 @@ gpu_trace_channel_await
 
 
 void
-gpu_trace_channel_signal_consumer
+gpu_operation_channel_signal_consumer
 (
- gpu_trace_channel_t *trace_channel
+gpu_operation_channel_t *channel
 )
 {
-  pthread_cond_signal(&trace_channel->cond);
+  pthread_cond_signal(&channel->cond);
 }
-

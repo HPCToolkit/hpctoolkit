@@ -1,6 +1,6 @@
-// -*-Mode: C++;-*- // technically C99
 
 // * BeginRiceCopyright *****************************************************
+// -*-Mode: C++;-*- // technically C99
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -42,150 +42,75 @@
 // ******************************************************* EndRiceCopyright *
 
 
-//******************************************************************************
-// system includes
-//******************************************************************************
+#ifndef gpu_activity_multiplexer_h
+#define gpu_activity_multiplexer_h
 
-#include <assert.h>
-
-
+#include <hpcrun/thread_data.h>
+#include "gpu-operation-channel.h"
 
 //******************************************************************************
-// local includes
+// type declarations
 //******************************************************************************
-
-#include "gpu-activity.h"
-#include "gpu-channel-item-allocator.h"
-#include "gpu-print.h"
-
-
+typedef struct gpu_activity_channel_t gpu_activity_channel_t;
+typedef struct gpu_activity_t gpu_activity_t;
 
 //******************************************************************************
-// macros
+// local variables
 //******************************************************************************
-
-#define UNIT_TEST 0
-
-#define DEBUG 0
-
-
-#define FORALL_OPENCL_KINDS(macro)					\
-  macro(GPU_ACTIVITY_UNKNOWN)							\
-  macro(GPU_ACTIVITY_KERNEL)           \
-  macro(GPU_ACTIVITY_MEMCPY)
-
-#define FORALL_OPENCL_MEM_TYPES(macro)					\
-  macro(GPU_MEMCPY_UNK)							\
-  macro(GPU_MEMCPY_H2D)           \
-  macro(GPU_MEMCPY_D2H)
-
-#define CODE_TO_STRING(e) case e: return #e;
-
 
 
 //******************************************************************************
-// interface functions
+// private operations
 //******************************************************************************
 
-void
-gpu_context_activity_dump
+
+//******************************************************************************
+// interface operations
+//******************************************************************************
+
+
+bool
+gpu_activity_multiplexer_my_channel_initialized
 (
- gpu_activity_t *activity,
- const char *context
-)
-{
-  PRINT("context %s gpu activity %p kind = %d\n", context, activity, activity->kind);
-}
+ void
+);
 
 
 void
-gpu_activity_dump
+gpu_activity_multiplexer_my_channel_init
 (
- gpu_activity_t *activity
-)
-{
-  gpu_context_activity_dump(activity, "DEBUGGER");
-}
+ void
+);
 
 
 void
-gpu_activity_consume
+gpu_activity_multiplexer_fini
 (
- gpu_activity_t *activity,
- gpu_activity_attribute_fn_t aa_fn
-)
-{
-  gpu_context_activity_dump(activity, "CONSUME");
-  aa_fn(activity);
-}
-
-
-gpu_activity_t *
-gpu_activity_alloc
-(
- gpu_activity_channel_t *channel
-)
-{
-  return channel_item_alloc(channel, gpu_activity_t);
-}
+ void
+);
 
 
 void
-gpu_activity_free
+gpu_activity_multiplexer_push
 (
- gpu_activity_channel_t *channel, 
- gpu_activity_t *a
-)
-{
-  channel_item_free(channel, a);
-}
-
-void
-set_gpu_instruction
-(
-  gpu_instruction_t* insn, 
-  ip_normalized_t pc
-)
-{
-  insn->pc = pc;
-}
-
-void
-set_gpu_interval
-(
-  gpu_interval_t* interval,
-  uint64_t start,
-  uint64_t end
-)
-{
-  interval->start = start;
-  interval->end = end;
-}
+ gpu_activity_channel_t *initiator_channel,
+ gpu_activity_t *gpu_activity
+);
 
 
-const char*
-gpu_kind_to_string
-(
-gpu_activity_kind_t kind
-)
-{
-  switch (kind)
-  {
-    FORALL_OPENCL_KINDS(CODE_TO_STRING)
-    default: return "CL_unknown_kind";
-  }
-}
+
+#endif
 
 
-const char*
-gpu_type_to_string
-(
-gpu_memcpy_type_t type
-)
-{
-  switch (type)
-  {
-    FORALL_OPENCL_MEM_TYPES(CODE_TO_STRING)
-    default: return "CL_unknown_type";
-  }
-}
+
+
+
+
+
+
+
+
+
+
+
+

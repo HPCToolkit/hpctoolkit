@@ -41,8 +41,8 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef _OPENCL_ACTIVITY_TRANSLATE_H_
-#define _OPENCL_ACTIVITY_TRANSLATE_H_
+#ifndef opencl_activity_translate_h
+#define opencl_activity_translate_h
 
 
 
@@ -55,6 +55,10 @@
 
 
 
+//*************************** Forward Declarations **************************
+
+typedef struct opencl_object_t opencl_object_t;
+
 //******************************************************************************
 // interface operations
 //******************************************************************************
@@ -62,9 +66,9 @@
 void
 opencl_activity_translate
 (
-  gpu_activity_t *,
-  cl_event,
-  void *
+  gpu_activity_t *ga,
+  cl_event event,
+  opencl_object_t *cb_data
 );
 
 

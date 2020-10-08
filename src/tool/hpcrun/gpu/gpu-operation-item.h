@@ -41,12 +41,16 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#ifndef gpu_operation_item_h
+#define gpu_operation_item_h
+
+
 
 //******************************************************************************
 // system includes
 //******************************************************************************
 
-#include <assert.h>
+#include <stdint.h>
 
 
 
@@ -54,138 +58,75 @@
 // local includes
 //******************************************************************************
 
+#include <lib/prof-lean/stacks.h>
+#include <hpcrun/utilities/ip-normalized.h>
+
 #include "gpu-activity.h"
-#include "gpu-channel-item-allocator.h"
-#include "gpu-print.h"
 
 
 
 //******************************************************************************
-// macros
+// forward declarations
 //******************************************************************************
 
-#define UNIT_TEST 0
-
-#define DEBUG 0
+typedef struct gpu_operation_channel_t gpu_operation_channel_t;
 
 
-#define FORALL_OPENCL_KINDS(macro)					\
-  macro(GPU_ACTIVITY_UNKNOWN)							\
-  macro(GPU_ACTIVITY_KERNEL)           \
-  macro(GPU_ACTIVITY_MEMCPY)
 
-#define FORALL_OPENCL_MEM_TYPES(macro)					\
-  macro(GPU_MEMCPY_UNK)							\
-  macro(GPU_MEMCPY_H2D)           \
-  macro(GPU_MEMCPY_D2H)
+//******************************************************************************
+// type declarations
+//******************************************************************************
 
-#define CODE_TO_STRING(e) case e: return #e;
+typedef struct gpu_operation_item_t{
+  s_element_t next;
+  gpu_activity_channel_t *channel;
+  gpu_activity_t activity;
+} gpu_operation_item_t;
 
 
+typedef void (*gpu_operation_channel_fn_t)
+(
+ gpu_operation_channel_t *channel
+);
+
+typedef void (*gpu_operation_item_fn_t)
+(
+ gpu_operation_item_t *it
+);
 
 //******************************************************************************
 // interface functions
 //******************************************************************************
 
 void
-gpu_context_activity_dump
+gpu_operation_item_consume
 (
- gpu_activity_t *activity,
- const char *context
-)
-{
-  PRINT("context %s gpu activity %p kind = %d\n", context, activity, activity->kind);
-}
+ gpu_operation_item_fn_t ap_fn,
+ gpu_operation_item_t *it
+);
+
+
+gpu_operation_item_t *
+gpu_operation_item_alloc
+(
+ gpu_operation_channel_t *channel
+);
 
 
 void
-gpu_activity_dump
+gpu_operation_item_free
 (
- gpu_activity_t *activity
-)
-{
-  gpu_context_activity_dump(activity, "DEBUGGER");
-}
+ gpu_operation_channel_t *channel,
+ gpu_operation_item_t *a
+);
 
 
 void
-gpu_activity_consume
+gpu_operation_item_dump
 (
- gpu_activity_t *activity,
- gpu_activity_attribute_fn_t aa_fn
-)
-{
-  gpu_context_activity_dump(activity, "CONSUME");
-  aa_fn(activity);
-}
+ gpu_operation_item_t *it
+);
 
 
-gpu_activity_t *
-gpu_activity_alloc
-(
- gpu_activity_channel_t *channel
-)
-{
-  return channel_item_alloc(channel, gpu_activity_t);
-}
 
-
-void
-gpu_activity_free
-(
- gpu_activity_channel_t *channel, 
- gpu_activity_t *a
-)
-{
-  channel_item_free(channel, a);
-}
-
-void
-set_gpu_instruction
-(
-  gpu_instruction_t* insn, 
-  ip_normalized_t pc
-)
-{
-  insn->pc = pc;
-}
-
-void
-set_gpu_interval
-(
-  gpu_interval_t* interval,
-  uint64_t start,
-  uint64_t end
-)
-{
-  interval->start = start;
-  interval->end = end;
-}
-
-
-const char*
-gpu_kind_to_string
-(
-gpu_activity_kind_t kind
-)
-{
-  switch (kind)
-  {
-    FORALL_OPENCL_KINDS(CODE_TO_STRING)
-    default: return "CL_unknown_kind";
-  }
-}
-
-
-const char*
-gpu_type_to_string
-(
-gpu_memcpy_type_t type
-)
-{
-  switch (type)
-  {
-    FORALL_OPENCL_MEM_TYPES(CODE_TO_STRING)
-    default: return "CL_unknown_type";
-  }
-}
+#endif
