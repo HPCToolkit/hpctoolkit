@@ -102,6 +102,7 @@
   macro(clEnqueueNDRangeKernel)  \
   macro(clEnqueueReadBuffer)  \
   macro(clEnqueueWriteBuffer)  \
+  macro(clEnqueueMapBuffer) \
   macro(clCreateBuffer)  \
   macro(clSetKernelArg)  \
   macro(clGetEventProfilingInfo)  \
@@ -118,6 +119,9 @@
 
 #define OPENCL_QUEUE_FN(fn, args)      \
   static cl_command_queue (*OPENCL_FN_NAME(fn)) args
+
+#define OPENCL_ENQUEUEMAPBUFFER_FN(fn, args)    \
+  static void* (*OPENCL_FN_NAME(fn)) args
 
 #define OPENCL_CREATEBUFFER_FN(fn, args)      \
   static cl_mem (*OPENCL_FN_NAME(fn)) args
@@ -249,6 +253,24 @@ OPENCL_FN
    cl_uint,
    const cl_event *,
    cl_event *
+  )
+);
+
+
+OPENCL_ENQUEUEMAPBUFFER_FN
+(
+  clEnqueueMapBuffer, 
+  (
+    cl_command_queue,
+    cl_mem,
+    cl_bool,
+    cl_map_flags,
+    size_t,
+    size_t,
+    cl_uint,
+    const cl_event*,
+    cl_event*,
+    cl_int*
   )
 );
 
@@ -1060,6 +1082,68 @@ clEnqueueWriteBuffer
 }
 
 
+void*
+clEnqueueMapBuffer
+(
+  cl_command_queue command_queue,
+  cl_mem buffer,
+  cl_bool blocking_map,
+  cl_map_flags map_flags,
+  size_t offset,
+  size_t size,
+  cl_uint num_events_in_wait_list,
+  const cl_event* event_wait_list,
+  cl_event* event,
+  cl_int* errcode_ret
+)
+{
+  ETMSG(OPENCL, "inside clEnqueueMapBuffer wrapper");
+
+  opencl_object_t *mem_info = opencl_malloc();
+  if (map_flags == CL_MAP_READ) {
+    initializeMemoryCallBackInfo(mem_info, GPU_MEMCPY_D2H, size, CORRELATION_ID_INVALID);
+  } else {
+    //map_flags == CL_MAP_WRITE || map_flags == CL_MAP_WRITE_INVALIDATE_REGION
+    initializeMemoryCallBackInfo(mem_info, GPU_MEMCPY_H2D, size, CORRELATION_ID_INVALID);
+  }
+  
+  opencl_subscriber_callback(mem_info);
+
+  cl_event my_event;
+  cl_event *eventp;
+  if (!event) {
+    mem_info->isInternalClEvent = true;
+    eventp = &my_event;
+  } else {
+    eventp = event;
+    mem_info->isInternalClEvent = false;
+  }
+
+  void *map_ptr =
+  HPCRUN_OPENCL_CALL(clEnqueueMapBuffer,
+                     (command_queue, buffer, blocking_map, map_flags, offset,
+                     size, num_events_in_wait_list, event_wait_list, eventp, errcode_ret));
+
+  if (map_flags == CL_MAP_READ) {
+    ETMSG(OPENCL, "Registering callback for kind MEMCPY, type: D2H. "
+                  "Correlation id: %"PRIu64 "", mem_info->details.mem_cb.correlation_id);
+    ETMSG(OPENCL, "%d(bytes) of data being transferred from device to host",
+          (long)size);
+  } else {
+    ETMSG(OPENCL, "Registering callback for kind MEMCPY, type: H2D. "
+                  "Correlation id: %"PRIu64 "", mem_info->details.mem_cb.correlation_id);
+    ETMSG(OPENCL, "%d(bytes) of data being transferred from host to device",
+          (long)size);
+  }
+
+
+  clSetEventCallback_wrapper(*eventp, CL_COMPLETE,
+                             &opencl_activity_completion_callback, mem_info);
+
+  return map_ptr;
+}
+
+
 cl_mem
 clCreateBuffer
 (
@@ -1075,7 +1159,7 @@ clCreateBuffer
   cl_mem buffer = 
     HPCRUN_OPENCL_CALL(clCreateBuffer, (context, flags, size, host_ptr, errcode_ret));
   uint64_t buffer_id = (uint64_t)buffer; 
-  ETMSG(OPENCL, "inside clCreateBuffer wrapper. cl_mem buffer: %p. buffer_id: %"PRIu64"", buffer, buffer_id);
+  //ETMSG(OPENCL, "inside clCreateBuffer wrapper. cl_mem buffer: %p. buffer_id: %"PRIu64"", buffer, buffer_id);
 	opencl_h2d_map_insert(buffer_id, correlation_id, size, 0, 0);
   
   return buffer;
@@ -1092,7 +1176,7 @@ clSetKernelArg
 )
 {
 	bool isClBuffer = opencl_isClArgBuffer(arg_value);
-  ETMSG(OPENCL, "inside clSetKernelArg wrapper."); //isClBuffer: %d. *(cl_mem*)arg_value: %p",isClBuffer, *(cl_mem*)arg_value
+  //ETMSG(OPENCL, "inside clSetKernelArg wrapper."); //isClBuffer: %d. *(cl_mem*)arg_value: %p",isClBuffer, *(cl_mem*)arg_value
 	uint64_t start_time = hpcrun_nanotime();
 
   cl_int return_status = 
