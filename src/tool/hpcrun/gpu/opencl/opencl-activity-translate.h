@@ -67,8 +67,9 @@ void
 opencl_activity_translate
 (
   gpu_activity_t *ga,
-  cl_event event,
-  opencl_object_t *cb_data
+  opencl_object_t *cb_data,
+  uint64_t start_time,
+  uint64_t end_time
 );
 
 
