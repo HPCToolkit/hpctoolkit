@@ -41,46 +41,71 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef opencl_activity_translate_h
-#define opencl_activity_translate_h
+#ifndef opencl_context_map_h
+#define opencl_context_map_h
+
+
+//*****************************************************************************
+// system includes
+//*****************************************************************************
+
+#include <stdint.h>
 
 
 
-//******************************************************************************
-// local includes
-//******************************************************************************
+//*****************************************************************************
+// type definitions 
+//*****************************************************************************
 
-#include <hpcrun/gpu/gpu-activity.h>
-#include <lib/prof-lean/hpcrun-opencl.h>
-
+typedef struct opencl_context_map_entry_t opencl_context_map_entry_t;
 
 
-//*************************** Forward Declarations **************************
 
-typedef struct opencl_object_t opencl_object_t;
-
-//******************************************************************************
+//*****************************************************************************
 // interface operations
-//******************************************************************************
+//*****************************************************************************
 
-void
-opencl_activity_translate
+opencl_context_map_entry_t *
+opencl_cl_context_map_lookup
 (
-  gpu_activity_t *ga,
-  cl_event event,
-  opencl_object_t *cb_data
+ uint64_t
 );
 
 
 void
-opencl_clSetKernelArg_activity_translate
+opencl_cl_context_map_insert
 (
-	gpu_activity_t *,
-	uint64_t,
-	uint32_t,
-	uint32_t,
-	size_t,
-	uint64_t,
-	uint64_t
+ uint64_t, 
+ uint32_t
 );
-#endif  //_OPENCL_ACTIVITY_TRANSLATE_H_
+
+
+void
+opencl_cl_context_map_delete
+(
+ uint64_t
+);
+
+
+uint64_t
+opencl_cl_context_map_entry_cl_context_id_get
+(
+ opencl_context_map_entry_t *entry
+);
+
+
+uint32_t
+opencl_cl_context_map_entry_stream_get
+(
+ opencl_context_map_entry_t *
+);
+
+
+uint64_t
+opencl_h2d_map_count
+(
+ void
+);
+
+#endif
+

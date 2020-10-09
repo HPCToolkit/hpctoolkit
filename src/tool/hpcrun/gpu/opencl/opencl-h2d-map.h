@@ -52,6 +52,15 @@
 #include <stdint.h>
 
 
+
+//*****************************************************************************
+// local includes
+//*****************************************************************************
+
+#include "opencl-memory-manager.h"
+
+
+
 //*****************************************************************************
 // type definitions 
 //*****************************************************************************
@@ -86,7 +95,8 @@ opencl_h2d_map_insert
  uint64_t, 
  size_t,
  uint64_t,
- uint64_t
+ uint64_t,
+ opencl_object_t *
 );
 
 
@@ -129,6 +139,13 @@ uint64_t
 opencl_h2d_map_entry_end_time_get
 (
  opencl_h2d_map_entry_t *
+);
+
+
+opencl_object_t *
+opencl_h2d_map_entry_callback_info_get
+(
+ opencl_h2d_map_entry_t *entry
 );
 
 

@@ -104,6 +104,8 @@ typedef struct opencl_object_details_t {
     cl_memory_callback_t mem_cb;
   };
   gpu_activity_channel_t *initiator_channel;
+  uint32_t context_id;
+  uint32_t stream_id;
   cct_node_t *cct_node;
   uint64_t submit_time;
 } opencl_object_details_t;

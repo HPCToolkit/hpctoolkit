@@ -83,6 +83,8 @@
 #include "opencl-activity-translate.h"
 #include "opencl-memory-manager.h"
 #include "opencl-h2d-map.h"
+#include "opencl-context-map.h"
+#include "opencl-kernel-map.h"
 
 
 
@@ -365,10 +367,10 @@ initializeKernelCallBackInfo
 static void
 initializeMemoryCallBackInfo
 (
-opencl_object_t *mem_info,
-gpu_memcpy_type_t type,
-size_t size,
-uint64_t correlation_id
+  opencl_object_t *mem_info,
+  gpu_memcpy_type_t type,
+  size_t size,
+  uint64_t correlation_id
 )
 {
   mem_info->kind = GPU_ACTIVITY_MEMCPY;
@@ -378,6 +380,29 @@ uint64_t correlation_id
   mem_info->details.mem_cb.size = size;
 
   mem_info->details.mem_cb.correlation_id = correlation_id;
+}
+
+
+static void
+initializeClSetKernelArgMemoryCallBackInfo
+(
+  opencl_object_t *mem_info,
+  gpu_memcpy_type_t type,
+  size_t size,
+  uint64_t correlation_id,
+  uint32_t context_id,
+  uint32_t stream_id
+)
+{
+  mem_info->kind = GPU_ACTIVITY_MEMCPY;
+  mem_info->details.mem_cb.type = type;
+  mem_info->details.mem_cb.fromHostToDevice = (type == GPU_MEMCPY_H2D);
+  mem_info->details.mem_cb.fromDeviceToHost = (type == GPU_MEMCPY_D2H);
+  mem_info->details.mem_cb.size = size;
+
+  mem_info->details.mem_cb.correlation_id = correlation_id;
+  mem_info->details.context_id = context_id;
+  mem_info->details.stream_id = stream_id;
 }
 
 
@@ -441,16 +466,24 @@ opencl_activity_process
 static void
 opencl_clSetKernelArg_activity_process
 (
- uint64_t correlation_id,
- opencl_h2d_map_entry_t *entry
+  opencl_h2d_map_entry_t *entry,
+  opencl_object_t *cb_data
 )
 {
   gpu_activity_t gpu_activity;
+  uint64_t correlation_id = opencl_h2d_map_entry_correlation_get(entry);
 	size_t size = opencl_h2d_map_entry_size_get(entry); 
 	uint64_t start_time = opencl_h2d_map_entry_start_time_get(entry); 
 	uint64_t end_time = opencl_h2d_map_entry_end_time_get(entry); 
-  opencl_clSetKernelArg_activity_translate(&gpu_activity, correlation_id, size, start_time, end_time);
-  gpu_activity_process(&gpu_activity);
+  opencl_clSetKernelArg_activity_translate(&gpu_activity, correlation_id, cb_data->details.context_id,
+      cb_data->details.stream_id, size, start_time, end_time);
+  
+  if (gpu_activity_multiplexer_my_channel_initialized() == false){
+    gpu_activity_multiplexer_my_channel_init();
+  }
+  ETMSG(OPENCL, "cb_data->details.initiator_channel: %p", cb_data->details.initiator_channel);
+  gpu_activity_multiplexer_push(cb_data->details.initiator_channel, &gpu_activity);
+  //gpu_activity_process(&gpu_activity);
 }
 
 
@@ -502,29 +535,32 @@ add_H2D_metrics_to_cct_node
 	void *arg
 )
 {
-	uint64_t correlation_id = opencl_h2d_map_entry_correlation_get(entry); 
-	gpu_correlation_id_map_entry_t *cid_map_entry = 
-		gpu_correlation_id_map_lookup(correlation_id);
-	if (cid_map_entry == NULL) {
-		ETMSG(OPENCL, "cid_map_entry for correlation_id: %"PRIu64 " (clSetKernelArg H2D) not found", correlation_id);
-		return;
-	}
-	ETMSG(OPENCL, "completion type: %s, Correlation id: %"PRIu64 "", "memcpy_H2D", correlation_id);
+	// uint64_t correlation_id = opencl_h2d_map_entry_correlation_get(entry); 
+	// gpu_correlation_id_map_entry_t *cid_map_entry = 
+	// 	gpu_correlation_id_map_lookup(correlation_id);
+	// if (cid_map_entry == NULL) {
+	// 	ETMSG(OPENCL, "cid_map_entry for correlation_id: %"PRIu64 " (clSetKernelArg H2D) not found", correlation_id);
+	// 	return;
+	// }
 
 	uint64_t start_time = opencl_h2d_map_entry_start_time_get(entry); 
-	uint64_t end_time = opencl_h2d_map_entry_end_time_get(entry); 
+	uint64_t end_time = opencl_h2d_map_entry_end_time_get(entry);
 	ETMSG(OPENCL, "duration [%"PRIu64", %"PRIu64"]",start_time, end_time); 
-	opencl_activity_completion_notify();
-	opencl_clSetKernelArg_activity_process(correlation_id, entry);
+	//opencl_activity_completion_notify();
+  opencl_object_t *cb_data = opencl_h2d_map_entry_callback_info_get(entry);
+  cl_basic_callback_t cb_basic = opencl_cb_basic_get(cb_data);
+  opencl_cb_basic_print(cb_basic, "Completion_Callback");
+
+	opencl_clSetKernelArg_activity_process(entry, cb_data);
 	uint64_t buffer_id = opencl_h2d_map_entry_buffer_id_get(entry);
-	opencl_h2d_map_delete(buffer_id);
+	//opencl_h2d_map_delete(buffer_id);
   opencl_h2d_pending_operations_adjust(-1);
   opencl_pending_operations_adjust(-1);
 }
 
 
 static void
-opencl_add_ccts_for_setClKernelArg
+opencl_update_ccts_for_setClKernelArg
 (
 	void
 )
@@ -651,7 +687,7 @@ opencl_subscriber_callback
 
     case GPU_ACTIVITY_MEMCPY:
       cb_info->details.mem_cb.correlation_id = correlation_id;
-      if (cb_info->details.mem_cb.type == GPU_MEMCPY_H2D){
+      if (cb_info->details.mem_cb.type == GPU_MEMCPY_H2D){ 
         gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
                                        gpu_placeholder_type_copyin);
 
@@ -681,7 +717,7 @@ opencl_subscriber_callback
   }
 
   cct_node_t *api_node =
-  gpu_application_thread_correlation_callback(correlation_id);
+    gpu_application_thread_correlation_callback(correlation_id);
   gpu_op_ccts_t gpu_op_ccts;
 
   hpcrun_safe_enter();
@@ -880,8 +916,10 @@ clCreateCommandQueue
   // enabling profiling
   properties |= (cl_command_queue_properties)CL_QUEUE_PROFILING_ENABLE; 
 
-  return HPCRUN_OPENCL_CALL(clCreateCommandQueue, (context, device,
-        properties,errcode_ret));  
+  cl_command_queue queue = HPCRUN_OPENCL_CALL(clCreateCommandQueue, (context, device,
+        properties,errcode_ret));
+  opencl_cl_context_map_insert((uint64_t)context, (uint32_t)queue);
+  return queue;
 }
 
 
@@ -938,6 +976,7 @@ clCreateCommandQueueWithProperties
     // The property is created by us
     free(queue_properties);
   }
+  opencl_cl_context_map_insert((uint64_t)context, (uint32_t)queue);
   return queue;
 }
 
@@ -1160,7 +1199,7 @@ clCreateBuffer
     HPCRUN_OPENCL_CALL(clCreateBuffer, (context, flags, size, host_ptr, errcode_ret));
   uint64_t buffer_id = (uint64_t)buffer; 
   //ETMSG(OPENCL, "inside clCreateBuffer wrapper. cl_mem buffer: %p. buffer_id: %"PRIu64"", buffer, buffer_id);
-	opencl_h2d_map_insert(buffer_id, correlation_id, size, 0, 0);
+	opencl_h2d_map_insert(buffer_id, correlation_id, size, 0, 0, NULL);
   
   return buffer;
 }
@@ -1185,6 +1224,18 @@ clSetKernelArg
 		return return_status;	
 	}
   uint64_t end_time = hpcrun_nanotime();
+
+  size_t context_size;
+  cl_int STATUS = clGetKernelInfo(kernel, CL_KERNEL_CONTEXT, 0, NULL, &context_size);
+  cl_context *context = malloc(sizeof(context_size));
+  STATUS = clGetKernelInfo(kernel, CL_KERNEL_CONTEXT, context_size, (void*)context, NULL);
+  
+  //opencl_cl_kernel_map_insert((uint64_t)ocl_kernel, (uint32_t)(*context), command_queue);
+
+  uint32_t context_id = (uint32_t)(*context);
+  opencl_context_map_entry_t *ce = opencl_cl_context_map_lookup((uint64_t)(*context));
+  uint32_t stream_id = (*ce).stream_id;
+
   uint64_t buffer_id = opencl_get_buffer_id(arg_value);
 	opencl_h2d_map_entry_t *entry = opencl_h2d_map_lookup(buffer_id);
 	if (entry) {
@@ -1192,10 +1243,10 @@ clSetKernelArg
 
 		uint64_t correlation_id = opencl_h2d_map_entry_correlation_get(entry);
     opencl_object_t *mem_info = opencl_malloc();
-    initializeMemoryCallBackInfo(mem_info, GPU_MEMCPY_H2D, size, correlation_id);
+    initializeClSetKernelArgMemoryCallBackInfo(mem_info, GPU_MEMCPY_H2D, size, correlation_id, context_id, stream_id);
     opencl_subscriber_callback(mem_info);
 
-  	opencl_h2d_map_insert(buffer_id,correlation_id, size, start_time, end_time);
+  	opencl_h2d_map_insert(buffer_id,correlation_id, size, start_time, end_time, mem_info);
 	}
   return return_status;
 }
@@ -1218,10 +1269,11 @@ opencl_api_thread_finalize
 )
 {
 	opencl_wait_for_non_clSetKernelArg_pending_operations();
-	opencl_add_ccts_for_setClKernelArg();
+	opencl_update_ccts_for_setClKernelArg();
   opencl_wait_for_all_pending_operations();
   gpu_application_thread_process_activities();
 }
+
 
 void
 opencl_api_process_finalize

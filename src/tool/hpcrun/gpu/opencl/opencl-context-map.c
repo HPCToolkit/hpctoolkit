@@ -60,7 +60,7 @@
 #include <hpcrun/gpu/gpu-splay-allocator.h>
 #include <hpcrun/gpu/gpu-op-placeholders.h>
 
-#include "opencl-h2d-map.h"
+#include "opencl-context-map.h"
 
 
 
@@ -89,7 +89,7 @@
   typed_splay_count(correlation_id)
 
 #define st_alloc(free_list)			\
-  typed_splay_alloc(free_list, opencl_h2d_map_entry_t)
+  typed_splay_alloc(free_list, opencl_context_map_entry_t)
 
 #define st_free(free_list, node)		\
   typed_splay_free(free_list, node)
@@ -101,18 +101,14 @@
 //*****************************************************************************
 
 #undef typed_splay_node
-#define typed_splay_node(correlation_id) opencl_h2d_map_entry_t
+#define typed_splay_node(correlation_id) opencl_context_map_entry_t
 
 typedef struct typed_splay_node(correlation_id) {
   struct typed_splay_node(correlation_id) *left;
   struct typed_splay_node(correlation_id) *right;
-  uint64_t buffer_id; // key
+  uint64_t cl_context_id; // key
 
-  uint64_t corr_id;
-  size_t size;
-  uint64_t start_time;
-  uint64_t end_time;
-  opencl_object_t *cb_info
+  uint32_t stream_id; // we save queue id as the stream id
 } typed_splay_node(correlation_id); 
 
 
@@ -120,11 +116,11 @@ typedef struct typed_splay_node(correlation_id) {
 // local data
 //******************************************************************************
 
-static opencl_h2d_map_entry_t *map_root = NULL;
+static opencl_context_map_entry_t *map_root = NULL;
 
-static opencl_h2d_map_entry_t *free_list = NULL;
+static opencl_context_map_entry_t *free_list = NULL;
 
-static spinlock_t opencl_h2d_map_lock = SPINLOCK_UNLOCKED;
+static spinlock_t opencl_context_map_lock = SPINLOCK_UNLOCKED;
 
 //*****************************************************************************
 // private operations
@@ -133,171 +129,107 @@ static spinlock_t opencl_h2d_map_lock = SPINLOCK_UNLOCKED;
 typed_splay_impl(correlation_id)
 
 
-static opencl_h2d_map_entry_t *
-opencl_h2d_map_entry_alloc()
+static opencl_context_map_entry_t *
+opencl_cl_context_map_entry_alloc()
 {
   return st_alloc(&free_list);
 }
 
 
-static opencl_h2d_map_entry_t *
-opencl_h2d_map_entry_new
+static opencl_context_map_entry_t *
+opencl_cl_context_map_entry_new
 (
- uint64_t buffer_id,
- uint64_t correlation_id,
- size_t size,
- uint64_t start_time,
- uint64_t end_time,
- opencl_object_t *cb_info
+ uint64_t cl_context_id,
+ uint32_t stream_id
 )
 {
-  opencl_h2d_map_entry_t *e = opencl_h2d_map_entry_alloc();
+  opencl_context_map_entry_t *e = opencl_cl_context_map_entry_alloc();
 
-  e->buffer_id = buffer_id;
-  e->corr_id = correlation_id;
-  e->size = size;
-  e->start_time = start_time;
-  e->end_time = end_time;
-  e->cb_info = cb_info;
-
+  e->cl_context_id = cl_context_id;
+  e->stream_id = stream_id;
+  
   return e;
 }
+
 
 
 //*****************************************************************************
 // interface operations
 //*****************************************************************************
 
-opencl_h2d_map_entry_t *
-opencl_h2d_map_lookup
+opencl_context_map_entry_t *
+opencl_cl_context_map_lookup
 (
- uint64_t buffer_id
+ uint64_t cl_context_id
 )
 {
-  spinlock_lock(&opencl_h2d_map_lock);
+  spinlock_lock(&opencl_context_map_lock);
 
-  uint64_t id = buffer_id;
-  opencl_h2d_map_entry_t *result = st_lookup(&map_root, id);
+  uint64_t id = cl_context_id;
+  opencl_context_map_entry_t *result = st_lookup(&map_root, id);
 
-  spinlock_unlock(&opencl_h2d_map_lock);
+  spinlock_unlock(&opencl_context_map_lock);
 
   return result;
 }
 
 
 void
-opencl_h2d_map_insert
+opencl_cl_context_map_insert
 (
- uint64_t buffer_id, 
- uint64_t correlation_id, 
- size_t size,
- uint64_t start_time,
- uint64_t end_time,
- opencl_object_t *cb_info
+ uint64_t cl_context_id, 
+ uint32_t stream_id
 )
 {
-  spinlock_lock(&opencl_h2d_map_lock);
+  spinlock_lock(&opencl_context_map_lock);
 
-  opencl_h2d_map_entry_t *entry = st_lookup(&map_root, buffer_id);
+  opencl_context_map_entry_t *entry = st_lookup(&map_root, cl_context_id);
   if (entry) {
-    entry->corr_id = correlation_id;
-    entry->size = size;
-    entry->start_time = start_time;
-    entry->end_time = end_time;
-    entry->cb_info = cb_info;
+    entry->cl_context_id = cl_context_id;
+    entry->stream_id = stream_id;
   } else {
-    opencl_h2d_map_entry_t *entry = 
-      opencl_h2d_map_entry_new(buffer_id, correlation_id, size, start_time, end_time, cb_info);
+    opencl_context_map_entry_t *entry = 
+      opencl_cl_context_map_entry_new(cl_context_id, stream_id);
 
     st_insert(&map_root, entry);
   }
 
-  spinlock_unlock(&opencl_h2d_map_lock);
+  spinlock_unlock(&opencl_context_map_lock);
 }
 
 
 void
-opencl_h2d_map_delete
+opencl_cl_context_map_delete
 (
- uint64_t buffer_id
+ uint64_t cl_context_id
 )
 {
-  spinlock_lock(&opencl_h2d_map_lock);
+  spinlock_lock(&opencl_context_map_lock);
 
-  opencl_h2d_map_entry_t *node = st_delete(&map_root, buffer_id);
+  opencl_context_map_entry_t *node = st_delete(&map_root, cl_context_id);
   st_free(&free_list, node);
 
-  spinlock_unlock(&opencl_h2d_map_lock);
+  spinlock_unlock(&opencl_context_map_lock);
 }
 
 
 uint64_t
-opencl_h2d_map_entry_buffer_id_get
+opencl_cl_context_map_entry_cl_context_id_get
 (
- opencl_h2d_map_entry_t *entry
+ opencl_context_map_entry_t *entry
 )
 {
-  return entry->buffer_id;
+  return entry->cl_context_id;
 }
 
 
-uint64_t
-opencl_h2d_map_entry_correlation_get
+uint32_t
+opencl_cl_context_map_entry_stream_get
 (
- opencl_h2d_map_entry_t *entry
+ opencl_context_map_entry_t *entry
 )
 {
-  return entry->corr_id;
-}
-
-
-size_t
-opencl_h2d_map_entry_size_get
-(
- opencl_h2d_map_entry_t *entry
-)
-{
-  return entry->size;
-}
-
-
-uint64_t
-opencl_h2d_map_entry_start_time_get
-(
- opencl_h2d_map_entry_t *entry
-)
-{
-  return entry->start_time;
-}
-
-
-uint64_t
-opencl_h2d_map_entry_end_time_get
-(
- opencl_h2d_map_entry_t *entry
-)
-{
-  return entry->end_time;
-}
-
-
-opencl_object_t *
-opencl_h2d_map_entry_callback_info_get
-(
- opencl_h2d_map_entry_t *entry
-)
-{
-  return entry->cb_info;
-}
-
-
-void
-opencl_update_ccts_for_h2d_nodes
-(
- opencl_splay_fn_t fn	
-)
-{
-	st_forall(map_root, splay_inorder, fn, NULL);
+  return entry->stream_id;
 }
 
 
@@ -307,7 +239,7 @@ opencl_update_ccts_for_h2d_nodes
 //*****************************************************************************
 
 uint64_t
-opencl_h2d_map_count
+opencl_cl_context_map_count
 (
  void
 )
