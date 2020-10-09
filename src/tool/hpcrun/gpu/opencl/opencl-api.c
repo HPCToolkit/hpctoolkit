@@ -1234,7 +1234,7 @@ clSetKernelArg
 
   uint32_t context_id = (uint32_t)(*context);
   opencl_context_map_entry_t *ce = opencl_cl_context_map_lookup((uint64_t)(*context));
-  uint32_t stream_id = (*ce).stream_id;
+  uint32_t stream_id = opencl_cl_kernel_map_entry_stream_get(ce);
 
   uint64_t buffer_id = opencl_get_buffer_id(arg_value);
 	opencl_h2d_map_entry_t *entry = opencl_h2d_map_lookup(buffer_id);
