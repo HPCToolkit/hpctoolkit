@@ -73,14 +73,13 @@ opencl_activity_translate
 
 
 void
-opencl_clSetKernelArg_activity_translate
+opencl_activity_translate_event
 (
-	gpu_activity_t *,
-	uint64_t,
-	uint32_t,
-	uint32_t,
-	size_t,
-	uint64_t,
-	uint64_t
+ gpu_activity_t *ga,
+ cl_event event,
+ opencl_object_t *cb_data
 );
+
+
+
 #endif  //_OPENCL_ACTIVITY_TRANSLATE_H_

@@ -454,7 +454,7 @@ opencl_activity_process
 )
 {
   gpu_activity_t gpu_activity;
-  opencl_activity_translate(&gpu_activity, event, cb_data);
+  opencl_activity_translate_event(&gpu_activity, event, cb_data);
 
   if (gpu_activity_multiplexer_my_channel_initialized() == false){
     gpu_activity_multiplexer_my_channel_init();
@@ -474,9 +474,10 @@ opencl_clSetKernelArg_activity_process
   uint64_t correlation_id = opencl_h2d_map_entry_correlation_get(entry);
 	size_t size = opencl_h2d_map_entry_size_get(entry); 
 	uint64_t start_time = opencl_h2d_map_entry_start_time_get(entry); 
-	uint64_t end_time = opencl_h2d_map_entry_end_time_get(entry); 
-  opencl_clSetKernelArg_activity_translate(&gpu_activity, correlation_id, cb_data->details.context_id,
-      cb_data->details.stream_id, size, start_time, end_time);
+	uint64_t end_time = opencl_h2d_map_entry_end_time_get(entry);
+
+  cb_data->details.ker_cb.correlation_id = correlation_id;
+  opencl_activity_translate(&gpu_activity, cb_data, start_time, end_time);
   
   if (gpu_activity_multiplexer_my_channel_initialized() == false){
     gpu_activity_multiplexer_my_channel_init();
