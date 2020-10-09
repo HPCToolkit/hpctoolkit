@@ -216,9 +216,6 @@ gpu_trace_channel_consume
  gpu_trace_channel_t *channel
 )
 {
-  PRINT("gpu_trace_channel_consume:: channel_count = %u, channel_td = %p, last_time = %lu\n", channel->count,
-        channel->td, channel->td->last_time_us);
-
 
   hpcrun_set_thread_data(channel->td);
 

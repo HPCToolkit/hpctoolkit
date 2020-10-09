@@ -323,9 +323,6 @@ gpu_trace_record
     //getting data from a trace channel
     gpu_trace_channel_set_process(channel_set);
 
-    PRINT("TraceRecord_processed: thread: %ld, set_index = %d\n",
-           gpu_trace_channel_set_get_thread(channel_set),
-           gpu_trace_channel_set_get_channel_num(channel_set));
   }
 
   gpu_trace_channel_set_process(channel_set);

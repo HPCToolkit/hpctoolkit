@@ -83,25 +83,7 @@ convert_kernel_launch
 
   ga->details.kernel.correlation_id = cb_data->details.ker_cb.correlation_id;
   ga->details.kernel.submit_time    = cb_data->details.submit_time;
-}
 
-
-static void
-convert_kernel_launch_event
-(
-gpu_activity_t *ga,
-opencl_object_t *cb_data,
-cl_event event
-)
-{
-  memset(&ga->details.kernel, 0, sizeof(gpu_kernel_t));
-  opencl_timing_info_get(&ga->details.interval, event);
-
-  ga->kind     = cb_data->kind;
-  ga->cct_node = cb_data->details.cct_node;
-
-  ga->details.kernel.correlation_id = cb_data->details.ker_cb.correlation_id;
-  ga->details.kernel.submit_time    = cb_data->details.submit_time;
 }
 
 
@@ -127,26 +109,6 @@ convert_memcpy
 }
 
 
-static void
-convert_memcpy_event
-(
-gpu_activity_t *ga,
-opencl_object_t *cb_data,
-cl_event event
-)
-{
-  memset(&ga->details.memcpy, 0, sizeof(gpu_memcpy_t));
-  opencl_timing_info_get(&ga->details.interval, event);
-
-  ga->kind     = cb_data->kind;
-  ga->cct_node = cb_data->details.cct_node;
-
-  ga->details.memcpy.correlation_id  = cb_data->details.mem_cb.correlation_id;
-  ga->details.memcpy.submit_time     = cb_data->details.submit_time;
-  ga->details.memcpy.bytes           = cb_data->details.mem_cb.size;
-  ga->details.memcpy.copyKind        = cb_data->details.mem_cb.type;
-}
-
 //******************************************************************************
 // interface operations
 //******************************************************************************
@@ -160,6 +122,8 @@ opencl_activity_translate
   uint64_t end_time
 )
 {
+
+
   switch (cb_data->kind) {
     case GPU_ACTIVITY_MEMCPY:
       convert_memcpy(ga, cb_data, start_time, end_time);
@@ -172,6 +136,17 @@ opencl_activity_translate
     default:
       assert(0);
   }
+
+
+  uint64_t diff = end_time - start_time;
+  uint64_t gpu_time_offset = 0;
+
+  ga->details.interval.start = ga->details.kernel.submit_time + gpu_time_offset;
+  ga->details.interval.end = ga->details.kernel.start + diff;
+
+
+
+
   cstack_ptr_set(&(ga->next), 0);
 }
 
@@ -179,22 +154,17 @@ opencl_activity_translate
 void
 opencl_activity_translate_event
 (
-gpu_activity_t *ga,
-cl_event event,
-opencl_object_t *cb_data
+ gpu_activity_t *ga,
+ opencl_object_t *cb_data,
+ cl_event event
 )
 {
-  switch (cb_data->kind) {
-    case GPU_ACTIVITY_MEMCPY:
-      convert_memcpy_event(ga, cb_data, event);
-      break;
 
-    case GPU_ACTIVITY_KERNEL:
-      convert_kernel_launch_event(ga, cb_data, event);
-      break;
+  gpu_interval_t interval;
+  memset(&interval, 0, sizeof(gpu_interval_t));
 
-    default:
-      assert(0);
-  }
-  cstack_ptr_set(&(ga->next), 0);
+  opencl_timing_info_get(&interval, event);
+
+  opencl_activity_translate(ga, cb_data, interval.start, interval.end);
+
 }
