@@ -113,7 +113,7 @@
 #include "sanitizer-buffer-channel.h"
 #include "sanitizer-buffer-channel-set.h"
 
-#define SANITIZER_API_DEBUG 0
+#define SANITIZER_API_DEBUG 1
 
 #if SANITIZER_API_DEBUG
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)
@@ -236,6 +236,9 @@ static atomic_uint sanitizer_thread_id = ATOMIC_VAR_INIT(0);
 static atomic_uint sanitizer_process_thread_counter = ATOMIC_VAR_INIT(0);
 static atomic_bool sanitizer_process_awake_flag = ATOMIC_VAR_INIT(0);
 static atomic_bool sanitizer_process_stop_flag = ATOMIC_VAR_INIT(0);
+
+static spinlock_t sanitizer_alloc_lock = SPINLOCK_UNLOCKED;
+static spinlock_t sanitizer_free_lock = SPINLOCK_UNLOCKED;
 
 //----------------------------------------------------------
 // sanitizer function pointers for late binding
@@ -1018,6 +1021,8 @@ sanitizer_subscribe_callback
         }
       case SANITIZER_CBID_RESOURCE_DEVICE_MEMORY_ALLOC:
         {
+          spinlock_lock(&sanitizer_alloc_lock);
+
           uint64_t correlation_id = gpu_correlation_id();
           cct_node_t *api_node = sanitizer_correlation_callback(correlation_id, 0);
 
@@ -1038,16 +1043,21 @@ sanitizer_subscribe_callback
 
           PRINT("Allocate memory address %p, size %zu, op %lu, id %d\n",
             (void *)md->address, md->size, correlation_id, persistent_id);
+
+          spinlock_unlock(&sanitizer_alloc_lock);
           break;
         }
       case SANITIZER_CBID_RESOURCE_DEVICE_MEMORY_FREE:
         {
+          spinlock_lock(&sanitizer_free_lock);
           uint64_t correlation_id = gpu_correlation_id();
 
           Sanitizer_ResourceMemoryData *md = (Sanitizer_ResourceMemoryData *)cbdata;
           redshow_memory_unregister(correlation_id, md->address, md->address + md->size);
 
           PRINT("Free memory address %p, size %zu, op %lu\n", (void *)md->address, md->size, correlation_id);
+
+          spinlock_unlock(&sanitizer_free_lock);
           break;
         }
       default:
@@ -1129,6 +1139,8 @@ sanitizer_subscribe_callback
   } else if (domain == SANITIZER_CB_DOMAIN_MEMCPY) {
     Sanitizer_MemcpyData *md = (Sanitizer_MemcpyData *)cbdata;
 
+    sanitizer_context_map_stream_lock(md->srcContext, md->stream);
+
     uint64_t correlation_id = gpu_correlation_id();
     cct_node_t *api_node = sanitizer_correlation_callback(correlation_id, 0);
 
@@ -1160,6 +1172,7 @@ sanitizer_subscribe_callback
     if (src_host) {
       src_mem_addr = md->srcAddress;
       src_mem_id = REDSHOW_MEMORY_HOST;
+      src_mem_op_id = REDSHOW_MEMORY_HOST;
     } else {
       redshow_memory_query(correlation_id, md->srcAddress, &src_mem_id, &src_mem_op_id, &src_mem_addr, &size);
       // src shadow memory does not need to be updated
@@ -1168,6 +1181,7 @@ sanitizer_subscribe_callback
     if (dst_host) {
       dst_mem_addr = md->dstAddress;
       dst_mem_id = REDSHOW_MEMORY_HOST;
+      dst_mem_op_id = REDSHOW_MEMORY_HOST;
     } else {
       redshow_memory_query(correlation_id, md->dstAddress, &dst_mem_id, &dst_mem_op_id, &dst_mem_addr, &size);
       if (src_host) {
@@ -1179,8 +1193,10 @@ sanitizer_subscribe_callback
       }
     }
 
-    redshow_memcpy_register(persistent_id, correlation_id, src_mem_id, src_mem_addr,
-      dst_mem_id, dst_mem_addr, md->size);
+    redshow_memcpy_register(persistent_id, correlation_id, src_mem_op_id, src_mem_addr,
+      dst_mem_op_id, dst_mem_addr, md->size);
+
+    sanitizer_context_map_stream_unlock(md->srcContext, md->stream);
   } else if (domain == SANITIZER_CB_DOMAIN_MEMSET) {
     Sanitizer_MemsetData *md = (Sanitizer_MemsetData *)cbdata;
 
@@ -1195,7 +1211,7 @@ sanitizer_subscribe_callback
     redshow_memory_query(correlation_id, md->address, &mem_id, &mem_op_id, &addr, &size);
 
     int32_t persistent_id = hpcrun_cct_persistent_id(api_node);
-    redshow_memset_register(persistent_id, correlation_id, mem_id, addr, md->value, md->width);
+    redshow_memset_register(persistent_id, correlation_id, mem_op_id, addr, md->value, md->width);
     
     memset((void *)addr, md->value, md->width);
   } else if (domain == SANITIZER_CB_DOMAIN_SYNCHRONIZE) {
