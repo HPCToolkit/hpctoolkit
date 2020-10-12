@@ -118,53 +118,21 @@ opencl_activity_translate
 (
   gpu_activity_t *ga,
   opencl_object_t *cb_data,
-  uint64_t start_time,
-  uint64_t end_time
+  gpu_interval_t interval
 )
 {
-
-
   switch (cb_data->kind) {
     case GPU_ACTIVITY_MEMCPY:
-      convert_memcpy(ga, cb_data, start_time, end_time);
+      convert_memcpy(ga, cb_data, interval.start, interval.end);
       break;
 
     case GPU_ACTIVITY_KERNEL:
-      convert_kernel_launch(ga, cb_data, start_time, end_time);
+      convert_kernel_launch(ga, cb_data, interval.start, interval.end);
       break;
 
     default:
       assert(0);
   }
 
-
-  uint64_t diff = end_time - start_time;
-  uint64_t gpu_time_offset = 0;
-
-  ga->details.interval.start = ga->details.kernel.submit_time + gpu_time_offset;
-  ga->details.interval.end = ga->details.kernel.start + diff;
-
-
-
-
   cstack_ptr_set(&(ga->next), 0);
-}
-
-
-void
-opencl_activity_translate_event
-(
- gpu_activity_t *ga,
- opencl_object_t *cb_data,
- cl_event event
-)
-{
-
-  gpu_interval_t interval;
-  memset(&interval, 0, sizeof(gpu_interval_t));
-
-  opencl_timing_info_get(&interval, event);
-
-  opencl_activity_translate(ga, cb_data, interval.start, interval.end);
-
 }

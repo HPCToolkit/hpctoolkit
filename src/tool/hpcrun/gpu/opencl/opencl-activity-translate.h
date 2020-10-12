@@ -68,19 +68,7 @@ opencl_activity_translate
 (
   gpu_activity_t *ga,
   opencl_object_t *cb_data,
-  uint64_t start_time,
-  uint64_t end_time
+  gpu_interval_t interval
 );
-
-
-void
-opencl_activity_translate_event
-(
- gpu_activity_t *ga,
- opencl_object_t *cb_data,
- cl_event event
-);
-
-
 
 #endif  //_OPENCL_ACTIVITY_TRANSLATE_H_
