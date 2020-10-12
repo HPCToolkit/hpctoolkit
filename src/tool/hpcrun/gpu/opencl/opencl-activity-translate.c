@@ -75,8 +75,9 @@ convert_kernel_launch
 )
 {
   memset(&ga->details.kernel, 0, sizeof(gpu_kernel_t));
-  set_gpu_interval(&ga->details.interval, start_time, end_time);
-
+  if (start_time != 0 && end_time != 0) {
+    set_gpu_interval(&ga->details.interval, start_time, end_time);
+  }
 
   ga->kind     = cb_data->kind;
   ga->cct_node = cb_data->details.cct_node;
@@ -97,7 +98,9 @@ convert_memcpy
 )
 {
   memset(&ga->details.memcpy, 0, sizeof(gpu_memcpy_t));
-  set_gpu_interval(&ga->details.interval, start_time, end_time);
+  if (start_time != 0 && end_time != 0) {
+    set_gpu_interval(&ga->details.interval, start_time, end_time);
+  }
 
   ga->kind     = cb_data->kind;
   ga->cct_node = cb_data->details.cct_node;

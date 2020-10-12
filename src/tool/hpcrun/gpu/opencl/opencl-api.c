@@ -478,14 +478,10 @@ opencl_clSetKernelArg_activity_process
   gpu_activity_t gpu_activity;
   uint64_t correlation_id = opencl_h2d_map_entry_correlation_get(entry);
 	size_t size = opencl_h2d_map_entry_size_get(entry); 
-	uint64_t start_time = opencl_h2d_map_entry_start_time_get(entry); 
-	uint64_t end_time = opencl_h2d_map_entry_end_time_get(entry);
-
   cb_data->details.ker_cb.correlation_id = correlation_id;
 
   gpu_interval_t interval;
   memset(&interval, 0, sizeof(gpu_interval_t));
-  set_gpu_interval(&interval, start_time, end_time);
 
   opencl_activity_translate(&gpu_activity, cb_data, interval);
   
@@ -554,9 +550,6 @@ add_H2D_metrics_to_cct_node
 	// 	return;
 	// }
 
-	uint64_t start_time = opencl_h2d_map_entry_start_time_get(entry); 
-	uint64_t end_time = opencl_h2d_map_entry_end_time_get(entry);
-	ETMSG(OPENCL, "duration [%"PRIu64", %"PRIu64"]",start_time, end_time); 
 	//opencl_activity_completion_notify();
   opencl_object_t *cb_data = opencl_h2d_map_entry_callback_info_get(entry);
   cl_basic_callback_t cb_basic = opencl_cb_basic_get(cb_data);
@@ -1210,7 +1203,7 @@ clCreateBuffer
     HPCRUN_OPENCL_CALL(clCreateBuffer, (context, flags, size, host_ptr, errcode_ret));
   uint64_t buffer_id = (uint64_t)buffer; 
   //ETMSG(OPENCL, "inside clCreateBuffer wrapper. cl_mem buffer: %p. buffer_id: %"PRIu64"", buffer, buffer_id);
-	opencl_h2d_map_insert(buffer_id, correlation_id, size, 0, 0, NULL);
+	opencl_h2d_map_insert(buffer_id, correlation_id, size, NULL);
   
   return buffer;
 }
@@ -1227,14 +1220,12 @@ clSetKernelArg
 {
 	bool isClBuffer = opencl_isClArgBuffer(arg_value);
   //ETMSG(OPENCL, "inside clSetKernelArg wrapper."); //isClBuffer: %d. *(cl_mem*)arg_value: %p",isClBuffer, *(cl_mem*)arg_value
-	uint64_t start_time = hpcrun_nanotime();
 
   cl_int return_status = 
     HPCRUN_OPENCL_CALL(clSetKernelArg, (kernel, arg_index, arg_size, arg_value));
 	if (!isClBuffer) {
 		return return_status;	
 	}
-  uint64_t end_time = hpcrun_nanotime();
 
   size_t context_size;
   cl_int STATUS = clGetKernelInfo(kernel, CL_KERNEL_CONTEXT, 0, NULL, &context_size);
@@ -1257,7 +1248,13 @@ clSetKernelArg
     initializeClSetKernelArgMemoryCallBackInfo(mem_info, GPU_MEMCPY_H2D, size, correlation_id, context_id, stream_id);
     opencl_subscriber_callback(mem_info);
 
-  	opencl_h2d_map_insert(buffer_id,correlation_id, size, start_time, end_time, mem_info);
+    /* There is no way to record start_time, end_time for the memory transfer that happens as part of clSetKernelArg
+      This is because clSetKernelArg sets argument for a kernel in a context. But in a context, there can be multiple
+      device-queue pairs and opencl does not provide events or listeners to the queue so that we can read the memory operations.
+      Since the memory transfer is async, there are no event handles and we dont know which device is the receiver;
+      the timing information cannot be calculated.
+    */
+  	opencl_h2d_map_insert(buffer_id,correlation_id, size, mem_info);
 	}
   return return_status;
 }

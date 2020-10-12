@@ -110,8 +110,6 @@ typedef struct typed_splay_node(correlation_id) {
 
   uint64_t corr_id;
   size_t size;
-  uint64_t start_time;
-  uint64_t end_time;
   opencl_object_t *cb_info
 } typed_splay_node(correlation_id); 
 
@@ -146,8 +144,6 @@ opencl_h2d_map_entry_new
  uint64_t buffer_id,
  uint64_t correlation_id,
  size_t size,
- uint64_t start_time,
- uint64_t end_time,
  opencl_object_t *cb_info
 )
 {
@@ -156,8 +152,6 @@ opencl_h2d_map_entry_new
   e->buffer_id = buffer_id;
   e->corr_id = correlation_id;
   e->size = size;
-  e->start_time = start_time;
-  e->end_time = end_time;
   e->cb_info = cb_info;
 
   return e;
@@ -191,8 +185,6 @@ opencl_h2d_map_insert
  uint64_t buffer_id, 
  uint64_t correlation_id, 
  size_t size,
- uint64_t start_time,
- uint64_t end_time,
  opencl_object_t *cb_info
 )
 {
@@ -202,12 +194,10 @@ opencl_h2d_map_insert
   if (entry) {
     entry->corr_id = correlation_id;
     entry->size = size;
-    entry->start_time = start_time;
-    entry->end_time = end_time;
     entry->cb_info = cb_info;
   } else {
     opencl_h2d_map_entry_t *entry = 
-      opencl_h2d_map_entry_new(buffer_id, correlation_id, size, start_time, end_time, cb_info);
+      opencl_h2d_map_entry_new(buffer_id, correlation_id, size, cb_info);
 
     st_insert(&map_root, entry);
   }
@@ -258,26 +248,6 @@ opencl_h2d_map_entry_size_get
 )
 {
   return entry->size;
-}
-
-
-uint64_t
-opencl_h2d_map_entry_start_time_get
-(
- opencl_h2d_map_entry_t *entry
-)
-{
-  return entry->start_time;
-}
-
-
-uint64_t
-opencl_h2d_map_entry_end_time_get
-(
- opencl_h2d_map_entry_t *entry
-)
-{
-  return entry->end_time;
 }
 
 

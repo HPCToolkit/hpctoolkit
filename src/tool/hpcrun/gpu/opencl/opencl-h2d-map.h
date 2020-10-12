@@ -94,8 +94,6 @@ opencl_h2d_map_insert
  uint64_t, 
  uint64_t, 
  size_t,
- uint64_t,
- uint64_t,
  opencl_object_t *
 );
 
@@ -123,20 +121,6 @@ opencl_h2d_map_entry_correlation_get
 
 size_t
 opencl_h2d_map_entry_size_get
-(
- opencl_h2d_map_entry_t *
-);
-
-
-uint64_t
-opencl_h2d_map_entry_start_time_get
-(
- opencl_h2d_map_entry_t *
-);
-
-
-uint64_t
-opencl_h2d_map_entry_end_time_get
 (
  opencl_h2d_map_entry_t *
 );
