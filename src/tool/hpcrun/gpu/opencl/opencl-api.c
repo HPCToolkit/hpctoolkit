@@ -83,8 +83,7 @@
 #include "opencl-activity-translate.h"
 #include "opencl-memory-manager.h"
 #include "opencl-h2d-map.h"
-#include "opencl-context-map.h"
-#include "opencl-kernel-map.h"
+#include "opencl-queue-map.h"
 
 
 
@@ -135,6 +134,8 @@
 #define CORRELATION_ID_INVALID -1
 
 #define BUFFER_ID_INVALID -1
+
+#define DEFAULT_OPENCL_STREAM_ID 0
 
 
 
@@ -355,12 +356,16 @@ getCorrelationId
 static void
 initializeKernelCallBackInfo
 (
- opencl_object_t *ker_info,
- uint64_t correlation_id
+  opencl_object_t *ker_info,
+  uint64_t correlation_id,
+  uint32_t context_id,
+  uint32_t stream_id
 )
 {
   ker_info->kind = GPU_ACTIVITY_KERNEL;
   ker_info->details.ker_cb.correlation_id = correlation_id;
+  ker_info->details.context_id = context_id;
+  ker_info->details.stream_id = stream_id;
 }
 
 
@@ -370,7 +375,9 @@ initializeMemoryCallBackInfo
   opencl_object_t *mem_info,
   gpu_memcpy_type_t type,
   size_t size,
-  uint64_t correlation_id
+  uint64_t correlation_id,
+  uint32_t context_id,
+  uint32_t stream_id
 )
 {
   mem_info->kind = GPU_ACTIVITY_MEMCPY;
@@ -380,6 +387,8 @@ initializeMemoryCallBackInfo
   mem_info->details.mem_cb.size = size;
 
   mem_info->details.mem_cb.correlation_id = correlation_id;
+  mem_info->details.context_id = context_id;
+  mem_info->details.stream_id = stream_id;
 }
 
 
@@ -490,7 +499,6 @@ opencl_clSetKernelArg_activity_process
   }
   ETMSG(OPENCL, "cb_data->details.initiator_channel: %p", cb_data->details.initiator_channel);
   gpu_activity_multiplexer_push(cb_data->details.initiator_channel, &gpu_activity);
-  //gpu_activity_process(&gpu_activity);
 }
 
 
@@ -542,22 +550,12 @@ add_H2D_metrics_to_cct_node
 	void *arg
 )
 {
-	// uint64_t correlation_id = opencl_h2d_map_entry_correlation_get(entry); 
-	// gpu_correlation_id_map_entry_t *cid_map_entry = 
-	// 	gpu_correlation_id_map_lookup(correlation_id);
-	// if (cid_map_entry == NULL) {
-	// 	ETMSG(OPENCL, "cid_map_entry for correlation_id: %"PRIu64 " (clSetKernelArg H2D) not found", correlation_id);
-	// 	return;
-	// }
-
-	//opencl_activity_completion_notify();
   opencl_object_t *cb_data = opencl_h2d_map_entry_callback_info_get(entry);
   cl_basic_callback_t cb_basic = opencl_cb_basic_get(cb_data);
   opencl_cb_basic_print(cb_basic, "Completion_Callback");
 
 	opencl_clSetKernelArg_activity_process(entry, cb_data);
 	uint64_t buffer_id = opencl_h2d_map_entry_buffer_id_get(entry);
-	//opencl_h2d_map_delete(buffer_id);
   opencl_h2d_pending_operations_adjust(-1);
   opencl_pending_operations_adjust(-1);
 }
@@ -867,7 +865,8 @@ clCreateProgramWithSource
       // what if a single file has multiple kernels?
       // we need to add logic to get filenames by reading the strings contents
       char fileno = '0' + (i + 1); // right now we are naming the files as index numbers
-      // using malloc instead of hpcrun_malloc gives extra garbage characters in file name
+
+      // TO-DO: AARON using malloc instead of hpcrun_malloc gives extra garbage characters in file name
       char *filename = (char *)hpcrun_malloc(sizeof(fileno) + 1);
       *filename = fileno + '\0';
       f_ptr = fopen(filename, "w");
@@ -922,7 +921,7 @@ clCreateCommandQueue
 
   cl_command_queue queue = HPCRUN_OPENCL_CALL(clCreateCommandQueue, (context, device,
         properties,errcode_ret));
-  opencl_cl_context_map_insert((uint64_t)context, (uint32_t)queue);
+  opencl_cl_queue_map_insert((uint64_t)queue, (uint32_t)context);
   return queue;
 }
 
@@ -980,7 +979,7 @@ clCreateCommandQueueWithProperties
     // The property is created by us
     free(queue_properties);
   }
-  opencl_cl_context_map_insert((uint64_t)context, (uint32_t)queue);
+  opencl_cl_queue_map_insert((uint64_t)queue, (uint32_t)context);
   return queue;
 }
 
@@ -1000,7 +999,10 @@ clEnqueueNDRangeKernel
 )
 {
   opencl_object_t *kernel_info = opencl_malloc();
-  initializeKernelCallBackInfo(kernel_info, CORRELATION_ID_INVALID);
+  opencl_queue_map_entry_t *qe = opencl_cl_queue_map_lookup((uint64_t)command_queue);
+  uint32_t context_id = opencl_cl_queue_map_entry_context_id_get(qe);
+  uint32_t stream_id = (uint32_t)command_queue;
+  initializeKernelCallBackInfo(kernel_info, CORRELATION_ID_INVALID, context_id, stream_id);
 
   opencl_subscriber_callback(kernel_info);
 
@@ -1044,7 +1046,10 @@ clEnqueueReadBuffer
   ETMSG(OPENCL, "inside clEnqueueReadBuffer wrapper");
 
   opencl_object_t *mem_info = opencl_malloc();
-  initializeMemoryCallBackInfo(mem_info, GPU_MEMCPY_D2H, cb, CORRELATION_ID_INVALID);
+  opencl_queue_map_entry_t *qe = opencl_cl_queue_map_lookup((uint64_t)command_queue);
+  uint32_t context_id = opencl_cl_queue_map_entry_context_id_get(qe);
+  uint32_t stream_id = (uint32_t)command_queue;
+  initializeMemoryCallBackInfo(mem_info, GPU_MEMCPY_D2H, cb, CORRELATION_ID_INVALID, context_id, stream_id);
   opencl_subscriber_callback(mem_info);
 
   cl_event my_event;
@@ -1094,7 +1099,12 @@ clEnqueueWriteBuffer
 	opencl_h2d_pending_operations_adjust(-1);
   //opencl_pending_operations_adjust(-1);
   opencl_object_t *mem_info = opencl_malloc();
-  initializeMemoryCallBackInfo(mem_info, GPU_MEMCPY_H2D, cb, CORRELATION_ID_INVALID);
+
+  opencl_queue_map_entry_t *qe = opencl_cl_queue_map_lookup((uint64_t)command_queue);
+  uint32_t context_id = opencl_cl_queue_map_entry_context_id_get(qe);
+  uint32_t stream_id = (uint32_t)command_queue;
+
+  initializeMemoryCallBackInfo(mem_info, GPU_MEMCPY_H2D, cb, CORRELATION_ID_INVALID, context_id, stream_id);
   opencl_subscriber_callback(mem_info);
 
   cl_event my_event;
@@ -1143,11 +1153,15 @@ clEnqueueMapBuffer
   ETMSG(OPENCL, "inside clEnqueueMapBuffer wrapper");
 
   opencl_object_t *mem_info = opencl_malloc();
+
+  opencl_queue_map_entry_t *qe = opencl_cl_queue_map_lookup((uint64_t)command_queue);
+  uint32_t context_id = opencl_cl_queue_map_entry_context_id_get(qe);
+  uint32_t stream_id = (uint32_t)command_queue;
   if (map_flags == CL_MAP_READ) {
-    initializeMemoryCallBackInfo(mem_info, GPU_MEMCPY_D2H, size, CORRELATION_ID_INVALID);
+    initializeMemoryCallBackInfo(mem_info, GPU_MEMCPY_D2H, size, CORRELATION_ID_INVALID, context_id, stream_id);
   } else {
     //map_flags == CL_MAP_WRITE || map_flags == CL_MAP_WRITE_INVALIDATE_REGION
-    initializeMemoryCallBackInfo(mem_info, GPU_MEMCPY_H2D, size, CORRELATION_ID_INVALID);
+    initializeMemoryCallBackInfo(mem_info, GPU_MEMCPY_H2D, size, CORRELATION_ID_INVALID, context_id, stream_id);
   }
   
   opencl_subscriber_callback(mem_info);
@@ -1231,12 +1245,9 @@ clSetKernelArg
   cl_int STATUS = clGetKernelInfo(kernel, CL_KERNEL_CONTEXT, 0, NULL, &context_size);
   cl_context *context = malloc(sizeof(context_size));
   STATUS = clGetKernelInfo(kernel, CL_KERNEL_CONTEXT, context_size, (void*)context, NULL);
-  
-  //opencl_cl_kernel_map_insert((uint64_t)ocl_kernel, (uint32_t)(*context), command_queue);
-
   uint32_t context_id = (uint32_t)(*context);
-  opencl_context_map_entry_t *ce = opencl_cl_context_map_lookup((uint64_t)(*context));
-  uint32_t stream_id = opencl_cl_kernel_map_entry_stream_get(ce);
+  free(context);
+  uint32_t stream_id = DEFAULT_OPENCL_STREAM_ID;
 
   uint64_t buffer_id = opencl_get_buffer_id(arg_value);
 	opencl_h2d_map_entry_t *entry = opencl_h2d_map_lookup(buffer_id);
@@ -1246,6 +1257,7 @@ clSetKernelArg
 		uint64_t correlation_id = opencl_h2d_map_entry_correlation_get(entry);
     opencl_object_t *mem_info = opencl_malloc();
     initializeClSetKernelArgMemoryCallBackInfo(mem_info, GPU_MEMCPY_H2D, size, correlation_id, context_id, stream_id);
+    ETMSG(OPENCL, "%d(bytes) of data being transferred from host to device", (long)size);
     opencl_subscriber_callback(mem_info);
 
     /* There is no way to record start_time, end_time for the memory transfer that happens as part of clSetKernelArg
