@@ -101,6 +101,7 @@
   macro(clCreateCommandQueue)  \
   macro(clCreateCommandQueueWithProperties)  \
   macro(clEnqueueNDRangeKernel)  \
+  macro(clEnqueueTask)  \
   macro(clEnqueueReadBuffer)  \
   macro(clEnqueueWriteBuffer)  \
   macro(clEnqueueMapBuffer) \
@@ -219,6 +220,19 @@ OPENCL_FN
    const size_t *, 
    const size_t *,
    const size_t *,
+   cl_uint,
+   const cl_event *,
+   cl_event *
+  )
+);
+
+
+OPENCL_FN
+(
+  clEnqueueTask, 
+  (
+   cl_command_queue,
+   cl_kernel,
    cl_uint,
    const cl_event *,
    cl_event *
@@ -1018,6 +1032,47 @@ clEnqueueNDRangeKernel
   cl_int return_status =
             HPCRUN_OPENCL_CALL(clEnqueueNDRangeKernel, (command_queue, ocl_kernel, work_dim,
                                 global_work_offset, global_work_size, local_work_size,
+                                num_events_in_wait_list, event_wait_list, eventp));
+
+  ETMSG(OPENCL, "Registering callback for kind: Kernel. "
+                "Correlation id: %"PRIu64 "", kernel_info->details.ker_cb.correlation_id);
+
+  clSetEventCallback_wrapper(*eventp, CL_COMPLETE,
+                             &opencl_activity_completion_callback, kernel_info);
+  return return_status;
+}
+
+
+// this is a simplified version of clEnqueueNDRangeKernel, TODO: check if code duplication can be avoided
+cl_int
+clEnqueueTask
+(
+  cl_command_queue command_queue,
+  cl_kernel kernel,
+  cl_uint num_events_in_wait_list,
+  const cl_event* event_wait_list,
+  cl_event* event
+)
+{
+  opencl_object_t *kernel_info = opencl_malloc();
+  opencl_queue_map_entry_t *qe = opencl_cl_queue_map_lookup((uint64_t)command_queue);
+  uint32_t context_id = opencl_cl_queue_map_entry_context_id_get(qe);
+  uint32_t stream_id = (uint32_t)command_queue;
+  initializeKernelCallBackInfo(kernel_info, CORRELATION_ID_INVALID, context_id, stream_id);
+
+  opencl_subscriber_callback(kernel_info);
+
+  cl_event my_event;
+  cl_event *eventp;
+  if (!event) {
+    kernel_info->isInternalClEvent = true;
+    eventp = &my_event;
+  } else {
+    eventp = event;
+    kernel_info->isInternalClEvent = false;
+  }
+  cl_int return_status =
+            HPCRUN_OPENCL_CALL(clEnqueueTask, (command_queue, kernel,
                                 num_events_in_wait_list, event_wait_list, eventp));
 
   ETMSG(OPENCL, "Registering callback for kind: Kernel. "
