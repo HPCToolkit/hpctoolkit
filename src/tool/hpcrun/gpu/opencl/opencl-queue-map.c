@@ -60,7 +60,7 @@
 #include <hpcrun/gpu/gpu-splay-allocator.h>
 #include <hpcrun/gpu/gpu-op-placeholders.h>
 
-#include "opencl-context-map.h"
+#include "opencl-queue-map.h"
 
 
 
@@ -89,7 +89,7 @@
   typed_splay_count(correlation_id)
 
 #define st_alloc(free_list)			\
-  typed_splay_alloc(free_list, opencl_context_map_entry_t)
+  typed_splay_alloc(free_list, opencl_queue_map_entry_t)
 
 #define st_free(free_list, node)		\
   typed_splay_free(free_list, node)
@@ -101,14 +101,14 @@
 //*****************************************************************************
 
 #undef typed_splay_node
-#define typed_splay_node(correlation_id) opencl_context_map_entry_t
+#define typed_splay_node(correlation_id) opencl_queue_map_entry_t
 
 typedef struct typed_splay_node(correlation_id) {
   struct typed_splay_node(correlation_id) *left;
   struct typed_splay_node(correlation_id) *right;
-  uint64_t cl_context_id; // key
+  uint64_t queue_id; // key
 
-  uint32_t stream_id; // we save queue id as the stream id
+  uint32_t context_id; // we save queue id as the stream id
 } typed_splay_node(correlation_id); 
 
 
@@ -116,11 +116,11 @@ typedef struct typed_splay_node(correlation_id) {
 // local data
 //******************************************************************************
 
-static opencl_context_map_entry_t *map_root = NULL;
+static opencl_queue_map_entry_t *map_root = NULL;
 
-static opencl_context_map_entry_t *free_list = NULL;
+static opencl_queue_map_entry_t *free_list = NULL;
 
-static spinlock_t opencl_context_map_lock = SPINLOCK_UNLOCKED;
+static spinlock_t opencl_queue_map_lock = SPINLOCK_UNLOCKED;
 
 //*****************************************************************************
 // private operations
@@ -129,24 +129,24 @@ static spinlock_t opencl_context_map_lock = SPINLOCK_UNLOCKED;
 typed_splay_impl(correlation_id)
 
 
-static opencl_context_map_entry_t *
-opencl_cl_context_map_entry_alloc()
+static opencl_queue_map_entry_t *
+opencl_cl_queue_map_entry_alloc()
 {
   return st_alloc(&free_list);
 }
 
 
-static opencl_context_map_entry_t *
-opencl_cl_context_map_entry_new
+static opencl_queue_map_entry_t *
+opencl_cl_queue_map_entry_new
 (
- uint64_t cl_context_id,
- uint32_t stream_id
+ uint64_t queue_id,
+ uint32_t context_id
 )
 {
-  opencl_context_map_entry_t *e = opencl_cl_context_map_entry_alloc();
+  opencl_queue_map_entry_t *e = opencl_cl_queue_map_entry_alloc();
 
-  e->cl_context_id = cl_context_id;
-  e->stream_id = stream_id;
+  e->queue_id = queue_id;
+  e->context_id = context_id;
   
   return e;
 }
@@ -157,79 +157,79 @@ opencl_cl_context_map_entry_new
 // interface operations
 //*****************************************************************************
 
-opencl_context_map_entry_t *
-opencl_cl_context_map_lookup
+opencl_queue_map_entry_t *
+opencl_cl_queue_map_lookup
 (
- uint64_t cl_context_id
+ uint64_t queue_id
 )
 {
-  spinlock_lock(&opencl_context_map_lock);
+  spinlock_lock(&opencl_queue_map_lock);
 
-  uint64_t id = cl_context_id;
-  opencl_context_map_entry_t *result = st_lookup(&map_root, id);
+  uint64_t id = queue_id;
+  opencl_queue_map_entry_t *result = st_lookup(&map_root, id);
 
-  spinlock_unlock(&opencl_context_map_lock);
+  spinlock_unlock(&opencl_queue_map_lock);
 
   return result;
 }
 
 
 void
-opencl_cl_context_map_insert
+opencl_cl_queue_map_insert
 (
- uint64_t cl_context_id, 
- uint32_t stream_id
+ uint64_t queue_id, 
+ uint32_t context_id
 )
 {
-  spinlock_lock(&opencl_context_map_lock);
+  spinlock_lock(&opencl_queue_map_lock);
 
-  opencl_context_map_entry_t *entry = st_lookup(&map_root, cl_context_id);
+  opencl_queue_map_entry_t *entry = st_lookup(&map_root, queue_id);
   if (entry) {
-    entry->cl_context_id = cl_context_id;
-    entry->stream_id = stream_id;
+    entry->queue_id = queue_id;
+    entry->context_id = context_id;
   } else {
-    opencl_context_map_entry_t *entry = 
-      opencl_cl_context_map_entry_new(cl_context_id, stream_id);
+    opencl_queue_map_entry_t *entry = 
+      opencl_cl_queue_map_entry_new(queue_id, context_id);
 
     st_insert(&map_root, entry);
   }
 
-  spinlock_unlock(&opencl_context_map_lock);
+  spinlock_unlock(&opencl_queue_map_lock);
 }
 
 
 void
-opencl_cl_context_map_delete
+opencl_cl_queue_map_delete
 (
- uint64_t cl_context_id
+ uint64_t queue_id
 )
 {
-  spinlock_lock(&opencl_context_map_lock);
+  spinlock_lock(&opencl_queue_map_lock);
 
-  opencl_context_map_entry_t *node = st_delete(&map_root, cl_context_id);
+  opencl_queue_map_entry_t *node = st_delete(&map_root, queue_id);
   st_free(&free_list, node);
 
-  spinlock_unlock(&opencl_context_map_lock);
+  spinlock_unlock(&opencl_queue_map_lock);
 }
 
 
 uint64_t
-opencl_cl_context_map_entry_cl_context_id_get
+opencl_cl_queue_map_entry_queue_id_get
 (
- opencl_context_map_entry_t *entry
+ opencl_queue_map_entry_t *entry
 )
 {
-  return entry->cl_context_id;
+  return entry->queue_id;
 }
 
 
 uint32_t
-opencl_cl_context_map_entry_stream_get
+opencl_cl_queue_map_entry_context_id_get
 (
- opencl_context_map_entry_t *entry
+ opencl_queue_map_entry_t *entry
 )
 {
-  return entry->stream_id;
+  return entry->context_id;
 }
 
 
@@ -239,7 +239,7 @@ opencl_cl_context_map_entry_stream_get
 //*****************************************************************************
 
 uint64_t
-opencl_cl_context_map_count
+opencl_cl_queue_map_count
 (
  void
 )

@@ -84,7 +84,8 @@ convert_kernel_launch
 
   ga->details.kernel.correlation_id = cb_data->details.ker_cb.correlation_id;
   ga->details.kernel.submit_time    = cb_data->details.submit_time;
-
+  ga->details.kernel.context_id    = cb_data->details.context_id;
+  ga->details.kernel.stream_id    = cb_data->details.stream_id;
 }
 
 
@@ -107,6 +108,8 @@ convert_memcpy
 
   ga->details.memcpy.correlation_id  = cb_data->details.cpy_cb.correlation_id;
   ga->details.memcpy.submit_time     = cb_data->details.submit_time;
+  ga->details.memcpy.context_id      = cb_data->details.context_id;
+  ga->details.memcpy.stream_id       = cb_data->details.stream_id;
   ga->details.memcpy.bytes           = cb_data->details.cpy_cb.size;
   ga->details.memcpy.copyKind        = cb_data->details.cpy_cb.type;
 }

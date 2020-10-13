@@ -215,8 +215,8 @@ typedef struct gpu_mem_t {
 typedef struct gpu_memcpy_t {
   uint64_t start;
   uint64_t end;
-  uint64_t submit_time;
   uint64_t bytes;
+  uint64_t submit_time;
   uint32_t correlation_id;
   uint32_t context_id;
   uint32_t stream_id;

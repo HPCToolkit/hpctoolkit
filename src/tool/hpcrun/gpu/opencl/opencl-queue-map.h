@@ -41,8 +41,8 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef opencl_kernel_map_h
-#define opencl_kernel_map_h
+#ifndef opencl_queue_map_h
+#define opencl_queue_map_h
 
 
 //*****************************************************************************
@@ -57,7 +57,7 @@
 // type definitions 
 //*****************************************************************************
 
-typedef struct opencl_kernel_map_entry_t opencl_kernel_map_entry_t;
+typedef struct opencl_queue_map_entry_t opencl_queue_map_entry_t;
 
 
 
@@ -65,47 +65,39 @@ typedef struct opencl_kernel_map_entry_t opencl_kernel_map_entry_t;
 // interface operations
 //*****************************************************************************
 
-opencl_kernel_map_entry_t *
-opencl_cl_kernel_map_lookup
+opencl_queue_map_entry_t *
+opencl_cl_queue_map_lookup
 (
  uint64_t
 );
 
 
 void
-opencl_cl_kernel_map_insert
+opencl_cl_queue_map_insert
 (
  uint64_t, 
- uint32_t,
  uint32_t
 );
 
 
 void
-opencl_cl_kernel_map_delete
+opencl_cl_queue_map_delete
 (
  uint64_t
 );
 
 
 uint64_t
-opencl_cl_kernel_map_entry_cl_kernel_id_get
+opencl_cl_queue_map_entry_queue_id_get
 (
- opencl_kernel_map_entry_t *entry
+ opencl_queue_map_entry_t *entry
 );
 
 
 uint32_t
-opencl_cl_kernel_map_entry_context_get
+opencl_cl_queue_map_entry_context_id_get
 (
- opencl_kernel_map_entry_t *
-);
-
-
-uint32_t
-opencl_cl_kernel_map_entry_stream_get
-(
- opencl_kernel_map_entry_t *
+ opencl_queue_map_entry_t *
 );
 
 
