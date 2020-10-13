@@ -154,6 +154,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   int nevents = (self->evl).nevents;
   TMSG(OPENCL,"nevents = %d", nevents);
   gpu_metrics_default_enable();
+  gpu_metrics_KINFO_enable();
 
   char* evlist = METHOD_CALL(self, get_event_str);
   char* event = start_tok(evlist);

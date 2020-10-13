@@ -77,10 +77,11 @@ typedef struct gpu_operation_channel_t gpu_operation_channel_t;
 // type declarations
 //******************************************************************************
 
-typedef struct gpu_operation_item_t{
+typedef struct gpu_operation_item_t {
   s_element_t next;
   gpu_activity_channel_t *channel;
   gpu_activity_t activity;
+  atomic_bool *flush;
 } gpu_operation_item_t;
 
 

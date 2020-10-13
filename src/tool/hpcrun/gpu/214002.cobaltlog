@@ -1,0 +1,25 @@
+Jobid: 214002
+qsub -I -t 30 -n 1 -q iris
+Thu Oct 01 23:59:10 2020 +0000 (UTC) submitted with cwd set to: /home/jokeren/Codes/hpctoolkit_aaron/src/tool/hpcrun/gpu
+jobid 214002 submitted from terminal /dev/pts/206
+Thu Oct 01 23:59:28 2020 +0000 (UTC) 
+Thu Oct 01 23:59:28 2020 +0000 (UTC) Command: '/usr/bin/ssh' 'iris09' '/usr/libexec/cobalt/cobalt-launcher.py' '--nf' '/var/tmp/cobalt.214002' '--jobid' '214002' '--cwd' '/home/jokeren/Codes/hpctoolkit_aaron/src/tool/hpcrun/gpu' '--env' 'COBALT_JOBID=214002' '/bin/sleep' '1800'
+Thu Oct 01 23:59:28 2020 +0000 (UTC) 
+Thu Oct 01 23:59:28 2020 +0000 (UTC) Environment:
+Thu Oct 01 23:59:28 2020 +0000 (UTC) SHELL=/bin/bash
+Thu Oct 01 23:59:28 2020 +0000 (UTC) COBALT_NODEFILE=/tmp/tmpR3QupI
+Thu Oct 01 23:59:28 2020 +0000 (UTC) COBALT_PARTNAME=iris09
+Thu Oct 01 23:59:28 2020 +0000 (UTC) COBALT_JOBID=214002
+Thu Oct 01 23:59:28 2020 +0000 (UTC) COBALT_STARTTIME=1601596758
+Thu Oct 01 23:59:28 2020 +0000 (UTC) LOGNAME=jokeren
+Thu Oct 01 23:59:28 2020 +0000 (UTC) USER=jokeren
+Thu Oct 01 23:59:28 2020 +0000 (UTC) COBALT_ENDTIME=1601598558
+Thu Oct 01 23:59:28 2020 +0000 (UTC) COBALT_PARTSIZE=1
+Thu Oct 01 23:59:28 2020 +0000 (UTC) HOME=/home/jokeren
+Thu Oct 01 23:59:28 2020 +0000 (UTC) COBALT_JOBSIZE=1
+Thu Oct 01 23:59:28 2020 +0000 (UTC) 
+Thu Oct 01 23:59:28 2020 +0000 (UTC) Info: stdin received from /dev/null
+Thu Oct 01 23:59:28 2020 +0000 (UTC) Info: stdout sent to /home/jokeren/Codes/hpctoolkit_aaron/src/tool/hpcrun/gpu/214002.output
+Thu Oct 01 23:59:28 2020 +0000 (UTC) Info: stderr sent to /home/jokeren/Codes/hpctoolkit_aaron/src/tool/hpcrun/gpu/214002.error
+Thu Oct 01 23:59:28 2020 +0000 (UTC) 
+Fri Oct 02 00:10:57 2020 +0000 (UTC) Info: user delete requested with signal SIGTERM by user jokeren

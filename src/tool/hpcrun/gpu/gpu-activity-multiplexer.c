@@ -132,6 +132,7 @@ gpu_activity_multiplexer_create
   control_knob_value_get_int("MAX_COMPLETION_CALLBACK_THREADS", &max_completion_cb_threads);
 
   gpu_operation_channel_set_alloc(max_completion_cb_threads);
+
   // You are the first to create monitor thread
   pthread_create(&thread, NULL, (pthread_start_routine_t) gpu_activity_record,
                  NULL);
@@ -190,26 +191,3 @@ gpu_activity_multiplexer_push
   gpu_operation_item_t item = (gpu_operation_item_t){.channel=initiator_channel, .activity=*gpu_activity};
   gpu_operation_channel_produce(gpu_operation_channel, &item);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
