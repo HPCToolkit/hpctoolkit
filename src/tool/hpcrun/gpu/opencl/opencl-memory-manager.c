@@ -134,7 +134,6 @@ opencl_free
  opencl_object_t *obj
 )
 {
-  memset(obj, 0, sizeof(opencl_object_t));
-  opencl_object_channel_t *c = &(obj->channel);
+  opencl_object_channel_t *c = obj->channel;
   channel_item_free(c, obj);
 }

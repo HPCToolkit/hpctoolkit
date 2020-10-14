@@ -385,6 +385,8 @@ initializeKernelCallBackInfo
   uint32_t context_id = opencl_cl_queue_map_entry_context_id_get(qe);
   uint32_t queue_id = opencl_cl_queue_map_entry_queue_id_get(qe);
 
+  ETMSG(OPENCL, "submit kernel to context %u queue %u\n", context_id, queue_id);
+
   ker_info->details.context_id = context_id;
   ker_info->details.stream_id = queue_id;
   ker_info->pending_operations = &opencl_self_pending_operations;
@@ -403,6 +405,8 @@ initializeMemcpyCallBackInfo
   opencl_queue_map_entry_t *qe = opencl_cl_queue_map_lookup((uint64_t)command_queue);
   uint32_t context_id = opencl_cl_queue_map_entry_context_id_get(qe);
   uint32_t queue_id = opencl_cl_queue_map_entry_queue_id_get(qe);
+
+  ETMSG(OPENCL, "submit memcpy to context %u queue %u\n", context_id, queue_id);
 
   cpy_info->kind = GPU_ACTIVITY_MEMCPY;
   cpy_info->details.cpy_cb.type = type;
@@ -526,7 +530,7 @@ opencl_clSetKernelArg_activity_process
   memset(&gpu_activity, 0, sizeof(gpu_activity_t));
 
   uint32_t correlation_id = opencl_h2d_map_entry_correlation_get(entry);
-  size_t size = opencl_h2d_map_entry_size_get(entry); 
+  opencl_h2d_map_entry_size_get(entry); 
   cb_data->details.ker_cb.correlation_id = correlation_id;
 
   gpu_interval_t interval;
@@ -594,9 +598,8 @@ add_H2D_metrics_to_cct_node
   opencl_cb_basic_print(cb_basic, "Completion_Callback");
 
   opencl_clSetKernelArg_activity_process(entry, cb_data);
-  uint64_t buffer_id = opencl_h2d_map_entry_buffer_id_get(entry);
+  opencl_h2d_map_entry_buffer_id_get(entry);
   opencl_h2d_pending_operations_adjust(-1);
-  opencl_pending_operations_adjust(-1);
 }
 
 
@@ -607,7 +610,7 @@ opencl_update_ccts_for_setClKernelArg
 )
 {
   spinlock_lock(&opencl_h2d_lock);
-  uint64_t count = opencl_h2d_map_count();
+  opencl_h2d_map_count();
   if (atomic_load(&opencl_h2d_pending_operations) > 0) {
     opencl_update_ccts_for_h2d_nodes(add_H2D_metrics_to_cct_node);
   }
@@ -637,7 +640,7 @@ opencl_wait_for_self_pending_operations
 }
 
 
-static void
+static void __attribute__((unused))
 opencl_wait_for_all_pending_operations
 (
  void
@@ -964,8 +967,9 @@ clCreateCommandQueue
   cl_command_queue queue = HPCRUN_OPENCL_CALL(clCreateCommandQueue, (context, device,
         properties,errcode_ret));
 
-  uint32_t context_id = opencl_cl_context_map_update(context);
+  uint32_t context_id = opencl_cl_context_map_update((uint64_t)context);
   opencl_cl_queue_map_update((uint64_t)queue, context_id);
+
   return queue;
 }
 
@@ -1023,8 +1027,8 @@ clCreateCommandQueueWithProperties
     free(queue_properties);
   }
 
-  uint32_t context_id = opencl_cl_context_map_update(context);
-  opencl_cl_queue_map_update(queue, context_id);
+  uint32_t context_id = opencl_cl_context_map_update((uint64_t)context);
+  opencl_cl_queue_map_update((uint64_t)queue, context_id);
   return queue;
 }
 

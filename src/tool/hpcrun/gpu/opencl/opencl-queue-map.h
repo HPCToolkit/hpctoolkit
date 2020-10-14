@@ -70,7 +70,7 @@ opencl_cl_queue_map_lookup
 );
 
 
-void
+uint32_t
 opencl_cl_queue_map_update
 (
  uint64_t, 
