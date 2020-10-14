@@ -124,7 +124,7 @@ typedef struct opencl_object_t {
   s_element_ptr_t next;
   opencl_object_channel_t *channel;
   gpu_activity_kind_t kind;
-  bool isInternalClEvent;
+  bool internal_event;
   opencl_object_details_t details;
   atomic_int *pending_operations;
 } opencl_object_t;
@@ -135,19 +135,24 @@ typedef struct opencl_object_t {
 // interface operations
 //******************************************************************************
 
-opencl_object_t*
+opencl_object_t *
 opencl_malloc
 (
-  void
+ void
+);
+
+
+opencl_object_t *
+opencl_malloc_kind
+(
+ gpu_activity_kind_t kind
 );
 
 
 void
 opencl_free
 (
-  opencl_object_t *
+ opencl_object_t *
 );
-
-
 
 #endif  //OPENCL_MEMORY_MANAGER_H

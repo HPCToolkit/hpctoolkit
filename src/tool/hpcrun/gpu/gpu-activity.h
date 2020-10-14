@@ -434,11 +434,11 @@ gpu_activity_free
 
 
 void
-set_gpu_interval
+gpu_interval_set
 (
-  gpu_interval_t* interval,
-  uint64_t start,
-  uint64_t end
+ gpu_interval_t* interval,
+ uint64_t start,
+ uint64_t end
 );
 
 

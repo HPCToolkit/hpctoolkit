@@ -188,6 +188,10 @@ gpu_activity_multiplexer_push
  gpu_activity_t *gpu_activity
 )
 {
+  if (gpu_activity_multiplexer_my_channel_initialized() == false) {
+    gpu_activity_multiplexer_my_channel_init();
+  }
+
   gpu_operation_item_t item = (gpu_operation_item_t){.channel=initiator_channel, .activity=*gpu_activity};
   gpu_operation_channel_produce(gpu_operation_channel, &item);
 }

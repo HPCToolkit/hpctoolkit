@@ -69,9 +69,9 @@
 #define GPU_STRING "gpu=opencl"
 #define ENABLE_INSTRUMENTATION "gpu=opencl,inst"
 #define NO_THRESHOLD  1L
-static device_finalizer_fn_entry_t device_finalizer_shutdown;
-static device_finalizer_fn_entry_t device_trace_finalizer_shutdown;
 
+static device_finalizer_fn_entry_t device_finalizer_flush;
+static device_finalizer_fn_entry_t device_finalizer_shutdown;
 
 
 //******************************************************************************
@@ -118,7 +118,6 @@ static void
 METHOD_FN(thread_fini_action)
 {
   TMSG(OPENCL, "thread_fini_action");
-  opencl_api_thread_finalize(NULL);
 }
 
 
@@ -164,7 +163,8 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   if (hpcrun_ev_is(opencl_name, GPU_STRING)) {
   } else if (hpcrun_ev_is(opencl_name, ENABLE_INSTRUMENTATION)) {
-    opencl_enable_instrumentation();
+    gpu_metrics_GPU_INST_enable();
+    opencl_instrumentation_enable();
   }
 }
 
@@ -179,6 +179,9 @@ METHOD_FN(finalize_event_list)
   }
   #endif
   opencl_api_initialize();
+
+  device_finalizer_flush.fn = opencl_api_thread_finalize;
+  device_finalizer_register(device_finalizer_type_flush, &device_finalizer_flush);
 
   device_finalizer_shutdown.fn = opencl_api_process_finalize;
   device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_shutdown);

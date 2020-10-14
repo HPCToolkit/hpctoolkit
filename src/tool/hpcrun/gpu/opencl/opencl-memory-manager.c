@@ -48,7 +48,6 @@
 #include <string.h>
 
 
-
 //******************************************************************************
 // local includes
 //******************************************************************************
@@ -58,8 +57,6 @@
 
 #include "opencl-memory-manager.h"
 
-
-
 //******************************************************************************
 // type declarations
 //******************************************************************************
@@ -68,15 +65,11 @@ struct opencl_object_channel_t {
   bistack_t bistacks[2];
 };
 
-
-
 //******************************************************************************
 // local data
 //******************************************************************************
 
 static __thread opencl_object_channel_t *opencl_object_channel;
-
-
 
 //******************************************************************************
 // private operations
@@ -105,20 +98,32 @@ opencl_object_channel_get
 }
 
 
-
 //******************************************************************************
 // interface operations
 //******************************************************************************
 
-opencl_object_t*
+opencl_object_t *
 opencl_malloc
 (
-  void
+ void
 )
 {
   opencl_object_channel_t *c = opencl_object_channel_get();
   opencl_object_t *cl_obj = channel_item_alloc(c, opencl_object_t);
+  memset(cl_obj, 0, sizeof(opencl_object_t));
   cl_obj->channel = c;
+  return cl_obj;
+}
+
+
+opencl_object_t *
+opencl_malloc_kind
+(
+ gpu_activity_kind_t kind
+)
+{
+  opencl_object_t *cl_obj = opencl_malloc();
+  cl_obj->kind = kind;
   return cl_obj;
 }
 
@@ -126,10 +131,10 @@ opencl_malloc
 void
 opencl_free
 (
-  opencl_object_t *o
+ opencl_object_t *obj
 )
 {
-  memset(o, 0, sizeof(opencl_object_t));
-  opencl_object_channel_t *c = &(o->channel);
-  channel_item_free(c, o);
+  memset(obj, 0, sizeof(opencl_object_t));
+  opencl_object_channel_t *c = &(obj->channel);
+  channel_item_free(c, obj);
 }
