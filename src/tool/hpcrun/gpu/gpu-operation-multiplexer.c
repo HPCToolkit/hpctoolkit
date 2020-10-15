@@ -49,9 +49,9 @@
 
 #define DEBUG 0
 
+#include "gpu-operation-multiplexer.h"
 #include "gpu-activity.h"
 #include "gpu-activity-channel.h"
-#include "gpu-activity-multiplexer.h"
 #include "gpu-activity-process.h"
 #include "gpu-monitoring-thread-api.h"
 #include "gpu-operation-channel-set.h"
@@ -70,7 +70,7 @@ typedef void *(*pthread_start_routine_t)(void *);
 // local variables
 //******************************************************************************
 
-static _Atomic(bool) stop_activity_flag;
+static _Atomic(bool) stop_operation_flag;
 static _Atomic(bool) gpu_trace_finished;
 
 static atomic_uint operation_channels_count;
@@ -94,14 +94,14 @@ gpu_init_operation_channel(){
 
 
 static void *
-gpu_activity_record
+gpu_operation_record
 (
  void
 )
 {
   int current_operation_channels_count;
 
-  while (!atomic_load(&stop_activity_flag)){
+  while (!atomic_load(&stop_operation_flag)){
     current_operation_channels_count = atomic_load(&operation_channels_count);
     gpu_operation_channel_set_process(current_operation_channels_count);
   }
@@ -118,13 +118,13 @@ gpu_activity_record
 
 
 static void
-gpu_activity_multiplexer_create
+gpu_operation_multiplexer_create
 (
  void
 )
 {
   pthread_t thread;
-  atomic_store(&stop_activity_flag, false);
+  atomic_store(&stop_operation_flag, false);
   atomic_store(&gpu_trace_finished, false);
   atomic_store(&operation_channels_count, 0);
 
@@ -134,7 +134,7 @@ gpu_activity_multiplexer_create
   gpu_operation_channel_set_alloc(max_completion_cb_threads);
 
   // You are the first to create monitor thread
-  pthread_create(&thread, NULL, (pthread_start_routine_t) gpu_activity_record,
+  pthread_create(&thread, NULL, (pthread_start_routine_t) gpu_operation_record,
                  NULL);
 }
 
@@ -145,7 +145,7 @@ gpu_activity_multiplexer_create
 //******************************************************************************
 
 bool
-gpu_activity_multiplexer_my_channel_initialized
+gpu_operation_multiplexer_my_channel_initialized
 (
  void
 )
@@ -155,25 +155,25 @@ gpu_activity_multiplexer_my_channel_initialized
 
 
 void
-gpu_activity_multiplexer_my_channel_init
+gpu_operation_multiplexer_my_channel_init
 (
  void
 )
 {
-  pthread_once(&is_initialized, gpu_activity_multiplexer_create);
+  pthread_once(&is_initialized, gpu_operation_multiplexer_create);
   gpu_init_operation_channel();
 }
 
 
 void
-gpu_activity_multiplexer_fini
+gpu_operation_multiplexer_fini
 (
  void
 )
 {
-  PRINT("gpu_activity_multiplexer_fini called\n");
+  PRINT("gpu_operation_multiplexer_fini called\n");
 
-  atomic_store(&stop_activity_flag, true);
+  atomic_store(&stop_operation_flag, true);
 
   gpu_operation_channel_set_notify(atomic_load(&operation_channels_count));
 
@@ -182,14 +182,14 @@ gpu_activity_multiplexer_fini
 
 
 void
-gpu_activity_multiplexer_push
+gpu_operation_multiplexer_push
 (
  gpu_activity_channel_t *initiator_channel,
  gpu_activity_t *gpu_activity
 )
 {
-  if (gpu_activity_multiplexer_my_channel_initialized() == false) {
-    gpu_activity_multiplexer_my_channel_init();
+  if (gpu_operation_multiplexer_my_channel_initialized() == false) {
+    gpu_operation_multiplexer_my_channel_init();
   }
 
   gpu_operation_item_t item = (gpu_operation_item_t){.channel=initiator_channel, .activity=*gpu_activity};

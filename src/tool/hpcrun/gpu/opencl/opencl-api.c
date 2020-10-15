@@ -61,7 +61,7 @@
 #include <hpcrun/gpu/gpu-activity.h>
 #include <hpcrun/gpu/gpu-activity-channel.h>
 #include <hpcrun/gpu/gpu-activity-process.h>
-#include <hpcrun/gpu/gpu-activity-multiplexer.h>
+#include <hpcrun/gpu/gpu-operation-multiplexer.h>
 #include <hpcrun/gpu/gpu-correlation-channel.h>
 #include <hpcrun/gpu/gpu-correlation-id-map.h>
 #include <hpcrun/gpu/gpu-application-thread-api.h>
@@ -495,11 +495,11 @@ opencl_activity_multiplexer_push
   gpu_activity.kind = GPU_ACTIVITY_EXTERNAL_CORRELATION;
   gpu_activity.details.correlation.correlation_id = correlation_id;
   gpu_activity.details.correlation.host_correlation_id = correlation_id;
-  gpu_activity_multiplexer_push(obj->details.initiator_channel, &gpu_activity);
+  gpu_operation_multiplexer_push(obj->details.initiator_channel, &gpu_activity);
   
   // The actual entry
   opencl_activity_translate(&gpu_activity, obj, interval);
-  gpu_activity_multiplexer_push(obj->details.initiator_channel, &gpu_activity);
+  gpu_operation_multiplexer_push(obj->details.initiator_channel, &gpu_activity);
 }
 
 
@@ -538,11 +538,8 @@ opencl_clSetKernelArg_activity_process
 
   opencl_activity_translate(&gpu_activity, cb_data, interval);
   
-  if (gpu_activity_multiplexer_my_channel_initialized() == false){
-    gpu_activity_multiplexer_my_channel_init();
-  }
   ETMSG(OPENCL, "cb_data->details.initiator_channel: %p", cb_data->details.initiator_channel);
-  gpu_activity_multiplexer_push(cb_data->details.initiator_channel, &gpu_activity);
+  gpu_operation_multiplexer_push(cb_data->details.initiator_channel, &gpu_activity);
 }
 
 
@@ -1313,7 +1310,7 @@ opencl_api_thread_finalize
 
     gpu_activity.kind = GPU_ACTIVITY_FLUSH;
     gpu_activity.details.flush.wait = &wait;
-    gpu_activity_multiplexer_push(gpu_activity_channel_get(), &gpu_activity);
+    gpu_operation_multiplexer_push(gpu_activity_channel_get(), &gpu_activity);
 
     // Wait until the activity is flushed
     // Operation channel is FIFO
@@ -1331,5 +1328,5 @@ opencl_api_process_finalize
  void *args
 )
 {
-  gpu_activity_multiplexer_fini();
+  gpu_operation_multiplexer_fini();
 }

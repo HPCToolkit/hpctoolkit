@@ -42,8 +42,8 @@
 // ******************************************************* EndRiceCopyright *
 
 
-#ifndef gpu_activity_multiplexer_h
-#define gpu_activity_multiplexer_h
+#ifndef gpu_operation_multiplexer_h
+#define gpu_operation_multiplexer_h
 
 #include <hpcrun/thread_data.h>
 #include "gpu-operation-channel.h"
@@ -70,47 +70,32 @@ typedef struct gpu_activity_t gpu_activity_t;
 
 
 bool
-gpu_activity_multiplexer_my_channel_initialized
+gpu_operation_multiplexer_my_channel_initialized
 (
  void
 );
 
 
 void
-gpu_activity_multiplexer_my_channel_init
+gpu_operation_multiplexer_my_channel_init
 (
  void
 );
 
 
 void
-gpu_activity_multiplexer_fini
+gpu_operation_multiplexer_fini
 (
  void
 );
 
 
 void
-gpu_activity_multiplexer_push
+gpu_operation_multiplexer_push
 (
  gpu_activity_channel_t *initiator_channel,
  gpu_activity_t *gpu_activity
 );
 
 
-
 #endif
-
-
-
-
-
-
-
-
-
-
-
-
-
-

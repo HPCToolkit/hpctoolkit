@@ -53,7 +53,7 @@
 
 
 #include "gpu-activity-process.h"
-#include "gpu-activity-multiplexer.h"
+#include "gpu-operation-multiplexer.h"
 #include "gpu-operation-item.h"
 #include "gpu-operation-channel.h"
 #include "gpu-operation-channel-set.h"

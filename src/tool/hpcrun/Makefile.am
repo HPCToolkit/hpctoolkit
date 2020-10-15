@@ -357,7 +357,6 @@ MY_BASE_FILES =				\
 	hpcrun-placeholders.c 		\
 	gpu/gpu-activity.c 		\
 	gpu/gpu-activity-channel.c 	\
-	gpu/gpu-activity-multiplexer.c 	\
 	gpu/gpu-activity-process.c 	\
 	gpu/gpu-application-thread-api.c \
 	gpu/gpu-channel-item-allocator.c \
@@ -378,6 +377,7 @@ MY_BASE_FILES =				\
 	gpu/gpu-operation-item-process.c   \
 	gpu/gpu-operation-channel.c \
 	gpu/gpu-operation-channel-set.c \
+	gpu/gpu-operation-multiplexer.c 	\
 	gpu/gpu-splay-allocator.c	\
 	gpu/gpu-stream-id-map.c		\
 	gpu/gpu-trace.c			\
