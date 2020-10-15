@@ -185,6 +185,7 @@ void
 gpu_operation_multiplexer_push
 (
  gpu_activity_channel_t *initiator_channel,
+ atomic_bool *initiator_pending_operations,
  gpu_activity_t *gpu_activity
 )
 {
@@ -192,6 +193,7 @@ gpu_operation_multiplexer_push
     gpu_operation_multiplexer_my_channel_init();
   }
 
-  gpu_operation_item_t item = (gpu_operation_item_t){.channel=initiator_channel, .activity=*gpu_activity};
+  gpu_operation_item_t item = {.channel=initiator_channel,
+    .pending_operations=initiator_pending_operations, .activity=*gpu_activity};
   gpu_operation_channel_produce(gpu_operation_channel, &item);
 }

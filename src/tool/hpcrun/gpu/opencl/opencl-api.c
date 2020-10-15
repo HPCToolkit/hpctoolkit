@@ -153,7 +153,7 @@ static atomic_uint opencl_pending_operations = { 0 };
 static __thread atomic_int opencl_self_pending_operations = { 0 };
 // Mark if a thread has invoked any opencl call
 // If yes, we can flush all opencl activities when the thread terminates
-static __thread bool opencl_stop_flag = false;
+static __thread bool opencl_api_flag = false;
 
 static spinlock_t opencl_h2d_lock = SPINLOCK_UNLOCKED;
 static bool instrumentation = false;
@@ -481,7 +481,7 @@ opencl_h2d_pending_operations_adjust
 
 
 static void
-opencl_activity_multiplexer_push
+opencl_operation_multiplexer_push
 (
  gpu_interval_t interval,
  opencl_object_t *obj,
@@ -495,11 +495,13 @@ opencl_activity_multiplexer_push
   gpu_activity.kind = GPU_ACTIVITY_EXTERNAL_CORRELATION;
   gpu_activity.details.correlation.correlation_id = correlation_id;
   gpu_activity.details.correlation.host_correlation_id = correlation_id;
-  gpu_operation_multiplexer_push(obj->details.initiator_channel, &gpu_activity);
+  gpu_operation_multiplexer_push(obj->details.initiator_channel,
+    NULL, &gpu_activity);
   
   // The actual entry
   opencl_activity_translate(&gpu_activity, obj, interval);
-  gpu_operation_multiplexer_push(obj->details.initiator_channel, &gpu_activity);
+  gpu_operation_multiplexer_push(obj->details.initiator_channel, 
+    obj->pending_operations, &gpu_activity);
 }
 
 
@@ -515,7 +517,7 @@ opencl_activity_process
   memset(&interval, 0, sizeof(gpu_interval_t));
   opencl_timing_info_get(&interval, event);
 
-  opencl_activity_multiplexer_push(interval, obj, correlation_id);
+  opencl_operation_multiplexer_push(interval, obj, correlation_id);
 }
 
 
@@ -539,7 +541,8 @@ opencl_clSetKernelArg_activity_process
   opencl_activity_translate(&gpu_activity, cb_data, interval);
   
   ETMSG(OPENCL, "cb_data->details.initiator_channel: %p", cb_data->details.initiator_channel);
-  gpu_operation_multiplexer_push(cb_data->details.initiator_channel, &gpu_activity);
+  gpu_operation_multiplexer_push(cb_data->details.initiator_channel,
+    cb_data->pending_operations, &gpu_activity);
 }
 
 
@@ -694,33 +697,32 @@ opencl_cb_basic_print
 void
 opencl_subscriber_callback
 (
- opencl_object_t *cb_info
+ opencl_object_t *obj
 )
 {
   // We invoked an opencl operation
-  opencl_stop_flag = true;
+  opencl_api_flag = true;
 
   uint32_t correlation_id = getCorrelationId();
 
   // Init operations
-  atomic_fetch_add(cb_info->pending_operations, 1);
-  atomic_fetch_add(&opencl_pending_operations, 1);
+  atomic_fetch_add(obj->pending_operations, 1);
 
   gpu_placeholder_type_t placeholder_type;
   gpu_op_placeholder_flags_t gpu_op_placeholder_flags = 0;
 
-  switch (cb_info->kind) {
+  switch (obj->kind) {
 
     case GPU_ACTIVITY_MEMCPY:
       {
-        cb_info->details.cpy_cb.correlation_id = correlation_id;
-        if (cb_info->details.cpy_cb.type == GPU_MEMCPY_H2D){ 
+        obj->details.cpy_cb.correlation_id = correlation_id;
+        if (obj->details.cpy_cb.type == GPU_MEMCPY_H2D){ 
           gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
             gpu_placeholder_type_copyin);
 
           placeholder_type = gpu_placeholder_type_copyin;
 
-        } else if (cb_info->details.cpy_cb.type == GPU_MEMCPY_D2H){
+        } else if (obj->details.cpy_cb.type == GPU_MEMCPY_D2H){
           gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
             gpu_placeholder_type_copyout);
 
@@ -731,7 +733,7 @@ opencl_subscriber_callback
 
     case GPU_ACTIVITY_KERNEL:
       {
-        cb_info->details.ker_cb.correlation_id = correlation_id;
+        obj->details.ker_cb.correlation_id = correlation_id;
         gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, 
           gpu_placeholder_type_kernel);
 
@@ -745,7 +747,7 @@ opencl_subscriber_callback
 
     case GPU_ACTIVITY_MEMORY:
       {
-        cb_info->details.mem_cb.correlation_id = correlation_id;
+        obj->details.mem_cb.correlation_id = correlation_id;
         gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
           gpu_placeholder_type_alloc);
 
@@ -768,11 +770,11 @@ opencl_subscriber_callback
 
   gpu_activity_channel_consume(gpu_metrics_attribute);
 
-  cb_info->details.cct_node = cct_ph;
-  cb_info->details.initiator_channel = gpu_activity_channel_get();
-  cb_info->details.submit_time = CPU_NANOTIME();
+  obj->details.cct_node = cct_ph;
+  obj->details.initiator_channel = gpu_activity_channel_get();
+  obj->details.submit_time = CPU_NANOTIME();
 
-  if (cb_info->kind == GPU_ACTIVITY_KERNEL && instrumentation) {
+  if (obj->kind == GPU_ACTIVITY_KERNEL && instrumentation) {
     // Callback to produce gtpin correlation
     gtpin_produce_runtime_callstack(&gpu_op_ccts);
   }
@@ -799,9 +801,6 @@ opencl_activity_completion_callback
   }
 
   // Finish operations
-  atomic_fetch_add(cb_data->pending_operations, -1);
-  atomic_fetch_add(&opencl_pending_operations, -1);
-
   opencl_free(cb_data);
 }
 
@@ -1258,10 +1257,7 @@ clCreateBuffer
     HPCRUN_OPENCL_CALL(clCreateBuffer, (context, flags, size, host_ptr, errcode_ret));
   interval.end = CPU_NANOTIME();
 
-  opencl_activity_multiplexer_push(interval, mem_info, mem_info->details.mem_cb.correlation_id);
-
-  atomic_fetch_add(&opencl_pending_operations, -1);
-  atomic_fetch_add(&opencl_self_pending_operations, -1);
+  opencl_operation_multiplexer_push(interval, mem_info, mem_info->details.mem_cb.correlation_id);
 
   opencl_free(mem_info);
   
@@ -1298,10 +1294,9 @@ opencl_api_thread_finalize
  void *args
 )
 {
-  if (opencl_stop_flag) {
+  if (opencl_api_flag) {
     // If I have invoked any opencl api, I have to attribute all my activities to my ccts
-    opencl_stop_flag = false;
-    opencl_wait_for_self_pending_operations();
+    opencl_api_flag = false;
 
     atomic_bool wait;
     atomic_store(&wait, true);
@@ -1310,11 +1305,14 @@ opencl_api_thread_finalize
 
     gpu_activity.kind = GPU_ACTIVITY_FLUSH;
     gpu_activity.details.flush.wait = &wait;
-    gpu_operation_multiplexer_push(gpu_activity_channel_get(), &gpu_activity);
+    gpu_operation_multiplexer_push(gpu_activity_channel_get(), NULL, &gpu_activity);
 
-    // Wait until the activity is flushed
+    // Wait until operations are drained
     // Operation channel is FIFO
     while (atomic_load(&wait)) {}
+
+    // Wait until my activities are drained
+    opencl_wait_for_self_pending_operations();
 
     // Now I can attribute activities
     gpu_application_thread_process_activities();

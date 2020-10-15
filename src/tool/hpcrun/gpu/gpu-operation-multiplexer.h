@@ -94,6 +94,7 @@ void
 gpu_operation_multiplexer_push
 (
  gpu_activity_channel_t *initiator_channel,
+ atomic_bool *initiator_pending_operations,
  gpu_activity_t *gpu_activity
 );
 

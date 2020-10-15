@@ -210,5 +210,9 @@ gpu_operation_item_process
       gpu_unknown_process(it);
       break;
   }
+
+  if (it->pending_operations) {
+    atomic_fetch_add(it->pending_operations, -1);
+  }
 }
 
