@@ -99,17 +99,22 @@
 #include <lush/lush-backtrace.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 
+#include "papi-c.h"
 #include "tool_state.h"
+
 
 /******************************************************************************
  * macros
  *****************************************************************************/
 
+#define DEBUG 0
+
+#include <hpcrun/gpu/gpu-print.h>
+
 #define OVERFLOW_MODE 0
 #define WEIGHT_METRIC 0
 #define DEFAULT_THRESHOLD  2000000L
 
-#include "papi-c.h"
 
 /******************************************************************************
  * forward declarations 
@@ -754,7 +759,7 @@ METHOD_FN(display_events)
   int num_components, cidx;
 
   if (papi_unavail) {
-    printf("PAPI is not available.  Probably, the kernel doesn't support PAPI,\n"
+    PRINT("PAPI is not available.  Probably, the kernel doesn't support PAPI,\n"
      "or else maybe HPCToolkit is out of sync with PAPI.\n\n");
     goto finish;
   }
@@ -762,11 +767,11 @@ METHOD_FN(display_events)
   cidx = 0; // CPU component
   {
     const PAPI_component_info_t *component = PAPI_get_component_info(cidx);
-    printf("===========================================================================\n");
-    printf("Available PAPI preset events in component %s\n", component->name);
-    printf("\n");
-    printf("Name\t    Profilable\tDescription\n");
-    printf("===========================================================================\n");
+    PRINT("===========================================================================\n");
+    PRINT("Available PAPI preset events in component %s\n", component->name);
+    PRINT("\n");
+    PRINT("Name\t    Profilable\tDescription\n");
+    PRINT("===========================================================================\n");
 
     num_total = 0;
     num_prof = 0;
@@ -783,13 +788,13 @@ METHOD_FN(display_events)
     num_prof++;
   }
   num_total++;
-  printf("%-10s\t%s\t%s\n", info.symbol, prof, info.long_descr);
+  PRINT("%-10s\t%s\t%s\n", info.symbol, prof, info.long_descr);
       }
       ret = PAPI_enum_cmp_event(&ev, PAPI_ENUM_EVENTS, cidx);
     }
-    printf("---------------------------------------------------------------------------\n");
-    printf("Total PAPI events: %d, able to profile: %d\n", num_total, num_prof);
-    printf("\n\n");
+    PRINT("---------------------------------------------------------------------------\n");
+    PRINT("Total PAPI events: %d, able to profile: %d\n", num_total, num_prof);
+    PRINT("\n\n");
   }
 
   num_components = PAPI_num_components();
@@ -799,11 +804,11 @@ METHOD_FN(display_events)
 
     if (component->disabled) continue;
 
-    printf("===========================================================================\n");
-    printf("Native events in component %s\n", component->name);
-    printf("\n");
-    printf("Name  Description\n");
-    printf("===========================================================================\n");
+    PRINT("===========================================================================\n");
+    PRINT("Native events in component %s\n", component->name);
+    PRINT("\n");
+    PRINT("Name  Description\n");
+    PRINT("===========================================================================\n");
 
     ev = 0 | PAPI_NATIVE_MASK;
     ret = PAPI_enum_cmp_event(&ev, PAPI_ENUM_FIRST, cidx);
@@ -812,17 +817,17 @@ METHOD_FN(display_events)
       if (PAPI_get_event_info(ev, &info) == PAPI_OK) {
   cmp_event_count++;
         display_event_info(stdout, info.symbol, info.long_descr);
-        printf("---------------------------------------------------------------------------\n");
+        PRINT("---------------------------------------------------------------------------\n");
       }
       ret = PAPI_enum_cmp_event(&ev, PAPI_ENUM_EVENTS, cidx);
     }
-    printf("Total native events for component %s: %d\n", component->name, cmp_event_count);
-    printf("\n\n");
+    PRINT("Total native events for component %s: %d\n", component->name, cmp_event_count);
+    PRINT("\n\n");
     num_total += cmp_event_count;
   }
 
-  printf( "Total events reported: %d\n", num_total);
-  printf("\n\n");
+  PRINT( "Total events reported: %d\n", num_total);
+  PRINT("\n\n");
 finish:
   tool_exit();
 }
@@ -1043,7 +1048,7 @@ papi_monitor_enter(void *reg_info, void *args_in)
   sample_source_t *self = &obj_name(); /// just for debug
   int ret;
 
-  printf("|------->PAPI_MONITOR_ENTER | cct = %p\n", args->cct_node);
+  PRINT("|------->PAPI_MONITOR_ENTER | cct = %p\n", args->cct_node);
 
   // if sampling disabled explicitly for this thread, skip all processing
   if (hpcrun_suppress_sample() || sample_filters_apply()) goto finish;
@@ -1057,7 +1062,7 @@ papi_monitor_enter(void *reg_info, void *args_in)
   for (int cid = 0; cid < psi->num_components; ++cid) {
     papi_component_info_t *ci = &(psi->component_info[cid]);
     if (ci->inUse) {
-      printf("Self = %p | Component %d \t | cct = %p \n\n", self, cid, args->cct_node );
+      PRINT("Self = %p | Component %d \t | cct = %p \n\n", self, cid, args->cct_node );
 
       ret = PAPI_read(ci->eventSet, prev_values);
       //      ret = PAPI_start(ci->eventSet);
@@ -1088,7 +1093,7 @@ papi_monitor_exit(void *reg_info, void *args_in)
   int my_event_count = MAX_EVENTS;
   int ret;
 
-  printf("|------->PAPI_MONITOR_EXIT| running? %d\n", METHOD_CALL(self, started));
+  PRINT("|------->PAPI_MONITOR_EXIT| running? %d\n", METHOD_CALL(self, started));
 
   if (args->gpu_sync_ptr)
     args->gpu_sync_ptr();
@@ -1118,7 +1123,7 @@ papi_monitor_exit(void *reg_info, void *args_in)
         int event_index = get_event_index(self, my_event_codes[eid]);
         int metric_id = hpcrun_event2metric(self, event_index);
 
-        printf("%d Event = %x, event_index = %d, metric_id = %d || value = %llu ---> %llu\n",
+        PRINT("%d Event = %x, event_index = %d, metric_id = %d || value = %llu ---> %llu\n",
                eid, my_event_codes[eid], event_index, metric_id, prev_values[eid], my_event_values[eid]);
 
         blame_shift_apply(metric_id, cct_node, my_event_values[eid] /*metricIncr*/);

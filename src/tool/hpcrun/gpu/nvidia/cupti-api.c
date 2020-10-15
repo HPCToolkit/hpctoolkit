@@ -112,8 +112,10 @@
 //******************************************************************************
 // macros
 //******************************************************************************
-#define DEBUG 1
+
+#define DEBUG 0
 #include <hpcrun/gpu/gpu-print.h>
+
 
 #define CUPTI_LIBRARY_LOCATION "/lib64/libcupti.so"
 #define CUPTI_PATH_FROM_CUDA "extras/CUPTI"
@@ -800,7 +802,7 @@ cupti_subscriber_callback
     cupti_stop_flag_set();
 
     const CUpti_CallbackData *cd = (const CUpti_CallbackData *) cb_info;
-		printf("\nDriver API:  -----------------%s\n", cd->functionName );
+		PRINT("\nDriver API:  -----------------%s\n", cd->functionName );
 
     bool ompt_runtime_api_flag = ompt_runtime_status_get();
 
@@ -1015,7 +1017,7 @@ cupti_subscriber_callback
     cupti_stop_flag_set();
 
     const CUpti_CallbackData *cd = (const CUpti_CallbackData *)cb_info;
-		printf("\nRuntime API:  -----------------%s\n", cd->functionName );
+		PRINT("\nRuntime API:  -----------------%s\n", cd->functionName );
 
     bool is_valid_op = false;
     bool is_kernel_op __attribute__((unused)) = false; // used only by PRINT when debugging
