@@ -59,5 +59,4 @@ void level0_init();
 void level0_fini();
 int level0_bind();
 
-
 #endif //HPCTOOLKIT_LEVEL0_H

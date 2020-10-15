@@ -67,7 +67,7 @@
 
 level0_data_node_t**
 level0_commandlist_map_lookup
-( 
+(
  ze_command_list_handle_t command_list_handle
 );
 

@@ -185,6 +185,11 @@ compute_normalized_ips(hpcrun_unw_cursor_t* cursor)
 void
 hpcrun_unw_init(void)
 {
+  static bool msg_sent = false;
+  if (msg_sent == false) {
+    TMSG(NU, "hpcrun_unw_init from x86_unwind.c" );
+    msg_sent = true;
+  }
   x86_family_decoder_init();
   uw_recipe_map_init();
 }
@@ -414,6 +419,12 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor, int *steps_taken)
 {
   step_state unw_res;
   int decrement_pc = 0;
+
+  static bool msg_sent = false;
+  if (msg_sent == false) {
+    TMSG(NU, "hpcrun_unw_step from x86_unwind.c" );
+    msg_sent = true;
+  }
 
   if ((*steps_taken)++ > 0 && cursor->pc_unnorm != 0) {
     DECREMENT_PC(cursor->pc_unnorm);

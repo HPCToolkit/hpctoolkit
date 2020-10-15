@@ -67,6 +67,10 @@
 // local data
 //******************************************************************************
 
+// TODO:
+// Replace mutual exclusion with more efficient
+// data structures.
+
 static level0_handle_map_entry_t *commandlist_map_root = NULL;
 
 static level0_handle_map_entry_t *commandlist_free_list = NULL;

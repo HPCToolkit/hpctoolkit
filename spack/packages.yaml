@@ -17,7 +17,7 @@
 #    https://spack.readthedocs.io/en/latest/basic_usage.html#specs-dependencies
 #    https://spack.readthedocs.io/en/latest/build_settings.html
 #
-#  Last revised: August 17, 2020.
+#  Last revised: September 11, 2020.
 #
 packages:
 
@@ -46,15 +46,10 @@ packages:
   #   1. boost -- avoid 1.68.0, it breaks the build in hpctoolkit.
   #   1.66.0 is good for all dyninst revs.
   #
-  #   2. dyninst -- use version 9.3.2 for Blue Gene with the default
-  #   gcc 4.4 compilers.  (not recommended)
-  #
-  #   3. elfutils -- 0.176 doesn't build on Blue Gene, use 0.175.
-  #
-  #   4. intel-tbb -- add '~tm' for AMD, Xeon Phi (KNL, etc), and very
+  #   2. intel-tbb -- add '~tm' for AMD, Xeon Phi (KNL, etc), and very
   #   old Intel systems that don't support transactional memory.
   #
-  #   5. libmonitor -- add '+bgq' on Blue Gene/Q.
+  # Blue Gene is no longer supported.
   #
   #------------------------------------------------------------
 
@@ -67,11 +62,11 @@ packages:
   # 2019.12.28 is the last version that runs on Blue Gene.
   #
   # +mpi builds hpcprof-mpi (requires mpi).
-  # +papi uses papi instead of perfmon.
+  # +papi uses papi instead of perfmon (now default).
   #
   # hpctoolkit:
   #   version:  [2020.08.03, master]
-  #   variants: +mpi
+  #   variants: +mpi +papi
 
 
   # binutils -- used by hpcprof and struct simple (for functions and
@@ -145,7 +140,7 @@ packages:
   # +openmp is to support openmp threads in parseapi.
   #
   dyninst:
-    version:  [10.2.0, master]
+    version:  [10.2.1, master]
     variants: +openmp build_type=RelWithDebInfo
 
 
@@ -253,13 +248,14 @@ packages:
   # else develop.  Use >= 1.4 (1.4-rc1 replaces 2018.10.12.)
   #
   # +xz is for reading compressed symbol tables.
+  # +pic is needed in master for hpcrun.
   #
   libunwind:
     version:  [1.4.0, 1.5-rc1]
-    variants: +xz
+    variants: +xz +pic
 
 
-  # mbedtls -- now used in master.
+  # mbedtls -- used in hpcrun for hash functions.
   #
   # Use a recent version >= 2.16.1.
   #
@@ -302,8 +298,11 @@ packages:
   #
   # Any recent version is good.
   #
+  # +pic is needed in master for hpcrun.
+  #
   xz:
     version:  [5.2.5]
+    variants: +pic
 
 
   # zlib -- used by binutils, elfutils and libdwarf to read compressed

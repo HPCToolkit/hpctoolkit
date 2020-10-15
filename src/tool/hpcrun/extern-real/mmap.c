@@ -1,4 +1,4 @@
-// -*-Mode: C++;-*- // technically C99
+// -*-Mode: C++;-*-
 
 // * BeginRiceCopyright *****************************************************
 //
@@ -44,14 +44,30 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef _CSPROF_DLFNS_H_
-#define _CSPROF_DLFNS_H_
+// Redefine function calls from external libraries (libunwind) to
+// better hide them from UCX.
+//
+// Call the real functions via syscall().
 
-void hpcrun_pre_dlopen(const char *path, int flags);
-void hpcrun_dlopen(const char *module_name, int flags, void *handle);
-void hpcrun_dlclose(void *handle);
-void hpcrun_post_dlclose(void *handle, int ret);
+//----------------------------------------------------------------------
 
-long hpcrun_dlopen_pending(void);
+#define _GNU_SOURCE  1
 
-#endif
+#include <sys/types.h>
+#include <sys/syscall.h>
+#include <errno.h>
+#include <unistd.h>
+
+void *
+hpcrun_real_mmap(void *addr, size_t len, int prot, int flags, int fd, off_t offset)
+{
+  return (void *)
+    syscall((long) SYS_mmap, addr, len, prot, flags, fd, offset);
+}
+
+int
+hpcrun_real_munmap(void *addr, size_t len)
+{
+  return (int)
+    syscall((long) SYS_munmap, addr, len);
+}

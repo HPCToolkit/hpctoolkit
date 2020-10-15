@@ -108,7 +108,7 @@
 // where any GPU can indicate that its functions should be added to
 // the module ignore map when that type of GPU is being monitored.
 
-#define NUM_FNS 6
+#define NUM_FNS 7
 
 
 
@@ -134,6 +134,7 @@ static const char *IGNORE_FNS[NUM_FNS] = {
   "roctracer_set_properties",  // amd roctracer library
   "amd_dbgapi_initialize",     // amd debug library
   "hipKernelNameRefByPtr",     // amd hip runtime
+  "hsa_queue_create"           // amd hsa runtime
 };
 static module_ignore_entry_t modules[NUM_FNS];
 static pfq_rwlock_t modules_lock;
@@ -341,7 +342,6 @@ module_ignore_map_ignore
     munmap(buffer, stat.st_size);
     close(fd);
   }
-
   pfq_rwlock_write_unlock(&modules_lock, &me);
   return result;
 }
@@ -353,18 +353,14 @@ module_ignore_map_delete
  load_module_t* lm
 )
 {
-  if (lm == NULL || lm->dso_info == NULL) return false;
-  void* start = lm->dso_info->start_addr;
-  void* end = lm->dso_info->end_addr;
   size_t i;
   bool result = false;
   pfq_rwlock_node_t me;
   pfq_rwlock_write_lock(&modules_lock, &me);
   for (i = 0; i < NUM_FNS; ++i) {
-    if (modules[i].empty == false &&
-      modules[i].module->dso_info->start_addr <= start &&
-      modules[i].module->dso_info->end_addr >= end) {
+    if (modules[i].empty == false && modules[i].module == lm) {
       modules[i].empty = true;
+      modules[i].module = NULL;
       result = true;
       break;
     }

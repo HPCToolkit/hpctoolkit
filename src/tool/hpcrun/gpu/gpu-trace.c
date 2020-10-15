@@ -278,6 +278,41 @@ gpu_trace_stream_id
 }
 
 
+thread_data_t *
+gpu_trace_stream_acquire
+(
+ void
+)
+{
+  bool demand_new_thread = true;
+  bool has_trace = true;
+
+  thread_data_t *td = NULL;
+
+  int id = gpu_trace_stream_id();
+
+  // XXX(Keren): This API calls allocate_and_init_thread_data to bind td with the current thread
+
+  hpcrun_threadMgr_data_get_safe(id, NULL, &td, has_trace, demand_new_thread);
+
+  return td;
+}
+
+
+void
+gpu_trace_stream_release
+(
+ gpu_trace_channel_t *channel
+)
+{
+  thread_data_t *td = gpu_trace_channel_get_td(channel);
+
+  hpcrun_write_profile_data(&td->core_profile_trace_data);
+  hpcrun_trace_close(&td->core_profile_trace_data);
+  atomic_fetch_add(&stream_counter, -1);
+
+}
+
 
 //******************************************************************************
 // interface operations

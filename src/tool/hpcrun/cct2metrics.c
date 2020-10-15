@@ -117,12 +117,14 @@ hpcrun_reify_metric_set(cct_node_id_t cct_id, int metric_id)
   TMSG(CCT2METRICS, "REIFY: %p", cct_id);
   metric_data_list_t* rv = hpcrun_get_metric_data_list(cct_id);
   if (rv == NULL) {
+    // First time initialze
     TMSG(CCT2METRICS, " -- Metric kind was null, allocating new metric kind");
     rv = hpcrun_new_metric_data_list(metric_id);
     cct2metrics_assoc(cct_id, rv);
-  }
-  else
+  } else {
+    rv = hpcrun_reify_metric_data_list_kind(rv, metric_id);
     TMSG(CCT2METRICS, " -- Metric kind found = %p", rv);
+  }
   return rv;
 }
 
