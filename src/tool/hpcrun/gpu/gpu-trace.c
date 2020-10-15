@@ -309,7 +309,7 @@ gpu_trace_stream_release
 
   hpcrun_write_profile_data(&td->core_profile_trace_data);
   hpcrun_trace_close(&td->core_profile_trace_data);
-  atomic_fetch_add(&stream_counter, -1);
+  atomic_fetch_add(&active_streams_counter, -1);
 
 }
 
@@ -461,35 +461,4 @@ consume_one_trace_item
 
     PRINT("%p Append trace activity [%lu, %lu]\n", td, start, end);
   }
-}
-
-
-thread_data_t *
-gpu_trace_stream_acquire
-(
- void
-)
-{
-  thread_data_t *td = NULL;
-
-  int id = gpu_trace_stream_id();
-
-  // XXX(Keren): This API calls allocate_and_init_thread_data to bind td with the current thread
-  hpcrun_threadMgr_data_get_safe(id, NULL, &td, true);
-
-  return td;
-}
-
-
-void
-gpu_trace_stream_release
-(
- gpu_trace_channel_t *channel
-)
-{
-  thread_data_t *td = gpu_trace_channel_get_td(channel);
-
-  hpcrun_write_profile_data(&td->core_profile_trace_data);
-  hpcrun_trace_close(&td->core_profile_trace_data);
-  atomic_fetch_add(&active_streams_counter, -1);
 }
