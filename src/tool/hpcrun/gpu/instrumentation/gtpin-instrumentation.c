@@ -70,6 +70,7 @@
 #include <hpcrun/gpu/gpu-application-thread-api.h>
 #include <hpcrun/gpu/gpu-correlation.h>
 #include <hpcrun/gpu/gpu-correlation-channel.h>
+#include <hpcrun/gpu/gpu-operation-multiplexer.h>
 #include <hpcrun/gpu/gpu-host-correlation-map.h>
 #include <hpcrun/gpu/gpu-op-placeholders.h>
 #include <hpcrun/gpu/gpu-metrics.h>
@@ -327,7 +328,7 @@ kernelBlockActivityProcess
   cct_node_t *cct_child = hpcrun_cct_insert_ip_norm(host_op_node, ip); // how to set the ip_norm
   if (cct_child) {
     ga.cct_node = cct_child;
-    gpu_activity_channel_produce(activity_channel, &ga);
+    gpu_operation_multiplexer_push(activity_channel, NULL, &ga);
   }
 }
 
@@ -508,8 +509,6 @@ gtpin_enable_profiling
     KnobAddBool("gen12_1", true);
   }
 #endif
-
-  gpu_metrics_GPU_INST_enable();
 
   // Use opencl/level zero runtime stack
   gtpin_use_runtime_callstack = true;
