@@ -123,6 +123,7 @@ if OPT_ENABLE_HPCRUN_DYNAMIC
   pkglib_LTLIBRARIES += libhpcrun.la
 if OPT_ENABLE_RTLD_AUDIT
   pkglib_LTLIBRARIES += libhpcrun_audit.la
+  pkglib_LTLIBRARIES += libhpcrun_plt_audit.la  
 endif
   pkglib_LTLIBRARIES += libhpcrun_ga.la
   pkglib_LTLIBRARIES += libhpcrun_gprof.la
@@ -600,6 +601,8 @@ libhpcrun_la_SOURCES = 			\
 if OPT_ENABLE_RTLD_AUDIT
 libhpcrun_audit_la_SOURCES =		\
 	audit/auditor.c
+libhpcrun_plt_audit_la_SOURCES=     \
+	audit/plt-auditor.c	
 endif
 
 libhpcrun_o_SOURCES = 			\
@@ -664,6 +667,9 @@ if OPT_ENABLE_RTLD_AUDIT
 libhpcrun_audit_la_CPPFLAGS =		\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
+libhpcrun_plt_audit_la_CPPFLAGS =		\
+	$(MY_CPP_DEFINES)		\
+	$(MY_INCLUDE_DIRS)	
 endif
 
 
@@ -795,6 +801,7 @@ libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic
 
 if OPT_ENABLE_RTLD_AUDIT
 libhpcrun_audit_la_LDFLAGS = -Wl,-Bsymbolic -ldl
+libhpcrun_plt_audit_la_LDFLAGS = -Wl,-Bsymbolic -ldl
 endif
 
 libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic

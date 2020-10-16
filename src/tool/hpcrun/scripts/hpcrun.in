@@ -184,6 +184,11 @@ Options: Profiling (Defaults shown in curly brackets {})
   -nu, --no-unwind     Disable unwinding
                        Generates a flat profile (leaf instructions) only
 
+  --disable-plt-auditing  Disable PLT auditing
+                          PLT auditing is used to mitigate the performance slowdown
+						  caused by enabling LD_AUDIT. However, if the user wants to
+						  use another auditor that does PLT auditing, the user needs
+						  to use this option to disable hpcrun's PLT auditing code.
 NOTES:
 * hpcrun uses preloaded shared libraries to initiate profiling.  For this
   reason, it cannot be used to profile setuid programs.
@@ -217,6 +222,8 @@ roctracer_lib=
 HPCRUN_DEBUG_FLAGS=
 HPCRUN_EVENT_LIST=
 HPCRUN_CONTROL_KNOBS=
+disable_plt_audit=0
+use_ld_audit=@rtld_audit_mesg@
 
 while test "x$1" != x
 do
@@ -383,6 +390,12 @@ do
 	    ;;
 
 	# --------------------------------------------------
+	--disable-plt-auditing )
+		disable_plt_audit=1
+		shift
+		;;
+
+	# --------------------------------------------------		
 
 	-- )
 	    break
@@ -517,6 +530,9 @@ export HPCRUN_FNBOUNDS_CMD
 export LD_LIBRARY_PATH="${hpc_ld_library_path}:${LD_LIBRARY_PATH}"
 export LD_PRELOAD="${preload_list} ${LD_PRELOAD}"
 @export_ld_audit@
+if test "${use_ld_audit}" = "yes" && test ${disable_plt_audit} != 1 ; then
+	export LD_AUDIT="${hpcrun_dir}/libhpcrun_plt_audit.so:${LD_AUDIT}"
+fi
 export HPCRUN_AUDIT_MAIN_LIB="${hpcrun_dir}/libhpcrun.so"
 
 exec "$@"

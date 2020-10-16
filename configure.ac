@@ -3548,6 +3548,7 @@ else
 fi
 
 AC_SUBST([export_ld_audit])
+AC_SUBST([rtld_audit_mesg])
 AM_CONDITIONAL([OPT_ENABLE_RTLD_AUDIT], [test "$rtld_audit" = yes])
 
 if test "$rtld_audit" = yes ; then

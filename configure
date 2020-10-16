@@ -736,6 +736,7 @@ TBB_LFLAGS
 TBB_IFLAGS
 OPT_ENABLE_RTLD_AUDIT_FALSE
 OPT_ENABLE_RTLD_AUDIT_TRUE
+rtld_audit_mesg
 export_ld_audit
 OPT_PAPI_CUPTI_FALSE
 OPT_PAPI_CUPTI_TRUE
@@ -22057,6 +22058,7 @@ else
   export_ld_audit='export LD_AUDIT="${hpcrun_dir}/libhpcrun_audit.so:${LD_AUDIT}"'
   rtld_audit_mesg='yes'
 fi
+
 
 
  if test "$rtld_audit" = yes; then
