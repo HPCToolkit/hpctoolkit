@@ -332,7 +332,14 @@ InstructionStat::InstructionStat(const Instruction *inst) {
 
     auto pos = inst->predicate.find("P");
     if (pos != std::string::npos) {
-      this->predicate = convert_reg(inst->predicate, pos + 1);
+      int pred = convert_reg(inst->predicate, pos + 1);
+      if (pred == -1) {
+        // Use special registers in predicate as a placeholder
+        // e.g., @PT, @!PT
+        // Skip this instruction
+        return;
+      }
+      this->predicate = pred;
       pos = inst->predicate.find("!");
       if (pos != std::string::npos) {
         this->predicate_flag = InstructionStat::PredicateFlag::PREDICATE_FALSE;
@@ -371,6 +378,11 @@ InstructionStat::InstructionStat(const Instruction *inst) {
       auto &srcs = uniform ? this->usrcs : this->srcs;
       auto &dsts = uniform ? this->udsts : this->dsts;
       auto reg = convert_reg(inst->operands[0], pos + 1);
+      if (reg == -1) {
+        // Use special registers in destation as a placeholder
+        // Skip this instruction
+        return;
+      }
       if (store) {
         if (this->op.find(".SHARED") != std::string::npos ||
           this->op.find(".LOCAL") != std::string::npos) {
@@ -402,6 +414,11 @@ InstructionStat::InstructionStat(const Instruction *inst) {
     pos = inst->operands[0].find("P");
     if (pos != std::string::npos) {
       auto reg = convert_reg(inst->operands[0], pos + 1);
+      if (reg == -1) {
+        // Use special registers in destation as a placeholder
+        // Skip this instruction
+        return;
+      }
       if (inst->operands[0].find("UP")) {
         // uniform predicate register
         this->updsts.push_back(reg);
@@ -824,6 +841,7 @@ void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_s
         auto *inst_stat = inst_stat_map.at(inst_addr);
 
         if (INSTRUCTION_ANALYZER_DEBUG) {
+          std::cout << inst_stat->pc << std::endl;
           std::cout << "try to find inst_addr " << inst_addr - func_addr << std::endl;
         }
 
