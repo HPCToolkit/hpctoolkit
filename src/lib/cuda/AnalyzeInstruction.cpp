@@ -190,7 +190,7 @@ void analyze_instruction<INS_TYPE_INTEGER>(const Instruction &inst, std::string 
 
 template <>
 void analyze_instruction<INS_TYPE_TEXTRUE>(const Instruction &inst, std::string &op) {
-  op = "TEXTURE";
+  op = "MEMORY.TEXTURE";
 }
 
 
