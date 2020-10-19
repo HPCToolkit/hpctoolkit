@@ -209,7 +209,10 @@ realmain(int argc, char* const* argv)
   Analysis::CallPath::overlayStaticStructureMain(*prof, args.agent,
 						 args.doNormalizeTy, printProgress);
 
-  Analysis::CallPath::transformCudaCFGMain(*prof);
+  Analysis::CallPath::analyzeValueFlowMain(*prof, args.valueflowFiles);
+
+  // Do not transform CFG in this sanitizer
+  //Analysis::CallPath::transformCudaCFGMain(*prof);
   
   // -------------------------------------------------------
   // 2a. Create summary metrics for canonical CCT

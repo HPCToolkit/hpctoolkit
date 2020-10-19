@@ -490,6 +490,11 @@ ArgsHPCProf::parse(int argc, const char* const argv[], AppType type)
       if (is_directory(nvidia_dir)) {
         find_files(instructionFiles, nvidia_dir, ".inst");
       }
+
+      const std::string value_flow_dir = structs_dir + "/value_flow";
+      if (is_directory(value_flow_dir)) {
+        find_files(valueFlowFiles, value_flow_dir, ".dot");
+      }
     }
 
     // For now, parse first file name to determine name of database
