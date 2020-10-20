@@ -1442,7 +1442,14 @@ sanitizer_process_init
 (
 )
 {
-  redshow_output_dir_config(hpcrun_files_output_directory());
+  char file_name[PATH_MAX];
+  size_t i;
+  size_t used = 0;
+  used += sprintf(&file_name[used], "%s", hpcrun_files_output_directory());
+  used += sprintf(&file_name[used], "%s", "/value_flow/");
+  mkdir(file_name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+
+  redshow_output_dir_config(file_name);
 
   if (sanitizer_analysis_async) {
     pthread_t *thread = &(sanitizer_thread.thread);
