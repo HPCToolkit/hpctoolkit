@@ -86,3 +86,5 @@ void analyzeValueFlowMain(Prof::CallPath::Profile &prof, const std::vector<std::
 } // namespace CallPath
 
 } // namespace Analysis
+
+#endif

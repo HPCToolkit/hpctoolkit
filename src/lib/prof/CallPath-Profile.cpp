@@ -1483,11 +1483,7 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
 		       const metric_tbl_t& metricTbl,
 		       std::string ctxtStr, FILE* outfs)
 {
-  typedef std::map<int, CCT::ANode*> CCTIdToCCTNodeMap;
-
   DIAG_Assert(infs, "Bad file descriptor!");
-  
-  CCTIdToCCTNodeMap cctNodeMap;
 
   int ret = HPCFMT_ERR;
 
@@ -1528,6 +1524,8 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
 #if 0
   ExprEval eval;
 #endif
+
+  auto &cctNodeMap = prof.cctNodeMap();
 
   for (uint i = 0; i < numNodes; ++i) {
     // ----------------------------------------------------------

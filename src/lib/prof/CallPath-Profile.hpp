@@ -93,6 +93,7 @@ namespace Prof {
 
 namespace CallPath {
 
+typedef std::map<int, CCT::ANode*> CCTIdToCCTNodeMap;
 
 class Profile
   : public Unique // non copyable
@@ -172,6 +173,9 @@ public:
   metricMgr(Metric::Mgr* mMgr)
   { m_mMgr = mMgr; }
 
+  CCTIdToCCTNodeMap &
+  cctNodeMap()
+  { return m_cctNodeMap; }
 
   // isMetricMgrVirtual: It is sometimes useful for the metric manager
   //   to contain descriptions of metrics for which there are no
@@ -389,6 +393,8 @@ private:
   Prof::Struct::Tree* m_structure;
  
   bool m_remove_redundancy;
+  
+  CCTIdToCCTNodeMap m_cctNodeMap;
 };
 
 } // namespace CallPath
