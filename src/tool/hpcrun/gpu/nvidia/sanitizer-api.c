@@ -1442,6 +1442,8 @@ sanitizer_process_init
 (
 )
 {
+  redshow_output_dir_config(hpcrun_files_output_directory());
+
   if (sanitizer_analysis_async) {
     pthread_t *thread = &(sanitizer_thread.thread);
     pthread_mutex_t *mutex = &(sanitizer_thread.mutex);
