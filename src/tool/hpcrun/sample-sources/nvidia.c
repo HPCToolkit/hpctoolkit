@@ -153,7 +153,7 @@ static const int DEFAULT_BUFFER_POOL_SIZE = 500;
 static const int DEFAULT_APPROX_LEVEL = 0;
 static const int DEFAULT_PC_VIEWS = 30;
 // 0: no mem views
-static const int DEFAULT_MEM_VIEWS = 0;
+static const int DEFAULT_MEM_VIEWS = 30;
 // 0: no kernel sampling
 static const int DEFAULT_KERNEL_SAMPLING_FREQUENCY = 1;
 

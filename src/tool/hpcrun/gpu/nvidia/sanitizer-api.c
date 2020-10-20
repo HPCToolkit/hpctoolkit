@@ -1246,11 +1246,25 @@ sanitizer_bind()
 }
 
 
+static void
+output_dir_config(char *dir_name, char *suffix) {
+  size_t used = 0;
+  used += sprintf(&dir_name[used], "%s", hpcrun_files_output_directory());
+  used += sprintf(&dir_name[used], "%s", suffix);
+  mkdir(dir_name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+}
+
+
 void
 sanitizer_redundancy_analysis_enable()
 {
   redshow_analysis_enable(REDSHOW_ANALYSIS_SPATIAL_REDUNDANCY);
   redshow_analysis_enable(REDSHOW_ANALYSIS_TEMPORAL_REDUNDANCY);
+
+  char dir_name[PATH_MAX];
+  output_dir_config(dir_name, "/redundancy/");
+
+  redshow_output_dir_config(dir_name);
 }
 
 
@@ -1260,6 +1274,11 @@ sanitizer_value_flow_analysis_enable()
   redshow_analysis_enable(REDSHOW_ANALYSIS_VALUE_FLOW);
   // XXX(Keren): value flow analysis must be sync
   sanitizer_analysis_async = false;
+
+  char dir_name[PATH_MAX];
+  output_dir_config(dir_name, "/value_flow/");
+
+  redshow_output_dir_config(dir_name);
 }
 
 
@@ -1442,15 +1461,6 @@ sanitizer_process_init
 (
 )
 {
-  char file_name[PATH_MAX];
-  size_t i;
-  size_t used = 0;
-  used += sprintf(&file_name[used], "%s", hpcrun_files_output_directory());
-  used += sprintf(&file_name[used], "%s", "/value_flow/");
-  mkdir(file_name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-
-  redshow_output_dir_config(file_name);
-
   if (sanitizer_analysis_async) {
     pthread_t *thread = &(sanitizer_thread.thread);
     pthread_mutex_t *mutex = &(sanitizer_thread.mutex);
