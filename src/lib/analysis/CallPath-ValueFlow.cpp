@@ -146,6 +146,10 @@ static void readGraph(const std::string &file_name, NodeMap &node_map, EdgeMap &
       node.overwrite = std::stod(ninfo.second.at("overwrite"));
     }
 
+    if (ninfo.second.find("duplicate") != ninfo.second.end()) {
+      node.duplicate = ninfo.second.at("duplicate");
+    }
+
     node_map.emplace(node.node_id, node);
   }
 
@@ -234,6 +238,7 @@ static void writeGraph(const std::string &file_name, const NodeMap &node_map, co
   dp.property("node_type", boost::get(&VertexProperty::type, g));
   dp.property("overwrite", boost::get(&VertexProperty::overwrite, g));
   dp.property("redundancy", boost::get(&VertexProperty::redundancy, g));
+  dp.property("duplicate", boost::get(&VertexProperty::duplicate, g));
   dp.property("edge_type", boost::get(&EdgeProperty::type, g));
 
   std::ofstream out(file_name + ".context");
