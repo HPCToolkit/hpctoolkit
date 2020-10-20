@@ -97,7 +97,7 @@
 
 //****************************************************************************
 
-#define epsilon  (0.000001)
+#define EPSILON  (0.000001)
 
 namespace Prof {
 
@@ -114,7 +114,7 @@ class AExprIncr
 {
 public:
   // fixme: return this with 'constexpr' after switching to std C++11
-  // static const double epsilon = 0.000001;
+  // static const double EPSILON = 0.000001;
 
 public:
   AExprIncr(uint accumId, uint srcId)
@@ -841,7 +841,7 @@ public:
     double sdev = finalizeStdDev(mdata);
     double mean = accumVar(1, mdata);
     double z = 0.0;
-    if (mean > epsilon) {
+    if (mean > EPSILON) {
       z = sdev / mean;
     }
     accumVar(0, mdata) = z;
@@ -927,7 +927,7 @@ public:
     double sdev = finalizeStdDev(mdata);
     double mean = accumVar(1, mdata);
     double z = 0.0;
-    if (mean > epsilon) {
+    if (mean > EPSILON) {
       z = (sdev / mean) * 100;
     }
     accumVar(0, mdata) = z;

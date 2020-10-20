@@ -73,12 +73,11 @@
 
 //*************************** User Include Files ****************************
 
-#include <boost/graph/graphviz.hpp>
-
 #include <include/uint.h>
 #include <include/gcc-attr.h>
+#include <include/gpu-metric-names.h>
 
-#include "CallPath-CudaCFG.hpp"
+#include "CallPath-ValueFlow.hpp"
 
 using std::string;
 
@@ -211,7 +210,6 @@ static void writeGraph(const std::string &file_name, const NodeMap &node_map, co
   typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS, VertexProperty,
                                 EdgeProperty> Graph;
   typedef boost::graph_traits<Graph>::vertex_descriptor vertex_descriptor;
-  typedef boost::graph_traits<Graph>::edge_descriptor edge_descriptor;
   Graph g;
   std::map<int, vertex_descriptor> vertice;
   for (auto &node_iter : node_map) {

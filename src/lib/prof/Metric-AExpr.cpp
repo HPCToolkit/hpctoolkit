@@ -483,7 +483,7 @@ CoefVar::eval(const Metric::IData& mdata) const
   double sdev = sqrt(v_m.first); // always non-negative
   double mean = v_m.second;
   double z = 0.0;
-  if (mean > epsilon) {
+  if (mean > EPSILON) {
     z = sdev / mean;
   }
 
@@ -522,7 +522,7 @@ RStdDev::eval(const Metric::IData& mdata) const
   double sdev = sqrt(v_m.first); // always non-negative
   double mean = v_m.second;
   double z = 0.0;
-  if (mean > epsilon) {
+  if (mean > EPSILON) {
     z = (sdev / mean) * 100;
   }
 
