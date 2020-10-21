@@ -72,7 +72,7 @@
 
 #define UNIT_TEST 0
 
-#define DEBUG 0
+#define DEBUG 1
 
 #include "gpu-print.h"
 
@@ -578,7 +578,30 @@ gpu_memory_process
  gpu_activity_t *activity
 )
 {
-  PRINT("Memory process not implemented\n");
+  uint32_t correlation_id = activity->details.memory.correlation_id;
+  gpu_correlation_id_map_entry_t *cid_map_entry =
+    gpu_correlation_id_map_lookup(correlation_id);
+  if (cid_map_entry != NULL) {
+    uint64_t external_id =
+      gpu_correlation_id_map_entry_external_id_get(cid_map_entry);
+    gpu_host_correlation_map_entry_t *host_op_entry =
+      gpu_host_correlation_map_lookup(external_id);
+    if (host_op_entry != NULL) {
+      gpu_placeholder_type_t ph = gpu_placeholder_type_alloc;
+      cct_node_t *host_op_node =
+        gpu_host_correlation_map_entry_op_cct_get(host_op_entry, ph);
+      assert(host_op_node != NULL);
+      // Memory allocation does not always happen on the device
+      // Do not send it to trace channels
+      attribute_activity(host_op_entry, activity, host_op_node);
+    }
+    gpu_correlation_id_map_delete(correlation_id);
+  } else {
+    PRINT("Memory correlation_id %u cannot be found\n", correlation_id);
+  }
+  PRINT("Memory CorrelationId %u\n", correlation_id);
+  PRINT("Memory kind %u\n", activity->details.memory.memKind);
+  PRINT("Memory bytes %lu\n", activity->details.memory.bytes);
 }
 
 

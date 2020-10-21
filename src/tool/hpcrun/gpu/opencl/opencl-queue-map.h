@@ -59,8 +59,6 @@
 
 typedef struct opencl_queue_map_entry_t opencl_queue_map_entry_t;
 
-
-
 //*****************************************************************************
 // interface operations
 //*****************************************************************************
@@ -72,8 +70,8 @@ opencl_cl_queue_map_lookup
 );
 
 
-void
-opencl_cl_queue_map_insert
+uint32_t
+opencl_cl_queue_map_update
 (
  uint64_t, 
  uint32_t
@@ -87,7 +85,7 @@ opencl_cl_queue_map_delete
 );
 
 
-uint64_t
+uint32_t
 opencl_cl_queue_map_entry_queue_id_get
 (
  opencl_queue_map_entry_t *entry
@@ -100,12 +98,6 @@ opencl_cl_queue_map_entry_context_id_get
  opencl_queue_map_entry_t *
 );
 
-
-uint64_t
-opencl_h2d_map_count
-(
- void
-);
 
 #endif
 

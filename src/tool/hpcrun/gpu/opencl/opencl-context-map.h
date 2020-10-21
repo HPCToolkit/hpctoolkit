@@ -1,6 +1,6 @@
+// -*-Mode: C++;-*- // technically C99
 
 // * BeginRiceCopyright *****************************************************
-// -*-Mode: C++;-*- // technically C99
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -41,76 +41,58 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-
-#ifndef gpu_activity_multiplexer_h
-#define gpu_activity_multiplexer_h
-
-#include <hpcrun/thread_data.h>
-#include "gpu-operation-channel.h"
-
-//******************************************************************************
-// type declarations
-//******************************************************************************
-typedef struct gpu_activity_channel_t gpu_activity_channel_t;
-typedef struct gpu_activity_t gpu_activity_t;
-
-//******************************************************************************
-// local variables
-//******************************************************************************
+#ifndef opencl_context_map_h
+#define opencl_context_map_h
 
 
-//******************************************************************************
-// private operations
-//******************************************************************************
+//*****************************************************************************
+// system includes
+//*****************************************************************************
+
+#include <stdint.h>
 
 
-//******************************************************************************
+
+//*****************************************************************************
+// type definitions 
+//*****************************************************************************
+
+typedef struct opencl_context_map_entry_t opencl_context_map_entry_t;
+
+
+
+//*****************************************************************************
 // interface operations
-//******************************************************************************
+//*****************************************************************************
 
-
-bool
-gpu_activity_multiplexer_my_channel_initialized
+opencl_context_map_entry_t *
+opencl_cl_context_map_lookup
 (
- void
+ uint64_t
+);
+
+
+uint32_t
+opencl_cl_context_map_update
+(
+ uint64_t
 );
 
 
 void
-gpu_activity_multiplexer_my_channel_init
+opencl_cl_context_map_delete
 (
- void
+ uint64_t
 );
 
 
-void
-gpu_activity_multiplexer_fini
+uint32_t
+opencl_cl_context_map_entry_context_id_get
 (
- void
+ opencl_context_map_entry_t *entry
 );
-
-
-void
-gpu_activity_multiplexer_push
-(
- gpu_activity_channel_t *initiator_channel,
- gpu_activity_t *gpu_activity
-);
-
 
 
 #endif
-
-
-
-
-
-
-
-
-
-
-
-
 
 

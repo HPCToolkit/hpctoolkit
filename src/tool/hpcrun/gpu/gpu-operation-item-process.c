@@ -58,6 +58,7 @@
 #include <hpcrun/gpu/gpu-activity-channel.h>
 #include <hpcrun/gpu/gpu-trace-item.h>
 #include <hpcrun/gpu/gpu-context-id-map.h>
+#include <lib/prof-lean/stdatomic.h>
 
 #include "gpu-operation-item.h"
 #include "gpu-operation-item-process.h"
@@ -99,7 +100,7 @@ gpu_context_stream_trace
 static void
 gpu_memcpy_process
 (
-gpu_operation_item_t *it
+ gpu_operation_item_t *it
 )
 {
   gpu_activity_t *activity = &it->activity;
@@ -130,7 +131,7 @@ gpu_operation_item_t *it
 static void
 gpu_kernel_process
 (
-gpu_operation_item_t *it
+ gpu_operation_item_t *it
 )
 {
   gpu_activity_t *activity = &it->activity;
@@ -156,15 +157,30 @@ gpu_operation_item_t *it
 
 
 static void
-gpu_unknown_process
+gpu_flush_process
 (
-gpu_operation_item_t *it
+ gpu_operation_item_t *it
 )
 {
-  PRINT("Unknown activity kind %d\n", it->activity->kind);
+  gpu_activity_t *activity = &it->activity;
+  // A special flush operation at the end of each thread
+  // Set it false to indicate all previous activities have been processed
+  if (atomic_load(activity->details.flush.wait)) {
+    atomic_store(activity->details.flush.wait, false);
+  }
 }
 
 
+static void
+gpu_unknown_process
+(
+ gpu_operation_item_t *it
+)
+{
+  gpu_activity_t *activity = &it->activity;
+  gpu_activity_channel_t *channel = it->channel;
+  gpu_activity_channel_produce(channel, activity);
+}
 
 //******************************************************************************
 // interface operations
@@ -173,23 +189,30 @@ gpu_operation_item_t *it
 void
 gpu_operation_item_process
 (
-gpu_operation_item_t *it
+ gpu_operation_item_t *it
 )
 {
-
   switch (it->activity.kind) {
 
-  case GPU_ACTIVITY_MEMCPY:
-    gpu_memcpy_process(it);
-    break;
+    case GPU_ACTIVITY_MEMCPY:
+      gpu_memcpy_process(it);
+      break;
 
-  case GPU_ACTIVITY_KERNEL:
-    gpu_kernel_process(it);
-    break;
+    case GPU_ACTIVITY_KERNEL:
+      gpu_kernel_process(it);
+      break;
 
-  default:
-    gpu_unknown_process(it);
-    break;
+    case GPU_ACTIVITY_FLUSH:
+      gpu_flush_process(it);
+      break;
+
+    default:
+      gpu_unknown_process(it);
+      break;
+  }
+
+  if (it->pending_operations) {
+    atomic_fetch_add(it->pending_operations, -1);
   }
 }
 

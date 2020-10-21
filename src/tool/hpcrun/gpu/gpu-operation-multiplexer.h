@@ -1,6 +1,6 @@
-// -*-Mode: C++;-*- // technically C99
 
 // * BeginRiceCopyright *****************************************************
+// -*-Mode: C++;-*- // technically C99
 //
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
@@ -41,125 +41,62 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef _OPENCL_API_H_
-#define _OPENCL_API_H_
+
+#ifndef gpu_operation_multiplexer_h
+#define gpu_operation_multiplexer_h
+
+#include <hpcrun/thread_data.h>
+#include "gpu-operation-channel.h"
 
 //******************************************************************************
-// local includes
+// type declarations
+//******************************************************************************
+typedef struct gpu_activity_channel_t gpu_activity_channel_t;
+typedef struct gpu_activity_t gpu_activity_t;
+
+//******************************************************************************
+// local variables
 //******************************************************************************
 
-#include <hpcrun/gpu/gpu-activity.h>
-#include <lib/prof-lean/hpcrun-opencl.h>
-#include "opencl-memory-manager.h"
 
-
-
-//************************ Forward Declarations ******************************
-
-typedef struct opencl_object_t opencl_object_t;
-
+//******************************************************************************
+// private operations
+//******************************************************************************
 
 
 //******************************************************************************
 // interface operations
 //******************************************************************************
 
-cl_basic_callback_t
-opencl_cb_basic_get
-(
- opencl_object_t *cb_data
-);
 
-
-void
-opencl_cb_basic_print
-(
- cl_basic_callback_t cb_basic,
- char *title
-);
-
-
-void
-opencl_initialize_correlation_id
+bool
+gpu_operation_multiplexer_my_channel_initialized
 (
  void
 );
 
 
 void
-opencl_subscriber_callback
-(
- opencl_object_t *cb_info
-);
-
-
-void
-opencl_activity_completion_callback
-(
- cl_event,
- cl_int,
- void *
-);
-
-
-void
-opencl_timing_info_get
-(
- gpu_interval_t *,
- cl_event
-);
-
-
-cct_node_t *
-opencl_api_node_get
+gpu_operation_multiplexer_my_channel_init
 (
  void
 );
 
 
 void
-clSetEventCallback_wrapper
-(
- cl_event,
- cl_int,
- void (CL_CALLBACK*)(cl_event, cl_int, void *),
- void *
-);
-
-
-void
-opencl_api_initialize
-(
- void
-);
-
-
-int
-opencl_bind
+gpu_operation_multiplexer_fini
 (
  void
 );
 
 
 void
-opencl_instrumentation_enable
+gpu_operation_multiplexer_push
 (
- void
+ gpu_activity_channel_t *initiator_channel,
+ atomic_bool *initiator_pending_operations,
+ gpu_activity_t *gpu_activity
 );
 
 
-void
-opencl_api_thread_finalize
-(
- void *
-);
-
-
-void
-opencl_api_process_finalize
-(
- void *
-);
-
-
-#endif  //_OPENCL_API_H_
+#endif

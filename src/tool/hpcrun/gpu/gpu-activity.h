@@ -94,7 +94,8 @@ typedef enum {
   GPU_ACTIVITY_PC_SAMPLING_INFO        = 13, 
   GPU_ACTIVITY_EXTERNAL_CORRELATION    = 14,
   GPU_ACTIVITY_EVENT                   = 15,
-  GPU_ACTIVITY_FUNCTION                = 16
+  GPU_ACTIVITY_FUNCTION                = 16,
+  GPU_ACTIVITY_FLUSH                   = 17
 } gpu_activity_kind_t;
 
 
@@ -175,7 +176,7 @@ typedef enum {
   GPU_MEM_MANAGED_STATIC  = 6,
   GPU_MEM_UNKNOWN         = 7,
   GPU_MEM_COUNT           = 8
-} gpu_mem_kind_t;
+} gpu_mem_type_t;
 
 
 // pc sampling
@@ -196,6 +197,10 @@ typedef struct gpu_pc_sampling_info_t {
   uint64_t fullSMSamples;
 } gpu_pc_sampling_info_t;
 
+// a special flush record to notify all operations have been consumed
+typedef struct gpu_flush_t {
+  atomic_bool *wait;
+} gpu_flush_t;
 
 // this type is prefix of all memory structures
 // gpu_interval_t is a prefix 
@@ -225,7 +230,8 @@ typedef struct gpu_memory_t {
   uint64_t start;
   uint64_t end;
   uint64_t bytes;
-  gpu_mem_kind_t memKind;
+  uint32_t correlation_id;
+  gpu_mem_type_t memKind;
 } gpu_memory_t;
 
 
@@ -237,7 +243,7 @@ typedef struct gpu_memset_t {
   uint32_t correlation_id;
   uint32_t context_id;
   uint32_t stream_id;
-  gpu_mem_kind_t memKind;
+  gpu_mem_type_t memKind;
 } gpu_memset_t;
 
 
@@ -370,6 +376,7 @@ typedef struct gpu_activity_details_t {
     gpu_branch_t branch;
     gpu_synchronization_t synchronization;
     gpu_host_correlation_t correlation;
+    gpu_flush_t flush;
 
     /* Access short cut for activitiy fields shared by multiple kinds */
 
@@ -427,11 +434,11 @@ gpu_activity_free
 
 
 void
-set_gpu_interval
+gpu_interval_set
 (
-  gpu_interval_t* interval,
-  uint64_t start,
-  uint64_t end
+ gpu_interval_t* interval,
+ uint64_t start,
+ uint64_t end
 );
 
 

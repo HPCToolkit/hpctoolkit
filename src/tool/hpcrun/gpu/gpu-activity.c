@@ -141,21 +141,21 @@ gpu_activity_free
 }
 
 void
-set_gpu_instruction
+gpu_instruction_set
 (
-  gpu_instruction_t* insn, 
-  ip_normalized_t pc
+ gpu_instruction_t* insn, 
+ ip_normalized_t pc
 )
 {
   insn->pc = pc;
 }
 
 void
-set_gpu_interval
+gpu_interval_set
 (
-  gpu_interval_t* interval,
-  uint64_t start,
-  uint64_t end
+ gpu_interval_t* interval,
+ uint64_t start,
+ uint64_t end
 )
 {
   interval->start = start;
