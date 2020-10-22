@@ -106,7 +106,6 @@ plugin_instdir = $(pkglibdir)/plugins
 bin_SCRIPTS =
 pkglibexec_SCRIPTS =
 include_HEADERS =
-pkglibexec_PROGRAMS =
 pkglib_LIBRARIES =
 pkglib_LTLIBRARIES =
 
@@ -120,7 +119,7 @@ if OPT_BUILD_FRONT_END
 endif
 
 if OPT_ENABLE_HPCRUN_DYNAMIC
-  pkglib_LTLIBRARIES += libhpcrun.la
+  noinst_LTLIBRARIES = libhpcrun.la
   pkglib_LTLIBRARIES += libhpcrun_ga.la
   pkglib_LTLIBRARIES += libhpcrun_io.la
   pkglib_LTLIBRARIES += libhpcrun_memleak.la
@@ -710,7 +709,7 @@ libhpcrun_mpi_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 
 
 #-----------------------------------------------------------
-# ldflags
+# Dependency Flags
 #-----------------------------------------------------------
 
 # The noinst_LTLIBRARIES always build with -fPIC and can be linked
@@ -739,19 +738,27 @@ libhpcrun_pthread_la_LDFLAGS = -Wl,-Bsymbolic
 
 libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic
 
-libhpcrun_o_LDFLAGS =
+# Note: (1) for dynamic libhpcrun.so, use LIBADD for (.a) archives
+# with fPIC (libunwind, etc) that are linked in and hidden at link
+# time, and LDFLAGS (-L, -l) for other dependency libraries.
+#
+# (2) for static libhpcrun.o, use LDADD for archives that are linked
+# and hidden into libhpcrun.o.  Other dependencies go into hpclink.
+# Don't use LDFLAGS for static case.
 
 libhpcrun_la_LIBADD =  \
 	$(PROF_LEAN_A)  \
 	$(SUPPORT_LEAN_A)  \
+	$(MBEDTLS_LIBS)  \
+	$(OUR_LIBUNWIND_A)  \
+	$(OUR_LZMA_A)
+
+libhpcrun_la_LDFLAGS +=  \
 	-L$(LIBMONITOR_LIB) -lmonitor  \
 	-lpthread -lrt  \
 	-L$(LIBELF_LIB) -lelf  \
 	$(PERFMON_LDFLAGS_DYN)  \
-	$(OPT_ROCM_LDFLAGS)  \
-	$(MBEDTLS_LIBS)  \
-	$(OUR_LIBUNWIND_A)  \
-	$(OUR_LZMA_A)
+	$(OPT_ROCM_LDFLAGS)
 
 libhpcrun_o_LDADD =  \
 	$(PROF_LEAN_A)  \
@@ -820,7 +827,7 @@ if HOST_CPU_X86_FAMILY
   libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
   libhpcrun_o_CCASFLAGS  = $(AM_CCASFLAGS)
   libhpcrun_la_LDFLAGS  += $(XED2_HPCRUN_LIBS)
-  libhpcrun_o_LDFLAGS   += $(XED2_HPCLINK_LIBS) 
+  libhpcrun_o_LDADD     += $(XED2_HPCLINK_LIBS) 
   libhpcrun_ga_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_io_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
@@ -891,7 +898,7 @@ endif
 if OPT_PAPI_STATIC
   libhpcrun_o_SOURCES   += $(MY_PAPI_FILES)
   libhpcrun_o_CPPFLAGS  += $(PAPI_INC_FLGS)
-  libhpcrun_o_LDFLAGS   += $(PAPI_LD_FLGS)
+  libhpcrun_o_LDADD     += $(OPT_PAPI_LIBS_STAT)
 
   MY_CPP_DEFINES  += -DHPCRUN_SS_PAPI
 endif
@@ -967,7 +974,7 @@ libhpcrun_pthread_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_pthread_wrap_a_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_mpi_la_CPPFLAGS += $(UNW_INCLUDE_DIRS)
 libhpcrun_la_LDFLAGS  += $(UNW_DYNAMIC_LD_FLAGS)
-libhpcrun_o_LDFLAGS   += $(UNW_STATIC_LD_FLAGS)
+libhpcrun_o_LDADD     += $(UNW_STATIC_LD_FLAGS)
 MY_AGENT_INCLUDE_DIRS += $(UNW_INCLUDE_DIRS)
 
 libhpcrun_la_SOURCES += utilities/last_func.c
@@ -1026,8 +1033,61 @@ endif
 
 
 #-----------------------------------------------------------
-# local hooks
+# Manual install targets
 #-----------------------------------------------------------
+
+# Take over the last stage of building and installing libhpcrun.so and
+# libhpcrun.o.  Objcopy works to hide (localize) symbol names, but
+# only on object files (.o and .a), not on shared (.so) libraries.
+#
+# We change libhpcrun to no-install targets and automake builds an
+# (.a) archive of (.o) files with fPIC.  Then, we manually unpack the
+# archive, link in the 3rd-party libraries (libunwind, etc, with
+# fPIC), hide the symbols, and then link as a shared library.
+#
+# Note: (1) for dynamic libhpcrun.so, use LIBADD for (.a) archives
+# with fPIC (libunwind, etc) that are linked in and hidden at link
+# time, and LDFLAGS (-L, -l) for other dependency libraries.
+#
+# (2) for static libhpcrun.o, use LDADD for archives that are linked
+# and hidden into libhpcrun.o.  Other dependencies go into hpclink.
+# Don't use LDFLAGS for static case.
+
+MONITOR_NAMES = -w -G 'monitor_*'
+HPCRUN_NAMES =  -w -G 'hpcrun_*'
+
+DYN_SYSCALL_LIST = poll ppoll pselect select
+DYN_SYSCALL_NAMES = $(foreach name,$(DYN_SYSCALL_LIST),-G $(name))
+
+STAT_WRAP_NAMES = -w -G '__wrap_*'
+
+WORK_DYN = work-dyn
+WORK_STAT = work-stat
+
+install-exec-hook:
+if OPT_ENABLE_HPCRUN
+	@echo "building and installing libhpcrun.so ..."
+	rm -rf $(WORK_DYN)
+	mkdir $(WORK_DYN)
+	cd $(WORK_DYN) && $(AR) x ../.libs/libhpcrun.a
+	$(LD) -r $(WORK_DYN)/*.o $(libhpcrun_la_LIBADD) -o $(WORK_DYN)/part1.o
+	$(OBJCOPY) $(MONITOR_NAMES) $(HPCRUN_NAMES) $(DYN_SYSCALL_NAMES)  \
+		$(WORK_DYN)/part1.o $(WORK_DYN)/part2.o
+	$(CC) -shared $(WORK_DYN)/part2.o $(libhpcrun_la_LDFLAGS) -o $(WORK_DYN)/libhpcrun.so
+	$(INSTALL) -m 0755 $(WORK_DYN)/libhpcrun.so $(DESTDIR)$(pkglibdir)
+else
+	@echo "skipping libhpcrun.so"
+endif
+if OPT_ENABLE_HPCRUN_STATIC
+	@echo "building and installing libhpcrun.o ..."
+	rm -rf $(WORK_STAT)
+	mkdir $(WORK_STAT)
+	$(OBJCOPY) $(MONITOR_NAMES) $(HPCRUN_NAMES) $(STAT_WRAP_NAMES)  \
+		libhpcrun.o $(WORK_STAT)/libhpcrun.o
+	$(INSTALL) -m 0644 $(WORK_STAT)/libhpcrun.o $(DESTDIR)$(pkglibdir)
+else
+	@echo "skipping libhpcrun.o"
+endif
 
 # Install the plugin config files.
 
@@ -1036,14 +1096,6 @@ install-data-hook:
 	-for file in $(PLUGIN_CONFIG_FILES) ; do \
 	    cp -f "$(plugin_srcdir)/$$file" "$(DESTDIR)$(plugin_instdir)/$$file" ; \
 	done
-
-# Install libhpcrun.o into pkglibdir.  New automake won't install a
-# program into a libdir, so we use noinst and install it manually.
-
-if OPT_ENABLE_HPCRUN_STATIC
-install-exec-hook:
-	cp libhpcrun.o $(DESTDIR)$(pkglibdir)
-endif
 
 
 #############################################################################
