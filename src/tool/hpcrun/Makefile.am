@@ -1055,6 +1055,7 @@ endif
 
 MONITOR_NAMES = -w -G 'monitor_*'
 HPCRUN_NAMES =  -w -G 'hpcrun_*'
+MISC_NAMES =    -w -G 'debug_flag_*' -G 'messages_*'
 
 DYN_SYSCALL_LIST = poll ppoll pselect select
 DYN_SYSCALL_NAMES = $(foreach name,$(DYN_SYSCALL_LIST),-G $(name))
@@ -1071,7 +1072,7 @@ if OPT_ENABLE_HPCRUN
 	mkdir $(WORK_DYN)
 	cd $(WORK_DYN) && $(AR) x ../.libs/libhpcrun.a
 	$(LD) -r $(WORK_DYN)/*.o $(libhpcrun_la_LIBADD) -o $(WORK_DYN)/part1.o
-	$(OBJCOPY) $(MONITOR_NAMES) $(HPCRUN_NAMES) $(DYN_SYSCALL_NAMES)  \
+	$(OBJCOPY) $(MONITOR_NAMES) $(HPCRUN_NAMES) $(DYN_SYSCALL_NAMES) $(MISC_NAMES)  \
 		$(WORK_DYN)/part1.o $(WORK_DYN)/part2.o
 	$(CC) -shared $(WORK_DYN)/part2.o $(libhpcrun_la_LDFLAGS) -o $(WORK_DYN)/libhpcrun.so
 	$(INSTALL) -m 0755 $(WORK_DYN)/libhpcrun.so $(DESTDIR)$(pkglibdir)
@@ -1082,7 +1083,7 @@ if OPT_ENABLE_HPCRUN_STATIC
 	@echo "building and installing libhpcrun.o ..."
 	rm -rf $(WORK_STAT)
 	mkdir $(WORK_STAT)
-	$(OBJCOPY) $(MONITOR_NAMES) $(HPCRUN_NAMES) $(STAT_WRAP_NAMES)  \
+	$(OBJCOPY) $(MONITOR_NAMES) $(HPCRUN_NAMES) $(STAT_WRAP_NAMES) $(MISC_NAMES)  \
 		libhpcrun.o $(WORK_STAT)/libhpcrun.o
 	$(INSTALL) -m 0644 $(WORK_STAT)/libhpcrun.o $(DESTDIR)$(pkglibdir)
 else
