@@ -100,6 +100,8 @@ static bool gtpin_use_runtime_callstack = false;
 
 static __thread uint64_t gtpin_correlation_id = 0;
 static __thread uint64_t gtpin_cpu_submit_time = 0;
+static __thread gpu_op_ccts_t gtpin_gpu_op_ccts;
+static __thread bool gtpin_first = true;
 
 //******************************************************************************
 // private operations
@@ -153,8 +155,15 @@ createKernelNode
   if (gtpin_use_runtime_callstack) {
     // XXX(Keren): gtpin's call stack is a mass, better to use opencl's call path
     // onKernelRun->clEnqueueNDRangeKernel_wrapper->opencl_subscriber_callback
-    gtpin_correlation_id = correlation_id;
-    gtpin_cpu_submit_time = cpu_submit_time;
+    if (gtpin_first) {
+      // gtpin callback->runtime callback
+      gtpin_correlation_id = correlation_id;
+      gtpin_cpu_submit_time = cpu_submit_time;
+    } else {
+      // runtime callback->gtpin callback
+      gpu_activity_channel_t *activity_channel = gpu_activity_channel_get();
+      gtpin_correlation_id_map_insert(correlation_id, &gtpin_gpu_op_ccts, activity_channel, cpu_submit_time);
+    }
   } else {
     cct_node_t *api_node = gpu_application_thread_correlation_callback(correlation_id);
 
@@ -528,7 +537,16 @@ gtpin_produce_runtime_callstack
 )
 {
   if (gtpin_use_runtime_callstack) {
-    gpu_activity_channel_t *activity_channel = gpu_activity_channel_get();
-    gtpin_correlation_id_map_insert(gtpin_correlation_id, gpu_op_ccts, activity_channel, gtpin_cpu_submit_time);
+    if (gtpin_correlation_id != 0) {
+      // gtpin callback->opencl callback
+      gpu_activity_channel_t *activity_channel = gpu_activity_channel_get();
+      gtpin_correlation_id_map_insert(gtpin_correlation_id, gpu_op_ccts, activity_channel, gtpin_cpu_submit_time);
+      gtpin_correlation_id = 0;
+      gtpin_first = true;
+    } else {
+      // opencl callback->gtpin callback;
+      gtpin_gpu_op_ccts = *gpu_op_ccts;      
+      gtpin_first = false;
+    }
   }
 }
