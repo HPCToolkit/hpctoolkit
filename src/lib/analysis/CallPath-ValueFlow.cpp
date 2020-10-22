@@ -134,8 +134,8 @@ static void readGraph(const std::string &file_name, NodeMap &node_map, EdgeMap &
     
     node.node_id = std::stoi(ninfo.first);
 
-    if (ninfo.second.find("type") != ninfo.second.end()) {
-      node.type = ninfo.second.at("type");
+    if (ninfo.second.find("node_type") != ninfo.second.end()) {
+      node.type = ninfo.second.at("node_type");
     }
 
     if (ninfo.second.find("redundancy") != ninfo.second.end()) {
@@ -156,8 +156,8 @@ static void readGraph(const std::string &file_name, NodeMap &node_map, EdgeMap &
   for (auto &einfo : result.edges) {
     int source_id = std::stoi(einfo.source.name);
     int target_id = std::stoi(einfo.target.name);
-    if (einfo.props.find("type") != einfo.props.end()) {
-      edge_map[source_id][target_id].push_back(einfo.props.at("type"));
+    if (einfo.props.find("edge_type") != einfo.props.end()) {
+      edge_map[source_id][target_id].push_back(einfo.props.at("edge_type"));
     }
   }
 }
@@ -227,6 +227,7 @@ static void writeGraph(const std::string &file_name, const NodeMap &node_map, co
     for (auto &node_iter : edge_iter.second) {
       auto to = vertice.at(node_iter.first);
       for (auto &type : node_iter.second) {
+        std::cout << from << "->" << to << std::endl;
         boost::add_edge(from, to, EdgeProperty(type), g);
       }
     }
