@@ -89,8 +89,8 @@ using std::string;
 //***************************************************************************
 
 // Size in bytes for parallel analysis of gpu binaries
-#define DEFAULT_GPU_SIZE   100000000
-#define GPU_SIZE_STR      "100000000"
+#define DEFAULT_GPU_SIZE   100000
+#define GPU_SIZE_STR      "100000"
 
 static const char* version_info = HPCTOOLKIT_VERSION_STRING;
 
@@ -137,7 +137,7 @@ Options: General\n\
 \n\
 Options: Parallel usage\n\
   -j <num>, --jobs <num>  Use <num> threads for all phases in hpcstruct. {1}\n\
-  --gpu-size <n>       Size (bytes) of a GPU binary that will cause hpcstruct\n\
+  --gpu-size <n>       Size (KB) of a GPU binary that will cause hpcstruct\n\
                        to use <num> threads to analyze a binary in parallel.\n\
                        GPU binaries with fewer than <n> bytes will be analyzed\n\
                        concurrently, <num> at a time.  {" GPU_SIZE_STR "}\n\
