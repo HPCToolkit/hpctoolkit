@@ -51,7 +51,7 @@
 //
 // Purpose:
 //   compute a cryptographic hash of a sequence of bytes. this is used
-//   to name information presented to hpcrun in memory (e.g. an NVIDIA cubin) 
+//   to name information presented to hpcrun in memory (e.g. a GPU binary) 
 //   that needs to be saved for post-mortem analysis.
 //
 //***************************************************************************

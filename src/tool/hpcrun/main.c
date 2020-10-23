@@ -87,7 +87,6 @@
 #include "files.h"
 #include "fnbounds_interface.h"
 #include "fnbounds_table_interface.h"
-#include "hpcrun_dlfns.h"
 #include "hpcrun-initializers.h"
 #include "hpcrun_options.h"
 #include "hpcrun_return_codes.h"
@@ -142,29 +141,22 @@
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <lib/prof-lean/hpcio.h>
 #include <lib/prof-lean/spinlock.h>
+#include <lib/prof-lean/vdso.h>
 
 #include <messages/messages.h>
 #include <messages/debug-flag.h>
 
 #include <loadmap.h>
 
-// Gotcha only applies to the dynamic case.
-// If this grows, then move to a separate file.
+// The auditor only applies to the dynamic case.
 #ifndef HPCRUN_STATIC_LINK
-#include <gotcha/gotcha.h>
-
-static const char* library_to_intercept = "libunwind.so";
-static gotcha_wrappee_handle_t wrappee_dl_iterate_phdr_handle;
-struct gotcha_binding_t wrap_actions [] = {
-  { "dl_iterate_phdr", hpcrun_loadmap_iterate, &wrappee_dl_iterate_phdr_handle}    
-};
+#include "audit/audit-api.h"
 #endif
-  
 extern void hpcrun_set_retain_recursion_mode(bool mode);
-#ifndef USE_LIBUNW
-extern void hpcrun_dump_intervals(void* addr);
-#endif // ! USE_LIBUNW
 
+#ifdef HPCRUN_HAVE_CUSTOM_UNWINDER
+extern void hpcrun_dump_intervals(void* addr);
+#endif
 
 
 //***************************************************************************
@@ -223,11 +215,12 @@ __attribute__ ((unused));
 
 int lush_metrics = 0; // FIXME: global variable for now
 
+bool hpcrun_no_unwind = false;
+
 /******************************************************************************
  * (public declaration) thread-local variables
  *****************************************************************************/
 static __thread bool hpcrun_thread_suppress_sample = true;
-static __thread int hpcrun_thread_dl_operation = 0;
 
 
 //***************************************************************************
@@ -255,30 +248,9 @@ static char execname[PATH_MAX] = {'\0'};
 // Interface functions for suppressing samples
 //***************************************************************************
 
-static spinlock_t dl_op_lock = SPINLOCK_UNLOCKED;
-
-void hpcrun_dlfunction_begin()
-{
-  if (hpcrun_thread_dl_operation == 0)
-    spinlock_lock(&dl_op_lock);
-  hpcrun_thread_dl_operation += 1;
-}
-
-void hpcrun_dlfunction_end()
-{
-  hpcrun_thread_dl_operation -= 1;
-  if (hpcrun_thread_dl_operation == 0)
-    spinlock_unlock(&dl_op_lock);
-}
-
-bool hpcrun_dlfunction_is_active()
-{
-  return hpcrun_thread_dl_operation > 0;
-}
-
 bool hpcrun_suppress_sample()
 {
-  return hpcrun_dlfunction_is_active() || hpcrun_thread_suppress_sample;
+  return hpcrun_thread_suppress_sample;
 }
 
 
@@ -446,7 +418,7 @@ hpcrun_set_abort_timeout()
 
 siglongjmp_fcn* hpcrun_get_real_siglongjmp(void);
 
-#ifndef USE_LIBUNW
+#ifdef HPCRUN_HAVE_CUSTOM_UNWINDER
 static sigjmp_buf ivd_jb;
 
 static int
@@ -464,12 +436,6 @@ dump_interval_handler(int sig, siginfo_t* info, void* ctxt)
 void
 hpcrun_init_internal(bool is_child)
 {
-#ifndef HPCRUN_STATIC_LINK
-  gotcha_filter_libraries_by_name(library_to_intercept);
-  gotcha_wrap(wrap_actions, sizeof(wrap_actions)/sizeof(struct gotcha_binding_t), "hpctoolkit");
-  gotcha_restore_library_filter_func();
-#endif
-
   hpcrun_memory_reinit();
   hpcrun_mmap_init();
   hpcrun_thread_data_init(0, NULL, is_child, hpcrun_get_num_sample_sources());
@@ -507,7 +473,7 @@ hpcrun_init_internal(bool is_child)
   hpcrun_setup_segv();
 
 
-#ifndef USE_LIBUNW
+#ifdef HPCRUN_HAVE_CUSTOM_UNWINDER
   if (getenv("HPCRUN_ONLY_DUMP_INTERVALS")) {
     fnbounds_table_t table = fnbounds_fetch_executable_table();
     TMSG(INTERVALS_PRINT, "table data = %p", table.table);
@@ -529,7 +495,7 @@ hpcrun_init_internal(bool is_child)
     }
     exit(0);
   }
-#endif // ! USE_LIBUNW
+#endif  // HPCRUN_HAVE_CUSTOM_UNWINDER
 
   hpcrun_stats_reinit();
   hpcrun_start_stop_internal_init();
@@ -762,6 +728,7 @@ logit(cct_node_t* n, cct_op_arg_t arg, size_t l)
 void*
 hpcrun_thread_init(int id, local_thread_data_t* local_thread_data, bool has_trace)
 {
+  bool demand_new_thread = false;
   cct_ctxt_t* thr_ctxt = local_thread_data ? local_thread_data->thr_ctxt : NULL;
 
   hpcrun_mmap_init();
@@ -773,7 +740,7 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data, bool has_trac
   // ----------------------------------------
 
   thread_data_t* td = NULL;
-  hpcrun_threadMgr_data_get_safe(id, thr_ctxt, &td, has_trace);
+  hpcrun_threadMgr_data_get_safe(id, thr_ctxt, &td, has_trace, demand_new_thread);
   hpcrun_set_thread_data(td);
 
   td->inside_hpcrun = 1;  // safe enter, disable signals
@@ -889,6 +856,8 @@ monitor_init_process(int *argc, char **argv, void* data)
 
   hpcrun_wait();
 
+  hpcrun_init_auditor();
+
 #if 0
   // temporary patch to avoid deadlock within PAMI's optimized implementation
     // of all-to-all. a problem was observed when PAMI's optimized all-to-all
@@ -944,6 +913,9 @@ monitor_init_process(int *argc, char **argv, void* data)
 
   // fnbounds must be after module_ignore_map
   fnbounds_init();
+#ifndef HPCRUN_STATIC_LINK
+  auditor_exports->mainlib_connected(get_saved_vdso_path());
+#endif
 
   control_knob_init();
 
@@ -956,6 +928,13 @@ monitor_init_process(int *argc, char **argv, void* data)
   if (life != NULL){
     int seconds = atoi(life);
     if (seconds > 0) alarm((unsigned int) seconds);
+  }
+
+  // see if unwinding has been turned off
+  // the same setting governs whether or not fnbounds is needed or used.
+  char *foo = getenv("HPCRUN_NO_UNWIND");
+  if (foo != NULL){
+    hpcrun_no_unwind = true;
   }
 
   char* s = getenv(HPCRUN_EVENT_LIST);
@@ -1700,47 +1679,38 @@ MONITOR_EXT_WRAP_NAME(pthread_cond_broadcast)(pthread_cond_t* cond)
 
 #ifndef HPCRUN_STATIC_LINK
 
-void
-monitor_pre_dlopen(const char* path, int flags)
-{
-  if (!hpcrun_is_initialized()) {
+static void auditor_open(auditor_map_entry_t* entry) {
+  hpcrun_safe_enter();
+  entry->load_module = fnbounds_map_dso(entry->path,
+    entry->start, entry->end, &entry->dl_info);
+  hpcrun_safe_exit();
+}
+
+static void auditor_close(auditor_map_entry_t* entry) {
+  hpcrun_safe_enter();
+  hpcrun_loadmap_unmap(entry->load_module);
+  hpcrun_safe_exit();
+}
+
+static void auditor_stable(bool additive) {
+  if(!hpcrun_td_avail()) return;
+  hpcrun_safe_enter();
+  if(additive) fnbounds_fini();
+  hpcrun_safe_exit();
+}
+
+static void auditor_init() {
+  if(!hpcrun_is_initialized())
     monitor_initialize();
-  }
-
-  hpcrun_dlfunction_begin();
-  hpcrun_safe_enter();
-  hpcrun_pre_dlopen(path, flags);
-  hpcrun_safe_exit();
 }
 
-
-void
-monitor_dlopen(const char *path, int flags, void* handle)
-{
-  hpcrun_safe_enter();
-  hpcrun_dlopen(path, flags, handle);
-  hpcrun_safe_exit();
-  hpcrun_dlfunction_end();
-}
-
-
-void
-monitor_dlclose(void* handle)
-{
-  hpcrun_dlfunction_begin();
-  hpcrun_safe_enter();
-  hpcrun_dlclose(handle);
-  hpcrun_safe_exit();
-}
-
-
-void
-monitor_post_dlclose(void* handle, int ret)
-{
-  hpcrun_safe_enter();
-  hpcrun_post_dlclose(handle, ret);
-  hpcrun_safe_exit();
-  hpcrun_dlfunction_end();
+const auditor_exports_t* auditor_exports;
+void hpcrun_auditor_attach(const auditor_exports_t* exports, auditor_hooks_t* hooks) {
+  auditor_exports = exports;
+  hooks->initialize = auditor_init;
+  hooks->open = auditor_open;
+  hooks->close = auditor_close;
+  hooks->stable = auditor_stable;
 }
 
 #endif /* ! HPCRUN_STATIC_LINK */

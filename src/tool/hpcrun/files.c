@@ -539,6 +539,9 @@ hpcrun_save_vdso()
   int fd;
   int error = 0;
 
+  // don't try to write vdso file if measurement is disabled
+  if (hpcrun_get_disabled()) return;
+
   // don't need to try writing it again after a fork
   if (vdso_written) return;
 

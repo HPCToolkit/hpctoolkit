@@ -152,7 +152,7 @@ endif
 MYCLEAN = @HOST_LIBTREPOSITORY@
 
 GENHEADERS = \
-	cubins-analysis.h \
+	gpubin-analysis.h \
 	usage.h
 
 #----------------------------------------------------------------------
@@ -182,7 +182,7 @@ MOSTLYCLEANFILES = $(MYCLEAN)
 #############################################################################
 
 %.h : $(srcdir)/%.txt
-	$(srcdir)/stringify.py < $<  > $@
+	$(srcdir)/stringify.sh < $<  > $@
 
 
 #############################################################################

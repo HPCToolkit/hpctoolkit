@@ -86,6 +86,7 @@
 #include <hpcrun/gpu/amd/roctracer-api.h>
 #include <hpcrun/gpu/gpu-activity.h>
 #include <hpcrun/gpu/gpu-metrics.h>
+#include <hpcrun/gpu/gpu-trace.h>
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/metrics.h>
@@ -195,8 +196,11 @@ METHOD_FN(finalize_event_list)
     monitor_real_exit(-1);
   }
 #endif
-
   level0_init();
+
+  // Init records
+  gpu_trace_init();
+
   device_finalizer_shutdown.fn = level0_fini;
   device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_shutdown);
 }
