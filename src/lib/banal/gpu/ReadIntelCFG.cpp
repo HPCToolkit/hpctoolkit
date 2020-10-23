@@ -126,7 +126,7 @@ addCustomFunctionObject
 
 
 static std::string
-getFileNameFromAbsolutePath(const std::string &str) {
+getFunctionNameFromAbsolutePath(const std::string &str) {
   // TODO(Aaron): you can just find the last "/" and grab "/" to the end
   std::vector<std::string> tokens; 
   std::stringstream str_stream(str); 
@@ -136,7 +136,16 @@ getFileNameFromAbsolutePath(const std::string &str) {
   while(std::getline(str_stream, intermediate, '/')) { 
     tokens.push_back(intermediate); 
   } 
-  return tokens[tokens.size() - 1];
+
+  std::string file_name = tokens[tokens.size() - 1];
+  std::string function_name;
+  // xxx.gpubin.function_name
+  auto pos = file_name.rfind(".");
+  if (pos != std::string::npos) {
+    function_name = file_name.substr(pos + 1);
+  }
+
+  return function_name;
 }
 
 
@@ -243,7 +252,7 @@ readIntelCFG
 )
 {
   if (cfg_wanted) {
-    auto function_name = getFileNameFromAbsolutePath(elfFile->getFileName());
+    auto function_name = getFunctionNameFromAbsolutePath(elfFile->getFileName());
     addCustomFunctionObject(function_name, the_symtab); //adds a dummy function object
 
     char *text_section = NULL;

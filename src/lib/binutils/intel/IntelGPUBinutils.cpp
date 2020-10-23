@@ -152,25 +152,21 @@ findIntelGPUBins
     const SKernelDebugDataHeaderIGC *kernel_header =
       reinterpret_cast<const SKernelDebugDataHeaderIGC*>(ptr);
     ptr += sizeof(SKernelDebugDataHeaderIGC);
+    std::string kernel_name(ptr);
 
     unsigned kernel_name_size_aligned = sizeof(uint32_t) *
       (1 + (kernel_header->KernelNameSize - 1) / sizeof(uint32_t));
     ptr += kernel_name_size_aligned;
 
     if (kernel_header->SizeVisaDbgInBytes > 0) {
-      std::string kernel_name = file_name + ".kernel";
+      std::string real_kernel_name = file_name + "." + kernel_name;
 
       size_t kernel_size = kernel_header->SizeVisaDbgInBytes;
       char *kernel_buffer = (char *)malloc(kernel_size);
       memcpy(kernel_buffer, ptr, kernel_size);
 
       auto elf_file = new ElfFile;
-      if (elf_file->open(kernel_buffer, kernel_size, kernel_name)) {
-        // XXX(Keren): Since we are using gtpin, each elf correponds to a single kernel
-        FILE *fptr = fopen(kernel_name.c_str(), "wb");
-        fwrite(kernel_buffer, sizeof(char), kernel_size, fptr);
-        fclose(fptr);
-
+      if (elf_file->open(kernel_buffer, kernel_size, real_kernel_name)) {
         elf_file->setIntelGPUFile(true);
         filevector->push_back(elf_file);
       } else {

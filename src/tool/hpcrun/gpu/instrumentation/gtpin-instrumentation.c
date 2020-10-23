@@ -245,8 +245,14 @@ findOrAddKernelModule
  GTPinKernel kernel
 )
 {
+  char kernel_name[MAX_STR_SIZE];
+  GTPINTOOL_STATUS status;
+
+  status = GTPin_KernelGetName(kernel, MAX_STR_SIZE, kernel_name, NULL);
+  assert(status == GTPINTOOL_STATUS_SUCCESS);
+
   uint32_t kernel_elf_size = 0;
-  GTPINTOOL_STATUS status = GTPin_GetElf(kernel, 0, NULL, &kernel_elf_size);
+  status = GTPin_GetElf(kernel, 0, NULL, &kernel_elf_size);
   assert(status == GTPINTOOL_STATUS_SUCCESS);
 
   char *kernel_elf = (char *)malloc(sizeof(char) * kernel_elf_size);
@@ -265,7 +271,8 @@ findOrAddKernelModule
 
   free(kernel_elf);
 
-  strncat(file_name, KERNEL_SUFFIX, strlen(KERNEL_SUFFIX));
+  strncat(file_name, ".", 1);
+  strncat(file_name, kernel_name, strlen(kernel_name));
 
   uint32_t module_id = 0;
 
