@@ -309,7 +309,7 @@ gpu_trace_stream_release
 
   hpcrun_write_profile_data(&td->core_profile_trace_data);
   hpcrun_trace_close(&td->core_profile_trace_data);
-  atomic_fetch_add(&stream_counter, -1);
+  atomic_fetch_add(&active_streams_counter, -1);
 
 }
 

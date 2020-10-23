@@ -61,6 +61,7 @@
 // local includes
 //******************************************************************************
 
+#include <include/gpu-binary.h>
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/cct/cct.h>
 #include <hpcrun/memory/hpcrun-malloc.h>
@@ -229,12 +230,12 @@ computeBinaryHash
   size_t i;
   size_t used = 0;
   used += sprintf(&file_name[used], "%s", hpcrun_files_output_directory());
-  used += sprintf(&file_name[used], "%s", "/intel/");
+  used += sprintf(&file_name[used], "%s", "/" GPU_BINARY_DIRECTORY "/");
   mkdir(file_name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
   for (i = 0; i < HASH_LENGTH; ++i) {
     used += sprintf(&file_name[used], "%02x", hash[i]);
   }
-  used += sprintf(&file_name[used], "%s", ".gpubin");
+  used += sprintf(&file_name[used], "%s", GPU_BINARY_SUFFIX);
 }
 
 
