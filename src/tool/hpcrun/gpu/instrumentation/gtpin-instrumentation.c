@@ -214,8 +214,27 @@ writeBinary
   }
 }
 
+static size_t
+computeHash
+(
+ const char *mem_ptr,
+ size_t mem_size,
+ char *name
+)
+{
+  // Compute hash for mem_ptr with mem_size
+  unsigned char hash[HASH_LENGTH];
+  crypto_hash_compute((const unsigned char *)mem_ptr, mem_size, hash, HASH_LENGTH);
 
-void
+  size_t i;
+  size_t used = 0;
+  for (i = 0; i < HASH_LENGTH; ++i) {
+    used += sprintf(&name[used], "%02x", hash[i]);
+  }
+  return used;
+}
+
+static void
 computeBinaryHash
 (
  const char *binary,
@@ -223,18 +242,11 @@ computeBinaryHash
  char *file_name
 )
 {
-  // Compute hash for the binary
-  unsigned char hash[HASH_LENGTH];
-  crypto_hash_compute((const unsigned char *)binary, binary_size, hash, HASH_LENGTH);
-
-  size_t i;
   size_t used = 0;
   used += sprintf(&file_name[used], "%s", hpcrun_files_output_directory());
   used += sprintf(&file_name[used], "%s", "/" GPU_BINARY_DIRECTORY "/");
   mkdir(file_name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-  for (i = 0; i < HASH_LENGTH; ++i) {
-    used += sprintf(&file_name[used], "%02x", hash[i]);
-  }
+  used += computeHash(binary, binary_size, &file_name[used]);
   used += sprintf(&file_name[used], "%s", GPU_BINARY_SUFFIX);
 }
 
@@ -271,8 +283,12 @@ findOrAddKernelModule
 
   free(kernel_elf);
 
+  // Compute hash for the kernel name
+  char kernel_name_hash[PATH_MAX];
+  computeHash(kernel_name, strlen(kernel_name), kernel_name_hash);
+
   strncat(file_name, ".", 1);
-  strncat(file_name, kernel_name, strlen(kernel_name));
+  strncat(file_name, kernel_name_hash, strlen(kernel_name_hash));
 
   uint32_t module_id = 0;
 

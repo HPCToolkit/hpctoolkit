@@ -55,6 +55,7 @@
 #include <string>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <linux/limits.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <libelf.h>
@@ -68,6 +69,7 @@
 // local includes
 //******************************************************************************
 
+#include <lib/prof-lean/crypto-hash.h>
 #include <lib/binutils/ElfHelper.hpp>
 #include <lib/support/diagnostics.h>
 #include <lib/support/RealPathMgr.cpp>
@@ -126,6 +128,26 @@ opencl_elf_section_type
   }
 }
 
+static size_t
+computeHash
+(
+ const char *mem_ptr,
+ size_t mem_size,
+ char *name
+)
+{
+  // Compute hash for the binary
+  unsigned char hash[HASH_LENGTH];
+  crypto_hash_compute((const unsigned char *)mem_ptr, mem_size, hash, HASH_LENGTH);
+
+  size_t i;
+  size_t used = 0;
+  for (i = 0; i < HASH_LENGTH; ++i) {
+    used += sprintf(&name[used], "%02x", hash[i]);
+  }
+  return used;
+}
+
 //******************************************************************************
 // interface operations
 //******************************************************************************
@@ -159,15 +181,24 @@ findIntelGPUBins
     ptr += kernel_name_size_aligned;
 
     if (kernel_header->SizeVisaDbgInBytes > 0) {
-      std::string real_kernel_name = file_name + "." + kernel_name;
-
       size_t kernel_size = kernel_header->SizeVisaDbgInBytes;
       char *kernel_buffer = (char *)malloc(kernel_size);
       memcpy(kernel_buffer, ptr, kernel_size);
 
+      // Compute hash for the kernel name
+      char kernel_name_hash[PATH_MAX];
+      computeHash(kernel_name.c_str(), kernel_name.size(), kernel_name_hash);
+
+      std::string real_kernel_name = file_name + "." + std::string((char *)kernel_name_hash);
+
       auto elf_file = new ElfFile;
       if (elf_file->open(kernel_buffer, kernel_size, real_kernel_name)) {
+        FILE *fptr = fopen(real_kernel_name.c_str(), "wb");
+        fwrite(kernel_buffer, sizeof(char), kernel_size, fptr);
+        fclose(fptr);
+
         elf_file->setIntelGPUFile(true);
+        elf_file->setGPUKernelName(kernel_name);
         filevector->push_back(elf_file);
       } else {
         // kernel_buffer is released with elf_file

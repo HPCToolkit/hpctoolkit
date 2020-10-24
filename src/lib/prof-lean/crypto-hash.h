@@ -67,6 +67,11 @@
 // interface operations
 //*****************************************************************************
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
+
 //-----------------------------------------------------------------------------
 // function: 
 //   crypto_hash_compute
@@ -151,5 +156,9 @@ crypto_hash_self_test
 (
   int verbose
 );
+
+#if defined(__cplusplus)
+}
+#endif
 
 #endif
