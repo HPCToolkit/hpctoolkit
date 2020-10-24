@@ -1054,7 +1054,7 @@ endif
 # Don't use LDFLAGS for static case.
 
 MONITOR_NAMES = -G 'monitor_*'
-HPCRUN_NAMES =  -G 'hpcrun_*'
+HPCRUN_NAMES =  -G 'hpcrun_*' -G 'hpctoolkit_*'
 MISC_NAMES =    -G 'debug_flag_*' -G 'messages_*' -G ompt_start_tool
 
 DYN_SYSCALL_LIST = poll ppoll pselect select

@@ -2084,7 +2084,7 @@ MY_AGENT_TBB_CFLAGS = \
 # and hidden into libhpcrun.o.  Other dependencies go into hpclink.
 # Don't use LDFLAGS for static case.
 MONITOR_NAMES = -G 'monitor_*'
-HPCRUN_NAMES = -G 'hpcrun_*'
+HPCRUN_NAMES = -G 'hpcrun_*' -G 'hpctoolkit_*'
 MISC_NAMES = -G 'debug_flag_*' -G 'messages_*' -G ompt_start_tool
 DYN_SYSCALL_LIST = poll ppoll pselect select
 DYN_SYSCALL_NAMES = $(foreach name,$(DYN_SYSCALL_LIST),-G $(name))
