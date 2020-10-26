@@ -116,7 +116,7 @@ namespace CallPath {
 
 typedef std::map<int, redshow_graphviz_node> NodeMap;
 
-typedef std::map<int, std::map<int, std::vector<std::string>>> EdgeMap;
+typedef std::map<int, std::map<int, std::map<std::string, redshow_graphviz_edge>>> EdgeMap;
 
 static void readGraph(const std::string &file_name, NodeMap &node_map, EdgeMap &edge_map) {
   std::ifstream file(file_name);
@@ -138,14 +138,6 @@ static void readGraph(const std::string &file_name, NodeMap &node_map, EdgeMap &
       node.type = ninfo.second.at("node_type");
     }
 
-    if (ninfo.second.find("redundancy") != ninfo.second.end()) {
-      node.redundancy = std::stod(ninfo.second.at("redundancy"));
-    }
-
-    if (ninfo.second.find("overwrite") != ninfo.second.end()) {
-      node.overwrite = std::stod(ninfo.second.at("overwrite"));
-    }
-
     if (ninfo.second.find("duplicate") != ninfo.second.end()) {
       node.duplicate = ninfo.second.at("duplicate");
     }
@@ -156,9 +148,22 @@ static void readGraph(const std::string &file_name, NodeMap &node_map, EdgeMap &
   for (auto &einfo : result.edges) {
     int source_id = std::stoi(einfo.source.name);
     int target_id = std::stoi(einfo.target.name);
+
+    redshow_graphviz_edge edge;
+
     if (einfo.props.find("edge_type") != einfo.props.end()) {
-      edge_map[source_id][target_id].push_back(einfo.props.at("edge_type"));
+      edge.type = einfo.props.at("edge_type");
     }
+
+    if (einfo.props.find("redundancy") != einfo.props.end()) {
+      edge.redundancy = std::stod(einfo.props.at("redundancy"));
+    }
+
+    if (einfo.props.find("overwrite") != einfo.props.end()) {
+      edge.overwrite = std::stod(einfo.props.at("overwrite"));
+    }
+
+    edge_map[source_id][target_id].emplace(edge.type, edge);
   }
 }
 
@@ -226,9 +231,8 @@ static void writeGraph(const std::string &file_name, const NodeMap &node_map, co
     auto from = vertice.at(edge_iter.first);
     for (auto &node_iter : edge_iter.second) {
       auto to = vertice.at(node_iter.first);
-      for (auto &type : node_iter.second) {
-        std::cout << from << "->" << to << std::endl;
-        boost::add_edge(from, to, EdgeProperty(type), g);
+      for (auto &type_iter : node_iter.second) {
+        boost::add_edge(from, to, type_iter.second, g);
       }
     }
   }
@@ -237,10 +241,10 @@ static void writeGraph(const std::string &file_name, const NodeMap &node_map, co
   dp.property("node_id", boost::get(&VertexProperty::node_id, g));
   dp.property("context", boost::get(&VertexProperty::context, g));
   dp.property("node_type", boost::get(&VertexProperty::type, g));
-  dp.property("overwrite", boost::get(&VertexProperty::overwrite, g));
-  dp.property("redundancy", boost::get(&VertexProperty::redundancy, g));
   dp.property("duplicate", boost::get(&VertexProperty::duplicate, g));
   dp.property("edge_type", boost::get(&EdgeProperty::type, g));
+  dp.property("overwrite", boost::get(&EdgeProperty::overwrite, g));
+  dp.property("redundancy", boost::get(&EdgeProperty::redundancy, g));
 
   std::ofstream out(file_name + ".context");
   boost::write_graphviz_dp(out, g, dp);

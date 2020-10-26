@@ -1161,20 +1161,21 @@ sanitizer_subscribe_callback
       dst_host = true;
     }
 
-    uint64_t src_mem_addr = 0;
-    uint64_t dst_mem_addr = 0;
     int32_t src_mem_id = 0;
     uint64_t src_mem_op_id = 0;
+    uint64_t src_mem_addr = 0;
+    uint64_t src_size = 0;
     int32_t dst_mem_id = 0;
     uint64_t dst_mem_op_id = 0;
-    uint64_t size = 0;
+    uint64_t dst_mem_addr = 0;
+    uint64_t dst_size = 0;
 
     if (src_host) {
       src_mem_addr = md->srcAddress;
       src_mem_id = REDSHOW_MEMORY_HOST;
       src_mem_op_id = REDSHOW_MEMORY_HOST;
     } else {
-      redshow_memory_query(correlation_id, md->srcAddress, &src_mem_id, &src_mem_op_id, &src_mem_addr, &size);
+      redshow_memory_query(correlation_id, md->srcAddress, &src_mem_id, &src_mem_op_id, &src_mem_addr, &src_size);
       // src shadow memory does not need to be updated
     }
 
@@ -1183,18 +1184,19 @@ sanitizer_subscribe_callback
       dst_mem_id = REDSHOW_MEMORY_HOST;
       dst_mem_op_id = REDSHOW_MEMORY_HOST;
     } else {
-      redshow_memory_query(correlation_id, md->dstAddress, &dst_mem_id, &dst_mem_op_id, &dst_mem_addr, &size);
+      redshow_memory_query(correlation_id, md->dstAddress, &dst_mem_id, &dst_mem_op_id, &dst_mem_addr, &dst_size);
       if (src_host) {
+        // Update shadow
         memcpy((void *)dst_mem_addr, (void *)src_mem_addr, md->size);
-      } else {
+      } else { 
         Sanitizer_StreamHandle priority_stream = sanitizer_priority_stream_get(md->srcContext);
         HPCRUN_SANITIZER_CALL(sanitizerMemcpyDeviceToHost,
           ((void *)dst_mem_addr, (void *)md->srcAddress, md->size, priority_stream));
       }
     }
 
-    redshow_memcpy_register(persistent_id, correlation_id, src_mem_op_id, src_mem_addr,
-      dst_mem_op_id, dst_mem_addr, md->size);
+    redshow_memcpy_register(persistent_id, correlation_id, src_mem_op_id, src_mem_addr, src_size,
+      dst_mem_op_id, dst_mem_addr, dst_size, md->size);
 
     sanitizer_context_map_stream_unlock(md->srcContext, md->stream);
   } else if (domain == SANITIZER_CB_DOMAIN_MEMSET) {
@@ -1211,8 +1213,9 @@ sanitizer_subscribe_callback
     redshow_memory_query(correlation_id, md->address, &mem_id, &mem_op_id, &addr, &size);
 
     int32_t persistent_id = hpcrun_cct_persistent_id(api_node);
-    redshow_memset_register(persistent_id, correlation_id, mem_op_id, addr, md->value, md->width);
+    redshow_memset_register(persistent_id, correlation_id, mem_op_id, addr, size, md->value, md->width);
     
+    // Update shadow
     memset((void *)addr, md->value, md->width);
   } else if (domain == SANITIZER_CB_DOMAIN_SYNCHRONIZE) {
     // TODO(Keren): sync data
