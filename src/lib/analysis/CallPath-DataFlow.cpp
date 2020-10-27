@@ -77,7 +77,7 @@
 #include <include/gcc-attr.h>
 #include <include/gpu-metric-names.h>
 
-#include "CallPath-ValueFlow.hpp"
+#include "CallPath-DataFlow.hpp"
 
 using std::string;
 
@@ -251,10 +251,10 @@ static void writeGraph(const std::string &file_name, const NodeMap &node_map, co
 }
 
 
-void analyzeValueFlowMain(Prof::CallPath::Profile &prof, const std::vector<std::string> &value_flow_files) {
+void analyzeDataFlowMain(Prof::CallPath::Profile &prof, const std::vector<std::string> &data_flow_files) {
   auto &cctNodeMap = prof.cctNodeMap();
 
-  for (auto &file : value_flow_files) {
+  for (auto &file : data_flow_files) {
     NodeMap node_map;
     EdgeMap edge_map;
 

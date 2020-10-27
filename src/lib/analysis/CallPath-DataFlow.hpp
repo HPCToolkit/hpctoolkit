@@ -57,8 +57,8 @@
 //
 //***************************************************************************
 
-#ifndef Analysis_CallPath_CallPath_ValueFlow_hpp 
-#define Analysis_CallPath_CallPath_ValueFlow_hpp
+#ifndef Analysis_CallPath_CallPath_DataFlow_hpp 
+#define Analysis_CallPath_CallPath_DataFlow_hpp
 
 //************************* System Include Files ****************************
 
@@ -81,7 +81,7 @@ namespace Analysis {
 
 namespace CallPath {
 
-void analyzeValueFlowMain(Prof::CallPath::Profile &prof, const std::vector<std::string> &value_flow_files);
+void analyzeDataFlowMain(Prof::CallPath::Profile &prof, const std::vector<std::string> &data_flow_files);
 
 } // namespace CallPath
 

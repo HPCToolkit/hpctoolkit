@@ -491,9 +491,9 @@ ArgsHPCProf::parse(int argc, const char* const argv[], AppType type)
         find_files(instructionFiles, nvidia_dir, ".inst");
       }
 
-      const std::string value_flow_dir = profileFiles[i] + "/value_flow";
-      if (is_directory(value_flow_dir)) {
-        find_files(valueFlowFiles, value_flow_dir, ".dot");
+      const std::string data_flow_dir = profileFiles[i] + "/data_flow";
+      if (is_directory(data_flow_dir)) {
+        find_files(dataFlowFiles, data_flow_dir, ".dot");
       }
     }
 
