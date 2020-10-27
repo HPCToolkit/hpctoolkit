@@ -8,7 +8,10 @@ void
 sanitizer_redundancy_analysis_enable();
 
 void
-sanitizer_value_flow_analysis_enable();
+sanitizer_data_flow_analysis_enable();
+
+void
+sanitizer_value_pattern_analysis_enable();
 
 void
 sanitizer_callbacks_subscribe();

@@ -1272,14 +1272,26 @@ sanitizer_redundancy_analysis_enable()
 
 
 void
-sanitizer_value_flow_analysis_enable()
+sanitizer_data_flow_analysis_enable()
 {
-  redshow_analysis_enable(REDSHOW_ANALYSIS_VALUE_FLOW);
+  redshow_analysis_enable(REDSHOW_ANALYSIS_DATA_FLOW);
   // XXX(Keren): value flow analysis must be sync
   sanitizer_analysis_async = false;
 
   char dir_name[PATH_MAX];
-  output_dir_config(dir_name, "/value_flow/");
+  output_dir_config(dir_name, "/data_flow/");
+
+  redshow_output_dir_config(dir_name);
+}
+
+
+void
+sanitizer_value_pattern_analysis_enable()
+{
+  redshow_analysis_enable(REDSHOW_ANALYSIS_VALUE_PATTERN);
+
+  char dir_name[PATH_MAX];
+  output_dir_config(dir_name, "/value_pattern/");
 
   redshow_output_dir_config(dir_name);
 }
