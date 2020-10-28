@@ -1185,18 +1185,24 @@ sanitizer_subscribe_callback
       dst_mem_op_id = REDSHOW_MEMORY_HOST;
     } else {
       redshow_memory_query(correlation_id, md->dstAddress, &dst_mem_id, &dst_mem_op_id, &dst_mem_addr, &dst_size);
-      if (src_host) {
-        // Update shadow
-        memcpy((void *)dst_mem_addr, (void *)src_mem_addr, md->size);
-      } else { 
-        Sanitizer_StreamHandle priority_stream = sanitizer_priority_stream_get(md->srcContext);
-        HPCRUN_SANITIZER_CALL(sanitizerMemcpyDeviceToHost,
-          ((void *)dst_mem_addr, (void *)md->srcAddress, md->size, priority_stream));
+      if (dst_mem_addr != 0) {
+        // Memcpy to symbol without allocation
+        if (src_host) {
+          // Update shadow
+          memcpy((void *)dst_mem_addr, (void *)src_mem_addr, md->size);
+        } else { 
+          Sanitizer_StreamHandle priority_stream = sanitizer_priority_stream_get(md->srcContext);
+          HPCRUN_SANITIZER_CALL(sanitizerMemcpyDeviceToHost,
+            ((void *)dst_mem_addr, (void *)md->srcAddress, md->size, priority_stream));
+        }
       }
     }
 
-    redshow_memcpy_register(persistent_id, correlation_id, src_mem_op_id, src_mem_addr, src_size,
-      dst_mem_op_id, dst_mem_addr, dst_size, md->size);
+    if (dst_mem_addr != 0) {
+      // Memcpy to symbol without allocation
+      redshow_memcpy_register(persistent_id, correlation_id, src_mem_op_id, src_mem_addr, src_size,
+        dst_mem_op_id, dst_mem_addr, dst_size, md->size);
+    }
 
     sanitizer_context_map_stream_unlock(md->srcContext, md->stream);
   } else if (domain == SANITIZER_CB_DOMAIN_MEMSET) {
