@@ -168,6 +168,50 @@ static void readGraph(const std::string &file_name, NodeMap &node_map, EdgeMap &
 }
 
 
+std::vector<std::string>
+static getInlineStack(Prof::Struct::ACodeNode *stmt) {
+  std::vector<std::string> st;
+  Prof::Struct::Alien *alien = stmt->ancestorAlien();
+  if (alien) {
+    auto func_name = alien->name();
+    auto *stmt = alien->parent();
+    if (stmt && stmt->type() == Prof::Struct::ANode::TyAlien) {
+      alien = dynamic_cast<Prof::Struct::Alien *>(stmt);
+      auto file_name = alien->fileName();
+      auto line = std::to_string(alien->begLine());
+      auto name = file_name + ":" + line + "\t" + func_name;
+      st.push_back(name);
+
+      while (true) {
+        stmt = alien->parent();
+        if (stmt) {
+          alien = stmt->ancestorAlien();
+          if (alien) {
+            func_name = alien->name();
+            stmt = alien->parent();
+            if (stmt && stmt->type() == Prof::Struct::ANode::TyAlien) {
+              alien = dynamic_cast<Prof::Struct::Alien *>(stmt);
+              file_name = alien->fileName();
+              line = std::to_string(alien->begLine());
+              name = file_name + ":" + line + "\t" + func_name;
+              st.push_back(name);
+            } else {
+              break;
+            }
+          } else { 
+            break;
+          }
+        } else {
+          break;
+        }
+      }
+    }
+  } 
+
+  return st;
+}
+
+
 static void matchCCTNode(Prof::CallPath::CCTIdToCCTNodeMap &cctNodeMap, NodeMap &node_map) { 
   // match nodes
   for (auto &iter : node_map) {
@@ -204,9 +248,37 @@ static void matchCCTNode(Prof::CallPath::CCTIdToCCTNodeMap &cctNodeMap, NodeMap 
         proc_frm = st.top();
         st.pop();
         if (proc_frm->structure()) {
-          auto &name = proc_frm->structure()->name();
-          node.context.append(name);
-          node.context.append("\n");
+          if (proc_frm->ancestorCall()) {
+            auto func_name = proc_frm->structure()->name();
+            auto *call = proc_frm->ancestorCall();
+            auto *call_strct = call->structure();
+            auto line = std::to_string(call_strct->begLine());
+            std::string file_name = "Unknown";
+            if (call_strct->ancestorAlien()) {
+              auto alien_st = getInlineStack(call_strct);
+              for (auto &name : alien_st) {
+                // Get inline call stack
+                node.context.append(name);
+                node.context.append("\n");
+              }
+
+              auto fname = call_strct->ancestorAlien()->fileName();
+              if (fname.find("<unknown file>") == std::string::npos) {
+                file_name = fname;
+              }
+              auto name = file_name + ":" + line + "\t" + func_name;
+              node.context.append(name);
+              node.context.append("\n");
+            } else if (call_strct->ancestorFile()) {
+              auto fname = call_strct->ancestorFile()->name();
+              if (fname.find("<unknown file>") == std::string::npos) {
+                file_name = fname;
+              }
+              auto name = file_name + ":" + line + "\t" + func_name;
+              node.context.append(name);
+              node.context.append("\n");
+            }
+          }
         }
       }
     }
