@@ -216,6 +216,8 @@ static __thread bool sanitizer_stop_flag = false;
 static __thread bool sanitizer_internal_flag = false;
 static __thread uint32_t sanitizer_thread_id_self = (1 << 30);
 static __thread uint32_t sanitizer_thread_id_local = 0;
+static __thread CUcontext sanitizer_thread_context = NULL;
+
 
 static __thread gpu_patch_buffer_t gpu_patch_buffer_reset = {
   .head_index = 0,
@@ -411,6 +413,11 @@ SANITIZER_FN
  )
 );
 
+//******************************************************************************
+// forward declaration operations
+//******************************************************************************
+
+static Sanitizer_StreamHandle sanitizer_priority_stream_get(CUcontext context);
 
 //******************************************************************************
 // private operations
@@ -461,6 +468,21 @@ sanitizer_log_data_callback
  gpu_patch_buffer_t *trace_data
 )
 {
+}
+
+
+static void
+sanitizer_dtoh
+(
+ uint64_t host,
+ uint64_t device,
+ uint64_t len
+)
+{
+ Sanitizer_StreamHandle priority_stream = sanitizer_priority_stream_get(sanitizer_thread_context);
+
+  HPCRUN_SANITIZER_CALL(sanitizerMemcpyDeviceToHost,
+    ((void *)host, (void *)device, len, priority_stream));
 }
 
 
@@ -692,7 +714,6 @@ sanitizer_load_callback
       // do not check error
       HPCRUN_SANITIZER_CALL_NO_CHECK(sanitizerGetFunctionPcAndSize, (module, elf_vector->names[i], &pc, &size));
       addrs[i] = pc;
-      PRINT("Symbol %u, addr %p\n", i, pc);
     }
   }
   redshow_cubin_cache_register(cubin_id, mod_id, elf_vector->nsymbols, addrs, file_name);
@@ -981,6 +1002,8 @@ sanitizer_subscribe_callback
         {
           // single thread
           Sanitizer_ResourceModuleData *md = (Sanitizer_ResourceModuleData *)cbdata;
+          sanitizer_thread_context = md->context;
+
           sanitizer_load_callback(md->context, md->module, md->pCubin, md->cubinSize);
           break;
         }
@@ -988,6 +1011,8 @@ sanitizer_subscribe_callback
         {
           // single thread
           Sanitizer_ResourceModuleData *md = (Sanitizer_ResourceModuleData *)cbdata;
+          sanitizer_thread_context = md->context;
+
           sanitizer_unload_callback(md->module, md->pCubin, md->cubinSize);
           break;
         }
@@ -995,6 +1020,8 @@ sanitizer_subscribe_callback
         {
           // single thread
           Sanitizer_ResourceStreamData *sd = (Sanitizer_ResourceStreamData *)cbdata;
+          sanitizer_thread_context = sd->context;
+
           if (sanitizer_internal_flag) {
             // Update priority stream
             sanitizer_context_map_priority_stream_update(sd->context, sd->hStream);
@@ -1021,6 +1048,9 @@ sanitizer_subscribe_callback
         }
       case SANITIZER_CBID_RESOURCE_DEVICE_MEMORY_ALLOC:
         {
+          Sanitizer_ResourceMemoryData *md = (Sanitizer_ResourceMemoryData *)cbdata;
+          sanitizer_thread_context = md->context;
+
           spinlock_lock(&sanitizer_alloc_lock);
 
           uint64_t correlation_id = gpu_correlation_id();
@@ -1038,7 +1068,6 @@ sanitizer_subscribe_callback
           hpcrun_safe_exit();
 
           int32_t persistent_id = hpcrun_cct_persistent_id(api_node);
-          Sanitizer_ResourceMemoryData *md = (Sanitizer_ResourceMemoryData *)cbdata;
           redshow_memory_register(persistent_id, correlation_id, md->address, md->address + md->size);
 
           PRINT("Allocate memory address %p, size %zu, op %lu, id %d\n",
@@ -1049,10 +1078,12 @@ sanitizer_subscribe_callback
         }
       case SANITIZER_CBID_RESOURCE_DEVICE_MEMORY_FREE:
         {
+          Sanitizer_ResourceMemoryData *md = (Sanitizer_ResourceMemoryData *)cbdata;
+          sanitizer_thread_context = md->context;
+
           spinlock_lock(&sanitizer_free_lock);
           uint64_t correlation_id = gpu_correlation_id();
 
-          Sanitizer_ResourceMemoryData *md = (Sanitizer_ResourceMemoryData *)cbdata;
           redshow_memory_unregister(correlation_id, md->address, md->address + md->size);
 
           PRINT("Free memory address %p, size %zu, op %lu\n", (void *)md->address, md->size, correlation_id);
@@ -1067,12 +1098,15 @@ sanitizer_subscribe_callback
     }
   } else if (domain == SANITIZER_CB_DOMAIN_LAUNCH) {
     Sanitizer_LaunchData *ld = (Sanitizer_LaunchData *)cbdata;
+    sanitizer_thread_context = ld->context;
+
     static __thread dim3 grid_size = { .x = 0, .y = 0, .z = 0};
     static __thread dim3 block_size = { .x = 0, .y = 0, .z = 0};
     static __thread Sanitizer_StreamHandle priority_stream = NULL;
     static __thread bool kernel_sampling = false;
     static __thread uint64_t correlation_id = 0;
     static __thread cct_node_t *api_node = NULL;
+    static __thread int32_t persistent_id = 0;
 
     if (cbid == SANITIZER_CBID_LAUNCH_BEGIN) {
       // Get a place holder cct node
@@ -1098,7 +1132,7 @@ sanitizer_subscribe_callback
       kernel_sampling = rand() % kernel_sampling_frequency == 0;
 
       // Look persisitent id
-      int32_t persistent_id = hpcrun_cct_persistent_id(api_node);
+      persistent_id = hpcrun_cct_persistent_id(api_node);
 
       // First time must be sampled
       if (sanitizer_op_map_lookup(persistent_id) == NULL) {
@@ -1121,6 +1155,8 @@ sanitizer_subscribe_callback
       // Create a high priority stream for the context at the first time
       // TODO(Keren): change stream->hstream
       sanitizer_context_map_stream_lock(ld->context, ld->stream);
+      
+      redshow_kernel_begin(sanitizer_thread_id_local, persistent_id, correlation_id);
 
       sanitizer_kernel_launch_callback(ld->context, ld->hStream, ld->function, grid_size, block_size, kernel_sampling);
     } else if (cbid == SANITIZER_CBID_LAUNCH_END) {
@@ -1132,12 +1168,15 @@ sanitizer_subscribe_callback
           priority_stream, grid_size, block_size);
       }
 
+      redshow_kernel_end(sanitizer_thread_id_local, persistent_id, correlation_id);
+
       sanitizer_context_map_stream_unlock(ld->context, ld->stream);
 
       kernel_sampling = false;
     }
   } else if (domain == SANITIZER_CB_DOMAIN_MEMCPY) {
     Sanitizer_MemcpyData *md = (Sanitizer_MemcpyData *)cbdata;
+    sanitizer_thread_context = md->srcContext;
 
     sanitizer_context_map_stream_lock(md->srcContext, md->stream);
 
@@ -1185,28 +1224,27 @@ sanitizer_subscribe_callback
       dst_mem_op_id = REDSHOW_MEMORY_HOST;
     } else {
       redshow_memory_query(correlation_id, md->dstAddress, &dst_mem_id, &dst_mem_op_id, &dst_mem_addr, &dst_size);
-      if (dst_mem_addr != 0) {
-        // Memcpy to symbol without allocation
-        if (src_host) {
-          // Update shadow
-          memcpy((void *)dst_mem_addr, (void *)src_mem_addr, md->size);
-        } else { 
-          Sanitizer_StreamHandle priority_stream = sanitizer_priority_stream_get(md->srcContext);
-          HPCRUN_SANITIZER_CALL(sanitizerMemcpyDeviceToHost,
-            ((void *)dst_mem_addr, (void *)md->srcAddress, md->size, priority_stream));
-        }
-      }
     }
 
     if (dst_mem_addr != 0) {
-      // Memcpy to symbol without allocation
+      // Avoid memcpy to symbol without allocation
       redshow_memcpy_register(persistent_id, correlation_id, src_mem_op_id, src_mem_addr, src_size,
         dst_mem_op_id, dst_mem_addr, dst_size, md->size);
+
+      // Update shadow
+      if (src_host) {
+        memcpy((void *)dst_mem_addr, (void *)src_mem_addr, md->size);
+      } else { 
+        Sanitizer_StreamHandle priority_stream = sanitizer_priority_stream_get(md->srcContext);
+        HPCRUN_SANITIZER_CALL(sanitizerMemcpyDeviceToHost,
+          ((void *)dst_mem_addr, (void *)md->srcAddress, md->size, priority_stream));
+      }
     }
 
     sanitizer_context_map_stream_unlock(md->srcContext, md->stream);
   } else if (domain == SANITIZER_CB_DOMAIN_MEMSET) {
     Sanitizer_MemsetData *md = (Sanitizer_MemsetData *)cbdata;
+    sanitizer_thread_context = md->context;
 
     uint64_t correlation_id = gpu_correlation_id();
     cct_node_t *api_node = sanitizer_correlation_callback(correlation_id, 0);
@@ -1311,6 +1349,8 @@ sanitizer_callbacks_subscribe()
   redshow_log_data_callback_register(sanitizer_log_data_callback);
 
   redshow_record_data_callback_register(sanitizer_record_data_callback, sanitizer_pc_views, sanitizer_mem_views);
+
+  redshow_tool_dtoh_register(sanitizer_dtoh);
 
   HPCRUN_SANITIZER_CALL(sanitizerSubscribe,
     (&sanitizer_subscriber_handle, sanitizer_subscribe_callback, NULL));
