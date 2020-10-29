@@ -836,7 +836,7 @@ void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_s
       dyn_block->getInsns(insns);
       for (auto &iter : insns) {
         std::pair<Dyninst::InstructionAPI::Instruction, Dyninst::Address> p(iter.second, iter.first);
-        dyn_inst_cache[dyn_block].emplace_back(std::move(p));
+        dyn_inst_cache[dyn_block->start()].emplace_back(std::move(p));
       }
     }
 
