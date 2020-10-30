@@ -208,6 +208,7 @@ static getInlineStack(Prof::Struct::ACodeNode *stmt) {
     }
   } 
 
+  std::reverse(st.begin(), st.end());
   return st;
 }
 
@@ -227,9 +228,26 @@ static void matchCCTNode(Prof::CallPath::CCTIdToCCTNodeMap &cctNodeMap, NodeMap 
     if (cct) {
       std::stack<Prof::CCT::ProcFrm *> st;
       Prof::CCT::ProcFrm *proc_frm = NULL;
+      std::string cct_context;
       
       if (cct->type() != Prof::CCT::ANode::TyProcFrm) {
         proc_frm = cct->ancestorProcFrm(); 
+
+        auto *strct = cct->structure();
+        if (strct->ancestorAlien()) {
+          auto alien_st = getInlineStack(strct);
+          for (auto &name : alien_st) {
+            // Get inline call stack
+            cct_context.append(name);
+            cct_context.append("\n");
+          }
+        }
+        auto *file_struct = strct->ancestorFile();
+        auto file_name = file_struct->name();
+        auto line = std::to_string(strct->begLine());
+        auto name = file_name + ":" + line + "\t <op>";
+        cct_context.append(name);
+        cct_context.append("\n");
       } else {
         proc_frm = dynamic_cast<Prof::CCT::ProcFrm *>(cct);
       }
@@ -280,6 +298,10 @@ static void matchCCTNode(Prof::CallPath::CCTIdToCCTNodeMap &cctNodeMap, NodeMap 
             }
           }
         }
+      }
+
+      if (cct_context.size() != 0) {
+        node.context.append(cct_context);
       }
     }
   }
