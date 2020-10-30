@@ -482,6 +482,10 @@ METHOD_FN(process_event_list, int lush_metrics)
     monitor_real_exit(-1);
 #endif
 
+    // Get control knobs
+    int gpu_patch_record_num = 
+      control_knob_value_get_int(HPCRUN_SANITIZER_GPU_PATCH_RECORD_NUM);
+
     int buffer_pool_size = 
       control_knob_value_get_int(HPCRUN_SANITIZER_BUFFER_POOL_SIZE);
 

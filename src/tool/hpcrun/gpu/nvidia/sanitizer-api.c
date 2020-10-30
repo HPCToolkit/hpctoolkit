@@ -797,6 +797,7 @@ sanitizer_kernel_launch_sync
  cct_node_t *api_node,
  uint64_t correlation_id,
  CUcontext context,
+ Sanitizer_StreamHandle handle_stream,
  CUmodule module,
  CUfunction function,
  Sanitizer_StreamHandle priority_stream,
@@ -905,7 +906,7 @@ sanitizer_kernel_launch_sync
   }
 
   // To ensure previous kernel is done
-  HPCRUN_SANITIZER_CALL(sanitizerStreamSynchronize, (ld->hStream));
+  HPCRUN_SANITIZER_CALL(sanitizerStreamSynchronize, (handle_stream));
 
   if (!sanitizer_analysis_async) {
     // Empty current buffer
@@ -1167,7 +1168,7 @@ sanitizer_subscribe_callback
         priority_stream = sanitizer_priority_stream_get(ld->context);
 
         sanitizer_kernel_launch_sync(api_node, correlation_id,
-          ld->context, ld->module, ld->function,
+          ld->context, ld->hStream, ld->module, ld->function,
           priority_stream, grid_size, block_size);
       }
 
