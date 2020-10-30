@@ -144,8 +144,6 @@ static int cupti_enabled_activities = 0;
 // event name, which is nvidia-cuda
 static char nvidia_name[128];
 
-static bool sanitizer_enabled = false;
-
 static const int DEFAULT_DEVICE_BUFFER_SIZE = 1024 * 1024 * 8;
 static const int DEFAULT_DEVICE_SEMAPHORE_SIZE = 65536;
 
@@ -484,83 +482,76 @@ METHOD_FN(process_event_list, int lush_metrics)
     monitor_real_exit(-1);
 #endif
 
-    if (sanitizer_enabled == false) {
-      sanitizer_enabled = true;
+    // Get control knobs
+    int gpu_patch_record_num = 
+      control_knob_value_get_int(HPCRUN_SANITIZER_GPU_PATCH_RECORD_NUM);
 
-      // Get control knobs
-      int gpu_patch_record_num = 
-        control_knob_value_get_int(HPCRUN_SANITIZER_GPU_PATCH_RECORD_NUM);
+    int buffer_pool_size = 
+      control_knob_value_get_int(HPCRUN_SANITIZER_BUFFER_POOL_SIZE);
 
-      int buffer_pool_size = 
-        control_knob_value_get_int(HPCRUN_SANITIZER_BUFFER_POOL_SIZE);
+    int approx_level = control_knob_value_get_int(HPCRUN_SANITIZER_APPROX_LEVEL);
 
-      int approx_level = control_knob_value_get_int(HPCRUN_SANITIZER_APPROX_LEVEL);
+    int pc_views = control_knob_value_get_int(HPCRUN_SANITIZER_PC_VIEWS);
 
-      int pc_views = control_knob_value_get_int(HPCRUN_SANITIZER_PC_VIEWS);
+    int mem_views = control_knob_value_get_int(HPCRUN_SANITIZER_MEM_VIEWS);
 
-      int mem_views = control_knob_value_get_int(HPCRUN_SANITIZER_MEM_VIEWS);
+    char *data_type = control_knob_value_get(HPCRUN_SANITIZER_DEFAULT_TYPE);
 
-      char *data_type = control_knob_value_get(HPCRUN_SANITIZER_DEFAULT_TYPE);
-
-      if (gpu_patch_record_num == 0) {
-        gpu_patch_record_num = DEFAULT_GPU_PATCH_RECORD_NUM;
-      }
-
-      if (buffer_pool_size == 0) {
-        buffer_pool_size = DEFAULT_BUFFER_POOL_SIZE;
-      }
-
-      if (approx_level == 0) {
-        approx_level = DEFAULT_APPROX_LEVEL;
-      }
-
-      if (pc_views == 0) {
-        pc_views = DEFAULT_PC_VIEWS;
-      }
-
-      if (mem_views == 0) {
-        mem_views = DEFAULT_MEM_VIEWS;
-      }
-
-      kernel_sampling_frequency = control_knob_value_get_int(HPCRUN_SANITIZER_KERNEL_SAMPLING_FREQUENCY);
-
-      if (kernel_sampling_frequency == 0) {
-        kernel_sampling_frequency = DEFAULT_KERNEL_SAMPLING_FREQUENCY;
-      }
-
-      PRINT("gpu_patch_record_num %d\n", gpu_patch_record_num);
-      PRINT("buffer_pool_size %d\n", buffer_pool_size);
-      PRINT("approx_level %d\n", approx_level);
-      PRINT("pc_views %d\n", pc_views);
-      PRINT("mem_views %d\n", mem_views);
-      PRINT("kernel_sampling_frequency %d\n", kernel_sampling_frequency);
-
-      sanitizer_buffer_config(gpu_patch_record_num, buffer_pool_size);
-
-      sanitizer_approx_level_config(approx_level);
-
-      sanitizer_views_config(pc_views, mem_views);
-
-      sanitizer_data_type_config(data_type);
-
-      // Init random number generator
-      srand(time(0));
-
-      block_sampling_frequency = frequency == frequency_default ?
-        block_sampling_frequency_default : frequency;
-
-      // Register hpcrun callbacks
-      device_finalizer_flush.fn = sanitizer_device_flush;
-      device_finalizer_register(device_finalizer_type_flush, &device_finalizer_flush);
-      device_finalizer_shutdown.fn = sanitizer_device_shutdown;
-      device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_shutdown);
-
-      // Init background process thread
-      sanitizer_process_init();
-
-      // Register sanitizer callbacks
-      sanitizer_callbacks_subscribe();
+    if (gpu_patch_record_num == 0) {
+      gpu_patch_record_num = DEFAULT_GPU_PATCH_RECORD_NUM;
     }
+
+    if (buffer_pool_size == 0) {
+      buffer_pool_size = DEFAULT_BUFFER_POOL_SIZE;
+    }
+
+    if (approx_level == 0) {
+      approx_level = DEFAULT_APPROX_LEVEL;
+    }
+
+    if (pc_views == 0) {
+      pc_views = DEFAULT_PC_VIEWS;
+    }
+
+    if (mem_views == 0) {
+      mem_views = DEFAULT_MEM_VIEWS;
+    }
+
+    kernel_sampling_frequency = control_knob_value_get_int(HPCRUN_SANITIZER_KERNEL_SAMPLING_FREQUENCY);
+
+    if (kernel_sampling_frequency == 0) {
+      kernel_sampling_frequency = DEFAULT_KERNEL_SAMPLING_FREQUENCY;
+    }
+
+    PRINT("gpu_patch_record_num %d\n", gpu_patch_record_num);
+    PRINT("buffer_pool_size %d\n", buffer_pool_size);
+    PRINT("approx_level %d\n", approx_level);
+    PRINT("pc_views %d\n", pc_views);
+    PRINT("mem_views %d\n", mem_views);
+    PRINT("kernel_sampling_frequency %d\n", kernel_sampling_frequency);
+
+    sanitizer_buffer_config(gpu_patch_record_num, buffer_pool_size);
+
+    sanitizer_approx_level_config(approx_level);
+
+    sanitizer_views_config(pc_views, mem_views);
+
+    sanitizer_data_type_config(data_type);
+
+    // Init random number generator
+    srand(time(0));
+
+    block_sampling_frequency = frequency == frequency_default ?
+      block_sampling_frequency_default : frequency;
+
+    // Register hpcrun callbacks
+    device_finalizer_flush.fn = sanitizer_device_flush;
+    device_finalizer_register(device_finalizer_type_flush, &device_finalizer_flush);
+    device_finalizer_shutdown.fn = sanitizer_device_shutdown;
+    device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_shutdown);
+
+    // Register sanitizer callbacks
+    sanitizer_callbacks_subscribe();
     
     // Register redshow analysis
     if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_REDUNDANCY)) {
@@ -574,6 +565,9 @@ METHOD_FN(process_event_list, int lush_metrics)
       sanitizer_value_pattern_analysis_enable();
       sanitizer_data_flow_analysis_enable();
     }
+
+    // Init background process thread
+    sanitizer_process_init();
   }
 }
 
