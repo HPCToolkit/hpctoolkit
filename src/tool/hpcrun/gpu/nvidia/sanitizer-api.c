@@ -1311,7 +1311,8 @@ sanitizer_redundancy_analysis_enable()
   char dir_name[PATH_MAX];
   output_dir_config(dir_name, "/redundancy/");
 
-  redshow_output_dir_config(dir_name);
+  redshow_output_dir_config(REDSHOW_ANALYSIS_SPATIAL_REDUNDANCY, dir_name);
+  redshow_output_dir_config(REDSHOW_ANALYSIS_TEMPORAL_REDUNDANCY, dir_name);
 }
 
 
@@ -1325,7 +1326,7 @@ sanitizer_data_flow_analysis_enable()
   char dir_name[PATH_MAX];
   output_dir_config(dir_name, "/data_flow/");
 
-  redshow_output_dir_config(dir_name);
+  redshow_output_dir_config(REDSHOW_ANALYSIS_DATA_FLOW, dir_name);
 }
 
 
@@ -1337,7 +1338,7 @@ sanitizer_value_pattern_analysis_enable()
   char dir_name[PATH_MAX];
   output_dir_config(dir_name, "/value_pattern/");
 
-  redshow_output_dir_config(dir_name);
+  redshow_output_dir_config(REDSHOW_ANALYSIS_VALUE_PATTERN, dir_name);
 }
 
 
