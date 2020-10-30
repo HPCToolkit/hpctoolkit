@@ -479,7 +479,7 @@ sanitizer_dtoh
  uint64_t len
 )
 {
- Sanitizer_StreamHandle priority_stream = sanitizer_priority_stream_get(sanitizer_thread_context);
+  Sanitizer_StreamHandle priority_stream = sanitizer_priority_stream_get(sanitizer_thread_context);
 
   HPCRUN_SANITIZER_CALL(sanitizerMemcpyDeviceToHost,
     ((void *)host, (void *)device, len, priority_stream));
@@ -903,6 +903,9 @@ sanitizer_kernel_launch_sync
       break;
     }
   }
+
+  // To ensure previous kernel is done
+  HPCRUN_SANITIZER_CALL(sanitizerStreamSynchronize, (ld->hStream));
 
   if (!sanitizer_analysis_async) {
     // Empty current buffer
