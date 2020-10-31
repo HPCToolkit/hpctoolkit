@@ -2432,6 +2432,9 @@ AC_SUBST([LIBELF_COPY])
 # Option: --with-gotcha=PATH
 #-------------------------------------------------
 
+# NOTE: currently not used, but there's a non-trivial chance that it
+# may come back.
+
 GOTCHA="$default_gotcha_prefix"
 
 GOTCHA_IFLAGS=
@@ -2440,9 +2443,13 @@ GOTCHA_LIBDIR=no
 
 AC_ARG_WITH([gotcha],
   [AS_HELP_STRING([--with-gotcha=PATH],
-      [path to gotcha install directory])],
+      [path to gotcha install directory (ignored)])],
   [GOTCHA="$withval"],
   [])
+
+AC_MSG_NOTICE([skipping gotcha ...])
+
+if false ; then
 
 AC_MSG_CHECKING([for gotcha])
 
@@ -2507,6 +2514,8 @@ int main(int argc, char **argv)
     fi
     ;;
 esac
+
+fi  # skip test for gotcha
 
 AC_SUBST([GOTCHA_IFLAGS])
 AC_SUBST([GOTCHA_LDFLAGS])
@@ -5175,7 +5184,6 @@ AC_MSG_NOTICE([  bzip:         ${BZIP}])
 AC_MSG_NOTICE([  dyninst:      ${DYNINST}])
 AC_MSG_NOTICE([  dyninst:      ${dyninst_features}])
 AC_MSG_NOTICE([  elfutils:     ${LIBELF}])
-AC_MSG_NOTICE([  gotcha:       ${GOTCHA}])
 AC_MSG_NOTICE([  libdwarf:     ${LIBDWARF}])
 AC_MSG_NOTICE([  libiberty:    ${LIBIBERTY}])
 AC_MSG_NOTICE([  libmonitor:   ${LIBMONITOR}])

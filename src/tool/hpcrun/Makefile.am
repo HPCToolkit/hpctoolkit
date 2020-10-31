@@ -388,6 +388,7 @@ MY_BASE_FILES =				\
 	ompt/ompt-task.c                \
 	ompt/ompt-thread.c              \
 	\
+	extern-real/dl-iterate.c	\
 	extern-real/mmap.c		\
 	\
 	syscalls/poll.c	\

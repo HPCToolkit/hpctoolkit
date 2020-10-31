@@ -148,18 +148,6 @@
 
 #include <loadmap.h>
 
-// Gotcha only applies to the dynamic case.
-// If this grows, then move to a separate file.
-#ifndef HPCRUN_STATIC_LINK
-#include <gotcha/gotcha.h>
-
-static const char* library_to_intercept = "libunwind.so";
-static gotcha_wrappee_handle_t wrappee_dl_iterate_phdr_handle;
-struct gotcha_binding_t wrap_actions [] = {
-  { "dl_iterate_phdr", hpcrun_loadmap_iterate, &wrappee_dl_iterate_phdr_handle}    
-};
-#endif
-  
 extern void hpcrun_set_retain_recursion_mode(bool mode);
 
 #ifdef HPCRUN_HAVE_CUSTOM_UNWINDER
@@ -464,12 +452,6 @@ dump_interval_handler(int sig, siginfo_t* info, void* ctxt)
 void
 hpcrun_init_internal(bool is_child)
 {
-#ifndef HPCRUN_STATIC_LINK
-  gotcha_filter_libraries_by_name(library_to_intercept);
-  gotcha_wrap(wrap_actions, sizeof(wrap_actions)/sizeof(struct gotcha_binding_t), "hpctoolkit");
-  gotcha_restore_library_filter_func();
-#endif
-
   hpcrun_initLoadmap();
 
   hpcrun_memory_reinit();
