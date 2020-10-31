@@ -105,7 +105,7 @@ foreach v : _victims
     set_variable(v['name']+'_dep_libs', _new_libs.to_list())
     set_variable(v['name']+'_dep', declare_dependency(
       link_with: _new_libs,
-      dependencies: get_variable(v['name']+'_dep').partial_dependency(compile_args: true, includes: true),
+      dependencies: get_variable(v['name']+'_static_dep').partial_dependency(compile_args: true, includes: true),
     ))
     set_variable(v['name']+'_d_dep', get_variable(v['name']+'_dep').found()
       ? get_variable(v['name']+'_dep') : disabler())
@@ -132,7 +132,7 @@ foreach v : _victims
     set_variable(v['name']+'_static_d_dep', get_variable(v['name']+'_static_dep').found()
       ? get_variable(v['name']+'_static_dep') : disabler())
   else
-    warning('''
+    error('''
 The dependency @0@ does not provide an archive (.a) compiled with -fPIC.
 hpcrun is unable to properly hide this libraries from the application which
 may cause deadlocks or segfaults. Please recompile with -fPIC (+pic for Spack).
