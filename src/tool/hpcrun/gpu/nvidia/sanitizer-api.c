@@ -871,6 +871,11 @@ sanitizer_kernel_launch_sync
     if (gpu_patch_buffer == NULL && !sanitizer_analysis_async) {
       sanitizer_buffer_channel_t *channel = sanitizer_buffer_channel_get();
       sanitizer_buffer_channel_consume(channel);
+      // Get it again
+      sanitizer_buffer = sanitizer_buffer_channel_produce(
+        sanitizer_thread_id_local, cubin_id, mod_id, persistent_id, correlation_id,
+        sanitizer_gpu_patch_record_num, sanitizer_analysis_async);
+      gpu_patch_buffer = sanitizer_buffer_entry_gpu_patch_buffer_get(sanitizer_buffer);
     }
 
     // Move host buffer to a cache
