@@ -6,7 +6,9 @@ pc_dir="$3"
 pc_name="$4"
 shift ; shift ; shift ; shift
 
-oc_args="--redefine-sym mmap=hpcrun_real_mmap --redefine-sym munmap=hpcrun_real_munmap"
+oc_args="--redefine-sym mmap=hpcrun_real_mmap"
+oc_args="$oc_args --redefine-sym munmap=hpcrun_real_munmap"
+oc_args="$oc_args --redefine-sym dl_iterate_phdr=hpcrun_real_dl_iterate_phdr"
 
 for lib in "$(PKG_CONFIG_PATH="$pc_dir" "$pc" --libs "$pc_name")"; do
   test -n "$1" || exit 1

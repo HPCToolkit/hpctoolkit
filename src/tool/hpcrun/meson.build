@@ -165,6 +165,7 @@ _srcset.add([
     'ompt/ompt-task.c',
     'ompt/ompt-thread.c',
 
+    'extern-real/dl-iterate.c',
     'extern-real/mmap.c',
 
     'syscalls/poll.c',
@@ -211,7 +212,7 @@ _d_srcset.add(
     'hpcrun_dlfns.c',
     'custom-init-dynamic.c',
   ),
-  libelf_dep, libmonitor_dep, gotcha_dep,
+  libelf_dep, libmonitor_dep,
 )
 _s_srcset.add(
   files(
