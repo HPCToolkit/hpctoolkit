@@ -754,8 +754,6 @@ OPT_PAPI
 MBEDTLS_LIBS
 MBEDTLS_IFLAGS
 MBEDTLS_LIB
-OPT_LZMA_STATIC_FPIC_FALSE
-OPT_LZMA_STATIC_FPIC_TRUE
 OPT_LZMA_STATIC_FALSE
 OPT_LZMA_STATIC_TRUE
 LZMA_LIB_DIR
@@ -764,8 +762,6 @@ LZMA_PROF_MPI_LIBS
 LZMA_LDFLAGS_STAT
 LZMA_LDFLAGS_DYN
 LZMA_IFLAGS
-OPT_LIBUNWIND_STATIC_FPIC_FALSE
-OPT_LIBUNWIND_STATIC_FPIC_TRUE
 OPT_LIBUNWIND_STATIC_FALSE
 OPT_LIBUNWIND_STATIC_TRUE
 UNW_LIBUNW_FALSE
@@ -775,7 +771,6 @@ UNW_PPC64_TRUE
 UNW_X86_FALSE
 UNW_X86_TRUE
 LIBUNWIND_LIB_DIR
-LIBUNWIND_COPY
 LIBUNWIND_LDFLAGS_STAT
 LIBUNWIND_LDFLAGS_DYN
 LIBUNWIND_IFLAGS
@@ -21051,22 +21046,12 @@ fi
 $as_echo "$as_me: libunwind.a compiled with -fPIC: $libunwind_fpic" >&6;}
 
 #
-# Libunwind is only used in hpcrun.  But if libunwind.a has fpic, then
-# we link at build time.  So, only need to copy if .so exists and .a
-# does not have fpic.
+# Now require libunwind static archive with fpic for both static and
+# dynamic cases, or else not at all, same as mbedtls.  (The nothing
+# case is for just building documentation.)  And never need to copy.
 #
-if test "$libunwind_dynamic" = yes && test "$libunwind_fpic" = no ; then
-  LIBUNWIND_COPY=yes
-else
-  LIBUNWIND_COPY=no
-fi
-
-#
-# Report a warning if not using an fpic archive.
-#
-missing_fpic=
-if test "$libunwind_fpic" != yes ; then
-  missing_fpic="$missing_fpic libunwind"
+if test "$libunwind_exists" = yes && test "$libunwind_fpic" = no ; then
+  as_fn_error $? "libunwind.a must be compiled with -fPIC" "$LINENO" 5
 fi
 
 unwinder_mesg="$UNWINDER"
@@ -21081,8 +21066,6 @@ if test "$UNWINDER" != "libunw"; then
 $as_echo "#define HPCRUN_HAVE_CUSTOM_UNWINDER 1" >>confdefs.h
 
 fi
-
-
 
 
 
@@ -21123,14 +21106,6 @@ fi
 else
   OPT_LIBUNWIND_STATIC_TRUE='#'
   OPT_LIBUNWIND_STATIC_FALSE=
-fi
-
- if test "$libunwind_fpic" = yes; then
-  OPT_LIBUNWIND_STATIC_FPIC_TRUE=
-  OPT_LIBUNWIND_STATIC_FPIC_FALSE='#'
-else
-  OPT_LIBUNWIND_STATIC_FPIC_TRUE='#'
-  OPT_LIBUNWIND_STATIC_FPIC_FALSE=
 fi
 
 
@@ -21277,8 +21252,12 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: lzma.a compiled with -fPIC: $lzma_fpic" >&5
 $as_echo "$as_me: lzma.a compiled with -fPIC: $lzma_fpic" >&6;}
 
-if test "$lzma_fpic" != yes ; then
-  missing_fpic="$missing_fpic lzma"
+#
+# Now require lzma static archive with fpic, or else nothing at all
+# (for docs), same as libunwind and mbedtls.
+#
+if test "$lzma_exists" = yes && test "$lzma_fpic" = no ; then
+  as_fn_error $? "liblzma.a must be compiled with -fPIC" "$LINENO" 5
 fi
 
 #
@@ -21298,24 +21277,12 @@ fi
 
 
 
-# Libunwind calls lzma.  If we statically link lzma int hpcrun but
-# dynamically link libuwnind, then we get two copies of lzma.  So,
-# linking lzma requires linking libunwind.
-
  if test "$lzma_static" = yes; then
   OPT_LZMA_STATIC_TRUE=
   OPT_LZMA_STATIC_FALSE='#'
 else
   OPT_LZMA_STATIC_TRUE='#'
   OPT_LZMA_STATIC_FALSE=
-fi
-
- if test "$lzma_fpic" = yes && test "$libunwind_fpic" = yes; then
-  OPT_LZMA_STATIC_FPIC_TRUE=
-  OPT_LZMA_STATIC_FPIC_FALSE='#'
-else
-  OPT_LZMA_STATIC_FPIC_TRUE='#'
-  OPT_LZMA_STATIC_FPIC_FALSE=
 fi
 
 
@@ -24262,16 +24229,8 @@ if test -z "${OPT_LIBUNWIND_STATIC_TRUE}" && test -z "${OPT_LIBUNWIND_STATIC_FAL
   as_fn_error $? "conditional \"OPT_LIBUNWIND_STATIC\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
-if test -z "${OPT_LIBUNWIND_STATIC_FPIC_TRUE}" && test -z "${OPT_LIBUNWIND_STATIC_FPIC_FALSE}"; then
-  as_fn_error $? "conditional \"OPT_LIBUNWIND_STATIC_FPIC\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
 if test -z "${OPT_LZMA_STATIC_TRUE}" && test -z "${OPT_LZMA_STATIC_FALSE}"; then
   as_fn_error $? "conditional \"OPT_LZMA_STATIC\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${OPT_LZMA_STATIC_FPIC_TRUE}" && test -z "${OPT_LZMA_STATIC_FPIC_FALSE}"; then
-  as_fn_error $? "conditional \"OPT_LZMA_STATIC_FPIC\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_PERFMON_TRUE}" && test -z "${OPT_PERFMON_FALSE}"; then
@@ -27076,23 +27035,6 @@ $as_echo "$as_me: Note: HPCToolkit is configured for Blue Gene/Q back end." >&6;
 $as_echo "$as_me: If you wanted to build for the front end (regular powerpc)," >&6;}
   { $as_echo "$as_me:${as_lineno-$LINENO}: then re-run configure with '--disable-bgq'." >&5
 $as_echo "$as_me: then re-run configure with '--disable-bgq'." >&6;}
-fi
-
-if test "x$missing_fpic" != x ; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
-$as_echo "$as_me: " >&6;}
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: The following prereqs are missing an archive (.a) compiled with -fPIC." >&5
-$as_echo "$as_me: WARNING: The following prereqs are missing an archive (.a) compiled with -fPIC." >&2;}
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING:   $missing_fpic" >&5
-$as_echo "$as_me: WARNING:   $missing_fpic" >&2;}
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: " >&5
-$as_echo "$as_me: WARNING: " >&2;}
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: hpcrun is unable to properly hide these libraries from the" >&5
-$as_echo "$as_me: WARNING: hpcrun is unable to properly hide these libraries from the" >&2;}
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: application and this may cause deadlock or segfault." >&5
-$as_echo "$as_me: WARNING: application and this may cause deadlock or segfault." >&2;}
-  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: Recompile the above libraries with -fPIC (+pic in spack)." >&5
-$as_echo "$as_me: WARNING: Recompile the above libraries with -fPIC (+pic in spack)." >&2;}
 fi
 
 if test "$warn_papi_mismatch" = yes ; then
