@@ -487,9 +487,9 @@ launch_server(void)
 
   if (pid < 0) {
     //
-    // fork failed
+    // clone failed
     //
-    EMSG("FNBOUNDS_CLIENT ERROR: syserv launch failed: fork failed");
+    EMSG("FNBOUNDS_CLIENT ERROR: syserv launch failed: clone failed");
     return -1;
   }
 
