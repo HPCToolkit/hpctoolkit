@@ -487,7 +487,7 @@ hpcrun_init_internal(bool is_child)
 
   // Decide whether to retain full single recursion, or collapse recursive calls to
   // first instance of recursive call
-  hpcrun_set_retain_recursion_mode(getenv("HPCRUN_RETAIN_RECURSION") != NULL);
+  hpcrun_set_retain_recursion_mode(hpcrun_get_env_bool("HPCRUN_RETAIN_RECURSION"));
 
   // Initialize logical unwinding agents (LUSH)
   if (opts.lush_agent_paths[0] != '\0') {
@@ -859,7 +859,8 @@ hpcrun_continue()
 void 
 hpcrun_wait()
 {
-  const char* HPCRUN_WAIT = getenv("HPCRUN_WAIT");
+  bool HPCRUN_WAIT = hpcrun_get_env_bool("HPCRUN_WAIT");
+
   if (HPCRUN_WAIT) {
     while (HPCRUN_DEBUGGER_WAIT);
 
@@ -934,10 +935,7 @@ monitor_init_process(int *argc, char **argv, void* data)
 
   // see if unwinding has been turned off
   // the same setting governs whether or not fnbounds is needed or used.
-  char *foo = getenv("HPCRUN_NO_UNWIND");
-  if (foo != NULL){
-    hpcrun_no_unwind = true;
-  }
+  hpcrun_no_unwind = hpcrun_get_env_bool("HPCRUN_NO_UNWIND");
 
   char* s = getenv(HPCRUN_EVENT_LIST);
 

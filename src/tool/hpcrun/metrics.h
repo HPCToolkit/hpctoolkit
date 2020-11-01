@@ -116,6 +116,8 @@ void hpcrun_metrics_data_finalize();
 
 int hpcrun_get_num_kind_metrics(void);
 
+metric_data_list_t* hpcrun_reify_metric_data_list_kind(metric_data_list_t* rv, int metric_id);
+
 metric_desc_t* hpcrun_id2metric(int id);
 
 void hpcrun_metrics_data_dump();
