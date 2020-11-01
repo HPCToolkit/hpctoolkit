@@ -1091,6 +1091,7 @@ sanitizer_subscribe_callback
           sanitizer_thread_context = md->context;
 
           spinlock_lock(&sanitizer_free_lock);
+          
           uint64_t correlation_id = gpu_correlation_id();
 
           redshow_memory_unregister(correlation_id, md->address, md->address + md->size);
@@ -1255,6 +1256,8 @@ sanitizer_subscribe_callback
     Sanitizer_MemsetData *md = (Sanitizer_MemsetData *)cbdata;
     sanitizer_thread_context = md->context;
 
+    sanitizer_context_map_stream_lock(md->context, md->stream);
+
     uint64_t correlation_id = gpu_correlation_id();
     cct_node_t *api_node = sanitizer_correlation_callback(correlation_id, 0);
 
@@ -1270,6 +1273,8 @@ sanitizer_subscribe_callback
     
     // Update shadow
     memset((void *)addr, md->value, md->width);
+
+    sanitizer_context_map_stream_unlock(md->context, md->stream);
   } else if (domain == SANITIZER_CB_DOMAIN_SYNCHRONIZE) {
     // TODO(Keren): sync data
   }
