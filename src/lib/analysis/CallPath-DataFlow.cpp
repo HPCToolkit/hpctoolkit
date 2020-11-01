@@ -155,6 +155,10 @@ static void readGraph(const std::string &file_name, NodeMap &node_map, EdgeMap &
       edge.type = einfo.props.at("edge_type");
     }
 
+    if (einfo.props.find("memory_node_id") != einfo.props.end()) {
+      edge.memory_node_id = std::stoi(einfo.props.at("memory_node_id"));
+    }
+
     if (einfo.props.find("redundancy") != einfo.props.end()) {
       edge.redundancy = std::stod(einfo.props.at("redundancy"));
     }
@@ -337,6 +341,7 @@ static void writeGraph(const std::string &file_name, const NodeMap &node_map, co
   dp.property("node_type", boost::get(&VertexProperty::type, g));
   dp.property("duplicate", boost::get(&VertexProperty::duplicate, g));
   dp.property("edge_type", boost::get(&EdgeProperty::type, g));
+  dp.property("memory_node_id", boost::get(&EdgeProperty::memory_node_id, g));
   dp.property("overwrite", boost::get(&EdgeProperty::overwrite, g));
   dp.property("redundancy", boost::get(&EdgeProperty::redundancy, g));
 
