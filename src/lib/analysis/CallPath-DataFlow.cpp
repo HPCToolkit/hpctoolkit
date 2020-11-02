@@ -179,8 +179,15 @@ static getInlineStack(Prof::Struct::ACodeNode *stmt) {
   if (alien) {
     auto func_name = alien->name();
     auto *stmt = alien->parent();
-    if (stmt && stmt->type() == Prof::Struct::ANode::TyAlien) {
-      alien = dynamic_cast<Prof::Struct::Alien *>(stmt);
+    if (stmt) {
+      if (alien->name() == "<inline>") {
+        // Inline macro
+      } else if (stmt->type() == Prof::Struct::ANode::TyAlien) {
+        // inline function
+        alien = dynamic_cast<Prof::Struct::Alien *>(stmt);
+      } else {
+        return st;
+      }
       auto file_name = alien->fileName();
       auto line = std::to_string(alien->begLine());
       auto name = file_name + ":" + line + "\t" + func_name;
@@ -193,8 +200,15 @@ static getInlineStack(Prof::Struct::ACodeNode *stmt) {
           if (alien) {
             func_name = alien->name();
             stmt = alien->parent();
-            if (stmt && stmt->type() == Prof::Struct::ANode::TyAlien) {
-              alien = dynamic_cast<Prof::Struct::Alien *>(stmt);
+            if (stmt) {
+              if (alien->name() == "<inline>") {
+                // Inline macro
+              } else if (stmt->type() == Prof::Struct::ANode::TyAlien) {
+                // inline function
+                alien = dynamic_cast<Prof::Struct::Alien *>(stmt);
+              } else {
+                break;
+              }
               file_name = alien->fileName();
               line = std::to_string(alien->begLine());
               name = file_name + ":" + line + "\t" + func_name;
