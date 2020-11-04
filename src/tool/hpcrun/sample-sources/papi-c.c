@@ -107,7 +107,7 @@
  * macros
  *****************************************************************************/
 
-#define DEBUG 0
+#define DEBUG 1
 
 #include <hpcrun/gpu/gpu-print.h>
 
@@ -145,11 +145,43 @@ static kind_info_t *papi_kind;
 static __thread gpu_monitor_fn_entry_t gpu_monitor_enter;
 static __thread gpu_monitor_fn_entry_t gpu_monitor_exit;
 
+typedef struct papi_mon_comp_t{
+  struct papi_mon_comp_t *next;
+  int idx;
+}papi_mon_comp_t;
+
+static papi_mon_comp_t *papi_mon_comp_list = NULL;
+
 /******************************************************************************
  * private operations 
  *****************************************************************************/
 static void papi_monitor_enter(void *reg_info, void *args_in);
 static void papi_monitor_exit(void *reg_info, void *args_in);
+
+static bool
+is_gpu_component(int cidx)
+{
+  const char* name = PAPI_get_component_info(cidx)->name;
+  if(strstr(name, "cuda") == name || strstr(name, "rocm")==name) {
+    return true;
+  }
+  return false;
+}
+
+
+static void
+papi_add_mon_comp(int cidx)
+{
+  if (is_gpu_component(cidx)){
+    papi_mon_comp_t *new_comp = hpcrun_malloc(sizeof(papi_mon_comp_t));
+    new_comp->next = papi_mon_comp_list;
+    new_comp->idx = cidx;
+
+    papi_mon_comp_list = new_comp;
+  }
+}
+
+
 static void
 gpu_metrics_attribute_papi(int metric_id, cct_node_t *cct_node, long long value);
 
@@ -671,6 +703,8 @@ METHOD_FN(gen_event_set, int lush_metrics)
     ci->sync_start = sync_start_for_component(i);
     ci->sync_stop = sync_stop_for_component(i);
     memset(ci->prev_values, 0, sizeof(ci->prev_values));
+
+    papi_add_mon_comp(i);
   }
 
   // record the component state in thread state
@@ -1048,22 +1082,24 @@ papi_monitor_enter(void *reg_info, void *args_in)
   sample_source_t *self = &obj_name(); /// just for debug
   int ret;
 
-  PRINT("|------->PAPI_MONITOR_ENTER | cct = %p\n", args->cct_node);
+//  PRINT("|------->PAPI_MONITOR_ENTER | cct = %p\n", args->cct_node);
 
   // if sampling disabled explicitly for this thread, skip all processing
   if (hpcrun_suppress_sample() || sample_filters_apply()) goto finish;
 
   cct_node = args->cct_node;
 
-  if (args->gpu_sync_ptr)  // for amd it seems that there is no default sync like in nvidia case
-    args->gpu_sync_ptr();
-
   // Save counts on the end so we could substract that from next call (we don't want to measure ourselves)
-  for (int cid = 0; cid < psi->num_components; ++cid) {
+  
+  for ( papi_mon_comp_t *it = papi_mon_comp_list; it != NULL; it = it->next) {
+    int cid = it->idx;
     papi_component_info_t *ci = &(psi->component_info[cid]);
+    
     if (ci->inUse) {
-      PRINT("Self = %p | Component %d \t | cct = %p \n\n", self, cid, args->cct_node );
+      if (args->gpu_sync_ptr)  // for amd it seems that there is no default sync like in nvidia case
+        args->gpu_sync_ptr();
 
+      PRINT("Self = %p | Component %d \t | cct = %p \n\n", self, cid, args->cct_node );
       ret = PAPI_read(ci->eventSet, prev_values);
       //      ret = PAPI_start(ci->eventSet);
 
@@ -1093,18 +1129,22 @@ papi_monitor_exit(void *reg_info, void *args_in)
   int my_event_count = MAX_EVENTS;
   int ret;
 
-  PRINT("|------->PAPI_MONITOR_EXIT| running? %d\n", METHOD_CALL(self, started));
-
-  if (args->gpu_sync_ptr)
-    args->gpu_sync_ptr();
+//  PRINT("|------->PAPI_MONITOR_EXIT| running? %d\n", METHOD_CALL(self, started));
 
   // if sampling disabled explicitly for this thread, skip all processing
   if (hpcrun_suppress_sample() || sample_filters_apply()) goto finish;
 
   // Collect counters for components in use
-  for (int cid = 0; cid < psi->num_components; ++cid) {
+  for ( papi_mon_comp_t *it = papi_mon_comp_list; it != NULL; it = it->next) {
+    int cid = it->idx;
+
     papi_component_info_t *ci = &(psi->component_info[cid]);
     if (ci->inUse){
+
+      if (args->gpu_sync_ptr)
+        args->gpu_sync_ptr();
+
+
       ret = PAPI_read(ci->eventSet, my_event_values);
 
       if (ret != PAPI_OK) {

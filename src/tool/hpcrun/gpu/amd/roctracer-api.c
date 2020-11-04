@@ -73,6 +73,10 @@
 // macros
 //******************************************************************************
 
+#define DEBUG 0
+#include <hpcrun/gpu/gpu-print.h>
+
+
 #define FORALL_ROCTRACER_ROUTINES(macro)      \
   macro(roctracer_open_pool_expl)   \
   macro(roctracer_enable_callback)  \
@@ -372,13 +376,13 @@ roctracer_subscriber_callback
     // Generate notification entry
     uint64_t cpu_submit_time = hpcrun_nanotime();
 
-    printf("\nACTIVITY_API_PHASE_ENTER -----------------| cct = %p \n", api_node);
+    PRINT("\nACTIVITY_API_PHASE_ENTER -----------------| cct = %p \n", api_node);
     int (*hip_gpu_sync_ptr)(void) = hip_dev_sync;
     gpu_monitors_apply(&(gpu_monitors_apply_t) {.cct_node=api_node, .gpu_sync_ptr=hip_gpu_sync_ptr}, gpu_monitor_type_enter);
 
     gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, cpu_submit_time);
   }else if (data->phase == ACTIVITY_API_PHASE_EXIT){
-    printf("\nACTIVITY_API_PHASE_EXIT -----------------| \n");
+    PRINT("\nACTIVITY_API_PHASE_EXIT -----------------| \n");
     int (*hip_gpu_sync_ptr)(void) = hip_dev_sync;
     gpu_monitors_apply(&(gpu_monitors_apply_t) {.cct_node=NULL, .gpu_sync_ptr=hip_gpu_sync_ptr}, gpu_monitor_type_exit);
 
