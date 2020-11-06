@@ -1458,14 +1458,16 @@ sanitizer_data_type_config
 )
 {
   if (data_type == NULL) {
-    sanitizer_data_type = REDSHOW_DATA_FLOAT;
+    sanitizer_data_type = REDSHOW_DATA_UNKNOWN;
   } else if (strcmp(data_type, "float") == 0 || strcmp(data_type, "FLOAT") == 0) {
     sanitizer_data_type = REDSHOW_DATA_FLOAT;
   } else if (strcmp(data_type, "int") == 0 || strcmp(data_type, "INT") == 0) {
     sanitizer_data_type = REDSHOW_DATA_INT;
   } else {
-    sanitizer_data_type = REDSHOW_DATA_FLOAT;
+    sanitizer_data_type = REDSHOW_DATA_UNKNOWN;
   }
+
+  PRINT("Config data type %u\n", sanitizer_data_type);
 
   redshow_data_type_config(sanitizer_data_type);
 }
