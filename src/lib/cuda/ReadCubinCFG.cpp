@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <omp.h>
 
 #include <set>
 #include <sstream>
@@ -84,7 +85,6 @@ parseDotCFG
  std::vector<int> symbol_visibility
 ) 
 {
-  CudaParse::CFGParser cfg_parser;
   // Step 1: parse all function symbols
   std::vector<Symbol *> symbols;
   the_symtab->getAllSymbols(symbols);
@@ -110,59 +110,79 @@ parseDotCFG
   }
 
   // Test valid symbols
-  for (auto *symbol : symbols) {
-    if (symbol->getType() == Dyninst::SymtabAPI::Symbol::ST_FUNCTION && symbol->getSize() != 0) {
-      auto index = symbol->getIndex();
-      const std::string cmd = "nvdisasm -fun " +
-        std::to_string(index) + " -cfg -poff " + cubin + " > " + dot_filename;
-      if (system(cmd.c_str()) == 0) {
-        // Only parse valid symbols
-        CudaParse::GraphReader graph_reader(dot_filename);
-        CudaParse::Graph graph;
-        std::vector<CudaParse::Function *> functions;
-        graph_reader.read(graph);
-        cfg_parser.parse(graph, functions);
-        // Local functions inside a global function cannot be independently parsed
-        for (auto *function : functions) {
-          if (function_map.find(function->name) == function_map.end()) {
-            auto iter = symbol_map.find(function->name);
-            if (iter == symbol_map.end()) {
-              // If nvcc-11 has special suffix, remove it
-              auto function_name = function->name;
-              auto pos = function_name.rfind("__");
-              if (pos == std::string::npos) {
-                // cannot find
-                continue;
-              }
-              function_name.erase(pos);
-              iter = symbol_map.find(function_name);
+  #pragma omp parallel shared(function_map, unparsable_function_symbols) num_threads(16)
+  {
+    std::map<std::string, CudaParse::Function *> local_function_map;
+    std::vector<Symbol *> local_unparsable_function_symbols;
+    auto local_dot_filename = dot_filename + std::to_string(omp_get_thread_num());
+
+    #pragma omp for schedule(dynamic, 1)
+    for (size_t i = 0; i < symbols.size(); ++i) {
+      auto *symbol = symbols[i];
+      if (symbol->getType() == Dyninst::SymtabAPI::Symbol::ST_FUNCTION && symbol->getSize() != 0) {
+        auto index = symbol->getIndex();
+        const std::string cmd = "nvdisasm -fun " +
+          std::to_string(index) + " -cfg -poff " + cubin + " > " + local_dot_filename;
+        if (system(cmd.c_str()) == 0) {
+          // Only parse valid symbols
+          CudaParse::GraphReader graph_reader(local_dot_filename);
+          CudaParse::Graph graph;
+          std::vector<CudaParse::Function *> functions;
+          graph_reader.read(graph);
+          CudaParse::CFGParser cfg_parser;
+          cfg_parser.parse(graph, functions);
+          // Local functions inside a global function cannot be independently parsed
+          for (auto *function : functions) {
+            if (function_map.find(function->name) == function_map.end()) {
+              auto iter = symbol_map.find(function->name);
               if (iter == symbol_map.end()) {
-                // cannot find
-                continue;
+                // If nvcc-11 has special suffix, remove it
+                auto function_name = function->name;
+                auto pos = function_name.rfind("__");
+                if (pos == std::string::npos) {
+                  // cannot find
+                  continue;
+                }
+                function_name.erase(pos);
+                iter = symbol_map.find(function_name);
+                if (iter == symbol_map.end()) {
+                  // cannot find
+                  continue;
+                }
+                function->name = function_name;
               }
-              function->name = function_name;
-            }
-            // Assign symbol index to function
-            auto *symbol_function = iter->second;
-            function->index = symbol_function->getIndex();
-            function->address = symbol_function->getOffset();
-            function->global = symbol_visibility[function->index] == CUDA_GLOBAL ? true : false;
-            function->size = symbol_function->getSize();
-            if (symbol_function != symbol) {
-              if (symbol_function->getType() != Dyninst::SymtabAPI::Symbol::ST_FUNCTION) {
-                // NOTYPE functions' original offsets are relative.
-                // hpcstruct relocates them with absolute offsets.
-                // Allow gaps between a function begining and the first block?
-                //function->blocks[0]->address = symbol->getOffset();
-                function->address += symbol->getOffset();
+              // Assign symbol index to function
+              auto *symbol_function = iter->second;
+              function->index = symbol_function->getIndex();
+              function->address = symbol_function->getOffset();
+              function->global = symbol_visibility[function->index] == CUDA_GLOBAL ? true : false;
+              function->size = symbol_function->getSize();
+              if (symbol_function != symbol) {
+                if (symbol_function->getType() != Dyninst::SymtabAPI::Symbol::ST_FUNCTION) {
+                  // NOTYPE functions' original offsets are relative.
+                  // hpcstruct relocates them with absolute offsets.
+                  // Allow gaps between a function begining and the first block?
+                  //function->blocks[0]->address = symbol->getOffset();
+                  function->address += symbol->getOffset();
+                }
               }
+              local_function_map[function->name] = function;
             }
-            function_map[function->name] = function;
           }
+        } else {
+          local_unparsable_function_symbols.push_back(symbol);
+          std::cout << "WARNING: unable to parse function: " << symbol->getMangledName() << std::endl;
         }
-      } else {
+      }
+    }
+
+    #pragma omp critical
+    {
+      for (auto &iter : local_function_map) {
+        function_map[iter.first] = iter.second;
+      }
+      for (auto *symbol : local_unparsable_function_symbols) {
         unparsable_function_symbols.push_back(symbol);
-        std::cout << "WARNING: unable to parse function: " << symbol->getMangledName() << std::endl;
       }
     }
   }
@@ -258,6 +278,7 @@ parseDotCFG
   }
 
   // Parse function calls
+  CudaParse::CFGParser cfg_parser;
   cfg_parser.parse_calls(functions);
 
   // Debug final functions and blocks
