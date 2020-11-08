@@ -142,6 +142,10 @@ static void readGraph(const std::string &file_name, NodeMap &node_map, EdgeMap &
       node.duplicate = ninfo.second.at("duplicate");
     }
 
+    if (ninfo.second.find("count") != ninfo.second.end()) {
+      node.count = std::stoull(ninfo.second.at("count"));
+    }
+
     node_map.emplace(node.node_id, node);
   }
 
@@ -165,6 +169,10 @@ static void readGraph(const std::string &file_name, NodeMap &node_map, EdgeMap &
 
     if (einfo.props.find("overwrite") != einfo.props.end()) {
       edge.overwrite = std::stod(einfo.props.at("overwrite"));
+    }
+
+    if (einfo.props.find("count") != einfo.props.end()) {
+      edge.count = std::stoull(einfo.props.at("count"));
     }
 
     edge_map[source_id][target_id].emplace(edge.type, edge);
@@ -354,10 +362,12 @@ static void writeGraph(const std::string &file_name, const NodeMap &node_map, co
   dp.property("context", boost::get(&VertexProperty::context, g));
   dp.property("node_type", boost::get(&VertexProperty::type, g));
   dp.property("duplicate", boost::get(&VertexProperty::duplicate, g));
+  dp.property("count", boost::get(&VertexProperty::count, g));
   dp.property("edge_type", boost::get(&EdgeProperty::type, g));
   dp.property("memory_node_id", boost::get(&EdgeProperty::memory_node_id, g));
   dp.property("overwrite", boost::get(&EdgeProperty::overwrite, g));
   dp.property("redundancy", boost::get(&EdgeProperty::redundancy, g));
+  dp.property("count", boost::get(&EdgeProperty::count, g));
 
   std::ofstream out(file_name + ".context");
   boost::write_graphviz_dp(out, g, dp);
