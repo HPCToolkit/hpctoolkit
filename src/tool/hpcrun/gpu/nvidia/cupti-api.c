@@ -498,6 +498,17 @@ cupti_path
   static char buffer[PATH_MAX];
   buffer[0] = 0;
 
+#ifdef NEW_CUPTI
+  TMSG(CUPTI, "New cupti enabled");
+
+  cupti_set_default_path(buffer);
+  if (library_path_resolves(buffer)) {
+    fprintf(stderr, "NOTE: Using builtin path for NVIDIA's CUPTI tools "
+      "library %s.\n", buffer);
+    path = buffer;
+    resolved = 1;
+  }
+#else
   // open an NVIDIA library to find the CUDA path with dl_iterate_phdr
   // note: a version of this file with a more specific name may
   // already be loaded. thus, even if the dlopen fails, we search with
@@ -538,6 +549,7 @@ cupti_path
   }
 
   if (h) monitor_real_dlclose(h);
+#endif
 
   return path;
 }
