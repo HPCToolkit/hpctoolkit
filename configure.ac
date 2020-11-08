@@ -319,6 +319,8 @@ if test "${ac_cv_prog_cc_c99}" = "no" ; then
 fi
 AM_PROG_CC_C_O()
 
+AM_PROG_AR
+
 # Note: this will set CC and CFLAGS if not already set
 LT_INIT()
 AC_SUBST([LIBTOOL_DEPS])
@@ -329,10 +331,6 @@ AC_PROG_SED
 
 AC_PROG_CXXCPP()
 
-AC_ARG_VAR([LD],
-    [ld program for binaries produced by CC, only needed if
-     autoconf fails to find a suitable program])
-
 AC_PROG_INSTALL()
 
 AC_MSG_NOTICE([INFO: post autoconf tests: CC='${CC}'  CFLAGS='${CFLAGS}'])
@@ -340,6 +338,32 @@ AC_MSG_NOTICE([INFO: post autoconf tests: CXX='${CXX}'  CXXFLAGS='${CXXFLAGS}'])
 AC_MSG_NOTICE([INFO: post autoconf tests: MPICC='${MPICC}'])
 AC_MSG_NOTICE([INFO: post autoconf tests: MPICXX='${MPICXX}'])
 AC_MSG_NOTICE([INFO: post autoconf tests: MPIF77='${MPIF77}'])
+
+
+#-------------------------------------------------
+# Other build tools: ld, objcopy
+#-------------------------------------------------
+
+# Autotools searches for LD automatically.  The ARG-VAR's are only if
+# autotools fails to find a good program.  We could change this to use
+# the spack-built binutils.
+
+AC_ARG_VAR([LD],
+    [the ld program, only needed if autotools fails to find a suitable program])
+
+AC_ARG_VAR([OBJCOPY],
+    [the objcopy program, only needed if autotools fails to find a suitable program])
+
+# Search path for objcopy
+AC_PATH_PROG([path_objcopy], [objcopy], [objcopy])
+
+if test "x$OBJCOPY" = x ; then
+  OBJCOPY="$path_objcopy"
+fi
+
+AC_MSG_NOTICE([ar is $AR])
+AC_MSG_NOTICE([ld is $LD])
+AC_MSG_NOTICE([objcopy is $OBJCOPY])
 
 
 #-------------------------------------------------
@@ -3064,6 +3088,7 @@ OPT_PAPI_DYNAMIC=no
 OPT_PAPI_STATIC=no
 OPT_PAPI_IFLAGS=
 OPT_PAPI_LDFLAGS=
+OPT_PAPI_LIBS_STAT=
 OPT_PAPI_LIBPATH=
 
 OPT_PAPI="$default_papi_prefix"
@@ -3095,12 +3120,19 @@ case "$OPT_PAPI" in
       if test -f "${lib_dir}/libpapi.so" || test -f "${lib_dir}/libpapi.a"
       then
         OPT_PAPI_LIBPATH="$lib_dir"
-        OPT_PAPI_LDFLAGS="-L${lib_dir} -lpapi"
 	if test -f "${lib_dir}/libpapi.so" ; then
           OPT_PAPI_DYNAMIC=yes
+	  OPT_PAPI_LDFLAGS="-L${lib_dir} -lpapi"
+	  if test -f "${lib_dir}/libpfm.so" ; then
+	    OPT_PAPI_LDFLAGS="${OPT_PAPI_LDFLAGS} -lpfm"
+	  fi
         fi
         if test -f "${lib_dir}/libpapi.a" ; then
           OPT_PAPI_STATIC=yes
+	  OPT_PAPI_LIBS_STAT="${lib_dir}/libpapi.a"
+	  if test -f "${lib_dir}/libpfm.a" ; then
+	    OPT_PAPI_LIBS_STAT="${OPT_PAPI_LIBS_STAT} ${lib_dir}/libpfm.a"
+	  fi
 	fi
 	break
       fi
@@ -3125,24 +3157,11 @@ if test "$OPT_PAPI" != no ; then
   AC_MSG_NOTICE([papi static libpapi.a: $OPT_PAPI_STATIC])
 fi
 
-# The dynamic case also needs libpapi.so's prerequisite libraries
-# (-lpfm).  In the static case, libpapi.a already includes these
-# functions.  At least, that's what we've seen so far.
-
-papi_extra_libs=
-so_file="${OPT_PAPI_LIBPATH}/libpapi.so"
-if test -f "$so_file" ; then
-  ldd "$so_file" | grep libpfm >/dev/null 2>&1
-  if test $? = 0 ; then
-    papi_extra_libs="${papi_extra_libs} -lpfm"
-  fi
-fi
-
 AC_SUBST(OPT_PAPI)
 AC_SUBST(OPT_PAPI_IFLAGS)
 AC_SUBST(OPT_PAPI_LDFLAGS)
+AC_SUBST(OPT_PAPI_LIBS_STAT)
 AC_SUBST(OPT_PAPI_LIBPATH)
-AC_SUBST([papi_extra_libs])
 
 
 #-------------------------------------------------
@@ -4848,28 +4867,6 @@ AC_MSG_RESULT([${OPT_ENABLE_DATACENTRIC_TRACE}])
 if test "${OPT_ENABLE_DATACENTRIC_TRACE}" = "yes" ; then
   AC_DEFINE([DATACENTRIC_TRACE], [1], [Data-centric tracing])
 fi
-
-
-
-#-------------------------------------------------
-# with-objcopy
-#-------------------------------------------------
-
-AC_MSG_CHECKING([whether configured with objcopy])
-
-OPT_OBJCOPY=objcopy
-
-AC_ARG_WITH([objcopy],
-  AS_HELP_STRING([--with-objcopy=<obcopy_path>],
-                 [use given objcopy when hiding hpcrun library symbols]),
-  [if test $withval != no; then
-     OPT_OBJCOPY=${withval}
-   fi],
-  [])
-
-AC_MSG_RESULT([yes (${OPT_OBJCOPY})])
-
-AC_SUBST(OPT_OBJCOPY)
 
 
 #-------------------------------------------------

@@ -41,35 +41,48 @@ on the hpctoolkit web site.
 @end example
 
 @noindent
-Last revised: September 11, 2020.
+Last revised: October 26, 2020.
 
 @c ------------------------------------------------------------
 
 @section Current Issues
 
-@subsection (2020-09-05) Configure warns about -fPIC.
+@subsection (2020-10-20) Binutils 2.35 spews errors in hpcprof
 
-As of commit
-@uref{https://github.com/HPCToolkit/hpctoolkit/pull/317, b2d3d067ecad}
-on 2020-09-05, the master branch now wants libunwind and xz (lzma) to
-be built with variant @code{+pic}.  This is used to workaround a
-deadlock with hpcrun, openmpi 4.x and UCX.  If not, then you'll see
-this warning at the bottom of configure.
+There is a bug in binutils 2.35 that causes hpcprof to spew BFD errors
+about ``could not find variable specification.''  For example,
 
 @example
-WARNING: The following prereqs are missing an archive (.a) compiled with -fPIC.
-WARNING:    libunwind lzma
-WARNING: 
-WARNING: hpcrun is unable to properly hide these libraries from the
-WARNING: application and this may cause deadlock or segfault.
-WARNING: Recompile the above libraries with -fPIC (+pic in spack).
+$ hpcprof hpctoolkit-foo-measurements
+BFD: DWARF error: could not find variable specification at offset 13df
+BFD: DWARF error: could not find variable specification at offset 1455
+BFD: DWARF error: could not find variable specification at offset 291f
 @end example
 
 @noindent
-For now, this is only a warning.  Everything will work as before, you
-just won't get the benefit of the work around.  But going forward, you
-should build libunwind and xz with variant @code{+pic}.  For example,
-in @code{packages.yaml}.
+@b{Workaround:} This is broken in the 2.35 and 2.35.1 releases but fixed
+in binutils master.  Until 2.36 (or 2.35.2) are released, use binutils
+version 2.34.
+
+@uref{https://sourceware.org/bugzilla/show_bug.cgi?id=26520}
+
+@subsection (2020-09-05) Configure fails without -fPIC in dependencies
+
+As of commit @uref{https://github.com/HPCToolkit/hpctoolkit/pull/317, b2d3d067ecad} 
+on 2020-09-05, the master branch now requires libunwind and xz (lzma) to
+be built with variant @code{+pic}.  This is used to better separate and
+hide third-party libraries in hpcrun from the application.  If not, then
+configure will fail with an error such as:
+
+@example
+configure: libunwind.a static archive: yes
+configure: libunwind.a compiled with -fPIC: no
+configure: error: libunwind.a must be compiled with -fPIC
+@end example
+
+@noindent
+@b{Fixed:} Build libunwind and xz (lzma) with the @code{+pic} variants.
+For example, in @code{packages.yaml},
 
 @example
 libunwind:

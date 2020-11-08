@@ -646,7 +646,6 @@ OPT_ENABLE_VG_ANNOTATIONS_TRUE
 VALGRIND_IFLAGS
 OPT_ENABLE_DEVTOOLS_FALSE
 OPT_ENABLE_DEVTOOLS_TRUE
-OPT_OBJCOPY
 OPT_ROCM_LDFLAGS
 OPT_ROCM_IFLAGS
 OPT_ROCM
@@ -746,8 +745,8 @@ PERFMON_LDFLAGS_STAT
 PERFMON_LDFLAGS_DYN
 PERFMON_LIB
 PERFMON_CFLAGS
-papi_extra_libs
 OPT_PAPI_LIBPATH
+OPT_PAPI_LIBS_STAT
 OPT_PAPI_LDFLAGS
 OPT_PAPI_IFLAGS
 OPT_PAPI
@@ -850,6 +849,8 @@ HOST_CPU_K1OM_FALSE
 HOST_CPU_K1OM_TRUE
 HOST_OS_LINUX_FALSE
 HOST_OS_LINUX_TRUE
+path_objcopy
+OBJCOPY
 am__fastdepCCAS_FALSE
 am__fastdepCCAS_TRUE
 CCASDEPMODE
@@ -866,8 +867,6 @@ NMEDIT
 DSYMUTIL
 MANIFEST_TOOL
 RANLIB
-ac_ct_AR
-AR
 DLLTOOL
 OBJDUMP
 LN_S
@@ -880,6 +879,8 @@ EGREP
 GREP
 SED
 LIBTOOL
+ac_ct_AR
+AR
 am__fastdepCC_FALSE
 am__fastdepCC_TRUE
 CCDEPMODE
@@ -1049,7 +1050,6 @@ with_cuda
 with_cupti
 with_rocm
 enable_data_centric_tracing
-with_objcopy
 enable_devtools
 with_valgrind
 enable_valgrind_annotations
@@ -1072,6 +1072,7 @@ CXXCPP
 CCAS
 CCASFLAGS
 LD
+OBJCOPY
 CXX11_FLAG
 MPICXX
 MPICC
@@ -1797,8 +1798,6 @@ Optional Packages:
                           cuda
   --with-rocm=PATH        use given ROCM installation (absolute path) with
                           hpcrun (default is NO)
-  --with-objcopy=<obcopy_path>
-                          use given objcopy when hiding hpcrun library symbols
   --with-valgrind=PATH    path to Valgrind install directory
 
 Some influential environment variables:
@@ -1821,8 +1820,10 @@ Some influential environment variables:
   CXXCPP      C++ preprocessor
   CCAS        assembler compiler command (defaults to CC)
   CCASFLAGS   assembler compiler flags (defaults to CFLAGS)
-  LD          ld program for binaries produced by CC, only needed if autoconf
-              fails to find a suitable program
+  LD          the ld program, only needed if autotools fails to find a
+              suitable program
+  OBJCOPY     the objcopy program, only needed if autotools fails to find a
+              suitable program
   CXX11_FLAG  CXX flag for C++11 standard, normally only needed for non-GNU
               CXX
   MPICXX      MPI C++ compiler for hpcprof-mpi
@@ -5753,6 +5754,179 @@ if test "${ac_cv_prog_cc_c99}" = "no" ; then
 fi
 
 
+
+if test -n "$ac_tool_prefix"; then
+  for ac_prog in ar lib "link -lib"
+  do
+    # Extract the first word of "$ac_tool_prefix$ac_prog", so it can be a program name with args.
+set dummy $ac_tool_prefix$ac_prog; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_AR+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$AR"; then
+  ac_cv_prog_AR="$AR" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_AR="$ac_tool_prefix$ac_prog"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+AR=$ac_cv_prog_AR
+if test -n "$AR"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $AR" >&5
+$as_echo "$AR" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+    test -n "$AR" && break
+  done
+fi
+if test -z "$AR"; then
+  ac_ct_AR=$AR
+  for ac_prog in ar lib "link -lib"
+do
+  # Extract the first word of "$ac_prog", so it can be a program name with args.
+set dummy $ac_prog; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_ac_ct_AR+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$ac_ct_AR"; then
+  ac_cv_prog_ac_ct_AR="$ac_ct_AR" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_ac_ct_AR="$ac_prog"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+fi
+fi
+ac_ct_AR=$ac_cv_prog_ac_ct_AR
+if test -n "$ac_ct_AR"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_ct_AR" >&5
+$as_echo "$ac_ct_AR" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+  test -n "$ac_ct_AR" && break
+done
+
+  if test "x$ac_ct_AR" = x; then
+    AR="false"
+  else
+    case $cross_compiling:$ac_tool_warned in
+yes:)
+{ $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: using cross tools not prefixed with host triplet" >&5
+$as_echo "$as_me: WARNING: using cross tools not prefixed with host triplet" >&2;}
+ac_tool_warned=yes ;;
+esac
+    AR=$ac_ct_AR
+  fi
+fi
+
+: ${AR=ar}
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking the archiver ($AR) interface" >&5
+$as_echo_n "checking the archiver ($AR) interface... " >&6; }
+if ${am_cv_ar_interface+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+   am_cv_ar_interface=ar
+   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+int some_variable = 0;
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  am_ar_try='$AR cru libconftest.a conftest.$ac_objext >&5'
+      { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$am_ar_try\""; } >&5
+  (eval $am_ar_try) 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }
+      if test "$ac_status" -eq 0; then
+        am_cv_ar_interface=ar
+      else
+        am_ar_try='$AR -NOLOGO -OUT:conftest.lib conftest.$ac_objext >&5'
+        { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$am_ar_try\""; } >&5
+  (eval $am_ar_try) 2>&5
+  ac_status=$?
+  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
+  test $ac_status = 0; }
+        if test "$ac_status" -eq 0; then
+          am_cv_ar_interface=lib
+        else
+          am_cv_ar_interface=unknown
+        fi
+      fi
+      rm -f conftest.lib libconftest.a
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+   ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $am_cv_ar_interface" >&5
+$as_echo "$am_cv_ar_interface" >&6; }
+
+case $am_cv_ar_interface in
+ar)
+  ;;
+lib)
+  # Microsoft lib, so override with the ar-lib wrapper script.
+  # FIXME: It is wrong to rewrite AR.
+  # But if we don't then we get into trouble of one sort or another.
+  # A longer-term fix would be to have automake use am__AR in this case,
+  # and then we could set am__AR="$am_aux_dir/ar-lib \$(AR)" or something
+  # similar.
+  AR="$am_aux_dir/ar-lib $AR"
+  ;;
+unknown)
+  as_fn_error $? "could not determine $AR interface" "$LINENO" 5
+  ;;
+esac
+
+
 # Note: this will set CC and CFLAGS if not already set
 case `pwd` in
   *\ * | *\	*)
@@ -7246,7 +7420,6 @@ fi
 $as_echo "$lt_cv_sharedlib_from_linklib_cmd" >&6; }
 sharedlib_from_linklib_cmd=$lt_cv_sharedlib_from_linklib_cmd
 test -z "$sharedlib_from_linklib_cmd" && sharedlib_from_linklib_cmd=$ECHO
-
 
 
 
@@ -17450,8 +17623,6 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 
-
-
 { $as_echo "$as_me:${as_lineno-$LINENO}: INFO: post autoconf tests: CC='${CC}'  CFLAGS='${CFLAGS}'" >&5
 $as_echo "$as_me: INFO: post autoconf tests: CC='${CC}'  CFLAGS='${CFLAGS}'" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: INFO: post autoconf tests: CXX='${CXX}'  CXXFLAGS='${CXXFLAGS}'" >&5
@@ -17462,6 +17633,73 @@ $as_echo "$as_me: INFO: post autoconf tests: MPICC='${MPICC}'" >&6;}
 $as_echo "$as_me: INFO: post autoconf tests: MPICXX='${MPICXX}'" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: INFO: post autoconf tests: MPIF77='${MPIF77}'" >&5
 $as_echo "$as_me: INFO: post autoconf tests: MPIF77='${MPIF77}'" >&6;}
+
+
+#-------------------------------------------------
+# Other build tools: ld, objcopy
+#-------------------------------------------------
+
+# Autotools searches for LD automatically.  The ARG-VAR's are only if
+# autotools fails to find a good program.  We could change this to use
+# the spack-built binutils.
+
+
+
+
+
+# Search path for objcopy
+# Extract the first word of "objcopy", so it can be a program name with args.
+set dummy objcopy; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_path_path_objcopy+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  case $path_objcopy in
+  [\\/]* | ?:[\\/]*)
+  ac_cv_path_path_objcopy="$path_objcopy" # Let the user override the test with a path.
+  ;;
+  *)
+  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_path_path_objcopy="$as_dir/$ac_word$ac_exec_ext"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  test -z "$ac_cv_path_path_objcopy" && ac_cv_path_path_objcopy="objcopy"
+  ;;
+esac
+fi
+path_objcopy=$ac_cv_path_path_objcopy
+if test -n "$path_objcopy"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $path_objcopy" >&5
+$as_echo "$path_objcopy" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+
+if test "x$OBJCOPY" = x ; then
+  OBJCOPY="$path_objcopy"
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: ar is $AR" >&5
+$as_echo "$as_me: ar is $AR" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: ld is $LD" >&5
+$as_echo "$as_me: ld is $LD" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}: objcopy is $OBJCOPY" >&5
+$as_echo "$as_me: objcopy is $OBJCOPY" >&6;}
 
 
 #-------------------------------------------------
@@ -21421,6 +21659,7 @@ OPT_PAPI_DYNAMIC=no
 OPT_PAPI_STATIC=no
 OPT_PAPI_IFLAGS=
 OPT_PAPI_LDFLAGS=
+OPT_PAPI_LIBS_STAT=
 OPT_PAPI_LIBPATH=
 
 OPT_PAPI="$default_papi_prefix"
@@ -21455,12 +21694,19 @@ case "$OPT_PAPI" in
       if test -f "${lib_dir}/libpapi.so" || test -f "${lib_dir}/libpapi.a"
       then
         OPT_PAPI_LIBPATH="$lib_dir"
-        OPT_PAPI_LDFLAGS="-L${lib_dir} -lpapi"
 	if test -f "${lib_dir}/libpapi.so" ; then
           OPT_PAPI_DYNAMIC=yes
+	  OPT_PAPI_LDFLAGS="-L${lib_dir} -lpapi"
+	  if test -f "${lib_dir}/libpfm.so" ; then
+	    OPT_PAPI_LDFLAGS="${OPT_PAPI_LDFLAGS} -lpfm"
+	  fi
         fi
         if test -f "${lib_dir}/libpapi.a" ; then
           OPT_PAPI_STATIC=yes
+	  OPT_PAPI_LIBS_STAT="${lib_dir}/libpapi.a"
+	  if test -f "${lib_dir}/libpfm.a" ; then
+	    OPT_PAPI_LIBS_STAT="${OPT_PAPI_LIBS_STAT} ${lib_dir}/libpfm.a"
+	  fi
 	fi
 	break
       fi
@@ -21486,19 +21732,6 @@ if test "$OPT_PAPI" != no ; then
 $as_echo "$as_me: papi shared libpapi.so: $OPT_PAPI_DYNAMIC" >&6;}
   { $as_echo "$as_me:${as_lineno-$LINENO}: papi static libpapi.a: $OPT_PAPI_STATIC" >&5
 $as_echo "$as_me: papi static libpapi.a: $OPT_PAPI_STATIC" >&6;}
-fi
-
-# The dynamic case also needs libpapi.so's prerequisite libraries
-# (-lpfm).  In the static case, libpapi.a already includes these
-# functions.  At least, that's what we've seen so far.
-
-papi_extra_libs=
-so_file="${OPT_PAPI_LIBPATH}/libpapi.so"
-if test -f "$so_file" ; then
-  ldd "$so_file" | grep libpfm >/dev/null 2>&1
-  if test $? = 0 ; then
-    papi_extra_libs="${papi_extra_libs} -lpfm"
-  fi
 fi
 
 
@@ -23764,31 +23997,6 @@ if test "${OPT_ENABLE_DATACENTRIC_TRACE}" = "yes" ; then
 $as_echo "#define DATACENTRIC_TRACE 1" >>confdefs.h
 
 fi
-
-
-
-#-------------------------------------------------
-# with-objcopy
-#-------------------------------------------------
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether configured with objcopy" >&5
-$as_echo_n "checking whether configured with objcopy... " >&6; }
-
-OPT_OBJCOPY=objcopy
-
-
-# Check whether --with-objcopy was given.
-if test "${with_objcopy+set}" = set; then :
-  withval=$with_objcopy; if test $withval != no; then
-     OPT_OBJCOPY=${withval}
-   fi
-fi
-
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: yes (${OPT_OBJCOPY})" >&5
-$as_echo "yes (${OPT_OBJCOPY})" >&6; }
-
-
 
 
 #-------------------------------------------------
