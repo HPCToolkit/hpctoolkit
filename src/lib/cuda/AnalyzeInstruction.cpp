@@ -14,6 +14,8 @@
 
 #define INSTRUCTION_ANALYZER_DEBUG 0
 
+#define FAST_SLICING
+
 namespace CudaParse {
 
 template <InstructionType inst_type>
@@ -604,7 +606,7 @@ void controlCudaInstructions(const char *cubin, std::vector<Function *> &functio
   }
 }
 
-#define TRACK_LIMIT 8
+static int TRACK_LIMIT = 8;
 
 static void trackDependency(const std::map<int, InstructionStat *> &inst_stat_map,
   Dyninst::Address inst_addr, Dyninst::Address func_addr, std::map<int, int> &predicate_map,
@@ -747,6 +749,14 @@ static void trackDependency(const std::map<int, InstructionStat *> &inst_stat_ma
 }
 
 
+class FirstMatchPred : public Dyninst::Slicer::Predicates {
+ public:
+  virtual bool endAtPoint(Dyninst::Assignment::Ptr ap) {
+    return true;
+  }
+};
+
+
 void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_set,
   std::vector<Function *> &functions) {
   // Build a instruction map
@@ -804,7 +814,12 @@ void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_s
         ac.convert(inst, inst_addr, dyn_func, dyn_block, assignments); 
 
         for (auto a : assignments) {
+          #ifdef FAST_SLICING
+          FirstMatchPred p;
+          #else
           IgnoreRegPred p(a->inputs());
+          #endif
+
           Dyninst::Slicer s(a, dyn_block, dyn_func, &ac, &dyn_inst_cache);
           Dyninst::GraphPtr g = s.backwardSlice(p); 
 
@@ -819,6 +834,9 @@ void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_s
             } else if (inst_stat->predicate_flag == InstructionStat::PREDICATE_FALSE) {
               predicate_map[-(inst_stat->predicate + 1)]++;
             }
+            #ifdef FAST_SLICING
+            TRACK_LIMIT = 1;
+            #endif
             trackDependency(inst_stat_map, inst_addr, func_addr, predicate_map,
               exit_begin, inst_stat, 0);
           }
