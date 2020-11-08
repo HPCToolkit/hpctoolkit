@@ -103,7 +103,9 @@
 #include "cubin-hash-map.h"
 #include "cubin-id-map.h"
 
-
+#ifdef NEW_CUPTI
+#include "cupti-pc-sampling-api.h"
+#endif
 
 //******************************************************************************
 // macros
@@ -506,7 +508,6 @@ cupti_path
     fprintf(stderr, "NOTE: Using builtin path for NVIDIA's CUPTI tools "
       "library %s.\n", buffer);
     path = buffer;
-    resolved = 1;
   }
 #else
   // open an NVIDIA library to find the CUDA path with dl_iterate_phdr

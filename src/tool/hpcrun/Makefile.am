@@ -503,6 +503,9 @@ MY_CUPTI_FILES = sample-sources/nvidia.c	\
 	gpu/nvidia/cupti-gpu-api.c		
 endif
 
+if OPT_ENABLE_NEW_CUPTI
+MY_NEW_CUPTI_FILES = gpu/nvidia/cupti-pc-sampling-api.c
+endif
 
 if OPT_ENABLE_ROCM
 MY_ROCM_FILES=\
@@ -888,6 +891,13 @@ if OPT_ENABLE_CUPTI
   libhpcrun_la_CPPFLAGS += $(CUPTI_INC_FLGS)
 
   MY_CPP_DEFINES  += -DHPCRUN_SS_NVIDIA
+
+if OPT_ENABLE_NEW_CUPTI
+  libhpcrun_la_SOURCES  += $(MY_NEW_CUPTI_FILES)
+  libhpcrun_o_SOURCES   += $(MY_NEW_CUPTI_FILES)
+  libhpcrun_la_CFLAGS += -DNEW_CUPTI
+endif
+
 endif
 
 if OPT_PAPI_CUPTI

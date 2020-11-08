@@ -23869,10 +23869,6 @@ else
 fi
 
 
-if test "$OPT_ENABLE_NEW_CUPTI" = "yes" ; then
-  CFLAGS="${CFLAGS} -DNEW_CUPTI"
-fi
-
 #-------------------------------------------------
 # Option: --with-cupti=PATH
 #-------------------------------------------------

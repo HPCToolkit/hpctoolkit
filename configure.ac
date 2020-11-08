@@ -4757,10 +4757,6 @@ AC_ARG_ENABLE([new_cupti],
 AC_MSG_RESULT([${OPT_ENABLE_NEW_CUPTI}])
 AM_CONDITIONAL(OPT_ENABLE_NEW_CUPTI, test "${OPT_ENABLE_NEW_CUPTI}" = "yes")
 
-if test "$OPT_ENABLE_NEW_CUPTI" = "yes" ; then
-  CFLAGS="${CFLAGS} -DNEW_CUPTI"
-fi
-
 #-------------------------------------------------
 # Option: --with-cupti=PATH
 #-------------------------------------------------
