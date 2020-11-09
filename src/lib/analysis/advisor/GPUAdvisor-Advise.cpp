@@ -154,9 +154,6 @@ KernelStats GPUAdvisor::readKernelStats(int mpi_rank, int thread_id) {
 }
 
 void GPUAdvisor::advise(const CCTBlames &cct_blames) {
-  // NOTE: stringstream.clear() does not work
-  _output.str("");
-
   for (auto mpi_rank = 0; mpi_rank < _metric_name_prof_map->num_mpi_ranks();
        ++mpi_rank) {
     // For each MPI process
@@ -177,7 +174,6 @@ void GPUAdvisor::advise(const CCTBlames &cct_blames) {
           KernelStats kernel_stats = readKernelStats(mpi_rank, thread_id);
 
           auto &kernel_blame = mpi_blames.at(thread_id);
-
           // 1. Summarize function statistics
           if (DEBUG_GPUADVISOR) {
             std::cout << "[" << mpi_rank << "," << thread_id << "]"
@@ -234,6 +230,9 @@ void GPUAdvisor::advise(const CCTBlames &cct_blames) {
             binary_optimizer_rank[score].push_back(optimizer);
           }
 
+          // NOTE: stringstream.clear() does not work
+          _output.str("");
+
           // 3. Output top advises
           _output << std::endl << "Code Optimizers" << std::endl << std::endl;
           concatAdvise(code_optimizer_rank);
@@ -245,13 +244,11 @@ void GPUAdvisor::advise(const CCTBlames &cct_blames) {
 
           _output << std::endl << "Binary Optimizers" << std::endl << std::endl;
           concatAdvise(binary_optimizer_rank);
+
+          _advise.push_back(std::make_pair(kernel_stats.time, _output.str()));
         }
       }
     }
-  }
-
-  if (_output.rdbuf()->in_avail() != 0) {
-    std::cout << _output.str();
   }
 
   // Clean advise
@@ -265,6 +262,23 @@ void GPUAdvisor::advise(const CCTBlames &cct_blames) {
 
   for (auto *optimizer : _binary_optimizers) {
     optimizer->clear();
+  }
+}
+
+
+void GPUAdvisor::output() {
+  if (_advise.size() > 0) {
+    std::sort(_advise.begin(), _advise.end(), [](
+        std::pair<double, std::string> &p1, std::pair<double, std::string> &p2){
+        return p1.first > p2.first;
+      });
+
+    std::ofstream of(_output_dir + "/gpa.advise");
+    for (size_t i = 0; i < _top_kernels && i < _advise.size(); ++i) {
+      of << "Rank " << (i + 1) << std::endl;
+      of << _advise[i].second;
+    }
+    of.close();
   }
 }
 

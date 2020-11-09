@@ -227,7 +227,8 @@ associateInstStmts(const std::vector<VMAStmt> &vma_stmts,
 
 void
 overlayGPUInstructionsMain(Prof::CallPath::Profile &prof,
-  const std::vector<std::string> &instruction_files) {
+  const std::vector<std::string> &instruction_files,
+  const std::string &output_dir) {
   auto *mgr = prof.metricMgr(); 
   MetricNameProfMap metric_name_prof_map(mgr);
   metric_name_prof_map.init();
@@ -241,7 +242,7 @@ overlayGPUInstructionsMain(Prof::CallPath::Profile &prof,
     return;
   }
 
-  GPUAdvisor gpu_advisor(&prof, &metric_name_prof_map);
+  GPUAdvisor gpu_advisor(&prof, &metric_name_prof_map, output_dir);
   gpu_advisor.init();
   // Read instruction files
   for (auto &file: instruction_files) {
@@ -313,6 +314,8 @@ overlayGPUInstructionsMain(Prof::CallPath::Profile &prof,
       std::cout << "Finish reading instruction file " << file << std::endl;
     }
   }
+
+  gpu_advisor.output();
 }
 
 }  // namespace CallPath

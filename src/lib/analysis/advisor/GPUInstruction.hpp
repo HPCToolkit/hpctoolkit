@@ -24,7 +24,8 @@ namespace CallPath {
 
 void
 overlayGPUInstructionsMain(Prof::CallPath::Profile &prof,
-  const std::vector<std::string> &instruction_files);
+  const std::vector<std::string> &instruction_files,
+  const std::string &output_dir);
 
 }
 

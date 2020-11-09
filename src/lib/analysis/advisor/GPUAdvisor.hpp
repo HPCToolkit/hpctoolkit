@@ -97,9 +97,9 @@ namespace Analysis {
 
 class GPUAdvisor {
  public:
-  explicit GPUAdvisor(Prof::CallPath::Profile *prof, MetricNameProfMap *metric_name_prof_map) :
-    _prof(prof), _metric_name_prof_map(metric_name_prof_map),
-    _gpu_root(NULL), _gpu_kernel(NULL), _arch(NULL) {}
+  explicit GPUAdvisor(Prof::CallPath::Profile *prof, MetricNameProfMap *metric_name_prof_map,
+    const std::string &output_dir) : _prof(prof), _metric_name_prof_map(metric_name_prof_map),
+    _gpu_root(NULL), _gpu_kernel(NULL), _arch(NULL), _output_dir(output_dir) {}
 
   MetricNameProfMap *metric_name_prof_map() {
     return this->_metric_name_prof_map;
@@ -114,6 +114,8 @@ class GPUAdvisor {
   void blame(CCTBlames &cct_blames);
 
   void advise(const CCTBlames &cct_blames);
+
+  void output();
  
   ~GPUAdvisor() {
     for (auto *optimizer : _code_optimizers) {
@@ -318,9 +320,12 @@ class GPUAdvisor {
 
   KernelStats _kernel_stats;
  
+  std::string _output_dir;
+  std::vector<std::pair<double, std::string>> _advise;
   std::stringstream _output;
 
  private:
+  const size_t _top_kernels = 10;
   const size_t _top_optimizers = 5;
 };
 
