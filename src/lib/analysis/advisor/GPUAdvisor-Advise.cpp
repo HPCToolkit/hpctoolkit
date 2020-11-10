@@ -61,7 +61,7 @@ using std::string;
 
 namespace Analysis {
 
-void GPUAdvisor::concatAdvise(const OptimizerRank &optimizer_rank) {
+void GPUAdvisor::concatAdvice(const OptimizerRank &optimizer_rank) {
   size_t rank = 0;
 
   // TODO(Keren): use other formatters
@@ -150,7 +150,7 @@ KernelStats GPUAdvisor::readKernelStats(int mpi_rank, int thread_id) {
   }
 
   return KernelStats(blocks, block_threads, block_smem, thread_regs, warps, 0,
-                     samples_total, samples_expected, count, 0, time);
+                     samples_total, samples_expected, time, 0, count);
 }
 
 void GPUAdvisor::advise(const CCTBlames &cct_blames) {
@@ -235,17 +235,17 @@ void GPUAdvisor::advise(const CCTBlames &cct_blames) {
 
           // 3. Output top advises
           _output << std::endl << "Code Optimizers" << std::endl << std::endl;
-          concatAdvise(code_optimizer_rank);
+          concatAdvice(code_optimizer_rank);
 
           _output << std::endl
                   << "Parallel Optimizers" << std::endl
                   << std::endl;
-          concatAdvise(parallel_optimizer_rank);
+          concatAdvice(parallel_optimizer_rank);
 
           _output << std::endl << "Binary Optimizers" << std::endl << std::endl;
-          concatAdvise(binary_optimizer_rank);
+          concatAdvice(binary_optimizer_rank);
 
-          _advise.push_back(std::make_pair(kernel_stats.time, _output.str()));
+          _advice.push_back(std::make_tuple(kernel_stats.time, _gpu_kernel, _output.str()));
         }
       }
     }
@@ -266,20 +266,17 @@ void GPUAdvisor::advise(const CCTBlames &cct_blames) {
 }
 
 
-void GPUAdvisor::output() {
-  if (_advise.size() > 0) {
-    std::sort(_advise.begin(), _advise.end(), [](
-        std::pair<double, std::string> &p1, std::pair<double, std::string> &p2){
-        return p1.first > p2.first;
+std::vector<GPUAdvisor::AdviceTuple> GPUAdvisor::get_advice() {
+  if (_advice.size() > 0) {
+    std::sort(_advice.begin(), _advice.end(), [](
+        AdviceTuple &t1, AdviceTuple &t2) {
+      return std::get<0>(t1) > std::get<0>(t2);
       });
 
-    std::ofstream of(_output_dir + "/gpa.advise");
-    for (size_t i = 0; i < _top_kernels && i < _advise.size(); ++i) {
-      of << "Rank " << (i + 1) << std::endl;
-      of << _advise[i].second;
-    }
-    of.close();
+    auto limit = _advice.size() > _top_kernels ? _top_kernels : _advice.size();
+    return decltype(_advice) (_advice.begin(), _advice.begin() + limit);
   }
+  return decltype(_advice)();
 }
 
 } // namespace Analysis

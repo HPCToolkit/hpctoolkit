@@ -69,6 +69,7 @@
 #include <string>
 #include <map>
 #include <queue>
+#include <tuple>
 
 //*************************** User Include Files ****************************
 
@@ -97,9 +98,12 @@ namespace Analysis {
 
 class GPUAdvisor {
  public:
-  explicit GPUAdvisor(Prof::CallPath::Profile *prof, MetricNameProfMap *metric_name_prof_map,
-    const std::string &output_dir) : _prof(prof), _metric_name_prof_map(metric_name_prof_map),
-    _gpu_root(NULL), _gpu_kernel(NULL), _arch(NULL), _output_dir(output_dir) {}
+  typedef std::tuple<double, Prof::CCT::ADynNode *, std::string> AdviceTuple;
+
+ public:
+  explicit GPUAdvisor(Prof::CallPath::Profile *prof, MetricNameProfMap *metric_name_prof_map) :
+    _prof(prof), _metric_name_prof_map(metric_name_prof_map),
+    _gpu_root(NULL), _gpu_kernel(NULL), _arch(NULL) {}
 
   MetricNameProfMap *metric_name_prof_map() {
     return this->_metric_name_prof_map;
@@ -115,7 +119,7 @@ class GPUAdvisor {
 
   void advise(const CCTBlames &cct_blames);
 
-  void output();
+  std::vector<AdviceTuple> get_advice();
  
   ~GPUAdvisor() {
     for (auto *optimizer : _code_optimizers) {
@@ -217,7 +221,7 @@ class GPUAdvisor {
 
   KernelStats readKernelStats(int mpi_rank, int thread_id);
 
-  void concatAdvise(const OptimizerRank &optimizer_rank);
+  void concatAdvice(const OptimizerRank &optimizer_rank);
   
   // Helper functions
   int demandNodeMetric(int mpi_rank, int thread_id, Prof::CCT::ADynNode *node);
@@ -320,8 +324,7 @@ class GPUAdvisor {
 
   KernelStats _kernel_stats;
  
-  std::string _output_dir;
-  std::vector<std::pair<double, std::string>> _advise;
+  std::vector<AdviceTuple> _advice;
   std::stringstream _output;
 
  private:

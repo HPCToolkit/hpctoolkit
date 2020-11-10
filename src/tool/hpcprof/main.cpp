@@ -61,6 +61,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <tuple>
 
 #include <string>
 using std::string;
@@ -204,10 +205,23 @@ realmain(int argc, char* const* argv)
   bool printProgress = true;
 
   // Static instruction overlay should be down before stmt coalesce 
-  Analysis::CallPath::overlayGPUInstructionsMain(*prof, args.instructionFiles, args.db_dir);
+  auto advice = Analysis::CallPath::overlayGPUInstructionsMain(*prof, args.instructionFiles);
 
   Analysis::CallPath::overlayStaticStructureMain(*prof, args.agent,
 						 args.doNormalizeTy, printProgress);
+
+  std::ofstream of(args.db_dir + "/gpa.advice");
+  for (auto &advice_tuple : advice) {
+    auto time = std::get<0>(advice_tuple);
+    auto *kernel = std::get<1>(advice_tuple);
+    auto suggestion = std::get<2>(advice_tuple);
+    auto *strct = kernel->structure();
+    if (strct->ancestorProc() != NULL) {
+      of << "GPU Kernel " << strct->ancestorProc()->name() << ": " << time << std::endl;
+      of << suggestion << std::endl;
+    }
+  }
+  of.close();
 
   Analysis::CallPath::transformCudaCFGMain(*prof);
   
