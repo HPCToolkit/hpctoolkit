@@ -774,72 +774,65 @@ void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_s
     }
   }
 
-  std::vector<Dyninst::ParseAPI::Function*> func_vec;
+  std::vector<std::pair<Dyninst::ParseAPI::Block *, Dyninst::ParseAPI::Function *>> block_vec;
   for (auto dyn_func : func_set) {
-    func_vec.emplace_back(dyn_func);
+    for (auto *dyn_block : dyn_func->blocks()) {
+      block_vec.emplace_back(dyn_block, dyn_func);
+    }
   }
 
-  #pragma omp parallel for schedule(dynamic) num_threads(16)
-  for (size_t i = 0; i < func_vec.size(); ++i) {
-    Dyninst::ParseAPI::Function* dyn_func = func_vec[i];
-    Dyninst::AssignmentConverter ac(true, false);
+  // TODO(Keren)
+  // Prepare pass: create instruction cache for slicing
+  Dyninst::AssignmentConverter ac(true, false);
+  Dyninst::Slicer::InsnCache dyn_inst_cache;
+    
+  #pragma omp parallel for schedule(dynamic) num_threads(16) firstprivate(ac, dyn_inst_cache)
+  for (size_t i = 0; i < block_vec.size(); ++i) {
+    auto *dyn_block = block_vec[i].first;
+    auto *dyn_func = block_vec[i].second;
     auto func_addr = dyn_func->addr();
 
-    // Prepare pass: create instruction cache for slicing
-    Dyninst::Slicer::InsnCache dyn_inst_cache;
-    for (auto *dyn_block : dyn_func->blocks()) {
-      Dyninst::ParseAPI::Block::Insns insns;
-      dyn_block->getInsns(insns);
-      for (auto &iter : insns) {
-        std::pair<Dyninst::InstructionAPI::Instruction, Dyninst::Address> p(iter.second, iter.first);
-        dyn_inst_cache[dyn_block->start()].emplace_back(std::move(p));
+    Dyninst::ParseAPI::Block::Insns insns;
+    dyn_block->getInsns(insns);
+
+    for (auto &inst_iter : insns) {
+      auto &inst = inst_iter.second;
+      auto inst_addr = inst_iter.first;
+      auto *inst_stat = inst_stat_map.at(inst_addr);
+
+      if (INSTRUCTION_ANALYZER_DEBUG) {
+        std::cout << "try to find inst_addr " << inst_addr - func_addr << std::endl;
       }
-    }
 
-    // First pass: slice instructions that have direct def instructions that contain them
-    for (auto *dyn_block : dyn_func->blocks()) {
-      Dyninst::ParseAPI::Block::Insns insns;
-      dyn_block->getInsns(insns);
+      std::vector<Dyninst::Assignment::Ptr> assignments;
+      ac.convert(inst, inst_addr, dyn_func, dyn_block, assignments); 
 
-      for (auto &inst_iter : insns) {
-        auto &inst = inst_iter.second;
-        auto inst_addr = inst_iter.first;
-        auto *inst_stat = inst_stat_map.at(inst_addr);
+      for (auto a : assignments) {
+#ifdef FAST_SLICING
+        FirstMatchPred p;
+#else
+        IgnoreRegPred p(a->inputs());
+#endif
 
-        if (INSTRUCTION_ANALYZER_DEBUG) {
-          std::cout << "try to find inst_addr " << inst_addr - func_addr << std::endl;
-        }
+        Dyninst::Slicer s(a, dyn_block, dyn_func, &ac, &dyn_inst_cache);
+        Dyninst::GraphPtr g = s.backwardSlice(p); 
 
-        std::vector<Dyninst::Assignment::Ptr> assignments;
-        ac.convert(inst, inst_addr, dyn_func, dyn_block, assignments); 
+        Dyninst::NodeIterator exit_begin, exit_end;
+        g->exitNodes(exit_begin, exit_end);
 
-        for (auto a : assignments) {
-          #ifdef FAST_SLICING
-          FirstMatchPred p;
-          #else
-          IgnoreRegPred p(a->inputs());
-          #endif
-
-          Dyninst::Slicer s(a, dyn_block, dyn_func, &ac, &dyn_inst_cache);
-          Dyninst::GraphPtr g = s.backwardSlice(p); 
-
-          Dyninst::NodeIterator exit_begin, exit_end;
-          g->exitNodes(exit_begin, exit_end);
-
-          for (; exit_begin != exit_end; ++exit_begin) {
-            std::map<int, int> predicate_map;
-            // DFS to iterate the whole dependency graph
-            if (inst_stat->predicate_flag == InstructionStat::PREDICATE_TRUE) {
-              predicate_map[inst_stat->predicate + 1]++;
-            } else if (inst_stat->predicate_flag == InstructionStat::PREDICATE_FALSE) {
-              predicate_map[-(inst_stat->predicate + 1)]++;
-            }
-            #ifdef FAST_SLICING
-            TRACK_LIMIT = 1;
-            #endif
-            trackDependency(inst_stat_map, inst_addr, func_addr, predicate_map,
-              exit_begin, inst_stat, 0);
+        for (; exit_begin != exit_end; ++exit_begin) {
+          std::map<int, int> predicate_map;
+          // DFS to iterate the whole dependency graph
+          if (inst_stat->predicate_flag == InstructionStat::PREDICATE_TRUE) {
+            predicate_map[inst_stat->predicate + 1]++;
+          } else if (inst_stat->predicate_flag == InstructionStat::PREDICATE_FALSE) {
+            predicate_map[-(inst_stat->predicate + 1)]++;
           }
+#ifdef FAST_SLICING
+          TRACK_LIMIT = 1;
+#endif
+          trackDependency(inst_stat_map, inst_addr, func_addr, predicate_map,
+            exit_begin, inst_stat, 0);
         }
       }
     }
