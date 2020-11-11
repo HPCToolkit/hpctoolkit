@@ -210,6 +210,9 @@ realmain(int argc, char* const* argv)
   Analysis::CallPath::overlayStaticStructureMain(*prof, args.agent,
 						 args.doNormalizeTy, printProgress);
 
+  const std::string sep = "**********************************************"
+                           "********************************************";
+
   std::ofstream of(args.db_dir + "/gpa.advice");
   for (auto &advice_tuple : advice) {
     auto time = std::get<0>(advice_tuple);
@@ -217,6 +220,7 @@ realmain(int argc, char* const* argv)
     auto suggestion = std::get<2>(advice_tuple);
     auto *strct = kernel->structure();
     if (strct->ancestorProc() != NULL) {
+      of << sep << std::endl;    
       of << "GPU Kernel " << strct->ancestorProc()->name() << ": " << time << std::endl;
       of << suggestion << std::endl;
     }

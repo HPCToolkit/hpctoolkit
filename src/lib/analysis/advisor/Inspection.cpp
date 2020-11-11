@@ -93,23 +93,27 @@ std::string SimpleInspectionFormatter::format(const Inspection &inspection) {
   std::string sep = "------------------------------------------"
     "--------------------------------------------------";
 
+  std::string indent = "  ";
+
   // Debug
   //std::cout << "Apply " << inspection.optimization << " optimization," << std::endl;
 
   // Overview
-  ss << "Apply " << inspection.optimization << " optimization,";
+  ss << indent << "Apply " << inspection.optimization << " optimization,";
 
   ss << std::fixed << std::setprecision(3);
 
   ss << " ratio " << inspection.ratios.back() * 100 << "%,";
 
-  ss << " estimate speedup " << inspection.speedups.back() << "x";
+  ss << " estimate speedup " << inspection.speedups.back() << "x" << std::endl;
 
-  ss << std::endl << std::endl << inspection.hint << std::endl << std::endl;
+  indent += "  ";
+
+  ss << indent << inspection.hint << std::endl;
 
   // Specific suggestion
   if (inspection.active_warp_count.first != -1) {
-    ss << "Adjust #active_warps: " << inspection.active_warp_count.first;
+    ss << indent << "Adjust #active_warps: " << inspection.active_warp_count.first;
 
     if (inspection.active_warp_count.second != -1) {
       ss << " to " << inspection.active_warp_count.second;
@@ -119,7 +123,7 @@ std::string SimpleInspectionFormatter::format(const Inspection &inspection) {
   }
 
   if (inspection.thread_count.first != -1) {
-    ss << "Adjust #threads: " << inspection.thread_count.first;
+    ss << indent << "Adjust #threads: " << inspection.thread_count.first;
 
     if (inspection.thread_count.second != -1) {
       ss << " to " << inspection.thread_count.second;
@@ -129,7 +133,7 @@ std::string SimpleInspectionFormatter::format(const Inspection &inspection) {
   }
 
   if (inspection.block_count.first != -1) {
-    ss << "Adjust #blocks: " << inspection.block_count.first;
+    ss << indent << "Adjust #blocks: " << inspection.block_count.first;
 
     if (inspection.block_count.second != -1) {
       ss << " to " << inspection.block_count.second;
@@ -139,7 +143,7 @@ std::string SimpleInspectionFormatter::format(const Inspection &inspection) {
   }
 
   if (inspection.reg_count.first != -1) {
-    ss << "Adjust #regs: " << inspection.reg_count.first;
+    ss << indent << "Adjust #regs: " << inspection.reg_count.first;
 
     if (inspection.reg_count.second != -1) {
       ss << " to " << inspection.reg_count.second;
@@ -160,7 +164,7 @@ std::string SimpleInspectionFormatter::format(const Inspection &inspection) {
       auto metric = inspection.stall ? region_blame.stall_blame : region_blame.lat_blame;
       ratio = metric / inspection.total;
     }
-    ss << index + 1 << ". Hot " << region_blame.blame_name << " code, ratio " <<
+    ss << indent << index + 1 << ". Hot " << region_blame.blame_name << " code, ratio " <<
       ratio * 100 << "%, ";
     if (speedup != 0.0) {
       ss << "speedup " << speedup << "x";
@@ -183,7 +187,7 @@ std::string SimpleInspectionFormatter::format(const Inspection &inspection) {
       auto inst_blame_metric = inspection.stall ? inst_blame.stall_blame : inst_blame.lat_blame;
       inst_blame_ratio = inst_blame_metric / inspection.total;
 
-      ss << prefix << "Hot " << inst_blame.blame_name << " code, ratio " <<
+      ss << indent + prefix << "Hot " << inst_blame.blame_name << " code, ratio " <<
         inst_blame_ratio * 100 << "%, distance " << inst_blame.distance << std::endl;
 
       auto *src_struct = inst_blame.src_struct;
@@ -203,12 +207,12 @@ std::string SimpleInspectionFormatter::format(const Inspection &inspection) {
 
       auto *src_file = src_struct->ancestorFile();
 
-      ss << prefix << "From " << src_func->name() << " at " << src_file->name() << ":" <<
+      ss << indent + prefix + prefix << "From " << src_func->name() << " at " << src_file->name() << ":" <<
         src_file->begLine()  << std::endl;
       if (src_inline_stack.empty() == false) {
-        ss << prefix << formatInlineStack(src_inline_stack);
+        ss << indent + prefix + prefix + prefix << formatInlineStack(src_inline_stack);
       }
-      ss << prefix << std::hex << "0x" << src_vma << std::dec << " at " <<
+      ss << indent + prefix + prefix + prefix << std::hex << "0x" << src_vma << std::dec << " at " <<
         "Line " << src_struct->begLine();
       if (inspection.loop) {
         auto *loop = src_struct->ancestorLoop();
@@ -219,12 +223,12 @@ std::string SimpleInspectionFormatter::format(const Inspection &inspection) {
       ss  << std::endl;
 
       auto *dst_file = dst_struct->ancestorFile();
-      ss << prefix << "To " << dst_func->name() << " at " << dst_file->name() << ":" <<
+      ss << indent + prefix + prefix << "To " << dst_func->name() << " at " << dst_file->name() << ":" <<
         dst_file->begLine() << std::endl;
       if (dst_inline_stack.empty() == false) {
-        ss << prefix << formatInlineStack(dst_inline_stack);
+        ss << indent + prefix + prefix + prefix << formatInlineStack(dst_inline_stack);
       }
-      ss << prefix << std::hex << "0x" << dst_vma << std::dec << " at " <<
+      ss << indent + prefix + prefix + prefix << std::hex << "0x" << dst_vma << std::dec << " at " <<
         "Line " << dst_struct->begLine() << std::endl;
     }
 
