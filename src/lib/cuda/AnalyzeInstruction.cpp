@@ -14,7 +14,7 @@
 
 #define INSTRUCTION_ANALYZER_DEBUG 0
 
-#define FAST_SLICING
+//#define FAST_SLICING
 
 namespace CudaParse {
 

@@ -81,7 +81,7 @@ std::string SimpleInspectionFormatter::formatInlineStack(
     inline_stack.pop();
     // Current inline stack line mapping information is not accurate
     //ss << "Line " << inline_struct->begLine() <<
-    ss << inline_struct->fileName() << std::endl;
+    ss << "        " << inline_struct->fileName() << std::endl;
   }
 
   return ss.str();
