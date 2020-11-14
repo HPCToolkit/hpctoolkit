@@ -112,8 +112,11 @@
 #include "sanitizer-buffer.h"
 #include "sanitizer-buffer-channel.h"
 #include "sanitizer-buffer-channel-set.h"
+#include "sanitizer-function-list.h"
 
 #define SANITIZER_API_DEBUG 1
+
+#define FUNCTION_NAME_LENGTH 1024
 
 #if SANITIZER_API_DEBUG
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)
@@ -218,7 +221,6 @@ static __thread uint32_t sanitizer_thread_id_self = (1 << 30);
 static __thread uint32_t sanitizer_thread_id_local = 0;
 static __thread CUcontext sanitizer_thread_context = NULL;
 
-
 static __thread gpu_patch_buffer_t gpu_patch_buffer_reset = {
   .head_index = 0,
   .tail_index = 0,
@@ -241,6 +243,9 @@ static atomic_bool sanitizer_process_stop_flag = ATOMIC_VAR_INIT(0);
 
 static spinlock_t sanitizer_alloc_lock = SPINLOCK_UNLOCKED;
 static spinlock_t sanitizer_free_lock = SPINLOCK_UNLOCKED;
+
+static sanitizer_function_list_entry_t *sanitizer_whitelist = NULL;
+static sanitizer_function_list_entry_t *sanitizer_blacklist = NULL;
 
 //----------------------------------------------------------
 // sanitizer function pointers for late binding
@@ -940,6 +945,7 @@ sanitizer_kernel_launch_callback
   int block_sampling_frequency = kernel_sampling ? sanitizer_block_sampling_frequency_get() : 0;
   int block_sampling_offset = kernel_sampling ? rand() % grid_dim % block_sampling_frequency : 0;
 
+  PRINT("Kernel sampling %d\n", kernel_sampling);
   PRINT("Sampling offset %d\n", block_sampling_offset);
   PRINT("Sampling frequency %d\n", block_sampling_frequency);
 
@@ -1113,12 +1119,25 @@ sanitizer_subscribe_callback
     static __thread dim3 grid_size = { .x = 0, .y = 0, .z = 0};
     static __thread dim3 block_size = { .x = 0, .y = 0, .z = 0};
     static __thread Sanitizer_StreamHandle priority_stream = NULL;
-    static __thread bool kernel_sampling = false;
+    static __thread bool kernel_sampling = true;
     static __thread uint64_t correlation_id = 0;
     static __thread cct_node_t *api_node = NULL;
     static __thread int32_t persistent_id = 0;
 
     if (cbid == SANITIZER_CBID_LAUNCH_BEGIN) {
+      // Use function list to filter functions
+      if (sanitizer_whitelist != NULL) {
+        if (sanitizer_function_list_lookup(sanitizer_whitelist, ld->functionName) == NULL) {
+          kernel_sampling = false;
+        }
+      }
+
+      if (sanitizer_blacklist != NULL) {
+        if (sanitizer_function_list_lookup(sanitizer_blacklist, ld->functionName) != NULL) {
+          kernel_sampling = false;
+        }
+      }
+
       // Get a place holder cct node
       correlation_id = gpu_correlation_id();
       // TODO(Keren): why two extra layers?
@@ -1136,18 +1155,22 @@ sanitizer_subscribe_callback
 
       hpcrun_safe_exit();
 
-      // Kernel 
-      int kernel_sampling_frequency = sanitizer_kernel_sampling_frequency_get();
-      // TODO(Keren): thread safe rand
-      kernel_sampling = rand() % kernel_sampling_frequency == 0;
-
-      // Look persisitent id
+      // Look up persisitent id
       persistent_id = hpcrun_cct_persistent_id(api_node);
+      
+      if (kernel_sampling) {
+        // Kernel is not ignored
+        // By default ignored this kernel
+        kernel_sampling = false;
+        int kernel_sampling_frequency = sanitizer_kernel_sampling_frequency_get();
+        // TODO(Keren): thread safe rand
+        kernel_sampling = rand() % kernel_sampling_frequency == 0;
 
-      // First time must be sampled
-      if (sanitizer_op_map_lookup(persistent_id) == NULL) {
-        kernel_sampling = true;
-        sanitizer_op_map_init(persistent_id, api_node);
+        // First time must be sampled
+        if (sanitizer_op_map_lookup(persistent_id) == NULL) {
+          kernel_sampling = true;
+          sanitizer_op_map_init(persistent_id, api_node);
+        }
       }
 
       grid_size.x = ld->gridDim_x;
@@ -1412,6 +1435,47 @@ sanitizer_async_config
 )
 {
   sanitizer_analysis_async = async;
+}
+
+
+static void
+function_list_add
+(
+ sanitizer_function_list_entry_t *head,
+ char *file_name
+)
+{
+  FILE *fp = NULL;
+  fp = fopen(file_name, "r");
+  if (fp != NULL) {
+    char function[FUNCTION_NAME_LENGTH];
+    while (fgets(function, FUNCTION_NAME_LENGTH, fp) != NULL) {
+      char *pos = NULL;
+      if ((pos=strchr(function, '\n')) != NULL)
+        *pos = '\0';
+      PRINT("Add function %s from %s\n", function, file_name);
+      sanitizer_function_list_register(head, function);
+    }
+    fclose(fp);
+  }
+}
+
+
+void
+sanitizer_function_config
+(
+ char *file_whitelist,
+ char *file_blacklist
+)
+{
+  if (file_whitelist != NULL) {
+    sanitizer_function_list_init(&sanitizer_whitelist);
+    function_list_add(sanitizer_whitelist, file_whitelist);
+  }
+  if (file_blacklist != NULL) {
+    sanitizer_function_list_init(&sanitizer_blacklist);
+    function_list_add(sanitizer_blacklist, file_blacklist);
+  }
 }
 
 

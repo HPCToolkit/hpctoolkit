@@ -495,7 +495,13 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     int mem_views = control_knob_value_get_int(HPCRUN_SANITIZER_MEM_VIEWS);
 
+    kernel_sampling_frequency = control_knob_value_get_int(HPCRUN_SANITIZER_KERNEL_SAMPLING_FREQUENCY);
+
     char *data_type = control_knob_value_get(HPCRUN_SANITIZER_DEFAULT_TYPE);
+
+    char *whitelist = control_knob_value_get(HPCRUN_SANITIZER_WHITELIST);
+
+    char *blacklist = control_knob_value_get(HPCRUN_SANITIZER_BLACKLIST);
 
     if (gpu_patch_record_num == 0) {
       gpu_patch_record_num = DEFAULT_GPU_PATCH_RECORD_NUM;
@@ -517,8 +523,6 @@ METHOD_FN(process_event_list, int lush_metrics)
       mem_views = DEFAULT_MEM_VIEWS;
     }
 
-    kernel_sampling_frequency = control_knob_value_get_int(HPCRUN_SANITIZER_KERNEL_SAMPLING_FREQUENCY);
-
     if (kernel_sampling_frequency == 0) {
       kernel_sampling_frequency = DEFAULT_KERNEL_SAMPLING_FREQUENCY;
     }
@@ -529,6 +533,8 @@ METHOD_FN(process_event_list, int lush_metrics)
     PRINT("pc_views %d\n", pc_views);
     PRINT("mem_views %d\n", mem_views);
     PRINT("kernel_sampling_frequency %d\n", kernel_sampling_frequency);
+
+    sanitizer_function_config(whitelist, blacklist);
 
     sanitizer_buffer_config(gpu_patch_record_num, buffer_pool_size);
 

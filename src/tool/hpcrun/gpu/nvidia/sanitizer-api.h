@@ -41,6 +41,9 @@ void
 sanitizer_async_config(bool async);
 
 void
+sanitizer_function_config(char *whitelist, char *blacklist);
+
+void
 sanitizer_buffer_config(int gpu_patch_record_num, int buffer_pool_size);
 
 void
