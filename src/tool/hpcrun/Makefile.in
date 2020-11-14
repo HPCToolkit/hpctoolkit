@@ -1920,7 +1920,8 @@ MY_AARCH64_FILES = \
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/cupti-api.c			\
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/cupti-gpu-api.c		
 
-@OPT_ENABLE_OPENCL_TRUE@MY_OPENCL_FILES = sample-sources/opencl.c \
+@OPT_ENABLE_OPENCL_TRUE@MY_OPENCL_FILES = \
+@OPT_ENABLE_OPENCL_TRUE@  sample-sources/opencl.c \
 @OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/opencl-api.c \
 @OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/opencl-memory-manager.c \
 @OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/opencl-activity-translate.c \

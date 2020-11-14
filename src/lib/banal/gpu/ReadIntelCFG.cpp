@@ -124,22 +124,6 @@ addCustomFunctionObject
   assert(status == true);
 }
 
-
-static std::string
-getFileNameFromAbsolutePath(const std::string &str) {
-  // TODO(Aaron): you can just find the last "/" and grab "/" to the end
-  std::vector<std::string> tokens; 
-  std::stringstream str_stream(str); 
-  std::string intermediate; 
-
-  // Tokenizing w.r.t. '/'
-  while(std::getline(str_stream, intermediate, '/')) { 
-    tokens.push_back(intermediate); 
-  } 
-  return tokens[tokens.size() - 1];
-}
-
-
 static void
 parseIntelCFG
 (
@@ -243,12 +227,15 @@ readIntelCFG
 )
 {
   if (cfg_wanted) {
-    auto function_name = getFileNameFromAbsolutePath(elfFile->getFileName());
+    auto function_name = elfFile->getGPUKernelName();
     addCustomFunctionObject(function_name, the_symtab); //adds a dummy function object
 
     char *text_section = NULL;
     auto text_section_size = elfFile->getTextSection(&text_section);
     if (text_section_size == 0) {
+      *code_src = new SymtabCodeSource(the_symtab);
+      *code_obj = new CodeObject(*code_src, NULL, NULL, false, true);
+
       return false;
     }
 

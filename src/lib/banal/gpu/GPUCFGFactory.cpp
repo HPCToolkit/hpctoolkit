@@ -21,6 +21,8 @@ Function *GPUCFGFactory::mkfunc(Address addr, FuncSource src,
           std::hex << addr << std::dec << std::endl;
       }
       for (auto *block : function->blocks) {
+        auto arch = block->insts.front()->arch;
+
         GPUBlock *ret_block = NULL;
         // If a block has not been created by callers, create it
         // Otherwise get the block from _block_filter
@@ -32,7 +34,7 @@ Function *GPUCFGFactory::mkfunc(Address addr, FuncSource src,
           for (auto *inst : block->insts) {
             inst_offsets.emplace_back(std::make_pair(inst->offset, inst->size));
           }
-          ret_block = new GPUBlock(obj, region, block->address, inst_offsets);
+          ret_block = new GPUBlock(obj, region, block->address, inst_offsets, arch);
           _block_filter[block->id] = ret_block;
           blocks_.add(ret_block);
         } else {
@@ -59,7 +61,7 @@ Function *GPUCFGFactory::mkfunc(Address addr, FuncSource src,
             for (auto *inst : target->block->insts) {
               inst_offsets.push_back(std::make_pair(inst->offset, inst->size));
             }
-            ret_target_block = new GPUBlock(obj, region, target->block->address, inst_offsets);
+            ret_target_block = new GPUBlock(obj, region, target->block->address, inst_offsets, arch);
             _block_filter[target->block->id] = ret_target_block;
             blocks_.add(ret_target_block);
           } else {

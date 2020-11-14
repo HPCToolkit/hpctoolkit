@@ -98,6 +98,9 @@ public:
   size_t getTextSection(char **text_section);
   bool isIntelGPUFile() { return intelGPU; }
   void setIntelGPUFile(bool _intelGPU) { intelGPU = _intelGPU; }
+  // Intel GPUs have kernel name suffix
+  void setGPUKernelName(const std::string &_gpuKernel) { gpuKernel = _gpuKernel; }
+  std::string getGPUKernelName() { return gpuKernel; }
 private:
   int arch;
   char *origPtr;
@@ -106,6 +109,7 @@ private:
   Elf *elf;
   bool intelGPU;
   std::string fileName;
+  std::string gpuKernel;
 };
 
 class ElfFileVector : public std::vector<ElfFile *> {};

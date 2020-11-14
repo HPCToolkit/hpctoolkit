@@ -61,6 +61,7 @@
 // local includes
 //******************************************************************************
 
+#include <include/gpu-binary.h>
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/cct/cct.h>
 #include <hpcrun/memory/hpcrun-malloc.h>
@@ -90,6 +91,7 @@
 //******************************************************************************
 
 #define MAX_STR_SIZE 1024
+#define KERNEL_SUFFIX ".kernel"
 
 // TODO(Aaron): Why there are so many correlation ids
 static atomic_ullong correlation_id;
@@ -100,6 +102,8 @@ static bool gtpin_use_runtime_callstack = false;
 
 static __thread uint64_t gtpin_correlation_id = 0;
 static __thread uint64_t gtpin_cpu_submit_time = 0;
+static __thread gpu_op_ccts_t gtpin_gpu_op_ccts;
+static __thread bool gtpin_first = true;
 
 //******************************************************************************
 // private operations
@@ -153,8 +157,15 @@ createKernelNode
   if (gtpin_use_runtime_callstack) {
     // XXX(Keren): gtpin's call stack is a mass, better to use opencl's call path
     // onKernelRun->clEnqueueNDRangeKernel_wrapper->opencl_subscriber_callback
-    gtpin_correlation_id = correlation_id;
-    gtpin_cpu_submit_time = cpu_submit_time;
+    if (gtpin_first) {
+      // gtpin callback->runtime callback
+      gtpin_correlation_id = correlation_id;
+      gtpin_cpu_submit_time = cpu_submit_time;
+    } else {
+      // runtime callback->gtpin callback
+      gpu_activity_channel_t *activity_channel = gpu_activity_channel_get();
+      gtpin_correlation_id_map_insert(correlation_id, &gtpin_gpu_op_ccts, activity_channel, cpu_submit_time);
+    }
   } else {
     cct_node_t *api_node = gpu_application_thread_correlation_callback(correlation_id);
 
@@ -203,8 +214,27 @@ writeBinary
   }
 }
 
+static size_t
+computeHash
+(
+ const char *mem_ptr,
+ size_t mem_size,
+ char *name
+)
+{
+  // Compute hash for mem_ptr with mem_size
+  unsigned char hash[HASH_LENGTH];
+  crypto_hash_compute((const unsigned char *)mem_ptr, mem_size, hash, HASH_LENGTH);
 
-void
+  size_t i;
+  size_t used = 0;
+  for (i = 0; i < HASH_LENGTH; ++i) {
+    used += sprintf(&name[used], "%02x", hash[i]);
+  }
+  return used;
+}
+
+static void
 computeBinaryHash
 (
  const char *binary,
@@ -212,19 +242,12 @@ computeBinaryHash
  char *file_name
 )
 {
-  // Compute hash for the binary
-  unsigned char hash[HASH_LENGTH];
-  crypto_hash_compute((const unsigned char *)binary, binary_size, hash, HASH_LENGTH);
-
-  size_t i;
   size_t used = 0;
   used += sprintf(&file_name[used], "%s", hpcrun_files_output_directory());
-  used += sprintf(&file_name[used], "%s", "/intel/");
+  used += sprintf(&file_name[used], "%s", "/" GPU_BINARY_DIRECTORY "/");
   mkdir(file_name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-  for (i = 0; i < HASH_LENGTH; ++i) {
-    used += sprintf(&file_name[used], "%02x", hash[i]);
-  }
-  used += sprintf(&file_name[used], "%s", ".gpubin");
+  used += computeHash(binary, binary_size, &file_name[used]);
+  used += sprintf(&file_name[used], "%s", GPU_BINARY_SUFFIX);
 }
 
 
@@ -260,8 +283,12 @@ findOrAddKernelModule
 
   free(kernel_elf);
 
+  // Compute hash for the kernel name
+  char kernel_name_hash[PATH_MAX];
+  computeHash(kernel_name, strlen(kernel_name), kernel_name_hash);
+
   strncat(file_name, ".", 1);
-  strncat(file_name, kernel_name, strlen(kernel_name));
+  strncat(file_name, kernel_name_hash, strlen(kernel_name_hash));
 
   uint32_t module_id = 0;
 
@@ -528,7 +555,16 @@ gtpin_produce_runtime_callstack
 )
 {
   if (gtpin_use_runtime_callstack) {
-    gpu_activity_channel_t *activity_channel = gpu_activity_channel_get();
-    gtpin_correlation_id_map_insert(gtpin_correlation_id, gpu_op_ccts, activity_channel, gtpin_cpu_submit_time);
+    if (gtpin_correlation_id != 0) {
+      // gtpin callback->opencl callback
+      gpu_activity_channel_t *activity_channel = gpu_activity_channel_get();
+      gtpin_correlation_id_map_insert(gtpin_correlation_id, gpu_op_ccts, activity_channel, gtpin_cpu_submit_time);
+      gtpin_correlation_id = 0;
+      gtpin_first = true;
+    } else {
+      // opencl callback->gtpin callback;
+      gtpin_gpu_op_ccts = *gpu_op_ccts;      
+      gtpin_first = false;
+    }
   }
 }
