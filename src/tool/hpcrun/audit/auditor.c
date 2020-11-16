@@ -61,9 +61,21 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <sched.h>
+#include <sys/mman.h>
+
+
+#if defined(HOST_CPU_x86_64) || defined(HOST_CPU_x86)
+#define GOT_resolve_offset 2
+#elif defined(HOST_CPU_PPC)
+#define GOT_resolve_offset 0
+#else
+#error "PLT resolve offset for the host architecture is unknown"
+#endif
 
 static bool verbose = false;
 static char* mainlib = NULL;
+static bool disable_plt_call_opt = false;
+static ElfW(Addr) dl_runtime_resolve_ptr = 0;
 
 enum hpcrun_state {
   state_awaiting, state_found, state_attached,
@@ -90,8 +102,29 @@ struct buffered_entry_t {
   struct buffered_entry_t* next;
 } *buffer = NULL;
 
+static struct buffered_entry_t* obj_update_list = NULL;
+
+ElfW(Addr) * get_plt_got_start(ElfW(Dyn) * dyn_init) {
+  ElfW(Dyn) *dyn;
+  for (dyn = dyn_init; dyn->d_tag != DT_NULL; dyn++) {
+    if (dyn->d_tag == DT_PLTGOT) {
+      return (ElfW(Addr) *) dyn->d_un.d_ptr;
+    }
+  }
+  return NULL;
+}
+
 unsigned int la_version(unsigned int version) {
   if(version < 1) return 0;
+
+  // Check if we need to optimize PLT calls
+  disable_plt_call_opt = getenv("HPCRUN_AUDIT_DISABLE_PLT_CALL_OPT");
+  if (!disable_plt_call_opt) {
+    ElfW(Addr)* plt_got = get_plt_got_start(_DYNAMIC);
+    if (plt_got != NULL) {
+      dl_runtime_resolve_ptr = plt_got[GOT_resolve_offset];      
+    }
+  }
 
   // Read in our arguments
   verbose = getenv("HPCRUN_AUDIT_DEBUG");
@@ -241,6 +274,13 @@ static void* get_symbol(struct link_map* map, const char* name) {
 }
 
 unsigned int la_objopen(struct link_map* map, Lmid_t lmid, uintptr_t* cookie) {
+  if (dl_runtime_resolve_ptr) {
+    // We record the open objects and then later overwrite ldso pointers
+    struct buffered_entry_t* new_entry = (struct  buffered_entry_t*)malloc(sizeof(struct buffered_entry_t));
+    new_entry->map = map;
+    new_entry->next = obj_update_list;
+    obj_update_list = new_entry;
+  }
   switch(state) {
   case state_awaiting: {
     // If this is libhpcrun.so, nab the initialization bits and transition.
@@ -336,10 +376,42 @@ void mainlib_connected(const char* vdso_path) {
   state = state_connected;
 }
 
+static void change_memory_protection(void* address) {
+  unsigned long start_page, end_page;
+  static unsigned long pagesize;
+
+  if (!pagesize)
+    pagesize = getpagesize();
+
+  start_page = ((unsigned long) address) & ~(pagesize-1);
+  end_page = (((unsigned long) address) + pagesize);
+  mprotect((void *) start_page, end_page - start_page, PROT_READ | PROT_WRITE);
+}
+
+static void update_objects_gotplt() {
+  // Iterate every object and update pltgot
+  for (struct buffered_entry_t* entry = obj_update_list; entry != NULL;) {    
+    ElfW(Addr)* plt_got = get_plt_got_start(entry->map->l_ld);
+    if (plt_got != NULL) {
+      // .pltgot may not necessarily be writable      
+      change_memory_protection(&plt_got[GOT_resolve_offset]);
+      plt_got[GOT_resolve_offset] = dl_runtime_resolve_ptr;
+    }
+    struct buffered_entry_t* prev = entry;
+    entry = entry->next;    
+    free(prev);    
+  }
+  obj_update_list = NULL;  
+}
+
 static unsigned int previous = LA_ACT_CONSISTENT;
 void la_activity(uintptr_t* cookie, unsigned int flag) {
-  // If we've hit consistency and know where libhpcrun is, initialize it.
-  if(flag == LA_ACT_CONSISTENT) {
+  if(flag == LA_ACT_CONSISTENT) {  
+    if (dl_runtime_resolve_ptr && obj_update_list != NULL) {
+      update_objects_gotplt();
+    }
+
+    // If we've hit consistency and know where libhpcrun is, initialize it.
     switch(state) {
     case state_awaiting:
       break;

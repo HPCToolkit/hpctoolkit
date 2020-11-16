@@ -384,6 +384,12 @@ do
 
 	# --------------------------------------------------
 
+	-dapco | --disable-audit-plt-call-opt )
+	    export HPCRUN_AUDIT_DISABLE_PLT_CALL_OPT=1
+	    ;;
+
+	# --------------------------------------------------
+
 	-- )
 	    break
 	    ;;
