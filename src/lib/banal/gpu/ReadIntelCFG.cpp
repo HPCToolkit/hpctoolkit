@@ -45,6 +45,8 @@
 
 //***************************************************************************
 
+#ifdef OPT_ENABLE_IGC
+
 //******************************************************************************
 // system includes
 //******************************************************************************
@@ -62,6 +64,8 @@
 #include <CodeObject.h>
 
 #include <iga/kv.hpp>
+
+
 
 //******************************************************************************
 // local includes
@@ -123,6 +127,7 @@ addCustomFunctionObject
   status = symtab->addSymbol(custom_symbol); //(Symbol *newsym)
   assert(status == true);
 }
+
 
 static void
 parseIntelCFG
@@ -256,3 +261,5 @@ readIntelCFG
 
   return false;
 }
+
+#endif // OPT_ENABLE_IGC

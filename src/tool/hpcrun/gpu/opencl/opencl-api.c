@@ -919,7 +919,7 @@ clCreateProgramWithSource
   return HPCRUN_OPENCL_CALL(clCreateProgramWithSource, (context, count, strings, lengths, errcode_ret));
 }
 
-
+#ifdef OPT_ENABLE_IGC
 // one downside of this appproach is that we may override the callback provided by user
 cl_int
 clBuildProgram
@@ -946,6 +946,7 @@ clBuildProgram
   free(options_with_debug_flags);
   return ret;
 }
+#endif // OPT_ENABLE_IGC
 
 
 cl_command_queue

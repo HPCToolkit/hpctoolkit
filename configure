@@ -23843,6 +23843,7 @@ $as_echo "$OPENCL" >&6; }
 # Option: --with-igc=PATH
 #-------------------------------------------------
 
+IGC=no
 OPT_HAVE_IGC=no
 OPT_IGC_IFLAGS=
 OPT_IGC_LDFLAGS=
@@ -23918,6 +23919,7 @@ $as_echo "$IGC" >&6; }
 # Option: --with-metrics-discovery=PATH
 #-------------------------------------------------
 
+METRICS_DISCOVERY=no
 OPT_HAVE_METRICS_DISCOVERY=no
 OPT_METRICS_DISCOVERY_IFLAGS=
 OPT_METRICS_DISCOVERY_LDFLAGS=
@@ -23977,6 +23979,7 @@ $as_echo "$METRICS_DISCOVERY" >&6; }
 # Option: --with-gtpin=PATH
 #-------------------------------------------------
 
+GTPIN=no
 OPT_HAVE_GTPIN=no
 OPT_GTPIN_IFLAGS=
 OPT_GTPIN_LDFLAGS=

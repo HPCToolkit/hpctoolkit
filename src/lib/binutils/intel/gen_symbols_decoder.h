@@ -25,13 +25,17 @@
 
 #include <vector>
 
+#ifdef OPT_ENABLE_IGC
 #include <igc/ocl_igc_shared/executable_format/program_debug_data.h>
+#endif // OPT_ENABLE_IGC
+
 
 #include "elf_parser.h"
 
 #define IS_POWER_OF_TWO(X) (!((X - 1)&X))
 #define IGC_MAX_VALUE 1024
 
+#ifdef OPT_ENABLE_IGC
 class GenSymbolsDecoder {
  public:
   GenSymbolsDecoder(const std::vector<uint8_t>& symbols)
@@ -120,5 +124,6 @@ class GenSymbolsDecoder {
   const uint8_t* data_ = nullptr;
   size_t size_ = 0;
 };
+#endif // OPT_ENABLE_IGC
 
 #endif // PTI_SAMPLES_UTILS_GEN_SYMBOLS_DECODER_H_
