@@ -4881,6 +4881,7 @@ AC_SUBST([OPT_OPENCL_IFLAGS])
 # Option: --with-igc=PATH
 #-------------------------------------------------
 
+IGC=no
 OPT_HAVE_IGC=no
 OPT_IGC_IFLAGS=
 OPT_IGC_LDFLAGS=
@@ -4946,6 +4947,7 @@ AC_SUBST([OPT_IGC_LDFLAGS])
 # Option: --with-metrics-discovery=PATH
 #-------------------------------------------------
 
+METRICS_DISCOVERY=no
 OPT_HAVE_METRICS_DISCOVERY=no
 OPT_METRICS_DISCOVERY_IFLAGS=
 OPT_METRICS_DISCOVERY_LDFLAGS=
@@ -4995,6 +4997,7 @@ AC_SUBST([OPT_METRICS_DISCOVERY_LDFLAGS])
 # Option: --with-gtpin=PATH
 #-------------------------------------------------
 
+GTPIN=no
 OPT_HAVE_GTPIN=no
 OPT_GTPIN_IFLAGS=
 OPT_GTPIN_LDFLAGS=

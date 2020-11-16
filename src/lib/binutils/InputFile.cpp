@@ -188,7 +188,9 @@ InputFile::openFile
   if (result) {
     filevector->push_back(elfFile);
     //findCubins(elfFile, filevector);
-  } else if (!findIntelGPUBins(filename, file_buffer, f_size, filevector)) { // Check if the file is a intel debug binary
+  } 
+  #ifdef OPT_ENABLE_IGC
+  else if (!findIntelGPUBins(filename, file_buffer, f_size, filevector)) { // Check if the file is a intel debug binary
     // Release memory
     delete(elfFile);
     DIAG_MsgIf_GENERIC(tag, 1, "Not an ELF binary " << filename);
@@ -196,6 +198,7 @@ InputFile::openFile
     // Not a standard elf file
     return false;
   }
+  #endif // OPT_ENABLE_IGC
 
   return result;
 }
