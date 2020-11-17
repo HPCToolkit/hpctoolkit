@@ -68,6 +68,8 @@
 #define GOT_resolve_offset 2
 #elif defined(HOST_CPU_PPC)
 #define GOT_resolve_offset 0
+#elif defined(HOST_CPU_ARM64)
+#define GOT_resolve_offset 2
 #else
 #error "PLT resolve offset for the host architecture is unknown"
 #endif
