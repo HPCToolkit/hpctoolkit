@@ -122,7 +122,7 @@ unsigned int la_version(unsigned int version) {
   if (!disable_plt_call_opt) {
     ElfW(Addr)* plt_got = get_plt_got_start(_DYNAMIC);
     if (plt_got != NULL) {
-      dl_runtime_resolve_ptr = plt_got[GOT_resolve_offset];      
+      dl_runtime_resolve_ptr = plt_got[GOT_resolve_offset];
     }
   }
 
@@ -390,23 +390,23 @@ static void change_memory_protection(void* address) {
 
 static void update_objects_gotplt() {
   // Iterate every object and update pltgot
-  for (struct buffered_entry_t* entry = obj_update_list; entry != NULL;) {    
+  for (struct buffered_entry_t* entry = obj_update_list; entry != NULL;) {
     ElfW(Addr)* plt_got = get_plt_got_start(entry->map->l_ld);
     if (plt_got != NULL) {
-      // .pltgot may not necessarily be writable      
+      // .pltgot may not necessarily be writable
       change_memory_protection(&plt_got[GOT_resolve_offset]);
       plt_got[GOT_resolve_offset] = dl_runtime_resolve_ptr;
     }
     struct buffered_entry_t* prev = entry;
-    entry = entry->next;    
-    free(prev);    
+    entry = entry->next;
+    free(prev);
   }
-  obj_update_list = NULL;  
+  obj_update_list = NULL;
 }
 
 static unsigned int previous = LA_ACT_CONSISTENT;
 void la_activity(uintptr_t* cookie, unsigned int flag) {
-  if(flag == LA_ACT_CONSISTENT) {  
+  if(flag == LA_ACT_CONSISTENT) {
     if (dl_runtime_resolve_ptr && obj_update_list != NULL) {
       update_objects_gotplt();
     }
