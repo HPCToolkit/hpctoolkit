@@ -179,13 +179,23 @@ static void readGraph(const std::string &file_name, NodeMap &node_map, EdgeMap &
   }
 }
 
+#define MAX_STR_LEN 256
 
-std::vector<std::string>
-static getInlineStack(Prof::Struct::ACodeNode *stmt) {
+static std::string
+trunc(const std::string &raw_str) {
+  std::string str = raw_str;
+  if (str.size() > MAX_STR_LEN) {
+    str.erase(str.begin() + MAX_STR_LEN, str.end());
+  }
+  return str;
+}
+
+static std::vector<std::string>
+getInlineStack(Prof::Struct::ACodeNode *stmt) {
   std::vector<std::string> st;
   Prof::Struct::Alien *alien = stmt->ancestorAlien();
   if (alien) {
-    auto func_name = alien->name();
+    auto func_name = trunc(alien->name());
     auto *stmt = alien->parent();
     if (stmt) {
       if (alien->name() == "<inline>") {
@@ -206,7 +216,7 @@ static getInlineStack(Prof::Struct::ACodeNode *stmt) {
         if (stmt) {
           alien = stmt->ancestorAlien();
           if (alien) {
-            func_name = alien->name();
+            func_name = trunc(alien->name());
             stmt = alien->parent();
             if (stmt) {
               if (alien->name() == "<inline>") {
@@ -293,7 +303,7 @@ static void matchCCTNode(Prof::CallPath::CCTIdToCCTNodeMap &cctNodeMap, NodeMap 
         st.pop();
         if (proc_frm->structure()) {
           if (proc_frm->ancestorCall()) {
-            auto func_name = proc_frm->structure()->name();
+            auto func_name = trunc(proc_frm->structure()->name());
             auto *call = proc_frm->ancestorCall();
             auto *call_strct = call->structure();
             auto line = std::to_string(call_strct->begLine());
