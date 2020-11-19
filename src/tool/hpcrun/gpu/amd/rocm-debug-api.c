@@ -159,7 +159,7 @@ static amd_dbgapi_status_t
 hpcrun_self_process
 (
   amd_dbgapi_client_process_id_t cp,
-  amd_dbgapi_os_pid_t *os_pid
+  amd_dbgapi_os_process_id_t *os_pid
 )
 {
   *os_pid = getpid();
