@@ -1205,7 +1205,7 @@ sanitizer_subscribe_callback
 
       sanitizer_context_map_stream_unlock(ld->context, ld->stream);
 
-      kernel_sampling = false;
+      kernel_sampling = true;
     }
   } else if (domain == SANITIZER_CB_DOMAIN_MEMCPY) {
     Sanitizer_MemcpyData *md = (Sanitizer_MemcpyData *)cbdata;
