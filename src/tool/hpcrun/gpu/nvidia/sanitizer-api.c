@@ -1602,6 +1602,27 @@ sanitizer_device_shutdown(void *args)
 
 
 void
+sanitizer_init
+(
+)
+{
+  sanitizer_stop_flag = false;
+  sanitizer_internal_flag = false;
+  sanitizer_thread_id_local = 0;
+  sanitizer_thread_context = NULL;
+
+  gpu_patch_buffer_device = NULL;
+  gpu_patch_buffer_host = NULL;
+
+  spinlock_unlock(&sanitizer_alloc_lock);
+  spinlock_unlock(&sanitizer_free_lock);
+
+  atomic_store(&sanitizer_process_awake_flag, false);
+  atomic_store(&sanitizer_process_stop_flag, false);
+}
+
+
+void
 sanitizer_process_init
 (
 )

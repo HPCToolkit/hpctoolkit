@@ -308,6 +308,8 @@ METHOD_FN(init)
 {
   self->state = INIT;
 
+  sanitizer_init();
+
   // Reset cupti flags
   cupti_device_init();
 
