@@ -44,16 +44,19 @@
 #ifndef _OPENCL_API_H_
 #define _OPENCL_API_H_
 
-
-
 //******************************************************************************
 // local includes
 //******************************************************************************
 
 #include <hpcrun/gpu/gpu-activity.h>
 #include <lib/prof-lean/hpcrun-opencl.h>
+#include "opencl-memory-manager.h"
 
-#include "opencl-intercept.h"
+
+
+//************************ Forward Declarations ******************************
+
+typedef struct opencl_object_t opencl_object_t;
 
 
 
@@ -61,61 +64,102 @@
 // interface operations
 //******************************************************************************
 
+cl_basic_callback_t
+opencl_cb_basic_get
+(
+ opencl_object_t *cb_data
+);
+
+
+void
+opencl_cb_basic_print
+(
+ cl_basic_callback_t cb_basic,
+ char *title
+);
+
+
+void
+opencl_initialize_correlation_id
+(
+ void
+);
+
+
 void
 opencl_subscriber_callback
 (
-  opencl_call_t,
-  uint64_t
+ opencl_object_t *cb_info
 );
 
 
 void
 opencl_activity_completion_callback
 (
-  cl_event,
-  cl_int,
-  void *
+ cl_event,
+ cl_int,
+ void *
 );
 
 
 void
-getTimingInfoFromClEvent
+opencl_timing_info_get
 (
-  gpu_interval_t *,
-  cl_event
+ gpu_interval_t *,
+ cl_event
+);
+
+
+cct_node_t *
+opencl_api_node_get
+(
+ void
 );
 
 
 void
 clSetEventCallback_wrapper
 (
-  cl_event,
-  cl_int,
-  void (CL_CALLBACK*)(cl_event, cl_int, void *),
-  void *
+ cl_event,
+ cl_int,
+ void (CL_CALLBACK*)(cl_event, cl_int, void *),
+ void *
 );
 
 
 void
 opencl_api_initialize
 (
-  void
+ void
 );
 
 
 int
 opencl_bind
 (
-  void
+ void
 );
 
 
 void
-opencl_api_finalize
+opencl_instrumentation_enable
 (
-  void *
+ void
 );
 
+
+void
+opencl_api_thread_finalize
+(
+ void *
+);
+
+
+void
+opencl_api_process_finalize
+(
+ void *
+);
 
 
 #endif  //_OPENCL_API_H_

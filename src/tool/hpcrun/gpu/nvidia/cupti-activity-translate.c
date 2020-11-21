@@ -288,7 +288,7 @@ convert_memcpy
   ga->details.memcpy.copyKind = convert_memcpy_type(activity->copyKind);
   ga->details.memcpy.bytes = activity->bytes;
 
-  set_gpu_interval(&ga->details.interval, activity->start, activity->end);
+  gpu_interval_set(&ga->details.interval, activity->start, activity->end);
 }
 
 
@@ -310,7 +310,7 @@ convert_memcpy2
   ga->details.memcpy.copyKind = convert_memcpy_type(activity->copyKind);
   ga->details.memcpy.bytes = activity->bytes;
 
-  set_gpu_interval(&ga->details.interval, activity->start, activity->end);
+  gpu_interval_set(&ga->details.interval, activity->start, activity->end);
 }
 
 
@@ -337,7 +337,7 @@ convert_kernel
   ga->details.kernel.context_id = activity->contextId;
   ga->details.kernel.stream_id = activity->streamId;
 
-  set_gpu_interval(&ga->details.interval, activity->start, activity->end);
+  gpu_interval_set(&ga->details.interval, activity->start, activity->end);
 
   uint32_t activeWarpsPerSM = 0;
   uint32_t maxActiveWarpsPerSM = 0;
@@ -467,7 +467,7 @@ convert_synchronization
   ga->details.synchronization.event_id = activity_sync->cudaEventId;
   ga->details.synchronization.syncKind = convert_sync_type(activity_sync->type);
 
-  set_gpu_interval(&ga->details.interval, activity_sync->start, activity_sync->end);
+  gpu_interval_set(&ga->details.interval, activity_sync->start, activity_sync->end);
 }
 
 
@@ -482,7 +482,7 @@ convert_memory
   ga->details.memory.memKind = activity_mem->memoryKind;
   ga->details.memory.bytes = activity_mem->bytes;
 
-  set_gpu_interval(&ga->details.interval, activity_mem->start, activity_mem->end);
+  gpu_interval_set(&ga->details.interval, activity_mem->start, activity_mem->end);
 }
 
 
@@ -500,7 +500,7 @@ convert_memset
   ga->details.memset.memKind = activity->memoryKind;
   ga->details.memset.bytes = activity->bytes;
 
-  set_gpu_interval(&ga->details.interval, activity->start, activity->end);
+  gpu_interval_set(&ga->details.interval, activity->start, activity->end);
 }
 
 static void
@@ -531,7 +531,7 @@ convert_cdpkernel
   ga->details.cdpkernel.context_id = activity->contextId;
   ga->details.cdpkernel.stream_id = activity->streamId;
 
-  set_gpu_interval(&ga->details.interval, activity->start, activity->end);
+  gpu_interval_set(&ga->details.interval, activity->start, activity->end);
 }
 
 static void

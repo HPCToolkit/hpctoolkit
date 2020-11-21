@@ -377,12 +377,18 @@ MY_BASE_FILES =				\
 	gpu/gpu-monitoring.c 		\
 	gpu/gpu-monitoring-thread-api.c \
 	gpu/gpu-op-placeholders.c 	\
+	gpu/gpu-operation-item.c			\
+	gpu/gpu-operation-item-process.c   \
+	gpu/gpu-operation-channel.c \
+	gpu/gpu-operation-channel-set.c \
+	gpu/gpu-operation-multiplexer.c 	\
 	gpu/gpu-splay-allocator.c	\
 	gpu/gpu-stream-id-map.c		\
 	gpu/gpu-trace.c			\
 	gpu/gpu-trace-channel.c		\
 	gpu/gpu-trace-item.c		\
 	gpu/gpu-trace-channel-set.c	\
+	gpu/gpu-trace-demultiplexer.c	\
 	\
 	ompt/ompt-callstack.c           \
 	ompt/ompt-defer.c               \
@@ -517,20 +523,26 @@ MY_CUPTI_FILES = sample-sources/nvidia.c	\
 	gpu/nvidia/cupti-gpu-api.c		
 endif
 
-if ENABLE_OPENCL
-#MY_OPENCL_FILES =
-MY_BASE_FILES += \
-	sample-sources/opencl.c 		\
-	gpu/opencl/opencl-intercept.c		\
-	gpu/opencl/opencl-api.c			\
-	gpu/opencl/opencl-memory-manager.c  	\
-	gpu/opencl/opencl-activity-translate.c
+if OPT_ENABLE_OPENCL
+MY_OPENCL_FILES = \
+  sample-sources/opencl.c \
+	gpu/opencl/opencl-api.c \
+	gpu/opencl/opencl-memory-manager.c \
+	gpu/opencl/opencl-activity-translate.c \
+	gpu/opencl/opencl-h2d-map.c \
+	gpu/opencl/opencl-queue-map.c \
+	gpu/opencl/opencl-context-map.c 
 endif
 
-
+if OPT_ENABLE_GTPIN
+MY_GTPIN_FILES = \
+	gpu/instrumentation/kernel-data-map.c \
+	gpu/instrumentation/gtpin-instrumentation.c \
+	gpu/instrumentation/gtpin-correlation-id-map.c
+endif
 
 if OPT_ENABLE_ROCM
-MY_ROCM_FILES=\
+MY_ROCM_FILES =\
 	sample-sources/amd.c \
 	gpu/amd/roctracer-activity-translate.c \
 	gpu/amd/roctracer-api.c 	\
@@ -1030,11 +1042,23 @@ if OPT_ENABLE_LEVEL0
 
   MY_CPP_DEFINES  += -DHPCRUN_SS_LEVEL0
 endif
-if ENABLE_OPENCL
-  libhpcrun_la_CFLAGS += $(OPENCL_IFLAGS)
+
+if OPT_ENABLE_OPENCL
+  libhpcrun_la_SOURCES  += $(MY_OPENCL_FILES)
+  libhpcrun_la_CPPFLAGS += -DENABLE_OPENCL
+  libhpcrun_la_CFLAGS   += $(OPT_OPENCL_IFLAGS)
 
   MY_CPP_DEFINES  += -DHPCRUN_SS_OPENCL
 endif 
+
+if OPT_ENABLE_GTPIN
+  libhpcrun_la_SOURCES  += $(MY_GTPIN_FILES)
+  libhpcrun_la_CPPFLAGS += -DENABLE_GTPIN
+  libhpcrun_la_CFLAGS   += $(OPT_GTPIN_IFLAGS)
+  libhpcrun_la_LDFLAGS  += $(OPT_GTPIN_LDFLAGS)
+
+  MY_CPP_DEFINES  += -DHPCRUN_SS_GTPIN
+endif
 
 if UNW_LIBUNW
   UNW_SOURCE_FILES = $(UNW_LIBUNW_FILES)
