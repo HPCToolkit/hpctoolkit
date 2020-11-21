@@ -81,7 +81,7 @@ m4_include(config/hpc-cxxutils.m4)
 # Initialization:
 #----------------------------------------------------------------------------
 
-AC_INIT([hpctoolkit], [2020.06-develop],
+AC_INIT([hpctoolkit], [2020.08-develop],
         [hpctoolkit-forum@rice.edu],
 	[hpctoolkit],
 	[http://hpctoolkit.org/])
@@ -276,6 +276,9 @@ default=yes
 if test "$OPT_ENABLE_DEVELOP" = yes ; then
   default=no
 fi
+case "$host_cpu" in
+  *aarch* | *arm* ) default=no ;;
+esac
 
 AC_ARG_ENABLE([strip-debug],
   [AS_HELP_STRING([--enable-strip-debug],
@@ -2429,6 +2432,9 @@ AC_SUBST([LIBELF_COPY])
 # Option: --with-gotcha=PATH
 #-------------------------------------------------
 
+# NOTE: currently not used, but there's a non-trivial chance that it
+# may come back.
+
 GOTCHA="$default_gotcha_prefix"
 
 GOTCHA_IFLAGS=
@@ -2437,9 +2443,13 @@ GOTCHA_LIBDIR=no
 
 AC_ARG_WITH([gotcha],
   [AS_HELP_STRING([--with-gotcha=PATH],
-      [path to gotcha install directory])],
+      [path to gotcha install directory (ignored)])],
   [GOTCHA="$withval"],
   [])
+
+AC_MSG_NOTICE([skipping gotcha ...])
+
+if false ; then
 
 AC_MSG_CHECKING([for gotcha])
 
@@ -2504,6 +2514,8 @@ int main(int argc, char **argv)
     fi
     ;;
 esac
+
+fi  # skip test for gotcha
 
 AC_SUBST([GOTCHA_IFLAGS])
 AC_SUBST([GOTCHA_LDFLAGS])
@@ -2658,26 +2670,32 @@ AC_SUBST([LIBMONITOR_WRAP_NAMES])
 
 
 #-------------------------------------------------
-# Option: --with-libunwind=PATH, --enable-libunwind-primary
+# Option: --with-libunwind=PATH
 #-------------------------------------------------
-
-# Libunwind can be the primary unwinder (any platform), the secondary
-# unwinder or not used at all.  So, keep it optional and test static
-# and dynamic versions separately.  But if libunwind is the primary
-# unwinder, then can't build hpcrun or hpclink without it.
-
-LIBUNWIND_STAT=no
-
-LIBUNWIND_IFLAGS=
-LIBUNWIND_CPPFLAGS_DYN=
-LIBUNWIND_CPPFLAGS_STAT=
-LIBUNWIND_LDFLAGS_DYN=
-LIBUNWIND_LDFLAGS_STAT=
-
-LIBUNWIND_COPY=no
-LIBUNWIND_LIB=
+#
+# Now required on all platforms for hpcrun.
+# Test for three things:
+#
+#  1. libunwind exists (headers + .so) for dynamic case.
+#  2. static archive libunwind.a exists for static case.
+#  3. archive compiled with -fPIC for link into libhpcrun.so.
+#
+# Note: we only use local (first-party) unwinding, so we only need
+# libunwind.so, not libunwind-PLATFORM.so, but code must be compiled
+# with UNW_LOCAL_ONLY.
+#
 
 LIBUNWIND="$default_libunwind_prefix"
+
+LIBUNWIND_IFLAGS=
+LIBUNWIND_LDFLAGS_DYN=
+LIBUNWIND_LDFLAGS_STAT=
+LIBUNWIND_LIB_DIR=
+
+libunwind_exists=no
+libunwind_dynamic=no
+libunwind_static=no
+libunwind_fpic=no
 
 AC_ARG_WITH([libunwind],
   [AS_HELP_STRING([--with-libunwind=PATH],
@@ -2685,18 +2703,11 @@ AC_ARG_WITH([libunwind],
   [LIBUNWIND="$withval"],
   [])
 
-AC_ARG_ENABLE([libunwind-primary],
-  [AS_HELP_STRING([--enable-libunwind-primary],
-      [use libunwind as primary unwinder for hpcrun (default no)])],
-  [],
-  [enable_libunwind_primary=no])
-
-# If libunwind is available, require dynamic (.so) version, and make
-# static (.a) optional.  On powerpc, libunwind installs libs into
-# lib64, so test for multilib here.
-
 AC_MSG_CHECKING([for libunwind])
 
+#
+# Test if libunwind.h, libunwind.so and libunwind.a exist.
+#
 case "$LIBUNWIND" in
   /* )
     if test ! -f "${LIBUNWIND}/include/libunwind.h" ; then
@@ -2705,19 +2716,24 @@ case "$LIBUNWIND" in
     LIBUNWIND_IFLAGS="-I${LIBUNWIND}/include"
 
     for lib in $multilib_path ; do
-      unw_libdir="${LIBUNWIND}/$lib"
-      if test -f "$unw_libdir/libunwind.so" ; then
-        LIBUNWIND_LDFLAGS_DYN="-L${unw_libdir} -lunwind"
-    	LIBUNWIND_COPY=yes
-	LIBUNWIND_LIB="$unw_libdir"
-	if test -f "${unw_libdir}/libunwind.a" ; then
-	  LIBUNWIND_STAT=yes
-      	  LIBUNWIND_LDFLAGS_STAT="${unw_libdir}/libunwind.a"
-	fi
-	break
+      ldir="${LIBUNWIND}/$lib"
+      if test -f "${ldir}/libunwind.so" ; then
+        LIBUNWIND_LDFLAGS_DYN="-L${ldir} -lunwind"
+	LIBUNWIND_LIB_DIR="$ldir"
+	libunwind_exists=yes
+	libunwind_dynamic=yes
+      fi
+      if test -f "${ldir}/libunwind.a" ; then
+        LIBUNWIND_LDFLAGS_STAT="${ldir}/libunwind.a"
+	LIBUNWIND_LIB_DIR="$ldir"
+	libunwind_exists=yes
+	libunwind_static=yes
+      fi
+      if test "$libunwind_exists" = yes ; then
+        break
       fi
     done
-    if test "x$LIBUNWIND_LIB" = x ; then
+    if test "$libunwind_exists" != yes ; then
       AC_MSG_ERROR([invalid libunwind directory: $LIBUNWIND])
     fi
     num_pkgs=`expr 1 + $num_pkgs`
@@ -2730,92 +2746,109 @@ case "$LIBUNWIND" in
 esac
 
 AC_MSG_RESULT([$LIBUNWIND])
-AC_MSG_NOTICE([libunwind static: $LIBUNWIND_STAT])
+AC_MSG_NOTICE([libunwind.a static archive: $libunwind_static])
 
-case "$enable_libunwind_primary" in
-  yes | Yes | YES )
-    if test "$LIBUNWIND" = no ; then
-      AC_MSG_ERROR([enable libunwind primary requires libunwind])
-    fi
-    UNWINDER=libunw
-    ;;
-esac
+#
+# Test if libunwind.a was compiled with -fPIC.
+# If yes, then use for both static and dynamic.
+#
+if test "x$libunwind_static" = xyes
+then
+  ORIG_CFLAGS="$CFLAGS"
+  ORIG_LIBS="$LIBS"
+  CFLAGS="-shared -fPIC $LIBUNWIND_IFLAGS"
+  LIBS="$LIBUNWIND_LDFLAGS_STAT"
 
-no_unwind_for_hpcrun=no
-no_unwind_for_hpclink=no
-unwinder_mesg="$UNWINDER"
+  AC_LANG_PUSH([C])
+  AC_LINK_IFELSE([
+  AC_LANG_SOURCE([[
+#define UNW_LOCAL_ONLY
+#include <sys/types.h>
+#include <libunwind.h>
+unw_word_t
+my_get_ip_addr(unw_context_t *context)
+{
+  unw_cursor_t cursor;
+  unw_word_t ip;
+  unw_init_local(&cursor, context);
+  unw_step(&cursor);
+  unw_get_reg(&cursor, UNW_REG_IP, &ip);
+  return ip;
+}
+]])], [libunwind_fpic=yes], [libunwind_fpic=no])
 
-if test "$UNWINDER" = libunw ; then
-  #
-  # libunwind is the primary unwinder.  must have libunwind or else
-  # can't build hpcrun or hpclink.  don't need CPPFLAGS in this case.
-  #
-  if test "$LIBUNWIND" = no ; then
-    no_unwind_for_hpcrun=yes
-  fi
-  if test "$LIBUNWIND_STAT" = no ; then
-    no_unwind_for_hpclink=yes
-  fi
-else
-  #
-  # libunwind is the secondary unwinder or not available.  can build
-  # hpcrun without libunwind, but set CPPFLAGS when available.
-  #
-  if test "$LIBUNWIND" != no ; then
-    LIBUNWIND_CPPFLAGS_DYN='-DUSE_LIBUNWIND'
-    unwinder_mesg="$UNWINDER + libunw"
-  fi
-  if test "$LIBUNWIND_STAT" = yes ; then
-    LIBUNWIND_CPPFLAGS_STAT='-DUSE_LIBUNWIND'
-  fi
+  AC_LANG_POP
+  CFLAGS="$ORIG_CFLAGS"
+  LIBS="$ORIG_LIBS"
 fi
 
-AC_MSG_NOTICE([hpcrun unwinder: $unwinder_mesg])
+AC_MSG_NOTICE([libunwind.a compiled with -fPIC: $libunwind_fpic])
+
+#
+# Now require libunwind static archive with fpic for both static and
+# dynamic cases, or else not at all, same as mbedtls.  (The nothing
+# case is for just building documentation.)  And never need to copy.
+#
+if test "$libunwind_exists" = yes && test "$libunwind_fpic" = no ; then
+  AC_MSG_ERROR([libunwind.a must be compiled with -fPIC])
+fi
+
+unwinder_mesg="$UNWINDER"
+if test "$UNWINDER" != libunw && test "$libunwind_exists" = yes ; then
+  unwinder_mesg="$unwinder_mesg + libunw"
+fi
 
 # fixme: only used in hpcrun/main.c because we don't have a libunwind
 # version of hpcrun_dump_intervals().
-if test "$UNWINDER" = "libunw"; then
-   AC_DEFINE([USE_LIBUNW], [1], [libunwind is the specified unwinder])
+if test "$UNWINDER" != "libunw"; then
+  AC_DEFINE([HPCRUN_HAVE_CUSTOM_UNWINDER], 1,
+            [have custom unwinder for this platform])
 fi
 
 AC_SUBST(LIBUNWIND_IFLAGS)
-AC_SUBST(LIBUNWIND_CPPFLAGS_DYN)
-AC_SUBST(LIBUNWIND_CPPFLAGS_STAT)
 AC_SUBST(LIBUNWIND_LDFLAGS_DYN)
 AC_SUBST(LIBUNWIND_LDFLAGS_STAT)
-
-AC_SUBST(LIBUNWIND_COPY)
-AC_SUBST(LIBUNWIND_LIB)
+AC_SUBST(LIBUNWIND_LIB_DIR)
 
 #
 # set up automake choice of unwinder
 #
 AM_CONDITIONAL([UNW_X86], [test "$UNWINDER" = x86-family])
 AM_CONDITIONAL([UNW_PPC64], [test "$UNWINDER" = ppc64])
-AM_CONDITIONAL([UNW_MIPS], [test "$UNWINDER" = mips])
 AM_CONDITIONAL([UNW_LIBUNW], [test "$UNWINDER" = libunw])
+
+AM_CONDITIONAL(OPT_LIBUNWIND_STATIC, [test "$libunwind_static" = yes])
 
 
 #-------------------------------------------------
 # Option: --with-lzma=PATH
 #-------------------------------------------------
-
-# Test for lzma libraries and add to the build system if available.
-# New libunwind (aug 2017) uses liblzma to read compressed sections.
-# But allow for older externals that doesn't build them.
 #
-# Dynamically, add -llzma to libhpcrun.so and copy libs.
-# Statically, link liblzma.a into libhpcrun.o at build time.
-
-LZMA_STATIC=no
-LZMA_LDFLAGS_DYN=
-LZMA_LDFLAGS_STAT=
-LZMA_INC=no
-LZMA_COPY=no
-LZMA_LIB=
-LZMA_PROF_MPI_LIBS=
+# Test for three things:
+#
+#  1. liblzma exists (headers + .so) for dynamic case.
+#  2. static archive liblzma.a exists for static case.
+#  3. archive compiled with -fPIC for link into libhpcrun.so.
+#
+# Note: lzma is also used in prof-mpi (via support-lean), not just in
+# hpcrun, so we also need "normal" usage, not just fPIC archive for
+# hiding.
+#
 
 LZMA="$default_lzma_prefix"
+
+LZMA_IFLAGS=
+LZMA_LDFLAGS_DYN=
+LZMA_LDFLAGS_STAT=
+LZMA_PROF_MPI_LIBS=
+
+LZMA_COPY=no
+LZMA_LIB_DIR=
+
+lzma_exists=no
+lzma_dynamic=no
+lzma_static=no
+lzma_fpic=no
 
 AC_ARG_WITH([lzma],
   [AS_HELP_STRING([--with-lzma=PATH],
@@ -2825,34 +2858,37 @@ AC_ARG_WITH([lzma],
 
 AC_MSG_CHECKING([for lzma])
 
+#
+# Test if lzma.h, liblzma.so and/or liblzma.a exist.
+#
 case "$LZMA" in
   /* )
+    if test ! -f "${LZMA}/include/lzma.h" ; then
+      AC_MSG_ERROR([invalid lzma directory: $LZMA])
+    fi
+    LZMA_IFLAGS="-I${LZMA}/include"
+
     for lib in $multilib_path ; do
-      lzma_libdir="${LZMA}/$lib"
-      if test -f "${lzma_libdir}/liblzma.so" ; then
-        LZMA_LDFLAGS_DYN="-L${lzma_libdir} -llzma"
+      ldir="${LZMA}/$lib"
+      if test -f "${ldir}/liblzma.so" ; then
+        LZMA_LDFLAGS_DYN="-L${ldir} -llzma"
 	LZMA_COPY=yes
-	LZMA_LIB="$lzma_libdir"
-        LZMA_INC="${LZMA}/include"
-	if test -f "${lzma_libdir}/liblzma.a" ; then
-	  LZMA_STATIC=yes
-	  LZMA_LDFLAGS_STAT="${lzma_libdir}/liblzma.a"
-	fi
-	break
+	LZMA_LIB_DIR="$ldir"
+        lzma_exists=yes
+	lzma_dynamic=yes
+      fi
+      if test -f "${ldir}/liblzma.a" ; then
+        LZMA_LDFLAGS_STAT="${ldir}/liblzma.a"
+	LZMA_LIB_DIR="$ldir"
+        lzma_exists=yes
+	lzma_static=yes
+      fi
+      if test "$lzma_exists" = yes ; then
+        break
       fi
     done
-    if test "x$LZMA_LIB" = x ; then
+    if test "$lzma_exists" != yes ; then
       AC_MSG_ERROR([invalid lzma directory: $LZMA])
-    else
-      #
-      # hpcprof-mpi: same as hpclink if fully static, else default
-      #
-      echo "x$HPCPROFMPI_LT_LDFLAGS" | grep -e all-static >/dev/null 2>&1
-      if test $? = 0 ; then
-        LZMA_PROF_MPI_LIBS="$LZMA_LDFLAGS_DYN"
-      else
-        LZMA_PROF_MPI_LIBS="$LZMA_LDFLAGS_STAT"
-      fi
     fi
     num_pkgs=`expr 1 + $num_pkgs`
     ;;
@@ -2864,14 +2900,69 @@ case "$LZMA" in
 esac
 
 AC_MSG_RESULT([$LZMA])
-AC_MSG_NOTICE([lzma static: $LZMA_STATIC])
+AC_MSG_NOTICE([lzma.a static archive: $lzma_static])
 
+#
+# Test if liblzma.a was compiled with -fPIC.
+# If yes, then use for both static and dynamic.
+#
+if test "$lzma_static" = yes
+then
+  ORIG_CFLAGS="$CFLAGS"
+  ORIG_LIBS="$LIBS"
+  CFLAGS="-shared -fPIC $LZMA_IFLAGS"
+  LIBS="$LZMA_LDFLAGS_STAT"
+
+  AC_LANG_PUSH([C])
+  AC_LINK_IFELSE([
+  AC_LANG_SOURCE([[
+#include <sys/types.h>
+#include <inttypes.h>
+#include <lzma.h>
+long
+myencode(uint8_t *in_buf, uint8_t *out_buf)
+{
+  lzma_stream stream = LZMA_STREAM_INIT;
+  stream.next_in = in_buf;
+  stream.next_out = out_buf;
+  lzma_code(&stream, LZMA_FINISH);
+  return (long) stream.avail_out;
+}
+]])], [lzma_fpic=yes], [lzma_fpic=no])
+
+  AC_LANG_POP
+  CFLAGS="$ORIG_CFLAGS"
+  LIBS="$ORIG_LIBS"
+fi
+
+AC_MSG_NOTICE([lzma.a compiled with -fPIC: $lzma_fpic])
+
+#
+# Now require lzma static archive with fpic, or else nothing at all
+# (for docs), same as libunwind and mbedtls.
+#
+if test "$lzma_exists" = yes && test "$lzma_fpic" = no ; then
+  AC_MSG_ERROR([liblzma.a must be compiled with -fPIC])
+fi
+
+#
+# hpcprof-mpi: same as hpclink if fully static, else default
+#
+echo "x$HPCPROFMPI_LT_LDFLAGS" | grep -e all-static >/dev/null 2>&1
+if test $? = 0 ; then
+  LZMA_PROF_MPI_LIBS="$LZMA_LDFLAGS_DYN"
+else
+  LZMA_PROF_MPI_LIBS="$LZMA_LDFLAGS_STAT"
+fi
+
+AC_SUBST([LZMA_IFLAGS])
 AC_SUBST([LZMA_LDFLAGS_DYN])
 AC_SUBST([LZMA_LDFLAGS_STAT])
 AC_SUBST([LZMA_PROF_MPI_LIBS])
 AC_SUBST([LZMA_COPY])
-AC_SUBST([LZMA_INC])
-AC_SUBST([LZMA_LIB])
+AC_SUBST([LZMA_LIB_DIR])
+
+AM_CONDITIONAL(OPT_LZMA_STATIC, [test "$lzma_static" = yes])
 
 
 #-------------------------------------------------
@@ -2883,7 +2974,6 @@ AC_SUBST([LZMA_LIB])
 #
 # Note: we require libmbedcrypto.a to be compiled with -fPIC.
 
-MBEDTLS_COPY=no
 MBEDTLS="$default_mbedtls_prefix"
 MBEDTLS_IFLAGS=
 MBEDTLS_LIBS=
@@ -2905,7 +2995,6 @@ case "$MBEDTLS" in
     MBEDTLS_IFLAGS="-I ${MBEDTLS}/include"
     for lib in $multilib_path ; do
       if test -f "${MBEDTLS}/lib/libmbedcrypto.a" ; then
-	MBEDTLS_COPY=yes
 	MBEDTLS_LIB="${MBEDTLS}/lib"
         MBEDTLS_LIBS="${MBEDTLS}/lib/libmbedcrypto.a"
 	break
@@ -2962,7 +3051,6 @@ my_md5_hash(char *buf, size_t len)
     ;;
 esac
 
-AC_SUBST([MBEDTLS_COPY])
 AC_SUBST([MBEDTLS_LIB])
 AC_SUBST([MBEDTLS_IFLAGS])
 AC_SUBST([MBEDTLS_LIBS])
@@ -3128,10 +3216,8 @@ else
   AC_LINK_IFELSE([
   AC_LANG_SOURCE([[
 #include "papi.h"
-extern void CUDA_init_component(void);
 int main()
 {
-  CUDA_init_component();
 }
 ]])], [use_papi_c_cupti=yes], [use_papi_c_cupti=no])
 
@@ -3426,6 +3512,45 @@ AM_CONDITIONAL(OPT_PAPI_STATIC,  [test "$OPT_PAPI_STATIC" = yes])
 AM_CONDITIONAL(OPT_PAPI_COMPONENT, [test "$use_papi_c" = yes])
 AM_CONDITIONAL(OPT_PAPI_CUPTI, [test "$use_papi_c_cupti" = yes])
 
+
+#-------------------------------------------------
+# Option: --disable-rtld-audit
+#-------------------------------------------------
+
+# Tracking changes to the set of currently loaded or mapped binaries at runtime
+# is difficult to do both accuractly and efficiently. In particular, there is
+# no clean way to wrap `dlopen` and still use the RUNPATH/RPATH present on the
+# original binary.
+
+# The solution to this is to use a series of hooks exposed by the dynamic
+# linker itself, allowing us to observe its actions without affecting it.
+# Collectively this interface is called the rtld-audit interface.
+
+# Unfortunately there are multiple bugs within all but the latest Glibc versions
+# that cause segfaults when this interface is in use. Thus, during this
+# transition period we allow for the usage of LD_AUDIT to be disabled.
+# The fallback wraps `dlopen` and thus may result in R*PATH issues.
+
+AC_ARG_ENABLE([rtld-audit],
+  [AS_HELP_STRING([--enable-rtld-audit],
+      [enable or disable the use of LD_AUDIT for monitoring of loaded binaries])],
+  [rtld_audit="$enableval"],
+  [rtld_audit=yes])
+
+if test "$rtld_audit" = no ; then
+  export_ld_audit='# LD_AUDIT disabled by configure'
+  rtld_audit_mesg='no'
+else
+  export_ld_audit='export LD_AUDIT="${hpcrun_dir}/libhpcrun_audit.so:${LD_AUDIT}"'
+  rtld_audit_mesg='yes'
+fi
+
+AC_SUBST([export_ld_audit])
+AM_CONDITIONAL([OPT_ENABLE_RTLD_AUDIT], [test "$rtld_audit" = yes])
+
+if test "$rtld_audit" = yes ; then
+  AC_DEFINE([ENABLE_RTLD_AUDIT], [1], [Using the LD_AUDIT interface])
+fi
 
 #-------------------------------------------------
 # Option: --with-tbb=PATH
@@ -4107,7 +4232,7 @@ if test "$enable_hpcrun" = no ; then
   enable_hpcrun_mesg='no (disabled)'
 elif test "$LIBDWARF" = no   || test "$LIBELF" = no ||  \
      test "$LIBMONITOR" = no || test "$DYNINST" = no || \
-     test "$no_xed_for_hpcrun" = yes || test "$no_unwind_for_hpcrun" = yes
+     test "$no_xed_for_hpcrun" = yes || test "$libunwind_exists" = no
 then
   OPT_ENABLE_HPCRUN=no
   enable_hpcrun_mesg='no (missing prerequisites)'
@@ -4158,7 +4283,7 @@ AC_ARG_ENABLE([hpcrun-static],
   [OPT_ENABLE_HPCRUN_STATIC=yes])
 
 if test "$OPT_LIBMONITOR_STATIC" = no || test "$no_xed_for_hpclink" = yes \
-   || test "$no_unwind_for_hpclink" = yes
+   || test "$libunwind_static" = no
 then
   OPT_ENABLE_HPCRUN_STATIC=no
 fi
@@ -4572,7 +4697,8 @@ AC_LANG_POP
 #-------------------------------------------------
 
 # CUDA support for CPU-GPU-Blame-shifting.  Also requires CUPTI,
-# either in CUDA/extras/CUPTI or else in a separate install.
+# in CUDA, CUDA/extras/CUPTI, or in a separate install 
+# directory specified using the --with-cupti option.
 
 CUDA="$default_cuda_prefix"
 
@@ -4632,12 +4758,12 @@ AC_SUBST([OPT_CUDA_LDFLAGS])
 # Option: --with-cupti=PATH
 #-------------------------------------------------
 
-# CUPTI is either in CUDA/extras/CUPTI or else specified separately
-# here.
+# CUPTI is either in CUDA, CUDA/extras/CUPTI, or in a directory
+#  specified separately here.
 
 CUPTI=no
 case "$CUDA" in
-  /* ) if test -d "${CUDA}/extras/CUPTI" ; then CUPTI="${CUDA}/extras/CUPTI" ; fi
+  /* ) if test -d "${CUDA}/extras/CUPTI/include" ; then CUPTI="${CUDA}/extras/CUPTI" ; else CUPTI=${CUDA} ; fi
        ;;
 esac
 
@@ -4702,6 +4828,48 @@ AC_SUBST([OPT_CUPTI_IFLAGS])
 AC_SUBST([OPT_CUPTI_LDFLAGS])
 
 
+
+#-------------------------------------------------
+# Option: --with-opencl=PATH
+#-------------------------------------------------
+
+OPENCL=no
+OPT_HAVE_OPENCL=no
+OPT_OPENCL_IFLAGS=
+
+AC_ARG_WITH([opencl],
+  [AS_HELP_STRING([--with-opencl=PATH],
+      [path to opencl headers])],
+  [OPENCL="$withval"],
+  [])
+
+case "$OPENCL" in
+  /* )
+    if test ! -f "${OPENCL}/CL/cl.h" ; then
+      AC_MSG_ERROR([unable to find CL/cl.h in: $OPENCL])
+    else
+      OPT_OPENCL_IFLAGS="-I${OPENCL}"
+      OPT_HAVE_OPENCL=yes
+    fi
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([opencl header path must be absolute: $OPENCL])
+    ;;
+esac
+
+if test "$OPENCL" = yes && test "$OPT_HAVE_OPENCL" = no ; then
+  AC_MSG_ERROR([use --with-opencl to provide path/location of opencl headers])
+fi
+
+if test "$OPT_HAVE_OPENCL" = yes ; then
+  AC_MSG_NOTICE([The <CL/cl.h> header file is available.])
+fi
+
+AM_CONDITIONAL([ENABLE_OPENCL], [test "$OPT_HAVE_OPENCL" = yes])
+AC_SUBST([OPT_OPENCL_IFLAGS])
+
 #-------------------------------------------------
 # Option: --with-rocm=PATH
 #-------------------------------------------------
@@ -4726,7 +4894,7 @@ AC_ARG_WITH([rocm],
 
 if test "$OPT_HAVE_ROCM" = "yes" ; then
   AC_DEFINE(USE_ROCM, 1, [use ROCM])
-  OPT_ROCM_IFLAGS="-I${OPT_ROCM}/hip -I${OPT_ROCM}/hip/include -I${OPT_ROCM}/roctracer/include -I${OPT_ROCM}/hcc/include -I${OPT_ROCM}/hsa/include "
+  OPT_ROCM_IFLAGS="-I${OPT_ROCM}/include -I${OPT_ROCM}/hip -I${OPT_ROCM}/hip/include -I${OPT_ROCM}/roctracer/include -I${OPT_ROCM}/hcc/include -I${OPT_ROCM}/hsa/include "
 fi
 
 AM_CONDITIONAL([OPT_ENABLE_ROCM], [test "$OPT_HAVE_ROCM" = yes])
@@ -4735,6 +4903,36 @@ AC_SUBST([OPT_ROCM])
 AC_SUBST([OPT_ROCM_IFLAGS])
 AC_SUBST([OPT_ROCM_LDFLAGS])
 
+#-------------------------------------------------
+# Option: --with-level0=PATH
+#-------------------------------------------------
+
+OPT_LEVEL0=
+OPT_LEVEL0_INCPATH=
+OPT_LEVEL0_LDFLAGS=
+OPT_LEVEL0_LIBPATH=
+
+AC_ARG_WITH([level0],
+  AS_HELP_STRING([--with-level0=PATH],
+                 [use given Level Zero installation (absolute path) with hpcrun (default is NO)]),
+  [if test $withval != no; then
+     OPT_HAVE_LEVEL0=yes
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-level0 requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_LEVEL0=${withval}
+   fi])
+
+if test "$OPT_HAVE_LEVEL0" = "yes" ; then
+  AC_DEFINE(USE_LEVEL0, 1, [use Level Zero])
+  OPT_LEVEL0_IFLAGS="-I${OPT_LEVEL0}/include"
+fi
+
+AM_CONDITIONAL([OPT_ENABLE_LEVEL0], [test "$OPT_HAVE_LEVEL0" = yes])
+
+AC_SUBST([OPT_LEVEL0])
+AC_SUBST([OPT_LEVEL0_IFLAGS])
+AC_SUBST([OPT_LEVEL0_LDFLAGS])
 
 #-------------------------------------------------
 # enable-data-centric-tracing: data-centric tracing
@@ -4963,6 +5161,9 @@ AC_CONFIG_FILES([ \
   lib/Makefile \
   \
   src/Makefile \
+  src/extern/Makefile \
+  src/extern/libunwind/Makefile \
+  src/extern/lzma/Makefile \
   src/tool/Makefile \
   src/tool/hpcfnbounds/Makefile \
   src/tool/hpcfnbounds2/Makefile \
@@ -5067,6 +5268,7 @@ AC_MSG_NOTICE([  datacentric?: ${OPT_ENABLE_DATACENTRIC_TRACE}])
 AC_MSG_NOTICE([  hpcserver?:   ${enable_hpcserver}])
 AC_MSG_NOTICE([  hpcstruct:    ${hpcstruct_mesg}])
 AC_MSG_NOTICE([  perf-events:  ${perf_event_mesg}])
+AC_MSG_NOTICE([  rtld-audit:   ${rtld_audit_mesg}])
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  C compiler: $CC_VERSION])
 AC_MSG_NOTICE([  Path:      $CC_PATH])
@@ -5092,7 +5294,6 @@ AC_MSG_NOTICE([  bzip:         ${BZIP}])
 AC_MSG_NOTICE([  dyninst:      ${DYNINST}])
 AC_MSG_NOTICE([  dyninst:      ${dyninst_features}])
 AC_MSG_NOTICE([  elfutils:     ${LIBELF}])
-AC_MSG_NOTICE([  gotcha:       ${GOTCHA}])
 AC_MSG_NOTICE([  libdwarf:     ${LIBDWARF}])
 AC_MSG_NOTICE([  libiberty:    ${LIBIBERTY}])
 AC_MSG_NOTICE([  libmonitor:   ${LIBMONITOR}])

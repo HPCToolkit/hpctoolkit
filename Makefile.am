@@ -65,10 +65,11 @@ AUTOMAKE_OPTIONS = foreign no-dist
 #############################################################################
 
 MYDATA = \
-	README \
+	README.md \
+	README.Acknowledgments \
+	README.Install \
 	README.License \
-	README.ReleaseNotes \
-	README.Acknowledgments
+	README.ReleaseNotes
 
 MYSCRIPTS = \
 	config/hpcguess \
@@ -142,13 +143,10 @@ install-exec-local:
 	@$(call copy-libs,$(LIBELF_COPY),$(LIBELF_LIB),libelf*so*)
 	@$(call copy-libs,$(LIBELF_COPY),$(LIBELF_LIB),libelf.a)
 	@$(call copy-libs,$(LIBELF_COPY),$(LIBELF_LIB),libdw*so*)
-	@$(call copy-libs,$(MBEDTLS_COPY),$(MBEDTLS_LIB),libmbedcrypto.a)
 	@$(call copy-libs,$(LIBDWARF_COPY),$(LIBDWARF_LIB),libdwarf*so*)
 	@$(call copy-libs,$(LIBMONITOR_COPY),$(LIBMONITOR_LIB),libmonitor*)
 	@$(call copy-libs,$(PERFMON_COPY),$(PERFMON_LIB),libpfm.so*)
-	@$(call copy-libs,$(LIBUNWIND_COPY),$(LIBUNWIND_LIB),libunwind.so*)
-	@$(call copy-libs,$(LZMA_COPY),$(LZMA_LIB),liblzma.so*)
-	@$(call copy-libs,$(LZMA_COPY),$(LZMA_LIB),liblzma.a*)
+	@$(call copy-libs,$(LZMA_COPY),$(LZMA_LIB_DIR),liblzma.so*)
 	@$(call copy-libs,$(TBB_COPY),$(TBB_LIB_DIR),libtbb.so*)
 	@$(call copy-libs,$(TBB_COPY),$(TBB_LIB_DIR),libtbbmalloc.so*)
 	@$(call copy-libs,$(TBB_COPY),$(TBB_LIB_DIR),libtbbmalloc_proxy.so*)

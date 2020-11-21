@@ -128,12 +128,6 @@ static int cupti_enabled_activities = 0;
 // event name, which is nvidia-cuda
 static char nvidia_name[128];
 
-
-static const size_t DEFAULT_DEVICE_BUFFER_SIZE = 1024 * 1024 * 8;
-static const size_t DEFAULT_DEVICE_SEMAPHORE_SIZE = 65536;
-
-
-
 //******************************************************************************
 // constants
 //******************************************************************************
@@ -267,6 +261,15 @@ static void
 METHOD_FN(init)
 {
   self->state = INIT;
+
+  control_knob_register("HPCRUN_CUDA_DEVICE_BUFFER_SIZE", "8388608", ck_int);
+  control_knob_register("HPCRUN_CUDA_DEVICE_SEMAPHORE_SIZE", "65536", ck_int);
+
+  // Reset cupti flags
+  cupti_device_init();
+
+  // Init records
+  gpu_trace_init();
 }
 
 static void
@@ -284,6 +287,7 @@ static void
 METHOD_FN(start)
 {
   TMSG(CUDA, "start");
+  TD_GET(ss_state)[self->sel_idx] = START;
 }
 
 static void
@@ -317,6 +321,20 @@ METHOD_FN(supports_event, const char *ev_str)
   return false;
 #endif
 }
+
+// FIXME: The contents of this function (and potentially the entire sample source
+//        callback set) should be rearranged to better handle fork().
+// As part of fork() handling, the CUPTI sample source is shut down nearly
+// completely, and doesn't get started again upon a call to gen_event_set below.
+// As such, after a fork() no CUPTI data is processed even though CUPTI activities
+// are delivered, resulting in (at best) mysteriously blank trace lines.
+//
+// The current hotfix is to not zero out as much in cupti_device_init (called
+// by init above, called by the post-fork() hook in main.c). For PyTorch it
+// functions sufficiently for testing purposes.
+//
+// A proper fix will require investigation and reevaluation of the design for
+// sample sources' lifetimes.
 
 static void
 METHOD_FN(process_event_list, int lush_metrics)
@@ -381,19 +399,13 @@ METHOD_FN(process_event_list, int lush_metrics)
 			    &device_finalizer_shutdown);
 
   // Get control knobs
-  int device_buffer_size =
-    control_knob_value_get_int(HPCRUN_CUDA_DEVICE_BUFFER_SIZE);
+  int device_buffer_size;
+  if (control_knob_value_get_int("HPCRUN_CUDA_DEVICE_BUFFER_SIZE", &device_buffer_size) != 0)
+    monitor_real_exit(-1);
 
-  int device_semaphore_size =
-    control_knob_value_get_int(HPCRUN_CUDA_DEVICE_SEMAPHORE_SIZE);
-
-  if (device_buffer_size == 0) {
-    device_buffer_size = DEFAULT_DEVICE_BUFFER_SIZE;
-  }
-
-  if (device_semaphore_size == 0) {
-    device_semaphore_size = DEFAULT_DEVICE_SEMAPHORE_SIZE;
-  }
+  int device_semaphore_size;
+  if(control_knob_value_get_int("HPCRUN_CUDA_DEVICE_SEMAPHORE_SIZE", &device_semaphore_size) != 0)
+    monitor_real_exit(-1);
 
   TMSG(CUDA, "Device buffer size %d", device_buffer_size);
   TMSG(CUDA, "Device semaphore size %d", device_semaphore_size);
@@ -412,9 +424,6 @@ METHOD_FN(process_event_list, int lush_metrics)
   cupti_enabled_activities |= CUPTI_KERNEL_INVOCATION;
   cupti_enabled_activities |= CUPTI_DATA_MOTION_EXPLICIT;
   cupti_enabled_activities |= CUPTI_OVERHEAD;
-
-  // Init records
-  gpu_trace_init();
 
   // Register shutdown functions to write trace files
   device_trace_finalizer_shutdown.fn = gpu_trace_fini;

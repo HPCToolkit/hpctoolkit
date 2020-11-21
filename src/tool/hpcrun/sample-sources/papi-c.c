@@ -411,6 +411,7 @@ METHOD_FN(start)
      ci->eventSet, cidx, PAPI_strerror(ret), ret);
     }
   }
+
       }
     }
   }
@@ -499,6 +500,7 @@ METHOD_FN(shutdown)
     METHOD_CALL(self, stop); // make sure stop has been called
   }while(0);
   // FIXME: add component shutdown code here
+
   PAPI_shutdown();
 
   self->state = UNINIT;

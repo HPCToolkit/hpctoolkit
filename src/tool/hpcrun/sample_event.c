@@ -52,7 +52,6 @@
 
 #include <unwind/common/backtrace.h>
 #include <cct/cct.h>
-#include "hpcrun_dlfns.h"
 #include "hpcrun_stats.h"
 #include "hpcrun-malloc.h"
 #include "fnbounds_interface.h"

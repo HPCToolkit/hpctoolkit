@@ -17,12 +17,10 @@
 hpcfnbounds_dir='libexec/hpctoolkit'
 hpcrun_dir='lib/hpctoolkit'
 libmonitor_dir='@LIBMONITOR_RUN_DIR@'
-libunwind_dir='@LIBUNWIND_RUN_DIR@'
 papi_libdir='@OPT_PAPI_LIBPATH@'
 perfmon_libdir='@PERFMON_LIB@'
 roctracer_lib_path='@OPT_ROCM@/roctracer/lib'
-gotcha_lib_path='@GOTCHA_LIBDIR@'
-
+# gotcha_lib_path='@GOTCHA_LIBDIR@'
 
 prog_name=hpcrun
 
@@ -45,10 +43,6 @@ esac
 case "$libmonitor_dir" in
     /* ) ;;
     * ) libmonitor_dir="${HPCTOOLKIT}/${libmonitor_dir}" ;;
-esac
-case "$libunwind_dir" in
-    /* ) ;;
-    * )  libunwind_dir="${HPCTOOLKIT}/${libunwind_dir}" ;;
 esac
 case "$papi_libdir" in
     /* ) ;;
@@ -143,6 +137,13 @@ Options: Profiling (Defaults shown in curly brackets {})
                        Delay starting sampling until the application calls
                        hpctoolkit_sampling_start().
 
+  --disable-gprof      Override and disable gprof instrumentation  This option
+                       is only useful when using hpcrun to add HPCToolkit's
+                       measurement subsystem to a dynamically-linked application 
+                       that has been compiled with -pg. One can't measure 
+                       performance with HPCToolkit when gprof instrumentation 
+                       is active in the same execution.
+
   -f <frac>, -fp <frac>, --process-fraction <frac>
                        Measure only a fraction <frac> of the execution's
                        processes.  For each process, enable measurement
@@ -179,6 +180,9 @@ Options: Profiling (Defaults shown in curly brackets {})
                        NOTE: If the user employs the RETCNT sample source, then this
                              option is enabled: RETCNT implies *all* elements of
                              call chains, including recursive elements, are recorded.
+
+  -nu, --no-unwind     Disable unwinding
+                       Generates a flat profile (leaf instructions) only
 
 NOTES:
 * hpcrun uses preloaded shared libraries to initiate profiling.  For this
@@ -233,10 +237,18 @@ do
 	    shift
 	    ;;
 
+	-ad | --audit-debug )
+	    export HPCRUN_AUDIT_DEBUG=1
+	    ;;
+
 	-ck | --control-knob )
 	    arg_ok "$1" || die "missing argument for $arg"
 	    export HPCRUN_CONTROL_KNOBS="$HPCRUN_CONTROL_KNOBS $1"
 	    shift
+	    ;;
+
+	-nu | --no-unwind )
+	    export HPCRUN_NO_UNWIND=1
 	    ;;
 
 	-h | -help | --help )
@@ -263,7 +275,8 @@ do
 		PTHREAD_WAIT* ) preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_pthread.so" ;;
 		CPU_GPU_IDLE* ) preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_gpu.so" ;;
 		MPI* )     preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_mpi.so" ;;
-		amd-rocm*) roctracer_lib="${roctracer_lib_path}";;
+		gpu=amd) roctracer_lib="${roctracer_lib_path}"
+			 export HIP_ENABLE_DEFERRED_LOADING=0;;
 	    esac
 	    case "$HPCRUN_EVENT_LIST" in
 		'' ) HPCRUN_EVENT_LIST="$1" ;;
@@ -317,10 +330,15 @@ do
 
 	# --------------------------------------------------
 
+	--disable-gprof )
+	    preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_gprof.so"
+	    ;;
+
+	# --------------------------------------------------
+
 	--omp-serial-only )
 	    export HPCRUN_OMP_SERIAL_ONLY=1
 	    ;;
-
 
 	# --------------------------------------------------
 
@@ -479,7 +497,7 @@ fi
 ulimit -S -c unlimited >/dev/null 2>&1
 
 # laks 2016.10.06: add perfmon directory
-hpc_ld_library_path="${hpcrun_dir}:${papi_libdir}:${ext_dir}:${perfmon_libdir}:${roctracer_lib}:${gotcha_lib_path}"
+hpc_ld_library_path="${hpcrun_dir}:${papi_libdir}:${ext_dir}:${perfmon_libdir}:${roctracer_lib}"
 preload_list="${libmonitor_dir}/libmonitor.so ${preload_list}"
 preload_list="${hpcrun_dir}/libhpcrun.so ${preload_list}"
 
@@ -492,11 +510,13 @@ esac
 
 if test ! -x "$HPCRUN_FNBOUNDS_CMD" ; then
     echo "bad HPCRUN_FNBOUNDS_CMD command: $HPCRUN_FNBOUNDS_CMD" >&2
-    HPCRUN_FNBOUNDS_CMD="${hpcfnbounds_dir}/hpcfnbounds"
+    HPCRUN_FNBOUNDS_CMD="${hpcfnbounds_dir}/hpcfnbounds2"
 fi
 export HPCRUN_FNBOUNDS_CMD
 
 export LD_LIBRARY_PATH="${hpc_ld_library_path}:${LD_LIBRARY_PATH}"
 export LD_PRELOAD="${preload_list} ${LD_PRELOAD}"
+@export_ld_audit@
+export HPCRUN_AUDIT_MAIN_LIB="${hpcrun_dir}/libhpcrun.so"
 
 exec "$@"

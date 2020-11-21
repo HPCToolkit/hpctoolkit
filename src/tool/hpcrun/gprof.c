@@ -44,14 +44,23 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef _CSPROF_DLFNS_H_
-#define _CSPROF_DLFNS_H_
+// stubs to override gprof support to avoid conflicts with hpcrun
+// NOTE: avoids core dump on ppc64le
 
-void hpcrun_pre_dlopen(const char *path, int flags);
-void hpcrun_dlopen(const char *module_name, int flags, void *handle);
-void hpcrun_dlclose(void *handle);
-void hpcrun_post_dlclose(void *handle, int ret);
+#include <monitor-exts/monitor_ext.h>
 
-long hpcrun_dlopen_pending(void);
+void
+MONITOR_EXT_WRAP_NAME(__monstartup) (void)
+{ }
 
-#endif
+void
+MONITOR_EXT_WRAP_NAME(_mcleanup) (void)
+{ }
+
+void
+MONITOR_EXT_WRAP_NAME(mcount) (void)
+{ }
+
+void
+MONITOR_EXT_WRAP_NAME(_mcount) (void)
+{ }

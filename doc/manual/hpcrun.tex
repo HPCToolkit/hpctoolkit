@@ -101,6 +101,20 @@ statically or dynamically linked binaries.  All that \hpcrun{} really
 does is set some environment variables (including \verb|LD_PRELOAD|)
 and \verb|exec| the binary.
 
+\subsection{Using \hpcrun{} when {\tt gprof} instrumentation is present}
+
+When an application has been compiled with the compiler flag \verb|-pg|,
+the compiler adds instrumentation to collect performance measurement data for 
+the \verb|gprof| profiler. Measuring application performance with 
+\HPCToolkit{}'s measurement subsystem and \verb|gprof| instrumentation
+active in the same execution may cause the execution
+to abort. One can detect the presence of \verb|gprof| instrumentation in an
+application by the presence of \verb|__monstartup| and \verb|_mcleanup| symbols 
+in a executable.
+One can disable \verb|gprof| instrumentation when measuring the performance of 
+a dynamically-linked application by using the \verb|--disable-gprof| 
+argument to \hpcrun{}.
+
 % ===========================================================================
 
 \section{Using \hpclink{}}

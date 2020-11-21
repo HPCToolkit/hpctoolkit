@@ -149,6 +149,13 @@ Options: Linking
                        of -Wl).  Used to work around problems with the 
                        Berkeley UPC compiler script (rarely needed).
 
+  --disable-gprof      Override and disable gprof instrumentation  This option
+                       is only useful when using hpclink to add HPCToolkit's
+                       measurement subsystem to a statically-linked application 
+                       that has been compiled with -pg. One can't measure 
+                       performance with HPCToolkit when gprof instrumentation 
+                       is active in the same execution.
+
   -fe <dir>, --front-end <dir>
                        In a cross-compile link, use the current install tree
                        for the back-end libraries and use <dir> for the install
@@ -221,6 +228,14 @@ do
 	    ;;
 	-dw | --double-wrap )
 	    double_wrap=yes
+	    shift
+	    ;;
+	--disable-gprof )
+	    gprof_wrap="${libhpcrun_dir}/libhpcrun_gprof_wrap.a"
+	    test -f "$gprof_wrap" || die "unable to find: $gprof_wrap"
+	    extra_hpc_files="$extra_hpc_files $gprof_wrap"
+	    extra_wrap_names="$extra_wrap_names __monstartup _mcleanup mcount _mcount"
+	    undef_names="$undef_names __monstartup"
 	    shift
 	    ;;
 	-fe | -front-end | --front-end )
@@ -429,13 +444,8 @@ done
 libhpcrun="${libhpcrun_dir}/libhpcrun.o"
 test -f "$libhpcrun" || die "no such file: $libhpcrun"
 
-# FIXME: add LZMA static library at the end of libhpcrun.o
-# Ideally the library is included in libhpcrun.o, but somwehow not all
-# routines are included
-liblzma="${ext_libs_dir}/liblzma.a"
-libmbedtls="${ext_libs_dir}/libmbedcrypto.a"
 libelf="${ext_libs_dir}/libelf.a"
-set -- $undef_args $wrap_args $libhpcrun "$liblzma" "$libmbedtls" "$libelf" "$@" 
+set -- $undef_args $wrap_args $libhpcrun "$libelf" "$@" 
 set -- "$@" "${nm_addrs}.o"
 
 libhpcrun_wrap="${libhpcrun_dir}/libhpcrun_wrap.a"

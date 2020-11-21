@@ -91,3 +91,13 @@ SAMPLE_SOURCE_DECL_MACRO(nvidia_gpu)
 #ifdef HPCRUN_SS_AMD
 SAMPLE_SOURCE_DECL_MACRO(amd_gpu)
 #endif
+
+#ifdef HPCRUN_SS_LEVEL0
+SAMPLE_SOURCE_DECL_MACRO(level0)
+#endif
+#ifndef HPCRUN_STATIC_LINK
+#ifdef HPCRUN_SS_OPENCL
+SAMPLE_SOURCE_DECL_MACRO(opencl)
+#endif
+#endif
+

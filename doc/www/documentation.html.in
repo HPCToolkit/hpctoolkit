@@ -113,52 +113,40 @@ User's Manual [<a href="manual/HPCToolkit-users-manual.pdf">pdf</a>]
 </ul>
 
 
-<h2>Questions, Problems, Bugs</h2>
+<h2>Questions, Problems, Bug Reports</h2>
 
-<div class="indent">
-<p>Note: When contacting us or submitting a bug report using any of the means listed below, please tell us the following:</p>
-<ol>
-  <li>
-    System information: OS/architecture (<code>uname -a</code>), compiler (<code>gcc -v</code>), PAPI (version), Java (<code>java -version</code>).
-  </li>
-  <li>Linux Perf-events (if available): <code>/proc/sys/kernel/kptr_restrict</code> and <code>/proc/sys/kernel/perf_event_*</code>
-  <li>
-    HPCToolkit: HPCToolkit version; if available, build information from <code>&lt;hpctoolkit-build&gt;/config.log</code>, which is generated after running <code>configure</code>.
-  </li>
-  <li>
-    Profiled application: Information about your application, e.g., source language, whether dynamically or statically linked.
-  </li>
-  <li>
-    Relevant profiling/analysis commands.
-    If you have used <span class="hpctool">hpcrun</span>, please include the results of executing:
-    <div class="indent">
-      <code>hpcsummary --all &lt;hpctoolkit-measurements&gt;</code>
-    </div>
-  </li>
-</ol>
-</div>
+<p>
+The best way to contact us for questions or bug reports is via the
+mailing list hpctoolkit-forum =at= rice.edu.  The mailman list is
+technically members-only, but you don't really need to be a member.
+Just send mail to this address, say something relevant to hpctoolkit
+and then we can white-list you.
+</p>
+
+<p>
+If reporting a problem, be sure to include sufficient information
+about your system, what you tried, what went wrong, etc, to allow us
+follow your steps.
+</p>
 
 <ul>
-
-<li>
-Email the <a href ="https://mailman.rice.edu/mailman/listinfo/hpctoolkit-forum">HPCToolkit Forum</a>: <a href ="mailto:hpctoolkit-forum =at= rice.edu"><tt>hpctoolkit-forum =at= rice.edu</tt></a>
+<li>type of system, architecture, linux distribution and version, compiler
+version, glibc version.
 </li>
 
-<li>
-Sign up for <a href ="https://mailman.rice.edu/mailman/listinfo/hpctoolkit-announce">HPCToolkit Announcements</a>
+<li>hpctoolkit version.
 </li>
 
-<!--
-<li>
-Submit a <a href="https://outreach.scidac.gov/tracker/?group_id=87">bug report</a>
+<li>if a build failure, then the config.log file from the build
+directory and the output from make.
 </li>
--->
 
+<li>if a run failure, then what command you ran and how it failed.
+</li>
 </ul>
 
 
-
-<p>[<span class="lastupdated">Page last updated: 2011/12/30</span>]
+<p>[<span class="lastupdated">Page last updated: 2020/09/11</span>]
 </p>
 
 <!-- ********************************************************************** -->

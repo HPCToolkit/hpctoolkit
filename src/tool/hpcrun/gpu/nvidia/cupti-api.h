@@ -174,6 +174,11 @@ cupti_device_timestamp_get
  uint64_t *time
 );
 
+void cupti_activity_timestamp_get
+(
+ uint64_t *time
+);
+
 
 void 
 cupti_init
@@ -260,7 +265,7 @@ cupti_unload_callback_cuda
 
 
 //******************************************************************************
-// finalizer
+// finalizer and initializer
 //******************************************************************************
 
 void
@@ -283,6 +288,11 @@ cupti_device_shutdown
  void *args
 );
 
+
+void
+cupti_device_init
+(
+);
 
 
 //******************************************************************************

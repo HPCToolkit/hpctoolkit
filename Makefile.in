@@ -172,8 +172,8 @@ am__can_run_installinfo = \
     n|no|NO) false;; \
     *) (install-info --version) >/dev/null 2>&1;; \
   esac
-am__dist_doc_DATA_DIST = README README.License README.ReleaseNotes \
-	README.Acknowledgments
+am__dist_doc_DATA_DIST = README.md README.Acknowledgments \
+	README.Install README.License README.ReleaseNotes
 DATA = $(dist_doc_DATA)
 RECURSIVE_CLEAN_TARGETS = mostlyclean-recursive clean-recursive	\
   distclean-recursive maintainer-clean-recursive
@@ -300,27 +300,23 @@ LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LIBTOOL = @LIBTOOL@
 LIBTOOL_DEPS = @LIBTOOL_DEPS@
-LIBUNWIND_COPY = @LIBUNWIND_COPY@
-LIBUNWIND_CPPFLAGS_DYN = @LIBUNWIND_CPPFLAGS_DYN@
-LIBUNWIND_CPPFLAGS_STAT = @LIBUNWIND_CPPFLAGS_STAT@
 LIBUNWIND_IFLAGS = @LIBUNWIND_IFLAGS@
 LIBUNWIND_LDFLAGS_DYN = @LIBUNWIND_LDFLAGS_DYN@
 LIBUNWIND_LDFLAGS_STAT = @LIBUNWIND_LDFLAGS_STAT@
-LIBUNWIND_LIB = @LIBUNWIND_LIB@
+LIBUNWIND_LIB_DIR = @LIBUNWIND_LIB_DIR@
 LIPO = @LIPO@
 LN_S = @LN_S@
 LTLIBOBJS = @LTLIBOBJS@
 LT_SYS_LIBRARY_PATH = @LT_SYS_LIBRARY_PATH@
 LZMA_COPY = @LZMA_COPY@
-LZMA_INC = @LZMA_INC@
+LZMA_IFLAGS = @LZMA_IFLAGS@
 LZMA_LDFLAGS_DYN = @LZMA_LDFLAGS_DYN@
 LZMA_LDFLAGS_STAT = @LZMA_LDFLAGS_STAT@
-LZMA_LIB = @LZMA_LIB@
+LZMA_LIB_DIR = @LZMA_LIB_DIR@
 LZMA_PROF_MPI_LIBS = @LZMA_PROF_MPI_LIBS@
 MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
-MBEDTLS_COPY = @MBEDTLS_COPY@
 MBEDTLS_IFLAGS = @MBEDTLS_IFLAGS@
 MBEDTLS_LIB = @MBEDTLS_LIB@
 MBEDTLS_LIBS = @MBEDTLS_LIBS@
@@ -341,7 +337,11 @@ OPT_CUDA_LDFLAGS = @OPT_CUDA_LDFLAGS@
 OPT_CUPTI = @OPT_CUPTI@
 OPT_CUPTI_IFLAGS = @OPT_CUPTI_IFLAGS@
 OPT_CUPTI_LDFLAGS = @OPT_CUPTI_LDFLAGS@
+OPT_LEVEL0 = @OPT_LEVEL0@
+OPT_LEVEL0_IFLAGS = @OPT_LEVEL0_IFLAGS@
+OPT_LEVEL0_LDFLAGS = @OPT_LEVEL0_LDFLAGS@
 OPT_OBJCOPY = @OPT_OBJCOPY@
+OPT_OPENCL_IFLAGS = @OPT_OPENCL_IFLAGS@
 OPT_PAPI = @OPT_PAPI@
 OPT_PAPI_IFLAGS = @OPT_PAPI_IFLAGS@
 OPT_PAPI_LDFLAGS = @OPT_PAPI_LDFLAGS@
@@ -423,6 +423,7 @@ datarootdir = @datarootdir@
 docdir = @docdir@
 dvidir = @dvidir@
 exec_prefix = @exec_prefix@
+export_ld_audit = @export_ld_audit@
 hash_fcn = @hash_fcn@
 hash_value = @hash_value@
 host = @host@
@@ -466,10 +467,11 @@ AUTOMAKE_OPTIONS = foreign no-dist
 # Local settings
 #############################################################################
 MYDATA = \
-	README \
+	README.md \
+	README.Acknowledgments \
+	README.Install \
 	README.License \
-	README.ReleaseNotes \
-	README.Acknowledgments
+	README.ReleaseNotes
 
 MYSCRIPTS = \
 	config/hpcguess \
@@ -895,13 +897,10 @@ install-exec-local:
 	@$(call copy-libs,$(LIBELF_COPY),$(LIBELF_LIB),libelf*so*)
 	@$(call copy-libs,$(LIBELF_COPY),$(LIBELF_LIB),libelf.a)
 	@$(call copy-libs,$(LIBELF_COPY),$(LIBELF_LIB),libdw*so*)
-	@$(call copy-libs,$(MBEDTLS_COPY),$(MBEDTLS_LIB),libmbedcrypto.a)
 	@$(call copy-libs,$(LIBDWARF_COPY),$(LIBDWARF_LIB),libdwarf*so*)
 	@$(call copy-libs,$(LIBMONITOR_COPY),$(LIBMONITOR_LIB),libmonitor*)
 	@$(call copy-libs,$(PERFMON_COPY),$(PERFMON_LIB),libpfm.so*)
-	@$(call copy-libs,$(LIBUNWIND_COPY),$(LIBUNWIND_LIB),libunwind.so*)
-	@$(call copy-libs,$(LZMA_COPY),$(LZMA_LIB),liblzma.so*)
-	@$(call copy-libs,$(LZMA_COPY),$(LZMA_LIB),liblzma.a*)
+	@$(call copy-libs,$(LZMA_COPY),$(LZMA_LIB_DIR),liblzma.so*)
 	@$(call copy-libs,$(TBB_COPY),$(TBB_LIB_DIR),libtbb.so*)
 	@$(call copy-libs,$(TBB_COPY),$(TBB_LIB_DIR),libtbbmalloc.so*)
 	@$(call copy-libs,$(TBB_COPY),$(TBB_LIB_DIR),libtbbmalloc_proxy.so*)

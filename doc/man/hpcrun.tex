@@ -137,6 +137,14 @@ with calls to \Prog{hpctoolkit_sampling_start()} and \Prog{hpctoolkit_sampling_s
 Sampling may be started and stopped any number of times during an execution;
 measurements from all measurement intervals are aggregated.
 
+\item[\Opt{--disable-gprof}]
+Override and disable \Prog{gprof} instrumentation  This option
+is only useful when using \Prog{hpcrun} to add HPCToolkit's
+measurement subsystem to a dynamically-linked application
+that has been compiled with \Prog{-pg}. One can't measure
+performance with HPCToolkit when gprof instrumentation
+is active in the same execution.
+
 \item[\OptArg{-e}{event\Lbr@howoften\Rbr}, \OptArg{--event}{event\Lbr@howoften\Rbr}]
 \Arg{event} may be an architecture-independent hardware or software event supported by Linux perf, a native hardware counter event, 
 a hardware counter event supported by the PAPI library, a Linux system timer (\Prog{CPUTIME} and \Prog{REALTIME}), or the
@@ -217,6 +225,12 @@ saves space and time during post-mortem analysis by collapsing long chains of re
 If this option is given, \Prog{hpcrun} will record all elements of a recursive call chain.
 Note: When you use the \Prog{RETCNT} sample source this option is enabled automatically
 to gather accurate counts.
+
+ \item[\Opt{-nu}, \Opt{--no-unwind}]
+Suppress unwinding of callstacks.
+Normally as \Prog{hpcrun} collects data against full callstacks at the time of each event.
+If this option is given, \Prog{hpcrun} will skip unwinding, and generate data with only
+the leafPC's.
 
 \item[\Opt{-t}, \Opt{--trace}]
 Generate a call path trace in addition to a call path profile.

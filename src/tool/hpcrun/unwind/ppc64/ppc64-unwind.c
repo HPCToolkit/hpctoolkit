@@ -196,6 +196,12 @@ hpcrun_unw_get_norm_reg(hpcrun_unw_cursor_t* cursor, unw_reg_code_t reg_id,
 void
 hpcrun_unw_init(void)
 {
+  static bool msg_sent = false;
+  if (msg_sent == false) {
+    TMSG(NU, "hpcrun_unw_init from ppc64_unwind.c" );
+    msg_sent = true;
+  }
+
   uw_recipe_map_init();
 }
 
@@ -253,6 +259,7 @@ hpcrun_unw_init_cursor(hpcrun_unw_cursor_t* cursor, void* context)
   cursor->ra_loc    = NULL;
 
   bitree_uwi_t* intvl = NULL;
+
   bool found = uw_recipe_map_lookup(cursor->pc_unnorm, NATIVE_UNWINDER, &(cursor->unwr_info));
   if (found) {
 	intvl = cursor->unwr_info.btuwi;
@@ -292,6 +299,12 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor, int *steps_taken)
   void** fp = cursor->bp; // unused
   unwind_interval* intvl = (unwind_interval*)(cursor->unwr_info.btuwi);
 
+  static bool msg_sent = false;
+  if (msg_sent == false) {
+    TMSG(NU, "hpcrun_unw_step from ppc64_unwind.c" );
+    msg_sent = true;
+  }
+
   bool isInteriorFrm = (cursor->flags != UnwFlg_StackTop);
   
   // next (parent) frame
@@ -322,7 +335,7 @@ hpcrun_unw_step(hpcrun_unw_cursor_t *cursor, int *steps_taken)
   if ((void*)sp >= monitor_stack_bottom()) {
     TMSG(FENCE_UNW, "stop: sp (%p) >= unw_stack_bottom", sp);
     cursor->fence = FENCE_MAIN;
-    return STEP_STOP;
+    return STEP_ERROR;
   }
 
   //-----------------------------------------------------------

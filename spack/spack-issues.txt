@@ -3,9 +3,9 @@ Current Spack Issues for HPCToolkit
 
 1 Introduction
 2 Current Issues
-2.1 (2019-08-28) Cray front-end compilers
+2.1 (2020-09-05) Configure warns about -fPIC.
 3 Recently Resolved Issues
-3.1 (2020-03-27) Intel-TBB checksums don't match
+3.1 (2020-06-29) Cray front-end compilers
 4 General Problems
 4.1 Unable to fetch
 4.2 Connection timeout
@@ -14,6 +14,7 @@ Current Spack Issues for HPCToolkit
 5 Long Term Issues
 5.1 Boost 1.68.0
 5.2 Elfutils 0.176
+5.3 IBM-Java fails to fetch (powerpc)
     
 
 1 Introduction
@@ -35,35 +36,67 @@ hpctoolkit web site.
 
      <http://hpctoolkit.org/spack-issues.html>
 
-Last revised: June 17, 2020.
+Last revised: September 11, 2020.
 
 2 Current Issues
 ================
 
-2.1 (2019-08-28) Cray front-end compilers
+2.1 (2020-09-05) Configure warns about -fPIC.
+---------------------------------------------
+
+As of commit b2d3d067ecad
+(https://github.com/HPCToolkit/hpctoolkit/pull/317) on 2020-09-05, the
+master branch now wants libunwind and xz (lzma) to be built with variant
+'+pic'.  This is used to workaround a deadlock with hpcrun, openmpi 4.x
+and UCX. If not, then you'll see this warning at the bottom of
+configure.
+
+     WARNING: The following prereqs are missing an archive (.a) compiled with -fPIC.
+     WARNING:    libunwind lzma
+     WARNING:
+     WARNING: hpcrun is unable to properly hide these libraries from the
+     WARNING: application and this may cause deadlock or segfault.
+     WARNING: Recompile the above libraries with -fPIC (+pic in spack).
+
+For now, this is only a warning.  Everything will work as before, you
+just won't get the benefit of the work around.  But going forward, you
+should build libunwind and xz with variant '+pic'.  For example, in
+'packages.yaml'.
+
+     libunwind:
+       version:  [1.4.0]
+       variants: +xz +pic
+     xz:
+       version:  [5.2.5]
+       variants: +pic
+
+3 Recently Resolved Issues
+==========================
+
+3.1 (2020-06-29) Cray front-end compilers
 -----------------------------------------
 
-'Spack compiler find' is currently broken for detecting the front-end
-compilers on Cray that HPCToolkit uses.  Normally, you would load a
-module for gcc and run 'spack compiler find' and spack would add that
-compiler to 'compilers.yaml', but this currently does not work.
+'Spack compiler find' was previously broken for detecting the front-end
+compilers on Cray that HPCToolkit uses.
 
-   Workaround: If you have a working 'compiler:' entry for a front-end
-GNU compiler on Cray, then that will continue to work.  If not, then you
-will have to add one manually.  For example, this is an entry for the
+Fixed: This is now fixed in commit 789d060ff61b
+(https://github.com/spack/spack/pull/17267) on 2020-06-29.
+
+Note: Remember, you still need to fill in the 'modules:' field with the
+following four modules.  For example, this is an entry for the
 'gcc/8.3.0' module on theta at ANL. Note that the front-end
-operating_system is something like 'sles12' (not 'cnl6'), and the
+operating_system is something like 'sles15' (not 'cnl6'), and the
 front-end target is 'x86_64' (not 'mic_knl').  Your versions may differ.
 
      - compiler:
          environment: {}
          flags: {}
          modules:
-         - PrgEnv-gnu/6.0.5
+         - PrgEnv-gnu/6.0.7
          - gcc/8.3.0
-         - craype/2.6.1
-         - cray-mpich/7.7.10
-         operating_system: sles12
+         - craype/2.6.5
+         - cray-mpich/7.7.14
+         operating_system: sles15
          paths:
            cc:  /opt/gcc/8.3.0/bin/gcc
            cxx: /opt/gcc/8.3.0/bin/g++
@@ -71,30 +104,6 @@ front-end target is 'x86_64' (not 'mic_knl').  Your versions may differ.
            fc:  /opt/gcc/8.3.0/bin/gfortran
          spec: gcc@8.3.0
          target: x86_64
-
-Note: Be sure to fill in the 'modules:' field with all four modules.
-
-3 Recently Resolved Issues
-==========================
-
-3.1 (2020-03-27) Intel-TBB checksums don't match
-------------------------------------------------
-
-Intel recently moved the TBB project on GitHub to a new repository,
-'oneAPI-SRC/oneTBB'.  When downloading the intel-tbb tar file, github
-makes the tar file on the fly, and this includes the new top-level
-directory name (oneTBB). The contents of the tar file are the same, but
-the new directory name is enough to invalidate the spack checksum.
-
-Fixed: The new checksums were added to spack in commit 16f104aafe2b
-(https://github.com/spack/spack/pull/15675) on 2020-03-27.  So, if you
-update your spack repository after this commit, then the checksums will
-match.
-
-Workaround: If you have an older spack repository, then you will need to
-disable verifying checksums.
-
-     spack install --no-checksum intel-tbb
 
 4 General Problems
 ==================
@@ -154,4 +163,27 @@ is good and works with all versions of dyninst.
 Elfutils 0.176 requires glibc 2.16 or later (for 'aligned_alloc') and
 won't work with an older glibc, including RedHat or CentOS 6.x and Blue
 Gene.  On systems with an old glibc, use version 0.175.
+
+5.3 IBM-Java fails to fetch (powerpc)
+-------------------------------------
+
+IBM is fairly aggressive about taking down old versions, so you may find
+that fetching ibm-java fails while trying to install hpcviewer (powerpc
+only).
+
+     ==> Installing ibm-java
+     ==> No binary for ibm-java found: installing from source
+     ==> Error: FetchError: All fetchers failed
+
+If this happens, first compare 'spack info ibm-java' with what versions
+are available at IBM's download site.  If there is another 8.0.x.y
+version that spack understands that is still available for download,
+then use that.
+
+     <http://public.dhe.ibm.com/ibmdl/export/pub/systems/cloud/runtimes/java>
+
+If not, then manually download the latest 8.0.x.y version, compute a
+'sha256sum' checksum for the file and then edit the
+'ibm-java/package.py' file to add this version.  And then report the
+problem to the spack maintainer.
 
