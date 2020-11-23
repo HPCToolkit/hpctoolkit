@@ -138,7 +138,7 @@ void flatCudaInstructionStats(const std::vector<Function *> &functions,
 void controlCudaInstructions(const char *cubin, std::vector<Function *> &functions);
 
 void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_set,
-  std::vector<Function *> &functions);
+  int threads, std::vector<Function *> &functions);
 
 void processLivenessCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_set,
   std::vector<Function *> &functions);

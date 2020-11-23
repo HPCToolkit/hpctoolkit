@@ -1206,6 +1206,8 @@ sanitizer_subscribe_callback
       sanitizer_context_map_stream_unlock(ld->context, ld->stream);
 
       kernel_sampling = true;
+
+      PRINT("kernel %s done\n", ld->functionName);
     }
   } else if (domain == SANITIZER_CB_DOMAIN_MEMCPY) {
     Sanitizer_MemcpyData *md = (Sanitizer_MemcpyData *)cbdata;
@@ -1221,8 +1223,8 @@ sanitizer_subscribe_callback
       sanitizer_op_map_init(persistent_id, api_node);
     }
 
-    PRINT("Memcpy async %d from %p to %p, op %llu, id %d\n", md->isAsync, md->srcAddress, md->dstAddress,
-      correlation_id, persistent_id);
+    PRINT("Memcpy async %d direction %d from %p to %p, op %llu, id %d\n", md->isAsync, md->direction,
+      md->srcAddress, md->dstAddress, correlation_id, persistent_id);
 
     bool src_host = false;
     bool dst_host = false;

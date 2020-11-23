@@ -654,7 +654,7 @@ makeStructure(string filename,
       cuda_arch = elfFile->getArch();
       cubin_size = elfFile->getLength();
       parsable = readCubinCFG(search_path, elfFile, the_symtab, 
-			      structOpts.compute_gpu_cfg, &code_src, &code_obj);
+			      structOpts.compute_gpu_cfg, structOpts.jobs_struct, &code_src, &code_obj);
     }
 
     if (opts.show_time) {
