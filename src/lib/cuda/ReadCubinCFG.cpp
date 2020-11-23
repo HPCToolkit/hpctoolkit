@@ -81,6 +81,7 @@ parseDotCFG
  const std::string &cubin,
  int cuda_arch,
  Dyninst::SymtabAPI::Symtab *the_symtab,
+ int threads,
  std::vector<CudaParse::Function *> &functions,
  std::vector<int> symbol_visibility
 ) 
@@ -110,7 +111,7 @@ parseDotCFG
   }
 
   // Test valid symbols
-  #pragma omp parallel shared(function_map, unparsable_function_symbols) num_threads(16)
+  #pragma omp parallel shared(function_map, unparsable_function_symbols) num_threads(threads)
   {
     std::map<std::string, CudaParse::Function *> local_function_map;
     std::vector<Symbol *> local_unparsable_function_symbols;
@@ -340,6 +341,7 @@ readCubinCFG
  ElfFile *elfFile,
  Dyninst::SymtabAPI::Symtab *the_symtab, 
  bool cfg_wanted,
+ int num_threads,
  Dyninst::ParseAPI::CodeSource **code_src, 
  Dyninst::ParseAPI::CodeObject **code_obj,
  bool dump_insts,
@@ -363,8 +365,11 @@ readCubinCFG
       // Get raw dot functions
       std::vector<CudaParse::Function *> functions;
       std::vector<int> symbol_visibility = getVisibilityCubin(elfFile->getMemoryOriginal(), elfFile->getElf());
-      parseDotCFG(dot, cubin, elfFile->getArch(), the_symtab, functions, symbol_visibility);
 
+      parseDotCFG(dot, cubin, elfFile->getArch(), the_symtab, num_threads, functions, symbol_visibility);
+      
+      // Don't use multiple threads for code_obj->parse
+      omp_set_num_threads(1);
       // Dyninst adapters
       // First construct dyninst functions, blocks, and instructions
       // Then parse slice and liveness, and update instruction_stats
@@ -378,7 +383,7 @@ readCubinCFG
       }
 
       if (slice) {
-        sliceCudaInstructions((*code_obj)->funcs(), functions);
+        sliceCudaInstructions((*code_obj)->funcs(), num_threads, functions);
       }
 
       if (liveness) {

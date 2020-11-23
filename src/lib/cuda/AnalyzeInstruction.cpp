@@ -802,7 +802,7 @@ class FirstMatchPred : public Dyninst::Slicer::Predicates {
 
 
 void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_set,
-  std::vector<Function *> &functions) {
+  int threads, std::vector<Function *> &functions) {
   // Build a instruction map
   std::map<int, InstructionStat *> inst_stat_map;
   std::map<int, Block *> inst_block_map;
@@ -830,7 +830,7 @@ void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_s
   Dyninst::AssignmentConverter ac(true, false);
   Dyninst::Slicer::InsnCache dyn_inst_cache;
     
-  #pragma omp parallel for schedule(dynamic) num_threads(16) firstprivate(ac, dyn_inst_cache)
+  #pragma omp parallel for schedule(dynamic) firstprivate(ac, dyn_inst_cache) num_threads(threads)
   for (size_t i = 0; i < block_vec.size(); ++i) {
     auto *dyn_block = block_vec[i].first;
     auto *dyn_func = block_vec[i].second;

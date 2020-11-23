@@ -13,6 +13,7 @@ readCubinCFG
  ElfFile *elfFile,
  Dyninst::SymtabAPI::Symtab *the_symtab, 
  bool cfg_wanted,
+ int num_threads,
  Dyninst::ParseAPI::CodeSource **code_src, 
  Dyninst::ParseAPI::CodeObject **code_obj,
  bool dump_insts = true,
