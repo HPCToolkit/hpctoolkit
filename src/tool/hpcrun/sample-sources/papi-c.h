@@ -71,8 +71,9 @@ typedef struct {
   get_event_set_proc_t get_event_set;
   add_event_proc_t add_event;
   finalize_event_set_proc_t finalize_event_set;
-  start_proc_t sync_start;
-  stop_proc_t sync_stop;
+  start_proc_t start;
+  read_proc_t sync_read;
+  stop_proc_t stop;
   setup_proc_t sync_setup;
   teardown_proc_t sync_teardown;
 } papi_component_info_t;

@@ -80,9 +80,9 @@ SAMPLE_SOURCE_DECL_MACRO(directed_blame)
 SAMPLE_SOURCE_DECL_MACRO(retcnt)
 #endif
 
-#ifdef HPCRUN_SS_PAPI_C_CUPTI
+//#ifdef HPCRUN_SS_PAPI_C_CUPTI
 SAMPLE_SOURCE_DECL_MACRO(papi_c_cupti)
-#endif
+//#endif
 
 #ifdef HPCRUN_SS_NVIDIA
 SAMPLE_SOURCE_DECL_MACRO(nvidia_gpu)

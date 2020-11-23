@@ -72,7 +72,7 @@
 
 #define UNIT_TEST 0
 
-#define DEBUG 1
+#define DEBUG 0
 
 #include "gpu-print.h"
 
@@ -678,7 +678,7 @@ gpu_activity_process
     break;
 
   case GPU_ACTIVITY_SYNCHRONIZATION:
-    gpu_synchronization_process(ga);
+//    gpu_synchronization_process(ga);
     break;
 
   case GPU_ACTIVITY_MEMORY:

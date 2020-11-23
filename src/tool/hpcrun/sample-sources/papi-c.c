@@ -150,7 +150,7 @@ typedef struct papi_mon_comp_t{
   int idx;
 }papi_mon_comp_t;
 
-static papi_mon_comp_t *papi_mon_comp_list = NULL;
+static __thread papi_mon_comp_t *papi_mon_comp_list = NULL;
 
 /******************************************************************************
  * private operations 
@@ -264,6 +264,8 @@ strip_papi_prefix(const char *str)
 
   return str;
 }
+
+static atomic_uint stop_papi_flag = { 0 };
 
 static void
 METHOD_FN(init)
@@ -389,7 +391,7 @@ METHOD_FN(start)
     if (ci->inUse) {
       if (component_uses_sync_samples(cidx)) {
   TMSG(PAPI, "component %d is synchronous, use synchronous start", cidx);
-  ci->sync_start();
+  ci->start(ci->eventSet);
       }
       else {
   TMSG(PAPI,"starting PAPI event set %d for component %d", ci->eventSet, cidx);
@@ -473,12 +475,16 @@ METHOD_FN(stop)
   long_long values[nevents+2];
   //  long_long *values = (long_long *) alloca(sizeof(long_long) * (nevents+2));
 
-  int ret = PAPI_stop(ci->eventSet, values);
-  if (ret != PAPI_OK){
-    EMSG("Failed to stop PAPI for eventset %d. Return code = %d ==> %s",
-         ci->eventSet, ret, PAPI_strerror(ret));
-  }
 
+  if(atomic_fetch_add(&stop_papi_flag, 1) == 0) {
+    //TODO: PAPI_stop is called from monitor_fini_thread and monitor_fini_process -> PAPI_error
+
+    int ret = PAPI_stop(ci->eventSet, values);
+    if (ret != PAPI_OK) {
+      EMSG("Failed to stop PAPI for eventset %d. Return code = %d ==> %s",
+           ci->eventSet, ret, PAPI_strerror(ret));
+    }
+  }
       }
     }
   }
@@ -501,7 +507,7 @@ METHOD_FN(shutdown)
   }while(0);
   // FIXME: add component shutdown code here
 
-  PAPI_shutdown();
+//  PAPI_shutdown();
 
   self->state = UNINIT;
 finish:
@@ -702,8 +708,9 @@ METHOD_FN(gen_event_set, int lush_metrics)
     ci->is_sync = component_uses_sync_samples(i);
     ci->sync_setup = sync_setup_for_component(i);
     ci->sync_teardown = sync_teardown_for_component(i);
-    ci->sync_start = sync_start_for_component(i);
-    ci->sync_stop = sync_stop_for_component(i);
+    ci->start = sync_start_for_component(i);
+    ci->sync_read = sync_read_for_component(i);
+    ci->stop = sync_stop_for_component(i);
     memset(ci->prev_values, 0, sizeof(ci->prev_values));
 
     papi_add_mon_comp(i);
@@ -1075,6 +1082,21 @@ static __thread cct_node_t *cct_node;
 static __thread long long prev_values[MAX_EVENTS];
 
 static void
+papi_insert_cct(cct_node_t *api_node){
+
+//  gpu_op_ccts_t gpu_op_ccts;
+//
+//  hpcrun_safe_enter();
+//  gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_placeholder_type_sync);
+//  hpcrun_safe_exit();
+//
+//  cupti_papi_ph = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_sync);
+//
+//  gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts,
+//                                  cpu_submit_time);
+}
+
+static void
 papi_monitor_enter(void *reg_info, void *args_in)
 {
   tool_enter();
@@ -1092,24 +1114,23 @@ papi_monitor_enter(void *reg_info, void *args_in)
   cct_node = args->cct_node;
 
   // Save counts on the end so we could substract that from next call (we don't want to measure ourselves)
-  
+
   for ( papi_mon_comp_t *it = papi_mon_comp_list; it != NULL; it = it->next) {
     int cid = it->idx;
     papi_component_info_t *ci = &(psi->component_info[cid]);
-    
+
     if (ci->inUse) {
       if (args->gpu_sync_ptr)  // for amd it seems that there is no default sync like in nvidia case
         args->gpu_sync_ptr();
 
       PRINT("Self = %p | Component %d \t | cct = %p \n\n", self, cid, args->cct_node );
-      ret = PAPI_read(ci->eventSet, prev_values);
-      //      ret = PAPI_start(ci->eventSet);
-
+      ret = ci->sync_read(ci->eventSet, prev_values);
       if (ret != PAPI_OK) {
         EMSG("PAPI_read of event set %d for component %d failed with %s (%d)",
              ci->eventSet, cid, PAPI_strerror(ret), ret);
       }
 
+      PRINT("ENTER_read Event = %d, value = %lld \n", ci->eventSet, prev_values[0]);
     }
   }
 
@@ -1146,9 +1167,7 @@ papi_monitor_exit(void *reg_info, void *args_in)
       if (args->gpu_sync_ptr)
         args->gpu_sync_ptr();
 
-
-      ret = PAPI_read(ci->eventSet, my_event_values);
-
+      ret = ci->sync_read(ci->eventSet, my_event_values);
       if (ret != PAPI_OK) {
         EMSG("PAPI_read of event set %d for component %d failed with %s (%d)",
              ci->eventSet, cid, PAPI_strerror(ret), ret);
@@ -1165,7 +1184,7 @@ papi_monitor_exit(void *reg_info, void *args_in)
         int event_index = get_event_index(self, my_event_codes[eid]);
         int metric_id = hpcrun_event2metric(self, event_index);
 
-        PRINT("%d Event = %x, event_index = %d, metric_id = %d || value = %llu ---> %llu\n",
+        PRINT("%d Event = %x, event_index = %d, metric_id = %d || value = %lld ---> %lld\n",
                eid, my_event_codes[eid], event_index, metric_id, prev_values[eid], my_event_values[eid]);
 
         blame_shift_apply(metric_id, cct_node, my_event_values[eid] /*metricIncr*/);
@@ -1196,7 +1215,4 @@ gpu_metrics_attribute_papi
   hpcrun_metric_std_inc(metric_id,
                         metrics,
                         (cct_metric_data_t) {.i = value});
-
-
-//  gpu_context_trace(context_id, &entry_trace);
 }

@@ -287,9 +287,9 @@ papi_c_cupti_setup(void)
   local.event_set = get_component_event_set(psi, cuda_component_idx);
 
   Cupti_call(dcuptiSubscribe, &subscriber,
-             (CUpti_CallbackFunc)hpcrun_cuda_kernel_callback, 
+             (CUpti_CallbackFunc)hpcrun_cuda_kernel_callback,
              &local);
-             
+
   Cupti_call(dcuptiEnableCallback, 1, subscriber,
              CUPTI_CB_DOMAIN_RUNTIME_API,
              CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_v3020);
@@ -312,7 +312,7 @@ papi_c_cupti_get_event_set(int* ev_s)
     TMSG(CUDA, "No event set created, so create one");
     int ret = PAPI_create_eventset(ev_s);
     if (ret != PAPI_OK) {
-      hpcrun_abort("Failure: PAPI_create_eventset.Return code = %d ==> %s", 
+      hpcrun_abort("Failure: PAPI_create_eventset.Return code = %d ==> %s",
                    ret, PAPI_strerror(ret));
     }
     local.event_set = *ev_s;
@@ -348,6 +348,16 @@ papi_c_cupti_finalize_event_set(void)
   spinlock_unlock(&setup_lock);
 }
 
+void
+papi_c_cupti_read(int EventSet, long long *values)
+{
+  int ret = PAPI_read(EventSet, values);
+  if (ret != PAPI_OK) {
+    EMSG("PAPI_read of event set %d failed with %s (%d)",
+         EventSet, PAPI_strerror(ret), ret);
+  }
+}
+
 
 //
 // sync teardown for cuda/cupti
@@ -368,13 +378,14 @@ papi_c_cupti_teardown(void)
 
 static sync_info_list_t cuda_component = {
   .pred = is_papi_c_cuda,
-  .get_event_set = papi_c_cupti_get_event_set,
-  .add_event = papi_c_cupti_add_event,
-  .finalize_event_set = papi_c_cupti_finalize_event_set,
-  .sync_setup = papi_c_cupti_setup,
-  .sync_teardown = papi_c_cupti_teardown,
-  .sync_start = papi_c_no_action,
-  .sync_stop = papi_c_no_action,
+  .get_event_set = NULL, //papi_c_cupti_get_event_set,
+  .add_event = NULL, //papi_c_cupti_add_event,
+  .finalize_event_set = NULL, //papi_c_cupti_finalize_event_set,
+  .sync_setup = NULL, //papi_c_cupti_setup,
+  .sync_teardown = NULL, //papi_c_cupti_teardown,
+  .start = NULL, //papi_c_no_action,
+  .sync_read = NULL,
+  .stop = NULL, //papi_c_no_action,
   .process_only = true,
   .next = NULL,
 };

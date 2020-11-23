@@ -371,8 +371,8 @@ static sync_info_list_t cuda_component = {
   .finalize_event_set = papi_c_cupti_finalize_event_set,
   .sync_setup = papi_c_cupti_setup,
   .sync_teardown = papi_c_cupti_teardown,
-  .sync_start = papi_c_no_action,
-  .sync_stop = papi_c_no_action,
+  .start = papi_c_no_action,
+  .stop = papi_c_no_action,
   .process_only = true,
   .next = NULL,
 };
