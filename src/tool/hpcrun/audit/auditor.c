@@ -387,7 +387,11 @@ static void change_memory_protection(void* address) {
 
   start_page = ((unsigned long) address) & ~(pagesize-1);
   end_page = (((unsigned long) address) + pagesize);
-  mprotect((void *) start_page, end_page - start_page, PROT_READ | PROT_WRITE);
+  // We also add execute permission because
+  // the loader may place multiple libraries in one page...
+  // Therefore, the got table of one library and code from another
+  // library can be in the same page.
+  mprotect((void *) start_page, end_page - start_page, PROT_READ | PROT_WRITE | PROT_EXEC);
 }
 
 static void update_objects_gotplt() {
