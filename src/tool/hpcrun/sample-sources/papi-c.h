@@ -53,7 +53,7 @@
 
 #include "papi-c-extended-info.h"
 
-
+#include "sample_source_obj.h"
 
 /******************************************************************************
  * type declarations 

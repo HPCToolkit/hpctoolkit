@@ -285,6 +285,14 @@ papi_c_cupti_setup(void)
 
   papi_source_info_t* psi = td->ss_info[local.self->sel_idx].ptr;
   local.event_set = get_component_event_set( &(psi->component_info[cuda_component_idx]) );
+//TODO Dejan: Can I delete these hpcrun_cuda_kernel_callback callback?
+//  Cupti_call(dcuptiSubscribe, &subscriber,
+//             (CUpti_CallbackFunc)hpcrun_cuda_kernel_callback,
+//             &local);
+//
+//  Cupti_call(dcuptiEnableCallback, 1, subscriber,
+//             CUPTI_CB_DOMAIN_RUNTIME_API,
+//             CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_v3020);
 
   one_time = true;
   spinlock_unlock(&setup_lock);

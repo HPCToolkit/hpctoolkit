@@ -5,7 +5,9 @@
 #ifndef HPCTOOLKIT_GPU_MONITORS_H
 #define HPCTOOLKIT_GPU_MONITORS_H
 
-#include "cct.h"
+#include <cct.h>
+#include <sample-sources/papi-c.h>
+
 
 
 typedef enum {
@@ -14,24 +16,18 @@ typedef enum {
 } gpu_monitor_type_t;
 
 
-typedef struct gpu_monitor_apply_t {
-	cct_node_t *cct_node;
-  const char *name;
-} gpu_monitor_apply_t;
-
-
-typedef void (*gpu_monitor_fn_t)(const void* component, gpu_monitor_apply_t* args_in);
+typedef void (*gpu_monitor_fn_t)(papi_component_info_t *ci, const cct_node_t *cct_node);
 
 typedef struct gpu_monitor_node_t {
 	struct gpu_monitor_node_t * next;
-	void *component;
+  papi_component_info_t *ci;
 	gpu_monitor_fn_t enter_fn;
   gpu_monitor_fn_t exit_fn;
 } gpu_monitor_node_t;
 
 
 extern void gpu_monitor_register(gpu_monitor_node_t node);
-extern void gpu_monitors_apply(gpu_monitor_apply_t *args, gpu_monitor_type_t type);
+extern void gpu_monitors_apply(cct_node_t *cct_node, gpu_monitor_type_t type);
 
 
 #endif //HPCTOOLKIT_GPU_MONITORS_H
