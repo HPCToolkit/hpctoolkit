@@ -7,7 +7,6 @@
 
 #include "cct.h"
 
-typedef void (*gpu_monitor_fn_t)(void* reg_info, void* args_in);
 
 typedef enum {
 	gpu_monitor_type_enter,
@@ -15,21 +14,24 @@ typedef enum {
 } gpu_monitor_type_t;
 
 
-typedef struct gpu_monitors_apply_t {
+typedef struct gpu_monitor_apply_t {
 	cct_node_t *cct_node;
-  int (*gpu_sync_ptr)(void);
-} gpu_monitors_apply_t;
+  const char *name;
+} gpu_monitor_apply_t;
 
 
-typedef struct gpu_monitor_fn_entry_t {
-	struct gpu_monitor_fn_entry_t* next;
-	gpu_monitor_fn_t fn;
-	void* reg_info;
-} gpu_monitor_fn_entry_t;
+typedef void (*gpu_monitor_fn_t)(void* component, gpu_monitor_apply_t* args_in);
+
+typedef struct gpu_monitor_node_t {
+	struct gpu_monitor_node_t * next;
+	void *component;
+	gpu_monitor_fn_t enter_fn;
+  gpu_monitor_fn_t exit_fn;
+} gpu_monitor_node_t;
 
 
-extern void gpu_monitor_register(gpu_monitor_type_t type, gpu_monitor_fn_entry_t* entry);
-extern void gpu_monitors_apply(void *args, gpu_monitor_type_t type);
+extern void gpu_monitor_register(gpu_monitor_node_t node);
+extern void gpu_monitors_apply(gpu_monitor_apply_t *args, gpu_monitor_type_t type);
 
 
 #endif //HPCTOOLKIT_GPU_MONITORS_H

@@ -60,6 +60,7 @@
  *****************************************************************************/
 
 typedef struct {
+  const char *name;
   bool inUse;
   int eventSet;
   source_state_t state;
@@ -72,10 +73,10 @@ typedef struct {
   add_event_proc_t add_event;
   finalize_event_set_proc_t finalize_event_set;
   start_proc_t start;
-  read_proc_t sync_read;
+  read_proc_t read;
   stop_proc_t stop;
-  setup_proc_t sync_setup;
-  teardown_proc_t sync_teardown;
+  setup_proc_t setup;
+  teardown_proc_t teardown;
 } papi_component_info_t;
 
 

@@ -1019,7 +1019,7 @@ cupti_subscriber_callback
         // Generate notification entry
         uint64_t cpu_submit_time = hpcrun_nanotime();
 
-				gpu_monitors_apply( &(gpu_monitors_apply_t){.cct_node=api_node,.gpu_sync_ptr=NULL}, gpu_monitor_type_enter);
+				gpu_monitors_apply( &(gpu_monitor_apply_t){.cct_node=api_node, .name="cuda"}, gpu_monitor_type_enter);
 
 
 				gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts,
@@ -1031,7 +1031,7 @@ cupti_subscriber_callback
         correlation_id = cupti_correlation_id_pop();
         TMSG(CUPTI_TRACE, "Driver pop externalId %lu (cb_id = %u)", correlation_id, cb_id);
 
-				gpu_monitors_apply( &(gpu_monitors_apply_t){.cct_node=NULL,.gpu_sync_ptr=NULL}, gpu_monitor_type_exit);
+				gpu_monitors_apply( &(gpu_monitor_apply_t){.cct_node=NULL, .name="cuda"}, gpu_monitor_type_exit);
 
 
 			}
@@ -1182,7 +1182,7 @@ cupti_subscriber_callback
         // Generate notification entry
         uint64_t cpu_submit_time = hpcrun_nanotime();
 
-				gpu_monitors_apply( &(gpu_monitors_apply_t){.cct_node=cupti_kernel_ph, .gpu_sync_ptr=NULL}, gpu_monitor_type_enter);
+				gpu_monitors_apply( &(gpu_monitor_apply_t){.cct_node=cupti_kernel_ph, .name="cuda"}, gpu_monitor_type_enter);
 
 				gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts,
           cpu_submit_time);
@@ -1196,7 +1196,7 @@ cupti_subscriber_callback
         correlation_id = cupti_correlation_id_pop();
         TMSG(CUPTI_TRACE, "Runtime pop externalId %lu (cb_id = %u)", correlation_id, cb_id);
 
-				gpu_monitors_apply( &(gpu_monitors_apply_t){.cct_node=cupti_kernel_ph, .gpu_sync_ptr=NULL}, gpu_monitor_type_exit);
+				gpu_monitors_apply( &(gpu_monitor_apply_t){.cct_node=cupti_kernel_ph, .name="cuda"}, gpu_monitor_type_exit);
 
         cupti_kernel_ph = NULL;
         cupti_trace_ph = NULL;

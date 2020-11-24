@@ -301,19 +301,19 @@ papi_c_cupti_setup(void)
 // Get or create a cupti event set --- but only ONCE per process
 //
 void
-papi_c_cupti_get_event_set(int* ev_s)
+papi_c_cupti_get_event_set(int* event_set)
 {
   TMSG(CUDA, "Get event set");
   spinlock_lock(&setup_lock);
   TMSG(CUDA, "Cupti lock acquired");
   if (! event_set_created) {
     TMSG(CUDA, "No event set created, so create one");
-    int ret = PAPI_create_eventset(ev_s);
+    int ret = PAPI_create_eventset(event_set);
     if (ret != PAPI_OK) {
       hpcrun_abort("Failure: PAPI_create_eventset.Return code = %d ==> %s", 
                    ret, PAPI_strerror(ret));
     }
-    local.event_set = *ev_s;
+    local.event_set = *event_set;
     event_set_created = true;
     TMSG(CUDA, "Event set %d created", local.event_set);
   }
@@ -322,7 +322,7 @@ papi_c_cupti_get_event_set(int* ev_s)
 }
 
 int
-papi_c_cupti_add_event(int ev_s, int ev)
+papi_c_cupti_add_event(int event_set, int ev)
 {
   int rv = PAPI_OK;
   TMSG(CUDA, "Adding event to cupti event set");
@@ -331,7 +331,7 @@ papi_c_cupti_add_event(int ev_s, int ev)
   if (! event_set_finalized) {
     TMSG(CUDA, "Really add event %x to cupti event set", ev);
     rv = PAPI_add_event(local.event_set, ev);
-    TMSG(CUDA, "Check event set passed in = %d, cuda event set = %d", ev_s, local.event_set);
+    TMSG(CUDA, "Check event set passed in = %d, cuda event set = %d", event_set, local.event_set);
   }
   spinlock_unlock(&setup_lock);
   TMSG(CUDA, "Cupti lock released");
@@ -369,8 +369,8 @@ static sync_info_list_t cuda_component = {
   .get_event_set = papi_c_cupti_get_event_set,
   .add_event = papi_c_cupti_add_event,
   .finalize_event_set = papi_c_cupti_finalize_event_set,
-  .sync_setup = papi_c_cupti_setup,
-  .sync_teardown = papi_c_cupti_teardown,
+  .setup = papi_c_cupti_setup,
+  .teardown = papi_c_cupti_teardown,
   .start = papi_c_no_action,
   .stop = papi_c_no_action,
   .process_only = true,

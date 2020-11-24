@@ -110,6 +110,7 @@
 #define DEBUG 1
 
 #include <hpcrun/gpu/gpu-print.h>
+#include <gpu-monitors.h>
 
 #define OVERFLOW_MODE 0
 #define WEIGHT_METRIC 0
@@ -120,12 +121,19 @@
  * forward declarations 
  *****************************************************************************/
 static void papi_event_handler(int event_set, void *pc, long long ovec, void *context);
+static void papi_monitor_enter(void *reg_info, gpu_monitor_apply_t *args_in);
+static void papi_monitor_exit(void *reg_info, gpu_monitor_apply_t *args_in);
+
 static int  event_is_derived(int ev_code);
 static void event_fatal_error(int ev_code, int papi_ret);
 
 /******************************************************************************
  * local variables
  *****************************************************************************/
+
+// Support for derived events (proxy sampling).
+static int derived[MAX_EVENTS];
+static int some_overflow;
 
 
 // Special case to make PAPI_library_init() a soft failure.
@@ -141,22 +149,10 @@ static bool disable_papi_cuda = false;
 
 static kind_info_t *papi_kind;
 
-// gpu monitor
-static __thread gpu_monitor_fn_entry_t gpu_monitor_enter;
-static __thread gpu_monitor_fn_entry_t gpu_monitor_exit;
-
-typedef struct papi_mon_comp_t{
-  struct papi_mon_comp_t *next;
-  int idx;
-}papi_mon_comp_t;
-
-static __thread papi_mon_comp_t *papi_mon_comp_list = NULL;
 
 /******************************************************************************
  * private operations 
  *****************************************************************************/
-static void papi_monitor_enter(void *reg_info, void *args_in);
-static void papi_monitor_exit(void *reg_info, void *args_in);
 
 static bool
 is_gpu_component(int cidx)
@@ -168,22 +164,6 @@ is_gpu_component(int cidx)
   return false;
 }
 
-
-static void
-papi_add_mon_comp(int cidx)
-{
-  if (is_gpu_component(cidx)){
-    papi_mon_comp_t *new_comp = hpcrun_malloc(sizeof(papi_mon_comp_t));
-    new_comp->next = papi_mon_comp_list;
-    new_comp->idx = cidx;
-
-    papi_mon_comp_list = new_comp;
-  }
-}
-
-
-static void
-gpu_metrics_attribute_papi(int metric_id, cct_node_t *cct_node, long long value);
 
 static int
 get_event_index(sample_source_t *self, int event_code)
@@ -203,9 +183,9 @@ get_event_index(sample_source_t *self, int event_code)
 int
 get_component_event_set(papi_source_info_t* psi, int cidx)
 {
-   if (cidx < 0 || cidx >= psi->num_components) {
+  if (cidx < 0 || cidx >= psi->num_components) {
     hpcrun_abort("PAPI component index out of range [0,%d]: %d", psi->num_components, cidx);
-   }
+  }
 
    papi_component_info_t* ci = &(psi->component_info[cidx]);
 
@@ -219,13 +199,106 @@ get_component_event_set(papi_source_info_t* psi, int cidx)
 //
 // add an event to a component's event set
 //
-int
-component_add_event(papi_source_info_t* psi, int cidx, int evcode)
+void
+component_add_event(papi_source_info_t* psi, int evcode)
 {
+  int cidx = PAPI_get_event_component(evcode);
   int event_set = get_component_event_set(psi, cidx);
+
   papi_component_info_t* ci = &(psi->component_info[cidx]);
-  return ci->add_event(event_set, evcode);
+  ci->add_event(event_set, evcode);
+  ci->some_derived |= event_is_derived(evcode);
+
+  TMSG(PAPI, "Added event code %x to component %d", evcode, cidx);
+  {
+    char buffer[PAPI_MAX_STR_LEN];
+    PAPI_event_code_to_name(evcode, buffer);
+    TMSG(PAPI,
+         "PAPI_add_event(eventSet=%%d, event_code=%x (event name %s)) component=%d",
+    /* eventSet, */ evcode, buffer, cidx);
+  }
 }
+
+
+static void
+papi_register_events(papi_source_info_t *psi, evlist_t *evl)
+{
+  int i;
+  int nevents = evl->nevents;
+
+  // add events to new event_sets
+  for (i = 0; i < nevents; i++) {
+    int evcode = evl->events[i].event;
+    component_add_event(psi, evcode);
+
+  }
+
+  // finalize component event sets
+  for (i = 0; i < psi->num_components; i++) {
+    papi_component_info_t *ci = &(psi->component_info[i]);
+    ci->finalize_event_set();
+  }
+}
+
+
+static void
+papi_register_sync_callback(papi_component_info_t *ci)
+{
+  gpu_monitor_node_t node;
+  node.component = ci;
+  node.enter_fn = papi_monitor_enter;
+  node.exit_fn = papi_monitor_exit;
+  gpu_monitor_register(node);
+}
+
+
+static void
+papi_register_overflow_callback(int eventSet, int evcode, long thresh)
+{
+  int ret = PAPI_overflow(eventSet, evcode, thresh, OVERFLOW_MODE,
+                          papi_event_handler);
+  TMSG(PAPI, "PAPI_overflow(eventSet=%d, evcode=%x, thresh=%d) = %d",
+       eventSet, evcode, thresh, ret);
+  if (ret != PAPI_OK) {
+    EMSG("failure in PAPI gen_event_set(): PAPI_overflow() returned: %s (%d)",
+         PAPI_strerror(ret), ret);
+    event_fatal_error(evcode, ret);
+  }
+}
+
+
+static void
+papi_register_callbacks(papi_source_info_t *psi, evlist_t *evl)
+{
+  int i;
+  // set up overflow handling for asynchronous event sets for active components
+  // set up synchronous handling for synchronous event sets for active compoents
+  for (i = 0; i < evl->nevents; i++) {
+    int evcode = evl->events[i].event;
+    long thresh = evl->events[i].thresh;
+    int cidx = PAPI_get_event_component(evcode);
+
+    int eventSet = get_component_event_set(psi, cidx);
+    papi_component_info_t *ci = &(psi->component_info[cidx]);
+
+    // **** No overflow for synchronous events ****
+    if (ci->is_sync) {
+      TMSG(PAPI, "event code %d (component %d) is synchronous, so do NOT set overflow", evcode, cidx);
+      TMSG(PAPI, "Set up papi_monitor_apply instead");
+      TMSG(PAPI, "synchronous sample component index = %d", cidx);
+
+      papi_register_sync_callback(ci);
+    }
+    else{
+      // ***** Only set overflow if NOT derived event *****
+      if (! derived[i]) {
+        papi_register_overflow_callback(eventSet, evcode, thresh);
+      }
+    }
+  }
+
+}
+
 
 static bool
 thread_count_scaling_for_component(int cidx)
@@ -235,14 +308,6 @@ thread_count_scaling_for_component(int cidx)
   return 0;
 }
 
-
-/******************************************************************************
- * sample source registration
- *****************************************************************************/
-
-// Support for derived events (proxy sampling).
-static int derived[MAX_EVENTS];
-static int some_overflow;
 
 /******************************************************************************
  * method functions
@@ -391,7 +456,7 @@ METHOD_FN(start)
     if (ci->inUse) {
       if (component_uses_sync_samples(cidx)) {
   TMSG(PAPI, "component %d is synchronous, use synchronous start", cidx);
-  ci->start(ci->eventSet);
+  ci->start();
       }
       else {
   TMSG(PAPI,"starting PAPI event set %d for component %d", ci->eventSet, cidx);
@@ -678,7 +743,6 @@ METHOD_FN(gen_event_set, int lush_metrics)
   tool_enter();
   thread_data_t *td = hpcrun_get_thread_data();
   int i;
-  int ret;
 
   TMSG(PAPI, "generating all event sets for all components");
   if (papi_unavail) { goto finish; }
@@ -697,6 +761,7 @@ METHOD_FN(gen_event_set, int lush_metrics)
   psi->num_components = num_components;
   for (i = 0; i < num_components; i++) {
     papi_component_info_t *ci = &(psi->component_info[i]);
+    ci->name = component_get_name(i);
     ci->inUse = false;
     ci->eventSet = PAPI_NULL;
     ci->state = INIT;
@@ -706,88 +771,20 @@ METHOD_FN(gen_event_set, int lush_metrics)
     ci->finalize_event_set = component_finalize_event_set(i);
     ci->scale_by_thread_count = thread_count_scaling_for_component(i);
     ci->is_sync = component_uses_sync_samples(i);
-    ci->sync_setup = sync_setup_for_component(i);
-    ci->sync_teardown = sync_teardown_for_component(i);
+    ci->setup = sync_setup_for_component(i);
+    ci->teardown = sync_teardown_for_component(i);
     ci->start = sync_start_for_component(i);
-    ci->sync_read = sync_read_for_component(i);
+    ci->read = sync_read_for_component(i);
     ci->stop = sync_stop_for_component(i);
     memset(ci->prev_values, 0, sizeof(ci->prev_values));
-
-    papi_add_mon_comp(i);
   }
 
   // record the component state in thread state
   td->ss_info[self->sel_idx].ptr = psi;
 
-  int nevents = (self->evl).nevents;
-  for (i = 0; i < nevents; i++) {
-    int evcode = self->evl.events[i].event;
-    int cidx = PAPI_get_event_component(evcode);
+  papi_register_events(psi, &self->evl);
 
-    ret = component_add_event(psi, cidx, evcode);
-    psi->component_info[cidx].some_derived |= event_is_derived(evcode);
-    TMSG(PAPI, "Added event code %x to component %d", evcode, cidx);
-    {
-      char buffer[PAPI_MAX_STR_LEN];
-      PAPI_event_code_to_name(evcode, buffer);
-      TMSG(PAPI,
-     "PAPI_add_event(eventSet=%%d, event_code=%x (event name %s)) component=%d",
-     /* eventSet, */ evcode, buffer, cidx);
-    }
-    if (ret != PAPI_OK) {
-      EMSG("failure in PAPI gen_event_set(): PAPI_add_event() returned: %s (%d)",
-     PAPI_strerror(ret), ret);
-      event_fatal_error(evcode, ret);
-    }
-  }
-
-  // finalize component event sets
-    for (i = 0; i < num_components; i++) {
-      papi_component_info_t *ci = &(psi->component_info[i]);
-      ci->finalize_event_set();
-    }
-
-  // set up overflow handling for asynchronous event sets for active components
-  // set up synchronous handling for synchronous event sets for active compoents
-  for (i = 0; i < nevents; i++) {
-    int evcode = self->evl.events[i].event;
-    long thresh = self->evl.events[i].thresh;
-    int cidx = PAPI_get_event_component(evcode);
-    int eventSet = get_component_event_set(psi, cidx);
-
-    // **** No overflow for synchronous events ****
-    // **** Use component-specific setup for synchronous events ****
-    if (component_uses_sync_samples(cidx)) {
-      TMSG(PAPI, "event code %d (component %d) is synchronous, so do NOT set overflow", evcode, cidx);
-      TMSG(PAPI, "Set up sync handler instead");
-      TMSG(PAPI, "synchronous sample component index = %d", cidx);
-      sync_setup_for_component(cidx)();
-      continue;
-    }
-    // ***** Only set overflow if NOT derived event *****
-    if (! derived[i]) {
-      ret = PAPI_overflow(eventSet, evcode, thresh, OVERFLOW_MODE,
-        papi_event_handler);
-      TMSG(PAPI, "PAPI_overflow(eventSet=%d, evcode=%x, thresh=%d) = %d",
-     eventSet, evcode, thresh, ret);
-      if (ret != PAPI_OK) {
-  EMSG("failure in PAPI gen_event_set(): PAPI_overflow() returned: %s (%d)",
-       PAPI_strerror(ret), ret);
-  event_fatal_error(evcode, ret);
-      }
-    }
-  }
-
-  /// Register papi handler callbacks
-  gpu_monitor_enter.reg_info = psi;
-  gpu_monitor_enter.fn = papi_monitor_enter;
-  gpu_monitor_register(gpu_monitor_type_enter,
-                            &gpu_monitor_enter);
-
-  gpu_monitor_exit.reg_info = psi;
-  gpu_monitor_exit.fn = papi_monitor_exit;
-  gpu_monitor_register(gpu_monitor_type_exit,
-                            &gpu_monitor_exit);
+  papi_register_callbacks(psi, &self->evl);
 
 finish:
   tool_exit();
@@ -1097,14 +1094,29 @@ papi_insert_cct(cct_node_t *api_node){
 }
 
 static void
-papi_monitor_enter(void *reg_info, void *args_in)
+gpu_metrics_attribute_papi
+(
+int metric_id,
+cct_node_t *cct_node,
+long long value
+)
+{
+  metric_data_list_t* metrics = hpcrun_reify_metric_set(cct_node, metric_id);
+
+  hpcrun_metric_std_inc(metric_id,
+                        metrics,
+                        (cct_metric_data_t) {.i = value});
+}
+
+
+static void
+papi_monitor_enter(void *component, gpu_monitor_apply_t *args_in)
 {
   tool_enter();
-  papi_source_info_t *psi = (papi_source_info_t *) reg_info;
-  gpu_monitors_apply_t *args = (gpu_monitors_apply_t *) args_in;
+  papi_component_info_t *ci = (papi_component_info_t *) component;
+  gpu_monitor_apply_t *args = (gpu_monitor_apply_t *) args_in;
 
   sample_source_t *self = &obj_name(); /// just for debug
-  int ret;
 
 //  PRINT("|------->PAPI_MONITOR_ENTER | cct = %p\n", args->cct_node);
 
@@ -1115,23 +1127,13 @@ papi_monitor_enter(void *reg_info, void *args_in)
 
   // Save counts on the end so we could substract that from next call (we don't want to measure ourselves)
 
-  for ( papi_mon_comp_t *it = papi_mon_comp_list; it != NULL; it = it->next) {
-    int cid = it->idx;
-    papi_component_info_t *ci = &(psi->component_info[cid]);
+  if (ci->inUse) {
+//    if (args->gpu_sync_ptr)  // for amd it seems that there is no default sync like in nvidia case
+//      args->gpu_sync_ptr();
 
-    if (ci->inUse) {
-      if (args->gpu_sync_ptr)  // for amd it seems that there is no default sync like in nvidia case
-        args->gpu_sync_ptr();
-
-      PRINT("Self = %p | Component %d \t | cct = %p \n\n", self, cid, args->cct_node );
-      ret = ci->sync_read(ci->eventSet, prev_values);
-      if (ret != PAPI_OK) {
-        EMSG("PAPI_read of event set %d for component %d failed with %s (%d)",
-             ci->eventSet, cid, PAPI_strerror(ret), ret);
-      }
-
-      PRINT("ENTER_read Event = %d, value = %lld \n", ci->eventSet, prev_values[0]);
-    }
+    PRINT("Self = %p | Component %s \t | cct = %p \n\n", self, ci->name, args->cct_node );
+    ci->read(prev_values);
+    PRINT("ENTER_read Event = %d, value = %lld \n", ci->eventSet, prev_values[0]);
   }
 
 finish:
@@ -1140,11 +1142,11 @@ finish:
 
 
 static void
-papi_monitor_exit(void *reg_info, void *args_in)
+papi_monitor_exit(void *component, gpu_monitor_apply_t *args_in)
 {
   tool_enter();
-  papi_source_info_t *psi = (papi_source_info_t *) reg_info;
-  gpu_monitors_apply_t *args = (gpu_monitors_apply_t *) args_in;
+  papi_component_info_t *ci = (papi_component_info_t *) component;
+  gpu_monitor_apply_t *args = (gpu_monitor_apply_t *) args_in;
 
   sample_source_t *self = &obj_name(); /// just for debug
   int my_event_codes[MAX_EVENTS];
@@ -1157,62 +1159,38 @@ papi_monitor_exit(void *reg_info, void *args_in)
   // if sampling disabled explicitly for this thread, skip all processing
   if (hpcrun_suppress_sample() || sample_filters_apply()) goto finish;
 
-  // Collect counters for components in use
-  for ( papi_mon_comp_t *it = papi_mon_comp_list; it != NULL; it = it->next) {
-    int cid = it->idx;
+  if (ci->inUse){
 
-    papi_component_info_t *ci = &(psi->component_info[cid]);
-    if (ci->inUse){
+//    if (args->gpu_sync_ptr)
+//      args->gpu_sync_ptr();
 
-      if (args->gpu_sync_ptr)
-        args->gpu_sync_ptr();
-
-      ret = ci->sync_read(ci->eventSet, my_event_values);
-      if (ret != PAPI_OK) {
-        EMSG("PAPI_read of event set %d for component %d failed with %s (%d)",
-             ci->eventSet, cid, PAPI_strerror(ret), ret);
-      }
-
-      // Attribute collected metric to cct nodes
-      ret = PAPI_list_events(ci->eventSet, my_event_codes, &my_event_count);
-      if (ret != PAPI_OK) {
-        hpcrun_abort("PAPI_list_events failed inside papi_event_handler."
-                     "Return code = %d ==> %s", ret, PAPI_strerror(ret));
-      }
-
-      for (int eid = 0; eid < my_event_count; ++eid) {
-        int event_index = get_event_index(self, my_event_codes[eid]);
-        int metric_id = hpcrun_event2metric(self, event_index);
-
-        PRINT("%d Event = %x, event_index = %d, metric_id = %d || value = %lld ---> %lld\n",
-               eid, my_event_codes[eid], event_index, metric_id, prev_values[eid], my_event_values[eid]);
-
-        blame_shift_apply(metric_id, cct_node, my_event_values[eid] /*metricIncr*/);
+    ci->read(my_event_values);
 
 
-        gpu_metrics_attribute_papi(metric_id, cct_node, my_event_values[eid]);
-      }
-
+    // Attribute collected metric to cct nodes
+    ret = PAPI_list_events(ci->eventSet, my_event_codes, &my_event_count);
+    if (ret != PAPI_OK) {
+      hpcrun_abort("PAPI_list_events failed inside papi_event_handler."
+                   "Return code = %d ==> %s", ret, PAPI_strerror(ret));
     }
+
+    for (int eid = 0; eid < my_event_count; ++eid) {
+      int event_index = get_event_index(self, my_event_codes[eid]);
+      int metric_id = hpcrun_event2metric(self, event_index);
+
+      PRINT("%d Event = %x, event_index = %d, metric_id = %d || value = %lld ---> %lld\n",
+             eid, my_event_codes[eid], event_index, metric_id, prev_values[eid], my_event_values[eid]);
+
+      blame_shift_apply(metric_id, cct_node, my_event_values[eid] /*metricIncr*/);
+
+
+      gpu_metrics_attribute_papi(metric_id, cct_node, my_event_values[eid]);
+    }
+
   }
+
   cct_node = NULL;
 
 finish:
   tool_exit();
-}
-
-
-static void
-gpu_metrics_attribute_papi
-(
- int metric_id,
- cct_node_t *cct_node,
- long long value
-)
-{
-  metric_data_list_t* metrics = hpcrun_reify_metric_set(cct_node, metric_id);
-  
-  hpcrun_metric_std_inc(metric_id,
-                        metrics,
-                        (cct_metric_data_t) {.i = value});
 }

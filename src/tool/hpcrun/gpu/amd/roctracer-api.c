@@ -451,13 +451,13 @@ roctracer_subscriber_callback
 
     PRINT("\nACTIVITY_API_PHASE_ENTER -----------------| cct = %p \n", api_node);
     int (*hip_gpu_sync_ptr)(void) = hip_dev_sync;
-    gpu_monitors_apply(&(gpu_monitors_apply_t) {.cct_node=api_node, .gpu_sync_ptr=hip_gpu_sync_ptr}, gpu_monitor_type_enter);
+    gpu_monitors_apply(&(gpu_monitor_apply_t) {.cct_node=api_node, .gpu_sync_ptr=hip_gpu_sync_ptr}, gpu_monitor_type_enter);
 
     gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, cpu_submit_time);
   }else if (data->phase == ACTIVITY_API_PHASE_EXIT){
     PRINT("\nACTIVITY_API_PHASE_EXIT -----------------| \n");
     int (*hip_gpu_sync_ptr)(void) = hip_dev_sync;
-    gpu_monitors_apply(&(gpu_monitors_apply_t) {.cct_node=NULL, .gpu_sync_ptr=hip_gpu_sync_ptr}, gpu_monitor_type_exit);
+    gpu_monitors_apply(&(gpu_monitor_apply_t) {.cct_node=NULL, .gpu_sync_ptr=hip_gpu_sync_ptr}, gpu_monitor_type_exit);
 
   }else{
     ;
