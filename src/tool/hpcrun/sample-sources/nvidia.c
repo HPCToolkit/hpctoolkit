@@ -83,6 +83,9 @@
 #include <hpcrun/gpu/gpu-trace.h>
 #include <hpcrun/gpu/nvidia/cuda-api.h>
 #include <hpcrun/gpu/nvidia/cupti-api.h>
+#ifdef NEW_CUPTI
+#include <hpcrun/gpu/nvidia/cupti-pc-sampling-api.h>
+#endif
 
 #include <hpcrun/messages/messages.h>
 #include <hpcrun/device-finalizers.h>
@@ -370,6 +373,13 @@ METHOD_FN(process_event_list, int lush_metrics)
     EEMSG("hpcrun: unable to bind to NVIDIA CUPTI library %s\n", dlerror());
     monitor_real_exit(-1);
   }
+
+#ifdef NEW_CUPTI
+  if (cupti_pc_sampling_bind()) {
+    EEMSG("hpcrun: unable to bind to new NVIDIA CUPTI library %s\n", dlerror());
+    monitor_real_exit(-1);
+  }
+#endif
 #endif
 
   // Register hpcrun callbacks

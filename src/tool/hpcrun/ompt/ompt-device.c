@@ -345,7 +345,7 @@ ompt_device_load(uint64_t device_num,
                  uint64_t module_id)
 {
   PRINT("ompt_device_load->%s, %" PRIu64 "\n", filename, device_num);
-  cupti_load_callback_cuda(module_id, host_addr, bytes);
+  cupti_load_callback_cuda(NULL, module_id, host_addr, bytes);
 }
 
 

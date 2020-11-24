@@ -180,6 +180,7 @@ typedef cct_node_t *(*cupti_correlation_callback_t)
 
 typedef void (*cupti_load_callback_t)
 (
+ CUcontext context,
  uint32_t cubin_id,
  const void *cubin,
  size_t cubin_size
@@ -477,10 +478,11 @@ cuda_path
 static void
 cupti_set_default_path(char *buffer)
 {
-  strcpy(buffer, CUPTI_INSTALL_PREFIX CUPTI_LIBRARY_LOCATION);
+  strcpy(buffer, CUPTI_INSTALL_PREFIX "/" CUPTI_LIBRARY_LOCATION);
 }
 
-int
+
+static int
 library_path_resolves(const char *buffer)
 {
   struct stat sb;
@@ -488,10 +490,10 @@ library_path_resolves(const char *buffer)
 }
 
 
-static const char *
+const char *
 cupti_path
 (
-  void
+ void
 )
 {
   const char *path = "libcupti.so";
@@ -560,7 +562,7 @@ cupti_path
 int
 cupti_bind
 (
-  void
+ void
 )
 {
 #ifndef HPCRUN_STATIC_LINK
@@ -660,6 +662,7 @@ cupti_write_cubin
 void
 cupti_load_callback_cuda
 (
+ CUcontext context,
  uint32_t cubin_id,
  const void *cubin,
  size_t cubin_size
@@ -719,11 +722,18 @@ cupti_load_callback_cuda
 void
 cupti_unload_callback_cuda
 (
+ CUcontext context,
  uint32_t cubin_id,
  const void *cubin,
  size_t cubin_size
 )
 {
+#ifdef NEW_CUPTI
+  TMSG(CUPTI, "Context %p cubin_id %d unload", context, cubin_id);
+  if (context != NULL) {
+    cupti_context_pc_sampling_flush(context);
+  }
+#endif
   //cubin_id_map_delete(cubin_id);
 }
 
@@ -785,20 +795,36 @@ cupti_subscriber_callback
       CUpti_ModuleResourceData *mrd = (CUpti_ModuleResourceData *)
         rd->resourceDescriptor;
 
-      TMSG(CUPTI, "loaded module id %d, cubin size %" PRIu64 ", cubin %p",
-        mrd->moduleId, mrd->cubinSize, mrd->pCubin);
-      DISPATCH_CALLBACK(cupti_load_callback, (mrd->moduleId, mrd->pCubin, mrd->cubinSize));
+      TMSG(CUPTI, "Context %p loaded module id %d, cubin size %" PRIu64 ", cubin %p",
+        rd->context, mrd->moduleId, mrd->cubinSize, mrd->pCubin);
+      DISPATCH_CALLBACK(cupti_load_callback, (rd->context, mrd->moduleId, mrd->pCubin, mrd->cubinSize));
     } else if (cb_id == CUPTI_CBID_RESOURCE_MODULE_UNLOAD_STARTING) {
       CUpti_ModuleResourceData *mrd = (CUpti_ModuleResourceData *)
         rd->resourceDescriptor;
 
-      TMSG(CUPTI, "unloaded module id %d, cubin size %" PRIu64 ", cubin %p",
-        mrd->moduleId, mrd->cubinSize, mrd->pCubin);
-      DISPATCH_CALLBACK(cupti_unload_callback, (mrd->moduleId, mrd->pCubin, mrd->cubinSize));
+      TMSG(CUPTI, "Context %p unloaded module id %d, cubin size %" PRIu64 ", cubin %p",
+        rd->context, mrd->moduleId, mrd->cubinSize, mrd->pCubin);
+      DISPATCH_CALLBACK(cupti_unload_callback, (rd->context, mrd->moduleId, mrd->pCubin, mrd->cubinSize));
     } else if (cb_id == CUPTI_CBID_RESOURCE_CONTEXT_CREATED) {
+      TMSG(CUPTI, "Context %p created", rd->context);
       int pc_sampling_frequency = cupti_pc_sampling_frequency_get();
       if (pc_sampling_frequency != -1) {
+#ifdef NEW_CUPTI
+        cupti_pc_sampling_enable2(rd->context);
+        cupti_pc_sampling_config(rd->context, pc_sampling_frequency);
+#else
         cupti_pc_sampling_enable(rd->context, pc_sampling_frequency);
+#endif
+      }
+    } else if (cb_id == CUPTI_CBID_RESOURCE_CONTEXT_DESTROY_STARTING) {
+      TMSG(CUPTI, "Context %lu destroyed", rd->context);
+      int pc_sampling_frequency = cupti_pc_sampling_frequency_get();
+      if (pc_sampling_frequency != -1) {
+#ifdef NEW_CUPTI
+        cupti_context_pc_sampling_flush(rd->context);
+#else
+        cupti_pc_sampling_disable(rd->context);
+#endif
       }
     }
   } else if (domain == CUPTI_CB_DOMAIN_DRIVER_API) {
@@ -947,7 +973,9 @@ cupti_subscriber_callback
 
           if (cd->callbackSite == CUPTI_API_ENTER) {
             gpu_application_thread_process_activities();
-
+#ifdef NEW_CUPTI
+            cupti_pc_sampling_collect(cd->context);
+#endif
             // XXX(Keren): cannot parse this kind of kernel launch
             //if (cb_id != CUPTI_DRIVER_TRACE_CBID_cuLaunchCooperativeKernelMultiDevice)
             // CUfunction is the first param
@@ -980,14 +1008,14 @@ cupti_subscriber_callback
 
         if (is_kernel_op) {
           cct_node_t *kernel_ph = 
-	    gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel);
+            gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel);
 
-	  ensure_kernel_ip_present(kernel_ph, kernel_ip);
+          ensure_kernel_ip_present(kernel_ph, kernel_ip);
 
           cct_node_t *trace_ph = 
-	    gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace);
+            gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace);
 
-	  ensure_kernel_ip_present(trace_ph, kernel_ip);
+          ensure_kernel_ip_present(trace_ph, kernel_ip);
         }
 
         hpcrun_safe_exit();
@@ -1006,16 +1034,16 @@ cupti_subscriber_callback
     } else if (is_kernel_op && cupti_runtime_api_flag && cd->callbackSite ==
       CUPTI_API_ENTER) {
       if (cupti_kernel_ph != NULL) {
-	ensure_kernel_ip_present(cupti_kernel_ph, kernel_ip);
+        ensure_kernel_ip_present(cupti_kernel_ph, kernel_ip);
       }
       if (cupti_trace_ph != NULL) {
-	ensure_kernel_ip_present(cupti_trace_ph, kernel_ip);
+        ensure_kernel_ip_present(cupti_trace_ph, kernel_ip);
       }
     } else if (is_kernel_op && ompt_runtime_api_flag && cd->callbackSite ==
       CUPTI_API_ENTER) {
       cct_node_t *ompt_trace_node = ompt_trace_node_get();
       if (ompt_trace_node != NULL) {
-	ensure_kernel_ip_present(ompt_trace_node, kernel_ip);
+        ensure_kernel_ip_present(ompt_trace_node, kernel_ip);
       }
     }
   } else if (domain == CUPTI_CB_DOMAIN_RUNTIME_API) {
@@ -1111,6 +1139,9 @@ cupti_subscriber_callback
           is_kernel_op = true;
           if (cd->callbackSite == CUPTI_API_ENTER) {
             gpu_application_thread_process_activities();
+#ifdef NEW_CUPTI
+            cupti_pc_sampling_collect(cd->context);
+#endif
           }
           break;
         }
@@ -1510,6 +1541,9 @@ cupti_activity_flush
 {
   if (cupti_stop_flag) {
     cupti_stop_flag_unset();
+#ifdef NEW_CUPTI
+    cupti_pc_sampling_flush();
+#endif
     HPCRUN_CUPTI_CALL(cuptiActivityFlushAll, (CUPTI_ACTIVITY_FLAG_FLUSH_FORCED));
   }
 }

@@ -45,12 +45,54 @@
 #define cupti_pc_sampling_api_h
 
 #include <cupti.h>
+#include <cupti_pcsampling.h>
 
 void
 cupti_pc_sampling_config
 (
  CUcontext context,
  int frequency
+);
+
+
+void
+cupti_pc_sampling_collect
+(
+ CUcontext context
+);
+
+
+int
+cupti_pc_sampling_bind
+(
+);
+
+
+void
+cupti_pc_sampling_enable2
+(
+ CUcontext context
+);
+
+
+void
+cupti_pc_sampling_disable2
+(
+ CUcontext context
+);
+
+
+void
+cupti_context_pc_sampling_flush
+(
+ CUcontext context
+);
+
+
+void
+cupti_pc_sampling_flush
+(
+ void
 );
 
 #endif

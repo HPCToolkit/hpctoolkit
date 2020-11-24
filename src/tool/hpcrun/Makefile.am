@@ -504,7 +504,8 @@ MY_CUPTI_FILES = sample-sources/nvidia.c	\
 endif
 
 if OPT_ENABLE_NEW_CUPTI
-MY_NEW_CUPTI_FILES = gpu/nvidia/cupti-pc-sampling-api.c
+MY_NEW_CUPTI_FILES = gpu/nvidia/cupti-pc-sampling-api.c \
+	gpu/nvidia/cupti-context-pc-sampling-map.c
 endif
 
 if OPT_ENABLE_ROCM
