@@ -756,11 +756,13 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data, bool has_trac
 
   epoch_t* epoch = TD_GET(core_profile_trace_data.epoch);
 
-  if (! hpcrun_thread_suppress_sample) {
-    // handle event sets for sample sources
-    SAMPLE_SOURCES(gen_event_set,lush_metrics);
+  if (! hpcrun_thread_suppress_sample ) { //TODO Dejan: has_trace instead?
+//TODO Dejan: thread_init_action must go before gen-event-set
     // sample sources take thread specific action prior to start (often is a 'registration' action);
     SAMPLE_SOURCES(thread_init_action);
+
+    // handle event sets for sample sources
+    SAMPLE_SOURCES(gen_event_set,lush_metrics);
 
     // start the sample sources
     SAMPLE_SOURCES(start);

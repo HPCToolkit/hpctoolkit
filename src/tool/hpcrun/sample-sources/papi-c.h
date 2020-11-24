@@ -90,6 +90,6 @@ typedef struct {
  * external declarations 
  *****************************************************************************/
 
-extern int get_component_event_set(papi_source_info_t *psi, int cidx);
+extern int get_component_event_set(papi_component_info_t* ci);
 
 #endif // PAPI_C_H

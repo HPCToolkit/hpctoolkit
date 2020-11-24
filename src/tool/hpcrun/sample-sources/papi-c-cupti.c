@@ -83,10 +83,10 @@ typedef struct {
   sample_source_t* self;
 } papi_cuda_data_t;
 
-static bool event_set_created = false;
-static bool event_set_finalized = false;
+static __thread bool event_set_created = false;
+static __thread bool event_set_finalized = false;
 
-static papi_cuda_data_t local = {};
+static __thread papi_cuda_data_t local = {};
 
 static spinlock_t cupti_lock = SPINLOCK_UNLOCKED;
 static spinlock_t setup_lock = SPINLOCK_UNLOCKED;
@@ -284,7 +284,7 @@ papi_c_cupti_setup(void)
   }
 
   papi_source_info_t* psi = td->ss_info[local.self->sel_idx].ptr;
-  local.event_set = get_component_event_set(psi, cuda_component_idx);
+  local.event_set = get_component_event_set( &(psi->component_info[cuda_component_idx]) );
 
   one_time = true;
   spinlock_unlock(&setup_lock);

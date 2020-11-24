@@ -20,7 +20,7 @@ typedef struct gpu_monitor_apply_t {
 } gpu_monitor_apply_t;
 
 
-typedef void (*gpu_monitor_fn_t)(void* component, gpu_monitor_apply_t* args_in);
+typedef void (*gpu_monitor_fn_t)(const void* component, gpu_monitor_apply_t* args_in);
 
 typedef struct gpu_monitor_node_t {
 	struct gpu_monitor_node_t * next;

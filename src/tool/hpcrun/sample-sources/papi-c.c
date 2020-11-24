@@ -121,8 +121,8 @@
  * forward declarations 
  *****************************************************************************/
 static void papi_event_handler(int event_set, void *pc, long long ovec, void *context);
-static void papi_monitor_enter(void *reg_info, gpu_monitor_apply_t *args_in);
-static void papi_monitor_exit(void *reg_info, gpu_monitor_apply_t *args_in);
+static void papi_monitor_enter(const void *reg_info, gpu_monitor_apply_t *args_in);
+static void papi_monitor_exit(const void *reg_info, gpu_monitor_apply_t *args_in);
 
 static int  event_is_derived(int ev_code);
 static void event_fatal_error(int ev_code, int papi_ret);
@@ -177,18 +177,24 @@ get_event_index(sample_source_t *self, int event_code)
   assert(0);
 }
 
+
+static int
+evcode_to_component_id(papi_source_info_t* psi, int evcode)
+{
+  int cidx = PAPI_get_event_component(evcode);
+  if (cidx < 0 || cidx >= psi->num_components) {
+    hpcrun_abort("PAPI component index out of range [0,%d]: %d", psi->num_components, cidx);
+  }
+  return cidx;
+}
+
+
 //
 // fetch a given component's event set. Create one if need be
 //
 int
-get_component_event_set(papi_source_info_t* psi, int cidx)
+get_component_event_set(papi_component_info_t* ci)
 {
-  if (cidx < 0 || cidx >= psi->num_components) {
-    hpcrun_abort("PAPI component index out of range [0,%d]: %d", psi->num_components, cidx);
-  }
-
-   papi_component_info_t* ci = &(psi->component_info[cidx]);
-
    if (!ci->inUse) {
      ci->get_event_set(&(ci->eventSet));
      ci->inUse = true;
@@ -196,16 +202,17 @@ get_component_event_set(papi_source_info_t* psi, int cidx)
   return ci->eventSet;
 }
 
+
 //
 // add an event to a component's event set
 //
 void
 component_add_event(papi_source_info_t* psi, int evcode)
 {
-  int cidx = PAPI_get_event_component(evcode);
-  int event_set = get_component_event_set(psi, cidx);
-
+  int cidx = evcode_to_component_id(psi, evcode);
   papi_component_info_t* ci = &(psi->component_info[cidx]);
+  int event_set = get_component_event_set(ci);
+
   ci->add_event(event_set, evcode);
   ci->some_derived |= event_is_derived(evcode);
 
@@ -221,14 +228,14 @@ component_add_event(papi_source_info_t* psi, int evcode)
 
 
 static void
-papi_register_events(papi_source_info_t *psi, evlist_t *evl)
+papi_register_events(papi_source_info_t *psi, evlist_t evl)
 {
   int i;
-  int nevents = evl->nevents;
+  int nevents = evl.nevents;
 
   // add events to new event_sets
   for (i = 0; i < nevents; i++) {
-    int evcode = evl->events[i].event;
+    int evcode = evl.events[i].event;
     component_add_event(psi, evcode);
 
   }
@@ -268,18 +275,18 @@ papi_register_overflow_callback(int eventSet, int evcode, long thresh)
 
 
 static void
-papi_register_callbacks(papi_source_info_t *psi, evlist_t *evl)
+papi_register_callbacks(papi_source_info_t *psi, evlist_t evl)
 {
   int i;
   // set up overflow handling for asynchronous event sets for active components
   // set up synchronous handling for synchronous event sets for active compoents
-  for (i = 0; i < evl->nevents; i++) {
-    int evcode = evl->events[i].event;
-    long thresh = evl->events[i].thresh;
-    int cidx = PAPI_get_event_component(evcode);
-
-    int eventSet = get_component_event_set(psi, cidx);
+  for (i = 0; i < evl.nevents; i++) {
+    int evcode = evl.events[i].event;
+    long thresh = evl.events[i].thresh;
+    int cidx = evcode_to_component_id(psi, evcode);
     papi_component_info_t *ci = &(psi->component_info[cidx]);
+
+    int eventSet = get_component_event_set(ci);
 
     // **** No overflow for synchronous events ****
     if (ci->is_sync) {
@@ -782,9 +789,9 @@ METHOD_FN(gen_event_set, int lush_metrics)
   // record the component state in thread state
   td->ss_info[self->sel_idx].ptr = psi;
 
-  papi_register_events(psi, &self->evl);
+  papi_register_events(psi, self->evl);
 
-  papi_register_callbacks(psi, &self->evl);
+  papi_register_callbacks(psi, self->evl);
 
 finish:
   tool_exit();
@@ -1110,7 +1117,7 @@ long long value
 
 
 static void
-papi_monitor_enter(void *component, gpu_monitor_apply_t *args_in)
+papi_monitor_enter(const void *component, gpu_monitor_apply_t *args_in)
 {
   tool_enter();
   papi_component_info_t *ci = (papi_component_info_t *) component;
@@ -1142,7 +1149,7 @@ finish:
 
 
 static void
-papi_monitor_exit(void *component, gpu_monitor_apply_t *args_in)
+papi_monitor_exit(const void *component, gpu_monitor_apply_t *args_in)
 {
   tool_enter();
   papi_component_info_t *ci = (papi_component_info_t *) component;
