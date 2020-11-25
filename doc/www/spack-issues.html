@@ -47,7 +47,8 @@
 <li><a name="toc-Introduction" href="#Introduction">1 Introduction</a></li>
 <li><a name="toc-Current-Issues" href="#Current-Issues">2 Current Issues</a>
 <ul class="no-bullet">
-  <li><a name="toc-_00282020_002d09_002d05_0029-Configure-warns-about-_002dfPIC_002e" href="#g_t_00282020_002d09_002d05_0029-Configure-warns-about-_002dfPIC_002e">2.1 (2020-09-05) Configure warns about -fPIC.</a></li>
+  <li><a name="toc-_00282020_002d10_002d20_0029-Binutils-2_002e35-spews-errors-in-hpcprof" href="#g_t_00282020_002d10_002d20_0029-Binutils-2_002e35-spews-errors-in-hpcprof">2.1 (2020-10-20) Binutils 2.35 spews errors in hpcprof</a></li>
+  <li><a name="toc-_00282020_002d09_002d05_0029-Configure-fails-without-_002dfPIC-in-dependencies" href="#g_t_00282020_002d09_002d05_0029-Configure-fails-without-_002dfPIC-in-dependencies">2.2 (2020-09-05) Configure fails without -fPIC in dependencies</a></li>
 </ul></li>
 <li><a name="toc-Recently-Resolved-Issues" href="#Recently-Resolved-Issues">3 Recently Resolved Issues</a>
 <ul class="no-bullet">
@@ -93,35 +94,48 @@ on the hpctoolkit web site.
 <pre class="example"><a href="http://hpctoolkit.org/spack-issues.html">http://hpctoolkit.org/spack-issues.html</a>
 </pre></div>
 
-<p>Last revised: September 11, 2020.
+<p>Last revised: October 26, 2020.
 </p>
 
 <a name="Current-Issues"></a>
 <h3 class="section">2 Current Issues</h3>
 
-<a name="g_t_00282020_002d09_002d05_0029-Configure-warns-about-_002dfPIC_002e"></a>
-<h4 class="subsection">2.1 (2020-09-05) Configure warns about -fPIC.</h4>
+<a name="g_t_00282020_002d10_002d20_0029-Binutils-2_002e35-spews-errors-in-hpcprof"></a>
+<h4 class="subsection">2.1 (2020-10-20) Binutils 2.35 spews errors in hpcprof</h4>
 
-<p>As of commit
-<a href="https://github.com/HPCToolkit/hpctoolkit/pull/317">b2d3d067ecad</a>
-on 2020-09-05, the master branch now wants libunwind and xz (lzma) to
-be built with variant <code>+pic</code>.  This is used to workaround a
-deadlock with hpcrun, openmpi 4.x and UCX.  If not, then you&rsquo;ll see
-this warning at the bottom of configure.
+<p>There is a bug in binutils 2.35 that causes hpcprof to spew BFD errors
+about &ldquo;could not find variable specification.&rdquo;  For example,
 </p>
 <div class="example">
-<pre class="example">WARNING: The following prereqs are missing an archive (.a) compiled with -fPIC.
-WARNING:    libunwind lzma
-WARNING: 
-WARNING: hpcrun is unable to properly hide these libraries from the
-WARNING: application and this may cause deadlock or segfault.
-WARNING: Recompile the above libraries with -fPIC (+pic in spack).
+<pre class="example">$ hpcprof hpctoolkit-foo-measurements
+BFD: DWARF error: could not find variable specification at offset 13df
+BFD: DWARF error: could not find variable specification at offset 1455
+BFD: DWARF error: could not find variable specification at offset 291f
 </pre></div>
 
-<p>For now, this is only a warning.  Everything will work as before, you
-just won&rsquo;t get the benefit of the work around.  But going forward, you
-should build libunwind and xz with variant <code>+pic</code>.  For example,
-in <code>packages.yaml</code>.
+<p><b>Workaround:</b> This is broken in the 2.35 and 2.35.1 releases but fixed
+in binutils master.  Until 2.36 (or 2.35.2) are released, use binutils
+version 2.34.
+</p>
+<p><a href="https://sourceware.org/bugzilla/show_bug.cgi?id=26520">https://sourceware.org/bugzilla/show_bug.cgi?id=26520</a>
+</p>
+<a name="g_t_00282020_002d09_002d05_0029-Configure-fails-without-_002dfPIC-in-dependencies"></a>
+<h4 class="subsection">2.2 (2020-09-05) Configure fails without -fPIC in dependencies</h4>
+
+<p>As of commit <a href="https://github.com/HPCToolkit/hpctoolkit/pull/317">b2d3d067ecad</a> 
+on 2020-09-05, the master branch now requires libunwind and xz (lzma) to
+be built with variant <code>+pic</code>.  This is used to better separate and
+hide third-party libraries in hpcrun from the application.  If not, then
+configure will fail with an error such as:
+</p>
+<div class="example">
+<pre class="example">configure: libunwind.a static archive: yes
+configure: libunwind.a compiled with -fPIC: no
+configure: error: libunwind.a must be compiled with -fPIC
+</pre></div>
+
+<p><b>Fixed:</b> Build libunwind and xz (lzma) with the <code>+pic</code> variants.
+For example, in <code>packages.yaml</code>,
 </p>
 <div class="example">
 <pre class="example">libunwind:

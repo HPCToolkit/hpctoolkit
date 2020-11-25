@@ -30,12 +30,6 @@ hpcfnbounds_dir='libexec/hpctoolkit'
 libhpcrun_dir='lib/hpctoolkit'
 libmonitor_dir='@LIBMONITOR_RUN_DIR@'
 
-# Absolute path or empty.
-papi_dir='@OPT_PAPI_LIBPATH@'
-papi_extra_libs='@papi_extra_libs@'
-
-upc_libs='@OPT_UPC_LDFLAGS@'
-
 internal_wrap_names='poll select ppoll pselect'
 external_wrap_names='@LIBMONITOR_WRAP_NAMES@  @hpclink_extra_wrap_names@'
 
@@ -455,12 +449,6 @@ set -- "$@" "$libhpcrun_wrap" $extra_hpc_files
 libmonitor="${libmonitor_dir}/libmonitor_wrap.a"
 test -f "$libmonitor" || die "no such file: $libmonitor"
 set -- "$@" "$libmonitor" $extra_plugin_files
-
-if test -d "$papi_dir" ; then
-    set -- "$@" "-L${papi_dir}" -lpapi $papi_extra_libs
-fi
-
-set -- "$@" $upc_libs
 
 set -- "$@" "${ext_libs_dir}/libz.a"
 
