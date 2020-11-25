@@ -16,13 +16,15 @@ typedef enum {
 } gpu_monitor_type_t;
 
 
-typedef void (*gpu_monitor_fn_t)(papi_component_info_t *ci, const cct_node_t *cct_node);
+typedef void (*gpu_monitor_enter_fn_t)(papi_component_info_t *ci, cct_node_t *cct_node);
+typedef void (*gpu_monitor_exit_fn_t)(papi_component_info_t *ci);
+
 
 typedef struct gpu_monitor_node_t {
 	struct gpu_monitor_node_t * next;
   papi_component_info_t *ci;
-	gpu_monitor_fn_t enter_fn;
-  gpu_monitor_fn_t exit_fn;
+  gpu_monitor_enter_fn_t enter_fn;
+  gpu_monitor_exit_fn_t exit_fn;
 } gpu_monitor_node_t;
 
 

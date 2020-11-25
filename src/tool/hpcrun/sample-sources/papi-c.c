@@ -121,8 +121,8 @@
  * forward declarations 
  *****************************************************************************/
 static void papi_event_handler(int event_set, void *pc, long long ovec, void *context);
-static void papi_monitor_enter(papi_component_info_t *ci,  const cct_node_t *cct_node);
-static void papi_monitor_exit(papi_component_info_t *ci,  const cct_node_t *cct_node);
+static void papi_monitor_enter(papi_component_info_t *ci, cct_node_t *cct_node);
+static void papi_monitor_exit(papi_component_info_t *ci);
 
 static int  event_is_derived(int ev_code);
 static void event_fatal_error(int ev_code, int papi_ret);
@@ -279,7 +279,7 @@ papi_register_callbacks(papi_source_info_t *psi, evlist_t evl)
     int eventSet = get_component_event_set(ci);
 
     // **** No overflow for synchronous events ****
-    if (ci->is_sync) {
+    if (ci->is_gpu_sync) {
       TMSG(PAPI, "event code %d (component %d) is synchronous, so do NOT set overflow", evcode, cidx);
       TMSG(PAPI, "Set up papi_monitor_apply instead");
       TMSG(PAPI, "synchronous sample component index = %d", cidx);
@@ -761,7 +761,7 @@ METHOD_FN(gen_event_set, int lush_metrics)
     ci->add_event = component_add_event_proc(i);
     ci->finalize_event_set = component_finalize_event_set(i);
     ci->scale_by_thread_count = thread_count_scaling_for_component(i);
-    ci->is_sync = component_uses_sync_samples(i);
+    ci->is_gpu_sync = component_uses_sync_samples(i);
     ci->setup = sync_setup_for_component(i);
     ci->teardown = sync_teardown_for_component(i);
     ci->start = sync_start_for_component(i);
@@ -1066,23 +1066,6 @@ finish:
 }
 
 
-static __thread cct_node_t *cct_node_loc; // TODO Dejan: Should I use this get cct_node from exit?
-
-static void
-papi_insert_cct(cct_node_t *api_node){
-
-//  gpu_op_ccts_t gpu_op_ccts;
-//
-//  hpcrun_safe_enter();
-//  gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_placeholder_type_sync);
-//  hpcrun_safe_exit();
-//
-//  cupti_papi_ph = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_sync);
-//
-//  gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts,
-//                                  cpu_submit_time);
-}
-
 static void
 attribute_metric_to_cct
 (
@@ -1132,22 +1115,21 @@ attribute_counters(papi_component_info_t *ci, long long *collected_values, cct_n
 
 
 static void
-papi_monitor_enter(papi_component_info_t *ci, const cct_node_t *cct_node)
+papi_monitor_enter(papi_component_info_t *ci, cct_node_t *cct_node)
 {
   tool_enter();
-//  sample_source_t *self = &obj_name();
-
 //  PRINT("|------->PAPI_MONITOR_ENTER | cct = %p\n", cct_node);
 
   // if sampling disabled explicitly for this thread, skip all processing
   if (hpcrun_suppress_sample() || sample_filters_apply()) goto finish;
 
-  cct_node_loc = cct_node;
+  ci->cct_node = cct_node;
 
   // Save counts on the end so we could substract that from next call (we don't want to measure ourselves)
 
   if (ci->inUse) {
     ci->read(ci->prev_values);
+
     PRINT("PAPI_ENTER:: Component %s Event = %d, value = %lld   |  %p\n", ci->name, ci->eventSet, ci->prev_values[0], cct_node);
   }
 
@@ -1157,7 +1139,7 @@ finish:
 
 
 static void
-papi_monitor_exit(papi_component_info_t *ci,  const cct_node_t *cct_node)
+papi_monitor_exit(papi_component_info_t *ci)
 {
   tool_enter();
   long long collected_values[MAX_EVENTS];
@@ -1167,10 +1149,9 @@ papi_monitor_exit(papi_component_info_t *ci,  const cct_node_t *cct_node)
 
   if (ci->inUse){
     ci->read(collected_values);
-    attribute_counters(ci, collected_values, cct_node_loc);
+    attribute_counters(ci, collected_values, ci->cct_node);
   }
 
-  cct_node_loc = NULL;
 
 finish:
   tool_exit();

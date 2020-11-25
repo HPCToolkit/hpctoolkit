@@ -16,7 +16,7 @@ typedef struct sync_info_list_t {
   const get_event_set_proc_t get_event_set;
   const add_event_proc_t add_event;
   const finalize_event_set_proc_t finalize_event_set;
-  const bool is_sync;
+  const bool is_gpu_sync;
   const setup_proc_t setup;
   const teardown_proc_t teardown;
   const start_proc_t start;

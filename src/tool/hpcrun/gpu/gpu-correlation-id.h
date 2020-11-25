@@ -52,7 +52,8 @@
 
 #include <stdint.h>
 
-
+//we use this for our activity that should be ignored
+#define IGNORE_CORR_ID (~0ULL)
 
 //******************************************************************************
 // interface operations

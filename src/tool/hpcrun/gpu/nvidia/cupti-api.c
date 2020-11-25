@@ -779,6 +779,23 @@ ensure_kernel_ip_present
 
 
 static void
+cupti_gpu_monitors_apply_enter(cct_node_t *cct_node)
+{
+  cupti_correlation_id_push(IGNORE_CORR_ID);
+  gpu_monitors_apply( cct_node, gpu_monitor_type_enter);
+  cupti_correlation_id_pop();
+}
+
+
+static void
+cupti_gpu_monitors_apply_exit()
+{
+  cupti_correlation_id_push(IGNORE_CORR_ID);
+  gpu_monitors_apply( NULL, gpu_monitor_type_exit);
+  cupti_correlation_id_pop();
+}
+
+static void
 cupti_subscriber_callback
 (
  void *userdata,
@@ -789,11 +806,6 @@ cupti_subscriber_callback
 {
 
 	if (is_tool_active()) {
-//		const CUpti_CallbackData *cd = (const CUpti_CallbackData *) cb_info;
-//		PRINT("\nTOOL callback: -----------------%s\n", cd->functionName );
-
-//		TMSG(CUPTI, "PAPI correlation callback");
-//		gpu_correlation_channel_produce(PAPI_CORR_ID, NULL, 0);
 		return;
 	}
 
@@ -1019,21 +1031,19 @@ cupti_subscriber_callback
         // Generate notification entry
         uint64_t cpu_submit_time = hpcrun_nanotime();
 
-				gpu_monitors_apply( api_node, gpu_monitor_type_enter);
 
+        cupti_gpu_monitors_apply_enter(api_node);
 
 				gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts,
           cpu_submit_time);
 
         TMSG(CUPTI_TRACE, "Driver push externalId %lu (cb_id = %u)", correlation_id, cb_id);
       } else if (cd->callbackSite == CUPTI_API_EXIT) {
+        cupti_gpu_monitors_apply_exit();
+
         uint64_t correlation_id __attribute__((unused)); // not used if PRINT omitted
         correlation_id = cupti_correlation_id_pop();
         TMSG(CUPTI_TRACE, "Driver pop externalId %lu (cb_id = %u)", correlation_id, cb_id);
-
-				gpu_monitors_apply( NULL, gpu_monitor_type_exit);
-
-
 			}
     } else if (is_kernel_op && cupti_runtime_api_flag && cd->callbackSite ==
       CUPTI_API_ENTER) {
@@ -1182,21 +1192,21 @@ cupti_subscriber_callback
         // Generate notification entry
         uint64_t cpu_submit_time = hpcrun_nanotime();
 
-				gpu_monitors_apply( cupti_kernel_ph, gpu_monitor_type_enter);
+        cupti_gpu_monitors_apply_enter(cupti_kernel_ph);
 
 				gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts,
           cpu_submit_time);
 
         TMSG(CUPTI_TRACE, "Runtime push externalId %lu (cb_id = %u)", correlation_id, cb_id);
       } else if (cd->callbackSite == CUPTI_API_EXIT) {
+
+        cupti_gpu_monitors_apply_exit();
         // Exit an CUDA runtime api
         cupti_runtime_api_flag_unset();
 
         uint64_t correlation_id __attribute__((unused)); // not used if PRINT omitted
         correlation_id = cupti_correlation_id_pop();
         TMSG(CUPTI_TRACE, "Runtime pop externalId %lu (cb_id = %u)", correlation_id, cb_id);
-
-				gpu_monitors_apply( cupti_kernel_ph, gpu_monitor_type_exit);
 
         cupti_kernel_ph = NULL;
         cupti_trace_ph = NULL;

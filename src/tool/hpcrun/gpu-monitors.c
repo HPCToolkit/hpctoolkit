@@ -25,12 +25,16 @@ gpu_monitors_apply(cct_node_t *cct_node, gpu_monitor_type_t type)
 {
   gpu_monitor_node_t *node = gpu_monitor_list;
 
-	while (node != NULL) {
-    if (type == gpu_monitor_type_enter)
+  if (type == gpu_monitor_type_enter){
+    while (node != NULL) {
       node->enter_fn(node->ci, cct_node);
-    else if (type == gpu_monitor_type_exit)
-      node->exit_fn(node->ci, cct_node);
-
-		node = node->next;
-	}
+      node = node->next;
+    }
+  }
+  else if (type == gpu_monitor_type_exit){
+    while (node != NULL) {
+      node->exit_fn(node->ci);
+      node = node->next;
+    }
+  }
 }

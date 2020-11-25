@@ -72,7 +72,7 @@ component_uses_sync_samples(int cidx)
 
   TMSG(PAPI, "checking component idx %d (name %s) to see if it is synchronous", cidx, name);
   for(sync_info_list_t* item=registered_sync_components; item; item = item->next) {
-    if (item->pred(name)) return item->is_sync;
+    if (item->pred(name)) return item->is_gpu_sync;
   }
   return false;
 }

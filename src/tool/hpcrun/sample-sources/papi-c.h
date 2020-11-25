@@ -54,6 +54,8 @@
 #include "papi-c-extended-info.h"
 
 #include "sample_source_obj.h"
+#include "cct.h"
+
 
 /******************************************************************************
  * type declarations 
@@ -67,7 +69,8 @@ typedef struct {
   int some_derived;
   bool scale_by_thread_count;
   long long prev_values[MAX_EVENTS];
-  bool is_sync;
+  cct_node_t *cct_node;
+  bool is_gpu_sync;
   bool setup_process_only;
   get_event_set_proc_t get_event_set;
   add_event_proc_t add_event;
