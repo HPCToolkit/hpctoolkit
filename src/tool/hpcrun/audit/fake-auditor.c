@@ -204,15 +204,13 @@ static void hpcrun_constructor_init_fake_auditor() {
 static int update_shadow_dl(struct dl_phdr_info*, size_t, void*);
 struct update_shadow_args {
   bool dirty;
-  int index;
 };
 bool update_shadow() {
   pthread_mutex_lock(&shadow_lock);
   for(shadow_map_entry_t* m = shadow_map; m != NULL; m = m->next)
     m->seen = false;
   struct update_shadow_args args = {
-    .dirty = false,
-    .index = 0,
+    .dirty = false
   };
   dl_iterate_phdr(update_shadow_dl, &args);
   if(args.dirty) {
@@ -228,8 +226,9 @@ bool update_shadow() {
         m = p;
       } else if(m->new) {
         if(verbose)
-          fprintf(stderr, "[fake audit] Delivering objopen for `%s' [%p, %p)\n", 
-		  m->entry.path, m->entry.start, m->entry.end);
+          fprintf(stderr, "[fake audit] Delivering objopen for `%s' [%p, %p)" 
+		  " dl_info.dlpi_addr = %p\n", m->entry.path, m->entry.start, 
+		  m->entry.end, (void *)m->entry.dl_info.dlpi_addr);
         hooks.open(&m->entry);
         m->new = false;
       }
@@ -274,10 +273,10 @@ int update_shadow_dl(struct dl_phdr_info* map, size_t sz, void* args_vp) {
   entry->entry.end = (void*)map->dlpi_addr + end;
 
   entry->entry.path = NULL;
-  if(args->index == 0 && map->dlpi_name[0] == '\0')
-    entry->entry.path = realpath((const char*)getauxval(AT_EXECFN), NULL);
-  else if (entry->entry.start == getauxval(AT_SYSINFO_EHDR))
+  if (entry->entry.start == (void *)getauxval(AT_SYSINFO_EHDR))
     entry->entry.path = realpath(vdso_path, NULL);
+  else if(map->dlpi_name[0] == '\0')
+    entry->entry.path = realpath((const char*)getauxval(AT_EXECFN), NULL);
   else 
     entry->entry.path = realpath(map->dlpi_name, NULL);
 
@@ -288,7 +287,6 @@ int update_shadow_dl(struct dl_phdr_info* map, size_t sz, void* args_vp) {
   shadow_map = entry;
 
   args->dirty = true;
-  args->index++;
 
   return 0;
 }
