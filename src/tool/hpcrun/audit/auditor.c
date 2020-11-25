@@ -45,7 +45,6 @@
 // ******************************************************* EndRiceCopyright *
 
 
-
 //******************************************************************************
 // global includes
 //******************************************************************************
@@ -292,7 +291,18 @@ static void change_memory_protection(void* address) {
 
   start_page = ((unsigned long) address) & ~(pagesize-1);
   end_page = (((unsigned long) address) + pagesize);
-  mprotect((void *) start_page, end_page - start_page, PROT_READ | PROT_WRITE);
+
+  // the page containing the GOT entry with the resolver address may
+  // not be writable. we must make the page writable before updating
+  // the resolver.  
+  //
+  // we also add execute permission to the page because the loader may
+  // arrange the address space so that multiple libraries share a
+  // page.  in this case, the GOT table from one library and code from
+  // the next library may be on the same page. this case occurs in
+  // practice.
+  mprotect((void *) start_page, end_page - start_page, 
+	   PROT_READ | PROT_WRITE | PROT_EXEC);
 }
 
 
