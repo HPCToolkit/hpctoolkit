@@ -91,7 +91,7 @@
 #elif defined(HOST_CPU_ARM64)
 #define GOT_resolver_index 2
 #else
-#error "PLT resolve index for the host architecture is unknown"
+#error "GOT resolver index for the host architecture is unknown"
 #endif
 
 
@@ -123,7 +123,7 @@ struct buffered_entry_t {
 static bool verbose = false;
 static char* mainlib = NULL;
 static bool disable_plt_call_opt = false;
-static ElfW(Addr) dl_runtime_resolve_ptr = 0;
+static ElfW(Addr) dl_runtime_resolver_ptr = 0;
 
 static enum hpcrun_state state = state_awaiting;
 
@@ -313,7 +313,7 @@ static void update_objects_gotplt() {
     if (plt_got != NULL) {
       // .pltgot may not necessarily be writable
       change_memory_protection(&plt_got[GOT_resolver_index]);
-      plt_got[GOT_resolver_index] = dl_runtime_resolve_ptr;
+      plt_got[GOT_resolver_index] = dl_runtime_resolver_ptr;
     }
     struct buffered_entry_t* prev = entry;
     entry = entry->next;
@@ -387,7 +387,7 @@ unsigned int la_version(unsigned int version) {
   if (!disable_plt_call_opt) {
     ElfW(Addr)* plt_got = get_plt_got_start(_DYNAMIC);
     if (plt_got != NULL) {
-      dl_runtime_resolve_ptr = plt_got[GOT_resolver_index];
+      dl_runtime_resolver_ptr = plt_got[GOT_resolver_index];
     }
   }
 
@@ -418,7 +418,7 @@ unsigned int la_version(unsigned int version) {
 
 
 unsigned int la_objopen(struct link_map* map, Lmid_t lmid, uintptr_t* cookie) {
-  if (dl_runtime_resolve_ptr) {
+  if (dl_runtime_resolver_ptr) {
     // We record the open objects and then later overwrite ldso pointers
     struct buffered_entry_t* new_entry = (struct  buffered_entry_t*)malloc(sizeof(struct buffered_entry_t));
     new_entry->map = map;
@@ -475,7 +475,7 @@ void la_activity(uintptr_t* cookie, unsigned int flag) {
   static unsigned int previous = LA_ACT_CONSISTENT;
 
   if(flag == LA_ACT_CONSISTENT) {
-    if (dl_runtime_resolve_ptr && obj_update_list != NULL) {
+    if (dl_runtime_resolver_ptr && obj_update_list != NULL) {
       update_objects_gotplt();
     }
 
