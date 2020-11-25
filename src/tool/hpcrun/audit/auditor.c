@@ -147,8 +147,6 @@ static auditor_exports_t exports = {
 
 static struct buffered_entry_t* obj_update_list = NULL;
 
-static const bool vdso_load_module = true;
-
 
 
 //******************************************************************************
