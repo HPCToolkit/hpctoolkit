@@ -246,10 +246,10 @@ static void hook_open(uintptr_t* cookie, struct link_map* map, enum audit_open_f
 
   // load module.  we must adjust it by start so that it has the proper
   // base address value for the subsequent calculations.
-  if (ao_flags & AO_VDSO) map->l_addr -= (long) start;
+  if (ao_flags & AO_VDSO) map->l_addr -= (intptr_t) start;
 
-  entry->start = (void*)map->l_addr + (long) start;
-  entry->end = (void*)map->l_addr + (long) end;
+  entry->start = (void*)map->l_addr + (intptr_t) start;
+  entry->end = (void*)map->l_addr + (intptr_t) end;
 
   // Since we don't use dl_iterate_phdr, we have to reconsitute its data.
   entry->dl_info.dlpi_addr = (ElfW(Addr))map->l_addr;
