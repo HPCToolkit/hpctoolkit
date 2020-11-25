@@ -115,6 +115,12 @@ struct buffered_entry_t {
 } *buffer = NULL;
 
 
+enum audit_open_flags {
+  AO_NONE = 0x0,
+  AO_VDSO = 0x1,
+};
+
+
 
 //******************************************************************************
 // local data
@@ -159,7 +165,7 @@ static ElfW(Addr) * get_plt_got_start(ElfW(Dyn) * dyn_init) {
 
 
 // Helper to call the open hook, when you only have the link_map.
-static void hook_open(uintptr_t* cookie, struct link_map* map) {
+static void hook_open(uintptr_t* cookie, struct link_map* map, enum audit_open_flags ao_flags) {
   // Allocate some space for our extra bits, and fill it.
   auditor_map_entry_t* entry = malloc(sizeof *entry);
 
@@ -237,8 +243,13 @@ static void hook_open(uintptr_t* cookie, struct link_map* map) {
       }
     } else abort();
   }
-  entry->start = (void*)map->l_addr + start;
-  entry->end = (void*)map->l_addr + end;
+
+  // load module.  we must adjust it by start so that it has the proper
+  // base address value for the subsequent calculations.
+  if (ao_flags & AO_VDSO) map->l_addr -= (intptr_t) start;
+
+  entry->start = (void*)map->l_addr + (intptr_t) start;
+  entry->end = (void*)map->l_addr + (intptr_t) end;
 
   // Since we don't use dl_iterate_phdr, we have to reconsitute its data.
   entry->dl_info.dlpi_addr = (ElfW(Addr))map->l_addr;
@@ -253,8 +264,12 @@ static void hook_open(uintptr_t* cookie, struct link_map* map) {
                       + sizeof entry->dl_info.dlpi_phnum;
 
   if(verbose)
-    fprintf(stderr, "[audit] Delivering objopen for `%s'\n", entry->path);
+    fprintf(stderr, "[audit] Delivering objopen for `%s' [%p, %p)"
+	    " dl_info.dlpi_addr = %p\n", entry->path, entry->start, 
+	    entry->end, entry->dl_info.dlpi_addr);
+
   hooks.open(entry);
+
   if(cookie)
     *cookie = (uintptr_t)entry;
   else free(entry);
@@ -344,7 +359,7 @@ static void mainlib_connected(const char* vdso_path) {
   if(verbose)
     fprintf(stderr, "[audit] Draining buffered objopens\n");
   while(queue != NULL) {
-    hook_open(queue->cookie, queue->map);
+    hook_open(queue->cookie, queue->map, AO_NONE);
     struct buffered_entry_t* next = queue->next;
     free(queue);
     queue = next;
@@ -355,7 +370,7 @@ static void mainlib_connected(const char* vdso_path) {
   struct link_map* map;
   Dl_info info;
   dladdr1(la_version, &info, (void**)&map, RTLD_DL_LINKMAP);
-  hook_open(NULL, map);
+  hook_open(NULL, map, AO_NONE);
 
   // Add an entry for vDSO, because we don't get it otherwise.
   uintptr_t vdso = getauxval(AT_SYSINFO_EHDR);
@@ -365,7 +380,7 @@ static void mainlib_connected(const char* vdso_path) {
     mvdso->l_name = vdso_path ? (char*)vdso_path : "[vdso]";
     mvdso->l_ld = NULL;  // NOTE: Filled by hook_open
     mvdso->l_next = mvdso->l_prev = NULL;
-    hook_open(NULL, mvdso);
+    hook_open(NULL, mvdso, AO_VDSO);
   }
 
   if(verbose)
@@ -459,7 +474,7 @@ unsigned int la_objopen(struct link_map* map, Lmid_t lmid, uintptr_t* cookie) {
   }
   case state_connected:
     // If we're already connected, just call the hook.
-    hook_open(cookie, map);
+    hook_open(cookie, map, AO_NONE);
     return 0;
   case state_disconnected:
     // We just ignore things that happen after disconnection.
