@@ -204,6 +204,7 @@ static void hpcrun_constructor_init_fake_auditor() {
 static int update_shadow_dl(struct dl_phdr_info*, size_t, void*);
 struct update_shadow_args {
   bool dirty;
+  int index;
 };
 bool update_shadow() {
   pthread_mutex_lock(&shadow_lock);
@@ -211,6 +212,7 @@ bool update_shadow() {
     m->seen = false;
   struct update_shadow_args args = {
     .dirty = false,
+    .index = 0,
   };
   dl_iterate_phdr(update_shadow_dl, &args);
   if(args.dirty) {
@@ -226,7 +228,8 @@ bool update_shadow() {
         m = p;
       } else if(m->new) {
         if(verbose)
-          fprintf(stderr, "[fake audit] Delivering objopen for `%s'\n", m->entry.path);
+          fprintf(stderr, "[fake audit] Delivering objopen for `%s' [%p, %p)\n", 
+		  m->entry.path, m->entry.start, m->entry.end);
         hooks.open(&m->entry);
         m->new = false;
       }
@@ -254,15 +257,6 @@ int update_shadow_dl(struct dl_phdr_info* map, size_t sz, void* args_vp) {
   entry->addr = map->dlpi_addr;
   entry->seen = true;
   entry->new = true;
-
-  entry->entry.path = NULL;
-  if(map->dlpi_addr == getauxval(AT_SYSINFO_EHDR))
-    entry->entry.path = realpath(vdso_path, NULL);
-  else if(map->dlpi_name[0] == '\0')
-    entry->entry.path = realpath((const char*)getauxval(AT_EXECFN), NULL);
-  else
-    entry->entry.path = realpath(map->dlpi_name, NULL);
-
   entry->entry.ehdr = map->dlpi_addr != 0 ? (void*)map->dlpi_addr
     : (void*)(uintptr_t)(map->dlpi_phdr[0].p_vaddr - map->dlpi_phdr[0].p_offset);
 
@@ -275,15 +269,27 @@ int update_shadow_dl(struct dl_phdr_info* map, size_t sz, void* args_vp) {
         end = map->dlpi_phdr[i].p_vaddr + map->dlpi_phdr[i].p_memsz;
     }
   }
+
   entry->entry.start = (void*)map->dlpi_addr + start;
   entry->entry.end = (void*)map->dlpi_addr + end;
+
+  entry->entry.path = NULL;
+  if(args->index == 0 && map->dlpi_name[0] == '\0')
+    entry->entry.path = realpath((const char*)getauxval(AT_EXECFN), NULL);
+  else if (entry->entry.start == getauxval(AT_SYSINFO_EHDR))
+    entry->entry.path = realpath(vdso_path, NULL);
+  else 
+    entry->entry.path = realpath(map->dlpi_name, NULL);
 
   entry->entry.dl_info = *map;
   entry->entry.dl_info_sz = sz;
 
   entry->next = shadow_map;
   shadow_map = entry;
+
   args->dirty = true;
+  args->index++;
+
   return 0;
 }
 
