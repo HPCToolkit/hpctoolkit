@@ -258,8 +258,11 @@ static void matchCCTNode(Prof::CallPath::CCTIdToCCTNodeMap &cctNodeMap, NodeMap 
 
     if (cctNodeMap.find(node.node_id) != cctNodeMap.end()) {
       cct = cctNodeMap.at(node.node_id);
-    } else if (cctNodeMap.find(-node.node_id) != cctNodeMap.end()) {
-      cct = cctNodeMap.at(-node.node_id);
+    } else {
+      auto node_id = (uint32_t)(-node.node_id);
+      if (cctNodeMap.find(node_id) != cctNodeMap.end()) {
+        cct = cctNodeMap.at(node_id);
+      }
     }
 
     if (cct) {
@@ -390,6 +393,7 @@ static void writeGraph(const std::string &file_name, const NodeMap &node_map, co
 
 void analyzeDataFlowMain(Prof::CallPath::Profile &prof, const std::vector<std::string> &data_flow_files) {
   auto &cctNodeMap = prof.cctNodeMap();
+
 
   for (auto &file : data_flow_files) {
     NodeMap node_map;

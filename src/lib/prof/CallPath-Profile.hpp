@@ -93,7 +93,7 @@ namespace Prof {
 
 namespace CallPath {
 
-typedef std::map<int, CCT::ANode*> CCTIdToCCTNodeMap;
+typedef std::map<uint32_t, CCT::ANode*> CCTIdToCCTNodeMap;
 
 class Profile
   : public Unique // non copyable
@@ -173,7 +173,7 @@ public:
   metricMgr(Metric::Mgr* mMgr)
   { m_mMgr = mMgr; }
 
-  CCTIdToCCTNodeMap &
+  static CCTIdToCCTNodeMap &
   cctNodeMap()
   { return m_cctNodeMap; }
 
@@ -394,7 +394,7 @@ private:
  
   bool m_remove_redundancy;
   
-  CCTIdToCCTNodeMap m_cctNodeMap;
+  static CCTIdToCCTNodeMap m_cctNodeMap;
 };
 
 } // namespace CallPath

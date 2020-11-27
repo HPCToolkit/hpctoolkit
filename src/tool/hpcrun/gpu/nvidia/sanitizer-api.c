@@ -1223,8 +1223,8 @@ sanitizer_subscribe_callback
       sanitizer_op_map_init(persistent_id, api_node);
     }
 
-    PRINT("Memcpy async %d direction %d from %p to %p, op %llu, id %d\n", md->isAsync, md->direction,
-      md->srcAddress, md->dstAddress, correlation_id, persistent_id);
+    PRINT("Memcpy async %d direction %d from %p to %p, op %lu, id %d\n", md->isAsync, md->direction,
+      (void *)md->srcAddress, (void *)md->dstAddress, correlation_id, persistent_id);
 
     bool src_host = false;
     bool dst_host = false;
