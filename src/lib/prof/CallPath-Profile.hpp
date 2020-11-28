@@ -173,7 +173,7 @@ public:
   metricMgr(Metric::Mgr* mMgr)
   { m_mMgr = mMgr; }
 
-  static CCTIdToCCTNodeMap &
+  CCTIdToCCTNodeMap &
   cctNodeMap()
   { return m_cctNodeMap; }
 

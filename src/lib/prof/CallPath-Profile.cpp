@@ -1526,6 +1526,8 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
   ExprEval eval;
 #endif
 
+  CCTIdToCCTNodeMap localCCTNodeMap;
+
   auto &cctNodeMap = prof.cctNodeMap();
 
   for (uint i = 0; i < numNodes; ++i) {
@@ -1569,7 +1571,7 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     // Find parent of node
     CCT::ANode* node_parent = NULL;
     if (parentId != HPCRUN_FMT_CCTNodeId_NULL) {
-      CCTIdToCCTNodeMap::iterator it = cctNodeMap.find(parentId);
+      CCTIdToCCTNodeMap::iterator it = localCCTNodeMap.find(parentId);
       if (it != cctNodeMap.end()) {
 	      node_parent = it->second;
       }
@@ -1617,6 +1619,8 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
       DIAG_AssertWarn(!node_sib, ctxtStr << ": CCT root cannot be split into interior and leaf!");
       if (cct->empty()) cct->root(node);
     }
+
+    localCCTNodeMap.insert(std::make_pair(nodeFmt.id, node));
 
     if (cctNodeMap.find(nodeFmt.id) == cctNodeMap.end()) {
       cctNodeMap.insert(std::make_pair(nodeFmt.id, node));

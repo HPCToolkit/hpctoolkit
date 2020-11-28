@@ -116,7 +116,7 @@ namespace CallPath {
 
 typedef std::map<int, redshow_graphviz_node> NodeMap;
 
-typedef std::map<int, std::map<int, std::map<std::string, redshow_graphviz_edge>>> EdgeMap;
+typedef std::map<int, std::map<int, std::map<int, std::map<std::string, redshow_graphviz_edge>>>> EdgeMap;
 
 static void readGraph(const std::string &file_name, NodeMap &node_map, EdgeMap &edge_map) {
   std::ifstream file(file_name);
@@ -175,7 +175,7 @@ static void readGraph(const std::string &file_name, NodeMap &node_map, EdgeMap &
       edge.count = std::stoull(einfo.props.at("count"));
     }
 
-    edge_map[source_id][target_id].emplace(edge.type, edge);
+    edge_map[source_id][target_id][edge.memory_node_id].emplace(edge.type, edge);
   }
 }
 
@@ -368,8 +368,10 @@ static void writeGraph(const std::string &file_name, const NodeMap &node_map, co
     auto from = vertice.at(edge_iter.first);
     for (auto &node_iter : edge_iter.second) {
       auto to = vertice.at(node_iter.first);
-      for (auto &type_iter : node_iter.second) {
-        boost::add_edge(from, to, type_iter.second, g);
+      for (auto &mem_iter : node_iter.second) {
+        for (auto &type_iter : mem_iter.second) {
+          boost::add_edge(from, to, type_iter.second, g);
+        }
       }
     }
   }
