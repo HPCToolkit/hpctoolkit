@@ -93,4 +93,25 @@ cupti_context_pc_sampling_map_flush
  cupti_context_pc_sampling_flush_fn_t fn
 );
 
+
+size_t
+cupti_context_pc_sampling_map_entry_num_stall_reasons_get
+(
+ cupti_context_pc_sampling_map_entry_t *entry
+);
+
+
+uint32_t *
+cupti_context_pc_sampling_map_entry_stall_reason_index_get
+(
+ cupti_context_pc_sampling_map_entry_t *entry
+);
+
+
+char **
+cupti_context_pc_sampling_map_entry_stall_reason_names_get
+(
+ cupti_context_pc_sampling_map_entry_t *entry
+);
+
 #endif

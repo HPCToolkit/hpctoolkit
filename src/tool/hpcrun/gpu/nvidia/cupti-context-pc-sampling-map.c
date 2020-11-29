@@ -268,3 +268,32 @@ cupti_context_pc_sampling_map_entry_user_buffer_pc_get
   return entry->user_buffer_pc;
 }
 
+
+size_t
+cupti_context_pc_sampling_map_entry_num_stall_reasons_get
+(
+ cupti_context_pc_sampling_map_entry_t *entry
+)
+{
+  return entry->num_stall_reasons;
+}
+
+
+uint32_t *
+cupti_context_pc_sampling_map_entry_stall_reason_index_get
+(
+ cupti_context_pc_sampling_map_entry_t *entry
+)
+{
+  return entry->stall_reason_index;
+}
+
+
+char **
+cupti_context_pc_sampling_map_entry_stall_reason_names_get
+(
+ cupti_context_pc_sampling_map_entry_t *entry
+)
+{
+  return entry->stall_reason_names;
+}

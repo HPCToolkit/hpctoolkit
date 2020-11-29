@@ -312,6 +312,15 @@ cupti_pc_sampling_collect
   cupti_context_pc_sampling_map_entry_t *entry = cupti_context_pc_sampling_map_lookup(context);
   CUpti_PCSamplingData *buffer_pc = cupti_context_pc_sampling_map_entry_buffer_pc_get(entry);
   CUpti_PCSamplingData *user_buffer_pc = cupti_context_pc_sampling_map_entry_user_buffer_pc_get(entry);
+  size_t num_stall_reasons = cupti_context_pc_sampling_map_entry_num_stall_reasons_get(entry);
+  uint32_t *stall_reason_index = cupti_context_pc_sampling_map_entry_stall_reason_index_get(entry);
+  char **stall_reason_names = cupti_context_pc_sampling_map_entry_stall_reason_names_get(entry);
+
+  if (DEBUG) {
+    for (size_t i = 0; i < num_stall_reasons; ++i) {
+      TMSG(CUPTI, "stall name %u : %s", stall_reason_index[i], stall_reason_names[i]);
+    }
+  }
 
   if (user_buffer_pc != NULL && buffer_pc != NULL) {
     TMSG(CUPTI, "NEW CUPTI totalNumPcs: %lu, totalSamples: %lu, collectNumPcs: %lu, remainingNumPcs: %lu",
@@ -320,8 +329,15 @@ cupti_pc_sampling_collect
     if (DEBUG) {
       for (size_t i = 0; i < buffer_pc->totalNumPcs; ++i) {
         CUpti_PCSamplingPCData *pc_data = &buffer_pc->pPcData[i];
-        TMSG(CUPTI, "cubinCrc: %lu, functionName: %s, pc: %lu, pcOffset: %u", pc_data->cubinCrc,
-          pc_data->functionName, pc_data->pc, pc_data->pcOffset);
+        TMSG(CUPTI, "cubinCrc: %lu, functionName: %s, pc: %lu, pcOffset: %u, count: %u", pc_data->cubinCrc,
+          pc_data->functionName, pc_data->pc, pc_data->pcOffset, pc_data->stallReasonCount);
+
+        for (size_t j = 0; j < num_stall_reasons; ++j) {
+          if (pc_data->stallReason[j].samples > 0) {
+            TMSG(CUPTI, "stall index: %u, count: %d", pc_data->stallReason[j].pcSamplingStallReasonIndex,
+              pc_data->stallReason[j].samples);
+          }
+        }
       }
     }
 
@@ -337,13 +353,17 @@ cupti_pc_sampling_collect
       HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiPCSamplingGetData, (&params));
 
       if (DEBUG) {
-        TMSG(CUPTI, "NEW CUPTI totalNumPcs: %lu, totalSamples: %lu, collectNumPcs: %lu, remainingNumPcs: %lu",
-          user_buffer_pc->totalNumPcs, user_buffer_pc->totalSamples, user_buffer_pc->collectNumPcs, user_buffer_pc->remainingNumPcs);
+        for (size_t i = 0; i < buffer_pc->totalNumPcs; ++i) {
+          CUpti_PCSamplingPCData *pc_data = &buffer_pc->pPcData[i];
+          TMSG(CUPTI, "cubinCrc: %lu, functionName: %s, pc: %lu, pcOffset: %u, count: %u", pc_data->cubinCrc,
+            pc_data->functionName, pc_data->pc, pc_data->pcOffset, pc_data->stallReasonCount);
 
-        for (size_t i = 0; i < user_buffer_pc->totalNumPcs; ++i) {
-          CUpti_PCSamplingPCData *pc_data = &user_buffer_pc->pPcData[i];
-          TMSG(CUPTI, "cubinCrc: %lu, functionName: %s, pc: %lu, pcOffset: %u", pc_data->cubinCrc,
-            pc_data->functionName, pc_data->pc, pc_data->pcOffset);
+          for (size_t j = 0; j < num_stall_reasons; ++j) {
+            if (pc_data->stallReason[j].samples > 0) {
+              TMSG(CUPTI, "stall index: %u, count: %d", pc_data->stallReason[j].pcSamplingStallReasonIndex,
+                pc_data->stallReason[j].samples);
+            }
+          }
         }
       }
     }
