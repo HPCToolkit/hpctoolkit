@@ -13,6 +13,8 @@
 #include "cupti-api.h"
 #include "cupti-context-pc-sampling-map.h"
 
+#define DEBUG 1
+
 #define CUPTI_FN_NAME(f) DYN_FN_NAME(f)
 
 #define CUPTI_FN(fn, args) \
@@ -88,7 +90,7 @@ CUPTI_FN
 #define HPCRUN_CUPTI_ACTIVITY_HW_BUFFER_SIZE (512 * 1024 * 1024)
 #define HPCRUN_CUPTI_ACTIVITY_SW_BUFFER_SIZE (16 * 1024 * 1024)
 #define HPCRUN_CUPTI_ACTIVITY_BUFFER_PC_NUM 2000
-#define HPCRUN_CUPTI_ACTIVITY_USER_BUFFER_PC_NUM 500
+#define HPCRUN_CUPTI_ACTIVITY_USER_BUFFER_PC_NUM 2000
 
 #define FORALL_CONFIG_INFO(macro) \
   macro(COLLECTION_MODE, 0) \
@@ -315,7 +317,16 @@ cupti_pc_sampling_collect
     TMSG(CUPTI, "NEW CUPTI totalNumPcs: %lu, totalSamples: %lu, collectNumPcs: %lu, remainingNumPcs: %lu",
       buffer_pc->totalNumPcs, buffer_pc->totalSamples, buffer_pc->collectNumPcs, buffer_pc->remainingNumPcs);
 
-    while (buffer_pc->remainingNumPcs > 0) {
+    if (DEBUG) {
+      for (size_t i = 0; i < buffer_pc->totalNumPcs; ++i) {
+        CUpti_PCSamplingPCData *pc_data = &buffer_pc->pPcData[i];
+        TMSG(CUPTI, "cubinCrc: %lu, functionName: %s, pc: %lu, pcOffset: %u", pc_data->cubinCrc,
+          pc_data->functionName, pc_data->pc, pc_data->pcOffset);
+      }
+    }
+
+    while (buffer_pc->remainingNumPcs >= HPCRUN_CUPTI_ACTIVITY_USER_BUFFER_PC_NUM) {
+      // Need to copy back buffer now, otherwise buffer_pc is not big enough to hold all samples
       CUpti_PCSamplingGetDataParams params = {
         .size = CUpti_PCSamplingGetDataParamsSize,
         .ctx = context,
@@ -324,6 +335,17 @@ cupti_pc_sampling_collect
       };
 
       HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiPCSamplingGetData, (&params));
+
+      if (DEBUG) {
+        TMSG(CUPTI, "NEW CUPTI totalNumPcs: %lu, totalSamples: %lu, collectNumPcs: %lu, remainingNumPcs: %lu",
+          user_buffer_pc->totalNumPcs, user_buffer_pc->totalSamples, user_buffer_pc->collectNumPcs, user_buffer_pc->remainingNumPcs);
+
+        for (size_t i = 0; i < user_buffer_pc->totalNumPcs; ++i) {
+          CUpti_PCSamplingPCData *pc_data = &user_buffer_pc->pPcData[i];
+          TMSG(CUPTI, "cubinCrc: %lu, functionName: %s, pc: %lu, pcOffset: %u", pc_data->cubinCrc,
+            pc_data->functionName, pc_data->pc, pc_data->pcOffset);
+        }
+      }
     }
   }
 }
