@@ -659,6 +659,60 @@ cupti_write_cubin
 }
 
 
+#ifdef NEW_CUPTI
+
+void
+cupti_load_callback_cuda
+(
+ CUcontext context,
+ uint32_t cubin_id,
+ const void *cubin,
+ size_t cubin_size
+)
+{
+  // Compute hash for cubin and store it into a map
+  uint64_t cubin_crc = cupti_cubin_crc_get(cubin, cubin_size);
+
+  // Create file name
+  char file_name[PATH_MAX];
+  size_t i;
+  size_t used = 0;
+  used += sprintf(&file_name[used], "%s", hpcrun_files_output_directory());
+  used += sprintf(&file_name[used], "%s", "/cubins/");
+  mkdir(file_name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
+  used += sprintf(&file_name[used], "%"PRIu64"", cubin_crc);
+  used += sprintf(&file_name[used], "%s", ".cubin");
+  TMSG(CUPTI, "cubin_crc %s", file_name);
+
+  // Write a file if does not exist
+  bool file_flag;
+  spinlock_lock(&files_lock);
+  file_flag = cupti_write_cubin(file_name, cubin, cubin_size);
+  spinlock_unlock(&files_lock);
+
+  if (file_flag) {
+    char device_file[PATH_MAX];
+    sprintf(device_file, "%s", file_name);
+    uint32_t hpctoolkit_module_id;
+    load_module_t *module = NULL;
+    hpcrun_loadmap_lock();
+    if ((module = hpcrun_loadmap_findByName(device_file)) == NULL) {
+      hpctoolkit_module_id = hpcrun_loadModule_add(device_file);
+    } else {
+      hpctoolkit_module_id = module->id;
+    }
+    hpcrun_loadmap_unlock();
+    TMSG(CUPTI, "cubin_crc %d -> hpctoolkit_module_id %d", cubin_crc, hpctoolkit_module_id);
+    cubin_id_map_entry_t *entry = cubin_id_map_lookup(cubin_crc);
+    if (entry == NULL) {
+      Elf_SymbolVector *vector = computeCubinFunctionOffsets(cubin, cubin_size);
+      cubin_id_map_insert(cubin_crc, hpctoolkit_module_id, vector);
+    }
+  }
+}
+
+#else
+
 void
 cupti_load_callback_cuda
 (
@@ -717,6 +771,8 @@ cupti_load_callback_cuda
     }
   }
 }
+
+#endif
 
 
 void

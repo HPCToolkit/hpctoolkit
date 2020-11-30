@@ -37,7 +37,16 @@
   macro(cuptiPCSamplingSetConfigurationAttribute) \
   macro(cuptiPCSamplingEnable) \
   macro(cuptiPCSamplingDisable) \
-  macro(cuptiPCSamplingGetData)
+  macro(cuptiPCSamplingGetData) \
+  macro(cuptiGetCubinCrc)
+
+CUPTI_FN
+(
+ cuptiGetCubinCrc,
+ (
+  CUpti_GetCubinCrcParams *pParams
+ );
+);
 
 CUPTI_FN
 (
@@ -397,6 +406,25 @@ cupti_pc_sampling_bind
 }
 
 
+uint64_t
+cupti_cubin_crc_get
+(
+ const void *cubin,
+ uint32_t cubin_size
+)
+{
+  CUpti_GetCubinCrcParams params = {
+    .size = CUpti_GetCubinCrcParamsSize,
+    .cubinSize = cubin_size,
+    .cubin = cubin
+  };
+
+  HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiGetCubinCrc, (&params));
+
+  return params.cubinCrc;
+}
+
+
 void
 cupti_pc_sampling_enable2
 (
@@ -408,6 +436,7 @@ cupti_pc_sampling_enable2
     .ctx = context,
     .pPriv = NULL
   };
+
   HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiPCSamplingEnable, (&params));
 }
 

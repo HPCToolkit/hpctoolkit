@@ -68,6 +68,14 @@ cupti_pc_sampling_bind
 );
 
 
+uint64_t
+cupti_cubin_crc_get
+(
+ const void *cubin,
+ uint32_t cubin_size
+);
+
+
 void
 cupti_pc_sampling_enable2
 (
