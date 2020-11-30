@@ -31,7 +31,7 @@ To enable to display a pair of $\langle$profile, metric$\rangle$ dimensions, the
 Requirements to launch \hpcviewer:
 \begin{itemize}
  \item On all platforms: Java 8 or newer. 
- \item On Linux: GTK.
+ \item On Linux: GTK 3.20 or newer.
 \end{itemize}
 
 \hpcviewer{} can either be launched from a command line (Linux platforms) or by clicking the \hpcviewer{} icon (for Windows, Mac OS X and Linux platforms).
@@ -257,7 +257,7 @@ Vertical scrolling of the metric and navigation panes is synchronized.
 % ----------------------------------------------------------
 
 \newcommand{\crosshair}{crosshair}
-\newcommand{\traceview}{Trace View}
+\newcommand{\traceview}{Main View}
 \newcommand{\depthview}{Depth View}
 \newcommand{\summaryview}{Summary View}
 \newcommand{\miniview}{Mini Map View}
@@ -283,10 +283,11 @@ When launching a dynamically-linked executable with \hpcrun{}, add the {\tt -t }
 When launching a statically-linked executable, set the environment variable \verb|HPCRUN_TRACE=1| to enable tracing. 
 When collecting a trace, one must also specify a metric to measure.  The best way to collect a useful trace is to asynchronously sample the execution with a time-based metric such as {\tt REALTIME}, {\tt CYCLES}, or {\tt WALLCLOCK} (Blue Gene/Q only).
 
-As shown in Figure~\ref{fig:hpctraceviewer-callpath},  call path traces consist of data in three dimensions: \emph{process/thread rank}, \emph{time}, and \emph{call path} depth.
+As shown in Figure~\ref{fig:hpctraceviewer-callpath},  call path traces consist of data in three dimensions: \emph{profile} (process/thread rank), \emph{time}, and \emph{call path} depth.
 A \emph{\crosshair} in \hpctraceviewer{} is defined by a triplet $(p,t,d)$ where $p$ is the selected process/thread rank, $t$ is the selected time, and $d$ is the selected call path depth. 
 
-\hpctraceviewer{}'s  \emph{\traceview} (Section~\ref{sec:traceview}) renders a view of processes and threads over time. \hpctraceviewer{}'s  \emph{\depthview} (Section~\ref{sec:depthview}) shows the call path depth over time for the thread selected by the cursor. \hpctraceviewer{}'s  \emph{\callview}  (Section~\ref{sec:callview}) shows the call path associated with the thread and time pair specified by the cursor. 
+\hpctraceviewer{} renders a view of processes and threads over time. The \emph{\depthview} (Section~\ref{sec:depthview}) shows the call path depth over time for the thread selected by the cursor.
+\hpctraceviewer{}'s  \emph{\callview}  (Section~\ref{sec:callview}) shows the call path associated with the thread and time pair specified by the cursor. 
 Each of these views plays a role for understanding an application's performance.
 
 In \hpctraceviewer, each procedure is assigned specific color. Figure~\ref{fig:hpctraceviewer-callpath} shows that at depth 1   each call path has the same color: blue. This node represents the main program that serves as the root of the call chain in all process at all times. At depth 2, all processes have a green node, which indicates another procedure. 
@@ -298,18 +299,18 @@ This might indicate that the processes first are observed in an initialization p
 
 \begin{figure}[t]
 \centering{\includegraphics[width=.8\textwidth]{fig/traceview-legend.png}}
-\caption{A screenshot of \hpctraceviewer{}'s interface.}
+\caption{A screenshot of \hpcviewer{}'s Trace view.}
 \label{fig:hpctraceviewer-legend}
 \end{figure}
 
 \begin{figure}[t]
 \centering{\includegraphics[width=.8\textwidth]{fig/traceview-stat.png}}
-\caption{A screenshot of \hpctraceviewer{}'s interface showing the \summaryview{} and \statview.}
+\caption{A screenshot of \hpcviewer{}'s Trace view showing the \summaryview{} and \statview.}
 \label{fig:hpctraceviewer-stat}
 \end{figure}
 
-Figures~\ref{fig:hpctraceviewer-legend} and~\ref{fig:hpctraceviewer-stat} show screenshots of \hpctraceviewer{}'s user interface presenting a call path profile.
-Figure~\ref{fig:hpctraceviewer-legend} highlights \hpctraceviewer{}'s four principal window panes: \traceview, \depthview, \callview{} and \miniview, 
+Figures~\ref{fig:hpctraceviewer-legend} and~\ref{fig:hpctraceviewer-stat} show screenshots of \hpctraceviewer{}'s capabilities in presenting call path traces.
+Figure~\ref{fig:hpctraceviewer-legend} highlights \hpctraceviewer{}'s four principal window panes: \traceview (the main view), \depthview, \callview{} and \miniview, 
 while Figure\ref{fig:hpctraceviewer-stat} shows additional two window panes: \summaryview{} and \statview.
 
 \begin{itemize}
@@ -360,7 +361,7 @@ while Figure\ref{fig:hpctraceviewer-stat} shows additional two window panes: \su
 \subsection{\traceview}
 \label{sec:traceview}
 
-\traceview{} is divided into two parts: the top part which contains \emph{action pane} and the \emph{information pane}, and the main view which displays the traces. 
+\traceview{} is divided into two parts: the top part which contains \emph{action pane} and the \emph{information pane}, and the main canvas which displays the traces. 
 
 The buttons in the action pane are the following:
 \begin{itemize}
@@ -743,15 +744,23 @@ Currently, it is only possible to generate scatter plots for metrics directly co
 \subsection{Thread View}
 \label{sec:thread-level-table}
 
+\hpcviewer{} also provides a feature to view the metrics of a certain threads (or processes) named Thread View.
+
+\begin{figure}[t]
+\centering{\includegraphics[width=0.8\textwidth]{fig/hpcviewer-dialog-thread.png}}
+\caption{A snapshot of a thread filter dialog. Users can refine the list of threads using regular expression by selecting the Regular expression checkbox.}
+\label{fig:hpcviewer-dialog-thread-select}
+\end{figure}
+
 \begin{figure}[t]
 \centering{\includegraphics[width=0.8\textwidth]{fig/hpcviewer-thread-table.png}}
-\caption{Example of a Thread View which display thread-level metrics of a set of threads. The first column is a CCT equivalent to the CCT in the Top-down View, the second and third columns represent the metrics of the selected threads (in this case they are the sum of metrics from threads 0.0, to 7.0)}
+\caption{Example of a Thread View which display thread-level metrics of a set of threads. The first column is a CCT equivalent to the CCT in the Top-down View, the second and third columns represent the metrics of the selected threads (in this case they are the sum of metrics from threads 0.1, to 7.1)}
 \label{fig:hpcviewer-view-thread-level}
 \end{figure}
 
 \hpcviewer{} also provides a feature to view the metrics of a certain threads (or processes) named Thread View.
 To select a thread or group of threads, you need to use the thread selection window by clicking \includegraphics[scale=.6]{fig/hpcviewer-thread.png} button from the calling-context view.
-On the thread selection window, you need to select the checkbox of the threads of interest. 
+On the thread selection window (Figure~\ref{fig:hpcviewer-dialog-thread-select}), you need to select the checkbox of the threads of interest. 
 To  narrow the list, you can specify the thread name on the filter part of the window.
 Recall that the format of the thread is ``\texttt{process\_id.thread\_id}'' (see Section~\ref{sec:hpcviewer:thread-level}).
 Hence, to specify just a main thread (thread zero), you can type '.0' on the filter, and the view only list threads 0 (such as 1.0, 2.0, 3.0 \dots).
