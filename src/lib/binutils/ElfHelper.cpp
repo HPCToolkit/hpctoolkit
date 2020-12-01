@@ -126,14 +126,10 @@ ElfFile::open
     origPtr = (char *) malloc(memLen);
     memcpy(origPtr, memPtr, memLen);
     relocateCubin(memPtr, memLen, elf);
-    // Prevent memory leak
-    free(memPtr);
 #else
     result = false;
-#endif
-    // If we cannot open the binary, release memPtr's memory
-    // If we opened the binary, we've copied memPtr to origPtr, also release memory
     memPtr = 0;
+#endif
   }
 #endif
 
