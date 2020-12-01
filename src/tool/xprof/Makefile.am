@@ -93,6 +93,7 @@ MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
 	$(HPCLIB_Binutils) $(HPCLIB_ISA) $(HPCLIB_XML) $(HPCLIB_Support) \
 	@BINUTILS_LIBS@ \
+	$(HPCLIB_gettext) \
 	@HOST_XPROF_LDFLAGS@ \
 	-lm
 
