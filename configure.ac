@@ -3535,6 +3535,45 @@ AM_CONDITIONAL(OPT_PAPI_CUPTI, [test "$use_papi_c_cupti" = yes])
 
 
 #-------------------------------------------------
+# Option: --disable-rtld-audit
+#-------------------------------------------------
+
+# Tracking changes to the set of currently loaded or mapped binaries at runtime
+# is difficult to do both accuractly and efficiently. In particular, there is
+# no clean way to wrap `dlopen` and still use the RUNPATH/RPATH present on the
+# original binary.
+
+# The solution to this is to use a series of hooks exposed by the dynamic
+# linker itself, allowing us to observe its actions without affecting it.
+# Collectively this interface is called the rtld-audit interface.
+
+# Unfortunately there are multiple bugs within all but the latest Glibc versions
+# that cause segfaults when this interface is in use. Thus, during this
+# transition period we allow for the usage of LD_AUDIT to be disabled.
+# The fallback wraps `dlopen` and thus may result in R*PATH issues.
+
+AC_ARG_ENABLE([rtld-audit],
+  [AS_HELP_STRING([--enable-rtld-audit],
+      [enable or disable the use of LD_AUDIT for monitoring of loaded binaries])],
+  [rtld_audit="$enableval"],
+  [rtld_audit=yes])
+
+if test "$rtld_audit" = no ; then
+  export_ld_audit='# LD_AUDIT disabled by configure'
+  rtld_audit_mesg='no'
+else
+  export_ld_audit='export LD_AUDIT="${hpcrun_dir}/libhpcrun_audit.so:${LD_AUDIT}"'
+  rtld_audit_mesg='yes'
+fi
+
+AC_SUBST([export_ld_audit])
+AM_CONDITIONAL([OPT_ENABLE_RTLD_AUDIT], [test "$rtld_audit" = yes])
+
+if test "$rtld_audit" = yes ; then
+  AC_DEFINE([ENABLE_RTLD_AUDIT], [1], [Using the LD_AUDIT interface])
+fi
+
+#-------------------------------------------------
 # Option: --with-tbb=PATH
 #-------------------------------------------------
 
@@ -4831,6 +4870,48 @@ AC_SUBST([OPT_CUPTI_IFLAGS])
 AC_SUBST([OPT_CUPTI_LDFLAGS])
 
 
+
+#-------------------------------------------------
+# Option: --with-opencl=PATH
+#-------------------------------------------------
+
+OPENCL=no
+OPT_HAVE_OPENCL=no
+OPT_OPENCL_IFLAGS=
+
+AC_ARG_WITH([opencl],
+  [AS_HELP_STRING([--with-opencl=PATH],
+      [path to opencl headers])],
+  [OPENCL="$withval"],
+  [])
+
+case "$OPENCL" in
+  /* )
+    if test ! -f "${OPENCL}/CL/cl.h" ; then
+      AC_MSG_ERROR([unable to find CL/cl.h in: $OPENCL])
+    else
+      OPT_OPENCL_IFLAGS="-I${OPENCL}"
+      OPT_HAVE_OPENCL=yes
+    fi
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([opencl header path must be absolute: $OPENCL])
+    ;;
+esac
+
+if test "$OPENCL" = yes && test "$OPT_HAVE_OPENCL" = no ; then
+  AC_MSG_ERROR([use --with-opencl to provide path/location of opencl headers])
+fi
+
+if test "$OPT_HAVE_OPENCL" = yes ; then
+  AC_MSG_NOTICE([The <CL/cl.h> header file is available.])
+fi
+
+AM_CONDITIONAL([ENABLE_OPENCL], [test "$OPT_HAVE_OPENCL" = yes])
+AC_SUBST([OPT_OPENCL_IFLAGS])
+
 #-------------------------------------------------
 # Option: --with-rocm=PATH
 #-------------------------------------------------
@@ -4855,7 +4936,7 @@ AC_ARG_WITH([rocm],
 
 if test "$OPT_HAVE_ROCM" = "yes" ; then
   AC_DEFINE(USE_ROCM, 1, [use ROCM])
-  OPT_ROCM_IFLAGS="-I${OPT_ROCM}/hip -I${OPT_ROCM}/hip/include -I${OPT_ROCM}/roctracer/include -I${OPT_ROCM}/hcc/include -I${OPT_ROCM}/hsa/include "
+  OPT_ROCM_IFLAGS="-I${OPT_ROCM}/include -I${OPT_ROCM}/hip -I${OPT_ROCM}/hip/include -I${OPT_ROCM}/roctracer/include -I${OPT_ROCM}/hcc/include -I${OPT_ROCM}/hsa/include "
 fi
 
 AM_CONDITIONAL([OPT_ENABLE_ROCM], [test "$OPT_HAVE_ROCM" = yes])
@@ -4864,6 +4945,36 @@ AC_SUBST([OPT_ROCM])
 AC_SUBST([OPT_ROCM_IFLAGS])
 AC_SUBST([OPT_ROCM_LDFLAGS])
 
+#-------------------------------------------------
+# Option: --with-level0=PATH
+#-------------------------------------------------
+
+OPT_LEVEL0=
+OPT_LEVEL0_INCPATH=
+OPT_LEVEL0_LDFLAGS=
+OPT_LEVEL0_LIBPATH=
+
+AC_ARG_WITH([level0],
+  AS_HELP_STRING([--with-level0=PATH],
+                 [use given Level Zero installation (absolute path) with hpcrun (default is NO)]),
+  [if test $withval != no; then
+     OPT_HAVE_LEVEL0=yes
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-level0 requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_LEVEL0=${withval}
+   fi])
+
+if test "$OPT_HAVE_LEVEL0" = "yes" ; then
+  AC_DEFINE(USE_LEVEL0, 1, [use Level Zero])
+  OPT_LEVEL0_IFLAGS="-I${OPT_LEVEL0}/include"
+fi
+
+AM_CONDITIONAL([OPT_ENABLE_LEVEL0], [test "$OPT_HAVE_LEVEL0" = yes])
+
+AC_SUBST([OPT_LEVEL0])
+AC_SUBST([OPT_LEVEL0_IFLAGS])
+AC_SUBST([OPT_LEVEL0_LDFLAGS])
 
 #-------------------------------------------------
 # enable-data-centric-tracing: data-centric tracing
@@ -5177,6 +5288,7 @@ AC_MSG_NOTICE([  datacentric?: ${OPT_ENABLE_DATACENTRIC_TRACE}])
 AC_MSG_NOTICE([  hpcserver?:   ${enable_hpcserver}])
 AC_MSG_NOTICE([  hpcstruct:    ${hpcstruct_mesg}])
 AC_MSG_NOTICE([  perf-events:  ${perf_event_mesg}])
+AC_MSG_NOTICE([  rtld-audit:   ${rtld_audit_mesg}])
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  C compiler: $CC_VERSION])
 AC_MSG_NOTICE([  Path:      $CC_PATH])

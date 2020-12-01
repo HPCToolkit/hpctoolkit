@@ -49,8 +49,8 @@
 // lib/banal/Struct.cpp.
 //
 // This side now handles the case of a measurements directory with
-// cubins.  We don't analyze anything here, just setup a Makefile and
-// launch the work for each cubin.
+// GPU binaries.  We don't analyze anything here, just setup a Makefile and
+// launch the work for each GPU binary.
 
 //****************************** Include Files ******************************
 
@@ -72,8 +72,7 @@ using std::endl;
 #include <vector>
 #include <unistd.h>
 
-#include <include/hpctoolkit-config.h>
-
+#include <include/gpu-binary.h>
 #include <include/hpctoolkit-config.h>
 
 #include "Args.hpp"
@@ -101,13 +100,13 @@ realmain(int argc, char* argv[]);
 
 //***************************** Analyze Cubins ******************************
 
-static const char* cubins_analysis_makefile =
-#include "cubins-analysis.h"
+static const char* gpubin_analysis_makefile =
+#include "gpubin-analysis.h"
 ;
 
 //
 // For a measurements directory, write a Makefile and launch hpcstruct
-// for each .cubin file.
+// for each GPU binary (gpubin).
 //
 static void
 doMeasurementsDir(string measurements_dir, BAnal::Struct::Options & opts)
@@ -115,33 +114,29 @@ doMeasurementsDir(string measurements_dir, BAnal::Struct::Options & opts)
   measurements_dir = RealPath(measurements_dir.c_str());
 
   //
-  // Check that 'measurements_dir' has at least one .cubin file.
+  // Check that 'measurements_dir' has at least one .gpubin file.
   //
-#ifndef OPT_HAVE_CUDA
-  PRINT_ERROR("Hpcstruct is not compiled with cuda.");
-  exit(1);
-#endif
 
-  string cubins_dir = measurements_dir + "/cubins";
+  string gpubin_dir = measurements_dir + "/" GPU_BINARY_DIRECTORY;
   struct dirent *ent;
   bool found = false;
 
-  DIR *dir = opendir(cubins_dir.c_str());
+  DIR *dir = opendir(gpubin_dir.c_str());
   if (dir == NULL) {
-    PRINT_ERROR("Unable to open measurements directory: " << cubins_dir);
+    PRINT_ERROR("Unable to open measurements directory: " << gpubin_dir);
     exit(1);
   }
 
   while ((ent = readdir(dir)) != NULL) {
     string file_name(ent->d_name);
-    if (file_name.find(".cubin") != string::npos) {
+    if (file_name.find(GPU_BINARY_SUFFIX) != string::npos) {
       found = true;
       break;
     }
   }
 
   if (! found) {
-    PRINT_ERROR("Measurements directory does not contain cubins: " << cubins_dir);
+    PRINT_ERROR("Measurements directory does not contain gpubin: " << gpubin_dir);
     exit(1);
   }
   closedir(dir);
@@ -172,19 +167,19 @@ doMeasurementsDir(string measurements_dir, BAnal::Struct::Options & opts)
 
   string gpucfg = opts.compute_gpu_cfg ? "yes" : "no";
 
-  makefile << "CUBINS_DIR =  " << cubins_dir << "\n"
+  makefile << "GPUBIN_DIR =  " << gpubin_dir << "\n"
 	   << "STRUCTS_DIR = " << structs_dir << "\n"
-	   << "CUBIN_CFG = " << gpucfg << "\n"
+	   << "GPUBIN_CFG = " << gpucfg << "\n"
 	   << "GPU_SIZE = " << opts.gpu_size << "\n"
 	   << "JOBS = " << opts.jobs << "\n\n"
-	   << cubins_analysis_makefile << endl;
+	   << gpubin_analysis_makefile << endl;
   makefile.close();
 
   string make_cmd = string("make -C ") + structs_dir + " -k --silent "
       + " --no-print-directory all";
 
   if (system(make_cmd.c_str()) != 0) {
-    DIAG_EMsg("Make hpcstruct files for cubins failed.");
+    DIAG_EMsg("Make hpcstruct files for GPU binaries failed.");
     exit(1);
   }
 }

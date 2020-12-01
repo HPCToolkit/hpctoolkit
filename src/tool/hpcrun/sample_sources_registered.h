@@ -48,7 +48,6 @@
 #define REGISTERED_SAMPLE_SOURCES_H
 
 #include <sample-sources/sample_source_obj.h>
-#define MAX_POSSIBLE_SAMPLE_SOURCES 12
 
 void hpcrun_ss_register(sample_source_t *src);
 sample_source_t *hpcrun_source_can_process(char *event);

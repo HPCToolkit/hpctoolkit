@@ -1192,6 +1192,22 @@ To build a version of your executable with \HPCToolkit's monitoring code linked 
 In practice, you may want to edit your \texttt{Makefile} to always build two versions of your program, perhaps naming them \texttt{app} and \texttt{app.hpc}.
 
 
+\subsection{Using \hpclink{} when {\tt gprof} instrumentation is present}
+
+When an application has been compiled with the compiler flag \verb|-pg|,
+the compiler adds instrumentation to collect performance measurement data for
+the \verb|gprof| profiler. Measuring application performance with
+\HPCToolkit{}'s measurement subsystem and \verb|gprof| instrumentation
+active in the same execution may cause the execution
+to abort. One can detect the presence of \verb|gprof| instrumentation in an
+application by the presence of \verb|__monstartup| and \verb|_mcleanup| symbols
+in a executable.
+One can disable \verb|gprof| instrumentation when measuring the performance of
+a statically-linked application by using the \verb|--disable-gprof|
+argument to \hpclink{}.
+
+
+
 % ===========================================================================
 % ===========================================================================
 
@@ -1446,6 +1462,35 @@ The most common causes for unusually high overhead are the following:
   (We plan to address this issue in a future release.)
 
 \end{itemize}
+
+\subsection{When using \HPCToolkit{}, my application aborts}
+
+When an application has been compiled with the compiler flag \verb|-pg|,
+the compiler adds instrumentation to collect performance measurement data for
+the \verb|gprof| profiler. Measuring application performance with
+\HPCToolkit{}'s measurement subsystem and \verb|gprof| instrumentation
+active in the same execution may cause the execution
+to abort. One can detect the presence of \verb|gprof| instrumentation in an
+application by the presence of the \verb|__monstartup| and \verb|_mcleanup| symbols
+in a executable.  You can recompile your code without the
+\verb|-pg| compiler flag and measure again. Alternatively, you can use the \verb|--disable-gprof|
+argument to \hpcrun{} or \hpclink{} to disable \verb|gprof| instrumentation while 
+measuring performance with \HPCToolkit{}.
+
+
+\section{\HPCToolkit{} reports that my application spends a lot of time in C library functions with names that include {\tt mcount}}
+
+If performance measurements with \HPCToolkit{} show that your
+application is spending a lot of time in C library routines with
+names that include the string {\tt mcount} (e.g., \verb|mcount|, \verb|_mcount| or
+\verb|__mcount_internal|), your code has been compiled with the compiler
+flag \verb|-pg|, which adds instrumentation to collect performance
+measurement data for the \verb|gprof| profiler.  If you are using
+\HPCToolkit{} to collect performance data, the \verb|gprof| instrumentation
+is needlessly slowing your application. You can recompile your code without the
+\verb|-pg| compiler flag and measure again. Alternatively, you can use the \verb|--disable-gprof|
+argument to \hpcrun{} or \hpclink{} to disable \verb|gprof| instrumentation while 
+measuring performance with \HPCToolkit{}.
 
 
 % ===========================================================================

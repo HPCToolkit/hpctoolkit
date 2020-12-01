@@ -33,6 +33,9 @@
 /* Symtab supports openmp (for fnbounds) */
 #undef ENABLE_OPENMP_SYMTAB
 
+/* Using the LD_AUDIT interface */
+#undef ENABLE_RTLD_AUDIT
+
 /* Add extra annotations for debugging with Valgrind */
 #undef ENABLE_VG_ANNOTATIONS
 
@@ -194,6 +197,9 @@
 
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
+
+/* use Level Zero */
+#undef USE_LEVEL0
 
 /* use ROCM */
 #undef USE_ROCM

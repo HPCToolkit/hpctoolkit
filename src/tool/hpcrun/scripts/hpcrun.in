@@ -22,7 +22,6 @@ perfmon_libdir='@PERFMON_LIB@'
 roctracer_lib_path='@OPT_ROCM@/roctracer/lib'
 # gotcha_lib_path='@GOTCHA_LIBDIR@'
 
-
 prog_name=hpcrun
 
 #------------------------------------------------------------
@@ -138,6 +137,13 @@ Options: Profiling (Defaults shown in curly brackets {})
                        Delay starting sampling until the application calls
                        hpctoolkit_sampling_start().
 
+  --disable-gprof      Override and disable gprof instrumentation  This option
+                       is only useful when using hpcrun to add HPCToolkit's
+                       measurement subsystem to a dynamically-linked application 
+                       that has been compiled with -pg. One can't measure 
+                       performance with HPCToolkit when gprof instrumentation 
+                       is active in the same execution.
+
   -f <frac>, -fp <frac>, --process-fraction <frac>
                        Measure only a fraction <frac> of the execution's
                        processes.  For each process, enable measurement
@@ -231,6 +237,10 @@ do
 	    shift
 	    ;;
 
+	-ad | --audit-debug )
+	    export HPCRUN_AUDIT_DEBUG=1
+	    ;;
+
 	-ck | --control-knob )
 	    arg_ok "$1" || die "missing argument for $arg"
 	    export HPCRUN_CONTROL_KNOBS="$HPCRUN_CONTROL_KNOBS $1"
@@ -265,7 +275,8 @@ do
 		PTHREAD_WAIT* ) preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_pthread.so" ;;
 		CPU_GPU_IDLE* ) preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_gpu.so" ;;
 		MPI* )     preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_mpi.so" ;;
-		amd-rocm*) roctracer_lib="${roctracer_lib_path}";;
+		gpu=amd) roctracer_lib="${roctracer_lib_path}"
+			 export HIP_ENABLE_DEFERRED_LOADING=0;;
 	    esac
 	    case "$HPCRUN_EVENT_LIST" in
 		'' ) HPCRUN_EVENT_LIST="$1" ;;
@@ -319,10 +330,15 @@ do
 
 	# --------------------------------------------------
 
+	--disable-gprof )
+	    preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_gprof.so"
+	    ;;
+
+	# --------------------------------------------------
+
 	--omp-serial-only )
 	    export HPCRUN_OMP_SERIAL_ONLY=1
 	    ;;
-
 
 	# --------------------------------------------------
 
@@ -364,6 +380,12 @@ do
 	    arg_ok "$1" || die "missing argument for $arg"
 	    export HPCRUN_MEMLEAK_PROB="$1"
 	    shift
+	    ;;
+
+	# --------------------------------------------------
+
+	-dapco | --disable-audit-plt-call-opt )
+	    export HPCRUN_AUDIT_DISABLE_PLT_CALL_OPT=1
 	    ;;
 
 	# --------------------------------------------------
@@ -500,5 +522,7 @@ export HPCRUN_FNBOUNDS_CMD
 
 export LD_LIBRARY_PATH="${hpc_ld_library_path}:${LD_LIBRARY_PATH}"
 export LD_PRELOAD="${preload_list} ${LD_PRELOAD}"
+@export_ld_audit@
+export HPCRUN_AUDIT_MAIN_LIB="${hpcrun_dir}/libhpcrun.so"
 
 exec "$@"

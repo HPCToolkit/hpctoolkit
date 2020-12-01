@@ -32,7 +32,7 @@ stream_data_collecting
 
     thread_data_t* td = NULL;
     //!unsure of the first argument
-    hpcrun_threadMgr_non_compact_data_get(500 + atomic_fetch_add(&stream_id, 1), NULL, &td);
+    hpcrun_threadMgr_non_compact_data_get(500 + atomic_fetch_add(&stream_id, 1), NULL, &td, true);
     hpcrun_set_thread_data(td);
 
     while(!atomic_load(&stop_streams))

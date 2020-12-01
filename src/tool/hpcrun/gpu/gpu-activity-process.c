@@ -87,7 +87,7 @@
 static void
 gpu_context_stream_trace
 (
- uint32_t context_id, 
+ uint32_t context_id,
  uint32_t stream_id,
  gpu_trace_item_t *ti
 )
@@ -99,12 +99,12 @@ gpu_context_stream_trace
 static void
 gpu_context_trace
 (
- uint32_t context_id, 
+ uint32_t context_id,
  gpu_trace_item_t *ti
 )
 {
   gpu_context_id_map_context_process(context_id, gpu_trace_produce, ti);
-  
+
 }
 
 
@@ -133,7 +133,7 @@ attribute_activity
  cct_node_t *cct_node
 )
 {
-  gpu_activity_channel_t *channel = 
+  gpu_activity_channel_t *channel =
     gpu_host_correlation_map_entry_channel_get(hc);
   activity->cct_node = cct_node;
   gpu_activity_channel_produce(channel, activity);
@@ -157,13 +157,13 @@ gpu_memcpy_process
     if (host_op_entry != NULL) {
       gpu_placeholder_type_t mct;
       switch (activity->details.memcpy.copyKind) {
-        case GPU_MEMCPY_H2D: 
+        case GPU_MEMCPY_H2D:
           mct = gpu_placeholder_type_copyin;
           break;
-        case GPU_MEMCPY_D2H: 
+        case GPU_MEMCPY_D2H:
           mct = gpu_placeholder_type_copyout;
           break;
-        default: 
+        default:
           mct = gpu_placeholder_type_copy;
           break;
       }
@@ -176,11 +176,12 @@ gpu_memcpy_process
           gpu_placeholder_type_copy);
       }
 
+      assert(host_op_node != NULL);
       gpu_trace_item_t entry_trace;
       trace_item_set(&entry_trace, activity, host_op_entry, host_op_node);
 
       gpu_context_stream_trace
-        (activity->details.memcpy.context_id, activity->details.memcpy.stream_id, 
+        (activity->details.memcpy.context_id, activity->details.memcpy.stream_id,
          &entry_trace);
 
       attribute_activity(host_op_entry, activity, host_op_node);
@@ -229,7 +230,7 @@ gpu_sample_process
     if (host_op_entry != NULL) {
       PRINT("external_id %lu\n", external_id);
 
-      bool more_samples = 
+      bool more_samples =
         gpu_host_correlation_map_samples_increase
         (external_id, sample->details.pc_sampling.samples);
 
@@ -275,9 +276,9 @@ gpu_sampling_info_process
       attribute_activity(host_op_entry, sri, host_op_node);
     }
     // sample info is the last record for a given correlation id
-    bool more_samples = 
+    bool more_samples =
       gpu_host_correlation_map_total_samples_update
-      (external_id, sri->details.pc_sampling_info.totalSamples - 
+      (external_id, sri->details.pc_sampling_info.totalSamples -
        sri->details.pc_sampling_info.droppedSamples);
     if (!more_samples) {
       gpu_correlation_id_map_delete(correlation_id);
@@ -303,7 +304,7 @@ gpu_correlation_process
     gpu_correlation_id_map_external_id_replace(gpu_correlation_id, host_correlation_id);
   }
   PRINT("Correlation: native_correlation %u --> host_correlation %lu\n", 
-	gpu_correlation_id, host_correlation_id);
+      gpu_correlation_id, host_correlation_id);
 }
 
 
@@ -314,15 +315,15 @@ gpu_memset_process
 )
 {
   uint32_t correlation_id = activity->details.memset.correlation_id;
-  gpu_correlation_id_map_entry_t *cid_map_entry = 
+  gpu_correlation_id_map_entry_t *cid_map_entry =
     gpu_correlation_id_map_lookup(correlation_id);
   if (cid_map_entry != NULL) {
     uint64_t external_id = gpu_correlation_id_map_entry_external_id_get(cid_map_entry);
-    gpu_host_correlation_map_entry_t *host_op_entry = 
+    gpu_host_correlation_map_entry_t *host_op_entry =
       gpu_host_correlation_map_lookup(external_id);
     if (host_op_entry != NULL) {
       cct_node_t *host_op_node =
-	gpu_host_correlation_map_entry_op_cct_get(host_op_entry, 
+	gpu_host_correlation_map_entry_op_cct_get(host_op_entry,
 						  gpu_placeholder_type_memset);
 
       gpu_trace_item_t entry_trace;
@@ -368,7 +369,7 @@ gpu_kernel_process
     gpu_correlation_id_map_lookup(correlation_id);
   if (cid_map_entry != NULL) {
     gpu_correlation_id_map_kernel_update
-      (correlation_id, activity->details.kernel.device_id, 
+      (correlation_id, activity->details.kernel.device_id,
        activity->details.interval.start, activity->details.interval.end);
 
     uint64_t external_id =
@@ -377,11 +378,12 @@ gpu_kernel_process
       gpu_host_correlation_map_lookup(external_id);
 
     if (host_op_entry != NULL) {
-      cct_node_t *func_ph = 
+      cct_node_t *func_ph =
         gpu_host_correlation_map_entry_op_cct_get(host_op_entry,
 						  gpu_placeholder_type_trace);
 
       cct_node_t *func_node = hpcrun_cct_children(func_ph); // only child
+
       if (func_node == NULL) {
 	// in case placeholder doesn't have a child
         func_node = func_ph;
@@ -394,7 +396,7 @@ gpu_kernel_process
         (activity->details.kernel.context_id, activity->details.kernel.stream_id,
          &entry_trace);
 
-      cct_node_t *kernel_ph = 
+      cct_node_t *kernel_ph =
         gpu_host_correlation_map_entry_op_cct_get(host_op_entry,
 						  gpu_placeholder_type_kernel);
 
@@ -411,7 +413,7 @@ gpu_kernel_process
       attribute_activity(host_op_entry, activity, kernel_node);
     }
   } else {
-    PRINT("Kernel execution correlation_id %u cannot be found", correlation_id);
+    PRINT("Kernel execution correlation_id %u cannot be found\n", correlation_id);
   }
 
   PRINT("Kernel execution deviceId %u\n", activity->details.kernel.device_id);
@@ -435,7 +437,7 @@ gpu_synchronization_process
       gpu_host_correlation_map_lookup(external_id);
     if (host_op_entry != NULL) {
       cct_node_t *host_op_node =
-        gpu_host_correlation_map_entry_op_cct_get(host_op_entry, 
+        gpu_host_correlation_map_entry_op_cct_get(host_op_entry,
           gpu_placeholder_type_sync);
 
       attribute_activity(host_op_entry, activity, host_op_node);
@@ -453,7 +455,7 @@ gpu_synchronization_process
           case GPU_SYNC_STREAM_EVENT_WAIT:
             // Insert a event for a specific stream
             PRINT("Add context %u stream %u sync\n", context_id, stream_id);
-            gpu_context_stream_trace(context_id, stream_id, &entry_trace); 
+            gpu_context_stream_trace(context_id, stream_id, &entry_trace);
             break;
           case GPU_SYNC_CONTEXT:
             // Insert events for all current active streams
@@ -463,13 +465,13 @@ gpu_synchronization_process
             break;
           case GPU_SYNC_EVENT:
             {
-              // Find the corresponding stream that records the event 
+              // Find the corresponding stream that records the event
               gpu_event_id_map_entry_t *event_id_entry = gpu_event_id_map_lookup(event_id);
               if (event_id_entry != NULL) {
                 context_id = gpu_event_id_map_entry_context_id_get(event_id_entry);
                 stream_id = gpu_event_id_map_entry_stream_id_get(event_id_entry);
                 PRINT("Add context %u stream %u event %u sync\n", context_id, stream_id, event_id);
-                gpu_context_stream_trace(context_id, stream_id, &entry_trace); 
+                gpu_context_stream_trace(context_id, stream_id, &entry_trace);
               }
               break;
             }
@@ -509,7 +511,7 @@ gpu_cdpkernel_process
       cct_node_t *func_node = hpcrun_leftmost_child(func_ph);
       if (func_node == NULL) {
 	// in case placeholder doesn't have a child
-	func_node = func_ph;
+        func_node = func_ph;
       }
 
       gpu_trace_item_t entry_trace;
@@ -557,17 +559,17 @@ gpu_instruction_process
 )
 {
   uint32_t correlation_id = activity->details.instruction.correlation_id;
-  ip_normalized_t pc = activity->details.instruction.pc;    
+  ip_normalized_t pc = activity->details.instruction.pc;
   gpu_correlation_id_map_entry_t *cid_map_entry =
     gpu_correlation_id_map_lookup(correlation_id);
   if (cid_map_entry != NULL) {
     uint64_t external_id =
       gpu_correlation_id_map_entry_external_id_get(cid_map_entry);
     PRINT("external_id %lu\n", external_id);
-    gpu_host_correlation_map_entry_t *host_op_entry = 
+    gpu_host_correlation_map_entry_t *host_op_entry =
       gpu_host_correlation_map_lookup(external_id);
     if (host_op_entry != NULL) {
-      cct_node_t *func_ph = 
+      cct_node_t *func_ph =
         gpu_host_correlation_map_entry_op_function_get(host_op_entry);
 
       cct_node_t *func_ins = hpcrun_cct_insert_ip_norm(func_ph, pc);
@@ -598,7 +600,7 @@ gpu_activity_process
     gpu_sampling_info_process(ga);
     break;
 
-  case GPU_ACTIVITY_EXTERNAL_CORRELATION: 
+  case GPU_ACTIVITY_EXTERNAL_CORRELATION:
     gpu_correlation_process(ga);
     break;
 

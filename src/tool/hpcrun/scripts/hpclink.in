@@ -143,6 +143,13 @@ Options: Linking
                        of -Wl).  Used to work around problems with the 
                        Berkeley UPC compiler script (rarely needed).
 
+  --disable-gprof      Override and disable gprof instrumentation  This option
+                       is only useful when using hpclink to add HPCToolkit's
+                       measurement subsystem to a statically-linked application 
+                       that has been compiled with -pg. One can't measure 
+                       performance with HPCToolkit when gprof instrumentation 
+                       is active in the same execution.
+
   -fe <dir>, --front-end <dir>
                        In a cross-compile link, use the current install tree
                        for the back-end libraries and use <dir> for the install
@@ -215,6 +222,14 @@ do
 	    ;;
 	-dw | --double-wrap )
 	    double_wrap=yes
+	    shift
+	    ;;
+	--disable-gprof )
+	    gprof_wrap="${libhpcrun_dir}/libhpcrun_gprof_wrap.a"
+	    test -f "$gprof_wrap" || die "unable to find: $gprof_wrap"
+	    extra_hpc_files="$extra_hpc_files $gprof_wrap"
+	    extra_wrap_names="$extra_wrap_names __monstartup _mcleanup mcount _mcount"
+	    undef_names="$undef_names __monstartup"
 	    shift
 	    ;;
 	-fe | -front-end | --front-end )
