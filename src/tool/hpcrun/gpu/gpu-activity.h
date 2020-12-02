@@ -80,20 +80,22 @@ typedef struct gpu_activity_channel_t gpu_activity_channel_t;
 typedef enum {    
   GPU_ACTIVITY_UNKNOWN                 = 0,
   GPU_ACTIVITY_KERNEL                  = 1,
-  GPU_ACTIVITY_MEMCPY                  = 2,
-  GPU_ACTIVITY_MEMCPY2                 = 3,
-  GPU_ACTIVITY_MEMSET                  = 4,
-  GPU_ACTIVITY_MEMORY                  = 5,    
-  GPU_ACTIVITY_SYNCHRONIZATION         = 6,
-  GPU_ACTIVITY_GLOBAL_ACCESS           = 7,
-  GPU_ACTIVITY_LOCAL_ACCESS            = 8,
-  GPU_ACTIVITY_BRANCH                  = 9,
-  GPU_ACTIVITY_CDP_KERNEL              = 10,
-  GPU_ACTIVITY_PC_SAMPLING             = 11,
-  GPU_ACTIVITY_PC_SAMPLING_INFO        = 12, 
-  GPU_ACTIVITY_EXTERNAL_CORRELATION    = 13,
-  GPU_ACTIVITY_EVENT                   = 14,
-  GPU_ACTIVITY_FUNCTION                = 15
+  GPU_ACTIVITY_KERNEL_BLOCK             = 2,  
+  GPU_ACTIVITY_MEMCPY                  = 3,
+  GPU_ACTIVITY_MEMCPY2                 = 4,
+  GPU_ACTIVITY_MEMSET                  = 5,
+  GPU_ACTIVITY_MEMORY                  = 6,    
+  GPU_ACTIVITY_SYNCHRONIZATION         = 7,
+  GPU_ACTIVITY_GLOBAL_ACCESS           = 8,
+  GPU_ACTIVITY_LOCAL_ACCESS            = 9,
+  GPU_ACTIVITY_BRANCH                  = 10,
+  GPU_ACTIVITY_CDP_KERNEL              = 11,
+  GPU_ACTIVITY_PC_SAMPLING             = 12,
+  GPU_ACTIVITY_PC_SAMPLING_INFO        = 13, 
+  GPU_ACTIVITY_EXTERNAL_CORRELATION    = 14,
+  GPU_ACTIVITY_EVENT                   = 15,
+  GPU_ACTIVITY_FUNCTION                = 16,
+  GPU_ACTIVITY_FLUSH                   = 17
 } gpu_activity_kind_t;
 
 
@@ -174,7 +176,7 @@ typedef enum {
   GPU_MEM_MANAGED_STATIC  = 6,
   GPU_MEM_UNKNOWN         = 7,
   GPU_MEM_COUNT           = 8
-} gpu_mem_kind_t;
+} gpu_mem_type_t;
 
 
 // pc sampling
@@ -195,6 +197,10 @@ typedef struct gpu_pc_sampling_info_t {
   uint64_t fullSMSamples;
 } gpu_pc_sampling_info_t;
 
+// a special flush record to notify all operations have been consumed
+typedef struct gpu_flush_t {
+  atomic_bool *wait;
+} gpu_flush_t;
 
 // this type is prefix of all memory structures
 // gpu_interval_t is a prefix 
@@ -210,6 +216,7 @@ typedef struct gpu_memcpy_t {
   uint64_t start;
   uint64_t end;
   uint64_t bytes;
+  uint64_t submit_time;
   uint32_t correlation_id;
   uint32_t context_id;
   uint32_t stream_id;
@@ -223,7 +230,8 @@ typedef struct gpu_memory_t {
   uint64_t start;
   uint64_t end;
   uint64_t bytes;
-  gpu_mem_kind_t memKind;
+  uint32_t correlation_id;
+  gpu_mem_type_t memKind;
 } gpu_memory_t;
 
 
@@ -235,7 +243,7 @@ typedef struct gpu_memset_t {
   uint32_t correlation_id;
   uint32_t context_id;
   uint32_t stream_id;
-  gpu_mem_kind_t memKind;
+  gpu_mem_type_t memKind;
 } gpu_memset_t;
 
 
@@ -243,6 +251,7 @@ typedef struct gpu_memset_t {
 typedef struct gpu_kernel_t {
   uint64_t start;
   uint64_t end;
+  uint64_t submit_time;
   uint32_t correlation_id;
   uint32_t device_id;
   uint32_t context_id;
@@ -256,6 +265,13 @@ typedef struct gpu_kernel_t {
   uint32_t blockThreads;
   uint32_t blockSharedMemory;
 } gpu_kernel_t;
+
+
+typedef struct gpu_kernel_block_t {
+  uint64_t external_id;
+  uint64_t execution_count;
+  ip_normalized_t pc;
+} gpu_kernel_block_t;
 
 
 typedef struct gpu_cdpkernel_t {
@@ -351,6 +367,7 @@ typedef struct gpu_activity_details_t {
     gpu_memory_t memory;
     gpu_memset_t memset;
     gpu_kernel_t kernel;
+    gpu_kernel_block_t kernel_block;
     gpu_function_t function;
     gpu_cdpkernel_t cdpkernel;
     gpu_event_t event;
@@ -359,6 +376,7 @@ typedef struct gpu_activity_details_t {
     gpu_branch_t branch;
     gpu_synchronization_t synchronization;
     gpu_host_correlation_t correlation;
+    gpu_flush_t flush;
 
     /* Access short cut for activitiy fields shared by multiple kinds */
 
@@ -416,11 +434,11 @@ gpu_activity_free
 
 
 void
-set_gpu_interval
+gpu_interval_set
 (
-  gpu_interval_t* interval,
-  uint64_t start,
-  uint64_t end
+ gpu_interval_t* interval,
+ uint64_t start,
+ uint64_t end
 );
 
 
@@ -432,5 +450,17 @@ gpu_context_activity_dump
 );
 
 
+const char*
+gpu_kind_to_string
+(
+gpu_activity_kind_t kind
+);
+
+
+const char*
+gpu_type_to_string
+(
+gpu_memcpy_type_t type
+);
 
 #endif

@@ -58,7 +58,6 @@
 
 #include "opencl-activity-translate.h"
 #include "opencl-api.h"
-#include "opencl-intercept.h"
 
 
 
@@ -67,33 +66,26 @@
 //******************************************************************************
 
 static void
-getMemoryProfileInfo
-(
-  gpu_memcpy_t *memcpy,
-  cl_memory_callback_t *cb_data
-)
-{
-  memcpy->correlation_id = cb_data->correlation_id;
-  memcpy->bytes = cb_data->size;
-  memcpy->copyKind = (gpu_memcpy_type_t) 
-    (cb_data->fromHostToDevice)? GPU_MEMCPY_H2D: 
-    (cb_data->fromDeviceToHost? GPU_MEMCPY_D2H:	GPU_MEMCPY_UNK);
-}
-
-
-static void
 convert_kernel_launch
 (
   gpu_activity_t *ga,
-  void *user_data,
-  cl_event event
+  opencl_object_t *cb_data,
+  uint64_t start_time,
+  uint64_t end_time
 )
 {
-  cl_kernel_callback_t *kernel_cb_data = (cl_kernel_callback_t*)user_data;
   memset(&ga->details.kernel, 0, sizeof(gpu_kernel_t));
-  getTimingInfoFromClEvent(&ga->details.interval, event);
-  ga->kind = GPU_ACTIVITY_KERNEL;
-  ga->details.kernel.correlation_id = kernel_cb_data->correlation_id;
+  if (start_time != 0 && end_time != 0) {
+    gpu_interval_set(&ga->details.interval, start_time, end_time);
+  }
+
+  ga->kind     = cb_data->kind;
+  ga->cct_node = cb_data->details.cct_node;
+
+  ga->details.kernel.correlation_id = cb_data->details.ker_cb.correlation_id;
+  ga->details.kernel.submit_time    = cb_data->details.submit_time;
+  ga->details.kernel.context_id    = cb_data->details.context_id;
+  ga->details.kernel.stream_id    = cb_data->details.stream_id;
 }
 
 
@@ -101,18 +93,49 @@ static void
 convert_memcpy
 (
   gpu_activity_t *ga,
-  void *user_data,
-  cl_event event,
-  gpu_memcpy_type_t kind
+  opencl_object_t *cb_data,
+  uint64_t start_time,
+  uint64_t end_time
 )
 {
-  cl_memory_callback_t *memory_cb_data = (cl_memory_callback_t*)user_data;
   memset(&ga->details.memcpy, 0, sizeof(gpu_memcpy_t));
-  getTimingInfoFromClEvent(&ga->details.interval, event);
-  getMemoryProfileInfo(&ga->details.memcpy, memory_cb_data);
-  ga->kind = GPU_ACTIVITY_MEMCPY;
+  if (start_time != 0 && end_time != 0) {
+    gpu_interval_set(&ga->details.interval, start_time, end_time);
+  }
+
+  ga->kind     = cb_data->kind;
+  ga->cct_node = cb_data->details.cct_node;
+
+  ga->details.memcpy.correlation_id  = cb_data->details.cpy_cb.correlation_id;
+  ga->details.memcpy.submit_time     = cb_data->details.submit_time;
+  ga->details.memcpy.context_id      = cb_data->details.context_id;
+  ga->details.memcpy.stream_id       = cb_data->details.stream_id;
+  ga->details.memcpy.bytes           = cb_data->details.cpy_cb.size;
+  ga->details.memcpy.copyKind        = cb_data->details.cpy_cb.type;
 }
 
+
+static void
+convert_memory
+(
+  gpu_activity_t *ga,
+  opencl_object_t *cb_data,
+  uint64_t start_time,
+  uint64_t end_time
+)
+{
+  memset(&ga->details.memory, 0, sizeof(gpu_memory_t));
+  if (start_time != 0 && end_time != 0) {
+    gpu_interval_set(&ga->details.interval, start_time, end_time);
+  }
+
+  ga->kind     = cb_data->kind;
+  ga->cct_node = cb_data->details.cct_node;
+
+  ga->details.memory.correlation_id  = cb_data->details.mem_cb.correlation_id;
+  ga->details.memory.bytes           = cb_data->details.mem_cb.size;
+  ga->details.memory.memKind         = cb_data->details.mem_cb.type;
+}
 
 
 //******************************************************************************
@@ -123,24 +146,26 @@ void
 opencl_activity_translate
 (
   gpu_activity_t *ga,
-  cl_event event,
-  void *user_data
+  opencl_object_t *cb_data,
+  gpu_interval_t interval
 )
 {
-  cl_generic_callback_t *cb_data = (cl_generic_callback_t*)user_data;
-  opencl_call_t type = cb_data->type;
-  switch (type) {
-    case kernel:
-      convert_kernel_launch(ga, user_data, event);
+  switch (cb_data->kind) {
+    case GPU_ACTIVITY_MEMCPY:
+      convert_memcpy(ga, cb_data, interval.start, interval.end);
       break;
-    case memcpy_H2D:
-      convert_memcpy(ga, user_data, event, GPU_MEMCPY_H2D);
+
+    case GPU_ACTIVITY_KERNEL:
+      convert_kernel_launch(ga, cb_data, interval.start, interval.end);
       break;
-    case memcpy_D2H:
-      convert_memcpy(ga, user_data, event, GPU_MEMCPY_D2H);
+
+    case GPU_ACTIVITY_MEMORY:
+      convert_memory(ga, cb_data, interval.start, interval.end);
       break;
+
     default:
       assert(0);
   }
+
   cstack_ptr_set(&(ga->next), 0);
 }

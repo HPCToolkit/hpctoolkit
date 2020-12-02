@@ -4885,12 +4885,14 @@ AC_ARG_WITH([opencl],
   [OPENCL="$withval"],
   [])
 
+AC_MSG_CHECKING([for opencl])
+
 case "$OPENCL" in
   /* )
-    if test ! -f "${OPENCL}/CL/cl.h" ; then
+    if test ! -f "${OPENCL}/include/CL/cl.h" ; then
       AC_MSG_ERROR([unable to find CL/cl.h in: $OPENCL])
     else
-      OPT_OPENCL_IFLAGS="-I${OPENCL}"
+      OPT_OPENCL_IFLAGS="-I${OPENCL}/include"
       OPT_HAVE_OPENCL=yes
     fi
     ;;
@@ -4909,8 +4911,176 @@ if test "$OPT_HAVE_OPENCL" = yes ; then
   AC_MSG_NOTICE([The <CL/cl.h> header file is available.])
 fi
 
-AM_CONDITIONAL([ENABLE_OPENCL], [test "$OPT_HAVE_OPENCL" = yes])
+AM_CONDITIONAL([OPT_ENABLE_OPENCL], [test "$OPT_HAVE_OPENCL" = yes])
+
+AC_MSG_RESULT([$OPENCL])
+
 AC_SUBST([OPT_OPENCL_IFLAGS])
+
+#-------------------------------------------------
+# Option: --with-igc=PATH
+#-------------------------------------------------
+
+IGC=no
+OPT_HAVE_IGC=no
+OPT_IGC_IFLAGS=
+OPT_IGC_LDFLAGS=
+
+AC_ARG_WITH([igc],
+  [AS_HELP_STRING([--with-igc=PATH],
+      [path to igc install directory])],
+  [IGC="$withval"],
+  [])
+
+AC_MSG_CHECKING([for igc])
+
+case "$IGC" in
+  /* )
+    if test ! -f "${IGC}/include/igc/igc.opencl.h" ; then
+      AC_MSG_ERROR([unable to find igc.opencl.h in: $IGC])
+    fi
+    OPT_IGC_IFLAGS="-I${IGC}/include"
+
+    IGC_LDFLAGS = 
+    IGA_LDFLAGS =
+
+    for lib in $multilib_path ; do
+      if test -f "${IGC}/${lib}/libigc.so" ; then
+        IGC_LDFLAGS="-L${IGC}/$lib -Wl,-rpath=${IGC}/$lib -ligc"
+        break
+      fi
+    done
+    if test "x$IGC_LDFLAGS" = x ; then
+      AC_MSG_ERROR([unable to find libigc.so in: $IGC])
+    fi
+
+    for lib in $multilib_path ; do
+      if test -f "${IGC}/${lib}/libiga64.so" ; then
+        IGA_LDFLAGS="-L${IGC}/$lib -Wl,-rpath=${IGC}/$lib -liga64"
+        break
+      fi
+    done
+    if test "x$IGA_LDFLAGS" = x ; then
+      AC_MSG_ERROR([unable to find libiga.so in: $IGC])
+    fi
+
+    OPT_IGC_LDFLAGS="${IGC_LDFLAGS} ${IGA_LDFLAGS}"
+
+    OPT_HAVE_IGC=yes
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([igc directory must be absolute path: $IGC])
+    ;;
+esac
+
+AM_CONDITIONAL([OPT_ENABLE_IGC], [test "$OPT_HAVE_IGC" = yes])
+
+AC_MSG_RESULT([$IGC])
+
+AC_SUBST([OPT_IGC])
+AC_SUBST([OPT_IGC_IFLAGS])
+AC_SUBST([OPT_IGC_LDFLAGS])
+
+#-------------------------------------------------
+# Option: --with-metrics-discovery=PATH
+#-------------------------------------------------
+
+METRICS_DISCOVERY=no
+OPT_HAVE_METRICS_DISCOVERY=no
+OPT_METRICS_DISCOVERY_IFLAGS=
+OPT_METRICS_DISCOVERY_LDFLAGS=
+
+AC_ARG_WITH([metrics-discovery],
+  [AS_HELP_STRING([--with-metrics-discovery=PATH],
+      [path to metrics-discovery install directory])],
+  [METRICS_DISCOVERY="$withval"],
+  [])
+
+AC_MSG_CHECKING([for metrics-discovery])
+
+case "$METRICS_DISCOVERY" in
+  /* )
+    if test ! -f "${METRICS_DISCOVERY}/include/metrics_discovery_api.h" ; then
+      AC_MSG_ERROR([unable to find metrics_discovery_api.h in: $METRICS_DISCOVERY])
+    fi
+    OPT_METRICS_DISCOVERY_IFLAGS="-I${METRICS_DISCOVERY}/include"
+
+    for lib in $multilib_path ; do
+      if test -f "${METRICS_DISCOVERY}/${lib}/libmd.so" ; then
+        OPT_METRICS_DISCOVERY_LDFLAGS="-L${METRICS_DISCOVERY}/$lib -Wl,-rpath=${METRICS_DISCOVERY}/$lib -lmd"
+        break
+      fi
+    done
+    if test "x$OPT_METRICS_DISCOVERY_LDFLAGS" = x ; then
+      AC_MSG_ERROR([unable to find libmd.so in: $METRICS_DISCOVERY])
+    fi
+    OPT_HAVE_METRICS_DISCOVERY=yes
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([metrics-discovery directory must be absolute path: $METRICS_DISCOVERY])
+    ;;
+esac
+
+AM_CONDITIONAL([OPT_ENABLE_METRICS_DISCOVERY], [test "$OPT_HAVE_METRICS_DISCOVERY" = yes])
+
+AC_MSG_RESULT([$METRICS_DISCOVERY])
+
+AC_SUBST([OPT_METRICS_DISCOVERY])
+AC_SUBST([OPT_METRICS_DISCOVERY_IFLAGS])
+AC_SUBST([OPT_METRICS_DISCOVERY_LDFLAGS])
+
+#-------------------------------------------------
+# Option: --with-gtpin=PATH
+#-------------------------------------------------
+
+GTPIN=no
+OPT_HAVE_GTPIN=no
+OPT_GTPIN_IFLAGS=
+OPT_GTPIN_LDFLAGS=
+
+AC_ARG_WITH([gtpin],
+  [AS_HELP_STRING([--with-gtpin=PATH],
+      [path to gtpin install directory])],
+  [GTPIN="$withval"],
+  [])
+
+AC_MSG_CHECKING([for gtpin])
+
+case "$GTPIN" in
+  /* )
+    if test ! -f "${GTPIN}/Profilers/Include/gtpin.h" ; then
+      AC_MSG_ERROR([unable to find gtpin.h in: $GTPIN])
+    fi
+    OPT_GTPIN_IFLAGS="-I${GTPIN}/Profilers/Include -I${GTPIN}/Profilers/Include/ged/intel64/"
+
+    if test -f "${GTPIN}/Profilers/Lib/intel64/libgtpin.so" ; then
+      OPT_GTPIN_LDFLAGS="-L${GTPIN}/Profilers/Lib/intel64/ -Wl,-rpath=${GTPIN}/Profilers/Lib/intel64/ -lgtpin"
+    fi
+
+    if test "x$OPT_GTPIN_LDFLAGS" = x ; then
+      AC_MSG_ERROR([unable to find libgtpin.so in: $GTPIN])
+    fi
+    OPT_HAVE_GTPIN=yes
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([gtpin directory must be absolute path: $GTPIN])
+    ;;
+esac
+
+AM_CONDITIONAL([OPT_ENABLE_GTPIN], [test "$OPT_HAVE_GTPIN" = yes])
+
+AC_MSG_RESULT([$GTPIN])
+
+AC_SUBST([OPT_GTPIN])
+AC_SUBST([OPT_GTPIN_IFLAGS])
+AC_SUBST([OPT_GTPIN_LDFLAGS])
+
 
 #-------------------------------------------------
 # Option: --with-rocm=PATH
@@ -5328,6 +5498,9 @@ AC_MSG_NOTICE([  xerces:       ${XERCES}])
 AC_MSG_NOTICE([  zlib:         ${ZLIB}])
 AC_MSG_NOTICE([  cuda:         ${CUDA}])
 AC_MSG_NOTICE([  cupti:        ${CUPTI}])
+AC_MSG_NOTICE([  igc:          ${IGC}])
+AC_MSG_NOTICE([  gtpin:        ${GTPIN}])
+AC_MSG_NOTICE([  metrics-discovery: ${METRICS_DISCOVERY}])
 AC_MSG_NOTICE([  papi-c-cupti: ${use_papi_c_cupti}])
 AC_MSG_NOTICE([  valgrind:     ${VALGRIND}])
 AC_MSG_NOTICE([  valgrind:     annotated: ${OPT_ENABLE_VG_ANNOTATIONS}])

@@ -30,6 +30,7 @@ typedef struct core_profile_trace_data_t {
   // ----------------------------------------
   uint64_t trace_min_time_us;
   uint64_t trace_max_time_us;
+  bool traceOrdered;
 
   // ----------------------------------------
   // IO support

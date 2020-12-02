@@ -136,13 +136,14 @@ LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libHPCbanal_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am__dirstamp = $(am__leading_dot)dirstamp
-am__objects_1 = cuda/libHPCbanal_la-CFGParser.lo \
-	cuda/libHPCbanal_la-CudaCFGFactory.lo \
-	cuda/libHPCbanal_la-CudaFunction.lo \
-	cuda/libHPCbanal_la-GraphReader.lo \
-	cuda/libHPCbanal_la-CudaBlock.lo \
-	cuda/libHPCbanal_la-CudaCodeSource.lo \
-	cuda/libHPCbanal_la-ReadCubinCFG.lo libHPCbanal_la-Struct.lo \
+am__objects_1 = gpu/libHPCbanal_la-GPUCFGFactory.lo \
+	gpu/libHPCbanal_la-GPUFunction.lo \
+	gpu/libHPCbanal_la-GPUBlock.lo \
+	gpu/libHPCbanal_la-GPUCodeSource.lo \
+	gpu/libHPCbanal_la-GraphReader.lo \
+	gpu/libHPCbanal_la-CudaCFGParser.lo \
+	gpu/libHPCbanal_la-ReadCudaCFG.lo \
+	gpu/libHPCbanal_la-ReadIntelCFG.lo libHPCbanal_la-Struct.lo \
 	libHPCbanal_la-Struct-Inline.lo \
 	libHPCbanal_la-Struct-Output.lo
 am_libHPCbanal_la_OBJECTS = $(am__objects_1)
@@ -362,9 +363,18 @@ OPT_CUDA_LDFLAGS = @OPT_CUDA_LDFLAGS@
 OPT_CUPTI = @OPT_CUPTI@
 OPT_CUPTI_IFLAGS = @OPT_CUPTI_IFLAGS@
 OPT_CUPTI_LDFLAGS = @OPT_CUPTI_LDFLAGS@
+OPT_GTPIN = @OPT_GTPIN@
+OPT_GTPIN_IFLAGS = @OPT_GTPIN_IFLAGS@
+OPT_GTPIN_LDFLAGS = @OPT_GTPIN_LDFLAGS@
+OPT_IGC = @OPT_IGC@
+OPT_IGC_IFLAGS = @OPT_IGC_IFLAGS@
+OPT_IGC_LDFLAGS = @OPT_IGC_LDFLAGS@
 OPT_LEVEL0 = @OPT_LEVEL0@
 OPT_LEVEL0_IFLAGS = @OPT_LEVEL0_IFLAGS@
 OPT_LEVEL0_LDFLAGS = @OPT_LEVEL0_LDFLAGS@
+OPT_METRICS_DISCOVERY = @OPT_METRICS_DISCOVERY@
+OPT_METRICS_DISCOVERY_IFLAGS = @OPT_METRICS_DISCOVERY_IFLAGS@
+OPT_METRICS_DISCOVERY_LDFLAGS = @OPT_METRICS_DISCOVERY_LDFLAGS@
 OPT_OPENCL_IFLAGS = @OPT_OPENCL_IFLAGS@
 OPT_PAPI = @OPT_PAPI@
 OPT_PAPI_IFLAGS = @OPT_PAPI_IFLAGS@
@@ -514,14 +524,17 @@ HPCLIB_XML = $(top_builddir)/src/lib/xml/libHPCxml.la
 HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
 HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
 @OPT_DYNINST_LIBDWARF_TRUE@DWARF_IFLAGS = -I$(LIBDWARF_INC)
+@OPT_ENABLE_IGC_TRUE@IGC_IFLAGS = @OPT_IGC_IFLAGS@
+@OPT_ENABLE_METRICS_DISCOVERY_TRUE@MD_IFLAGS = @OPT_METRICS_DISCOVERY_IFLAGS@
 MYSOURCES = \
-	cuda/CFGParser.cpp  \
-	cuda/CudaCFGFactory.cpp  \
-	cuda/CudaFunction.cpp  \
-	cuda/GraphReader.cpp \
-	cuda/CudaBlock.cpp  \
-	cuda/CudaCodeSource.cpp  \
-	cuda/ReadCubinCFG.cpp \
+	gpu/GPUCFGFactory.cpp  \
+	gpu/GPUFunction.cpp  \
+	gpu/GPUBlock.cpp  \
+	gpu/GPUCodeSource.cpp  \
+	gpu/GraphReader.cpp \
+	gpu/CudaCFGParser.cpp  \
+	gpu/ReadCudaCFG.cpp \
+	gpu/ReadIntelCFG.cpp \
 	Struct.cpp  \
 	Struct-Inline.cpp  \
 	Struct-Output.cpp
@@ -535,6 +548,8 @@ MYCXXFLAGS = \
 	$(DWARF_IFLAGS)  \
 	-I$(LIBELF_INC)  \
 	$(DYNINST_IFLAGS)  \
+	$(IGC_IFLAGS) \
+	$(MD_IFLAGS) \
 	$(TBB_IFLAGS)    \
 	$(VALGRIND_IFLAGS)
 
@@ -601,26 +616,28 @@ clean-noinstLTLIBRARIES:
 	  echo rm -f $${locs}; \
 	  rm -f $${locs}; \
 	}
-cuda/$(am__dirstamp):
-	@$(MKDIR_P) cuda
-	@: > cuda/$(am__dirstamp)
-cuda/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) cuda/$(DEPDIR)
-	@: > cuda/$(DEPDIR)/$(am__dirstamp)
-cuda/libHPCbanal_la-CFGParser.lo: cuda/$(am__dirstamp) \
-	cuda/$(DEPDIR)/$(am__dirstamp)
-cuda/libHPCbanal_la-CudaCFGFactory.lo: cuda/$(am__dirstamp) \
-	cuda/$(DEPDIR)/$(am__dirstamp)
-cuda/libHPCbanal_la-CudaFunction.lo: cuda/$(am__dirstamp) \
-	cuda/$(DEPDIR)/$(am__dirstamp)
-cuda/libHPCbanal_la-GraphReader.lo: cuda/$(am__dirstamp) \
-	cuda/$(DEPDIR)/$(am__dirstamp)
-cuda/libHPCbanal_la-CudaBlock.lo: cuda/$(am__dirstamp) \
-	cuda/$(DEPDIR)/$(am__dirstamp)
-cuda/libHPCbanal_la-CudaCodeSource.lo: cuda/$(am__dirstamp) \
-	cuda/$(DEPDIR)/$(am__dirstamp)
-cuda/libHPCbanal_la-ReadCubinCFG.lo: cuda/$(am__dirstamp) \
-	cuda/$(DEPDIR)/$(am__dirstamp)
+gpu/$(am__dirstamp):
+	@$(MKDIR_P) gpu
+	@: > gpu/$(am__dirstamp)
+gpu/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) gpu/$(DEPDIR)
+	@: > gpu/$(DEPDIR)/$(am__dirstamp)
+gpu/libHPCbanal_la-GPUCFGFactory.lo: gpu/$(am__dirstamp) \
+	gpu/$(DEPDIR)/$(am__dirstamp)
+gpu/libHPCbanal_la-GPUFunction.lo: gpu/$(am__dirstamp) \
+	gpu/$(DEPDIR)/$(am__dirstamp)
+gpu/libHPCbanal_la-GPUBlock.lo: gpu/$(am__dirstamp) \
+	gpu/$(DEPDIR)/$(am__dirstamp)
+gpu/libHPCbanal_la-GPUCodeSource.lo: gpu/$(am__dirstamp) \
+	gpu/$(DEPDIR)/$(am__dirstamp)
+gpu/libHPCbanal_la-GraphReader.lo: gpu/$(am__dirstamp) \
+	gpu/$(DEPDIR)/$(am__dirstamp)
+gpu/libHPCbanal_la-CudaCFGParser.lo: gpu/$(am__dirstamp) \
+	gpu/$(DEPDIR)/$(am__dirstamp)
+gpu/libHPCbanal_la-ReadCudaCFG.lo: gpu/$(am__dirstamp) \
+	gpu/$(DEPDIR)/$(am__dirstamp)
+gpu/libHPCbanal_la-ReadIntelCFG.lo: gpu/$(am__dirstamp) \
+	gpu/$(DEPDIR)/$(am__dirstamp)
 
 libHPCbanal.la: $(libHPCbanal_la_OBJECTS) $(libHPCbanal_la_DEPENDENCIES) $(EXTRA_libHPCbanal_la_DEPENDENCIES) 
 	$(AM_V_CXXLD)$(libHPCbanal_la_LINK)  $(libHPCbanal_la_OBJECTS) $(libHPCbanal_la_LIBADD) $(LIBS)
@@ -630,8 +647,8 @@ libHPCbanal_simple.la: $(libHPCbanal_simple_la_OBJECTS) $(libHPCbanal_simple_la_
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
-	-rm -f cuda/*.$(OBJEXT)
-	-rm -f cuda/*.lo
+	-rm -f gpu/*.$(OBJEXT)
+	-rm -f gpu/*.lo
 
 distclean-compile:
 	-rm -f *.tab.c
@@ -640,13 +657,14 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbanal_la-Struct-Output.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbanal_la-Struct.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbanal_simple_la-StructSimple.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@cuda/$(DEPDIR)/libHPCbanal_la-CFGParser.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@cuda/$(DEPDIR)/libHPCbanal_la-CudaBlock.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@cuda/$(DEPDIR)/libHPCbanal_la-CudaCFGFactory.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@cuda/$(DEPDIR)/libHPCbanal_la-CudaCodeSource.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@cuda/$(DEPDIR)/libHPCbanal_la-CudaFunction.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@cuda/$(DEPDIR)/libHPCbanal_la-GraphReader.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@cuda/$(DEPDIR)/libHPCbanal_la-ReadCubinCFG.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libHPCbanal_la-CudaCFGParser.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libHPCbanal_la-GPUBlock.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libHPCbanal_la-GPUCFGFactory.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libHPCbanal_la-GPUCodeSource.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libHPCbanal_la-GPUFunction.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libHPCbanal_la-GraphReader.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libHPCbanal_la-ReadCudaCFG.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libHPCbanal_la-ReadIntelCFG.Plo@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
@@ -672,54 +690,61 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LTCXXCOMPILE) -c -o $@ $<
 
-cuda/libHPCbanal_la-CFGParser.lo: cuda/CFGParser.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -MT cuda/libHPCbanal_la-CFGParser.lo -MD -MP -MF cuda/$(DEPDIR)/libHPCbanal_la-CFGParser.Tpo -c -o cuda/libHPCbanal_la-CFGParser.lo `test -f 'cuda/CFGParser.cpp' || echo '$(srcdir)/'`cuda/CFGParser.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) cuda/$(DEPDIR)/libHPCbanal_la-CFGParser.Tpo cuda/$(DEPDIR)/libHPCbanal_la-CFGParser.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='cuda/CFGParser.cpp' object='cuda/libHPCbanal_la-CFGParser.lo' libtool=yes @AMDEPBACKSLASH@
+gpu/libHPCbanal_la-GPUCFGFactory.lo: gpu/GPUCFGFactory.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -MT gpu/libHPCbanal_la-GPUCFGFactory.lo -MD -MP -MF gpu/$(DEPDIR)/libHPCbanal_la-GPUCFGFactory.Tpo -c -o gpu/libHPCbanal_la-GPUCFGFactory.lo `test -f 'gpu/GPUCFGFactory.cpp' || echo '$(srcdir)/'`gpu/GPUCFGFactory.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) gpu/$(DEPDIR)/libHPCbanal_la-GPUCFGFactory.Tpo gpu/$(DEPDIR)/libHPCbanal_la-GPUCFGFactory.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='gpu/GPUCFGFactory.cpp' object='gpu/libHPCbanal_la-GPUCFGFactory.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -c -o cuda/libHPCbanal_la-CFGParser.lo `test -f 'cuda/CFGParser.cpp' || echo '$(srcdir)/'`cuda/CFGParser.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -c -o gpu/libHPCbanal_la-GPUCFGFactory.lo `test -f 'gpu/GPUCFGFactory.cpp' || echo '$(srcdir)/'`gpu/GPUCFGFactory.cpp
 
-cuda/libHPCbanal_la-CudaCFGFactory.lo: cuda/CudaCFGFactory.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -MT cuda/libHPCbanal_la-CudaCFGFactory.lo -MD -MP -MF cuda/$(DEPDIR)/libHPCbanal_la-CudaCFGFactory.Tpo -c -o cuda/libHPCbanal_la-CudaCFGFactory.lo `test -f 'cuda/CudaCFGFactory.cpp' || echo '$(srcdir)/'`cuda/CudaCFGFactory.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) cuda/$(DEPDIR)/libHPCbanal_la-CudaCFGFactory.Tpo cuda/$(DEPDIR)/libHPCbanal_la-CudaCFGFactory.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='cuda/CudaCFGFactory.cpp' object='cuda/libHPCbanal_la-CudaCFGFactory.lo' libtool=yes @AMDEPBACKSLASH@
+gpu/libHPCbanal_la-GPUFunction.lo: gpu/GPUFunction.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -MT gpu/libHPCbanal_la-GPUFunction.lo -MD -MP -MF gpu/$(DEPDIR)/libHPCbanal_la-GPUFunction.Tpo -c -o gpu/libHPCbanal_la-GPUFunction.lo `test -f 'gpu/GPUFunction.cpp' || echo '$(srcdir)/'`gpu/GPUFunction.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) gpu/$(DEPDIR)/libHPCbanal_la-GPUFunction.Tpo gpu/$(DEPDIR)/libHPCbanal_la-GPUFunction.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='gpu/GPUFunction.cpp' object='gpu/libHPCbanal_la-GPUFunction.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -c -o cuda/libHPCbanal_la-CudaCFGFactory.lo `test -f 'cuda/CudaCFGFactory.cpp' || echo '$(srcdir)/'`cuda/CudaCFGFactory.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -c -o gpu/libHPCbanal_la-GPUFunction.lo `test -f 'gpu/GPUFunction.cpp' || echo '$(srcdir)/'`gpu/GPUFunction.cpp
 
-cuda/libHPCbanal_la-CudaFunction.lo: cuda/CudaFunction.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -MT cuda/libHPCbanal_la-CudaFunction.lo -MD -MP -MF cuda/$(DEPDIR)/libHPCbanal_la-CudaFunction.Tpo -c -o cuda/libHPCbanal_la-CudaFunction.lo `test -f 'cuda/CudaFunction.cpp' || echo '$(srcdir)/'`cuda/CudaFunction.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) cuda/$(DEPDIR)/libHPCbanal_la-CudaFunction.Tpo cuda/$(DEPDIR)/libHPCbanal_la-CudaFunction.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='cuda/CudaFunction.cpp' object='cuda/libHPCbanal_la-CudaFunction.lo' libtool=yes @AMDEPBACKSLASH@
+gpu/libHPCbanal_la-GPUBlock.lo: gpu/GPUBlock.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -MT gpu/libHPCbanal_la-GPUBlock.lo -MD -MP -MF gpu/$(DEPDIR)/libHPCbanal_la-GPUBlock.Tpo -c -o gpu/libHPCbanal_la-GPUBlock.lo `test -f 'gpu/GPUBlock.cpp' || echo '$(srcdir)/'`gpu/GPUBlock.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) gpu/$(DEPDIR)/libHPCbanal_la-GPUBlock.Tpo gpu/$(DEPDIR)/libHPCbanal_la-GPUBlock.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='gpu/GPUBlock.cpp' object='gpu/libHPCbanal_la-GPUBlock.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -c -o cuda/libHPCbanal_la-CudaFunction.lo `test -f 'cuda/CudaFunction.cpp' || echo '$(srcdir)/'`cuda/CudaFunction.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -c -o gpu/libHPCbanal_la-GPUBlock.lo `test -f 'gpu/GPUBlock.cpp' || echo '$(srcdir)/'`gpu/GPUBlock.cpp
 
-cuda/libHPCbanal_la-GraphReader.lo: cuda/GraphReader.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -MT cuda/libHPCbanal_la-GraphReader.lo -MD -MP -MF cuda/$(DEPDIR)/libHPCbanal_la-GraphReader.Tpo -c -o cuda/libHPCbanal_la-GraphReader.lo `test -f 'cuda/GraphReader.cpp' || echo '$(srcdir)/'`cuda/GraphReader.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) cuda/$(DEPDIR)/libHPCbanal_la-GraphReader.Tpo cuda/$(DEPDIR)/libHPCbanal_la-GraphReader.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='cuda/GraphReader.cpp' object='cuda/libHPCbanal_la-GraphReader.lo' libtool=yes @AMDEPBACKSLASH@
+gpu/libHPCbanal_la-GPUCodeSource.lo: gpu/GPUCodeSource.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -MT gpu/libHPCbanal_la-GPUCodeSource.lo -MD -MP -MF gpu/$(DEPDIR)/libHPCbanal_la-GPUCodeSource.Tpo -c -o gpu/libHPCbanal_la-GPUCodeSource.lo `test -f 'gpu/GPUCodeSource.cpp' || echo '$(srcdir)/'`gpu/GPUCodeSource.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) gpu/$(DEPDIR)/libHPCbanal_la-GPUCodeSource.Tpo gpu/$(DEPDIR)/libHPCbanal_la-GPUCodeSource.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='gpu/GPUCodeSource.cpp' object='gpu/libHPCbanal_la-GPUCodeSource.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -c -o cuda/libHPCbanal_la-GraphReader.lo `test -f 'cuda/GraphReader.cpp' || echo '$(srcdir)/'`cuda/GraphReader.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -c -o gpu/libHPCbanal_la-GPUCodeSource.lo `test -f 'gpu/GPUCodeSource.cpp' || echo '$(srcdir)/'`gpu/GPUCodeSource.cpp
 
-cuda/libHPCbanal_la-CudaBlock.lo: cuda/CudaBlock.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -MT cuda/libHPCbanal_la-CudaBlock.lo -MD -MP -MF cuda/$(DEPDIR)/libHPCbanal_la-CudaBlock.Tpo -c -o cuda/libHPCbanal_la-CudaBlock.lo `test -f 'cuda/CudaBlock.cpp' || echo '$(srcdir)/'`cuda/CudaBlock.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) cuda/$(DEPDIR)/libHPCbanal_la-CudaBlock.Tpo cuda/$(DEPDIR)/libHPCbanal_la-CudaBlock.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='cuda/CudaBlock.cpp' object='cuda/libHPCbanal_la-CudaBlock.lo' libtool=yes @AMDEPBACKSLASH@
+gpu/libHPCbanal_la-GraphReader.lo: gpu/GraphReader.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -MT gpu/libHPCbanal_la-GraphReader.lo -MD -MP -MF gpu/$(DEPDIR)/libHPCbanal_la-GraphReader.Tpo -c -o gpu/libHPCbanal_la-GraphReader.lo `test -f 'gpu/GraphReader.cpp' || echo '$(srcdir)/'`gpu/GraphReader.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) gpu/$(DEPDIR)/libHPCbanal_la-GraphReader.Tpo gpu/$(DEPDIR)/libHPCbanal_la-GraphReader.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='gpu/GraphReader.cpp' object='gpu/libHPCbanal_la-GraphReader.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -c -o cuda/libHPCbanal_la-CudaBlock.lo `test -f 'cuda/CudaBlock.cpp' || echo '$(srcdir)/'`cuda/CudaBlock.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -c -o gpu/libHPCbanal_la-GraphReader.lo `test -f 'gpu/GraphReader.cpp' || echo '$(srcdir)/'`gpu/GraphReader.cpp
 
-cuda/libHPCbanal_la-CudaCodeSource.lo: cuda/CudaCodeSource.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -MT cuda/libHPCbanal_la-CudaCodeSource.lo -MD -MP -MF cuda/$(DEPDIR)/libHPCbanal_la-CudaCodeSource.Tpo -c -o cuda/libHPCbanal_la-CudaCodeSource.lo `test -f 'cuda/CudaCodeSource.cpp' || echo '$(srcdir)/'`cuda/CudaCodeSource.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) cuda/$(DEPDIR)/libHPCbanal_la-CudaCodeSource.Tpo cuda/$(DEPDIR)/libHPCbanal_la-CudaCodeSource.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='cuda/CudaCodeSource.cpp' object='cuda/libHPCbanal_la-CudaCodeSource.lo' libtool=yes @AMDEPBACKSLASH@
+gpu/libHPCbanal_la-CudaCFGParser.lo: gpu/CudaCFGParser.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -MT gpu/libHPCbanal_la-CudaCFGParser.lo -MD -MP -MF gpu/$(DEPDIR)/libHPCbanal_la-CudaCFGParser.Tpo -c -o gpu/libHPCbanal_la-CudaCFGParser.lo `test -f 'gpu/CudaCFGParser.cpp' || echo '$(srcdir)/'`gpu/CudaCFGParser.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) gpu/$(DEPDIR)/libHPCbanal_la-CudaCFGParser.Tpo gpu/$(DEPDIR)/libHPCbanal_la-CudaCFGParser.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='gpu/CudaCFGParser.cpp' object='gpu/libHPCbanal_la-CudaCFGParser.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -c -o cuda/libHPCbanal_la-CudaCodeSource.lo `test -f 'cuda/CudaCodeSource.cpp' || echo '$(srcdir)/'`cuda/CudaCodeSource.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -c -o gpu/libHPCbanal_la-CudaCFGParser.lo `test -f 'gpu/CudaCFGParser.cpp' || echo '$(srcdir)/'`gpu/CudaCFGParser.cpp
 
-cuda/libHPCbanal_la-ReadCubinCFG.lo: cuda/ReadCubinCFG.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -MT cuda/libHPCbanal_la-ReadCubinCFG.lo -MD -MP -MF cuda/$(DEPDIR)/libHPCbanal_la-ReadCubinCFG.Tpo -c -o cuda/libHPCbanal_la-ReadCubinCFG.lo `test -f 'cuda/ReadCubinCFG.cpp' || echo '$(srcdir)/'`cuda/ReadCubinCFG.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) cuda/$(DEPDIR)/libHPCbanal_la-ReadCubinCFG.Tpo cuda/$(DEPDIR)/libHPCbanal_la-ReadCubinCFG.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='cuda/ReadCubinCFG.cpp' object='cuda/libHPCbanal_la-ReadCubinCFG.lo' libtool=yes @AMDEPBACKSLASH@
+gpu/libHPCbanal_la-ReadCudaCFG.lo: gpu/ReadCudaCFG.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -MT gpu/libHPCbanal_la-ReadCudaCFG.lo -MD -MP -MF gpu/$(DEPDIR)/libHPCbanal_la-ReadCudaCFG.Tpo -c -o gpu/libHPCbanal_la-ReadCudaCFG.lo `test -f 'gpu/ReadCudaCFG.cpp' || echo '$(srcdir)/'`gpu/ReadCudaCFG.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) gpu/$(DEPDIR)/libHPCbanal_la-ReadCudaCFG.Tpo gpu/$(DEPDIR)/libHPCbanal_la-ReadCudaCFG.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='gpu/ReadCudaCFG.cpp' object='gpu/libHPCbanal_la-ReadCudaCFG.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -c -o cuda/libHPCbanal_la-ReadCubinCFG.lo `test -f 'cuda/ReadCubinCFG.cpp' || echo '$(srcdir)/'`cuda/ReadCubinCFG.cpp
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -c -o gpu/libHPCbanal_la-ReadCudaCFG.lo `test -f 'gpu/ReadCudaCFG.cpp' || echo '$(srcdir)/'`gpu/ReadCudaCFG.cpp
+
+gpu/libHPCbanal_la-ReadIntelCFG.lo: gpu/ReadIntelCFG.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -MT gpu/libHPCbanal_la-ReadIntelCFG.lo -MD -MP -MF gpu/$(DEPDIR)/libHPCbanal_la-ReadIntelCFG.Tpo -c -o gpu/libHPCbanal_la-ReadIntelCFG.lo `test -f 'gpu/ReadIntelCFG.cpp' || echo '$(srcdir)/'`gpu/ReadIntelCFG.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) gpu/$(DEPDIR)/libHPCbanal_la-ReadIntelCFG.Tpo gpu/$(DEPDIR)/libHPCbanal_la-ReadIntelCFG.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='gpu/ReadIntelCFG.cpp' object='gpu/libHPCbanal_la-ReadIntelCFG.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -c -o gpu/libHPCbanal_la-ReadIntelCFG.lo `test -f 'gpu/ReadIntelCFG.cpp' || echo '$(srcdir)/'`gpu/ReadIntelCFG.cpp
 
 libHPCbanal_la-Struct.lo: Struct.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbanal_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCbanal_la-Struct.lo -MD -MP -MF $(DEPDIR)/libHPCbanal_la-Struct.Tpo -c -o libHPCbanal_la-Struct.lo `test -f 'Struct.cpp' || echo '$(srcdir)/'`Struct.cpp
@@ -754,7 +779,7 @@ mostlyclean-libtool:
 
 clean-libtool:
 	-rm -rf .libs _libs
-	-rm -rf cuda/.libs cuda/_libs
+	-rm -rf gpu/.libs gpu/_libs
 
 ID: $(am__tagged_files)
 	$(am__define_uniq_tagged_files); mkid -fID $$unique
@@ -869,8 +894,8 @@ clean-generic:
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
-	-rm -f cuda/$(DEPDIR)/$(am__dirstamp)
-	-rm -f cuda/$(am__dirstamp)
+	-rm -f gpu/$(DEPDIR)/$(am__dirstamp)
+	-rm -f gpu/$(am__dirstamp)
 
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
@@ -881,7 +906,7 @@ clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
 	mostlyclean-am
 
 distclean: distclean-am
-	-rm -rf ./$(DEPDIR) cuda/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) gpu/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -927,7 +952,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-	-rm -rf ./$(DEPDIR) cuda/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) gpu/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
