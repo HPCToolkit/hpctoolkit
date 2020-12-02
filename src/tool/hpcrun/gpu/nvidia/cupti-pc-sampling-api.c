@@ -319,6 +319,11 @@ cupti_pc_sampling_collect
 )
 {
   cupti_context_pc_sampling_map_entry_t *entry = cupti_context_pc_sampling_map_lookup(context);
+  if (entry == NULL) {
+    // PC sampling not enabled
+    return;
+  }
+
   CUpti_PCSamplingData *buffer_pc = cupti_context_pc_sampling_map_entry_buffer_pc_get(entry);
   CUpti_PCSamplingData *user_buffer_pc = cupti_context_pc_sampling_map_entry_user_buffer_pc_get(entry);
   size_t num_stall_reasons = cupti_context_pc_sampling_map_entry_num_stall_reasons_get(entry);
