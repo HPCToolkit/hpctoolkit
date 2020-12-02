@@ -80,7 +80,7 @@ typedef struct gpu_activity_channel_t gpu_activity_channel_t;
 typedef enum {    
   GPU_ACTIVITY_UNKNOWN                 = 0,
   GPU_ACTIVITY_KERNEL                  = 1,
-  GPU_ACTIVITY_KERNEL_BLOCK             = 2,  
+  GPU_ACTIVITY_KERNEL_BLOCK            = 2,  
   GPU_ACTIVITY_MEMCPY                  = 3,
   GPU_ACTIVITY_MEMCPY2                 = 4,
   GPU_ACTIVITY_MEMSET                  = 5,
@@ -95,7 +95,8 @@ typedef enum {
   GPU_ACTIVITY_EXTERNAL_CORRELATION    = 14,
   GPU_ACTIVITY_EVENT                   = 15,
   GPU_ACTIVITY_FUNCTION                = 16,
-  GPU_ACTIVITY_FLUSH                   = 17
+  GPU_ACTIVITY_FLUSH                   = 17,
+  GPU_ACTIVITY_PC_SAMPLING2            = 18
 } gpu_activity_kind_t;
 
 
@@ -167,6 +168,29 @@ typedef enum {
 
 
 typedef enum {
+  GPU_INST_STALL2_BARRIER       = 1,
+  GPU_INST_STALL2_BRANCH        = 2,
+  GPU_INST_STALL2_DISPATCH      = 3,
+  GPU_INST_STALL2_MEM_DRAIN     = 4,
+  GPU_INST_STALL2_CMEM          = 5,
+  GPU_INST_STALL2_MEM_THROTTLE  = 6,
+  GPU_INST_STALL2_MEM_DEP       = 7,
+  GPU_INST_STALL2_FIX_THROTTLE  = 8,
+  GPU_INST_STALL2_SYNC          = 9,
+  GPU_INST_STALL2_VAR_THROTTLE  = 10,
+  GPU_INST_STALL2_MISC          = 11,
+  GPU_INST_STALL2_IFETCH        = 12,
+  GPU_INST_STALL2_NOT_SELECTED  = 13,
+  GPU_INST_STALL2_NONE          = 14,
+  GPU_INST_STALL2_VAR_DEP       = 15,
+  GPU_INST_STALL2_SLEEP         = 16,
+  GPU_INST_STALL2_TEX_THROTTLE  = 17,
+  GPU_INST_STALL2_FIX_DEP       = 18,
+  GPU_INST_STALL2_INVALID       = 19
+} gpu_inst_stall2_t;
+
+
+typedef enum {
   GPU_MEM_ARRAY           = 0,
   GPU_MEM_DEVICE          = 1,
   GPU_MEM_MANAGED         = 2,
@@ -189,6 +213,15 @@ typedef struct gpu_pc_sampling_t {
 } gpu_pc_sampling_t;
 
 
+typedef struct gpu_pc_sampling2_t {
+  uint64_t host_correlation_id;
+  ip_normalized_t pc;
+  uint32_t samples;
+  uint32_t latencySamples;
+  gpu_inst_stall2_t stallReason;    
+} gpu_pc_sampling2_t;
+
+
 typedef struct gpu_pc_sampling_info_t {
   uint32_t correlation_id;
   uint64_t droppedSamples;
@@ -196,6 +229,16 @@ typedef struct gpu_pc_sampling_info_t {
   uint64_t totalSamples;
   uint64_t fullSMSamples;
 } gpu_pc_sampling_info_t;
+
+
+typedef struct gpu_pc_sampling_info2_t {
+  uint64_t host_range_id;
+  uint64_t droppedSamples;
+  uint64_t samplingPeriodInCycles;
+  uint64_t totalSamples;
+  void *pc_sampling_data;
+} gpu_pc_sampling_info2_t;
+
 
 // a special flush record to notify all operations have been consumed
 typedef struct gpu_flush_t {
@@ -362,7 +405,9 @@ typedef struct gpu_activity_details_t {
        for processing each activity kind.
      */
     gpu_pc_sampling_t pc_sampling;
+    gpu_pc_sampling2_t pc_sampling2;
     gpu_pc_sampling_info_t pc_sampling_info;
+    gpu_pc_sampling_info2_t pc_sampling_info2;
     gpu_memcpy_t memcpy;
     gpu_memory_t memory;
     gpu_memset_t memset;
