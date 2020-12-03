@@ -68,7 +68,7 @@
   <li><a name="toc-Blue-Gene" href="#Blue-Gene">11.1 Blue Gene</a></li>
   <li><a name="toc-Cray" href="#Cray">11.2 Cray</a></li>
 </ul></li>
-<li><a name="toc-Hpcviewer-and-Hpctraceviewer" href="#Hpcviewer-and-Hpctraceviewer">12 Hpcviewer and Hpctraceviewer</a>
+<li><a name="toc-Hpcviewer-and-Hpctraceviewer" href="#Hpcviewer-and-Hpctraceviewer">12 Hpcviewer</a>
 <ul class="no-bullet">
   <li><a name="toc-Spack-Install-1" href="#Spack-Install-1">12.1 Spack Install</a></li>
   <li><a name="toc-Manual-Install-1" href="#Manual-Install-1">12.2 Manual Install</a></li>
@@ -109,7 +109,7 @@ supported on the following platforms.
 </li><li> IBM Blue Gene/Q on ppc64 (now deprecated).
 </li></ol>
 
-<p>We provide binary distributions for hpcviewer and hpctraceviewer on
+<p>We provide binary distributions for hpcviewer on
 Linux (x86_64 and powerpc), Windows and MacOS.  HPCToolkit databases are
 platform-independent and it is common to run hpcrun on one machine and
 then view the results on another machine.
@@ -175,8 +175,8 @@ HPCToolkit available as a module.  Again, spack can install these
 packages if they are missing from your system.
 </li></ol>
 
-<p>Hpcviewer and hpctraceviewer require Java version 8.  On Linux, the
-viewers also require GTK+ version 2.x.
+<p>Hpcviewer requires at least Java version 8.  On Linux, the
+viewers also require GTK version 3.20 or newer.
 </p>
 
 <a name="Spack-Notation"></a>
@@ -986,9 +986,9 @@ similar to the following.
 
 
 <a name="Hpcviewer-and-Hpctraceviewer"></a>
-<h3 class="section">12 Hpcviewer and Hpctraceviewer</h3>
+<h3 class="section">12 Hpcviewer </h3>
 
-<p>We provide binary distributions for hpcviewer and hpctraceviewer on
+<p>We provide binary distributions for hpcviewer on
 Linux (x86_64 and powerpc), Windows and MacOS.  HPCToolkit databases are
 platform-independent and it is common to run hpcrun on one machine and
 then view the results on another machine.
@@ -1001,7 +1001,7 @@ The Linux versions also require GTK+ version 2.x.
 
 <p>The spack install is available on Linux x86_64, big-endian power7
 (ppc64) and little-endian power8 and 9 (ppc64le).  This installs both
-hpcviewer and hpctraceviewer and includes the Java 8 prerequisite.
+hpcviewer and includes the Java 8 prerequisite.
 </p>
 <p>On x86_64, use either jdk or openjdk.  The latest 1.8 jdk package,
 1.8.0_202 has trouble downloading due to licensing issues, however
@@ -1030,8 +1030,8 @@ available at:
 <pre class="example"><a href="http://hpctoolkit.org/download/hpcviewer">http://hpctoolkit.org/download/hpcviewer</a>
 </pre></div>
 
-<p>On Linux, download the <code>linux.gtk</code> versions of hpcviewer and
-hpctraceviewer, unpack the tar files and run the install scripts (for
+<p>On Linux, download the <code>linux.gtk</code> versions of hpcviewer
+, unpack the tar files and run the install scripts (for
 both viewers) with the path to the desired install prefix.
 </p>
 <div class="example">

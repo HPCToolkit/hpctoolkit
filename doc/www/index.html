@@ -64,7 +64,7 @@ hpcprof overlays call path profiles and traces with program structure
 computed by hpcstruct and correlates the result with source code. 
 hpcprof/mpi handles thousands of profiles from a parallel execution by 
 performing this correlation in parallel. hpcprof and hpcprof/mpi generate a 
-performance database that can be explored using the hpcviewer and hpctraceviewer user interfaces. 
+performance database that can be explored using the hpcviewer user interface. 
 </p>
 </li>
 
@@ -75,13 +75,10 @@ as well as a graphical view that enables one to assess performance variability
 across threads and processes. hpcviewer is designed to facilitate rapid top-down 
 analysis using derived metrics that highlight scalability losses and inefficiency rather than focusing exclusively on program hot spots. 
 </p>
-</li>
-
-<li><p><span class="hpctool">hpctraceviewer</span>: hpctraceviewer is a graphical user interface
-that presents a hierarhical, time-centric view of a program execution.  
+hpcviewer also presents a hierarhical, time-centric view of a program execution.  
 The tool can rapidly render graphical views of trace lines for thousands of processors for an execution 
 tens of minutes long even a laptop.
-hpctraceviewer's hierarchical graphical presentation is quite different than that of other tools -
+hpcviewer's hierarchical graphical presentation is quite different than that of other tools -
 it renders execution traces at multiple levels of abstraction by 
 showing activity over time at different call stack depths. 
 </p>
