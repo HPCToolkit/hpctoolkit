@@ -216,8 +216,8 @@ typedef struct gpu_pc_sampling_t {
 typedef struct gpu_pc_sampling2_t {
   uint64_t host_correlation_id;
   ip_normalized_t pc;
-  uint32_t samples;
-  uint32_t latencySamples;
+  uint64_t samples;
+  uint64_t latencySamples;
   gpu_inst_stall2_t stallReason;    
 } gpu_pc_sampling2_t;
 
@@ -231,12 +231,15 @@ typedef struct gpu_pc_sampling_info_t {
 } gpu_pc_sampling_info_t;
 
 
+typedef void (*gpu_pc_sampling2_translate_fn_t)(void *pc_sampling_data, size_t index, gpu_pc_sampling2_t *gpu_pc_sampling2);
+
 typedef struct gpu_pc_sampling_info2_t {
   uint64_t host_range_id;
   uint64_t droppedSamples;
   uint64_t samplingPeriodInCycles;
   uint64_t totalSamples;
   void *pc_sampling_data;
+  gpu_pc_sampling2_translate_fn_t *translator;
 } gpu_pc_sampling_info2_t;
 
 

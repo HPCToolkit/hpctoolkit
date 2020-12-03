@@ -302,6 +302,49 @@ gpu_metrics_attribute_pc_sampling
 
 
 static void
+gpu_metrics_attribute_pc_sampling2
+(
+ gpu_activity_t *activity
+)
+{
+  gpu_pc_sampling2_t *sinfo = &(activity->details.pc_sampling);
+  cct_node_t *cct_node = activity->cct_node;
+
+  // frequencly is handled already 
+  uint64_t inst_count = sinfo->samples;
+
+  metric_data_list_t *inst_metric = 
+    hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_INST_ALL));
+
+  // instruction execution metric
+  gpu_metrics_attribute_metric_int(inst_metric, METRIC_ID(GPU_INST_ALL), 
+           inst_count);
+
+  if (sinfo->stallReason != GPU_INST_STALL_INVALID) {
+    int stall_summary_metric_index = 
+      METRIC_ID(GPU_INST_STALL2)[GPU_INST_STALL2_ANY];
+
+    int stall_kind_metric_index = METRIC_ID(GPU_INST_STALL2)[sinfo->stallReason];
+
+    metric_data_list_t *stall_metrics = 
+      hpcrun_reify_metric_set(cct_node, stall_kind_metric_index);
+
+    uint64_t stall_count = sinfo->latencySamples;
+
+    if (sinfo->stallReason != GPU_INST_STALL2_NONE) {
+      // stall summary metric
+      gpu_metrics_attribute_metric_int(stall_metrics, 
+               stall_summary_metric_index, stall_count);
+    }
+
+    // stall reason specific metric
+    gpu_metrics_attribute_metric_int(stall_metrics, 
+             stall_kind_metric_index, stall_count);
+  }
+}
+
+
+static void
 gpu_metrics_attribute_pc_sampling_info
 (
  gpu_activity_t *activity
@@ -876,6 +919,28 @@ gpu_metrics_GPU_INST_STALL_enable
   FORALL_GPU_INST_STALL(HIDE_INDEXED_METRIC);
 
   SET_DISPLAY_INDEXED_METRIC(GPU_INST_STALL_ANY, GPU_INST_STALL_ANY, 
+           HPCRUN_FMT_METRIC_SHOW);
+
+  FINALIZE_METRIC_KIND();
+}
+
+
+void
+gpu_metrics_GPU_INST_STALL2_enable
+(
+ void
+)
+{
+#undef CURRENT_METRIC 
+#define CURRENT_METRIC GPU_INST_STALL2
+
+  INITIALIZE_METRIC_KIND();
+
+  FORALL_GPU_INST_STALL2(INITIALIZE_INDEXED_METRIC_INT)
+
+  FORALL_GPU_INST_STALL2(HIDE_INDEXED_METRIC);
+
+  SET_DISPLAY_INDEXED_METRIC(GPU_INST_STALL2_ANY, GPU_INST_STALL2_ANY, 
            HPCRUN_FMT_METRIC_SHOW);
 
   FINALIZE_METRIC_KIND();

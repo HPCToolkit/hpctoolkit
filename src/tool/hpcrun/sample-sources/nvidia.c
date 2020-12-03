@@ -366,9 +366,13 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     gpu_metrics_GPU_INST_enable(); // instruction counts
 
+#ifdef NEW_CUPTI
+    gpu_metrics_GPU_INST_STALL2_enable(); // stall metrics
+#else
     gpu_metrics_GPU_INST_STALL_enable(); // stall metrics
 
     gpu_metrics_GSAMP_enable(); // GPU utilization from sampling
+#endif
   }
 
   gpu_metrics_default_enable();

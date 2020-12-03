@@ -157,6 +157,16 @@ gpu_kernel_process
 
 
 static void
+gpu_pc_sampling_info2_process
+(
+ gpu_operation_item_t *it
+)
+{
+  gpu_activity_t *activity = &it->activity;
+}
+
+
+static void
 gpu_flush_process
 (
  gpu_operation_item_t *it

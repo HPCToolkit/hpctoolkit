@@ -485,6 +485,13 @@ gpu_metrics_GPU_INST_STALL_enable
 );
 
 
+void
+gpu_metrics_GPU_INST_STALL2_enable
+(
+ void
+);
+
+
 // record NVIDIA GPU instruction sampling statistics
 void
 gpu_metrics_GSAMP_enable

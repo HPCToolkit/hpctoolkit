@@ -480,3 +480,37 @@ cupti_pc_sampling_flush
 {
   cupti_context_pc_sampling_map_flush(cupti_context_pc_sampling_flush);
 }
+
+
+void
+cupti_pc_sampling2_translate
+(
+ void *pc_sampling_data,
+ size_t index,
+ gpu_pc_sampling2_t *gpu_pc_sampling2
+)
+{
+  CUpti_PCSamplingData *cupti_pc_sampling_data = (CUpti_PCSamplingData *)pc_sampling_data;
+
+  if (index >= cupti_pc_sampling_data->totalNumPcs) {
+    gpu_pc_sampling2 = NULL;
+    return;
+  }
+
+  CUpti_PCSamplingPCData *pc_data = &cupti_pc_sampling_data->pPcData[index];
+  TMSG(CUPTI, "cubinCrc: %lu, functionName: %s, pc: %lu, pcOffset: %u, count: %u", pc_data->cubinCrc,
+    pc_data->functionName, pc_data->pc, pc_data->pcOffset, pc_data->stallReasonCount);
+
+  for (size_t j = 0; j < num_stall_reasons; ++j) {
+    if (pc_data->stallReason[j].samples > 0) {
+      if (j % 2 == 0) {
+        gpu_pc_sampling2[j / 2].host_correlation_id = 0; 
+        gpu_pc_sampling2[j / 2].pc = 0;
+        gpu_pc_sampling2[j / 2].samples = pc_data->stallReason[j].samples
+        gpu_pc_sampling2[j / 2].stallReason = (gpu_inst_stall2_t)(j / 2);
+      } else {
+        gpu_pc_sampling2[j / 2 + 1].latencySamples = pc_data->stallReason[j].samples
+      }
+    }
+  }
+}

@@ -103,4 +103,13 @@ cupti_pc_sampling_flush
  void
 );
 
+
+void
+cupti_pc_sampling2_translate
+(
+ void *pc_sampling_data,
+ size_t index,
+ gpu_pc_sampling2_t *gpu_pc_sampling2
+);
+
 #endif

@@ -256,6 +256,39 @@ gpu_sample_process
 
 
 static void
+gpu_sample_process2
+(
+ gpu_activity_t* sample
+)
+{
+  uint64_t correlation_id = sample->details.pc_sampling2.host_correlation_id;
+
+  uint64_t external_id =
+    gpu_correlation_id_map_entry_external_id_get(cid_map_entry);
+
+  ip_normalized_t ip = sample->details.pc_sampling2.pc;
+
+  gpu_host_correlation_map_entry_t *host_op_entry =
+    gpu_host_correlation_map_lookup(external_id);
+
+  if (host_op_entry != NULL) {
+    PRINT("external_id %lu\n", external_id);
+
+    cct_node_t *host_op_node =
+      gpu_host_correlation_map_entry_op_function_get(host_op_entry);
+
+    cct_node_t *cct_child = hpcrun_cct_insert_ip_norm(host_op_node, ip);
+    if (cct_child) {
+      PRINT("cct_child %p\n", cct_child);
+      attribute_activity(host_op_entry, sample, cct_child);
+    }
+  } else {
+    PRINT("host_map_entry %lu not found\n", external_id);
+  }
+}
+
+
+static void
 gpu_sampling_info_process
 (
  gpu_activity_t *sri
