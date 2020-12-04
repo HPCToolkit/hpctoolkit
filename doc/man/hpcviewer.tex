@@ -273,13 +273,13 @@ It comprises of three different parts.
 
 \begin{itemize}
 \item \textbf{Main view} (left, top):
-  This is hpctraceviewer's primary view.
+  This is the primary view.
   This view, which is similar to a conventional process/time (or space/time) view, shows time on the horizontal axis and process (or thread) rank on the vertical axis; time moves from left to right.
   Compared to typical process/time views, there is one key difference.
   To show call path hierarchy, the view is actually a user-controllable slice of the process/time/call-path space.
   Given a call path depth, the view shows the color of the currently active procedure at a given time and process rank.
-  (If the requested depth is deeper than a particular call path, then hpctraceviewer simply displays the deepest procedure frame and, space permitting, overlays an annotation indicating the fact that this frame represents a shallower depth.)
-  hpctraceviewer assigns colors to procedures based on (static) source code procedures.
+  (If the requested depth is deeper than a particular call path, then the viewer simply displays the deepest procedure frame and, space permitting, overlays an annotation indicating the fact that this frame represents a shallower depth.)
+  hpcviewer assigns colors to procedures based on (static) source code procedures.
   Although the color assignment is currently random, it is consistent across the different views.
   Thus, the same color within the Trace and Depth Views refers to the same procedure.
   The Trace View has a white crosshair that represents a selected point in time and process space.
@@ -468,7 +468,7 @@ By default, the menu is hidden. Once you open a database, the menu is then shown
  \item \textbf{Split window}
  Enabled if there are two databases open. This menu allows to split vertically two databases into two panes to easily compare them.
 
- \item \textbf{Show procedure-color mapping} \emph{Trace view only}: to open a window which shows customized mapping between a procedure pattern and a color. \Prog{hpctraceviewer} allows users to customize assignment of a pattern of procedure names with a specific color.
+ \item \textbf{Show procedure-color mapping} \emph{Trace view only}: to open a window which shows customized mapping between a procedure pattern and a color. \Prog{hpcviewer} allows users to customize assignment of a pattern of procedure names with a specific color.
 
  \item \textbf{Debug}
  A special set of menus for advanced users. These menus are useful to debug \Prog{hpcviewer}. The menu consists of:
@@ -479,13 +479,6 @@ By default, the menu is hidden. Once you open a database, the menu is then shown
   \end{itemize}
 
 \end{itemize}
-% ==========================================================
-% ==========================================================
-
-\subsection{Window}
-This menu contains only one submenu to reset the position of the views to the original default position.
-Since \Prog{hpcviewer} is built on top of Eclipse, sometimes Eclipse fails to reposition its views due to its bugs.
-A work-around to fix this issue is an ongoing work.
 
 % ==========================================================
 % ==========================================================
