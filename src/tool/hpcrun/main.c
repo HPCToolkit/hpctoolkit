@@ -857,7 +857,9 @@ monitor_init_process(int *argc, char **argv, void* data)
 
   hpcrun_wait();
 
+#ifndef HPCRUN_STATIC_LINK
   hpcrun_init_auditor();
+#endif
 
 #if 0
   // temporary patch to avoid deadlock within PAMI's optimized implementation
