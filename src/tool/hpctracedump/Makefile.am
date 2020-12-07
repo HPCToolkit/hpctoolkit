@@ -84,7 +84,8 @@ MYLDADD = \
 	$(HPCLIB_ProfLean) \
 	$(HPCLIB_Support) \
 	$(HPCLIB_SupportLean) \
-	@BINUTILS_LIBS@ 
+	@BINUTILS_LIBS@ \
+	$(HPCLIB_gettext)
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
 

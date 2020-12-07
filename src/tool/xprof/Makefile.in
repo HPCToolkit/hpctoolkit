@@ -149,7 +149,7 @@ am__objects_1 = xprof-main.$(OBJEXT) xprof-Args.$(OBJEXT) \
 am_xprof_OBJECTS = $(am__objects_1)
 xprof_OBJECTS = $(am_xprof_OBJECTS)
 am__DEPENDENCIES_1 = $(HPCLIB_Binutils) $(HPCLIB_ISA) $(HPCLIB_XML) \
-	$(HPCLIB_Support)
+	$(HPCLIB_Support) $(HPCLIB_gettext)
 xprof_DEPENDENCIES = $(am__DEPENDENCIES_1)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -531,6 +531,7 @@ HPCLIB_Prof = $(top_builddir)/src/lib/prof/libHPCprof.la
 HPCLIB_ProfXML = $(top_builddir)/src/lib/profxml/libHPCprofxml.la
 HPCLIB_ProfLean = $(top_builddir)/src/lib/prof-lean/libHPCprof-lean.la
 HPCLIB_Binutils = $(top_builddir)/src/lib/binutils/libHPCbinutils.la
+HPCLIB_gettext = $(top_builddir)/src/lib/binutils/libHPCgettext.la
 HPCLIB_ISA = $(top_builddir)/src/lib/isa/libHPCisa.la
 HPCLIB_XML = $(top_builddir)/src/lib/xml/libHPCxml.la
 HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
@@ -564,6 +565,7 @@ MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
 	$(HPCLIB_Binutils) $(HPCLIB_ISA) $(HPCLIB_XML) $(HPCLIB_Support) \
 	@BINUTILS_LIBS@ \
+	$(HPCLIB_gettext) \
 	@HOST_XPROF_LDFLAGS@ \
 	-lm
 
