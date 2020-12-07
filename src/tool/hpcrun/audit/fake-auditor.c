@@ -210,7 +210,7 @@ bool update_shadow() {
   for(shadow_map_entry_t* m = shadow_map; m != NULL; m = m->next)
     m->seen = false;
   struct update_shadow_args args = {
-    .dirty = false,
+    .dirty = false
   };
   dl_iterate_phdr(update_shadow_dl, &args);
   if(args.dirty) {
@@ -226,7 +226,9 @@ bool update_shadow() {
         m = p;
       } else if(m->new) {
         if(verbose)
-          fprintf(stderr, "[fake audit] Delivering objopen for `%s'\n", m->entry.path);
+          fprintf(stderr, "[fake audit] Delivering objopen for `%s' [%p, %p)" 
+		  " dl_info.dlpi_addr = %p\n", m->entry.path, m->entry.start, 
+		  m->entry.end, (void *)m->entry.dl_info.dlpi_addr);
         hooks.open(&m->entry);
         m->new = false;
       }
@@ -254,15 +256,6 @@ int update_shadow_dl(struct dl_phdr_info* map, size_t sz, void* args_vp) {
   entry->addr = map->dlpi_addr;
   entry->seen = true;
   entry->new = true;
-
-  entry->entry.path = NULL;
-  if(map->dlpi_addr == getauxval(AT_SYSINFO_EHDR))
-    entry->entry.path = realpath(vdso_path, NULL);
-  else if(map->dlpi_name[0] == '\0')
-    entry->entry.path = realpath((const char*)getauxval(AT_EXECFN), NULL);
-  else
-    entry->entry.path = realpath(map->dlpi_name, NULL);
-
   entry->entry.ehdr = map->dlpi_addr != 0 ? (void*)map->dlpi_addr
     : (void*)(uintptr_t)(map->dlpi_phdr[0].p_vaddr - map->dlpi_phdr[0].p_offset);
 
@@ -275,15 +268,26 @@ int update_shadow_dl(struct dl_phdr_info* map, size_t sz, void* args_vp) {
         end = map->dlpi_phdr[i].p_vaddr + map->dlpi_phdr[i].p_memsz;
     }
   }
+
   entry->entry.start = (void*)map->dlpi_addr + start;
   entry->entry.end = (void*)map->dlpi_addr + end;
+
+  entry->entry.path = NULL;
+  if (entry->entry.start == (void *)getauxval(AT_SYSINFO_EHDR))
+    entry->entry.path = realpath(vdso_path, NULL);
+  else if(map->dlpi_name[0] == '\0')
+    entry->entry.path = realpath((const char*)getauxval(AT_EXECFN), NULL);
+  else 
+    entry->entry.path = realpath(map->dlpi_name, NULL);
 
   entry->entry.dl_info = *map;
   entry->entry.dl_info_sz = sz;
 
   entry->next = shadow_map;
   shadow_map = entry;
+
   args->dirty = true;
+
   return 0;
 }
 
