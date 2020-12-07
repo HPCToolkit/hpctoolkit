@@ -92,13 +92,6 @@ cupti_pc_sampling_disable2
 
 
 void
-cupti_context_pc_sampling_flush
-(
- CUcontext context
-);
-
-
-void
 cupti_pc_sampling_flush
 (
  void

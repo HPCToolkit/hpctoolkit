@@ -315,7 +315,7 @@ cupti_pc_sampling_config
 
 
 static void
-cupti_pc_sampling2_translate
+pc_sampling2_translate
 (
  void *pc_sampling_data,
  uint64_t index,
@@ -388,8 +388,9 @@ cupti_pc_sampling_collect
       gpu_activity.details.pc_sampling_info2.samplingPeriodInCycles = cupti_pc_sampling_frequency_get();
       gpu_activity.details.pc_sampling_info2.totalSamples = buffer_pc->totalSamples;
       gpu_activity.details.pc_sampling_info2.totalNumPcs = buffer_pc->totalNumPcs;
+        // TODO(Keren): allocate and free pcSamplingData using channels
       gpu_activity.details.pc_sampling_info2.pcSamplingData = buffer_pc->pPcData;
-      gpu_activity.details.pc_sampling_info2.translate = cupti_pc_sampling2_translate;
+      gpu_activity.details.pc_sampling_info2.translate = pc_sampling2_translate;
       gpu_operation_multiplexer_push(NULL, NULL, &gpu_activity);
     }
 
@@ -411,6 +412,7 @@ cupti_pc_sampling_collect
       }
     }
 
+    // TODO(Keren): check if remainingNumPcs is also updated
     while (buffer_pc->remainingNumPcs >= HPCRUN_CUPTI_ACTIVITY_USER_BUFFER_PC_NUM) {
       // Need to copy back buffer now, otherwise buffer_pc is not big enough to hold all samples
       CUpti_PCSamplingGetDataParams params = {
@@ -429,8 +431,9 @@ cupti_pc_sampling_collect
         gpu_activity.details.pc_sampling_info2.samplingPeriodInCycles = cupti_pc_sampling_frequency_get();
         gpu_activity.details.pc_sampling_info2.totalSamples = user_buffer_pc->totalSamples;
         gpu_activity.details.pc_sampling_info2.totalNumPcs = user_buffer_pc->totalNumPcs;
+        // TODO(Keren): allocate and free pcSamplingData using channels
         gpu_activity.details.pc_sampling_info2.pcSamplingData = user_buffer_pc->pPcData;
-        gpu_activity.details.pc_sampling_info2.translate = cupti_pc_sampling2_translate;
+        gpu_activity.details.pc_sampling_info2.translate = pc_sampling2_translate;
         gpu_operation_multiplexer_push(NULL, NULL, &gpu_activity);
       }
 
@@ -526,18 +529,11 @@ cupti_pc_sampling_disable2
     .pPriv = NULL
   };
   HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiPCSamplingDisable, (&params));
-}
 
-
-void
-cupti_context_pc_sampling_flush
-(
- CUcontext context
-)
-{
-  cupti_pc_sampling_disable2(context);
   // Last collect
   cupti_pc_sampling_collect(context);
+  // Remove the entry
+  cupti_context_pc_sampling_map_delete(context);
 }
 
 
@@ -546,5 +542,5 @@ cupti_pc_sampling_flush
 (
 )
 {
-  cupti_context_pc_sampling_map_flush(cupti_context_pc_sampling_flush);
+  cupti_context_pc_sampling_map_flush(cupti_pc_sampling_disable2);
 }

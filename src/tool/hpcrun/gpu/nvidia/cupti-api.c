@@ -799,7 +799,8 @@ cupti_unload_callback_cuda
 #ifdef NEW_CUPTI
   TMSG(CUPTI, "Context %p cubin_id %d unload", context, cubin_id);
   if (context != NULL) {
-    cupti_context_pc_sampling_flush(context);
+    // Flush records but not disable context
+    cupti_pc_sampling_collect(context);
   }
 #endif
   //cubin_id_map_delete(cubin_id);
@@ -889,7 +890,7 @@ cupti_subscriber_callback
       int pc_sampling_frequency = cupti_pc_sampling_frequency_get();
       if (pc_sampling_frequency != -1) {
 #ifdef NEW_CUPTI
-        cupti_context_pc_sampling_flush(rd->context);
+        cupti_pc_sampling_disable2(rd->context);
 #else
         cupti_pc_sampling_disable(rd->context);
 #endif
