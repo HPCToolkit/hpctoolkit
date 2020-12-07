@@ -96,7 +96,8 @@ typedef enum {
   GPU_ACTIVITY_EVENT                   = 15,
   GPU_ACTIVITY_FUNCTION                = 16,
   GPU_ACTIVITY_FLUSH                   = 17,
-  GPU_ACTIVITY_PC_SAMPLING2            = 18
+  GPU_ACTIVITY_PC_SAMPLING2            = 18,
+  GPU_ACTIVITY_PC_SAMPLING_INFO2       = 19
 } gpu_activity_kind_t;
 
 
@@ -231,15 +232,27 @@ typedef struct gpu_pc_sampling_info_t {
 } gpu_pc_sampling_info_t;
 
 
-typedef void (*gpu_pc_sampling2_translate_fn_t)(void *pc_sampling_data, size_t index, gpu_pc_sampling2_t *gpu_pc_sampling2);
+typedef struct gpu_range_kernel_t {
+} gpu_range_kernel_t;
+
+
+typedef void (*gpu_pc_sampling2_translate_fn_t)
+(
+ void *pc_sampling_data,
+ uint64_t index,
+ gpu_pc_sampling2_t *gpu_pc_sampling2,
+ uint32_t period
+);
+
 
 typedef struct gpu_pc_sampling_info2_t {
   uint64_t host_range_id;
   uint64_t droppedSamples;
   uint64_t samplingPeriodInCycles;
   uint64_t totalSamples;
-  void *pc_sampling_data;
-  gpu_pc_sampling2_translate_fn_t *translator;
+  uint64_t totalNumPcs;
+  void *pcSamplingData;
+  gpu_pc_sampling2_translate_fn_t translate;
 } gpu_pc_sampling_info2_t;
 
 
@@ -289,6 +302,7 @@ typedef struct gpu_memset_t {
   uint32_t correlation_id;
   uint32_t context_id;
   uint32_t stream_id;
+  uint64_t submit_time;
   gpu_mem_type_t memKind;
 } gpu_memset_t;
 
@@ -377,6 +391,7 @@ typedef struct gpu_synchronization_t {
   uint32_t context_id;
   uint32_t stream_id;
   uint32_t event_id;
+  uint64_t submit_time;
   gpu_sync_type_t syncKind;
 } gpu_synchronization_t;
 

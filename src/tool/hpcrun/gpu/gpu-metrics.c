@@ -72,10 +72,11 @@
   macro(GMEM, 0)  \
   macro(GMSET, 1)  \
   macro(GPU_INST_STALL, 2)  \
-  macro(GXCOPY, 3)  \
-  macro(GSYNC, 4)  \
-  macro(GGMEM, 5)  \
-  macro(GLMEM, 6)
+  macro(GPU_INST_STALL2, 3)  \
+  macro(GXCOPY, 4)  \
+  macro(GSYNC, 5)  \
+  macro(GGMEM, 6)  \
+  macro(GLMEM, 7)
 
 
 #define FORALL_SCALAR_METRIC_KINDS(macro)  \
@@ -307,7 +308,7 @@ gpu_metrics_attribute_pc_sampling2
  gpu_activity_t *activity
 )
 {
-  gpu_pc_sampling2_t *sinfo = &(activity->details.pc_sampling);
+  gpu_pc_sampling2_t *sinfo = &(activity->details.pc_sampling2);
   cct_node_t *cct_node = activity->cct_node;
 
   // frequencly is handled already 
@@ -320,9 +321,9 @@ gpu_metrics_attribute_pc_sampling2
   gpu_metrics_attribute_metric_int(inst_metric, METRIC_ID(GPU_INST_ALL), 
            inst_count);
 
-  if (sinfo->stallReason != GPU_INST_STALL_INVALID) {
+  if (sinfo->stallReason != GPU_INST_STALL2_INVALID) {
     int stall_summary_metric_index = 
-      METRIC_ID(GPU_INST_STALL2)[GPU_INST_STALL2_ANY];
+      METRIC_ID(GPU_INST_STALL2)[GPU_INST_STALL_ANY];
 
     int stall_kind_metric_index = METRIC_ID(GPU_INST_STALL2)[sinfo->stallReason];
 
@@ -642,6 +643,10 @@ gpu_metrics_attribute
     gpu_metrics_attribute_pc_sampling_info(activity);
     break;
 
+  case GPU_ACTIVITY_PC_SAMPLING2:
+    gpu_metrics_attribute_pc_sampling2(activity);
+    break;
+
   case GPU_ACTIVITY_MEMCPY:
     gpu_metrics_attribute_memcpy(activity);
     break;
@@ -940,7 +945,7 @@ gpu_metrics_GPU_INST_STALL2_enable
 
   FORALL_GPU_INST_STALL2(HIDE_INDEXED_METRIC);
 
-  SET_DISPLAY_INDEXED_METRIC(GPU_INST_STALL2_ANY, GPU_INST_STALL2_ANY, 
+  SET_DISPLAY_INDEXED_METRIC(GPU_INST_STALL_ANY, GPU_INST_STALL_ANY, 
            HPCRUN_FMT_METRIC_SHOW);
 
   FINALIZE_METRIC_KIND();

@@ -80,5 +80,4 @@ gpu_application_thread_correlation_callback
 );
 
 
-
 #endif

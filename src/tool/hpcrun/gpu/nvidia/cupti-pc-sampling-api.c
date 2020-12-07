@@ -10,6 +10,8 @@
 #include <hpcrun/messages/debug-flag.h>
 #include <hpcrun/messages/messages.h>
 
+#include "../gpu/gpu-operation-multiplexer.h"
+
 #include "cupti-api.h"
 #include "cupti-context-pc-sampling-map.h"
 
@@ -312,6 +314,44 @@ cupti_pc_sampling_config
 }
 
 
+static void
+cupti_pc_sampling2_translate
+(
+ void *pc_sampling_data,
+ uint64_t index,
+ gpu_pc_sampling2_t *gpu_pc_sampling2,
+ uint32_t period
+)
+{
+  CUpti_PCSamplingData *cupti_pc_sampling_data = (CUpti_PCSamplingData *)pc_sampling_data;
+
+  CUpti_PCSamplingPCData *pc_data = &cupti_pc_sampling_data->pPcData[index];
+  TMSG(CUPTI, "cubinCrc: %lu, functionName: %s, pc: %lu, pcOffset: %u, count: %u", pc_data->cubinCrc,
+    pc_data->functionName, pc_data->pc, pc_data->pcOffset, pc_data->stallReasonCount);
+
+  for (size_t j = 0; j < GPU_INST_STALL2_INVALID; ++j) {
+    CUpti_PCSamplingStallReason *stall_reason = &pc_data->stallReason[j];
+    uint32_t stall_reason_index = stall_reason->pcSamplingStallReasonIndex;
+    uint32_t samples = stall_reason->samples;
+
+    if (samples > 0) {
+      ip_normalized_t ip;
+      // TODO(Keren): fix apportion host_correlation id and pc
+      gpu_pc_sampling2[stall_reason_index / 2 + 1].host_correlation_id = 0; 
+      gpu_pc_sampling2[stall_reason_index / 2 + 1].pc = ip;
+
+      if (stall_reason_index % 2 == 0) {
+        // non-latency sample
+        gpu_pc_sampling2[stall_reason_index / 2 + 1].samples = samples * period;
+      } else {
+        // latency sample 
+        gpu_pc_sampling2[stall_reason_index / 2 + 1].latencySamples = samples * period;
+      }
+    }
+  }
+}
+
+
 void
 cupti_pc_sampling_collect
 (
@@ -330,6 +370,9 @@ cupti_pc_sampling_collect
   uint32_t *stall_reason_index = cupti_context_pc_sampling_map_entry_stall_reason_index_get(entry);
   char **stall_reason_names = cupti_context_pc_sampling_map_entry_stall_reason_names_get(entry);
 
+  gpu_activity_t gpu_activity;
+  memset(&gpu_activity, 0, sizeof(gpu_activity_t));
+
   if (DEBUG) {
     for (size_t i = 0; i < num_stall_reasons; ++i) {
       TMSG(CUPTI, "stall name %u : %s", stall_reason_index[i], stall_reason_names[i]);
@@ -337,6 +380,19 @@ cupti_pc_sampling_collect
   }
 
   if (user_buffer_pc != NULL && buffer_pc != NULL) {
+    if (buffer_pc->totalNumPcs > 0) {
+      // When pc sampling is disabled or pcs exceed collectNumPCs limit
+      gpu_activity.kind = GPU_ACTIVITY_PC_SAMPLING_INFO2;
+      gpu_activity.details.pc_sampling_info2.host_range_id = 0;
+      gpu_activity.details.pc_sampling_info2.droppedSamples = buffer_pc->droppedSamples;
+      gpu_activity.details.pc_sampling_info2.samplingPeriodInCycles = cupti_pc_sampling_frequency_get();
+      gpu_activity.details.pc_sampling_info2.totalSamples = buffer_pc->totalSamples;
+      gpu_activity.details.pc_sampling_info2.totalNumPcs = buffer_pc->totalNumPcs;
+      gpu_activity.details.pc_sampling_info2.pcSamplingData = buffer_pc->pPcData;
+      gpu_activity.details.pc_sampling_info2.translate = cupti_pc_sampling2_translate;
+      gpu_operation_multiplexer_push(NULL, NULL, &gpu_activity);
+    }
+
     TMSG(CUPTI, "NEW CUPTI totalNumPcs: %lu, totalSamples: %lu, collectNumPcs: %lu, remainingNumPcs: %lu",
       buffer_pc->totalNumPcs, buffer_pc->totalSamples, buffer_pc->collectNumPcs, buffer_pc->remainingNumPcs);
 
@@ -366,9 +422,21 @@ cupti_pc_sampling_collect
 
       HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiPCSamplingGetData, (&params));
 
+      if (user_buffer_pc->totalNumPcs > 0) {
+        gpu_activity.kind = GPU_ACTIVITY_PC_SAMPLING_INFO2;
+        gpu_activity.details.pc_sampling_info2.host_range_id = 0;
+        gpu_activity.details.pc_sampling_info2.droppedSamples = user_buffer_pc->droppedSamples;
+        gpu_activity.details.pc_sampling_info2.samplingPeriodInCycles = cupti_pc_sampling_frequency_get();
+        gpu_activity.details.pc_sampling_info2.totalSamples = user_buffer_pc->totalSamples;
+        gpu_activity.details.pc_sampling_info2.totalNumPcs = user_buffer_pc->totalNumPcs;
+        gpu_activity.details.pc_sampling_info2.pcSamplingData = user_buffer_pc->pPcData;
+        gpu_activity.details.pc_sampling_info2.translate = cupti_pc_sampling2_translate;
+        gpu_operation_multiplexer_push(NULL, NULL, &gpu_activity);
+      }
+
       if (DEBUG) {
-        for (size_t i = 0; i < buffer_pc->totalNumPcs; ++i) {
-          CUpti_PCSamplingPCData *pc_data = &buffer_pc->pPcData[i];
+        for (size_t i = 0; i < user_buffer_pc->totalNumPcs; ++i) {
+          CUpti_PCSamplingPCData *pc_data = &user_buffer_pc->pPcData[i];
           TMSG(CUPTI, "cubinCrc: %lu, functionName: %s, pc: %lu, pcOffset: %u, count: %u", pc_data->cubinCrc,
             pc_data->functionName, pc_data->pc, pc_data->pcOffset, pc_data->stallReasonCount);
 
@@ -479,38 +547,4 @@ cupti_pc_sampling_flush
 )
 {
   cupti_context_pc_sampling_map_flush(cupti_context_pc_sampling_flush);
-}
-
-
-void
-cupti_pc_sampling2_translate
-(
- void *pc_sampling_data,
- size_t index,
- gpu_pc_sampling2_t *gpu_pc_sampling2
-)
-{
-  CUpti_PCSamplingData *cupti_pc_sampling_data = (CUpti_PCSamplingData *)pc_sampling_data;
-
-  if (index >= cupti_pc_sampling_data->totalNumPcs) {
-    gpu_pc_sampling2 = NULL;
-    return;
-  }
-
-  CUpti_PCSamplingPCData *pc_data = &cupti_pc_sampling_data->pPcData[index];
-  TMSG(CUPTI, "cubinCrc: %lu, functionName: %s, pc: %lu, pcOffset: %u, count: %u", pc_data->cubinCrc,
-    pc_data->functionName, pc_data->pc, pc_data->pcOffset, pc_data->stallReasonCount);
-
-  for (size_t j = 0; j < num_stall_reasons; ++j) {
-    if (pc_data->stallReason[j].samples > 0) {
-      if (j % 2 == 0) {
-        gpu_pc_sampling2[j / 2].host_correlation_id = 0; 
-        gpu_pc_sampling2[j / 2].pc = 0;
-        gpu_pc_sampling2[j / 2].samples = pc_data->stallReason[j].samples
-        gpu_pc_sampling2[j / 2].stallReason = (gpu_inst_stall2_t)(j / 2);
-      } else {
-        gpu_pc_sampling2[j / 2 + 1].latencySamples = pc_data->stallReason[j].samples
-      }
-    }
-  }
 }

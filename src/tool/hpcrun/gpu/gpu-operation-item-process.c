@@ -157,12 +157,96 @@ gpu_kernel_process
 
 
 static void
+gpu_synchronization_process
+(
+ gpu_operation_item_t *it
+)
+{
+  gpu_activity_t *activity = &it->activity;
+  gpu_activity_channel_t *channel = it->channel;
+
+  gpu_trace_item_t entry_trace;
+
+  gpu_trace_item_produce(&entry_trace,
+                         activity->details.synchronization.submit_time,
+                         activity->details.synchronization.start,
+                         activity->details.synchronization.end,
+                         activity->cct_node);
+
+  if (activity->kind == GPU_ACTIVITY_SYNCHRONIZATION) {
+    uint32_t context_id = activity->details.synchronization.context_id;
+    uint32_t stream_id = activity->details.synchronization.stream_id;
+
+    switch (activity->details.synchronization.syncKind) {
+      case GPU_SYNC_STREAM:
+      case GPU_SYNC_STREAM_EVENT_WAIT:
+        // Insert a event for a specific stream
+        PRINT("Add context %u stream %u sync\n", context_id, stream_id);
+        gpu_context_id_map_stream_process(context_id, stream_id, gpu_trace_produce, &entry_trace);
+        break;
+      case GPU_SYNC_CONTEXT:
+        // Insert events for all current active streams
+        // TODO(Keren): What if the stream is created
+        PRINT("Add context %u sync\n", context_id);
+        gpu_context_id_map_context_process(context_id, gpu_trace_produce, &entry_trace);
+        break;
+      case GPU_SYNC_EVENT:
+        PRINT("Add context %u stream %u sync\n", context_id, stream_id);
+        gpu_context_id_map_stream_process(context_id, stream_id, gpu_trace_produce, &entry_trace);
+        break;
+      default:
+        // invalid
+        PRINT("Invalid synchronization %u\n", correlation_id);
+    }
+  }
+
+  gpu_activity_channel_produce(channel, activity);
+}
+
+
+static void
+gpu_range_kernel_process
+(
+ gpu_operation_item_t *it
+)
+{
+}
+
+
+static void
 gpu_pc_sampling_info2_process
 (
  gpu_operation_item_t *it
 )
 {
   gpu_activity_t *activity = &it->activity;
+  gpu_pc_sampling_info2_t pc_sampling_info2 = activity->details.pc_sampling_info2;
+
+  void *pc_sampling_data = pc_sampling_info2.pcSamplingData;
+  uint32_t period = pc_sampling_info2.samplingPeriodInCycles;
+  uint64_t total_num_pcs = pc_sampling_info2.totalNumPcs;
+
+  static gpu_pc_sampling2_t gpu_pc_sampling[GPU_INST_STALL2_INVALID];
+
+  // 1. translate a pc sample activity for each record
+  gpu_activity_channel_t *channel;
+  for (uint64_t index = 0; index < total_num_pcs; ++index) {
+    pc_sampling_info2.translate(pc_sampling_data, index, gpu_pc_sampling, period);
+
+    for (size_t i = 0; i < GPU_INST_STALL2_INVALID; ++i) {
+      if (gpu_pc_sampling[i].samples != 0) {
+        //channel = gpu_range_profiling_pc_sampling_process(&gpu_pc_sampling[i]);
+        //gpu_activity_channel_produce(channel, &gpu_pc_sampling[i]);
+      }
+    }
+  }
+
+  // 2. produce overall metrics
+  //gpu_trace_metrics_t 
+  //gpu_range_pc_sampling_overall(range_id);
+
+  // 3. clear the current range 
+  //gpu_range_id_map_delete(range_id);
 }
 
 
@@ -182,7 +266,7 @@ gpu_flush_process
 
 
 static void
-gpu_unknown_process
+gpu_default_process
 (
  gpu_operation_item_t *it
 )
@@ -212,12 +296,20 @@ gpu_operation_item_process
       gpu_kernel_process(it);
       break;
 
+    case GPU_ACTIVITY_SYNCHRONIZATION:
+      gpu_synchronization_process(it);
+      break;
+
     case GPU_ACTIVITY_FLUSH:
       gpu_flush_process(it);
       break;
 
+    case GPU_ACTIVITY_PC_SAMPLING_INFO2:
+      gpu_pc_sampling_info2_process(it);
+      break;
+
     default:
-      gpu_unknown_process(it);
+      gpu_default_process(it);
       break;
   }
 

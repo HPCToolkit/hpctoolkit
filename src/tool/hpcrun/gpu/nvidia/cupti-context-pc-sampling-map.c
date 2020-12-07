@@ -169,7 +169,7 @@ flush_fn_helper
 )
 {
   cupti_context_pc_sampling_flush_fn_t fn = (cupti_context_pc_sampling_flush_fn_t)arg;
-  fn(entry->context);
+  fn((CUcontext)entry->context);
 }
 
 

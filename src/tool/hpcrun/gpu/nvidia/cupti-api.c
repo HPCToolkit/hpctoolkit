@@ -91,6 +91,7 @@
 #include <hpcrun/gpu/gpu-correlation-channel.h>
 #include <hpcrun/gpu/gpu-correlation-id.h>
 #include <hpcrun/gpu/gpu-op-placeholders.h>
+#include <hpcrun/gpu/gpu-operation-multiplexer.h>
 
 #include <hpcrun/ompt/ompt-device.h>
 
@@ -1620,9 +1621,25 @@ cupti_activity_flush
 {
   if (cupti_stop_flag) {
     cupti_stop_flag_unset();
+
 #ifdef NEW_CUPTI
+    // Flush pc samples of all contexts
     cupti_pc_sampling_flush();
+
+    // Wait until operations are drained
+    // Operation channel is FIFO
+    atomic_bool wait;
+    atomic_store(&wait, true);
+    gpu_activity_t gpu_activity;
+    memset(&gpu_activity, 0, sizeof(gpu_activity_t));
+
+    gpu_activity.kind = GPU_ACTIVITY_FLUSH;
+    gpu_activity.details.flush.wait = &wait;
+    gpu_operation_multiplexer_push(NULL, NULL, &gpu_activity);
+
+    while (atomic_load(&wait)) {}
 #endif
+
     HPCRUN_CUPTI_CALL(cuptiActivityFlushAll, (CUPTI_ACTIVITY_FLAG_FLUSH_FORCED));
   }
 }
