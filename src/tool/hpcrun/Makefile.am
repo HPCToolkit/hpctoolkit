@@ -1170,6 +1170,7 @@ MONITOR_NAMES = -G 'monitor_*'
 HPCRUN_NAMES =  -G 'hpcrun_*' -G 'hpctoolkit_*'
 MISC_NAMES =    -G 'debug_flag_*' -G 'messages_*' -G ompt_start_tool
 LEVEL0_NAMES = -G 'zeInit' -G 'zeDriverGet' -G 'zeDevice*' -G 'zeEvent*' -G 'zeMem*' -G 'zeCommand*'
+OPENCL_NAMES = -G 'clBuildProgram' -G 'clCreate*' -G 'clEnqueue*' -G 'clSetKernelArg' -G 'cl*Event*'
 
 DYN_SYSCALL_LIST = poll ppoll pselect select
 DYN_SYSCALL_NAMES = $(foreach name,$(DYN_SYSCALL_LIST),-G $(name))
@@ -1186,7 +1187,7 @@ if OPT_ENABLE_HPCRUN
 	mkdir $(WORK_DYN)
 	cd $(WORK_DYN) && $(AR) x ../.libs/libhpcrun.a
 	$(LD) -r $(WORK_DYN)/*.o $(libhpcrun_la_LIBADD) -o $(WORK_DYN)/part1.o
-	$(OBJCOPY) -w $(MONITOR_NAMES) $(HPCRUN_NAMES) $(DYN_SYSCALL_NAMES) $(MISC_NAMES) $(LEVEL0_NAMES) \
+	$(OBJCOPY) -w $(MONITOR_NAMES) $(HPCRUN_NAMES) $(DYN_SYSCALL_NAMES) $(MISC_NAMES) $(LEVEL0_NAMES) $(OPENCL_NAMES) \
 		$(WORK_DYN)/part1.o $(WORK_DYN)/part2.o
 	$(CC) -shared $(WORK_DYN)/part2.o $(libhpcrun_la_LDFLAGS) -o $(WORK_DYN)/libhpcrun.so
 	$(INSTALL) -m 0755 $(WORK_DYN)/libhpcrun.so $(DESTDIR)$(pkglibdir)
