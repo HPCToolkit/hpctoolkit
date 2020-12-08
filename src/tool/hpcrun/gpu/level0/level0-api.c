@@ -92,6 +92,7 @@
   macro(zeCommandListCreate) \
   macro(zeCommandListCreateImmediate) \
   macro(zeCommandListDestroy) \
+  macro(zeCommandListReset) \
   macro(zeCommandQueueExecuteCommandLists) \
   macro(zeEventHostReset)
 
@@ -279,6 +280,14 @@ LEVEL0_FN
 
 LEVEL0_FN
 (
+  zeCommandListReset,
+  (
+    ze_command_list_handle_t hCommandList           ///< [in] handle of command list object to reset
+  )
+);
+
+LEVEL0_FN
+(
   zeCommandQueueExecuteCommandLists,
   (
     ze_command_queue_handle_t hCommandQueue,        ///< [in] handle of the command queue
@@ -411,6 +420,7 @@ level0_attribute_event
   ze_event_handle_t event
 )
 {
+  PRINT("level0_attribute_event for event %p\n", event);
   level0_data_node_t* data = level0_event_map_lookup(event);
   if (data == NULL) return;
 
@@ -614,6 +624,29 @@ level0_command_list_destroy_entry
 }
 
 static void
+level0_command_list_reset_entry
+(
+  ze_command_list_handle_t handle
+)
+{
+  level0_data_node_t ** command_list_head = level0_commandlist_map_lookup(handle);
+
+  // If this happens, it is an immedicate list
+  if (command_list_head == NULL) {
+    return;
+  }
+
+  level0_data_node_t * command_node = *command_list_head;
+  for (; command_node != NULL; command_node = command_node->next) {
+    level0_attribute_event(command_node->event);
+  }
+
+  // Reset the command list data to empty
+  level0_data_list_free(*command_list_head);
+  *command_list_head = NULL;
+}
+
+static void
 level0_command_queue_execute_command_list_entry
 (
   uint32_t numCommandLists,                       ///< [in] number of command lists to execute
@@ -782,6 +815,21 @@ zeCommandListDestroy
   level0_command_list_destroy_entry(hCommandList);
   // Execute the real level0 API
   ze_result_t ret = HPCRUN_LEVEL0_CALL(zeCommandListDestroy, (hCommandList));
+  // Exit action
+  return ret;
+}
+
+
+ze_result_t
+zeCommandListReset
+(
+  ze_command_list_handle_t hCommandList           ///< [in] handle of command list object to reset
+)
+{
+  // Entry action
+  level0_command_list_reset_entry(hCommandList);
+  // Execute the real level0 API
+  ze_result_t ret = HPCRUN_LEVEL0_CALL(zeCommandListReset, (hCommandList));
   // Exit action
   return ret;
 }
