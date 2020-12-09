@@ -128,6 +128,8 @@ opencl_elf_section_type
   }
 }
 
+
+#ifdef OPT_ENABLE_IGC
 static size_t
 computeHash
 (
@@ -147,6 +149,9 @@ computeHash
   }
   return used;
 }
+#endif 
+
+
 
 //******************************************************************************
 // interface operations
