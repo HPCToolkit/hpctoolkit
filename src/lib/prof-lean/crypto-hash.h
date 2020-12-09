@@ -140,6 +140,8 @@ crypto_hash_to_hexstring
 );
 
 
+#if 0
+
 //-----------------------------------------------------------------------------
 // function: 
 //   crypto_hash_self_test
@@ -156,6 +158,8 @@ crypto_hash_self_test
 (
   int verbose
 );
+
+#endif
 
 #if defined(__cplusplus)
 }
