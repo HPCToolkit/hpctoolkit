@@ -86,7 +86,7 @@ parseDotCFG
   GPUParse::CudaCFGParser cfg_parser;
   // Step 1: parse all function symbols
   std::vector<Symbol *> symbols;
-  the_symtab->getAllSymbols(symbols);
+  the_symtab->getAllDefinedSymbols(symbols); // skipping undefined symbols
 
   if (DEBUG_CFG_PARSE) {
     std::cout << "Debug symbols: " << std::endl;
