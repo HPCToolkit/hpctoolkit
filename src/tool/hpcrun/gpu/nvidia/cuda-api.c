@@ -160,6 +160,24 @@ CUDA_FN
 );
 
 
+CUDA_FN
+(
+ cuCtxSetCurrent,
+ (
+  CUcontext context
+ )
+);
+
+
+CUDA_FN
+(
+ cuCtxSynchronize,
+ (
+  void
+ )
+);
+
+
 CUDA_RUNTIME_FN
 (
  cudaGetDevice,
@@ -188,7 +206,7 @@ CUDA_RUNTIME_FN
 int
 cuda_bind
 (
-  void
+ void
 )
 {
 #ifndef HPCRUN_STATIC_LINK
@@ -197,6 +215,8 @@ cuda_bind
 
   CHK_DLSYM(cuda, cuDeviceGetAttribute);
   CHK_DLSYM(cuda, cuCtxGetCurrent);
+  CHK_DLSYM(cuda, cuCtxSetCurrent);
+  CHK_DLSYM(cuda, cuCtxSynchronize);
 
   CHK_DLOPEN(cudart, "libcudart.so", RTLD_NOW | RTLD_GLOBAL);
 
@@ -292,7 +312,7 @@ cuda_runtime_version
 //******************************************************************************
 
 int
-cuda_context
+cuda_context_get
 (
  CUcontext *ctx
 )
@@ -377,5 +397,30 @@ cuda_global_pc_sampling_required
   *required = ((DEVICE_IS_TURING(dev_major, dev_minor)) && 
                (RUNTIME_MAJOR_VERSION(rt_version) < CUDA11));
 
+  return 0;
+}
+
+
+int
+cuda_context_sync
+(
+ CUcontext ctx
+)
+{
+ if (cuda_context_set(ctx)) {
+   HPCRUN_CUDA_API_CALL(cuCtxSynchronize, ());
+ } else {
+   return -1;
+ }
+}
+
+
+int
+cuda_context_set
+(
+ CUcontext ctx
+)
+{
+  HPCRUN_CUDA_API_CALL(cuCtxSetCurrent, (ctx));  
   return 0;
 }

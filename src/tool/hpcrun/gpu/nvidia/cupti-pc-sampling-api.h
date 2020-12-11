@@ -57,8 +57,38 @@ cupti_pc_sampling_config
 
 
 void
+cupti_pc_sampling_enable2
+(
+ CUcontext context
+);
+
+
+void
+cupti_pc_sampling_disable2
+(
+ CUcontext context
+);
+
+
+void
+cupti_pc_sampling_range_disable2
+(
+ uint64_t range_id,
+ CUcontext context
+);
+
+
+void
 cupti_pc_sampling_collect
 (
+ CUcontext context
+);
+
+
+void
+cupti_pc_sampling_range_collect
+(
+ uint64_t range_id,
  CUcontext context
 );
 
@@ -76,26 +106,19 @@ cupti_cubin_crc_get
  uint32_t cubin_size
 );
 
-
-void
-cupti_pc_sampling_enable2
-(
- CUcontext context
-);
-
-
-void
-cupti_pc_sampling_disable2
-(
- CUcontext context
-);
-
-
+// Stop pc sampling on all contexts
+// And reenable all contexts
 void
 cupti_pc_sampling_flush
 (
  void
 );
 
+
+void
+cupti_pc_sampling_range_flush
+(
+ uint64_t range_id
+);
 
 #endif

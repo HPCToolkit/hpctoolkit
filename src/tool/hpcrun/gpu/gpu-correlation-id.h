@@ -65,5 +65,28 @@ gpu_correlation_id
 );
 
 
+uint64_t
+gpu_range_id
+(
+);
+
+
+void
+gpu_range_enter
+(
+ uint64_t correlation_id
+);
+
+
+void
+gpu_range_exit
+(
+);
+
+
+bool
+gpu_range_is_lead
+(
+);
 
 #endif

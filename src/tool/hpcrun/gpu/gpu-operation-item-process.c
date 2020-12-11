@@ -91,8 +91,6 @@ gpu_context_stream_trace
   gpu_context_id_map_stream_process(context_id, stream_id, gpu_trace_produce, ti);
 }
 
-
-
 //******************************************************************************
 // gpu operations process
 //******************************************************************************
@@ -205,33 +203,24 @@ gpu_synchronization_process
 
 
 static void
-gpu_range_kernel_process
-(
- gpu_operation_item_t *it
-)
-{
-}
-
-
-static void
 gpu_pc_sampling_info2_process
 (
  gpu_operation_item_t *it
 )
 {
   gpu_activity_t *activity = &it->activity;
-  gpu_pc_sampling_info2_t pc_sampling_info2 = activity->details.pc_sampling_info2;
+  gpu_pc_sampling_info2_t *pc_sampling_info2 = &activity->details.pc_sampling_info2;
 
-  void *pc_sampling_data = pc_sampling_info2.pcSamplingData;
-  uint32_t period = pc_sampling_info2.samplingPeriodInCycles;
-  uint64_t total_num_pcs = pc_sampling_info2.totalNumPcs;
+  void *pc_sampling_data = pc_sampling_info2->pc_sampling_data;
+  uint32_t period = pc_sampling_info2->samplingPeriodInCycles;
+  uint64_t total_num_pcs = pc_sampling_info2->totalNumPcs;
 
   static gpu_pc_sampling2_t gpu_pc_sampling[GPU_INST_STALL2_INVALID];
 
   // 1. translate a pc sample activity for each record
   gpu_activity_channel_t *channel;
   for (uint64_t index = 0; index < total_num_pcs; ++index) {
-    pc_sampling_info2.translate(pc_sampling_data, index, gpu_pc_sampling, period);
+    pc_sampling_info2->translate(pc_sampling_data, index, gpu_pc_sampling, period);
 
     for (size_t i = 0; i < GPU_INST_STALL2_INVALID; ++i) {
       if (gpu_pc_sampling[i].samples != 0) {
@@ -240,6 +229,7 @@ gpu_pc_sampling_info2_process
       }
     }
   }
+  pc_sampling_info2->free(pc_sampling_data);
 
   // 2. produce overall metrics
   //gpu_trace_metrics_t 

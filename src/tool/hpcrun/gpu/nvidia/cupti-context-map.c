@@ -60,7 +60,7 @@
 #include <hpcrun/messages/messages.h>
 #include <hpcrun/memory/hpcrun-malloc.h>
 
-#include "cupti-context-pc-sampling-map.h"
+#include "cupti-context-map.h"
 #include "../gpu-splay-allocator.h"
 
 
@@ -90,7 +90,7 @@
   typed_splay_free(free_list, node)
 
 #undef typed_splay_node
-#define typed_splay_node(context) cupti_context_pc_sampling_map_entry_t 
+#define typed_splay_node(context) cupti_context_map_entry_t 
 
 
 
@@ -98,18 +98,17 @@
 // type declarations
 //******************************************************************************
 
-struct cupti_context_pc_sampling_map_entry_s {
-  struct cupti_context_pc_sampling_map_entry_s *left;
-  struct cupti_context_pc_sampling_map_entry_s *right;
+struct cupti_context_map_entry_s {
+  struct cupti_context_map_entry_s *left;
+  struct cupti_context_map_entry_s *right;
   uint64_t context;
 
+  // PC sampling records
   size_t num_stall_reasons;
   uint32_t *stall_reason_index;
   char **stall_reason_names;
-  size_t buffer_pc_num;
-  CUpti_PCSamplingData *buffer_pc;
-  size_t user_buffer_pc_num;
-  CUpti_PCSamplingData *user_buffer_pc;
+  size_t num_buffer_pcs;
+  cupti_pc_sampling_data_t *pc_sampling_data;
 }; 
 
 
@@ -118,8 +117,8 @@ struct cupti_context_pc_sampling_map_entry_s {
 // local data
 //******************************************************************************
 
-static cupti_context_pc_sampling_map_entry_t *map_root = NULL;
-static cupti_context_pc_sampling_map_entry_t *free_list = NULL;
+static cupti_context_map_entry_t *map_root = NULL;
+static cupti_context_map_entry_t *free_list = NULL;
 static spinlock_t spinlock = SPINLOCK_UNLOCKED;
 
 //******************************************************************************
@@ -129,47 +128,33 @@ static spinlock_t spinlock = SPINLOCK_UNLOCKED;
 typed_splay_impl(context)
 
 
-static cupti_context_pc_sampling_map_entry_t *
-cupti_context_pc_sampling_map_entry_new
+static cupti_context_map_entry_t *
+cupti_context_map_entry_new
 (
- CUcontext context,
- size_t num_stall_reasons,
- uint32_t *stall_reason_index,
- char **stall_reason_names,
- size_t buffer_pc_num,
- CUpti_PCSamplingData *buffer_pc,
- size_t user_buffer_pc_num,
- CUpti_PCSamplingData *user_buffer_pc
+ CUcontext context
 )
 {
-  cupti_context_pc_sampling_map_entry_t *e;
+  cupti_context_map_entry_t *e;
   e = st_alloc(&free_list);
 
-  memset(e, 0, sizeof(cupti_context_pc_sampling_map_entry_t));
-
-  e->context = (uint64_t)context;
-  e->num_stall_reasons = num_stall_reasons;
-  e->stall_reason_index = stall_reason_index;
-  e->stall_reason_names = stall_reason_names;
-  e->buffer_pc_num = buffer_pc_num;
-  e->buffer_pc = buffer_pc;
-  e->user_buffer_pc_num = user_buffer_pc_num;
-  e->user_buffer_pc = user_buffer_pc;
+  memset(e, 0, sizeof(cupti_context_map_entry_t));
 
   return e;
 }
 
 
+
 static void
 flush_fn_helper
 (
- cupti_context_pc_sampling_map_entry_t *entry,
+ cupti_context_map_entry_t *entry,
  splay_visit_t visit_type,
- void *arg
+ void *args
 )
 {
-  cupti_context_pc_sampling_flush_fn_t fn = (cupti_context_pc_sampling_flush_fn_t)arg;
-  fn((CUcontext)entry->context);
+  cupti_context_process_args_t *process_args = (cupti_context_process_args_t *)args;
+  cupti_context_process_fn_t fn = (cupti_context_process_fn_t)process_args->fn;
+  fn(entry->context, process_args->args);
 }
 
 
@@ -177,15 +162,15 @@ flush_fn_helper
 // interface operations
 //******************************************************************************
 
-cupti_context_pc_sampling_map_entry_t *
-cupti_context_pc_sampling_map_lookup
+cupti_context_map_entry_t *
+cupti_context_map_lookup
 (
  CUcontext context
 )
 {
   spinlock_lock(&spinlock);
 
-  cupti_context_pc_sampling_map_entry_t *result = st_lookup(&map_root, (uint64_t)context);
+  cupti_context_map_entry_t *result = st_lookup(&map_root, (uint64_t)context);
 
   TMSG(DEFER_CTXT, "context map lookup: context=0x%lx (record %p)", 
        context, result);
@@ -197,26 +182,17 @@ cupti_context_pc_sampling_map_lookup
 
 
 void
-cupti_context_pc_sampling_map_insert
+cupti_context_map_init
 (
- CUcontext context,
- size_t num_stall_reasons,
- uint32_t *stall_reason_index,
- char **stall_reason_names,
- size_t buffer_pc_num,
- CUpti_PCSamplingData *buffer_pc,
- size_t user_buffer_pc_num,
- CUpti_PCSamplingData *user_buffer_pc
+ CUcontext context
 )
 {
   spinlock_lock(&spinlock);
 
-  cupti_context_pc_sampling_map_entry_t *entry = st_lookup(&map_root, (uint64_t)context);
+  cupti_context_map_entry_t *entry = st_lookup(&map_root, (uint64_t)context);
 
   if (entry == NULL) {
-    entry = cupti_context_pc_sampling_map_entry_new(context, num_stall_reasons,
-      stall_reason_index, stall_reason_names, buffer_pc_num, buffer_pc,
-      user_buffer_pc_num, user_buffer_pc);
+    entry = cupti_context_map_entry_new(context);
     st_insert(&map_root, entry);
   }
 
@@ -225,14 +201,42 @@ cupti_context_pc_sampling_map_insert
 
 
 void
-cupti_context_pc_sampling_map_delete
+cupti_context_map_pc_sampling_insert
+(
+ CUcontext context,
+ size_t num_stall_reasons,
+ uint32_t *stall_reason_index,
+ char **stall_reason_names,
+ size_t num_buffer_pcs,
+ cupti_pc_sampling_data_t *pc_sampling_data
+)
+{
+  spinlock_lock(&spinlock);
+
+  cupti_context_map_entry_t *entry = st_lookup(&map_root, (uint64_t)context);
+
+  if (entry != NULL) {
+    entry->num_stall_reasons = num_stall_reasons;
+    entry->stall_reason_index = stall_reason_index;
+    entry->stall_reason_names = stall_reason_names;
+    entry->num_buffer_pcs = num_buffer_pcs;
+    entry->pc_sampling_data = pc_sampling_data;
+  }
+
+  spinlock_unlock(&spinlock);
+}
+
+
+void
+cupti_context_map_delete
 (
  CUcontext context
 )
 {
   spinlock_lock(&spinlock);
 
-  cupti_context_pc_sampling_map_entry_t *node = st_delete(&map_root, (uint64_t)context);
+  cupti_context_map_entry_t *node = st_delete(&map_root, (uint64_t)context);
+
   st_free(&free_list, node);
 
   spinlock_unlock(&spinlock);
@@ -240,39 +244,34 @@ cupti_context_pc_sampling_map_delete
 
 
 void
-cupti_context_pc_sampling_map_flush
+cupti_context_map_process
 (
- cupti_context_pc_sampling_flush_fn_t fn
+ cupti_context_process_fn_t fn,
+ void *args
 )
 {
-  st_forall(map_root, splay_inorder, flush_fn_helper, fn);
+  cupti_context_process_args_t process_args = {
+    .fn = fn,
+    .args = args
+  };
+  st_forall(map_root, splay_inorder, flush_fn_helper, &process_args);
 }
 
 
-CUpti_PCSamplingData *
-cupti_context_pc_sampling_map_entry_buffer_pc_get
+cupti_pc_sampling_data_t *
+cupti_context_map_entry_buffer_pc_get
 (
- cupti_context_pc_sampling_map_entry_t *entry
+ cupti_context_map_entry_t *entry
 )
 {
-  return entry->buffer_pc;
-}
-
-
-CUpti_PCSamplingData *
-cupti_context_pc_sampling_map_entry_user_buffer_pc_get
-(
- cupti_context_pc_sampling_map_entry_t *entry
-)
-{
-  return entry->user_buffer_pc;
+  return entry->pc_sampling_data;
 }
 
 
 size_t
-cupti_context_pc_sampling_map_entry_num_stall_reasons_get
+cupti_context_map_entry_num_stall_reasons_get
 (
- cupti_context_pc_sampling_map_entry_t *entry
+ cupti_context_map_entry_t *entry
 )
 {
   return entry->num_stall_reasons;
@@ -280,9 +279,9 @@ cupti_context_pc_sampling_map_entry_num_stall_reasons_get
 
 
 uint32_t *
-cupti_context_pc_sampling_map_entry_stall_reason_index_get
+cupti_context_map_entry_stall_reason_index_get
 (
- cupti_context_pc_sampling_map_entry_t *entry
+ cupti_context_map_entry_t *entry
 )
 {
   return entry->stall_reason_index;
@@ -290,9 +289,9 @@ cupti_context_pc_sampling_map_entry_stall_reason_index_get
 
 
 char **
-cupti_context_pc_sampling_map_entry_stall_reason_names_get
+cupti_context_map_entry_stall_reason_names_get
 (
- cupti_context_pc_sampling_map_entry_t *entry
+ cupti_context_map_entry_t *entry
 )
 {
   return entry->stall_reason_names;

@@ -97,7 +97,8 @@ typedef enum {
   GPU_ACTIVITY_FUNCTION                = 16,
   GPU_ACTIVITY_FLUSH                   = 17,
   GPU_ACTIVITY_PC_SAMPLING2            = 18,
-  GPU_ACTIVITY_PC_SAMPLING_INFO2       = 19
+  GPU_ACTIVITY_PC_SAMPLING_INFO2       = 19,
+  GPU_ACTIVITY_RANGE                   = 20
 } gpu_activity_kind_t;
 
 
@@ -232,10 +233,6 @@ typedef struct gpu_pc_sampling_info_t {
 } gpu_pc_sampling_info_t;
 
 
-typedef struct gpu_range_kernel_t {
-} gpu_range_kernel_t;
-
-
 typedef void (*gpu_pc_sampling2_translate_fn_t)
 (
  void *pc_sampling_data,
@@ -245,14 +242,21 @@ typedef void (*gpu_pc_sampling2_translate_fn_t)
 );
 
 
+typedef void (*gpu_pc_sampling2_free_fn_t)
+(
+ void *pc_sampling_data
+);
+
+
 typedef struct gpu_pc_sampling_info2_t {
-  uint64_t host_range_id;
+  uint64_t range_id;
   uint64_t droppedSamples;
   uint64_t samplingPeriodInCycles;
   uint64_t totalSamples;
   uint64_t totalNumPcs;
-  void *pcSamplingData;
+  void *pc_sampling_data;
   gpu_pc_sampling2_translate_fn_t translate;
+  gpu_pc_sampling2_free_fn_t free;
 } gpu_pc_sampling_info2_t;
 
 
@@ -396,6 +400,12 @@ typedef struct gpu_synchronization_t {
 } gpu_synchronization_t;
 
 
+typedef struct gpu_range_t {
+  uint32_t range_id;
+  uint64_t submit_time;  // End time of a range
+} gpu_range_t;
+
+
 typedef struct gpu_host_correlation_t {
   uint32_t correlation_id;
   uint64_t host_correlation_id;
@@ -439,6 +449,7 @@ typedef struct gpu_activity_details_t {
     gpu_branch_t branch;
     gpu_synchronization_t synchronization;
     gpu_host_correlation_t correlation;
+    gpu_range_t range;
     gpu_flush_t flush;
 
     /* Access short cut for activitiy fields shared by multiple kinds */

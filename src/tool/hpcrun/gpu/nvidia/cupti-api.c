@@ -890,6 +890,7 @@ cupti_subscriber_callback
       int pc_sampling_frequency = cupti_pc_sampling_frequency_get();
       if (pc_sampling_frequency != -1) {
 #ifdef NEW_CUPTI
+        // TODO(Keren): Get the current range_id
         cupti_pc_sampling_disable2(rd->context);
 #else
         cupti_pc_sampling_disable(rd->context);
@@ -1043,11 +1044,8 @@ cupti_subscriber_callback
 
           if (cd->callbackSite == CUPTI_API_ENTER) {
             gpu_application_thread_process_activities();
-#ifdef NEW_CUPTI
-            cupti_pc_sampling_collect(cd->context);
-#endif
             // XXX(Keren): cannot parse this kind of kernel launch
-            //if (cb_id != CUPTI_DRIVER_TRACE_CBID_cuLaunchCooperativeKernelMultiDevice)
+           //if (cb_id != CUPTI_DRIVER_TRACE_CBID_cuLaunchCooperativeKernelMultiDevice)
             // CUfunction is the first param
             CUfunction function_ptr = *(CUfunction *)((CUfunction)cd->functionParams);
             kernel_ip = cupti_func_ip_resolve(function_ptr);
@@ -1064,11 +1062,17 @@ cupti_subscriber_callback
       if (cd->callbackSite == CUPTI_API_ENTER) {
         // A driver API cannot be implemented by other driver APIs, so we get an id
         // and unwind when the API is entered
-
         uint64_t correlation_id = gpu_correlation_id();
         cupti_correlation_id_push(correlation_id);
 
         cct_node_t *api_node = cupti_correlation_callback(correlation_id);
+
+#ifdef NEW_CUPTI
+        // Wait until operations of the previous region are done
+        gpu_range_enter(correlation_id);
+        uint64_t range_id = gpu_range_id();
+        //api_node = gpu_range_range_id_insert(api_node, range_id);
+#endif
 
         gpu_op_ccts_t gpu_op_ccts;
 
@@ -1097,8 +1101,18 @@ cupti_subscriber_callback
 
         TMSG(CUPTI_TRACE, "Driver push externalId %lu (cb_id = %u)", correlation_id, cb_id);
       } else if (cd->callbackSite == CUPTI_API_EXIT) {
-        uint64_t correlation_id __attribute__((unused)); // not used if PRINT omitted
+        uint64_t correlation_id;
         correlation_id = cupti_correlation_id_pop();
+#ifdef NEW_CUPTI
+        if (gpu_range_is_lead()) {
+          // TODO(Keren): call synchronization for PAPI metrics
+          uint64_t range_id = gpu_range_id();
+          // collect pc samples from all contexts
+          cupti_pc_sampling_range_flush(range_id);
+          // Release the lock
+          gpu_range_exit();
+        }
+#endif
         TMSG(CUPTI_TRACE, "Driver pop externalId %lu (cb_id = %u)", correlation_id, cb_id);
       }
     } else if (is_kernel_op && cupti_runtime_api_flag && cd->callbackSite ==
@@ -1209,9 +1223,6 @@ cupti_subscriber_callback
           is_kernel_op = true;
           if (cd->callbackSite == CUPTI_API_ENTER) {
             gpu_application_thread_process_activities();
-#ifdef NEW_CUPTI
-            cupti_pc_sampling_collect(cd->context);
-#endif
           }
           break;
         }
@@ -1230,6 +1241,13 @@ cupti_subscriber_callback
         // it is still possible that a cupti buffer is full and returned to the host
         // in the interval of a runtime api.
         cct_node_t *api_node = cupti_correlation_callback(correlation_id);
+
+#ifdef NEW_CUPTI
+        // Wait until operations of the previous region are done
+        gpu_range_enter(correlation_id);
+        uint64_t range_id = gpu_range_id();
+        //api_node = gpu_range_range_id_insert(api_node, range_id);
+#endif
 
         gpu_op_ccts_t gpu_op_ccts;
 
@@ -1252,8 +1270,20 @@ cupti_subscriber_callback
         // Exit an CUDA runtime api
         cupti_runtime_api_flag_unset();
 
-        uint64_t correlation_id __attribute__((unused)); // not used if PRINT omitted
+        uint64_t correlation_id;
         correlation_id = cupti_correlation_id_pop();
+
+#ifdef NEW_CUPTI
+        if (gpu_range_is_lead()) {
+          // TODO(Keren): call synchronization for PAPI metrics
+          uint64_t range_id = gpu_range_id();
+          // collect pc samples from all contexts
+          cupti_pc_sampling_range_collect(range_id, cd->context);
+          // Release the lock
+          gpu_range_exit();
+        }
+#endif
+
         TMSG(CUPTI_TRACE, "Runtime pop externalId %lu (cb_id = %u)", correlation_id, cb_id);
 
         cupti_kernel_ph = NULL;
@@ -1625,7 +1655,12 @@ cupti_activity_flush
 
 #ifdef NEW_CUPTI
     // Flush pc samples of all contexts
-    cupti_pc_sampling_flush();
+    // Get the current range
+    uint64_t correlation_id = gpu_correlation_id();
+    gpu_range_enter(correlation_id);
+    uint64_t range_id = gpu_range_id();
+    cupti_pc_sampling_range_flush(range_id);
+    gpu_range_exit();
 
     // Wait until operations are drained
     // Operation channel is FIFO

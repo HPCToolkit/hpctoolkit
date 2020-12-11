@@ -386,9 +386,6 @@ MY_BASE_FILES =				\
 	gpu/gpu-trace-item.c		\
 	gpu/gpu-trace-channel-set.c	\
 	gpu/gpu-trace-demultiplexer.c	\
-	gpu/range-profiling/gpu-kernel-stats.c \
-	gpu/range-profiling/gpu-range-id-map.c \
-	gpu/range-profiling/gpu-range-process.c \
 	\
 	ompt/ompt-callstack.c           \
 	ompt/ompt-defer.c               \
@@ -525,7 +522,8 @@ endif
 
 if OPT_ENABLE_NEW_CUPTI
 MY_NEW_CUPTI_FILES = gpu/nvidia/cupti-pc-sampling-api.c \
-	gpu/nvidia/cupti-context-pc-sampling-map.c
+	gpu/nvidia/cupti-pc-sampling-data.c \
+	gpu/nvidia/cupti-context-map.c
 endif
 
 if OPT_ENABLE_OPENCL

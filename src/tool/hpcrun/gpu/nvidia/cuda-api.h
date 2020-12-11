@@ -92,14 +92,6 @@ cuda_bind
 
 
 // returns 0 on success
-int
-cuda_context
-(
- CUcontext *ctx
-);
-
-
-// returns 0 on success
 int 
 cuda_device_property_query
 (
@@ -115,5 +107,26 @@ cuda_global_pc_sampling_required
   int *required
 );
 
+
+int
+cuda_context_sync
+(
+ CUcontext ctx
+);
+
+
+// returns 0 on success
+int
+cuda_context_get
+(
+ CUcontext *ctx
+);
+
+
+int
+cuda_context_set
+(
+ CUcontext ctx
+);
 
 #endif
