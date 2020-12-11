@@ -90,20 +90,20 @@ to meaningful source code constructs such as procedures, loop nests, and individ
 The result of attribution is an \emph{experiment database} stored in a file system directory.
 
 \item \textbf{Visualizing attributed costs in source code or timeline views.}
-\HTMLhref{hpcviewer.html}{\Cmd{hpcviewer}{1}} and \HTMLhref{hpctraceviewer.html}{\Cmd{hpctraceviewer}{1}}
+\HTMLhref{hpcviewer.html}{\Cmd{hpcviewer}{1}} 
 are tools for presenting the resulting experiment databases.
 \Prog{hpcviewer} displays measurements in outline form,
 each entry attributing costs to a source code construct by line number
 and linked to a display of corresponding application source code.
-\Prog{hpctraceviewer} displays measurements as a two dimensional timeline
+\Prog{hpcviewer} displays measurements as a two dimensional timeline
 with execution progress aalong the horizontal axis
 and the application's parallel threads along the vertical axis.
 The visualization step may be done  interactively with either tool on a personal computer.
 even if the application must run in batch on a large computing cluster.
 To this end, experiment databases are self contained and relocatable,
 even containing a copy of the application source code,
-and the \Prog{hpcviewer} and \Prog{hpctraceviewer} tools
-are platform-independent (via Eclipse RCP)
+and the \Prog{hpcviewer} tools
+is platform-independent (via Eclipse RCP)
 and lightweight enough for good interactive performance on a laptop.
 
 \end{enumerate}
@@ -126,7 +126,7 @@ Profile with \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}}.
 Assume you wish to measure two different sets of resources,
 which will require two measurement runs.
 \Prog{hpcrun} always collects the data needed for \Prog{hpcviewer},
-but if you want to use \Prog{hpctraceviewer} you must add
+but if you want to use traces you must add
 the \Prog{-t} / \Prog{--trace} option to collect additional data.
 \begin{verbatim}
   hpcrun -t <event-set-1> zoo
@@ -154,19 +154,18 @@ Create an experiment database using \HTMLhref{hpcprof.html}{\Cmd{hpcprof}{1}}.
 the version of \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}}.)
 Use the \Prog{-I} option to specify the location of \Prog{zoo}'s source code
 and the \Prog{-S} option to specify the structure file produced in the previous step.
-The neasurement directory is specified as the last argument.
+The measurement directory is specified as the last argument.
 By default the generated experiment database is named \File{hpctoolkit-zoo-database}.
 \begin{verbatim}
   hpcprof -I path-to-zoo/+ -S zoo.hpcstruct hpctoolkit-zoo-measurements
 \end{verbatim}
 
 \item \textbf{Visualize}.
-Visualize the experiment database in either source or timeline view,
+Visualize using \HTMLhref{hpcviewer.html}{\Cmd{hpcviewer}{1}}
+the experiment database in either source or timeline view,
 on any machine where you've copied the database:
 \begin{verbatim}
   hpcviewer hpctoolkit-zoo-database
-  hpctraceviewerviewer hpctoolkit-zoo-database
-  
 \end{verbatim}
 In \Prog{hpcviewer} you may also view "derived metrics",
 i\.e\. combinations of measured metrics which are computed on the fly.
@@ -187,8 +186,7 @@ See \emph{The hpcviewer User Interface} Guide for more information.
 \HTMLhref{hpcprof.html}{\Cmd{hpcprof}{1}},
   \HTMLhref{hpcprof-mpi.html}{\Cmd{hpcprof-mpi}{1}} \\
   \SP\SP \HTMLhref{hpcsummary.html}{\Cmd{hpcsummary}{1}} \\
-\HTMLhref{hpcviewer.html}{\Cmd{hpcviewer}{1}},
-  \HTMLhref{hpctraceviewer.html}{\Cmd{hpctraceviewer}{1}}
+\HTMLhref{hpcviewer.html}{\Cmd{hpcviewer}{1}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Version}

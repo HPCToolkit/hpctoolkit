@@ -104,9 +104,6 @@ User's Manual [<a href="manual/HPCToolkit-users-manual.pdf">pdf</a>]
   <li>
     <a href="man/hpcviewer.html">hpcviewer</a>
   </li>
-  <li>
-    <a href="man/hpctraceviewer.html">hpctraceviewer</a>
-  </li>
 </ul>
 </li>
 
@@ -146,7 +143,7 @@ directory and the output from make.
 </ul>
 
 
-<p>[<span class="lastupdated">Page last updated: 2020/09/11</span>]
+<p>[<span class="lastupdated">Page last updated: 2020/12/03</span>]
 </p>
 
 <!-- ********************************************************************** -->
