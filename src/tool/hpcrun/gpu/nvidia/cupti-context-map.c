@@ -154,7 +154,7 @@ flush_fn_helper
 {
   cupti_context_process_args_t *process_args = (cupti_context_process_args_t *)args;
   cupti_context_process_fn_t fn = (cupti_context_process_fn_t)process_args->fn;
-  fn(entry->context, process_args->args);
+  fn((CUcontext)entry->context, process_args->args);
 }
 
 

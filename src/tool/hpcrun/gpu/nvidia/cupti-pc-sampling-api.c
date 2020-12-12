@@ -10,6 +10,8 @@
 #include <hpcrun/messages/debug-flag.h>
 #include <hpcrun/messages/messages.h>
 
+#include <hpcrun/utilities/hpcrun-nanotime.h>
+
 #include "../gpu/gpu-operation-multiplexer.h"
 
 #include "cuda-api.h"

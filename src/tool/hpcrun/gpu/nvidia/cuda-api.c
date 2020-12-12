@@ -409,6 +409,7 @@ cuda_context_sync
 {
  if (cuda_context_set(ctx)) {
    HPCRUN_CUDA_API_CALL(cuCtxSynchronize, ());
+   return 0;
  } else {
    return -1;
  }
