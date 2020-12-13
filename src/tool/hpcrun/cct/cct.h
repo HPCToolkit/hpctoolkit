@@ -101,6 +101,7 @@
 #define ADDR2_I(id, ip) NON_LUSH_ADDR_INI(id, ip)
 #define ADDR2(id, ip) (cct_addr_t) ADDR2_I(id, ip)
 #define HPCRUN_DUMMY_NODE 65534
+#define HPCRUN_RANGE_NODE 65533
 
 //***************************************************************************
 // Calling context tree node (abstract data type)
@@ -170,6 +171,8 @@ extern cct_node_t* hpcrun_cct_insert_addr(cct_node_t* cct, cct_addr_t* addr);
 // Insert a dummy node to represent the callback function by hpcrun, which will
 // be eliminated before writing out the cct.
 extern cct_node_t* hpcrun_cct_insert_dummy(cct_node_t* node, uint16_t lm_ip);
+
+extern cct_node_t* hpcrun_cct_insert_range(cct_node_t* node, uint16_t lm_ip);
 
 //
 // 2nd fundamental mutator: mark a node as "terminal". That is,

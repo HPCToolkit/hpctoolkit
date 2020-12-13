@@ -1071,7 +1071,7 @@ cupti_subscriber_callback
         // Wait until operations of the previous region are done
         gpu_range_enter(correlation_id);
         uint64_t range_id = gpu_range_id();
-        //api_node = gpu_range_range_id_insert(api_node, range_id);
+        api_node = hpcrun_cct_insert_range(api_node, range_id);
 #endif
 
         gpu_op_ccts_t gpu_op_ccts;
