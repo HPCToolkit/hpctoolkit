@@ -412,6 +412,7 @@ cupti_pc_sampling_range_collect
     return;
   }
 
+  uint32_t context_id = ((hpctoolkit_cuctx_st_t *)context)->context_id;
   cupti_pc_sampling_data_t *device_pc_sampling_data = cupti_context_map_entry_pc_sampling_data_get(entry);
   CUpti_PCSamplingData *buffer_pc = cupti_pc_sampling_buffer_pc_get(device_pc_sampling_data);
   size_t num_stall_reasons = cupti_context_map_entry_num_stall_reasons_get(entry);
@@ -442,7 +443,7 @@ cupti_pc_sampling_range_collect
 
     HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiPCSamplingGetData, (&params));
     if (user_buffer_pc->totalNumPcs > 0) {
-      pc_sampling_activity_set(&gpu_activity, range_id, 0, pc_sampling_data);
+      pc_sampling_activity_set(&gpu_activity, range_id, context_id, pc_sampling_data);
       gpu_operation_multiplexer_push(NULL, NULL, &gpu_activity);
     }
 
@@ -460,7 +461,7 @@ cupti_pc_sampling_range_collect
 
       HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiPCSamplingGetData, (&params));
       if (user_buffer_pc->totalNumPcs > 0) {
-        pc_sampling_activity_set(&gpu_activity, range_id, 0, pc_sampling_data);
+        pc_sampling_activity_set(&gpu_activity, range_id, context_id, pc_sampling_data);
         gpu_operation_multiplexer_push(NULL, NULL, &gpu_activity);
       }
 

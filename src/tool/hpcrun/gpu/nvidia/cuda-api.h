@@ -79,6 +79,25 @@ typedef struct cuda_device_property {
 } cuda_device_property_t;
 
 
+// DRIVER_UPDATE_CHECK(Keren): reverse engineered
+typedef struct {
+  uint32_t unknown_field1[4];
+  uint32_t function_index;
+  uint32_t unknown_field2[3];
+  CUmodule cumod;
+} hpctoolkit_cufunc_st_t;
+
+
+typedef struct {
+  uint32_t cubin_id;
+} hpctoolkit_cumod_st_t;
+
+
+typedef struct {
+  uint32_t unknown_field1[25];
+  uint32_t context_id;
+} hpctoolkit_cuctx_st_t;
+
 //*****************************************************************************
 // interface operations
 //*****************************************************************************

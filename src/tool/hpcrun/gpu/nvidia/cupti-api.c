@@ -197,19 +197,6 @@ typedef struct {
 } cupti_activity_buffer_state_t;
 
 
-// DRIVER_UPDATE_CHECK(Keren): cufunc and cumod fields are reverse engineered
-typedef struct {
-  uint32_t unknown_field1[4];
-  uint32_t function_index;
-  uint32_t unknown_field2[3];
-  CUmodule cumod;
-} hpctoolkit_cufunc_st_t;
-
-
-typedef struct {
-  uint32_t cubin_id;
-} hpctoolkit_cumod_st_t;
-
 
 //******************************************************************************
 // forward declarations
