@@ -52,7 +52,11 @@
 
 #include <stdint.h>
 
+#define GPU_CORRELATION_ID_START 0x8000000000000001
 
+#define GPU_CORRELATION_ID_MASK 0x7FFFFFFFFFFFFFFF
+
+#define GPU_CORRELATION_ID_UNMASK(x) (x & GPU_CORRELATION_ID_MASK)
 
 //******************************************************************************
 // interface operations
@@ -64,29 +68,5 @@ gpu_correlation_id
  void
 );
 
-
-uint64_t
-gpu_range_id
-(
-);
-
-
-void
-gpu_range_enter
-(
- uint64_t correlation_id
-);
-
-
-void
-gpu_range_exit
-(
-);
-
-
-bool
-gpu_range_is_lead
-(
-);
 
 #endif

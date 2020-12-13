@@ -352,7 +352,8 @@ static void
 pc_sampling_activity_set
 (
  gpu_activity_t *activity,
- uint64_t range_id,
+ uint32_t range_id,
+ uint32_t context_id,
  cupti_pc_sampling_data_t *pc_sampling_data
 )
 {
@@ -361,6 +362,7 @@ pc_sampling_activity_set
   // When pc sampling is disabled or pcs exceed collectNumPCs limit
   activity->kind = GPU_ACTIVITY_PC_SAMPLING_INFO2;
   activity->details.pc_sampling_info2.range_id = range_id;
+  activity->details.pc_sampling_info2.context_id = context_id;
   activity->details.pc_sampling_info2.droppedSamples = buffer_pc->droppedSamples;
   activity->details.pc_sampling_info2.samplingPeriodInCycles = cupti_pc_sampling_frequency_get();
   activity->details.pc_sampling_info2.totalSamples = buffer_pc->totalSamples;
@@ -400,7 +402,7 @@ pc_sampling_data_debug
 void
 cupti_pc_sampling_range_collect
 (
- uint64_t range_id,
+ uint32_t range_id,
  CUcontext context
 )
 {
@@ -440,7 +442,7 @@ cupti_pc_sampling_range_collect
 
     HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiPCSamplingGetData, (&params));
     if (user_buffer_pc->totalNumPcs > 0) {
-      pc_sampling_activity_set(&gpu_activity, range_id, pc_sampling_data);
+      pc_sampling_activity_set(&gpu_activity, range_id, 0, pc_sampling_data);
       gpu_operation_multiplexer_push(NULL, NULL, &gpu_activity);
     }
 
@@ -458,7 +460,7 @@ cupti_pc_sampling_range_collect
 
       HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiPCSamplingGetData, (&params));
       if (user_buffer_pc->totalNumPcs > 0) {
-        pc_sampling_activity_set(&gpu_activity, range_id, pc_sampling_data);
+        pc_sampling_activity_set(&gpu_activity, range_id, 0, pc_sampling_data);
         gpu_operation_multiplexer_push(NULL, NULL, &gpu_activity);
       }
 
@@ -544,7 +546,7 @@ cupti_pc_sampling_disable2
 void
 cupti_pc_sampling_range_disable2
 (
- uint64_t range_id,
+ uint32_t range_id,
  CUcontext context
 )
 {
@@ -588,7 +590,7 @@ pc_sampling_context_flush
  void *args
 )
 {
-  uint64_t range_id = *(uint64_t *)args;
+  uint32_t range_id = *(uint32_t *)args;
   // 1. Set current ctx
   // 2. Sync current ctx
   // 3. Flush all pc samples
@@ -601,7 +603,7 @@ pc_sampling_context_flush
 void
 cupti_pc_sampling_range_flush
 (
- uint64_t range_id
+ uint32_t range_id
 )
 {
   CUcontext context;

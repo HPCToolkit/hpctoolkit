@@ -249,7 +249,8 @@ typedef void (*gpu_pc_sampling2_free_fn_t)
 
 
 typedef struct gpu_pc_sampling_info2_t {
-  uint64_t range_id;
+  uint32_t range_id;
+  uint32_t context_id;
   uint64_t droppedSamples;
   uint64_t samplingPeriodInCycles;
   uint64_t totalSamples;
@@ -470,6 +471,7 @@ typedef struct gpu_activity_t {
   gpu_activity_kind_t kind;
   gpu_activity_details_t details;
   cct_node_t *cct_node;
+  uint32_t range_id;
 } gpu_activity_t;
 
 

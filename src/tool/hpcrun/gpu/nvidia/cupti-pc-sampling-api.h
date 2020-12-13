@@ -73,7 +73,7 @@ cupti_pc_sampling_disable2
 void
 cupti_pc_sampling_range_disable2
 (
- uint64_t range_id,
+ uint32_t range_id,
  CUcontext context
 );
 
@@ -88,7 +88,7 @@ cupti_pc_sampling_collect
 void
 cupti_pc_sampling_range_collect
 (
- uint64_t range_id,
+ uint32_t range_id,
  CUcontext context
 );
 
@@ -118,7 +118,7 @@ cupti_pc_sampling_flush
 void
 cupti_pc_sampling_range_flush
 (
- uint64_t range_id
+ uint32_t range_id
 );
 
 #endif

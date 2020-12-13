@@ -92,6 +92,7 @@
 #include <hpcrun/gpu/gpu-correlation-id.h>
 #include <hpcrun/gpu/gpu-op-placeholders.h>
 #include <hpcrun/gpu/gpu-operation-multiplexer.h>
+#include <hpcrun/gpu/gpu-range.h>
 
 #include <hpcrun/ompt/ompt-device.h>
 
@@ -1070,7 +1071,8 @@ cupti_subscriber_callback
 #ifdef NEW_CUPTI
         // Wait until operations of the previous region are done
         gpu_range_enter(correlation_id);
-        uint64_t range_id = gpu_range_id();
+        uint32_t range_id = gpu_range_id();
+        // No need to retain this node in hpcprof if no metrics
         api_node = hpcrun_cct_insert_range(api_node, range_id);
 #endif
 
@@ -1106,7 +1108,7 @@ cupti_subscriber_callback
 #ifdef NEW_CUPTI
         if (gpu_range_is_lead()) {
           // TODO(Keren): call synchronization for PAPI metrics
-          uint64_t range_id = gpu_range_id();
+          uint32_t range_id = gpu_range_id();
           // collect pc samples from all contexts
           cupti_pc_sampling_range_flush(range_id);
           // Release the lock
@@ -1245,8 +1247,8 @@ cupti_subscriber_callback
 #ifdef NEW_CUPTI
         // Wait until operations of the previous region are done
         gpu_range_enter(correlation_id);
-        uint64_t range_id = gpu_range_id();
-        //api_node = gpu_range_range_id_insert(api_node, range_id);
+        uint32_t range_id = gpu_range_id();
+        api_node = hpcrun_cct_insert_range(api_node, range_id);
 #endif
 
         gpu_op_ccts_t gpu_op_ccts;
@@ -1276,7 +1278,7 @@ cupti_subscriber_callback
 #ifdef NEW_CUPTI
         if (gpu_range_is_lead()) {
           // TODO(Keren): call synchronization for PAPI metrics
-          uint64_t range_id = gpu_range_id();
+          uint32_t range_id = gpu_range_id();
           // collect pc samples from all contexts
           cupti_pc_sampling_range_collect(range_id, cd->context);
           // Release the lock
@@ -1658,7 +1660,7 @@ cupti_activity_flush
     // Get the current range
     uint64_t correlation_id = gpu_correlation_id();
     gpu_range_enter(correlation_id);
-    uint64_t range_id = gpu_range_id();
+    uint32_t range_id = gpu_range_id();
     cupti_pc_sampling_range_flush(range_id);
     gpu_range_exit();
 

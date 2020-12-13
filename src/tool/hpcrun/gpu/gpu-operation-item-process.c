@@ -211,6 +211,7 @@ gpu_pc_sampling_info2_process
   gpu_activity_t *activity = &it->activity;
   gpu_pc_sampling_info2_t *pc_sampling_info2 = &activity->details.pc_sampling_info2;
 
+  uint32_t context_id = pc_sampling_info2->context_id;
   void *pc_sampling_data = pc_sampling_info2->pc_sampling_data;
   uint32_t period = pc_sampling_info2->samplingPeriodInCycles;
   uint64_t total_num_pcs = pc_sampling_info2->totalNumPcs;
@@ -224,19 +225,11 @@ gpu_pc_sampling_info2_process
 
     for (size_t i = 0; i < GPU_INST_STALL2_INVALID; ++i) {
       if (gpu_pc_sampling[i].samples != 0) {
-        //channel = gpu_range_profiling_pc_sampling_process(&gpu_pc_sampling[i]);
-        //gpu_activity_channel_produce(channel, &gpu_pc_sampling[i]);
+        gpu_range_attribute(context_id, &gpu_pc_sampling[i]);
       }
     }
   }
   pc_sampling_info2->free(pc_sampling_data);
-
-  // 2. produce overall metrics
-  //gpu_trace_metrics_t 
-  //gpu_range_pc_sampling_overall(range_id);
-
-  // 3. clear the current range 
-  //gpu_range_id_map_delete(range_id);
 }
 
 

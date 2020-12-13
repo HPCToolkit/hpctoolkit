@@ -102,6 +102,8 @@
 #define ADDR2(id, ip) (cct_addr_t) ADDR2_I(id, ip)
 #define HPCRUN_DUMMY_NODE 65534
 #define HPCRUN_RANGE_NODE 65533
+#define HPCRUN_CONTEXT_NODE 65532
+#define HPCRUN_STREAM_NODE 65531
 
 //***************************************************************************
 // Calling context tree node (abstract data type)
@@ -173,6 +175,10 @@ extern cct_node_t* hpcrun_cct_insert_addr(cct_node_t* cct, cct_addr_t* addr);
 extern cct_node_t* hpcrun_cct_insert_dummy(cct_node_t* node, uint16_t lm_ip);
 
 extern cct_node_t* hpcrun_cct_insert_range(cct_node_t* node, uint16_t lm_ip);
+
+extern cct_node_t* hpcrun_cct_insert_context(cct_node_t* node, uint16_t lm_ip);
+
+extern cct_node_t* hpcrun_cct_insert_stream(cct_node_t* node, uint16_t lm_ip);
 
 //
 // 2nd fundamental mutator: mark a node as "terminal". That is,

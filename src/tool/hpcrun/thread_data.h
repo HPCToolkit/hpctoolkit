@@ -72,6 +72,9 @@
 #include <lib/prof-lean/hpcio.h>
 #include <lib/prof-lean/hpcio-buffer.h>
 
+#define THREAD_ID_GPU_STREAM (1 << 25)
+#define THREAD_ID_GPU_RANGE (1 << 26)
+
 typedef struct {
   sigjmp_buf jb;
 } sigjmp_buf_t;
