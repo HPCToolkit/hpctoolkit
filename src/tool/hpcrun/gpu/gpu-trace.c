@@ -196,19 +196,6 @@ gpu_trace_cct_insert_context
 }
 
 
-static uint64_t
-gpu_trace_time
-(
- uint64_t gpu_time
-)
-{
-  // return time in ns
-  uint64_t time = gpu_time;
-
-  return time;
-}
-
-
 static void
 gpu_trace_stream_append
 (
@@ -425,8 +412,8 @@ consume_one_trace_item
 
   cct_node_t *no_activity = gpu_trace_cct_no_activity(td);
 
-  uint64_t start = gpu_trace_time(start_time);
-  uint64_t end   = gpu_trace_time(end_time);
+  uint64_t start = start_time;
+  uint64_t end   = end_time;
 
   stream_start_set(start_time);
 
