@@ -139,6 +139,8 @@ cupti_context_map_entry_new
 
   memset(e, 0, sizeof(cupti_context_map_entry_t));
 
+  e->context = (uint64_t)context;
+
   return e;
 }
 
