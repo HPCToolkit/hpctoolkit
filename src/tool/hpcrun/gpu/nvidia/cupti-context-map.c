@@ -259,7 +259,7 @@ cupti_context_map_process
 
 
 cupti_pc_sampling_data_t *
-cupti_context_map_entry_buffer_pc_get
+cupti_context_map_entry_pc_sampling_data_get
 (
  cupti_context_map_entry_t *entry
 )
