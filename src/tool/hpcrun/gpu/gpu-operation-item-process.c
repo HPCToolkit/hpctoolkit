@@ -194,11 +194,20 @@ gpu_synchronization_process
         break;
       default:
         // invalid
-        PRINT("Invalid synchronization %u\n", correlation_id);
+        PRINT("Invalid synchronization\n");
     }
   }
 
   gpu_activity_channel_produce(channel, activity);
+}
+
+
+static void
+gpu_range_process
+(
+ gpu_operation_item_t *it
+)
+{
 }
 
 
@@ -289,6 +298,10 @@ gpu_operation_item_process
 
     case GPU_ACTIVITY_PC_SAMPLING_INFO2:
       gpu_pc_sampling_info2_process(it);
+      break;
+
+    case GPU_ACTIVITY_RANGE:
+      gpu_range_process(it);
       break;
 
     default:

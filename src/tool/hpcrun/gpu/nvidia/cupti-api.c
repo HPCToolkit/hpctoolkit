@@ -846,6 +846,8 @@ cupti_subscriber_callback
  const void *cb_info
 )
 {
+  gpu_operation_multiplexer_init();
+
   if (domain == CUPTI_CB_DOMAIN_RESOURCE) {
     const CUpti_ResourceData *rd = (const CUpti_ResourceData *) cb_info;
     if (cb_id == CUPTI_CBID_RESOURCE_MODULE_LOADED) {
@@ -1642,6 +1644,8 @@ cupti_activity_flush
   if (cupti_stop_flag) {
     cupti_stop_flag_unset();
 
+    HPCRUN_CUPTI_CALL(cuptiActivityFlushAll, (CUPTI_ACTIVITY_FLAG_FLUSH_FORCED));
+
 #ifdef NEW_CUPTI
     // Flush pc samples of all contexts
     // Get the current range
@@ -1664,8 +1668,6 @@ cupti_activity_flush
 
     while (atomic_load(&wait)) {}
 #endif
-
-    HPCRUN_CUPTI_CALL(cuptiActivityFlushAll, (CUPTI_ACTIVITY_FLAG_FLUSH_FORCED));
   }
 }
 
@@ -1755,5 +1757,7 @@ cupti_device_shutdown(void *args)
 {
   cupti_callbacks_unsubscribe();
   cupti_device_flush(0);
+  // Terminate monitor thread
+  gpu_operation_multiplexer_fini();
 }
 

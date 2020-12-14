@@ -194,7 +194,6 @@ stall_reason_config
   cupti_pc_sampling_data_t *pc_sampling_data =
     cupti_pc_sampling_data_produce(HPCRUN_CUPTI_ACTIVITY_BUFFER_PC_NUM, num_stall_reasons);
 
-  cupti_context_map_init(context);
   cupti_context_map_pc_sampling_insert(context, num_stall_reasons, stall_reason_index,
     stall_reason_names, HPCRUN_CUPTI_ACTIVITY_BUFFER_PC_NUM, pc_sampling_data);
 }
@@ -209,6 +208,7 @@ sampling_buffer_config
 {
   // User buffer to hold collected PC Sampling data in PC-To-Counter format
   cupti_context_map_entry_t *entry = cupti_context_map_lookup(context);
+  assert(entry != NULL);
   cupti_pc_sampling_data_t *pc_sampling_data = cupti_context_map_entry_pc_sampling_data_get(entry);
   CUpti_PCSamplingData *buffer_pc = cupti_pc_sampling_buffer_pc_get(pc_sampling_data);
   
@@ -263,6 +263,8 @@ cupti_pc_sampling_config
  int frequency
 )
 {
+  cupti_context_map_init(context);
+
   CUpti_PCSamplingConfigurationInfo *config_info = (CUpti_PCSamplingConfigurationInfo *)
     calloc(CONFIG_INFO_COUNT, sizeof(CUpti_PCSamplingConfigurationInfo));
     

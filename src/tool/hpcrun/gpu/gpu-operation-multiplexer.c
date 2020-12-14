@@ -85,7 +85,11 @@ static pthread_once_t is_initialized = PTHREAD_ONCE_INIT;
 //******************************************************************************
 
 static void
-gpu_init_operation_channel(){
+gpu_init_operation_channel
+(
+ void
+)
+{
   // Create operation channel
   my_operation_channel_id = atomic_fetch_add(&operation_channels_count, 1);
   gpu_operation_channel = gpu_operation_channel_get();
@@ -101,7 +105,7 @@ gpu_operation_record
 {
   int current_operation_channels_count;
 
-  while (!atomic_load(&stop_operation_flag)){
+  while (!atomic_load(&stop_operation_flag)) {
     current_operation_channels_count = atomic_load(&operation_channels_count);
     gpu_operation_channel_set_process(current_operation_channels_count);
   }
@@ -155,12 +159,21 @@ gpu_operation_multiplexer_my_channel_initialized
 
 
 void
+gpu_operation_multiplexer_init
+(
+)
+{
+  pthread_once(&is_initialized, gpu_operation_multiplexer_create);
+}
+
+
+void
 gpu_operation_multiplexer_my_channel_init
 (
  void
 )
 {
-  pthread_once(&is_initialized, gpu_operation_multiplexer_create);
+  gpu_operation_multiplexer_init();
   gpu_init_operation_channel();
 }
 
