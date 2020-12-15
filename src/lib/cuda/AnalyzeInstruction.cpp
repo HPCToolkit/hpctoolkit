@@ -19,10 +19,10 @@
 namespace CudaParse {
 
 template <InstructionType inst_type>
-void analyze_instruction(const Instruction &inst, std::string &op);
+void analyze_instruction(Instruction &inst, std::string &op);
 
 template <>
-void analyze_instruction<INS_TYPE_MEMORY>(const Instruction &inst, std::string &op) {
+void analyze_instruction<INS_TYPE_MEMORY>(Instruction &inst, std::string &op) {
   op = "MEMORY";
 
   std::string width;
@@ -82,12 +82,7 @@ void analyze_instruction<INS_TYPE_MEMORY>(const Instruction &inst, std::string &
 
 
 template <>
-void analyze_instruction<INS_TYPE_UNIFORM>(const Instruction &inst, std::string &op) {
-}
-
-
-template <>
-void analyze_instruction<INS_TYPE_FLOAT>(const Instruction &inst, std::string &op) {
+void analyze_instruction<INS_TYPE_FLOAT>(Instruction &inst, std::string &op) {
   op = "FLOAT";
 
   std::string type;
@@ -121,7 +116,7 @@ void analyze_instruction<INS_TYPE_FLOAT>(const Instruction &inst, std::string &o
 
 
 template <>
-void analyze_instruction<INS_TYPE_INTEGER>(const Instruction &inst, std::string &op) {
+void analyze_instruction<INS_TYPE_INTEGER>(Instruction &inst, std::string &op) {
   op = "INTEGER";
 
   std::string type;
@@ -164,19 +159,19 @@ void analyze_instruction<INS_TYPE_INTEGER>(const Instruction &inst, std::string 
 
 
 template <>
-void analyze_instruction<INS_TYPE_TEXTRUE>(const Instruction &inst, std::string &op) {
+void analyze_instruction<INS_TYPE_TEXTRUE>(Instruction &inst, std::string &op) {
   op = "TEXTURE";
 }
 
 
 template <>
-void analyze_instruction<INS_TYPE_PREDICATE>(const Instruction &inst, std::string &op) {
+void analyze_instruction<INS_TYPE_PREDICATE>(Instruction &inst, std::string &op) {
   op = "PREDICATE";
 }
 
 
 template <>
-void analyze_instruction<INS_TYPE_CONTROL>(const Instruction &inst, std::string &op) {
+void analyze_instruction<INS_TYPE_CONTROL>(Instruction &inst, std::string &op) {
   op = "CONTROL";
 
   std::string type;
@@ -210,7 +205,7 @@ void analyze_instruction<INS_TYPE_CONTROL>(const Instruction &inst, std::string 
 
 
 template <>
-void analyze_instruction<INS_TYPE_MISC>(const Instruction &inst, std::string &op) {
+void analyze_instruction<INS_TYPE_MISC>(Instruction &inst, std::string &op) {
   op = "MISC";
 
   std::string type;
@@ -251,6 +246,45 @@ void analyze_instruction<INS_TYPE_MISC>(const Instruction &inst, std::string &op
 }
 
 
+template <>
+void analyze_instruction<INS_TYPE_UNIFORM>(Instruction &inst, std::string &op) {
+  auto &opcode = inst.opcode;
+
+  if (opcode.find("R2UR") != std::string::npos ||
+    opcode.find("S2UR") != std::string::npos ||
+    opcode.find("UR2UP") != std::string::npos ||
+    opcode.find("UP2UR") != std::string::npos) {
+    op = "MISC.MOVE";
+  } else if (opcode.find("UCLEA") != std::string::npos) {
+    op = "INTEGER";
+  } else if (opcode.find("REDUX") != std::string::npos ||
+    opcode.find("VOTEU") != std::string::npos) {
+    op = "MISC";
+  } else {
+    // Remove U prefix
+    opcode.erase(1);
+    if (Instruction::opcode_types.find(opcode) != Instruction::opcode_types.end()) {
+      auto inst_type = Instruction::opcode_types[opcode];
+
+#define INST_DISPATCHER(TYPE, VALUE) \
+      case TYPE: \
+        { \
+          analyze_instruction<TYPE>(inst, op); \
+          break; \
+        }
+
+      switch (inst_type) {
+        FORALL_INS_TYPES(INST_DISPATCHER)
+        default:
+          break;
+        }
+
+#undef INST_DISPATCHER
+    }
+  } 
+}
+
+
 static int convert_reg(const std::string &str, size_t pos) {
   int num = 0;
   bool find_digit = false;
@@ -272,7 +306,7 @@ static int convert_reg(const std::string &str, size_t pos) {
 }
 
 
-InstructionStat::InstructionStat(const Instruction *inst) {
+InstructionStat::InstructionStat(Instruction *inst) {
   std::string op;
 
 #define INST_DISPATCHER(TYPE, VALUE)                \
