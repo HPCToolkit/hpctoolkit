@@ -57,7 +57,7 @@ struct InstructionStat {
 
   InstructionStat() {}
 
-  explicit InstructionStat(const Instruction *inst);
+  explicit InstructionStat(Instruction *inst);
 
   InstructionStat(const std::string &op,
     int pc, int predicate, PredicateFlag predicate_flag,
