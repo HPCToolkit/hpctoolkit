@@ -262,7 +262,7 @@ void analyze_instruction<INS_TYPE_UNIFORM>(Instruction &inst, std::string &op) {
     op = "MISC";
   } else {
     // Remove U prefix
-    opcode.erase(1);
+    opcode.erase(0, 1);
     if (Instruction::opcode_types.find(opcode) != Instruction::opcode_types.end()) {
       auto inst_type = Instruction::opcode_types[opcode];
 
@@ -281,7 +281,9 @@ void analyze_instruction<INS_TYPE_UNIFORM>(Instruction &inst, std::string &op) {
 
 #undef INST_DISPATCHER
     }
-  } 
+  }
+
+  op += ".UNIFORM";
 }
 
 
