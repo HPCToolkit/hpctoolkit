@@ -508,7 +508,10 @@ roctracer_bind
   // More details: https://github.com/ROCm-Developer-Tools/roctracer/issues/22
   setenv("HSA_ENABLE_INTERRUPT", "0", 1);
 
-  rocm_debug_api_bind();
+  if (rocm_debug_api_bind() < 0) {
+    EEMSG("hpcrun: unable to bind to AMD debug library %s\n", dlerror());        
+    return -1;
+  };
 
 #ifndef HPCRUN_STATIC_LINK
   // dynamic libraries only availabile in non-static case
