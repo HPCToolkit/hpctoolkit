@@ -565,7 +565,7 @@ sanitizer_path
 
   if (cuda_path(buffer)) {
     // invariant: buffer contains CUDA home 
-    strcat(buffer, "Sanitizer/libsanitizer-public.so");
+    strcat(buffer, "compute-sanitizer/libsanitizer-public.so");
     path = buffer;
   }
 
@@ -728,7 +728,11 @@ sanitizer_load_callback
   // patch binary
   HPCRUN_SANITIZER_CALL(sanitizerAddPatchesFromFile, (HPCTOOLKIT_GPU_PATCH, context));
   HPCRUN_SANITIZER_CALL(sanitizerPatchInstructions,
-    (SANITIZER_INSTRUCTION_MEMORY_ACCESS, module, "sanitizer_memory_access_callback"));
+    (SANITIZER_INSTRUCTION_GLOBAL_MEMORY_ACCESS, module, "sanitizer_global_memory_access_callback"));
+  HPCRUN_SANITIZER_CALL(sanitizerPatchInstructions,
+    (SANITIZER_INSTRUCTION_SHARED_MEMORY_ACCESS, module, "sanitizer_shared_memory_access_callback"));
+  HPCRUN_SANITIZER_CALL(sanitizerPatchInstructions,
+    (SANITIZER_INSTRUCTION_LOCAL_MEMORY_ACCESS, module, "sanitizer_local_memory_access_callback"));
   HPCRUN_SANITIZER_CALL(sanitizerPatchInstructions,
     (SANITIZER_INSTRUCTION_BLOCK_ENTER, module, "sanitizer_block_enter_callback"));
   HPCRUN_SANITIZER_CALL(sanitizerPatchInstructions,
@@ -1213,19 +1217,6 @@ sanitizer_subscribe_callback
     Sanitizer_MemcpyData *md = (Sanitizer_MemcpyData *)cbdata;
     sanitizer_thread_context = md->srcContext;
 
-    sanitizer_context_map_stream_lock(md->srcContext, md->stream);
-
-    uint64_t correlation_id = gpu_correlation_id();
-    cct_node_t *api_node = sanitizer_correlation_callback(correlation_id, 0);
-
-    int32_t persistent_id = hpcrun_cct_persistent_id(api_node);
-    if (sanitizer_op_map_lookup(persistent_id) == NULL) {
-      sanitizer_op_map_init(persistent_id, api_node);
-    }
-
-    PRINT("Memcpy async %d direction %d from %p to %p, op %lu, id %d\n", md->isAsync, md->direction,
-      (void *)md->srcAddress, (void *)md->dstAddress, correlation_id, persistent_id);
-
     bool src_host = false;
     bool dst_host = false;
 
@@ -1238,12 +1229,39 @@ sanitizer_subscribe_callback
       dst_host = true;
     }
 
+    if (!src_host) {
+      sanitizer_context_map_stream_lock(md->srcContext, md->srcStream);
+    }
+
+    if (!dst_host && md->hSrcStream != md->hDstStream) {
+      // Use handles to differentiate NULL streams in two contexts
+      sanitizer_context_map_stream_lock(md->dstContext, md->dstStream);
+    }
+
+    uint64_t correlation_id = gpu_correlation_id();
+    cct_node_t *api_node = sanitizer_correlation_callback(correlation_id, 0);
+
+    int32_t persistent_id = hpcrun_cct_persistent_id(api_node);
+    if (sanitizer_op_map_lookup(persistent_id) == NULL) {
+      sanitizer_op_map_init(persistent_id, api_node);
+    }
+
+    PRINT("Memcpy async %d direction %d from %p to %p, op %lu, id %d\n", md->isAsync, md->direction,
+      (void *)md->srcAddress, (void *)md->dstAddress, correlation_id, persistent_id);
+
+
     // Avoid memcpy to symbol without allocation
     // Let redshow update shadow memory
     redshow_memcpy_register(persistent_id, correlation_id, src_host, md->srcAddress,
       dst_host, md->dstAddress, md->size);
 
-    sanitizer_context_map_stream_unlock(md->srcContext, md->stream);
+    if (!src_host) {
+      sanitizer_context_map_stream_unlock(md->srcContext, md->srcStream);
+    }
+
+    if (!dst_host && md->hSrcStream != md->hDstStream) {
+      sanitizer_context_map_stream_unlock(md->dstContext, md->dstStream);
+    }
   } else if (domain == SANITIZER_CB_DOMAIN_MEMSET) {
     Sanitizer_MemsetData *md = (Sanitizer_MemsetData *)cbdata;
     sanitizer_thread_context = md->context;
