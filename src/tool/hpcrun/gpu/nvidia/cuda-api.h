@@ -148,4 +148,10 @@ cuda_context_set
  CUcontext ctx
 );
 
+
+bool
+cuda_api_internal
+(
+);
+
 #endif

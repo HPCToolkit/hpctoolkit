@@ -96,10 +96,7 @@ typedef struct {
   gpu_operation_channel_ptr_t channel;
 } typed_stack_elem(gpu_operation_channel_ptr_t);
 
-
 typed_stack_declare_type(gpu_operation_channel_ptr_t);
-
-
 
 //******************************************************************************
 // local data
@@ -148,8 +145,8 @@ gpu_operation_channel_set_forall
 static void
 gpu_operation_channel_set_apply
 (
-gpu_operation_channel_fn_t channel_fn,
-int channel_num
+ gpu_operation_channel_fn_t channel_fn,
+ int channel_num
 )
 {
   for (int channel_idx = 0; channel_idx < channel_num; ++channel_idx) {
@@ -163,7 +160,7 @@ int channel_num
 //******************************************************************************
 
 void gpu_operation_channel_set_alloc(int size){
-  gpu_operation_channel_stack = hpcrun_malloc_safe( size * sizeof(typed_stack_elem_ptr(gpu_operation_channel_ptr_t)));
+  gpu_operation_channel_stack = hpcrun_malloc_safe(size * sizeof(typed_stack_elem_ptr(gpu_operation_channel_ptr_t)));
 }
 
 void

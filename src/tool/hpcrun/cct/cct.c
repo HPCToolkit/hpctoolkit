@@ -578,6 +578,15 @@ hpcrun_cct_insert_range(cct_node_t* node, uint16_t lm_ip)
 }
 
 cct_node_t*
+hpcrun_cct_insert_context(cct_node_t* node, uint16_t lm_ip)
+{
+  ip_normalized_t ip = { .lm_id = HPCRUN_CONTEXT_NODE, .lm_ip = lm_ip };
+  cct_addr_t frm = { .ip_norm = ip };
+  cct_node_t *range = hpcrun_cct_insert_addr(node, &frm);
+  return range;
+}
+
+cct_node_t*
 hpcrun_cct_delete_addr(cct_node_t* node, cct_addr_t* frm)
 {
   if(!node) return NULL;

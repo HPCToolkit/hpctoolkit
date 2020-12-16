@@ -73,12 +73,10 @@ typedef void *(*pthread_start_routine_t)(void *);
 static _Atomic(bool) stop_operation_flag;
 static _Atomic(bool) gpu_trace_finished;
 
-static atomic_uint operation_channels_count;
-static __thread uint32_t my_operation_channel_id = -1;
+static atomic_int operation_channels_count;
+static __thread int32_t my_operation_channel_id = -1;
 static __thread gpu_operation_channel_t *gpu_operation_channel = NULL;
 static pthread_once_t is_initialized = PTHREAD_ONCE_INIT;
-
-
 
 //******************************************************************************
 // private operations
@@ -91,9 +89,11 @@ gpu_init_operation_channel
 )
 {
   // Create operation channel
-  my_operation_channel_id = atomic_fetch_add(&operation_channels_count, 1);
-  gpu_operation_channel = gpu_operation_channel_get();
-  gpu_operation_channel_set_insert(gpu_operation_channel, my_operation_channel_id);
+  if (my_operation_channel_id == -1) {
+    my_operation_channel_id = atomic_fetch_add(&operation_channels_count, 1);
+    gpu_operation_channel = gpu_operation_channel_get();
+    gpu_operation_channel_set_insert(gpu_operation_channel, my_operation_channel_id);
+  }
 }
 
 
@@ -108,6 +108,7 @@ gpu_operation_record
   while (!atomic_load(&stop_operation_flag)) {
     current_operation_channels_count = atomic_load(&operation_channels_count);
     gpu_operation_channel_set_process(current_operation_channels_count);
+    gpu_operation_channel_set_await(current_operation_channels_count);
   }
 
   current_operation_channels_count = atomic_load(&operation_channels_count);

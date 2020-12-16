@@ -62,7 +62,7 @@ gpu_range_attribute
 
   cct_bundle_t *cct_bundle = &(range_td->core_profile_trace_data.epoch->csdata);
   cct_node_t *cct_root = cct_bundle->top;
-  cct_node_t *cct_context = hpcrun_cct_insert_context(cct_root, context_id);
+  cct_node_t *cct_context = hpcrun_cct_insert_context(cct_root, (uint16_t)context_id);
 
   // Set current activity data
   gpu_activity_t *cct_node = activity->cct_node;

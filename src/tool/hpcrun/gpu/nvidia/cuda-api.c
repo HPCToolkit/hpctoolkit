@@ -134,6 +134,7 @@
 #define RUNTIME_MAJOR_VERSION(rt_version) (rt_version / 1000) 
 #define RUNTIME_MINOR_VERSION(rt_version) (rt_version % 10) 
 
+static __thread bool api_internal = false;
 
 //******************************************************************************
 // static data
@@ -261,11 +262,13 @@ cuda_device_compute_capability
 )
 {
 #ifndef HPCRUN_STATIC_LINK
+  api_internal = true;
   HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
     (major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device_id));
 
   HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
     (minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device_id));
+  api_internal = false;
 
   return 0;
 #else
@@ -282,7 +285,9 @@ cuda_device_id
 )
 {
 #ifndef HPCRUN_STATIC_LINK
+  api_internal = true;
   HPCRUN_CUDA_RUNTIME_CALL(cudaGetDevice, (device_id));
+  api_internal = false;
   return 0;
 #else
   return -1;
@@ -298,7 +303,9 @@ cuda_runtime_version
 )
 {
 #ifndef HPCRUN_STATIC_LINK
+  api_internal = true;
   HPCRUN_CUDA_RUNTIME_CALL(cudaRuntimeGetVersion, (rt_version));
+  api_internal = false;
   return 0;
 #else
   return -1;
@@ -318,7 +325,9 @@ cuda_context_get
 )
 {
 #ifndef HPCRUN_STATIC_LINK
+  api_internal = true;
   HPCRUN_CUDA_API_CALL(cuCtxGetCurrent, (ctx));
+  api_internal = false;
   return 0;
 #else
   return -1;
@@ -333,6 +342,8 @@ cuda_device_property_query
 )
 {
 #ifndef HPCRUN_STATIC_LINK
+  api_internal = true;
+
   HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
     (&property->sm_count, CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, device_id));
 
@@ -364,6 +375,8 @@ cuda_device_property_query
     (&minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device_id));
 
   property->sm_blocks = cuda_device_sm_blocks_query(major, minor);
+
+  api_internal = false;
 
   return 0;
 #else
@@ -407,12 +420,16 @@ cuda_context_sync
  CUcontext ctx
 )
 {
+  int ret = 0;
+  api_internal = true;
  if (cuda_context_set(ctx)) {
    HPCRUN_CUDA_API_CALL(cuCtxSynchronize, ());
-   return 0;
+   ret = 0;
  } else {
-   return -1;
+   ret = -1;
  }
+ api_internal = false;
+ return ret;
 }
 
 
@@ -422,6 +439,17 @@ cuda_context_set
  CUcontext ctx
 )
 {
+  api_internal = true;
   HPCRUN_CUDA_API_CALL(cuCtxSetCurrent, (ctx));  
+  api_internal = false;
   return 0;
+}
+
+
+bool
+cuda_api_internal
+(
+)
+{
+  return api_internal;
 }

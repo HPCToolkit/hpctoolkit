@@ -178,8 +178,6 @@ extern cct_node_t* hpcrun_cct_insert_range(cct_node_t* node, uint16_t lm_ip);
 
 extern cct_node_t* hpcrun_cct_insert_context(cct_node_t* node, uint16_t lm_ip);
 
-extern cct_node_t* hpcrun_cct_insert_stream(cct_node_t* node, uint16_t lm_ip);
-
 //
 // 2nd fundamental mutator: mark a node as "terminal". That is,
 //   it is the last node of a path

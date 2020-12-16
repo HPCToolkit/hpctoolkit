@@ -846,7 +846,9 @@ cupti_subscriber_callback
  const void *cb_info
 )
 {
-  gpu_operation_multiplexer_init();
+  if (cuda_api_internal()) {
+    return;
+  }
 
   if (domain == CUPTI_CB_DOMAIN_RESOURCE) {
     const CUpti_ResourceData *rd = (const CUpti_ResourceData *) cb_info;
@@ -890,6 +892,8 @@ cupti_subscriber_callback
   } else if (domain == CUPTI_CB_DOMAIN_DRIVER_API) {
     // stop flag is only set if a driver or runtime api called
     cupti_stop_flag_set();
+
+    gpu_operation_multiplexer_my_channel_init();
 
     const CUpti_CallbackData *cd = (const CUpti_CallbackData *) cb_info;
 
@@ -1124,6 +1128,8 @@ cupti_subscriber_callback
   } else if (domain == CUPTI_CB_DOMAIN_RUNTIME_API) {
     // stop flag is only set if a driver or runtime api called
     cupti_stop_flag_set();
+
+    gpu_operation_multiplexer_my_channel_init();
 
     const CUpti_CallbackData *cd = (const CUpti_CallbackData *)cb_info;
 
