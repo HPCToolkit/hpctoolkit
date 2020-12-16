@@ -39,6 +39,9 @@ std::map<std::string, InstructionType> Instruction::opcode_types = {
   { "DMUL", INS_TYPE_FLOAT },
   { "DSETP", INS_TYPE_FLOAT },
   // sm_75
+  // sm_80
+  { "HMNMX2", INS_TYPE_FLOAT },
+  { "DMMA", INS_TYPE_FLOAT },
   // sm_60
   { "BFE", INS_TYPE_INTEGER },
   { "BFI", INS_TYPE_INTEGER },
@@ -96,6 +99,9 @@ std::map<std::string, InstructionType> Instruction::opcode_types = {
   { "CCTLT", INS_TYPE_MEMORY },
   // sm_75
   { "LDSM", INS_TYPE_MEMORY },
+  // sm_80
+  { "LDGDEPBAR", INS_TYPE_MEMORY },
+  { "LDGSTS", INS_TYPE_MEMORY },
   // sm_60
   { "TEXS", INS_TYPE_TEXTRUE },
   { "TLD4S", INS_TYPE_TEXTRUE },
@@ -188,7 +194,6 @@ std::map<std::string, InstructionType> Instruction::opcode_types = {
   { "MOVM", INS_TYPE_MISC },
   // sm_75
   { "R2UR", INS_TYPE_UNIFORM }, 
-  { "REDUX", INS_TYPE_UNIFORM },
   { "S2UR", INS_TYPE_UNIFORM }, 
   { "UBMSK", INS_TYPE_UNIFORM },
   { "UBREV", INS_TYPE_UNIFORM },
@@ -214,7 +219,9 @@ std::map<std::string, InstructionType> Instruction::opcode_types = {
   { "USHF", INS_TYPE_UNIFORM }, 
   { "USHL", INS_TYPE_UNIFORM }, 
   { "USHR", INS_TYPE_UNIFORM }, 
-  { "VOTEU", INS_TYPE_UNIFORM }
+  { "VOTEU", INS_TYPE_UNIFORM },
+  // sm_80
+  { "REDUX", INS_TYPE_UNIFORM }
 };
 
 
