@@ -123,6 +123,7 @@ if OPT_ENABLE_HPCRUN_DYNAMIC
 if OPT_ENABLE_RTLD_AUDIT
   pkglib_LTLIBRARIES += libhpcrun_audit.la
 endif
+  pkglib_LTLIBRARIES += libhpcrun_dlmopen.la
   pkglib_LTLIBRARIES += libhpcrun_ga.la
   pkglib_LTLIBRARIES += libhpcrun_gprof.la
   pkglib_LTLIBRARIES += libhpcrun_io.la
@@ -1070,6 +1071,10 @@ if UNW_LIBUNW
   UNW_STATIC_LD_FLAGS =  $(UNW_LIBUNW_LD_FLAGS)
 endif
 
+libhpcrun_dlmopen_la_SOURCES   = dlmopen/dlmopen.c
+libhpcrun_dlmopen_la_LDFLAGS   = -ldl 
+
+endif
 libhpcrun_la_CFLAGS += $(GOTCHA_IFLAGS)
 libhpcrun_la_LDFLAGS += $(GOTCHA_LDFLAGS)
 libhpcrun_la_SOURCES  +=  $(UNW_SOURCE_FILES)

@@ -138,6 +138,14 @@ Options: Profiling (Defaults shown in curly brackets {})
                        Delay starting sampling until the application calls
                        hpctoolkit_sampling_start().
 
+  ---dlmopen
+                       Allow dlmopen to create alternate namespaces.
+
+  --dlopen
+                       Use dlopen in place of dlmopen, which has the effect of 
+                       loading all shared libraries into the application's 
+                       namespace. (Caution: this may crash your program!)
+
   --disable-gprof      Override and disable gprof instrumentation  This option
                        is only useful when using hpcrun to add HPCToolkit's
                        measurement subsystem to a dynamically-linked application 
@@ -216,6 +224,8 @@ arg_ok()
 preload_list=
 roctracer_lib=
 gtpin_lib=
+dlmopen=
+dlopen=
 HPCRUN_DEBUG_FLAGS=
 HPCRUN_EVENT_LIST=
 HPCRUN_CONTROL_KNOBS=
@@ -281,10 +291,11 @@ do
 			 export HIP_ENABLE_DEFERRED_LOADING=0;;
 
 		gpu=opencl,inst) gtpin_lib="${gtpin_lib_path}"
-			 export GTPIN_DEBUG=1;;
+		    dlopen=yes;;
 
 		gpu=level0,inst) gtpin_lib="${gtpin_lib_path}"
-			 export GTPIN_DEBUG=1;;
+		    dlopen=yes;;
+
 	    esac
 	    case "$HPCRUN_EVENT_LIST" in
 		'' ) HPCRUN_EVENT_LIST="$1" ;;
@@ -346,6 +357,20 @@ do
 
 	--omp-serial-only )
 	    export HPCRUN_OMP_SERIAL_ONLY=1
+	    ;;
+
+
+	# --------------------------------------------------
+
+	--dlopen )
+	    dlopen=yes
+	    ;;
+
+
+	# --------------------------------------------------
+
+	--dlmopen )
+	    dlmopen=yes
 	    ;;
 
 	# --------------------------------------------------
@@ -428,6 +453,16 @@ if test -z "$1" ; then
 	die "no command to profile"
     fi
 fi
+
+
+# replace dlmopen with dlopen as directed
+if test -z "$dlmopen" ; then
+  case "$dlopen" in
+      '' ) ;;
+      yes ) preload_list="${hpcrun_dir}/libhpcrun_dlmopen.so ${preload_list}"
+  esac
+fi
+
 
 #------------------------------------------------------------
 # Pre-Launch Sanity Checks

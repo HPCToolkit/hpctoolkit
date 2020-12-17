@@ -124,7 +124,8 @@ host_triplet = @host@
 @OPT_BUILD_FRONT_END_TRUE@am__append_1 = scripts/hpcsummary \
 @OPT_BUILD_FRONT_END_TRUE@	scripts/hpclog
 @OPT_BUILD_FRONT_END_TRUE@am__append_2 = hpctoolkit.h
-@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@@OPT_ENABLE_RTLD_AUDIT_TRUE@am__append_3 = libhpcrun_audit.la
+@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@@OPT_ENABLE_RTLD_AUDIT_TRUE@am__append_3 = libhpcrun_audit.la \
+@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@@OPT_ENABLE_RTLD_AUDIT_TRUE@	libhpcrun_dlmopen.la
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am__append_4 = libhpcrun_ga.la \
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	libhpcrun_gprof.la \
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	libhpcrun_io.la \
@@ -833,6 +834,15 @@ libhpcrun_audit_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(LDFLAGS) -o $@
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@@OPT_ENABLE_RTLD_AUDIT_TRUE@am_libhpcrun_audit_la_rpath = -rpath \
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@@OPT_ENABLE_RTLD_AUDIT_TRUE@	$(pkglibdir)
+libhpcrun_dlmopen_la_LIBADD =
+am_libhpcrun_dlmopen_la_OBJECTS = dlmopen/dlmopen.lo
+libhpcrun_dlmopen_la_OBJECTS = $(am_libhpcrun_dlmopen_la_OBJECTS)
+libhpcrun_dlmopen_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(AM_CFLAGS) $(CFLAGS) $(libhpcrun_dlmopen_la_LDFLAGS) \
+	$(LDFLAGS) -o $@
+@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@@OPT_ENABLE_RTLD_AUDIT_TRUE@am_libhpcrun_dlmopen_la_rpath = -rpath \
+@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@@OPT_ENABLE_RTLD_AUDIT_TRUE@	$(pkglibdir)
 libhpcrun_ga_la_LIBADD =
 am_libhpcrun_ga_la_OBJECTS =  \
 	sample-sources/libhpcrun_ga_la-ga-overrides.lo
@@ -1299,11 +1309,11 @@ SOURCES = $(libhpcrun_ga_wrap_a_SOURCES) \
 	$(libhpcrun_wrap_a_SOURCES) $(libhpctoolkit_a_SOURCES) \
 	$(libagent_cilk_la_SOURCES) $(libagent_pthread_la_SOURCES) \
 	$(libagent_tbb_la_SOURCES) $(libhpcrun_la_SOURCES) \
-	$(libhpcrun_audit_la_SOURCES) $(libhpcrun_ga_la_SOURCES) \
-	$(libhpcrun_gprof_la_SOURCES) $(libhpcrun_io_la_SOURCES) \
-	$(libhpcrun_memleak_la_SOURCES) $(libhpcrun_mpi_la_SOURCES) \
-	$(libhpcrun_pthread_la_SOURCES) $(libhpctoolkit_la_SOURCES) \
-	$(libhpcrun_o_SOURCES)
+	$(libhpcrun_audit_la_SOURCES) $(libhpcrun_dlmopen_la_SOURCES) \
+	$(libhpcrun_ga_la_SOURCES) $(libhpcrun_gprof_la_SOURCES) \
+	$(libhpcrun_io_la_SOURCES) $(libhpcrun_memleak_la_SOURCES) \
+	$(libhpcrun_mpi_la_SOURCES) $(libhpcrun_pthread_la_SOURCES) \
+	$(libhpctoolkit_la_SOURCES) $(libhpcrun_o_SOURCES)
 DIST_SOURCES = $(libhpcrun_ga_wrap_a_SOURCES) \
 	$(libhpcrun_gprof_wrap_a_SOURCES) \
 	$(libhpcrun_io_wrap_a_SOURCES) \
@@ -1315,10 +1325,11 @@ DIST_SOURCES = $(libhpcrun_ga_wrap_a_SOURCES) \
 	$(am__libagent_tbb_la_SOURCES_DIST) \
 	$(am__libhpcrun_la_SOURCES_DIST) \
 	$(am__libhpcrun_audit_la_SOURCES_DIST) \
-	$(libhpcrun_ga_la_SOURCES) $(libhpcrun_gprof_la_SOURCES) \
-	$(libhpcrun_io_la_SOURCES) $(libhpcrun_memleak_la_SOURCES) \
-	$(libhpcrun_mpi_la_SOURCES) $(libhpcrun_pthread_la_SOURCES) \
-	$(libhpctoolkit_la_SOURCES) $(am__libhpcrun_o_SOURCES_DIST)
+	$(libhpcrun_dlmopen_la_SOURCES) $(libhpcrun_ga_la_SOURCES) \
+	$(libhpcrun_gprof_la_SOURCES) $(libhpcrun_io_la_SOURCES) \
+	$(libhpcrun_memleak_la_SOURCES) $(libhpcrun_mpi_la_SOURCES) \
+	$(libhpcrun_pthread_la_SOURCES) $(libhpctoolkit_la_SOURCES) \
+	$(am__libhpcrun_o_SOURCES_DIST)
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -2206,6 +2217,8 @@ MY_AGENT_INCLUDE_DIRS = $(MY_INCLUDE_DIRS) $(am__append_70) \
 @UNW_LIBUNW_TRUE@UNW_STATIC_LD_FLAGS = $(UNW_LIBUNW_LD_FLAGS)
 @UNW_PPC64_TRUE@UNW_STATIC_LD_FLAGS = $(UNW_PPC64_LD_FLAGS)
 @UNW_X86_TRUE@UNW_STATIC_LD_FLAGS = $(XED2_HPCLINK_LIBS)
+libhpcrun_dlmopen_la_SOURCES = dlmopen/dlmopen.c
+libhpcrun_dlmopen_la_LDFLAGS = -ldl 
 
 #-----------------------------------------------------------
 # whirled peas, LUSH-style
@@ -3135,6 +3148,17 @@ audit/libhpcrun_audit_la-auditor.lo: audit/$(am__dirstamp) \
 
 libhpcrun_audit.la: $(libhpcrun_audit_la_OBJECTS) $(libhpcrun_audit_la_DEPENDENCIES) $(EXTRA_libhpcrun_audit_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(libhpcrun_audit_la_LINK) $(am_libhpcrun_audit_la_rpath) $(libhpcrun_audit_la_OBJECTS) $(libhpcrun_audit_la_LIBADD) $(LIBS)
+dlmopen/$(am__dirstamp):
+	@$(MKDIR_P) dlmopen
+	@: > dlmopen/$(am__dirstamp)
+dlmopen/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) dlmopen/$(DEPDIR)
+	@: > dlmopen/$(DEPDIR)/$(am__dirstamp)
+dlmopen/dlmopen.lo: dlmopen/$(am__dirstamp) \
+	dlmopen/$(DEPDIR)/$(am__dirstamp)
+
+libhpcrun_dlmopen.la: $(libhpcrun_dlmopen_la_OBJECTS) $(libhpcrun_dlmopen_la_DEPENDENCIES) $(EXTRA_libhpcrun_dlmopen_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(libhpcrun_dlmopen_la_LINK) $(am_libhpcrun_dlmopen_la_rpath) $(libhpcrun_dlmopen_la_OBJECTS) $(libhpcrun_dlmopen_la_LIBADD) $(LIBS)
 sample-sources/libhpcrun_ga_la-ga-overrides.lo:  \
 	sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
@@ -3666,6 +3690,8 @@ mostlyclean-compile:
 	-rm -f audit/*.lo
 	-rm -f cct/*.$(OBJEXT)
 	-rm -f cct/*.lo
+	-rm -f dlmopen/*.$(OBJEXT)
+	-rm -f dlmopen/*.lo
 	-rm -f extern-real/*.$(OBJEXT)
 	-rm -f extern-real/*.lo
 	-rm -f fnbounds/*.$(OBJEXT)
@@ -3827,6 +3853,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@cct/$(DEPDIR)/libhpcrun_o-cct.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@cct/$(DEPDIR)/libhpcrun_o-cct_bundle.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@cct/$(DEPDIR)/libhpcrun_o-cct_ctxt.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@dlmopen/$(DEPDIR)/dlmopen.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@extern-real/$(DEPDIR)/libhpcrun_la-dl-iterate.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@extern-real/$(DEPDIR)/libhpcrun_la-mmap.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@extern-real/$(DEPDIR)/libhpcrun_o-dl-iterate.Po@am__quote@
@@ -8670,6 +8697,7 @@ clean-libtool:
 	-rm -rf .libs _libs
 	-rm -rf audit/.libs audit/_libs
 	-rm -rf cct/.libs cct/_libs
+	-rm -rf dlmopen/.libs dlmopen/_libs
 	-rm -rf extern-real/.libs extern-real/_libs
 	-rm -rf fnbounds/.libs fnbounds/_libs
 	-rm -rf gpu/.libs gpu/_libs
@@ -8923,6 +8951,8 @@ distclean-generic:
 	-rm -f audit/$(am__dirstamp)
 	-rm -f cct/$(DEPDIR)/$(am__dirstamp)
 	-rm -f cct/$(am__dirstamp)
+	-rm -f dlmopen/$(DEPDIR)/$(am__dirstamp)
+	-rm -f dlmopen/$(am__dirstamp)
 	-rm -f extern-real/$(DEPDIR)/$(am__dirstamp)
 	-rm -f extern-real/$(am__dirstamp)
 	-rm -f fnbounds/$(DEPDIR)/$(am__dirstamp)
@@ -9004,7 +9034,7 @@ clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
 	clean-pkglibLTLIBRARIES mostlyclean-am
 
 distclean: distclean-recursive
-	-rm -rf ./$(DEPDIR) audit/$(DEPDIR) cct/$(DEPDIR) extern-real/$(DEPDIR) fnbounds/$(DEPDIR) gpu/$(DEPDIR) gpu/amd/$(DEPDIR) gpu/instrumentation/$(DEPDIR) gpu/level0/$(DEPDIR) gpu/nvidia/$(DEPDIR) gpu/opencl/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) ompt/$(DEPDIR) os/linux/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) sample-sources/perf/$(DEPDIR) syscalls/$(DEPDIR) trampoline/aarch64/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/libunwind/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) audit/$(DEPDIR) cct/$(DEPDIR) dlmopen/$(DEPDIR) extern-real/$(DEPDIR) fnbounds/$(DEPDIR) gpu/$(DEPDIR) gpu/amd/$(DEPDIR) gpu/instrumentation/$(DEPDIR) gpu/level0/$(DEPDIR) gpu/nvidia/$(DEPDIR) gpu/opencl/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) ompt/$(DEPDIR) os/linux/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) sample-sources/perf/$(DEPDIR) syscalls/$(DEPDIR) trampoline/aarch64/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/libunwind/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -9053,7 +9083,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-recursive
-	-rm -rf ./$(DEPDIR) audit/$(DEPDIR) cct/$(DEPDIR) extern-real/$(DEPDIR) fnbounds/$(DEPDIR) gpu/$(DEPDIR) gpu/amd/$(DEPDIR) gpu/instrumentation/$(DEPDIR) gpu/level0/$(DEPDIR) gpu/nvidia/$(DEPDIR) gpu/opencl/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) ompt/$(DEPDIR) os/linux/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) sample-sources/perf/$(DEPDIR) syscalls/$(DEPDIR) trampoline/aarch64/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/libunwind/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) audit/$(DEPDIR) cct/$(DEPDIR) dlmopen/$(DEPDIR) extern-real/$(DEPDIR) fnbounds/$(DEPDIR) gpu/$(DEPDIR) gpu/amd/$(DEPDIR) gpu/instrumentation/$(DEPDIR) gpu/level0/$(DEPDIR) gpu/nvidia/$(DEPDIR) gpu/opencl/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) ompt/$(DEPDIR) os/linux/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) sample-sources/perf/$(DEPDIR) syscalls/$(DEPDIR) trampoline/aarch64/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/libunwind/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
