@@ -113,6 +113,8 @@ typedef struct typed_splay_node(host_correlation) {
 
   uint64_t cpu_submit_time;
 
+  uint32_t range_id;
+
   gpu_activity_channel_t *activity_channel;
 
   int samples;
@@ -154,6 +156,7 @@ gpu_host_correlation_map_entry_new
  uint64_t host_correlation_id,
  gpu_op_ccts_t *gpu_op_ccts, 
  uint64_t cpu_submit_time,
+ uint32_t range_id,
  gpu_activity_channel_t *activity_channel
 )
 {
@@ -165,6 +168,7 @@ gpu_host_correlation_map_entry_new
   e->gpu_op_ccts = *gpu_op_ccts;
   e->cpu_submit_time = cpu_submit_time;
   e->activity_channel = activity_channel;
+  e->range_id = range_id;
 
   return e;
 }
@@ -207,11 +211,12 @@ gpu_host_correlation_map_lookup
 
 
 void
-gpu_host_correlation_map_insert
+gpu_host_correlation_map_range_insert
 (
  uint64_t host_correlation_id, 
  gpu_op_ccts_t *gpu_op_ccts, 
  uint64_t cpu_submit_time,
+ uint32_t range_id,
  gpu_activity_channel_t *activity_channel
 )
 {
@@ -221,6 +226,7 @@ gpu_host_correlation_map_insert
       entry->gpu_op_ccts = *gpu_op_ccts;
       entry->cpu_submit_time = cpu_submit_time;
       entry->activity_channel = activity_channel;
+      entry->range_id = range_id;
     } else {
       // fatal error: host_correlation id already present; a
       // correlation should be inserted only once.
@@ -229,7 +235,7 @@ gpu_host_correlation_map_insert
   } else {
     gpu_host_correlation_map_entry_t *entry = 
       gpu_host_correlation_map_entry_new(host_correlation_id, gpu_op_ccts, 
-					 cpu_submit_time, activity_channel);
+					 cpu_submit_time, range_id, activity_channel);
 
     st_insert(&map_root, entry);
 
@@ -237,6 +243,20 @@ gpu_host_correlation_map_insert
 	 "activity_channel=%p (entry=%p)", 
 	  host_correlation_id, activity_channel, entry);
   }
+}
+
+
+void
+gpu_host_correlation_map_insert
+(
+ uint64_t host_correlation_id, 
+ gpu_op_ccts_t *gpu_op_ccts, 
+ uint64_t cpu_submit_time,
+ gpu_activity_channel_t *activity_channel
+)
+{
+  gpu_host_correlation_map_range_insert(host_correlation_id,
+    gpu_op_ccts, cpu_submit_time, 0, activity_channel);
 }
 
 
@@ -345,6 +365,16 @@ gpu_host_correlation_map_replace_set
 )
 {
   allow_replace = replace;
+}
+
+
+uint32_t
+gpu_host_correlation_map_entry_range_id_get
+(
+ gpu_host_correlation_map_entry_t *entry
+)
+{
+  return entry->range_id;
 }
 
 

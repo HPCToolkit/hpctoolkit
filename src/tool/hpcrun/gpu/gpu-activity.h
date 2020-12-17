@@ -249,7 +249,6 @@ typedef void (*gpu_pc_sampling2_free_fn_t)
 
 
 typedef struct gpu_pc_sampling_info2_t {
-  uint32_t range_id;
   uint32_t context_id;
   uint64_t droppedSamples;
   uint64_t samplingPeriodInCycles;
@@ -401,12 +400,6 @@ typedef struct gpu_synchronization_t {
 } gpu_synchronization_t;
 
 
-typedef struct gpu_range_t {
-  uint32_t range_id;
-  uint64_t submit_time;  // End time of a range
-} gpu_range_t;
-
-
 typedef struct gpu_host_correlation_t {
   uint32_t correlation_id;
   uint64_t host_correlation_id;
@@ -450,7 +443,6 @@ typedef struct gpu_activity_details_t {
     gpu_branch_t branch;
     gpu_synchronization_t synchronization;
     gpu_host_correlation_t correlation;
-    gpu_range_t range;
     gpu_flush_t flush;
 
     /* Access short cut for activitiy fields shared by multiple kinds */

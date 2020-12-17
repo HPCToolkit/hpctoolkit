@@ -23,7 +23,7 @@ void
 gpu_range_attribute
 (
  uint32_t context_id,
- gpu_activity_t *activity 
+ gpu_activity_t *activity
 );
 
 
@@ -33,15 +33,26 @@ gpu_range_id
 );
 
 
-void
+uint64_t
+gpu_range_correlation_id
+(
+);
+
+
+uint64_t
 gpu_range_enter
 (
- uint64_t correlation_id
 );
 
 
 void
 gpu_range_exit
+(
+);
+
+
+void
+gpu_range_lead_barrier
 (
 );
 

@@ -1054,18 +1054,20 @@ cupti_subscriber_callback
     // If we have a valid operation and is not in the interval of a cuda/ompt runtime api
     if (is_valid_op && !cupti_runtime_api_flag && !ompt_runtime_api_flag) {
       if (cd->callbackSite == CUPTI_API_ENTER) {
+#ifdef NEW_CUPTI
+        // Wait until operations of the previous region are done
+        uint64_t correlation_id = gpu_range_enter();
+        uint32_t range_id = gpu_range_id();
+#else
+        uint64_t correlation_id = gpu_correlation_id();
+#endif
         // A driver API cannot be implemented by other driver APIs, so we get an id
         // and unwind when the API is entered
-        uint64_t correlation_id = gpu_correlation_id();
         cupti_correlation_id_push(correlation_id);
 
         cct_node_t *api_node = cupti_correlation_callback(correlation_id);
 
 #ifdef NEW_CUPTI
-        // Wait until operations of the previous region are done
-        gpu_range_enter(correlation_id);
-        uint32_t range_id = gpu_range_id();
-        // No need to retain this node in hpcprof if no metrics
         api_node = hpcrun_cct_insert_range(api_node, range_id);
 #endif
 
@@ -1091,23 +1093,33 @@ cupti_subscriber_callback
 
         // Generate notification entry
         uint64_t cpu_submit_time = hpcrun_nanotime();
+#ifdef NEW_CUPTI
+        gpu_correlation_channel_range_produce(correlation_id, &gpu_op_ccts,
+          cpu_submit_time, range_id);
+#else
         gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts,
           cpu_submit_time);
+#endif
 
         TMSG(CUPTI_TRACE, "Driver push externalId %lu (cb_id = %u)", correlation_id, cb_id);
       } else if (cd->callbackSite == CUPTI_API_EXIT) {
         uint64_t correlation_id;
         correlation_id = cupti_correlation_id_pop();
+
 #ifdef NEW_CUPTI
         if (gpu_range_is_lead()) {
+          // Wait until previous operations are done
+          gpu_range_lead_barrier();
           // TODO(Keren): call synchronization for PAPI metrics
           uint32_t range_id = gpu_range_id();
           // collect pc samples from all contexts
           cupti_pc_sampling_range_flush(range_id);
-          // Release the lock
-          gpu_range_exit();
         }
+
+        // Release the lock
+        gpu_range_exit();
 #endif
+
         TMSG(CUPTI_TRACE, "Driver pop externalId %lu (cb_id = %u)", correlation_id, cb_id);
       }
     } else if (is_kernel_op && cupti_runtime_api_flag && cd->callbackSite ==
@@ -1230,7 +1242,14 @@ cupti_subscriber_callback
       if (cd->callbackSite == CUPTI_API_ENTER) {
         // Enter a CUDA runtime api
         cupti_runtime_api_flag_set();
+
+#ifdef NEW_CUPTI
+        // Wait until operations of the previous region are done
+        uint64_t correlation_id = gpu_range_enter();
+        uint32_t range_id = gpu_range_id();
+#else
         uint64_t correlation_id = gpu_correlation_id();
+#endif
         cupti_correlation_id_push(correlation_id);
         // We should make notification records in the api enter callback.
         // A runtime API must be implemented by driver APIs.
@@ -1240,9 +1259,6 @@ cupti_subscriber_callback
         cct_node_t *api_node = cupti_correlation_callback(correlation_id);
 
 #ifdef NEW_CUPTI
-        // Wait until operations of the previous region are done
-        gpu_range_enter(correlation_id);
-        uint32_t range_id = gpu_range_id();
         api_node = hpcrun_cct_insert_range(api_node, range_id);
 #endif
 
@@ -1259,8 +1275,13 @@ cupti_subscriber_callback
 
         // Generate notification entry
         uint64_t cpu_submit_time = hpcrun_nanotime();
+#ifdef NEW_CUPTI
+        gpu_correlation_channel_range_produce(correlation_id, &gpu_op_ccts,
+          cpu_submit_time, range_id);
+#else
         gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts,
           cpu_submit_time);
+#endif
 
         TMSG(CUPTI_TRACE, "Runtime push externalId %lu (cb_id = %u)", correlation_id, cb_id);
       } else if (cd->callbackSite == CUPTI_API_EXIT) {
@@ -1272,13 +1293,16 @@ cupti_subscriber_callback
 
 #ifdef NEW_CUPTI
         if (gpu_range_is_lead()) {
+          // Wait until previous operations are done
+          gpu_range_lead_barrier();
           // TODO(Keren): call synchronization for PAPI metrics
           uint32_t range_id = gpu_range_id();
           // collect pc samples from all contexts
-          cupti_pc_sampling_range_collect(range_id, cd->context);
-          // Release the lock
-          gpu_range_exit();
+          cupti_pc_sampling_range_flush(range_id);
         }
+
+        // Release the lock
+        gpu_range_exit();
 #endif
 
         TMSG(CUPTI_TRACE, "Runtime pop externalId %lu (cb_id = %u)", correlation_id, cb_id);
@@ -1651,29 +1675,6 @@ cupti_activity_flush
     cupti_stop_flag_unset();
 
     HPCRUN_CUPTI_CALL(cuptiActivityFlushAll, (CUPTI_ACTIVITY_FLAG_FLUSH_FORCED));
-
-#ifdef NEW_CUPTI
-    // Flush pc samples of all contexts
-    // Get the current range
-    uint64_t correlation_id = gpu_correlation_id();
-    gpu_range_enter(correlation_id);
-    uint32_t range_id = gpu_range_id();
-    cupti_pc_sampling_range_flush(range_id);
-    gpu_range_exit();
-
-    // Wait until operations are drained
-    // Operation channel is FIFO
-    atomic_bool wait;
-    atomic_store(&wait, true);
-    gpu_activity_t gpu_activity;
-    memset(&gpu_activity, 0, sizeof(gpu_activity_t));
-
-    gpu_activity.kind = GPU_ACTIVITY_FLUSH;
-    gpu_activity.details.flush.wait = &wait;
-    gpu_operation_multiplexer_push(NULL, NULL, &gpu_activity);
-
-    while (atomic_load(&wait)) {}
-#endif
   }
 }
 
@@ -1763,6 +1764,29 @@ cupti_device_shutdown(void *args)
 {
   cupti_callbacks_unsubscribe();
   cupti_device_flush(0);
+
+#ifdef NEW_CUPTI
+  // Flush pc samples of all contexts
+  // Get the current range
+  gpu_range_enter();
+  uint32_t range_id = gpu_range_id();
+  cupti_pc_sampling_range_flush(range_id);
+  gpu_range_exit();
+
+  // Wait until operations are drained
+  // Operation channel is FIFO
+  atomic_bool wait;
+  atomic_store(&wait, true);
+  gpu_activity_t gpu_activity;
+  memset(&gpu_activity, 0, sizeof(gpu_activity_t));
+
+  gpu_activity.kind = GPU_ACTIVITY_FLUSH;
+  gpu_activity.details.flush.wait = &wait;
+  gpu_operation_multiplexer_push(NULL, NULL, &gpu_activity);
+
+  while (atomic_load(&wait)) {}
+#endif
+
   // Terminate monitor thread
   gpu_operation_multiplexer_fini();
 }

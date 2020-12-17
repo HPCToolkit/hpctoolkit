@@ -90,6 +90,17 @@ gpu_host_correlation_map_lookup
 
 
 void
+gpu_host_correlation_map_range_insert
+(
+ uint64_t host_correlation_id,
+ gpu_op_ccts_t *gpu_op_ccts,
+ uint64_t cpu_gpu_time_offset,
+ uint32_t range_id,
+ gpu_activity_channel_t *activity_channel
+);
+
+
+void
 gpu_host_correlation_map_insert
 (
  uint64_t host_correlation_id,
@@ -174,5 +185,10 @@ gpu_host_correlation_map_entry_cpu_submit_time
 );
 
 
+uint32_t
+gpu_host_correlation_map_entry_range_id_get
+(
+ gpu_host_correlation_map_entry_t *entry
+);
 
 #endif

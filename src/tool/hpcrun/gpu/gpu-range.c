@@ -7,17 +7,16 @@
 #include <hpcrun/cct/cct_bundle.h>
 #include <hpcrun/threadmgr.h>
 
-static atomic_uint thread_id = ATOMIC_VAR_INIT(1);
-static atomic_uint thread_id_lead = ATOMIC_VAR_INIT(0);
-static atomic_bool wait = ATOMIC_VAR_INIT(false);
+static atomic_ullong correlation_id_lead = ATOMIC_VAR_INIT(0);
+static atomic_ullong correlation_id_done = ATOMIC_VAR_INIT(0);
 
+static __thread uint64_t thread_correlation_id = 0;
 static __thread uint32_t thread_range_id = 0;
-static __thread uint32_t thread_id_local = 0;
 
 static spinlock_t count_lock = SPINLOCK_UNLOCKED;
 
 static uint32_t
-gpu_range_thread_id
+range_thread_id
 (
  uint32_t range_id
 )
@@ -40,7 +39,7 @@ gpu_range_thread_data_acquire
 
   thread_data_t *td = NULL;
 
-  uint32_t thread_id = gpu_range_thread_id(range_id);
+  uint32_t thread_id = range_thread_id(range_id);
 
   hpcrun_threadMgr_data_get_safe(td, NULL, &td, has_trace, demand_new_thread);
 
@@ -85,29 +84,43 @@ gpu_range_id
 }
 
 
-void
-gpu_range_enter
+uint64_t
+gpu_range_correlation_id
 (
- uint64_t correlation_id
 )
 {
-  thread_range_id = (GPU_CORRELATION_ID_UNMASK(correlation_id) - 1) / GPU_RANGE_COUNT_LIMIT;
+  return thread_correlation_id;
+}
 
-  if (thread_id_local == 0) {
-    thread_id_local = atomic_fetch_add(&thread_id, 1);
-  }
 
+uint64_t
+gpu_range_enter
+(
+)
+{
   spinlock_lock(&count_lock);
 
+  uint64_t correlation_id = gpu_correlation_id();
   if (GPU_CORRELATION_ID_UNMASK(correlation_id) % GPU_RANGE_COUNT_LIMIT == 0) {
+    // If lead is set, don't do anything
+    while (atomic_load(&correlation_id_lead) != 0) {}
     // The last call in this range
-    atomic_store(&thread_id_lead, thread_id_local);
-    atomic_store(&wait, true);
+    atomic_store(&correlation_id_lead, correlation_id);
   }
 
   spinlock_unlock(&count_lock);
 
-  while (atomic_load(&thread_id_lead) != thread_id_local && atomic_load(&wait) == true) {}
+  thread_correlation_id = correlation_id;
+  thread_range_id = (GPU_CORRELATION_ID_UNMASK(correlation_id) - 1) / GPU_RANGE_COUNT_LIMIT;
+
+  uint64_t old_correlation_id_lead = atomic_load(&correlation_id_lead);
+  // Wait until correlation_id_lead is done
+  // If correlation_id_lead is not set, we are good to go
+  while (old_correlation_id_lead != 0 && old_correlation_id_lead < correlation_id) {
+    old_correlation_id_lead = atomic_load(&correlation_id_lead);
+  }
+
+  return correlation_id;
 }
 
 
@@ -116,10 +129,22 @@ gpu_range_exit
 (
 )
 {
+  atomic_fetch_add(&correlation_id_done, 1);
+
   if (gpu_range_is_lead()) {
-    atomic_store(&thread_id_lead, 0);
-    atomic_store(&wait, false);
+    // unleash wait operations
+    atomic_store(&correlation_id_lead, 0);
   }
+}
+
+
+void
+gpu_range_lead_barrier
+(
+)
+{
+  // Wait until correlation id before me have done
+  while (atomic_load(&correlation_id_done) != GPU_CORRELATION_ID_UNMASK(thread_correlation_id) - 1);
 }
 
 
@@ -128,5 +153,5 @@ gpu_range_is_lead
 (
 )
 {
-  return atomic_load(&thread_id_lead) == thread_id_local;
+  return atomic_load(&correlation_id_lead) == thread_correlation_id;
 }

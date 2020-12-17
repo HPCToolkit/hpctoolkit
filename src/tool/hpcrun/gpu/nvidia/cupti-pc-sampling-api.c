@@ -330,7 +330,7 @@ pc_sampling_activity_set
 
   // When pc sampling is disabled or pcs exceed collectNumPCs limit
   activity->kind = GPU_ACTIVITY_PC_SAMPLING_INFO2;
-  activity->details.pc_sampling_info2.range_id = range_id;
+  activity->range_id = range_id;
   activity->details.pc_sampling_info2.context_id = context_id;
   activity->details.pc_sampling_info2.droppedSamples = buffer_pc->droppedSamples;
   activity->details.pc_sampling_info2.samplingPeriodInCycles = cupti_pc_sampling_frequency_get();
@@ -676,14 +676,6 @@ cupti_pc_sampling_range_flush
     // Reset the current context
     cuda_context_set(context);
   }
-
-  gpu_activity_t gpu_activity;
-  memset(&gpu_activity, 0, sizeof(gpu_activity_t));
-
-  gpu_activity.kind = GPU_ACTIVITY_RANGE;
-  gpu_activity.details.range.range_id = range_id;
-  gpu_activity.details.range.submit_time = hpcrun_nanotime();  // End time of a range
-  gpu_operation_multiplexer_push(NULL, NULL, &gpu_activity);
 }
 
 

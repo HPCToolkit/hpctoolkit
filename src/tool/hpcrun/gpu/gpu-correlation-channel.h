@@ -69,13 +69,21 @@ typedef struct gpu_op_ccts_t gpu_op_ccts_t;
 
 // produce into a channel that my thread created
 void
+gpu_correlation_channel_range_produce
+(
+ uint64_t host_correlation_id,
+ gpu_op_ccts_t *gpu_ccts,
+ uint64_t cpu_submit_time,
+ uint32_t range_id
+);
+
+void
 gpu_correlation_channel_produce
 (
  uint64_t host_correlation_id,
  gpu_op_ccts_t *gpu_ccts,
  uint64_t cpu_submit_time
 );
-
 
 // consume from a channel that another thread created
 void

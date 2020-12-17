@@ -74,8 +74,6 @@
 
 #include "gpu-print.h"
 
-
-
 //******************************************************************************
 // private operations
 //******************************************************************************
@@ -120,6 +118,7 @@ gpu_memcpy_process
 
   gpu_activity_channel_produce(channel, activity);
 
+  PRINT("Memcpy copy range %u\n", activity->range_id);
   PRINT("Memcpy copy cct_node %p\n", activity->cct_node);
   PRINT("Memcpy copy kind %u\n", activity->details.memcpy.copyKind);
   PRINT("Memcpy copy bytes %lu\n", activity->details.memcpy.bytes);
@@ -149,6 +148,7 @@ gpu_kernel_process
 
   gpu_activity_channel_produce(channel, activity);
 
+  PRINT("Kernel execution range %u\n", activity->range_id);
   PRINT("Kernel execution cct_node %p\n", activity->cct_node);
   PRINT("Kernel execution deviceId %u\n", activity->details.kernel.device_id);
 }
@@ -171,6 +171,7 @@ gpu_synchronization_process
                          activity->details.synchronization.end,
                          activity->cct_node);
 
+  PRINT("Sync range range %u\n", activity->range_id);
   if (activity->kind == GPU_ACTIVITY_SYNCHRONIZATION) {
     uint32_t context_id = activity->details.synchronization.context_id;
     uint32_t stream_id = activity->details.synchronization.stream_id;
@@ -203,21 +204,14 @@ gpu_synchronization_process
 
 
 static void
-gpu_range_process
-(
- gpu_operation_item_t *it
-)
-{
-}
-
-
-static void
 gpu_pc_sampling_info2_process
 (
  gpu_operation_item_t *it
 )
 {
   gpu_activity_t *activity = &it->activity;
+  uint32_t range_id = activity->range_id;
+
   gpu_pc_sampling_info2_t *pc_sampling_info2 = &activity->details.pc_sampling_info2;
 
   uint32_t context_id = pc_sampling_info2->context_id;
@@ -239,6 +233,8 @@ gpu_pc_sampling_info2_process
     }
   }
   pc_sampling_info2->free(pc_sampling_data);
+
+  PRINT("PC sampling range %u\n", range_id);
 }
 
 
@@ -266,6 +262,8 @@ gpu_default_process
   gpu_activity_t *activity = &it->activity;
   gpu_activity_channel_t *channel = it->channel;
   gpu_activity_channel_produce(channel, activity);
+
+  PRINT("Default activity range %u\n", activity->range_id);
 }
 
 //******************************************************************************
@@ -298,10 +296,6 @@ gpu_operation_item_process
 
     case GPU_ACTIVITY_PC_SAMPLING_INFO2:
       gpu_pc_sampling_info2_process(it);
-      break;
-
-    case GPU_ACTIVITY_RANGE:
-      gpu_range_process(it);
       break;
 
     default:
