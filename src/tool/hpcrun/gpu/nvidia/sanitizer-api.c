@@ -136,7 +136,7 @@
   SanitizerResult status = SANITIZER_FN_NAME(fn) args; \
   if (status != SANITIZER_SUCCESS) { \
     sanitizer_error_report(status, #fn); \
-  }	\
+  } \
 }
 
 #define HPCRUN_SANITIZER_CALL_NO_CHECK(fn, args) \
@@ -1248,7 +1248,6 @@ sanitizer_subscribe_callback
 
     PRINT("Memcpy async %d direction %d from %p to %p, op %lu, id %d\n", md->isAsync, md->direction,
       (void *)md->srcAddress, (void *)md->dstAddress, correlation_id, persistent_id);
-
 
     // Avoid memcpy to symbol without allocation
     // Let redshow update shadow memory
