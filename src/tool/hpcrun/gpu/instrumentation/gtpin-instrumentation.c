@@ -76,6 +76,7 @@
 #include <hpcrun/gpu/gpu-op-placeholders.h>
 #include <hpcrun/gpu/gpu-metrics.h>
 #include <hpcrun/gpu/gpu-monitoring-thread-api.h>
+#include <hpcrun/sample-sources/libdl.h>
 #include <hpcrun/utilities/hpcrun-nanotime.h>
 
 #include <lib/prof-lean/crypto-hash.h>
@@ -86,12 +87,28 @@
 #include "kernel-data.h"
 #include "kernel-data-map.h"
 
+
+
 //******************************************************************************
-// local data
+// hpctoolkit's interface to gtpin
+//******************************************************************************
+
+#include "gtpin-interface.c"
+
+
+
+//******************************************************************************
+// macros
 //******************************************************************************
 
 #define MAX_STR_SIZE 1024
 #define KERNEL_SUFFIX ".kernel"
+
+
+
+//******************************************************************************
+// local data
+//******************************************************************************
 
 // TODO(Aaron): Why there are so many correlation ids
 static atomic_ullong correlation_id;
@@ -105,9 +122,13 @@ static __thread uint64_t gtpin_cpu_submit_time = 0;
 static __thread gpu_op_ccts_t gtpin_gpu_op_ccts;
 static __thread bool gtpin_first = true;
 
+
+
 //******************************************************************************
 // private operations
 //******************************************************************************
+
+// FIXME the asserts in this file should be replaced by fatal error messages
 
 static void
 knobAddBool
@@ -116,12 +137,15 @@ knobAddBool
  bool value
 )
 {
-  GTPinKnob knob = KNOB_FindArg(name);
+  GTPinKnob knob = HPCRUN_GTPIN_CALL(KNOB_FindArg, (name));
   assert(knob != NULL);
+
   KnobValue knob_value;
   knob_value.value._bool = value;
   knob_value.type = KNOB_TYPE_BOOL;
-  KNOB_STATUS status = KNOB_AddValue(knob, &knob_value);
+
+  KNOB_STATUS status = 
+    HPCRUN_GTPIN_CALL(KNOB_AddValue, (knob, &knob_value));
   assert(status == KNOB_STATUS_SUCCESS);
 }
 
@@ -132,6 +156,12 @@ initializeInstrumentation
  void
 )
 {
+  if (gtpin_bind() != 0) {
+    EEMSG("HPCToolkit fatal error: failed to initialize GTPin "
+	  "for instrumentation of GPU binaries");
+    exit(1);
+  }
+
   atomic_store(&correlation_id, 100000000);  // to avoid conflict with opencl operation correlation ids, we start instrumentation ids with 5000 (TODO(Aaron):FIX)
 }
 
@@ -214,6 +244,7 @@ writeBinary
   }
 }
 
+
 static size_t
 computeHash
 (
@@ -233,6 +264,7 @@ computeHash
   }
   return used;
 }
+
 
 static void
 computeBinaryHash
@@ -260,15 +292,18 @@ findOrAddKernelModule
   char kernel_name[MAX_STR_SIZE];
   GTPINTOOL_STATUS status;
 
-  status = GTPin_KernelGetName(kernel, MAX_STR_SIZE, kernel_name, NULL);
+  status = HPCRUN_GTPIN_CALL(GTPin_KernelGetName,
+			     (kernel, MAX_STR_SIZE, kernel_name, NULL));
+
   assert(status == GTPINTOOL_STATUS_SUCCESS);
 
   uint32_t kernel_elf_size = 0;
-  status = GTPin_GetElf(kernel, 0, NULL, &kernel_elf_size);
+  status = HPCRUN_GTPIN_CALL(GTPin_GetElf, (kernel, 0, NULL, &kernel_elf_size));
   assert(status == GTPINTOOL_STATUS_SUCCESS);
 
   char *kernel_elf = (char *)malloc(sizeof(char) * kernel_elf_size);
-  status = GTPin_GetElf(kernel, kernel_elf_size, kernel_elf, NULL);
+  status = HPCRUN_GTPIN_CALL(GTPin_GetElf, 
+			     (kernel, kernel_elf_size, kernel_elf, NULL));
   assert(status == GTPINTOOL_STATUS_SUCCESS);
 
   // Create file name
@@ -287,7 +322,7 @@ findOrAddKernelModule
   char kernel_name_hash[PATH_MAX];
   computeHash(kernel_name, strlen(kernel_name), kernel_name_hash);
 
-  strncat(file_name, ".", 1);
+  strcat(file_name, ".");
   strncat(file_name, kernel_name_hash, strlen(kernel_name_hash));
 
   uint32_t module_id = 0;
@@ -303,16 +338,6 @@ findOrAddKernelModule
   hpcrun_loadmap_unlock();
 
   return module_id;
-}
-
-
-static void
-activityNotify
-(
- void
-)
-{
-  gpu_monitoring_thread_activities_ready();
 }
 
 
@@ -378,20 +403,26 @@ onKernelBuild
   kernel_data_gtpin_block_t *gtpin_block_head = NULL;
   kernel_data_gtpin_block_t *gtpin_block_curr = NULL;
 
-  for (GTPinBBL block = GTPin_BBLHead(kernel); GTPin_BBLValid(block); block = GTPin_BBLNext(block)) {
-    GTPinINS head = GTPin_InsHead(block);
-    GTPinINS tail = GTPin_InsTail(block);
-    assert(GTPin_InsValid(head));
-    int32_t head_offset = GTPin_InsOffset(head);
-    int32_t tail_offset = GTPin_InsOffset(tail);
+  for (GTPinBBL block = HPCRUN_GTPIN_CALL(GTPin_BBLHead, (kernel)); 
+       HPCRUN_GTPIN_CALL(GTPin_BBLValid, (block)); 
+       block = HPCRUN_GTPIN_CALL(GTPin_BBLNext, (block))) {
+
+    GTPinINS head = HPCRUN_GTPIN_CALL(GTPin_InsHead,(block));
+    GTPinINS tail = HPCRUN_GTPIN_CALL(GTPin_InsTail,(block));
+    assert(HPCRUN_GTPIN_CALL(GTPin_InsValid,(head)));
+
+    int32_t head_offset = HPCRUN_GTPIN_CALL(GTPin_InsOffset,(head));
+    int32_t tail_offset = HPCRUN_GTPIN_CALL(GTPin_InsOffset,(tail));
 
     GTPinMem mem = NULL;
-    status = GTPin_MemClaim(kernel, sizeof(uint32_t), &mem);
-    assert(status == GTPINTOOL_STATUS_SUCCESS);
-    status = GTPin_OpcodeprofInstrument(head, mem);
+    status = HPCRUN_GTPIN_CALL(GTPin_MemClaim, (kernel, sizeof(uint32_t), &mem));
     assert(status == GTPINTOOL_STATUS_SUCCESS);
 
-    kernel_data_gtpin_block_t *gtpin_block = (kernel_data_gtpin_block_t *)hpcrun_malloc(sizeof(kernel_data_gtpin_block_t));
+    status = HPCRUN_GTPIN_CALL(GTPin_OpcodeprofInstrument, (head, mem));
+    assert(status == GTPINTOOL_STATUS_SUCCESS);
+
+    kernel_data_gtpin_block_t *gtpin_block = 
+      (kernel_data_gtpin_block_t *) hpcrun_malloc(sizeof(kernel_data_gtpin_block_t));
     gtpin_block->head_offset = head_offset;
     gtpin_block->tail_offset = tail_offset;
     gtpin_block->mem = mem;
@@ -406,7 +437,7 @@ onKernelBuild
     
     // while loop that iterates for each instruction in the block and adds an offset entry in map
     int32_t offset = head_offset;
-    GTPinINS inst = GTPin_InsHead(block);
+    GTPinINS inst = HPCRUN_GTPIN_CALL(GTPin_InsHead,(block));
     kernel_data_gtpin_inst_t *gtpin_inst_curr = NULL;
     while (offset <= tail_offset && offset != -1) {
       kernel_data_gtpin_inst_t *gtpin_inst = (kernel_data_gtpin_inst_t *)hpcrun_malloc(sizeof(kernel_data_gtpin_inst_t));
@@ -417,8 +448,8 @@ onKernelBuild
         gtpin_inst_curr->next = gtpin_inst;
       }
       gtpin_inst_curr = gtpin_inst;
-      inst = GTPin_InsNext(inst);
-      offset = GTPin_InsOffset(inst);
+      inst = HPCRUN_GTPIN_CALL(GTPin_InsNext,(inst));
+      offset = HPCRUN_GTPIN_CALL(GTPin_InsOffset,(inst));
     }
   }
 
@@ -445,7 +476,7 @@ onKernelRun
   ETMSG(OPENCL, "onKernelRun starting. Inserted: correlation %"PRIu64"", (uint64_t)kernelExec);
 
   GTPINTOOL_STATUS status = GTPINTOOL_STATUS_SUCCESS;
-  GTPin_KernelProfilingActive(kernelExec, 1);
+  HPCRUN_GTPIN_CALL(GTPin_KernelProfilingActive,(kernelExec, 1));
   assert(status == GTPINTOOL_STATUS_SUCCESS);
 
   createKernelNode((uint64_t)kernelExec);
@@ -459,11 +490,7 @@ onKernelComplete
  void *v
 )
 {
-  // Receive correlations from the host thread.
-  // XXX(Keren): This is done usually at the monitor thread, but not guaranteed.
-  // For safety concern, we need to adopt the multiplexer framework.
-  //activityNotify();  
-  
+  // FIXME: johnmc thinks this is unsafe to use kernel pointer as correlation id
   uint64_t correlation_id = (uint64_t)kernelExec;
 
   gtpin_correlation_id_map_entry_t *entry =
@@ -481,7 +508,7 @@ onKernelComplete
   cct_node_t *host_op_node = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel);
 
   GTPINTOOL_STATUS status = GTPINTOOL_STATUS_SUCCESS;
-  GTPinKernel kernel = GTPin_KernelExec_GetKernel(kernelExec);
+  GTPinKernel kernel = HPCRUN_GTPIN_CALL(GTPin_KernelExec_GetKernel,(kernelExec));
   ETMSG(OPENCL, "onKernelComplete starting. Lookup: kernel: %"PRIu64"", (uint64_t)kernel);
   assert(kernel_data_map_lookup((uint64_t)kernel) != 0);
 
@@ -495,12 +522,14 @@ onKernelComplete
   kernel_data_gtpin_block_t *block = kernel_data_gtpin->block;
 
   while (block != NULL) {
-    uint32_t thread_count = GTPin_MemSampleLength(block->mem);
+    uint32_t thread_count = HPCRUN_GTPIN_CALL(GTPin_MemSampleLength,(block->mem));
     assert(thread_count > 0);
 
     uint32_t total = 0, value = 0;
     for (uint32_t tid = 0; tid < thread_count; ++tid) {
-      status = GTPin_MemRead(block->mem, tid, sizeof(uint32_t), (char*)(&value), NULL);
+      status = 
+	HPCRUN_GTPIN_CALL(GTPin_MemRead,
+			  (block->mem, tid, sizeof(uint32_t), (char*)(&value), NULL));
       assert(status == GTPINTOOL_STATUS_SUCCESS);
       total += value;
     }
@@ -516,6 +545,8 @@ onKernelComplete
     //how to make offset the primary key within the cct and += the execution value for existing ccts?
   }
 }
+
+
 
 //******************************************************************************
 // interface operations
@@ -540,11 +571,11 @@ gtpin_enable_profiling
   // Use opencl/level zero runtime stack
   gtpin_use_runtime_callstack = true;
 
-  GTPin_OnKernelBuild(onKernelBuild, NULL);
-  GTPin_OnKernelRun(onKernelRun, NULL);
-  GTPin_OnKernelComplete(onKernelComplete, NULL);
+  HPCRUN_GTPIN_CALL(GTPin_OnKernelBuild,(onKernelBuild, NULL));
+  HPCRUN_GTPIN_CALL(GTPin_OnKernelRun,(onKernelRun, NULL));
+  HPCRUN_GTPIN_CALL(GTPin_OnKernelComplete,(onKernelComplete, NULL));
 
-  GTPIN_Start();
+  HPCRUN_GTPIN_CALL(GTPIN_Start,());
 }
 
 

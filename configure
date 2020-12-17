@@ -656,7 +656,7 @@ OPT_ROCM_IFLAGS
 OPT_ROCM
 OPT_ENABLE_ROCM_FALSE
 OPT_ENABLE_ROCM_TRUE
-OPT_GTPIN_LDFLAGS
+OPT_GTPIN_LIBDIR
 OPT_GTPIN_IFLAGS
 OPT_GTPIN
 OPT_ENABLE_GTPIN_FALSE
@@ -24215,7 +24215,7 @@ $as_echo "$METRICS_DISCOVERY" >&6; }
 GTPIN=no
 OPT_HAVE_GTPIN=no
 OPT_GTPIN_IFLAGS=
-OPT_GTPIN_LDFLAGS=
+OPT_GTPIN_LIBDIR=
 
 
 # Check whether --with-gtpin was given.
@@ -24235,10 +24235,10 @@ case "$GTPIN" in
     OPT_GTPIN_IFLAGS="-I${GTPIN}/Profilers/Include -I${GTPIN}/Profilers/Include/ged/intel64/"
 
     if test -f "${GTPIN}/Profilers/Lib/intel64/libgtpin.so" ; then
-      OPT_GTPIN_LDFLAGS="-L${GTPIN}/Profilers/Lib/intel64/ -Wl,-rpath=${GTPIN}/Profilers/Lib/intel64/ -lgtpin"
+      OPT_GTPIN_LIBDIR="${GTPIN}/Profilers/Lib/intel64"
     fi
 
-    if test "x$OPT_GTPIN_LDFLAGS" = x ; then
+    if test "x$OPT_GTPIN_LIBDIR" = x ; then
       as_fn_error $? "unable to find libgtpin.so in: $GTPIN" "$LINENO" 5
     fi
     OPT_HAVE_GTPIN=yes

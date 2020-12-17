@@ -1057,9 +1057,8 @@ endif
 
 if OPT_ENABLE_GTPIN
   libhpcrun_la_SOURCES  += $(MY_GTPIN_FILES)
-  libhpcrun_la_CPPFLAGS += -DENABLE_GTPIN
+  libhpcrun_la_CPPFLAGS += -DENABLE_GTPIN -DGTPIN_LIBDIR=$(OPT_GTPIN_LIBDIR)
   libhpcrun_la_CFLAGS   += $(OPT_GTPIN_IFLAGS)
-#   libhpcrun_la_LDFLAGS  += $(OPT_GTPIN_LDFLAGS)
 
   MY_CPP_DEFINES  += -DHPCRUN_SS_GTPIN
 endif
