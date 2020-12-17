@@ -1334,7 +1334,8 @@ opencl_instrumentation_enable
 void
 opencl_api_thread_finalize
 (
- void *args
+ void *args,
+ int how
 )
 {
   if (opencl_api_flag) {
@@ -1355,7 +1356,7 @@ opencl_api_thread_finalize
     while (atomic_load(&wait)) {}
 
     // Wait until my activities are drained
-    opencl_wait_for_self_pending_operations();
+    if (how == MONITOR_EXIT_NORMAL) opencl_wait_for_self_pending_operations();
 
     // Now I can attribute activities
     gpu_application_thread_process_activities();
@@ -1366,7 +1367,8 @@ opencl_api_thread_finalize
 void
 opencl_api_process_finalize
 (
- void *args
+ void *args,
+ int how
 )
 {
   gpu_operation_multiplexer_fini();

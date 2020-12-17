@@ -954,7 +954,8 @@ level0_init
 void
 level0_fini
 (
- void* args
+ void* args,
+ int how
 )
 {
   gpu_application_thread_process_activities();

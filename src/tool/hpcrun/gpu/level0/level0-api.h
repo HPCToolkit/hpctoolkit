@@ -64,7 +64,8 @@ level0_init
 void
 level0_fini
 (
- void*
+ void *args,
+ int how
 );
 
 

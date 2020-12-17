@@ -576,7 +576,8 @@ roctracer_init
 void
 roctracer_fini
 (
- void* args
+ void* args,
+ int how
 )
 {
   HPCRUN_ROCTRACER_CALL(roctracer_disable_domain_callback, (ACTIVITY_DOMAIN_HIP_API));

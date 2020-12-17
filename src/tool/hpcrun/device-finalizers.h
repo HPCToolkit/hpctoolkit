@@ -7,7 +7,7 @@ typedef enum {
 } device_finalizer_type_t;
 
 
-typedef void (*device_finalizer_fn_t)(void* args);
+typedef void (*device_finalizer_fn_t)(void* args, int how);
 
 
 typedef struct device_finalizer_fn_entry_t {
@@ -18,6 +18,6 @@ typedef struct device_finalizer_fn_entry_t {
 
 
 extern void device_finalizer_register(device_finalizer_type_t type, device_finalizer_fn_entry_t* entry);
-extern void device_finalizer_apply();
+extern void device_finalizer_apply(device_finalizer_type_t type, int how);
 
 #endif
