@@ -113,10 +113,10 @@ std::vector<BlameStats> GPURegisterIncreaseOptimizer::match_impl(const KernelBla
   _inspection.hint =
       "Too many registers are allocated in the kernel that exceeds the upper bound. Register "
       "spills to local memory causes extra instruction cycles.\n"
-      "To eliminate these cycles:\n"
-      "1. Increase the upper bound of regster count in a kernel.\n"
-      "2. Simplify computations to reuse registers.\n"
-      "3. Split loops to reduce register usage.\n";
+      "    To eliminate these cycles:\n"
+      "    1. Increase the upper bound of regster count in a kernel.\n"
+      "    2. Simplify computations to reuse registers.\n"
+      "    3. Split loops to reduce register usage.\n";
 
   _inspection.stall = false;
   _inspection.loop = true;
@@ -170,11 +170,11 @@ std::vector<BlameStats> GPULoopUnrollOptimizer::match_impl(const KernelBlame &ke
 
   _inspection.hint =
       "Instructions within loops form long dependency edges and cause arithmetic, memory, and "
-      "stall latencies."
-      "To eliminate these stalls:\n"
-      "1. Unroll the loops several times with pragma unroll or manual unrolling. Sometimes the "
+      "stall latencies.\n"
+      "    To eliminate these stalls:\n"
+      "    1. Unroll the loops several times with pragma unroll or manual unrolling. Sometimes the "
       "compiler fails to automatically unroll loops\n"
-      "2. Use vector instructions to achieve higher dependency (e.g., float4 load/store, tensor "
+      "    2. Use vector instructions to achieve higher dependency (e.g., float4 load/store, tensor "
       "operations).";
   _inspection.stall = true;
   _inspection.loop = true;
@@ -225,9 +225,9 @@ std::vector<BlameStats> GPULoopNoUnrollOptimizer::match_impl(const KernelBlame &
 
   _inspection.hint =
       "Large loops are unrolled aggressively.\n"
-      "To eliminate these stalls:\n"
-      "1. Manually unroll loops to reduce redundant instructions.\n"
-      "2. Reduce loop unroll factor.";
+      "    To eliminate these stalls:\n"
+      "    1. Manually unroll loops to reduce redundant instructions.\n"
+      "    2. Reduce loop unroll factor.";
   _inspection.stall = false;
   _inspection.loop = false;
 
@@ -259,9 +259,9 @@ std::vector<BlameStats> GPUStrengthReductionOptimizer::match_impl(const KernelBl
   _inspection.hint =
       "Long latency non-memory instructions are used. Look for improvements that are "
       "mathematically equivalent but the compiler is not intelligent to do so.\n"
-      "1. Avoid integer division. An integer division requires the usage of SFU to "
+      "    1. Avoid integer division. An integer division requires the usage of SFU to "
       "perform floating point transforming. One can use a multiplication of reciprocal instead.\n"
-      "2. Avoid conversion. A float constant by default is 64-bit. If the constant is multiplied by a 32-bit "
+      "    2. Avoid conversion. A float constant by default is 64-bit. If the constant is multiplied by a 32-bit "
       "float value, the compiler transforms the 32-bit value to a 64-bit value first.\n";
   _inspection.stall = false;
   _inspection.loop = true;
@@ -288,8 +288,8 @@ std::vector<BlameStats> GPUWarpBalanceOptimizer::match_impl(const KernelBlame &k
   _inspection.hint =
       "Threads within the same block are waiting for all to synchronize after a barrier "
       "instruction (e.g., __syncwarp or __threadfence). To reduce sync stalls:\n"
-      "1. Try to balance the work before synchronization points.\n"
-      "2. Use warp shuffle operations to reduce synchronization cost.";
+      "    1. Try to balance the work before synchronization points.\n"
+      "    2. Use warp shuffle operations to reduce synchronization cost.\n";
   _inspection.stall = false;
   _inspection.loop = true;
 
@@ -325,8 +325,8 @@ std::vector<BlameStats> GPUCodeReorderOptimizer::match_impl(const KernelBlame &k
       region = inst_blame->src_struct->ancestorProc();
     }
 
-    if ((inst_blame->blame_name.find(":LAT_GMEM") != std::string::npos ||
-      inst_blame->blame_name.find(":LAT_IDEP") != std::string::npos)) {
+    if (inst_blame->blame_name.find(":LAT_GMEM") != std::string::npos ||
+      inst_blame->blame_name.find(":LAT_IDEP") != std::string::npos) {
       blame += inst_blame->stall_blame;
       region_stats[region].blame += inst_blame->stall_blame;
       region_blames[region].push_back(inst_blame);
@@ -335,8 +335,8 @@ std::vector<BlameStats> GPUCodeReorderOptimizer::match_impl(const KernelBlame &k
 
   _inspection.hint =
       "Compiler fails to schedule instructions properly to hide latencies.\n"
-      "To reduce latency: \n"
-      "1. Reorder statements manually. For example, if a memory load latency is outstanding, the "
+      "    To reduce latency: \n"
+      "    1. Reorder statements manually. For example, if a memory load latency is outstanding, the "
       "load can be put a few lines before the first usage.\n";
   _inspection.stall = true;
   //TODO(Keren): nested regions
@@ -659,9 +659,9 @@ std::vector<BlameStats> GPUGlobalMemoryCoalesceOptimizer::match_impl(
 
   _inspection.hint =
       "Too many global memory requests are issued at the following PCs.\n"
-      "To eliminate abundant memory requests:\n"
-      "1. Coalsece memory access among threads within the same warp.\n"
-      "2. Use constant/texture memory to reduce memory transactions.\n";
+      "    To eliminate abundant memory requests:\n"
+      "    1. Coalsece memory access among threads within the same warp.\n"
+      "    2. Use constant/texture memory to reduce memory transactions.\n";
 
   return blame_stats_vec;
 }

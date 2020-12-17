@@ -61,7 +61,7 @@ using std::string;
 
 namespace Analysis {
 
-void GPUAdvisor::concatAdvise(const OptimizerRank &optimizer_rank) {
+void GPUAdvisor::concatAdvice(const OptimizerRank &optimizer_rank) {
   size_t rank = 0;
 
   // TODO(Keren): use other formatters
@@ -150,13 +150,10 @@ KernelStats GPUAdvisor::readKernelStats(int mpi_rank, int thread_id) {
   }
 
   return KernelStats(blocks, block_threads, block_smem, thread_regs, warps, 0,
-                     samples_total, samples_expected, count, 0, time);
+                     samples_total, samples_expected, time, 0, count);
 }
 
 void GPUAdvisor::advise(const CCTBlames &cct_blames) {
-  // NOTE: stringstream.clear() does not work
-  _output.str("");
-
   for (auto mpi_rank = 0; mpi_rank < _metric_name_prof_map->num_mpi_ranks();
        ++mpi_rank) {
     // For each MPI process
@@ -177,7 +174,6 @@ void GPUAdvisor::advise(const CCTBlames &cct_blames) {
           KernelStats kernel_stats = readKernelStats(mpi_rank, thread_id);
 
           auto &kernel_blame = mpi_blames.at(thread_id);
-
           // 1. Summarize function statistics
           if (DEBUG_GPUADVISOR) {
             std::cout << "[" << mpi_rank << "," << thread_id << "]"
@@ -234,24 +230,25 @@ void GPUAdvisor::advise(const CCTBlames &cct_blames) {
             binary_optimizer_rank[score].push_back(optimizer);
           }
 
+          // NOTE: stringstream.clear() does not work
+          _output.str("");
+
           // 3. Output top advises
           _output << std::endl << "Code Optimizers" << std::endl << std::endl;
-          concatAdvise(code_optimizer_rank);
+          concatAdvice(code_optimizer_rank);
 
           _output << std::endl
                   << "Parallel Optimizers" << std::endl
                   << std::endl;
-          concatAdvise(parallel_optimizer_rank);
+          concatAdvice(parallel_optimizer_rank);
 
           _output << std::endl << "Binary Optimizers" << std::endl << std::endl;
-          concatAdvise(binary_optimizer_rank);
+          concatAdvice(binary_optimizer_rank);
+
+          _advice.push_back(std::make_tuple(kernel_stats.time, _gpu_kernel, _output.str()));
         }
       }
     }
-  }
-
-  if (_output.rdbuf()->in_avail() != 0) {
-    std::cout << _output.str();
   }
 
   // Clean advise
@@ -266,6 +263,20 @@ void GPUAdvisor::advise(const CCTBlames &cct_blames) {
   for (auto *optimizer : _binary_optimizers) {
     optimizer->clear();
   }
+}
+
+
+std::vector<GPUAdvisor::AdviceTuple> GPUAdvisor::get_advice() {
+  if (_advice.size() > 0) {
+    std::sort(_advice.begin(), _advice.end(), [](
+        AdviceTuple &t1, AdviceTuple &t2) {
+      return std::get<0>(t1) > std::get<0>(t2);
+      });
+
+    auto limit = _advice.size() > _top_kernels ? _top_kernels : _advice.size();
+    return decltype(_advice) (_advice.begin(), _advice.begin() + limit);
+  }
+  return decltype(_advice)();
 }
 
 } // namespace Analysis

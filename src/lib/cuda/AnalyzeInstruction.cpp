@@ -160,7 +160,7 @@ void analyze_instruction<INS_TYPE_INTEGER>(Instruction &inst, std::string &op) {
 
 template <>
 void analyze_instruction<INS_TYPE_TEXTRUE>(Instruction &inst, std::string &op) {
-  op = "TEXTURE";
+  op = "MEMORY.TEXTURE";
 }
 
 
@@ -343,7 +343,14 @@ InstructionStat::InstructionStat(Instruction *inst) {
 
     auto pos = inst->predicate.find("P");
     if (pos != std::string::npos) {
-      this->predicate = convert_reg(inst->predicate, pos + 1);
+      int pred = convert_reg(inst->predicate, pos + 1);
+      if (pred == -1) {
+        // Use special registers in predicate as a placeholder
+        // e.g., @PT, @!PT
+        // Skip this instruction
+        return;
+      }
+      this->predicate = pred;
       pos = inst->predicate.find("!");
       if (pos != std::string::npos) {
         this->predicate_flag = InstructionStat::PredicateFlag::PREDICATE_FALSE;
@@ -382,6 +389,11 @@ InstructionStat::InstructionStat(Instruction *inst) {
       auto &srcs = uniform ? this->usrcs : this->srcs;
       auto &dsts = uniform ? this->udsts : this->dsts;
       auto reg = convert_reg(inst->operands[0], pos + 1);
+      if (reg == -1) {
+        // Use special registers in destation as a placeholder
+        // Skip this instruction
+        return;
+      }
       if (store) {
         if (this->op.find(".SHARED") != std::string::npos ||
           this->op.find(".LOCAL") != std::string::npos) {
@@ -413,6 +425,11 @@ InstructionStat::InstructionStat(Instruction *inst) {
     pos = inst->operands[0].find("P");
     if (pos != std::string::npos) {
       auto reg = convert_reg(inst->operands[0], pos + 1);
+      if (reg == -1) {
+        // Use special registers in destation as a placeholder
+        // Skip this instruction
+        return;
+      }
       if (inst->operands[0].find("UP")) {
         // uniform predicate register
         this->updsts.push_back(reg);
@@ -716,7 +733,7 @@ static void trackDependency(const std::map<int, InstructionStat *> &inst_stat_ma
       }
 
       if (INSTRUCTION_ANALYZER_DEBUG) {
-        std::cout << " barrier " << reg_id << std::endl;
+        std::cout << " uniform " << reg_id << std::endl;
       }
     } else if (reg.val() & Dyninst::cuda::UPR) {
       for (size_t i = 0; i < inst_stat->upsrcs.size(); ++i) {
@@ -731,7 +748,7 @@ static void trackDependency(const std::map<int, InstructionStat *> &inst_stat_ma
       }
 
       if (INSTRUCTION_ANALYZER_DEBUG) {
-        std::cout << " barrier " << reg_id << std::endl;
+        std::cout << " uniform predicate " << reg_id << std::endl;
       }
     } else {
       for (size_t i = 0; i < inst_stat->srcs.size(); ++i) {
@@ -837,6 +854,7 @@ void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_s
       auto *inst_stat = inst_stat_map.at(inst_addr);
 
       if (INSTRUCTION_ANALYZER_DEBUG) {
+        std::cout << inst_stat->pc << std::endl;
         std::cout << "try to find inst_addr " << inst_addr - func_addr << std::endl;
       }
 

@@ -53,8 +53,8 @@ using std::string;
 #include <lib/support/IOUtil.hpp>
 #include <lib/support/StrUtil.hpp>
 
-#define DEBUG_GPUADVISOR 1
-#define DEBUG_GPUADVISOR_DETAILS 1
+#define DEBUG_GPUADVISOR 0
+#define DEBUG_GPUADVISOR_DETAILS 0
 
 #define MAX2(x, y) (x > y ? x : y)
 
@@ -1000,6 +1000,9 @@ GPUAdvisor::detailizeMemBlame(CudaParse::InstructionStat *from_inst) {
   } else if (from_inst->op.find(".CONSTANT") != std::string::npos) {
     // constant mem
     return std::make_pair(_mem_dep_cmem_stall_metric, _mem_dep_cmem_lat_metric);
+  } else if (from_inst->op.find(".TEXTURE") != std::string::npos) {
+    // texture mem
+    return std::make_pair(_mem_dep_tmem_stall_metric, _mem_dep_tmem_lat_metric);
   } else {
     // global mem
     return std::make_pair(_mem_dep_gmem_stall_metric, _mem_dep_gmem_lat_metric);

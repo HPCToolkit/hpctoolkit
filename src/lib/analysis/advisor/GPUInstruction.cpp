@@ -225,7 +225,7 @@ associateInstStmts(const std::vector<VMAStmt> &vma_stmts,
 }
 
 
-void
+std::vector<GPUAdvisor::AdviceTuple>
 overlayGPUInstructionsMain(Prof::CallPath::Profile &prof,
   const std::vector<std::string> &instruction_files) {
   auto *mgr = prof.metricMgr(); 
@@ -238,7 +238,7 @@ overlayGPUInstructionsMain(Prof::CallPath::Profile &prof,
     if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
       std::cout << "Skip non-gpu prof" << std::endl;
     }
-    return;
+    return std::vector<GPUAdvisor::AdviceTuple>();
   }
 
   GPUAdvisor gpu_advisor(&prof, &metric_name_prof_map);
@@ -313,6 +313,8 @@ overlayGPUInstructionsMain(Prof::CallPath::Profile &prof,
       std::cout << "Finish reading instruction file " << file << std::endl;
     }
   }
+
+  return gpu_advisor.get_advice();
 }
 
 }  // namespace CallPath

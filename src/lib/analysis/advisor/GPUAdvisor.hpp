@@ -69,6 +69,7 @@
 #include <string>
 #include <map>
 #include <queue>
+#include <tuple>
 
 //*************************** User Include Files ****************************
 
@@ -97,6 +98,9 @@ namespace Analysis {
 
 class GPUAdvisor {
  public:
+  typedef std::tuple<double, Prof::CCT::ADynNode *, std::string> AdviceTuple;
+
+ public:
   explicit GPUAdvisor(Prof::CallPath::Profile *prof, MetricNameProfMap *metric_name_prof_map) :
     _prof(prof), _metric_name_prof_map(metric_name_prof_map),
     _gpu_root(NULL), _gpu_kernel(NULL), _arch(NULL) {}
@@ -114,6 +118,8 @@ class GPUAdvisor {
   void blame(CCTBlames &cct_blames);
 
   void advise(const CCTBlames &cct_blames);
+
+  std::vector<AdviceTuple> get_advice();
  
   ~GPUAdvisor() {
     for (auto *optimizer : _code_optimizers) {
@@ -215,7 +221,7 @@ class GPUAdvisor {
 
   KernelStats readKernelStats(int mpi_rank, int thread_id);
 
-  void concatAdvise(const OptimizerRank &optimizer_rank);
+  void concatAdvice(const OptimizerRank &optimizer_rank);
   
   // Helper functions
   int demandNodeMetric(int mpi_rank, int thread_id, Prof::CCT::ADynNode *node);
@@ -276,6 +282,7 @@ class GPUAdvisor {
   std::string _mem_dep_stall_metric;
   std::string _mem_dep_gmem_stall_metric;
   std::string _mem_dep_cmem_stall_metric;
+  std::string _mem_dep_tmem_stall_metric;
   std::string _mem_dep_lmem_stall_metric;
   std::string _sync_stall_metric;
 
@@ -288,6 +295,7 @@ class GPUAdvisor {
   std::string _mem_dep_lat_metric;
   std::string _mem_dep_gmem_lat_metric;
   std::string _mem_dep_cmem_lat_metric;
+  std::string _mem_dep_tmem_lat_metric;
   std::string _mem_dep_lmem_lat_metric;
   std::string _sync_lat_metric;
 
@@ -316,9 +324,11 @@ class GPUAdvisor {
 
   KernelStats _kernel_stats;
  
+  std::vector<AdviceTuple> _advice;
   std::stringstream _output;
 
  private:
+  const size_t _top_kernels = 10;
   const size_t _top_optimizers = 5;
 };
 

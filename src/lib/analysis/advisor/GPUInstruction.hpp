@@ -17,12 +17,13 @@
 #include <lib/prof/CallPath-Profile.hpp>
 #include <lib/prof/Struct-Tree.hpp>
 
+#include "GPUAdvisor.hpp"
 
 namespace Analysis {
 
 namespace CallPath {
 
-void
+std::vector<GPUAdvisor::AdviceTuple>
 overlayGPUInstructionsMain(Prof::CallPath::Profile &prof,
   const std::vector<std::string> &instruction_files);
 
