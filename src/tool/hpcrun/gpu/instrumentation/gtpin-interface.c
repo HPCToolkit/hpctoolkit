@@ -100,6 +100,7 @@
   				     \
   macro(GTPin_GetElf)		     \
   				     \
+  macro(GTPin_MemSampleLength)	     \
   macro(GTPin_MemClaim)		     \
   macro(GTPin_MemRead)
 

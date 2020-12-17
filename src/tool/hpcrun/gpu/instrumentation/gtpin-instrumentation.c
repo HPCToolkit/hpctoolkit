@@ -392,6 +392,7 @@ onKernelBuild
  void *v
 )
 {
+  // return; // stub
   GTPINTOOL_STATUS status = GTPINTOOL_STATUS_SUCCESS;
 
   assert(kernel_data_map_lookup((uint64_t)kernel) == 0);
@@ -473,6 +474,7 @@ onKernelRun
  void *v
 )
 {
+  // return; // stub
   ETMSG(OPENCL, "onKernelRun starting. Inserted: correlation %"PRIu64"", (uint64_t)kernelExec);
 
   GTPINTOOL_STATUS status = GTPINTOOL_STATUS_SUCCESS;
@@ -490,6 +492,7 @@ onKernelComplete
  void *v
 )
 {
+  // return; // stub
   // FIXME: johnmc thinks this is unsafe to use kernel pointer as correlation id
   uint64_t correlation_id = (uint64_t)kernelExec;
 
