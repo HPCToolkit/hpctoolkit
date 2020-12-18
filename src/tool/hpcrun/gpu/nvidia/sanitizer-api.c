@@ -162,6 +162,7 @@
   macro(sanitizerPatchInstructions)        \
   macro(sanitizerPatchModule)              \
   macro(sanitizerGetResultString)          \
+  macro(sanitizerGetStreamHandle)          \
   macro(sanitizerUnpatchModule)
 
 
@@ -216,7 +217,6 @@ static redshow_data_type_t sanitizer_data_type = REDSHOW_DATA_FLOAT;
 static bool sanitizer_analysis_async = false;
 
 static __thread bool sanitizer_stop_flag = false;
-static __thread bool sanitizer_internal_flag = false;
 static __thread uint32_t sanitizer_thread_id_self = (1 << 30);
 static __thread uint32_t sanitizer_thread_id_local = 0;
 static __thread CUcontext sanitizer_thread_context = NULL;
@@ -415,6 +415,17 @@ SANITIZER_FN
   const char *functionName,
   uint64_t* pc,
   uint64_t* size
+ )
+);
+
+
+SANITIZER_FN
+(
+ sanitizerGetStreamHandle,
+ (
+  CUcontext ctx,
+  CUstream stream,
+  Sanitizer_StreamHandle *hStream
  )
 );
 
@@ -784,19 +795,18 @@ sanitizer_priority_stream_get
 {
   sanitizer_context_map_entry_t *entry = sanitizer_context_map_init(context);
 
-  Sanitizer_StreamHandle priority_stream =
-    (Sanitizer_StreamHandle)sanitizer_context_map_entry_priority_stream_get(entry);
+  Sanitizer_StreamHandle priority_stream_handle =
+    sanitizer_context_map_entry_priority_stream_handle_get(entry);
 
-  if (priority_stream == NULL) {
+  if (priority_stream_handle == NULL) {
     // First time
-    sanitizer_internal_flag = true;
-    // Sanitizer callback will associate a priority stream
-    cuda_priority_stream_create();
-    sanitizer_internal_flag = false;
-    priority_stream = (Sanitizer_StreamHandle)sanitizer_context_map_entry_priority_stream_get(entry);
+    // Update priority stream
+    CUstream priority_stream = sanitizer_context_map_entry_priority_stream_get(entry);
+    HPCRUN_SANITIZER_CALL(sanitizerGetStreamHandle, (context, priority_stream, &priority_stream_handle)); 
+    sanitizer_context_map_priority_stream_handle_update(context, priority_stream_handle);
   }
 
-  return priority_stream;
+  return priority_stream_handle;
 }
 
 
@@ -1040,11 +1050,6 @@ sanitizer_subscribe_callback
           // single thread
           Sanitizer_ResourceStreamData *sd = (Sanitizer_ResourceStreamData *)cbdata;
           sanitizer_thread_context = sd->context;
-
-          if (sanitizer_internal_flag) {
-            // Update priority stream
-            sanitizer_context_map_priority_stream_update(sd->context, sd->hStream);
-          }
           break;
         }
       case SANITIZER_CBID_RESOURCE_STREAM_DESTROY_STARTING:
@@ -1581,15 +1586,11 @@ sanitizer_init
 )
 {
   sanitizer_stop_flag = false;
-  sanitizer_internal_flag = false;
   sanitizer_thread_id_local = 0;
   sanitizer_thread_context = NULL;
 
   gpu_patch_buffer_device = NULL;
   gpu_patch_buffer_host = NULL;
-
-  spinlock_unlock(&sanitizer_alloc_lock);
-  spinlock_unlock(&sanitizer_free_lock);
 
   atomic_store(&sanitizer_process_awake_flag, false);
   atomic_store(&sanitizer_process_stop_flag, false);

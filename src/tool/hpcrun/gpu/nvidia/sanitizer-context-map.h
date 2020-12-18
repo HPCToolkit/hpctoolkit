@@ -12,6 +12,7 @@
  *****************************************************************************/
 
 #include <cuda.h>
+#include <sanitizer.h>
 
 /******************************************************************************
  * type definitions 
@@ -69,15 +70,22 @@ sanitizer_context_map_stream_unlock
 
 
 void
-sanitizer_context_map_priority_stream_update
+sanitizer_context_map_priority_stream_handle_update
 (
  CUcontext context,
- void *priority_stream
+ Sanitizer_StreamHandle priority_stream_handle
 );
 
 
 CUstream
 sanitizer_context_map_entry_priority_stream_get
+(
+ sanitizer_context_map_entry_t *entry
+);
+
+
+Sanitizer_StreamHandle
+sanitizer_context_map_entry_priority_stream_handle_get
 (
  sanitizer_context_map_entry_t *entry
 );
