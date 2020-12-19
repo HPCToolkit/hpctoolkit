@@ -107,7 +107,7 @@
  * macros
  *****************************************************************************/
 
-#define DEBUG 1
+#define DEBUG 0
 
 #include <hpcrun/gpu/gpu-print.h>
 #include <gpu-monitors.h>
