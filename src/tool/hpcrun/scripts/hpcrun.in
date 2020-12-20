@@ -181,7 +181,7 @@ Options: Profiling (Defaults shown in curly brackets {})
 Options to consider only when hpcrun causes an application to fail:
 
   --namespace-single   dlmopen may load a shared library into an alternate
-		       namespace.  Use of dlmopen to create multiple namespaces
+                       namespace.  Use of dlmopen to create multiple namespaces
                        can cause an application to crash when using glibc < 2.32
                        (see NOTES). This option asks HPCToolkit to load all
                        shared libraries within the application namespace, which
