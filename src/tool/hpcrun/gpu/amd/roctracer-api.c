@@ -508,7 +508,9 @@ roctracer_bind
   // More details: https://github.com/ROCm-Developer-Tools/roctracer/issues/22
   setenv("HSA_ENABLE_INTERRUPT", "0", 1);
 
-  rocm_debug_api_bind();
+  if (rocm_debug_api_bind() != DYNAMIC_BINDING_STATUS_OK) {
+    return DYNAMIC_BINDING_STATUS_ERROR;
+  }
 
 #ifndef HPCRUN_STATIC_LINK
   // dynamic libraries only availabile in non-static case
@@ -524,24 +526,25 @@ roctracer_bind
 #define ROCTRACER_BIND(fn) \
   CHK_DLSYM(roctracer, fn);
 
-  FORALL_ROCTRACER_ROUTINES(ROCTRACER_BIND)
+  FORALL_ROCTRACER_ROUTINES(ROCTRACER_BIND);
 
 #undef ROCTRACER_BIND
+
   dlerror();
   hip_kernel_name_fn = (hip_kernel_name_fnt) dlsym(hip, "hipKernelNameRef");
   if (hip_kernel_name_fn == 0) {
-    return -1;
+    return DYNAMIC_BINDING_STATUS_ERROR;
   }
 
   dlerror();
   hip_kernel_name_ref_fn = (hip_kernel_name_ref_fnt) dlsym(hip, "hipKernelNameRefByPtr");
   if (hip_kernel_name_ref_fn == 0) {
-    return -1;
+    return DYNAMIC_BINDING_STATUS_ERROR;
   }
 
-  return 0;
+  return DYNAMIC_BINDING_STATUS_OK;
 #else
-  return -1;
+  return DYNAMIC_BINDING_STATUS_ERROR;
 #endif // ! HPCRUN_STATIC_LINK
 }
 

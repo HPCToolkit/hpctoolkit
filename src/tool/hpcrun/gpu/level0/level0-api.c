@@ -932,13 +932,13 @@ level0_bind
 #define LEVEL0_BIND(fn) \
   CHK_DLSYM(level0, fn);
 
-  FORALL_LEVEL0_ROUTINES(LEVEL0_BIND)
+  FORALL_LEVEL0_ROUTINES(LEVEL0_BIND);
 
 #undef LEVEL0_BIND
 
-  return 0;
+  return DYNAMIC_BINDING_STATUS_OK;
 #else
-  return -1;
+  return DYNAMIC_BINDING_STATUS_ERROR;
 #endif // ! HPCRUN_STATIC_LINK
 }
 

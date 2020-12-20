@@ -570,13 +570,13 @@ cupti_bind
 #define CUPTI_BIND(fn) \
   CHK_DLSYM(cupti, fn);
 
-  FORALL_CUPTI_ROUTINES(CUPTI_BIND)
+  FORALL_CUPTI_ROUTINES(CUPTI_BIND);
 
 #undef CUPTI_BIND
 
-  return 0;
+  return DYNAMIC_BINDING_STATUS_OK;
 #else
-  return -1;
+  return DYNAMIC_BINDING_STATUS_ERROR;
 #endif // ! HPCRUN_STATIC_LINK
 }
 

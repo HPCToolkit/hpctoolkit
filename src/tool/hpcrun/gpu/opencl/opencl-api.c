@@ -61,6 +61,7 @@
 //******************************************************************************
 
 #include <hpcrun/safe-sampling.h>
+#include <hpcrun/sample-sources/libdl.h>
 #include <hpcrun/gpu/gpu-activity.h>
 #include <hpcrun/gpu/gpu-activity-channel.h>
 #include <hpcrun/gpu/gpu-activity-process.h>
@@ -168,7 +169,7 @@ static bool instrumentation = false;
 static pthread_once_t is_initialized = PTHREAD_ONCE_INIT;
 
 static bool opencl_monitoring_enabled = false;
-static int opencl_bind_result = OPENCL_BIND_RESULT_UNINITIALIZED;
+static int opencl_bind_result = DYNAMIC_BINDING_STATUS_UNINIT;
 
 
 //----------------------------------------------------------
@@ -651,13 +652,13 @@ opencl_bind_helper
 #define OPENCL_BIND(fn)        \
   CHK_DLSYM(opencl, fn);
   
-  FORALL_OPENCL_ROUTINES(OPENCL_BIND)
+  FORALL_OPENCL_ROUTINES(OPENCL_BIND);
     
 #undef OPENCL_BIND
     
-  return 0;
+  return DYNAMIC_BINDING_STATUS_OK;
 #else
-  return -1;
+  return DYNAMIC_BINDING_STATUS_ERROR;
 #endif // ! HPCRUN_STATIC_LINK  
 }
 
@@ -668,9 +669,7 @@ opencl_bind_once_helper
   void
 )
 {
-  opencl_bind_result = (opencl_bind_helper() == 0) ?
-    OPENCL_BIND_RESULT_SUCCESS :
-    OPENCL_BIND_RESULT_FAILURE;
+  opencl_bind_result = opencl_bind_helper();
 }
 
 
@@ -691,7 +690,7 @@ opencl_noaction
  char *name
 )
 {
-  if (opencl_bind_once() != OPENCL_BIND_RESULT_SUCCESS) {
+  if (opencl_bind_once() != DYNAMIC_BINDING_STATUS_OK) {
     EEMSG("hpcrun failed to bind OpenCL interface operations");
     monitor_real_exit(-1);
   }	

@@ -76,7 +76,6 @@
 #include <hpcrun/gpu/gpu-op-placeholders.h>
 #include <hpcrun/gpu/gpu-metrics.h>
 #include <hpcrun/gpu/gpu-monitoring-thread-api.h>
-#include <hpcrun/sample-sources/libdl.h>
 #include <hpcrun/utilities/hpcrun-nanotime.h>
 
 #include <lib/prof-lean/crypto-hash.h>

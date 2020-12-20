@@ -78,21 +78,24 @@
 // macros
 //*****************************************************************************
 
-#define DLERR -1
+
+#define DYNAMIC_BINDING_STATUS_UNINIT -1
+#define DYNAMIC_BINDING_STATUS_ERROR  -1
+#define DYNAMIC_BINDING_STATUS_OK      0
 
 #define DYN_FN_NAME(f) f ## _fn
 
-#define CHK_DLOPEN(h, lib, flags)		      \
-  void* h = dlopen(lib, flags);          \
-  if (!h) {					      \
-    return -1;					      \
+#define CHK_DLOPEN(h, lib, flags)					\
+  void* h = dlopen(lib, flags);						\
+  if (!h) {								\
+    return DYNAMIC_BINDING_STATUS_ERROR;				\
   }                                                   
   
 #define CHK_DLSYM(h, fn) {						\
     dlerror();								\
     DYN_FN_NAME(fn) = dlsym(h, #fn);					\
     if (DYN_FN_NAME(fn) == 0) {						\
-      return -1;							\
+      return DYNAMIC_BINDING_STATUS_ERROR;				\
     }									\
   }
 
