@@ -751,6 +751,7 @@ TBB_IFLAGS
 OPT_ENABLE_RTLD_AUDIT_FALSE
 OPT_ENABLE_RTLD_AUDIT_TRUE
 export_ld_audit
+rtld_audit_mesg
 OPT_PAPI_CUPTI_FALSE
 OPT_PAPI_CUPTI_TRUE
 OPT_PAPI_COMPONENT_FALSE
@@ -22305,13 +22306,15 @@ else
 fi
 
 
-if test "$rtld_audit" = no ; then
-  export_ld_audit='# LD_AUDIT disabled by configure'
-  rtld_audit_mesg='no'
-else
+if test "$rtld_audit" = yes ; then
   export_ld_audit='export LD_AUDIT="${hpcrun_dir}/libhpcrun_audit.so:${LD_AUDIT}"'
   rtld_audit_mesg='yes'
+else
+  export_ld_audit='# LD_AUDIT disabled by configure'
+  rtld_audit_mesg='no'
 fi
+
+
 
 
  if test "$rtld_audit" = yes; then
@@ -22328,6 +22331,7 @@ if test "$rtld_audit" = yes ; then
 $as_echo "#define ENABLE_RTLD_AUDIT 1" >>confdefs.h
 
 fi
+
 
 #-------------------------------------------------
 # Option: --with-tbb=PATH
