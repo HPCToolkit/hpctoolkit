@@ -96,7 +96,7 @@ the directory:
 where <jobid> is a job launcher id that associated with the execution, if any.
 
 hpcrun enables a user to abort a process and write the partial profiling
-data to disk by sending a signal such as SIGINT (often bound to Ctrl-C).  
+data to disk by sending a signal such as SIGINT (often bound to Ctrl-C).
 This can be extremely useful on long-running or misbehaving applications.
 
 Options: Informational
@@ -106,26 +106,26 @@ Options: Informational
 
 Options: Profiling (Defaults shown in curly brackets {})
   -e <event>[@<howoften>], --event <event>[@<howoften>]
-                      event  may  be an architecture-independent hardware or 
-                      software event supported by Linux perf, a native hardware 
-                      counter event, a hardware counter event supported by the 
-                      PAPI library, a Linux  system timer (CPUTIME and REALTIME), 
-                      or the operating system interval timer WALLCLOCK.  This option 
-                      may be given multiple times to profile several events at once.  
-                      If the value for <howoften> is a number, it will be 
-                      interpreted as a sample period. For Linux perf events, one 
-                      may specify a sampling frequency for 'howoften' by writing f 
-                      before a number.  For instance, to sample an event 100 times 
-                      per second,  specify  <howoften>  as '@f100'. For Linux perf 
-                      events, if no value for <howoften> is specified, hpcrun 
-                      will monitor the event using frequency-based sampling at 300 
+                      event  may  be an architecture-independent hardware or
+                      software event supported by Linux perf, a native hardware
+                      counter event, a hardware counter event supported by the
+                      PAPI library, a Linux  system timer (CPUTIME and REALTIME),
+                      or the operating system interval timer WALLCLOCK.  This option
+                      may be given multiple times to profile several events at once.
+                      If the value for <howoften> is a number, it will be
+                      interpreted as a sample period. For Linux perf events, one
+                      may specify a sampling frequency for 'howoften' by writing f
+                      before a number.  For instance, to sample an event 100 times
+                      per second,  specify  <howoften>  as '@f100'. For Linux perf
+                      events, if no value for <howoften> is specified, hpcrun
+                      will monitor the event using frequency-based sampling at 300
                       samples/second.
 
   -c, --count <howoften>
-                      Only  available  for  events  managed  by Linux perf. This 
-                      option specifies a default value for how often to sample. The 
-                      value for <howoften> may be a number that will be used as a 
-                      default event period or an f followed by a number, e.g. f100, 
+                      Only  available  for  events  managed  by Linux perf. This
+                      option specifies a default value for how often to sample. The
+                      value for <howoften> may be a number that will be used as a
+                      default event period or an f followed by a number, e.g. f100,
                       to specify a default sampling frequency in samples/second.
 
   -t, --trace          Generate a call path trace in addition to a call
@@ -137,21 +137,6 @@ Options: Profiling (Defaults shown in curly brackets {})
   -ds, --delay-sampling
                        Delay starting sampling until the application calls
                        hpctoolkit_sampling_start().
-
-  ---dlmopen
-                       Allow dlmopen to create alternate namespaces.
-
-  --dlopen
-                       Use dlopen in place of dlmopen, which has the effect of 
-                       loading all shared libraries into the application's 
-                       namespace. (Caution: this may crash your program!)
-
-  --disable-gprof      Override and disable gprof instrumentation  This option
-                       is only useful when using hpcrun to add HPCToolkit's
-                       measurement subsystem to a dynamically-linked application 
-                       that has been compiled with -pg. One can't measure 
-                       performance with HPCToolkit when gprof instrumentation 
-                       is active in the same execution.
 
   -f <frac>, -fp <frac>, --process-fraction <frac>
                        Measure only a fraction <frac> of the execution's
@@ -172,7 +157,7 @@ Options: Profiling (Defaults shown in curly brackets {})
                        profile and trace files as each thread generates its own
                        profile and trace data. The options are:
                        0 : do not merge non-overlapped threads
-                       1 : merge non-overlapped threads (default) 
+                       1 : merge non-overlapped threads (default)
 
   -o <outpath>, --output <outpath>
                        Directory for output data.
@@ -184,7 +169,7 @@ Options: Profiling (Defaults shown in curly brackets {})
 
   -r, --retain-recursion
                        Normally, hpcrun will collapse (simple) recursive call chains
-                       to save space and analysis time. This option disables that 
+                       to save space and analysis time. This option disables that
                        behavior: all elements of a recursive call chain will be recorded
                        NOTE: If the user employs the RETCNT sample source, then this
                              option is enabled: RETCNT implies *all* elements of
@@ -193,10 +178,36 @@ Options: Profiling (Defaults shown in curly brackets {})
   -nu, --no-unwind     Disable unwinding
                        Generates a flat profile (leaf instructions) only
 
+Options to consider only when hpcrun causes an application to fail:
+
+  --namespace-single   dlmopen may load a shared library into an alternate
+		       namespace.  Use of dlmopen to create multiple namespaces
+                       can cause an application to crash when using glibc < 2.32
+                       (see NOTES). This option asks HPCToolkit to load all
+                       shared libraries within the application namespace, which
+                       might help avoid a crash.  (Default when performing
+                       instruction-level measurements of Intel GPU binaries.)
+
+  --namespace-multiple dlmopen may load a shared library into an alternate
+                       namespace. Force HPCToolkit to allow dlmopen to create
+                       alternate namespaces.  (Default unless performing
+                       instruction-level measurements of Intel GPU binaries.)
+
+  --disable-gprof      Override and disable gprof instrumentation  This option
+                       is only useful when using hpcrun to add HPCToolkit's
+                       measurement subsystem to a dynamically-linked application
+                       that has been compiled with -pg. One can't measure
+                       performance with HPCToolkit when gprof instrumentation
+                       is active in the same execution.
+
+
 NOTES:
 * hpcrun uses preloaded shared libraries to initiate profiling.  For this
   reason, it cannot be used to profile setuid programs.
-* hpcrun may not be able to profile programs that themselves use preloading.
+* By default, hpcrun use LD_AUDIT to monitor an application's use of dynamic
+  libraries. Use of LD_AUDIT will cause dlmopen to fail for glibc < 2.32. Intel's
+  GTPin library for instrumentation of Intel GPU binaries uses dlmopen.
+
 
 EOF
     exit 0
@@ -209,7 +220,7 @@ EOF
 @launch_early_options@
 
 # Return success (0) if $1 is not empty and not the next option.
-arg_ok()
+non_empty()
 {
     case "x$1" in
 	x | x-* ) return 1 ;;
@@ -221,11 +232,19 @@ arg_ok()
 # LD_PRELOAD should be delayed until we launch the program, but the
 # others can be set now.
 
+namespace_gtpin=multiple
 preload_list=
 roctracer_lib=
-gtpin_lib=
-dlmopen=
-dlopen=
+gtpin_dir=
+namespace_default=multiple
+namespace_multiple=
+namespace_single=
+
+if test @rtld_audit_mesg@ = yes ; then
+  namespace_gtpin=single
+fi
+
+
 HPCRUN_DEBUG_FLAGS=
 HPCRUN_EVENT_LIST=
 HPCRUN_CONTROL_KNOBS=
@@ -244,7 +263,7 @@ do
 	    ;;
 
 	-dd | --dynamic-debug )
-	    arg_ok "$1" || die "missing argument for $arg"
+	    non_empty "$1" || die "missing argument for $arg"
 	    export HPCRUN_DEBUG_FLAGS="$HPCRUN_DEBUG_FLAGS $1"
 	    shift
 	    ;;
@@ -254,7 +273,7 @@ do
 	    ;;
 
 	-ck | --control-knob )
-	    arg_ok "$1" || die "missing argument for $arg"
+	    non_empty "$1" || die "missing argument for $arg"
 	    export HPCRUN_CONTROL_KNOBS="$HPCRUN_CONTROL_KNOBS $1"
 	    shift
 	    ;;
@@ -270,7 +289,7 @@ do
 	# --------------------------------------------------
 
 	-a | --agent )
-	    arg_ok "$1" || die "missing argument for $arg"
+	    non_empty "$1" || die "missing argument for $arg"
 	    export HPCRUN_OPT_LUSH_AGENTS="$1"
 	    shift
 	    ;;
@@ -278,7 +297,7 @@ do
 	# --------------------------------------------------
 
 	-e | --event )
-	    arg_ok "$1" || die "missing argument for $arg"
+	    non_empty "$1" || die "missing argument for $arg"
 	    case "$1" in
 	        GA* )      preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_ga.so" ;;
 		IO* )      preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_io.so" ;;
@@ -290,11 +309,11 @@ do
 		gpu=amd) roctracer_lib="${roctracer_lib_path}"
 			 export HIP_ENABLE_DEFERRED_LOADING=0;;
 
-		gpu=opencl,inst) gtpin_lib="${gtpin_lib_path}"
-		    dlopen=yes;;
+		gpu=opencl,inst) gtpin_dir="${gtpin_lib_path}"
+		    namespace_default=$namespace_gtpin ;;
 
-		gpu=level0,inst) gtpin_lib="${gtpin_lib_path}"
-		    dlopen=yes;;
+		gpu=level0,inst) gtpin_dir="${gtpin_lib_path}"
+		    namespace_default=$namespace_gtpin ;;
 
 	    esac
 	    case "$HPCRUN_EVENT_LIST" in
@@ -342,7 +361,7 @@ do
 	# --------------------------------------------------
 
 	-o | --output )
-	    arg_ok "$1" || die "missing argument for $arg"
+	    non_empty "$1" || die "missing argument for $arg"
 	    export HPCRUN_OUT_PATH="$1"
 	    shift
 	    ;;
@@ -362,15 +381,16 @@ do
 
 	# --------------------------------------------------
 
-	--dlopen )
-	    dlopen=yes
+	--namespace-multiple )
+	    non_empty "$namespace_single" && die "can't use both --namespace-single and --namespace-multiple"
+	    namespace_multiple=yes
 	    ;;
-
 
 	# --------------------------------------------------
 
-	--dlmopen )
-	    dlmopen=yes
+	--namespace-single )
+	    non_empty "$namespace_multiple" && die "can't use both --namespace-single and --namespace-multiple"
+	    namespace_single=yes
 	    ;;
 
 	# --------------------------------------------------
@@ -382,21 +402,21 @@ do
 	# --------------------------------------------------
 
 	-m | --merge-threads )
-	    arg_ok "$1" || die "missing argument for $arg"
+	    non_empty "$1" || die "missing argument for $arg"
 	    export HPCRUN_MERGE_THREADS="$1"
 	    shift
 	    ;;
-      
+
 	# --------------------------------------------------
 
 	-lm | --low-memsize )
-	    arg_ok "$1" || die "missing argument for $arg"
+	    non_empty "$1" || die "missing argument for $arg"
 	    export HPCRUN_LOW_MEMSIZE="$1"
 	    shift
 	    ;;
 
 	-ms | --memsize )
-	    arg_ok "$1" || die "missing argument for $arg"
+	    non_empty "$1" || die "missing argument for $arg"
 	    export HPCRUN_MEMSIZE="$1"
 	    shift
 	    ;;
@@ -404,13 +424,13 @@ do
 	# --------------------------------------------------
 
 	-f | -fp | --process-fraction )
-	    arg_ok "$1" || die "missing argument for $arg"
+	    non_empty "$1" || die "missing argument for $arg"
 	    export HPCRUN_PROCESS_FRACTION="$1"
 	    shift
 	    ;;
 
 	-mp | --memleak-prob )
-	    arg_ok "$1" || die "missing argument for $arg"
+	    non_empty "$1" || die "missing argument for $arg"
 	    export HPCRUN_MEMLEAK_PROB="$1"
 	    shift
 	    ;;
@@ -455,12 +475,11 @@ if test -z "$1" ; then
 fi
 
 
-# replace dlmopen with dlopen as directed
-if test -z "$dlmopen" ; then
-  case "$dlopen" in
-      '' ) ;;
-      yes ) preload_list="${hpcrun_dir}/libhpcrun_dlmopen.so ${preload_list}"
-  esac
+# collapse namespaces, if necessary
+if test "$namespace_multiple"x = x ; then
+  if test $namespace_default = single || test "$namespace_single"x != x ; then
+    preload_list="${hpcrun_dir}/libhpcrun_dlmopen.so ${preload_list}"
+  fi
 fi
 
 
@@ -545,8 +564,7 @@ fi
 # Enable core files.
 ulimit -S -c unlimited >/dev/null 2>&1
 
-# laks 2016.10.06: add perfmon directory
-hpc_ld_library_path="${hpcrun_dir}:${papi_libdir}:${ext_dir}:${perfmon_libdir}:${roctracer_lib}:${gtpin_lib}"
+hpc_ld_library_path="${hpcrun_dir}:${papi_libdir}:${ext_dir}:${perfmon_libdir}:${roctracer_lib}:${gtpin_dir}"
 preload_list="${libmonitor_dir}/libmonitor.so ${preload_list}"
 preload_list="${hpcrun_dir}/libhpcrun.so ${preload_list}"
 
