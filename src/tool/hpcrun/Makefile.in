@@ -124,9 +124,9 @@ host_triplet = @host@
 @OPT_BUILD_FRONT_END_TRUE@am__append_1 = scripts/hpcsummary \
 @OPT_BUILD_FRONT_END_TRUE@	scripts/hpclog
 @OPT_BUILD_FRONT_END_TRUE@am__append_2 = hpctoolkit.h
-@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@@OPT_ENABLE_RTLD_AUDIT_TRUE@am__append_3 = libhpcrun_audit.la \
-@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@@OPT_ENABLE_RTLD_AUDIT_TRUE@	libhpcrun_dlmopen.la
-@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am__append_4 = libhpcrun_ga.la \
+@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@@OPT_ENABLE_RTLD_AUDIT_TRUE@am__append_3 = libhpcrun_audit.la
+@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am__append_4 = libhpcrun_dlmopen.la \
+@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	libhpcrun_ga.la \
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	libhpcrun_gprof.la \
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	libhpcrun_io.la \
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	libhpcrun_memleak.la \
@@ -841,8 +841,8 @@ libhpcrun_dlmopen_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(AM_CFLAGS) $(CFLAGS) $(libhpcrun_dlmopen_la_LDFLAGS) \
 	$(LDFLAGS) -o $@
-@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@@OPT_ENABLE_RTLD_AUDIT_TRUE@am_libhpcrun_dlmopen_la_rpath = -rpath \
-@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@@OPT_ENABLE_RTLD_AUDIT_TRUE@	$(pkglibdir)
+@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am_libhpcrun_dlmopen_la_rpath =  \
+@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	-rpath $(pkglibdir)
 libhpcrun_ga_la_LIBADD =
 am_libhpcrun_ga_la_OBJECTS =  \
 	sample-sources/libhpcrun_ga_la-ga-overrides.lo

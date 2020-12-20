@@ -129,7 +129,7 @@ opencl_elf_section_type
 }
 
 
-#ifdef OPT_ENABLE_IGC
+#ifdef ENABLE_IGC
 static size_t
 computeHash
 (
@@ -157,7 +157,7 @@ computeHash
 // interface operations
 //******************************************************************************
 
-#ifdef OPT_ENABLE_IGC
+#ifdef ENABLE_IGC
 bool
 findIntelGPUBins
 (
@@ -222,4 +222,4 @@ findIntelGPUBins
   return true;
 }
 
-#endif // OPT_ENABLE_IGC
+#endif // ENABLE_IGC

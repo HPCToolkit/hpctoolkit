@@ -4918,7 +4918,7 @@ case "$IGC" in
     if test ! -f "${IGC}/include/igc/igc.opencl.h" ; then
       AC_MSG_ERROR([unable to find igc.opencl.h in: $IGC])
     fi
-    OPT_IGC_IFLAGS="-I${IGC}/include"
+    OPT_IGC_IFLAGS="-DENABLE_IGC -I${IGC}/include"
 
     IGC_LDFLAGS = 
     IGA_LDFLAGS =
