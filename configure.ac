@@ -4891,31 +4891,149 @@ fi
 AM_CONDITIONAL([ENABLE_OPENCL], [test "$OPT_HAVE_OPENCL" = yes])
 AC_SUBST([OPT_OPENCL_IFLAGS])
 
+
 #-------------------------------------------------
 # Option: --with-rocm=PATH
 #-------------------------------------------------
 
-# ROCM default install path is /usr/local/rocm
+# Can specify ROCM with all-in-one ROCM + HIP directory (normally
+# /opt/rocm), or with spack packages: hip, rocm-dbgapi, roctracer-dev,
+# or partially with /opt/rocm plus a subset of spack packages.
+#
+# Note: may use both --with-rocm plus specific rocm package(s).
+# In this case, the specific overrides the general.
 
-OPT_ROCM=
-OPT_ROCM_INCPATH=
-OPT_ROCM_LDFLAGS=
-OPT_ROCM_LIBPATH=
+ROCM=
+ROCM_HIP=
+ROCM_DBGAPI=
+ROCM_TRACER=
 
 AC_ARG_WITH([rocm],
   AS_HELP_STRING([--with-rocm=PATH],
-                 [use given ROCM installation (absolute path) with hpcrun (default is NO)]),
-  [if test $withval != no; then
-     OPT_HAVE_ROCM=yes
-     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
-       AC_MSG_ERROR([--with-rocm requires absolute path as argument; given '${withval}'])
-     fi
-     OPT_ROCM=${withval}
-   fi])
+      [path to full ROCM + HIP install directory]),
+  [ROCM="$withval"], [])
+
+AC_ARG_WITH([rocm-hip],
+  AS_HELP_STRING([--with-rocm-hip=PATH],
+      [path to hip install directory]),
+  [ROCM_HIP="$withval"], [])
+
+AC_ARG_WITH([rocm-dbgapi],
+  AS_HELP_STRING([--with-rocm-dbgapi=PATH],
+      [path to rocm-dbgapi install directory]),
+  [ROCM_DBGAPI="$withval"], [])
+
+AC_ARG_WITH([rocm-tracer],
+  AS_HELP_STRING([--with-rocm-tracer=PATH],
+      [path to roctracer-dev install directory]),
+  [ROCM_TRACER="$withval"], [])
+
+ROCM_HIP_IFLAGS=
+ROCM_DBGAPI_IFLAGS=
+ROCM_TRACER_IFLAGS=
+
+require_rocm=no
+
+AC_MSG_NOTICE([checking for rocm ....])
+
+#
+# The all-in-one system rocm, commonly /opt/rocm.
+#
+case "$ROCM" in
+  /* )
+    require_rocm=yes
+    if test -f "$ROCM/hip/include/hip/hip_runtime.h" ; then
+      AC_MSG_NOTICE([found $ROCM/hip/include/hip/hip_runtime.h])
+      ROCM_HIP_IFLAGS="-I$ROCM/hip/include"
+    fi
+    if test -f "$ROCM/include/amd-dbgapi.h" ; then
+      AC_MSG_NOTICE([found $ROCM/include/amd-dbgapi.h])
+      ROCM_DBGAPI_IFLAGS="-I$ROCM/include"
+    fi
+    if test -f "$ROCM/roctracer/include/roctracer_hip.h" ; then
+      AC_MSG_NOTICE([found $ROCM/roctracer/include/roctracer_hip.h])
+      ROCM_TRACER_IFLAGS="-I$ROCM/roctracer/include"
+    elif test -f "$ROCM/include/roctracer/roctracer_hip.h" ; then
+      AC_MSG_NOTICE([found $ROCM/include/roctracer/roctracer_hip.h])
+      ROCM_TRACER_IFLAGS="-I$ROCM/include/roctracer"
+    fi
+    ;;
+  * )
+    ROCM=no
+    ;;
+esac
+
+#
+# Individual packages, the specific overrides the general.
+#
+case "$ROCM_HIP" in
+  /* )
+    require_rocm=yes
+    if test -f "$ROCM_HIP/include/hip/hip_runtime.h" ; then
+      AC_MSG_NOTICE([found $ROCM_HIP/include/hip/hip_runtime.h])
+      ROCM_HIP_IFLAGS="-I$ROCM_HIP/include"
+    fi
+    ;;
+  * )
+    ROCM_HIP=no
+    ;;
+esac
+
+case "$ROCM_DBGAPI" in
+  /* )
+    require_rocm=yes
+    if test -f "$ROCM_DBGAPI/include/amd-dbgapi.h" ; then
+      AC_MSG_NOTICE([found $ROCM_DBGAPI/include/amd-dbgapi.h])
+      ROCM_DBGAPI_IFLAGS="-I$ROCM_DBGAPI/include"
+    fi
+    ;;
+  * )
+    ROCM_DBGAPI=no
+    ;;
+esac
+
+case "$ROCM_TRACER" in
+  /* )
+    require_rocm=yes
+    if test -f "$ROCM_TRACER/roctracer/include/roctracer_hip.h" ; then
+      AC_MSG_NOTICE([found $ROCM_TRACER/roctracer/include/roctracer_hip.h])
+      ROCM_TRACER_IFLAGS="-I$ROCM_TRACER/roctracer/include"
+    elif test -f "$ROCM_TRACER/include/roctracer/roctracer_hip.h" ; then
+      AC_MSG_NOTICE([found $ROCM_TRACER/include/roctracer/roctracer_hip.h])
+      ROCM_TRACER_IFLAGS="-I$ROCM_TRACER/include/roctracer"
+    fi
+    ;;
+  * )
+    ROCM_TRACER=no
+    ;;
+esac
+
+#
+# Check that we found all the pieces.
+#
+if test "$require_rocm" = no ; then
+  AC_MSG_NOTICE([rocm: no configure args provided])
+  OPT_HAVE_ROCM=no
+else
+  if test "x$ROCM_HIP_IFLAGS" = x ; then
+    AC_MSG_ERROR([unable to find hip_runtime.h])
+  fi
+  if test "x$ROCM_DBGAPI_IFLAGS" = x ; then
+    AC_MSG_ERROR([unable to find amd-dbgapi.h])
+  fi
+  if test "x$ROCM_TRACER_IFLAGS" = x ; then
+    AC_MSG_ERROR([unable to find roctracer_hip.h])
+  fi
+  AC_MSG_NOTICE([rocm: yes])
+  OPT_HAVE_ROCM=yes
+  OPT_ROCM_IFLAGS="$ROCM_HIP_IFLAGS  $ROCM_DBGAPI_IFLAGS  $ROCM_TRACER_IFLAGS"
+fi
+
+OPT_ROCM=
+OPT_ROCM_LDFLAGS=
 
 if test "$OPT_HAVE_ROCM" = "yes" ; then
   AC_DEFINE(USE_ROCM, 1, [use ROCM])
-  OPT_ROCM_IFLAGS="-I${OPT_ROCM}/include -I${OPT_ROCM}/hip -I${OPT_ROCM}/hip/include -I${OPT_ROCM}/roctracer/include -I${OPT_ROCM}/hcc/include -I${OPT_ROCM}/hsa/include "
 fi
 
 AM_CONDITIONAL([OPT_ENABLE_ROCM], [test "$OPT_HAVE_ROCM" = yes])
@@ -4923,6 +5041,7 @@ AM_CONDITIONAL([OPT_ENABLE_ROCM], [test "$OPT_HAVE_ROCM" = yes])
 AC_SUBST([OPT_ROCM])
 AC_SUBST([OPT_ROCM_IFLAGS])
 AC_SUBST([OPT_ROCM_LDFLAGS])
+
 
 #-------------------------------------------------
 # Option: --with-level0=PATH
@@ -5308,6 +5427,12 @@ AC_MSG_NOTICE([  zlib:         ${ZLIB}])
 AC_MSG_NOTICE([  cuda:         ${CUDA}])
 AC_MSG_NOTICE([  cupti:        ${CUPTI}])
 AC_MSG_NOTICE([  papi-c-cupti: ${use_papi_c_cupti}])
+AC_MSG_NOTICE([  rocm:         $OPT_HAVE_ROCM])
+if test "$OPT_HAVE_ROCM" = yes ; then
+  AC_MSG_NOTICE([  rocm hip flags:     $ROCM_HIP_IFLAGS])
+  AC_MSG_NOTICE([  rocm dbgapi flags:  $ROCM_DBGAPI_IFLAGS])
+  AC_MSG_NOTICE([  rocm tracer flags:  $ROCM_TRACER_IFLAGS])
+fi
 AC_MSG_NOTICE([  valgrind:     ${VALGRIND}])
 AC_MSG_NOTICE([  valgrind:     annotated: ${OPT_ENABLE_VG_ANNOTATIONS}])
 
