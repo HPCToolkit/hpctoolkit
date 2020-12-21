@@ -909,7 +909,7 @@ opencl_bind
 }
 
 
-#ifdef ENABLE_IGC
+#ifdef ENABLE_GTPIN
 // one downside of this appproach is that we may override the callback provided by user
 cl_int
 clBuildProgram
@@ -946,7 +946,7 @@ clBuildProgram
   free(options_with_debug_flags);
   return ret;
 }
-#endif // ENABLE_IGC
+#endif // ENABLE_GTPIN
 
 
 cl_command_queue
