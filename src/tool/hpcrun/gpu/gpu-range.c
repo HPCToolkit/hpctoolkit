@@ -6,6 +6,7 @@
 #include <hpcrun/cct/cct.h>
 #include <hpcrun/cct/cct_bundle.h>
 #include <hpcrun/threadmgr.h>
+#include <hpcrun/thread_data.h>
 
 static atomic_ullong correlation_id_lead = ATOMIC_VAR_INIT(0);
 static atomic_ullong correlation_id_done = ATOMIC_VAR_INIT(0);
@@ -41,7 +42,7 @@ gpu_range_thread_data_acquire
 
   uint32_t thread_id = range_thread_id(range_id);
 
-  hpcrun_threadMgr_data_get_safe(td, NULL, &td, has_trace, demand_new_thread);
+  hpcrun_threadMgr_data_get_safe(thread_id, NULL, &td, has_trace, demand_new_thread);
 
   return td;
 }
