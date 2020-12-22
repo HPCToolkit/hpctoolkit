@@ -121,12 +121,8 @@ extern void hpcrun_auditor_attach(const auditor_exports_t*, auditor_hooks_t*);
 
 extern const auditor_exports_t* auditor_exports;
 
-// Called by the mainlib to initialize the auditor in the event that
+// Called by the mainlib to initialize the fake auditor in the event that
 // one of the other interfaces has been called already.
-#ifdef ENABLE_RTLD_AUDIT
-#define hpcrun_init_auditor() ({})
-#else
-extern void hpcrun_init_auditor();
-#endif
+extern void hpcrun_init_fake_auditor();
 
 #endif  // AUDIT_AUDITAPI_H

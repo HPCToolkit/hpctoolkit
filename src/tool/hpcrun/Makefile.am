@@ -120,6 +120,7 @@ endif
 
 if OPT_ENABLE_HPCRUN_DYNAMIC
   noinst_LTLIBRARIES = libhpcrun.la
+  pkglib_LTLIBRARIES += libhpcrun_fake_audit.la
 if OPT_ENABLE_RTLD_AUDIT
   pkglib_LTLIBRARIES += libhpcrun_audit.la
 endif
@@ -455,11 +456,6 @@ MY_DYNAMIC_FILES = 			\
 	monitor-exts/openmp.c		\
         custom-init-dynamic.c
 
-if OPT_ENABLE_RTLD_AUDIT
-else
-MY_DYNAMIC_FILES += audit/fake-auditor.c
-endif
-
 MY_STATIC_FILES = 			\
 	fnbounds/fnbounds_static.c      \
         custom-init-static.c
@@ -596,6 +592,9 @@ libhpcrun_la_SOURCES = 			\
 	$(MY_BASE_FILES)		\
 	$(MY_DYNAMIC_FILES)
 
+libhpcrun_fake_audit_la_SOURCES =	\
+	audit/fake-auditor.c
+
 if OPT_ENABLE_RTLD_AUDIT
 libhpcrun_audit_la_SOURCES =		\
 	audit/auditor.c
@@ -658,6 +657,10 @@ libhpcrun_la_CPPFLAGS =			\
 if OPT_BGQ_BACKEND
   libhpcrun_la_CPPFLAGS += -I$(srcdir)/utilities/bgq-cnk
 endif
+
+libhpcrun_fake_audit_la_CPPFLAGS =	\
+	$(MY_CPP_DEFINES)		\
+	$(MY_INCLUDE_DIRS)
 
 if OPT_ENABLE_RTLD_AUDIT
 libhpcrun_audit_la_CPPFLAGS =		\
@@ -791,6 +794,8 @@ OUR_LIBUNWIND_A = $(top_builddir)/src/extern/libunwind/libunwind.a
 OUR_LZMA_A = $(top_builddir)/src/extern/lzma/liblzma.a
 
 libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic
+
+libhpcrun_fake_audit_la_LDFLAGS = -Wl,-Bsymbolic -ldl
 
 if OPT_ENABLE_RTLD_AUDIT
 libhpcrun_audit_la_LDFLAGS = -Wl,-Bsymbolic -ldl

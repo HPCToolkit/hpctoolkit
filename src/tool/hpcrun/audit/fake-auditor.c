@@ -106,7 +106,7 @@ static int self_scan_dl(struct dl_phdr_info* map, size_t sz, void* vp) {
 
 // Initialization can happen from multiple locations, but always looks like this:
 static bool initialized = false;
-void hpcrun_init_auditor() {
+void hpcrun_init_fake_auditor() {
   if(initialized) return;
   initialized = true;
 
@@ -128,7 +128,7 @@ void hpcrun_init_auditor() {
 
   // Find our DYNAMIC section, and scan it for NEEDED entries to fill the exports
   Dl_info selfinfo;
-  dladdr(&hpcrun_init_auditor, &selfinfo);
+  dladdr(&hpcrun_init_fake_auditor, &selfinfo);
   self_baseaddr = (uintptr_t)selfinfo.dli_fbase;
   dl_iterate_phdr(self_scan_dl, NULL);
   const char* strtab = NULL;
@@ -191,7 +191,7 @@ void hpcrun_init_auditor() {
 // The earliest we can do anything without LD_AUDIT is with the constructor
 __attribute__((constructor))
 static void hpcrun_constructor_init_fake_auditor() {
-  hpcrun_init_auditor();
+  hpcrun_init_fake_auditor();
 
   // Since we're late to the party, we can kick bits off right now
   if(verbose)

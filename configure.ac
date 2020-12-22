@@ -3559,19 +3559,16 @@ AC_ARG_ENABLE([rtld-audit],
   [rtld_audit=yes])
 
 if test "$rtld_audit" = no ; then
-  export_ld_audit='# LD_AUDIT disabled by configure'
+  rtld_audit_config='export HPCRUN_USE_FAKE_AUDITOR=1  # LD_AUDIT disabled by configure'
   rtld_audit_mesg='no'
 else
-  export_ld_audit='export LD_AUDIT="${hpcrun_dir}/libhpcrun_audit.so:${LD_AUDIT}"'
+  rtld_audit_config='# LD_AUDIT enabled by configure'
   rtld_audit_mesg='yes'
 fi
 
-AC_SUBST([export_ld_audit])
+AC_SUBST([rtld_audit_config])
 AM_CONDITIONAL([OPT_ENABLE_RTLD_AUDIT], [test "$rtld_audit" = yes])
 
-if test "$rtld_audit" = yes ; then
-  AC_DEFINE([ENABLE_RTLD_AUDIT], [1], [Using the LD_AUDIT interface])
-fi
 
 #-------------------------------------------------
 # Option: --with-tbb=PATH
