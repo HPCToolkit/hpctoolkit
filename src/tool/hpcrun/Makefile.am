@@ -121,9 +121,7 @@ endif
 if OPT_ENABLE_HPCRUN_DYNAMIC
   noinst_LTLIBRARIES = libhpcrun.la
   pkglib_LTLIBRARIES += libhpcrun_fake_audit.la
-if OPT_ENABLE_RTLD_AUDIT
   pkglib_LTLIBRARIES += libhpcrun_audit.la
-endif
   pkglib_LTLIBRARIES += libhpcrun_ga.la
   pkglib_LTLIBRARIES += libhpcrun_gprof.la
   pkglib_LTLIBRARIES += libhpcrun_io.la
@@ -595,10 +593,8 @@ libhpcrun_la_SOURCES = 			\
 libhpcrun_fake_audit_la_SOURCES =	\
 	audit/fake-auditor.c
 
-if OPT_ENABLE_RTLD_AUDIT
 libhpcrun_audit_la_SOURCES =		\
 	audit/auditor.c
-endif
 
 libhpcrun_o_SOURCES = 			\
 	$(MY_BASE_FILES)		\
@@ -662,12 +658,9 @@ libhpcrun_fake_audit_la_CPPFLAGS =	\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
 
-if OPT_ENABLE_RTLD_AUDIT
 libhpcrun_audit_la_CPPFLAGS =		\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
-endif
-
 
 libhpcrun_o_CPPFLAGS =			\
 	-DHPCRUN_STATIC_LINK		\
@@ -797,9 +790,7 @@ libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic
 
 libhpcrun_fake_audit_la_LDFLAGS = -Wl,-Bsymbolic -ldl
 
-if OPT_ENABLE_RTLD_AUDIT
 libhpcrun_audit_la_LDFLAGS = -Wl,-Bsymbolic -ldl
-endif
 
 libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic
 

@@ -733,9 +733,6 @@ TBB_LIB_DIR
 TBB_PROXY_LIB
 TBB_LFLAGS
 TBB_IFLAGS
-OPT_ENABLE_RTLD_AUDIT_FALSE
-OPT_ENABLE_RTLD_AUDIT_TRUE
-rtld_audit_config
 OPT_PAPI_CUPTI_FALSE
 OPT_PAPI_CUPTI_TRUE
 OPT_PAPI_COMPONENT_FALSE
@@ -1042,7 +1039,6 @@ enable_papi_c_cupti
 with_perfmon
 enable_perf_events
 enable_kernel_blocking
-enable_rtld_audit
 with_tbb
 with_xed
 with_xerces
@@ -1748,8 +1744,6 @@ Optional Features:
                           force enable or disable kernel blocking support in
                           perf events (normally 4.3 or later), only needed if
                           fails to auto-detect correctly
-  --enable-rtld-audit     enable or disable the use of LD_AUDIT for monitoring
-                          of loaded binaries
   --enable-back-end       build only those tools needed to run hpcrun and
                           hpclink on the back-end compute nodes
   --enable-hpcrun         build hpcrun (default yes)
@@ -22258,51 +22252,6 @@ fi
 
 
 #-------------------------------------------------
-# Option: --disable-rtld-audit
-#-------------------------------------------------
-
-# Tracking changes to the set of currently loaded or mapped binaries at runtime
-# is difficult to do both accuractly and efficiently. In particular, there is
-# no clean way to wrap `dlopen` and still use the RUNPATH/RPATH present on the
-# original binary.
-
-# The solution to this is to use a series of hooks exposed by the dynamic
-# linker itself, allowing us to observe its actions without affecting it.
-# Collectively this interface is called the rtld-audit interface.
-
-# Unfortunately there are multiple bugs within all but the latest Glibc versions
-# that cause segfaults when this interface is in use. Thus, during this
-# transition period we allow for the usage of LD_AUDIT to be disabled.
-# The fallback wraps `dlopen` and thus may result in R*PATH issues.
-
-# Check whether --enable-rtld-audit was given.
-if test "${enable_rtld_audit+set}" = set; then :
-  enableval=$enable_rtld_audit; rtld_audit="$enableval"
-else
-  rtld_audit=yes
-fi
-
-
-if test "$rtld_audit" = no ; then
-  rtld_audit_config='export HPCRUN_USE_FAKE_AUDITOR=1  # LD_AUDIT disabled by configure'
-  rtld_audit_mesg='no'
-else
-  rtld_audit_config='# LD_AUDIT enabled by configure'
-  rtld_audit_mesg='yes'
-fi
-
-
- if test "$rtld_audit" = yes; then
-  OPT_ENABLE_RTLD_AUDIT_TRUE=
-  OPT_ENABLE_RTLD_AUDIT_FALSE='#'
-else
-  OPT_ENABLE_RTLD_AUDIT_TRUE='#'
-  OPT_ENABLE_RTLD_AUDIT_FALSE=
-fi
-
-
-
-#-------------------------------------------------
 # Option: --with-tbb=PATH
 #-------------------------------------------------
 
@@ -24633,10 +24582,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_PAPI_CUPTI_TRUE}" && test -z "${OPT_PAPI_CUPTI_FALSE}"; then
   as_fn_error $? "conditional \"OPT_PAPI_CUPTI\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${OPT_ENABLE_RTLD_AUDIT_TRUE}" && test -z "${OPT_ENABLE_RTLD_AUDIT_FALSE}"; then
-  as_fn_error $? "conditional \"OPT_ENABLE_RTLD_AUDIT\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_USE_ZLIB_TRUE}" && test -z "${OPT_USE_ZLIB_FALSE}"; then

@@ -3535,42 +3535,6 @@ AM_CONDITIONAL(OPT_PAPI_CUPTI, [test "$use_papi_c_cupti" = yes])
 
 
 #-------------------------------------------------
-# Option: --disable-rtld-audit
-#-------------------------------------------------
-
-# Tracking changes to the set of currently loaded or mapped binaries at runtime
-# is difficult to do both accuractly and efficiently. In particular, there is
-# no clean way to wrap `dlopen` and still use the RUNPATH/RPATH present on the
-# original binary.
-
-# The solution to this is to use a series of hooks exposed by the dynamic
-# linker itself, allowing us to observe its actions without affecting it.
-# Collectively this interface is called the rtld-audit interface.
-
-# Unfortunately there are multiple bugs within all but the latest Glibc versions
-# that cause segfaults when this interface is in use. Thus, during this
-# transition period we allow for the usage of LD_AUDIT to be disabled.
-# The fallback wraps `dlopen` and thus may result in R*PATH issues.
-
-AC_ARG_ENABLE([rtld-audit],
-  [AS_HELP_STRING([--enable-rtld-audit],
-      [enable or disable the use of LD_AUDIT for monitoring of loaded binaries])],
-  [rtld_audit="$enableval"],
-  [rtld_audit=yes])
-
-if test "$rtld_audit" = no ; then
-  rtld_audit_config='export HPCRUN_USE_FAKE_AUDITOR=1  # LD_AUDIT disabled by configure'
-  rtld_audit_mesg='no'
-else
-  rtld_audit_config='# LD_AUDIT enabled by configure'
-  rtld_audit_mesg='yes'
-fi
-
-AC_SUBST([rtld_audit_config])
-AM_CONDITIONAL([OPT_ENABLE_RTLD_AUDIT], [test "$rtld_audit" = yes])
-
-
-#-------------------------------------------------
 # Option: --with-tbb=PATH
 #-------------------------------------------------
 

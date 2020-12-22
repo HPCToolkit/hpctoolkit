@@ -513,7 +513,6 @@ preload_list="${libmonitor_dir}/libmonitor.so ${preload_list}"
 preload_list="${hpcrun_dir}/libhpcrun.so ${preload_list}"
 
 # Set up the auditor or fake auditor, depending on what's configured.
-@rtld_audit_config@
 if test "$HPCRUN_AUDIT_USE_FAKE_AUDITOR" = 1 ; then
     preload_list="${hpcrun_dir}/libhpcrun_fake_audit.so ${preload_list}"
 else
