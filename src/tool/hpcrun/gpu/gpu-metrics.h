@@ -268,10 +268,10 @@ enum {
 	"GPU local memory: store (transactions, theoretical)")
 
 // gpu instruction executed
-#define FORALL_GINSE(macro) \
-  macro("GINSE:EXE ",       GPU_INST_EXECUTE,	\
+#define FORALL_GINS(macro) \
+  macro(GPU_INST_METRIC_NAME ":EXE ",       GPU_INST_EXECUTE,	\
 	"GPU instructions executed by threads regardless of predicate code")	\
-  macro("GINSE:EXE (PRED)", GPU_INST_EXECUTE_PRED,	\
+  macro(GPU_INST_METRIC_NAME ":EXE (PRED)", GPU_INST_EXECUTE_PRED,	\
 	"GPU instructions executed by threads with predicate evaluated as true")
 
 //--------------------------------------------------------------------------
@@ -508,7 +508,7 @@ gpu_metrics_GBR_enable
 // record instruction execution statistics
 
 void
-gpu_metrics_GINSE_enable
+gpu_metrics_GINS_enable
 (
  void
 );

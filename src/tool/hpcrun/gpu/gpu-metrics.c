@@ -86,7 +86,7 @@
   macro(GTIMES, 10)				\
   macro(KINFO, 12)				\
   macro(GSAMP, 13) \
-  macro(GINSE, 14)
+  macro(GINS, 14)
 
 
 #define FORALL_METRIC_KINDS(macro)	\
@@ -867,18 +867,18 @@ gpu_metrics_GBR_enable
 
 
 void
-gpu_metrics_GINSE_enable
+gpu_metrics_GINS_enable
 (
  void
 )
 {
 // GPU executed instruction metrics
 #undef CURRENT_METRIC 
-#define CURRENT_METRIC GINSE
+#define CURRENT_METRIC GINS
 
   INITIALIZE_METRIC_KIND();
 
-  FORALL_GINSE(INITIALIZE_SCALAR_METRIC_INT)
+  FORALL_GINS(INITIALIZE_SCALAR_METRIC_INT)
 
   FINALIZE_METRIC_KIND();
 }

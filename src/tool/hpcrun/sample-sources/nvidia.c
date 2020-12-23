@@ -368,9 +368,13 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     gpu_metrics_GSAMP_enable(); // GPU utilization from sampling
   } else if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_INST)) {
+    gpu_metrics_GINS_enable();
   } else if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_INST_BRANCH)) {
+    gpu_metrics_GBR_enable();
   } else if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_INST_SHARED)) {
+    gpu_metrics_GLMEM_enable();
   } else if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_INST_GLOBAL)) {
+    gpu_metrics_GGMEM_enable();
   }
 
 #ifndef HPCRUN_STATIC_LINK
