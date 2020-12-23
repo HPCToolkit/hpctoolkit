@@ -177,10 +177,6 @@ CUpti_ActivityKind
 kernel_execution_activities[] = {
   CUPTI_ACTIVITY_KIND_CONTEXT,
   CUPTI_ACTIVITY_KIND_FUNCTION,
-// FIXME(keren): cupti does not allow the following activities to be profiled with pc sampling
-// CUPTI_ACTIVITY_KIND_GLOBAL_ACCESS,
-// CUPTI_ACTIVITY_KIND_SHARED_ACCESS,
-// CUPTI_ACTIVITY_KIND_BRANCH,
   CUPTI_ACTIVITY_KIND_INVALID
 };
 
@@ -208,14 +204,41 @@ runtime_activities[] = {
 };
 
 
+CUpti_ActivityKind
+global_access_activities[] = {
+  CUPTI_ACTIVITY_KIND_GLOBAL_ACCESS
+};
+
+
+CUpti_ActivityKind
+shared_access_activities[] = {
+  CUPTI_ACTIVITY_KIND_SHARED_ACCESS
+};
+
+
+CUpti_ActivityKind
+branch_activities[] = {
+  CUPTI_ACTIVITY_KIND_BRANCH
+};
+
+
+CUpti_ActivityKind
+instruction_execution_activities[] = {
+  CUPTI_ACTIVITY_KIND_INSTRUCTION_EXECUTION
+};
+
 typedef enum cupti_activities_flags {
-  CUPTI_DATA_MOTION_EXPLICIT = 1,
-  CUPTI_DATA_MOTION_IMPLICIT = 2,
-  CUPTI_KERNEL_INVOCATION    = 4,
-  CUPTI_KERNEL_EXECUTION     = 8,
-  CUPTI_DRIVER               = 16,
-  CUPTI_RUNTIME	             = 32,
-  CUPTI_OVERHEAD	     = 64
+  CUPTI_DATA_MOTION_EXPLICIT  = 1,
+  CUPTI_DATA_MOTION_IMPLICIT  = 2,
+  CUPTI_KERNEL_INVOCATION     = 4,
+  CUPTI_KERNEL_EXECUTION      = 8,
+  CUPTI_DRIVER                = 16,
+  CUPTI_RUNTIME	              = 32,
+  CUPTI_OVERHEAD	            = 64,
+  CUPTI_GLOBAL_ACCESS	        = 128,
+  CUPTI_SHARED_ACCESS	        = 256,
+  CUPTI_BRANCH	              = 512,
+  CUPTI_INSTRUCTION_EXECUTION	= 1024
 } cupti_activities_flags_t;
 
 
@@ -242,13 +265,17 @@ cupti_enable_activities
 
   cupti_correlation_enable();
 
-  #define FORALL_ACTIVITIES(macro)                                      \
-    macro(CUPTI_DATA_MOTION_EXPLICIT, data_motion_explicit_activities)  \
-    macro(CUPTI_KERNEL_INVOCATION, kernel_invocation_activities)        \
-    macro(CUPTI_KERNEL_EXECUTION, kernel_execution_activities)          \
-    macro(CUPTI_DRIVER, driver_activities)                              \
-    macro(CUPTI_RUNTIME, runtime_activities)                            \
-    macro(CUPTI_OVERHEAD, overhead_activities)
+  #define FORALL_ACTIVITIES(macro)                                       \
+    macro(CUPTI_DATA_MOTION_EXPLICIT, data_motion_explicit_activities)   \
+    macro(CUPTI_KERNEL_INVOCATION, kernel_invocation_activities)         \
+    macro(CUPTI_KERNEL_EXECUTION, kernel_execution_activities)           \
+    macro(CUPTI_DRIVER, driver_activities)                               \
+    macro(CUPTI_RUNTIME, runtime_activities)                             \
+    macro(CUPTI_OVERHEAD, overhead_activities)                           \
+    macro(CUPTI_BRANCH, branch_activities)                               \
+    macro(CUPTI_INSTRUCTION_EXECUTION, instruction_execution_activities) \
+    macro(CUPTI_GLOBAL_ACCESS, global_access_activities)                 \
+    macro(CUPTI_SHARED_ACCESS, shared_access_activities)
 
   #define CUPTI_SET_ACTIVITIES(activity_kind, activity)  \
     if (cupti_enabled_activities & activity_kind) {      \
@@ -354,6 +381,14 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     gpu_metrics_default_enable();
     gpu_metrics_KINFO_enable();
+
+    // Set enabling activities
+    cupti_enabled_activities |= CUPTI_DRIVER;
+    cupti_enabled_activities |= CUPTI_RUNTIME;
+    cupti_enabled_activities |= CUPTI_KERNEL_EXECUTION;
+    cupti_enabled_activities |= CUPTI_KERNEL_INVOCATION;
+    cupti_enabled_activities |= CUPTI_DATA_MOTION_EXPLICIT;
+    cupti_enabled_activities |= CUPTI_OVERHEAD;
   } else if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_PC_SAMPLING)) {
     pc_sampling_frequency = (frequency == frequency_default) ?
       pc_sampling_frequency_default : frequency;
@@ -369,12 +404,16 @@ METHOD_FN(process_event_list, int lush_metrics)
     gpu_metrics_GSAMP_enable(); // GPU utilization from sampling
   } else if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_INST)) {
     gpu_metrics_GINS_enable();
+    cupti_enabled_activities |= CUPTI_INSTRUCTION_EXECUTION;
   } else if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_INST_BRANCH)) {
     gpu_metrics_GBR_enable();
+    cupti_enabled_activities |= CUPTI_BRANCH;
   } else if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_INST_SHARED)) {
     gpu_metrics_GLMEM_enable();
+    cupti_enabled_activities |= CUPTI_SHARED_ACCESS;
   } else if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_INST_GLOBAL)) {
     gpu_metrics_GGMEM_enable();
+    cupti_enabled_activities |= CUPTI_GLOBAL_ACCESS;
   }
 
 #ifndef HPCRUN_STATIC_LINK
@@ -422,14 +461,6 @@ METHOD_FN(process_event_list, int lush_metrics)
   cupti_init();
   cupti_callbacks_subscribe();
   cupti_start();
-
-  // Set enabling activities
-  cupti_enabled_activities |= CUPTI_DRIVER;
-  cupti_enabled_activities |= CUPTI_RUNTIME;
-  cupti_enabled_activities |= CUPTI_KERNEL_EXECUTION;
-  cupti_enabled_activities |= CUPTI_KERNEL_INVOCATION;
-  cupti_enabled_activities |= CUPTI_DATA_MOTION_EXPLICIT;
-  cupti_enabled_activities |= CUPTI_OVERHEAD;
 
   // Register shutdown functions to write trace files
   device_trace_finalizer_shutdown.fn = gpu_trace_fini;

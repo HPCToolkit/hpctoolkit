@@ -409,6 +409,8 @@ convert_global_access
     activity->threadsExecuted;
 
   ga->details.global_access.bytes = bytes;
+
+  TMSG(CUPTI_ACTIVITY, "Global access");
 }
 
 
@@ -615,7 +617,6 @@ cupti_activity_translate
 )
 {
   switch (activity->kind) {
-
   case CUPTI_ACTIVITY_KIND_PC_SAMPLING:
     convert_pcsampling (ga, (CUpti_ActivityPCSamplingVersion *) activity);
     break;
