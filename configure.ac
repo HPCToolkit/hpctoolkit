@@ -4932,6 +4932,14 @@ ROCM_HIP_IFLAGS=
 ROCM_DBGAPI_IFLAGS=
 ROCM_TRACER_IFLAGS=
 
+ROCM_HIP_LD_DIR=
+ROCM_DBGAPI_LD_DIR=
+ROCM_TRACER_LD_DIR=
+
+ROCM_HIP_MESG=
+ROCM_DBGAPI_MESG=
+ROCM_TRACER_MESG=
+
 require_rocm=no
 
 AC_MSG_NOTICE([checking for rocm ....])
@@ -4942,20 +4950,53 @@ AC_MSG_NOTICE([checking for rocm ....])
 case "$ROCM" in
   /* )
     require_rocm=yes
+    found=no
+
+    # HIP
     if test -f "$ROCM/hip/include/hip/hip_runtime.h" ; then
       AC_MSG_NOTICE([found $ROCM/hip/include/hip/hip_runtime.h])
       ROCM_HIP_IFLAGS="-I$ROCM/hip/include"
+      ROCM_HIP_MESG="$ROCM/hip"
+      found=yes
     fi
+    if test -f "$ROCM/hip/lib/libamdhip64.so" ; then
+      AC_MSG_NOTICE([found $ROCM/hip/lib/libamdhip64.so])
+      ROCM_HIP_LD_DIR="$ROCM/hip/lib"
+      ROCM_HIP_MESG="$ROCM/hip"
+      found=yes
+    fi
+
+    # AMD-DBGAPI
     if test -f "$ROCM/include/amd-dbgapi.h" ; then
       AC_MSG_NOTICE([found $ROCM/include/amd-dbgapi.h])
       ROCM_DBGAPI_IFLAGS="-I$ROCM/include"
+      ROCM_DBGAPI_MESG="$ROCM"
+      found=yes
     fi
+    if test -f "$ROCM/lib/librocm-dbgapi.so" ; then
+      AC_MSG_NOTICE([found $ROCM/lib/librocm-dbgapi.so])
+      ROCM_DBGAPI_LD_DIR="$ROCM/lib"
+      ROCM_DBGAPI_MESG="$ROCM"
+      found=yes
+    fi
+
+    # ROCTRACER
     if test -f "$ROCM/roctracer/include/roctracer_hip.h" ; then
       AC_MSG_NOTICE([found $ROCM/roctracer/include/roctracer_hip.h])
       ROCM_TRACER_IFLAGS="-I$ROCM/roctracer/include"
-    elif test -f "$ROCM/include/roctracer/roctracer_hip.h" ; then
-      AC_MSG_NOTICE([found $ROCM/include/roctracer/roctracer_hip.h])
-      ROCM_TRACER_IFLAGS="-I$ROCM/include/roctracer"
+      ROCM_TRACER_MESG="$ROCM/roctracer"
+      found=yes
+    fi
+    if test -f "$ROCM/roctracer/lib/libroctracer64.so" ; then
+      AC_MSG_NOTICE([found $ROCM/roctracer/lib/libroctracer64.so])
+      ROCM_TRACER_LD_DIR="$ROCM/roctracer/lib"
+      ROCM_TRACER_MESG="$ROCM/roctracer"
+      found=yes
+    fi
+
+    # warn if given dir has nothing useful
+    if test "$found" = no ; then
+      AC_MSG_WARN([found nothing useful in $ROCM])
     fi
     ;;
   * )
@@ -4969,9 +5010,22 @@ esac
 case "$ROCM_HIP" in
   /* )
     require_rocm=yes
+    found=no
+
     if test -f "$ROCM_HIP/include/hip/hip_runtime.h" ; then
       AC_MSG_NOTICE([found $ROCM_HIP/include/hip/hip_runtime.h])
       ROCM_HIP_IFLAGS="-I$ROCM_HIP/include"
+      ROCM_HIP_MESG="$ROCM_HIP"
+      found=yes
+    fi
+    if test -f "$ROCM_HIP/lib/libamdhip64.so" ; then
+      AC_MSG_NOTICE([found $ROCM_HIP/lib/libamdhip64.so])
+      ROCM_HIP_LD_DIR="$ROCM_HIP/lib"
+      ROCM_HIP_MESG="$ROCM_HIP"
+      found=yes
+    fi
+    if test "$found" = no ; then
+      AC_MSG_WARN([found nothing useful in $ROCM_HIP])
     fi
     ;;
   * )
@@ -4982,9 +5036,22 @@ esac
 case "$ROCM_DBGAPI" in
   /* )
     require_rocm=yes
+    found=no
+
     if test -f "$ROCM_DBGAPI/include/amd-dbgapi.h" ; then
       AC_MSG_NOTICE([found $ROCM_DBGAPI/include/amd-dbgapi.h])
       ROCM_DBGAPI_IFLAGS="-I$ROCM_DBGAPI/include"
+      ROCM_DBGAPI_MESG="$ROCM_DBGAPI"
+      found=yes
+    fi
+    if test -f "$ROCM_DBGAPI/lib/librocm-dbgapi.so" ; then
+      AC_MSG_NOTICE([found $ROCM_DBGAPI/lib/librocm-dbgapi.so])
+      ROCM_DBGAPI_LD_DIR="$ROCM_DBGAPI/lib"
+      ROCM_DBGAPI_MESG="$ROCM_DBGAPI"
+      found=yes
+    fi
+    if test "$found" = no ; then
+      AC_MSG_WARN([found nothing useful in $ROCM_DBGAPI])
     fi
     ;;
   * )
@@ -4995,12 +5062,22 @@ esac
 case "$ROCM_TRACER" in
   /* )
     require_rocm=yes
+    found=no
+
     if test -f "$ROCM_TRACER/roctracer/include/roctracer_hip.h" ; then
       AC_MSG_NOTICE([found $ROCM_TRACER/roctracer/include/roctracer_hip.h])
       ROCM_TRACER_IFLAGS="-I$ROCM_TRACER/roctracer/include"
-    elif test -f "$ROCM_TRACER/include/roctracer/roctracer_hip.h" ; then
-      AC_MSG_NOTICE([found $ROCM_TRACER/include/roctracer/roctracer_hip.h])
-      ROCM_TRACER_IFLAGS="-I$ROCM_TRACER/include/roctracer"
+      ROCM_TRACER_MESG="$ROCM_TRACER/roctracer"
+      found=yes
+    fi
+    if test -f "$ROCM_TRACER/roctracer/lib/libroctracer64.so" ; then
+      AC_MSG_NOTICE([found $ROCM_TRACER/roctracer/lib/libroctracer64.so])
+      ROCM_TRACER_LD_DIR="$ROCM_TRACER/roctracer/lib"
+      ROCM_TRACER_MESG="$ROCM_TRACER/roctracer"
+      found=yes
+    fi
+    if test "$found" = no ; then
+      AC_MSG_WARN([found nothing useful in $ROCM_TRACER])
     fi
     ;;
   * )
@@ -5024,13 +5101,23 @@ else
   if test "x$ROCM_TRACER_IFLAGS" = x ; then
     AC_MSG_ERROR([unable to find roctracer_hip.h])
   fi
+
+  if test "x$ROCM_HIP_LD_DIR" = x ; then
+    AC_MSG_ERROR([unable to find libamdhip64.so])
+  fi
+  if test "x$ROCM_DBGAPI_LD_DIR" = x ; then
+    AC_MSG_ERROR([unable to find librocm-dbgapi.so])
+  fi
+  if test "x$ROCM_TRACER_LD_DIR" = x ; then
+    AC_MSG_ERROR([unable to find libroctracer64.so])
+  fi
+
   AC_MSG_NOTICE([rocm: yes])
+
   OPT_HAVE_ROCM=yes
   OPT_ROCM_IFLAGS="$ROCM_HIP_IFLAGS  $ROCM_DBGAPI_IFLAGS  $ROCM_TRACER_IFLAGS"
+  OPT_ROCM_LD_LIB_PATH="${ROCM_HIP_LD_DIR}:${ROCM_DBGAPI_LD_DIR}:${ROCM_TRACER_LD_DIR}"
 fi
-
-OPT_ROCM=
-OPT_ROCM_LDFLAGS=
 
 if test "$OPT_HAVE_ROCM" = "yes" ; then
   AC_DEFINE(USE_ROCM, 1, [use ROCM])
@@ -5038,9 +5125,8 @@ fi
 
 AM_CONDITIONAL([OPT_ENABLE_ROCM], [test "$OPT_HAVE_ROCM" = yes])
 
-AC_SUBST([OPT_ROCM])
 AC_SUBST([OPT_ROCM_IFLAGS])
-AC_SUBST([OPT_ROCM_LDFLAGS])
+AC_SUBST([OPT_ROCM_LD_LIB_PATH])
 
 
 #-------------------------------------------------
@@ -5429,9 +5515,9 @@ AC_MSG_NOTICE([  cupti:        ${CUPTI}])
 AC_MSG_NOTICE([  papi-c-cupti: ${use_papi_c_cupti}])
 AC_MSG_NOTICE([  rocm:         $OPT_HAVE_ROCM])
 if test "$OPT_HAVE_ROCM" = yes ; then
-  AC_MSG_NOTICE([  rocm hip flags:     $ROCM_HIP_IFLAGS])
-  AC_MSG_NOTICE([  rocm dbgapi flags:  $ROCM_DBGAPI_IFLAGS])
-  AC_MSG_NOTICE([  rocm tracer flags:  $ROCM_TRACER_IFLAGS])
+  AC_MSG_NOTICE([  rocm hip:     $ROCM_HIP_MESG])
+  AC_MSG_NOTICE([  rocm dbgapi:  $ROCM_DBGAPI_MESG])
+  AC_MSG_NOTICE([  rocm tracer:  $ROCM_TRACER_MESG])
 fi
 AC_MSG_NOTICE([  valgrind:     ${VALGRIND}])
 AC_MSG_NOTICE([  valgrind:     annotated: ${OPT_ENABLE_VG_ANNOTATIONS}])

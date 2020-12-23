@@ -19,7 +19,7 @@ hpcrun_dir='lib/hpctoolkit'
 libmonitor_dir='@LIBMONITOR_RUN_DIR@'
 papi_libdir='@OPT_PAPI_LIBPATH@'
 perfmon_libdir='@PERFMON_LIB@'
-roctracer_lib_path='@OPT_ROCM@/roctracer/lib'
+roctracer_lib_path='@OPT_ROCM_LD_LIB_PATH@'
 # gotcha_lib_path='@GOTCHA_LIBDIR@'
 
 prog_name=hpcrun

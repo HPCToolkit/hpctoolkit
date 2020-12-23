@@ -651,9 +651,8 @@ OPT_LEVEL0_IFLAGS
 OPT_LEVEL0
 OPT_ENABLE_LEVEL0_FALSE
 OPT_ENABLE_LEVEL0_TRUE
-OPT_ROCM_LDFLAGS
+OPT_ROCM_LD_LIB_PATH
 OPT_ROCM_IFLAGS
-OPT_ROCM
 OPT_ENABLE_ROCM_FALSE
 OPT_ENABLE_ROCM_TRUE
 OPT_OPENCL_IFLAGS
@@ -24097,6 +24096,14 @@ ROCM_HIP_IFLAGS=
 ROCM_DBGAPI_IFLAGS=
 ROCM_TRACER_IFLAGS=
 
+ROCM_HIP_LD_DIR=
+ROCM_DBGAPI_LD_DIR=
+ROCM_TRACER_LD_DIR=
+
+ROCM_HIP_MESG=
+ROCM_DBGAPI_MESG=
+ROCM_TRACER_MESG=
+
 require_rocm=no
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for rocm ...." >&5
@@ -24108,24 +24115,60 @@ $as_echo "$as_me: checking for rocm ...." >&6;}
 case "$ROCM" in
   /* )
     require_rocm=yes
+    found=no
+
+    # HIP
     if test -f "$ROCM/hip/include/hip/hip_runtime.h" ; then
       { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM/hip/include/hip/hip_runtime.h" >&5
 $as_echo "$as_me: found $ROCM/hip/include/hip/hip_runtime.h" >&6;}
       ROCM_HIP_IFLAGS="-I$ROCM/hip/include"
+      ROCM_HIP_MESG="$ROCM/hip"
+      found=yes
     fi
+    if test -f "$ROCM/hip/lib/libamdhip64.so" ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM/hip/lib/libamdhip64.so" >&5
+$as_echo "$as_me: found $ROCM/hip/lib/libamdhip64.so" >&6;}
+      ROCM_HIP_LD_DIR="$ROCM/hip/lib"
+      ROCM_HIP_MESG="$ROCM/hip"
+      found=yes
+    fi
+
+    # AMD-DBGAPI
     if test -f "$ROCM/include/amd-dbgapi.h" ; then
       { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM/include/amd-dbgapi.h" >&5
 $as_echo "$as_me: found $ROCM/include/amd-dbgapi.h" >&6;}
       ROCM_DBGAPI_IFLAGS="-I$ROCM/include"
+      ROCM_DBGAPI_MESG="$ROCM"
+      found=yes
     fi
+    if test -f "$ROCM/lib/librocm-dbgapi.so" ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM/lib/librocm-dbgapi.so" >&5
+$as_echo "$as_me: found $ROCM/lib/librocm-dbgapi.so" >&6;}
+      ROCM_DBGAPI_LD_DIR="$ROCM/lib"
+      ROCM_DBGAPI_MESG="$ROCM"
+      found=yes
+    fi
+
+    # ROCTRACER
     if test -f "$ROCM/roctracer/include/roctracer_hip.h" ; then
       { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM/roctracer/include/roctracer_hip.h" >&5
 $as_echo "$as_me: found $ROCM/roctracer/include/roctracer_hip.h" >&6;}
       ROCM_TRACER_IFLAGS="-I$ROCM/roctracer/include"
-    elif test -f "$ROCM/include/roctracer/roctracer_hip.h" ; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM/include/roctracer/roctracer_hip.h" >&5
-$as_echo "$as_me: found $ROCM/include/roctracer/roctracer_hip.h" >&6;}
-      ROCM_TRACER_IFLAGS="-I$ROCM/include/roctracer"
+      ROCM_TRACER_MESG="$ROCM/roctracer"
+      found=yes
+    fi
+    if test -f "$ROCM/roctracer/lib/libroctracer64.so" ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM/roctracer/lib/libroctracer64.so" >&5
+$as_echo "$as_me: found $ROCM/roctracer/lib/libroctracer64.so" >&6;}
+      ROCM_TRACER_LD_DIR="$ROCM/roctracer/lib"
+      ROCM_TRACER_MESG="$ROCM/roctracer"
+      found=yes
+    fi
+
+    # warn if given dir has nothing useful
+    if test "$found" = no ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: found nothing useful in $ROCM" >&5
+$as_echo "$as_me: WARNING: found nothing useful in $ROCM" >&2;}
     fi
     ;;
   * )
@@ -24139,10 +24182,25 @@ esac
 case "$ROCM_HIP" in
   /* )
     require_rocm=yes
+    found=no
+
     if test -f "$ROCM_HIP/include/hip/hip_runtime.h" ; then
       { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM_HIP/include/hip/hip_runtime.h" >&5
 $as_echo "$as_me: found $ROCM_HIP/include/hip/hip_runtime.h" >&6;}
       ROCM_HIP_IFLAGS="-I$ROCM_HIP/include"
+      ROCM_HIP_MESG="$ROCM_HIP"
+      found=yes
+    fi
+    if test -f "$ROCM_HIP/lib/libamdhip64.so" ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM_HIP/lib/libamdhip64.so" >&5
+$as_echo "$as_me: found $ROCM_HIP/lib/libamdhip64.so" >&6;}
+      ROCM_HIP_LD_DIR="$ROCM_HIP/lib"
+      ROCM_HIP_MESG="$ROCM_HIP"
+      found=yes
+    fi
+    if test "$found" = no ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: found nothing useful in $ROCM_HIP" >&5
+$as_echo "$as_me: WARNING: found nothing useful in $ROCM_HIP" >&2;}
     fi
     ;;
   * )
@@ -24153,10 +24211,25 @@ esac
 case "$ROCM_DBGAPI" in
   /* )
     require_rocm=yes
+    found=no
+
     if test -f "$ROCM_DBGAPI/include/amd-dbgapi.h" ; then
       { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM_DBGAPI/include/amd-dbgapi.h" >&5
 $as_echo "$as_me: found $ROCM_DBGAPI/include/amd-dbgapi.h" >&6;}
       ROCM_DBGAPI_IFLAGS="-I$ROCM_DBGAPI/include"
+      ROCM_DBGAPI_MESG="$ROCM_DBGAPI"
+      found=yes
+    fi
+    if test -f "$ROCM_DBGAPI/lib/librocm-dbgapi.so" ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM_DBGAPI/lib/librocm-dbgapi.so" >&5
+$as_echo "$as_me: found $ROCM_DBGAPI/lib/librocm-dbgapi.so" >&6;}
+      ROCM_DBGAPI_LD_DIR="$ROCM_DBGAPI/lib"
+      ROCM_DBGAPI_MESG="$ROCM_DBGAPI"
+      found=yes
+    fi
+    if test "$found" = no ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: found nothing useful in $ROCM_DBGAPI" >&5
+$as_echo "$as_me: WARNING: found nothing useful in $ROCM_DBGAPI" >&2;}
     fi
     ;;
   * )
@@ -24167,14 +24240,25 @@ esac
 case "$ROCM_TRACER" in
   /* )
     require_rocm=yes
+    found=no
+
     if test -f "$ROCM_TRACER/roctracer/include/roctracer_hip.h" ; then
       { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM_TRACER/roctracer/include/roctracer_hip.h" >&5
 $as_echo "$as_me: found $ROCM_TRACER/roctracer/include/roctracer_hip.h" >&6;}
       ROCM_TRACER_IFLAGS="-I$ROCM_TRACER/roctracer/include"
-    elif test -f "$ROCM_TRACER/include/roctracer/roctracer_hip.h" ; then
-      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM_TRACER/include/roctracer/roctracer_hip.h" >&5
-$as_echo "$as_me: found $ROCM_TRACER/include/roctracer/roctracer_hip.h" >&6;}
-      ROCM_TRACER_IFLAGS="-I$ROCM_TRACER/include/roctracer"
+      ROCM_TRACER_MESG="$ROCM_TRACER/roctracer"
+      found=yes
+    fi
+    if test -f "$ROCM_TRACER/roctracer/lib/libroctracer64.so" ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM_TRACER/roctracer/lib/libroctracer64.so" >&5
+$as_echo "$as_me: found $ROCM_TRACER/roctracer/lib/libroctracer64.so" >&6;}
+      ROCM_TRACER_LD_DIR="$ROCM_TRACER/roctracer/lib"
+      ROCM_TRACER_MESG="$ROCM_TRACER/roctracer"
+      found=yes
+    fi
+    if test "$found" = no ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: found nothing useful in $ROCM_TRACER" >&5
+$as_echo "$as_me: WARNING: found nothing useful in $ROCM_TRACER" >&2;}
     fi
     ;;
   * )
@@ -24199,14 +24283,24 @@ else
   if test "x$ROCM_TRACER_IFLAGS" = x ; then
     as_fn_error $? "unable to find roctracer_hip.h" "$LINENO" 5
   fi
+
+  if test "x$ROCM_HIP_LD_DIR" = x ; then
+    as_fn_error $? "unable to find libamdhip64.so" "$LINENO" 5
+  fi
+  if test "x$ROCM_DBGAPI_LD_DIR" = x ; then
+    as_fn_error $? "unable to find librocm-dbgapi.so" "$LINENO" 5
+  fi
+  if test "x$ROCM_TRACER_LD_DIR" = x ; then
+    as_fn_error $? "unable to find libroctracer64.so" "$LINENO" 5
+  fi
+
   { $as_echo "$as_me:${as_lineno-$LINENO}: rocm: yes" >&5
 $as_echo "$as_me: rocm: yes" >&6;}
+
   OPT_HAVE_ROCM=yes
   OPT_ROCM_IFLAGS="$ROCM_HIP_IFLAGS  $ROCM_DBGAPI_IFLAGS  $ROCM_TRACER_IFLAGS"
+  OPT_ROCM_LD_LIB_PATH="${ROCM_HIP_LD_DIR}:${ROCM_DBGAPI_LD_DIR}:${ROCM_TRACER_LD_DIR}"
 fi
-
-OPT_ROCM=
-OPT_ROCM_LDFLAGS=
 
 if test "$OPT_HAVE_ROCM" = "yes" ; then
 
@@ -24221,7 +24315,6 @@ else
   OPT_ENABLE_ROCM_TRUE='#'
   OPT_ENABLE_ROCM_FALSE=
 fi
-
 
 
 
@@ -27535,12 +27628,12 @@ $as_echo "$as_me:   papi-c-cupti: ${use_papi_c_cupti}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   rocm:         $OPT_HAVE_ROCM" >&5
 $as_echo "$as_me:   rocm:         $OPT_HAVE_ROCM" >&6;}
 if test "$OPT_HAVE_ROCM" = yes ; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}:   rocm hip flags:     $ROCM_HIP_IFLAGS" >&5
-$as_echo "$as_me:   rocm hip flags:     $ROCM_HIP_IFLAGS" >&6;}
-  { $as_echo "$as_me:${as_lineno-$LINENO}:   rocm dbgapi flags:  $ROCM_DBGAPI_IFLAGS" >&5
-$as_echo "$as_me:   rocm dbgapi flags:  $ROCM_DBGAPI_IFLAGS" >&6;}
-  { $as_echo "$as_me:${as_lineno-$LINENO}:   rocm tracer flags:  $ROCM_TRACER_IFLAGS" >&5
-$as_echo "$as_me:   rocm tracer flags:  $ROCM_TRACER_IFLAGS" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}:   rocm hip:     $ROCM_HIP_MESG" >&5
+$as_echo "$as_me:   rocm hip:     $ROCM_HIP_MESG" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}:   rocm dbgapi:  $ROCM_DBGAPI_MESG" >&5
+$as_echo "$as_me:   rocm dbgapi:  $ROCM_DBGAPI_MESG" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}:   rocm tracer:  $ROCM_TRACER_MESG" >&5
+$as_echo "$as_me:   rocm tracer:  $ROCM_TRACER_MESG" >&6;}
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}:   valgrind:     ${VALGRIND}" >&5
 $as_echo "$as_me:   valgrind:     ${VALGRIND}" >&6;}
