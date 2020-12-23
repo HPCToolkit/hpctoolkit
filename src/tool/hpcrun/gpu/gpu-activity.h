@@ -94,7 +94,8 @@ typedef enum {
   GPU_ACTIVITY_EXTERNAL_CORRELATION    = 13,
   GPU_ACTIVITY_EVENT                   = 14,
   GPU_ACTIVITY_ENVIRONMENT             = 15,
-  GPU_ACTIVITY_FUNCTION                = 16
+  GPU_ACTIVITY_FUNCTION                = 16,
+  GPU_ACTIVITY_INST_EXECUTION          = 17
 } gpu_activity_kind_t;
 
 
@@ -176,6 +177,36 @@ typedef enum {
   GPU_MEM_UNKNOWN         = 7,
   GPU_MEM_COUNT           = 8
 } gpu_mem_kind_t;
+
+
+typedef enum {
+  GPU_GMEM_LD_CACHED_BYTES             = 0,
+  GPU_GMEM_LD_UNCACHED_BYTES           = 1,
+  GPU_GMEM_ST_BYTES                    = 2,
+  GPU_GMEM_LD_CACHED_L2TRANS           = 3,
+  GPU_GMEM_LD_UNCACHED_L2TRANS         = 4,
+  GPU_GMEM_ST_L2TRANS                  = 5,
+  GPU_GMEM_LD_CACHED_L2TRANS_THEOR     = 6,
+  GPU_GMEM_LD_UNCACHED_L2TRANS_THEOR   = 7,
+  GPU_GMEM_ST_L2TRANS_THEOR            = 8
+} gpu_gmem_ops_t;
+
+
+typedef enum {
+  GPU_LMEM_LD_BYTES                    = 0,
+  GPU_LMEM_ST_BYTES                    = 1,
+  GPU_LMEM_LD_TRANS                    = 2,
+  GPU_LMEM_ST_TRANS                    = 3,
+  GPU_LMEM_LD_TRANS_THEOR              = 4,
+  GPU_LMEM_ST_TRANS_THEOR              = 5
+} gpu_lmem_ops_t;
+
+
+typedef enum {
+  GPU_INST_EXECUTE                     = 0,
+  GPU_INST_EXECUTE_PRED                = 1
+} gpu_inst_exe_t;
+
 
 
 // pc sampling
@@ -339,6 +370,8 @@ typedef struct gpu_interval_t {
 typedef struct gpu_instruction_t {
   uint32_t correlation_id;
   ip_normalized_t pc;
+  uint64_t notPredOffThreadsExecuted;
+  uint64_t threadsExecuted;
 } gpu_instruction_t;
 
 

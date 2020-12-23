@@ -54,8 +54,6 @@
 
 #include "gpu-activity.h"
 
-
-
 //*****************************************************************************
 // macros
 //*****************************************************************************
@@ -64,31 +62,6 @@
 enum {
   GPU_INST_STALL_ANY                   = 0
 } gpu_inst_stall_all_t;
-
-
-typedef enum {
-  GPU_GMEM_LD_CACHED_BYTES             = 0,
-  GPU_GMEM_LD_UNCACHED_BYTES           = 1,
-  GPU_GMEM_ST_BYTES                    = 2,
-  GPU_GMEM_LD_CACHED_L2TRANS           = 3,
-  GPU_GMEM_LD_UNCACHED_L2TRANS         = 4,
-  GPU_GMEM_ST_L2TRANS                  = 5,
-  GPU_GMEM_LD_CACHED_L2TRANS_THEOR     = 6,
-  GPU_GMEM_LD_UNCACHED_L2TRANS_THEOR   = 7,
-  GPU_GMEM_ST_L2TRANS_THEOR            = 8
-} gpu_gmem_ops_t;
-
-
-typedef enum {
-  GPU_LMEM_LD_BYTES                    = 0,
-  GPU_LMEM_ST_BYTES                    = 1,
-  GPU_LMEM_LD_TRANS                    = 2,
-  GPU_LMEM_ST_TRANS                    = 3,
-  GPU_LMEM_LD_TRANS_THEOR              = 4,
-  GPU_LMEM_ST_TRANS_THEOR              = 5
-} gpu_lmem_ops_t;
-
-
 
 //--------------------------------------------------------------------------
 // indexed metrics
@@ -294,6 +267,13 @@ typedef enum {
   macro("GLMEM:STT (T)",          GPU_LMEM_ST_TRANS_THEOR,	\
 	"GPU local memory: store (transactions, theoretical)")
 
+// gpu instruction executed
+#define FORALL_GINSE(macro) \
+  macro("GINSE:EXE ",       GPU_INST_EXECUTE,	\
+	"GPU instructions executed by threads regardless of predicate code")	\
+  macro("GINSE:EXE (PRED)", GPU_INST_EXECUTE_PRED,	\
+	"GPU instructions executed by threads with predicate evaluated as true")
+
 //--------------------------------------------------------------------------
 // scalar metrics 
 //--------------------------------------------------------------------------
@@ -395,8 +375,8 @@ typedef enum {
 
 // gpu branch
 #define FORALL_GBR(macro)					\
-    macro("GBR:DIV",                GPU_BR_DIVERGED,		\
-	  "GPU branches: diverged")				\
+  macro("GBR:DIV",                GPU_BR_DIVERGED,		\
+	"GPU branches: diverged")				\
   macro("GBR:EXE",                GPU_BR_EXECUTED,		\
 	"GPU branches: executed")
 
@@ -525,6 +505,13 @@ gpu_metrics_GBR_enable
  void
 );
 
+// record instruction execution statistics
+
+void
+gpu_metrics_GINSE_enable
+(
+ void
+);
 
 //--------------------------------------------------
 // attribute GPU measurements to an application 

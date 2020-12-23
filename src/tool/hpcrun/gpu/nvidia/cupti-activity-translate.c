@@ -394,8 +394,8 @@ convert_global_access
     activity->theoreticalL2Transactions;
 
   gpu_global_access_type_t type;
-  if (activity->flags & (1<<8)) {
-    if (activity->flags & (1<<9)) {
+  if (activity->flags & (CUPTI_ACTIVITY_FLAG_GLOBAL_ACCESS_KIND_LOAD)) {
+    if (activity->flags & (CUPTI_ACTIVITY_FLAG_GLOBAL_ACCESS_KIND_CACHED)) {
       type = GPU_GLOBAL_ACCESS_LOAD_CACHED;
     } else {
       type = GPU_GLOBAL_ACCESS_LOAD_UNCACHED;
@@ -405,7 +405,8 @@ convert_global_access
   }
   ga->details.global_access.type = type;
 
-  uint64_t bytes = (activity->flags & 0xFF) * activity->threadsExecuted;
+  uint64_t bytes = (activity->flags & (CUPTI_ACTIVITY_FLAG_GLOBAL_ACCESS_KIND_SIZE_MASK)) *
+    activity->threadsExecuted;
 
   ga->details.global_access.bytes = bytes;
 }
@@ -430,13 +431,13 @@ convert_shared_access
     activity->theoreticalSharedTransactions;
 
   ga->details.local_access.type =
-    ((activity->flags & (1<<8)) ?
-     GPU_LOCAL_ACCESS_LOAD :
-     GPU_LOCAL_ACCESS_STORE);
+    ((activity->flags & (CUPTI_ACTIVITY_FLAG_GLOBAL_ACCESS_KIND_LOAD)) ?
+     GPU_LOCAL_ACCESS_LOAD : GPU_LOCAL_ACCESS_STORE);
 
-  ga->details.local_access.bytes = (activity->flags & 0xFF) *
+  ga->details.local_access.bytes = (activity->flags & (CUPTI_ACTIVITY_FLAG_SHARED_ACCESS_KIND_SIZE_MASK)) *
     activity->threadsExecuted;
 }
+
 
 static void
 convert_branch
@@ -452,6 +453,23 @@ convert_branch
 
   ga->details.branch.diverged = activity->diverged;
   ga->details.branch.executed = activity->executed;
+}
+
+
+static void
+convert_instruction
+(
+ gpu_activity_t *ga,
+ CUpti_ActivityInstructionExecution *activity
+)
+{
+  ga->kind = GPU_ACTIVITY_INST_EXECUTION;
+
+  set_gpu_instruction_fields(&ga->details.instruction, activity->correlationId,
+           activity->functionId, activity->pcOffset);
+
+  ga->details.instruction.notPredOffThreadsExecuted = activity->notPredOffThreadsExecuted;
+  ga->details.instruction.threadsExecuted = activity->threadsExecuted;
 }
 
 
@@ -633,6 +651,10 @@ cupti_activity_translate
 
   case CUPTI_ACTIVITY_KIND_BRANCH:
     convert_branch(ga, (CUpti_ActivityBranch2 *) activity);
+    break;
+
+  case CUPTI_ACTIVITY_KIND_INSTRUCTION_EXECUTION:
+    convert_instruction(ga, (CUpti_ActivityInstructionExecution *) activity);
     break;
 
   case CUPTI_ACTIVITY_KIND_SYNCHRONIZATION:

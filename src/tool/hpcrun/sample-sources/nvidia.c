@@ -98,8 +98,10 @@
 
 #define NVIDIA_CUDA "gpu=nvidia"
 #define NVIDIA_CUDA_PC_SAMPLING "gpu=nvidia,pc"
-
-
+#define NVIDIA_CUDA_INST "gpu=nvidia,inst"
+#define NVIDIA_CUDA_INST_BRANCH "gpu=nvidia,inst_branch"
+#define NVIDIA_CUDA_INST_GLOBAL "gpu=nvidia,inst_global"
+#define NVIDIA_CUDA_INST_SHARED "gpu=nvidia,inst_shared"
 
 /******************************************************************************
  * local variables
@@ -321,7 +323,9 @@ static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
 #ifndef HPCRUN_STATIC_LINK
-  return hpcrun_ev_is(ev_str, NVIDIA_CUDA) || hpcrun_ev_is(ev_str, NVIDIA_CUDA_PC_SAMPLING);
+  return hpcrun_ev_is(ev_str, NVIDIA_CUDA) || hpcrun_ev_is(ev_str, NVIDIA_CUDA_PC_SAMPLING) ||
+    hpcrun_ev_is(ev_str, NVIDIA_CUDA_INST) || hpcrun_ev_is(ev_str, NVIDIA_CUDA_INST_BRANCH) ||
+    hpcrun_ev_is(ev_str, NVIDIA_CUDA_INST_GLOBAL) || hpcrun_ev_is(ev_str, NVIDIA_CUDA_INST_SHARED);;
 #else
   return false;
 #endif
@@ -347,6 +351,9 @@ METHOD_FN(process_event_list, int lush_metrics)
     trace_frequency =
       (frequency == frequency_default) ? trace_frequency_default : frequency;
     gpu_monitoring_trace_sample_frequency_set(trace_frequency);
+
+    gpu_metrics_default_enable();
+    gpu_metrics_KINFO_enable();
   } else if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_PC_SAMPLING)) {
     pc_sampling_frequency = (frequency == frequency_default) ?
       pc_sampling_frequency_default : frequency;
@@ -360,10 +367,11 @@ METHOD_FN(process_event_list, int lush_metrics)
     gpu_metrics_GPU_INST_LAT_enable(); // lat metrics
 
     gpu_metrics_GSAMP_enable(); // GPU utilization from sampling
+  } else if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_INST)) {
+  } else if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_INST_BRANCH)) {
+  } else if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_INST_SHARED)) {
+  } else if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_INST_GLOBAL)) {
   }
-
-  gpu_metrics_default_enable();
-  gpu_metrics_KINFO_enable();
 
 #ifndef HPCRUN_STATIC_LINK
   if (cuda_bind()) {

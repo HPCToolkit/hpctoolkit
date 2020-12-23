@@ -639,6 +639,7 @@ gpu_activity_process
   case GPU_ACTIVITY_LOCAL_ACCESS:
   case GPU_ACTIVITY_GLOBAL_ACCESS:
   case GPU_ACTIVITY_BRANCH:
+  case GPU_ACTIVITY_INST_EXECUTION:
     gpu_instruction_process(ga);
     break;
 

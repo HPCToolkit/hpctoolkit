@@ -85,7 +85,8 @@
   macro(GPU_INST, 9)				\
   macro(GTIMES, 10)				\
   macro(KINFO, 12)				\
-  macro(GSAMP, 13)			
+  macro(GSAMP, 13) \
+  macro(GINSE, 14)
 
 
 #define FORALL_METRIC_KINDS(macro)	\
@@ -564,6 +565,26 @@ gpu_metrics_attribute_branch
 }
 
 
+static void
+gpu_metrics_attribute_instruction_execution
+(
+ gpu_activity_t *activity
+)
+{
+  gpu_instruction_t *i = &(activity->details.instruction);
+  cct_node_t *cct_node = activity->cct_node;
+
+  metric_data_list_t *metrics = 
+    hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_INST_EXECUTE));
+
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_INST_EXECUTE), 
+				   i->threadsExecuted);
+
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_INST_EXECUTE_PRED), 
+				   i->notPredOffThreadsExecuted);
+}
+
+
 //******************************************************************************
 // interface operations
 //******************************************************************************
@@ -617,6 +638,10 @@ gpu_metrics_attribute
 
   case GPU_ACTIVITY_BRANCH:
     gpu_metrics_attribute_branch(activity);
+    break;
+
+  case GPU_ACTIVITY_INST_EXECUTION:
+    gpu_metrics_attribute_instruction_execution(activity);
     break;
 
   default:
@@ -836,6 +861,24 @@ gpu_metrics_GBR_enable
   INITIALIZE_METRIC_KIND();
 
   FORALL_GBR(INITIALIZE_SCALAR_METRIC_INT)
+
+  FINALIZE_METRIC_KIND();
+}
+
+
+void
+gpu_metrics_GINSE_enable
+(
+ void
+)
+{
+// GPU executed instruction metrics
+#undef CURRENT_METRIC 
+#define CURRENT_METRIC GINSE
+
+  INITIALIZE_METRIC_KIND();
+
+  FORALL_GINSE(INITIALIZE_SCALAR_METRIC_INT)
 
   FINALIZE_METRIC_KIND();
 }
