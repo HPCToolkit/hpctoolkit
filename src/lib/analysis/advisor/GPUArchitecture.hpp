@@ -157,6 +157,45 @@ class V100 : public GPUArchitecture {
 };
 
 
+class A100 : public GPUArchitecture {
+ public:
+  A100() : GPUArchitecture(VENDOR_NVIDIA) {}
+
+  virtual std::pair<int, int> latency(const std::string &opcode) const;
+
+  virtual int issue(const std::string &opcode) const;
+
+  virtual int inst_size() const {
+    return 16;
+  }
+
+  virtual int sms() const {
+    return 108;
+  }
+
+  virtual int schedulers() const {
+    return 4;
+  }
+
+  virtual int warps() const {
+    return 64;
+  }
+
+  virtual int warp_size() const {
+    return 32;
+  }
+
+  virtual double frequency() const {
+    return 1.41;
+  }
+
+  virtual ~A100() {}
+
+ protected:
+  Vendor _vendor;
+};
+
+
 }  // Analysis
 
 #endif  // Analysis_Advisor_GPUArchitecture_hpp

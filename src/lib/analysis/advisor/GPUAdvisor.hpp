@@ -109,7 +109,7 @@ class GPUAdvisor {
     return this->_metric_name_prof_map;
   }
 
-  void init();
+  void init(const std::string &gpu_arch);
 
   void configInst(const std::string &lm_name, const std::vector<CudaParse::Function *> &functions);
 

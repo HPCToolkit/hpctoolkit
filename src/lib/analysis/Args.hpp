@@ -120,6 +120,9 @@ public:
   // Title
   std::string title;
 
+  // GPU Arch
+  std::string gpuArch;
+
   // Search paths
   //std::vector<std::string> searchPaths;
   PathTupleVec searchPathTpls;

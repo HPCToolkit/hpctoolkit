@@ -63,15 +63,17 @@ namespace Analysis {
  * Interface methods
  */
 
-void GPUAdvisor::init() {
+void GPUAdvisor::init(const std::string &gpu_arch) {
   if (_inst_metrics.size() != 0) {
     // Init already
     return;
   }
 
-  // TODO(Keren): Find device tag under the root and use the corresponding archtecture
-  // Problem: currently we only have device tags for call instructions
-  this->_arch = new V100(); 
+  if (gpu_arch == "A100") {
+    this->_arch = new A100(); 
+  } else {
+    this->_arch = new V100(); 
+  }
 
   // Init individual metrics
   _issue_metric = GPU_INST_METRIC_NAME":LAT_NONE";

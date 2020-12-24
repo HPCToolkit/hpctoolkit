@@ -149,6 +149,11 @@ Options: Metrics:\n\
   --force-metric       Force hpcprof to show all thread-level metrics,\n\
                        regardless of their number.\n\
 \n\
+Options: GPU:\n\
+  --gpu-arch\n\
+                       Specify the measurements are collected on which GPU architecture.\n\
+                       Default: {V100}\n\
+\n\
 Options: Output:\n\
   -o <db-path>, --db <db-path>, --output <db-path>\n\
                        Specify Experiment database name <db-path>.\n\
@@ -201,6 +206,9 @@ CmdLineParser::OptArgDesc Analysis::ArgsHPCProf::optArgs[] = {
      NULL },
   {  0 , "force-metric",    CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
      NULL },
+
+  // GPU
+  { 0, "gpu-arch",          CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL, NULL },
 
   // Output options
   { 'o', "output",          CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL,
@@ -452,6 +460,11 @@ ArgsHPCProf::parse(int argc, const char* const argv[], AppType type)
       }
     }
     // N.B.: hpcprof checks for "force-metric": src/tool/hpcprof/Args.cpp
+    
+    // Check for GPU options:
+    if (parser.isOpt("gpu-arch")) {
+      gpuArch = parser.getOptArg("gpu-arch");
+    }
     
     // Check for other options: Output options
     bool isDbDirSet = false;

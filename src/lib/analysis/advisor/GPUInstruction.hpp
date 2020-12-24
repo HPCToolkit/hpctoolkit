@@ -25,7 +25,8 @@ namespace CallPath {
 
 std::vector<GPUAdvisor::AdviceTuple>
 overlayGPUInstructionsMain(Prof::CallPath::Profile &prof,
-  const std::vector<std::string> &instruction_files);
+  const std::vector<std::string> &instruction_files,
+  const std::string &gpu_arch);
 
 }
 
