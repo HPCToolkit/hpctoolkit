@@ -5088,10 +5088,10 @@ esac
 #
 # Check that we found all the pieces.
 #
-if test "$require_rocm" = no ; then
-  AC_MSG_NOTICE([rocm: no configure args provided])
-  OPT_HAVE_ROCM=no
-else
+OPT_HAVE_ROCM=no
+
+if test "$require_rocm" = yes
+then
   if test "x$ROCM_HIP_IFLAGS" = x ; then
     AC_MSG_ERROR([unable to find hip_runtime.h])
   fi
@@ -5112,12 +5112,40 @@ else
     AC_MSG_ERROR([unable to find libroctracer64.so])
   fi
 
-  AC_MSG_NOTICE([rocm: yes])
-
   OPT_HAVE_ROCM=yes
   OPT_ROCM_IFLAGS="$ROCM_HIP_IFLAGS  $ROCM_DBGAPI_IFLAGS  $ROCM_TRACER_IFLAGS"
   OPT_ROCM_LD_LIB_PATH="${ROCM_HIP_LD_DIR}:${ROCM_DBGAPI_LD_DIR}:${ROCM_TRACER_LD_DIR}"
 fi
+
+#
+# Check for ROCM version
+#
+rocm_mesg=no
+
+if test "$OPT_HAVE_ROCM" = yes ; then
+  version_file="${ROCM_HIP_MESG}/include/hip/hip_version.h"
+
+  rocm_major=`grep VERSION_MAJOR $version_file | head -1 | awk '{ print $3 }'`
+  rocm_minor=`grep VERSION_MINOR $version_file | head -1 | awk '{ print $3 }'`
+
+  if test "x$rocm_major" = x || test "x$rocm_minor" = x ; then
+    AC_MSG_WARN([unable to find rocm version])
+    rocm_version=unknown
+  else
+    rocm_version="${rocm_major}.${rocm_minor}"
+
+    # Require 3.10 or 4.0 or greater.
+    if ( test $rocm_major -eq 3 && test $rocm_minor -ge 10 )  \
+       || test $rocm_major -ge 4
+    then :
+    else
+      AC_MSG_ERROR([rocm version $rocm_version is too old, use 3.10.0 or later])
+    fi
+  fi
+  rocm_mesg="yes, version: $rocm_version"
+fi
+
+AC_MSG_NOTICE([rocm: $rocm_mesg])
 
 if test "$OPT_HAVE_ROCM" = "yes" ; then
   AC_DEFINE(USE_ROCM, 1, [use ROCM])
@@ -5513,7 +5541,7 @@ AC_MSG_NOTICE([  zlib:         ${ZLIB}])
 AC_MSG_NOTICE([  cuda:         ${CUDA}])
 AC_MSG_NOTICE([  cupti:        ${CUPTI}])
 AC_MSG_NOTICE([  papi-c-cupti: ${use_papi_c_cupti}])
-AC_MSG_NOTICE([  rocm:         $OPT_HAVE_ROCM])
+AC_MSG_NOTICE([  rocm:         ${rocm_mesg}])
 if test "$OPT_HAVE_ROCM" = yes ; then
   AC_MSG_NOTICE([  rocm hip:     $ROCM_HIP_MESG])
   AC_MSG_NOTICE([  rocm dbgapi:  $ROCM_DBGAPI_MESG])

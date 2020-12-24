@@ -24269,11 +24269,10 @@ esac
 #
 # Check that we found all the pieces.
 #
-if test "$require_rocm" = no ; then
-  { $as_echo "$as_me:${as_lineno-$LINENO}: rocm: no configure args provided" >&5
-$as_echo "$as_me: rocm: no configure args provided" >&6;}
-  OPT_HAVE_ROCM=no
-else
+OPT_HAVE_ROCM=no
+
+if test "$require_rocm" = yes
+then
   if test "x$ROCM_HIP_IFLAGS" = x ; then
     as_fn_error $? "unable to find hip_runtime.h" "$LINENO" 5
   fi
@@ -24294,13 +24293,42 @@ else
     as_fn_error $? "unable to find libroctracer64.so" "$LINENO" 5
   fi
 
-  { $as_echo "$as_me:${as_lineno-$LINENO}: rocm: yes" >&5
-$as_echo "$as_me: rocm: yes" >&6;}
-
   OPT_HAVE_ROCM=yes
   OPT_ROCM_IFLAGS="$ROCM_HIP_IFLAGS  $ROCM_DBGAPI_IFLAGS  $ROCM_TRACER_IFLAGS"
   OPT_ROCM_LD_LIB_PATH="${ROCM_HIP_LD_DIR}:${ROCM_DBGAPI_LD_DIR}:${ROCM_TRACER_LD_DIR}"
 fi
+
+#
+# Check for ROCM version
+#
+rocm_mesg=no
+
+if test "$OPT_HAVE_ROCM" = yes ; then
+  version_file="${ROCM_HIP_MESG}/include/hip/hip_version.h"
+
+  rocm_major=`grep VERSION_MAJOR $version_file | head -1 | awk '{ print $3 }'`
+  rocm_minor=`grep VERSION_MINOR $version_file | head -1 | awk '{ print $3 }'`
+
+  if test "x$rocm_major" = x || test "x$rocm_minor" = x ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to find rocm version" >&5
+$as_echo "$as_me: WARNING: unable to find rocm version" >&2;}
+    rocm_version=unknown
+  else
+    rocm_version="${rocm_major}.${rocm_minor}"
+
+    # Require 3.10 or 4.0 or greater.
+    if ( test $rocm_major -eq 3 && test $rocm_minor -ge 10 )  \
+       || test $rocm_major -ge 4
+    then :
+    else
+      as_fn_error $? "rocm version $rocm_version is too old, use 3.10.0 or later" "$LINENO" 5
+    fi
+  fi
+  rocm_mesg="yes, version: $rocm_version"
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: rocm: $rocm_mesg" >&5
+$as_echo "$as_me: rocm: $rocm_mesg" >&6;}
 
 if test "$OPT_HAVE_ROCM" = "yes" ; then
 
@@ -27625,8 +27653,8 @@ $as_echo "$as_me:   cuda:         ${CUDA}" >&6;}
 $as_echo "$as_me:   cupti:        ${CUPTI}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   papi-c-cupti: ${use_papi_c_cupti}" >&5
 $as_echo "$as_me:   papi-c-cupti: ${use_papi_c_cupti}" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   rocm:         $OPT_HAVE_ROCM" >&5
-$as_echo "$as_me:   rocm:         $OPT_HAVE_ROCM" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   rocm:         ${rocm_mesg}" >&5
+$as_echo "$as_me:   rocm:         ${rocm_mesg}" >&6;}
 if test "$OPT_HAVE_ROCM" = yes ; then
   { $as_echo "$as_me:${as_lineno-$LINENO}:   rocm hip:     $ROCM_HIP_MESG" >&5
 $as_echo "$as_me:   rocm hip:     $ROCM_HIP_MESG" >&6;}
