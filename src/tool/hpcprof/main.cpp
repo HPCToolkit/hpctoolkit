@@ -205,7 +205,7 @@ realmain(int argc, char* const* argv)
   bool printProgress = true;
 
   // Static instruction overlay should be down before stmt coalesce 
-  auto advice = Analysis::CallPath::overlayGPUInstructionsMain(*prof, args.instructionFiles);
+  auto advice = Analysis::CallPath::overlayGPUInstructionsMain(*prof, args.instructionFiles, args.gpuArch);
 
   Analysis::CallPath::overlayStaticStructureMain(*prof, args.agent,
 						 args.doNormalizeTy, printProgress);
