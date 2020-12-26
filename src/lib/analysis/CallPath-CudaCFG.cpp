@@ -114,7 +114,7 @@ using std::string;
 #define OUTPUT_SCC_FRAME 1
 #define SIMULATE_SCC_WITH_LOOP 1
 
-#define WARP_SIZE 1
+#define WARP_SIZE 32
 
 namespace Analysis {
 
@@ -295,6 +295,7 @@ transformCudaCFGMain(Prof::CallPath::Profile& prof) {
     std::cout << "Step 0: Check if prof has GPU metrics" << std::endl;
     std::cout << "-------------------------------------------------" << std::endl;
   }
+  // TODO(Keren): use metric_name_prof_map and use exact inst counts with pred == true
   // Check if prof contains gpu metrics
   auto *mgr = prof.metricMgr(); 
   for (size_t i = 0; i < mgr->size(); ++i) {

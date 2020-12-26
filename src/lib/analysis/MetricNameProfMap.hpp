@@ -66,6 +66,7 @@
 #include <vector>
 #include <stack>
 #include <string>
+#include <sstream>
 
 //*************************** User Include Files ****************************
 
@@ -103,6 +104,22 @@ class MetricNameProfMap {
       ret = _mgr->metric(metric_id)->name();
     }
     return ret;
+  }
+
+  const std::string to_string() const {
+    std::stringstream ss;
+    for (auto &mpi_iter : _metric_name_prof_maps) {
+      auto mpi_rank = mpi_iter.first;
+      for (auto &thread_iter : mpi_iter.second) {
+        auto thread_id = thread_iter.first;
+        for (auto &metric_iter : thread_iter.second) {
+          auto &metric_name = metric_iter.first;
+          ss << "[" << mpi_rank << "," << thread_id << "]: " << metric_name << " (" <<
+            metric_iter.second.first << "," << metric_iter.second.second << ")" << std::endl;
+        }
+      }
+    }
+    return ss.str();
   }
 
  private:

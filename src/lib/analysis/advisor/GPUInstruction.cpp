@@ -233,6 +233,10 @@ overlayGPUInstructionsMain(Prof::CallPath::Profile &prof,
   MetricNameProfMap metric_name_prof_map(mgr);
   metric_name_prof_map.init();
 
+  if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
+    std::cout << metric_name_prof_map.to_string();
+  }
+
   // Check if prof contains gpu metrics
   // Skip non-gpu prof
   if (metric_name_prof_map.metric_ids(GPU_INST_METRIC_NAME":STL_NONE").size() == 0) {
