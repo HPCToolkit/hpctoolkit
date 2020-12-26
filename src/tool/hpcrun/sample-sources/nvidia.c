@@ -402,6 +402,9 @@ METHOD_FN(process_event_list, int lush_metrics)
     gpu_metrics_GPU_INST_LAT_enable(); // lat metrics
 
     gpu_metrics_GSAMP_enable(); // GPU utilization from sampling
+
+    cupti_enabled_activities |= CUPTI_DRIVER;
+    cupti_enabled_activities |= CUPTI_RUNTIME;
   } else if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_INST)) {
     gpu_metrics_GINS_enable();
     cupti_enabled_activities |= CUPTI_INSTRUCTION_EXECUTION;
