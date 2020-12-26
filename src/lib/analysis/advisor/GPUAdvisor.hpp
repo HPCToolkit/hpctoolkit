@@ -303,6 +303,29 @@ class GPUAdvisor {
   std::vector<std::pair<std::string, std::string>> _inst_metrics;
   std::vector<std::pair<std::string, std::string>> _dep_metrics;
 
+  // inst
+  std::string _inst_exe_metric;
+  std::string _inst_exe_pred_metric;
+
+  // branch
+  std::string _branch_div_metric;
+  std::string _branch_exe_metric;
+
+  // global
+  std::string _gmem_cache_load_trans_metric;
+  std::string _gmem_uncache_load_trans_metric;
+  std::string _gmem_cache_store_trans_metric;
+
+  std::string _gmem_cache_load_trans_theor_metric;
+  std::string _gmem_uncache_load_trans_theor_metric;
+  std::string _gmem_cache_store_trans_theor_metric;
+
+  // shared
+  std::string _smem_load_trans_metric;
+  std::string _smem_store_trans_metric;
+  std::string _smem_load_trans_theor_metric;
+  std::string _smem_store_trans_theor_metric;
+
   Prof::CallPath::Profile *_prof;
   MetricNameProfMap *_metric_name_prof_map;
 

@@ -269,7 +269,7 @@ enum {
 
 // gpu instruction executed
 #define FORALL_GINS(macro) \
-  macro(GPU_INST_METRIC_NAME ":EXE ",       GPU_INST_EXECUTE,	\
+  macro(GPU_INST_METRIC_NAME ":EXE",       GPU_INST_EXECUTE,	\
 	"GPU instructions executed by threads regardless of predicate code")	\
   macro(GPU_INST_METRIC_NAME ":EXE (PRED)", GPU_INST_EXECUTE_PRED,	\
 	"GPU instructions executed by threads with predicate evaluated as true")

@@ -160,6 +160,28 @@ void GPUAdvisor::init(const std::string &gpu_arch) {
     _metric_name_prof_map->add("BLAME " + s.second);
   }
 
+  // Branch
+  _branch_div_metric = "GBR:DIV";
+  _branch_exe_metric = "GBR:EXE";
+
+  // Inst
+  _inst_exe_metric = GPU_INST_METRIC_NAME":EXE";
+  _inst_exe_pred_metric = GPU_INST_METRIC_NAME":EXE (PRED)";
+
+  _gmem_cache_load_trans_metric = "GGMEM:LDC (L2T)";
+  _gmem_uncache_load_trans_metric = "GGMEM:LDU (L2T)";
+  _gmem_cache_store_trans_metric = "GGMEM:ST (L2T)";
+
+  _gmem_cache_load_trans_theor_metric = "GGMEM:LDCT (L2T)";
+  _gmem_uncache_load_trans_theor_metric = "GGMEM:LDUT (L2T)";
+  _gmem_cache_store_trans_theor_metric = "GGMEM:STT (L2T)";
+
+  // shared
+  _smem_load_trans_metric = "GLMEM:LD (T)";
+  _smem_store_trans_metric = "GLMEM:ST (T)";
+  _smem_load_trans_theor_metric = "GLMEM:LDT (T)";
+  _smem_store_trans_theor_metric = "GLMEM:ST (T)";
+
   // Init estimators
   auto *seq_estimator = GPUEstimatorFactory(_arch, SEQ);
   auto *seq_lat_estimator = GPUEstimatorFactory(_arch, SEQ_LAT);
