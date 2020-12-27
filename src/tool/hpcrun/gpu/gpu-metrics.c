@@ -507,12 +507,12 @@ gpu_metrics_attribute_global_access
   gpu_metrics_attribute_metric_int(metrics, l2t_index, g->l2_transactions);
   
   int l2t_theoretical_index = 
-    METRIC_ID(GMEM)[GPU_GMEM_LD_CACHED_L2TRANS_THEOR + type];
+    METRIC_ID(GGMEM)[GPU_GMEM_LD_CACHED_L2TRANS_THEOR + type];
 
   gpu_metrics_attribute_metric_int(metrics, l2t_theoretical_index, 
 				   g->theoreticalL2Transactions);
 
-  int bytes_index = METRIC_ID(GMEM)[GPU_GMEM_LD_CACHED_BYTES + type];
+  int bytes_index = METRIC_ID(GGMEM)[GPU_GMEM_LD_CACHED_BYTES + type];
   gpu_metrics_attribute_metric_int(metrics, bytes_index, g->bytes);
 }
 

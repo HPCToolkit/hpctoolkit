@@ -410,7 +410,8 @@ convert_global_access
 
   ga->details.global_access.bytes = bytes;
 
-  TMSG(CUPTI_ACTIVITY, "Global access");
+  TMSG(CUPTI_ACTIVITY, "Global access l2 %lu theoreticalL2 %lu", activity->l2_transactions,
+    activity->theoreticalL2Transactions);
 }
 
 
