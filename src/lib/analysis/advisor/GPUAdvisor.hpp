@@ -200,8 +200,11 @@ class GPUAdvisor {
   double computePathInsts(int mpi_rank, int thread_id, int from_vma, int to_vma,
     std::vector<CudaParse::Block *> &path);
 
-  void reverseDistance(std::map<Prof::CCT::ADynNode *, double> &distance,
+  void reverseRatio(std::map<Prof::CCT::ADynNode *, double> &distance,
     std::map<Prof::CCT::ADynNode *, double> &insts);
+
+  double computeEfficiency(int mpi_rank, int thread_id,
+    CudaParse::InstructionStat *inst, Prof::CCT::ADynNode *node);
 
   std::pair<std::string, std::string>
   detailizeExecBlame(CudaParse::InstructionStat *from_inst,

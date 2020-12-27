@@ -98,15 +98,17 @@ struct InstructionBlame {
   // src->dst instructions
   // 0: same instruction
   // -1: very long distance
-  // >0: xact distance
+  // >0: exact distance
   double distance;
   double stall_blame;
   double lat_blame;
+  // TODO(Keren): only care about src efficiency
+  double efficiency;
   std::string blame_name;
 
   InstructionBlame(CudaParse::InstructionStat *src_inst, CudaParse::InstructionStat *dst_inst,
                    Prof::Struct::ACodeNode *src_struct, Prof::Struct::ACodeNode *dst_struct,
-                   double distance, double stall_blame, double lat_blame,
+                   double distance, double stall_blame, double lat_blame, double efficiency,
                    const std::string &blame_name)
       : src_inst(src_inst),
         dst_inst(dst_inst),
@@ -115,13 +117,14 @@ struct InstructionBlame {
         distance(distance),
         stall_blame(stall_blame),
         lat_blame(lat_blame),
+        efficiency(efficiency),
         blame_name(blame_name) {}
 
   InstructionBlame(CudaParse::InstructionStat *src_inst, CudaParse::InstructionStat *dst_inst,
                    CudaParse::Block *src_block, CudaParse::Block *dst_block,
                    CudaParse::Function *src_function, CudaParse::Function *dst_function,
                    Prof::Struct::ACodeNode *src_struct, Prof::Struct::ACodeNode *dst_struct,
-                   double distance, double stall_blame, double lat_blame,
+                   double distance, double stall_blame, double lat_blame, double efficiency,
                    const std::string &blame_name)
       : src_inst(src_inst),
         dst_inst(dst_inst),
@@ -134,12 +137,14 @@ struct InstructionBlame {
         distance(distance),
         stall_blame(stall_blame),
         lat_blame(lat_blame),
+        efficiency(efficiency),
         blame_name(blame_name) {}
 
   InstructionBlame() : src_inst(NULL), dst_inst(NULL), src_block(NULL), dst_block(NULL),
     src_function(NULL), dst_function(NULL), src_struct(NULL), dst_struct(NULL),
-    distance(0), stall_blame(0), lat_blame(0) {}
+    distance(0), stall_blame(0), lat_blame(0), efficiency(1.0) {}
 };
+
 
 struct InstructionBlameStallComparator {
   bool operator() (const InstructionBlame *l, const InstructionBlame *r) const {

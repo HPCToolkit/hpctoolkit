@@ -450,6 +450,8 @@ void GPUAdvisor::initCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::CCT
     }
   }
 
+  auto inst_exe_pred_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_exe_pred_metric);
+
   std::vector<std::pair<Prof::CCT::ADynNode *, Prof::CCT::ADynNode *> > edge_vec;
   // Insert all possible edges
   // If a node has samples, we find all possible causes.
@@ -469,19 +471,31 @@ void GPUAdvisor::initCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::CCT
         auto vma_prop_iter = _vma_prop_map.find(vma);
 
         Prof::CCT::ADynNode *prof_node = NULL;
-        if (vma_prop_iter->second.prof_node == NULL) {
-          // Create a new prof node
-          Prof::Metric::IData metric_data(_prof->metricMgr()->size());
-          metric_data.clearMetrics();
 
-          prof_node = new Prof::CCT::Stmt(node->parent(), HPCRUN_FMT_CCTNodeId_NULL,
-            lush_assoc_info_NULL, _gpu_root->lmId(), vma, 0, NULL, metric_data);
-          vma_prop_iter->second.prof_node = prof_node;
+        if (inst_exe_pred_index != -1) {
+          // Accurate mode
+          if (vma_prop_iter->second.prof_node->hasMetricSlow(inst_exe_pred_index)) {
+            // Only add prof node it is executed
+            prof_node = vma_prop_iter->second.prof_node;
+          }
         } else {
-          prof_node = vma_prop_iter->second.prof_node;
+          // Fast mode
+          if (vma_prop_iter->second.prof_node == NULL) {
+            // Create a new prof node
+            Prof::Metric::IData metric_data(_prof->metricMgr()->size());
+            metric_data.clearMetrics();
+
+            prof_node = new Prof::CCT::Stmt(node->parent(), HPCRUN_FMT_CCTNodeId_NULL,
+              lush_assoc_info_NULL, _gpu_root->lmId(), vma, 0, NULL, metric_data);
+            vma_prop_iter->second.prof_node = prof_node;
+          } else {
+            prof_node = vma_prop_iter->second.prof_node;
+          }
         }
 
-        edge_vec.push_back(std::pair<Prof::CCT::ADynNode *, Prof::CCT::ADynNode *>(prof_node, node));
+        if (prof_node != NULL) {
+          edge_vec.push_back(std::pair<Prof::CCT::ADynNode *, Prof::CCT::ADynNode *>(prof_node, node));
+        }
       }
     }
   }
@@ -790,6 +804,7 @@ void GPUAdvisor::pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
 
   auto mem_dep_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _mem_dep_lat_metric);
   auto exec_dep_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _exec_dep_lat_metric);
+  auto inst_exe_pred_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_exe_pred_metric);
 
   std::vector<std::set<CCTEdge<Prof::CCT::ADynNode *> >::iterator> remove_edges;
   for (auto iter = cct_dep_graph.edgeBegin(); iter != cct_dep_graph.edgeEnd(); ++iter) {
@@ -833,6 +848,36 @@ void GPUAdvisor::pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
       // Find the dst barrier that causes dependency
       if (to_inst->predicate == pred_dst) {
         trackDepInit(to_vma, from_vma, pred_dst, cct_edge_path_map, TRACK_PREDICATE, fixed);
+      }
+    }
+
+    // Remove path if branch instructions are not executed
+    if (inst_exe_pred_index != -1) {
+      std::vector<std::vector<std::vector<CudaParse::Block *>>::iterator> remove_paths;
+      // Remove if any of block on this path has no executed branch
+      for (auto path_iter = cct_edge_path_map[from_vma][to_vma].begin();
+        path_iter != cct_edge_path_map[from_vma][to_vma].end(); ++path_iter) {
+        for (auto *block : *path_iter) {
+          auto *inst = block->insts.back();
+          auto inst_vma = inst->inst_stat->pc;
+
+          // No metric with the inst
+          auto prop_iter = _vma_prop_map.find(inst_vma);
+          if (prop_iter == _vma_prop_map.end()) {
+            remove_paths.push_back(path_iter);
+            break;
+          }
+
+          // Has metric but pred not taken (inst is only issued);
+          if (prop_iter->second.prof_node == NULL || !prop_iter->second.prof_node->hasMetricSlow(inst_exe_pred_index)) {
+            remove_paths.push_back(path_iter);
+            break;
+          }
+        }
+      }
+      
+      for (auto &path_iter : remove_paths) {
+        cct_edge_path_map[from_vma][to_vma].erase(path_iter);
       }
     }
 
@@ -908,7 +953,7 @@ double GPUAdvisor::computePathInsts(
 }
 
 
-void GPUAdvisor::reverseDistance(std::map<Prof::CCT::ADynNode *, double> &distance, std::map<Prof::CCT::ADynNode *, double> &insts) {
+void GPUAdvisor::reverseRatio(std::map<Prof::CCT::ADynNode *, double> &distance, std::map<Prof::CCT::ADynNode *, double> &insts) {
   Prof::CCT::ADynNode *pivot = NULL;
   double pivot_inst = 0.0;
 
@@ -1010,6 +1055,77 @@ GPUAdvisor::detailizeMemBlame(CudaParse::InstructionStat *from_inst) {
 }
 
 
+double GPUAdvisor::computeEfficiency(int mpi_rank, int thread_id,
+  CudaParse::InstructionStat *inst, Prof::CCT::ADynNode *node) {
+  double efficiency = 1.0;
+
+  if (inst->op.find("MEMORY") != std::string::npos) {
+    if (inst->op.find(".SHARED") != std::string::npos) {
+      // smem
+      auto smem_load_trans_index = _metric_name_prof_map->metric_id(
+        mpi_rank, thread_id, _smem_load_trans_metric);
+      auto smem_load_trans_theor_index = _metric_name_prof_map->metric_id(
+        mpi_rank, thread_id, _smem_load_trans_theor_metric);
+      auto smem_store_trans_index = _metric_name_prof_map->metric_id(
+        mpi_rank, thread_id, _smem_store_trans_metric);
+      auto smem_store_trans_theor_index = _metric_name_prof_map->metric_id(
+        mpi_rank, thread_id, _smem_store_trans_theor_metric);
+
+      auto smem_load_trans = node->demandMetric(smem_load_trans_index);
+      auto smem_load_trans_theor = node->demandMetric(smem_load_trans_theor_index);
+      auto smem_store_trans = node->demandMetric(smem_store_trans_index);
+      auto smem_store_trans_theor = node->demandMetric(smem_store_trans_theor_index);
+
+      auto trans = smem_load_trans + smem_store_trans;
+      auto trans_theor = smem_load_trans_theor + smem_store_trans_theor;
+
+      efficiency = (trans_theor == 0) ? 1.0 : trans / trans_theor;
+    } else {
+      // gmem
+      auto gmem_cache_load_trans_index = _metric_name_prof_map->metric_id(
+        mpi_rank, thread_id, _gmem_cache_load_trans_metric);
+      auto gmem_cache_load_trans_theor_index = _metric_name_prof_map->metric_id(
+        mpi_rank, thread_id, _gmem_cache_load_trans_theor_metric);
+      auto gmem_uncache_load_trans_index = _metric_name_prof_map->metric_id(
+        mpi_rank, thread_id, _gmem_uncache_load_trans_metric);
+      auto gmem_uncache_load_trans_theor_index = _metric_name_prof_map->metric_id(
+        mpi_rank, thread_id, _gmem_uncache_load_trans_theor_metric);
+      auto gmem_cache_store_trans_index = _metric_name_prof_map->metric_id(
+        mpi_rank, thread_id, _gmem_cache_store_trans_metric);
+      auto gmem_cache_store_trans_theor_index = _metric_name_prof_map->metric_id(
+        mpi_rank, thread_id, _gmem_cache_store_trans_theor_metric);
+
+      // global or tex
+      // If tex, trans may equal 0
+      auto gmem_cache_load_trans = node->demandMetric(gmem_cache_load_trans_index);
+      auto gmem_cache_load_trans_theor = node->demandMetric(gmem_cache_load_trans_theor_index);
+      auto gmem_uncache_load_trans = node->demandMetric(gmem_uncache_load_trans_index);
+      auto gmem_uncache_load_trans_theor = node->demandMetric(gmem_uncache_load_trans_theor_index);
+      auto gmem_cache_store_trans = node->demandMetric(gmem_cache_store_trans_index);
+      auto gmem_cache_store_trans_theor = node->demandMetric(gmem_cache_store_trans_theor_index);
+
+      auto trans = gmem_cache_load_trans + gmem_cache_store_trans + gmem_uncache_load_trans;
+      auto trans_theor = gmem_cache_load_trans_theor + gmem_cache_store_trans_theor + gmem_uncache_load_trans_theor;
+
+      efficiency = (trans_theor == 0) ? 1.0 : trans / trans_theor;
+    }
+  } else if (inst->op.find(".BRANCH") != std::string::npos) {
+    // branch
+    auto branch_div_index = _metric_name_prof_map->metric_id(
+      mpi_rank, thread_id, _branch_div_metric);
+    auto branch_exe_index = _metric_name_prof_map->metric_id(
+      mpi_rank, thread_id, _branch_exe_metric);
+
+    auto div = node->demandMetric(branch_div_index);
+    auto exe = node->demandMetric(branch_exe_index);
+    
+    efficiency = (exe == 0) ? 1.0 : div / exe;
+  }
+  
+  return efficiency;
+}
+
+
 void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
   CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph, CCTEdgePathMap &cct_edge_path_map,
   InstBlames &inst_blames) {
@@ -1025,6 +1141,9 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
 
   auto issue_metric_index = _metric_name_prof_map->metric_id(
     mpi_rank, thread_id, _issue_metric);
+
+  auto inst_exe_pred_index = _metric_name_prof_map->metric_id(
+    mpi_rank, thread_id, _inst_exe_pred_metric);
 
   for (auto iter = cct_dep_graph.nodeBegin(); iter != cct_dep_graph.nodeEnd(); ++iter) {
     auto *to_node = *iter;
@@ -1082,9 +1201,11 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
       auto stall_blame_name = "BLAME " + _exec_dep_sche_stall_metric;
       attributeBlameMetric(mpi_rank, thread_id, to_node, stall_blame_name, stall_blame);
 
+      auto efficiency = computeEfficiency(mpi_rank, thread_id, to_inst, to_node);
+
       if (lat_blame != 0) {
         inst_blames.emplace_back(InstructionBlame(to_inst, to_inst, to_struct, to_struct, 0,
-            stall_blame, lat_blame, lat_blame_name));
+            stall_blame, lat_blame, efficiency, lat_blame_name));
       }
     }
 
@@ -1106,7 +1227,9 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
       }
 
       std::map<Prof::CCT::ADynNode *, double> distance;
+      std::map<Prof::CCT::ADynNode *, double> efficiency;
       std::map<Prof::CCT::ADynNode *, double> insts;
+      std::map<Prof::CCT::ADynNode *, double> insts_efficiency;
       std::map<Prof::CCT::ADynNode *, double> issues;
       double issue_sum = 0.0;
 
@@ -1130,28 +1253,42 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
         
       for (auto *from_node : from_nodes) {
         auto from_vma = from_node->lmIP();
+        auto *from_inst = _vma_prop_map.at(from_vma).inst;
         auto ps = cct_edge_path_map[from_vma][to_vma];
 
         for (auto &path : ps) {
           auto path_inst = computePathInsts(mpi_rank, thread_id, from_vma, to_vma, path);
           distance[from_node] = MAX2(distance[from_node], path_inst);
         }
-        auto issue = from_node->demandMetric(issue_metric_index);
+
+        auto issue = 0;
+        if (inst_exe_pred_index != -1) {
+          issue = from_node->demandMetric(inst_exe_pred_index);
+          assert(issue != 0);
+        } else {
+          issue = from_node->demandMetric(issue_metric_index);
+        }
         // Guarantee that issue is not zero
         issue = issue > 0 ? issue : _arch->warp_size();
         issues[from_node] = issue;
         issue_sum += issue;
+
+        efficiency[from_node] = computeEfficiency(mpi_rank, thread_id, from_inst, from_node);
       }
 
-      // More insts, less hiding possibility
-      reverseDistance(distance, insts);
+      // More insts, less instructions apportioned
+      reverseRatio(distance, insts);
+
+      // High efficiency, less instructions apportioned
+      reverseRatio(efficiency, insts_efficiency); 
 
       auto adjust_sum = 0.0;
-      // Apportion based on issue and stalls
+      // Apportion based on issue, efficiency, and stalls
       for (auto *from_node : from_nodes) {
         auto inst_ratio = insts[from_node];
+        auto eff_ratio = insts_efficiency[from_node];
         auto issue_ratio = issues[from_node] / issue_sum;
-        adjust_sum += inst_ratio * issue_ratio;
+        adjust_sum += eff_ratio * inst_ratio * issue_ratio;
       }
 
       for (auto *from_node : from_nodes) {
@@ -1165,9 +1302,10 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
         }
 
         auto inst_ratio = insts[from_node];
+        auto eff_ratio = insts_efficiency[from_node];
         auto issue_ratio = issues[from_node] / issue_sum;
-        auto stall_blame = stall * inst_ratio * issue_ratio / adjust_sum;
-        auto lat_blame = lat * inst_ratio * issue_ratio / adjust_sum;
+        auto stall_blame = stall * inst_ratio * eff_ratio * issue_ratio / adjust_sum;
+        auto lat_blame = lat * inst_ratio * eff_ratio * issue_ratio / adjust_sum;
 
         std::pair<std::string, std::string> metric_name;
         if (stall_metric_index == exec_stall_metric_index) {
@@ -1186,7 +1324,7 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
         // One metric id is enough for inst blame analysis
         inst_blames.emplace_back(InstructionBlame(from_inst, to_inst, from_struct, to_struct,
                                                   distance[from_node], stall_blame,
-                                                  lat_blame, lat_blame_name));
+                                                  lat_blame, efficiency[from_node], lat_blame_name));
       }
     }
 
@@ -1212,13 +1350,11 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
       auto lat_blame_name = "BLAME " + lat_metric;
       attributeBlameMetric(mpi_rank, thread_id, to_node, lat_blame_name, lat);
 
-      if (to_struct == NULL) {
-        std::cout << "here3" << std::endl;
-      }
+      auto efficiency = computeEfficiency(mpi_rank, thread_id, to_inst, to_node);
 
       // one metric id is enough for inst blame analysis
       inst_blames.emplace_back(
-          InstructionBlame(to_inst, to_inst, to_struct, to_struct, 0, stall, lat, lat_blame_name));
+          InstructionBlame(to_inst, to_inst, to_struct, to_struct, 0, stall, lat, efficiency, lat_blame_name));
     }
 
     // Sync stall
@@ -1268,9 +1404,11 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
     auto lat_blame_name = "BLAME " + _sync_lat_metric;
     attributeBlameMetric(mpi_rank, thread_id, to_node, lat_blame_name, sync_lat);
 
+    auto efficiency = computeEfficiency(mpi_rank, thread_id, sync_inst, sync_node);
+
     // one metric id is enough for inst blame analysis
     inst_blames.emplace_back(InstructionBlame(sync_inst, to_inst, sync_struct, to_struct,
-        distance, sync_stall, sync_lat, lat_blame_name));
+        distance, sync_stall, sync_lat, efficiency, lat_blame_name));
   }
 }
 
