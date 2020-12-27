@@ -207,12 +207,14 @@ typedef std::map<int, std::map<int, KernelBlame>> CCTBlames;
   macro(FUNCTION_SPLIT, GPUFunctionSplitOptimizer, 9) \
   macro(SHARED_MEMORY_COALESCE, GPUSharedMemoryCoalesceOptimizer, 10) \
   macro(GLOBAL_MEMORY_COALESCE, GPUGlobalMemoryCoalesceOptimizer, 11) \
-  macro(OCCUPANCY_INCREASE, GPUOccupancyIncreaseOptimizer, 12) \
-  macro(OCCUPANCY_DECREASE, GPUOccupancyDecreaseOptimizer, 13) \
-  macro(SM_BALANCE, GPUSMBalanceOptimizer, 14) \
-  macro(BLOCK_INCREASE, GPUBlockIncreaseOptimizer, 15) \
-  macro(BLOCK_DECREASE, GPUBlockDecreaseOptimizer, 16) \
-  macro(FAST_MATH, GPUFastMathOptimizer, 17)
+  macro(GLOBAL_MEMORY_REDUCTION, GPUGlobalMemoryReductionOptimizer, 12) \
+  macro(OCCUPANCY_INCREASE, GPUOccupancyIncreaseOptimizer, 13) \
+  macro(OCCUPANCY_DECREASE, GPUOccupancyDecreaseOptimizer, 14) \
+  macro(SM_BALANCE, GPUSMBalanceOptimizer, 15) \
+  macro(BLOCK_INCREASE, GPUBlockIncreaseOptimizer, 16) \
+  macro(BLOCK_DECREASE, GPUBlockDecreaseOptimizer, 17) \
+  macro(FAST_MATH, GPUFastMathOptimizer, 18) \
+  macro(BRANCH_REDUCTION, GPUBranchReductionOptimizer, 19)
 
 
 #define DECLARE_OPTIMIZER_TYPE(TYPE, CLASS, VALUE) \

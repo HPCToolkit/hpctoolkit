@@ -1057,7 +1057,7 @@ GPUAdvisor::detailizeMemBlame(CudaParse::InstructionStat *from_inst) {
 
 double GPUAdvisor::computeEfficiency(int mpi_rank, int thread_id,
   CudaParse::InstructionStat *inst, Prof::CCT::ADynNode *node) {
-  double efficiency = 1.0;
+  double efficiency = 0.0;
 
   if (inst->op.find("MEMORY") != std::string::npos) {
     if (inst->op.find(".SHARED") != std::string::npos) {
