@@ -365,6 +365,10 @@ ANode::ancestor(ANodeTy tp) const
 {
   ANode* s = const_cast<ANode*>(this); 
   while (s && s->type() != tp) {
+    if (s->type() == TyRoot || s == s->parent()) {
+      s = NULL;
+      break;
+    }
     s = s->parent(); 
   } 
   return s;

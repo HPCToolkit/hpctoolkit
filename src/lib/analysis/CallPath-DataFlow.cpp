@@ -179,7 +179,7 @@ static void readGraph(const std::string &file_name, NodeMap &node_map, EdgeMap &
   }
 }
 
-#define MAX_STR_LEN 256
+#define MAX_STR_LEN 128
 
 static std::string
 trunc(const std::string &raw_str) {
@@ -248,7 +248,7 @@ getInlineStack(Prof::Struct::ACodeNode *stmt) {
   return st;
 }
 
-#define MAX_FRAMES 15
+#define MAX_FRAMES 25
 
 static void matchCCTNode(Prof::CallPath::CCTIdToCCTNodeMap &cctNodeMap, NodeMap &node_map) { 
   // match nodes
@@ -270,24 +270,27 @@ static void matchCCTNode(Prof::CallPath::CCTIdToCCTNodeMap &cctNodeMap, NodeMap 
       Prof::CCT::ProcFrm *proc_frm = NULL;
       std::string cct_context;
       
-      if (cct->type() != Prof::CCT::ANode::TyProcFrm) {
+      if (cct->type() != Prof::CCT::ANode::TyProcFrm &&
+        cct->type() != Prof::CCT::ANode::TyRoot) {
         proc_frm = cct->ancestorProcFrm(); 
 
-        auto *strct = cct->structure();
-        if (strct->ancestorAlien()) {
-          auto alien_st = getInlineStack(strct);
-          for (auto &name : alien_st) {
-            // Get inline call stack
-            cct_context.append(name);
-            cct_context.append("\n");
+        if (proc_frm != NULL) {
+          auto *strct = cct->structure();
+          if (strct->ancestorAlien()) {
+            auto alien_st = getInlineStack(strct);
+            for (auto &name : alien_st) {
+              // Get inline call stack
+              cct_context.append(name);
+              cct_context.append("\n");
+            }
           }
+          auto *file_struct = strct->ancestorFile();
+          auto file_name = file_struct->name();
+          auto line = std::to_string(strct->begLine());
+          auto name = file_name + ":" + line + "\t <op>";
+          cct_context.append(name);
+          cct_context.append("\n");
         }
-        auto *file_struct = strct->ancestorFile();
-        auto file_name = file_struct->name();
-        auto line = std::to_string(strct->begLine());
-        auto name = file_name + ":" + line + "\t <op>";
-        cct_context.append(name);
-        cct_context.append("\n");
       } else {
         proc_frm = dynamic_cast<Prof::CCT::ProcFrm *>(cct);
       }
