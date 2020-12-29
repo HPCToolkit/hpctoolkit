@@ -89,8 +89,8 @@ using std::string;
 //***************************************************************************
 
 // Size in bytes for parallel analysis of gpu binaries
-#define DEFAULT_GPU_SIZE   100000000
-#define GPU_SIZE_STR      "100000000"
+#define DEFAULT_GPU_SIZE   10000000
+#define GPU_SIZE_STR      "10000000"
 
 static const char* version_info = HPCTOOLKIT_VERSION_STRING;
 
