@@ -383,8 +383,6 @@ METHOD_FN(process_event_list, int lush_metrics)
     gpu_metrics_KINFO_enable();
 
     // Set enabling activities
-    cupti_enabled_activities |= CUPTI_DRIVER;
-    cupti_enabled_activities |= CUPTI_RUNTIME;
     cupti_enabled_activities |= CUPTI_KERNEL_EXECUTION;
     cupti_enabled_activities |= CUPTI_KERNEL_INVOCATION;
     cupti_enabled_activities |= CUPTI_DATA_MOTION_EXPLICIT;
@@ -402,9 +400,6 @@ METHOD_FN(process_event_list, int lush_metrics)
     gpu_metrics_GPU_INST_LAT_enable(); // lat metrics
 
     gpu_metrics_GSAMP_enable(); // GPU utilization from sampling
-
-    cupti_enabled_activities |= CUPTI_DRIVER;
-    cupti_enabled_activities |= CUPTI_RUNTIME;
   } else if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_INST)) {
     gpu_metrics_GINS_enable();
     cupti_enabled_activities |= CUPTI_INSTRUCTION_EXECUTION;
@@ -418,6 +413,9 @@ METHOD_FN(process_event_list, int lush_metrics)
     gpu_metrics_GGMEM_enable();
     cupti_enabled_activities |= CUPTI_GLOBAL_ACCESS;
   }
+
+  cupti_enabled_activities |= CUPTI_DRIVER;
+  cupti_enabled_activities |= CUPTI_RUNTIME;
 
 #ifndef HPCRUN_STATIC_LINK
   if (cuda_bind()) {

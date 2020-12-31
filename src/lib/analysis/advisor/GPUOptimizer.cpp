@@ -337,7 +337,7 @@ std::vector<BlameStats> GPUCodeReorderOptimizer::match_impl(const KernelBlame &k
       "Compiler fails to schedule instructions properly to hide latencies.\n"
       "    To reduce latency: \n"
       "    1. Reorder statements manually. For example, if a memory load latency is outstanding, the "
-      "load can be put a few lines before the first usage.\n";
+      "load can be put a few lines before the first usage.\n"
       "    2. On new GPU architectures, looking for asynchronous memory copy to directly load value into "
       "shared memory.\n";
   _inspection.stall = true;

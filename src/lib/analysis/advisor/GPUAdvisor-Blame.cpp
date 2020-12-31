@@ -474,7 +474,8 @@ void GPUAdvisor::initCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::CCT
 
         if (inst_exe_pred_index != -1) {
           // Accurate mode
-          if (vma_prop_iter->second.prof_node->hasMetricSlow(inst_exe_pred_index)) {
+          if (vma_prop_iter->second.prof_node != NULL &&
+            vma_prop_iter->second.prof_node->hasMetricSlow(inst_exe_pred_index)) {
             // Only add prof node it is executed
             prof_node = vma_prop_iter->second.prof_node;
           }
