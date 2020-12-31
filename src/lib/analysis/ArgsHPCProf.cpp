@@ -208,7 +208,7 @@ CmdLineParser::OptArgDesc Analysis::ArgsHPCProf::optArgs[] = {
      NULL },
 
   // GPU
-  { 0, "gpu-arch",          CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL, NULL },
+  { 0, "gpu-arch",          CLP::ARG_REQ, CLP::DUPOPT_CLOB, NULL, NULL },
 
   // Output options
   { 'o', "output",          CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL,
