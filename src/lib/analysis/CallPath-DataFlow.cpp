@@ -248,7 +248,7 @@ getInlineStack(Prof::Struct::ACodeNode *stmt) {
   return st;
 }
 
-#define MAX_FRAMES 25
+#define MAX_FRAMES 20
 
 static void matchCCTNode(Prof::CallPath::CCTIdToCCTNodeMap &cctNodeMap, NodeMap &node_map) { 
   // match nodes
