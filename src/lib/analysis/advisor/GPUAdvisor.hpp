@@ -167,7 +167,8 @@ class GPUAdvisor {
     TRACK_REG = 0,
     TRACK_PRED_REG = 1,
     TRACK_PREDICATE = 2,
-    TRACK_BARRIER = 3
+    TRACK_UNIFORM = 3,
+    TRACK_BARRIER = 4
   };
 
  private:

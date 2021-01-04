@@ -121,6 +121,10 @@ struct InstructionStat {
     return std::find(srcs.begin(), srcs.end(), reg) != srcs.end();
   }
 
+  bool find_src_ureg(int ureg) {
+    return std::find(usrcs.begin(), usrcs.end(), ureg) != usrcs.end();
+  }
+
   bool find_src_pred_reg(int pred_reg) {
     return std::find(psrcs.begin(), psrcs.end(), pred_reg) != psrcs.end();
   }

@@ -708,6 +708,8 @@ void GPUAdvisor::trackDep(int from_vma, int to_vma, int id,
       find = inst->find_src_pred_reg(id);
     } else if (track_type == TRACK_PREDICATE) {
       find = (inst->predicate == id || inst->find_src_pred_reg(id));
+    } else if (track_type == TRACK_UNIFORM) {
+      find = inst->find_src_ureg(id);
     } else {  // track_type == TRACK_BARRIER
       find = inst->find_src_barrier(id);
     }
@@ -841,6 +843,15 @@ void GPUAdvisor::pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
       auto bassign_iter = to_inst->bassign_pcs.find(bdst);
       if (bassign_iter != to_inst->bassign_pcs.end()) {
         trackDepInit(to_vma, from_vma, bdst, cct_edge_path_map, TRACK_BARRIER, fixed);
+      }
+    }
+
+    // Uniform registers
+    for (auto udst : from_inst->udsts) {
+      // Find the dst that causes dependency
+      auto uassign_iter = to_inst->uassign_pcs.find(udst);
+      if (uassign_iter != to_inst->uassign_pcs.end()) {
+        trackDepInit(to_vma, from_vma, udst, cct_edge_path_map, TRACK_UNIFORM, fixed);
       }
     }
 
@@ -993,6 +1004,15 @@ GPUAdvisor::detailizeExecBlame(CudaParse::InstructionStat *from_inst,
     if (to_inst->find_src_reg(dst)) {
       find_reg = true;
       break;
+    }
+  }
+
+  if (!find_reg) {
+    for (auto udst : from_inst->udsts) {
+      if (to_inst->find_src_ureg(udst)) {
+        find_reg = true;
+        break;
+      }
     }
   }
 
@@ -1258,9 +1278,10 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
         auto ps = cct_edge_path_map[from_vma][to_vma];
 
         for (auto &path : ps) {
-          auto path_inst = computePathInsts(mpi_rank, thread_id, from_vma, to_vma, path);
-          distance[from_node] = MAX2(distance[from_node], path_inst);
+          distance[from_node] += computePathInsts(mpi_rank, thread_id, from_vma, to_vma, path);
         }
+        // Calculate average distance
+        distance[from_node] /= ps.size();
 
         auto issue = 0;
         if (inst_exe_pred_index != -1) {

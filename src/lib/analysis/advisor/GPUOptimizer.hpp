@@ -140,43 +140,47 @@ struct InstructionBlame {
         efficiency(efficiency),
         blame_name(blame_name) {}
 
-  InstructionBlame() : src_inst(NULL), dst_inst(NULL), src_block(NULL), dst_block(NULL),
-    src_function(NULL), dst_function(NULL), src_struct(NULL), dst_struct(NULL),
-    distance(0), stall_blame(0), lat_blame(0), efficiency(1.0) {}
+  InstructionBlame()
+      : src_inst(NULL),
+        dst_inst(NULL),
+        src_block(NULL),
+        dst_block(NULL),
+        src_function(NULL),
+        dst_function(NULL),
+        src_struct(NULL),
+        dst_struct(NULL),
+        distance(0),
+        stall_blame(0),
+        lat_blame(0),
+        efficiency(1.0) {}
 };
 
-
 struct InstructionBlameStallComparator {
-  bool operator() (const InstructionBlame *l, const InstructionBlame *r) const {
+  bool operator()(const InstructionBlame *l, const InstructionBlame *r) const {
     return l->stall_blame > r->stall_blame;
   }
 };
 
-
 struct InstructionBlameLatComparator {
-  bool operator() (const InstructionBlame *l, const InstructionBlame *r) const {
+  bool operator()(const InstructionBlame *l, const InstructionBlame *r) const {
     return l->lat_blame > r->lat_blame;
   }
 };
 
-
 struct InstructionBlameSrcComparator {
-  bool operator() (const InstructionBlame *l, const InstructionBlame *r) const {
+  bool operator()(const InstructionBlame *l, const InstructionBlame *r) const {
     return l->src_inst->pc < r->src_inst->pc;
   }
 };
 
-
 struct InstructionBlameDstComparator {
-  bool operator() (const InstructionBlame *l, const InstructionBlame *r) const {
+  bool operator()(const InstructionBlame *l, const InstructionBlame *r) const {
     return l->dst_inst->pc < r->dst_inst->pc;
   }
 };
 
-
 typedef std::vector<InstructionBlame> InstBlames;
 typedef std::vector<InstructionBlame *> InstBlamePtrs;
-
 
 struct KernelBlame {
   InstBlames inst_blames;
@@ -190,9 +194,7 @@ struct KernelBlame {
   KernelBlame() : stall_blame(0), lat_blame(0) {}
 };
 
-
 typedef std::map<int, std::map<int, KernelBlame>> CCTBlames;
-
 
 #define FORALL_OPTIMIZER_TYPES(macro) \
   macro(REGISTER_INCREASE, GPURegisterIncreaseOptimizer, 0) \
@@ -214,38 +216,27 @@ typedef std::map<int, std::map<int, KernelBlame>> CCTBlames;
   macro(BLOCK_INCREASE, GPUBlockIncreaseOptimizer, 16) \
   macro(BLOCK_DECREASE, GPUBlockDecreaseOptimizer, 17) \
   macro(FAST_MATH, GPUFastMathOptimizer, 18) \
-  macro(BRANCH_REDUCTION, GPUBranchReductionOptimizer, 19)
+  macro(BRANCH_MERGE, GPUBranchMergeOptimizer, 19) \
+  macro(BRANCH_LIKELY, GPUBranchLikelyOptimizer, 20) \
+  macro(ASYNC_COPY, GPUAsyncCopyOptimizer, 21)
 
+#define DECLARE_OPTIMIZER_TYPE(TYPE, CLASS, VALUE) TYPE = VALUE,
 
-#define DECLARE_OPTIMIZER_TYPE(TYPE, CLASS, VALUE) \
-  TYPE = VALUE,
-
-enum GPUOptimizerType {
-  FORALL_OPTIMIZER_TYPES(DECLARE_OPTIMIZER_TYPE)
-};
+enum GPUOptimizerType { FORALL_OPTIMIZER_TYPES(DECLARE_OPTIMIZER_TYPE) };
 
 #undef DECLARE_OPTIMIZER_TYPE
 
 class GPUOptimizer {
  public:
-  GPUOptimizer(const std::string &name, const GPUArchitecture *arch) : 
-    _name(name), _arch(arch) {}
+  GPUOptimizer(const std::string &name, const GPUArchitecture *arch) : _name(name), _arch(arch) {}
 
-  void clear() {
-    _inspection.clear();
-  }
+  void clear() { _inspection.clear(); }
 
-  std::string name() {
-    return _name;
-  }
+  std::string name() { return _name; }
 
-  std::string advise(InspectionFormatter *formatter) {
-    return formatter->format(_inspection);
-  }
+  std::string advise(InspectionFormatter *formatter) { return formatter->format(_inspection); }
 
-  void set_estimator(GPUEstimator *estimator) {
-    this->_estimator = estimator;
-  }
+  void set_estimator(GPUEstimator *estimator) { this->_estimator = estimator; }
 
   /**
    * @brief
@@ -267,7 +258,7 @@ class GPUOptimizer {
   double match(const KernelBlame &kernel_blame, const KernelStats &kernel_stats);
 
   virtual ~GPUOptimizer() {}
- 
+
  protected:
   std::string _name;
 
