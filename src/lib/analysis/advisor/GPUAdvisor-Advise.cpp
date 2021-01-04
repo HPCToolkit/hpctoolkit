@@ -128,7 +128,6 @@ KernelStats GPUAdvisor::readKernelStats(int mpi_rank, int thread_id) {
   block_smem /= count;
   thread_regs /= count;
   warps /= count;
-  time /= count;
 
   samples_total = samples_total - samples_dropped;
   samples_expected *= sample_frequency;
