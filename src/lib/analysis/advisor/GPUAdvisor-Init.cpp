@@ -224,8 +224,20 @@ void GPUAdvisor::init(const std::string &gpu_arch) {
   auto *shared_memory_optimizer = GPUOptimizerFactory(SHARED_MEMORY_COALESCE, _arch);
   shared_memory_optimizer->set_estimator(_estimators[SEQ]);
 
-  auto *global_memory_optimizer = GPUOptimizerFactory(GLOBAL_MEMORY_COALESCE, _arch);
-  global_memory_optimizer->set_estimator(_estimators[SEQ]);
+  auto *global_memory_coalesce_optimizer = GPUOptimizerFactory(GLOBAL_MEMORY_COALESCE, _arch);
+  global_memory_coalesce_optimizer->set_estimator(_estimators[SEQ]);
+
+  auto *global_memory_reduction_optimizer = GPUOptimizerFactory(GLOBAL_MEMORY_REDUCTION, _arch);
+  global_memory_reduction_optimizer->set_estimator(_estimators[SEQ]);
+
+  auto *branch_merge_optimizer = GPUOptimizerFactory(BRANCH_MERGE, _arch);
+  branch_merge_optimizer->set_estimator(_estimators[SEQ]);
+
+  auto *branch_likely_optimizer = GPUOptimizerFactory(BRANCH_LIKELY, _arch);
+  branch_likely_optimizer->set_estimator(_estimators[SEQ]);
+
+  auto *async_copy_optimizer = GPUOptimizerFactory(ASYNC_COPY, _arch);
+  async_copy_optimizer->set_estimator(_estimators[SEQ]);
 
   auto *occupancy_increase_optimizer = GPUOptimizerFactory(OCCUPANCY_INCREASE, _arch);
   occupancy_increase_optimizer->set_estimator(_estimators[PARALLEL_LAT]);
@@ -255,8 +267,11 @@ void GPUAdvisor::init(const std::string &gpu_arch) {
   _code_optimizers.push_back(function_inline_optimizer);
   _code_optimizers.push_back(function_split_optimizer);
   _code_optimizers.push_back(shared_memory_optimizer);
-  _code_optimizers.push_back(global_memory_optimizer);
+  _code_optimizers.push_back(global_memory_coalesce_optimizer);
   _code_optimizers.push_back(fast_math_optimizer);
+  _code_optimizers.push_back(branch_merge_optimizer);
+  _code_optimizers.push_back(branch_likely_optimizer);
+  _code_optimizers.push_back(async_copy_optimizer);
 
   // Parallel optimizers
   _parallel_optimizers.push_back(occupancy_increase_optimizer);

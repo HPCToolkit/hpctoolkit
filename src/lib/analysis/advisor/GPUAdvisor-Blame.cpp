@@ -1140,7 +1140,7 @@ double GPUAdvisor::computeEfficiency(int mpi_rank, int thread_id,
     auto div = node->demandMetric(branch_div_index);
     auto exe = node->demandMetric(branch_exe_index);
     
-    efficiency = (exe == 0) ? 1.0 : div / exe;
+    efficiency = (exe == 0) ? 1.0 : 1 - div / exe;
   }
   
   return efficiency;
