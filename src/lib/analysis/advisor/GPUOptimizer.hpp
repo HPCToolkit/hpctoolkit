@@ -216,9 +216,8 @@ typedef std::map<int, std::map<int, KernelBlame>> CCTBlames;
   macro(BLOCK_INCREASE, GPUBlockIncreaseOptimizer, 16) \
   macro(BLOCK_DECREASE, GPUBlockDecreaseOptimizer, 17) \
   macro(FAST_MATH, GPUFastMathOptimizer, 18) \
-  macro(BRANCH_MERGE, GPUBranchMergeOptimizer, 19) \
-  macro(BRANCH_LIKELY, GPUBranchLikelyOptimizer, 20) \
-  macro(ASYNC_COPY, GPUAsyncCopyOptimizer, 21)
+  macro(DIVERGE_REDUCTION, GPUDivergeReductionOptimizer, 19) \
+  macro(ASYNC_COPY, GPUAsyncCopyOptimizer, 20)
 
 #define DECLARE_OPTIMIZER_TYPE(TYPE, CLASS, VALUE) TYPE = VALUE,
 

@@ -737,8 +737,7 @@ std::vector<BlameStats> GPUGlobalMemoryReductionOptimizer::match_impl(
   // Find top latency pairs
   for (auto *inst_blame : kernel_blame.lat_inst_blame_ptrs) {
     auto *inst = inst_blame->src_inst;
-    if (inst->op.find(".GLOBAL") != std::string::npos &&
-      inst_blame->blame_name.find(":LAT_MTHR") != std::string::npos &&
+    if (inst_blame->blame_name.find(":LAT_MTHR") != std::string::npos &&
       inst_blame->efficiency >= COALSECE_LIMIT) {
       blame += inst_blame->lat_blame;
 
@@ -748,7 +747,7 @@ std::vector<BlameStats> GPUGlobalMemoryReductionOptimizer::match_impl(
     }
   }
 
-  _inspection.loop = true;
+  _inspection.loop = false;
   _inspection.stall = false;
 
   _inspection.hint =
@@ -760,9 +759,9 @@ std::vector<BlameStats> GPUGlobalMemoryReductionOptimizer::match_impl(
   return std::vector<BlameStats>{blame_stats};
 }
 
-std::vector<BlameStats> GPUBranchMergeOptimizer::match_impl(const KernelBlame &kernel_blame,
-                                                            const KernelStats &kernel_stats) {
-  const double DIV_LIMIT = 0.3;
+std::vector<BlameStats> GPUDivergeReductionOptimizer::match_impl(
+  const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
+  const double DIV_LIMIT = 0.5;
   std::vector<BlameStats> blame_stats_vec;
   auto blame = 0.0;
 
@@ -789,33 +788,6 @@ std::vector<BlameStats> GPUBranchMergeOptimizer::match_impl(const KernelBlame &k
   return std::vector<BlameStats>{blame_stats};
 }
 
-std::vector<BlameStats> GPUBranchLikelyOptimizer::match_impl(const KernelBlame &kernel_blame,
-                                                             const KernelStats &kernel_stats) {
-  const double DIV_LIMIT = 0.8;
-  auto blame = 0.0;
-
-  // Match if high execution latency for not diverged branch instructions
-  for (auto *inst_blame : kernel_blame.lat_inst_blame_ptrs) {
-    auto *src_inst = inst_blame->src_inst;
-
-    if (src_inst->op.find("BRANCH") != std::string::npos && inst_blame->efficiency > DIV_LIMIT) {
-      blame += inst_blame->lat_blame;
-
-      if (_inspection.regions.size() < _top_regions) {
-        _inspection.regions.push_back(*inst_blame);
-      }
-    }
-  }
-
-  _inspection.hint =
-      "Undiverged branch conditions encountered in execution. Look for improvements by "
-      "using compiler hints.\n";
-  _inspection.stall = false;
-  _inspection.loop = false;
-
-  BlameStats blame_stats(blame, kernel_stats.active_samples, kernel_stats.total_samples);
-  return std::vector<BlameStats>{blame_stats};
-}
 
 std::vector<BlameStats> GPUOccupancyIncreaseOptimizer::match_impl(const KernelBlame &kernel_blame,
                                                                   const KernelStats &kernel_stats) {
