@@ -1,11 +1,11 @@
 #ifndef _CUDA_ANALYZE_INSTRUCTION_H_
 #define _CUDA_ANALYZE_INSTRUCTION_H_
 
-#include <map>
-#include <vector>
-#include <string>
-
 #include <CodeObject.h>
+
+#include <map>
+#include <string>
+#include <vector>
 
 namespace CudaParse {
 
@@ -38,14 +38,14 @@ struct InstructionStat {
   int predicate;  // P0-P6
   PredicateFlag predicate_flag;
   std::vector<int> predicate_assign_pcs;
-  std::vector<int> dsts;  // R0-R255: only records normal registers
-  std::vector<int> srcs;  // R0-R255: only records normal registers
-  std::vector<int> pdsts;  // P0-P6: only records predicate registers
-  std::vector<int> psrcs;  // P0-P6: only records predicate registers
-  std::vector<int> bdsts;  // B1-B6: only records barriers
-  std::vector<int> bsrcs;  // B1-B6: only records barriers
-  std::vector<int> udsts;  // UR0-UR63: only records uniform regsters
-  std::vector<int> usrcs;  // UR0-UR63: only records uniform regsters
+  std::vector<int> dsts;    // R0-R255: only records normal registers
+  std::vector<int> srcs;    // R0-R255: only records normal registers
+  std::vector<int> pdsts;   // P0-P6: only records predicate registers
+  std::vector<int> psrcs;   // P0-P6: only records predicate registers
+  std::vector<int> bdsts;   // B1-B6: only records barriers
+  std::vector<int> bsrcs;   // B1-B6: only records barriers
+  std::vector<int> udsts;   // UR0-UR63: only records uniform regsters
+  std::vector<int> usrcs;   // UR0-UR63: only records uniform regsters
   std::vector<int> updsts;  // UP0-UP?: only records uniform predicate regsters
   std::vector<int> upsrcs;  // UP0-UP?: only records uniform predicate regsters
   std::map<int, std::vector<int> > assign_pcs;
@@ -59,67 +59,88 @@ struct InstructionStat {
 
   explicit InstructionStat(Instruction *inst);
 
-  InstructionStat(const std::string &op,
-    int pc, int predicate, PredicateFlag predicate_flag,
-    std::vector<int> &predicate_assign_pcs,
-    std::vector<int> &dsts, std::vector<int> &srcs,
-    std::vector<int> &pdsts, std::vector<int> &psrcs,
-    std::vector<int> &bdsts, std::vector<int> &bsrcs) :
-    op(op), pc(pc), predicate(predicate), predicate_flag(predicate_flag),
-    predicate_assign_pcs(predicate_assign_pcs),
-    dsts(dsts), srcs(srcs), pdsts(pdsts), psrcs(psrcs),
-    bdsts(bdsts), bsrcs(bsrcs) {}
+  InstructionStat(const std::string &op, int pc, int predicate, PredicateFlag predicate_flag,
+                  std::vector<int> &predicate_assign_pcs, std::vector<int> &dsts,
+                  std::vector<int> &srcs, std::vector<int> &pdsts, std::vector<int> &psrcs,
+                  std::vector<int> &bdsts, std::vector<int> &bsrcs)
+      : op(op),
+        pc(pc),
+        predicate(predicate),
+        predicate_flag(predicate_flag),
+        predicate_assign_pcs(predicate_assign_pcs),
+        dsts(dsts),
+        srcs(srcs),
+        pdsts(pdsts),
+        psrcs(psrcs),
+        bdsts(bdsts),
+        bsrcs(bsrcs) {}
 
-  InstructionStat(const std::string &op,
-    int pc, int predicate, PredicateFlag predicate_flag,
-    std::vector<int> &predicate_assign_pcs,
-    std::vector<int> &dsts, std::vector<int> &srcs,
-    std::vector<int> &pdsts, std::vector<int> &psrcs,
-    std::vector<int> &bdsts, std::vector<int> &bsrcs,
-    std::vector<int> &udsts, std::vector<int> &usrcs,
-    std::vector<int> &updsts, std::vector<int> &upsrcs,
-    std::map<int, std::vector<int> > &assign_pcs,
-    std::map<int, std::vector<int> > &passign_pcs,
-    std::map<int, std::vector<int> > &bassign_pcs,
-    std::map<int, std::vector<int> > &uassign_pcs,
-    std::map<int, std::vector<int> > &upassign_pcs) :
-    op(op), pc(pc), predicate(predicate), predicate_flag(predicate_flag),
-    predicate_assign_pcs(predicate_assign_pcs),
-    dsts(dsts), srcs(srcs), pdsts(pdsts), psrcs(psrcs),
-    bdsts(bdsts), bsrcs(bsrcs), udsts(udsts), usrcs(usrcs),
-    updsts(updsts), upsrcs(upsrcs), 
-    assign_pcs(assign_pcs), passign_pcs(passign_pcs), bassign_pcs(bassign_pcs),
-    uassign_pcs(uassign_pcs), upassign_pcs(upassign_pcs) {}
+  InstructionStat(const std::string &op, int pc, int predicate, PredicateFlag predicate_flag,
+                  std::vector<int> &predicate_assign_pcs, std::vector<int> &dsts,
+                  std::vector<int> &srcs, std::vector<int> &pdsts, std::vector<int> &psrcs,
+                  std::vector<int> &bdsts, std::vector<int> &bsrcs, std::vector<int> &udsts,
+                  std::vector<int> &usrcs, std::vector<int> &updsts, std::vector<int> &upsrcs,
+                  std::map<int, std::vector<int> > &assign_pcs,
+                  std::map<int, std::vector<int> > &passign_pcs,
+                  std::map<int, std::vector<int> > &bassign_pcs,
+                  std::map<int, std::vector<int> > &uassign_pcs,
+                  std::map<int, std::vector<int> > &upassign_pcs)
+      : op(op),
+        pc(pc),
+        predicate(predicate),
+        predicate_flag(predicate_flag),
+        predicate_assign_pcs(predicate_assign_pcs),
+        dsts(dsts),
+        srcs(srcs),
+        pdsts(pdsts),
+        psrcs(psrcs),
+        bdsts(bdsts),
+        bsrcs(bsrcs),
+        udsts(udsts),
+        usrcs(usrcs),
+        updsts(updsts),
+        upsrcs(upsrcs),
+        assign_pcs(assign_pcs),
+        passign_pcs(passign_pcs),
+        bassign_pcs(bassign_pcs),
+        uassign_pcs(uassign_pcs),
+        upassign_pcs(upassign_pcs) {}
 
-  InstructionStat(const std::string &op,
-    int pc, int predicate, PredicateFlag predicate_flag,
-    std::vector<int> &predicate_assign_pcs,
-    std::vector<int> &dsts, std::vector<int> &srcs,
-    std::vector<int> &pdsts, std::vector<int> &psrcs,
-    std::vector<int> &bdsts, std::vector<int> &bsrcs,
-    std::vector<int> &udsts, std::vector<int> &usrcs,
-    std::vector<int> &updsts, std::vector<int> &upsrcs,
-    std::map<int, std::vector<int> > &assign_pcs,
-    std::map<int, std::vector<int> > &passign_pcs,
-    std::map<int, std::vector<int> > &bassign_pcs,
-    std::map<int, std::vector<int> > &uassign_pcs,
-    std::map<int, std::vector<int> > &upassign_pcs,
-    Control &control) :
-    op(op), pc(pc), predicate(predicate), predicate_flag(predicate_flag),
-    predicate_assign_pcs(predicate_assign_pcs),
-    dsts(dsts), srcs(srcs), pdsts(pdsts), psrcs(psrcs), 
-    bdsts(bdsts), bsrcs(bsrcs), udsts(udsts), usrcs(usrcs),
-    updsts(updsts), upsrcs(upsrcs),
-    assign_pcs(assign_pcs), passign_pcs(passign_pcs), bassign_pcs(bassign_pcs),
-    uassign_pcs(uassign_pcs), upassign_pcs(upassign_pcs), control(control) {}
+  InstructionStat(const std::string &op, int pc, int predicate, PredicateFlag predicate_flag,
+                  std::vector<int> &predicate_assign_pcs, std::vector<int> &dsts,
+                  std::vector<int> &srcs, std::vector<int> &pdsts, std::vector<int> &psrcs,
+                  std::vector<int> &bdsts, std::vector<int> &bsrcs, std::vector<int> &udsts,
+                  std::vector<int> &usrcs, std::vector<int> &updsts, std::vector<int> &upsrcs,
+                  std::map<int, std::vector<int> > &assign_pcs,
+                  std::map<int, std::vector<int> > &passign_pcs,
+                  std::map<int, std::vector<int> > &bassign_pcs,
+                  std::map<int, std::vector<int> > &uassign_pcs,
+                  std::map<int, std::vector<int> > &upassign_pcs, Control &control)
+      : op(op),
+        pc(pc),
+        predicate(predicate),
+        predicate_flag(predicate_flag),
+        predicate_assign_pcs(predicate_assign_pcs),
+        dsts(dsts),
+        srcs(srcs),
+        pdsts(pdsts),
+        psrcs(psrcs),
+        bdsts(bdsts),
+        bsrcs(bsrcs),
+        udsts(udsts),
+        usrcs(usrcs),
+        updsts(updsts),
+        upsrcs(upsrcs),
+        assign_pcs(assign_pcs),
+        passign_pcs(passign_pcs),
+        bassign_pcs(bassign_pcs),
+        uassign_pcs(uassign_pcs),
+        upassign_pcs(upassign_pcs),
+        control(control) {}
 
-  bool operator < (const InstructionStat &other) const {
-    return this->pc < other.pc;
-  }
+  bool operator<(const InstructionStat &other) const { return this->pc < other.pc; }
 
-  bool find_src_reg(int reg) {
-    return std::find(srcs.begin(), srcs.end(), reg) != srcs.end();
-  }
+  bool find_src_reg(int reg) { return std::find(srcs.begin(), srcs.end(), reg) != srcs.end(); }
 
   bool find_src_ureg(int ureg) {
     return std::find(usrcs.begin(), usrcs.end(), ureg) != usrcs.end();
@@ -137,20 +158,19 @@ struct InstructionStat {
 void relocateCudaInstructionStats(std::vector<Function *> &functions);
 
 void flatCudaInstructionStats(const std::vector<Function *> &functions,
-  std::vector<InstructionStat *> &inst_stats);
+                              std::vector<InstructionStat *> &inst_stats);
 
 void controlCudaInstructions(const char *cubin, std::vector<Function *> &functions);
 
-void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_set,
-  int threads, std::vector<Function *> &functions);
+void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_set, int threads,
+                           std::vector<Function *> &functions);
 
 void processLivenessCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_set,
-  std::vector<Function *> &functions);
+                                     std::vector<Function *> &functions);
 
 bool dumpCudaInstructions(const std::string &file_path, const std::vector<Function *> &functions);
 
 bool readCudaInstructions(const std::string &file_path, std::vector<Function *> &Function_stats);
-
 
 }  // namespace CudaParse
 

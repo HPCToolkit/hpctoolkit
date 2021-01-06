@@ -104,12 +104,13 @@ struct InstructionBlame {
   double lat_blame;
   // TODO(Keren): only care about src efficiency
   double efficiency;
+  double pred_true;
   std::string blame_name;
 
   InstructionBlame(CudaParse::InstructionStat *src_inst, CudaParse::InstructionStat *dst_inst,
                    Prof::Struct::ACodeNode *src_struct, Prof::Struct::ACodeNode *dst_struct,
                    double distance, double stall_blame, double lat_blame, double efficiency,
-                   const std::string &blame_name)
+                   double pred_true, const std::string &blame_name)
       : src_inst(src_inst),
         dst_inst(dst_inst),
         src_struct(src_struct),
@@ -118,6 +119,7 @@ struct InstructionBlame {
         stall_blame(stall_blame),
         lat_blame(lat_blame),
         efficiency(efficiency),
+        pred_true(pred_true),
         blame_name(blame_name) {}
 
   InstructionBlame(CudaParse::InstructionStat *src_inst, CudaParse::InstructionStat *dst_inst,
@@ -125,7 +127,7 @@ struct InstructionBlame {
                    CudaParse::Function *src_function, CudaParse::Function *dst_function,
                    Prof::Struct::ACodeNode *src_struct, Prof::Struct::ACodeNode *dst_struct,
                    double distance, double stall_blame, double lat_blame, double efficiency,
-                   const std::string &blame_name)
+                   double pred_true, const std::string &blame_name)
       : src_inst(src_inst),
         dst_inst(dst_inst),
         src_block(src_block),
@@ -138,6 +140,7 @@ struct InstructionBlame {
         stall_blame(stall_blame),
         lat_blame(lat_blame),
         efficiency(efficiency),
+        pred_true(pred_true),
         blame_name(blame_name) {}
 
   InstructionBlame()
@@ -152,7 +155,8 @@ struct InstructionBlame {
         distance(0),
         stall_blame(0),
         lat_blame(0),
-        efficiency(1.0) {}
+        efficiency(1.0),
+        pred_true(1.0) {}
 };
 
 struct InstructionBlameStallComparator {
@@ -217,7 +221,8 @@ typedef std::map<int, std::map<int, KernelBlame>> CCTBlames;
   macro(BLOCK_DECREASE, GPUBlockDecreaseOptimizer, 17) \
   macro(FAST_MATH, GPUFastMathOptimizer, 18) \
   macro(DIVERGE_REDUCTION, GPUDivergeReductionOptimizer, 19) \
-  macro(ASYNC_COPY, GPUAsyncCopyOptimizer, 20)
+  macro(BRANCH_ELIMINATION, GPUBranchEliminationOptimizer, 20) \
+  macro(ASYNC_COPY, GPUAsyncCopyOptimizer, 21)
 
 #define DECLARE_OPTIMIZER_TYPE(TYPE, CLASS, VALUE) TYPE = VALUE,
 

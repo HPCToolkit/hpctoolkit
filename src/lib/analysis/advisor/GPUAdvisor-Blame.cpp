@@ -1,57 +1,50 @@
 //************************* System Include Files ****************************
 
-#include <iostream>
-#include <fstream>
-#include <sstream>
+#include <sys/stat.h>
 
-#include <climits>
-#include <cstring>
-#include <cstdio>
-
+#include <algorithm>
 #include <bitset>
+#include <climits>
+#include <cstdio>
+#include <cstring>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <limits>
+#include <queue>
+#include <sstream>
 #include <string>
 #include <typeinfo>
 #include <unordered_map>
-#include <algorithm>
-#include <iomanip>
-#include <queue>
-#include <limits>
-
-#include <sys/stat.h>
 
 //*************************** User Include Files ****************************
 
-#include <include/uint.h>
 #include <include/gcc-attr.h>
 #include <include/gpu-metric-names.h>
+#include <include/uint.h>
 
-#include "GPUAdvisor.hpp"
-#include "../MetricNameProfMap.hpp"
 #include "../CCTGraph.hpp"
+#include "../MetricNameProfMap.hpp"
+#include "GPUAdvisor.hpp"
 
 using std::string;
 
-#include <lib/prof/CCT-Tree.hpp>
-#include <lib/prof/Struct-Tree.hpp>
-#include <lib/prof/Metric-Mgr.hpp>
-#include <lib/prof/Metric-ADesc.hpp>
-
-#include <lib/profxml/XercesUtil.hpp>
-#include <lib/profxml/PGMReader.hpp>
-
 #include <lib/prof-lean/hpcrun-metric.h>
+#include <lib/support/diagnostics.h>
 
 #include <lib/binutils/LM.hpp>
 #include <lib/binutils/VMAInterval.hpp>
-
 #include <lib/cuda/DotCFG.hpp>
-
-#include <lib/xml/xml.hpp>
-
-#include <lib/support/diagnostics.h>
-#include <lib/support/Logic.hpp>
+#include <lib/prof/CCT-Tree.hpp>
+#include <lib/prof/Metric-ADesc.hpp>
+#include <lib/prof/Metric-Mgr.hpp>
+#include <lib/prof/Struct-Tree.hpp>
+#include <lib/profxml/PGMReader.hpp>
+#include <lib/profxml/XercesUtil.hpp>
 #include <lib/support/IOUtil.hpp>
+#include <lib/support/Logic.hpp>
 #include <lib/support/StrUtil.hpp>
+#include <lib/xml/xml.hpp>
 
 #define DEBUG_GPUADVISOR 0
 #define DEBUG_GPUADVISOR_DETAILS 0
@@ -75,8 +68,8 @@ std::string GPUAdvisor::debugInstOffset(int vma) {
   return ss.str();
 }
 
-
-void GPUAdvisor::debugCCTDepGraphSummary(int mpi_rank, int thread_id, CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph) {
+void GPUAdvisor::debugCCTDepGraphSummary(int mpi_rank, int thread_id,
+                                         CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph) {
   // <dep_stalls, <vmas> >
   std::map<std::string, double> lats;
   auto total = 0.0;
@@ -85,8 +78,7 @@ void GPUAdvisor::debugCCTDepGraphSummary(int mpi_rank, int thread_id, CCTGraph<P
     auto *to_node = *it;
 
     for (auto &p : _inst_metrics) {
-      auto metric_index = _metric_name_prof_map->metric_id(
-        mpi_rank, thread_id, p.second);
+      auto metric_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, p.second);
       if (metric_index != -1) {
         double lat = to_node->demandMetric(metric_index);
         lats[p.second] += lat;
@@ -95,8 +87,7 @@ void GPUAdvisor::debugCCTDepGraphSummary(int mpi_rank, int thread_id, CCTGraph<P
     }
 
     for (auto &p : _dep_metrics) {
-      auto metric_index = _metric_name_prof_map->metric_id(
-        mpi_rank, thread_id, p.second);
+      auto metric_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, p.second);
       if (metric_index != -1) {
         double lat = to_node->demandMetric(metric_index);
         lats[p.second] += lat;
@@ -111,15 +102,15 @@ void GPUAdvisor::debugCCTDepGraphSummary(int mpi_rank, int thread_id, CCTGraph<P
   }
 }
 
-
-void GPUAdvisor::debugCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph) {
+void GPUAdvisor::debugCCTDepGraph(int mpi_rank, int thread_id,
+                                  CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph) {
   // Only debug no stall latencies
   std::cout << "Nodes (" << cct_dep_graph.size() << ")" << std::endl;
   std::cout << "Edges (" << cct_dep_graph.edge_size() << ")" << std::endl;
 
   // <dep_stalls, <vmas> >
-  std::map<int, std::vector<int> > exec_dep_vmas;
-  std::map<int, std::vector<int> > mem_dep_vmas;
+  std::map<int, std::vector<int>> exec_dep_vmas;
+  std::map<int, std::vector<int>> mem_dep_vmas;
   double exec_deps = 0.0;
   double mem_deps = 0.0;
 
@@ -127,11 +118,11 @@ void GPUAdvisor::debugCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::CC
     auto *to_node = *it;
     auto to_vma = to_node->lmIP();
 
-    auto exec_dep_metric_index = _metric_name_prof_map->metric_id(
-      mpi_rank, thread_id, _exec_dep_lat_metric);
+    auto exec_dep_metric_index =
+        _metric_name_prof_map->metric_id(mpi_rank, thread_id, _exec_dep_lat_metric);
     auto exec_dep = to_node->demandMetric(exec_dep_metric_index);
-    auto mem_dep_metric_index = _metric_name_prof_map->metric_id(
-      mpi_rank, thread_id, _mem_dep_lat_metric);
+    auto mem_dep_metric_index =
+        _metric_name_prof_map->metric_id(mpi_rank, thread_id, _mem_dep_lat_metric);
     auto mem_dep = to_node->demandMetric(mem_dep_metric_index);
 
     exec_dep_vmas[exec_dep].push_back(to_vma);
@@ -158,8 +149,7 @@ void GPUAdvisor::debugCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::CC
     if (iter.first == 0) {
       continue;
     }
-    std::cout << iter.first << "(" <<
-      static_cast<double>(iter.first) / exec_deps * 100 << "%): ";
+    std::cout << iter.first << "(" << static_cast<double>(iter.first) / exec_deps * 100 << "%): ";
     for (auto vma : iter.second) {
       std::cout << debugInstOffset(vma) << ", ";
     }
@@ -171,8 +161,7 @@ void GPUAdvisor::debugCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::CC
     if (iter.first == 0) {
       continue;
     }
-    std::cout << iter.first << "(" <<
-      static_cast<double>(iter.first) / mem_deps * 100 << "%): ";
+    std::cout << iter.first << "(" << static_cast<double>(iter.first) / mem_deps * 100 << "%): ";
     for (auto vma : iter.second) {
       std::cout << debugInstOffset(vma) << ", ";
     }
@@ -180,13 +169,12 @@ void GPUAdvisor::debugCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::CC
   }
 }
 
-
 void GPUAdvisor::debugCCTDepGraphNoPath(int mpi_rank, int thread_id,
-  CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph) {
+                                        CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph) {
   // Only debug no stall latencies
   // <dep_stalls, <vmas> >
-  std::map<int, std::vector<int> > exec_dep_vmas;
-  std::map<int, std::vector<int> > mem_dep_vmas;
+  std::map<int, std::vector<int>> exec_dep_vmas;
+  std::map<int, std::vector<int>> mem_dep_vmas;
   double exec_deps = 0.0;
   double no_path_exec_dep = 0.0;
   double mem_deps = 0.0;
@@ -195,9 +183,11 @@ void GPUAdvisor::debugCCTDepGraphNoPath(int mpi_rank, int thread_id,
   for (auto it = cct_dep_graph.nodeBegin(); it != cct_dep_graph.nodeEnd(); ++it) {
     auto *node = *it;
     auto node_vma = node->lmIP();
-    auto exec_dep_metric_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _exec_dep_lat_metric);
+    auto exec_dep_metric_index =
+        _metric_name_prof_map->metric_id(mpi_rank, thread_id, _exec_dep_lat_metric);
     auto exec_dep = node->demandMetric(exec_dep_metric_index);
-    auto mem_dep_metric_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _mem_dep_lat_metric);
+    auto mem_dep_metric_index =
+        _metric_name_prof_map->metric_id(mpi_rank, thread_id, _mem_dep_lat_metric);
     auto mem_dep = node->demandMetric(mem_dep_metric_index);
 
     if (cct_dep_graph.incoming_nodes_size(node) == 0 && exec_dep != 0) {
@@ -219,41 +209,36 @@ void GPUAdvisor::debugCCTDepGraphNoPath(int mpi_rank, int thread_id,
     if (iter.first == 0) {
       continue;
     }
-    std::cout << iter.first << "(" <<
-      static_cast<double>(iter.first) / exec_deps * 100 << "%): ";
+    std::cout << iter.first << "(" << static_cast<double>(iter.first) / exec_deps * 100 << "%): ";
     for (auto vma : iter.second) {
       std::cout << debugInstOffset(vma) << ", ";
     }
     std::cout << std::endl;
   }
-  std::cout << no_path_exec_dep << "(" <<
-    no_path_exec_dep / exec_deps * 100 << "%)" << std::endl;
+  std::cout << no_path_exec_dep << "(" << no_path_exec_dep / exec_deps * 100 << "%)" << std::endl;
 
   std::cout << "Mem_deps" << std::endl;
   for (auto &iter : mem_dep_vmas) {
     if (iter.first == 0) {
       continue;
     }
-    std::cout << iter.first << "(" <<
-      static_cast<double>(iter.first) / mem_deps * 100 << "%): ";
+    std::cout << iter.first << "(" << static_cast<double>(iter.first) / mem_deps * 100 << "%): ";
     for (auto vma : iter.second) {
       std::cout << debugInstOffset(vma) << ", ";
     }
     std::cout << std::endl;
   }
-  std::cout << no_path_mem_dep << "(" <<
-    no_path_mem_dep / mem_deps * 100 << "%)" << std::endl;
+  std::cout << no_path_mem_dep << "(" << no_path_mem_dep / mem_deps * 100 << "%)" << std::endl;
 
-  std::cout << no_path_mem_dep + no_path_exec_dep << "(" <<
-    (no_path_mem_dep + no_path_exec_dep) / (exec_deps + mem_deps) * 100 <<
-    "%): overall" << std::endl;
+  std::cout << no_path_mem_dep + no_path_exec_dep << "("
+            << (no_path_mem_dep + no_path_exec_dep) / (exec_deps + mem_deps) * 100 << "%): overall"
+            << std::endl;
 }
 
-
 void GPUAdvisor::debugCCTDepGraphStallExec(int mpi_rank, int thread_id,
-  CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph) {
+                                           CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph) {
   // <dep_stalls, <vmas> >
-  std::map<int, std::vector<int> > stall_exec_dep_vmas;
+  std::map<int, std::vector<int>> stall_exec_dep_vmas;
   double stall_exec_dep = 0.0;
   double exec_deps = 0.0;
 
@@ -261,7 +246,8 @@ void GPUAdvisor::debugCCTDepGraphStallExec(int mpi_rank, int thread_id,
     auto *node = *it;
     auto node_vma = node->lmIP();
     auto *inst = _vma_prop_map.at(node_vma).inst;
-    auto exec_dep_metric_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _exec_dep_lat_metric);
+    auto exec_dep_metric_index =
+        _metric_name_prof_map->metric_id(mpi_rank, thread_id, _exec_dep_lat_metric);
     auto exec_dep = node->demandMetric(exec_dep_metric_index);
 
     if (inst->control.wait == 0) {
@@ -277,17 +263,14 @@ void GPUAdvisor::debugCCTDepGraphStallExec(int mpi_rank, int thread_id,
     if (iter.first == 0) {
       continue;
     }
-    std::cout << iter.first << "(" <<
-      static_cast<double>(iter.first) / exec_deps * 100 << "%): ";
+    std::cout << iter.first << "(" << static_cast<double>(iter.first) / exec_deps * 100 << "%): ";
     for (auto vma : iter.second) {
       std::cout << debugInstOffset(vma) << ", ";
     }
     std::cout << std::endl;
   }
-  std::cout << stall_exec_dep << "(" <<
-    stall_exec_dep / exec_deps * 100 << "%)" << std::endl;
+  std::cout << stall_exec_dep << "(" << stall_exec_dep / exec_deps * 100 << "%)" << std::endl;
 }
-
 
 void GPUAdvisor::debugCCTDepGraphSinglePath(CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph) {
   double total_path = 0.0;
@@ -314,16 +297,14 @@ void GPUAdvisor::debugCCTDepGraphSinglePath(CCTGraph<Prof::CCT::ADynNode *> &cct
             ++mem_dep_path;
           }
         } else {
-          // short_scoreboard or fixed dependency 
+          // short_scoreboard or fixed dependency
           ++exec_dep_path;
         }
       }
     }
-    
-    if ((exec_dep_path == 1 && mem_dep_path == 0) ||
-        (exec_dep_path == 0 && mem_dep_path == 1) ||
-        (exec_dep_path == 1 && mem_dep_path == 1) ||
-        (exec_dep_path == 0 && mem_dep_path == 0)) {
+
+    if ((exec_dep_path == 1 && mem_dep_path == 0) || (exec_dep_path == 0 && mem_dep_path == 1) ||
+        (exec_dep_path == 1 && mem_dep_path == 1) || (exec_dep_path == 0 && mem_dep_path == 0)) {
       ++single_path;
     }
 
@@ -337,7 +318,6 @@ void GPUAdvisor::debugCCTDepGraphSinglePath(CCTGraph<Prof::CCT::ADynNode *> &cct
   }
 }
 
-
 void GPUAdvisor::debugCCTDepPaths(CCTEdgePathMap &cct_edge_path_map) {
   for (auto &from_iter : cct_edge_path_map) {
     auto from_vma = from_iter.first;
@@ -347,8 +327,7 @@ void GPUAdvisor::debugCCTDepPaths(CCTEdgePathMap &cct_edge_path_map) {
         continue;
       }
       auto to_vma = to_iter.first;
-      std::cout << debugInstOffset(from_vma) << " -> " <<
-        debugInstOffset(to_vma) << ": ";
+      std::cout << debugInstOffset(from_vma) << " -> " << debugInstOffset(to_vma) << ": ";
       for (auto &path : to_iter.second) {
         std::cout << "[";
         for (auto *b : path) {
@@ -360,7 +339,6 @@ void GPUAdvisor::debugCCTDepPaths(CCTEdgePathMap &cct_edge_path_map) {
     }
   }
 }
-
 
 void GPUAdvisor::debugInstDepGraph() {
   std::cout << "Nodes (" << _inst_dep_graph.size() << ")" << std::endl;
@@ -381,7 +359,6 @@ void GPUAdvisor::debugInstDepGraph() {
   }
 }
 
-
 void GPUAdvisor::debugInstBlames(InstBlames &inst_blames) {
   // <blame_id, blame_sum>
   double lat_blame_sum = 0.0;
@@ -394,26 +371,30 @@ void GPUAdvisor::debugInstBlames(InstBlames &inst_blames) {
   std::cout << "(" << lat_blame_sum << "," << stall_blame_sum << ")" << std::endl;
 
   for (auto &inst_blame : inst_blames) {
-    std::cout << debugInstOffset(inst_blame.src_inst->pc) <<
-      " -> " << debugInstOffset(inst_blame.dst_inst->pc) << ", ";
-    std::cout << inst_blame.blame_name << ": " << inst_blame.lat_blame <<
-      "(" << static_cast<double>(inst_blame.lat_blame) /
-      lat_blame_sum * 100 << "%" 
-      ", " << static_cast<double>(inst_blame.stall_blame) /
-      stall_blame_sum * 100 << "%)" << std::endl;
+    std::cout << debugInstOffset(inst_blame.src_inst->pc) << " -> "
+              << debugInstOffset(inst_blame.dst_inst->pc) << ", ";
+    std::cout << inst_blame.blame_name << ": " << inst_blame.lat_blame << "("
+              << static_cast<double>(inst_blame.lat_blame) / lat_blame_sum * 100
+              << "%"
+                 ", "
+              << static_cast<double>(inst_blame.stall_blame) / stall_blame_sum * 100 << "%)"
+              << std::endl;
   }
 }
-
 
 /*
  * Private methods
  */
 
 int GPUAdvisor::demandNodeMetric(int mpi_rank, int thread_id, Prof::CCT::ADynNode *node) {
-  auto in_issue_metric_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _issue_metric, true);
-  auto ex_issue_metric_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _issue_metric, false);
-  auto in_inst_metric_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_metric, true);
-  auto ex_inst_metric_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_metric, false);
+  auto in_issue_metric_index =
+      _metric_name_prof_map->metric_id(mpi_rank, thread_id, _issue_metric, true);
+  auto ex_issue_metric_index =
+      _metric_name_prof_map->metric_id(mpi_rank, thread_id, _issue_metric, false);
+  auto in_inst_metric_index =
+      _metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_metric, true);
+  auto ex_inst_metric_index =
+      _metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_metric, false);
 
   // If instruction issue is not sampled, assign it one issue
   int ret = node->demandMetric(in_issue_metric_index);
@@ -427,21 +408,20 @@ int GPUAdvisor::demandNodeMetric(int mpi_rank, int thread_id, Prof::CCT::ADynNod
   return ret;
 }
 
-
-void GPUAdvisor::attributeBlameMetric(int mpi_rank, int thread_id,
-  Prof::CCT::ANode *node, const std::string &blame_name, double blame) {
+void GPUAdvisor::attributeBlameMetric(int mpi_rank, int thread_id, Prof::CCT::ANode *node,
+                                      const std::string &blame_name, double blame) {
   // inclusive and exclusive metrics have the same value
-  auto in_blame_metric_index = _metric_name_prof_map->metric_id(
-    mpi_rank, thread_id, blame_name, true);
-  auto ex_blame_metric_index = _metric_name_prof_map->metric_id(
-    mpi_rank, thread_id, blame_name, false);
+  auto in_blame_metric_index =
+      _metric_name_prof_map->metric_id(mpi_rank, thread_id, blame_name, true);
+  auto ex_blame_metric_index =
+      _metric_name_prof_map->metric_id(mpi_rank, thread_id, blame_name, false);
 
   node->demandMetric(in_blame_metric_index) += blame;
   node->demandMetric(ex_blame_metric_index) += blame;
 }
 
-
-void GPUAdvisor::initCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph) {
+void GPUAdvisor::initCCTDepGraph(int mpi_rank, int thread_id,
+                                 CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph) {
   // Init nodes
   for (auto &iter : _vma_prop_map) {
     auto *prof_node = iter.second.prof_node;
@@ -450,13 +430,15 @@ void GPUAdvisor::initCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::CCT
     }
   }
 
-  auto inst_exe_pred_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_exe_pred_metric);
+  auto inst_exe_pred_index =
+      _metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_exe_pred_metric);
 
-  std::vector<std::pair<Prof::CCT::ADynNode *, Prof::CCT::ADynNode *> > edge_vec;
+  std::vector<std::pair<Prof::CCT::ADynNode *, Prof::CCT::ADynNode *>> edge_vec;
   // Insert all possible edges
   // If a node has samples, we find all possible causes.
-  // Even for instructions that are not sampled, we assign them one issued sample, but no latency sample.
-  // Since no latency sample is associated with these nodes, we do not need to propogate in the grpah.
+  // Even for instructions that are not sampled, we assign them one issued sample, but no latency
+  // sample. Since no latency sample is associated with these nodes, we do not need to propogate in
+  // the grpah.
   for (auto iter = cct_dep_graph.nodeBegin(); iter != cct_dep_graph.nodeEnd(); ++iter) {
     auto *node = *iter;
     auto node_vma = node->lmIP();
@@ -475,7 +457,7 @@ void GPUAdvisor::initCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::CCT
         if (inst_exe_pred_index != -1) {
           // Accurate mode
           if (vma_prop_iter->second.prof_node != NULL &&
-            vma_prop_iter->second.prof_node->hasMetricSlow(inst_exe_pred_index)) {
+              vma_prop_iter->second.prof_node->hasMetricSlow(inst_exe_pred_index)) {
             // Only add prof node it is executed
             prof_node = vma_prop_iter->second.prof_node;
           }
@@ -486,8 +468,9 @@ void GPUAdvisor::initCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::CCT
             Prof::Metric::IData metric_data(_prof->metricMgr()->size());
             metric_data.clearMetrics();
 
-            prof_node = new Prof::CCT::Stmt(node->parent(), HPCRUN_FMT_CCTNodeId_NULL,
-              lush_assoc_info_NULL, _gpu_root->lmId(), vma, 0, NULL, metric_data);
+            prof_node =
+                new Prof::CCT::Stmt(node->parent(), HPCRUN_FMT_CCTNodeId_NULL, lush_assoc_info_NULL,
+                                    _gpu_root->lmId(), vma, 0, NULL, metric_data);
             vma_prop_iter->second.prof_node = prof_node;
           } else {
             prof_node = vma_prop_iter->second.prof_node;
@@ -495,7 +478,8 @@ void GPUAdvisor::initCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::CCT
         }
 
         if (prof_node != NULL) {
-          edge_vec.push_back(std::pair<Prof::CCT::ADynNode *, Prof::CCT::ADynNode *>(prof_node, node));
+          edge_vec.push_back(
+              std::pair<Prof::CCT::ADynNode *, Prof::CCT::ADynNode *>(prof_node, node));
         }
       }
     }
@@ -504,14 +488,13 @@ void GPUAdvisor::initCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::CCT
   for (auto &edge : edge_vec) {
     auto *from_node = edge.first;
     auto *to_node = edge.second;
-    
+
     cct_dep_graph.addEdge(from_node, to_node);
   }
 }
 
-
 void GPUAdvisor::pruneCCTDepGraphOpcode(int mpi_rank, int thread_id,
-  CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph) {
+                                        CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph) {
   // Profile single path coverage
   if (DEBUG_GPUADVISOR) {
     std::cout << "Single path coverage before opcode constraints:" << std::endl;
@@ -523,7 +506,7 @@ void GPUAdvisor::pruneCCTDepGraphOpcode(int mpi_rank, int thread_id,
   auto exec_dep_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _exec_dep_lat_metric);
 
   // Opcode constraints
-  std::vector<std::set<CCTEdge<Prof::CCT::ADynNode *> >::iterator> remove_edges;
+  std::vector<std::set<CCTEdge<Prof::CCT::ADynNode *>>::iterator> remove_edges;
   for (auto iter = cct_dep_graph.edgeBegin(); iter != cct_dep_graph.edgeEnd(); ++iter) {
     auto edge = *iter;
     auto *from = edge.from;
@@ -545,7 +528,7 @@ void GPUAdvisor::pruneCCTDepGraphOpcode(int mpi_rank, int thread_id,
       }
     } else {
       // XXX(Keren): Other type instructions cause either
-      // short_scoreboard or fixed dependency 
+      // short_scoreboard or fixed dependency
       if (to->demandMetric(exec_dep_index) == 0) {
         remove_edges.push_back(iter);
       }
@@ -561,9 +544,8 @@ void GPUAdvisor::pruneCCTDepGraphOpcode(int mpi_rank, int thread_id,
       auto to_vma = to->lmIP();
       auto mem_deps = to->demandMetric(mem_dep_index);
       auto exec_deps = to->demandMetric(exec_dep_index);
-      std::cout << "Remove " << debugInstOffset(from_vma) << " -> " <<
-        debugInstOffset(to_vma) << ", Mem_deps: " << mem_deps <<
-        ", Exec_deps: " << exec_deps << std::endl;
+      std::cout << "Remove " << debugInstOffset(from_vma) << " -> " << debugInstOffset(to_vma)
+                << ", Mem_deps: " << mem_deps << ", Exec_deps: " << exec_deps << std::endl;
     }
     cct_dep_graph.removeEdge(iter);
   }
@@ -576,9 +558,8 @@ void GPUAdvisor::pruneCCTDepGraphOpcode(int mpi_rank, int thread_id,
   }
 }
 
-
 void GPUAdvisor::pruneCCTDepGraphBarrier(int mpi_rank, int thread_id,
-  CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph) {
+                                         CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph) {
   // Profile single path coverage
   if (DEBUG_GPUADVISOR) {
     std::cout << "Single path coverage before barrier constraints:" << std::endl;
@@ -590,7 +571,7 @@ void GPUAdvisor::pruneCCTDepGraphBarrier(int mpi_rank, int thread_id,
   auto exec_dep_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _exec_dep_lat_metric);
 
   // Opcode constraints
-  std::vector<std::set<CCTEdge<Prof::CCT::ADynNode *> >::iterator> remove_edges;
+  std::vector<std::set<CCTEdge<Prof::CCT::ADynNode *>>::iterator> remove_edges;
   for (auto iter = cct_dep_graph.edgeBegin(); iter != cct_dep_graph.edgeEnd(); ++iter) {
     auto edge = *iter;
     auto *from = edge.from;
@@ -602,13 +583,13 @@ void GPUAdvisor::pruneCCTDepGraphBarrier(int mpi_rank, int thread_id,
 
     // No barrier, we prune it by path analysis
     if (from_inst->control.read == CudaParse::InstructionStat::BARRIER_NONE ||
-      from_inst->control.write == CudaParse::InstructionStat::BARRIER_NONE) {
+        from_inst->control.write == CudaParse::InstructionStat::BARRIER_NONE) {
       continue;
     }
 
     // Barrier does not match
     if (((to_inst->control.wait & (1 << from_inst->control.read)) == 0) &&
-      ((to_inst->control.wait & (1 << from_inst->control.write)) == 0)) {
+        ((to_inst->control.wait & (1 << from_inst->control.write)) == 0)) {
       remove_edges.push_back(iter);
     }
   }
@@ -624,13 +605,11 @@ void GPUAdvisor::pruneCCTDepGraphBarrier(int mpi_rank, int thread_id,
       auto *to_inst = _vma_prop_map.at(to_vma).inst;
       auto mem_deps = to->demandMetric(mem_dep_index);
       auto exec_deps = to->demandMetric(exec_dep_index);
-      std::cout << "Remove " << debugInstOffset(from_vma) << " -> " <<
-        debugInstOffset(to_vma) << ", Barrier: b" <<
-        std::bitset<6>(to_inst->control.wait) << ", Write: " <<
-        static_cast<int>(from_inst->control.write) << ", Read: " <<
-        static_cast<int>(from_inst->control.read) << 
-        ", Mem_deps: " << mem_deps <<
-        ", Exec_deps: " << exec_deps << std::endl;
+      std::cout << "Remove " << debugInstOffset(from_vma) << " -> " << debugInstOffset(to_vma)
+                << ", Barrier: b" << std::bitset<6>(to_inst->control.wait)
+                << ", Write: " << static_cast<int>(from_inst->control.write)
+                << ", Read: " << static_cast<int>(from_inst->control.read)
+                << ", Mem_deps: " << mem_deps << ", Exec_deps: " << exec_deps << std::endl;
     }
     cct_dep_graph.removeEdge(iter);
   }
@@ -643,15 +622,13 @@ void GPUAdvisor::pruneCCTDepGraphBarrier(int mpi_rank, int thread_id,
   }
 }
 
-
 // DFS procedure
-void GPUAdvisor::trackDep(int from_vma, int to_vma, int id,
-  CudaParse::Block *from_block, CudaParse::Block *to_block,
-  int latency_issue, int latency,
-  std::set<CudaParse::Block *> &visited_blocks,
-  std::vector<CudaParse::Block *> &path,
-  std::vector<std::vector<CudaParse::Block *>> &paths,
-  TrackType track_type, bool fixed) {
+void GPUAdvisor::trackDep(int from_vma, int to_vma, int id, CudaParse::Block *from_block,
+                          CudaParse::Block *to_block, int latency_issue, int latency,
+                          std::set<CudaParse::Block *> &visited_blocks,
+                          std::vector<CudaParse::Block *> &path,
+                          std::vector<std::vector<CudaParse::Block *>> &paths, TrackType track_type,
+                          bool fixed) {
   // The current block has been visited
   if (visited_blocks.find(from_block) != visited_blocks.end()) {
     return;
@@ -681,9 +658,8 @@ void GPUAdvisor::trackDep(int from_vma, int to_vma, int id,
   // If from_vma and to_vma are in the same block but from_vma >= to_vma
   // It indicates we have a loop
   bool loop_block = false;
-  if (from_vma <= back_vma && from_vma >= front_vma &&
-    to_vma <= back_vma && to_vma >= front_vma &&
-    from_vma >= to_vma) {
+  if (from_vma <= back_vma && from_vma >= front_vma && to_vma <= back_vma && to_vma >= front_vma &&
+      from_vma >= to_vma) {
     // It only happens in the first block
     visited_blocks.erase(from_block);
     end_vma = back_vma;
@@ -738,8 +714,8 @@ void GPUAdvisor::trackDep(int from_vma, int to_vma, int id,
       for (auto *target : from_block->targets) {
         if (target->type != CudaParse::TargetType::CALL) {
           // We do not need from_vma anymore
-          trackDep(0, to_vma, id, target->block, to_block, latency_issue, latency,
-            visited_blocks, path, paths, track_type, fixed);
+          trackDep(0, to_vma, id, target->block, to_block, latency_issue, latency, visited_blocks,
+                   path, paths, track_type, fixed);
         }
       }
     }
@@ -749,9 +725,8 @@ void GPUAdvisor::trackDep(int from_vma, int to_vma, int id,
   path.pop_back();
 }
 
-
-void GPUAdvisor::trackDepInit(int to_vma, int from_vma,
-  int dst, CCTEdgePathMap &cct_edge_path_map, TrackType track_type, bool fixed) {
+void GPUAdvisor::trackDepInit(int to_vma, int from_vma, int dst, CCTEdgePathMap &cct_edge_path_map,
+                              TrackType track_type, bool fixed) {
   // Search for all possible paths from dst to src.
   // Since the single path rate here is expected to be high,
   // The following code section only executes few times.
@@ -764,8 +739,8 @@ void GPUAdvisor::trackDepInit(int to_vma, int from_vma,
   std::vector<CudaParse::Block *> path;
   std::vector<std::vector<CudaParse::Block *>> paths;
   auto latency = _vma_prop_map.at(from_vma).latency_upper;
-  trackDep(from_vma, to_vma, dst, from_block, to_block,
-    0, latency, visited_blocks, path, paths, track_type, fixed);
+  trackDep(from_vma, to_vma, dst, from_block, to_block, 0, latency, visited_blocks, path, paths,
+           track_type, fixed);
 
   // Merge paths
   for (auto &path : paths) {
@@ -794,10 +769,9 @@ void GPUAdvisor::trackDepInit(int to_vma, int from_vma,
   }
 }
 
-
 void GPUAdvisor::pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
-  CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph,
-  CCTEdgePathMap &cct_edge_path_map) {
+                                         CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph,
+                                         CCTEdgePathMap &cct_edge_path_map) {
   // Profile single path coverage
   if (DEBUG_GPUADVISOR) {
     std::cout << "Single path coverage before latency constraints:" << std::endl;
@@ -807,9 +781,11 @@ void GPUAdvisor::pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
 
   auto mem_dep_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _mem_dep_lat_metric);
   auto exec_dep_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _exec_dep_lat_metric);
-  auto inst_exe_pred_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_exe_pred_metric);
+  auto inst_exe_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_exe_metric);
+  auto inst_exe_pred_index =
+      _metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_exe_pred_metric);
 
-  std::vector<std::set<CCTEdge<Prof::CCT::ADynNode *> >::iterator> remove_edges;
+  std::vector<std::set<CCTEdge<Prof::CCT::ADynNode *>>::iterator> remove_edges;
   for (auto iter = cct_dep_graph.edgeBegin(); iter != cct_dep_graph.edgeEnd(); ++iter) {
     auto edge = *iter;
     auto *from = edge.from;
@@ -868,8 +844,9 @@ void GPUAdvisor::pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
       std::vector<std::vector<std::vector<CudaParse::Block *>>::iterator> remove_paths;
       // Remove if any of block on this path has no executed branch
       for (auto path_iter = cct_edge_path_map[from_vma][to_vma].begin();
-        path_iter != cct_edge_path_map[from_vma][to_vma].end(); ++path_iter) {
-        for (auto *block : *path_iter) {
+           path_iter != cct_edge_path_map[from_vma][to_vma].end(); ++path_iter) {
+        for (auto bi = 0; bi < path_iter->size(); ++bi) {
+          auto *block = path_iter->at(bi);
           auto *inst = block->insts.back();
           auto inst_vma = inst->inst_stat->pc;
 
@@ -880,14 +857,34 @@ void GPUAdvisor::pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
             break;
           }
 
-          // Has metric but pred not taken (inst is only issued);
-          if (prop_iter->second.prof_node == NULL || !prop_iter->second.prof_node->hasMetricSlow(inst_exe_pred_index)) {
-            remove_paths.push_back(path_iter);
-            break;
+          if (bi != path_iter->size() - 1) {
+            auto *nxt_block = path_iter->at(bi + 1);
+            auto *nxt_inst = nxt_block->insts.front();
+            auto nxt_vma = nxt_inst->inst_stat->pc;
+            auto *prof_node = prop_iter->second.prof_node;
+            if (nxt_vma == inst_vma + _arch->inst_size()) {
+              // Fall through block
+              if (prof_node != NULL && prof_node->hasMetricSlow(inst_exe_pred_index)) {
+                if (prof_node->demandMetric(inst_exe_index) != 0 &&
+                    (prof_node->demandMetric(inst_exe_pred_index) ==
+                     prof_node->demandMetric(inst_exe_index))) {
+                  // Always taken
+                  remove_paths.push_back(path_iter);
+                  break;
+                }
+              }
+            } else {
+              // Jump block
+              if (prof_node == NULL || !prof_node->hasMetricSlow(inst_exe_pred_index)) {
+                // Never taken
+                remove_paths.push_back(path_iter);
+                break;
+              }
+            }
           }
         }
       }
-      
+
       for (auto &path_iter : remove_paths) {
         cct_edge_path_map[from_vma][to_vma].erase(path_iter);
       }
@@ -909,9 +906,8 @@ void GPUAdvisor::pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
       auto to_vma = to->lmIP();
       auto mem_deps = to->demandMetric(mem_dep_index);
       auto exec_deps = to->demandMetric(exec_dep_index);
-      std::cout << "Remove " << debugInstOffset(from_vma) << " -> " <<
-        debugInstOffset(to_vma) << ", Mem_deps: " << mem_deps <<
-        ", Exec_deps: " << exec_deps << std::endl;
+      std::cout << "Remove " << debugInstOffset(from_vma) << " -> " << debugInstOffset(to_vma)
+                << ", Mem_deps: " << mem_deps << ", Exec_deps: " << exec_deps << std::endl;
     }
     cct_dep_graph.removeEdge(iter);
   }
@@ -930,10 +926,8 @@ void GPUAdvisor::pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
   }
 }
 
-
-double GPUAdvisor::computePathInsts(
-  int mpi_rank, int thread_id, int from_vma, int to_vma,
-  std::vector<CudaParse::Block *> &path) {
+double GPUAdvisor::computePathInsts(int mpi_rank, int thread_id, int from_vma, int to_vma,
+                                    std::vector<CudaParse::Block *> &path) {
   double insts = 0.0;
 
   _metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_metric, true);
@@ -942,7 +936,7 @@ double GPUAdvisor::computePathInsts(
     auto *block = path[i];
     auto front_vma = block->insts.front()->inst_stat->pc;
     auto back_vma = block->insts.back()->inst_stat->pc;
-    auto start_vma = front_vma; 
+    auto start_vma = front_vma;
     auto end_vma = back_vma;
     if (i == 0) {
       // Do not count the stall of the first inst
@@ -953,7 +947,7 @@ double GPUAdvisor::computePathInsts(
     }
     insts += (end_vma - start_vma) / _arch->inst_size() + 1;
     // XXX(Keren): which is more reasonable?
-    //for (auto j = start_vma; j <= end_vma; j += _arch->inst_size()) {
+    // for (auto j = start_vma; j <= end_vma; j += _arch->inst_size()) {
     //  auto *prof_node = _vma_prop_map[j].prof_node;
     //  if (prof_node != NULL) {
     //    insts += prof_node->demandMetric(inst_metric_index);
@@ -964,8 +958,8 @@ double GPUAdvisor::computePathInsts(
   return insts;
 }
 
-
-void GPUAdvisor::reverseRatio(std::map<Prof::CCT::ADynNode *, double> &distance, std::map<Prof::CCT::ADynNode *, double> &insts) {
+void GPUAdvisor::reverseRatio(std::map<Prof::CCT::ADynNode *, double> &distance,
+                              std::map<Prof::CCT::ADynNode *, double> &insts) {
   Prof::CCT::ADynNode *pivot = NULL;
   double pivot_inst = 0.0;
 
@@ -976,7 +970,7 @@ void GPUAdvisor::reverseRatio(std::map<Prof::CCT::ADynNode *, double> &distance,
   for (auto &dis_iter : distance) {
     if (dis_iter.second == 0.0) {
       dis_iter.second = 1.0;
-    } 
+    }
     double ratio = 1.0;
     if (pivot == NULL) {
       pivot = dis_iter.first;
@@ -991,14 +985,12 @@ void GPUAdvisor::reverseRatio(std::map<Prof::CCT::ADynNode *, double> &distance,
 
   // Normalize ratio
   for (auto &ratio_iter : ratios) {
-    insts[ratio_iter.first] = 1.0 / ratio_sum * ratio_iter.second; 
+    insts[ratio_iter.first] = 1.0 / ratio_sum * ratio_iter.second;
   }
 }
 
-
-std::pair<std::string, std::string>
-GPUAdvisor::detailizeExecBlame(CudaParse::InstructionStat *from_inst,
-  CudaParse::InstructionStat *to_inst) {
+std::pair<std::string, std::string> GPUAdvisor::detailizeExecBlame(
+    CudaParse::InstructionStat *from_inst, CudaParse::InstructionStat *to_inst) {
   bool find_reg = false;
   for (auto dst : from_inst->dsts) {
     if (to_inst->find_src_reg(dst)) {
@@ -1045,7 +1037,7 @@ GPUAdvisor::detailizeExecBlame(CudaParse::InstructionStat *from_inst,
     bool find_barrier = false;
     for (auto bdst : from_inst->bdsts) {
       if (to_inst->find_src_barrier(bdst)) {
-        find_barrier = true;  
+        find_barrier = true;
         break;
       }
     }
@@ -1057,9 +1049,8 @@ GPUAdvisor::detailizeExecBlame(CudaParse::InstructionStat *from_inst,
   }
 }
 
-
-std::pair<std::string, std::string>
-GPUAdvisor::detailizeMemBlame(CudaParse::InstructionStat *from_inst) {
+std::pair<std::string, std::string> GPUAdvisor::detailizeMemBlame(
+    CudaParse::InstructionStat *from_inst) {
   if (from_inst->op.find(".LOCAL") != std::string::npos) {
     // local mem
     return std::make_pair(_mem_dep_lmem_stall_metric, _mem_dep_lmem_lat_metric);
@@ -1075,22 +1066,21 @@ GPUAdvisor::detailizeMemBlame(CudaParse::InstructionStat *from_inst) {
   }
 }
 
-
-double GPUAdvisor::computeEfficiency(int mpi_rank, int thread_id,
-  CudaParse::InstructionStat *inst, Prof::CCT::ADynNode *node) {
+double GPUAdvisor::computeEfficiency(int mpi_rank, int thread_id, CudaParse::InstructionStat *inst,
+                                     Prof::CCT::ADynNode *node) {
   double efficiency = 0.0;
 
   if (inst->op.find("MEMORY") != std::string::npos) {
     if (inst->op.find(".SHARED") != std::string::npos) {
       // smem
-      auto smem_load_trans_index = _metric_name_prof_map->metric_id(
-        mpi_rank, thread_id, _smem_load_trans_metric);
-      auto smem_load_trans_theor_index = _metric_name_prof_map->metric_id(
-        mpi_rank, thread_id, _smem_load_trans_theor_metric);
-      auto smem_store_trans_index = _metric_name_prof_map->metric_id(
-        mpi_rank, thread_id, _smem_store_trans_metric);
-      auto smem_store_trans_theor_index = _metric_name_prof_map->metric_id(
-        mpi_rank, thread_id, _smem_store_trans_theor_metric);
+      auto smem_load_trans_index =
+          _metric_name_prof_map->metric_id(mpi_rank, thread_id, _smem_load_trans_metric);
+      auto smem_load_trans_theor_index =
+          _metric_name_prof_map->metric_id(mpi_rank, thread_id, _smem_load_trans_theor_metric);
+      auto smem_store_trans_index =
+          _metric_name_prof_map->metric_id(mpi_rank, thread_id, _smem_store_trans_metric);
+      auto smem_store_trans_theor_index =
+          _metric_name_prof_map->metric_id(mpi_rank, thread_id, _smem_store_trans_theor_metric);
 
       auto smem_load_trans = node->demandMetric(smem_load_trans_index);
       auto smem_load_trans_theor = node->demandMetric(smem_load_trans_theor_index);
@@ -1103,18 +1093,18 @@ double GPUAdvisor::computeEfficiency(int mpi_rank, int thread_id,
       efficiency = (trans_theor == 0) ? 1.0 : trans / trans_theor;
     } else {
       // gmem
-      auto gmem_cache_load_trans_index = _metric_name_prof_map->metric_id(
-        mpi_rank, thread_id, _gmem_cache_load_trans_metric);
+      auto gmem_cache_load_trans_index =
+          _metric_name_prof_map->metric_id(mpi_rank, thread_id, _gmem_cache_load_trans_metric);
       auto gmem_cache_load_trans_theor_index = _metric_name_prof_map->metric_id(
-        mpi_rank, thread_id, _gmem_cache_load_trans_theor_metric);
-      auto gmem_uncache_load_trans_index = _metric_name_prof_map->metric_id(
-        mpi_rank, thread_id, _gmem_uncache_load_trans_metric);
+          mpi_rank, thread_id, _gmem_cache_load_trans_theor_metric);
+      auto gmem_uncache_load_trans_index =
+          _metric_name_prof_map->metric_id(mpi_rank, thread_id, _gmem_uncache_load_trans_metric);
       auto gmem_uncache_load_trans_theor_index = _metric_name_prof_map->metric_id(
-        mpi_rank, thread_id, _gmem_uncache_load_trans_theor_metric);
-      auto gmem_cache_store_trans_index = _metric_name_prof_map->metric_id(
-        mpi_rank, thread_id, _gmem_cache_store_trans_metric);
+          mpi_rank, thread_id, _gmem_uncache_load_trans_theor_metric);
+      auto gmem_cache_store_trans_index =
+          _metric_name_prof_map->metric_id(mpi_rank, thread_id, _gmem_cache_store_trans_metric);
       auto gmem_cache_store_trans_theor_index = _metric_name_prof_map->metric_id(
-        mpi_rank, thread_id, _gmem_cache_store_trans_theor_metric);
+          mpi_rank, thread_id, _gmem_cache_store_trans_theor_metric);
 
       // global or tex
       // If tex, trans may equal 0
@@ -1126,45 +1116,62 @@ double GPUAdvisor::computeEfficiency(int mpi_rank, int thread_id,
       auto gmem_cache_store_trans_theor = node->demandMetric(gmem_cache_store_trans_theor_index);
 
       auto trans = gmem_cache_load_trans + gmem_cache_store_trans + gmem_uncache_load_trans;
-      auto trans_theor = gmem_cache_load_trans_theor + gmem_cache_store_trans_theor + gmem_uncache_load_trans_theor;
+      auto trans_theor = gmem_cache_load_trans_theor + gmem_cache_store_trans_theor +
+                         gmem_uncache_load_trans_theor;
 
       efficiency = (trans_theor == 0) ? 1.0 : trans / trans_theor;
     }
   } else if (inst->op.find(".BRANCH") != std::string::npos) {
     // branch
-    auto branch_div_index = _metric_name_prof_map->metric_id(
-      mpi_rank, thread_id, _branch_div_metric);
-    auto branch_exe_index = _metric_name_prof_map->metric_id(
-      mpi_rank, thread_id, _branch_exe_metric);
+    auto branch_div_index =
+        _metric_name_prof_map->metric_id(mpi_rank, thread_id, _branch_div_metric);
+    auto branch_exe_index =
+        _metric_name_prof_map->metric_id(mpi_rank, thread_id, _branch_exe_metric);
 
     auto div = node->demandMetric(branch_div_index);
     auto exe = node->demandMetric(branch_exe_index);
-    
+
     efficiency = (exe == 0) ? 1.0 : 1 - div / exe;
   }
-  
+
   return efficiency;
 }
 
+double GPUAdvisor::computePredTrue(int mpi_rank, int thread_id, CudaParse::InstructionStat *inst,
+                                   Prof::CCT::ADynNode *node) {
+  double pred_true = 1.0;
+
+  auto inst_exe_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_exe_metric);
+  auto inst_exe_pred_index =
+      _metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_exe_pred_metric);
+
+  if (inst_exe_index != -1) {
+    auto exe = node->demandMetric(inst_exe_index);
+    auto exe_pred = node->demandMetric(inst_exe_pred_index);
+
+    pred_true = exe / exe_pred;
+  }
+
+  return pred_true;
+}
 
 void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
-  CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph, CCTEdgePathMap &cct_edge_path_map,
-  InstBlames &inst_blames) {
-  auto mem_stall_metric_index = _metric_name_prof_map->metric_id(
-    mpi_rank, thread_id, _mem_dep_stall_metric);
-  auto exec_stall_metric_index = _metric_name_prof_map->metric_id(
-    mpi_rank, thread_id, _exec_dep_stall_metric);
+                                  CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph,
+                                  CCTEdgePathMap &cct_edge_path_map, InstBlames &inst_blames) {
+  auto mem_stall_metric_index =
+      _metric_name_prof_map->metric_id(mpi_rank, thread_id, _mem_dep_stall_metric);
+  auto exec_stall_metric_index =
+      _metric_name_prof_map->metric_id(mpi_rank, thread_id, _exec_dep_stall_metric);
 
-  auto mem_lat_metric_index = _metric_name_prof_map->metric_id(
-    mpi_rank, thread_id, _mem_dep_lat_metric);
-  auto exec_lat_metric_index = _metric_name_prof_map->metric_id(
-    mpi_rank, thread_id, _exec_dep_lat_metric);
+  auto mem_lat_metric_index =
+      _metric_name_prof_map->metric_id(mpi_rank, thread_id, _mem_dep_lat_metric);
+  auto exec_lat_metric_index =
+      _metric_name_prof_map->metric_id(mpi_rank, thread_id, _exec_dep_lat_metric);
 
-  auto issue_metric_index = _metric_name_prof_map->metric_id(
-    mpi_rank, thread_id, _issue_metric);
+  auto issue_metric_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _issue_metric);
 
-  auto inst_exe_pred_index = _metric_name_prof_map->metric_id(
-    mpi_rank, thread_id, _inst_exe_pred_metric);
+  auto inst_exe_pred_index =
+      _metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_exe_pred_metric);
 
   for (auto iter = cct_dep_graph.nodeBegin(); iter != cct_dep_graph.nodeEnd(); ++iter) {
     auto *to_node = *iter;
@@ -1178,7 +1185,7 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
     }
     auto innode_iter = cct_dep_graph.incoming_nodes(to_node);
 
-    std::map<int, std::vector<Prof::CCT::ADynNode *> > prof_nodes;
+    std::map<int, std::vector<Prof::CCT::ADynNode *>> prof_nodes;
     if (innode_iter != cct_dep_graph.incoming_nodes_end()) {
       for (auto *from_node : innode_iter->second) {
         // Ensure from node is issued at least once
@@ -1192,7 +1199,7 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
           if (from_inst->op.find(".SHARED") != std::string::npos) {
             // Shared memory
             prof_nodes[exec_lat_metric_index].push_back(from_node);
-          } else { 
+          } else {
             prof_nodes[mem_lat_metric_index].push_back(from_node);
 
             // Global and local memory store instructions can result in raw dependencies
@@ -1210,8 +1217,9 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
         }
       }
     }
-    
-    if (prof_nodes.size() == 0 || (prof_nodes.size() == 1 && prof_nodes.begin()->first == mem_lat_metric_index)) {
+
+    if (prof_nodes.size() == 0 ||
+        (prof_nodes.size() == 1 && prof_nodes.begin()->first == mem_lat_metric_index)) {
       // Scheduler lat
       auto lat_blame = to_node->demandMetric(exec_lat_metric_index);
       auto lat_blame_name = "BLAME " + _exec_dep_sche_lat_metric;
@@ -1223,21 +1231,22 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
       attributeBlameMetric(mpi_rank, thread_id, to_node, stall_blame_name, stall_blame);
 
       auto efficiency = computeEfficiency(mpi_rank, thread_id, to_inst, to_node);
+      auto pred_true = computePredTrue(mpi_rank, thread_id, to_inst, to_node);
 
       if (lat_blame != 0) {
         inst_blames.emplace_back(InstructionBlame(to_inst, to_inst, to_struct, to_struct, 0,
-            stall_blame, lat_blame, efficiency, lat_blame_name));
+                                                  stall_blame, lat_blame, efficiency, pred_true,
+                                                  lat_blame_name));
       }
     }
-
 
     // Dependent latencies
     for (auto &prof_iter : prof_nodes) {
       auto lat_metric_index = prof_iter.first;
       auto lat = to_node->demandMetric(lat_metric_index);
 
-      auto stall_metric_index = lat_metric_index == mem_lat_metric_index ?
-        mem_stall_metric_index : exec_stall_metric_index;
+      auto stall_metric_index = lat_metric_index == mem_lat_metric_index ? mem_stall_metric_index
+                                                                         : exec_stall_metric_index;
       auto stall = to_node->demandMetric(stall_metric_index);
 
       auto &from_nodes = prof_iter.second;
@@ -1252,10 +1261,11 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
       std::map<Prof::CCT::ADynNode *, double> insts;
       std::map<Prof::CCT::ADynNode *, double> insts_efficiency;
       std::map<Prof::CCT::ADynNode *, double> issues;
+      std::map<Prof::CCT::ADynNode *, double> pred_true;
       double issue_sum = 0.0;
 
-        // Give bias to barrier instructions?
-        // TODO(Keren): could be removed when CUPTIv2 is available
+      // Give bias to barrier instructions?
+      // TODO(Keren): could be removed when CUPTIv2 is available
 #if 0
         std::vector<Prof::CCT::ADynNode *> barrier_from_nodes;
         for (auto *from_node : from_nodes) {
@@ -1271,7 +1281,7 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
         auto &biased_from_nodes = barrier_from_nodes.size() > 0 ?
           barrier_from_nodes : from_nodes;
 #endif
-        
+
       for (auto *from_node : from_nodes) {
         auto from_vma = from_node->lmIP();
         auto *from_inst = _vma_prop_map.at(from_vma).inst;
@@ -1296,13 +1306,14 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
         issue_sum += issue;
 
         efficiency[from_node] = computeEfficiency(mpi_rank, thread_id, from_inst, from_node);
+        pred_true[from_node] = computePredTrue(mpi_rank, thread_id, from_inst, from_node);
       }
 
       // More insts, less instructions apportioned
       reverseRatio(distance, insts);
 
       // High efficiency, less instructions apportioned
-      reverseRatio(efficiency, insts_efficiency); 
+      reverseRatio(efficiency, insts_efficiency);
 
       auto adjust_sum = 0.0;
       // Apportion based on issue, efficiency, and stalls
@@ -1344,9 +1355,9 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
         attributeBlameMetric(mpi_rank, thread_id, from_node, lat_blame_name, lat_blame);
 
         // One metric id is enough for inst blame analysis
-        inst_blames.emplace_back(InstructionBlame(from_inst, to_inst, from_struct, to_struct,
-                                                  distance[from_node], stall_blame,
-                                                  lat_blame, efficiency[from_node], lat_blame_name));
+        inst_blames.emplace_back(InstructionBlame(
+            from_inst, to_inst, from_struct, to_struct, distance[from_node], stall_blame, lat_blame,
+            efficiency[from_node], pred_true[from_node], lat_blame_name));
       }
     }
 
@@ -1373,17 +1384,18 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
       attributeBlameMetric(mpi_rank, thread_id, to_node, lat_blame_name, lat);
 
       auto efficiency = computeEfficiency(mpi_rank, thread_id, to_inst, to_node);
+      auto pred_true = computePredTrue(mpi_rank, thread_id, to_inst, to_node);
 
       // one metric id is enough for inst blame analysis
-      inst_blames.emplace_back(
-          InstructionBlame(to_inst, to_inst, to_struct, to_struct, 0, stall, lat, efficiency, lat_blame_name));
+      inst_blames.emplace_back(InstructionBlame(to_inst, to_inst, to_struct, to_struct, 0, stall,
+                                                lat, efficiency, pred_true, lat_blame_name));
     }
 
     // Sync stall
-    auto sync_stall_metric_index = _metric_name_prof_map->metric_id(
-      mpi_rank, thread_id, _sync_stall_metric);
-    auto sync_lat_metric_index = _metric_name_prof_map->metric_id(
-      mpi_rank, thread_id, _sync_lat_metric);
+    auto sync_stall_metric_index =
+        _metric_name_prof_map->metric_id(mpi_rank, thread_id, _sync_stall_metric);
+    auto sync_lat_metric_index =
+        _metric_name_prof_map->metric_id(mpi_rank, thread_id, _sync_lat_metric);
     auto sync_stall = to_node->demandMetric(sync_stall_metric_index);
     auto sync_lat = to_node->demandMetric(sync_lat_metric_index);
 
@@ -1416,8 +1428,9 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
       Prof::Metric::IData metric_data(_prof->metricMgr()->size());
       metric_data.clearMetrics();
 
-      sync_node = new Prof::CCT::Stmt(to_node->parent(), HPCRUN_FMT_CCTNodeId_NULL,
-        lush_assoc_info_NULL, _gpu_root->lmId(), sync_vma, 0, NULL, metric_data);
+      sync_node =
+          new Prof::CCT::Stmt(to_node->parent(), HPCRUN_FMT_CCTNodeId_NULL, lush_assoc_info_NULL,
+                              _gpu_root->lmId(), sync_vma, 0, NULL, metric_data);
     }
 
     auto stall_blame_name = "BLAME " + _sync_stall_metric;
@@ -1427,13 +1440,14 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
     attributeBlameMetric(mpi_rank, thread_id, to_node, lat_blame_name, sync_lat);
 
     auto efficiency = computeEfficiency(mpi_rank, thread_id, sync_inst, sync_node);
+    auto pred_true = computePredTrue(mpi_rank, thread_id, sync_inst, sync_node);
 
     // one metric id is enough for inst blame analysis
-    inst_blames.emplace_back(InstructionBlame(sync_inst, to_inst, sync_struct, to_struct,
-        distance, sync_stall, sync_lat, efficiency, lat_blame_name));
+    inst_blames.emplace_back(InstructionBlame(sync_inst, to_inst, sync_struct, to_struct, distance,
+                                              sync_stall, sync_lat, efficiency, pred_true,
+                                              lat_blame_name));
   }
 }
-
 
 void GPUAdvisor::overlayInstBlames(InstBlames &inst_blames, KernelBlame &kernel_blame) {
   for (auto &inst_blame : inst_blames) {
@@ -1465,19 +1479,17 @@ void GPUAdvisor::overlayInstBlames(InstBlames &inst_blames, KernelBlame &kernel_
   }
 
   std::sort(kernel_blame.lat_inst_blame_ptrs.begin(), kernel_blame.lat_inst_blame_ptrs.end(),
-    InstructionBlameLatComparator());
+            InstructionBlameLatComparator());
   std::sort(kernel_blame.stall_inst_blame_ptrs.begin(), kernel_blame.stall_inst_blame_ptrs.end(),
-    InstructionBlameStallComparator());
+            InstructionBlameStallComparator());
 }
-
 
 void GPUAdvisor::blame(CCTBlames &cct_blames) {
   // For each MPI process
-  for (auto mpi_rank = 0; mpi_rank < _metric_name_prof_map->num_mpi_ranks();
-    ++mpi_rank) {
+  for (auto mpi_rank = 0; mpi_rank < _metric_name_prof_map->num_mpi_ranks(); ++mpi_rank) {
     // For each CPU thread
     for (auto thread_id = 0; thread_id < _metric_name_prof_map->num_thread_ids(mpi_rank);
-      ++thread_id) {
+         ++thread_id) {
       if (_metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_metric) == -1) {
         // Skip tracing threads
         continue;
@@ -1575,6 +1587,5 @@ void GPUAdvisor::blame(CCTBlames &cct_blames) {
     }
   }
 }
-
 
 }  // namespace Analysis

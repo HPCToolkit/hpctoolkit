@@ -37,7 +37,6 @@ enum InstructionType {
 
 #undef DECLARE_INS_TYPE
 
-
 struct Instruction {
   unsigned int offset;
   bool dual_first;
@@ -63,19 +62,39 @@ struct Instruction {
   explicit Instruction(InstructionStat *inst_stat) : inst_stat(inst_stat) {}
 
   // constructor for dummy instruction
-  explicit Instruction(unsigned int offset) : offset(offset), dual_first(false), dual_second(false),
-    is_call(false), is_jump(false), is_sync(false), opcode("NOP"), type(INS_TYPE_MISC) {
+  explicit Instruction(unsigned int offset)
+      : offset(offset),
+        dual_first(false),
+        dual_second(false),
+        is_call(false),
+        is_jump(false),
+        is_sync(false),
+        opcode("NOP"),
+        type(INS_TYPE_MISC) {
     inst_stat = new InstructionStat(this);
   }
 
-  explicit Instruction(unsigned int offset, unsigned int pc) : offset(offset), dual_first(false), dual_second(false),
-    is_call(false), is_jump(false), is_sync(false), opcode("NOP"), type(INS_TYPE_MISC) {
+  explicit Instruction(unsigned int offset, unsigned int pc)
+      : offset(offset),
+        dual_first(false),
+        dual_second(false),
+        is_call(false),
+        is_jump(false),
+        is_sync(false),
+        opcode("NOP"),
+        type(INS_TYPE_MISC) {
     inst_stat = new InstructionStat(this);
     inst_stat->pc = pc;
   }
 
-  Instruction(std::string &inst_str) : offset(0), dual_first(false), dual_second(false),
-  is_call(false), is_jump(false), is_sync(false), inst_stat(NULL) {
+  Instruction(std::string &inst_str)
+      : offset(0),
+        dual_first(false),
+        dual_second(false),
+        is_call(false),
+        is_jump(false),
+        is_sync(false),
+        inst_stat(NULL) {
     if (INSTRUCTION_DEBUG) {
       std::cout << inst_str << std::endl;
     }
@@ -88,7 +107,7 @@ struct Instruction {
     if (inst_str.find("}") != std::string::npos) {  // Dual second
       inst_str = inst_str.substr(2);
       auto pos = inst_str.find("*/");
-      if (pos != std::string::npos) {  
+      if (pos != std::string::npos) {
         inst_str.replace(pos, 2, ":");
         dual_second = true;
       }
@@ -100,7 +119,7 @@ struct Instruction {
       if (s.find("<") != std::string::npos) {
         auto pos = s.find(">");
         this->port = s.substr(1, pos - 1);
-        s = s.substr(pos + 1); 
+        s = s.substr(pos + 1);
       }
       std::stringstream ss;
       ss << std::hex << s;
@@ -202,7 +221,6 @@ struct Instruction {
     }
   }
 };
-
 }
 
 #endif

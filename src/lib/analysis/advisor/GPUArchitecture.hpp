@@ -57,15 +57,15 @@
 //
 //***************************************************************************
 
-#ifndef Analysis_Advisor_GPUArchitecture_hpp 
+#ifndef Analysis_Advisor_GPUArchitecture_hpp
 #define Analysis_Advisor_GPUArchitecture_hpp
 
 //************************* System Include Files ****************************
 
 #include <iostream>
-#include <vector>
 #include <stack>
 #include <string>
+#include <vector>
 
 //*************************** User Include Files ****************************
 
@@ -74,16 +74,11 @@
 #include <lib/prof/CallPath-Profile.hpp>
 #include <lib/prof/Struct-Tree.hpp>
 
-
 namespace Analysis {
 
 class GPUArchitecture {
  public:
-  enum Vendor {
-    VENDOR_NVIDIA = 0,
-    VENDOR_AMD = 1,
-    VENDOR_UNKNOWN = 2
-  };
+  enum Vendor { VENDOR_NVIDIA = 0, VENDOR_AMD = 1, VENDOR_UNKNOWN = 2 };
 
   GPUArchitecture(Vendor vendor) : _vendor(vendor) {}
 
@@ -117,7 +112,6 @@ class GPUArchitecture {
   Vendor _vendor;
 };
 
-
 class V100 : public GPUArchitecture {
  public:
   V100() : GPUArchitecture(VENDOR_NVIDIA) {}
@@ -126,36 +120,23 @@ class V100 : public GPUArchitecture {
 
   virtual int issue(const std::string &opcode) const;
 
-  virtual int inst_size() const {
-    return 16;
-  }
+  virtual int inst_size() const { return 16; }
 
-  virtual int sms() const {
-    return 80;
-  }
+  virtual int sms() const { return 80; }
 
-  virtual int schedulers() const {
-    return 4;
-  }
+  virtual int schedulers() const { return 4; }
 
-  virtual int warps() const {
-    return 64;
-  }
+  virtual int warps() const { return 64; }
 
-  virtual int warp_size() const {
-    return 32;
-  }
+  virtual int warp_size() const { return 32; }
 
-  virtual double frequency() const {
-    return 1.38;
-  }
+  virtual double frequency() const { return 1.38; }
 
   virtual ~V100() {}
 
  protected:
   Vendor _vendor;
 };
-
 
 class A100 : public GPUArchitecture {
  public:
@@ -165,29 +146,17 @@ class A100 : public GPUArchitecture {
 
   virtual int issue(const std::string &opcode) const;
 
-  virtual int inst_size() const {
-    return 16;
-  }
+  virtual int inst_size() const { return 16; }
 
-  virtual int sms() const {
-    return 108;
-  }
+  virtual int sms() const { return 108; }
 
-  virtual int schedulers() const {
-    return 4;
-  }
+  virtual int schedulers() const { return 4; }
 
-  virtual int warps() const {
-    return 64;
-  }
+  virtual int warps() const { return 64; }
 
-  virtual int warp_size() const {
-    return 32;
-  }
+  virtual int warp_size() const { return 32; }
 
-  virtual double frequency() const {
-    return 1.41;
-  }
+  virtual double frequency() const { return 1.41; }
 
   virtual ~A100() {}
 
@@ -195,8 +164,6 @@ class A100 : public GPUArchitecture {
   Vendor _vendor;
 };
 
-
-}  // Analysis
+}  // namespace Analysis
 
 #endif  // Analysis_Advisor_GPUArchitecture_hpp
-

@@ -24,15 +24,12 @@ typedef Dyninst::ParseAPI::EdgeTypeEnum TargetType;
 struct Target {
   Instruction *inst;
   Block *block;
-  TargetType type; 
+  TargetType type;
 
   Target(Instruction *inst, Block *block, TargetType type) : inst(inst), block(block), type(type) {}
 
-  bool operator<(const Target &other) const {
-    return this->inst->offset < other.inst->offset;
-  }
+  bool operator<(const Target &other) const { return this->inst->offset < other.inst->offset; }
 };
-
 
 struct Block {
   int begin_offset;
@@ -60,12 +57,11 @@ struct Block {
     for (auto *inst : insts) {
       delete inst;
     }
-    for (auto *target: targets) {
+    for (auto *target : targets) {
       delete target;
     }
   }
 };
-
 
 struct Function {
   std::vector<Block *> blocks;
@@ -78,14 +74,22 @@ struct Function {
   bool global;
   size_t size;
 
-  Function(size_t id, size_t index, const std::string &name, int address, bool unparsable, bool global, size_t size) :
-    id(id), index(index), name(name), address(address), unparsable(unparsable), global(global), size(size) {}
+  Function(size_t id, size_t index, const std::string &name, int address, bool unparsable,
+           bool global, size_t size)
+      : id(id),
+        index(index),
+        name(name),
+        address(address),
+        unparsable(unparsable),
+        global(global),
+        size(size) {}
 
-  Function(size_t id, size_t index, const std::string &name, int address, bool unparsable, bool global) :
-    Function(id, index, name, address, unparsable, global, 0) {}
+  Function(size_t id, size_t index, const std::string &name, int address, bool unparsable,
+           bool global)
+      : Function(id, index, name, address, unparsable, global, 0) {}
 
-  Function(size_t id, size_t index, const std::string &name, int address) :
-    Function(id, index, name, address, false, false) {}
+  Function(size_t id, size_t index, const std::string &name, int address)
+      : Function(id, index, name, address, false, false) {}
 
   Function(size_t id, const std::string &name, int address) : Function(id, 0, name, address) {}
 
@@ -98,18 +102,18 @@ struct Function {
   }
 };
 
-
 struct LoopEntry {
-  Block *entry_block; 
+  Block *entry_block;
   Block *back_edge_block;
   Instruction *back_edge_inst;
 
   LoopEntry(Block *entry_block) : entry_block(entry_block) {}
 
-  LoopEntry(Block *entry_block, Block *back_edge_block, Instruction *back_edge_inst) :
-    entry_block(entry_block), back_edge_block(back_edge_block), back_edge_inst(back_edge_inst) {}
+  LoopEntry(Block *entry_block, Block *back_edge_block, Instruction *back_edge_inst)
+      : entry_block(entry_block),
+        back_edge_block(back_edge_block),
+        back_edge_inst(back_edge_inst) {}
 };
-
 
 struct Loop {
   std::vector<LoopEntry *> entries;
@@ -121,17 +125,19 @@ struct Loop {
   Loop(Function *function) : function(function) {}
 };
 
-
 struct Call {
   Instruction *inst;
-  Block *block; 
+  Block *block;
   Function *caller_function;
   Function *callee_function;
 
-  Call(Instruction *inst, Block *block, Function *caller_function, Function *callee_function) :
-    inst(inst), block(block), caller_function(caller_function), callee_function(callee_function) {}
+  Call(Instruction *inst, Block *block, Function *caller_function, Function *callee_function)
+      : inst(inst),
+        block(block),
+        caller_function(caller_function),
+        callee_function(callee_function) {}
 };
 
-}
+}  // namespace CudaParse
 
 #endif

@@ -1,18 +1,17 @@
 #ifndef _CUDA_CUDA_CODE_SOURCE_H_
 #define _CUDA_CUDA_CODE_SOURCE_H_
 
-#include <dyn_regs.h>
 #include <CodeSource.h>
 #include <Symtab.h>
+#include <dyn_regs.h>
 
 #include "DotCFG.hpp"
 
 namespace Dyninst {
 namespace ParseAPI {
-  class PARSER_EXPORT CudaCodeSource : public /*Symtab */ CodeSource {
+class PARSER_EXPORT CudaCodeSource : public /*Symtab */ CodeSource {
  public:
-  CudaCodeSource(std::vector<CudaParse::Function *> &functions, 
-		Dyninst::SymtabAPI::Symtab *s);
+  CudaCodeSource(std::vector<CudaParse::Function*>& functions, Dyninst::SymtabAPI::Symtab* s);
   ~CudaCodeSource() {}
 
  public:
@@ -28,28 +27,31 @@ namespace ParseAPI {
   virtual Address length() const { return 0; }
   virtual Architecture getArch() const { return Arch_cuda; }
 
-  virtual bool nonReturning(Address /*func_entry*/) { return false; }                                                                                  
-	virtual bool nonReturningSyscall(int /*number*/) { return false; }
+  virtual bool nonReturning(Address /*func_entry*/) { return false; }
+  virtual bool nonReturningSyscall(int /*number*/) { return false; }
 
-	/* If the binary file type supplies per-function
-	 * TOC's (e.g. ppc64 Linux), override.
-	 */
+  /* If the binary file type supplies per-function
+   * TOC's (e.g. ppc64 Linux), override.
+   */
   virtual Address getTOC(Address) const { return _table_of_contents; }
 
   // statistics accessor
-  virtual void print_stats() const { return; }                                                                                                         
+  virtual void print_stats() const { return; }
   virtual bool have_stats() const { return false; }
 
   // manage statistics
-  virtual void incrementCounter(const std::string& /*name*/) const { return; } 
+  virtual void incrementCounter(const std::string& /*name*/) const { return; }
   virtual void addCounter(const std::string& /*name*/, int /*num*/) const { return; }
   virtual void decrementCounter(const std::string& /*name*/) const { return; }
-  virtual void startTimer(const std::string& /*name*/) const { return; } 
+  virtual void startTimer(const std::string& /*name*/) const { return; }
   virtual void stopTimer(const std::string& /*name*/) const { return; }
-  virtual bool findCatchBlockByTryRange(Address /*given try address*/, std::set<Address> & /* catch start */)  const { return false; }
+  virtual bool findCatchBlockByTryRange(Address /*given try address*/,
+                                        std::set<Address>& /* catch start */) const {
+    return false;
+  }
 };
 
-}
-}
+}  // namespace ParseAPI
+}  // namespace Dyninst
 
 #endif

@@ -1,20 +1,18 @@
 
 //************************* System Include Files ****************************
 
-#include <fstream>
-#include <iostream>
+#include <sys/stat.h>
 
+#include <algorithm>
 #include <climits>
 #include <cstdio>
 #include <cstring>
-#include <string>
-
-#include <algorithm>
+#include <fstream>
+#include <iostream>
 #include <stack>
+#include <string>
 #include <typeinfo>
 #include <unordered_map>
-
-#include <sys/stat.h>
 
 //*************************** User Include Files ****************************
 
@@ -26,27 +24,22 @@
 
 using std::string;
 
+#include <lib/prof-lean/hpcrun-metric.h>
+#include <lib/support/diagnostics.h>
+
+#include <iostream>
+#include <lib/binutils/LM.hpp>
+#include <lib/binutils/VMAInterval.hpp>
 #include <lib/prof/CCT-Tree.hpp>
 #include <lib/prof/Metric-ADesc.hpp>
 #include <lib/prof/Metric-Mgr.hpp>
 #include <lib/prof/Struct-Tree.hpp>
-
 #include <lib/profxml/PGMReader.hpp>
 #include <lib/profxml/XercesUtil.hpp>
-
-#include <lib/prof-lean/hpcrun-metric.h>
-
-#include <lib/binutils/LM.hpp>
-#include <lib/binutils/VMAInterval.hpp>
-
-#include <lib/xml/xml.hpp>
-
 #include <lib/support/IOUtil.hpp>
 #include <lib/support/Logic.hpp>
 #include <lib/support/StrUtil.hpp>
-#include <lib/support/diagnostics.h>
-
-#include <iostream>
+#include <lib/xml/xml.hpp>
 #include <vector>
 
 #define MIN2(x, y) (x > y ? y : x)
@@ -76,9 +69,8 @@ GPUEstimator *GPUEstimatorFactory(GPUArchitecture *arch, GPUEstimatorType type) 
   return gpu_estimator;
 }
 
-
-std::pair<std::vector<double>, std::vector<double>>
-SequentialGPUEstimator::estimate(const std::vector<BlameStats> &blame_stats, const KernelStats &kernel_stats) {
+std::pair<std::vector<double>, std::vector<double>> SequentialGPUEstimator::estimate(
+    const std::vector<BlameStats> &blame_stats, const KernelStats &kernel_stats) {
   std::vector<double> estimate_ratios;
   std::vector<double> estimate_speedups;
 
@@ -87,21 +79,19 @@ SequentialGPUEstimator::estimate(const std::vector<BlameStats> &blame_stats, con
   // regional analysis
   for (auto &stats : blame_stats) {
     estimate_ratios.push_back(stats.blame / kernel_stats.total_samples);
-    estimate_speedups.push_back(
-        kernel_stats.total_samples / (kernel_stats.total_samples - stats.blame));
+    estimate_speedups.push_back(kernel_stats.total_samples /
+                                (kernel_stats.total_samples - stats.blame));
     blame += stats.blame;
   }
 
   estimate_ratios.push_back(blame / kernel_stats.total_samples);
-  estimate_speedups.push_back(
-    kernel_stats.total_samples / (kernel_stats.total_samples - blame));
+  estimate_speedups.push_back(kernel_stats.total_samples / (kernel_stats.total_samples - blame));
 
   return std::make_pair(estimate_ratios, estimate_speedups);
 }
 
-
-std::pair<std::vector<double>, std::vector<double>>
-SequentialLatencyGPUEstimator::estimate(const std::vector<BlameStats> &blame_stats, const KernelStats &kernel_stats) {
+std::pair<std::vector<double>, std::vector<double>> SequentialLatencyGPUEstimator::estimate(
+    const std::vector<BlameStats> &blame_stats, const KernelStats &kernel_stats) {
   std::vector<double> estimate_ratios;
   std::vector<double> estimate_speedups;
 
@@ -124,16 +114,14 @@ SequentialLatencyGPUEstimator::estimate(const std::vector<BlameStats> &blame_sta
   }
 
   estimate_ratios.push_back(blame / kernel_stats.total_samples);
-  estimate_speedups.push_back(
-    kernel_stats.total_samples /
-    (kernel_stats.total_samples - MIN2(active_samples, hidden_samples)));
+  estimate_speedups.push_back(kernel_stats.total_samples /
+                              (kernel_stats.total_samples - MIN2(active_samples, hidden_samples)));
 
   return std::make_pair(estimate_ratios, estimate_speedups);
 }
 
-
-std::pair<std::vector<double>, std::vector<double>>
-ParallelGPUEstimator::estimate(const std::vector<BlameStats> &blame_stats, const KernelStats &kernel_stats) {
+std::pair<std::vector<double>, std::vector<double>> ParallelGPUEstimator::estimate(
+    const std::vector<BlameStats> &blame_stats, const KernelStats &kernel_stats) {
   std::vector<double> estimate_ratios;
   std::vector<double> estimate_speedups;
 
@@ -152,9 +140,8 @@ ParallelGPUEstimator::estimate(const std::vector<BlameStats> &blame_stats, const
   return std::make_pair(estimate_ratios, estimate_speedups);
 }
 
-
-std::pair<std::vector<double>, std::vector<double>>
-ParallelLatencyGPUEstimator::estimate(const std::vector<BlameStats> &blame_stats, const KernelStats &kernel_stats) {
+std::pair<std::vector<double>, std::vector<double>> ParallelLatencyGPUEstimator::estimate(
+    const std::vector<BlameStats> &blame_stats, const KernelStats &kernel_stats) {
   std::vector<double> estimate_ratios;
   std::vector<double> estimate_speedups;
 
@@ -166,7 +153,8 @@ ParallelLatencyGPUEstimator::estimate(const std::vector<BlameStats> &blame_stats
     blame = blame_stats[0].blame;
   }
 
-  double expected_threads = (((int)kernel_stats.threads - 1) / _arch->warp_size() + 1) * _arch->warp_size();
+  double expected_threads =
+      (((int)kernel_stats.threads - 1) / _arch->warp_size() + 1) * _arch->warp_size();
   double thread_balance = expected_threads / kernel_stats.threads;
 
   if (cur_warps < _arch->schedulers()) {
@@ -184,4 +172,4 @@ ParallelLatencyGPUEstimator::estimate(const std::vector<BlameStats> &blame_stats
   return std::make_pair(estimate_ratios, estimate_speedups);
 }
 
-} // namespace Analysis
+}  // namespace Analysis

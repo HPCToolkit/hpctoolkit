@@ -57,37 +57,34 @@
 //
 //***************************************************************************
 
-
-#ifndef Analysis_Advisor_GPUAdvisor_hpp 
+#ifndef Analysis_Advisor_GPUAdvisor_hpp
 #define Analysis_Advisor_GPUAdvisor_hpp
 
 //************************* System Include Files ****************************
 
 #include <iostream>
-#include <vector>
-#include <stack>
-#include <string>
 #include <map>
 #include <queue>
+#include <stack>
+#include <string>
 #include <tuple>
+#include <vector>
 
 //*************************** User Include Files ****************************
 
 #include <include/uint.h>
 
 #include <lib/binutils/LM.hpp>
-
+#include <lib/cuda/AnalyzeInstruction.hpp>
+#include <lib/cuda/DotCFG.hpp>
 #include <lib/prof/CallPath-Profile.hpp>
 #include <lib/prof/Struct-Tree.hpp>
 
-#include <lib/cuda/AnalyzeInstruction.hpp>
-#include <lib/cuda/DotCFG.hpp>
-
 #include "../CCTGraph.hpp"
 #include "../MetricNameProfMap.hpp"
-#include "GPUOptimizer.hpp"
-#include "GPUEstimator.hpp"
 #include "GPUArchitecture.hpp"
+#include "GPUEstimator.hpp"
+#include "GPUOptimizer.hpp"
 
 //*************************** Forward Declarations ***************************
 
@@ -95,19 +92,19 @@
 
 namespace Analysis {
 
-
 class GPUAdvisor {
  public:
   typedef std::tuple<double, Prof::CCT::ADynNode *, std::string> AdviceTuple;
 
  public:
-  explicit GPUAdvisor(Prof::CallPath::Profile *prof, MetricNameProfMap *metric_name_prof_map) :
-    _prof(prof), _metric_name_prof_map(metric_name_prof_map),
-    _gpu_root(NULL), _gpu_kernel(NULL), _arch(NULL) {}
+  explicit GPUAdvisor(Prof::CallPath::Profile *prof, MetricNameProfMap *metric_name_prof_map)
+      : _prof(prof),
+        _metric_name_prof_map(metric_name_prof_map),
+        _gpu_root(NULL),
+        _gpu_kernel(NULL),
+        _arch(NULL) {}
 
-  MetricNameProfMap *metric_name_prof_map() {
-    return this->_metric_name_prof_map;
-  }
+  MetricNameProfMap *metric_name_prof_map() { return this->_metric_name_prof_map; }
 
   void init(const std::string &gpu_arch);
 
@@ -120,7 +117,7 @@ class GPUAdvisor {
   void advise(const CCTBlames &cct_blames);
 
   std::vector<AdviceTuple> get_advice();
- 
+
   ~GPUAdvisor() {
     for (auto *optimizer : _code_optimizers) {
       delete optimizer;
@@ -142,7 +139,7 @@ class GPUAdvisor {
  private:
   typedef std::map<double, std::vector<GPUOptimizer *>, std::greater<double>> OptimizerRank;
 
-  typedef std::map<int, std::map<int, std::vector<std::vector<CudaParse::Block *> > > > CCTEdgePathMap;
+  typedef std::map<int, std::map<int, std::vector<std::vector<CudaParse::Block *>>>> CCTEdgePathMap;
 
   struct VMAProperty {
     VMA vma;
@@ -154,9 +151,15 @@ class GPUAdvisor {
     int latency_upper;
     int latency_issue;
 
-    VMAProperty() : vma(0), prof_node(NULL), inst(NULL),
-      function(NULL), block(NULL), latency_lower(0),
-      latency_upper(0), latency_issue(0) {}
+    VMAProperty()
+        : vma(0),
+          prof_node(NULL),
+          inst(NULL),
+          function(NULL),
+          block(NULL),
+          latency_lower(0),
+          latency_upper(0),
+          latency_issue(0) {}
   };
 
   typedef std::map<VMA, VMAProperty> VMAPropertyMap;
@@ -172,52 +175,49 @@ class GPUAdvisor {
   };
 
  private:
-  void attributeBlameMetric(int mpi_rank, int thread_id,
-    Prof::CCT::ANode *node, const std::string &blame_name, double blame);
+  void attributeBlameMetric(int mpi_rank, int thread_id, Prof::CCT::ANode *node,
+                            const std::string &blame_name, double blame);
 
-  void initCCTDepGraph(int mpi_rank, int thread_id,
-    CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
+  void initCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
 
   void pruneCCTDepGraphOpcode(int mpi_rank, int thread_id,
-    CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
+                              CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
 
   void pruneCCTDepGraphBarrier(int mpi_rank, int thread_id,
-    CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
+                               CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
 
   void pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
-    CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph,
-    CCTEdgePathMap &cct_edge_path_map);
+                               CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph,
+                               CCTEdgePathMap &cct_edge_path_map);
 
-  void trackDep(int to_vma, int from_vma, int reg,
-    CudaParse::Block *to_block, CudaParse::Block *from_block,
-    int latency_issue, int latency, std::set<CudaParse::Block *> &visited_blocks,
-    std::vector<CudaParse::Block *> &path,
-    std::vector<std::vector<CudaParse::Block *>> &paths,
-    TrackType track_type, bool fixed);
+  void trackDep(int to_vma, int from_vma, int reg, CudaParse::Block *to_block,
+                CudaParse::Block *from_block, int latency_issue, int latency,
+                std::set<CudaParse::Block *> &visited_blocks, std::vector<CudaParse::Block *> &path,
+                std::vector<std::vector<CudaParse::Block *>> &paths, TrackType track_type,
+                bool fixed);
 
-  void trackDepInit(int to_vma, int from_vma,
-    int dst, CCTEdgePathMap &cct_edge_path_map, TrackType track_type, bool fixed);
+  void trackDepInit(int to_vma, int from_vma, int dst, CCTEdgePathMap &cct_edge_path_map,
+                    TrackType track_type, bool fixed);
 
   double computePathInsts(int mpi_rank, int thread_id, int from_vma, int to_vma,
-    std::vector<CudaParse::Block *> &path);
+                          std::vector<CudaParse::Block *> &path);
 
   void reverseRatio(std::map<Prof::CCT::ADynNode *, double> &distance,
-    std::map<Prof::CCT::ADynNode *, double> &insts);
+                    std::map<Prof::CCT::ADynNode *, double> &insts);
 
-  double computeEfficiency(int mpi_rank, int thread_id,
-    CudaParse::InstructionStat *inst, Prof::CCT::ADynNode *node);
+  double computeEfficiency(int mpi_rank, int thread_id, CudaParse::InstructionStat *inst,
+                           Prof::CCT::ADynNode *node);
 
-  std::pair<std::string, std::string>
-  detailizeExecBlame(CudaParse::InstructionStat *from_inst,
-    CudaParse::InstructionStat *to_inst);
-    
-  std::pair<std::string, std::string>
-  detailizeMemBlame(CudaParse::InstructionStat *from_inst);
+  double computePredTrue(int mpi_rank, int thread_id, CudaParse::InstructionStat *inst,
+                         Prof::CCT::ADynNode *node);
 
-  void blameCCTDepGraph(int mpi_rank, int thread_id,
-    CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph,
-    CCTEdgePathMap &cct_edge_path_map,
-    InstBlames &inst_blames);
+  std::pair<std::string, std::string> detailizeExecBlame(CudaParse::InstructionStat *from_inst,
+                                                         CudaParse::InstructionStat *to_inst);
+
+  std::pair<std::string, std::string> detailizeMemBlame(CudaParse::InstructionStat *from_inst);
+
+  void blameCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph,
+                        CCTEdgePathMap &cct_edge_path_map, InstBlames &inst_blames);
 
   void detailizeInstBlames(InstBlames &inst_blames);
 
@@ -226,7 +226,7 @@ class GPUAdvisor {
   KernelStats readKernelStats(int mpi_rank, int thread_id);
 
   void concatAdvice(const OptimizerRank &optimizer_rank);
-  
+
   // Helper functions
   int demandNodeMetric(int mpi_rank, int thread_id, Prof::CCT::ADynNode *node);
 
@@ -236,14 +236,18 @@ class GPUAdvisor {
 
   void debugCCTDepPaths(CCTEdgePathMap &cct_edge_path_map);
 
-  void debugCCTDepGraphSummary(int mpi_rank, int thread_id, CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
+  void debugCCTDepGraphSummary(int mpi_rank, int thread_id,
+                               CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
 
-  void debugCCTDepGraph(int mpi_rank, int thread_id, CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
+  void debugCCTDepGraph(int mpi_rank, int thread_id,
+                        CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
 
-  void debugCCTDepGraphNoPath(int mpi_rank, int thread_id, CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
+  void debugCCTDepGraphNoPath(int mpi_rank, int thread_id,
+                              CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
 
-  void debugCCTDepGraphStallExec(int mpi_rank, int thread_id, CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
-  
+  void debugCCTDepGraphStallExec(int mpi_rank, int thread_id,
+                                 CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
+
   void debugCCTDepGraphSinglePath(CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
 
   void debugInstBlames(InstBlames &inst_blames);
@@ -350,7 +354,7 @@ class GPUAdvisor {
   GPUArchitecture *_arch;
 
   KernelStats _kernel_stats;
- 
+
   std::vector<AdviceTuple> _advice;
   std::stringstream _output;
 
@@ -359,7 +363,6 @@ class GPUAdvisor {
   const size_t _top_optimizers = 5;
 };
 
-
-}  // Analysis
+}  // namespace Analysis
 
 #endif  // Analysis_Advisor_GPUAdvisor_hpp

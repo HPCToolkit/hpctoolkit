@@ -1,24 +1,21 @@
 #include "CudaBlock.hpp"
+
 #include <Instruction.h>
-#include <Register.h>
 #include <Operand.h>
 #include <Operation_impl.h>
+#include <Register.h>
 
 namespace Dyninst {
 namespace ParseAPI {
 
-CudaBlock::CudaBlock(CodeObject * o, CodeRegion * r,
-  CudaParse::Block * block) : Block(o, r, block->address) {
+CudaBlock::CudaBlock(CodeObject *o, CodeRegion *r, CudaParse::Block *block)
+    : Block(o, r, block->address) {
   for (auto *inst : block->insts) {
     _insts.push_back(inst);
   }
 }
 
-
-Address CudaBlock::last() const {
-  return this->_insts.back()->offset;
-}
-
+Address CudaBlock::last() const { return this->_insts.back()->offset; }
 
 void CudaBlock::getInsns(Insns &insns) const {
   // Manually decoding cuda instructions
@@ -38,12 +35,14 @@ void CudaBlock::getInsns(Insns &insns) const {
 
     // Instruction predicate flags
     int pred = inst->inst_stat->predicate;
-    if (inst->inst_stat->predicate_flag == CudaParse::InstructionStat::PredicateFlag::PREDICATE_TRUE) {
+    if (inst->inst_stat->predicate_flag ==
+        CudaParse::InstructionStat::PredicateFlag::PREDICATE_TRUE) {
       MachRegister r(pred | cuda::PR | Arch_cuda);
       InstructionAPI::RegisterAST::Ptr reg_ptr(new InstructionAPI::RegisterAST(r));
       // bool isRead, bool isWritten, bool isImplicit, bool trueP, bool falseP
       instruction.appendOperand(reg_ptr, true, false, false, true, false);
-    } else if (inst->inst_stat->predicate_flag == CudaParse::InstructionStat::PredicateFlag::PREDICATE_FALSE) {
+    } else if (inst->inst_stat->predicate_flag ==
+               CudaParse::InstructionStat::PredicateFlag::PREDICATE_FALSE) {
       MachRegister r(pred | cuda::PR | Arch_cuda);
       InstructionAPI::RegisterAST::Ptr reg_ptr(new InstructionAPI::RegisterAST(r));
       // bool isRead, bool isWritten, bool isImplicit, bool trueP, bool falseP
@@ -61,9 +60,9 @@ void CudaBlock::getInsns(Insns &insns) const {
           MachRegister r(dst | cuda::GPR | Arch_cuda);
           InstructionAPI::RegisterAST::Ptr reg_ptr(new InstructionAPI::RegisterAST(r));
           instruction.appendOperand(reg_ptr, false, true);
-        }   
-      } 
-    }   
+        }
+      }
+    }
 
     for (auto udst : inst->inst_stat->udsts) {
       if (udst != -1) {
@@ -79,7 +78,7 @@ void CudaBlock::getInsns(Insns &insns) const {
         InstructionAPI::RegisterAST::Ptr reg_ptr(new InstructionAPI::RegisterAST(r));
         instruction.appendOperand(reg_ptr, false, true);
       }
-    } 
+    }
 
     for (auto updst : inst->inst_stat->pdsts) {
       if (updst != -1) {
@@ -87,7 +86,7 @@ void CudaBlock::getInsns(Insns &insns) const {
         InstructionAPI::RegisterAST::Ptr reg_ptr(new InstructionAPI::RegisterAST(r));
         instruction.appendOperand(reg_ptr, false, true);
       }
-    } 
+    }
 
     for (auto bdst : inst->inst_stat->bdsts) {
       if (bdst != -1) {
@@ -141,5 +140,5 @@ void CudaBlock::getInsns(Insns &insns) const {
   }
 }
 
-}
-}
+}  // namespace ParseAPI
+}  // namespace Dyninst

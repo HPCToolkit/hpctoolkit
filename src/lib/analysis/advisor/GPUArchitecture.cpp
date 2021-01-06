@@ -1,51 +1,44 @@
 //************************* System Include Files ****************************
 
-#include <iostream>
-#include <fstream>
+#include <sys/stat.h>
 
-#include <string>
+#include <algorithm>
 #include <climits>
-#include <cstring>
 #include <cstdio>
-
+#include <cstring>
+#include <fstream>
+#include <iostream>
+#include <limits>
+#include <queue>
+#include <string>
 #include <typeinfo>
 #include <unordered_map>
-#include <algorithm>
-#include <queue>
-#include <limits>
-
-#include <sys/stat.h>
 
 //*************************** User Include Files ****************************
 
-#include <include/uint.h>
 #include <include/gcc-attr.h>
+#include <include/uint.h>
 
 #include "GPUArchitecture.hpp"
 
 using std::string;
 
-#include <lib/prof/CCT-Tree.hpp>
-#include <lib/prof/Struct-Tree.hpp>
-#include <lib/prof/Metric-Mgr.hpp>
-#include <lib/prof/Metric-ADesc.hpp>
-
-#include <lib/profxml/XercesUtil.hpp>
-#include <lib/profxml/PGMReader.hpp>
-
 #include <lib/prof-lean/hpcrun-metric.h>
+#include <lib/support/diagnostics.h>
 
 #include <lib/binutils/LM.hpp>
 #include <lib/binutils/VMAInterval.hpp>
-
 #include <lib/cuda/DotCFG.hpp>
-
-#include <lib/xml/xml.hpp>
-
-#include <lib/support/diagnostics.h>
-#include <lib/support/Logic.hpp>
+#include <lib/prof/CCT-Tree.hpp>
+#include <lib/prof/Metric-ADesc.hpp>
+#include <lib/prof/Metric-Mgr.hpp>
+#include <lib/prof/Struct-Tree.hpp>
+#include <lib/profxml/PGMReader.hpp>
+#include <lib/profxml/XercesUtil.hpp>
 #include <lib/support/IOUtil.hpp>
+#include <lib/support/Logic.hpp>
 #include <lib/support/StrUtil.hpp>
+#include <lib/xml/xml.hpp>
 
 namespace Analysis {
 
@@ -89,7 +82,6 @@ std::pair<int, int> V100::latency(const std::string &opcode) const {
   return std::pair<int, int>(4, 4);
 }
 
-
 // XXX: not throughput
 int V100::issue(const std::string &opcode) const {
   if (opcode.find("INTEGER") != std::string::npos) {
@@ -124,7 +116,6 @@ int V100::issue(const std::string &opcode) const {
   // At least 2
   return 2;
 }
-
 
 // TODO(Keren): add more latency components
 std::pair<int, int> A100::latency(const std::string &opcode) const {
@@ -167,7 +158,6 @@ std::pair<int, int> A100::latency(const std::string &opcode) const {
   return std::pair<int, int>(4, 4);
 }
 
-
 // XXX: issue latency
 int A100::issue(const std::string &opcode) const {
   if (opcode.find("INTEGER") != std::string::npos) {
@@ -203,4 +193,4 @@ int A100::issue(const std::string &opcode) const {
   return 2;
 }
 
-}  // Analysis
+}  // namespace Analysis

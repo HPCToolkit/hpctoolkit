@@ -1,61 +1,53 @@
 //************************* System Include Files ****************************
 
-#include <iostream>
-#include <fstream>
-#include <sstream>
+#include <sys/stat.h>
 
-#include <climits>
-#include <cstring>
-#include <cstdio>
-
+#include <algorithm>
 #include <bitset>
+#include <climits>
+#include <cstdio>
+#include <cstring>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <limits>
+#include <queue>
+#include <sstream>
 #include <string>
 #include <typeinfo>
 #include <unordered_map>
-#include <algorithm>
-#include <iomanip>
-#include <queue>
-#include <limits>
-
-#include <sys/stat.h>
 
 //*************************** User Include Files ****************************
 
-#include <include/uint.h>
 #include <include/gcc-attr.h>
 #include <include/gpu-metric-names.h>
+#include <include/uint.h>
 
-#include "GPUAdvisor.hpp"
-#include "../MetricNameProfMap.hpp"
 #include "../CCTGraph.hpp"
+#include "../MetricNameProfMap.hpp"
+#include "GPUAdvisor.hpp"
 
 using std::string;
 
-#include <lib/prof/CCT-Tree.hpp>
-#include <lib/prof/Struct-Tree.hpp>
-#include <lib/prof/Metric-Mgr.hpp>
-#include <lib/prof/Metric-ADesc.hpp>
-
-#include <lib/profxml/XercesUtil.hpp>
-#include <lib/profxml/PGMReader.hpp>
-
 #include <lib/prof-lean/hpcrun-metric.h>
+#include <lib/support/diagnostics.h>
 
 #include <lib/binutils/LM.hpp>
 #include <lib/binutils/VMAInterval.hpp>
-
 #include <lib/cuda/DotCFG.hpp>
-
-#include <lib/xml/xml.hpp>
-
-#include <lib/support/diagnostics.h>
-#include <lib/support/Logic.hpp>
+#include <lib/prof/CCT-Tree.hpp>
+#include <lib/prof/Metric-ADesc.hpp>
+#include <lib/prof/Metric-Mgr.hpp>
+#include <lib/prof/Struct-Tree.hpp>
+#include <lib/profxml/PGMReader.hpp>
+#include <lib/profxml/XercesUtil.hpp>
 #include <lib/support/IOUtil.hpp>
+#include <lib/support/Logic.hpp>
 #include <lib/support/StrUtil.hpp>
+#include <lib/xml/xml.hpp>
 
 #define DEBUG_GPUADVISOR 0
 #define DEBUG_GPUADVISOR_DETAILS 0
-
 
 namespace Analysis {
 
@@ -70,38 +62,38 @@ void GPUAdvisor::init(const std::string &gpu_arch) {
   }
 
   if (gpu_arch == "A100") {
-    this->_arch = new A100(); 
+    this->_arch = new A100();
   } else {
-    this->_arch = new V100(); 
+    this->_arch = new V100();
   }
 
   // Init individual metrics
-  _issue_metric = GPU_INST_METRIC_NAME":LAT_NONE";
-  _stall_metric = GPU_INST_METRIC_NAME":STL_ANY";
+  _issue_metric = GPU_INST_METRIC_NAME ":LAT_NONE";
+  _stall_metric = GPU_INST_METRIC_NAME ":STL_ANY";
   _inst_metric = GPU_INST_METRIC_NAME;
 
   // STL
-  _tex_stall_metric = GPU_INST_METRIC_NAME":STL_TMEM";
-  _ifetch_stall_metric = GPU_INST_METRIC_NAME":STL_IFET";
-  _pipe_bsy_stall_metric = GPU_INST_METRIC_NAME":STL_PIPE";
-  _mem_thr_stall_metric = GPU_INST_METRIC_NAME":STL_MTHR";
-  _nosel_stall_metric = GPU_INST_METRIC_NAME":STL_NSEL";
-  _other_stall_metric = GPU_INST_METRIC_NAME":STL_OTHR";
-  _sleep_stall_metric = GPU_INST_METRIC_NAME":STL_SLP";
-  _cmem_stall_metric = GPU_INST_METRIC_NAME":STL_CMEM";
-  _none_stall_metric = GPU_INST_METRIC_NAME":STL_NONE";
+  _tex_stall_metric = GPU_INST_METRIC_NAME ":STL_TMEM";
+  _ifetch_stall_metric = GPU_INST_METRIC_NAME ":STL_IFET";
+  _pipe_bsy_stall_metric = GPU_INST_METRIC_NAME ":STL_PIPE";
+  _mem_thr_stall_metric = GPU_INST_METRIC_NAME ":STL_MTHR";
+  _nosel_stall_metric = GPU_INST_METRIC_NAME ":STL_NSEL";
+  _other_stall_metric = GPU_INST_METRIC_NAME ":STL_OTHR";
+  _sleep_stall_metric = GPU_INST_METRIC_NAME ":STL_SLP";
+  _cmem_stall_metric = GPU_INST_METRIC_NAME ":STL_CMEM";
+  _none_stall_metric = GPU_INST_METRIC_NAME ":STL_NONE";
 
   // LAT
-  _tex_lat_metric = GPU_INST_METRIC_NAME":LAT_TMEM";
-  _ifetch_lat_metric = GPU_INST_METRIC_NAME":LAT_IFET";
-  _pipe_bsy_lat_metric = GPU_INST_METRIC_NAME":LAT_PIPE";
-  _mem_thr_lat_metric = GPU_INST_METRIC_NAME":LAT_MTHR";
-  _nosel_lat_metric = GPU_INST_METRIC_NAME":LAT_NSEL";
-  _other_lat_metric = GPU_INST_METRIC_NAME":LAT_OTHR";
-  _sleep_lat_metric = GPU_INST_METRIC_NAME":LAT_SLP";
-  _cmem_lat_metric = GPU_INST_METRIC_NAME":LAT_CMEM";
-  _none_lat_metric = GPU_INST_METRIC_NAME":LAT_NONE";
-  
+  _tex_lat_metric = GPU_INST_METRIC_NAME ":LAT_TMEM";
+  _ifetch_lat_metric = GPU_INST_METRIC_NAME ":LAT_IFET";
+  _pipe_bsy_lat_metric = GPU_INST_METRIC_NAME ":LAT_PIPE";
+  _mem_thr_lat_metric = GPU_INST_METRIC_NAME ":LAT_MTHR";
+  _nosel_lat_metric = GPU_INST_METRIC_NAME ":LAT_NSEL";
+  _other_lat_metric = GPU_INST_METRIC_NAME ":LAT_OTHR";
+  _sleep_lat_metric = GPU_INST_METRIC_NAME ":LAT_SLP";
+  _cmem_lat_metric = GPU_INST_METRIC_NAME ":LAT_CMEM";
+  _none_lat_metric = GPU_INST_METRIC_NAME ":LAT_NONE";
+
   _inst_metrics.emplace_back(std::make_pair(_tex_stall_metric, _tex_lat_metric));
   _inst_metrics.emplace_back(std::make_pair(_ifetch_stall_metric, _ifetch_lat_metric));
   _inst_metrics.emplace_back(std::make_pair(_pipe_bsy_stall_metric, _pipe_bsy_lat_metric));
@@ -113,30 +105,30 @@ void GPUAdvisor::init(const std::string &gpu_arch) {
   _inst_metrics.emplace_back(std::make_pair(_none_stall_metric, _none_lat_metric));
 
   // STL
-  _exec_dep_stall_metric = GPU_INST_METRIC_NAME":STL_IDEP";
-  _exec_dep_dep_stall_metric = GPU_INST_METRIC_NAME":STL_IDEP_DEP";
-  _exec_dep_sche_stall_metric = GPU_INST_METRIC_NAME":STL_IDEP_SCHE";
-  _exec_dep_smem_stall_metric = GPU_INST_METRIC_NAME":STL_IDEP_SMEM";
-  _exec_dep_war_stall_metric = GPU_INST_METRIC_NAME":STL_IDEP_WAR";
-  _mem_dep_stall_metric = GPU_INST_METRIC_NAME":STL_GMEM";
-  _mem_dep_gmem_stall_metric = GPU_INST_METRIC_NAME":STL_GMEM_GMEM";
-  _mem_dep_lmem_stall_metric = GPU_INST_METRIC_NAME":STL_GMEM_LMEM";
-  _mem_dep_cmem_stall_metric = GPU_INST_METRIC_NAME":STL_GMEM_CMEM";
-  _mem_dep_tmem_stall_metric = GPU_INST_METRIC_NAME":STL_GMEM_TMEM";
-  _sync_stall_metric = GPU_INST_METRIC_NAME":STL_SYNC";
+  _exec_dep_stall_metric = GPU_INST_METRIC_NAME ":STL_IDEP";
+  _exec_dep_dep_stall_metric = GPU_INST_METRIC_NAME ":STL_IDEP_DEP";
+  _exec_dep_sche_stall_metric = GPU_INST_METRIC_NAME ":STL_IDEP_SCHE";
+  _exec_dep_smem_stall_metric = GPU_INST_METRIC_NAME ":STL_IDEP_SMEM";
+  _exec_dep_war_stall_metric = GPU_INST_METRIC_NAME ":STL_IDEP_WAR";
+  _mem_dep_stall_metric = GPU_INST_METRIC_NAME ":STL_GMEM";
+  _mem_dep_gmem_stall_metric = GPU_INST_METRIC_NAME ":STL_GMEM_GMEM";
+  _mem_dep_lmem_stall_metric = GPU_INST_METRIC_NAME ":STL_GMEM_LMEM";
+  _mem_dep_cmem_stall_metric = GPU_INST_METRIC_NAME ":STL_GMEM_CMEM";
+  _mem_dep_tmem_stall_metric = GPU_INST_METRIC_NAME ":STL_GMEM_TMEM";
+  _sync_stall_metric = GPU_INST_METRIC_NAME ":STL_SYNC";
 
   // LAT
-  _exec_dep_lat_metric = GPU_INST_METRIC_NAME":LAT_IDEP";
-  _exec_dep_dep_lat_metric = GPU_INST_METRIC_NAME":LAT_IDEP_DEP";
-  _exec_dep_sche_lat_metric = GPU_INST_METRIC_NAME":LAT_IDEP_SCHE";
-  _exec_dep_smem_lat_metric = GPU_INST_METRIC_NAME":LAT_IDEP_SMEM";
-  _exec_dep_war_lat_metric = GPU_INST_METRIC_NAME":LAT_IDEP_WAR";
-  _mem_dep_lat_metric = GPU_INST_METRIC_NAME":LAT_GMEM";
-  _mem_dep_gmem_lat_metric = GPU_INST_METRIC_NAME":LAT_GMEM_GMEM";
-  _mem_dep_cmem_lat_metric = GPU_INST_METRIC_NAME":LAT_GMEM_CMEM";
-  _mem_dep_lmem_lat_metric = GPU_INST_METRIC_NAME":LAT_GMEM_LMEM";
-  _mem_dep_tmem_lat_metric = GPU_INST_METRIC_NAME":LAT_GMEM_TMEM";
-  _sync_lat_metric = GPU_INST_METRIC_NAME":LAT_SYNC";
+  _exec_dep_lat_metric = GPU_INST_METRIC_NAME ":LAT_IDEP";
+  _exec_dep_dep_lat_metric = GPU_INST_METRIC_NAME ":LAT_IDEP_DEP";
+  _exec_dep_sche_lat_metric = GPU_INST_METRIC_NAME ":LAT_IDEP_SCHE";
+  _exec_dep_smem_lat_metric = GPU_INST_METRIC_NAME ":LAT_IDEP_SMEM";
+  _exec_dep_war_lat_metric = GPU_INST_METRIC_NAME ":LAT_IDEP_WAR";
+  _mem_dep_lat_metric = GPU_INST_METRIC_NAME ":LAT_GMEM";
+  _mem_dep_gmem_lat_metric = GPU_INST_METRIC_NAME ":LAT_GMEM_GMEM";
+  _mem_dep_cmem_lat_metric = GPU_INST_METRIC_NAME ":LAT_GMEM_CMEM";
+  _mem_dep_lmem_lat_metric = GPU_INST_METRIC_NAME ":LAT_GMEM_LMEM";
+  _mem_dep_tmem_lat_metric = GPU_INST_METRIC_NAME ":LAT_GMEM_TMEM";
+  _sync_lat_metric = GPU_INST_METRIC_NAME ":LAT_SYNC";
 
   _dep_metrics.emplace_back(std::make_pair(_exec_dep_stall_metric, _exec_dep_lat_metric));
   _dep_metrics.emplace_back(std::make_pair(_exec_dep_dep_stall_metric, _exec_dep_dep_lat_metric));
@@ -165,8 +157,8 @@ void GPUAdvisor::init(const std::string &gpu_arch) {
   _branch_exe_metric = "GBR:EXE";
 
   // Inst
-  _inst_exe_metric = GPU_INST_METRIC_NAME":EXE";
-  _inst_exe_pred_metric = GPU_INST_METRIC_NAME":EXE (PRED)";
+  _inst_exe_metric = GPU_INST_METRIC_NAME ":EXE";
+  _inst_exe_pred_metric = GPU_INST_METRIC_NAME ":EXE (PRED)";
 
   _gmem_cache_load_trans_metric = "GGMEM:LDC (L2T)";
   _gmem_uncache_load_trans_metric = "GGMEM:LDU (L2T)";
@@ -218,6 +210,13 @@ void GPUAdvisor::init(const std::string &gpu_arch) {
   auto *function_inline_optimizer = GPUOptimizerFactory(FUNCTION_INLINE, _arch);
   function_inline_optimizer->set_estimator(_estimators[SEQ_LAT]);
 
+  // Composite optimizers
+  auto *branch_elimination_optimizer = GPUOptimizerFactory(BRANCH_ELIMINATION, _arch);
+  branch_elimination_optimizer->set_estimator(_estimators[SEQ_LAT]);
+
+  auto *async_copy_optimizer = GPUOptimizerFactory(ASYNC_COPY, _arch);
+  async_copy_optimizer->set_estimator(_estimators[SEQ_LAT]);
+
   auto *function_split_optimizer = GPUOptimizerFactory(FUNCTION_SPLIT, _arch);
   function_split_optimizer->set_estimator(_estimators[SEQ]);
 
@@ -232,9 +231,6 @@ void GPUAdvisor::init(const std::string &gpu_arch) {
 
   auto *diverge_reduction_optimizer = GPUOptimizerFactory(DIVERGE_REDUCTION, _arch);
   diverge_reduction_optimizer->set_estimator(_estimators[SEQ]);
-
-  auto *async_copy_optimizer = GPUOptimizerFactory(ASYNC_COPY, _arch);
-  async_copy_optimizer->set_estimator(_estimators[SEQ]);
 
   auto *occupancy_increase_optimizer = GPUOptimizerFactory(OCCUPANCY_INCREASE, _arch);
   occupancy_increase_optimizer->set_estimator(_estimators[PARALLEL_LAT]);
@@ -268,6 +264,7 @@ void GPUAdvisor::init(const std::string &gpu_arch) {
   _code_optimizers.push_back(global_memory_reduction_optimizer);
   _code_optimizers.push_back(fast_math_optimizer);
   _code_optimizers.push_back(diverge_reduction_optimizer);
+  _code_optimizers.push_back(branch_elimination_optimizer);
   _code_optimizers.push_back(async_copy_optimizer);
 
   // Parallel optimizers
@@ -283,7 +280,8 @@ void GPUAdvisor::init(const std::string &gpu_arch) {
 
 // 1. Init static instruction information in vma_prop_map
 // 2. Init an instruction dependency graph
-void GPUAdvisor::configInst(const std::string &lm_name, const std::vector<CudaParse::Function *> &functions) {
+void GPUAdvisor::configInst(const std::string &lm_name,
+                            const std::vector<CudaParse::Function *> &functions) {
   _vma_struct_map.clear();
   _vma_prop_map.clear();
   _inst_dep_graph.clear();
@@ -347,18 +345,17 @@ void GPUAdvisor::configInst(const std::string &lm_name, const std::vector<CudaPa
       _inst_dep_graph.addEdge(dep_inst, inst);
     }
   }
-  
+
   if (DEBUG_GPUADVISOR_DETAILS) {
     std::cout << "Instruction dependency graph: " << std::endl;
     debugInstDepGraph();
     std::cout << std::endl;
   }
 
-
   // Static struct
   auto *struct_root = _prof->structure()->root();
-  Prof::Struct::ANodeIterator struct_iter(struct_root, NULL/*filter*/, true/*leavesOnly*/,
-    IteratorStack::PreOrder);
+  Prof::Struct::ANodeIterator struct_iter(struct_root, NULL /*filter*/, true /*leavesOnly*/,
+                                          IteratorStack::PreOrder);
   for (Prof::Struct::ANode *n = NULL; (n = struct_iter.current()); ++struct_iter) {
     if (n->type() == Prof::Struct::ANode::TyStmt) {
       if (n->ancestorLM()->name() == lm_name) {
@@ -371,7 +368,6 @@ void GPUAdvisor::configInst(const std::string &lm_name, const std::vector<CudaPa
     }
   }
 }
-
 
 void GPUAdvisor::configGPURoot(Prof::CCT::ADynNode *gpu_root, Prof::CCT::ADynNode *gpu_kernel) {
   // Update current root
@@ -386,10 +382,10 @@ void GPUAdvisor::configGPURoot(Prof::CCT::ADynNode *gpu_root, Prof::CCT::ADynNod
   }
 
   // Update vma->prof mapping
-  Prof::CCT::ANodeIterator prof_it(_gpu_root, NULL/*filter*/, true/*leavesOnly*/,
-    IteratorStack::PreOrder);
+  Prof::CCT::ANodeIterator prof_it(_gpu_root, NULL /*filter*/, true /*leavesOnly*/,
+                                   IteratorStack::PreOrder);
   for (Prof::CCT::ANode *n = NULL; (n = prof_it.current()); ++prof_it) {
-    Prof::CCT::ADynNode* n_dyn = dynamic_cast<Prof::CCT::ADynNode*>(n);
+    Prof::CCT::ADynNode *n_dyn = dynamic_cast<Prof::CCT::ADynNode *>(n);
     if (n_dyn) {
       auto vma = n_dyn->lmIP();
       if (_vma_prop_map.find(vma) != _vma_prop_map.end()) {

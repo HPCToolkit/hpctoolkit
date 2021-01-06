@@ -1,23 +1,21 @@
 //************************* System Include Files ****************************
 
-#include <fstream>
-#include <iostream>
-#include <sstream>
-
-#include <climits>
-#include <cstdio>
-#include <cstring>
+#include <sys/stat.h>
 
 #include <algorithm>
 #include <bitset>
+#include <climits>
+#include <cstdio>
+#include <cstring>
+#include <fstream>
 #include <iomanip>
+#include <iostream>
 #include <limits>
 #include <queue>
+#include <sstream>
 #include <string>
 #include <typeinfo>
 #include <unordered_map>
-
-#include <sys/stat.h>
 
 //*************************** User Include Files ****************************
 
@@ -32,27 +30,22 @@
 
 using std::string;
 
+#include <lib/prof-lean/hpcrun-metric.h>
+#include <lib/support/diagnostics.h>
+
+#include <lib/binutils/LM.hpp>
+#include <lib/binutils/VMAInterval.hpp>
+#include <lib/cuda/DotCFG.hpp>
 #include <lib/prof/CCT-Tree.hpp>
 #include <lib/prof/Metric-ADesc.hpp>
 #include <lib/prof/Metric-Mgr.hpp>
 #include <lib/prof/Struct-Tree.hpp>
-
 #include <lib/profxml/PGMReader.hpp>
 #include <lib/profxml/XercesUtil.hpp>
-
-#include <lib/prof-lean/hpcrun-metric.h>
-
-#include <lib/binutils/LM.hpp>
-#include <lib/binutils/VMAInterval.hpp>
-
-#include <lib/cuda/DotCFG.hpp>
-
-#include <lib/xml/xml.hpp>
-
 #include <lib/support/IOUtil.hpp>
 #include <lib/support/Logic.hpp>
 #include <lib/support/StrUtil.hpp>
-#include <lib/support/diagnostics.h>
+#include <lib/xml/xml.hpp>
 
 #define DEBUG_GPUADVISOR 0
 #define DEBUG_GPUADVISOR_DETAILS 0
@@ -88,28 +81,28 @@ void GPUAdvisor::concatAdvice(const OptimizerRank &optimizer_rank) {
 }
 
 KernelStats GPUAdvisor::readKernelStats(int mpi_rank, int thread_id) {
-  auto metric_index_blocks = _metric_name_prof_map->metric_id(
-      mpi_rank, thread_id, "GKER:BLKS_ACUMU", false);
-  auto metric_index_block_threads = _metric_name_prof_map->metric_id(
-      mpi_rank, thread_id, "GKER:BLK_THR_ACUMU", false);
-  auto metric_index_block_smem = _metric_name_prof_map->metric_id(
-      mpi_rank, thread_id, "GKER:BLK_SMEM_ACUMU", false);
-  auto metric_index_thread_reg = _metric_name_prof_map->metric_id(
-      mpi_rank, thread_id, "GKER:THR_REG_ACUMU", false);
-  auto metric_index_warps = _metric_name_prof_map->metric_id(
-      mpi_rank, thread_id, "GKER:FGP_ACT_ACUMU", false);
-  auto metric_index_time = _metric_name_prof_map->metric_id(
-      mpi_rank, thread_id, "GKER (sec)", false);
-  auto metric_index_count = _metric_name_prof_map->metric_id(
-      mpi_rank, thread_id, "GKER:COUNT", false);
+  auto metric_index_blocks =
+      _metric_name_prof_map->metric_id(mpi_rank, thread_id, "GKER:BLKS_ACUMU", false);
+  auto metric_index_block_threads =
+      _metric_name_prof_map->metric_id(mpi_rank, thread_id, "GKER:BLK_THR_ACUMU", false);
+  auto metric_index_block_smem =
+      _metric_name_prof_map->metric_id(mpi_rank, thread_id, "GKER:BLK_SMEM_ACUMU", false);
+  auto metric_index_thread_reg =
+      _metric_name_prof_map->metric_id(mpi_rank, thread_id, "GKER:THR_REG_ACUMU", false);
+  auto metric_index_warps =
+      _metric_name_prof_map->metric_id(mpi_rank, thread_id, "GKER:FGP_ACT_ACUMU", false);
+  auto metric_index_time =
+      _metric_name_prof_map->metric_id(mpi_rank, thread_id, "GKER (sec)", false);
+  auto metric_index_count =
+      _metric_name_prof_map->metric_id(mpi_rank, thread_id, "GKER:COUNT", false);
   auto metric_index_samples_dropped =
       _metric_name_prof_map->metric_id(mpi_rank, thread_id, "GSAMP:DRP", false);
   auto metric_index_samples_expected =
       _metric_name_prof_map->metric_id(mpi_rank, thread_id, "GSAMP:EXP", false);
   auto metric_index_samples_total =
       _metric_name_prof_map->metric_id(mpi_rank, thread_id, "GSAMP:TOT", false);
-  auto metric_index_sample_frequency = _metric_name_prof_map->metric_id(
-      mpi_rank, thread_id, "GSAMP:PER (cyc)", false);
+  auto metric_index_sample_frequency =
+      _metric_name_prof_map->metric_id(mpi_rank, thread_id, "GSAMP:PER (cyc)", false);
 
   auto blocks = _gpu_kernel->metric(metric_index_blocks);
   auto block_threads = _gpu_kernel->metric(metric_index_block_threads);
@@ -148,20 +141,17 @@ KernelStats GPUAdvisor::readKernelStats(int mpi_rank, int thread_id) {
     std::cout << std::endl;
   }
 
-  return KernelStats(blocks, block_threads, block_smem, thread_regs, warps, 0,
-                     samples_total, samples_expected, time, 0, count);
+  return KernelStats(blocks, block_threads, block_smem, thread_regs, warps, 0, samples_total,
+                     samples_expected, time, 0, count);
 }
 
 void GPUAdvisor::advise(const CCTBlames &cct_blames) {
-  for (auto mpi_rank = 0; mpi_rank < _metric_name_prof_map->num_mpi_ranks();
-       ++mpi_rank) {
+  for (auto mpi_rank = 0; mpi_rank < _metric_name_prof_map->num_mpi_ranks(); ++mpi_rank) {
     // For each MPI process
-    for (auto thread_id = 0;
-         thread_id < _metric_name_prof_map->num_thread_ids(mpi_rank);
+    for (auto thread_id = 0; thread_id < _metric_name_prof_map->num_thread_ids(mpi_rank);
          ++thread_id) {
       // For each CPU thread
-      if (_metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_metric) ==
-          -1) {
+      if (_metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_metric) == -1) {
         // Skip tracing threads
         continue;
       }
@@ -175,8 +165,7 @@ void GPUAdvisor::advise(const CCTBlames &cct_blames) {
           auto &kernel_blame = mpi_blames.at(thread_id);
           // 1. Summarize function statistics
           if (DEBUG_GPUADVISOR) {
-            std::cout << "[" << mpi_rank << "," << thread_id << "]"
-                      << std::endl;
+            std::cout << "[" << mpi_rank << "," << thread_id << "]" << std::endl;
 
             std::cout << "Lat: " << kernel_blame.lat_blame << std::endl;
 
@@ -185,28 +174,24 @@ void GPUAdvisor::advise(const CCTBlames &cct_blames) {
               auto lat = lat_blame_iter.first;
               auto lat_blame = lat_blame_iter.second;
               std::cout << lat << ": " << lat_blame << "("
-                        << lat_blame / kernel_blame.lat_blame * 100 << "%)"
-                        << std::endl;
+                        << lat_blame / kernel_blame.lat_blame * 100 << "%)" << std::endl;
             }
 
-            std::cout << std::endl
-                      << "Stall: " << kernel_blame.stall_blame << std::endl;
+            std::cout << std::endl << "Stall: " << kernel_blame.stall_blame << std::endl;
 
             for (auto &stall_blame_iter : kernel_blame.stall_blames) {
               // Following lines, blame metrics
               auto stall = stall_blame_iter.first;
               auto stall_blame = stall_blame_iter.second;
               std::cout << stall << ": " << stall_blame << "("
-                        << stall_blame / kernel_blame.stall_blame * 100 << "%)"
-                        << std::endl;
+                        << stall_blame / kernel_blame.stall_blame * 100 << "%)" << std::endl;
             }
           }
 
           // XXX(Keren): pc sample total sample info is inaccurate for small kernels
           // Calculate active samples
           kernel_stats.total_samples = kernel_blame.lat_blame;
-          kernel_stats.active_samples =
-              kernel_blame.lat_blame - kernel_blame.stall_blame;
+          kernel_stats.active_samples = kernel_blame.lat_blame - kernel_blame.stall_blame;
           kernel_stats.sm_efficiency = kernel_stats.total_samples / kernel_stats.expected_samples;
 
           // 2. Rank optimizers
@@ -236,9 +221,7 @@ void GPUAdvisor::advise(const CCTBlames &cct_blames) {
           _output << std::endl << "Code Optimizers" << std::endl << std::endl;
           concatAdvice(code_optimizer_rank);
 
-          _output << std::endl
-                  << "Parallel Optimizers" << std::endl
-                  << std::endl;
+          _output << std::endl << "Parallel Optimizers" << std::endl << std::endl;
           concatAdvice(parallel_optimizer_rank);
 
           _output << std::endl << "Binary Optimizers" << std::endl << std::endl;
@@ -264,18 +247,15 @@ void GPUAdvisor::advise(const CCTBlames &cct_blames) {
   }
 }
 
-
 std::vector<GPUAdvisor::AdviceTuple> GPUAdvisor::get_advice() {
   if (_advice.size() > 0) {
-    std::sort(_advice.begin(), _advice.end(), [](
-        AdviceTuple &t1, AdviceTuple &t2) {
-      return std::get<0>(t1) > std::get<0>(t2);
-      });
+    std::sort(_advice.begin(), _advice.end(),
+              [](AdviceTuple &t1, AdviceTuple &t2) { return std::get<0>(t1) > std::get<0>(t2); });
 
     auto limit = _advice.size() > _top_kernels ? _top_kernels : _advice.size();
-    return decltype(_advice) (_advice.begin(), _advice.begin() + limit);
+    return decltype(_advice)(_advice.begin(), _advice.begin() + limit);
   }
   return decltype(_advice)();
 }
 
-} // namespace Analysis
+}  // namespace Analysis

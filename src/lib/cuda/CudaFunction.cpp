@@ -8,5 +8,5 @@ void CudaFunction::setEntry(Block *entry) {
   _entry = entry;
 }
 
-}
-}
+}  // namespace ParseAPI
+}  // namespace Dyninst

@@ -10,7 +10,7 @@ namespace ParseAPI {
 
 class PARSER_EXPORT CudaBlock : public Block {
  public:
-  CudaBlock(CodeObject * o, CodeRegion * r, CudaParse::Block * block);
+  CudaBlock(CodeObject *o, CodeRegion *r, CudaParse::Block *block);
 
   virtual ~CudaBlock() {}
 
@@ -22,7 +22,7 @@ class PARSER_EXPORT CudaBlock : public Block {
   std::vector<CudaParse::Instruction *> _insts;
 };
 
-}
-}
+}  // namespace ParseAPI
+}  // namespace Dyninst
 
 #endif

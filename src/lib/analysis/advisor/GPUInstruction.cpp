@@ -1,54 +1,46 @@
 //************************* System Include Files ****************************
 
-#include <iostream>
-#include <fstream>
+#include <sys/stat.h>
 
-#include <string>
+#include <algorithm>
 #include <climits>
-#include <cstring>
 #include <cstdio>
-
+#include <cstring>
+#include <fstream>
+#include <iostream>
+#include <string>
 #include <typeinfo>
 #include <unordered_map>
-#include <algorithm>
-
-#include <sys/stat.h>
 
 //*************************** User Include Files ****************************
 
-#include <include/uint.h>
 #include <include/gcc-attr.h>
 #include <include/gpu-metric-names.h>
+#include <include/uint.h>
 
-#include "GPUInstruction.hpp"
 #include "GPUAdvisor.hpp"
+#include "GPUInstruction.hpp"
 
 using std::string;
 
-#include <lib/prof/CCT-Tree.hpp>
-#include <lib/prof/Struct-Tree.hpp>
-#include <lib/prof/Metric-Mgr.hpp>
-#include <lib/prof/Metric-ADesc.hpp>
-
-#include <lib/profxml/XercesUtil.hpp>
-#include <lib/profxml/PGMReader.hpp>
-
 #include <lib/prof-lean/hpcrun-metric.h>
+#include <lib/support/diagnostics.h>
 
+#include <iostream>
 #include <lib/binutils/LM.hpp>
 #include <lib/binutils/VMAInterval.hpp>
-
-#include <lib/xml/xml.hpp>
-
-#include <lib/support/diagnostics.h>
-#include <lib/support/Logic.hpp>
-#include <lib/support/IOUtil.hpp>
-#include <lib/support/StrUtil.hpp>
-
 #include <lib/cuda/AnalyzeInstruction.hpp>
-
+#include <lib/prof/CCT-Tree.hpp>
+#include <lib/prof/Metric-ADesc.hpp>
+#include <lib/prof/Metric-Mgr.hpp>
+#include <lib/prof/Struct-Tree.hpp>
+#include <lib/profxml/PGMReader.hpp>
+#include <lib/profxml/XercesUtil.hpp>
+#include <lib/support/IOUtil.hpp>
+#include <lib/support/Logic.hpp>
+#include <lib/support/StrUtil.hpp>
+#include <lib/xml/xml.hpp>
 #include <vector>
-#include <iostream>
 
 #define DEBUG_CALLPATH_CUDAINSTRUCTION 0
 
@@ -62,17 +54,12 @@ struct VMAStmt {
   VMA lm_ip;
   Prof::CCT::ANode *node;
 
-  VMAStmt(VMA lm_ip, Prof::CCT::ANode *node) : 
-    lm_ip(lm_ip), node(node) {}
+  VMAStmt(VMA lm_ip, Prof::CCT::ANode *node) : lm_ip(lm_ip), node(node) {}
 
-  bool operator < (const VMAStmt &other) const {
-    return this->lm_ip < other.lm_ip;
-  }
+  bool operator<(const VMAStmt &other) const { return this->lm_ip < other.lm_ip; }
 };
 
-
-static inline std::string
-getLMfromInst(const std::string &inst_file) {
+static inline std::string getLMfromInst(const std::string &inst_file) {
   char resolved_path[PATH_MAX];
   realpath(inst_file.c_str(), resolved_path);
   std::string file = std::string(resolved_path);
@@ -83,16 +70,14 @@ getLMfromInst(const std::string &inst_file) {
 
   auto slash_pos0 = cubin_file.rfind("/structs");
   auto slash_pos1 = cubin_file.rfind("/");
-  cubin_file.replace(slash_pos0, slash_pos1 - slash_pos0, "/cubins"); 
+  cubin_file.replace(slash_pos0, slash_pos1 - slash_pos0, "/cubins");
   std::cout << cubin_file << std::endl;
 
   return cubin_file;
 }
 
-
-static void
-createMetrics(const std::vector<CudaParse::InstructionStat *> &inst_stats,
-  MetricNameProfMap &metric_name_prof_map, Prof::Metric::Mgr &mgr) {
+static void createMetrics(const std::vector<CudaParse::InstructionStat *> &inst_stats,
+                          MetricNameProfMap &metric_name_prof_map, Prof::Metric::Mgr &mgr) {
   // Create new metrics in hpcprof
   // raw_id-><inclusive id, exclusive id>
   // Existing metric names
@@ -104,8 +89,7 @@ createMetrics(const std::vector<CudaParse::InstructionStat *> &inst_stats,
         if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
           metric_ids = metric_name_prof_map.metric_ids(metric_name);
           for (auto id : metric_ids) {
-            std::cout << "Create metric " << metric_name <<
-              " inclusive id " << id << std::endl;
+            std::cout << "Create metric " << metric_name << " inclusive id " << id << std::endl;
           }
         }
       }
@@ -114,35 +98,33 @@ createMetrics(const std::vector<CudaParse::InstructionStat *> &inst_stats,
       if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
         metric_ids = metric_name_prof_map.metric_ids(metric_name);
         for (auto id : metric_ids) {
-          std::cout << "Existing metric " << metric_name <<
-            " inclusive id " << id << std::endl;
+          std::cout << "Existing metric " << metric_name << " inclusive id " << id << std::endl;
         }
       }
     }
   }
 }
 
-
-static void
-gatherStmts(const Prof::LoadMap::LMId_t lm_id, int inst_pc_front, int inst_pc_back,
-  const Prof::CCT::ANode *prof_root, std::vector<VMAStmt> &vma_stmts,
-  std::vector<int> &gpu_kernel_index,
-  std::set<Prof::CCT::ADynNode *> &gpu_kernels) {
+static void gatherStmts(const Prof::LoadMap::LMId_t lm_id, int inst_pc_front, int inst_pc_back,
+                        const Prof::CCT::ANode *prof_root, std::vector<VMAStmt> &vma_stmts,
+                        std::vector<int> &gpu_kernel_index,
+                        std::set<Prof::CCT::ADynNode *> &gpu_kernels) {
   if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
-    std::cout << "inst pc range: [0x" << std::hex << inst_pc_front <<
-      ", 0x" << inst_pc_back << "]" << std::dec << std::endl;
+    std::cout << "inst pc range: [0x" << std::hex << inst_pc_front << ", 0x" << inst_pc_back << "]"
+              << std::dec << std::endl;
   }
 
   // Get all the stmt nodes
-  Prof::CCT::ANodeIterator prof_it(prof_root, NULL/*filter*/, false/*leavesOnly*/,
-    IteratorStack::PreOrder);
+  Prof::CCT::ANodeIterator prof_it(prof_root, NULL /*filter*/, false /*leavesOnly*/,
+                                   IteratorStack::PreOrder);
   for (Prof::CCT::ANode *n = NULL; (n = prof_it.current()); ++prof_it) {
-    Prof::CCT::ADynNode* n_dyn = dynamic_cast<Prof::CCT::ADynNode*>(n);
+    Prof::CCT::ADynNode *n_dyn = dynamic_cast<Prof::CCT::ADynNode *>(n);
     if (n_dyn) {
-      Prof::LoadMap::LMId_t n_lm_id = n_dyn->lmId(); // ok if LoadMap::LMId_NULL
+      Prof::LoadMap::LMId_t n_lm_id = n_dyn->lmId();  // ok if LoadMap::LMId_NULL
       VMA n_lm_ip = n_dyn->lmIP();
       // filter out
-      if (n_lm_id != lm_id || n_lm_ip < static_cast<VMA>(inst_pc_front) || n_lm_ip > static_cast<VMA>(inst_pc_back)) {
+      if (n_lm_id != lm_id || n_lm_ip < static_cast<VMA>(inst_pc_front) ||
+          n_lm_ip > static_cast<VMA>(inst_pc_back)) {
         continue;
       }
 
@@ -166,21 +148,20 @@ gatherStmts(const Prof::LoadMap::LMId_t lm_id, int inst_pc_front, int inst_pc_ba
   std::sort(vma_stmts.begin(), vma_stmts.end());
 }
 
-
-static void
-associateInstStmts(const std::vector<VMAStmt> &vma_stmts,
-  const std::vector<CudaParse::InstructionStat *> &inst_stats,
-  MetricNameProfMap &metric_name_prof_map) {
+static void associateInstStmts(const std::vector<VMAStmt> &vma_stmts,
+                               const std::vector<CudaParse::InstructionStat *> &inst_stats,
+                               MetricNameProfMap &metric_name_prof_map) {
   size_t cur_stmt_index = 0;
-  auto issue_metric_ids = metric_name_prof_map.metric_ids(GPU_INST_METRIC_NAME":STL_NONE");
+  auto issue_metric_ids = metric_name_prof_map.metric_ids(GPU_INST_METRIC_NAME ":STL_NONE");
 
   // Lay metrics over prof tree O(n)
   for (auto *inst_stat : inst_stats) {
     // while lm_ip < inst_stat->pc
-    while (cur_stmt_index < vma_stmts.size() && static_cast<VMA>(inst_stat->pc) > vma_stmts[cur_stmt_index].lm_ip) {
+    while (cur_stmt_index < vma_stmts.size() &&
+           static_cast<VMA>(inst_stat->pc) > vma_stmts[cur_stmt_index].lm_ip) {
       if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
-        std::cout << "inst_stat->pc: 0x" << std::hex << inst_stat->pc << ", vma: 0x" <<
-          vma_stmts[cur_stmt_index].lm_ip << std::dec << std::endl;
+        std::cout << "inst_stat->pc: 0x" << std::hex << inst_stat->pc << ", vma: 0x"
+                  << vma_stmts[cur_stmt_index].lm_ip << std::dec << std::endl;
       }
       ++cur_stmt_index;
     }
@@ -213,23 +194,20 @@ associateInstStmts(const std::vector<VMAStmt> &vma_stmts,
       if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
         auto in_count = node->metric(in_metric_id);
         auto ex_count = node->metric(ex_metric_id);
-        std::cout << "Associate pc: 0x" << std::hex << inst_stat->pc <<
-          " with vma: " << cur_vma << std::dec <<
-          " inclusive id " << in_metric_id <<
-          " name " << metric_name_prof_map.name(in_metric_id) << " count " << in_count <<
-          " exclusive id " << ex_metric_id <<
-          " name " << metric_name_prof_map.name(ex_metric_id) << " count " << ex_count << std::endl;
+        std::cout << "Associate pc: 0x" << std::hex << inst_stat->pc << " with vma: " << cur_vma
+                  << std::dec << " inclusive id " << in_metric_id << " name "
+                  << metric_name_prof_map.name(in_metric_id) << " count " << in_count
+                  << " exclusive id " << ex_metric_id << " name "
+                  << metric_name_prof_map.name(ex_metric_id) << " count " << ex_count << std::endl;
       }
     }
   }
 }
 
-
-std::vector<GPUAdvisor::AdviceTuple>
-overlayGPUInstructionsMain(Prof::CallPath::Profile &prof,
-  const std::vector<std::string> &instruction_files,
-  const std::string &gpu_arch) {
-  auto *mgr = prof.metricMgr(); 
+std::vector<GPUAdvisor::AdviceTuple> overlayGPUInstructionsMain(
+    Prof::CallPath::Profile &prof, const std::vector<std::string> &instruction_files,
+    const std::string &gpu_arch) {
+  auto *mgr = prof.metricMgr();
   MetricNameProfMap metric_name_prof_map(mgr);
   metric_name_prof_map.init();
 
@@ -239,7 +217,7 @@ overlayGPUInstructionsMain(Prof::CallPath::Profile &prof,
 
   // Check if prof contains gpu metrics
   // Skip non-gpu prof
-  if (metric_name_prof_map.metric_ids(GPU_INST_METRIC_NAME":STL_NONE").size() == 0) {
+  if (metric_name_prof_map.metric_ids(GPU_INST_METRIC_NAME ":STL_NONE").size() == 0) {
     if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
       std::cout << "Skip non-gpu prof" << std::endl;
     }
@@ -249,7 +227,7 @@ overlayGPUInstructionsMain(Prof::CallPath::Profile &prof,
   GPUAdvisor gpu_advisor(&prof, &metric_name_prof_map);
   gpu_advisor.init(gpu_arch);
   // Read instruction files
-  for (auto &file: instruction_files) {
+  for (auto &file : instruction_files) {
     if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
       std::cout << std::endl;
       std::cout << "-------------------------------------------------" << std::endl;
@@ -288,8 +266,8 @@ overlayGPUInstructionsMain(Prof::CallPath::Profile &prof,
     std::set<Prof::CCT::ADynNode *> gpu_kernels;
     std::vector<int> gpu_kernel_index = metric_name_prof_map.metric_ids(GPU_KERNEL_METRIC_NAME);
     auto *prof_root = prof.cct()->root();
-    gatherStmts(lm_id, inst_stats.front()->pc, inst_stats.back()->pc,
-      prof_root, vma_stmts, gpu_kernel_index, gpu_kernels);
+    gatherStmts(lm_id, inst_stats.front()->pc, inst_stats.back()->pc, prof_root, vma_stmts,
+                gpu_kernel_index, gpu_kernels);
 
     // Step 5: Lay metrics over prof tree
     associateInstStmts(vma_stmts, inst_stats, metric_name_prof_map);
@@ -297,11 +275,11 @@ overlayGPUInstructionsMain(Prof::CallPath::Profile &prof,
     gpu_advisor.configInst(lm_name, functions);
 
     // Step 6: Make advise
-    // Find each GPU calling context, make recommendation for each calling context 
+    // Find each GPU calling context, make recommendation for each calling context
     for (auto *gpu_kernel : gpu_kernels) {
       auto *gpu_root = dynamic_cast<Prof::CCT::ADynNode *>(gpu_kernel->parent());
 
-      // Pass current gpu root 
+      // Pass current gpu root
       gpu_advisor.configGPURoot(gpu_root, gpu_kernel);
 
       // <mpi_rank, <thread_id, <blames>>>
@@ -313,7 +291,7 @@ overlayGPUInstructionsMain(Prof::CallPath::Profile &prof,
       // Make advise for the calling context and cache result
       gpu_advisor.advise(cct_blames);
     }
-    
+
     if (DEBUG_CALLPATH_CUDAINSTRUCTION) {
       std::cout << "Finish reading instruction file " << file << std::endl;
     }

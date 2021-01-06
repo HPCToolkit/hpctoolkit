@@ -652,9 +652,11 @@ std::vector<BlameStats> GPUSharedMemoryCoalesceOptimizer::match_impl(
 std::vector<BlameStats> GPUAsyncCopyOptimizer::match_impl(const KernelBlame &kernel_blame,
                                                           const KernelStats &kernel_stats) {
   auto blame = 0.0;
+  std::vector<BlameStats> blame_stats_vec;
   std::set<CudaParse::InstructionStat *> smem_insts;
 
   // Find top latency pairs
+  BlameStats stall_blame_stats;
   for (auto *inst_blame : kernel_blame.lat_inst_blame_ptrs) {
     auto *from_inst = inst_blame->src_inst;
     auto *to_inst = inst_blame->dst_inst;
@@ -664,6 +666,7 @@ std::vector<BlameStats> GPUAsyncCopyOptimizer::match_impl(const KernelBlame &ker
       for (auto dst : from_inst->dsts) {
         for (auto src : to_inst->srcs) {
           if (src == dst) {
+            stall_blame_stats.blame += inst_blame->stall_blame;
             // direct load-store pairs
             smem_insts.insert(to_inst);
             find = true;
@@ -677,10 +680,13 @@ std::vector<BlameStats> GPUAsyncCopyOptimizer::match_impl(const KernelBlame &ker
     }
   }
 
+  BlameStats lat_blame_stats;
   for (auto *inst_blame : kernel_blame.lat_inst_blame_ptrs) {
     auto *from_inst = inst_blame->src_inst;
     if (smem_insts.find(from_inst) != smem_insts.end()) {
-      blame += inst_blame->lat_blame;
+      lat_blame_stats.blame += inst_blame->lat_blame;
+      lat_blame_stats.active_samples += inst_blame->lat_blame;
+      lat_blame_stats.total_samples += inst_blame->lat_blame;
 
       if (_inspection.regions.size() < _top_regions) {
         _inspection.regions.push_back(*inst_blame);
@@ -688,11 +694,19 @@ std::vector<BlameStats> GPUAsyncCopyOptimizer::match_impl(const KernelBlame &ker
     }
   }
 
-  _inspection.loop = false;
-  _inspection.stall = false;
+  stall_blame_stats.active_samples = kernel_stats.active_samples - lat_blame_stats.active_samples;
+  stall_blame_stats.total_samples = kernel_stats.total_samples - lat_blame_stats.total_samples;
 
-  BlameStats blame_stats(blame, kernel_stats.active_samples, kernel_stats.total_samples);
-  return std::vector<BlameStats>{blame_stats};
+  blame_stats_vec.push_back(lat_blame_stats);
+  blame_stats_vec.push_back(stall_blame_stats);
+  blame_stats_vec.push_back(BlameStats(blame,
+                                       kernel_stats.active_samples - lat_blame_stats.active_samples,
+                                       kernel_stats.total_samples - lat_blame_stats.total_samples));
+
+  _inspection.loop = false;
+  _inspection.stall = true;
+
+  return blame_stats_vec;
 }
 
 std::vector<BlameStats> GPUGlobalMemoryCoalesceOptimizer::match_impl(
@@ -706,8 +720,8 @@ std::vector<BlameStats> GPUGlobalMemoryCoalesceOptimizer::match_impl(
   for (auto *inst_blame : kernel_blame.lat_inst_blame_ptrs) {
     auto *inst = inst_blame->src_inst;
     if (inst->op.find(".GLOBAL") != std::string::npos &&
-      inst_blame->blame_name.find(":LAT_MTHR") != std::string::npos &&
-      inst_blame->efficiency < COALSECE_LIMIT) {
+        inst_blame->blame_name.find(":LAT_MTHR") != std::string::npos &&
+        inst_blame->efficiency < COALSECE_LIMIT) {
       blame += inst_blame->lat_blame;
 
       if (_inspection.regions.size() < _top_regions) {
@@ -736,9 +750,8 @@ std::vector<BlameStats> GPUGlobalMemoryReductionOptimizer::match_impl(
 
   // Find top latency pairs
   for (auto *inst_blame : kernel_blame.lat_inst_blame_ptrs) {
-    auto *inst = inst_blame->src_inst;
     if (inst_blame->blame_name.find(":LAT_MTHR") != std::string::npos &&
-      inst_blame->efficiency >= COALSECE_LIMIT) {
+        inst_blame->efficiency >= COALSECE_LIMIT) {
       blame += inst_blame->lat_blame;
 
       if (_inspection.regions.size() < _top_regions) {
@@ -759,8 +772,8 @@ std::vector<BlameStats> GPUGlobalMemoryReductionOptimizer::match_impl(
   return std::vector<BlameStats>{blame_stats};
 }
 
-std::vector<BlameStats> GPUDivergeReductionOptimizer::match_impl(
-  const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
+std::vector<BlameStats> GPUDivergeReductionOptimizer::match_impl(const KernelBlame &kernel_blame,
+                                                                 const KernelStats &kernel_stats) {
   const double DIV_LIMIT = 0.5;
   std::vector<BlameStats> blame_stats_vec;
   auto blame = 0.0;
@@ -788,6 +801,65 @@ std::vector<BlameStats> GPUDivergeReductionOptimizer::match_impl(
   return std::vector<BlameStats>{blame_stats};
 }
 
+std::vector<BlameStats> GPUBranchEliminationOptimizer::match_impl(const KernelBlame &kernel_blame,
+                                                                  const KernelStats &kernel_stats) {
+  const double PRED_LIMIT_UPPER = 0.9;
+  const double PRED_LIMIT_LOWER = 0.1;
+  std::vector<BlameStats> blame_stats_vec;
+  std::set<CudaParse::Block *> match_blocks;
+
+  BlameStats lat_blame_stats;
+  // Match if high execution latency for diverged branch instructions
+  for (auto *inst_blame : kernel_blame.lat_inst_blame_ptrs) {
+    auto *src_inst = inst_blame->src_inst;
+
+    if (src_inst->op.find("BRANCH") != std::string::npos &&
+        (inst_blame->pred_true >= PRED_LIMIT_UPPER || inst_blame->pred_true <= PRED_LIMIT_LOWER)) {
+      // Ensure lat_blame_stats is hidden
+      lat_blame_stats.blame += inst_blame->lat_blame;
+      lat_blame_stats.active_samples += inst_blame->lat_blame;
+      lat_blame_stats.total_samples += inst_blame->lat_blame;
+
+      auto *src_block = inst_blame->src_block;
+      auto *dst_block = inst_blame->dst_block;
+      match_blocks.insert(src_block);
+      match_blocks.insert(dst_block);
+
+      if (_inspection.regions.size() < _top_regions) {
+        auto b = *inst_blame;
+        // Fake stall to let it sort by lat_blame
+        b.stall_blame = b.lat_blame;
+        _inspection.regions.push_back(std::move(b));
+      }
+    }
+  }
+
+  BlameStats stall_blame_stats;
+  for (auto *inst_blame : kernel_blame.stall_inst_blame_ptrs) {
+    if (match_blocks.find(inst_blame->src_block) != match_blocks.end() ||
+        match_blocks.find(inst_blame->dst_block) != match_blocks.end()) {
+      stall_blame_stats.blame += inst_blame->stall_blame;
+      stall_blame_stats.active_samples += inst_blame->lat_blame - inst_blame->stall_blame;
+      stall_blame_stats.total_samples += inst_blame->lat_blame;
+    }
+  }
+  stall_blame_stats.active_samples -= lat_blame_stats.active_samples;
+  stall_blame_stats.total_samples -= lat_blame_stats.total_samples;
+
+  blame_stats_vec.push_back(lat_blame_stats);
+  blame_stats_vec.push_back(stall_blame_stats);
+  blame_stats_vec.push_back(BlameStats(0.0,
+                                       kernel_stats.active_samples - lat_blame_stats.active_samples,
+                                       kernel_stats.total_samples));
+
+  _inspection.hint =
+      "Determined branch conditions encountered in execution. Look for improvements to "
+      "remove branch conditions.\n";
+  _inspection.stall = true;
+  _inspection.loop = false;
+
+  return blame_stats_vec;
+}
 
 std::vector<BlameStats> GPUOccupancyIncreaseOptimizer::match_impl(const KernelBlame &kernel_blame,
                                                                   const KernelStats &kernel_stats) {

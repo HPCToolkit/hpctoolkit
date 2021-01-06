@@ -1,26 +1,24 @@
 #include "CFGParser.hpp"
+
 #include <cctype>
 #include <iostream>
 
 #define DEBUG_CUDA_CFGPARSER 0
 
-
 namespace CudaParse {
 
 static void debug_blocks(const std::vector<Block *> &blocks) {
   for (auto *block : blocks) {
-    std::cout << "Block id: " << block->id <<
-      " , name: " << block->name << std::endl;
-    std::cout << "Range: [" << block->insts[0]->offset <<
-      ", " << block->insts.back()->offset << "]" << std::endl;
+    std::cout << "Block id: " << block->id << " , name: " << block->name << std::endl;
+    std::cout << "Range: [" << block->insts[0]->offset << ", " << block->insts.back()->offset << "]"
+              << std::endl;
     for (auto *target : block->targets) {
-      std::cout << "Target block id: " << target->block->id <<
-        " , name: " << target->block->name << std::endl;
+      std::cout << "Target block id: " << target->block->id << " , name: " << target->block->name
+                << std::endl;
     }
     std::cout << std::endl;
   }
 }
-
 
 TargetType CFGParser::get_target_type(const Instruction *inst) {
   TargetType type;
@@ -34,7 +32,6 @@ TargetType CFGParser::get_target_type(const Instruction *inst) {
   return type;
 }
 
-
 TargetType CFGParser::get_fallthrough_type(const Instruction *inst) {
   TargetType type;
   if (inst->is_call) {
@@ -45,10 +42,8 @@ TargetType CFGParser::get_fallthrough_type(const Instruction *inst) {
   return type;
 }
 
-
-void CFGParser::parse_inst_strings(
-  const std::string &label,
-  std::deque<std::string> &inst_strings) {
+void CFGParser::parse_inst_strings(const std::string &label,
+                                   std::deque<std::string> &inst_strings) {
   std::regex e("\\\\l([|]*)");
   std::string newline("\n");
   std::istringstream ss(std::regex_replace(label, e, newline));
@@ -69,7 +64,8 @@ void CFGParser::parse_inst_strings(
       // sth. like <exit>00f0
       break;
     } else {
-      // Validate if the offset is a hex number, we can do sth. smarter, but we don't have to right now
+      // Validate if the offset is a hex number, we can do sth. smarter, but we don't have to right
+      // now
       std::istringstream iss(inst_strings[i]);
       if (std::getline(iss, s, ':')) {
         if (std::all_of(s.begin(), s.end(), ::isxdigit) == false) {
@@ -90,10 +86,8 @@ void CFGParser::parse_inst_strings(
   }
 }
 
-
-void CFGParser::link_dangling_blocks(
-  std::set<Block *> &dangling_blocks,
-  std::vector<Function *> &functions) {
+void CFGParser::link_dangling_blocks(std::set<Block *> &dangling_blocks,
+                                     std::vector<Function *> &functions) {
   for (auto *function : functions) {
     bool find = true;
     // Find a matched dangling_block and insert it
@@ -108,15 +102,16 @@ void CFGParser::link_dangling_blocks(
           auto prev_offset1 = block->insts.front()->offset - 8;
           auto prev_offset2 = block->insts.front()->offset - 16;
           if (dangling_block->insts.front()->offset == next_offset1 ||
-            dangling_block->insts.front()->offset == next_offset2 ||
-            dangling_block->insts.back()->offset == prev_offset1 ||
-            dangling_block->insts.back()->offset == prev_offset2) {
+              dangling_block->insts.front()->offset == next_offset2 ||
+              dangling_block->insts.back()->offset == prev_offset1 ||
+              dangling_block->insts.back()->offset == prev_offset2) {
             // block->dangling_block
-            // Either block.address > dangling_block.address or dangling_block.address > block.address
+            // Either block.address > dangling_block.address or dangling_block.address >
+            // block.address
             bool duplicate = false;
             for (auto *b : function->blocks) {
               if (dangling_block->insts.back()->offset >= b->insts.front()->offset &&
-                dangling_block->insts.front()->offset <= b->insts.back()->offset) {
+                  dangling_block->insts.front()->offset <= b->insts.back()->offset) {
                 // Find existing inst, skip
                 duplicate = true;
                 break;
@@ -125,7 +120,7 @@ void CFGParser::link_dangling_blocks(
             if (!duplicate) {
               find = true;
               block->targets.push_back(
-                new Target(block->insts.back(), dangling_block, TargetType::DIRECT));
+                  new Target(block->insts.back(), dangling_block, TargetType::DIRECT));
             }
             // Either we inserted the target or we found a duplicate
             break;
@@ -140,7 +135,6 @@ void CFGParser::link_dangling_blocks(
     }
   }
 }
-
 
 void CFGParser::parse_calls(std::vector<Function *> &functions) {
   for (auto *function : functions) {
@@ -168,17 +162,21 @@ void CFGParser::parse_calls(std::vector<Function *> &functions) {
             }
             if (!find_target) {
               if (DEBUG_CUDA_CFGPARSER) {
-                std::cout << "Function (" << function->name << ") call (" << callee_function->name << ") at " << inst->offset << std::endl;
+                std::cout << "Function (" << function->name << ") call (" << callee_function->name
+                          << ") at " << inst->offset << std::endl;
               }
-              block->targets.push_back(new Target(inst, callee_function->blocks[0], TargetType::CALL));
+              block->targets.push_back(
+                  new Target(inst, callee_function->blocks[0], TargetType::CALL));
             } else {
               if (DEBUG_CUDA_CFGPARSER) {
-                std::cout << "Call link exists (" << function->name << ") call (" << callee_function->name << ") at " << inst->offset << " " << t->type << std::endl;
+                std::cout << "Call link exists (" << function->name << ") call ("
+                          << callee_function->name << ") at " << inst->offset << " " << t->type
+                          << std::endl;
               }
             }
           } else {
             if (DEBUG_CUDA_CFGPARSER) {
-              std::cout << "warning: CUBIN function " << operand << " not found" << std::endl; 
+              std::cout << "warning: CUBIN function " << operand << " not found" << std::endl;
             }
           }
         }
@@ -186,7 +184,6 @@ void CFGParser::parse_calls(std::vector<Function *> &functions) {
     }
   }
 }
-
 
 void CFGParser::find_block_parent(const std::vector<Block *> &blocks) {
   bool incoming_nodes[blocks.size()];
@@ -209,7 +206,6 @@ void CFGParser::find_block_parent(const std::vector<Block *> &blocks) {
   }
 }
 
-
 void CFGParser::unite_blocks(const Block *block, bool *visited, size_t parent) {
   for (auto *target : block->targets) {
     if (visited[target->block->id] == false) {
@@ -220,16 +216,9 @@ void CFGParser::unite_blocks(const Block *block, bool *visited, size_t parent) {
   }
 }
 
+static bool compare_block_ptr(Block *l, Block *r) { return *l < *r; }
 
-static bool compare_block_ptr(Block *l, Block *r) {
-  return *l < *r;
-}
-
-
-static bool compare_target_ptr(Target *l, Target *r) {
-  return *l < *r;
-}
-
+static bool compare_target_ptr(Target *l, Target *r) { return *l < *r; }
 
 void CFGParser::parse(const Graph &graph, std::vector<Function *> &functions) {
   std::unordered_map<size_t, Block *> block_id_map;
@@ -314,7 +303,8 @@ void CFGParser::parse(const Graph &graph, std::vector<Function *> &functions) {
       for (auto *bb : blocks) {
         if (_block_parent[bb->id] == block->id) {
           if (DEBUG_CUDA_CFGPARSER) {
-            std::cout << "Link " << bb->name << " with " << block_id_map[_block_parent[block->id]]->name << std::endl;
+            std::cout << "Link " << bb->name << " with "
+                      << block_id_map[_block_parent[block->id]]->name << std::endl;
           }
           function->blocks.push_back(bb);
 
@@ -336,7 +326,7 @@ void CFGParser::parse(const Graph &graph, std::vector<Function *> &functions) {
   }
 
   link_dangling_blocks(dangling_blocks, functions);
-  
+
   // Sort blocks after linking dangling blocks
   for (auto *function : functions) {
     for (auto *block : function->blocks) {
@@ -348,11 +338,8 @@ void CFGParser::parse(const Graph &graph, std::vector<Function *> &functions) {
   parse_calls(functions);
 }
 
-
-void CFGParser::link_fallthrough_edges(
-  const Graph &graph,
-  const std::vector<Block *> &blocks,
-  std::unordered_map<size_t, Block *> &block_id_map) {
+void CFGParser::link_fallthrough_edges(const Graph &graph, const std::vector<Block *> &blocks,
+                                       std::unordered_map<size_t, Block *> &block_id_map) {
   std::map<std::pair<size_t, size_t>, size_t> edges;
   for (auto *edge : graph.edges) {
     edges[std::pair<size_t, size_t>(edge->source_id, edge->target_id)]++;
@@ -380,10 +367,8 @@ void CFGParser::link_fallthrough_edges(
   }
 }
 
-
-void CFGParser::split_blocks(
-  std::vector<Block *> &blocks,
-  std::unordered_map<size_t, Block *> &block_id_map) {
+void CFGParser::split_blocks(std::vector<Block *> &blocks,
+                             std::unordered_map<size_t, Block *> &block_id_map) {
   size_t extra_block_id = blocks.size();
   std::vector<Block *> candidate_blocks;
   for (auto *block : blocks) {
@@ -406,9 +391,9 @@ void CFGParser::split_blocks(
     if (DEBUG_CUDA_CFGPARSER) {
       std::cout << "Split index:" << std::endl;
       for (size_t i = 0; i < split_inst_index.size(); ++i) {
-        std::cout << "Block: " << block->name <<
-          ", offset: " << block->insts[split_inst_index[i]]->offset <<
-          " " << block->insts[split_inst_index[i]]->opcode << std::endl;
+        std::cout << "Block: " << block->name
+                  << ", offset: " << block->insts[split_inst_index[i]]->offset << " "
+                  << block->insts[split_inst_index[i]]->opcode << std::endl;
       }
     }
 
@@ -480,17 +465,16 @@ void CFGParser::split_blocks(
           if (call_split) {
             TargetType next_block_type = TargetType::CALL_FT;
             Block *next_block = new_blocks[i + 1];
-            new_block->targets.push_back(new Target(
-              new_block->insts.back(), next_block, next_block_type));
+            new_block->targets.push_back(
+                new Target(new_block->insts.back(), next_block, next_block_type));
           } else {
             Block *next_block = new_blocks[i + 1];
             TargetType next_block_type = get_fallthrough_type(target->inst);
             TargetType target_block_type = get_target_type(target->inst);
 
-            new_block->targets.push_back(new Target(
-              target->inst, next_block, next_block_type));
-            new_block->targets.push_back(new Target(
-              target->inst, target->block, target_block_type));
+            new_block->targets.push_back(new Target(target->inst, next_block, next_block_type));
+            new_block->targets.push_back(
+                new Target(target->inst, target->block, target_block_type));
           }
         }
       }
@@ -502,5 +486,4 @@ void CFGParser::split_blocks(
   }
 }
 
-
-}
+}  // namespace CudaParse
