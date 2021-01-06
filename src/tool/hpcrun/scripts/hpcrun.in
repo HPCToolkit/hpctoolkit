@@ -536,9 +536,22 @@ if test ! -x "$HPCRUN_FNBOUNDS_CMD" ; then
 fi
 export HPCRUN_FNBOUNDS_CMD
 
-export LD_LIBRARY_PATH="${hpc_ld_library_path}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
-export LD_PRELOAD="${preload_list}${LD_PRELOAD:+:${LD_PRELOAD}}"
-export LD_AUDIT="${audit_list}${LD_AUDIT:+:${LD_AUDIT}}"
 export HPCRUN_AUDIT_MAIN_LIB="${hpcrun_dir}/libhpcrun.so"
 
+if test -n "${hpc_ld_library_path}"; then
+  LD_LIBRARY_PATH="${hpc_ld_library_path}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+fi
+if test -z "${LD_LIBRARY_PATH}"; then unset LD_LIBRARY_PATH; fi
+
+if test -n "${preload_list}"; then
+  LD_PRELOAD="${preload_list}${LD_PRELOAD:+:${LD_PRELOAD}}"
+fi
+if test -z "${LD_PRELOAD}"; then unset LD_PRELOAD; fi
+
+if test -n "${audit_list}"; then
+  LD_AUDIT="${audit_list}${LD_AUDIT:+:${LD_AUDIT}}"
+fi
+if test -z "${LD_AUDIT}"; then unset LD_AUDIT; fi
+
+export LD_LIBRARY_PATH LD_PRELOAD LD_AUDIT
 exec "$@"
