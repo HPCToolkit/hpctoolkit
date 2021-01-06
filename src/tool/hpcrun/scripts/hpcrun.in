@@ -390,7 +390,7 @@ do
 	    ;;
 
 	--disable-rtld-audit )
-	    export HPCRUN_AUDIT_USE_FAKE_AUDITOR=1
+	    export HPCRUN_AUDIT_FAKE_AUDITOR=1
 	    ;;
 
 	# --------------------------------------------------
@@ -517,7 +517,7 @@ preload_list="${libmonitor_dir}/libmonitor.so ${preload_list}"
 preload_list="${hpcrun_dir}/libhpcrun.so ${preload_list}"
 
 # Set up the auditor or fake auditor, depending on what's configured.
-if test "$HPCRUN_AUDIT_USE_FAKE_AUDITOR" = 1 ; then
+if test "$HPCRUN_AUDIT_FAKE_AUDITOR" = 1 ; then
     preload_list="${hpcrun_dir}/libhpcrun_fake_audit.so ${preload_list}"
 else
     audit_list="${hpcrun_dir}/libhpcrun_audit.so:${audit_list}"
