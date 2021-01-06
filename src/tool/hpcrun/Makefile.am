@@ -123,6 +123,7 @@ if OPT_ENABLE_HPCRUN_DYNAMIC
 if OPT_ENABLE_RTLD_AUDIT
   pkglib_LTLIBRARIES += libhpcrun_audit.la
 endif
+  pkglib_LTLIBRARIES += libhpcrun_dlmopen.la
   pkglib_LTLIBRARIES += libhpcrun_ga.la
   pkglib_LTLIBRARIES += libhpcrun_gprof.la
   pkglib_LTLIBRARIES += libhpcrun_io.la
@@ -1057,9 +1058,8 @@ endif
 
 if OPT_ENABLE_GTPIN
   libhpcrun_la_SOURCES  += $(MY_GTPIN_FILES)
-  libhpcrun_la_CPPFLAGS += -DENABLE_GTPIN
+  libhpcrun_la_CPPFLAGS += -DENABLE_GTPIN -DGTPIN_LIBDIR=$(OPT_GTPIN_LIBDIR)
   libhpcrun_la_CFLAGS   += $(OPT_GTPIN_IFLAGS)
-  libhpcrun_la_LDFLAGS  += $(OPT_GTPIN_LDFLAGS)
 
   MY_CPP_DEFINES  += -DHPCRUN_SS_GTPIN
 endif
@@ -1070,6 +1070,9 @@ if UNW_LIBUNW
   UNW_DYNAMIC_LD_FLAGS = $(UNW_LIBUNW_LD_FLAGS)
   UNW_STATIC_LD_FLAGS =  $(UNW_LIBUNW_LD_FLAGS)
 endif
+
+libhpcrun_dlmopen_la_SOURCES   = dlmopen/dlmopen.c
+libhpcrun_dlmopen_la_LDFLAGS   = -ldl 
 
 libhpcrun_la_CFLAGS += $(GOTCHA_IFLAGS)
 libhpcrun_la_LDFLAGS += $(GOTCHA_LDFLAGS)

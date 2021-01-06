@@ -3558,20 +3558,23 @@ AC_ARG_ENABLE([rtld-audit],
   [rtld_audit="$enableval"],
   [rtld_audit=yes])
 
-if test "$rtld_audit" = no ; then
-  export_ld_audit='# LD_AUDIT disabled by configure'
-  rtld_audit_mesg='no'
-else
+if test "$rtld_audit" = yes ; then
   export_ld_audit='export LD_AUDIT="${hpcrun_dir}/libhpcrun_audit.so:${LD_AUDIT}"'
   rtld_audit_mesg='yes'
+else
+  export_ld_audit='# LD_AUDIT disabled by configure'
+  rtld_audit_mesg='no'
 fi
 
+AC_SUBST([rtld_audit_mesg])
 AC_SUBST([export_ld_audit])
+
 AM_CONDITIONAL([OPT_ENABLE_RTLD_AUDIT], [test "$rtld_audit" = yes])
 
 if test "$rtld_audit" = yes ; then
   AC_DEFINE([ENABLE_RTLD_AUDIT], [1], [Using the LD_AUDIT interface])
 fi
+
 
 #-------------------------------------------------
 # Option: --with-tbb=PATH
@@ -4918,7 +4921,7 @@ case "$IGC" in
     if test ! -f "${IGC}/include/igc/igc.opencl.h" ; then
       AC_MSG_ERROR([unable to find igc.opencl.h in: $IGC])
     fi
-    OPT_IGC_IFLAGS="-I${IGC}/include"
+    OPT_IGC_IFLAGS="-DENABLE_IGC -I${IGC}/include"
 
     IGC_LDFLAGS = 
     IGA_LDFLAGS =
@@ -5019,7 +5022,7 @@ AC_SUBST([OPT_METRICS_DISCOVERY_LDFLAGS])
 GTPIN=no
 OPT_HAVE_GTPIN=no
 OPT_GTPIN_IFLAGS=
-OPT_GTPIN_LDFLAGS=
+OPT_GTPIN_LIBDIR=
 
 AC_ARG_WITH([gtpin],
   [AS_HELP_STRING([--with-gtpin=PATH],
@@ -5037,10 +5040,10 @@ case "$GTPIN" in
     OPT_GTPIN_IFLAGS="-I${GTPIN}/Profilers/Include -I${GTPIN}/Profilers/Include/ged/intel64/"
 
     if test -f "${GTPIN}/Profilers/Lib/intel64/libgtpin.so" ; then
-      OPT_GTPIN_LDFLAGS="-L${GTPIN}/Profilers/Lib/intel64/ -Wl,-rpath=${GTPIN}/Profilers/Lib/intel64/ -lgtpin"
+      OPT_GTPIN_LIBDIR="${GTPIN}/Profilers/Lib/intel64"
     fi
 
-    if test "x$OPT_GTPIN_LDFLAGS" = x ; then
+    if test "x$OPT_GTPIN_LIBDIR" = x ; then
       AC_MSG_ERROR([unable to find libgtpin.so in: $GTPIN])
     fi
     OPT_HAVE_GTPIN=yes
@@ -5058,7 +5061,7 @@ AC_MSG_RESULT([$GTPIN])
 
 AC_SUBST([OPT_GTPIN])
 AC_SUBST([OPT_GTPIN_IFLAGS])
-AC_SUBST([OPT_GTPIN_LDFLAGS])
+AC_SUBST([OPT_GTPIN_LIBDIR])
 
 
 #-------------------------------------------------

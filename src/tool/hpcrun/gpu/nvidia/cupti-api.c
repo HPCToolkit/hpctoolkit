@@ -570,13 +570,13 @@ cupti_bind
 #define CUPTI_BIND(fn) \
   CHK_DLSYM(cupti, fn);
 
-  FORALL_CUPTI_ROUTINES(CUPTI_BIND)
+  FORALL_CUPTI_ROUTINES(CUPTI_BIND);
 
 #undef CUPTI_BIND
 
-  return 0;
+  return DYNAMIC_BINDING_STATUS_OK;
 #else
-  return -1;
+  return DYNAMIC_BINDING_STATUS_ERROR;
 #endif // ! HPCRUN_STATIC_LINK
 }
 
@@ -1525,7 +1525,7 @@ cupti_activity_flush
 
 
 void
-cupti_device_flush(void *args)
+cupti_device_flush(void *args, int how)
 {
   cupti_activity_flush();
   // TODO(keren): replace cupti with sth. called device queue
@@ -1605,7 +1605,7 @@ cupti_device_init()
 
 
 void
-cupti_device_shutdown(void *args)
+cupti_device_shutdown(void *args, int how)
 {
   cupti_callbacks_unsubscribe();
   cupti_device_flush(0);

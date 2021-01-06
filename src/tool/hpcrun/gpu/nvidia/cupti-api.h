@@ -278,14 +278,16 @@ cupti_activity_flush
 void
 cupti_device_flush
 (
- void *args
+ void *args,
+ int how
 );
 
 
 void
 cupti_device_shutdown
 (
- void *args
+ void *args,
+ int how
 );
 
 

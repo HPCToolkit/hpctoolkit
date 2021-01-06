@@ -117,9 +117,9 @@
 
 #include "gpu/ReadCudaCFG.hpp"
 
-#ifdef OPT_ENABLE_IGC
+#ifdef ENABLE_IGC
 #include "gpu/ReadIntelCFG.hpp"
-#endif // OPT_ENABLE_IGC
+#endif // ENABLE_IGC
 
 #ifdef ENABLE_OPENMP
 #include <omp.h>
@@ -662,10 +662,10 @@ makeStructure(string filename,
       // TODO(Aaron): determine which generation of intel gpu it is
       intel_gpu_arch = 1;
 
-      #ifdef OPT_ENABLE_IGC
+      #ifdef ENABLE_IGC
       parsable = readIntelCFG(search_path, elfFile, the_symtab,
         structOpts.compute_gpu_cfg, &code_src, &code_obj);
-      #endif // OPT_ENABLE_IGC
+      #endif // ENABLE_IGC
     } else {
       code_src = new SymtabCodeSource(symtab);
       code_obj = new CodeObject(code_src);

@@ -41,38 +41,40 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef level0_api_h
-#define level0_api_h
+
+//----------------------------------------------------------
+// File: dlmopen.c
+//
+// Purpose:
+//   implement dlmopen with dlopen, which has the effect of
+//   loading all shared libraries in the initial namespace.
+//
+//   this functionality is needed when using LD_AUDIT
+//   with an older glibc that crashes when using dlmopen
+//   in combination with an auditor library. 
+//
+//   this file will be compiled into a separate 
+//   shared library that will be loaded only when this
+//   functionality is needed. 
+// 
+//----------------------------------------------------------
+
+
 
 //******************************************************************************
-// local includes
+// global includes
 //******************************************************************************
 
-#include <level_zero/ze_api.h>
+#define _GNU_SOURCE
+#include <dlfcn.h>
+
+
 
 //******************************************************************************
-// interface operations
+// interface operations 
 //******************************************************************************
 
-void
-level0_init
-(
- void
-);
-
-
-void
-level0_fini
-(
- void *args,
- int how
-);
-
-
-int
-level0_bind
-(
-  void
-);
-
-#endif
+void *dlmopen (Lmid_t lmid, const char *filename, int flags)
+{
+  return dlopen(filename, flags);
+}
