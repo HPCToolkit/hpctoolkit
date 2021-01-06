@@ -688,11 +688,11 @@ level0_process_immediate_command_list
 }
 
 //******************************************************************************
-// L0 public API override
+// interface operations
 //******************************************************************************
 
 ze_result_t
-zeInit
+hpcrun_zeInit
 (
   ze_init_flag_t flag
 )
@@ -707,7 +707,7 @@ zeInit
 }
 
 ze_result_t
-zeCommandListAppendLaunchKernel
+hpcrun_zeCommandListAppendLaunchKernel
 (
   ze_command_list_handle_t hCommandList,          ///< [in] handle of the command list
   ze_kernel_handle_t hKernel,                     ///< [in] handle of the kernel object
@@ -737,7 +737,7 @@ zeCommandListAppendLaunchKernel
 }
 
 ze_result_t
-zeCommandListAppendMemoryCopy
+hpcrun_zeCommandListAppendMemoryCopy
 (
   ze_command_list_handle_t hCommandList,          ///< [in] handle of command list
   void* dstptr,                                   ///< [in] pointer to destination memory to copy to
@@ -768,7 +768,7 @@ zeCommandListAppendMemoryCopy
 
 
 ze_result_t
-zeCommandListCreate
+hpcrun_zeCommandListCreate
 (
   ze_context_handle_t hContext,                   ///< [in] handle of the context object
   ze_device_handle_t hDevice,                     ///< [in] handle of the device object
@@ -787,7 +787,7 @@ zeCommandListCreate
 }
 
 ze_result_t
-zeCommandListCreateImmediate
+hpcrun_zeCommandListCreateImmediate
 (
   ze_context_handle_t hContext,                   ///< [in] handle of the context object
   ze_device_handle_t hDevice,                     ///< [in] handle of the device object
@@ -806,7 +806,7 @@ zeCommandListCreateImmediate
 }
 
 ze_result_t
-zeCommandListDestroy
+hpcrun_zeCommandListDestroy
 (
   ze_command_list_handle_t hCommandList           ///< [in][release] handle of command list object to destroy
 )
@@ -821,7 +821,7 @@ zeCommandListDestroy
 
 
 ze_result_t
-zeCommandListReset
+hpcrun_zeCommandListReset
 (
   ze_command_list_handle_t hCommandList           ///< [in] handle of command list object to reset
 )
@@ -835,7 +835,7 @@ zeCommandListReset
 }
 
 ze_result_t
-zeCommandQueueExecuteCommandLists
+hpcrun_zeCommandQueueExecuteCommandLists
 (
   ze_command_queue_handle_t hCommandQueue,        ///< [in] handle of the command queue
   uint32_t numCommandLists,                       ///< [in] number of command lists to execute
@@ -855,7 +855,7 @@ zeCommandQueueExecuteCommandLists
 }
 
 ze_result_t
-zeEventPoolCreate
+hpcrun_zeEventPoolCreate
 (
   ze_context_handle_t hContext,                   ///< [in] handle of the context object
   const ze_event_pool_desc_t* desc,               ///< [in] pointer to event pool descriptor
@@ -885,7 +885,7 @@ zeEventPoolCreate
 }
 
 ze_result_t
-zeEventDestroy
+hpcrun_zeEventDestroy
 (
   ze_event_handle_t hEvent                        ///< [in][release] handle of event object to destroy
 )
@@ -899,7 +899,7 @@ zeEventDestroy
 }
 
 ze_result_t
-zeEventHostReset
+hpcrun_zeEventHostReset
 (
   ze_event_handle_t hEvent                        ///< [in] handle of the event
 )
@@ -912,10 +912,6 @@ zeEventHostReset
   // Exit action
   return ret;
 }
-
-//******************************************************************************
-// interface operations
-//******************************************************************************
 
 int
 level0_bind

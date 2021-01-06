@@ -316,6 +316,7 @@ do
 		gpu=level0,inst) gtpin_libdir="${gtpin_lib_path}"
 		    namespace_default=$namespace_gtpin ;;
 
+		gpu=level0) preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_level0.so" ;;
 	    esac
 	    case "$HPCRUN_EVENT_LIST" in
 		'' ) HPCRUN_EVENT_LIST="$1" ;;
