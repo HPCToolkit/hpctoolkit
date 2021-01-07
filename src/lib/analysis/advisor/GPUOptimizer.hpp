@@ -156,7 +156,7 @@ struct InstructionBlame {
         stall_blame(0),
         lat_blame(0),
         efficiency(1.0),
-        pred_true(1.0) {}
+        pred_true(-1.0) {}
 };
 
 struct InstructionBlameStallComparator {

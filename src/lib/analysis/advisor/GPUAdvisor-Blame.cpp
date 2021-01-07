@@ -1139,7 +1139,7 @@ double GPUAdvisor::computeEfficiency(int mpi_rank, int thread_id, CudaParse::Ins
 
 double GPUAdvisor::computePredTrue(int mpi_rank, int thread_id, CudaParse::InstructionStat *inst,
                                    Prof::CCT::ADynNode *node) {
-  double pred_true = 1.0;
+  double pred_true = -1.0;
 
   auto inst_exe_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_exe_metric);
   auto inst_exe_pred_index =
@@ -1149,7 +1149,7 @@ double GPUAdvisor::computePredTrue(int mpi_rank, int thread_id, CudaParse::Instr
     auto exe = node->demandMetric(inst_exe_index);
     auto exe_pred = node->demandMetric(inst_exe_pred_index);
 
-    pred_true = exe / exe_pred;
+    pred_true = exe_pred / exe;
   }
 
   return pred_true;

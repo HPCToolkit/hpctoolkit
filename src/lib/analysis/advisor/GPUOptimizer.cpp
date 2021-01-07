@@ -803,8 +803,8 @@ std::vector<BlameStats> GPUDivergeReductionOptimizer::match_impl(const KernelBla
 
 std::vector<BlameStats> GPUBranchEliminationOptimizer::match_impl(const KernelBlame &kernel_blame,
                                                                   const KernelStats &kernel_stats) {
-  const double PRED_LIMIT_UPPER = 0.9;
-  const double PRED_LIMIT_LOWER = 0.1;
+  const double PRED_LIMIT_UPPER = 0.999;
+  const double PRED_LIMIT_LOWER = 0.001;
   std::vector<BlameStats> blame_stats_vec;
   std::set<CudaParse::Block *> match_blocks;
 
@@ -814,7 +814,8 @@ std::vector<BlameStats> GPUBranchEliminationOptimizer::match_impl(const KernelBl
     auto *src_inst = inst_blame->src_inst;
 
     if (src_inst->op.find("BRANCH") != std::string::npos &&
-        (inst_blame->pred_true >= PRED_LIMIT_UPPER || inst_blame->pred_true <= PRED_LIMIT_LOWER)) {
+        (inst_blame->pred_true != -1.0 && (inst_blame->pred_true >= PRED_LIMIT_UPPER ||
+         inst_blame->pred_true <= PRED_LIMIT_LOWER))) {
       // Ensure lat_blame_stats is hidden
       lat_blame_stats.blame += inst_blame->lat_blame;
       lat_blame_stats.active_samples += inst_blame->lat_blame;
