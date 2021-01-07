@@ -375,7 +375,6 @@ datarootdir = @datarootdir@
 docdir = @docdir@
 dvidir = @dvidir@
 exec_prefix = @exec_prefix@
-export_ld_audit = @export_ld_audit@
 hash_fcn = @hash_fcn@
 hash_value = @hash_value@
 host = @host@

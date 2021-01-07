@@ -858,7 +858,8 @@ monitor_init_process(int *argc, char **argv, void* data)
   hpcrun_wait();
 
 #ifndef HPCRUN_STATIC_LINK
-  hpcrun_init_auditor();
+  if(hpcrun_get_env_bool("HPCRUN_AUDIT_FAKE_AUDITOR"))
+    hpcrun_init_fake_auditor();
 #endif
 
 #if 0
