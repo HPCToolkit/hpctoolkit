@@ -41,27 +41,24 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef level0_api_h
-#define level0_api_h
+
+#include "level0-api.h"
 
 //******************************************************************************
-// local includes
-//******************************************************************************
-
-#include <level_zero/ze_api.h>
-
-//******************************************************************************
-// interface operations
+// L0 public API override
 //******************************************************************************
 
 ze_result_t
-hpcrun_zeInit
+zeInit
 (
   ze_init_flag_t flag
-);
+)
+{
+  return hpcrun_zeInit(flag);
+}
 
 ze_result_t
-hpcrun_zeCommandListAppendLaunchKernel
+zeCommandListAppendLaunchKernel
 (
   ze_command_list_handle_t hCommandList,          ///< [in] handle of the command list
   ze_kernel_handle_t hKernel,                     ///< [in] handle of the kernel object
@@ -71,10 +68,15 @@ hpcrun_zeCommandListAppendLaunchKernel
                                                   ///< if `nullptr == phWaitEvents`
   ze_event_handle_t* phWaitEvents                 ///< [in][optional][range(0, numWaitEvents)] handle of the events to wait
                                                   ///< on before launching
-);
+)
+{
+  return hpcrun_zeCommandListAppendLaunchKernel(
+    hCommandList, hKernel, pLaunchFuncArgs,
+    hSignalEvent, numWaitEvents, phWaitEvents);
+}
 
 ze_result_t
-hpcrun_zeCommandListAppendMemoryCopy
+zeCommandListAppendMemoryCopy
 (
   ze_command_list_handle_t hCommandList,          ///< [in] handle of command list
   void* dstptr,                                   ///< [in] pointer to destination memory to copy to
@@ -85,50 +87,75 @@ hpcrun_zeCommandListAppendMemoryCopy
                                                   ///< if `nullptr == phWaitEvents`
   ze_event_handle_t* phWaitEvents                 ///< [in][optional][range(0, numWaitEvents)] handle of the events to wait
                                                   ///< on before launching
-);
+)
+{
+  return hpcrun_zeCommandListAppendMemoryCopy(
+    hCommandList, dstptr, srcptr, size,
+    hSignalEvent, numWaitEvents, phWaitEvents);
+}
+
 
 ze_result_t
-hpcrun_zeCommandListCreate
+zeCommandListCreate
 (
   ze_context_handle_t hContext,                   ///< [in] handle of the context object
   ze_device_handle_t hDevice,                     ///< [in] handle of the device object
   const ze_command_list_desc_t* desc,             ///< [in] pointer to command list descriptor
   ze_command_list_handle_t* phCommandList         ///< [out] pointer to handle of command list object created
-);
+)
+{
+  return hpcrun_zeCommandListCreate(
+    hContext, hDevice, desc, phCommandList);
+}
 
 ze_result_t
-hpcrun_zeCommandListCreateImmediate
+zeCommandListCreateImmediate
 (
   ze_context_handle_t hContext,                   ///< [in] handle of the context object
   ze_device_handle_t hDevice,                     ///< [in] handle of the device object
   const ze_command_queue_desc_t* altdesc,         ///< [in] pointer to command queue descriptor
   ze_command_list_handle_t* phCommandList         ///< [out] pointer to handle of command list object created
-);
+)
+{
+  return hpcrun_zeCommandListCreateImmediate(
+    hContext, hDevice, altdesc, phCommandList);
+}
 
 ze_result_t
-hpcrun_zeCommandListDestroy
+zeCommandListDestroy
 (
   ze_command_list_handle_t hCommandList           ///< [in][release] handle of command list object to destroy
-);
+)
+{
+  return hpcrun_zeCommandListDestroy(hCommandList);
+}
+
 
 ze_result_t
-hpcrun_zeCommandListReset
+zeCommandListReset
 (
   ze_command_list_handle_t hCommandList           ///< [in] handle of command list object to reset
-);
+)
+{
+  return hpcrun_zeCommandListReset(hCommandList);
+}
 
 ze_result_t
-hpcrun_zeCommandQueueExecuteCommandLists
+zeCommandQueueExecuteCommandLists
 (
   ze_command_queue_handle_t hCommandQueue,        ///< [in] handle of the command queue
   uint32_t numCommandLists,                       ///< [in] number of command lists to execute
   ze_command_list_handle_t* phCommandLists,       ///< [in][range(0, numCommandLists)] list of handles of the command lists
                                                   ///< to execute
   ze_fence_handle_t hFence                        ///< [in][optional] handle of the fence to signal on completion
-);
+)
+{
+  return hpcrun_zeCommandQueueExecuteCommandLists(
+    hCommandQueue, numCommandLists, phCommandLists, hFence);
+}
 
 ze_result_t
-hpcrun_zeEventPoolCreate
+zeEventPoolCreate
 (
   ze_context_handle_t hContext,                   ///< [in] handle of the context object
   const ze_event_pool_desc_t* desc,               ///< [in] pointer to event pool descriptor
@@ -139,39 +166,26 @@ hpcrun_zeEventPoolCreate
                                                   ///< if nullptr, then event pool is visible to all devices supported by the
                                                   ///< driver instance.
   ze_event_pool_handle_t* phEventPool             ///< [out] pointer handle of event pool object created
-);
+)
+{
+  return hpcrun_zeEventPoolCreate(
+    hContext, desc, numDevices, phDevices, phEventPool);
+}
 
 ze_result_t
-hpcrun_zeEventDestroy
+zeEventDestroy
 (
   ze_event_handle_t hEvent                        ///< [in][release] handle of event object to destroy
-);
+)
+{
+  return hpcrun_zeEventDestroy(hEvent);
+}
 
 ze_result_t
-hpcrun_zeEventHostReset
+zeEventHostReset
 (
   ze_event_handle_t hEvent                        ///< [in] handle of the event
-);
-
-void
-level0_init
-(
- void
-);
-
-
-void
-level0_fini
-(
- void *args,
- int how
-);
-
-
-int
-level0_bind
-(
-  void
-);
-
-#endif
+)
+{
+  return hpcrun_zeEventHostReset(hEvent);
+}

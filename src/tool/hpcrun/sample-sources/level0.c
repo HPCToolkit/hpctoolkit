@@ -75,6 +75,7 @@
 // local includes
 //******************************************************************************
 
+#include "libdl.h"
 #include "level0.h"
 
 #include "simple_oo.h"

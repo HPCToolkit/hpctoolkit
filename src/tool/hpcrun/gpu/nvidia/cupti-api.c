@@ -1608,6 +1608,6 @@ void
 cupti_device_shutdown(void *args, int how)
 {
   cupti_callbacks_unsubscribe();
-  cupti_device_flush(0);
+  cupti_device_flush(args, how);
 }
 
