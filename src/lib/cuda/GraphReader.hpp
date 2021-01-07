@@ -1,8 +1,8 @@
 #ifndef _CUDA_GRAPH_READER_H_
 #define _CUDA_GRAPH_READER_H_
 
-#include <boost/graph/detail/read_graphviz_new.hpp>
 #include <boost/graph/graphviz.hpp>
+#include <boost/graph/detail/read_graphviz_new.hpp>
 #include <string>
 #include <unordered_map>
 
