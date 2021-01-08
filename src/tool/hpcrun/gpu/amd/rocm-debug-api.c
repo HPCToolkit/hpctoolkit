@@ -68,7 +68,7 @@
   macro(amd_dbgapi_initialize)   \
   macro(amd_dbgapi_process_attach)   \
   macro(amd_dbgapi_process_detach) \
-  macro(amd_dbgapi_code_object_list) \
+  macro(amd_dbgapi_process_code_object_list) \
   macro(amd_dbgapi_code_object_get_info)
 
 
@@ -130,7 +130,7 @@ ROCM_DEBUG_FN
 
 ROCM_DEBUG_FN
 (
-  amd_dbgapi_code_object_list,
+  amd_dbgapi_process_code_object_list,
   (
     amd_dbgapi_process_id_t,
     size_t *,
@@ -143,8 +143,7 @@ ROCM_DEBUG_FN
 (
   amd_dbgapi_code_object_get_info,
   (
-    amd_dbgapi_process_id_t,
-    amd_dbgapi_code_object_id_t,
+    amd_dbgapi_code_object_id_t,    
     amd_dbgapi_code_object_info_t,
     size_t,
     void*
@@ -159,7 +158,7 @@ static amd_dbgapi_status_t
 hpcrun_self_process
 (
   amd_dbgapi_client_process_id_t cp,
-  amd_dbgapi_os_pid_t *os_pid
+  amd_dbgapi_os_process_id_t *os_pid
 )
 {
   *os_pid = getpid();
@@ -258,7 +257,7 @@ check_rocm_debug_status
     CHECK_RET(AMD_DBGAPI_STATUS_ERROR_INVALID_ARGUMENT)
     CHECK_RET(AMD_DBGAPI_STATUS_ERROR_CLIENT_CALLBACK)
     CHECK_RET(AMD_DBGAPI_STATUS_ERROR_INVALID_CODE_OBJECT_ID)
-    CHECK_RET(AMD_DBGAPI_STATUS_ERROR_INVALID_ARGUMENT_SIZE)
+    CHECK_RET(AMD_DBGAPI_STATUS_ERROR_INVALID_ARGUMENT_COMPATIBILITY)
     default:
       PRINT("unknown rocm debug return value");
       break;
@@ -338,7 +337,7 @@ rocm_debug_api_query_code_object
   size_t* code_object_count_ptr
 )
 {
-  HPCRUN_ROCM_DEBUG_CALL(amd_dbgapi_code_object_list,
+  HPCRUN_ROCM_DEBUG_CALL(amd_dbgapi_process_code_object_list,
     (self, code_object_count_ptr, &code_objects_id, NULL));
   PRINT("code object count %u\n", *code_object_count_ptr);
 }
@@ -351,7 +350,7 @@ rocm_debug_api_query_uri
 {
   char* uri;
   HPCRUN_ROCM_DEBUG_CALL(amd_dbgapi_code_object_get_info,
-    (self, code_objects_id[code_object_index],
+    (code_objects_id[code_object_index],
       AMD_DBGAPI_CODE_OBJECT_INFO_URI_NAME,
       sizeof(char*), (void*)(&uri)));
   return uri;
