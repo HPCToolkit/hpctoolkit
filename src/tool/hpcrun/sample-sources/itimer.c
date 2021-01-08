@@ -274,7 +274,7 @@ hpcrun_start_timer(thread_data_t *td)
     return hpcrun_settime(td, &itspec_start);
   }
 #else
-  EEMSG("start_timer: neither clock nor realtime itimer requested.\n");
+  EEMSG("start_timer: neither clock nor realtime Linux timer requested.\n");
 #endif
   return -1;
 }
@@ -294,7 +294,7 @@ hpcrun_stop_timer(thread_data_t *td)
     return ret;
   }
 #else
-  EEMSG("stop_itimer: neither clock nor realtime itimer requested.\n");
+  EEMSG("stop_itimer: neither clock nor realtime Linux timer requested.\n");
 #endif
   return -1;
 }
@@ -505,7 +505,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   // store event threshold
   METHOD_CALL(self, store_event, ITIMER_EVENT, period);
-  TMSG(OPTIONS,"itimer period set to %ld",period);
+  TMSG(OPTIONS,"Linux timer period set to %ld",period);
 
   // set up file local variables for sample source control
   int seconds = period / 1000000;
@@ -638,7 +638,7 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
 
   // If we got a wallclock signal not meant for our thread, then drop the sample
   if (! wallclock_ok) {
-    EMSG("Received itimer signal, but thread not initialized");
+    EMSG("Received Linux timer signal, but thread not initialized");
   }
   // If the interrupt came from inside our code, then drop the sample
   // and return and avoid any MSG.
@@ -694,7 +694,7 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
     blame_shift_apply(metric_id, sv.sample_node, metric_incr);
   }
   if (hpcrun_is_sampling_disabled()) {
-    TMSG(ITIMER_HANDLER, "No itimer restart, due to disabled sampling");
+    TMSG(ITIMER_HANDLER, "No Linux timer restart due to disabled sampling");
   }
   else {
     hpcrun_restart_timer(self, 1);
