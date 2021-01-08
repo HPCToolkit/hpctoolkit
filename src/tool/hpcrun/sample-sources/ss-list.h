@@ -58,9 +58,13 @@
 //
 //******************************************************************************
 
+#include <include/hpctoolkit-config.h>
+
 SAMPLE_SOURCE_DECL_MACRO(ga)
 SAMPLE_SOURCE_DECL_MACRO(io)  
+#ifdef ENABLE_CLOCK_REALTIME
 SAMPLE_SOURCE_DECL_MACRO(itimer)  
+#endif
 
 #ifdef HPCRUN_SS_LINUX_PERF
 SAMPLE_SOURCE_DECL_MACRO(linux_perf)  
