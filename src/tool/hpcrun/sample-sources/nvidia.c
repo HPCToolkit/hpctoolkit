@@ -393,6 +393,9 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     gpu_monitoring_instruction_sample_frequency_set(pc_sampling_frequency);
 
+    gpu_metrics_default_enable();
+    gpu_metrics_KINFO_enable();
+
     gpu_metrics_GPU_INST_enable(); // instruction counts
 
     gpu_metrics_GPU_INST_STALL_enable(); // stall metrics
@@ -400,6 +403,8 @@ METHOD_FN(process_event_list, int lush_metrics)
     gpu_metrics_GPU_INST_LAT_enable(); // lat metrics
 
     gpu_metrics_GSAMP_enable(); // GPU utilization from sampling
+
+    cupti_enabled_activities |= CUPTI_KERNEL_INVOCATION;
   } else if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_INST)) {
     gpu_metrics_GINS_enable();
     cupti_enabled_activities |= CUPTI_INSTRUCTION_EXECUTION;

@@ -455,9 +455,11 @@ gpu_metrics_attribute_kernel
     gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_COUNT), 1);
   }
   
-  // kernel execution time
-  gpu_metrics_attribute_metric_time_interval(cct_node, METRIC_ID(GPU_TIME_KER), 
-				     (gpu_interval_t *) k);
+  if (METRIC_KIND(GTIMES)) {
+    // kernel execution time
+    gpu_metrics_attribute_metric_time_interval(cct_node, METRIC_ID(GPU_TIME_KER), 
+               (gpu_interval_t *) k);
+  }
 }
 
 
@@ -470,22 +472,24 @@ gpu_metrics_attribute_synchronization
   gpu_synchronization_t *s = &(activity->details.synchronization);
   cct_node_t *cct_node = activity->cct_node;
 
-  int sync_kind_metric_id = METRIC_ID(GSYNC)[s->syncKind];
+  if (METRIC_KIND(GSYNC)) {
+    int sync_kind_metric_id = METRIC_ID(GSYNC)[s->syncKind];
 
-  gpu_metrics_attribute_metric_time_interval(cct_node, sync_kind_metric_id, 
-				     (gpu_interval_t *) s);
+    gpu_metrics_attribute_metric_time_interval(cct_node, sync_kind_metric_id, 
+               (gpu_interval_t *) s);
 
-  gpu_metrics_attribute_metric_time_interval(cct_node, 
-					     METRIC_ID(GPU_TIME_SYNC), 
-					     (gpu_interval_t *) s);
+    gpu_metrics_attribute_metric_time_interval(cct_node, 
+                 METRIC_ID(GPU_TIME_SYNC), 
+                 (gpu_interval_t *) s);
 
-  int count_metric_index = METRIC_ID(GSYNC)[GPU_SYNC_COUNT];
-  
-  metric_data_list_t *count_metrics = hpcrun_reify_metric_set(cct_node, count_metric_index);
+    int count_metric_index = METRIC_ID(GSYNC)[GPU_SYNC_COUNT];
+    
+    metric_data_list_t *count_metrics = hpcrun_reify_metric_set(cct_node, count_metric_index);
 
-  // increment the count of sync op
-  // use 1.0 because sync metrics array is initialized as REAL
-  gpu_metrics_attribute_metric_real(count_metrics, count_metric_index, 1.0);
+    // increment the count of sync op
+    // use 1.0 because sync metrics array is initialized as REAL
+    gpu_metrics_attribute_metric_real(count_metrics, count_metric_index, 1.0);
+  }
 }
 
 
