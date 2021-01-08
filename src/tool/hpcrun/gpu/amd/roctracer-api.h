@@ -60,7 +60,8 @@ roctracer_init
 void
 roctracer_fini
 (
- void*
+ void *args,
+ int how
 );
 
 

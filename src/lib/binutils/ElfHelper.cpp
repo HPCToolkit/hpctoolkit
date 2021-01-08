@@ -96,7 +96,7 @@ ElfFile::open
 (
  char *_memPtr,
  size_t _memLen,
- std::string _fileName
+ const std::string &_fileName
 )
 {
   origPtr = _memPtr;
@@ -107,15 +107,19 @@ ElfFile::open
   elf_version(EV_CURRENT);
   elf = elf_memory(memPtr, memLen);
   if (elf == 0 || elf_kind(elf) != ELF_K_ELF) {
+    memPtr = 0;
     return false;
   }
+
   GElf_Ehdr ehdr_v; 
   GElf_Ehdr *ehdr = gelf_getehdr(elf, &ehdr_v);
   if (!ehdr) {
+    memPtr = 0;
     return false;
   }
-#ifdef EM_CUDA
 
+  bool result = true;
+#ifdef EM_CUDA
   if (ehdr->e_machine == EM_CUDA) {
     this->arch = ehdr->e_flags & 0xFF;
 #ifdef DYNINST_USE_CUDA
@@ -123,20 +127,19 @@ ElfFile::open
     memcpy(origPtr, memPtr, memLen);
     relocateCubin(memPtr, memLen, elf);
 #else
-    elf_end(elf);
-    return false;
+    result = false;
+    memPtr = 0;
 #endif
   }
-
 #endif
 
-  return true;
+  return result;
 }
 
 
 ElfFile::~ElfFile() 
 {
-  if (origPtr != memPtr) free(origPtr);
+  if (origPtr != memPtr && origPtr != 0) free(origPtr);
   elf_end(elf);
 }
 
@@ -174,4 +177,35 @@ elfSectionGetData
 {
   char *sectionData = obj_ptr + shdr->sh_offset;
   return sectionData;
+}
+
+
+size_t
+ElfFile::getTextSection
+(
+ char **text_section
+)
+{
+  // start cfg generation
+  ElfSectionVector *sections = elfGetSectionVector(elf);
+  GElf_Ehdr ehdr_v;
+  GElf_Ehdr *ehdr = gelf_getehdr(elf, &ehdr_v);
+
+  if (ehdr) {
+    for (auto si = sections->begin(); si != sections->end(); si++) {
+      Elf_Scn *scn = *si;
+      GElf_Shdr shdr_v;
+      GElf_Shdr *shdr = gelf_getshdr(scn, &shdr_v);
+      if (!shdr) continue;
+      char *sectionData = elfSectionGetData(memPtr, shdr);
+      const char *section_name = elf_strptr(elf, ehdr->e_shstrndx, shdr->sh_name);
+      if (strcmp(section_name, ".text") == 0) {
+        // TODO(Aaron): can a intel GPU binary has two text sections?
+        *text_section = sectionData;
+        return shdr->sh_size;
+      }
+    }
+  }
+
+  return 0;
 }

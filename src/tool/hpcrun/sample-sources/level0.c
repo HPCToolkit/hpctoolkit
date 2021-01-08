@@ -75,6 +75,7 @@
 // local includes
 //******************************************************************************
 
+#include "libdl.h"
 #include "level0.h"
 
 #include "simple_oo.h"
@@ -191,7 +192,7 @@ static void
 METHOD_FN(finalize_event_list)
 {
 #ifndef HPCRUN_STATIC_LINK
-  if (level0_bind()) {
+  if (level0_bind() != DYNAMIC_BINDING_STATUS_OK) {
     EEMSG("hpcrun: unable to bind to Level0 library %s\n", dlerror());
     monitor_real_exit(-1);
   }

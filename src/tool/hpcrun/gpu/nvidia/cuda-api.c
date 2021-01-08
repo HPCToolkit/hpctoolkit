@@ -203,9 +203,9 @@ cuda_bind
   CHK_DLSYM(cudart, cudaGetDevice);
   CHK_DLSYM(cudart, cudaRuntimeGetVersion);
 
-  return 0;
+  return DYNAMIC_BINDING_STATUS_OK;
 #else
-  return -1;
+  return DYNAMIC_BINDING_STATUS_ERROR;
 #endif // ! HPCRUN_STATIC_LINK
 }
 

@@ -179,6 +179,7 @@ StmtLessThan(StmtInfo * s1, StmtInfo * s2)
   return s1->vma < s2->vma;
 }
 
+
 //----------------------------------------------------------------------
 
 // DOCTYPE header and <HPCToolkitStructure> tag.
@@ -248,6 +249,7 @@ printLoadModuleEnd(ostream * os)
 
   *os << "</LM>\n";
 }
+
 
 //----------------------------------------------------------------------
 

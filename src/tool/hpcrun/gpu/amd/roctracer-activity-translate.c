@@ -63,7 +63,7 @@ convert_kernel_launch
 )
 {
   ga->kind = GPU_ACTIVITY_KERNEL;
-  set_gpu_interval(&ga->details.interval, activity->begin_ns, activity->end_ns);
+  gpu_interval_set(&ga->details.interval, activity->begin_ns, activity->end_ns);
   ga->details.kernel.correlation_id = activity->correlation_id;
 }
 
@@ -77,7 +77,7 @@ convert_memcpy
 )
 {
   ga->kind = GPU_ACTIVITY_MEMCPY;
-  set_gpu_interval(&ga->details.interval, activity->begin_ns, activity->end_ns);
+  gpu_interval_set(&ga->details.interval, activity->begin_ns, activity->end_ns);
   ga->details.memcpy.correlation_id = activity->correlation_id;
   ga->details.memcpy.copyKind = kind;
 }
@@ -91,7 +91,7 @@ convert_memset
 )
 {
   ga->kind = GPU_ACTIVITY_MEMSET;
-  set_gpu_interval(&ga->details.interval, activity->begin_ns, activity->end_ns);
+  gpu_interval_set(&ga->details.interval, activity->begin_ns, activity->end_ns);
   ga->details.memset.correlation_id = activity->correlation_id;
 }
 
@@ -105,7 +105,7 @@ convert_sync
 )
 {
   ga->kind = GPU_ACTIVITY_SYNCHRONIZATION;
-  set_gpu_interval(&ga->details.interval, activity->begin_ns, activity->end_ns);
+  gpu_interval_set(&ga->details.interval, activity->begin_ns, activity->end_ns);
   ga->details.synchronization.syncKind = syncKind;
   ga->details.synchronization.correlation_id = activity->correlation_id;
 }

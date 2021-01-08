@@ -143,7 +143,8 @@ am__DEPENDENCIES_1 =
 @HOST_CPU_X86_FAMILY_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
 am__DEPENDENCIES_3 = $(HPCLIB_Binutils) $(HPCLIB_ProfLean) \
 	$(HPCLIB_ISA) $(am__DEPENDENCIES_2) $(HPCLIB_Support) \
-	$(HPCLIB_SupportLean) $(am__DEPENDENCIES_1)
+	$(HPCLIB_SupportLean) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) $(HPCLIB_gettext)
 hpclump_DEPENDENCIES = $(am__DEPENDENCIES_3)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -377,9 +378,18 @@ OPT_CUDA_LDFLAGS = @OPT_CUDA_LDFLAGS@
 OPT_CUPTI = @OPT_CUPTI@
 OPT_CUPTI_IFLAGS = @OPT_CUPTI_IFLAGS@
 OPT_CUPTI_LDFLAGS = @OPT_CUPTI_LDFLAGS@
+OPT_GTPIN = @OPT_GTPIN@
+OPT_GTPIN_IFLAGS = @OPT_GTPIN_IFLAGS@
+OPT_GTPIN_LIBDIR = @OPT_GTPIN_LIBDIR@
+OPT_IGC = @OPT_IGC@
+OPT_IGC_IFLAGS = @OPT_IGC_IFLAGS@
+OPT_IGC_LDFLAGS = @OPT_IGC_LDFLAGS@
 OPT_LEVEL0 = @OPT_LEVEL0@
 OPT_LEVEL0_IFLAGS = @OPT_LEVEL0_IFLAGS@
 OPT_LEVEL0_LDFLAGS = @OPT_LEVEL0_LDFLAGS@
+OPT_METRICS_DISCOVERY = @OPT_METRICS_DISCOVERY@
+OPT_METRICS_DISCOVERY_IFLAGS = @OPT_METRICS_DISCOVERY_IFLAGS@
+OPT_METRICS_DISCOVERY_LDFLAGS = @OPT_METRICS_DISCOVERY_LDFLAGS@
 OPT_OPENCL_IFLAGS = @OPT_OPENCL_IFLAGS@
 OPT_PAPI = @OPT_PAPI@
 OPT_PAPI_IFLAGS = @OPT_PAPI_IFLAGS@
@@ -524,12 +534,14 @@ HPCLIB_Prof = $(top_builddir)/src/lib/prof/libHPCprof.la
 HPCLIB_ProfXML = $(top_builddir)/src/lib/profxml/libHPCprofxml.la
 HPCLIB_ProfLean = $(top_builddir)/src/lib/prof-lean/libHPCprof-lean.la
 HPCLIB_Binutils = $(top_builddir)/src/lib/binutils/libHPCbinutils.la
+HPCLIB_gettext = $(top_builddir)/src/lib/binutils/libHPCgettext.la
 HPCLIB_ISA = $(top_builddir)/src/lib/isa/libHPCisa.la
 HPCLIB_XML = $(top_builddir)/src/lib/xml/libHPCxml.la
 HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
 HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
 @OPT_DYNINST_LIBDW_FALSE@MY_ELF_DWARF = -L$(LIBDWARF_LIB) -ldwarf -L$(LIBELF_LIB) -lelf
 @OPT_DYNINST_LIBDW_TRUE@MY_ELF_DWARF = -L$(LIBELF_LIB) -ldw -lelf
+@OPT_ENABLE_IGC_TRUE@IGC_LDFLGS = @OPT_IGC_LDFLAGS@
 MYSOURCES = \
 	main.cpp \
 	Args.hpp Args.cpp
@@ -549,8 +561,11 @@ MYLDADD = \
 	$(HPCLIB_Support) \
 	$(HPCLIB_SupportLean) \
 	$(MY_ELF_DWARF) \
+	$(IGC_LDFLGS) \
+	$(MBEDTLS_LIBS) \
 	@LZMA_LDFLAGS_STAT@ \
 	@BINUTILS_LIBS@ \
+	$(HPCLIB_gettext) \
 	@HOST_HPCSTRUCT_LDFLAGS@
 
 @HOST_CPU_X86_FAMILY_FALSE@MY_LIB_XED = 

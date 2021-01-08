@@ -62,14 +62,23 @@ if OPT_DYNINST_LIBDWARF
 DWARF_IFLAGS = -I$(LIBDWARF_INC)
 endif
 
+if OPT_ENABLE_IGC
+IGC_IFLAGS = @OPT_IGC_IFLAGS@
+endif
+
+if OPT_ENABLE_METRICS_DISCOVERY
+MD_IFLAGS = @OPT_METRICS_DISCOVERY_IFLAGS@
+endif
+
 MYSOURCES = \
-	cuda/CFGParser.cpp  \
-	cuda/CudaCFGFactory.cpp  \
-	cuda/CudaFunction.cpp  \
-	cuda/GraphReader.cpp \
-	cuda/CudaBlock.cpp  \
-	cuda/CudaCodeSource.cpp  \
-	cuda/ReadCubinCFG.cpp \
+	gpu/GPUCFGFactory.cpp  \
+	gpu/GPUFunction.cpp  \
+	gpu/GPUBlock.cpp  \
+	gpu/GPUCodeSource.cpp  \
+	gpu/GraphReader.cpp \
+	gpu/CudaCFGParser.cpp  \
+	gpu/ReadCudaCFG.cpp \
+	gpu/ReadIntelCFG.cpp \
 	Struct.cpp  \
 	Struct-Inline.cpp  \
 	Struct-Output.cpp
@@ -84,6 +93,8 @@ MYCXXFLAGS = \
 	$(DWARF_IFLAGS)  \
 	-I$(LIBELF_INC)  \
 	$(DYNINST_IFLAGS)  \
+	$(IGC_IFLAGS) \
+	$(MD_IFLAGS) \
 	$(TBB_IFLAGS)    \
 	$(VALGRIND_IFLAGS)
 

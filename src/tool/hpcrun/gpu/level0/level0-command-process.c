@@ -86,7 +86,7 @@ level0_kernel_translate
 {
   ga->kind = GPU_ACTIVITY_KERNEL;
   ga->details.kernel.correlation_id = (uint64_t)(c->event);
-  set_gpu_interval(&ga->details.interval, start, end);
+  gpu_interval_set(&ga->details.interval, start, end);
 }
 
 static void
@@ -161,7 +161,7 @@ level0_memcpy_translate
     default:
       break;
   }
-  set_gpu_interval(&ga->details.interval, start, end);
+  gpu_interval_set(&ga->details.interval, start, end);
 }
 
 //*****************************************************************************

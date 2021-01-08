@@ -138,6 +138,7 @@ CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 libHPCbinutils_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
+am__dirstamp = $(am__leading_dot)dirstamp
 am__objects_1 = libHPCbinutils_la-LM.lo libHPCbinutils_la-Seg.lo \
 	libHPCbinutils_la-Proc.lo libHPCbinutils_la-Insn.lo \
 	libHPCbinutils_la-LinuxKernelSymbols.lo \
@@ -147,7 +148,8 @@ am__objects_1 = libHPCbinutils_la-LM.lo libHPCbinutils_la-Seg.lo \
 	libHPCbinutils_la-BinUtils.lo libHPCbinutils_la-VMAInterval.lo \
 	libHPCbinutils_la-Fatbin.lo libHPCbinutils_la-ElfHelper.lo \
 	libHPCbinutils_la-InputFile.lo \
-	libHPCbinutils_la-RelocateCubin.lo
+	libHPCbinutils_la-RelocateCubin.lo \
+	intel/libHPCbinutils_la-IntelGPUBinutils.lo
 am_libHPCbinutils_la_OBJECTS = $(am__objects_1)
 libHPCbinutils_la_OBJECTS = $(am_libHPCbinutils_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -158,6 +160,13 @@ libHPCbinutils_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) \
 	$(LDFLAGS) -o $@
+libHPCgettext_la_LIBADD =
+am_libHPCgettext_la_OBJECTS = libHPCgettext_la-gettext.lo
+libHPCgettext_la_OBJECTS = $(am_libHPCgettext_la_OBJECTS)
+libHPCgettext_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(libHPCgettext_la_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
+	-o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -174,24 +183,6 @@ DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src/include
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
 am__mv = mv -f
-CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
-	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
-LTCXXCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) \
-	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
-	$(AM_CXXFLAGS) $(CXXFLAGS)
-AM_V_CXX = $(am__v_CXX_@AM_V@)
-am__v_CXX_ = $(am__v_CXX_@AM_DEFAULT_V@)
-am__v_CXX_0 = @echo "  CXX     " $@;
-am__v_CXX_1 = 
-CXXLD = $(CXX)
-CXXLINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
-	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-AM_V_CXXLD = $(am__v_CXXLD_@AM_V@)
-am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
-am__v_CXXLD_0 = @echo "  CXXLD   " $@;
-am__v_CXXLD_1 = 
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -210,8 +201,27 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(libHPCbinutils_la_SOURCES)
-DIST_SOURCES = $(libHPCbinutils_la_SOURCES)
+CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
+LTCXXCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) \
+	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
+	$(AM_CXXFLAGS) $(CXXFLAGS)
+AM_V_CXX = $(am__v_CXX_@AM_V@)
+am__v_CXX_ = $(am__v_CXX_@AM_DEFAULT_V@)
+am__v_CXX_0 = @echo "  CXX     " $@;
+am__v_CXX_1 = 
+CXXLD = $(CXX)
+CXXLINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
+	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+AM_V_CXXLD = $(am__v_CXXLD_@AM_V@)
+am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
+am__v_CXXLD_0 = @echo "  CXXLD   " $@;
+am__v_CXXLD_1 = 
+SOURCES = $(libHPCbinutils_la_SOURCES) $(libHPCgettext_la_SOURCES)
+DIST_SOURCES = $(libHPCbinutils_la_SOURCES) \
+	$(libHPCgettext_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -373,9 +383,18 @@ OPT_CUDA_LDFLAGS = @OPT_CUDA_LDFLAGS@
 OPT_CUPTI = @OPT_CUPTI@
 OPT_CUPTI_IFLAGS = @OPT_CUPTI_IFLAGS@
 OPT_CUPTI_LDFLAGS = @OPT_CUPTI_LDFLAGS@
+OPT_GTPIN = @OPT_GTPIN@
+OPT_GTPIN_IFLAGS = @OPT_GTPIN_IFLAGS@
+OPT_GTPIN_LIBDIR = @OPT_GTPIN_LIBDIR@
+OPT_IGC = @OPT_IGC@
+OPT_IGC_IFLAGS = @OPT_IGC_IFLAGS@
+OPT_IGC_LDFLAGS = @OPT_IGC_LDFLAGS@
 OPT_LEVEL0 = @OPT_LEVEL0@
 OPT_LEVEL0_IFLAGS = @OPT_LEVEL0_IFLAGS@
 OPT_LEVEL0_LDFLAGS = @OPT_LEVEL0_LDFLAGS@
+OPT_METRICS_DISCOVERY = @OPT_METRICS_DISCOVERY@
+OPT_METRICS_DISCOVERY_IFLAGS = @OPT_METRICS_DISCOVERY_IFLAGS@
+OPT_METRICS_DISCOVERY_LDFLAGS = @OPT_METRICS_DISCOVERY_LDFLAGS@
 OPT_OPENCL_IFLAGS = @OPT_OPENCL_IFLAGS@
 OPT_PAPI = @OPT_PAPI@
 OPT_PAPI_IFLAGS = @OPT_PAPI_IFLAGS@
@@ -495,7 +514,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 
 # We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)
-AUTOMAKE_OPTIONS = foreign
+AUTOMAKE_OPTIONS = foreign subdir-objects
 HPC_IFLAGS = -I@abs_top_srcdir@/src -I@abs_top_builddir@/src
 
 ############################################################
@@ -520,11 +539,14 @@ HPCLIB_Prof = $(top_builddir)/src/lib/prof/libHPCprof.la
 HPCLIB_ProfXML = $(top_builddir)/src/lib/profxml/libHPCprofxml.la
 HPCLIB_ProfLean = $(top_builddir)/src/lib/prof-lean/libHPCprof-lean.la
 HPCLIB_Binutils = $(top_builddir)/src/lib/binutils/libHPCbinutils.la
+HPCLIB_gettext = $(top_builddir)/src/lib/binutils/libHPCgettext.la
 HPCLIB_ISA = $(top_builddir)/src/lib/isa/libHPCisa.la
 HPCLIB_XML = $(top_builddir)/src/lib/xml/libHPCxml.la
 HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
 HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
 @OPT_DYNINST_LIBDWARF_TRUE@DWARF_IFLAGS = -I$(LIBDWARF_INC)
+@OPT_ENABLE_IGC_TRUE@IGC_IFLAGS = @OPT_IGC_IFLAGS@
+@OPT_ENABLE_METRICS_DISCOVERY_TRUE@MD_IFLAGS = @OPT_METRICS_DISCOVERY_IFLAGS@
 
 #############################################################################
 # Local settings
@@ -547,7 +569,8 @@ MYSOURCES = \
 	Fatbin.cpp \
 	ElfHelper.cpp \
 	InputFile.cpp \
-	RelocateCubin.cpp 
+	RelocateCubin.cpp \
+	intel/IntelGPUBinutils.cpp
 
 
 #############################################################################
@@ -556,7 +579,9 @@ MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@ \
 	$(BOOST_IFLAGS)  \
 	$(DWARF_IFLAGS)  \
 	-I$(LIBELF_INC)  \
-	$(DYNINST_IFLAGS)
+	$(DYNINST_IFLAGS) \
+	$(IGC_IFLAGS) \
+	$(MD_IFLAGS)
 
 @IS_HOST_AR_FALSE@MYAR = $(AR) cru
 @IS_HOST_AR_TRUE@MYAR = @HOST_AR@
@@ -566,12 +591,14 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 #############################################################################
 # Automake rules
 #############################################################################
-noinst_LTLIBRARIES = libHPCbinutils.la
+noinst_LTLIBRARIES = libHPCbinutils.la libHPCgettext.la
 libHPCbinutils_la_SOURCES = $(MYSOURCES)
 libHPCbinutils_la_CFLAGS = $(MYCFLAGS)
 libHPCbinutils_la_CXXFLAGS = $(MYCXXFLAGS)
 libHPCbinutils_la_AR = $(MYAR)
 libHPCbinutils_la_LIBADD = $(MYLIBADD)
+libHPCgettext_la_SOURCES = gettext.c
+libHPCgettext_la_CFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS)
 MOSTLYCLEANFILES = $(MYCLEAN)
 
 # Assumes includer sets MYCXXFLAGS and MYCFLAGS
@@ -584,7 +611,7 @@ MYCPPFLAGS_0_CC = $(MYCPPFLAGS_0) $(AM_CFLAGS)   $(CFLAGS)   $(MYCFLAGS)
 all: all-am
 
 .SUFFIXES:
-.SUFFIXES: .cpp .lo .o .obj
+.SUFFIXES: .c .cpp .lo .o .obj
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am $(top_srcdir)/src/Makeinclude.config $(top_srcdir)/src/Makeinclude.rules $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -626,12 +653,25 @@ clean-noinstLTLIBRARIES:
 	  echo rm -f $${locs}; \
 	  rm -f $${locs}; \
 	}
+intel/$(am__dirstamp):
+	@$(MKDIR_P) intel
+	@: > intel/$(am__dirstamp)
+intel/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) intel/$(DEPDIR)
+	@: > intel/$(DEPDIR)/$(am__dirstamp)
+intel/libHPCbinutils_la-IntelGPUBinutils.lo: intel/$(am__dirstamp) \
+	intel/$(DEPDIR)/$(am__dirstamp)
 
 libHPCbinutils.la: $(libHPCbinutils_la_OBJECTS) $(libHPCbinutils_la_DEPENDENCIES) $(EXTRA_libHPCbinutils_la_DEPENDENCIES) 
 	$(AM_V_CXXLD)$(libHPCbinutils_la_LINK)  $(libHPCbinutils_la_OBJECTS) $(libHPCbinutils_la_LIBADD) $(LIBS)
 
+libHPCgettext.la: $(libHPCgettext_la_OBJECTS) $(libHPCgettext_la_DEPENDENCIES) $(EXTRA_libHPCgettext_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(libHPCgettext_la_LINK)  $(libHPCgettext_la_OBJECTS) $(libHPCgettext_la_LIBADD) $(LIBS)
+
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
+	-rm -f intel/*.$(OBJEXT)
+	-rm -f intel/*.lo
 
 distclean-compile:
 	-rm -f *.tab.c
@@ -651,24 +691,60 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-SimpleSymbols.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-SimpleSymbolsFactories.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCbinutils_la-VMAInterval.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCgettext_la-gettext.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@intel/$(DEPDIR)/libHPCbinutils_la-IntelGPUBinutils.Plo@am__quote@
+
+.c.o:
+@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
+@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ $<
+
+.c.obj:
+@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.obj$$||'`;\
+@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ `$(CYGPATH_W) '$<'` &&\
+@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+
+.c.lo:
+@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.lo$$||'`;\
+@am__fastdepCC_TRUE@	$(LTCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
+
+libHPCgettext_la-gettext.lo: gettext.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCgettext_la_CFLAGS) $(CFLAGS) -MT libHPCgettext_la-gettext.lo -MD -MP -MF $(DEPDIR)/libHPCgettext_la-gettext.Tpo -c -o libHPCgettext_la-gettext.lo `test -f 'gettext.c' || echo '$(srcdir)/'`gettext.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCgettext_la-gettext.Tpo $(DEPDIR)/libHPCgettext_la-gettext.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gettext.c' object='libHPCgettext_la-gettext.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCgettext_la_CFLAGS) $(CFLAGS) -c -o libHPCgettext_la-gettext.lo `test -f 'gettext.c' || echo '$(srcdir)/'`gettext.c
 
 .cpp.o:
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
+@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXXCOMPILE) -c -o $@ $<
 
 .cpp.obj:
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.obj$$||'`;\
+@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ `$(CYGPATH_W) '$<'` &&\
+@am__fastdepCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
 .cpp.lo:
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LTCXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.lo$$||'`;\
+@am__fastdepCXX_TRUE@	$(LTCXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Plo
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LTCXXCOMPILE) -c -o $@ $<
@@ -778,11 +854,19 @@ libHPCbinutils_la-RelocateCubin.lo: RelocateCubin.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCbinutils_la-RelocateCubin.lo `test -f 'RelocateCubin.cpp' || echo '$(srcdir)/'`RelocateCubin.cpp
 
+intel/libHPCbinutils_la-IntelGPUBinutils.lo: intel/IntelGPUBinutils.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -MT intel/libHPCbinutils_la-IntelGPUBinutils.lo -MD -MP -MF intel/$(DEPDIR)/libHPCbinutils_la-IntelGPUBinutils.Tpo -c -o intel/libHPCbinutils_la-IntelGPUBinutils.lo `test -f 'intel/IntelGPUBinutils.cpp' || echo '$(srcdir)/'`intel/IntelGPUBinutils.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) intel/$(DEPDIR)/libHPCbinutils_la-IntelGPUBinutils.Tpo intel/$(DEPDIR)/libHPCbinutils_la-IntelGPUBinutils.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='intel/IntelGPUBinutils.cpp' object='intel/libHPCbinutils_la-IntelGPUBinutils.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCbinutils_la_CXXFLAGS) $(CXXFLAGS) -c -o intel/libHPCbinutils_la-IntelGPUBinutils.lo `test -f 'intel/IntelGPUBinutils.cpp' || echo '$(srcdir)/'`intel/IntelGPUBinutils.cpp
+
 mostlyclean-libtool:
 	-rm -f *.lo
 
 clean-libtool:
 	-rm -rf .libs _libs
+	-rm -rf intel/.libs intel/_libs
 
 ID: $(am__tagged_files)
 	$(am__define_uniq_tagged_files); mkid -fID $$unique
@@ -897,6 +981,8 @@ clean-generic:
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
+	-rm -f intel/$(DEPDIR)/$(am__dirstamp)
+	-rm -f intel/$(am__dirstamp)
 
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
@@ -907,7 +993,7 @@ clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
 	mostlyclean-am
 
 distclean: distclean-am
-	-rm -rf ./$(DEPDIR)
+	-rm -rf ./$(DEPDIR) intel/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -953,7 +1039,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-	-rm -rf ./$(DEPDIR)
+	-rm -rf ./$(DEPDIR) intel/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
