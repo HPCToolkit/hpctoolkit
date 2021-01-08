@@ -369,6 +369,8 @@ get_gpu_driver_and_device
 
     for(d = 0; d < deviceCount; ++d) {
       ze_device_properties_t device_properties;
+      device_properties.stype = ZE_STRUCTURE_TYPE_DEVICE_PROPERTIES;
+      device_properties.pNext = NULL;
       HPCRUN_LEVEL0_CALL(zeDeviceGetProperties, (allDevices[d], &device_properties));
       if(ZE_DEVICE_TYPE_GPU == device_properties.type) {
         hDriver = allDrivers[i];
@@ -425,7 +427,9 @@ level0_attribute_event
   if (data == NULL) return;
 
   // Get ready to query time stamps
-  ze_device_properties_t props = {};
+  ze_device_properties_t props;
+  props.stype = ZE_STRUCTURE_TYPE_DEVICE_PROPERTIES ;
+  props.pNext = NULL;
   HPCRUN_LEVEL0_CALL(zeDeviceGetProperties, (hDevice, &props));
   HPCRUN_LEVEL0_CALL(zeEventQueryStatus, (event));
 
@@ -464,6 +468,8 @@ level0_get_memory_types
   // In such case, zeDriverGetMemAllocProperties will return failure.
   // So, we default the memory type to be HOST.
   ze_memory_allocation_properties_t property;
+  property.stype = ZE_STRUCTURE_TYPE_MEMORY_ALLOCATION_PROPERTIES;
+  property.pNext = NULL;
   if (HPCRUN_LEVEL0_CALL(zeMemGetAllocProperties, (hContext, src_ptr, &property, NULL)) == ZE_RESULT_SUCCESS) {
     *src_type_ptr = property.type;
   }
@@ -490,6 +496,8 @@ level0_event_pool_create_entry
   // This leads to one description per event pool creation.
   pool_desc->flags = desc->flags;
   pool_desc->count = desc->count;
+  pool_desc->stype = desc->stype;
+  pool_desc->pNext = desc->pNext;
 
   // We attach the time stamp flag to the event pool,
   // so that we can query time stamps for events in this pool.
