@@ -291,12 +291,12 @@ rocm_debug_api_bind
 #define ROCM_DEBUG_BIND(fn) \
   CHK_DLSYM(rocm_debug, fn);
 
-  FORALL_ROCM_DEBUG_ROUTINES(ROCM_DEBUG_BIND)
+  FORALL_ROCM_DEBUG_ROUTINES(ROCM_DEBUG_BIND);
 
 #undef ROCM_DEBUG_BIND
-  return 0;
+  return DYNAMIC_BINDING_STATUS_OK;
 #else
-  return -1;
+  return DYNAMIC_BINDING_STATUS_ERROR;
 #endif // ! HPCRUN_STATIC_LINK
 }
 

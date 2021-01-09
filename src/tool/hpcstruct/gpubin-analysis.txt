@@ -49,7 +49,7 @@ $(STRUCTS_DIR)/%.hpcstruct: $(GPUBIN_DIR)/%
 	@gpubin_name=`basename -s x $<`
 	struct_name=$@
 	warn_name=$(STRUCTS_DIR)/$$gpubin_name.warnings
-	if test `size $< | tail -1 | awk '{ print $$1 }'` -gt $(PAR_SIZE) ; then
+	if test `du -b $< | tail -1 | awk '{ print $$1 }'` -gt $(PAR_SIZE) ; then
 		if test $(THREADS) -gt 1 ; then
 			echo msg: begin parallel analysis of $$gpubin_name \\($(THREADS) threads\\)
 		else

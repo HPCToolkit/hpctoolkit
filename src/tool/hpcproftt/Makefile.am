@@ -84,6 +84,10 @@ else
 MY_ELF_DWARF = -L$(LIBDWARF_LIB) -ldwarf -L$(LIBELF_LIB) -lelf
 endif
 
+if OPT_ENABLE_IGC
+IGC_LDFLGS = @OPT_IGC_LDFLAGS@
+endif
+
 MYSOURCES = \
 	main.cpp \
 	Args.hpp Args.cpp
@@ -110,9 +114,12 @@ MYLDADD = \
 	$(HPCLIB_Support) \
 	$(HPCLIB_SupportLean) \
 	$(MY_ELF_DWARF) \
+	$(IGC_LDFLGS) \
+	$(MBEDTLS_LIBS) \
 	@LZMA_LDFLAGS_STAT@ \
 	@XERCES_LDLIBS@ \
 	@BINUTILS_LIBS@ \
+	$(HPCLIB_gettext)  \
 	@HOST_HPCPROFTT_LDFLAGS@
 
 if HOST_CPU_X86_FAMILY

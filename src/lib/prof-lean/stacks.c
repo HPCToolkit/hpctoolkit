@@ -115,7 +115,7 @@ sstack_pop
 {
   s_element_t *e = (s_element_t *) atomic_load_explicit(&Ap(q), memory_order_relaxed);
   if (e) {
-    s_element_t *next = 
+    s_element_t *next =
       (s_element_t *) atomic_load_explicit(&(e->Ad(next)), memory_order_relaxed);
     atomic_store_explicit(&Ap(q), next, memory_order_relaxed);
     atomic_store_explicit(&(e->Ad(next)), 0, memory_order_relaxed);

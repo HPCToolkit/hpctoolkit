@@ -244,6 +244,8 @@ static hpcrun_aux_cleanup_t * hpcrun_aux_cleanup_list_head = NULL;
 static hpcrun_aux_cleanup_t * hpcrun_aux_cleanup_free_list_head = NULL;
 static char execname[PATH_MAX] = {'\0'};
 
+static int monitor_fini_process_how = 0;
+
 //***************************************************************************
 // Interface functions for suppressing samples
 //***************************************************************************
@@ -675,8 +677,8 @@ hpcrun_fini_internal()
 
     // Call all registered auxiliary functions before termination.
     // This typically means flushing files that were not done by their creators.
-    device_finalizer_apply(device_finalizer_type_flush);
-    device_finalizer_apply(device_finalizer_type_shutdown);
+    device_finalizer_apply(device_finalizer_type_flush, monitor_fini_process_how);
+    device_finalizer_apply(device_finalizer_type_shutdown, monitor_fini_process_how);
 
     hpcrun_process_aux_cleanup_action();
 
@@ -794,7 +796,7 @@ hpcrun_thread_fini(epoch_t *epoch)
       return;
     }
 
-    device_finalizer_apply(device_finalizer_type_flush);
+    device_finalizer_apply(device_finalizer_type_flush, monitor_fini_process_how);
 
     int is_process = 0;
     thread_finalize(is_process);
@@ -921,9 +923,9 @@ monitor_init_process(int *argc, char **argv, void* data)
   auditor_exports->mainlib_connected(get_saved_vdso_path());
 #endif
 
-  hpcrun_registered_sources_init();
-
   control_knob_init();
+
+  hpcrun_registered_sources_init();
 
   hpcrun_do_custom_init();
 
@@ -980,6 +982,8 @@ monitor_fini_process(int how, void* data)
 
   hpcrun_safe_enter();
 
+  monitor_fini_process_how = how;
+
   hpcrun_fini_internal();
 
   hpcrun_safe_exit();
@@ -988,6 +992,8 @@ monitor_fini_process(int how, void* data)
 void
 monitor_begin_process_exit(int how)
 {
+//TODO:Check with John if we should delete this or adjust hpcrun_fini_internal
+#if 0
   if (hpcrun_get_disabled()) {
     return;
   }
@@ -1009,6 +1015,7 @@ monitor_begin_process_exit(int how)
 
 
   hpcrun_safe_exit();
+#endif
 }
 
 static fork_data_t from_fork;

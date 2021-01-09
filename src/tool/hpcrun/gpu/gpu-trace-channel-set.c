@@ -51,11 +51,14 @@
 #include <hpcrun/thread_data.h>
 #include <hpcrun/control-knob.h>
 
+
+#define DEBUG 0
+
 #include "gpu-print.h"
+#include "gpu-trace.h"
 #include "gpu-trace-channel.h"
 #include "gpu-trace-channel-set.h"
-
-#include "gpu-trace.h"
+#include "gpu-trace-demultiplexer.h"
 
 
 
@@ -87,7 +90,6 @@
 
 typedef gpu_trace_channel_t* gpu_trace_channel_ptr_t;
 
-
 typedef struct {
   s_element_ptr_t next;
   gpu_trace_channel_ptr_t channel;
@@ -101,11 +103,6 @@ typed_stack_declare_type(gpu_trace_channel_ptr_t);
 //******************************************************************************
 // local data
 //******************************************************************************
-
-static
-typed_stack_elem_ptr(gpu_trace_channel_ptr_t) *gpu_trace_channel_stack;
-
-
 
 //******************************************************************************
 // private operations
@@ -135,12 +132,30 @@ static void
 gpu_trace_channel_set_forall
 (
  gpu_trace_channel_fn_t channel_fn,
+ typed_stack_elem_ptr(gpu_trace_channel_ptr_t) *gpu_trace_channel_stack,
  int set_index
-
 )
 {
   channel_stack_forall(&gpu_trace_channel_stack[set_index], channel_forone,
     channel_fn);
+}
+
+
+static void
+gpu_trace_channel_set_apply
+(
+ gpu_trace_channel_fn_t channel_fn,
+ gpu_trace_channel_set_t *channel_set
+)
+{
+  int channel_count = gpu_trace_channel_set_get_channel_num(channel_set);
+  typed_stack_elem_ptr(gpu_trace_channel_ptr_t) * gpu_trace_channel_stack = gpu_trace_channel_set_get_ptr(channel_set);
+
+  for (int channel_idx = 0; channel_idx < channel_count; ++channel_idx) {
+    gpu_trace_channel_set_forall(channel_fn,
+                                 gpu_trace_channel_stack,
+                                 channel_idx);
+  }
 }
 
 
@@ -149,14 +164,17 @@ gpu_trace_channel_set_forall
 // interface operations
 //******************************************************************************
 
-void gpu_trace_channel_stack_alloc(int size){
-	gpu_trace_channel_stack = hpcrun_malloc_safe( size * sizeof(typed_stack_elem_ptr(gpu_trace_channel_ptr_t)));
+void *
+gpu_trace_channel_set_alloc(int size){
+  return hpcrun_malloc_safe( size * sizeof(typed_stack_elem_ptr(gpu_trace_channel_ptr_t)));
 }
+
 
 void
 gpu_trace_channel_set_insert
 (
  gpu_trace_channel_t *channel,
+ void *gpu_trace_channel_stack_ptr,
  int set_index
 )
 {
@@ -171,25 +189,46 @@ gpu_trace_channel_set_insert
   channel_stack_elem_ptr_set(e, 0);
 
 	  // add the entry to the channel stack
+  typed_stack_elem_ptr(gpu_trace_channel_ptr_t) * gpu_trace_channel_stack = gpu_trace_channel_stack_ptr;
   channel_stack_push(&gpu_trace_channel_stack[set_index], e);
 }
 
 
 void
-gpu_trace_channel_set_consume
+gpu_trace_channel_set_process
 (
- int set_index
+ gpu_trace_channel_set_t *channel_set
 )
 {
-  gpu_trace_channel_set_forall(gpu_trace_channel_consume, set_index);
+  gpu_trace_channel_set_apply(gpu_trace_channel_consume, channel_set);
+}
+
+
+void
+gpu_trace_channel_set_await
+(
+ gpu_trace_channel_set_t *channel_set
+)
+{
+  gpu_trace_channel_set_apply(gpu_trace_channel_await, channel_set);
 }
 
 
 void
 gpu_trace_channel_set_release
 (
- int set_index
+ gpu_trace_channel_set_t *channel_set
 )
 {
-  gpu_trace_channel_set_forall(gpu_trace_stream_release, set_index);
+  gpu_trace_channel_set_apply(gpu_trace_stream_release, channel_set);
+}
+
+
+void
+gpu_trace_channel_set_notify
+(
+gpu_trace_channel_set_t *channel_set
+)
+{
+  gpu_trace_channel_set_apply(gpu_trace_channel_signal_consumer, channel_set);
 }

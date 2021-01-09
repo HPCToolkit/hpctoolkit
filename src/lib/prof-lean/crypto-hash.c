@@ -192,6 +192,21 @@ crypto_hash_to_hexstring
 }
 
 
+
+//******************************************************************************
+// unit test
+//******************************************************************************
+
+#if UNIT_TEST
+
+#include <stdio.h>
+#include <stdlib.h>
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+
 //-----------------------------------------------------------------------------
 // function: 
 //   crypto_hash_self_test
@@ -212,21 +227,6 @@ crypto_hash_self_test
   int status = mbedtls_md5_self_test(verbose);
   return status;
 }
-
-
-
-//******************************************************************************
-// unit test
-//******************************************************************************
-
-#if UNIT_TEST
-
-#include <stdio.h>
-#include <stdlib.h>
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
 
 
 int

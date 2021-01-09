@@ -58,7 +58,7 @@
 #############################################################################
 
 # We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)
-AUTOMAKE_OPTIONS = foreign
+AUTOMAKE_OPTIONS = foreign subdir-objects
 
 #############################################################################
 # Common settings
@@ -73,6 +73,14 @@ LIBELF_INC = @LIBELF_INC@
 
 if OPT_DYNINST_LIBDWARF
 DWARF_IFLAGS = -I$(LIBDWARF_INC)
+endif
+
+if OPT_ENABLE_IGC
+IGC_IFLAGS = @OPT_IGC_IFLAGS@
+endif
+
+if OPT_ENABLE_METRICS_DISCOVERY
+MD_IFLAGS = @OPT_METRICS_DISCOVERY_IFLAGS@
 endif
 
 #############################################################################
@@ -97,7 +105,8 @@ MYSOURCES = \
 	Fatbin.cpp \
 	ElfHelper.cpp \
 	InputFile.cpp \
-	RelocateCubin.cpp 
+	RelocateCubin.cpp \
+	intel/IntelGPUBinutils.cpp
 
 
 #############################################################################
@@ -106,7 +115,9 @@ MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@ \
 	$(BOOST_IFLAGS)  \
 	$(DWARF_IFLAGS)  \
 	-I$(LIBELF_INC)  \
-	$(DYNINST_IFLAGS)
+	$(DYNINST_IFLAGS) \
+	$(IGC_IFLAGS) \
+	$(MD_IFLAGS)
 
 if IS_HOST_AR
   MYAR = @HOST_AR@
@@ -123,13 +134,16 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 # Automake rules
 #############################################################################
 
-noinst_LTLIBRARIES = libHPCbinutils.la
+noinst_LTLIBRARIES = libHPCbinutils.la libHPCgettext.la
 
 libHPCbinutils_la_SOURCES  = $(MYSOURCES)
 libHPCbinutils_la_CFLAGS   = $(MYCFLAGS)
 libHPCbinutils_la_CXXFLAGS = $(MYCXXFLAGS)
 libHPCbinutils_la_AR       = $(MYAR)
 libHPCbinutils_la_LIBADD   = $(MYLIBADD)
+
+libHPCgettext_la_SOURCES = gettext.c
+libHPCgettext_la_CFLAGS  = @HOST_CFLAGS@ $(HPC_IFLAGS)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
 
