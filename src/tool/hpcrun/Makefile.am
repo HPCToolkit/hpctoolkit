@@ -524,6 +524,11 @@ MY_OPENCL_FILES = \
 	gpu/opencl/opencl-h2d-map.c \
 	gpu/opencl/opencl-queue-map.c \
 	gpu/opencl/opencl-context-map.c
+
+pkglib_LTLIBRARIES += libhpcrun_opencl.la
+libhpcrun_opencl_la_CPPFLAGS  = -I$(top_srcdir)/src $(OPENCL_IFLAGS)
+libhpcrun_opencl_la_SOURCES   = gpu/opencl/opencl-api-wrappers.c
+libhpcrun_opencl_la_LDFLAGS   = -Wl,-Bsymbolic
 endif
 
 if OPT_ENABLE_GTPIN
