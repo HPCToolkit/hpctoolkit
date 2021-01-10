@@ -1485,13 +1485,6 @@ void GPUAdvisor::overlayInstBlames(InstBlames &inst_blames, KernelBlame &kernel_
 }
 
 void GPUAdvisor::blame(CCTBlames &cct_blames) {
-  if (DEBUG_GPUADVISOR) {
-    auto *strct = _gpu_kernel->structure();
-    if (strct->ancestorProc() != NULL) {
-      std::cout << "GPU Kernel " << strct->ancestorProc()->name() << std::endl;
-    }
-  }
-
   // For each MPI process
   for (auto mpi_rank = 0; mpi_rank < _metric_name_prof_map->num_mpi_ranks(); ++mpi_rank) {
     // For each CPU thread
@@ -1516,8 +1509,15 @@ void GPUAdvisor::blame(CCTBlames &cct_blames) {
         continue;
       }
 
+
       if (DEBUG_GPUADVISOR) {
-        std::cout << "[" << mpi_rank << "," << thread_id << "]" << std::endl << std::endl;
+        std::cout << "[" << mpi_rank << "," << thread_id << "]: ";
+
+        auto metric_index_time =
+          _metric_name_prof_map->metric_id(mpi_rank, thread_id, "GKER (sec)", false);
+        auto time = _gpu_kernel->metric(metric_index_time);
+
+        std::cout << time << std::endl << std::endl;
       }
 
       // 1. Init a CCT dependency graph
