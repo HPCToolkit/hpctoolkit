@@ -93,9 +93,8 @@ std::vector<BlameStats> GPURegisterIncreaseOptimizer::match_impl(const KernelBla
     auto &blame_name = inst_blame->blame_name;
 
     if (blame_name == BLAME_GPU_INST_METRIC_NAME ":LAT_GMEM_LMEM") {
-      BlameStats blame_stats(inst_blame->lat_blame, kernel_stats.active_samples,
-                             kernel_stats.total_samples);
-      blame_stats_vec.push_back(blame_stats);
+      blame_stats_vec.push_back(BlameStats(inst_blame->lat_blame, kernel_stats.active_samples,
+                                           kernel_stats.total_samples));
 
       if (_inspection.regions.size() < _top_regions) {
         _inspection.regions.push_back(*inst_blame);
@@ -105,8 +104,8 @@ std::vector<BlameStats> GPURegisterIncreaseOptimizer::match_impl(const KernelBla
 
   _inspection.hint =
       "Too many registers are allocated in the kernel that exceeds the upper bound. Register "
-      "spills to local memory causes extra instruction cycles.\n"
-      "    To eliminate these cycles:\n"
+      "spills to local memory causes excessive instruction stalls.\n"
+      "    To eliminate these stalls:\n"
       "    1. Increase the upper bound of regster count in a kernel.\n"
       "    2. Simplify computations to reuse registers.\n"
       "    3. Split loops to reduce register usage.\n";
@@ -168,8 +167,7 @@ std::vector<BlameStats> GPULoopUnrollOptimizer::match_impl(const KernelBlame &ke
       "    1. Unroll the loops several times with pragma unroll or manual unrolling. Sometimes the "
       "compiler fails to automatically unroll loops\n"
       "    2. Use vector instructions to achieve higher dependency (e.g., float4 load/store, "
-      "tensor "
-      "operations).";
+      "tensor operations).";
   _inspection.stall = true;
   _inspection.loop = true;
 
@@ -203,14 +201,16 @@ std::vector<BlameStats> GPULoopUnrollOptimizer::match_impl(const KernelBlame &ke
 
 std::vector<BlameStats> GPULoopNoUnrollOptimizer::match_impl(const KernelBlame &kernel_blame,
                                                              const KernelStats &kernel_stats) {
-  auto blame = 0.0;
+  std::vector<BlameStats> blame_stats_vec;
+
   // Find top instruction fetch latencies
   for (auto *inst_blame : kernel_blame.lat_inst_blame_ptrs) {
     auto &blame_name = inst_blame->blame_name;
 
     Prof::Struct::ACodeNode *region = inst_blame->src_struct->ancestorLoop();
     if (region != NULL && blame_name == BLAME_GPU_INST_METRIC_NAME ":LAT_IFET") {
-      blame += inst_blame->lat_blame;
+      blame_stats_vec.push_back(BlameStats(inst_blame->lat_blame, kernel_stats.active_samples,
+                                           kernel_stats.total_samples));
 
       if (_inspection.regions.size() < _top_regions) {
         _inspection.regions.push_back(*inst_blame);
@@ -224,10 +224,9 @@ std::vector<BlameStats> GPULoopNoUnrollOptimizer::match_impl(const KernelBlame &
       "    1. Manually unroll loops to reduce redundant instructions.\n"
       "    2. Reduce loop unroll factor.";
   _inspection.stall = false;
-  _inspection.loop = false;
+  _inspection.loop = true;
 
-  BlameStats blame_stats(blame, kernel_stats.active_samples, kernel_stats.total_samples);
-  return std::vector<BlameStats>{blame_stats};
+  return blame_stats_vec;
 }
 
 std::vector<BlameStats> GPUStrengthReductionOptimizer::match_impl(const KernelBlame &kernel_blame,
@@ -242,9 +241,8 @@ std::vector<BlameStats> GPUStrengthReductionOptimizer::match_impl(const KernelBl
 
     if (_arch->latency(src_inst->op).first >= LAT_UPPER &&
         src_inst->op.find("MEMORY") == std::string::npos) {
-      BlameStats blame_stats(inst_blame->lat_blame, kernel_stats.active_samples,
-                             kernel_stats.total_samples);
-      blame_stats_vec.push_back(blame_stats);
+      blame_stats_vec.push_back(BlameStats(inst_blame->lat_blame, kernel_stats.active_samples,
+                                           kernel_stats.total_samples));
 
       if (_inspection.regions.size() < _top_regions) {
         _inspection.regions.push_back(*inst_blame);
@@ -258,8 +256,8 @@ std::vector<BlameStats> GPUStrengthReductionOptimizer::match_impl(const KernelBl
       "    1. Avoid integer division. An integer division requires the usage of SFU to "
       "perform floating point transforming. One can use a multiplication of reciprocal instead.\n"
       "    2. Avoid conversion. A float constant by default is 64-bit. If the constant is "
-      "multiplied by a 32-bit "
-      "float value, the compiler transforms the 32-bit value to a 64-bit value first.\n";
+      "multiplied by a 32-bit float value, the compiler transforms the 32-bit value to a 64-bit "
+      "value first.\n";
   _inspection.stall = false;
   _inspection.loop = true;
 
@@ -273,9 +271,8 @@ std::vector<BlameStats> GPUWarpBalanceOptimizer::match_impl(const KernelBlame &k
 
   for (auto *inst_blame : kernel_blame.lat_inst_blame_ptrs) {
     if (inst_blame->blame_name.find(":LAT_SYNC") != std::string::npos) {
-      BlameStats blame_stats(inst_blame->lat_blame, kernel_stats.active_samples,
-                             kernel_stats.total_samples);
-      blame_stats_vec.push_back(blame_stats);
+      blame_stats_vec.push_back(BlameStats(inst_blame->lat_blame, kernel_stats.active_samples,
+                                           kernel_stats.total_samples));
 
       if (_inspection.regions.size() < _top_regions) {
         _inspection.regions.push_back(*inst_blame);
@@ -288,8 +285,8 @@ std::vector<BlameStats> GPUWarpBalanceOptimizer::match_impl(const KernelBlame &k
       "instruction (e.g., __syncwarp or __threadfence). To reduce sync stalls:\n"
       "    1. Try to balance the work before synchronization points.\n"
       "    2. Use warp shuffle operations to reduce synchronization cost.\n"
-      "    3. On new GPU architectures, looking for splitting arrive/wait barrier to enable"
-      "    hardware acceleration.\n";
+      "    3. On new GPU architectures, looking for splitting arrive/wait barrier to enable "
+      "hardware acceleration.\n";
   _inspection.stall = false;
   _inspection.loop = true;
 
@@ -335,10 +332,9 @@ std::vector<BlameStats> GPUCodeReorderOptimizer::match_impl(const KernelBlame &k
 
   _inspection.hint =
       "Compiler fails to schedule instructions properly to hide latencies.\n"
-      "    To reduce latency: \n"
+      "    To eliminate latencies: \n"
       "    1. Reorder statements manually. For example, if a memory load latency is outstanding, "
-      "the "
-      "load can be put a few lines before the first usage\n";
+      "the load can be put a few lines before the first usage\n";
   _inspection.stall = true;
   // TODO(Keren): nested regions
   _inspection.loop = true;
@@ -627,15 +623,17 @@ std::vector<BlameStats> GPUFunctionSplitOptimizer::match_impl(const KernelBlame 
 
 std::vector<BlameStats> GPUSharedMemoryCoalesceOptimizer::match_impl(
     const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
-  // Match if shared memory latency is high and access is not coalseced
+  // Match if a shared memory instruction's latency is high and access is not coalseced
   const double COALSECE_LIMIT = 0.8;
-  auto blame = 0.0;
+  std::vector<BlameStats> blame_stats_vec;
 
   // Find top latency pairs
   for (auto *inst_blame : kernel_blame.lat_inst_blame_ptrs) {
     if (inst_blame->blame_name.find(":LAT_IDEP_SMEM") != std::string::npos &&
         inst_blame->efficiency < COALSECE_LIMIT) {
-      blame += inst_blame->lat_blame;
+      blame_stats_vec.push_back(BlameStats(inst_blame->lat_blame * (1 - inst_blame->efficiency),
+                                           kernel_stats.active_samples,
+                                           kernel_stats.total_samples));
 
       if (_inspection.regions.size() < _top_regions) {
         _inspection.regions.push_back(*inst_blame);
@@ -644,14 +642,13 @@ std::vector<BlameStats> GPUSharedMemoryCoalesceOptimizer::match_impl(
   }
 
   _inspection.stall = false;
+  _inspection.loop = false;
 
-  BlameStats blame_stats(blame, kernel_stats.active_samples, kernel_stats.total_samples);
-  return std::vector<BlameStats>{blame_stats};
+  return blame_stats_vec;
 }
 
 std::vector<BlameStats> GPUAsyncCopyOptimizer::match_impl(const KernelBlame &kernel_blame,
                                                           const KernelStats &kernel_stats) {
-  auto blame = 0.0;
   std::vector<BlameStats> blame_stats_vec;
   std::set<CudaParse::InstructionStat *> smem_insts;
 
@@ -699,7 +696,7 @@ std::vector<BlameStats> GPUAsyncCopyOptimizer::match_impl(const KernelBlame &ker
 
   blame_stats_vec.push_back(lat_blame_stats);
   blame_stats_vec.push_back(stall_blame_stats);
-  blame_stats_vec.push_back(BlameStats(blame,
+  blame_stats_vec.push_back(BlameStats(0.0,
                                        kernel_stats.active_samples - lat_blame_stats.active_samples,
                                        kernel_stats.total_samples - lat_blame_stats.total_samples));
 
@@ -712,7 +709,6 @@ std::vector<BlameStats> GPUAsyncCopyOptimizer::match_impl(const KernelBlame &ker
 std::vector<BlameStats> GPUGlobalMemoryCoalesceOptimizer::match_impl(
     const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
   // Match if global memory throttle is high and efficiency is low
-  auto blame = 0.0;
   const double COALSECE_LIMIT = 0.5;
   std::vector<BlameStats> blame_stats_vec;
 
@@ -722,7 +718,9 @@ std::vector<BlameStats> GPUGlobalMemoryCoalesceOptimizer::match_impl(
     if (inst->op.find(".GLOBAL") != std::string::npos &&
         inst_blame->blame_name.find(":LAT_MTHR") != std::string::npos &&
         inst_blame->efficiency < COALSECE_LIMIT) {
-      blame += inst_blame->lat_blame;
+      blame_stats_vec.push_back(BlameStats(inst_blame->lat_blame * (1 - inst_blame->efficiency),
+                                           kernel_stats.active_samples,
+                                           kernel_stats.total_samples));
 
       if (_inspection.regions.size() < _top_regions) {
         _inspection.regions.push_back(*inst_blame);
@@ -738,21 +736,21 @@ std::vector<BlameStats> GPUGlobalMemoryCoalesceOptimizer::match_impl(
       "    To eliminate abundant memory requests:\n"
       "    1. Coalsece memory access among threads within the same warp.\n";
 
-  BlameStats blame_stats(blame, kernel_stats.active_samples, kernel_stats.total_samples);
-  return std::vector<BlameStats>{blame_stats};
+  return blame_stats_vec;
 }
 
 std::vector<BlameStats> GPUGlobalMemoryReductionOptimizer::match_impl(
     const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
   // Match if global memory throttle is high and efficiency is high
   const double COALSECE_LIMIT = 0.5;
-  auto blame = 0.0;
+  std::vector<BlameStats> blame_stats_vec;
 
   // Find top latency pairs
   for (auto *inst_blame : kernel_blame.lat_inst_blame_ptrs) {
     if (inst_blame->blame_name.find(":LAT_MTHR") != std::string::npos &&
         inst_blame->efficiency >= COALSECE_LIMIT) {
-      blame += inst_blame->lat_blame;
+      blame_stats_vec.push_back(BlameStats(inst_blame->lat_blame, kernel_stats.active_samples,
+                                           kernel_stats.total_samples));
 
       if (_inspection.regions.size() < _top_regions) {
         _inspection.regions.push_back(*inst_blame);
@@ -768,22 +766,24 @@ std::vector<BlameStats> GPUGlobalMemoryReductionOptimizer::match_impl(
       "    To eliminate abundant memory requests:\n"
       "    1. Use constant/texture memory to reduce memory transactions.\n";
 
-  BlameStats blame_stats(blame, kernel_stats.active_samples, kernel_stats.total_samples);
-  return std::vector<BlameStats>{blame_stats};
+  return blame_stats_vec;
 }
 
 std::vector<BlameStats> GPUDivergeReductionOptimizer::match_impl(const KernelBlame &kernel_blame,
                                                                  const KernelStats &kernel_stats) {
-  const double DIV_LIMIT = 0.5;
+  const double DIV_LIMIT = 0.9;
   std::vector<BlameStats> blame_stats_vec;
-  auto blame = 0.0;
 
-  // Match if high execution latency for diverged branch instructions
   for (auto *inst_blame : kernel_blame.lat_inst_blame_ptrs) {
-    auto *src_inst = inst_blame->src_inst;
+    auto blame_name = inst_blame->blame_name;
 
-    if (src_inst->op.find("BRANCH") != std::string::npos && inst_blame->efficiency < DIV_LIMIT) {
-      blame += inst_blame->lat_blame;
+    if ((blame_name == BLAME_GPU_INST_METRIC_NAME ":LAT_NONE" ||
+         blame_name == BLAME_GPU_INST_METRIC_NAME ":LAT_IFET" ||
+         blame_name == BLAME_GPU_INST_METRIC_NAME ":LAT_NSEL") &&
+        inst_blame->pred_true <= DIV_LIMIT) {
+      blame_stats_vec.push_back(BlameStats(inst_blame->lat_blame * (1 - inst_blame->pred_true),
+                                           kernel_stats.active_samples,
+                                           kernel_stats.total_samples));
 
       if (_inspection.regions.size() < _top_regions) {
         _inspection.regions.push_back(*inst_blame);
@@ -795,10 +795,9 @@ std::vector<BlameStats> GPUDivergeReductionOptimizer::match_impl(const KernelBla
       "Diverged branch conditions encountered in execution. Look for improvements to "
       "reduce branch conditions or replicate similar computations.\n";
   _inspection.stall = false;
-  _inspection.loop = false;
+  _inspection.loop = true;
 
-  BlameStats blame_stats(blame, kernel_stats.active_samples, kernel_stats.total_samples);
-  return std::vector<BlameStats>{blame_stats};
+  return blame_stats_vec;
 }
 
 std::vector<BlameStats> GPUBranchEliminationOptimizer::match_impl(const KernelBlame &kernel_blame,
@@ -809,13 +808,13 @@ std::vector<BlameStats> GPUBranchEliminationOptimizer::match_impl(const KernelBl
   std::set<CudaParse::Block *> match_blocks;
 
   BlameStats lat_blame_stats;
-  // Match if high execution latency for diverged branch instructions
+  // Match if high latency with determined branch conditions
   for (auto *inst_blame : kernel_blame.lat_inst_blame_ptrs) {
     auto *src_inst = inst_blame->src_inst;
 
     if (src_inst->op.find("BRANCH") != std::string::npos &&
         (inst_blame->pred_true != -1.0 && (inst_blame->pred_true >= PRED_LIMIT_UPPER ||
-         inst_blame->pred_true <= PRED_LIMIT_LOWER))) {
+                                           inst_blame->pred_true <= PRED_LIMIT_LOWER))) {
       // Ensure lat_blame_stats is hidden
       lat_blame_stats.blame += inst_blame->lat_blame;
       lat_blame_stats.active_samples += inst_blame->lat_blame;
@@ -892,12 +891,13 @@ std::vector<BlameStats> GPUOccupancyIncreaseOptimizer::match_impl(const KernelBl
 std::vector<BlameStats> GPUOccupancyDecreaseOptimizer::match_impl(const KernelBlame &kernel_blame,
                                                                   const KernelStats &kernel_stats) {
   // Match if not selected if high
-  auto blame = 0.0;
+  std::vector<BlameStats> blame_stats_vec;
 
   // Find top latency pairs
   for (auto *inst_blame : kernel_blame.stall_inst_blame_ptrs) {
     if (inst_blame->blame_name.find(":LAT_NSEL") != std::string::npos) {
-      blame += inst_blame->stall_blame;
+      blame_stats_vec.push_back(BlameStats(inst_blame->stall_blame, kernel_stats.active_samples,
+                                           kernel_stats.total_samples));
 
       if (_inspection.regions.size() < _top_regions) {
         _inspection.regions.push_back(*inst_blame);
@@ -908,8 +908,7 @@ std::vector<BlameStats> GPUOccupancyDecreaseOptimizer::match_impl(const KernelBl
   _inspection.stall = true;
   _inspection.loop = false;
 
-  BlameStats blame_stats(blame, kernel_stats.active_samples, kernel_stats.total_samples);
-  return std::vector<BlameStats>{blame_stats};
+  return blame_stats_vec;
 }
 
 std::vector<BlameStats> GPUSMBalanceOptimizer::match_impl(const KernelBlame &kernel_blame,

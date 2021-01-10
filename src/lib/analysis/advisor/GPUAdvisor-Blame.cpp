@@ -46,7 +46,7 @@ using std::string;
 #include <lib/support/StrUtil.hpp>
 #include <lib/xml/xml.hpp>
 
-#define DEBUG_GPUADVISOR 0
+#define DEBUG_GPUADVISOR 1
 #define DEBUG_GPUADVISOR_DETAILS 0
 
 #define MAX2(x, y) (x > y ? x : y)
@@ -1485,6 +1485,13 @@ void GPUAdvisor::overlayInstBlames(InstBlames &inst_blames, KernelBlame &kernel_
 }
 
 void GPUAdvisor::blame(CCTBlames &cct_blames) {
+  if (DEBUG_GPUADVISOR) {
+    auto *strct = _gpu_kernel->structure();
+    if (strct->ancestorProc() != NULL) {
+      std::cout << "GPU Kernel " << strct->ancestorProc()->name() << std::endl;
+    }
+  }
+
   // For each MPI process
   for (auto mpi_rank = 0; mpi_rank < _metric_name_prof_map->num_mpi_ranks(); ++mpi_rank) {
     // For each CPU thread
@@ -1575,7 +1582,7 @@ void GPUAdvisor::blame(CCTBlames &cct_blames) {
       InstBlames inst_blames;
       blameCCTDepGraph(mpi_rank, thread_id, cct_dep_graph, cct_edge_path_map, inst_blames);
 
-      if (DEBUG_GPUADVISOR) {
+      if (DEBUG_GPUADVISOR_DETAILS) {
         std::cout << "Inst blames: " << std::endl;
         debugInstBlames(inst_blames);
         std::cout << std::endl;
