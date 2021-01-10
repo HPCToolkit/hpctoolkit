@@ -73,6 +73,10 @@ using std::endl;
 
 #include <cstring>
 
+#include <unistd.h>
+#include <fcntl.h>
+
+
 //*************************** User Include Files ****************************
 
 #include <include/hpctoolkit-config.h>
@@ -331,6 +335,57 @@ dumpSymFlag(std::ostream& o, asymbol* sym, int flag, const char* txt, bool& hasP
 
 
 //***************************************************************************
+// private operations
+//***************************************************************************
+
+static int
+file_readable(const char *path)
+{
+   // one could check this with stat; however readability
+   // requires trickly logic that may require testing 
+   // owner, group, and other permissions.  the simplest 
+   // way to test if a file is readable by the current user 
+   // is to try opening the file.
+   int file_fd = open(path, O_RDONLY);
+   int opened = file_fd != -1;
+   if (opened) {
+     close(file_fd);
+   }
+  return opened;
+}
+
+
+static void 
+throw_if_intel_gpubin_function_missing(std::string &file_name)
+{
+  // intel gpu binaries are not recorded as an ELF file. instead, they
+  // are recorded in a form that only hpcstruct knows how to unpack.
+  // hpcstruct unpacks an intel gpubin and creates a separate ELF
+  // file for each function in the gpubin which has the name of the
+  // gpubin as a prefix. here, recognize that case and emit an 
+  // appropriate error message.
+  size_t last_dot_pos = file_name.find_last_of(".", string::npos);
+  if (last_dot_pos != string::npos) {
+    size_t prev_dot_pos = file_name.find_last_of(".", last_dot_pos - 1);
+    if (prev_dot_pos != string::npos) {
+      std::string between = 
+        file_name.substr(prev_dot_pos+1, last_dot_pos - prev_dot_pos - 1);
+      if (between.find("gpubin") != string::npos) {
+        // a prefix of the file name is gpubin name
+        std::string prefix = file_name.substr(0, last_dot_pos);
+        if (file_readable(prefix.c_str())) {
+          // if the gpubin that is a prefix of path exists, then we
+          // recognize this case as an intel function binary that should be 
+          // synthesized by hpcstruct. 
+          DIAG_Throw("you must run hpcstruct on the HPCToolkit measurement"
+		 " directory to map measurements of Intel"
+		 " GPU binaries to source code");
+        }
+      }
+    }
+  }
+}
+
 
 
 //***************************************************************************
@@ -414,6 +469,8 @@ BinUtil::LM::open(const char* filenm)
   InputFile input_file;
 
   std::string file_name = std::string(filenm);
+
+  throw_if_intel_gpubin_function_missing(file_name);
 
   if (input_file.openFile(file_name, InputFileError_WarningNothrow)) {
     // We only relocate individual cubins, with filevector size 1
