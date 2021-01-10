@@ -176,10 +176,29 @@ Options: Profiling (Defaults shown in curly brackets {})
                              option is enabled: RETCNT implies *all* elements of
                              call chains, including recursive elements, are recorded.
 
-  -nu, --no-unwind     Disable unwinding
-                       Generates a flat profile (leaf instructions) only
+  -nu, --no-unwind     Disable unwinding and collect a flat profile of leaf 
+                       procedures only instead of full calling contexts.
+
 
 Options to consider only when hpcrun causes an application to fail:
+
+  --disable-auditor    By default, hpcrun uses LD_AUDIT to track dynamic library
+                       operations (see NOTES). This option instructs hpcrun
+                       to track dynamic library operations by intercepting
+                       dlopen and dlclose instead of using LD_AUDIT. Note
+                       that this alternate approach can cause problem with
+                       load modules that specify a RUNPATH.
+
+  --disable-auditor-got-rewriting
+                       By default, hpcrun uses LD_AUDIT to help track dynamic
+                       library operations using an 'auditor' library. When using
+                       an auditor library, glibc unnecessarily intercepts
+                       every call to a function in a shared library. hpcrun
+                       avoids this overhead by rewriting each shared libary's
+                       global offset table (GOT). Such rewriting is tricky.
+                       This option can be used to disable GOT rewriting if
+                       it is believed that the rewriting is causing the
+                       application to fail.
 
   --namespace-single   dlmopen may load a shared library into an alternate
                        namespace.  Use of dlmopen to create multiple namespaces
@@ -203,12 +222,15 @@ Options to consider only when hpcrun causes an application to fail:
 
 
 NOTES:
+
 * hpcrun uses preloaded shared libraries to initiate profiling.  For this
   reason, it cannot be used to profile setuid programs.
-* By default, hpcrun use LD_AUDIT to monitor an application's use of dynamic
-  libraries. Use of LD_AUDIT will cause dlmopen to fail for glibc < 2.32. Intel's
-  GTPin library for instrumentation of Intel GPU binaries uses dlmopen.
 
+* By default, hpcrun use LD_AUDIT to monitor an application's use of dynamic
+  libraries. Use of LD_AUDIT is needed to properly interpret a load module's
+  RUNPATH attribute. However, use of LD_AUDIT will cause dlmopen to fail 
+  for glibc < 2.32. Intel's GTPin library for instrumentation of Intel GPU 
+  binaries uses dlmopen.
 
 EOF
     exit 0
@@ -436,11 +458,11 @@ do
 
 	# --------------------------------------------------
 
-	-dapco | --disable-audit-plt-call-opt )
+	--disable-auditor-got-rewriting )
 	    export HPCRUN_AUDIT_DISABLE_PLT_CALL_OPT=1
 	    ;;
 
-	--disable-rtld-audit )
+	--disable-auditor )
 	    export HPCRUN_AUDIT_FAKE_AUDITOR=1
 	    ;;
 
