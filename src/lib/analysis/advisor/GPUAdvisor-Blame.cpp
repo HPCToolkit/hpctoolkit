@@ -46,7 +46,7 @@ using std::string;
 #include <lib/support/StrUtil.hpp>
 #include <lib/xml/xml.hpp>
 
-#define DEBUG_GPUADVISOR 1
+#define DEBUG_GPUADVISOR 0
 #define DEBUG_GPUADVISOR_DETAILS 0
 
 #define MAX2(x, y) (x > y ? x : y)
@@ -794,7 +794,8 @@ void GPUAdvisor::pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
     auto to_vma = to->lmIP();
     auto *to_inst = _vma_prop_map.at(to_vma).inst;
     auto *from_inst = _vma_prop_map.at(from_vma).inst;
-    bool fixed = from_inst->control.read == 0 && from_inst->control.write == 0;
+    bool fixed = from_inst->control.read == CudaParse::InstructionStat::BARRIER_NONE &&
+      from_inst->control.write == CudaParse::InstructionStat::BARRIER_NONE;
 
     // Regular regs
     for (auto dst : from_inst->dsts) {
