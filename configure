@@ -748,6 +748,8 @@ TBB_LIB_DIR
 TBB_PROXY_LIB
 TBB_LFLAGS
 TBB_IFLAGS
+OPT_PAPI_ROCM_FALSE
+OPT_PAPI_ROCM_TRUE
 OPT_PAPI_CUPTI_FALSE
 OPT_PAPI_CUPTI_TRUE
 OPT_PAPI_COMPONENT_FALSE
@@ -1051,6 +1053,7 @@ with_papi
 enable_force_papi
 enable_papi_c
 enable_papi_c_cupti
+enable_papi_c_rocm
 with_perfmon
 enable_perf_events
 enable_kernel_blocking
@@ -1758,6 +1761,8 @@ Optional Features:
   --enable-papi-c         use component papi, if available (default yes)
   --enable-papi-c-cupti   use papi CUPTI support, if available (default no),
                           requires papi cuda component
+  --enable-papi-c-rocm    use papi ROCM support, if available (default no),
+                          requires papi rocm component
   --enable-perf-events    force enable or disable perf events in hpcrun
                           (normally 2.6.32 or later), only needed if fails to
                           auto-detect correctly
@@ -21909,6 +21914,67 @@ fi
 
 
 #-------------------------------------------------
+# Option: --enable-papi-c-rocm
+#-------------------------------------------------
+
+use_papi_c_rocm=no
+
+# Check whether --enable-papi-c-rocm was given.
+if test "${enable_papi_c_rocm+set}" = set; then :
+  enableval=$enable_papi_c_rocm; use_papi_c_rocm="$enableval"
+fi
+
+
+if test "$use_papi_c" = no || test "$use_papi_c_rocm" != yes ; then
+  use_papi_c_rocm=no
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for papi rocm component" >&5
+$as_echo_n "checking for papi rocm component... " >&6; }
+
+  ORIG_CFLAGS="$CFLAGS"
+  ORIG_LIBS="$LIBS"
+  CFLAGS="$CFLAGS $OPT_PAPI_IFLAGS"
+  LIBS="$OPT_PAPI_LDFLAGS $papi_extra_libs"
+  ac_ext=c
+ac_cpp='$CPP $CPPFLAGS'
+ac_compile='$CC -c $CFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_c_compiler_gnu
+
+
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+#include "papi.h"
+int main()
+{
+}
+
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  use_papi_c_rocm=yes
+else
+  use_papi_c_rocm=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+  ac_ext=cpp
+ac_cpp='$CXXCPP $CPPFLAGS'
+ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
+ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
+ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+  CFLAGS="$ORIG_CFLAGS"
+  LIBS="$ORIG_LIBS"
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $use_papi_c_rocm" >&5
+$as_echo "$use_papi_c_rocm" >&6; }
+fi
+
+
+#-------------------------------------------------
 # Option: --with-perfmon=PATH
 #-------------------------------------------------
 
@@ -22272,6 +22338,14 @@ fi
 else
   OPT_PAPI_CUPTI_TRUE='#'
   OPT_PAPI_CUPTI_FALSE=
+fi
+
+ if test "$use_papi_c_rocm" = yes; then
+  OPT_PAPI_ROCM_TRUE=
+  OPT_PAPI_ROCM_FALSE='#'
+else
+  OPT_PAPI_ROCM_TRUE='#'
+  OPT_PAPI_ROCM_FALSE=
 fi
 
 
@@ -25264,6 +25338,10 @@ if test -z "${OPT_PAPI_CUPTI_TRUE}" && test -z "${OPT_PAPI_CUPTI_FALSE}"; then
   as_fn_error $? "conditional \"OPT_PAPI_CUPTI\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
+if test -z "${OPT_PAPI_ROCM_TRUE}" && test -z "${OPT_PAPI_ROCM_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_PAPI_ROCM\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 if test -z "${OPT_USE_ZLIB_TRUE}" && test -z "${OPT_USE_ZLIB_FALSE}"; then
   as_fn_error $? "conditional \"OPT_USE_ZLIB\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
@@ -28041,6 +28119,8 @@ $as_echo "$as_me:   gtpin:        ${GTPIN}" >&6;}
 $as_echo "$as_me:   metrics-discovery: ${METRICS_DISCOVERY}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   papi-c-cupti: ${use_papi_c_cupti}" >&5
 $as_echo "$as_me:   papi-c-cupti: ${use_papi_c_cupti}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   papi-c-rocm: ${use_papi_c_rocm}" >&5
+$as_echo "$as_me:   papi-c-rocm: ${use_papi_c_rocm}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   rocm:         ${rocm_mesg}" >&5
 $as_echo "$as_me:   rocm:         ${rocm_mesg}" >&6;}
 if test "$OPT_HAVE_ROCM" = yes ; then

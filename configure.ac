@@ -3249,6 +3249,46 @@ fi
 
 
 #-------------------------------------------------
+# Option: --enable-papi-c-rocm
+#-------------------------------------------------
+
+use_papi_c_rocm=no
+
+AC_ARG_ENABLE([papi-c-rocm],
+  [AS_HELP_STRING([--enable-papi-c-rocm],
+      [use papi ROCM support, if available (default no), requires
+       papi rocm component])],
+  [use_papi_c_rocm="$enableval"],
+  [])
+
+if test "$use_papi_c" = no || test "$use_papi_c_rocm" != yes ; then
+  use_papi_c_rocm=no
+else
+  AC_MSG_CHECKING([for papi rocm component])
+
+  ORIG_CFLAGS="$CFLAGS"
+  ORIG_LIBS="$LIBS"
+  CFLAGS="$CFLAGS $OPT_PAPI_IFLAGS"
+  LIBS="$OPT_PAPI_LDFLAGS $papi_extra_libs"
+  AC_LANG_PUSH([C])
+
+  AC_LINK_IFELSE([
+  AC_LANG_SOURCE([[
+#include "papi.h"
+int main()
+{
+}
+]])], [use_papi_c_rocm=yes], [use_papi_c_rocm=no])
+
+  AC_LANG_POP
+  CFLAGS="$ORIG_CFLAGS"
+  LIBS="$ORIG_LIBS"
+
+  AC_MSG_RESULT([$use_papi_c_rocm])
+fi
+
+
+#-------------------------------------------------
 # Option: --with-perfmon=PATH
 #-------------------------------------------------
 
@@ -3530,6 +3570,7 @@ AM_CONDITIONAL(OPT_PAPI_DYNAMIC, [test "$OPT_PAPI_DYNAMIC" = yes])
 AM_CONDITIONAL(OPT_PAPI_STATIC,  [test "$OPT_PAPI_STATIC" = yes])
 AM_CONDITIONAL(OPT_PAPI_COMPONENT, [test "$use_papi_c" = yes])
 AM_CONDITIONAL(OPT_PAPI_CUPTI, [test "$use_papi_c_cupti" = yes])
+AM_CONDITIONAL(OPT_PAPI_ROCM, [test "$use_papi_c_rocm" = yes])
 
 
 #-------------------------------------------------
@@ -5838,6 +5879,7 @@ AC_MSG_NOTICE([  igc:          ${IGC}])
 AC_MSG_NOTICE([  gtpin:        ${GTPIN}])
 AC_MSG_NOTICE([  metrics-discovery: ${METRICS_DISCOVERY}])
 AC_MSG_NOTICE([  papi-c-cupti: ${use_papi_c_cupti}])
+AC_MSG_NOTICE([  papi-c-rocm: ${use_papi_c_rocm}])
 AC_MSG_NOTICE([  rocm:         ${rocm_mesg}])
 if test "$OPT_HAVE_ROCM" = yes ; then
   AC_MSG_NOTICE([  rocm hip:     $ROCM_HIP_MESG])

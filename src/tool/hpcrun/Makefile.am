@@ -504,6 +504,11 @@ if OPT_PAPI_CUPTI
     MY_PAPI_FILES += sample-sources/papi-c-cupti.c
 endif
 
+if OPT_PAPI_ROCM
+    MY_PAPI_FILES += sample-sources/papi-c-rocm.c
+endif
+
+
 if OPT_ENABLE_CUPTI
 MY_CUPTI_FILES = sample-sources/nvidia.c	\
 	gpu/nvidia/cubin-hash-map.c		\
@@ -546,8 +551,8 @@ MY_ROCM_FILES =\
 	gpu/amd/roctracer-activity-translate.c \
 	gpu/amd/roctracer-api.c 	\
 	gpu/amd/rocm-debug-api.c \
-	gpu/amd/rocm-binary-processing.c \
-	gpu/amd/hip-api.c
+	gpu/amd/rocm-binary-processing.c 
+	
 endif
 
 if OPT_ENABLE_LEVEL0

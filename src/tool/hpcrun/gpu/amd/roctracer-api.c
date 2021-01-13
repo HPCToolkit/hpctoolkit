@@ -48,7 +48,7 @@
 #include "roctracer-api.h"
 #include "roctracer-activity-translate.h"
 
-#include "hip-api.h"
+// #include "hip-api.h"
 #include "rocm-debug-api.h"
 #include "rocm-binary-processing.h"
 #include "tool_state.h"
@@ -450,13 +450,11 @@ roctracer_subscriber_callback
     uint64_t cpu_submit_time = hpcrun_nanotime();
 
     PRINT("\nACTIVITY_API_PHASE_ENTER -----------------| cct = %p \n", api_node);
-    int (*hip_gpu_sync_ptr)(void) = hip_dev_sync;
     gpu_monitors_apply(api_node, gpu_monitor_type_enter);
 
     gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, cpu_submit_time);
   }else if (data->phase == ACTIVITY_API_PHASE_EXIT){
     PRINT("\nACTIVITY_API_PHASE_EXIT -----------------| \n");
-    int (*hip_gpu_sync_ptr)(void) = hip_dev_sync;
     gpu_monitors_apply(NULL, gpu_monitor_type_exit);
 
   }else{
