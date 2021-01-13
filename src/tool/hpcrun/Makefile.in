@@ -121,39 +121,40 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-pkglibexec_PROGRAMS =
 @OPT_BUILD_FRONT_END_TRUE@am__append_1 = scripts/hpcsummary \
 @OPT_BUILD_FRONT_END_TRUE@	scripts/hpclog
 @OPT_BUILD_FRONT_END_TRUE@am__append_2 = hpctoolkit.h
-@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am__append_3 = libhpcrun.la
-@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@@OPT_ENABLE_RTLD_AUDIT_TRUE@am__append_4 = libhpcrun_audit.la
-@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am__append_5 = libhpcrun_ga.la \
+@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am__append_3 =  \
+@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	libhpcrun_fake_audit.la \
+@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	libhpcrun_audit.la \
+@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	libhpcrun_dlmopen.la \
+@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	libhpcrun_ga.la \
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	libhpcrun_gprof.la \
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	libhpcrun_io.la \
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	libhpcrun_memleak.la \
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	libhpcrun_pthread.la \
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	libhpctoolkit.la
-@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am__append_6 = scripts/hpcrun
+@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am__append_4 = scripts/hpcrun
 @OPT_ENABLE_HPCRUN_STATIC_TRUE@noinst_PROGRAMS = libhpcrun.o$(EXEEXT)
-@OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_7 = libhpcrun_wrap.a \
+@OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_5 = libhpcrun_wrap.a \
 @OPT_ENABLE_HPCRUN_STATIC_TRUE@	libhpcrun_ga_wrap.a \
 @OPT_ENABLE_HPCRUN_STATIC_TRUE@	libhpcrun_gprof_wrap.a \
 @OPT_ENABLE_HPCRUN_STATIC_TRUE@	libhpcrun_io_wrap.a \
 @OPT_ENABLE_HPCRUN_STATIC_TRUE@	libhpcrun_memleak_wrap.a \
 @OPT_ENABLE_HPCRUN_STATIC_TRUE@	libhpcrun_pthread_wrap.a \
 @OPT_ENABLE_HPCRUN_STATIC_TRUE@	libhpctoolkit.a
-@OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_8 = scripts/hpclink
-@OPT_ENABLE_MPI_WRAP_TRUE@am__append_9 = libhpcrun_mpi.la
+@OPT_ENABLE_HPCRUN_STATIC_TRUE@am__append_6 = scripts/hpclink
+@OPT_ENABLE_MPI_WRAP_TRUE@am__append_7 = libhpcrun_mpi.la
 
 # 	gpu/gpu-api.c
 #	trampoline/common/trampoline.c
-@HOST_CPU_PPC_TRUE@am__append_10 = \
+@HOST_CPU_PPC_TRUE@am__append_8 = \
 @HOST_CPU_PPC_TRUE@        trampoline/common/trampoline_eager.c
 
-@HOST_CPU_PPC_FALSE@am__append_11 = \
+@HOST_CPU_PPC_FALSE@am__append_9 = \
 @HOST_CPU_PPC_FALSE@        trampoline/common/trampoline_lazy.c
 
-@OPT_ENABLE_PERF_EVENT_TRUE@am__append_12 = \
+@OPT_ENABLE_PERF_EVENT_TRUE@am__append_10 = \
 @OPT_ENABLE_PERF_EVENT_TRUE@	sample-sources/perf/event_custom.c  \
 @OPT_ENABLE_PERF_EVENT_TRUE@	sample-sources/perf/linux_perf.c    \
 @OPT_ENABLE_PERF_EVENT_TRUE@	sample-sources/perf/perf_event_open.c     \
@@ -161,29 +162,31 @@ pkglibexec_PROGRAMS =
 @OPT_ENABLE_PERF_EVENT_TRUE@	sample-sources/perf/perf_mmap.c     \
 @OPT_ENABLE_PERF_EVENT_TRUE@	sample-sources/perf/perf_skid.c
 
-@OPT_ENABLE_PERF_EVENT_TRUE@am__append_13 = -DHPCRUN_SS_LINUX_PERF
-@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_PERFMON_TRUE@am__append_14 = sample-sources/perf/perfmon-util.c
-@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_PERFMON_FALSE@am__append_15 = sample-sources/perf/perfmon-util-dummy.c
-@OPT_ENABLE_KERNEL_4_3_TRUE@@OPT_ENABLE_PERF_EVENT_TRUE@am__append_16 = sample-sources/perf/kernel_blocking.c
-@OPT_ENABLE_KERNEL_4_3_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@am__append_17 = sample-sources/perf/kernel_blocking_stub.c
-@OPT_ENABLE_RTLD_AUDIT_FALSE@am__append_18 = audit/fake-auditor.c
-@OPT_PAPI_CUPTI_TRUE@am__append_19 = sample-sources/papi-c-cupti.c
+@OPT_ENABLE_PERF_EVENT_TRUE@am__append_11 = -DHPCRUN_SS_LINUX_PERF
+@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_PERFMON_TRUE@am__append_12 = sample-sources/perf/perfmon-util.c
+@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_PERFMON_FALSE@am__append_13 = sample-sources/perf/perfmon-util-dummy.c
+@OPT_ENABLE_KERNEL_4_3_TRUE@@OPT_ENABLE_PERF_EVENT_TRUE@am__append_14 = sample-sources/perf/kernel_blocking.c
+@OPT_ENABLE_KERNEL_4_3_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@am__append_15 = sample-sources/perf/kernel_blocking_stub.c
+@OPT_PAPI_CUPTI_TRUE@am__append_16 = sample-sources/papi-c-cupti.c
+@OPT_ENABLE_OPENCL_TRUE@am__append_17 = libhpcrun_opencl.la
+@OPT_ENABLE_LEVEL0_TRUE@am__append_18 = libhpcrun_level0.la
 
 #
 # BG/Q backend requires special treatment to avoid deadlocks
 #
-@OPT_BGQ_BACKEND_TRUE@am__append_20 = -DUSE_HW_THREAD_ID -DNONZERO_THRESHOLD
+@OPT_BGQ_BACKEND_TRUE@am__append_19 = -DUSE_HW_THREAD_ID -DNONZERO_THRESHOLD
+@OPT_BGQ_BACKEND_TRUE@am__append_20 = -I$(srcdir)/utilities/bgq-cnk
 @OPT_BGQ_BACKEND_TRUE@am__append_21 = -I$(srcdir)/utilities/bgq-cnk
-@OPT_BGQ_BACKEND_TRUE@am__append_22 = -I$(srcdir)/utilities/bgq-cnk
+@OPT_ENABLE_MPI_WRAP_TRUE@am__append_22 = mpi-overrides.c
 @OPT_ENABLE_MPI_WRAP_TRUE@am__append_23 = mpi-overrides.c
-@OPT_ENABLE_MPI_WRAP_TRUE@am__append_24 = mpi-overrides.c
 
 #-----------------------------------------------------------
 # whirled peas
 #-----------------------------------------------------------
-@HOST_OS_LINUX_TRUE@am__append_25 = $(MY_LINUX_DYNAMIC_FILES)
+@HOST_OS_LINUX_TRUE@am__append_24 = $(MY_LINUX_DYNAMIC_FILES)
+@HOST_CPU_MIPS_TRUE@am__append_25 = $(MY_MIPS_FILES)
 @HOST_CPU_MIPS_TRUE@am__append_26 = $(MY_MIPS_FILES)
-@HOST_CPU_MIPS_TRUE@am__append_27 = $(MY_MIPS_FILES)
+@HOST_CPU_MIPS_TRUE@am__append_27 = $(MY_MIPS_INCLUDE_DIRS)
 @HOST_CPU_MIPS_TRUE@am__append_28 = $(MY_MIPS_INCLUDE_DIRS)
 @HOST_CPU_MIPS_TRUE@am__append_29 = $(MY_MIPS_INCLUDE_DIRS)
 @HOST_CPU_MIPS_TRUE@am__append_30 = $(MY_MIPS_INCLUDE_DIRS)
@@ -194,15 +197,15 @@ pkglibexec_PROGRAMS =
 @HOST_CPU_MIPS_TRUE@am__append_35 = $(MY_MIPS_INCLUDE_DIRS)
 @HOST_CPU_MIPS_TRUE@am__append_36 = $(MY_MIPS_INCLUDE_DIRS)
 @HOST_CPU_MIPS_TRUE@am__append_37 = $(MY_MIPS_INCLUDE_DIRS)
-@HOST_CPU_MIPS_TRUE@am__append_38 = $(MY_MIPS_INCLUDE_DIRS)
 
 # Note: setting CCASFLAGS here is a no-op hack with the side effect of
 # prefixing the tramp.s file names so they will be compiled separately
 # for .o and .so targets.  CFLAGS does this for the .c files, but
 # CFLAGS doesn't apply to .s files.  See the automake docs section
 # 8.3.9.2, Objects created with both libtool and without.
+@HOST_CPU_PPC_TRUE@am__append_38 = $(MY_PPC_FILES)
 @HOST_CPU_PPC_TRUE@am__append_39 = $(MY_PPC_FILES)
-@HOST_CPU_PPC_TRUE@am__append_40 = $(MY_PPC_FILES)
+@HOST_CPU_PPC_TRUE@am__append_40 = $(MY_PPC_INCLUDE_DIRS)
 @HOST_CPU_PPC_TRUE@am__append_41 = $(MY_PPC_INCLUDE_DIRS)
 @HOST_CPU_PPC_TRUE@am__append_42 = $(MY_PPC_INCLUDE_DIRS)
 @HOST_CPU_PPC_TRUE@am__append_43 = $(MY_PPC_INCLUDE_DIRS)
@@ -215,13 +218,13 @@ pkglibexec_PROGRAMS =
 @HOST_CPU_PPC_TRUE@am__append_50 = $(MY_PPC_INCLUDE_DIRS)
 @HOST_CPU_PPC_TRUE@am__append_51 = $(MY_PPC_INCLUDE_DIRS)
 @HOST_CPU_PPC_TRUE@am__append_52 = $(MY_PPC_INCLUDE_DIRS)
-@HOST_CPU_PPC_TRUE@am__append_53 = $(MY_PPC_INCLUDE_DIRS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_53 = $(MY_X86_FILES)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_54 = $(MY_X86_FILES)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_55 = $(MY_X86_FILES)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_55 = $(MY_X86_INCLUDE_DIRS)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_56 = $(MY_X86_INCLUDE_DIRS)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_57 = $(MY_X86_INCLUDE_DIRS)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_58 = $(XED2_HPCRUN_LIBS)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_59 = $(XED2_HPCLINK_LIBS) 
+@HOST_CPU_X86_FAMILY_TRUE@am__append_57 = $(XED2_HPCRUN_LIBS)
+@HOST_CPU_X86_FAMILY_TRUE@am__append_58 = $(XED2_HPCLINK_LIBS) 
+@HOST_CPU_X86_FAMILY_TRUE@am__append_59 = $(MY_X86_INCLUDE_DIRS)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_60 = $(MY_X86_INCLUDE_DIRS)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_61 = $(MY_X86_INCLUDE_DIRS)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_62 = $(MY_X86_INCLUDE_DIRS)
@@ -233,9 +236,9 @@ pkglibexec_PROGRAMS =
 @HOST_CPU_X86_FAMILY_TRUE@am__append_68 = $(MY_X86_INCLUDE_DIRS)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_69 = $(MY_X86_INCLUDE_DIRS)
 @HOST_CPU_X86_FAMILY_TRUE@am__append_70 = $(MY_X86_INCLUDE_DIRS)
-@HOST_CPU_X86_FAMILY_TRUE@am__append_71 = $(MY_X86_INCLUDE_DIRS)
+@HOST_CPU_IA64_TRUE@am__append_71 = $(MY_IA64_FILES)
 @HOST_CPU_IA64_TRUE@am__append_72 = $(MY_IA64_FILES)
-@HOST_CPU_IA64_TRUE@am__append_73 = $(MY_IA64_FILES)
+@HOST_CPU_IA64_TRUE@am__append_73 = $(MY_IA64_INCLUDE_DIRS)
 @HOST_CPU_IA64_TRUE@am__append_74 = $(MY_IA64_INCLUDE_DIRS)
 @HOST_CPU_IA64_TRUE@am__append_75 = $(MY_IA64_INCLUDE_DIRS)
 @HOST_CPU_IA64_TRUE@am__append_76 = $(MY_IA64_INCLUDE_DIRS)
@@ -246,9 +249,9 @@ pkglibexec_PROGRAMS =
 @HOST_CPU_IA64_TRUE@am__append_81 = $(MY_IA64_INCLUDE_DIRS)
 @HOST_CPU_IA64_TRUE@am__append_82 = $(MY_IA64_INCLUDE_DIRS)
 @HOST_CPU_IA64_TRUE@am__append_83 = $(MY_IA64_INCLUDE_DIRS)
-@HOST_CPU_IA64_TRUE@am__append_84 = $(MY_IA64_INCLUDE_DIRS)
+@HOST_CPU_AARCH64_TRUE@am__append_84 = $(MY_AARCH64_FILES)
 @HOST_CPU_AARCH64_TRUE@am__append_85 = $(MY_AARCH64_FILES)
-@HOST_CPU_AARCH64_TRUE@am__append_86 = $(MY_AARCH64_FILES)
+@HOST_CPU_AARCH64_TRUE@am__append_86 = $(MY_AARCH64_INCLUDE_DIRS)
 @HOST_CPU_AARCH64_TRUE@am__append_87 = $(MY_AARCH64_INCLUDE_DIRS)
 @HOST_CPU_AARCH64_TRUE@am__append_88 = $(MY_AARCH64_INCLUDE_DIRS)
 @HOST_CPU_AARCH64_TRUE@am__append_89 = $(MY_AARCH64_INCLUDE_DIRS)
@@ -261,51 +264,49 @@ pkglibexec_PROGRAMS =
 @HOST_CPU_AARCH64_TRUE@am__append_96 = $(MY_AARCH64_INCLUDE_DIRS)
 @HOST_CPU_AARCH64_TRUE@am__append_97 = $(MY_AARCH64_INCLUDE_DIRS)
 @HOST_CPU_AARCH64_TRUE@am__append_98 = $(MY_AARCH64_INCLUDE_DIRS)
-@HOST_CPU_AARCH64_TRUE@am__append_99 = $(MY_AARCH64_INCLUDE_DIRS)
-@OPT_PAPI_DYNAMIC_TRUE@am__append_100 = $(MY_PAPI_FILES)
-@OPT_PAPI_DYNAMIC_TRUE@am__append_101 = $(PAPI_INC_FLGS)
-@OPT_PAPI_DYNAMIC_TRUE@am__append_102 = $(PAPI_LD_FLGS)
-@OPT_PAPI_DYNAMIC_TRUE@am__append_103 = -DHPCRUN_SS_PAPI
+@OPT_PAPI_DYNAMIC_TRUE@am__append_99 = $(MY_PAPI_FILES)
+@OPT_PAPI_DYNAMIC_TRUE@am__append_100 = $(PAPI_INC_FLGS)
+@OPT_PAPI_DYNAMIC_TRUE@am__append_101 = $(PAPI_LD_FLGS)
+@OPT_PAPI_DYNAMIC_TRUE@am__append_102 = -DHPCRUN_SS_PAPI
+@OPT_ENABLE_CUPTI_TRUE@am__append_103 = $(MY_CUPTI_FILES)
 @OPT_ENABLE_CUPTI_TRUE@am__append_104 = $(MY_CUPTI_FILES)
-@OPT_ENABLE_CUPTI_TRUE@am__append_105 = $(MY_CUPTI_FILES)
-@OPT_ENABLE_CUPTI_TRUE@am__append_106 = $(CUPTI_INC_FLGS)
-@OPT_ENABLE_CUPTI_TRUE@am__append_107 = -DHPCRUN_SS_NVIDIA
-@OPT_PAPI_CUPTI_TRUE@am__append_108 = $(CUPTI_INC_FLGS)
-@OPT_PAPI_CUPTI_TRUE@am__append_109 = -DHPCRUN_SS_PAPI_C_CUPTI
-@OPT_PAPI_STATIC_TRUE@am__append_110 = $(MY_PAPI_FILES)
-@OPT_PAPI_STATIC_TRUE@am__append_111 = $(PAPI_INC_FLGS)
-@OPT_PAPI_STATIC_TRUE@am__append_112 = $(PAPI_LD_FLGS)
-@OPT_PAPI_STATIC_TRUE@am__append_113 = -DHPCRUN_SS_PAPI
+@OPT_ENABLE_CUPTI_TRUE@am__append_105 = $(CUPTI_INC_FLGS)
+@OPT_ENABLE_CUPTI_TRUE@am__append_106 = -DHPCRUN_SS_NVIDIA
+@OPT_PAPI_CUPTI_TRUE@am__append_107 = $(CUPTI_INC_FLGS)
+@OPT_PAPI_CUPTI_TRUE@am__append_108 = -DHPCRUN_SS_PAPI_C_CUPTI
+@OPT_PAPI_STATIC_TRUE@am__append_109 = $(MY_PAPI_FILES)
+@OPT_PAPI_STATIC_TRUE@am__append_110 = $(PAPI_INC_FLGS)
+@OPT_PAPI_STATIC_TRUE@am__append_111 = $(OPT_PAPI_LIBS_STAT)
+@OPT_PAPI_STATIC_TRUE@am__append_112 = -DHPCRUN_SS_PAPI
+@OPT_ENABLE_UPC_TRUE@am__append_113 = $(MY_UPC_FILES)
 @OPT_ENABLE_UPC_TRUE@am__append_114 = $(MY_UPC_FILES)
-@OPT_ENABLE_UPC_TRUE@am__append_115 = $(MY_UPC_FILES)
+@OPT_ENABLE_UPC_TRUE@am__append_115 = $(OPT_UPC_IFLAGS)
 @OPT_ENABLE_UPC_TRUE@am__append_116 = $(OPT_UPC_IFLAGS)
-@OPT_ENABLE_UPC_TRUE@am__append_117 = $(OPT_UPC_IFLAGS)
-@OPT_ENABLE_UPC_TRUE@am__append_118 = $(OPT_UPC_LDFLAGS)
+@OPT_ENABLE_UPC_TRUE@am__append_117 = $(OPT_UPC_LDFLAGS)
+@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_118 = -DLUSH_PTHREADS
 @OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_119 = -DLUSH_PTHREADS
-@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_120 = -DLUSH_PTHREADS
-@OPT_ENABLE_CUDA_TRUE@am__append_121 = $(MY_CUDA_FILES)
-@OPT_ENABLE_CUDA_TRUE@am__append_122 = -DENABLE_CUDA
-@OPT_ENABLE_CUDA_TRUE@am__append_123 = $(OPT_CUDA_IFLAGS)
-@OPT_ENABLE_CUDA_TRUE@am__append_124 = $(MY_CUDA_FILES)
-@OPT_ENABLE_ROCM_TRUE@am__append_125 = $(MY_ROCM_FILES)
-@OPT_ENABLE_ROCM_TRUE@am__append_126 = -DENABLE_ROCM
-@OPT_ENABLE_ROCM_TRUE@am__append_127 = $(OPT_ROCM_IFLAGS)
-@OPT_ENABLE_ROCM_TRUE@am__append_128 = -DHPCRUN_SS_AMD
-@OPT_ENABLE_LEVEL0_TRUE@am__append_129 = $(MY_LEVEL0_FILES)
-@OPT_ENABLE_LEVEL0_TRUE@am__append_130 = -DENABLE_LEVEL0
-@OPT_ENABLE_LEVEL0_TRUE@am__append_131 = $(OPT_LEVEL0_IFLAGS)
-@OPT_ENABLE_LEVEL0_TRUE@am__append_132 = -DHPCRUN_SS_LEVEL0
-@OPT_ENABLE_OPENCL_TRUE@am__append_133 = $(MY_OPENCL_FILES)
-@OPT_ENABLE_OPENCL_TRUE@am__append_134 = -DENABLE_OPENCL
-@OPT_ENABLE_OPENCL_TRUE@am__append_135 = $(OPT_OPENCL_IFLAGS)
-@OPT_ENABLE_OPENCL_TRUE@am__append_136 = -DHPCRUN_SS_OPENCL
-@OPT_ENABLE_GTPIN_TRUE@am__append_137 = $(MY_GTPIN_FILES)
-@OPT_ENABLE_GTPIN_TRUE@am__append_138 = -DENABLE_GTPIN
-@OPT_ENABLE_GTPIN_TRUE@am__append_139 = $(OPT_GTPIN_IFLAGS)
-@OPT_ENABLE_GTPIN_TRUE@am__append_140 = $(OPT_GTPIN_LDFLAGS)
-@OPT_ENABLE_GTPIN_TRUE@am__append_141 = -DHPCRUN_SS_GTPIN
-@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_142 = libagent-cilk.la
-@OPT_ENABLE_LUSH_TRUE@am__append_143 = libagent-pthread.la \
+@OPT_ENABLE_CUDA_TRUE@am__append_120 = $(MY_CUDA_FILES)
+@OPT_ENABLE_CUDA_TRUE@am__append_121 = -DENABLE_CUDA
+@OPT_ENABLE_CUDA_TRUE@am__append_122 = $(OPT_CUDA_IFLAGS)
+@OPT_ENABLE_CUDA_TRUE@am__append_123 = $(MY_CUDA_FILES)
+@OPT_ENABLE_ROCM_TRUE@am__append_124 = $(MY_ROCM_FILES)
+@OPT_ENABLE_ROCM_TRUE@am__append_125 = -DENABLE_ROCM
+@OPT_ENABLE_ROCM_TRUE@am__append_126 = $(OPT_ROCM_IFLAGS)
+@OPT_ENABLE_ROCM_TRUE@am__append_127 = -DHPCRUN_SS_AMD
+@OPT_ENABLE_LEVEL0_TRUE@am__append_128 = $(MY_LEVEL0_FILES)
+@OPT_ENABLE_LEVEL0_TRUE@am__append_129 = -DENABLE_LEVEL0
+@OPT_ENABLE_LEVEL0_TRUE@am__append_130 = $(OPT_LEVEL0_IFLAGS)
+@OPT_ENABLE_LEVEL0_TRUE@am__append_131 = -DHPCRUN_SS_LEVEL0
+@OPT_ENABLE_OPENCL_TRUE@am__append_132 = $(MY_OPENCL_FILES)
+@OPT_ENABLE_OPENCL_TRUE@am__append_133 = -DENABLE_OPENCL
+@OPT_ENABLE_OPENCL_TRUE@am__append_134 = $(OPT_OPENCL_IFLAGS)
+@OPT_ENABLE_OPENCL_TRUE@am__append_135 = -DHPCRUN_SS_OPENCL
+@OPT_ENABLE_GTPIN_TRUE@am__append_136 = $(MY_GTPIN_FILES)
+@OPT_ENABLE_GTPIN_TRUE@am__append_137 = -DENABLE_GTPIN -DGTPIN_LIBDIR=$(OPT_GTPIN_LIBDIR)
+@OPT_ENABLE_GTPIN_TRUE@am__append_138 = $(OPT_GTPIN_IFLAGS)
+@OPT_ENABLE_GTPIN_TRUE@am__append_139 = -DHPCRUN_SS_GTPIN
+@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_140 = libagent-cilk.la
+@OPT_ENABLE_LUSH_TRUE@am__append_141 = libagent-pthread.la \
 @OPT_ENABLE_LUSH_TRUE@	libagent-tbb.la
 subdir = src/tool/hpcrun
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -352,8 +353,8 @@ am__uninstall_files_from_dir = { \
          $(am__cd) "$$dir" && rm -f $$files; }; \
   }
 am__installdirs = "$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(pkglibdir)" \
-	"$(DESTDIR)$(pkglibexecdir)" "$(DESTDIR)$(bindir)" \
-	"$(DESTDIR)$(pkglibexecdir)" "$(DESTDIR)$(includedir)"
+	"$(DESTDIR)$(bindir)" "$(DESTDIR)$(pkglibexecdir)" \
+	"$(DESTDIR)$(includedir)"
 LIBRARIES = $(pkglib_LIBRARIES)
 ARFLAGS = cru
 AM_V_AR = $(am__v_AR_@AM_V@)
@@ -395,7 +396,7 @@ libhpctoolkit_a_AR = $(AR) $(ARFLAGS)
 libhpctoolkit_a_LIBADD =
 am_libhpctoolkit_a_OBJECTS = libhpctoolkit_a-hpctoolkit.$(OBJEXT)
 libhpctoolkit_a_OBJECTS = $(am_libhpctoolkit_a_OBJECTS)
-LTLIBRARIES = $(pkglib_LTLIBRARIES)
+LTLIBRARIES = $(noinst_LTLIBRARIES) $(pkglib_LTLIBRARIES)
 libagent_cilk_la_LIBADD =
 am__libagent_cilk_la_SOURCES_DIST = lush-agents/agent-cilk.h \
 	lush-agents/agent-cilk.c lush/lush-support-rt.h \
@@ -448,7 +449,6 @@ libagent_tbb_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 @OPT_ENABLE_LUSH_TRUE@am_libagent_tbb_la_rpath = -rpath $(pkglibdir)
 am__DEPENDENCIES_1 =
 libhpcrun_la_DEPENDENCIES = $(PROF_LEAN_A) $(SUPPORT_LEAN_A) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(OUR_LIBUNWIND_A) $(OUR_LZMA_A)
 am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	disabled.c closure-registry.c cct_insert_backtrace.c \
@@ -520,8 +520,7 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/perf/kernel_blocking.c \
 	sample-sources/perf/kernel_blocking_stub.c \
 	fnbounds/fnbounds_client.c fnbounds/fnbounds_dynamic.c \
-	monitor-exts/openmp.c custom-init-dynamic.c \
-	audit/fake-auditor.c os/linux/dylib.c \
+	monitor-exts/openmp.c custom-init-dynamic.c os/linux/dylib.c \
 	unwind/common/default_validation_summary.c \
 	trampoline/ppc64/ppc64-tramp.s \
 	utilities/arch/ppc64/ppc64-context-pc.c \
@@ -702,37 +701,36 @@ am__objects_14 = utilities/libhpcrun_la-first_func.lo \
 	utilities/libhpcrun_la-unlink.lo $(am__objects_7) \
 	$(am__objects_8) $(am__objects_9) $(am__objects_10) \
 	$(am__objects_11) $(am__objects_12) $(am__objects_13)
-@OPT_ENABLE_RTLD_AUDIT_FALSE@am__objects_15 = audit/libhpcrun_la-fake-auditor.lo
-am__objects_16 = fnbounds/libhpcrun_la-fnbounds_client.lo \
+am__objects_15 = fnbounds/libhpcrun_la-fnbounds_client.lo \
 	fnbounds/libhpcrun_la-fnbounds_dynamic.lo \
 	monitor-exts/libhpcrun_la-openmp.lo \
-	libhpcrun_la-custom-init-dynamic.lo $(am__objects_15)
-am__objects_17 = os/linux/libhpcrun_la-dylib.lo
-@HOST_OS_LINUX_TRUE@am__objects_18 = $(am__objects_17)
-am__objects_19 =  \
+	libhpcrun_la-custom-init-dynamic.lo
+am__objects_16 = os/linux/libhpcrun_la-dylib.lo
+@HOST_OS_LINUX_TRUE@am__objects_17 = $(am__objects_16)
+am__objects_18 =  \
 	unwind/common/libhpcrun_la-default_validation_summary.lo
-@HOST_CPU_MIPS_TRUE@am__objects_20 = $(am__objects_19)
-am__objects_21 = trampoline/ppc64/libhpcrun_la-ppc64-tramp.lo \
+@HOST_CPU_MIPS_TRUE@am__objects_19 = $(am__objects_18)
+am__objects_20 = trampoline/ppc64/libhpcrun_la-ppc64-tramp.lo \
 	utilities/arch/ppc64/libhpcrun_la-ppc64-context-pc.lo
-@HOST_CPU_PPC_TRUE@am__objects_22 = $(am__objects_21)
-am__objects_23 = trampoline/x86-family/libhpcrun_la-x86-tramp.lo \
+@HOST_CPU_PPC_TRUE@am__objects_21 = $(am__objects_20)
+am__objects_22 = trampoline/x86-family/libhpcrun_la-x86-tramp.lo \
 	utilities/arch/x86-family/libhpcrun_la-x86-context-pc.lo
-@HOST_CPU_X86_FAMILY_TRUE@am__objects_24 = $(am__objects_23)
-am__objects_25 = trampoline/ia64/libhpcrun_la-ia64-tramp.lo \
+@HOST_CPU_X86_FAMILY_TRUE@am__objects_23 = $(am__objects_22)
+am__objects_24 = trampoline/ia64/libhpcrun_la-ia64-tramp.lo \
 	utilities/arch/ia64/libhpcrun_la-ia64-context-pc.lo
-@HOST_CPU_IA64_TRUE@am__objects_26 = $(am__objects_25)
-am__objects_27 = trampoline/aarch64/libhpcrun_la-aarch64-tramp.lo \
+@HOST_CPU_IA64_TRUE@am__objects_25 = $(am__objects_24)
+am__objects_26 = trampoline/aarch64/libhpcrun_la-aarch64-tramp.lo \
 	utilities/arch/libunwind/libhpcrun_la-libunwind-context-pc.lo
-@HOST_CPU_AARCH64_TRUE@am__objects_28 = $(am__objects_27)
-@OPT_PAPI_CUPTI_TRUE@am__objects_29 = sample-sources/libhpcrun_la-papi-c-cupti.lo
-@OPT_PAPI_COMPONENT_FALSE@am__objects_30 =  \
+@HOST_CPU_AARCH64_TRUE@am__objects_27 = $(am__objects_26)
+@OPT_PAPI_CUPTI_TRUE@am__objects_28 = sample-sources/libhpcrun_la-papi-c-cupti.lo
+@OPT_PAPI_COMPONENT_FALSE@am__objects_29 =  \
 @OPT_PAPI_COMPONENT_FALSE@	sample-sources/libhpcrun_la-papi.lo \
-@OPT_PAPI_COMPONENT_FALSE@	$(am__objects_29)
-@OPT_PAPI_COMPONENT_TRUE@am__objects_30 = sample-sources/libhpcrun_la-papi-c.lo \
+@OPT_PAPI_COMPONENT_FALSE@	$(am__objects_28)
+@OPT_PAPI_COMPONENT_TRUE@am__objects_29 = sample-sources/libhpcrun_la-papi-c.lo \
 @OPT_PAPI_COMPONENT_TRUE@	sample-sources/libhpcrun_la-papi-c-extended-info.lo \
-@OPT_PAPI_COMPONENT_TRUE@	$(am__objects_29)
-@OPT_PAPI_DYNAMIC_TRUE@am__objects_31 = $(am__objects_30)
-@OPT_ENABLE_CUPTI_TRUE@am__objects_32 =  \
+@OPT_PAPI_COMPONENT_TRUE@	$(am__objects_28)
+@OPT_PAPI_DYNAMIC_TRUE@am__objects_30 = $(am__objects_29)
+@OPT_ENABLE_CUPTI_TRUE@am__objects_31 =  \
 @OPT_ENABLE_CUPTI_TRUE@	sample-sources/libhpcrun_la-nvidia.lo \
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cubin-hash-map.lo \
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cubin-id-map.lo \
@@ -743,19 +741,19 @@ am__objects_27 = trampoline/aarch64/libhpcrun_la-aarch64-tramp.lo \
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cupti-analysis.lo \
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cupti-api.lo \
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cupti-gpu-api.lo
-@OPT_ENABLE_CUPTI_TRUE@am__objects_33 = $(am__objects_32)
-am__objects_34 = sample-sources/libhpcrun_la-upc.lo
-@OPT_ENABLE_UPC_TRUE@am__objects_35 = $(am__objects_34)
-am__objects_36 =
-@OPT_ENABLE_ROCM_TRUE@am__objects_37 =  \
+@OPT_ENABLE_CUPTI_TRUE@am__objects_32 = $(am__objects_31)
+am__objects_33 = sample-sources/libhpcrun_la-upc.lo
+@OPT_ENABLE_UPC_TRUE@am__objects_34 = $(am__objects_33)
+am__objects_35 =
+@OPT_ENABLE_ROCM_TRUE@am__objects_36 =  \
 @OPT_ENABLE_ROCM_TRUE@	sample-sources/libhpcrun_la-amd.lo \
 @OPT_ENABLE_ROCM_TRUE@	gpu/amd/libhpcrun_la-roctracer-activity-translate.lo \
 @OPT_ENABLE_ROCM_TRUE@	gpu/amd/libhpcrun_la-roctracer-api.lo \
 @OPT_ENABLE_ROCM_TRUE@	gpu/amd/libhpcrun_la-rocm-debug-api.lo \
 @OPT_ENABLE_ROCM_TRUE@	gpu/amd/libhpcrun_la-rocm-binary-processing.lo \
 @OPT_ENABLE_ROCM_TRUE@	gpu/amd/libhpcrun_la-hip-api.lo
-@OPT_ENABLE_ROCM_TRUE@am__objects_38 = $(am__objects_37)
-@OPT_ENABLE_LEVEL0_TRUE@am__objects_39 =  \
+@OPT_ENABLE_ROCM_TRUE@am__objects_37 = $(am__objects_36)
+@OPT_ENABLE_LEVEL0_TRUE@am__objects_38 =  \
 @OPT_ENABLE_LEVEL0_TRUE@	sample-sources/libhpcrun_la-level0.lo \
 @OPT_ENABLE_LEVEL0_TRUE@	gpu/level0/libhpcrun_la-level0-api.lo \
 @OPT_ENABLE_LEVEL0_TRUE@	gpu/level0/libhpcrun_la-level0-command-list-context-map.lo \
@@ -764,8 +762,8 @@ am__objects_36 =
 @OPT_ENABLE_LEVEL0_TRUE@	gpu/level0/libhpcrun_la-level0-data-node.lo \
 @OPT_ENABLE_LEVEL0_TRUE@	gpu/level0/libhpcrun_la-level0-event-map.lo \
 @OPT_ENABLE_LEVEL0_TRUE@	gpu/level0/libhpcrun_la-level0-handle-map.lo
-@OPT_ENABLE_LEVEL0_TRUE@am__objects_40 = $(am__objects_39)
-@OPT_ENABLE_OPENCL_TRUE@am__objects_41 =  \
+@OPT_ENABLE_LEVEL0_TRUE@am__objects_39 = $(am__objects_38)
+@OPT_ENABLE_OPENCL_TRUE@am__objects_40 =  \
 @OPT_ENABLE_OPENCL_TRUE@	sample-sources/libhpcrun_la-opencl.lo \
 @OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/libhpcrun_la-opencl-api.lo \
 @OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/libhpcrun_la-opencl-memory-manager.lo \
@@ -773,28 +771,28 @@ am__objects_36 =
 @OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/libhpcrun_la-opencl-h2d-map.lo \
 @OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/libhpcrun_la-opencl-queue-map.lo \
 @OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/libhpcrun_la-opencl-context-map.lo
-@OPT_ENABLE_OPENCL_TRUE@am__objects_42 = $(am__objects_41)
-@OPT_ENABLE_GTPIN_TRUE@am__objects_43 = gpu/instrumentation/libhpcrun_la-kernel-data-map.lo \
+@OPT_ENABLE_OPENCL_TRUE@am__objects_41 = $(am__objects_40)
+@OPT_ENABLE_GTPIN_TRUE@am__objects_42 = gpu/instrumentation/libhpcrun_la-kernel-data-map.lo \
 @OPT_ENABLE_GTPIN_TRUE@	gpu/instrumentation/libhpcrun_la-gtpin-instrumentation.lo \
 @OPT_ENABLE_GTPIN_TRUE@	gpu/instrumentation/libhpcrun_la-gtpin-correlation-id-map.lo
-@OPT_ENABLE_GTPIN_TRUE@am__objects_44 = $(am__objects_43)
-am__objects_45 = unwind/common/libhpcrun_la-backtrace.lo \
+@OPT_ENABLE_GTPIN_TRUE@am__objects_43 = $(am__objects_42)
+am__objects_44 = unwind/common/libhpcrun_la-backtrace.lo \
 	unwind/common/libhpcrun_la-unw-throw.lo
-am__objects_46 = $(am__objects_45) \
+am__objects_45 = $(am__objects_44) \
 	unwind/common/libhpcrun_la-binarytree_uwi.lo \
 	unwind/common/libhpcrun_la-interval_t.lo \
 	unwind/common/libhpcrun_la-libunw_intervals.lo \
 	unwind/common/libhpcrun_la-stack_troll.lo \
 	unwind/common/libhpcrun_la-uw_hash.lo \
 	unwind/common/libhpcrun_la-uw_recipe_map.lo
-am__objects_47 = $(am__objects_46) \
+am__objects_46 = $(am__objects_45) \
 	unwind/generic-libunwind/libhpcrun_la-libunw-unwind.lo \
 	unwind/common/libhpcrun_la-default_validation_summary.lo
-am__objects_48 = $(am__objects_46) \
+am__objects_47 = $(am__objects_45) \
 	unwind/ppc64/libhpcrun_la-ppc64-unwind.lo \
 	unwind/ppc64/libhpcrun_la-ppc64-unwind-interval.lo \
 	unwind/common/libhpcrun_la-default_validation_summary.lo
-am__objects_49 = $(am__objects_46) \
+am__objects_48 = $(am__objects_45) \
 	unwind/x86-family/libhpcrun_la-x86-all.lo \
 	unwind/x86-family/libhpcrun_la-amd-xop.lo \
 	unwind/x86-family/libhpcrun_la-x86-cold-path.lo \
@@ -814,32 +812,50 @@ am__objects_49 = $(am__objects_46) \
 	unwind/x86-family/manual-intervals/libhpcrun_la-x86-32bit-icc-variant.lo \
 	unwind/x86-family/manual-intervals/libhpcrun_la-x86-fail-intervals.lo \
 	unwind/x86-family/manual-intervals/libhpcrun_la-x86-pgi-mp_pexit.lo
-@UNW_LIBUNW_FALSE@@UNW_PPC64_FALSE@@UNW_X86_TRUE@am__objects_50 = $(am__objects_49)
-@UNW_LIBUNW_FALSE@@UNW_PPC64_TRUE@am__objects_50 = $(am__objects_48)
-@UNW_LIBUNW_TRUE@am__objects_50 = $(am__objects_47)
-am_libhpcrun_la_OBJECTS = $(am__objects_14) $(am__objects_16) \
-	$(am__objects_18) $(am__objects_20) $(am__objects_22) \
-	$(am__objects_24) $(am__objects_26) $(am__objects_28) \
-	$(am__objects_31) $(am__objects_33) $(am__objects_35) \
-	$(am__objects_36) $(am__objects_38) $(am__objects_40) \
-	$(am__objects_42) $(am__objects_44) $(am__objects_50) \
+@UNW_LIBUNW_FALSE@@UNW_PPC64_FALSE@@UNW_X86_TRUE@am__objects_49 = $(am__objects_48)
+@UNW_LIBUNW_FALSE@@UNW_PPC64_TRUE@am__objects_49 = $(am__objects_47)
+@UNW_LIBUNW_TRUE@am__objects_49 = $(am__objects_46)
+am_libhpcrun_la_OBJECTS = $(am__objects_14) $(am__objects_15) \
+	$(am__objects_17) $(am__objects_19) $(am__objects_21) \
+	$(am__objects_23) $(am__objects_25) $(am__objects_27) \
+	$(am__objects_30) $(am__objects_32) $(am__objects_34) \
+	$(am__objects_35) $(am__objects_37) $(am__objects_39) \
+	$(am__objects_41) $(am__objects_43) $(am__objects_49) \
 	utilities/libhpcrun_la-last_func.lo
 libhpcrun_la_OBJECTS = $(am_libhpcrun_la_OBJECTS)
 libhpcrun_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libhpcrun_la_CFLAGS) \
 	$(CFLAGS) $(libhpcrun_la_LDFLAGS) $(LDFLAGS) -o $@
-@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am_libhpcrun_la_rpath = -rpath \
-@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	$(pkglibdir)
+@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am_libhpcrun_la_rpath =
 libhpcrun_audit_la_LIBADD =
-am__libhpcrun_audit_la_SOURCES_DIST = audit/auditor.c
-@OPT_ENABLE_RTLD_AUDIT_TRUE@am_libhpcrun_audit_la_OBJECTS = audit/libhpcrun_audit_la-auditor.lo
+am_libhpcrun_audit_la_OBJECTS = audit/libhpcrun_audit_la-auditor.lo
 libhpcrun_audit_la_OBJECTS = $(am_libhpcrun_audit_la_OBJECTS)
 libhpcrun_audit_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(AM_CFLAGS) $(CFLAGS) $(libhpcrun_audit_la_LDFLAGS) \
 	$(LDFLAGS) -o $@
-@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@@OPT_ENABLE_RTLD_AUDIT_TRUE@am_libhpcrun_audit_la_rpath = -rpath \
-@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@@OPT_ENABLE_RTLD_AUDIT_TRUE@	$(pkglibdir)
+@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am_libhpcrun_audit_la_rpath = -rpath \
+@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	$(pkglibdir)
+libhpcrun_dlmopen_la_LIBADD =
+am_libhpcrun_dlmopen_la_OBJECTS = dlmopen/dlmopen.lo
+libhpcrun_dlmopen_la_OBJECTS = $(am_libhpcrun_dlmopen_la_OBJECTS)
+libhpcrun_dlmopen_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(AM_CFLAGS) $(CFLAGS) $(libhpcrun_dlmopen_la_LDFLAGS) \
+	$(LDFLAGS) -o $@
+@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am_libhpcrun_dlmopen_la_rpath =  \
+@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	-rpath $(pkglibdir)
+libhpcrun_fake_audit_la_LIBADD =
+am_libhpcrun_fake_audit_la_OBJECTS =  \
+	audit/libhpcrun_fake_audit_la-fake-auditor.lo
+libhpcrun_fake_audit_la_OBJECTS =  \
+	$(am_libhpcrun_fake_audit_la_OBJECTS)
+libhpcrun_fake_audit_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(AM_CFLAGS) $(CFLAGS) $(libhpcrun_fake_audit_la_LDFLAGS) \
+	$(LDFLAGS) -o $@
+@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am_libhpcrun_fake_audit_la_rpath =  \
+@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	-rpath $(pkglibdir)
 libhpcrun_ga_la_LIBADD =
 am_libhpcrun_ga_la_OBJECTS =  \
 	sample-sources/libhpcrun_ga_la-ga-overrides.lo
@@ -869,6 +885,18 @@ libhpcrun_io_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(LDFLAGS) -o $@
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am_libhpcrun_io_la_rpath = -rpath \
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	$(pkglibdir)
+libhpcrun_level0_la_LIBADD =
+am__libhpcrun_level0_la_SOURCES_DIST =  \
+	gpu/level0/level0-api-wrappers.c
+@OPT_ENABLE_LEVEL0_TRUE@am_libhpcrun_level0_la_OBJECTS =  \
+@OPT_ENABLE_LEVEL0_TRUE@	gpu/level0/level0-api-wrappers.lo
+libhpcrun_level0_la_OBJECTS = $(am_libhpcrun_level0_la_OBJECTS)
+libhpcrun_level0_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(AM_CFLAGS) $(CFLAGS) $(libhpcrun_level0_la_LDFLAGS) \
+	$(LDFLAGS) -o $@
+@OPT_ENABLE_LEVEL0_TRUE@am_libhpcrun_level0_la_rpath = -rpath \
+@OPT_ENABLE_LEVEL0_TRUE@	$(pkglibdir)
 libhpcrun_memleak_la_LIBADD =
 am_libhpcrun_memleak_la_OBJECTS =  \
 	sample-sources/libhpcrun_memleak_la-memleak-overrides.lo
@@ -888,6 +916,17 @@ libhpcrun_mpi_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(libhpcrun_mpi_la_LDFLAGS) $(LDFLAGS) -o $@
 @OPT_ENABLE_MPI_WRAP_TRUE@am_libhpcrun_mpi_la_rpath = -rpath \
 @OPT_ENABLE_MPI_WRAP_TRUE@	$(pkglibdir)
+libhpcrun_opencl_la_LIBADD =
+am__libhpcrun_opencl_la_SOURCES_DIST =  \
+	gpu/opencl/opencl-api-wrappers.c
+@OPT_ENABLE_OPENCL_TRUE@am_libhpcrun_opencl_la_OBJECTS = gpu/opencl/libhpcrun_opencl_la-opencl-api-wrappers.lo
+libhpcrun_opencl_la_OBJECTS = $(am_libhpcrun_opencl_la_OBJECTS)
+libhpcrun_opencl_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(AM_CFLAGS) $(CFLAGS) $(libhpcrun_opencl_la_LDFLAGS) \
+	$(LDFLAGS) -o $@
+@OPT_ENABLE_OPENCL_TRUE@am_libhpcrun_opencl_la_rpath = -rpath \
+@OPT_ENABLE_OPENCL_TRUE@	$(pkglibdir)
 libhpcrun_pthread_la_LIBADD =
 am_libhpcrun_pthread_la_OBJECTS = sample-sources/libhpcrun_pthread_la-pthread-blame-overrides.lo
 libhpcrun_pthread_la_OBJECTS = $(am_libhpcrun_pthread_la_OBJECTS)
@@ -902,7 +941,7 @@ am_libhpctoolkit_la_OBJECTS = libhpctoolkit_la-hpctoolkit.lo
 libhpctoolkit_la_OBJECTS = $(am_libhpctoolkit_la_OBJECTS)
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@am_libhpctoolkit_la_rpath = -rpath \
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@	$(pkglibdir)
-PROGRAMS = $(noinst_PROGRAMS) $(pkglibexec_PROGRAMS)
+PROGRAMS = $(noinst_PROGRAMS)
 am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	disabled.c closure-registry.c cct_insert_backtrace.c \
 	cct_backtrace_finalize.c env.c epoch.c files.c \
@@ -1016,19 +1055,19 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	unwind/x86-family/manual-intervals/x86-fail-intervals.c \
 	unwind/x86-family/manual-intervals/x86-pgi-mp_pexit.c \
 	utilities/last_func.c
-@HOST_CPU_PPC_TRUE@am__objects_51 = trampoline/common/libhpcrun_o-trampoline_eager.$(OBJEXT)
-@HOST_CPU_PPC_FALSE@am__objects_52 = trampoline/common/libhpcrun_o-trampoline_lazy.$(OBJEXT)
-@OPT_ENABLE_PERF_EVENT_TRUE@am__objects_53 = sample-sources/perf/libhpcrun_o-event_custom.$(OBJEXT) \
+@HOST_CPU_PPC_TRUE@am__objects_50 = trampoline/common/libhpcrun_o-trampoline_eager.$(OBJEXT)
+@HOST_CPU_PPC_FALSE@am__objects_51 = trampoline/common/libhpcrun_o-trampoline_lazy.$(OBJEXT)
+@OPT_ENABLE_PERF_EVENT_TRUE@am__objects_52 = sample-sources/perf/libhpcrun_o-event_custom.$(OBJEXT) \
 @OPT_ENABLE_PERF_EVENT_TRUE@	sample-sources/perf/libhpcrun_o-linux_perf.$(OBJEXT) \
 @OPT_ENABLE_PERF_EVENT_TRUE@	sample-sources/perf/libhpcrun_o-perf_event_open.$(OBJEXT) \
 @OPT_ENABLE_PERF_EVENT_TRUE@	sample-sources/perf/libhpcrun_o-perf-util.$(OBJEXT) \
 @OPT_ENABLE_PERF_EVENT_TRUE@	sample-sources/perf/libhpcrun_o-perf_mmap.$(OBJEXT) \
 @OPT_ENABLE_PERF_EVENT_TRUE@	sample-sources/perf/libhpcrun_o-perf_skid.$(OBJEXT)
-@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_PERFMON_TRUE@am__objects_54 = sample-sources/perf/libhpcrun_o-perfmon-util.$(OBJEXT)
-@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_PERFMON_FALSE@am__objects_55 = sample-sources/perf/libhpcrun_o-perfmon-util-dummy.$(OBJEXT)
-@OPT_ENABLE_KERNEL_4_3_TRUE@@OPT_ENABLE_PERF_EVENT_TRUE@am__objects_56 = sample-sources/perf/libhpcrun_o-kernel_blocking.$(OBJEXT)
-@OPT_ENABLE_KERNEL_4_3_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@am__objects_57 = sample-sources/perf/libhpcrun_o-kernel_blocking_stub.$(OBJEXT)
-am__objects_58 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
+@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_PERFMON_TRUE@am__objects_53 = sample-sources/perf/libhpcrun_o-perfmon-util.$(OBJEXT)
+@OPT_ENABLE_PERF_EVENT_TRUE@@OPT_PERFMON_FALSE@am__objects_54 = sample-sources/perf/libhpcrun_o-perfmon-util-dummy.$(OBJEXT)
+@OPT_ENABLE_KERNEL_4_3_TRUE@@OPT_ENABLE_PERF_EVENT_TRUE@am__objects_55 = sample-sources/perf/libhpcrun_o-kernel_blocking.$(OBJEXT)
+@OPT_ENABLE_KERNEL_4_3_FALSE@@OPT_ENABLE_PERF_EVENT_TRUE@am__objects_56 = sample-sources/perf/libhpcrun_o-kernel_blocking_stub.$(OBJEXT)
+am__objects_57 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	libhpcrun_o-main.$(OBJEXT) libhpcrun_o-disabled.$(OBJEXT) \
 	libhpcrun_o-closure-registry.$(OBJEXT) \
 	libhpcrun_o-cct_insert_backtrace.$(OBJEXT) \
@@ -1148,28 +1187,28 @@ am__objects_58 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	utilities/libhpcrun_o-line_wrapping.$(OBJEXT) \
 	utilities/libhpcrun_o-timer.$(OBJEXT) \
 	utilities/libhpcrun_o-tokenize.$(OBJEXT) \
-	utilities/libhpcrun_o-unlink.$(OBJEXT) $(am__objects_51) \
-	$(am__objects_52) $(am__objects_53) $(am__objects_54) \
-	$(am__objects_55) $(am__objects_56) $(am__objects_57)
-am__objects_59 = fnbounds/libhpcrun_o-fnbounds_static.$(OBJEXT) \
+	utilities/libhpcrun_o-unlink.$(OBJEXT) $(am__objects_50) \
+	$(am__objects_51) $(am__objects_52) $(am__objects_53) \
+	$(am__objects_54) $(am__objects_55) $(am__objects_56)
+am__objects_58 = fnbounds/libhpcrun_o-fnbounds_static.$(OBJEXT) \
 	libhpcrun_o-custom-init-static.$(OBJEXT)
-am__objects_60 = unwind/common/libhpcrun_o-default_validation_summary.$(OBJEXT)
-@HOST_CPU_MIPS_TRUE@am__objects_61 = $(am__objects_60)
-am__objects_62 = trampoline/ppc64/libhpcrun_o-ppc64-tramp.$(OBJEXT) \
+am__objects_59 = unwind/common/libhpcrun_o-default_validation_summary.$(OBJEXT)
+@HOST_CPU_MIPS_TRUE@am__objects_60 = $(am__objects_59)
+am__objects_61 = trampoline/ppc64/libhpcrun_o-ppc64-tramp.$(OBJEXT) \
 	utilities/arch/ppc64/libhpcrun_o-ppc64-context-pc.$(OBJEXT)
-@HOST_CPU_PPC_TRUE@am__objects_63 = $(am__objects_62)
-am__objects_64 =  \
+@HOST_CPU_PPC_TRUE@am__objects_62 = $(am__objects_61)
+am__objects_63 =  \
 	trampoline/x86-family/libhpcrun_o-x86-tramp.$(OBJEXT) \
 	utilities/arch/x86-family/libhpcrun_o-x86-context-pc.$(OBJEXT)
-@HOST_CPU_X86_FAMILY_TRUE@am__objects_65 = $(am__objects_64)
-am__objects_66 = trampoline/ia64/libhpcrun_o-ia64-tramp.$(OBJEXT) \
+@HOST_CPU_X86_FAMILY_TRUE@am__objects_64 = $(am__objects_63)
+am__objects_65 = trampoline/ia64/libhpcrun_o-ia64-tramp.$(OBJEXT) \
 	utilities/arch/ia64/libhpcrun_o-ia64-context-pc.$(OBJEXT)
-@HOST_CPU_IA64_TRUE@am__objects_67 = $(am__objects_66)
-am__objects_68 =  \
+@HOST_CPU_IA64_TRUE@am__objects_66 = $(am__objects_65)
+am__objects_67 =  \
 	trampoline/aarch64/libhpcrun_o-aarch64-tramp.$(OBJEXT) \
 	utilities/arch/libunwind/libhpcrun_o-libunwind-context-pc.$(OBJEXT)
-@HOST_CPU_AARCH64_TRUE@am__objects_69 = $(am__objects_68)
-@OPT_ENABLE_CUPTI_TRUE@am__objects_70 = sample-sources/libhpcrun_o-nvidia.$(OBJEXT) \
+@HOST_CPU_AARCH64_TRUE@am__objects_68 = $(am__objects_67)
+@OPT_ENABLE_CUPTI_TRUE@am__objects_69 = sample-sources/libhpcrun_o-nvidia.$(OBJEXT) \
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cubin-hash-map.$(OBJEXT) \
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cubin-id-map.$(OBJEXT) \
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cubin-symbols.$(OBJEXT) \
@@ -1179,33 +1218,33 @@ am__objects_68 =  \
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cupti-analysis.$(OBJEXT) \
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cupti-api.$(OBJEXT) \
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cupti-gpu-api.$(OBJEXT)
-@OPT_ENABLE_CUPTI_TRUE@am__objects_71 = $(am__objects_70)
-@OPT_PAPI_CUPTI_TRUE@am__objects_72 = sample-sources/libhpcrun_o-papi-c-cupti.$(OBJEXT)
-@OPT_PAPI_COMPONENT_FALSE@am__objects_73 = sample-sources/libhpcrun_o-papi.$(OBJEXT) \
-@OPT_PAPI_COMPONENT_FALSE@	$(am__objects_72)
-@OPT_PAPI_COMPONENT_TRUE@am__objects_73 = sample-sources/libhpcrun_o-papi-c.$(OBJEXT) \
+@OPT_ENABLE_CUPTI_TRUE@am__objects_70 = $(am__objects_69)
+@OPT_PAPI_CUPTI_TRUE@am__objects_71 = sample-sources/libhpcrun_o-papi-c-cupti.$(OBJEXT)
+@OPT_PAPI_COMPONENT_FALSE@am__objects_72 = sample-sources/libhpcrun_o-papi.$(OBJEXT) \
+@OPT_PAPI_COMPONENT_FALSE@	$(am__objects_71)
+@OPT_PAPI_COMPONENT_TRUE@am__objects_72 = sample-sources/libhpcrun_o-papi-c.$(OBJEXT) \
 @OPT_PAPI_COMPONENT_TRUE@	sample-sources/libhpcrun_o-papi-c-extended-info.$(OBJEXT) \
-@OPT_PAPI_COMPONENT_TRUE@	$(am__objects_72)
-@OPT_PAPI_STATIC_TRUE@am__objects_74 = $(am__objects_73)
-am__objects_75 = sample-sources/libhpcrun_o-upc.$(OBJEXT)
-@OPT_ENABLE_UPC_TRUE@am__objects_76 = $(am__objects_75)
-am__objects_77 = unwind/common/libhpcrun_o-backtrace.$(OBJEXT) \
+@OPT_PAPI_COMPONENT_TRUE@	$(am__objects_71)
+@OPT_PAPI_STATIC_TRUE@am__objects_73 = $(am__objects_72)
+am__objects_74 = sample-sources/libhpcrun_o-upc.$(OBJEXT)
+@OPT_ENABLE_UPC_TRUE@am__objects_75 = $(am__objects_74)
+am__objects_76 = unwind/common/libhpcrun_o-backtrace.$(OBJEXT) \
 	unwind/common/libhpcrun_o-unw-throw.$(OBJEXT)
-am__objects_78 = $(am__objects_77) \
+am__objects_77 = $(am__objects_76) \
 	unwind/common/libhpcrun_o-binarytree_uwi.$(OBJEXT) \
 	unwind/common/libhpcrun_o-interval_t.$(OBJEXT) \
 	unwind/common/libhpcrun_o-libunw_intervals.$(OBJEXT) \
 	unwind/common/libhpcrun_o-stack_troll.$(OBJEXT) \
 	unwind/common/libhpcrun_o-uw_hash.$(OBJEXT) \
 	unwind/common/libhpcrun_o-uw_recipe_map.$(OBJEXT)
-am__objects_79 = $(am__objects_78) \
+am__objects_78 = $(am__objects_77) \
 	unwind/generic-libunwind/libhpcrun_o-libunw-unwind.$(OBJEXT) \
 	unwind/common/libhpcrun_o-default_validation_summary.$(OBJEXT)
-am__objects_80 = $(am__objects_78) \
+am__objects_79 = $(am__objects_77) \
 	unwind/ppc64/libhpcrun_o-ppc64-unwind.$(OBJEXT) \
 	unwind/ppc64/libhpcrun_o-ppc64-unwind-interval.$(OBJEXT) \
 	unwind/common/libhpcrun_o-default_validation_summary.$(OBJEXT)
-am__objects_81 = $(am__objects_78) \
+am__objects_80 = $(am__objects_77) \
 	unwind/x86-family/libhpcrun_o-x86-all.$(OBJEXT) \
 	unwind/x86-family/libhpcrun_o-amd-xop.$(OBJEXT) \
 	unwind/x86-family/libhpcrun_o-x86-cold-path.$(OBJEXT) \
@@ -1225,21 +1264,28 @@ am__objects_81 = $(am__objects_78) \
 	unwind/x86-family/manual-intervals/libhpcrun_o-x86-32bit-icc-variant.$(OBJEXT) \
 	unwind/x86-family/manual-intervals/libhpcrun_o-x86-fail-intervals.$(OBJEXT) \
 	unwind/x86-family/manual-intervals/libhpcrun_o-x86-pgi-mp_pexit.$(OBJEXT)
-@UNW_LIBUNW_FALSE@@UNW_PPC64_FALSE@@UNW_X86_TRUE@am__objects_82 = $(am__objects_81)
-@UNW_LIBUNW_FALSE@@UNW_PPC64_TRUE@am__objects_82 = $(am__objects_80)
-@UNW_LIBUNW_TRUE@am__objects_82 = $(am__objects_79)
-am_libhpcrun_o_OBJECTS = $(am__objects_58) $(am__objects_59) \
-	$(am__objects_61) $(am__objects_63) $(am__objects_65) \
-	$(am__objects_67) $(am__objects_69) $(am__objects_71) \
-	$(am__objects_74) $(am__objects_76) $(am__objects_36) \
-	$(am__objects_82) utilities/libhpcrun_o-last_func.$(OBJEXT)
+@UNW_LIBUNW_FALSE@@UNW_PPC64_FALSE@@UNW_X86_TRUE@am__objects_81 = $(am__objects_80)
+@UNW_LIBUNW_FALSE@@UNW_PPC64_TRUE@am__objects_81 = $(am__objects_79)
+@UNW_LIBUNW_TRUE@am__objects_81 = $(am__objects_78)
+am_libhpcrun_o_OBJECTS = $(am__objects_57) $(am__objects_58) \
+	$(am__objects_60) $(am__objects_62) $(am__objects_64) \
+	$(am__objects_66) $(am__objects_68) $(am__objects_70) \
+	$(am__objects_73) $(am__objects_75) $(am__objects_35) \
+	$(am__objects_81) utilities/libhpcrun_o-last_func.$(OBJEXT)
 libhpcrun_o_OBJECTS = $(am_libhpcrun_o_OBJECTS)
+@HOST_CPU_X86_FAMILY_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
+@OPT_PAPI_STATIC_TRUE@am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1)
+@UNW_LIBUNW_FALSE@@UNW_PPC64_FALSE@@UNW_X86_TRUE@am__DEPENDENCIES_4 = $(am__DEPENDENCIES_1)
+@UNW_LIBUNW_FALSE@@UNW_PPC64_TRUE@am__DEPENDENCIES_4 =  \
+@UNW_LIBUNW_FALSE@@UNW_PPC64_TRUE@	$(am__DEPENDENCIES_1)
+@UNW_LIBUNW_TRUE@am__DEPENDENCIES_4 = $(am__DEPENDENCIES_1)
 libhpcrun_o_DEPENDENCIES = $(PROF_LEAN_A) $(SUPPORT_LEAN_A) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) $(OUR_LIBUNWIND_A) \
-	$(OUR_LZMA_A)
+	$(OUR_LZMA_A) $(am__DEPENDENCIES_2) $(am__DEPENDENCIES_3) \
+	$(am__DEPENDENCIES_4)
 libhpcrun_o_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libhpcrun_o_CFLAGS) \
-	$(CFLAGS) $(libhpcrun_o_LDFLAGS) $(LDFLAGS) -o $@
+	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 SCRIPTS = $(bin_SCRIPTS) $(pkglibexec_SCRIPTS)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
@@ -1301,9 +1347,11 @@ SOURCES = $(libhpcrun_ga_wrap_a_SOURCES) \
 	$(libhpcrun_wrap_a_SOURCES) $(libhpctoolkit_a_SOURCES) \
 	$(libagent_cilk_la_SOURCES) $(libagent_pthread_la_SOURCES) \
 	$(libagent_tbb_la_SOURCES) $(libhpcrun_la_SOURCES) \
-	$(libhpcrun_audit_la_SOURCES) $(libhpcrun_ga_la_SOURCES) \
+	$(libhpcrun_audit_la_SOURCES) $(libhpcrun_dlmopen_la_SOURCES) \
+	$(libhpcrun_fake_audit_la_SOURCES) $(libhpcrun_ga_la_SOURCES) \
 	$(libhpcrun_gprof_la_SOURCES) $(libhpcrun_io_la_SOURCES) \
-	$(libhpcrun_memleak_la_SOURCES) $(libhpcrun_mpi_la_SOURCES) \
+	$(libhpcrun_level0_la_SOURCES) $(libhpcrun_memleak_la_SOURCES) \
+	$(libhpcrun_mpi_la_SOURCES) $(libhpcrun_opencl_la_SOURCES) \
 	$(libhpcrun_pthread_la_SOURCES) $(libhpctoolkit_la_SOURCES) \
 	$(libhpcrun_o_SOURCES)
 DIST_SOURCES = $(libhpcrun_ga_wrap_a_SOURCES) \
@@ -1315,12 +1363,15 @@ DIST_SOURCES = $(libhpcrun_ga_wrap_a_SOURCES) \
 	$(am__libagent_cilk_la_SOURCES_DIST) \
 	$(am__libagent_pthread_la_SOURCES_DIST) \
 	$(am__libagent_tbb_la_SOURCES_DIST) \
-	$(am__libhpcrun_la_SOURCES_DIST) \
-	$(am__libhpcrun_audit_la_SOURCES_DIST) \
-	$(libhpcrun_ga_la_SOURCES) $(libhpcrun_gprof_la_SOURCES) \
-	$(libhpcrun_io_la_SOURCES) $(libhpcrun_memleak_la_SOURCES) \
-	$(libhpcrun_mpi_la_SOURCES) $(libhpcrun_pthread_la_SOURCES) \
-	$(libhpctoolkit_la_SOURCES) $(am__libhpcrun_o_SOURCES_DIST)
+	$(am__libhpcrun_la_SOURCES_DIST) $(libhpcrun_audit_la_SOURCES) \
+	$(libhpcrun_dlmopen_la_SOURCES) \
+	$(libhpcrun_fake_audit_la_SOURCES) $(libhpcrun_ga_la_SOURCES) \
+	$(libhpcrun_gprof_la_SOURCES) $(libhpcrun_io_la_SOURCES) \
+	$(am__libhpcrun_level0_la_SOURCES_DIST) \
+	$(libhpcrun_memleak_la_SOURCES) $(libhpcrun_mpi_la_SOURCES) \
+	$(am__libhpcrun_opencl_la_SOURCES_DIST) \
+	$(libhpcrun_pthread_la_SOURCES) $(libhpctoolkit_la_SOURCES) \
+	$(am__libhpcrun_o_SOURCES_DIST)
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -1518,6 +1569,7 @@ MPI_INC = @MPI_INC@
 MPI_PROTO_FILE = @MPI_PROTO_FILE@
 NM = @NM@
 NMEDIT = @NMEDIT@
+OBJCOPY = @OBJCOPY@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 OPENMP_FLAG = @OPENMP_FLAG@
@@ -1530,6 +1582,7 @@ OPT_CUPTI_LDFLAGS = @OPT_CUPTI_LDFLAGS@
 OPT_GTPIN = @OPT_GTPIN@
 OPT_GTPIN_IFLAGS = @OPT_GTPIN_IFLAGS@
 OPT_GTPIN_LDFLAGS = @OPT_GTPIN_LDFLAGS@
+OPT_GTPIN_LIBDIR = @OPT_GTPIN_LIBDIR@
 OPT_IGC = @OPT_IGC@
 OPT_IGC_IFLAGS = @OPT_IGC_IFLAGS@
 OPT_IGC_LDFLAGS = @OPT_IGC_LDFLAGS@
@@ -1539,15 +1592,14 @@ OPT_LEVEL0_LDFLAGS = @OPT_LEVEL0_LDFLAGS@
 OPT_METRICS_DISCOVERY = @OPT_METRICS_DISCOVERY@
 OPT_METRICS_DISCOVERY_IFLAGS = @OPT_METRICS_DISCOVERY_IFLAGS@
 OPT_METRICS_DISCOVERY_LDFLAGS = @OPT_METRICS_DISCOVERY_LDFLAGS@
-OPT_OBJCOPY = @OPT_OBJCOPY@
 OPT_OPENCL_IFLAGS = @OPT_OPENCL_IFLAGS@
 OPT_PAPI = @OPT_PAPI@
 OPT_PAPI_IFLAGS = @OPT_PAPI_IFLAGS@
 OPT_PAPI_LDFLAGS = @OPT_PAPI_LDFLAGS@
 OPT_PAPI_LIBPATH = @OPT_PAPI_LIBPATH@
-OPT_ROCM = @OPT_ROCM@
+OPT_PAPI_LIBS_STAT = @OPT_PAPI_LIBS_STAT@
 OPT_ROCM_IFLAGS = @OPT_ROCM_IFLAGS@
-OPT_ROCM_LDFLAGS = @OPT_ROCM_LDFLAGS@
+OPT_ROCM_LD_LIB_PATH = @OPT_ROCM_LD_LIB_PATH@
 OPT_UPC_IFLAGS = @OPT_UPC_IFLAGS@
 OPT_UPC_LDFLAGS = @OPT_UPC_LDFLAGS@
 OTOOL = @OTOOL@
@@ -1622,7 +1674,6 @@ datarootdir = @datarootdir@
 docdir = @docdir@
 dvidir = @dvidir@
 exec_prefix = @exec_prefix@
-export_ld_audit = @export_ld_audit@
 hash_fcn = @hash_fcn@
 hash_value = @hash_value@
 host = @host@
@@ -1645,7 +1696,7 @@ mkdir_p = @mkdir_p@
 my_pkglibdir = @my_pkglibdir@
 my_pkglibexecdir = @my_pkglibexecdir@
 oldincludedir = @oldincludedir@
-papi_extra_libs = @papi_extra_libs@
+path_objcopy = @path_objcopy@
 pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
@@ -1685,6 +1736,7 @@ HPCLIB_Prof = $(top_builddir)/src/lib/prof/libHPCprof.la
 HPCLIB_ProfXML = $(top_builddir)/src/lib/profxml/libHPCprofxml.la
 HPCLIB_ProfLean = $(top_builddir)/src/lib/prof-lean/libHPCprof-lean.la
 HPCLIB_Binutils = $(top_builddir)/src/lib/binutils/libHPCbinutils.la
+HPCLIB_gettext = $(top_builddir)/src/lib/binutils/libHPCgettext.la
 HPCLIB_ISA = $(top_builddir)/src/lib/isa/libHPCisa.la
 HPCLIB_XML = $(top_builddir)/src/lib/xml/libHPCxml.la
 HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
@@ -1721,14 +1773,15 @@ PYTHON = python
 @OPT_BGQ_BACKEND_TRUE@SUBDIRS = utilities/bgq-cnk
 plugin_srcdir = $(srcdir)/plugins
 plugin_instdir = $(pkglibdir)/plugins
-bin_SCRIPTS = $(am__append_6) $(am__append_8)
+bin_SCRIPTS = $(am__append_4) $(am__append_6)
 pkglibexec_SCRIPTS = $(am__append_1)
 include_HEADERS = $(am__append_2)
-pkglib_LIBRARIES = $(am__append_7)
-pkglib_LTLIBRARIES = $(am__append_3) $(am__append_4) $(am__append_5) \
-	$(am__append_9) $(am__append_142) $(am__append_143)
-BUILT_SOURCES = $(am__append_23)
-CLEANFILES = $(am__append_24)
+pkglib_LIBRARIES = $(am__append_5)
+pkglib_LTLIBRARIES = $(am__append_3) $(am__append_7) $(am__append_17) \
+	$(am__append_18) $(am__append_140) $(am__append_141)
+BUILT_SOURCES = $(am__append_22)
+CLEANFILES = $(am__append_23)
+@OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@noinst_LTLIBRARIES = libhpcrun.la
 PAPI_INC_FLGS = @OPT_PAPI_IFLAGS@ 
 PAPI_LD_FLGS = @OPT_PAPI_LDFLAGS@
 CUPTI_INC_FLGS = @OPT_CUPTI_IFLAGS@
@@ -1814,10 +1867,10 @@ UNW_MIPS_INCLUDE_DIRS = \
 
 UNW_MIPS_LD_FLAGS = 
 MY_CPP_DEFINES = -D_GNU_SOURCE -DINLINE_FN=1 -DLOCAL_BUILD=1 \
-	-D__HIP_PLATFORM_HCC__=1 $(am__append_13) $(am__append_20) \
-	$(am__append_103) $(am__append_107) $(am__append_109) \
-	$(am__append_113) $(am__append_128) $(am__append_132) \
-	$(am__append_136) $(am__append_141)
+	-D__HIP_PLATFORM_HCC__=1 $(am__append_11) $(am__append_19) \
+	$(am__append_102) $(am__append_106) $(am__append_108) \
+	$(am__append_112) $(am__append_127) $(am__append_131) \
+	$(am__append_135) $(am__append_139)
 MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	closure-registry.c cct_insert_backtrace.c \
 	cct_backtrace_finalize.c env.c epoch.c files.c \
@@ -1874,12 +1927,15 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	utilities/hpcrun-nanotime.c utilities/ip-normalized.h \
 	utilities/ip-normalized.c utilities/line_wrapping.c \
 	utilities/timer.c utilities/tokenize.h utilities/tokenize.c \
-	utilities/unlink.h utilities/unlink.c $(am__append_10) \
-	$(am__append_11) $(am__append_12) $(am__append_14) \
-	$(am__append_15) $(am__append_16) $(am__append_17)
-MY_DYNAMIC_FILES = fnbounds/fnbounds_client.c \
-	fnbounds/fnbounds_dynamic.c monitor-exts/openmp.c \
-	custom-init-dynamic.c $(am__append_18)
+	utilities/unlink.h utilities/unlink.c $(am__append_8) \
+	$(am__append_9) $(am__append_10) $(am__append_12) \
+	$(am__append_13) $(am__append_14) $(am__append_15)
+MY_DYNAMIC_FILES = \
+	fnbounds/fnbounds_client.c	\
+	fnbounds/fnbounds_dynamic.c	\
+	monitor-exts/openmp.c		\
+        custom-init-dynamic.c
+
 MY_STATIC_FILES = \
 	fnbounds/fnbounds_static.c      \
         custom-init-static.c
@@ -1909,10 +1965,10 @@ MY_AARCH64_FILES = \
 	utilities/arch/libunwind/libunwind-context-pc.c
 
 @OPT_PAPI_COMPONENT_FALSE@MY_PAPI_FILES = sample-sources/papi.c \
-@OPT_PAPI_COMPONENT_FALSE@	$(am__append_19)
+@OPT_PAPI_COMPONENT_FALSE@	$(am__append_16)
 @OPT_PAPI_COMPONENT_TRUE@MY_PAPI_FILES = sample-sources/papi-c.c \
 @OPT_PAPI_COMPONENT_TRUE@	sample-sources/papi-c-extended-info.c \
-@OPT_PAPI_COMPONENT_TRUE@	$(am__append_19)
+@OPT_PAPI_COMPONENT_TRUE@	$(am__append_16)
 @OPT_ENABLE_CUPTI_TRUE@MY_CUPTI_FILES = sample-sources/nvidia.c	\
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/cubin-hash-map.c		\
 @OPT_ENABLE_CUPTI_TRUE@	gpu/nvidia/cubin-id-map.c		\
@@ -1931,8 +1987,11 @@ MY_AARCH64_FILES = \
 @OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/opencl-activity-translate.c \
 @OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/opencl-h2d-map.c \
 @OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/opencl-queue-map.c \
-@OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/opencl-context-map.c 
+@OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/opencl-context-map.c
 
+@OPT_ENABLE_OPENCL_TRUE@libhpcrun_opencl_la_CPPFLAGS = -I$(top_srcdir)/src $(OPENCL_IFLAGS)
+@OPT_ENABLE_OPENCL_TRUE@libhpcrun_opencl_la_SOURCES = gpu/opencl/opencl-api-wrappers.c
+@OPT_ENABLE_OPENCL_TRUE@libhpcrun_opencl_la_LDFLAGS = -Wl,-Bsymbolic
 @OPT_ENABLE_GTPIN_TRUE@MY_GTPIN_FILES = \
 @OPT_ENABLE_GTPIN_TRUE@	gpu/instrumentation/kernel-data-map.c \
 @OPT_ENABLE_GTPIN_TRUE@	gpu/instrumentation/gtpin-instrumentation.c \
@@ -1956,6 +2015,8 @@ MY_AARCH64_FILES = \
 @OPT_ENABLE_LEVEL0_TRUE@	gpu/level0/level0-event-map.c \
 @OPT_ENABLE_LEVEL0_TRUE@	gpu/level0/level0-handle-map.c
 
+@OPT_ENABLE_LEVEL0_TRUE@libhpcrun_level0_la_SOURCES = gpu/level0/level0-api-wrappers.c
+@OPT_ENABLE_LEVEL0_TRUE@libhpcrun_level0_la_LDFLAGS = -Wl,-Bsymbolic
 MY_UPC_FILES = sample-sources/upc.c
 MY_INCLUDE_DIRS = \
         -I$(top_srcdir)/src/tool        \
@@ -1993,19 +2054,22 @@ MY_AARCH64_INCLUDE_DIRS = \
 	-I$(srcdir)/utilities/arch/aarch64
 
 libhpcrun_la_SOURCES = $(MY_BASE_FILES) $(MY_DYNAMIC_FILES) \
-	$(am__append_25) $(am__append_26) $(am__append_39) \
-	$(am__append_54) $(am__append_72) $(am__append_85) \
-	$(am__append_100) $(am__append_104) $(am__append_114) \
-	$(am__append_121) $(am__append_125) $(am__append_129) \
-	$(am__append_133) $(am__append_137) $(UNW_SOURCE_FILES) \
+	$(am__append_24) $(am__append_25) $(am__append_38) \
+	$(am__append_53) $(am__append_71) $(am__append_84) \
+	$(am__append_99) $(am__append_103) $(am__append_113) \
+	$(am__append_120) $(am__append_124) $(am__append_128) \
+	$(am__append_132) $(am__append_136) $(UNW_SOURCE_FILES) \
 	utilities/last_func.c
-@OPT_ENABLE_RTLD_AUDIT_TRUE@libhpcrun_audit_la_SOURCES = \
-@OPT_ENABLE_RTLD_AUDIT_TRUE@	audit/auditor.c
+libhpcrun_fake_audit_la_SOURCES = \
+	audit/fake-auditor.c
+
+libhpcrun_audit_la_SOURCES = \
+	audit/auditor.c
 
 libhpcrun_o_SOURCES = $(MY_BASE_FILES) $(MY_STATIC_FILES) \
-	$(am__append_27) $(am__append_40) $(am__append_55) \
-	$(am__append_73) $(am__append_86) $(am__append_105) \
-	$(am__append_110) $(am__append_115) $(am__append_124) \
+	$(am__append_26) $(am__append_39) $(am__append_54) \
+	$(am__append_72) $(am__append_85) $(am__append_104) \
+	$(am__append_109) $(am__append_114) $(am__append_123) \
 	$(UNW_SOURCE_FILES) utilities/last_func.c
 libhpcrun_wrap_a_SOURCES = \
 	monitor-exts/openmp.c
@@ -2050,62 +2114,66 @@ libhpctoolkit_a_SOURCES = \
 # cppflags
 #-----------------------------------------------------------
 libhpcrun_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_21) $(am__append_28) $(am__append_41) \
-	$(am__append_56) $(am__append_74) $(am__append_87) \
-	$(am__append_101) $(am__append_106) $(am__append_108) \
-	$(am__append_116) $(am__append_119) $(am__append_122) \
-	$(am__append_126) $(am__append_130) $(am__append_134) \
-	$(am__append_138) $(UNW_INCLUDE_DIRS)
-@OPT_ENABLE_RTLD_AUDIT_TRUE@libhpcrun_audit_la_CPPFLAGS = \
-@OPT_ENABLE_RTLD_AUDIT_TRUE@	$(MY_CPP_DEFINES)		\
-@OPT_ENABLE_RTLD_AUDIT_TRUE@	$(MY_INCLUDE_DIRS)
+	$(am__append_20) $(am__append_27) $(am__append_40) \
+	$(am__append_55) $(am__append_73) $(am__append_86) \
+	$(am__append_100) $(am__append_105) $(am__append_107) \
+	$(am__append_115) $(am__append_118) $(am__append_121) \
+	$(am__append_125) $(am__append_129) $(am__append_133) \
+	$(am__append_137) $(UNW_INCLUDE_DIRS)
+libhpcrun_fake_audit_la_CPPFLAGS = \
+	$(MY_CPP_DEFINES)		\
+	$(MY_INCLUDE_DIRS)
+
+libhpcrun_audit_la_CPPFLAGS = \
+	$(MY_CPP_DEFINES)		\
+	$(MY_INCLUDE_DIRS)
 
 libhpcrun_o_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
-	$(MY_INCLUDE_DIRS) $(am__append_22) $(am__append_29) \
-	$(am__append_42) $(am__append_57) $(am__append_75) \
-	$(am__append_88) $(am__append_111) $(am__append_117) \
-	$(am__append_120) $(UNW_INCLUDE_DIRS)
+	$(MY_INCLUDE_DIRS) $(am__append_21) $(am__append_28) \
+	$(am__append_41) $(am__append_56) $(am__append_74) \
+	$(am__append_87) $(am__append_110) $(am__append_116) \
+	$(am__append_119) $(UNW_INCLUDE_DIRS)
 libhpcrun_wrap_a_CPPFLAGS = \
 	-DHPCRUN_STATIC_LINK		\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
 
 libhpcrun_ga_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_30) $(am__append_43) $(am__append_60) \
-	$(am__append_76) $(am__append_89) $(UNW_INCLUDE_DIRS)
+	$(am__append_29) $(am__append_42) $(am__append_59) \
+	$(am__append_75) $(am__append_88) $(UNW_INCLUDE_DIRS)
 libhpcrun_ga_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
-	$(MY_INCLUDE_DIRS) $(am__append_31) $(am__append_44) \
-	$(am__append_61) $(am__append_77) $(am__append_90) \
+	$(MY_INCLUDE_DIRS) $(am__append_30) $(am__append_43) \
+	$(am__append_60) $(am__append_76) $(am__append_89) \
 	$(UNW_INCLUDE_DIRS)
 libhpcrun_gprof_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_45) $(am__append_62) $(am__append_91)
+	$(am__append_44) $(am__append_61) $(am__append_90)
 libhpcrun_gprof_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK \
-	$(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) $(am__append_46) \
-	$(am__append_63) $(am__append_92)
+	$(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) $(am__append_45) \
+	$(am__append_62) $(am__append_91)
 libhpcrun_io_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_32) $(am__append_47) $(am__append_64) \
-	$(am__append_78) $(am__append_93) $(UNW_INCLUDE_DIRS)
+	$(am__append_31) $(am__append_46) $(am__append_63) \
+	$(am__append_77) $(am__append_92) $(UNW_INCLUDE_DIRS)
 libhpcrun_io_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
-	$(MY_INCLUDE_DIRS) $(am__append_33) $(am__append_48) \
-	$(am__append_65) $(am__append_79) $(am__append_94) \
+	$(MY_INCLUDE_DIRS) $(am__append_32) $(am__append_47) \
+	$(am__append_64) $(am__append_78) $(am__append_93) \
 	$(UNW_INCLUDE_DIRS)
 libhpcrun_memleak_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_34) $(am__append_49) $(am__append_66) \
-	$(am__append_80) $(am__append_95) $(UNW_INCLUDE_DIRS)
+	$(am__append_33) $(am__append_48) $(am__append_65) \
+	$(am__append_79) $(am__append_94) $(UNW_INCLUDE_DIRS)
 libhpcrun_memleak_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK \
-	$(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) $(am__append_35) \
-	$(am__append_50) $(am__append_67) $(am__append_81) \
-	$(am__append_96) $(UNW_INCLUDE_DIRS)
+	$(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) $(am__append_34) \
+	$(am__append_49) $(am__append_66) $(am__append_80) \
+	$(am__append_95) $(UNW_INCLUDE_DIRS)
 libhpcrun_pthread_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
-	$(am__append_36) $(am__append_51) $(am__append_68) \
-	$(am__append_82) $(am__append_97) $(UNW_INCLUDE_DIRS)
+	$(am__append_35) $(am__append_50) $(am__append_67) \
+	$(am__append_81) $(am__append_96) $(UNW_INCLUDE_DIRS)
 libhpcrun_pthread_wrap_a_CPPFLAGS = -DHPCRUN_STATIC_LINK \
-	$(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) $(am__append_37) \
-	$(am__append_52) $(am__append_69) $(am__append_83) \
-	$(am__append_98) $(UNW_INCLUDE_DIRS)
+	$(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) $(am__append_36) \
+	$(am__append_51) $(am__append_68) $(am__append_82) \
+	$(am__append_97) $(UNW_INCLUDE_DIRS)
 libhpcrun_mpi_la_CPPFLAGS = $(MY_CPP_DEFINES) -I$(MPI_INC) \
-	$(MY_INCLUDE_DIRS) $(am__append_38) $(am__append_53) \
-	$(am__append_70) $(am__append_84) $(am__append_99) \
+	$(MY_INCLUDE_DIRS) $(am__append_37) $(am__append_52) \
+	$(am__append_69) $(am__append_83) $(am__append_98) \
 	$(UNW_INCLUDE_DIRS)
 libhpctoolkit_la_CPPFLAGS = \
 	$(MY_CPP_DEFINES)		\
@@ -2121,8 +2189,8 @@ libhpctoolkit_a_CPPFLAGS = \
 # cflags
 #-----------------------------------------------------------
 libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(PERFMON_CFLAGS) \
-	$(am__append_123) $(am__append_127) $(am__append_131) \
-	$(am__append_135) $(am__append_139) $(GOTCHA_IFLAGS)
+	$(am__append_122) $(am__append_126) $(am__append_130) \
+	$(am__append_134) $(am__append_138) $(GOTCHA_IFLAGS)
 libhpcrun_o_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(PERFMON_CFLAGS)
 libhpcrun_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_ga_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
@@ -2138,7 +2206,7 @@ libhpcrun_pthread_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_mpi_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 
 #-----------------------------------------------------------
-# ldflags
+# Dependency Flags
 #-----------------------------------------------------------
 
 # The noinst_LTLIBRARIES always build with -fPIC and can be linked
@@ -2152,39 +2220,38 @@ SUPPORT_LEAN_A = $(top_builddir)/src/lib/support-lean/.libs/libHPCsupport-lean.a
 # with or without -fPIC, but the dynamic case requies -fPIC.
 OUR_LIBUNWIND_A = $(top_builddir)/src/extern/libunwind/libunwind.a
 OUR_LZMA_A = $(top_builddir)/src/extern/lzma/liblzma.a
-libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic $(am__append_58) \
-	$(am__append_102) $(am__append_118) $(am__append_140) \
-	$(GOTCHA_LDFLAGS) $(UNW_DYNAMIC_LD_FLAGS)
-@OPT_ENABLE_RTLD_AUDIT_TRUE@libhpcrun_audit_la_LDFLAGS = -Wl,-Bsymbolic -ldl
+libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic -L$(LIBMONITOR_LIB) -lmonitor \
+	-lpthread -lrt -L$(LIBELF_LIB) -lelf $(PERFMON_LDFLAGS_DYN) \
+	$(OPT_ROCM_LDFLAGS) $(am__append_57) $(am__append_101) \
+	$(am__append_117) $(GOTCHA_LDFLAGS) $(UNW_DYNAMIC_LD_FLAGS)
+libhpcrun_fake_audit_la_LDFLAGS = -Wl,-Bsymbolic -ldl
+libhpcrun_audit_la_LDFLAGS = -Wl,-Bsymbolic -ldl
 libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_gprof_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_io_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_memleak_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_pthread_la_LDFLAGS = -Wl,-Bsymbolic
 libhpcrun_mpi_la_LDFLAGS = -Wl,-Bsymbolic
-libhpcrun_o_LDFLAGS = $(am__append_59) $(am__append_112) \
-	$(UNW_STATIC_LD_FLAGS)
+
+# Note: (1) for dynamic libhpcrun.so, use LIBADD for (.a) archives
+# with fPIC (libunwind, etc) that are linked in and hidden at link
+# time, and LDFLAGS (-L, -l) for other dependency libraries.
+#
+# (2) for static libhpcrun.o, use LDADD for archives that are linked
+# and hidden into libhpcrun.o.  Other dependencies go into hpclink.
+# Don't use LDFLAGS for static case.
 libhpcrun_la_LIBADD = \
 	$(PROF_LEAN_A)  \
 	$(SUPPORT_LEAN_A)  \
-	-L$(LIBMONITOR_LIB) -lmonitor  \
-	-lpthread -lrt  \
-	-L$(LIBELF_LIB) -lelf  \
-	$(PERFMON_LDFLAGS_DYN)  \
-	$(OPT_ROCM_LDFLAGS)  \
 	$(MBEDTLS_LIBS)  \
 	$(OUR_LIBUNWIND_A)  \
 	$(OUR_LZMA_A)
 
-libhpcrun_o_LDADD = \
-	$(PROF_LEAN_A)  \
-	$(SUPPORT_LEAN_A)  \
-	$(PERFMON_LDFLAGS_STAT)  \
-	$(MBEDTLS_LIBS)  \
-	$(OUR_LIBUNWIND_A)  \
-	$(OUR_LZMA_A)
-
-MY_AGENT_INCLUDE_DIRS = $(MY_INCLUDE_DIRS) $(am__append_71) \
+libhpcrun_o_LDADD = $(PROF_LEAN_A) $(SUPPORT_LEAN_A) \
+	$(PERFMON_LDFLAGS_STAT) $(MBEDTLS_LIBS) $(OUR_LIBUNWIND_A) \
+	$(OUR_LZMA_A) $(am__append_58) $(am__append_111) \
+	$(UNW_STATIC_LD_FLAGS)
+MY_AGENT_INCLUDE_DIRS = $(MY_INCLUDE_DIRS) $(am__append_70) \
 	$(UNW_INCLUDE_DIRS)
 @HOST_CPU_AARCH64_TRUE@libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
 @HOST_CPU_PPC_TRUE@libhpcrun_la_CCASFLAGS = $(AM_CCASFLAGS)
@@ -2208,6 +2275,8 @@ MY_AGENT_INCLUDE_DIRS = $(MY_INCLUDE_DIRS) $(am__append_71) \
 @UNW_LIBUNW_TRUE@UNW_STATIC_LD_FLAGS = $(UNW_LIBUNW_LD_FLAGS)
 @UNW_PPC64_TRUE@UNW_STATIC_LD_FLAGS = $(UNW_PPC64_LD_FLAGS)
 @UNW_X86_TRUE@UNW_STATIC_LD_FLAGS = $(XED2_HPCLINK_LIBS)
+libhpcrun_dlmopen_la_SOURCES = dlmopen/dlmopen.c
+libhpcrun_dlmopen_la_LDFLAGS = -ldl
 
 #-----------------------------------------------------------
 # whirled peas, LUSH-style
@@ -2244,6 +2313,36 @@ MY_AGENT_TBB_CFLAGS = \
 @OPT_ENABLE_LUSH_TRUE@libagent_pthread_la_CFLAGS = $(MY_AGENT_PTHREAD_CFLAGS)
 @OPT_ENABLE_LUSH_TRUE@libagent_tbb_la_SOURCES = $(MY_AGENT_TBB_SOURCES)
 @OPT_ENABLE_LUSH_TRUE@libagent_tbb_la_CFLAGS = $(MY_AGENT_TBB_CFLAGS)
+
+#-----------------------------------------------------------
+# Manual install targets
+#-----------------------------------------------------------
+
+# Take over the last stage of building and installing libhpcrun.so and
+# libhpcrun.o.  Objcopy works to hide (localize) symbol names, but
+# only on object files (.o and .a), not on shared (.so) libraries.
+#
+# We change libhpcrun to no-install targets and automake builds an
+# (.a) archive of (.o) files with fPIC.  Then, we manually unpack the
+# archive, link in the 3rd-party libraries (libunwind, etc, with
+# fPIC), hide the symbols, and then link as a shared library.
+#
+# Note: (1) for dynamic libhpcrun.so, use LIBADD for (.a) archives
+# with fPIC (libunwind, etc) that are linked in and hidden at link
+# time, and LDFLAGS (-L, -l) for other dependency libraries.
+#
+# (2) for static libhpcrun.o, use LDADD for archives that are linked
+# and hidden into libhpcrun.o.  Other dependencies go into hpclink.
+# Don't use LDFLAGS for static case.
+MONITOR_NAMES = -G 'monitor_*'
+HPCRUN_NAMES = -G 'hpcrun_*' -G 'hpctoolkit_*'
+MISC_NAMES = -G 'debug_flag_*' -G 'messages_*' -G ompt_start_tool
+OPENCL_NAMES = -G 'clBuildProgram' -G 'clCreate*' -G 'clEnqueue*' -G 'clSetKernelArg' -G 'cl*Event*'
+DYN_SYSCALL_LIST = poll ppoll pselect select
+DYN_SYSCALL_NAMES = $(foreach name,$(DYN_SYSCALL_LIST),-G $(name))
+STAT_WRAP_NAMES = -w -G '__wrap_*'
+WORK_DYN = work-dyn
+WORK_STAT = work-stat
 
 # Assumes includer sets MYCXXFLAGS and MYCFLAGS
 # cf. CXXCOMPILE (automatically generated by automake)
@@ -2380,6 +2479,17 @@ libhpctoolkit.a: $(libhpctoolkit_a_OBJECTS) $(libhpctoolkit_a_DEPENDENCIES) $(EX
 	$(AM_V_at)-rm -f libhpctoolkit.a
 	$(AM_V_AR)$(libhpctoolkit_a_AR) libhpctoolkit.a $(libhpctoolkit_a_OBJECTS) $(libhpctoolkit_a_LIBADD)
 	$(AM_V_at)$(RANLIB) libhpctoolkit.a
+
+clean-noinstLTLIBRARIES:
+	-test -z "$(noinst_LTLIBRARIES)" || rm -f $(noinst_LTLIBRARIES)
+	@list='$(noinst_LTLIBRARIES)'; \
+	locs=`for p in $$list; do echo $$p; done | \
+	      sed 's|^[^/]*$$|.|; s|/[^/]*$$||; s|$$|/so_locations|' | \
+	      sort -u`; \
+	test -z "$$locs" || { \
+	  echo rm -f $${locs}; \
+	  rm -f $${locs}; \
+	}
 
 install-pkglibLTLIBRARIES: $(pkglib_LTLIBRARIES)
 	@$(NORMAL_INSTALL)
@@ -2752,14 +2862,6 @@ fnbounds/libhpcrun_la-fnbounds_dynamic.lo: fnbounds/$(am__dirstamp) \
 	fnbounds/$(DEPDIR)/$(am__dirstamp)
 monitor-exts/libhpcrun_la-openmp.lo: monitor-exts/$(am__dirstamp) \
 	monitor-exts/$(DEPDIR)/$(am__dirstamp)
-audit/$(am__dirstamp):
-	@$(MKDIR_P) audit
-	@: > audit/$(am__dirstamp)
-audit/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) audit/$(DEPDIR)
-	@: > audit/$(DEPDIR)/$(am__dirstamp)
-audit/libhpcrun_la-fake-auditor.lo: audit/$(am__dirstamp) \
-	audit/$(DEPDIR)/$(am__dirstamp)
 os/linux/$(am__dirstamp):
 	@$(MKDIR_P) os/linux
 	@: > os/linux/$(am__dirstamp)
@@ -3092,11 +3194,33 @@ utilities/libhpcrun_la-last_func.lo: utilities/$(am__dirstamp) \
 
 libhpcrun.la: $(libhpcrun_la_OBJECTS) $(libhpcrun_la_DEPENDENCIES) $(EXTRA_libhpcrun_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(libhpcrun_la_LINK) $(am_libhpcrun_la_rpath) $(libhpcrun_la_OBJECTS) $(libhpcrun_la_LIBADD) $(LIBS)
+audit/$(am__dirstamp):
+	@$(MKDIR_P) audit
+	@: > audit/$(am__dirstamp)
+audit/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) audit/$(DEPDIR)
+	@: > audit/$(DEPDIR)/$(am__dirstamp)
 audit/libhpcrun_audit_la-auditor.lo: audit/$(am__dirstamp) \
 	audit/$(DEPDIR)/$(am__dirstamp)
 
 libhpcrun_audit.la: $(libhpcrun_audit_la_OBJECTS) $(libhpcrun_audit_la_DEPENDENCIES) $(EXTRA_libhpcrun_audit_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(libhpcrun_audit_la_LINK) $(am_libhpcrun_audit_la_rpath) $(libhpcrun_audit_la_OBJECTS) $(libhpcrun_audit_la_LIBADD) $(LIBS)
+dlmopen/$(am__dirstamp):
+	@$(MKDIR_P) dlmopen
+	@: > dlmopen/$(am__dirstamp)
+dlmopen/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) dlmopen/$(DEPDIR)
+	@: > dlmopen/$(DEPDIR)/$(am__dirstamp)
+dlmopen/dlmopen.lo: dlmopen/$(am__dirstamp) \
+	dlmopen/$(DEPDIR)/$(am__dirstamp)
+
+libhpcrun_dlmopen.la: $(libhpcrun_dlmopen_la_OBJECTS) $(libhpcrun_dlmopen_la_DEPENDENCIES) $(EXTRA_libhpcrun_dlmopen_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(libhpcrun_dlmopen_la_LINK) $(am_libhpcrun_dlmopen_la_rpath) $(libhpcrun_dlmopen_la_OBJECTS) $(libhpcrun_dlmopen_la_LIBADD) $(LIBS)
+audit/libhpcrun_fake_audit_la-fake-auditor.lo: audit/$(am__dirstamp) \
+	audit/$(DEPDIR)/$(am__dirstamp)
+
+libhpcrun_fake_audit.la: $(libhpcrun_fake_audit_la_OBJECTS) $(libhpcrun_fake_audit_la_DEPENDENCIES) $(EXTRA_libhpcrun_fake_audit_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(libhpcrun_fake_audit_la_LINK) $(am_libhpcrun_fake_audit_la_rpath) $(libhpcrun_fake_audit_la_OBJECTS) $(libhpcrun_fake_audit_la_LIBADD) $(LIBS)
 sample-sources/libhpcrun_ga_la-ga-overrides.lo:  \
 	sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
@@ -3112,6 +3236,11 @@ sample-sources/libhpcrun_io_la-io-over.lo:  \
 
 libhpcrun_io.la: $(libhpcrun_io_la_OBJECTS) $(libhpcrun_io_la_DEPENDENCIES) $(EXTRA_libhpcrun_io_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(libhpcrun_io_la_LINK) $(am_libhpcrun_io_la_rpath) $(libhpcrun_io_la_OBJECTS) $(libhpcrun_io_la_LIBADD) $(LIBS)
+gpu/level0/level0-api-wrappers.lo: gpu/level0/$(am__dirstamp) \
+	gpu/level0/$(DEPDIR)/$(am__dirstamp)
+
+libhpcrun_level0.la: $(libhpcrun_level0_la_OBJECTS) $(libhpcrun_level0_la_DEPENDENCIES) $(EXTRA_libhpcrun_level0_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(libhpcrun_level0_la_LINK) $(am_libhpcrun_level0_la_rpath) $(libhpcrun_level0_la_OBJECTS) $(libhpcrun_level0_la_LIBADD) $(LIBS)
 sample-sources/libhpcrun_memleak_la-memleak-overrides.lo:  \
 	sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
@@ -3129,6 +3258,12 @@ $(DEPDIR)/$(am__dirstamp):
 
 libhpcrun_mpi.la: $(libhpcrun_mpi_la_OBJECTS) $(libhpcrun_mpi_la_DEPENDENCIES) $(EXTRA_libhpcrun_mpi_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(libhpcrun_mpi_la_LINK) $(am_libhpcrun_mpi_la_rpath) $(libhpcrun_mpi_la_OBJECTS) $(libhpcrun_mpi_la_LIBADD) $(LIBS)
+gpu/opencl/libhpcrun_opencl_la-opencl-api-wrappers.lo:  \
+	gpu/opencl/$(am__dirstamp) \
+	gpu/opencl/$(DEPDIR)/$(am__dirstamp)
+
+libhpcrun_opencl.la: $(libhpcrun_opencl_la_OBJECTS) $(libhpcrun_opencl_la_DEPENDENCIES) $(EXTRA_libhpcrun_opencl_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(libhpcrun_opencl_la_LINK) $(am_libhpcrun_opencl_la_rpath) $(libhpcrun_opencl_la_OBJECTS) $(libhpcrun_opencl_la_LIBADD) $(LIBS)
 sample-sources/libhpcrun_pthread_la-pthread-blame-overrides.lo:  \
 	sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
@@ -3141,55 +3276,6 @@ libhpctoolkit.la: $(libhpctoolkit_la_OBJECTS) $(libhpctoolkit_la_DEPENDENCIES) $
 
 clean-noinstPROGRAMS:
 	@list='$(noinst_PROGRAMS)'; test -n "$$list" || exit 0; \
-	echo " rm -f" $$list; \
-	rm -f $$list || exit $$?; \
-	test -n "$(EXEEXT)" || exit 0; \
-	list=`for p in $$list; do echo "$$p"; done | sed 's/$(EXEEXT)$$//'`; \
-	echo " rm -f" $$list; \
-	rm -f $$list
-install-pkglibexecPROGRAMS: $(pkglibexec_PROGRAMS)
-	@$(NORMAL_INSTALL)
-	@list='$(pkglibexec_PROGRAMS)'; test -n "$(pkglibexecdir)" || list=; \
-	if test -n "$$list"; then \
-	  echo " $(MKDIR_P) '$(DESTDIR)$(pkglibexecdir)'"; \
-	  $(MKDIR_P) "$(DESTDIR)$(pkglibexecdir)" || exit 1; \
-	fi; \
-	for p in $$list; do echo "$$p $$p"; done | \
-	sed 's/$(EXEEXT)$$//' | \
-	while read p p1; do if test -f $$p \
-	 || test -f $$p1 \
-	  ; then echo "$$p"; echo "$$p"; else :; fi; \
-	done | \
-	sed -e 'p;s,.*/,,;n;h' \
-	    -e 's|.*|.|' \
-	    -e 'p;x;s,.*/,,;s/$(EXEEXT)$$//;$(transform);s/$$/$(EXEEXT)/' | \
-	sed 'N;N;N;s,\n, ,g' | \
-	$(AWK) 'BEGIN { files["."] = ""; dirs["."] = 1 } \
-	  { d=$$3; if (dirs[d] != 1) { print "d", d; dirs[d] = 1 } \
-	    if ($$2 == $$4) files[d] = files[d] " " $$1; \
-	    else { print "f", $$3 "/" $$4, $$1; } } \
-	  END { for (d in files) print "f", d, files[d] }' | \
-	while read type dir files; do \
-	    if test "$$dir" = .; then dir=; else dir=/$$dir; fi; \
-	    test -z "$$files" || { \
-	    echo " $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL_PROGRAM) $$files '$(DESTDIR)$(pkglibexecdir)$$dir'"; \
-	    $(INSTALL_PROGRAM_ENV) $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL_PROGRAM) $$files "$(DESTDIR)$(pkglibexecdir)$$dir" || exit $$?; \
-	    } \
-	; done
-
-uninstall-pkglibexecPROGRAMS:
-	@$(NORMAL_UNINSTALL)
-	@list='$(pkglibexec_PROGRAMS)'; test -n "$(pkglibexecdir)" || list=; \
-	files=`for p in $$list; do echo "$$p"; done | \
-	  sed -e 'h;s,^.*/,,;s/$(EXEEXT)$$//;$(transform)' \
-	      -e 's/$$/$(EXEEXT)/' \
-	`; \
-	test -n "$$list" || exit 0; \
-	echo " ( cd '$(DESTDIR)$(pkglibexecdir)' && rm -f" $$files ")"; \
-	cd "$(DESTDIR)$(pkglibexecdir)" && rm -f $$files
-
-clean-pkglibexecPROGRAMS:
-	@list='$(pkglibexec_PROGRAMS)'; test -n "$$list" || exit 0; \
 	echo " rm -f" $$list; \
 	rm -f $$list || exit $$?; \
 	test -n "$(EXEEXT)" || exit 0; \
@@ -3677,6 +3763,8 @@ mostlyclean-compile:
 	-rm -f audit/*.lo
 	-rm -f cct/*.$(OBJEXT)
 	-rm -f cct/*.lo
+	-rm -f dlmopen/*.$(OBJEXT)
+	-rm -f dlmopen/*.lo
 	-rm -f extern-real/*.$(OBJEXT)
 	-rm -f extern-real/*.lo
 	-rm -f fnbounds/*.$(OBJEXT)
@@ -3833,7 +3921,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpctoolkit_a-hpctoolkit.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpctoolkit_la-hpctoolkit.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@audit/$(DEPDIR)/libhpcrun_audit_la-auditor.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@audit/$(DEPDIR)/libhpcrun_la-fake-auditor.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@audit/$(DEPDIR)/libhpcrun_fake_audit_la-fake-auditor.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@cct/$(DEPDIR)/libhpcrun_la-cct-node-vector.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@cct/$(DEPDIR)/libhpcrun_la-cct.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@cct/$(DEPDIR)/libhpcrun_la-cct_bundle.Plo@am__quote@
@@ -3842,6 +3930,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@cct/$(DEPDIR)/libhpcrun_o-cct.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@cct/$(DEPDIR)/libhpcrun_o-cct_bundle.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@cct/$(DEPDIR)/libhpcrun_o-cct_ctxt.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@dlmopen/$(DEPDIR)/dlmopen.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@extern-real/$(DEPDIR)/libhpcrun_la-dl-iterate.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@extern-real/$(DEPDIR)/libhpcrun_la-mmap.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@extern-real/$(DEPDIR)/libhpcrun_o-dl-iterate.Po@am__quote@
@@ -3919,6 +4008,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/instrumentation/$(DEPDIR)/libhpcrun_la-gtpin-correlation-id-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/instrumentation/$(DEPDIR)/libhpcrun_la-gtpin-instrumentation.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/instrumentation/$(DEPDIR)/libhpcrun_la-kernel-data-map.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/level0/$(DEPDIR)/level0-api-wrappers.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/level0/$(DEPDIR)/libhpcrun_la-level0-api.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/level0/$(DEPDIR)/libhpcrun_la-level0-command-list-context-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/level0/$(DEPDIR)/libhpcrun_la-level0-command-list-map.Plo@am__quote@
@@ -3950,6 +4040,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/opencl/$(DEPDIR)/libhpcrun_la-opencl-h2d-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/opencl/$(DEPDIR)/libhpcrun_la-opencl-memory-manager.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/opencl/$(DEPDIR)/libhpcrun_la-opencl-queue-map.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/opencl/$(DEPDIR)/libhpcrun_opencl_la-opencl-api-wrappers.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@lush-agents/$(DEPDIR)/libagent_cilk_la-agent-cilk.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@lush-agents/$(DEPDIR)/libagent_pthread_la-agent-pthread.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@lush-agents/$(DEPDIR)/libagent_tbb_la-agent-tbb.Plo@am__quote@
@@ -5397,13 +5488,6 @@ libhpcrun_la-custom-init-dynamic.lo: custom-init-dynamic.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-custom-init-dynamic.lo `test -f 'custom-init-dynamic.c' || echo '$(srcdir)/'`custom-init-dynamic.c
 
-audit/libhpcrun_la-fake-auditor.lo: audit/fake-auditor.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT audit/libhpcrun_la-fake-auditor.lo -MD -MP -MF audit/$(DEPDIR)/libhpcrun_la-fake-auditor.Tpo -c -o audit/libhpcrun_la-fake-auditor.lo `test -f 'audit/fake-auditor.c' || echo '$(srcdir)/'`audit/fake-auditor.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) audit/$(DEPDIR)/libhpcrun_la-fake-auditor.Tpo audit/$(DEPDIR)/libhpcrun_la-fake-auditor.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='audit/fake-auditor.c' object='audit/libhpcrun_la-fake-auditor.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o audit/libhpcrun_la-fake-auditor.lo `test -f 'audit/fake-auditor.c' || echo '$(srcdir)/'`audit/fake-auditor.c
-
 os/linux/libhpcrun_la-dylib.lo: os/linux/dylib.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT os/linux/libhpcrun_la-dylib.lo -MD -MP -MF os/linux/$(DEPDIR)/libhpcrun_la-dylib.Tpo -c -o os/linux/libhpcrun_la-dylib.lo `test -f 'os/linux/dylib.c' || echo '$(srcdir)/'`os/linux/dylib.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) os/linux/$(DEPDIR)/libhpcrun_la-dylib.Tpo os/linux/$(DEPDIR)/libhpcrun_la-dylib.Plo
@@ -5950,6 +6034,13 @@ audit/libhpcrun_audit_la-auditor.lo: audit/auditor.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_audit_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o audit/libhpcrun_audit_la-auditor.lo `test -f 'audit/auditor.c' || echo '$(srcdir)/'`audit/auditor.c
 
+audit/libhpcrun_fake_audit_la-fake-auditor.lo: audit/fake-auditor.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_fake_audit_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT audit/libhpcrun_fake_audit_la-fake-auditor.lo -MD -MP -MF audit/$(DEPDIR)/libhpcrun_fake_audit_la-fake-auditor.Tpo -c -o audit/libhpcrun_fake_audit_la-fake-auditor.lo `test -f 'audit/fake-auditor.c' || echo '$(srcdir)/'`audit/fake-auditor.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) audit/$(DEPDIR)/libhpcrun_fake_audit_la-fake-auditor.Tpo audit/$(DEPDIR)/libhpcrun_fake_audit_la-fake-auditor.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='audit/fake-auditor.c' object='audit/libhpcrun_fake_audit_la-fake-auditor.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_fake_audit_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o audit/libhpcrun_fake_audit_la-fake-auditor.lo `test -f 'audit/fake-auditor.c' || echo '$(srcdir)/'`audit/fake-auditor.c
+
 sample-sources/libhpcrun_ga_la-ga-overrides.lo: sample-sources/ga-overrides.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_ga_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_ga_la_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_ga_la-ga-overrides.lo -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_ga_la-ga-overrides.Tpo -c -o sample-sources/libhpcrun_ga_la-ga-overrides.lo `test -f 'sample-sources/ga-overrides.c' || echo '$(srcdir)/'`sample-sources/ga-overrides.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/$(DEPDIR)/libhpcrun_ga_la-ga-overrides.Tpo sample-sources/$(DEPDIR)/libhpcrun_ga_la-ga-overrides.Plo
@@ -5984,6 +6075,13 @@ sample-sources/libhpcrun_memleak_la-memleak-overrides.lo: sample-sources/memleak
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='./mpi-overrides.c' object='./libhpcrun_mpi_la-mpi-overrides.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_mpi_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_mpi_la_CFLAGS) $(CFLAGS) -c -o ./libhpcrun_mpi_la-mpi-overrides.lo `test -f './mpi-overrides.c' || echo '$(srcdir)/'`./mpi-overrides.c
+
+gpu/opencl/libhpcrun_opencl_la-opencl-api-wrappers.lo: gpu/opencl/opencl-api-wrappers.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_opencl_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT gpu/opencl/libhpcrun_opencl_la-opencl-api-wrappers.lo -MD -MP -MF gpu/opencl/$(DEPDIR)/libhpcrun_opencl_la-opencl-api-wrappers.Tpo -c -o gpu/opencl/libhpcrun_opencl_la-opencl-api-wrappers.lo `test -f 'gpu/opencl/opencl-api-wrappers.c' || echo '$(srcdir)/'`gpu/opencl/opencl-api-wrappers.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/opencl/$(DEPDIR)/libhpcrun_opencl_la-opencl-api-wrappers.Tpo gpu/opencl/$(DEPDIR)/libhpcrun_opencl_la-opencl-api-wrappers.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/opencl/opencl-api-wrappers.c' object='gpu/opencl/libhpcrun_opencl_la-opencl-api-wrappers.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_opencl_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o gpu/opencl/libhpcrun_opencl_la-opencl-api-wrappers.lo `test -f 'gpu/opencl/opencl-api-wrappers.c' || echo '$(srcdir)/'`gpu/opencl/opencl-api-wrappers.c
 
 sample-sources/libhpcrun_pthread_la-pthread-blame-overrides.lo: sample-sources/pthread-blame-overrides.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_pthread_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_pthread_la_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_pthread_la-pthread-blame-overrides.lo -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_pthread_la-pthread-blame-overrides.Tpo -c -o sample-sources/libhpcrun_pthread_la-pthread-blame-overrides.lo `test -f 'sample-sources/pthread-blame-overrides.c' || echo '$(srcdir)/'`sample-sources/pthread-blame-overrides.c
@@ -8735,6 +8833,7 @@ clean-libtool:
 	-rm -rf .libs _libs
 	-rm -rf audit/.libs audit/_libs
 	-rm -rf cct/.libs cct/_libs
+	-rm -rf dlmopen/.libs dlmopen/_libs
 	-rm -rf extern-real/.libs extern-real/_libs
 	-rm -rf fnbounds/.libs fnbounds/_libs
 	-rm -rf gpu/.libs gpu/_libs
@@ -8952,7 +9051,7 @@ all-am: Makefile $(LIBRARIES) $(LTLIBRARIES) $(PROGRAMS) $(SCRIPTS) \
 		$(HEADERS)
 installdirs: installdirs-recursive
 installdirs-am:
-	for dir in "$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(pkglibexecdir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(pkglibexecdir)" "$(DESTDIR)$(includedir)"; do \
+	for dir in "$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(pkglibexecdir)" "$(DESTDIR)$(includedir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: $(BUILT_SOURCES)
@@ -8988,6 +9087,8 @@ distclean-generic:
 	-rm -f audit/$(am__dirstamp)
 	-rm -f cct/$(DEPDIR)/$(am__dirstamp)
 	-rm -f cct/$(am__dirstamp)
+	-rm -f dlmopen/$(DEPDIR)/$(am__dirstamp)
+	-rm -f dlmopen/$(am__dirstamp)
 	-rm -f extern-real/$(DEPDIR)/$(am__dirstamp)
 	-rm -f extern-real/$(am__dirstamp)
 	-rm -f fnbounds/$(DEPDIR)/$(am__dirstamp)
@@ -9062,15 +9163,14 @@ maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
 	-test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
-@OPT_ENABLE_HPCRUN_STATIC_FALSE@install-exec-hook:
 clean: clean-recursive
 
-clean-am: clean-generic clean-libtool clean-noinstPROGRAMS \
-	clean-pkglibLIBRARIES clean-pkglibLTLIBRARIES \
-	clean-pkglibexecPROGRAMS mostlyclean-am
+clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
+	clean-noinstPROGRAMS clean-pkglibLIBRARIES \
+	clean-pkglibLTLIBRARIES mostlyclean-am
 
 distclean: distclean-recursive
-	-rm -rf ./$(DEPDIR) audit/$(DEPDIR) cct/$(DEPDIR) extern-real/$(DEPDIR) fnbounds/$(DEPDIR) gpu/$(DEPDIR) gpu/amd/$(DEPDIR) gpu/instrumentation/$(DEPDIR) gpu/level0/$(DEPDIR) gpu/nvidia/$(DEPDIR) gpu/opencl/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) ompt/$(DEPDIR) os/linux/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) sample-sources/perf/$(DEPDIR) syscalls/$(DEPDIR) trampoline/aarch64/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/libunwind/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) audit/$(DEPDIR) cct/$(DEPDIR) dlmopen/$(DEPDIR) extern-real/$(DEPDIR) fnbounds/$(DEPDIR) gpu/$(DEPDIR) gpu/amd/$(DEPDIR) gpu/instrumentation/$(DEPDIR) gpu/level0/$(DEPDIR) gpu/nvidia/$(DEPDIR) gpu/opencl/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) ompt/$(DEPDIR) os/linux/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) sample-sources/perf/$(DEPDIR) syscalls/$(DEPDIR) trampoline/aarch64/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/libunwind/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -9095,8 +9195,7 @@ install-dvi: install-dvi-recursive
 install-dvi-am:
 
 install-exec-am: install-binSCRIPTS install-pkglibLIBRARIES \
-	install-pkglibLTLIBRARIES install-pkglibexecPROGRAMS \
-	install-pkglibexecSCRIPTS
+	install-pkglibLTLIBRARIES install-pkglibexecSCRIPTS
 	@$(NORMAL_INSTALL)
 	$(MAKE) $(AM_MAKEFLAGS) install-exec-hook
 install-html: install-html-recursive
@@ -9120,7 +9219,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-recursive
-	-rm -rf ./$(DEPDIR) audit/$(DEPDIR) cct/$(DEPDIR) extern-real/$(DEPDIR) fnbounds/$(DEPDIR) gpu/$(DEPDIR) gpu/amd/$(DEPDIR) gpu/instrumentation/$(DEPDIR) gpu/level0/$(DEPDIR) gpu/nvidia/$(DEPDIR) gpu/opencl/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) ompt/$(DEPDIR) os/linux/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) sample-sources/perf/$(DEPDIR) syscalls/$(DEPDIR) trampoline/aarch64/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/libunwind/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) audit/$(DEPDIR) cct/$(DEPDIR) dlmopen/$(DEPDIR) extern-real/$(DEPDIR) fnbounds/$(DEPDIR) gpu/$(DEPDIR) gpu/amd/$(DEPDIR) gpu/instrumentation/$(DEPDIR) gpu/level0/$(DEPDIR) gpu/nvidia/$(DEPDIR) gpu/opencl/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) ompt/$(DEPDIR) os/linux/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) sample-sources/perf/$(DEPDIR) syscalls/$(DEPDIR) trampoline/aarch64/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/libunwind/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
@@ -9139,15 +9238,15 @@ ps-am:
 
 uninstall-am: uninstall-binSCRIPTS uninstall-includeHEADERS \
 	uninstall-pkglibLIBRARIES uninstall-pkglibLTLIBRARIES \
-	uninstall-pkglibexecPROGRAMS uninstall-pkglibexecSCRIPTS
+	uninstall-pkglibexecSCRIPTS
 
 .MAKE: $(am__recursive_targets) all check install install-am \
 	install-data-am install-exec-am install-strip
 
 .PHONY: $(am__recursive_targets) CTAGS GTAGS TAGS all all-am check \
 	check-am clean clean-generic clean-libtool \
-	clean-noinstPROGRAMS clean-pkglibLIBRARIES \
-	clean-pkglibLTLIBRARIES clean-pkglibexecPROGRAMS cscopelist-am \
+	clean-noinstLTLIBRARIES clean-noinstPROGRAMS \
+	clean-pkglibLIBRARIES clean-pkglibLTLIBRARIES cscopelist-am \
 	ctags ctags-am distclean distclean-compile distclean-generic \
 	distclean-libtool distclean-tags distdir dvi dvi-am html \
 	html-am info info-am install install-am install-binSCRIPTS \
@@ -9156,15 +9255,14 @@ uninstall-am: uninstall-binSCRIPTS uninstall-includeHEADERS \
 	install-html install-html-am install-includeHEADERS \
 	install-info install-info-am install-man install-pdf \
 	install-pdf-am install-pkglibLIBRARIES \
-	install-pkglibLTLIBRARIES install-pkglibexecPROGRAMS \
-	install-pkglibexecSCRIPTS install-ps install-ps-am \
-	install-strip installcheck installcheck-am installdirs \
-	installdirs-am maintainer-clean maintainer-clean-generic \
-	mostlyclean mostlyclean-compile mostlyclean-generic \
-	mostlyclean-libtool pdf pdf-am ps ps-am tags tags-am uninstall \
-	uninstall-am uninstall-binSCRIPTS uninstall-includeHEADERS \
-	uninstall-pkglibLIBRARIES uninstall-pkglibLTLIBRARIES \
-	uninstall-pkglibexecPROGRAMS uninstall-pkglibexecSCRIPTS
+	install-pkglibLTLIBRARIES install-pkglibexecSCRIPTS install-ps \
+	install-ps-am install-strip installcheck installcheck-am \
+	installdirs installdirs-am maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-compile \
+	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
+	tags tags-am uninstall uninstall-am uninstall-binSCRIPTS \
+	uninstall-includeHEADERS uninstall-pkglibLIBRARIES \
+	uninstall-pkglibLTLIBRARIES uninstall-pkglibexecSCRIPTS
 
 .PRECIOUS: Makefile
 
@@ -9187,9 +9285,24 @@ endef
 @OPT_ENABLE_MPI_WRAP_TRUE@	$(PYTHON) $(srcdir)/sample-sources/make-wrappers.py \
 @OPT_ENABLE_MPI_WRAP_TRUE@		--f77symbol $(F77_SYMBOLS) $(srcdir)/sample-sources/$(MPI_PROTO_FILE)
 
-#-----------------------------------------------------------
-# local hooks
-#-----------------------------------------------------------
+install-exec-hook:
+@OPT_ENABLE_HPCRUN_TRUE@	@echo "building and installing libhpcrun.so ..."
+@OPT_ENABLE_HPCRUN_TRUE@	rm -rf $(WORK_DYN)
+@OPT_ENABLE_HPCRUN_TRUE@	mkdir $(WORK_DYN)
+@OPT_ENABLE_HPCRUN_TRUE@	cd $(WORK_DYN) && $(AR) x ../.libs/libhpcrun.a
+@OPT_ENABLE_HPCRUN_TRUE@	$(LD) -r $(WORK_DYN)/*.o $(libhpcrun_la_LIBADD) -o $(WORK_DYN)/part1.o
+@OPT_ENABLE_HPCRUN_TRUE@	$(OBJCOPY) -w $(MONITOR_NAMES) $(HPCRUN_NAMES) $(DYN_SYSCALL_NAMES) $(MISC_NAMES) $(OPENCL_NAMES) \
+@OPT_ENABLE_HPCRUN_TRUE@		$(WORK_DYN)/part1.o $(WORK_DYN)/part2.o
+@OPT_ENABLE_HPCRUN_TRUE@	$(CC) -shared $(WORK_DYN)/part2.o $(libhpcrun_la_LDFLAGS) -o $(WORK_DYN)/libhpcrun.so
+@OPT_ENABLE_HPCRUN_TRUE@	$(INSTALL) -m 0755 $(WORK_DYN)/libhpcrun.so $(DESTDIR)$(pkglibdir)
+@OPT_ENABLE_HPCRUN_FALSE@	@echo "skipping libhpcrun.so"
+@OPT_ENABLE_HPCRUN_STATIC_TRUE@	@echo "building and installing libhpcrun.o ..."
+@OPT_ENABLE_HPCRUN_STATIC_TRUE@	rm -rf $(WORK_STAT)
+@OPT_ENABLE_HPCRUN_STATIC_TRUE@	mkdir $(WORK_STAT)
+@OPT_ENABLE_HPCRUN_STATIC_TRUE@	$(OBJCOPY) -w $(MONITOR_NAMES) $(HPCRUN_NAMES) $(STAT_WRAP_NAMES) $(MISC_NAMES)  \
+@OPT_ENABLE_HPCRUN_STATIC_TRUE@		libhpcrun.o $(WORK_STAT)/libhpcrun.o
+@OPT_ENABLE_HPCRUN_STATIC_TRUE@	$(INSTALL) -m 0644 $(WORK_STAT)/libhpcrun.o $(DESTDIR)$(pkglibdir)
+@OPT_ENABLE_HPCRUN_STATIC_FALSE@	@echo "skipping libhpcrun.o"
 
 # Install the plugin config files.
 
@@ -9198,12 +9311,6 @@ install-data-hook:
 	-for file in $(PLUGIN_CONFIG_FILES) ; do \
 	    cp -f "$(plugin_srcdir)/$$file" "$(DESTDIR)$(plugin_instdir)/$$file" ; \
 	done
-
-# Install libhpcrun.o into pkglibdir.  New automake won't install a
-# program into a libdir, so we use noinst and install it manually.
-
-@OPT_ENABLE_HPCRUN_STATIC_TRUE@install-exec-hook:
-@OPT_ENABLE_HPCRUN_STATIC_TRUE@	cp libhpcrun.o $(DESTDIR)$(pkglibdir)
 
 %.cpp.pp : %.cpp
 	$(CXXCPP) $(MYCPPFLAGS_0_CXX) $< > $@

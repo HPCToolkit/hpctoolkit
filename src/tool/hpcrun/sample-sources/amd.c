@@ -34,6 +34,8 @@
 
 #include "amd.h"
 
+#include "libdl.h"
+
 #include "simple_oo.h"
 #include "sample_source_obj.h"
 #include "common.h"
@@ -162,10 +164,10 @@ static void
 METHOD_FN(finalize_event_list)
 {
 #ifndef HPCRUN_STATIC_LINK
-    if (roctracer_bind()) {
-        EEMSG("hpcrun: unable to bind to AMD roctracer library %s\n", dlerror());
-        monitor_real_exit(-1);
-    }
+  if (roctracer_bind() != DYNAMIC_BINDING_STATUS_OK) {
+    EEMSG("hpcrun: unable to bind to AMD roctracer library %s\n", dlerror());
+    monitor_real_exit(-1);
+  }
 #endif
 
 #if 0

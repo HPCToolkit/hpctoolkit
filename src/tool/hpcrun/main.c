@@ -244,6 +244,8 @@ static hpcrun_aux_cleanup_t * hpcrun_aux_cleanup_list_head = NULL;
 static hpcrun_aux_cleanup_t * hpcrun_aux_cleanup_free_list_head = NULL;
 static char execname[PATH_MAX] = {'\0'};
 
+static int monitor_fini_process_how = 0;
+
 //***************************************************************************
 // Interface functions for suppressing samples
 //***************************************************************************
@@ -452,7 +454,7 @@ hpcrun_init_internal(bool is_child)
 
   // Decide whether to retain full single recursion, or collapse recursive calls to
   // first instance of recursive call
-  hpcrun_set_retain_recursion_mode(getenv("HPCRUN_RETAIN_RECURSION") != NULL);
+  hpcrun_set_retain_recursion_mode(hpcrun_get_env_bool("HPCRUN_RETAIN_RECURSION"));
 
   // Initialize logical unwinding agents (LUSH)
   if (opts.lush_agent_paths[0] != '\0') {
@@ -675,8 +677,8 @@ hpcrun_fini_internal()
 
     // Call all registered auxiliary functions before termination.
     // This typically means flushing files that were not done by their creators.
-    device_finalizer_apply(device_finalizer_type_flush);
-    device_finalizer_apply(device_finalizer_type_shutdown);
+    device_finalizer_apply(device_finalizer_type_flush, monitor_fini_process_how);
+    device_finalizer_apply(device_finalizer_type_shutdown, monitor_fini_process_how);
 
     hpcrun_process_aux_cleanup_action();
 
@@ -795,7 +797,7 @@ hpcrun_thread_fini(epoch_t *epoch)
       return;
     }
 
-    device_finalizer_apply(device_finalizer_type_flush);
+    device_finalizer_apply(device_finalizer_type_flush, monitor_fini_process_how);
 
     int is_process = 0;
     thread_finalize(is_process);
@@ -827,7 +829,8 @@ hpcrun_continue()
 void 
 hpcrun_wait()
 {
-  const char* HPCRUN_WAIT = getenv("HPCRUN_WAIT");
+  bool HPCRUN_WAIT = hpcrun_get_env_bool("HPCRUN_WAIT");
+
   if (HPCRUN_WAIT) {
     while (HPCRUN_DEBUGGER_WAIT);
 
@@ -857,7 +860,10 @@ monitor_init_process(int *argc, char **argv, void* data)
 
   hpcrun_wait();
 
-  hpcrun_init_auditor();
+#ifndef HPCRUN_STATIC_LINK
+  if(hpcrun_get_env_bool("HPCRUN_AUDIT_FAKE_AUDITOR"))
+    hpcrun_init_fake_auditor();
+#endif
 
 #if 0
   // temporary patch to avoid deadlock within PAMI's optimized implementation
@@ -933,10 +939,7 @@ monitor_init_process(int *argc, char **argv, void* data)
 
   // see if unwinding has been turned off
   // the same setting governs whether or not fnbounds is needed or used.
-  char *foo = getenv("HPCRUN_NO_UNWIND");
-  if (foo != NULL){
-    hpcrun_no_unwind = true;
-  }
+  hpcrun_no_unwind = hpcrun_get_env_bool("HPCRUN_NO_UNWIND");
 
   char* s = getenv(HPCRUN_EVENT_LIST);
 
@@ -978,6 +981,8 @@ monitor_fini_process(int how, void* data)
   }
 
   hpcrun_safe_enter();
+
+  monitor_fini_process_how = how;
 
   hpcrun_fini_internal();
 

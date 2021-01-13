@@ -44,10 +44,14 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+
+//******************************************************************************
+// global includes
+//******************************************************************************
+
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
-#include "audit-api.h"
 
 #include <sys/stat.h>
 #include <sys/auxv.h>
@@ -61,26 +65,46 @@
 #include <unistd.h>
 #include <ctype.h>
 #include <sched.h>
+#include <sys/mman.h>
 
-static bool verbose = false;
-static char* mainlib = NULL;
+
+
+//******************************************************************************
+// local includes
+//******************************************************************************
+
+#include "audit-api.h"
+
+
+
+//******************************************************************************
+// macros
+//******************************************************************************
+
+// define the architecture-specific GOT index where the address of loader's 
+// resolver function can be found
+
+#if defined(HOST_CPU_x86_64) || defined(HOST_CPU_x86)
+#define GOT_resolver_index 2
+#elif defined(HOST_CPU_PPC)
+#define GOT_resolver_index 0
+#elif defined(HOST_CPU_ARM64)
+#define GOT_resolver_index 2
+#else
+#error "GOT resolver index for the host architecture is unknown"
+#endif
+
+
+
+//******************************************************************************
+// type declarations
+//******************************************************************************
 
 enum hpcrun_state {
   state_awaiting, state_found, state_attached,
   state_connecting, state_connected, state_disconnected,
 };
-static enum hpcrun_state state = state_awaiting;
 
-static auditor_hooks_t hooks;
-static auditor_attach_pfn_t pfn_init = NULL;
-static uintptr_t* mainlib_cookie = NULL;
-
-static void mainlib_connected(const char*);
-static auditor_exports_t exports = {
-  .mainlib_connected = mainlib_connected,
-  .pipe = pipe, .close = close, .waitpid = waitpid,
-  .clone = clone, .execve = execve,
-};
 
 struct buffered_entry_t {
   struct link_map* map;
@@ -90,36 +114,58 @@ struct buffered_entry_t {
   struct buffered_entry_t* next;
 } *buffer = NULL;
 
-unsigned int la_version(unsigned int version) {
-  if(version < 1) return 0;
 
-  // Read in our arguments
-  verbose = getenv("HPCRUN_AUDIT_DEBUG");
+enum audit_open_flags {
+  AO_NONE = 0x0,
+  AO_VDSO = 0x1,
+};
 
-  mainlib = realpath(getenv("HPCRUN_AUDIT_MAIN_LIB"), NULL);
-  if(verbose)
-    fprintf(stderr, "[audit] Awaiting mainlib `%s'\n", mainlib);
 
-  // Generate the purified environment before the app changes it
-  // NOTE: Consider removing only ourselves to allow for Spindle-like optimizations.
-  {
-    size_t envsz = 0;
-    for(char** e = environ; *e != NULL; e++) envsz++;
-    exports.pure_environ = malloc((envsz+1)*sizeof exports.pure_environ[0]);
-    size_t idx = 0;
-    for(char** e = environ; *e != NULL; e++) {
-      if(strncmp(*e, "LD_PRELOAD=", 11) == 0) continue;
-      if(strncmp(*e, "LD_AUDIT=", 9) == 0) continue;
-      exports.pure_environ[idx++] = *e;
+
+//******************************************************************************
+// local data
+//******************************************************************************
+
+static bool verbose = false;
+static char* mainlib = NULL;
+static bool disable_plt_call_opt = false;
+static ElfW(Addr) dl_runtime_resolver_ptr = 0;
+
+static enum hpcrun_state state = state_awaiting;
+
+static auditor_hooks_t hooks;
+static auditor_attach_pfn_t pfn_init = NULL;
+static uintptr_t* mainlib_cookie = NULL;
+
+static void mainlib_connected(const char*);
+
+static auditor_exports_t exports = {
+  .mainlib_connected = mainlib_connected,
+  .pipe = pipe, .close = close, .waitpid = waitpid,
+  .clone = clone, .execve = execve
+};
+
+static struct buffered_entry_t* obj_update_list = NULL;
+
+
+
+//******************************************************************************
+// private operations
+//******************************************************************************
+
+static ElfW(Addr) * get_plt_got_start(ElfW(Dyn) * dyn_init) {
+  ElfW(Dyn) *dyn;
+  for (dyn = dyn_init; dyn->d_tag != DT_NULL; dyn++) {
+    if (dyn->d_tag == DT_PLTGOT) {
+      return (ElfW(Addr) *) dyn->d_un.d_ptr;
     }
-    exports.pure_environ[idx] = NULL;
   }
-
-  return 1;
+  return NULL;
 }
 
+
 // Helper to call the open hook, when you only have the link_map.
-static void hook_open(uintptr_t* cookie, struct link_map* map) {
+static void hook_open(uintptr_t* cookie, struct link_map* map, enum audit_open_flags ao_flags) {
   // Allocate some space for our extra bits, and fill it.
   auditor_map_entry_t* entry = malloc(sizeof *entry);
 
@@ -197,8 +243,13 @@ static void hook_open(uintptr_t* cookie, struct link_map* map) {
       }
     } else abort();
   }
-  entry->start = (void*)map->l_addr + start;
-  entry->end = (void*)map->l_addr + end;
+
+  // load module.  we must adjust it by start so that it has the proper
+  // base address value for the subsequent calculations.
+  if (ao_flags & AO_VDSO) map->l_addr -= (intptr_t) start;
+
+  entry->start = (void*)map->l_addr + (intptr_t) start;
+  entry->end = (void*)map->l_addr + (intptr_t) end;
 
   // Since we don't use dl_iterate_phdr, we have to reconsitute its data.
   entry->dl_info.dlpi_addr = (ElfW(Addr))map->l_addr;
@@ -213,12 +264,17 @@ static void hook_open(uintptr_t* cookie, struct link_map* map) {
                       + sizeof entry->dl_info.dlpi_phnum;
 
   if(verbose)
-    fprintf(stderr, "[audit] Delivering objopen for `%s'\n", entry->path);
+    fprintf(stderr, "[audit] Delivering objopen for `%s' [%p, %p)"
+	    " dl_info.dlpi_addr = %p\n", entry->path, entry->start, 
+	    entry->end, entry->dl_info.dlpi_addr);
+
   hooks.open(entry);
+
   if(cookie)
     *cookie = (uintptr_t)entry;
   else free(entry);
 }
+
 
 // Search a link_map's (dynamic) symbol table until we find the given symbol.
 static void* get_symbol(struct link_map* map, const char* name) {
@@ -240,7 +296,150 @@ static void* get_symbol(struct link_map* map, const char* name) {
   }
 }
 
+
+static void change_memory_protection(void* address) {
+  unsigned long start_page, end_page;
+  static unsigned long pagesize;
+
+  if (!pagesize)
+    pagesize = getpagesize();
+
+  start_page = ((unsigned long) address) & ~(pagesize-1);
+  end_page = (((unsigned long) address) + pagesize);
+
+  // the page containing the GOT entry with the resolver address may
+  // not be writable. we must make the page writable before updating
+  // the resolver.  
+  //
+  // we also add execute permission to the page because the loader may
+  // arrange the address space so that multiple libraries share a
+  // page.  in this case, the GOT table from one library and code from
+  // the next library may be on the same page. this case occurs in
+  // practice.
+  mprotect((void *) start_page, end_page - start_page, 
+	   PROT_READ | PROT_WRITE | PROT_EXEC);
+}
+
+
+static void update_objects_gotplt() {
+  // Iterate every object and update pltgot
+  for (struct buffered_entry_t* entry = obj_update_list; entry != NULL;) {
+    ElfW(Addr)* plt_got = get_plt_got_start(entry->map->l_ld);
+    if (plt_got != NULL) {
+      // .pltgot may not necessarily be writable
+      change_memory_protection(&plt_got[GOT_resolver_index]);
+      plt_got[GOT_resolver_index] = dl_runtime_resolver_ptr;
+    }
+    struct buffered_entry_t* prev = entry;
+    entry = entry->next;
+    free(prev);
+  }
+  obj_update_list = NULL;
+}
+
+
+// Transition to connected, once the mainlib is ready.
+static void mainlib_connected(const char* vdso_path) {
+  if(state >= state_connected) return;
+  if(state < state_attached) {
+    fprintf(stderr, "[audit] Attempt to connect before attached!\n");
+    abort();
+  }
+
+  // Reverse the stack of buffered notifications, so they get reported in order.
+  struct buffered_entry_t* queue = NULL;
+  while(buffer != NULL) {
+   struct buffered_entry_t* next = buffer->next;
+   buffer->next = queue;
+   queue = buffer;
+   buffer = next;
+  }
+
+  // Drain the buffer and deliver everything that happened before time begins.
+  if(verbose)
+    fprintf(stderr, "[audit] Draining buffered objopens\n");
+  while(queue != NULL) {
+    hook_open(queue->cookie, queue->map, AO_NONE);
+    struct buffered_entry_t* next = queue->next;
+    free(queue);
+    queue = next;
+  }
+
+  // Try to get our own linkmap, and let the mainlib know about us.
+  // Obviously there is no cookie, we never notify a close from these.
+  struct link_map* map;
+  Dl_info info;
+  dladdr1(la_version, &info, (void**)&map, RTLD_DL_LINKMAP);
+  hook_open(NULL, map, AO_NONE);
+
+  // Add an entry for vDSO, because we don't get it otherwise.
+  uintptr_t vdso = getauxval(AT_SYSINFO_EHDR);
+  if(vdso != 0) {
+    struct link_map* mvdso = malloc(sizeof *mvdso);
+    mvdso->l_addr = vdso;
+    mvdso->l_name = vdso_path ? (char*)vdso_path : "[vdso]";
+    mvdso->l_ld = NULL;  // NOTE: Filled by hook_open
+    mvdso->l_next = mvdso->l_prev = NULL;
+    hook_open(NULL, mvdso, AO_VDSO);
+  }
+
+  if(verbose)
+    fprintf(stderr, "[audit] Auditor is now connected\n");
+  state = state_connected;
+}
+
+
+
+//******************************************************************************
+// interface operations
+//******************************************************************************
+
+unsigned int la_version(unsigned int version) {
+  if(version < 1) return 0;
+
+  // Check if we need to optimize PLT calls
+  disable_plt_call_opt = getenv("HPCRUN_AUDIT_DISABLE_PLT_CALL_OPT");
+  if (!disable_plt_call_opt) {
+    ElfW(Addr)* plt_got = get_plt_got_start(_DYNAMIC);
+    if (plt_got != NULL) {
+      dl_runtime_resolver_ptr = plt_got[GOT_resolver_index];
+    }
+  }
+
+  // Read in our arguments
+  verbose = getenv("HPCRUN_AUDIT_DEBUG");
+
+  mainlib = realpath(getenv("HPCRUN_AUDIT_MAIN_LIB"), NULL);
+  if(verbose)
+    fprintf(stderr, "[audit] Awaiting mainlib `%s'\n", mainlib);
+
+  // Generate the purified environment before the app changes it
+  // NOTE: Consider removing only ourselves to allow for Spindle-like optimizations.
+  {
+    size_t envsz = 0;
+    for(char** e = environ; *e != NULL; e++) envsz++;
+    exports.pure_environ = malloc((envsz+1)*sizeof exports.pure_environ[0]);
+    size_t idx = 0;
+    for(char** e = environ; *e != NULL; e++) {
+      if(strncmp(*e, "LD_PRELOAD=", 11) == 0) continue;
+      if(strncmp(*e, "LD_AUDIT=", 9) == 0) continue;
+      exports.pure_environ[idx++] = *e;
+    }
+    exports.pure_environ[idx] = NULL;
+  }
+
+  return 1;
+}
+
+
 unsigned int la_objopen(struct link_map* map, Lmid_t lmid, uintptr_t* cookie) {
+  if (dl_runtime_resolver_ptr) {
+    // We record the open objects and then later overwrite ldso pointers
+    struct buffered_entry_t* new_entry = (struct  buffered_entry_t*)malloc(sizeof(struct buffered_entry_t));
+    new_entry->map = map;
+    new_entry->next = obj_update_list;
+    obj_update_list = new_entry;
+  }
   switch(state) {
   case state_awaiting: {
     // If this is libhpcrun.so, nab the initialization bits and transition.
@@ -275,7 +474,7 @@ unsigned int la_objopen(struct link_map* map, Lmid_t lmid, uintptr_t* cookie) {
   }
   case state_connected:
     // If we're already connected, just call the hook.
-    hook_open(cookie, map);
+    hook_open(cookie, map, AO_NONE);
     return 0;
   case state_disconnected:
     // We just ignore things that happen after disconnection.
@@ -286,60 +485,16 @@ unsigned int la_objopen(struct link_map* map, Lmid_t lmid, uintptr_t* cookie) {
   abort();  // unreachable
 }
 
-// Transition to connected, once the mainlib is ready.
-void mainlib_connected(const char* vdso_path) {
-  if(state >= state_connected) return;
-  if(state < state_attached) {
-    fprintf(stderr, "[audit] Attempt to connect before attached!\n");
-    abort();
-  }
 
-  // Reverse the stack of buffered notifications, so they get reported in order.
-  struct buffered_entry_t* queue = NULL;
-  while(buffer != NULL) {
-   struct buffered_entry_t* next = buffer->next;
-   buffer->next = queue;
-   queue = buffer;
-   buffer = next;
-  }
-
-  // Drain the buffer and deliver everything that happened before time begins.
-  if(verbose)
-    fprintf(stderr, "[audit] Draining buffered objopens\n");
-  while(queue != NULL) {
-    hook_open(queue->cookie, queue->map);
-    struct buffered_entry_t* next = queue->next;
-    free(queue);
-    queue = next;
-  }
-
-  // Try to get our own linkmap, and let the mainlib know about us.
-  // Obviously there is no cookie, we never notify a close from these.
-  struct link_map* map;
-  Dl_info info;
-  dladdr1(la_version, &info, (void**)&map, RTLD_DL_LINKMAP);
-  hook_open(NULL, map);
-
-  // Add an entry for vDSO, because we don't get it otherwise.
-  uintptr_t vdso = getauxval(AT_SYSINFO_EHDR);
-  if(vdso != 0) {
-    struct link_map* mvdso = malloc(sizeof *mvdso);
-    mvdso->l_addr = vdso;
-    mvdso->l_name = vdso_path ? (char*)vdso_path : "[vdso]";
-    mvdso->l_ld = NULL;  // NOTE: Filled by hook_open
-    mvdso->l_next = mvdso->l_prev = NULL;
-    hook_open(NULL, mvdso);
-  }
-
-  if(verbose)
-    fprintf(stderr, "[audit] Auditor is now connected\n");
-  state = state_connected;
-}
-
-static unsigned int previous = LA_ACT_CONSISTENT;
 void la_activity(uintptr_t* cookie, unsigned int flag) {
-  // If we've hit consistency and know where libhpcrun is, initialize it.
+  static unsigned int previous = LA_ACT_CONSISTENT;
+
   if(flag == LA_ACT_CONSISTENT) {
+    if (dl_runtime_resolver_ptr && obj_update_list != NULL) {
+      update_objects_gotplt();
+    }
+
+    // If we've hit consistency and know where libhpcrun is, initialize it.
     switch(state) {
     case state_awaiting:
       break;
@@ -372,6 +527,7 @@ void la_activity(uintptr_t* cookie, unsigned int flag) {
   previous = flag;
 }
 
+
 void la_preinit(uintptr_t* cookie) {
   if(state == state_attached) {
     if(verbose)
@@ -380,6 +536,7 @@ void la_preinit(uintptr_t* cookie) {
     hooks.initialize();
   }
 }
+
 
 unsigned int la_objclose(uintptr_t* cookie) {
   switch(state) {

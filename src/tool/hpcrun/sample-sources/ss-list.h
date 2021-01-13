@@ -58,9 +58,13 @@
 //
 //******************************************************************************
 
+#include <include/hpctoolkit-config.h>
+
 SAMPLE_SOURCE_DECL_MACRO(ga)
 SAMPLE_SOURCE_DECL_MACRO(io)  
+#ifdef ENABLE_CLOCK_REALTIME
 SAMPLE_SOURCE_DECL_MACRO(itimer)  
+#endif
 
 #ifdef HPCRUN_SS_LINUX_PERF
 SAMPLE_SOURCE_DECL_MACRO(linux_perf)  
@@ -80,9 +84,13 @@ SAMPLE_SOURCE_DECL_MACRO(directed_blame)
 SAMPLE_SOURCE_DECL_MACRO(retcnt)
 #endif
 
-//#ifdef HPCRUN_SS_PAPI_C_CUPTI
+#ifdef HPCRUN_SS_PAPI_C_CUPTI
 SAMPLE_SOURCE_DECL_MACRO(papi_c_cupti)
-//#endif
+#endif
+
+#ifdef HPCRUN_SS_PAPI_C_ROCM
+SAMPLE_SOURCE_DECL_MACRO(papi_c_rocm)
+#endif
 
 #ifdef HPCRUN_SS_NVIDIA
 SAMPLE_SOURCE_DECL_MACRO(nvidia_gpu)

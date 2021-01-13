@@ -29,7 +29,8 @@
 #include <string>
 
 
-#ifdef OPT_ENABLE_IGC
+
+#ifdef ENABLE_IGC
 #include <iga/kv.hpp>
 
 #define MAX_STR_SIZE 1024
@@ -74,6 +75,7 @@ class GenBinaryDecoder {
  private:
   KernelView kernel_view_;
 };
-#endif // OPT_ENABLE_IGC
+
+#endif // ENABLE_IGC
 
 #endif // PTI_SAMPLES_UTILS_GEN_BINARY_DECODER_H_

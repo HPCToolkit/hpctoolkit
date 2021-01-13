@@ -45,7 +45,8 @@
 
 //***************************************************************************
 
-#ifdef OPT_ENABLE_IGC
+
+#ifdef ENABLE_IGC
 
 //******************************************************************************
 // system includes
@@ -262,4 +263,5 @@ readIntelCFG
   return false;
 }
 
-#endif // OPT_ENABLE_IGC
+
+#endif // ENABLE_IGC

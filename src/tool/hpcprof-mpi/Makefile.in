@@ -148,7 +148,7 @@ am__DEPENDENCIES_3 = $(HPCLIB_Analysis) $(HPCLIB_Banal_Simple) \
 	$(HPCLIB_ProfXML) $(HPCLIB_Prof) $(HPCLIB_Binutils) \
 	$(HPCLIB_ProfLean) $(HPCLIB_ISA) $(am__DEPENDENCIES_2) \
 	$(HPCLIB_XML) $(HPCLIB_Support) $(HPCLIB_SupportLean) \
-	$(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(HPCLIB_gettext)
 hpcprof_mpi_bin_DEPENDENCIES = $(am__DEPENDENCIES_3)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -402,6 +402,7 @@ MPI_INC = @MPI_INC@
 MPI_PROTO_FILE = @MPI_PROTO_FILE@
 NM = @NM@
 NMEDIT = @NMEDIT@
+OBJCOPY = @OBJCOPY@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 OPENMP_FLAG = @OPENMP_FLAG@
@@ -414,6 +415,7 @@ OPT_CUPTI_LDFLAGS = @OPT_CUPTI_LDFLAGS@
 OPT_GTPIN = @OPT_GTPIN@
 OPT_GTPIN_IFLAGS = @OPT_GTPIN_IFLAGS@
 OPT_GTPIN_LDFLAGS = @OPT_GTPIN_LDFLAGS@
+OPT_GTPIN_LIBDIR = @OPT_GTPIN_LIBDIR@
 OPT_IGC = @OPT_IGC@
 OPT_IGC_IFLAGS = @OPT_IGC_IFLAGS@
 OPT_IGC_LDFLAGS = @OPT_IGC_LDFLAGS@
@@ -423,15 +425,14 @@ OPT_LEVEL0_LDFLAGS = @OPT_LEVEL0_LDFLAGS@
 OPT_METRICS_DISCOVERY = @OPT_METRICS_DISCOVERY@
 OPT_METRICS_DISCOVERY_IFLAGS = @OPT_METRICS_DISCOVERY_IFLAGS@
 OPT_METRICS_DISCOVERY_LDFLAGS = @OPT_METRICS_DISCOVERY_LDFLAGS@
-OPT_OBJCOPY = @OPT_OBJCOPY@
 OPT_OPENCL_IFLAGS = @OPT_OPENCL_IFLAGS@
 OPT_PAPI = @OPT_PAPI@
 OPT_PAPI_IFLAGS = @OPT_PAPI_IFLAGS@
 OPT_PAPI_LDFLAGS = @OPT_PAPI_LDFLAGS@
 OPT_PAPI_LIBPATH = @OPT_PAPI_LIBPATH@
-OPT_ROCM = @OPT_ROCM@
+OPT_PAPI_LIBS_STAT = @OPT_PAPI_LIBS_STAT@
 OPT_ROCM_IFLAGS = @OPT_ROCM_IFLAGS@
-OPT_ROCM_LDFLAGS = @OPT_ROCM_LDFLAGS@
+OPT_ROCM_LD_LIB_PATH = @OPT_ROCM_LD_LIB_PATH@
 OPT_UPC_IFLAGS = @OPT_UPC_IFLAGS@
 OPT_UPC_LDFLAGS = @OPT_UPC_LDFLAGS@
 OTOOL = @OTOOL@
@@ -506,7 +507,6 @@ datarootdir = @datarootdir@
 docdir = @docdir@
 dvidir = @dvidir@
 exec_prefix = @exec_prefix@
-export_ld_audit = @export_ld_audit@
 hash_fcn = @hash_fcn@
 hash_value = @hash_value@
 host = @host@
@@ -529,7 +529,7 @@ mkdir_p = @mkdir_p@
 my_pkglibdir = @my_pkglibdir@
 my_pkglibexecdir = @my_pkglibexecdir@
 oldincludedir = @oldincludedir@
-papi_extra_libs = @papi_extra_libs@
+path_objcopy = @path_objcopy@
 pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
@@ -569,6 +569,7 @@ HPCLIB_Prof = $(top_builddir)/src/lib/prof/libHPCprof.la
 HPCLIB_ProfXML = $(top_builddir)/src/lib/profxml/libHPCprofxml.la
 HPCLIB_ProfLean = $(top_builddir)/src/lib/prof-lean/libHPCprof-lean.la
 HPCLIB_Binutils = $(top_builddir)/src/lib/binutils/libHPCbinutils.la
+HPCLIB_gettext = $(top_builddir)/src/lib/binutils/libHPCgettext.la
 HPCLIB_ISA = $(top_builddir)/src/lib/isa/libHPCisa.la
 HPCLIB_XML = $(top_builddir)/src/lib/xml/libHPCxml.la
 HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
@@ -605,6 +606,7 @@ MYLDADD = \
 	@LZMA_PROF_MPI_LIBS@ \
 	@XERCES_LDLIBS@ \
 	@BINUTILS_LIBS@ \
+	$(HPCLIB_gettext) \
 	@HOST_HPCPROF_LDFLAGS@
 
 @HOST_CPU_X86_FAMILY_FALSE@MY_LIB_XED = 

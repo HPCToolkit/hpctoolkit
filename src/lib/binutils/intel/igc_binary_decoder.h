@@ -25,7 +25,7 @@
 
 #include <memory.h>
 
-#ifdef OPT_ENABLE_IGC
+#ifdef ENABLE_IGC
 #include <igc/ocl_igc_shared/executable_format/patch_list.h>
 
 #include <metrics_discovery_internal_api.h>
@@ -114,6 +114,6 @@ class IgcBinaryDecoder {
 private:
     std::vector<uint8_t> binary_;
 };
-#endif // OPT_ENABLE_IGC
+#endif // ENABLE_IGC
 
 #endif

@@ -17,7 +17,7 @@
 #    https://spack.readthedocs.io/en/latest/basic_usage.html#specs-dependencies
 #    https://spack.readthedocs.io/en/latest/build_settings.html
 #
-#  Last revised: September 11, 2020.
+#  Last revised: October 26, 2020.
 #
 packages:
 
@@ -43,10 +43,13 @@ packages:
   # Note: the following packages have variants that may need changing
   # for your local system.
   #
-  #   1. boost -- avoid 1.68.0, it breaks the build in hpctoolkit.
-  #   1.66.0 is good for all dyninst revs.
+  #   1. binutils -- avoid 2.35, it has a bug that spews errors from
+  #   hpcprof.
   #
-  #   2. intel-tbb -- add '~tm' for AMD, Xeon Phi (KNL, etc), and very
+  #   2. boost -- avoid 1.68.0, it breaks the build in hpctoolkit.
+  #   1.66.0 is good for all dyninst revs, or 1.72.0 for recent dyninst.
+  #
+  #   3. intel-tbb -- add '~tm' for AMD, Xeon Phi (KNL, etc), and very
   #   old Intel systems that don't support transactional memory.
   #
   # Blue Gene is no longer supported.
@@ -73,6 +76,7 @@ packages:
   # line map info) and for VMA types in various places.
   #
   # Need >= 2.32 for important bug fixes.
+  # Avoid 2.35, it contains a bug that spews errors from hpcprof.
   # Hpctoolkit <= 2020.03.01 requires binutils <= 2.33.1.
   #
   # +libiberty is needed for xmalloc functions in libbfd.
@@ -87,6 +91,7 @@ packages:
   #
   # Dyninst requires >= 1.61.
   #   1.66.0 is good, works with all dyninst revs.
+  #   1.72.0 is good for recent dyninst.
   #   1.70.0 requires dyninst >= 10.1.0 (breaks earlier revs).
   #   1.69.0 requires dyninst >= 10.0.0 (breaks earlier revs).
   #   1.68.0 breaks the build for hpctoolkit.
@@ -248,7 +253,7 @@ packages:
   # else develop.  Use >= 1.4 (1.4-rc1 replaces 2018.10.12.)
   #
   # +xz is for reading compressed symbol tables.
-  # +pic is needed in master for hpcrun.
+  # +pic is required for linking with hpcrun.
   #
   libunwind:
     version:  [1.4.0, 1.5-rc1]
@@ -298,7 +303,7 @@ packages:
   #
   # Any recent version is good.
   #
-  # +pic is needed in master for hpcrun.
+  # +pic is required for linking with hpcrun.
   #
   xz:
     version:  [5.2.5]

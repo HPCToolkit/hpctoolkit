@@ -80,7 +80,7 @@ typedef struct gpu_activity_channel_t gpu_activity_channel_t;
 typedef enum {    
   GPU_ACTIVITY_UNKNOWN                 = 0,
   GPU_ACTIVITY_KERNEL                  = 1,
-  GPU_ACTIVITY_KERNEL_BLOCK            = 2,
+  GPU_ACTIVITY_KERNEL_BLOCK             = 2,  
   GPU_ACTIVITY_MEMCPY                  = 3,
   GPU_ACTIVITY_MEMCPY2                 = 4,
   GPU_ACTIVITY_MEMSET                  = 5,
