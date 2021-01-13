@@ -79,7 +79,7 @@ std::pair<int, int> V100::latency(const std::string &opcode) const {
   }
   // Use pipeline latency
   // At least 4
-  return std::pair<int, int>(4, 4);
+  return std::pair<int, int>(4, 25);
 }
 
 // XXX: not throughput
@@ -155,7 +155,7 @@ std::pair<int, int> A100::latency(const std::string &opcode) const {
   // TODO(Keren): uniform data path instructions
   // Use pipeline latency
   // At least 4
-  return std::pair<int, int>(4, 4);
+  return std::pair<int, int>(4, 25);
 }
 
 // XXX: issue latency

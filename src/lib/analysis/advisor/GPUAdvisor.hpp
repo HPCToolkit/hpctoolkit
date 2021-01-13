@@ -194,10 +194,10 @@ class GPUAdvisor {
                 CudaParse::Block *from_block, int latency_issue, int latency,
                 std::set<CudaParse::Block *> &visited_blocks, std::vector<CudaParse::Block *> &path,
                 std::vector<std::vector<CudaParse::Block *>> &paths, TrackType track_type,
-                bool fixed);
+                bool fixed, int hidden_threshold, int barrier_threshold);
 
   void trackDepInit(int to_vma, int from_vma, int dst, CCTEdgePathMap &cct_edge_path_map,
-                    TrackType track_type, bool fixed);
+                    TrackType track_type, bool fixed, int hidden_threshold, int barrier_threshold);
 
   double computePathInsts(int mpi_rank, int thread_id, int from_vma, int to_vma,
                           std::vector<CudaParse::Block *> &path);

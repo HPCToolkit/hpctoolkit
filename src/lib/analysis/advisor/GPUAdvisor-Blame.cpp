@@ -205,28 +205,32 @@ void GPUAdvisor::debugCCTDepGraphNoPath(int mpi_rank, int thread_id,
   }
 
   std::cout << "Exec_deps" << std::endl;
-  for (auto &iter : exec_dep_vmas) {
-    if (iter.first == 0) {
-      continue;
+  if (DEBUG_GPUADVISOR_DETAILS) {
+    for (auto &iter : exec_dep_vmas) {
+      if (iter.first == 0) {
+        continue;
+      }
+      std::cout << iter.first << "(" << static_cast<double>(iter.first) / exec_deps * 100 << "%): ";
+      for (auto vma : iter.second) {
+        std::cout << debugInstOffset(vma) << ", ";
+      }
+      std::cout << std::endl;
     }
-    std::cout << iter.first << "(" << static_cast<double>(iter.first) / exec_deps * 100 << "%): ";
-    for (auto vma : iter.second) {
-      std::cout << debugInstOffset(vma) << ", ";
-    }
-    std::cout << std::endl;
   }
   std::cout << no_path_exec_dep << "(" << no_path_exec_dep / exec_deps * 100 << "%)" << std::endl;
 
   std::cout << "Mem_deps" << std::endl;
-  for (auto &iter : mem_dep_vmas) {
-    if (iter.first == 0) {
-      continue;
+  if (DEBUG_GPUADVISOR_DETAILS) {
+    for (auto &iter : mem_dep_vmas) {
+      if (iter.first == 0) {
+        continue;
+      }
+      std::cout << iter.first << "(" << static_cast<double>(iter.first) / mem_deps * 100 << "%): ";
+      for (auto vma : iter.second) {
+        std::cout << debugInstOffset(vma) << ", ";
+      }
+      std::cout << std::endl;
     }
-    std::cout << iter.first << "(" << static_cast<double>(iter.first) / mem_deps * 100 << "%): ";
-    for (auto vma : iter.second) {
-      std::cout << debugInstOffset(vma) << ", ";
-    }
-    std::cout << std::endl;
   }
   std::cout << no_path_mem_dep << "(" << no_path_mem_dep / mem_deps * 100 << "%)" << std::endl;
 
@@ -628,7 +632,7 @@ void GPUAdvisor::trackDep(int from_vma, int to_vma, int id, CudaParse::Block *fr
                           std::set<CudaParse::Block *> &visited_blocks,
                           std::vector<CudaParse::Block *> &path,
                           std::vector<std::vector<CudaParse::Block *>> &paths, TrackType track_type,
-                          bool fixed) {
+                          bool fixed, int hidden_threshold, int barrier_threshold) {
   // The current block has been visited
   if (visited_blocks.find(from_block) != visited_blocks.end()) {
     return;
@@ -642,6 +646,7 @@ void GPUAdvisor::trackDep(int from_vma, int to_vma, int id, CudaParse::Block *fr
   // Accumulate throughput
   bool find_def = false;
   bool hidden = false;
+  bool skip = false;
   auto start_vma = front_vma;
   auto end_vma = back_vma;
 
@@ -691,8 +696,17 @@ void GPUAdvisor::trackDep(int from_vma, int to_vma, int id, CudaParse::Block *fr
     }
 
     if (find && start_vma != (from_vma + _arch->inst_size())) {
-      find_def = true;
-      break;
+      if (barrier_threshold == -1) {
+        find_def = true;
+      } else {
+        hidden_threshold += 1;
+
+        if (hidden_threshold < barrier_threshold) {
+          skip = true;
+        } else {
+          skip = false;
+        }
+      }
     }
 
     // 2. Latency constraint
@@ -708,14 +722,14 @@ void GPUAdvisor::trackDep(int from_vma, int to_vma, int id, CudaParse::Block *fr
   if (find_def == false && hidden == false) {
     // Reach the final block
     // [front_vma, to_vma, back_vma]
-    if (to_vma <= back_vma && to_vma >= front_vma && loop_block == false) {
+    if (to_vma <= back_vma && to_vma >= front_vma && loop_block == false && skip == false) {
       paths.push_back(path);
     } else {
       for (auto *target : from_block->targets) {
         if (target->type != CudaParse::TargetType::CALL) {
           // We do not need from_vma anymore
           trackDep(0, to_vma, id, target->block, to_block, latency_issue, latency, visited_blocks,
-                   path, paths, track_type, fixed);
+                   path, paths, track_type, fixed, hidden_threshold, barrier_threshold);
         }
       }
     }
@@ -726,7 +740,7 @@ void GPUAdvisor::trackDep(int from_vma, int to_vma, int id, CudaParse::Block *fr
 }
 
 void GPUAdvisor::trackDepInit(int to_vma, int from_vma, int dst, CCTEdgePathMap &cct_edge_path_map,
-                              TrackType track_type, bool fixed) {
+                              TrackType track_type, bool fixed, int hidden_threshold, int barrier_threshold) {
   // Search for all possible paths from dst to src.
   // Since the single path rate here is expected to be high,
   // The following code section only executes few times.
@@ -738,9 +752,9 @@ void GPUAdvisor::trackDepInit(int to_vma, int from_vma, int dst, CCTEdgePathMap 
   std::set<CudaParse::Block *> visited_blocks;
   std::vector<CudaParse::Block *> path;
   std::vector<std::vector<CudaParse::Block *>> paths;
-  auto latency = _vma_prop_map.at(from_vma).latency_upper;
+  auto latency = fixed ? _vma_prop_map.at(from_vma).latency_lower : _vma_prop_map.at(from_vma).latency_upper;
   trackDep(from_vma, to_vma, dst, from_block, to_block, 0, latency, visited_blocks, path, paths,
-           track_type, fixed);
+           track_type, fixed, hidden_threshold, barrier_threshold);
 
   // Merge paths
   for (auto &path : paths) {
@@ -794,6 +808,7 @@ void GPUAdvisor::pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
     auto to_vma = to->lmIP();
     auto *to_inst = _vma_prop_map.at(to_vma).inst;
     auto *from_inst = _vma_prop_map.at(from_vma).inst;
+    auto barrier_threshold = to_inst->barrier_threshold;
     bool fixed = from_inst->control.read == CudaParse::InstructionStat::BARRIER_NONE &&
       from_inst->control.write == CudaParse::InstructionStat::BARRIER_NONE;
 
@@ -802,7 +817,7 @@ void GPUAdvisor::pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
       // Find the dst reg that causes dependency
       auto assign_iter = to_inst->assign_pcs.find(dst);
       if (assign_iter != to_inst->assign_pcs.end()) {
-        trackDepInit(to_vma, from_vma, dst, cct_edge_path_map, TRACK_REG, fixed);
+        trackDepInit(to_vma, from_vma, dst, cct_edge_path_map, TRACK_REG, fixed, -1, -1);
       }
     }
 
@@ -810,7 +825,7 @@ void GPUAdvisor::pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
     for (auto pdst : from_inst->pdsts) {
       auto passign_iter = to_inst->passign_pcs.find(pdst);
       if (passign_iter != to_inst->passign_pcs.end()) {
-        trackDepInit(to_vma, from_vma, pdst, cct_edge_path_map, TRACK_PRED_REG, fixed);
+        trackDepInit(to_vma, from_vma, pdst, cct_edge_path_map, TRACK_PRED_REG, fixed, -1, -1);
       }
     }
 
@@ -819,7 +834,7 @@ void GPUAdvisor::pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
       // Find the dst barrier that causes dependency
       auto bassign_iter = to_inst->bassign_pcs.find(bdst);
       if (bassign_iter != to_inst->bassign_pcs.end()) {
-        trackDepInit(to_vma, from_vma, bdst, cct_edge_path_map, TRACK_BARRIER, fixed);
+        trackDepInit(to_vma, from_vma, bdst, cct_edge_path_map, TRACK_BARRIER, fixed, -1, barrier_threshold);
       }
     }
 
@@ -828,7 +843,7 @@ void GPUAdvisor::pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
       // Find the dst that causes dependency
       auto uassign_iter = to_inst->uassign_pcs.find(udst);
       if (uassign_iter != to_inst->uassign_pcs.end()) {
-        trackDepInit(to_vma, from_vma, udst, cct_edge_path_map, TRACK_UNIFORM, fixed);
+        trackDepInit(to_vma, from_vma, udst, cct_edge_path_map, TRACK_UNIFORM, fixed, -1, -1);
       }
     }
 
@@ -836,7 +851,7 @@ void GPUAdvisor::pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
     for (auto pred_dst : from_inst->pdsts) {
       // Find the dst barrier that causes dependency
       if (to_inst->predicate == pred_dst) {
-        trackDepInit(to_vma, from_vma, pred_dst, cct_edge_path_map, TRACK_PREDICATE, fixed);
+        trackDepInit(to_vma, from_vma, pred_dst, cct_edge_path_map, TRACK_PREDICATE, fixed, -1, -1);
       }
     }
 
@@ -1526,6 +1541,12 @@ void GPUAdvisor::blame(CCTBlames &cct_blames) {
       initCCTDepGraph(mpi_rank, thread_id, cct_dep_graph);
 
       if (DEBUG_GPUADVISOR) {
+        std::cout << "CCT no path: " << std::endl;
+        debugCCTDepGraphNoPath(mpi_rank, thread_id, cct_dep_graph);
+        std::cout << std::endl;
+      }
+
+      if (DEBUG_GPUADVISOR) {
         std::cout << "CCT dependency graph summary: " << std::endl;
         debugCCTDepGraphSummary(mpi_rank, thread_id, cct_dep_graph);
         std::cout << std::endl;
@@ -1541,6 +1562,12 @@ void GPUAdvisor::blame(CCTBlames &cct_blames) {
       // 2.1 Opcode constraints
       pruneCCTDepGraphOpcode(mpi_rank, thread_id, cct_dep_graph);
 
+      if (DEBUG_GPUADVISOR) {
+        std::cout << "CCT no path: " << std::endl;
+        debugCCTDepGraphNoPath(mpi_rank, thread_id, cct_dep_graph);
+        std::cout << std::endl;
+      }
+
       if (DEBUG_GPUADVISOR_DETAILS) {
         std::cout << "CCT dependency graph after opcode pruning: " << std::endl;
         debugCCTDepGraph(mpi_rank, thread_id, cct_dep_graph);
@@ -1549,6 +1576,12 @@ void GPUAdvisor::blame(CCTBlames &cct_blames) {
 
       // 2.2 Barrier constraints
       pruneCCTDepGraphBarrier(mpi_rank, thread_id, cct_dep_graph);
+
+      if (DEBUG_GPUADVISOR) {
+        std::cout << "CCT no path: " << std::endl;
+        debugCCTDepGraphNoPath(mpi_rank, thread_id, cct_dep_graph);
+        std::cout << std::endl;
+      }
 
       if (DEBUG_GPUADVISOR_DETAILS) {
         std::cout << "CCT dependency graph after barrier pruning: " << std::endl;
@@ -1560,6 +1593,12 @@ void GPUAdvisor::blame(CCTBlames &cct_blames) {
       CCTEdgePathMap cct_edge_path_map;
       pruneCCTDepGraphLatency(mpi_rank, thread_id, cct_dep_graph, cct_edge_path_map);
 
+      if (DEBUG_GPUADVISOR) {
+        std::cout << "CCT no path: " << std::endl;
+        debugCCTDepGraphNoPath(mpi_rank, thread_id, cct_dep_graph);
+        std::cout << std::endl;
+      }
+
       if (DEBUG_GPUADVISOR_DETAILS) {
         std::cout << "CCT dependency graph after latency pruning: " << std::endl;
         debugCCTDepGraph(mpi_rank, thread_id, cct_dep_graph);
@@ -1569,12 +1608,6 @@ void GPUAdvisor::blame(CCTBlames &cct_blames) {
       if (DEBUG_GPUADVISOR_DETAILS) {
         std::cout << "CCT pure stall: " << std::endl;
         debugCCTDepGraphStallExec(mpi_rank, thread_id, cct_dep_graph);
-        std::cout << std::endl;
-      }
-
-      if (DEBUG_GPUADVISOR_DETAILS) {
-        std::cout << "CCT no path: " << std::endl;
-        debugCCTDepGraphNoPath(mpi_rank, thread_id, cct_dep_graph);
         std::cout << std::endl;
       }
 

@@ -195,6 +195,12 @@ void analyze_instruction<INS_TYPE_CONTROL>(Instruction &inst, std::string &op) {
   }
 
   op += type;
+
+  for (auto &modifier : inst.modifiers) {
+    if (modifier == "LE" || modifier == "LT" || modifier == "GE" || modifier == "GT") {
+      op += "." + modifier;
+    }
+  }
 }
 
 template <>
@@ -423,6 +429,18 @@ InstructionStat::InstructionStat(Instruction *inst) {
       }
     }
 
+    // Barrier regster
+    pos = inst->operands[0].find("SB");
+    if (pos != std::string::npos) {
+      auto reg = convert_reg(inst->operands[0], pos + 2);
+      if (reg == -1) {
+        // Use special registers in destation as a placeholder
+        // Skip this instruction
+        return;
+      }
+      this->bsrcs.push_back(reg);
+    }
+
     for (size_t i = 1; i < inst->operands.size(); ++i) {
       if (INSTRUCTION_ANALYZER_DEBUG) {
         std::cout << inst->operands[i] << " ";
@@ -491,6 +509,18 @@ InstructionStat::InstructionStat(Instruction *inst) {
             this->upsrcs.push_back(reg);
           } else {
             this->psrcs.push_back(reg);
+          }
+        }
+      }
+
+      pos = inst->operands[i].find("0x");
+      if (pos != std::string::npos) {
+        // Analyze immediate for barrier instruction only
+        if (this->op.find("DEPBAR") != std::string::npos) {
+          if (this->op.find(".LE") != std::string::npos) {
+            this->barrier_threshold = std::stoi(inst->operands[i]);
+          } else if (this->op.find(".LT") != std::string::npos) {
+            this->barrier_threshold = std::stoi(inst->operands[i]) - 1;
           }
         }
       }
@@ -641,7 +671,7 @@ static int TRACK_LIMIT = 8;
 static void trackDependency(const std::map<int, InstructionStat *> &inst_stat_map,
                             Dyninst::Address inst_addr, Dyninst::Address func_addr,
                             std::map<int, int> &predicate_map, Dyninst::NodeIterator exit_node_iter,
-                            InstructionStat *inst_stat, int step) {
+                            InstructionStat *inst_stat, int barriers, int step) {
   if (step >= TRACK_LIMIT) {
     return;
   }
@@ -694,6 +724,10 @@ static void trackDependency(const std::map<int, InstructionStat *> &inst_stat_ma
         }
       }
 
+      if (barriers != -1) {
+        barriers -= 1;
+      }
+
       if (INSTRUCTION_ANALYZER_DEBUG) {
         std::cout << " barrier " << reg_id << std::endl;
       }
@@ -744,17 +778,17 @@ static void trackDependency(const std::map<int, InstructionStat *> &inst_stat_ma
       }
     }
 
-    if (slice_inst->predicate_flag == InstructionStat::PREDICATE_NONE) {
+    if (slice_inst->predicate_flag == InstructionStat::PREDICATE_NONE && barriers == -1) {
       // 1. No predicate, stop immediately
     } else if (inst_stat->predicate == slice_inst->predicate &&
-               inst_stat->predicate_flag == slice_inst->predicate_flag) {
+               inst_stat->predicate_flag == slice_inst->predicate_flag && barriers == -1) {
       // 2. Find an exact match, stop immediately
     } else {
-      if ((slice_inst->predicate_flag == InstructionStat::PREDICATE_TRUE &&
+      if (((slice_inst->predicate_flag == InstructionStat::PREDICATE_TRUE &&
            predicate_map[-(slice_inst->predicate + 1)] > 0) ||
           (slice_inst->predicate_flag == InstructionStat::PREDICATE_FALSE &&
-           predicate_map[(slice_inst->predicate + 1)] > 0)) {
-        // 3. Stop if find both !@PI and @PI
+           predicate_map[(slice_inst->predicate + 1)] > 0)) && barriers == -1) {
+        // 3. Stop if find both !@PI and @PI=
         // add one to avoid P0
       } else {
         // 4. Continue search
@@ -765,7 +799,7 @@ static void trackDependency(const std::map<int, InstructionStat *> &inst_stat_ma
         }
 
         trackDependency(inst_stat_map, inst_addr, func_addr, predicate_map, in_begin, inst_stat,
-                        step + 1);
+                        barriers, step + 1);
 
         // Clear
         if (slice_inst->predicate_flag == InstructionStat::PREDICATE_TRUE) {
@@ -858,8 +892,9 @@ void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_s
 #ifdef FAST_SLICING
           TRACK_LIMIT = 1;
 #endif
+          auto barrier_threshold = inst_stat->barrier_threshold;
           trackDependency(inst_stat_map, inst_addr, func_addr, predicate_map, exit_begin, inst_stat,
-                          0);
+                          barrier_threshold, 0);
         }
       }
     }
@@ -930,6 +965,7 @@ bool dumpCudaInstructions(const std::string &file_path, const std::vector<Functi
           ptree_inst.put("pc", inst->offset - function->address);
           ptree_inst.put("op", inst->inst_stat->op);
           ptree_inst.put("pred", inst->inst_stat->predicate);
+          ptree_inst.put("barrier_threshold", inst->inst_stat->barrier_threshold);
 
           boost::property_tree::ptree ptree_predicate_assign_pcs;
           for (auto predicate_assign_pc : inst->inst_stat->predicate_assign_pcs) {
@@ -1090,6 +1126,8 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
         int pc = ptree_inst.second.get<int>("pc", 0);
         std::string op = ptree_inst.second.get<std::string>("op", "");
         int pred = ptree_inst.second.get<int>("pred", -1);
+        int barrier_threshold = ptree_inst.second.get<int>("barrier_threshold", -1);
+
         InstructionStat::PredicateFlag pred_flag =
             static_cast<InstructionStat::PredicateFlag>(ptree_inst.second.get<int>("pred_flag", 0));
         std::vector<int> pred_assign_pcs;
@@ -1170,8 +1208,8 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
         fill_srcs("bsrcs", "bassign_pcs", bsrcs, bassign_pcs);
 
         auto *inst_stat =
-            new InstructionStat(op, pc, pred, pred_flag, pred_assign_pcs, dsts, srcs, pdsts, psrcs,
-                                bdsts, bsrcs, udsts, usrcs, updsts, upsrcs, assign_pcs, passign_pcs,
+            new InstructionStat(op, pc, pred, barrier_threshold, pred_flag, pred_assign_pcs, dsts, srcs,
+                                pdsts, psrcs, bdsts, bsrcs, udsts, usrcs, updsts, upsrcs, assign_pcs, passign_pcs,
                                 bassign_pcs, uassign_pcs, upassign_pcs, control);
         auto *inst = new Instruction(inst_stat);
         inst_map[pc] = inst;

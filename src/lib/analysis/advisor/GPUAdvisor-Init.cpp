@@ -333,6 +333,13 @@ void GPUAdvisor::configInst(const std::string &lm_name,
       }
     }
 
+    for (auto &inst_iter : inst->uassign_pcs) {
+      for (auto pc : inst_iter.second) {
+        auto *dep_inst = _vma_prop_map.at(pc).inst;
+        _inst_dep_graph.addEdge(dep_inst, inst);
+      }
+    }
+
     for (auto &inst_iter : inst->bassign_pcs) {
       for (auto pc : inst_iter.second) {
         auto *dep_inst = _vma_prop_map.at(pc).inst;
@@ -380,7 +387,7 @@ void GPUAdvisor::configGPURoot(Prof::CCT::ADynNode *gpu_root, Prof::CCT::ADynNod
     // Clear previous vma->prof mapping
     prop.prof_node = NULL;
   }
-
+  
   // Update vma->prof mapping
   Prof::CCT::ANodeIterator prof_it(_gpu_root, NULL /*filter*/, true /*leavesOnly*/,
                                    IteratorStack::PreOrder);
