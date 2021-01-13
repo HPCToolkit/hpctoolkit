@@ -421,7 +421,7 @@ InstructionStat::InstructionStat(Instruction *inst) {
         // Skip this instruction
         return;
       }
-      if (inst->operands[0].find("UP")) {
+      if (inst->operands[0].find("UP") != std::string::npos) {
         // uniform predicate register
         this->updsts.push_back(reg);
       } else {
@@ -575,6 +575,11 @@ void relocateCudaInstructionStats(std::vector<Function *> &functions) {
           for (auto &iter : inst_stat->bassign_pcs) {
             for (auto biter = iter.second.begin(); biter != iter.second.end(); ++biter) {
               *biter += function->address;
+            }
+          }
+          for (auto &iter : inst_stat->uassign_pcs) {
+            for (auto uiter = iter.second.begin(); uiter != iter.second.end(); ++uiter) {
+              *uiter += function->address;
             }
           }
           for (auto &predicate_assign_pc : inst_stat->predicate_assign_pcs) {
@@ -861,7 +866,6 @@ void sliceCudaInstructions(const Dyninst::ParseAPI::CodeObject::funclist &func_s
       auto *inst_stat = inst_stat_map.at(inst_addr);
 
       if (INSTRUCTION_ANALYZER_DEBUG) {
-        std::cout << inst_stat->pc << std::endl;
         std::cout << "try to find inst_addr " << inst_addr - func_addr << std::endl;
       }
 

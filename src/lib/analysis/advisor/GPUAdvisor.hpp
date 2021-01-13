@@ -190,6 +190,10 @@ class GPUAdvisor {
                                CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph,
                                CCTEdgePathMap &cct_edge_path_map);
 
+  void pruneCCTDepGraphExecution(int mpi_rank, int thread_id,
+                                 CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph,
+                                 CCTEdgePathMap &cct_edge_path_map);
+
   void trackDep(int to_vma, int from_vma, int reg, CudaParse::Block *to_block,
                 CudaParse::Block *from_block, int latency_issue, int latency,
                 std::set<CudaParse::Block *> &visited_blocks, std::vector<CudaParse::Block *> &path,
