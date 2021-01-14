@@ -46,7 +46,7 @@ using std::string;
 #include <lib/support/StrUtil.hpp>
 #include <lib/xml/xml.hpp>
 
-#define DEBUG_GPUADVISOR 1
+#define DEBUG_GPUADVISOR 0
 #define DEBUG_GPUADVISOR_DETAILS 0
 
 #define MAX2(x, y) (x > y ? x : y)
@@ -755,7 +755,6 @@ void GPUAdvisor::trackDepInit(int to_vma, int from_vma, int dst, CCTEdgePathMap 
   std::vector<CudaParse::Block *> path;
   std::vector<std::vector<CudaParse::Block *>> paths;
   auto latency = fixed ? _vma_prop_map.at(from_vma).latency_lower : _vma_prop_map.at(from_vma).latency_upper;
-  std::cout << "track " << debugInstOffset(from_vma) << " latency " << latency << std::endl;
   trackDep(from_vma, to_vma, dst, from_block, to_block, 0, latency, visited_blocks, path, paths,
            track_type, fixed, hidden_threshold, barrier_threshold);
 
