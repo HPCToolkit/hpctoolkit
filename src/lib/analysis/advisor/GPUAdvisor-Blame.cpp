@@ -985,6 +985,118 @@ void GPUAdvisor::pruneCCTDepGraphExecution(int mpi_rank, int thread_id,
   }
 }
 
+void GPUAdvisor::pruneCCTDepGraphBranch(int mpi_rank, int thread_id,
+                                        CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph,
+                                        CCTEdgePathMap &cct_edge_path_map) {
+  // Profile single path coverage
+  if (DEBUG_GPUADVISOR) {
+    std::cout << "Single path coverage before branch constraints:" << std::endl;
+    debugCCTDepGraphSinglePath(cct_dep_graph);
+    std::cout << std::endl;
+  }
+
+  auto inst_exe_pred_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_exe_pred_metric);
+  auto inst_exe_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_exe_metric);
+
+  std::vector<std::set<CCTEdge<Prof::CCT::ADynNode *>>::iterator> remove_edges;
+  for (auto iter = cct_dep_graph.edgeBegin(); iter != cct_dep_graph.edgeEnd(); ++iter) {
+    auto edge = *iter;
+    auto *from = edge.from;
+    auto from_vma = from->lmIP();
+    auto *to = edge.to;
+    auto to_vma = to->lmIP();
+
+    // Remove path if any instructions is not executed
+    std::vector<std::vector<std::vector<CudaParse::Block *>>::iterator> remove_paths;
+    // Remove if any of block on this path has no executed branch
+    for (auto path_iter = cct_edge_path_map[from_vma][to_vma].begin();
+         path_iter != cct_edge_path_map[from_vma][to_vma].end(); ++path_iter) {
+      for (size_t bi = 0; bi < path_iter->size() - 1; ++bi) {
+        auto *block = path_iter->at(bi);
+        auto *inst = block->insts.back();
+        auto inst_vma = inst->inst_stat->pc;
+
+        if (inst->inst_stat->op.find("BRANCH") == std::string::npos) {
+          continue;
+        }
+
+        // No metric with the inst
+        auto prop_iter = _vma_prop_map.find(inst_vma);
+        if (prop_iter == _vma_prop_map.end()) {
+          remove_paths.push_back(path_iter);
+          break;
+        }
+
+        // This logic only applies to branch instructions
+        auto *nxt_block = path_iter->at(bi + 1);
+        auto *nxt_inst = nxt_block->insts.front();
+        auto nxt_vma = nxt_inst->inst_stat->pc;
+        auto *prof_node = prop_iter->second.prof_node;
+        if (nxt_vma == inst_vma + _arch->inst_size()) {
+          // Fall through block
+          if (prof_node != NULL && prof_node->hasMetricSlow(inst_exe_pred_index)) {
+            if (prof_node->demandMetric(inst_exe_index) != 0 &&
+              (prof_node->demandMetric(inst_exe_pred_index) ==
+               prof_node->demandMetric(inst_exe_index))) {
+              // Always taken
+              remove_paths.push_back(path_iter);
+              break;
+            }
+          }
+        } else {
+          // Jump block
+          if (prof_node == NULL || !prof_node->hasMetricSlow(inst_exe_pred_index)) {
+            // Never taken
+            remove_paths.push_back(path_iter);
+            break;
+          }
+        }
+      }
+    }
+
+    for (auto &path_iter : remove_paths) {
+      cct_edge_path_map[from_vma][to_vma].erase(path_iter);
+    }
+
+    // If there's no satisfied path
+    if (cct_edge_path_map[from_vma][to_vma].size() == 0) {
+      // This edge can be removed
+      remove_edges.push_back(iter);
+    }
+  }
+
+  auto mem_dep_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _mem_dep_lat_metric);
+  auto exec_dep_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _exec_dep_lat_metric);
+
+  for (auto &iter : remove_edges) {
+    if (DEBUG_GPUADVISOR_DETAILS) {
+      auto edge = *iter;
+      auto *from = edge.from;
+      auto from_vma = from->lmIP();
+      auto *to = edge.to;
+      auto to_vma = to->lmIP();
+      auto mem_deps = to->demandMetric(mem_dep_index);
+      auto exec_deps = to->demandMetric(exec_dep_index);
+      std::cout << "Remove " << debugInstOffset(from_vma) << " -> " << debugInstOffset(to_vma)
+                << ", Mem_deps: " << mem_deps << ", Exec_deps: " << exec_deps << std::endl;
+    }
+    cct_dep_graph.removeEdge(iter);
+  }
+
+  if (DEBUG_GPUADVISOR_DETAILS) {
+    std::cout << "CCT dependency paths: " << std::endl;
+    debugCCTDepPaths(cct_edge_path_map);
+    std::cout << std::endl;
+  }
+
+  // Profile single path coverage
+  if (DEBUG_GPUADVISOR) {
+    std::cout << "Single path coverage after branch constraints:" << std::endl;
+    debugCCTDepGraphSinglePath(cct_dep_graph);
+    std::cout << std::endl;
+  }
+}
+
 double GPUAdvisor::computePathInsts(int mpi_rank, int thread_id, int from_vma, int to_vma,
                                     std::vector<CudaParse::Block *> &path) {
   double insts = 0.0;
@@ -1660,6 +1772,23 @@ void GPUAdvisor::blame(CCTBlames &cct_blames) {
 
         if (DEBUG_GPUADVISOR_DETAILS) {
           std::cout << "CCT dependency graph after execution pruning: " << std::endl;
+          debugCCTDepGraph(mpi_rank, thread_id, cct_dep_graph);
+          std::cout << std::endl;
+        }
+      }
+
+      // 2.5 Branch constraints
+      if (_metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_exe_metric) != -1) {
+        pruneCCTDepGraphBranch(mpi_rank, thread_id, cct_dep_graph, cct_edge_path_map);
+
+        if (DEBUG_GPUADVISOR) {
+          std::cout << "CCT no path: " << std::endl;
+          debugCCTDepGraphNoPath(mpi_rank, thread_id, cct_dep_graph);
+          std::cout << std::endl;
+        }
+
+        if (DEBUG_GPUADVISOR_DETAILS) {
+          std::cout << "CCT dependency graph after branch pruning: " << std::endl;
           debugCCTDepGraph(mpi_rank, thread_id, cct_dep_graph);
           std::cout << std::endl;
         }
