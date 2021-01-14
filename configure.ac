@@ -4093,6 +4093,37 @@ if test "$DYNINST" != no ; then
   LD_LIBRARY_PATH="$ORIG_LD_LIBRARY_PATH"
 fi
 
+#-------------------------------------------------
+
+# Test if dyninst has Intel GPU support.
+
+dyninst_intel_gpu=no
+
+if test "$DYNINST" != no ; then
+  AC_MSG_CHECKING([if dyninst supports intel gpus])
+
+  AC_COMPILE_IFELSE([
+  AC_LANG_SOURCE([[
+#include <entryIDs.h>
+unsigned int has_intel_enum(void)
+{
+  return intel_gpu_op_general;
+}
+]])],
+  [dyninst_intel_gpu=yes ; dyninst_features="$dyninst_features intel-gpu"],
+  [dyninst_intel_gpu=no])
+
+  AC_MSG_RESULT([$dyninst_intel_gpu])
+fi
+
+if test "$dyninst_intel_gpu" = yes ; then
+  AC_DEFINE(DYNINST_SUPPORTS_INTEL_GPU, 1, [dyninst supports Intel GPUs])
+fi
+
+#-------------------------------------------------
+
+# Restore C++ flags from dyninst tests
+
 AC_LANG_POP
 CXXFLAGS="$ORIG_CXXFLAGS"
 

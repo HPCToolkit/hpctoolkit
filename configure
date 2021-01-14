@@ -22927,6 +22927,48 @@ $as_echo "$symtab_openmp" >&6; }
   LD_LIBRARY_PATH="$ORIG_LD_LIBRARY_PATH"
 fi
 
+#-------------------------------------------------
+
+# Test if dyninst has Intel GPU support.
+
+dyninst_intel_gpu=no
+
+if test "$DYNINST" != no ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking if dyninst supports intel gpus" >&5
+$as_echo_n "checking if dyninst supports intel gpus... " >&6; }
+
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+#include <entryIDs.h>
+unsigned int has_intel_enum(void)
+{
+  return intel_gpu_op_general;
+}
+
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+  dyninst_intel_gpu=yes ; dyninst_features="$dyninst_features intel-gpu"
+else
+  dyninst_intel_gpu=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $dyninst_intel_gpu" >&5
+$as_echo "$dyninst_intel_gpu" >&6; }
+fi
+
+if test "$dyninst_intel_gpu" = yes ; then
+
+$as_echo "#define DYNINST_SUPPORTS_INTEL_GPU 1" >>confdefs.h
+
+fi
+
+#-------------------------------------------------
+
+# Restore C++ flags from dyninst tests
+
 ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
 ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
