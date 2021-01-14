@@ -347,7 +347,11 @@ gpu_metrics_attribute_mem_op
   gpu_metrics_attribute_metric_time_interval(cct_node, time_metric_index, 
                (gpu_interval_t *) m);
 
-  metric_data_list_t *count_metrics = 
+  // gpu operation summary metric
+  gpu_metrics_attribute_metric_time_interval(cct_node, METRIC_ID(GPU_TIME_OP),
+               (gpu_interval_t *) m);
+
+  metric_data_list_t *count_metrics =
     hpcrun_reify_metric_set(cct_node, count_metric_index);
 
   // increment the count of mem op
@@ -449,9 +453,13 @@ gpu_metrics_attribute_kernel
     // number of kernel launches
     gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_COUNT), 1);
   }
-  
+
   // kernel execution time
-  gpu_metrics_attribute_metric_time_interval(cct_node, METRIC_ID(GPU_TIME_KER), 
+  gpu_metrics_attribute_metric_time_interval(cct_node, METRIC_ID(GPU_TIME_KER),
+             (gpu_interval_t *) k);
+
+  // gpu operation summary metric
+  gpu_metrics_attribute_metric_time_interval(cct_node, METRIC_ID(GPU_TIME_OP),
              (gpu_interval_t *) k);
 }
 
@@ -489,6 +497,12 @@ gpu_metrics_attribute_synchronization
   gpu_metrics_attribute_metric_time_interval(cct_node, 
                METRIC_ID(GPU_TIME_SYNC), 
                (gpu_interval_t *) s);
+
+  // gpu operation summary metric
+  gpu_metrics_attribute_metric_time_interval(cct_node,
+               METRIC_ID(GPU_TIME_OP),
+               (gpu_interval_t *) s);
+
 
   int count_metric_index = METRIC_ID(GSYNC)[GPU_SYNC_COUNT];
   
