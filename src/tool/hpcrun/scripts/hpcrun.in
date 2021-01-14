@@ -324,7 +324,7 @@ do
 		PTHREAD_WAIT* ) preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_pthread.so" ;;
 		CPU_GPU_IDLE* ) preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_gpu.so" ;;
 		MPI* )     preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_mpi.so" ;;
-		gpu=amd) roctracer_libdir="${roctracer_libdir_path}"
+		gpu=amd) roctracer_libdir="${roctracer_lib_path}"
 			 export HIP_ENABLE_DEFERRED_LOADING=0;;
 		gpu=opencl)	 preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_opencl.so" ;;
 
