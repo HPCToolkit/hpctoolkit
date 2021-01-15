@@ -87,8 +87,7 @@ foreach v : _victims
     _pkgconfig = find_program('pkg-config', native: true)
     pkgconfig.generate(name: 'hpctoolkit_external_'+v['name'],
       description: 'temporary externalization shim for '+v['name'],
-      libraries: get_variable(v['name']+'_static_dep_libs'),
-      install_dir: get_option('libdir') / 'hpctoolkit/extern')
+      libraries: get_variable(v['name']+'_static_dep_libs'))
 
     _new_lib_names = []
     foreach _ : get_variable(v['name']+'_static_dep_libs')
@@ -121,7 +120,7 @@ foreach v : _victims
     endforeach
     pkgconfig.generate(_shim_lib,
       libraries: _shim_paths,
-      variables: 'extprefix=' + ('${prefix}' / get_option('libdir')) / 'hpctoolkit/extern',
+      variables: 'extprefix=' + '${prefix}'/get_option('libdir')/'hpctoolkit/extern',
       uninstalled_variables: 'extprefix='+meson.current_build_dir(),
       install_dir: get_option('libdir') / 'hpctoolkit/pkgconfig')
     set_variable(v['name']+'_static_dep_libs', [_shim_lib])
