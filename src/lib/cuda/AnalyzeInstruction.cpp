@@ -12,7 +12,7 @@
 #include "DotCFG.hpp"
 #include "Instruction.hpp"
 
-#define INSTRUCTION_ANALYZER_DEBUG 1
+#define INSTRUCTION_ANALYZER_DEBUG 0
 
 //#define FAST_SLICING
 
@@ -304,6 +304,11 @@ static int convert_reg(const std::string &str, size_t pos) {
   return -1;
 }
 
+static bool find_indirect(const std::string &str) {
+  return str.find("R") != std::string::npos &&
+    (str.find("-0x") != std::string::npos || str.find("+0x") != std::string::npos);
+}
+
 InstructionStat::InstructionStat(Instruction *inst) {
   std::string op;
 
@@ -381,6 +386,9 @@ InstructionStat::InstructionStat(Instruction *inst) {
         // Skip this instruction
         return;
       }
+      if (find_indirect(inst->operands[0])) {
+        indirect = true;
+      }
       if (store) {
         if (this->op.find(".SHARED") != std::string::npos ||
             this->op.find(".LOCAL") != std::string::npos ||
@@ -444,6 +452,9 @@ InstructionStat::InstructionStat(Instruction *inst) {
         bool uniform = false;
         if (inst->operands[i].find("UR") != std::string::npos) {  // uniform register
           uniform = true;
+        }
+        if (find_indirect(inst->operands[i])) {  // indirect addressing
+          indirect = true;
         }
 
         auto &srcs = uniform ? this->usrcs : this->srcs;
@@ -956,6 +967,7 @@ bool dumpCudaInstructions(const std::string &file_path, const std::vector<Functi
           ptree_inst.put("op", inst->inst_stat->op);
           ptree_inst.put("pred", inst->inst_stat->predicate);
           ptree_inst.put("barrier_threshold", inst->inst_stat->barrier_threshold);
+          ptree_inst.put("indirect", inst->inst_stat->indirect);
 
           boost::property_tree::ptree ptree_predicate_assign_pcs;
           for (auto predicate_assign_pc : inst->inst_stat->predicate_assign_pcs) {
@@ -1117,6 +1129,7 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
         std::string op = ptree_inst.second.get<std::string>("op", "");
         int pred = ptree_inst.second.get<int>("pred", -1);
         int barrier_threshold = ptree_inst.second.get<int>("barrier_threshold", -1);
+        bool indirect = ptree_inst.second.get<bool>("indirect", false);
 
         InstructionStat::PredicateFlag pred_flag =
             static_cast<InstructionStat::PredicateFlag>(ptree_inst.second.get<int>("pred_flag", 0));
@@ -1198,7 +1211,7 @@ bool readCudaInstructions(const std::string &file_path, std::vector<Function *> 
         fill_srcs("bsrcs", "bassign_pcs", bsrcs, bassign_pcs);
 
         auto *inst_stat =
-            new InstructionStat(op, pc, pred, barrier_threshold, pred_flag, pred_assign_pcs, dsts, srcs,
+            new InstructionStat(op, pc, pred, barrier_threshold, indirect, pred_flag, pred_assign_pcs, dsts, srcs,
                                 pdsts, psrcs, bdsts, bsrcs, udsts, usrcs, updsts, upsrcs, assign_pcs, passign_pcs,
                                 bassign_pcs, uassign_pcs, upassign_pcs, control);
         auto *inst = new Instruction(inst_stat);

@@ -202,10 +202,10 @@ class GPUAdvisor {
                 CudaParse::Block *from_block, int latency_issue, int latency,
                 std::set<CudaParse::Block *> &visited_blocks, std::vector<CudaParse::Block *> &path,
                 std::vector<std::vector<CudaParse::Block *>> &paths, TrackType track_type,
-                bool fixed, int hidden_threshold, int barrier_threshold);
+                bool fixed, int barrier_threshold);
 
   void trackDepInit(int to_vma, int from_vma, int dst, CCTEdgePathMap &cct_edge_path_map,
-                    TrackType track_type, bool fixed, int hidden_threshold, int barrier_threshold);
+                    TrackType track_type, bool fixed, int barrier_threshold);
 
   double computePathInsts(int mpi_rank, int thread_id, int from_vma, int to_vma,
                           std::vector<CudaParse::Block *> &path);
@@ -295,6 +295,7 @@ class GPUAdvisor {
   std::string _exec_dep_sche_stall_metric;
   std::string _exec_dep_smem_stall_metric;
   std::string _exec_dep_war_stall_metric;
+  std::string _exec_dep_ind_stall_metric;
   std::string _mem_dep_stall_metric;
   std::string _mem_dep_gmem_stall_metric;
   std::string _mem_dep_cmem_stall_metric;
@@ -308,6 +309,7 @@ class GPUAdvisor {
   std::string _exec_dep_sche_lat_metric;
   std::string _exec_dep_smem_lat_metric;
   std::string _exec_dep_war_lat_metric;
+  std::string _exec_dep_ind_lat_metric;
   std::string _mem_dep_lat_metric;
   std::string _mem_dep_gmem_lat_metric;
   std::string _mem_dep_cmem_lat_metric;

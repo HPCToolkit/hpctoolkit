@@ -123,6 +123,7 @@ void GPUAdvisor::init(const std::string &gpu_arch) {
   _exec_dep_sche_lat_metric = GPU_INST_METRIC_NAME ":LAT_IDEP_SCHE";
   _exec_dep_smem_lat_metric = GPU_INST_METRIC_NAME ":LAT_IDEP_SMEM";
   _exec_dep_war_lat_metric = GPU_INST_METRIC_NAME ":LAT_IDEP_WAR";
+  _exec_dep_ind_lat_metric = GPU_INST_METRIC_NAME ":LAT_IDEP_IND";
   _mem_dep_lat_metric = GPU_INST_METRIC_NAME ":LAT_GMEM";
   _mem_dep_gmem_lat_metric = GPU_INST_METRIC_NAME ":LAT_GMEM_GMEM";
   _mem_dep_cmem_lat_metric = GPU_INST_METRIC_NAME ":LAT_GMEM_CMEM";
@@ -135,6 +136,7 @@ void GPUAdvisor::init(const std::string &gpu_arch) {
   _dep_metrics.emplace_back(std::make_pair(_exec_dep_sche_stall_metric, _exec_dep_sche_lat_metric));
   _dep_metrics.emplace_back(std::make_pair(_exec_dep_smem_stall_metric, _exec_dep_smem_lat_metric));
   _dep_metrics.emplace_back(std::make_pair(_exec_dep_war_stall_metric, _exec_dep_war_lat_metric));
+  _dep_metrics.emplace_back(std::make_pair(_exec_dep_ind_stall_metric, _exec_dep_ind_lat_metric));
   _dep_metrics.emplace_back(std::make_pair(_mem_dep_stall_metric, _mem_dep_lat_metric));
   _dep_metrics.emplace_back(std::make_pair(_mem_dep_gmem_stall_metric, _mem_dep_gmem_lat_metric));
   _dep_metrics.emplace_back(std::make_pair(_mem_dep_lmem_stall_metric, _mem_dep_lmem_lat_metric));
@@ -214,6 +216,9 @@ void GPUAdvisor::init(const std::string &gpu_arch) {
   auto *branch_elimination_optimizer = GPUOptimizerFactory(BRANCH_ELIMINATION, _arch);
   branch_elimination_optimizer->set_estimator(_estimators[SEQ_LAT]);
 
+  auto *indirect_address_elimination_optimizer = GPUOptimizerFactory(INDIRECT_ADDRESS_ELIMINATION, _arch);
+  indirect_address_elimination_optimizer->set_estimator(_estimators[SEQ]);
+
   auto *async_copy_optimizer = GPUOptimizerFactory(ASYNC_COPY, _arch);
   async_copy_optimizer->set_estimator(_estimators[SEQ_LAT]);
 
@@ -266,6 +271,7 @@ void GPUAdvisor::init(const std::string &gpu_arch) {
   _code_optimizers.push_back(diverge_reduction_optimizer);
   _code_optimizers.push_back(branch_elimination_optimizer);
   _code_optimizers.push_back(async_copy_optimizer);
+  _code_optimizers.push_back(indirect_address_elimination_optimizer);
 
   // Parallel optimizers
   _parallel_optimizers.push_back(occupancy_increase_optimizer);

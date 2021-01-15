@@ -647,6 +647,31 @@ std::vector<BlameStats> GPUSharedMemoryCoalesceOptimizer::match_impl(
   return blame_stats_vec;
 }
 
+std::vector<BlameStats> GPUIndirectAddressEliminationOptimizer::match_impl(
+    const KernelBlame &kernel_blame, const KernelStats &kernel_stats) {
+  // Match if address is calculated
+  std::vector<BlameStats> blame_stats_vec;
+
+  // Find top latency pairs
+  for (auto *inst_blame : kernel_blame.lat_inst_blame_ptrs) {
+    if (inst_blame->blame_name.find(":LAT_IDEP") != std::string::npos &&
+        inst_blame->dst_inst->indirect) {
+      blame_stats_vec.push_back(BlameStats(inst_blame->lat_blame,
+                                           kernel_stats.active_samples,
+                                           kernel_stats.total_samples));
+
+      if (_inspection.regions.size() < _top_regions) {
+        _inspection.regions.push_back(*inst_blame);
+      }
+    }
+  }
+
+  _inspection.stall = false;
+  _inspection.loop = false;
+
+  return blame_stats_vec;
+}
+
 std::vector<BlameStats> GPUAsyncCopyOptimizer::match_impl(const KernelBlame &kernel_blame,
                                                           const KernelStats &kernel_stats) {
   std::vector<BlameStats> blame_stats_vec;
@@ -780,7 +805,7 @@ std::vector<BlameStats> GPUDivergeReductionOptimizer::match_impl(const KernelBla
     if ((blame_name == BLAME_GPU_INST_METRIC_NAME ":LAT_NONE" ||
          blame_name == BLAME_GPU_INST_METRIC_NAME ":LAT_IFET" ||
          blame_name == BLAME_GPU_INST_METRIC_NAME ":LAT_NSEL") &&
-        inst_blame->pred_true <= DIV_LIMIT) {
+        inst_blame->pred_true != -1.0 && inst_blame->pred_true <= DIV_LIMIT) {
       blame_stats_vec.push_back(BlameStats(inst_blame->lat_blame * (1 - inst_blame->pred_true),
                                            kernel_stats.active_samples,
                                            kernel_stats.total_samples));

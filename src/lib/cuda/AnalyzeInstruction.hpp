@@ -37,6 +37,7 @@ struct InstructionStat {
   int pc;
   int predicate;  // P0-P6
   int barrier_threshold = -1;
+  bool indirect = false; // indirect memory addressing
   PredicateFlag predicate_flag;
   std::vector<int> predicate_assign_pcs;
   std::vector<int> dsts;    // R0-R255: only records normal registers
@@ -108,7 +109,7 @@ struct InstructionStat {
         upassign_pcs(upassign_pcs) {}
 
   InstructionStat(const std::string &op, int pc, int predicate, int barrier_threshold,
-                  PredicateFlag predicate_flag,
+                  bool indirect, PredicateFlag predicate_flag,
                   std::vector<int> &predicate_assign_pcs, std::vector<int> &dsts,
                   std::vector<int> &srcs, std::vector<int> &pdsts, std::vector<int> &psrcs,
                   std::vector<int> &bdsts, std::vector<int> &bsrcs, std::vector<int> &udsts,
@@ -122,6 +123,7 @@ struct InstructionStat {
         pc(pc),
         predicate(predicate),
         barrier_threshold(barrier_threshold),
+        indirect(indirect),
         predicate_flag(predicate_flag),
         predicate_assign_pcs(predicate_assign_pcs),
         dsts(dsts),

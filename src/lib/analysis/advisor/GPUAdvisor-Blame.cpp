@@ -205,32 +205,28 @@ void GPUAdvisor::debugCCTDepGraphNoPath(int mpi_rank, int thread_id,
   }
 
   std::cout << "Exec_deps" << std::endl;
-  if (DEBUG_GPUADVISOR_DETAILS) {
-    for (auto &iter : exec_dep_vmas) {
-      if (iter.first == 0) {
-        continue;
-      }
-      std::cout << iter.first << "(" << static_cast<double>(iter.first) / exec_deps * 100 << "%): ";
-      for (auto vma : iter.second) {
-        std::cout << debugInstOffset(vma) << ", ";
-      }
-      std::cout << std::endl;
+  for (auto &iter : exec_dep_vmas) {
+    if (iter.first == 0) {
+      continue;
     }
+    std::cout << iter.first << "(" << static_cast<double>(iter.first) / exec_deps * 100 << "%): ";
+    for (auto vma : iter.second) {
+      std::cout << debugInstOffset(vma) << ", ";
+    }
+    std::cout << std::endl;
   }
   std::cout << no_path_exec_dep << "(" << no_path_exec_dep / exec_deps * 100 << "%)" << std::endl;
 
   std::cout << "Mem_deps" << std::endl;
-  if (DEBUG_GPUADVISOR_DETAILS) {
-    for (auto &iter : mem_dep_vmas) {
-      if (iter.first == 0) {
-        continue;
-      }
-      std::cout << iter.first << "(" << static_cast<double>(iter.first) / mem_deps * 100 << "%): ";
-      for (auto vma : iter.second) {
-        std::cout << debugInstOffset(vma) << ", ";
-      }
-      std::cout << std::endl;
+  for (auto &iter : mem_dep_vmas) {
+    if (iter.first == 0) {
+      continue;
     }
+    std::cout << iter.first << "(" << static_cast<double>(iter.first) / mem_deps * 100 << "%): ";
+    for (auto vma : iter.second) {
+      std::cout << debugInstOffset(vma) << ", ";
+    }
+    std::cout << std::endl;
   }
   std::cout << no_path_mem_dep << "(" << no_path_mem_dep / mem_deps * 100 << "%)" << std::endl;
 
@@ -367,22 +363,42 @@ void GPUAdvisor::debugInstBlames(InstBlames &inst_blames) {
   // <blame_id, blame_sum>
   double lat_blame_sum = 0.0;
   double stall_blame_sum = 0.0;
+  double lat_mem_blame_sum = 0.0;
+  double lat_exec_blame_sum = 0.0;
+  double lat_exec_sche_blame_sum = 0.0;
   for (auto &inst_blame : inst_blames) {
     lat_blame_sum += inst_blame.lat_blame;
     stall_blame_sum += inst_blame.stall_blame;
+    if (inst_blame.blame_name.find(_exec_dep_lat_metric) != std::string::npos) {
+      lat_exec_blame_sum += inst_blame.lat_blame;
+    }
+    if (inst_blame.blame_name.find(_exec_dep_sche_lat_metric) != std::string::npos) {
+      lat_exec_sche_blame_sum += inst_blame.lat_blame;
+    }
+    if (inst_blame.blame_name.find(_mem_dep_lat_metric) != std::string::npos) {
+      lat_mem_blame_sum += inst_blame.lat_blame;
+    }
   }
 
   std::cout << "(" << lat_blame_sum << "," << stall_blame_sum << ")" << std::endl;
+  std::cout << "exec " << lat_exec_blame_sum << " ("
+            << static_cast<double>(lat_exec_blame_sum) / lat_blame_sum * 100 << "%)" << std::endl;
+  std::cout << "mem " << lat_mem_blame_sum << " ("
+            << static_cast<double>(lat_mem_blame_sum) / lat_blame_sum * 100 << "%)" << std::endl;
+  std::cout << "sche " << lat_exec_sche_blame_sum << " ("
+            << static_cast<double>(lat_exec_sche_blame_sum) / lat_blame_sum * 100 << "%)" << std::endl;
 
-  for (auto &inst_blame : inst_blames) {
-    std::cout << debugInstOffset(inst_blame.src_inst->pc) << " -> "
-              << debugInstOffset(inst_blame.dst_inst->pc) << ", ";
-    std::cout << inst_blame.blame_name << ": " << inst_blame.lat_blame << "("
-              << static_cast<double>(inst_blame.lat_blame) / lat_blame_sum * 100
-              << "%"
-                 ", "
-              << static_cast<double>(inst_blame.stall_blame) / stall_blame_sum * 100 << "%)"
-              << std::endl;
+  if (DEBUG_GPUADVISOR_DETAILS) {
+    for (auto &inst_blame : inst_blames) {
+      std::cout << debugInstOffset(inst_blame.src_inst->pc) << " -> "
+                << debugInstOffset(inst_blame.dst_inst->pc) << ", ";
+      std::cout << inst_blame.blame_name << ": " << inst_blame.lat_blame << "("
+                << static_cast<double>(inst_blame.lat_blame) / lat_blame_sum * 100
+                << "%"
+                   ", "
+                << static_cast<double>(inst_blame.stall_blame) / stall_blame_sum * 100 << "%)"
+                << std::endl;
+    }
   }
 }
 
@@ -518,23 +534,30 @@ void GPUAdvisor::pruneCCTDepGraphOpcode(int mpi_rank, int thread_id,
     auto *from_inst = _vma_prop_map.at(from_vma).inst;
     auto *to = edge.to;
 
-    if (from_inst->op.find("MEMORY") != std::string::npos) {
-      if (from_inst->op.find(".SHARED") != std::string::npos) {
-        // Shared memory instructions only cause short_scoreboard wait
+    if (to->demandMetric(exec_dep_index) == 0 && to->demandMetric(mem_dep_index) == 0) {
+      remove_edges.push_back(iter);
+    } else {
+      if (from_inst->op.find(".LOAD") != std::string::npos) {
+        if (from_inst->op.find(".SHARED") != std::string::npos) {
+          // Shared memory instructions only cause short_scoreboard wait
+          if (to->demandMetric(exec_dep_index) == 0) {
+            remove_edges.push_back(iter);
+          }
+        } else {
+          // CONSTANT and STORE memory instructions cause both memory and exec deps
+          // L1TEX memory instructions cause memory dep
+          if (from_inst->op.find(".CONSTANT") == std::string::npos) {
+            if (to->demandMetric(mem_dep_index) == 0) {
+              remove_edges.push_back(iter);
+            }
+          }
+        }
+      } else {
+        // XXX(Keren): Other type instructions cause either
+        // short_scoreboard or fixed dependency
         if (to->demandMetric(exec_dep_index) == 0) {
           remove_edges.push_back(iter);
         }
-      } else {
-        // L1TEX Memory instructions cause memory dep
-        if (to->demandMetric(mem_dep_index) == 0) {
-          remove_edges.push_back(iter);
-        }
-      }
-    } else {
-      // XXX(Keren): Other type instructions cause either
-      // short_scoreboard or fixed dependency
-      if (to->demandMetric(exec_dep_index) == 0) {
-        remove_edges.push_back(iter);
       }
     }
   }
@@ -632,7 +655,7 @@ void GPUAdvisor::trackDep(int from_vma, int to_vma, int id, CudaParse::Block *fr
                           std::set<CudaParse::Block *> &visited_blocks,
                           std::vector<CudaParse::Block *> &path,
                           std::vector<std::vector<CudaParse::Block *>> &paths, TrackType track_type,
-                          bool fixed, int hidden_threshold, int barrier_threshold) {
+                          bool fixed, int barrier_threshold) {
   // The current block has been visited
   if (visited_blocks.find(from_block) != visited_blocks.end()) {
     return;
@@ -678,7 +701,7 @@ void GPUAdvisor::trackDep(int from_vma, int to_vma, int id, CudaParse::Block *fr
     if (fixed) {
       latency_issue += 1;
     } else {
-      latency_issue += inst->control.stall + 1;
+      latency_issue += inst->control.stall;
     }
 
     // 1. id on path constraint
@@ -699,15 +722,6 @@ void GPUAdvisor::trackDep(int from_vma, int to_vma, int id, CudaParse::Block *fr
       if (barrier_threshold == -1) {
         find_def = true;
         break;
-      } else {
-        hidden_threshold += 1;
-
-        if (hidden_threshold < barrier_threshold) {
-          skip = true;
-        } else {
-          skip = false;
-          break;
-        }
       }
     }
 
@@ -731,7 +745,7 @@ void GPUAdvisor::trackDep(int from_vma, int to_vma, int id, CudaParse::Block *fr
         if (target->type != CudaParse::TargetType::CALL) {
           // We do not need from_vma anymore
           trackDep(0, to_vma, id, target->block, to_block, latency_issue, latency, visited_blocks,
-                   path, paths, track_type, fixed, hidden_threshold, barrier_threshold);
+                   path, paths, track_type, fixed, barrier_threshold);
         }
       }
     }
@@ -742,7 +756,7 @@ void GPUAdvisor::trackDep(int from_vma, int to_vma, int id, CudaParse::Block *fr
 }
 
 void GPUAdvisor::trackDepInit(int to_vma, int from_vma, int dst, CCTEdgePathMap &cct_edge_path_map,
-                              TrackType track_type, bool fixed, int hidden_threshold, int barrier_threshold) {
+                              TrackType track_type, bool fixed, int barrier_threshold) {
   // Search for all possible paths from dst to src.
   // Since the single path rate here is expected to be high,
   // The following code section only executes few times.
@@ -756,7 +770,7 @@ void GPUAdvisor::trackDepInit(int to_vma, int from_vma, int dst, CCTEdgePathMap 
   std::vector<std::vector<CudaParse::Block *>> paths;
   auto latency = fixed ? _vma_prop_map.at(from_vma).latency_lower : _vma_prop_map.at(from_vma).latency_upper;
   trackDep(from_vma, to_vma, dst, from_block, to_block, 0, latency, visited_blocks, path, paths,
-           track_type, fixed, hidden_threshold, barrier_threshold);
+           track_type, fixed, barrier_threshold);
 
   // Merge paths
   for (auto &path : paths) {
@@ -816,7 +830,7 @@ void GPUAdvisor::pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
       // Find the dst reg that causes dependency
       auto assign_iter = to_inst->assign_pcs.find(dst);
       if (assign_iter != to_inst->assign_pcs.end()) {
-        trackDepInit(to_vma, from_vma, dst, cct_edge_path_map, TRACK_REG, fixed, -1, -1);
+        trackDepInit(to_vma, from_vma, dst, cct_edge_path_map, TRACK_REG, fixed, -1);
       }
     }
 
@@ -824,7 +838,7 @@ void GPUAdvisor::pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
     for (auto pdst : from_inst->pdsts) {
       auto passign_iter = to_inst->passign_pcs.find(pdst);
       if (passign_iter != to_inst->passign_pcs.end()) {
-        trackDepInit(to_vma, from_vma, pdst, cct_edge_path_map, TRACK_PRED_REG, fixed, -1, -1);
+        trackDepInit(to_vma, from_vma, pdst, cct_edge_path_map, TRACK_PRED_REG, fixed, -1);
       }
     }
 
@@ -833,7 +847,7 @@ void GPUAdvisor::pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
       // Find the dst barrier that causes dependency
       auto bassign_iter = to_inst->bassign_pcs.find(bdst);
       if (bassign_iter != to_inst->bassign_pcs.end()) {
-        trackDepInit(to_vma, from_vma, bdst, cct_edge_path_map, TRACK_BARRIER, fixed, -1, barrier_threshold);
+        trackDepInit(to_vma, from_vma, bdst, cct_edge_path_map, TRACK_BARRIER, fixed, barrier_threshold);
       }
     }
 
@@ -842,7 +856,7 @@ void GPUAdvisor::pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
       // Find the dst that causes dependency
       auto uassign_iter = to_inst->uassign_pcs.find(udst);
       if (uassign_iter != to_inst->uassign_pcs.end()) {
-        trackDepInit(to_vma, from_vma, udst, cct_edge_path_map, TRACK_UNIFORM, fixed, -1, -1);
+        trackDepInit(to_vma, from_vma, udst, cct_edge_path_map, TRACK_UNIFORM, fixed, -1);
       }
     }
 
@@ -850,7 +864,7 @@ void GPUAdvisor::pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
     for (auto pred_dst : from_inst->pdsts) {
       // Find the dst barrier that causes dependency
       if (to_inst->predicate == pred_dst) {
-        trackDepInit(to_vma, from_vma, pred_dst, cct_edge_path_map, TRACK_PREDICATE, fixed, -1, -1);
+        trackDepInit(to_vma, from_vma, pred_dst, cct_edge_path_map, TRACK_PREDICATE, fixed, -1);
       }
     }
 
@@ -1365,22 +1379,17 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
         auto *from_inst = _vma_prop_map.at(from_vma).inst;
 
         // Sum up all neighbors' issue count
-        if (from_inst->op.find("MEMORY") != std::string::npos) {
+        if (from_inst->op.find(".LOAD") != std::string::npos) {
           if (from_inst->op.find(".SHARED") != std::string::npos) {
             // Shared memory
             prof_nodes[exec_lat_metric_index].push_back(from_node);
           } else {
             prof_nodes[mem_lat_metric_index].push_back(from_node);
 
-            // Global and local memory store instructions can result in raw dependencies
-            if (from_inst->op.find(".STORE") != std::string::npos) {
+            // Constant memory access can result in execution latency
+            if (from_inst->op.find(".CONSTANT") != std::string::npos) {
               prof_nodes[exec_lat_metric_index].push_back(from_node);
             }
-
-            // We must have found a correponding stall, otherwise the edge is removed by pruning
-            auto mem = to_node->demandMetric(mem_lat_metric_index);
-            auto exec = to_node->demandMetric(exec_lat_metric_index);
-            assert(mem != 0 || exec != 0);
           }
         } else {
           prof_nodes[exec_lat_metric_index].push_back(from_node);
@@ -1390,15 +1399,32 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
 
     if (prof_nodes.size() == 0 ||
         (prof_nodes.size() == 1 && prof_nodes.begin()->first == mem_lat_metric_index)) {
-      // Scheduler lat
-      auto lat_blame = to_node->demandMetric(exec_lat_metric_index);
-      auto lat_blame_name = "BLAME " + _exec_dep_sche_lat_metric;
-      attributeBlameMetric(mpi_rank, thread_id, to_node, lat_blame_name, lat_blame);
+      auto lat_blame = 0;
+      auto stall_blame = 0;
+      std::string lat_blame_name = "";
+      std::string stall_blame_name = "";
 
-      // Scheduler stall
-      auto stall_blame = to_node->demandMetric(exec_stall_metric_index);
-      auto stall_blame_name = "BLAME " + _exec_dep_sche_stall_metric;
-      attributeBlameMetric(mpi_rank, thread_id, to_node, stall_blame_name, stall_blame);
+      if (to_inst->control.stall == 1 && to_inst->indirect) {
+        // Indirect lat
+        lat_blame = to_node->demandMetric(exec_lat_metric_index);
+        lat_blame_name = "BLAME " + _exec_dep_ind_lat_metric;
+        attributeBlameMetric(mpi_rank, thread_id, to_node, lat_blame_name, lat_blame);
+
+        // Indirect stall
+        stall_blame = to_node->demandMetric(exec_stall_metric_index);
+        stall_blame_name = "BLAME " + _exec_dep_ind_stall_metric;
+        attributeBlameMetric(mpi_rank, thread_id, to_node, stall_blame_name, stall_blame);
+      } else {
+        // Scheduler lat
+        lat_blame = to_node->demandMetric(exec_lat_metric_index);
+        lat_blame_name = "BLAME " + _exec_dep_sche_lat_metric;
+        attributeBlameMetric(mpi_rank, thread_id, to_node, lat_blame_name, lat_blame);
+
+        // Scheduler stall
+        stall_blame = to_node->demandMetric(exec_stall_metric_index);
+        stall_blame_name = "BLAME " + _exec_dep_sche_stall_metric;
+        attributeBlameMetric(mpi_rank, thread_id, to_node, stall_blame_name, stall_blame);
+      } 
 
       auto efficiency = computeEfficiency(mpi_rank, thread_id, to_inst, to_node);
       auto pred_true = computePredTrue(mpi_rank, thread_id, to_inst, to_node);
@@ -1694,7 +1720,7 @@ void GPUAdvisor::blame(CCTBlames &cct_blames) {
       CCTGraph<Prof::CCT::ADynNode *> cct_dep_graph;
       initCCTDepGraph(mpi_rank, thread_id, cct_dep_graph);
 
-      if (DEBUG_GPUADVISOR) {
+      if (DEBUG_GPUADVISOR_DETAILS) {
         std::cout << "CCT no path: " << std::endl;
         debugCCTDepGraphNoPath(mpi_rank, thread_id, cct_dep_graph);
         std::cout << std::endl;
@@ -1716,7 +1742,7 @@ void GPUAdvisor::blame(CCTBlames &cct_blames) {
       // 2.1 Opcode constraints
       pruneCCTDepGraphOpcode(mpi_rank, thread_id, cct_dep_graph);
 
-      if (DEBUG_GPUADVISOR) {
+      if (DEBUG_GPUADVISOR_DETAILS) {
         std::cout << "CCT no path: " << std::endl;
         debugCCTDepGraphNoPath(mpi_rank, thread_id, cct_dep_graph);
         std::cout << std::endl;
@@ -1731,7 +1757,7 @@ void GPUAdvisor::blame(CCTBlames &cct_blames) {
       // 2.2 Barrier constraints
       pruneCCTDepGraphBarrier(mpi_rank, thread_id, cct_dep_graph);
 
-      if (DEBUG_GPUADVISOR) {
+      if (DEBUG_GPUADVISOR_DETAILS) {
         std::cout << "CCT no path: " << std::endl;
         debugCCTDepGraphNoPath(mpi_rank, thread_id, cct_dep_graph);
         std::cout << std::endl;
@@ -1747,7 +1773,7 @@ void GPUAdvisor::blame(CCTBlames &cct_blames) {
       CCTEdgePathMap cct_edge_path_map;
       pruneCCTDepGraphLatency(mpi_rank, thread_id, cct_dep_graph, cct_edge_path_map);
 
-      if (DEBUG_GPUADVISOR) {
+      if (DEBUG_GPUADVISOR_DETAILS) {
         std::cout << "CCT no path: " << std::endl;
         debugCCTDepGraphNoPath(mpi_rank, thread_id, cct_dep_graph);
         std::cout << std::endl;
@@ -1763,7 +1789,7 @@ void GPUAdvisor::blame(CCTBlames &cct_blames) {
       if (_metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_exe_metric) != -1) {
         pruneCCTDepGraphExecution(mpi_rank, thread_id, cct_dep_graph, cct_edge_path_map);
 
-        if (DEBUG_GPUADVISOR) {
+        if (DEBUG_GPUADVISOR_DETAILS) {
           std::cout << "CCT no path: " << std::endl;
           debugCCTDepGraphNoPath(mpi_rank, thread_id, cct_dep_graph);
           std::cout << std::endl;
@@ -1780,7 +1806,7 @@ void GPUAdvisor::blame(CCTBlames &cct_blames) {
       if (_metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_exe_metric) != -1) {
         pruneCCTDepGraphBranch(mpi_rank, thread_id, cct_dep_graph, cct_edge_path_map);
 
-        if (DEBUG_GPUADVISOR) {
+        if (DEBUG_GPUADVISOR_DETAILS) {
           std::cout << "CCT no path: " << std::endl;
           debugCCTDepGraphNoPath(mpi_rank, thread_id, cct_dep_graph);
           std::cout << std::endl;
@@ -1804,7 +1830,7 @@ void GPUAdvisor::blame(CCTBlames &cct_blames) {
       InstBlames inst_blames;
       blameCCTDepGraph(mpi_rank, thread_id, cct_dep_graph, cct_edge_path_map, inst_blames);
 
-      if (DEBUG_GPUADVISOR_DETAILS) {
+      if (DEBUG_GPUADVISOR) {
         std::cout << "Inst blames: " << std::endl;
         debugInstBlames(inst_blames);
         std::cout << std::endl;
