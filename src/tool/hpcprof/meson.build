@@ -49,7 +49,12 @@ _srcs = files(
 
 hpcprof_exe = executable('hpcprof', _srcs,
   include_directories: main_includes,
+  dependencies: [hpcprof_opt_dep],
   link_with: [support_lib, binutils_lib, prof_lib, analysis_lib],
   install: true)
 summary('hpcprof', not is_disabler(hpcprof_exe), section: 'Applications', bool_yn: true)
 all_apps += hpcprof_exe
+
+if get_option('hpcprof').enabled()
+  assert(not is_disabler(hpcprof_exe), 'hpcprof required but disabled')
+endif

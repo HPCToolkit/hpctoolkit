@@ -55,15 +55,22 @@ _srcs += _gen.process(files('cubins-analysis.txt'))
 hpcstruct_exe = executable('hpcstruct', _srcs,
   include_directories: tool_includes,
   link_with: [support_lib, banal_lib, analysis_lib],
-  dependencies: [openmp_d_dep],
+  dependencies: [openmp_dep, hpcstruct_opt_dep],
   install: true)
 summary('hpcstruct', not is_disabler(hpcstruct_exe), section: 'Applications', bool_yn: true)
 all_apps += hpcstruct_exe
 
+if get_option('hpcstruct').enabled()
+  assert(not is_disabler(hpcstruct_exe), 'hpcstruct required but disabled')
+endif
+
 dotgraph_exe = executable('dotgraph', files('DotGraph.cpp'),
   include_directories: tool_includes,
-  dependencies: [dyninst_d_dep, openmp_d_dep]
-    + (get_option('devtools').enabled() ? [] : [disabler()]),
+  dependencies: [dyninst_d_dep, openmp_dep, devtools_opt_dep],
   install: true, install_dir: get_option('libexecdir') / meson.project_name())
 summary('dotgraph', not is_disabler(dotgraph_exe), section: 'Applications', bool_yn: true)
 all_apps += dotgraph_exe
+
+if get_option('devtools').enabled()
+  assert(not is_disabler(dotgraph_exe), 'dotgraph required but disabled')
+endif

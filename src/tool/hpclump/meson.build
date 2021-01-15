@@ -50,7 +50,11 @@ _srcs = files(
 hpclump_exe = executable('hpclump', _srcs,
   include_directories: tool_includes,
   link_with: [support_lib, binutils_lib],
-  dependencies: get_option('devtools').enabled() ? [] : disabler(),
+  dependencies: devtools_opt_dep,
   install: true, install_dir: get_option('libexecdir') / meson.project_name())
 summary('hpclump', not is_disabler(hpclump_exe), section: 'Applications', bool_yn: true)
 all_apps += hpclump_exe
+
+if get_option('devtools').enabled()
+  assert(not is_disabler(hpclump_exe), 'hpclump required but disabled')
+endif

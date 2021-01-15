@@ -73,6 +73,9 @@ _victims = [
 ]
 
 foreach v : _victims
+  if not get_variable(v['name']+'_static_dep').found()
+    continue
+  endif
   if cc.links(v['code'], name: '@0@.a -fPIC compatibility'.format(v['name']),
     args: ['-shared', '-fPIC'],
     dependencies: get_variable(v['name']+'_static_dep_libs'),

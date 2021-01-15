@@ -121,8 +121,8 @@ hpctoolkit_config.set('ENABLE_CLOCK_CPUTIME',
   ''', name: 'CPUTIME timer support')) ? 1 : false)
 
 # TODO: This should also require some tests for Dyninst
-hpctoolkit_config.set('ENABLE_OPENMP', get_option('openmp').enabled() ? 1 : false)
-hpctoolkit_config.set('ENABLE_OPENMP_SYMTAB', get_option('openmp').enabled() ? 1 : false)
+hpctoolkit_config.set('ENABLE_OPENMP', openmp_d_dep.found() ? 1 : false)
+hpctoolkit_config.set('ENABLE_OPENMP_SYMTAB', openmp_d_dep.found() ? 1 : false)
 
 hpctoolkit_config.set('ENABLE_VG_ANNOTATIONS', get_option('valgrind-annotations').enabled() ? 1 : false)
 

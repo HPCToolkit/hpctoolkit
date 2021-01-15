@@ -108,15 +108,15 @@ endif
 # TODO: Figure out how to handle this properly. The original controls its usage
 # via a test for Dyninst support, but it doesn't appear to compile here without
 # having it enabled. Maybe something to do with the library?
-openmp_dep = dependency('OpenMP', required: false)
+openmp_dep = dependency('OpenMP', required: get_option('openmp'))
 # TODO: Handle finding the OpenMP directory.
 
 # Enable MPI (for C and C++).
 # NOTE: Autotools has a separate search system for Cray and Blue Gene, to get
 # around a Spack bug. We trust Meson's search functionality and ability to
 # override the issue in a Spack recipe.
-mpi_c_dep = dependency('MPI', language: 'c', required: false)
-mpi_cpp_dep = dependency('MPI', language: 'cpp', required: false)
+mpi_c_dep = dependency('MPI', language: 'c', required: get_option('mpi'))
+mpi_cpp_dep = dependency('MPI', language: 'cpp', required: get_option('mpi'))
 
 # Handle getting the Spack we'll use for our business
 if get_option('spack') != '' or meson.get_external_property('spack', '') != ''
@@ -548,13 +548,23 @@ if meson.get_external_property('cuda_enabled', true)
   # TODO: Handle Spack-provided CUDA. Or don't. Decide what to do there.
 
   # Search for the CUDA toolkit
-  cuda_dep = dependency('CUDA', required: false, modules: ['cupti'])
+  cuda_dep = dependency('CUDA', required: get_option('cuda-monitoring'), modules: ['cupti'])
 else
-  cuda_dep = dependency('', required: false)
+  cuda_dep = dependency('', required: get_option('cuda-monitoring'))
 endif
 summary('CUDA/CUPTI', cuda_dep.found() ? '(system)' : false,
         section: 'Dependencies', bool_yn: true)
 cuda_d_dep = cuda_dep.found() ? cuda_dep : disabler()
+
+# Set up some empty dependencies for top-level targets, which are controlled
+# by options.
+foreach opt : ['hpcrun', 'hpclink', 'hpcstruct', 'hpcprof', 'devtools', 'hpcserver']
+  if get_option(opt).disabled()
+    set_variable(opt+'_opt_dep', disabler())
+  else
+    set_variable(opt+'_opt_dep', [])
+  endif
+endforeach
 
 # Install the READMEs to the documentation directory, {datadir}/doc/hpctoolkit
 install_data(files(

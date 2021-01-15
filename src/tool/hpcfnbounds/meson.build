@@ -65,7 +65,7 @@ endif
 hpcfnbounds_exe = executable('hpcfnbounds', _srcs,
   include_directories: tool_includes,
   link_with: [prof_lean_lib],
-  dependencies: [dyninst_d_dep, openmp_d_dep,
+  dependencies: [dyninst_d_dep, openmp_dep,
     libdwarf_d_dep.partial_dependency(compile_args: true, link_args: true, includes: true)]
     + _deps + [cc.find_library('dl')],
   install: true, install_dir: get_option('libexecdir') / meson.project_name())

@@ -51,7 +51,11 @@ _srcs = files(
 hpcprof_mpi_exe = executable('hpcprof-mpi', _srcs,
   include_directories: tool_includes,
   link_with: [analysis_lib, support_lib, prof_lib, prof_lean_lib],
-  dependencies: [mpi_cpp_d_dep],
+  dependencies: [mpi_cpp_d_dep, hpcprof_opt_dep],
   install: true)
 summary('hpcprof-mpi', not is_disabler(hpcprof_mpi_exe), section: 'Applications', bool_yn: true)
 all_apps += hpcprof_mpi_exe
+
+if get_option('hpcprof').enabled() and mpi_cpp_d_dep.found()
+  assert(not is_disabler(hpcprof_mpi_exe), 'hpcprof-mpi required but disabled')
+endif

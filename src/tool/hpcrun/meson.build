@@ -465,10 +465,14 @@ endforeach
 
 libhpcrun_lib = shared_library('hpcrun', _d_srcs.sources(),
   dependencies: _d_srcs.dependencies() + _d_ddep
-    + [cc.find_library('dl'), cc.find_library('rt'), dependency('threads')],
+    + [cc.find_library('dl'), cc.find_library('rt'), dependency('threads'),
+       hpcrun_opt_dep],
   link_with: [prof_lean_lib, support_lean_lib],
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
+if get_option('hpcrun').enabled()
+  assert(not is_disabler(libhpcrun_lib), 'hpcrun required but disabled')
+endif
 summary('hpcrun', not is_disabler(libhpcrun_lib), section: 'Applications', bool_yn: true)
 
 if not is_disabler(libhpcrun_lib)
@@ -543,7 +547,7 @@ endforeach
 
 libhpcrun_static_lib = static_library('hpcrun_static', _s_srcs.sources(),
   dependencies: _s_partial_ddeps,
-  link_with: [prof_lean_static_lib, support_lean_static_lib],
+  link_with: [prof_lean_static_lib, support_lean_static_lib, hpclink_opt_dep],
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
 libhpcrun_wrap_lib = static_library('hpcrun_wrap',
@@ -559,6 +563,12 @@ summary('hpclink', not is_disabler(libhpcrun_static_lib)
   and not is_disabler(libhpcrun_wrap_lib)
   and not is_disabler(libhpcrun_deps_lib),
   section: 'Applications', bool_yn: true)
+if get_option('hpclink').enabled()
+  assert(not is_disabler(libhpcrun_static_lib)
+         and not is_disabler(libhpcrun_wrap_lib)
+         and not is_disabler(libhpcrun_deps_lib),
+         'hpclink required but disabled')
+endif
 
 if not is_disabler(libhpcrun_static_lib) and not is_disabler(libhpcrun_wrap_lib)
   pkgconfig.generate(libhpcrun_static_lib)

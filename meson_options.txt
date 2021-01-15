@@ -1,11 +1,22 @@
-option('devtools', type: 'feature',
+option('hpcrun', type: 'feature',
+       description: 'Enable the HPCToolkit measurement application, hpcrun')
+option('hpclink', type: 'feature',
+       description: 'Enable the HPCToolkit measurement linker script for static applications, hpclink')
+option('hpcstruct', type: 'feature',
+       description: 'Enable the HPCToolkit binary analysis application, hpcstruct')
+option('hpcprof', type: 'feature',
+       description: 'Enable the HPCToolkit profile analysis application, hpcprof')
+option('devtools', type: 'feature', value: 'disabled',
        description: 'Enable extra tools useful for debugging.')
-option('hpcserver', type: 'feature',
+option('hpcserver', type: 'feature', value: 'disabled',
        description: 'Enable the (old and experimental) hpcserver application.')
+
 option('openmp', type: 'feature',
        description: 'Accelerate applications using OpenMP where applicable.')
 option('valgrind-annotations', type: 'feature',
        description: 'Enable Valgrind annotations where applicable.')
+option('mpi', type: 'feature',
+       description: 'Accelerate applications using MPI where applicable.')
 
 option('spack', type: 'string', value: '',
        description: 'Use the given Spack to find external dependencies. Must either be an absolute path or a command to search on the PATH.')
@@ -16,6 +27,8 @@ option('datacentric', type: 'feature',
        description: 'Enable data-centric profiling.')
 option('papi-c', type: 'feature',
        description: 'Enable the use of the new component API for PAPI.')
+option('cuda-monitoring', type: 'feature',
+       description: 'Enable CUDA support')
 option('papi-c-cupti', type: 'feature',
        description: 'Enable CUDA support via PAPI.')
 
@@ -26,4 +39,3 @@ option('kernel-blocking', type: 'string', value: 'auto',
        description: '[true, false, auto] force enable or disable kernel blocking support in perf events (Linux >=4.3).')
 option('perf-events', type: 'string', value: 'auto',
        description: '[true, false, auto] force enable or disable perf event sample sources (Linux >=2.6.32).')
-
