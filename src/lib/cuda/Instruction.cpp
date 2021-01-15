@@ -100,7 +100,7 @@ std::map<std::string, InstructionType> Instruction::opcode_types = {
     // sm_75
     {"LDSM", INS_TYPE_MEMORY},
     // sm_80
-    {"LDGDEPBAR", INS_TYPE_CONTROL},
+    {"LDGDEPBAR", INS_TYPE_MEMORY},
     {"LDGSTS", INS_TYPE_MEMORY},
     // sm_60
     {"TEXS", INS_TYPE_TEXTRUE},

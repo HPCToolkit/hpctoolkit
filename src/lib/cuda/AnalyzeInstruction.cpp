@@ -12,7 +12,7 @@
 #include "DotCFG.hpp"
 #include "Instruction.hpp"
 
-#define INSTRUCTION_ANALYZER_DEBUG 0
+#define INSTRUCTION_ANALYZER_DEBUG 1
 
 //#define FAST_SLICING
 
@@ -41,6 +41,10 @@ void analyze_instruction<INS_TYPE_MEMORY>(Instruction &inst, std::string &op) {
       scope = ".GLOBAL";
     } else if (opcode == "LDC") {
       scope = ".CONSTANT";
+    } else if (opcode == "LDGSTS") {
+      scope = ".GLOBAL.ASYNC";
+    } else if (opcode == "LDGDEPBAR") {
+      scope = ".GLOBAL.BAR";
     }
   } else if (opcode.find("ST") != std::string::npos) {
     ldst = ".STORE";
@@ -324,14 +328,10 @@ InstructionStat::InstructionStat(Instruction *inst) {
   this->predicate_flag = InstructionStat::PredicateFlag::PREDICATE_NONE;
 
   if (INSTRUCTION_ANALYZER_DEBUG) {
-    std::cout << inst->offset << " " << op << " ";
+    std::cout << inst->offset << " " << op << " " << inst->to_string() << std::endl;
   }
 
   if (inst->predicate.size() != 0) {
-    if (INSTRUCTION_ANALYZER_DEBUG) {
-      std::cout << inst->predicate << " ";
-    }
-
     auto pos = inst->predicate.find("P");
     if (pos != std::string::npos) {
       int pred = convert_reg(inst->predicate, pos + 1);
@@ -357,10 +357,6 @@ InstructionStat::InstructionStat(Instruction *inst) {
   }
 
   if (inst->operands.size() != 0) {
-    if (INSTRUCTION_ANALYZER_DEBUG) {
-      std::cout << inst->operands[0] << " ";
-    }
-
     // STORE [R1], R2
     // LOAD R1, [R2]
     // FADD R1, R2, R3
@@ -387,7 +383,8 @@ InstructionStat::InstructionStat(Instruction *inst) {
       }
       if (store) {
         if (this->op.find(".SHARED") != std::string::npos ||
-            this->op.find(".LOCAL") != std::string::npos) {
+            this->op.find(".LOCAL") != std::string::npos ||
+            this->op.find(".ASYNC") != std::string::npos) {
           // memory 32-bit
           srcs.push_back(reg);
         } else {
@@ -442,10 +439,6 @@ InstructionStat::InstructionStat(Instruction *inst) {
     }
 
     for (size_t i = 1; i < inst->operands.size(); ++i) {
-      if (INSTRUCTION_ANALYZER_DEBUG) {
-        std::cout << inst->operands[i] << " ";
-      }
-
       pos = inst->operands[i].find("R");
       if (pos != std::string::npos) {
         bool uniform = false;
@@ -458,6 +451,7 @@ InstructionStat::InstructionStat(Instruction *inst) {
         if (this->op.find(".LOAD") != std::string::npos) {
           // load
           if (this->op.find(".SHARED") != std::string::npos ||
+              this->op.find(".CONSTANT") != std::string::npos ||
               this->op.find(".LOCAL") != std::string::npos) {
             // memory 32-bit
             srcs.push_back(reg);
@@ -516,19 +510,15 @@ InstructionStat::InstructionStat(Instruction *inst) {
       pos = inst->operands[i].find("0x");
       if (pos != std::string::npos) {
         // Analyze immediate for barrier instruction only
-        if (this->op.find("DEPBAR") != std::string::npos) {
+        if (this->op.find(".BAR") != std::string::npos) {
           if (this->op.find(".LE") != std::string::npos) {
-            this->barrier_threshold = std::stoi(inst->operands[i]);
+            this->barrier_threshold = std::stoi(inst->operands[i], NULL, 0);
           } else if (this->op.find(".LT") != std::string::npos) {
-            this->barrier_threshold = std::stoi(inst->operands[i]) - 1;
+            this->barrier_threshold = std::stoi(inst->operands[i], NULL, 0) - 1;
           }
         }
       }
     }
-  }
-
-  if (INSTRUCTION_ANALYZER_DEBUG) {
-    std::cout << std::endl;
   }
 }
 
@@ -727,10 +717,6 @@ static void trackDependency(const std::map<int, InstructionStat *> &inst_stat_ma
           }
           break;
         }
-      }
-
-      if (barriers != -1) {
-        barriers -= 1;
       }
 
       if (INSTRUCTION_ANALYZER_DEBUG) {
