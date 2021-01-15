@@ -48,7 +48,7 @@ hpcrun -e CYCLES -e INSTRUCTIONS@4000000 app arg ...
 \end{verbatim}
 \end{quote}
 
-The units for timer-based sample sources (\verb|CPUTIME|, \verb|REALTIME|, and \verb|WALLCLOCK|) are microseconds,
+The units for timer-based sample sources (\verb|CPUTIME| and \verb|REALTIME| are microseconds,
 so to sample an application with tracing every 5,000 microseconds
 (200~times/second), you would use:
 
@@ -434,9 +434,7 @@ support for accessing  performance counters
 using the Linux \perfevents{} performance monitoring subsystem is
 built into the kernel.  \perfevents{}  provides a measurement substrate for PAPI on Linux.
 
-On Blue Gene platforms that are not based on Linux,
-PAPI is highly recommended as it provides an essential substrate for accessing
-hardware performance counters. On modern Linux systems that include support
+On modern Linux systems that include support
 for \verb|perf_events|, PAPI is only recommended for monitoring 
 events outside the scope of the \verb|perf_events| interface. 
 
@@ -483,10 +481,10 @@ within the loop is likely to be off.  But as long as the loop is long
 enough, the count for the loop as a whole (and up the tree) should be
 accurate.
 
-\subsection{WALLCLOCK, REALTIME and CPUTIME}
+\subsection{REALTIME and CPUTIME}
 
-\HPCToolkit{} supports three timer-based sample sources: \verb|CPUTIME|,
-\verb|REALTIME| and \verb|WALLCLOCK|.
+\HPCToolkit{} supports three timer-based sample sources: \verb|CPUTIME| and
+\verb|REALTIME|.
 The unit for periods of these timers is microseconds.
 
 Before describing this capability further, it is worth noting
@@ -505,24 +503,6 @@ profiling multithreaded programs.
 Sampling using the \verb|REALTIME| sample source
 may break some applications that don't handle interrupted syscalls well.  In that
 case, consider using \verb|CPUTIME| instead.
-It is worth noting that \verb|REALTIME| and \verb|CPUTIME| are not available on Blue Gene,
-where compute nodes run a custom microkernel instead of Linux.
-
-The \verb|WALLCLOCK| sample source is based on the \verb|ITIMER_PROF|
-interval timer. 
-\verb|WALLCLOCK| counts time when an application is running or the kernel is running on behalf of the
-application. 
-Unlike the POSIX timers that support  \verb|CPUTIME| and \verb|REALTIME|,
-the interval timer supporting \verb|WALLCLOCK| does not support thread-specific signal delivery 
-on Linux. 
-\verb|WALLCLOCK| is available on Blue Gene even though \verb|REALTIME| and \verb|CPUTIME| are not.
-On Linux the maximum interrupt rate for the interval itimer is limited by the
-system's Hz rate, commonly 1,000 cycles per second, but may be lower.
-That is, \verb|WALLCLOCK@10| will not generate any higher sampling rate
-than \verb|WALLCLOCK@1000|.  
-On IBM Blue Gene, the interval timer is not
-bound by the Hz rate and so sampling rates faster than 1,000 per
-second are possible.
 
 The following example, which specifies a period of 5000 microseconds will sample
 each thread in \verb|app| at a rate of approximately 200 times per second.
@@ -535,7 +515,7 @@ hpcrun -e REALTIME@5000 app arg ...
 
 
 \noindent {\it Note:} do not use more than one timer-based sample source to monitor a program execution.
-When using a sample source such as \verb|CPUTIME|, \verb|REALTIME|, or \verb|WALLCLOCK|,
+When using a sample source such as \verb|CPUTIME| or \verb|REALTIME|,
 we recommend not using another time-based sampling source such as 
 Linux \perfevents{} CYCLES or PAPI's \verb|PAPI_TOT_CYC|. 
 Technically, this is feasible and \hpcrun{} won't die.
@@ -873,13 +853,6 @@ Your system may have a module installed for \verb|hpctoolkit| with the
 correct settings for \verb|PATH|, \verb|HPCTOOLKIT|, etc.  In that case,
 the easiest solution is to load the \verb|hpctoolkit| module.  Try
 ``\verb|module show hpctoolkit|'' to see if it sets \verb|HPCTOOLKIT|.
-
-\subsection{Blue Gene/Q Systems}
-Blue Gene Q systems provide the \verb|WALLCLOCK| interval timer, but not the 
-POSIX \verb|CPUTIME| and \verb|REALTIME| timers.
-
-The Linux \verb|perf_events| subsystem is unavailable on Blue Gene Q systems. 
-One should use the PAPI interface to monitor executions using hardware performance counters. 
 
 \subsection{ARM Systems}
 \HPCToolkit{}'s measurement infrastructure depends upon \verb|libunwind| for call stack unwinding on ARM.
