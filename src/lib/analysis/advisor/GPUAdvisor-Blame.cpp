@@ -772,6 +772,7 @@ void GPUAdvisor::trackDepInit(int to_vma, int from_vma, int dst, CCTEdgePathMap 
   trackDep(from_vma, to_vma, dst, from_block, to_block, 0, latency, visited_blocks, path, paths,
            track_type, fixed, barrier_threshold);
 
+  std::vector<bool> new_paths;
   // Merge paths
   for (auto &path : paths) {
     bool new_path = true;
@@ -793,8 +794,12 @@ void GPUAdvisor::trackDepInit(int to_vma, int from_vma, int dst, CCTEdgePathMap 
         break;
       }
     }
-    if (new_path == true) {
-      cct_edge_path_map[from_vma][to_vma].push_back(path);
+    new_paths.push_back(new_path);
+  }
+
+  for (size_t i = 0; i < paths.size(); ++i) {
+    if (new_paths[i]) {
+      cct_edge_path_map[from_vma][to_vma].push_back(paths[i]);
     }
   }
 }
