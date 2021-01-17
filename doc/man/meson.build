@@ -55,7 +55,6 @@ _srcs = [
   {'src': files('hpcproftt.tex'), 'if': hpcproftt_exe},
   {'src': files('hpcsummary.tex'), 'ifvar': 'hpcsummary_script', 'stem': 'hpcsummary'},
 
-  {'src': files('hpctraceviewer.tex'), 'stem': 'hpctraceviewer'},
   {'src': files('hpcviewer.tex'), 'stem': 'hpcviewer'},
 ]
 

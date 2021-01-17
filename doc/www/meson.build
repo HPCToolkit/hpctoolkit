@@ -48,6 +48,7 @@ _srcs = [files(
 
   'index.html',
   'documentation.html',
+  'download.html',
   'examples.html',
   'overview.html',
   'software.html',
