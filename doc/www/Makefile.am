@@ -72,6 +72,7 @@ MYSOURCES = \
 	index.html \
 	\
 	documentation.html \
+	download.html \
 	examples.html \
 	overview.html \
 	publications.html \
