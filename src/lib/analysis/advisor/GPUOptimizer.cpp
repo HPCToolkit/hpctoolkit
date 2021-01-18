@@ -679,10 +679,10 @@ std::vector<BlameStats> GPUAsyncCopyOptimizer::match_impl(const KernelBlame &ker
 
   // Find top latency pairs
   BlameStats stall_blame_stats;
-  for (auto *inst_blame : kernel_blame.lat_inst_blame_ptrs) {
+  for (auto *inst_blame : kernel_blame.stall_inst_blame_ptrs) {
     auto *from_inst = inst_blame->src_inst;
     auto *to_inst = inst_blame->dst_inst;
-    if (from_inst->op.find(".GLOBAL") != std::string::npos &&
+    if (from_inst->op.find("LOAD.GLOBAL") != std::string::npos &&
         to_inst->op.find(".SHARED") != std::string::npos) {
       bool find = false;
       for (auto dst : from_inst->dsts) {
