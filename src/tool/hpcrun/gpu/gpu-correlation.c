@@ -77,7 +77,7 @@ typedef struct gpu_correlation_t {
 
   // correlation info
   uint64_t host_correlation_id;
-  gpu_op_ccts_t gpu_op_ccts; 
+  gpu_op_ccts_t gpu_op_ccts;
 
   uint64_t cpu_submit_time;
 
@@ -91,7 +91,7 @@ typedef struct gpu_correlation_t {
 
 
 //******************************************************************************
-// interface operations 
+// interface operations
 //******************************************************************************
 
 void
@@ -105,7 +105,7 @@ gpu_correlation_range_produce
  gpu_activity_channel_t *activity_channel
 )
 {
-  PRINT("Produce correlation id %lu\n", host_correlation_id);
+  PRINT("Produce correlation id 0x%lx\n", host_correlation_id);
   c->host_correlation_id = host_correlation_id;
   c->gpu_op_ccts = *gpu_op_ccts;
   c->activity_channel = activity_channel;
@@ -135,8 +135,8 @@ gpu_correlation_consume
  gpu_correlation_t *c
 )
 {
-#if UNIT_TEST 
-    printf("gpu_correlation_consume(%ld, %ld,%ld)\n", c->host_correlation_id); 
+#if UNIT_TEST
+    printf("gpu_correlation_consume(%ld, %ld,%ld)\n", c->host_correlation_id);
 #else
     PRINT("Consume correlation id %lu\n", c->host_correlation_id);
 #ifdef NEW_CUPTI
@@ -163,7 +163,7 @@ gpu_correlation_alloc
 void
 gpu_correlation_free
 (
- gpu_correlation_channel_t *channel, 
+ gpu_correlation_channel_t *channel,
  gpu_correlation_t *c
 )
 {

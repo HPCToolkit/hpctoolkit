@@ -224,9 +224,9 @@ cuda_bind
   CHK_DLSYM(cudart, cudaGetDevice);
   CHK_DLSYM(cudart, cudaRuntimeGetVersion);
 
-  return 0;
+  return DYNAMIC_BINDING_STATUS_OK;
 #else
-  return -1;
+  return DYNAMIC_BINDING_STATUS_ERROR;
 #endif // ! HPCRUN_STATIC_LINK
 }
 
@@ -420,16 +420,20 @@ cuda_context_sync
  CUcontext ctx
 )
 {
+#ifndef HPCRUN_STATIC_LINK
   int ret = 0;
   api_internal = true;
- if (cuda_context_set(ctx)) {
-   HPCRUN_CUDA_API_CALL(cuCtxSynchronize, ());
-   ret = 0;
- } else {
-   ret = -1;
- }
- api_internal = false;
- return ret;
+  if (cuda_context_set(ctx)) {
+    HPCRUN_CUDA_API_CALL(cuCtxSynchronize, ());
+    ret = 0;
+  } else {
+    ret = -1;
+  }
+  api_internal = false;
+  return ret;
+#else
+  return -1;
+#endif
 }
 
 
@@ -439,10 +443,14 @@ cuda_context_set
  CUcontext ctx
 )
 {
+#ifndef HPCRUN_STATIC_LINK
   api_internal = true;
   HPCRUN_CUDA_API_CALL(cuCtxSetCurrent, (ctx));  
   api_internal = false;
   return 0;
+#else
+  return -1;
+#endif
 }
 
 

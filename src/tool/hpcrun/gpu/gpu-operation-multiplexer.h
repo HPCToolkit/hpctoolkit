@@ -84,13 +84,6 @@ gpu_operation_multiplexer_my_channel_init
 
 
 void
-gpu_operation_multiplexer_init
-(
- void
-);
-
-
-void
 gpu_operation_multiplexer_fini
 (
  void

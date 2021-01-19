@@ -151,14 +151,16 @@ opencl_instrumentation_enable
 void
 opencl_api_thread_finalize
 (
- void *
+ void *args,
+ int how
 );
 
 
 void
 opencl_api_process_finalize
 (
- void *
+ void *args,
+ int how
 );
 
 

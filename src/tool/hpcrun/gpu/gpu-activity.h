@@ -233,12 +233,15 @@ typedef struct gpu_pc_sampling_info_t {
 } gpu_pc_sampling_info_t;
 
 
+typedef struct gpu_activity_t gpu_activity_t;
+
 typedef void (*gpu_pc_sampling2_translate_fn_t)
 (
  void *pc_sampling_data,
  uint64_t index,
- gpu_pc_sampling2_t *gpu_pc_sampling2,
- uint32_t period
+ gpu_activity_t *gpu_activity,
+ uint32_t period,
+ uint32_t range_id
 );
 
 

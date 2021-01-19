@@ -41,36 +41,53 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef roctracer_api_h
-#define roctracer_api_h
+#ifndef gpu_range_id_map_h
+#define gpu_range_id_map_h
 
 
+//*****************************************************************************
+// system includes
+//*****************************************************************************
 
-//******************************************************************************
+#include <stdint.h>
+
+//*****************************************************************************
+// type definitions 
+//*****************************************************************************
+
+typedef struct gpu_range_id_map_entry_t gpu_range_id_map_entry_t;
+
+//*****************************************************************************
 // interface operations
-//******************************************************************************
+//*****************************************************************************
 
-void
-roctracer_init
+gpu_range_id_map_entry_t *
+gpu_range_id_map_lookup
 (
- void
+ uint32_t range_id
 );
 
 
 void
-roctracer_fini
+gpu_range_id_map_insert
 (
- void *args,
- int how
+ uint32_t range_id,
+ thread_data_t *thread_data
 );
 
 
-int
-roctracer_bind
+void
+gpu_range_id_map_delete
 (
-  void
+ uint32_t range_id
 );
 
+
+thread_data_t *
+gpu_range_id_map_entry_thread_data_get
+(
+ gpu_range_id_map_entry_t *entry
+);
 
 
 #endif

@@ -311,6 +311,8 @@ typedef enum {
 
 // gpu activity times
 #define FORALL_GTIMES(macro)					\
+  macro("GPUOP (sec)",              GPU_TIME_OP,		\
+	"GPU time: all operations (seconds)")  \
   macro("GKER (sec)",               GPU_TIME_KER,			\
 	"GPU time: kernel execution (seconds)")			\
   macro("GMEM (sec)",               GPU_TIME_MEM,			\
@@ -323,7 +325,6 @@ typedef enum {
 	"GPU time: implicit data copy (seconds)")		\
   macro("GSYNC (sec)",              GPU_TIME_SYNC,		\
 	"GPU time: synchronization (seconds)")
-
 
 // gpu instruction count
 #define FORALL_GPU_INST(macro)			\

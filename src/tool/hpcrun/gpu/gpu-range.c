@@ -8,6 +8,9 @@
 #include <hpcrun/threadmgr.h>
 #include <hpcrun/thread_data.h>
 
+#include "gpu-range-id-map.h"
+#include "gpu-metrics.h"
+
 static atomic_ullong correlation_id_lead = ATOMIC_VAR_INIT(0);
 static atomic_ullong correlation_id_done = ATOMIC_VAR_INIT(0);
 
@@ -57,7 +60,15 @@ gpu_range_attribute
 {
   // Set current thread data
   thread_data_t *cur_td = hpcrun_safe_get_td();
-  thread_data_t *range_td = gpu_range_thread_data_acquire(activity->range_id);
+  thread_data_t *range_td = NULL;
+
+  gpu_range_id_map_entry_t *entry = gpu_range_id_map_lookup(activity->range_id);
+  if (entry == NULL) {
+    range_td = gpu_range_thread_data_acquire(activity->range_id);
+    gpu_range_id_map_insert(activity->range_id, range_td);
+  } else {
+    range_td = gpu_range_id_map_entry_thread_data_get(entry);
+  }
   hpcrun_set_thread_data(range_td);
 
   cct_bundle_t *cct_bundle = &(range_td->core_profile_trace_data.epoch->csdata);
@@ -65,14 +76,12 @@ gpu_range_attribute
   cct_node_t *cct_context = hpcrun_cct_insert_context(cct_root, (uint16_t)context_id);
 
   // Set current activity data
-  gpu_activity_t *cct_node = activity->cct_node;
   activity->cct_node = cct_context;
 
   gpu_metrics_attribute(activity);
 
   // Reset thread data and activity data
   hpcrun_set_thread_data(cur_td);
-  activity->cct_node = cct_node;
 }
 
 

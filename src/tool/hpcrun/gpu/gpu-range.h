@@ -1,5 +1,5 @@
-#ifndef gpu_trace_h
-#define gpu_trace_h
+#ifndef gpu_range_h
+#define gpu_range_h
 
 #include <stdint.h>
 #include <stdbool.h>
@@ -62,4 +62,4 @@ gpu_range_is_lead
 (
 );
 
-#endif  // gpu_trace_h
+#endif  // gpu_range_h

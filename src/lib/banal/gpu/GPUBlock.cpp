@@ -1,6 +1,8 @@
 #include "GPUBlock.hpp"
 #include <Instruction.h>
 
+#include <include/hpctoolkit-config.h>
+
 #define MAX_INST_SIZE 32
 
 namespace Dyninst {
@@ -18,6 +20,7 @@ Address GPUBlock::last() const {
 
 
 void GPUBlock::getInsns(Insns &insns) const {
+#ifdef DYNINST_SUPPORTS_INTEL_GPU
   unsigned char dummy_inst[MAX_INST_SIZE];
 
   for (auto &inst_offset : _inst_offsets) {
@@ -30,6 +33,7 @@ void GPUBlock::getInsns(Insns &insns) const {
     InstructionAPI::Instruction inst(op, size, dummy_inst, _arch);
     insns.emplace(offset, inst);
   }
+#endif  // DYNINST_SUPPORTS_INTEL_GPU
 }
 
 }

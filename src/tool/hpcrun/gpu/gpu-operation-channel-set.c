@@ -96,7 +96,9 @@ typedef struct {
   gpu_operation_channel_ptr_t channel;
 } typed_stack_elem(gpu_operation_channel_ptr_t);
 
+
 typed_stack_declare_type(gpu_operation_channel_ptr_t);
+
 
 //******************************************************************************
 // local data

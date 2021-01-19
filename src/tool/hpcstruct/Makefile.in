@@ -164,7 +164,7 @@ am__DEPENDENCIES_4 = $(HPCLIB_Analysis) $(HPCLIB_Banal) \
 	$(HPCLIB_ProfLean) $(HPCLIB_ISA) $(am__DEPENDENCIES_3) \
 	$(HPCLIB_XML) $(HPCLIB_Support) $(HPCLIB_SupportLean) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1) $(HPCLIB_gettext) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1)
 hpcstruct_bin_DEPENDENCIES = $(am__DEPENDENCIES_4)
@@ -406,6 +406,7 @@ OPT_CUPTI_LDFLAGS = @OPT_CUPTI_LDFLAGS@
 OPT_GTPIN = @OPT_GTPIN@
 OPT_GTPIN_IFLAGS = @OPT_GTPIN_IFLAGS@
 OPT_GTPIN_LDFLAGS = @OPT_GTPIN_LDFLAGS@
+OPT_GTPIN_LIBDIR = @OPT_GTPIN_LIBDIR@
 OPT_IGC = @OPT_IGC@
 OPT_IGC_IFLAGS = @OPT_IGC_IFLAGS@
 OPT_IGC_LDFLAGS = @OPT_IGC_LDFLAGS@
@@ -421,9 +422,8 @@ OPT_PAPI_IFLAGS = @OPT_PAPI_IFLAGS@
 OPT_PAPI_LDFLAGS = @OPT_PAPI_LDFLAGS@
 OPT_PAPI_LIBPATH = @OPT_PAPI_LIBPATH@
 OPT_PAPI_LIBS_STAT = @OPT_PAPI_LIBS_STAT@
-OPT_ROCM = @OPT_ROCM@
 OPT_ROCM_IFLAGS = @OPT_ROCM_IFLAGS@
-OPT_ROCM_LDFLAGS = @OPT_ROCM_LDFLAGS@
+OPT_ROCM_LD_LIB_PATH = @OPT_ROCM_LD_LIB_PATH@
 OPT_UPC_IFLAGS = @OPT_UPC_IFLAGS@
 OPT_UPC_LDFLAGS = @OPT_UPC_LDFLAGS@
 OTOOL = @OTOOL@
@@ -498,7 +498,6 @@ datarootdir = @datarootdir@
 docdir = @docdir@
 dvidir = @dvidir@
 exec_prefix = @exec_prefix@
-export_ld_audit = @export_ld_audit@
 hash_fcn = @hash_fcn@
 hash_value = @hash_value@
 host = @host@
@@ -559,6 +558,7 @@ HPCLIB_Prof = $(top_builddir)/src/lib/prof/libHPCprof.la
 HPCLIB_ProfXML = $(top_builddir)/src/lib/profxml/libHPCprofxml.la
 HPCLIB_ProfLean = $(top_builddir)/src/lib/prof-lean/libHPCprof-lean.la
 HPCLIB_Binutils = $(top_builddir)/src/lib/binutils/libHPCbinutils.la
+HPCLIB_gettext = $(top_builddir)/src/lib/binutils/libHPCgettext.la
 HPCLIB_ISA = $(top_builddir)/src/lib/isa/libHPCisa.la
 HPCLIB_XML = $(top_builddir)/src/lib/xml/libHPCxml.la
 HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
@@ -593,6 +593,7 @@ MYLDADD = \
 	$(BOOST_LFLAGS) \
 	$(MY_ELF_DWARF) \
 	@BINUTILS_LIBS@ \
+	$(HPCLIB_gettext) \
 	$(LZMA_LDFLAGS_DYN) \
 	$(IGC_LDFLGS) \
 	$(MBEDTLS_LIBS) \

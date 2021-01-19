@@ -120,9 +120,9 @@ endif
 
 if OPT_ENABLE_HPCRUN_DYNAMIC
   noinst_LTLIBRARIES = libhpcrun.la
-if OPT_ENABLE_RTLD_AUDIT
+  pkglib_LTLIBRARIES += libhpcrun_fake_audit.la
   pkglib_LTLIBRARIES += libhpcrun_audit.la
-endif
+  pkglib_LTLIBRARIES += libhpcrun_dlmopen.la
   pkglib_LTLIBRARIES += libhpcrun_ga.la
   pkglib_LTLIBRARIES += libhpcrun_gprof.la
   pkglib_LTLIBRARIES += libhpcrun_io.la
@@ -461,11 +461,6 @@ MY_DYNAMIC_FILES = 			\
 	monitor-exts/openmp.c		\
         custom-init-dynamic.c
 
-if OPT_ENABLE_RTLD_AUDIT
-else
-MY_DYNAMIC_FILES += audit/fake-auditor.c
-endif
-
 MY_STATIC_FILES = 			\
 	fnbounds/fnbounds_static.c      \
         custom-init-static.c
@@ -524,7 +519,8 @@ if OPT_ENABLE_NEW_CUPTI
 MY_NEW_CUPTI_FILES = gpu/nvidia/cupti-pc-sampling-api.c \
 	gpu/nvidia/cupti-pc-sampling-data.c \
 	gpu/nvidia/cupti-context-map.c \
-	gpu/gpu-range.c
+	gpu/gpu-range.c \
+	gpu/gpu-range-id-map.c
 endif
 
 if OPT_ENABLE_OPENCL
@@ -535,7 +531,12 @@ MY_OPENCL_FILES = \
 	gpu/opencl/opencl-activity-translate.c \
 	gpu/opencl/opencl-h2d-map.c \
 	gpu/opencl/opencl-queue-map.c \
-	gpu/opencl/opencl-context-map.c 
+	gpu/opencl/opencl-context-map.c
+
+pkglib_LTLIBRARIES += libhpcrun_opencl.la
+libhpcrun_opencl_la_CPPFLAGS  = -I$(top_srcdir)/src $(OPENCL_IFLAGS)
+libhpcrun_opencl_la_SOURCES   = gpu/opencl/opencl-api-wrappers.c
+libhpcrun_opencl_la_LDFLAGS   = -Wl,-Bsymbolic
 endif
 
 if OPT_ENABLE_GTPIN
@@ -564,6 +565,11 @@ MY_LEVEL0_FILES=\
 	gpu/level0/level0-data-node.c \
 	gpu/level0/level0-event-map.c \
 	gpu/level0/level0-handle-map.c
+
+pkglib_LTLIBRARIES += libhpcrun_level0.la
+libhpcrun_level0_la_SOURCES   = gpu/level0/level0-api-wrappers.c
+libhpcrun_level0_la_LDFLAGS   = -Wl,-Bsymbolic
+
 endif
 
 MY_UPC_FILES = sample-sources/upc.c
@@ -615,10 +621,11 @@ libhpcrun_la_SOURCES = 			\
 	$(MY_BASE_FILES)		\
 	$(MY_DYNAMIC_FILES)
 
-if OPT_ENABLE_RTLD_AUDIT
+libhpcrun_fake_audit_la_SOURCES =	\
+	audit/fake-auditor.c
+
 libhpcrun_audit_la_SOURCES =		\
 	audit/auditor.c
-endif
 
 libhpcrun_o_SOURCES = 			\
 	$(MY_BASE_FILES)		\
@@ -678,12 +685,13 @@ if OPT_BGQ_BACKEND
   libhpcrun_la_CPPFLAGS += -I$(srcdir)/utilities/bgq-cnk
 endif
 
-if OPT_ENABLE_RTLD_AUDIT
+libhpcrun_fake_audit_la_CPPFLAGS =	\
+	$(MY_CPP_DEFINES)		\
+	$(MY_INCLUDE_DIRS)
+
 libhpcrun_audit_la_CPPFLAGS =		\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
-endif
-
 
 libhpcrun_o_CPPFLAGS =			\
 	-DHPCRUN_STATIC_LINK		\
@@ -811,9 +819,9 @@ OUR_LZMA_A = $(top_builddir)/src/extern/lzma/liblzma.a
 
 libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic
 
-if OPT_ENABLE_RTLD_AUDIT
+libhpcrun_fake_audit_la_LDFLAGS = -Wl,-Bsymbolic -ldl
+
 libhpcrun_audit_la_LDFLAGS = -Wl,-Bsymbolic -ldl
-endif
 
 libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic
 
@@ -1071,9 +1079,8 @@ endif
 
 if OPT_ENABLE_GTPIN
   libhpcrun_la_SOURCES  += $(MY_GTPIN_FILES)
-  libhpcrun_la_CPPFLAGS += -DENABLE_GTPIN
+  libhpcrun_la_CPPFLAGS += -DENABLE_GTPIN -DGTPIN_LIBDIR=$(OPT_GTPIN_LIBDIR)
   libhpcrun_la_CFLAGS   += $(OPT_GTPIN_IFLAGS)
-  libhpcrun_la_LDFLAGS  += $(OPT_GTPIN_LDFLAGS)
 
   MY_CPP_DEFINES  += -DHPCRUN_SS_GTPIN
 endif
@@ -1084,6 +1091,9 @@ if UNW_LIBUNW
   UNW_DYNAMIC_LD_FLAGS = $(UNW_LIBUNW_LD_FLAGS)
   UNW_STATIC_LD_FLAGS =  $(UNW_LIBUNW_LD_FLAGS)
 endif
+
+libhpcrun_dlmopen_la_SOURCES   = dlmopen/dlmopen.c
+libhpcrun_dlmopen_la_LDFLAGS   = -ldl
 
 libhpcrun_la_CFLAGS += $(GOTCHA_IFLAGS)
 libhpcrun_la_LDFLAGS += $(GOTCHA_LDFLAGS)
@@ -1183,6 +1193,7 @@ endif
 MONITOR_NAMES = -G 'monitor_*'
 HPCRUN_NAMES =  -G 'hpcrun_*' -G 'hpctoolkit_*'
 MISC_NAMES =    -G 'debug_flag_*' -G 'messages_*' -G ompt_start_tool
+OPENCL_NAMES = -G 'clBuildProgram' -G 'clCreate*' -G 'clEnqueue*' -G 'clSetKernelArg' -G 'cl*Event*'
 
 DYN_SYSCALL_LIST = poll ppoll pselect select
 DYN_SYSCALL_NAMES = $(foreach name,$(DYN_SYSCALL_LIST),-G $(name))
@@ -1199,7 +1210,7 @@ if OPT_ENABLE_HPCRUN
 	mkdir $(WORK_DYN)
 	cd $(WORK_DYN) && $(AR) x ../.libs/libhpcrun.a
 	$(LD) -r $(WORK_DYN)/*.o $(libhpcrun_la_LIBADD) -o $(WORK_DYN)/part1.o
-	$(OBJCOPY) -w $(MONITOR_NAMES) $(HPCRUN_NAMES) $(DYN_SYSCALL_NAMES) $(MISC_NAMES)  \
+	$(OBJCOPY) -w $(MONITOR_NAMES) $(HPCRUN_NAMES) $(DYN_SYSCALL_NAMES) $(MISC_NAMES) $(OPENCL_NAMES) \
 		$(WORK_DYN)/part1.o $(WORK_DYN)/part2.o
 	$(CC) -shared $(WORK_DYN)/part2.o $(libhpcrun_la_LDFLAGS) -o $(WORK_DYN)/libhpcrun.so
 	$(INSTALL) -m 0755 $(WORK_DYN)/libhpcrun.so $(DESTDIR)$(pkglibdir)

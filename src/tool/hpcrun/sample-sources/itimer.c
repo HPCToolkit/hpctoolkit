@@ -123,18 +123,7 @@
 // SIGEV_THREAD_ID is also thread-specific and it seems that THREAD is
 // limited by the kernel Hz rate.
 
-// Implement WALLCLOCK as CPUTIME where possible, except on Blue Gene
-// where we need to use ITIMER.
-
 #define IDLE_METRIC_NAME     "idleness (sec)"
-
-#define WALLCLOCK_EVENT_NAME   "WALLCLOCK"
-#define WALLCLOCK_METRIC_NAME  "WALLCLOCK (sec)"
-
-#define ITIMER_EVENT_NAME    "ITIMER"
-#define ITIMER_METRIC_NAME   "ITIMER (sec)"
-#define ITIMER_SIGNAL         SIGPROF
-#define ITIMER_TYPE           ITIMER_PROF
 
 #define REALTIME_EVENT_NAME   "REALTIME"
 #define REALTIME_METRIC_NAME  "REALTIME (sec)"
@@ -153,15 +142,7 @@
 #define sigev_notify_thread_id  _sigev_un._tid
 #endif
 
-#if !defined(HOST_SYSTEM_IBM_BLUEGENE)
-#define USE_ELAPSED_TIME_FOR_WALLCLOCK
-#endif
-
-#ifdef USE_ELAPSED_TIME_FOR_WALLCLOCK
 #define sample_period 1
-#else
-#define sample_period period
-#endif
 
 #define DEFAULT_PERIOD  5000L
 
@@ -187,7 +168,6 @@ itimer_signal_handler(int sig, siginfo_t *siginfo, void *context);
  * local variables
  *****************************************************************************/
 
-static bool use_itimer = false;
 static bool use_realtime = false;
 static bool use_cputime = false;
 
@@ -293,9 +273,10 @@ hpcrun_start_timer(thread_data_t *td)
   if (use_realtime || use_cputime) {
     return hpcrun_settime(td, &itspec_start);
   }
+#else
+  EEMSG("start_timer: neither clock nor realtime Linux timer requested.\n");
 #endif
-
-  return setitimer(ITIMER_TYPE, &itval_start, NULL);
+  return -1;
 }
 
 static int
@@ -312,9 +293,10 @@ hpcrun_stop_timer(thread_data_t *td)
 
     return ret;
   }
+#else
+  EEMSG("stop_itimer: neither clock nor realtime Linux timer requested.\n");
 #endif
-
-  return setitimer(ITIMER_TYPE, &itval_stop, NULL);
+  return -1;
 }
 
 // Factor out the body of the start method so we can restart itimer
@@ -366,15 +348,17 @@ hpcrun_restart_timer(sample_source_t *self, int safe)
     hpcrun_ssfail_start("itimer");
   }
 
-#ifdef USE_ELAPSED_TIME_FOR_WALLCLOCK
-  ret = time_getTimeReal(&TD_GET(last_time_us));
+  // get the current value of the appropriate clock for this thread
+  if (use_cputime) {
+    ret = time_getTimeCPU(&TD_GET(last_time_us));
+  } else {
+    ret = time_getTimeReal(&TD_GET(last_time_us));
+  }
+
   if (ret != 0) {
-    if (safe) {
-      EMSG("time_getTimeReal (clock_gettime) failed!");
-    }
+    EMSG("%s clock_gettime failed!", (use_cputime ? "time_getTimeCPU" : "time_getTimeReal") );
     monitor_real_abort();
   }
-#endif
 
   TD_GET(ss_state)[self->sel_idx] = START;
 }
@@ -470,9 +454,7 @@ METHOD_FN(shutdown)
 static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
-  return hpcrun_ev_is(ev_str, ITIMER_EVENT_NAME)
-    || hpcrun_ev_is(ev_str, WALLCLOCK_EVENT_NAME)
-    || hpcrun_ev_is(ev_str, CPUTIME_EVENT_NAME)
+  return hpcrun_ev_is(ev_str, CPUTIME_EVENT_NAME)
     || hpcrun_ev_is(ev_str, REALTIME_EVENT_NAME);
 }
  
@@ -488,26 +470,6 @@ METHOD_FN(process_event_list, int lush_metrics)
   char* event = start_tok(evlist);
 
   TMSG(ITIMER_CTL,"checking event spec = %s",event);
-
-  if (hpcrun_ev_is(event, WALLCLOCK_EVENT_NAME)) {
-#ifdef HOST_SYSTEM_IBM_BLUEGENE
-    use_itimer = true;
-    the_event_name = WALLCLOCK_EVENT_NAME;
-    the_metric_name = WALLCLOCK_METRIC_NAME;
-    the_signal_num = ITIMER_SIGNAL;
-#else
-#ifdef ENABLE_CLOCK_CPUTIME
-    use_cputime = true;
-    the_event_name = CPUTIME_EVENT_NAME;
-    the_metric_name = CPUTIME_METRIC_NAME;
-    the_signal_num = REALTIME_SIGNAL;
-#else
-    EEMSG("Event %s (%s) is not available on this system.",
-	  WALLCLOCK_EVENT_NAME, CPUTIME_EVENT_NAME);
-    hpcrun_ssfail_unknown(event);
-#endif
-#endif
-  }
 
   if (hpcrun_ev_is(event, REALTIME_EVENT_NAME)) {
 #ifdef ENABLE_CLOCK_REALTIME
@@ -533,14 +495,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 #endif
   }
 
-  if (hpcrun_ev_is(event, ITIMER_EVENT_NAME)) {
-    use_itimer = true;
-    the_event_name = ITIMER_EVENT_NAME;
-    the_metric_name = ITIMER_METRIC_NAME;
-    the_signal_num = ITIMER_SIGNAL;
-  }
-
-  if (!use_itimer && !use_realtime && !use_cputime) {
+  if (!use_realtime && !use_cputime) {
     // should never get here if supports_event is true
     hpcrun_ssfail_unknown(event);
   }
@@ -550,7 +505,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   // store event threshold
   METHOD_CALL(self, store_event, ITIMER_EVENT, period);
-  TMSG(OPTIONS,"wallclock period set to %ld",period);
+  TMSG(OPTIONS,"Linux timer period set to %ld",period);
 
   // set up file local variables for sample source control
   int seconds = period / 1000000;
@@ -568,14 +523,6 @@ METHOD_FN(process_event_list, int lush_metrics)
   itspec_start.it_value.tv_nsec = 1000 * microseconds;
   itspec_start.it_interval.tv_sec = 0;
   itspec_start.it_interval.tv_nsec = 0;
-
-  // older versions of BG/P incorrectly delivered SIGALRM when
-  // interval is zero. I (krentel) believe this is no longer
-  // necessary, but it can't really hurt.
-#ifdef HOST_SYSTEM_IBM_BLUEGENE
-  itval_start.it_interval.tv_sec = 3600;
-  itspec_start.it_interval.tv_sec = 3600;
-#endif
 
   memset(&itval_stop, 0, sizeof(itval_stop));
   memset(&itspec_stop, 0, sizeof(itspec_stop));
@@ -636,9 +583,8 @@ METHOD_FN(display_events)
   printf("---------------------------------------------------------------------------\n");
   printf("%s\tReal clock time used by the thread in microseconds.\n"
 	 "\t\tBased on the CLOCK_REALTIME timer with the SIGEV_THREAD_ID\n"
-	 "\t\textension.  Includes time blocked in the kernel, but may\n"
-	 "\t\tnot be available on all systems (eg, Blue Gene) and may\n"
-	 "\t\tbreak some syscalls that are sensitive to EINTR.\n",
+	 "\t\textension.  Includes time blocked in the kernel, and may\n"
+	 "\t\tbreak the invocation of some syscalls that are sensitive to EINTR.\n",
 	 REALTIME_EVENT_NAME);
 #ifndef ENABLE_CLOCK_REALTIME
   printf("\t\tNot available on this system.\n");
@@ -646,18 +592,13 @@ METHOD_FN(display_events)
   printf("\n");
   printf("%s  \tCPU clock time used by the thread in microseconds.  Based\n"
 	 "\t\ton the CLOCK_THREAD_CPUTIME_ID timer with the SIGEV_THREAD_ID\n"
-	 "\t\textension.  May not be available on all systems (eg, Blue Gene).\n",
+	 "\t\textension.\n",
 	 CPUTIME_EVENT_NAME);
 #ifndef ENABLE_CLOCK_CPUTIME
   printf("\t\tNot available on this system.\n");
 #endif
   printf("\n");
-  printf("%s \tCPU clock time used by the thread in microseconds.  Same\n"
-	 "\t\tas %s except on Blue Gene, where it is implemented\n"
-	 "\t\tby ITIMER_PROF.\n",
-	 WALLCLOCK_EVENT_NAME, CPUTIME_EVENT_NAME);
-  printf("\n");
-  printf("Note: do not use multiple timer events in the same run.\n");
+  printf("Note: only one of the above timer events may be used in a run.\n");
   printf("\n");
 }
 
@@ -697,7 +638,7 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
 
   // If we got a wallclock signal not meant for our thread, then drop the sample
   if (! wallclock_ok) {
-    EMSG("Received itimer signal, but thread not initialized");
+    EMSG("Received Linux timer signal, but thread not initialized");
   }
   // If the interrupt came from inside our code, then drop the sample
   // and return and avoid any MSG.
@@ -723,15 +664,23 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
 
   uint64_t metric_incr = 1; // default: one time unit
 
-#if defined (USE_ELAPSED_TIME_FOR_WALLCLOCK) 
+  // get the current time for the appropriate clock
   uint64_t cur_time_us = 0;
-  int ret = time_getTimeReal(&cur_time_us);
+  int ret;
+
+  if (use_cputime) {
+    ret = time_getTimeCPU(&cur_time_us);
+  } else {
+    ret = time_getTimeReal(&cur_time_us);
+  }
+
   if (ret != 0) {
-    EMSG("time_getTimeReal (clock_gettime) failed!");
+    EMSG("%s clock_gettime failed!", (use_cputime ? "time_getTimeCPU" : "time_getTimeReal") );
     monitor_real_abort();
   }
+  // compute the difference between it and the previous event on this thread
   metric_incr = cur_time_us - TD_GET(last_time_us);
-#endif
+
   // convert microseconds to seconds
   hpcrun_metricVal_t metric_delta = {.r = metric_incr / 1.0e6}; 
 
@@ -745,7 +694,7 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
     blame_shift_apply(metric_id, sv.sample_node, metric_incr);
   }
   if (hpcrun_is_sampling_disabled()) {
-    TMSG(ITIMER_HANDLER, "No itimer restart, due to disabled sampling");
+    TMSG(ITIMER_HANDLER, "No Linux timer restart due to disabled sampling");
   }
   else {
     hpcrun_restart_timer(self, 1);

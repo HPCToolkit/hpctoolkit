@@ -279,8 +279,9 @@ pc_sampling2_translate
 (
  void *pc_sampling_data,
  uint64_t index,
- gpu_pc_sampling2_t *gpu_pc_sampling2,
- uint32_t period
+ gpu_activity_t *gpu_activity,
+ uint32_t period,
+ uint32_t range_id
 )
 {
   CUpti_PCSamplingData *buffer_pc = cupti_pc_sampling_buffer_pc_get((cupti_pc_sampling_data_t *)pc_sampling_data);
@@ -301,17 +302,21 @@ pc_sampling2_translate
 
     if (samples > 0) {
       ip_normalized_t ip;
+      uint32_t index = stall_reason_index / 2 + 1;
       // TODO(Keren): fix apportion host_correlation id and pc
-      gpu_pc_sampling2[stall_reason_index / 2 + 1].host_correlation_id = 0; 
-      gpu_pc_sampling2[stall_reason_index / 2 + 1].pc = ip;
+      gpu_activity[index].details.pc_sampling2.host_correlation_id = 0; 
+      gpu_activity[index].details.pc_sampling2.pc = ip;
 
       if (stall_reason_index % 2 == 0) {
         // non-latency sample
-        gpu_pc_sampling2[stall_reason_index / 2 + 1].samples = samples * period;
+        gpu_activity[index].details.pc_sampling2.samples = samples * period;
       } else {
         // latency sample 
-        gpu_pc_sampling2[stall_reason_index / 2 + 1].latencySamples = samples * period;
+        gpu_activity[index].details.pc_sampling2.latencySamples = samples * period;
       }
+
+      gpu_activity[index].kind = GPU_ACTIVITY_PC_SAMPLING2;
+      gpu_activity[index].range_id = range_id;
     }
   }
 }
