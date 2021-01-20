@@ -752,7 +752,7 @@ Otherwise, the configuration will be applied only on the current view.
 To collect a trace for a program execution, one must instruct \HPCToolkit{}'s measurement system to collect a trace. 
 When launching a dynamically-linked executable with \hpcrun{}, add the {\tt -t } flag to enable tracing. 
 When launching a statically-linked executable, set the environment variable \verb|HPCRUN_TRACE=1| to enable tracing. 
-When collecting a trace, one must also specify a metric to measure.  The best way to collect a useful trace is to asynchronously sample the execution with a time-based metric such as {\tt REALTIME}, {\tt CYCLES}, or {\tt WALLCLOCK} (Blue Gene/Q only).
+When collecting a trace, one must also specify a metric to measure.  The best way to collect a useful trace is to asynchronously sample the execution with a time-based metric such as {\tt REALTIME}, {\tt CYCLES}, or {\tt CPUTIME}.
 
 As shown in Figure~\ref{fig:hpctraceviewer-callpath},  call path traces consist of data in three dimensions: \emph{profile} (process/thread rank), \emph{time}, and \emph{call path} depth.
 A \emph{\crosshair} in \hpctraceviewer{} is defined by a triplet $(p,t,d)$ where $p$ is the selected process/thread rank, $t$ is the selected time, and $d$ is the selected call path depth. 
