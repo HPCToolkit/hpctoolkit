@@ -48,14 +48,18 @@ _srcs = files(
   'ParallelAnalysis.cpp',
 )
 
-hpcprof_mpi_exe = executable('hpcprof-mpi', _srcs,
-  include_directories: tool_includes,
-  link_with: [analysis_lib, support_lib, prof_lib, prof_lean_lib],
-  dependencies: [mpi_cpp_d_dep, hpcprof_opt_dep],
-  install: true)
-summary('hpcprof-mpi', not is_disabler(hpcprof_mpi_exe), section: 'Applications', bool_yn: true)
-all_apps += hpcprof_mpi_exe
-
-if get_option('hpcprof').enabled() and mpi_cpp_d_dep.found()
+if not get_option('hpcprof').disabled()
+  hpcprof_mpi_exe = executable('hpcprof-mpi', _srcs,
+    include_directories: tool_includes,
+    link_with: [analysis_lib, support_lib, prof_lib, prof_lean_lib],
+    dependencies: [
+      dependency('libbfd', required: false).partial_dependency(compile_args: true, includes: true),
+      dependency('MPI', language: 'cpp', required: get_option('mpi'), disabler: true),
+    ],
+    install: true)
+  all_apps += hpcprof_mpi_exe
+endif
+if get_option('hpcprof').enabled() and get_option('mpi').enabled()
   assert(not is_disabler(hpcprof_mpi_exe), 'hpcprof-mpi required but disabled')
 endif
+summary('hpcprof-mpi', is_variable('hpcprof_mpi_exe') and not is_disabler(hpcprof_mpi_exe), section: 'Applications', bool_yn: true)

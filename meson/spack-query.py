@@ -69,5 +69,7 @@ for var in shlex.split(shellcode, comments=True):
 
 # Compose everything together into our final output. Meson supports \0 properly,
 # so we use that to separate our elements.
-print('\0'.join([summary] + ['I'+x for x in environs['CPATH']]
-                + ['L'+x for x in environs['LIBRARY_PATH']]))
+print('\0'.join(['V'+spec.format('{name}{@version}{/hash:7}')]
+                + ['I'+x for x in environs.get('CPATH', [])]
+                + ['I'+x for x in environs.get('CPLUS_INCLUDE_PATH', [])]
+                + ['L'+x for x in environs.get('LIBRARY_PATH', [])]))

@@ -49,9 +49,13 @@ _srcs = files(
   'server.c',
 )
 
-hpcfnbounds2_exe = executable('hpcfnbounds2', _srcs,
-  include_directories: tool_includes,
-  dependencies: [libelf_d_dep],
-  install: true, install_dir: get_option('libexecdir') / meson.project_name())
-summary('hpcfnbounds2', not is_disabler(hpcfnbounds2_exe), section: 'Applications', bool_yn: true)
-all_apps += hpcfnbounds2_exe
+if not get_option('hpcrun').disabled()
+  hpcfnbounds2_exe = executable('hpcfnbounds2', _srcs,
+    include_directories: tool_includes,
+    dependencies: [
+      dependency('libelf', required: get_option('hpcrun'), disabler: true),
+    ],
+    install: true, install_dir: get_option('libexecdir') / meson.project_name())
+  all_apps += hpcfnbounds2_exe
+endif
+summary('hpcfnbounds2', is_variable('hpcfnbounds2_exe') and not is_disabler(hpcfnbounds2_exe), section: 'Applications', bool_yn: true)

@@ -55,19 +55,25 @@ _deps = []
 
 if host_machine.cpu_family() == 'x86' or host_machine.cpu_family() == 'x86_64'
   _srcs += files('x86-process-ranges.cpp', 'amd-xop.c')
-  _deps += xed_d_dep
+  _deps += dependency('xed', required: false, disabler: true)
 elif host_machine.cpu_family() == 'aarch64'
   _srcs += files('arm-process-ranges.cpp')
 else
   _srcs += files('generic-process-ranges.cpp')
 endif
 
-hpcfnbounds_exe = executable('hpcfnbounds', _srcs,
-  include_directories: tool_includes,
-  link_with: [prof_lean_lib],
-  dependencies: [dyninst_d_dep, openmp_dep,
-    libdwarf_d_dep.partial_dependency(compile_args: true, link_args: true, includes: true)]
-    + _deps + [cc.find_library('dl')],
-  install: true, install_dir: get_option('libexecdir') / meson.project_name())
-summary('hpcfnbounds', not is_disabler(hpcfnbounds_exe), section: 'Applications', bool_yn: true)
-all_apps += hpcfnbounds_exe
+if not get_option('hpcrun').disabled()
+  hpcfnbounds_exe = executable('hpcfnbounds', _srcs,
+    include_directories: tool_includes,
+    link_with: [prof_lean_lib],
+    dependencies: [
+      dependency('dyninst', required: false, disabler: true),
+      dependency('OpenMP', required: get_option('openmp')),
+      dependency('libdwarf', required: false, disabler: true)
+        .partial_dependency(compile_args: true, includes: true),
+      cc.find_library('dl'),
+    ] + _deps,
+    install: true, install_dir: get_option('libexecdir') / meson.project_name())
+  all_apps += hpcfnbounds_exe
+endif
+summary('hpcfnbounds', is_variable('hpcfnbounds_exe') and not is_disabler(hpcfnbounds_exe), section: 'Applications', bool_yn: true)

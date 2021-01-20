@@ -212,7 +212,8 @@ _d_srcset.add(
     'hpcrun_dlfns.c',
     'custom-init-dynamic.c',
   ),
-  libelf_dep, libmonitor_dep,
+  dependency('libelf', required: get_option('hpcrun')),
+  dependency('libmonitor', required: get_option('hpcrun')),
 )
 _s_srcset.add(
   files(
@@ -220,8 +221,10 @@ _s_srcset.add(
     'custom-init-static.c',
   ),
   declare_dependency(compile_args: '-DHPCRUN_STATIC_LINK'),
-  libelf_dep.partial_dependency(compile_args: true, includes: true),
-  libmonitor_dep.partial_dependency(compile_args: true, includes: true),
+  dependency('libelf', required: get_option('hpclink'), static: true)
+    .partial_dependency(compile_args: true, includes: true),
+  dependency('libmonitor', required: get_option('hpclink'), static: true)
+    .partial_dependency(compile_args: true, includes: true),
 )
 
 if host_machine.system() == 'linux'
@@ -274,9 +277,11 @@ _perfmon_true = [
 ]
 _perfmon_false = files('sample-sources/perf/perfmon-util-dummy.c')
 _perf_d_srcset = sourceset.source_set()
-_perf_d_srcset.add(when: perfmon_dep, if_true: _perfmon_true, if_false: _perfmon_false)
+_perf_d_srcset.add(when: dependency('perfmon', required: false),
+                   if_true: _perfmon_true, if_false: _perfmon_false)
 _perf_s_srcset = sourceset.source_set()
-_perf_s_srcset.add(when: perfmon_static_dep, if_true: _perfmon_true, if_false: _perfmon_false)
+_perf_s_srcset.add(when: dependency('perfmon', required: false, static: true),
+                   if_true: _perfmon_true, if_false: _perfmon_false)
 if get_option('perf-events') == 'true'
   _config.set('PERF_AVAILABLE', true)
 elif get_option('perf-events') == 'false'
@@ -297,29 +302,37 @@ _d_srcset.add_all(when: 'PERF_AVAILABLE', if_true: _perf_d_srcset)
 _s_srcset.add_all(when: 'PERF_AVAILABLE', if_true: _perf_s_srcset)
 
 _papi_srcset = sourceset.source_set()
-_config.set('PAPI_C', get_option('papi-c').auto()
-  ? cc.has_header_symbol('papi.h', 'PAPI_get_eventset_component',
-                         include_directories: papi_dep_idirs)
-  : get_option('papi-c').enabled())
+_papi_dep = dependency('papi', required: false)
+_config.set('PAPI_C', not get_option('papi-c').disabled()
+  and cc.has_header_symbol('papi.h', 'PAPI_get_eventset_component',
+                           dependencies: ex_libs.get('papi', _papi_dep),
+                           include_directories: ex_idirs.get('papi', [])))
+if get_option('papi-c').enabled()
+  assert(_config.get('PAPI_C'), 'papi-c enabled but not available!')
+endif
 _papi_srcset.add(when: 'PAPI_C',
   if_true: files(
-      'sample-sources/papi-c.c',
-      'sample-sources/papi-c-extended-info.c',
+    'sample-sources/papi-c.c',
+    'sample-sources/papi-c-extended-info.c',
   ), if_false: files(
     'sample-sources/papi.c',
   ))
-_config.set('PAPI_C_CUPTI', get_option('papi-c-cupti').auto()
-  ? cc.has_function('CUDA_init_component', dependencies: papi_dep_libs)
-  : get_option('papi-c-cupti').enabled())
+_config.set('PAPI_C_CUPTI', not get_option('papi-c-cupti').disabled()
+  and cc.has_function('CUDA_init_component',
+                      dependencies: ex_libs.get('papi', _papi_dep),
+                      include_directories: ex_idirs.get('papi', [])))
+if get_option('papi-c-cupti').enabled()
+  assert(_config.get('PAPI_C_CUPTI'), 'papi-c-cupti enabled but not available!')
+endif
 _papi_srcset.add(when: ['PAPI_C', 'PAPI_C_CUPTI'],
   if_true: [
     files('sample-sources/papi-c-cupti.c'),
     declare_dependency(compile_args: '-DHPCRUN_SS_PAPI_C_CUPTI'),
   ])
-_d_srcset.add_all(when: papi_dep, if_true: _papi_srcset)
-_s_srcset.add_all(when: papi_static_dep, if_true: _papi_srcset)
+_d_srcset.add_all(when: _papi_dep, if_true: _papi_srcset)
+_s_srcset.add_all(when: dependency('papi', required: false, static: true), if_true: _papi_srcset)
 
-_d_srcset.add(when: cuda_dep, if_true: [
+_d_srcset.add(when: dependency('CUDA', required: get_option('cuda-monitoring')), if_true: [
     files(
       'sample-sources/nvidia.c',
       'gpu/nvidia/cubin-hash-map.c',
@@ -335,7 +348,7 @@ _d_srcset.add(when: cuda_dep, if_true: [
     declare_dependency(compile_args: ['-DENABLE_CUDA', '-DHPCRUN_SS_NVIDIA'])
   ])
 
-_d_srcset.add(when: rocm_headers_dep, if_true: [
+_d_srcset.add(when: dependency('rocm-headers', required: false), if_true: [
     files(
       'sample-sources/amd.c',
       'gpu/amd/roctracer-activity-translate.c',
@@ -395,8 +408,8 @@ if host_machine.cpu_family() == 'x86' or host_machine.cpu_family() == 'x86_64'
     include_directories: include_directories('unwind/x86-family'),
     compile_args: ['-DHPCRUN_HAVE_CUSTOM_UNWINDER=1'],
   ))
-  _d_srcset.add(xed_dep)
-  _s_srcset.add(xed_static_dep)
+  _d_srcset.add(dependency('xed', required: get_option('hpcrun')))
+  _s_srcset.add(dependency('xed', required: get_option('hpcrun'), static: true))
 elif host_machine.cpu_family() == 'ppc64'
   _srcset.add(files(
     'unwind/ppc64/ppc64-unwind.c',
@@ -417,8 +430,8 @@ endif
 
 _libunwind_srcset = sourceset.source_set()
 _libunwind_srcset.add(declare_dependency(compile_args: '-DUSE_LIBUNWIND'))
-_d_srcset.add_all(when: libunwind_dep, if_true: _libunwind_srcset)
-_s_srcset.add_all(when: libunwind_static_dep, if_true: _libunwind_srcset)
+_d_srcset.add_all(when: dependency('internalized libunwind', required: false), if_true: _libunwind_srcset)
+_s_srcset.add_all(when: dependency('internalized libunwind', required: false, static: true), if_true: _libunwind_srcset)
 
 _srcset.add(files('utilities/last_func.c'))
 
@@ -465,8 +478,7 @@ endforeach
 
 libhpcrun_lib = shared_library('hpcrun', _d_srcs.sources(),
   dependencies: _d_srcs.dependencies() + _d_ddep
-    + [cc.find_library('dl'), cc.find_library('rt'), dependency('threads'),
-       hpcrun_opt_dep],
+    + [cc.find_library('dl'), cc.find_library('rt'), dependency('threads')],
   link_with: [prof_lean_lib, support_lean_lib],
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
@@ -526,9 +538,16 @@ _s_srcset.add_all(_srcset)
 _s_srcs = _s_srcset.apply(_config)
 _s_deps = _s_srcs.dependencies()
 # These are needed to since the pkgconfig module doesn't recursively search deps for static libs
-_s_deps += [libelf_static_d_dep, liblzma_static_d_dep, mbedtls_crypto_d_dep]
+_s_deps += [
+  dependency('libelf', required: get_option('hpclink'), disabler: true, static: true),
+  dependency('liblzma', required: get_option('hpclink'), disabler: true, static: true),
+  dependency('mbedtls', required: get_option('hpclink'), disabler: true, static: true),
+]
 # This is used to ensure we only generate bits if libmonitor_wrap is available
-_s_deps += [libmonitor_wrap_dep.partial_dependency()]
+_s_deps += [
+  dependency('libmonitor', required: get_option('hpclink'), disabler: true, static: true)
+    .partial_dependency()
+]
 # These are required by hpcrun_static or libmonitor
 _s_deps += [cc.find_library('dl'), cc.find_library('rt'), dependency('threads')]
 
@@ -547,7 +566,7 @@ endforeach
 
 libhpcrun_static_lib = static_library('hpcrun_static', _s_srcs.sources(),
   dependencies: _s_partial_ddeps,
-  link_with: [prof_lean_static_lib, support_lean_static_lib, hpclink_opt_dep],
+  link_with: [prof_lean_static_lib, support_lean_static_lib],
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
 libhpcrun_wrap_lib = static_library('hpcrun_wrap',
@@ -579,7 +598,7 @@ if not is_disabler(libhpcrun_static_lib) and not is_disabler(libhpcrun_wrap_lib)
   # Since libmonitor doesn't generate one, we handle that part.
   pkgconfig.generate(
     name: 'monitor_wrap', description: 'libmonitor: wrap library',
-    libraries: libmonitor_wrap_dep_libs,
+    libraries: ex_libs['libmonitor'],
     install_dir: get_option('libdir') / meson.project_name() / 'pkgconfig',
   )
 

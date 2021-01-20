@@ -62,4 +62,8 @@ _srcs = files(
 analysis_lib = static_library('analysis', _srcs, pic: true,
   include_directories: main_includes,
   link_with: [support_lib, xml_lib, prof_lib, profxml_lib, banal_simple_lib],
-  dependencies: [libbfd_d_dep, xerces_d_dep, boost_d_dep])
+  dependencies: [
+    dependency('libbfd', required: false, disabler: true),
+    dependency('xerces-c', required: false, disabler: true),
+    dependency('boost', required: false, disabler: true, modules: ['graph', 'regex', 'system']),
+  ])

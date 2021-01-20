@@ -47,14 +47,17 @@ _srcs = files(
   'Args.cpp',
 )
 
-hpcproftt_exe = executable('hpcproftt', _srcs,
-  include_directories: tool_includes,
-  link_with: [support_lib, analysis_lib],
-  dependencies: [xerces_d_dep, devtools_opt_dep],
-  install: true, install_dir: get_option('libexecdir') / meson.project_name())
-summary('hpcproftt', not is_disabler(hpcproftt_exe), section: 'Applications', bool_yn: true)
-all_apps += hpcproftt_exe
-
+if not get_option('devtools').disabled()
+  hpcproftt_exe = executable('hpcproftt', _srcs,
+    include_directories: tool_includes,
+    link_with: [support_lib, analysis_lib],
+    dependencies: [
+      dependency('xerces-c', required: get_option('devtools'), disabler: true),
+    ],
+    install: true, install_dir: get_option('libexecdir') / meson.project_name())
+  all_apps += hpcproftt_exe
+endif
 if get_option('devtools').enabled()
   assert(not is_disabler(hpcproftt_exe), 'hpcproftt required but disabled')
 endif
+summary('hpcproftt', is_variable('hpcproftt_exe') and not is_disabler(hpcproftt_exe), section: 'Applications', bool_yn: true)

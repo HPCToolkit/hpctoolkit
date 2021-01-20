@@ -45,15 +45,15 @@
 _srcs = [
   {'src': files('hpctoolkit.tex'), 'stem': 'hpctoolkit'},
 
-  {'src': files('hpcrun.tex'), 'ifvar': 'hpcrun_script', 'stem': 'hpcrun'},
-  {'src': files('hpclink.tex'), 'ifvar': 'hpclink_script', 'stem': 'hpclink'},
+  {'src': files('hpcrun.tex'), 'if': 'hpcrun_script', 'stem': 'hpcrun'},
+  {'src': files('hpclink.tex'), 'if': 'hpclink_script', 'stem': 'hpclink'},
 
-  {'src': files('hpcstruct.tex'), 'if': hpcstruct_exe},
+  {'src': files('hpcstruct.tex'), 'if': 'hpcstruct_exe'},
 
-  {'src': files('hpcprof.tex'), 'if': hpcprof_exe},
-  {'src': files('hpcprof-mpi.tex'), 'if': hpcprof_mpi_exe},
-  {'src': files('hpcproftt.tex'), 'if': hpcproftt_exe},
-  {'src': files('hpcsummary.tex'), 'ifvar': 'hpcsummary_script', 'stem': 'hpcsummary'},
+  {'src': files('hpcprof.tex'), 'if': 'hpcprof_exe'},
+  {'src': files('hpcprof-mpi.tex'), 'if': 'hpcprof_mpi_exe'},
+  {'src': files('hpcproftt.tex'), 'if': 'hpcproftt_exe'},
+  {'src': files('hpcsummary.tex'), 'if': 'hpcsummary_script', 'stem': 'hpcsummary'},
 
   {'src': files('hpcviewer.tex'), 'stem': 'hpcviewer'},
 ]
@@ -66,13 +66,17 @@ _gen_tmp = generator(find_program('sed', native: true),
   capture: true, output: '@BASENAME@.tex_pp')
 
 foreach s : _srcs
-  if s.has_key('if') and is_disabler(s['if'])
-    continue
-  elif s.has_key('ifvar') and not is_variable(s['ifvar'])
-    continue
+  if s.has_key('if')
+    if not is_variable(s['if'])
+      continue
+    endif
+    _if = get_variable(s['if'])
+    if is_disabler(_if)
+      continue
+    endif
   endif
 
-  _stem = s.has_key('stem') ? s['stem'] : s['if'].name()
+  _stem = s.has_key('stem') ? s['stem'] : _if.name()
   custom_target('man page for @0@'.format(_stem),
     command: [_latex2man, '-t', _latex2man_t, '@INPUT@', '@OUTPUT@'],
     output: '@BASENAME@.1hpctoolkit',

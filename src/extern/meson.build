@@ -44,8 +44,8 @@
 
 _redef = find_program('redefine.sh', native: true)
 
-_victims = [
-  { 'name': 'libunwind', 'code': '''
+_victims = {
+  'libunwind': '''
   #define UNW_LOCAL_ONLY
   #include <sys/types.h>
   #include <libunwind.h>
@@ -57,8 +57,8 @@ _victims = [
     unw_get_reg(&cursor, UNW_REG_IP, &ip);
     return ip;
   }
-  ''' },
-  { 'name': 'liblzma', 'code': '''
+  ''',
+  'liblzma': '''
   #include <sys/types.h>
   #include <inttypes.h>
   #include <lzma.h>
@@ -69,17 +69,19 @@ _victims = [
     lzma_code(&stream, LZMA_FINISH);
     return (long) stream.avail_out;
   }
-  ''' },
-]
+  ''',
+}
 
-foreach v : _victims
-  if not get_variable(v['name']+'_static_dep').found()
+foreach name, code : _victims
+  _dep = dependency(name, required: false, static: true)
+  if not _dep.found()
     continue
   endif
-  if cc.links(v['code'], name: '@0@.a -fPIC compatibility'.format(v['name']),
+  assert(ex_libs.has_key(name), 'dependency @0@ is not (fully) external, cannot internalize!'.format(name))
+
+  if cc.links(code, name: '@0@.a -fPIC compatibility'.format(name),
     args: ['-shared', '-fPIC'],
-    dependencies: get_variable(v['name']+'_static_dep_libs'),
-    include_directories: get_variable(v['name']+'_static_dep_idirs'))
+    dependencies: ex_libs[name], include_directories: ex_idirs[name])
 
     _objcopy = find_program('objcopy')
 
@@ -88,34 +90,32 @@ foreach v : _victims
     # the pkgconfig module writes it out (for static libs) during configure-time.
     # Its a hack and a half, and only works for static libs.
     _pkgconfig = find_program('pkg-config', native: true)
-    pkgconfig.generate(name: 'hpctoolkit_external_'+v['name'],
-      description: 'temporary externalization shim for '+v['name'],
-      libraries: get_variable(v['name']+'_static_dep_libs'))
+    pkgconfig.generate(name: 'hpctoolkit_external_'+name,
+      description: 'temporary externalization shim for '+name,
+      libraries: ex_libs[name])
 
     _new_lib_names = []
-    foreach _ : get_variable(v['name']+'_static_dep_libs')
-      _new_lib_names += 'internalized_@0@_@1@.a'.format(v['name'], _new_lib_names.length())
+    foreach _ : ex_libs[name]
+      _new_lib_names += 'internalized_@0@_@1@.a'.format(name, _new_lib_names.length())
     endforeach
-    _new_libs = custom_target('internalized '+v['name'],
+    _new_libs = custom_target('internalized '+name,
       command: [_redef, _objcopy, _pkgconfig,
-        meson.build_root() / 'meson-uninstalled', 'hpctoolkit_external_'+v['name'],
+        meson.build_root() / 'meson-uninstalled', 'hpctoolkit_external_'+name,
         '@OUTPUT@'],
       output: _new_lib_names,
       install: true, install_dir: get_option('libdir') / 'hpctoolkit/extern')
 
     # In the dynamic case we can just let Meson handle it. It gets it right in the end.
-    set_variable(v['name']+'_dep_libs', _new_libs.to_list())
-    set_variable(v['name']+'_dep', declare_dependency(
+    meson.override_dependency('internalized '+name, declare_dependency(
       link_with: _new_libs,
-      dependencies: get_variable(v['name']+'_static_dep').partial_dependency(compile_args: true, includes: true),
+      dependencies: _dep.partial_dependency(compile_args: true, includes: true),
+      version: 'internalized '+_dep.version(),
     ))
-    set_variable(v['name']+'_d_dep', get_variable(v['name']+'_dep').found()
-      ? get_variable(v['name']+'_dep') : disabler())
 
     # In the static case things are more difficult. We create an empty static
     # library to act as a target, and then edit the pkgconfig output to ensure
     # the paths end up right in the end.
-    _shim_lib = static_library('hpctoolkit_internalized_'+v['name'],
+    _shim_lib = static_library('hpctoolkit_internalized_'+name,
       install: true, install_dir: get_option('libdir') / 'hpctoolkit/extern')
     _shim_paths = []
     foreach n : _new_lib_names
@@ -126,18 +126,16 @@ foreach v : _victims
       variables: 'extprefix=' + '${prefix}'/get_option('libdir')/'hpctoolkit/extern',
       uninstalled_variables: 'extprefix='+meson.current_build_dir(),
       install_dir: get_option('libdir') / 'hpctoolkit/pkgconfig')
-    set_variable(v['name']+'_static_dep_libs', [_shim_lib])
-    set_variable(v['name']+'_static_dep', declare_dependency(
+    meson.override_dependency('internalized '+name, declare_dependency(
       link_with: _shim_lib,
-      dependencies: get_variable(v['name']+'_static_dep').partial_dependency(compile_args: true, includes: true),
-    ))
-    set_variable(v['name']+'_static_d_dep', get_variable(v['name']+'_static_dep').found()
-      ? get_variable(v['name']+'_static_dep') : disabler())
+      dependencies: _dep.partial_dependency(compile_args: true, includes: true),
+      version: 'internalized '+_dep.version(),
+    ), static: true)
   else
     error('''
 The dependency @0@ does not provide an archive (.a) compiled with -fPIC.
 hpcrun is unable to properly hide this libraries from the application which
 may cause deadlocks or segfaults. Please recompile with -fPIC (+pic for Spack).
-'''.strip().format(v['name']))
+'''.strip().format(name))
   endif
 endforeach

@@ -48,4 +48,7 @@ _srcs = files(
 
 isa_lib = static_library('isa', _srcs, pic: true,
   include_directories: main_includes,
-  link_with: [support_lib])
+  link_with: [support_lib],
+  dependencies: [
+    dependency('libbfd', required: false, disabler: true),
+  ])

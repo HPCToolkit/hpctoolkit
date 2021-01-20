@@ -62,9 +62,17 @@ _simple_srcs = files(
 banal_lib = static_library('banal', _srcs, pic: true,
   include_directories: main_includes,
   link_with: [xml_lib, support_lib, binutils_lib],
-  dependencies: [dyninst_d_dep, libelf_d_dep, tbb_d_dep, boost_d_dep, openmp_dep]
-    + (get_option('valgrind-annotations').enabled() ? [valgrind_headers_d_dep] : []),
-)
+  dependencies: [
+    dependency('libbfd', required: false).partial_dependency(compile_args: true, includes: true),
+    dependency('dyninst', required: false, disabler: true),
+    dependency('tbb', required: false, disabler: true),
+    dependency('boost', required: false, disabler: true, modules: ['graph', 'regex', 'system']),
+    dependency('OpenMP', required: get_option('openmp')),
+    dependency('valgrind', required: get_option('valgrind-annotations')),
+  ])
 banal_simple_lib = static_library('banal_simple', _simple_srcs, pic: true,
   include_directories: main_includes,
-  link_with: [binutils_lib, support_lib, prof_lib])
+  link_with: [binutils_lib, support_lib, prof_lib],
+  dependencies: [
+    dependency('libbfd', required: false).partial_dependency(compile_args: true, includes: true),
+  ])

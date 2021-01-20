@@ -108,15 +108,15 @@ endif
 # TODO: Figure out how to handle this properly. The original controls its usage
 # via a test for Dyninst support, but it doesn't appear to compile here without
 # having it enabled. Maybe something to do with the library?
-openmp_dep = dependency('OpenMP', required: get_option('openmp'))
+dependency('OpenMP', required: get_option('openmp'))
 # TODO: Handle finding the OpenMP directory.
 
 # Enable MPI (for C and C++).
 # NOTE: Autotools has a separate search system for Cray and Blue Gene, to get
 # around a Spack bug. We trust Meson's search functionality and ability to
 # override the issue in a Spack recipe.
-mpi_c_dep = dependency('MPI', language: 'c', required: get_option('mpi'))
-mpi_cpp_dep = dependency('MPI', language: 'cpp', required: get_option('mpi'))
+dependency('MPI', language: 'c', required: get_option('mpi'))
+dependency('MPI', language: 'cpp', required: get_option('mpi'))
 
 # Handle getting the Spack we'll use for our business
 if get_option('spack') != '' or meson.get_external_property('spack', '') != ''
@@ -162,9 +162,7 @@ _deps = {
   'libbfd': { 'propstems': ['bfd', 'binutils'], 'spack': 'binutils',
               'libs': ['bfd'], 'headers': ['bfd.h'],
             },
-  # 'libunwind': { 'propstems': ['libunwind'], 'spack': 'libunwind', 'dependency': 'libunwind',
-  #                'libs': ['unwind'], 'headers': ['libunwind.h'],
-  #              },
+  # NOTE: Only static version to support internalization
   'libunwind_static': { 'propstems': ['libunwind'], 'spack': 'libunwind',
                         'spack_spec': '+pic',
                         'libs': ['unwind'], 'headers': ['libunwind.h'],
@@ -181,7 +179,7 @@ _deps = {
             },
   'libelf_static': { 'propstems': ['libelf', 'elfutils'], 'spack': 'elfutils', 'dependency': 'libelf',
                      'libs': ['elf'], 'headers': ['libelf.h'], 'static': true,
-                     'extra_deps': ['zlib_static_dep'],
+                     # 'extra_deps': ['zlib_static_dep'],
                    },
   'libdw': { 'propstems': ['libdw', 'elfutils'], 'spack': 'elfutils', 'dependency': 'libdw',
              'libs': ['dw'], 'headers': ['elfutils/libdw.h'],
@@ -189,9 +187,11 @@ _deps = {
   'libdwarf': { 'propstems': ['libdwarf'], 'spack': 'libdwarf',
                 'libs': ['dwarf'], 'headers': ['libdwarf.h'],
               },
-  # 'liblzma': { 'propstems': ['liblzma', 'lzma'], 'spack': 'xz', 'dependency': 'liblzma',
-  #              'libs': ['lzma'], 'headers': ['lzma.h'],
-  #            },
+  'liblzma': { 'propstems': ['liblzma', 'lzma'], 'spack': 'xz', 'dependency': 'liblzma',
+               'spack_spec': '+pic',
+               'libs': ['lzma'], 'headers': ['lzma.h'],
+             },
+  # NOTE: no dependency() option to support internalization
   'liblzma_static': { 'propstems': ['liblzma', 'lzma'], 'spack': 'xz',
                       'spack_spec': '+pic',
                       'libs': ['lzma'], 'headers': ['lzma.h'], 'static': true,
@@ -224,7 +224,7 @@ _deps = {
                   'libs': ['xed'], 'headers': ['xed-interface.h'],
                   'static': true,
                 },
-  'rocm_headers': { 'propstems': ['rocm'],
+  'rocm-headers': { 'propstems': ['rocm'],
                     'libs': [], 'headers': ['hip/hip_runtime.h', 'roctracer/roctracer.h'],
                   },
 
@@ -232,7 +232,7 @@ _deps = {
                   'spack_spec': '+hpctoolkit',
                   'libs': ['monitor'], 'headers': ['monitor.h'],
                 },
-  'libmonitor_wrap': { 'propstems': ['libmonitor', 'monitor'], 'spack': 'libmonitor',
+  'libmonitor_static': { 'propstems': ['libmonitor', 'monitor'], 'spack': 'libmonitor',
                        'spack_spec': '+hpctoolkit',
                        'libs': ['monitor_wrap'], 'headers': ['monitor.h'],
                        'static': true,
@@ -242,10 +242,6 @@ _deps = {
            'libs': ['tbb', 'tbbmalloc'], 'headers': ['tbb/concurrent_hash_map.h'],
            'cc': cpp,
          },
-  'tbb_mproxy': { 'propstems': ['tbb'], 'spack': 'intel-tbb',
-                  'libs': ['tbbmalloc_proxy'], 'headers': ['tbb/concurrent_hash_map.h'],
-                  'cc': cpp,
-                },
   'boost': { 'propstems': ['boost'], 'spack': 'boost', 'dependency': 'boost',
              'spack_spec': 'visibility=global',
              'libs': ['boost_graph', 'boost_regex', 'boost_system'],
@@ -257,28 +253,26 @@ _deps = {
                'libs': ['parseAPI', 'instructionAPI', 'symtabAPI', 'dynDwarf',
                         'dynElf', 'common'],
                'headers': ['Symtab.h'], 'cc': cpp,
-               'extra_incdeps': ['tbb_dep', 'boost_dep'],
+               'extra_deps': ['tbb', 'boost'],
              },
   'xerces': { 'propstems': ['xerces'], 'spack': 'xerces-c', 'dependency': 'xerces-c',
               'libs': ['xerces-c'], 'headers': ['xercesc/sax2/SAX2XMLReader.hpp'],
               'cc': cpp,
             },
-  'valgrind_headers': { 'propstems': ['valgrind'], 'spack': 'valgrind', 'dependency': 'valgrind',
+  'valgrind-headers': { 'propstems': ['valgrind'], 'spack': 'valgrind',
+                        'dependency': 'valgrind',
                         'libs': [], 'headers': ['valgrind.h', 'helgrind.h'],
                         'spack_include_suffix': 'valgrind',
                       },
-
-  # NOTE: BEGIN the ones that currently aren't referenced anywhere.
-  # Remove the x_ tag and move above this line when these are in use.
-  'x_libiberty': { 'propstems': ['iberty', 'binutils'], 'spack': 'libiberty',
-                   'libs': ['iberty'], 'headers': ['libiberty/libiberty.h'],
-                 },
-  'x_bzip': { 'propstems': ['bzip2', 'bzip'], 'spack': 'bzip2', 'dependency': 'BZip2',
-              'libs': ['bz2'], 'headers': ['bzlib.h'],
-            },
-  # NOTE: END the ones that currently aren't referenced anywhere.
 }
+ex_libs = {}
+ex_idirs = {}
+_raw_idirs = {}
 foreach var, dep : _deps
+  # If we need to, we'll add an override for dependencies that can't be found
+  # via the normal methods. This is the name of said dependency.
+  _dep_name = dep.get('dependency', var.split('_')[0])
+
   # If an explicit *_enabled property is set to false, don't do anything more.
   # We use the first explicitly set property we find.
   _dep_enabled = true
@@ -289,12 +283,21 @@ foreach var, dep : _deps
     endif
   endforeach
   if not _dep_enabled
-    set_variable(var+'_dep', dependency('', required: false))
-    set_variable(var+'_dep_libs', [])
-    set_variable(var+'_dep_idirs', [])
-    summary(var, false, section: 'Dependencies', bool_yn: true)
+    if dep.has_key('static')
+      assert(not dep.has_key('modules'), 'TODO: \'static\' and \'modules\' are currently incompatible!')
+      meson.override_dependency(_dep_name, dependency('', required: false),
+        static: dep['static'])
+    elif dep.has_key('modules')
+      meson.override_dependency(_dep_name, dependency('', required: false),
+        modules: dep['modules'])
+    else
+      meson.override_dependency(_dep_name, dependency('', required: false))
+    endif
     continue
   endif
+
+  # The following few clauses attempt to find the search data for this dep.
+  _dep_search = {}
 
   # If an explicit *_root or *_librarydir/*_includedir property is set, search there.
   # Boost is a special case, its _root variable is handled by Meson.
@@ -352,15 +355,14 @@ foreach var, dep : _deps
     if dep.has_key('root_min_ver') and meson.version().version_compare('<'+dep['root_min_ver'])
       error(stem+'_root as a property is not effective until '+dep['root_min_ver']+', please upgrade!')
     endif
-    set_variable(var+'_dep', dep.get('root_use_dep', false) ? {'skip_to_dep': true} : {
-      'summary': meson.get_external_property(stem+'_root', _dep_ldirs[0]),
-      'idirs': _dep_idirs, 'ldirs': _dep_ldirs,
-    })
+    _dep_search = dep.get('root_use_dep', false)
+                  ? {'skip_to_dep': true} \
+                  : {'idirs': _dep_idirs, 'ldirs': _dep_ldirs}
     break
   endforeach
 
   # If a Spack is available and usable for this dependency, use it to scare up some paths
-  if not is_variable(var+'_dep') and is_variable('spack') and dep.has_key('spack') \
+  if _dep_search == {} and is_variable('spack') and dep.has_key('spack') \
      and meson.get_external_property(dep['spack']+'_spec', '') != 'system'
     # To reduce the amount of times we have to fire up Spack, check the cache.
     if not _spack_cache.has_key(dep['spack'])
@@ -379,155 +381,121 @@ foreach var, dep : _deps
         if _spack_paths.stderr().strip() != ''
           warning(_spack_paths.stderr().strip())
         endif
-        set_variable(var + '_dep', dependency('', required: false))
-        summary(var, false, section: 'Dependencies', bool_yn: true)
+        if dep.has_key('static')
+          assert(not dep.has_key('modules'), 'TODO: \'static\' and \'modules\' are currently incompatible!')
+          meson.override_dependency(_dep_name, dependency('', required: false),
+            static: dep['static'])
+        elif dep.has_key('modules')
+          meson.override_dependency(_dep_name, dependency('', required: false),
+            modules: dep['modules'])
+        else
+          meson.override_dependency(_dep_name, dependency('', required: false))
+        endif
         continue
       endif
 
       _spack_paths = _spack_paths.stdout().strip().split('\0')
-      _dep_summary = ''
+      _dep_version = 'unknown'
       _dep_idirs = []
       _dep_ldirs = []
       foreach part : _spack_paths
-        if _dep_summary == ''
-          _dep_summary = part
-        elif part.startswith('L')
-          _dep_ldirs += (part / '').strip('L')
+        if part.startswith('L')
+          _dep_ldirs += part.substring(1)
         elif part.startswith('I')
-          _dep_idirs += (part / '').strip('I') / dep.get('spack_include_suffix', '')
-        else
-          error('Invalid output from spack-paths.py: ' + part)
+          _dep_idirs += part.substring(1) / dep.get('spack_include_suffix', '')
+        elif part.startswith('V')
+          assert(_dep_version == 'unknown', 'multiple version values?')
+          _dep_version = part.substring(1)
+        elif part != ''
+          error('Invalid output from spack-query.py: ' + part)
         endif
       endforeach
       if _dep_idirs.length() == 0 or _dep_ldirs.length() == 0
-        error('Invalid output from spack-paths.py, missing elements')
+        error('Invalid output from spack-query.py, missing elements')
       endif
 
       # Throw the variables in the cache for later
-      _spack_cache += { dep['spack']: {
-        'summary': _dep_summary, 'idirs': _dep_idirs, 'ldirs': _dep_ldirs,
-      }}
+      _spack_cache += {
+        dep['spack']: {
+          'version': 'spack: '+_dep_version,
+          'idirs': _dep_idirs, 'ldirs': _dep_ldirs,
+        }
+      }
     endif
-    set_variable(var+'_dep', _spack_cache[dep['spack']])
+    _dep_search = _spack_cache[dep['spack']]
   endif
 
-  # Fetch the base dependencies needed to make this all work
-  _dep_idirs = []
+  # If we don't have an alternative with dependency(), search the system paths
+  # instead. In this case don't error if we don't find it.
+  if _dep_search == {} and not dep.has_key('dependency')
+    _dep_search = {'idirs': [], 'ldirs': [], 'required': false}
+  endif
+
+  # Some dependencies require others in order to function. So fetch them and
+  # stitch all the bits together.
+  _dep_xidirs = []
   _dep_xlibs = []
   foreach exdep : dep.get('extra_deps', [])
-    _dep_idirs += get_variable(exdep+'_idirs')
-    _dep_xlibs += get_variable(exdep+'_libs')
-  endforeach
-  foreach exdep : dep.get('extra_incdeps', [])
-    _dep_idirs += get_variable(exdep+'_idirs')
-    foreach d : get_variable(exdep+'_libs')
-      _dep_xlibs += d.partial_dependency(compile_args: true, includes: true)
-    endforeach
+    if ex_libs.has_key(exdep)
+      _dep_xidirs += _raw_idirs[exdep]
+      _dep_xlibs += ex_libs[exdep]
+    else
+      _dep_xlibs += dependency(_deps[exdep]['dependency'], required: false, disabler: true)
+    endif
   endforeach
 
-  # If we reach this point, we may have to do the actual search.
-  _dep_cc = dep.get('cc', cc)
-  _dep_libs = []
-  if is_variable(var+'_dep') and not get_variable(var+'_dep').get('skip_to_dep', false)
-    _dep_paths = get_variable(var+'_dep')
-
-    # In the end, these are the include directories that we will depend on.
-    _dep_idirs += include_directories(_dep_paths['idirs'])
-    set_variable(var+'_dep_idirs', _dep_idirs)
-
-    # Hunt down the libraries on the given paths. Also check for the headers.
+  # At this point we have enough info to attempt to search for the dependency
+  if _dep_search != {} and not _dep_search.get('skip_to_dep', false)
+    # This is a rooted search: we know the paths to check for the bits we need.
+    _dep_idirs = include_directories(_dep_search['idirs'])
+    _dep_libs = []
     foreach lib : dep['libs']
       if dep.has_key('static')
-        _dep_libs += _dep_cc.find_library(lib,
-          dirs: _dep_paths['ldirs'], required: true, static: dep['static'],
-          has_headers: dep['headers'], header_include_directories: _dep_idirs)
+        _dep_libs += dep.get('cc', cc).find_library(lib, disabler: true,
+          has_headers: dep['headers'], header_include_directories: _dep_idirs,
+          dirs: _dep_search['ldirs'], required: _dep_search.get('required', true),
+          static: dep['static'])
       else
-        _dep_libs += _dep_cc.find_library(lib,
-          dirs: _dep_paths['ldirs'], required: true,
-          has_headers: dep['headers'], header_include_directories: _dep_idirs)
+        _dep_libs += dep.get('cc', cc).find_library(lib, disabler: true,
+          has_headers: dep['headers'], header_include_directories: _dep_idirs,
+          dirs: _dep_search['ldirs'], required: _dep_search.get('required', true))
       endif
     endforeach
+    # Special case: make sure we scan for header-only dependencies
     if dep['libs'].length() == 0
       foreach h : dep['headers']
-        cc.has_header(h, include_directories: _dep_idirs, required: true)
+        if not cc.has_header(h, include_directories: _dep_idirs, required: _dep_search.get('required', true))
+          _dep_libs += [disabler()]
+        endif
       endforeach
     endif
-    _dep_libs += _dep_xlibs
-    set_variable(var+'_dep_libs', _dep_libs)
 
-    # Stitch together a final dependency to represent the entire mess.
-    set_variable(var+'_dep', declare_dependency(
-      dependencies: _dep_libs, include_directories: _dep_idirs,
-    ))
-    summary(var, _dep_paths['summary'], section: 'Dependencies')
-  elif not dep.has_key('dependency')
-    # Repeat of the above, but only using the system paths.
-    set_variable(var+'_dep_idirs', _dep_idirs)
-    foreach lib : dep['libs']
-      if dep.has_key('static')
-        _dep_libs += _dep_cc.find_library(lib, required: false,
-          static: dep['static'],
-          has_headers: dep['headers'], header_include_directories: _dep_idirs)
-      else
-        _dep_libs += _dep_cc.find_library(lib, required: false,
-          has_headers: dep['headers'], header_include_directories: _dep_idirs)
-      endif
-    endforeach
-    if dep['libs'].length() == 0
-      foreach h : dep['headers']
-        _dep_libs += cc.has_header(h, include_directories: _dep_idirs) ? [] \
-                     : [disabler()]
-      endforeach
+    # Stitch together a final dependncy to represent the entire mess
+    if _dep_name == 'libbfd'
+      message(_dep_search['idirs'])
     endif
-    _dep_libs += _dep_xlibs
-    set_variable(var+'_dep_libs', _dep_libs)
-    set_variable(var+'_dep', declare_dependency(
-      dependencies: _dep_libs, include_directories: _dep_idirs,
-    ))
-    if is_disabler(get_variable(var+'_dep'))
-      set_variable(var+'_dep', dependency('', required: false))
+    _dep = declare_dependency(
+      dependencies: _dep_libs + _dep_xlibs,
+      include_directories: include_directories(_dep_search['idirs'] + _dep_xidirs),
+      version: _dep_search.get('version', 'unknown'),
+    )
+    if is_disabler(_dep)
+      _dep = dependency('', required: false)
+    else
+      # Expose the constructing libs and includes as variables to allow for compile tests
+      ex_libs += {_dep_name: _dep_libs + _dep_xlibs}
+      ex_idirs += {_dep_name: include_directories(_dep_search['idirs'] + _dep_xidirs)}
+      _raw_idirs += {_dep_name: _dep_search['idirs'] + _dep_xidirs}
     endif
-    summary(var, get_variable(var+'_dep').found() ? '(system)' : false,
-            section: 'Dependencies', bool_yn: true)
-  else
-    # Use the standard dependency logic to pull from the system.
-    # Unlike the other paths, we assume the standard logic can handle the
-    # internal dependencies without our help.
     if dep.has_key('static')
-      set_variable(var+'_dep', dependency(dep['dependency'],
-        required: is_variable(var+'_dep'), static: dep['static'],
-        modules: dep.get('modules', []),
-        components: dep.get('components', [])))
+      assert(not dep.has_key('modules'), 'TODO: \'static\' and \'modules\' are currently incompatible!')
+      meson.override_dependency(_dep_name, _dep, static: dep['static'])
+    elif dep.has_key('modules')
+      meson.override_dependency(_dep_name, _dep, modules: dep['modules'])
     else
-      set_variable(var+'_dep', dependency(dep['dependency'],
-        required: is_variable(var+'_dep'),
-        modules: dep.get('modules', []),
-        components: dep.get('components', [])))
-    endif
-    set_variable(var+'_dep_idirs', [])
-    set_variable(var+'_dep_libs', [get_variable(var+'_dep')])
-    if get_variable(var+'_dep').found()
-      summary(var, get_variable(var+'_dep').get_variable(
-        cmake: get_variable(var+'_dep').name() + '_LIBRARY',
-        pkgconfig: 'prefix',
-        default_value: '(system)'), section: 'Dependencies')
-    else
-      summary(var, false, section: 'Dependencies', bool_yn: true)
+      meson.override_dependency(_dep_name, _dep)
     endif
   endif
-endforeach
-
-# The Valgrind dependency should only reference the headers, so remove any
-# of its other bits.
-valgrind_headers_dep = valgrind_headers_dep.partial_dependency(compile_args: true, includes: true)
-
-# For every dependency (_dep) variable, add an additional _d_dep variable that
-# is a disabler when the dependency is not found. Because disablers are handy.
-openmp_d_dep = openmp_dep.found() ? openmp_dep : disabler()
-mpi_c_d_dep = mpi_c_dep.found() ? mpi_c_dep : disabler()
-mpi_cpp_d_dep = mpi_cpp_dep.found() ? mpi_cpp_dep : disabler()
-foreach var, _ : _deps
-  set_variable(var+'_d_dep', get_variable(var+'_dep').found() ? get_variable(var+'_dep') : disabler())
 endforeach
 
 ## CUDA a special case, we use Meson's logic to handle differences between
@@ -548,23 +516,11 @@ if meson.get_external_property('cuda_enabled', true)
   # TODO: Handle Spack-provided CUDA. Or don't. Decide what to do there.
 
   # Search for the CUDA toolkit
-  cuda_dep = dependency('CUDA', required: get_option('cuda-monitoring'), modules: ['cupti'])
+  meson.override_dependency('CUDA', dependency('CUDA', required: get_option('cuda-monitoring'), modules: ['cupti']))
 else
-  cuda_dep = dependency('', required: get_option('cuda-monitoring'))
+  assert(not get_option('cuda-monitoring').enabled(), 'cuda-monitoring is enabled but cuda_enabled is false!')
+  meson.override_dependency('CUDA', dependency('', required: false))
 endif
-summary('CUDA/CUPTI', cuda_dep.found() ? '(system)' : false,
-        section: 'Dependencies', bool_yn: true)
-cuda_d_dep = cuda_dep.found() ? cuda_dep : disabler()
-
-# Set up some empty dependencies for top-level targets, which are controlled
-# by options.
-foreach opt : ['hpcrun', 'hpclink', 'hpcstruct', 'hpcprof', 'devtools', 'hpcserver']
-  if get_option(opt).disabled()
-    set_variable(opt+'_opt_dep', disabler())
-  else
-    set_variable(opt+'_opt_dep', [])
-  endif
-endforeach
 
 # Install the READMEs to the documentation directory, {datadir}/doc/hpctoolkit
 install_data(files(

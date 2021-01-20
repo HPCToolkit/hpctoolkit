@@ -47,14 +47,17 @@ _srcs = files(
   'Args.cpp',
 )
 
-hpcprof_exe = executable('hpcprof', _srcs,
-  include_directories: main_includes,
-  dependencies: [hpcprof_opt_dep],
-  link_with: [support_lib, binutils_lib, prof_lib, analysis_lib],
-  install: true)
-summary('hpcprof', not is_disabler(hpcprof_exe), section: 'Applications', bool_yn: true)
-all_apps += hpcprof_exe
-
+if not get_option('hpcprof').disabled()
+  hpcprof_exe = executable('hpcprof', _srcs,
+    include_directories: main_includes,
+    link_with: [support_lib, binutils_lib, prof_lib, analysis_lib],
+    dependencies: [
+      dependency('libbfd', required: false).partial_dependency(compile_args: true, includes: true),
+    ],
+    install: true)
+  all_apps += hpcprof_exe
+endif
 if get_option('hpcprof').enabled()
   assert(not is_disabler(hpcprof_exe), 'hpcprof required but disabled')
 endif
+summary('hpcprof', is_variable('hpcprof_exe') and not is_disabler(hpcprof_exe), section: 'Applications', bool_yn: true)

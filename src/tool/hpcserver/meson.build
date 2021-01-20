@@ -61,32 +61,38 @@ _srcs = files(
   'main.cpp',
 )
 
-hpcserver_exe = executable('hpcserver', _srcs, files(
-    'Communication-SingleThreaded.cpp',
-  ),
-  include_directories: tool_includes,
-  link_with: [support_lib],
-  dependencies: [zlib_d_dep, hpcserver_opt_dep],
-  install: true)
-summary('hpcserver', not is_disabler(hpcserver_exe), section: 'Applications', bool_yn: true)
-all_apps += hpcserver_exe
+if not get_option('hpcserver').enabled()
+  hpcserver_exe = executable('hpcserver', _srcs, files(
+      'Communication-SingleThreaded.cpp',
+    ),
+    include_directories: tool_includes,
+    link_with: [support_lib],
+    dependencies: [
+      dependency('zlib', required: get_option('hpcserver'), disabler: true),
+    ],
+    install: true)
 
+  hpcserver_mpi_exe = executable('hpcserver-mpi', _srcs, files(
+      'Communication-MPI.cpp',
+      'Slave.cpp',
+    ),
+    cpp_args: '-DMPICH_IGNORE_CXX_SEEK',
+    include_directories: tool_includes,
+    link_with: [support_lib],
+    dependencies: [
+      dependency('zlib', required: get_option('hpcserver'), disabler: true),
+      dependency('MPI', required: get_option('mpi'), disabler: true),
+    ],
+    install: true)
+  all_apps += [hpcserver_exe, hpcserver_mpi_exe]
+endif
 if get_option('hpcserver').enabled()
   assert(not is_disabler(hpcserver_exe), 'hpcserver required but disabled')
 endif
-
-hpcserver_mpi_exe = executable('hpcserver-mpi', _srcs, files(
-    'Communication-MPI.cpp',
-    'Slave.cpp',
-  ),
-  cpp_args: '-DMPICH_IGNORE_CXX_SEEK',
-  include_directories: tool_includes,
-  link_with: [support_lib],
-  dependencies: [zlib_d_dep, mpi_cpp_d_dep, hpcserver_opt_dep],
-  install: true)
-summary('hpcserver-mpi', not is_disabler(hpcserver_mpi_exe), section: 'Applications', bool_yn: true)
-all_apps += hpcserver_mpi_exe
-
-if get_option('hpcserver').enabled() and mpi_cpp_d_dep.found()
+if get_option('hpcserver').enabled() and get_option('mpi').enabled()
   assert(not is_disabler(hpcserver_mpi_exe), 'hpcserver-mpi required but disabled')
 endif
+summary('hpcserver', is_variable('hpcserver_exe') and not is_disabler(hpcserver_exe), section: 'Applications', bool_yn: true)
+summary('hpcserver-mpi', is_variable('hpcserver_mpi_exe') and not is_disabler(hpcserver_mpi_exe), section: 'Applications', bool_yn: true)
+
+

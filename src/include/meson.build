@@ -52,17 +52,23 @@ else
   error('Unknown endian: ' + host_machine.endian())
 endif
 
+_libbfd_dep = dependency('libbfd', required: false)
+_dyninst_dep = dependency('dyninst', required: false)
+_openmp_dep = dependency('openmp', required: get_option('openmp'))
+_cuda_dep = dependency('cuda', required: get_option('cuda-monitoring'))
+_rocm_dep = dependency('rocm-headers', required: false)
+
 hpctoolkit_config.set('BINUTILS_234', cc.compiles('''
     #include <bfd.h>
     int main() {
       return bfd_section_vma((asection*)0);
     }
   ''', name: 'libbfd >=2.34 syntax',
-  include_directories: libbfd_dep_idirs, dependencies: libbfd_dep_libs)
-  ? 1 : false)
+  dependencies: ex_libs.get('libbfd', _libbfd_dep),
+  include_directories: ex_idirs.get('libbfd', []),
+  ) ? 1 : false)
 hpctoolkit_config.set('DATACENTRIC_TRACE', get_option('datacentric').enabled() ? 1 : false)
-if dyninst_dep.found()
-  hpctoolkit_config.set('DYNINST_INSTRUCTION_PTR', cpp.compiles('''
+hpctoolkit_config.set('DYNINST_INSTRUCTION_PTR', cpp.compiles('''
     #include <map>
     #include <iostream>
     #include <Symtab.h>
@@ -77,39 +83,39 @@ if dyninst_dep.found()
       std::cout << imap.begin()->second->size();
     }
   ''', name: 'Dyninst Instruction::Ptr syntax',
-  include_directories: dyninst_dep_idirs, dependencies: dyninst_dep_libs)
-  ? 1 : false)
-  hpctoolkit_config.set('DYNINST_USE_CUDA', cpp.compiles('''
+  dependencies: ex_libs.get('dyninst', _dyninst_dep),
+  include_directories: ex_idirs.get('dyninst', []),
+  ) ? 1 : false)
+hpctoolkit_config.set('DYNINST_USE_CUDA', cpp.compiles('''
     #include <iostream>
     #include <Symtab.h>
     int main() {
       std::cout << (long) Dyninst::Arch_cuda;
     }
   ''', name: 'Dyninst CUDA support',
-  include_directories: dyninst_dep_idirs, dependencies: dyninst_dep_libs)
-  ? 1 : false)
-  # TODO: Change this out for an actual test
-  hpctoolkit_config.set('DYNINST_USE_LIBDW', true ? 1 : false)
-endif
+  dependencies: ex_libs.get('dyninst', _dyninst_dep),
+  include_directories: ex_idirs.get('dyninst', [])) ? 1 : false)
+# TODO: Change this out for an actual test
+hpctoolkit_config.set('DYNINST_USE_LIBDW', true ? 1 : false)
 
 hpctoolkit_config.set('ENABLE_CLOCK_REALTIME', cc.compiles('''
-  #include <sys/syscall.h>
-  #include <signal.h>
-  #include <time.h>
-  #include <unistd.h>
-  #ifndef sigev_notify_thread_id
-  #define sigev_notify_thread_id _sigev_un._tid
-  #endif
-  int main() {
-    struct sigevent sigev;
-    timer_t timerid;
-    sigev.sigev_notify = SIGEV_THREAD_ID;
-    sigev.sigev_signo = SIGRTMIN + 3;
-    sigev.sigev_value.sival_ptr = &timerid;
-    sigev.sigev_notify_thread_id = syscall(SYS_gettid);
-    return timer_create(CLOCK_REALTIME, &sigev, &timerid);
-  }
-''', name: 'REALTIME timer support'))
+    #include <sys/syscall.h>
+    #include <signal.h>
+    #include <time.h>
+    #include <unistd.h>
+    #ifndef sigev_notify_thread_id
+    #define sigev_notify_thread_id _sigev_un._tid
+    #endif
+    int main() {
+      struct sigevent sigev;
+      timer_t timerid;
+      sigev.sigev_notify = SIGEV_THREAD_ID;
+      sigev.sigev_signo = SIGRTMIN + 3;
+      sigev.sigev_value.sival_ptr = &timerid;
+      sigev.sigev_notify_thread_id = syscall(SYS_gettid);
+      return timer_create(CLOCK_REALTIME, &sigev, &timerid);
+    }
+  ''', name: 'REALTIME timer support'))
 hpctoolkit_config.set('ENABLE_CLOCK_CPUTIME',
   (hpctoolkit_config.get('ENABLE_CLOCK_REALTIME', false) and cc.compiles('''
     #include <sys/time.h>
@@ -121,17 +127,15 @@ hpctoolkit_config.set('ENABLE_CLOCK_CPUTIME',
   ''', name: 'CPUTIME timer support')) ? 1 : false)
 
 # TODO: This should also require some tests for Dyninst
-hpctoolkit_config.set('ENABLE_OPENMP', openmp_d_dep.found() ? 1 : false)
-hpctoolkit_config.set('ENABLE_OPENMP_SYMTAB', openmp_d_dep.found() ? 1 : false)
+hpctoolkit_config.set('ENABLE_OPENMP', _openmp_dep.found() ? 1 : false)
+hpctoolkit_config.set('ENABLE_OPENMP_SYMTAB', _openmp_dep.found() ? 1 : false)
 
 hpctoolkit_config.set('ENABLE_VG_ANNOTATIONS', get_option('valgrind-annotations').enabled() ? 1 : false)
 
 hpctoolkit_config.set('ENABLE_XOP', get_option('xop').enabled() ? 1 : false)
 
-if cuda_dep.found()
-  # CUDA is weird, for now just stick with a compile test
-  hpctoolkit_config.set('HAVE_CUPTI_H', cpp.has_header('cupti.h', dependencies: cuda_dep) ? 1 : false)
-endif
+# CUDA is weird, for now just stick with a compile test
+hpctoolkit_config.set('HAVE_CUPTI_H', cpp.has_header('cupti.h', dependencies: _cuda_dep) ? 1 : false)
 
 hpctoolkit_config.set('HAVE_DLFCN_H', cc.has_header('dlfcn.h') ? 1 : false)
 hpctoolkit_config.set('HAVE_INTTYPES_H', cc.has_header('inttypes.h') ? 1 : false)
@@ -183,7 +187,7 @@ hpctoolkit_config.set_quoted('HPCTOOLKIT_VERSION_STRING',
 # TODO: Again, modern systems should be fine.
 hpctoolkit_config.set('NO_STD_CHEADERS', false ? 1 : false)
 
-hpctoolkit_config.set('OPT_HAVE_CUDA', cuda_dep.found() ? 1 : false)
+hpctoolkit_config.set('OPT_HAVE_CUDA', _cuda_dep.found() ? 1 : false)
 
 # TODO: Figure out how to handle this properly.
 # It should be find_program('nvdisasm').path(), but that doesn't take into
@@ -193,7 +197,7 @@ hpctoolkit_config.set_quoted('CUPTI_INSTALL_PREFIX', '/nonexistant/')
 
 hpctoolkit_config.set('SIZEOF_VOIDP', cc.sizeof('void*'))
 
-hpctoolkit_config.set('USE_ROCM', rocm_headers_dep.found() ? 1 : false)
+hpctoolkit_config.set('USE_ROCM', _rocm_dep.found() ? 1 : false)
 
 configure_file(configuration: hpctoolkit_config, output: 'hpctoolkit-config.h')
 main_includes += include_directories('.')
