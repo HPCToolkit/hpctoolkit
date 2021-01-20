@@ -110,10 +110,9 @@ Options: Profiling (Defaults shown in curly brackets {})
                       event  may  be an architecture-independent hardware or
                       software event supported by Linux perf, a native hardware
                       counter event, a hardware counter event supported by the
-                      PAPI library, a Linux  system timer (CPUTIME and REALTIME),
-                      or the operating system interval timer WALLCLOCK.  This option
-                      may be given multiple times to profile several events at once.
-                      If the value for <howoften> is a number, it will be
+                      PAPI library, or a Linux  system timer (CPUTIME and REALTIME).
+                      This option may be given multiple times to profile several events 
+                      at once. If the value for <howoften> is a number, it will be
                       interpreted as a sample period. For Linux perf events, one
                       may specify a sampling frequency for 'howoften' by writing f
                       before a number.  For instance, to sample an event 100 times
@@ -485,8 +484,8 @@ done
 
 # Add default sampling source if needed.
 case "$HPCRUN_EVENT_LIST" in
-    '' ) HPCRUN_EVENT_LIST='WALLCLOCK@5000' ;;
-    RETCNT ) HPCRUN_EVENT_LIST='WALLCLOCK@5000 RETCNT' ;;
+    '' ) HPCRUN_EVENT_LIST='REALTIME@5000' ;;
+    RETCNT ) HPCRUN_EVENT_LIST='REALTIME@5000 RETCNT' ;;
 esac
 export HPCRUN_EVENT_LIST
 
