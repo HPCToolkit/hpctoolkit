@@ -159,7 +159,8 @@ am__objects_1 = libHPCprof_lean_la-hpcrun-fmt.lo \
 	libHPCprof_lean_la-procmaps.lo libHPCprof_lean_la-vdso.lo \
 	libHPCprof_lean_la-randomizer.lo \
 	libHPCprof_lean_la-splay-uint64.lo \
-	libHPCprof_lean_la-elf-helper.lo
+	libHPCprof_lean_la-elf-helper.lo \
+	libHPCprof_lean_la-id-tuple.lo libHPCprof_lean_la-tracedb.lo
 am_libHPCprof_lean_la_OBJECTS = $(am__objects_1)
 libHPCprof_lean_la_OBJECTS = $(am_libHPCprof_lean_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -518,6 +519,8 @@ HPCLIB_Analysis = $(top_builddir)/src/lib/analysis/libHPCanalysis.la
 HPCLIB_Banal = $(top_builddir)/src/lib/banal/libHPCbanal.la
 HPCLIB_Banal_Simple = $(top_builddir)/src/lib/banal/libHPCbanal_simple.la
 HPCLIB_Prof = $(top_builddir)/src/lib/prof/libHPCprof.la
+HPCLIB_Profile = $(top_builddir)/src/lib/profile/libHPCprofile.la
+HPCLIB_ProfileStandalone = $(top_builddir)/src/lib/profile/libHPCprofile_standalone.la
 HPCLIB_ProfXML = $(top_builddir)/src/lib/profxml/libHPCprofxml.la
 HPCLIB_ProfLean = $(top_builddir)/src/lib/prof-lean/libHPCprof-lean.la
 HPCLIB_Binutils = $(top_builddir)/src/lib/binutils/libHPCbinutils.la
@@ -572,7 +575,10 @@ MYSOURCES = \
 	vdso.h vdso.c \
 	randomizer.h randomizer.c \
 	splay-uint64.h splay-uint64.c \
-	elf-helper.h elf-helper.c
+	elf-helper.h elf-helper.c \
+	\
+	id-tuple.h id-tuple.c \
+	tracedb.h tracedb.c 
 
 MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) $(MBEDTLS_IFLAGS)  -I$(LIBELF_INC)
 @IS_HOST_AR_FALSE@MYAR = $(AR) cru
@@ -687,6 +693,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-hpcio-buffer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-hpcio.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-hpcrun-fmt.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-id-tuple.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-mcs-lock.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-pfq-rwlock.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-placeholders.Plo@am__quote@
@@ -697,6 +704,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-spinlock.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-splay-uint64.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-stacks.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-tracedb.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-urand.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-usec_time.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-vdso.Plo@am__quote@
@@ -907,6 +915,20 @@ libHPCprof_lean_la-elf-helper.lo: elf-helper.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='elf-helper.c' object='libHPCprof_lean_la-elf-helper.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-elf-helper.lo `test -f 'elf-helper.c' || echo '$(srcdir)/'`elf-helper.c
+
+libHPCprof_lean_la-id-tuple.lo: id-tuple.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-id-tuple.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-id-tuple.Tpo -c -o libHPCprof_lean_la-id-tuple.lo `test -f 'id-tuple.c' || echo '$(srcdir)/'`id-tuple.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCprof_lean_la-id-tuple.Tpo $(DEPDIR)/libHPCprof_lean_la-id-tuple.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='id-tuple.c' object='libHPCprof_lean_la-id-tuple.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-id-tuple.lo `test -f 'id-tuple.c' || echo '$(srcdir)/'`id-tuple.c
+
+libHPCprof_lean_la-tracedb.lo: tracedb.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-tracedb.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-tracedb.Tpo -c -o libHPCprof_lean_la-tracedb.lo `test -f 'tracedb.c' || echo '$(srcdir)/'`tracedb.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCprof_lean_la-tracedb.Tpo $(DEPDIR)/libHPCprof_lean_la-tracedb.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='tracedb.c' object='libHPCprof_lean_la-tracedb.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-tracedb.lo `test -f 'tracedb.c' || echo '$(srcdir)/'`tracedb.c
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -1125,7 +1147,7 @@ uninstall-am:
 
 
 ############################################################
-# 
+#
 ############################################################
 
 # arguments: ($1: from) ($2: to)

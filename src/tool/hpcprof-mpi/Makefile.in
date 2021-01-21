@@ -567,6 +567,8 @@ HPCLIB_Analysis = $(top_builddir)/src/lib/analysis/libHPCanalysis.la
 HPCLIB_Banal = $(top_builddir)/src/lib/banal/libHPCbanal.la
 HPCLIB_Banal_Simple = $(top_builddir)/src/lib/banal/libHPCbanal_simple.la
 HPCLIB_Prof = $(top_builddir)/src/lib/prof/libHPCprof.la
+HPCLIB_Profile = $(top_builddir)/src/lib/profile/libHPCprofile.la
+HPCLIB_ProfileStandalone = $(top_builddir)/src/lib/profile/libHPCprofile_standalone.la
 HPCLIB_ProfXML = $(top_builddir)/src/lib/profxml/libHPCprofxml.la
 HPCLIB_ProfLean = $(top_builddir)/src/lib/prof-lean/libHPCprof-lean.la
 HPCLIB_Binutils = $(top_builddir)/src/lib/binutils/libHPCbinutils.la
@@ -1046,7 +1048,7 @@ uninstall-am: uninstall-binSCRIPTS uninstall-pkglibexecPROGRAMS
 
 
 ############################################################
-# 
+#
 ############################################################
 
 # arguments: ($1: from) ($2: to)
