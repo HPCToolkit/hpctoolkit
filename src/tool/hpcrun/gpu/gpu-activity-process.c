@@ -83,17 +83,17 @@
 //******************************************************************************
 
 
-
 static void
 gpu_context_stream_trace
 (
+ uint32_t device_id,
  uint32_t context_id,
  uint32_t stream_id,
  gpu_trace_item_t *ti
 )
 {
   if (hpcrun_trace_isactive()) {
-    gpu_context_id_map_stream_process(context_id, stream_id, gpu_trace_produce, ti);
+    gpu_context_id_map_stream_process(device_id, context_id, stream_id, gpu_trace_produce, ti);
   }
 }
 
@@ -184,8 +184,8 @@ gpu_memcpy_process
       trace_item_set(&entry_trace, activity, host_op_entry, host_op_node);
 
       gpu_context_stream_trace
-        (activity->details.memcpy.context_id, activity->details.memcpy.stream_id,
-         &entry_trace);
+        (activity->details.memcpy.device_id, activity->details.memcpy.context_id,
+         activity->details.memcpy.stream_id, &entry_trace);
 
       attribute_activity(host_op_entry, activity, host_op_node);
       //FIXME(keren): In OpenMP, an external_id may maps to multiple cct_nodes
@@ -333,8 +333,8 @@ gpu_memset_process
       trace_item_set(&entry_trace, activity, host_op_entry, host_op_node);
 
       gpu_context_stream_trace
-	(activity->details.memset.context_id, activity->details.memset.stream_id,
-	 &entry_trace);
+        (activity->details.memset.device_id, activity->details.memset.context_id,
+         activity->details.memset.stream_id, &entry_trace);
 
       attribute_activity(host_op_entry, activity, host_op_node);
 
@@ -396,8 +396,8 @@ gpu_kernel_process
       trace_item_set(&entry_trace, activity, host_op_entry, func_node);
 
       gpu_context_stream_trace
-        (activity->details.kernel.context_id, activity->details.kernel.stream_id,
-         &entry_trace);
+        (activity->details.kernel.device_id, activity->details.kernel.context_id,
+         activity->details.kernel.stream_id, &entry_trace);
 
       cct_node_t *kernel_ph =
         gpu_host_correlation_map_entry_op_cct_get(host_op_entry,
@@ -488,7 +488,7 @@ gpu_synchronization_process
           case GPU_SYNC_STREAM_EVENT_WAIT:
             // Insert a event for a specific stream
             PRINT("Add context %u stream %u sync\n", context_id, stream_id);
-            gpu_context_stream_trace(context_id, stream_id, &entry_trace);
+            gpu_context_stream_trace(IDTUPLE_INVALID, context_id, stream_id, &entry_trace);
             break;
           case GPU_SYNC_CONTEXT:
             // Insert events for all current active streams
@@ -504,7 +504,7 @@ gpu_synchronization_process
                 context_id = gpu_event_id_map_entry_context_id_get(event_id_entry);
                 stream_id = gpu_event_id_map_entry_stream_id_get(event_id_entry);
                 PRINT("Add context %u stream %u event %u sync\n", context_id, stream_id, event_id);
-                gpu_context_stream_trace(context_id, stream_id, &entry_trace);
+                gpu_context_stream_trace(IDTUPLE_INVALID, context_id, stream_id, &entry_trace);
               }
               break;
             }
@@ -551,8 +551,8 @@ gpu_cdpkernel_process
       trace_item_set(&entry_trace, activity, host_op_entry, func_node);
 
       gpu_context_stream_trace
-        (activity->details.cdpkernel.context_id, activity->details.cdpkernel.stream_id,
-         &entry_trace);
+        (activity->details.cdpkernel.device_id, activity->details.cdpkernel.context_id,
+         activity->details.cdpkernel.stream_id, &entry_trace);
     }
     gpu_correlation_id_map_delete(correlation_id);
   }
