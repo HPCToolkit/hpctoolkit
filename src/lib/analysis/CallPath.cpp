@@ -176,7 +176,7 @@ read(const char* prof_fnm, uint groupId, uint rFlags)
   Prof::CallPath::Profile* prof = NULL;
   try {
     DIAG_MsgIf(0, "Reading: '" << prof_fnm << "'");
-    prof = Prof::CallPath::Profile::make(prof_fnm, rFlags, /*outfs*/ NULL);
+    prof = Prof::CallPath::Profile::make(prof_fnm, rFlags, /*outfs*/ NULL, false);
   }
   catch (...) {
     DIAG_EMsg("While reading profile '" << prof_fnm << "'...");
