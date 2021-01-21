@@ -235,7 +235,7 @@ _config.set('LUSH_PTHREADS', get_option('lush-pthreads').enabled())
 _srcset.add(when: 'LUSH_PTHREADS', if_true: declare_dependency(
   compile_args: ['-DLUSH_PTHREADS']))
 
-_config.set('BLUE_GENE', false)  # TODO: Change out for a Blue Gene option
+_config.set('BLUE_GENE', false)  # TODO: Remove, we no longer support this
 _srcset.add(when: 'BLUE_GENE', if_true: declare_dependency(
   compile_args: ['-DUSE_HW_THREAD_ID', '-DNONZERO_THRESHOLD']))
 
@@ -435,26 +435,23 @@ _s_srcset.add_all(when: dependency('internalized libunwind', required: false, st
 
 _srcset.add(files('utilities/last_func.c'))
 
-# If the front-end bits have been requested, use them.
-# TODO: Swap out for a !--enable-backend option
-if true
-  all_scripts += configure_file(
-    input: files('scripts/hpclog'), output: '@PLAINNAME@', copy: true,
-    install: true, install_dir: get_option('libexecdir') / meson.project_name(),
-    install_mode: 'rwxr-xr-x')
-  # For the man page generation
-  hpcsummary_script = files('scripts/hpcsummary.in')
-  all_scripts += configure_file(
-    input: hpcsummary_script, output: '@BASENAME@',
-    configuration: {'PACKAGE_VERSION': meson.project_version()},
-    install: true, install_dir: get_option('libexecdir') / meson.project_name(),
-    install_mode: 'rwxr-xr-x')
-  install_headers(files('hpctoolkit.h'))
-  libhpctoolkit_lib = both_libraries('hpctoolkit',
-    files('hpctoolkit.c'),
-    install: true, install_dir: get_option('libdir') / meson.project_name(),
-  )
-endif
+# Install some bits useful for writing applications or analyzing data
+all_scripts += configure_file(
+  input: files('scripts/hpclog'), output: '@PLAINNAME@', copy: true,
+  install: true, install_dir: get_option('libexecdir') / meson.project_name(),
+  install_mode: 'rwxr-xr-x')
+# For the man page generation
+hpcsummary_script = files('scripts/hpcsummary.in')
+all_scripts += configure_file(
+  input: hpcsummary_script, output: '@BASENAME@',
+  configuration: {'PACKAGE_VERSION': meson.project_version()},
+  install: true, install_dir: get_option('libexecdir') / meson.project_name(),
+  install_mode: 'rwxr-xr-x')
+install_headers(files('hpctoolkit.h'))
+libhpctoolkit_lib = both_libraries('hpctoolkit',
+  files('hpctoolkit.c'),
+  install: true, install_dir: get_option('libdir') / meson.project_name(),
+)
 
 # hpcrun/link require an hpcfnbounds in order to function. Make sure we have one.
 if is_disabler(hpcfnbounds_exe) and is_disabler(hpcfnbounds2_exe)

@@ -68,55 +68,18 @@ if get_option('libdir') != 'lib' or get_option('libexecdir') != 'libexec'
           + 'launch scripts will not function!')
 endif
 
-# TODO: Hunt down the Git version and Spack spec. Generally not needed.
-# (For Git, use vcs_tag, probably. Might not work for all cases.)
-
-# TODO: Autotools issues a whole bunch of sanity checks for headers and types.
-# In particular:
-#  - stdlib.h, stdarg.h, string.h, float.h
-#  - unistd.h, inttypes.h (but only for C++?)
-#  - void* (for C)
-#  - cxxabi.h, cstdlib, cstddef, cstdio, cassert, cerrno, cstdarg, cstring,
-#    cmath, csetjmp, csignal, cctype, climits, cfloat, clocale (for C++)
-#  - sizeof void* (but only for C++?)
-#  - ushort, uint, ulong
-#  - pthread.h (more than preprocessor)
-# None of these are probably nessesary on a modern system.
-
-# TODO: Autotools has a long switch statement configuring the unwinder usage
-# and host flags. Some of it is handled by Meson
-# (host_machine.system() and .cpu_family()), but the rest is tricky.
-
 # Warn if we're not running a GNU compiler with a sufficient version
-if meson.get_compiler('c').get_id() != 'gcc' \
-   or meson.get_compiler('cpp').get_id() != 'gcc'
+if cc.get_id() != 'gcc' or cpp.get_id() != 'gcc'
   warning('Compilers other than GCC are not supported!')
+elif cc.version().version_compare('<5') or cpp.version().version_compare('<5')
+  warning('Compilers older than GCC 5.x are not supported!')
 endif
-# TODO: Handle getting the GCC version and checking that
-
-# TODO: Fix the compiler wrapper thingy for Spack builds
-
-# TODO: Find libstdc++, for hpcfnbounds apparently. Not used for hpcfnbounds2.
 
 # Enable extended C++ alignment if possible, for dyninst
 if cpp.get_argument_syntax() == 'gcc'
   add_project_arguments(cpp.get_supported_arguments(['-faligned-new']),
                         language: 'cpp')
 endif
-
-# Enable OpenMP.
-# TODO: Figure out how to handle this properly. The original controls its usage
-# via a test for Dyninst support, but it doesn't appear to compile here without
-# having it enabled. Maybe something to do with the library?
-dependency('OpenMP', required: get_option('openmp'))
-# TODO: Handle finding the OpenMP directory.
-
-# Enable MPI (for C and C++).
-# NOTE: Autotools has a separate search system for Cray and Blue Gene, to get
-# around a Spack bug. We trust Meson's search functionality and ability to
-# override the issue in a Spack recipe.
-dependency('MPI', language: 'c', required: get_option('mpi'))
-dependency('MPI', language: 'cpp', required: get_option('mpi'))
 
 # Handle getting the Spack we'll use for our business
 if get_option('spack') != '' or meson.get_external_property('spack', '') != ''
@@ -149,10 +112,6 @@ if get_option('spack') != '' or meson.get_external_property('spack', '') != ''
   endif
   spack = find_program(spack, version: '>=0.15.0', native: true)
 endif
-
-# TODO: Sanity-check that Spack's compiler and ours are compatible.
-# Is this really nessesary? The .a, .o and .so formats have been stable
-# for a very long time.
 
 # Get all the bits for our dependencies, hunt down the parts and construct
 # the dependency objects. We do the searches within Meson to allow the automatic
@@ -471,9 +430,6 @@ foreach var, dep : _deps
     endif
 
     # Stitch together a final dependncy to represent the entire mess
-    if _dep_name == 'libbfd'
-      message(_dep_search['idirs'])
-    endif
     _dep = declare_dependency(
       dependencies: _dep_libs + _dep_xlibs,
       include_directories: include_directories(_dep_search['idirs'] + _dep_xidirs),
@@ -512,8 +468,6 @@ if meson.get_external_property('cuda_enabled', true)
     error('cupti_root as a property is not effective, '
           + 'use the CUDA_HOME environment variable!')
   endif
-
-  # TODO: Handle Spack-provided CUDA. Or don't. Decide what to do there.
 
   # Search for the CUDA toolkit
   meson.override_dependency('CUDA', dependency('CUDA', required: get_option('cuda-monitoring'), modules: ['cupti']))

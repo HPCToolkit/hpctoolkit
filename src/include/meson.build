@@ -95,7 +95,7 @@ hpctoolkit_config.set('DYNINST_USE_CUDA', cpp.compiles('''
   ''', name: 'Dyninst CUDA support',
   dependencies: ex_libs.get('dyninst', _dyninst_dep),
   include_directories: ex_idirs.get('dyninst', [])) ? 1 : false)
-# TODO: Change this out for an actual test
+# TODO: Remove once the Dyninst lower version bound gets bumped
 hpctoolkit_config.set('DYNINST_USE_LIBDW', true ? 1 : false)
 
 hpctoolkit_config.set('ENABLE_CLOCK_REALTIME', cc.compiles('''
@@ -125,8 +125,6 @@ hpctoolkit_config.set('ENABLE_CLOCK_CPUTIME',
       return 0;
     }
   ''', name: 'CPUTIME timer support')) ? 1 : false)
-
-# TODO: This should also require some tests for Dyninst
 hpctoolkit_config.set('ENABLE_OPENMP', _openmp_dep.found() ? 1 : false)
 hpctoolkit_config.set('ENABLE_OPENMP_SYMTAB', _openmp_dep.found() ? 1 : false)
 
@@ -140,7 +138,7 @@ hpctoolkit_config.set('HAVE_CUPTI_H', cpp.has_header('cupti.h', dependencies: _c
 hpctoolkit_config.set('HAVE_DLFCN_H', cc.has_header('dlfcn.h') ? 1 : false)
 hpctoolkit_config.set('HAVE_INTTYPES_H', cc.has_header('inttypes.h') ? 1 : false)
 
-# TODO: This should be replaced with something more useful
+# TODO: Remove, this should be done differently anyway.
 hpctoolkit_config.set('HAVE_OS_MULTILIB', false ? 1 : false)
 
 hpctoolkit_config.set('HAVE_STDINT_H', cc.has_header('stdint.h') ? 1 : false)
@@ -168,7 +166,7 @@ hpctoolkit_config.set('HOST_OS_Tru64', false ? 1 : false)  # TODO: What's a Tru6
 hpctoolkit_config.set('HOST_PLATFORM_MIPS64LE_LINUX',
   (host_machine.system() == 'linux' and host_machine.cpu_family() == 'mips64') ? 1 : false)
 
-# TODO: Make this a proper option/test
+# TODO: Remove, we no longer support this
 hpctoolkit_config.set('HOST_SYSTEM_IBM_BLUEGENE', false ? 1 : false)
 
 # TODO: Base this on the output from vcs_tag
@@ -184,7 +182,6 @@ hpctoolkit_config.set_quoted('HPCTOOLKIT_VERSION', meson.project_version())
 hpctoolkit_config.set_quoted('HPCTOOLKIT_VERSION_STRING',
   'A member of ' + meson.project_name() + ', version ' + meson.project_version())
 
-# TODO: Again, modern systems should be fine.
 hpctoolkit_config.set('NO_STD_CHEADERS', false ? 1 : false)
 
 hpctoolkit_config.set('OPT_HAVE_CUDA', _cuda_dep.found() ? 1 : false)
