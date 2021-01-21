@@ -418,7 +418,7 @@ MY_BASE_FILES =				\
 	utilities/timer.c		\
 	utilities/tokenize.h utilities/tokenize.c \
 	utilities/unlink.h utilities/unlink.c \
-	\	
+	\
 	gpu/blame-shifting/blame.c \
 	gpu/blame-shifting/blame-helper.c \
 	gpu/blame-shifting/blame-queue-map.c	\

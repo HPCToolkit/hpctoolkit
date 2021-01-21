@@ -68,16 +68,14 @@
 //******************************************************************************
 
 #define GPU_STRING "gpu=opencl"
-<<<<<<< HEAD
 #define INTEL_OPTIMIZATION_CHECK "intel_opt_check"
 #define ENABLE_OPENCL_BLAME_SHIFTING "opencl-blame"
-=======
->>>>>>> f6b345e94... adding default instrumentation mode for intel GPU
 #define DEFAULT_INSTRUMENTATION "gpu=opencl,inst"
 #define INSTRUMENTATION_PREFIX "gpu=opencl,inst="
 #define EXECUTION_COUNT "count"
 #define LATENCY "latency"
 #define SIMD "simd"
+#define ENABLE_OPENCL_BLAME_SHIFTING "opencl-blame"
 #define NO_THRESHOLD  1L
 
 static device_finalizer_fn_entry_t device_finalizer_flush;
@@ -151,16 +149,11 @@ static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
   #ifndef HPCRUN_STATIC_LINK
-<<<<<<< HEAD
   return (hpcrun_ev_is(ev_str, GPU_STRING) || hpcrun_ev_is(ev_str, DEFAULT_INSTRUMENTATION)
                                            || strstr(ev_str, INSTRUMENTATION_PREFIX)
                                            || hpcrun_ev_is(ev_str, INTEL_OPTIMIZATION_CHECK)
                                            || hpcrun_ev_is(ev_str, ENABLE_OPENCL_BLAME_SHIFTING)
          );
-=======
-  return (hpcrun_ev_is(ev_str, GPU_STRING) || hpcrun_ev_is(ev_str, DEFAULT_INSTRUMENTATION) ||
-          strstr(ev_str, INSTRUMENTATION_PREFIX));
->>>>>>> f6b345e94... adding default instrumentation mode for intel GPU
   #else
   return false;
   #endif
@@ -281,6 +274,10 @@ METHOD_FN(display_events)
     "\t\tIf %6$s is passed(default mode), %3$s and %4$s instrumentation is turned on\n",
     INSTRUMENTATION_PREFIX, "<comma-separated instrumentation options>",
     EXECUTION_COUNT, LATENCY, SIMD, DEFAULT_INSTRUMENTATION);
+  printf("\n");
+
+  printf("%s\tBlame-Shifting analysis of opencl applications.\n",
+    ENABLE_OPENCL_BLAME_SHIFTING);
   printf("\n");
 }
 

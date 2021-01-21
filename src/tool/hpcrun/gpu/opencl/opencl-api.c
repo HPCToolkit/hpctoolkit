@@ -1630,6 +1630,17 @@ opencl_instrumentation_count_enable
 
 
 void
+opencl_blame_shifting_enable
+(
+ void
+)
+{
+  ENABLE_BLAME_SHIFTING = true;
+	ETMSG(OPENCL, "blame shifting enabled\n");
+}
+
+
+void
 opencl_api_thread_finalize
 (
  void *args,
