@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2021, Rice University
+## Copyright ((c)) 2002-2020, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -58,7 +58,7 @@
 #############################################################################
 
 # We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)
-AUTOMAKE_OPTIONS = foreign
+AUTOMAKE_OPTIONS = foreign subdir-objects
 
 #############################################################################
 # Common settings
@@ -70,46 +70,57 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
-MYSOURCES = \
-	Metric-Mgr.hpp Metric-Mgr.cpp \
-	Metric-ADesc.hpp Metric-ADesc.cpp \
-	Metric-IData.hpp Metric-IData.cpp \
-	Metric-AExpr.hpp Metric-AExpr.cpp \
-	Metric-AExprIncr.hpp Metric-AExprIncr.cpp \
-	Metric-IDBExpr.hpp Metric-IDBExpr.cpp \
-	\
-	FileError.hpp FileError.cpp \
-	\
-	LoadMap.hpp LoadMap.cpp \
-	\
-	Struct-Tree.hpp Struct-Tree.cpp \
-	Struct-TreeIterator.hpp Struct-TreeIterator.cpp \
-	\
-	CCT-Tree.hpp CCT-Tree.cpp \
-	CCT-TreeIterator.hpp CCT-TreeIterator.cpp \
-	CCT-Merge.hpp CCT-Merge.cpp \
-	\
-	Flat-ProfileData.hpp Flat-ProfileData.cpp \
-	\
-	CallPath-Profile.hpp CallPath-Profile.cpp \
-	pms-format.c pms-format.h \
-	cms-format.c cms-format.h \
-	\
-	StringSet.hpp StringSet.cpp \
-	NameMappings.hpp NameMappings.cpp 
+EXT_LIBS = lib/hpctoolkit/ext-libs
 
+LIBDWARF_INC = @LIBDWARF_INC@
+LIBDWARF_LIB = @LIBDWARF_LIB@
 
-# GNU binutils flags are needed for HPCLIB_ISA.
-MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @BINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@
+LIBELF_INC = @LIBELF_INC@
+LIBELF_LIB   = @LIBELF_LIB@
 
-if IS_HOST_AR
-  MYAR = @HOST_AR@
+XED2_LIB_FLAGS = @XED2_LIB_FLAGS@
+
+if OPT_DYNINST_LIBDW
+MY_ELF_DWARF = -L$(LIBELF_LIB) -ldw -lelf
 else
-  MYAR = $(AR) cru
+MY_ELF_DWARF = -L$(LIBDWARF_LIB) -ldwarf -L$(LIBELF_LIB) -lelf
 endif
 
-MYLIBADD = @HOST_LIBTREPOSITORY@
+MYSOURCES = \
+	main.cpp master.cpp worker.cpp tree.cpp sparse.cpp \
+	mpi.cpp ../hpcprof2/args.cpp
+
+MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @BINUTILS_IFLAGS@ @VALGRIND_IFLAGS@
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@ @BOOST_IFLAGS@ \
+             @VALGRIND_IFLAGS@ -std=gnu++17
+
+
+MYLDFLAGS = \
+	-Wl,-rpath='$(prefix)/$(EXT_LIBS)' \
+	-Wl,-rpath='$$ORIGIN/../$(EXT_LIBS)' \
+	-lstdc++fs \
+	@HPCPROFMPI_LT_LDFLAGS@ \
+	@HOST_CXXFLAGS@ \
+	@XERCES_LDFLAGS@ \
+	@LZMA_PROF_MPI_LIBS@ \
+	-L@LIBELF_LIB@ -ldw -lelf
+
+MYLDADD = \
+	@HOST_LIBTREPOSITORY@ \
+	$(HPCLIB_Profile) \
+	$(HPCLIB_ProfLean) \
+	$(HPCLIB_SupportLean) \
+	$(MY_ELF_DWARF) \
+	@LZMA_PROF_MPI_LIBS@ \
+	@XERCES_LDLIBS@ \
+	@BINUTILS_LIBS@ \
+	@BOOST_LFLAGS@ \
+	@HOST_HPCPROF_LDFLAGS@
+
+if OPT_ENABLE_OPENMP
+MYCFLAGS += $(OPENMP_FLAG)
+MYCXXFLAGS += $(OPENMP_FLAG)
+endif
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
 
@@ -117,13 +128,15 @@ MYCLEAN = @HOST_LIBTREPOSITORY@
 # Automake rules
 #############################################################################
 
-noinst_LTLIBRARIES = libHPCprof.la
+CXX = $(MPICXX)
 
-libHPCprof_la_SOURCES  = $(MYSOURCES)
-libHPCprof_la_CFLAGS   = $(MYCFLAGS)
-libHPCprof_la_CXXFLAGS = $(MYCXXFLAGS)
-libHPCprof_la_AR       = $(MYAR)
-libHPCprof_la_LIBADD   = $(MYLIBADD)
+bin_PROGRAMS = hpcprof2-mpi
+
+hpcprof2_mpi_SOURCES  = $(MYSOURCES)
+hpcprof2_mpi_CFLAGS   = $(MYCFLAGS)
+hpcprof2_mpi_CXXFLAGS = $(MYCXXFLAGS)
+hpcprof2_mpi_LDFLAGS  = $(MYLDFLAGS)
+hpcprof2_mpi_LDADD    = $(MYLDADD)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
 
