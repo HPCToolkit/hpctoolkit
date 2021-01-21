@@ -57,6 +57,7 @@ _dyninst_dep = dependency('dyninst', required: false)
 _openmp_dep = dependency('openmp', required: get_option('openmp'))
 _cuda_dep = dependency('cuda', required: get_option('cuda-monitoring'))
 _rocm_dep = dependency('rocm-headers', required: false)
+_valgrind_dep = dependency('valgrind', required: get_option('valgrind-annotations'))
 
 hpctoolkit_config.set('BINUTILS_234', cc.compiles('''
     #include <bfd.h>
@@ -67,7 +68,7 @@ hpctoolkit_config.set('BINUTILS_234', cc.compiles('''
   dependencies: ex_libs.get('libbfd', _libbfd_dep),
   include_directories: ex_idirs.get('libbfd', []),
   ) ? 1 : false)
-hpctoolkit_config.set('DATACENTRIC_TRACE', get_option('datacentric').enabled() ? 1 : false)
+hpctoolkit_config.set('DATACENTRIC_TRACE', get_option('data-centric-tracing') ? 1 : false)
 hpctoolkit_config.set('DYNINST_INSTRUCTION_PTR', cpp.compiles('''
     #include <map>
     #include <iostream>
@@ -128,9 +129,9 @@ hpctoolkit_config.set('ENABLE_CLOCK_CPUTIME',
 hpctoolkit_config.set('ENABLE_OPENMP', _openmp_dep.found() ? 1 : false)
 hpctoolkit_config.set('ENABLE_OPENMP_SYMTAB', _openmp_dep.found() ? 1 : false)
 
-hpctoolkit_config.set('ENABLE_VG_ANNOTATIONS', get_option('valgrind-annotations').enabled() ? 1 : false)
+hpctoolkit_config.set('ENABLE_VG_ANNOTATIONS', _valgrind_dep.found() ? 1 : false)
 
-hpctoolkit_config.set('ENABLE_XOP', get_option('xop').enabled() ? 1 : false)
+hpctoolkit_config.set('ENABLE_XOP', get_option('xop') ? 1 : false)
 
 # CUDA is weird, for now just stick with a compile test
 hpctoolkit_config.set('HAVE_CUPTI_H', cpp.has_header('cupti.h', dependencies: _cuda_dep) ? 1 : false)

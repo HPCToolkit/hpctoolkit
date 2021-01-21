@@ -1,3 +1,10 @@
+# External dependency options
+option('spack', type: 'string', value: '',
+       description: 'Find external dependencies via the given Spack command.')
+option('papi-c', type: 'feature',
+       description: 'Use PAPI\'s newer component API (PAPI >=5.1).')
+
+# Top-level targets/applications
 option('hpcrun', type: 'feature',
        description: 'Enable the HPCToolkit measurement application, hpcrun')
 option('hpclink', type: 'feature',
@@ -11,31 +18,30 @@ option('devtools', type: 'feature', value: 'disabled',
 option('hpcserver', type: 'feature', value: 'disabled',
        description: 'Enable the (old and experimental) hpcserver application.')
 
+# Application options (hpcstruct + hpcprof)
 option('openmp', type: 'feature',
        description: 'Accelerate applications using OpenMP where applicable.')
-option('valgrind-annotations', type: 'feature',
+option('valgrind-annotations', type: 'feature', value: 'disabled',
        description: 'Enable Valgrind annotations where applicable.')
 option('mpi', type: 'feature',
        description: 'Accelerate applications using MPI where applicable.')
 
-option('spack', type: 'string', value: '',
-       description: 'Use the given Spack to find external dependencies. Must either be an absolute path or a command to search on the PATH.')
-
-option('lush-pthreads', type: 'feature', value: 'disabled',
-       description: 'Enable LUSH Pthread logical unwind support.')
-option('datacentric', type: 'feature',
-       description: 'Enable data-centric profiling.')
-option('papi-c', type: 'feature',
-       description: 'Enable the use of the new component API for PAPI.')
+# Profiling options (hpcrun + hpclink)
 option('cuda-monitoring', type: 'feature',
-       description: 'Enable CUDA support')
+       description: 'Allow profiling CUDA activity.')
 option('papi-c-cupti', type: 'feature',
-       description: 'Enable CUDA support via PAPI.')
+       description: 'Allow profiling CUDA activity via PAPI.')
+option('kernel-blocking', type: 'feature',
+       description: 'Allow monitoring kernel blocked time (Linux >=4.3).')
+option('perf-events', type: 'feature',
+       description: 'Allow monitoring kernel perf events (Linux >=2.6.32).')
+option('xop', type: 'boolean', value: true,
+       description: 'Support decoding of AMD XOP instructions on x86-64.')
+# TODO: Currently not used anywhere
+option('lush', type: 'boolean', value: false,
+       description: 'Enable LUSH logical unwind support.')
+option('lush-pthreads', type: 'boolean', value: false,
+       description: 'Enable LUSH Pthread logical unwind support.')
+option('data-centric-tracing', type: 'boolean', value: false,
+       description: 'Enable data-centric profiling.')
 
-option('xop', type: 'feature',
-       description: 'Enable support for decoding AMD XOP instructions (for x86-64).')
-
-option('kernel-blocking', type: 'string', value: 'auto',
-       description: '[true, false, auto] force enable or disable kernel blocking support in perf events (Linux >=4.3).')
-option('perf-events', type: 'string', value: 'auto',
-       description: '[true, false, auto] force enable or disable perf event sample sources (Linux >=2.6.32).')

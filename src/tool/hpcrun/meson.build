@@ -231,7 +231,7 @@ if host_machine.system() == 'linux'
   _d_srcset.add(files('os/linux/dylib.c'))
 endif
 
-_config.set('LUSH_PTHREADS', get_option('lush-pthreads').enabled())
+_config.set('LUSH_PTHREADS', get_option('lush-pthreads'))
 _srcset.add(when: 'LUSH_PTHREADS', if_true: declare_dependency(
   compile_args: ['-DLUSH_PTHREADS']))
 
@@ -248,12 +248,7 @@ _perf_srcset.add(files(
   'sample-sources/perf/perf_mmap.c',
   'sample-sources/perf/perf_skid.c',
 ), declare_dependency(compile_args: ['-DHPCRUN_SS_LINUX_PERF']))
-if get_option('kernel-blocking') == 'true'
-  _config.set('LINUX_4_3', true)
-elif get_option('kernel-blocking') == 'false'
-  _config.set('LINUX_4_3', false)
-elif get_option('kernel-blocking') == 'auto'
-  _config.set('LINUX_4_3', cc.compiles('''
+_config.set('LINUX_4_3', not get_option('kernel-blocking').disabled() and cc.compiles('''
     #include <linux/perf_event.h>
     #include <linux/version.h>
     static struct perf_event_attr attr;
@@ -265,8 +260,9 @@ elif get_option('kernel-blocking') == 'auto'
       #endif
     }
   ''', name: 'kernel blocking perf event support'))
-else
-  error('Option kernel-blocking must be boolean or auto, not `@0@\''.format(get_option('kernel-blocking')))
+if get_option('kernel-blocking').enabled() and not _config.get('LINUX_4_3')
+  warning('Kernel blocked event support does not appear to be available, but enabling as requested.')
+  _config.set('LINUX_4_3', true)
 endif
 _perf_srcset.add(when: 'LINUX_4_3',
   if_true: files('sample-sources/perf/kernel_blocking.c'),
@@ -282,20 +278,16 @@ _perf_d_srcset.add(when: dependency('perfmon', required: false),
 _perf_s_srcset = sourceset.source_set()
 _perf_s_srcset.add(when: dependency('perfmon', required: false, static: true),
                    if_true: _perfmon_true, if_false: _perfmon_false)
-if get_option('perf-events') == 'true'
-  _config.set('PERF_AVAILABLE', true)
-elif get_option('perf-events') == 'false'
-  _config.set('PERF_AVAILABLE', false)
-elif get_option('perf-events') == 'auto'
-  _config.set('PERF_AVAILABLE', cc.compiles('''
+_config.set('PERF_AVAILABLE', not get_option('perf-events').disabled() and cc.compiles('''
     #include <linux/perf_event.h>
     static struct perf_event_attr attr;
     int main() {
       attr.sample_id_all = 1;
     }
   ''', name: 'kernel perf event support'))
-else
-  error('Option perf-events must be boolean or auto, not `@0@\''.format(get_option('perf-events')))
+if get_option('perf-events').enabled() and not _config.get('PERF_AVAILABLE')
+  warning('Kernel perf event suport does not appear to be available, but enabling as requested.')
+  _config.set('PERF_AVAILABLE', true)
 endif
 _srcset.add_all(when: 'PERF_AVAILABLE', if_true: _perf_srcset)
 _d_srcset.add_all(when: 'PERF_AVAILABLE', if_true: _perf_d_srcset)
@@ -526,6 +518,7 @@ summary('PThread Blame Shifting (hpcrun)', not is_disabler(libhpcrun_pthread_lib
         section: 'Plugins', bool_yn: true)
 
 # TODO: libhpcrun_mpi
+# TODO: LUSH agents
 
 ##
 ## Static case (hpclink)
