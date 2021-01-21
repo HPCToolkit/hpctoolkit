@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2021, Rice University
+## Copyright ((c)) 2002-2020, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -61,26 +61,83 @@
 AUTOMAKE_OPTIONS = foreign
 
 #############################################################################
+# Common settings
+#############################################################################
+
+include $(top_srcdir)/src/Makeinclude.config
+
+
+#############################################################################
 # Local settings
 #############################################################################
 
-LOOSEDOCS = \
-	FORMATS.md
+EXT_LIBS = lib/hpctoolkit/ext-libs
+
+LIBDWARF_INC = @LIBDWARF_INC@
+LIBDWARF_LIB = @LIBDWARF_LIB@
+
+LIBELF_INC = @LIBELF_INC@
+LIBELF_LIB   = @LIBELF_LIB@
+
+if OPT_DYNINST_LIBDW
+MY_ELF_DWARF = -L$(LIBELF_LIB) -ldw -lelf
+else
+MY_ELF_DWARF = -L$(LIBDWARF_LIB) -ldwarf -L$(LIBELF_LIB) -lelf
+endif
+
+MYSOURCES = \
+	main.cpp args.cpp
+
+MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @BINUTILS_IFLAGS@ @VALGRIND_IFLAGS@
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@ @XERCES_IFLAGS@ \
+	@BOOST_IFLAGS@ @VALGRIND_IFLAGS@ -std=gnu++17
+
+MYLDFLAGS = \
+	-Wl,-rpath='$(prefix)/$(EXT_LIBS)' \
+	-Wl,-rpath='$$ORIGIN/../$(EXT_LIBS)' \
+	-lstdc++fs \
+	@HOST_CXXFLAGS@ \
+	@XERCES_LDFLAGS@ \
+	@LZMA_LDFLAGS_DYN@ \
+    -L@LIBELF_LIB@ -ldw -lelf
+
+MYLDADD = \
+	@HOST_LIBTREPOSITORY@ \
+	$(HPCLIB_Profile) \
+	$(HPCLIB_ProfileStandalone) \
+	$(HPCLIB_ProfLean) \
+	$(HPCLIB_SupportLean) \
+	$(MY_ELF_DWARF) \
+	@LZMA_LDFLAGS_STAT@ \
+	@XERCES_LDLIBS@ \
+	@BINUTILS_LIBS@ \
+	@BOOST_LFLAGS@ \
+	@HOST_HPCPROF_LDFLAGS@
+
+if OPT_ENABLE_OPENMP
+MYCFLAGS += $(OPENMP_FLAG)
+MYCXXFLAGS += $(OPENMP_FLAG)
+endif
+
+MYCLEAN = @HOST_LIBTREPOSITORY@
 
 #############################################################################
 # Automake rules
 #############################################################################
 
-SUBDIRS = \
-	www \
-	\
-	man \
-	manual
+bin_PROGRAMS = hpcprof2
 
-loosedocsdir = $(docdir)
-dist_loosedocs_DATA = $(LOOSEDOCS)
+hpcprof2_SOURCES  = $(MYSOURCES)
+hpcprof2_CFLAGS   = $(MYCFLAGS)
+hpcprof2_CXXFLAGS = $(MYCXXFLAGS)
+hpcprof2_LDFLAGS  = $(MYLDFLAGS)
+hpcprof2_LDADD    = $(MYLDADD)
+
+MOSTLYCLEANFILES = $(MYCLEAN)
 
 #############################################################################
-# Other rules
+# Common rules
 #############################################################################
+
+include $(top_srcdir)/src/Makeinclude.rules
 
