@@ -79,14 +79,14 @@
 extern "C" {
 #endif
 
-#define MULTIPLE_8(v) (v + 7) & ~7
+#define MULTIPLE_8(v) ((v + 7) & ~7)
 //***************************************************************************
 // hdr
 //***************************************************************************
-#define HPCPROFILESPARSE_FMT_Magic   "HPCPROF-pmsdb___" //16 bytes
+#define HPCPROFILESPARSE_FMT_Magic   "HPCPROF-profdb__" //16 bytes
 #define HPCPROFILESPARSE_FMT_VersionMajor 1             //1  byte
 #define HPCPROFILESPARSE_FMT_VersionMinor 0             //1  byte
-#define HPCPROFILESPARSE_FMT_NumSec 2                   //2  byte
+#define HPCPROFILESPARSE_FMT_NumSec       2             //2  byte
 
 #define HPCPROFILESPARSE_FMT_MagicLen     (sizeof(HPCPROFILESPARSE_FMT_Magic) - 1)
 #define HPCPROFILESPARSE_FMT_VersionLen   2
@@ -188,6 +188,7 @@ typedef struct pms_id_tuple_t{
 #define PMS_ctx_pair_SIZE  (PMS_ctx_id_SIZE + PMS_ctx_idx_SIZE)
 #define PMS_val_SIZE       8
 #define PMS_mid_SIZE       2
+#define PMS_vm_pair_SIZE   (PMS_val_SIZE + PMS_mid_SIZE)
 
 
 int
