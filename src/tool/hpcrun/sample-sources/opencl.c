@@ -70,6 +70,7 @@
 #define GPU_STRING "gpu=opencl"
 #define ENABLE_INSTRUMENTATION "gpu=opencl,inst"
 #define INTEL_OPTIMIZATION_CHECK "intel_opt_check"
+#define ENABLE_OPENCL_BLAME_SHIFTING "opencl-blame"
 #define NO_THRESHOLD  1L
 
 static device_finalizer_fn_entry_t device_finalizer_flush;
@@ -144,7 +145,9 @@ METHOD_FN(supports_event, const char *ev_str)
 {
   #ifndef HPCRUN_STATIC_LINK
   return (hpcrun_ev_is(ev_str, GPU_STRING) || hpcrun_ev_is(ev_str, ENABLE_INSTRUMENTATION)
-                                           || hpcrun_ev_is(ev_str, INTEL_OPTIMIZATION_CHECK));
+                                           || hpcrun_ev_is(ev_str, INTEL_OPTIMIZATION_CHECK)
+                                           || hpcrun_ev_is(ev_str, ENABLE_OPENCL_BLAME_SHIFTING)
+         );
   #else
   return false;
   #endif
@@ -174,7 +177,9 @@ METHOD_FN(process_event_list, int lush_metrics)
     } else if (hpcrun_ev_is(opencl_name, INTEL_OPTIMIZATION_CHECK)) {
       opencl_optimization_check_enable();
       gpu_metrics_INTEL_OPTIMIZATION_enable();
-    }
+    } else if (hpcrun_ev_is(opencl_name, ENABLE_OPENCL_BLAME_SHIFTING)) {
+			opencl_blame_shifting_enable();
+		}
   }
 }
 
@@ -213,10 +218,17 @@ METHOD_FN(display_events)
   printf("===========================================================================\n");
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
-  printf("%s\t\tOperation-level monitoring for opencl on a GPU.\n"
+  printf("%s\tOperation-level monitoring for opencl on a GPU.\n"
     "\t\tCollect timing information on GPU kernel invocations,\n"
     "\t\tmemory copies, etc.\n",
     GPU_STRING);
+  printf("\n");
+  printf("%s\tFine-grained instrumentation support for opencl on a GPU.\n"
+    "\t\tthe profiling data collected from %s is also part of this run\n",
+    ENABLE_INSTRUMENTATION, GPU_STRING);
+  printf("\n");
+  printf("%s\tBlame-Shifting analysis of opencl applications.\n",
+    ENABLE_OPENCL_BLAME_SHIFTING);
   printf("\n");
 }
 
