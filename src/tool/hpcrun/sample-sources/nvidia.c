@@ -269,6 +269,7 @@ METHOD_FN(init)
 
   control_knob_register("HPCRUN_CUDA_DEVICE_BUFFER_SIZE", "8388608", ck_int);
   control_knob_register("HPCRUN_CUDA_DEVICE_SEMAPHORE_SIZE", "65536", ck_int);
+  control_knob_register("HPCRUN_CUDA_RANGE_INTERVAL", "1", ck_int);
 
   // Reset cupti flags
   cupti_device_init();
@@ -366,10 +367,16 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     gpu_monitoring_instruction_sample_frequency_set(pc_sampling_frequency);
 
+    int range_interval = 1;
+    control_knob_value_get_int("HPCRUN_CUDA_RANGE_INTERVAL", &range_interval);
+    gpu_range_interval_set(range_interval);
+
     gpu_metrics_GPU_INST_enable(); // instruction counts
 
 #ifdef NEW_CUPTI
     gpu_metrics_GPU_INST_STALL2_enable(); // stall metrics
+    
+    // TODO(keren): gsamp in new_cupti
 #else
     gpu_metrics_GPU_INST_STALL_enable(); // stall metrics
 
@@ -392,7 +399,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   }
 
 #ifdef NEW_CUPTI
-  if (cupti_pc_sampling_bind()) {
+  if (cupti_pc_sampling_bind() != DYNAMIC_BINDING_STATUS_OK) {
     EEMSG("hpcrun: unable to bind to new NVIDIA CUPTI library %s\n", dlerror());
     monitor_real_exit(-1);
   }

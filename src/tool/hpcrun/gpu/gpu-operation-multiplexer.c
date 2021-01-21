@@ -138,8 +138,7 @@ gpu_operation_multiplexer_create
   gpu_operation_channel_set_alloc(max_completion_cb_threads);
 
   // You are the first to create monitor thread
-  pthread_create(&thread, NULL, (pthread_start_routine_t) gpu_operation_record,
-                 NULL);
+  pthread_create(&thread, NULL, (pthread_start_routine_t) gpu_operation_record, NULL);
 }
 
 

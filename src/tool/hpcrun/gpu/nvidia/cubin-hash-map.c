@@ -61,7 +61,7 @@
 #include <hpcrun/memory/hpcrun-malloc.h>
 
 #include "cubin-hash-map.h"
-
+#include "cubin-id-map.h"
 
 
 //*****************************************************************************
@@ -221,7 +221,6 @@ cubin_hash_map_entry_hash_get
   *len = crypto_hash_length();
   return entry->hash;
 }
-
 
 
 //*****************************************************************************

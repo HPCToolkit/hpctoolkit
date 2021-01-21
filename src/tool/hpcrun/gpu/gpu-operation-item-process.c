@@ -63,6 +63,7 @@
 #include "gpu-operation-item.h"
 #include "gpu-operation-item-process.h"
 #include "gpu-range.h"
+#include "gpu-metrics.h"
 
 //******************************************************************************
 // macros
@@ -211,6 +212,7 @@ gpu_pc_sampling_info2_process
 {
   gpu_activity_t *activity = &it->activity;
   uint32_t range_id = activity->range_id;
+  cct_node_t *cct_node = activity->cct_node;
 
   gpu_pc_sampling_info2_t *pc_sampling_info2 = &activity->details.pc_sampling_info2;
 
@@ -224,11 +226,15 @@ gpu_pc_sampling_info2_process
   // 1. translate a pc sample activity for each record
   gpu_activity_channel_t *channel;
   for (uint64_t index = 0; index < total_num_pcs; ++index) {
-    pc_sampling_info2->translate(pc_sampling_data, index, gpu_activity, period, range_id);
+    pc_sampling_info2->translate(pc_sampling_data, index, gpu_activity, period, range_id, cct_node);
 
     for (size_t i = 0; i < GPU_INST_STALL2_INVALID; ++i) {
       if (gpu_activity[i].details.pc_sampling2.samples != 0) {
-        gpu_range_attribute(context_id, &gpu_activity[i]);
+        if (gpu_range_interval_get() == 1) {
+          gpu_metrics_attribute(&gpu_activity[i]);
+        } else {
+          gpu_range_attribute(context_id, &gpu_activity[i]);
+        }
       }
     }
   }

@@ -17,6 +17,8 @@ static atomic_ullong correlation_id_done = ATOMIC_VAR_INIT(0);
 static __thread uint64_t thread_correlation_id = 0;
 static __thread uint32_t thread_range_id = 0;
 
+static uint32_t gpu_range_interval = 1;
+
 static spinlock_t count_lock = SPINLOCK_UNLOCKED;
 
 static uint32_t
@@ -111,7 +113,7 @@ gpu_range_enter
   spinlock_lock(&count_lock);
 
   uint64_t correlation_id = gpu_correlation_id();
-  if (GPU_CORRELATION_ID_UNMASK(correlation_id) % GPU_RANGE_COUNT_LIMIT == 0) {
+  if (GPU_CORRELATION_ID_UNMASK(correlation_id) % gpu_range_interval == 0) {
     // If lead is set, don't do anything
     while (atomic_load(&correlation_id_lead) != 0) {}
     // The last call in this range
@@ -121,7 +123,7 @@ gpu_range_enter
   spinlock_unlock(&count_lock);
 
   thread_correlation_id = correlation_id;
-  thread_range_id = (GPU_CORRELATION_ID_UNMASK(correlation_id) - 1) / GPU_RANGE_COUNT_LIMIT;
+  thread_range_id = (GPU_CORRELATION_ID_UNMASK(correlation_id) - 1) / gpu_range_interval;
 
   uint64_t old_correlation_id_lead = atomic_load(&correlation_id_lead);
   // Wait until correlation_id_lead is done
@@ -164,4 +166,23 @@ gpu_range_is_lead
 )
 {
   return atomic_load(&correlation_id_lead) == thread_correlation_id;
+}
+
+
+uint32_t
+gpu_range_interval_get
+(
+)
+{
+  return gpu_range_interval;
+}
+
+
+void
+gpu_range_interval_set
+(
+ uint32_t interval
+)
+{
+  gpu_range_interval = interval;
 }

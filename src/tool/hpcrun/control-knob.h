@@ -2,9 +2,9 @@
 #define HPCRUN_CONTROL_KNOB_H
 
 typedef enum{
-ck_int,
-ck_float,
-ck_string
+  ck_int,
+  ck_float,
+  ck_string
 }control_knob_type;
 
 // Add to register from Command line

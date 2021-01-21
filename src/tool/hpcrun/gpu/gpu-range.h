@@ -10,8 +10,6 @@
 #include "gpu-activity.h"
 
 
-#define GPU_RANGE_COUNT_LIMIT 2000
-
 thread_data_t *
 gpu_range_thread_data_acquire
 (
@@ -60,6 +58,19 @@ gpu_range_lead_barrier
 bool
 gpu_range_is_lead
 (
+);
+
+
+uint32_t
+gpu_range_interval_get
+(
+);
+
+
+void
+gpu_range_interval_set
+(
+ uint32_t interval
 );
 
 #endif  // gpu_range_h

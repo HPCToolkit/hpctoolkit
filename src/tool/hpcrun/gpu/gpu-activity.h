@@ -241,7 +241,8 @@ typedef void (*gpu_pc_sampling2_translate_fn_t)
  uint64_t index,
  gpu_activity_t *gpu_activity,
  uint32_t period,
- uint32_t range_id
+ uint32_t range_id,
+ cct_node_t *cct_node
 );
 
 

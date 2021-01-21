@@ -41,85 +41,83 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef cupti_pc_sampling_api_h
-#define cupti_pc_sampling_api_h
+#ifndef cubin_crc_map_h
+#define cubin_crc_map_h
 
-#include <cupti.h>
-#include <cupti_pcsampling.h>
-#include "../gpu-activity.h"
+
+
+//*****************************************************************************
+// system includes
+//*****************************************************************************
+
+#include <stdint.h>
+
+//*****************************************************************************
+// local includes
+//*****************************************************************************
+
+#include <hpcrun/sample_event.h>
+#include "cubin-symbols.h"
+
+
+
+//*****************************************************************************
+// type definitions 
+//*****************************************************************************
+
+typedef struct cubin_crc_map_entry_s cubin_crc_map_entry_t;
+
+
+
+//*****************************************************************************
+// interface operations
+//*****************************************************************************
+
+cubin_crc_map_entry_t *
+cubin_crc_map_lookup
+(
+ uint64_t cubin_crc
+); 
+
 
 void
-cupti_pc_sampling_config
+cubin_crc_map_insert
 (
- CUcontext context,
- int frequency
-);
-
-
-void
-cupti_pc_sampling_enable2
-(
- CUcontext context
-);
-
-
-void
-cupti_pc_sampling_disable2
-(
- CUcontext context
-);
-
-
-void
-cupti_pc_sampling_range_disable2
-(
- uint32_t range_id,
- CUcontext context
-);
-
-
-void
-cupti_pc_sampling_range_correlation_collect
-(
- uint32_t range_id,
- cct_node_t *cct_node,
- CUcontext context
-);
-
-
-int
-cupti_pc_sampling_bind
-(
-);
-
-
-uint64_t
-cupti_cubin_crc_get
-(
- const void *cubin,
- uint32_t cubin_size
-);
-
-// Stop pc sampling on all contexts
-// And reenable all contexts
-void
-cupti_pc_sampling_flush
-(
- void
+ uint64_t cubin_crc, 
+ uint32_t hpctoolkit_module_id, 
+ Elf_SymbolVector *vector
 );
 
 
 void
-cupti_pc_sampling_range_flush
+cubin_crc_map_delete
 (
- uint32_t range_id
+ uint64_t cubin_crc
 );
 
 
-void
-cupti_pc_sampling_correlation_flush
+uint32_t
+cubin_crc_map_entry_hpctoolkit_id_get
 (
- cct_node_t *cct_node
+ cubin_crc_map_entry_t *entry
 );
+
+
+Elf_SymbolVector *
+cubin_crc_map_entry_elf_vector_get
+(
+ cubin_crc_map_entry_t *entry
+);
+
+
+ip_normalized_t
+cubin_crc_transform
+(
+ uint64_t cubin_crc, 
+ uint32_t function_id, 
+ uint64_t offset
+);
+
+
 
 #endif
