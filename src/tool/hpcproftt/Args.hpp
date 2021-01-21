@@ -142,6 +142,11 @@ public:
   bool obj_metricsAsPercents;
   bool obj_showSourceCode;
 
+public:
+
+  // Sparse metrics data format version - YUMENG
+  bool sm_easyToGrep = false; //default
+
 private:
   void Ctor();
   void setHPCHome(); 

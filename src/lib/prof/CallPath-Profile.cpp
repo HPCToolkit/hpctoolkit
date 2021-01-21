@@ -87,8 +87,6 @@ using std::string;
 #include <alloca.h>
 #include <linux/limits.h>
 
-
-
 //*************************** User Include Files ****************************
 
 #include <include/gcc-attr.h>
@@ -995,11 +993,12 @@ Profile::make(uint rFlags)
 
 
 Profile*
-Profile::make(const char* fnm, uint rFlags, FILE* outfs)
+Profile::make(const char* fnm, uint rFlags, FILE* outfs, bool sm_easyToGrep) //YUMENG: last arg change to a struct of flags?
 {
   int ret;
 
   FILE* fs = hpcio_fopen_r(fnm);
+
   if (!fs) {
     if (errno == ENOENT)
       fprintf(stderr, "ERROR: measurement file or directory '%s' does not exist\n",
@@ -1020,7 +1019,8 @@ Profile::make(const char* fnm, uint rFlags, FILE* outfs)
   rFlags |= RFlg_HpcrunData; // TODO: for now assume an hpcrun file (verify!)
 
   Profile* prof = NULL;
-  ret = fmt_fread(prof, fs, rFlags, fnm, fnm, outfs);
+  
+  ret = fmt_fread(prof, fs, rFlags, fnm, fnm, outfs, sm_easyToGrep);
   
   hpcio_fclose(fs);
 
@@ -1032,19 +1032,46 @@ Profile::make(const char* fnm, uint rFlags, FILE* outfs)
 
 int
 Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
-		   std::string ctxtStr, const char* filename, FILE* outfs)
+		   std::string ctxtStr, const char* filename, FILE* outfs, bool sm_easyToGrep)
 {
   int ret;
+
+
+  // ------------------------------------------------------------
+  // footer - YUMENG
+  // ------------------------------------------------------------
+  hpcrun_fmt_footer_t footer;
+  fseek(infs, 0, SEEK_END); 
+  size_t footer_position = ftell(infs) - SF_footer_SIZE;
+  fseek(infs, footer_position, SEEK_SET); 
+  ret = hpcrun_fmt_footer_fread(&footer, infs);
+  if(ret != HPCFMT_OK){
+    fprintf(stderr, "ERROR: error reading footer section in '%s'\n", filename);
+    prof_abort(-1);
+  }
+  if(getc(infs) != EOF){
+    fprintf(stderr, "ERROR: data exists after footer section in '%s'\n", filename);
+    prof_abort(-1);
+  }
 
   // ------------------------------------------------------------
   // hdr
   // ------------------------------------------------------------
+  //YUMENG: file not consecutive anymore after making boundary multiple of 1024
+  fseek(infs, footer.hdr_start, SEEK_SET); 
+
   hpcrun_fmt_hdr_t hdr;
   ret = hpcrun_fmt_hdr_fread(&hdr, infs, malloc);
   if (ret != HPCFMT_OK) {
     fprintf(stderr, "ERROR: error reading 'fmt-hdr' in '%s': either the file "
 	    "is not a profile or it is corrupted\n", filename);
     prof_abort(-1);
+  }
+  //YUMENG check if the ending position match the recorded in footer
+  if((uint64_t)ftell(infs) != footer.hdr_end){
+    fprintf(stderr, "ERROR: 'fmt-hdr' is succesfully read but the data seems off the recorded location in '%s'\n",
+     filename);
+     prof_abort(-1);
   }
   if ( !(hdr.version >= HPCRUN_FMT_Version_20) ) {
     DIAG_Throw("unsupported file version '" << hdr.versionStr << "'");
@@ -1054,27 +1081,29 @@ Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
     hpcrun_fmt_hdr_fprint(&hdr, outfs);
   }
 
-
   // ------------------------------------------------------------
   // epoch: Read each epoch and merge them to form one Profile
   // ------------------------------------------------------------
   
   prof = NULL;
 
-  uint num_epochs = 0;
-  while ( !feof(infs) ) {
+  //YUMENG: no epoch info needed
+  //uint num_epochs = 0;
+  //size_t file_cur = 0;
+  //while ( !feof(infs) && (file_cur != footer.footer_offset)) {
 
     Profile* myprof = NULL;
-    
-    string myCtxtStr = "epoch " + StrUtil::toStr(num_epochs + 1);
-    ctxtStr += ": " + myCtxtStr;
+
+    //YUMENG: no epoch info needed    
+    //string myCtxtStr = "epoch " + StrUtil::toStr(num_epochs + 1);
+    //ctxtStr += ": " + myCtxtStr;
 
     try {
-      ret = fmt_epoch_fread(myprof, infs, rFlags, hdr,
-			    ctxtStr, filename, outfs);
-      if (ret == HPCFMT_EOF) {
-	break;
-      }
+      ret = fmt_epoch_fread(myprof, infs, rFlags, hdr, footer, 
+			    ctxtStr, filename, outfs, sm_easyToGrep);
+      //if (ret == HPCFMT_EOF) {
+	    //  break; 
+      // }
     }
     catch (const Diagnostics::Exception& x) {
       delete myprof;
@@ -1087,9 +1116,17 @@ Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
     else {
       prof->merge(*myprof, Profile::Merge_MergeMetricById);
     }
+   //YUMENG: no epoch info needed
+   //num_epochs++;
 
-    num_epochs++;
-  }
+   //footer print YUMENG
+   //file_cur = ftell(infs);
+   if(outfs){
+     hpcrun_fmt_footer_fprint(&footer, outfs, "  ");
+   }
+
+  //}
+
 
   if (!prof) {
     prof = make(rFlags); // make an empty profile
@@ -1103,7 +1140,9 @@ Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
   // ------------------------------------------------------------
 
   if (outfs) {
-    fprintf(outfs, "\n[You look fine today! (num-epochs: %u)]\n", num_epochs);
+    //YUMENG: no epoch info needed
+    //fprintf(outfs, "\n[You look fine today! (num-epochs: %u)]\n", num_epochs);
+    fprintf(outfs, "\n[You look fine today!]\n");
   }
 
   hpcrun_fmt_hdr_free(&hdr, free);
@@ -1114,9 +1153,9 @@ Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
 
 int
 Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
-			 const hpcrun_fmt_hdr_t& hdr,
+			 const hpcrun_fmt_hdr_t& hdr, const hpcrun_fmt_footer_t& footer,
 			 std::string ctxtStr, const char* filename,
-			 FILE* outfs)
+			 FILE* outfs, bool sm_easyToGrep)
 {
   using namespace Prof;
 
@@ -1128,6 +1167,8 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   // Read epoch data
   // ------------------------------------------------------------
 
+//YUMENG: no epoch info
+#if 0
   // ----------------------------------------
   // epoch-hdr
   // ----------------------------------------
@@ -1142,34 +1183,33 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   if (outfs) {
     hpcrun_fmt_epochHdr_fprint(&ehdr, outfs);
   }
+#endif
 
-  // ----------------------------------------
-  // metric-tbl
-  // ----------------------------------------
-  metric_tbl_t metricTbl;
-  metric_aux_info_t *aux_info;
-
-  ret = hpcrun_fmt_metricTbl_fread(&metricTbl, &aux_info, infs, hdr.version, malloc);
-  if (ret != HPCFMT_OK) {
-    DIAG_Throw("error reading 'metric-tbl'");
-  }
-  if (outfs) {
-    hpcrun_fmt_metricTbl_fprint(&metricTbl, aux_info, outfs);
-  }
-
-  const uint numMetricsSrc = metricTbl.len;
-  
   // ----------------------------------------
   // loadmap
   // ----------------------------------------
+  //YUMENG: file not consecutive anymore after making boundary multiple of 1024
+  fseek(infs, footer.loadmap_start, SEEK_SET);
+
   loadmap_t loadmap_tbl;
   ret = hpcrun_fmt_loadmap_fread(&loadmap_tbl, infs, malloc);
+
+  if (ret == HPCFMT_EOF) {
+    return HPCFMT_EOF;
+  }
   if (ret != HPCFMT_OK) {
     DIAG_Throw("error reading 'loadmap'");
+  }
+  //YUMENG check if the ending position match the recorded in footer
+  if((uint64_t)ftell(infs) != footer.loadmap_end){
+    fprintf(stderr, "ERROR: 'loadmap' is succesfully read but the data seems off the recorded location in '%s'\n",
+     filename);
+     prof_abort(-1);
   }
   if (outfs) {
     hpcrun_fmt_loadmap_fprint(&loadmap_tbl, outfs);
   }
+
 
   // ------------------------------------------------------------
   // Create Profile
@@ -1184,6 +1224,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   // -------------------------
   // program name
   // -------------------------
+
   string progNm;
   val = hpcfmt_nvpairList_search(&(hdr.nvps), HPCRUN_FMT_NV_prog);
   if (val && strlen(val) > 0) {
@@ -1208,7 +1249,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   string mpiRankStr, tidStr;
 
   // val = hpcfmt_nvpairList_search(&(hdr.nvps), HPCRUN_FMT_NV_jobId);
-  
+ 
   val = hpcfmt_nvpairList_search(&(hdr.nvps), HPCRUN_FMT_NV_mpiRank);
   if (val) {
     mpiRankStr = val;
@@ -1264,24 +1305,26 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
 
   // N.B.: We currently assume FmtEpoch_NV_virtualMetrics is set iff
   // we read from a memory buffer.  Possibly we need an explicit tag for this.
-
   bool isVirtualMetrics = false;
+  // YUMENG: needs to figure out the usage of this portion, cut right now due to missing of epoch 
+#if 0
   val = hpcfmt_nvpairList_search(&(ehdr.nvps), FmtEpoch_NV_virtualMetrics);
   if (val && strcmp(val, "0") != 0) {
     isVirtualMetrics = true;
     rFlags |= RFlg_NoMetricValues;
   }
-
+#endif
 
   // ----------------------------------------
   // make CallPath::Profile
   // ----------------------------------------
-  
+
   prof = new Profile(progNm);
 
   prof->m_fmtVersion = hdr.version;
-  prof->m_flags = ehdr.flags;
-  prof->m_measurementGranularity = ehdr.measurementGranularity;
+  //YUMENG: no epoch info 
+  //prof->m_flags = ehdr.flags;
+  //prof->m_measurementGranularity = ehdr.measurementGranularity;
 
   prof->m_profileFileName = profFileName;
 
@@ -1293,6 +1336,76 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     prof->m_traceMinTime = traceMinTime;
     prof->m_traceMaxTime = traceMaxTime;
   }
+
+  // ----------------------------------------
+  // make loadmap
+  // ----------------------------------------
+
+  uint num_lm = loadmap_tbl.len;
+
+  LoadMap loadmap(num_lm);
+
+  for (uint i = 0; i < num_lm; ++i) {
+    string nm = loadmap_tbl.lst[i].name;
+    RealPathMgr::singleton().realpath(nm);
+
+    LoadMap::LM* lm = new LoadMap::LM(nm);
+    loadmap.lm_insert(lm);
+    
+    DIAG_Assert(lm->id() == i + 1, "Profile::fmt_epoch_fread: Currently expect load module id's to be in dense ascending order.");
+  }
+
+  DIAG_MsgIf(DBG, loadmap.toString());
+
+  std::vector<LoadMap::MergeEffect>* mrgEffect =
+    prof->loadmap()->merge(loadmap);
+  DIAG_Assert(mrgEffect->empty(), "Profile::fmt_epoch_fread: " << DIAG_UnexpectedInput);
+
+  hpcrun_fmt_loadmap_free(&loadmap_tbl, free);
+  delete mrgEffect;
+
+  // ------------------------------------------------------------
+  // cct
+  // ------------------------------------------------------------
+#if 0
+  fmt_cct_fread(*prof, infs, rFlags, metricTbl, ctxtStr, outfs);
+#else 
+  //YUMENG: no need to parse metricTbl for sparse format
+  //file not consecutive anymore after making boundary multiple of 1024
+  fseek(infs, footer.cct_start, SEEK_SET);
+  fmt_cct_fread(*prof, infs, rFlags, ctxtStr, outfs);
+  //check if the ending position match the recorded in footer
+  if((uint64_t)ftell(infs) != footer.cct_end){
+    fprintf(stderr, "ERROR: 'cct' is succesfully read but the data seems off the recorded location in '%s'\n",
+     filename);
+     prof_abort(-1);
+  }
+#endif
+
+  // ----------------------------------------
+  // metric-tbl
+  // ----------------------------------------
+  //YUMENG: file not consecutive anymore after making boundary multiple of 1024
+  fseek(infs, footer.met_tbl_start, SEEK_SET);
+
+  metric_tbl_t metricTbl;
+  metric_aux_info_t *aux_info;
+
+  ret = hpcrun_fmt_metricTbl_fread(&metricTbl, &aux_info, infs, hdr.version, malloc);
+  if (ret != HPCFMT_OK) {
+    DIAG_Throw("error reading 'metric-tbl'");
+  }
+  //YUMENG check if the ending position match the recorded in footer
+  if((uint64_t)ftell(infs) != footer.met_tbl_end){
+    fprintf(stderr, "ERROR: 'metric-tbl' is succesfully read but the data seems off the recorded location in '%s'\n",
+     filename);
+     prof_abort(-1);
+  }
+  if (outfs) {
+    hpcrun_fmt_metricTbl_fprint(&metricTbl, aux_info, outfs);
+  }
+
+  const uint numMetricsSrc = metricTbl.len;
 
 
   // ----------------------------------------
@@ -1314,6 +1427,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     m_sfx = "";
     //if (!tidStr.empty()) { m_sfx = "[" + tidStr + "]"; } // TODO:threads
   }
+
 
   metric_desc_t* m_lst = metricTbl.lst;
   for (uint i = 0; i < numMetricsSrc; i++) {
@@ -1342,10 +1456,11 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     DIAG_Assert(Logic::implies(mdesc.flags.fields.ty == MetricFlags_Ty_Final,
 			       !(rFlags & RFlg_MakeInclExcl)),
 		DIAG_UnexpectedInput);
-    
+   
     // ----------------------------------------
     // 1. Make 'regular'/'inclusive' metric descriptor
     // ----------------------------------------
+ 
     Metric::SampledDesc* m =
       new Metric::SampledDesc(nm, desc, mdesc.period, true/*isUnitsEvents*/,
 			      profFileName, profRelId, "HPCRUN", mdesc.flags.fields.show, false,
@@ -1358,10 +1473,10 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     }
     else {
       if (nm == HPCRUN_METRIC_RetCnt) {
-	m->type(Metric::ADesc::TyExcl);
+	      m->type(Metric::ADesc::TyExcl);
       }
       else {
-	m->type(Metric::ADesc::fromHPCRunMetricValTy(mdesc.flags.fields.valTy));
+      	m->type(Metric::ADesc::fromHPCRunMetricValTy(mdesc.flags.fields.valTy));
       }
     }
     if (!m_sfx.empty()) {
@@ -1401,7 +1516,7 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
         false, mdesc.flags.fields.showPercent);
       mSmpl->type(Metric::ADesc::TyExcl);
       if (!m_sfx.empty()) {
-	mSmpl->nameSfx(m_sfx);
+	      mSmpl->nameSfx(m_sfx);
       }
       mSmpl->flags  (mdesc.flags);
       mSmpl->formula(mdesc.formula);
@@ -1434,55 +1549,51 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   }
 
   // ----------------------------------------
-  // make loadmap
+  // cct_metrics_sparse_values - YUMENG
   // ----------------------------------------
+  //YUMENG: file not consecutive anymore after making boundary multiple of 1024
+  fseek(infs, footer.sm_start, SEEK_SET);
 
-  uint num_lm = loadmap_tbl.len;
-
-  LoadMap loadmap(num_lm);
-
-  for (uint i = 0; i < num_lm; ++i) {
-    string nm = loadmap_tbl.lst[i].name;
-    RealPathMgr::singleton().realpath(nm);
-
-    LoadMap::LM* lm = new LoadMap::LM(nm);
-    loadmap.lm_insert(lm);
-    
-    DIAG_Assert(lm->id() == i + 1, "Profile::fmt_epoch_fread: Currently expect load module id's to be in dense ascending order.");
+  hpcrun_fmt_sparse_metrics_t sparse_metrics;
+  ret = hpcrun_fmt_sparse_metrics_fread(&sparse_metrics,infs);
+  if (ret != HPCFMT_OK) {
+    DIAG_Throw("error reading 'metric-tbl'");
   }
+  //check if the ending position match the recorded in footer
+  if((uint64_t)ftell(infs) != footer.sm_end){
+    fprintf(stderr, "ERROR: 'sparse metrics' is succesfully read but the data seems off the recorded location in '%s'\n",
+     filename);
+     prof_abort(-1);
+  }
+  hpcrun_fmt_sparse_metrics_fprint(&sparse_metrics,outfs, &metricTbl, "  ", sm_easyToGrep);
+  hpcrun_fmt_sparse_metrics_free(&sparse_metrics, free);
 
-  DIAG_MsgIf(DBG, loadmap.toString());
-
-  std::vector<LoadMap::MergeEffect>* mrgEffect =
-    prof->loadmap()->merge(loadmap);
-  DIAG_Assert(mrgEffect->empty(), "Profile::fmt_epoch_fread: " << DIAG_UnexpectedInput);
-
-  hpcrun_fmt_loadmap_free(&loadmap_tbl, free);
-  delete mrgEffect;
-
-
-  // ------------------------------------------------------------
-  // cct
-  // ------------------------------------------------------------
-  fmt_cct_fread(*prof, infs, rFlags, metricTbl, ctxtStr, outfs);
-
-
-  hpcrun_fmt_epochHdr_free(&ehdr, free);
+  //YUMENG: no epoch info 
+  //hpcrun_fmt_epochHdr_free(&ehdr, free);
   hpcrun_fmt_metricTbl_free(&metricTbl, free);
 
   if (aux_info) {
     free(aux_info);
   }
-  
+
+
   return HPCFMT_OK;
 }
 
 
+#if 0
 int
 Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
 		       const metric_tbl_t& metricTbl,
 		       std::string ctxtStr, FILE* outfs)
+#else
+//YUMENG: no need to parse metricTbl for sparse format
+int
+Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
+		       std::string ctxtStr, FILE* outfs)
+#endif
 {
+ 
   typedef std::map<int, CCT::ANode*> CCTIdToCCTNodeMap;
 
   DIAG_Assert(infs, "Bad file descriptor!");
@@ -1500,7 +1611,6 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
   // ------------------------------------------------------------
   // Read each CCT node
   // ------------------------------------------------------------
-
   if (outfs) {
     fprintf(outfs, "[cct: (num-nodes: %" PRIu64 ")\n", numNodes);
   }
@@ -1512,18 +1622,25 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     cct->root(NULL);
   }
 
+//YUMENG: No metric info
+#if 0
   // N.B.: numMetricsSrc <= [numMetricsDst = prof.metricMgr()->size()]
   uint numMetricsSrc = metricTbl.len;
 
   if (rFlags & RFlg_NoMetricValues) {
     numMetricsSrc = 0;
   }
+#endif
 
   hpcrun_fmt_cct_node_t nodeFmt;
+
+//YUMENG: No metric info
+#if 0
   nodeFmt.num_metrics = numMetricsSrc;
   nodeFmt.metrics = (numMetricsSrc > 0) ?
     (hpcrun_metricVal_t*)alloca(numMetricsSrc * sizeof(hpcrun_metricVal_t))
     : NULL;
+#endif
 
 #if 0
   ExprEval eval;
@@ -1538,9 +1655,17 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
       DIAG_Throw("Error reading CCT node " << nodeFmt.id);
     }
     if (outfs) {
+
+#if 0
       hpcrun_fmt_cct_node_fprint(&nodeFmt, outfs, prof.m_flags,
 				 &metricTbl, "  ");
+#else
+//YUMENG: No metric info
+      hpcrun_fmt_cct_node_fprint(&nodeFmt, outfs, prof.m_flags,
+				  "  ");
+#endif
     }
+
 #if 0
     // ------------------------------------------
     // check if the metric contains a formula
@@ -1603,14 +1728,14 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     if (node_parent) {
       // If 'node' is not the secondary root, perform sanity check
       if (!node->isSecondarySynthRoot()) {
-	if (node->lmId_real() == LoadMap::LMId_NULL) {
-	  DIAG_WMsg(2, ctxtStr << ": CCT (non-root) node " << nodeId << " has invalid normalized IP: " << node->nameDyn());
-	}
+        if (node->lmId_real() == LoadMap::LMId_NULL) {
+          DIAG_WMsg(2, ctxtStr << ": CCT (non-root) node " << nodeId << " has invalid normalized IP: " << node->nameDyn());
+        }
       }
 
       node->link(node_parent);
       if (node_sib) {
-	node_sib->link(node_parent);
+      	node_sib->link(node_parent);
       }
     }
     else {
@@ -1851,9 +1976,9 @@ Profile::canonicalize(uint rFlags)
       CCT::ANode* n = it.current();
       CCT::ADynNode* n_dyn = dynamic_cast<CCT::ADynNode*>(n);
       if (n_dyn && n_dyn->isSecondarySynthRoot()) {
-	secondaryRoot = n_dyn;
-	secondaryRoot->unlink();
-	break;
+        secondaryRoot = n_dyn;
+        secondaryRoot->unlink();
+        break;
       }
     }
   }
@@ -1879,7 +2004,7 @@ Profile::canonicalize(uint rFlags)
     if (rFlags & RFlg_HpcrunData) {
       // hpcrun generates CCTs in the form diagrammed above
       if (splicePoint->childCount() == 1) {
-	splicePoint = splicePoint->firstChild();
+	      splicePoint = splicePoint->firstChild();
       } 
     }
 #endif
@@ -2015,11 +2140,11 @@ cct_makeNode(Prof::CallPath::Profile& prof,
     double mval = 0;
     switch (mdesc->flags().fields.valFmt) {
       case MetricFlags_ValFmt_Int:
-	mval = (double)m.i; break;
+	      mval = (double)m.i; break;
       case MetricFlags_ValFmt_Real:
-	mval = m.r; break;
+	      mval = m.r; break;
       default:
-	DIAG_Die(DIAG_UnexpectedInput);
+	      DIAG_Die(DIAG_UnexpectedInput);
     }
 
     metricData.metric(i_dst) = mval * (double)mdesc->period();
@@ -2030,8 +2155,8 @@ cct_makeNode(Prof::CallPath::Profile& prof,
 
     if (rFlags & Prof::CallPath::Profile::RFlg_MakeInclExcl) {
       if (adesc->type() == Prof::Metric::ADesc::TyNULL ||
-	  adesc->type() == Prof::Metric::ADesc::TyExcl) {
-	i_src++;
+      adesc->type() == Prof::Metric::ADesc::TyExcl) {
+        i_src++;
       }
       // Prof::Metric::ADesc::TyIncl: reuse i_src
     }
