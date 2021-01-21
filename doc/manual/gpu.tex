@@ -69,6 +69,7 @@ Metric & Description\\\hline\hline
   GXCOPY (sec)  &  GPU time: explicit data copy (seconds)  \\\hline 
 % GICOPY (sec)  &  GPU time: implicit data copy (seconds)  \\\hline 
   GSYNC (sec)  &  GPU time: synchronization (seconds)  \\\hline 
+ GPUOP (sec) & Total GPU operation time: the summation of all metrics above \\\hline
 \end{tabular}
 \caption{GPU operation timings.}
 \label{table:gtimes}
@@ -322,7 +323,7 @@ One can use {\tt nvcc}'s {\tt -lineinfo } option to instruct {\tt nvcc} to recor
 When HPCToolkit uses NVIDIA's CUPTI to monitor a GPU-accelerated application, 
 CUPTI notifies HPCToolkit every time it loads a CUDA binary, known as a CUBIN, into a GPU.
 At runtime, HPCToolkit computes a cryptographic hash of a CUBIN's contents and records the CUBIN into the execution's measurement directory. 
-For instance, if a GPU-accelerated application loaded CUBIN into a GPU, NVIDIA's CUPTI informed HPCToolkit that the CUBIN was being loaded, and HPCToolkit computed its cryptographic hash as {\tt 972349aed8}, then HPCToolkit would record {\tt 972349aed8.cubin} inside a {\tt cubins} subdirectory of an HPCToolkit measurement directory. 
+For instance, if a GPU-accelerated application loaded CUBIN into a GPU, NVIDIA's CUPTI informed HPCToolkit that the CUBIN was being loaded, and HPCToolkit computed its cryptographic hash as {\tt 972349aed8}, then HPCToolkit would record {\tt 972349aed8.cubin} inside a {\tt gpubins} subdirectory of an HPCToolkit measurement directory.
 
 To  attribute GPU performance measurements back to source, HPCToolkit's \hpcstruct{} supports analysis of NVIDIA CUBIN binaries. Since many CUBIN binaries may be loaded  by a GPU-accelerated application during execution,  an application's measurements directory may contain a {\tt cubins} subdirectory populated with many CUBINs. In this case, it would be inconvenient to require a developer to apply \hpcstruct{} manually to analyze each CUBIN. To simplify the analysis of an execution's CUBINs, a developer may apply HPCToolkit's \hpcstruct{} directly to a measurement directory to analyze all of the CUBINs it contains. Namely, for a measurements directory {\tt hpctoolkit-laghos-measurements} collected during an execution of the GPU-accelerated laghos mini-app~\cite{laghos}, one can analyze all of the CUBINs collected during execution by using the following command:
 
@@ -384,7 +385,7 @@ If a GPU function G can be called from multiple call sites and PC samples have b
 If no call instructions for a GPU function G have been sampled, the costs of G are apportioned evenly among each of G's call sites.
 \end{itemize}
 
-IHPCToolkit's {\tt hpcprof} analyzes the static call graph associated with each GPU kernel invocation. If the static call graph for the GPU kernel contains cycles, which arise from recursive or mutually-recursive calls,  \hpcprof{} replaces each cycle with a strongly connected component (SCC). In this case, \hpcprof{} unlink's call graph edges between vertices within the SCC and adds an SCC vertex to enclose the set of vertices in each SCC. The rest of \hpcprof{}'s analysis 
+IHPCToolkit's {\tt hpcprof} analyzes the static call graph associated with each GPU kernel invocation. If the static call graph for the GPU kernel contains cycles, which arise from recursive or mutually-recursive calls,  \hpcprof{} replaces each cycle with a strongly connected component (SCC). In this case, \hpcprof{} unlinks call graph edges between vertices within the SCC and adds an SCC vertex to enclose the set of vertices in each SCC. The rest of \hpcprof{}'s analysis 
 treats an SCC vertex as a normal ``function'' in the call graph.
 
 \begin{figure}[t]
@@ -480,21 +481,22 @@ Argument to \hpcrun{} & What is monitored\\\hline\hline
 \label{intel-opencl-options}
 \end{table}
 
-\begin{table}[t]
-\centering
-\begin{tabular}{|l|p{3.5in}|}\hline
-Argument to \hpcrun{} & What is monitored\\\hline\hline
-{\tt -e gpu=level0} & coarse-grain profiling of Intel GPU operations using Intel's Level 0 runtime\\\hline
-{\tt -e gpu=level0 -t} & coarse-grain profiling and tracing of Intel GPU operations using Intel's Level 0 runtime\\\hline
-{\tt -e gpu=level0,inst} & coarse-grain profiling and tracing of Intel GPU operations;  fine-grain profiling of Intel GPU kernel executions using Intel's GT-Pin\\\hline
-\end{tabular}
-\caption{Monitoring performance on Intel GPUs when using Intel's Level 0 runtime.}
-\label{intel-level0-options}
-\end{table}
+%\begin{table}[t]
+%\centering
+%\begin{tabular}{|l|p{3.5in}|}\hline
+%Argument to \hpcrun{} & What is monitored\\\hline\hline
+%{\tt -e gpu=level0} & coarse-grain profiling of Intel GPU operations using Intel's Level 0 runtime\\\hline
+%{\tt -e gpu=level0 -t} & coarse-grain profiling and tracing of Intel GPU operations using Intel's Level 0 runtime\\\hline
+%{\tt -e gpu=level0,inst} & coarse-grain profiling and tracing of Intel GPU operations;  fine-grain profiling of Intel GPU kernel executions using Intel's GT-Pin\\\hline
+%\end{tabular}
+%\caption{Monitoring performance on Intel GPUs when using Intel's Level 0 runtime.}
+%\label{intel-level0-options}
+%\end{table}
 
-HPCToolkit supports coarse-grain profiling of GPU-accelerated  applications that offload computation onto Intel GPUs using  OpenCL or Intel's Data-parallel C++ programming model supported by the {\tt dpcpp} compiler. At program launch, a user can select whether Intel's Data-parallel C++ programming model is to execute atop Intel's OpenCL runtime or Intel's Level 0 runtime. For each of these runtimes, HPCToolkit supports both coarse-grain monitoring of GPU operations by intercepting their interface operations.  Table~\ref{intel-opencl-options} shows available options for using HPCToolkit with Intel's OpenCL runtime.  Table~\ref{intel-level0-options} shows available options for using HPCToolkit with Intel's Level 0 runtime.
+HPCToolkit supports coarse-grain profiling of GPU-accelerated  applications that offload computation onto Intel GPUs using  OpenCL or Intel's Data-parallel C++ programming model supported by the {\tt dpcpp} compiler. At program launch, a user can select whether Intel's Data-parallel C++ programming model is to execute atop Intel's OpenCL runtime or Intel's Level 0 runtime. For each of these runtimes, HPCToolkit supports both coarse-grain monitoring of GPU operations by intercepting their interface operations.  Table~\ref{intel-opencl-options} shows available options for using HPCToolkit with Intel's OpenCL runtime.
+HPCToolkit supports coarse-grain profiling of Intel GPU operations using Intel's Level 0 runtime with argument ``{\tt -e gpu=level0}'' to \hpcrun{}.
 
- Table~\ref{intel-options} shows arguments to \hpcrun{} to monitor the performance of GPU operations on Intel GPUs. With this coarse-grain profiling support, HPCToolkit can collect GPU operation timings (Table~\ref
+With this coarse-grain profiling support, HPCToolkit can collect GPU operation timings (Table~\ref
 {table:gtimes}) and a subset of standard metrics for GPU operations such as memory allocation and deallocation (Table~\ref{table:gmem}), memory set (Table~\ref{table:gmset}), explicit memory copies (Table~\ref{table:gxcopy}), and synchronization (Table~\ref{table:gsync}). 
 
 
