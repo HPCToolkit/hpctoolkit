@@ -334,7 +334,8 @@ gpu_trace_init
 void
 gpu_trace_fini
 (
- void *arg
+ void *arg,
+ int how
 )
 {
   PRINT("gpu_trace_fini called\n");
