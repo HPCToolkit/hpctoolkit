@@ -315,6 +315,8 @@ MY_BASE_FILES =				\
         sample-sources/sync.c           \
 	sample_sources_registered.c	\
 	sample-sources/sample-filters.c \
+	sample-sources/gpu/gpu-blame/blame-shift-datastructure.c	\
+	sample-sources/gpu/gpu-blame/blame-shift-opencl.c	\
 	segv_handler.c			\
 	start-stop.c			\
 	term_handler.c			\
