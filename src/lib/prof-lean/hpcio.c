@@ -413,6 +413,36 @@ hpcio_beX_fwrite(uint8_t* val, size_t size, FILE* fs)
 }
 
 
+char*
+hpcio_be2_swrite(uint16_t val, char* buf)
+{
+  for (int shift = 8; shift >= 0; shift -= 8) {
+    *(buf++) = (val >> shift) & 0xff;
+  }
+  return buf;
+}
+
+
+char*
+hpcio_be4_swrite(uint32_t val, char* buf)
+{
+  for (int shift = 24; shift >= 0; shift -= 8) {
+    *(buf++) = (val >> shift) & 0xff;
+  }
+  return buf;
+}
+
+
+char*
+hpcio_be8_swrite(uint64_t val, char* buf)
+{
+  for (int shift = 56; shift >= 0; shift -= 8) {
+    *(buf++) = (val >> shift) & 0xff;
+  }
+  return buf;
+}
+
+
 //***************************************************************************
 //
 //***************************************************************************

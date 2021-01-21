@@ -104,7 +104,8 @@ static const char* usage_details =
 		 "\n"
 		 "Options:\n"
 		 "  -V, --version        Print version information.\n"
-		 "  -h, --help           Print this help.\n";
+		 "  -h, --help           Print this help.\n"
+     "  -g, --grep           Show the sparse metrics in a format that is easy to grep.\n";
 
 #define CLP CmdLineParser
 #define CLP_SEPARATOR "!!!"
@@ -115,6 +116,8 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   { 'V', "version",         CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
      NULL },
   { 'h', "help",            CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
+     NULL },
+  { 'g', "grep",            CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,  //YUMENG
      NULL },
   CmdLineParser_OptArgDesc_NULL_MACRO // SGI's compiler requires this version
 };
@@ -227,6 +230,9 @@ Args::parse(int argc, const char* const argv[])
     if (parser.isOpt("version")) {
       printVersion(std::cerr);
       exit(1);
+    }
+    if (parser.isOpt("grep")) { //YUMENG
+      sm_easyToGrep = true;
     }
 
     // FIXME: sanity check that options correspond to mode
