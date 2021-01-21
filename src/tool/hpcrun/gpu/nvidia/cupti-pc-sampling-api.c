@@ -13,6 +13,8 @@
 #include <hpcrun/utilities/hpcrun-nanotime.h>
 #include <hpcrun/cct/cct.h>
 
+#include "../gpu/gpu-operation-item.h"
+#include "../gpu/gpu-operation-item-process.h"
 #include "../gpu/gpu-operation-multiplexer.h"
 #include "../gpu/gpu-range.h"
 
@@ -308,19 +310,20 @@ pc_sampling2_translate
     uint32_t samples = stall_reason->samples;
 
     if (samples > 0) {
-      uint32_t index = stall_reason_index / 2 + 1;
+      uint32_t st_index = stall_reason_index / 2 + 1;
       // TODO(Keren): fix apportion host_correlation id and pc
       if (stall_reason_index % 2 == 0) {
         // non-latency sample
-        gpu_activity[index].details.pc_sampling2.samples = samples * period;
+        gpu_activity[st_index].details.pc_sampling2.samples = samples * period;
       } else {
         // latency sample 
-        gpu_activity[index].details.pc_sampling2.latencySamples = samples * period;
+        gpu_activity[st_index].details.pc_sampling2.latencySamples = samples * period;
       }
 
-      gpu_activity[index].kind = GPU_ACTIVITY_PC_SAMPLING2;
-      gpu_activity[index].cct_node = cct_child;
-      gpu_activity[index].range_id = range_id;
+      gpu_activity[st_index].details.pc_sampling2.stallReason = st_index;
+      gpu_activity[st_index].kind = GPU_ACTIVITY_PC_SAMPLING2;
+      gpu_activity[st_index].cct_node = cct_child;
+      gpu_activity[st_index].range_id = range_id;
     }
   }
 }
@@ -482,8 +485,8 @@ cupti_pc_sampling_range_correlation_collect
   uint32_t *stall_reason_index = cupti_context_map_entry_stall_reason_index_get(entry);
   char **stall_reason_names = cupti_context_map_entry_stall_reason_names_get(entry);
 
-  gpu_activity_t gpu_activity;
-  memset(&gpu_activity, 0, sizeof(gpu_activity_t));
+  gpu_operation_item_t op_item;
+  memset(&op_item, 0, sizeof(op_item));
 
   if (DEBUG) {
     for (size_t i = 0; i < num_stall_reasons; ++i) {
@@ -506,8 +509,12 @@ cupti_pc_sampling_range_correlation_collect
 
     HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiPCSamplingGetData, (&params));
     if (user_buffer_pc->totalNumPcs > 0) {
-      pc_sampling_activity_set(&gpu_activity, range_id, context_id, cct_node, pc_sampling_data);
-      gpu_operation_multiplexer_push(NULL, NULL, &gpu_activity);
+      pc_sampling_activity_set(&op_item.activity, range_id, context_id, cct_node, pc_sampling_data);
+      if (gpu_range_interval_get() == 1) {
+        gpu_pc_sampling_info2_process(&op_item);
+      } else {
+        gpu_operation_multiplexer_push(NULL, NULL, &op_item.activity);
+      }
     }
 
     if (DEBUG) {
@@ -524,8 +531,12 @@ cupti_pc_sampling_range_correlation_collect
 
       HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiPCSamplingGetData, (&params));
       if (user_buffer_pc->totalNumPcs > 0) {
-        pc_sampling_activity_set(&gpu_activity, range_id, context_id, cct_node, pc_sampling_data);
-        gpu_operation_multiplexer_push(NULL, NULL, &gpu_activity);
+        pc_sampling_activity_set(&op_item.activity, range_id, context_id, cct_node, pc_sampling_data);
+        if (gpu_range_interval_get() == 1) {
+          gpu_pc_sampling_info2_process(&op_item);
+        } else {
+          gpu_operation_multiplexer_push(NULL, NULL, &op_item.activity);
+        }
       }
 
       if (DEBUG) {

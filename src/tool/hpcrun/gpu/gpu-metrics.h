@@ -142,44 +142,44 @@ typedef enum {
   macro(GPU_INST_METRIC_NAME ":STL_ANY", GPU_INST_STALL_ANY,	\
 	"GPU instruction stalls: any") \
   macro(GPU_INST_METRIC_NAME ":STL_BARR", GPU_INST_STALL2_BARRIER, \
-  "GPU instruction stlals: await completion of memory barriers") \
+  "GPU instruction stalls: await completion of memory barriers") \
   macro(GPU_INST_METRIC_NAME ":STL_BRANCH", GPU_INST_STALL2_BRANCH, \
-  "GPU instruction stlals: await solving branch instructions") \
+  "GPU instruction stalls: await solving branch instructions") \
   macro(GPU_INST_METRIC_NAME ":STL_DISP", GPU_INST_STALL2_DISPATCH, \
-  "GPU instruction stlals: await dispatch") \
-  macro(GPU_INST_METRIC_NAME ":STL_MCMP", GPU_INST_STALL2_DISPATCH, \
-  "GPU instruction stlals: await completion of memory store instructions") \
+  "GPU instruction stalls: await dispatch") \
+  macro(GPU_INST_METRIC_NAME ":STL_MSTR", GPU_INST_STALL2_MEM_DRAIN, \
+  "GPU instruction stalls: await completion of memory store instructions") \
   macro(GPU_INST_METRIC_NAME ":STL_CMEM", GPU_INST_STALL2_CMEM,	\
 	"GPU instruction stalls: await completion of constant memory access")	\
   macro(GPU_INST_METRIC_NAME ":STL_MTHR", GPU_INST_STALL2_MEM_THROTTLE,	\
 	"GPU instruction stalls: global/local memory request queue full") \
   macro(GPU_INST_METRIC_NAME ":STL_MDEP", GPU_INST_STALL2_MEM_DEP, \
-  "GPU instruction stlals: await satisfaction of memory instruction " \
+  "GPU instruction stalls: await satisfaction of memory instruction " \
 	"input dependence") \
   macro(GPU_INST_METRIC_NAME ":STL_FTHR", GPU_INST_STALL2_FIX_THROTTLE, \
-  "GPU instruction stlals: await completion of fixed latency instruction") \
+  "GPU instruction stalls: await completion of fixed latency instruction") \
   macro(GPU_INST_METRIC_NAME ":STL_SYNC", GPU_INST_STALL2_SYNC, \
-  "GPU instruction stlals: await completion of sibling warps") \
+  "GPU instruction stalls: await completion of sibling warps") \
   macro(GPU_INST_METRIC_NAME ":STL_VTHR", GPU_INST_STALL2_VAR_THROTTLE, \
-  "GPU instruction stlals: await completion of variable latency instruction") \
+  "GPU instruction stalls: await completion of variable latency instruction") \
   macro(GPU_INST_METRIC_NAME ":STL_MISC", GPU_INST_STALL2_MISC, \
-  "GPU instruction stlals: misc") \
+  "GPU instruction stalls: misc") \
   macro(GPU_INST_METRIC_NAME ":STL_IFET", GPU_INST_STALL2_IFETCH, \
-  "GPU instruction stlals: await availability of next "	\
+  "GPU instruction stalls: await availability of next "	\
 	"instruction (fetch or branch delay)") \
   macro(GPU_INST_METRIC_NAME ":STL_NSEL", GPU_INST_STALL2_NOT_SELECTED, \
-  "GPU instruction stlals: not selected for issue but ready)")  \
+  "GPU instruction stalls: not selected for issue but ready)")  \
   macro(GPU_INST_METRIC_NAME ":STL_NONE", GPU_INST_STALL2_NONE,	\
 	"GPU instruction stalls: no stall")	\
   macro(GPU_INST_METRIC_NAME ":STL_VDEP", GPU_INST_STALL2_VAR_DEP, \
-  "GPU instruction stlals: await satisfaction of variable latency instruction " \
+  "GPU instruction stalls: await satisfaction of variable latency instruction " \
 	"input dependence") \
   macro(GPU_INST_METRIC_NAME ":STL_SLEP", GPU_INST_STALL2_SLEEP, \
-  "GPU instruction stlals: all threads in a warp are blocked or yield") \
+  "GPU instruction stalls: all threads in a warp are blocked or yield") \
   macro(GPU_INST_METRIC_NAME ":STL_TTHR", GPU_INST_STALL2_TEX_THROTTLE, \
-  "GPU instruction stlals: await completion of texture instruction") \
+  "GPU instruction stalls: await completion of texture instruction") \
   macro(GPU_INST_METRIC_NAME ":STL_FDEP", GPU_INST_STALL2_FIX_DEP, \
-  "GPU instruction stlals: await satisfaction of fixed latency instruction " \
+  "GPU instruction stalls: await satisfaction of fixed latency instruction " \
 	"input dependence")
 
 

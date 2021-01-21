@@ -80,6 +80,7 @@ gpu_range_attribute
   // Set current activity data
   activity->cct_node = cct_context;
 
+  // TODO(Keren): Send this activity back
   gpu_metrics_attribute(activity);
 
   // Reset thread data and activity data

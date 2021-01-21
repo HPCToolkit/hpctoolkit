@@ -204,7 +204,7 @@ gpu_synchronization_process
 }
 
 
-static void
+void
 gpu_pc_sampling_info2_process
 (
  gpu_operation_item_t *it
@@ -224,7 +224,6 @@ gpu_pc_sampling_info2_process
   static gpu_activity_t gpu_activity[GPU_INST_STALL2_INVALID];
 
   // 1. translate a pc sample activity for each record
-  gpu_activity_channel_t *channel;
   for (uint64_t index = 0; index < total_num_pcs; ++index) {
     pc_sampling_info2->translate(pc_sampling_data, index, gpu_activity, period, range_id, cct_node);
 
