@@ -149,6 +149,13 @@ opencl_instrumentation_enable
 
 
 void
+opencl_blame_shifting_enable
+(
+ void
+);
+
+
+void
 opencl_api_thread_finalize
 (
  void *args,

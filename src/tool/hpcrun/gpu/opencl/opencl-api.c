@@ -165,6 +165,9 @@ static __thread bool opencl_api_flag = false;
 
 static spinlock_t opencl_h2d_lock = SPINLOCK_UNLOCKED;
 static bool instrumentation = false;
+static bool ENABLE_BLAME_SHIFTING = false;
+
+
 
 //----------------------------------------------------------
 // opencl function pointers for late binding
@@ -691,7 +694,7 @@ opencl_cb_basic_print
  char *title
 )
 {
-  ETMSG(OPENCL, " %s | Activity kind: %s | type: %s | correlation id: %"PRIu64 "| cct_node = %p",
+  ETMSG(OPENCL, "%s | Activity kind: %s | type: %s | correlation id: %"PRIu64 "| cct_node = %p",
         title,
         gpu_kind_to_string(cb_basic.kind),
         gpu_type_to_string(cb_basic.type),
@@ -1214,6 +1217,17 @@ opencl_instrumentation_enable
 )
 {
   instrumentation = true;
+}
+
+
+void
+opencl_blame_shifting_enable
+(
+ void
+)
+{
+  ENABLE_BLAME_SHIFTING = true;
+	ETMSG(OPENCL, "blame shifting enabled\n");
 }
 
 

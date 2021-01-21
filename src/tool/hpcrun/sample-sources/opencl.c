@@ -68,6 +68,7 @@
 
 #define GPU_STRING "gpu=opencl"
 #define ENABLE_INSTRUMENTATION "gpu=opencl,inst"
+#define ENABLE_OPENCL_BLAME_SHIFTING "opencl-blame"
 #define NO_THRESHOLD  1L
 
 static device_finalizer_fn_entry_t device_finalizer_flush;
@@ -140,7 +141,10 @@ static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
   #ifndef HPCRUN_STATIC_LINK
-  return (hpcrun_ev_is(ev_str, GPU_STRING) || hpcrun_ev_is(ev_str, ENABLE_INSTRUMENTATION));
+  return (hpcrun_ev_is(ev_str, GPU_STRING)
+					|| hpcrun_ev_is(ev_str, ENABLE_INSTRUMENTATION)
+					|| hpcrun_ev_is(ev_str, ENABLE_OPENCL_BLAME_SHIFTING)
+				 );
   #else
   return false;
   #endif
@@ -156,16 +160,20 @@ METHOD_FN(process_event_list, int lush_metrics)
   gpu_metrics_KINFO_enable();
 
   char* evlist = METHOD_CALL(self, get_event_str);
-  char* event = start_tok(evlist);
-  long th;
-  hpcrun_extract_ev_thresh(event, sizeof(opencl_name), opencl_name,
-    &th, NO_THRESHOLD);
+  char* event;
+  for (event = start_tok(evlist); more_tok(); event = next_tok()) {
+		long th;
+		hpcrun_extract_ev_thresh(event, sizeof(opencl_name), opencl_name,
+			&th, NO_THRESHOLD);
 
-  if (hpcrun_ev_is(opencl_name, GPU_STRING)) {
-  } else if (hpcrun_ev_is(opencl_name, ENABLE_INSTRUMENTATION)) {
-    gpu_metrics_GPU_INST_enable();
-    opencl_instrumentation_enable();
-  }
+		if (hpcrun_ev_is(opencl_name, GPU_STRING)) {
+		} else if (hpcrun_ev_is(opencl_name, ENABLE_INSTRUMENTATION)) {
+			gpu_metrics_GPU_INST_enable();
+			opencl_instrumentation_enable();
+		} else if (hpcrun_ev_is(opencl_name, ENABLE_OPENCL_BLAME_SHIFTING)) {
+			opencl_blame_shifting_enable();
+		}
+	}
 }
 
 
@@ -203,10 +211,17 @@ METHOD_FN(display_events)
   printf("===========================================================================\n");
   printf("Name\t\tDescription\n");
   printf("---------------------------------------------------------------------------\n");
-  printf("%s\t\tOperation-level monitoring for opencl on a GPU.\n"
+  printf("%s\tOperation-level monitoring for opencl on a GPU.\n"
     "\t\tCollect timing information on GPU kernel invocations,\n"
     "\t\tmemory copies, etc.\n",
     GPU_STRING);
+  printf("\n");
+  printf("%s\tFine-grained instrumentation support for opencl on a GPU.\n"
+    "\t\tthe profiling data collected from %s is also part of this run\n",
+    ENABLE_INSTRUMENTATION, GPU_STRING);
+  printf("\n");
+  printf("%s\tBlame-Shifting analysis of opencl applications.\n",
+    ENABLE_OPENCL_BLAME_SHIFTING);
   printf("\n");
 }
 
