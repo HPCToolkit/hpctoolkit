@@ -95,6 +95,7 @@ host_triplet = @host@
 @OPT_BUILD_TOOL_ALL_TRUE@am__append_1 = \
 @OPT_BUILD_TOOL_ALL_TRUE@	hpcstruct \
 @OPT_BUILD_TOOL_ALL_TRUE@	hpcprof \
+@OPT_BUILD_TOOL_ALL_TRUE@	hpcprof2 \
 @OPT_BUILD_TOOL_ALL_TRUE@	hpcproftt \
 @OPT_BUILD_TOOL_ALL_TRUE@	hpclump \
 @OPT_BUILD_TOOL_ALL_TRUE@	hpctracedump
@@ -105,7 +106,7 @@ host_triplet = @host@
 @OPT_ENABLE_HPCRUN_TRUE@	hpcfnbounds \
 @OPT_ENABLE_HPCRUN_TRUE@	hpcfnbounds2
 
-@OPT_ENABLE_MPI_TRUE@am__append_4 = hpcprof-mpi 
+@OPT_ENABLE_MPI_TRUE@am__append_4 = hpcprof-mpi hpcprof2-mpi
 @OPT_ENABLE_HPCSERVER_TRUE@@OPT_ENABLE_MPI_TRUE@am__append_5 = hpcserver/mpi
 subdir = src/tool
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -177,9 +178,9 @@ am__define_uniq_tagged_files = \
   done | $(am__uniquify_input)`
 ETAGS = etags
 CTAGS = ctags
-DIST_SUBDIRS = hpcstruct hpcprof hpcproftt hpclump hpctracedump \
-	hpcserver hpcrun hpcfnbounds hpcfnbounds2 hpcprof-mpi \
-	hpcserver/mpi
+DIST_SUBDIRS = hpcstruct hpcprof hpcprof2 hpcproftt hpclump \
+	hpctracedump hpcserver hpcrun hpcfnbounds hpcfnbounds2 \
+	hpcprof-mpi hpcprof2-mpi hpcserver/mpi
 am__DIST_COMMON = $(srcdir)/Makefile.in \
 	$(top_srcdir)/config/mkinstalldirs
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
