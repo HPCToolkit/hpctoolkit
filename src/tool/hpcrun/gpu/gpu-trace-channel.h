@@ -82,7 +82,7 @@ gpu_trace_channel_get_stream_id
 gpu_trace_channel_t *
 gpu_trace_channel_alloc
 (
- void
+ gpu_tag_t tag
 );
 
 

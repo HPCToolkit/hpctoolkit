@@ -83,12 +83,13 @@
 static void
 gpu_context_stream_trace
 (
+ uint32_t device_id,
  uint32_t context_id,
  uint32_t stream_id,
  gpu_trace_item_t *ti
 )
 {
-  gpu_context_id_map_stream_process(context_id, stream_id, gpu_trace_produce, ti);
+  gpu_context_id_map_stream_process(device_id, context_id, stream_id, gpu_trace_produce, ti);
 }
 
 
@@ -116,7 +117,8 @@ gpu_memcpy_process
                          activity->details.memcpy.end,
                          activity->cct_node);
 
-  gpu_context_stream_trace(activity->details.memcpy.context_id,
+  gpu_context_stream_trace(activity->details.memcpy.device_id,
+                           activity->details.memcpy.context_id,
                            activity->details.memcpy.stream_id,
                            &entry_trace);
 
@@ -145,7 +147,8 @@ gpu_kernel_process
                          activity->details.kernel.end,
                          activity->cct_node);
 
-  gpu_context_stream_trace(activity->details.kernel.context_id,
+  gpu_context_stream_trace(activity->details.kernel.device_id,
+                           activity->details.kernel.context_id,
                            activity->details.kernel.stream_id,
                            &entry_trace);
 

@@ -85,6 +85,7 @@
 
 #include <hpcrun/utilities/ip-normalized.h>
 
+
 #include <lib/prof-lean/hpcio.h>
 #include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
@@ -268,12 +269,26 @@ extern void hpcrun_cct_walkset(cct_node_t* cct, cct_op_t fn, cct_op_arg_t arg);
 // TODO: need to declare cct2metrics_t here to avoid to cyclic inclusion
 typedef struct cct2metrics_t cct2metrics_t;
 
+
+#if 0
 int hpcrun_cct_fwrite(cct2metrics_t* cct2metrics_map,
                       cct_node_t* cct, FILE* fs, epoch_flags_t flags);
+#else 
+//YUMENG: add sparse_metrics to collect metric values and info 
+int hpcrun_cct_fwrite(cct2metrics_t* cct2metrics_map,
+                      cct_node_t* cct, FILE* fs, epoch_flags_t flags, hpcrun_fmt_sparse_metrics_t* sparse_metrics);
+
+void hpcrun_cct_fwrite_errmsg_w_fn(FILE* fs, uint32_t tid, char* msg);
+#endif
 //
 // Utilities
 //
+#if 0
 extern size_t hpcrun_cct_num_nodes(cct_node_t* cct, bool count_dummy);
+#else
+extern size_t hpcrun_cct_num_nodes(cct_node_t* cct, bool count_dummy,\
+    cct2metrics_t **cct2metrics_map,uint64_t* num_nzval, uint32_t* num_nzcct);
+#endif
 //
 // look up addr in the set of cct's children
 // return the found node or NULL
