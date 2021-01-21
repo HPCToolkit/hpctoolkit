@@ -588,15 +588,8 @@ MYSTANDALONESOURCES = mpi/standalone.cpp
 # GNU binutils flags are needed for HPCLIB_ISA.
 MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) @VALGRIND_IFLAGS@ \
 	-I@LIBELF_INC@ $(am__append_1)
-<<<<<<< HEAD
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @VALGRIND_IFLAGS@ \
 	@XERCES_IFLAGS@ -I@LIBELF_INC@ -std=gnu++17 $(am__append_2)
-=======
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BOOST_IFLAGS@ \
-	@VALGRIND_IFLAGS@ $(IGC_IFLAGS) $(MD_IFLAGS) $(DYNINST_IFLAGS) \
-	@TBB_IFLAGS@ @XERCES_IFLAGS@ -I@LIBELF_INC@ -std=gnu++17 \
-	$(am__append_2)
->>>>>>> 02237a4e6... parsing intel instructions and creating statistics object inside instructions for backward slicing. ISSUE: Dyninst assignments still not getting created
 @IS_HOST_AR_FALSE@MYAR = $(AR) cru
 @IS_HOST_AR_TRUE@MYAR = @HOST_AR@
 MYLIBADD = @HOST_LIBTREPOSITORY@ -L@LIBELF_LIB@ -ldw -lelf	\

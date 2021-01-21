@@ -182,7 +182,10 @@ static __thread bool opencl_api_flag = false;
 static spinlock_t opencl_h2d_lock = SPINLOCK_UNLOCKED;
 
 static bool instrumentation = false;
+<<<<<<< HEAD
 static bool optimization_check = false;
+=======
+>>>>>>> 7f2cf3c4e... added the starter code for opencl blame-shifting analysis. Updated hpcrun/Makefile for the same. Added a new event opencl-blame in sample-sources and its corresponding handling in opencl-api.c. Also fixed an import issue in gpu-splay-allocator.h
 static bool ENABLE_BLAME_SHIFTING = false;
 
 
@@ -1626,6 +1629,17 @@ opencl_instrumentation_count_enable
 )
 {
   gtpin_count_enable();
+}
+
+
+void
+opencl_blame_shifting_enable
+(
+ void
+)
+{
+  ENABLE_BLAME_SHIFTING = true;
+	ETMSG(OPENCL, "blame shifting enabled\n");
 }
 
 
