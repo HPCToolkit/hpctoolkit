@@ -50,8 +50,17 @@
 //************************* System Include Files ****************************
 
 #include <assert.h>
+
+#ifndef _GNU_SOURCE
+// needed for pthread_getaffinity_np
+#define _GNU_SOURCE
+#endif
+
 #include <pthread.h>
+#include <sched.h>
+
 #include <stdlib.h>
+#include <unistd.h>
 
 //************************ libmonitor Include Files *************************
 
@@ -63,6 +72,7 @@
 #include "epoch.h"
 #include "handling_sample.h"
 
+#include "rank.h"
 #include "thread_data.h"
 #include "trace.h"
 
@@ -70,7 +80,18 @@
 #include <messages/messages.h>
 #include <trampoline/common/trampoline.h>
 #include <memory/mmap.h>
+#include <lib/prof-lean/id-tuple.h>
 
+//***************************************************************************
+// macros
+//***************************************************************************
+
+#define DEBUG_CPUSET 0
+
+
+
+//***************************************************************************
+// types
 //***************************************************************************
 
 enum _local_int_const {
@@ -79,8 +100,21 @@ enum _local_int_const {
 };
 
 
+
 //***************************************************************************
-// 
+// forward declarations
+//***************************************************************************
+
+static int
+hpcrun_thread_core_bindings
+(
+ void
+);
+
+
+
+//***************************************************************************
+// data 
 //***************************************************************************
 
 #ifdef USE_GCC_THREAD
@@ -218,6 +252,11 @@ core_profile_trace_data_init(core_profile_trace_data_t * cptd, int id, cct_ctxt_
   // id
   // ----------------------------------------
   cptd->id = id;
+  // ----------------------------------------
+  // id_tuple
+  // ----------------------------------------
+  cptd->id_tuple.length = 0;
+  cptd->id_tuple.ids_length = 0;
   // ----------------------------------------
   // epoch: loadmap + cct + cct_ctxt
   // ----------------------------------------
@@ -478,3 +517,106 @@ hpcrun_ensure_btbuf_avail(void)
   }
 }
 
+
+void
+hpcrun_id_tuple_cputhread
+(
+ thread_data_t *td
+)
+{
+  int rank = hpcrun_get_rank();
+  core_profile_trace_data_t *cptd = &(td->core_profile_trace_data);
+
+  pms_id_t ids[IDTUPLE_MAXTYPES];
+  id_tuple_t id_tuple;
+
+  id_tuple_constructor(&id_tuple, ids, IDTUPLE_MAXTYPES);
+
+  id_tuple_push_back(&id_tuple, IDTUPLE_NODE, gethostid()); 
+
+  int core = hpcrun_thread_core_bindings();
+  if (core >= 0) {
+    id_tuple_push_back(&id_tuple, IDTUPLE_CORE, core); 
+  }
+
+  if (rank >= 0) {
+    id_tuple_push_back(&id_tuple, IDTUPLE_RANK, rank); 
+  }
+
+  id_tuple_push_back(&id_tuple, IDTUPLE_THREAD, cptd->id); 
+
+  id_tuple_copy(&cptd->id_tuple, &id_tuple, hpcrun_malloc);
+}
+
+
+static void
+__attribute__((unused))
+dump_cpuset
+(
+ cpu_set_t *cpuset
+)
+{
+  int count = CPU_COUNT(cpuset);
+  printf("cpu set count = %d\n", count);
+  if (count > 0) {
+    printf("cpu set ={ ");
+    int i; 
+    for (i = 0; i < CPU_SETSIZE; i++) {
+      if (CPU_ISSET(i, cpuset)) {
+	printf("%d ", i);
+      }
+    }
+    printf("}\n");
+  }
+}
+
+
+static bool
+cpuset_dense_region
+(
+ cpu_set_t *cpuset,
+ int first,
+ int remaining_count
+)
+{
+  int i; 
+  for (i = first+1; i < CPU_SETSIZE && remaining_count--; i++) {
+    if (!CPU_ISSET(i, cpuset)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+
+static int
+hpcrun_thread_core_bindings
+(
+ void
+)
+{
+  int core_id = -1;
+  pthread_t self = pthread_self();
+
+  cpu_set_t cpuset;
+  if (pthread_getaffinity_np(self, sizeof (cpuset), &cpuset) == 0) {
+    // FIXME: this returns the first HW thread id for a dense set of bindings. 
+    // this isn't always the right thing. one case that needs special handling is 
+    // when HW threads on a core aren't adjacent. there are other cases as well.
+    // the right way to do this is to compare with info from hwloc.
+    int count = CPU_COUNT(&cpuset);
+    if (count < 8) { // no CPU currently supports more than 8 SMT threads
+      int i; 
+      for (i = 0; i < CPU_SETSIZE; i++) {
+	if (CPU_ISSET(i, &cpuset)) {
+	  if (cpuset_dense_region(&cpuset, i, count - 1)) {
+	    core_id = i;
+	  } 
+	  break;
+	}
+      }
+    }
+  }
+
+  return core_id;
+}
