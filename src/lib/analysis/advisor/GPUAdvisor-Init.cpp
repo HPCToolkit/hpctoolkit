@@ -109,6 +109,7 @@ void GPUAdvisor::init(const std::string &gpu_arch) {
   _exec_dep_dep_stall_metric = GPU_INST_METRIC_NAME ":STL_IDEP_DEP";
   _exec_dep_sche_stall_metric = GPU_INST_METRIC_NAME ":STL_IDEP_SCHE";
   _exec_dep_smem_stall_metric = GPU_INST_METRIC_NAME ":STL_IDEP_SMEM";
+  _exec_dep_cmem_stall_metric = GPU_INST_METRIC_NAME ":STL_IDEP_CMEM";
   _exec_dep_war_stall_metric = GPU_INST_METRIC_NAME ":STL_IDEP_WAR";
   _mem_dep_stall_metric = GPU_INST_METRIC_NAME ":STL_GMEM";
   _mem_dep_gmem_stall_metric = GPU_INST_METRIC_NAME ":STL_GMEM_GMEM";
@@ -122,6 +123,7 @@ void GPUAdvisor::init(const std::string &gpu_arch) {
   _exec_dep_dep_lat_metric = GPU_INST_METRIC_NAME ":LAT_IDEP_DEP";
   _exec_dep_sche_lat_metric = GPU_INST_METRIC_NAME ":LAT_IDEP_SCHE";
   _exec_dep_smem_lat_metric = GPU_INST_METRIC_NAME ":LAT_IDEP_SMEM";
+  _exec_dep_cmem_lat_metric = GPU_INST_METRIC_NAME ":LAT_IDEP_CMEM";
   _exec_dep_war_lat_metric = GPU_INST_METRIC_NAME ":LAT_IDEP_WAR";
   _exec_dep_ind_lat_metric = GPU_INST_METRIC_NAME ":LAT_IDEP_IND";
   _mem_dep_lat_metric = GPU_INST_METRIC_NAME ":LAT_GMEM";
@@ -135,6 +137,7 @@ void GPUAdvisor::init(const std::string &gpu_arch) {
   _dep_metrics.emplace_back(std::make_pair(_exec_dep_dep_stall_metric, _exec_dep_dep_lat_metric));
   _dep_metrics.emplace_back(std::make_pair(_exec_dep_sche_stall_metric, _exec_dep_sche_lat_metric));
   _dep_metrics.emplace_back(std::make_pair(_exec_dep_smem_stall_metric, _exec_dep_smem_lat_metric));
+  _dep_metrics.emplace_back(std::make_pair(_exec_dep_cmem_stall_metric, _exec_dep_cmem_lat_metric));
   _dep_metrics.emplace_back(std::make_pair(_exec_dep_war_stall_metric, _exec_dep_war_lat_metric));
   _dep_metrics.emplace_back(std::make_pair(_exec_dep_ind_stall_metric, _exec_dep_ind_lat_metric));
   _dep_metrics.emplace_back(std::make_pair(_mem_dep_stall_metric, _mem_dep_lat_metric));

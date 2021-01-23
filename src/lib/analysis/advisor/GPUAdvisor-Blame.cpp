@@ -46,8 +46,8 @@ using std::string;
 #include <lib/support/StrUtil.hpp>
 #include <lib/xml/xml.hpp>
 
-#define DEBUG_GPUADVISOR 0
-#define DEBUG_GPUADVISOR_DETAILS 0
+#define DEBUG_GPUADVISOR 1
+#define DEBUG_GPUADVISOR_DETAILS 1
 
 #define MAX2(x, y) (x > y ? x : y)
 
@@ -1214,6 +1214,8 @@ std::pair<std::string, std::string> GPUAdvisor::detailizeExecBlame(
     if (from_inst->op.find(".SHARED") != std::string::npos) {
       // smem
       return std::make_pair(_exec_dep_smem_stall_metric, _exec_dep_smem_lat_metric);
+    } else if (from_inst->op.find(".CONSTANT") != std::string::npos) {
+      return std::make_pair(_exec_dep_cmem_stall_metric, _exec_dep_cmem_lat_metric);
     } else {
       // reg
       return std::make_pair(_exec_dep_dep_stall_metric, _exec_dep_dep_lat_metric);
@@ -1389,11 +1391,12 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
             // Shared memory
             prof_nodes[exec_lat_metric_index].push_back(from_node);
           } else {
-            prof_nodes[mem_lat_metric_index].push_back(from_node);
-
-            // Constant memory access can result in execution latency
+            // XXX(Keren): not sure
+            // Constant memory access result in execution latency most time
             if (from_inst->op.find(".CONSTANT") != std::string::npos) {
               prof_nodes[exec_lat_metric_index].push_back(from_node);
+            } else {
+              prof_nodes[mem_lat_metric_index].push_back(from_node);
             }
           }
         } else {
@@ -1725,15 +1728,15 @@ void GPUAdvisor::blame(CCTBlames &cct_blames) {
       CCTGraph<Prof::CCT::ADynNode *> cct_dep_graph;
       initCCTDepGraph(mpi_rank, thread_id, cct_dep_graph);
 
-      if (DEBUG_GPUADVISOR_DETAILS) {
-        std::cout << "CCT no path: " << std::endl;
-        debugCCTDepGraphNoPath(mpi_rank, thread_id, cct_dep_graph);
-        std::cout << std::endl;
-      }
-
       if (DEBUG_GPUADVISOR) {
         std::cout << "CCT dependency graph summary: " << std::endl;
         debugCCTDepGraphSummary(mpi_rank, thread_id, cct_dep_graph);
+        std::cout << std::endl;
+      }
+
+      if (DEBUG_GPUADVISOR_DETAILS) {
+        std::cout << "CCT no path: " << std::endl;
+        debugCCTDepGraphNoPath(mpi_rank, thread_id, cct_dep_graph);
         std::cout << std::endl;
       }
 
