@@ -46,8 +46,8 @@ using std::string;
 #include <lib/support/StrUtil.hpp>
 #include <lib/xml/xml.hpp>
 
-#define DEBUG_GPUADVISOR 0
-#define DEBUG_GPUADVISOR_DETAILS 0
+#define DEBUG_GPUADVISOR 1
+#define DEBUG_GPUADVISOR_DETAILS 1
 
 #define MAX2(x, y) (x > y ? x : y)
 
@@ -537,7 +537,7 @@ void GPUAdvisor::pruneCCTDepGraphOpcode(int mpi_rank, int thread_id,
     if (to->demandMetric(exec_dep_index) == 0 && to->demandMetric(mem_dep_index) == 0) {
       remove_edges.push_back(iter);
     } else {
-      if (from_inst->op.find("MEMORY") != std::string::npos) {
+      if (from_inst->op.find(".LOAD") != std::string::npos) {
         if (from_inst->op.find(".SHARED") != std::string::npos) {
           // Shared memory instructions only cause short_scoreboard wait
           if (to->demandMetric(exec_dep_index) == 0) {
@@ -546,8 +546,7 @@ void GPUAdvisor::pruneCCTDepGraphOpcode(int mpi_rank, int thread_id,
         } else {
           // CONSTANT and STORE memory instructions cause both memory and exec deps
           // L1TEX memory instructions cause memory dep
-          if (from_inst->op.find(".CONSTANT") == std::string::npos &&
-            from_inst->op.find(".STORE") == std::string::npos) {
+          if (from_inst->op.find(".CONSTANT") == std::string::npos) {
             if (to->demandMetric(mem_dep_index) == 0) {
               remove_edges.push_back(iter);
             }
@@ -670,6 +669,7 @@ void GPUAdvisor::trackDep(int from_vma, int to_vma, int id, CudaParse::Block *fr
   // Accumulate throughput
   bool find_def = false;
   bool hidden = false;
+  bool skip = false;
   auto start_vma = front_vma;
   auto end_vma = back_vma;
 
@@ -738,7 +738,7 @@ void GPUAdvisor::trackDep(int from_vma, int to_vma, int id, CudaParse::Block *fr
   if (find_def == false && hidden == false) {
     // Reach the final block
     // [front_vma, to_vma, back_vma]
-    if (to_vma <= back_vma && to_vma >= front_vma && loop_block == false) {
+    if (to_vma <= back_vma && to_vma >= front_vma && loop_block == false && skip == false) {
       paths.push_back(path);
     } else {
       for (auto *target : from_block->targets) {
@@ -830,7 +830,6 @@ void GPUAdvisor::pruneCCTDepGraphLatency(int mpi_rank, int thread_id,
     bool fixed = from_inst->control.read == CudaParse::InstructionStat::BARRIER_NONE &&
       from_inst->control.write == CudaParse::InstructionStat::BARRIER_NONE;
 
-    std::cout << "1: from " << debugInstOffset(from_vma) << " to " << debugInstOffset(to_vma) << std::endl;
     // Regular regs
     for (auto dst : from_inst->dsts) {
       // Find the dst reg that causes dependency
@@ -1387,7 +1386,7 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
         auto *from_inst = _vma_prop_map.at(from_vma).inst;
 
         // Sum up all neighbors' issue count
-        if (from_inst->op.find("MEMORY") != std::string::npos) {
+        if (from_inst->op.find(".LOAD") != std::string::npos) {
           if (from_inst->op.find(".SHARED") != std::string::npos) {
             // Shared memory
             prof_nodes[exec_lat_metric_index].push_back(from_node);
@@ -1396,11 +1395,6 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
             // Constant memory access result in execution latency most time
             if (from_inst->op.find(".CONSTANT") != std::string::npos) {
               prof_nodes[exec_lat_metric_index].push_back(from_node);
-            } else if (from_inst->op.find(".STORE") != std::string::npos) {
-              // XXX(Keren): not sure
-              // Store memory access result in both memory and exec latency
-              prof_nodes[exec_lat_metric_index].push_back(from_node);
-              prof_nodes[mem_lat_metric_index].push_back(from_node);
             } else {
               prof_nodes[mem_lat_metric_index].push_back(from_node);
             }
