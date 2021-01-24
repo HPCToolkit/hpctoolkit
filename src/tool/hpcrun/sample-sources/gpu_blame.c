@@ -76,6 +76,7 @@
  *****************************************************************************/
 #include "sample_source_obj.h"
 #include "common.h"
+#include <hpcrun/gpu/opencl/opencl-api.h>
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
 
@@ -231,8 +232,13 @@ static void METHOD_FN(process_event_list, int lush_metrics)
     gpu_overload_potential_metric_id = hpcrun_set_new_metric_info(blame_kind, "GPU_OVERLOAD_POTENTIAL");
 
     hpcrun_close_kind(blame_kind);
-    
-    bs_entry.fn = dlsym(RTLD_DEFAULT, "gpu_blame_shifter");
+   
+	 	if (ENABLE_CUDA) {	// is this check sufficient
+			bs_entry.fn = dlsym(RTLD_DEFAULT, "gpu_blame_shifter");
+		} else if (ENABLE_OPENCL && is_opencl_blame_shifting_enabled()) {
+			printf("test: gpu_blame.c--->OPENCL\n");
+    	bs_entry.fn = dlsym(RTLD_DEFAULT, "opencl_gpu_blame_shifter");
+		}
     bs_entry.next = 0;
     blame_shift_register(&bs_entry);
 }

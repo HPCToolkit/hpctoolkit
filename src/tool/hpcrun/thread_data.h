@@ -77,6 +77,7 @@ typedef struct {
 } sigjmp_buf_t;
 
 typedef struct gpu_data_t {
+	/* CUDA events */
   // True if this thread is at CuXXXXSynchronize.
   bool is_thread_at_cuda_sync;
   // maintains state to account for overload potential  
@@ -91,6 +92,11 @@ typedef struct gpu_data_t {
 	// holds the number of times the above accum_num_sync_threads
 	// is updated
   uint64_t accum_num_samples;
+	
+	/* OPENCL events */
+  // True if this thread is at clWaitForEvents() or clFinish().
+	bool is_thread_at_opencl_sync;
+
 } gpu_data_t;
 
 
@@ -281,9 +287,10 @@ typedef struct thread_data_t {
 
 
 
-#ifdef ENABLE_CUDA
+// need to change this
+// #if defined(ENABLE_CUDA) || is_opencl_blame_shifting_enabled()
   gpu_data_t gpu_data;
-#endif
+// #endif
   
   uint64_t gpu_trace_first_time;
   uint64_t gpu_trace_prev_time;
