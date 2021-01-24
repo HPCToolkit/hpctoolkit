@@ -1474,6 +1474,16 @@ opencl_blame_shifting_enable
 }
 
 
+bool
+is_opencl_blame_shifting_enabled
+(
+ void
+)
+{
+  return (ENABLE_BLAME_SHIFTING == true);
+}
+
+
 void
 opencl_api_thread_finalize
 (

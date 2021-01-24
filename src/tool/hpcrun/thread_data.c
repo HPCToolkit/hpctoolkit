@@ -305,6 +305,13 @@ static inline void gpu_data_init(gpu_data_t * gpu_data)
 }
 #endif
 
+#ifdef ENABLE_OPENCL
+static inline void gpu_data_init(gpu_data_t * gpu_data)
+{
+  gpu_data->is_thread_at_opencl_sync = false;
+}
+#endif
+
 void
 hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child, size_t n_sources)
 {
