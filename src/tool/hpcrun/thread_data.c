@@ -375,6 +375,15 @@ static inline void gpu_data_init(gpu_data_t * gpu_data)
 }
 #endif
 
+<<<<<<< HEAD
+=======
+#ifdef ENABLE_OPENCL
+static inline void gpu_data_init(gpu_data_t * gpu_data)
+{
+  gpu_data->is_thread_at_opencl_sync = false;
+}
+#endif
+>>>>>>> bec89122f... copied many code lines from CUDA blame-shifting files to corresponding opencl files. Also updated common blame-shifting files in some places to include support when opencl blame-shifting is enabled. Renamed some opencl blame-shifing files. ISSUE: After trying to run some examples, the itimer callbacks are not getting triggered
 
 void
 hpcrun_thread_data_init

@@ -36,7 +36,7 @@
 #include <hpcrun/gpu/gpu-splay-allocator.h>
 #include <lib/prof-lean/splay-uint64.h>
 #include <lib/prof-lean/spinlock.h>
-#include "blame-shift-datastructure.h"
+#include "gpu-blame-opencl-datastructure.h"
 
 
 
