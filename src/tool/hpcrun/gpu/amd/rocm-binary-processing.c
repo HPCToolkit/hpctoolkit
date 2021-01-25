@@ -255,13 +255,6 @@ parse_amd_gpu_binary_uri
   used += sprintf(&gpu_file_path[used], "%s.%llx" GPU_BINARY_SUFFIX, 
 		  filename, offset);
 
-  // We directly return if we have write down this URI
-  int wfd;
-  wfd = open(gpu_file_path, O_WRONLY | O_CREAT | O_EXCL, 0644);
-  if (wfd < 0) {
-    return;
-  }
-
   int rfd = open(filepath, O_RDONLY);
   if (rfd < 0) {
     PRINT("\tcannot open the file specified in the file URI\n");
@@ -281,8 +274,14 @@ parse_amd_gpu_binary_uri
     perror(NULL);
     return;
   }
-  write(wfd, (const void*)(bin->buf), bin->size);
-  close(wfd);
+
+  // We write down this GPU binary if necessary.
+  // We may not need to create this GPU binary when reusing a measurement directory.
+  int wfd = open(gpu_file_path, O_WRONLY | O_CREAT | O_EXCL, 0644);
+  if (wfd >= 0) {
+    write(wfd, (const void*)(bin->buf), bin->size);
+    close(wfd);
+  }
 
   bin->amd_gpu_module_id = hpcrun_loadModule_add(gpu_file_path);
 }
