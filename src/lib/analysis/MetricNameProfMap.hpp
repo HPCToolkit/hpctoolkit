@@ -86,6 +86,10 @@ class MetricNameProfMap {
 
   std::vector<int> metric_ids(const std::string &metric_name, bool inclusive = true);
 
+  std::map<std::string, std::pair<int, int> > metrics(size_t mpi_rank, size_t thread_id) {
+    return _metric_name_prof_maps[mpi_rank][thread_id];
+  }
+
   int metric_id(size_t mpi_rank, size_t thread_id, const std::string &metric_name, bool inclusive = true);
   
   int num_mpi_ranks() {

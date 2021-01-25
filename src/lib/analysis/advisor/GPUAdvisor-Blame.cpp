@@ -511,6 +511,43 @@ void GPUAdvisor::initCCTDepGraph(int mpi_rank, int thread_id,
 
     cct_dep_graph.addEdge(from_node, to_node);
   }
+
+  auto mem_dep_lat_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _mem_dep_lat_metric);
+  auto mem_dep_stall_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _mem_dep_stall_metric);
+
+  // Special handling for depbar
+  for (auto iter = cct_dep_graph.nodeBegin(); iter != cct_dep_graph.nodeEnd(); ++iter) {
+    auto *node = *iter;
+    auto node_vma = node->lmIP();
+    auto *prof_node = _vma_prop_map.at(node_vma).prof_node;
+
+    if (prof_node != NULL && cct_dep_graph.incoming_nodes_size(node) == 0 &&
+      prof_node->hasMetricSlow(mem_dep_lat_index) != 0.0) {
+      auto bar_vma = node_vma - _arch->inst_size();
+      auto bar_vma_prop_iter = _vma_prop_map.find(bar_vma);
+      auto *bar_inst = bar_vma_prop_iter->second.inst;
+
+      if (bar_inst->op.find("BAR") == std::string::npos) {
+        continue;
+      }
+
+      decltype(prof_node) bar_node = bar_vma_prop_iter->second.prof_node;
+      if (bar_node == NULL) {
+        // Create a node
+        Prof::Metric::IData metric_data(_prof->metricMgr()->size());
+        metric_data.clearMetrics();
+        bar_node = new Prof::CCT::Stmt(node->parent(), HPCRUN_FMT_CCTNodeId_NULL, lush_assoc_info_NULL,
+          _gpu_root->lmId(), bar_vma, 0, NULL, metric_data);
+        bar_vma_prop_iter->second.prof_node = bar_node;
+      }
+
+      // Move mem dep metrics
+      bar_node->demandMetric(mem_dep_lat_index) = prof_node->demandMetric(mem_dep_lat_index);
+      bar_node->demandMetric(mem_dep_stall_index) = prof_node->demandMetric(mem_dep_stall_index);
+      prof_node->demandMetric(mem_dep_lat_index) = 0;
+      prof_node->demandMetric(mem_dep_stall_index) = 0;
+    }
+  }
 }
 
 void GPUAdvisor::pruneCCTDepGraphOpcode(int mpi_rank, int thread_id,
@@ -920,7 +957,7 @@ void GPUAdvisor::pruneCCTDepGraphExecution(int mpi_rank, int thread_id,
   }
 
   auto inst_exe_index = _metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_exe_metric);
-
+  
   std::vector<std::set<CCTEdge<Prof::CCT::ADynNode *>>::iterator> remove_edges;
   for (auto iter = cct_dep_graph.edgeBegin(); iter != cct_dep_graph.edgeEnd(); ++iter) {
     auto edge = *iter;
@@ -930,39 +967,34 @@ void GPUAdvisor::pruneCCTDepGraphExecution(int mpi_rank, int thread_id,
     auto to_vma = to->lmIP();
 
     // Remove path if any instructions is not executed
-    std::vector<std::vector<std::vector<CudaParse::Block *>>::iterator> remove_paths;
+    std::vector<std::vector<CudaParse::Block *>> new_paths;
     // Remove if any of block on this path has no executed branch
     for (auto path_iter = cct_edge_path_map[from_vma][to_vma].begin();
          path_iter != cct_edge_path_map[from_vma][to_vma].end(); ++path_iter) {
       bool remove = false;
       for (size_t bi = 0; bi < path_iter->size(); ++bi) {
         auto *block = path_iter->at(bi);
-        for (auto *inst : block->insts) {
-          auto inst_vma = inst->inst_stat->pc;
-          // No metric with the inst
-          auto prop_iter = _vma_prop_map.find(inst_vma);
-          if (prop_iter == _vma_prop_map.end()) {
-            remove_paths.push_back(path_iter);
-            remove = true;
-            break;
-          }
-          // No execution metric with the inst
-          auto *prof_node = prop_iter->second.prof_node;
-          if (prof_node == NULL || prof_node->hasMetricSlow(inst_exe_index) == 0) {
-            remove_paths.push_back(path_iter);
-            remove = true;
-            break;
-          }
+        auto inst_vma = block->insts.front()->inst_stat->pc;
+        // No metric with the inst
+        auto prop_iter = _vma_prop_map.find(inst_vma);
+        if (prop_iter == _vma_prop_map.end()) {
+          remove = true;
+          break;
         }
-        if (remove == true) {
+        // No execution metric with the inst
+        auto *prof_node = prop_iter->second.prof_node;
+        if (prof_node == NULL || prof_node->hasMetricSlow(inst_exe_index) == 0) {
+          remove = true;
           break;
         }
       }
+      if (!remove) {
+        new_paths.push_back(*path_iter);
+      }
     }
 
-    for (auto &path_iter : remove_paths) {
-      cct_edge_path_map[from_vma][to_vma].erase(path_iter);
-    }
+    // Erase previous paths
+    cct_edge_path_map[from_vma][to_vma] = new_paths;
 
     // If there's no satisfied path
     if (cct_edge_path_map[from_vma][to_vma].size() == 0) {
@@ -1025,10 +1057,11 @@ void GPUAdvisor::pruneCCTDepGraphBranch(int mpi_rank, int thread_id,
     auto to_vma = to->lmIP();
 
     // Remove path if any instructions is not executed
-    std::vector<std::vector<std::vector<CudaParse::Block *>>::iterator> remove_paths;
+    std::vector<std::vector<CudaParse::Block *>> new_paths;
     // Remove if any of block on this path has no executed branch
     for (auto path_iter = cct_edge_path_map[from_vma][to_vma].begin();
          path_iter != cct_edge_path_map[from_vma][to_vma].end(); ++path_iter) {
+      bool remove = false;
       for (size_t bi = 0; bi < path_iter->size() - 1; ++bi) {
         auto *block = path_iter->at(bi);
         auto *inst = block->insts.back();
@@ -1041,7 +1074,7 @@ void GPUAdvisor::pruneCCTDepGraphBranch(int mpi_rank, int thread_id,
         // No metric with the inst
         auto prop_iter = _vma_prop_map.find(inst_vma);
         if (prop_iter == _vma_prop_map.end()) {
-          remove_paths.push_back(path_iter);
+          remove = true;
           break;
         }
 
@@ -1057,7 +1090,7 @@ void GPUAdvisor::pruneCCTDepGraphBranch(int mpi_rank, int thread_id,
               (prof_node->demandMetric(inst_exe_pred_index) ==
                prof_node->demandMetric(inst_exe_index))) {
               // Always taken
-              remove_paths.push_back(path_iter);
+              remove = true;
               break;
             }
           }
@@ -1065,16 +1098,18 @@ void GPUAdvisor::pruneCCTDepGraphBranch(int mpi_rank, int thread_id,
           // Jump block
           if (prof_node == NULL || !prof_node->hasMetricSlow(inst_exe_pred_index)) {
             // Never taken
-            remove_paths.push_back(path_iter);
+            remove = true;
             break;
           }
         }
       }
+      if (!remove) {
+        new_paths.push_back(*path_iter);
+      }
     }
 
-    for (auto &path_iter : remove_paths) {
-      cct_edge_path_map[from_vma][to_vma].erase(path_iter);
-    }
+    // Erase previous paths
+    cct_edge_path_map[from_vma][to_vma] = new_paths;
 
     // If there's no satisfied path
     if (cct_edge_path_map[from_vma][to_vma].size() == 0) {
