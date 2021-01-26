@@ -328,7 +328,26 @@ static void update_objects_gotplt() {
     if (plt_got != NULL) {
       // .pltgot may not necessarily be writable
       change_memory_protection(&plt_got[GOT_resolver_index]);
+      if(verbose) {
+        Dl_info info;
+        Dl_info info2;
+        if(!dladdr((void*)plt_got[GOT_resolver_index], &info))
+          info = (Dl_info){NULL, NULL, NULL, NULL};
+        if(!dladdr((void*)dl_runtime_resolver_ptr, &info2))
+          info = (Dl_info){NULL, NULL, NULL, NULL};
+        if(info.dli_fname != NULL && info2.dli_fname != NULL
+           && strcmp(info.dli_fname, info2.dli_fname) == 0)
+          info2.dli_fname = "...";
+        fprintf(stderr, "[audit] Optimizing `%s': %p (%s+%p) -> %p (%s+%p)\n",
+                entry->map->l_name,
+                (void*)plt_got[GOT_resolver_index], info.dli_fname,
+                (void*)plt_got[GOT_resolver_index]-(ptrdiff_t)info.dli_fbase,
+                (void*)dl_runtime_resolver_ptr, info2.dli_fname,
+                (void*)dl_runtime_resolver_ptr-(ptrdiff_t)info2.dli_fbase);
+      }
       plt_got[GOT_resolver_index] = dl_runtime_resolver_ptr;
+    } else if(verbose) {
+      fprintf(stderr, "[audit] Failed to find GOTPLT section in `%s'!\n", entry->map->l_name);
     }
     struct buffered_entry_t* prev = entry;
     entry = entry->next;
@@ -397,17 +416,21 @@ static void mainlib_connected(const char* vdso_path) {
 unsigned int la_version(unsigned int version) {
   if(version < 1) return 0;
 
+  // Read in our arguments
+  verbose = getenv("HPCRUN_AUDIT_DEBUG");
+
   // Check if we need to optimize PLT calls
   disable_plt_call_opt = getenv("HPCRUN_AUDIT_DISABLE_PLT_CALL_OPT");
   if (!disable_plt_call_opt) {
     ElfW(Addr)* plt_got = get_plt_got_start(_DYNAMIC);
     if (plt_got != NULL) {
       dl_runtime_resolver_ptr = plt_got[GOT_resolver_index];
+      if(verbose)
+        fprintf(stderr, "[audit] PLT optimized resolver: %p\n", (void*)dl_runtime_resolver_ptr);
+    } else if(verbose) {
+      fprintf(stderr, "[audit] Failed to find PLTGOT section in auditor!\n");
     }
   }
-
-  // Read in our arguments
-  verbose = getenv("HPCRUN_AUDIT_DEBUG");
 
   mainlib = realpath(getenv("HPCRUN_AUDIT_MAIN_LIB"), NULL);
   if(verbose)
