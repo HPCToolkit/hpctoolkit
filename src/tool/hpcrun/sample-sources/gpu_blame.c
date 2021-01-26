@@ -101,9 +101,9 @@
 #include <lib/prof-lean/splay-macros.h>
 #include "blame-shift/blame-shift.h"
 
-#ifdef ENABLE_CUDA
+//#ifdef ENABLE_CUDA
 #include "gpu_blame.h"
-#endif // ENABLE_CUDA
+//#endif // ENABLE_CUDA
 
 // ****************** utility macros *********************
 #define Cuda_RTcall(fn) cudaRuntimeFunctionPointer[fn ## Enum].fn ## Real
@@ -233,11 +233,11 @@ static void METHOD_FN(process_event_list, int lush_metrics)
 
     hpcrun_close_kind(blame_kind);
    
-	 	if (ENABLE_CUDA) {	// is this check sufficient
-			bs_entry.fn = dlsym(RTLD_DEFAULT, "gpu_blame_shifter");
-		} else if (ENABLE_OPENCL && is_opencl_blame_shifting_enabled()) {
-			printf("test: gpu_blame.c--->OPENCL\n");
+		if (is_opencl_blame_shifting_enabled()) {
+			printf("registering opencl_gpu_blame_shifter with itimer\n===============");
     	bs_entry.fn = dlsym(RTLD_DEFAULT, "opencl_gpu_blame_shifter");
+		}	else {	// CUDA blame-shifting
+			// bs_entry.fn = dlsym(RTLD_DEFAULT, "gpu_blame_shifter");
 		}
     bs_entry.next = 0;
     blame_shift_register(&bs_entry);
