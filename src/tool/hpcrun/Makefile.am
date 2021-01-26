@@ -534,7 +534,8 @@ MY_OPENCL_FILES = \
 	gpu/opencl/intel/maps/kernel-param-map.c	\
 	gpu/opencl/intel/pointer-alias-check-helper.c \
 	gpu/opencl/intel/maps/buffer-map.c	\
-	gpu/opencl/intel/maps/device-map.c
+	gpu/opencl/intel/maps/device-map.c	\
+  	sample-sources/gpu_blame.c
 
 pkglib_LTLIBRARIES += libhpcrun_opencl.la
 libhpcrun_opencl_la_CPPFLAGS  = -I$(top_srcdir)/src $(OPENCL_IFLAGS)
