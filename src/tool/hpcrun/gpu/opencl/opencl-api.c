@@ -128,6 +128,8 @@
 
 #define DYN_FN_NAME(f) f ## _fn
 
+#define DYN_FN_NAME(f) f ## _fn
+
 #define OPENCL_FN_NAME(f) DYN_FN_NAME(f)
 
 #define OPENCL_FN(fn, args)      \
@@ -1636,7 +1638,7 @@ opencl_blame_shifting_enable
 )
 {
   ENABLE_BLAME_SHIFTING = true;
-	ETMSG(OPENCL, "blame shifting enabled\n");
+	ETMSG(OPENCL, "blame shifting enabled\n=================");
 }
 
 
