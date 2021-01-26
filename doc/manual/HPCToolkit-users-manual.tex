@@ -2,7 +2,7 @@
 % $HeadURL$
 % $Id$
 %
-% Copyright ((c)) 2002-2020, Rice University
+% Copyright ((c)) 2002-2021, Rice University
 % All rights reserved.
 % See file README.License for details.
 %
@@ -120,7 +120,7 @@
 % ***************************************************************************
 % ***************************************************************************
 
-\title{\HPCToolkit{} User's Manual\\[.5in]Version 2020.07.15}
+\title{\HPCToolkit{} User's Manual\\[.5in]Version 2021.01.31}
 %\subtitle{}
 
 \author{
@@ -135,7 +135,7 @@ Rice University\\
 %For \HPCToolkit{} 5.3.2 ($Revision$)
 }
 
-\date{July 15, 2020}
+\date{January 31, 2021}
 
 \maketitle
 
@@ -261,8 +261,7 @@ We have also developed techniques for efficiently attributing the idleness in on
 \HPCToolkit{} is deployed on many DOE supercomputers, including
 the Sierra supercomputer (IBM Power9 + NVIDIA V100 GPUs) at Lawrence Livermore National Laboratory,
 Cray XC40 systems at Argonne's Leadership Computing Facility and the National Energy
-Research Scientific Computing Center; the Summit supercomputer (IBM Power9 + NVIDIA V100 GPUs) at Oak Ridge Leadership Computing Facility,
-Blue Gene/Q systems at Argonne Leadership Computing Facility,
+Research Scientific Computing Center; the Summit supercomputer (IBM Power9 + NVIDIA V100 GPUs) at Oak Ridge Leadership Computing Facility
 as well as other clusters and supercomputers based on x86\_64, Power, and ARM processors.
 
 % ***************************************************************************
@@ -434,7 +433,7 @@ Since compilers can usually provide information about line mappings and inlining
 
 Measurement of application performance takes two different forms depending on whether your application is dynamically or statically linked.
 To monitor a dynamically linked application, simply use \hpcrun{} to launch the application.
-To monitor a statically linked application, such as those typically used on Blue Gene and Cray supercomputers, link your application using \hpclink{}.
+To monitor a statically linked application, such as those often used on  Cray supercomputers, link your application using \hpclink{}.
 In either case, the application may be sequential, multithreaded or based on MPI.
 The commands below give examples for an application named \texttt{app}.
 %
@@ -940,13 +939,6 @@ To isolate code that is an impediment to scalable performance, one can use the {
 \chapter{Measurement and Analysis of GPU-accelerated Applications}
 \label{chpt:gpu}
 
-{
-\centering
- \fbox{\parbox{\textwidth}{Note: This release contains beta support for monitoring computations offloaded onto  NVIDIA GPUs and alpha support for monitoring computations offloaded onto AMD GPUs.}}
- \vspace{2ex}
-}
-
-
 \input{gpu}
 
 
@@ -982,11 +974,6 @@ If an interaction between HPCToolkit's support for the OMPT interface and an Ope
 
 % ***************************************************************************
 % ***************************************************************************
-
-\chapter{The \hpctraceviewer{} User Interface}
-\label{chpt:hpctraceviewer-interface}
-
-\input{hpctraceviewer}
 
 
 % ***************************************************************************
@@ -1026,7 +1013,7 @@ Observe that the MPI launcher (\texttt{mpirun}, \texttt{mpiexec}, \etc{}) is use
 \question{How do I compile and run a statically linked MPI program?}
 
 \answer{}
-On systems such IBM's Blue Gene/Q microkernel that are designed to run statically linked binaries, use \hpclink{} to build a statically linked version of your application that includes \HPCToolkit{}'s monitoring library.
+To use  \HPCToolkit{} to monitor  statically linked binaries, use \hpclink{} to build a statically linked version of your application that includes \HPCToolkit{}'s monitoring library.
 For example, to link your application binary \texttt{app}:
 %
 \begin{quote}
@@ -1160,7 +1147,7 @@ With dynamically linked executables, \HPCToolkit{}'s \hpcrun{} script uses libra
 However, in some cases, statically-linked executables are necessary or desirable.
 \begin{itemize}
 \item One might prefer a statically linked executable because they are generally faster if the executable spends a significant amount of time calling functions in libraries.
-\item On Blue Gene and Cray supercomputers, statically-linked executables are preferred.
+\item On Cray supercomputers, statically-linked executables are often the default.
 \end{itemize}
 
 For statically linked executables, preloading \HPCToolkit's monitoring code into an application's address space at program launch is not an option.
@@ -1216,7 +1203,7 @@ argument to \hpclink{}.
 For dynamically linked executables, the \hpcrun{} script sets environment variables to pass information to the \HPCToolkit{} monitoring library.
 On standard Linux systems, statically linked \hpclink{}-ed executables can still be launched with \hpcrun{}.
 
-On Cray and Blue Gene systems, the \hpcrun{} script is not applicable because of differences in application launch procedures.
+For statically-linked binaries, the \hpcrun{} script is not applicable because of differences in application launch procedures.
 On these systems, you will need to use the \mytt{HPCRUN_EVENT_LIST} environment variable to pass a list of events to \HPCToolkit{}'s monitoring code, which was linked into your executable using \hpclink{}.
 Typically, you would set \mytt{HPCRUN_EVENT_LIST} in your launch script.
 
@@ -1230,15 +1217,6 @@ For example, in a PBS script for a Cray system, you might write the following in
 cd $PBS_O_WORKDIR
 export HPCRUN_EVENT_LIST="CYCLES@f200 PERF_COUNT_HW_CACHE_MISSES@f200"
 aprun -n 64 ./app arg ...
-\end{verbatim}
-\end{quote}
-
-Using the Cobalt job launcher on Argonne National Laboratory's Blue Gene/Q system, you would use the \texttt{--env} option to pass environment variables.
-For example, you might submit a job with:
-\begin{quote}
-\begin{verbatim}
-qsub -t 60 -n 64 --env HPCRUN_EVENT_LIST="WALLCLOCK@1000" \
-    /path/to/app <app arguments> ...
 \end{verbatim}
 \end{quote}
 
