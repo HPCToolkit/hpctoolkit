@@ -184,10 +184,7 @@ static __thread bool opencl_api_flag = false;
 static spinlock_t opencl_h2d_lock = SPINLOCK_UNLOCKED;
 
 static bool instrumentation = false;
-<<<<<<< HEAD
 static bool optimization_check = false;
-=======
->>>>>>> 7f2cf3c4e... added the starter code for opencl blame-shifting analysis. Updated hpcrun/Makefile for the same. Added a new event opencl-blame in sample-sources and its corresponding handling in opencl-api.c. Also fixed an import issue in gpu-splay-allocator.h
 static bool ENABLE_BLAME_SHIFTING = false;
 
 
@@ -430,15 +427,6 @@ OPENCL_FN
 OPENCL_FN
 (
   clFinish,
-  (
-   cl_command_queue command_queue
-  )
-);
-
-
-OPENCL_FN
-(
-  clReleaseCommandQueue,
   (
    cl_command_queue command_queue
   )
@@ -1071,6 +1059,10 @@ hpcrun_clCreateCommandQueue
 		opencl_queue_prologue(queue);
 	}
 
+	if(is_opencl_blame_shifting_enabled()) {
+		queue_prologue(queue);
+	}
+
   return queue;
 }
 
@@ -1186,6 +1178,11 @@ hpcrun_clEnqueueNDRangeKernel
 
   cl_event *eventp = NULL;
   SET_EVENT_POINTER(eventp, event, kernel_info)
+
+	if(is_opencl_blame_shifting_enabled()) {
+		// add a node for corresponding kernel-queue entry in StreamQs
+		kernel_prologue(eventp, command_queue);
+	}
 
   cl_int return_status =
             HPCRUN_OPENCL_CALL(clEnqueueNDRangeKernel, (command_queue, ocl_kernel, work_dim,
@@ -1519,6 +1516,10 @@ hpcrun_clReleaseCommandQueue
   if (optimization_check && status == CL_SUCCESS) {
     clearQueueContext(command_queue);
   }
+  if (is_opencl_blame_shifting_enabled() && status == CL_SUCCESS) {
+    opencl_queue_epilogue(command_queue);
+  }
+
   return status;
 }
 
@@ -1557,22 +1558,6 @@ hpcrun_clFinish
   cl_int status = HPCRUN_OPENCL_CALL(clFinish, (command_queue));
   if(is_opencl_blame_shifting_enabled()) {
     opencl_sync_epilogue(command_queue);
-  }
-  return status;
-}
-
-
-cl_int
-hpcrun_clReleaseCommandQueue
-(
-	cl_command_queue command_queue
-)
-{
-  ETMSG(OPENCL, "clReleaseCommandQueue called");
-  cl_int status = HPCRUN_OPENCL_CALL(clReleaseCommandQueue, (command_queue));
-
-  if (is_opencl_blame_shifting_enabled() && status == CL_SUCCESS) {
-    opencl_queue_epilogue(command_queue);
   }
   return status;
 }
@@ -1641,7 +1626,7 @@ opencl_blame_shifting_enable
 )
 {
   ENABLE_BLAME_SHIFTING = true;
-	ETMSG(OPENCL, "blame shifting enabled\n=================");
+	ETMSG(OPENCL, "Opencl Blame-Shifting enabled");
 }
 
 
