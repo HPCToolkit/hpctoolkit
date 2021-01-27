@@ -266,7 +266,7 @@ static void hook_open(uintptr_t* cookie, struct link_map* map, enum audit_open_f
   if(verbose)
     fprintf(stderr, "[audit] Delivering objopen for `%s' [%p, %p)"
 	    " dl_info.dlpi_addr = %p\n", entry->path, entry->start, 
-	    entry->end, entry->dl_info.dlpi_addr);
+	    entry->end, (void*)entry->dl_info.dlpi_addr);
 
   hooks.open(entry);
 
@@ -320,35 +320,49 @@ static void change_memory_protection(void* address) {
 	   PROT_READ | PROT_WRITE | PROT_EXEC);
 }
 
+static void optimize_object_plt(struct link_map* map) {
+  ElfW(Addr)* plt_got = get_plt_got_start(map->l_ld);
+  if (plt_got != NULL) {
+    // If the original entry is already optimized, silently skip
+    if(plt_got[GOT_resolver_index] == dl_runtime_resolver_ptr)
+      return;
+
+    // If the original entry is NULL, we skip it (obviously something is wrong)
+    if(plt_got[GOT_resolver_index] == 0) {
+      if(verbose)
+        fprintf(stderr, "[audit] Skipping optimization of `%s', original entry %p is NULL\n", map->l_name, &plt_got[GOT_resolver_index]);
+      return;
+    }
+
+    // .pltgot may not necessarily be writable
+    change_memory_protection(&plt_got[GOT_resolver_index]);
+    if(verbose) {
+      Dl_info info;
+      Dl_info info2;
+      if(!dladdr((void*)plt_got[GOT_resolver_index], &info))
+        info = (Dl_info){NULL, NULL, NULL, NULL};
+      if(!dladdr((void*)dl_runtime_resolver_ptr, &info2))
+        info = (Dl_info){NULL, NULL, NULL, NULL};
+      if(info.dli_fname != NULL && info2.dli_fname != NULL
+         && strcmp(info.dli_fname, info2.dli_fname) == 0)
+        info2.dli_fname = "...";
+      fprintf(stderr, "[audit] Optimizing `%s': %p (%s+%p) -> %p (%s+%p)\n",
+              map->l_name,
+              (void*)plt_got[GOT_resolver_index], info.dli_fname,
+              (void*)plt_got[GOT_resolver_index]-(ptrdiff_t)info.dli_fbase,
+              (void*)dl_runtime_resolver_ptr, info2.dli_fname,
+              (void*)dl_runtime_resolver_ptr-(ptrdiff_t)info2.dli_fbase);
+    }
+    plt_got[GOT_resolver_index] = dl_runtime_resolver_ptr;
+  } else if(verbose) {
+    fprintf(stderr, "[audit] Failed to find GOTPLT section in `%s'!\n", map->l_name);
+  }
+}
 
 static void update_objects_gotplt() {
   // Iterate every object and update pltgot
   for (struct buffered_entry_t* entry = obj_update_list; entry != NULL;) {
-    ElfW(Addr)* plt_got = get_plt_got_start(entry->map->l_ld);
-    if (plt_got != NULL) {
-      // .pltgot may not necessarily be writable
-      change_memory_protection(&plt_got[GOT_resolver_index]);
-      if(verbose) {
-        Dl_info info;
-        Dl_info info2;
-        if(!dladdr((void*)plt_got[GOT_resolver_index], &info))
-          info = (Dl_info){NULL, NULL, NULL, NULL};
-        if(!dladdr((void*)dl_runtime_resolver_ptr, &info2))
-          info = (Dl_info){NULL, NULL, NULL, NULL};
-        if(info.dli_fname != NULL && info2.dli_fname != NULL
-           && strcmp(info.dli_fname, info2.dli_fname) == 0)
-          info2.dli_fname = "...";
-        fprintf(stderr, "[audit] Optimizing `%s': %p (%s+%p) -> %p (%s+%p)\n",
-                entry->map->l_name,
-                (void*)plt_got[GOT_resolver_index], info.dli_fname,
-                (void*)plt_got[GOT_resolver_index]-(ptrdiff_t)info.dli_fbase,
-                (void*)dl_runtime_resolver_ptr, info2.dli_fname,
-                (void*)dl_runtime_resolver_ptr-(ptrdiff_t)info2.dli_fbase);
-      }
-      plt_got[GOT_resolver_index] = dl_runtime_resolver_ptr;
-    } else if(verbose) {
-      fprintf(stderr, "[audit] Failed to find GOTPLT section in `%s'!\n", entry->map->l_name);
-    }
+    optimize_object_plt(entry->map);
     struct buffered_entry_t* prev = entry;
     entry = entry->next;
     free(prev);
