@@ -49,10 +49,11 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 
-#ifdef ENABLE_CUDA
+//#ifdef ENABLE_CUDA
 
-#include "gpu_blame-cuda-runtime-header.h"
-#include "gpu_blame-cuda-driver-header.h"
+//#include "gpu_blame-cuda-runtime-header.h"
+//#include "gpu_blame-cuda-driver-header.h"
+#include <lib/prof-lean/stdatomic.h>		// atomic_uint_fast64_t
 #include <hpcrun/core_profile_trace_data.h>
 #include <hpcrun/main.h>
 
@@ -79,12 +80,12 @@ extern int uva_data_xfer_metric_id;
 extern bool g_cpu_gpu_enabled;
 
 // num threads in the process
-extern uint64_t g_active_threads;
+extern atomic_uint_fast64_t g_active_threads;
 
 // Visible function declarations
 extern void gpu_blame_shifter(void* dc, int metric_id, cct_node_t* node, int  metric_incr);
 extern  void hpcrun_stream_finalize(void* st);
 extern void hpcrun_set_gpu_proxy_present();
 
-#endif
+//#endif
 #endif

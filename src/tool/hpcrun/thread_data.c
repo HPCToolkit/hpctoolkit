@@ -529,7 +529,7 @@ hpcrun_thread_data_init
   // ----------------------------------------
   td->gpu_trace_prev_time = 0;
 
-#ifdef ENABLE_CUDA
+#if defined(ENABLE_CUDA) || defined (ENABLE_OPENCL)
   gpu_data_init(&(td->gpu_data));
 #endif
 }

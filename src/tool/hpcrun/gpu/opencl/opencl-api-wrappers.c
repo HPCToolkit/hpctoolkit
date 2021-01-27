@@ -263,6 +263,18 @@ clReleaseKernel
 }
 
 
+// comment if opencl blame-shifting is disabled
+cl_int
+clWaitForEvents
+(
+	cl_uint num_events,
+	const cl_event* event_list
+)
+{
+	return hpcrun_clWaitForEvents(num_events, event_list);
+}
+
+
 cl_int
 clReleaseCommandQueue
 (
@@ -270,5 +282,14 @@ clReleaseCommandQueue
 )
 {
   return hpcrun_clReleaseCommandQueue(command_queue);
+}
+
+
+clFinish
+(
+	cl_command_queue command_queue
+)
+{
+	return hpcrun_clFinish(command_queue);	
 }
 
