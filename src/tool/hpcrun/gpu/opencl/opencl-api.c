@@ -76,6 +76,7 @@
 #include <hpcrun/gpu/instrumentation/gtpin-instrumentation.h>
 #include <hpcrun/messages/messages.h>
 #include <hpcrun/sample-sources/libdl.h>
+#include <hpcrun/sample-sources/gpu/gpu-blame/gpu-blame-opencl.h>
 #include <hpcrun/files.h>
 #include <hpcrun/utilities/hpcrun-nanotime.h>
 #include <lib/prof-lean/crypto-hash.h>
@@ -121,7 +122,9 @@
   macro(clReleaseEvent)  \
   macro(clSetEventCallback) \
   macro(clReleaseKernel)  \
-  macro(clReleaseCommandQueue)
+  macro(clReleaseCommandQueue)  \
+  macro(clWaitForEvents)  \
+  macro(clFinish)
 
 #define DYN_FN_NAME(f) f ## _fn
 
@@ -400,10 +403,29 @@ OPENCL_FN
 
 OPENCL_FN
 (
+  clWaitForEvents,
+  (
+   cl_uint num_events,
+   const cl_event* event_list
+  )
+);
+
+
+OPENCL_FN
+(
  clReleaseCommandQueue,
  (
   cl_command_queue command_queue
  )
+);
+
+
+OPENCL_FN
+(
+  clFinish,
+  (
+   cl_command_queue command_queue
+  )
 );
 
 
@@ -1013,6 +1035,10 @@ hpcrun_clCreateCommandQueue
     recordQueueContext(queue, context);
   }
 
+	if(is_opencl_blame_shifting_enabled()) {
+		queue_prologue(queue);
+	}
+
   return queue;
 }
 
@@ -1080,6 +1106,11 @@ hpcrun_clCreateCommandQueueWithProperties
   if (optimization_check && *errcode_ret == CL_SUCCESS) {
     recordQueueContext(queue, context);
   }
+	
+	if(is_opencl_blame_shifting_enabled()) {
+		queue_prologue(queue);
+	}
+
   return queue;
 }
 
@@ -1123,6 +1154,11 @@ hpcrun_clEnqueueNDRangeKernel
 
   cl_event *eventp = NULL;
   SET_EVENT_POINTER(eventp, event, kernel_info)
+
+	if(is_opencl_blame_shifting_enabled()) {
+		// add a node for corresponding kernel-queue entry in StreamQs
+		kernel_prologue(eventp, command_queue);
+	}
 
   cl_int return_status =
             HPCRUN_OPENCL_CALL(clEnqueueNDRangeKernel, (command_queue, ocl_kernel, work_dim,
@@ -1378,6 +1414,22 @@ hpcrun_clSetKernelArg
 
 
 cl_int
+hpcrun_clWaitForEvents
+(
+	cl_uint num_events,
+	const cl_event* event_list
+)
+{
+	ETMSG(OPENCL, "clWaitForEvents called");
+	// on the assumption that clWaitForEvents is synchonous, we have sandwiched it with calls to sync_prologue and sync_epilogue
+	sync_prologue();	
+	cl_int status = HPCRUN_OPENCL_CALL(clWaitForEvents, (num_events, event_list));
+	sync_epilogue();
+	return status;
+}
+
+
+cl_int
 hpcrun_clReleaseMemObject
 (
  cl_mem mem
@@ -1444,6 +1496,21 @@ get_numeric_hash_id_for_string
 }
 
 
+cl_int
+hpcrun_clFinish
+(
+	cl_command_queue command_queue
+)
+{
+	ETMSG(OPENCL, "clFinish called");
+	// on the assumption that clFinish is synchonous, we have sandwiched it with calls to sync_prologue and sync_epilogue
+	sync_prologue();	
+	cl_int status = HPCRUN_OPENCL_CALL(clFinish, (command_queue));
+	sync_epilogue();
+	return status;
+}
+
+
 void
 opencl_instrumentation_enable
 (
@@ -1472,7 +1539,7 @@ opencl_blame_shifting_enable
 )
 {
   ENABLE_BLAME_SHIFTING = true;
-	ETMSG(OPENCL, "blame shifting enabled\n=================");
+	ETMSG(OPENCL, "Opencl Blame-Shifting enabled");
 }
 
 

@@ -450,7 +450,7 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child, size_t n_sou
   // ----------------------------------------
   td->gpu_trace_prev_time = 0;
 
-#ifdef ENABLE_CUDA
+#if defined(ENABLE_CUDA) || defined (ENABLE_OPENCL)
   gpu_data_init(&(td->gpu_data));
 #endif
 }

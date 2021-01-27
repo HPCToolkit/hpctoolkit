@@ -73,7 +73,7 @@ typedef struct typed_splay_node(stream_node) {
   struct typed_splay_node(stream_node) *right;
   uint64_t stream_id; // key
 
-  stream_node_t node;
+  stream_node_t *node;
 } typed_splay_node(stream_node);
 
 typed_splay_impl(stream_node);
@@ -106,7 +106,7 @@ static stream_map_entry_t *
 stream_node_new
 (
  uint64_t stream_id,
- stream_node_t node
+ stream_node_t *node
 )
 {
   stream_map_entry_t *e = stream_node_alloc();
@@ -138,7 +138,7 @@ void
 stream_map_insert
 (
  uint64_t stream_id,
- stream_node_t node
+ stream_node_t *node
 )
 {
   if (stream_lookup(&stream_map_root, stream_id)) {
@@ -163,7 +163,7 @@ stream_map_delete
 }
 
 
-stream_node_t
+stream_node_t*
 stream_map_entry_stream_node_get
 (
  stream_map_entry_t *entry

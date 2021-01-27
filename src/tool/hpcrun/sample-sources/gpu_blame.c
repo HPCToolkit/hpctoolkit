@@ -77,6 +77,7 @@
 #include "sample_source_obj.h"
 #include "common.h"
 #include <hpcrun/gpu/opencl/opencl-api.h>
+#include <hpcrun/sample-sources/gpu/gpu-blame/gpu-blame-opencl.h>
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
 
@@ -129,7 +130,7 @@ int d_to_d_data_xfer_metric_id;
 int uva_data_xfer_metric_id;
 
 
-uint64_t g_active_threads;
+atomic_uint_fast64_t g_active_threads = { 1 };
 
 // blame shift registration info
 static bs_fn_entry_t bs_entry = {};
@@ -147,14 +148,13 @@ static void METHOD_FN(init)
     TMSG(CPU_GPU_BLAME_CTL, "setting up CPU_GPU_BLAME");
     //active threads represents the total number of threads in the system
     //including the main thread 
-    g_active_threads = 1;
     self->state = INIT;                                    
 }
 
 static void METHOD_FN(thread_init)
 {
     TMSG(CPU_GPU_BLAME_CTL, "thread init");
-    atomic_add_i64(&g_active_threads, 1L);
+    atomic_fetch_add(&g_active_threads, 1L);
 }
 
 static void METHOD_FN(thread_init_action)
@@ -177,7 +177,7 @@ METHOD_FN(start)
 static void METHOD_FN(thread_fini_action)
 {
     TMSG(CPU_GPU_BLAME_CTL, "thread action ");
-    atomic_add_i64(&g_active_threads, -1L);
+    atomic_fetch_add(&g_active_threads, -1L);
 }
 
 static void METHOD_FN(stop)
@@ -219,7 +219,7 @@ static void METHOD_FN(process_event_list, int lush_metrics)
     // gpu_time_metric_id a.k.a. GPU_ACTIVITY_TIME accounts the absolute running time of a kernel (CCT node which launched it)
     gpu_time_metric_id = hpcrun_set_new_metric_info(blame_kind, "GPU_TIME");
     // h_to_d_data_xfer_metric_id is the number of bytes xfered from CPU to GPU
-    h_to_d_data_xfer_metric_id = hpcrun_set_new__metric_info(blame_kind, "H_TO_D_BYTES");
+    h_to_d_data_xfer_metric_id = hpcrun_set_new_metric_info(blame_kind, "H_TO_D_BYTES");
     // d_to_h_data_xfer_metric_id is the number of bytes xfered from GPU to CPU
     d_to_h_data_xfer_metric_id = hpcrun_set_new_metric_info(blame_kind, "D_TO_H_BYTES");
     // h_to_h_data_xfer_metric_id is the number of bytes xfered from CPU to CPU
@@ -234,8 +234,9 @@ static void METHOD_FN(process_event_list, int lush_metrics)
     hpcrun_close_kind(blame_kind);
    
 		if (is_opencl_blame_shifting_enabled()) {
-			printf("registering opencl_gpu_blame_shifter with itimer\n===============");
-    	bs_entry.fn = dlsym(RTLD_DEFAULT, "opencl_gpu_blame_shifter");
+			TMSG(OPENCL, "registering opencl_gpu_blame_shifter with itimer");
+    	//bs_entry.fn = dlsym(RTLD_DEFAULT, "opencl_gpu_blame_shifter");
+    	bs_entry.fn = &opencl_gpu_blame_shifter;
 		}	else {	// CUDA blame-shifting
 			// bs_entry.fn = dlsym(RTLD_DEFAULT, "gpu_blame_shifter");
 		}
