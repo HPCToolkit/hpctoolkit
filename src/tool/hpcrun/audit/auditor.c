@@ -145,8 +145,6 @@ static auditor_exports_t exports = {
   .clone = clone, .execve = execve
 };
 
-static struct buffered_entry_t* obj_update_list = NULL;
-
 
 
 //******************************************************************************
@@ -168,6 +166,7 @@ static ElfW(Addr) * get_plt_got_start(ElfW(Dyn) * dyn_init) {
 static void hook_open(uintptr_t* cookie, struct link_map* map, enum audit_open_flags ao_flags) {
   // Allocate some space for our extra bits, and fill it.
   auditor_map_entry_t* entry = malloc(sizeof *entry);
+  entry->map = map;
 
   // Normally the path is map->l_name, but sometimes that string is empty
   // which indicates the main executable. So we get it the other way.
@@ -359,15 +358,19 @@ static void optimize_object_plt(struct link_map* map) {
   }
 }
 
-static void update_objects_gotplt() {
-  // Iterate every object and update pltgot
-  for (struct buffered_entry_t* entry = obj_update_list; entry != NULL;) {
-    optimize_object_plt(entry->map);
-    struct buffered_entry_t* prev = entry;
-    entry = entry->next;
-    free(prev);
-  }
-  obj_update_list = NULL;
+uintptr_t la_symbind32(Elf32_Sym *sym, unsigned int ndx,
+                       uintptr_t *refcook, uintptr_t *defcook,
+                       unsigned int *flags, const char *symname) {
+  if(dl_runtime_resolver_ptr != NULL)
+    optimize_object_plt(state < state_connected ? (struct link_map*)*refcook : ((auditor_map_entry_t*)*refcook)->map);
+  return sym->st_value;
+}
+uintptr_t la_symbind64(Elf64_Sym *sym, unsigned int ndx,
+                       uintptr_t *refcook, uintptr_t *defcook,
+                       unsigned int *flags, const char *symname) {
+  if(dl_runtime_resolver_ptr != NULL)
+    optimize_object_plt(state < state_connected ? (struct link_map*)*refcook : ((auditor_map_entry_t*)*refcook)->map);
+  return sym->st_value;
 }
 
 
@@ -470,13 +473,6 @@ unsigned int la_version(unsigned int version) {
 
 
 unsigned int la_objopen(struct link_map* map, Lmid_t lmid, uintptr_t* cookie) {
-  if (dl_runtime_resolver_ptr) {
-    // We record the open objects and then later overwrite ldso pointers
-    struct buffered_entry_t* new_entry = (struct  buffered_entry_t*)malloc(sizeof(struct buffered_entry_t));
-    new_entry->map = map;
-    new_entry->next = obj_update_list;
-    obj_update_list = new_entry;
-  }
   switch(state) {
   case state_awaiting: {
     // If this is libhpcrun.so, nab the initialization bits and transition.
@@ -507,17 +503,17 @@ unsigned int la_objopen(struct link_map* map, Lmid_t lmid, uintptr_t* cookie) {
       .map = map, .lmid = lmid, .cookie = cookie, .next = buffer,
     };
     buffer = entry;
-    return 0;
+    return LA_FLG_BINDFROM | LA_FLG_BINDTO;
   }
   case state_connected:
     // If we're already connected, just call the hook.
     hook_open(cookie, map, AO_NONE);
-    return 0;
+    return LA_FLG_BINDFROM | LA_FLG_BINDTO;
   case state_disconnected:
     // We just ignore things that happen after disconnection.
     if(verbose)
       fprintf(stderr, "[audit] objopen after disconnection: `%s'\n", map->l_name);
-    return 0;
+    return LA_FLG_BINDFROM | LA_FLG_BINDTO;
   }
   abort();  // unreachable
 }
@@ -527,10 +523,6 @@ void la_activity(uintptr_t* cookie, unsigned int flag) {
   static unsigned int previous = LA_ACT_CONSISTENT;
 
   if(flag == LA_ACT_CONSISTENT) {
-    if (dl_runtime_resolver_ptr && obj_update_list != NULL) {
-      update_objects_gotplt();
-    }
-
     // If we've hit consistency and know where libhpcrun is, initialize it.
     switch(state) {
     case state_awaiting:
