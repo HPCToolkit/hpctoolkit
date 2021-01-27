@@ -135,6 +135,8 @@ private:
 
   hpctoolkit::util::locked_unordered_map<const hpctoolkit::Thread*,
     hpctoolkit::stdshim::filesystem::path> outputs;
+  hpctoolkit::util::locked_unordered_map<const hpctoolkit::Thread*,
+    pms_profile_info_t> outputs1;
   std::atomic<std::size_t> outputCnt;
   hpctoolkit::stdshim::filesystem::path summaryOut;
   std::vector<std::pair<const uint32_t,
@@ -256,6 +258,7 @@ private:
   //---------------------------------------------------------------------------
   // write profiles 
   //---------------------------------------------------------------------------
+  void writeProfInfos(const hpctoolkit::util::File& fh);
 
   std::vector<char> profInfoBytes(const std::vector<char>& partial_info_bytes, 
                                   const uint64_t id_tuple_ptr, const uint64_t metadata_ptr,
