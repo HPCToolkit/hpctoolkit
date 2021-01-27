@@ -433,15 +433,6 @@ OPENCL_FN
 );
 
 
-OPENCL_FN
-(
-  clReleaseCommandQueue,
-  (
-   cl_command_queue command_queue
-  )
-);
-
-
 
 //******************************************************************************
 // private operations
@@ -1068,6 +1059,10 @@ hpcrun_clCreateCommandQueue
 		opencl_queue_prologue(queue);
 	}
 
+	if(is_opencl_blame_shifting_enabled()) {
+		queue_prologue(queue);
+	}
+
   return queue;
 }
 
@@ -1183,6 +1178,11 @@ hpcrun_clEnqueueNDRangeKernel
 
   cl_event *eventp = NULL;
   SET_EVENT_POINTER(eventp, event, kernel_info)
+
+	if(is_opencl_blame_shifting_enabled()) {
+		// add a node for corresponding kernel-queue entry in StreamQs
+		kernel_prologue(eventp, command_queue);
+	}
 
   cl_int return_status =
             HPCRUN_OPENCL_CALL(clEnqueueNDRangeKernel, (command_queue, ocl_kernel, work_dim,
@@ -1516,6 +1516,10 @@ hpcrun_clReleaseCommandQueue
   if (optimization_check && status == CL_SUCCESS) {
     clearQueueContext(command_queue);
   }
+  if (is_opencl_blame_shifting_enabled() && status == CL_SUCCESS) {
+    opencl_queue_epilogue(command_queue);
+  }
+
   return status;
 }
 
@@ -1554,22 +1558,6 @@ hpcrun_clFinish
   cl_int status = HPCRUN_OPENCL_CALL(clFinish, (command_queue));
   if(is_opencl_blame_shifting_enabled()) {
     opencl_sync_epilogue(command_queue);
-  }
-  return status;
-}
-
-
-cl_int
-hpcrun_clReleaseCommandQueue
-(
-	cl_command_queue command_queue
-)
-{
-  ETMSG(OPENCL, "clReleaseCommandQueue called");
-  cl_int status = HPCRUN_OPENCL_CALL(clReleaseCommandQueue, (command_queue));
-
-  if (is_opencl_blame_shifting_enabled() && status == CL_SUCCESS) {
-    opencl_queue_epilogue(command_queue);
   }
   return status;
 }
@@ -1638,7 +1626,7 @@ opencl_blame_shifting_enable
 )
 {
   ENABLE_BLAME_SHIFTING = true;
-	ETMSG(OPENCL, "blame shifting enabled\n=================");
+	ETMSG(OPENCL, "Opencl Blame-Shifting enabled");
 }
 
 
