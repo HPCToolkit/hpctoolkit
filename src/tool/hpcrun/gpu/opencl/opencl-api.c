@@ -1023,15 +1023,15 @@ hpcrun_clEnqueueNDRangeKernel
   cl_event *eventp = NULL;
   SET_EVENT_POINTER(eventp, event, kernel_info)
 
-	if(is_opencl_blame_shifting_enabled()) {
-		// add a node for corresponding kernel-queue entry in StreamQs
-		kernel_prologue(eventp, command_queue);
-	}
-
   cl_int return_status =
             HPCRUN_OPENCL_CALL(clEnqueueNDRangeKernel, (command_queue, ocl_kernel, work_dim,
                                 global_work_offset, global_work_size, local_work_size,
                                 num_events_in_wait_list, event_wait_list, eventp));
+
+	if(is_opencl_blame_shifting_enabled()) {
+		// add a node for corresponding kernel-queue entry in StreamQs
+		kernel_prologue(*eventp, command_queue);
+	}
 
   ETMSG(OPENCL, "Registering callback for kind: Kernel. "
                 "Correlation id: %"PRIu64 "", kernel_info->details.ker_cb.correlation_id);

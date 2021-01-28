@@ -44,39 +44,39 @@
 // type declarations
 //******************************************************************************
 
-#define stream_insert \
-  typed_splay_insert(stream_node)
+#define queue_insert \
+  typed_splay_insert(queue_node)
 
-#define stream_lookup \
-  typed_splay_lookup(stream_node)
+#define queue_lookup \
+  typed_splay_lookup(queue_node)
 
-#define stream_delete \
-  typed_splay_delete(stream_node)
+#define queue_delete \
+  typed_splay_delete(queue_node)
 
-#define stream_forall \
-  typed_splay_forall(stream_node)
+#define queue_forall \
+  typed_splay_forall(queue_node)
 
-#define stream_count \
-  typed_splay_count(stream_node)
+#define queue_count \
+  typed_splay_count(queue_node)
 
-#define stream_alloc(free_list) \
-  typed_splay_alloc(free_list, stream_map_entry_t)
+#define queue_alloc(free_list) \
+  typed_splay_alloc(free_list, queue_map_entry_t)
 
-#define stream_free(free_list, node) \
+#define queue_free(free_list, node) \
   typed_splay_free(free_list, node)
 
 #undef typed_splay_node
-#define typed_splay_node(stream_node) stream_map_entry_t
+#define typed_splay_node(queue_node) queue_map_entry_t
 
-typedef struct typed_splay_node(stream_node) {
-  struct typed_splay_node(stream_node) *left;
-  struct typed_splay_node(stream_node) *right;
-  uint64_t stream_id; // key
+typedef struct typed_splay_node(queue_node) {
+  struct typed_splay_node(queue_node) *left;
+  struct typed_splay_node(queue_node) *right;
+  uint64_t queue_id; // key
 
-  stream_node_t *node;
-} typed_splay_node(stream_node);
+  queue_node_t *node;
+} typed_splay_node(queue_node);
 
-typed_splay_impl(stream_node);
+typed_splay_impl(queue_node);
 
 
 
@@ -84,10 +84,10 @@ typed_splay_impl(stream_node);
 // local data
 //******************************************************************************
 
-static stream_map_entry_t *stream_map_root = NULL;
-static stream_map_entry_t *stream_map_free_list = NULL;
+static queue_map_entry_t *queue_map_root = NULL;
+static queue_map_entry_t *queue_map_free_list = NULL;
 
-static spinlock_t stream_map_lock = SPINLOCK_UNLOCKED;
+static spinlock_t queue_map_lock = SPINLOCK_UNLOCKED;
 
 
 
@@ -95,22 +95,22 @@ static spinlock_t stream_map_lock = SPINLOCK_UNLOCKED;
 // private operations
 //******************************************************************************
 
-static stream_map_entry_t *
-stream_node_alloc()
+static queue_map_entry_t *
+queue_node_alloc()
 {
-  return stream_alloc(&stream_map_free_list);
+  return queue_alloc(&queue_map_free_list);
 }
 
 
-static stream_map_entry_t *
-stream_node_new
+static queue_map_entry_t *
+queue_node_new
 (
- uint64_t stream_id,
- stream_node_t *node
+ uint64_t queue_id,
+ queue_node_t *node
 )
 {
-  stream_map_entry_t *e = stream_node_alloc();
-  e->stream_id = stream_id;
+  queue_map_entry_t *e = queue_node_alloc();
+  e->queue_id = queue_id;
   e->node = node;
   return e;
 }
@@ -121,52 +121,52 @@ stream_node_new
 // interface operations
 //******************************************************************************
 
-stream_map_entry_t*
-stream_map_lookup
+queue_map_entry_t*
+queue_map_lookup
 (
- uint64_t stream_id
+ uint64_t queue_id
 )
 {
-  spinlock_lock(&stream_map_lock);
-  stream_map_entry_t *result = stream_lookup(&stream_map_root, stream_id);
-  spinlock_unlock(&stream_map_lock);
+  spinlock_lock(&queue_map_lock);
+  queue_map_entry_t *result = queue_lookup(&queue_map_root, queue_id);
+  spinlock_unlock(&queue_map_lock);
   return result;
 }
 
 
 void
-stream_map_insert
+queue_map_insert
 (
- uint64_t stream_id,
- stream_node_t *node
+ uint64_t queue_id,
+ queue_node_t *node
 )
 {
-  if (stream_lookup(&stream_map_root, stream_id)) {
+  if (queue_lookup(&queue_map_root, queue_id)) {
     assert(0);  // entry for a given key should be inserted only once
   } else {
-    spinlock_lock(&stream_map_lock);
-    stream_map_entry_t *entry = stream_node_new(stream_id, node);
-    stream_insert(&stream_map_root, entry);  
-    spinlock_unlock(&stream_map_lock);
+    spinlock_lock(&queue_map_lock);
+    queue_map_entry_t *entry = queue_node_new(queue_id, node);
+    queue_insert(&queue_map_root, entry);  
+    spinlock_unlock(&queue_map_lock);
   }
 }
 
 
 void
-stream_map_delete
+queue_map_delete
 (
- uint64_t stream_id
+ uint64_t queue_id
 )
 {
-  stream_map_entry_t *node = stream_delete(&stream_map_root, stream_id);
-  stream_free(&stream_map_free_list, node);
+  queue_map_entry_t *node = queue_delete(&queue_map_root, queue_id);
+  queue_free(&queue_map_free_list, node);
 }
 
 
-stream_node_t*
-stream_map_entry_stream_node_get
+queue_node_t*
+queue_map_entry_queue_node_get
 (
- stream_map_entry_t *entry
+ queue_map_entry_t *entry
 )
 {
   return entry->node;
