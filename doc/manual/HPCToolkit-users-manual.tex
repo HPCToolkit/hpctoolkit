@@ -1366,7 +1366,27 @@ or the \hpcrun{} command itself.
 \section{Why do I see partial unwinds?}
 \label{sec:partial}
 
-Under certain circumstances, HPCToolkit can't fully unwind the call stack to determine the full calling context where a sample event occurred. Most often, this occurs when \hpcrun{} tries to unwind through functions in a shared library or executable that has not been compiled with \verb|-g| as one of its options. The \verb|-g| compiler flag can be used in addition to optimization flags. On Power and \verb|x86_64| processors, \hpcrun{} can often compensate the lack of the availability of unwind recipes in a binary by using binary analysis to compute recipes itself. However, since \hpcrun{} lacks binary analysis capabilities for ARM processors, there is a higher likelihood that the lack of a \verb|-g| compiler option for an executable or a shared library will lead to partial unwinds.
+Under certain circumstances, HPCToolkit can't fully unwind the call
+stack to determine the full calling context where a sample event
+occurred. Most often, this occurs when \hpcrun{} tries to unwind
+through functions in a shared library or executable that has not
+been compiled with \verb|-g| as one of its options. The \verb|-g|
+compiler flag can be used in addition to optimization flags. On
+Power and \verb|x86_64| processors, \hpcrun{} can often compensate
+for the lack of unwind recipes by using
+binary analysis to compute recipes itself. However, since \hpcrun{}
+lacks binary analysis capabilities for ARM processors, there is a
+higher likelihood that the lack of a \verb|-g| compiler option for
+an executable or a shared library will lead to partial unwinds.
+
+One annoying place where partial unwinds are somewhat common on \verb|x86_64| 
+processors is in Intel's MKL family of libraries.  A careful examination of Intel’s
+MKL libraries showed that most but not all routines have
+compiler-generated Frame Descriptor Entries (FDEs) that help tools 
+unwind the call stack.  For any routine that lacks
+an FDE, HPCToolkit tries to compensate using binary analysis.  
+Unfortunately, highly-optimized code in MKL library
+routines has code features that are difficult to analyze correctly.
 
 There are two ways to deal with this problem:
 \begin{itemize}
