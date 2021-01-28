@@ -123,11 +123,11 @@
 \title{\HPCToolkit{} User's Manual\\[.5in]Version 2021.01.31}
 %\subtitle{}
 
-\author{
-John Mellor-Crummey\\
+\author{John Mellor-Crummey,\\
 Laksono Adhianto,
 Mike Fagan,
-Mark Krentel,
+Mark Krentel,\\
+Xiaozhu Meng,
 Nathan Tallent, Keren Zhou\\
 \\
 Rice University\\
@@ -1395,13 +1395,28 @@ There are two ways to deal with this problem:
 Recompile the binary or shared library causing the problem and add \verb|-g| to the list of its compiler options.
 \end{itemize}
 
-\section{How do I handle error \texttt{CUPTI\_ERROR\_NOT\_INITIALIZED}?}
+\section{How do I handle the error \texttt{CUPTI\_ERROR\_NOT\_INITIALIZED}?}
 \label{sec:troubleshooting:cupti}
 
-\hpcrun{} uses CUPTI to monitor GPU computation on NVIDIA GPUs. In our experience, this error 
-is typically caused by incompatible versions between CUPTI and the CUDA driver.
-Based on CUPTI documentation from NVIDIA, newer versions of CUPTI may be incompatible with older versions of CUDA driver.
-Therefore, we recommend trying an older version of CUPTI or upgrading the CUDA driver when encountering error \texttt{CUPTI\_ERROR\_NOT\_INITIALIZED}.
+\hpcrun{} uses NVIDIA's CUDA Performance Tools Interface known as
+CUPTI to monitor computations on NVIDIA GPUs. In our experience,
+this error occurs when the version of CUPTI used by HPCToolkit is
+incompatible with the CUDA kernel driver installed on your system.
+Documentation from NVIDIA indicates that new versions of CUPTI may
+be incompatible with older versions of the CUDA kernel driver. For
+instance, even though you may be able to run CUDA 11 programs on a
+kernel driver designed to support CUDA 10, you are unlikely to
+succeed measuring CUDA performance with a version of HPCToolkit
+configured for CUDA 11 atop the CUDA 10 kernel driver.  To avoid
+the error \texttt{CUPTI\_ERROR\_NOT\_INITIALIZED}, we recommend
+configuring HPCToolkit for the version of CUDA supported by the
+CUDA kernel driver installed on your system.  You can check the
+version of the CUDA kernel driver installed on your system using
+the {\tt nvidia-smi} command.  If you want HPCToolkit to use the
+latest version of NVIDIA's CUPTI, then we recommend upgrading the
+CUDA kernel driver on your system to match the latest CUDA release
+you want to use and then configuring HPCToolkit atop this CUDA
+release.
 
 % ===========================================================================
 % ===========================================================================
@@ -1412,11 +1427,11 @@ When using sample sources for hardware counter and software counter events provi
 we recommend that you use frequency-based sampling. The default frequency is 300 samples/second.
 
 Statisticians use samples sizes of approximately 3500 to make accurate projections about the voting preferences of millions of people.
-In an analogous way, rather than collect unnecessary large amounts of performance information, sampling-based performance measurement collects ``just enough'' representative performance data.
+In an analogous way, rather than measuring and attributing every action of a program or every runtime event (e.g., a cache miss), sampling-based performance measurement collects ``just enough'' representative performance data.
 You can control \hpcrun{}'s sampling periods to collect ``just enough'' representative data even for very long executions and, to a lesser degree, for very short executions.
 
 For reasonable accuracy ($\pm 5\%$), there should be at least 20 samples in each context that is important with respect to performance.
-Since unimportant contexts are irrelevant to performance, as long as this condition is met (and as long as samples are not correlated, etc.), \HPCToolkit{}'s performance data should be accurate.
+Since unimportant contexts are irrelevant to performance, as long as this condition is met (and as long as samples are not correlated, etc.), \HPCToolkit{}'s performance data should be accurate enough to guide program tuning.
 
 We typically recommend targeting a frequency of hundreds of samples per second.
 For very short runs, you may need to collect thousands of samples per second to record an adequate number of samples.
