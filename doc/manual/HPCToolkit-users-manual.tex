@@ -1395,6 +1395,14 @@ There are two ways to deal with this problem:
 Recompile the binary or shared library causing the problem and add \verb|-g| to the list of its compiler options.
 \end{itemize}
 
+\section{How do I handle error \texttt{CUPTI\_ERROR\_NOT\_INITIALIZED}?}
+\label{sec:troubleshooting:cupti}
+
+\hpcrun{} uses CUPTI to monitor GPU computation on NVIDIA GPUs. In our experience, this error 
+is typically caused by incompatible versions between CUPTI and the CUDA driver.
+Based on CUPTI documentation from NVIDIA, newer versions of CUPTI may be incompatible with older versions of CUDA driver.
+Therefore, we recommend trying an older version of CUPTI or upgrading the CUDA driver when encountering error \texttt{CUPTI\_ERROR\_NOT\_INITIALIZED}.
+
 % ===========================================================================
 % ===========================================================================
 \section{How do I choose \hpcrun{} sampling periods?}
