@@ -35,7 +35,7 @@ void
 kernel_prologue
 (
 	cl_event event,
-	cl_command_queue stream
+	cl_command_queue queue
 );
 
 
