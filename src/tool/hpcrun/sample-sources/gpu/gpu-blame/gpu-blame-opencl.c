@@ -28,10 +28,11 @@
 // local includes
 //******************************************************************************
 
-#include "gpu-blame-opencl-datastructure.h"		// event_list_node_t, stream_node_t
+#include "gpu-blame-opencl-datastructure.h"		// event_list_node_t, queue_node_t
 
 #include <hpcrun/cct/cct.h>										// cct_node_t
 #include <hpcrun/constructors.h>							// HPCRUN_CONSTRUCTOR
+#include <hpcrun/memory/mmap.h>								// hpcrun_mmap_anon
 #include <hpcrun/sample_event.h>							// hpcrun_sample_callpath
 #include <hpcrun/sample-sources/gpu_blame.h>	// g_active_threads
 #include <hpcrun/thread_data.h>								// gpu_data
@@ -65,6 +66,9 @@ typedef struct IPC_data_t {
 #define INCR_SHARED_BLAMING_DS(field)  do{ if(SHARED_BLAMING_INITIALISED) atomic_fetch_add(&(ipc_data->field), 1L); }while(0) 
 #define DECR_SHARED_BLAMING_DS(field)  do{ if(SHARED_BLAMING_INITIALISED) atomic_fetch_add(&(ipc_data->field), -1L); }while(0) 
 
+#define ADD_TO_FREE_EVENTS_LIST(node_ptr) do { (node_ptr)->next_free_node = g_free_event_nodes_head; \
+g_free_event_nodes_head = (node_ptr); }while(0)
+
 
 
 //******************************************************************************
@@ -86,42 +90,46 @@ static uint64_t g_num_threads_at_sync;
 
 static event_list_node_t *g_free_event_nodes_head;
 
-static stream_node_t g_stream_array[MAX_STREAMS];
+// First queue with pending activities
+static queue_node_t *g_unfinished_queue_list_head;
 
-// First stream with pending activities
-static stream_node_t *g_unfinished_stream_list_head;
-
-// Last stream with pending activities
+// I think this can be deleted
+// Last queue with pending activities
 static event_list_node_t *g_finished_event_nodes_tail;
 
+// I think this can be deleted
 // dummy activity node
 static event_list_node_t dummy_event_node = {
 	.event_start_time = 0,
 	.event_end_time = 0,
 	.launcher_cct = 0,
-	.stream_launcher_cct = 0 
+	.queue_launcher_cct = 0 
 };
 
 // is inter-process blaming enabled?
 static bool g_do_shared_blaming;
 
-static IPC_data_t * ipc_data;
+static IPC_data_t *ipc_data;
 
 
 
 /******************** Utilities ********************/
 /******************** CONSTRUCTORS ********************/
 
-	static void
-InitCpuGpuBlameShiftOpenclDataStructs(void)
+static void
+InitCpuGpuBlameShiftOpenclDataStructs
+(
+	void
+)
 {
 	char * shared_blaming_env;
-	g_unfinished_stream_list_head = NULL;
+	g_unfinished_queue_list_head = NULL;
 	g_finished_event_nodes_tail = &dummy_event_node;
 	dummy_event_node.next = g_finished_event_nodes_tail;
 	shared_blaming_env = getenv("HPCRUN_ENABLE_SHARED_GPU_BLAMING");
-	if(shared_blaming_env)
+	if(shared_blaming_env) {
 		g_do_shared_blaming = atoi(shared_blaming_env);
+	}
 }
 
 
@@ -143,22 +151,61 @@ HPCRUN_CONSTRUCTOR(CpuGpuBlameShiftInit)(void)
 // private operations
 //******************************************************************************
 
-void
+// Initialize hpcrun core_profile_trace_data for a new queue
+static inline core_profile_trace_data_t*
+hpcrun_queue_data_alloc_init
+(
+	int id
+)
+{
+	core_profile_trace_data_t *st = hpcrun_mmap_anon(sizeof(core_profile_trace_data_t));
+	// FIXME: revisit to perform this memstore operation appropriately.
+	//memstore = td->memstore;
+	//memset(st, 0xfe, sizeof(core_profile_trace_data_t));
+	memset(st, 0, sizeof(core_profile_trace_data_t));
+	//td->memstore = memstore;
+	//hpcrun_make_memstore(&td->memstore, is_child);
+	st->id = id;
+	st->epoch = hpcrun_malloc(sizeof(epoch_t));
+	st->epoch->csdata_ctxt = copy_thr_ctxt(TD_GET(core_profile_trace_data.epoch)->csdata.ctxt); //copy_thr_ctxt(thr_ctxt);
+	hpcrun_cct_bundle_init(&(st->epoch->csdata), (st->epoch->csdata).ctxt);
+	st->epoch->loadmap = hpcrun_getLoadmap();
+	st->epoch->next  = NULL;
+	hpcrun_cct2metrics_init(&(st->cct2metrics_map)); //this just does st->map = NULL;
+
+
+	st->trace_min_time_us = 0;
+	st->trace_max_time_us = 0;
+	st->hpcrun_file  = NULL;
+
+	return st;
+}
+
+
+static void
 add_queue_node_to_splay_tree
 (
 	cl_command_queue queue
 )
 {
-	stream_node_t *node = (stream_node_t*)hpcrun_malloc(sizeof(stream_node_t));
-	node->st = NULL;
-	node->latest_event_node = NULL;
-	node->unfinished_event_node = NULL;
-	node->next_unfinished_stream = NULL;
-	stream_map_insert((uint64_t)&queue, node);
+	uint64_t queue_id = (uint64_t)queue;
+	queue_node_t *node = (queue_node_t*)hpcrun_malloc(sizeof(queue_node_t));
+	node->st = hpcrun_queue_data_alloc_init(queue_id);	
+	node->event_list_head = NULL;
+	node->event_list_tail = NULL;
+	node->next_unfinished_queue = NULL;
+	queue_map_insert(queue_id, node);
 }
 
 
-static cct_node_t *stream_duplicate_cpu_node(core_profile_trace_data_t *st, ucontext_t *context, cct_node_t *node) {
+static cct_node_t*
+queue_duplicate_cpu_node
+(
+	core_profile_trace_data_t *st,
+	ucontext_t *context,
+	cct_node_t *node
+)
+{
 	cct_bundle_t* cct= &(st->epoch->csdata);
 	cct_node_t * tmp_root = cct->tree_root;
 	hpcrun_cct_insert_path(&tmp_root, node);
@@ -166,14 +213,16 @@ static cct_node_t *stream_duplicate_cpu_node(core_profile_trace_data_t *st, ucon
 }
 
 
-// Insert a new activity in a stream
-// Caller is responsible for calling monitor_disable_new_threads()
-static event_list_node_t*
+// Insert a new event node corresponding to a kernel in a queue
+// Caller is responsible for calling monitor_disable_new_threads() : why?
+static void
 create_and_insert_event
 (
-	int stream_id,
+	uint64_t queue_id,
+	queue_node_t *queue_node,
+	cl_event event,
 	cct_node_t *launcher_cct,
-	cct_node_t *stream_launcher_cct
+	cct_node_t *queue_launcher_cct
 )
 {
 	event_list_node_t *event_node;
@@ -186,54 +235,48 @@ create_and_insert_event
 		// allocate new node
 		event_node = (event_list_node_t *) hpcrun_malloc(sizeof(event_list_node_t));
 	}
-	event_node->stream_launcher_cct = stream_launcher_cct;
+	event_node->event = event;
+	event_node->queue_launcher_cct = queue_launcher_cct;
 	event_node->launcher_cct = launcher_cct;
+	event_node->queue_id = queue_id;
 	event_node->next = NULL;
-	event_node->stream_id = stream_id;
 
-	stream_map_entry_t *entry = stream_map_lookup(stream_id);
-	stream_node_t *stream_node = stream_map_entry_stream_node_get(entry);
-	// NULL checks need to be added for entry and stream_node
-
-	if (stream_node->latest_event_node == NULL) {
-		stream_node->latest_event_node = event_node;
-		stream_node->unfinished_event_node = event_node;
-		stream_node->next_unfinished_stream = g_unfinished_stream_list_head;
-		g_unfinished_stream_list_head = &(stream_node);
+	if (queue_node->event_list_head == NULL) {
+		queue_node->event_list_head = event_node;
+		queue_node->event_list_tail = event_node;
+		queue_node->next_unfinished_queue = g_unfinished_queue_list_head;
+		g_unfinished_queue_list_head = queue_node;
 	} else {
-		stream_node->latest_event_node->next = event_node;
-		stream_node->latest_event_node = event_node;
+		queue_node->event_list_tail->next = event_node;
+		queue_node->event_list_tail = event_node;
 	}
-
-	return event_node;
 }
 
 
-// inspect activities finished on each stream and record metrics accordingly
+// inspect activities finished on each queue and record metrics accordingly
 static uint32_t
 cleanup_finished_events
 (
 	void
 )
 {
-	uint32_t num_unfinished_streams = 0;
-	stream_node_t *prev_stream = NULL;
-	stream_node_t *next_stream = NULL;
-	stream_node_t *cur_stream = g_unfinished_stream_list_head;
+	uint32_t num_unfinished_queues = 0;
+	queue_node_t *prev_queue = NULL;
+	queue_node_t *next_queue = NULL;
+	queue_node_t *cur_queue = g_unfinished_queue_list_head;
 
-	while (cur_stream != NULL) {
-		assert(cur_stream->unfinished_event_node && " Can't point unfinished stream to null");
-		next_stream = cur_stream->next_unfinished_stream;
+	while (cur_queue != NULL) {
+		assert(cur_queue->event_list_head && " Can't point unfinished queue to null");
+		next_queue = cur_queue->next_unfinished_queue;
 
-		event_list_node_t *current_event_node = cur_stream->unfinished_event_node;
+		event_list_node_t *current_event_node = cur_queue->event_list_head;
+
 		while (current_event_node) {
-
 			// we need access to the node that contains the event
 			cl_int err_cl = clGetEventProfilingInfo(current_event_node->event, CL_PROFILING_COMMAND_END,
 					sizeof(cl_ulong), &(current_event_node->event_end_time), NULL);
 
 			if (err_cl == CL_SUCCESS) {
-
 				// Decrement   ipc_data->outstanding_kernels
 				DECR_SHARED_BLAMING_DS(outstanding_kernels);
 
@@ -272,6 +315,7 @@ cleanup_finished_events
 				// if we are doing deferred BS, we need this line, else remove
 				event_list_node_t *deferred_node = current_event_node;
 				// delete the current_event_node variable from the linkedlist
+				clReleaseEvent(current_event_node->event);
 				current_event_node = current_event_node->next;
 
 				// if we are doing deferred BS, we need this line, else remove
@@ -288,30 +332,29 @@ cleanup_finished_events
 						 */
 
 				} else {
-					clReleaseEvent(current_event_node->event);
+					ADD_TO_FREE_EVENTS_LIST(deferred_node);
 				}
 			} else {
 				break;
 			}
 		}
 
-		cur_stream->unfinished_event_node = current_event_node;
+		cur_queue->event_list_head = current_event_node;
 		if (current_event_node == NULL) {
 			// set oldest and newest pointers to null
-			cur_stream->latest_event_node = NULL;
-			if (prev_stream == NULL) {
-				g_unfinished_stream_list_head = next_stream;
+			cur_queue->event_list_tail = NULL;
+			if (prev_queue == NULL) {
+				g_unfinished_queue_list_head = next_queue;
 			} else {
-				prev_stream->next_unfinished_stream = next_stream;
+				prev_queue->next_unfinished_queue = next_queue;
 			}
 		} else {
-
-			num_unfinished_streams++;
-			prev_stream = cur_stream;
+			num_unfinished_queues++;
+			prev_queue = cur_queue;
 		}
-		cur_stream = next_stream;
+		cur_queue = next_queue;
 	}
-	return num_unfinished_streams;
+	return num_unfinished_queues;
 }
 
 
@@ -334,15 +377,13 @@ void
 kernel_prologue
 (
 	cl_event event,
-	cl_command_queue stream
+	cl_command_queue queue
 )
 {
-	//create_stream0_if_needed(stream);
-	uint32_t streamId = 0;
-	event_list_node_t *event_node;
-	
-	// why splay tree?
-	streamId = (uint32_t) &stream; // splay_get_stream_id(stream);
+	// increment the reference count for the event
+	clRetainEvent(event);
+	//create_queue0_if_needed(queue);
+	uint64_t queue_id = (uint64_t) queue;
 	// HPCRUN_ASYNC_BLOCK_SPIN_LOCK;
 
 	// why should thread be marked blocked on sync? 
@@ -350,11 +391,16 @@ kernel_prologue
 	ucontext_t context;
 	getcontext(&context);
 	int skip_inner = 1; // what value should be passed here?
+	// why is cpu_idle_metric_id being passed here?
 	cct_node_t *cct_node = hpcrun_sample_callpath(&context, cpu_idle_metric_id, (cct_metric_data_t){.i = 0}, skip_inner /*skipInner */ , 1 /*isSync */, NULL ).sample_node;
-	cct_node_t *stream_cct = stream_duplicate_cpu_node(g_stream_array[streamId].st, &context, cct_node);
+	
+	queue_map_entry_t *entry = queue_map_lookup(queue_id);
+	queue_node_t *queue_node = queue_map_entry_queue_node_get(entry);
+	// NULL checks need to be added for entry and queue_node
+	
+	cct_node_t *queue_cct = queue_duplicate_cpu_node(queue_node->st, &context, cct_node);
 	monitor_disable_new_threads();	// why?
-	event_node = create_and_insert_event(streamId, cct_node, stream_cct);
-	// CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[cudaEventRecordEnum].cudaEventRecordReal(event_node->event_start, stream));
+	create_and_insert_event(queue_id, queue_node, event, cct_node, queue_cct);
 	INCR_SHARED_BLAMING_DS(outstanding_kernels);
 }
 
@@ -381,18 +427,19 @@ sync_epilogue
 }
 
 
+
 ////////////////////////////////////////////////
 // CPU-GPU blame shift interface
 ////////////////////////////////////////////////
 
 void
-	opencl_gpu_blame_shifter
+opencl_gpu_blame_shifter
 (
  void* dc,
  int metric_id,
  cct_node_t* node,
  int metric_dc
- )
+)
 {
 	metric_desc_t* metric_desc = hpcrun_id2metric(metric_id);
 
@@ -414,6 +461,11 @@ void
 
 	// CUDA needed to defer BS during sync. ops, if we have no such need for opencl, we can remove this block
 	if (is_threads_at_sync) {
+				
+		// during a sample, host thread is in sync block waiting for a GPU kernel to complete execution. Mark CPU as idle at this sample
+		//cct_metric_data_increment(cpu_idle_cause_metric_id, unfinished_queue->event_list_head->launcher_cct, (cct_metric_data_t) {
+		//		.r = metric_incr / atomic_load(&g_active_threads)}
+		//		);
 		if(SHARED_BLAMING_INITIALISED) {
 			// uncomment this when you understand what these variables mean for opencl context
 			// TD_GET(gpu_data.accum_num_sync_threads) += ipc_data->num_threads_at_sync_all_procs; 
@@ -424,21 +476,22 @@ void
 
 	// is the purpose of this lock to provide atomicity to each blame-shifting call
 	spinlock_lock(&bs_lock);
-	uint32_t num_unfinished_streams = 0;
-	stream_node_t *unfinished_event_list_head = 0;
+	uint32_t num_unfinished_queues = 0;
+	queue_node_t *unfinished_event_list_head = 0;
 
-	num_unfinished_streams = cleanup_finished_events();
-	unfinished_event_list_head = g_unfinished_stream_list_head;
+	num_unfinished_queues = cleanup_finished_events();
+	unfinished_event_list_head = g_unfinished_queue_list_head;
 
-	if (num_unfinished_streams) {
+	if (num_unfinished_queues) {
 
 		//SHARED BLAMING: kernels need to be blamed for idleness on other procs/threads.
 		if(SHARED_BLAMING_INITIALISED && ipc_data->num_threads_at_sync_all_procs && !g_num_threads_at_sync) {
-			for (stream_node_t * unfinished_stream = unfinished_event_list_head; unfinished_stream; unfinished_stream = unfinished_stream->next_unfinished_stream) {
+			for (queue_node_t * unfinished_queue = unfinished_event_list_head; unfinished_queue; unfinished_queue = unfinished_queue->next_unfinished_queue) {
 				//TODO: FIXME: the local threads at sync need to be removed, /T has to be done while adding metric
 				//increment (either one of them).
 				// How is the CPU idle at this time? If loop at L:300 exits if the thread is at sync
-				cct_metric_data_increment(cpu_idle_cause_metric_id, unfinished_stream->unfinished_event_node->launcher_cct, (cct_metric_data_t) {
+				// Careful, unfinished_event_node was replaced by event_list_head. Does that replacement make sense
+				cct_metric_data_increment(cpu_idle_cause_metric_id, unfinished_queue->event_list_head->launcher_cct, (cct_metric_data_t) {
 						.r = metric_incr / atomic_load(&g_active_threads)}
 						);
 			}
