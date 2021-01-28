@@ -1,9 +1,7 @@
 HPCToolkit can measure both the CPU and GPU performance of GPU-accelerated applications. It can measure CPU performance using asynchronous sampling triggered by Linux timers or hardware counter events as described in 
 Section~\ref{sample-sources} and it can monitor GPU performance using tool support libraries provided by GPU vendors.
 
-The foundation of HPCToolkit's support for measuring the performance of GPU-accelerated applications is a vendor-independent monitoring substrate. A thin software layer connects NVIDIA's CUPTI (CUDA Performance Tools Interface)~\cite{cupti} and AMD's ROC-tracer (ROCm Tracer Callback/Activity Library)~\cite{roctracer} monitoring libraries to this substrate. HPCToolkit reports GPU performance metrics in a vendor-neutral way. For instance, rather than focusing on NVIDIA warps or AMD wavefronts, HPCToolkit presents both as fine-grain, thread-level parallelism.
-
-In the following sections, we describe how to use HPCToolkit to measure GPU metrics for GPU-accelerated applications. We begin with a discussion of NVIDIA GPUs since HPCToolkit's support for them is more complete than for others.
+In the following sections, we describe a generic substrate in HPCToolkit to interact with vendor specific runtime systems and libraries and the vendor specific details for measuring performance for NVIDIA, AMD, and Intel GPUs. 
 
 \begin{comment}
 
@@ -16,47 +14,22 @@ Perform binary analysis to recover program structure of your executable or a sha
 hpcstruct hpctoolkit-<your application>-measurements
 \end{comment}
 
-\section{NVIDIA GPUs}
+\section{Generic Performance Measurement Substrate}
 
-\subsection{Performance Measurement of OpenCL Programs}
+The foundation of HPCToolkit's support for measuring the performance of GPU-accelerated applications is a vendor-independent monitoring substrate. A thin software layer connects NVIDIA's CUPTI (CUDA Performance Tools Interface)~\cite{cupti} and AMD's ROC-tracer (ROCm Tracer Callback/Activity Library)~\cite{roctracer} monitoring libraries to this substrate. The substrate also includes function wrappers to intercept OpenCL APIs and Intel's Level 0 APIs to measure GPU performance for programming models that do not have corresponding monitoring libraries. HPCToolkit reports GPU performance metrics in a vendor-neutral way. For instance, rather than focusing on NVIDIA warps or AMD wavefronts, HPCToolkit presents both as fine-grain, thread-level parallelism.
 
-\begin{table}[t]
-\centering
-\begin{tabular}{|l|p{3.5in}|}\hline
-Argument to \hpcrun{} & What is monitored\\\hline\hline
-{\tt -e gpu=opencl} & coarse-grain profiling of NVIDIA GPU operations using NVIDIA's OpenCL runtime\\\hline
-{\tt -e gpu=opencl -t} & coarse-grain profiling and tracing of NVIDIA GPU operations using NVIDIA's OpenCL runtime\\\hline
-\end{tabular}
-\caption{Monitoring performance on NVIDIA GPUs when using the OpenCL programming model and  NVIDIA's OpenCL runtime.}
-\label{nvidia-opencl-monitoring-options} 
-\end{table}
+HPCToolkit supports two levels of performance monitoring for GPU accelerated applications: coarse-grain profiling and tracing of GPU activities at the operation level (e.g., kernel launches, data allocations, memory copies, ...), and fine-grain profiling of GPU computations using PC sampling, which measures GPU computations at a granularity of individual machine instructions.
 
-When using the OpenCL programming model on NVIDIA GPUs, HPCToolkit supports coarse-grain profiling and tracing of GPU activities at the operation level (e.g., kernel launches, data allocations, memory copies, ...).
+Coarse-grain profiling attributes to each calling context the total time of all GPU operations initiated in that context. Table~\ref{table:gtimes} shows the classes of GPU operations for which timings are collected. In addition, HPCToolkit records metrics for operations performed including memory allocation and deallocation (Table~\ref{table:gmem}), memory set (Table~\ref{table:gmset}), explicit memory copies (Table~\ref{table:gxcopy}), and synchronization (Table~\ref{table:gsync}). These operation metrics are available for GPUs from all three vendors. In addition, HPCToolkit reports GPU kernel characteristics, including including register usage, thread count per block, and theoretical occupancy as shown in Table~\ref{table:gker}. We also derive a theoretical GPU occupancy metric as the ratio of the active threads in a streaming multiprocessor to the maximum active threads supported by the hardware in one streaming multiprocessor.
 
-Table~\ref{nvidia-opencl-monitoring-options} shows the possible command-line arguments to \hpcrun{} for monitoring  OpenCL programs on NVIDIA GPUs. There are two levels of monitoring: profiling, or profiling + tracing. When tracing is enabled,  HPCToolkit will collect a trace of activity for each OpenCL command queue. 
+Table~\ref{table:pc-stall} shows fine-grain metrics for GPU instruction execution.
+When possible, we attribute fine-grain GPU metrics to both GPU calling contexts and CPU calling contexts.
+To our best knowledge, there is no hardware support for collecting GPU calling contexts.
+We approximate GPU calling contexts by constructing static GPU call graphs for NVIDIA GPUs (See Section~\label{nvidia-cct}).
+We expect to add similar functionality for GPUs from other vendors in the future.
 
-\subsection{Performance Measurement of CUDA Programs}
-
-\begin{table}[t]
-\centering
-\begin{tabular}{|l|p{3.5in}|}\hline
-Argument to \hpcrun{} & What is monitored\\\hline\hline
-{\tt -e gpu=nvidia} & coarse-grain profiling of GPU operations\\\hline
-{\tt -e gpu=nvidia -t} & coarse-grain profiling and tracing of GPU operations\\\hline
-{\tt -e gpu=nvidia,pc} &  coarse-grain profiling of GPU operations; fine-grain profiling og GPU kernels using PC sampling\\\hline
-\end{tabular}
-\caption{Monitoring performance on NVIDIA GPUs when using NVIDIA's CUDA programming model and runtime.}
-\label{nvidia-cuda-monitoring-options} 
-\end{table}
-
-When using NVIDIA's CUDA programming model, HPCToolkit supports two levels of performance monitoring for NVIDIA GPUs: coarse-grain profiling and tracing of GPU activities at the operation level (e.g., kernel launches, data allocations, memory copies, ...) , and fine-grain profiling of GPU computations using PC sampling, which measures GPU computations at a granularity of individual machine instructions. Section~\ref{nvidia-pc-sampling} describes fine-grain GPU performance measurement using PC sampling and the metrics it measures or computes. 
-
-While performing coarse-grain GPU monitoring of kernels launches, memory copies, and other GPU activities as a CUDA program executes, HPCToolkit will collect a trace of activity for each GPU stream if tracing is enabled. Table~\ref{nvidia-cuda-monitoring-options} shows the possible command-line arguments to \hpcrun{} that will enable different levels of monitoring  for NVIDIA GPUs for GPU-accelerated code implemented using CUDA. When fine-grain monitoring using PC sampling is enabled, coarse-grain profiling is also performed, so tracing is available in this mode as well. However, since PC sampling dilates the CPU overhead of GPU-accelerated codes, tracing is not recommended when PC sampling is enabled.
-
-Coarse-grain profiling attributes to each calling context the total time of all GPU operations initiated in that context. Table~\ref
-{table:gtimes} shows the classes of GPU operations for which timings are collected. In addition, HPCToolkit records metrics for  operations performed including memory allocation and deallocation (Table~\ref{table:gmem}), memory set (Table~\ref{table:gmset}), explicit memory copies (Table~\ref{table:gxcopy}), and synchronization (Table~\ref{table:gsync}). In addition, HPCToolkit reports GPU kernel characteristics, including including register usage,  thread count per block, and theoretical occupancy as shown in Table~\ref{table:gker}. NVIDIA defines theoretical occupancy as the ratio of the active threads in a streaming multiprocessor to the maximum active threads supported by the hardware in one streaming multiprocessor.
-
-
+The performance metrics above are reported in a vendor-neutral way. Not every metric is available for all three GPU vendors.
+Coarse-grain profiling and tracing are supported for AMD, Intel, and NVIDIA GPUs. We have complete fine-grain profiling support for NVIDIA GPUs and preliminary fine-grain profiling support for Intel GPUs. Currently, there is no fine-grain profiling for AMD GPUs. We now describe more details for measuring performance for NVIDIA, AMD, and Intel GPUs.
 
 
 \begin{table}[t]
@@ -69,6 +42,7 @@ Metric & Description\\\hline\hline
   GXCOPY (sec)  &  GPU time: explicit data copy (seconds)  \\\hline 
 % GICOPY (sec)  &  GPU time: implicit data copy (seconds)  \\\hline 
   GSYNC (sec)  &  GPU time: synchronization (seconds)  \\\hline 
+ GPUOP (sec) & Total GPU operation time: sum of all metrics above \\\hline
 \end{tabular}
 \caption{GPU operation timings.}
 \label{table:gtimes}
@@ -167,6 +141,73 @@ GKER:OCC\_THR & GPU kernel: theoretical occupancy    \\\hline
 \caption{GPU kernel characteristic metrics.}
 \label{table:gker}
 \end{table}
+
+\begin{table}[t]
+\centering
+\begin{tabular}{|l|p{3.5in}|}\hline
+Metric & Description\\\hline\hline
+GINST & GPU instructions executed\\\hline
+GINST:STL\_ANY  &  GPU instruction stalls: any  \\\hline 
+ GINST:STL\_NONE  &  GPU instruction stalls: no stall  \\\hline 
+ GINST:STL\_IFET  &  GPU instruction stalls: await availability of next    instruction (fetch or branch delay)  \\\hline 
+ GINST:STL\_IDEP  &  GPU instruction stalls: await satisfaction of instruction    input dependence  \\\hline 
+ GINST:STL\_GMEM  &  GPU instruction stalls: await completion of global memory    access  \\\hline 
+ GINST:STL\_TMEM  &  GPU instruction stalls: texture memory request queue full  \\\hline 
+ GINST:STL\_SYNC  &  GPU instruction stalls: await completion of thread or    memory synchronization  \\\hline 
+ GINST:STL\_CMEM  &  GPU instruction stalls: await completion of constant or    immediate memory access  \\\hline 
+ GINST:STL\_PIPE  &  GPU instruction stalls: await completion of required    compute resources  \\\hline 
+ GINST:STL\_MTHR  &  GPU instruction stalls: global memory request queue full  \\\hline 
+ GINST:STL\_NSEL  &  GPU instruction stalls: not selected for issue but ready  \\\hline 
+ GINST:STL\_OTHR  &  GPU instruction stalls: other  \\\hline 
+ GINST:STL\_SLP  &  GPU instruction stalls: sleep  \\\hline 
+\end{tabular}
+\caption{GPU instruction execution and stall metrics.}
+\label{table:pc-stall}
+\end{table}
+
+\section{NVIDIA GPUs}
+
+\subsection{Performance Measurement of OpenCL Programs}
+
+\begin{table}[t]
+\centering
+\begin{tabular}{|l|p{3.5in}|}\hline
+Argument to \hpcrun{} & What is monitored\\\hline\hline
+{\tt -e gpu=opencl} & coarse-grain profiling of NVIDIA GPU operations using NVIDIA's OpenCL runtime\\\hline
+{\tt -e gpu=opencl -t} & coarse-grain profiling and tracing of NVIDIA GPU operations using NVIDIA's OpenCL runtime\\\hline
+\end{tabular}
+\caption{Monitoring performance on NVIDIA GPUs when using the OpenCL programming model and  NVIDIA's OpenCL runtime.}
+\label{nvidia-opencl-monitoring-options} 
+\end{table}
+
+When using the OpenCL programming model on NVIDIA GPUs, HPCToolkit supports coarse-grain profiling and tracing of GPU activities.
+Supported metrics include GPU operation timings (Table~\ref{table:gtimes}) and a subset of standard metrics for GPU operations such as memory allocation and deallocation (Table~\ref{table:gmem}), memory set (Table~\ref{table:gmset}), explicit memory copies (Table~\ref{table:gxcopy}), and synchronization (Table~\ref{table:gsync})
+
+Table~\ref{nvidia-opencl-monitoring-options} shows the possible command-line arguments to \hpcrun{} for monitoring  OpenCL programs on NVIDIA GPUs. There are two levels of monitoring: profiling, or profiling + tracing. When tracing is enabled,  HPCToolkit will collect a trace of activity for each OpenCL command queue. 
+
+\subsection{Performance Measurement of CUDA Programs}
+
+\begin{table}[t]
+\centering
+\begin{tabular}{|l|p{3.5in}|}\hline
+Argument to \hpcrun{} & What is monitored\\\hline\hline
+{\tt -e gpu=nvidia} & coarse-grain profiling of GPU operations\\\hline
+{\tt -e gpu=nvidia -t} & coarse-grain profiling and tracing of GPU operations\\\hline
+{\tt -e gpu=nvidia,pc} &  coarse-grain profiling of GPU operations; fine-grain profiling og GPU kernels using PC sampling\\\hline
+\end{tabular}
+\caption{Monitoring performance on NVIDIA GPUs when using NVIDIA's CUDA programming model and runtime.}
+\label{nvidia-cuda-monitoring-options} 
+\end{table}
+
+When using NVIDIA's CUDA programming model, HPCToolkit supports two levels of performance monitoring for NVIDIA GPUs: coarse-grain profiling and tracing of GPU activities at the operation level, and fine-grain profiling of GPU computations using PC sampling, which measures GPU computations at a granularity of individual machine instructions. Section~\ref{nvidia-pc-sampling} describes fine-grain GPU performance measurement using PC sampling and the metrics it measures or computes. 
+
+While performing coarse-grain GPU monitoring of kernels launches, memory copies, and other GPU activities as a CUDA program executes, HPCToolkit will collect a trace of activity for each GPU stream if tracing is enabled. Table~\ref{nvidia-cuda-monitoring-options} shows the possible command-line arguments to \hpcrun{} that will enable different levels of monitoring  for NVIDIA GPUs for GPU-accelerated code implemented using CUDA. When fine-grain monitoring using PC sampling is enabled, coarse-grain profiling is also performed, so tracing is available in this mode as well. However, since PC sampling dilates the CPU overhead of GPU-accelerated codes, tracing is not recommended when PC sampling is enabled.
+
+Besides the standard metrics for GPU operation timings (Table~\ref{table:gtimes}), memory allocation and deallocation (Table~\ref{table:gmem}), memory set (Table~\ref{table:gmset}), explicit memory copies (Table~\ref{table:gxcopy}), and synchronization (Table~\ref{table:gsync}), HPCToolkit reports GPU kernel characteristics, including including register usage,  thread count per block, and theoretical occupancy as shown in Table~\ref{table:gker}. NVIDIA defines theoretical occupancy as the ratio of the active threads in a streaming multiprocessor to the maximum active threads supported by the hardware in one streaming multiprocessor.
+
+
+
+
 
 \begin{comment}
 \begin{table}
@@ -271,29 +312,6 @@ six sample periods P cycles apart. $S_{1}-S_{4}$ represent four schedulers on an
 
 \begin{table}[t]
 \centering
-\begin{tabular}{|l|p{3.5in}|}\hline
-Metric & Description\\\hline\hline
-GINST & GPU instructions executed\\\hline
-GINST:STL\_ANY  &  GPU instruction stalls: any  \\\hline 
- GINST:STL\_NONE  &  GPU instruction stalls: no stall  \\\hline 
- GINST:STL\_IFET  &  GPU instruction stalls: await availability of next    instruction (fetch or branch delay)  \\\hline 
- GINST:STL\_IDEP  &  GPU instruction stalls: await satisfaction of instruction    input dependence  \\\hline 
- GINST:STL\_GMEM  &  GPU instruction stalls: await completion of global memory    access  \\\hline 
- GINST:STL\_TMEM  &  GPU instruction stalls: texture memory request queue full  \\\hline 
- GINST:STL\_SYNC  &  GPU instruction stalls: await completion of thread or    memory synchronization  \\\hline 
- GINST:STL\_CMEM  &  GPU instruction stalls: await completion of constant or    immediate memory access  \\\hline 
- GINST:STL\_PIPE  &  GPU instruction stalls: await completion of required    compute resources  \\\hline 
- GINST:STL\_MTHR  &  GPU instruction stalls: global memory request queue full  \\\hline 
- GINST:STL\_NSEL  &  GPU instruction stalls: not selected for issue but ready  \\\hline 
- GINST:STL\_OTHR  &  GPU instruction stalls: other  \\\hline 
- GINST:STL\_SLP  &  GPU instruction stalls: sleep  \\\hline 
-\end{tabular}
-\caption{GPU instruction execution and stall metrics.}
-\label{table:pc-stall}
-\end{table}
-
-\begin{table}[t]
-\centering
 \begin{tabular}{|l|l|}\hline
 Metric & Description\\\hline\hline
  GSAMP:DRP  &  GPU PC samples: dropped  \\\hline 
@@ -322,9 +340,9 @@ One can use {\tt nvcc}'s {\tt -lineinfo } option to instruct {\tt nvcc} to recor
 When HPCToolkit uses NVIDIA's CUPTI to monitor a GPU-accelerated application, 
 CUPTI notifies HPCToolkit every time it loads a CUDA binary, known as a CUBIN, into a GPU.
 At runtime, HPCToolkit computes a cryptographic hash of a CUBIN's contents and records the CUBIN into the execution's measurement directory. 
-For instance, if a GPU-accelerated application loaded CUBIN into a GPU, NVIDIA's CUPTI informed HPCToolkit that the CUBIN was being loaded, and HPCToolkit computed its cryptographic hash as {\tt 972349aed8}, then HPCToolkit would record {\tt 972349aed8.cubin} inside a {\tt cubins} subdirectory of an HPCToolkit measurement directory. 
+For instance, if a GPU-accelerated application loaded CUBIN into a GPU, NVIDIA's CUPTI informed HPCToolkit that the CUBIN was being loaded, and HPCToolkit computed its cryptographic hash as {\tt 972349aed8}, then HPCToolkit would record {\tt 972349aed8.gpubin} inside a {\tt gpubins} subdirectory of an HPCToolkit measurement directory.
 
-To  attribute GPU performance measurements back to source, HPCToolkit's \hpcstruct{} supports analysis of NVIDIA CUBIN binaries. Since many CUBIN binaries may be loaded  by a GPU-accelerated application during execution,  an application's measurements directory may contain a {\tt cubins} subdirectory populated with many CUBINs. In this case, it would be inconvenient to require a developer to apply \hpcstruct{} manually to analyze each CUBIN. To simplify the analysis of an execution's CUBINs, a developer may apply HPCToolkit's \hpcstruct{} directly to a measurement directory to analyze all of the CUBINs it contains. Namely, for a measurements directory {\tt hpctoolkit-laghos-measurements} collected during an execution of the GPU-accelerated laghos mini-app~\cite{laghos}, one can analyze all of the CUBINs collected during execution by using the following command:
+To  attribute GPU performance measurements back to source, HPCToolkit's \hpcstruct{} supports analysis of NVIDIA CUBIN binaries. Since many CUBIN binaries may be loaded  by a GPU-accelerated application during execution,  an application's measurements directory may contain a {\tt gpubins} subdirectory populated with many CUBINs. In this case, it would be inconvenient to require a developer to apply \hpcstruct{} manually to analyze each CUBIN. To simplify the analysis of an execution's CUBINs, a developer may apply HPCToolkit's \hpcstruct{} directly to a measurement directory to analyze all of the CUBINs it contains. Namely, for a measurements directory {\tt hpctoolkit-laghos-measurements} collected during an execution of the GPU-accelerated laghos mini-app~\cite{laghos}, one can analyze all of the CUBINs collected during execution by using the following command:
 
 \begin{quote}
 \begin{verbatim}
@@ -384,7 +402,7 @@ If a GPU function G can be called from multiple call sites and PC samples have b
 If no call instructions for a GPU function G have been sampled, the costs of G are apportioned evenly among each of G's call sites.
 \end{itemize}
 
-IHPCToolkit's {\tt hpcprof} analyzes the static call graph associated with each GPU kernel invocation. If the static call graph for the GPU kernel contains cycles, which arise from recursive or mutually-recursive calls,  \hpcprof{} replaces each cycle with a strongly connected component (SCC). In this case, \hpcprof{} unlink's call graph edges between vertices within the SCC and adds an SCC vertex to enclose the set of vertices in each SCC. The rest of \hpcprof{}'s analysis 
+IHPCToolkit's {\tt hpcprof} analyzes the static call graph associated with each GPU kernel invocation. If the static call graph for the GPU kernel contains cycles, which arise from recursive or mutually-recursive calls,  \hpcprof{} replaces each cycle with a strongly connected component (SCC). In this case, \hpcprof{} unlinks call graph edges between vertices within the SCC and adds an SCC vertex to enclose the set of vertices in each SCC. The rest of \hpcprof{}'s analysis 
 treats an SCC vertex as a normal ``function'' in the call graph.
 
 \begin{figure}[t]
@@ -480,21 +498,22 @@ Argument to \hpcrun{} & What is monitored\\\hline\hline
 \label{intel-opencl-options}
 \end{table}
 
-\begin{table}[t]
-\centering
-\begin{tabular}{|l|p{3.5in}|}\hline
-Argument to \hpcrun{} & What is monitored\\\hline\hline
-{\tt -e gpu=level0} & coarse-grain profiling of Intel GPU operations using Intel's Level 0 runtime\\\hline
-{\tt -e gpu=level0 -t} & coarse-grain profiling and tracing of Intel GPU operations using Intel's Level 0 runtime\\\hline
-{\tt -e gpu=level0,inst} & coarse-grain profiling and tracing of Intel GPU operations;  fine-grain profiling of Intel GPU kernel executions using Intel's GT-Pin\\\hline
-\end{tabular}
-\caption{Monitoring performance on Intel GPUs when using Intel's Level 0 runtime.}
-\label{intel-level0-options}
-\end{table}
+%\begin{table}[t]
+%\centering
+%\begin{tabular}{|l|p{3.5in}|}\hline
+%Argument to \hpcrun{} & What is monitored\\\hline\hline
+%{\tt -e gpu=level0} & coarse-grain profiling of Intel GPU operations using Intel's Level 0 runtime\\\hline
+%{\tt -e gpu=level0 -t} & coarse-grain profiling and tracing of Intel GPU operations using Intel's Level 0 runtime\\\hline
+%{\tt -e gpu=level0,inst} & coarse-grain profiling and tracing of Intel GPU operations;  fine-grain profiling of Intel GPU kernel executions using Intel's GT-Pin\\\hline
+%\end{tabular}
+%\caption{Monitoring performance on Intel GPUs when using Intel's Level 0 runtime.}
+%\label{intel-level0-options}
+%\end{table}
 
-HPCToolkit supports coarse-grain profiling of GPU-accelerated  applications that offload computation onto Intel GPUs using  OpenCL or Intel's Data-parallel C++ programming model supported by the {\tt dpcpp} compiler. At program launch, a user can select whether Intel's Data-parallel C++ programming model is to execute atop Intel's OpenCL runtime or Intel's Level 0 runtime. For each of these runtimes, HPCToolkit supports both coarse-grain monitoring of GPU operations by intercepting their interface operations.  Table~\ref{intel-opencl-options} shows available options for using HPCToolkit with Intel's OpenCL runtime.  Table~\ref{intel-level0-options} shows available options for using HPCToolkit with Intel's Level 0 runtime.
+HPCToolkit supports coarse-grain profiling of GPU-accelerated  applications that offload computation onto Intel GPUs using  OpenCL or Intel's Data-parallel C++ programming model supported by the {\tt dpcpp} compiler. At program launch, a user can select whether Intel's Data-parallel C++ programming model is to execute atop Intel's OpenCL runtime or Intel's Level 0 runtime. For each of these runtimes, HPCToolkit supports both coarse-grain monitoring of GPU operations by intercepting their interface operations.  Table~\ref{intel-opencl-options} shows available options for using HPCToolkit with Intel's OpenCL runtime.
+HPCToolkit supports coarse-grain profiling of Intel GPU operations using Intel's Level 0 runtime with argument ``{\tt -e gpu=level0}'' to \hpcrun{}.
 
- Table~\ref{intel-options} shows arguments to \hpcrun{} to monitor the performance of GPU operations on Intel GPUs. With this coarse-grain profiling support, HPCToolkit can collect GPU operation timings (Table~\ref
+With this coarse-grain profiling support, HPCToolkit can collect GPU operation timings (Table~\ref
 {table:gtimes}) and a subset of standard metrics for GPU operations such as memory allocation and deallocation (Table~\ref{table:gmem}), memory set (Table~\ref{table:gmset}), explicit memory copies (Table~\ref{table:gxcopy}), and synchronization (Table~\ref{table:gsync}). 
 
 
