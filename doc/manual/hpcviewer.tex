@@ -30,7 +30,7 @@ To enable to display a pair of $\langle$profile, metric$\rangle$ dimensions, the
 
 Requirements to launch \hpcviewer:
 \begin{itemize}
- \item On all platforms: Java 8 or newer. 
+ \item On all platforms: Java 11.
  \item On Linux: GTK 3.20 or newer.
 \end{itemize}
 
@@ -944,14 +944,14 @@ This menu includes several menu items for controlling basic viewer operations.
   Open a new \hpcviewer{} window that is independent from the existing one.
 
   \item \textbf{Open database}
-  Load a performance database into the current \hpcviewer{} window replacing the existing opened databases (if any).
-
-  \item \textbf{Add database}
-  Open another database without replacing the existing one. This menu can be used to compare two databases.
+  Open a database without replacing the existing one. This menu can be used to compare two databases.
   Currently \hpcviewer{} restricts maximum of two database open at a time. 
 
+  \item \textbf{Switch database}
+  Load a performance database into the current \hpcviewer{} window replacing the existing opened databases.
+
   \item \textbf{Close database}
-  Unloading one of more open performance database.
+  Unloading an open database.
 
   \item \textbf{Merge databases}
   Merging two database that are currently in the viewer. 
@@ -1026,7 +1026,7 @@ This menu displays information about the viewer. The menu contains two items:
 \begin{itemize}
 
 \item \textbf{About}.
-  Displays brief information about the viewer, including used plug-ins and error log.
+  Displays brief information about the viewer, including used plug-ins and error log files.
 
 \end{itemize}
 
@@ -1039,8 +1039,8 @@ This menu displays information about the viewer. The menu contains two items:
 Some important \hpcviewer{} limitations are listed below:
 \begin{itemize}
 
-\item \textbf{No support for ARM platforms}.
-\hpcviewer{} is not currently available on ARM platforms because the Eclipse Rich Client Platform does not yet export binaries for ARM.
+\item \textbf{Experimental ARM platforms}.
+The ARM version of \hpcviewer{} is currently in beta release because the Eclipse Rich Client Platform does not officially support ARM platform.
 
 \item \textbf{Limited number of metric columns}.
 With a large number of metric columns, \hpcviewer{}'s response time may become sluggish as this requires a large amount of memory.
