@@ -343,7 +343,6 @@ uintptr_t la_symbind32(Elf32_Sym *sym, unsigned int ndx,
 uintptr_t la_symbind64(Elf64_Sym *sym, unsigned int ndx,
                        uintptr_t *refcook, uintptr_t *defcook,
                        unsigned int *flags, const char *symname) {
-  fprintf(stderr, "Symbind: %s\n", symname);
   if(dl_runtime_resolver_ptr != 0)
     optimize_object_plt(state < state_connected ? (struct link_map*)*refcook : ((auditor_map_entry_t*)*refcook)->map);
   return sym->st_value;
