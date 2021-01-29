@@ -32,6 +32,13 @@ queue_prologue
 
 
 void
+command_queue_marked_for_deletion
+(
+	cl_command_queue queue
+);
+
+
+void
 kernel_prologue
 (
 	cl_event event,
