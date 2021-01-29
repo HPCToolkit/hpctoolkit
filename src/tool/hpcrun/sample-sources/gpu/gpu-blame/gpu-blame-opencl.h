@@ -42,7 +42,7 @@ kernel_prologue
 void
 sync_prologue
 (
-	void
+	cl_command_queue queue
 );
 
 

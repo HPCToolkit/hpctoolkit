@@ -69,6 +69,8 @@
 #include <unwind/common/backtrace.h>
 #include <unwind/common/uw_hash.h>
 
+#include <hpcrun/sample-sources/gpu/gpu-blame/gpu-blame-opencl-datastructure.h>
+
 #include <lib/prof-lean/hpcio.h>
 #include <lib/prof-lean/hpcio-buffer.h>
 
