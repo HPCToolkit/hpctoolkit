@@ -128,8 +128,6 @@
 
 #define DYN_FN_NAME(f) f ## _fn
 
-#define DYN_FN_NAME(f) f ## _fn
-
 #define OPENCL_FN_NAME(f) DYN_FN_NAME(f)
 
 #define OPENCL_FN(fn, args)      \
@@ -427,6 +425,15 @@ OPENCL_FN
 OPENCL_FN
 (
   clFinish,
+  (
+   cl_command_queue command_queue
+  )
+);
+
+
+OPENCL_FN
+(
+  clReleaseCommandQueue,
   (
    cl_command_queue command_queue
   )
@@ -1560,6 +1567,22 @@ hpcrun_clFinish
     opencl_sync_epilogue(command_queue);
   }
   return status;
+}
+
+
+cl_int
+hpcrun_clReleaseCommandQueue
+(
+	cl_command_queue command_queue
+)
+{
+	ETMSG(OPENCL, "clReleaseCommandQueue called");
+	cl_int status = HPCRUN_OPENCL_CALL(clReleaseCommandQueue, (command_queue));
+
+	if (status == CL_SUCCESS) {
+		command_queue_marked_for_deletion(command_queue);
+	}
+	return status;
 }
 
 
