@@ -69,6 +69,8 @@
 #include <unwind/common/backtrace.h>
 #include <unwind/common/uw_hash.h>
 
+#include <hpcrun/sample-sources/gpu/gpu-blame/gpu-blame-opencl-datastructure.h>
+
 #include <lib/prof-lean/hpcio.h>
 #include <lib/prof-lean/hpcio-buffer.h>
 
@@ -96,6 +98,7 @@ typedef struct gpu_data_t {
 	/* OPENCL events */
   // True if this thread is at clWaitForEvents() or clFinish().
 	bool is_thread_at_opencl_sync;
+	queue_node_t *queue_responsible_for_cpu_sync;
 
 } gpu_data_t;
 

@@ -309,6 +309,7 @@ static inline void gpu_data_init(gpu_data_t * gpu_data)
 static inline void gpu_data_init(gpu_data_t * gpu_data)
 {
   gpu_data->is_thread_at_opencl_sync = false;
+  gpu_data->queue_responsible_for_cpu_sync = NULL;
 }
 #endif
 
