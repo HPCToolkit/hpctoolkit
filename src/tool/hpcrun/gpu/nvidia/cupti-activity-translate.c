@@ -336,6 +336,7 @@ convert_kernel
   ga->details.kernel.device_id = activity->deviceId;
   ga->details.kernel.context_id = activity->contextId;
   ga->details.kernel.stream_id = activity->streamId;
+  ga->details.kernel.blocks = activity->blockX * activity->blockY * activity->blockZ;
 
   gpu_interval_set(&ga->details.interval, activity->start, activity->end);
 
