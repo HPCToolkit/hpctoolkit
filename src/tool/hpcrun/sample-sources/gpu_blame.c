@@ -102,9 +102,11 @@
 #include <lib/prof-lean/splay-macros.h>
 #include "blame-shift/blame-shift.h"
 
-//#ifdef ENABLE_CUDA
+#if defined(ENABLE_CUDA) || defined(ENABLE_OPENCL)
 #include "gpu_blame.h"
-//#endif // ENABLE_CUDA
+#endif // ENABLE_CUDA || ENABLE_OPENCL
+
+
 
 // ****************** utility macros *********************
 #define Cuda_RTcall(fn) cudaRuntimeFunctionPointer[fn ## Enum].fn ## Real
@@ -131,6 +133,8 @@ int uva_data_xfer_metric_id;
 
 
 atomic_uint_fast64_t g_active_threads = { 1 };
+
+
 
 // blame shift registration info
 static bs_fn_entry_t bs_entry = {};
@@ -233,16 +237,24 @@ static void METHOD_FN(process_event_list, int lush_metrics)
 
     hpcrun_close_kind(blame_kind);
    
-		if (is_opencl_blame_shifting_enabled()) {
+	 	// The blame-shift registration for OPENCL and CUDA are kept in separate if-blocks and not if-else'd because someone may want to enable both 
+		#ifdef ENABLE_OPENCL
 			TMSG(OPENCL, "registering opencl_gpu_blame_shifter with itimer");
+			opencl_blame_shifting_enable();
     	//bs_entry.fn = dlsym(RTLD_DEFAULT, "opencl_gpu_blame_shifter");
     	bs_entry.fn = &opencl_gpu_blame_shifter;
-		}	else {	// CUDA blame-shifting
+			bs_entry.next = 0;
+			blame_shift_register(&bs_entry);
+		#endif
+		
+		#ifdef ENABLE_CUDA
+			// CUDA blame-shifting: (disabled because support is out-of-date)
 			// bs_entry.fn = dlsym(RTLD_DEFAULT, "gpu_blame_shifter");
-		}
-    bs_entry.next = 0;
-    blame_shift_register(&bs_entry);
+			// bs_entry.next = 0;
+			// blame_shift_register(&bs_entry);
+		#endif
 }
+
 
 static void
 METHOD_FN(finalize_event_list)

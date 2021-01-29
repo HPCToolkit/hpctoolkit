@@ -732,6 +732,15 @@ opencl_wait_for_all_pending_operations
 }
 
 
+static bool
+is_opencl_blame_shifting_enabled
+(
+ void
+)
+{
+  return (ENABLE_BLAME_SHIFTING == true);
+}
+
 
 int
 opencl_bind
@@ -1572,16 +1581,6 @@ opencl_blame_shifting_enable
 {
   ENABLE_BLAME_SHIFTING = true;
 	ETMSG(OPENCL, "Opencl Blame-Shifting enabled");
-}
-
-
-bool
-is_opencl_blame_shifting_enabled
-(
- void
-)
-{
-  return (ENABLE_BLAME_SHIFTING == true);
 }
 
 
