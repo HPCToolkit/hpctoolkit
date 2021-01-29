@@ -227,9 +227,6 @@ METHOD_FN(display_events)
     "\t\tthe profiling data collected from %s is also part of this run\n",
     ENABLE_INSTRUMENTATION, GPU_STRING);
   printf("\n");
-  printf("%s\tBlame-Shifting analysis of opencl applications.\n",
-    ENABLE_OPENCL_BLAME_SHIFTING);
-  printf("\n");
 }
 
 
