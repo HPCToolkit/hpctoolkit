@@ -18,8 +18,10 @@
 // system includes
 //******************************************************************************
 
+#include <fcntl.h>														// O_CREAT, O_RDWR
 #include <monitor.h>													// monitor_real_abort
 #include <stdbool.h>													// bool
+#include <sys/mman.h>													// shm_open
 #include <ucontext.h>           							// getcontext
 
 
@@ -52,7 +54,7 @@
 typedef struct IPC_data_t {
 	uint32_t device_id;
 	_Atomic(uint64_t) outstanding_kernels;
-	uint64_t num_threads_at_sync_all_procs;
+	_Atomic(uint64_t) num_threads_at_sync_all_procs;
 } IPC_data_t;
 
 
@@ -60,6 +62,8 @@ typedef struct IPC_data_t {
 //******************************************************************************
 // macros
 //******************************************************************************
+
+#define MAX_SHARED_KEY_LENGTH (100)
 
 #define SHARED_BLAMING_INITIALISED (ipc_data != NULL)
 
@@ -116,6 +120,38 @@ static IPC_data_t *ipc_data;
 /******************** Utilities ********************/
 /******************** CONSTRUCTORS ********************/
 
+static char shared_key[MAX_SHARED_KEY_LENGTH];
+
+
+static void destroy_shared_memory(void * p) {
+    // we should munmap, but I will not do since we dont do it in so many other places in hpcrun
+    // munmap(ipc_data);
+    shm_unlink((char *)shared_key);
+}
+
+
+static inline void create_shared_memory() {
+    int device_id = 1;	// static device_id
+    int fd ;
+    sprintf(shared_key, "/gpublame%d",device_id);
+    if ( (fd = shm_open(shared_key, O_RDWR | O_CREAT, 0666)) < 0 ) {
+        EEMSG("Failed to shm_open (%s) on device %d, retval = %d", shared_key, device_id, fd);
+        monitor_real_abort();
+    }
+    if ( ftruncate(fd, sizeof(IPC_data_t)) < 0 ) {
+        EEMSG("Failed to ftruncate() on device %d",device_id);
+        monitor_real_abort();
+    }
+    
+    if( (ipc_data = mmap(NULL, sizeof(IPC_data_t), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0 )) == MAP_FAILED ) {
+        EEMSG("Failed to mmap() on device %d",device_id);
+        monitor_real_abort();
+    }
+
+    hpcrun_process_aux_cleanup_add(destroy_shared_memory, (void *) shared_key);    
+}
+
+
 static void
 InitCpuGpuBlameShiftOpenclDataStructs
 (
@@ -130,6 +166,9 @@ InitCpuGpuBlameShiftOpenclDataStructs
 	if(shared_blaming_env) {
 		g_do_shared_blaming = atoi(shared_blaming_env);
 	}
+	// uncomment later
+	g_do_shared_blaming = true;
+	create_shared_memory();
 }
 
 
@@ -270,6 +309,7 @@ cleanup_finished_events
 		next_queue = cur_queue->next_unfinished_queue;
 
 		event_list_node_t *current_event_node = cur_queue->event_list_head;
+		bool cur_queue_unfinished = false;
 
 		while (current_event_node) {
 			// we need access to the node that contains the event
@@ -316,6 +356,15 @@ cleanup_finished_events
 				event_list_node_t *deferred_node = current_event_node;
 				// delete the current_event_node variable from the linkedlist
 				clReleaseEvent(current_event_node->event);
+				if (current_event_node == cur_queue->event_list_head) {
+					if (cur_queue->event_list_head == cur_queue->event_list_tail) {
+						cur_queue->event_list_head = NULL;
+						cur_queue->event_list_tail = NULL;
+					} else {
+						cur_queue->event_list_head = current_event_node->next;
+					}
+				}
+				// we need to update prev_node->next to completely eliminate reference to current node
 				current_event_node = current_event_node->next;
 
 				// if we are doing deferred BS, we need this line, else remove
@@ -335,13 +384,15 @@ cleanup_finished_events
 					ADD_TO_FREE_EVENTS_LIST(deferred_node);
 				}
 			} else {
-				break;
+				cur_queue_unfinished = true;
+				current_event_node = current_event_node->next;
 			}
 		}
 
-		cur_queue->event_list_head = current_event_node;
-		if (current_event_node == NULL) {
+		//cur_queue->event_list_head = current_event_node;
+		if (cur_queue_unfinished == false) {
 			// set oldest and newest pointers to null
+			cur_queue->event_list_head = NULL;
 			cur_queue->event_list_tail = NULL;
 			if (prev_queue == NULL) {
 				g_unfinished_queue_list_head = next_queue;
@@ -408,10 +459,17 @@ kernel_prologue
 void
 sync_prologue
 (
- void
+ cl_command_queue queue
 )
 {
+	// get the queue node in splay-tree associated with the queue. We will need it for attributing CPU_IDLE_CAUSE
+	uint64_t queue_id = (uint64_t) queue;
+	queue_map_entry_t *entry = queue_map_lookup(queue_id);
+	queue_node_t *queue_node = queue_map_entry_queue_node_get(entry);
+	TD_GET(gpu_data.queue_responsible_for_cpu_sync) = queue_node;
+
 	TD_GET(gpu_data.is_thread_at_opencl_sync) = true;
+	INCR_SHARED_BLAMING_DS(num_threads_at_sync_all_procs);
 }
 
 
@@ -422,8 +480,10 @@ sync_epilogue
 )
 {
 	// TODO: remove all completed kernel events from StreamQs
+	TD_GET(gpu_data.queue_responsible_for_cpu_sync) = NULL;
 
 	TD_GET(gpu_data.is_thread_at_opencl_sync) = false;
+	DECR_SHARED_BLAMING_DS(num_threads_at_sync_all_procs);
 }
 
 
@@ -463,9 +523,15 @@ opencl_gpu_blame_shifter
 	if (is_threads_at_sync) {
 				
 		// during a sample, host thread is in sync block waiting for a GPU kernel to complete execution. Mark CPU as idle at this sample
-		//cct_metric_data_increment(cpu_idle_cause_metric_id, unfinished_queue->event_list_head->launcher_cct, (cct_metric_data_t) {
-		//		.r = metric_incr / atomic_load(&g_active_threads)}
-		//		);
+		queue_node_t *queue_node = TD_GET(gpu_data.queue_responsible_for_cpu_sync);
+		if (queue_node != NULL) {
+			cct_node_t *gpu_cct = queue_node->event_list_head->launcher_cct;
+			cct_metric_data_increment(cpu_idle_cause_metric_id, gpu_cct, (cct_metric_data_t) {
+					.r = metric_incr / atomic_load(&g_active_threads)}
+					);
+		} else {
+			// cant find queue responsoble for cpu sync	
+		}
 		if(SHARED_BLAMING_INITIALISED) {
 			// uncomment this when you understand what these variables mean for opencl context
 			// TD_GET(gpu_data.accum_num_sync_threads) += ipc_data->num_threads_at_sync_all_procs; 
@@ -485,7 +551,7 @@ opencl_gpu_blame_shifter
 	if (num_unfinished_queues) {
 
 		//SHARED BLAMING: kernels need to be blamed for idleness on other procs/threads.
-		if(SHARED_BLAMING_INITIALISED && ipc_data->num_threads_at_sync_all_procs && !g_num_threads_at_sync) {
+		if(SHARED_BLAMING_INITIALISED && atomic_load(&ipc_data->num_threads_at_sync_all_procs)) { // && !g_num_threads_at_sync
 			for (queue_node_t * unfinished_queue = unfinished_event_list_head; unfinished_queue; unfinished_queue = unfinished_queue->next_unfinished_queue) {
 				//TODO: FIXME: the local threads at sync need to be removed, /T has to be done while adding metric
 				//increment (either one of them).

@@ -1257,7 +1257,14 @@ hpcrun_clWaitForEvents
 {
 	ETMSG(OPENCL, "clWaitForEvents called");
 	// on the assumption that clWaitForEvents is synchonous, we have sandwiched it with calls to sync_prologue and sync_epilogue
-	sync_prologue();	
+	// clWaitForEvents can wait on multiple events(probably from different queues).
+	// We need a more complicated approach of finding the queues on which the CPU will wait
+	// For now we pass the 1st queue
+	size_t queue_size;
+	clGetEventInfo(*event_list, CL_EVENT_COMMAND_QUEUE, 0, NULL, &queue_size);
+	void *queue = hpcrun_malloc(sizeof(queue_size));
+	clGetEventInfo(*event_list, CL_EVENT_COMMAND_QUEUE, queue_size, queue, NULL);
+	sync_prologue((cl_command_queue)queue);
 	cl_int status = HPCRUN_OPENCL_CALL(clWaitForEvents, (num_events, event_list));
 	sync_epilogue();
 	return status;
@@ -1272,7 +1279,7 @@ hpcrun_clFinish
 {
 	ETMSG(OPENCL, "clFinish called");
 	// on the assumption that clFinish is synchonous, we have sandwiched it with calls to sync_prologue and sync_epilogue
-	sync_prologue();	
+	sync_prologue(command_queue);	
 	cl_int status = HPCRUN_OPENCL_CALL(clFinish, (command_queue));
 	sync_epilogue();
 	return status;
