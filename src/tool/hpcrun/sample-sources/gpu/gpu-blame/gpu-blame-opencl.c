@@ -57,7 +57,12 @@ typedef struct IPC_data_t {
 #define DECR_SHARED_BLAMING_DS(field)  do{ if(SHARED_BLAMING_INITIALISED) atomic_fetch_add(&(ipc_data->field), -1L); }while(0) 
 
 #define ADD_TO_FREE_EVENTS_LIST(node_ptr) do { (node_ptr)->next_free_node = g_free_event_nodes_head; \
-g_free_event_nodes_head = (node_ptr); }while(0)
+	(node_ptr)->event = NULL;	\
+	(node_ptr)->event_start_time = 0;	\
+	(node_ptr)->event_end_time = 0;	\
+	(node_ptr)->launcher_cct = NULL;	\
+	(node_ptr)->queue_launcher_cct = NULL;	\
+	g_free_event_nodes_head = (node_ptr); }while(0)
 
 
 
