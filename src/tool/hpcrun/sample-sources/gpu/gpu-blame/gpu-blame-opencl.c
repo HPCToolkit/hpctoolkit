@@ -1,17 +1,3 @@
-/* Strategy:
- * at each CPU sample, the CPU/host thread will query the completion status of kernel at head each queue in StreamQs datastructure
- * But this approach was needed for Nvidia streams that had in-order kernel execution.
- * Opencl has 2 kernel-execution modes: in-order and out-of-order.
- * Thus we need to rethink our strategy
- * */
-
-/* Scenarios/Action:
- * CPU: inactive, GPU: active			Action: GPU_IDLE_CAUSE for calling_context at GPU is incremented by sampling interval
- * CPU: inactive, GPU: inactive		Action: Need to figure out how to handle this scenario
- * CPU: active, 	GPU: inactive		Action:	CPU_IDLE_CAUSE for calling_context at CPU is incremented by sampling interval
- * CPU: active, 	GPU: active			Action: Nothing to do
- * */
-
 // #ifdef ENABLE_OPENCL_BLAME_SHIFTING
 
 //******************************************************************************
@@ -84,31 +70,13 @@ int gpu_time_metric_id;
 int cpu_idle_cause_metric_id;
 int gpu_idle_metric_id;
 
-// num threads in the process
-atomic_uint_fast64_t g_active_threads;
-
 // lock for blame-shifting activities
 static spinlock_t bs_lock = SPINLOCK_UNLOCKED;
-
-static uint64_t g_num_threads_at_sync;
 
 static event_list_node_t *g_free_event_nodes_head;
 
 // First queue with pending activities
 static queue_node_t *g_unfinished_queue_list_head;
-
-// I think this can be deleted
-// Last queue with pending activities
-static event_list_node_t *g_finished_event_nodes_tail;
-
-// I think this can be deleted
-// dummy activity node
-static event_list_node_t dummy_event_node = {
-	.event_start_time = 0,
-	.event_end_time = 0,
-	.launcher_cct = 0,
-	.queue_launcher_cct = 0 
-};
 
 // is inter-process blaming enabled?
 static bool g_do_shared_blaming;
@@ -123,32 +91,42 @@ static IPC_data_t *ipc_data;
 static char shared_key[MAX_SHARED_KEY_LENGTH];
 
 
-static void destroy_shared_memory(void * p) {
-    // we should munmap, but I will not do since we dont do it in so many other places in hpcrun
-    // munmap(ipc_data);
-    shm_unlink((char *)shared_key);
+static void
+destroy_shared_memory
+(
+	void *p
+)
+{
+	// we should munmap, but I will not do since we dont do it in so many other places in hpcrun
+	// munmap(ipc_data);
+	shm_unlink((char *)shared_key);
 }
 
 
-static inline void create_shared_memory() {
-    int device_id = 1;	// static device_id
-    int fd ;
-    sprintf(shared_key, "/gpublame%d",device_id);
-    if ( (fd = shm_open(shared_key, O_RDWR | O_CREAT, 0666)) < 0 ) {
-        EEMSG("Failed to shm_open (%s) on device %d, retval = %d", shared_key, device_id, fd);
-        monitor_real_abort();
-    }
-    if ( ftruncate(fd, sizeof(IPC_data_t)) < 0 ) {
-        EEMSG("Failed to ftruncate() on device %d",device_id);
-        monitor_real_abort();
-    }
-    
-    if( (ipc_data = mmap(NULL, sizeof(IPC_data_t), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0 )) == MAP_FAILED ) {
-        EEMSG("Failed to mmap() on device %d",device_id);
-        monitor_real_abort();
-    }
+static inline void
+create_shared_memory
+(
+	void
+)
+{
+	int device_id = 1;	// static device_id
+	int fd ;
+	sprintf(shared_key, "/gpublame%d",device_id);
+	if ( (fd = shm_open(shared_key, O_RDWR | O_CREAT, 0666)) < 0 ) {
+		EEMSG("Failed to shm_open (%s) on device %d, retval = %d", shared_key, device_id, fd);
+		monitor_real_abort();
+	}
+	if ( ftruncate(fd, sizeof(IPC_data_t)) < 0 ) {
+		EEMSG("Failed to ftruncate() on device %d",device_id);
+		monitor_real_abort();
+	}
 
-    hpcrun_process_aux_cleanup_add(destroy_shared_memory, (void *) shared_key);    
+	if( (ipc_data = mmap(NULL, sizeof(IPC_data_t), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0 )) == MAP_FAILED ) {
+		EEMSG("Failed to mmap() on device %d",device_id);
+		monitor_real_abort();
+	}
+
+	hpcrun_process_aux_cleanup_add(destroy_shared_memory, (void *) shared_key);    
 }
 
 
@@ -160,8 +138,6 @@ InitCpuGpuBlameShiftOpenclDataStructs
 {
 	char * shared_blaming_env;
 	g_unfinished_queue_list_head = NULL;
-	g_finished_event_nodes_tail = &dummy_event_node;
-	dummy_event_node.next = g_finished_event_nodes_tail;
 	shared_blaming_env = getenv("HPCRUN_ENABLE_SHARED_GPU_BLAMING");
 	if(shared_blaming_env) {
 		g_do_shared_blaming = atoi(shared_blaming_env);
@@ -212,7 +188,6 @@ hpcrun_queue_data_alloc_init
 	st->epoch->next  = NULL;
 	hpcrun_cct2metrics_init(&(st->cct2metrics_map)); //this just does st->map = NULL;
 
-
 	st->trace_min_time_us = 0;
 	st->trace_max_time_us = 0;
 	st->hpcrun_file  = NULL;
@@ -229,10 +204,13 @@ add_queue_node_to_splay_tree
 {
 	uint64_t queue_id = (uint64_t)queue;
 	queue_node_t *node = (queue_node_t*)hpcrun_malloc(sizeof(queue_node_t));
+
 	node->st = hpcrun_queue_data_alloc_init(queue_id);	
 	node->event_list_head = NULL;
 	node->event_list_tail = NULL;
 	node->next_unfinished_queue = NULL;
+	node->queue_marked_for_deletion = false;
+	
 	queue_map_insert(queue_id, node);
 }
 
@@ -277,7 +255,6 @@ create_and_insert_event
 	event_node->event = event;
 	event_node->queue_launcher_cct = queue_launcher_cct;
 	event_node->launcher_cct = launcher_cct;
-	event_node->queue_id = queue_id;
 	event_node->next = NULL;
 
 	if (queue_node->event_list_head == NULL) {
@@ -317,45 +294,30 @@ cleanup_finished_events
 					sizeof(cl_ulong), &(current_event_node->event_end_time), NULL);
 
 			if (err_cl == CL_SUCCESS) {
-				// Decrement   ipc_data->outstanding_kernels
 				DECR_SHARED_BLAMING_DS(outstanding_kernels);
 
-				// record start time
-				float elapsedTime;      // in millisec with 0.5 microsec resolution as per CUDA
+				float elapsedTime;
 
-				// in cuda, g_start_of_world_time was used. What was the purpose of that
 				err_cl = clGetEventProfilingInfo(current_event_node->event, CL_PROFILING_COMMAND_START,
 						sizeof(cl_ulong), &(current_event_node->event_start_time), NULL);
 
-				// soft failure
 				if (err_cl != CL_SUCCESS) {
 					EMSG("clGetEventProfilingInfo failed");
 					break;
 				}
+				// Just to verify that this is a valid profiling value. 
 				elapsedTime = current_event_node->event_end_time - current_event_node->event_start_time; 
 				assert(elapsedTime > 0);
-
-				/*
-					 uint64_t micro_time_start = (uint64_t) (((double) elapsedTime) * 1000) + g_start_of_world_time;
-					 CUDA_SAFE_CALL(cudaRuntimeFunctionPointer[cudaEventElapsedTimeEnum].cudaEventElapsedTimeReal(&elapsedTime, g_start_of_world_event, current_event_node->event_end));
-					 assert(elapsedTime > 0);
-					 uint64_t micro_time_end = (uint64_t) (((double) elapsedTime) * 1000) + g_start_of_world_time;
-					 assert(micro_time_start <= micro_time_end);
-					 */
-
-				if(hpcrun_trace_isactive()) {
-					// the purpose of tracing with blame-shifting was to find the issues caused by blocking system called. I dont think we need this block
-				}
-
 
 				// Add the kernel execution time to the gpu_time_metric_id
 				cct_metric_data_increment(gpu_time_metric_id, current_event_node->launcher_cct, (cct_metric_data_t) {
 						.i = (current_event_node->event_end_time - current_event_node->event_start_time)});
 
-				// if we are doing deferred BS, we need this line, else remove
-				event_list_node_t *deferred_node = current_event_node;
 				// delete the current_event_node variable from the linkedlist
+				event_list_node_t *deleted_node = current_event_node;
 				clReleaseEvent(current_event_node->event);
+				
+				// updating the linkedlist
 				if (current_event_node == cur_queue->event_list_head) {
 					if (cur_queue->event_list_head == cur_queue->event_list_tail) {
 						cur_queue->event_list_head = NULL;
@@ -367,22 +329,8 @@ cleanup_finished_events
 				// we need to update prev_node->next to completely eliminate reference to current node
 				current_event_node = current_event_node->next;
 
-				// if we are doing deferred BS, we need this line, else remove
-				// Add to_free to fre list
-				if (g_num_threads_at_sync) {
-					// some threads are waiting, hence add this kernel for deferred blaming
-					/*
-						 deferred_node->ref_count = g_num_threads_at_sync;
-						 deferred_node->event_start_time = micro_time_start;
-						 deferred_node->event_end_time = micro_time_end;
-						 deferred_node->next = g_finished_event_nodes_tail->next;
-						 g_finished_event_nodes_tail->next = deferred_node;
-						 g_finished_event_nodes_tail = deferred_node;
-						 */
-
-				} else {
-					ADD_TO_FREE_EVENTS_LIST(deferred_node);
-				}
+				// Add node to free list
+				ADD_TO_FREE_EVENTS_LIST(deleted_node);
 			} else {
 				cur_queue_unfinished = true;
 				current_event_node = current_event_node->next;
@@ -394,6 +342,11 @@ cleanup_finished_events
 			// set oldest and newest pointers to null
 			cur_queue->event_list_head = NULL;
 			cur_queue->event_list_tail = NULL;
+
+			// we are done processing this queue. Safe for deletion
+			if (cur_queue->queue_marked_for_deletion == true) {
+				queue_map_delete(cur_queue->queue_id);
+			}
 			if (prev_queue == NULL) {
 				g_unfinished_queue_list_head = next_queue;
 			} else {
@@ -425,6 +378,19 @@ queue_prologue
 
 
 void
+command_queue_marked_for_deletion
+(
+	cl_command_queue queue
+)
+{
+	uint64_t queue_id = (uint64_t) queue;
+	queue_map_entry_t *entry = queue_map_lookup(queue_id);
+	queue_node_t *queue_node = queue_map_entry_queue_node_get(entry);
+	queue_node->queue_marked_for_deletion = true;
+}
+
+
+void
 kernel_prologue
 (
 	cl_event event,
@@ -433,15 +399,13 @@ kernel_prologue
 {
 	// increment the reference count for the event
 	clRetainEvent(event);
-	//create_queue0_if_needed(queue);
-	uint64_t queue_id = (uint64_t) queue;
-	// HPCRUN_ASYNC_BLOCK_SPIN_LOCK;
 
-	// why should thread be marked blocked on sync? 
-	// TD_GET(gpu_data.is_thread_at_cuda_sync) = true;
+	uint64_t queue_id = (uint64_t) queue;
+
 	ucontext_t context;
 	getcontext(&context);
 	int skip_inner = 1; // what value should be passed here?
+
 	// why is cpu_idle_metric_id being passed here?
 	cct_node_t *cct_node = hpcrun_sample_callpath(&context, cpu_idle_metric_id, (cct_metric_data_t){.i = 0}, skip_inner /*skipInner */ , 1 /*isSync */, NULL ).sample_node;
 	
@@ -462,7 +426,7 @@ sync_prologue
  cl_command_queue queue
 )
 {
-	// get the queue node in splay-tree associated with the queue. We will need it for attributing CPU_IDLE_CAUSE
+	// getting the queue node in splay-tree associated with the queue. We will need it for attributing CPU_IDLE_CAUSE
 	uint64_t queue_id = (uint64_t) queue;
 	queue_map_entry_t *entry = queue_map_lookup(queue_id);
 	queue_node_t *queue_node = queue_map_entry_queue_node_get(entry);
@@ -515,13 +479,9 @@ opencl_gpu_blame_shifter
 	}
 	uint64_t metric_incr = cur_time_us - TD_GET(last_time_us);
 
-	// If we are already in a cuda API, then we can't call cleanup_finished_events() since CUDA could have taken the same lock. Hence we just return.
-
 	bool is_threads_at_sync = TD_GET(gpu_data.is_thread_at_opencl_sync);
 
-	// CUDA needed to defer BS during sync. ops, if we have no such need for opencl, we can remove this block
 	if (is_threads_at_sync) {
-				
 		// during a sample, host thread is in sync block waiting for a GPU kernel to complete execution. Mark CPU as idle at this sample
 		queue_node_t *queue_node = TD_GET(gpu_data.queue_responsible_for_cpu_sync);
 		if (queue_node != NULL) {
@@ -530,7 +490,7 @@ opencl_gpu_blame_shifter
 					.r = metric_incr / atomic_load(&g_active_threads)}
 					);
 		} else {
-			// cant find queue responsoble for cpu sync	
+			// cant find queue responsible for cpu sync	
 		}
 		if(SHARED_BLAMING_INITIALISED) {
 			// uncomment this when you understand what these variables mean for opencl context
@@ -562,11 +522,7 @@ opencl_gpu_blame_shifter
 						);
 			}
 		}
-	}
-	else {
-
-		/*** Code to account for Overload factor has been removed(if we need if, add it back from gpu_blame-overrides) ***/
-
+	}	else {
 		// GPU is idle iff   ipc_data->outstanding_kernels == 0 
 		// If ipc_data is NULL, then this process has not made GPU calls so, we are blind and declare GPU idle w/o checking status of other processes
 		// There is no better solution yet since we dont know which GPU card we should be looking for idleness. 
