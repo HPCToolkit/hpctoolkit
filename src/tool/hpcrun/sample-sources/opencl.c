@@ -75,7 +75,6 @@
 #define EXECUTION_COUNT "count"
 #define LATENCY "latency"
 #define SIMD "simd"
-#define ENABLE_OPENCL_BLAME_SHIFTING "opencl-blame"
 #define NO_THRESHOLD  1L
 
 static device_finalizer_fn_entry_t device_finalizer_flush;
@@ -274,10 +273,6 @@ METHOD_FN(display_events)
     "\t\tIf %6$s is passed(default mode), %3$s and %4$s instrumentation is turned on\n",
     INSTRUMENTATION_PREFIX, "<comma-separated instrumentation options>",
     EXECUTION_COUNT, LATENCY, SIMD, DEFAULT_INSTRUMENTATION);
-  printf("\n");
-
-  printf("%s\tBlame-Shifting analysis of opencl applications.\n",
-    ENABLE_OPENCL_BLAME_SHIFTING);
   printf("\n");
 }
 

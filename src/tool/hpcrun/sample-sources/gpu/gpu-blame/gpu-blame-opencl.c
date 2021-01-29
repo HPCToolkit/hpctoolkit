@@ -1,4 +1,4 @@
-// #ifdef ENABLE_OPENCL_BLAME_SHIFTING
+#ifdef ENABLE_OPENCL
 
 //******************************************************************************
 // system includes
@@ -547,4 +547,4 @@ opencl_gpu_blame_shifter
 	spinlock_unlock(&bs_lock);
 }
 
-// #endif	// ENABLE_OPENCL_BLAME_SHIFTING
+#endif	// ENABLE_OPENCL
