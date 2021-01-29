@@ -122,9 +122,9 @@
   macro(clReleaseEvent)  \
   macro(clSetEventCallback) \
   macro(clReleaseKernel)  \
-  macro(clReleaseCommandQueue)  \
   macro(clWaitForEvents)  \
-  macro(clFinish)
+  macro(clFinish)	\
+  macro(clReleaseCommandQueue)
 
 #define DYN_FN_NAME(f) f ## _fn
 
@@ -423,6 +423,15 @@ OPENCL_FN
 OPENCL_FN
 (
   clFinish,
+  (
+   cl_command_queue command_queue
+  )
+);
+
+
+OPENCL_FN
+(
+  clReleaseCommandQueue,
   (
    cl_command_queue command_queue
   )
@@ -1514,6 +1523,22 @@ hpcrun_clFinish
 	sync_prologue(command_queue);	
 	cl_int status = HPCRUN_OPENCL_CALL(clFinish, (command_queue));
 	sync_epilogue();
+	return status;
+}
+
+
+cl_int
+hpcrun_clReleaseCommandQueue
+(
+	cl_command_queue command_queue
+)
+{
+	ETMSG(OPENCL, "clReleaseCommandQueue called");
+	cl_int status = HPCRUN_OPENCL_CALL(clReleaseCommandQueue, (command_queue));
+
+	if (status == CL_SUCCESS) {
+		command_queue_marked_for_deletion(command_queue);
+	}
 	return status;
 }
 
