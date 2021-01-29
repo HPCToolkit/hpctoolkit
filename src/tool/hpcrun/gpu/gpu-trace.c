@@ -361,10 +361,7 @@ gpu_trace_record
     gpu_trace_channel_set_process(channel_set);
 
   }
-
   gpu_trace_channel_set_process(channel_set);
-  gpu_trace_channel_set_await(channel_set);
-
   gpu_trace_channel_set_release(channel_set);
   return NULL;
 }
