@@ -145,6 +145,8 @@ hpcrun_registered_sources_init(void)
     METHOD_CALL(ss, init);
     TMSG(SS_COMMON, "sample source \"%s\": init", ss->name);
   }
+  
+  control_knob_init();
 }
 
 void

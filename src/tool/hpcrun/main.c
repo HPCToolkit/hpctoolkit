@@ -923,11 +923,10 @@ monitor_init_process(int *argc, char **argv, void* data)
   auditor_exports->mainlib_connected(get_saved_vdso_path());
 #endif
 
-  control_knob_init();
-
   hpcrun_registered_sources_init();
 
   hpcrun_do_custom_init();
+
 
   // for debugging, limit the life of the execution with an alarm.
   char* life  = getenv("HPCRUN_LIFETIME");
