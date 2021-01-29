@@ -22,8 +22,12 @@ perfmon_libdir='@PERFMON_LIB@'
 roctracer_lib_path='@OPT_ROCM_LD_LIB_PATH@'
 gtpin_lib_path='@OPT_GTPIN_LIBDIR@'
 # gotcha_lib_path='@GOTCHA_LIBDIR@'
-
+host_arm='@HOST_CPU_AARCH64@'
 prog_name=hpcrun
+
+if test $host_arm = "yes"; then
+    export HPCRUN_AUDIT_FAKE_AUDITOR=1
+fi
 
 #------------------------------------------------------------
 # Find path to this script
@@ -187,7 +191,11 @@ Options to consider only when hpcrun causes an application to fail:
                        to track dynamic library operations by intercepting
                        dlopen and dlclose instead of using LD_AUDIT. Note
                        that this alternate approach can cause problem with
-                       load modules that specify a RUNPATH.
+                       load modules that specify a RUNPATH. Due to a glibc bug,
+                       this option is disabled by default on ARM.
+
+  --enable-auditor     LD_AUDIT is by default disabled on ARM due to a glib bug.
+                       Use this option to enable LD_AUDIT on ARM.
 
   --disable-auditor-got-rewriting
                        By default, hpcrun uses LD_AUDIT to help track dynamic
@@ -465,6 +473,9 @@ do
 	--disable-auditor )
 	    export HPCRUN_AUDIT_FAKE_AUDITOR=1
 	    ;;
+    --enable-auditor )
+        unset HPCRUN_AUDIT_FAKE_AUDITOR
+        ;;
 
 	# --------------------------------------------------
 

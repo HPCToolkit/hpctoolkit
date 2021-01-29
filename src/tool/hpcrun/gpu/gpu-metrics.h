@@ -305,6 +305,8 @@ typedef enum {
 	"GPU kernel: thread count accumulator [internal use only]")	\
   macro("GKER:BLK_SM_ACUMU",            GPU_KINFO_BLK_SMEM_ACUMU,	\
 	"GPU kernel: block local memory accumulator [internal use only]") \
+  macro("GKER:BLKS_ACUMU",           GPU_KINFO_BLKS_ACUMU,	\
+	"GPU kernel: block count accumulator [internal use only]")	\
   macro("GKER:STMEM (B)",         GPU_KINFO_STMEM,			\
 	"GPU kernel: static memory (bytes)")				\
   macro("GKER:DYMEM (B)",         GPU_KINFO_DYMEM,			\
@@ -321,6 +323,8 @@ typedef enum {
 	"GPU kernel: thread count")					\
   macro("GKER:BLK_SM (B)",            GPU_KINFO_BLK_SMEM,		\
 	"GPU kernel: block local memory (bytes)")			\
+  macro("GKER:BLKS",            GPU_KINFO_BLKS,		\
+	"GPU kernel: block count")			\
   macro("GKER:COUNT",             GPU_KINFO_COUNT,  			\
 	"GPU kernel: launch count")					\
   macro("GKER:OCC_THR",               GPU_KINFO_OCCUPANCY_THR,		\

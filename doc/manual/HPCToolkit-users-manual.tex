@@ -123,11 +123,11 @@
 \title{\HPCToolkit{} User's Manual\\[.5in]Version 2021.01.31}
 %\subtitle{}
 
-\author{
-John Mellor-Crummey\\
+\author{John Mellor-Crummey,\\
 Laksono Adhianto,
 Mike Fagan,
-Mark Krentel,
+Mark Krentel,\\
+Xiaozhu Meng,
 Nathan Tallent, Keren Zhou\\
 \\
 Rice University\\
@@ -1366,7 +1366,27 @@ or the \hpcrun{} command itself.
 \section{Why do I see partial unwinds?}
 \label{sec:partial}
 
-Under certain circumstances, HPCToolkit can't fully unwind the call stack to determine the full calling context where a sample event occurred. Most often, this occurs when \hpcrun{} tries to unwind through functions in a shared library or executable that has not been compiled with \verb|-g| as one of its options. The \verb|-g| compiler flag can be used in addition to optimization flags. On Power and \verb|x86_64| processors, \hpcrun{} can often compensate the lack of the availability of unwind recipes in a binary by using binary analysis to compute recipes itself. However, since \hpcrun{} lacks binary analysis capabilities for ARM processors, there is a higher likelihood that the lack of a \verb|-g| compiler option for an executable or a shared library will lead to partial unwinds.
+Under certain circumstances, HPCToolkit can't fully unwind the call
+stack to determine the full calling context where a sample event
+occurred. Most often, this occurs when \hpcrun{} tries to unwind
+through functions in a shared library or executable that has not
+been compiled with \verb|-g| as one of its options. The \verb|-g|
+compiler flag can be used in addition to optimization flags. On
+Power and \verb|x86_64| processors, \hpcrun{} can often compensate
+for the lack of unwind recipes by using
+binary analysis to compute recipes itself. However, since \hpcrun{}
+lacks binary analysis capabilities for ARM processors, there is a
+higher likelihood that the lack of a \verb|-g| compiler option for
+an executable or a shared library will lead to partial unwinds.
+
+One annoying place where partial unwinds are somewhat common on \verb|x86_64| 
+processors is in Intel's MKL family of libraries.  A careful examination of Intel’s
+MKL libraries showed that most but not all routines have
+compiler-generated Frame Descriptor Entries (FDEs) that help tools 
+unwind the call stack.  For any routine that lacks
+an FDE, HPCToolkit tries to compensate using binary analysis.  
+Unfortunately, highly-optimized code in MKL library
+routines has code features that are difficult to analyze correctly.
 
 There are two ways to deal with this problem:
 \begin{itemize}
@@ -1374,6 +1394,29 @@ There are two ways to deal with this problem:
 \item 
 Recompile the binary or shared library causing the problem and add \verb|-g| to the list of its compiler options.
 \end{itemize}
+
+\section{How do I handle the error \texttt{CUPTI\_ERROR\_NOT\_INITIALIZED}?}
+\label{sec:troubleshooting:cupti}
+
+\hpcrun{} uses NVIDIA's CUDA Performance Tools Interface known as
+CUPTI to monitor computations on NVIDIA GPUs. In our experience,
+this error occurs when the version of CUPTI used by HPCToolkit is
+incompatible with the CUDA kernel driver installed on your system.
+Documentation from NVIDIA indicates that new versions of CUPTI may
+be incompatible with older versions of the CUDA kernel driver. For
+instance, even though you may be able to run CUDA 11 programs on a
+kernel driver designed to support CUDA 10, you are unlikely to
+succeed measuring CUDA performance with a version of HPCToolkit
+configured for CUDA 11 atop the CUDA 10 kernel driver.  To avoid
+the error \texttt{CUPTI\_ERROR\_NOT\_INITIALIZED}, we recommend
+configuring HPCToolkit for the version of CUDA supported by the
+CUDA kernel driver installed on your system.  You can check the
+version of the CUDA kernel driver installed on your system using
+the {\tt nvidia-smi} command.  If you want HPCToolkit to use the
+latest version of NVIDIA's CUPTI, then we recommend upgrading the
+CUDA kernel driver on your system to match the latest CUDA release
+you want to use and then configuring HPCToolkit atop this CUDA
+release.
 
 % ===========================================================================
 % ===========================================================================
@@ -1384,11 +1427,11 @@ When using sample sources for hardware counter and software counter events provi
 we recommend that you use frequency-based sampling. The default frequency is 300 samples/second.
 
 Statisticians use samples sizes of approximately 3500 to make accurate projections about the voting preferences of millions of people.
-In an analogous way, rather than collect unnecessary large amounts of performance information, sampling-based performance measurement collects ``just enough'' representative performance data.
+In an analogous way, rather than measuring and attributing every action of a program or every runtime event (e.g., a cache miss), sampling-based performance measurement collects ``just enough'' representative performance data.
 You can control \hpcrun{}'s sampling periods to collect ``just enough'' representative data even for very long executions and, to a lesser degree, for very short executions.
 
 For reasonable accuracy ($\pm 5\%$), there should be at least 20 samples in each context that is important with respect to performance.
-Since unimportant contexts are irrelevant to performance, as long as this condition is met (and as long as samples are not correlated, etc.), \HPCToolkit{}'s performance data should be accurate.
+Since unimportant contexts are irrelevant to performance, as long as this condition is met (and as long as samples are not correlated, etc.), \HPCToolkit{}'s performance data should be accurate enough to guide program tuning.
 
 We typically recommend targeting a frequency of hundreds of samples per second.
 For very short runs, you may need to collect thousands of samples per second to record an adequate number of samples.
@@ -1484,7 +1527,7 @@ To fix this, set the permission of the library to 0755, and launch again the vie
 % ===========================================================================
 % ===========================================================================
 
-\section{Mac only: \hpcviewer{} runs on Java $X$ instead of ``Java 8"}
+\section{Mac only: \hpcviewer{} runs on Java $X$ instead of ``Java 11"}
 
 If your system has multiple versions of Java and Java 8 is not the newer version, you need to set Java 8 as the default JVM:
 
@@ -1540,15 +1583,12 @@ If you see this error, the memory footprint that \hpcviewer{} needs to store and
 \section{\hpcviewer{} writes a long list of Java error messages to the terminal!}
 
 The Eclipse Java framework that serves as the foundation for \hpcviewer{} can be somewhat temperamental. If the persistent state maintained by Eclipse for \hpcviewer{}
-gets corrupted, \hpcviewer{} may spew a list of errors deep within call chains of the Eclipse framework.  Below are a few suggestions that may fix the problem:
+gets corrupted, \hpcviewer{} may spew a list of errors deep within call chains of the Eclipse framework.  
 
-On Linux, try removing your \hpcviewer{} Eclipse workspace with default location:\\
+On MacOS and Linux, try removing your \hpcviewer{} Eclipse workspace with default location:\\
  \texttt{\$HOME/.hpctoolkit/hpcviewer} \\
  and run \hpcviewer{} again.
 
-On MacOS, persistent state is currently stored within Mac app. If the Eclipse persistent state gets corrupted, one can't simply clear the workspace because some initial persistent state is needed for Eclipse to function properly.  For MacOS, the thing to try is downloading a fresh copy of hpcviewer and running the freshly downloaded copy.
-
-If one of the aforementioned suggestions doesn’t fix the problem, report a bug.
 
 % ===========================================================================
 % ===========================================================================
