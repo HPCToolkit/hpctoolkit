@@ -1279,13 +1279,20 @@ hpcrun_clWaitForEvents
 	// clWaitForEvents can wait on multiple events(probably from different queues).
 	// We need a more complicated approach of finding the queues on which the CPU will wait
 	// For now we pass the 1st queue
-	size_t queue_size;
-	clGetEventInfo(*event_list, CL_EVENT_COMMAND_QUEUE, 0, NULL, &queue_size);
-	void *queue = hpcrun_malloc(sizeof(queue_size));
-	clGetEventInfo(*event_list, CL_EVENT_COMMAND_QUEUE, queue_size, queue, NULL);
-	sync_prologue((cl_command_queue)queue);
+	void *queue;
+	if(is_opencl_blame_shifting_enabled()) {
+		size_t queue_size;
+		clGetEventInfo(*event_list, CL_EVENT_COMMAND_QUEUE, 0, NULL, &queue_size);
+		queue = hpcrun_malloc(sizeof(queue_size));
+		clGetEventInfo(*event_list, CL_EVENT_COMMAND_QUEUE, queue_size, queue, NULL);
+		sync_prologue((cl_command_queue)queue);
+	}
+
 	cl_int status = HPCRUN_OPENCL_CALL(clWaitForEvents, (num_events, event_list));
-	sync_epilogue();
+
+	if(is_opencl_blame_shifting_enabled()) {
+		sync_epilogue((cl_command_queue)queue);
+	}
 	return status;
 }
 
@@ -1298,9 +1305,13 @@ hpcrun_clFinish
 {
 	ETMSG(OPENCL, "clFinish called");
 	// on the assumption that clFinish is synchonous, we have sandwiched it with calls to sync_prologue and sync_epilogue
-	sync_prologue(command_queue);	
+	if(is_opencl_blame_shifting_enabled()) {
+		sync_prologue(command_queue);
+	}
 	cl_int status = HPCRUN_OPENCL_CALL(clFinish, (command_queue));
-	sync_epilogue();
+	if(is_opencl_blame_shifting_enabled()) {
+		sync_epilogue(command_queue);
+	}
 	return status;
 }
 
@@ -1314,7 +1325,7 @@ hpcrun_clReleaseCommandQueue
 	ETMSG(OPENCL, "clReleaseCommandQueue called");
 	cl_int status = HPCRUN_OPENCL_CALL(clReleaseCommandQueue, (command_queue));
 
-	if (status == CL_SUCCESS) {
+	if (is_opencl_blame_shifting_enabled() && status == CL_SUCCESS) {
 		command_queue_marked_for_deletion(command_queue);
 	}
 	return status;
