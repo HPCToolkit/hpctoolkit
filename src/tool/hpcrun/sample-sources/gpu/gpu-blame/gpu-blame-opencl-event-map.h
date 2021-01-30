@@ -1,5 +1,5 @@
-#ifndef blame_shift_datastructure_h
-#define blame_shift_datastructure_h
+#ifndef gpu_blame_opencl_event_map_h_
+#define gpu_blame_opencl_event_map_h_
 
 //******************************************************************************
 // system includes
@@ -40,61 +40,39 @@ typedef struct event_list_node_t {
 } event_list_node_t;
 
 
-// Per GPU queue information
-typedef struct queue_node_t {
-	// we maintain queue_id here for deleting the queue_node from map
-	uint64_t queue_id;
-	
-	// hpcrun profiling and tracing infp
-	struct core_profile_trace_data_t *st;
-
-	// I think we need to maintain head and tail pointers for events here
-	struct event_list_node_t *event_list_head;
-	struct event_list_node_t *event_list_tail;
-
-	// pointer to the next queue which has activities pending
-	struct queue_node_t *next_unfinished_queue;
-
-	// clReleaseCommandQueue will denote that the user has marked the node for deletion
-	// If thats called, we mark the corresponding queue node for deletion
-	bool queue_marked_for_deletion;
-
-} queue_node_t;
-
-
 
 //******************************************************************************
 // interface operations
 //******************************************************************************
 
-typedef struct queue_map_entry_t queue_map_entry_t;
+typedef struct event_map_entry_t event_map_entry_t;
 
-queue_map_entry_t*
-queue_map_lookup
+event_map_entry_t*
+event_map_lookup
 (
- uint64_t queue_id
+ uint64_t event_id
 );
 
 
 void
-queue_map_insert
+event_map_insert
 (
- uint64_t queue_id,
- queue_node_t *queue_node
+ uint64_t event_id,
+ event_list_node_t *event_node
 );
 
 
 void
-queue_map_delete
+event_map_delete
 (
- uint64_t queue_id
+ uint64_t event_id
 );
 
 
-queue_node_t*
-queue_map_entry_queue_node_get
+event_list_node_t*
+event_map_entry_event_node_get
 (
- queue_map_entry_t *entry
+ event_map_entry_t *entry
 );
 
-#endif		//blame_shift_datastructure_h
+#endif		// gpu_blame_opencl_event_map_h_
