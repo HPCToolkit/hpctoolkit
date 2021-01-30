@@ -848,7 +848,10 @@ opencl_activity_completion_callback
     opencl_cb_basic_print(cb_basic, "Completion_Callback");
     opencl_activity_process(event, cb_data, cb_basic.correlation_id);
   }
-  if (cb_data->internal_event) {
+  if (is_opencl_blame_shifting_enabled() && cb_data->kind == GPU_ACTIVITY_KERNEL) {
+		kernel_epilogue(event);	
+	}
+	if (cb_data->internal_event) {
     HPCRUN_OPENCL_CALL(clReleaseEvent, (event));
   }
 

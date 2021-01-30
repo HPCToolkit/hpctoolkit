@@ -315,8 +315,7 @@ MY_BASE_FILES =				\
         sample-sources/sync.c           \
 	sample_sources_registered.c	\
 	sample-sources/sample-filters.c \
-	sample-sources/gpu/gpu-blame/gpu-blame-opencl-datastructure.c	\
-	sample-sources/gpu/gpu-blame/gpu-blame-opencl.c	\
+  sample-sources/gpu_blame.c	\
 	segv_handler.c			\
 	start-stop.c			\
 	term_handler.c			\
@@ -526,7 +525,9 @@ MY_OPENCL_FILES = \
 	gpu/opencl/opencl-h2d-map.c \
 	gpu/opencl/opencl-queue-map.c \
 	gpu/opencl/opencl-context-map.c \
-  sample-sources/gpu_blame.c
+	sample-sources/gpu/gpu-blame/gpu-blame-opencl.c	\
+	sample-sources/gpu/gpu-blame/gpu-blame-opencl-queue-map.c	\
+	sample-sources/gpu/gpu-blame/gpu-blame-opencl-event-map.c
 
 pkglib_LTLIBRARIES += libhpcrun_opencl.la
 libhpcrun_opencl_la_CPPFLAGS  = -I$(top_srcdir)/src $(OPENCL_IFLAGS)
