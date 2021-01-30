@@ -9,6 +9,7 @@
 #include <stdbool.h>													// bool
 #include <sys/mman.h>													// shm_open
 #include <ucontext.h>           							// getcontext
+#include <unistd.h>														// ftruncate
 
 
 
@@ -16,7 +17,8 @@
 // local includes
 //******************************************************************************
 
-#include "gpu-blame-opencl-datastructure.h"		// event_list_node_t, queue_node_t
+#include "gpu-blame-opencl-event-map.h"		// event_list_node_t, queue_node_t
+#include "gpu-blame-opencl-queue-map.h"		// event_list_node_t, queue_node_t
 
 #include <hpcrun/cct/cct.h>										// cct_node_t
 #include <hpcrun/constructors.h>							// HPCRUN_CONSTRUCTOR
@@ -78,6 +80,8 @@ int gpu_idle_metric_id;
 // lock for blame-shifting activities
 static spinlock_t bs_lock = SPINLOCK_UNLOCKED;
 
+static _Atomic(uint64_t) g_num_threads_at_sync;
+
 static event_list_node_t *g_free_event_nodes_head;
 
 // First queue with pending activities
@@ -87,6 +91,11 @@ static queue_node_t *g_unfinished_queue_list_head;
 static bool g_do_shared_blaming;
 
 static IPC_data_t *ipc_data;
+
+_Atomic(unsigned long) latest_kernel_end_time = { 0 };
+
+static _Atomic(event_list_node_t*) completed_kernel_list_head;
+static _Atomic(event_list_node_t*) completed_kernel_list_tail;
 
 
 
@@ -147,9 +156,12 @@ InitCpuGpuBlameShiftOpenclDataStructs
 	if(shared_blaming_env) {
 		g_do_shared_blaming = atoi(shared_blaming_env);
 	}
-	// uncomment later
-	g_do_shared_blaming = true;
+	// remove later
+	g_do_shared_blaming = false;
 	create_shared_memory();
+
+	atomic_init(&completed_kernel_list_head, NULL);
+	atomic_init(&completed_kernel_list_tail, NULL);
 }
 
 
@@ -261,6 +273,8 @@ create_and_insert_event
 	event_node->queue_launcher_cct = queue_launcher_cct;
 	event_node->launcher_cct = launcher_cct;
 	event_node->next = NULL;
+	uint64_t event_id = (uint64_t) event;
+	event_map_insert(event_id, event_node);
 
 	if (queue_node->event_list_head == NULL) {
 		queue_node->event_list_head = event_node;
@@ -270,6 +284,51 @@ create_and_insert_event
 	} else {
 		queue_node->event_list_tail->next = event_node;
 		queue_node->event_list_tail = event_node;
+	}
+}
+
+
+static void
+record_latest_kernel_end_time
+(
+	unsigned long kernel_end_time	
+)
+{
+	unsigned long expected = atomic_load(&latest_kernel_end_time);
+	if (kernel_end_time > expected) {
+		atomic_compare_exchange_strong(&latest_kernel_end_time, &expected, kernel_end_time);
+	}
+}
+
+
+static void
+add_completed_kernel_to_list
+(
+	cl_event event
+)
+{
+	// maintain a new splay-tree only for events.
+	// Each node in this tree will contain key: event, val: (event_list_node_t val)
+	event_list_node_t *null_ptr = NULL;
+
+	// get event from event splay tree
+	uint64_t event_id = (uint64_t) event;
+	event_map_entry_t *entry = event_map_lookup(event_id);
+	event_list_node_t *event_node = event_map_entry_event_node_get(entry);
+
+	if(atomic_compare_exchange_strong(&completed_kernel_list_head, &null_ptr, event_node)) {
+		atomic_store(&completed_kernel_list_tail, event_node);
+	} else {
+		try_again: ;
+		event_list_node_t *current_tail = atomic_load(&completed_kernel_list_tail);
+		if (current_tail == NULL) {
+			goto try_again;	
+		}
+		if (!atomic_compare_exchange_strong(&completed_kernel_list_tail, &current_tail, event_node)) {
+			goto try_again;	
+		}
+		// we may have to make "next" variable atomic
+		current_tail->next = event_node;
 	}
 }
 
@@ -291,6 +350,7 @@ cleanup_finished_events
 		next_queue = cur_queue->next_unfinished_queue;
 
 		event_list_node_t *current_event_node = cur_queue->event_list_head;
+		event_list_node_t *prev_event_node = current_event_node;
 		bool cur_queue_unfinished = false;
 
 		while (current_event_node) {
@@ -314,6 +374,8 @@ cleanup_finished_events
 				elapsedTime = current_event_node->event_end_time - current_event_node->event_start_time; 
 				assert(elapsedTime > 0);
 
+				record_latest_kernel_end_time(current_event_node->event_end_time);
+
 				// Add the kernel execution time to the gpu_time_metric_id
 				cct_metric_data_increment(gpu_time_metric_id, current_event_node->launcher_cct, (cct_metric_data_t) {
 						.i = (current_event_node->event_end_time - current_event_node->event_start_time)});
@@ -332,12 +394,16 @@ cleanup_finished_events
 					}
 				}
 				// we need to update prev_node->next to completely eliminate reference to current node
+				if (prev_event_node != current_event_node) {
+					prev_event_node->next = current_event_node->next;
+				}
 				current_event_node = current_event_node->next;
 
 				// Add node to free list
 				ADD_TO_FREE_EVENTS_LIST(deleted_node);
 			} else {
 				cur_queue_unfinished = true;
+				prev_event_node = current_event_node;
 				current_event_node = current_event_node->next;
 			}
 		}
@@ -410,8 +476,6 @@ kernel_prologue
 	ucontext_t context;
 	getcontext(&context);
 	int skip_inner = 1; // what value should be passed here?
-
-	// why is cpu_idle_metric_id being passed here?
 	cct_node_t *cct_node = hpcrun_sample_callpath(&context, cpu_idle_metric_id, (cct_metric_data_t){.i = 0}, skip_inner /*skipInner */ , 1 /*isSync */, NULL ).sample_node;
 	
 	queue_map_entry_t *entry = queue_map_lookup(queue_id);
@@ -426,11 +490,28 @@ kernel_prologue
 
 
 void
+kernel_epilogue
+(
+	cl_event event
+)
+{
+	clRetainEvent(event);
+	add_completed_kernel_to_list(event);
+	clReleaseEvent(event);
+}
+
+
+void
 sync_prologue
 (
  cl_command_queue queue
 )
 {
+  struct timespec sync_start;
+  clock_gettime(CLOCK_REALTIME, &sync_start); // get current time
+	
+	atomic_fetch_add(&g_num_threads_at_sync, 1L);
+
 	// getting the queue node in splay-tree associated with the queue. We will need it for attributing CPU_IDLE_CAUSE
 	uint64_t queue_id = (uint64_t) queue;
 	queue_map_entry_t *entry = queue_map_lookup(queue_id);
@@ -439,18 +520,75 @@ sync_prologue
 
 	TD_GET(gpu_data.is_thread_at_opencl_sync) = true;
 	INCR_SHARED_BLAMING_DS(num_threads_at_sync_all_procs);
+	
+	ucontext_t context;
+	getcontext(&context);
+	int skip_inner = 1; // what value should be passed here?
+	cct_node_t *cpu_cct_node = hpcrun_sample_callpath(&context, cpu_idle_metric_id, (cct_metric_data_t){.i = 0}, skip_inner /*skipInner */ , 1 /*isSync */, NULL ).sample_node;
+	queue_node->cpu_idle_cct = cpu_cct_node; // we may need to remove hpcrun functions from the stackframe of the cct
+	queue_node->cpu_sync_start_time = &sync_start;
+}
+
+static void
+attributing_cpu_idle_metric_at_sync_epilogue
+(
+ cl_command_queue queue
+)
+{
+  struct timespec sync_end;
+  clock_gettime(CLOCK_REALTIME, &sync_end); // get current time
+
+	uint64_t queue_id = (uint64_t) queue;
+	queue_map_entry_t *entry = queue_map_lookup(queue_id);
+	queue_node_t *queue_node = queue_map_entry_queue_node_get(entry);
+	cct_node_t *cpu_cct_node = queue_node->cpu_idle_cct;
+	struct timespec sync_start = *(queue_node->cpu_sync_start_time);
+
+	// attributing cpu_idle time for the min of (sync_end - sync_start, sync_end - last_kernel_end)
+	uint64_t last_kernel_end_time = atomic_load(&latest_kernel_end_time);
+
+	// this differnce calculation may be incorrect. We might need to factor the different clocks of CPU and GPU
+	uint64_t cpu_idle_time = (sync_end.tv_sec - last_kernel_end_time < sync_end.tv_sec  - sync_start.tv_sec) ? 
+																(sync_end.tv_sec - last_kernel_end_time) :
+																(sync_end.tv_sec  - sync_start.tv_sec);
+	cct_metric_data_increment(cpu_idle_metric_id, cpu_cct_node, (cct_metric_data_t) {.i = (cpu_idle_time)});
+
+	queue_node->cpu_idle_cct = NULL;
+	queue_node->cpu_sync_start_time = NULL;
+}
+
+
+static void
+attributing_cpu_idle_cause_metric_at_sync_epilogue
+(
+ cl_command_queue queue
+)
+{
+	event_list_node_t *private_completed_kernel_head = atomic_load(&completed_kernel_list_head);
+	if (private_completed_kernel_head == NULL) {
+		// no kernels to attribute idle blame, return
+		return;
+	}
+	if (atomic_compare_exchange_strong(&completed_kernel_list_head, private_completed_kernel_head, NULL)) {
+		// exchange successful, proceed with metric attribution	
+	} else {
+		// some other sync block could have attributed its idleless blame, return
+		return;
+	}
 }
 
 
 void
 sync_epilogue
 (
- void
+ cl_command_queue queue
 )
 {
-	// TODO: remove all completed kernel events from StreamQs
+	attributing_cpu_idle_metric_at_sync_epilogue(queue);	
+	attributing_cpu_idle_cause_metric_at_sync_epilogue(queue);	
+	
+	atomic_fetch_add(&g_num_threads_at_sync, -1L);
 	TD_GET(gpu_data.queue_responsible_for_cpu_sync) = NULL;
-
 	TD_GET(gpu_data.is_thread_at_opencl_sync) = false;
 	DECR_SHARED_BLAMING_DS(num_threads_at_sync_all_procs);
 }
@@ -485,18 +623,7 @@ opencl_gpu_blame_shifter
 	uint64_t metric_incr = cur_time_us - TD_GET(last_time_us);
 
 	bool is_threads_at_sync = TD_GET(gpu_data.is_thread_at_opencl_sync);
-
 	if (is_threads_at_sync) {
-		// during a sample, host thread is in sync block waiting for a GPU kernel to complete execution. Mark CPU as idle at this sample
-		queue_node_t *queue_node = TD_GET(gpu_data.queue_responsible_for_cpu_sync);
-		if (queue_node != NULL) {
-			cct_node_t *gpu_cct = queue_node->event_list_head->launcher_cct;
-			cct_metric_data_increment(cpu_idle_cause_metric_id, gpu_cct, (cct_metric_data_t) {
-					.r = metric_incr / atomic_load(&g_active_threads)}
-					);
-		} else {
-			// cant find queue responsible for cpu sync	
-		}
 		if(SHARED_BLAMING_INITIALISED) {
 			// uncomment this when you understand what these variables mean for opencl context
 			// TD_GET(gpu_data.accum_num_sync_threads) += ipc_data->num_threads_at_sync_all_procs; 
@@ -515,16 +642,18 @@ opencl_gpu_blame_shifter
 
 	if (num_unfinished_queues) {
 
-		//SHARED BLAMING: kernels need to be blamed for idleness on other procs/threads.
-		if(SHARED_BLAMING_INITIALISED && atomic_load(&ipc_data->num_threads_at_sync_all_procs)) { // && !g_num_threads_at_sync
+		// SHARED BLAMING: kernels need to be blamed for idleness on other procs/threads.
+		// Do we want this to be enabled for OpenCL?
+		if(SHARED_BLAMING_INITIALISED && 
+				atomic_load(&ipc_data->num_threads_at_sync_all_procs) && !atomic_load(&g_num_threads_at_sync)) {
 			for (queue_node_t * unfinished_queue = unfinished_event_list_head; unfinished_queue; unfinished_queue = unfinished_queue->next_unfinished_queue) {
 				//TODO: FIXME: the local threads at sync need to be removed, /T has to be done while adding metric
 				//increment (either one of them).
-				// How is the CPU idle at this time? If loop at L:300 exits if the thread is at sync
 				// Careful, unfinished_event_node was replaced by event_list_head. Does that replacement make sense
 				cct_metric_data_increment(cpu_idle_cause_metric_id, unfinished_queue->event_list_head->launcher_cct, (cct_metric_data_t) {
 						.r = metric_incr / atomic_load(&g_active_threads)}
 						);
+				// why are we dividing by g_active_threads here?
 			}
 		}
 	}	else {
