@@ -56,7 +56,7 @@ sync_prologue
 void
 sync_epilogue
 (
-	void
+	cl_command_queue queue
 );
 
 #endif 	//blame_shift_opencl_h
