@@ -1570,21 +1570,6 @@ hpcrun_clFinish
 }
 
 
-cl_int
-hpcrun_clReleaseCommandQueue
-(
-	cl_command_queue command_queue
-)
-{
-	ETMSG(OPENCL, "clReleaseCommandQueue called");
-	cl_int status = HPCRUN_OPENCL_CALL(clReleaseCommandQueue, (command_queue));
-
-	if (status == CL_SUCCESS) {
-		command_queue_marked_for_deletion(command_queue);
-	}
-	return status;
-}
-
 
 void
 opencl_instrumentation_enable
