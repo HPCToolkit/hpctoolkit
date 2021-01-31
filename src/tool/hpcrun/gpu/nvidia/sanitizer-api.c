@@ -1079,6 +1079,7 @@ sanitizer_subscribe_callback
 
           uint64_t correlation_id = gpu_correlation_id();
           cct_node_t *api_node = sanitizer_correlation_callback(correlation_id, 0);
+          hpcrun_cct_retain(api_node);
 
           hpcrun_safe_enter();
 
@@ -1151,6 +1152,7 @@ sanitizer_subscribe_callback
       correlation_id = gpu_correlation_id();
       // TODO(Keren): why two extra layers?
       api_node = sanitizer_correlation_callback(correlation_id, 0);
+      hpcrun_cct_retain(api_node);
 
       // Insert a function cct node
       hpcrun_safe_enter();
@@ -1245,6 +1247,7 @@ sanitizer_subscribe_callback
 
     uint64_t correlation_id = gpu_correlation_id();
     cct_node_t *api_node = sanitizer_correlation_callback(correlation_id, 0);
+    hpcrun_cct_retain(api_node);
 
     int32_t persistent_id = hpcrun_cct_persistent_id(api_node);
     if (sanitizer_op_map_lookup(persistent_id) == NULL) {
@@ -1274,6 +1277,7 @@ sanitizer_subscribe_callback
 
     uint64_t correlation_id = gpu_correlation_id();
     cct_node_t *api_node = sanitizer_correlation_callback(correlation_id, 0);
+    hpcrun_cct_retain(api_node);
 
     // Let redshow update shadow
     int32_t persistent_id = hpcrun_cct_persistent_id(api_node);
