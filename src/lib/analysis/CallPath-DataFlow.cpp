@@ -397,8 +397,16 @@ static void writeGraph(const std::string &file_name, const NodeMap &node_map, co
 
 
 void analyzeDataFlowMain(Prof::CallPath::Profile &prof, const std::vector<std::string> &data_flow_files) {
-  auto &cctNodeMap = prof.cctNodeMap();
+  Prof::CallPath::CCTIdToCCTNodeMap cctNodeMap;
 
+  Prof::CCT::ANodeIterator prof_it(prof.cct()->root(), NULL/*filter*/, false/*leavesOnly*/,
+    IteratorStack::PreOrder);
+  for (Prof::CCT::ANode *n = NULL; (n = prof_it.current()); ++prof_it) {
+    Prof::CCT::ADynNode* n_dyn = dynamic_cast<Prof::CCT::ADynNode*>(n);
+    if (n_dyn) {
+      cctNodeMap.insert(std::make_pair(n_dyn->cpId(), n));
+    }
+  }
 
   for (auto &file : data_flow_files) {
     NodeMap node_map;

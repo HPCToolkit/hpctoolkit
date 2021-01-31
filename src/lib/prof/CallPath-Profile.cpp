@@ -156,7 +156,6 @@ std::map<uint, uint> m_mapLoadModuleIDs;      // map between load module IDs
 
 namespace CallPath {
 
-CCTIdToCCTNodeMap Profile::m_cctNodeMap;
 
 Profile::Profile(const std::string name)
 {
@@ -1528,8 +1527,6 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
 
   CCTIdToCCTNodeMap localCCTNodeMap;
 
-  auto &cctNodeMap = prof.cctNodeMap();
-
   for (uint i = 0; i < numNodes; ++i) {
     // ----------------------------------------------------------
     // Read the node
@@ -1572,7 +1569,7 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     CCT::ANode* node_parent = NULL;
     if (parentId != HPCRUN_FMT_CCTNodeId_NULL) {
       CCTIdToCCTNodeMap::iterator it = localCCTNodeMap.find(parentId);
-      if (it != cctNodeMap.end()) {
+      if (it != localCCTNodeMap.end()) {
 	      node_parent = it->second;
       }
       else {
@@ -1621,10 +1618,6 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     }
 
     localCCTNodeMap.insert(std::make_pair(nodeFmt.id, node));
-
-    if (cctNodeMap.find(nodeFmt.id) == cctNodeMap.end()) {
-      cctNodeMap.insert(std::make_pair(nodeFmt.id, node));
-    }
   }
 
   if (outfs) {

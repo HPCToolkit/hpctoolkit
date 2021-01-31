@@ -173,10 +173,6 @@ public:
   metricMgr(Metric::Mgr* mMgr)
   { m_mMgr = mMgr; }
 
-  CCTIdToCCTNodeMap &
-  cctNodeMap()
-  { return m_cctNodeMap; }
-
   // isMetricMgrVirtual: It is sometimes useful for the metric manager
   //   to contain descriptions of metrics for which there are no
   //   corresponding values.  We call this a virtual metric manager.
@@ -393,8 +389,6 @@ private:
   Prof::Struct::Tree* m_structure;
  
   bool m_remove_redundancy;
-  
-  static CCTIdToCCTNodeMap m_cctNodeMap;
 };
 
 } // namespace CallPath

@@ -501,7 +501,11 @@ hpcrun_fmt_loadmapEntry_free(loadmap_entry_t* x, hpcfmt_free_fn dealloc);
 static inline bool
 hpcrun_fmt_doRetainId(uint32_t id)
 {
+#if 0
   return (id & HPCRUN_FMT_RetainIdFlag);
+#else // always return true in this branch
+  return true;
+#endif
 }
 
 
