@@ -190,14 +190,15 @@ lazy_open_data_file(core_profile_trace_data_t * cptd)
   hpcrun_fmt_hdr_fwrite(fs,
                         HPCRUN_FMT_NV_prog, hpcrun_files_executable_name(),
                         HPCRUN_FMT_NV_progPath, hpcrun_files_executable_pathname(),
-			HPCRUN_FMT_NV_envPath, getenv("PATH"),
+			                  HPCRUN_FMT_NV_envPath, getenv("PATH"),
                         HPCRUN_FMT_NV_jobId, jobIdStr,
                         HPCRUN_FMT_NV_mpiRank, mpiRankStr,
                         HPCRUN_FMT_NV_tid, tidStr,
                         HPCRUN_FMT_NV_hostid, hostidStr,
                         HPCRUN_FMT_NV_pid, pidStr,
-			HPCRUN_FMT_NV_traceMinTime, traceMinTimeStr,
-			HPCRUN_FMT_NV_traceMaxTime, traceMaxTimeStr,
+                        HPCRUN_FMT_NV_traceMinTime, traceMinTimeStr,
+                        HPCRUN_FMT_NV_traceMaxTime, traceMaxTimeStr,
+                        HPCRUN_FMT_NV_traceOrdered, cptd->traceOrdered?"1":"0",
                         NULL);
   return fs;
 }

@@ -58,9 +58,13 @@
 //
 //******************************************************************************
 
+#include <include/hpctoolkit-config.h>
+
 SAMPLE_SOURCE_DECL_MACRO(ga)
 SAMPLE_SOURCE_DECL_MACRO(io)  
+#ifdef ENABLE_CLOCK_REALTIME
 SAMPLE_SOURCE_DECL_MACRO(itimer)  
+#endif
 
 #ifdef HPCRUN_SS_LINUX_PERF
 SAMPLE_SOURCE_DECL_MACRO(linux_perf)  
@@ -91,3 +95,13 @@ SAMPLE_SOURCE_DECL_MACRO(nvidia_gpu)
 #ifdef HPCRUN_SS_AMD
 SAMPLE_SOURCE_DECL_MACRO(amd_gpu)
 #endif
+
+#ifdef HPCRUN_SS_LEVEL0
+SAMPLE_SOURCE_DECL_MACRO(level0)
+#endif
+#ifndef HPCRUN_STATIC_LINK
+#ifdef HPCRUN_SS_OPENCL
+SAMPLE_SOURCE_DECL_MACRO(opencl)
+#endif
+#endif
+

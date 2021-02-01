@@ -76,10 +76,13 @@ void hpcrun_threadmgr_thread_delete();
 int hpcrun_threadmgr_thread_count();
 
 bool
-hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data);
+hpcrun_threadMgr_data_get_safe(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data, bool has_trace, bool demand_new_thread);
+
+bool
+hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data, bool has_trace, bool demand_new_thread);
 
 void
-hpcrun_threadMgr_non_compact_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data);
+hpcrun_threadMgr_non_compact_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data, bool has_trace);
 
 void
 hpcrun_threadMgr_data_put( epoch_t *epoch, thread_data_t *data, int no_separator);

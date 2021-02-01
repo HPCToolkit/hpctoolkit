@@ -53,8 +53,6 @@
 #include "gpu-trace.h"
 #include "gpu-trace-item.h"
 
-
-
 //******************************************************************************
 // type declarations
 //******************************************************************************
@@ -62,9 +60,24 @@
 typedef struct gpu_trace_channel_t gpu_trace_channel_t;
 
 
+
 //******************************************************************************
 // interface operations 
 //******************************************************************************
+
+thread_data_t *
+gpu_trace_channel_get_td
+(
+ gpu_trace_channel_t *ch
+);
+
+
+int
+gpu_trace_channel_get_stream_id
+(
+ gpu_trace_channel_t *ch
+);
+
 
 gpu_trace_channel_t *
 gpu_trace_channel_alloc
@@ -84,9 +97,7 @@ gpu_trace_channel_produce
 void
 gpu_trace_channel_consume
 (
- gpu_trace_channel_t *channel,
- thread_data_t *td, 
- gpu_trace_item_consume_fn_t trace_item_consume
+ gpu_trace_channel_t *channel
 );
 
 

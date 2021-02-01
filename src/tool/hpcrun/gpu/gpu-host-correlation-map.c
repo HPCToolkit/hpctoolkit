@@ -117,7 +117,7 @@ typedef struct typed_splay_node(host_correlation) {
 
   int samples;
   int total_samples;
-} typed_splay_node(host_correlation); 
+} typed_splay_node(host_correlation);
 
 
 
@@ -129,7 +129,7 @@ static gpu_host_correlation_map_entry_t *map_root = NULL;
 
 static gpu_host_correlation_map_entry_t *free_list = NULL;
 
-
+static bool allow_replace = false;
 
 //******************************************************************************
 // private operations
@@ -152,14 +152,14 @@ static gpu_host_correlation_map_entry_t *
 gpu_host_correlation_map_entry_new
 (
  uint64_t host_correlation_id,
- gpu_op_ccts_t *gpu_op_ccts, 
+ gpu_op_ccts_t *gpu_op_ccts,
  uint64_t cpu_submit_time,
  gpu_activity_channel_t *activity_channel
 )
 {
   gpu_host_correlation_map_entry_t *e = gpu_host_correlation_map_entry_alloc();
 
-  memset(e, 0, sizeof(gpu_host_correlation_map_entry_t)); 
+  memset(e, 0, sizeof(gpu_host_correlation_map_entry_t));
 
   e->host_correlation_id = host_correlation_id;
   e->gpu_op_ccts = *gpu_op_ccts;
@@ -173,7 +173,7 @@ gpu_host_correlation_map_entry_new
 static bool
 gpu_host_correlation_map_samples_pending
 (
- uint64_t host_correlation_id, 
+ uint64_t host_correlation_id,
  gpu_host_correlation_map_entry_t *entry
 )
 {
@@ -200,7 +200,7 @@ gpu_host_correlation_map_lookup
 {
   gpu_host_correlation_map_entry_t *result = st_lookup(&map_root, host_correlation_id);
 
-  PRINT("host_correlation_map lookup: id=0x%lx (entry %p)", host_correlation_id, result);
+  PRINT("host_correlation_map lookup: id=0x%lx (entry %p)\n", host_correlation_id, result);
 
   return result;
 }
@@ -209,25 +209,32 @@ gpu_host_correlation_map_lookup
 void
 gpu_host_correlation_map_insert
 (
- uint64_t host_correlation_id, 
- gpu_op_ccts_t *gpu_op_ccts, 
+ uint64_t host_correlation_id,
+ gpu_op_ccts_t *gpu_op_ccts,
  uint64_t cpu_submit_time,
  gpu_activity_channel_t *activity_channel
 )
 {
-  if (st_lookup(&map_root, host_correlation_id)) { 
-    // fatal error: host_correlation id already present; a
-    // correlation should be inserted only once.
-    assert(0);
+  gpu_host_correlation_map_entry_t *entry = st_lookup(&map_root, host_correlation_id);
+  if (entry) {
+    if (allow_replace) {
+      entry->gpu_op_ccts = *gpu_op_ccts;
+      entry->cpu_submit_time = cpu_submit_time;
+      entry->activity_channel = activity_channel;
+    } else {
+      // fatal error: host_correlation id already present; a
+      // correlation should be inserted only once.
+      assert(0);
+    }
   } else {
-    gpu_host_correlation_map_entry_t *entry = 
-      gpu_host_correlation_map_entry_new(host_correlation_id, gpu_op_ccts, 
+    gpu_host_correlation_map_entry_t *entry =
+      gpu_host_correlation_map_entry_new(host_correlation_id, gpu_op_ccts,
 					 cpu_submit_time, activity_channel);
 
     st_insert(&map_root, entry);
 
     PRINT("host_correlation_map insert: correlation_id=0x%lx "
-	 "activity_channel=%p (entry=%p)", 
+	 "activity_channel=%p (entry=%p)\n",
 	  host_correlation_id, activity_channel, entry);
   }
 }
@@ -236,20 +243,20 @@ gpu_host_correlation_map_insert
 bool
 gpu_host_correlation_map_samples_increase
 (
- uint64_t host_correlation_id, 
+ uint64_t host_correlation_id,
  int val
 )
 {
   bool result = true;
 
-  PRINT("correlation_map samples update: correlation_id=0x%lx (update %d)", 
+  PRINT("correlation_map samples update: correlation_id=0x%lx (update %d)\n",
 	host_correlation_id, val);
 
   gpu_host_correlation_map_entry_t *entry = st_lookup(&map_root, host_correlation_id);
 
   if (entry) {
     entry->samples += val;
-    gpu_host_correlation_map_samples_pending(host_correlation_id, entry); 
+    gpu_host_correlation_map_samples_pending(host_correlation_id, entry);
   }
 
   return result;
@@ -259,20 +266,20 @@ gpu_host_correlation_map_samples_increase
 bool
 gpu_host_correlation_map_total_samples_update
 (
- uint64_t host_correlation_id, 
+ uint64_t host_correlation_id,
  int val
 )
 {
   bool result = true;
 
-  PRINT("correlation_map total samples update: correlation_id=0x%lx (update %d)",
+  PRINT("correlation_map total samples update: correlation_id=0x%lx (update %d)\n",
        host_correlation_id, val);
 
   gpu_host_correlation_map_entry_t *entry = st_lookup(&map_root, host_correlation_id);
 
   if (entry) {
     entry->total_samples = val;
-    result = gpu_host_correlation_map_samples_pending(host_correlation_id, entry); 
+    result = gpu_host_correlation_map_samples_pending(host_correlation_id, entry);
   }
 
   return result;
@@ -285,6 +292,7 @@ gpu_host_correlation_map_delete
  uint64_t host_correlation_id
 )
 {
+  PRINT("host_correlation_map delete: correlation_id=0x%lx\n", host_correlation_id);
   gpu_host_correlation_map_entry_t *node = st_delete(&map_root, host_correlation_id);
   st_free(&free_list, node);
 }
@@ -330,6 +338,15 @@ gpu_host_correlation_map_entry_cpu_submit_time
   return entry->cpu_submit_time;
 }
 
+
+void
+gpu_host_correlation_map_replace_set
+(
+ bool replace
+)
+{
+  allow_replace = replace;
+}
 
 
 //*****************************************************************************

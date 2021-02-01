@@ -44,6 +44,7 @@
 #ifndef gpu_trace_h
 #define gpu_trace_h
 
+#include <stdbool.h>
 
 
 //******************************************************************************
@@ -76,7 +77,7 @@ typedef struct gpu_trace_item_t gpu_trace_item_t;
 
 typedef void (*gpu_trace_fn_t)
 (
- gpu_trace_t *trace, 
+ gpu_trace_t *trace,
  gpu_trace_item_t *ti
 );
 
@@ -86,10 +87,24 @@ typedef void (*gpu_trace_fn_t)
 // interface operations
 //******************************************************************************
 
-void 
+void
 gpu_trace_init
 (
  void
+);
+
+
+void
+gpu_trace_fini
+(
+void *arg
+);
+
+
+void *
+gpu_trace_record
+(
+void *args
 );
 
 
@@ -100,14 +115,7 @@ gpu_trace_create
 );
 
 
-void *
-gpu_trace_record
-(
- gpu_trace_t *thread_args
-);
-
-
-void 
+void
 gpu_trace_produce
 (
  gpu_trace_t *t,
@@ -115,7 +123,7 @@ gpu_trace_produce
 );
 
 
-void 
+void
 gpu_trace_signal_consumer
 (
  gpu_trace_t *t
@@ -123,10 +131,28 @@ gpu_trace_signal_consumer
 
 
 void
-gpu_trace_fini
+consume_one_trace_item
 (
- void *arg
+thread_data_t* td,
+cct_node_t *call_path,
+uint64_t start_time,
+uint64_t end_time
 );
+
+
+thread_data_t *
+gpu_trace_stream_acquire
+(
+ void
+);
+
+
+void
+gpu_trace_stream_release
+(
+ gpu_trace_channel_t *channel
+);
+
 
 
 

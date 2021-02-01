@@ -51,6 +51,16 @@
 
 
 //******************************************************************************
+// local includes
+//******************************************************************************
+
+#include "gpu-activity.h"
+#include "gpu-channel-item-allocator.h"
+#include "gpu-print.h"
+
+
+
+//******************************************************************************
 // macros
 //******************************************************************************
 
@@ -58,16 +68,18 @@
 
 #define DEBUG 0
 
-#include "gpu-print.h"
 
+#define FORALL_OPENCL_KINDS(macro)					\
+  macro(GPU_ACTIVITY_UNKNOWN)							\
+  macro(GPU_ACTIVITY_KERNEL)           \
+  macro(GPU_ACTIVITY_MEMCPY)
 
+#define FORALL_OPENCL_MEM_TYPES(macro)					\
+  macro(GPU_MEMCPY_UNK)							\
+  macro(GPU_MEMCPY_H2D)           \
+  macro(GPU_MEMCPY_D2H)
 
-//******************************************************************************
-// local includes
-//******************************************************************************
-
-#include "gpu-activity.h"
-#include "gpu-channel-item-allocator.h"
+#define CODE_TO_STRING(e) case e: return #e;
 
 
 
@@ -104,7 +116,6 @@ gpu_activity_consume
 )
 {
   gpu_context_activity_dump(activity, "CONSUME");
-
   aa_fn(activity);
 }
 
@@ -130,23 +141,51 @@ gpu_activity_free
 }
 
 void
-set_gpu_instruction
+gpu_instruction_set
 (
-  gpu_instruction_t* insn, 
-  ip_normalized_t pc
+ gpu_instruction_t* insn, 
+ ip_normalized_t pc
 )
 {
   insn->pc = pc;
 }
 
 void
-set_gpu_interval
+gpu_interval_set
 (
-  gpu_interval_t* interval,
-  uint64_t start,
-  uint64_t end
+ gpu_interval_t* interval,
+ uint64_t start,
+ uint64_t end
 )
 {
   interval->start = start;
   interval->end = end;
+}
+
+
+const char*
+gpu_kind_to_string
+(
+gpu_activity_kind_t kind
+)
+{
+  switch (kind)
+  {
+    FORALL_OPENCL_KINDS(CODE_TO_STRING)
+    default: return "CL_unknown_kind";
+  }
+}
+
+
+const char*
+gpu_type_to_string
+(
+gpu_memcpy_type_t type
+)
+{
+  switch (type)
+  {
+    FORALL_OPENCL_MEM_TYPES(CODE_TO_STRING)
+    default: return "CL_unknown_type";
+  }
 }

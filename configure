@@ -646,11 +646,33 @@ OPT_ENABLE_VG_ANNOTATIONS_TRUE
 VALGRIND_IFLAGS
 OPT_ENABLE_DEVTOOLS_FALSE
 OPT_ENABLE_DEVTOOLS_TRUE
-OPT_ROCM_LDFLAGS
+OPT_LEVEL0_LDFLAGS
+OPT_LEVEL0_IFLAGS
+OPT_LEVEL0
+OPT_ENABLE_LEVEL0_FALSE
+OPT_ENABLE_LEVEL0_TRUE
+OPT_ROCM_LD_LIB_PATH
 OPT_ROCM_IFLAGS
-OPT_ROCM
 OPT_ENABLE_ROCM_FALSE
 OPT_ENABLE_ROCM_TRUE
+OPT_GTPIN_LIBDIR
+OPT_GTPIN_IFLAGS
+OPT_GTPIN
+OPT_ENABLE_GTPIN_FALSE
+OPT_ENABLE_GTPIN_TRUE
+OPT_METRICS_DISCOVERY_LDFLAGS
+OPT_METRICS_DISCOVERY_IFLAGS
+OPT_METRICS_DISCOVERY
+OPT_ENABLE_METRICS_DISCOVERY_FALSE
+OPT_ENABLE_METRICS_DISCOVERY_TRUE
+OPT_IGC_LDFLAGS
+OPT_IGC_IFLAGS
+OPT_IGC
+OPT_ENABLE_IGC_FALSE
+OPT_ENABLE_IGC_TRUE
+OPT_OPENCL_IFLAGS
+OPT_ENABLE_OPENCL_FALSE
+OPT_ENABLE_OPENCL_TRUE
 OPT_CUPTI_LDFLAGS
 OPT_CUPTI_IFLAGS
 OPT_CUPTI
@@ -831,6 +853,7 @@ cxx_c11_flag
 CXX11_FLAG
 HPCLINK_CC
 ans
+HOST_CPU_AARCH64
 HOST_CPU_AARCH64_FALSE
 HOST_CPU_AARCH64_TRUE
 HOST_CPU_IA64_FALSE
@@ -1048,7 +1071,15 @@ enable_lush_pthreads
 enable_xop
 with_cuda
 with_cupti
+with_opencl
+with_igc
+with_metrics_discovery
+with_gtpin
 with_rocm
+with_rocm_hip
+with_rocm_dbgapi
+with_rocm_tracer
+with_level0
 enable_data_centric_tracing
 enable_devtools
 with_valgrind
@@ -1796,8 +1827,17 @@ Optional Packages:
   --with-cuda=PATH        path to cuda install directory
   --with-cupti=PATH       path to cupti install directory, default is from
                           cuda
-  --with-rocm=PATH        use given ROCM installation (absolute path) with
-                          hpcrun (default is NO)
+  --with-opencl=PATH      path to opencl headers
+  --with-igc=PATH         path to igc install directory
+  --with-metrics-discovery=PATH
+                          path to metrics-discovery install directory
+  --with-gtpin=PATH       path to gtpin install directory
+  --with-rocm=PATH        path to full ROCM + HIP install directory
+  --with-rocm-hip=PATH    path to hip install directory
+  --with-rocm-dbgapi=PATH path to rocm-dbgapi install directory
+  --with-rocm-tracer=PATH path to roctracer-dev install directory
+  --with-level0=PATH      use given Level Zero installation (absolute path)
+                          with hpcrun (default is NO)
   --with-valgrind=PATH    path to Valgrind install directory
 
 Some influential environment variables:
@@ -18478,6 +18518,7 @@ else
 fi
 
 
+
 #-------------------------------------------------
 # Host-specific compiler settings
 #-------------------------------------------------
@@ -22888,6 +22929,48 @@ $as_echo "$symtab_openmp" >&6; }
   LD_LIBRARY_PATH="$ORIG_LD_LIBRARY_PATH"
 fi
 
+#-------------------------------------------------
+
+# Test if dyninst has Intel GPU support.
+
+dyninst_intel_gpu=no
+
+if test "$DYNINST" != no ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking if dyninst supports intel gpus" >&5
+$as_echo_n "checking if dyninst supports intel gpus... " >&6; }
+
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+#include <entryIDs.h>
+unsigned int has_intel_enum(void)
+{
+  return intel_gpu_op_general;
+}
+
+_ACEOF
+if ac_fn_cxx_try_compile "$LINENO"; then :
+  dyninst_intel_gpu=yes ; dyninst_features="$dyninst_features intel-gpu"
+else
+  dyninst_intel_gpu=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $dyninst_intel_gpu" >&5
+$as_echo "$dyninst_intel_gpu" >&6; }
+fi
+
+if test "$dyninst_intel_gpu" = yes ; then
+
+$as_echo "#define DYNINST_SUPPORTS_INTEL_GPU 1" >>confdefs.h
+
+fi
+
+#-------------------------------------------------
+
+# Restore C++ flags from dyninst tests
+
 ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
 ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -23923,35 +24006,546 @@ _ACEOF
 
 
 
+
+#-------------------------------------------------
+# Option: --with-opencl=PATH
+#-------------------------------------------------
+
+OPENCL=no
+OPT_HAVE_OPENCL=no
+OPT_OPENCL_IFLAGS=
+
+
+# Check whether --with-opencl was given.
+if test "${with_opencl+set}" = set; then :
+  withval=$with_opencl; OPENCL="$withval"
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for opencl" >&5
+$as_echo_n "checking for opencl... " >&6; }
+
+case "$OPENCL" in
+  /* )
+    if test ! -f "${OPENCL}/include/CL/cl.h" ; then
+      as_fn_error $? "unable to find CL/cl.h in: $OPENCL" "$LINENO" 5
+    else
+      OPT_OPENCL_IFLAGS="-I${OPENCL}/include"
+      OPT_HAVE_OPENCL=yes
+    fi
+    ;;
+  no )
+    ;;
+  * )
+    as_fn_error $? "opencl header path must be absolute: $OPENCL" "$LINENO" 5
+    ;;
+esac
+
+if test "$OPENCL" = yes && test "$OPT_HAVE_OPENCL" = no ; then
+  as_fn_error $? "use --with-opencl to provide path/location of opencl headers" "$LINENO" 5
+fi
+
+if test "$OPT_HAVE_OPENCL" = yes ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: The <CL/cl.h> header file is available." >&5
+$as_echo "$as_me: The <CL/cl.h> header file is available." >&6;}
+fi
+
+ if test "$OPT_HAVE_OPENCL" = yes; then
+  OPT_ENABLE_OPENCL_TRUE=
+  OPT_ENABLE_OPENCL_FALSE='#'
+else
+  OPT_ENABLE_OPENCL_TRUE='#'
+  OPT_ENABLE_OPENCL_FALSE=
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $OPENCL" >&5
+$as_echo "$OPENCL" >&6; }
+
+
+
+
+#-------------------------------------------------
+# Option: --with-igc=PATH
+#-------------------------------------------------
+
+IGC=no
+OPT_HAVE_IGC=no
+OPT_IGC_IFLAGS=
+OPT_IGC_LDFLAGS=
+
+
+# Check whether --with-igc was given.
+if test "${with_igc+set}" = set; then :
+  withval=$with_igc; IGC="$withval"
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for igc" >&5
+$as_echo_n "checking for igc... " >&6; }
+
+case "$IGC" in
+  /* )
+    if test ! -f "${IGC}/include/igc/igc.opencl.h" ; then
+      as_fn_error $? "unable to find igc.opencl.h in: $IGC" "$LINENO" 5
+    fi
+    OPT_IGC_IFLAGS="-DENABLE_IGC -I${IGC}/include"
+
+    IGC_LDFLAGS =
+    IGA_LDFLAGS =
+
+    for lib in $multilib_path ; do
+      if test -f "${IGC}/${lib}/libigc.so" ; then
+        IGC_LDFLAGS="-L${IGC}/$lib -Wl,-rpath=${IGC}/$lib -ligc"
+        break
+      fi
+    done
+    if test "x$IGC_LDFLAGS" = x ; then
+      as_fn_error $? "unable to find libigc.so in: $IGC" "$LINENO" 5
+    fi
+
+    for lib in $multilib_path ; do
+      if test -f "${IGC}/${lib}/libiga64.so" ; then
+        IGA_LDFLAGS="-L${IGC}/$lib -Wl,-rpath=${IGC}/$lib -liga64"
+        break
+      fi
+    done
+    if test "x$IGA_LDFLAGS" = x ; then
+      as_fn_error $? "unable to find libiga.so in: $IGC" "$LINENO" 5
+    fi
+
+    OPT_IGC_LDFLAGS="${IGC_LDFLAGS} ${IGA_LDFLAGS}"
+
+    OPT_HAVE_IGC=yes
+    ;;
+  no )
+    ;;
+  * )
+    as_fn_error $? "igc directory must be absolute path: $IGC" "$LINENO" 5
+    ;;
+esac
+
+ if test "$OPT_HAVE_IGC" = yes; then
+  OPT_ENABLE_IGC_TRUE=
+  OPT_ENABLE_IGC_FALSE='#'
+else
+  OPT_ENABLE_IGC_TRUE='#'
+  OPT_ENABLE_IGC_FALSE=
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $IGC" >&5
+$as_echo "$IGC" >&6; }
+
+
+
+
+
+#-------------------------------------------------
+# Option: --with-metrics-discovery=PATH
+#-------------------------------------------------
+
+METRICS_DISCOVERY=no
+OPT_HAVE_METRICS_DISCOVERY=no
+OPT_METRICS_DISCOVERY_IFLAGS=
+OPT_METRICS_DISCOVERY_LDFLAGS=
+
+
+# Check whether --with-metrics-discovery was given.
+if test "${with_metrics_discovery+set}" = set; then :
+  withval=$with_metrics_discovery; METRICS_DISCOVERY="$withval"
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for metrics-discovery" >&5
+$as_echo_n "checking for metrics-discovery... " >&6; }
+
+case "$METRICS_DISCOVERY" in
+  /* )
+    if test ! -f "${METRICS_DISCOVERY}/include/metrics_discovery_api.h" ; then
+      as_fn_error $? "unable to find metrics_discovery_api.h in: $METRICS_DISCOVERY" "$LINENO" 5
+    fi
+    OPT_METRICS_DISCOVERY_IFLAGS="-I${METRICS_DISCOVERY}/include"
+
+    for lib in $multilib_path ; do
+      if test -f "${METRICS_DISCOVERY}/${lib}/libmd.so" ; then
+        OPT_METRICS_DISCOVERY_LDFLAGS="-L${METRICS_DISCOVERY}/$lib -Wl,-rpath=${METRICS_DISCOVERY}/$lib -lmd"
+        break
+      fi
+    done
+    if test "x$OPT_METRICS_DISCOVERY_LDFLAGS" = x ; then
+      as_fn_error $? "unable to find libmd.so in: $METRICS_DISCOVERY" "$LINENO" 5
+    fi
+    OPT_HAVE_METRICS_DISCOVERY=yes
+    ;;
+  no )
+    ;;
+  * )
+    as_fn_error $? "metrics-discovery directory must be absolute path: $METRICS_DISCOVERY" "$LINENO" 5
+    ;;
+esac
+
+ if test "$OPT_HAVE_METRICS_DISCOVERY" = yes; then
+  OPT_ENABLE_METRICS_DISCOVERY_TRUE=
+  OPT_ENABLE_METRICS_DISCOVERY_FALSE='#'
+else
+  OPT_ENABLE_METRICS_DISCOVERY_TRUE='#'
+  OPT_ENABLE_METRICS_DISCOVERY_FALSE=
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $METRICS_DISCOVERY" >&5
+$as_echo "$METRICS_DISCOVERY" >&6; }
+
+
+
+
+
+#-------------------------------------------------
+# Option: --with-gtpin=PATH
+#-------------------------------------------------
+
+GTPIN=no
+OPT_HAVE_GTPIN=no
+OPT_GTPIN_IFLAGS=
+OPT_GTPIN_LIBDIR=
+
+
+# Check whether --with-gtpin was given.
+if test "${with_gtpin+set}" = set; then :
+  withval=$with_gtpin; GTPIN="$withval"
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for gtpin" >&5
+$as_echo_n "checking for gtpin... " >&6; }
+
+case "$GTPIN" in
+  /* )
+    if test ! -f "${GTPIN}/Profilers/Include/gtpin.h" ; then
+      as_fn_error $? "unable to find gtpin.h in: $GTPIN" "$LINENO" 5
+    fi
+    OPT_GTPIN_IFLAGS="-I${GTPIN}/Profilers/Include -I${GTPIN}/Profilers/Include/ged/intel64/"
+
+    if test -f "${GTPIN}/Profilers/Lib/intel64/libgtpin.so" ; then
+      OPT_GTPIN_LIBDIR="${GTPIN}/Profilers/Lib/intel64"
+    fi
+
+    if test "x$OPT_GTPIN_LIBDIR" = x ; then
+      as_fn_error $? "unable to find libgtpin.so in: $GTPIN" "$LINENO" 5
+    fi
+    OPT_HAVE_GTPIN=yes
+    ;;
+  no )
+    ;;
+  * )
+    as_fn_error $? "gtpin directory must be absolute path: $GTPIN" "$LINENO" 5
+    ;;
+esac
+
+ if test "$OPT_HAVE_GTPIN" = yes; then
+  OPT_ENABLE_GTPIN_TRUE=
+  OPT_ENABLE_GTPIN_FALSE='#'
+else
+  OPT_ENABLE_GTPIN_TRUE='#'
+  OPT_ENABLE_GTPIN_FALSE=
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $GTPIN" >&5
+$as_echo "$GTPIN" >&6; }
+
+
+
+
+
+
 #-------------------------------------------------
 # Option: --with-rocm=PATH
 #-------------------------------------------------
 
-# ROCM default install path is /usr/local/rocm
+# Can specify ROCM with all-in-one ROCM + HIP directory (normally
+# /opt/rocm), or with spack packages: hip, rocm-dbgapi, roctracer-dev,
+# or partially with /opt/rocm plus a subset of spack packages.
+#
+# Note: may use both --with-rocm plus specific rocm package(s).
+# In this case, the specific overrides the general.
 
-OPT_ROCM=
-OPT_ROCM_INCPATH=
-OPT_ROCM_LDFLAGS=
-OPT_ROCM_LIBPATH=
+ROCM=
+ROCM_HIP=
+ROCM_DBGAPI=
+ROCM_TRACER=
 
 
 # Check whether --with-rocm was given.
 if test "${with_rocm+set}" = set; then :
-  withval=$with_rocm; if test $withval != no; then
-     OPT_HAVE_ROCM=yes
-     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
-       as_fn_error $? "--with-rocm requires absolute path as argument; given '${withval}'" "$LINENO" 5
-     fi
-     OPT_ROCM=${withval}
-   fi
+  withval=$with_rocm; ROCM="$withval"
 fi
 
+
+
+# Check whether --with-rocm-hip was given.
+if test "${with_rocm_hip+set}" = set; then :
+  withval=$with_rocm_hip; ROCM_HIP="$withval"
+fi
+
+
+
+# Check whether --with-rocm-dbgapi was given.
+if test "${with_rocm_dbgapi+set}" = set; then :
+  withval=$with_rocm_dbgapi; ROCM_DBGAPI="$withval"
+fi
+
+
+
+# Check whether --with-rocm-tracer was given.
+if test "${with_rocm_tracer+set}" = set; then :
+  withval=$with_rocm_tracer; ROCM_TRACER="$withval"
+fi
+
+
+ROCM_HIP_IFLAGS=
+ROCM_DBGAPI_IFLAGS=
+ROCM_TRACER_IFLAGS=
+
+ROCM_HIP_LD_DIR=
+ROCM_DBGAPI_LD_DIR=
+ROCM_TRACER_LD_DIR=
+
+ROCM_HIP_MESG=
+ROCM_DBGAPI_MESG=
+ROCM_TRACER_MESG=
+
+require_rocm=no
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for rocm ...." >&5
+$as_echo "$as_me: checking for rocm ...." >&6;}
+
+#
+# The all-in-one system rocm, commonly /opt/rocm.
+#
+case "$ROCM" in
+  /* )
+    require_rocm=yes
+    found=no
+
+    # HIP
+    if test -f "$ROCM/hip/include/hip/hip_runtime.h" ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM/hip/include/hip/hip_runtime.h" >&5
+$as_echo "$as_me: found $ROCM/hip/include/hip/hip_runtime.h" >&6;}
+      ROCM_HIP_IFLAGS="-I$ROCM/hip/include"
+      ROCM_HIP_MESG="$ROCM/hip"
+      found=yes
+    fi
+    if test -f "$ROCM/hip/lib/libamdhip64.so" ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM/hip/lib/libamdhip64.so" >&5
+$as_echo "$as_me: found $ROCM/hip/lib/libamdhip64.so" >&6;}
+      ROCM_HIP_LD_DIR="$ROCM/hip/lib"
+      ROCM_HIP_MESG="$ROCM/hip"
+      found=yes
+    fi
+
+    # AMD-DBGAPI
+    if test -f "$ROCM/include/amd-dbgapi.h" ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM/include/amd-dbgapi.h" >&5
+$as_echo "$as_me: found $ROCM/include/amd-dbgapi.h" >&6;}
+      ROCM_DBGAPI_IFLAGS="-I$ROCM/include"
+      ROCM_DBGAPI_MESG="$ROCM"
+      found=yes
+    fi
+    if test -f "$ROCM/lib/librocm-dbgapi.so" ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM/lib/librocm-dbgapi.so" >&5
+$as_echo "$as_me: found $ROCM/lib/librocm-dbgapi.so" >&6;}
+      ROCM_DBGAPI_LD_DIR="$ROCM/lib"
+      ROCM_DBGAPI_MESG="$ROCM"
+      found=yes
+    fi
+
+    # ROCTRACER
+    if test -f "$ROCM/roctracer/include/roctracer_hip.h" ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM/roctracer/include/roctracer_hip.h" >&5
+$as_echo "$as_me: found $ROCM/roctracer/include/roctracer_hip.h" >&6;}
+      ROCM_TRACER_IFLAGS="-I$ROCM/roctracer/include"
+      ROCM_TRACER_MESG="$ROCM/roctracer"
+      found=yes
+    fi
+    if test -f "$ROCM/roctracer/lib/libroctracer64.so" ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM/roctracer/lib/libroctracer64.so" >&5
+$as_echo "$as_me: found $ROCM/roctracer/lib/libroctracer64.so" >&6;}
+      ROCM_TRACER_LD_DIR="$ROCM/roctracer/lib"
+      ROCM_TRACER_MESG="$ROCM/roctracer"
+      found=yes
+    fi
+
+    # warn if given dir has nothing useful
+    if test "$found" = no ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: found nothing useful in $ROCM" >&5
+$as_echo "$as_me: WARNING: found nothing useful in $ROCM" >&2;}
+    fi
+    ;;
+  * )
+    ROCM=no
+    ;;
+esac
+
+#
+# Individual packages, the specific overrides the general.
+#
+case "$ROCM_HIP" in
+  /* )
+    require_rocm=yes
+    found=no
+
+    if test -f "$ROCM_HIP/include/hip/hip_runtime.h" ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM_HIP/include/hip/hip_runtime.h" >&5
+$as_echo "$as_me: found $ROCM_HIP/include/hip/hip_runtime.h" >&6;}
+      ROCM_HIP_IFLAGS="-I$ROCM_HIP/include"
+      ROCM_HIP_MESG="$ROCM_HIP"
+      found=yes
+    fi
+    if test -f "$ROCM_HIP/lib/libamdhip64.so" ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM_HIP/lib/libamdhip64.so" >&5
+$as_echo "$as_me: found $ROCM_HIP/lib/libamdhip64.so" >&6;}
+      ROCM_HIP_LD_DIR="$ROCM_HIP/lib"
+      ROCM_HIP_MESG="$ROCM_HIP"
+      found=yes
+    fi
+    if test "$found" = no ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: found nothing useful in $ROCM_HIP" >&5
+$as_echo "$as_me: WARNING: found nothing useful in $ROCM_HIP" >&2;}
+    fi
+    ;;
+  * )
+    ROCM_HIP=no
+    ;;
+esac
+
+case "$ROCM_DBGAPI" in
+  /* )
+    require_rocm=yes
+    found=no
+
+    if test -f "$ROCM_DBGAPI/include/amd-dbgapi.h" ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM_DBGAPI/include/amd-dbgapi.h" >&5
+$as_echo "$as_me: found $ROCM_DBGAPI/include/amd-dbgapi.h" >&6;}
+      ROCM_DBGAPI_IFLAGS="-I$ROCM_DBGAPI/include"
+      ROCM_DBGAPI_MESG="$ROCM_DBGAPI"
+      found=yes
+    fi
+    if test -f "$ROCM_DBGAPI/lib/librocm-dbgapi.so" ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM_DBGAPI/lib/librocm-dbgapi.so" >&5
+$as_echo "$as_me: found $ROCM_DBGAPI/lib/librocm-dbgapi.so" >&6;}
+      ROCM_DBGAPI_LD_DIR="$ROCM_DBGAPI/lib"
+      ROCM_DBGAPI_MESG="$ROCM_DBGAPI"
+      found=yes
+    fi
+    if test "$found" = no ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: found nothing useful in $ROCM_DBGAPI" >&5
+$as_echo "$as_me: WARNING: found nothing useful in $ROCM_DBGAPI" >&2;}
+    fi
+    ;;
+  * )
+    ROCM_DBGAPI=no
+    ;;
+esac
+
+case "$ROCM_TRACER" in
+  /* )
+    require_rocm=yes
+    found=no
+
+    if test -f "$ROCM_TRACER/roctracer/include/roctracer_hip.h" ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM_TRACER/roctracer/include/roctracer_hip.h" >&5
+$as_echo "$as_me: found $ROCM_TRACER/roctracer/include/roctracer_hip.h" >&6;}
+      ROCM_TRACER_IFLAGS="-I$ROCM_TRACER/roctracer/include"
+      ROCM_TRACER_MESG="$ROCM_TRACER/roctracer"
+      found=yes
+    fi
+    if test -f "$ROCM_TRACER/roctracer/lib/libroctracer64.so" ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM_TRACER/roctracer/lib/libroctracer64.so" >&5
+$as_echo "$as_me: found $ROCM_TRACER/roctracer/lib/libroctracer64.so" >&6;}
+      ROCM_TRACER_LD_DIR="$ROCM_TRACER/roctracer/lib"
+      ROCM_TRACER_MESG="$ROCM_TRACER/roctracer"
+      found=yes
+    fi
+    if test "$found" = no ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: found nothing useful in $ROCM_TRACER" >&5
+$as_echo "$as_me: WARNING: found nothing useful in $ROCM_TRACER" >&2;}
+    fi
+    ;;
+  * )
+    ROCM_TRACER=no
+    ;;
+esac
+
+#
+# Check that we found all the pieces.
+#
+OPT_HAVE_ROCM=no
+
+if test "$require_rocm" = yes
+then
+  if test "x$ROCM_HIP_IFLAGS" = x ; then
+    as_fn_error $? "unable to find hip_runtime.h" "$LINENO" 5
+  fi
+  if test "x$ROCM_DBGAPI_IFLAGS" = x ; then
+    as_fn_error $? "unable to find amd-dbgapi.h" "$LINENO" 5
+  fi
+  if test "x$ROCM_TRACER_IFLAGS" = x ; then
+    as_fn_error $? "unable to find roctracer_hip.h" "$LINENO" 5
+  fi
+
+  if test "x$ROCM_HIP_LD_DIR" = x ; then
+    as_fn_error $? "unable to find libamdhip64.so" "$LINENO" 5
+  fi
+  if test "x$ROCM_DBGAPI_LD_DIR" = x ; then
+    as_fn_error $? "unable to find librocm-dbgapi.so" "$LINENO" 5
+  fi
+  if test "x$ROCM_TRACER_LD_DIR" = x ; then
+    as_fn_error $? "unable to find libroctracer64.so" "$LINENO" 5
+  fi
+
+  OPT_HAVE_ROCM=yes
+  OPT_ROCM_IFLAGS="$ROCM_HIP_IFLAGS  $ROCM_DBGAPI_IFLAGS  $ROCM_TRACER_IFLAGS"
+  OPT_ROCM_LD_LIB_PATH="${ROCM_HIP_LD_DIR}:${ROCM_DBGAPI_LD_DIR}:${ROCM_TRACER_LD_DIR}"
+fi
+
+#
+# Check for ROCM version
+#
+rocm_mesg=no
+
+if test "$OPT_HAVE_ROCM" = yes ; then
+  version_file="${ROCM_HIP_MESG}/include/hip/hip_version.h"
+
+  rocm_major=`grep VERSION_MAJOR $version_file | head -1 | awk '{ print $3 }'`
+  rocm_minor=`grep VERSION_MINOR $version_file | head -1 | awk '{ print $3 }'`
+
+  if test "x$rocm_major" = x || test "x$rocm_minor" = x ; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: unable to find rocm version" >&5
+$as_echo "$as_me: WARNING: unable to find rocm version" >&2;}
+    rocm_version=unknown
+  else
+    rocm_version="${rocm_major}.${rocm_minor}"
+
+    # Require 3.10 or 4.0 or greater.
+    if ( test $rocm_major -eq 3 && test $rocm_minor -ge 10 )  \
+       || test $rocm_major -ge 4
+    then :
+    else
+      as_fn_error $? "rocm version $rocm_version is too old, use 3.10.0 or later" "$LINENO" 5
+    fi
+  fi
+  rocm_mesg="yes, version: $rocm_version"
+fi
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: rocm: $rocm_mesg" >&5
+$as_echo "$as_me: rocm: $rocm_mesg" >&6;}
 
 if test "$OPT_HAVE_ROCM" = "yes" ; then
 
 $as_echo "#define USE_ROCM 1" >>confdefs.h
 
-  OPT_ROCM_IFLAGS="-I${OPT_ROCM}/hip -I${OPT_ROCM}/hip/include -I${OPT_ROCM}/roctracer/include -I${OPT_ROCM}/hcc/include -I${OPT_ROCM}/hsa/include "
 fi
 
  if test "$OPT_HAVE_ROCM" = yes; then
@@ -23962,6 +24556,47 @@ else
   OPT_ENABLE_ROCM_FALSE=
 fi
 
+
+
+
+
+
+#-------------------------------------------------
+# Option: --with-level0=PATH
+#-------------------------------------------------
+
+OPT_LEVEL0=
+OPT_LEVEL0_INCPATH=
+OPT_LEVEL0_LDFLAGS=
+OPT_LEVEL0_LIBPATH=
+
+
+# Check whether --with-level0 was given.
+if test "${with_level0+set}" = set; then :
+  withval=$with_level0; if test $withval != no; then
+     OPT_HAVE_LEVEL0=yes
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       as_fn_error $? "--with-level0 requires absolute path as argument; given '${withval}'" "$LINENO" 5
+     fi
+     OPT_LEVEL0=${withval}
+   fi
+fi
+
+
+if test "$OPT_HAVE_LEVEL0" = "yes" ; then
+
+$as_echo "#define USE_LEVEL0 1" >>confdefs.h
+
+  OPT_LEVEL0_IFLAGS="-I${OPT_LEVEL0}/include"
+fi
+
+ if test "$OPT_HAVE_LEVEL0" = yes; then
+  OPT_ENABLE_LEVEL0_TRUE=
+  OPT_ENABLE_LEVEL0_FALSE='#'
+else
+  OPT_ENABLE_LEVEL0_TRUE='#'
+  OPT_ENABLE_LEVEL0_FALSE=
+fi
 
 
 
@@ -24555,8 +25190,28 @@ if test -z "${OPT_ENABLE_CUPTI_TRUE}" && test -z "${OPT_ENABLE_CUPTI_FALSE}"; th
   as_fn_error $? "conditional \"OPT_ENABLE_CUPTI\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
+if test -z "${OPT_ENABLE_OPENCL_TRUE}" && test -z "${OPT_ENABLE_OPENCL_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_ENABLE_OPENCL\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_ENABLE_IGC_TRUE}" && test -z "${OPT_ENABLE_IGC_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_ENABLE_IGC\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_ENABLE_METRICS_DISCOVERY_TRUE}" && test -z "${OPT_ENABLE_METRICS_DISCOVERY_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_ENABLE_METRICS_DISCOVERY\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_ENABLE_GTPIN_TRUE}" && test -z "${OPT_ENABLE_GTPIN_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_ENABLE_GTPIN\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 if test -z "${OPT_ENABLE_ROCM_TRUE}" && test -z "${OPT_ENABLE_ROCM_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_ROCM\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_ENABLE_LEVEL0_TRUE}" && test -z "${OPT_ENABLE_LEVEL0_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_ENABLE_LEVEL0\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_DEVTOOLS_TRUE}" && test -z "${OPT_ENABLE_DEVTOOLS_FALSE}"; then
@@ -27136,6 +27791,8 @@ $as_echo "$as_me:   hpcserver?:   ${enable_hpcserver}" >&6;}
 $as_echo "$as_me:   hpcstruct:    ${hpcstruct_mesg}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   perf-events:  ${perf_event_mesg}" >&5
 $as_echo "$as_me:   perf-events:  ${perf_event_mesg}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   rtld-audit:   ${rtld_audit_mesg}" >&5
+$as_echo "$as_me:   rtld-audit:   ${rtld_audit_mesg}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}: " >&5
 $as_echo "$as_me: " >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   C compiler: $CC_VERSION" >&5
@@ -27214,8 +27871,24 @@ $as_echo "$as_me:   zlib:         ${ZLIB}" >&6;}
 $as_echo "$as_me:   cuda:         ${CUDA}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   cupti:        ${CUPTI}" >&5
 $as_echo "$as_me:   cupti:        ${CUPTI}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   igc:          ${IGC}" >&5
+$as_echo "$as_me:   igc:          ${IGC}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   gtpin:        ${GTPIN}" >&5
+$as_echo "$as_me:   gtpin:        ${GTPIN}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   metrics-discovery: ${METRICS_DISCOVERY}" >&5
+$as_echo "$as_me:   metrics-discovery: ${METRICS_DISCOVERY}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   papi-c-cupti: ${use_papi_c_cupti}" >&5
 $as_echo "$as_me:   papi-c-cupti: ${use_papi_c_cupti}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   rocm:         ${rocm_mesg}" >&5
+$as_echo "$as_me:   rocm:         ${rocm_mesg}" >&6;}
+if test "$OPT_HAVE_ROCM" = yes ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}:   rocm hip:     $ROCM_HIP_MESG" >&5
+$as_echo "$as_me:   rocm hip:     $ROCM_HIP_MESG" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}:   rocm dbgapi:  $ROCM_DBGAPI_MESG" >&5
+$as_echo "$as_me:   rocm dbgapi:  $ROCM_DBGAPI_MESG" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}:   rocm tracer:  $ROCM_TRACER_MESG" >&5
+$as_echo "$as_me:   rocm tracer:  $ROCM_TRACER_MESG" >&6;}
+fi
 { $as_echo "$as_me:${as_lineno-$LINENO}:   valgrind:     ${VALGRIND}" >&5
 $as_echo "$as_me:   valgrind:     ${VALGRIND}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   valgrind:     annotated: ${OPT_ENABLE_VG_ANNOTATIONS}" >&5

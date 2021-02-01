@@ -114,15 +114,6 @@ struct dylib_fmbn_s {
 //*****************************************************************************
 
 static int 
-dylib_map_open_dsos_callback(struct dl_phdr_info *info, 
-			     size_t size, void *);
-
-static int 
-dylib_find_module_bounds_by_name_callback(struct dl_phdr_info *info, 
-					  size_t size, void *fargs_v);
-
-
-static int 
 dylib_find_module_containing_addr_callback(struct dl_phdr_info *info, 
 					   size_t size, void *fargs_v);
 
@@ -133,67 +124,8 @@ dylib_find_module_containing_addr_callback(struct dl_phdr_info *info,
 //*****************************************************************************
 
 //------------------------------------------------------------------
-// ensure bounds information computed for all open shared libraries
-//------------------------------------------------k-----------------
-void 
-dylib_map_open_dsos()
-{
-  char *vdso_start = (char *) vdso_segment_addr();
-  dl_iterate_phdr(dylib_map_open_dsos_callback, (void *) vdso_start);
-  if (vdso_start) {
-    char *vdso_end = vdso_start + vdso_segment_len();
-    // create a real file for vdso in our measurements directory and
-    // process bounds on that
-    fnbounds_ensure_mapped_dso(get_saved_vdso_path(), vdso_start, vdso_end, NULL);
-  }
-}
-
-
-//------------------------------------------------------------------
 // ensure bounds information computed for the executable
 //------------------------------------------------------------------
-
-int 
-dylib_addr_is_mapped(void *addr) 
-{
-  struct dylib_fmca_s arg;
-
-  // initialize arg structure
-  arg.addr = addr;
-  return dl_iterate_phdr(dylib_find_module_containing_addr_callback, &arg);
-}
-
-
-int 
-dylib_find_executable_bounds(void** start, void** end)
-{
-  // executable name in map is empty string; don't know why
-  return dylib_find_module_bounds_by_name("", start, end);
-}
-
-
-int 
-dylib_find_module_bounds_by_name(char* module_name,
-				 void** start, 
-				 void** end)
-{
-  int retval = 0; // not found
-  struct dylib_fmbn_s arg;
-
-  arg.module_name = module_name;
-
-  if (dl_iterate_phdr(dylib_find_module_bounds_by_name_callback, &arg)) {
-    //-------------------------------------
-    // return callback results into arguments
-    //-------------------------------------
-    *start = arg.bounds.start;
-    *end = arg.bounds.end;
-    retval = 1;
-  }
-
-  return retval;
-}
-
 
 int 
 dylib_find_module_containing_addr(void* addr, 
@@ -222,74 +154,11 @@ dylib_find_module_containing_addr(void* addr,
 }
 
 
-int 
-dylib_find_proc(void* pc, void* *proc_beg, void* *mod_beg)
-{
-  Dl_info dli;
-  int ret = dladdr(pc, &dli); // cf. glibc's _dl_addr
-  if (ret) {
-    //printf("dylib_find_proc: lm: %s (%p); sym: %s (%p)\n", dli.dli_fname, dli.dli_fbase, dli.dli_sname, dli.dli_saddr);
-    *proc_beg = dli.dli_saddr;
-    *mod_beg  = dli.dli_fbase;
-    return 0;
-  }
-  else {
-    *proc_beg = NULL;
-    *mod_beg = NULL;
-    return -1;
-  }
-}
-
-
-#if defined(__ia64__) && defined(__linux__)
-bool
-dylib_isin_start_func(void* pc)
-{
-  extern int __libc_start_main(void); // start of a process                                                                             
-  extern int __clone2(int (*fn)(void *),  void *child_stack_base,
-                      size_t stack_size, int flags, void *arg, ...
-                      /* pid_t *pid, struct user_desc *tls, pid_t *ctid */ );
-  void* proc_beg = NULL, *mod_beg = NULL;
-  dylib_find_proc(pc, &proc_beg, &mod_beg);
-
-  return (proc_beg == __libc_start_main ||
-          proc_beg == __clone2);
-}
-#else
-bool
-dylib_isin_start_func(void* pc)
-{
-  extern int __libc_start_main(void); // start of a process
-  extern int __clone(void);           // start of a thread (extern)
-  extern int clone(void);             // start of a thread (weak)
-
-  void* proc_beg = NULL, *mod_beg = NULL;
-  dylib_find_proc(pc, &proc_beg, &mod_beg);
-  return (proc_beg == __libc_start_main || 
-	  proc_beg == clone || proc_beg == __clone);
-}
-#endif  // __ia64__ && __linux__
-
-const char* 
-dylib_find_proc_name(const void* pc)
-{
-  Dl_info dli;
-  int ret = dladdr(pc, &dli);
-  if (ret) {
-    return (dli.dli_sname) ? dli.dli_sname : dli.dli_fname;
-  }
-  else {
-    return NULL;
-  }
-}
-
-
-
 //*****************************************************************************
 // private operations
 //*****************************************************************************
 
-void 
+static void
 dylib_get_segment_bounds(struct dl_phdr_info *info, 
 			 struct dylib_seg_bounds_s *bounds)
 {
@@ -315,39 +184,6 @@ dylib_get_segment_bounds(struct dl_phdr_info *info,
 
   bounds->start = start;
   bounds->end = end;
-}
-
-
-static int
-dylib_map_open_dsos_callback(struct dl_phdr_info *info, size_t size, 
-			     void *vdso_start)
-{
-  struct dylib_seg_bounds_s bounds;
-  dylib_get_segment_bounds(info, &bounds);
-
-  // the file name provided by dl_iterate_phdr for the vdso segment 
-  // is a pseudo-file, so we can't process it directly below, which 
-  // expects a real file
-  if (bounds.start != vdso_start) {
-    fnbounds_ensure_mapped_dso(info->dlpi_name, bounds.start, bounds.end, info);
-  }
-
-  return 0;
-}
-
-
-static int
-dylib_find_module_bounds_by_name_callback(struct dl_phdr_info* info, 
-					  size_t size, void* fargs_v)
-{
-  struct dylib_fmbn_s* fargs = (struct dylib_fmbn_s*) fargs_v;
-
-  if (strcmp(info->dlpi_name, fargs->module_name) == 0) {
-    dylib_get_segment_bounds(info, &fargs->bounds);
-    return 1;
-  }
-
-  return 0;
 }
 
 

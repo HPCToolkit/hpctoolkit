@@ -634,6 +634,7 @@ AM_CONDITIONAL([HOST_CPU_X86_64], [test "${HOST_CPU_X86_64}" = yes])
 AM_CONDITIONAL([HOST_CPU_X86_FAMILY], [test "${HOST_CPU_X86_FAMILY}" = yes])
 AM_CONDITIONAL([HOST_CPU_IA64], [test "$HOST_CPU_IA64" = yes])
 AM_CONDITIONAL([HOST_CPU_AARCH64], [test "$HOST_CPU_AARCH64" = yes])
+AC_SUBST([HOST_CPU_AARCH64])
 
 #-------------------------------------------------
 # Host-specific compiler settings
@@ -4093,6 +4094,37 @@ if test "$DYNINST" != no ; then
   LD_LIBRARY_PATH="$ORIG_LD_LIBRARY_PATH"
 fi
 
+#-------------------------------------------------
+
+# Test if dyninst has Intel GPU support.
+
+dyninst_intel_gpu=no
+
+if test "$DYNINST" != no ; then
+  AC_MSG_CHECKING([if dyninst supports intel gpus])
+
+  AC_COMPILE_IFELSE([
+  AC_LANG_SOURCE([[
+#include <entryIDs.h>
+unsigned int has_intel_enum(void)
+{
+  return intel_gpu_op_general;
+}
+]])],
+  [dyninst_intel_gpu=yes ; dyninst_features="$dyninst_features intel-gpu"],
+  [dyninst_intel_gpu=no])
+
+  AC_MSG_RESULT([$dyninst_intel_gpu])
+fi
+
+if test "$dyninst_intel_gpu" = yes ; then
+  AC_DEFINE(DYNINST_SUPPORTS_INTEL_GPU, 1, [dyninst supports Intel GPUs])
+fi
+
+#-------------------------------------------------
+
+# Restore C++ flags from dyninst tests
+
 AC_LANG_POP
 CXXFLAGS="$ORIG_CXXFLAGS"
 
@@ -4810,39 +4842,514 @@ AC_SUBST([OPT_CUPTI_IFLAGS])
 AC_SUBST([OPT_CUPTI_LDFLAGS])
 
 
+
+#-------------------------------------------------
+# Option: --with-opencl=PATH
+#-------------------------------------------------
+
+OPENCL=no
+OPT_HAVE_OPENCL=no
+OPT_OPENCL_IFLAGS=
+
+AC_ARG_WITH([opencl],
+  [AS_HELP_STRING([--with-opencl=PATH],
+      [path to opencl headers])],
+  [OPENCL="$withval"],
+  [])
+
+AC_MSG_CHECKING([for opencl])
+
+case "$OPENCL" in
+  /* )
+    if test ! -f "${OPENCL}/include/CL/cl.h" ; then
+      AC_MSG_ERROR([unable to find CL/cl.h in: $OPENCL])
+    else
+      OPT_OPENCL_IFLAGS="-I${OPENCL}/include"
+      OPT_HAVE_OPENCL=yes
+    fi
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([opencl header path must be absolute: $OPENCL])
+    ;;
+esac
+
+if test "$OPENCL" = yes && test "$OPT_HAVE_OPENCL" = no ; then
+  AC_MSG_ERROR([use --with-opencl to provide path/location of opencl headers])
+fi
+
+if test "$OPT_HAVE_OPENCL" = yes ; then
+  AC_MSG_NOTICE([The <CL/cl.h> header file is available.])
+fi
+
+AM_CONDITIONAL([OPT_ENABLE_OPENCL], [test "$OPT_HAVE_OPENCL" = yes])
+
+AC_MSG_RESULT([$OPENCL])
+
+AC_SUBST([OPT_OPENCL_IFLAGS])
+
+
+#-------------------------------------------------
+# Option: --with-igc=PATH
+#-------------------------------------------------
+
+IGC=no
+OPT_HAVE_IGC=no
+OPT_IGC_IFLAGS=
+OPT_IGC_LDFLAGS=
+
+AC_ARG_WITH([igc],
+  [AS_HELP_STRING([--with-igc=PATH],
+      [path to igc install directory])],
+  [IGC="$withval"],
+  [])
+
+AC_MSG_CHECKING([for igc])
+
+case "$IGC" in
+  /* )
+    if test ! -f "${IGC}/include/igc/igc.opencl.h" ; then
+      AC_MSG_ERROR([unable to find igc.opencl.h in: $IGC])
+    fi
+    OPT_IGC_IFLAGS="-DENABLE_IGC -I${IGC}/include"
+
+    IGC_LDFLAGS =
+    IGA_LDFLAGS =
+
+    for lib in $multilib_path ; do
+      if test -f "${IGC}/${lib}/libigc.so" ; then
+        IGC_LDFLAGS="-L${IGC}/$lib -Wl,-rpath=${IGC}/$lib -ligc"
+        break
+      fi
+    done
+    if test "x$IGC_LDFLAGS" = x ; then
+      AC_MSG_ERROR([unable to find libigc.so in: $IGC])
+    fi
+
+    for lib in $multilib_path ; do
+      if test -f "${IGC}/${lib}/libiga64.so" ; then
+        IGA_LDFLAGS="-L${IGC}/$lib -Wl,-rpath=${IGC}/$lib -liga64"
+        break
+      fi
+    done
+    if test "x$IGA_LDFLAGS" = x ; then
+      AC_MSG_ERROR([unable to find libiga.so in: $IGC])
+    fi
+
+    OPT_IGC_LDFLAGS="${IGC_LDFLAGS} ${IGA_LDFLAGS}"
+
+    OPT_HAVE_IGC=yes
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([igc directory must be absolute path: $IGC])
+    ;;
+esac
+
+AM_CONDITIONAL([OPT_ENABLE_IGC], [test "$OPT_HAVE_IGC" = yes])
+
+AC_MSG_RESULT([$IGC])
+
+AC_SUBST([OPT_IGC])
+AC_SUBST([OPT_IGC_IFLAGS])
+AC_SUBST([OPT_IGC_LDFLAGS])
+
+#-------------------------------------------------
+# Option: --with-metrics-discovery=PATH
+#-------------------------------------------------
+
+METRICS_DISCOVERY=no
+OPT_HAVE_METRICS_DISCOVERY=no
+OPT_METRICS_DISCOVERY_IFLAGS=
+OPT_METRICS_DISCOVERY_LDFLAGS=
+
+AC_ARG_WITH([metrics-discovery],
+  [AS_HELP_STRING([--with-metrics-discovery=PATH],
+      [path to metrics-discovery install directory])],
+  [METRICS_DISCOVERY="$withval"],
+  [])
+
+AC_MSG_CHECKING([for metrics-discovery])
+
+case "$METRICS_DISCOVERY" in
+  /* )
+    if test ! -f "${METRICS_DISCOVERY}/include/metrics_discovery_api.h" ; then
+      AC_MSG_ERROR([unable to find metrics_discovery_api.h in: $METRICS_DISCOVERY])
+    fi
+    OPT_METRICS_DISCOVERY_IFLAGS="-I${METRICS_DISCOVERY}/include"
+
+    for lib in $multilib_path ; do
+      if test -f "${METRICS_DISCOVERY}/${lib}/libmd.so" ; then
+        OPT_METRICS_DISCOVERY_LDFLAGS="-L${METRICS_DISCOVERY}/$lib -Wl,-rpath=${METRICS_DISCOVERY}/$lib -lmd"
+        break
+      fi
+    done
+    if test "x$OPT_METRICS_DISCOVERY_LDFLAGS" = x ; then
+      AC_MSG_ERROR([unable to find libmd.so in: $METRICS_DISCOVERY])
+    fi
+    OPT_HAVE_METRICS_DISCOVERY=yes
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([metrics-discovery directory must be absolute path: $METRICS_DISCOVERY])
+    ;;
+esac
+
+AM_CONDITIONAL([OPT_ENABLE_METRICS_DISCOVERY], [test "$OPT_HAVE_METRICS_DISCOVERY" = yes])
+
+AC_MSG_RESULT([$METRICS_DISCOVERY])
+
+AC_SUBST([OPT_METRICS_DISCOVERY])
+AC_SUBST([OPT_METRICS_DISCOVERY_IFLAGS])
+AC_SUBST([OPT_METRICS_DISCOVERY_LDFLAGS])
+
+#-------------------------------------------------
+# Option: --with-gtpin=PATH
+#-------------------------------------------------
+
+GTPIN=no
+OPT_HAVE_GTPIN=no
+OPT_GTPIN_IFLAGS=
+OPT_GTPIN_LIBDIR=
+
+AC_ARG_WITH([gtpin],
+  [AS_HELP_STRING([--with-gtpin=PATH],
+      [path to gtpin install directory])],
+  [GTPIN="$withval"],
+  [])
+
+AC_MSG_CHECKING([for gtpin])
+
+case "$GTPIN" in
+  /* )
+    if test ! -f "${GTPIN}/Profilers/Include/gtpin.h" ; then
+      AC_MSG_ERROR([unable to find gtpin.h in: $GTPIN])
+    fi
+    OPT_GTPIN_IFLAGS="-I${GTPIN}/Profilers/Include -I${GTPIN}/Profilers/Include/ged/intel64/"
+
+    if test -f "${GTPIN}/Profilers/Lib/intel64/libgtpin.so" ; then
+      OPT_GTPIN_LIBDIR="${GTPIN}/Profilers/Lib/intel64"
+    fi
+
+    if test "x$OPT_GTPIN_LIBDIR" = x ; then
+      AC_MSG_ERROR([unable to find libgtpin.so in: $GTPIN])
+    fi
+    OPT_HAVE_GTPIN=yes
+    ;;
+  no )
+    ;;
+  * )
+    AC_MSG_ERROR([gtpin directory must be absolute path: $GTPIN])
+    ;;
+esac
+
+AM_CONDITIONAL([OPT_ENABLE_GTPIN], [test "$OPT_HAVE_GTPIN" = yes])
+
+AC_MSG_RESULT([$GTPIN])
+
+AC_SUBST([OPT_GTPIN])
+AC_SUBST([OPT_GTPIN_IFLAGS])
+AC_SUBST([OPT_GTPIN_LIBDIR])
+
+
 #-------------------------------------------------
 # Option: --with-rocm=PATH
 #-------------------------------------------------
 
-# ROCM default install path is /usr/local/rocm
+# Can specify ROCM with all-in-one ROCM + HIP directory (normally
+# /opt/rocm), or with spack packages: hip, rocm-dbgapi, roctracer-dev,
+# or partially with /opt/rocm plus a subset of spack packages.
+#
+# Note: may use both --with-rocm plus specific rocm package(s).
+# In this case, the specific overrides the general.
 
-OPT_ROCM=
-OPT_ROCM_INCPATH=
-OPT_ROCM_LDFLAGS=
-OPT_ROCM_LIBPATH=
+ROCM=
+ROCM_HIP=
+ROCM_DBGAPI=
+ROCM_TRACER=
 
 AC_ARG_WITH([rocm],
   AS_HELP_STRING([--with-rocm=PATH],
-                 [use given ROCM installation (absolute path) with hpcrun (default is NO)]),
-  [if test $withval != no; then
-     OPT_HAVE_ROCM=yes
-     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
-       AC_MSG_ERROR([--with-rocm requires absolute path as argument; given '${withval}'])
-     fi
-     OPT_ROCM=${withval}
-   fi])
+      [path to full ROCM + HIP install directory]),
+  [ROCM="$withval"], [])
+
+AC_ARG_WITH([rocm-hip],
+  AS_HELP_STRING([--with-rocm-hip=PATH],
+      [path to hip install directory]),
+  [ROCM_HIP="$withval"], [])
+
+AC_ARG_WITH([rocm-dbgapi],
+  AS_HELP_STRING([--with-rocm-dbgapi=PATH],
+      [path to rocm-dbgapi install directory]),
+  [ROCM_DBGAPI="$withval"], [])
+
+AC_ARG_WITH([rocm-tracer],
+  AS_HELP_STRING([--with-rocm-tracer=PATH],
+      [path to roctracer-dev install directory]),
+  [ROCM_TRACER="$withval"], [])
+
+ROCM_HIP_IFLAGS=
+ROCM_DBGAPI_IFLAGS=
+ROCM_TRACER_IFLAGS=
+
+ROCM_HIP_LD_DIR=
+ROCM_DBGAPI_LD_DIR=
+ROCM_TRACER_LD_DIR=
+
+ROCM_HIP_MESG=
+ROCM_DBGAPI_MESG=
+ROCM_TRACER_MESG=
+
+require_rocm=no
+
+AC_MSG_NOTICE([checking for rocm ....])
+
+#
+# The all-in-one system rocm, commonly /opt/rocm.
+#
+case "$ROCM" in
+  /* )
+    require_rocm=yes
+    found=no
+
+    # HIP
+    if test -f "$ROCM/hip/include/hip/hip_runtime.h" ; then
+      AC_MSG_NOTICE([found $ROCM/hip/include/hip/hip_runtime.h])
+      ROCM_HIP_IFLAGS="-I$ROCM/hip/include"
+      ROCM_HIP_MESG="$ROCM/hip"
+      found=yes
+    fi
+    if test -f "$ROCM/hip/lib/libamdhip64.so" ; then
+      AC_MSG_NOTICE([found $ROCM/hip/lib/libamdhip64.so])
+      ROCM_HIP_LD_DIR="$ROCM/hip/lib"
+      ROCM_HIP_MESG="$ROCM/hip"
+      found=yes
+    fi
+
+    # AMD-DBGAPI
+    if test -f "$ROCM/include/amd-dbgapi.h" ; then
+      AC_MSG_NOTICE([found $ROCM/include/amd-dbgapi.h])
+      ROCM_DBGAPI_IFLAGS="-I$ROCM/include"
+      ROCM_DBGAPI_MESG="$ROCM"
+      found=yes
+    fi
+    if test -f "$ROCM/lib/librocm-dbgapi.so" ; then
+      AC_MSG_NOTICE([found $ROCM/lib/librocm-dbgapi.so])
+      ROCM_DBGAPI_LD_DIR="$ROCM/lib"
+      ROCM_DBGAPI_MESG="$ROCM"
+      found=yes
+    fi
+
+    # ROCTRACER
+    if test -f "$ROCM/roctracer/include/roctracer_hip.h" ; then
+      AC_MSG_NOTICE([found $ROCM/roctracer/include/roctracer_hip.h])
+      ROCM_TRACER_IFLAGS="-I$ROCM/roctracer/include"
+      ROCM_TRACER_MESG="$ROCM/roctracer"
+      found=yes
+    fi
+    if test -f "$ROCM/roctracer/lib/libroctracer64.so" ; then
+      AC_MSG_NOTICE([found $ROCM/roctracer/lib/libroctracer64.so])
+      ROCM_TRACER_LD_DIR="$ROCM/roctracer/lib"
+      ROCM_TRACER_MESG="$ROCM/roctracer"
+      found=yes
+    fi
+
+    # warn if given dir has nothing useful
+    if test "$found" = no ; then
+      AC_MSG_WARN([found nothing useful in $ROCM])
+    fi
+    ;;
+  * )
+    ROCM=no
+    ;;
+esac
+
+#
+# Individual packages, the specific overrides the general.
+#
+case "$ROCM_HIP" in
+  /* )
+    require_rocm=yes
+    found=no
+
+    if test -f "$ROCM_HIP/include/hip/hip_runtime.h" ; then
+      AC_MSG_NOTICE([found $ROCM_HIP/include/hip/hip_runtime.h])
+      ROCM_HIP_IFLAGS="-I$ROCM_HIP/include"
+      ROCM_HIP_MESG="$ROCM_HIP"
+      found=yes
+    fi
+    if test -f "$ROCM_HIP/lib/libamdhip64.so" ; then
+      AC_MSG_NOTICE([found $ROCM_HIP/lib/libamdhip64.so])
+      ROCM_HIP_LD_DIR="$ROCM_HIP/lib"
+      ROCM_HIP_MESG="$ROCM_HIP"
+      found=yes
+    fi
+    if test "$found" = no ; then
+      AC_MSG_WARN([found nothing useful in $ROCM_HIP])
+    fi
+    ;;
+  * )
+    ROCM_HIP=no
+    ;;
+esac
+
+case "$ROCM_DBGAPI" in
+  /* )
+    require_rocm=yes
+    found=no
+
+    if test -f "$ROCM_DBGAPI/include/amd-dbgapi.h" ; then
+      AC_MSG_NOTICE([found $ROCM_DBGAPI/include/amd-dbgapi.h])
+      ROCM_DBGAPI_IFLAGS="-I$ROCM_DBGAPI/include"
+      ROCM_DBGAPI_MESG="$ROCM_DBGAPI"
+      found=yes
+    fi
+    if test -f "$ROCM_DBGAPI/lib/librocm-dbgapi.so" ; then
+      AC_MSG_NOTICE([found $ROCM_DBGAPI/lib/librocm-dbgapi.so])
+      ROCM_DBGAPI_LD_DIR="$ROCM_DBGAPI/lib"
+      ROCM_DBGAPI_MESG="$ROCM_DBGAPI"
+      found=yes
+    fi
+    if test "$found" = no ; then
+      AC_MSG_WARN([found nothing useful in $ROCM_DBGAPI])
+    fi
+    ;;
+  * )
+    ROCM_DBGAPI=no
+    ;;
+esac
+
+case "$ROCM_TRACER" in
+  /* )
+    require_rocm=yes
+    found=no
+
+    if test -f "$ROCM_TRACER/roctracer/include/roctracer_hip.h" ; then
+      AC_MSG_NOTICE([found $ROCM_TRACER/roctracer/include/roctracer_hip.h])
+      ROCM_TRACER_IFLAGS="-I$ROCM_TRACER/roctracer/include"
+      ROCM_TRACER_MESG="$ROCM_TRACER/roctracer"
+      found=yes
+    fi
+    if test -f "$ROCM_TRACER/roctracer/lib/libroctracer64.so" ; then
+      AC_MSG_NOTICE([found $ROCM_TRACER/roctracer/lib/libroctracer64.so])
+      ROCM_TRACER_LD_DIR="$ROCM_TRACER/roctracer/lib"
+      ROCM_TRACER_MESG="$ROCM_TRACER/roctracer"
+      found=yes
+    fi
+    if test "$found" = no ; then
+      AC_MSG_WARN([found nothing useful in $ROCM_TRACER])
+    fi
+    ;;
+  * )
+    ROCM_TRACER=no
+    ;;
+esac
+
+#
+# Check that we found all the pieces.
+#
+OPT_HAVE_ROCM=no
+
+if test "$require_rocm" = yes
+then
+  if test "x$ROCM_HIP_IFLAGS" = x ; then
+    AC_MSG_ERROR([unable to find hip_runtime.h])
+  fi
+  if test "x$ROCM_DBGAPI_IFLAGS" = x ; then
+    AC_MSG_ERROR([unable to find amd-dbgapi.h])
+  fi
+  if test "x$ROCM_TRACER_IFLAGS" = x ; then
+    AC_MSG_ERROR([unable to find roctracer_hip.h])
+  fi
+
+  if test "x$ROCM_HIP_LD_DIR" = x ; then
+    AC_MSG_ERROR([unable to find libamdhip64.so])
+  fi
+  if test "x$ROCM_DBGAPI_LD_DIR" = x ; then
+    AC_MSG_ERROR([unable to find librocm-dbgapi.so])
+  fi
+  if test "x$ROCM_TRACER_LD_DIR" = x ; then
+    AC_MSG_ERROR([unable to find libroctracer64.so])
+  fi
+
+  OPT_HAVE_ROCM=yes
+  OPT_ROCM_IFLAGS="$ROCM_HIP_IFLAGS  $ROCM_DBGAPI_IFLAGS  $ROCM_TRACER_IFLAGS"
+  OPT_ROCM_LD_LIB_PATH="${ROCM_HIP_LD_DIR}:${ROCM_DBGAPI_LD_DIR}:${ROCM_TRACER_LD_DIR}"
+fi
+
+#
+# Check for ROCM version
+#
+rocm_mesg=no
+
+if test "$OPT_HAVE_ROCM" = yes ; then
+  version_file="${ROCM_HIP_MESG}/include/hip/hip_version.h"
+
+  rocm_major=`grep VERSION_MAJOR $version_file | head -1 | awk '{ print $3 }'`
+  rocm_minor=`grep VERSION_MINOR $version_file | head -1 | awk '{ print $3 }'`
+
+  if test "x$rocm_major" = x || test "x$rocm_minor" = x ; then
+    AC_MSG_WARN([unable to find rocm version])
+    rocm_version=unknown
+  else
+    rocm_version="${rocm_major}.${rocm_minor}"
+
+    # Require 3.10 or 4.0 or greater.
+    if ( test $rocm_major -eq 3 && test $rocm_minor -ge 10 )  \
+       || test $rocm_major -ge 4
+    then :
+    else
+      AC_MSG_ERROR([rocm version $rocm_version is too old, use 3.10.0 or later])
+    fi
+  fi
+  rocm_mesg="yes, version: $rocm_version"
+fi
+
+AC_MSG_NOTICE([rocm: $rocm_mesg])
 
 if test "$OPT_HAVE_ROCM" = "yes" ; then
   AC_DEFINE(USE_ROCM, 1, [use ROCM])
-  OPT_ROCM_IFLAGS="-I${OPT_ROCM}/hip -I${OPT_ROCM}/hip/include -I${OPT_ROCM}/roctracer/include -I${OPT_ROCM}/hcc/include -I${OPT_ROCM}/hsa/include "
 fi
 
 AM_CONDITIONAL([OPT_ENABLE_ROCM], [test "$OPT_HAVE_ROCM" = yes])
 
-AC_SUBST([OPT_ROCM])
 AC_SUBST([OPT_ROCM_IFLAGS])
-AC_SUBST([OPT_ROCM_LDFLAGS])
+AC_SUBST([OPT_ROCM_LD_LIB_PATH])
 
+
+#-------------------------------------------------
+# Option: --with-level0=PATH
+#-------------------------------------------------
+
+OPT_LEVEL0=
+OPT_LEVEL0_INCPATH=
+OPT_LEVEL0_LDFLAGS=
+OPT_LEVEL0_LIBPATH=
+
+AC_ARG_WITH([level0],
+  AS_HELP_STRING([--with-level0=PATH],
+                 [use given Level Zero installation (absolute path) with hpcrun (default is NO)]),
+  [if test $withval != no; then
+     OPT_HAVE_LEVEL0=yes
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-level0 requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_LEVEL0=${withval}
+   fi])
+
+if test "$OPT_HAVE_LEVEL0" = "yes" ; then
+  AC_DEFINE(USE_LEVEL0, 1, [use Level Zero])
+  OPT_LEVEL0_IFLAGS="-I${OPT_LEVEL0}/include"
+fi
+
+AM_CONDITIONAL([OPT_ENABLE_LEVEL0], [test "$OPT_HAVE_LEVEL0" = yes])
+
+AC_SUBST([OPT_LEVEL0])
+AC_SUBST([OPT_LEVEL0_IFLAGS])
+AC_SUBST([OPT_LEVEL0_LDFLAGS])
 
 #-------------------------------------------------
 # enable-data-centric-tracing: data-centric tracing
@@ -5156,6 +5663,7 @@ AC_MSG_NOTICE([  datacentric?: ${OPT_ENABLE_DATACENTRIC_TRACE}])
 AC_MSG_NOTICE([  hpcserver?:   ${enable_hpcserver}])
 AC_MSG_NOTICE([  hpcstruct:    ${hpcstruct_mesg}])
 AC_MSG_NOTICE([  perf-events:  ${perf_event_mesg}])
+AC_MSG_NOTICE([  rtld-audit:   ${rtld_audit_mesg}])
 AC_MSG_NOTICE([])
 AC_MSG_NOTICE([  C compiler: $CC_VERSION])
 AC_MSG_NOTICE([  Path:      $CC_PATH])
@@ -5195,7 +5703,16 @@ AC_MSG_NOTICE([  xerces:       ${XERCES}])
 AC_MSG_NOTICE([  zlib:         ${ZLIB}])
 AC_MSG_NOTICE([  cuda:         ${CUDA}])
 AC_MSG_NOTICE([  cupti:        ${CUPTI}])
+AC_MSG_NOTICE([  igc:          ${IGC}])
+AC_MSG_NOTICE([  gtpin:        ${GTPIN}])
+AC_MSG_NOTICE([  metrics-discovery: ${METRICS_DISCOVERY}])
 AC_MSG_NOTICE([  papi-c-cupti: ${use_papi_c_cupti}])
+AC_MSG_NOTICE([  rocm:         ${rocm_mesg}])
+if test "$OPT_HAVE_ROCM" = yes ; then
+  AC_MSG_NOTICE([  rocm hip:     $ROCM_HIP_MESG])
+  AC_MSG_NOTICE([  rocm dbgapi:  $ROCM_DBGAPI_MESG])
+  AC_MSG_NOTICE([  rocm tracer:  $ROCM_TRACER_MESG])
+fi
 AC_MSG_NOTICE([  valgrind:     ${VALGRIND}])
 AC_MSG_NOTICE([  valgrind:     annotated: ${OPT_ENABLE_VG_ANNOTATIONS}])
 

@@ -120,7 +120,11 @@ endif
 
 if OPT_ENABLE_HPCRUN_DYNAMIC
   noinst_LTLIBRARIES = libhpcrun.la
+  pkglib_LTLIBRARIES += libhpcrun_fake_audit.la
+  pkglib_LTLIBRARIES += libhpcrun_audit.la
+  pkglib_LTLIBRARIES += libhpcrun_dlmopen.la
   pkglib_LTLIBRARIES += libhpcrun_ga.la
+  pkglib_LTLIBRARIES += libhpcrun_gprof.la
   pkglib_LTLIBRARIES += libhpcrun_io.la
   pkglib_LTLIBRARIES += libhpcrun_memleak.la
   pkglib_LTLIBRARIES += libhpcrun_pthread.la
@@ -132,6 +136,7 @@ if OPT_ENABLE_HPCRUN_STATIC
   noinst_PROGRAMS  = libhpcrun.o
   pkglib_LIBRARIES += libhpcrun_wrap.a
   pkglib_LIBRARIES += libhpcrun_ga_wrap.a
+  pkglib_LIBRARIES += libhpcrun_gprof_wrap.a
   pkglib_LIBRARIES += libhpcrun_io_wrap.a
   pkglib_LIBRARIES += libhpcrun_memleak_wrap.a
   pkglib_LIBRARIES += libhpcrun_pthread_wrap.a
@@ -158,6 +163,7 @@ XED2_INC = @XED2_INC@
 XED2_HPCRUN_LIBS =  @XED2_HPCRUN_LIBS@
 XED2_HPCLINK_LIBS = @XED2_HPCLINK_LIBS@
 CUPTI_INC_FLGS = @OPT_CUPTI_IFLAGS@
+OPENCL_IFLAGS = @OPT_OPENCL_IFLAGS@
 CUPTI_LD_FLGS = @OPT_CUPTI_LDFLAGS@
 CUPTI_BASE = @OPT_CUPTI@
 
@@ -368,11 +374,18 @@ MY_BASE_FILES =				\
 	gpu/gpu-monitoring.c 		\
 	gpu/gpu-monitoring-thread-api.c \
 	gpu/gpu-op-placeholders.c 	\
+	gpu/gpu-operation-item.c			\
+	gpu/gpu-operation-item-process.c   \
+	gpu/gpu-operation-channel.c \
+	gpu/gpu-operation-channel-set.c \
+	gpu/gpu-operation-multiplexer.c 	\
 	gpu/gpu-splay-allocator.c	\
 	gpu/gpu-stream-id-map.c		\
 	gpu/gpu-trace.c			\
 	gpu/gpu-trace-channel.c		\
 	gpu/gpu-trace-item.c		\
+	gpu/gpu-trace-channel-set.c	\
+	gpu/gpu-trace-demultiplexer.c	\
 	\
 	ompt/ompt-callstack.c           \
 	ompt/ompt-defer.c               \
@@ -446,7 +459,6 @@ MY_DYNAMIC_FILES = 			\
 	fnbounds/fnbounds_client.c	\
 	fnbounds/fnbounds_dynamic.c	\
 	monitor-exts/openmp.c		\
-	hpcrun_dlfns.c                  \
         custom-init-dynamic.c
 
 MY_STATIC_FILES = 			\
@@ -503,12 +515,53 @@ MY_CUPTI_FILES = sample-sources/nvidia.c	\
 	gpu/nvidia/cupti-gpu-api.c		
 endif
 
+if OPT_ENABLE_OPENCL
+MY_OPENCL_FILES = \
+  sample-sources/opencl.c \
+	gpu/opencl/opencl-api.c \
+	gpu/opencl/opencl-memory-manager.c \
+	gpu/opencl/opencl-activity-translate.c \
+	gpu/opencl/opencl-h2d-map.c \
+	gpu/opencl/opencl-queue-map.c \
+	gpu/opencl/opencl-context-map.c
+
+pkglib_LTLIBRARIES += libhpcrun_opencl.la
+libhpcrun_opencl_la_CPPFLAGS  = -I$(top_srcdir)/src $(OPENCL_IFLAGS)
+libhpcrun_opencl_la_SOURCES   = gpu/opencl/opencl-api-wrappers.c
+libhpcrun_opencl_la_LDFLAGS   = -Wl,-Bsymbolic
+endif
+
+if OPT_ENABLE_GTPIN
+MY_GTPIN_FILES = \
+	gpu/instrumentation/kernel-data-map.c \
+	gpu/instrumentation/gtpin-instrumentation.c \
+	gpu/instrumentation/gtpin-correlation-id-map.c
+endif
 
 if OPT_ENABLE_ROCM
-MY_ROCM_FILES=\
+MY_ROCM_FILES =\
 	sample-sources/amd.c \
 	gpu/amd/roctracer-activity-translate.c \
-	gpu/amd/roctracer-api.c 	
+	gpu/amd/roctracer-api.c \
+	gpu/amd/rocm-debug-api.c \
+	gpu/amd/rocm-binary-processing.c
+endif
+
+if OPT_ENABLE_LEVEL0
+MY_LEVEL0_FILES=\
+	sample-sources/level0.c \
+	gpu/level0/level0-api.c \
+	gpu/level0/level0-command-list-context-map.c \
+	gpu/level0/level0-command-list-map.c \
+	gpu/level0/level0-command-process.c \
+	gpu/level0/level0-data-node.c \
+	gpu/level0/level0-event-map.c \
+	gpu/level0/level0-handle-map.c
+
+pkglib_LTLIBRARIES += libhpcrun_level0.la
+libhpcrun_level0_la_SOURCES   = gpu/level0/level0-api-wrappers.c
+libhpcrun_level0_la_LDFLAGS   = -Wl,-Bsymbolic
+
 endif
 
 MY_UPC_FILES = sample-sources/upc.c
@@ -537,7 +590,9 @@ MY_INCLUDE_DIRS =			\
         $(OPT_CUDA_IFLAGS)             \
         $(OPT_CUPTI_IFLAGS)             \
 	-I$(LIBELF_INC)			\
-	-I$(LIBMONITOR_INC)
+	-I$(LIBMONITOR_INC)	\
+	$(GOTCHA_IFLAGS)	\
+	$(OPENCL_IFLAGS)
 
 MY_MIPS_INCLUDE_DIRS = \
 	-I$(srcdir)/unwind/mips
@@ -558,6 +613,12 @@ libhpcrun_la_SOURCES = 			\
 	$(MY_BASE_FILES)		\
 	$(MY_DYNAMIC_FILES)
 
+libhpcrun_fake_audit_la_SOURCES =	\
+	audit/fake-auditor.c
+
+libhpcrun_audit_la_SOURCES =		\
+	audit/auditor.c
+
 libhpcrun_o_SOURCES = 			\
 	$(MY_BASE_FILES)		\
 	$(MY_STATIC_FILES)
@@ -571,6 +632,10 @@ libhpcrun_ga_la_SOURCES = 		\
 
 libhpcrun_ga_wrap_a_SOURCES = 		\
 	sample-sources/ga-overrides.c
+
+libhpcrun_gprof_la_SOURCES = gprof.c
+
+libhpcrun_gprof_wrap_a_SOURCES = gprof.c
 
 libhpcrun_io_la_SOURCES = 		\
 	sample-sources/io-over.c
@@ -612,6 +677,14 @@ if OPT_BGQ_BACKEND
   libhpcrun_la_CPPFLAGS += -I$(srcdir)/utilities/bgq-cnk
 endif
 
+libhpcrun_fake_audit_la_CPPFLAGS =	\
+	$(MY_CPP_DEFINES)		\
+	$(MY_INCLUDE_DIRS)
+
+libhpcrun_audit_la_CPPFLAGS =		\
+	$(MY_CPP_DEFINES)		\
+	$(MY_INCLUDE_DIRS)
+
 libhpcrun_o_CPPFLAGS =			\
 	-DHPCRUN_STATIC_LINK		\
 	$(MY_CPP_DEFINES)		\
@@ -635,6 +708,15 @@ libhpcrun_ga_wrap_a_CPPFLAGS =		\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
 
+libhpcrun_gprof_la_CPPFLAGS =		\
+	$(MY_CPP_DEFINES)		\
+	$(MY_INCLUDE_DIRS)
+
+libhpcrun_gprof_wrap_a_CPPFLAGS =	\
+	-DHPCRUN_STATIC_LINK		\
+	$(MY_CPP_DEFINES)		\
+	$(MY_INCLUDE_DIRS)
+
 libhpcrun_io_la_CPPFLAGS =		\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
@@ -643,7 +725,6 @@ libhpcrun_io_wrap_a_CPPFLAGS =		\
 	-DHPCRUN_STATIC_LINK		\
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
-
 
 libhpcrun_memleak_la_CPPFLAGS =		\
 	$(MY_CPP_DEFINES)		\
@@ -699,6 +780,8 @@ libhpcrun_o_CFLAGS  = $(CFLAGS) $(HOST_CFLAGS) $(PERFMON_CFLAGS)
 libhpcrun_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_ga_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_ga_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
+libhpcrun_gprof_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
+libhpcrun_gprof_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_io_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_io_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_memleak_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
@@ -728,7 +811,13 @@ OUR_LZMA_A = $(top_builddir)/src/extern/lzma/liblzma.a
 
 libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic
 
+libhpcrun_fake_audit_la_LDFLAGS = -Wl,-Bsymbolic -ldl
+
+libhpcrun_audit_la_LDFLAGS = -Wl,-Bsymbolic -ldl
+
 libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic
+
+libhpcrun_gprof_la_LDFLAGS = -Wl,-Bsymbolic
 
 libhpcrun_io_la_LDFLAGS = -Wl,-Bsymbolic
 
@@ -808,6 +897,8 @@ if HOST_CPU_PPC
   libhpcrun_o_CPPFLAGS  += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_ga_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
+  libhpcrun_gprof_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
+  libhpcrun_gprof_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_io_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_io_wrap_a_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
   libhpcrun_memleak_la_CPPFLAGS += $(MY_PPC_INCLUDE_DIRS)
@@ -830,6 +921,8 @@ if HOST_CPU_X86_FAMILY
   libhpcrun_o_LDADD     += $(XED2_HPCLINK_LIBS) 
   libhpcrun_ga_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
+  libhpcrun_gprof_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
+  libhpcrun_gprof_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_io_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_io_wrap_a_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
   libhpcrun_memleak_la_CPPFLAGS += $(MY_X86_INCLUDE_DIRS)
@@ -865,6 +958,8 @@ if HOST_CPU_AARCH64
   libhpcrun_o_CCASFLAGS  = $(AM_CCASFLAGS)
   libhpcrun_ga_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
   libhpcrun_ga_wrap_a_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
+  libhpcrun_gprof_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
+  libhpcrun_gprof_wrap_a_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
   libhpcrun_io_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
   libhpcrun_io_wrap_a_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
   libhpcrun_memleak_la_CPPFLAGS += $(MY_AARCH64_INCLUDE_DIRS)
@@ -946,9 +1041,33 @@ endif
 if OPT_ENABLE_ROCM
   libhpcrun_la_SOURCES  += $(MY_ROCM_FILES)
   libhpcrun_la_CPPFLAGS += -DENABLE_ROCM
-  libhpcrun_la_CFLAGS   += $(OPT_ROCM_IFLAGS) -g
+  libhpcrun_la_CFLAGS   += $(OPT_ROCM_IFLAGS)
 
   MY_CPP_DEFINES  += -DHPCRUN_SS_AMD
+endif
+
+if OPT_ENABLE_LEVEL0
+  libhpcrun_la_SOURCES  += $(MY_LEVEL0_FILES)
+  libhpcrun_la_CPPFLAGS += -DENABLE_LEVEL0
+  libhpcrun_la_CFLAGS   += $(OPT_LEVEL0_IFLAGS)
+
+  MY_CPP_DEFINES  += -DHPCRUN_SS_LEVEL0
+endif
+
+if OPT_ENABLE_OPENCL
+  libhpcrun_la_SOURCES  += $(MY_OPENCL_FILES)
+  libhpcrun_la_CPPFLAGS += -DENABLE_OPENCL
+  libhpcrun_la_CFLAGS   += $(OPT_OPENCL_IFLAGS)
+
+  MY_CPP_DEFINES  += -DHPCRUN_SS_OPENCL
+endif 
+
+if OPT_ENABLE_GTPIN
+  libhpcrun_la_SOURCES  += $(MY_GTPIN_FILES)
+  libhpcrun_la_CPPFLAGS += -DENABLE_GTPIN -DGTPIN_LIBDIR=$(OPT_GTPIN_LIBDIR)
+  libhpcrun_la_CFLAGS   += $(OPT_GTPIN_IFLAGS)
+
+  MY_CPP_DEFINES  += -DHPCRUN_SS_GTPIN
 endif
 
 if UNW_LIBUNW
@@ -957,6 +1076,9 @@ if UNW_LIBUNW
   UNW_DYNAMIC_LD_FLAGS = $(UNW_LIBUNW_LD_FLAGS)
   UNW_STATIC_LD_FLAGS =  $(UNW_LIBUNW_LD_FLAGS)
 endif
+
+libhpcrun_dlmopen_la_SOURCES   = dlmopen/dlmopen.c
+libhpcrun_dlmopen_la_LDFLAGS   = -ldl
 
 libhpcrun_la_CFLAGS += $(GOTCHA_IFLAGS)
 libhpcrun_la_LDFLAGS += $(GOTCHA_LDFLAGS)
@@ -1056,6 +1178,7 @@ endif
 MONITOR_NAMES = -G 'monitor_*'
 HPCRUN_NAMES =  -G 'hpcrun_*' -G 'hpctoolkit_*'
 MISC_NAMES =    -G 'debug_flag_*' -G 'messages_*' -G ompt_start_tool
+OPENCL_NAMES = -G 'clBuildProgram' -G 'clCreate*' -G 'clEnqueue*' -G 'clSetKernelArg' -G 'cl*Event*'
 
 DYN_SYSCALL_LIST = poll ppoll pselect select
 DYN_SYSCALL_NAMES = $(foreach name,$(DYN_SYSCALL_LIST),-G $(name))
@@ -1072,7 +1195,7 @@ if OPT_ENABLE_HPCRUN
 	mkdir $(WORK_DYN)
 	cd $(WORK_DYN) && $(AR) x ../.libs/libhpcrun.a
 	$(LD) -r $(WORK_DYN)/*.o $(libhpcrun_la_LIBADD) -o $(WORK_DYN)/part1.o
-	$(OBJCOPY) -w $(MONITOR_NAMES) $(HPCRUN_NAMES) $(DYN_SYSCALL_NAMES) $(MISC_NAMES)  \
+	$(OBJCOPY) -w $(MONITOR_NAMES) $(HPCRUN_NAMES) $(DYN_SYSCALL_NAMES) $(MISC_NAMES) $(OPENCL_NAMES) \
 		$(WORK_DYN)/part1.o $(WORK_DYN)/part2.o
 	$(CC) -shared $(WORK_DYN)/part2.o $(libhpcrun_la_LDFLAGS) -o $(WORK_DYN)/libhpcrun.so
 	$(INSTALL) -m 0755 $(WORK_DYN)/libhpcrun.so $(DESTDIR)$(pkglibdir)

@@ -15,6 +15,9 @@
 /* dyninst uses Instruction::Ptr */
 #undef DYNINST_INSTRUCTION_PTR
 
+/* dyninst supports Intel GPUs */
+#undef DYNINST_SUPPORTS_INTEL_GPU
+
 /* dyninst supports cuda */
 #undef DYNINST_USE_CUDA
 
@@ -194,6 +197,9 @@
 
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
+
+/* use Level Zero */
+#undef USE_LEVEL0
 
 /* use ROCM */
 #undef USE_ROCM

@@ -1,0 +1,93 @@
+#*******************************************************************************
+# a helper template makefile used by hpcstruct at runtime
+#
+# if hpcstruct is passed the name of a measurements directory that contains
+# a gpubins subdirectory, this makefile will be used to orchestrate parallel
+# analysis of all gpubins within the subdirectory.
+#
+# to simplify things at execution time, this makefile will be incorporated
+# into hpcstruct as a string and written to a temporary file if it is needed.
+# this avoids the need for hpcstruct to know how to find a copy of this
+# makefile at runtime in an hpctoolkit installation.
+#*******************************************************************************
+
+#-------------------------------------------------------------------------------
+# $(C): gpubin files
+#-------------------------------------------------------------------------------
+C := $(wildcard $(GPUBIN_DIR)/*.gpubin)
+
+
+#-------------------------------------------------------------------------------
+# $(S): hpcstruct files for gpubins
+#-------------------------------------------------------------------------------
+S := $(patsubst $(GPUBIN_DIR)/%,$(STRUCTS_DIR)/%.hpcstruct,$(C))
+
+
+#-------------------------------------------------------------------------------
+# $(W): warning files that may be generated during structure analysis of gpubins
+#-------------------------------------------------------------------------------
+W := $(patsubst %.hpcstruct,%.warnings,$(S))
+
+
+#-------------------------------------------------------------------------------
+# execute the sequence of commands for each target in a single shell
+#-------------------------------------------------------------------------------
+.ONESHELL:
+.SILENT:
+
+.DEFAULT_GOAL := all
+
+
+#-------------------------------------------------------------------------------
+# rule  for analyzing a gpubin
+# 1. analyze a gpubin file in $(GPUBIN_DIR)
+# 2. produce a hpcstruct file in $(STRUCTS_DIR)
+# 3. leave a warnings file in $(STRUCTS_DIR) if trouble arises
+# 4. announce when analysis of a gpubin begins and ends
+#-------------------------------------------------------------------------------
+$(STRUCTS_DIR)/%.hpcstruct: $(GPUBIN_DIR)/%
+	@gpubin_name=`basename -s x $<`
+	struct_name=$@
+	warn_name=$(STRUCTS_DIR)/$$gpubin_name.warnings
+	if test `du -b $< | tail -1 | awk '{ print $$1 }'` -gt $(PAR_SIZE) ; then
+		if test $(THREADS) -gt 1 ; then
+			echo msg: begin parallel analysis of $$gpubin_name \\($(THREADS) threads\\)
+		else
+			echo msg: begin serial analysis of $$gpubin_name
+		fi
+		hpcstruct -j $(THREADS) --gpucfg $(GPUBIN_CFG) -o $$struct_name $< > $$warn_name 2>&1
+		if test -s $$warn_name ; then
+			echo WARNING: incomplete analysis of $$gpubin_name\\; see $$warn_name for details
+			if test ! -s $$struct_name ; then
+				rm -f $$struct_name
+			fi
+		else
+			rm -f $$warn_name
+		fi
+		if test $(THREADS) -gt 1 ; then
+			echo msg: end parallel analysis of $$gpubin_name
+		else
+			echo msg: end serial analysis of $$gpubin_name
+		fi
+	fi
+
+
+#-------------------------------------------------------------------------------
+# analyze all gpubins to create structure files
+#-------------------------------------------------------------------------------
+all:
+	make -j 1  THREADS=$(JOBS)  PAR_SIZE=$(GPU_SIZE)  analyze
+	make -j $(JOBS)  THREADS=1  PAR_SIZE=0  analyze
+
+analyze: $(S)
+
+
+#-------------------------------------------------------------------------------
+# remove all generated files
+#-------------------------------------------------------------------------------
+clean:
+	@echo removing all hpcstruct files in $(STRUCTS_DIR)
+	@rm -f $(S)
+	@echo removing all warnings in $(STRUCTS_DIR)
+	@rm -f $(W)
+

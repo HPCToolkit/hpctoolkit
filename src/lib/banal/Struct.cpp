@@ -115,7 +115,11 @@
 #include "Struct-Output.hpp"
 #include "Struct-Skel.hpp"
 
-#include "cuda/ReadCubinCFG.hpp"
+#include "gpu/ReadCudaCFG.hpp"
+
+#ifdef ENABLE_IGC
+#include "gpu/ReadIntelCFG.hpp"
+#endif // ENABLE_IGC
 
 #ifdef ENABLE_OPENMP
 #include <omp.h>
@@ -169,7 +173,11 @@ static const string & unknown_link = UNKNOWN_LINK;
 // FIXME: temporary until the line map problems are resolved
 static Symtab * the_symtab = NULL;
 static int cuda_arch = 0;
+static int intel_gpu_arch = 0;
+// We relocate the symbols and line maps of cubins to 'original_offset+cubin_size'
+// to handle the cases in which relocated offsets conflicts with original information
 static size_t cubin_size = 0;
+
 
 static BAnal::Struct::Options opts;
 
@@ -550,6 +558,7 @@ printTime(const char *label, struct timeval *tv_prev, struct rusage *ru_prev,
   cout << endl;
 }
 
+
 //
 // makeStructure -- the main entry point for hpcstruct realmain().
 //
@@ -581,7 +590,6 @@ makeStructure(string filename,
 
   // failure throws an error up the call chain
   inputFile.openFile(filename, InputFileError_Error);
-
   ElfFileVector * elfFileVector = inputFile.fileVector();
   string & sfilename = inputFile.fileName();
   const char * cfilename = inputFile.CfileName();
@@ -591,7 +599,7 @@ makeStructure(string filename,
   }
 
   Output::printStructFileBegin(outFile, gapsFile, sfilename);
-
+	
   for (uint i = 0; i < elfFileVector->size(); i++) {
     bool parsable = true;
     ElfFile *elfFile = (*elfFileVector)[i];
@@ -627,8 +635,8 @@ makeStructure(string filename,
     {
 #pragma omp for  schedule(dynamic, 1)
       for (uint i = 0; i < modVec.size(); i++) {
-	Module * mod = modVec[i];
-	mod->parseLineInformation();
+        Module * mod = modVec[i];
+        mod->parseLineInformation();
       }
     }  // end parallel
 
@@ -643,18 +651,28 @@ makeStructure(string filename,
     omp_set_num_threads(opts.jobs_parse);
 #endif
 
-    // don't run parseapi on cuda binary
-    if (! cuda_file) {
+    bool intel_file = elfFile->isIntelGPUFile();
+
+    if (cuda_file) { // don't run parseapi on cuda binary
+      cuda_arch = elfFile->getArch();
+      cubin_size = elfFile->getLength();
+      parsable = readCudaCFG(search_path, elfFile, the_symtab,
+        structOpts.compute_gpu_cfg, &code_src, &code_obj);
+    } else if (intel_file) { // don't run parseapi on intel binary
+      // TODO(Aaron): determine which generation of intel gpu it is
+      intel_gpu_arch = 1;
+
+      #ifdef ENABLE_IGC
+      parsable = readIntelCFG(search_path, elfFile, the_symtab,
+        structOpts.compute_gpu_cfg, &code_src, &code_obj);
+      #endif // ENABLE_IGC
+    } else {
       code_src = new SymtabCodeSource(symtab);
       code_obj = new CodeObject(code_src);
       code_obj->parse();
+      intel_gpu_arch = 0;
       cuda_arch = 0;
       cubin_size = 0;
-    } else {
-      cuda_arch = elfFile->getArch();
-      cubin_size = elfFile->getLength();
-      parsable = readCubinCFG(search_path, elfFile, the_symtab, 
-			      structOpts.compute_gpu_cfg, &code_src, &code_obj);
     }
 
     if (opts.show_time) {
@@ -682,7 +700,7 @@ makeStructure(string filename,
     mutex output_mtx;
 
     makeWorkList(fileMap, wlPrint, wlLaunch);
-
+		
     Output::printLoadModuleBegin(outFile, elfFile->getFileName());
 
 #pragma omp parallel  default(none)				\
@@ -980,6 +998,8 @@ getProcLineMap(StatementVector & svec, Offset vma, Offset end,
   svec.clear();
 
   if (cuda_arch > 0) {
+    // TODO(Keren): Use the same method below and remove magic numbers for instruction length
+    // mod->getSourceLines(svec, next + cubin_size);
     int len = (cuda_arch >= 70) ? 16 : 8;
 
     StatementVector tmp;
@@ -991,7 +1011,7 @@ getProcLineMap(StatementVector & svec, Offset vma, Offset end,
         if (svec.empty()) {
           svec.push_back(tmp[0]);
         } else if (tmp[0]->getFile() == svec[0]->getFile() &&
-		   tmp[0]->getLine() < svec[0]->getLine()) {
+          tmp[0]->getLine() < svec[0]->getLine()) {
           svec[0] = tmp[0];
         }
       }
@@ -1786,11 +1806,7 @@ doBlock(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func,
   LineMapCache lmcache (ginfo->sym_func, env.realPath);
 
   // iterate through the instructions in this block
-#ifdef DYNINST_INSTRUCTION_PTR
-  map <Offset, Instruction::Ptr> imap;
-#else
   map <Offset, Instruction> imap;
-#endif
   block->getInsns(imap);
 
   int len = 0;
@@ -1798,7 +1814,8 @@ doBlock(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func,
 
   if (cuda_arch > 0) {
     device = "NVIDIA sm_" + std::to_string(cuda_arch);
-    len = (cuda_arch >= 70) ? 16 : 8;
+  } else if (intel_gpu_arch > 0) {
+    device = "INTEL GPU";
   }
   
   for (auto iit = imap.begin(); iit != imap.end(); ++iit) {
@@ -1807,13 +1824,7 @@ doBlock(WorkEnv & env, GroupInfo * ginfo, ParseAPI::Function * func,
     string filenm = "";
     uint line = 0;
 
-    if (cuda_arch == 0) {
-#ifdef DYNINST_INSTRUCTION_PTR
-      len = iit->second->size();
-#else
-      len = iit->second.size();
-#endif
-    }
+    len = iit->second.size();
 
     lmcache.getLineInfo(vma, filenm, line);
 

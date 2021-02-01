@@ -76,6 +76,8 @@
 // local includes
 //***************************************************************************
 
+#include <include/gpu-binary.h>
+
 #include <lib/prof-lean/spinlock.h>
 
 #include <hpcrun/files.h>
@@ -390,6 +392,15 @@ CUPTI_FN
 
 CUPTI_FN
 (
+  cuptiGetTimestamp,
+  (
+    uint64_t* timestamp
+  )
+);
+
+
+CUPTI_FN
+(
  cuptiEnableDomain,
  (
   uint32_t enable,
@@ -559,13 +570,13 @@ cupti_bind
 #define CUPTI_BIND(fn) \
   CHK_DLSYM(cupti, fn);
 
-  FORALL_CUPTI_ROUTINES(CUPTI_BIND)
+  FORALL_CUPTI_ROUTINES(CUPTI_BIND);
 
 #undef CUPTI_BIND
 
-  return 0;
+  return DYNAMIC_BINDING_STATUS_OK;
 #else
-  return -1;
+  return DYNAMIC_BINDING_STATUS_ERROR;
 #endif // ! HPCRUN_STATIC_LINK
 }
 
@@ -590,7 +601,7 @@ cupti_error_callback_dummy // __attribute__((unused))
 {
   
   EEMSG("FATAL: hpcrun failure: failure type = %s, "
-	"function %s failed with error %s", type, fn, error_string);
+      "function %s failed with error %s", type, fn, error_string);
   exit(1);
 }
 
@@ -667,12 +678,12 @@ cupti_load_callback_cuda
   size_t i;
   size_t used = 0;
   used += sprintf(&file_name[used], "%s", hpcrun_files_output_directory());
-  used += sprintf(&file_name[used], "%s", "/cubins/");
+  used += sprintf(&file_name[used], "%s", "/" GPU_BINARY_DIRECTORY "/");
   mkdir(file_name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
   for (i = 0; i < hash_len; ++i) {
     used += sprintf(&file_name[used], "%02x", hash[i]);
   }
-  used += sprintf(&file_name[used], "%s", ".cubin");
+  used += sprintf(&file_name[used], "%s", GPU_BINARY_SUFFIX);
   TMSG(CUPTI, "cubin_id %d hash %s", cubin_id, file_name);
 
   // Write a file if does not exist
@@ -802,6 +813,7 @@ cupti_subscriber_callback
 
     switch (cb_id) {
       //FIXME(Keren): do not support memory allocate and free for current CUPTI version
+      // FIXME(Dejan): here find #bytes from func argument list and atribute it to node in cct(corr_id)
       //case CUPTI_DRIVER_TRACE_CBID_cuMemAlloc:
       //case CUPTI_DRIVER_TRACE_CBID_cu64MemAlloc:
       //case CUPTI_DRIVER_TRACE_CBID_cuMemAllocPitch:
@@ -966,8 +978,7 @@ cupti_subscriber_callback
         gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
 
         if (is_kernel_op) {
-          cct_node_t *kernel_ph = 
-	    gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel);
+          cct_node_t *kernel_ph = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel);
 
 	  ensure_kernel_ip_present(kernel_ph, kernel_ip);
 
@@ -993,7 +1004,7 @@ cupti_subscriber_callback
     } else if (is_kernel_op && cupti_runtime_api_flag && cd->callbackSite ==
       CUPTI_API_ENTER) {
       if (cupti_kernel_ph != NULL) {
-	ensure_kernel_ip_present(cupti_kernel_ph, kernel_ip);
+        ensure_kernel_ip_present(cupti_kernel_ph, kernel_ip);
       }
       if (cupti_trace_ph != NULL) {
 	ensure_kernel_ip_present(cupti_trace_ph, kernel_ip);
@@ -1002,7 +1013,7 @@ cupti_subscriber_callback
       CUPTI_API_ENTER) {
       cct_node_t *ompt_trace_node = ompt_trace_node_get();
       if (ompt_trace_node != NULL) {
-	ensure_kernel_ip_present(ompt_trace_node, kernel_ip);
+        ensure_kernel_ip_present(ompt_trace_node, kernel_ip);
       }
     }
   } else if (domain == CUPTI_CB_DOMAIN_RUNTIME_API) {
@@ -1170,6 +1181,16 @@ cupti_device_timestamp_get
 
 
 void
+cupti_activity_timestamp_get
+(
+ uint64_t *time
+)
+{
+  HPCRUN_CUPTI_CALL(cuptiGetTimestamp, (time));
+}
+
+
+void
 cupti_device_buffer_config
 (
  size_t buf_size,
@@ -1255,6 +1276,7 @@ cupti_buffer_completion_callback
 
   free(buffer);
 }
+
 
 //-------------------------------------------------------------
 // event specification
@@ -1503,7 +1525,7 @@ cupti_activity_flush
 
 
 void
-cupti_device_flush(void *args)
+cupti_device_flush(void *args, int how)
 {
   cupti_activity_flush();
   // TODO(keren): replace cupti with sth. called device queue
@@ -1563,26 +1585,29 @@ cupti_device_init()
   cupti_stop_flag = false;
   cupti_runtime_api_flag = false;
 
-  cupti_correlation_enabled = false;
-  cupti_pc_sampling_enabled = false;
+  // FIXME: Callback shutdown currently disabled to handle issues with fork()
+  // See the comment preceeding sample-sources/nvidia.c:process_event_list for details.
 
-  cupti_correlation_callback = cupti_correlation_callback_dummy;
+  // cupti_correlation_enabled = false;
+  // cupti_pc_sampling_enabled = false;
 
-  cupti_error_callback = cupti_error_callback_dummy;
+  // cupti_correlation_callback = cupti_correlation_callback_dummy;
 
-  cupti_activity_enabled.buffer_request = 0;
-  cupti_activity_enabled.buffer_complete = 0;
+  // cupti_error_callback = cupti_error_callback_dummy;
 
-  cupti_load_callback = 0;
+  // cupti_activity_enabled.buffer_request = 0;
+  // cupti_activity_enabled.buffer_complete = 0;
 
-  cupti_unload_callback = 0;
+  // cupti_load_callback = 0;
+
+  // cupti_unload_callback = 0;
 }
 
 
 void
-cupti_device_shutdown(void *args)
+cupti_device_shutdown(void *args, int how)
 {
   cupti_callbacks_unsubscribe();
-  cupti_device_flush(0);
+  cupti_device_flush(args, how);
 }
 

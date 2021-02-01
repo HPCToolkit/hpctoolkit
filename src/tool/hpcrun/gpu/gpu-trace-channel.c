@@ -55,7 +55,7 @@
 
 #define SECONDS_UNTIL_WAKEUP 2
 
-
+#define DEBUG 0
 
 //******************************************************************************
 // local includes
@@ -68,8 +68,8 @@
 #include "gpu-trace.h"
 #include "gpu-trace-channel.h"
 #include "gpu-trace-item.h"
-
-
+#include "gpu-print.h"
+#include "thread_data.h"
 
 //******************************************************************************
 // macros
@@ -106,11 +106,15 @@
 // type declarations
 //******************************************************************************
 
+typedef struct thread_data_t thread_data_t;
+
+
 typedef struct gpu_trace_channel_t {
   bistack_t bistacks[2];
   pthread_mutex_t mutex;
   pthread_cond_t cond;
   uint64_t count;
+  thread_data_t *td;
 } gpu_trace_channel_t;
 
 
@@ -140,18 +144,40 @@ gpu_trace_channel_signal_consumer_when_full
 // interface functions
 //******************************************************************************
 
+struct thread_data_t *
+gpu_trace_channel_get_td
+(
+ gpu_trace_channel_t *ch
+)
+{
+  return ch->td;
+}
+
+
+int
+gpu_trace_channel_get_stream_id
+(
+ gpu_trace_channel_t *ch
+)
+{
+  return ch->td->core_profile_trace_data.id;
+}
+
+
 gpu_trace_channel_t *
 gpu_trace_channel_alloc
 (
  void
 )
 {
-  gpu_trace_channel_t *channel = 
+  gpu_trace_channel_t *channel =
     hpcrun_malloc_safe(sizeof(gpu_trace_channel_t));
 
   memset(channel, 0, sizeof(gpu_trace_channel_t));
 
   channel_init(channel);
+
+  channel->td = gpu_trace_stream_acquire();
 
   pthread_mutex_init(&channel->mutex, NULL);
   pthread_cond_init(&channel->cond, NULL);
@@ -171,8 +197,15 @@ gpu_trace_channel_produce
 
   *cti = *ti;
 
+  PRINT("\n===========TRACE_PRODUCE: ti = %p || submit = %lu, start = %lu, end = %lu, cct_node = %p\n\n",
+         ti,
+         ti->cpu_submit_time,
+         ti->start,
+         ti->end,
+         ti->call_path_leaf);
+
   channel_push(channel, bichannel_direction_forward, cti);
-  
+
   gpu_trace_channel_signal_consumer_when_full(channel);
 }
 
@@ -180,11 +213,12 @@ gpu_trace_channel_produce
 void
 gpu_trace_channel_consume
 (
- gpu_trace_channel_t *channel,
- thread_data_t *td, 
- gpu_trace_item_consume_fn_t trace_item_consume
+ gpu_trace_channel_t *channel
 )
 {
+
+  hpcrun_set_thread_data(channel->td);
+
   // steal elements previously pushed by the producer
   channel_steal(channel, bichannel_direction_forward);
 
@@ -195,7 +229,14 @@ gpu_trace_channel_consume
   for (;;) {
     gpu_trace_item_t *ti = channel_pop(channel, bichannel_direction_forward);
     if (!ti) break;
-    gpu_trace_item_consume(trace_item_consume, td, ti);
+
+    PRINT("\n===========TRACE_CONSUME: ti = %p || submit = %lu, start = %lu, end = %lu, cct_node = %p\n\n",
+           ti,
+           ti->cpu_submit_time,
+           ti->start,
+           ti->end,
+           ti->call_path_leaf);
+    gpu_trace_item_consume(consume_one_trace_item, channel->td, ti);
     gpu_trace_item_free(channel, ti);
   }
 }
@@ -213,7 +254,7 @@ gpu_trace_channel_await
 
   // wait for a signal or for a few seconds. periodically waking
   // up avoids missing a signal.
-  pthread_cond_timedwait(&channel->cond, &channel->mutex, &time); 
+  pthread_cond_timedwait(&channel->cond, &channel->mutex, &time);
 }
 
 

@@ -75,6 +75,7 @@
 
 #include "ElfHelper.hpp"
 #include "Fatbin.hpp"
+#include "intel/IntelGPUBinutils.hpp"
 #include "InputFile.hpp"
 
 
@@ -140,7 +141,7 @@ InputFile::openFile
 
   if (file_fd < 0) {
     DIAG_MsgIf_GENERIC(tag, 1, "Unable to open input file: " 
-		       << filename << " (" << strerror(errno) << ")");
+           << filename << " (" << strerror(errno) << ")");
 
     if (errType != InputFileError_WarningNothrow) throw 1;
 
@@ -161,7 +162,7 @@ InputFile::openFile
 
   if (file_buffer == 0) {
     DIAG_MsgIf_GENERIC(tag, 1, "Unable to allocate file buffer of " 
-		       << f_size << " bytes");
+           << f_size << " bytes");
     if (errType != InputFileError_WarningNothrow) throw 1;
 
     return false;
@@ -171,7 +172,7 @@ InputFile::openFile
 
   if (f_size != bytes) {
     DIAG_MsgIf_GENERIC(tag, 1, "Read only " << bytes << " bytes of "
-		       << f_size << " bytes from file " << filename);
+           << f_size << " bytes from file " << filename);
 
     if (errType != InputFileError_WarningNothrow) throw 1;
 
@@ -180,20 +181,24 @@ InputFile::openFile
 
   close(file_fd);
 
+  filevector = new ElfFileVector;
   ElfFile *elfFile = new ElfFile;
-  bool result = elfFile->open(file_buffer, f_size, filename);
 
+  bool result = elfFile->open(file_buffer, f_size, filename);
   if (result) {
-    filevector = new ElfFileVector;
     filevector->push_back(elfFile);
     //findCubins(elfFile, filevector);
-  } else {
+  } 
+  #ifdef ENABLE_IGC
+  else if (!findIntelGPUBins(filename, file_buffer, f_size, filevector)) { // Check if the file is a intel debug binary
+    // Release memory
+    delete(elfFile);
     DIAG_MsgIf_GENERIC(tag, 1, "Not an ELF binary " << filename);
-
     if (errType != InputFileError_WarningNothrow) throw 1;
-
+    // Not a standard elf file
     return false;
   }
+  #endif // ENABLE_IGC
 
   return result;
 }

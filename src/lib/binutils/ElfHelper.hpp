@@ -86,8 +86,8 @@
 
 class ElfFile {
 public:
-  ElfFile() { origPtr = 0; memPtr = 0; elf = 0; memLen = 0; }
-  bool open(char *_memPtr, size_t _memLen, std::string _fileName);
+  ElfFile() : origPtr(0), memPtr(0), memLen(0), elf(0), intelGPU(false) {}
+  bool open(char *_memPtr, size_t _memLen, const std::string &_fileName);
   ~ElfFile();
   int getArch() { return arch; }
   Elf *getElf() { return elf; }
@@ -95,22 +95,26 @@ public:
   char *getMemoryOriginal() { return origPtr; }
   size_t getLength() { return memLen; }
   std::string getFileName() { return fileName; }
+  size_t getTextSection(char **text_section);
+  bool isIntelGPUFile() { return intelGPU; }
+  void setIntelGPUFile(bool _intelGPU) { intelGPU = _intelGPU; }
+  // Intel GPUs have kernel name suffix
+  void setGPUKernelName(const std::string &_gpuKernel) { gpuKernel = _gpuKernel; }
+  std::string getGPUKernelName() { return gpuKernel; }
 private:
   int arch;
   char *origPtr;
   char *memPtr;
   size_t memLen;
   Elf *elf;
+  bool intelGPU;
   std::string fileName;
+  std::string gpuKernel;
 };
-
 
 class ElfFileVector : public std::vector<ElfFile *> {};
 
-
 class ElfSectionVector : public std::vector<Elf_Scn *> {};
-
-
 
 //******************************************************************************
 // interface functions

@@ -139,7 +139,7 @@ is_compact_thread()
 }
 
 static thread_data_t *
-allocate_and_init_thread_data(int id, cct_ctxt_t* thr_ctxt)
+allocate_and_init_thread_data(int id, cct_ctxt_t* thr_ctxt, bool has_trace)
 {
   thread_data_t *data = hpcrun_allocate_thread_data(id);
 
@@ -163,7 +163,9 @@ allocate_and_init_thread_data(int id, cct_ctxt_t* thr_ctxt)
   // ----------------------------------------
   // opening trace file
   // ----------------------------------------
-  hpcrun_trace_open(&(data->core_profile_trace_data));
+  if (has_trace) {
+  	hpcrun_trace_open(&(data->core_profile_trace_data));
+  }
 
   return data;
 }
@@ -259,6 +261,34 @@ hpcrun_threadMgr_compact_thread()
   return compact_thread;
 }
 
+/***
+ *   Wrapper around hpcrun_threadMgr_data_get
+ *   Checks if there is thread specific data and preserves it
+ *****/
+bool
+hpcrun_threadMgr_data_get_safe
+(
+ int id,
+ cct_ctxt_t *thr_ctxt,
+ thread_data_t **data,
+ bool has_trace,
+ bool demand_new_thread
+)
+{
+  thread_data_t *td_self;
+  bool res;
+
+  if (hpcrun_td_avail()) {
+    td_self = hpcrun_get_thread_data();
+    res = hpcrun_threadMgr_data_get(id, thr_ctxt, data, has_trace, demand_new_thread);
+    hpcrun_set_thread_data(td_self);
+  }
+  else{
+    res = hpcrun_threadMgr_data_get(id, thr_ctxt, data, has_trace, demand_new_thread);
+  }
+  return res;
+}
+
 
 /***
  * get pointer of thread local data
@@ -270,16 +300,18 @@ hpcrun_threadMgr_compact_thread()
  *
  *   Return true if we allocate a new thread data,
  *          false if we reuse an existing data
+ *
+ *   Side effect: Overwrites pthread_specific data
  *****/
 bool
-hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data)
+hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data, bool has_trace, bool demand_new_thread)
 {
   // -----------------------------------------------------------------
   // if we don't want coalesce threads, just allocate it and return
   // -----------------------------------------------------------------
 
-  if (!is_compact_thread()) {
-    *data = allocate_and_init_thread_data(id, thr_ctxt);
+  if (!is_compact_thread() || demand_new_thread) {
+    *data = allocate_and_init_thread_data(id, thr_ctxt, has_trace);
     return true;
   }
 
@@ -295,7 +327,7 @@ hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data)
   if (need_to_allocate) {
 
     adjust_num_logical_threads(1);
-    *data = allocate_and_init_thread_data(id, thr_ctxt);
+    *data = allocate_and_init_thread_data(id, thr_ctxt, has_trace);
   }
 
 #if HPCRUN_THREADS_DEBUG
@@ -306,10 +338,10 @@ hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data)
 }
 
 void
-hpcrun_threadMgr_non_compact_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data)
+hpcrun_threadMgr_non_compact_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data, bool has_trace)
 {
     adjust_num_logical_threads(1);
-    *data = allocate_and_init_thread_data(id, thr_ctxt);
+    *data = allocate_and_init_thread_data(id, thr_ctxt, has_trace);
 
 #if HPCRUN_THREADS_DEBUG
     atomic_fetch_add_explicit(&threadmgr_tot_threads, 1, memory_order_relaxed);
@@ -353,6 +385,7 @@ hpcrun_threadMgr_data_put( epoch_t *epoch, thread_data_t *data, int no_separator
 
   // step 2: enqueue thread data into the free list
 
+  // Temporary solution
   spinlock_lock(&threaddata_lock);
 
   thread_list_t *list_item = (thread_list_t *) hpcrun_malloc(sizeof(thread_list_t));

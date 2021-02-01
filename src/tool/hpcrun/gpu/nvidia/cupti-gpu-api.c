@@ -75,6 +75,6 @@ cupti_activity_process
 )
 {
   gpu_activity_t gpu_activity;
-  cupti_activity_translate(&gpu_activity, cupti_activity); 
+  cupti_activity_translate(&gpu_activity, cupti_activity);
   gpu_activity_process(&gpu_activity);
 }

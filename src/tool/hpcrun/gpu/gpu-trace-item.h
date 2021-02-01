@@ -68,15 +68,13 @@
 
 typedef struct cct_node_t cct_node_t; 
 
-typedef struct thread_data_t thread_data_t; 
+typedef struct thread_data_t thread_data_t;
 
-
+typedef struct gpu_trace_channel_t gpu_trace_channel_t;
 
 //******************************************************************************
 // type declarations
 //******************************************************************************
-
-typedef struct gpu_trace_channel_t gpu_trace_channel_t; 
 
 typedef struct gpu_trace_item_t {
   s_element_ptr_t next;

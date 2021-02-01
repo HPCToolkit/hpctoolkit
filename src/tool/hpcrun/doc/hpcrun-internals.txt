@@ -16,7 +16,7 @@ upon longjmp:
 	lose information about return counts for frames between source frame and target frame on call stack
 
 	note: not safe to take samples during longjmp processing
-	to determine if the trampoline needs to be moved, we 
+	to determine if the trampoline needs to be moved, we
 
 assumption that program stack is contiguous, which is not always true
 this may be a problem for user-level threads, or programming languages that support heap-based stack frames or segments

@@ -5,97 +5,129 @@
 #include <string.h>
 
 
-static char *control_knob_names[] = {
-#define DEFINE_KNOB_NAMES(knob_name) \
-  #knob_name,
-
-  FORALL_KNOBS(DEFINE_KNOB_NAMES) 
-
-#undef DEFINE_KNOB_NAMES
-};
-
-
 typedef struct control_knob {
+  struct control_knob *next;
   char *name;
   char *value;
+  control_knob_type type;
 } control_knob_t;
 
-control_knob_t control_knobs[HPCRUN_NUM_CONTROL_KNOBS];
+
+static control_knob_t *control_knobs = NULL;
 
 
-static void control_knob_process_string(char *in);
-
-
-void
-control_knob_init()
+static control_knob_t *
+control_knob_name_lookup(char *in)
 {
-  char *s = getenv("HPCRUN_CONTROL_KNOBS");
-  if (s) {
-#define INIT_KNOBS(knob_name) \
-  control_knobs[knob_name].name = control_knob_names[knob_name]; \
-  control_knobs[knob_name].value = NULL;
+  control_knob_t *iter = control_knobs;
 
-  FORALL_KNOBS(INIT_KNOBS) 
+  while (iter != NULL){
+    if(strcmp(iter->name, in) == 0) return iter;
 
-#undef INIT_KNOBS
-
-    control_knob_process_string(s);
-  }
-}
-
-
-char *
-control_knob_value_get(control_category c)
-{
-  if (c < HPCRUN_NUM_CONTROL_KNOBS) {
-    return control_knobs[c].value;
+    iter = iter->next;
   }
   return NULL;
 }
 
 
-int
-control_knob_value_get_int(control_category c)
+void
+control_knob_register(char *name, char *value, control_knob_type type)
 {
-  char *ret = NULL;
-  if ((ret = control_knob_value_get(c)) != NULL) {
-    // FIXME(Keren): atoi does not differentiate between zero and failure
-    return atoi(ret);
+  control_knob_t *iter = control_knob_name_lookup(name);
+
+  if (iter == NULL){
+    iter = (control_knob_t*) malloc(sizeof(control_knob_t));
+    iter->name = strdup(name);
+    iter->type = type;
   }
-  return 0;
-}
-
-
-static int
-control_knob_name_lookup(char *n)
-{
-#define LOOKUP_KNOBS(knob_name)  \
-  if (strcmp(control_knobs[knob_name].name, n) == 0) {  \
-    return knob_name;                                   \
-  }
-
-  FORALL_KNOBS(LOOKUP_KNOBS) 
-
-#undef LOOKUP_KNOBS
-
-  return -1;
+  iter->value = strdup(value);
+  iter->next = control_knobs;
+  control_knobs = iter;
 }
 
 
 static void
-control_knob_process_string(char *in)
+control_knob_default_register(){
+  control_knob_register("STREAMS_PER_THREAD", "4", ck_int);
+  control_knob_register("MAX_COMPLETION_CALLBACK_THREADS", "1000", ck_int);
+}
+
+
+void
+control_knob_init()
 {
+  control_knob_default_register();
+
+  char *in = getenv("HPCRUN_CONTROL_KNOBS");
+  if (in == NULL) return;
+
   char *save;
   for (char *f = start_tok(in); more_tok(); f = next_tok()){
     char *tmp = strdup(f);
     char *name = strtok_r(tmp, "=", &save);
-    int i = -1;
+    control_knob_t *iter = NULL;
 
-    if (name != NULL && (i = control_knob_name_lookup(name)) != -1) {
+    if (name != NULL && (iter = control_knob_name_lookup(name))) {
       char *value = strtok_r(NULL, "=", &save);
-      control_knobs[i].value = value;
+      iter->value = value;
     } else {
       fprintf(stderr, "\tcontrol token %s not recognized\n\n", f);
     }
   }
+
 }
+
+
+int
+control_knob_value_get_int(char *in, int *value)
+{
+  control_knob_t *iter = control_knob_name_lookup(in);
+  if (iter) {
+    if (iter->type == ck_int) {
+      *value = atoi(iter->value);
+      return 0;
+    }else{
+      fprintf(stderr,"Control register type is not int.\n");
+      return 1;
+    }
+  }
+  fprintf(stderr,"No such name in Control register\n");
+  return 2;
+}
+
+
+int
+control_knob_value_get_float(char *in, float *value)
+{
+  control_knob_t *iter = control_knob_name_lookup(in);
+  if (iter) {
+    if (iter->type == ck_float) {
+      *value = atof(iter->value);
+      return 0;
+    }else{
+      fprintf(stderr,"Control register type is not float.\n");
+      return 1;
+    }
+  }
+  fprintf(stderr,"No such name in Control register\n");
+  return 2;
+}
+
+
+int
+control_knob_value_get_string(char *in, char *value)
+{
+  control_knob_t *iter = control_knob_name_lookup(in);
+  if (iter) {
+    if (iter->type == ck_string) {
+      value = iter->value;
+      return 0;
+    }else{
+      fprintf(stderr,"Control register type is not string.\n");
+      return 1;
+    }
+  }
+  fprintf(stderr,"No such name in Control register\n");
+  return 2;
+}
+

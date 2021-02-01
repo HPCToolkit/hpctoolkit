@@ -80,9 +80,6 @@ void hpcrun_process_aux_cleanup_remove(hpcrun_aux_cleanup_t * node);
 
 extern void special_cuda_ctxt_actions(bool enable);
 
-extern void hpcrun_dlfunction_begin();
-extern void hpcrun_dlfunction_end();
-extern bool hpcrun_dlfunction_is_active();
 extern bool hpcrun_suppress_sample();
 
 #endif  // ! main_h

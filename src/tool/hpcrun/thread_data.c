@@ -236,6 +236,7 @@ core_profile_trace_data_init(core_profile_trace_data_t * cptd, int id, cct_ctxt_
   // ----------------------------------------
   cptd->trace_min_time_us = 0;
   cptd->trace_max_time_us = 0;
+  cptd->traceOrdered = true;
 
   // ----------------------------------------
   // IO support
@@ -397,6 +398,12 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child, size_t n_sou
   // miscellaneous
   // ----------------------------------------
   td->inside_dlfcn = false;
+
+  // ----------------------------------------
+  // gpu trace line support
+  // ----------------------------------------
+  td->gpu_trace_first_time = 0;
+  td->gpu_trace_prev_time = 0;
 
 #ifdef ENABLE_CUDA
   gpu_data_init(&(td->gpu_data));

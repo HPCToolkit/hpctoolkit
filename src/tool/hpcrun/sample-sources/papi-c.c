@@ -334,7 +334,7 @@ METHOD_FN(start)
 	TMSG(PAPI, "component %d is synchronous, use synchronous start", cidx);
 	ci->sync_start();
       }
-      else {
+      else { //use async start
 	TMSG(PAPI,"starting PAPI event set %d for component %d", ci->eventSet, cidx);
 	int ret = PAPI_start(ci->eventSet);
 	if (ret == PAPI_EISRUN) {
@@ -425,6 +425,7 @@ METHOD_FN(shutdown)
 
   METHOD_CALL(self, stop); // make sure stop has been called
   // FIXME: add component shutdown code here
+
   PAPI_shutdown();
 
   self->state = UNINIT;

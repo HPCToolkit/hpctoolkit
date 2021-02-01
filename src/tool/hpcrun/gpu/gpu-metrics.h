@@ -266,6 +266,8 @@ typedef enum {
 
 // gpu activity times
 #define FORALL_GTIMES(macro)					\
+  macro("GPUOP (sec)",              GPU_TIME_OP,		\
+	"GPU time: all operations (seconds)")  \
   macro("GKER (sec)",               GPU_TIME_KER,			\
 	"GPU time: kernel execution (seconds)")			\
   macro("GMEM (sec)",               GPU_TIME_MEM,			\
@@ -278,7 +280,6 @@ typedef enum {
 	"GPU time: implicit data copy (seconds)")		\
   macro("GSYNC (sec)",              GPU_TIME_SYNC,		\
 	"GPU time: synchronization (seconds)")
-
 
 // gpu instruction count
 #define FORALL_GPU_INST(macro)			\
@@ -304,6 +305,8 @@ typedef enum {
 	"GPU kernel: thread count accumulator [internal use only]")	\
   macro("GKER:BLK_SM_ACUMU",            GPU_KINFO_BLK_SMEM_ACUMU,	\
 	"GPU kernel: block local memory accumulator [internal use only]") \
+  macro("GKER:BLKS_ACUMU",           GPU_KINFO_BLKS_ACUMU,	\
+	"GPU kernel: block count accumulator [internal use only]")	\
   macro("GKER:STMEM (B)",         GPU_KINFO_STMEM,			\
 	"GPU kernel: static memory (bytes)")				\
   macro("GKER:DYMEM (B)",         GPU_KINFO_DYMEM,			\
@@ -320,6 +323,8 @@ typedef enum {
 	"GPU kernel: thread count")					\
   macro("GKER:BLK_SM (B)",            GPU_KINFO_BLK_SMEM,		\
 	"GPU kernel: block local memory (bytes)")			\
+  macro("GKER:BLKS",            GPU_KINFO_BLKS,		\
+	"GPU kernel: block count")			\
   macro("GKER:COUNT",             GPU_KINFO_COUNT,  			\
 	"GPU kernel: launch count")					\
   macro("GKER:OCC_THR",               GPU_KINFO_OCCUPANCY_THR,		\
@@ -380,6 +385,7 @@ typedef enum {
 #define FORALL_GSAMP(macro)			\
   FORALL_GSAMP_INT(macro)			\
   FORALL_GSAMP_REAL(macro)				
+
 
 
 //******************************************************************************

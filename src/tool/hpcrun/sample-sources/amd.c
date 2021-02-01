@@ -34,6 +34,8 @@
 
 #include "amd.h"
 
+#include "libdl.h"
+
 #include "simple_oo.h"
 #include "sample_source_obj.h"
 #include "common.h"
@@ -43,6 +45,7 @@
 #include <hpcrun/gpu/amd/roctracer-api.h>
 #include <hpcrun/gpu/gpu-activity.h>
 #include <hpcrun/gpu/gpu-metrics.h>
+#include <hpcrun/gpu/gpu-trace.h>
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
 #include <hpcrun/metrics.h>
@@ -69,6 +72,8 @@
 #define AMD_ROCM "gpu=amd"
 
 static device_finalizer_fn_entry_t device_finalizer_shutdown;
+static device_finalizer_fn_entry_t device_trace_finalizer_shutdown;
+
 
 //******************************************************************************
 // interface operations
@@ -150,10 +155,10 @@ static void
 METHOD_FN(finalize_event_list)
 {
 #ifndef HPCRUN_STATIC_LINK
-    if (roctracer_bind()) {
-        EEMSG("hpcrun: unable to bind to AMD roctracer library %s\n", dlerror());
-        monitor_real_exit(-1);
-    }
+  if (roctracer_bind() != DYNAMIC_BINDING_STATUS_OK) {
+    EEMSG("hpcrun: unable to bind to AMD roctracer library %s\n", dlerror());
+    monitor_real_exit(-1);
+  }
 #endif
 
 #if 0
@@ -163,11 +168,16 @@ METHOD_FN(finalize_event_list)
     char* event = start_tok(evlist);
 #endif
     roctracer_init();
-    
+
+    // Init records
+    gpu_trace_init();
+
     device_finalizer_shutdown.fn = roctracer_fini;
     device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_shutdown);
 
-
+    // Register shutdown functions to write trace files
+    device_trace_finalizer_shutdown.fn = gpu_trace_fini;
+    device_finalizer_register(device_finalizer_type_shutdown, &device_trace_finalizer_shutdown);
 }
 
 

@@ -134,6 +134,14 @@ Double quote the linker wrap options introduced by \Prog{hpclink},
 i.e.emit \Prog{-Wl,-Wl} instead of \Prog{-Wl}.
 Use this to work around problems with the Berkeley UPC compiler script (rarely necessary).
 
+\item[\Opt{--disable-gprof}]
+Override and disable \Prog{gprof} instrumentation  This option
+is only useful when using \Prog{hpclink} to add HPCToolkit's
+measurement subsystem to a statically-linked application 
+that has been compiled with \Prog{-pg}. One can't measure 
+performance with HPCToolkit when gprof instrumentation 
+is active in the same execution.
+
 \item[\OptArg{-fe}{dir}, \OptArg{--front-end}{dir}]
 In a cross-compile link,
 use the current install tree for back-end libraries and
