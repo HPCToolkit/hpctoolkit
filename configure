@@ -853,6 +853,7 @@ cxx_c11_flag
 CXX11_FLAG
 HPCLINK_CC
 ans
+HOST_CPU_AARCH64
 HOST_CPU_AARCH64_FALSE
 HOST_CPU_AARCH64_TRUE
 HOST_CPU_IA64_FALSE
@@ -18515,6 +18516,7 @@ else
   HOST_CPU_AARCH64_TRUE='#'
   HOST_CPU_AARCH64_FALSE=
 fi
+
 
 
 #-------------------------------------------------
