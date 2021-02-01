@@ -120,7 +120,7 @@
 % ***************************************************************************
 % ***************************************************************************
 
-\title{\HPCToolkit{} User's Manual\\[.5in]Version 2021.01.31}
+\title{\HPCToolkit{} User's Manual\\[.5in]Version 2021.02.01}
 %\subtitle{}
 
 \author{John Mellor-Crummey,\\
@@ -1401,22 +1401,18 @@ Recompile the binary or shared library causing the problem and add \verb|-g| to 
 \hpcrun{} uses NVIDIA's CUDA Performance Tools Interface known as
 CUPTI to monitor computations on NVIDIA GPUs. In our experience,
 this error occurs when the version of CUPTI used by HPCToolkit is
-incompatible with the CUDA kernel driver installed on your system.
-Documentation from NVIDIA indicates that new versions of CUPTI may
-be incompatible with older versions of the CUDA kernel driver. For
-instance, even though you may be able to run CUDA 11 programs on a
-kernel driver designed to support CUDA 10, you are unlikely to
-succeed measuring CUDA performance with a version of HPCToolkit
-configured for CUDA 11 atop the CUDA 10 kernel driver.  To avoid
-the error \texttt{CUPTI\_ERROR\_NOT\_INITIALIZED}, we recommend
-configuring HPCToolkit for the version of CUDA supported by the
-CUDA kernel driver installed on your system.  You can check the
-version of the CUDA kernel driver installed on your system using
-the {\tt nvidia-smi} command.  If you want HPCToolkit to use the
-latest version of NVIDIA's CUPTI, then we recommend upgrading the
-CUDA kernel driver on your system to match the latest CUDA release
-you want to use and then configuring HPCToolkit atop this CUDA
-release.
+incompatible with the version of CUDA used by your program or CUDA kernel driver installed on your system. You can check the
+version of the CUDA kernel driver installed on your system using the {\tt nvidia-smi} command. 
+Table 3 {\em CUDA Application Compatibility Support Matrix} at the following URL~\url{https://docs.nvidia.com/deploy/cuda-compatibility/index.html\#cuda-application-compatibility} 
+specifies what versions of the CUDA kernel driver match each version of CUDA and CUPTI. 
+Although the table indicates that some drivers can support newer versions of CUDA than the one that they were designed for, 
+e.g. driver 418.40.04+ designed to support CUDA 10.1 can also run CUDA 11.0 and 11.1 programs, 
+in our experience that does not necessarily mean that the driver will support performance measurement of CUDA programs 
+using any CUDA version newer than 10.1.
+We believe that best way to avoid the \texttt{CUPTI\_ERROR\_NOT\_INITIALIZED} error is to ensure that 
+(1) HPCToolkit is compiled with the version of CUDA that your installed CUDA kernel driver was designed to support, and 
+(2) your application uses the version of CUDA that matches the one your kernel driver was designed to support or a compatible older version.
+
 
 % ===========================================================================
 % ===========================================================================
