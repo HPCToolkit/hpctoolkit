@@ -14,8 +14,9 @@ Installing HPCToolkit with Spack
 9 Manual Install
 10 Advanced Options
 10.1 CUDA
-10.2 MPI
-10.3 PAPI vs Perfmon
+10.2 ROCM
+10.3 MPI
+10.4 PAPI vs Perfmon
 11 Platform Specific Notes
 11.1 Blue Gene
 11.2 Cray
@@ -80,7 +81,7 @@ The current status of using Spack for HPCToolkit is at:
 
      <http://hpctoolkit.org/spack-issues.html>
 
-Last revised: August 17, 2020.
+Last revised: February 1, 2021.
 
 2 Prerequisites
 ===============
@@ -565,7 +566,80 @@ automatically (but check the summary at the end of the configure
 output).  If you are using CUDA from a separate system module, then you
 will need the '--with-cuda' option.
 
-10.2 MPI
+10.2 ROCM
+---------
+
+Beginning with version 2021.02.01, HPCToolkit now supports profiling AMD
+GPU binaries through the HIP/ROCM interface.  This requires ROCM 3.10 or
+later and also requires matching the HPCToolkit ROCM version to the
+version the application uses.
+
+   The spack build with ROCM support requires a 2-step build.  First,
+build the ROCM prerequisites (hip, rocm-dbgapi and roctracer-dev), and
+second, specify them as spack externals packages and install hpctoolkit
+with '+rocm'.
+
+   The easiest way is to install the AMD package for ROCM in '/opt'.
+Normally, this requires root access.  For example, suppose ROCM 4.0.0 is
+installed in '/opt/rocm-4.0.0'.  In this case, edit 'packages.yaml' or
+'spack.yaml' to specify the three spack packages.
+
+     packages:
+       hip:
+         externals:
+         - spec: hip@4.0.0
+           prefix: /opt/rocm-4.0.0/hip
+
+       rocm-dbgapi:
+         externals:
+         - spec: rocm-dbgapi@4.0.0
+           prefix: /opt/rocm-4.0.0
+
+       roctracer-dev:
+         externals:
+         - spec: roctracer-dev@4.0.0
+           prefix: /opt/rocm-4.0.0
+
+Then, build HPCToolkit with the '+rocm' variant.
+
+     spack install hpctoolkit +rocm ...
+
+Note: the hip prefix requires the hip subdirectory, but the other two
+use the top-level '/opt/rocm' prefix.  This is somewhat fluid and may
+change by system.
+
+   If '/opt/rocm' is not available or is missing some of the pieces,
+then build the missing packages with spack and again add them to
+'packages.yaml'.  Note: you must build the packages one at a time as
+separate roots.  This will necessarily build some packages twice.  For
+example:
+
+     hip:
+       externals:
+       - spec: hip@4.0.0
+         prefix: /home/krentel/spack/linux-rhel8-x86_64/gcc-8.3.1/hip-4.0.0-qzauqkhwrfmpa6j37cpzysfpgipvhkmj
+
+Note: for now, you must use the 2-step build and specify the ROCM
+packages as spack externals, even if building them with spack.  There
+are two conflicts in the 'spack spec' for an all-in-one build.
+Roctracer-dev requires python 2, but other packages require python 3,
+and rocm-dbgapi requires libelf but dyninst requires elfutils.  Writing
+the packages as externals works around this problem.
+
+   For developers building with autotools, use the following configure
+options.  If '/opt/rocm' is available, then use just the '--with-rocm'
+option.  Otherwise, use the three other options.
+
+     --with-rocm=/opt/rocm    (for all-in-one /opt/rocm)
+
+     --with-rocm-hip=/path/to/hip/install
+     --with-rocm-dbgapi=/path/to/rocm-dbgapi/install
+     --with-rocm-tracer=/path/to/roctracer-dev/install
+
+It is allowed to mix the all-in-one option with the individual packages.
+The rule is that the specific overrides the general.
+
+10.3 MPI
 --------
 
 HPCToolkit always supports profiling MPI applications.  For hpctoolkit,
@@ -579,7 +653,7 @@ and add this to 'packages.yaml'.  The MPI module should be built with
 the same version of GNU gcc/g++ used to build hpctoolkit (to keep the
 C++ libraries in sync).
 
-10.3 PAPI vs Perfmon
+10.4 PAPI vs Perfmon
 --------------------
 
 HPCToolkit can access the Hardware Performance Counters with either PAPI

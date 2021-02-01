@@ -60,15 +60,16 @@
 <li><a name="toc-Advanced-Options" href="#Advanced-Options">10 Advanced Options</a>
 <ul class="no-bullet">
   <li><a name="toc-CUDA" href="#CUDA">10.1 CUDA</a></li>
-  <li><a name="toc-MPI" href="#MPI">10.2 MPI</a></li>
-  <li><a name="toc-PAPI-vs-Perfmon" href="#PAPI-vs-Perfmon">10.3 PAPI vs Perfmon</a></li>
+  <li><a name="toc-ROCM" href="#ROCM">10.2 ROCM</a></li>
+  <li><a name="toc-MPI" href="#MPI">10.3 MPI</a></li>
+  <li><a name="toc-PAPI-vs-Perfmon" href="#PAPI-vs-Perfmon">10.4 PAPI vs Perfmon</a></li>
 </ul></li>
 <li><a name="toc-Platform-Specific-Notes" href="#Platform-Specific-Notes">11 Platform Specific Notes</a>
 <ul class="no-bullet">
   <li><a name="toc-Blue-Gene" href="#Blue-Gene">11.1 Blue Gene</a></li>
   <li><a name="toc-Cray" href="#Cray">11.2 Cray</a></li>
 </ul></li>
-<li><a name="toc-Hpcviewer" href="#Hpcviewer">12 Hpcviewer</a>
+<li><a name="toc-Hpcviewer-and-Hpctraceviewer" href="#Hpcviewer-and-Hpctraceviewer">12 Hpcviewer and Hpctraceviewer</a>
 <ul class="no-bullet">
   <li><a name="toc-Spack-Install-1" href="#Spack-Install-1">12.1 Spack Install</a></li>
   <li><a name="toc-Manual-Install-1" href="#Manual-Install-1">12.2 Manual Install</a></li>
@@ -109,7 +110,7 @@ supported on the following platforms.
 </li><li> IBM Blue Gene/Q on ppc64 (now deprecated).
 </li></ol>
 
-<p>We provide binary distributions for hpcviewer on
+<p>We provide binary distributions for hpcviewer and hpctraceviewer on
 Linux (x86_64 and powerpc), Windows and MacOS.  HPCToolkit databases are
 platform-independent and it is common to run hpcrun on one machine and
 then view the results on another machine.
@@ -145,7 +146,7 @@ your own needs.
 <pre class="example"><a href="http://hpctoolkit.org/spack-issues.html">http://hpctoolkit.org/spack-issues.html</a>
 </pre></div>
 
-<p>Last revised: August 17, 2020.
+<p>Last revised: February 1, 2021.
 </p>
 
 <a name="Prerequisites"></a>
@@ -175,8 +176,8 @@ HPCToolkit available as a module.  Again, spack can install these
 packages if they are missing from your system.
 </li></ol>
 
-<p>Hpcviewer requires at least Java version 8.  On Linux, the
-viewers also require GTK version 3.20 or newer.
+<p>Hpcviewer and hpctraceviewer require Java version 8.  On Linux, the
+viewers also require GTK+ version 2.x.
 </p>
 
 <a name="Spack-Notation"></a>
@@ -717,8 +718,92 @@ automatically (but check the summary at the end of the configure
 output).  If you are using CUDA from a separate system module, then you
 will need the <code>--with-cuda</code> option.
 </p>
+
+<a name="ROCM"></a>
+<h4 class="subsection">10.2 ROCM</h4>
+
+<p>Beginning with version 2021.02.01, HPCToolkit now supports profiling
+AMD GPU binaries through the HIP/ROCM interface.  This requires ROCM
+3.10 or later and also requires matching the HPCToolkit ROCM version
+to the version the application uses.
+</p>
+<p>The spack build with ROCM support requires a 2-step build.  First,
+build the ROCM prerequisites (hip, rocm-dbgapi and roctracer-dev), and
+second, specify them as spack externals packages and install
+hpctoolkit with <code>+rocm</code>.
+</p>
+<p>The easiest way is to install the AMD package for ROCM in <code>/opt</code>.
+Normally, this requires root access.  For example, suppose ROCM 4.0.0
+is installed in <code>/opt/rocm-4.0.0</code>.  In this case, edit
+<code>packages.yaml</code> or <code>spack.yaml</code> to specify the three spack
+packages.
+</p>
+<div class="example">
+<pre class="example">packages:
+  hip:
+    externals:
+    - spec: hip@4.0.0
+      prefix: /opt/rocm-4.0.0/hip
+
+  rocm-dbgapi:
+    externals:
+    - spec: rocm-dbgapi@4.0.0
+      prefix: /opt/rocm-4.0.0
+
+  roctracer-dev:
+    externals:
+    - spec: roctracer-dev@4.0.0
+      prefix: /opt/rocm-4.0.0
+</pre></div>
+
+<p>Then, build HPCToolkit with the <code>+rocm</code> variant.
+</p>
+<div class="example">
+<pre class="example">spack install hpctoolkit +rocm ...
+</pre></div>
+
+<p>Note: the hip prefix requires the hip subdirectory, but the other two
+use the top-level <code>/opt/rocm</code> prefix.  This is somewhat fluid and
+may change by system.
+</p>
+<p>If <code>/opt/rocm</code> is not available or is missing some of the pieces,
+then build the missing packages with spack and again add them to
+<code>packages.yaml</code>.  Note: you must build the packages one at a time
+as separate roots.  This will necessarily build some packages twice.
+For example:
+</p>
+<div class="example">
+<pre class="example">hip:
+  externals:
+  - spec: hip@4.0.0
+    prefix: /home/krentel/spack/linux-rhel8-x86_64/gcc-8.3.1/hip-4.0.0-qzauqkhwrfmpa6j37cpzysfpgipvhkmj
+</pre></div>
+
+<p>Note: for now, you must use the 2-step build and specify the ROCM
+packages as spack externals, even if building them with spack.  There
+are two conflicts in the <code>spack spec</code> for an all-in-one build.
+Roctracer-dev requires python 2, but other packages require python 3,
+and rocm-dbgapi requires libelf but dyninst requires elfutils.
+Writing the packages as externals works around this problem.
+</p>
+<p>For developers building with autotools, use the following configure
+options.  If <code>/opt/rocm</code> is available, then use just the
+<code>--with-rocm</code> option.  Otherwise, use the three other options.
+</p>
+<div class="example">
+<pre class="example">--with-rocm=/opt/rocm    (for all-in-one /opt/rocm)
+
+--with-rocm-hip=/path/to/hip/install
+--with-rocm-dbgapi=/path/to/rocm-dbgapi/install
+--with-rocm-tracer=/path/to/roctracer-dev/install
+</pre></div>
+
+<p>It is allowed to mix the all-in-one option with the individual
+packages.  The rule is that the specific overrides the general.
+</p>
+
 <a name="MPI"></a>
-<h4 class="subsection">10.2 MPI</h4>
+<h4 class="subsection">10.3 MPI</h4>
 
 <p>HPCToolkit always supports profiling MPI applications.  For
 hpctoolkit, the spack variant <code>+mpi</code> is for building hpcprof-mpi,
@@ -732,7 +817,7 @@ with the same version of GNU gcc/g++ used to build hpctoolkit (to keep
 the C++ libraries in sync).
 </p>
 <a name="PAPI-vs-Perfmon"></a>
-<h4 class="subsection">10.3 PAPI vs Perfmon</h4>
+<h4 class="subsection">10.4 PAPI vs Perfmon</h4>
 
 <p>HPCToolkit can access the Hardware Performance Counters with either
 PAPI or Perfmon (libpfm4).  By default, the hpctoolkit package uses
@@ -985,10 +1070,10 @@ similar to the following.
 </pre></div>
 
 
-<a name="Hpcviewer"></a>
-<h3 class="section">12 Hpcviewer </h3>
+<a name="Hpcviewer-and-Hpctraceviewer"></a>
+<h3 class="section">12 Hpcviewer and Hpctraceviewer</h3>
 
-<p>We provide binary distributions for hpcviewer on
+<p>We provide binary distributions for hpcviewer and hpctraceviewer on
 Linux (x86_64 and powerpc), Windows and MacOS.  HPCToolkit databases are
 platform-independent and it is common to run hpcrun on one machine and
 then view the results on another machine.
@@ -1001,7 +1086,7 @@ The Linux versions also require GTK+ version 2.x.
 
 <p>The spack install is available on Linux x86_64, big-endian power7
 (ppc64) and little-endian power8 and 9 (ppc64le).  This installs both
-hpcviewer and includes the Java 8 prerequisite.
+hpcviewer and hpctraceviewer and includes the Java 8 prerequisite.
 </p>
 <p>On x86_64, use either jdk or openjdk.  The latest 1.8 jdk package,
 1.8.0_202 has trouble downloading due to licensing issues, however
@@ -1030,8 +1115,8 @@ available at:
 <pre class="example"><a href="http://hpctoolkit.org/download/hpcviewer">http://hpctoolkit.org/download/hpcviewer</a>
 </pre></div>
 
-<p>On Linux, download the <code>linux.gtk</code> versions of hpcviewer
-, unpack the tar files and run the install scripts (for
+<p>On Linux, download the <code>linux.gtk</code> versions of hpcviewer and
+hpctraceviewer, unpack the tar files and run the install scripts (for
 both viewers) with the path to the desired install prefix.
 </p>
 <div class="example">

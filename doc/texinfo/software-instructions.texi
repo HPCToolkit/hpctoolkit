@@ -73,7 +73,7 @@ The current status of using Spack for HPCToolkit is at:
 @end example
 
 @noindent
-Last revised: August 17, 2020.
+Last revised: February 1, 2021.
 
 @c ------------------------------------------------------------
 
@@ -690,6 +690,95 @@ the prerequisites, then the @code{--with-spack} option should find it
 automatically (but check the summary at the end of the configure
 output).  If you are using CUDA from a separate system module, then you
 will need the @code{--with-cuda} option.
+
+@c ------------------------------------------------------------
+
+@subsection ROCM
+
+Beginning with version 2021.02.01, HPCToolkit now supports profiling
+AMD GPU binaries through the HIP/ROCM interface.  This requires ROCM
+3.10 or later and also requires matching the HPCToolkit ROCM version
+to the version the application uses.
+
+The spack build with ROCM support requires a 2-step build.  First,
+build the ROCM prerequisites (hip, rocm-dbgapi and roctracer-dev), and
+second, specify them as spack externals packages and install
+hpctoolkit with @code{+rocm}.
+
+The easiest way is to install the AMD package for ROCM in @code{/opt}.
+Normally, this requires root access.  For example, suppose ROCM 4.0.0
+is installed in @code{/opt/rocm-4.0.0}.  In this case, edit
+@code{packages.yaml} or @code{spack.yaml} to specify the three spack
+packages.
+
+@example
+packages:
+  hip:
+    externals:
+    - spec: hip@@4.0.0
+      prefix: /opt/rocm-4.0.0/hip
+
+  rocm-dbgapi:
+    externals:
+    - spec: rocm-dbgapi@@4.0.0
+      prefix: /opt/rocm-4.0.0
+
+  roctracer-dev:
+    externals:
+    - spec: roctracer-dev@@4.0.0
+      prefix: /opt/rocm-4.0.0
+@end example
+
+@noindent
+Then, build HPCToolkit with the @code{+rocm} variant.
+
+@example
+spack install hpctoolkit +rocm ...
+@end example
+
+@noindent
+Note: the hip prefix requires the hip subdirectory, but the other two
+use the top-level @code{/opt/rocm} prefix.  This is somewhat fluid and
+may change by system.
+
+If @code{/opt/rocm} is not available or is missing some of the pieces,
+then build the missing packages with spack and again add them to
+@code{packages.yaml}.  Note: you must build the packages one at a time
+as separate roots.  This will necessarily build some packages twice.
+For example:
+
+@example
+hip:
+  externals:
+  - spec: hip@@4.0.0
+    prefix: /home/krentel/spack/linux-rhel8-x86_64/gcc-8.3.1/hip-4.0.0-qzauqkhwrfmpa6j37cpzysfpgipvhkmj
+@end example
+
+@noindent
+Note: for now, you must use the 2-step build and specify the ROCM
+packages as spack externals, even if building them with spack.  There
+are two conflicts in the @code{spack spec} for an all-in-one build.
+Roctracer-dev requires python 2, but other packages require python 3,
+and rocm-dbgapi requires libelf but dyninst requires elfutils.
+Writing the packages as externals works around this problem.
+
+For developers building with autotools, use the following configure
+options.  If @code{/opt/rocm} is available, then use just the
+@code{--with-rocm} option.  Otherwise, use the three other options.
+
+@example
+--with-rocm=/opt/rocm    (for all-in-one /opt/rocm)
+
+--with-rocm-hip=/path/to/hip/install
+--with-rocm-dbgapi=/path/to/rocm-dbgapi/install
+--with-rocm-tracer=/path/to/roctracer-dev/install
+@end example
+
+@noindent
+It is allowed to mix the all-in-one option with the individual
+packages.  The rule is that the specific overrides the general.
+
+@c ------------------------------------------------------------
 
 @subsection MPI
 
