@@ -49,6 +49,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "control-knob.h"
 #include "sample_sources_registered.h"
 #include <sample-sources/sample_source_obj.h>
 #include <sample-sources/ss-obj-name.h>
