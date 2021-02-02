@@ -186,7 +186,7 @@ int rankN(ProfArgs&& args) {
     case ProfArgs::Format::sparse:
       if(args.include_traces)
         pipelineB2 << make_unique_x<sinks::HPCTraceDB2>(args.output);
-      pipelineB2 << *(sdb = make_unique_x<SparseDB>(args.output));
+      pipelineB2 << *(sdb = make_unique_x<SparseDB>(args.output, args.threads));
       break;
     }
 

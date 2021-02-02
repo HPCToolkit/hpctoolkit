@@ -173,7 +173,7 @@ int rank0(ProfArgs&& args) {
     std::unique_ptr<sinks::HPCTraceDB2> tdb;
     if(args.include_traces)
       tdb = make_unique_x<sinks::HPCTraceDB2>(args.output);
-    sdb = make_unique_x<SparseDB>(args.output);
+    sdb = make_unique_x<SparseDB>(args.output, args.threads);
     auto exml = make_unique_x<sinks::ExperimentXML4>(args.output, args.include_sources,
                                                      tdb.get());
     pipelineB << std::move(tdb) << std::move(exml);
