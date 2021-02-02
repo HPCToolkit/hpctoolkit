@@ -32,6 +32,8 @@ typedef struct event_list_node_t {
 	cct_node_t *launcher_cct;
 	// CCT node of the queue
 	cct_node_t *queue_launcher_cct;
+	
+	bool isDeleted;
 
 	union {
 		struct event_list_node_t *next;
