@@ -55,7 +55,6 @@
 #include "gpu-print.h"
 
 
-
 //******************************************************************************
 // type declarations
 //******************************************************************************
@@ -110,7 +109,7 @@ gpu_trace_demultiplexer_init
  void
 )
 {
-  control_knob_value_get_int("STREAMS_PER_THREAD", &streams_per_thread);
+  control_knob_value_get_int("STREAMS_PER_TRACING_THREAD", &streams_per_thread);
   trace_channel_set_list_head = gpu_trace_channel_set_create();
   trace_channel_set_list_tail = trace_channel_set_list_head;
 
