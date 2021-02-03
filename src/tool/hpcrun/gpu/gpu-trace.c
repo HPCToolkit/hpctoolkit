@@ -65,6 +65,7 @@
 #include <lib/prof-lean/stdatomic.h>
 
 #include <hpcrun/cct/cct.h>
+#include <hpcrun/utilities/hpcrun-nanotime.h>
 #include <hpcrun/control-knob.h>
 #include <hpcrun/thread_data.h>
 #include <hpcrun/threadmgr.h>
@@ -88,7 +89,7 @@
 
 #define DEBUG 0
 #include "gpu-print.h"
-
+#define TRACE_CHANNEL_SLEEP 5000000 // in ns
 
 
 //******************************************************************************
@@ -359,10 +360,11 @@ gpu_trace_record
   while (!atomic_load(&stop_trace_flag)) {
     //getting data from a trace channel
     gpu_trace_channel_set_process(channel_set);
-
+    hpcrun_nanosleep(TRACE_CHANNEL_SLEEP);
   }
   gpu_trace_channel_set_process(channel_set);
   gpu_trace_channel_set_release(channel_set);
+
   return NULL;
 }
 
