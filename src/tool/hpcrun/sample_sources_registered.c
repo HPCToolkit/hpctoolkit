@@ -49,6 +49,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "control-knob.h"
 #include "sample_sources_registered.h"
 #include <sample-sources/sample_source_obj.h>
 #include <sample-sources/ss-obj-name.h>
@@ -145,6 +146,8 @@ hpcrun_registered_sources_init(void)
     METHOD_CALL(ss, init);
     TMSG(SS_COMMON, "sample source \"%s\": init", ss->name);
   }
+  
+  control_knob_init();
 }
 
 void
