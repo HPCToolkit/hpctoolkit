@@ -798,23 +798,37 @@ std::vector<BlameStats> GPUDivergeReductionOptimizer::match_impl(const KernelBla
                                                                  const KernelStats &kernel_stats) {
   const double DIV_LIMIT = 0.9;
   std::vector<BlameStats> blame_stats_vec;
+  std::map<CudaParse::Block *, double> match_blocks;
 
+  BlameStats lat_blame_stats;
+  // Match if high latency with determined branch conditions
   for (auto *inst_blame : kernel_blame.lat_inst_blame_ptrs) {
-    auto blame_name = inst_blame->blame_name;
+    auto *src_inst = inst_blame->src_inst;
 
-    if ((blame_name == BLAME_GPU_INST_METRIC_NAME ":LAT_NONE" ||
-         blame_name == BLAME_GPU_INST_METRIC_NAME ":LAT_IFET" ||
-         blame_name == BLAME_GPU_INST_METRIC_NAME ":LAT_NSEL") &&
-        inst_blame->pred_true != -1.0 && inst_blame->pred_true <= DIV_LIMIT) {
-      blame_stats_vec.push_back(BlameStats(inst_blame->lat_blame * (1 - inst_blame->pred_true),
-                                           kernel_stats.active_samples,
-                                           kernel_stats.total_samples));
+    if (src_inst->op.find("BRANCH") != std::string::npos &&
+        (inst_blame->efficiency != -1.0 && inst_blame->efficiency <= DIV_LIMIT)) {
+      auto *dst_block = inst_blame->dst_block;
+      match_blocks.insert(std::make_pair(dst_block, inst_blame->efficiency));
 
       if (_inspection.regions.size() < _top_regions) {
         _inspection.regions.push_back(*inst_blame);
       }
     }
   }
+
+  double blame = 0;
+  for (auto *inst_blame : kernel_blame.lat_inst_blame_ptrs) {
+    if (match_blocks.find(inst_blame->src_block) != match_blocks.end()) {
+      if (inst_blame->blame_name.find(":LAT_NSEL") != std::string::npos ||
+        inst_blame->blame_name.find(":LAT_NONE") != std::string::npos) {
+        blame += inst_blame->lat_blame * (1 - match_blocks[inst_blame->src_block]);
+      }
+    }
+  }
+
+  blame_stats_vec.push_back(BlameStats(blame,
+                                       kernel_stats.active_samples,
+                                       kernel_stats.total_samples));
 
   _inspection.hint =
       "Diverged branch conditions encountered in execution. Look for improvements to "
