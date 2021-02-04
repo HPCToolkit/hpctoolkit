@@ -3,9 +3,6 @@
 //******************************************************************************
 
 #include <stdbool.h>												// bool
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 
 
 
@@ -16,8 +13,8 @@
 #include <hpcrun/memory/hpcrun-malloc.h>		// hpcrun_malloc
 #include <lib/prof-lean/splay-uint64.h>			// splay_visit_t 
 
-#include "opencl-event-map.h"		// event_list_node_t, queue_node_t
-#include "opencl-active-kernels-map.h"		// event_list_node_t, queue_node_t
+#include "opencl-event-map.h"								// event_list_node_t
+#include "opencl-active-kernels-map.h"			// active_kernels_*
 
 
 
@@ -39,7 +36,6 @@ typedef struct ak_helper_node {
 	long last_time;
 	long ak_size;
 } ak_helper_node;
-
 
 
 
@@ -181,6 +177,7 @@ void quickSort(struct Node** headRef)
 }
 
 
+
 //******************************************************************************
 // private functions 
 //******************************************************************************
@@ -280,21 +277,22 @@ void
 calculate_blame_for_active_kernels
 (
  event_list_node_t *event_list,
- struct timespec sync_start,
- struct timespec sync_end
+ long sync_start,
+ long sync_end
 )
 {
 	// also input the sync times and add nodes	
 	Node *head = transform_event_nodes_to_sortable_nodes(event_list);
 
-	long NS_IN_SEC = 1000000000;
-	Node sync_start_node = {sync_start.tv_sec*NS_IN_SEC + sync_start.tv_nsec, "Sync", 1, NULL, NULL};
-	Node sync_end_node = {sync_start.tv_sec*NS_IN_SEC + sync_end.tv_nsec, "Sync", 0, NULL, NULL};
+	Node sync_start_node = {sync_start, "Sync", 1, NULL, NULL};
+	Node sync_end_node = {sync_end, "Sync", 0, NULL, NULL};
 	push(&head, sync_start_node);
 	push(&head, sync_end_node);
+	
 	printList(head);
 	quickSort(&head);
 	printList(head);
+	
 	distribute_blame_to_kernels(head);
 }
 
