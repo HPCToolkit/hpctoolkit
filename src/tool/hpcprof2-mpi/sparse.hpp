@@ -135,9 +135,15 @@ private:
 
   hpctoolkit::util::locked_unordered_map<const hpctoolkit::Thread*,
     hpctoolkit::stdshim::filesystem::path> outputs;
+
   std::mutex outputs_l;
   std::vector<std::pair<const hpctoolkit::Thread*,
     pms_profile_info_t>> outputs1;
+  std::mutex obuffer_l;
+  size_t cur_position; //next available starting position for a profile
+  size_t cur_fposition; //next available starting position in the file
+  std::vector<char> cur_obuffer; //profiles in binary form waiting to be written
+
   std::atomic<std::size_t> outputCnt;
   int team_size;
   hpctoolkit::stdshim::filesystem::path summaryOut;
@@ -249,6 +255,8 @@ private:
   //---------------------------------------------------------------------------
   // get profile's real data (bytes)
   //---------------------------------------------------------------------------
+  std::vector<char> profBytes(hpcrun_fmt_sparse_metrics_t* sm);
+
   void updateCtxMids(const char* input, const uint64_t ctx_nzval_cnt, std::set<uint16_t>& ctx_nzmids);
 
   void interpretOneCtxValCntMids(const char* val_cnt_input, 
