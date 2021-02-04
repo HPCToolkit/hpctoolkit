@@ -176,9 +176,7 @@ void SparseDB::notifyThreadFinal(const Thread::Temporary& tt) {
   }
   */
   pi.offset = cur_position;
-  printf(" %ld + %ld", cur_position, sparse_metrics_bytes.size());
   cur_position += sparse_metrics_bytes.size();
-  printf(" = %ld\n", cur_position);
   cur_obuffer.insert(cur_obuffer.end(), sparse_metrics_bytes.begin(), sparse_metrics_bytes.end());
   outputs1.emplace_back(&t, std::move(pi));
   outputs_l.unlock();
@@ -322,13 +320,12 @@ void SparseDB::write()
   b = convertToByte4(coffsets.size() - 1);
   info_bytes.insert(info_bytes.end(), b.begin(), b.end());
 
-  b = convertToByte8(cur_position);
+  b = convertToByte8(cur_position + (id_tuples_sec_ptr + MULTIPLE_8(id_tuples_sec_size)));
   info_bytes.insert(info_bytes.end(), b.begin(), b.end());
 
   auto fhi = profile_major_f.open(true);
   fhi.writeat(prof_info_sec_ptr, PMS_prof_info_SIZE, info_bytes.data());
 
-  printf("%ld\n", cur_position);
   auto sparse_metrics_bytes = profBytes(&sm);
   assert(sparse_metrics_bytes.size() == (values.size() * PMS_vm_pair_SIZE + coffsets.size() * PMS_ctx_pair_SIZE));
   cur_obuffer.insert(cur_obuffer.end(), sparse_metrics_bytes.begin(), sparse_metrics_bytes.end());
@@ -336,10 +333,9 @@ void SparseDB::write()
 
   //footer to show completeness
   //MPI_Barrier(MPI_COMM_WORLD);
-  //auto footer_off = cur_position + sparse_metrics_bytes.size();
-  //printf("%ld\n", cur_position);
-  //uint64_t footer_val = PROFDBft;
-  //fhi.writeat(footer_off, sizeof(footer_val), &footer_val);
+  auto footer_off = cur_position + sparse_metrics_bytes.size() + id_tuples_sec_ptr + MULTIPLE_8(id_tuples_sec_size);
+  uint64_t footer_val = PROFDBft;
+  fhi.writeat(footer_off, sizeof(footer_val), &footer_val);
 
 
 
@@ -1089,7 +1085,7 @@ void SparseDB::writeProfInfos(const util::File& fh, const int threads)
       b = convertToByte4(pi.num_nzctxs);
       info_bytes.insert(info_bytes.end(), b.begin(), b.end());
 
-      auto off = pi.offset + id_tuples_sec_ptr + MULTIPLE_8(id_tuples_sec_size);
+      uint64_t off = pi.offset + id_tuples_sec_ptr + MULTIPLE_8(id_tuples_sec_size);
       b = convertToByte8(off);
       info_bytes.insert(info_bytes.end(), b.begin(), b.end());
 
