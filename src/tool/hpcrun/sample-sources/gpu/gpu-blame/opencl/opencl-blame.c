@@ -17,8 +17,9 @@
 // local includes
 //******************************************************************************
 
-#include "gpu-blame-opencl-event-map.h"		// event_list_node_t, queue_node_t
-#include "gpu-blame-opencl-queue-map.h"		// event_list_node_t, queue_node_t
+#include "opencl-event-map.h"		// event_list_node_t, queue_node_t
+#include "opencl-queue-map.h"		// event_list_node_t, queue_node_t
+#include "opencl-blame-helper.h"		// event_list_node_t, queue_node_t
 
 #include <hpcrun/cct/cct.h>										// cct_node_t
 #include <hpcrun/constructors.h>							// HPCRUN_CONSTRUCTOR
@@ -177,116 +178,6 @@ HPCRUN_CONSTRUCTOR(CpuGpuBlameShiftInit)(void)
 
 /******************** END CONSTRUCTORS ****/
 
-
-//******************************************************************************
-// linkedlist sort functions: https://www.geeksforgeeks.org/quicksort-on-singly-linked-list/
-//******************************************************************************
-
-// Returns the last node of the list
-struct event_list_node_t* getTail(struct event_list_node_t* cur)
-{
-	while (cur != NULL && cur->next != NULL)
-		cur = cur->next;
-	return cur;
-}
-
-
-// Partitions the list taking the last element as the pivot
-struct event_list_node_t* partition(struct event_list_node_t* head, struct event_list_node_t* end,
-		struct event_list_node_t** newHead,
-		struct event_list_node_t** newEnd)
-{
-	struct event_list_node_t* pivot = end;
-	struct event_list_node_t *prev = NULL, *cur = head, *tail = pivot;
-
-	// During partition, both the head and end of the list
-	// might change which is updated in the newHead and
-	// newEnd variables
-	while (cur != pivot) {
-		if (cur->event_start_time < pivot->event_start_time) {
-			// First node that has a value less than the
-			// pivot - becomes the new head
-			if ((*newHead) == NULL)
-				(*newHead) = cur;
-
-			prev = cur;
-			cur = cur->next;
-		}
-		else // If cur node is greater than pivot
-		{
-			// Move cur node to next of tail, and change
-			// tail
-			if (prev)
-				prev->next = cur->next;
-			struct event_list_node_t* tmp = cur->next;
-			cur->next = NULL;
-			tail->next = cur;
-			tail = cur;
-			cur = tmp;
-		}
-	}
-
-	// If the pivot data is the smallest element in the
-	// current list, pivot becomes the head
-	if ((*newHead) == NULL)
-		(*newHead) = pivot;
-
-	// Update newEnd to the current last node
-	(*newEnd) = tail;
-
-	// Return the pivot node
-	return pivot;
-}
-
-// here the sorting happens exclusive of the end node
-struct event_list_node_t* quickSortRecur(struct event_list_node_t* head,
-		struct event_list_node_t* end)
-{
-	// base condition
-	if (!head || head == end)
-		return head;
-
-	event_list_node_t *newHead = NULL, *newEnd = NULL;
-
-	// Partition the list, newHead and newEnd will be
-	// updated by the partition function
-	struct event_list_node_t* pivot
-		= partition(head, end, &newHead, &newEnd);
-
-	// If pivot is the smallest element - no need to recur
-	// for the left part.
-	if (newHead != pivot) {
-		// Set the node before the pivot node as NULL
-		struct event_list_node_t* tmp = newHead;
-		while (tmp->next != pivot)
-			tmp = tmp->next;
-		tmp->next = NULL;
-
-		// Recur for the list before pivot
-		newHead = quickSortRecur(newHead, tmp);
-
-		// Change next of last node of the left half to
-		// pivot
-		tmp = getTail(newHead);
-		tmp->next = pivot;
-	}
-
-	// Recur for the list after the pivot element
-	pivot->next = quickSortRecur(pivot->next, newEnd);
-
-	return newHead;
-}
-
-// The main function for quick sort. This is a wrapper over
-// recursive function quickSortRecur()
-void quickSort(struct event_list_node_t** headRef)
-{
-	(*headRef)
-		= quickSortRecur(*headRef, getTail(*headRef));
-	return;
-}
-
-
 //******************************************************************************
 // private operations
 //******************************************************************************
@@ -380,6 +271,7 @@ create_and_insert_event
 	event_node->event = event;
 	event_node->queue_launcher_cct = queue_launcher_cct;
 	event_node->launcher_cct = launcher_cct;
+	event_node->isComplete = false;
 	event_node->next = NULL;
 	uint64_t event_id = (uint64_t) event;
 	event_map_insert(event_id, event_node);
@@ -417,10 +309,10 @@ add_kernel_to_completed_list
 {
 	// maintain a new splay-tree only for events.
 	// Each node in this tree will contain key: event, val: (event_list_node_t val)
-	if (event_node->isDeleted) {
+	if (event_node->isComplete) {
 		return;	
 	} else {
-		event_node->isDeleted = true;	
+		event_node->isComplete = true;	
 	}
 
 	event_list_node_t *null_ptr = NULL;
@@ -463,36 +355,7 @@ cleanup_finished_events
 		bool cur_queue_unfinished = false;
 
 		while (current_event_node) {
-			// we need access to the node that contains the event
-			cl_int err_cl = clGetEventProfilingInfo(current_event_node->event, CL_PROFILING_COMMAND_END,
-					sizeof(cl_ulong), &(current_event_node->event_end_time), NULL);
-
-			if (err_cl == CL_SUCCESS) {
-				DECR_SHARED_BLAMING_DS(outstanding_kernels);
-
-				float elapsedTime;
-
-				err_cl = clGetEventProfilingInfo(current_event_node->event, CL_PROFILING_COMMAND_START,
-						sizeof(cl_ulong), &(current_event_node->event_start_time), NULL);
-
-				if (err_cl != CL_SUCCESS) {
-					EMSG("clGetEventProfilingInfo failed");
-					break;
-				}
-				// Just to verify that this is a valid profiling value. 
-				elapsedTime = current_event_node->event_end_time - current_event_node->event_start_time; 
-				assert(elapsedTime > 0);
-
-				record_latest_kernel_end_time(current_event_node->event_end_time);
-
-				// Add the kernel execution time to the gpu_time_metric_id
-				cct_metric_data_increment(gpu_time_metric_id, current_event_node->launcher_cct, (cct_metric_data_t) {
-						.i = (current_event_node->event_end_time - current_event_node->event_start_time)});
-
-				// delete the current_event_node variable from the linkedlist
-				event_list_node_t *deleted_node = current_event_node;
-				clReleaseEvent(current_event_node->event);
-				
+			if(current_event_node->isComplete) {
 				// updating the linkedlist
 				if (current_event_node == cur_queue->event_list_head) {
 					if (cur_queue->event_list_head == cur_queue->event_list_tail) {
@@ -507,9 +370,6 @@ cleanup_finished_events
 					prev_event_node->next = current_event_node->next;
 				}
 				current_event_node = current_event_node->next;
-
-				// Add node to free list
-				add_kernel_to_completed_list(deleted_node);
 			} else {
 				cur_queue_unfinished = true;
 				prev_event_node = current_event_node;
@@ -610,6 +470,30 @@ kernel_epilogue
 	event_map_entry_t *entry = event_map_lookup(event_id);
 	event_list_node_t *event_node = event_map_entry_event_node_get(entry);
 
+	cl_int err_cl = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &(event_node->event_end_time), NULL);
+
+	if (err_cl == CL_SUCCESS) {
+		DECR_SHARED_BLAMING_DS(outstanding_kernels);
+
+		float elapsedTime;
+		err_cl = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START,	sizeof(cl_ulong), &(event_node->event_start_time), NULL);
+
+		if (err_cl != CL_SUCCESS) {
+			EMSG("clGetEventProfilingInfo failed");
+		}
+		// Just to verify that this is a valid profiling value. 
+		elapsedTime = event_node->event_end_time - event_node->event_start_time; 
+		assert(elapsedTime > 0);
+
+		record_latest_kernel_end_time(event_node->event_end_time);
+
+		// Add the kernel execution time to the gpu_time_metric_id
+		cct_metric_data_increment(gpu_time_metric_id, event_node->launcher_cct, (cct_metric_data_t) {
+				.i = (event_node->event_end_time - event_node->event_start_time)});
+
+	} else {
+		EMSG("clGetEventProfilingInfo failed");
+	}
 	add_kernel_to_completed_list(event_node);
 	clReleaseEvent(event);
 }
@@ -622,7 +506,7 @@ sync_prologue
 )
 {
   struct timespec sync_start;
-  clock_gettime(CLOCK_REALTIME, &sync_start); // get current time
+  clock_gettime(CLOCK_MONOTONIC_RAW, &sync_start); // get current time
 	
 	atomic_fetch_add(&g_num_threads_at_sync, 1L);
 
@@ -646,12 +530,11 @@ sync_prologue
 static void
 attributing_cpu_idle_metric_at_sync_epilogue
 (
-	cl_command_queue queue,
+	cct_node_t *cpu_cct_node,
 	struct timespec sync_start,
 	struct timespec sync_end
 )
 {
-
 	// attributing cpu_idle time for the min of (sync_end - sync_start, sync_end - last_kernel_end)
 	uint64_t last_kernel_end_time = atomic_load(&latest_kernel_end_time);
 
@@ -661,55 +544,6 @@ attributing_cpu_idle_metric_at_sync_epilogue
 																(sync_end.tv_sec - last_kernel_end_time) :
 																(sync_end.tv_sec  - sync_start.tv_sec);
 	cct_metric_data_increment(cpu_idle_metric_id, cpu_cct_node, (cct_metric_data_t) {.i = (cpu_idle_time)});
-
-	queue_node->cpu_idle_cct = NULL;
-	queue_node->cpu_sync_start_time = NULL;
-}
-
-
-static void
-attributing_cpu_idle_cause_metric_for_single_kernel
-(
-	event_list_node_t *node,
-	struct timespec sync_start,
-	struct timespec sync_end
-)
-{
-	kernel_start = node->event_start_time;
-	kernel_end = node->event_end_time;
-	if (kernel_start >= sync_end || kernel_end <= sync_start) {
-		// kernel time and sync times to not intersect
-		goto final;
-	} else if (kernel_start <= sync_start && kernel_end <= sync_end) {
-		blame_start = sync_start;
-		blame_end_time = kernel_end;
-		goto final;
-	} else if (kernel_start >= sync_start && kernel_end <= sync_end) {
-		blame_start = kernel_start;
-		blame_end_time = kernel_end;
-	} else if (kernel_start <= sync_start && kernel_end >= sync_end) {
-		blame_start = sync_start;
-		blame_end_time = sync_end;
-	} else if (kernel_start >= sync_start && kernel_end >= sync_end) {
-		blame_start = kernel_start;
-		blame_end_time = sync_end;
-	}
-	blame_duration = kernel_end - sync_start;
-	
-	
-
-
-
-
-
-
-	
-	final:
-	if (atomic_load(&g_num_threads_at_sync) == 1) {
-		// discard node from list if current sync_block is the only sync_block
-		ADD_TO_FREE_EVENTS_LIST(node);
-		return;
-	}
 }
 
 
@@ -729,34 +563,15 @@ attributing_cpu_idle_cause_metric_at_sync_epilogue
 	if (atomic_compare_exchange_strong(&completed_kernel_list_head, private_completed_kernel_head, NULL)) {
 		// exchange successful, proceed with metric attribution	
 		
-		// sort private_completed_kernel_head according to start time
-		quickSort(&private_completed_kernel_head);
-		
-		// For all kernels, get list of kernels that intersect in time
+		calculate_blame_for_active_kernels(private_completed_kernel_head, sync_start, sync_end);
 		event_list_node_t *curr_event = private_completed_kernel_head;
-		event_list_node_t *future_event;
 		while (curr_event) {
-			future_event = curr_event->next;
-			event_list_node_t *temp = curr_event->intersecting_kernels;
-			while (future_event) {
-				if (future_event->event_start_time < curr_event->event_end_time) {
-					temp = future_event;
-					temp = temp->next;
-					future_event = future_event->next;
-				} else {
-					break;
-				}
-			}
-			curr_event = curr_event->next;
-		}
-		
-		curr_event = private_completed_kernel_head;
-		while (curr_event) {
-			attributing_cpu_idle_cause_metric_for_single_kernel(curr_event, sync_start, sync_end);
+			cct_metric_data_increment(cpu_idle_cause_metric_id, curr_event->launcher_cct,
+																		(cct_metric_data_t) {.r = curr_event->cpu_idle_blame});
+			ADD_TO_FREE_EVENTS_LIST(curr_event);
 			curr_event = curr_event->next;
 		}
 
-		//ADD_TO_FREE_EVENTS_LIST(deleted_node);
 	} else {
 		// some other sync block could have attributed its idleless blame, return
 		return;
@@ -771,7 +586,7 @@ sync_epilogue
 )
 {
   struct timespec sync_end;
-  clock_gettime(CLOCK_REALTIME, &sync_end); // get current time
+  clock_gettime(CLOCK_MONOTONIC_RAW, &sync_end); // get current time
 
 	uint64_t queue_id = (uint64_t) queue;
 	queue_map_entry_t *entry = queue_map_lookup(queue_id);
@@ -779,9 +594,11 @@ sync_epilogue
 	cct_node_t *cpu_cct_node = queue_node->cpu_idle_cct;
 	struct timespec sync_start = *(queue_node->cpu_sync_start_time);
 	
-	attributing_cpu_idle_metric_at_sync_epilogue(queue, sync_start, sync_end);	
+	attributing_cpu_idle_metric_at_sync_epilogue(cpu_cct_node, sync_start, sync_end);	
 	attributing_cpu_idle_cause_metric_at_sync_epilogue(queue, sync_start, sync_end);	
 	
+	queue_node->cpu_idle_cct = NULL;
+	queue_node->cpu_sync_start_time = NULL;
 	atomic_fetch_add(&g_num_threads_at_sync, -1L);
 	TD_GET(gpu_data.queue_responsible_for_cpu_sync) = NULL;
 	TD_GET(gpu_data.is_thread_at_opencl_sync) = false;
