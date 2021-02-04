@@ -17,9 +17,9 @@
 // local includes
 //******************************************************************************
 
-#include "opencl-event-map.h"		// event_list_node_t, queue_node_t
-#include "opencl-queue-map.h"		// event_list_node_t, queue_node_t
-#include "opencl-blame-helper.h"		// event_list_node_t, queue_node_t
+#include "opencl-event-map.h"									// event_list_node_t
+#include "opencl-queue-map.h"									// queue_node_t
+#include "opencl-blame-helper.h"							// calculate_blame_for_active_kernels
 
 #include <hpcrun/cct/cct.h>										// cct_node_t
 #include <hpcrun/constructors.h>							// HPCRUN_CONSTRUCTOR
@@ -27,7 +27,6 @@
 #include <hpcrun/sample_event.h>							// hpcrun_sample_callpath
 #include <hpcrun/sample-sources/gpu_blame.h>	// g_active_threads
 #include <hpcrun/thread_data.h>								// gpu_data
-#include <hpcrun/trace.h>											// hpcrun_trace_isactive
 
 #include <lib/prof-lean/hpcrun-opencl.h>			// CL_SUCCESS, cl_event, etc
 #include <lib/prof-lean/spinlock.h>						// spinlock_t, SPINLOCK_UNLOCKED
@@ -51,6 +50,8 @@ typedef struct IPC_data_t {
 //******************************************************************************
 // macros
 //******************************************************************************
+
+#define	NS_IN_SEC 1000000000
 
 #define MAX_SHARED_KEY_LENGTH (100)
 
@@ -491,10 +492,10 @@ kernel_epilogue
 		cct_metric_data_increment(gpu_time_metric_id, event_node->launcher_cct, (cct_metric_data_t) {
 				.i = (event_node->event_end_time - event_node->event_start_time)});
 
+		add_kernel_to_completed_list(event_node);
 	} else {
 		EMSG("clGetEventProfilingInfo failed");
 	}
-	add_kernel_to_completed_list(event_node);
 	clReleaseEvent(event);
 }
 
@@ -531,8 +532,8 @@ static void
 attributing_cpu_idle_metric_at_sync_epilogue
 (
 	cct_node_t *cpu_cct_node,
-	struct timespec sync_start,
-	struct timespec sync_end
+	long sync_start,
+	long sync_end
 )
 {
 	// attributing cpu_idle time for the min of (sync_end - sync_start, sync_end - last_kernel_end)
@@ -540,9 +541,8 @@ attributing_cpu_idle_metric_at_sync_epilogue
 
 	// this differnce calculation may be incorrect. We might need to factor the different clocks of CPU and GPU
 	// using time in seconds may lead to loss of precision
-	uint64_t cpu_idle_time = (sync_end.tv_sec - last_kernel_end_time < sync_end.tv_sec  - sync_start.tv_sec) ? 
-																(sync_end.tv_sec - last_kernel_end_time) :
-																(sync_end.tv_sec  - sync_start.tv_sec);
+	uint64_t cpu_idle_time = ((sync_end - last_kernel_end_time) < (sync_end - sync_start)) ? 
+																(sync_end - last_kernel_end_time) :	(sync_end  - sync_start);
 	cct_metric_data_increment(cpu_idle_metric_id, cpu_cct_node, (cct_metric_data_t) {.i = (cpu_idle_time)});
 }
 
@@ -551,8 +551,8 @@ static void
 attributing_cpu_idle_cause_metric_at_sync_epilogue
 (
 	cl_command_queue queue,
-	struct timespec sync_start,
-	struct timespec sync_end
+	long sync_start,
+	long sync_end
 )
 {
 	event_list_node_t *private_completed_kernel_head = atomic_load(&completed_kernel_list_head);
@@ -593,9 +593,11 @@ sync_epilogue
 	queue_node_t *queue_node = queue_map_entry_queue_node_get(entry);
 	cct_node_t *cpu_cct_node = queue_node->cpu_idle_cct;
 	struct timespec sync_start = *(queue_node->cpu_sync_start_time);
-	
-	attributing_cpu_idle_metric_at_sync_epilogue(cpu_cct_node, sync_start, sync_end);	
-	attributing_cpu_idle_cause_metric_at_sync_epilogue(queue, sync_start, sync_end);	
+
+	long sync_start_nsec = sync_start.tv_sec*NS_IN_SEC + sync_start.tv_nsec;
+	long sync_end_nsec = sync_end.tv_sec*NS_IN_SEC + sync_end.tv_nsec;
+	attributing_cpu_idle_metric_at_sync_epilogue(cpu_cct_node, sync_start_nsec, sync_end_nsec);	
+	attributing_cpu_idle_cause_metric_at_sync_epilogue(queue, sync_start_nsec, sync_end_nsec);	
 	
 	queue_node->cpu_idle_cct = NULL;
 	queue_node->cpu_sync_start_time = NULL;
