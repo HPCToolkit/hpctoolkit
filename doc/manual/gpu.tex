@@ -3,6 +3,8 @@ Section~\ref{sample-sources} and it can monitor GPU performance using tool suppo
 
 In the following sections, we describe a generic substrate in HPCToolkit to interact with vendor specific runtime systems and libraries and the vendor specific details for measuring performance for NVIDIA, AMD, and Intel GPUs. 
 
+While a single version of HPCToolkit can be built that supports GPUs from multiple vendors and programming models, using HPCToolkit to collect GPU metrics  using GPUs from multiple vendors in a single execution or  using multiple GPU programming models (e.g. CUDA + OpenCL) in a single execution is unsupported. It is  unlikely to produce correct measurements and likely to crash.
+
 \begin{comment}
 
 To measure both CUDA and OpenMP offloading performance, use one of the CUDA events specified above.
@@ -14,7 +16,11 @@ Perform binary analysis to recover program structure of your executable or a sha
 hpcstruct hpctoolkit-<your application>-measurements
 \end{comment}
 
-\section{Generic Performance Measurement Substrate}
+\section{GPU Performance Measurement Substrate}
+
+HPCToolkit's measurement subsystem supports both profiling and tracing of GPU activities. We discuss the support for profiling and tracing in the following subsections. 
+
+\subsection{Profiling GPU Activities}
 
 The foundation of HPCToolkit's support for measuring the performance of GPU-accelerated applications is a vendor-independent monitoring substrate. A thin software layer connects NVIDIA's CUPTI (CUDA Performance Tools Interface)~\cite{cupti} and AMD's ROC-tracer (ROCm Tracer Callback/Activity Library)~\cite{roctracer} monitoring libraries to this substrate. The substrate also includes function wrappers to intercept calls to the OpenCL API and Intel's Level 0 API to measure GPU performance for programming models that do not have an integrated measurement substrate 
 such as CUPTI or ROC-tracer. 
@@ -139,6 +145,7 @@ GKER:FGP\_ACT & GPU kernel: fine-grain parallelism, actual    \\\hline
 GKER:FGP\_MAX & GPU kernel: fine-grain parallelism, maximum    \\\hline
 GKER:THR\_REG & GPU kernel: thread register count    \\\hline
 GKER:BLK\_THR & GPU kernel: thread count   \\\hline
+GKER:BLK  & GPU kernel: block count   \\\hline
 GKER:BLK\_SM (B) & GPU kernel: block local memory (bytes)   \\\hline
 GKER:COUNT & GPU kernel: launch count   \\\hline
 GKER:OCC\_THR & GPU kernel: theoretical occupancy    \\\hline
@@ -169,6 +176,12 @@ GINST:STL\_ANY  &  GPU instruction stalls: any  \\\hline
 \caption{GPU instruction execution and stall metrics.}
 \label{table:pc-stall}
 \end{table}
+
+\subsection{Tracing GPU Activities}
+HPCToolkit also supports tracing of activities on GPU streams on NVIDIA, AMD, and Intel GPUs.\footnote{Tacing of GPU activities on Intel GPUs is currently supported only for Intel's OpenCL runtime. We plan to add tracing support for Intel's Level 0 runtime in a future release.}  Tracing of GPU activities will be enabled any time GPU monitoring is enabled and \hpcrun's tracing is enabled with {\tt -t} or {\tt --trace}.
+
+It is important to know that \hpcrun{} creates CPU tracing threads to record a trace of GPU activities. By default, it creates one tracing thread per four GPU streams. To adjust the number of GPU streams per tracing thread, see the settings for {\tt HPCRUN\_CONTROL\_KNOBS} in Appendix~\ref{sec:env}.
+When mapping a GPU-accelerated node program onto a node, you may need to consider provisioning additional hardware threads or cores to accommodate these tracing threads; otherwise, they may compete against  application threads for CPU resources, which  may degrade the performance of your execution. 
 
 \section{NVIDIA GPUs}
 

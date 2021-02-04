@@ -354,6 +354,7 @@ do
 
 	-L | -l | --list-events )
 	    export HPCRUN_EVENT_LIST=LIST
+		export HPCRUN_LIST_EVENT=1
 	    ;;
 
 	-ds | --delay-sampling )
