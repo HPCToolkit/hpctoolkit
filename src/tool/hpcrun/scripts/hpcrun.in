@@ -22,8 +22,12 @@ perfmon_libdir='@PERFMON_LIB@'
 roctracer_lib_path='@OPT_ROCM_LD_LIB_PATH@'
 gtpin_lib_path='@OPT_GTPIN_LIBDIR@'
 # gotcha_lib_path='@GOTCHA_LIBDIR@'
-
+host_arm='@HOST_CPU_AARCH64@'
 prog_name=hpcrun
+
+if test $host_arm = "yes"; then
+    export HPCRUN_AUDIT_FAKE_AUDITOR=1
+fi
 
 #------------------------------------------------------------
 # Find path to this script
@@ -107,7 +111,7 @@ Options: Informational
 
 Options: Profiling (Defaults shown in curly brackets {})
   -e <event>[@<howoften>], --event <event>[@<howoften>]
-                      event  may  be an architecture-independent hardware or
+                      <event> may be an architecture-independent hardware or
                       software event supported by Linux perf, a native hardware
                       counter event, a hardware counter event supported by the
                       PAPI library, or a Linux  system timer (CPUTIME and REALTIME).
@@ -119,7 +123,8 @@ Options: Profiling (Defaults shown in curly brackets {})
                       per second,  specify  <howoften>  as '@f100'. For Linux perf
                       events, if no value for <howoften> is specified, hpcrun
                       will monitor the event using frequency-based sampling at 300
-                      samples/second.
+                      samples/second. If no event is specified, hpcrun will collect
+                      CPUTIME samples 200 times per second per application thread.
 
   -c, --count <howoften>
                       Only  available  for  events  managed  by Linux perf. This
@@ -186,7 +191,11 @@ Options to consider only when hpcrun causes an application to fail:
                        to track dynamic library operations by intercepting
                        dlopen and dlclose instead of using LD_AUDIT. Note
                        that this alternate approach can cause problem with
-                       load modules that specify a RUNPATH.
+                       load modules that specify a RUNPATH. Due to a glibc bug,
+                       this option is disabled by default on ARM.
+
+  --enable-auditor     LD_AUDIT is by default disabled on ARM due to a glib bug.
+                       Use this option to enable LD_AUDIT on ARM.
 
   --disable-auditor-got-rewriting
                        By default, hpcrun uses LD_AUDIT to help track dynamic
@@ -344,6 +353,7 @@ do
 
 	-L | -l | --list-events )
 	    export HPCRUN_EVENT_LIST=LIST
+		export HPCRUN_LIST_EVENT=1
 	    ;;
 
 	-ds | --delay-sampling )
@@ -463,6 +473,9 @@ do
 	--disable-auditor )
 	    export HPCRUN_AUDIT_FAKE_AUDITOR=1
 	    ;;
+    --enable-auditor )
+        unset HPCRUN_AUDIT_FAKE_AUDITOR
+        ;;
 
 	# --------------------------------------------------
 
@@ -483,8 +496,8 @@ done
 
 # Add default sampling source if needed.
 case "$HPCRUN_EVENT_LIST" in
-    '' ) HPCRUN_EVENT_LIST='REALTIME@5000' ;;
-    RETCNT ) HPCRUN_EVENT_LIST='REALTIME@5000 RETCNT' ;;
+    '' ) HPCRUN_EVENT_LIST='CPUTIME@5000' ;;
+    RETCNT ) HPCRUN_EVENT_LIST='CPUTIME@5000 RETCNT' ;;
 esac
 export HPCRUN_EVENT_LIST
 

@@ -120,7 +120,7 @@
 % ***************************************************************************
 % ***************************************************************************
 
-\title{\HPCToolkit{} User's Manual\\[.5in]Version 2021.01.31}
+\title{\HPCToolkit{} User's Manual\\[.5in]Version 2021.02.01}
 %\subtitle{}
 
 \author{John Mellor-Crummey,\\
@@ -135,7 +135,7 @@ Rice University\\
 %For \HPCToolkit{} 5.3.2 ($Revision$)
 }
 
-\date{January 31, 2021}
+\date{February 1, 2021}
 
 \maketitle
 
@@ -927,7 +927,7 @@ To isolate code that is an impediment to scalable performance, one can use the {
 % ***************************************************************************
 % ***************************************************************************
 
-\chapter{Running Applications with \hpcrun{} and \hpclink{}}
+\chapter{Monitoring Dynamically-linked Applications with \hpcrun{}}
 \label{chpt:hpcrun}
 
 \input{hpcrun}
@@ -936,45 +936,107 @@ To isolate code that is an impediment to scalable performance, one can use the {
 % ***************************************************************************
 % ***************************************************************************
 
-\chapter{Measurement and Analysis of GPU-accelerated Applications}
-\label{chpt:gpu}
-
-\input{gpu}
+\chapter{Monitoring Statically Linked Applications with \hpclink{}}
+\label{chpt:statically-linked-apps}
 
 
-% ***************************************************************************
-% ***************************************************************************
+% ===========================================================================
+% ===========================================================================
 
-\chapter{Measurement and Analysis of OpenMP Multithreading}
-\label{chpt:gpu}
+On modern Linux systems, dynamically linked executables are the default.
+With dynamically linked executables, \HPCToolkit{}'s \hpcrun{} script uses library preloading to inject \HPCToolkit's monitoring code into an application's address space.
+However, in some cases, statically-linked executables are necessary or desirable.
+\begin{itemize}
+\item One might prefer a statically linked executable because they are generally faster if the executable spends a significant amount of time calling functions in libraries.
+\item On Cray supercomputers, statically-linked executables are often the default.
+\end{itemize}
 
-{
-\centering
- \fbox{\parbox{\textwidth}{Note: This release contains beta support for monitoring OpenMP computations using the OpenMP 5.0 OpenMP Tools API support known as OMPT.}}
- \vspace{2ex}
-}
+For statically linked executables, preloading \HPCToolkit's monitoring code into an application's address space at program launch is not an option.
+Instead, monitoring code must be added at link time; \HPCToolkit{}'s \hpclink{} script is used for this purpose.
 
-HPCToolkit includes an implementation of the OpenMP 5.0 Tools API known as OMPT. The OMPT interface enables HPCToolkit to extract enough information to reconstruct user-level calling contexts from implementation-level measurements.
+% ===========================================================================
+% ===========================================================================
 
-Support for OpenMP 5.0 and OMPT is emerging in OpenMP runtimes. Recent versions of LLVM's OpenMP runtime, IBM's LOMP (Lightweight OpenMP Runtime) and Intel's OpenMP runtime provide emerging support for OMPT. At present, support in these implementations is known to be incomplete, especially with respect to offloading computation onto TARGET devices.
+\section{Linking with \hpclink{}}
 
-If an interaction between HPCToolkit's support for the OMPT interface and an OpenMP runtime causes problems, OMPT support may be disabled when using HPCToolkit by setting  OpenMP environment variable {\tt OMP\_TOOL} to {\tt disabled}.
+Adding \HPCToolkit{}'s monitoring code into a statically linked application is easy.
+This does not require any source-code modifications, but it does involve a small change to your build procedure.
+You continue to compile all of your object (\texttt{.o}) files exactly as before, but you will need to modify your final link step to use \hpclink{} to add \HPCToolkit{}'s monitoring code to your executable.
+
+In your build scripts, locate the last step in the build, namely, the command that produces the final statically linked binary.
+Edit that command line to add the \hpclink{} command at the front.
+
+For example, suppose that the name of your application binary is \texttt{app} and the last step in
+your \texttt{Makefile} links various object files and libraries as
+follows into a statically linked executable:
+\begin{quote}
+  \verb|mpicc -o app -static file.o ... -l<lib> ...|
+\end{quote}
+To build a version of your executable with \HPCToolkit's monitoring code linked in, you would use the following command line:
+\begin{quote}
+  \verb|hpclink mpicc -o app -static file.o ... -l<lib> ...|
+\end{quote}
+
+In practice, you may want to edit your \texttt{Makefile} to always build two versions of your program, perhaps naming them \texttt{app} and \texttt{app.hpc}.
+
+
+\subsection{Using \hpclink{} when {\tt gprof} instrumentation is present}
+
+When an application has been compiled with the compiler flag \verb|-pg|,
+the compiler adds instrumentation to collect performance measurement data for
+the \verb|gprof| profiler. Measuring application performance with
+\HPCToolkit{}'s measurement subsystem and \verb|gprof| instrumentation
+active in the same execution may cause the execution
+to abort. One can detect the presence of \verb|gprof| instrumentation in an
+application by the presence of \verb|__monstartup| and \verb|_mcleanup| symbols
+in a executable.
+One can disable \verb|gprof| instrumentation when measuring the performance of
+a statically-linked application by using the \verb|--disable-gprof|
+argument to \hpclink{}.
 
 
 
+% ===========================================================================
+% ===========================================================================
 
-% ***************************************************************************
-% ***************************************************************************
+\section{Running a Statically Linked Binary}
 
-\chapter{The \hpcviewer{} User Interface}
-\label{chpt:hpcviewer-interface}
+For dynamically linked executables, the \hpcrun{} script sets environment variables to pass information to the \HPCToolkit{} monitoring library.
+On standard Linux systems, statically linked \hpclink{}-ed executables can still be launched with \hpcrun{}.
 
-\input{hpcviewer}
+For statically-linked binaries, the \hpcrun{} script is not applicable because of differences in application launch procedures.
+On these systems, you will need to use the \mytt{HPCRUN_EVENT_LIST} environment variable to pass a list of events to \HPCToolkit{}'s monitoring code, which was linked into your executable using \hpclink{}.
+Typically, you would set \mytt{HPCRUN_EVENT_LIST} in your launch script.
+
+The \mytt{HPCRUN_EVENT_LIST} environment variable should be set to a space-separated list of \mytt{EVENT@COUNT} pairs.
+For example, in a PBS script for a Cray system, you might write the following in Bourne shell or bash syntax:
+\begin{quote}
+\begin{verbatim}
+#!/bin/sh
+#PBS -l size=64
+#PBS -l walltime=01:00:00
+cd $PBS_O_WORKDIR
+export HPCRUN_EVENT_LIST="CYCLES@f200 PERF_COUNT_HW_CACHE_MISSES@f200"
+aprun -n 64 ./app arg ...
+\end{verbatim}
+\end{quote}
+
+To collect sample traces of  an execution of a statically linked binary (for visualization with \hpctraceviewer{}), one needs to set the environment variable \mytt{HPCRUN_TRACE=1} in the execution environment.
 
 
-% ***************************************************************************
-% ***************************************************************************
+% ===========================================================================
+% ===========================================================================
 
+\section{Troubleshooting}
+
+With some compilers you need to disable interprocedural optimization to use \hpclink{}.
+To instrument your statically linked executable at link time, \hpclink{} uses the \texttt{ld} option \texttt{--wrap} (see the ld(1) man page) to interpose monitoring code between your application and various process, thread, and signal control operations, \eg{}, \mytt{fork}, \mytt{pthread_create}, and \mytt{sigprocmask} to name a few.
+For some compilers, \eg{}, IBM's XL compilers and Pathscale's compilers, interprocedural optimization interferes with the \texttt{--wrap} option and prevents \hpclink{} from working properly.
+If this is the case, \hpclink{} will emit error messages and fail.
+If you want to use \hpclink{} with such compilers, sadly, you must turn off interprocedural optimization.
+
+Note that interprocedural optimization may not be explicitly enabled during your compiles; it might be implicitly enabled when using a compiler optimization option such as \texttt{-fast}.
+In cases such as this, you can often specify \texttt{-fast} along with an option such as \texttt{-no-ipa}; this option combination will provide the benefit of all of \texttt{-fast}'s optimizations {\em except} interprocedural optimization.
 
 % ***************************************************************************
 % ***************************************************************************
@@ -1135,107 +1197,47 @@ This is why we need the application to call \mytt{MPI_Comm_rank()} with communic
 % ***************************************************************************
 % ***************************************************************************
 
-\chapter{Monitoring Statically Linked Applications}
-\label{chpt:statically-linked-apps}
+\chapter{Measurement and Analysis of GPU-accelerated Applications}
+\label{chpt:gpu}
+
+\input{gpu}
 
 
-% ===========================================================================
-% ===========================================================================
+% ***************************************************************************
+% ***************************************************************************
 
-On modern Linux systems, dynamically linked executables are the default.
-With dynamically linked executables, \HPCToolkit{}'s \hpcrun{} script uses library preloading to inject \HPCToolkit's monitoring code into an application's address space.
-However, in some cases, statically-linked executables are necessary or desirable.
-\begin{itemize}
-\item One might prefer a statically linked executable because they are generally faster if the executable spends a significant amount of time calling functions in libraries.
-\item On Cray supercomputers, statically-linked executables are often the default.
-\end{itemize}
+\chapter{Measurement and Analysis of OpenMP Multithreading}
+\label{chpt:gpu}
 
-For statically linked executables, preloading \HPCToolkit's monitoring code into an application's address space at program launch is not an option.
-Instead, monitoring code must be added at link time; \HPCToolkit{}'s \hpclink{} script is used for this purpose.
+{
+\centering
+ \fbox{\parbox{\textwidth}{Note: This release contains beta support for monitoring OpenMP computations using the OpenMP 5.0 OpenMP Tools API support known as OMPT.}}
+ \vspace{2ex}
+}
 
-% ===========================================================================
-% ===========================================================================
+HPCToolkit includes an implementation of the OpenMP 5.0 Tools API known as OMPT. The OMPT interface enables HPCToolkit to extract enough information to reconstruct user-level calling contexts from implementation-level measurements.
 
-\section{Linking with \hpclink{}}
+Support for OpenMP 5.0 and OMPT is emerging in OpenMP runtimes. Recent versions of LLVM's OpenMP runtime, IBM's LOMP (Lightweight OpenMP Runtime) and Intel's OpenMP runtime provide emerging support for OMPT. At present, support in these implementations is known to be incomplete, especially with respect to offloading computation onto TARGET devices.
 
-Adding \HPCToolkit{}'s monitoring code into a statically linked application is easy.
-This does not require any source-code modifications, but it does involve a small change to your build procedure.
-You continue to compile all of your object (\texttt{.o}) files exactly as before, but you will need to modify your final link step to use \hpclink{} to add \HPCToolkit{}'s monitoring code to your executable.
-
-In your build scripts, locate the last step in the build, namely, the command that produces the final statically linked binary.
-Edit that command line to add the \hpclink{} command at the front.
-
-For example, suppose that the name of your application binary is \texttt{app} and the last step in
-your \texttt{Makefile} links various object files and libraries as
-follows into a statically linked executable:
-\begin{quote}
-  \verb|mpicc -o app -static file.o ... -l<lib> ...|
-\end{quote}
-To build a version of your executable with \HPCToolkit's monitoring code linked in, you would use the following command line:
-\begin{quote}
-  \verb|hpclink mpicc -o app -static file.o ... -l<lib> ...|
-\end{quote}
-
-In practice, you may want to edit your \texttt{Makefile} to always build two versions of your program, perhaps naming them \texttt{app} and \texttt{app.hpc}.
-
-
-\subsection{Using \hpclink{} when {\tt gprof} instrumentation is present}
-
-When an application has been compiled with the compiler flag \verb|-pg|,
-the compiler adds instrumentation to collect performance measurement data for
-the \verb|gprof| profiler. Measuring application performance with
-\HPCToolkit{}'s measurement subsystem and \verb|gprof| instrumentation
-active in the same execution may cause the execution
-to abort. One can detect the presence of \verb|gprof| instrumentation in an
-application by the presence of \verb|__monstartup| and \verb|_mcleanup| symbols
-in a executable.
-One can disable \verb|gprof| instrumentation when measuring the performance of
-a statically-linked application by using the \verb|--disable-gprof|
-argument to \hpclink{}.
+If an interaction between HPCToolkit's support for the OMPT interface and an OpenMP runtime causes problems, OMPT support may be disabled when using HPCToolkit by setting  OpenMP environment variable {\tt OMP\_TOOL} to {\tt disabled}.
 
 
 
-% ===========================================================================
-% ===========================================================================
 
-\section{Running a Statically Linked Binary}
+% ***************************************************************************
+% ***************************************************************************
 
-For dynamically linked executables, the \hpcrun{} script sets environment variables to pass information to the \HPCToolkit{} monitoring library.
-On standard Linux systems, statically linked \hpclink{}-ed executables can still be launched with \hpcrun{}.
+\chapter{Analyzing Performance Data with \hpcviewer{}}
+\label{chpt:hpcviewer-interface}
 
-For statically-linked binaries, the \hpcrun{} script is not applicable because of differences in application launch procedures.
-On these systems, you will need to use the \mytt{HPCRUN_EVENT_LIST} environment variable to pass a list of events to \HPCToolkit{}'s monitoring code, which was linked into your executable using \hpclink{}.
-Typically, you would set \mytt{HPCRUN_EVENT_LIST} in your launch script.
-
-The \mytt{HPCRUN_EVENT_LIST} environment variable should be set to a space-separated list of \mytt{EVENT@COUNT} pairs.
-For example, in a PBS script for a Cray system, you might write the following in Bourne shell or bash syntax:
-\begin{quote}
-\begin{verbatim}
-#!/bin/sh
-#PBS -l size=64
-#PBS -l walltime=01:00:00
-cd $PBS_O_WORKDIR
-export HPCRUN_EVENT_LIST="CYCLES@f200 PERF_COUNT_HW_CACHE_MISSES@f200"
-aprun -n 64 ./app arg ...
-\end{verbatim}
-\end{quote}
-
-To collect sample traces of  an execution of a statically linked binary (for visualization with \hpctraceviewer{}), one needs to set the environment variable \mytt{HPCRUN_TRACE=1} in the execution environment.
+\input{hpcviewer}
 
 
-% ===========================================================================
-% ===========================================================================
+% ***************************************************************************
+% ***************************************************************************
 
-\section{Troubleshooting}
 
-With some compilers you need to disable interprocedural optimization to use \hpclink{}.
-To instrument your statically linked executable at link time, \hpclink{} uses the \texttt{ld} option \texttt{--wrap} (see the ld(1) man page) to interpose monitoring code between your application and various process, thread, and signal control operations, \eg{}, \mytt{fork}, \mytt{pthread_create}, and \mytt{sigprocmask} to name a few.
-For some compilers, \eg{}, IBM's XL compilers and Pathscale's compilers, interprocedural optimization interferes with the \texttt{--wrap} option and prevents \hpclink{} from working properly.
-If this is the case, \hpclink{} will emit error messages and fail.
-If you want to use \hpclink{} with such compilers, sadly, you must turn off interprocedural optimization.
 
-Note that interprocedural optimization may not be explicitly enabled during your compiles; it might be implicitly enabled when using a compiler optimization option such as \texttt{-fast}.
-In cases such as this, you can often specify \texttt{-fast} along with an option such as \texttt{-no-ipa}; this option combination will provide the benefit of all of \texttt{-fast}'s optimizations {\em except} interprocedural optimization.
 
 % ***************************************************************************
 % ***************************************************************************
@@ -1243,8 +1245,15 @@ In cases such as this, you can often specify \texttt{-fast} along with an option
 \chapter{Known Issues}
 \label{chpt:known}
 
-\section{A confusing label for GPU theoretical occupancy}
+\section{\hpcrun{} sometimes enables writing of read-only data}
 
+If an application or shared library contains a \verb|PT_GNU_RELRO| segment in its program header, the runtime loader \verb|ld.so| will mark all data in that segment readonly
+after relocations have been processed at runtime. 
+As described in Section~\ref{hpcrun-audit} of the manual, on \verb|x86_64| and Power architectures, \hpcrun{} uses \verb|LD_AUDIT| to monitor operations on dynamic libraries. 
+For \hpcrun{} to properly resolve calls to functions in shared libraries, the Global Offset Table (GOT) must be writable. Sometimes, the GOT lies within the \verb|PT_GNU_RELRO| segment, which may cause it to be marked readonly after relocations are processed.
+If \hpcrun{} is using   \verb|LD_AUDIT| to monitor shared library operations, it will enable write permissions on the \verb|PT_GNU_RELRO| segment during execution. While this makes some data writable that should have read-only permissions, it should not affect the behavior of any program that does not attempt to overwrite data that should have been readonly in its address space.
+
+\section{A confusing label for GPU theoretical occupancy}
 \paragraph{Affected architectures:}  NVIDIA GPUs
 
 \paragraph{Description:} When analyzing a GPU-accelerated application that employs NVIDIA GPUs, HPCToolkit estimates percent GPU theoretical occupancy as the ratio of active GPU threads divided by the maximum number of GPU threads available. In multi-threaded or multi-rank programs, HPCToolkit reports GPU  theoretical occupancy with the label 
@@ -1298,42 +1307,6 @@ The Darshan wrapper for \verb|open| may try to allocate data to record statistic
 \paragraph{Workaround:} Unload the Darshan module before compiling a statically-linked application or running a dynamically-linked application.
 
 \paragraph{Development Plan:} Ensure that \verb|libunwind|'s calls to \verb|open| are never intercepted by Darshan.
-
-\section{Deadlock when using UCX}
-
-\paragraph{Affected architectures:} \verb|x86_64| and ARM
-
-\paragraph{Description:}
-OpenUCX (\url{https://www.openucx.org}) is a communication layer developed at ORNL. When using asynchronous sampling on the CPU to monitor a program that uses a communication layer based on UCX, your program may deadlock. We have observed this behavior with a program that used a version of OpenMPI that employed UCX as a communication substrate.
-
-\paragraph{Explanation:} UCX hijacks calls to \verb|mmap| and \verb|munmap|.
-HPCToolkit uses the \verb|libunwind| library.
-Under certain circumstances, \verb|libunwind| uses \verb|mmap| and \verb|munmap| to map a section of your application's executable or one of the shared libraries it uses to obtain unwinding information recorded by the compiler.
-The following sequence of actions leads to a problem:
-\begin{enumerate}
-\item
-UCX is interrupted with an asynchronous sample while holding a lock in its implementation.
-\item
-HPCToolkit's signal handler is invoked to record the sample.
-\item
-\verb|libunwind| is invoked to obtain the calling context for the sample.
-\item
-\verb|libunwind|  calls \verb|mmap| and \verb|munmap|
-when inspecting compiler-based unwind information.
-\item
-UCX wrappers for \verb|mmap| and \verb|munmap|  execute in HPCToolkit's signal handler.
-\item
-A UCX wrapper for \verb|mmap| or \verb|munmap| may try to acquire a non-reentrant lock that is already held by
-by the UCX code that was interrupted by the sample trigger.
-\end{enumerate}
-
-\paragraph{Workaround:} Use a communication library that doesn't employ UCX.
-
-
-\paragraph{Development Plan:} Ensure that \verb|libunwind|'s calls to \verb|mmap| and \verb|munmap| are never intercepted by UCX.
-
-
-
 
 
 % ***************************************************************************
@@ -1401,22 +1374,18 @@ Recompile the binary or shared library causing the problem and add \verb|-g| to 
 \hpcrun{} uses NVIDIA's CUDA Performance Tools Interface known as
 CUPTI to monitor computations on NVIDIA GPUs. In our experience,
 this error occurs when the version of CUPTI used by HPCToolkit is
-incompatible with the CUDA kernel driver installed on your system.
-Documentation from NVIDIA indicates that new versions of CUPTI may
-be incompatible with older versions of the CUDA kernel driver. For
-instance, even though you may be able to run CUDA 11 programs on a
-kernel driver designed to support CUDA 10, you are unlikely to
-succeed measuring CUDA performance with a version of HPCToolkit
-configured for CUDA 11 atop the CUDA 10 kernel driver.  To avoid
-the error \texttt{CUPTI\_ERROR\_NOT\_INITIALIZED}, we recommend
-configuring HPCToolkit for the version of CUDA supported by the
-CUDA kernel driver installed on your system.  You can check the
-version of the CUDA kernel driver installed on your system using
-the {\tt nvidia-smi} command.  If you want HPCToolkit to use the
-latest version of NVIDIA's CUPTI, then we recommend upgrading the
-CUDA kernel driver on your system to match the latest CUDA release
-you want to use and then configuring HPCToolkit atop this CUDA
-release.
+incompatible with the version of CUDA used by your program or CUDA kernel driver installed on your system. You can check the
+version of the CUDA kernel driver installed on your system using the {\tt nvidia-smi} command. 
+Table 3 {\em CUDA Application Compatibility Support Matrix} at the following URL~\url{https://docs.nvidia.com/deploy/cuda-compatibility/index.html\#cuda-application-compatibility} 
+specifies what versions of the CUDA kernel driver match each version of CUDA and CUPTI. 
+Although the table indicates that some drivers can support newer versions of CUDA than the one that they were designed for, 
+e.g. driver 418.40.04+ designed to support CUDA 10.1 can also run CUDA 11.0 and 11.1 programs, 
+in our experience that does not necessarily mean that the driver will support performance measurement of CUDA programs 
+using any CUDA version newer than 10.1.
+We believe that best way to avoid the \texttt{CUPTI\_ERROR\_NOT\_INITIALIZED} error is to ensure that 
+(1) HPCToolkit is compiled with the version of CUDA that your installed CUDA kernel driver was designed to support, and 
+(2) your application uses the version of CUDA that matches the one your kernel driver was designed to support or a compatible older version.
+
 
 % ===========================================================================
 % ===========================================================================

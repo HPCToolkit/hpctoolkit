@@ -634,6 +634,7 @@ AM_CONDITIONAL([HOST_CPU_X86_64], [test "${HOST_CPU_X86_64}" = yes])
 AM_CONDITIONAL([HOST_CPU_X86_FAMILY], [test "${HOST_CPU_X86_FAMILY}" = yes])
 AM_CONDITIONAL([HOST_CPU_IA64], [test "$HOST_CPU_IA64" = yes])
 AM_CONDITIONAL([HOST_CPU_AARCH64], [test "$HOST_CPU_AARCH64" = yes])
+AC_SUBST([HOST_CPU_AARCH64])
 
 #-------------------------------------------------
 # Host-specific compiler settings
