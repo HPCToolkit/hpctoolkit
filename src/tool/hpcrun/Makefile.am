@@ -317,11 +317,7 @@ MY_BASE_FILES =				\
         sample-sources/sync.c           \
 	sample_sources_registered.c	\
 	sample-sources/sample-filters.c \
-<<<<<<< HEAD
   sample-sources/cpu_gpu_idle.c	\
-=======
-  sample-sources/gpu_blame.c	\
->>>>>>> 319fde1c7... adding missing metric attribution scenarios to opencl blame-shifting(incomplete). ISSUE: Code segfaults during execution due to null event profiling
 	segv_handler.c			\
 	start-stop.c			\
 	term_handler.c			\

@@ -33,7 +33,7 @@
 // local includes
 //******************************************************************************
 
-#include "gpu-blame-opencl-event-map.h"		// event_list_node_t, queue_node_t
+#include "opencl-event-map.h"		// event_list_node_t, queue_node_t
 
 #include <hpcrun/gpu/gpu-splay-allocator.h>
 #include <lib/prof-lean/splay-uint64.h>

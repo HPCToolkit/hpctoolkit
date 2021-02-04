@@ -33,7 +33,7 @@
 // local includes
 //******************************************************************************
 
-#include "gpu-blame-opencl-queue-map.h"
+#include "opencl-queue-map.h"
 
 #include <hpcrun/gpu/gpu-splay-allocator.h>
 #include <lib/prof-lean/splay-uint64.h>
