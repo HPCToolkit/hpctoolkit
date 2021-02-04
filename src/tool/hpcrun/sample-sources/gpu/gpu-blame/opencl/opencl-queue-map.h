@@ -10,7 +10,7 @@
 // local includes
 //******************************************************************************
 
-#include "gpu-blame-opencl-event-map.h"
+#include "opencl-event-map.h"
 #include <hpcrun/cct/cct.h>										// cct_node_t
 #include <lib/prof-lean/hpcrun-opencl.h>
 
