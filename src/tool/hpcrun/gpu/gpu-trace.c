@@ -89,7 +89,8 @@
 
 #define DEBUG 0
 #include "gpu-print.h"
-#define TRACE_CHANNEL_SLEEP 5000000 // in ns
+
+#define TRACE_CHANNEL_SLEEP 50000000 // 50ms in ns
 
 
 //******************************************************************************
