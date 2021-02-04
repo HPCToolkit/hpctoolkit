@@ -77,7 +77,7 @@
 #include "sample_source_obj.h"
 #include "common.h"
 #include <hpcrun/gpu/opencl/opencl-api.h>
-#include <hpcrun/sample-sources/gpu/gpu-blame/gpu-blame-opencl.h>
+#include <hpcrun/sample-sources/gpu/gpu-blame/opencl/opencl-blame.h>
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
 

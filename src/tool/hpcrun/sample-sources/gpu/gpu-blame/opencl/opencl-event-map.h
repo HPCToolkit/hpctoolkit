@@ -33,7 +33,8 @@ typedef struct event_list_node_t {
 	// CCT node of the queue
 	cct_node_t *queue_launcher_cct;
 	
-	bool isDeleted;
+	bool isComplete;
+	double cpu_idle_blame;
 
 	union {
 		struct event_list_node_t *next;

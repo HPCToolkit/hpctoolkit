@@ -164,6 +164,8 @@ XED2_HPCRUN_LIBS =  @XED2_HPCRUN_LIBS@
 XED2_HPCLINK_LIBS = @XED2_HPCLINK_LIBS@
 CUPTI_INC_FLGS = @OPT_CUPTI_IFLAGS@
 OPENCL_IFLAGS = @OPT_OPENCL_IFLAGS@
+OCL_BH_IFLAGS = @OPT_OCL_BH_IFLAGS@
+OCL_BH_LDFLGS = @OPT_OCL_BH_LDFLAGS@
 CUPTI_LD_FLGS = @OPT_CUPTI_LDFLAGS@
 CUPTI_BASE = @OPT_CUPTI@
 
@@ -525,14 +527,17 @@ MY_OPENCL_FILES = \
 	gpu/opencl/opencl-h2d-map.c \
 	gpu/opencl/opencl-queue-map.c \
 	gpu/opencl/opencl-context-map.c \
-	sample-sources/gpu/gpu-blame/gpu-blame-opencl.c	\
-	sample-sources/gpu/gpu-blame/gpu-blame-opencl-queue-map.c	\
-	sample-sources/gpu/gpu-blame/gpu-blame-opencl-event-map.c
+	sample-sources/gpu/gpu-blame/opencl/opencl-blame.c	\
+	sample-sources/gpu/gpu-blame/opencl/opencl-blame-helper.c	\
+	sample-sources/gpu/gpu-blame/opencl/opencl-queue-map.c	\
+	sample-sources/gpu/gpu-blame/opencl/opencl-event-map.c	\
+	sample-sources/gpu/gpu-blame/opencl/opencl-active-kernels-map.c
 
 pkglib_LTLIBRARIES += libhpcrun_opencl.la
 libhpcrun_opencl_la_CPPFLAGS  = -I$(top_srcdir)/src $(OPENCL_IFLAGS)
 libhpcrun_opencl_la_SOURCES   = gpu/opencl/opencl-api-wrappers.c
 libhpcrun_opencl_la_LDFLAGS   = -Wl,-Bsymbolic
+libhpcrun_opencl_la_LDFLAGS   += $(OPT_OCL_BH_LDFLAGS)
 endif
 
 if OPT_ENABLE_GTPIN
@@ -1061,6 +1066,7 @@ endif
 if OPT_ENABLE_OPENCL
   libhpcrun_la_SOURCES  += $(MY_OPENCL_FILES)
   libhpcrun_la_CPPFLAGS += -DENABLE_OPENCL
+  libhpcrun_la_CPPFLAGS += $(OPT_OCL_BH_IFLAGS)
   libhpcrun_la_CFLAGS   += $(OPT_OPENCL_IFLAGS)
 
   MY_CPP_DEFINES  += -DHPCRUN_SS_OPENCL

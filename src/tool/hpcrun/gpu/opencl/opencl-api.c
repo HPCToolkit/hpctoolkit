@@ -75,7 +75,7 @@
 #include <hpcrun/gpu/instrumentation/gtpin-instrumentation.h>
 #include <hpcrun/messages/messages.h>
 #include <hpcrun/sample-sources/libdl.h>
-#include <hpcrun/sample-sources/gpu/gpu-blame/gpu-blame-opencl.h>
+#include <hpcrun/sample-sources/gpu/gpu-blame/opencl/opencl-blame.h>
 #include <hpcrun/files.h>
 #include <hpcrun/utilities/hpcrun-nanotime.h>
 #include <lib/prof-lean/hpcrun-opencl.h>

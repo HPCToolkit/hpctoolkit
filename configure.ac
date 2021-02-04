@@ -4889,6 +4889,93 @@ AC_MSG_RESULT([$OPENCL])
 AC_SUBST([OPT_OPENCL_IFLAGS])
 
 
+
+#-------------------------------------------------
+# Option: --with-opencl_blame_helper=PATH
+#-------------------------------------------------
+OPT_HAVE_OCL_BH=no
+OPT_OCL_BH=
+OPT_OCL_BH_INCPATH=
+OPT_OCL_BH_IFLAGS=
+OPT_OCL_BH_LIBPATH=
+
+if test "${host_sizeof_voidp}" = "4"; then
+    OCL_BH_LIB_SEARCH_ORDER="lib32 lib"
+else
+    OCL_BH_LIB_SEARCH_ORDER="lib64 lib"
+fi
+
+AC_ARG_WITH([opencl_blame_helper],
+  AS_HELP_STRING([--with-opencl_blame_helper=PATH],
+                 [use given OCL_BH installation (absolute path) with hpcrun (default is NO)]),
+  [if test $withval != no; then
+     OPT_HAVE_OCL_BH=yes
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-opencl_blame_helper requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_OCL_BH=${withval}
+   fi])
+
+#
+# Valid opencl_blame_helper library
+#
+if test "$OPT_HAVE_OCL_BH" = yes; then
+    OPT_OCL_BH_IFLAGS="-I$OPT_OCL_BH/include"
+fi
+
+if test "$OPT_HAVE_OCL_BH" = "yes" ; then
+ AC_ARG_WITH([opencl_blame_helper-include],
+  AS_HELP_STRING([--with-opencl_blame_helper-include=PATH],
+                 [use given opencl_blame_helper include (absolute path) with hpcrun (default is NO)]),
+  [if test $withval != no; then
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-opencl_blame_helper-include requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_OCL_BH_INCPATH=${withval}
+  fi],
+
+     [if test -f ${OPT_OCL_BH}/include/opencl_blame_helper.h; then
+         OPT_OCL_BH_INCPATH=${OPT_OCL_BH}/include
+         AC_DEFINE(HAVE_OCL_BH_H, 1, [opencl_blame_helper include file available])
+     else
+         AC_MSG_ERROR(['${OPT_OCL_BH}/include/opencl_blame_helper.h' not found])
+     fi])  
+
+  OPT_OCL_BH_IFLAGS="-I${OPT_OCL_BH_INCPATH} "
+
+  AC_ARG_WITH([opencl_blame_helper-lib],
+  AS_HELP_STRING([--with-opencl_blame_helper-lib=PATH],
+                 [use given opencl_blame_helper lib (absolute path) with hpcrun (default is NO)]),
+  [if test $withval != no; then
+     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
+       AC_MSG_ERROR([--with-opencl_blame_helper-lib requires absolute path as argument; given '${withval}'])
+     fi
+     OPT_OCL_BH_LIBPATH=${withval}
+   fi], 
+  
+    [if test -f "${OPT_OCL_BH}/lib/libopencl_blame_helper.so" 
+    then
+      OPT_OCL_BH_LIBPATH="${OPT_OCL_BH}/lib"
+      break
+    fi
+    if test  -z "${OPT_OCL_BH_LIBPATH}" ; then
+      AC_MSG_ERROR([libopencl_blame_helper.so not found])
+    fi
+   ] )
+
+  OPT_OCL_BH_LDFLAGS="-L${OPT_OCL_BH_LIBPATH} -Wl,-rpath=${OPT_OCL_BH_LIBPATH} -lopencl_blame_helper"
+fi
+
+AC_MSG_RESULT([$OPT_OCL_BH])
+
+AM_CONDITIONAL([OPT_ENABLE_OCL_BH], [test "$OPT_HAVE_OCL_BH" = yes])
+
+AC_SUBST([OPT_OCL_BH])
+AC_SUBST([OPT_OCL_BH_IFLAGS])
+AC_SUBST([OPT_OCL_BH_LDFLAGS])
+
+
+
 #-------------------------------------------------
 # Option: --with-igc=PATH
 #-------------------------------------------------
@@ -5702,6 +5789,8 @@ AC_MSG_NOTICE([  xerces:       ${XERCES}])
 AC_MSG_NOTICE([  zlib:         ${ZLIB}])
 AC_MSG_NOTICE([  cuda:         ${CUDA}])
 AC_MSG_NOTICE([  cupti:        ${CUPTI}])
+AC_MSG_NOTICE([  opencl:        ${OPENCL}])
+AC_MSG_NOTICE([  ocl_blame_helper:        ${OPT_OCL_BH}])
 AC_MSG_NOTICE([  igc:          ${IGC}])
 AC_MSG_NOTICE([  gtpin:        ${GTPIN}])
 AC_MSG_NOTICE([  metrics-discovery: ${METRICS_DISCOVERY}])
