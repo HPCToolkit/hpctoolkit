@@ -7,12 +7,6 @@
 
 typedef struct active_kernels_entry_t active_kernels_entry_t;
 
-active_kernels_entry_t*
-active_kernels_lookup
-(
- uint64_t ak_id
-);
-
 
 void
 active_kernels_insert
