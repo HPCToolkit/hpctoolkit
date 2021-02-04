@@ -1828,6 +1828,7 @@ void GPUAdvisor::blame(CCTBlames &cct_blames) {
         std::cout << std::endl;
       }
 
+#if 0
       // 2.4 Execution constraints
       if (_metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_exe_metric) != -1) {
         pruneCCTDepGraphExecution(mpi_rank, thread_id, cct_dep_graph, cct_edge_path_map);
@@ -1844,6 +1845,7 @@ void GPUAdvisor::blame(CCTBlames &cct_blames) {
           std::cout << std::endl;
         }
       }
+#endif
 
       // 2.5 Branch constraints
       if (_metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_exe_metric) != -1) {
