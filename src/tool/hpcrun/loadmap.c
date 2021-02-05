@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2020, Rice University
+// Copyright ((c)) 2002-2021, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -417,6 +417,50 @@ hpcrun_loadmap_moveToBack(load_module_t* lm)
 #endif
 
 
+static void
+hpcrun_loadmap_dump_dl_phdr_info(struct dl_phdr_info *x)
+{
+  fprintf(stderr, "\t phdr_info %p\n", x);
+  if (x) {
+    fprintf(stderr, "\t\t dlpi_addr 0x%lx\n", x->dlpi_addr);
+    fprintf(stderr, "\t\t dlpi_name %s\n", x->dlpi_name);
+    fprintf(stderr, "\t\t dlpi_phnum %d\n", x->dlpi_phnum);
+    fprintf(stderr, "\t\t dlpi_adds %llu\n", x->dlpi_adds);
+    fprintf(stderr, "\t\t dlpi_subs %llu\n", x->dlpi_adds);
+    fprintf(stderr, "\t\t dlpi_tls_modid %ld\n", x->dlpi_tls_modid);
+    fprintf(stderr, "\t\t dlpi_tls_data %p\n", x->dlpi_tls_data);
+  }
+}
+
+
+static void
+hpcrun_loadmap_dump_dso_info_t(dso_info_t* x)
+{
+  fprintf(stderr, "\t dso_info_t %p\n", x);
+  if (x) {
+    fprintf(stderr, "\t\t name %s\n", x->name);
+    fprintf(stderr, "\t\t start_addr %p\n", x->start_addr);
+    fprintf(stderr, "\t\t end_addr %p\n", x->end_addr);
+    fprintf(stderr, "\t\t map_size %lu\n", x->map_size);
+    fprintf(stderr, "\t\t nsymbols %lu\n", x->nsymbols);
+    fprintf(stderr, "\t\t is_relocatable %p\n", x->is_relocatable);
+  }
+}
+
+
+static void
+hpcrun_loadmap_dump_load_module_t(load_module_t* x)
+{
+  fprintf(stderr, "load_module_t %p\n", x);
+  fprintf(stderr, "\t id %d\n", x->id);
+  fprintf(stderr, "\t name %s\n", x->name);
+  hpcrun_loadmap_dump_dso_info_t(x->dso_info);
+  hpcrun_loadmap_dump_dl_phdr_info(&(x->phdr_info));
+  fprintf(stderr, "\t next %p\n", x->next);
+  fprintf(stderr, "\t prev %p\n", x->prev);
+}
+
+
 load_module_t*
 hpcrun_loadmap_map(dso_info_t* dso)
 {
@@ -470,6 +514,9 @@ hpcrun_loadmap_unmap(load_module_t* lm)
 
   if (old_dso == NULL) return; // nothing to do!  
 
+  // need to notify unmap clients before setting dso_info to NULL
+  hpcrun_loadmap_notify_unmap(lm);
+
   lm->dso_info = NULL;
 
   // Set dl_phdr_info structure to uninitialized state
@@ -498,8 +545,6 @@ hpcrun_loadmap_unmap(load_module_t* lm)
   fprintf(stderr, "hpcrun_loadmap_unmap: '%s' start=%p end=%p\n", 
           lm->name, old_dso->start_addr, old_dso->end_addr);
 #endif
-
-  hpcrun_loadmap_notify_unmap(lm);
 }
 
 
@@ -535,6 +580,7 @@ hpcrun_getLoadmap()
   return s_loadmap_ptr;
 }
 
+
 int
 hpcrun_loadmap_iterate
 (
@@ -550,4 +596,13 @@ hpcrun_loadmap_iterate
     if (ret != 0) return ret;    
   }  
   return ret;
+}
+
+
+void
+hpcrun_loadmap_dump()
+{
+  for (load_module_t* x = s_loadmap_ptr->lm_head; (x); x = x->next) {
+    hpcrun_loadmap_dump_load_module_t(x);
+  }
 }

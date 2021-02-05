@@ -252,15 +252,8 @@ parse_amd_gpu_binary_uri
   used += sprintf(&gpu_file_path[used], "%s", hpcrun_files_output_directory());
   used += sprintf(&gpu_file_path[used], "%s", "/" GPU_BINARY_DIRECTORY "/");
   mkdir(gpu_file_path, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
-  used += sprintf(&gpu_file_path[used], "%s.%llx" GPU_BINARY_SUFFIX, 
+  used += sprintf(&gpu_file_path[used], "%s.%llx" GPU_BINARY_SUFFIX,
 		  filename, offset);
-
-  // We directly return if we have write down this URI
-  int wfd;
-  wfd = open(gpu_file_path, O_WRONLY | O_CREAT | O_EXCL, 0644);
-  if (wfd < 0) {
-    return;
-  }
 
   int rfd = open(filepath, O_RDONLY);
   if (rfd < 0) {
@@ -281,8 +274,27 @@ parse_amd_gpu_binary_uri
     perror(NULL);
     return;
   }
-  write(wfd, (const void*)(bin->buf), bin->size);
-  close(wfd);
+
+  // We write down this GPU binary if necessary.
+  // We may not need to create this GPU binary when reusing a measurement directory.
+  errno = 0;
+  int wfd = open(gpu_file_path, O_WRONLY | O_CREAT | O_EXCL, 0644);
+  if (wfd >= 0) {
+    errno = 0;
+    if (write(wfd, (const void*)(bin->buf), bin->size) != bin->size) {
+      // This could happen if running out of disk quota
+      int error = errno;
+      close(wfd);
+      hpcrun_abort("hpctoolkit: unable to write AMD GPU binary file %s: %s", gpu_file_path, strerror(error));
+    }
+    close(wfd);
+  } else {
+    // We tolerate an existing file.
+    // Otherwise, fatal error
+    if (errno != EEXIST) {
+      hpcrun_abort("hpctoolkit: unable to create AMD GPU binary file %s: %s", gpu_file_path, strerror(errno));
+    }
+  }
 
   bin->amd_gpu_module_id = hpcrun_loadModule_add(gpu_file_path);
 }
@@ -320,10 +332,10 @@ parse_amd_gpu_binary
     char* uri = rocm_debug_api_query_uri(i);
     PRINT("uri %d, %s\n", i, uri);
 
-    // Handle file URIs 
+    // Handle file URIs
     if (strncmp(uri, "file://", strlen("file://")) == 0) {
       if (file_uri_exists(uri)) continue;
-      
+
       // Handle a new AMD GPU binary
       amd_gpu_binary_t* bin = (amd_gpu_binary_t*) malloc(sizeof(amd_gpu_binary_t));
       bin->uri = strdup(uri);

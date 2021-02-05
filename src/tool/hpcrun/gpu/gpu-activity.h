@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2020, Rice University
+// Copyright ((c)) 2002-2021, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -262,6 +262,7 @@ typedef struct gpu_kernel_t {
   uint32_t activeWarpsPerSM;
   uint32_t maxActiveWarpsPerSM;
   uint32_t threadRegisters;
+  uint32_t blocks;
   uint32_t blockThreads;
   uint32_t blockSharedMemory;
 } gpu_kernel_t;

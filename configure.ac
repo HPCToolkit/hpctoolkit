@@ -11,7 +11,7 @@ dnl Information about sources of support for research and development of
 dnl HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 dnl --------------------------------------------------------------------------
 dnl
-dnl Copyright ((c)) 2002-2020, Rice University
+dnl Copyright ((c)) 2002-2021, Rice University
 dnl All rights reserved.
 dnl
 dnl Redistribution and use in source and binary forms, with or without
@@ -85,7 +85,7 @@ AC_INIT([hpctoolkit], [2020.08-develop],
         [hpctoolkit-forum@rice.edu],
 	[hpctoolkit],
 	[http://hpctoolkit.org/])
-AC_COPYRIGHT([Copyright (c) 2002-2020, Rice University.
+AC_COPYRIGHT([Copyright (c) 2002-2021, Rice University.
 See the file README.License for details.])
 
 AC_CONFIG_SRCDIR([src/include/hpctoolkit-config.h.in])
@@ -634,6 +634,7 @@ AM_CONDITIONAL([HOST_CPU_X86_64], [test "${HOST_CPU_X86_64}" = yes])
 AM_CONDITIONAL([HOST_CPU_X86_FAMILY], [test "${HOST_CPU_X86_FAMILY}" = yes])
 AM_CONDITIONAL([HOST_CPU_IA64], [test "$HOST_CPU_IA64" = yes])
 AM_CONDITIONAL([HOST_CPU_AARCH64], [test "$HOST_CPU_AARCH64" = yes])
+AC_SUBST([HOST_CPU_AARCH64])
 
 #-------------------------------------------------
 # Host-specific compiler settings
@@ -4131,6 +4132,37 @@ if test "$DYNINST" != no ; then
 
   LD_LIBRARY_PATH="$ORIG_LD_LIBRARY_PATH"
 fi
+
+#-------------------------------------------------
+
+# Test if dyninst has Intel GPU support.
+
+dyninst_intel_gpu=no
+
+if test "$DYNINST" != no ; then
+  AC_MSG_CHECKING([if dyninst supports intel gpus])
+
+  AC_COMPILE_IFELSE([
+  AC_LANG_SOURCE([[
+#include <entryIDs.h>
+unsigned int has_intel_enum(void)
+{
+  return intel_gpu_op_general;
+}
+]])],
+  [dyninst_intel_gpu=yes ; dyninst_features="$dyninst_features intel-gpu"],
+  [dyninst_intel_gpu=no])
+
+  AC_MSG_RESULT([$dyninst_intel_gpu])
+fi
+
+if test "$dyninst_intel_gpu" = yes ; then
+  AC_DEFINE(DYNINST_SUPPORTS_INTEL_GPU, 1, [dyninst supports Intel GPUs])
+fi
+
+#-------------------------------------------------
+
+# Restore C++ flags from dyninst tests
 
 AC_LANG_POP
 CXXFLAGS="$ORIG_CXXFLAGS"

@@ -22,8 +22,12 @@ perfmon_libdir='@PERFMON_LIB@'
 roctracer_lib_path='@OPT_ROCM_LD_LIB_PATH@'
 gtpin_lib_path='@OPT_GTPIN_LIBDIR@'
 # gotcha_lib_path='@GOTCHA_LIBDIR@'
-
+host_arm='@HOST_CPU_AARCH64@'
 prog_name=hpcrun
+
+if test $host_arm = "yes"; then
+    export HPCRUN_AUDIT_FAKE_AUDITOR=1
+fi
 
 #------------------------------------------------------------
 # Find path to this script
@@ -107,20 +111,20 @@ Options: Informational
 
 Options: Profiling (Defaults shown in curly brackets {})
   -e <event>[@<howoften>], --event <event>[@<howoften>]
-                      event  may  be an architecture-independent hardware or
+                      <event> may be an architecture-independent hardware or
                       software event supported by Linux perf, a native hardware
                       counter event, a hardware counter event supported by the
-                      PAPI library, a Linux  system timer (CPUTIME and REALTIME),
-                      or the operating system interval timer WALLCLOCK.  This option
-                      may be given multiple times to profile several events at once.
-                      If the value for <howoften> is a number, it will be
+                      PAPI library, or a Linux  system timer (CPUTIME and REALTIME).
+                      This option may be given multiple times to profile several events 
+                      at once. If the value for <howoften> is a number, it will be
                       interpreted as a sample period. For Linux perf events, one
                       may specify a sampling frequency for 'howoften' by writing f
                       before a number.  For instance, to sample an event 100 times
                       per second,  specify  <howoften>  as '@f100'. For Linux perf
                       events, if no value for <howoften> is specified, hpcrun
                       will monitor the event using frequency-based sampling at 300
-                      samples/second.
+                      samples/second. If no event is specified, hpcrun will collect
+                      CPUTIME samples 200 times per second per application thread.
 
   -c, --count <howoften>
                       Only  available  for  events  managed  by Linux perf. This
@@ -187,14 +191,18 @@ Options to consider only when hpcrun causes an application to fail:
                        to track dynamic library operations by intercepting
                        dlopen and dlclose instead of using LD_AUDIT. Note
                        that this alternate approach can cause problem with
-                       load modules that specify a RUNPATH.
+                       load modules that specify a RUNPATH. Due to a glibc bug,
+                       this option is disabled by default on ARM.
+
+  --enable-auditor     LD_AUDIT is by default disabled on ARM due to a glib bug.
+                       Use this option to enable LD_AUDIT on ARM.
 
   --disable-auditor-got-rewriting
                        By default, hpcrun uses LD_AUDIT to help track dynamic
                        library operations using an 'auditor' library. When using
                        an auditor library, glibc unnecessarily intercepts
                        every call to a function in a shared library. hpcrun
-                       avoids this overhead by rewriting each shared libary's
+                       avoids this overhead by rewriting each shared library's
                        global offset table (GOT). Such rewriting is tricky.
                        This option can be used to disable GOT rewriting if
                        it is believed that the rewriting is causing the
@@ -324,7 +332,7 @@ do
 		PTHREAD_WAIT* ) preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_pthread.so" ;;
 		CPU_GPU_IDLE* ) preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_gpu.so" ;;
 		MPI* )     preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_mpi.so" ;;
-		gpu=amd) roctracer_libdir="${roctracer_libdir_path}"
+		gpu=amd) roctracer_libdir="${roctracer_lib_path}"
 			 export HIP_ENABLE_DEFERRED_LOADING=0;;
 		gpu=opencl)	 preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_opencl.so" ;;
 
@@ -346,6 +354,7 @@ do
 
 	-L | -l | --list-events )
 	    export HPCRUN_EVENT_LIST=LIST
+		export HPCRUN_LIST_EVENT=1
 	    ;;
 
 	-ds | --delay-sampling )
@@ -465,6 +474,9 @@ do
 	--disable-auditor )
 	    export HPCRUN_AUDIT_FAKE_AUDITOR=1
 	    ;;
+    --enable-auditor )
+        unset HPCRUN_AUDIT_FAKE_AUDITOR
+        ;;
 
 	# --------------------------------------------------
 
@@ -485,8 +497,8 @@ done
 
 # Add default sampling source if needed.
 case "$HPCRUN_EVENT_LIST" in
-    '' ) HPCRUN_EVENT_LIST='WALLCLOCK@5000' ;;
-    RETCNT ) HPCRUN_EVENT_LIST='WALLCLOCK@5000 RETCNT' ;;
+    '' ) HPCRUN_EVENT_LIST='CPUTIME@5000' ;;
+    RETCNT ) HPCRUN_EVENT_LIST='CPUTIME@5000 RETCNT' ;;
 esac
 export HPCRUN_EVENT_LIST
 

@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2020, Rice University
+// Copyright ((c)) 2002-2021, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -97,14 +97,15 @@ gpu_trace_init
 void
 gpu_trace_fini
 (
-void *arg
+ void *arg,
+ int how
 );
 
 
 void *
 gpu_trace_record
 (
-void *args
+ void *args
 );
 
 

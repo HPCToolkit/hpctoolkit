@@ -15,6 +15,9 @@
 /* dyninst uses Instruction::Ptr */
 #undef DYNINST_INSTRUCTION_PTR
 
+/* dyninst supports Intel GPUs */
+#undef DYNINST_SUPPORTS_INTEL_GPU
+
 /* dyninst supports cuda */
 #undef DYNINST_USE_CUDA
 

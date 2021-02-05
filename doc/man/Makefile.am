@@ -12,7 +12,7 @@
 ## HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 ## --------------------------------------------------------------------------
 ##
-## Copyright ((c)) 2002-2020, Rice University
+## Copyright ((c)) 2002-2021, Rice University
 ## All rights reserved.
 ##
 ## Redistribution and use in source and binary forms, with or without
@@ -77,7 +77,6 @@ MYSOURCES = \
 	hpcproftt.tex \
 	hpcsummary.tex \
 	\
-	hpctraceviewer.tex \
 	hpcviewer.tex
 
 MYLATEX2MAN = @abs_top_srcdir@/tools/latex2man/latex2man
@@ -103,7 +102,6 @@ man_MANS = \
 	hpcprof-mpi.1hpctoolkit \
 	hpcproftt.1hpctoolkit \
 	hpcsummary.1hpctoolkit \
-	hpctraceviewer.1hpctoolkit \
 	hpcviewer.1hpctoolkit
 
 wwwmandir = $(docdir)/man

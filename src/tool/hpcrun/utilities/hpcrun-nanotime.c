@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2020, Rice University
+// Copyright ((c)) 2002-2021, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -48,9 +48,9 @@
 // system includes
 //*****************************************************************************
 
-#include <time.h>
 #include <assert.h>
-
+#include <errno.h>
+#include <time.h>
 
 //*****************************************************************************
 // local includes
@@ -85,4 +85,27 @@ hpcrun_nanotime()
   uint64_t now_ns = now_sec * NS_PER_SEC + now.tv_nsec;
 
   return now_ns;
+}
+
+
+int32_t
+hpcrun_nanosleep
+(
+  uint32_t nsec
+)
+{
+  struct timespec time_wait = {.tv_sec=0, .tv_nsec=nsec};
+  struct timespec time_rem = {.tv_sec=0, .tv_nsec=0};
+  int32_t ret;
+  
+  for(;;){
+    ret = nanosleep(&time_wait, &time_rem);
+    if (! (ret < 0 && errno == EINTR)){
+      // normal non-signal return
+      break;
+    }
+  time_wait = time_rem;
+  }
+
+  return ret;
 }

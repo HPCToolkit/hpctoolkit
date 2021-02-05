@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2020, Rice University
+// Copyright ((c)) 2002-2021, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -93,7 +93,9 @@ gpu_context_stream_trace
  gpu_trace_item_t *ti
 )
 {
-  gpu_context_id_map_stream_process(context_id, stream_id, gpu_trace_produce, ti);
+  if (hpcrun_trace_isactive()) {
+    gpu_context_id_map_stream_process(context_id, stream_id, gpu_trace_produce, ti);
+  }
 }
 
 
@@ -104,8 +106,9 @@ gpu_context_trace
  gpu_trace_item_t *ti
 )
 {
-  gpu_context_id_map_context_process(context_id, gpu_trace_produce, ti);
-
+  if (hpcrun_trace_isactive()) {
+    gpu_context_id_map_context_process(context_id, gpu_trace_produce, ti);
+  }
 }
 
 

@@ -40,6 +40,16 @@ in the texinfo directory.  See the README file in that directory to
 see how to edit that file.
 
 -----------------------------
+Update the publications
+-----------------------------
+
+To update the publications:
+1. Edit doc/manual/texmf/bibtex/bib/pubs.bib
+2. Edit doc/www/publications.html.in to include the citation
+3. Go to <build>/doc/www
+4. Run make hpc
+
+-----------------------------
 WWW directory and html files
 -----------------------------
 

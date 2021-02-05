@@ -11,15 +11,39 @@ Strategies for Analyzing Program Performance}.
 \section{Using \hpcrun{}}
 
 The \hpcrun{} launch script is used to run an application and collect
-performance data for {\it dynamically linked\/} binaries.  For
+call path profiles and call path traces  data for {\it dynamically linked\/} binaries. For
 dynamically linked programs, this requires no change to the program
 source and no change to the build procedure.  You should build your
-application natively at full optimization.  \hpcrun{} inserts its
+application natively with full optimization.  \hpcrun{} inserts its
 profiling code into the application at runtime via \verb|LD_PRELOAD|.
 
-The basic options for \hpcrun{} are \verb|-e| (or \verb|--event|) to
-specify a sampling source and rate and \verb|-t| (or \verb|--trace|) to
-turn on tracing.  Sample sources are specified as `\verb|event@howoften|'
+\hpcrun{} monitors the execution of applications on a CPU using asynchronous sampling.  If \hpcrun{} is used without any arguments to measure a program  
+ 
+ \begin{quote}
+\begin{verbatim}
+hpcrun app arg ...
+\end{verbatim}
+\end{quote}
+
+\noindent
+it will the measure the program's execution by sampling its CPUTIME and collect a call path profile for each thread in the execution. More about the CPUTIME metric can be found in Section~\ref{linux-timers}.
+
+In addition to a call path profile,  \hpcrun{} can collect a call path trace of an execution if the \verb|-t| (or \verb|--trace|) option is used
+turn on tracing. The following use of \hpcrun{} will collect both a call path profile and a call path trace of CPU execution using the default CPUTIME sample source.
+
+ \begin{quote}
+\begin{verbatim}
+hpcrun -t app arg ...
+\end{verbatim}
+\end{quote}
+
+\noindent
+Traces are most useful for understanding the execution dynamics of multithreaded or multi-process applications; however, you may find a trace of a single-threaded application to be useful to understand how an execution unfolds over time.
+
+While CPUTIME is used as the default sample source if no other sample source is specified, many other sample sources are available.
+Typically, one uses the \verb|-e| (or \verb|--event|) to
+specify a sample source and sampling rate.\footnote{GPU and OpenMP measurement events don't accept a rate.}
+Sample sources are specified as `\verb|event@howoften|'
 where \verb|event| is the name of the source and \verb|howoften| is either
 a number specifying the period (threshold) for that event, or \verb|f| followed by a number, \eg{}, \verb|@f100| 
 specifying a target sampling frequency for the event in samples/second.\footnote{Frequency-based sampling and 
@@ -29,6 +53,7 @@ a default sampling frequency of 300 samples/second.}
 Note that a higher period implies a lower rate of sampling.  
 The \verb|-e| option may be used multiple times to specify that multiple
 sample sources be used for measuring an execution.  
+
 The basic syntax for profiling an application with
 \hpcrun{} is:
 
@@ -48,7 +73,7 @@ hpcrun -e CYCLES -e INSTRUCTIONS@4000000 app arg ...
 \end{verbatim}
 \end{quote}
 
-The units for timer-based sample sources (\verb|CPUTIME|, \verb|REALTIME|, and \verb|WALLCLOCK|) are microseconds,
+The units for timer-based sample sources (\verb|CPUTIME| and \verb|REALTIME| are microseconds,
 so to sample an application with tracing every 5,000 microseconds
 (200~times/second), you would use:
 
@@ -101,7 +126,71 @@ statically or dynamically linked binaries.  All that \hpcrun{} really
 does is set some environment variables (including \verb|LD_PRELOAD|)
 and \verb|exec| the binary.
 
-\subsection{Using \hpcrun{} when {\tt gprof} instrumentation is present}
+\subsection{If  \hpcrun{} causes your application to fail}
+
+\hpcrun{} can cause applications to fail in certain circumstances. Here, we describe two kind of failures that may arise and how to sidestep them.
+
+\subsubsection{\hpcrun{} causes failures related to loading or using shared libraries}
+\label{hpcrun-audit}
+
+Unfortunately, the {\tt libc} implementations used today on most platforms have known bugs monitoring loading and unloading of shared libraries and calls to a shared library's API. 
+While the best approach for coping with these problems is to use a system running  {\tt libc}  2.32 or later, for most people, this is not an option: 
+the system administrator picks the operating system version, which determines the {\tt libc} and loader ({\tt ld.so}) versions available to developers.
+
+To understand what kinds of problems that you may encounter with shared libraries and how you can work around them, it is helpful to understand how HPCToolkit monitors shared libraries. 
+On Power and \verb|x86_64| architectures, by default \hpcrun{}  use \verb|LD_AUDIT| to monitor an application's use of dynamic libraries. 
+Use of \verb|LD_AUDIT|  is the only  strategy for monitoring shared libraries that will cause the loader to properly interpret a load module's
+ \verb|RUNPATH| attribute. However, use of \verb|LD_AUDIT|  will cause {\tt dlmopen} to fail  for {\tt libc} $< 2.32$. 
+While use of {\tt dlmopen} is rather uncommon, Intel's GTPin library for instrumentation of Intel GPU binaries, which is used by HPCToolkit, uses {\tt dlmopen}. 
+
+% If your program uses {\tt dlmopen}, you have two alternatives: ask \hpcrun{} to use an alternative strategy for monitoring shared libraries, namely by wrapping {\tt dlopen} and {\tt dlclose}. 
+
+At the writing of this manual, all existing versions of {\tt libc} have a fatal flaw in their implementations of the \verb|LD_AUDIT| API for the ARM architecture. 
+When \verb|LD_AUDIT|  is enabled on ARM, it fails to save a register that passes an address used to determine where a returned structure should be written. 
+Any  program that returns a structure will almost certainly fail on an ARM platform if \hpcrun{} uses \verb|LD_AUDIT| to monitor dynamic library operations. 
+
+The following options direct \hpcrun{} to adjust the strategy it uses for monitoring dynamic libraries. We suggest that you don't consider using any of these options unless your program fails using \hpcrun{}'s defaults.
+
+\begin{description}
+\item{{\tt --disable-auditor}}  By default, \hpcrun{} uses \verb|LD_AUDIT| to track dynamic library
+                       operations. This option instructs hpcrun
+                       to track dynamic library operations by intercepting
+                       {\tt dlopen} and {\tt dlclose}  instead of using \verb|LD_AUDIT|. Note
+                       that this alternate approach can cause problem with
+                       load modules that specify a RUNPATH. Due to a {\tt libc} bug,
+                       this option is disabled by default on ARM. 
+                       
+\item{{\tt --enable-auditor}}    \verb|LD_AUDIT| is by default disabled on ARM due to a {\tt libc} bug.
+                       Use this option to enable \verb|LD_AUDIT| on ARM. This option may be useful if none of your shared library API operations return structures.
+                       
+\item{{\tt --disable-auditor-got-rewriting}}
+                       By default, \hpcrun{} uses \verb|LD_AUDIT| to help track dynamic
+                       library operations using an 'auditor' library. When using
+                       an auditor library, {\tt libc} unnecessarily intercepts
+                       every call to a function in a shared library. \hpcrun{}
+                       avoids this overhead by rewriting each shared library's
+                       global offset table (GOT). Such rewriting is tricky.
+                       This option can be used to disable GOT rewriting if
+                       it is believed that the rewriting is causing the
+                       application to fail.
+                       
+\item{{\tt --namespace-single}}   {\tt dlmopen} may load a shared library into an alternate
+                       namespace.  Use of {\tt dlmopen} to create multiple namespaces
+                       can cause an application to crash when using {\tt libc} $< 2.32$. This option asks HPCToolkit to load all
+                       shared libraries within the application namespace, which
+                       might help avoid a crash.  (Default when performing
+                       instruction-level measurements of Intel GPU binaries.)
+                       
+\item{{\tt --namespace-multiple}} {\tt dlmopen} may load a shared library into an alternate
+                       namespace. Force HPCToolkit to allow {\tt dlmopen} to create
+                       alternate namespaces.  (Default unless performing
+                       instruction-level measurements of Intel GPU binaries.)
+ \end{description}
+ 
+ If your code fails to find libraries when it is monitoring your code by wrapping {\tt dlopen} and {\tt dlclose} rather than using \verb|LD_AUDIT|, you can sidestep this problem by adding any library paths encoded by a {\tt RUNPATH} attributie in your application or a shared library it uses to your \verb|LD_LIBRARY_PATH| variable before launching \hpcrun{}.
+                      
+
+\subsubsection{ \hpcrun{} causes your application to fail when {\tt gprof} instrumentation is present}
 
 When an application has been compiled with the compiler flag \verb|-pg|,
 the compiler adds instrumentation to collect performance measurement data for 
@@ -115,16 +204,10 @@ One can disable \verb|gprof| instrumentation when measuring the performance of
 a dynamically-linked application by using the \verb|--disable-gprof| 
 argument to \hpcrun{}.
 
-% ===========================================================================
-
-\section{Using \hpclink{}}
-
-For now, see Chapter~\ref{chpt:statically-linked-apps} on {\it
-Monitoring Statically Linked Applications}.
 
 % ===========================================================================
 
-\section{Harware Counter Event Names}
+\section{Hardware Counter Event Names}
 
 HPCToolkit uses libpfm4\cite{libpfm-www} to translate from an event name string to an event code recognized by the kernel. 
 An event name is case insensitive and is defined as followed:
@@ -448,9 +531,7 @@ support for accessing  performance counters
 using the Linux \perfevents{} performance monitoring subsystem is
 built into the kernel.  \perfevents{}  provides a measurement substrate for PAPI on Linux.
 
-On Blue Gene platforms that are not based on Linux,
-PAPI is highly recommended as it provides an essential substrate for accessing
-hardware performance counters. On modern Linux systems that include support
+On modern Linux systems that include support
 for \verb|perf_events|, PAPI is only recommended for monitoring 
 events outside the scope of the \verb|perf_events| interface. 
 
@@ -497,10 +578,11 @@ within the loop is likely to be off.  But as long as the loop is long
 enough, the count for the loop as a whole (and up the tree) should be
 accurate.
 
-\subsection{WALLCLOCK, REALTIME and CPUTIME}
+\subsection{REALTIME and CPUTIME}
+\label{linux-timers}
 
-\HPCToolkit{} supports three timer-based sample sources: \verb|CPUTIME|,
-\verb|REALTIME| and \verb|WALLCLOCK|.
+\HPCToolkit{} supports two timer-based sample sources: \verb|CPUTIME| and
+\verb|REALTIME|.
 The unit for periods of these timers is microseconds.
 
 Before describing this capability further, it is worth noting
@@ -519,24 +601,6 @@ profiling multithreaded programs.
 Sampling using the \verb|REALTIME| sample source
 may break some applications that don't handle interrupted syscalls well.  In that
 case, consider using \verb|CPUTIME| instead.
-It is worth noting that \verb|REALTIME| and \verb|CPUTIME| are not available on Blue Gene,
-where compute nodes run a custom microkernel instead of Linux.
-
-The \verb|WALLCLOCK| sample source is based on the \verb|ITIMER_PROF|
-interval timer. 
-\verb|WALLCLOCK| counts time when an application is running or the kernel is running on behalf of the
-application. 
-Unlike the POSIX timers that support  \verb|CPUTIME| and \verb|REALTIME|,
-the interval timer supporting \verb|WALLCLOCK| does not support thread-specific signal delivery 
-on Linux. 
-\verb|WALLCLOCK| is available on Blue Gene even though \verb|REALTIME| and \verb|CPUTIME| are not.
-On Linux the maximum interrupt rate for the interval itimer is limited by the
-system's Hz rate, commonly 1,000 cycles per second, but may be lower.
-That is, \verb|WALLCLOCK@10| will not generate any higher sampling rate
-than \verb|WALLCLOCK@1000|.  
-On IBM Blue Gene, the interval timer is not
-bound by the Hz rate and so sampling rates faster than 1,000 per
-second are possible.
 
 The following example, which specifies a period of 5000 microseconds will sample
 each thread in \verb|app| at a rate of approximately 200 times per second.
@@ -549,7 +613,7 @@ hpcrun -e REALTIME@5000 app arg ...
 
 
 \noindent {\it Note:} do not use more than one timer-based sample source to monitor a program execution.
-When using a sample source such as \verb|CPUTIME|, \verb|REALTIME|, or \verb|WALLCLOCK|,
+When using a sample source such as \verb|CPUTIME| or \verb|REALTIME|,
 we recommend not using another time-based sampling source such as 
 Linux \perfevents{} CYCLES or PAPI's \verb|PAPI_TOT_CYC|. 
 Technically, this is feasible and \hpcrun{} won't die.
@@ -887,13 +951,6 @@ Your system may have a module installed for \verb|hpctoolkit| with the
 correct settings for \verb|PATH|, \verb|HPCTOOLKIT|, etc.  In that case,
 the easiest solution is to load the \verb|hpctoolkit| module.  Try
 ``\verb|module show hpctoolkit|'' to see if it sets \verb|HPCTOOLKIT|.
-
-\subsection{Blue Gene/Q Systems}
-Blue Gene Q systems provide the \verb|WALLCLOCK| interval timer, but not the 
-POSIX \verb|CPUTIME| and \verb|REALTIME| timers.
-
-The Linux \verb|perf_events| subsystem is unavailable on Blue Gene Q systems. 
-One should use the PAPI interface to monitor executions using hardware performance counters. 
 
 \subsection{ARM Systems}
 \HPCToolkit{}'s measurement infrastructure depends upon \verb|libunwind| for call stack unwinding on ARM.
