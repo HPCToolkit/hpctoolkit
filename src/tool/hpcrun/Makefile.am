@@ -998,6 +998,10 @@ libhpcrun_la_CPPFLAGS += $(CUPTI_INC_FLGS)
 MY_CPP_DEFINES += -DHPCRUN_SS_PAPI_C_CUPTI
 endif
 
+if OPT_PAPI_ROCM
+MY_CPP_DEFINES += -DHPCRUN_SS_PAPI_C_ROCM
+endif
+
 if OPT_PAPI_STATIC
   libhpcrun_o_SOURCES   += $(MY_PAPI_FILES)
   libhpcrun_o_CPPFLAGS  += $(PAPI_INC_FLGS)
@@ -1044,7 +1048,6 @@ if OPT_ENABLE_CUDA
   libhpcrun_la_CFLAGS += $(OPT_CUDA_IFLAGS)
   libhpcrun_o_SOURCES += $(MY_CUDA_FILES)
 endif
-
 
 if OPT_ENABLE_ROCM
   libhpcrun_la_SOURCES  += $(MY_ROCM_FILES)

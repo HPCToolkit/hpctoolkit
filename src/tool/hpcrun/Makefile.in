@@ -275,39 +275,40 @@ host_triplet = @host@
 @OPT_ENABLE_CUPTI_TRUE@am__append_107 = -DHPCRUN_SS_NVIDIA
 @OPT_PAPI_CUPTI_TRUE@am__append_108 = $(CUPTI_INC_FLGS)
 @OPT_PAPI_CUPTI_TRUE@am__append_109 = -DHPCRUN_SS_PAPI_C_CUPTI
-@OPT_PAPI_STATIC_TRUE@am__append_110 = $(MY_PAPI_FILES)
-@OPT_PAPI_STATIC_TRUE@am__append_111 = $(PAPI_INC_FLGS)
-@OPT_PAPI_STATIC_TRUE@am__append_112 = $(OPT_PAPI_LIBS_STAT)
-@OPT_PAPI_STATIC_TRUE@am__append_113 = -DHPCRUN_SS_PAPI
-@OPT_ENABLE_UPC_TRUE@am__append_114 = $(MY_UPC_FILES)
+@OPT_PAPI_ROCM_TRUE@am__append_110 = -DHPCRUN_SS_PAPI_C_ROCM
+@OPT_PAPI_STATIC_TRUE@am__append_111 = $(MY_PAPI_FILES)
+@OPT_PAPI_STATIC_TRUE@am__append_112 = $(PAPI_INC_FLGS)
+@OPT_PAPI_STATIC_TRUE@am__append_113 = $(OPT_PAPI_LIBS_STAT)
+@OPT_PAPI_STATIC_TRUE@am__append_114 = -DHPCRUN_SS_PAPI
 @OPT_ENABLE_UPC_TRUE@am__append_115 = $(MY_UPC_FILES)
-@OPT_ENABLE_UPC_TRUE@am__append_116 = $(OPT_UPC_IFLAGS)
+@OPT_ENABLE_UPC_TRUE@am__append_116 = $(MY_UPC_FILES)
 @OPT_ENABLE_UPC_TRUE@am__append_117 = $(OPT_UPC_IFLAGS)
-@OPT_ENABLE_UPC_TRUE@am__append_118 = $(OPT_UPC_LDFLAGS)
-@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_119 = -DLUSH_PTHREADS
+@OPT_ENABLE_UPC_TRUE@am__append_118 = $(OPT_UPC_IFLAGS)
+@OPT_ENABLE_UPC_TRUE@am__append_119 = $(OPT_UPC_LDFLAGS)
 @OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_120 = -DLUSH_PTHREADS
-@OPT_ENABLE_CUDA_TRUE@am__append_121 = $(MY_CUDA_FILES)
-@OPT_ENABLE_CUDA_TRUE@am__append_122 = -DENABLE_CUDA
-@OPT_ENABLE_CUDA_TRUE@am__append_123 = $(OPT_CUDA_IFLAGS)
-@OPT_ENABLE_CUDA_TRUE@am__append_124 = $(MY_CUDA_FILES)
-@OPT_ENABLE_ROCM_TRUE@am__append_125 = $(MY_ROCM_FILES)
-@OPT_ENABLE_ROCM_TRUE@am__append_126 = -DENABLE_ROCM
-@OPT_ENABLE_ROCM_TRUE@am__append_127 = $(OPT_ROCM_IFLAGS)
-@OPT_ENABLE_ROCM_TRUE@am__append_128 = -DHPCRUN_SS_AMD
-@OPT_ENABLE_LEVEL0_TRUE@am__append_129 = $(MY_LEVEL0_FILES)
-@OPT_ENABLE_LEVEL0_TRUE@am__append_130 = -DENABLE_LEVEL0
-@OPT_ENABLE_LEVEL0_TRUE@am__append_131 = $(OPT_LEVEL0_IFLAGS)
-@OPT_ENABLE_LEVEL0_TRUE@am__append_132 = -DHPCRUN_SS_LEVEL0
-@OPT_ENABLE_OPENCL_TRUE@am__append_133 = $(MY_OPENCL_FILES)
-@OPT_ENABLE_OPENCL_TRUE@am__append_134 = -DENABLE_OPENCL
-@OPT_ENABLE_OPENCL_TRUE@am__append_135 = $(OPT_OPENCL_IFLAGS)
-@OPT_ENABLE_OPENCL_TRUE@am__append_136 = -DHPCRUN_SS_OPENCL
-@OPT_ENABLE_GTPIN_TRUE@am__append_137 = $(MY_GTPIN_FILES)
-@OPT_ENABLE_GTPIN_TRUE@am__append_138 = -DENABLE_GTPIN -DGTPIN_LIBDIR=$(OPT_GTPIN_LIBDIR)
-@OPT_ENABLE_GTPIN_TRUE@am__append_139 = $(OPT_GTPIN_IFLAGS)
-@OPT_ENABLE_GTPIN_TRUE@am__append_140 = -DHPCRUN_SS_GTPIN
-@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_141 = libagent-cilk.la
-@OPT_ENABLE_LUSH_TRUE@am__append_142 = libagent-pthread.la \
+@OPT_ENABLE_LUSH_PTHREADS_TRUE@am__append_121 = -DLUSH_PTHREADS
+@OPT_ENABLE_CUDA_TRUE@am__append_122 = $(MY_CUDA_FILES)
+@OPT_ENABLE_CUDA_TRUE@am__append_123 = -DENABLE_CUDA
+@OPT_ENABLE_CUDA_TRUE@am__append_124 = $(OPT_CUDA_IFLAGS)
+@OPT_ENABLE_CUDA_TRUE@am__append_125 = $(MY_CUDA_FILES)
+@OPT_ENABLE_ROCM_TRUE@am__append_126 = $(MY_ROCM_FILES)
+@OPT_ENABLE_ROCM_TRUE@am__append_127 = -DENABLE_ROCM
+@OPT_ENABLE_ROCM_TRUE@am__append_128 = $(OPT_ROCM_IFLAGS)
+@OPT_ENABLE_ROCM_TRUE@am__append_129 = -DHPCRUN_SS_AMD
+@OPT_ENABLE_LEVEL0_TRUE@am__append_130 = $(MY_LEVEL0_FILES)
+@OPT_ENABLE_LEVEL0_TRUE@am__append_131 = -DENABLE_LEVEL0
+@OPT_ENABLE_LEVEL0_TRUE@am__append_132 = $(OPT_LEVEL0_IFLAGS)
+@OPT_ENABLE_LEVEL0_TRUE@am__append_133 = -DHPCRUN_SS_LEVEL0
+@OPT_ENABLE_OPENCL_TRUE@am__append_134 = $(MY_OPENCL_FILES)
+@OPT_ENABLE_OPENCL_TRUE@am__append_135 = -DENABLE_OPENCL
+@OPT_ENABLE_OPENCL_TRUE@am__append_136 = $(OPT_OPENCL_IFLAGS)
+@OPT_ENABLE_OPENCL_TRUE@am__append_137 = -DHPCRUN_SS_OPENCL
+@OPT_ENABLE_GTPIN_TRUE@am__append_138 = $(MY_GTPIN_FILES)
+@OPT_ENABLE_GTPIN_TRUE@am__append_139 = -DENABLE_GTPIN -DGTPIN_LIBDIR=$(OPT_GTPIN_LIBDIR)
+@OPT_ENABLE_GTPIN_TRUE@am__append_140 = $(OPT_GTPIN_IFLAGS)
+@OPT_ENABLE_GTPIN_TRUE@am__append_141 = -DHPCRUN_SS_GTPIN
+@OPT_ENABLE_LUSH_TRUE@@OPT_WITH_CILK_TRUE@am__append_142 = libagent-cilk.la
+@OPT_ENABLE_LUSH_TRUE@am__append_143 = libagent-pthread.la \
 @OPT_ENABLE_LUSH_TRUE@	libagent-tbb.la
 subdir = src/tool/hpcrun
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -1783,7 +1784,7 @@ pkglibexec_SCRIPTS = $(am__append_1)
 include_HEADERS = $(am__append_2)
 pkglib_LIBRARIES = $(am__append_5)
 pkglib_LTLIBRARIES = $(am__append_3) $(am__append_7) $(am__append_18) \
-	$(am__append_19) $(am__append_141) $(am__append_142)
+	$(am__append_19) $(am__append_142) $(am__append_143)
 BUILT_SOURCES = $(am__append_23)
 CLEANFILES = $(am__append_24)
 @OPT_ENABLE_HPCRUN_DYNAMIC_TRUE@noinst_LTLIBRARIES = libhpcrun.la
@@ -1874,8 +1875,8 @@ UNW_MIPS_LD_FLAGS =
 MY_CPP_DEFINES = -D_GNU_SOURCE -DINLINE_FN=1 -DLOCAL_BUILD=1 \
 	-D__HIP_PLATFORM_HCC__=1 $(am__append_11) $(am__append_20) \
 	$(am__append_103) $(am__append_107) $(am__append_109) \
-	$(am__append_113) $(am__append_128) $(am__append_132) \
-	$(am__append_136) $(am__append_140)
+	$(am__append_110) $(am__append_114) $(am__append_129) \
+	$(am__append_133) $(am__append_137) $(am__append_141)
 MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	closure-registry.c cct_insert_backtrace.c \
 	cct_backtrace_finalize.c env.c epoch.c files.c \
@@ -2060,9 +2061,9 @@ MY_AARCH64_INCLUDE_DIRS = \
 libhpcrun_la_SOURCES = $(MY_BASE_FILES) $(MY_DYNAMIC_FILES) \
 	$(am__append_25) $(am__append_26) $(am__append_39) \
 	$(am__append_54) $(am__append_72) $(am__append_85) \
-	$(am__append_100) $(am__append_104) $(am__append_114) \
-	$(am__append_121) $(am__append_125) $(am__append_129) \
-	$(am__append_133) $(am__append_137) $(UNW_SOURCE_FILES) \
+	$(am__append_100) $(am__append_104) $(am__append_115) \
+	$(am__append_122) $(am__append_126) $(am__append_130) \
+	$(am__append_134) $(am__append_138) $(UNW_SOURCE_FILES) \
 	utilities/last_func.c
 libhpcrun_fake_audit_la_SOURCES = \
 	audit/fake-auditor.c
@@ -2073,7 +2074,7 @@ libhpcrun_audit_la_SOURCES = \
 libhpcrun_o_SOURCES = $(MY_BASE_FILES) $(MY_STATIC_FILES) \
 	$(am__append_27) $(am__append_40) $(am__append_55) \
 	$(am__append_73) $(am__append_86) $(am__append_105) \
-	$(am__append_110) $(am__append_115) $(am__append_124) \
+	$(am__append_111) $(am__append_116) $(am__append_125) \
 	$(UNW_SOURCE_FILES) utilities/last_func.c
 libhpcrun_wrap_a_SOURCES = \
 	monitor-exts/openmp.c
@@ -2121,9 +2122,9 @@ libhpcrun_la_CPPFLAGS = $(MY_CPP_DEFINES) $(MY_INCLUDE_DIRS) \
 	$(am__append_21) $(am__append_28) $(am__append_41) \
 	$(am__append_56) $(am__append_74) $(am__append_87) \
 	$(am__append_101) $(am__append_106) $(am__append_108) \
-	$(am__append_116) $(am__append_119) $(am__append_122) \
-	$(am__append_126) $(am__append_130) $(am__append_134) \
-	$(am__append_138) $(UNW_INCLUDE_DIRS)
+	$(am__append_117) $(am__append_120) $(am__append_123) \
+	$(am__append_127) $(am__append_131) $(am__append_135) \
+	$(am__append_139) $(UNW_INCLUDE_DIRS)
 libhpcrun_fake_audit_la_CPPFLAGS = \
 	$(MY_CPP_DEFINES)		\
 	$(MY_INCLUDE_DIRS)
@@ -2135,8 +2136,8 @@ libhpcrun_audit_la_CPPFLAGS = \
 libhpcrun_o_CPPFLAGS = -DHPCRUN_STATIC_LINK $(MY_CPP_DEFINES) \
 	$(MY_INCLUDE_DIRS) $(am__append_22) $(am__append_29) \
 	$(am__append_42) $(am__append_57) $(am__append_75) \
-	$(am__append_88) $(am__append_111) $(am__append_117) \
-	$(am__append_120) $(UNW_INCLUDE_DIRS)
+	$(am__append_88) $(am__append_112) $(am__append_118) \
+	$(am__append_121) $(UNW_INCLUDE_DIRS)
 libhpcrun_wrap_a_CPPFLAGS = \
 	-DHPCRUN_STATIC_LINK		\
 	$(MY_CPP_DEFINES)		\
@@ -2193,8 +2194,8 @@ libhpctoolkit_a_CPPFLAGS = \
 # cflags
 #-----------------------------------------------------------
 libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(PERFMON_CFLAGS) \
-	$(am__append_123) $(am__append_127) $(am__append_131) \
-	$(am__append_135) $(am__append_139) $(GOTCHA_IFLAGS)
+	$(am__append_124) $(am__append_128) $(am__append_132) \
+	$(am__append_136) $(am__append_140) $(GOTCHA_IFLAGS)
 libhpcrun_o_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(PERFMON_CFLAGS)
 libhpcrun_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
 libhpcrun_ga_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
@@ -2227,7 +2228,7 @@ OUR_LZMA_A = $(top_builddir)/src/extern/lzma/liblzma.a
 libhpcrun_la_LDFLAGS = -Wl,-Bsymbolic -L$(LIBMONITOR_LIB) -lmonitor \
 	-lpthread -lrt -L$(LIBELF_LIB) -lelf $(PERFMON_LDFLAGS_DYN) \
 	$(OPT_ROCM_LDFLAGS) $(am__append_58) $(am__append_102) \
-	$(am__append_118) $(GOTCHA_LDFLAGS) $(UNW_DYNAMIC_LD_FLAGS)
+	$(am__append_119) $(GOTCHA_LDFLAGS) $(UNW_DYNAMIC_LD_FLAGS)
 libhpcrun_fake_audit_la_LDFLAGS = -Wl,-Bsymbolic -ldl
 libhpcrun_audit_la_LDFLAGS = -Wl,-Bsymbolic -ldl
 libhpcrun_ga_la_LDFLAGS = -Wl,-Bsymbolic
@@ -2253,7 +2254,7 @@ libhpcrun_la_LIBADD = \
 
 libhpcrun_o_LDADD = $(PROF_LEAN_A) $(SUPPORT_LEAN_A) \
 	$(PERFMON_LDFLAGS_STAT) $(MBEDTLS_LIBS) $(OUR_LIBUNWIND_A) \
-	$(OUR_LZMA_A) $(am__append_59) $(am__append_112) \
+	$(OUR_LZMA_A) $(am__append_59) $(am__append_113) \
 	$(UNW_STATIC_LD_FLAGS)
 MY_AGENT_INCLUDE_DIRS = $(MY_INCLUDE_DIRS) $(am__append_71) \
 	$(UNW_INCLUDE_DIRS)
