@@ -78,6 +78,7 @@
 #include <include/uint.h>
 
 #include <include/hpctoolkit-config.h>
+#include <hpcrun/hpcrun-placeholders.h>
 
 #include "main.h"
 
@@ -112,7 +113,6 @@
 #include "device-initializers.h"
 #include "device-finalizers.h"
 #include "module-ignore-map.h"
-#include "control-knob.h"
 #include "epoch.h"
 #include "thread_data.h"
 #include "threadmgr.h"
@@ -221,7 +221,7 @@ bool hpcrun_no_unwind = false;
  * (public declaration) thread-local variables
  *****************************************************************************/
 static __thread bool hpcrun_thread_suppress_sample = true;
-
+static atomic_bool is_partially_initialized = ATOMIC_VAR_INIT(false);
 
 //***************************************************************************
 // local variables 
@@ -888,43 +888,56 @@ monitor_init_process(int *argc, char **argv, void* data)
     }
   }
 
-  hpcrun_set_using_threads(false);
+  if (atomic_fetch_add(&is_partially_initialized, 1) == 0){
 
-  copy_execname(process_name);
-  hpcrun_files_set_executable(process_name);
+    hpcrun_set_using_threads(false);
 
-  // We initialize the load map and fnbounds before registering sample source.
-  // This is because sample source init (such as PAPI)  may dlopen other libraries,
-  // which will trigger our library monitoring code and fnbound queries
-  hpcrun_initLoadmap();
+    copy_execname(process_name);
+    hpcrun_files_set_executable(process_name);
 
-  // We need to initialize messages related functions and set up measurement directory,
-  // so that we can write vdso and prevent fnbounds print messages to the terminal.
-  messages_init();
-  if (!hpcrun_get_disabled()) {
-    hpcrun_files_set_directory();
+    // We initialize the load map and fnbounds before registering sample source.
+    // This is because sample source init (such as PAPI)  may dlopen other libraries,
+    // which will trigger our library monitoring code and fnbound queries
+    hpcrun_initLoadmap();
+
+    // We need to initialize messages related functions and set up measurement directory,
+    // so that we can write vdso and prevent fnbounds print messages to the terminal.
+    messages_init();
+    if (!hpcrun_get_disabled()) {
+      hpcrun_files_set_directory();
+    }
+    messages_logfile_create();
+
+    // must initialize unwind recipe map before initializing fnbounds
+    // because mapping of load modules affects the recipe map.
+    hpcrun_unw_init();
+
+    // We need to save vdso before initializing fnbounds this
+    // is because fnbounds_init will iterate over the load map
+    // and will invoke analysis on vdso
+    hpcrun_save_vdso();
+
+    // init callbacks for each device //Module_ignore_map is here
+    hpcrun_initializer_init();
+
+    // fnbounds must be after module_ignore_map
+    fnbounds_init();
+    #ifndef HPCRUN_STATIC_LINK
+      auditor_exports->mainlib_connected(get_saved_vdso_path());
+    #endif
   }
-  messages_logfile_create();
 
-  // must initialize unwind recipe map before initializing fnbounds
-  // because mapping of load modules affects the recipe map.
-  hpcrun_unw_init();
+  struct monitor_thread_info mti;
+  if (monitor_get_new_thread_info(&mti) == 0){
+    // we end up here only if we called from pthread create
 
-  // We need to save vdso before initializing fnbounds this
-  // is because fnbounds_init will iterate over the load map
-  // and will invoke analysis on vdso
-  hpcrun_save_vdso();
+    // Check if thread is on the clean spot for initializing sample source
+    load_module_t *lm_mti = pc_to_lm(mti.mti_create_return_addr);
+    if(module_ignore_map_ignore(lm_mti)){
+      return data;
+    }
+  }
 
-  // init callbacks for each device //Module_ignore_map is here
-  hpcrun_initializer_init();
-
-  // fnbounds must be after module_ignore_map
-  fnbounds_init();
-#ifndef HPCRUN_STATIC_LINK
-  auditor_exports->mainlib_connected(get_saved_vdso_path());
-#endif
-
-  control_knob_init();
 
   hpcrun_registered_sources_init();
 

@@ -352,7 +352,7 @@ METHOD_FN(init)
       }
     }
   }
-  int ret = 0; //PAPI_library_init(PAPI_VER_CURRENT);
+  int ret = PAPI_library_init(PAPI_VER_CURRENT);
   monitor_enable_new_threads();
 
   TMSG(PAPI_C,"PAPI_library_init = %d", ret);
