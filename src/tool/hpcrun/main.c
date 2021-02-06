@@ -932,7 +932,7 @@ monitor_init_process(int *argc, char **argv, void* data)
 
 
 static
-void monitor_init_process_deferred()
+void  hpcrun_prepare_measurement_subsystem()
 {
   bool is_child = false;
   
@@ -974,7 +974,6 @@ void monitor_init_process_deferred()
     STDERR_MSG("Std Err message appears");
   }
 
-
   hpcrun_safe_exit();
 }
 
@@ -982,7 +981,7 @@ void monitor_init_process_deferred()
 void
 monitor_at_main()
 {  
-    monitor_init_process_deferred();
+     hpcrun_prepare_measurement_subsystem();
 }
 
 
@@ -1161,7 +1160,7 @@ monitor_thread_pre_create(void)
   }
   
   // outer initialization
-  monitor_init_process_deferred();
+   hpcrun_prepare_measurement_subsystem();
 
 
   hpcrun_safe_enter();
