@@ -182,7 +182,7 @@ Options to consider only when hpcrun causes an application to fail:
                        library operations using an 'auditor' library. When using
                        an auditor library, glibc unnecessarily intercepts
                        every call to a function in a shared library. hpcrun
-                       avoids this overhead by rewriting each shared libary's
+                       avoids this overhead by rewriting each shared library's
                        global offset table (GOT). Such rewriting is tricky.
                        This option can be used to disable GOT rewriting if
                        it is believed that the rewriting is causing the
@@ -334,6 +334,7 @@ do
 
 	-L | -l | --list-events )
 	    export HPCRUN_EVENT_LIST=LIST
+	    export HPCRUN_LIST_EVENT=1
 	    ;;
 
 	-ds | --delay-sampling )
