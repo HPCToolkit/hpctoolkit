@@ -1003,8 +1003,10 @@ By default, the menu is hidden. Once you open a database, the menu is then shown
 \begin{itemize}
 
  \item \textbf{Show metrics}   \textit{(Profile view only)}
- Display a list of metrics in a window. From this window, you can modify the name of the metric. For derived metrics, this also allows to modify the formula as well as the format.
-
+ Display a list of (metric name, metric name description) pairs in a window. For GPU metrics, the descriptions are useful for explaining what the short and somewhat cryptic metric names mean.
+ From this window, you can use the edit button to modify the name of the selected metric. When editing a derived metric, the metric editor will allow you to modify the formula for the metric in addition to the name.
+ Once you modify a metric and exit this window by selecting the OK button, the metric pane will refresh the display of any metrics whose name or formula was modified.
+ 
  \item \textbf{Show procedure-color mapping} \textit{(Trace view only)} 
   Open a window which shows customized mapping between a procedure pattern and a color (Figure~\ref{fig:hpctraceviewer-mapping}). \hpctraceviewer{} allows users to customize assignment of a pattern of procedure names with a specific color.
  

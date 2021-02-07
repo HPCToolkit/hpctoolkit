@@ -97,14 +97,15 @@ gpu_trace_init
 void
 gpu_trace_fini
 (
-void *arg
+ void *arg,
+ int how
 );
 
 
 void *
 gpu_trace_record
 (
-void *args
+ void *args
 );
 
 

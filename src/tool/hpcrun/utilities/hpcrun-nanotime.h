@@ -65,5 +65,10 @@ hpcrun_nanotime
   void
 );
 
+int32_t
+hpcrun_nanosleep
+(
+  uint32_t nsec
+);
 
 #endif
