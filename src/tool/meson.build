@@ -220,6 +220,7 @@ VERSION=''' + '\'' + meson.project_version() + '\'' + '''
 git_version='(Git TODO)'
 spack_spec='(Spack TODO)'
 ''')
+launch_config.set('HOST_CPU_AARCH64', host_machine.cpu_family() == 'aarch64' ? 'yes' : 'no')
 configure_file(input: '../../meson/hash-file.in', output: 'hash-file',
   configuration: {'HASH': _launch_hash_value},
   install: true, install_dir: get_option('libdir')/meson.project_name())

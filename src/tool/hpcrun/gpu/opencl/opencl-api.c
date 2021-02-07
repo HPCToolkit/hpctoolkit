@@ -780,10 +780,12 @@ opencl_subscriber_callback
   obj->details.initiator_channel = gpu_activity_channel_get();
   obj->details.submit_time = CPU_NANOTIME();
 
+#ifdef ENABLE_GTPIN
   if (obj->kind == GPU_ACTIVITY_KERNEL && instrumentation) {
     // Callback to produce gtpin correlation
     gtpin_produce_runtime_callstack(&gpu_op_ccts);
   }
+#endif
 }
 
 
@@ -842,9 +844,11 @@ opencl_api_initialize
 )
 {
   ETMSG(OPENCL, "CL_TARGET_OPENCL_VERSION: %d", CL_TARGET_OPENCL_VERSION);
+#ifdef ENABLE_GTPIN
   if (instrumentation) {
     gtpin_enable_profiling();
   }
+#endif
   atomic_store(&correlation_id_counter, 0);
   atomic_store(&opencl_pending_operations, 0);
   atomic_store(&opencl_h2d_pending_operations, 0);

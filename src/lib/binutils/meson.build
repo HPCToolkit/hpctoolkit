@@ -61,7 +61,13 @@ _srcs = files(
   'ElfHelper.cpp',
   'InputFile.cpp',
   'RelocateCubin.cpp',
+  'intel/IntelGPUBinutils.cpp',
 )
+
+_igc_dep = [dependency('igc', required: false)]
+if _igc_dep[0].found()
+  _igc_dep = [_igc_dep, declare_dependency(compile_args: ['-DENABLE_IGC'])]
+endif
 
 binutils_lib = static_library('binutils', _srcs, pic: true,
   include_directories: main_includes,
@@ -70,4 +76,5 @@ binutils_lib = static_library('binutils', _srcs, pic: true,
     dependency('libbfd', required: false, disabler: true),
     dependency('libelf', required: false, disabler: true),
     dependency('dyninst', required: false, disabler: true),
-  ])
+    dependency('metrics-discovery', required: false),
+  ] + _igc_dep)

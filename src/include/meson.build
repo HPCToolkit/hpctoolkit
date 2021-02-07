@@ -96,6 +96,11 @@ hpctoolkit_config.set('DYNINST_USE_CUDA', cpp.compiles('''
   ''', name: 'Dyninst CUDA support',
   dependencies: ex_libs.get('dyninst', _dyninst_dep),
   include_directories: ex_idirs.get('dyninst', [])) ? 1 : false)
+hpctoolkit_config.set('DYNINST_SUPPORTS_INTEL_GPU',
+  cpp.has_header_symbol('entryIDs.h', 'intel_gpu_op_general',
+  dependencies: ex_libs.get('dyninst', _dyninst_dep),
+  include_directories: ex_idirs.get('dyninst', []),
+  ) ? 1 : false)
 # TODO: Remove once the Dyninst lower version bound gets bumped
 hpctoolkit_config.set('DYNINST_USE_LIBDW', true ? 1 : false)
 

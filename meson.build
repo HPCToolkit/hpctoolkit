@@ -183,6 +183,7 @@ _deps = {
                   'libs': ['xed'], 'headers': ['xed-interface.h'],
                   'static': true,
                 },
+  // TODO: Update to allow for a separated ROCM install
   'rocm-headers': { 'propstems': ['rocm'],
                     'libs': [], 'headers': ['hip/hip_runtime.h', 'roctracer/roctracer.h'],
                   },
@@ -223,6 +224,21 @@ _deps = {
                         'libs': [], 'headers': ['valgrind.h', 'helgrind.h'],
                         'spack_include_suffix': 'valgrind',
                       },
+  'opencl-headers': { 'propstems': ['opencl'],
+                      'libs': [], 'headers': ['CL/cl.h'],
+                    },
+  'gtpin': { 'propstems': ['gtpin'],
+             'libs': ['gtpin'], 'headers': ['gtpin.h'],
+           },
+  'level0-headers': { 'propstems': ['level0'],
+                      'libs': [], 'headers': ['level0???.h'],
+                    },
+  'igc': { 'propstems': ['igc'],
+           'libs': ['igc', 'igc64'], 'headers': ['igc/igc.opencl.h'],
+         },
+  'metrics-discovery': { 'propstems': ['intel-md'],
+                         'libs': ['md'], 'headers': ['metrics_discovery_api.h'],
+                       },
 }
 ex_libs = {}
 ex_idirs = {}

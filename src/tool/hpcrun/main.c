@@ -846,6 +846,9 @@ hpcrun_wait()
 // process control (via libmonitor)
 //***************************************************************************
 
+__attribute__((weak))
+void hpcrun_init_fake_auditor() {}
+
 void*
 monitor_init_process(int *argc, char **argv, void* data)
 {

@@ -43,13 +43,14 @@
 # ******************************************************* EndRiceCopyright *
 
 _srcs = files(
-  'cuda/CFGParser.cpp',
-  'cuda/CudaCFGFactory.cpp',
-  'cuda/CudaFunction.cpp',
-  'cuda/GraphReader.cpp',
-  'cuda/CudaBlock.cpp',
-  'cuda/CudaCodeSource.cpp',
-  'cuda/ReadCubinCFG.cpp',
+  'gpu/GPUCFGFactory.cpp',
+  'gpu/GPUFunction.cpp',
+  'gpu/GPUBlock.cpp',
+  'gpu/GPUCodeSource.cpp',
+  'gpu/GraphReader.cpp',
+  'gpu/CudaCFGParser.cpp',
+  'gpu/ReadCudaCFG.cpp',
+  'gpu/ReadIntelCFG.cpp',
   'Struct.cpp',
   'Struct-Inline.cpp',
   'Struct-Output.cpp',
@@ -58,6 +59,11 @@ _srcs = files(
 _simple_srcs = files(
   'StructSimple.cpp',
 )
+
+_igc_dep = [dependency('igc', required: false)]
+if _igc_dep[0].found()
+  _igc_dep = [_igc_dep, declare_dependency(compile_args: ['-DENABLE_IGC'])]
+endif
 
 banal_lib = static_library('banal', _srcs, pic: true,
   include_directories: main_includes,
@@ -69,7 +75,8 @@ banal_lib = static_library('banal', _srcs, pic: true,
     dependency('boost', required: false, disabler: true, modules: ['graph', 'regex', 'system']),
     dependency('OpenMP', required: get_option('openmp')),
     dependency('valgrind', required: get_option('valgrind-annotations')),
-  ])
+    dependency('metrics-discovery', required: false),
+  ] + _igc_dep)
 banal_simple_lib = static_library('banal_simple', _simple_srcs, pic: true,
   include_directories: main_includes,
   link_with: [binutils_lib, support_lib, prof_lib],

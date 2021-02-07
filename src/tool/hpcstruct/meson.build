@@ -50,7 +50,7 @@ _srcs = [files(
 _gen = generator(find_program('stringify.sh', native: true),
                  arguments: ['@INPUT@'],
                  output: '@BASENAME@.h', capture: true)
-_srcs += _gen.process(files('cubins-analysis.txt'))
+_srcs += _gen.process(files('gpubin-analysis.txt'))
 
 if not get_option('hpcstruct').disabled()
   hpcstruct_exe = executable('hpcstruct', _srcs,
@@ -82,5 +82,3 @@ if get_option('devtools').enabled()
   assert(not is_disabler(dotgraph_exe), 'dotgraph required but disabled')
 endif
 summary('dotgraph', is_variable('dotgraph_exe') and not is_disabler(dotgraph_exe), section: 'Applications', bool_yn: true)
-
-

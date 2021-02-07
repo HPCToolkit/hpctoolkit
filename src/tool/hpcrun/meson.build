@@ -146,11 +146,18 @@ _srcset.add([
     'gpu/gpu-monitoring.c',
     'gpu/gpu-monitoring-thread-api.c',
     'gpu/gpu-op-placeholders.c',
+    'gpu/gpu-operation-item.c',
+    'gpu/gpu-operation-item-process.c',
+    'gpu/gpu-operation-channel.c',
+    'gpu/gpu-operation-channel-set.c',
+    'gpu/gpu-operation-multiplexer.c',
     'gpu/gpu-splay-allocator.c',
     'gpu/gpu-stream-id-map.c',
     'gpu/gpu-trace.c',
     'gpu/gpu-trace-channel.c',
     'gpu/gpu-trace-item.c',
+    'gpu/gpu-trace-channel-set.c',
+    'gpu/gpu-trace-demultiplexer.c',
 
     'ompt/ompt-callstack.c',
     'ompt/ompt-defer.c',
@@ -209,7 +216,6 @@ _d_srcset.add(
     'fnbounds/fnbounds_client.c',
     'fnbounds/fnbounds_dynamic.c',
     'monitor-exts/openmp.c',
-    'hpcrun_dlfns.c',
     'custom-init-dynamic.c',
   ),
   dependency('libelf', required: get_option('hpcrun')),
@@ -340,11 +346,49 @@ _d_srcset.add(when: dependency('CUDA', required: get_option('cuda-monitoring')),
     declare_dependency(compile_args: ['-DENABLE_CUDA', '-DHPCRUN_SS_NVIDIA'])
   ])
 
+_d_srcset.add(when: dependency('opencl-headers', required: false), if_true: [
+    files(
+      'sample-sources/opencl.c',
+      'gpu/opencl/opencl-api.c',
+      'gpu/opencl/opencl-memory-manager.c',
+      'gpu/opencl/opencl-activity-translate.c',
+      'gpu/opencl/opencl-h2d-map.c',
+      'gpu/opencl/opencl-queue-map.c',
+      'gpu/opencl/opencl-context-map.c',
+    ),
+    declare_dependency(compile_args: ['-DENABLE_OPENCL', '-DHPCRUN_SS_OPENCL'])
+  ])
+
+_d_srcset.add(when: dependency('gtpin', required: false), if_true: [
+    files(
+      'gpu/instrumentation/kernel-data-map.c',
+      'gpu/instrumentation/gtpin-instrumentation.c',
+      'gpu/instrumentation/gtpin-correlation-id-map.c',
+    ),
+    declare_dependency(compile_args: ['-DENABLE_GTPIN', '-DHPCRUN_SS_GTPIN', '-DGTPIN_LIBDIR=/nonexistant'])
+  ])
+
+_d_srcset.add(when: dependency('level0-headers', required: false), if_true: [
+    files(
+      'sample-sources/level0.c',
+      'gpu/level0/level0-api.c',
+      'gpu/level0/level0-command-list-context-map.c',
+      'gpu/level0/level0-command-list-map.c',
+      'gpu/level0/level0-command-process.c',
+      'gpu/level0/level0-data-node.c',
+      'gpu/level0/level0-event-map.c',
+      'gpu/level0/level0-handle-map.c',
+    ),
+    declare_dependency(compile_args: ['-DENABLE_LEVEL0', '-DHPCRUN_SS_LEVEL0'])
+  ])
+
 _d_srcset.add(when: dependency('rocm-headers', required: false), if_true: [
     files(
       'sample-sources/amd.c',
       'gpu/amd/roctracer-activity-translate.c',
       'gpu/amd/roctracer-api.c',
+      'gpu/amd/rocm-debug-api.c',
+      'gpu/amd/rocm-binary-processing.c',
     ),
     declare_dependency(compile_args: ['-DENABLE_ROCM', '-DHPCRUN_SS_AMD'])
   ])
@@ -458,11 +502,13 @@ endif
 
 _d_srcset.add_all(_srcset)
 _d_srcs = _d_srcset.apply(_config)
+_d_partial_deps = []
 _d_ddep = []
 foreach dep : _d_srcs.dependencies()
   if not dep.found()
     _d_ddep = [disabler()]
   endif
+  _d_partial_deps += dep.partial_dependency(compile_args: true, includes: true, sources: true)
 endforeach
 
 libhpcrun_lib = shared_library('hpcrun', _d_srcs.sources(),
@@ -471,10 +517,33 @@ libhpcrun_lib = shared_library('hpcrun', _d_srcs.sources(),
   link_with: [prof_lean_lib, support_lean_lib],
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
+libhpcrun_fake_audit_lib = shared_module('hpcrun_fake_audit',
+  files('audit/fake-auditor.c'),
+  dependencies: _d_partial_deps + _d_ddep + [cc.find_library('dl')],
+  install: true, install_dir: get_option('libdir') / meson.project_name(),
+)
+libhpcrun_audit_lib = shared_module('hpcrun_audit',
+  files('audit/auditor.c'),
+  dependencies: _d_partial_deps + _d_ddep + [cc.find_library('dl')],
+  install: true, install_dir: get_option('libdir') / meson.project_name(),
+)
+libhpcrun_dlmopen_lib = shared_module('hpcrun_dlmopen',
+  files('dlmopen/dlmopen.c'),
+  dependencies: _d_partial_deps + _d_ddep + [cc.find_library('dl')],
+  install: true, install_dir: get_option('libdir') / meson.project_name(),
+)
 if get_option('hpcrun').enabled()
-  assert(not is_disabler(libhpcrun_lib), 'hpcrun required but disabled')
+  assert(not is_disabler(libhpcrun_lib)
+         and not is_disabler(libhpcrun_fake_audit_lib)
+         and not is_disabler(libhpcrun_audit_lib)
+         and not is_disabler(libhpcrun_dlmopen_lib),
+         'hpcrun required but disabled')
 endif
-summary('hpcrun', not is_disabler(libhpcrun_lib), section: 'Applications', bool_yn: true)
+summary('hpcrun', not is_disabler(libhpcrun_lib)
+                  and not is_disabler(libhpcrun_fake_audit_lib)
+                  and not is_disabler(libhpcrun_audit_lib)
+                  and not is_disabler(libhpcrun_dlmopen_lib),
+        section: 'Applications', bool_yn: true)
 
 if not is_disabler(libhpcrun_lib)
   # Set for bin/meson.build
@@ -516,6 +585,33 @@ libhpcrun_pthread_lib = shared_module('hpcrun_pthread',
 )
 summary('PThread Blame Shifting (hpcrun)', not is_disabler(libhpcrun_pthread_lib),
         section: 'Plugins', bool_yn: true)
+
+libhpcrun_gprof_lib = shared_module('hpcrun_gprof',
+  files('gprof.c'),
+  dependencies: _d_srcs.dependencies() + _d_ddep,
+  install: true, install_dir: get_option('libdir') / meson.project_name(),
+)
+summary('GProf Disabling Wrapper (hpcrun)', not is_disabler(libhpcrun_gprof_lib),
+        section: 'Plugins', bool_yn: true)
+
+libhpcrun_opencl_lib = shared_module('hpcrun_opencl',
+  files('gpu/opencl/opencl-api-wrappers.c'),
+  dependencies: _d_srcs.dependencies() + _d_ddep
+     + [dependency('opencl-headers', required: false, disabler: true)],
+  install: true, install_dir: get_option('libdir') / meson.project_name(),
+)
+summary('OpenCL Wrappers (hpcrun)', not is_disabler(libhpcrun_opencl_lib),
+        section: 'Plugins', bool_yn: true)
+
+libhpcrun_level0_lib = shared_module('hpcrun_level0',
+  files('gpu/level0/level0-api-wrappers.c'),
+  dependencies: _d_srcs.dependencies() + _d_ddep
+    + [dependency('level0-headers', required: false, disabler: true)],
+  install: true, install_dir: get_option('libdir') / meson.project_name(),
+)
+summary('Level0 Wrappers (hpcrun)', not is_disabler(libhpcrun_level0_lib),
+        section: 'Plugins', bool_yn: true)
+
 
 # TODO: libhpcrun_mpi
 # TODO: LUSH agents
@@ -657,4 +753,18 @@ _vars = [
 pkgconfig.generate(libhpcrun_pthread_wrap_lib,
   variables: _vars, uninstalled_variables: _vars)
 summary('PThread Blame Shifting (hpclink)', not is_disabler(libhpcrun_pthread_wrap_lib),
+        section: 'Plugins', bool_yn: true)
+
+libhpcrun_gprof_wrap_lib = static_library('hpcrun_gprof_wrap',
+  files('gprof.c'),
+  dependencies: _s_partial_ddeps,
+  install: true, install_dir: get_option('libdir') / meson.project_name(),
+)
+_vars = [
+  'wrapnames=__monstartup:_mcleanup:mcount:_mcount',
+  'undefnames=__monstartup'
+]
+pkgconfig.generate(libhpcrun_gprof_wrap_lib,
+  variables: _vars, uninstalled_variables: _vars)
+summary('GProf Disabling Wrapper (hpclink)', not is_disabler(libhpcrun_gprof_wrap_lib),
         section: 'Plugins', bool_yn: true)

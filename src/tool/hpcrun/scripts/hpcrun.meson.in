@@ -16,8 +16,12 @@
 # Relative paths are relative to HPCTOOLKIT.
 hpcfnbounds_dir='libexec/hpctoolkit'
 hpcrun_dir='lib/hpctoolkit'
-
+host_arm='@HOST_CPU_AARCH64@'
 prog_name=hpcrun
+
+if test $host_arm = "yes"; then
+    export HPCRUN_AUDIT_FAKE_AUDITOR=1
+fi
 
 #------------------------------------------------------------
 # Find path to this script
@@ -87,20 +91,20 @@ Options: Informational
 
 Options: Profiling (Defaults shown in curly brackets {})
   -e <event>[@<howoften>], --event <event>[@<howoften>]
-                      event  may  be an architecture-independent hardware or
+                      <event> may be an architecture-independent hardware or
                       software event supported by Linux perf, a native hardware
                       counter event, a hardware counter event supported by the
-                      PAPI library, a Linux  system timer (CPUTIME and REALTIME),
-                      or the operating system interval timer WALLCLOCK.  This option
-                      may be given multiple times to profile several events at once.
-                      If the value for <howoften> is a number, it will be
+                      PAPI library, or a Linux  system timer (CPUTIME and REALTIME).
+                      This option may be given multiple times to profile several events
+                      at once. If the value for <howoften> is a number, it will be
                       interpreted as a sample period. For Linux perf events, one
                       may specify a sampling frequency for 'howoften' by writing f
                       before a number.  For instance, to sample an event 100 times
                       per second,  specify  <howoften>  as '@f100'. For Linux perf
                       events, if no value for <howoften> is specified, hpcrun
                       will monitor the event using frequency-based sampling at 300
-                      samples/second.
+                      samples/second. If no event is specified, hpcrun will collect
+                      CPUTIME samples 200 times per second per application thread.
 
   -c, --count <howoften>
                       Only  available  for  events  managed  by Linux perf. This
@@ -156,13 +160,65 @@ Options: Profiling (Defaults shown in curly brackets {})
                              option is enabled: RETCNT implies *all* elements of
                              call chains, including recursive elements, are recorded.
 
-  -nu, --no-unwind     Disable unwinding
-                       Generates a flat profile (leaf instructions) only
+  -nu, --no-unwind     Disable unwinding and collect a flat profile of leaf
+                       procedures only instead of full calling contexts.
+
+
+Options to consider only when hpcrun causes an application to fail:
+
+  --disable-auditor    By default, hpcrun uses LD_AUDIT to track dynamic library
+                       operations (see NOTES). This option instructs hpcrun
+                       to track dynamic library operations by intercepting
+                       dlopen and dlclose instead of using LD_AUDIT. Note
+                       that this alternate approach can cause problem with
+                       load modules that specify a RUNPATH. Due to a glibc bug,
+                       this option is disabled by default on ARM.
+
+  --enable-auditor     LD_AUDIT is by default disabled on ARM due to a glib bug.
+                       Use this option to enable LD_AUDIT on ARM.
+
+  --disable-auditor-got-rewriting
+                       By default, hpcrun uses LD_AUDIT to help track dynamic
+                       library operations using an 'auditor' library. When using
+                       an auditor library, glibc unnecessarily intercepts
+                       every call to a function in a shared library. hpcrun
+                       avoids this overhead by rewriting each shared libary's
+                       global offset table (GOT). Such rewriting is tricky.
+                       This option can be used to disable GOT rewriting if
+                       it is believed that the rewriting is causing the
+                       application to fail.
+
+  --namespace-single   dlmopen may load a shared library into an alternate
+                       namespace.  Use of dlmopen to create multiple namespaces
+                       can cause an application to crash when using glibc < 2.32
+                       (see NOTES). This option asks HPCToolkit to load all
+                       shared libraries within the application namespace, which
+                       might help avoid a crash.  (Default when performing
+                       instruction-level measurements of Intel GPU binaries.)
+
+  --namespace-multiple dlmopen may load a shared library into an alternate
+                       namespace. Force HPCToolkit to allow dlmopen to create
+                       alternate namespaces.  (Default unless performing
+                       instruction-level measurements of Intel GPU binaries.)
+
+  --disable-gprof      Override and disable gprof instrumentation  This option
+                       is only useful when using hpcrun to add HPCToolkit's
+                       measurement subsystem to a dynamically-linked application
+                       that has been compiled with -pg. One can't measure
+                       performance with HPCToolkit when gprof instrumentation
+                       is active in the same execution.
+
 
 NOTES:
+
 * hpcrun uses preloaded shared libraries to initiate profiling.  For this
   reason, it cannot be used to profile setuid programs.
-* hpcrun may not be able to profile programs that themselves use preloading.
+
+* By default, hpcrun use LD_AUDIT to monitor an application's use of dynamic
+  libraries. Use of LD_AUDIT is needed to properly interpret a load module's
+  RUNPATH attribute. However, use of LD_AUDIT will cause dlmopen to fail
+  for glibc < 2.32. Intel's GTPin library for instrumentation of Intel GPU
+  binaries uses dlmopen.
 
 EOF
     exit 0
@@ -175,7 +231,7 @@ EOF
 @launch_early_options@
 
 # Return success (0) if $1 is not empty and not the next option.
-arg_ok()
+non_empty()
 {
     case "x$1" in
 	x | x-* ) return 1 ;;
@@ -187,8 +243,14 @@ arg_ok()
 # LD_PRELOAD should be delayed until we launch the program, but the
 # others can be set now.
 
+audit_list=
 preload_list=
-roctracer_lib=
+roctracer_libdir=
+gtpin_libdir=
+namespace_default=multiple
+namespace_multiple=
+namespace_single=
+
 HPCRUN_DEBUG_FLAGS=
 HPCRUN_EVENT_LIST=
 HPCRUN_CONTROL_KNOBS=
@@ -207,13 +269,17 @@ do
 	    ;;
 
 	-dd | --dynamic-debug )
-	    arg_ok "$1" || die "missing argument for $arg"
+	    non_empty "$1" || die "missing argument for $arg"
 	    export HPCRUN_DEBUG_FLAGS="$HPCRUN_DEBUG_FLAGS $1"
 	    shift
 	    ;;
 
+	-ad | --audit-debug )
+	    export HPCRUN_AUDIT_DEBUG=1
+	    ;;
+
 	-ck | --control-knob )
-	    arg_ok "$1" || die "missing argument for $arg"
+	    non_empty "$1" || die "missing argument for $arg"
 	    export HPCRUN_CONTROL_KNOBS="$HPCRUN_CONTROL_KNOBS $1"
 	    shift
 	    ;;
@@ -229,7 +295,7 @@ do
 	# --------------------------------------------------
 
 	-a | --agent )
-	    arg_ok "$1" || die "missing argument for $arg"
+	    non_empty "$1" || die "missing argument for $arg"
 	    export HPCRUN_OPT_LUSH_AGENTS="$1"
 	    shift
 	    ;;
@@ -237,16 +303,27 @@ do
 	# --------------------------------------------------
 
 	-e | --event )
-	    arg_ok "$1" || die "missing argument for $arg"
+	    non_empty "$1" || die "missing argument for $arg"
 	    case "$1" in
-	        GA* )      preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_ga.so" ;;
-		IO* )      preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_io.so" ;;
-		MEMLEAK* ) preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_memleak.so" ;;
-		DATACENTRIC*  ) preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_datacentric.so" ;;
-		PTHREAD_WAIT* ) preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_pthread.so" ;;
-		CPU_GPU_IDLE* ) preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_gpu.so" ;;
-		MPI* )     preload_list="${preload_list} ${hpcrun_dir}/libhpcrun_mpi.so" ;;
-		amd-rocm*) roctracer_lib="${roctracer_lib_path}";;
+	        GA* )      preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_ga.so" ;;
+		IO* )      preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_io.so" ;;
+		MEMLEAK* ) preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_memleak.so" ;;
+		DATACENTRIC*  ) preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_datacentric.so" ;;
+		PTHREAD_WAIT* ) preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_pthread.so" ;;
+		CPU_GPU_IDLE* ) preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_gpu.so" ;;
+		MPI* )     preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_mpi.so" ;;
+		gpu=amd) roctracer_libdir="${roctracer_lib_path}"
+			 export HIP_ENABLE_DEFERRED_LOADING=0;;
+		gpu=opencl)	 preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_opencl.so" ;;
+
+		gpu=opencl,inst) gtpin_libdir="${gtpin_lib_path}"
+			preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_opencl.so"
+		    namespace_default=single_if_auditing ;;
+
+		gpu=level0,inst) gtpin_libdir="${gtpin_lib_path}"
+		    namespace_default=single_if_auditing ;;
+
+		gpu=level0) preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_level0.so" ;;
 	    esac
 	    case "$HPCRUN_EVENT_LIST" in
 		'' ) HPCRUN_EVENT_LIST="$1" ;;
@@ -293,9 +370,15 @@ do
 	# --------------------------------------------------
 
 	-o | --output )
-	    arg_ok "$1" || die "missing argument for $arg"
+	    non_empty "$1" || die "missing argument for $arg"
 	    export HPCRUN_OUT_PATH="$1"
 	    shift
+	    ;;
+
+	# --------------------------------------------------
+
+	--disable-gprof )
+	    preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_gprof.so"
 	    ;;
 
 	# --------------------------------------------------
@@ -307,6 +390,20 @@ do
 
 	# --------------------------------------------------
 
+	--namespace-multiple )
+	    non_empty "$namespace_single" && die "can't use both --namespace-single and --namespace-multiple"
+	    namespace_multiple=yes
+	    ;;
+
+	# --------------------------------------------------
+
+	--namespace-single )
+	    non_empty "$namespace_multiple" && die "can't use both --namespace-single and --namespace-multiple"
+	    namespace_single=yes
+	    ;;
+
+	# --------------------------------------------------
+
 	-r | --retain-recursion )
 	    export HPCRUN_RETAIN_RECURSION=1
 	    ;;
@@ -314,7 +411,7 @@ do
 	# --------------------------------------------------
 
 	-m | --merge-threads )
-	    arg_ok "$1" || die "missing argument for $arg"
+	    non_empty "$1" || die "missing argument for $arg"
 	    export HPCRUN_MERGE_THREADS="$1"
 	    shift
 	    ;;
@@ -322,13 +419,13 @@ do
 	# --------------------------------------------------
 
 	-lm | --low-memsize )
-	    arg_ok "$1" || die "missing argument for $arg"
+	    non_empty "$1" || die "missing argument for $arg"
 	    export HPCRUN_LOW_MEMSIZE="$1"
 	    shift
 	    ;;
 
 	-ms | --memsize )
-	    arg_ok "$1" || die "missing argument for $arg"
+	    non_empty "$1" || die "missing argument for $arg"
 	    export HPCRUN_MEMSIZE="$1"
 	    shift
 	    ;;
@@ -336,16 +433,29 @@ do
 	# --------------------------------------------------
 
 	-f | -fp | --process-fraction )
-	    arg_ok "$1" || die "missing argument for $arg"
+	    non_empty "$1" || die "missing argument for $arg"
 	    export HPCRUN_PROCESS_FRACTION="$1"
 	    shift
 	    ;;
 
 	-mp | --memleak-prob )
-	    arg_ok "$1" || die "missing argument for $arg"
+	    non_empty "$1" || die "missing argument for $arg"
 	    export HPCRUN_MEMLEAK_PROB="$1"
 	    shift
 	    ;;
+
+	# --------------------------------------------------
+
+	--disable-auditor-got-rewriting )
+	    export HPCRUN_AUDIT_DISABLE_PLT_CALL_OPT=1
+	    ;;
+
+	--disable-auditor )
+	    export HPCRUN_AUDIT_FAKE_AUDITOR=1
+	    ;;
+    --enable-auditor )
+        unset HPCRUN_AUDIT_FAKE_AUDITOR
+        ;;
 
 	# --------------------------------------------------
 
@@ -366,8 +476,8 @@ done
 
 # Add default sampling source if needed.
 case "$HPCRUN_EVENT_LIST" in
-    '' ) HPCRUN_EVENT_LIST='WALLCLOCK@5000' ;;
-    RETCNT ) HPCRUN_EVENT_LIST='WALLCLOCK@5000 RETCNT' ;;
+    '' ) HPCRUN_EVENT_LIST='CPUTIME@5000' ;;
+    RETCNT ) HPCRUN_EVENT_LIST='CPUTIME@5000 RETCNT' ;;
 esac
 export HPCRUN_EVENT_LIST
 
@@ -379,6 +489,22 @@ if test -z "$1" ; then
 	die "no command to profile"
     fi
 fi
+
+
+# collapse namespaces, if necessary
+if test "$namespace_default" = single_if_auditing; then
+  if test "$HPCRUN_AUDIT_FAKE_AUDITOR" = 1; then
+    namespace_default=multiple
+  else
+    namespace_default=single
+  fi
+fi
+if test "$namespace_multiple"x = x ; then
+  if test $namespace_default = single || test "$namespace_single"x != x ; then
+    preload_list="${hpcrun_dir}/libhpcrun_dlmopen.so${preload_list:+:${preload_list}}"
+  fi
+fi
+
 
 #------------------------------------------------------------
 # Pre-Launch Sanity Checks
@@ -468,8 +594,19 @@ if test -z "${libmonitor}"; then
    exit 1
 fi
 
-preload_list="${libmonitor} ${preload_list}"
-preload_list="${hpcrun_dir}/libhpcrun.so ${preload_list}"
+#------------------------------------------------------------
+# assemble preload list
+#------------------------------------------------------------
+
+preload_list="${libmonitor}${preload_list:+:${preload_list}}"
+preload_list="${hpcrun_dir}/libhpcrun.so${preload_list:+:${preload_list}}"
+
+# Set up the auditor or fake auditor, depending on what's configured.
+if test "$HPCRUN_AUDIT_FAKE_AUDITOR" = 1 ; then
+    preload_list="${hpcrun_dir}/libhpcrun_fake_audit.so${preload_list:+:${preload_list}}"
+else
+    audit_list="${hpcrun_dir}/libhpcrun_audit.so${audit_list:+:${audit_list}}"
+fi
 
 # Allow fnbounds command relative to hpcfnbounds_dir.
 case "$HPCRUN_FNBOUNDS_CMD" in
@@ -484,6 +621,17 @@ if test ! -x "$HPCRUN_FNBOUNDS_CMD" ; then
 fi
 export HPCRUN_FNBOUNDS_CMD
 
-export LD_PRELOAD="${preload_list} ${LD_PRELOAD}"
+export HPCRUN_AUDIT_MAIN_LIB="${hpcrun_dir}/libhpcrun.so"
 
+if test -n "${preload_list}"; then
+  LD_PRELOAD="${preload_list}${LD_PRELOAD:+:${LD_PRELOAD}}"
+fi
+if test -z "${LD_PRELOAD}"; then unset LD_PRELOAD; fi
+
+if test -n "${audit_list}"; then
+  LD_AUDIT="${audit_list}${LD_AUDIT:+:${LD_AUDIT}}"
+fi
+if test -z "${LD_AUDIT}"; then unset LD_AUDIT; fi
+
+export LD_PRELOAD LD_AUDIT
 exec "$@"

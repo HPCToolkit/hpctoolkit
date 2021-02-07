@@ -44,4 +44,3 @@ option('lush-pthreads', type: 'boolean', value: false,
        description: 'Enable LUSH Pthread logical unwind support.')
 option('data-centric-tracing', type: 'boolean', value: false,
        description: 'Enable data-centric profiling.')
-
