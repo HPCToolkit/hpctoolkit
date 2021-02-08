@@ -19,12 +19,21 @@
 
 
 //******************************************************************************
+// macros
+//******************************************************************************
+
+#define NEXT(node) node->next
+#define SYNC -1
+
+
+
+//******************************************************************************
 // type definitions
 //******************************************************************************
 
 typedef struct Node {
 	long time;
-	char *id;
+	long id;
 	bool isStart;
 	event_list_node_t *event_node;
 	struct Node *next;
@@ -40,11 +49,23 @@ typedef struct ak_helper_node {
 
 
 //******************************************************************************
+// local data
+//******************************************************************************
+
+static Node *node_free_list = NULL;
+
+
+
+//******************************************************************************
 // linkedlist sort functions: https://www.geeksforgeeks.org/quicksort-on-singly-linked-list/
 //******************************************************************************
 
 /* A utility function to print linked list */
-void printList(struct Node* node)
+static void
+printList
+(
+	struct Node* node
+)
 {
 	while (node != NULL) {
 		printf("%ld ", node->time);
@@ -54,12 +75,49 @@ void printList(struct Node* node)
 }
 
 
+static Node*
+node_alloc_helper
+(
+ Node **free_list
+)
+{
+  Node *first = *free_list; 
+
+  if (first) { 
+    *free_list = NEXT(first);
+  } else {
+    first = (Node *) hpcrun_malloc_safe(sizeof(Node));
+  }
+
+  memset(first, 0, sizeof(Node));
+  return first;
+}
+
+
+static void
+node_free_helper
+(
+ Node **free_list, 
+ Node *node 
+)
+{
+  NEXT(node) = *free_list;
+  *free_list = node;
+}
+
+
 /* A utility function to insert a node at the beginning of
  * linked list */
-void push(struct Node** head_ref, Node new_data)
+static void
+push
+(
+	struct Node** head_ref,
+	Node new_data
+)
 {
 	/* allocate node */
-	struct Node *new_node = (Node*)hpcrun_malloc(sizeof(Node));
+	// struct Node *new_node = (Node*)hpcrun_malloc(sizeof(Node));
+	struct Node *new_node = node_alloc_helper(&node_free_list);
 
 	/* put in the data */
 	*new_node = new_data;
@@ -73,7 +131,11 @@ void push(struct Node** head_ref, Node new_data)
 
 
 // Returns the last node of the list
-struct Node* getTail(struct Node* cur)
+static struct Node*
+getTail
+(
+	struct Node* cur
+)
 {
 	while (cur != NULL && cur->next != NULL)
 		cur = cur->next;
@@ -82,9 +144,13 @@ struct Node* getTail(struct Node* cur)
 
 
 // Partitions the list taking the last element as the pivot
-struct Node* partition(struct Node* head, struct Node* end,
-		struct Node** newHead,
-		struct Node** newEnd)
+static struct Node*
+partition
+(
+	struct Node* head, struct Node* end,
+	struct Node** newHead,
+	struct Node** newEnd
+)
 {
 	struct Node* pivot = end;
 	struct Node *prev = NULL, *cur = head, *tail = pivot;
@@ -128,9 +194,14 @@ struct Node* partition(struct Node* head, struct Node* end,
 	return pivot;
 }
 
+
 // here the sorting happens exclusive of the end node
-struct Node* quickSortRecur(struct Node* head,
-		struct Node* end)
+static struct Node*
+quickSortRecur
+(
+	struct Node* head,
+	struct Node* end
+)
 {
 	// base condition
 	if (!head || head == end)
@@ -167,9 +238,14 @@ struct Node* quickSortRecur(struct Node* head,
 	return newHead;
 }
 
+
 // The main function for quick sort. This is a wrapper over
 // recursive function quickSortRecur()
-void quickSort(struct Node** headRef)
+static void
+quickSort
+(
+	struct Node** headRef
+)
 {
 	(*headRef)
 		= quickSortRecur(*headRef, getTail(*headRef));
@@ -213,7 +289,7 @@ distribute_blame_to_kernels
 	long last_time;
 
 	while (data) {
-		if (strcmp(data->id, "Sync") == 0) {
+		if (data->id == SYNC) {
 			if (data->isStart) {
 				inSync = true;
 				last_time = data->time;
@@ -244,6 +320,7 @@ distribute_blame_to_kernels
 		}
 		data = data->next;
 	}
+	ak_map_clear();
 }
 
 
@@ -258,13 +335,27 @@ transform_event_nodes_to_sortable_nodes
 	// convert event_list_node_t nodes to sortable Nodes
 	event_list_node_t *curr = event_node_head;
 	while (curr) {
-		Node start_node = {curr->event_start_time, (char*)curr->event, 1, curr, NULL};
-		Node end_node = {curr->event_end_time, (char*)curr->event, 0, curr, NULL};
+		Node start_node = {curr->event_start_time, (long)curr->event, 1, curr, NULL};
+		Node end_node = {curr->event_end_time, (long)curr->event, 0, curr, NULL};
 		push(&head, start_node);
 		push(&head, end_node);
 		curr = curr->next;
 	}
 	return head;
+}
+
+
+static void
+free_all_sortable_nodes
+(
+	Node *head
+)
+{
+	Node *curr = head;
+	while (curr) {
+		node_free_helper(&node_free_list, curr);
+		curr = curr->next;	
+	}
 }
 
 
@@ -284,15 +375,14 @@ calculate_blame_for_active_kernels
 	// also input the sync times and add nodes	
 	Node *head = transform_event_nodes_to_sortable_nodes(event_list);
 
-	Node sync_start_node = {sync_start, "Sync", 1, NULL, NULL};
-	Node sync_end_node = {sync_end, "Sync", 0, NULL, NULL};
+	Node sync_start_node = {sync_start, SYNC, 1, NULL, NULL};
+	Node sync_end_node = {sync_end, SYNC, 0, NULL, NULL};
 	push(&head, sync_start_node);
 	push(&head, sync_end_node);
 	
-	printList(head);
 	quickSort(&head);
-	printList(head);
 	
 	distribute_blame_to_kernels(head);
+	free_all_sortable_nodes(head);
 }
 

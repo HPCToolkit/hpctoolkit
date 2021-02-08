@@ -24,6 +24,7 @@
 #include <hpcrun/cct/cct.h>										// cct_node_t
 #include <hpcrun/constructors.h>							// HPCRUN_CONSTRUCTOR
 #include <hpcrun/memory/mmap.h>								// hpcrun_mmap_anon
+#include <hpcrun/safe-sampling.h>							// hpcrun_safe_enter, hpcrun_safe_exit
 #include <hpcrun/sample_event.h>							// hpcrun_sample_callpath
 #include <hpcrun/sample-sources/gpu_blame.h>	// g_active_threads
 #include <hpcrun/thread_data.h>								// gpu_data
@@ -60,13 +61,7 @@ typedef struct IPC_data_t {
 #define INCR_SHARED_BLAMING_DS(field)  do{ if(SHARED_BLAMING_INITIALISED) atomic_fetch_add(&(ipc_data->field), 1L); }while(0) 
 #define DECR_SHARED_BLAMING_DS(field)  do{ if(SHARED_BLAMING_INITIALISED) atomic_fetch_add(&(ipc_data->field), -1L); }while(0) 
 
-#define ADD_TO_FREE_EVENTS_LIST(node_ptr) do { (node_ptr)->next_free_node = g_free_event_nodes_head; \
-	(node_ptr)->event = NULL;	\
-	(node_ptr)->event_start_time = 0;	\
-	(node_ptr)->event_end_time = 0;	\
-	(node_ptr)->launcher_cct = NULL;	\
-	(node_ptr)->queue_launcher_cct = NULL;	\
-	g_free_event_nodes_head = (node_ptr); }while(0)
+#define NEXT(node) node->next
 
 
 
@@ -84,8 +79,6 @@ static spinlock_t bs_lock = SPINLOCK_UNLOCKED;
 
 static _Atomic(uint64_t) g_num_threads_at_sync;
 
-static event_list_node_t *g_free_event_nodes_head;
-
 // First queue with pending activities
 static queue_node_t *g_unfinished_queue_list_head;
 
@@ -98,6 +91,10 @@ _Atomic(unsigned long) latest_kernel_end_time = { 0 };
 
 static _Atomic(event_list_node_t*) completed_kernel_list_head;
 static _Atomic(event_list_node_t*) completed_kernel_list_tail;
+
+static queue_node_t *queue_node_free_list = NULL;
+static event_list_node_t *event_node_free_list = NULL;
+static epoch_t *epoch_free_list = NULL;
 
 
 
@@ -183,6 +180,99 @@ HPCRUN_CONSTRUCTOR(CpuGpuBlameShiftInit)(void)
 // private operations
 //******************************************************************************
 
+static queue_node_t*
+queue_node_alloc_helper
+(
+ queue_node_t **free_list
+)
+{
+  queue_node_t *first = *free_list; 
+
+  if (first) { 
+    *free_list = NEXT(first);
+  } else {
+    first = (queue_node_t *) hpcrun_malloc_safe(sizeof(queue_node_t));
+  }
+
+  memset(first, 0, sizeof(queue_node_t));
+  return first;
+}
+
+
+static void
+queue_node_free_helper
+(
+ queue_node_t **free_list, 
+ queue_node_t *node 
+)
+{
+  NEXT(node) = *free_list;
+  *free_list = node;
+}
+
+
+static event_list_node_t*
+event_node_alloc_helper
+(
+ event_list_node_t **free_list
+)
+{
+  event_list_node_t *first = *free_list; 
+
+  if (first) { 
+    *free_list = NEXT(first);
+  } else {
+    first = (event_list_node_t *) hpcrun_malloc_safe(sizeof(event_list_node_t));
+  }
+
+  memset(first, 0, sizeof(event_list_node_t));
+  return first;
+}
+
+
+static void
+event_node_free_helper
+(
+ event_list_node_t **free_list, 
+ event_list_node_t *node 
+)
+{
+  NEXT(node) = *free_list;
+  *free_list = node;
+}
+
+
+static epoch_t*
+epoch_alloc_helper
+(
+ epoch_t **free_list
+)
+{
+  epoch_t *first = *free_list; 
+
+  if (first) { 
+    *free_list = NEXT(first);
+  } else {
+    first = (epoch_t *) hpcrun_malloc_safe(sizeof(epoch_t));
+  }
+
+  memset(first, 0, sizeof(epoch_t));
+  return first;
+}
+
+
+static void
+epoch_free_helper
+(
+ epoch_t **free_list, 
+ epoch_t *node 
+)
+{
+  NEXT(node) = *free_list;
+  *free_list = node;
+}
+
+
 // Initialize hpcrun core_profile_trace_data for a new queue
 static inline core_profile_trace_data_t*
 hpcrun_queue_data_alloc_init
@@ -198,7 +288,7 @@ hpcrun_queue_data_alloc_init
 	//td->memstore = memstore;
 	//hpcrun_make_memstore(&td->memstore, is_child);
 	st->id = id;
-	st->epoch = hpcrun_malloc(sizeof(epoch_t));
+	st->epoch = epoch_alloc_helper(&epoch_free_list);
 	st->epoch->csdata_ctxt = copy_thr_ctxt(TD_GET(core_profile_trace_data.epoch)->csdata.ctxt); //copy_thr_ctxt(thr_ctxt);
 	hpcrun_cct_bundle_init(&(st->epoch->csdata), (st->epoch->csdata).ctxt);
 	st->epoch->loadmap = hpcrun_getLoadmap();
@@ -220,13 +310,13 @@ add_queue_node_to_splay_tree
 )
 {
 	uint64_t queue_id = (uint64_t)queue;
-	queue_node_t *node = (queue_node_t*)hpcrun_malloc(sizeof(queue_node_t));
+	queue_node_t *node = queue_node_alloc_helper(&queue_node_free_list);
 
 	node->st = hpcrun_queue_data_alloc_init(queue_id);	
 	node->event_list_head = NULL;
 	node->event_list_tail = NULL;
-	node->next_unfinished_queue = NULL;
-	node->queue_marked_for_deletion = false;
+	node->next = NULL;
+	atomic_init(&node->queue_marked_for_deletion, false);
 	
 	queue_map_insert(queue_id, node);
 }
@@ -259,16 +349,7 @@ create_and_insert_event
 	cct_node_t *queue_launcher_cct
 )
 {
-	event_list_node_t *event_node;
-	if (g_free_event_nodes_head) {
-		// get from free list
-		event_node = g_free_event_nodes_head;
-		g_free_event_nodes_head = g_free_event_nodes_head->next_free_node;
-
-	} else {
-		// allocate new node
-		event_node = (event_list_node_t *) hpcrun_malloc(sizeof(event_list_node_t));
-	}
+	event_list_node_t *event_node = event_node_alloc_helper(&event_node_free_list);
 	event_node->event = event;
 	event_node->queue_launcher_cct = queue_launcher_cct;
 	event_node->launcher_cct = launcher_cct;
@@ -280,7 +361,7 @@ create_and_insert_event
 	if (queue_node->event_list_head == NULL) {
 		queue_node->event_list_head = event_node;
 		queue_node->event_list_tail = event_node;
-		queue_node->next_unfinished_queue = g_unfinished_queue_list_head;
+		queue_node->next = g_unfinished_queue_list_head;
 		g_unfinished_queue_list_head = queue_node;
 	} else {
 		queue_node->event_list_tail->next = event_node;
@@ -335,199 +416,6 @@ add_kernel_to_completed_list
 }
 
 
-// inspect activities finished on each queue and record metrics accordingly
-static uint32_t
-cleanup_finished_events
-(
-	void
-)
-{
-	uint32_t num_unfinished_queues = 0;
-	queue_node_t *prev_queue = NULL;
-	queue_node_t *next_queue = NULL;
-	queue_node_t *cur_queue = g_unfinished_queue_list_head;
-
-	while (cur_queue != NULL) {
-		assert(cur_queue->event_list_head && " Can't point unfinished queue to null");
-		next_queue = cur_queue->next_unfinished_queue;
-
-		event_list_node_t *current_event_node = cur_queue->event_list_head;
-		event_list_node_t *prev_event_node = current_event_node;
-		bool cur_queue_unfinished = false;
-
-		while (current_event_node) {
-			if(current_event_node->isComplete) {
-				// updating the linkedlist
-				if (current_event_node == cur_queue->event_list_head) {
-					if (cur_queue->event_list_head == cur_queue->event_list_tail) {
-						cur_queue->event_list_head = NULL;
-						cur_queue->event_list_tail = NULL;
-					} else {
-						cur_queue->event_list_head = current_event_node->next;
-					}
-				}
-				// we need to update prev_node->next to completely eliminate reference to current node
-				if (prev_event_node != current_event_node) {
-					prev_event_node->next = current_event_node->next;
-				}
-				current_event_node = current_event_node->next;
-			} else {
-				cur_queue_unfinished = true;
-				prev_event_node = current_event_node;
-				current_event_node = current_event_node->next;
-			}
-		}
-
-		//cur_queue->event_list_head = current_event_node;
-		if (cur_queue_unfinished == false) {
-			// set oldest and newest pointers to null
-			cur_queue->event_list_head = NULL;
-			cur_queue->event_list_tail = NULL;
-
-			// we are done processing this queue. Safe for deletion
-			if (cur_queue->queue_marked_for_deletion == true) {
-				queue_map_delete(cur_queue->queue_id);
-			}
-			if (prev_queue == NULL) {
-				g_unfinished_queue_list_head = next_queue;
-			} else {
-				prev_queue->next_unfinished_queue = next_queue;
-			}
-		} else {
-			num_unfinished_queues++;
-			prev_queue = cur_queue;
-		}
-		cur_queue = next_queue;
-	}
-	return num_unfinished_queues;
-}
-
-
-
-//******************************************************************************
-// interface operations
-//******************************************************************************
-
-void
-queue_prologue
-(
-	cl_command_queue queue
-)
-{
-	add_queue_node_to_splay_tree(queue);
-}
-
-
-void
-command_queue_marked_for_deletion
-(
-	cl_command_queue queue
-)
-{
-	uint64_t queue_id = (uint64_t) queue;
-	queue_map_entry_t *entry = queue_map_lookup(queue_id);
-	queue_node_t *queue_node = queue_map_entry_queue_node_get(entry);
-	queue_node->queue_marked_for_deletion = true;
-}
-
-
-void
-kernel_prologue
-(
-	cl_event event,
-	cl_command_queue queue
-)
-{
-	// increment the reference count for the event
-	clRetainEvent(event);
-
-	uint64_t queue_id = (uint64_t) queue;
-
-	ucontext_t context;
-	getcontext(&context);
-	int skip_inner = 1; // what value should be passed here?
-	cct_node_t *cct_node = hpcrun_sample_callpath(&context, cpu_idle_metric_id, (cct_metric_data_t){.i = 0}, skip_inner /*skipInner */ , 1 /*isSync */, NULL ).sample_node;
-	
-	queue_map_entry_t *entry = queue_map_lookup(queue_id);
-	queue_node_t *queue_node = queue_map_entry_queue_node_get(entry);
-	// NULL checks need to be added for entry and queue_node
-	
-	cct_node_t *queue_cct = queue_duplicate_cpu_node(queue_node->st, &context, cct_node);
-	monitor_disable_new_threads();	// why?
-	create_and_insert_event(queue_id, queue_node, event, cct_node, queue_cct);
-	INCR_SHARED_BLAMING_DS(outstanding_kernels);
-}
-
-
-void
-kernel_epilogue
-(
-	cl_event event
-)
-{
-	clRetainEvent(event);
-	// get event from event splay tree
-	uint64_t event_id = (uint64_t) event;
-	event_map_entry_t *entry = event_map_lookup(event_id);
-	event_list_node_t *event_node = event_map_entry_event_node_get(entry);
-
-	cl_int err_cl = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &(event_node->event_end_time), NULL);
-
-	if (err_cl == CL_SUCCESS) {
-		DECR_SHARED_BLAMING_DS(outstanding_kernels);
-
-		float elapsedTime;
-		err_cl = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START,	sizeof(cl_ulong), &(event_node->event_start_time), NULL);
-
-		if (err_cl != CL_SUCCESS) {
-			EMSG("clGetEventProfilingInfo failed");
-		}
-		// Just to verify that this is a valid profiling value. 
-		elapsedTime = event_node->event_end_time - event_node->event_start_time; 
-		assert(elapsedTime > 0);
-
-		record_latest_kernel_end_time(event_node->event_end_time);
-
-		// Add the kernel execution time to the gpu_time_metric_id
-		cct_metric_data_increment(gpu_time_metric_id, event_node->launcher_cct, (cct_metric_data_t) {
-				.i = (event_node->event_end_time - event_node->event_start_time)});
-
-		add_kernel_to_completed_list(event_node);
-	} else {
-		EMSG("clGetEventProfilingInfo failed");
-	}
-	clReleaseEvent(event);
-}
-
-
-void
-sync_prologue
-(
- cl_command_queue queue
-)
-{
-  struct timespec sync_start;
-  clock_gettime(CLOCK_MONOTONIC_RAW, &sync_start); // get current time
-	
-	atomic_fetch_add(&g_num_threads_at_sync, 1L);
-
-	// getting the queue node in splay-tree associated with the queue. We will need it for attributing CPU_IDLE_CAUSE
-	uint64_t queue_id = (uint64_t) queue;
-	queue_map_entry_t *entry = queue_map_lookup(queue_id);
-	queue_node_t *queue_node = queue_map_entry_queue_node_get(entry);
-	TD_GET(gpu_data.queue_responsible_for_cpu_sync) = queue_node;
-
-	TD_GET(gpu_data.is_thread_at_opencl_sync) = true;
-	INCR_SHARED_BLAMING_DS(num_threads_at_sync_all_procs);
-	
-	ucontext_t context;
-	getcontext(&context);
-	int skip_inner = 1; // what value should be passed here?
-	cct_node_t *cpu_cct_node = hpcrun_sample_callpath(&context, cpu_idle_metric_id, (cct_metric_data_t){.i = 0}, skip_inner /*skipInner */ , 1 /*isSync */, NULL ).sample_node;
-	queue_node->cpu_idle_cct = cpu_cct_node; // we may need to remove hpcrun functions from the stackframe of the cct
-	queue_node->cpu_sync_start_time = &sync_start;
-}
-
 static void
 attributing_cpu_idle_metric_at_sync_epilogue
 (
@@ -568,7 +456,7 @@ attributing_cpu_idle_cause_metric_at_sync_epilogue
 		while (curr_event) {
 			cct_metric_data_increment(cpu_idle_cause_metric_id, curr_event->launcher_cct,
 																		(cct_metric_data_t) {.r = curr_event->cpu_idle_blame});
-			ADD_TO_FREE_EVENTS_LIST(curr_event);
+			event_node_free_helper(&event_node_free_list, curr_event);
 			curr_event = curr_event->next;
 		}
 
@@ -579,13 +467,244 @@ attributing_cpu_idle_cause_metric_at_sync_epilogue
 }
 
 
+// inspect activities finished on each queue and record metrics accordingly
+static uint32_t
+cleanup_finished_events
+(
+	void
+)
+{
+	uint32_t num_unfinished_queues = 0;
+	queue_node_t *prev_queue = NULL;
+	queue_node_t *next_queue = NULL;
+	queue_node_t *cur_queue = g_unfinished_queue_list_head;
+
+	while (cur_queue != NULL) {
+		assert(cur_queue->event_list_head && " Can't point unfinished queue to null");
+		next_queue = cur_queue->next;
+
+		event_list_node_t *current_event_node = cur_queue->event_list_head;
+		event_list_node_t *prev_event_node = current_event_node;
+		bool cur_queue_unfinished = false;
+
+		while (current_event_node) {
+			if(current_event_node->isComplete) {
+				// updating the linkedlist
+				if (current_event_node == cur_queue->event_list_head) {
+					if (cur_queue->event_list_head == cur_queue->event_list_tail) {
+						cur_queue->event_list_head = NULL;
+						cur_queue->event_list_tail = NULL;
+					} else {
+						cur_queue->event_list_head = current_event_node->next;
+					}
+				}
+				// we need to update prev_node->next to completely eliminate reference to current node
+				if (prev_event_node != current_event_node) {
+					prev_event_node->next = current_event_node->next;
+				}
+				if (current_event_node == current_event_node->next) {
+					// why is this happening in the first place?
+					printf("loop condition\n");
+					current_event_node->next = NULL;
+				}
+				current_event_node = current_event_node->next;
+			} else {
+				cur_queue_unfinished = true;
+				prev_event_node = current_event_node;
+				current_event_node = current_event_node->next;
+			}
+		}
+
+		//cur_queue->event_list_head = current_event_node;
+		if (cur_queue_unfinished == false) {
+			// set oldest and newest pointers to null
+			cur_queue->event_list_head = NULL;
+			cur_queue->event_list_tail = NULL;
+
+			// we are done processing this queue. Safe for deletion
+			if (atomic_load(&cur_queue->queue_marked_for_deletion) == true) {
+				queue_map_delete(cur_queue->queue_id);
+				epoch_free_helper(&epoch_free_list, cur_queue->st->epoch);
+				queue_node_free_helper(&queue_node_free_list, cur_queue);
+			}
+			if (prev_queue == NULL) {
+				g_unfinished_queue_list_head = next_queue;
+			} else {
+				prev_queue->next = next_queue;
+			}
+		} else {
+			num_unfinished_queues++;
+			prev_queue = cur_queue;
+		}
+		cur_queue = next_queue;
+	}
+	return num_unfinished_queues;
+}
+
+
+
+//******************************************************************************
+// interface operations
+//******************************************************************************
+
+void
+queue_prologue
+(
+	cl_command_queue queue
+)
+{
+	// prevent self a sample interrupt while gathering calling context
+  hpcrun_safe_enter(); 
+	
+	add_queue_node_to_splay_tree(queue);
+
+	hpcrun_safe_exit();
+}
+
+
+void
+queue_epilogue
+(
+	cl_command_queue queue
+)
+{
+	// prevent self a sample interrupt while gathering calling context
+  hpcrun_safe_enter(); 
+	
+	uint64_t queue_id = (uint64_t) queue;
+	queue_map_entry_t *entry = queue_map_lookup(queue_id);
+	queue_node_t *queue_node = queue_map_entry_queue_node_get(entry);
+	atomic_store(&queue_node->queue_marked_for_deletion, true);
+
+	hpcrun_safe_exit();
+}
+
+
+void
+kernel_prologue
+(
+	cl_event event,
+	cl_command_queue queue
+)
+{
+	// prevent self a sample interrupt while gathering calling context
+  hpcrun_safe_enter(); 
+	
+	// increment the reference count for the event
+	clRetainEvent(event);
+
+	uint64_t queue_id = (uint64_t) queue;
+
+	ucontext_t context;
+	getcontext(&context);
+	int skip_inner = 1; // what value should be passed here?
+	
+	cct_node_t *cct_node = hpcrun_sample_callpath(&context, cpu_idle_metric_id, (cct_metric_data_t){.i = 0}, skip_inner /*skipInner */ , 1 /*isSync */, NULL ).sample_node;
+	
+	queue_map_entry_t *entry = queue_map_lookup(queue_id);
+	queue_node_t *queue_node = queue_map_entry_queue_node_get(entry);
+	// NULL checks need to be added for entry and queue_node
+	
+	cct_node_t *queue_cct = queue_duplicate_cpu_node(queue_node->st, &context, cct_node);
+	create_and_insert_event(queue_id, queue_node, event, cct_node, queue_cct);
+	INCR_SHARED_BLAMING_DS(outstanding_kernels);
+  
+	hpcrun_safe_exit();
+}
+
+
+void
+kernel_epilogue
+(
+	cl_event event
+)
+{
+	// prevent self a sample interrupt while gathering calling context
+  hpcrun_safe_enter(); 
+  
+	clRetainEvent(event);
+	// get event from event splay tree
+	uint64_t event_id = (uint64_t) event;
+	event_map_entry_t *entry = event_map_lookup(event_id);
+	event_list_node_t *event_node = event_map_entry_event_node_get(entry);
+
+	cl_int err_cl = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &(event_node->event_end_time), NULL);
+
+	if (err_cl == CL_SUCCESS) {
+		DECR_SHARED_BLAMING_DS(outstanding_kernels);
+
+		float elapsedTime;
+		err_cl = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START,	sizeof(cl_ulong), &(event_node->event_start_time), NULL);
+
+		if (err_cl != CL_SUCCESS) {
+			EMSG("clGetEventProfilingInfo failed");
+		}
+		// Just to verify that this is a valid profiling value. 
+		elapsedTime = event_node->event_end_time - event_node->event_start_time; 
+		assert(elapsedTime > 0);
+
+		record_latest_kernel_end_time(event_node->event_end_time);
+
+		// Add the kernel execution time to the gpu_time_metric_id
+		cct_metric_data_increment(gpu_time_metric_id, event_node->launcher_cct, (cct_metric_data_t) {
+				.i = (event_node->event_end_time - event_node->event_start_time)});
+
+		add_kernel_to_completed_list(event_node);
+	} else {
+		EMSG("clGetEventProfilingInfo failed");
+	}
+	clReleaseEvent(event);
+  
+	hpcrun_safe_exit();
+}
+
+
+void
+sync_prologue
+(
+ cl_command_queue queue
+)
+{
+	// prevent self a sample interrupt while gathering calling context
+  hpcrun_safe_enter(); 
+  
+	struct timespec sync_start;
+  clock_gettime(CLOCK_MONOTONIC_RAW, &sync_start); // get current time
+	
+	atomic_fetch_add(&g_num_threads_at_sync, 1L);
+
+	// getting the queue node in splay-tree associated with the queue. We will need it for attributing CPU_IDLE_CAUSE
+	uint64_t queue_id = (uint64_t) queue;
+	queue_map_entry_t *entry = queue_map_lookup(queue_id);
+	queue_node_t *queue_node = queue_map_entry_queue_node_get(entry);
+	TD_GET(gpu_data.queue_responsible_for_cpu_sync) = queue_node;
+
+	TD_GET(gpu_data.is_thread_at_opencl_sync) = true;
+	INCR_SHARED_BLAMING_DS(num_threads_at_sync_all_procs);
+	
+	ucontext_t context;
+	getcontext(&context);
+	int skip_inner = 1; // what value should be passed here?
+  
+	cct_node_t *cpu_cct_node = hpcrun_sample_callpath(&context, cpu_idle_metric_id, (cct_metric_data_t){.i = 0}, skip_inner /*skipInner */ , 1 /*isSync */, NULL ).sample_node;
+	
+	queue_node->cpu_idle_cct = cpu_cct_node; // we may need to remove hpcrun functions from the stackframe of the cct
+	queue_node->cpu_sync_start_time = &sync_start;
+
+	hpcrun_safe_exit();
+}
+
+
 void
 sync_epilogue
 (
  cl_command_queue queue
 )
 {
-  struct timespec sync_end;
+	// prevent self a sample interrupt while gathering calling context
+  hpcrun_safe_enter(); 
+  
+	struct timespec sync_end;
   clock_gettime(CLOCK_MONOTONIC_RAW, &sync_end); // get current time
 
 	uint64_t queue_id = (uint64_t) queue;
@@ -605,6 +724,8 @@ sync_epilogue
 	TD_GET(gpu_data.queue_responsible_for_cpu_sync) = NULL;
 	TD_GET(gpu_data.is_thread_at_opencl_sync) = false;
 	DECR_SHARED_BLAMING_DS(num_threads_at_sync_all_procs);
+
+	hpcrun_safe_exit();
 }
 
 
@@ -660,7 +781,7 @@ opencl_gpu_blame_shifter
 		// Do we want this to be enabled for OpenCL?
 		if(SHARED_BLAMING_INITIALISED && 
 				atomic_load(&ipc_data->num_threads_at_sync_all_procs) && !atomic_load(&g_num_threads_at_sync)) {
-			for (queue_node_t * unfinished_queue = unfinished_event_list_head; unfinished_queue; unfinished_queue = unfinished_queue->next_unfinished_queue) {
+			for (queue_node_t * unfinished_queue = unfinished_event_list_head; unfinished_queue; unfinished_queue = unfinished_queue->next) {
 				//TODO: FIXME: the local threads at sync need to be removed, /T has to be done while adding metric
 				//increment (either one of them).
 				// Careful, unfinished_event_node was replaced by event_list_head. Does that replacement make sense
