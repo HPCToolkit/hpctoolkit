@@ -1446,19 +1446,22 @@ hpcrun_clWaitForEvents
 	// clWaitForEvents can wait on multiple events(probably from different queues).
 	// We need a more complicated approach of finding the queues on which the CPU will wait
 	// For now we pass the 1st queue
-	void *queue;
+	void *queue_ptr;
+	cl_command_queue queue;
+
 	if(is_opencl_blame_shifting_enabled()) {
 		size_t queue_size;
 		clGetEventInfo(*event_list, CL_EVENT_COMMAND_QUEUE, 0, NULL, &queue_size);
-		queue = hpcrun_malloc(sizeof(queue_size));
-		clGetEventInfo(*event_list, CL_EVENT_COMMAND_QUEUE, queue_size, queue, NULL);
-		sync_prologue((cl_command_queue)queue);
+		queue_ptr = hpcrun_malloc(sizeof(queue_size));
+		clGetEventInfo(*event_list, CL_EVENT_COMMAND_QUEUE, queue_size, queue_ptr, NULL);
+		queue = *(cl_command_queue*)queue_ptr;
+		sync_prologue(queue);
 	}
 
 	cl_int status = HPCRUN_OPENCL_CALL(clWaitForEvents, (num_events, event_list));
 
 	if(is_opencl_blame_shifting_enabled()) {
-		sync_epilogue((cl_command_queue)queue);
+		sync_epilogue(queue);
 	}
 	return status;
 }
@@ -1560,7 +1563,7 @@ hpcrun_clReleaseCommandQueue
 	cl_int status = HPCRUN_OPENCL_CALL(clReleaseCommandQueue, (command_queue));
 
 	if (is_opencl_blame_shifting_enabled() && status == CL_SUCCESS) {
-		command_queue_marked_for_deletion(command_queue);
+		queue_epilogue(command_queue);
 	}
 	return status;
 }
