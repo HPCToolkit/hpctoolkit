@@ -32,7 +32,7 @@ queue_prologue
 
 
 void
-command_queue_marked_for_deletion
+queue_epilogue
 (
 	cl_command_queue queue
 );

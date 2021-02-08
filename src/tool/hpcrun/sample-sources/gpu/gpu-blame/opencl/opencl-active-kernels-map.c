@@ -63,11 +63,11 @@ typed_splay_impl(ak_node);
 // local data
 //******************************************************************************
 
-static active_kernels_entry_t *ak_map_root = NULL;
-static active_kernels_entry_t *ak_map_free_list = NULL;
+static __thread active_kernels_entry_t *ak_map_root = NULL;
+static __thread active_kernels_entry_t *ak_map_free_list = NULL;
 
-static spinlock_t ak_map_lock = SPINLOCK_UNLOCKED;
-static long size = 0;	// this should be unique for every ak splay-tree
+static __thread spinlock_t ak_map_lock = SPINLOCK_UNLOCKED;
+static long __thread size = 0;	// this should be unique for every ak splay-tree
 
 
 
@@ -93,6 +93,23 @@ ak_node_new
   e->kernel_event_address = ak_id;
   e->event_node = event_node;
   return e;
+}
+
+
+static void
+clear_recursive
+(
+ void
+)
+{
+	if (!ak_map_root) {
+		return;
+	}
+	active_kernels_delete(ak_map_root->kernel_event_address);
+	// after deletion, parent of the removed node is taken to the top of the tree
+	// so, either only the root will be deleted(since root has no parent) or
+	// either the left or right child will be the root, confirm what happens with John
+	clear_recursive();
 }
 
 
@@ -162,5 +179,16 @@ increment_blame_for_entry
 )
 {
 	entry->event_node->cpu_idle_blame += blame;
+}
+
+
+// what is the best way to delete the entire splay tree?
+void
+ak_map_clear
+(
+ void
+)
+{
+	clear_recursive();		
 }
 

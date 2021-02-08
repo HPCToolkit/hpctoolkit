@@ -46,4 +46,11 @@ increment_blame_for_entry
  double blame
 );
 
+
+void
+ak_map_clear
+(
+ void
+);
+
 #endif		// gpu_blame_opencl_active_kernels_map_h_
