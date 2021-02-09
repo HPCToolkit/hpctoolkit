@@ -848,9 +848,17 @@ opencl_activity_completion_callback
     opencl_cb_basic_print(cb_basic, "Completion_Callback");
     opencl_activity_process(event, cb_data, cb_basic.correlation_id);
   }
-  if (is_opencl_blame_shifting_enabled() && cb_data->kind == GPU_ACTIVITY_KERNEL) {
-		kernel_epilogue(event);	
+
+	void *queue_ptr;
+  if (is_opencl_blame_shifting_enabled() && cb_data->kind == GPU_ACTIVITY_KERNEL && event_command_exec_status == CL_COMPLETE) {
+		size_t queue_size;
+		clGetEventInfo(event, CL_EVENT_COMMAND_QUEUE, 0, NULL, &queue_size);
+		queue_ptr = hpcrun_malloc(sizeof(queue_size));
+		clGetEventInfo(event, CL_EVENT_COMMAND_QUEUE, queue_size, queue_ptr, NULL);
+		cl_command_queue queue = *(cl_command_queue*)queue_ptr;
+		kernel_epilogue(event, queue);	
 	}
+
 	if (cb_data->internal_event) {
     HPCRUN_OPENCL_CALL(clReleaseEvent, (event));
   }
