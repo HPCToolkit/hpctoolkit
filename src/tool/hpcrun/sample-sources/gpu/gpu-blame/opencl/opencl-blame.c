@@ -4,12 +4,12 @@
 // system includes
 //******************************************************************************
 
-#include <fcntl.h>														// O_CREAT, O_RDWR
-#include <monitor.h>													// monitor_real_abort
-#include <stdbool.h>													// bool
-#include <sys/mman.h>													// shm_open
-#include <ucontext.h>           							// getcontext
-#include <unistd.h>														// ftruncate
+#include <fcntl.h>                            // O_CREAT, O_RDWR
+#include <monitor.h>                          // monitor_real_abort
+#include <stdbool.h>                          // bool
+#include <sys/mman.h>                         // shm_open
+#include <ucontext.h>                         // getcontext
+#include <unistd.h>                           // ftruncate
 
 
 
@@ -17,22 +17,22 @@
 // local includes
 //******************************************************************************
 
-#include "opencl-event-map.h"									// event_node_t
-#include "opencl-queue-map.h"									// queue_node_t
-#include "opencl-blame-helper.h"							// calculate_blame_for_active_kernels
+#include "opencl-event-map.h"                 // event_node_t
+#include "opencl-queue-map.h"                 // queue_node_t
+#include "opencl-blame-helper.h"              // calculate_blame_for_active_kernels
 
-#include <hpcrun/cct/cct.h>										// cct_node_t
-#include <hpcrun/constructors.h>							// HPCRUN_CONSTRUCTOR
-#include <hpcrun/memory/mmap.h>								// hpcrun_mmap_anon
-#include <hpcrun/safe-sampling.h>							// hpcrun_safe_enter, hpcrun_safe_exit
-#include <hpcrun/sample_event.h>							// hpcrun_sample_callpath
-#include <hpcrun/sample-sources/gpu_blame.h>	// g_active_threads
-#include <hpcrun/thread_data.h>								// gpu_data
+#include <hpcrun/cct/cct.h>                   // cct_node_t
+#include <hpcrun/constructors.h>              // HPCRUN_CONSTRUCTOR
+#include <hpcrun/memory/mmap.h>               // hpcrun_mmap_anon
+#include <hpcrun/safe-sampling.h>             // hpcrun_safe_enter, hpcrun_safe_exit
+#include <hpcrun/sample_event.h>              // hpcrun_sample_callpath
+#include <hpcrun/sample-sources/gpu_blame.h>  // g_active_threads
+#include <hpcrun/thread_data.h>               // gpu_data
 
-#include <lib/prof-lean/hpcrun-opencl.h>			// CL_SUCCESS, cl_event, etc
-#include <lib/prof-lean/spinlock.h>						// spinlock_t, SPINLOCK_UNLOCKED
-#include <lib/prof-lean/stdatomic.h>					// atomic_fetch_add
-#include <lib/support-lean/timer.h>						// time_getTimeReal
+#include <lib/prof-lean/hpcrun-opencl.h>      // CL_SUCCESS, cl_event, etc
+#include <lib/prof-lean/spinlock.h>           // spinlock_t, SPINLOCK_UNLOCKED
+#include <lib/prof-lean/stdatomic.h>          // atomic_fetch_add
+#include <lib/support-lean/timer.h>           // time_getTimeReal
 
 
 

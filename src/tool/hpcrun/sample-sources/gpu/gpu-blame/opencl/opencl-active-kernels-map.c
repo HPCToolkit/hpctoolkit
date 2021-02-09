@@ -50,8 +50,8 @@ typedef struct typed_splay_node(ak_node) {
   struct typed_splay_node(ak_node) *left;
   struct typed_splay_node(ak_node) *right;
   
-	uint64_t kernel_event_address; // key
-	event_node_t *event_node;
+  uint64_t kernel_event_address; // key
+  event_node_t *event_node;
 
 } typed_splay_node(ak_node);
 
@@ -102,14 +102,14 @@ clear_recursive
  void
 )
 {
-	if (!ak_map_root) {
-		return;
-	}
-	active_kernels_delete(ak_map_root->kernel_event_address);
-	// after deletion, parent of the removed node is taken to the top of the tree
-	// so, either only the root will be deleted(since root has no parent) or
-	// either the left or right child will be the root, confirm what happens with John
-	clear_recursive();
+  if (!ak_map_root) {
+    return;
+  }
+  active_kernels_delete(ak_map_root->kernel_event_address);
+  // after deletion, parent of the removed node is taken to the top of the tree
+  // so, either only the root will be deleted(since root has no parent) or
+  // either the left or right child will be the root, confirm what happens with John
+  clear_recursive();
 }
 
 
@@ -125,15 +125,15 @@ active_kernels_insert
  event_node_t *event_node
 )
 {
-	spinlock_lock(&ak_map_lock);
+  spinlock_lock(&ak_map_lock);
   if (ak_lookup(&ak_map_root, ak_id)) {
     assert(0);  // entry for a given key should be inserted only once
   } else {
     active_kernels_entry_t *entry = ak_node_new(ak_id, event_node);
     ak_insert(&ak_map_root, entry);  
-		size++;
+    size++;
   }
-	spinlock_unlock(&ak_map_lock);
+  spinlock_unlock(&ak_map_lock);
 }
 
 
@@ -143,11 +143,11 @@ active_kernels_delete
  uint64_t ak_id
 )
 {
-	spinlock_lock(&ak_map_lock);
+  spinlock_lock(&ak_map_lock);
   active_kernels_entry_t *node = ak_delete(&ak_map_root, ak_id);
-	size--;
+  size--;
   ak_free(&ak_map_free_list, node);
-	spinlock_unlock(&ak_map_lock);
+  spinlock_unlock(&ak_map_lock);
 }
 
 
@@ -159,7 +159,7 @@ active_kernels_forall
  void *arg
 )
 {
-	ak_forall(ak_map_root, visit_type, fn, arg);
+  ak_forall(ak_map_root, visit_type, fn, arg);
 }
 
 
@@ -180,7 +180,7 @@ increment_blame_for_entry
  double blame
 )
 {
-	entry->event_node->cpu_idle_blame += blame;
+  entry->event_node->cpu_idle_blame += blame;
 }
 
 
@@ -191,6 +191,6 @@ ak_map_clear
  void
 )
 {
-	clear_recursive();		
+  clear_recursive();		
 }
 
