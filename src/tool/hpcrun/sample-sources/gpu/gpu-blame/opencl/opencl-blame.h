@@ -49,7 +49,8 @@ kernel_prologue
 void
 kernel_epilogue
 (
-	cl_event event
+	cl_event event,
+	cl_command_queue queue
 );
 
 

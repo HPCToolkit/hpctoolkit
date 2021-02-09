@@ -5,7 +5,7 @@
 // local includes
 //******************************************************************************
 
-#include "opencl-event-map.h"		// event_list_node_t, queue_node_t
+#include "opencl-event-map.h"		// event_node_t, queue_node_t
 
 
 
@@ -16,7 +16,7 @@
 void
 calculate_blame_for_active_kernels
 (
- event_list_node_t *event_list,
+ event_node_t *event_list,
  long sync_start,
  long sync_end
 );
