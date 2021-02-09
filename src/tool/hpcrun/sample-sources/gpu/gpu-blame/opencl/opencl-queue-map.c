@@ -159,8 +159,10 @@ queue_map_delete
  uint64_t queue_id
 )
 {
+	spinlock_lock(&queue_map_lock);
   queue_map_entry_t *node = queue_delete(&queue_map_root, queue_id);
   queue_free(&queue_map_free_list, node);
+	spinlock_unlock(&queue_map_lock);
 }
 
 
