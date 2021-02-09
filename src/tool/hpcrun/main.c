@@ -244,6 +244,8 @@ static hpcrun_aux_cleanup_t * hpcrun_aux_cleanup_free_list_head = NULL;
 static char execname[PATH_MAX] = {'\0'};
 
 static int monitor_fini_process_how = 0;
+static atomic_int is_ms_initialized = ATOMIC_VAR_INIT(0);
+
 
 //***************************************************************************
 // Interface functions for suppressing samples
@@ -936,6 +938,9 @@ void  hpcrun_prepare_measurement_subsystem()
 {
   bool is_child = false;
   
+  if (atomic_fetch_add(&is_ms_initialized, 1) != 0)
+    return;
+
   hpcrun_registered_sources_init();
 
   hpcrun_do_custom_init();
