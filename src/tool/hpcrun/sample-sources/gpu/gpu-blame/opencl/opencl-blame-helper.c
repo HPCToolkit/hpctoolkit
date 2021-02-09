@@ -65,7 +65,7 @@ static Node *node_free_list = NULL;
 static void
 printList
 (
-	struct Node* node
+ struct Node* node
 )
 {
 	while (node != NULL) {
@@ -82,16 +82,16 @@ node_alloc_helper
  Node **free_list
 )
 {
-  Node *first = *free_list; 
+	Node *first = *free_list; 
 
-  if (first) { 
-    *free_list = NEXT(first);
-  } else {
-    first = (Node *) hpcrun_malloc_safe(sizeof(Node));
-  }
+	if (first) { 
+		*free_list = NEXT(first);
+	} else {
+		first = (Node *) hpcrun_malloc_safe(sizeof(Node));
+	}
 
-  memset(first, 0, sizeof(Node));
-  return first;
+	memset(first, 0, sizeof(Node));
+	return first;
 }
 
 
@@ -102,8 +102,8 @@ node_free_helper
  Node *node 
 )
 {
-  NEXT(node) = *free_list;
-  *free_list = node;
+	NEXT(node) = *free_list;
+	*free_list = node;
 }
 
 
@@ -112,8 +112,8 @@ node_free_helper
 static void
 push
 (
-	struct Node** head_ref,
-	Node new_data
+ struct Node** head_ref,
+ Node new_data
 )
 {
 	/* allocate node */
@@ -135,7 +135,7 @@ push
 static struct Node*
 getTail
 (
-	struct Node* cur
+ struct Node* cur
 )
 {
 	while (cur != NULL && cur->next != NULL)
@@ -148,9 +148,9 @@ getTail
 static struct Node*
 partition
 (
-	struct Node* head, struct Node* end,
-	struct Node** newHead,
-	struct Node** newEnd
+ struct Node* head, struct Node* end,
+ struct Node** newHead,
+ struct Node** newEnd
 )
 {
 	struct Node* pivot = end;
@@ -200,8 +200,8 @@ partition
 static struct Node*
 quickSortRecur
 (
-	struct Node* head,
-	struct Node* end
+ struct Node* head,
+ struct Node* end
 )
 {
 	// base condition
@@ -245,7 +245,7 @@ quickSortRecur
 static void
 quickSort
 (
-	struct Node** headRef
+ struct Node** headRef
 )
 {
 	(*headRef)
@@ -280,7 +280,7 @@ increment_blame_for_active_kernel
 static void
 distribute_blame_to_kernels
 (
-	Node *kernel_nodes
+ Node *kernel_nodes
 )
 {
 	// kernel_nodes are sorted set by first value (x's)
@@ -328,7 +328,7 @@ distribute_blame_to_kernels
 static Node*
 transform_event_nodes_to_sortable_nodes
 (
-	event_node_t *event_node_head
+ event_node_t *event_node_head
 )
 {
 	struct Node *head = NULL;
@@ -349,7 +349,7 @@ transform_event_nodes_to_sortable_nodes
 static void
 free_all_sortable_nodes
 (
-	Node *head
+ Node *head
 )
 {
 	Node *curr = head;
@@ -380,9 +380,9 @@ calculate_blame_for_active_kernels
 	Node sync_end_node = {sync_end, SYNC, 0, NULL, NULL};
 	push(&head, sync_start_node);
 	push(&head, sync_end_node);
-	
+
 	quickSort(&head);
-	
+
 	distribute_blame_to_kernels(head);
 	free_all_sortable_nodes(head);
 }

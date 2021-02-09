@@ -35,7 +35,7 @@ active_kernels_forall
 long
 active_kernels_size
 (
-	void
+ void
 );
 
 
