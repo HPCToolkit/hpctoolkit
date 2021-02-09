@@ -44,7 +44,7 @@ The instructions to install Java:
 	<li> For Mac OS users: in case some Java versions were already installed
 		<ul>
 			<li>Leave all JDKs at their default location, under <code>/Library/Java/JavaVirtualMachines</code>. The system will pick the highest version by default. </li>
-			<li>To exclude a JDK from being picked by default, rename its <code>Contents/Info.plist</code> to: <code>Info.plist.disabled</code>. <br>
+			<li>To exclude a JDK from being picked by default, rename its <code>Contents/Info.plist</code> to: <code>Info.plist.disabled</code>. <br/>
 				That JDK can still be used when <code>$JAVA_HOME</code> points to it, or explicitly referenced in a script or configuration. It will simply be ignored by system's java command.</li>
 		</ul>
 	</li>
