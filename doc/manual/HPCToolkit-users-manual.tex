@@ -1245,6 +1245,27 @@ If an interaction between HPCToolkit's support for the OMPT interface and an Ope
 \chapter{Known Issues}
 \label{chpt:known}
 
+\section{\hpcrun{} has been observed to crash when measuring many threads and processes using ``{\tt -e cycles}" }
+
+\paragraph{Affected architectures:}  any CPU 
+
+\paragraph{Description:} Low sampling periods or frequency-based sampling on cycles (the default) on large numbers of processes seems to expose unknown race conditions that can cause an application to crash during measurement.
+
+\paragraph{Workaround:} Using a large fixed sampling period, e.g. 10 million, may avoid this issue. Sampling using CPUTIME and REALTIME appears a more stable alternative. 
+
+\paragraph{Development Plan:} Identify race conditions present and develop strategies to avoid them.
+
+\section{After analyzing an execution traces  \hpcprofmpi{}, \hpcviewer{} may report invalid CPID (call path id) values when displaying traces}
+
+\paragraph{Affected architectures:}  any CPU 
+
+
+\paragraph{Description:} HPCToolkit assumes that the only call paths that appear in traces are leaves in a calling context tree. When analyzing traces with \hpcprofmpi{}, a strategy used to handle interior nodes that may have been traced doesn't work when analysis of traces is performed with \hpcprofmpi{} using multiple processes. 
+
+\paragraph{Workaround:} As long as the number of invalid CPID values seems small relative to the number of samples you see in the trace view, you can ignore this issue. 
+
+\paragraph{Development Plan:} A forthcoming version of \hpcprofmpi{} will not require that any node appearing in a trace is a leaf in a calling context tree.
+
 \section{\hpcrun{} sometimes enables writing of read-only data}
 
 If an application or shared library contains a \verb|PT_GNU_RELRO| segment in its program header, the runtime loader \verb|ld.so| will mark all data in that segment readonly
