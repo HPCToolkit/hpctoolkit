@@ -10,7 +10,7 @@
 // local includes
 //******************************************************************************
 
-#include "opencl-event-map.h"		// event_list_node_t, queue_node_t
+#include "opencl-event-map.h"		// event_node_t, queue_node_t
 
 #include <hpcrun/gpu/gpu-splay-allocator.h>
 #include <lib/prof-lean/splay-uint64.h>
@@ -51,7 +51,7 @@ typedef struct typed_splay_node(ak_node) {
   struct typed_splay_node(ak_node) *right;
   
 	uint64_t kernel_event_address; // key
-	event_list_node_t *event_node;
+	event_node_t *event_node;
 
 } typed_splay_node(ak_node);
 
@@ -86,7 +86,7 @@ static active_kernels_entry_t *
 ak_node_new
 (
  uint64_t ak_id,
- event_list_node_t *event_node
+ event_node_t *event_node
 )
 {
   active_kernels_entry_t *e = ak_node_alloc();
@@ -122,18 +122,18 @@ void
 active_kernels_insert
 (
  uint64_t ak_id,
- event_list_node_t *event_node
+ event_node_t *event_node
 )
 {
+	spinlock_lock(&ak_map_lock);
   if (ak_lookup(&ak_map_root, ak_id)) {
     assert(0);  // entry for a given key should be inserted only once
   } else {
-    spinlock_lock(&ak_map_lock);
     active_kernels_entry_t *entry = ak_node_new(ak_id, event_node);
     ak_insert(&ak_map_root, entry);  
-    spinlock_unlock(&ak_map_lock);
 		size++;
   }
+	spinlock_unlock(&ak_map_lock);
 }
 
 
@@ -143,9 +143,11 @@ active_kernels_delete
  uint64_t ak_id
 )
 {
+	spinlock_lock(&ak_map_lock);
   active_kernels_entry_t *node = ak_delete(&ak_map_root, ak_id);
 	size--;
   ak_free(&ak_map_free_list, node);
+	spinlock_unlock(&ak_map_lock);
 }
 
 

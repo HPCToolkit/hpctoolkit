@@ -12,8 +12,9 @@
 
 #include <hpcrun/memory/hpcrun-malloc.h>		// hpcrun_malloc
 #include <lib/prof-lean/splay-uint64.h>			// splay_visit_t 
+#include <lib/prof-lean/stdatomic.h>					// atomic_fetch_add
 
-#include "opencl-event-map.h"								// event_list_node_t
+#include "opencl-event-map.h"								// event_node_t
 #include "opencl-active-kernels-map.h"			// active_kernels_*
 
 
@@ -35,7 +36,7 @@ typedef struct Node {
 	long time;
 	long id;
 	bool isStart;
-	event_list_node_t *event_node;
+	event_node_t *event_node;
 	struct Node *next;
 } Node;
 
@@ -327,19 +328,19 @@ distribute_blame_to_kernels
 static Node*
 transform_event_nodes_to_sortable_nodes
 (
-	event_list_node_t *event_node_head
+	event_node_t *event_node_head
 )
 {
 	struct Node *head = NULL;
 
-	// convert event_list_node_t nodes to sortable Nodes
-	event_list_node_t *curr = event_node_head;
+	// convert event_node_t nodes to sortable Nodes
+	event_node_t *curr = event_node_head;
 	while (curr) {
 		Node start_node = {curr->event_start_time, (long)curr->event, 1, curr, NULL};
 		Node end_node = {curr->event_end_time, (long)curr->event, 0, curr, NULL};
 		push(&head, start_node);
 		push(&head, end_node);
-		curr = curr->next;
+		curr = atomic_load(&curr->next);
 	}
 	return head;
 }
@@ -367,7 +368,7 @@ free_all_sortable_nodes
 void
 calculate_blame_for_active_kernels
 (
- event_list_node_t *event_list,
+ event_node_t *event_list,
  long sync_start,
  long sync_end
 )

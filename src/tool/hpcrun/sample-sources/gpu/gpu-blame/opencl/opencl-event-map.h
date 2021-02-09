@@ -12,6 +12,7 @@
 
 #include <hpcrun/cct/cct.h>										// cct_node_t
 #include <lib/prof-lean/hpcrun-opencl.h>
+#include <lib/prof-lean/stdatomic.h>					// _Atomic
 
 
 
@@ -19,9 +20,9 @@
 // type declarations
 //******************************************************************************
 
-// Each event_list_node_t maintains information about an asynchronous opencl activity (kernel or memcpy)
+// Each event_node_t maintains information about an asynchronous opencl activity (kernel or memcpy)
 // Note that there are some implicit memory transfers that dont have events bound to them
-typedef struct event_list_node_t {
+typedef struct event_node_t {
 	cl_event event;
 
 	// start and end times of event_start and event_end
@@ -33,14 +34,11 @@ typedef struct event_list_node_t {
 	// CCT node of the queue
 	cct_node_t *queue_launcher_cct;
 	
-	bool isComplete;
 	double cpu_idle_blame;
 
-	union {
-		struct event_list_node_t *next;
-		struct event_list_node_t *next_free_node;	// didnt understand this variable's use
-	};
-} event_list_node_t;
+	struct event_node_t *prev;
+	_Atomic (struct event_node_t*) next;
+} event_node_t;
 
 
 
@@ -61,7 +59,7 @@ void
 event_map_insert
 (
  uint64_t event_id,
- event_list_node_t *event_node
+ event_node_t *event_node
 );
 
 
@@ -72,7 +70,7 @@ event_map_delete
 );
 
 
-event_list_node_t*
+event_node_t*
 event_map_entry_event_node_get
 (
  event_map_entry_t *entry

@@ -17,7 +17,7 @@
 // local includes
 //******************************************************************************
 
-#include "opencl-event-map.h"									// event_list_node_t
+#include "opencl-event-map.h"									// event_node_t
 #include "opencl-queue-map.h"									// queue_node_t
 #include "opencl-blame-helper.h"							// calculate_blame_for_active_kernels
 
@@ -75,12 +75,11 @@ int cpu_idle_cause_metric_id;
 int gpu_idle_metric_id;
 
 // lock for blame-shifting activities
-static spinlock_t bs_lock = SPINLOCK_UNLOCKED;
+static spinlock_t itimer_blame_lock = SPINLOCK_UNLOCKED;
 
 static _Atomic(uint64_t) g_num_threads_at_sync;
 
-// First queue with pending activities
-static queue_node_t *g_unfinished_queue_list_head;
+static _Atomic(uint32_t) g_unfinished_queues;
 
 // is inter-process blaming enabled?
 static bool g_do_shared_blaming;
@@ -89,11 +88,10 @@ static IPC_data_t *ipc_data;
 
 _Atomic(unsigned long) latest_kernel_end_time = { 0 };
 
-static _Atomic(event_list_node_t*) completed_kernel_list_head;
-static _Atomic(event_list_node_t*) completed_kernel_list_tail;
+static _Atomic(event_node_t*) completed_kernel_list_head;
 
 static queue_node_t *queue_node_free_list = NULL;
-static event_list_node_t *event_node_free_list = NULL;
+static event_node_t *event_node_free_list = NULL;
 static epoch_t *epoch_free_list = NULL;
 
 
@@ -116,6 +114,7 @@ destroy_shared_memory
 }
 
 
+//TODO: review this function
 static inline void
 create_shared_memory
 (
@@ -150,7 +149,6 @@ InitCpuGpuBlameShiftOpenclDataStructs
 )
 {
 	char * shared_blaming_env;
-	g_unfinished_queue_list_head = NULL;
 	shared_blaming_env = getenv("HPCRUN_ENABLE_SHARED_GPU_BLAMING");
 	if(shared_blaming_env) {
 		g_do_shared_blaming = atoi(shared_blaming_env);
@@ -160,7 +158,6 @@ InitCpuGpuBlameShiftOpenclDataStructs
 	create_shared_memory();
 
 	atomic_init(&completed_kernel_list_head, NULL);
-	atomic_init(&completed_kernel_list_tail, NULL);
 }
 
 
@@ -211,21 +208,20 @@ queue_node_free_helper
 }
 
 
-static event_list_node_t*
+static event_node_t*
 event_node_alloc_helper
 (
- event_list_node_t **free_list
+ event_node_t **free_list
 )
 {
-  event_list_node_t *first = *free_list; 
+  event_node_t *first = *free_list; 
 
   if (first) { 
-    *free_list = NEXT(first);
+    *free_list = atomic_load(&first->next);
   } else {
-    first = (event_list_node_t *) hpcrun_malloc_safe(sizeof(event_list_node_t));
+    first = (event_node_t *) hpcrun_malloc_safe(sizeof(event_node_t));
   }
-
-  memset(first, 0, sizeof(event_list_node_t));
+  memset(first, 0, sizeof(event_node_t));
   return first;
 }
 
@@ -233,11 +229,11 @@ event_node_alloc_helper
 static void
 event_node_free_helper
 (
- event_list_node_t **free_list, 
- event_list_node_t *node 
+ event_node_t **free_list, 
+ event_node_t *node 
 )
 {
-  NEXT(node) = *free_list;
+  atomic_store(&node->next, *free_list);
   *free_list = node;
 }
 
@@ -273,6 +269,7 @@ epoch_free_helper
 }
 
 
+//TODO: review this function
 // Initialize hpcrun core_profile_trace_data for a new queue
 static inline core_profile_trace_data_t*
 hpcrun_queue_data_alloc_init
@@ -313,15 +310,17 @@ add_queue_node_to_splay_tree
 	queue_node_t *node = queue_node_alloc_helper(&queue_node_free_list);
 
 	node->st = hpcrun_queue_data_alloc_init(queue_id);	
-	node->event_list_head = NULL;
-	node->event_list_tail = NULL;
+	#if 0
+	node->event_head = NULL;
+	node->event_tail = NULL;
+	#endif
 	node->next = NULL;
-	atomic_init(&node->queue_marked_for_deletion, false);
 	
 	queue_map_insert(queue_id, node);
 }
 
 
+//TODO: review this function
 static cct_node_t*
 queue_duplicate_cpu_node
 (
@@ -349,24 +348,25 @@ create_and_insert_event
 	cct_node_t *queue_launcher_cct
 )
 {
-	event_list_node_t *event_node = event_node_alloc_helper(&event_node_free_list);
+	event_node_t *event_node = event_node_alloc_helper(&event_node_free_list);
 	event_node->event = event;
 	event_node->queue_launcher_cct = queue_launcher_cct;
 	event_node->launcher_cct = launcher_cct;
-	event_node->isComplete = false;
-	event_node->next = NULL;
+	event_node->prev = NULL;
+	atomic_init(&event_node->next, NULL);
 	uint64_t event_id = (uint64_t) event;
 	event_map_insert(event_id, event_node);
 
-	if (queue_node->event_list_head == NULL) {
-		queue_node->event_list_head = event_node;
-		queue_node->event_list_tail = event_node;
-		queue_node->next = g_unfinished_queue_list_head;
-		g_unfinished_queue_list_head = queue_node;
+	#if 0
+	if (queue_node->event_head == NULL) {
+		queue_node->event_head = event_node;
+		queue_node->event_tail = event_node;
 	} else {
-		queue_node->event_list_tail->next = event_node;
-		queue_node->event_list_tail = event_node;
+		queue_node->event_tail->next = event_node;
+		event_node->prev = queue_node->event_tail;
+		queue_node->event_tail = event_node;
 	}
+	#endif
 }
 
 
@@ -386,33 +386,15 @@ record_latest_kernel_end_time
 static void
 add_kernel_to_completed_list
 (
-	event_list_node_t *event_node
+	event_node_t *event_node
 )
 {
-	// maintain a new splay-tree only for events.
-	// Each node in this tree will contain key: event, val: (event_list_node_t val)
-	if (event_node->isComplete) {
-		return;	
-	} else {
-		event_node->isComplete = true;	
-	}
-
-	event_list_node_t *null_ptr = NULL;
-
-	if(atomic_compare_exchange_strong(&completed_kernel_list_head, &null_ptr, event_node)) {
-		atomic_store(&completed_kernel_list_tail, event_node);
-	} else {
-		try_again: ;
-		event_list_node_t *current_tail = atomic_load(&completed_kernel_list_tail);
-		if (current_tail == NULL) {
-			goto try_again;	
-		}
-		if (!atomic_compare_exchange_strong(&completed_kernel_list_tail, &current_tail, event_node)) {
-			goto try_again;	
-		}
-		// we may have to make "next" variable atomic
-		current_tail->next = event_node;
-	}
+try_again: ;
+	 event_node_t *current_head = atomic_load(&completed_kernel_list_head);
+	 atomic_store(&event_node->next, current_head);
+	 if (!atomic_compare_exchange_strong(&completed_kernel_list_head, &current_head, event_node)) {
+		 goto try_again;
+	 }
 }
 
 
@@ -443,21 +425,28 @@ attributing_cpu_idle_cause_metric_at_sync_epilogue
 	long sync_end
 )
 {
-	event_list_node_t *private_completed_kernel_head = atomic_load(&completed_kernel_list_head);
+	event_node_t *private_completed_kernel_head = atomic_load(&completed_kernel_list_head);
 	if (private_completed_kernel_head == NULL) {
 		// no kernels to attribute idle blame, return
 		return;
 	}
-	if (atomic_compare_exchange_strong(&completed_kernel_list_head, private_completed_kernel_head, NULL)) {
+	event_node_t *null_ptr = NULL;
+	if (atomic_compare_exchange_strong(&completed_kernel_list_head, &private_completed_kernel_head, null_ptr)) {
 		// exchange successful, proceed with metric attribution	
 		
 		calculate_blame_for_active_kernels(private_completed_kernel_head, sync_start, sync_end);
-		event_list_node_t *curr_event = private_completed_kernel_head;
+		event_node_t *curr_event = private_completed_kernel_head;
+		event_node_t *next;
+		uint64_t event_id;
 		while (curr_event) {
 			cct_metric_data_increment(cpu_idle_cause_metric_id, curr_event->launcher_cct,
-																		(cct_metric_data_t) {.r = curr_event->cpu_idle_blame});
+					(cct_metric_data_t) {.r = curr_event->cpu_idle_blame});
+			event_id = (uint64_t) curr_event->event;
+			next = atomic_load(&curr_event->next);
+			event_map_delete(event_id);
+			clReleaseEvent(curr_event->event);
 			event_node_free_helper(&event_node_free_list, curr_event);
-			curr_event = curr_event->next;
+			curr_event = next;
 		}
 
 	} else {
@@ -469,76 +458,12 @@ attributing_cpu_idle_cause_metric_at_sync_epilogue
 
 // inspect activities finished on each queue and record metrics accordingly
 static uint32_t
-cleanup_finished_events
+	get_count_of_unfinished_queues
 (
-	void
-)
+ void
+ )
 {
-	uint32_t num_unfinished_queues = 0;
-	queue_node_t *prev_queue = NULL;
-	queue_node_t *next_queue = NULL;
-	queue_node_t *cur_queue = g_unfinished_queue_list_head;
-
-	while (cur_queue != NULL) {
-		assert(cur_queue->event_list_head && " Can't point unfinished queue to null");
-		next_queue = cur_queue->next;
-
-		event_list_node_t *current_event_node = cur_queue->event_list_head;
-		event_list_node_t *prev_event_node = current_event_node;
-		bool cur_queue_unfinished = false;
-
-		while (current_event_node) {
-			if(current_event_node->isComplete) {
-				// updating the linkedlist
-				if (current_event_node == cur_queue->event_list_head) {
-					if (cur_queue->event_list_head == cur_queue->event_list_tail) {
-						cur_queue->event_list_head = NULL;
-						cur_queue->event_list_tail = NULL;
-					} else {
-						cur_queue->event_list_head = current_event_node->next;
-					}
-				}
-				// we need to update prev_node->next to completely eliminate reference to current node
-				if (prev_event_node != current_event_node) {
-					prev_event_node->next = current_event_node->next;
-				}
-				if (current_event_node == current_event_node->next) {
-					// why is this happening in the first place?
-					printf("loop condition\n");
-					current_event_node->next = NULL;
-				}
-				current_event_node = current_event_node->next;
-			} else {
-				cur_queue_unfinished = true;
-				prev_event_node = current_event_node;
-				current_event_node = current_event_node->next;
-			}
-		}
-
-		//cur_queue->event_list_head = current_event_node;
-		if (cur_queue_unfinished == false) {
-			// set oldest and newest pointers to null
-			cur_queue->event_list_head = NULL;
-			cur_queue->event_list_tail = NULL;
-
-			// we are done processing this queue. Safe for deletion
-			if (atomic_load(&cur_queue->queue_marked_for_deletion) == true) {
-				queue_map_delete(cur_queue->queue_id);
-				epoch_free_helper(&epoch_free_list, cur_queue->st->epoch);
-				queue_node_free_helper(&queue_node_free_list, cur_queue);
-			}
-			if (prev_queue == NULL) {
-				g_unfinished_queue_list_head = next_queue;
-			} else {
-				prev_queue->next = next_queue;
-			}
-		} else {
-			num_unfinished_queues++;
-			prev_queue = cur_queue;
-		}
-		cur_queue = next_queue;
-	}
-	return num_unfinished_queues;
+	return atomic_load(&g_unfinished_queues);
 }
 
 
@@ -557,6 +482,7 @@ queue_prologue
   hpcrun_safe_enter(); 
 	
 	add_queue_node_to_splay_tree(queue);
+	atomic_fetch_add(&g_unfinished_queues, 1L);
 
 	hpcrun_safe_exit();
 }
@@ -574,8 +500,12 @@ queue_epilogue
 	uint64_t queue_id = (uint64_t) queue;
 	queue_map_entry_t *entry = queue_map_lookup(queue_id);
 	queue_node_t *queue_node = queue_map_entry_queue_node_get(entry);
-	atomic_store(&queue_node->queue_marked_for_deletion, true);
-
+	
+	epoch_free_helper(&epoch_free_list, queue_node->st->epoch);
+	queue_node_free_helper(&queue_node_free_list, queue_node);
+	queue_map_delete(queue_id);
+	atomic_fetch_add(&g_unfinished_queues, -1L);
+	
 	hpcrun_safe_exit();
 }
 
@@ -593,14 +523,12 @@ kernel_prologue
 	// increment the reference count for the event
 	clRetainEvent(event);
 
-	uint64_t queue_id = (uint64_t) queue;
-
 	ucontext_t context;
 	getcontext(&context);
 	int skip_inner = 1; // what value should be passed here?
-	
 	cct_node_t *cct_node = hpcrun_sample_callpath(&context, cpu_idle_metric_id, (cct_metric_data_t){.i = 0}, skip_inner /*skipInner */ , 1 /*isSync */, NULL ).sample_node;
 	
+	uint64_t queue_id = (uint64_t) queue;
 	queue_map_entry_t *entry = queue_map_lookup(queue_id);
 	queue_node_t *queue_node = queue_map_entry_queue_node_get(entry);
 	// NULL checks need to be added for entry and queue_node
@@ -616,17 +544,21 @@ kernel_prologue
 void
 kernel_epilogue
 (
-	cl_event event
+	cl_event event,
+	cl_command_queue queue
 )
 {
 	// prevent self a sample interrupt while gathering calling context
   hpcrun_safe_enter(); 
   
-	clRetainEvent(event);
-	// get event from event splay tree
 	uint64_t event_id = (uint64_t) event;
-	event_map_entry_t *entry = event_map_lookup(event_id);
-	event_list_node_t *event_node = event_map_entry_event_node_get(entry);
+	event_map_entry_t *e_entry = event_map_lookup(event_id);
+	if (!e_entry) {
+		// it is possible that another callback for the same kernel event triggered a kernel_epilogue before this
+		// if so, it could have deleted its corresponding entry from event map. If so, return
+		return;
+	}
+	event_node_t *event_node = event_map_entry_event_node_get(e_entry);
 
 	cl_int err_cl = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &(event_node->event_end_time), NULL);
 
@@ -653,7 +585,27 @@ kernel_epilogue
 	} else {
 		EMSG("clGetEventProfilingInfo failed");
 	}
-	clReleaseEvent(event);
+	
+	uint64_t queue_id = (uint64_t) queue;
+	queue_map_entry_t *q_entry = queue_map_lookup(queue_id);
+	queue_node_t *queue_node = queue_map_entry_queue_node_get(q_entry);
+				
+	#if 0
+	// updating the linkedlist
+	if (event_node == queue_node->event_head) {
+		if (queue_node->event_head == queue_node->event_tail) {
+			queue_node->event_head = NULL;
+			queue_node->event_tail = NULL;
+		} else {
+			queue_node->event_head = event_node->next;
+		}
+	} else if (event_node == queue_node->event_tail) {
+			(event_node->prev)->next = NULL;
+			queue_node->event_tail = event_node->prev;
+	} else {
+		(event_node->prev)->next = event_node->next;	
+	}
+	#endif
   
 	hpcrun_safe_exit();
 }
@@ -768,29 +720,25 @@ opencl_gpu_blame_shifter
 	}
 
 	// is the purpose of this lock to provide atomicity to each blame-shifting call
-	spinlock_lock(&bs_lock);
-	uint32_t num_unfinished_queues = 0;
-	queue_node_t *unfinished_event_list_head = 0;
-
-	num_unfinished_queues = cleanup_finished_events();
-	unfinished_event_list_head = g_unfinished_queue_list_head;
-
+	spinlock_lock(&itimer_blame_lock);
+	
+	uint32_t num_unfinished_queues = get_count_of_unfinished_queues();
 	if (num_unfinished_queues) {
+#if 0
+		queue_node_t *unfinished_queue_head = // get from splay tree;
+		// Do we want this to be enabled for OpenCL?
 
 		// SHARED BLAMING: kernels need to be blamed for idleness on other procs/threads.
-		// Do we want this to be enabled for OpenCL?
 		if(SHARED_BLAMING_INITIALISED && 
 				atomic_load(&ipc_data->num_threads_at_sync_all_procs) && !atomic_load(&g_num_threads_at_sync)) {
-			for (queue_node_t * unfinished_queue = unfinished_event_list_head; unfinished_queue; unfinished_queue = unfinished_queue->next) {
-				//TODO: FIXME: the local threads at sync need to be removed, /T has to be done while adding metric
-				//increment (either one of them).
-				// Careful, unfinished_event_node was replaced by event_list_head. Does that replacement make sense
-				cct_metric_data_increment(cpu_idle_cause_metric_id, unfinished_queue->event_list_head->launcher_cct, (cct_metric_data_t) {
+			for (queue_node_t * unfinished_queue = unfinished_queue_head; unfinished_queue; unfinished_queue = unfinished_queue->next) {
+				cct_metric_data_increment(cpu_idle_cause_metric_id, unfinished_queue->event_head->launcher_cct, (cct_metric_data_t) {
 						.r = metric_incr / atomic_load(&g_active_threads)}
 						);
 				// why are we dividing by g_active_threads here?
 			}
 		}
+#endif
 	}	else {
 		// GPU is idle iff   ipc_data->outstanding_kernels == 0 
 		// If ipc_data is NULL, then this process has not made GPU calls so, we are blind and declare GPU idle w/o checking status of other processes
@@ -808,7 +756,7 @@ opencl_gpu_blame_shifter
 		}
 
 	}
-	spinlock_unlock(&bs_lock);
+	spinlock_unlock(&itimer_blame_lock);
 }
 
 #endif	// ENABLE_OPENCL
