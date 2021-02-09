@@ -138,9 +138,9 @@ event_map_delete
 {
   spinlock_lock(&event_map_lock);
   event_map_entry_t *node = event_delete(&event_map_root, event_id);
-	if (!node) { // the entry has already been deleted?
-		return;
-	}
+  if (!node) { // the entry has already been deleted?
+    return;
+  }
   event_free(&event_map_free_list, node);
 	spinlock_unlock(&event_map_lock);
 }
