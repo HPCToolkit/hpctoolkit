@@ -2,17 +2,12 @@
 #define gpu_blame_opencl_event_map_h_
 
 //******************************************************************************
-// system includes
-//******************************************************************************
-
-
-//******************************************************************************
 // local includes
 //******************************************************************************
 
-#include <hpcrun/cct/cct.h>										// cct_node_t
-#include <lib/prof-lean/hpcrun-opencl.h>
-#include <lib/prof-lean/stdatomic.h>					// _Atomic
+#include <hpcrun/cct/cct.h>                   // cct_node_t
+#include <lib/prof-lean/hpcrun-opencl.h>      // cl_event
+#include <lib/prof-lean/stdatomic.h>          // _Atomic
 
 
 
@@ -33,7 +28,7 @@ typedef struct event_node_t {
 	cct_node_t *launcher_cct;
 	// CCT node of the queue
 	cct_node_t *queue_launcher_cct;
-	
+
 	double cpu_idle_blame;
 
 	struct event_node_t *prev;
