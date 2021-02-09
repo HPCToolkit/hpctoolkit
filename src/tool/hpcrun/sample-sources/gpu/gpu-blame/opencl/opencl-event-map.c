@@ -33,7 +33,7 @@
 // local includes
 //******************************************************************************
 
-#include "opencl-event-map.h"		// event_list_node_t, queue_node_t
+#include "opencl-event-map.h"		// event_node_t, queue_node_t
 
 #include <hpcrun/gpu/gpu-splay-allocator.h>
 #include <lib/prof-lean/splay-uint64.h>
@@ -74,7 +74,7 @@ typedef struct typed_splay_node(event_node) {
   struct typed_splay_node(event_node) *right;
   uint64_t event_id; // key
 
-  event_list_node_t *node;
+  event_node_t *node;
 } typed_splay_node(event_node);
 
 typed_splay_impl(event_node);
@@ -107,7 +107,7 @@ static event_map_entry_t *
 event_node_new
 (
  uint64_t event_id,
- event_list_node_t *node
+ event_node_t *node
 )
 {
   event_map_entry_t *e = event_node_alloc();
@@ -139,7 +139,7 @@ void
 event_map_insert
 (
  uint64_t event_id,
- event_list_node_t *node
+ event_node_t *node
 )
 {
   if (event_lookup(&event_map_root, event_id)) {
@@ -159,12 +159,17 @@ event_map_delete
  uint64_t event_id
 )
 {
+  spinlock_lock(&event_map_lock);
   event_map_entry_t *node = event_delete(&event_map_root, event_id);
+	if (!node) { // the entry has already been deleted?
+		return;
+	}
   event_free(&event_map_free_list, node);
+	spinlock_unlock(&event_map_lock);
 }
 
 
-event_list_node_t*
+event_node_t*
 event_map_entry_event_node_get
 (
  event_map_entry_t *entry
