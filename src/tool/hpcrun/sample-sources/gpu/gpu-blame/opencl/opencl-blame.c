@@ -322,7 +322,7 @@ add_queue_node_to_splay_tree
 
 //TODO: review this function
 static cct_node_t*
-  queue_duplicate_cpu_node
+queue_duplicate_cpu_node
 (
  core_profile_trace_data_t *st,
  ucontext_t *context,

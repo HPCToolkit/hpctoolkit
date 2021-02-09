@@ -1,26 +1,3 @@
-/* StreamQs data-stucture from Blame-Shifing paper:
- * In theory, we want multiple queues with head and tail pointers. There will be a queue/Linked-List for each stream(CUDA)/queue(OpenCL).
- *
- * For storing the multiple linked-lists, we will use a splay-tree datastructure. We will use a splay-tree instead of queue for the following reasons:
- * 1. Since the count of streams/queues are variable, we need a dynamic datastructure
- * 2. HPCRUN doesnt support C++, which rules out using built-in datastructures(e.g. queues, vectors)
- * 3. Splay-tree implementation is present in HPCToolkit
- *
- * Splay_Node {
- * 	key: 64bit representation of stream/queue variable address.
- * 	val: head pointer of linkedlist for the respective stream/queue
- * }
- * 
- * Each stream/queue will be represented using a Linked-List. Each node in this Linked-List will represent a kernel.
- * LL_Node {
- * 	kernel_key: 64bit representation of kernel variable address. // not needed, maintained for debugging purposes
- * 	event: 			event corresponding to the kernel // TODO: this is OpenCL specific. We might have to change this for maintaining generality
- * }
- * 
- * */
-
-
-
 //******************************************************************************
 // system includes
 //******************************************************************************
