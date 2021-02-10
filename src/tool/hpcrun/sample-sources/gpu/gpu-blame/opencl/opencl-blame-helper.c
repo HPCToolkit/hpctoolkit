@@ -33,7 +33,7 @@
 //******************************************************************************
 
 typedef struct Node {
-  long time;
+  double time;
   long id;
   bool isStart;
   event_node_t *event_node;
@@ -42,8 +42,8 @@ typedef struct Node {
 
 
 typedef struct ak_helper_node {
-  long current_time;
-  long last_time;
+  double current_time;
+  double last_time;
   long ak_size;
 } ak_helper_node;
 
@@ -268,12 +268,11 @@ increment_blame_for_active_kernel
 )
 {
   ak_helper_node *akn = (ak_helper_node*) arg;
-  long current_time = akn->current_time;
-  long last_time = akn->last_time;
+  double current_time = akn->current_time;
+  double last_time = akn->last_time;
   long active_kernels_size = akn->ak_size;
   double new_blame = (double)(current_time - last_time) / active_kernels_size;
   increment_blame_for_entry(entry, new_blame);
-  printf("you can expect cpu_idle_cause_metric_id\n");
 }
 
 
@@ -287,7 +286,7 @@ distribute_blame_to_kernels
   // kernel_nodes : (x11, A1, start), (x12, A1, end), (x21, A2, start), (x22, A2, end), ........, (x01, B, start), (x02, B, end);
   bool inSync = false;
   Node *data = kernel_nodes;
-  long last_time;
+  double last_time;
 
   while (data) {
     if (data->id == SYNC) {
@@ -369,8 +368,8 @@ void
 calculate_blame_for_active_kernels
 (
  event_node_t *event_list,
- long sync_start,
- long sync_end
+ double sync_start,
+ double sync_end
 )
 {
   // also input the sync times and add nodes	
