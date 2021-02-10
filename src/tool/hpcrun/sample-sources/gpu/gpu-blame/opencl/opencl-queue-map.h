@@ -20,13 +20,8 @@ typedef struct queue_node_t {
   // we maintain queue_id here for deleting the queue_node from map
   uint64_t queue_id;
 
-  // hpcrun profiling and tracing infp
+  // hpcrun profiling and tracing info
   struct core_profile_trace_data_t *st;
-
-#if 0
-  struct event_node_t *event_head;
-  struct event_node_t *event_tail;
-#endif
 
   // pointer to the next queue which has activities pending
   struct queue_node_t *next;

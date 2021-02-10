@@ -142,7 +142,7 @@ event_map_delete
     return;
   }
   event_free(&event_map_free_list, node);
-	spinlock_unlock(&event_map_lock);
+  spinlock_unlock(&event_map_lock);
 }
 
 
