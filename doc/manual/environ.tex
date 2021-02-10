@@ -1,6 +1,7 @@
 \newcommand{\parg}{\vspace{1ex}\noindent}
 
 \chapter{Environment Variables}
+\label{sec:env}
 
 \HPCToolkit{}'s measurement subsystem decides what and how to measure
 using information it obtains from environment variables.  
@@ -30,20 +31,21 @@ report when problems arise.
 
 \paragraph{HPCTOOLKIT.}
 Under normal circumstances, there is no need to use this environment variable. 
-However, there are two situations, however, \hpcrun{}
+However, there are two situations where \hpcrun{}
 \emph{must} consult the \verb+HPCTOOLKIT+ environment variable to determine the location
-of \HPCToolkit{}'s top-level installation directory:
+of \HPCToolkit{}'s top-level installation directory to find libraries
+and utilities that it needs at runtime.
 
 \begin{itemize}
-\item On some systems, parallel job launchers (e.g., Cray's aprun) \emph{copy} the
-       \hpcrun{} script to a different location. In this case, for \hpcrun{} to find libraries
-       and utilities it needs at runtime, you must set the \verb+HPCTOOLKIT+ environment variable to 
-       \HPCToolkit{}'s top-level installation directory.
 \item
        If you launch the \hpcrun{} script via a file system link,
-       you must set \verb+HPCTOOLKIT+ for the same reason.
-\end{itemize}
+       you must set the \verb+HPCTOOLKIT+ environment variable to
+       \HPCToolkit{}'s top-level installation directory.
+\item Some parallel job launchers (e.g., Cray's aprun) may \emph{copy} the
+       \hpcrun{} script to a different location. If this is the case, you will need to set the \verb+HPCTOOLKIT+ environment variable to
+       \HPCToolkit{}'s top-level installation directory.
 
+\end{itemize}
 
 \paragraph{HPCRUN\_EVENT\_LIST.}
 
@@ -108,6 +110,54 @@ measurements for that process.
 \parg
 Flags to set process fraction with \hpcrun: \verb|-f/-fp/--process-fraction| $frac$
 
+\paragraph{HPCRUN\_DELAY\_SAMPLING}
+
+\sloppy
+If this environment variable is set, HPCToolkit's measurement subsystem
+will initialize itself but not begin measurement using sampling
+until the program turns on sampling by calling
+\verb|hpctoolkit_sampling_start()|. To measure only a part of a
+program, one can bracket that with \verb|hpctoolkit_sampling_start()|
+and \verb|hpctoolkit_sampling_stop()|. Sampling may be turned on
+and off multiple times during an execution, if desired.
+
+\parg
+Flags to delay sampling with \hpcrun: \verb|-ds/--delay-sampling|
+
+
+\paragraph{HPCRUN\_CONTROL\_KNOBS.}
+
+\hpcrun{} has some settings, known as control knobs, that can be adjusted by a knowledgeable user to tune the operation of \hpcrun's measurement subsystem. Names and default values of the control knobs are shown in Table~\ref{knob-names}
+
+\begin{table}[t]
+\begin{center}
+\begin{tabular}{|l|r|p{2in}|}\hline
+ & Default & \\
+Name & Value & Description \\\hline\hline
+\verb|MAX_COMPLETION_CALLBACK_THREADS| & 1000 &  See Note 1.  \\\hline
+\verb|STREAMS_PER_TRACING_THREAD| &  4  & See Note 2.  \\\hline
+\verb|HPCRUN_CUDA_DEVICE_BUFFER_SIZE| & 8388608 & See Note 3.  \\\hline
+\verb|HPCRUN_CUDA_DEVICE_SEMAPHORE_SIZE| & 65536 & See Note 4. \\\hline
+\hline
+\end{tabular}
+\begin{flushleft}
+{\bf Note 1}:  OpenCL may execute callbacks on helper threads created by the OpenCL runtime. This knob specifies the maximum number of helper threads that can be handled by \hpcrun{}'s OpenCL tracing implementation.
+
+{\bf Note 2}: GPU stream traces are recorded by tracing threads created by \hpcrun{}. Reducing the number of streams per \hpcrun{} tracing thread may make monitoring faster, though it will use more resources.
+
+{\bf Note 3}: Value used as {\tt CUPTI\_ACTIVITY\_ATTR\_DEVICE\_BUFFER\_SIZE}. See \url{https://docs.nvidia.com/cuda/cupti/group__CUPTI__ACTIVITY__API.html}.
+
+{\bf Note 4}: Value used as \verb|CUPTI_ACTIVITY_ATTR_PROFILING_SEMAPHORE_POOL_SIZE|. See \url{https://docs.nvidia.com/cuda/cupti/group__CUPTI__ACTIVITY__API.html} 
+\end{flushleft}
+\caption{Control knob names and default values.}
+\label{knob-names}
+\end{center}
+\end{table}
+
+\parg
+Flags to set a control knob for \hpcrun: \verb|-ck/--control-knob|  name=setting.
+
+
 \paragraph{HPCRUN\_MEMLEAK\_PROB}
 
 If this environment variable is set, \HPCToolkit's measurement
@@ -128,19 +178,6 @@ allocation.
 \parg
 Flags to set process fraction with \hpcrun: \verb|-mp/--memleak-prob| $prob$
 
-\paragraph{HPCRUN\_DELAY\_SAMPLING}
-
-\sloppy
-If this environment variable is set, HPCToolkit's measurement subsystem
-will initialize itself but not begin measurement using sampling
-until the program turns on sampling by calling
-\verb|hpctoolkit_sampling_start()|. To measure only a part of a
-program, one can bracket that with \verb|hpctoolkit_sampling_start()|
-and \verb|hpctoolkit_sampling_stop()|. Sampling may be turned on
-and off multiple times during an execution, if desired.
-
-\parg
-Flags to delay sampling with \hpcrun: \verb|-ds/--delay-sampling|
 
 \paragraph{HPCRUN\_RETAIN\_RECURSION}
 
@@ -178,6 +215,27 @@ size is 80K.
 \parg
 Flags to set low memsize with \hpcrun: \verb|-lm/--low-memsize| $bytes$
 
+\section{Environment Variables that May Avoid a Crash}
+
+
+\paragraph{HPCRUN\_AUDIT\_FAKE\_AUDITOR.}
+
+By default, \hpcrun{} will use \verb|libc|'s \verb|LD_AUDIT| feature to monitor dynamic library operations. 
+For cases where using \verb|LD_AUDIT| is problematic (e.g. with applications or libraries that require the use of {\tt dlmopen}) , 
+\hpcrun{} supports an alternative {\em fake auditor} that monitors shared library operations by wrapping {\tt dlopen} and {\tt dlclose} instead. This variable will be set to 1 if a {\em fake auditor} is used. 
+If \verb|LD_AUDIT| is not causing your program to crash, we don't recommend using the fake auditor as it may cause your application or shared libraries it loads to ignore any {\tt RUNPATH} set in their binaries.
+
+\parg
+Flag to select the fake auditor with \hpcrun: \verb|--disable-auditor|.
+
+\paragraph{HPCRUN\_AUDIT\_DISABLE\_PLT\_CALL\_OPT.}
+
+By default, \hpcrun{} will use \verb|libc|'s \verb|LD_AUDIT| feature to monitor dynamic library operations. The \verb|LD_AUDIT| facility has the unfortunate behavior of intercepting each call to a shared library. Each call to a shared library is dispatched through  the {\em Procedure Linkage Table} (PLT). We have observed that allowing the \verb|LD_AUDIT| facility to intercept each call to a shared library is costly: on {\tt x86\_64} we measured a slowdown of $68\times$ for a call to an empty shared library routine. 
+
+To avoid this overhead, \hpcrun{} sidesteps \verb|LD_AUDIT|'s monitoring of a load module's calls to a shared library routine by allowing the address of the routine to be cached in the load module's Global Offset Table (GOT). The mechanism for this optimization is complex. If you suspect that this optimization is causing your program to crash, this optimization can be disabled. If your program is not crashing, don't even consider adjusting this!
+
+\parg
+Flag to disable optimization of PLT calls when using \verb|LD_AUDIT|  to monitor shared library operations with \hpcrun: \verb|--disable-auditor-got-rewriting|.
 
 \section{Environment Variables for Developers}
 \label{system-env}
