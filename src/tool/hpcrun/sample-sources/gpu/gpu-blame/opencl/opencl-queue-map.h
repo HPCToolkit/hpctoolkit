@@ -6,8 +6,9 @@
 //******************************************************************************
 
 #include "opencl-event-map.h"
-#include <hpcrun/cct/cct.h>                 // cct_node_t
+#include <hpcrun/cct/cct.h>                   // cct_node_t
 #include <lib/prof-lean/hpcrun-opencl.h>
+#include <lib/prof-lean/stdatomic.h>          // _Atomic
 
 
 
@@ -21,7 +22,7 @@ typedef struct queue_node_t {
   uint64_t queue_id;
 
   // pointer to the next queue which has activities pending
-  struct queue_node_t *next;
+  _Atomic (struct queue_node_t*) next;
 
   // if CPU is block for queue operations to complete, we use these 2 variables
   cct_node_t *cpu_idle_cct;

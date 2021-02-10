@@ -30,14 +30,6 @@
 
 
 //******************************************************************************
-// macros
-//******************************************************************************
-
-#define NEXT(node) node->next
-
-
-
-//******************************************************************************
 // local data
 //******************************************************************************
 
@@ -77,7 +69,7 @@ queue_node_alloc_helper
   queue_node_t *first = *free_list; 
 
   if (first) { 
-    *free_list = NEXT(first);
+    *free_list = atomic_load(&first->next);
   } else {
     first = (queue_node_t *) hpcrun_malloc_safe(sizeof(queue_node_t));
   }
@@ -94,7 +86,7 @@ queue_node_free_helper
  queue_node_t *node 
 )
 {
-  NEXT(node) = *free_list;
+  atomic_store(&node->next, *free_list);
   *free_list = node;
 }
 
@@ -137,7 +129,7 @@ add_queue_node_to_splay_tree
 {
   uint64_t queue_id = (uint64_t)queue;
   queue_node_t *node = queue_node_alloc_helper(&queue_node_free_list);
-  node->next = NULL;
+  atomic_init(&node->next, NULL);
   queue_map_insert(queue_id, node);
 }
 
@@ -180,12 +172,13 @@ add_kernel_to_completed_list
  event_node_t *event_node
 )
 {
-try_again: ;
-           event_node_t *current_head = atomic_load(&completed_kernel_list_head);
-           atomic_store(&event_node->next, current_head);
-           if (!atomic_compare_exchange_strong(&completed_kernel_list_head, &current_head, event_node)) {
-             goto try_again;
-           }
+  while (true) {
+    event_node_t *current_head = atomic_load(&completed_kernel_list_head);
+    atomic_store(&event_node->next, current_head);
+    if (atomic_compare_exchange_strong(&completed_kernel_list_head, &current_head, event_node)) {
+      break;
+    }
+  }
 }
 
 
@@ -344,6 +337,7 @@ kernel_epilogue
   if (!e_entry) {
     // it is possible that another callback for the same kernel event triggered a kernel_epilogue before this
     // if so, it could have deleted its corresponding entry from event map. If so, return
+    hpcrun_safe_exit();
     return;
   }
   event_node_t *event_node = event_map_entry_event_node_get(e_entry);
@@ -369,6 +363,7 @@ kernel_epilogue
     elapsedTime = event_node->event_end_time - event_node->event_start_time; 
     if (elapsedTime <= 0) {
       printf("bad kernel time\n");
+      hpcrun_safe_exit();
       return;
     }
 
@@ -397,7 +392,7 @@ sync_prologue
   hpcrun_safe_enter(); 
 
   struct timespec sync_start;
-  clock_gettime(CLOCK_MONOTONIC_RAW, &sync_start); // get current time
+  clock_gettime(CLOCK_REALTIME, &sync_start); // get current time
 
   atomic_fetch_add(&g_num_threads_at_sync, 1L);
 
@@ -428,7 +423,7 @@ sync_epilogue
   hpcrun_safe_enter(); 
 
   struct timespec sync_end;
-  clock_gettime(CLOCK_MONOTONIC_RAW, &sync_end); // get current time
+  clock_gettime(CLOCK_REALTIME, &sync_end); // get current time
 
   uint64_t queue_id = (uint64_t) queue;
   queue_map_entry_t *entry = queue_map_lookup(queue_id);
