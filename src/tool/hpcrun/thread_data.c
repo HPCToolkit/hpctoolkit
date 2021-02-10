@@ -305,13 +305,6 @@ static inline void gpu_data_init(gpu_data_t * gpu_data)
 }
 #endif
 
-#ifdef ENABLE_OPENCL
-static inline void gpu_data_init(gpu_data_t * gpu_data)
-{
-  gpu_data->is_thread_at_opencl_sync = false;
-  gpu_data->queue_responsible_for_cpu_sync = NULL;
-}
-#endif
 
 void
 hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child, size_t n_sources)
@@ -451,7 +444,7 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child, size_t n_sou
   // ----------------------------------------
   td->gpu_trace_prev_time = 0;
 
-#if defined(ENABLE_CUDA) || defined (ENABLE_OPENCL)
+#if defined(ENABLE_CUDA)
   gpu_data_init(&(td->gpu_data));
 #endif
 }

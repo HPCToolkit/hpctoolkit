@@ -31,7 +31,6 @@ typedef struct event_node_t {
 
   double cpu_idle_blame;
 
-  struct event_node_t *prev;
   _Atomic (struct event_node_t*) next;
 } event_node_t;
 
