@@ -178,8 +178,8 @@ private:
   std::vector<uint64_t> prof_offsets;
 
   std::vector<std::pair<uint32_t, uint64_t>> rank_idx_ptr_pairs;
-
-
+  std::vector<uint64_t> id_tuple_ptrs;
+  uint32_t min_prof_info_idx;
 
   void assignSparseInputs(int world_rank);
 
@@ -244,7 +244,7 @@ private:
 
   //all work related to IdTuples Section, 
   void workIdTuplesSection1(const int world_rank, const int world_size,
-                           const int threads, const int num_prof,
+                           const int threads, const int total_num_prof,
                            const hpctoolkit::util::File& fh);
   //other sections only need the vector of prof_info_idx and id_tuple_ptr pairs
   void workIdTuplesSection(const int world_rank, const int world_size,
