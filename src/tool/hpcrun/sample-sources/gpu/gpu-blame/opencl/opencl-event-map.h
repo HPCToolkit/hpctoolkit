@@ -21,13 +21,11 @@ typedef struct event_node_t {
   cl_event event;
 
   // start and end times of event_start and event_end
-  unsigned long event_start_time;
-  unsigned long event_end_time;
+  double event_start_time;
+  double event_end_time;
 
   // CCT node of the CPU thread that launched this activity
   cct_node_t *launcher_cct;
-  // CCT node of the queue
-  cct_node_t *queue_launcher_cct;
 
   double cpu_idle_blame;
 
