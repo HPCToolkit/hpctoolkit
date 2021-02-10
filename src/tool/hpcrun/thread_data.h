@@ -95,11 +95,6 @@ typedef struct gpu_data_t {
 	// is updated
   uint64_t accum_num_samples;
 	
-	/* OPENCL events */
-  // True if this thread is at clWaitForEvents() or clFinish().
-	bool is_thread_at_opencl_sync;
-	queue_node_t *queue_responsible_for_cpu_sync;
-
 } gpu_data_t;
 
 
@@ -289,12 +284,7 @@ typedef struct thread_data_t {
   bool inside_dlfcn;
 
 
-<<<<<<< HEAD
 #ifdef ENABLE_CUDA
-=======
-
-#if defined(ENABLE_CUDA) || defined(ENABLE_OPENCL)
->>>>>>> 2b0475fdd... removed -e opencl-blame event. Instead we have used ENABLE_OPENCL macros inside ifdef's. To enable blame-shifting for opencl: hpcrun -e gpu=opencl -e CPU_GPU_IDLE -e REALTIME ./executable
   gpu_data_t gpu_data;
 #endif
   

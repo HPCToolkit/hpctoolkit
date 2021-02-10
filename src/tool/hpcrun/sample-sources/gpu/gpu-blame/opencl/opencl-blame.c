@@ -4,12 +4,9 @@
 // system includes
 //******************************************************************************
 
-#include <fcntl.h>                            // O_CREAT, O_RDWR
 #include <monitor.h>                          // monitor_real_abort
 #include <stdbool.h>                          // bool
-#include <sys/mman.h>                         // shm_open
 #include <ucontext.h>                         // getcontext
-#include <unistd.h>                           // ftruncate
 
 
 
@@ -22,12 +19,9 @@
 #include "opencl-blame-helper.h"              // calculate_blame_for_active_kernels
 
 #include <hpcrun/cct/cct.h>                   // cct_node_t
-#include <hpcrun/constructors.h>              // HPCRUN_CONSTRUCTOR
 #include <hpcrun/memory/mmap.h>               // hpcrun_mmap_anon
 #include <hpcrun/safe-sampling.h>             // hpcrun_safe_enter, hpcrun_safe_exit
 #include <hpcrun/sample_event.h>              // hpcrun_sample_callpath
-#include <hpcrun/sample-sources/gpu_blame.h>  // g_active_threads
-#include <hpcrun/thread_data.h>               // gpu_data
 
 #include <lib/prof-lean/hpcrun-opencl.h>      // CL_SUCCESS, cl_event, etc
 #include <lib/prof-lean/spinlock.h>           // spinlock_t, SPINLOCK_UNLOCKED
@@ -36,30 +30,11 @@
 
 
 
-/******************************************************************************
- * forward declarations
- *****************************************************************************/
-
-typedef struct IPC_data_t {
-  uint32_t device_id;
-  _Atomic(uint64_t) outstanding_kernels;
-  _Atomic(uint64_t) num_threads_at_sync_all_procs;
-} IPC_data_t;
-
-
-
 //******************************************************************************
 // macros
 //******************************************************************************
 
 #define	NS_IN_SEC 1000000000
-
-#define MAX_SHARED_KEY_LENGTH (100)
-
-#define SHARED_BLAMING_INITIALISED (ipc_data != NULL)
-
-#define INCR_SHARED_BLAMING_DS(field)  do{ if(SHARED_BLAMING_INITIALISED) atomic_fetch_add(&(ipc_data->field), 1L); }while(0) 
-#define DECR_SHARED_BLAMING_DS(field)  do{ if(SHARED_BLAMING_INITIALISED) atomic_fetch_add(&(ipc_data->field), -1L); }while(0) 
 
 #define NEXT(node) node->next
 
@@ -77,101 +52,21 @@ int gpu_idle_metric_id;
 // lock for blame-shifting activities
 static spinlock_t itimer_blame_lock = SPINLOCK_UNLOCKED;
 
-static _Atomic(uint64_t) g_num_threads_at_sync;
+static _Atomic(uint64_t) g_num_threads_at_sync = { 0 };
+static _Atomic(uint32_t) g_unfinished_queues = { 0 };
+static _Atomic(uint32_t) g_unfinished_kernels = { 0 };
 
-static _Atomic(uint32_t) g_unfinished_queues;
-
-// is inter-process blaming enabled?
-static bool g_do_shared_blaming;
-
-static IPC_data_t *ipc_data;
+static bool shared_blaming = true;
 
 _Atomic(unsigned long) latest_kernel_end_time = { 0 };
 
-static _Atomic(event_node_t*) completed_kernel_list_head;
+static _Atomic(event_node_t*) completed_kernel_list_head = { NULL };
 
 static queue_node_t *queue_node_free_list = NULL;
 static event_node_t *event_node_free_list = NULL;
 static epoch_t *epoch_free_list = NULL;
 
 
-
-/******************** Utilities ********************/
-/******************** CONSTRUCTORS ********************/
-
-static char shared_key[MAX_SHARED_KEY_LENGTH];
-
-
-static void
-destroy_shared_memory
-(
- void *p
-)
-{
-  // we should munmap, but I will not do since we dont do it in so many other places in hpcrun
-  // munmap(ipc_data);
-  shm_unlink((char *)shared_key);
-}
-
-
-//TODO: review this function
-static inline void
-create_shared_memory
-(
- void
-)
-{
-  int device_id = 1;	// static device_id
-  int fd ;
-  sprintf(shared_key, "/gpublame%d",device_id);
-  if ( (fd = shm_open(shared_key, O_RDWR | O_CREAT, 0666)) < 0 ) {
-    EEMSG("Failed to shm_open (%s) on device %d, retval = %d", shared_key, device_id, fd);
-    monitor_real_abort();
-  }
-  if ( ftruncate(fd, sizeof(IPC_data_t)) < 0 ) {
-    EEMSG("Failed to ftruncate() on device %d",device_id);
-    monitor_real_abort();
-  }
-
-  if( (ipc_data = mmap(NULL, sizeof(IPC_data_t), PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0 )) == MAP_FAILED ) {
-    EEMSG("Failed to mmap() on device %d",device_id);
-    monitor_real_abort();
-  }
-
-  hpcrun_process_aux_cleanup_add(destroy_shared_memory, (void *) shared_key);    
-}
-
-
-static void
-InitCpuGpuBlameShiftOpenclDataStructs
-(
- void
-)
-{
-  char * shared_blaming_env;
-  shared_blaming_env = getenv("HPCRUN_ENABLE_SHARED_GPU_BLAMING");
-  if(shared_blaming_env) {
-    g_do_shared_blaming = atoi(shared_blaming_env);
-  }
-  // remove later
-  g_do_shared_blaming = false;
-  create_shared_memory();
-
-  atomic_init(&completed_kernel_list_head, NULL);
-}
-
-
-HPCRUN_CONSTRUCTOR(CpuGpuBlameShiftInit)(void)
-{
-  if (getenv("DEBUG_HPCRUN_GPU_CONS"))
-    fprintf(stderr, "CPU-GPU blame shift constructor called\n");
-  // no dlopen calls in static case
-  // #ifndef HPCRUN_STATIC_LINK
-  InitCpuGpuBlameShiftOpenclDataStructs();
-  // #endif // ! HPCRUN_STATIC_LINK
-}
-
-/******************** END CONSTRUCTORS ****/
 
 //******************************************************************************
 // private operations
@@ -310,10 +205,6 @@ add_queue_node_to_splay_tree
   queue_node_t *node = queue_node_alloc_helper(&queue_node_free_list);
 
   node->st = hpcrun_queue_data_alloc_init(queue_id);	
-#if 0
-  node->event_head = NULL;
-  node->event_tail = NULL;
-#endif
   node->next = NULL;
 
   queue_map_insert(queue_id, node);
@@ -337,7 +228,6 @@ queue_duplicate_cpu_node
 
 
 // Insert a new event node corresponding to a kernel in a queue
-// Caller is responsible for calling monitor_disable_new_threads() : why?
 static void
 create_and_insert_event
 (
@@ -352,21 +242,9 @@ create_and_insert_event
   event_node->event = event;
   event_node->queue_launcher_cct = queue_launcher_cct;
   event_node->launcher_cct = launcher_cct;
-  event_node->prev = NULL;
   atomic_init(&event_node->next, NULL);
   uint64_t event_id = (uint64_t) event;
   event_map_insert(event_id, event_node);
-
-#if 0
-  if (queue_node->event_head == NULL) {
-    queue_node->event_head = event_node;
-    queue_node->event_tail = event_node;
-  } else {
-    queue_node->event_tail->next = event_node;
-    event_node->prev = queue_node->event_tail;
-    queue_node->event_tail = event_node;
-  }
-#endif
 }
 
 
@@ -456,7 +334,6 @@ attributing_cpu_idle_cause_metric_at_sync_epilogue
 }
 
 
-// inspect activities finished on each queue and record metrics accordingly
 static uint32_t
 get_count_of_unfinished_queues
 (
@@ -535,7 +412,7 @@ kernel_prologue
 
   cct_node_t *queue_cct = queue_duplicate_cpu_node(queue_node->st, &context, cct_node);
   create_and_insert_event(queue_id, queue_node, event, cct_node, queue_cct);
-  INCR_SHARED_BLAMING_DS(outstanding_kernels);
+  atomic_fetch_add(&g_unfinished_kernels, 1L);
 
   hpcrun_safe_exit();
 }
@@ -563,7 +440,7 @@ kernel_epilogue
   cl_int err_cl = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &(event_node->event_end_time), NULL);
 
   if (err_cl == CL_SUCCESS) {
-    DECR_SHARED_BLAMING_DS(outstanding_kernels);
+		atomic_fetch_add(&g_unfinished_kernels, -1L);
 
     float elapsedTime;
     err_cl = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START,	sizeof(cl_ulong), &(event_node->event_start_time), NULL);
@@ -590,23 +467,6 @@ kernel_epilogue
   queue_map_entry_t *q_entry = queue_map_lookup(queue_id);
   queue_node_t *queue_node = queue_map_entry_queue_node_get(q_entry);
 
-#if 0
-  // updating the linkedlist
-  if (event_node == queue_node->event_head) {
-    if (queue_node->event_head == queue_node->event_tail) {
-      queue_node->event_head = NULL;
-      queue_node->event_tail = NULL;
-    } else {
-      queue_node->event_head = event_node->next;
-    }
-  } else if (event_node == queue_node->event_tail) {
-    (event_node->prev)->next = NULL;
-    queue_node->event_tail = event_node->prev;
-  } else {
-    (event_node->prev)->next = event_node->next;	
-  }
-#endif
-
   hpcrun_safe_exit();
 }
 
@@ -629,15 +489,10 @@ sync_prologue
   uint64_t queue_id = (uint64_t) queue;
   queue_map_entry_t *entry = queue_map_lookup(queue_id);
   queue_node_t *queue_node = queue_map_entry_queue_node_get(entry);
-  TD_GET(gpu_data.queue_responsible_for_cpu_sync) = queue_node;
-
-  TD_GET(gpu_data.is_thread_at_opencl_sync) = true;
-  INCR_SHARED_BLAMING_DS(num_threads_at_sync_all_procs);
 
   ucontext_t context;
   getcontext(&context);
   int skip_inner = 1; // what value should be passed here?
-
   cct_node_t *cpu_cct_node = hpcrun_sample_callpath(&context, cpu_idle_metric_id, (cct_metric_data_t){.i = 0}, skip_inner /*skipInner */ , 1 /*isSync */, NULL ).sample_node;
 
   queue_node->cpu_idle_cct = cpu_cct_node; // we may need to remove hpcrun functions from the stackframe of the cct
@@ -673,9 +528,6 @@ sync_epilogue
   queue_node->cpu_idle_cct = NULL;
   queue_node->cpu_sync_start_time = NULL;
   atomic_fetch_add(&g_num_threads_at_sync, -1L);
-  TD_GET(gpu_data.queue_responsible_for_cpu_sync) = NULL;
-  TD_GET(gpu_data.is_thread_at_opencl_sync) = false;
-  DECR_SHARED_BLAMING_DS(num_threads_at_sync_all_procs);
 
   hpcrun_safe_exit();
 }
@@ -709,50 +561,16 @@ opencl_gpu_blame_shifter
   }
   uint64_t metric_incr = cur_time_us - TD_GET(last_time_us);
 
-  bool is_threads_at_sync = TD_GET(gpu_data.is_thread_at_opencl_sync);
-  if (is_threads_at_sync) {
-    if(SHARED_BLAMING_INITIALISED) {
-      // uncomment this when you understand what these variables mean for opencl context
-      // TD_GET(gpu_data.accum_num_sync_threads) += ipc_data->num_threads_at_sync_all_procs; 
-      // TD_GET(gpu_data.accum_num_samples) += 1;
-    } 
-    return;
-  }
-
-  // is the purpose of this lock to provide atomicity to each blame-shifting call
   spinlock_lock(&itimer_blame_lock);
 
   uint32_t num_unfinished_queues = get_count_of_unfinished_queues();
-  if (num_unfinished_queues) {
-#if 0
-    queue_node_t *unfinished_queue_head = // get from splay tree;
-    // Do we want this to be enabled for OpenCL?
-
-    // SHARED BLAMING: kernels need to be blamed for idleness on other procs/threads.
-    if(SHARED_BLAMING_INITIALISED && 
-        atomic_load(&ipc_data->num_threads_at_sync_all_procs) && !atomic_load(&g_num_threads_at_sync)) {
-      for (queue_node_t * unfinished_queue = unfinished_queue_head; unfinished_queue; unfinished_queue = unfinished_queue->next) {
-        cct_metric_data_increment(cpu_idle_cause_metric_id, unfinished_queue->event_head->launcher_cct, (cct_metric_data_t) {
-            .r = metric_incr / atomic_load(&g_active_threads)}
-            );
-        // why are we dividing by g_active_threads here?
-      }
-    }
-#endif
-  }	else {
-    // GPU is idle iff   ipc_data->outstanding_kernels == 0 
-    // If ipc_data is NULL, then this process has not made GPU calls so, we are blind and declare GPU idle w/o checking status of other processes
-    // There is no better solution yet since we dont know which GPU card we should be looking for idleness. 
-    if(g_do_shared_blaming){
-      if ( !ipc_data || atomic_load(&(ipc_data->outstanding_kernels)) == 0) { // GPU device is truely idle i.e. no other process is keeping it busy
-        // Increment gpu_ilde by metric_incr
-        cct_metric_data_increment(gpu_idle_metric_id, node, (cct_metric_data_t) {
-            .i = metric_incr});
+  if (num_unfinished_queues == 0) {
+    if(shared_blaming) {
+      if (atomic_load(&g_unfinished_kernels) == 0) {
+        cct_metric_data_increment(gpu_idle_metric_id, node, (cct_metric_data_t) {.i = metric_incr});
       }
     } else {
-      // Increment gpu_ilde by metric_incr
-      cct_metric_data_increment(gpu_idle_metric_id, node, (cct_metric_data_t) {
-          .i = metric_incr});            
+      cct_metric_data_increment(gpu_idle_metric_id, node, (cct_metric_data_t) {.i = metric_incr});
     }
 
   }
