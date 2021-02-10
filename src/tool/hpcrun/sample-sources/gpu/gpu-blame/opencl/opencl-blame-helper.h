@@ -17,8 +17,8 @@ void
 calculate_blame_for_active_kernels
 (
  event_node_t *event_list,
- long sync_start,
- long sync_end
+ double sync_start,
+ double sync_end
 );
 
 #endif 	//blame_shift_helper_opencl_h

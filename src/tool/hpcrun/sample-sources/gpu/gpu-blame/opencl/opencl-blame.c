@@ -19,7 +19,6 @@
 #include "opencl-blame-helper.h"              // calculate_blame_for_active_kernels
 
 #include <hpcrun/cct/cct.h>                   // cct_node_t
-#include <hpcrun/memory/mmap.h>               // hpcrun_mmap_anon
 #include <hpcrun/safe-sampling.h>             // hpcrun_safe_enter, hpcrun_safe_exit
 #include <hpcrun/sample_event.h>              // hpcrun_sample_callpath
 
@@ -33,8 +32,6 @@
 //******************************************************************************
 // macros
 //******************************************************************************
-
-#define	NS_IN_SEC 1000000000
 
 #define NEXT(node) node->next
 
@@ -64,7 +61,6 @@ static _Atomic(event_node_t*) completed_kernel_list_head = { NULL };
 
 static queue_node_t *queue_node_free_list = NULL;
 static event_node_t *event_node_free_list = NULL;
-static epoch_t *epoch_free_list = NULL;
 
 
 
@@ -133,68 +129,6 @@ event_node_free_helper
 }
 
 
-static epoch_t*
-epoch_alloc_helper
-(
- epoch_t **free_list
-)
-{
-  epoch_t *first = *free_list; 
-
-  if (first) { 
-    *free_list = NEXT(first);
-  } else {
-    first = (epoch_t *) hpcrun_malloc_safe(sizeof(epoch_t));
-  }
-
-  memset(first, 0, sizeof(epoch_t));
-  return first;
-}
-
-
-static void
-epoch_free_helper
-(
- epoch_t **free_list, 
- epoch_t *node 
-)
-{
-  NEXT(node) = *free_list;
-  *free_list = node;
-}
-
-
-//TODO: review this function
-// Initialize hpcrun core_profile_trace_data for a new queue
-static inline core_profile_trace_data_t*
-hpcrun_queue_data_alloc_init
-(
- int id
-)
-{
-  core_profile_trace_data_t *st = hpcrun_mmap_anon(sizeof(core_profile_trace_data_t));
-  // FIXME: revisit to perform this memstore operation appropriately.
-  //memstore = td->memstore;
-  //memset(st, 0xfe, sizeof(core_profile_trace_data_t));
-  memset(st, 0, sizeof(core_profile_trace_data_t));
-  //td->memstore = memstore;
-  //hpcrun_make_memstore(&td->memstore, is_child);
-  st->id = id;
-  st->epoch = epoch_alloc_helper(&epoch_free_list);
-  st->epoch->csdata_ctxt = copy_thr_ctxt(TD_GET(core_profile_trace_data.epoch)->csdata.ctxt); //copy_thr_ctxt(thr_ctxt);
-  hpcrun_cct_bundle_init(&(st->epoch->csdata), (st->epoch->csdata).ctxt);
-  st->epoch->loadmap = hpcrun_getLoadmap();
-  st->epoch->next  = NULL;
-  hpcrun_cct2metrics_init(&(st->cct2metrics_map)); //this just does st->map = NULL;
-
-  st->trace_min_time_us = 0;
-  st->trace_max_time_us = 0;
-  st->hpcrun_file  = NULL;
-
-  return st;
-}
-
-
 static void
 add_queue_node_to_splay_tree
 (
@@ -203,27 +137,8 @@ add_queue_node_to_splay_tree
 {
   uint64_t queue_id = (uint64_t)queue;
   queue_node_t *node = queue_node_alloc_helper(&queue_node_free_list);
-
-  node->st = hpcrun_queue_data_alloc_init(queue_id);	
   node->next = NULL;
-
   queue_map_insert(queue_id, node);
-}
-
-
-//TODO: review this function
-static cct_node_t*
-queue_duplicate_cpu_node
-(
- core_profile_trace_data_t *st,
- ucontext_t *context,
- cct_node_t *node
-)
-{
-  cct_bundle_t* cct= &(st->epoch->csdata);
-  cct_node_t * tmp_root = cct->tree_root;
-  hpcrun_cct_insert_path(&tmp_root, node);
-  return tmp_root;
 }
 
 
@@ -234,13 +149,11 @@ create_and_insert_event
  uint64_t queue_id,
  queue_node_t *queue_node,
  cl_event event,
- cct_node_t *launcher_cct,
- cct_node_t *queue_launcher_cct
+ cct_node_t *launcher_cct
 )
 {
   event_node_t *event_node = event_node_alloc_helper(&event_node_free_list);
   event_node->event = event;
-  event_node->queue_launcher_cct = queue_launcher_cct;
   event_node->launcher_cct = launcher_cct;
   atomic_init(&event_node->next, NULL);
   uint64_t event_id = (uint64_t) event;
@@ -280,8 +193,8 @@ static void
 attributing_cpu_idle_metric_at_sync_epilogue
 (
  cct_node_t *cpu_cct_node,
- long sync_start,
- long sync_end
+ double sync_start,
+ double sync_end
 )
 {
   // attributing cpu_idle time for the min of (sync_end - sync_start, sync_end - last_kernel_end)
@@ -299,8 +212,8 @@ static void
 attributing_cpu_idle_cause_metric_at_sync_epilogue
 (
  cl_command_queue queue,
- long sync_start,
- long sync_end
+ double sync_start,
+ double sync_end
 )
 {
   event_node_t *private_completed_kernel_head = atomic_load(&completed_kernel_list_head);
@@ -378,7 +291,6 @@ queue_epilogue
   queue_map_entry_t *entry = queue_map_lookup(queue_id);
   queue_node_t *queue_node = queue_map_entry_queue_node_get(entry);
 
-  epoch_free_helper(&epoch_free_list, queue_node->st->epoch);
   queue_node_free_helper(&queue_node_free_list, queue_node);
   queue_map_delete(queue_id);
   atomic_fetch_add(&g_unfinished_queues, -1L);
@@ -410,8 +322,7 @@ kernel_prologue
   queue_node_t *queue_node = queue_map_entry_queue_node_get(entry);
   // NULL checks need to be added for entry and queue_node
 
-  cct_node_t *queue_cct = queue_duplicate_cpu_node(queue_node->st, &context, cct_node);
-  create_and_insert_event(queue_id, queue_node, event, cct_node, queue_cct);
+  create_and_insert_event(queue_id, queue_node, event, cct_node);
   atomic_fetch_add(&g_unfinished_kernels, 1L);
 
   hpcrun_safe_exit();
@@ -437,20 +348,29 @@ kernel_epilogue
   }
   event_node_t *event_node = event_map_entry_event_node_get(e_entry);
 
-  cl_int err_cl = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &(event_node->event_end_time), NULL);
+  unsigned long ev_start, ev_end;
+  cl_int err_cl = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &(ev_end), NULL);
 
   if (err_cl == CL_SUCCESS) {
 		atomic_fetch_add(&g_unfinished_kernels, -1L);
 
     float elapsedTime;
-    err_cl = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START,	sizeof(cl_ulong), &(event_node->event_start_time), NULL);
+    err_cl = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &(ev_start), NULL);
 
     if (err_cl != CL_SUCCESS) {
       EMSG("clGetEventProfilingInfo failed");
     }
+    // converting nsec to sec
+    double nsec_to_sec = pow(10,-9);
+    event_node->event_start_time = ev_start * nsec_to_sec;
+    event_node->event_end_time = ev_end * nsec_to_sec;
+
     // Just to verify that this is a valid profiling value. 
     elapsedTime = event_node->event_end_time - event_node->event_start_time; 
-    assert(elapsedTime > 0);
+    if (elapsedTime <= 0) {
+      printf("bad kernel time\n");
+      return;
+    }
 
     record_latest_kernel_end_time(event_node->event_end_time);
 
@@ -462,10 +382,6 @@ kernel_epilogue
   } else {
     EMSG("clGetEventProfilingInfo failed");
   }
-
-  uint64_t queue_id = (uint64_t) queue;
-  queue_map_entry_t *q_entry = queue_map_lookup(queue_id);
-  queue_node_t *queue_node = queue_map_entry_queue_node_get(q_entry);
 
   hpcrun_safe_exit();
 }
@@ -520,10 +436,11 @@ sync_epilogue
   cct_node_t *cpu_cct_node = queue_node->cpu_idle_cct;
   struct timespec sync_start = *(queue_node->cpu_sync_start_time);
 
-  long sync_start_nsec = sync_start.tv_sec*NS_IN_SEC + sync_start.tv_nsec;
-  long sync_end_nsec = sync_end.tv_sec*NS_IN_SEC + sync_end.tv_nsec;
-  attributing_cpu_idle_metric_at_sync_epilogue(cpu_cct_node, sync_start_nsec, sync_end_nsec);	
-  attributing_cpu_idle_cause_metric_at_sync_epilogue(queue, sync_start_nsec, sync_end_nsec);	
+  double nsec_to_sec = pow(10,-9);
+  double sync_start_sec = sync_start.tv_sec + sync_start.tv_nsec * nsec_to_sec;
+  double sync_end_sec = sync_end.tv_sec + sync_end.tv_nsec * nsec_to_sec;
+  attributing_cpu_idle_metric_at_sync_epilogue(cpu_cct_node, sync_start_sec, sync_end_sec);
+  attributing_cpu_idle_cause_metric_at_sync_epilogue(queue, sync_start_sec, sync_end_sec);
 
   queue_node->cpu_idle_cct = NULL;
   queue_node->cpu_sync_start_time = NULL;
@@ -559,7 +476,11 @@ opencl_gpu_blame_shifter
     EMSG("time_getTimeReal (clock_gettime) failed!");
     monitor_real_abort();
   }
-  uint64_t metric_incr = cur_time_us - TD_GET(last_time_us);
+
+  double msec_to_sec = pow(10,-6);
+  // metric_incr is in microseconds
+  double metric_incr = cur_time_us - TD_GET(last_time_us);
+  metric_incr *= msec_to_sec;
 
   spinlock_lock(&itimer_blame_lock);
 
