@@ -75,6 +75,7 @@
 #define EXECUTION_COUNT "count"
 #define LATENCY "latency"
 #define SIMD "simd"
+#define INTEL_OPTIMIZATION_CHECK "intel_opt_check"
 #define NO_THRESHOLD  1L
 
 static device_finalizer_fn_entry_t device_finalizer_flush;
