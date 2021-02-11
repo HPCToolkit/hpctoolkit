@@ -96,19 +96,30 @@ void SparseDB::notifyWavefront(DataClass d) noexcept {
 
   ctxcnt = contexts.size();
 
-  util::File profile_major_f(dir / "profile1.db", true);
+  // hdr
   int my_num_prof = src.threads().size();
   if(mpi::World::rank() == 0) my_num_prof++;
   uint32_t total_num_prof = getTotalNumProfiles(my_num_prof);
   prof_info_sec_ptr = PMS_hdr_SIZE;
   prof_info_sec_size = total_num_prof * PMS_prof_info_SIZE;
-  id_tuples_sec_ptr = prof_info_sec_ptr + (MULTIPLE_8(prof_info_sec_size));
+  id_tuples_sec_ptr = prof_info_sec_ptr + MULTIPLE_8(prof_info_sec_size);
 
-  //write id_tuples, set id_tuples_sec_size 
-  workIdTuplesSection1(mpi::World::rank(), mpi::World::size(), team_size, total_num_prof, profile_major_f);
+  // prepare to write in profile.db
+  util::File profile_major_f(dir / "profile1.db", true);
 
-  //write hdr
+  // write id_tuples, set id_tuples_sec_size for hdr
+  workIdTuplesSection1(total_num_prof, profile_major_f);
+
+  // write hdr
   writePMSHdr(total_num_prof,profile_major_f);
+
+  // prep for profiles writing 
+  cur_fposition = id_tuples_sec_ptr + MULTIPLE_8(id_tuples_sec_size);
+  std::vector<char> obuf0, obuf1;
+  obuffers.emplace_back(obuf0);
+  obuffers.emplace_back(obuf1);
+  cur_obuf_idx = 0;
+  prof_infos.resize(my_num_prof);
 }
 
 void SparseDB::notifyThreadFinal(const Thread::Temporary& tt) {
@@ -167,10 +178,7 @@ void SparseDB::notifyThreadFinal(const Thread::Temporary& tt) {
   auto sparse_metrics_bytes = profBytes(&sm);
   assert(sparse_metrics_bytes.size() == (values.size() * PMS_vm_pair_SIZE + coffsets.size() * PMS_ctx_pair_SIZE));
 
-  // add to the buffer, get its relative offset
-  // when size > threshold, write it out, clean buffer
-  // record my_start_offset
-  // map<&t, relative offset>
+  // Build prof_info
   pms_profile_info_t pi;
   pi.prof_info_idx = t.userdata[src.identifier()] + 1;
   pi.num_vals = values.size();
@@ -180,26 +188,8 @@ void SparseDB::notifyThreadFinal(const Thread::Temporary& tt) {
   pi.spare_one = 0;
   pi.spare_two = 0;
 
-  //util::File profile_major_f(dir / "profile1.db", true);
-  //auto pmfi = profile_major_f.open(true);
-  //size_t profsz = sparse_metrics_bytes.size();
-
-  outputs_l.lock();
-  
-//  if((profsz + cur_position) >= 10000000){
-//    pmfi.writeat((id_tuples_sec_ptr + MULTIPLE_8(id_tuples_sec_size) + cur_fposition), cur_obuffer.size(), cur_obuffer.data());
-//  }
-  
-  pi.offset = cur_position;
-  cur_position += sparse_metrics_bytes.size();
-  //cur_obuffer.insert(cur_obuffer.end(), sparse_metrics_bytes.begin(), sparse_metrics_bytes.end());
-  outputs1.emplace_back(&t, std::move(pi));
-  outputs_l.unlock();
-
-  //std::vector<char> profile;
-  //std::vector<char> prof_info;
-  //int try_size = src.threads().size();
-
+  pi.offset = writeProf(sparse_metrics_bytes, mode_reg_thr);
+  prof_infos[pi.prof_info_idx - min_prof_info_idx] = std::move(pi);
 
   // Set up the output temporary file.
   stdshim::filesystem::path outfile;
@@ -230,128 +220,103 @@ void SparseDB::write()
   MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
   MPI_Comm_size(MPI_COMM_WORLD, &world_size);
 
-  // Set up hdr of profile.db
- util::File profile_major_f(dir / "profile1.db", false);
-/*   int my_num_prof = outputs1.size();
-  if(world_rank == 0) my_num_prof++;
-  uint32_t total_num_prof = getTotalNumProfiles(my_num_prof);
-  prof_info_sec_ptr = PMS_hdr_SIZE;
-  prof_info_sec_size = total_num_prof * PMS_prof_info_SIZE;
-  id_tuples_sec_ptr = prof_info_sec_ptr + (MULTIPLE_8(prof_info_sec_size));
+  if(world_rank == 0){
+    // Allocate the blobs needed for the final output
+    std::vector<hpcrun_metricVal_t> values;
+    std::vector<uint16_t> mids;
+    std::vector<uint32_t> cids;
+    std::vector<uint64_t> coffsets;
+    coffsets.reserve(contexts.size() + 1);
 
-  //write id_tuples, set id_tuples_sec_size 
-  workIdTuplesSection1(world_rank, world_size, team_size, my_num_prof, profile_major_f);
-
-  //write hdr
-  writePMSHdr(total_num_prof,profile_major_f);
-
-  // write prof_infos*/
-  writeProfInfos(profile_major_f, team_size);
-
-  if(world_rank != 0) return;
-
-  // Allocate the blobs needed for the final output
-  std::vector<hpcrun_metricVal_t> values;
-  std::vector<uint16_t> mids;
-  std::vector<uint32_t> cids;
-  std::vector<uint64_t> coffsets;
-  coffsets.reserve(contexts.size() + 1);
-
-  // Now stitch together each Context's results
-  for(const Context& c: contexts) {
-    const auto& stats = c.statistics();
-    if(stats.size() > 0) {
-      cids.push_back(c.userdata[src.identifier()]);
-      coffsets.push_back(values.size());
-    }
-    for(const auto& mx: stats.citerate()) {
-      const auto& m = *mx.first;
-      if(!m.scopes().has(MetricScope::function) || !m.scopes().has(MetricScope::execution))
-        util::log::fatal{} << "Metric isn't function/execution!";
-      const auto& ids = m.userdata[src.mscopeIdentifiers()];
-      const auto& vv = mx.second;
-      size_t idx = 0;
-      for(const auto& sp: m.partials()) {
-        hpcrun_metricVal_t v;
-        if(auto vex = vv.get(sp).get(MetricScope::function)) {
-          v.r = *vex;
-          mids.push_back((ids.function << 8) + idx);
-          values.push_back(v);
+    // Now stitch together each Context's results
+    for(const Context& c: contexts) {
+      const auto& stats = c.statistics();
+      if(stats.size() > 0) {
+        cids.push_back(c.userdata[src.identifier()]);
+        coffsets.push_back(values.size());
+      }
+      for(const auto& mx: stats.citerate()) {
+        const auto& m = *mx.first;
+        if(!m.scopes().has(MetricScope::function) || !m.scopes().has(MetricScope::execution))
+          util::log::fatal{} << "Metric isn't function/execution!";
+        const auto& ids = m.userdata[src.mscopeIdentifiers()];
+        const auto& vv = mx.second;
+        size_t idx = 0;
+        for(const auto& sp: m.partials()) {
+          hpcrun_metricVal_t v;
+          if(auto vex = vv.get(sp).get(MetricScope::function)) {
+            v.r = *vex;
+            mids.push_back((ids.function << 8) + idx);
+            values.push_back(v);
+          }
+          if(auto vinc = vv.get(sp).get(MetricScope::execution)) {
+            v.r = *vinc;
+            mids.push_back((ids.execution << 8) + idx);
+            values.push_back(v);
+          }
+          idx++;
         }
-        if(auto vinc = vv.get(sp).get(MetricScope::execution)) {
-          v.r = *vinc;
-          mids.push_back((ids.execution << 8) + idx);
-          values.push_back(v);
-        }
-        idx++;
       }
     }
-  }
 
-  //Add the extra ctx id and offset pair, to mark the end of ctx
-  cids.push_back(LastNodeEnd);
-  coffsets.push_back(values.size());
+    //Add the extra ctx id and offset pair, to mark the end of ctx
+    cids.push_back(LastNodeEnd);
+    coffsets.push_back(values.size());
 
-  // Put together the sparse_metrics structure
-  hpcrun_fmt_sparse_metrics_t sm;
-  //sm.tid = 0;
-  sm.id_tuple.length = 0;
-  sm.num_vals = values.size();
-  sm.num_cct_nodes = contexts.size();
-  sm.num_nz_cct_nodes = coffsets.size() - 1; //since there is an extra end node 
-  sm.values = values.data();
-  sm.mids = mids.data();
-  sm.cct_node_ids = cids.data();
-  sm.cct_node_idxs = coffsets.data();
+    // Put together the sparse_metrics structure
+    hpcrun_fmt_sparse_metrics_t sm;
+    //sm.tid = 0;
+    sm.id_tuple.length = 0;
+    sm.num_vals = values.size();
+    sm.num_cct_nodes = contexts.size();
+    sm.num_nz_cct_nodes = coffsets.size() - 1; //since there is an extra end node 
+    sm.values = values.data();
+    sm.mids = mids.data();
+    sm.cct_node_ids = cids.data();
+    sm.cct_node_idxs = coffsets.data();
 
-  // Set up the output temporary file.
-  summaryOut = dir / "tmp-summary.sparse-db";
-  std::FILE* of = std::fopen(summaryOut.c_str(), "wb");
-  if(!of) util::log::fatal() << "Unable to open temporary summary sparse-db file for output!";
+    // Set up the output temporary file.
+    summaryOut = dir / "tmp-summary.sparse-db";
+    std::FILE* of = std::fopen(summaryOut.c_str(), "wb");
+    if(!of) util::log::fatal() << "Unable to open temporary summary sparse-db file for output!";
 
-  // Spit it all out, and close up.
-  if(hpcrun_fmt_sparse_metrics_fwrite(&sm, of) != HPCFMT_OK)
-    util::log::fatal() << "Error writing out temporary summary sparse-db!";
-  std::fclose(of);
+    // Spit it all out, and close up.
+    if(hpcrun_fmt_sparse_metrics_fwrite(&sm, of) != HPCFMT_OK)
+      util::log::fatal() << "Error writing out temporary summary sparse-db!";
+    std::fclose(of);
 
-  // write summary prof info
-  // map<&t, relative offset>
-  std::vector<char> info_bytes;
+    // Build prof_info
+    pms_profile_info_t pi;
+    pi.prof_info_idx = 0;
+    pi.num_vals = values.size();
+    pi.num_nzctxs = coffsets.size() - 1;
+    pi.id_tuple_ptr = id_tuple_ptrs[0];
+    pi.metadata_ptr = 0;
+    pi.spare_one = 0;
+    pi.spare_two = 0;
+
+    auto sparse_metrics_bytes = profBytes(&sm);
+    assert(sparse_metrics_bytes.size() == (values.size() * PMS_vm_pair_SIZE + coffsets.size() * PMS_ctx_pair_SIZE));
     
-  auto b = convertToByte8(id_tuple_ptrs[0]); //summary is always at index 0 
-  info_bytes.insert(info_bytes.end(), b.begin(), b.end());
+    pi.offset = writeProf(sparse_metrics_bytes, mode_wrt_root);
+    prof_infos[0] = std::move(pi);
 
-  b = convertToByte8(0);
-  info_bytes.insert(info_bytes.end(), b.begin(), b.end());
+  }else{// end of root rank
+    std::vector<char> fake_sm_bytes;
+    int ret = writeProf(fake_sm_bytes, mode_wrt_nroot);
+    assert(ret == -1);
+  } 
 
-  b = convertToByte8(0);
-  info_bytes.insert(info_bytes.end(), b.begin(), b.end());
-
-  b = convertToByte8(0);
-  info_bytes.insert(info_bytes.end(), b.begin(), b.end());
-
-  b = convertToByte8(values.size());
-  info_bytes.insert(info_bytes.end(), b.begin(), b.end());
-
-  b = convertToByte4(coffsets.size() - 1);
-  info_bytes.insert(info_bytes.end(), b.begin(), b.end());
-
-  b = convertToByte8(cur_position + (id_tuples_sec_ptr + MULTIPLE_8(id_tuples_sec_size)));
-  info_bytes.insert(info_bytes.end(), b.begin(), b.end());
-
-  auto fhi = profile_major_f.open(true);
-  fhi.writeat(prof_info_sec_ptr, PMS_prof_info_SIZE, info_bytes.data());
-/*
-  auto sparse_metrics_bytes = profBytes(&sm);
-  assert(sparse_metrics_bytes.size() == (values.size() * PMS_vm_pair_SIZE + coffsets.size() * PMS_ctx_pair_SIZE));
-  cur_obuffer.insert(cur_obuffer.end(), sparse_metrics_bytes.begin(), sparse_metrics_bytes.end());
-  fhi.writeat((id_tuples_sec_ptr + MULTIPLE_8(id_tuples_sec_size)), cur_obuffer.size(), cur_obuffer.data());
+  //update prof_info
+  //write prof_infos
+  writeProfInfos();
 
   //footer to show completeness
-  auto footer_off = cur_position + sparse_metrics_bytes.size() + id_tuples_sec_ptr + MULTIPLE_8(id_tuples_sec_size);
-  uint64_t footer_val = PROFDBft;
-  fhi.writeat(footer_off, sizeof(footer_val), &footer_val);
-*/
+//  mpi::barrier();
+//  auto footer_off = cur_fposition;
+//  uint64_t footer_val = PROFDBft;
+//  fhi.writeat(footer_off, sizeof(footer_val), &footer_val);
+
 
 
 }
@@ -636,36 +601,6 @@ void SparseDB::workProfSizesOffsets(const int world_rank, const int total_prof,
 //---------------------------------------------------------------------------
 // profile id tuples 
 //---------------------------------------------------------------------------
-std::vector<std::pair<uint16_t, uint64_t>>  SparseDB::getMyIdTuplesPairs1()
-{
-  std::vector<std::pair<uint16_t, uint64_t>> pairs;
-  
-  uint64_t rank = mpi::World::rank();
-
-  //each rank's pairs are led by a pair: {RANK_SPOT, rank number}
-  pairs.emplace_back(RANK_SPOT, rank);
-
-  //go through my rank's profiles' tuples and save them as pairs
-  for(uint i = 0; i < outputs1.size(); i++){
-    auto& tp = outputs1[i];
-    auto& ta = tp.first->attributes;
-    uint16_t tuple_length = ta.idTuple().size();
-    uint64_t prof_info_idx = tp.first->userdata[src.identifier()] + 1;
-    if(tuple_length == 0) continue; //skip this profile
-
-    pairs.emplace_back(tuple_length, prof_info_idx);
-    for(auto id : ta.idTuple())
-      pairs.emplace_back(id.kind, id.index);
-  }
-
-  if(rank != 0) return pairs;
-
-  //don't forget summary file for rank 0
-  pairs.emplace_back(IDTUPLE_SUMMARY_LENGTH, IDTUPLE_SUMMARY_PROF_INFO_IDX); 
-  pairs.emplace_back(IDTUPLE_SUMMARY, IDTUPLE_SUMMARY_IDX); 
-  return pairs;
-}
-
 
 std::vector<std::pair<uint16_t, uint64_t>>  SparseDB::getMyIdTuplesPairs()
 {
@@ -678,8 +613,6 @@ std::vector<std::pair<uint16_t, uint64_t>>  SparseDB::getMyIdTuplesPairs()
 
   //go through my rank's profiles' tuples and save them as pairs
   for(const auto& tp : outputs.citerate()){
- // for(auto i = 0; i < outputs1.size(); i++){
-  //  auto& tp = outputs1[i];
     auto& ta = tp.first->attributes;
     uint16_t tuple_length = ta.idTuple().size();
     uint64_t prof_info_idx = tp.first->userdata[src.identifier()] + 1;
@@ -917,15 +850,13 @@ void SparseDB::writeAllIdTuples(const std::vector<pms_id_tuple_t>& all_tuples, c
   id_tuples_sec_size = bytes.size();
 }
 
-void SparseDB::workIdTuplesSection1(const int world_rank, const int world_size, const int threads,
-                                    const int total_num_prof, const util::File& fh)
+void SparseDB::workIdTuplesSection1(const int total_num_prof, const util::File& fh)
 {
   int rank = mpi::World::rank();
   int local_num_prof = src.threads().size();
   if(rank == 0) local_num_prof++;
 
   std::vector<id_tuple_t> id_tuples(local_num_prof);
-  //std::vector<uint64_t> idt_bytes(local_num_prof);
   id_tuple_ptrs.resize(local_num_prof);
   uint64_t local_tuples_size = 0; 
 
@@ -947,9 +878,9 @@ void SparseDB::workIdTuplesSection1(const int world_rank, const int world_size, 
     id_tuple_t idt;
     idt.length = t->attributes.idTuple().size();
     idt.ids = (pms_id_t*)malloc(idt.length * sizeof(pms_id_t));
-    for(uint i = 0; i < idt.length; i++){
+    for(uint i = 0; i < idt.length; i++)
       idt.ids[i] = t->attributes.idTuple()[i];
-    }
+    
 
     id_tuples[idx] = std::move(idt);
     id_tuple_ptrs[idx] = PMS_id_tuple_len_SIZE + idt.length * PMS_id_SIZE; 
@@ -1068,6 +999,71 @@ std::vector<char> SparseDB::profBytes(hpcrun_fmt_sparse_metrics_t* sm)
 
 }
 
+uint64_t SparseDB::writeProf(const std::vector<char>& prof_bytes, int mode)
+{
+  uint64_t rel_off = -1; // only mode_wrt_nroot will return -1
+                         // it doesn't have any data to add, so no position for it 
+  uint64_t wrt_off = 0;  // only when it is going to write to the file, i.e write == true
+  bool write = false;
+
+  // add summary data to the current buffer
+  if(mode == mode_wrt_root){
+    obuffers[cur_obuf_idx].insert(obuffers[cur_obuf_idx].end(), prof_bytes.begin(), prof_bytes.end());
+    rel_off = cur_position;
+  }
+
+  if(mode != mode_reg_thr){ // called by write(), no need for lock, just communicate between ranks
+    write = true;
+    wrt_off = cur_fposition; //temp
+    cur_fposition += obuffers[cur_obuf_idx].size(); //temp for 1 rank
+
+    //record wrt_off with LAST
+
+    // be consistent with the else case
+    cur_obuf_idx = 1 - cur_obuf_idx;
+  }else{
+    outputs_l.lock();
+
+    // take care all previous profs in buffer
+    if((prof_bytes.size() + cur_position) >= 10000000){
+      write = true;
+
+      wrt_off = cur_fposition; //temp
+      cur_fposition += obuffers[cur_obuf_idx].size(); //temp for 1 rank
+
+      //record wrt_off with prof_info_idx
+
+      // prep to switch buffer
+      cur_obuf_idx = 1 - cur_obuf_idx;
+      cur_position = 0;
+    }
+
+    //add bytes to the current buffer
+    obuffers[cur_obuf_idx].insert(obuffers[cur_obuf_idx].end(), prof_bytes.begin(), prof_bytes.end());
+    
+    //update current position
+    rel_off = cur_position;
+    cur_position += prof_bytes.size();
+
+    outputs_l.unlock();
+  }
+
+  // if no need to write, just return 
+  if(!write) return rel_off;
+
+  // write
+  util::File profile_major_f(dir / "profile1.db", false);
+  auto pmfi = profile_major_f.open(true);
+
+  // ASSUMPTION: only one thread per rank is writing
+  pmfi.writeat(wrt_off, obuffers[1-cur_obuf_idx].size(), obuffers[1-cur_obuf_idx].data());
+  
+
+  return rel_off;
+
+
+}
+
 
 void SparseDB::updateCtxMids(const char* input, const uint64_t ctx_nzval_cnt,
                              std::set<uint16_t>& ctx_nzmids)
@@ -1124,11 +1120,13 @@ void SparseDB::collectCctMajorData(const uint32_t prof_info_idx, std::vector<cha
 //---------------------------------------------------------------------------
 // write profiles 
 //---------------------------------------------------------------------------
-void SparseDB::writeProfInfos(const util::File& fh, const int threads)
+void SparseDB::writeProfInfos()
 {
-  #pragma omp taskloop shared(fh)
-    for(uint i = 0; i < outputs1.size(); i++){
-      auto pi = outputs1[i].second;
+   util::File profile_major_f(dir / "profile1.db", false);
+
+  #pragma omp taskloop shared(profile_major_f)
+    for(uint i = 0; i < prof_infos.size(); i++){
+      auto pi = prof_infos[i];
       std::vector<char> info_bytes;
 
       auto b = convertToByte8(pi.id_tuple_ptr);
@@ -1149,11 +1147,11 @@ void SparseDB::writeProfInfos(const util::File& fh, const int threads)
       b = convertToByte4(pi.num_nzctxs);
       info_bytes.insert(info_bytes.end(), b.begin(), b.end());
 
-      uint64_t off = pi.offset + id_tuples_sec_ptr + MULTIPLE_8(id_tuples_sec_size);
-      b = convertToByte8(off);
+      b = convertToByte8(pi.offset);
       info_bytes.insert(info_bytes.end(), b.begin(), b.end());
 
-      auto fhi = fh.open(true);
+      printf("I am here write %ld\n", pi.offset);
+      auto fhi = profile_major_f.open(true);
       fhi.writeat(prof_info_sec_ptr + pi.prof_info_idx * PMS_prof_info_SIZE, PMS_prof_info_SIZE, info_bytes.data());
     }
 

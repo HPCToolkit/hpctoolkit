@@ -137,12 +137,11 @@ private:
     hpctoolkit::stdshim::filesystem::path> outputs;
 
   std::mutex outputs_l;
-  std::vector<std::pair<const hpctoolkit::Thread*,
-    pms_profile_info_t>> outputs1;
-  std::mutex obuffer_l;
-  size_t cur_position; //next available starting position for a profile
+  std::vector<pms_profile_info_t> prof_infos;
+  size_t cur_position; //next available starting position for a profile in buffer
   size_t cur_fposition; //next available starting position in the file
-  std::vector<char> cur_obuffer; //profiles in binary form waiting to be written
+  std::vector<std::vector<char>> obuffers; //profiles in binary form waiting to be written
+  int cur_obuf_idx;
 
   std::atomic<std::size_t> outputCnt;
   int team_size;
@@ -210,7 +209,6 @@ private:
   //---------------------------------------------------------------------------
   // profile id tuples 
   //---------------------------------------------------------------------------
-  std::vector<std::pair<uint16_t, uint64_t>> getMyIdTuplesPairs1();
   std::vector<std::pair<uint16_t, uint64_t>> getMyIdTuplesPairs();
 
   std::vector<pms_id_tuple_t> intPairs2Tuples(const std::vector<std::pair<uint16_t, uint64_t>>& all_pairs);
@@ -243,9 +241,8 @@ private:
                         const hpctoolkit::util::File& fh);
 
   //all work related to IdTuples Section, 
-  void workIdTuplesSection1(const int world_rank, const int world_size,
-                           const int threads, const int total_num_prof,
-                           const hpctoolkit::util::File& fh);
+  void workIdTuplesSection1(const int total_num_prof,
+                            const hpctoolkit::util::File& fh);
   //other sections only need the vector of prof_info_idx and id_tuple_ptr pairs
   void workIdTuplesSection(const int world_rank, const int world_size,
                            const int threads, const int num_prof,
@@ -255,7 +252,13 @@ private:
   //---------------------------------------------------------------------------
   // get profile's real data (bytes)
   //---------------------------------------------------------------------------
+  #define mode_reg_thr 0
+  #define mode_wrt_nroot 1
+  #define mode_wrt_root 2
+
   std::vector<char> profBytes(hpcrun_fmt_sparse_metrics_t* sm);
+
+  uint64_t writeProf(const std::vector<char>& prof_bytes, int mode); // return relative offset
 
   void updateCtxMids(const char* input, const uint64_t ctx_nzval_cnt, std::set<uint16_t>& ctx_nzmids);
 
@@ -272,7 +275,7 @@ private:
   //---------------------------------------------------------------------------
   // write profiles 
   //---------------------------------------------------------------------------
-  void writeProfInfos(const hpctoolkit::util::File& fh, const int threads);
+  void writeProfInfos();
 
   std::vector<char> profInfoBytes(const std::vector<char>& partial_info_bytes, 
                                   const uint64_t id_tuple_ptr, const uint64_t metadata_ptr,
