@@ -523,7 +523,8 @@ MY_OPENCL_FILES = \
 	gpu/opencl/opencl-activity-translate.c \
 	gpu/opencl/opencl-h2d-map.c \
 	gpu/opencl/opencl-queue-map.c \
-	gpu/opencl/opencl-context-map.c
+	gpu/opencl/opencl-context-map.c \
+	gpu/opencl/intel/optimization_check.c
 
 pkglib_LTLIBRARIES += libhpcrun_opencl.la
 libhpcrun_opencl_la_CPPFLAGS  = -I$(top_srcdir)/src $(OPENCL_IFLAGS)
