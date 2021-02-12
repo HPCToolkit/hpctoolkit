@@ -2,6 +2,14 @@
 #define _OPTIMIZATION_CHECK_H_
 
 //******************************************************************************
+// system includes
+//******************************************************************************
+
+#include <stdbool.h>
+
+
+
+//******************************************************************************
 // local includes
 //******************************************************************************
 
@@ -70,6 +78,41 @@ void
 clearKernelParams
 (
  cl_kernel kernel
+);
+
+
+void
+recordDeviceCount
+(
+  uint num_devices
+);
+
+
+void
+isSingleDeviceUsed
+(
+ void
+);
+
+
+void
+recordH2DCall
+(
+ cl_mem buffer
+);
+
+
+void
+recordD2HCall
+(
+ cl_mem buffer
+);
+
+
+void
+clearBufferEntry
+(
+ cl_mem buffer
 );
 
 #endif  // _OPTIMIZATION_CHECK_H_

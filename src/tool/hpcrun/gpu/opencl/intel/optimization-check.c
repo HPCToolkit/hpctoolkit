@@ -15,6 +15,7 @@
 #include "maps/kernel-queue-map.h"
 #include "maps/kernel-param-map.h"
 #include "pointer-alias-check-helper.h"
+#include "maps/buffer-map.h"
 
 #include <hpcrun/metrics.h>                 // hpcrun_metrics_new_kind, hpcrun_set_new_metric_info, hpcrun_close_kind
 #include <hpcrun/sample_event.h>            // hpcrun_sample_callpath
@@ -22,7 +23,7 @@
 
 
 //******************************************************************************
-// local includes
+// local data
 //******************************************************************************
 
 // metrics
@@ -30,6 +31,10 @@ int inorder_queue_metric_id;
 int kernel_to_multiple_queues;
 int kernel_to_multiple_queues_multiple_contexts;
 int kernel_params_not_aliased;
+int single_device_use_aot_compilation;
+int output_of_kernel_input_to_another_kernel;
+
+static uint numDevices = 0;
 
 
 
@@ -49,6 +54,8 @@ optimization_metrics_enable
   kernel_to_multiple_queues = hpcrun_set_new_metric_info(optimization_kind, "KERNEL_TO_MULTIPLE_QUEUES");
   kernel_to_multiple_queues_multiple_contexts = hpcrun_set_new_metric_info(optimization_kind, "KERNEL_TO_MULTIPLE_QUEUES_MULTIPLE_CONTEXTS");
   kernel_params_not_aliased = hpcrun_set_new_metric_info(optimization_kind, "KERNEL_PARAMS_NOT_ALIASED");
+  single_device_use_aot_compilation = hpcrun_set_new_metric_info(optimization_kind, "SINGLE_DEVICE_USE_AOT_COMPILATION");
+  output_of_kernel_input_to_another_kernel = hpcrun_set_new_metric_info(optimization_kind, "OUTPUT_OF_KERNEL_INPUT_TO_ANOTHER_KERNEL");
 
   hpcrun_close_kind(optimization_kind);  
 }
@@ -201,5 +208,95 @@ clearKernelParams
 )
 {
   kernel_param_map_delete((uint64_t)kernel);
+}
+
+
+/* Single device AOT compilation */
+void
+recordDeviceCount
+(
+ uint devicesCreated
+)
+{
+  numDevices += devicesCreated;
+}
+
+
+void
+isSingleDeviceUsed
+(
+ void
+)
+{
+  /* The Intel(R) oneAPI DPC++ Compiler converts a DPC++ program into an intermediate language called SPIR-V and stores that in the binary
+  produced by the compilation process. The advantage of producing this intermediate file instead of the binary is that this code can
+  be run on any hardware platform by translating the SPIR-V code into the assembly code of the platform at runtime. This process of translating
+  the intermediate code present in the binary is called JIT compilation (just-in-time compilation). JIT compilation can happen on demand at runtime.
+  There are multiple ways in which this JIT compilation can be controlled. By default, all the SPIR-V code present in the binary is translated
+  upfront at the beginning of the execution of the first offloaded kernel.
+
+  The overhead of JIT compilation at runtime can be avoided by ahead-of-time (AOT) compilation (it is enabled by appropriate switches on the compile-line).
+  With AOT compile, the binary will contain the actual assembly code of the platform that was selected during compilation instead of the SPIR-V
+  intermediate code. The advantage is that we do not need to JIT compile the code from SPIR-V to assembly during execution, which makes the code run
+  faster. The disadvantage is that now the code cannot run anywhere other than the platform for which it was compiled.
+
+  We can use AOT in the case where a single device is used */
+
+  // is this check simplistic? Maybe the user creates a context with many devices, but never uses the context.
+  bool singleDevice = (numDevices == 1) ? true : false;
+  if (singleDevice) {
+    ucontext_t context;
+    getcontext(&context);
+    cct_node_t *cct_node = hpcrun_sample_callpath(&context, single_device_use_aot_compilation, (cct_metric_data_t){.i = 1}, 0, 0, NULL ).sample_node;
+  }
+}
+
+
+/* Is output of a kernel passed as input to another kernel */
+void
+recordH2DCall
+(
+ cl_mem buffer
+)
+{
+  /*The cost of moving data between host and device is quite high especially in the case of discrete accelerators. So it is very important
+  to avoid data transfers between host and device as much as possible. In some situations it may be required to bring the data that was
+  computed by a kernel(kernel1) on the accelerator to the host and do some operation on it and send it back to the device(kernel2) for further processing.
+  In such situation we will end up paying for the cost of device to host transfer and then again host to device transfer.
+
+  We can perform kernel fusion one level further and fuse both kernel1 and kernel2. This gives very good performance since it avoids the intermediate
+  memory transfers completely in addition to avoiding launching an additional kernel. Most of the performance benefit in this case is due to improvement
+  in locality of memory reference */
+
+  buffer_map_entry_t *entry = buffer_map_update((uint64_t)buffer, 1, 0);
+  int D2H_count = buffer_map_entry_D2H_count_get(entry);
+  if (D2H_count > 0) {
+    // this H2D call happens after a D2H call for the same memory object
+    // are we missing any scenarios ?
+    // what about calls from clEnqueueMapBuffer and clSetKernelArg
+    ucontext_t context;
+    getcontext(&context);
+    cct_node_t *cct_node = hpcrun_sample_callpath(&context, output_of_kernel_input_to_another_kernel, (cct_metric_data_t){.i = 1}, 0, 0, NULL ).sample_node;
+  }
+}
+
+
+void
+recordD2HCall
+(
+ cl_mem buffer
+)
+{
+  buffer_map_update((uint64_t)buffer, 0, 1);
+}
+
+
+void
+clearBufferEntry
+(
+ cl_mem buffer
+)
+{
+  buffer_map_delete((uint64_t)buffer);
 }
 
