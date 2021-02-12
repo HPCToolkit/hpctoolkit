@@ -525,7 +525,11 @@ MY_OPENCL_FILES = \
 	gpu/opencl/opencl-h2d-map.c \
 	gpu/opencl/opencl-queue-map.c \
 	gpu/opencl/opencl-context-map.c \
-	gpu/opencl/intel/optimization_check.c
+	gpu/opencl/intel/optimization-check.c \
+	gpu/opencl/intel/maps/queue-context-map.c \
+	gpu/opencl/intel/maps/kernel-queue-map.c	\
+	gpu/opencl/intel/maps/kernel-param-map.c	\
+	gpu/opencl/intel/pointer-alias-check-helper.c
 
 pkglib_LTLIBRARIES += libhpcrun_opencl.la
 libhpcrun_opencl_la_CPPFLAGS  = -I$(top_srcdir)/src $(OPENCL_IFLAGS)

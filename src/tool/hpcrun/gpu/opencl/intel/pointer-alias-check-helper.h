@@ -1,9 +1,16 @@
+//******************************************************************************
+// system includes
+//******************************************************************************
+
+#include <stdbool.h>
+
+
 
 //******************************************************************************
 // local includes
 //******************************************************************************
 
-#include "optimization_check.h"
+#include "maps/kernel-param-map.h"
 
 
 
@@ -12,11 +19,8 @@
 //******************************************************************************
 
 bool
-isQueueInInOrderExecutionMode
+checkIfMemoryRegionsOverlap
 (
-	cl_command_queue_properties properties
-)
-{
-	return (properties && CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE);
-}
-
+ kp_node_t *kernel_param_list
+);
+ 
