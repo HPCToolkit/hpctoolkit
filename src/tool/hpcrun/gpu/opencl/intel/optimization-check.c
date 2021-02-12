@@ -16,6 +16,7 @@
 #include "maps/kernel-param-map.h"
 #include "pointer-alias-check-helper.h"
 #include "maps/buffer-map.h"
+#include "maps/device-map.h"
 
 #include <hpcrun/metrics.h>                 // hpcrun_metrics_new_kind, hpcrun_set_new_metric_info, hpcrun_close_kind
 #include <hpcrun/sample_event.h>            // hpcrun_sample_callpath
@@ -33,8 +34,9 @@ int kernel_to_multiple_queues_multiple_contexts;
 int kernel_params_not_aliased;
 int single_device_use_aot_compilation;
 int output_of_kernel_input_to_another_kernel;
+int all_devices_not_used;
 
-static uint numDevices = 0;
+static uint usedDeviceCount = 0;
 
 
 
@@ -56,6 +58,7 @@ optimization_metrics_enable
   kernel_params_not_aliased = hpcrun_set_new_metric_info(optimization_kind, "KERNEL_PARAMS_NOT_ALIASED");
   single_device_use_aot_compilation = hpcrun_set_new_metric_info(optimization_kind, "SINGLE_DEVICE_USE_AOT_COMPILATION");
   output_of_kernel_input_to_another_kernel = hpcrun_set_new_metric_info(optimization_kind, "OUTPUT_OF_KERNEL_INPUT_TO_ANOTHER_KERNEL");
+  all_devices_not_used = hpcrun_set_new_metric_info(optimization_kind, "ALL_DEVICES_NOT_USED");
 
   hpcrun_close_kind(optimization_kind);  
 }
@@ -215,10 +218,16 @@ clearKernelParams
 void
 recordDeviceCount
 (
- uint devicesCreated
+ uint num_devices,
+ const cl_device_id *devices
 )
 {
-  numDevices += devicesCreated;
+  for (int i = 0; i < num_devices; i++) {
+    bool new_device = device_map_insert((devices[i]));
+    if (new_device) {
+      usedDeviceCount++;
+    }
+  }
 }
 
 
@@ -243,7 +252,7 @@ isSingleDeviceUsed
   We can use AOT in the case where a single device is used */
 
   // is this check simplistic? Maybe the user creates a context with many devices, but never uses the context.
-  bool singleDevice = (numDevices == 1) ? true : false;
+  bool singleDevice = (usedDeviceCount == 1) ? true : false;
   if (singleDevice) {
     ucontext_t context;
     getcontext(&context);
@@ -298,5 +307,56 @@ clearBufferEntry
 )
 {
   buffer_map_delete((uint64_t)buffer);
+}
+
+
+/* using host device as an accelerator */
+static uint
+getTotalDeviceCount
+(
+ void
+)
+{
+  cl_uint platformCount;
+  cl_platform_id* platforms;
+  cl_uint platformDeviceCount;
+  uint totalDeviceCount;
+
+  clGetPlatformIDs(0, NULL, &platformCount);
+  platforms = (cl_platform_id*) malloc(sizeof(cl_platform_id) * platformCount);
+  clGetPlatformIDs(platformCount, platforms, NULL);
+
+  for (int i = 0; i < platformCount; i++) {
+    clGetDeviceIDs(platforms[i], CL_DEVICE_TYPE_ALL, 0, NULL, &platformDeviceCount);
+    totalDeviceCount += platformDeviceCount;
+  }
+  return totalDeviceCount;
+}
+
+
+void
+areAllDevicesUsed
+(
+ void
+)
+{
+  /* DPC++ provides access to different kinds of devices through abstraction of device selectors. Queues can be created for each of the devices,
+  and kernels can be submitted to them for execution. All kernel submits in DPC++ are non-blocking, which means that once the kernel is submitted
+  to a queue for execution, the host does not wait for it to finish unless waiting on the queue is explicitly requested. This allows the host to
+  do some work itself or initiate work on other devices while the kernel is executing on the accelerator.
+  The host CPU can be treated as an accelerator and the DPCPP can submit kernels to it for execution. This is completely independent and
+  orthogonal to the job done by the host to orchestrate the kernel submission and creation. The underlying operating system manages the kernels
+  submitted to the CPU accelerator as another process and uses the same openCL/Level0 runtime mechanisms to exchange information with the host device.
+
+  my addition: We can infact use all accelerators for distributing large computations
+  In order to achieve good balance one will have to split the work proportional to the capability of the accelerator instead of distributing it evenly
+  */
+
+  uint totalDeviceCount = getTotalDeviceCount();
+  if (totalDeviceCount != usedDeviceCount) {
+    ucontext_t context;
+    getcontext(&context);
+    cct_node_t *cct_node = hpcrun_sample_callpath(&context, all_devices_not_used, (cct_metric_data_t){.i = 1}, 0, 0, NULL ).sample_node;
+  }
 }
 
