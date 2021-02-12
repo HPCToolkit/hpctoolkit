@@ -950,7 +950,7 @@ hpcrun_clCreateContext
   cl_context context = HPCRUN_OPENCL_CALL(clCreateContext,
     (properties, num_devices, devices, pfn_notify, user_data, errcode_ret));
   if (optimization_check && *errcode_ret == CL_SUCCESS) {
-    recordDeviceCount(num_devices);
+    recordDeviceCount(num_devices, devices);
   }
   return context;
 }
@@ -1418,5 +1418,6 @@ opencl_api_process_finalize
   gpu_operation_multiplexer_fini();
   if (optimization_check) { // is this the right to do final optimization checks
     isSingleDeviceUsed();
+    areAllDevicesUsed();
   }
 }

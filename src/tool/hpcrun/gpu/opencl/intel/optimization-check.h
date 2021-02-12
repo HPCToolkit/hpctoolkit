@@ -84,7 +84,8 @@ clearKernelParams
 void
 recordDeviceCount
 (
-  uint num_devices
+ uint num_devices,
+ const cl_device_id *devices
 );
 
 
