@@ -103,6 +103,7 @@
 
 #define FORALL_OPENCL_ROUTINES(macro)  \
   macro(clBuildProgram)  \
+  macro(clCreateContext)  \
   macro(clCreateCommandQueue)  \
   macro(clCreateCommandQueueWithProperties)  \
   macro(clEnqueueNDRangeKernel)  \
@@ -111,6 +112,7 @@
   macro(clEnqueueWriteBuffer)  \
   macro(clEnqueueMapBuffer) \
   macro(clCreateBuffer)  \
+  macro(clReleaseMemObject)  \
   macro(clGetEventProfilingInfo)  \
   macro(clReleaseEvent)  \
   macro(clSetEventCallback) \
@@ -122,8 +124,8 @@
 #define OPENCL_FN(fn, args)      \
   static cl_int (*OPENCL_FN_NAME(fn)) args
 
-#define OPENCL_PROGRAM_FN(fn, args)      \
-  static cl_program (*OPENCL_FN_NAME(fn)) args
+#define OPENCL_CONTEXT_FN(fn, args)      \
+  static cl_context (*OPENCL_FN_NAME(fn)) args
 
 #define OPENCL_QUEUE_FN(fn, args)      \
   static cl_command_queue (*OPENCL_FN_NAME(fn)) args
@@ -187,6 +189,20 @@ OPENCL_FN
    const char* options,
    void (CL_CALLBACK* pfn_notify)(cl_program program, void* user_data),
    void* user_data
+  )
+);
+
+
+OPENCL_CONTEXT_FN
+(
+  clCreateContext,
+  (
+   cl_context_properties *properties,
+   cl_uint num_devices,
+   const cl_device_id *devices,
+   void *pfn_notify (const char *errinfo, const void *private_info, size_t cb, void *user_data),
+   void *user_data,
+   cl_int *errcode_ret
   )
 );
 
@@ -306,6 +322,15 @@ OPENCL_CREATEBUFFER_FN
    size_t,
    void *,
    cl_int *
+  )
+);
+
+
+OPENCL_FN
+(
+  clReleaseMemObject,
+  (
+   cl_mem mem
   )
 );
 
@@ -909,6 +934,27 @@ hpcrun_clBuildProgram
 #endif // ENABLE_GTPIN
 
 
+cl_context
+hpcrun_clCreateContext
+(
+  const cl_context_properties *properties,
+  cl_uint num_devices,
+  const cl_device_id *devices,
+  void (CL_CALLBACK* pfn_notify) (const char *errinfo, const void *private_info, size_t cb, void *user_data),
+  void *user_data,
+  cl_int *errcode_ret
+)
+{
+  ETMSG(OPENCL, "inside clCreateContext wrapper");
+  cl_context context = HPCRUN_OPENCL_CALL(clCreateContext,
+    (properties, num_devices, devices, pfn_notify, user_data, errcode_ret));
+  if (optimization_check && *errcode_ret == CL_SUCCESS) {
+    recordDeviceCount(num_devices);
+  }
+  return context;
+}
+
+
 cl_command_queue
 hpcrun_clCreateCommandQueue
 (
@@ -1109,6 +1155,9 @@ hpcrun_clEnqueueReadBuffer
   cl_event *eventp = NULL;
   SET_EVENT_POINTER(eventp, event, cpy_info);
 
+  if (optimization_check) {
+    recordD2HCall(buffer);
+  }
   cl_int return_status =
     HPCRUN_OPENCL_CALL(clEnqueueReadBuffer,
       (command_queue, buffer, blocking_read, offset,
@@ -1146,6 +1195,9 @@ hpcrun_clEnqueueWriteBuffer
   opencl_object_t *cpy_info = opencl_malloc_kind(GPU_ACTIVITY_MEMCPY);
   INITIALIZE_CALLBACK_INFO(initializeMemcpyCallBackInfo, cpy_info, (cpy_info, GPU_MEMCPY_H2D, cb, command_queue))
 
+  if (optimization_check) {
+    recordH2DCall(buffer);
+  }
   opencl_subscriber_callback(cpy_info);
 
   cl_event *eventp = NULL;
@@ -1256,6 +1308,19 @@ hpcrun_clCreateBuffer
 
 
 cl_int
+hpcrun_clReleaseMemObject
+(
+ cl_mem mem
+)
+{
+  if (optimization_check) {
+    clearBufferEntry(mem);
+  }
+  return HPCRUN_OPENCL_CALL(clReleaseMemObject, (mem));
+}
+
+
+cl_int
 hpcrun_clReleaseKernel
 (
  cl_kernel kernel
@@ -1350,4 +1415,7 @@ opencl_api_process_finalize
 )
 {
   gpu_operation_multiplexer_fini();
+  if (optimization_check) { // is this the right to do final optimization checks
+    isSingleDeviceUsed();
+  }
 }
