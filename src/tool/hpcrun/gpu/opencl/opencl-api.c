@@ -124,6 +124,7 @@
   macro(clReleaseKernel)  \
   macro(clWaitForEvents)  \
   macro(clFinish)	\
+  macro(clReleaseKernel)  \
   macro(clReleaseCommandQueue)
 
 #define DYN_FN_NAME(f) f ## _fn
@@ -433,10 +434,19 @@ OPENCL_FN
 
 OPENCL_FN
 (
-  clReleaseCommandQueue,
-  (
-   cl_command_queue command_queue
-  )
+ clFinish,
+ (
+  cl_command_queue command_queue
+ )
+);
+
+
+OPENCL_FN
+(
+ clReleaseCommandQueue,
+ (
+  cl_command_queue command_queue
+ )
 );
 
 
@@ -1142,6 +1152,9 @@ hpcrun_clCreateCommandQueueWithProperties
 		opencl_queue_prologue(queue);
 	}
 
+  if (optimization_check) {
+    recordQueueContext(queue, context);
+  }
   return queue;
 }
 
@@ -1186,6 +1199,10 @@ hpcrun_clEnqueueNDRangeKernel
   cl_event *eventp = NULL;
   SET_EVENT_POINTER(eventp, event, kernel_info)
 
+  if (optimization_check) {
+    isKernelSubmittedToMultipleQueues(ocl_kernel, command_queue);
+    areKernelParamsAliased(ocl_kernel);
+  }
   cl_int return_status =
             HPCRUN_OPENCL_CALL(clEnqueueNDRangeKernel, (command_queue, ocl_kernel, work_dim,
                                 global_work_offset, global_work_size, local_work_size,
@@ -1235,6 +1252,10 @@ hpcrun_clEnqueueTask
   cl_event *eventp = NULL;
   SET_EVENT_POINTER(eventp, event, kernel_info);
 
+  if (optimization_check) {
+    isKernelSubmittedToMultipleQueues(kernel, command_queue);
+    areKernelParamsAliased(kernel);
+  }
   cl_int return_status =
             HPCRUN_OPENCL_CALL(clEnqueueTask, (command_queue, kernel,
                                 num_events_in_wait_list, event_wait_list, eventp));
@@ -1514,6 +1535,23 @@ hpcrun_clReleaseKernel
 
 
 cl_int
+hpcrun_clReleaseKernel
+(
+ cl_kernel kernel
+)
+{
+  ETMSG(OPENCL, "clReleaseKernel called for kernel: %"PRIu64 "", (uint64_t)kernel);
+
+  cl_int status = HPCRUN_OPENCL_CALL(clReleaseKernel, (kernel));
+  if (optimization_check) {
+    clearKernelQueues(kernel);
+    clearKernelParams(kernel);
+  }
+  return status;
+}
+
+
+cl_int
 hpcrun_clReleaseCommandQueue
 (
  cl_command_queue command_queue
@@ -1528,7 +1566,6 @@ hpcrun_clReleaseCommandQueue
   if (is_opencl_blame_shifting_enabled() && status == CL_SUCCESS) {
     opencl_queue_epilogue(command_queue);
   }
-
   return status;
 }
 

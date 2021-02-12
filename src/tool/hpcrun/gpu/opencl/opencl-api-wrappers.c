@@ -295,11 +295,21 @@ clFinish
 
 
 cl_int
-clReleaseCommandQueue
+clReleaseKernel
 (
-	cl_command_queue command_queue
+ cl_kernel kernel
 )
 {
-	return hpcrun_clReleaseCommandQueue(command_queue);
+  return hpcrun_clReleaseKernel(kernel);
+}
+
+
+cl_int
+clReleaseCommandQueue
+(
+ cl_command_queue command_queue
+)
+{
+  return hpcrun_clReleaseCommandQueue(command_queue);
 }
 
