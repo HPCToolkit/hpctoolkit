@@ -212,3 +212,24 @@ clCreateBuffer
 {
   return hpcrun_clCreateBuffer(context, flags, size, host_ptr, errcode_ret);
 }
+
+
+cl_int
+clReleaseKernel
+(
+ cl_kernel kernel
+)
+{
+  return hpcrun_clReleaseKernel(kernel);
+}
+
+
+cl_int
+clReleaseCommandQueue
+(
+ cl_command_queue command_queue
+)
+{
+  return hpcrun_clReleaseCommandQueue(command_queue);
+}
+
