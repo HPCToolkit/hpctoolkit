@@ -1756,6 +1756,7 @@ opencl_api_process_finalize
   gpu_operation_multiplexer_fini();
   if (optimization_check) { // is this the right to do final optimization checks
     isSingleDeviceUsed();
+    areAllDevicesUsed();
   }
 }
 
