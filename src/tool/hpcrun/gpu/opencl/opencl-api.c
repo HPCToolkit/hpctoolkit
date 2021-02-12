@@ -1299,6 +1299,9 @@ hpcrun_clEnqueueReadBuffer
   cl_event *eventp = NULL;
   SET_EVENT_POINTER(eventp, event, cpy_info);
 
+  if (optimization_check) {
+    recordD2HCall(buffer);
+  }
   cl_int return_status =
     HPCRUN_OPENCL_CALL(clEnqueueReadBuffer,
       (command_queue, buffer, blocking_read, offset,
@@ -1339,6 +1342,9 @@ hpcrun_clEnqueueWriteBuffer
   opencl_object_t *cpy_info = opencl_malloc_kind(GPU_ACTIVITY_MEMCPY);
   INITIALIZE_CALLBACK_INFO(initializeMemcpyCallBackInfo, cpy_info, (cpy_info, GPU_MEMCPY_H2D, cb, command_queue))
 
+  if (optimization_check) {
+    recordH2DCall(buffer);
+  }
   opencl_subscriber_callback(cpy_info);
 
   cl_event *eventp = NULL;
@@ -1531,6 +1537,19 @@ hpcrun_clReleaseKernel
     clearKernelParams(kernel);
   }
   return status;
+}
+
+
+cl_int
+hpcrun_clReleaseMemObject
+(
+ cl_mem mem
+)
+{
+  if (optimization_check) {
+    clearBufferEntry(mem);
+  }
+  return HPCRUN_OPENCL_CALL(clReleaseMemObject, (mem));
 }
 
 
@@ -1735,5 +1754,8 @@ opencl_api_process_finalize
     areAllDevicesUsed();
   }
   gpu_operation_multiplexer_fini();
+  if (optimization_check) { // is this the right to do final optimization checks
+    isSingleDeviceUsed();
+  }
 }
 
