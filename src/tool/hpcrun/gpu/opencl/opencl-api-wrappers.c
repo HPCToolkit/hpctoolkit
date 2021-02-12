@@ -295,6 +295,16 @@ clFinish
 
 
 cl_int
+clReleaseMemObject
+(
+ cl_mem mem
+)
+{
+  return hpcrun_clReleaseMemObject(mem);
+}
+
+
+cl_int
 clReleaseKernel
 (
  cl_kernel kernel
