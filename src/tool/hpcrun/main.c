@@ -244,7 +244,8 @@ static hpcrun_aux_cleanup_t * hpcrun_aux_cleanup_free_list_head = NULL;
 static char execname[PATH_MAX] = {'\0'};
 
 static int monitor_fini_process_how = 0;
-static atomic_int is_ms_initialized = ATOMIC_VAR_INIT(0);
+static atomic_int ms_init_started = ATOMIC_VAR_INIT(0);
+static atomic_int ms_init_completed = ATOMIC_VAR_INIT(0);
 
 
 //***************************************************************************
@@ -848,6 +849,9 @@ hpcrun_wait()
 // hpcrun initialization ( process control via libmonitor)
 //***************************************************************************
 
+static
+void  hpcrun_prepare_measurement_subsystem(bool is_child);
+
 void*
 monitor_init_process(int *argc, char **argv, void* data)
 {
@@ -929,64 +933,74 @@ monitor_init_process(int *argc, char **argv, void* data)
     #endif
   }
   
+ fork_data_t* fork_data = (fork_data_t*) data;
+  bool is_child = data && fork_data->is_child;
+  if (is_child){
+    hpcrun_prepare_measurement_subsystem(is_child);
+  }
+
   return data;
-}
-
-
-static
-void  hpcrun_prepare_measurement_subsystem()
-{
-  bool is_child = false;
-  
-  if (atomic_fetch_add(&is_ms_initialized, 1) != 0)
-    return;
-
-  hpcrun_registered_sources_init();
-
-  hpcrun_do_custom_init();
-
-  // for debugging, limit the life of the execution with an alarm.
-  char* life  = getenv("HPCRUN_LIFETIME");
-  if (life != NULL){
-    int seconds = atoi(life);
-    if (seconds > 0) alarm((unsigned int) seconds);
-  }
-
-  // see if unwinding has been turned off
-  // the same setting governs whether or not fnbounds is needed or used.
-  hpcrun_no_unwind = hpcrun_get_env_bool("HPCRUN_NO_UNWIND");
-
-  char* s = getenv(HPCRUN_EVENT_LIST);
-
-  if (! is_child) {
-    hpcrun_sample_sources_from_eventlist(s);
-  }
-
-  hpcrun_set_abort_timeout();
-
-  hpcrun_process_sample_source_none();
-
-  TMSG(PROCESS,"hpcrun outer initialization");
-
-  hpcrun_sample_prob_mesg();
-
-  TMSG(PROCESS, "I am a %s process parent");
-
-  hpcrun_init_internal(is_child);
-
-  if (ENABLED(TST)){
-    EEMSG("TST debug ctl is active!");
-    STDERR_MSG("Std Err message appears");
-  }
-
-  hpcrun_safe_exit();
 }
 
 
 void
 monitor_at_main()
 {  
-     hpcrun_prepare_measurement_subsystem();
+  bool is_child = false;
+  hpcrun_prepare_measurement_subsystem(is_child);
+}
+
+
+static
+void  hpcrun_prepare_measurement_subsystem(bool is_child)
+{  
+  if (atomic_fetch_add(&ms_init_started, 1) == 0){
+    hpcrun_registered_sources_init();
+
+    hpcrun_do_custom_init();
+
+    // for debugging, limit the life of the execution with an alarm.
+    char* life  = getenv("HPCRUN_LIFETIME");
+    if (life != NULL){
+      int seconds = atoi(life);
+      if (seconds > 0) alarm((unsigned int) seconds);
+    }
+
+    // see if unwinding has been turned off
+    // the same setting governs whether or not fnbounds is needed or used.
+    hpcrun_no_unwind = hpcrun_get_env_bool("HPCRUN_NO_UNWIND");
+
+    char* s = getenv(HPCRUN_EVENT_LIST);
+
+    if (! is_child) {
+      hpcrun_sample_sources_from_eventlist(s);
+    }
+
+    hpcrun_set_abort_timeout();
+
+    hpcrun_process_sample_source_none();
+
+    TMSG(PROCESS,"hpcrun outer initialization");
+
+    hpcrun_sample_prob_mesg();
+
+    TMSG(PROCESS, "I am a %s process parent");
+
+    hpcrun_init_internal(is_child);
+
+    if (ENABLED(TST)){
+      EEMSG("TST debug ctl is active!");
+      STDERR_MSG("Std Err message appears");
+    }
+
+    hpcrun_safe_exit();
+
+    atomic_store(&ms_init_completed, 1);
+
+  }else{
+    while(! atomic_load(&ms_init_completed));
+  }
+    
 }
 
 
@@ -1163,9 +1177,9 @@ monitor_thread_pre_create(void)
   if (module_ignore_map_inrange_lookup(thread_pre_create_address)) {
     return NULL;
   }
-  
+  bool is_child = false;
   // outer initialization
-   hpcrun_prepare_measurement_subsystem();
+   hpcrun_prepare_measurement_subsystem(is_child);
 
 
   hpcrun_safe_enter();
