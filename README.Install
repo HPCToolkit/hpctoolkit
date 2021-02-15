@@ -40,19 +40,18 @@ These notes describe how to build and install HPCToolkit and hpcviewer
 and their prerequisites with Spack.  HPCToolkit proper (hpcrun,
 hpcstruct and hpcprof) is used to measure and analyze an application's
 performance and then produce a database for hpcviewer.  HPCToolkit is
-supported on the following platforms.
+supported on the following platforms.  IBM Blue Gene is no longer
+supported.
 
-  1. Linux (64-bit) on x86_64, big and little-endian powerpc (power7, 8
-     and 9) and ARM (aarch64).
+  1. Linux (64-bit) on x86_64, little-endian powerpc (power8 and 9) and
+     ARM (aarch64).  Big endian powerpc is no longer supported.
 
   2. Cray XT/XE/XK/XC on x86_64 and Compute Node Linux.
 
-  3. IBM Blue Gene/Q on ppc64 (now deprecated).
-
 We provide binary distributions for hpcviewer and hpctraceviewer on
-Linux (x86_64 and powerpc), Windows and MacOS. HPCToolkit databases are
-platform-independent and it is common to run hpcrun on one machine and
-then view the results on another machine.
+Linux (x86_64, ppc64/le and aarch64), Windows and MacOS. HPCToolkit
+databases are platform-independent and it is common to run hpcrun on one
+machine and then view the results on another machine.
 
    We build HPCToolkit and its prerequisite libraries from source.
 HPCToolkit has some 15-20 prerequisites and we now use spack to build
@@ -63,9 +62,8 @@ will probably want to run 'configure' and 'make' manually, but both
 methods are supported.
 
    Note: the old method of using hpctoolkit-externals to build the
-prerequisite libraries is now superseded by spack.  Although externals
-will continue to work for a while, we have stopped updating externals
-and now add newer versions of packages only in spack.
+prerequisite libraries is now superseded by spack and is no longer
+supported.
 
    These notes are written mostly from the view of using spack to build
 hpctoolkit and its dependencies.  If you are a more experienced spack
@@ -81,14 +79,14 @@ The current status of using Spack for HPCToolkit is at:
 
      <http://hpctoolkit.org/spack-issues.html>
 
-Last revised: February 1, 2021.
+Last revised: February 14, 2021.
 
 2 Prerequisites
 ===============
 
 Building HPCToolkit requires the following prerequisites.
 
-  1. The GNU gcc and g++ compilers version 5.x or later.  On systems
+  1. The GNU gcc and g++ compilers version 7.3 or later.  On systems
      with older compilers, you can use spack to build a later version of
      gcc.
 
@@ -100,8 +98,8 @@ Building HPCToolkit requires the following prerequisites.
      these tools, or else you couldn't compile anything.
 
   4. Cmake version 3.4 or later, perl version 5.x, and python version
-     2.7 or 3.4 or later.  On systems that are missing these tools or
-     have versions that are too old, you can use spack to build a later
+     3.4 or later.  On systems that are missing these tools or have
+     versions that are too old, you can use spack to build a later
      version.
 
   5. Git and curl for downloading files.
@@ -110,8 +108,11 @@ Building HPCToolkit requires the following prerequisites.
      make HPCToolkit available as a module.  Again, spack can install
      these packages if they are missing from your system.
 
-Hpcviewer and hpctraceviewer require Java version 8.  On Linux, the
-viewers also require GTK+ version 2.x.
+Hpcviewer and hpctraceviewer require Java version 8 or 11.  Starting
+with version 2021.01, the viewers now need Java 11 or later (but not
+15).  Up through 2020.12, the viewers need Java 8 (not later).  On
+Linux, the viewers also require GTK+ version 3.20 or later starting with
+2021.01 and GTK+ version 2.x up through 2020.12.
 
 3 Spack Notation
 ================
@@ -156,10 +157,10 @@ both on the command line and in config files.
 
   7. 'arch', 'platform', 'os' and 'target' are special options for the
      system architecture and machine type.  Platform is normally
-     'linux', or else 'cray' or 'bgq' (or even 'windows' or 'darwin').
-     OS is the Linux distribution, 'rhel7', 'sles15', etc, and target is
-     the machine type, 'x86_64', 'ppc64le', etc.  Arch is a triple of
-     platform, os and target separated by dashes.
+     'linux', or else 'cray' (or even 'darwin').  OS is the Linux
+     distribution, 'rhel7', 'sles15', etc, and target is the machine
+     type, 'x86_64', 'ppc64le', etc.  Arch is a triple of platform, os
+     and target separated by dashes.
 
      Normally, a system has only one arch type and you don't need to
      specify this.  However, for systems with separate front and
@@ -167,7 +168,7 @@ both on the command line and in config files.
      wanted to build python for the front end on Cray, then you might
      use something like this.
 
-          python@3.7.4 arch=cray-sles12-x86_64
+          python@3.7.4 arch=cray-sles15-x86_64
 
      Also, now that spack has implemented microarchitecture targets
      (haswell, ivybridge, etc), you can use 'target' to build for a
@@ -179,7 +180,9 @@ When writing a spec (for 'spack install' or other), spack will fully
 resolve all possible choices for the package and all of its dependencies
 and create a unique hash value for that exact configuration.  This
 process is called 'concretization.'  To see how spack would concretize a
-spec, use 'spack spec <partial-spec>'.
+spec, use 'spack spec'.
+
+     spack spec hpctoolkit@master ^binutils@2.34 ^boost@1.72.0
 
      <https://spack.readthedocs.io/en/latest/basic_usage.html#specs-dependencies>
 
@@ -187,7 +190,7 @@ spec, use 'spack spec <partial-spec>'.
 ============================
 
 Spack is available via git clone from GitHub.  This includes the core
-spack machinery and recipes for building more than 4,200 packages (and
+spack machinery and recipes for building more than 5,000 packages (and
 growing).  You should also clone HPCToolkit for the 'packages.yaml' file
 which is used to configure the spack build.
 
@@ -211,13 +214,13 @@ modules built by spack.
 'config.yaml' is the top-level spack config file.  This specifies the
 directory layout for installed files and the top-level spack parameters.
 There are two fields that you normally want to set, especially if you
-want to install modules for hpctoolkit in a public directory.  For a
-module to be available, both the 'install_tree' and 'module_roots'
-directories must be accessible.
+want to install packages and modules for hpctoolkit in a public
+directory.  For a module to be available, both the 'install_tree' and
+'module_roots' directories must be accessible.
 
-  1. 'install_tree' - by default, spack installs packages inside the
-     spack repository at 'spack/opt/spack'.  If you want to use another
-     location, then set this.
+  1. 'install_tree/root' - by default, spack installs packages inside
+     the spack repository at 'spack/opt/spack'.  If you want to use
+     another location, then set the 'root' field under 'install_tree'.
 
   2. 'module_roots' - by default, spack installs module files inside the
      spack repository at 'spack/share/spack'.  If you want to use
@@ -298,30 +301,33 @@ the versions from 'packages.yaml' that we supply.)
 change depending on your system.  But always check the current
 'packages.yaml' file to see if any more have been added.
 
-  1. 'intel-tbb' - for very old Intel or AMD systems that don't support
+  1. 'binutils' - avoid versions 2.35 and 2.35.1, they have a bug that
+     spews errors from hpcprof.  Use 2.34 until 2.36 is available.
+
+     'intel-tbb' - for very old Intel or AMD systems that don't support
      transactional memory, change '+tm' to '~tm'.  (This option has no
      effect on non-x86 systems.)
-
-  2. 'libmonitor' - on Blue Gene/Q, add '+bgq'.
 
 6.1 External Packages
 ---------------------
 
-The second section in 'packages.yaml' specifies a path or module for
-system build tools.  Building hpctoolkit's prerequisites requires cmake
-3.4 or later, perl 5.x and python 2.7 or 3.4 or later.  There are three
-ways to satisfy these requirements: a system installed version (eg,
-/usr), a pre-built module or build from scratch.
+The other sections in 'packages.yaml' specify paths or modules for other
+packages and system build tools.  Building hpctoolkit's prerequisites
+requires cmake 3.4 or later, perl 5.x and python 3.4 or later.  There
+are three ways to satisfy these requirements: a system installed version
+(eg, /usr), a pre-built module or build from scratch.
 
    By default, spack will rebuild these from scratch, even if your local
 version is perfectly fine.  If you already have an installed version and
 prefer to use that instead, then you can specify this in
-'packages.yaml'.  Note that these are only build tools.  Hpctoolkit does
-not link with any of their libraries.
+'packages.yaml'.
 
    For example, this entry says that cmake 3.7.2 is available from
 module 'CMake/3.7.2' and that spack should use this instead of building
-its own copy.  You may include more than one module, if needed.
+its own copy.  You may use more than one spec per package and more than
+one module per spec, if needed.  'buildable: False' is optional and
+means that spack must find a matching external spec or else fail the
+build.
 
      cmake:
        externals:
@@ -340,18 +346,15 @@ bin directory itself.
          prefix: /usr
        buildable: False
 
-Note: the syntax for the 'externals:' declaration has changed in spack
-develop as of Aug 10-11, 2020 (commit 193e8333fa23).  Prior to Aug 10,
-the old syntax was:
+Note that you may specify more than one spec for a package.  For
+example, your system might have both python2 and python3.
 
-     cmake:
-       modules:
-         cmake@3.7.2:  CMake/3.7.2
-       buildable: False
-
-     perl:
-       paths:
-         perl@5.16.3:  /usr
+     python:
+       externals:
+       - spec: python@3.6.5
+         prefix: /usr
+       - spec: python@2.7.15
+         prefix: /usr
        buildable: False
 
 6.2 Micro-Architecture Targets
@@ -393,7 +396,7 @@ Dependencies'.
 7 Compilers and compilers.yaml
 ==============================
 
-Building HPCToolkit requires GNU gcc/g++ version 5.x or later.  By
+Building HPCToolkit requires GNU gcc/g++ version 7.3 or later.  By
 default, spack uses the latest available version of gcc, but you can
 specify a different compiler, if one is available.
 
@@ -411,49 +414,49 @@ can also run 'spack compiler list' and 'spack compiler info' to see what
 compilers spack knows about.
 
    For example, on one power8 system running RedHat 7.3, /usr/bin/gcc is
-version 4.8.5, but gcc 6.4.0 is available as module 'GCC/6.4.0'.
+version 4.8.5, but gcc 8.3.0 is available as module 'GCC/8.3.0'.
 
-     module load GCC/6.4.0
+     module load GCC/8.3.0
 
      spack compiler find
      ==> Added 2 new compilers to /home/krentel/.spack/linux/compilers.yaml
-         gcc@6.4.0  gcc@4.8.5
+         gcc@8.3.0  gcc@4.8.5
      ==> Compilers are defined in the following files:
          /home/krentel/.spack/linux/compilers.yaml
 
      spack compiler list
      ==> Available compilers
      -- gcc rhel7-ppc64le --------------------------------------------
-     gcc@6.4.0  gcc@4.8.5
+     gcc@8.3.0  gcc@4.8.5
 
-     spack compiler info gcc@6.4
-     gcc@6.4.0:
+     spack compiler info gcc@8.3
+     gcc@8.3.0:
          paths:
-             cc = /opt/apps/software/Core/GCCcore/6.4.0/bin/gcc
-             cxx = /opt/apps/software/Core/GCCcore/6.4.0/bin/g++
-             f77 = /opt/apps/software/Core/GCCcore/6.4.0/bin/gfortran
-             fc = /opt/apps/software/Core/GCCcore/6.4.0/bin/gfortran
-         modules  = ['GCC/6.4.0']
+             cc = /opt/apps/software/Core/GCCcore/8.3.0/bin/gcc
+             cxx = /opt/apps/software/Core/GCCcore/8.3.0/bin/g++
+             f77 = /opt/apps/software/Core/GCCcore/8.3.0/bin/gfortran
+             fc = /opt/apps/software/Core/GCCcore/8.3.0/bin/gfortran
+         modules  = ['GCC/8.3.0']
          operating system  = rhel7
 
 Note: for compilers from modules, spack does not fill in the 'modules:'
 field in the 'compilers.yaml' file.  You need to do this manually.  In
 the above example, after running 'find', I edited 'compilers.yaml' to
-add 'GCC/6.4.0' to the 'modules:' field as below.  This is important to
+add 'GCC/8.3.0' to the 'modules:' field as below.  This is important to
 how spack manipulates the build environment.
 
      - compiler:
-         modules: [GCC/6.4.0]
+         modules: [GCC/8.3.0]
          operating_system: rhel7
-         spec: gcc@6.4.0
+         spec: gcc@8.3.0
          ...
 
 Spack uses '%' syntax to specify the build compiler and '@' syntax to
 specify the version.  For example, suppose you had gcc versions 7.3.1,
-6.4.0 and 5.4.0 available and you wanted to use 6.4.0.  You could write
+8.3.0 and 10.2.0 available and you wanted to use 8.3.0.  You could write
 this as:
 
-     spack install package %gcc@6.4.0
+     spack install package %gcc@8.3.0
 
 See the spack docs on 'Compiler Configuration'.
 
@@ -464,10 +467,9 @@ See the spack docs on 'Compiler Configuration'.
 
 First, set up your 'config.yaml', 'packages.yaml' and 'compilers.yaml'
 files as above and edit them for your system.  You can see how spack
-will build hpctoolkit with 'spack spec' and 'spack graph'.
+will build hpctoolkit with 'spack spec'.
 
      spack spec hpctoolkit
-     spack graph hpctoolkit
 
 Then, the "one button" method uses spack to install everything.
 
@@ -877,32 +879,37 @@ to the following.
 ===============================
 
 We provide binary distributions for hpcviewer and hpctraceviewer on
-Linux (x86_64 and powerpc), Windows and MacOS. HPCToolkit databases are
-platform-independent and it is common to run hpcrun on one machine and
-then view the results on another machine.
+Linux (x86_64, ppc64/le and now aarch64), Windows and MacOS. HPCToolkit
+databases are platform-independent and it is common to run hpcrun on one
+machine and then view the results on another machine.
 
-   All versions of the viewers require Java version 8 (not 9 or later).
-The Linux versions also require GTK+ version 2.x.
+   Starting with 2021.01, the viewers now require Java 11 or later (but
+not 15), plus GTK+ 3.20 or later on Linux.  Older viewers, up through
+2020.12, require Java 8 (not 9 or later), plus GTK+ 2.x for Linux.
 
 12.1 Spack Install
 ------------------
 
-The spack install is available on Linux x86_64, big-endian power7
-(ppc64) and little-endian power8 and 9 (ppc64le).  This installs both
-hpcviewer and hpctraceviewer and includes the Java 8 prerequisite.
+The spack install is available on Linux x86_64, little-endian powerpc64
+(power8 and 9) and now aarch64 ARM. This installs both hpcviewer and
+hpctraceviewer and includes the Java prerequisite.
 
-   On x86_64, use either jdk or openjdk.  The latest 1.8 jdk package,
-1.8.0_202 has trouble downloading due to licensing issues, however
-1.8.0_141-b15 seems to work.  (Or, you could manually download jdk
-1.8.0_202 and copy it to the spack file cache.)  For openjdk, use
-version 1.8.0_202-b08.
+   For the current viewers, use openjdk with the most recent version of
+Java 11 for all platforms.  Currently, this is the default, but if not,
+then you can add an explicit openjdk dependency.  You can check this
+with 'spack info' and 'spack spec'.
 
-     spack install hpcviewer ^jdk@1.8.0_141-b15
-     spack install hpcviewer ^openjdk@1.8.0_202-b08
+     spack info openjdk
+     spack install hpcviewer
+     spack install hpcviewer ^openjdk @11.0.8_10
 
-On powerpc (big and little-endian), use the IBM version of Java.
+For older viewers, up through 2020.12, the choice of Java depends on the
+platform.  On x86_64, use openjdk, the most recent version of Java 8
+(not 9).  For powerpc, use ibm-java, again the latest version 8.  Older
+viewers are not supported on ARM. For example (the versions may change):
 
-     spack install hpcviewer ^ibm-java
+     (x86)  spack install hpcviewer ^openjdk @1.8.0_265-b01
+     (ppc)  spack install hpcviewer ^ibm-java @8.0.6.20
 
 12.2 Manual Install
 -------------------
@@ -910,11 +917,12 @@ On powerpc (big and little-endian), use the IBM version of Java.
 Binary distributions of the viewers for all supported platforms are
 available at:
 
-     <http://hpctoolkit.org/download/hpcviewer>
+     <http://hpctoolkit.org/download.html>
 
-On Linux, download the 'linux.gtk' versions of hpcviewer and
-hpctraceviewer, unpack the tar files and run the install scripts (for
-both viewers) with the path to the desired install prefix.
+On Linux, download the 'linux.gtk' version of hpcviewer (and also
+hpctraceviewer for older versions), unpack the tar files and run the
+install scripts (for both viewers) with the path to the desired install
+prefix.
 
      ./install /path/to/install/directory
 
@@ -938,7 +946,8 @@ subdirectories 'packages' and 'modules'.  Edit 'config.yaml' to add
 these paths.
 
      config:
-       install_tree:  /opt/spack/Modules/packages
+       install_tree:
+         root: /opt/spack/Modules/packages
 
        # just use one of these
        module_roots:
@@ -957,11 +966,11 @@ these (and don't use dotkit unless you work at LLNL).
         - lmod
 
 Then, choose a version of gcc and use the default compiler (normally
-'/usr/bin/gcc') to build the newer version.  Currently, gcc 7.x is a
+'/usr/bin/gcc') to build the newer version.  Currently, gcc 8.x is a
 good choice that builds robustly, has enough modern features but is not
 too new to cause problems for some packages.  For example,
 
-     spack install gcc@7.4.0
+     spack install gcc@8.4.0
 
 Note: it is not necessary to rebuild the new compiler with itself.
 
@@ -974,13 +983,13 @@ TCL modules, the module files are in a subdirectory of 'module_roots'
 named after the system architecture.  For example,
 
      module use /opt/spack/Modules/modules/linux-rhel7-x86_64
-     module load gcc-7.4.0-gcc-4.8.5-qemsqrc
+     module load gcc-8.4.0-gcc-4.8.5-qemsqrc
 
 For Lmod modules, the module directory is one level below that and the
 module names are a little different.
 
      module use /opt/spack/Modules/modules/linux-rhel7-x86_64/Core
-     module load gcc/7.4.0-dan4vbm
+     module load gcc/8.4.0-dan4vbm
 
 For both TCL and Lmod modules, it's best to put the 'module use' command
 in your shell's startup scripts so that 'module avail' and 'module load'
@@ -989,7 +998,7 @@ compiler find'.
 
      $ spack compiler find
      ==> Added 1 new compiler to /home/krentel/.spack/linux/compilers.yaml
-         gcc@7.4.0
+         gcc@8.4.0
 
 Finally, always check the new entry in 'compilers.yaml' and add the name
 of the module to the 'modules:' field.
@@ -999,14 +1008,14 @@ of the module to the 'modules:' field.
          extra_rpaths: []
          flags: {}
          modules:
-         - gcc-7.4.0-gcc-4.8.5-qemsqrc
+         - gcc-8.4.0-gcc-4.8.5-qemsqrc
          operating_system: rhel7
          paths:
-           cc:  /opt/spack/Modules/packages/linux-rhel7-x86_64/gcc-4.8.5/gcc-7.4.0-qemsqrcwkk52f6neef4kg5wvoucsroif/bin/gcc
-           cxx: /opt/spack/Modules/packages/linux-rhel7-x86_64/gcc-4.8.5/gcc-7.4.0-qemsqrcwkk52f6neef4kg5wvoucsroif/bin/g++
-           f77: /opt/spack/Modules/packages/linux-rhel7-x86_64/gcc-4.8.5/gcc-7.4.0-qemsqrcwkk52f6neef4kg5wvoucsroif/bin/gfortran
-           fc:  /opt/spack/Modules/packages/linux-rhel7-x86_64/gcc-4.8.5/gcc-7.4.0-qemsqrcwkk52f6neef4kg5wvoucsroif/bin/gfortran
-         spec: gcc@7.4.0
+           cc:  /opt/spack/Modules/packages/linux-rhel7-x86_64/gcc-4.8.5/gcc-8.4.0-qemsqrcwkk52f6neef4kg5wvoucsroif/bin/gcc
+           cxx: /opt/spack/Modules/packages/linux-rhel7-x86_64/gcc-4.8.5/gcc-8.4.0-qemsqrcwkk52f6neef4kg5wvoucsroif/bin/g++
+           f77: /opt/spack/Modules/packages/linux-rhel7-x86_64/gcc-4.8.5/gcc-8.4.0-qemsqrcwkk52f6neef4kg5wvoucsroif/bin/gfortran
+           fc:  /opt/spack/Modules/packages/linux-rhel7-x86_64/gcc-4.8.5/gcc-8.4.0-qemsqrcwkk52f6neef4kg5wvoucsroif/bin/gfortran
+         spec: gcc@8.4.0
          target: x86_64
 
 Note: as long as the spack packages and modules directories remain
@@ -1018,7 +1027,7 @@ specify this in 'packages.yaml'.  For example,
 
      packages:
        all:
-         compiler: [gcc@7.4.0]
+         compiler: [gcc@8.4.0]
 
 Also, when using the compiler from within spack, it doesn't matter if
 you have the module loaded or not.  Spack will erase your environment
@@ -1154,10 +1163,10 @@ file ('compilers.yaml' or 'packages.yaml').  This can result in a
 situation where you think some compiler or build tool is available from
 your environment but spack removes it during the build.
 
-   In this example, I am using modules for 'GCC/6.4.0' and
-'CMake/3.8.2'.  Spack finds the gcc 6.4.0 compiler and I added
+   In this example, I am using modules for 'GCC/8.3.0' and
+'CMake/3.8.2'.  Spack finds the gcc 8.3.0 compiler and I added
 'cmake@3.8.2' to 'packages.yaml'.  But I failed to add the 'modules:'
-field for gcc 6.4.0 in 'compilers.yaml'.  As a result, the build fails
+field for gcc 8.3.0 in 'compilers.yaml'.  As a result, the build fails
 with:
 
      cmake: /usr/lib64/libstdc++.so.6: version `GLIBCXX_3.4.20' not found (required by cmake)
@@ -1165,8 +1174,8 @@ with:
      cmake: /usr/lib64/libstdc++.so.6: version `CXXABI_1.3.9' not found (required by cmake)
      ==> Error: ProcessError: Command exited with status 1:
 
-The problem is that cmake 3.8.2 was built with g++ 6.4.0, but spack is
-running cmake without the GCC/6.4.0 libraries and so the build fails as
+The problem is that cmake 3.8.2 was built with g++ 8.3.0, but spack is
+running cmake without the GCC/8.3.0 libraries and so the build fails as
 above.  One way to confirm this is to rerun 'spack install --dirty'
 which then succeeds.  The '--dirty' option tells spack not to unload
 your modules.  Whenever the build fails with a mismatched library as
