@@ -120,7 +120,7 @@
 % ***************************************************************************
 % ***************************************************************************
 
-\title{\HPCToolkit{} User's Manual\\[.5in]Version 2021.02.01}
+\title{\HPCToolkit{} User's Manual\\[.5in]Version 2021.02.15}
 %\subtitle{}
 
 \author{John Mellor-Crummey,\\
@@ -135,7 +135,7 @@ Rice University\\
 %For \HPCToolkit{} 5.3.2 ($Revision$)
 }
 
-\date{February 1, 2021}
+\date{February 15, 2021}
 
 \maketitle
 
@@ -1245,27 +1245,26 @@ If an interaction between HPCToolkit's support for the OMPT interface and an Ope
 \chapter{Known Issues}
 \label{chpt:known}
 
-This section lists some of known issues and the workaround. 
-Other known issues can be seen in the github issues:
+This section lists some known issues and potential workarounds. 
+Other known issues can be seen in the project's GitHub issues pages: 
 \begin{itemize}
- \item For hpctoolkit in general: \url{https://github.com/HPCToolkit/hpctoolkit/issues}
- \item For hpcviewer: \url{https://github.com/HPCToolkit/hpcviewer.e4/issues}
+ \item For HPCToolkit in general, see  \url{https://github.com/HPCToolkit/hpctoolkit/issues}
+ \item For hpcviewer, see \url{https://github.com/HPCToolkit/hpcviewer.e4/issues}
 \end{itemize}
 
-\section{\hpcrun{} has been observed to crash when measuring many threads and processes using ``{\tt -e cycles}" }
+\section{\hpcrun{} may fail to measure a program execution on a CPU with hardware performance counters}
 
-\paragraph{Affected architectures:}  any CPU 
+\paragraph{Affected architectures:} {\tt x86\_64} CPUs 
 
-\paragraph{Description:} Low sampling periods or frequency-based sampling on cycles (the default) on large numbers of processes seems to expose unknown race conditions that can cause an application to crash during measurement.
+\paragraph{Description:} We observed a problem using Linux  {\tt perf\_events} to measure CPU performance using hardware performance counters on one {\tt x86\_64} cluster at Sandia. Another system at Sandia with what appears to be the same kernel and configuration works just fine. 
 
-\paragraph{Workaround:} Using a large fixed sampling period, e.g. 10 million, may avoid this issue. Sampling using CPUTIME and REALTIME appears a more stable alternative. 
+\paragraph{Workaround:} On the problematic system at Sandia, we found that measuring using HPCToolkit's PAPI interface atop Linux  {\tt perf\_events} worked even though using HPCToolkit directly atop Linux  {\tt perf\_events} yielded no measurement data. Additionally, sampling using CPUTIME and REALTIME may be suitable alternatives to measuring {\tt cycles}.
 
-\paragraph{Development Plan:} Identify race conditions present and develop strategies to avoid them.
+\paragraph{Development Plan:} Identify the difference between how PAPI and HPCToolkit use Linux {\tt perf\_events}.
 
 \section{After analyzing an execution traces  \hpcprofmpi{}, \hpcviewer{} may report invalid CPID (call path id) values when displaying traces}
 
 \paragraph{Affected architectures:}  any CPU 
-
 
 \paragraph{Description:} HPCToolkit assumes that the only call paths that appear in traces are leaves in a calling context tree. When analyzing traces with \hpcprofmpi{}, a strategy used to handle interior nodes that may have been traced doesn't work when analysis of traces is performed with \hpcprofmpi{} using multiple processes. 
 
