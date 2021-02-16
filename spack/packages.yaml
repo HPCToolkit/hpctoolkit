@@ -6,18 +6,20 @@
 #  to build them.  It also specifies the paths or modules for system
 #  build tools (cmake, python, etc) to avoid rebuilding them.
 #
-#  Put this file in one of spack's configuration scope directories,
-#  normally either <spack-root>/etc/spack, or else in its own,
-#  separate directory (and then use 'spack -C dir').
+#  Put this file in one of spack's configuration scope directories:
+#    1. <spack-root>/etc/spack -- applies to this spack repo
+#    2. <home-dir>/.spack -- applies to any spack on this machine
+#    3. any dir -- applies with 'spack -C dir' argument
 #
-#  There are two main sections: (1) hpctoolkit dependency specs,
-#  and (2) system build tools: cmake, perl, python, MPI and GCC.
+#  There are three sections: (1) regular hpctoolkit dependency specs,
+#  (2) gpu and MPI specs, and (3) system build tools: cmake, perl,
+#  python and GCC.
 #
 #  See also:
-#    https://spack.readthedocs.io/en/latest/basic_usage.html#specs-dependencies
+#    https://spack.readthedocs.io/en/latest/configuration.html
 #    https://spack.readthedocs.io/en/latest/build_settings.html
 #
-#  Last revised: October 26, 2020.
+#  Last revised: February 9, 2021.
 #
 packages:
 
@@ -29,7 +31,7 @@ packages:
   #
   # all:
   #   target: [x86_64]
-  #   compiler: [gcc@7.4.0]
+  #   compiler: [gcc@8.3.1]
 
 
   #------------------------------------------------------------
@@ -37,17 +39,18 @@ packages:
   #------------------------------------------------------------
 
   # This section contains hpctoolkit's prerequisites, recommended
-  # versions and necessary variants.  For most packages, the most
-  # recent version will work.
+  # versions and necessary variants.  Packages in this section should
+  # normally be built from source, even if there is a system install.
+  # For most packages, the most recent version will work.
   #
   # Note: the following packages have variants that may need changing
   # for your local system.
   #
   #   1. binutils -- avoid 2.35, it has a bug that spews errors from
-  #   hpcprof.
+  #   hpcprof.  Use 2.34 until 2.36 is available.
   #
   #   2. boost -- avoid 1.68.0, it breaks the build in hpctoolkit.
-  #   1.66.0 is good for all dyninst revs, or 1.72.0 for recent dyninst.
+  #   1.66.0 is good for older dyninst revs, or 1.72.0 for recent dyninst.
   #
   #   3. intel-tbb -- add '~tm' for AMD, Xeon Phi (KNL, etc), and very
   #   old Intel systems that don't support transactional memory.
@@ -68,7 +71,7 @@ packages:
   # +papi uses papi instead of perfmon (now default).
   #
   # hpctoolkit:
-  #   version:  [2020.08.03, master]
+  #   version:  [2021.02.10, master]
   #   variants: +mpi +papi
 
 
@@ -80,7 +83,7 @@ packages:
   # Hpctoolkit <= 2020.03.01 requires binutils <= 2.33.1.
   #
   # +libiberty is needed for xmalloc functions in libbfd.
-  # ~nls is needed to avoid linking with libintl from gettext.
+  # ~nls is used to avoid building gettext.
   #
   binutils:
     version:  [2.34]
@@ -90,11 +93,9 @@ packages:
   # boost -- used by dyninst and now in hpcstruct.
   #
   # Dyninst requires >= 1.61.
-  #   1.66.0 is good, works with all dyninst revs.
+  #   1.66.0 is good for older versions of dyninst.
   #   1.72.0 is good for recent dyninst.
-  #   1.70.0 requires dyninst >= 10.1.0 (breaks earlier revs).
-  #   1.69.0 requires dyninst >= 10.0.0 (breaks earlier revs).
-  #   1.68.0 breaks the build for hpctoolkit.
+  #   avoid 1.68.0, it breaks the build for hpctoolkit.
   #
   # +atomic, +chrono, etc are for dyninst.
   # +graph, +regex, etc are for toolkit proper.
@@ -121,22 +122,10 @@ packages:
     variants: +shared
 
 
-  # cuda -- nvidia cuda, now used in master.
-  #
-  # If there is a pre-built cuda for the system, then it may be better
-  # to use that with an 'externals:' entry (see cmake below).
-  #
-  # If installing here, then use >= 10.1 and check that the cuda
-  # system drivers are installed.
-  #
-  cuda:
-    version:  [10.2.89]
-
-
   # dyninst -- used in hpcstruct for line map info, inline sequences
   # and loop analysis.  Hpctoolkit and Dyninst work closely together
-  # and Dyninst issues releases infrequently, so often it's necessary
-  # to use master (previously develop) to get the best version.
+  # and Dyninst issues releases infrequently, so sometimes it's
+  # necessary to use master for the best results.
   #
   # Need >= 10.2.0 for important bug fixes and features.
   # Need >= 10.1.0 for full cuda CFG support.
@@ -156,10 +145,10 @@ packages:
   # doesn't build, so use 0.175.
   #
   # +bzip2, +xz are for reading compressed sections.
-  # ~nls is needed to avoid linking with libintl from gettext.
+  # ~nls is used to avoid building gettext.
   #
   elfutils:
-    version:  [0.180]
+    version:  [0.182]
     variants: +bzip2 +xz ~nls
 
 
@@ -187,13 +176,13 @@ packages:
   # intel-xed -- used in various places to parse x86 instructions
   # (used on x86 only).
   #
-  # Xed does not have releases, only git repo snapshots.  But Xed
-  # changes pretty slowly.
+  # Xed now has releases but changes very slowly.  Normally use the
+  # latest release for best results.
   #
   # +debug adds debug symbols (-g).
   #
   intel-xed:
-    version:  [2019.03.01]
+    version:  [12.0.1]
     variants: +debug
 
 
@@ -222,16 +211,17 @@ packages:
   # libmonitor -- used in hpcrun to provide access to an application's
   # processes and threads.
   #
-  # Normally want the most recent snapshot.
+  # Normally need the most recent snapshot or master.
   #
   # +hpctoolkit is needed for features specific to hpctoolkit (client
   # signals).
+  # ~dlopen is needed for 2021.02 and later.
   #
   # Note: add +bgq on blue gene/q.
   #
   libmonitor:
-    version:  [2019.05.31, master]
-    variants: +hpctoolkit
+    version:  [2020.10.15, master]
+    variants: +hpctoolkit ~dlopen
 
 
   # libpfm4 (perfmon) -- used in hpcrun for access to the hardware
@@ -244,19 +234,18 @@ packages:
   # Normally want the latest version to support recent CPU types.
   #
   libpfm4:
-    version:  [4.10.1]
+    version:  [4.11.0]
 
 
   # libunwind -- used in hpcrun to help with unwinding.
   #
-  # Normally, we need the most recent snapshot (not the default), or
-  # else develop.  Use >= 1.4 (1.4-rc1 replaces 2018.10.12.)
+  # Normally want the most recent release.
   #
   # +xz is for reading compressed symbol tables.
   # +pic is required for linking with hpcrun.
   #
   libunwind:
-    version:  [1.4.0, 1.5-rc1]
+    version:  [1.5.0]
     variants: +xz +pic
 
 
@@ -292,14 +281,15 @@ packages:
   # Any recent version is good.
   #
   # transcoder=iconv is needed to avoid linking with libiconv.
+  # netaccessor=none is to reduce prereqs.
   #
   xerces-c:
     version:  [3.2.2]
-    variants: transcoder=iconv
+    variants: transcoder=iconv netaccessor=none
 
 
   # xz (lzma) -- used by elfutils and libunwind to read compressed
-  # sections (and copy libs).
+  # sections.
   #
   # Any recent version is good.
   #
@@ -311,7 +301,7 @@ packages:
 
 
   # zlib -- used by binutils, elfutils and libdwarf to read compressed
-  # sections (and copy libs).
+  # sections.
   #
   # Zlib development is stagnant and 1.2.9 and 1.2.10 are buggy, so
   # 1.2.11 is the only recent version.
@@ -324,10 +314,91 @@ packages:
 
 
   #------------------------------------------------------------
-  # 2 -- System Build Tools
+  # 2 -- GPU and MPI Packages
   #------------------------------------------------------------
 
-  # We require cmake >= 3.4, perl >= 5.x and python 2.7.x or 3.x.
+  # Packages in this section can be built from source, but if there is
+  # a system install for the compute nodes, then it is normally better
+  # to use that.
+
+  # cuda -- nvidia cuda, now in master
+  #
+  # Requires: 10.x or later, 11.x preferred.
+  #
+  # cuda:
+  #   version: [11.2.0]
+  #
+  # cuda:
+  #   externals:
+  #   - spec: cuda@11.2.0
+  #     prefix: /path/to/cuda-11.2.0/directory
+
+  #------------------------------------------------------------
+
+  # rocm -- amd gpus, now in master
+  #
+  # Requires: 3.10.0 or later, 4.0.0 preferred.
+  #
+  # For now, ROCM requires a 2-step build.  First, if /opt/rocm is
+  # available, then use that.  If not, then build hip, rocm-dbgapi and
+  # roctracer-dev with spack.
+  #
+  # hip:
+  #   version: [4.0.0]
+  #
+  # rocm-dbgapi:
+  #   version: [4.0.0]
+  #
+  # roctracer-dev:
+  #   version: [4.0.0]
+
+  # Second, specify the three packages with an externals prefix, even
+  # if you built them with spack.  For example, with /opt/rocm-4.0.0,
+  # use:
+  #
+  # hip:
+  #   externals:
+  #   - spec: hip@4.0.0
+  #     prefix: /opt/rocm-4.0.0/hip
+  #
+  #   rocm-dbgapi:
+  #     externals:
+  #     - spec: rocm-dbgapi@4.0.0
+  #       prefix: /opt/rocm-4.0.0
+  #
+  #   roctracer-dev:
+  #     externals:
+  #     - spec: roctracer-dev@4.0.0
+  #       prefix: /opt/rocm-4.0.0
+  #
+  # Note: for /opt/rocm, the hip prefix is the hip subdirectory,
+  # for the other two, it is the /opt/rocm directory.
+
+  #------------------------------------------------------------
+
+  # MPI -- hpctoolkit always supports profiling MPI applications.
+  # Adding MPI here is only for building hpcprof-mpi, the MPI version
+  # of hpcprof.
+  #
+  # Normally, you want MPI from a module (mpich, mvapich, openmpi)
+  # that was built for the correct interconnect system for the compute
+  # nodes.  Also, for hpcprof-mpi, MPI should be built with GNU
+  # gcc/g++ and the same version used to build hpctoolkit (to keep the
+  # C++ libraries in sync).
+  #
+  # openmpi:
+  #   externals:
+  #   - spec: openmpi@3.1.6
+  #     modules:
+  #     - OpenMPI/3.1.6
+  #   buildable: False
+
+
+  #------------------------------------------------------------
+  # 3 -- System Build Tools
+  #------------------------------------------------------------
+
+  # We require cmake >= 3.4, perl >= 5.x and python >= 3.4.
   # There are three ways to satisfy these requirements: a system
   # installed version (eg, /usr), a module or build from scratch.
   #
@@ -341,7 +412,7 @@ packages:
   # libraries.  (Not counting hpcsummary which is a python script.)
   # Note:
   #
-  #  1. the 'prefix:' entry is the parent directory of 'bin', not the
+  #  1. the 'prefix' entry is the parent directory of 'bin', not the
   #  bin directory itself.
   #
   #  2. the 'spec' entry may be a full spec, including dependency specs.
@@ -397,12 +468,15 @@ packages:
 
   #------------------------------------------------------------
 
-  # python -- spack always requires python >= 2.6 to do anything.
-  # On x86, intel-xed requires python 2.7.x or >= 3.4.
+  # python -- we require python >= 3.4, but some rocm packages require
+  # python 2.7 (and need to be built separately).
 
-  # Example for system python.
+  # Example for system python.  If you have both python2 and python3,
+  # then specify them both as 'python' (a special rule for python).
   # python:
   #   externals:
+  #   - spec: python@3.6.5
+  #     prefix: /usr
   #   - spec: python@2.7.5
   #     prefix: /usr
   #   buildable: False
@@ -410,48 +484,24 @@ packages:
   # Example for python module.
   # python:
   #   externals:
-  #   - spec: python@2.7.15
+  #   - spec: python@3.6.5
   #     modules:
-  #     - Python/2.7.15
+  #     - Python/3.6.5
   #   buildable: False
 
   # Example spec to build python.
-  # ~dbm, ~tk are to reduce prerequisites.
+  # ~dbm, etc are to reduce prerequisites.
   # python:
-  #   version:  [2.7.15, 3.6.5]
-  #   variants: ~dbm ~tk
+  #   version:  [3.6.5]
+  #   variants: ~dbm ~libxml2 ~ssl ~sqlite3 ~tkinter
 
   #------------------------------------------------------------
 
-  # MPI -- hpctoolkit always supports profiling MPI applications.
-  # Adding MPI here is only for building hpcprof-mpi, the MPI version
-  # of hpcprof.
-  #
-  # Normally, you want MPI from a module (mpich, mvapich, openmpi)
-  # that was built for the correct interconnect system for the compute
-  # nodes.  Also, for hpcprof-mpi, MPI should be built with GNU
-  # gcc/g++ and the same version used to build hpctoolkit (to keep the
-  # C++ libraries in sync).
-  #
-  # openmpi:
-  #   externals:
-  #   - spec: openmpi@2.1.3
-  #     modules:
-  #     - OpenMPI/2.1.3
-  #   buildable: False
-
-  #------------------------------------------------------------
-
-  # GCC -- hpctoolkit requires building with GNU gcc/g++.  We require
-  # version 5.x or later.
+  # GCC -- hpctoolkit requires building with GNU gcc/g++.
+  # Use version 7.3.x or later.
   #
   # Spack handles compilers specially with the compilers.yaml file.
   # This example is only for building a more recent compiler.
-  #
-  # Note: spack will select the first version that is compatible with
-  # the rest of the spec and command line.  So, put the version you
-  # want to build first.  4.8.4 is really only for Blue Gene.
 
   # gcc:
-  #   version:  [7.4.0, 6.4.0, 5.5.0, 4.8.4]
-
+  #   version:  [7.4.0, 8.4.0]

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2020, Rice University
+// Copyright ((c)) 2002-2021, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -187,6 +187,7 @@ static void hook_open(uintptr_t* cookie, struct link_map* map, enum audit_open_f
   // Allocate some space for our extra bits, and fill it.
   auditor_map_entry_t* entry = malloc(sizeof *entry);
   entry->map = map;
+  entry->ehdr = NULL;
 
   // Normally the path is map->l_name, but sometimes that string is empty
   // which indicates the main executable. So we get it the other way.
@@ -336,14 +337,14 @@ static void optimize_object_plt(struct link_map* map) {
 uintptr_t la_symbind32(Elf32_Sym *sym, unsigned int ndx,
                        uintptr_t *refcook, uintptr_t *defcook,
                        unsigned int *flags, const char *symname) {
-  if(dl_runtime_resolver_ptr != 0)
+  if(*refcook != 0 && dl_runtime_resolver_ptr != 0)
     optimize_object_plt(state < state_connected ? (struct link_map*)*refcook : ((auditor_map_entry_t*)*refcook)->map);
   return sym->st_value;
 }
 uintptr_t la_symbind64(Elf64_Sym *sym, unsigned int ndx,
                        uintptr_t *refcook, uintptr_t *defcook,
                        unsigned int *flags, const char *symname) {
-  if(dl_runtime_resolver_ptr != 0)
+  if(*refcook != 0 && dl_runtime_resolver_ptr != 0)
     optimize_object_plt(state < state_connected ? (struct link_map*)*refcook : ((auditor_map_entry_t*)*refcook)->map);
   return sym->st_value;
 }
@@ -576,5 +577,6 @@ unsigned int la_objclose(uintptr_t* cookie) {
     // We just ignore things that happen after disconnection.
     break;
   }
+  *cookie = 0;
   return 0;
 }
