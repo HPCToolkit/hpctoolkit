@@ -536,11 +536,13 @@ MY_OPENCL_FILES = \
 	gpu/opencl/intel/pointer-alias-check-helper.c \
 	gpu/opencl/intel/maps/buffer-map.c	\
 	gpu/opencl/intel/maps/device-map.c	\
-	sample-sources/gpu/gpu-blame/opencl/opencl-blame.c	\
-	sample-sources/gpu/gpu-blame/opencl/opencl-blame-helper.c	\
-	sample-sources/gpu/gpu-blame/opencl/opencl-queue-map.c	\
-	sample-sources/gpu/gpu-blame/opencl/opencl-event-map.c	\
-	sample-sources/gpu/gpu-blame/opencl/opencl-active-kernels-map.c
+	sample-sources/gpu/gpu-blame/blame.c \
+	sample-sources/gpu/gpu-blame/blame-helper.c \
+	sample-sources/gpu/gpu-blame/blame-queue-map.c	\
+	sample-sources/gpu/gpu-blame/blame-kernel-map.c	\
+	sample-sources/gpu/gpu-blame/active-kernels-map.c \
+	sample-sources/gpu/gpu-blame/blame-kernel-cleanup-map.c	\
+	sample-sources/gpu/gpu-blame/opencl/opencl-blame.c
 
 pkglib_LTLIBRARIES += libhpcrun_opencl.la
 libhpcrun_opencl_la_CPPFLAGS  = -I$(top_srcdir)/src $(OPENCL_IFLAGS)

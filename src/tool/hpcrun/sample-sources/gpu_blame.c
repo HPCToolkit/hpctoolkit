@@ -77,7 +77,7 @@
 #include "sample_source_obj.h"
 #include "common.h"
 #include <hpcrun/gpu/opencl/opencl-api.h>
-#include <hpcrun/sample-sources/gpu/gpu-blame/opencl/opencl-blame.h>
+#include <hpcrun/sample-sources/gpu/gpu-blame/blame.h>
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
 
@@ -239,10 +239,10 @@ static void METHOD_FN(process_event_list, int lush_metrics)
    
 	 	// The blame-shift registration for OPENCL and CUDA are kept in separate if-blocks and not if-else'd because someone may want to enable both 
 		#ifdef ENABLE_OPENCL
-			TMSG(OPENCL, "registering opencl_gpu_blame_shifter with itimer");
+			TMSG(OPENCL, "registering gpu_blame_shift callback with itimer");
 			opencl_blame_shifting_enable();
     	//bs_entry.fn = dlsym(RTLD_DEFAULT, "opencl_gpu_blame_shifter");
-    	bs_entry.fn = &opencl_gpu_blame_shifter;
+      bs_entry.fn = &gpu_idle_blame;
 			bs_entry.next = 0;
 			blame_shift_register(&bs_entry);
 		#endif

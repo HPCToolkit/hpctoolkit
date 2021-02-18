@@ -12,7 +12,7 @@ void
 active_kernels_insert
 (
  uint64_t ak_id,
- event_node_t *event_node
+ kernel_node_t *kernel_node
 );
 
 
