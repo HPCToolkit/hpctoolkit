@@ -47,7 +47,7 @@
 
 #include "roctracer-activity-translate.h"
 
-#define DEBUG 0
+#define DEBUG 1
 
 #include <hpcrun/gpu/gpu-print.h>
 
@@ -133,13 +133,30 @@ roctracer_activity_translate
  roctracer_record_t *record
 )
 {
-#if DEBUG
+//#if DEBUG
   const char * name = roctracer_op_string(record->domain, record->op, record->kind);
-#endif
+//#endif
   memset(ga, 0, sizeof(gpu_activity_t));
 
-  if (record->domain == ACTIVITY_DOMAIN_HIP_API) {
-    switch(record->op){
+  if (record->domain == ACTIVITY_DOMAIN_HIP_OPS) {
+    if (strcmp(name, "KernelExecution") == 0) {
+      convert_kernel_launch(ga, record);
+    } else if (strcmp(name, "CopyDeviceToDevice") == 0) {
+      convert_memcpy(ga, record, GPU_MEMCPY_D2D);
+    } else if (strcmp(name, "CopyDeviceToHost") == 0) {
+      convert_memcpy(ga, record, GPU_MEMCPY_D2H);
+    } else if (strcmp(name, "CopyHostToDevice") == 0) {
+      convert_memcpy(ga, record, GPU_MEMCPY_H2D);
+    } else if (strcmp(name, "FillBuffer") == 0) {
+      convert_memset(ga, record);
+    } else {
+      convert_unknown(ga);
+      PRINT("roctracer buffer event: Unhandled HIP OPS activity %s, duration %d\n", name, record->end_ns - record->begin_ns);      
+    }
+  } else if (record->domain == ACTIVITY_DOMAIN_HIP_API) {
+    // Ignore API tracing records
+    /*
+    switch(record->kind){
     case HIP_API_ID_hipMemcpyDtoD:
     case HIP_API_ID_hipMemcpyDtoDAsync:
       convert_memcpy(ga, record, GPU_MEMCPY_D2D);
@@ -211,13 +228,9 @@ roctracer_activity_translate
       break;
     default:
       convert_unknown(ga);
-      PRINT("roctracer buffer event: Unhandled HIP API activity %s\n", name);
+      PRINT("roctracer buffer event: Unhandled HIP OPS activity %s, duration %d\n", name, record->end_ns - record->begin_ns);
     }
-  } else if (record->domain == ACTIVITY_DOMAIN_HIP_OPS) {
-    // Async HIP events
-    switch (record->op) {
-
-    }
+    */    
   } else {
     convert_unknown(ga);
     PRINT("roctracer buffer enent: Unhandled activity %s, domain %u, op %u, kind %u\n", 
