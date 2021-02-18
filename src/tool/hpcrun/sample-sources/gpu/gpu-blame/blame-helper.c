@@ -14,8 +14,8 @@
 #include <lib/prof-lean/splay-uint64.h>     // splay_visit_t 
 #include <lib/prof-lean/stdatomic.h>        // atomic_fetch_add
 
-#include "opencl-event-map.h"               // event_node_t
-#include "opencl-active-kernels-map.h"      // active_kernels_*
+#include "blame-kernel-map.h"               // kernel_node_t
+#include "active-kernels-map.h"             // active_kernels_*
 
 
 
@@ -36,7 +36,7 @@ typedef struct Node {
   double time;
   long id;
   bool isStart;
-  event_node_t *event_node;
+  kernel_node_t *kernel_node;
   struct Node *next;
 } Node;
 
@@ -309,7 +309,7 @@ distribute_blame_to_kernels
         active_kernels_forall(splay_inorder, increment_blame_for_active_kernel, &akn);
         last_time = data->time;
       }
-      active_kernels_insert(data->id, data->event_node);
+      active_kernels_insert(data->id, data->kernel_node);
     } else {
       if (inSync) {
         ak_helper_node akn = {data->time, last_time, active_kernels_size()};
@@ -325,18 +325,18 @@ distribute_blame_to_kernels
 
 
 static Node*
-transform_event_nodes_to_sortable_nodes
+transform_kernel_nodes_to_sortable_nodes
 (
- event_node_t *event_node_head
+ kernel_node_t *kernel_node_head
 )
 {
   struct Node *head = NULL;
 
-  // convert event_node_t nodes to sortable Nodes
-  event_node_t *curr = event_node_head;
+  // convert kernel_node_t nodes to sortable Nodes
+  kernel_node_t *curr = kernel_node_head;
   while (curr) {
-    Node start_node = {curr->event_start_time, (long)curr->event, 1, curr, NULL};
-    Node end_node = {curr->event_end_time, (long)curr->event, 0, curr, NULL};
+    Node start_node = {curr->kernel_start_time, (long)curr->kernel_id, 1, curr, NULL};
+    Node end_node = {curr->kernel_end_time, (long)curr->kernel_id, 0, curr, NULL};
     push(&head, start_node);
     push(&head, end_node);
     curr = atomic_load(&curr->next);
@@ -367,13 +367,13 @@ free_all_sortable_nodes
 void
 calculate_blame_for_active_kernels
 (
- event_node_t *event_list,
+ kernel_node_t *kernel_list,
  double sync_start,
  double sync_end
 )
 {
   // also input the sync times and add nodes	
-  Node *head = transform_event_nodes_to_sortable_nodes(event_list);
+  Node *head = transform_kernel_nodes_to_sortable_nodes(kernel_list);
 
   Node sync_start_node = {sync_start, SYNC, 1, NULL, NULL};
   Node sync_end_node = {sync_end, SYNC, 0, NULL, NULL};

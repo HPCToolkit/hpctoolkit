@@ -10,7 +10,7 @@
 // local includes
 //******************************************************************************
 
-#include "opencl-event-map.h"		// event_node_t, queue_node_t
+#include "blame-kernel-map.h"		// kernel_node_t
 
 #include <hpcrun/gpu/gpu-splay-allocator.h>
 #include <lib/prof-lean/splay-uint64.h>
@@ -50,8 +50,8 @@ typedef struct typed_splay_node(ak_node) {
   struct typed_splay_node(ak_node) *left;
   struct typed_splay_node(ak_node) *right;
   
-  uint64_t kernel_event_address; // key
-  event_node_t *event_node;
+  uint64_t kernel_id; // key
+  kernel_node_t *kernel_node;
 
 } typed_splay_node(ak_node);
 
@@ -86,12 +86,12 @@ static active_kernels_entry_t *
 ak_node_new
 (
  uint64_t ak_id,
- event_node_t *event_node
+ kernel_node_t *kernel_node
 )
 {
   active_kernels_entry_t *e = ak_node_alloc();
-  e->kernel_event_address = ak_id;
-  e->event_node = event_node;
+  e->kernel_id = ak_id;
+  e->kernel_node = kernel_node;
   return e;
 }
 
@@ -105,7 +105,7 @@ clear_recursive
   if (!ak_map_root) {
     return;
   }
-  active_kernels_delete(ak_map_root->kernel_event_address);
+  active_kernels_delete(ak_map_root->kernel_id);
   // after deletion, parent of the removed node is taken to the top of the tree
   // so, either only the root will be deleted(since root has no parent) or
   // either the left or right child will be the root, confirm what happens with John
@@ -122,14 +122,14 @@ void
 active_kernels_insert
 (
  uint64_t ak_id,
- event_node_t *event_node
+ kernel_node_t *kernel_node
 )
 {
   spinlock_lock(&ak_map_lock);
   if (ak_lookup(&ak_map_root, ak_id)) {
     assert(0);  // entry for a given key should be inserted only once
   } else {
-    active_kernels_entry_t *entry = ak_node_new(ak_id, event_node);
+    active_kernels_entry_t *entry = ak_node_new(ak_id, kernel_node);
     ak_insert(&ak_map_root, entry);  
     size++;
   }
@@ -180,7 +180,7 @@ increment_blame_for_entry
  double blame
 )
 {
-  entry->event_node->cpu_idle_blame += blame;
+  entry->kernel_node->cpu_idle_blame += blame;
 }
 
 

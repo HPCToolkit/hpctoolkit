@@ -1,13 +1,12 @@
-#ifndef gpu_blame_opencl_queue_map_h_
-#define gpu_blame_opencl_queue_map_h_
+#ifndef blame_queue_map_h_
+#define blame_queue_map_h_
 
 //******************************************************************************
 // local includes
 //******************************************************************************
 
-#include "opencl-event-map.h"
+#include "blame-kernel-map.h"
 #include <hpcrun/cct/cct.h>                   // cct_node_t
-#include <lib/prof-lean/hpcrun-opencl.h>
 #include <lib/prof-lean/stdatomic.h>          // _Atomic
 
 
@@ -18,10 +17,7 @@
 
 // Per GPU queue information
 typedef struct queue_node_t {
-  // we maintain queue_id here for deleting the queue_node from map
-  uint64_t queue_id;
-
-  // pointer to the next queue which has activities pending
+  // next pointer is used only for maintaining a list of free nodes
   _Atomic (struct queue_node_t*) next;
 
   // if CPU is block for queue operations to complete, we use these 2 variables
@@ -65,4 +61,4 @@ queue_map_entry_queue_node_get
  queue_map_entry_t *entry
 );
 
-#endif		// gpu_blame_opencl_queue_map_h_
+#endif		// blame_queue_map_h_
