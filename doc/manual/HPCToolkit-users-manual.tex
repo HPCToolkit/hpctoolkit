@@ -1254,13 +1254,13 @@ Other known issues can be seen in the project's GitHub issues pages:
 
 \section{\hpcrun{} may fail to measure a program execution on a CPU with hardware performance counters}
 
-\paragraph{Affected architectures:} {\tt x86\_64} CPUs 
 
-\paragraph{Description:} We observed a problem using Linux  {\tt perf\_events} to measure CPU performance using hardware performance counters on one {\tt x86\_64} cluster at Sandia. Another system at Sandia with what appears to be the same kernel and configuration works just fine. 
+\paragraph{Description:} We observed a problem using Linux  {\tt perf\_events} to measure CPU performance using hardware performance counters on an {\tt x86\_64} cluster at Sandia. An investigation determined that the cluster was running Sandia's LDMS (Lightweight Distributed Metric Service)---a low-overhead, low-latency framework for collecting, transferring, and storing metric data on a large distributed computer system. On this cluster, the LDMS  daemon had been configured to use the {\tt syspapi\_sampler} (\url{https://github.com/ovis-hpc/ovis/blob/OVIS-4/ldms/src/sampler/syspapi/syspapi\_sampler.c}), which uses the Linux {\tt perf\_events} subsystem to measure hardware counters at the node level. At present, the LDMS {\tt syspapi\_sampler}'s use of  the Linux {\tt perf\_events} subsystem for data collection at the node level conflicts with native use of use the Linux {\tt perf\_events} subsystem by HPCToolkit for process-level measurement.\footnote{We observed the same conflict between the LDMS {\tt syspapi\_sampler}  and the Linux {\tt perf} command-line tool. We expect that the  {\tt syspapi\_sampler} 
+conflicts with other process-level tools that use the Linux {\tt perf\_events} subsystem to measure events using hardware counters.}
 
-\paragraph{Workaround:} On the problematic system at Sandia, we found that measuring using HPCToolkit's PAPI interface atop Linux  {\tt perf\_events} worked even though using HPCToolkit directly atop Linux  {\tt perf\_events} yielded no measurement data. Additionally, sampling using CPUTIME and REALTIME may be suitable alternatives to measuring {\tt cycles}.
+\paragraph{Workaround:} Surprisingly, measurement using HPCToolkit's PAPI interface atop Linux  {\tt perf\_events} works even though using HPCToolkit directly atop Linux  {\tt perf\_events} yields no measurement data.  For instance, rather than measuring {\tt cycles} using Linux {\tt perf\_events} directly with {\tt -e cycles}, one can measure cycles through HPCToolkit's PAPI measurement subsystem using {\tt -e PAPI\_TOT\_CYC}. Of course, one can configure PAPI to measure other hardware events, such as graduated instructions and cache misses.
 
-\paragraph{Development Plan:} Identify the difference between how PAPI and HPCToolkit use Linux {\tt perf\_events}.
+\paragraph{Development Plan:} Identify why the use of the Linux {\tt perf\_events} subsystem by the LDMS {\tt syspapi\_sampler} conflicts with the use of the direct use of Linux {\tt perf\_events} HPCToolkit and the Linux {\tt perf} tool but not with the use of Linux {\tt perf\_events} by PAPI.
 
 \section{After analyzing an execution traces  \hpcprofmpi{}, \hpcviewer{} may report invalid CPID (call path id) values when displaying traces}
 
