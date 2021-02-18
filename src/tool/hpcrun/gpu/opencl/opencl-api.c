@@ -1067,7 +1067,7 @@ hpcrun_clCreateCommandQueue
 	}
 
 	if(is_opencl_blame_shifting_enabled()) {
-		queue_prologue(queue);
+		opencl_queue_prologue(queue);
 	}
 
   return queue;
@@ -1200,8 +1200,7 @@ hpcrun_clEnqueueNDRangeKernel
 	}
 
 	if(is_opencl_blame_shifting_enabled()) {
-		// add a node for corresponding kernel-queue entry in StreamQs
-		kernel_prologue(*eventp, command_queue);
+		opencl_kernel_prologue(*eventp);
 	}
 
   ETMSG(OPENCL, "Registering callback for kind: Kernel. "
