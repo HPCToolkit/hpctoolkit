@@ -60,9 +60,6 @@
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
 
-/* opencl_blame_helper include file available */
-#undef HAVE_OCL_BH_H
-
 /* HOST OS: 32 and 64 bit OS libraries */
 #undef HAVE_OS_MULTILIB
 
