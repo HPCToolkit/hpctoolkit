@@ -32,8 +32,11 @@ typedef struct kernel_id_t {
 typedef struct kernel_cleanup_data_t {
   // platform/language specific variables
   union {
-    cl_event *event;
+    cl_event event;
   };
+
+  // only needed to maintain a list of free nodes
+  struct kernel_cleanup_data_t *next;
 } kernel_cleanup_data_t;
 
 
@@ -70,6 +73,20 @@ kernel_cleanup_data_t*
 kernel_cleanup_map_entry_data_get
 (
  kernel_cleanup_map_entry_t *entry
+);
+
+
+kernel_cleanup_data_t*
+kcd_alloc_helper
+(
+ void
+);
+
+
+void
+kcd_free_helper
+(
+ kernel_cleanup_data_t *node
 );
 
 #endif		// gpu_blame_kernel_cleanup_map_h_

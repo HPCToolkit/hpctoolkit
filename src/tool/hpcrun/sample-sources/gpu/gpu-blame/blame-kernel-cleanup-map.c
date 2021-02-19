@@ -10,9 +10,10 @@
 // local includes
 //******************************************************************************
 
-#include "blame-kernel-cleanup-map.h"		// kernel_node_t, queue_node_t
+#include "blame-kernel-cleanup-map.h"         // kernel_node_t, queue_node_t
 
 #include <hpcrun/gpu/gpu-splay-allocator.h>
+#include <hpcrun/memory/hpcrun-malloc.h>      // hpcrun_malloc_safe
 #include <lib/prof-lean/splay-uint64.h>
 #include <lib/prof-lean/spinlock.h>
 
@@ -64,6 +65,7 @@ typed_splay_impl(kernel_node);
 
 static kernel_cleanup_map_entry_t *kernel_cleanup_map_root = NULL;
 static kernel_cleanup_map_entry_t *kernel_cleanup_map_free_list = NULL;
+static kernel_cleanup_data_t *kcd_free_list = NULL;
 
 static spinlock_t kernel_cleanup_map_lock = SPINLOCK_UNLOCKED;
 
@@ -152,5 +154,35 @@ kernel_cleanup_map_entry_data_get
 )
 {
   return entry->data;
+}
+
+
+kernel_cleanup_data_t*
+kcd_alloc_helper
+(
+ void
+)
+{
+  kernel_cleanup_data_t *first = kcd_free_list;
+
+  if (first) {
+    kcd_free_list = first->next;
+  } else {
+    first = (kernel_cleanup_data_t *) hpcrun_malloc_safe(sizeof(kernel_cleanup_data_t));
+  }
+
+  memset(first, 0, sizeof(kernel_cleanup_data_t));
+  return first;
+}
+
+
+void
+kcd_free_helper
+(
+ kernel_cleanup_data_t *node
+)
+{
+  node->next = kcd_free_list;
+  kcd_free_list = node;
 }
 
