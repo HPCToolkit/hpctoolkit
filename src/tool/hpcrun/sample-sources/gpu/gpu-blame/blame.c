@@ -21,6 +21,7 @@
 #include "blame.h"
 
 #include <hpcrun/cct/cct.h>                   // cct_node_t
+#include <hpcrun/memory/hpcrun-malloc.h>      // hpcrun_malloc_safe
 #include <hpcrun/safe-sampling.h>             // hpcrun_safe_enter, hpcrun_safe_exit
 #include <hpcrun/sample_event.h>              // hpcrun_sample_callpath
 
@@ -140,6 +141,7 @@ create_and_insert_kernel_entry
 )
 {
   kernel_node_t *kernel_node = kernel_node_alloc_helper(&kernel_node_free_list);
+  kernel_node->kernel_id = kernelexec_id;
   kernel_node->launcher_cct = launcher_cct;
   atomic_init(&kernel_node->next, NULL);
   kernel_map_insert(kernelexec_id, kernel_node);
@@ -222,8 +224,11 @@ attributing_cpu_idle_cause_metric_at_sync_epilogue
 			length++;
       curr = next;
     }
-		uint64_t *id = hpcrun_malloc(sizeof(uint64_t) * length);
-		long i = 0;
+
+    uint64_t *id = hpcrun_malloc_safe(sizeof(uint64_t) * length);  // how to free reuse array data?
+    long i = 0;
+    curr = private_completed_kernel_head;
+
     while (curr) {
       cct_metric_data_increment(cpu_idle_cause_metric_id, curr->launcher_cct,
           (cct_metric_data_t) {.r = curr->cpu_idle_blame});
