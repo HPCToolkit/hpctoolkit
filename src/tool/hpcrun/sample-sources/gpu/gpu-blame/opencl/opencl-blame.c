@@ -34,8 +34,9 @@ releasing_opencl_events
   for (int i = 0; i < id_node.length; i++) {
     kernel_cleanup_map_entry_t *e = kernel_cleanup_map_lookup(id_node.id[i]);
     kernel_cleanup_data_t *d = kernel_cleanup_map_entry_data_get(e);
-    ev = *(d->event);
+    ev = d->event;
     clReleaseEvent(ev);
+    kcd_free_helper(d);
     kernel_cleanup_map_delete(id_node.id[i]);
   }
 }
@@ -77,9 +78,9 @@ opencl_kernel_prologue
 
   // increment the reference count for the event
   clRetainEvent(event);
-  kernel_cleanup_data_t data;
-  data.event = &event;
-  kernel_cleanup_map_insert((uint64_t) event, &data);
+  kernel_cleanup_data_t *data = kcd_alloc_helper();
+  data->event = event;
+  kernel_cleanup_map_insert((uint64_t) event, data);
   kernel_prologue((uint64_t) event);
 
   hpcrun_safe_exit();
@@ -108,11 +109,11 @@ opencl_kernel_epilogue
     }
     // converting nsec to sec
     double nsec_to_sec = pow(10,-9);
-    kernel_start *= nsec_to_sec;
-    kernel_end *= nsec_to_sec;
+    double kernel_start_d = kernel_start * nsec_to_sec;
+    double kernel_end_d = kernel_end * nsec_to_sec;
 
     // Just to verify that this is a valid profiling value. 
-    elapsedTime = kernel_end - kernel_start;
+    elapsedTime = kernel_end_d - kernel_start_d;
     if (elapsedTime <= 0) {
       printf("bad kernel time\n");
       hpcrun_safe_exit();
