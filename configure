@@ -670,11 +670,6 @@ OPT_IGC_IFLAGS
 OPT_IGC
 OPT_ENABLE_IGC_FALSE
 OPT_ENABLE_IGC_TRUE
-OPT_OCL_BH_LDFLAGS
-OPT_OCL_BH_IFLAGS
-OPT_OCL_BH
-OPT_ENABLE_OCL_BH_FALSE
-OPT_ENABLE_OCL_BH_TRUE
 OPT_OPENCL_IFLAGS
 OPT_ENABLE_OPENCL_FALSE
 OPT_ENABLE_OPENCL_TRUE
@@ -1077,9 +1072,6 @@ enable_xop
 with_cuda
 with_cupti
 with_opencl
-with_opencl_blame_helper
-with_opencl_blame_helper_include
-with_opencl_blame_helper_lib
 with_igc
 with_metrics_discovery
 with_gtpin
@@ -1836,15 +1828,6 @@ Optional Packages:
   --with-cupti=PATH       path to cupti install directory, default is from
                           cuda
   --with-opencl=PATH      path to opencl headers
-  --with-opencl_blame_helper=PATH
-                          use given OCL_BH installation (absolute path) with
-                          hpcrun (default is NO)
-  --with-opencl_blame_helper-include=PATH
-                          use given opencl_blame_helper include (absolute
-                          path) with hpcrun (default is NO)
-  --with-opencl_blame_helper-lib=PATH
-                          use given opencl_blame_helper lib (absolute path)
-                          with hpcrun (default is NO)
   --with-igc=PATH         path to igc install directory
   --with-metrics-discovery=PATH
                           path to metrics-discovery install directory
@@ -24084,108 +24067,6 @@ $as_echo "$OPENCL" >&6; }
 
 
 #-------------------------------------------------
-# Option: --with-opencl_blame_helper=PATH
-#-------------------------------------------------
-OPT_HAVE_OCL_BH=no
-OPT_OCL_BH=
-OPT_OCL_BH_INCPATH=
-OPT_OCL_BH_IFLAGS=
-OPT_OCL_BH_LIBPATH=
-
-if test "${host_sizeof_voidp}" = "4"; then
-    OCL_BH_LIB_SEARCH_ORDER="lib32 lib"
-else
-    OCL_BH_LIB_SEARCH_ORDER="lib64 lib"
-fi
-
-
-# Check whether --with-opencl_blame_helper was given.
-if test "${with_opencl_blame_helper+set}" = set; then :
-  withval=$with_opencl_blame_helper; if test $withval != no; then
-     OPT_HAVE_OCL_BH=yes
-     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
-       as_fn_error $? "--with-opencl_blame_helper requires absolute path as argument; given '${withval}'" "$LINENO" 5
-     fi
-     OPT_OCL_BH=${withval}
-   fi
-fi
-
-
-#
-# Valid opencl_blame_helper library
-#
-if test "$OPT_HAVE_OCL_BH" = yes; then
-    OPT_OCL_BH_IFLAGS="-I$OPT_OCL_BH/include"
-fi
-
-if test "$OPT_HAVE_OCL_BH" = "yes" ; then
-
-# Check whether --with-opencl_blame_helper-include was given.
-if test "${with_opencl_blame_helper_include+set}" = set; then :
-  withval=$with_opencl_blame_helper_include; if test $withval != no; then
-     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
-       as_fn_error $? "--with-opencl_blame_helper-include requires absolute path as argument; given '${withval}'" "$LINENO" 5
-     fi
-     OPT_OCL_BH_INCPATH=${withval}
-  fi
-else
-  if test -f ${OPT_OCL_BH}/include/opencl_blame_helper.h; then
-         OPT_OCL_BH_INCPATH=${OPT_OCL_BH}/include
-
-$as_echo "#define HAVE_OCL_BH_H 1" >>confdefs.h
-
-     else
-         as_fn_error $? "'${OPT_OCL_BH}/include/opencl_blame_helper.h' not found" "$LINENO" 5
-     fi
-fi
-
-
-  OPT_OCL_BH_IFLAGS="-I${OPT_OCL_BH_INCPATH} "
-
-
-# Check whether --with-opencl_blame_helper-lib was given.
-if test "${with_opencl_blame_helper_lib+set}" = set; then :
-  withval=$with_opencl_blame_helper_lib; if test $withval != no; then
-     if ( echo "${withval}" | grep -v "^/" >/dev/null 2>&1 ); then
-       as_fn_error $? "--with-opencl_blame_helper-lib requires absolute path as argument; given '${withval}'" "$LINENO" 5
-     fi
-     OPT_OCL_BH_LIBPATH=${withval}
-   fi
-else
-  if test -f "${OPT_OCL_BH}/lib/libopencl_blame_helper.so"
-    then
-      OPT_OCL_BH_LIBPATH="${OPT_OCL_BH}/lib"
-      break
-    fi
-    if test  -z "${OPT_OCL_BH_LIBPATH}" ; then
-      as_fn_error $? "libopencl_blame_helper.so not found" "$LINENO" 5
-    fi
-
-fi
-
-
-  OPT_OCL_BH_LDFLAGS="-L${OPT_OCL_BH_LIBPATH} -Wl,-rpath=${OPT_OCL_BH_LIBPATH} -lopencl_blame_helper"
-fi
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $OPT_OCL_BH" >&5
-$as_echo "$OPT_OCL_BH" >&6; }
-
- if test "$OPT_HAVE_OCL_BH" = yes; then
-  OPT_ENABLE_OCL_BH_TRUE=
-  OPT_ENABLE_OCL_BH_FALSE='#'
-else
-  OPT_ENABLE_OCL_BH_TRUE='#'
-  OPT_ENABLE_OCL_BH_FALSE=
-fi
-
-
-
-
-
-
-
-
-#-------------------------------------------------
 # Option: --with-igc=PATH
 #-------------------------------------------------
 
@@ -25312,10 +25193,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_OPENCL_TRUE}" && test -z "${OPT_ENABLE_OPENCL_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_OPENCL\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${OPT_ENABLE_OCL_BH_TRUE}" && test -z "${OPT_ENABLE_OCL_BH_FALSE}"; then
-  as_fn_error $? "conditional \"OPT_ENABLE_OCL_BH\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_IGC_TRUE}" && test -z "${OPT_ENABLE_IGC_FALSE}"; then
@@ -27997,8 +27874,6 @@ $as_echo "$as_me:   cuda:         ${CUDA}" >&6;}
 $as_echo "$as_me:   cupti:        ${CUPTI}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   opencl:        ${OPENCL}" >&5
 $as_echo "$as_me:   opencl:        ${OPENCL}" >&6;}
-{ $as_echo "$as_me:${as_lineno-$LINENO}:   ocl_blame_helper:        ${OPT_OCL_BH}" >&5
-$as_echo "$as_me:   ocl_blame_helper:        ${OPT_OCL_BH}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   igc:          ${IGC}" >&5
 $as_echo "$as_me:   igc:          ${IGC}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   gtpin:        ${GTPIN}" >&5

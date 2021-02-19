@@ -1605,9 +1605,6 @@ OPT_LEVEL0_LDFLAGS = @OPT_LEVEL0_LDFLAGS@
 OPT_METRICS_DISCOVERY = @OPT_METRICS_DISCOVERY@
 OPT_METRICS_DISCOVERY_IFLAGS = @OPT_METRICS_DISCOVERY_IFLAGS@
 OPT_METRICS_DISCOVERY_LDFLAGS = @OPT_METRICS_DISCOVERY_LDFLAGS@
-OPT_OCL_BH = @OPT_OCL_BH@
-OPT_OCL_BH_IFLAGS = @OPT_OCL_BH_IFLAGS@
-OPT_OCL_BH_LDFLAGS = @OPT_OCL_BH_LDFLAGS@
 OPT_OPENCL_IFLAGS = @OPT_OPENCL_IFLAGS@
 OPT_PAPI = @OPT_PAPI@
 OPT_PAPI_IFLAGS = @OPT_PAPI_IFLAGS@
@@ -2006,8 +2003,8 @@ MY_AARCH64_FILES = \
 @OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/opencl-h2d-map.c \
 @OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/opencl-queue-map.c \
 @OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/opencl-context-map.c \
-@OPT_ENABLE_OPENCL_TRUE@	sample-sources/gpu/gpu-blame/blame.c	\
-@OPT_ENABLE_OPENCL_TRUE@	sample-sources/gpu/gpu-blame/blame-helper.c	\
+@OPT_ENABLE_OPENCL_TRUE@	sample-sources/gpu/gpu-blame/blame.c \
+@OPT_ENABLE_OPENCL_TRUE@	sample-sources/gpu/gpu-blame/blame-helper.c \
 @OPT_ENABLE_OPENCL_TRUE@	sample-sources/gpu/gpu-blame/blame-queue-map.c	\
 @OPT_ENABLE_OPENCL_TRUE@	sample-sources/gpu/gpu-blame/blame-kernel-map.c	\
 @OPT_ENABLE_OPENCL_TRUE@	sample-sources/gpu/gpu-blame/active-kernels-map.c \
