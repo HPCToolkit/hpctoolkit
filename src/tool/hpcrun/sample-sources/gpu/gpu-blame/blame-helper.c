@@ -42,8 +42,8 @@ typedef struct Node {
 
 
 typedef struct ak_helper_node {
-  double current_time;
-  double last_time;
+  unsigned long current_time;
+  unsigned long last_time;
   long ak_size;
 } ak_helper_node;
 
@@ -268,10 +268,13 @@ increment_blame_for_active_kernel
 )
 {
   ak_helper_node *akn = (ak_helper_node*) arg;
-  double current_time = akn->current_time;
-  double last_time = akn->last_time;
+  unsigned long current_time = akn->current_time;
+  unsigned long last_time = akn->last_time;
   long active_kernels_size = akn->ak_size;
   double new_blame = (double)(current_time - last_time) / active_kernels_size;
+  // converting nsec to sec
+  double nsec_to_sec = pow(10,-9);
+  new_blame *= nsec_to_sec;
   increment_blame_for_entry(entry, new_blame);
 }
 
@@ -286,7 +289,7 @@ distribute_blame_to_kernels
   // kernel_nodes : (x11, A1, start), (x12, A1, end), (x21, A2, start), (x22, A2, end), ........, (x01, B, start), (x02, B, end);
   bool inSync = false;
   Node *data = kernel_nodes;
-  double last_time;
+  unsigned long last_time;
 
   while (data) {
     if (data->id == SYNC) {
@@ -364,6 +367,7 @@ free_all_sortable_nodes
 // interface functions 
 //******************************************************************************
 
+// sync start and end are in nanoseconds
 void
 calculate_blame_for_active_kernels
 (
