@@ -106,6 +106,8 @@
 {                                                                   \
   CUresult error_result = CUDA_FN_NAME(fn) args;		    \
   if (error_result != CUDA_SUCCESS) {				    \
+    fprintf(stderr, "cuda api %s returned %d", #fn,                 \
+          (int) error_result);                                      \
     ETMSG(CUDA, "cuda api %s returned %d", #fn,                     \
           (int) error_result);                                      \
     exit(-1);							    \
@@ -153,13 +155,15 @@
 //******************************************************************************
 
 static spinlock_t files_lock = SPINLOCK_UNLOCKED;
+static __thread bool cuda_internal = false;
 
 #ifndef HPCRUN_STATIC_LINK
+
 CUDA_FN
 (
  cuDeviceGetAttribute,
  (
-  int* pi,
+  int *pi,
   CUdevice_attribute attrib,
   CUdevice dev
  )
@@ -171,6 +175,15 @@ CUDA_FN
  cuCtxGetCurrent,
  (
   CUcontext *ctx
+ )
+);
+
+
+CUDA_FN
+(
+ cuCtxSetCurrent,
+ (
+  CUcontext ctx
  )
 );
 
@@ -188,7 +201,7 @@ CUDA_RUNTIME_FN
 (
  cudaRuntimeGetVersion,
  ( 
-  int* runtimeVersion
+  int *runtimeVersion
  )
 );
 
@@ -211,7 +224,17 @@ CUDA_FN
   unsigned int flags,
   int priority
  );
+);
+
+
+CUDA_FN
+(
+ cuStreamCreate,
+ (
+  CUstream *phStream,
+  unsigned int Flags
  );
+);
 
 
 CUDA_FN
@@ -246,6 +269,46 @@ CUDA_FN
  );
 );
 
+
+CUDA_FN
+(
+ cuModuleLoad,
+ (
+  CUmodule *module,
+  const char *fname
+ );
+);
+
+
+CUDA_FN
+(
+ cuModuleGetFunction,
+ (
+  CUfunction *hfunc,
+  CUmodule hmod,
+  const char *name
+ );
+);
+
+
+CUDA_FN
+(
+ cuLaunchKernel,
+ (
+  CUfunction f,
+  unsigned int gridDimX,
+  unsigned int gridDimY,
+  unsigned int gridDimZ,
+  unsigned int blockDimX,
+  unsigned int blockDimY,
+  unsigned int blockDimZ,
+  unsigned int sharedMemBytes,
+  CUstream hStream,
+  void **kernelParams,
+  void **extra
+ );
+);
+
 #endif
 
 
@@ -265,6 +328,7 @@ cuda_bind
 
   CHK_DLSYM(cuda, cuDeviceGetAttribute); 
   CHK_DLSYM(cuda, cuCtxGetCurrent); 
+  CHK_DLSYM(cuda, cuCtxSetCurrent); 
 
   CHK_DLOPEN(cudart, "libcudart.so", RTLD_NOW | RTLD_GLOBAL);
 
@@ -275,11 +339,19 @@ cuda_bind
 
   CHK_DLSYM(cuda, cuStreamCreateWithPriority);
 
+  CHK_DLSYM(cuda, cuStreamCreate);
+
   CHK_DLSYM(cuda, cuStreamSynchronize);
 
   CHK_DLSYM(cuda, cuMemcpyDtoHAsync);
 
   CHK_DLSYM(cuda, cuMemcpyHtoDAsync);
+
+  CHK_DLSYM(cuda, cuModuleLoad);
+
+  CHK_DLSYM(cuda, cuModuleGetFunction);
+
+  CHK_DLSYM(cuda, cuLaunchKernel);
 
   return 0;
 #else
@@ -288,18 +360,93 @@ cuda_bind
 }
 
 
+void
+cuda_module_load
+(
+ CUmodule *module,
+ const char *fname
+)
+{
+  cuda_internal = true;
+#ifndef HPCRUN_STATIC_LINK
+  HPCRUN_CUDA_API_CALL(cuModuleLoad, (module, fname));
+#endif
+  cuda_internal = false;
+}
+
+
+void
+cuda_module_function_get
+(
+ CUfunction *hfunc,
+ CUmodule hmod,
+ const char *name
+)
+{
+  cuda_internal = true;
+#ifndef HPCRUN_STATIC_LINK
+  HPCRUN_CUDA_API_CALL(cuModuleGetFunction, (hfunc, hmod, name));
+#endif
+  cuda_internal = false;
+}
+
+
+void
+cuda_kernel_launch
+(
+ CUfunction f,
+ unsigned int gridDimX,
+ unsigned int gridDimY,
+ unsigned int gridDimZ,
+ unsigned int blockDimX,
+ unsigned int blockDimY,
+ unsigned int blockDimZ,
+ unsigned int sharedMemBytes,
+ CUstream hStream,
+ void **kernelParams
+)
+{
+  cuda_internal = true;
+#ifndef HPCRUN_STATIC_LINK
+  HPCRUN_CUDA_API_CALL(cuLaunchKernel, (f, gridDimX, gridDimY, gridDimZ,
+    blockDimX, blockDimY, blockDimZ, 0, hStream, kernelParams, NULL));
+#endif
+  cuda_internal = false;
+}; 
+
+
 CUstream
 cuda_priority_stream_create
 (
 )
 {
 #ifndef HPCRUN_STATIC_LINK
+  cuda_internal = true;
   int priority_high, priority_low;
   CUstream stream;
   HPCRUN_CUDA_API_CALL(cuCtxGetStreamPriorityRange,
     (&priority_low, &priority_high));
   HPCRUN_CUDA_API_CALL(cuStreamCreateWithPriority,
     (&stream, CU_STREAM_NON_BLOCKING, priority_high));
+  cuda_internal = false;
+  return stream;
+#else
+  return NULL;
+#endif
+}
+
+
+CUstream
+cuda_stream_create
+(
+)
+{
+#ifndef HPCRUN_STATIC_LINK
+  cuda_internal = true;
+  CUstream stream;
+  HPCRUN_CUDA_API_CALL(cuStreamCreate,
+    (&stream, CU_STREAM_NON_BLOCKING));
+  cuda_internal = false;
   return stream;
 #else
   return NULL;
@@ -314,7 +461,9 @@ cuda_stream_synchronize
 )
 {
 #ifndef HPCRUN_STATIC_LINK
+  cuda_internal = true;
   HPCRUN_CUDA_API_CALL(cuStreamSynchronize, (stream));
+  cuda_internal = false;
 #endif
 }
 
@@ -329,7 +478,9 @@ cuda_memcpy_dtoh
 )
 {
 #ifndef HPCRUN_STATIC_LINK
+  cuda_internal = true;
   HPCRUN_CUDA_API_CALL(cuMemcpyDtoHAsync, (dst, src, byteCount, stream));
+  cuda_internal = false;
 #endif
 }
 
@@ -344,7 +495,9 @@ cuda_memcpy_htod
 )
 {
 #ifndef HPCRUN_STATIC_LINK
+  cuda_internal = true;
   HPCRUN_CUDA_API_CALL(cuMemcpyHtoDAsync, (dst, src, byteCount, stream));
+  cuda_internal = false;
 #endif
 }
 
@@ -395,11 +548,13 @@ cuda_device_compute_capability
 )
 {
 #ifndef HPCRUN_STATIC_LINK
+  cuda_internal = true;
   HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
     (major, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR, device_id));
 
   HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
     (minor, CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR, device_id));
+  cuda_internal = false;
   return 0;
 #else
   return -1;
@@ -415,7 +570,9 @@ cuda_device_id
 )
 {
 #ifndef HPCRUN_STATIC_LINK
+  cuda_internal = true;
   HPCRUN_CUDA_RUNTIME_CALL(cudaGetDevice, (device_id));
+  cuda_internal = false;
   return 0;
 #else
   return -1;
@@ -431,7 +588,9 @@ cuda_runtime_version
 )
 {
 #ifndef HPCRUN_STATIC_LINK
+  cuda_internal = true;
   HPCRUN_CUDA_RUNTIME_CALL(cudaRuntimeGetVersion, (rt_version));
+  cuda_internal = false;
   return 0;
 #else
   return -1;
@@ -451,12 +610,32 @@ cuda_context
 )
 {
 #ifndef HPCRUN_STATIC_LINK
+  cuda_internal = true;
   HPCRUN_CUDA_API_CALL(cuCtxGetCurrent, (ctx));
+  cuda_internal = false;
   return 0;
 #else
   return -1;
 #endif
 }
+
+
+int
+cuda_context_set
+(
+ CUcontext ctx
+)
+{
+#ifndef HPCRUN_STATIC_LINK
+  cuda_internal = true;
+  HPCRUN_CUDA_API_CALL(cuCtxSetCurrent, (ctx));
+  cuda_internal = false;
+  return 0;
+#else
+  return -1;
+#endif
+}
+
 
 int
 cuda_device_property_query
@@ -466,6 +645,8 @@ cuda_device_property_query
 )
 {
 #ifndef HPCRUN_STATIC_LINK
+  cuda_internal = true;
+
   HPCRUN_CUDA_API_CALL(cuDeviceGetAttribute,
     (&property->sm_count, CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, device_id));
 
@@ -499,6 +680,8 @@ cuda_device_property_query
   property->sm_blocks = cuda_device_sm_blocks_query(major, minor);
 
   property->sm_schedulers = cuda_device_sm_schedulers_query(major, minor);
+
+  cuda_internal = false;
 
   return 0;
 #else
@@ -668,4 +851,13 @@ cuda_path
 )
 {
   return dl_iterate_phdr(cuda_path_exist, buffer);
+}
+
+
+bool
+cuda_api_internal
+(
+)
+{
+  return cuda_internal;
 }

@@ -4904,7 +4904,7 @@ if test "$OPT_HAVE_GPU_PATCH" = "yes" ; then
     fi
    ] )
 
-  OPT_GPU_PATCH_LDFLAGS="${OPT_GPU_PATCH_LIBPATH}/lib/gpu-patch.fatbin"
+  OPT_GPU_PATCH_LDFLAGS="${OPT_GPU_PATCH_LIBPATH}/lib/"
 fi
 
 AC_MSG_RESULT([$OPT_GPU_PATCH])

@@ -156,6 +156,8 @@ static const int DEFAULT_PC_VIEWS = 30;
 static const int DEFAULT_MEM_VIEWS = 30;
 // 0: no kernel sampling
 static const int DEFAULT_KERNEL_SAMPLING_FREQUENCY = 1;
+// 0: cpu analysis
+static const int DEFAULT_GPU_ANALYSIS_BLOCKS = 0;
 
 //******************************************************************************
 // constants
@@ -497,6 +499,8 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     int mem_views = control_knob_value_get_int(HPCRUN_SANITIZER_MEM_VIEWS);
 
+    int gpu_analysis_blocks = control_knob_value_get_int(HPCRUN_SANITIZER_GPU_ANALYSIS_BLOCKS);
+
     kernel_sampling_frequency = control_knob_value_get_int(HPCRUN_SANITIZER_KERNEL_SAMPLING_FREQUENCY);
 
     char *data_type = control_knob_value_get(HPCRUN_SANITIZER_DEFAULT_TYPE);
@@ -529,6 +533,10 @@ METHOD_FN(process_event_list, int lush_metrics)
       kernel_sampling_frequency = DEFAULT_KERNEL_SAMPLING_FREQUENCY;
     }
 
+    if (gpu_analysis_blocks == 0) {
+      gpu_analysis_blocks = DEFAULT_GPU_ANALYSIS_BLOCKS;
+    }
+
     PRINT("gpu_patch_record_num %d\n", gpu_patch_record_num);
     PRINT("buffer_pool_size %d\n", buffer_pool_size);
     PRINT("approx_level %d\n", approx_level);
@@ -545,6 +553,8 @@ METHOD_FN(process_event_list, int lush_metrics)
     sanitizer_views_config(pc_views, mem_views);
 
     sanitizer_data_type_config(data_type);
+
+    sanitizer_gpu_analysis_config(gpu_analysis_blocks);
 
     // Init random number generator
     srand(time(0));
@@ -563,12 +573,10 @@ METHOD_FN(process_event_list, int lush_metrics)
       sanitizer_redundancy_analysis_enable();
       // Enable metrics
       gpu_metrics_GPU_REDUNDANCY_enable();
-      sanitizer_data_flow_analysis_enable();
     } else if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_DATA_FLOW)) {
       sanitizer_data_flow_analysis_enable();
     } else if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_VALUE_PATTERN)) {
       sanitizer_value_pattern_analysis_enable();
-      sanitizer_data_flow_analysis_enable();
     }
 
     // Register sanitizer callbacks

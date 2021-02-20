@@ -58,7 +58,13 @@ sanitizer_views_config(int pc_views, int mem_views);
 void
 sanitizer_data_type_config(char *data_type);
 
+size_t
+sanitizer_record_size_get();
+
 int
 sanitizer_buffer_pool_size_get();
+
+void
+sanitizer_gpu_analysis_config(int gpu_analysis_blocks);
 
 #endif

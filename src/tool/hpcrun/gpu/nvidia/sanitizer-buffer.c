@@ -129,6 +129,8 @@ sanitizer_buffer_produce
  bool async
 )
 {
+  size_t record_size = sanitizer_record_size_get();
+
   b->thread_id = thread_id;
   b->cubin_id = cubin_id;
   b->mod_id = mod_id;
@@ -146,12 +148,11 @@ sanitizer_buffer_produce
       }
       sanitizer_process_signal();
     }
-    PRINT("Allocate buffer size %lu\n", num_records * sizeof(gpu_patch_record_t));
+    PRINT("Allocate buffer size %lu\n", num_records * record_size);
     b->gpu_patch_buffer = (gpu_patch_buffer_t *) hpcrun_malloc_safe(sizeof(gpu_patch_buffer_t));
-    b->gpu_patch_buffer->records = (gpu_patch_record_t *) hpcrun_malloc_safe(
-      num_records * sizeof(gpu_patch_record_t));
+    b->gpu_patch_buffer->records = hpcrun_malloc_safe(num_records * record_size);
   } else {
-    PRINT("Reuse buffer size %lu\n", num_records * sizeof(gpu_patch_record_t));
+    PRINT("Reuse buffer size %lu\n", num_records * record_size);
   }
 }
 

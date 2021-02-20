@@ -23845,7 +23845,7 @@ else
 fi
 
 
-  OPT_GPU_PATCH_LDFLAGS="${OPT_GPU_PATCH_LIBPATH}/lib/gpu-patch.fatbin"
+  OPT_GPU_PATCH_LDFLAGS="${OPT_GPU_PATCH_LIBPATH}/lib/"
 fi
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $OPT_GPU_PATCH" >&5

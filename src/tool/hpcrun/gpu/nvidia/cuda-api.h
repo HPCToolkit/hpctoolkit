@@ -113,11 +113,52 @@ cuda_bind
  void
 );
 
+
+void
+cuda_kernel_launch
+(
+ CUfunction f,
+ unsigned int gridDimX,
+ unsigned int gridDimY,
+ unsigned int gridDimZ,
+ unsigned int blockDimX,
+ unsigned int blockDimY,
+ unsigned int blockDimZ,
+ unsigned int sharedMemBytes,
+ CUstream hStream,
+ void **kernelParams
+);
+
+
+void
+cuda_module_load
+(
+ CUmodule *module,
+ const char *fname
+);
+
+
+void
+cuda_module_function_get
+(
+ CUfunction *hfunc,
+ CUmodule hmod,
+ const char *name
+);
+
+
 // returns 0 on success
 int
 cuda_context
 (
  CUcontext *ctx
+);
+
+
+int
+cuda_context_set
+(
+ CUcontext ctx
 );
 
 
@@ -132,6 +173,12 @@ cuda_device_property_query
 
 CUstream
 cuda_priority_stream_create
+(
+);
+
+
+CUstream
+cuda_stream_create
 (
 );
 
@@ -191,6 +238,12 @@ int
 cuda_path
 (
  char *buffer
+);
+
+
+bool
+cuda_api_internal
+(
 );
 
 
