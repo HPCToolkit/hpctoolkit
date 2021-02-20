@@ -20,8 +20,8 @@ typedef struct kernel_node_t {
   uint64_t kernel_id;
 
   // start and end times of kernel_start and kernel_end
-  double kernel_start_time;
-  double kernel_end_time;
+  unsigned long kernel_start_time;
+  unsigned long kernel_end_time;
 
   // CCT node of the CPU thread that launched this activity
   cct_node_t *launcher_cct;

@@ -21,9 +21,11 @@
 #include "blame.h"
 
 #include <hpcrun/cct/cct.h>                   // cct_node_t
+#include <hpcrun/gpu/gpu-activity.h>          // gpu_activity_t
+#include <hpcrun/gpu/gpu-metrics.h>           // gpu_metrics_attribute
+#include <hpcrun/gpu/gpu-application-thread-api.h>  // gpu_application_thread_correlation_callback
 #include <hpcrun/memory/hpcrun-malloc.h>      // hpcrun_malloc_safe
 #include <hpcrun/safe-sampling.h>             // hpcrun_safe_enter, hpcrun_safe_exit
-#include <hpcrun/sample_event.h>              // hpcrun_sample_callpath
 
 #include <lib/prof-lean/spinlock.h>           // spinlock_t, SPINLOCK_UNLOCKED
 #include <lib/prof-lean/stdatomic.h>          // atomic_fetch_add
@@ -35,10 +37,7 @@
 // local data
 //******************************************************************************
 
-int cpu_idle_metric_id;
-int gpu_time_metric_id;
-int cpu_idle_cause_metric_id;
-int gpu_idle_metric_id;
+//int gpu_idle_metric_id;
 
 // lock for blame-shifting activities
 static spinlock_t itimer_blame_lock = SPINLOCK_UNLOCKED;
@@ -46,7 +45,7 @@ static spinlock_t itimer_blame_lock = SPINLOCK_UNLOCKED;
 static _Atomic(uint64_t) g_num_threads_at_sync = { 0 };
 static _Atomic(uint32_t) g_unfinished_kernels = { 0 };
 
-_Atomic(unsigned long) latest_kernel_end_time = { 0 };
+_Atomic(unsigned long) latest_kernel_end_time = { 0 }; // in nanoseconds
 
 static _Atomic(kernel_node_t*) completed_kernel_list_head = { NULL };
 
@@ -121,6 +120,35 @@ kernel_node_free_helper
 
 
 static void
+create_activity_object
+(
+ gpu_activity_t *ga,
+ cct_node_t *cct_node,
+ gpu_blame_shift_t *activity
+)
+{
+  ga->kind = GPU_ACTIVITY_BLAME_SHIFT;
+  ga->cct_node = cct_node;
+  ga->details.blame_shift.cpu_idle_time = activity->cpu_idle_time;
+  ga->details.blame_shift.gpu_idle_time = activity->gpu_idle_time;
+  ga->details.blame_shift.cpu_idle_cause_time = activity->cpu_idle_cause_time;
+}
+
+
+static void
+record_blame_shift_metrics
+(
+ cct_node_t *cct_node,
+ gpu_blame_shift_t *bs
+)
+{
+  gpu_activity_t ga;
+  create_activity_object(&ga, cct_node, bs);
+  gpu_metrics_attribute(&ga);
+}
+
+
+static void
 add_queue_node_to_splay_tree
 (
  uint64_t queue_id
@@ -181,18 +209,22 @@ static void
 attributing_cpu_idle_metric_at_sync_epilogue
 (
  cct_node_t *cpu_cct_node,
- double sync_start,
- double sync_end
+ unsigned long sync_start,
+ unsigned long sync_end
 )
 {
   // attributing cpu_idle time for the min of (sync_end - sync_start, sync_end - last_kernel_end)
   uint64_t last_kernel_end_time = atomic_load(&latest_kernel_end_time);
 
-  // this differnce calculation may be incorrect. We might need to factor the different clocks of CPU and GPU
-  // using time in seconds may lead to loss of precision
   uint64_t cpu_idle_time = ((sync_end - last_kernel_end_time) < (sync_end - sync_start)) ?
     (sync_end - last_kernel_end_time) :	(sync_end  - sync_start);
-  cct_metric_data_increment(cpu_idle_metric_id, cpu_cct_node, (cct_metric_data_t) {.i = (cpu_idle_time)});
+  // converting nsec to sec
+  double nsec_to_sec = pow(10,-9);
+  double cpu_idle_time_in_sec = cpu_idle_time * nsec_to_sec;
+
+  gpu_blame_shift_t bs;
+  bs.cpu_idle_time = cpu_idle_time_in_sec;
+  record_blame_shift_metrics(cpu_cct_node, &bs);
 }
 
 
@@ -201,8 +233,8 @@ attributing_cpu_idle_metric_at_sync_epilogue
 static kernel_id_t
 attributing_cpu_idle_cause_metric_at_sync_epilogue
 (
- double sync_start,
- double sync_end
+ unsigned long sync_start,
+ unsigned long sync_end
 )
 {
 	kernel_id_t processed_ids = {0, NULL};
@@ -225,16 +257,19 @@ attributing_cpu_idle_cause_metric_at_sync_epilogue
       curr = next;
     }
 
-    uint64_t *id = hpcrun_malloc_safe(sizeof(uint64_t) * length);  // how to free reuse array data?
+    uint64_t *id = hpcrun_malloc_safe(sizeof(uint64_t) * length);  // how to free/reuse array data?
     long i = 0;
     curr = private_completed_kernel_head;
 
     while (curr) {
-      cct_metric_data_increment(cpu_idle_cause_metric_id, curr->launcher_cct,
-          (cct_metric_data_t) {.r = curr->cpu_idle_blame});
+      //printf("cpu_idle_cause_metric_id: %f\n", curr->cpu_idle_blame);
+      gpu_blame_shift_t bs;
+      bs.cpu_idle_cause_time = curr->cpu_idle_blame;
+      record_blame_shift_metrics(curr->launcher_cct, &bs);
+
       next = atomic_load(&curr->next);
-			id[i++] = curr->kernel_id;
       kernel_map_delete(curr->kernel_id);
+			id[i++] = curr->kernel_id;
       kernel_node_free_helper(&kernel_node_free_list, curr);
       curr = next;
     }
@@ -308,7 +343,7 @@ kernel_prologue
   ucontext_t context;
   getcontext(&context);
   int skip_inner = 1; // what value should be passed here?
-  cct_node_t *cct_node = hpcrun_sample_callpath(&context, cpu_idle_metric_id, (cct_metric_data_t){.i = 0}, skip_inner /*skipInner */ , 1 /*isSync */, NULL ).sample_node;
+  cct_node_t *cct_node = gpu_application_thread_correlation_callback(0); // param is not used in the function
 
   create_and_insert_kernel_entry(kernelexec_id, cct_node);
   atomic_fetch_add(&g_unfinished_kernels, 1L);
@@ -317,7 +352,7 @@ kernel_prologue
 }
 
 
-// kernel_start and kernel_end should be in seconds
+// kernel_start and kernel_end should be in nanoseconds
 void
 kernel_epilogue
 (
@@ -369,10 +404,10 @@ sync_prologue
   ucontext_t context;
   getcontext(&context);
   int skip_inner = 1; // what value should be passed here?
-  cct_node_t *cpu_cct_node = hpcrun_sample_callpath(&context, cpu_idle_metric_id, (cct_metric_data_t){.i = 0}, skip_inner /*skipInner */ , 1 /*isSync */, NULL ).sample_node;
+  cct_node_t *cpu_cct_node = gpu_application_thread_correlation_callback(0); // param is not used in the function
 
   queue_node->cpu_idle_cct = cpu_cct_node; // we may need to remove hpcrun functions from the stackframe of the cct
-  queue_node->cpu_sync_start_time = &sync_start;
+  queue_node->cpu_sync_start_time = sync_start;
 
   hpcrun_safe_exit();
 }
@@ -393,17 +428,17 @@ sync_epilogue
   queue_map_entry_t *entry = queue_map_lookup(queue_id);
   queue_node_t *queue_node = queue_map_entry_queue_node_get(entry);
   cct_node_t *cpu_cct_node = queue_node->cpu_idle_cct;
-  struct timespec sync_start = *(queue_node->cpu_sync_start_time);
+  struct timespec sync_start = queue_node->cpu_sync_start_time;
 
-	// converting nsec to sec
-  double nsec_to_sec = pow(10,-9);
-  double sync_start_sec = sync_start.tv_sec + sync_start.tv_nsec * nsec_to_sec;
-  double sync_end_sec = sync_end.tv_sec + sync_end.tv_nsec * nsec_to_sec;
-  attributing_cpu_idle_metric_at_sync_epilogue(cpu_cct_node, sync_start_sec, sync_end_sec);
-  kernel_id_t processed_ids = attributing_cpu_idle_cause_metric_at_sync_epilogue(sync_start_sec, sync_end_sec);
+  // converting sec to nsec
+  unsigned long sec_to_nsec = pow(10,9);
+  unsigned long sync_start_nsec = sync_start.tv_sec * sec_to_nsec + sync_start.tv_nsec;
+  unsigned long sync_end_nsec = sync_end.tv_sec * sec_to_nsec + sync_end.tv_nsec;
+  attributing_cpu_idle_metric_at_sync_epilogue(cpu_cct_node, sync_start_nsec, sync_end_nsec);
+  kernel_id_t processed_ids = attributing_cpu_idle_cause_metric_at_sync_epilogue(sync_start_nsec, sync_end_nsec);
 
   queue_node->cpu_idle_cct = NULL;
-  queue_node->cpu_sync_start_time = NULL;
+  // queue_node->cpu_sync_start_time = NULL;
   atomic_fetch_add(&g_num_threads_at_sync, -1L);
 
   hpcrun_safe_exit();
@@ -447,8 +482,10 @@ gpu_idle_blame
 
   uint32_t num_unfinished_kernels = get_count_of_unfinished_kernels();
   if (num_unfinished_kernels == 0) {
-		cct_metric_data_increment(gpu_idle_metric_id, node, (cct_metric_data_t) {.i = metric_incr});
-	}
+    gpu_blame_shift_t bs;
+    bs.gpu_idle_time = metric_incr;
+    record_blame_shift_metrics(node, &bs);
+  }
 
   spinlock_unlock(&itimer_blame_lock);
 }

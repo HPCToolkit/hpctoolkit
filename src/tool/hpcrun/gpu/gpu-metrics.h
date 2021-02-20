@@ -421,6 +421,16 @@ typedef enum {
 	"all avaiable devices are not getting utilized. Offload computations to all devices to reduce total application execution time: bool")
 
 
+// blame-shifting metrics
+#define FORALL_BLAME_SHIFT(macro)					\
+  macro("CPU_IDLE (sec)",              CPU_IDLE,		\
+	"CPU_IDLE time (seconds)")  \
+  macro("GPU_IDLE (sec)",               GPU_IDLE,			\
+	"GPU_IDLE time (seconds)")			\
+  macro("CPU_IDLE_CAUSE (sec)",              CPU_IDLE_CAUSE,		\
+	"CPU_IDLE_CAUSE time (seconds)")
+
+
 
 //******************************************************************************
 // interface operations
@@ -485,6 +495,15 @@ gpu_metrics_GSAMP_enable
 (
  void
 );
+
+
+// record blame-shifting metrics
+void
+gpu_metrics_BLAME_SHIFT_enable
+(
+ void
+);
+
 
 
 //--------------------------------------------------

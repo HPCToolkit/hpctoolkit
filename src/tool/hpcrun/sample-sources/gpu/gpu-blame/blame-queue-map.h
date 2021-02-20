@@ -22,7 +22,7 @@ typedef struct queue_node_t {
 
   // if CPU is block for queue operations to complete, we use these 2 variables
   cct_node_t *cpu_idle_cct;
-  struct timespec *cpu_sync_start_time;
+  struct timespec cpu_sync_start_time;
 } queue_node_t;
 
 
