@@ -24,7 +24,7 @@
 //******************************************************************************
 
 #define NEXT(node) node->next
-#define SYNC -1
+#define SYNC 0
 
 
 
@@ -33,8 +33,8 @@
 //******************************************************************************
 
 typedef struct Node {
-  double time;
-  long id;
+  unsigned long time;
+  uint64_t id;
   bool isStart;
   kernel_node_t *kernel_node;
   struct Node *next;
@@ -69,7 +69,7 @@ printList
 )
 {
   while (node != NULL) {
-    printf("%ld ", node->time);
+    printf("%lu ", node->time);
     node = node->next;
   }
   printf("\n");
@@ -335,8 +335,8 @@ transform_kernel_nodes_to_sortable_nodes
   // convert kernel_node_t nodes to sortable Nodes
   kernel_node_t *curr = kernel_node_head;
   while (curr) {
-    Node start_node = {curr->kernel_start_time, (long)curr->kernel_id, 1, curr, NULL};
-    Node end_node = {curr->kernel_end_time, (long)curr->kernel_id, 0, curr, NULL};
+    Node start_node = {curr->kernel_start_time, curr->kernel_id, 1, curr, NULL};
+    Node end_node = {curr->kernel_end_time, curr->kernel_id, 0, curr, NULL};
     push(&head, start_node);
     push(&head, end_node);
     curr = atomic_load(&curr->next);
@@ -368,8 +368,8 @@ void
 calculate_blame_for_active_kernels
 (
  kernel_node_t *kernel_list,
- double sync_start,
- double sync_end
+ unsigned long sync_start,
+ unsigned long sync_end
 )
 {
   // also input the sync times and add nodes	

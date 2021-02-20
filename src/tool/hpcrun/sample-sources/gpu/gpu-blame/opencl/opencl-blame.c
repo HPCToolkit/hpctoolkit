@@ -98,6 +98,7 @@ opencl_kernel_epilogue
 
   uint64_t event_id = (uint64_t) event;
   unsigned long kernel_start, kernel_end;
+  // clGetEventProfilingInfo returns time in nanoseconds
   cl_int err_cl = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &(kernel_end), NULL);
 
   if (err_cl == CL_SUCCESS) {
@@ -107,13 +108,9 @@ opencl_kernel_epilogue
     if (err_cl != CL_SUCCESS) {
       EMSG("clGetEventProfilingInfo failed");
     }
-    // converting nsec to sec
-    double nsec_to_sec = pow(10,-9);
-    double kernel_start_d = kernel_start * nsec_to_sec;
-    double kernel_end_d = kernel_end * nsec_to_sec;
 
     // Just to verify that this is a valid profiling value. 
-    elapsedTime = kernel_end_d - kernel_start_d;
+    elapsedTime = kernel_end- kernel_start;
     if (elapsedTime <= 0) {
       printf("bad kernel time\n");
       hpcrun_safe_exit();
