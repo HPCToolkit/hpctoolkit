@@ -455,11 +455,11 @@ consume_one_trace_item
   }
 
   if (append) {
-    gpu_trace_first(td, no_activity, start);
-
+    gpu_trace_stream_append(td, no_activity, start - 1);
     gpu_trace_stream_append(td, leaf, start);
 
-    gpu_trace_stream_append(td, no_activity, end);
+    gpu_trace_stream_append(td, leaf, end);
+    gpu_trace_stream_append(td, no_activity, end + 1);
 
     PRINT("%p Append trace activity [%lu, %lu]\n", td, start, end);
   }
