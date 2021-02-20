@@ -222,8 +222,7 @@ attributing_cpu_idle_metric_at_sync_epilogue
   double nsec_to_sec = pow(10,-9);
   double cpu_idle_time_in_sec = cpu_idle_time * nsec_to_sec;
 
-  gpu_blame_shift_t bs;
-  bs.cpu_idle_time = cpu_idle_time_in_sec;
+  gpu_blame_shift_t bs = {cpu_idle_time_in_sec, 0, 0};
   record_blame_shift_metrics(cpu_cct_node, &bs);
 }
 
@@ -263,8 +262,7 @@ attributing_cpu_idle_cause_metric_at_sync_epilogue
 
     while (curr) {
       //printf("cpu_idle_cause_metric_id: %f\n", curr->cpu_idle_blame);
-      gpu_blame_shift_t bs;
-      bs.cpu_idle_cause_time = curr->cpu_idle_blame;
+      gpu_blame_shift_t bs = {0, 0, curr->cpu_idle_blame};
       record_blame_shift_metrics(curr->launcher_cct, &bs);
 
       next = atomic_load(&curr->next);
@@ -342,7 +340,6 @@ kernel_prologue
 
   ucontext_t context;
   getcontext(&context);
-  int skip_inner = 1; // what value should be passed here?
   cct_node_t *cct_node = gpu_application_thread_correlation_callback(0); // param is not used in the function
 
   create_and_insert_kernel_entry(kernelexec_id, cct_node);
@@ -386,14 +383,12 @@ kernel_epilogue
 void
 sync_prologue
 (
- uint64_t queue_id
+ uint64_t queue_id,
+ struct timespec sync_start
 )
 {
   // prevent self a sample interrupt while gathering calling context
   hpcrun_safe_enter();
-
-  struct timespec sync_start;
-  clock_gettime(CLOCK_REALTIME, &sync_start); // get current time
 
   atomic_fetch_add(&g_num_threads_at_sync, 1L);
 
@@ -403,7 +398,6 @@ sync_prologue
 
   ucontext_t context;
   getcontext(&context);
-  int skip_inner = 1; // what value should be passed here?
   cct_node_t *cpu_cct_node = gpu_application_thread_correlation_callback(0); // param is not used in the function
 
   queue_node->cpu_idle_cct = cpu_cct_node; // we may need to remove hpcrun functions from the stackframe of the cct
@@ -416,14 +410,12 @@ sync_prologue
 kernel_id_t
 sync_epilogue
 (
- uint64_t queue_id
+ uint64_t queue_id,
+ struct timespec sync_end
 )
 {
   // prevent self a sample interrupt while gathering calling context
   hpcrun_safe_enter();
-
-  struct timespec sync_end;
-  clock_gettime(CLOCK_REALTIME, &sync_end); // get current time
 
   queue_map_entry_t *entry = queue_map_lookup(queue_id);
   queue_node_t *queue_node = queue_map_entry_queue_node_get(entry);
@@ -482,8 +474,7 @@ gpu_idle_blame
 
   uint32_t num_unfinished_kernels = get_count_of_unfinished_kernels();
   if (num_unfinished_kernels == 0) {
-    gpu_blame_shift_t bs;
-    bs.gpu_idle_time = metric_incr;
+    gpu_blame_shift_t bs = {0, metric_incr, 0};
     record_blame_shift_metrics(node, &bs);
   }
 

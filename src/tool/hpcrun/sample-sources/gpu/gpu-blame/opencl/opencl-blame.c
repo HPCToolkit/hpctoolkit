@@ -99,11 +99,11 @@ opencl_kernel_epilogue
   uint64_t event_id = (uint64_t) event;
   unsigned long kernel_start, kernel_end;
   // clGetEventProfilingInfo returns time in nanoseconds
-  cl_int err_cl = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &(kernel_end), NULL);
+  cl_int err_cl = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &kernel_end, NULL);
 
   if (err_cl == CL_SUCCESS) {
     float elapsedTime;
-    err_cl = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &(kernel_start), NULL);
+    err_cl = clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &kernel_start, NULL);
 
     if (err_cl != CL_SUCCESS) {
       EMSG("clGetEventProfilingInfo failed");
@@ -132,7 +132,16 @@ opencl_sync_prologue
  cl_command_queue queue
 )
 {
-  sync_prologue((uint64_t)queue);
+  // prevent self a sample interrupt while gathering calling context
+  hpcrun_safe_enter();
+
+  struct timespec sync_start;
+  // using CLOCK_MONOTONIC_RAW, CLOCK_MONOTONIC gives time that matches with kernel start and end time outputted by clGetEventProfilingInfo
+  // CLOCK_REALTIME gives a timestamp that isnt comparable with kernel start and end time
+  clock_gettime(CLOCK_MONOTONIC_RAW, &sync_start); // get current time
+  sync_prologue((uint64_t)queue, sync_start);
+
+  hpcrun_safe_exit();
 }
 
 
@@ -145,9 +154,14 @@ opencl_sync_epilogue
   // prevent self a sample interrupt while gathering calling context
   hpcrun_safe_enter(); 
 
+  struct timespec sync_end;
+  // using CLOCK_MONOTONIC_RAW, CLOCK_MONOTONIC gives time that matches with kernel start and end time outputted by clGetEventProfilingInfo
+  // CLOCK_REALTIME gives a timestamp that isnt comparable with kernel start and end time
+  clock_gettime(CLOCK_MONOTONIC_RAW, &sync_end); // get current time
+
   // we cant release opencl events at kernel_epilogue. Their unique event ids can be used later for attributing cpu_idle_blame.
   // so we release them once they are processed in sync_epilogue
-  kernel_id_t id_node = sync_epilogue((uint64_t)queue);
+  kernel_id_t id_node = sync_epilogue((uint64_t)queue, sync_end);
   releasing_opencl_events(id_node);
 
   hpcrun_safe_exit();
