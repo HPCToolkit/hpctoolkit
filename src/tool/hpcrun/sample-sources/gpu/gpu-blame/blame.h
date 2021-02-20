@@ -57,14 +57,16 @@ kernel_epilogue
 void
 sync_prologue
 (
- uint64_t queue_id
+ uint64_t queue_id,
+ struct timespec sync_start
 );
 
 
 kernel_id_t
 sync_epilogue
 (
- uint64_t queue_id
+ uint64_t queue_id,
+ struct timespec sync_end
 );
 
 #endif 	//blame_h
