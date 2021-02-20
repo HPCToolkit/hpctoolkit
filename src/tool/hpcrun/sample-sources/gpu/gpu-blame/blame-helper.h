@@ -17,8 +17,8 @@ void
 calculate_blame_for_active_kernels
 (
  kernel_node_t *kernel_list,
- double sync_start,
- double sync_end
+ unsigned long sync_start,
+ unsigned long sync_end
 );
 
 #endif 	//blame_shift_helper_h
