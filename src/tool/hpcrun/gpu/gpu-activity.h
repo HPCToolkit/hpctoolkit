@@ -95,7 +95,8 @@ typedef enum {
   GPU_ACTIVITY_EXTERNAL_CORRELATION    = 14,
   GPU_ACTIVITY_EVENT                   = 15,
   GPU_ACTIVITY_FUNCTION                = 16,
-  GPU_ACTIVITY_FLUSH                   = 17
+  GPU_ACTIVITY_FLUSH                   = 17,
+  GPU_ACTIVITY_BLAME_SHIFT             = 18
 } gpu_activity_kind_t;
 
 
@@ -325,6 +326,13 @@ typedef struct gpu_branch_t {
 } gpu_branch_t;
 
 
+typedef struct gpu_blame_shift_t {
+  double cpu_idle_time;
+  double gpu_idle_time;
+  double cpu_idle_cause_time;
+} gpu_blame_shift_t;
+
+
 typedef struct gpu_synchronization_t {
   uint64_t start;
   uint64_t end;
@@ -378,6 +386,7 @@ typedef struct gpu_activity_details_t {
     gpu_synchronization_t synchronization;
     gpu_host_correlation_t correlation;
     gpu_flush_t flush;
+    gpu_blame_shift_t blame_shift;
 
     /* Access short cut for activitiy fields shared by multiple kinds */
 

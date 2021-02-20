@@ -64,26 +64,12 @@
 
 // Visible types
 
-// CPU GPU blame metrics
-extern int cpu_idle_metric_id;
-extern int gpu_time_metric_id;
-extern int cpu_idle_cause_metric_id;
-extern int gpu_idle_metric_id;
-extern int gpu_overload_potential_metric_id;
-extern int stream_special_metric_id;
-extern int h_to_h_data_xfer_metric_id;
-extern int h_to_d_data_xfer_metric_id;
-extern int d_to_d_data_xfer_metric_id;
-extern int d_to_h_data_xfer_metric_id;
-extern int uva_data_xfer_metric_id;
-
 extern bool g_cpu_gpu_enabled;
 
 // num threads in the process
 extern atomic_uint_fast64_t g_active_threads;
 
 // Visible function declarations
-extern void gpu_blame_shifter(void* dc, int metric_id, cct_node_t* node, int  metric_incr);
 extern  void hpcrun_stream_finalize(void* st);
 extern void hpcrun_set_gpu_proxy_present();
 

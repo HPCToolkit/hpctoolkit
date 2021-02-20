@@ -84,7 +84,8 @@
   macro(GPU_INST, 9)  \
   macro(GTIMES, 10)  \
   macro(KINFO, 12)  \
-  macro(GSAMP, 13)
+  macro(GSAMP, 13)  \
+  macro(BLAME_SHIFT, 14)
 
 
 #define FORALL_METRIC_KINDS(macro)  \
@@ -593,6 +594,23 @@ gpu_metrics_attribute_branch
 }
 
 
+static void
+gpu_metrics_attribute_blame_shift
+(
+ gpu_activity_t *activity
+)
+{
+  gpu_blame_shift_t *bs = &(activity->details.blame_shift);
+  cct_node_t *cct_node = activity->cct_node;
+
+  metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, METRIC_ID(CPU_IDLE));
+  gpu_metrics_attribute_metric_real(metrics, METRIC_ID(CPU_IDLE), bs->cpu_idle_time);
+  gpu_metrics_attribute_metric_real(metrics, METRIC_ID(GPU_IDLE), bs->gpu_idle_time);
+  gpu_metrics_attribute_metric_real(metrics, METRIC_ID(CPU_IDLE_CAUSE), bs->cpu_idle_cause_time);
+}
+
+
+
 //******************************************************************************
 // interface operations
 //******************************************************************************
@@ -650,6 +668,10 @@ gpu_metrics_attribute
 
   case GPU_ACTIVITY_BRANCH:
     gpu_metrics_attribute_branch(activity);
+    break;
+
+  case GPU_ACTIVITY_BLAME_SHIFT:
+    gpu_metrics_attribute_blame_shift(activity);
     break;
 
   default:
@@ -898,3 +920,22 @@ gpu_metrics_GPU_INST_STALL_enable
 
   FINALIZE_METRIC_KIND();
 }
+
+
+void
+gpu_metrics_BLAME_SHIFT_enable
+(
+ void
+)
+{
+// GPU implicit copy metrics
+#undef CURRENT_METRIC
+#define CURRENT_METRIC BLAME_SHIFT
+
+  INITIALIZE_METRIC_KIND();
+
+  FORALL_BLAME_SHIFT(INITIALIZE_SCALAR_METRIC_REAL)
+
+  FINALIZE_METRIC_KIND();
+}
+
