@@ -92,6 +92,7 @@
 #include <hpcrun/sample_event.h>
 #include <hpcrun/thread_data.h>
 #include <hpcrun/threadmgr.h>
+#include <hpcrun/utilities/hpcrun-nanotime.h>
 
 #include <hpcrun/gpu/gpu-application-thread-api.h>
 #include <hpcrun/gpu/gpu-monitoring-thread-api.h>
@@ -230,6 +231,7 @@ static __thread gpu_patch_buffer_t gpu_patch_buffer_reset = {
   .head_index = 0,
   .tail_index = 0,
   .size = 0,
+  .num_threads = 0,
   .type = GPU_PATCH_DEFAULT,
   .flags = GPU_PATCH_NONE
 };
@@ -240,6 +242,7 @@ static __thread gpu_patch_buffer_t gpu_patch_buffer_addr_read_reset = {
   .head_index = 0,
   .tail_index = 0,
   .size = 0,
+  .num_threads = 0,
   .type = GPU_PATCH_ADDRESS_ANALYSIS,
   .flags = GPU_PATCH_READ | GPU_PATCH_ANALYSIS
 };
@@ -250,6 +253,7 @@ static __thread gpu_patch_buffer_t gpu_patch_buffer_addr_write_reset = {
   .head_index = 0,
   .tail_index = 0,
   .size = 0,
+  .num_threads = 0,
   .type = GPU_PATCH_ADDRESS_ANALYSIS,
   .flags = GPU_PATCH_WRITE | GPU_PATCH_ANALYSIS
 };
@@ -1071,7 +1075,7 @@ sanitizer_kernel_analyze
     redshow_analyze(sanitizer_thread_id_local, cubin_id, mod_id, persistent_id, correlation_id,
       gpu_patch_buffer_addr_read_host);
 
-    // Do not enter later ode
+    // Do not enter later code
     PRINT("Sanitizer analysis kernel done\n");
     return;
   }
