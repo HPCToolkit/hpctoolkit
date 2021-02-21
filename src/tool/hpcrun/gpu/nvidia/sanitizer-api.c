@@ -1036,6 +1036,46 @@ sanitizer_kernel_analyze
   size_t num_records_write = gpu_patch_buffer_addr_write_host->head_index;
   int32_t persistent_id = hpcrun_cct_persistent_id(api_node);
 
+  if (analysis_end) {
+    // Last analysis
+    // Write
+    void *gpu_patch_record_device = gpu_patch_buffer_addr_write_host->records;
+    HPCRUN_SANITIZER_CALL(sanitizerMemcpyDeviceToHost,
+      (gpu_patch_buffer_addr_write_host_records, gpu_patch_record_device,
+       sizeof(gpu_patch_analysis_address_t) * num_records_write, priority_stream));
+
+    // Read
+    gpu_patch_record_device = gpu_patch_buffer_addr_read_host->records;
+    HPCRUN_SANITIZER_CALL(sanitizerMemcpyDeviceToHost,
+      (gpu_patch_buffer_addr_read_host_records, gpu_patch_record_device,
+       sizeof(gpu_patch_analysis_address_t) * num_records_read, priority_stream));
+
+    // Tell analysis kernel is done
+    gpu_patch_buffer_addr_read_host->full = 0;
+    gpu_patch_buffer_addr_read_host->analysis = 0;
+    gpu_patch_buffer_addr_write_host->full = 0;
+    gpu_patch_buffer_addr_write_host->analysis = 0;
+
+    HPCRUN_SANITIZER_CALL(sanitizerMemcpyHostToDeviceAsync,
+      (gpu_patch_buffer_addr_read_device, gpu_patch_buffer_addr_read_host,
+       offsetof(gpu_patch_buffer_t, head_index), priority_stream));
+    HPCRUN_SANITIZER_CALL(sanitizerMemcpyHostToDeviceAsync,
+      (gpu_patch_buffer_addr_write_device, gpu_patch_buffer_addr_write_host,
+       offsetof(gpu_patch_buffer_t, head_index), priority_stream));
+    
+    gpu_patch_buffer_addr_write_host->records = gpu_patch_buffer_addr_write_host_records;
+    redshow_analyze(sanitizer_thread_id_local, cubin_id, mod_id, persistent_id, correlation_id,
+      gpu_patch_buffer_addr_write_host);
+
+    gpu_patch_buffer_addr_read_host->records = gpu_patch_buffer_addr_read_host_records;
+    redshow_analyze(sanitizer_thread_id_local, cubin_id, mod_id, persistent_id, correlation_id,
+      gpu_patch_buffer_addr_read_host);
+
+    // Do not enter later ode
+    PRINT("Sanitizer analysis kernel done\n");
+    return;
+  }
+
   if (gpu_patch_buffer_addr_write_host->full != 0) {
     void *gpu_patch_record_device = gpu_patch_buffer_addr_write_host->records;
     HPCRUN_SANITIZER_CALL(sanitizerMemcpyDeviceToHost,
@@ -1048,7 +1088,7 @@ sanitizer_kernel_analyze
       (gpu_patch_buffer_addr_write_device, gpu_patch_buffer_addr_write_host,
        sizeof(gpu_patch_buffer_host->full), priority_stream));
 
-    gpu_patch_buffer_addr_write_host->records = gpu_patch_buffer_addr_write_host;
+    gpu_patch_buffer_addr_write_host->records = gpu_patch_buffer_addr_write_host_records;
     redshow_analyze(sanitizer_thread_id_local, cubin_id, mod_id, persistent_id, correlation_id,
       gpu_patch_buffer_addr_write_host);
 
@@ -1069,28 +1109,11 @@ sanitizer_kernel_analyze
       (gpu_patch_buffer_addr_read_device, gpu_patch_buffer_addr_read_host,
        sizeof(gpu_patch_buffer_host->full), priority_stream));
 
-    gpu_patch_buffer_addr_read_host->records = gpu_patch_buffer_addr_read_host;
+    gpu_patch_buffer_addr_read_host->records = gpu_patch_buffer_addr_read_host_records;
     redshow_analyze(sanitizer_thread_id_local, cubin_id, mod_id, persistent_id, correlation_id,
       gpu_patch_buffer_addr_read_host);
 
     PRINT("Sanitizer analysis kernel analysis in process\n");
-  }
-
-  if (analysis_end) {
-    // Tell analysis kernel is done
-    gpu_patch_buffer_addr_read_host->full = 0;
-    gpu_patch_buffer_addr_read_host->analysis = 0;
-    gpu_patch_buffer_addr_write_host->full = 0;
-    gpu_patch_buffer_addr_write_host->analysis = 0;
-
-    HPCRUN_SANITIZER_CALL(sanitizerMemcpyHostToDeviceAsync,
-      (gpu_patch_buffer_addr_read_device, gpu_patch_buffer_addr_read_host,
-       offsetof(gpu_patch_buffer_t, head_index), priority_stream));
-    HPCRUN_SANITIZER_CALL(sanitizerMemcpyHostToDeviceAsync,
-      (gpu_patch_buffer_addr_write_device, gpu_patch_buffer_addr_write_host,
-       offsetof(gpu_patch_buffer_t, head_index), priority_stream));
-
-    PRINT("Sanitizer analysis kernel done\n");
   }
 }
 
@@ -1217,6 +1240,8 @@ sanitizer_kernel_launch_sync
         (gpu_patch_buffer_device, gpu_patch_buffer_host, sizeof(gpu_patch_buffer_host->full), priority_stream));
     
       sanitizer_buffer_channel_push(sanitizer_buffer);
+
+      PRINT("Sanitizer analysis cpu in process\n");
     }
 
     // Awake background thread
