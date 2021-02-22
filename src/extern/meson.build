@@ -77,11 +77,9 @@ foreach name, code : _victims
   if not _dep.found()
     continue
   endif
-  assert(ex_libs.has_key(name), 'dependency @0@ is not (fully) external, cannot internalize!'.format(name))
 
   if cc.links(code, name: '@0@.a -fPIC compatibility'.format(name),
-    args: ['-shared', '-fPIC'],
-    dependencies: ex_libs[name], include_directories: ex_idirs[name])
+              args: ['-shared', '-fPIC'], dependencies: _dep)
 
     _objcopy = find_program('objcopy')
 

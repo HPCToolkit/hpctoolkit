@@ -303,8 +303,7 @@ _papi_srcset = sourceset.source_set()
 _papi_dep = dependency('papi', required: false)
 _config.set('PAPI_C', not get_option('papi-c').disabled()
   and cc.has_header_symbol('papi.h', 'PAPI_get_eventset_component',
-                           dependencies: ex_libs.get('papi', _papi_dep),
-                           include_directories: ex_idirs.get('papi', [])))
+                           dependencies: _papi_dep))
 if get_option('papi-c').enabled()
   assert(_config.get('PAPI_C'), 'papi-c enabled but not available!')
 endif
@@ -317,8 +316,7 @@ _papi_srcset.add(when: 'PAPI_C',
   ))
 _config.set('PAPI_C_CUPTI', not get_option('papi-c-cupti').disabled()
   and cc.has_function('CUDA_init_component',
-                      dependencies: ex_libs.get('papi', _papi_dep),
-                      include_directories: ex_idirs.get('papi', [])))
+                      dependencies: _papi_dep))
 if get_option('papi-c-cupti').enabled()
   assert(_config.get('PAPI_C_CUPTI'), 'papi-c-cupti enabled but not available!')
 endif

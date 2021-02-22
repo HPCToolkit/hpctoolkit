@@ -45,7 +45,7 @@
 project('hpctoolkit', ['c', 'cpp'],
         version: '2020.08-develop',
         license: 'MIT',
-        meson_version: '>=0.54.0',
+        meson_version: '>=0.57.0',
         default_options: ['buildtype=release', 'b_staticpic=false',
                           'libdir=lib', 'libexecdir=libexec',
                           'c_std=gnu11', 'cpp_std=gnu++11'])
@@ -183,7 +183,7 @@ _deps = {
                   'libs': ['xed'], 'headers': ['xed-interface.h'],
                   'static': true,
                 },
-  // TODO: Update to allow for a separated ROCM install
+  # TODO: Update to allow for a separated ROCM install
   'rocm-headers': { 'propstems': ['rocm'],
                     'libs': [], 'headers': ['hip/hip_runtime.h', 'roctracer/roctracer.h'],
                   },
@@ -241,8 +241,6 @@ _deps = {
                        },
 }
 ex_libs = {}
-ex_idirs = {}
-_raw_idirs = {}
 foreach var, dep : _deps
   # If we need to, we'll add an override for dependencies that can't be found
   # via the normal methods. This is the name of said dependency.
@@ -298,7 +296,7 @@ foreach var, dep : _deps
       if not dep.get('root_use_dep', false)
         error('Both of '+stem+'_librarydir and '+stem+'_includedir must be specified')
       endif  # It'll be a hard error later down
-    elif meson.get_external_property(stem+'_root', '') != ''
+    elif meson.get_external_property(stem+'_root', []) != []
       if not dep.get('root_use_dep', false)
         _dep_root = fs.expanduser(meson.get_external_property(stem+'_root'))
         if not fs.is_absolute(_dep_root)
@@ -330,7 +328,7 @@ foreach var, dep : _deps
     if dep.has_key('root_min_ver') and meson.version().version_compare('<'+dep['root_min_ver'])
       error(stem+'_root as a property is not effective until '+dep['root_min_ver']+', please upgrade!')
     endif
-    _dep_search = dep.get('root_use_dep', false)
+    _dep_search = dep.get('root_use_dep', false) \
                   ? {'skip_to_dep': true} \
                   : {'idirs': _dep_idirs, 'ldirs': _dep_ldirs}
     break
@@ -406,19 +404,6 @@ foreach var, dep : _deps
     _dep_search = {'idirs': [], 'ldirs': [], 'required': false}
   endif
 
-  # Some dependencies require others in order to function. So fetch them and
-  # stitch all the bits together.
-  _dep_xidirs = []
-  _dep_xlibs = []
-  foreach exdep : dep.get('extra_deps', [])
-    if ex_libs.has_key(exdep)
-      _dep_xidirs += _raw_idirs[exdep]
-      _dep_xlibs += ex_libs[exdep]
-    else
-      _dep_xlibs += dependency(_deps[exdep]['dependency'], required: false, disabler: true)
-    endif
-  endforeach
-
   # At this point we have enough info to attempt to search for the dependency
   if _dep_search != {} and not _dep_search.get('skip_to_dep', false)
     # This is a rooted search: we know the paths to check for the bits we need.
@@ -447,17 +432,15 @@ foreach var, dep : _deps
 
     # Stitch together a final dependncy to represent the entire mess
     _dep = declare_dependency(
-      dependencies: _dep_libs + _dep_xlibs,
-      include_directories: include_directories(_dep_search['idirs'] + _dep_xidirs),
+      dependencies: _dep_libs,
+      include_directories: include_directories(_dep_search['idirs']),
       version: _dep_search.get('version', 'unknown'),
     )
     if is_disabler(_dep)
       _dep = dependency('', required: false)
     else
-      # Expose the constructing libs and includes as variables to allow for compile tests
-      ex_libs += {_dep_name: _dep_libs + _dep_xlibs}
-      ex_idirs += {_dep_name: include_directories(_dep_search['idirs'] + _dep_xidirs)}
-      _raw_idirs += {_dep_name: _dep_search['idirs'] + _dep_xidirs}
+      # Expose the constructing libs, for the few cases where that matters
+      ex_libs += {_dep_name: _dep_libs}
     endif
     if dep.has_key('static')
       assert(not dep.has_key('modules'), 'TODO: \'static\' and \'modules\' are currently incompatible!')

@@ -50,8 +50,8 @@ _dtdgen = generator(find_program('makedtdstring', native: true),
   arguments: ['@INPUT@'],
   output: '@BASENAME@.h', capture: true)
 _srcs += _dtdgen.process(
-  meson.source_root() / 'lib' / 'dtd' / 'hpc-experiment.dtd',
-  meson.source_root() / 'lib' / 'dtd' / 'hpc-structure.dtd',
+  meson.project_source_root() / 'lib' / 'dtd' / 'hpc-experiment.dtd',
+  meson.project_source_root() / 'lib' / 'dtd' / 'hpc-structure.dtd',
 )
 
 xml_lib = static_library('xml', _srcs, pic: true,

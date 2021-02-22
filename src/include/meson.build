@@ -65,9 +65,7 @@ hpctoolkit_config.set('BINUTILS_234', cc.compiles('''
       return bfd_section_vma((asection*)0);
     }
   ''', name: 'libbfd >=2.34 syntax',
-  dependencies: ex_libs.get('libbfd', _libbfd_dep),
-  include_directories: ex_idirs.get('libbfd', []),
-  ) ? 1 : false)
+  dependencies: _libbfd_dep) ? 1 : false)
 hpctoolkit_config.set('DATACENTRIC_TRACE', get_option('data-centric-tracing') ? 1 : false)
 hpctoolkit_config.set('DYNINST_INSTRUCTION_PTR', cpp.compiles('''
     #include <map>
@@ -84,9 +82,7 @@ hpctoolkit_config.set('DYNINST_INSTRUCTION_PTR', cpp.compiles('''
       std::cout << imap.begin()->second->size();
     }
   ''', name: 'Dyninst Instruction::Ptr syntax',
-  dependencies: ex_libs.get('dyninst', _dyninst_dep),
-  include_directories: ex_idirs.get('dyninst', []),
-  ) ? 1 : false)
+  dependencies: _dyninst_dep) ? 1 : false)
 hpctoolkit_config.set('DYNINST_USE_CUDA', cpp.compiles('''
     #include <iostream>
     #include <Symtab.h>
@@ -94,13 +90,10 @@ hpctoolkit_config.set('DYNINST_USE_CUDA', cpp.compiles('''
       std::cout << (long) Dyninst::Arch_cuda;
     }
   ''', name: 'Dyninst CUDA support',
-  dependencies: ex_libs.get('dyninst', _dyninst_dep),
-  include_directories: ex_idirs.get('dyninst', [])) ? 1 : false)
+  dependencies: _dyninst_dep) ? 1 : false)
 hpctoolkit_config.set('DYNINST_SUPPORTS_INTEL_GPU',
   cpp.has_header_symbol('entryIDs.h', 'intel_gpu_op_general',
-  dependencies: ex_libs.get('dyninst', _dyninst_dep),
-  include_directories: ex_idirs.get('dyninst', []),
-  ) ? 1 : false)
+  dependencies: _dyninst_dep) ? 1 : false)
 # TODO: Remove once the Dyninst lower version bound gets bumped
 hpctoolkit_config.set('DYNINST_USE_LIBDW', true ? 1 : false)
 
