@@ -61,6 +61,9 @@ sanitizer_data_type_config(char *data_type);
 size_t
 sanitizer_record_size_get();
 
+size_t
+sanitizer_addr_record_num_get();
+
 int
 sanitizer_buffer_pool_size_get();
 

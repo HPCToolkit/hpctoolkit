@@ -1887,6 +1887,13 @@ sanitizer_record_size_get()
 }
 
 
+size_t
+sanitizer_addr_record_num_get()
+{
+  return sanitizer_gpu_patch_addr_record_num;
+}
+
+
 int
 sanitizer_buffer_pool_size_get()
 {
