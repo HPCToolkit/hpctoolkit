@@ -223,22 +223,6 @@ gpu_trace_stream_append
                            td->prev_dLCA, time);
 }
 
-
-static void
-gpu_trace_first
-(
- thread_data_t* td,
- cct_node_t *no_activity,
- uint64_t start
-)
-{
-  if (td->gpu_trace_first_time == 0) {
-    td->gpu_trace_first_time = start - 1;
-    gpu_trace_stream_append(td, no_activity, start - 1);
-  }
-}
-
-
 static uint64_t
 gpu_trace_start_adjust
 (
