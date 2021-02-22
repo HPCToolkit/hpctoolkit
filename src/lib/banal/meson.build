@@ -70,6 +70,7 @@ banal_lib = static_library('banal', _srcs, pic: true,
   link_with: [xml_lib, support_lib, binutils_lib],
   dependencies: [
     dependency('libbfd', required: false).partial_dependency(compile_args: true, includes: true),
+    dependency('libelf', required: false, disabler: true),
     dependency('dyninst', required: false, disabler: true),
     dependency('tbb', required: false, disabler: true),
     dependency('boost', required: false, disabler: true, modules: ['graph', 'regex', 'system']),
