@@ -121,6 +121,9 @@ _deps = {
   'libbfd': { 'propstems': ['bfd', 'binutils'], 'spack': 'binutils',
               'libs': ['bfd'], 'headers': ['bfd.h'],
             },
+  'libiberty': { 'propstems': ['iberty', 'binutils'], 'spack': 'binutils',
+                 'libs': ['iberty'], 'headers': ['libiberty/demangle.h'],
+               },
   # NOTE: Only static version to support internalization
   'libunwind_static': { 'propstems': ['libunwind'], 'spack': 'libunwind',
                         'spack_spec': '+pic',

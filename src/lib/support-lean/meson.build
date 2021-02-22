@@ -51,7 +51,13 @@ _srcs = files(
 
 support_lean_lib = static_library('support_lean', _srcs, pic: true,
   include_directories: main_includes,
-  dependencies: [dependency('liblzma', required: false, disabler: true)])
+  dependencies: [
+    dependency('liblzma', required: false, disabler: true),
+    dependency('libiberty', required: false, disabler: true),
+  ])
 support_lean_static_lib = static_library('support_lean_static', _srcs,
   include_directories: main_includes,
-  dependencies: [dependency('liblzma', required: false, disabler: true, static: true)])
+  dependencies: [
+    dependency('liblzma', required: false, disabler: true, static: true),
+    dependency('libiberty', required: false, disabler: true, static: true),
+  ])
