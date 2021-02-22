@@ -136,10 +136,6 @@ _deps = {
   'libelf': { 'propstems': ['libelf', 'elfutils'], 'spack': 'elfutils', 'dependency': 'libelf',
               'libs': ['elf'], 'headers': ['libelf.h'],
             },
-  'libelf_static': { 'propstems': ['libelf', 'elfutils'], 'spack': 'elfutils', 'dependency': 'libelf',
-                     'libs': ['elf'], 'headers': ['libelf.h'], 'static': true,
-                     # 'extra_deps': ['zlib_static_dep'],
-                   },
   'libdw': { 'propstems': ['libdw', 'elfutils'], 'spack': 'elfutils', 'dependency': 'libdw',
              'libs': ['dw'], 'headers': ['elfutils/libdw.h'],
            },
@@ -209,12 +205,6 @@ _deps = {
              'modules': ['graph', 'regex', 'system'],
              'cc': cpp,
            },
-  'dyninst': { 'propstems': ['dyninst'], 'spack': 'dyninst',
-               'libs': ['parseAPI', 'instructionAPI', 'symtabAPI', 'dynDwarf',
-                        'dynElf', 'common'],
-               'headers': ['Symtab.h'], 'cc': cpp,
-               'extra_deps': ['tbb', 'boost'],
-             },
   'xerces': { 'propstems': ['xerces'], 'spack': 'xerces-c', 'dependency': 'xerces-c',
               'libs': ['xerces-c'], 'headers': ['xercesc/sax2/SAX2XMLReader.hpp'],
               'cc': cpp,
@@ -240,8 +230,21 @@ _deps = {
                          'libs': ['md'], 'headers': ['metrics_discovery_api.h'],
                        },
 }
-ex_libs = {}
-foreach var, dep : _deps
+_deps2 = {
+  'libelf_static': { 'propstems': ['libelf', 'elfutils'], 'spack': 'elfutils', 'dependency': 'libelf',
+                     'libs': ['elf'], 'headers': ['libelf.h'], 'static': true,
+                     'extra_deps': ['zlib_static'],
+                   },
+  'dyninst': { 'propstems': ['dyninst'], 'spack': 'dyninst',
+               'libs': ['parseAPI', 'instructionAPI', 'symtabAPI', 'dynDwarf',
+                        'dynElf', 'common'],
+               'headers': ['Symtab.h'], 'cc': cpp,
+               'extra_deps': ['tbb', 'boost'],
+             },
+}
+_resolved_deps = {}
+foreach deps : [_deps, _deps2]
+foreach var, dep : deps
   # If we need to, we'll add an override for dependencies that can't be found
   # via the normal methods. This is the name of said dependency.
   _dep_name = dep.get('dependency', var.split('_')[0])
@@ -266,6 +269,7 @@ foreach var, dep : _deps
     else
       meson.override_dependency(_dep_name, dependency('', required: false))
     endif
+    _resolved_deps += {var: dependency('', required: false)}
     continue
   endif
 
@@ -364,6 +368,7 @@ foreach var, dep : _deps
         else
           meson.override_dependency(_dep_name, dependency('', required: false))
         endif
+        _resolved_deps += {var: dependency('', required: false)}
         continue
       endif
 
@@ -430,17 +435,36 @@ foreach var, dep : _deps
       endforeach
     endif
 
+    # If there are any extra dependencies, make sure they get incorperated
+    foreach xdep : dep.get('extra_deps', [])
+      assert(_resolved_deps.has_key(xdep), 'Invalid ordering of dependencies: @0@ should come before @1@'.format(xdep, var))
+      xdep = _resolved_deps[xdep]
+      if is_disabler(xdep)
+        if dep.has_key('static')
+          _dep_libs += dependency(xdep, static: dep['static'])
+        else
+          _dep_libs += dependency(xdep)
+        endif
+      else
+        _dep_libs += xdep
+      endif
+    endforeach
+
     # Stitch together a final dependncy to represent the entire mess
+    # FIXME: Workaround for an issue where the compiler objects don't add
+    # include_directories to their compile lines.
+    _dep_flags = []
+    foreach dir : _dep_search['idirs']
+      _dep_flags += '-I'+dir
+    endforeach
     _dep = declare_dependency(
       dependencies: _dep_libs,
       include_directories: include_directories(_dep_search['idirs']),
+      compile_args: _dep_flags,
       version: _dep_search.get('version', 'unknown'),
     )
     if is_disabler(_dep)
       _dep = dependency('', required: false)
-    else
-      # Expose the constructing libs, for the few cases where that matters
-      ex_libs += {_dep_name: _dep_libs}
     endif
     if dep.has_key('static')
       assert(not dep.has_key('modules'), 'TODO: \'static\' and \'modules\' are currently incompatible!')
@@ -450,7 +474,11 @@ foreach var, dep : _deps
     else
       meson.override_dependency(_dep_name, _dep)
     endif
+    _resolved_deps += {var: _dep}
+  else
+    _resolved_deps += {var: disabler()}
   endif
+endforeach
 endforeach
 
 ## CUDA a special case, we use Meson's logic to handle differences between

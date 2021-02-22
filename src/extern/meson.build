@@ -90,17 +90,14 @@ foreach name, code : _victims
     _pkgconfig = find_program('pkg-config', native: true)
     pkgconfig.generate(name: 'hpctoolkit_external_'+name,
       description: 'temporary externalization shim for '+name,
-      libraries: ex_libs[name])
+      libraries: _dep)
 
-    _new_lib_names = []
-    foreach _ : ex_libs[name]
-      _new_lib_names += 'internalized_@0@_@1@.a'.format(name, _new_lib_names.length())
-    endforeach
     _new_libs = custom_target('internalized '+name,
       command: [_redef, _objcopy, _pkgconfig,
-        meson.build_root() / 'meson-uninstalled', 'hpctoolkit_external_'+name,
+        meson.project_build_root() / 'meson-uninstalled',
+        'hpctoolkit_external_'+name+'-uninstalled',
         '@OUTPUT@'],
-      output: _new_lib_names,
+      output: 'internalized_@0@.a'.format(name),
       install: true, install_dir: get_option('libdir') / 'hpctoolkit/extern')
 
     # In the dynamic case we can just let Meson handle it. It gets it right in the end.
@@ -115,12 +112,8 @@ foreach name, code : _victims
     # the paths end up right in the end.
     _shim_lib = static_library('hpctoolkit_internalized_'+name,
       install: true, install_dir: get_option('libdir') / 'hpctoolkit/extern')
-    _shim_paths = []
-    foreach n : _new_lib_names
-      _shim_paths += '${extprefix}/' + n
-    endforeach
     pkgconfig.generate(_shim_lib,
-      libraries: _shim_paths,
+      libraries: '${extprefix}' / 'internalized_@0@.a'.format(name),
       variables: 'extprefix=' + '${prefix}'/get_option('libdir')/'hpctoolkit/extern',
       uninstalled_variables: 'extprefix='+meson.current_build_dir(),
       install_dir: get_option('libdir') / 'hpctoolkit/pkgconfig')

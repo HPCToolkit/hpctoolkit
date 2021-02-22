@@ -682,7 +682,7 @@ if not is_disabler(libhpcrun_static_lib) and not is_disabler(libhpcrun_wrap_lib)
   # Since libmonitor doesn't generate one, we handle that part.
   pkgconfig.generate(
     name: 'monitor_wrap', description: 'libmonitor: wrap library',
-    libraries: ex_libs['libmonitor'],
+    libraries: dependency('libmonitor', static: true),
     install_dir: get_option('libdir') / meson.project_name() / 'pkgconfig',
   )
 

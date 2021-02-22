@@ -358,7 +358,7 @@ done
 
 # Step 2.-1, generate the extra wrap names needed by libmonitor
 libmonitor_wrap_names="$( \
-    nm "$(PKG_CONFIG_PATH="${pc_dir}:${PKG_CONFIG_PATH}" pkg-config --libs monitor_wrap)" \
+    nm "$(PKG_CONFIG_PATH="${pc_dir}:${PKG_CONFIG_PATH}" pkg-config --libs --static monitor_wrap)" \
     | grep __wrap_ | sed -e 's/.*__wrap_//' | tr '\n' ' ')"
 
 hpctk_wrap_names="${internal_wrap_names}  ${external_wrap_names}  ${libmonitor_wrap_names}"
@@ -403,13 +403,13 @@ do
     wrap_args="${wrap_args} ${linker_prefix},--wrap=${name}"
 done
 
-set -- "${linker_prefix},--whole-archive" $(PKG_CONFIG_PATH="${pc_dir}:${PKG_CONFIG_PATH}" pkg-config --libs hpcrun_static) "${linker_prefix},--no-whole-archive" "$@"
+set -- "${linker_prefix},--whole-archive" $(PKG_CONFIG_PATH="${pc_dir}:${PKG_CONFIG_PATH}" pkg-config --libs --static hpcrun_static) "${linker_prefix},--no-whole-archive" "$@"
 set -- $undef_args $wrap_args "$@"
 set -- "$@" "${nm_addrs}.o"
 
 PKG_CONFIG_PATH="${pc_dir}:${PKG_CONFIG_PATH}" pkg-config --exists hpcrun_wrap || die "unable to find: hpcrun_wrap"
 PKG_CONFIG_PATH="${pc_dir}:${PKG_CONFIG_PATH}" pkg-config --exists monitor_wrap || die "unable to find: monitor_wrap"
-set -- "$@" $(PKG_CONFIG_PATH="${pc_dir}:${PKG_CONFIG_PATH}" pkg-config --libs hpcrun_wrap $extra_hpc_libs monitor_wrap hpcrun_deps)
+set -- "$@" $(PKG_CONFIG_PATH="${pc_dir}:${PKG_CONFIG_PATH}" pkg-config --libs --static hpcrun_wrap $extra_hpc_libs monitor_wrap hpcrun_deps)
 set -- "$@" $lib_args $appl_libs
 
 #------------------------------------------------------------
