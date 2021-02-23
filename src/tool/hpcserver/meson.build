@@ -81,7 +81,7 @@ if not get_option('hpcserver').enabled()
     link_with: [support_lib],
     dependencies: [
       dependency('zlib', required: get_option('hpcserver'), disabler: true),
-      dependency('MPI', required: get_option('mpi'), disabler: true),
+      dependency('MPI', language: 'cpp', required: get_option('mpi'), disabler: true),
     ],
     install: true)
   all_apps += [hpcserver_exe, hpcserver_mpi_exe]

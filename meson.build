@@ -485,6 +485,29 @@ foreach var, dep : deps
 endforeach
 endforeach
 
+## Handle cases where the built-in support for MPI fails
+
+foreach lang, env : {'c': ['MPICC'], 'cpp': ['MPICXX']}
+  if not dependency('MPI', required: false, language: lang).found()
+    # On some systems (Cray) MPI is integrated into the base compiler.
+    _comp = meson.get_compiler(lang)
+    if _comp.links('''
+      #include <mpi.h>
+      int main() {
+        MPI_Init(NULL, NULL);
+        MPI_Finalize();
+        return 0;
+      }
+    ''')
+      _Mver = _comp.get_define('MPI_VERSION', prefix: '#include <mpi.h>')
+      _mver = _comp.get_define('MPI_SUBVERSION', prefix: '#include <mpi.h>')
+      _ver = _Mver + (_mver == '' ? '' : '.') + _mver
+      _ver = _ver == '' ? 'unknown' : _ver
+      meson.override_dependency('MPI', declare_dependency(version: _ver), language: lang)
+    endif
+  endif
+endforeach
+
 ## CUDA a special case, we use Meson's logic to handle differences between
 ## versions smoothly. Downside is that cuda_root doesn't function as expected.
 
