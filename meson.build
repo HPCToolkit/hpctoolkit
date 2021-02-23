@@ -498,25 +498,78 @@ endforeach
 
 ## Handle cases where the built-in support for MPI fails
 
-foreach lang, env : {'c': ['MPICC'], 'cpp': ['MPICXX']}
-  if not dependency('MPI', required: false, language: lang).found()
-    # On some systems (Cray) MPI is integrated into the base compiler.
-    _comp = meson.get_compiler(lang)
-    if _comp.links('''
-      #include <mpi.h>
-      #include <stddef.h>
-      int main() {
-        MPI_Init(NULL, NULL);
-        MPI_Finalize();
-        return 0;
-      }
-    ''')
-      _Mver = _comp.get_define('MPI_VERSION', prefix: '#include <mpi.h>')
-      _mver = _comp.get_define('MPI_SUBVERSION', prefix: '#include <mpi.h>')
-      _ver = _Mver + (_mver == '' ? '' : '.') + _mver
-      _ver = _ver == '' ? 'unknown' : _ver
-      meson.override_dependency('MPI', declare_dependency(version: _ver), language: lang)
+_mpi_test_code = '''
+  #include <mpi.h>
+  #include <stddef.h>
+  int main() {
+    MPI_Init(NULL, NULL);
+    MPI_Finalize();
+    return 0;
+  }
+'''
+foreach lang : ['c', 'cpp']
+  if dependency('MPI', required: false, language: lang).found()
+    continue
+  endif
+
+  # On some systems (Cray) MPI is integrated into the base compiler.
+  _comp = meson.get_compiler(lang)
+  if _comp.links(_mpi_test_code, name: 'MPI is available by default test')
+    _Mver = _comp.get_define('MPI_VERSION', prefix: '#include <mpi.h>')
+    _mver = _comp.get_define('MPI_SUBVERSION', prefix: '#include <mpi.h>')
+    _ver = _Mver + (_mver == '' ? '' : '.') + _mver
+    _ver = _ver == '' ? 'unknown' : _ver
+    meson.override_dependency('MPI', declare_dependency(version: _ver), language: lang)
+    continue
+  endif
+
+  # Built-in Meson doesn't support MPICH, which responds to -compile_info and -link_info.
+  # Note that this is a fragile uncached test. It would be more robust to upstream support.
+  _printenv = find_program('printenv')
+  if lang == 'c'
+    _names = [run_command(_printenv, 'MPICC').stdout().strip(), 'mpicc']
+  elif lang == 'cpp'
+    _names = [run_command(_printenv, 'MPICXX').stdout().strip(), 'mpicxx']
+  endif
+  foreach name : _names
+    if name == ''
+      continue
     endif
+    _mpicc = find_program(name, required: false)
+    if _mpicc.found()
+      _c_info = run_command(_mpicc, '-compile_info')
+      _l_info = run_command(_mpicc, '-link_info')
+      if _c_info.returncode() == 0 and _l_info.returncode() == 0
+        # Skip the first argument, it should be the compiler itself
+        _c_args = ['!!sentinal!!']
+        foreach arg : _c_info.stdout().strip().split(' ')
+          if _c_args == ['!!sentinal!!']
+            _c_args = []
+          else
+            _c_args += arg
+          endif
+        endforeach
+        _l_args = ['!!sentinal!!']
+        foreach arg : _l_info.stdout().strip().split(' ')
+          if _l_args == ['!!sentinal!!']
+            _l_args = []
+          else
+            _l_args += arg
+          endif
+        endforeach
+
+        # Check that the dependency actually provides MPI
+        _dep = declare_dependency(compile_args: _c_args, link_args: _l_args, version: 'unknown mpich-like')
+        assert(_comp.links(_mpi_test_code, name: 'MPI validation check', dependencies: _dep),
+               'Found something like MPICH but it doesn\' seem to work')
+        meson.override_dependency('MPI', _dep, language: lang)
+        _names = []
+        break
+      endif
+    endif
+  endforeach
+  if _names == []
+    continue
   endif
 endforeach
 
