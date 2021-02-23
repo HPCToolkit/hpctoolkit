@@ -120,6 +120,7 @@ _spack_cache = {}
 _deps = {
   'libbfd': { 'propstems': ['bfd', 'binutils'], 'spack': 'binutils',
               'libs': ['bfd'], 'headers': ['bfd.h'],
+              'check_headers': true,
             },
   'libiberty': { 'propstems': ['iberty', 'binutils'], 'spack': 'binutils',
                  'libs': ['iberty'], 'headers': ['libiberty/demangle.h'],
@@ -433,7 +434,17 @@ foreach var, dep : deps
     # Special case: make sure we scan for header-only dependencies
     if dep['libs'].length() == 0
       foreach h : dep['headers']
-        if not cc.has_header(h, include_directories: _dep_idirs, required: _dep_search.get('required', true))
+        if not dep.get('cc', cc).has_header(h, include_directories: _dep_idirs,
+                    required: _dep_search.get('required', true))
+          _dep_libs += [disabler()]
+        endif
+      endforeach
+    endif
+    # Optionally ensure that the headers actually work. Catches issues early.
+    if dep.get('check_headers', false)
+      foreach h : dep['headers']
+        if not dep.get('cc', cc).check_header(h, include_directories: _dep_idirs,
+                    required: _dep_search.get('required', true))
           _dep_libs += [disabler()]
         endif
       endforeach
