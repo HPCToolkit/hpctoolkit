@@ -123,6 +123,7 @@ _deps = {
             },
   'libiberty': { 'propstems': ['iberty', 'binutils'], 'spack': 'binutils',
                  'libs': ['iberty'], 'headers': ['libiberty/demangle.h'],
+                 'static': true,
                },
   # NOTE: Only static version to support internalization
   'libunwind_static': { 'propstems': ['libunwind'], 'spack': 'libunwind',
