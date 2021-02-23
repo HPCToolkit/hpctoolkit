@@ -493,6 +493,7 @@ foreach lang, env : {'c': ['MPICC'], 'cpp': ['MPICXX']}
     _comp = meson.get_compiler(lang)
     if _comp.links('''
       #include <mpi.h>
+      #include <stddef.h>
       int main() {
         MPI_Init(NULL, NULL);
         MPI_Finalize();
