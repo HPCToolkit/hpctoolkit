@@ -139,9 +139,11 @@ private:
   std::mutex outputs_l;
   std::vector<pms_profile_info_t> prof_infos;
   size_t cur_position; //next available starting position for a profile in buffer
-  size_t cur_fposition; //next available starting position in the file
   std::vector<std::vector<char>> obuffers; //profiles in binary form waiting to be written
   int cur_obuf_idx;
+  std::optional<hpctoolkit::util::File> pmf;
+  uint64_t fpos;
+  MPI_Win win;
 
   std::atomic<std::size_t> outputCnt;
   int team_size;
@@ -241,8 +243,8 @@ private:
                         const hpctoolkit::util::File& fh);
 
   //all work related to IdTuples Section, 
-  void workIdTuplesSection1(const int total_num_prof,
-                            const hpctoolkit::util::File& fh);
+  void workIdTuplesSection1(const int total_num_prof, const hpctoolkit::util::File& pmf);
+
   //other sections only need the vector of prof_info_idx and id_tuple_ptr pairs
   void workIdTuplesSection(const int world_rank, const int world_size,
                            const int threads, const int num_prof,
@@ -259,6 +261,8 @@ private:
   std::vector<char> profBytes(hpcrun_fmt_sparse_metrics_t* sm);
 
   uint64_t writeProf(const std::vector<char>& prof_bytes, int mode); // return relative offset
+
+  uint64_t filePosFetchOp(uint64_t val);
 
   void updateCtxMids(const char* input, const uint64_t ctx_nzval_cnt, std::set<uint16_t>& ctx_nzmids);
 
