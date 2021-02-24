@@ -49,6 +49,7 @@
 #include "lib/profile/util/log.hpp"
 
 #include <mpi.h>
+#include <mutex>
 
 using namespace hpctoolkit::mpi;
 using namespace detail;
@@ -107,12 +108,21 @@ static void escape() {
   if(!done) MPI_Abort(MPI_COMM_WORLD, 0);
 }
 
+// We support serialized MPI if nessesary
+static std::mutex lock;
+static bool needsLock = true;
+static std::unique_lock<std::mutex> mpiLock() {
+  return needsLock ? std::unique_lock<std::mutex>(lock)
+                   : std::unique_lock<std::mutex>();
+}
+
 void World::initialize() noexcept {
   int available;
-  MPI_Init_thread(NULL, NULL, MPI_THREAD_MULTIPLE, &available);
+  MPI_Init_thread(NULL, NULL, MPI_THREAD_SERIALIZED, &available);
   std::atexit(escape);
-  if(available < MPI_THREAD_MULTIPLE)
-    util::log::fatal{} << "MPI does not have full thread support!";
+  if(available < MPI_THREAD_SERIALIZED)
+    util::log::fatal{} << "MPI does not have sufficient thread support!";
+  needsLock = available < MPI_THREAD_MULTIPLE;
 
   int rank;
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
@@ -128,16 +138,19 @@ void World::finalize() noexcept {
 }
 
 void hpctoolkit::mpi::barrier() {
+  auto l = mpiLock();
   if(MPI_Barrier(MPI_COMM_WORLD) != MPI_SUCCESS)
     util::log::fatal{} << "Error while performing an MPI barrier!";
 }
 void detail::bcast(void* data, std::size_t cnt, const Datatype& ty,
                    std::size_t root) {
+  auto l = mpiLock();
   if(MPI_Bcast(data, cnt, ty.value, root, MPI_COMM_WORLD) != MPI_SUCCESS)
     util::log::fatal{} << "Error while performing an MPI broadcast!";
 }
 void detail::reduce(void* data, std::size_t cnt, const Datatype& ty,
                     std::size_t root, const Op& op) {
+  auto l = mpiLock();
   if(MPI_Reduce(World::rank() == root ? MPI_IN_PLACE : data, data, cnt, ty.value,
                 static_cast<const BaseOp&>(op).op, root, MPI_COMM_WORLD)
      != MPI_SUCCESS)
@@ -145,6 +158,7 @@ void detail::reduce(void* data, std::size_t cnt, const Datatype& ty,
 }
 void detail::allreduce(void* data, std::size_t cnt, const Datatype& ty,
                        const Op& op) {
+  auto l = mpiLock();
   if(MPI_Allreduce(MPI_IN_PLACE, data, cnt, ty.value,
                    static_cast<const BaseOp&>(op).op, MPI_COMM_WORLD)
      != MPI_SUCCESS)
@@ -152,18 +166,21 @@ void detail::allreduce(void* data, std::size_t cnt, const Datatype& ty,
 }
 void detail::scan(void* data, std::size_t cnt, const Datatype& ty,
                   const Op& op) {
+  auto l = mpiLock();
   if(MPI_Scan(MPI_IN_PLACE, data, cnt, ty.value,
               static_cast<const BaseOp&>(op).op, MPI_COMM_WORLD) != MPI_SUCCESS)
     util::log::fatal{} << "Error while performing an MPI inclusive scan!";
 }
 void detail::exscan(void* data, std::size_t cnt, const Datatype& ty,
                     const Op& op) {
+  auto l = mpiLock();
   if(MPI_Exscan(MPI_IN_PLACE, data, cnt, ty.value,
      static_cast<const BaseOp&>(op).op, MPI_COMM_WORLD) != MPI_SUCCESS)
     util::log::fatal{} << "Error while performing an MPI exclusive scan!";
 }
 void detail::gather(void* data, std::size_t cnt, const Datatype& ty,
                     std::size_t rootRank) {
+  auto l = mpiLock();
   if(World::rank() == rootRank) {
     if(MPI_Gather(MPI_IN_PLACE, 0, 0, data, cnt, ty.value, rootRank,
                   MPI_COMM_WORLD) != MPI_SUCCESS)
@@ -184,6 +201,7 @@ void detail::gatherv(void* data, const std::size_t* cnts, const Datatype& ty,
     ioffsets[i] = idx;
     idx += cnts[i];
   }
+  auto l = mpiLock();
   if(MPI_Gatherv(MPI_IN_PLACE, 0, 0, data, icnts.data(), ioffsets.data(),
                  ty.value, rootRank, MPI_COMM_WORLD) != MPI_SUCCESS)
     util::log::fatal{} << "Error while performing an MPI vectorized gather (root)!";
@@ -191,12 +209,14 @@ void detail::gatherv(void* data, const std::size_t* cnts, const Datatype& ty,
 void detail::gatherv(void* data, std::size_t cnt, const Datatype& ty,
                      std::size_t rootRank) {
   if(World::rank() == rootRank) util::log::fatal{} << "Not valid at root!";
+  auto l = mpiLock();
   if(MPI_Gatherv(data, cnt, ty.value, nullptr, nullptr, nullptr, 0,
                  rootRank, MPI_COMM_WORLD) != MPI_SUCCESS)
     util::log::fatal{} << "Error while performing an MPI vectorized gather (non-root)!";
 }
 void detail::scatter(void* data, std::size_t cnt, const Datatype& ty,
                     std::size_t rootRank) {
+  auto l = mpiLock();
   if(World::rank() == rootRank) {
     if(MPI_Scatter(data, cnt, ty.value, MPI_IN_PLACE, 0, 0, rootRank,
                    MPI_COMM_WORLD) != MPI_SUCCESS)
@@ -217,6 +237,7 @@ void detail::scatterv(void* data, const std::size_t* cnts, const Datatype& ty,
     ioffsets[i] = idx;
     idx += cnts[i];
   }
+  auto l = mpiLock();
   if(MPI_Scatterv(data, icnts.data(), ioffsets.data(), ty.value,
                   MPI_IN_PLACE, 0, 0, rootRank, MPI_COMM_WORLD) != MPI_SUCCESS)
     util::log::fatal{} << "Error while performing an MPI vectorized scatter (root)!";
@@ -224,17 +245,20 @@ void detail::scatterv(void* data, const std::size_t* cnts, const Datatype& ty,
 void detail::scatterv(void* data, std::size_t cnt, const Datatype& ty,
                       std::size_t rootRank) {
   if(World::rank() == rootRank) util::log::fatal{} << "Only valid at root!";
+  auto l = mpiLock();
   if(MPI_Scatterv(nullptr, nullptr, nullptr, 0,
                   data, cnt, ty.value, rootRank, MPI_COMM_WORLD) != MPI_SUCCESS)
     util::log::fatal{} << "Error while performing an MPI vectorized scatter (non-root)!";
 }
 void detail::send(const void* data, std::size_t cnt, const Datatype& ty,
                   std::size_t tag, std::size_t dst) {
+  auto l = mpiLock();
   if(MPI_Send(data, cnt, ty.value, dst, tag, MPI_COMM_WORLD) != MPI_SUCCESS)
     util::log::fatal{} << "Error while performing an MPI send!";
 }
 void detail::recv(void* data, std::size_t cnt, const Datatype& ty,
                   std::size_t tag, std::size_t src) {
+  auto l = mpiLock();
   if(MPI_Recv(data, cnt, ty.value, src, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE)
      != MPI_SUCCESS)
     util::log::fatal{} << "Error while performing an MPI recieve!";
