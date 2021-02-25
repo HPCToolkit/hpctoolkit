@@ -74,6 +74,7 @@ public:
     using namespace hpctoolkit::literals;
     return data::attributes + data::references + data::contexts;
   }
+  void notifyPipeline() noexcept override;
   void write() override;
 
 private:
@@ -110,6 +111,7 @@ public:
   ~MetricSender() = default;
 
   hpctoolkit::DataClass accepts() const noexcept override;
+  void notifyPipeline() noexcept override;
   void write() override;
 
 private:
@@ -125,6 +127,7 @@ public:
   MetricReceiver(std::size_t, ctx_map_t&, const std::vector<std::uint8_t>&);
   ~MetricReceiver() = default;
 
+  bool requiresOrderedRegion() const noexcept override { return true; }
   hpctoolkit::DataClass provides() const noexcept override;
   hpctoolkit::DataClass finalizeRequest(const hpctoolkit::DataClass& d) const noexcept override {
     return d;
