@@ -84,6 +84,7 @@ public:
     return ExtensionClass::identifier + ExtensionClass::mscopeIdentifiers;
   }
 
+  hpctoolkit::util::WorkshareResult help() override;
   void notifyPipeline() noexcept override;
 
   void notifyWavefront(hpctoolkit::DataClass) noexcept override;
@@ -185,6 +186,8 @@ private:
   uint32_t min_prof_info_idx;
   std::vector<std::vector<uint32_t>> buffered_prof_idxs;
 
+  hpctoolkit::util::ParallelForEach<pms_profile_info_t> parForPi;
+
 
   void assignSparseInputs(int world_rank);
 
@@ -283,6 +286,7 @@ private:
   //---------------------------------------------------------------------------
   // write profiles 
   //---------------------------------------------------------------------------
+  void handleItemPi(pms_profile_info_t& pi);
   void writeProfInfos();
 
   std::vector<char> profInfoBytes(const std::vector<char>& partial_info_bytes, 

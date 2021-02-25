@@ -65,7 +65,7 @@
 using namespace hpctoolkit;
 
 SparseDB::SparseDB(const stdshim::filesystem::path& p, int threads) : dir(p), ctxMaxId(0), 
-  cur_position(0), fpos(0), outputCnt(0), team_size(threads) {
+  cur_position(0), fpos(0), outputCnt(0), team_size(threads), parForPi([&](pms_profile_info_t& item){ handleItemPi(item); }) {
 
   if(dir.empty())
     util::log::fatal{} << "SparseDB doesn't allow for dry runs!";
@@ -74,7 +74,7 @@ SparseDB::SparseDB(const stdshim::filesystem::path& p, int threads) : dir(p), ct
 }
 
 SparseDB::SparseDB(stdshim::filesystem::path&& p, int threads) : dir(std::move(p)), ctxMaxId(0), 
-  cur_position(0), fpos(0), outputCnt(0), team_size(threads)  {
+  cur_position(0), fpos(0), outputCnt(0), team_size(threads), parForPi([&](pms_profile_info_t& item){ handleItemPi(item); })  {
 
   if(dir.empty())
     util::log::fatal{} << "SparseDB doesn't allow for dry runs!";
@@ -82,7 +82,11 @@ SparseDB::SparseDB(stdshim::filesystem::path&& p, int threads) : dir(std::move(p
     stdshim::filesystem::create_directory(dir);
 }
 
-void HPCTraceDB2::notifyPipeline() noexcept {
+util::WorkshareResult SparseDB::help() {
+  return parForPi.contribute();
+}
+
+void SparseDB::notifyPipeline() noexcept {
   src.registerOrderedWavefront();
   src.registerOrderedWrite();
 }
@@ -1167,38 +1171,41 @@ void SparseDB::collectCctMajorData(const uint32_t prof_info_idx, std::vector<cha
 //---------------------------------------------------------------------------
 // write profiles 
 //---------------------------------------------------------------------------
+void SparseDB::handleItemPi(pms_profile_info_t& pi)
+{
+  std::vector<char> info_bytes;
+
+  auto b = convertToByte8(pi.id_tuple_ptr);
+  info_bytes.insert(info_bytes.end(), b.begin(), b.end());
+
+  b = convertToByte8(pi.metadata_ptr);
+  info_bytes.insert(info_bytes.end(), b.begin(), b.end());
+
+  b = convertToByte8(pi.spare_one);
+  info_bytes.insert(info_bytes.end(), b.begin(), b.end());
+
+  b = convertToByte8(pi.spare_two);
+  info_bytes.insert(info_bytes.end(), b.begin(), b.end());
+
+  b = convertToByte8(pi.num_vals);
+  info_bytes.insert(info_bytes.end(), b.begin(), b.end());
+
+  b = convertToByte4(pi.num_nzctxs);
+  info_bytes.insert(info_bytes.end(), b.begin(), b.end());
+
+  b = convertToByte8(pi.offset);
+  info_bytes.insert(info_bytes.end(), b.begin(), b.end());
+
+  auto fhi = pmf->open(true);
+  fhi.writeat(prof_info_sec_ptr + pi.prof_info_idx * PMS_prof_info_SIZE, PMS_prof_info_SIZE, info_bytes.data());
+}
+
+
 void SparseDB::writeProfInfos()
 {
 
-  #pragma omp taskloop shared(pmf)
-    for(uint i = 0; i < prof_infos.size(); i++){
-      auto pi = prof_infos[i];
-      std::vector<char> info_bytes;
-
-      auto b = convertToByte8(pi.id_tuple_ptr);
-      info_bytes.insert(info_bytes.end(), b.begin(), b.end());
-
-      b = convertToByte8(pi.metadata_ptr);
-      info_bytes.insert(info_bytes.end(), b.begin(), b.end());
-
-      b = convertToByte8(pi.spare_one);
-      info_bytes.insert(info_bytes.end(), b.begin(), b.end());
-
-      b = convertToByte8(pi.spare_two);
-      info_bytes.insert(info_bytes.end(), b.begin(), b.end());
-
-      b = convertToByte8(pi.num_vals);
-      info_bytes.insert(info_bytes.end(), b.begin(), b.end());
-
-      b = convertToByte4(pi.num_nzctxs);
-      info_bytes.insert(info_bytes.end(), b.begin(), b.end());
-
-      b = convertToByte8(pi.offset);
-      info_bytes.insert(info_bytes.end(), b.begin(), b.end());
-
-      auto fhi = pmf->open(true);
-      fhi.writeat(prof_info_sec_ptr + pi.prof_info_idx * PMS_prof_info_SIZE, PMS_prof_info_SIZE, info_bytes.data());
-    }
+  parForPi.fill(prof_infos);
+  parForPi.contribute(parForPi.wait());
 
 }
 
