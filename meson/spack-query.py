@@ -14,6 +14,7 @@ assert(len(sys.argv) == 6)
 assert(mode == '--unique' or mode == '--any')
 
 import shlex
+import os.path
 import spack
 
 db = spack.store.store.db
@@ -59,7 +60,9 @@ if len(specs) > 1:
   summary += ' (multiple match)'
 
 # Parse each fragment of the environment modifications, clean and save them
-shellcode = spack.user_environment.environment_modifications_for_spec(spec).shell_modifications()
+env = spack.util.environment.EnvironmentModifications()
+spack.build_environment.set_build_environment_variables(spec.package, env, True)
+shellcode = env.shell_modifications()
 environs = {}
 for var in shlex.split(shellcode, comments=True):
   if var == 'export': continue
@@ -67,9 +70,23 @@ for var in shlex.split(shellcode, comments=True):
   values = [x for x in value.split(':') if len(x) > 0]
   if len(values) > 0: environs[var] = values
 
+# Also get the paths from the spec itself.
+spec_includes = spec[package].headers.directories
+spec_links = []
+try:
+  spec_links.extend(spec[package].libs.directories)
+except spack.error.NoLibrariesError:
+  pass
+spec_links.extend([os.path.join(spec.prefix, libdir) for libdir in ('lib', 'lib64')])
+
 # Compose everything together into our final output. Meson supports \0 properly,
 # so we use that to separate our elements.
 print('\0'.join(['V'+spec.format('{name}{@version} {/hash:7}')]
                 + ['I'+x for x in environs.get('CPATH', [])]
                 + ['I'+x for x in environs.get('CPLUS_INCLUDE_PATH', [])]
-                + ['L'+x for x in environs.get('LIBRARY_PATH', [])]))
+                + ['I'+x for x in environs.get('SPACK_INCLUDE_DIRS', [])]
+                + ['I'+x for x in spec_includes]
+                + ['L'+x for x in environs.get('LIBRARY_PATH', [])]
+                + ['L'+x for x in environs.get('SPACK_LINK_DIRS', [])]
+                + ['L'+x for x in spec_links]
+               ))
