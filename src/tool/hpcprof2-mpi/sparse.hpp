@@ -84,6 +84,8 @@ public:
     return ExtensionClass::identifier + ExtensionClass::mscopeIdentifiers;
   }
 
+  void notifyPipeline() noexcept override;
+
   void notifyWavefront(hpctoolkit::DataClass) noexcept override;
   void notifyThreadFinal(const hpctoolkit::Thread::Temporary&) override;
 

@@ -63,7 +63,7 @@
 #include <stdexcept> 
 
 using namespace hpctoolkit;
-//pmf(dir / "profile1.db", true), 
+
 SparseDB::SparseDB(const stdshim::filesystem::path& p, int threads) : dir(p), ctxMaxId(0), 
   cur_position(0), fpos(0), outputCnt(0), team_size(threads) {
 
@@ -82,8 +82,14 @@ SparseDB::SparseDB(stdshim::filesystem::path&& p, int threads) : dir(std::move(p
     stdshim::filesystem::create_directory(dir);
 }
 
+void HPCTraceDB2::notifyPipeline() noexcept {
+  src.registerOrderedWavefront();
+  src.registerOrderedWrite();
+}
+
 void SparseDB::notifyWavefront(DataClass d) noexcept {
   if(!d.hasContexts()) return;
+  auto mpiSem = src.enterOrderedWavefront();
   auto sig = contextWavefront.signal();
 
   std::map<unsigned int, std::reference_wrapper<const Context>> cs;
@@ -227,6 +233,7 @@ void SparseDB::notifyThreadFinal(const Thread::Temporary& tt) {
 
 void SparseDB::write()
 {
+  auto mpiSem = src.enterOrderedWrite();
   int world_rank;
   int world_size;
   MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
@@ -327,18 +334,14 @@ void SparseDB::write()
 
   mpi::barrier();
 
-  
- 
   if(mpi::World::rank() == 0){
     //footer to show completeness
     auto pmfi = pmf->open(true);
     auto footer_val = PROFDBft;
     uint64_t footer_off = filePosFetchOp(sizeof(footer_val));
-    printf("%ld\n", footer_off);
     pmfi.writeat(footer_off, sizeof(footer_val), &footer_val);
 
   }
-  
   
   if(mpi::World::size() != 1) MPI_Win_free(&win);
 
