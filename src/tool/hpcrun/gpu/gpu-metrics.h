@@ -425,8 +425,8 @@ typedef enum {
 #define FORALL_BLAME_SHIFT(macro)					\
   macro("CPU_IDLE (sec)",              CPU_IDLE,		\
 	"CPU_IDLE time (seconds)")  \
-  macro("GPU_IDLE (sec)",               GPU_IDLE,			\
-	"GPU_IDLE time (seconds)")			\
+  macro("GPU_IDLE_CAUSE (sec)",               GPU_IDLE_CAUSE,			\
+	"GPU_IDLE_CAUSE time (seconds)")			\
   macro("CPU_IDLE_CAUSE (sec)",              CPU_IDLE_CAUSE,		\
 	"CPU_IDLE_CAUSE time (seconds)")
 
