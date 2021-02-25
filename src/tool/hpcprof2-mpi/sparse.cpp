@@ -119,8 +119,11 @@ void SparseDB::notifyWavefront(DataClass d) noexcept {
 
   // prep for profiles writing 
   std::vector<char> obuf0, obuf1;
+  std::vector<uint32_t> bpi0, bpi1;
   obuffers.emplace_back(obuf0);
   obuffers.emplace_back(obuf1);
+  buffered_prof_idxs.emplace_back(bpi0);
+  buffered_prof_idxs.emplace_back(bpi1);
   cur_obuf_idx = 0;
   prof_infos.resize(my_num_prof);
 
@@ -197,7 +200,7 @@ void SparseDB::notifyThreadFinal(const Thread::Temporary& tt) {
   pi.spare_one = 0;
   pi.spare_two = 0;
 
-  pi.offset = writeProf(sparse_metrics_bytes, mode_reg_thr);
+  pi.offset = writeProf(sparse_metrics_bytes, pi.prof_info_idx, mode_reg_thr);
   prof_infos[pi.prof_info_idx - min_prof_info_idx] = std::move(pi);
 
   // Set up the output temporary file.
@@ -307,35 +310,37 @@ void SparseDB::write()
     auto sparse_metrics_bytes = profBytes(&sm);
     assert(sparse_metrics_bytes.size() == (values.size() * PMS_vm_pair_SIZE + coffsets.size() * PMS_ctx_pair_SIZE));
     
-    pi.offset = writeProf(sparse_metrics_bytes, mode_wrt_root);
+    pi.offset = writeProf(sparse_metrics_bytes, 0, mode_wrt_root);
     prof_infos[0] = std::move(pi);
 
-    //update prof_info
     //write prof_infos
     writeProfInfos();
 
   }else{// end of root rank
     std::vector<char> fake_sm_bytes;
-    int ret = writeProf(fake_sm_bytes, mode_wrt_nroot);
+    int ret = writeProf(fake_sm_bytes, 0, mode_wrt_nroot); // 0 won't be used 
     assert(ret == -1);
 
-    //update prof_info
     //write prof_infos
     writeProfInfos();
   } 
 
   mpi::barrier();
 
-  if(mpi::World::size() != 1){
-    MPI_Win_free(&win);
-  }else{
+  
+ 
+  if(mpi::World::rank() == 0){
     //footer to show completeness
     auto pmfi = pmf->open(true);
     auto footer_val = PROFDBft;
     uint64_t footer_off = filePosFetchOp(sizeof(footer_val));
+    printf("%ld\n", footer_off);
     pmfi.writeat(footer_off, sizeof(footer_val), &footer_val);
+
   }
-    
+  
+  
+  if(mpi::World::size() != 1) MPI_Win_free(&win);
 
 }
 
@@ -1018,7 +1023,7 @@ std::vector<char> SparseDB::profBytes(hpcrun_fmt_sparse_metrics_t* sm)
 
 }
 
-uint64_t SparseDB::writeProf(const std::vector<char>& prof_bytes, int mode)
+uint64_t SparseDB::writeProf(const std::vector<char>& prof_bytes, uint32_t prof_info_idx, int mode)
 {
   uint64_t rel_off = -1; // only mode_wrt_nroot will return -1
                          // it doesn't have any data to add, so no position for it 
@@ -1036,8 +1041,6 @@ uint64_t SparseDB::writeProf(const std::vector<char>& prof_bytes, int mode)
     size_t my_size = obuffers[cur_obuf_idx].size();
     wrt_off = filePosFetchOp(my_size);
 
-    //record wrt_off with LAST
-
     // be consistent with the else case
     cur_obuf_idx = 1 - cur_obuf_idx;
   }else{
@@ -1050,8 +1053,6 @@ uint64_t SparseDB::writeProf(const std::vector<char>& prof_bytes, int mode)
       size_t my_size = obuffers[cur_obuf_idx].size(); 
       wrt_off = filePosFetchOp(my_size);
       
-      //record wrt_off with prof_info_idx
-
       // prep to switch buffer
       cur_obuf_idx = 1 - cur_obuf_idx;
       cur_position = 0;
@@ -1059,6 +1060,9 @@ uint64_t SparseDB::writeProf(const std::vector<char>& prof_bytes, int mode)
 
     //add bytes to the current buffer
     obuffers[cur_obuf_idx].insert(obuffers[cur_obuf_idx].end(), prof_bytes.begin(), prof_bytes.end());
+
+    //record the prof_info_idx of the profile being added to the buffer
+    buffered_prof_idxs[cur_obuf_idx].emplace_back(prof_info_idx);
     
     //update current position
     rel_off = cur_position;
@@ -1077,9 +1081,15 @@ uint64_t SparseDB::writeProf(const std::vector<char>& prof_bytes, int mode)
 
   // ASSUMPTION: only one thread per rank is writing
   pmfi.writeat(wrt_off, obuffers[1-cur_obuf_idx].size(), obuffers[1-cur_obuf_idx].data());
-  
 
-  return rel_off;
+  //update the prof offsets based on the buffered_prof_idxs
+  for(auto pi : buffered_prof_idxs[1-cur_obuf_idx]){
+    prof_infos[pi-min_prof_info_idx].offset += wrt_off;
+    printf("%d: %d, new: %ld, wrt_off %ld \n", pi, pi-min_prof_info_idx, prof_infos[pi-min_prof_info_idx].offset, wrt_off);
+  }
+    
+
+  return (mode == mode_wrt_root) ? (rel_off + wrt_off) : rel_off;
 
 
 }
@@ -1156,8 +1166,7 @@ void SparseDB::collectCctMajorData(const uint32_t prof_info_idx, std::vector<cha
 //---------------------------------------------------------------------------
 void SparseDB::writeProfInfos()
 {
-    //TEMP
-  //util::File pmf(dir/"profile1.db", false);
+
   #pragma omp taskloop shared(pmf)
     for(uint i = 0; i < prof_infos.size(); i++){
       auto pi = prof_infos[i];

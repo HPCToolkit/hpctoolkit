@@ -181,6 +181,8 @@ private:
   std::vector<std::pair<uint32_t, uint64_t>> rank_idx_ptr_pairs;
   std::vector<uint64_t> id_tuple_ptrs;
   uint32_t min_prof_info_idx;
+  std::vector<std::vector<uint32_t>> buffered_prof_idxs;
+
 
   void assignSparseInputs(int world_rank);
 
@@ -260,7 +262,7 @@ private:
 
   std::vector<char> profBytes(hpcrun_fmt_sparse_metrics_t* sm);
 
-  uint64_t writeProf(const std::vector<char>& prof_bytes, int mode); // return relative offset
+  uint64_t writeProf(const std::vector<char>& prof_bytes, uint32_t prof_info_idx, int mode); // return relative offset
 
   uint64_t filePosFetchOp(uint64_t val);
 
