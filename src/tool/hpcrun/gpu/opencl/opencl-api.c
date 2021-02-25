@@ -164,22 +164,6 @@
 
 
 
-<<<<<<< HEAD
-=======
-//******************************************************************************
-// type declarations
-//******************************************************************************
-
-typedef struct queue_node_t {
-  // next pointer is used only for maintaining a list of free nodes
-  _Atomic (struct queue_node_t*) next;
-
-  void *qptr;
-} queue_node_t;
-
-
-
->>>>>>> e4deed431... adding code refactorings related to blame-shifting
 //******************************************************************************
 // local data
 //******************************************************************************
@@ -198,13 +182,8 @@ static __thread bool opencl_api_flag = false;
 static spinlock_t opencl_h2d_lock = SPINLOCK_UNLOCKED;
 
 static bool instrumentation = false;
-<<<<<<< HEAD
 static bool optimization_check = false;
-=======
-
->>>>>>> e4deed431... adding code refactorings related to blame-shifting
 static bool ENABLE_BLAME_SHIFTING = false;
-static queue_node_t *queue_node_free_list = NULL;
 
 
 
@@ -762,38 +741,6 @@ is_opencl_blame_shifting_enabled
 )
 {
   return (ENABLE_BLAME_SHIFTING == true);
-}
-
-
-static queue_node_t*
-queue_node_alloc_helper
-(
- queue_node_t **free_list
-)
-{
-  queue_node_t *first = *free_list;
-
-  if (first) {
-    *free_list = atomic_load(&first->next);
-  } else {
-    first = (queue_node_t *) hpcrun_malloc_safe(sizeof(queue_node_t));
-		// first->qptr = hpcrun_malloc(sizeof(queue_size));
-  }
-
-  memset(first, 0, sizeof(queue_node_t));
-  return first;
-}
-
-
-static void
-queue_node_free_helper
-(
- queue_node_t **free_list,
- queue_node_t *node
-)
-{
-  atomic_store(&node->next, *free_list);
-  *free_list = node;
 }
 
 
@@ -1507,7 +1454,6 @@ hpcrun_clWaitForEvents
 	const cl_event* event_list
 )
 {
-<<<<<<< HEAD
   ETMSG(OPENCL, "clWaitForEvents called");
   // on the assumption that clWaitForEvents is synchonous, we have sandwiched it with calls to sync_prologue and sync_epilogue
   // clWaitForEvents can wait on multiple events(probably from different queues).
@@ -1525,26 +1471,6 @@ hpcrun_clWaitForEvents
   }
 
   cl_int status = HPCRUN_OPENCL_CALL(clWaitForEvents, (num_events, event_list));
-=======
-	ETMSG(OPENCL, "clWaitForEvents called");
-	// on the assumption that clWaitForEvents is synchonous, we have sandwiched it with calls to sync_prologue and sync_epilogue
-	// clWaitForEvents can wait on multiple events(probably from different queues).
-	// We need a more complicated approach of finding the queues on which the CPU will wait
-	// For now we pass the 1st queue
-  //queue_node_t *qn;
-	cl_command_queue queue;
-
-	if(is_opencl_blame_shifting_enabled()) {
-		size_t queue_size;
-		clGetEventInfo(*event_list, CL_EVENT_COMMAND_QUEUE, 0, NULL, &queue_size);
-		//qn = queue_node_alloc_helper(&queue_node_free_list);
-    //void *queue_ptr = qn->qptr;
-		void *queue_ptr = hpcrun_malloc(sizeof(queue_size));
-		clGetEventInfo(*event_list, CL_EVENT_COMMAND_QUEUE, queue_size, queue_ptr, NULL);
-		queue = *(cl_command_queue*)queue_ptr;
-		opencl_sync_prologue(queue);
-	}
->>>>>>> e4deed431... adding code refactorings related to blame-shifting
 
   if(is_opencl_blame_shifting_enabled()) {
     opencl_sync_epilogue(queue);
@@ -1552,7 +1478,6 @@ hpcrun_clWaitForEvents
   return status;
 }
 
-<<<<<<< HEAD
 
 cl_int
 hpcrun_clReleaseMemObject
@@ -1564,14 +1489,10 @@ hpcrun_clReleaseMemObject
   if (optimization_check && status == CL_SUCCESS) {
     clearBufferEntry(mem);
   }
-  return status;
-=======
 	if(is_opencl_blame_shifting_enabled()) {
 		opencl_sync_epilogue(queue);
-    //queue_node_free_helper(&queue_node_free_list, qn);
 	}
 	return status;
->>>>>>> e4deed431... adding code refactorings related to blame-shifting
 }
 
 
