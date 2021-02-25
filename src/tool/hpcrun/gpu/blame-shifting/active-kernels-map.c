@@ -105,7 +105,9 @@ clear_recursive
   if (!ak_map_root) {
     return;
   }
-  active_kernels_delete(ak_map_root->kernel_id);
+  active_kernels_entry_t *node = ak_delete(&ak_map_root, ak_map_root->kernel_id);
+  size--;
+  ak_free(&ak_map_free_list, node);
   // after deletion, parent of the removed node is taken to the top of the tree
   // so, either only the root will be deleted(since root has no parent) or
   // either the left or right child will be the root, confirm what happens with John
@@ -192,6 +194,8 @@ ak_map_clear
  void
 )
 {
+  spinlock_lock(&ak_map_lock);
   clear_recursive();		
+  spinlock_unlock(&ak_map_lock);
 }
 

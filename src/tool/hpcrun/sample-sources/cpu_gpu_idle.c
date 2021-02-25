@@ -77,8 +77,6 @@
 #include "sample_source_obj.h"
 #include "common.h"
 #include <hpcrun/gpu/gpu-metrics.h>
-#include <hpcrun/gpu/opencl/opencl-api.h>
-#include <hpcrun/sample-sources/gpu/gpu-blame/blame.h>
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
 
@@ -103,11 +101,14 @@
 #include <lib/prof-lean/splay-macros.h>
 #include "blame-shift/blame-shift.h"
 
+#include <hpcrun/gpu/blame-shifting/blame.h>
 #if defined(ENABLE_CUDA) || defined(ENABLE_OPENCL)
-#include "gpu_blame.h"
+#include "cpu_gpu_idle.h"
 #endif // ENABLE_CUDA || ENABLE_OPENCL
 
-
+#ifdef ENABLE_OPENCL
+#include <hpcrun/gpu/opencl/opencl-api.h>
+#endif // ENABLE_OPENCL
 
 // ****************** utility macros *********************
 #define Cuda_RTcall(fn) cudaRuntimeFunctionPointer[fn ## Enum].fn ## Real
@@ -199,6 +200,7 @@ static void METHOD_FN(process_event_list, int lush_metrics)
     gpu_metrics_BLAME_SHIFT_enable();
     TMSG(OPENCL, "registering gpu_blame_shift callback with itimer");
     bs_entry.fn = &gpu_idle_blame;
+    // bs_entry.fn = dlsym(RTLD_DEFAULT, "gpu_idle_blame");
     bs_entry.next = 0;
     blame_shift_register(&bs_entry);
 

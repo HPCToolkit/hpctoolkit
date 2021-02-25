@@ -76,7 +76,7 @@
 #include <hpcrun/gpu/instrumentation/gtpin-instrumentation.h>
 #include <hpcrun/messages/messages.h>
 #include <hpcrun/sample-sources/libdl.h>
-#include <hpcrun/sample-sources/gpu/gpu-blame/opencl/opencl-blame.h>
+#include <hpcrun/gpu/blame-shifting/opencl/opencl-blame.h>
 #include <hpcrun/files.h>
 #include <hpcrun/utilities/hpcrun-nanotime.h>
 #include <lib/prof-lean/crypto-hash.h>
@@ -163,6 +163,20 @@
 #define OPENCL_BIND_RESULT_UNINITIALIZED  -2
 
 
+
+//******************************************************************************
+// type declarations
+//******************************************************************************
+
+typedef struct queue_node_t {
+  // next pointer is used only for maintaining a list of free nodes
+  _Atomic (struct queue_node_t*) next;
+
+  void *qptr;
+} queue_node_t;
+
+
+
 //******************************************************************************
 // local data
 //******************************************************************************
@@ -179,9 +193,13 @@ static __thread atomic_int opencl_self_pending_operations = { 0 };
 static __thread bool opencl_api_flag = false;
 
 static spinlock_t opencl_h2d_lock = SPINLOCK_UNLOCKED;
+
 static bool instrumentation = false;
 static bool optimization_check = false;
+
+
 static bool ENABLE_BLAME_SHIFTING = false;
+static queue_node_t *queue_node_free_list = NULL;
 
 
 
@@ -742,6 +760,38 @@ is_opencl_blame_shifting_enabled
 }
 
 
+static queue_node_t*
+queue_node_alloc_helper
+(
+ queue_node_t **free_list
+)
+{
+  queue_node_t *first = *free_list;
+
+  if (first) {
+    *free_list = atomic_load(&first->next);
+  } else {
+    first = (queue_node_t *) hpcrun_malloc_safe(sizeof(queue_node_t));
+		// first->qptr = hpcrun_malloc(sizeof(queue_size));
+  }
+
+  memset(first, 0, sizeof(queue_node_t));
+  return first;
+}
+
+
+static void
+queue_node_free_helper
+(
+ queue_node_t **free_list,
+ queue_node_t *node
+)
+{
+  atomic_store(&node->next, *free_list);
+  *free_list = node;
+}
+
+
 int
 opencl_bind
 (
@@ -766,6 +816,8 @@ opencl_bind
   return DYNAMIC_BINDING_STATUS_ERROR;
 #endif // ! HPCRUN_STATIC_LINK
 }
+
+
 
 //******************************************************************************
 // interface operations
@@ -1447,13 +1499,15 @@ hpcrun_clWaitForEvents
 	// clWaitForEvents can wait on multiple events(probably from different queues).
 	// We need a more complicated approach of finding the queues on which the CPU will wait
 	// For now we pass the 1st queue
-	void *queue_ptr;
+  //queue_node_t *qn;
 	cl_command_queue queue;
 
 	if(is_opencl_blame_shifting_enabled()) {
 		size_t queue_size;
 		clGetEventInfo(*event_list, CL_EVENT_COMMAND_QUEUE, 0, NULL, &queue_size);
-		queue_ptr = hpcrun_malloc(sizeof(queue_size));
+		//qn = queue_node_alloc_helper(&queue_node_free_list);
+    //void *queue_ptr = qn->qptr;
+		void *queue_ptr = hpcrun_malloc(sizeof(queue_size));
 		clGetEventInfo(*event_list, CL_EVENT_COMMAND_QUEUE, queue_size, queue_ptr, NULL);
 		queue = *(cl_command_queue*)queue_ptr;
 		opencl_sync_prologue(queue);
@@ -1463,6 +1517,7 @@ hpcrun_clWaitForEvents
 
 	if(is_opencl_blame_shifting_enabled()) {
 		opencl_sync_epilogue(queue);
+    //queue_node_free_helper(&queue_node_free_list, qn);
 	}
 	return status;
 }

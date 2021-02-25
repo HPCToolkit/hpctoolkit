@@ -130,7 +130,7 @@ create_activity_object
   ga->kind = GPU_ACTIVITY_BLAME_SHIFT;
   ga->cct_node = cct_node;
   ga->details.blame_shift.cpu_idle_time = activity->cpu_idle_time;
-  ga->details.blame_shift.gpu_idle_time = activity->gpu_idle_time;
+  ga->details.blame_shift.gpu_idle_cause_time = activity->gpu_idle_cause_time;
   ga->details.blame_shift.cpu_idle_cause_time = activity->cpu_idle_cause_time;
 }
 
@@ -443,6 +443,7 @@ sync_epilogue
 // CPU-GPU blame shift itimer callback interface
 ////////////////////////////////////////////////
 
+// how is this function called? which thread is monitored here?
 void
 gpu_idle_blame
 (
