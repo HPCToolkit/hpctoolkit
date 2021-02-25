@@ -88,6 +88,9 @@ public:
   Receiver(std::size_t);
   ~Receiver() = default;
 
+  std::pair<bool, bool> requiresOrderedRegions() const noexcept override {
+    return {true, false};
+  }
   hpctoolkit::DataClass provides() const noexcept override {
     using namespace hpctoolkit::literals;
     return data::references + data::attributes + data::contexts;
@@ -127,7 +130,9 @@ public:
   MetricReceiver(std::size_t, ctx_map_t&, const std::vector<std::uint8_t>&);
   ~MetricReceiver() = default;
 
-  bool requiresOrderedRegion() const noexcept override { return true; }
+  std::pair<bool, bool> requiresOrderedRegions() const noexcept override {
+    return {false, true};
+  }
   hpctoolkit::DataClass provides() const noexcept override;
   hpctoolkit::DataClass finalizeRequest(const hpctoolkit::DataClass& d) const noexcept override {
     return d;

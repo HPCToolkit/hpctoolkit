@@ -130,8 +130,9 @@ Settings& Settings::operator<<(std::unique_ptr<ProfileTransformer>&& tp) {
 ProfilePipeline::ProfilePipeline(Settings&& b, std::size_t team_sz)
   : detail::ProfilePipelineBase(std::move(b)), team_size(team_sz),
     waves(sources.size()),
+    sourcePrewaveRegionDepChain(std::numeric_limits<std::size_t>::max()),
     sinkWavefrontDepChain(std::numeric_limits<std::size_t>::max()),
-    sourceRegionDepChain(std::numeric_limits<std::size_t>::max()),
+    sourcePostwaveRegionDepChain(std::numeric_limits<std::size_t>::max()),
     sinkWriteDepChain(std::numeric_limits<std::size_t>::max()),
     depChainComplete(false), sourceLocals(sources.size()), cct(nullptr) {
   using namespace literals::data;
@@ -216,12 +217,16 @@ ProfilePipeline::ProfilePipeline(Settings&& b, std::size_t team_sz)
   std::size_t idx = 0;
   for(auto& ms: sources) {
     ms.dataLimit = ms().provides();
-    if(ms().requiresOrderedRegion()) {
-      ms().bindPipeline(Source(*this, ms.dataLimit, ExtensionClass::all(), sourceLocals[idx], sourceRegionDepChain));
-      sourceRegionDepChain = idx;
-    } else {
-      ms().bindPipeline(Source(*this, ms.dataLimit, ExtensionClass::all(), sourceLocals[idx]));
+    sourceLocals[idx].orderedRegions = ms().requiresOrderedRegions();
+    if(sourceLocals[idx].orderedRegions.first) {
+      sourceLocals[idx].priorPrewaveRegionDep = sourcePrewaveRegionDepChain;
+      sourcePrewaveRegionDepChain = idx;
     }
+    if(sourceLocals[idx].orderedRegions.second) {
+      sourceLocals[idx].priorPostwaveRegionDep = sourcePostwaveRegionDepChain;
+      sourcePostwaveRegionDepChain = idx;
+    }
+    ms().bindPipeline(Source(*this, ms.dataLimit, ExtensionClass::all(), sourceLocals[idx]));
     scheduled |= ms.dataLimit;
     idx++;
   }
@@ -274,10 +279,18 @@ void ProfilePipeline::run() {
       notify(sinks[i], unscheduledWaves);
 
     // Unblock the finishing wave for any Sources that don't have waves.
+    // Also handle cases that require an initial pre-wavefront ordering
     #pragma omp for schedule(dynamic) nowait
     for(std::size_t i = 0; i < sources.size(); ++i) {
       if(!(scheduledWaves & sources[i].dataLimit).hasAny()) {
         sources[i].wavesComplete.signal();
+      }
+      auto& sl = sourceLocals[i];
+      if(sl.orderedRegions.first) {
+        std::unique_lock<std::mutex> l(sources[i].lock);
+        sl.orderedPrewaveRegionUnlocked = true;
+        sources[i]().read({});
+        sl.orderedPrewaveRegionUnlocked = false;
       }
     }
 
@@ -316,7 +329,7 @@ void ProfilePipeline::run() {
       {
         sources[i].wavesComplete.wait();
         std::unique_lock<std::mutex> l(sources[i].lock);
-        sl.orderedRegionUnlocked = true;
+        sl.orderedPostwaveRegionUnlocked = true;
         DataClass req = (sources[i]().finalizeRequest(scheduled - scheduledWaves)
                          - sources[i].read) & sources[i].dataLimit;
         sources[i].read |= req;
@@ -384,10 +397,7 @@ Source::Source(ProfilePipeline& p, const DataClass& ds, const ExtensionClass& es
   : Source(p, ds, es, std::numeric_limits<std::size_t>::max()) {};
 Source::Source(ProfilePipeline& p, const DataClass& ds, const ExtensionClass& es, SourceLocal& sl)
   : pipe(&p), slocal(&sl), dataLimit(ds), extensionLimit(es),
-    tskip(std::numeric_limits<std::size_t>::max()), orderedRegion(false) {};
-Source::Source(ProfilePipeline& p, const DataClass& ds, const ExtensionClass& es, SourceLocal& sl, std::size_t dep)
-  : pipe(&p), slocal(&sl), dataLimit(ds), extensionLimit(es),
-    tskip(std::numeric_limits<std::size_t>::max()), orderedRegion(true), priorOrderedRegionDep(dep) {};
+    tskip(std::numeric_limits<std::size_t>::max()) {};
 Source::Source(ProfilePipeline& p, const DataClass& ds, const ExtensionClass& es, std::size_t t)
   : pipe(&p), slocal(nullptr), dataLimit(ds), extensionLimit(es), tskip(t) {};
 
@@ -416,16 +426,27 @@ Source::resolvedPath() const {
   return pipe->uds.resolvedPath;
 }
 
-util::Once::Caller Source::enterOrderedRegion() {
-  if(!orderedRegion)
-    util::log::fatal{} << "Attempt to enter a Source ordered region without registration!";
-  if(!slocal->orderedRegionUnlocked)
-    util::log::fatal{} << "Attempt to enter a Source ordered region prior to wavefront completion!";
-  if(priorOrderedRegionDep != std::numeric_limits<std::size_t>::max())
-    pipe->sourceLocals[priorOrderedRegionDep].orderedRegionDepOnce.wait();
+util::Once::Caller Source::enterOrderedPrewaveRegion() {
+  if(!slocal->orderedRegions.first)
+    util::log::fatal{} << "Source attempted to enter a prewave ordered region without registration!";
+  if(!slocal->orderedPrewaveRegionUnlocked)
+    util::log::fatal{} << "Source attempted to enter a prewave ordered region prior to wavefront completion!";
+  if(slocal->priorPrewaveRegionDep != std::numeric_limits<std::size_t>::max())
+    pipe->sourceLocals[slocal->priorPrewaveRegionDep].orderedPrewaveRegionDepOnce.wait();
+  return slocal->orderedPrewaveRegionDepOnce.signal();
+}
+util::Once::Caller Source::enterOrderedPostwaveRegion() {
+  if(!slocal->orderedRegions.second)
+    util::log::fatal{} << "Source attempted to enter a postwave ordered region without registration!";
+  if(!slocal->orderedPostwaveRegionUnlocked)
+    util::log::fatal{} << "Source attempted to enter a postwave ordered region prior to wavefront completion!";
+  if(slocal->priorPostwaveRegionDep != std::numeric_limits<std::size_t>::max())
+    pipe->sourceLocals[slocal->priorPostwaveRegionDep].orderedPostwaveRegionDepOnce.wait();
   else if(pipe->sinkWavefrontDepChain != std::numeric_limits<std::size_t>::max())
     pipe->sinks[pipe->sinkWavefrontDepChain].wavefrontDepOnce.wait();
-  return slocal->orderedRegionDepOnce.signal();
+  else if(pipe->sourcePrewaveRegionDepChain != std::numeric_limits<std::size_t>::max())
+    pipe->sourceLocals[pipe->sourcePrewaveRegionDepChain].orderedPrewaveRegionDepOnce.wait();
+  return slocal->orderedPostwaveRegionDepOnce.signal();
 }
 
 void Source::attributes(const ProfileAttributes& as) {
@@ -645,8 +666,6 @@ Source& Source::operator=(Source&& o) {
   dataLimit = o.dataLimit;
   extensionLimit = o.extensionLimit;
   tskip = o.tskip;
-  orderedRegion = o.orderedRegion;
-  priorOrderedRegionDep = o.priorOrderedRegionDep;
   return *this;
 }
 
@@ -683,6 +702,8 @@ util::Once::Caller Sink::enterOrderedWavefront() {
     util::log::fatal{} << "Attempt to enter an ordered wavefront region without registering!";
   if(priorWavefrontDepOnce != std::numeric_limits<std::size_t>::max())
     pipe->sinks[priorWavefrontDepOnce].wavefrontDepOnce.wait();
+  else if(pipe->sourcePrewaveRegionDepChain != std::numeric_limits<std::size_t>::max())
+    pipe->sourceLocals[pipe->sourcePrewaveRegionDepChain].orderedPrewaveRegionDepOnce.wait();
   return pipe->sinks[idx].wavefrontDepOnce.signal();
 }
 util::Once::Caller Sink::enterOrderedWrite() {

@@ -244,8 +244,15 @@ private:
   struct SourceLocal {
     std::vector<Thread::Temporary> threads;
     std::unordered_set<Metric*> thawedMetrics;
-    util::Once orderedRegionDepOnce;
-    bool orderedRegionUnlocked = false;
+
+    std::pair<bool, bool> orderedRegions;
+    util::Once orderedPrewaveRegionDepOnce;
+    bool orderedPrewaveRegionUnlocked = false;
+    std::size_t priorPrewaveRegionDep;
+
+    util::Once orderedPostwaveRegionDepOnce;
+    bool orderedPostwaveRegionUnlocked = false;
+    std::size_t priorPostwaveRegionDep;
   };
 
 public:
@@ -264,10 +271,15 @@ public:
     const decltype(Extensions::mscopeIdentifiers)& mscopeIdentifiers() const;
     const decltype(Extensions::resolvedPath)& resolvedPath() const;
 
+    /// Wait for and enter a region used for ordering of pre-wavefront parts.
+    /// Only available if `Source::requiresOrderedRegion().first` returns true,
+    /// and only during an empty read request.
+    util::Once::Caller enterOrderedPrewaveRegion();
+
     /// Wait for and enter a region used for ordering of post-wavefront parts.
-    /// Only available if Source::requiresOrderedRegion() returns true, and only
-    /// after all possible wavefronts.
-    util::Once::Caller enterOrderedRegion();
+    /// Only available if `Source::requiresOrderedRegion().second` returns true,
+    /// and only after all possible wavefronts.
+    util::Once::Caller enterOrderedPostwaveRegion();
 
     /// Get the limits on this Source's emissions.
     DataClass limit() const noexcept { return dataLimit & pipe->scheduled; }
@@ -385,15 +397,12 @@ public:
     friend class ProfilePipeline;
     Source(ProfilePipeline&, const DataClass&, const ExtensionClass&);
     Source(ProfilePipeline&, const DataClass&, const ExtensionClass&, SourceLocal&);
-    Source(ProfilePipeline&, const DataClass&, const ExtensionClass&, SourceLocal&, std::size_t);
     Source(ProfilePipeline&, const DataClass&, const ExtensionClass&, std::size_t);
     ProfilePipeline* pipe;
     SourceLocal* slocal;
     DataClass dataLimit;
     ExtensionClass extensionLimit;
     std::size_t tskip;
-    bool orderedRegion;
-    std::size_t priorOrderedRegionDep;
   };
 
   /// Registration structure for a PipelineSink. All access to a Pipeline from
@@ -469,9 +478,10 @@ private:
   } waves;
 
   // Chain pointers marking dependency chains
+  std::size_t sourcePrewaveRegionDepChain;
   std::size_t sinkWavefrontDepChain;
   DataClass sinkWavefrontDepClasses;
-  std::size_t sourceRegionDepChain;
+  std::size_t sourcePostwaveRegionDepChain;
   std::size_t sinkWriteDepChain;
   bool depChainComplete;
 

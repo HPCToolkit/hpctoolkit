@@ -84,8 +84,10 @@ Receiver::Receiver(std::size_t p) : peer(p), done(false) {};
 void Receiver::read(const DataClass&) {
   if(done) return;
   std::vector<std::uint8_t> block;
-  // TODO: Guard this with an ordering guard to ensure it happens early enough.
-  block = mpi::receive_vector<std::uint8_t>(peer, 1);
+  {
+    auto mpiSem = sink.enterOrderedPrewaveRegion();
+    block = mpi::receive_vector<std::uint8_t>(peer, 1);
+  }
   iter_t it = block.begin();
   it = unpackAttributes(it);
   it = unpackReferences(it);
@@ -141,7 +143,7 @@ void MetricReceiver::read(const DataClass& d) {
 
   std::vector<std::uint8_t> block;
   {
-    auto mpiSem = sink.enterOrderedRegion();
+    auto mpiSem = sink.enterOrderedPostwaveRegion();
     block = mpi::receive_vector<std::uint8_t>(peer, 3);
   }
   iter_t it = block.begin();

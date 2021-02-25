@@ -75,9 +75,9 @@ public:
   // MT: Externally Sychronized
   void bindPipeline(ProfilePipeline::Source&& se) noexcept;
 
-  /// Query whether this Source requires a post-wavefront ordered region.
+  /// Query whether this Source requires a pre- and/or post-wavefront ordered region.
   // MT: Safe (const)
-  virtual bool requiresOrderedRegion() const noexcept;
+  virtual std::pair<bool, bool> requiresOrderedRegions() const noexcept;
 
   /// Query what Classes this Source can actually provide to the Pipeline.
   // MT: Safe (const)
