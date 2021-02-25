@@ -126,8 +126,8 @@ kernel_map_insert
   } else {
     kernel_map_entry_t *entry = kernel_node_new(kernel_id, node);
     kernel_insert(&kernel_map_root, entry);
-    spinlock_unlock(&kernel_map_lock);
   }
+  spinlock_unlock(&kernel_map_lock);
 }
 
 
