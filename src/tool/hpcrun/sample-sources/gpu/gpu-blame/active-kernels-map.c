@@ -127,6 +127,7 @@ active_kernels_insert
 {
   spinlock_lock(&ak_map_lock);
   if (ak_lookup(&ak_map_root, ak_id)) {
+    spinlock_unlock(&ak_map_lock);
     assert(0);  // entry for a given key should be inserted only once
   } else {
     active_kernels_entry_t *entry = ak_node_new(ak_id, kernel_node);
