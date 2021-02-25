@@ -287,7 +287,6 @@ typedef struct thread_data_t {
   gpu_data_t gpu_data;
 #endif
   
-  uint64_t gpu_trace_first_time;
   uint64_t gpu_trace_prev_time;
  
 } thread_data_t;
