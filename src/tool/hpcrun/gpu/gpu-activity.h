@@ -328,7 +328,7 @@ typedef struct gpu_branch_t {
 
 typedef struct gpu_blame_shift_t {
   double cpu_idle_time;
-  double gpu_idle_time;
+  double gpu_idle_cause_time;
   double cpu_idle_cause_time;
 } gpu_blame_shift_t;
 

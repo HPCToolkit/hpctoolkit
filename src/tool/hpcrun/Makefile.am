@@ -317,7 +317,7 @@ MY_BASE_FILES =				\
         sample-sources/sync.c           \
 	sample_sources_registered.c	\
 	sample-sources/sample-filters.c \
-  sample-sources/gpu_blame.c	\
+  sample-sources/cpu_gpu_idle.c	\
 	segv_handler.c			\
 	start-stop.c			\
 	term_handler.c			\
@@ -416,7 +416,14 @@ MY_BASE_FILES =				\
 	utilities/line_wrapping.c	\
 	utilities/timer.c		\
 	utilities/tokenize.h utilities/tokenize.c \
-	utilities/unlink.h utilities/unlink.c
+	utilities/unlink.h utilities/unlink.c \
+	\	
+	gpu/blame-shifting/blame.c \
+	gpu/blame-shifting/blame-helper.c \
+	gpu/blame-shifting/blame-queue-map.c	\
+	gpu/blame-shifting/blame-kernel-map.c	\
+	gpu/blame-shifting/active-kernels-map.c \
+	gpu/blame-shifting/blame-kernel-cleanup-map.c
 
 # 	gpu/gpu-api.c
 #	trampoline/common/trampoline.c
@@ -527,13 +534,7 @@ MY_OPENCL_FILES = \
 	gpu/opencl/opencl-h2d-map.c \
 	gpu/opencl/opencl-queue-map.c \
 	gpu/opencl/opencl-context-map.c \
-	sample-sources/gpu/gpu-blame/blame.c \
-	sample-sources/gpu/gpu-blame/blame-helper.c \
-	sample-sources/gpu/gpu-blame/blame-queue-map.c	\
-	sample-sources/gpu/gpu-blame/blame-kernel-map.c	\
-	sample-sources/gpu/gpu-blame/active-kernels-map.c \
-	sample-sources/gpu/gpu-blame/blame-kernel-cleanup-map.c	\
-	sample-sources/gpu/gpu-blame/opencl/opencl-blame.c
+	gpu/blame-shifting/opencl/opencl-blame.c
 
 pkglib_LTLIBRARIES += libhpcrun_opencl.la
 libhpcrun_opencl_la_CPPFLAGS  = -I$(top_srcdir)/src $(OPENCL_IFLAGS)

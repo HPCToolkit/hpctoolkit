@@ -605,7 +605,7 @@ gpu_metrics_attribute_blame_shift
 
   metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, METRIC_ID(CPU_IDLE));
   gpu_metrics_attribute_metric_real(metrics, METRIC_ID(CPU_IDLE), bs->cpu_idle_time);
-  gpu_metrics_attribute_metric_real(metrics, METRIC_ID(GPU_IDLE), bs->gpu_idle_time);
+  gpu_metrics_attribute_metric_real(metrics, METRIC_ID(GPU_IDLE_CAUSE), bs->gpu_idle_cause_time);
   gpu_metrics_attribute_metric_real(metrics, METRIC_ID(CPU_IDLE_CAUSE), bs->cpu_idle_cause_time);
 }
 
