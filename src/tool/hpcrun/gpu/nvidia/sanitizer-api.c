@@ -227,6 +227,7 @@ static int sanitizer_gpu_analysis_record_num = 0;
 static size_t sanitizer_gpu_analysis_record_size = 0;
 static uint32_t sanitizer_gpu_analysis_blocks = 0;
 static uint32_t sanitizer_gpu_analysis_type = GPU_PATCH_TYPE_ADDRESS_ANALYSIS;
+static bool sanitizer_analysis_trace_read = true;
 
 static __thread bool sanitizer_stop_flag = false;
 static __thread uint32_t sanitizer_thread_id_self = (1 << 30);
@@ -1703,6 +1704,7 @@ sanitizer_data_flow_analysis_enable()
   output_dir_config(dir_name, "/data_flow/");
 
   redshow_output_dir_config(REDSHOW_ANALYSIS_DATA_FLOW, dir_name);
+  redshow_analysis_trace_read_config(REDSHOW_ANALYSIS_DATA_FLOW, sanitizer_analysis_trace_read);
 
   // Address only patch
   sanitizer_gpu_patch_buffer_reset.type = GPU_PATCH_TYPE_ADDRESS_PATCH;
@@ -1928,6 +1930,13 @@ void
 sanitizer_gpu_analysis_config(int gpu_analysis_blocks)
 {
   sanitizer_gpu_analysis_blocks = gpu_analysis_blocks;
+}
+
+
+void
+sanitizer_analysis_trace_read_config(int trace_read)
+{
+  sanitizer_analysis_trace_read = trace_read == 0 ? false : true;
 }
 
 
