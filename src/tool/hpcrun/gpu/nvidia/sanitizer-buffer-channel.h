@@ -67,8 +67,9 @@ sanitizer_buffer_channel_produce
  uint32_t thread_id,
  uint32_t cubin_id,
  uint32_t mod_id,
-  int32_t kernel_id,
+ int32_t kernel_id,
  uint64_t host_op_id,
+ uint32_t type,
  size_t num_records,
  bool async
 );
@@ -78,19 +79,22 @@ sanitizer_buffer_channel_produce
 void
 sanitizer_buffer_channel_push
 (
- sanitizer_buffer_t *b
+ sanitizer_buffer_t *b,
+ uint32_t type
 );
 
 
 void
 sanitizer_buffer_channel_flush
 (
+ uint32_t type
 );
 
 
 bool
 sanitizer_buffer_channel_finish
 (
+ uint32_t type
 );
 
 
@@ -105,7 +109,7 @@ sanitizer_buffer_channel_consume
 sanitizer_buffer_channel_t *
 sanitizer_buffer_channel_get
 (
- void
+ uint32_t type
 );
 
 

@@ -94,7 +94,7 @@ typed_stack_declare_type(sanitizer_buffer_channel_ptr_t);
 
 static 
 typed_stack_elem_ptr(sanitizer_buffer_channel_ptr_t) 
-sanitizer_buffer_channel_stack;
+sanitizer_buffer_channel_stack[GPU_PATCH_TYPE_COUNT];
 
 //******************************************************************************
 // private operations
@@ -122,10 +122,11 @@ channel_forone
 static void
 sanitizer_buffer_channel_set_forall
 (
- sanitizer_buffer_channel_fn_t channel_fn
+ sanitizer_buffer_channel_fn_t channel_fn,
+ uint32_t type
 )
 {
-  channel_stack_forall(&sanitizer_buffer_channel_stack, channel_forone, 
+  channel_stack_forall(&sanitizer_buffer_channel_stack[type], channel_forone, 
     channel_fn);
 }
 
@@ -137,7 +138,8 @@ sanitizer_buffer_channel_set_forall
 void
 sanitizer_buffer_channel_set_insert
 (
- sanitizer_buffer_channel_t *channel
+ sanitizer_buffer_channel_t *channel,
+ uint32_t type
 )
 {
   // allocate and initialize new entry for channel stack
@@ -149,7 +151,7 @@ sanitizer_buffer_channel_set_insert
   channel_stack_elem_ptr_set(e, 0); // clear the entry's next ptr
 
   // add the entry to the channel stack
-  channel_stack_push(&sanitizer_buffer_channel_stack, e);
+  channel_stack_push(&sanitizer_buffer_channel_stack[type], e);
 }
 
 void
@@ -157,5 +159,7 @@ sanitizer_buffer_channel_set_consume
 (
 )
 {
-  sanitizer_buffer_channel_set_forall(sanitizer_buffer_channel_consume);
+  for (uint32_t i = 0; i < GPU_PATCH_TYPE_COUNT; ++i) {
+    sanitizer_buffer_channel_set_forall(&sanitizer_buffer_channel_consume, i);
+  }
 }

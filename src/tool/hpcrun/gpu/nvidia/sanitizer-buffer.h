@@ -78,6 +78,7 @@ sanitizer_buffer_produce
  uint32_t mod_id,
  int32_t kernel_id,
  uint64_t host_op_id,
+ uint32_t type,
  size_t num_records,
  atomic_uint *balance,
  bool async

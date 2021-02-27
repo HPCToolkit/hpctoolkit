@@ -131,6 +131,14 @@ cuda_kernel_launch
 
 
 void
+cuda_shared_mem_size_set
+(
+ CUfunction function,
+ int size
+);
+
+
+void
 cuda_module_load
 (
  CUmodule *module,

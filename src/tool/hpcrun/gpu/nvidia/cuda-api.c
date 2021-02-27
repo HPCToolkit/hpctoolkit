@@ -309,6 +309,17 @@ CUDA_FN
  );
 );
 
+
+CUDA_FN
+(
+ cuFuncSetAttribute,
+ (
+  CUfunction hfunc,
+  CUfunction_attribute attrib,
+  int value
+ );
+);
+
 #endif
 
 
@@ -353,10 +364,27 @@ cuda_bind
 
   CHK_DLSYM(cuda, cuLaunchKernel);
 
+  CHK_DLSYM(cuda, cuFuncSetAttribute);
+
   return 0;
 #else
   return -1;
 #endif // ! HPCRUN_STATIC_LINK
+}
+
+
+void
+cuda_shared_mem_size_set
+(
+ CUfunction function,
+ int size
+)
+{
+  cuda_internal = true;
+#ifndef HPCRUN_STATIC_LINK
+  HPCRUN_CUDA_API_CALL(cuFuncSetAttribute, (function, CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES, size));
+#endif
+  cuda_internal = false;
 }
 
 

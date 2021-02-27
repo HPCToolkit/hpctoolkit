@@ -99,7 +99,7 @@ typedef struct sanitizer_buffer_channel_t {
 // local data
 //******************************************************************************
 
-static __thread sanitizer_buffer_channel_t *sanitizer_buffer_channel = NULL;
+static __thread sanitizer_buffer_channel_t *sanitizer_buffer_channel[GPU_PATCH_TYPE_COUNT];
 
 //******************************************************************************
 // private functions
@@ -111,7 +111,7 @@ typed_bichannel_impl(sanitizer_buffer_t)
 static sanitizer_buffer_channel_t *
 sanitizer_buffer_channel_alloc
 (
- void
+ uint32_t type
 )
 {
   sanitizer_buffer_channel_t *b = 
@@ -123,7 +123,7 @@ sanitizer_buffer_channel_alloc
   atomic_store(&b->finish, false);
   atomic_store(&b->balance, 0);
 
-  sanitizer_buffer_channel_set_insert(b);
+  sanitizer_buffer_channel_set_insert(b, type);
 
   return b;
 }
@@ -136,14 +136,14 @@ sanitizer_buffer_channel_alloc
 sanitizer_buffer_channel_t *
 sanitizer_buffer_channel_get
 (
- void
+ uint32_t type
 )
 {
-  if (sanitizer_buffer_channel == NULL) {
-    sanitizer_buffer_channel = sanitizer_buffer_channel_alloc();
+  if (sanitizer_buffer_channel[type] == NULL) {
+    sanitizer_buffer_channel[type] = sanitizer_buffer_channel_alloc(type);
   }
 
-  return sanitizer_buffer_channel;
+  return sanitizer_buffer_channel[type];
 }
 
 sanitizer_buffer_t *
@@ -152,17 +152,18 @@ sanitizer_buffer_channel_produce
  uint32_t thread_id,
  uint32_t cubin_id,
  uint32_t mod_id,
-  int32_t kernel_id,
+ int32_t kernel_id,
  uint64_t host_op_id,
+ uint32_t type,
  size_t num_records,
  bool async
 )
 {
-  sanitizer_buffer_channel_t *buf_channel = sanitizer_buffer_channel_get();
+  sanitizer_buffer_channel_t *buf_channel = sanitizer_buffer_channel_get(type);
 
   sanitizer_buffer_t *b = sanitizer_buffer_alloc(buf_channel);
 
-  sanitizer_buffer_produce(b, thread_id, cubin_id, mod_id, kernel_id, host_op_id, num_records, &buf_channel->balance, async);
+  sanitizer_buffer_produce(b, thread_id, cubin_id, mod_id, kernel_id, host_op_id, type, num_records, &buf_channel->balance, async);
 
   return b;
 }
@@ -171,10 +172,11 @@ sanitizer_buffer_channel_produce
 void
 sanitizer_buffer_channel_push
 (
- sanitizer_buffer_t *b
+ sanitizer_buffer_t *b,
+ uint32_t type
 )
 {
-  sanitizer_buffer_channel_t *buf_channel = sanitizer_buffer_channel_get();
+  sanitizer_buffer_channel_t *buf_channel = sanitizer_buffer_channel_get(type);
 
   channel_push(buf_channel, bichannel_direction_forward, b);
 }
@@ -183,18 +185,20 @@ sanitizer_buffer_channel_push
 void
 sanitizer_buffer_channel_flush
 (
+ uint32_t type
 )
 {
-  atomic_store(&sanitizer_buffer_channel->flush, true);
+  atomic_store(&sanitizer_buffer_channel[type]->flush, true);
 }
 
 
 bool
 sanitizer_buffer_channel_finish
 (
+ uint32_t type
 )
 {
-  return atomic_load(&sanitizer_buffer_channel->finish);
+  return atomic_load(&sanitizer_buffer_channel[type]->finish);
 }
 
 

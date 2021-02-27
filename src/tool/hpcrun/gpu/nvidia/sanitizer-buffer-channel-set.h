@@ -66,13 +66,13 @@ typedef void (*sanitizer_buffer_channel_fn_t)
 void
 sanitizer_buffer_channel_set_insert
 (
- sanitizer_buffer_channel_t *channel
+ sanitizer_buffer_channel_t *channel,
+ uint32_t type
 );
 
 void
 sanitizer_buffer_channel_set_consume
 (
- void
 );
 
 #endif
