@@ -1283,29 +1283,28 @@ hpcrun_clWaitForEvents
 	const cl_event* event_list
 )
 {
-	ETMSG(OPENCL, "clWaitForEvents called");
-	// on the assumption that clWaitForEvents is synchonous, we have sandwiched it with calls to sync_prologue and sync_epilogue
-	// clWaitForEvents can wait on multiple events(probably from different queues).
-	// We need a more complicated approach of finding the queues on which the CPU will wait
-	// For now we pass the 1st queue
-	cl_command_queue queue;
+  ETMSG(OPENCL, "clWaitForEvents called");
+  // on the assumption that clWaitForEvents is synchonous, we have sandwiched it with calls to sync_prologue and sync_epilogue
+  // clWaitForEvents can wait on multiple events(probably from different queues).
+  // We need a more sophisticated approach of finding the queues on which the CPU will wait
+  // For now we pass the 1st queue
+  cl_command_queue queue;
 
-	if(is_opencl_blame_shifting_enabled()) {
-		size_t queue_size;
-		clGetEventInfo(*event_list, CL_EVENT_COMMAND_QUEUE, 0, NULL, &queue_size);
-    //void *queue_ptr = qn->qptr;
-		void *queue_ptr = hpcrun_malloc(sizeof(queue_size));
-		clGetEventInfo(*event_list, CL_EVENT_COMMAND_QUEUE, queue_size, queue_ptr, NULL);
-		queue = *(cl_command_queue*)queue_ptr;
-		opencl_sync_prologue(queue);
-	}
+  if(is_opencl_blame_shifting_enabled()) {
+    size_t queue_size;
+    clGetEventInfo(*event_list, CL_EVENT_COMMAND_QUEUE, 0, NULL, &queue_size);
+    char queue_data[queue_size];
+    clGetEventInfo(*event_list, CL_EVENT_COMMAND_QUEUE, queue_size, queue_data, NULL);
+    queue = *(cl_command_queue*)queue_data;
+    opencl_sync_prologue(queue);
+  }
 
-	cl_int status = HPCRUN_OPENCL_CALL(clWaitForEvents, (num_events, event_list));
+  cl_int status = HPCRUN_OPENCL_CALL(clWaitForEvents, (num_events, event_list));
 
-	if(is_opencl_blame_shifting_enabled()) {
-		opencl_sync_epilogue(queue);
-	}
-	return status;
+  if(is_opencl_blame_shifting_enabled()) {
+    opencl_sync_epilogue(queue);
+  }
+  return status;
 }
 
 
@@ -1315,16 +1314,16 @@ hpcrun_clFinish
 	cl_command_queue command_queue
 )
 {
-	ETMSG(OPENCL, "clFinish called");
-	// on the assumption that clFinish is synchonous, we have sandwiched it with calls to sync_prologue and sync_epilogue
-	if(is_opencl_blame_shifting_enabled()) {
-		opencl_sync_prologue(command_queue);
-	}
-	cl_int status = HPCRUN_OPENCL_CALL(clFinish, (command_queue));
-	if(is_opencl_blame_shifting_enabled()) {
-		opencl_sync_epilogue(command_queue);
-	}
-	return status;
+  ETMSG(OPENCL, "clFinish called");
+  // on the assumption that clFinish is synchonous, we have sandwiched it with calls to sync_prologue and sync_epilogue
+  if(is_opencl_blame_shifting_enabled()) {
+    opencl_sync_prologue(command_queue);
+  }
+  cl_int status = HPCRUN_OPENCL_CALL(clFinish, (command_queue));
+  if(is_opencl_blame_shifting_enabled()) {
+    opencl_sync_epilogue(command_queue);
+  }
+  return status;
 }
 
 
@@ -1334,13 +1333,13 @@ hpcrun_clReleaseCommandQueue
 	cl_command_queue command_queue
 )
 {
-	ETMSG(OPENCL, "clReleaseCommandQueue called");
-	cl_int status = HPCRUN_OPENCL_CALL(clReleaseCommandQueue, (command_queue));
+  ETMSG(OPENCL, "clReleaseCommandQueue called");
+  cl_int status = HPCRUN_OPENCL_CALL(clReleaseCommandQueue, (command_queue));
 
-	if (is_opencl_blame_shifting_enabled() && status == CL_SUCCESS) {
-		opencl_queue_epilogue(command_queue);
-	}
-	return status;
+  if (is_opencl_blame_shifting_enabled() && status == CL_SUCCESS) {
+    opencl_queue_epilogue(command_queue);
+  }
+  return status;
 }
 
 
