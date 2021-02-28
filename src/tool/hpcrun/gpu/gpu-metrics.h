@@ -431,6 +431,24 @@ typedef enum {
 	"CPU_IDLE_CAUSE time (seconds)")
 
 
+// intel optimization metrics
+#define FORALL_INTEL_OPTIMIZATION(macro)					\
+    macro("INORDER_QUEUE",                INORDER_QUEUE,		\
+	  "inorder GPU queue/stream. try out-of-order execution to run kernels in parallel: bool")				\
+  macro("KERNEL_TO_MULTIPLE_QUEUES",                KERNEL_TO_MULTIPLE_QUEUES,		\
+	"kernel to multiple queues: bool")        \
+  macro("KERNEL_TO_MULTIPLE_QUEUES_MULTIPLE_CONTEXTS",                KERNEL_TO_MULTIPLE_QUEUES_MULTIPLE_CONTEXTS,		\
+	"kernel to multiple queues with different contexts. Each context will JIT the kernel: bool")        \
+  macro("KERNEL_PARAMS_NOT_ALIASED",                KERNEL_PARAMS_NOT_ALIASED,		\
+	"kernel params are not aliased. Add directive for optimization benefits: bool")        \
+  macro("SINGLE_DEVICE_USE_AOT_COMPILATION",                SINGLE_DEVICE_USE_AOT_COMPILATION,		\
+	"since a single device is being used, use AOT for saving time JITing kernels: bool")        \
+  macro("OUTPUT_OF_KERNEL_INPUT_TO_ANOTHER_KERNEL",                OUTPUT_OF_KERNEL_INPUT_TO_ANOTHER_KERNEL,		\
+	"kernel output is input for another kernel. Try merging kernels to avoid sending redundant data to GPU: bool")        \
+  macro("ALL_DEVICES_NOT_USED",                ALL_DEVICES_NOT_USED,		\
+	"all avaiable devices are not getting utilized. Offload computations to all devices to reduce total application execution time: bool")
+
+
 
 //******************************************************************************
 // interface operations
