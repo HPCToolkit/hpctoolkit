@@ -84,7 +84,8 @@
   macro(GPU_INST, 9)  \
   macro(GTIMES, 10)  \
   macro(KINFO, 12)  \
-  macro(GSAMP, 13)
+  macro(GSAMP, 13)  \
+  macro(INTEL_OPTIMIZATION, 14)
 
 
 #define FORALL_METRIC_KINDS(macro)  \
@@ -608,6 +609,24 @@ gpu_metrics_attribute_branch
 }
 
 
+static void
+metrics_attribute_intel_optimization
+(
+ gpu_activity_t *activity
+)
+{
+  intel_optimization_t *i = &(activity->details.intel_optimization);
+  cct_node_t *cct_node = activity->cct_node;
+
+  int metric_id = METRIC_ID(INORDER_QUEUE) + i->intelOptKind;
+  metric_data_list_t *metrics = 
+    hpcrun_reify_metric_set(cct_node, metric_id);
+
+  gpu_metrics_attribute_metric_int(metrics, metric_id, i->val);
+}
+
+
+
 //******************************************************************************
 // interface operations
 //******************************************************************************
@@ -665,6 +684,10 @@ gpu_metrics_attribute
 
   case GPU_ACTIVITY_BRANCH:
     gpu_metrics_attribute_branch(activity);
+    break;
+
+  case GPU_ACTIVITY_INTEL_OPTIMIZATION:
+    metrics_attribute_intel_optimization(activity);
     break;
 
   default:
@@ -913,3 +936,21 @@ gpu_metrics_GPU_INST_STALL_enable
 
   FINALIZE_METRIC_KIND();
 }
+
+
+void
+gpu_metrics_INTEL_OPTIMIZATION_enable
+(
+ void
+)
+{
+#undef CURRENT_METRIC
+#define CURRENT_METRIC INTEL_OPTIMIZATION
+
+  INITIALIZE_METRIC_KIND();
+
+  FORALL_INTEL_OPTIMIZATION(INITIALIZE_SCALAR_METRIC_INT)
+
+  FINALIZE_METRIC_KIND();
+}
+

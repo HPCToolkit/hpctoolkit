@@ -22,13 +22,6 @@
 //******************************************************************************
 
 void
-optimization_metrics_enable
-(
- void
-);
-
-
-void
 isQueueInInOrderExecutionMode
 (
 	cl_command_queue_properties properties
