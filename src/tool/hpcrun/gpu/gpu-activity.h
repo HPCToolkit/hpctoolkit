@@ -95,7 +95,8 @@ typedef enum {
   GPU_ACTIVITY_EXTERNAL_CORRELATION    = 14,
   GPU_ACTIVITY_EVENT                   = 15,
   GPU_ACTIVITY_FUNCTION                = 16,
-  GPU_ACTIVITY_FLUSH                   = 17
+  GPU_ACTIVITY_FLUSH                   = 17,
+  GPU_ACTIVITY_INTEL_OPTIMIZATION      = 18
 } gpu_activity_kind_t;
 
 
@@ -177,6 +178,17 @@ typedef enum {
   GPU_MEM_UNKNOWN         = 7,
   GPU_MEM_COUNT           = 8
 } gpu_mem_type_t;
+
+
+typedef enum {
+  INORDER_QUEUE                                   = 0,
+  KERNEL_TO_MULTIPLE_QUEUES                       = 1,
+  KERNEL_TO_MULTIPLE_QUEUES_MULTIPLE_CONTEXTS     = 2,
+  KERNEL_PARAMS_NOT_ALIASED                       = 3,
+  SINGLE_DEVICE_USE_AOT_COMPILATION               = 4,
+  OUTPUT_OF_KERNEL_INPUT_TO_ANOTHER_KERNEL        = 5,
+  ALL_DEVICES_NOT_USED                            = 6
+} intel_optimization_type_t;
 
 
 // pc sampling
@@ -357,6 +369,12 @@ typedef struct gpu_instruction_t {
 } gpu_instruction_t;
 
 
+typedef struct intel_optimization_t {
+  uint32_t val;
+  intel_optimization_type_t intelOptKind;
+} intel_optimization_t;
+
+
 typedef struct gpu_activity_details_t { 
   union {
     /* Each field stores the complete information needed
@@ -378,6 +396,7 @@ typedef struct gpu_activity_details_t {
     gpu_synchronization_t synchronization;
     gpu_host_correlation_t correlation;
     gpu_flush_t flush;
+    intel_optimization_t intel_optimization;
 
     /* Access short cut for activitiy fields shared by multiple kinds */
 
