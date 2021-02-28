@@ -133,6 +133,14 @@ sanitizer_context_map_buffer_addr_write_device_update
 );
 
 
+void
+sanitizer_context_map_addr_dict_device_update
+(
+ CUcontext context,
+ gpu_patch_aux_address_dict_t *addr_dict_device
+ );
+
+
 CUstream
 sanitizer_context_map_entry_priority_stream_get
 (
@@ -182,10 +190,18 @@ sanitizer_context_map_entry_buffer_addr_write_device_get
 );
 
 
+gpu_patch_aux_address_dict_t *
+sanitizer_context_map_entry_addr_dict_device_get
+(
+ sanitizer_context_map_entry_t *entry
+);
+
+
 CUfunction
 sanitizer_context_map_entry_analysis_function_get
 (
  sanitizer_context_map_entry_t *entry
 );
+
 
 #endif

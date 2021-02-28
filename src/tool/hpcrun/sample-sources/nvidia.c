@@ -159,7 +159,7 @@ static const int DEFAULT_KERNEL_SAMPLING_FREQUENCY = 1;
 // 0: cpu analysis
 static const int DEFAULT_GPU_ANALYSIS_BLOCKS = 0;
 // 1: trace read
-static const int DEFAULT_ANALYSIS_TRACE_READ = 1;
+static const int DEFAULT_ANALYSIS_TRACE_READ = 0;
 
 //******************************************************************************
 // constants
@@ -564,7 +564,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     sanitizer_gpu_analysis_config(gpu_analysis_blocks);
 
-    sanitizer_analysis_trace_read(analysis_trace_read);
+    sanitizer_analysis_trace_read_config(analysis_trace_read);
 
     // Init random number generator
     srand(time(0));

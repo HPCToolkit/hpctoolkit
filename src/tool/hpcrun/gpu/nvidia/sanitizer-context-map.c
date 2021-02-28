@@ -34,6 +34,7 @@ struct sanitizer_context_map_entry_s {
   gpu_patch_buffer_t *buffer_device;
   gpu_patch_buffer_t *buffer_addr_read_device;
   gpu_patch_buffer_t *buffer_addr_write_device;
+  gpu_patch_aux_address_dict_t *addr_dict_device;
   struct sanitizer_context_map_entry_s *left;
   struct sanitizer_context_map_entry_s *right;
 }; 
@@ -68,6 +69,7 @@ sanitizer_context_map_entry_new(CUcontext context)
   e->buffer_device = NULL;
   e->buffer_addr_read_device = NULL;
   e->buffer_addr_write_device = NULL;
+  e->addr_dict_device = NULL;
 
   spinlock_init(&(e->lock));
 
@@ -313,6 +315,23 @@ sanitizer_context_map_buffer_addr_read_device_update
 
 
 void
+sanitizer_context_map_addr_dict_device_update
+(
+ CUcontext context,
+ gpu_patch_aux_address_dict_t *addr_dict_device
+)
+{
+  spinlock_lock(&sanitizer_context_map_lock);
+
+  sanitizer_context_map_entry_t *result = sanitizer_context_map_lookup_internal(context);
+
+  result->addr_dict_device = addr_dict_device;
+
+  spinlock_unlock(&sanitizer_context_map_lock);
+}
+
+
+void
 sanitizer_context_map_buffer_addr_write_device_update
 (
  CUcontext context,
@@ -444,4 +463,14 @@ sanitizer_context_map_entry_buffer_addr_write_device_get
 )
 {
   return entry->buffer_addr_write_device;
+}
+
+
+gpu_patch_aux_address_dict_t *
+sanitizer_context_map_entry_addr_dict_device_get
+(
+ sanitizer_context_map_entry_t *entry
+)
+{
+  return entry->addr_dict_device;
 }
