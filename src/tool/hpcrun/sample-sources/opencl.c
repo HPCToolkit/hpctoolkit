@@ -54,7 +54,6 @@
 #include <hpcrun/gpu/gpu-metrics.h>
 #include <hpcrun/gpu/gpu-trace.h>
 #include <hpcrun/gpu/opencl/opencl-api.h>
-#include <hpcrun/gpu/opencl/intel/optimization-check.h>
 #include <hpcrun/thread_data.h>
 
 #include <messages/messages.h>
