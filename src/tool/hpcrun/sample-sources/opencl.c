@@ -54,7 +54,6 @@
 #include <hpcrun/gpu/gpu-metrics.h>
 #include <hpcrun/gpu/gpu-trace.h>
 #include <hpcrun/gpu/opencl/opencl-api.h>
-#include <hpcrun/gpu/opencl/intel/optimization-check.h>
 #include <hpcrun/thread_data.h>
 
 #include <messages/messages.h>
@@ -171,7 +170,7 @@ METHOD_FN(process_event_list, int lush_metrics)
       opencl_instrumentation_enable();
     } else if (hpcrun_ev_is(opencl_name, INTEL_OPTIMIZATION_CHECK)) {
       opencl_optimization_check_enable();
-      optimization_metrics_enable();
+      gpu_metrics_INTEL_OPTIMIZATION_enable();
     }
   }
 }

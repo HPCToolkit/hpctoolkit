@@ -18,8 +18,9 @@
 #include "maps/buffer-map.h"
 #include "maps/device-map.h"
 
-#include <hpcrun/metrics.h>                 // hpcrun_metrics_new_kind, hpcrun_set_new_metric_info, hpcrun_close_kind
-#include <hpcrun/sample_event.h>            // hpcrun_sample_callpath
+#include <hpcrun/gpu/gpu-activity.h>                // intel_optimization_t
+#include <hpcrun/gpu/gpu-metrics.h>                 // gpu_metrics_attribute
+#include <hpcrun/gpu/gpu-application-thread-api.h>  // gpu_application_thread_correlation_callback
 
 
 
@@ -27,42 +28,46 @@
 // local data
 //******************************************************************************
 
-// metrics
-int inorder_queue_metric_id;
-int kernel_to_multiple_queues;
-int kernel_to_multiple_queues_multiple_contexts;
-int kernel_params_not_aliased;
-int single_device_use_aot_compilation;
-int output_of_kernel_input_to_another_kernel;
-int all_devices_not_used;
-
 static uint usedDeviceCount = 0;
+
+
+
+//******************************************************************************
+// private functions
+//******************************************************************************
+
+static void
+create_activity_object
+(
+ gpu_activity_t *ga,
+ cct_node_t *cct_node,
+ intel_optimization_t *activity
+)
+{
+  ga->kind = GPU_ACTIVITY_INTEL_OPTIMIZATION;
+  ga->cct_node = cct_node;
+  ga->details.intel_optimization.intelOptKind = activity->intelOptKind;
+  ga->details.intel_optimization.val = 1; // metric values will be 1(bool)
+}
+
+
+static void
+record_intel_optimization_metrics
+(
+ cct_node_t *cct_node,
+ intel_optimization_t *i
+)
+{
+  gpu_activity_t ga;
+  create_activity_object(&ga, cct_node, i);
+  gpu_metrics_attribute(&ga);
+}
 
 
 
 //******************************************************************************
 // interface functions
 //******************************************************************************
-
-void
-optimization_metrics_enable
-(
- void
-)
-{
-  kind_info_t *optimization_kind = hpcrun_metrics_new_kind();
-  // Create metrics for intel optimization
-  inorder_queue_metric_id = hpcrun_set_new_metric_info(optimization_kind, "INORDER_QUEUE");
-  kernel_to_multiple_queues = hpcrun_set_new_metric_info(optimization_kind, "KERNEL_TO_MULTIPLE_QUEUES");
-  kernel_to_multiple_queues_multiple_contexts = hpcrun_set_new_metric_info(optimization_kind, "KERNEL_TO_MULTIPLE_QUEUES_MULTIPLE_CONTEXTS");
-  kernel_params_not_aliased = hpcrun_set_new_metric_info(optimization_kind, "KERNEL_PARAMS_NOT_ALIASED");
-  single_device_use_aot_compilation = hpcrun_set_new_metric_info(optimization_kind, "SINGLE_DEVICE_USE_AOT_COMPILATION");
-  output_of_kernel_input_to_another_kernel = hpcrun_set_new_metric_info(optimization_kind, "OUTPUT_OF_KERNEL_INPUT_TO_ANOTHER_KERNEL");
-  all_devices_not_used = hpcrun_set_new_metric_info(optimization_kind, "ALL_DEVICES_NOT_USED");
-
-  hpcrun_close_kind(optimization_kind);  
-}
-
 
 /* is queue set to in-order execution */
 void
@@ -72,9 +77,15 @@ isQueueInInOrderExecutionMode
 )
 {
 	bool inorder = !(properties && CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE);
-  ucontext_t context;
-  getcontext(&context);
-  cct_node_t *cct_node = hpcrun_sample_callpath(&context, inorder_queue_metric_id, (cct_metric_data_t){.i = (int)inorder}, 0 /*skipInner */ , 0 /*isSync */, NULL ).sample_node;
+  if (inorder) {
+    printf("in order\n");
+    cct_node_t *cct_node = gpu_application_thread_correlation_callback(0);
+    intel_optimization_t i;
+    i.intelOptKind = INORDER_QUEUE;
+    record_intel_optimization_metrics(cct_node, &i);
+  } else {
+    printf("out of order\n");
+  }
 }
 
 
@@ -145,15 +156,15 @@ isKernelSubmittedToMultipleQueues
         continue;
       }
       // warning 1: kernel being passed to multiple queues
-      /*ucontext_t context;
-      getcontext(&context);
-      cct_node_t *cct_node = hpcrun_sample_callpath(&context, kernel_to_multiple_queues, (cct_metric_data_t){.i = 1}, 0, 0, NULL ).sample_node;*/
+      cct_node_t *cct_node = gpu_application_thread_correlation_callback(0);
+      intel_optimization_t i;
+      i.intelOptKind = KERNEL_TO_MULTIPLE_QUEUES;
+      record_intel_optimization_metrics(cct_node, &i);
 
       if (context_id != (uint64_t)queue_context) {
         // warning 2: kernel passed to multiple queues with different context  
-        ucontext_t context;
-        getcontext(&context);
-        cct_node_t *cct_node = hpcrun_sample_callpath(&context, kernel_to_multiple_queues_multiple_contexts, (cct_metric_data_t){.i = 1}, 0, 0, NULL).sample_node;
+        i.intelOptKind = KERNEL_TO_MULTIPLE_QUEUES_MULTIPLE_CONTEXTS;
+        record_intel_optimization_metrics(cct_node, &i);
       }
     }
     curr = curr->next;
@@ -193,13 +204,14 @@ areKernelParamsAliased
   /* Kernels typically operate on arrays of elements that are provided as pointer arguments. When the compiler cannot determine whether these pointers
    * alias each other, it will conservatively assume that they do, in which case it will not reorder operations on these pointers */
   kernel_param_map_entry_t *entry = kernel_param_map_lookup((uint64_t)kernel);
-  kp_node_t *kp_list = kernel_param_map_entry_kp_list_get(entry);
-  bool aliased = checkIfMemoryRegionsOverlap(kp_list);
+  //kp_node_t *kp_list = kernel_param_map_entry_kp_list_get(entry);
+  bool aliased = false; //checkIfMemoryRegionsOverlap(kp_list);
   
   if (!aliased) {
-    ucontext_t context;
-    getcontext(&context);
-    cct_node_t *cct_node = hpcrun_sample_callpath(&context, kernel_params_not_aliased, (cct_metric_data_t){.i = 1}, 0, 0, NULL ).sample_node;
+    cct_node_t *cct_node = gpu_application_thread_correlation_callback(0);
+    intel_optimization_t i;
+    i.intelOptKind = KERNEL_PARAMS_NOT_ALIASED;
+    record_intel_optimization_metrics(cct_node, &i);
   }
 }
 
@@ -210,7 +222,7 @@ clearKernelParams
  cl_kernel kernel
 )
 {
-  kernel_param_map_delete((uint64_t)kernel);
+  // kernel_param_map_delete((uint64_t)kernel);
 }
 
 
@@ -223,7 +235,7 @@ recordDeviceCount
 )
 {
   for (int i = 0; i < num_devices; i++) {
-    bool new_device = device_map_insert((devices[i]));
+    bool new_device = device_map_insert((uint64_t)devices[i]);
     if (new_device) {
       usedDeviceCount++;
     }
@@ -254,9 +266,10 @@ isSingleDeviceUsed
   // is this check simplistic? Maybe the user creates a context with many devices, but never uses the context.
   bool singleDevice = (usedDeviceCount == 1) ? true : false;
   if (singleDevice) {
-    ucontext_t context;
-    getcontext(&context);
-    cct_node_t *cct_node = hpcrun_sample_callpath(&context, single_device_use_aot_compilation, (cct_metric_data_t){.i = 1}, 0, 0, NULL ).sample_node;
+    cct_node_t *cct_node = gpu_application_thread_correlation_callback(0);
+    intel_optimization_t i;
+    i.intelOptKind = SINGLE_DEVICE_USE_AOT_COMPILATION;
+    record_intel_optimization_metrics(cct_node, &i);
   }
 }
 
@@ -283,9 +296,10 @@ recordH2DCall
     // this H2D call happens after a D2H call for the same memory object
     // are we missing any scenarios ?
     // what about calls from clEnqueueMapBuffer and clSetKernelArg
-    ucontext_t context;
-    getcontext(&context);
-    cct_node_t *cct_node = hpcrun_sample_callpath(&context, output_of_kernel_input_to_another_kernel, (cct_metric_data_t){.i = 1}, 0, 0, NULL ).sample_node;
+    cct_node_t *cct_node = gpu_application_thread_correlation_callback(0);
+    intel_optimization_t i;
+    i.intelOptKind = OUTPUT_OF_KERNEL_INPUT_TO_ANOTHER_KERNEL;
+    record_intel_optimization_metrics(cct_node, &i);
   }
 }
 
@@ -354,9 +368,10 @@ areAllDevicesUsed
 
   uint totalDeviceCount = getTotalDeviceCount();
   if (totalDeviceCount != usedDeviceCount) {
-    ucontext_t context;
-    getcontext(&context);
-    cct_node_t *cct_node = hpcrun_sample_callpath(&context, all_devices_not_used, (cct_metric_data_t){.i = 1}, 0, 0, NULL ).sample_node;
+    cct_node_t *cct_node = gpu_application_thread_correlation_callback(0);
+    intel_optimization_t i;
+    i.intelOptKind = ALL_DEVICES_NOT_USED;
+    record_intel_optimization_metrics(cct_node, &i);
   }
 }
 
