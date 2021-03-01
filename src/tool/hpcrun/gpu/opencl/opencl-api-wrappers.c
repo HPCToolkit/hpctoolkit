@@ -295,6 +295,19 @@ clFinish
 
 
 cl_int
+clSetKernelArg
+(
+ cl_kernel kernel,
+ cl_uint arg_index,
+ size_t arg_size,
+ const void* arg_value
+)
+{
+  return hpcrun_clSetKernelArg(kernel, arg_index, arg_size, arg_value);
+}
+
+
+cl_int
 clReleaseMemObject
 (
  cl_mem mem
