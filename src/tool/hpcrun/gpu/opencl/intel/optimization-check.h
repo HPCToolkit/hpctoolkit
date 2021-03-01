@@ -68,6 +68,13 @@ recordKernelParams
 
 
 void
+areKernelParamsAliased
+(
+ cl_kernel kernel
+);
+
+
+void
 clearKernelParams
 (
  cl_kernel kernel
@@ -107,6 +114,13 @@ void
 clearBufferEntry
 (
  cl_mem buffer
+);
+
+
+void
+areAllDevicesUsed
+(
+ void
 );
 
 #endif  // _OPTIMIZATION_CHECK_H_

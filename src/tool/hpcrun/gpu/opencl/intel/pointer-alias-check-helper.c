@@ -13,6 +13,7 @@
 //******************************************************************************
 
 #include "pointer-alias-check-helper.h"
+#include <hpcrun/memory/hpcrun-malloc.h>    // hpcrun_malloc
 
 
 
