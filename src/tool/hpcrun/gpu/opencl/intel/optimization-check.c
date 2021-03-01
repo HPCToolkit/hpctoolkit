@@ -234,7 +234,7 @@ clearKernelParams
  cl_kernel kernel
 )
 {
-  // kernel_param_map_delete((uint64_t)kernel);
+  kernel_param_map_delete((uint64_t)kernel);
 }
 
 
