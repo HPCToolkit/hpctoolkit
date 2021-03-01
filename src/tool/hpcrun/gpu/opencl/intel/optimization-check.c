@@ -29,6 +29,7 @@
 //******************************************************************************
 
 static uint usedDeviceCount = 0;
+static cct_node_t *firstDeviceCCT = NULL;
 
 
 
@@ -204,8 +205,8 @@ areKernelParamsAliased
   /* Kernels typically operate on arrays of elements that are provided as pointer arguments. When the compiler cannot determine whether these pointers
    * alias each other, it will conservatively assume that they do, in which case it will not reorder operations on these pointers */
   kernel_param_map_entry_t *entry = kernel_param_map_lookup((uint64_t)kernel);
-  //kp_node_t *kp_list = kernel_param_map_entry_kp_list_get(entry);
-  bool aliased = false; //checkIfMemoryRegionsOverlap(kp_list);
+  kp_node_t *kp_list = kernel_param_map_entry_kp_list_get(entry);
+  bool aliased = checkIfMemoryRegionsOverlap(kp_list);
   
   if (!aliased) {
     cct_node_t *cct_node = gpu_application_thread_correlation_callback(0);
@@ -222,7 +223,7 @@ clearKernelParams
  cl_kernel kernel
 )
 {
-  // kernel_param_map_delete((uint64_t)kernel);
+  kernel_param_map_delete((uint64_t)kernel);
 }
 
 
@@ -238,6 +239,10 @@ recordDeviceCount
     bool new_device = device_map_insert((uint64_t)devices[i]);
     if (new_device) {
       usedDeviceCount++;
+    }
+    if (usedDeviceCount == 1) {
+      // first device. If we need to record SINGLE_DEVICE_USE_AOT_COMPILATION or ALL_DEVICES_NOT_USED, this is the place to do it
+      firstDeviceCCT = gpu_application_thread_correlation_callback(0);
     }
   }
 }
@@ -266,10 +271,9 @@ isSingleDeviceUsed
   // is this check simplistic? Maybe the user creates a context with many devices, but never uses the context.
   bool singleDevice = (usedDeviceCount == 1) ? true : false;
   if (singleDevice) {
-    cct_node_t *cct_node = gpu_application_thread_correlation_callback(0);
     intel_optimization_t i;
     i.intelOptKind = SINGLE_DEVICE_USE_AOT_COMPILATION;
-    record_intel_optimization_metrics(cct_node, &i);
+    record_intel_optimization_metrics(firstDeviceCCT, &i);
   }
 }
 
@@ -368,10 +372,9 @@ areAllDevicesUsed
 
   uint totalDeviceCount = getTotalDeviceCount();
   if (totalDeviceCount != usedDeviceCount) {
-    cct_node_t *cct_node = gpu_application_thread_correlation_callback(0);
     intel_optimization_t i;
     i.intelOptKind = ALL_DEVICES_NOT_USED;
-    record_intel_optimization_metrics(cct_node, &i);
+    record_intel_optimization_metrics(firstDeviceCCT, &i);  // this may crash when firstDeviceCCT == NULL
   }
 }
 
