@@ -95,8 +95,8 @@
 
 
 #define SECONDS_UNTIL_WAKEUP 1
-
-
+// 0.001s
+#define NANO_SECONDS_UNTIL_WAKEUP 999999
 
 //******************************************************************************
 // type declarations
@@ -236,12 +236,13 @@ gpu_operation_channel_consume
 void
 gpu_operation_channel_await
 (
-gpu_operation_channel_t *channel
+ gpu_operation_channel_t *channel
 )
 {
   struct timespec time;
   clock_gettime(CLOCK_REALTIME, &time); // get current time
-  time.tv_sec += SECONDS_UNTIL_WAKEUP;
+  time.tv_sec = 0;
+  time.tv_nsec = NANO_SECONDS_UNTIL_WAKEUP;
 
   // wait for a signal or for a few seconds. periodically waking
   // up avoids missing a signal.
@@ -252,7 +253,7 @@ gpu_operation_channel_t *channel
 void
 gpu_operation_channel_signal_consumer
 (
-gpu_operation_channel_t *channel
+ gpu_operation_channel_t *channel
 )
 {
   pthread_cond_signal(&channel->cond);

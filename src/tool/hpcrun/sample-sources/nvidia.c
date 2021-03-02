@@ -83,6 +83,7 @@
 #include <hpcrun/gpu/gpu-monitoring.h>
 
 #include <hpcrun/gpu/gpu-trace.h>
+#include <hpcrun/gpu/gpu-range.h>
 #include <hpcrun/gpu/nvidia/cuda-api.h>
 #include <hpcrun/gpu/nvidia/cupti-api.h>
 #ifdef NEW_CUPTI
