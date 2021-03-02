@@ -500,7 +500,7 @@ void la_activity(uintptr_t* cookie, unsigned int flag) {
 
   if(flag == LA_ACT_CONSISTENT) {
     if(verbose)
-      fprintf(stderr, "[audit] Consistent\n");
+      fprintf(stderr, "[audit] la_activity: LA_CONSISTENT\n");
 
     // If we've hit consistency and know where libhpcrun is, initialize it.
     switch(state) {
@@ -513,10 +513,12 @@ void la_activity(uintptr_t* cookie, unsigned int flag) {
       state = state_attached;
       break;
     case state_attached: {
-      if(verbose)
-        fprintf(stderr, "[audit] Beginning early initialization\n");
-      //state = state_connecting;
-      //hooks.initialize();
+      if(previous == LA_ACT_ADD) {
+        if(verbose)
+          fprintf(stderr, "[audit] Beginning early initialization\n");
+        state = state_connecting;
+        hooks.initialize();
+      }
       break;
     }
     case state_connecting:
@@ -531,6 +533,13 @@ void la_activity(uintptr_t* cookie, unsigned int flag) {
     case state_disconnected:
       break;
     }
+  } else if(verbose) {
+    if(flag == LA_ACT_ADD)
+      fprintf(stderr, "[audit] la_activity: LA_ADD\n");
+    else if(flag == LA_ACT_DELETE)
+      fprintf(stderr, "[audit] la_activity: LA_DELETE\n");
+    else
+      fprintf(stderr, "[audit] la_activity: %d\n", flag);
   }
   previous = flag;
 }
