@@ -1813,6 +1813,8 @@ cupti_device_init()
 void
 cupti_device_shutdown(void *args, int how)
 {
+  TMSG(CUPTI, "CUPTI shutdown begin");
+
   cupti_callbacks_unsubscribe();
   cupti_device_flush(args, how);
 
@@ -1842,5 +1844,7 @@ cupti_device_shutdown(void *args, int how)
 
   // Terminate monitor thread
   gpu_operation_multiplexer_fini();
+
+  TMSG(CUPTI, "CUPTI shutdown end");
 }
 
