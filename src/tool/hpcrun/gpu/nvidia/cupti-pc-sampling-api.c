@@ -295,7 +295,7 @@ pc_sampling2_translate
   ip_normalized_t pc = cubin_crc_transform(pc_data->cubinCrc, pc_data->functionIndex, pc_data->pcOffset);
   cct_node_t *cct_child = hpcrun_cct_insert_ip_norm(cct_node, pc);
 
-  TMSG(CUPTI, "cubinCrc: %lu, lm_id: %u, lm_ip %p, functionName: %s, pcOffset: %p, count: %u", pc_data->cubinCrc,
+  TMSG(CUPTI_ACTIVITY, "cubinCrc: %lu, lm_id: %u, lm_ip %p, functionName: %s, pcOffset: %p, count: %u", pc_data->cubinCrc,
     pc.lm_id, pc.lm_ip, pc_data->functionName, pc_data->pcOffset, pc_data->stallReasonCount);
 
   for (size_t j = 0; j < GPU_INST_STALL2_INVALID; ++j) {
@@ -364,17 +364,17 @@ pc_sampling_data_debug
  size_t num_stall_reasons
 )
 {
-  TMSG(CUPTI, "NEW CUPTI totalNumPcs: %lu, totalSamples: %lu, collectNumPcs: %lu, remainingNumPcs: %lu",
+  TMSG(CUPTI_ACTIVITY, "NEW CUPTI totalNumPcs: %lu, totalSamples: %lu, collectNumPcs: %lu, remainingNumPcs: %lu",
     buffer_pc->totalNumPcs, buffer_pc->totalSamples, buffer_pc->collectNumPcs, buffer_pc->remainingNumPcs);
 
   for (size_t i = 0; i < buffer_pc->totalNumPcs; ++i) {
     CUpti_PCSamplingPCData *pc_data = &buffer_pc->pPcData[i];
-    TMSG(CUPTI, "cubinCrc: %lu, functionName: %s, pcOffset: %u, count: %u", pc_data->cubinCrc,
+    TMSG(CUPTI_ACTIVITY, "cubinCrc: %lu, functionName: %s, pcOffset: %u, count: %u", pc_data->cubinCrc,
       pc_data->functionName, pc_data->pcOffset, pc_data->stallReasonCount);
 
     for (size_t j = 0; j < num_stall_reasons; ++j) {
       if (pc_data->stallReason[j].samples > 0) {
-        TMSG(CUPTI, "stall index: %u, count: %d", pc_data->stallReason[j].pcSamplingStallReasonIndex,
+        TMSG(CUPTI_ACTIVITY, "stall index: %u, count: %d", pc_data->stallReason[j].pcSamplingStallReasonIndex,
           pc_data->stallReason[j].samples);
       }
     }
@@ -490,7 +490,7 @@ cupti_pc_sampling_range_correlation_collect
 
   if (DEBUG) {
     for (size_t i = 0; i < num_stall_reasons; ++i) {
-      TMSG(CUPTI, "stall name %u : %s", stall_reason_index[i], stall_reason_names[i]);
+      TMSG(CUPTI_ACTIVITY, "stall name %u : %s", stall_reason_index[i], stall_reason_names[i]);
     }
   }
 

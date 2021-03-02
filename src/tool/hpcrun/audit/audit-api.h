@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2020, Rice University
+// Copyright ((c)) 2002-2021, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -79,6 +79,9 @@ typedef struct auditor_map_entry_t {
 
   // Corrosponding load_module_t for this here thing.
   struct load_module_t* load_module;
+
+  // link_map entry for this library, if that makes sense for this entry.
+  struct link_map* map;
 } auditor_map_entry_t;
 
 typedef struct auditor_hooks_t {

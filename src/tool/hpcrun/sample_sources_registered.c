@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2020, Rice University
+// Copyright ((c)) 2002-2021, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -49,6 +49,7 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "control-knob.h"
 #include "sample_sources_registered.h"
 #include <sample-sources/sample_source_obj.h>
 #include <sample-sources/ss-obj-name.h>
@@ -145,6 +146,8 @@ hpcrun_registered_sources_init(void)
     METHOD_CALL(ss, init);
     TMSG(SS_COMMON, "sample source \"%s\": init", ss->name);
   }
+  
+  control_knob_init();
 }
 
 void

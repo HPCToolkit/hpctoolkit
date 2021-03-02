@@ -11,7 +11,7 @@
 # This configure script is free software; the Free Software Foundation
 # gives unlimited permission to copy, distribute and modify it.
 #
-# Copyright (c) 2002-2020, Rice University.
+# Copyright (c) 2002-2021, Rice University.
 # See the file README.License for details.
 ## -------------------- ##
 ## M4sh Initialization. ##
@@ -856,6 +856,7 @@ cxx_c11_flag
 CXX11_FLAG
 HPCLINK_CC
 ans
+HOST_CPU_AARCH64
 HOST_CPU_AARCH64_FALSE
 HOST_CPU_AARCH64_TRUE
 HOST_CPU_IA64_FALSE
@@ -1949,7 +1950,7 @@ Copyright (C) 2012 Free Software Foundation, Inc.
 This configure script is free software; the Free Software Foundation
 gives unlimited permission to copy, distribute and modify it.
 
-Copyright (c) 2002-2020, Rice University.
+Copyright (c) 2002-2021, Rice University.
 See the file README.License for details.
 _ACEOF
   exit
@@ -18520,6 +18521,7 @@ else
   HOST_CPU_AARCH64_TRUE='#'
   HOST_CPU_AARCH64_FALSE=
 fi
+
 
 
 #-------------------------------------------------

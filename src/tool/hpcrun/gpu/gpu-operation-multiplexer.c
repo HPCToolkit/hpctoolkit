@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2020, Rice University
+// Copyright ((c)) 2002-2021, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -57,7 +57,7 @@
 #include "gpu-operation-channel-set.h"
 #include "gpu-trace.h"
 #include "gpu-print.h"
-
+#include "monitor.h"
 
 
 //******************************************************************************
@@ -113,9 +113,9 @@ gpu_operation_record
 
   current_operation_channels_count = atomic_load(&operation_channels_count);
   gpu_operation_channel_set_process(current_operation_channels_count);
-  gpu_operation_channel_set_await(current_operation_channels_count);
 
-  gpu_trace_fini(NULL, 0);
+  // even if this is not normal exit, gpu-trace-fini will behave as if it is a normal exit
+  gpu_trace_fini(NULL, MONITOR_EXIT_NORMAL);
   atomic_store(&gpu_trace_finished, true);
 
   return NULL;

@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2020, Rice University
+// Copyright ((c)) 2002-2021, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -53,7 +53,6 @@
 #include "gpu-trace.h"
 #include "gpu-trace-demultiplexer.h"
 #include "gpu-print.h"
-
 
 
 //******************************************************************************
@@ -110,7 +109,7 @@ gpu_trace_demultiplexer_init
  void
 )
 {
-  control_knob_value_get_int("STREAMS_PER_THREAD", &streams_per_thread);
+  control_knob_value_get_int("STREAMS_PER_TRACING_THREAD", &streams_per_thread);
   trace_channel_set_list_head = gpu_trace_channel_set_create();
   trace_channel_set_list_tail = trace_channel_set_list_head;
 

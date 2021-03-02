@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2020, Rice University
+// Copyright ((c)) 2002-2021, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -112,7 +112,6 @@
 #include "device-initializers.h"
 #include "device-finalizers.h"
 #include "module-ignore-map.h"
-#include "control-knob.h"
 #include "epoch.h"
 #include "thread_data.h"
 #include "threadmgr.h"
@@ -897,37 +896,41 @@ monitor_init_process(int *argc, char **argv, void* data)
   // which will trigger our library monitoring code and fnbound queries
   hpcrun_initLoadmap();
 
+  // We do not want creating the measurement directory when
+  // the user only wants to see the complete event list
+  if (getenv("HPCRUN_LIST_EVENT")) {
+    hpcrun_set_disabled();
+  }
   // We need to initialize messages related functions and set up measurement directory,
   // so that we can write vdso and prevent fnbounds print messages to the terminal.
   messages_init();
   if (!hpcrun_get_disabled()) {
     hpcrun_files_set_directory();
-  }
-  messages_logfile_create();
+    messages_logfile_create();
 
-  // must initialize unwind recipe map before initializing fnbounds
-  // because mapping of load modules affects the recipe map.
-  hpcrun_unw_init();
+    // must initialize unwind recipe map before initializing fnbounds
+    // because mapping of load modules affects the recipe map.
+    hpcrun_unw_init();
 
-  // We need to save vdso before initializing fnbounds this
-  // is because fnbounds_init will iterate over the load map
-  // and will invoke analysis on vdso
-  hpcrun_save_vdso();
+    // We need to save vdso before initializing fnbounds this
+    // is because fnbounds_init will iterate over the load map
+    // and will invoke analysis on vdso
+    hpcrun_save_vdso();
 
-  // init callbacks for each device //Module_ignore_map is here
-  hpcrun_initializer_init();
+    // init callbacks for each device //Module_ignore_map is here
+    hpcrun_initializer_init();
 
-  // fnbounds must be after module_ignore_map
-  fnbounds_init();
+    // fnbounds must be after module_ignore_map
+    fnbounds_init();
 #ifndef HPCRUN_STATIC_LINK
-  auditor_exports->mainlib_connected(get_saved_vdso_path());
+    auditor_exports->mainlib_connected(get_saved_vdso_path());
 #endif
-
-  control_knob_init();
+  }
 
   hpcrun_registered_sources_init();
 
   hpcrun_do_custom_init();
+
 
   // for debugging, limit the life of the execution with an alarm.
   char* life  = getenv("HPCRUN_LIFETIME");

@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2020, Rice University
+// Copyright ((c)) 2002-2021, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -121,6 +121,11 @@ enum audit_open_flags {
 };
 
 
+struct phdrs_t {
+  ElfW(Phdr)* phdrs;
+  size_t phnum;
+};
+
 
 //******************************************************************************
 // local data
@@ -145,13 +150,26 @@ static auditor_exports_t exports = {
   .clone = clone, .execve = execve
 };
 
-static struct buffered_entry_t* obj_update_list = NULL;
-
 
 
 //******************************************************************************
 // private operations
 //******************************************************************************
+
+static struct phdrs_t get_phdrs(struct link_map* map) {
+  // Main (non-PIE?) executable
+  if(map->l_addr == 0) {
+    // This should never happen, if we're loaded we should have the same
+    // architecture as the application.
+    if(getauxval(AT_PHENT) != sizeof(ElfW(Phdr))) abort();
+
+    return (struct phdrs_t){(void*)getauxval(AT_PHDR), getauxval(AT_PHNUM)};
+  }
+
+  // Otherwise l_addr points to an Elf header
+  ElfW(Ehdr)* hdr = (void*)map->l_addr;
+  return (struct phdrs_t){(void*)map->l_addr + hdr->e_phoff, hdr->e_phnum};
+}
 
 static ElfW(Addr) * get_plt_got_start(ElfW(Dyn) * dyn_init) {
   ElfW(Dyn) *dyn;
@@ -168,6 +186,8 @@ static ElfW(Addr) * get_plt_got_start(ElfW(Dyn) * dyn_init) {
 static void hook_open(uintptr_t* cookie, struct link_map* map, enum audit_open_flags ao_flags) {
   // Allocate some space for our extra bits, and fill it.
   auditor_map_entry_t* entry = malloc(sizeof *entry);
+  entry->map = map;
+  entry->ehdr = NULL;
 
   // Normally the path is map->l_name, but sometimes that string is empty
   // which indicates the main executable. So we get it the other way.
@@ -178,70 +198,24 @@ static void hook_open(uintptr_t* cookie, struct link_map* map, enum audit_open_f
     entry->path = realpath(map->l_name, NULL);
 
   // Find the phdrs for this here binary. Depending on bits it can be tricky.
-  Elf32_Phdr* phdr32 = NULL;
-  Elf64_Phdr* phdr64 = NULL;
-  size_t phnum = 0;
-  if(map->l_addr == 0) {
-    phnum = getauxval(AT_PHNUM);
-    switch(getauxval(AT_PHENT)) {
-    case sizeof(Elf32_Phdr):
-      phdr32 = (void*)getauxval(AT_PHDR);
-      break;
-    case sizeof(Elf64_Phdr):
-      phdr64 = (void*)getauxval(AT_PHDR);
-      break;
-    default: abort();
-    }
-    entry->ehdr = NULL;
-  } else {
-    switch(((char*)map->l_addr)[EI_CLASS]) {
-    case ELFCLASS32: {
-      Elf32_Ehdr* hdr = (void*)(uintptr_t)map->l_addr;
-      phdr32 = (void*)(uintptr_t)map->l_addr + hdr->e_phoff;
-      phnum = hdr->e_phnum;
-      break;
-    }
-    case ELFCLASS64: {
-      Elf64_Ehdr* hdr = (void*)(uintptr_t)map->l_addr;
-      phdr64 = (void*)(uintptr_t)map->l_addr + hdr->e_phoff;
-      phnum = hdr->e_phnum;
-      break;
-    }
-    default: abort();
-    }
-    entry->ehdr = (void*)map->l_addr;
-  }
+  struct phdrs_t phdrs = get_phdrs(map);
 
   // Use the phdrs to calculate the range of executable bits as well as the
   // real base address.
   uintptr_t start = UINTPTR_MAX;
   uintptr_t end = 0;
-  for(size_t i = 0; i < phnum; i++) {
-    if(phdr32 != NULL) {
-      if(phdr32[i].p_type == PT_LOAD) {
-        if(!entry->ehdr)
-          entry->ehdr = (void*)(uintptr_t)(phdr32[i].p_vaddr - phdr32[i].p_offset);
-        if((phdr32[i].p_flags & PF_X) != 0 && phdr32[i].p_memsz > 0) {
-          if(phdr32[i].p_vaddr < start) start = phdr32[i].p_vaddr;
-          if(phdr32[i].p_vaddr + phdr32[i].p_memsz > end)
-            end = phdr32[i].p_vaddr + phdr32[i].p_memsz;
-        }
-      } else if(phdr64[i].p_type == PT_DYNAMIC && map->l_ld == NULL) {
-        map->l_ld = (void*)(map->l_addr + phdr32[i].p_vaddr);
+  for(size_t i = 0; i < phdrs.phnum; i++) {
+    if(phdrs.phdrs[i].p_type == PT_LOAD) {
+      if(!entry->ehdr)
+        entry->ehdr = (void*)(uintptr_t)(phdrs.phdrs[i].p_vaddr - phdrs.phdrs[i].p_offset);
+      if((phdrs.phdrs[i].p_flags & PF_X) != 0 && phdrs.phdrs[i].p_memsz > 0) {
+        if(phdrs.phdrs[i].p_vaddr < start) start = phdrs.phdrs[i].p_vaddr;
+        if(phdrs.phdrs[i].p_vaddr + phdrs.phdrs[i].p_memsz > end)
+          end = phdrs.phdrs[i].p_vaddr + phdrs.phdrs[i].p_memsz;
       }
-    } else if(phdr64 != NULL) {
-      if(phdr64[i].p_type == PT_LOAD) {
-        if(!entry->ehdr)
-          entry->ehdr = (void*)(uintptr_t)(phdr64[i].p_vaddr - phdr64[i].p_offset);
-        if((phdr64[i].p_flags & PF_X) != 0 && phdr64[i].p_memsz > 0) {
-          if(phdr64[i].p_vaddr < start) start = phdr64[i].p_vaddr;
-          if(phdr64[i].p_vaddr + phdr64[i].p_memsz > end)
-            end = phdr64[i].p_vaddr + phdr64[i].p_memsz;
-        }
-      } else if(phdr64[i].p_type == PT_DYNAMIC && map->l_ld == NULL) {
-        map->l_ld = (void*)(map->l_addr + phdr64[i].p_vaddr);
-      }
-    } else abort();
+    } else if(phdrs.phdrs[i].p_type == PT_DYNAMIC && map->l_ld == NULL) {
+      map->l_ld = (void*)(map->l_addr + phdrs.phdrs[i].p_vaddr);
+    }
   }
 
   // load module.  we must adjust it by start so that it has the proper
@@ -254,8 +228,8 @@ static void hook_open(uintptr_t* cookie, struct link_map* map, enum audit_open_f
   // Since we don't use dl_iterate_phdr, we have to reconsitute its data.
   entry->dl_info.dlpi_addr = (ElfW(Addr))map->l_addr;
   entry->dl_info.dlpi_name = entry->path;
-  entry->dl_info.dlpi_phdr = phdr32 ? (void*)phdr32 : (void*)phdr64;
-  entry->dl_info.dlpi_phnum = phnum;
+  entry->dl_info.dlpi_phdr = phdrs.phdrs;
+  entry->dl_info.dlpi_phnum = phdrs.phnum;
   entry->dl_info.dlpi_adds = 0;
   entry->dl_info.dlpi_subs = 0;
   entry->dl_info.dlpi_tls_modid = 0;
@@ -266,7 +240,7 @@ static void hook_open(uintptr_t* cookie, struct link_map* map, enum audit_open_f
   if(verbose)
     fprintf(stderr, "[audit] Delivering objopen for `%s' [%p, %p)"
 	    " dl_info.dlpi_addr = %p\n", entry->path, entry->start, 
-	    entry->end, entry->dl_info.dlpi_addr);
+	    entry->end, (void*)entry->dl_info.dlpi_addr);
 
   hooks.open(entry);
 
@@ -297,44 +271,82 @@ static void* get_symbol(struct link_map* map, const char* name) {
 }
 
 
-static void change_memory_protection(void* address) {
-  unsigned long start_page, end_page;
-  static unsigned long pagesize;
+static void enable_writable_got(struct link_map* map) {
+  static uintptr_t pagemask = 0;
+  if(pagemask == 0) pagemask = ~(getpagesize()-1);
 
-  if (!pagesize)
-    pagesize = getpagesize();
-
-  start_page = ((unsigned long) address) & ~(pagesize-1);
-  end_page = (((unsigned long) address) + pagesize);
-
-  // the page containing the GOT entry with the resolver address may
-  // not be writable. we must make the page writable before updating
-  // the resolver.  
-  //
-  // we also add execute permission to the page because the loader may
-  // arrange the address space so that multiple libraries share a
-  // page.  in this case, the GOT table from one library and code from
-  // the next library may be on the same page. this case occurs in
-  // practice.
-  mprotect((void *) start_page, end_page - start_page, 
-	   PROT_READ | PROT_WRITE | PROT_EXEC);
+  struct phdrs_t phdrs = get_phdrs(map);
+  for(size_t i = 0; i < phdrs.phnum; i++) {
+    // The GOT (and some other stuff) is listed in "a segment which may be made
+    // read-only after relocations have been processed."
+    // If we don't see this we assume the linker won't make the GOT unwritable.
+    if(phdrs.phdrs[i].p_type == PT_GNU_RELRO) {
+      // We include PROT_EXEC since the loader may share these pages with
+      // other unrelated sections, such as code regions.
+      //
+      // We also have to open up the entire GOT table since we can't trust
+      // the linker to leave the it open for the resolver in the LD_AUDIT case.
+      void* start = (void*)(((uintptr_t)map->l_addr + phdrs.phdrs[i].p_vaddr) & pagemask);
+      void* end = (void*)map->l_addr + phdrs.phdrs[i].p_vaddr + phdrs.phdrs[i].p_memsz;
+      mprotect(start, end - start, PROT_READ | PROT_WRITE | PROT_EXEC);
+    }
+  }
 }
 
+static void optimize_object_plt(struct link_map* map) {
+  ElfW(Addr)* plt_got = get_plt_got_start(map->l_ld);
+  if (plt_got != NULL) {
+    // If the original entry is already optimized, silently skip
+    if(plt_got[GOT_resolver_index] == dl_runtime_resolver_ptr)
+      return;
 
-static void update_objects_gotplt() {
-  // Iterate every object and update pltgot
-  for (struct buffered_entry_t* entry = obj_update_list; entry != NULL;) {
-    ElfW(Addr)* plt_got = get_plt_got_start(entry->map->l_ld);
-    if (plt_got != NULL) {
-      // .pltgot may not necessarily be writable
-      change_memory_protection(&plt_got[GOT_resolver_index]);
-      plt_got[GOT_resolver_index] = dl_runtime_resolver_ptr;
+    // If the original entry is NULL, we skip it (obviously something is wrong)
+    if(plt_got[GOT_resolver_index] == 0) {
+      if(verbose)
+        fprintf(stderr, "[audit] Skipping optimization of `%s', original entry %p is NULL\n", map->l_name, &plt_got[GOT_resolver_index]);
+      return;
     }
-    struct buffered_entry_t* prev = entry;
-    entry = entry->next;
-    free(prev);
+
+    // Print out some debugging information
+    if(verbose) {
+      Dl_info info;
+      Dl_info info2;
+      if(!dladdr((void*)plt_got[GOT_resolver_index], &info))
+        info = (Dl_info){NULL, NULL, NULL, NULL};
+      if(!dladdr((void*)dl_runtime_resolver_ptr, &info2))
+        info = (Dl_info){NULL, NULL, NULL, NULL};
+      if(info.dli_fname != NULL && info2.dli_fname != NULL
+         && strcmp(info.dli_fname, info2.dli_fname) == 0)
+        info2.dli_fname = "...";
+      fprintf(stderr, "[audit] Optimizing `%s': %p (%s+%p) -> %p (%s+%p)\n",
+              map->l_name,
+              (void*)plt_got[GOT_resolver_index], info.dli_fname,
+              (void*)plt_got[GOT_resolver_index]-(ptrdiff_t)info.dli_fbase,
+              (void*)dl_runtime_resolver_ptr, info2.dli_fname,
+              (void*)dl_runtime_resolver_ptr-(ptrdiff_t)info2.dli_fbase);
+    }
+
+    // Enable write perms for the GOT, and overwrite the resolver entry
+    enable_writable_got(map);
+    plt_got[GOT_resolver_index] = dl_runtime_resolver_ptr;
+  } else if(verbose) {
+    fprintf(stderr, "[audit] Failed to find GOTPLT section in `%s'!\n", map->l_name);
   }
-  obj_update_list = NULL;
+}
+
+uintptr_t la_symbind32(Elf32_Sym *sym, unsigned int ndx,
+                       uintptr_t *refcook, uintptr_t *defcook,
+                       unsigned int *flags, const char *symname) {
+  if(*refcook != 0 && dl_runtime_resolver_ptr != 0)
+    optimize_object_plt(state < state_connected ? (struct link_map*)*refcook : ((auditor_map_entry_t*)*refcook)->map);
+  return sym->st_value;
+}
+uintptr_t la_symbind64(Elf64_Sym *sym, unsigned int ndx,
+                       uintptr_t *refcook, uintptr_t *defcook,
+                       unsigned int *flags, const char *symname) {
+  if(*refcook != 0 && dl_runtime_resolver_ptr != 0)
+    optimize_object_plt(state < state_connected ? (struct link_map*)*refcook : ((auditor_map_entry_t*)*refcook)->map);
+  return sym->st_value;
 }
 
 
@@ -397,17 +409,21 @@ static void mainlib_connected(const char* vdso_path) {
 unsigned int la_version(unsigned int version) {
   if(version < 1) return 0;
 
+  // Read in our arguments
+  verbose = getenv("HPCRUN_AUDIT_DEBUG");
+
   // Check if we need to optimize PLT calls
   disable_plt_call_opt = getenv("HPCRUN_AUDIT_DISABLE_PLT_CALL_OPT");
   if (!disable_plt_call_opt) {
     ElfW(Addr)* plt_got = get_plt_got_start(_DYNAMIC);
     if (plt_got != NULL) {
       dl_runtime_resolver_ptr = plt_got[GOT_resolver_index];
+      if(verbose)
+        fprintf(stderr, "[audit] PLT optimized resolver: %p\n", (void*)dl_runtime_resolver_ptr);
+    } else if(verbose) {
+      fprintf(stderr, "[audit] Failed to find PLTGOT section in auditor!\n");
     }
   }
-
-  // Read in our arguments
-  verbose = getenv("HPCRUN_AUDIT_DEBUG");
 
   mainlib = realpath(getenv("HPCRUN_AUDIT_MAIN_LIB"), NULL);
   if(verbose)
@@ -433,13 +449,6 @@ unsigned int la_version(unsigned int version) {
 
 
 unsigned int la_objopen(struct link_map* map, Lmid_t lmid, uintptr_t* cookie) {
-  if (dl_runtime_resolver_ptr) {
-    // We record the open objects and then later overwrite ldso pointers
-    struct buffered_entry_t* new_entry = (struct  buffered_entry_t*)malloc(sizeof(struct buffered_entry_t));
-    new_entry->map = map;
-    new_entry->next = obj_update_list;
-    obj_update_list = new_entry;
-  }
   switch(state) {
   case state_awaiting: {
     // If this is libhpcrun.so, nab the initialization bits and transition.
@@ -470,17 +479,17 @@ unsigned int la_objopen(struct link_map* map, Lmid_t lmid, uintptr_t* cookie) {
       .map = map, .lmid = lmid, .cookie = cookie, .next = buffer,
     };
     buffer = entry;
-    return 0;
+    return LA_FLG_BINDFROM | LA_FLG_BINDTO;
   }
   case state_connected:
     // If we're already connected, just call the hook.
     hook_open(cookie, map, AO_NONE);
-    return 0;
+    return LA_FLG_BINDFROM | LA_FLG_BINDTO;
   case state_disconnected:
     // We just ignore things that happen after disconnection.
     if(verbose)
       fprintf(stderr, "[audit] objopen after disconnection: `%s'\n", map->l_name);
-    return 0;
+    return LA_FLG_BINDFROM | LA_FLG_BINDTO;
   }
   abort();  // unreachable
 }
@@ -490,9 +499,8 @@ void la_activity(uintptr_t* cookie, unsigned int flag) {
   static unsigned int previous = LA_ACT_CONSISTENT;
 
   if(flag == LA_ACT_CONSISTENT) {
-    if (dl_runtime_resolver_ptr && obj_update_list != NULL) {
-      update_objects_gotplt();
-    }
+    if(verbose)
+      fprintf(stderr, "[audit] la_activity: LA_CONSISTENT\n");
 
     // If we've hit consistency and know where libhpcrun is, initialize it.
     switch(state) {
@@ -505,10 +513,12 @@ void la_activity(uintptr_t* cookie, unsigned int flag) {
       state = state_attached;
       break;
     case state_attached: {
-      if(verbose)
-        fprintf(stderr, "[audit] Beginning early initialization\n");
-      state = state_connecting;
-      hooks.initialize();
+      if(previous == LA_ACT_ADD) {
+        if(verbose)
+          fprintf(stderr, "[audit] Beginning early initialization\n");
+        state = state_connecting;
+        hooks.initialize();
+      }
       break;
     }
     case state_connecting:
@@ -523,6 +533,13 @@ void la_activity(uintptr_t* cookie, unsigned int flag) {
     case state_disconnected:
       break;
     }
+  } else if(verbose) {
+    if(flag == LA_ACT_ADD)
+      fprintf(stderr, "[audit] la_activity: LA_ADD\n");
+    else if(flag == LA_ACT_DELETE)
+      fprintf(stderr, "[audit] la_activity: LA_DELETE\n");
+    else
+      fprintf(stderr, "[audit] la_activity: %d\n", flag);
   }
   previous = flag;
 }
@@ -572,5 +589,6 @@ unsigned int la_objclose(uintptr_t* cookie) {
     // We just ignore things that happen after disconnection.
     break;
   }
+  *cookie = 0;
   return 0;
 }

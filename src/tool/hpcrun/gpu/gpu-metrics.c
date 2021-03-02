@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2020, Rice University
+// Copyright ((c)) 2002-2021, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -495,6 +495,9 @@ gpu_metrics_attribute_kernel
     gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_BLK_SMEM_ACUMU), 
              k->blockSharedMemory);
 
+    gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_BLKS_ACUMU), 
+             k->blocks);
+
     // number of kernel launches
     gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_COUNT), 1);
   }
@@ -795,6 +798,7 @@ gpu_metrics_KINFO_enable
   DIVISION_FORMULA(GPU_KINFO_REGISTERS);
   DIVISION_FORMULA(GPU_KINFO_BLK_THREADS);
   DIVISION_FORMULA(GPU_KINFO_BLK_SMEM);
+  DIVISION_FORMULA(GPU_KINFO_BLKS);
   OCCUPANCY_FORMULA(GPU_KINFO_OCCUPANCY_THR);
 }
 

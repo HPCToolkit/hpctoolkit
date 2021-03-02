@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2020, Rice University
+// Copyright ((c)) 2002-2021, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -287,7 +287,6 @@ typedef struct thread_data_t {
   gpu_data_t gpu_data;
 #endif
   
-  uint64_t gpu_trace_first_time;
   uint64_t gpu_trace_prev_time;
  
 } thread_data_t;

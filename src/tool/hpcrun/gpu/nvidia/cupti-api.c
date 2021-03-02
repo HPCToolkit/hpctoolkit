@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2020, Rice University
+// Copyright ((c)) 2002-2021, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -607,6 +607,7 @@ cupti_error_callback_dummy // __attribute__((unused))
   
   EEMSG("FATAL: hpcrun failure: failure type = %s, "
       "function %s failed with error %s", type, fn, error_string);
+  EEMSG("See the 'FAQ and Troubleshooting' chapter in the HPCToolkit manual for guidance");
   exit(1);
 }
 

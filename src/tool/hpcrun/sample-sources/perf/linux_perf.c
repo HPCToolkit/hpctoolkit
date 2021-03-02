@@ -9,7 +9,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2020, Rice University
+// Copyright ((c)) 2002-2021, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -340,7 +340,7 @@ static void
 perf_init()
 {
   // copy /proc/kallsyms file into hpctoolkit output directory
-  // only if the value of kptr_restric is zero
+  // only if the value of kptr_restrict is zero
 
   if (perf_util_is_ksym_available()) {
     //copy the kernel symbol table

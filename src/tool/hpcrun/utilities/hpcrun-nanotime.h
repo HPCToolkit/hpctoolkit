@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2002-2020, Rice University
+// Copyright ((c)) 2002-2021, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -65,5 +65,10 @@ hpcrun_nanotime
   void
 );
 
+int32_t
+hpcrun_nanosleep
+(
+  uint32_t nsec
+);
 
 #endif

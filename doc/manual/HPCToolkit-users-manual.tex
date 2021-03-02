@@ -2,7 +2,7 @@
 % $HeadURL$
 % $Id$
 %
-% Copyright ((c)) 2002-2020, Rice University
+% Copyright ((c)) 2002-2021, Rice University
 % All rights reserved.
 % See file README.License for details.
 %
@@ -120,14 +120,14 @@
 % ***************************************************************************
 % ***************************************************************************
 
-\title{\HPCToolkit{} User's Manual\\[.5in]Version 2020.07.15}
+\title{\HPCToolkit{} User's Manual\\[.5in]Version 2021.02.15}
 %\subtitle{}
 
-\author{
-John Mellor-Crummey\\
+\author{John Mellor-Crummey,\\
 Laksono Adhianto,
 Mike Fagan,
-Mark Krentel,
+Mark Krentel,\\
+Xiaozhu Meng,
 Nathan Tallent, Keren Zhou\\
 \\
 Rice University\\
@@ -135,7 +135,7 @@ Rice University\\
 %For \HPCToolkit{} 5.3.2 ($Revision$)
 }
 
-\date{July 15, 2020}
+\date{February 15, 2021}
 
 \maketitle
 
@@ -261,8 +261,7 @@ We have also developed techniques for efficiently attributing the idleness in on
 \HPCToolkit{} is deployed on many DOE supercomputers, including
 the Sierra supercomputer (IBM Power9 + NVIDIA V100 GPUs) at Lawrence Livermore National Laboratory,
 Cray XC40 systems at Argonne's Leadership Computing Facility and the National Energy
-Research Scientific Computing Center; the Summit supercomputer (IBM Power9 + NVIDIA V100 GPUs) at Oak Ridge Leadership Computing Facility,
-Blue Gene/Q systems at Argonne Leadership Computing Facility,
+Research Scientific Computing Center; the Summit supercomputer (IBM Power9 + NVIDIA V100 GPUs) at Oak Ridge Leadership Computing Facility
 as well as other clusters and supercomputers based on x86\_64, Power, and ARM processors.
 
 % ***************************************************************************
@@ -434,7 +433,7 @@ Since compilers can usually provide information about line mappings and inlining
 
 Measurement of application performance takes two different forms depending on whether your application is dynamically or statically linked.
 To monitor a dynamically linked application, simply use \hpcrun{} to launch the application.
-To monitor a statically linked application, such as those typically used on Blue Gene and Cray supercomputers, link your application using \hpclink{}.
+To monitor a statically linked application, such as those often used on  Cray supercomputers, link your application using \hpclink{}.
 In either case, the application may be sequential, multithreaded or based on MPI.
 The commands below give examples for an application named \texttt{app}.
 %
@@ -928,7 +927,7 @@ To isolate code that is an impediment to scalable performance, one can use the {
 % ***************************************************************************
 % ***************************************************************************
 
-\chapter{Running Applications with \hpcrun{} and \hpclink{}}
+\chapter{Monitoring Dynamically-linked Applications with \hpcrun{}}
 \label{chpt:hpcrun}
 
 \input{hpcrun}
@@ -937,57 +936,107 @@ To isolate code that is an impediment to scalable performance, one can use the {
 % ***************************************************************************
 % ***************************************************************************
 
-\chapter{Measurement and Analysis of GPU-accelerated Applications}
-\label{chpt:gpu}
-
-{
-\centering
- \fbox{\parbox{\textwidth}{Note: This release contains beta support for monitoring computations offloaded onto  NVIDIA GPUs and alpha support for monitoring computations offloaded onto AMD GPUs.}}
- \vspace{2ex}
-}
+\chapter{Monitoring Statically Linked Applications with \hpclink{}}
+\label{chpt:statically-linked-apps}
 
 
-\input{gpu}
+% ===========================================================================
+% ===========================================================================
+
+On modern Linux systems, dynamically linked executables are the default.
+With dynamically linked executables, \HPCToolkit{}'s \hpcrun{} script uses library preloading to inject \HPCToolkit's monitoring code into an application's address space.
+However, in some cases, statically-linked executables are necessary or desirable.
+\begin{itemize}
+\item One might prefer a statically linked executable because they are generally faster if the executable spends a significant amount of time calling functions in libraries.
+\item On Cray supercomputers, statically-linked executables are often the default.
+\end{itemize}
+
+For statically linked executables, preloading \HPCToolkit's monitoring code into an application's address space at program launch is not an option.
+Instead, monitoring code must be added at link time; \HPCToolkit{}'s \hpclink{} script is used for this purpose.
+
+% ===========================================================================
+% ===========================================================================
+
+\section{Linking with \hpclink{}}
+
+Adding \HPCToolkit{}'s monitoring code into a statically linked application is easy.
+This does not require any source-code modifications, but it does involve a small change to your build procedure.
+You continue to compile all of your object (\texttt{.o}) files exactly as before, but you will need to modify your final link step to use \hpclink{} to add \HPCToolkit{}'s monitoring code to your executable.
+
+In your build scripts, locate the last step in the build, namely, the command that produces the final statically linked binary.
+Edit that command line to add the \hpclink{} command at the front.
+
+For example, suppose that the name of your application binary is \texttt{app} and the last step in
+your \texttt{Makefile} links various object files and libraries as
+follows into a statically linked executable:
+\begin{quote}
+  \verb|mpicc -o app -static file.o ... -l<lib> ...|
+\end{quote}
+To build a version of your executable with \HPCToolkit's monitoring code linked in, you would use the following command line:
+\begin{quote}
+  \verb|hpclink mpicc -o app -static file.o ... -l<lib> ...|
+\end{quote}
+
+In practice, you may want to edit your \texttt{Makefile} to always build two versions of your program, perhaps naming them \texttt{app} and \texttt{app.hpc}.
 
 
-% ***************************************************************************
-% ***************************************************************************
+\subsection{Using \hpclink{} when {\tt gprof} instrumentation is present}
 
-\chapter{Measurement and Analysis of OpenMP Multithreading}
-\label{chpt:gpu}
-
-{
-\centering
- \fbox{\parbox{\textwidth}{Note: This release contains beta support for monitoring OpenMP computations using the OpenMP 5.0 OpenMP Tools API support known as OMPT.}}
- \vspace{2ex}
-}
-
-HPCToolkit includes an implementation of the OpenMP 5.0 Tools API known as OMPT. The OMPT interface enables HPCToolkit to extract enough information to reconstruct user-level calling contexts from implementation-level measurements.
-
-Support for OpenMP 5.0 and OMPT is emerging in OpenMP runtimes. Recent versions of LLVM's OpenMP runtime, IBM's LOMP (Lightweight OpenMP Runtime) and Intel's OpenMP runtime provide emerging support for OMPT. At present, support in these implementations is known to be incomplete, especially with respect to offloading computation onto TARGET devices.
-
-If an interaction between HPCToolkit's support for the OMPT interface and an OpenMP runtime causes problems, OMPT support may be disabled when using HPCToolkit by setting  OpenMP environment variable {\tt OMP\_TOOL} to {\tt disabled}.
+When an application has been compiled with the compiler flag \verb|-pg|,
+the compiler adds instrumentation to collect performance measurement data for
+the \verb|gprof| profiler. Measuring application performance with
+\HPCToolkit{}'s measurement subsystem and \verb|gprof| instrumentation
+active in the same execution may cause the execution
+to abort. One can detect the presence of \verb|gprof| instrumentation in an
+application by the presence of \verb|__monstartup| and \verb|_mcleanup| symbols
+in a executable.
+One can disable \verb|gprof| instrumentation when measuring the performance of
+a statically-linked application by using the \verb|--disable-gprof|
+argument to \hpclink{}.
 
 
 
+% ===========================================================================
+% ===========================================================================
 
-% ***************************************************************************
-% ***************************************************************************
+\section{Running a Statically Linked Binary}
 
-\chapter{The \hpcviewer{} User Interface}
-\label{chpt:hpcviewer-interface}
+For dynamically linked executables, the \hpcrun{} script sets environment variables to pass information to the \HPCToolkit{} monitoring library.
+On standard Linux systems, statically linked \hpclink{}-ed executables can still be launched with \hpcrun{}.
 
-\input{hpcviewer}
+For statically-linked binaries, the \hpcrun{} script is not applicable because of differences in application launch procedures.
+On these systems, you will need to use the \mytt{HPCRUN_EVENT_LIST} environment variable to pass a list of events to \HPCToolkit{}'s monitoring code, which was linked into your executable using \hpclink{}.
+Typically, you would set \mytt{HPCRUN_EVENT_LIST} in your launch script.
+
+The \mytt{HPCRUN_EVENT_LIST} environment variable should be set to a space-separated list of \mytt{EVENT@COUNT} pairs.
+For example, in a PBS script for a Cray system, you might write the following in Bourne shell or bash syntax:
+\begin{quote}
+\begin{verbatim}
+#!/bin/sh
+#PBS -l size=64
+#PBS -l walltime=01:00:00
+cd $PBS_O_WORKDIR
+export HPCRUN_EVENT_LIST="CYCLES@f200 PERF_COUNT_HW_CACHE_MISSES@f200"
+aprun -n 64 ./app arg ...
+\end{verbatim}
+\end{quote}
+
+To collect sample traces of  an execution of a statically linked binary (for visualization with \hpctraceviewer{}), one needs to set the environment variable \mytt{HPCRUN_TRACE=1} in the execution environment.
 
 
-% ***************************************************************************
-% ***************************************************************************
+% ===========================================================================
+% ===========================================================================
 
-\chapter{The \hpctraceviewer{} User Interface}
-\label{chpt:hpctraceviewer-interface}
+\section{Troubleshooting}
 
-\input{hpctraceviewer}
+With some compilers you need to disable interprocedural optimization to use \hpclink{}.
+To instrument your statically linked executable at link time, \hpclink{} uses the \texttt{ld} option \texttt{--wrap} (see the ld(1) man page) to interpose monitoring code between your application and various process, thread, and signal control operations, \eg{}, \mytt{fork}, \mytt{pthread_create}, and \mytt{sigprocmask} to name a few.
+For some compilers, \eg{}, IBM's XL compilers, interprocedural optimization interferes with the \texttt{--wrap} option and prevents \hpclink{} from working properly.
+If this is the case, \hpclink{} will emit error messages and fail.
+If you want to use \hpclink{} with such compilers, sadly, you must turn off interprocedural optimization.
 
+Note that interprocedural optimization may not be explicitly enabled during your compiles; it might be implicitly enabled when using a compiler optimization option such as \texttt{-fast}.
+In cases such as this, you can often specify \texttt{-fast} along with an option such as \texttt{-no-ipa}; this option combination will provide the benefit of all of \texttt{-fast}'s optimizations {\em except} interprocedural optimization.
 
 % ***************************************************************************
 % ***************************************************************************
@@ -1026,7 +1075,7 @@ Observe that the MPI launcher (\texttt{mpirun}, \texttt{mpiexec}, \etc{}) is use
 \question{How do I compile and run a statically linked MPI program?}
 
 \answer{}
-On systems such IBM's Blue Gene/Q microkernel that are designed to run statically linked binaries, use \hpclink{} to build a statically linked version of your application that includes \HPCToolkit{}'s monitoring library.
+To use  \HPCToolkit{} to monitor  statically linked binaries, use \hpclink{} to build a statically linked version of your application that includes \HPCToolkit{}'s monitoring library.
 For example, to link your application binary \texttt{app}:
 %
 \begin{quote}
@@ -1148,116 +1197,47 @@ This is why we need the application to call \mytt{MPI_Comm_rank()} with communic
 % ***************************************************************************
 % ***************************************************************************
 
-\chapter{Monitoring Statically Linked Applications}
-\label{chpt:statically-linked-apps}
+\chapter{Measurement and Analysis of GPU-accelerated Applications}
+\label{chpt:gpu}
+
+\input{gpu}
 
 
-% ===========================================================================
-% ===========================================================================
+% ***************************************************************************
+% ***************************************************************************
 
-On modern Linux systems, dynamically linked executables are the default.
-With dynamically linked executables, \HPCToolkit{}'s \hpcrun{} script uses library preloading to inject \HPCToolkit's monitoring code into an application's address space.
-However, in some cases, statically-linked executables are necessary or desirable.
-\begin{itemize}
-\item One might prefer a statically linked executable because they are generally faster if the executable spends a significant amount of time calling functions in libraries.
-\item On Blue Gene and Cray supercomputers, statically-linked executables are preferred.
-\end{itemize}
+\chapter{Measurement and Analysis of OpenMP Multithreading}
+\label{chpt:gpu}
 
-For statically linked executables, preloading \HPCToolkit's monitoring code into an application's address space at program launch is not an option.
-Instead, monitoring code must be added at link time; \HPCToolkit{}'s \hpclink{} script is used for this purpose.
+{
+\centering
+ \fbox{\parbox{\textwidth}{Note: This release contains beta support for monitoring OpenMP computations using the OpenMP 5.0 OpenMP Tools API support known as OMPT.}}
+ \vspace{2ex}
+}
 
-% ===========================================================================
-% ===========================================================================
+HPCToolkit includes an implementation of the OpenMP 5.0 Tools API known as OMPT. The OMPT interface enables HPCToolkit to extract enough information to reconstruct user-level calling contexts from implementation-level measurements.
 
-\section{Linking with \hpclink{}}
+Support for OpenMP 5.0 and OMPT is emerging in OpenMP runtimes. Recent versions of LLVM's OpenMP runtime, IBM's LOMP (Lightweight OpenMP Runtime) and Intel's OpenMP runtime provide emerging support for OMPT. At present, support in these implementations is known to be incomplete, especially with respect to offloading computation onto TARGET devices.
 
-Adding \HPCToolkit{}'s monitoring code into a statically linked application is easy.
-This does not require any source-code modifications, but it does involve a small change to your build procedure.
-You continue to compile all of your object (\texttt{.o}) files exactly as before, but you will need to modify your final link step to use \hpclink{} to add \HPCToolkit{}'s monitoring code to your executable.
-
-In your build scripts, locate the last step in the build, namely, the command that produces the final statically linked binary.
-Edit that command line to add the \hpclink{} command at the front.
-
-For example, suppose that the name of your application binary is \texttt{app} and the last step in
-your \texttt{Makefile} links various object files and libraries as
-follows into a statically linked executable:
-\begin{quote}
-  \verb|mpicc -o app -static file.o ... -l<lib> ...|
-\end{quote}
-To build a version of your executable with \HPCToolkit's monitoring code linked in, you would use the following command line:
-\begin{quote}
-  \verb|hpclink mpicc -o app -static file.o ... -l<lib> ...|
-\end{quote}
-
-In practice, you may want to edit your \texttt{Makefile} to always build two versions of your program, perhaps naming them \texttt{app} and \texttt{app.hpc}.
-
-
-\subsection{Using \hpclink{} when {\tt gprof} instrumentation is present}
-
-When an application has been compiled with the compiler flag \verb|-pg|,
-the compiler adds instrumentation to collect performance measurement data for
-the \verb|gprof| profiler. Measuring application performance with
-\HPCToolkit{}'s measurement subsystem and \verb|gprof| instrumentation
-active in the same execution may cause the execution
-to abort. One can detect the presence of \verb|gprof| instrumentation in an
-application by the presence of \verb|__monstartup| and \verb|_mcleanup| symbols
-in a executable.
-One can disable \verb|gprof| instrumentation when measuring the performance of
-a statically-linked application by using the \verb|--disable-gprof|
-argument to \hpclink{}.
+If an interaction between HPCToolkit's support for the OMPT interface and an OpenMP runtime causes problems, OMPT support may be disabled when using HPCToolkit by setting  OpenMP environment variable {\tt OMP\_TOOL} to {\tt disabled}.
 
 
 
-% ===========================================================================
-% ===========================================================================
 
-\section{Running a Statically Linked Binary}
+% ***************************************************************************
+% ***************************************************************************
 
-For dynamically linked executables, the \hpcrun{} script sets environment variables to pass information to the \HPCToolkit{} monitoring library.
-On standard Linux systems, statically linked \hpclink{}-ed executables can still be launched with \hpcrun{}.
+\chapter{Analyzing Performance Data with \hpcviewer{}}
+\label{chpt:hpcviewer-interface}
 
-On Cray and Blue Gene systems, the \hpcrun{} script is not applicable because of differences in application launch procedures.
-On these systems, you will need to use the \mytt{HPCRUN_EVENT_LIST} environment variable to pass a list of events to \HPCToolkit{}'s monitoring code, which was linked into your executable using \hpclink{}.
-Typically, you would set \mytt{HPCRUN_EVENT_LIST} in your launch script.
-
-The \mytt{HPCRUN_EVENT_LIST} environment variable should be set to a space-separated list of \mytt{EVENT@COUNT} pairs.
-For example, in a PBS script for a Cray system, you might write the following in Bourne shell or bash syntax:
-\begin{quote}
-\begin{verbatim}
-#!/bin/sh
-#PBS -l size=64
-#PBS -l walltime=01:00:00
-cd $PBS_O_WORKDIR
-export HPCRUN_EVENT_LIST="CYCLES@f200 PERF_COUNT_HW_CACHE_MISSES@f200"
-aprun -n 64 ./app arg ...
-\end{verbatim}
-\end{quote}
-
-Using the Cobalt job launcher on Argonne National Laboratory's Blue Gene/Q system, you would use the \texttt{--env} option to pass environment variables.
-For example, you might submit a job with:
-\begin{quote}
-\begin{verbatim}
-qsub -t 60 -n 64 --env HPCRUN_EVENT_LIST="WALLCLOCK@1000" \
-    /path/to/app <app arguments> ...
-\end{verbatim}
-\end{quote}
-
-To collect sample traces of  an execution of a statically linked binary (for visualization with \hpctraceviewer{}), one needs to set the environment variable \mytt{HPCRUN_TRACE=1} in the execution environment.
+\input{hpcviewer}
 
 
-% ===========================================================================
-% ===========================================================================
+% ***************************************************************************
+% ***************************************************************************
 
-\section{Troubleshooting}
 
-With some compilers you need to disable interprocedural optimization to use \hpclink{}.
-To instrument your statically linked executable at link time, \hpclink{} uses the \texttt{ld} option \texttt{--wrap} (see the ld(1) man page) to interpose monitoring code between your application and various process, thread, and signal control operations, \eg{}, \mytt{fork}, \mytt{pthread_create}, and \mytt{sigprocmask} to name a few.
-For some compilers, \eg{}, IBM's XL compilers and Pathscale's compilers, interprocedural optimization interferes with the \texttt{--wrap} option and prevents \hpclink{} from working properly.
-If this is the case, \hpclink{} will emit error messages and fail.
-If you want to use \hpclink{} with such compilers, sadly, you must turn off interprocedural optimization.
 
-Note that interprocedural optimization may not be explicitly enabled during your compiles; it might be implicitly enabled when using a compiler optimization option such as \texttt{-fast}.
-In cases such as this, you can often specify \texttt{-fast} along with an option such as \texttt{-no-ipa}; this option combination will provide the benefit of all of \texttt{-fast}'s optimizations {\em except} interprocedural optimization.
 
 % ***************************************************************************
 % ***************************************************************************
@@ -1265,8 +1245,55 @@ In cases such as this, you can often specify \texttt{-fast} along with an option
 \chapter{Known Issues}
 \label{chpt:known}
 
-\section{A confusing label for GPU theoretical occupancy}
+This section lists some known issues and potential workarounds. 
+Other known issues can be seen in the project's GitHub issues pages: 
+\begin{itemize}
+ \item For HPCToolkit in general, see  \url{https://github.com/HPCToolkit/hpctoolkit/issues}
+ \item For hpcviewer, see \url{https://github.com/HPCToolkit/hpcviewer.e4/issues}
+\end{itemize}
 
+\section{\hpcrun{} reports partial call paths for code executed by a constructor prior to entering main}
+
+\paragraph{Description:} At present, all samples of code executed by constructors are reported as a partial call paths even if they are full unwinds. This occurs because HPCToolkit wasn't designed to attribute code that executes in constructors. 
+
+\paragraph{Workaround:} Don't be concerned by partial call paths that unwind through \verb|__libc_start_main|  and \verb|__lib_csu_init|. The samples are fully attributed even though HPCToolkit does not recognize them as such.
+
+\paragraph{Development Plan:} A future version of HPCToolkit will recognize that these unwinds are indeed full call paths and attribute them as such.
+
+\section{\hpcrun{} may fail to measure a program execution on a CPU with hardware performance counters}
+
+\paragraph{Description:} We observed a problem using Linux  {\tt perf\_events} to measure CPU performance using hardware performance counters on an {\tt x86\_64} cluster at Sandia. An investigation determined that the cluster was running Sandia's LDMS (Lightweight Distributed Metric Service)---a low-overhead, low-latency framework for collecting, transferring, and storing metric data on a large distributed computer system. On this cluster, the LDMS  daemon had been configured to use the {\tt syspapi\_sampler} (\url{https://github.com/ovis-hpc/ovis/blob/OVIS-4/ldms/src/sampler/syspapi/syspapi\_sampler.c}), which uses the Linux {\tt perf\_events} subsystem to measure hardware counters at the node level. At present, the LDMS {\tt syspapi\_sampler}'s use of  the Linux {\tt perf\_events} subsystem for data collection at the node level conflicts with native use of use the Linux {\tt perf\_events} subsystem by HPCToolkit for process-level measurement.\footnote{We observed the same conflict between the LDMS {\tt syspapi\_sampler}  and the Linux {\tt perf} command-line tool. We expect that the  {\tt syspapi\_sampler} 
+conflicts with other process-level tools that use the Linux {\tt perf\_events} subsystem to measure events using hardware counters.}
+
+\paragraph{Workaround:} Surprisingly, measurement using HPCToolkit's PAPI interface atop Linux  {\tt perf\_events} works even though using HPCToolkit directly atop Linux  {\tt perf\_events} yields no measurement data.  For instance, rather than measuring {\tt cycles} using Linux {\tt perf\_events} directly with {\tt -e cycles}, one can measure cycles through HPCToolkit's PAPI measurement subsystem using {\tt -e PAPI\_TOT\_CYC}. Of course, one can configure PAPI to measure other hardware events, such as graduated instructions and cache misses.
+
+\paragraph{Development Plan:} Identify why the use of the Linux {\tt perf\_events} subsystem by the LDMS {\tt syspapi\_sampler} conflicts with the use of the direct use of Linux {\tt perf\_events} HPCToolkit and the Linux {\tt perf} tool but not with the use of Linux {\tt perf\_events} by PAPI.
+
+\section{hpcrun{} may associate several profiles and traces with rank 0, thread 0}
+
+\paragraph{Description:}  On Cray systems, we have observed that \hpcrun{} associates several profiles and traces with rank 0, thread 0. This results from the fact that the Cray PMI daemon gets forked from the application in a constructor and there is no exec. Initially, each process gets tagged with rank 0, thread 0 until the real rank and thread is determined later in the execution. That determination never happens for the PMI daemon.
+
+\paragraph{Workaround:} In our experience, the hpcrun files in the measurement for the daemon tagged with rank 0 thread 0 are very small. In experiments we ran, they were about 2K. You can remove these profiles and their matching trace files before processing a measurement database with hpcprof or hpcprof-mpi. The correspondence between a profile and trace can be determined because they only differ in their suffix (hpcrun or hpctrace).
+
+\section{After analyzing an execution traces  \hpcprofmpi{}, \hpcviewer{} may report invalid CPID (call path id) values when displaying traces}
+
+\paragraph{Affected architectures:}  any CPU 
+
+\paragraph{Description:} HPCToolkit assumes that the only call paths that appear in traces are leaves in a calling context tree. When analyzing traces with \hpcprofmpi{}, a strategy used to handle interior nodes that may have been traced doesn't work when analysis of traces is performed with \hpcprofmpi{} using multiple processes. 
+
+\paragraph{Workaround:} As long as the number of invalid CPID values seems small relative to the number of samples you see in the trace view, you can ignore this issue. 
+
+\paragraph{Development Plan:} A forthcoming version of \hpcprofmpi{} will not require that any node appearing in a trace is a leaf in a calling context tree.
+
+\section{\hpcrun{} sometimes enables writing of read-only data}
+
+If an application or shared library contains a \verb|PT_GNU_RELRO| segment in its program header, the runtime loader \verb|ld.so| will mark all data in that segment readonly
+after relocations have been processed at runtime. 
+As described in Section~\ref{hpcrun-audit} of the manual, on \verb|x86_64| and Power architectures, \hpcrun{} uses \verb|LD_AUDIT| to monitor operations on dynamic libraries. 
+For \hpcrun{} to properly resolve calls to functions in shared libraries, the Global Offset Table (GOT) must be writable. Sometimes, the GOT lies within the \verb|PT_GNU_RELRO| segment, which may cause it to be marked readonly after relocations are processed.
+If \hpcrun{} is using   \verb|LD_AUDIT| to monitor shared library operations, it will enable write permissions on the \verb|PT_GNU_RELRO| segment during execution. While this makes some data writable that should have read-only permissions, it should not affect the behavior of any program that does not attempt to overwrite data that should have been readonly in its address space.
+
+\section{A confusing label for GPU theoretical occupancy}
 \paragraph{Affected architectures:}  NVIDIA GPUs
 
 \paragraph{Description:} When analyzing a GPU-accelerated application that employs NVIDIA GPUs, HPCToolkit estimates percent GPU theoretical occupancy as the ratio of active GPU threads divided by the maximum number of GPU threads available. In multi-threaded or multi-rank programs, HPCToolkit reports GPU  theoretical occupancy with the label 
@@ -1321,42 +1348,6 @@ The Darshan wrapper for \verb|open| may try to allocate data to record statistic
 
 \paragraph{Development Plan:} Ensure that \verb|libunwind|'s calls to \verb|open| are never intercepted by Darshan.
 
-\section{Deadlock when using UCX}
-
-\paragraph{Affected architectures:} \verb|x86_64| and ARM
-
-\paragraph{Description:}
-OpenUCX (\url{https://www.openucx.org}) is a communication layer developed at ORNL. When using asynchronous sampling on the CPU to monitor a program that uses a communication layer based on UCX, your program may deadlock. We have observed this behavior with a program that used a version of OpenMPI that employed UCX as a communication substrate.
-
-\paragraph{Explanation:} UCX hijacks calls to \verb|mmap| and \verb|munmap|.
-HPCToolkit uses the \verb|libunwind| library.
-Under certain circumstances, \verb|libunwind| uses \verb|mmap| and \verb|munmap| to map a section of your application's executable or one of the shared libraries it uses to obtain unwinding information recorded by the compiler.
-The following sequence of actions leads to a problem:
-\begin{enumerate}
-\item
-UCX is interrupted with an asynchronous sample while holding a lock in its implementation.
-\item
-HPCToolkit's signal handler is invoked to record the sample.
-\item
-\verb|libunwind| is invoked to obtain the calling context for the sample.
-\item
-\verb|libunwind|  calls \verb|mmap| and \verb|munmap|
-when inspecting compiler-based unwind information.
-\item
-UCX wrappers for \verb|mmap| and \verb|munmap|  execute in HPCToolkit's signal handler.
-\item
-A UCX wrapper for \verb|mmap| or \verb|munmap| may try to acquire a non-reentrant lock that is already held by
-by the UCX code that was interrupted by the sample trigger.
-\end{enumerate}
-
-\paragraph{Workaround:} Use a communication library that doesn't employ UCX.
-
-
-\paragraph{Development Plan:} Ensure that \verb|libunwind|'s calls to \verb|mmap| and \verb|munmap| are never intercepted by UCX.
-
-
-
-
 
 % ***************************************************************************
 % ***************************************************************************
@@ -1379,38 +1370,241 @@ binary, launching your application with \HPCToolkit's \hpcrun{}
 command pre-loads \HPCToolkit's measurement subsystem into your
 application's address space before the application begins to execute.
 \end{itemize}
-In this Chapter, for convenience, we refer to HPCToolkit's measurement
+In this chapter, for convenience, we refer to HPCToolkit's measurement
 system simply as \hpcrun{} since the measurement subsystem is most commonly used
 with dynamically-linked binaries. From the context, it should be clear enough
 whether we are talking about \HPCToolkit's measurement subsystem
 or the \hpcrun{} command itself.
 
-\section{Why do I see partial unwinds?}
-\label{sec:partial}
+\section{Instrumenting Statically-linked Applications}
 
-Under certain circumstances, HPCToolkit can't fully unwind the call stack to determine the full calling context where a sample event occurred. Most often, this occurs when \hpcrun{} tries to unwind through functions in a shared library or executable that has not been compiled with \verb|-g| as one of its options. The \verb|-g| compiler flag can be used in addition to optimization flags. On Power and \verb|x86_64| processors, \hpcrun{} can often compensate the lack of the availability of unwind recipes in a binary by using binary analysis to compute recipes itself. However, since \hpcrun{} lacks binary analysis capabilities for ARM processors, there is a higher likelihood that the lack of a \verb|-g| compiler option for an executable or a shared library will lead to partial unwinds.
+\subsubsection{Using \hpclink{} with {\tt cmake}}
 
-There are two ways to deal with this problem:
+When creating a statically-linked executable with {\tt cmake}, it is not obvious how to add {\tt hpclink} as a prefix to a link command. Unless it is overridden somewhere  along the way, the following rule found in {\tt Modules/CMakeCXXInformation.cmake} is
+used to create the link command line for a C++ executable:
+
+\begin{verbatim}
+  if(NOT CMAKE_CXX_LINK_EXECUTABLE)
+    set(CMAKE_CXX_LINK_EXECUTABLE
+       "<CMAKE_CXX_COMPILER> <FLAGS> <CMAKE_CXX_LINK_FLAGS> <LINK_FLAGS>
+                             <OBJECTS> -o <TARGET> <LINK_LIBRARIES>")
+  endif()
+\end{verbatim}
+
+\noindent
+As the rule shows, by default, the C++ compiler is used to link C++ executables. One way to change this is to override the definition for \verb|CMAKE_CXX_LINK_EXECUTABLE|  on the {\tt cmake} command line so that it includes the  necessary \hpclink{} prefix, as shown below:
+
+\begin{verbatim}
+  cmake srcdir ... \
+     -DCMAKE_CXX_LINK_EXECUTABLE="hpclink <CMAKE_CXX_COMPILER> \
+          <FLAGS> <CMAKE_CXX_LINK_FLAGS> <LINK_FLAGS> <OBJECTS> -o <TARGET> \
+          <LINK_LIBRARIES>" ...
+\end{verbatim}
+
+\noindent
+If your project has executables linked with a C or Fortran compiler, you will need analogous redefinitions for \verb|CMAKE_C_LINK_EXECUTABLE| or  \verb|CMAKE_Fortran_LINK_EXECUTABLE| as well.
+
+Rather than adding the redefinitions of these linker rules to the {\tt cmake} command line,
+you may find it more convenient to add definitions of these rules to your {\tt CMakeLists.cmake} file.
+
+% ===========================================================================
+% ===========================================================================
+
+\section{General Measurement Failures}
+
+\subsection{Unable to find HPCTOOLKIT root directory}
+
+On some systems, you might see a message like this:
+\begin{quote}
+\begin{verbatim}
+/path/to/copy/of/hpcrun: Unable to find HPCTOOLKIT root directory.
+Please set HPCTOOLKIT to the install prefix, either in this script,
+or in your environment, and try again.
+\end{verbatim}
+\end{quote}
+
+The problem is that the system job launcher copies the \hpcrun{}
+script from its install directory to a launch directory and runs
+it from there.  When the system launcher moves \hpcrun{} to a different directory, this
+breaks \hpcrun{}'s method for finding its own install directory.
+The solution is to add \verb|HPCTOOLKIT| to your environment so that
+\hpcrun{} can find its install directory. See section~\ref{sec:env-vars} for
+general notes on environment variables for \hpcrun{}. Also, see section~\ref{sec:platform-specific},
+as this problem occurs on Cray XE and XK systems.
+
+Note: Your system may have a module installed for \verb|hpctoolkit| with the
+correct settings for \verb|PATH|, \verb|HPCTOOLKIT|, etc.  In that case,
+the easiest solution is to load the \verb|hpctoolkit| module.  If there is
+such a module, Try
+``\verb|module show hpctoolkit|'' to see if it sets \verb|HPCTOOLKIT|.
+
+% ===========================================================================
+% ===========================================================================
+
+
+\subsection{Profiling {\tt setuid} programs}
+
+\hpcrun{} uses preloaded shared libraries to initiate profiling.  For this
+reason, it cannot be used to profile {\tt setuid} programs.
+
+
+% ===========================================================================
+% ===========================================================================
+
+\subsection{Problems loading dynamic libraries}
+
+By default, hpcrun use {\tt glibc}'s {\tt LD\_AUDIT} subsystem to monitor an application's use of dynamic
+  libraries. Use of  {\tt LD\_AUDIT}  is needed to properly interpret a load module's
+  {\tt RUNPATH} attribute. However, use of {\tt LD\_AUDIT} will cause {\tt dlmopen} to fail 
+  for \verb|glibc < 2.32|. Intel's GTPin library for instrumentation of Intel GPU 
+  binaries uses {\tt dlmopen}.
+
+If your program encounters a failure related to dynamic library loading, 
+\hpcrun{} has several options for precisely controlling the approach \hpcrun{}'s uses to monitor shared libraries that might help.
+
 \begin{itemize}
-\item Analyze the execution using information from partial unwinds. Often knowing several levels of calling context is enough for analysis without full calling context for sample events.
-\item 
-Recompile the binary or shared library causing the problem and add \verb|-g| to the list of its compiler options.
+\item\verb|--disable-auditor|. This option instructs hpcrun to track dynamic library operations by intercepting {\tt dlopen} and {\tt dlclose} instead of using {\tt LD\_AUDIT}. 
+ Note that this alternate approach can cause problem with load modules that specify a {\tt RUNPATH}. 
+ Due to a {\tt glibc} bug, this option is disabled by default on ARM.
+
+\item\verb|--enable-auditor|. {\tt LD\_AUDIT} is by default disabled on ARM due to a glib bug. Use this option to enable {\tt LD\_AUDIT} on ARM.
+
+\item\verb|--disable-auditor-got-rewriting|. When HPCToolkit uses  {\tt glibs}'s {\tt LD\_AUDIT}  capability {\tt glibc} unnecessarily intercepts every call to a function in a shared library. 
+\hpcrun{} avoids this overhead by rewriting each shared library's global offset table (GOT). Such rewriting is tricky. This option can be used to disable GOT rewriting if you suspect that the rewriting is causing your application to fail.
+
+\item\verb|--namespace-single|.   {\tt dlmopen} may load a shared library into an alternate namespace.  Use of {\tt dlmopen} to create multiple namespaces can cause an application to crash when using \verb|glibc < 2.32|. This option asks HPCToolkit to load all  shared libraries within the application namespace, which might help avoid a crash.  (This option is the default when performing instruction-level measurements of Intel GPU binaries with GTPin as GTPin uses  {\tt dlmopen}.)
 \end{itemize}
 
 % ===========================================================================
 % ===========================================================================
-\section{How do I choose \hpcrun{} sampling periods?}
+
+\subsection{Problems caused by {\tt gprof} instrumentation}
+
+When an application has been compiled with the compiler flag \verb|-pg|,
+the compiler adds instrumentation to collect performance measurement data for
+the \verb|gprof| profiler. Measuring application performance with
+\HPCToolkit{}'s measurement subsystem and \verb|gprof| instrumentation
+active in the same execution may cause the execution
+to abort. One can detect the presence of \verb|gprof| instrumentation in an
+application by the presence of the \verb|__monstartup| and \verb|_mcleanup| symbols
+in a executable.  You can recompile your code without the
+\verb|-pg| compiler flag and measure again. Alternatively, you can use the \verb|--disable-gprof|
+argument to \hpcrun{} or \hpclink{} to disable \verb|gprof| instrumentation while 
+measuring performance with \HPCToolkit{}.
+
+To cope with {\tt gprof} instrumentation in dynamically-linked programs, you can use \hpcrun{}'s \verb|--disable-gprof| option.
+
+
+% ===========================================================================
+% ===========================================================================
+
+
+
+
+% ===========================================================================
+% ===========================================================================
+
+\section{Measurement Failures using NVIDIA GPUs}
+
+\subsection{Ensuring permission to use GPU performance counters}
+
+
+
+Your Administrator or a recent NVIDIA driver installation may have disabled access to GPU Performance due to Security Notice: NVIDIA Response to ``Rendered Insecure: GPU Side Channel Attacks are Practical'' \url{https://nvidia.custhelp.com/app/answers/detail/a_id/4738} - November 2018.
+If that is the case, HPCToolkit cannot access NVIDIA GPU performance counters when using a Linux 418.43 or later driver. This may cause an error message when you try to use PC sampling on an NVIDIA GPU.
+
+A good way to check whether GPU performance counters are available to non-root users on Linux is to execute the following commands:
+\begin{enumerate}
+\item {\tt cd /etc/modprobe.d}
+\item \verb|grep NVreg_RestrictProfilingToAdminUsers *|
+\end{enumerate}
+\noindent Generally, if non-root user access to GPU performance counters is enabled, the {\tt grep} command above should yield a line that contains {\tt NVreg\_RestrictProfilingToAdminUsers=0}.
+Note: if you are on a cluster, access to GPU performance counters may be disabled on a login node, but enabled on a compute node. You should run an interactive job on a compute node and perform the checks there.
+
+If access to GPU hardware performance counters is not enabled, one option you have is to use \hpcrun{} without PC sampling, i.e., with the {\tt -e gpu=nvidia} option instead of {\tt -e gpu=nvidia,pc}.
+
+If PC sampling is a must, you have two  options:
+\begin{enumerate}
+\item Run the tool or application being profiled with administrative privileges.
+On Linux, launch HPCToolkit with {\tt sudo} or as a user with the {\tt CAP\_SYS\_ADMIN} capability set.
+\item Have a system administrator enable access to the NVIDIA performance counters using the instructions on the following web page: \url{https://developer.nvidia.com/ERR_NVGPUCTRPERM}.
+\end{enumerate}
+
+% ===========================================================================
+% ===========================================================================
+
+\subsection{Avoiding the error \texttt{CUPTI\_ERROR\_NOT\_INITIALIZED}}
+\label{sec:troubleshooting:cupti}
+
+\hpcrun{} uses NVIDIA's CUDA Performance Tools Interface known as
+CUPTI to monitor computations on NVIDIA GPUs. In our experience,
+this error occurs when the version of CUPTI used by HPCToolkit is
+incompatible with the version of CUDA used by your program or CUDA kernel driver installed on your system. You can check the
+version of the CUDA kernel driver installed on your system using the {\tt nvidia-smi} command. 
+Table 3 {\em CUDA Application Compatibility Support Matrix} at the following URL~\url{https://docs.nvidia.com/deploy/cuda-compatibility/index.html\#cuda-application-compatibility} 
+specifies what versions of the CUDA kernel driver match each version of CUDA and CUPTI. 
+Although the table indicates that some drivers can support newer versions of CUDA than the one that they were designed for, 
+e.g. driver 418.40.04+ designed to support CUDA 10.1 can also run CUDA 11.0 and 11.1 programs, 
+in our experience that does not necessarily mean that the driver will support performance measurement of CUDA programs 
+using any CUDA version newer than 10.1.
+We believe that best way to avoid the \texttt{CUPTI\_ERROR\_NOT\_INITIALIZED} error is to ensure that 
+(1) HPCToolkit is compiled with the version of CUDA that your installed CUDA kernel driver was designed to support, and 
+(2) your application uses the version of CUDA that matches the one your kernel driver was designed to support or a compatible older version.
+
+% ===========================================================================
+% ===========================================================================
+
+
+\subsection{Avoiding the error {\tt CUPTI\_ERROR\_HARDWARE\_BUSY}}
+
+When trying to use PC sampling to measure computation on an NVIDIA GPU, you may encounter the following error: `function {\tt cuptiActivityConfigurePCSampling} failed with error {\tt CUPTI\_ERROR\_HARDWARE\_BUSY}'.
+
+For all versions of CUDA  to date (through CUDA 11), NVIDIA's CUPTI library only supports PC sampling for only one process per GPU. If multiple MPI ranks in your application run CUDA on the same GPU, you may see this error.\footnote{We have observed this error on CUDA 11.}
+
+You have two alternatives: 
+\begin{enumerate}
+\item Measure the execution in which multiple MPI ranks share a GPU using only {\tt -e gpu=nvidia} without PC sampling.
+\item Launch your program so that there is only a single MPI rank per GPU.
+\begin{enumerate}
+\item {\tt jsrun} advice: if using {\tt -g1} for a resource set, don't use anything other than {\tt -a1}.
+\end{enumerate}
+\end{enumerate}
+
+% ===========================================================================
+% ===========================================================================
+
+\subsection{Avoiding the error {\tt CUPTI\_ERROR\_UNKNOWN}}
+
+When trying to use PC sampling to measure computation on an NVIDIA GPU, you may encounter the following error: `function {\tt cuptiActivityEnableContext} failed with error {\tt CUPTI\_ERROR\_UNKNOWN}'.
+
+For all versions of CUDA  to date (through CUDA 11), NVIDIA's CUPTI library only supports PC sampling for only one process per GPU. If multiple MPI ranks in your application run CUDA on the same GPU, you may see this error.\footnote{We have observed this error on CUDA 10.} You have two alternatives: 
+\begin{enumerate}
+\item Measure the execution in which multiple MPI ranks share a GPU using only {\tt -e gpu=nvidia} without PC sampling.
+\item Launch your program so that there is only a single MPI rank per GPU.
+\begin{enumerate}
+\item {\tt jsrun} advice: if using {\tt -g1} for a resource set, don't use anything other than {\tt -a1}.
+\end{enumerate}
+\end{enumerate}
+
+
+% ===========================================================================
+% ===========================================================================
+
+
+\section{General Measurement Issues}
+
+\subsection{How do I choose sampling periods?}
 \label{sec:troubleshooting:hpcrun-sample-periods}
 
 When using sample sources for hardware counter and software counter events provided by Linux \verb|perf_events|,
 we recommend that you use frequency-based sampling. The default frequency is 300 samples/second.
 
 Statisticians use samples sizes of approximately 3500 to make accurate projections about the voting preferences of millions of people.
-In an analogous way, rather than collect unnecessary large amounts of performance information, sampling-based performance measurement collects ``just enough'' representative performance data.
+In an analogous way, rather than measuring and attributing every action of a program or every runtime event (e.g., a cache miss), sampling-based performance measurement collects ``just enough'' representative performance data.
 You can control \hpcrun{}'s sampling periods to collect ``just enough'' representative data even for very long executions and, to a lesser degree, for very short executions.
 
 For reasonable accuracy ($\pm 5\%$), there should be at least 20 samples in each context that is important with respect to performance.
-Since unimportant contexts are irrelevant to performance, as long as this condition is met (and as long as samples are not correlated, etc.), \HPCToolkit{}'s performance data should be accurate.
+Since unimportant contexts are irrelevant to performance, as long as this condition is met (and as long as samples are not correlated, etc.), \HPCToolkit{}'s performance data should be accurate enough to guide program tuning.
 
 We typically recommend targeting a frequency of hundreds of samples per second.
 For very short runs, you may need to collect thousands of samples per second to record an adequate number of samples.
@@ -1423,11 +1617,45 @@ In practice, this may require some experimentation.
 
 See also the \hpcrun{} \href{http://hpctoolkit.org/man/hpcrun.html}{man page}.
 
+% ===========================================================================
+% ===========================================================================
+
+\subsection{Why do I see partial unwinds?}
+\label{sec:partial}
+
+Under certain circumstances, HPCToolkit can't fully unwind the call
+stack to determine the full calling context where a sample event
+occurred. Most often, this occurs when \hpcrun{} tries to unwind
+through functions in a shared library or executable that has not
+been compiled with \verb|-g| as one of its options. The \verb|-g|
+compiler flag can be used in addition to optimization flags. On
+Power and \verb|x86_64| processors, \hpcrun{} can often compensate
+for the lack of unwind recipes by using
+binary analysis to compute recipes itself. However, since \hpcrun{}
+lacks binary analysis capabilities for ARM processors, there is a
+higher likelihood that the lack of a \verb|-g| compiler option for
+an executable or a shared library will lead to partial unwinds.
+
+One annoying place where partial unwinds are somewhat common on \verb|x86_64| 
+processors is in Intel's MKL family of libraries.  A careful examination of Intel’s
+MKL libraries showed that most but not all routines have
+compiler-generated Frame Descriptor Entries (FDEs) that help tools 
+unwind the call stack.  For any routine that lacks
+an FDE, HPCToolkit tries to compensate using binary analysis.  
+Unfortunately, highly-optimized code in MKL library
+routines has code features that are difficult to analyze correctly.
+
+There are two ways to deal with this problem:
+\begin{itemize}
+\item Analyze the execution using information from partial unwinds. Often knowing several levels of calling context is enough for analysis without full calling context for sample events.
+\item 
+Recompile the binary or shared library causing the problem and add \verb|-g| to the list of its compiler options.
+\end{itemize}
 
 % ===========================================================================
 % ===========================================================================
 
-\section{\hpcrun{} incurs high overhead! Why?}
+\subsection{Measurement with HPCToolkit has high overhead! Why?}
 
 For reasonable sampling periods, we expect \hpcrun{}'s overhead percentage to be in the low single digits, \eg{}, less than 5\%.
 The most common causes for unusually high overhead are the following:
@@ -1463,22 +1691,23 @@ The most common causes for unusually high overhead are the following:
 
 \end{itemize}
 
-\subsection{When using \HPCToolkit{}, my application aborts}
-
-When an application has been compiled with the compiler flag \verb|-pg|,
-the compiler adds instrumentation to collect performance measurement data for
-the \verb|gprof| profiler. Measuring application performance with
-\HPCToolkit{}'s measurement subsystem and \verb|gprof| instrumentation
-active in the same execution may cause the execution
-to abort. One can detect the presence of \verb|gprof| instrumentation in an
-application by the presence of the \verb|__monstartup| and \verb|_mcleanup| symbols
-in a executable.  You can recompile your code without the
-\verb|-pg| compiler flag and measure again. Alternatively, you can use the \verb|--disable-gprof|
-argument to \hpcrun{} or \hpclink{} to disable \verb|gprof| instrumentation while 
-measuring performance with \HPCToolkit{}.
 
 
-\section{\HPCToolkit{} reports that my application spends a lot of time in C library functions with names that include {\tt mcount}}
+% ===========================================================================
+% ===========================================================================
+
+\subsection{Some of my syscalls return EINTR}
+
+When profiling a threaded program, there are times when it is
+necessary for \hpcrun{} to signal another thread to take some action.
+When this happens, if the thread receiving the signal is blocked in a
+syscall, the kernel may return EINTR from the syscall.  This would
+happen only in a threaded program and mainly with ``slow'' syscalls
+such as {\tt select()}, {\tt poll()} or {\tt sem\_wait()}.
+
+
+
+\subsection{My application spends a lot of time in C library functions with names that include {\tt mcount}}
 
 If performance measurements with \HPCToolkit{} show that your
 application is spending a lot of time in C library routines with
@@ -1493,10 +1722,12 @@ argument to \hpcrun{} or \hpclink{} to disable \verb|gprof| instrumentation whil
 measuring performance with \HPCToolkit{}.
 
 
+\section{Graphical User Interface Issues}
+
 % ===========================================================================
 % ===========================================================================
 
-\section{Fail to run \hpcviewer{}: executable launcher was unable to locate its companion shared library}
+\subsection{Fail to run \hpcviewer{}: executable launcher was unable to locate its companion shared library}
 
 Although this error mostly incurrs on Windows platform, but it can happen in other environment.
 The cause of this issue is that the permission of one of Eclipse launcher libary (org.eclipse.equinox.launcher.*) is too restricted.
@@ -1506,20 +1737,22 @@ To fix this, set the permission of the library to 0755, and launch again the vie
 % ===========================================================================
 % ===========================================================================
 
-\section{Mac only: \hpcviewer{} runs on Java $X$ instead of ``Java 8"}
+\subsection{On my Mac, \hpcviewer{} runs on Java $X$ instead of ``Java 11"}
 
-If your system has multiple versions of Java and Java 8 is not the newer version, you need to set Java 8 as the default JVM:
+\hpcviewer{} has only been tested on Java 11. If you are running an older or newer version of Java than Java 11, obtain a version of Java 11 from \url{https://adoptopenjdk.net}.
+
+If your system has multiple versions of Java and Java 11 is not the newest version, you need to set Java 11 as the default JVM:
 
 \begin{enumerate}
 \item Leave all JDKs at their default location (usually under \texttt{/Library/Java/JavaVirtualMachines}). The system will pick the highest version by default.
-\item To exclude a JDK from being picked by default, rename \texttt{Contents/Info.plist} file to other name like \texttt{Info.plist.disabled}. That JDK can still be used when \texttt{\$JAVA\_HOME} points to it, or explicitly referenced in a script or configuration. It will simply be ignored by system's java command.
+\item To exclude a JDK from being picked by default, rename \texttt{Contents/Info.plist} file to other name like \texttt{Info.plist.disabled}. That JDK can still be used when \texttt{\$JAVA\_HOME} points to it, or explicitly referenced in a script or configuration. It will simply be ignored by your Mac's java command.
 \end{enumerate}
 
 
 % ===========================================================================
 % ===========================================================================
 
-\section{When executing \hpcviewer, it complains cannot create ``Java Virtual Machine"}
+\subsection{When executing \hpcviewer, it complains cannot create ``Java Virtual Machine"}
 If you encounter this problem, we recommend that you edit the
 \texttt{hpcviewer.ini}
 file which is located in HPCToolkit installation directory to reduce the
@@ -1543,15 +1776,15 @@ You can decrease the maximum size of the Java heap from 2048MB to 1GB
 % ===========================================================================
 % ===========================================================================
 
-\section{\hpcviewer{} fails to launch due to {\tt java.lang.NoSuchMethodError} exception.}
+\subsection{\hpcviewer{} fails to launch due to {\tt java.lang.NoSuchMethodError} exception.}
 
-The root cause of the error is due to a mix of old \and new hpcviewer{} binaries.
-To solve this problem, you need to remove your hpcviewer workspace (usually in \texttt{\$HOME/.hpctoolkit/hpcviewer} directory, and run \hpcviewer{} again.
+The root cause of the error is due to a mix of old and new hpcviewer{} binaries.
+To solve this problem, you need to remove your hpcviewer workspace (usually in your \texttt{\$HOME/.hpctoolkit/hpcviewer} directory), and run \hpcviewer{} again.
 
 % ===========================================================================
 % ===========================================================================
 
-\section{\hpcviewer{} fails due to {\tt java.lang.OutOfMemoryError} exception.}
+\subsection{\hpcviewer{} fails due to {\tt java.lang.OutOfMemoryError} exception.}
 
 If you see this error, the memory footprint that \hpcviewer{} needs to store and the metrics for your measured program execution exceeds the maximum size for the Java heap specified at program launch.  On Linux, \hpcviewer{} accepts a command-line option \verb|--java-heap| that enables you to specify a larger non-default value for the maximum size of the Java heap. Run \verb|hpcviewer --help| for the details of how to use this option.
 
@@ -1559,23 +1792,20 @@ If you see this error, the memory footprint that \hpcviewer{} needs to store and
 % ===========================================================================
 
 
-\section{\hpcviewer{} writes a long list of Java error messages to the terminal!}
+\subsection{\hpcviewer{} writes a long list of Java error messages to the terminal!}
 
 The Eclipse Java framework that serves as the foundation for \hpcviewer{} can be somewhat temperamental. If the persistent state maintained by Eclipse for \hpcviewer{}
-gets corrupted, \hpcviewer{} may spew a list of errors deep within call chains of the Eclipse framework.  Below are a few suggestions that may fix the problem:
+gets corrupted, \hpcviewer{} may spew a list of errors deep within call chains of the Eclipse framework.  
 
-On Linux, try removing your \hpcviewer{} Eclipse workspace with default location:\\
+On MacOS and Linux, try removing your \hpcviewer{} Eclipse workspace with default location:\\
  \texttt{\$HOME/.hpctoolkit/hpcviewer} \\
  and run \hpcviewer{} again.
 
-On MacOS, persistent state is currently stored within Mac app. If the Eclipse persistent state gets corrupted, one can't simply clear the workspace because some initial persistent state is needed for Eclipse to function properly.  For MacOS, the thing to try is downloading a fresh copy of hpcviewer and running the freshly downloaded copy.
-
-If one of the aforementioned suggestions doesn’t fix the problem, report a bug.
 
 % ===========================================================================
 % ===========================================================================
 
-\section{\hpcviewer{} attributes performance information only to functions and not to source code loops and lines! Why?}
+\subsection{\hpcviewer{} attributes performance information only to functions and not to source code loops and lines! Why?}
 \label{sec:troubleshooting:debug-info}
 
 Most likely, your application's binary either lacks debugging information or is stripped.
@@ -1587,8 +1817,8 @@ The options for doing this vary by compiler.
 We suggest the following options:
 \begin{itemize}
 \item GNU compilers (\texttt{gcc}, \texttt{g++}, \texttt{gfortran}): \texttt{-g}
+\item IBM compilers (xlc, xlf, xlC): \texttt{-g}
 \item Intel compilers (\texttt{icc}, \texttt{icpc}, \texttt{ifort}): \texttt{-g -debug inline\_debug\_info}
-\item Pathscale compilers (\texttt{pathcc}, \texttt{pathCC}, \texttt{pathf95}): \texttt{-g1}
 \item PGI compilers (\texttt{pgcc}, \texttt{pgCC}, \texttt{pgf95}): \texttt{-gopt}.
 \end{itemize}
 We generally recommend adding optimization options \emph{after} debugging options --- \eg{}, `\texttt{-g -O2}' --- to minimize any potential effects of adding debugging information.%
@@ -1605,7 +1835,7 @@ Even so, the performance attribution is usually very informative.
 % ===========================================================================
 % ===========================================================================
 
-\section{\hpcviewer{} hangs trying to open a large database! Why?}
+\subsection{\hpcviewer{} hangs trying to open a large database! Why?}
 
 The most likely problem is that the Java virtual machine is low on memory and thrashing. The memory footprint that \hpcviewer{} needs to store and the metrics for your measured program execution is likely near the maximum size for the Java heap specified at program launch.
 
@@ -1615,7 +1845,7 @@ On Linux, \hpcviewer{} accepts a command-line option \verb|--java-heap| that ena
 % ===========================================================================
 % ===========================================================================
 
-\section{\hpcviewer{} runs glacially slowly! Why?}
+\subsection{\hpcviewer{} runs glacially slowly! Why?}
 
 There are three likely reasons why \hpcviewer{} might run slowly.
 First, you may be running \hpcviewer{} on a remote system with low bandwidth, high latency or an otherwise unsatisfactory network connection to your desktop.
@@ -1640,7 +1870,7 @@ On Linux, \hpcviewer{} accepts a command-line option \verb|--java-heap| that ena
 % ===========================================================================
 % ===========================================================================
 
-\section{\hpcviewer{} does not show my source code! Why?}
+\subsection{\hpcviewer{} does not show my source code! Why?}
 
 
 Assuming you compiled your application with debugging information (see Issue~\ref{sec:troubleshooting:debug-info}), the most common reason that \hpcviewer{} does not show source code is that \hpcprofAll{} could not find it and therefore could not copy it into the \HPCToolkit{} performance database.
@@ -1649,9 +1879,7 @@ Assuming you compiled your application with debugging information (see Issue~\re
 
 % ==========================================================
 % ==========================================================
-
-\subsection{Follow `Best Practices'}
-
+\paragraph{Follow `best practices'}
 When running \hpcprofAll{}, we recommend using an \texttt{-I/--include} option to specify a search directory for each distinct top-level source directory (or build directory, if it is separate from the source directory).
 Assume the paths to your top-level source directories are \texttt{<dir1>} through \texttt{<dirN>}.
 Then, pass the the following options to \hpcprofAll{}:
@@ -1674,16 +1902,17 @@ A non-recursive search directory \texttt{dir} is simply specified as \texttt{dir
 A recursive search directory \texttt{dir} is specified as the base search directory followed by the special suffix `\texttt{/+}': \texttt{dir/+}.
 The paths above use the recursive form.
 
-
 % ==========================================================
 % ==========================================================
 
-\subsection{Additional Background}
+\paragraph{An explanation how HPCToolkit finds source files}
 
 \hpcprofAll{} obtains source file names from your application binary's debugging information.
 If debugging information is unavailable, such as is often the case for system or math libraries, then source files are unknown.
+
+
 Two things immediately follow from this.
-First, in most normal situations, there will always be some functions for which source code cannot be found, such as those within system libraries.
+First, in most normal situations, there will always be some functions for which source code cannot be found, such as those within system libraries.\footnote{Having a system administrator download the associated {\tt devel} package for a library can enable visibility into the source code of system libraries.}
 Second, to ensure that \hpcprofAll{} has file names for which to search, make sure as much of your application as possible (including libraries) contains debugging information.
 
 If debugging information is available, source files can come in two forms: absolute and relative.
@@ -1709,6 +1938,8 @@ For any functions whose source code is not found (such as functions within syste
 
 % ===========================================================================
 % ===========================================================================
+
+
 
 % \section{\hpcviewer{} \emph{still} does not show my source code! Why?}
 
@@ -1788,7 +2019,7 @@ For any functions whose source code is not found (such as functions within syste
 % ===========================================================================
 % ===========================================================================
 
-\section{\hpcviewer{}'s reported line numbers do not exactly correspond to what I see in my source code!  Why?}
+\subsection{\hpcviewer{}'s reported line numbers do not exactly correspond to what I see in my source code!  Why?}
 
 To use a clich\'{e}, ``garbage in, garbage out''.
 \HPCToolkit{} depends on information recorded in the symbol table by the compiler.
@@ -1811,7 +2042,7 @@ This technique is used only when truly desperate.
 % ===========================================================================
 % ===========================================================================
 
-\section{\hpcviewer{} claims that there are several calls to a function within a particular source code scope, but my source code only has one!  Why?}
+\subsection{\hpcviewer{} claims that there are several calls to a function within a particular source code scope, but my source code only has one!  Why?}
 
 In the course of code optimization, compilers often replicate code blocks.
 For instance, as it generates code, a compiler may peel iterations from a loop or split the iteration space of a loop into two or more loops.
@@ -1825,56 +2056,15 @@ If the compiler duplicated calls as it replicated code during optimization, mult
 % ===========================================================================
 % ===========================================================================
 
-\section{\hpctraceviewer{} shows lots of white space on the left. Why?}
+\subsection{\hpctraceviewer{} shows lots of white space on the left. Why?}
 
 At startup, \hpctraceviewer{}  renders traces for the time interval between the minimum and maximum times recorded for any process or thread in the execution. The minimum time for each process or thread is recorded when its trace file is opened as HPCToolkit's monitoring facilities are initialized at the beginning of its execution. The maximum time for a process or thread is recorded when the process or thread is finalized and its trace file is closed. When an application uses the \verb|hpctoolkit_start| and \verb|hpctoolkit_stop| primitives, the minimum and maximum time recorded for a process/thread are  at the beginning and end of its execution, which may be  distant from the start/stop interval. This can cause significant white space to appear in \hpctraceviewer{}'s display to the left and right of the region (or regions) of interest demarcated in an execution by start/stop calls.
 
-
-\section{I get a message about ``Unable to find HPCTOOLKIT root directory''}
-
-On some systems, you might see a message like this:
-\begin{quote}
-\begin{verbatim}
-/path/to/copy/of/hpcrun: Unable to find HPCTOOLKIT root directory.
-Please set HPCTOOLKIT to the install prefix, either in this script,
-or in your environment, and try again.
-\end{verbatim}
-\end{quote}
-
-
-The problem is that the system job launcher copies the \hpcrun{}
-script from its install directory to a launch directory and runs
-it from there.  When the system launcher moves \hpcrun{} to a different directory, this
-breaks \hpcrun{}'s method for finding its own install directory.
-The solution is to add \verb|HPCTOOLKIT| to your environment so that
-\hpcrun{} can find its install directory. See section~\ref{sec:env-vars} for
-general notes on environment variables for \hpcrun{}. Also, see section~\ref{sec:platform-specific},
-as this problem occurs on Cray XE and XK systems.
-
-Note: Your system may have a module installed for \verb|hpctoolkit| with the
-correct settings for \verb|PATH|, \verb|HPCTOOLKIT|, etc.  In that case,
-the easiest solution is to load the \verb|hpctoolkit| module.  If there is
-such a module, Try
-``\verb|module show hpctoolkit|'' to see if it sets \verb|HPCTOOLKIT|.
-
-
 % ===========================================================================
 % ===========================================================================
+\section{Debugging}
 
-\section{Some of my syscalls return EINTR when run under \hpcrun{}}
-
-When profiling a threaded program, there are times when it is
-necessary for \hpcrun{} to signal another thread to take some action.
-When this happens, if the thread receiving the signal is blocked in a
-syscall, the kernel may return EINTR from the syscall.  This would
-happen only in a threaded program and mainly with ``slow'' syscalls
-such as {\tt select()}, {\tt poll()} or {\tt sem\_wait()}.
-
-
-% ===========================================================================
-% ===========================================================================
-
-\section{How do I debug \HPCToolkit{}'s measurement?}
+\subsection{How do I debug \HPCToolkit{}'s measurement?}
 
 Assume you want to debug \HPCToolkit{}'s measurement subsystem when
 collecting measurements for an application named \texttt{app}.
@@ -2021,35 +2211,6 @@ and continue.
 \item To raise a controlled sampling signal, raise a SIGPROF, \eg{}, using GDB's command \verb|signal SIGPROF|.
 
 \end{enumerate}
-
-\subsection{Using \hpclink{} with {\tt cmake}}
-
-When creating a statically-linked executable with {\tt cmake}, it is not obvious how to add {\tt hpclink} as a prefix to a link command. Unless it is overridden somewhere  along the way, the following rule found in {\tt Modules/CMakeCXXInformation.cmake} is
-used to create the link command line for a C++ executable:
-
-\begin{verbatim}
-  if(NOT CMAKE_CXX_LINK_EXECUTABLE)
-    set(CMAKE_CXX_LINK_EXECUTABLE
-       "<CMAKE_CXX_COMPILER> <FLAGS> <CMAKE_CXX_LINK_FLAGS> <LINK_FLAGS>
-                             <OBJECTS> -o <TARGET> <LINK_LIBRARIES>")
-  endif()
-\end{verbatim}
-
-\noindent
-As the rule shows, by default, the C++ compiler is used to link C++ executables. One way to change this is to override the definition for \verb|CMAKE_CXX_LINK_EXECUTABLE|  on the {\tt cmake} command line so that it includes the  necessary \hpclink{} prefix, as shown below:
-
-\begin{verbatim}
-  cmake srcdir ... \
-     -DCMAKE_CXX_LINK_EXECUTABLE="hpclink <CMAKE_CXX_COMPILER> \
-          <FLAGS> <CMAKE_CXX_LINK_FLAGS> <LINK_FLAGS> <OBJECTS> -o <TARGET> \
-          <LINK_LIBRARIES>" ...
-\end{verbatim}
-
-\noindent
-If your project has executables linked with a C or Fortran compiler, you will need analogous redefinitions for \verb|CMAKE_C_LINK_EXECUTABLE| or  \verb|CMAKE_Fortran_LINK_EXECUTABLE| as well.
-
-Rather than adding the redefinitions of these linker rules to the {\tt cmake} command line,
-you may find it more convenient to add definitions of these rules to your {\tt CMakeLists.cmake} file.
 
 
 
