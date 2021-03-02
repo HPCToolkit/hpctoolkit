@@ -74,18 +74,17 @@ record_intel_optimization_metrics
 void
 isQueueInInOrderExecutionMode
 (
-	cl_command_queue_properties properties
+	cl_command_queue_properties *properties
 )
 {
-	bool inorder = !(properties && CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE);
+  // if properties is not specified an in-order host command queue is created for the specified device
+	bool inorder = !properties ? true : !(*properties && CL_QUEUE_OUT_OF_ORDER_EXEC_MODE_ENABLE);
+
   if (inorder) {
-    printf("in order\n");
     cct_node_t *cct_node = gpu_application_thread_correlation_callback(0);
     intel_optimization_t i;
     i.intelOptKind = INORDER_QUEUE;
     record_intel_optimization_metrics(cct_node, &i);
-  } else {
-    printf("out of order\n");
   }
 }
 
@@ -205,6 +204,10 @@ areKernelParamsAliased
   /* Kernels typically operate on arrays of elements that are provided as pointer arguments. When the compiler cannot determine whether these pointers
    * alias each other, it will conservatively assume that they do, in which case it will not reorder operations on these pointers */
   kernel_param_map_entry_t *entry = kernel_param_map_lookup((uint64_t)kernel);
+  if (!entry) {
+    // entry will be null when the kernel has no parameters
+    return;
+  }
   kp_node_t *kp_list = kernel_param_map_entry_kp_list_get(entry);
   bool aliased = checkIfMemoryRegionsOverlap(kp_list);
   

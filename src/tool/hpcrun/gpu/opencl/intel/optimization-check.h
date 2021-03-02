@@ -24,7 +24,7 @@
 void
 isQueueInInOrderExecutionMode
 (
-	cl_command_queue_properties properties
+	cl_command_queue_properties *properties
 );
 
 
