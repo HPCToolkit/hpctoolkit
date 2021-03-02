@@ -499,6 +499,9 @@ void la_activity(uintptr_t* cookie, unsigned int flag) {
   static unsigned int previous = LA_ACT_CONSISTENT;
 
   if(flag == LA_ACT_CONSISTENT) {
+    if(verbose)
+      fprintf(stderr, "[audit] Consistent\n");
+
     // If we've hit consistency and know where libhpcrun is, initialize it.
     switch(state) {
     case state_awaiting:
@@ -512,8 +515,8 @@ void la_activity(uintptr_t* cookie, unsigned int flag) {
     case state_attached: {
       if(verbose)
         fprintf(stderr, "[audit] Beginning early initialization\n");
-      state = state_connecting;
-      hooks.initialize();
+      //state = state_connecting;
+      //hooks.initialize();
       break;
     }
     case state_connecting:
