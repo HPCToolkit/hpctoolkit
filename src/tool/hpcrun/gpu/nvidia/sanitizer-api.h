@@ -59,7 +59,7 @@ void
 sanitizer_data_type_config(char *data_type);
 
 void
-sanitizer_analysis_trace_read_config(int trace_read);
+sanitizer_analysis_trace_read_ignore_config(int trace_read_ignore);
 
 size_t
 sanitizer_gpu_patch_record_num_get();

@@ -34,7 +34,11 @@ struct sanitizer_context_map_entry_s {
   gpu_patch_buffer_t *buffer_device;
   gpu_patch_buffer_t *buffer_addr_read_device;
   gpu_patch_buffer_t *buffer_addr_write_device;
-  gpu_patch_aux_address_dict_t *addr_dict_device;
+  gpu_patch_aux_address_dict_t *aux_addr_dict_device;
+  gpu_patch_buffer_t *buffer_reset;
+  gpu_patch_buffer_t *buffer_addr_read_reset;
+  gpu_patch_buffer_t *buffer_addr_write_reset;
+  gpu_patch_aux_address_dict_t *aux_addr_dict_reset;
   struct sanitizer_context_map_entry_s *left;
   struct sanitizer_context_map_entry_s *right;
 }; 
@@ -69,7 +73,11 @@ sanitizer_context_map_entry_new(CUcontext context)
   e->buffer_device = NULL;
   e->buffer_addr_read_device = NULL;
   e->buffer_addr_write_device = NULL;
-  e->addr_dict_device = NULL;
+  e->aux_addr_dict_device = NULL;
+  e->buffer_reset = NULL;
+  e->buffer_addr_read_reset = NULL;
+  e->buffer_addr_write_reset = NULL;
+  e->aux_addr_dict_reset = NULL;
 
   spinlock_init(&(e->lock));
 
@@ -183,31 +191,46 @@ sanitizer_context_map_init(CUcontext context)
 }
 
 
+sanitizer_context_map_entry_t *
+sanitizer_context_map_init_nolock(CUcontext context)
+{
+  sanitizer_context_map_entry_t *result = sanitizer_context_map_init_internal(context);
+
+  return result;
+}
+
+
 void
 sanitizer_context_map_context_lock(CUcontext context)
 {
+  sanitizer_context_map_entry_t *entry = NULL;
+
   spinlock_lock(&sanitizer_context_map_lock);
 
-  sanitizer_context_map_entry_t *entry = NULL;
-  if ((entry = sanitizer_context_map_lookup_internal(context)) != NULL) {
-    spinlock_lock(&entry->lock);
-  }
+  entry = sanitizer_context_map_lookup_internal(context);
 
   spinlock_unlock(&sanitizer_context_map_lock);
+
+  if (entry != NULL) {
+    spinlock_lock(&entry->lock);
+  }
 }
 
 
 void
 sanitizer_context_map_context_unlock(CUcontext context)
 {
+  sanitizer_context_map_entry_t *entry = NULL;
+
   spinlock_lock(&sanitizer_context_map_lock);
 
-  sanitizer_context_map_entry_t *entry = NULL;
-  if ((entry = sanitizer_context_map_lookup_internal(context)) != NULL) {
-    spinlock_unlock(&entry->lock);
-  }
+  entry = sanitizer_context_map_lookup_internal(context);
 
   spinlock_unlock(&sanitizer_context_map_lock);
+
+  if (entry != NULL) {
+    spinlock_unlock(&entry->lock);
+  }
 }
 
 
@@ -266,6 +289,17 @@ sanitizer_context_map_priority_stream_handle_update(CUcontext context, Sanitizer
 
 
 void
+sanitizer_context_map_priority_stream_handle_update_nolock(CUcontext context, Sanitizer_StreamHandle priority_stream_handle)
+{
+  sanitizer_context_map_entry_t *result = sanitizer_context_map_lookup_internal(context);
+
+  if (result->priority_stream_handle == NULL) {
+    result->priority_stream_handle = priority_stream_handle;
+  }
+}
+
+
+void
 sanitizer_context_map_kernel_stream_handle_update(CUcontext context, Sanitizer_StreamHandle kernel_stream_handle)
 {
   spinlock_lock(&sanitizer_context_map_lock);
@@ -277,6 +311,17 @@ sanitizer_context_map_kernel_stream_handle_update(CUcontext context, Sanitizer_S
   }
 
   spinlock_unlock(&sanitizer_context_map_lock);
+}
+
+
+void
+sanitizer_context_map_kernel_stream_handle_update_nolock(CUcontext context, Sanitizer_StreamHandle kernel_stream_handle)
+{
+  sanitizer_context_map_entry_t *result = sanitizer_context_map_lookup_internal(context);
+
+  if (result->kernel_stream_handle == NULL) {
+    result->kernel_stream_handle = kernel_stream_handle;
+  }
 }
 
 
@@ -315,17 +360,17 @@ sanitizer_context_map_buffer_addr_read_device_update
 
 
 void
-sanitizer_context_map_addr_dict_device_update
+sanitizer_context_map_aux_addr_dict_device_update
 (
  CUcontext context,
- gpu_patch_aux_address_dict_t *addr_dict_device
+ gpu_patch_aux_address_dict_t *aux_addr_dict_device
 )
 {
   spinlock_lock(&sanitizer_context_map_lock);
 
   sanitizer_context_map_entry_t *result = sanitizer_context_map_lookup_internal(context);
 
-  result->addr_dict_device = addr_dict_device;
+  result->aux_addr_dict_device = aux_addr_dict_device;
 
   spinlock_unlock(&sanitizer_context_map_lock);
 }
@@ -343,6 +388,74 @@ sanitizer_context_map_buffer_addr_write_device_update
   sanitizer_context_map_entry_t *result = sanitizer_context_map_lookup_internal(context);
 
   result->buffer_addr_write_device = buffer_addr_write_device;
+
+  spinlock_unlock(&sanitizer_context_map_lock);
+}
+
+
+void
+sanitizer_context_map_buffer_reset_update
+(
+ CUcontext context,
+ gpu_patch_buffer_t *buffer_reset
+)
+{
+  spinlock_lock(&sanitizer_context_map_lock);
+
+  sanitizer_context_map_entry_t *result = sanitizer_context_map_lookup_internal(context);
+
+  result->buffer_reset = buffer_reset;
+
+  spinlock_unlock(&sanitizer_context_map_lock);
+}
+
+
+void
+sanitizer_context_map_buffer_addr_read_reset_update
+(
+ CUcontext context,
+ gpu_patch_buffer_t *buffer_addr_read_reset
+)
+{
+  spinlock_lock(&sanitizer_context_map_lock);
+
+  sanitizer_context_map_entry_t *result = sanitizer_context_map_lookup_internal(context);
+
+  result->buffer_addr_read_reset = buffer_addr_read_reset;
+
+  spinlock_unlock(&sanitizer_context_map_lock);
+}
+
+
+void
+sanitizer_context_map_aux_addr_dict_reset_update
+(
+ CUcontext context,
+ gpu_patch_aux_address_dict_t *aux_addr_dict_reset
+)
+{
+  spinlock_lock(&sanitizer_context_map_lock);
+
+  sanitizer_context_map_entry_t *result = sanitizer_context_map_lookup_internal(context);
+
+  result->aux_addr_dict_reset = aux_addr_dict_reset;
+
+  spinlock_unlock(&sanitizer_context_map_lock);
+}
+
+
+void
+sanitizer_context_map_buffer_addr_write_reset_update
+(
+ CUcontext context,
+ gpu_patch_buffer_t *buffer_addr_write_reset
+)
+{
+  spinlock_lock(&sanitizer_context_map_lock);
+
+  sanitizer_context_map_entry_t *result = sanitizer_context_map_lookup_internal(context);
+
+  result->buffer_addr_write_reset = buffer_addr_write_reset;
 
   spinlock_unlock(&sanitizer_context_map_lock);
 }
@@ -467,10 +580,50 @@ sanitizer_context_map_entry_buffer_addr_write_device_get
 
 
 gpu_patch_aux_address_dict_t *
-sanitizer_context_map_entry_addr_dict_device_get
+sanitizer_context_map_entry_aux_addr_dict_device_get
 (
  sanitizer_context_map_entry_t *entry
 )
 {
-  return entry->addr_dict_device;
+  return entry->aux_addr_dict_device;
+}
+
+
+gpu_patch_buffer_t *
+sanitizer_context_map_entry_buffer_reset_get
+(
+ sanitizer_context_map_entry_t *entry
+)
+{
+  return entry->buffer_reset;
+}
+
+
+gpu_patch_buffer_t *
+sanitizer_context_map_entry_buffer_addr_read_reset_get
+(
+ sanitizer_context_map_entry_t *entry
+)
+{
+  return entry->buffer_addr_read_reset;
+}
+
+
+gpu_patch_buffer_t *
+sanitizer_context_map_entry_buffer_addr_write_reset_get
+(
+ sanitizer_context_map_entry_t *entry
+)
+{
+  return entry->buffer_addr_write_reset;
+}
+
+
+gpu_patch_aux_address_dict_t *
+sanitizer_context_map_entry_aux_addr_dict_reset_get
+(
+ sanitizer_context_map_entry_t *entry
+)
+{
+  return entry->aux_addr_dict_reset;
 }
