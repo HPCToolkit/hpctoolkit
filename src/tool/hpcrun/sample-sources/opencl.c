@@ -113,6 +113,7 @@ static void
 METHOD_FN(start)
 {
   TMSG(OPENCL, "start");
+  TD_GET(ss_state)[self->sel_idx] = START;
 }
 
 
