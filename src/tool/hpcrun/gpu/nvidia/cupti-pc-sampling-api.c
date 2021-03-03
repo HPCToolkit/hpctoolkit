@@ -682,6 +682,8 @@ cupti_pc_sampling_range_flush
  uint32_t range_id
 )
 {
+  TMSG(CUPTI, "Collect range %u", range_id);
+
   CUcontext context;
   cuda_context_get(&context);
   if (context != NULL) {

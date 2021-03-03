@@ -83,13 +83,14 @@
 static void
 gpu_context_stream_trace
 (
+ uint32_t device_id,
  uint32_t context_id,
  uint32_t stream_id,
  gpu_trace_item_t *ti
 )
 {
   if (hpcrun_trace_isactive()) {
-    gpu_context_id_map_stream_process(context_id, stream_id, gpu_trace_produce, ti);
+    gpu_context_id_map_stream_process(device_id, context_id, stream_id, gpu_trace_produce, ti);
   }
 }
 
@@ -116,7 +117,8 @@ gpu_memcpy_process
                          activity->details.memcpy.end,
                          activity->cct_node);
 
-  gpu_context_stream_trace(activity->details.memcpy.context_id,
+  gpu_context_stream_trace(activity->details.memcpy.device_id,
+                           activity->details.memcpy.context_id,
                            activity->details.memcpy.stream_id,
                            &entry_trace);
 
@@ -146,7 +148,8 @@ gpu_kernel_process
                          activity->details.kernel.end,
                          activity->cct_node);
 
-  gpu_context_stream_trace(activity->details.kernel.context_id,
+  gpu_context_stream_trace(activity->details.kernel.device_id,
+                           activity->details.kernel.context_id,
                            activity->details.kernel.stream_id,
                            &entry_trace);
 
@@ -185,17 +188,17 @@ gpu_synchronization_process
       case GPU_SYNC_STREAM_EVENT_WAIT:
         // Insert a event for a specific stream
         PRINT("Add context %u stream %u sync\n", context_id, stream_id);
-        gpu_context_id_map_stream_process(context_id, stream_id, gpu_trace_produce, &entry_trace);
+        gpu_context_id_map_stream_process(IDTUPLE_INVALID, context_id, stream_id, gpu_trace_produce, &entry_trace);
         break;
       case GPU_SYNC_CONTEXT:
         // Insert events for all current active streams
         // TODO(Keren): What if the stream is created
         PRINT("Add context %u sync\n", context_id);
-        gpu_context_id_map_context_process(context_id, gpu_trace_produce, &entry_trace);
+        gpu_context_id_map_context_process(IDTUPLE_INVALID, context_id, gpu_trace_produce, &entry_trace);
         break;
       case GPU_SYNC_EVENT:
         PRINT("Add context %u stream %u sync\n", context_id, stream_id);
-        gpu_context_id_map_stream_process(context_id, stream_id, gpu_trace_produce, &entry_trace);
+        gpu_context_id_map_stream_process(IDTUPLE_INVALID, context_id, stream_id, gpu_trace_produce, &entry_trace);
         break;
       default:
         // invalid

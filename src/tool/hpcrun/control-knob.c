@@ -38,11 +38,11 @@ control_knob_register(char *name, char *value, control_knob_type type)
   if (iter == NULL){
     iter = (control_knob_t*) malloc(sizeof(control_knob_t));
     iter->name = strdup(name);
-    iter->value = strdup(value);
     iter->next = control_knobs;
     control_knobs = iter;
   }
   iter->type = type;
+  iter->value = strdup(value);
 }
 
 

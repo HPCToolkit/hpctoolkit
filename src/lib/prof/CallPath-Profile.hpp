@@ -285,7 +285,7 @@ public:
   make(uint rFlags);
 
   static Profile*
-  make(const char* fnm, uint rFlags, FILE* outfs);
+  make(const char* fnm, uint rFlags, FILE* outfs, bool sm_easyToGrep);
 
   
   // fmt_*_fread(): Reads the appropriate hpcrun_fmt object from the
@@ -294,19 +294,27 @@ public:
   // non-null, a textual form of the data is echoed to 'outfs' for
   // human inspection.
 
+
   static int
   fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
-	    std::string ctxtStr, const char* filename, FILE* outfs);
+	    std::string ctxtStr, const char* filename, FILE* outfs, bool sm_easyToGrep);
 
   static int
   fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
-		  const hpcrun_fmt_hdr_t& hdr,
-		  std::string ctxtStr, const char* filename, FILE* outfs);
+		  const hpcrun_fmt_hdr_t& hdr, const hpcrun_fmt_footer_t& footer,
+		  std::string ctxtStr, const char* filename, FILE* outfs, bool sm_easyToGrep);
 
+#if 0
   static int
   fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
 		const metric_tbl_t& metricTbl,
 		std::string ctxtStr, FILE* outfs);
+#else
+//YUMENG: No need to parse metricTbl for sparse format
+static int
+  fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
+		std::string ctxtStr, FILE* outfs);
+#endif
 
 
   // fmt_*_fwrite(): Write the appropriate object as hpcrun_fmt to the
