@@ -97,7 +97,9 @@ public:
   void writeCCTMajor(const std::vector<uint64_t>& cct_local_sizes, 
                      std::vector<std::set<uint16_t>>& cct_nzmids,
                      const int world_rank, const int world_size,const int threads);
-  
+  void writeCCTMajor1();
+
+
   void merge(int threads, bool debug);
 
   //local exscan over a vector of T, value after exscan will be stored in the original vector
@@ -188,6 +190,24 @@ private:
 
   hpctoolkit::util::ParallelForEach<pms_profile_info_t> parForPi;
 
+  //help collect cct major data 
+  std::vector<uint64_t> ctx_nzval_cnts1;
+  std::vector<std::set<uint16_t>> ctx_nzmids1;
+  class udContext {
+  public:
+    udContext(const hpctoolkit::Context&, SparseDB&) : cnt(0) {};
+    ~udContext() = default;
+
+    std::atomic<uint64_t> cnt;
+    std::vector<std::set<uint16_t>> nzmids; 
+  };
+
+  struct{
+    hpctoolkit::Context::ud_t::typed_member_t<udContext> context;
+    const auto& operator()(hpctoolkit::Context::ud_t&) const noexcept { return context; }
+  } ud;
+
+
 
   void assignSparseInputs(int world_rank);
 
@@ -250,7 +270,7 @@ private:
                         const hpctoolkit::util::File& fh);
 
   //all work related to IdTuples Section, 
-  void workIdTuplesSection1(const int total_num_prof, const hpctoolkit::util::File& pmf);
+  void workIdTuplesSection1(const int total_num_prof);
 
   //other sections only need the vector of prof_info_idx and id_tuple_ptr pairs
   void workIdTuplesSection(const int world_rank, const int world_size,

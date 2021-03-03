@@ -89,6 +89,8 @@ util::WorkshareResult SparseDB::help() {
 void SparseDB::notifyPipeline() noexcept {
   src.registerOrderedWavefront();
   src.registerOrderedWrite();
+  auto& ss = src.structs();
+  ud.context = ss.context.add<udContext>(std::ref(*this));
 }
 
 void SparseDB::notifyWavefront(DataClass d) noexcept {
@@ -121,11 +123,10 @@ void SparseDB::notifyWavefront(DataClass d) noexcept {
   pmf = util::File(dir / "profile1.db", true);
 
   // write id_tuples, set id_tuples_sec_size for hdr
-  workIdTuplesSection1(total_num_prof, *pmf);
+  workIdTuplesSection1(total_num_prof);
 
   // write hdr
   writePMSHdr(total_num_prof, *pmf);
-
 
   // prep for profiles writing 
   std::vector<char> obuf0, obuf1;
@@ -136,6 +137,12 @@ void SparseDB::notifyWavefront(DataClass d) noexcept {
   buffered_prof_idxs.emplace_back(bpi1);
   cur_obuf_idx = 0;
   prof_infos.resize(my_num_prof);
+
+  // prepare to collect cct data
+  std::set<uint16_t> empty;
+  for(const Context& c: contexts) {
+    c.userdata[ud].nzmids.resize(team_size, empty);
+  }
 
   // start the window to keep track of the real file cursor
   fpos += id_tuples_sec_ptr + MULTIPLE_8(id_tuples_sec_size);
@@ -154,12 +161,18 @@ void SparseDB::notifyThreadFinal(const Thread::Temporary& tt) {
   std::vector<uint32_t> cids;
   std::vector<uint64_t> coffsets;
   coffsets.reserve(contexts.size() + 1);
+  uint64_t pre_val_size;
+
+  // Get the current thread ID
+  auto tid = omp_get_thread_num(); 
 
   // Now stitch together each Context's results
   for(const Context& c: contexts) {
     if(auto accums = tt.accumulatorsFor(c)) {
       cids.push_back(c.userdata[src.identifier()]);
       coffsets.push_back(values.size());
+      pre_val_size = values.size();
+      auto& udc = c.userdata[ud];
       for(const auto& mx: accums->citerate()) {
         const auto& m = *mx.first;
         const auto& vv = mx.second;
@@ -170,14 +183,17 @@ void SparseDB::notifyThreadFinal(const Thread::Temporary& tt) {
         if(auto vex = vv.get(MetricScope::function)) {
           v.r = *vex;
           mids.push_back(ids.function);
+          udc.nzmids[tid].insert(ids.function);
           values.push_back(v);
         }
         if(auto vinc = vv.get(MetricScope::execution)) {
           v.r = *vinc;
           mids.push_back(ids.execution);
+          udc.nzmids[tid].insert(ids.execution);
           values.push_back(v);
         }
       }
+      udc.cnt += (values.size() - pre_val_size);
     }
   }
 
@@ -336,7 +352,7 @@ void SparseDB::write()
     writeProfInfos();
   } 
 
-  mpi::barrier();
+  ctxcnt = mpi::bcast(ctxcnt, 0);
 
   if(mpi::World::rank() == 0){
     //footer to show completeness
@@ -348,6 +364,24 @@ void SparseDB::write()
   }
   
   if(mpi::World::size() != 1) MPI_Win_free(&win);
+
+  //gather cct major data
+  std::set<uint16_t> empty;
+  ctx_nzval_cnts1.resize(ctxcnt, 0);
+  ctx_nzmids1.resize(ctxcnt, empty);
+  for(const Context& c: contexts) {
+    auto& cid = c.userdata[src.identifier()];
+    ctx_nzval_cnts1[cid] = c.userdata[ud].cnt.load(std::memory_order_relaxed);
+    auto& nzmids = c.userdata[ud].nzmids;
+    for(int t = 0; t < team_size; t++){
+      std::set_union(ctx_nzmids1[cid].begin(), ctx_nzmids1[cid].end(),
+            nzmids[t].begin(), nzmids[t].end(), 
+            std::inserter(ctx_nzmids1[cid], ctx_nzmids1[cid].begin()));
+    }
+  }
+
+  //write CCT major
+  writeCCTMajor1();
 
 }
 
@@ -881,7 +915,7 @@ void SparseDB::writeAllIdTuples(const std::vector<pms_id_tuple_t>& all_tuples, c
 }
 
 //void SparseDB::workIdTuplesSection1(const int total_num_prof)
-void SparseDB::workIdTuplesSection1(const int total_num_prof, const util::File& pmf1)
+void SparseDB::workIdTuplesSection1(const int total_num_prof)
 {
   int rank = mpi::World::rank();
   int local_num_prof = src.threads().size();
@@ -963,6 +997,7 @@ void SparseDB::workIdTuplesSection1(const int total_num_prof, const util::File& 
     free(tuple.ids);
     tuple.ids = NULL;
   }
+
  
 }
 
@@ -1092,7 +1127,6 @@ uint64_t SparseDB::writeProf(const std::vector<char>& prof_bytes, uint32_t prof_
   //update the prof offsets based on the buffered_prof_idxs
   for(auto pi : buffered_prof_idxs[1-cur_obuf_idx]){
     prof_infos[pi-min_prof_info_idx].offset += wrt_off;
-    printf("%d: %d, new: %ld, wrt_off %ld \n", pi, pi-min_prof_info_idx, prof_infos[pi-min_prof_info_idx].offset, wrt_off);
   }
     
 
@@ -2172,6 +2206,10 @@ void SparseDB::writeCCTMajor(const std::vector<uint64_t>& ctx_nzval_cnts,
 {
   //Prepare a union ctx_nzmids, only rank 0's ctx_nzmids is global
   unionMids(ctx_nzmids,world_rank,world_size, threads);
+  for(int i = 0; i<ctxcnt; i++){
+    if(ctx_nzmids1[i] != ctx_nzmids[i])
+      printf("nzmids not equal on %d ctx, size %ld != %ld\n", i, ctx_nzmids1[i].size(), ctx_nzmids[i].size());
+  }
 
   //Get context global final offsets for cct.db
   auto ctx_offs = std::move(ctxOffsets(ctx_nzval_cnts, ctx_nzmids, threads, world_rank));
@@ -2210,6 +2248,52 @@ void SparseDB::writeCCTMajor(const std::vector<uint64_t>& ctx_nzval_cnts,
   
 }
 
+void SparseDB::writeCCTMajor1()
+{
+  int world_rank = mpi::World::rank();
+  int world_size = mpi::World::size();
+
+  //Prepare a union ctx_nzmids, only rank 0's ctx_nzmids is global
+  unionMids(ctx_nzmids1,world_rank, world_size, team_size);
+
+  //Get context global final offsets for cct.db
+  auto ctx_offs = std::move(ctxOffsets(ctx_nzval_cnts1, ctx_nzmids1, team_size, world_rank));
+  auto my_ctxs = std::move(myCtxs(ctx_offs, world_size, world_rank));
+  updateCtxOffsets(team_size, ctx_offs);
+
+  //Prepare files to read and write, get the list of profiles
+  util::File cct_major_f(dir / "cct1.db", true);
+  
+  if(world_rank == 0){
+    auto cct_major_fi = cct_major_f.open(true);
+    // Write hdr
+    writeCMSHdr(cct_major_fi);
+    // Write ctx info section
+    writeCtxInfoSec(ctx_nzmids1, ctx_offs, cct_major_fi);
+  }
+
+  //get the list of prof_info
+  auto prof_info_list = std::move(profInfoList(team_size, *pmf));
+
+  //get the ctx_id & ctx_idx pairs for all profiles
+  auto all_prof_ctx_pairs = std::move(allProfileCtxIdIdxPairs(*pmf, team_size, prof_info_list));
+  
+  //read and write all the context groups I(rank) am responsible for
+  printf("rank %d: last ctx: %d\n", world_rank, my_ctxs.back());
+  rwAllCtxGroup(my_ctxs, prof_info_list, ctx_offs, team_size, all_prof_ctx_pairs, *pmf, cct_major_f);
+
+  //footer
+  mpi::barrier();
+  if(world_rank != world_size - 1) return;
+
+  auto cmfi = cct_major_f.open(true);
+  auto footer_off = ctx_offs.back();
+  uint64_t footer_val = CCTDBftr;
+  cmfi.writeat(footer_off, sizeof(footer_val), &footer_val);
+  
+}
+
+
 
 //***************************************************************************
 // others
@@ -2234,6 +2318,11 @@ void SparseDB::merge(int threads, bool debug) {
   std::vector<std::set<uint16_t>> ctx_nzmids(ctxcnt,empty);
   keepTemps = debug;
   writeProfileMajor(threads,world_rank,world_size, ctx_nzval_cnts, ctx_nzmids);
+
+  for(int i = 0; i<ctxcnt; i++){
+    if(ctx_nzval_cnts1[i] != ctx_nzval_cnts[i]) 
+      printf("%d: %ld != %ld\n", i, ctx_nzval_cnts1[i], ctx_nzval_cnts[i]);
+  }
   writeCCTMajor(ctx_nzval_cnts,ctx_nzmids, world_rank, world_size, threads);
 
 }
