@@ -427,7 +427,7 @@ initializeKernelCallBackInfo
   uint32_t context_id = opencl_cl_queue_map_entry_context_id_get(qe);
   uint32_t queue_id = opencl_cl_queue_map_entry_queue_id_get(qe);
 
-  ETMSG(OPENCL, "submit kernel to context %u queue %u\n", context_id, queue_id);
+  ETMSG(OPENCL, "submit kernel to context %" PRIu32 " queue %" PRIu32 "\n", context_id, queue_id);
 
   ker_info->details.context_id = context_id;
   ker_info->details.stream_id = queue_id;
