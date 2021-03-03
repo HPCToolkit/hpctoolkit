@@ -233,7 +233,6 @@ static __thread bool sanitizer_stop_flag = false;
 static __thread uint32_t sanitizer_thread_id_self = (1 << 30);
 static __thread uint32_t sanitizer_thread_id_local = 0;
 static __thread CUcontext sanitizer_thread_context = NULL;
-static __thread uint32_t sanitizer_thread_lock = 0;
 
 
 // Host buffers are per-thread
@@ -980,13 +979,7 @@ sanitizer_priority_stream_get
  CUcontext context
 )
 {
-  sanitizer_context_map_entry_t *entry = NULL;
-
-  if (sanitizer_thread_lock > 0) {
-    entry = sanitizer_context_map_init_nolock(context);
-  } else {
-    entry = sanitizer_context_map_init(context);
-  }
+  sanitizer_context_map_entry_t *entry = sanitizer_context_map_init(context);
 
   Sanitizer_StreamHandle priority_stream_handle =
     sanitizer_context_map_entry_priority_stream_handle_get(entry);
@@ -997,11 +990,7 @@ sanitizer_priority_stream_get
     CUstream priority_stream = sanitizer_context_map_entry_priority_stream_get(entry);
     HPCRUN_SANITIZER_CALL(sanitizerGetStreamHandle, (context, priority_stream, &priority_stream_handle)); 
 
-    if (sanitizer_thread_lock > 0) {
-      sanitizer_context_map_priority_stream_handle_update_nolock(context, priority_stream_handle);
-    } else {
-      sanitizer_context_map_priority_stream_handle_update(context, priority_stream_handle);
-    }
+    sanitizer_context_map_priority_stream_handle_update(context, priority_stream_handle);
   }
 
   return priority_stream_handle;
@@ -1014,13 +1003,7 @@ sanitizer_kernel_stream_get
  CUcontext context
 )
 {
-  sanitizer_context_map_entry_t *entry = NULL;
-
-  if (sanitizer_thread_lock > 0) {
-    entry = sanitizer_context_map_init_nolock(context);
-  } else {
-    entry = sanitizer_context_map_init(context);
-  }
+  sanitizer_context_map_entry_t *entry = sanitizer_context_map_init(context);
 
   Sanitizer_StreamHandle kernel_stream_handle =
     sanitizer_context_map_entry_kernel_stream_handle_get(entry);
@@ -1031,11 +1014,7 @@ sanitizer_kernel_stream_get
     CUstream kernel_stream = sanitizer_context_map_entry_kernel_stream_get(entry);
     HPCRUN_SANITIZER_CALL(sanitizerGetStreamHandle, (context, kernel_stream, &kernel_stream_handle)); 
 
-    if (sanitizer_thread_lock > 0) {
-      sanitizer_context_map_kernel_stream_handle_update_nolock(context, kernel_stream_handle);
-    } else {
-      sanitizer_context_map_kernel_stream_handle_update(context, kernel_stream_handle);
-    }
+    sanitizer_context_map_kernel_stream_handle_update(context, kernel_stream_handle);
   }
 
   return kernel_stream_handle;
@@ -1436,24 +1415,19 @@ sanitizer_subscribe_callback
     sanitizer_stop_flag_set();
   }
 
-  if (domain == SANITIZER_CB_DOMAIN_RUNTIME_API || domain == SANITIZER_CB_DOMAIN_DRIVER_API) {
+  if (domain == SANITIZER_CB_DOMAIN_DRIVER_API) {
     Sanitizer_CallbackData *cb = (Sanitizer_CallbackData *)cbdata;
     if (cb->callbackSite == SANITIZER_API_ENTER) {
-      if (sanitizer_thread_lock == 0) {
-        sanitizer_context_map_context_lock(cb->context);
-        sanitizer_thread_context = cb->context;
-      }
-      ++sanitizer_thread_lock;
       // Reserve for debug
-      //PRINT("Sanitizer-> Thread %u enter %s\n", sanitizer_thread_id_local, cb->functionName);
+      //PRINT("Sanitizer-> Thread %u enter context %p function %s\n", sanitizer_thread_id_local, cb->context, cb->functionName);
+      sanitizer_context_map_context_lock(cb->context, sanitizer_thread_id_local);
+      sanitizer_thread_context = cb->context;
     } else {
-      if (sanitizer_thread_lock == 1) {
-        sanitizer_context_map_context_unlock(cb->context);
-        sanitizer_thread_context = NULL;
-      }
-      --sanitizer_thread_lock;
       // Reserve for debug
-      //PRINT("Sanitizer-> Thread %u exit %s\n", sanitizer_thread_id_local, cb->functionName);
+      //PRINT("Sanitizer-> Thread %u exit context %p function %s\n", sanitizer_thread_id_local, cb->context, cb->functionName);
+      // Caution, do not use cb->context. When cuCtxGetCurrent is used, cb->context != sanitizer_thread_context
+      sanitizer_context_map_context_unlock(sanitizer_thread_context, sanitizer_thread_id_local);
+      sanitizer_thread_context = NULL;
     }
 
     return;
@@ -1833,6 +1807,12 @@ sanitizer_callbacks_unsubscribe()
   sanitizer_correlation_callback = 0;
 
   HPCRUN_SANITIZER_CALL(sanitizerUnsubscribe, (sanitizer_subscriber_handle));
+
+  HPCRUN_SANITIZER_CALL(sanitizerEnableDomain,
+    (0, sanitizer_subscriber_handle, SANITIZER_CB_DOMAIN_RUNTIME_API));
+
+  HPCRUN_SANITIZER_CALL(sanitizerEnableDomain,
+    (0, sanitizer_subscriber_handle, SANITIZER_CB_DOMAIN_DRIVER_API));
 
   HPCRUN_SANITIZER_CALL(sanitizerEnableDomain,
     (0, sanitizer_subscriber_handle, SANITIZER_CB_DOMAIN_RESOURCE));

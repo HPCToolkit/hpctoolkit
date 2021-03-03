@@ -73,14 +73,16 @@ sanitizer_context_map_analysis_function_update
 void
 sanitizer_context_map_context_lock
 (
- CUcontext context
+ CUcontext context,
+ int32_t thread_id
 );
 
 
 void
 sanitizer_context_map_context_unlock
 (
- CUcontext context
+ CUcontext context,
+ int32_t thread_id
 );
 
 

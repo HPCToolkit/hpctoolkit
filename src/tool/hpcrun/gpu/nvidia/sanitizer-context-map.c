@@ -31,6 +31,7 @@ struct sanitizer_context_map_entry_s {
   Sanitizer_StreamHandle kernel_stream_handle;
   sanitizer_stream_map_entry_t *streams;
   spinlock_t lock;
+  atomic_int lock_thread;
   gpu_patch_buffer_t *buffer_device;
   gpu_patch_buffer_t *buffer_addr_read_device;
   gpu_patch_buffer_t *buffer_addr_write_device;
@@ -62,8 +63,8 @@ sanitizer_context_map_entry_new(CUcontext context)
   e = (sanitizer_context_map_entry_t *)
     hpcrun_malloc(sizeof(sanitizer_context_map_entry_t));
   e->context = context;
-  e->priority_stream = cuda_priority_stream_create();
-  e->kernel_stream = cuda_stream_create();
+  e->priority_stream = NULL;
+  e->kernel_stream = NULL;
   e->priority_stream_handle = NULL;
   e->kernel_stream_handle = NULL;
   e->streams = NULL;
@@ -78,6 +79,8 @@ sanitizer_context_map_entry_new(CUcontext context)
   e->buffer_addr_read_reset = NULL;
   e->buffer_addr_write_reset = NULL;
   e->aux_addr_dict_reset = NULL;
+
+  atomic_store(&e->lock_thread, -1);
 
   spinlock_init(&(e->lock));
 
@@ -191,45 +194,42 @@ sanitizer_context_map_init(CUcontext context)
 }
 
 
-sanitizer_context_map_entry_t *
-sanitizer_context_map_init_nolock(CUcontext context)
-{
-  sanitizer_context_map_entry_t *result = sanitizer_context_map_init_internal(context);
-
-  return result;
-}
-
-
 void
-sanitizer_context_map_context_lock(CUcontext context)
+sanitizer_context_map_context_lock(CUcontext context, int32_t thread_id)
 {
   sanitizer_context_map_entry_t *entry = NULL;
 
   spinlock_lock(&sanitizer_context_map_lock);
 
-  entry = sanitizer_context_map_lookup_internal(context);
+  entry = sanitizer_context_map_init_internal(context);
 
   spinlock_unlock(&sanitizer_context_map_lock);
 
   if (entry != NULL) {
-    spinlock_lock(&entry->lock);
+    if (atomic_load(&entry->lock_thread) != thread_id) {
+      spinlock_lock(&entry->lock);
+      atomic_store(&entry->lock_thread, thread_id);
+    }
   }
 }
 
 
 void
-sanitizer_context_map_context_unlock(CUcontext context)
+sanitizer_context_map_context_unlock(CUcontext context, int32_t thread_id)
 {
   sanitizer_context_map_entry_t *entry = NULL;
 
   spinlock_lock(&sanitizer_context_map_lock);
 
-  entry = sanitizer_context_map_lookup_internal(context);
+  entry = sanitizer_context_map_init_internal(context);
 
   spinlock_unlock(&sanitizer_context_map_lock);
 
   if (entry != NULL) {
-    spinlock_unlock(&entry->lock);
+    if (atomic_load(&entry->lock_thread) == thread_id) {
+      atomic_store(&entry->lock_thread, -1);
+      spinlock_unlock(&entry->lock);
+    }
   }
 }
 
@@ -289,17 +289,6 @@ sanitizer_context_map_priority_stream_handle_update(CUcontext context, Sanitizer
 
 
 void
-sanitizer_context_map_priority_stream_handle_update_nolock(CUcontext context, Sanitizer_StreamHandle priority_stream_handle)
-{
-  sanitizer_context_map_entry_t *result = sanitizer_context_map_lookup_internal(context);
-
-  if (result->priority_stream_handle == NULL) {
-    result->priority_stream_handle = priority_stream_handle;
-  }
-}
-
-
-void
 sanitizer_context_map_kernel_stream_handle_update(CUcontext context, Sanitizer_StreamHandle kernel_stream_handle)
 {
   spinlock_lock(&sanitizer_context_map_lock);
@@ -311,17 +300,6 @@ sanitizer_context_map_kernel_stream_handle_update(CUcontext context, Sanitizer_S
   }
 
   spinlock_unlock(&sanitizer_context_map_lock);
-}
-
-
-void
-sanitizer_context_map_kernel_stream_handle_update_nolock(CUcontext context, Sanitizer_StreamHandle kernel_stream_handle)
-{
-  sanitizer_context_map_entry_t *result = sanitizer_context_map_lookup_internal(context);
-
-  if (result->kernel_stream_handle == NULL) {
-    result->kernel_stream_handle = kernel_stream_handle;
-  }
 }
 
 
@@ -505,6 +483,9 @@ sanitizer_context_map_entry_priority_stream_get
  sanitizer_context_map_entry_t *entry
 )
 {
+  if (entry->context != NULL && entry->priority_stream == NULL) {
+    entry->priority_stream = cuda_priority_stream_create();
+  }
   return entry->priority_stream;
 }
 
@@ -515,6 +496,9 @@ sanitizer_context_map_entry_kernel_stream_get
  sanitizer_context_map_entry_t *entry
 )
 {
+  if (entry->context != NULL && entry->kernel_stream == NULL) {
+    entry->kernel_stream = cuda_stream_create();
+  }
   return entry->kernel_stream;
 }
 
