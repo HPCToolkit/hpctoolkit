@@ -423,7 +423,7 @@ extern int
 hpcrun_fmt_metricDesc_fwrite(metric_desc_t* x, metric_aux_info_t *aux_info, FILE* outfs);
 
 extern int
-hpcrun_fmt_metricDesc_fprint(metric_desc_t* x, metric_aux_info_t *aux_info, FILE* outfs, const char* pre);
+hpcrun_fmt_metricDesc_fprint(metric_desc_t* x, metric_aux_info_t *aux_info, FILE* outfs, const char* pre, uint32_t id);
 
 extern void
 hpcrun_fmt_metricDesc_free(metric_desc_t* x, hpcfmt_free_fn dealloc);
