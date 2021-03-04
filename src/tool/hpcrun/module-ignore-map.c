@@ -108,7 +108,7 @@
 // where any GPU can indicate that its functions should be added to
 // the module ignore map when that type of GPU is being monitored.
 
-#define NUM_FNS 8
+#define NUM_FNS 10
 
 
 
@@ -135,7 +135,9 @@ static const char *IGNORE_FNS[NUM_FNS] = {
   "amd_dbgapi_initialize",     // amd debug library
   "hipKernelNameRefByPtr",     // amd hip runtime
   "hsa_queue_create",          // amd hsa runtime
-  "hpcrun_malloc"              // hpcrun library
+  "hpcrun_malloc",             // hpcrun library
+  "clIcdGetPlatformIDsKHR",    // libigdrcl.so(intel opencl)
+  "zeKernelCreate"             // libze_intel_gpu.so (intel L0) ISSUE: not getting ignored
 };
 static module_ignore_entry_t modules[NUM_FNS];
 static pfq_rwlock_t modules_lock;
