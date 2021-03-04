@@ -757,6 +757,8 @@ sanitizer_buffer_init
       HPCRUN_SANITIZER_CALL(sanitizerAlloc, (context, (void **)(&(gpu_patch_aux)), sizeof(gpu_patch_aux_address_dict_t)));
       HPCRUN_SANITIZER_CALL(sanitizerMemset, (gpu_patch_aux, 0, sizeof(gpu_patch_aux_address_dict_t), priority_stream));
 
+      PRINT("Sanitizer-> Allocate gpu_patch_aux %p, size %zu\n", gpu_patch_aux, sizeof(gpu_patch_aux_address_dict_t));
+
       // Update map
       sanitizer_gpu_patch_buffer_reset->aux = gpu_patch_aux;
       sanitizer_context_map_aux_addr_dict_device_update(context, gpu_patch_aux);
@@ -1384,10 +1386,6 @@ sanitizer_kernel_launch_callback
   HPCRUN_SANITIZER_CALL(sanitizerSetCallbackData, (function, sanitizer_gpu_patch_buffer_device));
 
   HPCRUN_SANITIZER_CALL(sanitizerStreamSynchronize, (priority_stream));
-
-  if (sanitizer_gpu_analysis_blocks != 0 && kernel_sampling) {
-    sanitizer_kernel_launch(context);
-  }
 }
 
 //-------------------------------------------------------------
@@ -1615,6 +1613,10 @@ sanitizer_subscribe_callback
 
       sanitizer_kernel_launch_callback(correlation_id, ld->context, priority_stream, ld->function,
         grid_size, block_size, kernel_sampling);
+    } else if (cbid == SANITIZER_CBID_LAUNCH_AFTER_SYSCALL_SETUP) {
+      if (sanitizer_gpu_analysis_blocks != 0 && kernel_sampling) {
+        sanitizer_kernel_launch(ld->context);
+      }
     } else if (cbid == SANITIZER_CBID_LAUNCH_END) {
       if (kernel_sampling) {
         PRINT("Sanitizer-> Sync kernel %s\n", ld->functionName);
