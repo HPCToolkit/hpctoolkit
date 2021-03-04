@@ -1152,7 +1152,7 @@ hpcrun_clCreateCommandQueueWithProperties
 		opencl_queue_prologue(queue);
 	}
 
-  if (optimization_check) {
+  if (optimization_check && *errcode_ret == CL_SUCCESS) {
     recordQueueContext(queue, context);
   }
   return queue;
@@ -1199,10 +1199,6 @@ hpcrun_clEnqueueNDRangeKernel
   cl_event *eventp = NULL;
   SET_EVENT_POINTER(eventp, event, kernel_info)
 
-  if (optimization_check) {
-    isKernelSubmittedToMultipleQueues(ocl_kernel, command_queue);
-    areKernelParamsAliased(ocl_kernel);
-  }
   cl_int return_status =
             HPCRUN_OPENCL_CALL(clEnqueueNDRangeKernel, (command_queue, ocl_kernel, work_dim,
                                 global_work_offset, global_work_size, local_work_size,
@@ -1211,10 +1207,6 @@ hpcrun_clEnqueueNDRangeKernel
     isKernelSubmittedToMultipleQueues(ocl_kernel, command_queue);
     areKernelParamsAliased(ocl_kernel);
   }
-
-	if(is_opencl_blame_shifting_enabled()) {
-		opencl_kernel_prologue(*eventp);
-	}
 
 	if(is_opencl_blame_shifting_enabled()) {
 		opencl_kernel_prologue(*eventp);
@@ -1252,10 +1244,6 @@ hpcrun_clEnqueueTask
   cl_event *eventp = NULL;
   SET_EVENT_POINTER(eventp, event, kernel_info);
 
-  if (optimization_check) {
-    isKernelSubmittedToMultipleQueues(kernel, command_queue);
-    areKernelParamsAliased(kernel);
-  }
   cl_int return_status =
             HPCRUN_OPENCL_CALL(clEnqueueTask, (command_queue, kernel,
                                 num_events_in_wait_list, event_wait_list, eventp));
@@ -1299,9 +1287,6 @@ hpcrun_clEnqueueReadBuffer
   cl_event *eventp = NULL;
   SET_EVENT_POINTER(eventp, event, cpy_info);
 
-  if (optimization_check) {
-    recordD2HCall(buffer);
-  }
   cl_int return_status =
     HPCRUN_OPENCL_CALL(clEnqueueReadBuffer,
       (command_queue, buffer, blocking_read, offset,
@@ -1342,9 +1327,6 @@ hpcrun_clEnqueueWriteBuffer
   opencl_object_t *cpy_info = opencl_malloc_kind(GPU_ACTIVITY_MEMCPY);
   INITIALIZE_CALLBACK_INFO(initializeMemcpyCallBackInfo, cpy_info, (cpy_info, GPU_MEMCPY_H2D, cb, command_queue))
 
-  if (optimization_check) {
-    recordH2DCall(buffer);
-  }
   opencl_subscriber_callback(cpy_info);
 
   cl_event *eventp = NULL;
@@ -1549,10 +1531,10 @@ hpcrun_clSetKernelArg
  const void* arg_value
 )
 {
-  if (optimization_check) {
+  cl_int status = HPCRUN_OPENCL_CALL(clSetKernelArg, (kernel, arg_index, arg_size, arg_value));
+  if (optimization_check && status == CL_SUCCESS) {
     recordKernelParams(kernel, arg_value, arg_size);
   }
-  cl_int status = HPCRUN_OPENCL_CALL(clSetKernelArg, (kernel, arg_index, arg_size, arg_value));
   return status;
 }
 
@@ -1563,10 +1545,11 @@ hpcrun_clReleaseMemObject
  cl_mem mem
 )
 {
-  if (optimization_check) {
+  cl_int status = HPCRUN_OPENCL_CALL(clReleaseMemObject, (mem));
+  if (optimization_check && status == CL_SUCCESS) {
     clearBufferEntry(mem);
   }
-  return HPCRUN_OPENCL_CALL(clReleaseMemObject, (mem));
+  return status;
 }
 
 
@@ -1579,7 +1562,7 @@ hpcrun_clReleaseKernel
   ETMSG(OPENCL, "clReleaseKernel called for kernel: %"PRIu64 "", (uint64_t)kernel);
 
   cl_int status = HPCRUN_OPENCL_CALL(clReleaseKernel, (kernel));
-  if (optimization_check) {
+  if (optimization_check && status == CL_SUCCESS) {
     clearKernelQueues(kernel);
     clearKernelParams(kernel);
   }
@@ -1777,5 +1760,6 @@ opencl_api_process_finalize
     isSingleDeviceUsed();
     areAllDevicesUsed();
   }
+  gpu_operation_multiplexer_fini();
 }
 
