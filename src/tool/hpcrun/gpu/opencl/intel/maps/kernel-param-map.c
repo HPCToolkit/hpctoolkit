@@ -238,11 +238,17 @@ kernel_param_map_delete
   spinlock_lock(&kernel_param_map_lock);
   
   kernel_param_map_entry_t *node = st_delete(&map_root, kernel_id);
+  if (!node) {
+    // This kernel could have no params or clReleaseKernel has been called more than once
+    return;
+  }
   // clear all nodes inside node->kp_list
   kp_node_t *kn = node->kp_list;
+  kp_node_t *next;
   while (kn) {
+    next = kn->next;
     kp_node_free_helper(&kp_node_free_list, kn);
-    kn = kn->next;
+    kn = next;
   }
   st_free(&free_list, node);
 

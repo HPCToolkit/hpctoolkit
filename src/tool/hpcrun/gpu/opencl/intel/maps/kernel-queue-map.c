@@ -216,6 +216,7 @@ kernel_queue_map_insert
   if (!entry) {
     entry = kernel_queue_map_entry_new(kernel_id);
     st_insert(&map_root, entry);
+    entry->qc_list = NULL;
   }
 
   qc_node_t *node = qc_node_alloc_helper(&qc_node_free_list);
@@ -241,9 +242,11 @@ kernel_queue_map_delete
   kernel_queue_map_entry_t *node = st_delete(&map_root, kernel_id);
   // clear all nodes inside node->qc_list
   qc_node_t *qn = node->qc_list;
+  qc_node_t *next;
   while (qn) {
+    next = qn->next;
     qc_node_free_helper(&qc_node_free_list, qn);
-    qn = qn->next;
+    qn = next;
   }
   st_free(&free_list, node);
 

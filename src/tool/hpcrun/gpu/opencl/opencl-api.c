@@ -983,13 +983,13 @@ hpcrun_clCreateCommandQueue
   cl_command_queue queue = HPCRUN_OPENCL_CALL(clCreateCommandQueue, (context, device,
         properties,errcode_ret));
 
-  if (optimization_check) {
+  if (optimization_check && *errcode_ret == CL_SUCCESS) {
     isQueueInInOrderExecutionMode(&properties);
   }
 
   uint32_t context_id = opencl_cl_context_map_update((uint64_t)context);
   opencl_cl_queue_map_update((uint64_t)queue, context_id);
-  if (optimization_check) {
+  if (optimization_check && *errcode_ret == CL_SUCCESS) {
     recordQueueContext(queue, context);
   }
 
@@ -1046,7 +1046,7 @@ hpcrun_clCreateCommandQueueWithProperties
   }
   cl_command_queue queue = HPCRUN_OPENCL_CALL(clCreateCommandQueueWithProperties, (context, device, queue_properties, errcode_ret));
 
-  if (optimization_check) {
+  if (optimization_check && *errcode_ret == CL_SUCCESS) {
     isQueueInInOrderExecutionMode(properties);
   }
 
@@ -1057,7 +1057,7 @@ hpcrun_clCreateCommandQueueWithProperties
 
   uint32_t context_id = opencl_cl_context_map_update((uint64_t)context);
   opencl_cl_queue_map_update((uint64_t)queue, context_id);
-  if (optimization_check) {
+  if (optimization_check && *errcode_ret == CL_SUCCESS) {
     recordQueueContext(queue, context);
   }
   return queue;
@@ -1086,14 +1086,14 @@ hpcrun_clEnqueueNDRangeKernel
   cl_event *eventp = NULL;
   SET_EVENT_POINTER(eventp, event, kernel_info)
 
-  if (optimization_check) {
-    isKernelSubmittedToMultipleQueues(ocl_kernel, command_queue);
-    areKernelParamsAliased(ocl_kernel);
-  }
   cl_int return_status =
             HPCRUN_OPENCL_CALL(clEnqueueNDRangeKernel, (command_queue, ocl_kernel, work_dim,
                                 global_work_offset, global_work_size, local_work_size,
                                 num_events_in_wait_list, event_wait_list, eventp));
+  if (optimization_check && return_status == CL_SUCCESS) {
+    isKernelSubmittedToMultipleQueues(ocl_kernel, command_queue);
+    areKernelParamsAliased(ocl_kernel);
+  }
 
   ETMSG(OPENCL, "Registering callback for kind: Kernel. "
                 "Correlation id: %"PRIu64 "", kernel_info->details.ker_cb.correlation_id);
@@ -1125,13 +1125,13 @@ hpcrun_clEnqueueTask
   cl_event *eventp = NULL;
   SET_EVENT_POINTER(eventp, event, kernel_info);
 
-  if (optimization_check) {
-    isKernelSubmittedToMultipleQueues(kernel, command_queue);
-    areKernelParamsAliased(kernel);
-  }
   cl_int return_status =
             HPCRUN_OPENCL_CALL(clEnqueueTask, (command_queue, kernel,
                                 num_events_in_wait_list, event_wait_list, eventp));
+  if (optimization_check && return_status == CL_SUCCESS) {
+    isKernelSubmittedToMultipleQueues(kernel, command_queue);
+    areKernelParamsAliased(kernel);
+  }
 
   ETMSG(OPENCL, "Registering callback for kind: Kernel. "
                 "Correlation id: %"PRIu64 "", kernel_info->details.ker_cb.correlation_id);
@@ -1168,13 +1168,13 @@ hpcrun_clEnqueueReadBuffer
   cl_event *eventp = NULL;
   SET_EVENT_POINTER(eventp, event, cpy_info);
 
-  if (optimization_check) {
-    recordD2HCall(buffer);
-  }
   cl_int return_status =
     HPCRUN_OPENCL_CALL(clEnqueueReadBuffer,
       (command_queue, buffer, blocking_read, offset,
        cb, ptr, num_events_in_wait_list, event_wait_list, eventp));
+  if (optimization_check && return_status == CL_SUCCESS) {
+    recordD2HCall(buffer);
+  }
 
   ETMSG(OPENCL, "Registering callback for kind MEMCPY, type: D2H. "
                 "Correlation id: %"PRIu64 "", cpy_info->details.cpy_cb.correlation_id);
@@ -1208,9 +1208,6 @@ hpcrun_clEnqueueWriteBuffer
   opencl_object_t *cpy_info = opencl_malloc_kind(GPU_ACTIVITY_MEMCPY);
   INITIALIZE_CALLBACK_INFO(initializeMemcpyCallBackInfo, cpy_info, (cpy_info, GPU_MEMCPY_H2D, cb, command_queue))
 
-  if (optimization_check) {
-    recordH2DCall(buffer);
-  }
   opencl_subscriber_callback(cpy_info);
 
   cl_event *eventp = NULL;
@@ -1220,6 +1217,9 @@ hpcrun_clEnqueueWriteBuffer
   HPCRUN_OPENCL_CALL(clEnqueueWriteBuffer,
                      (command_queue, buffer, blocking_write, offset, cb, ptr,
                           num_events_in_wait_list, event_wait_list, eventp));
+  if (optimization_check && return_status == CL_SUCCESS) {
+    recordH2DCall(buffer);
+  }
 
   ETMSG(OPENCL, "Registering callback for kind MEMCPY, type: H2D. "
                 "Correlation id: %"PRIu64 "", cpy_info->details.cpy_cb.correlation_id);
@@ -1329,10 +1329,10 @@ hpcrun_clSetKernelArg
  const void* arg_value
 )
 {
-  if (optimization_check) {
+  cl_int status = HPCRUN_OPENCL_CALL(clSetKernelArg, (kernel, arg_index, arg_size, arg_value));
+  if (optimization_check && status == CL_SUCCESS) {
     recordKernelParams(kernel, arg_value, arg_size);
   }
-  cl_int status = HPCRUN_OPENCL_CALL(clSetKernelArg, (kernel, arg_index, arg_size, arg_value));
   return status;
 }
 
@@ -1343,10 +1343,11 @@ hpcrun_clReleaseMemObject
  cl_mem mem
 )
 {
-  if (optimization_check) {
+  cl_int status = HPCRUN_OPENCL_CALL(clReleaseMemObject, (mem));
+  if (optimization_check && status == CL_SUCCESS) {
     clearBufferEntry(mem);
   }
-  return HPCRUN_OPENCL_CALL(clReleaseMemObject, (mem));
+  return status;
 }
 
 
@@ -1359,7 +1360,7 @@ hpcrun_clReleaseKernel
   ETMSG(OPENCL, "clReleaseKernel called for kernel: %"PRIu64 "", (uint64_t)kernel);
 
   cl_int status = HPCRUN_OPENCL_CALL(clReleaseKernel, (kernel));
-  if (optimization_check) {
+  if (optimization_check && status == CL_SUCCESS) {
     clearKernelQueues(kernel);
     clearKernelParams(kernel);
   }
@@ -1376,7 +1377,7 @@ hpcrun_clReleaseCommandQueue
   ETMSG(OPENCL, "clReleaseCommandQueue called");
   cl_int status = HPCRUN_OPENCL_CALL(clReleaseCommandQueue, (command_queue));
 
-  if (optimization_check) {
+  if (optimization_check && status == CL_SUCCESS) {
     clearQueueContext(command_queue);
   }
   return status;
@@ -1444,11 +1445,12 @@ opencl_api_process_finalize
  int how
 )
 {
-  gpu_operation_multiplexer_fini();
   if (optimization_check) { // is this the right to do final optimization checks
     // we cannot get cct nodes using gpu_application_thread_correlation_callback inside fini-thread callback
     // monitor_block_shootdown() inside libmonitor blocks this call
     isSingleDeviceUsed();
     areAllDevicesUsed();
   }
+  gpu_operation_multiplexer_fini();
 }
+
