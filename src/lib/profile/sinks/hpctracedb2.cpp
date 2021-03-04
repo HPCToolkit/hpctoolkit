@@ -87,32 +87,35 @@ HPCTraceDB2::udThread::udThread(const Thread& t, HPCTraceDB2& tdb)
 void HPCTraceDB2::notifyWavefront(DataClass d){
   if(!d.hasThreads()) return;
   auto wd_sem = threadsReady.signal();
-
-  //initialize the hdr to write
-  tracedb_hdr_t hdr;
-
-  //assign value to trace_hdrs_size
-  uint32_t num_traces = getTotalNumTraces();
-  trace_hdrs_size = num_traces * trace_hdr_SIZE;
-  hdr.num_trace = num_traces;
-  hdr.trace_hdr_sec_size = trace_hdrs_size;
-
-  //calculate the offsets for later stored in start and end
-  std::vector<uint64_t> trace_offs = calcStartEnd();
-  
-  //assign the values of the hdrs
-  assignHdrs(trace_offs);
-
-  //open the trace.db for writing, and write magic string, version number and number of tracelines
   std::FILE* trace_f = nullptr;
-  if(mpi::World::rank() == 0) {
-    trace_f = std::fopen(trace_p.c_str(), "wb");
-    if(!trace_f) util::log::fatal() << "Unable to open trace.db file for output!";
-    tracedb_hdr_fwrite(&hdr,trace_f);
-  }
+  {
+    auto mpiSem = src.enterOrderedWavefront();
 
-  // Ensure the file is truncated by rank 0 before proceeding.
-  mpi::barrier();
+    //initialize the hdr to write
+    tracedb_hdr_t hdr;
+
+    //assign value to trace_hdrs_size
+    uint32_t num_traces = getTotalNumTraces();
+    trace_hdrs_size = num_traces * trace_hdr_SIZE;
+    hdr.num_trace = num_traces;
+    hdr.trace_hdr_sec_size = trace_hdrs_size;
+
+    //calculate the offsets for later stored in start and end
+    std::vector<uint64_t> trace_offs = calcStartEnd();
+
+    //assign the values of the hdrs
+    assignHdrs(trace_offs);
+
+    //open the trace.db for writing, and write magic string, version number and number of tracelines
+    if(mpi::World::rank() == 0) {
+      trace_f = std::fopen(trace_p.c_str(), "wb");
+      if(!trace_f) util::log::fatal() << "Unable to open trace.db file for output!";
+      tracedb_hdr_fwrite(&hdr,trace_f);
+    }
+
+    // Ensure the file is truncated by rank 0 before proceeding.
+    mpi::barrier();
+  }
 
   // Write out the headers for threads that have no timepoints
   for(const auto& t : src.threads().iterate()) {
@@ -201,6 +204,8 @@ void HPCTraceDB2::notifyThreadFinal(const Thread::Temporary& tt) {
 void HPCTraceDB2::notifyPipeline() noexcept {
   auto& ss = src.structs();
   uds.thread = ss.thread.add<udThread>(std::ref(*this));
+  src.registerOrderedWavefront();
+  src.registerOrderedWrite();
 }
 
 bool HPCTraceDB2::seen(const Context& c) {
@@ -242,7 +247,10 @@ std::string HPCTraceDB2::exmlTag() {
 
 void HPCTraceDB2::write() {
   //make sure all processes finished
-  mpi::barrier();
+  {
+    auto mpiSem = src.enterOrderedWrite();
+    mpi::barrier();
+  }
 
   //write the footer
   if(mpi::World::rank() == 0) {
