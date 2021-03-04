@@ -234,6 +234,31 @@ hpcrun_threaded_data(void)
 }
 
 
+void
+hpcrun_thread_init_mem_pool_once(void){
+  static bool is_initialized = false;
+
+  if (is_initialized == false){
+    hpcrun_mmap_init();
+
+    // ----------------------------------------
+    // call thread manager to get a thread data. If there is unused thread data,
+    //  we can recycle it, otherwise we need to allocate a new one.
+    // If we allocate a new one, we need to initialize the data and trace file.
+    // ----------------------------------------
+
+    int id = 0;
+    thread_data_t* td = NULL;
+    bool has_trace = false;
+    bool demand_new_thread = true;
+
+    hpcrun_threadMgr_data_get_safe(id, NULL, &td, has_trace, demand_new_thread);
+    hpcrun_set_thread_data(td);
+    is_initialized = true;
+  }
+}
+
+
 //***************************************************************************
 // 
 //***************************************************************************
