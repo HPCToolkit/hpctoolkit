@@ -67,6 +67,9 @@ std::unique_ptr<ProfileSource> ProfileSource::create_for(const stdshim::filesyst
 }
 
 bool ProfileSource::valid() const noexcept { return true; }
+std::pair<bool, bool> ProfileSource::requiresOrderedRegions() const noexcept {
+  return {false, false};
+}
 
 void ProfileSource::bindPipeline(ProfilePipeline::Source&& se) noexcept {
   sink = std::move(se);

@@ -63,8 +63,8 @@
 
 class SparseDB : public hpctoolkit::ProfileSink {
 public:
-  SparseDB(const hpctoolkit::stdshim::filesystem::path&);
-  SparseDB(hpctoolkit::stdshim::filesystem::path&&);
+  SparseDB(const hpctoolkit::stdshim::filesystem::path&, int threads);
+  SparseDB(hpctoolkit::stdshim::filesystem::path&&, int threads);
   ~SparseDB() = default;
 
   void write() override;
@@ -84,6 +84,9 @@ public:
     return ExtensionClass::identifier + ExtensionClass::mscopeIdentifiers;
   }
 
+  hpctoolkit::util::WorkshareResult help() override;
+  void notifyPipeline() noexcept override;
+
   void notifyWavefront(hpctoolkit::DataClass) noexcept override;
   void notifyThreadFinal(const hpctoolkit::Thread::Temporary&) override;
 
@@ -94,7 +97,9 @@ public:
   void writeCCTMajor(const std::vector<uint64_t>& cct_local_sizes, 
                      std::vector<std::set<uint16_t>>& cct_nzmids,
                      const int world_rank, const int world_size,const int threads);
-  
+  void writeCCTMajor1();
+
+
   void merge(int threads, bool debug);
 
   //local exscan over a vector of T, value after exscan will be stored in the original vector
@@ -135,7 +140,18 @@ private:
 
   hpctoolkit::util::locked_unordered_map<const hpctoolkit::Thread*,
     hpctoolkit::stdshim::filesystem::path> outputs;
+
+  std::mutex outputs_l;
+  std::vector<pms_profile_info_t> prof_infos;
+  size_t cur_position; //next available starting position for a profile in buffer
+  std::vector<std::vector<char>> obuffers; //profiles in binary form waiting to be written
+  int cur_obuf_idx;
+  std::optional<hpctoolkit::util::File> pmf;
+  uint64_t fpos;
+  MPI_Win win;
+
   std::atomic<std::size_t> outputCnt;
+  int team_size;
   hpctoolkit::stdshim::filesystem::path summaryOut;
   std::vector<std::pair<const uint32_t,
     std::string>> sparseInputs;
@@ -147,7 +163,7 @@ private:
   //***************************************************************************
   #define CTX_VEC_IDX(c) c
   #define CTXID(c)       c
-  #define MULTIPLE_8(v) (v + 7) & ~7
+  #define MULTIPLE_8(v) ((v + 7) & ~7)
 
 
   //***************************************************************************
@@ -168,6 +184,28 @@ private:
   std::vector<uint64_t> prof_offsets;
 
   std::vector<std::pair<uint32_t, uint64_t>> rank_idx_ptr_pairs;
+  std::vector<uint64_t> id_tuple_ptrs;
+  uint32_t min_prof_info_idx;
+  std::vector<std::vector<uint32_t>> buffered_prof_idxs;
+
+  hpctoolkit::util::ParallelForEach<pms_profile_info_t> parForPi;
+
+  //help collect cct major data 
+  std::vector<uint64_t> ctx_nzval_cnts1;
+  std::vector<std::set<uint16_t>> ctx_nzmids1;
+  class udContext {
+  public:
+    udContext(const hpctoolkit::Context&, SparseDB&) : cnt(0) {};
+    ~udContext() = default;
+
+    std::atomic<uint64_t> cnt;
+    std::vector<std::set<uint16_t>> nzmids; 
+  };
+
+  struct{
+    hpctoolkit::Context::ud_t::typed_member_t<udContext> context;
+    const auto& operator()(hpctoolkit::Context::ud_t&) const noexcept { return context; }
+  } ud;
 
 
 
@@ -232,6 +270,8 @@ private:
                         const hpctoolkit::util::File& fh);
 
   //all work related to IdTuples Section, 
+  void workIdTuplesSection1(const int total_num_prof);
+
   //other sections only need the vector of prof_info_idx and id_tuple_ptr pairs
   void workIdTuplesSection(const int world_rank, const int world_size,
                            const int threads, const int num_prof,
@@ -241,6 +281,16 @@ private:
   //---------------------------------------------------------------------------
   // get profile's real data (bytes)
   //---------------------------------------------------------------------------
+  #define mode_reg_thr 0
+  #define mode_wrt_nroot 1
+  #define mode_wrt_root 2
+
+  std::vector<char> profBytes(hpcrun_fmt_sparse_metrics_t* sm);
+
+  uint64_t writeProf(const std::vector<char>& prof_bytes, uint32_t prof_info_idx, int mode); // return relative offset
+
+  uint64_t filePosFetchOp(uint64_t val);
+
   void updateCtxMids(const char* input, const uint64_t ctx_nzval_cnt, std::set<uint16_t>& ctx_nzmids);
 
   void interpretOneCtxValCntMids(const char* val_cnt_input, 
@@ -256,6 +306,8 @@ private:
   //---------------------------------------------------------------------------
   // write profiles 
   //---------------------------------------------------------------------------
+  void handleItemPi(pms_profile_info_t& pi);
+  void writeProfInfos();
 
   std::vector<char> profInfoBytes(const std::vector<char>& partial_info_bytes, 
                                   const uint64_t id_tuple_ptr, const uint64_t metadata_ptr,

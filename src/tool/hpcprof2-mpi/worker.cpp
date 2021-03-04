@@ -121,7 +121,11 @@ int rankN(ProfArgs&& args) {
       ThreadIDUniquer(std::size_t& t) : threadIdOffset(t) {};
       ExtensionClass requires() const noexcept override { return {}; }
       DataClass accepts() const noexcept override { return data::threads; }
+      void notifyPipeline() noexcept override {
+        src.registerOrderedWrite();
+      }
       void write() override {
+        auto mpiSem = src.enterOrderedWrite();
         threadIdOffset = mpi::exscan(src.threads().size(), mpi::Op::sum()).value();
       }
       std::size_t& threadIdOffset;
@@ -176,15 +180,13 @@ int rankN(ProfArgs&& args) {
     // ready to accept it.
     MetricReceiver::append(pipelineB2, tree, cmap, stash);
 
-    ProfilePipeline::WavefrontOrdering mpiDep;
-
     // We only emit our part of the MetricDB and TraceDB.
     std::unique_ptr<SparseDB> sdb;
     switch(args.format) {
     case ProfArgs::Format::sparse:
       if(args.include_traces)
-        pipelineB2 << make_unique_x<sinks::HPCTraceDB2>(args.output) >> mpiDep;      
-      pipelineB2 << *(sdb = make_unique_x<SparseDB>(args.output)) << mpiDep;
+        pipelineB2 << make_unique_x<sinks::HPCTraceDB2>(args.output);
+      pipelineB2 << *(sdb = make_unique_x<SparseDB>(args.output, args.threads));
       break;
     }
 

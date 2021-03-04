@@ -119,17 +119,16 @@ int rank0(ProfArgs&& args) {
     DataClass accepts() const noexcept override { return DataClass::threads; }
     ExtensionClass requires() const noexcept override { return {}; }
     DataClass wavefronts() const noexcept override { return DataClass::threads; }
+    void notifyPipeline() noexcept override {
+      src.registerOrderedWavefront();
+    }
     void notifyWavefront(DataClass wave) override {
       if(!wave.hasThreads()) return;
+      auto mpiSem = src.enterOrderedWavefront();
       mpi::exscan(src.threads().size(), mpi::Op::sum());
     }
   } tiduniquer;
   pipelineB << tiduniquer;
-
-  // MPI requires a very strict order to be followed for its collectives.
-  // So we serialize most of the Sinks. Its not ideal but its a flaw in MPI's design.
-  ProfilePipeline::WavefrontOrdering mpiDep;
-  pipelineB >> mpiDep;
 
   // No-op Source to detect whether the Pipeline requires timepoints
   // It should be args.include_traces, but you can never be too certain
@@ -144,13 +143,18 @@ int rank0(ProfArgs&& args) {
   // When everything is ready, ship off the block to the workers.
   struct Sender : public IdPacker {
     Sender(Detector& d) : detector(d) {};
+    void notifyPipeline() noexcept override {
+      IdPacker::notifyPipeline();
+      src.registerOrderedWavefront();
+    }
     void notifyPacked(std::vector<uint8_t>&& block) override {
+      auto mpiSem = src.enterOrderedWavefront();
       mpi::bcast(std::move(block), 0);
       mpi::bcast((uint8_t)(detector.needsTimepoints() ? 1 : 0), 0);
     }
     Detector& detector;
   } spacker(detector);
-  pipelineB << spacker << mpiDep >> mpiDep;
+  pipelineB << spacker;
 
   // For unpacking metrics, we need to be able to map the IDs back to their
   // Contexts. This does the magic for us.
@@ -169,11 +173,11 @@ int rank0(ProfArgs&& args) {
     std::unique_ptr<sinks::HPCTraceDB2> tdb;
     if(args.include_traces)
       tdb = make_unique_x<sinks::HPCTraceDB2>(args.output);
-    sdb = make_unique_x<SparseDB>(args.output);
+    sdb = make_unique_x<SparseDB>(args.output, args.threads);
     auto exml = make_unique_x<sinks::ExperimentXML4>(args.output, args.include_sources,
                                                      tdb.get());
-    pipelineB << std::move(tdb) << mpiDep >> mpiDep << std::move(exml);
-    if(sdb) pipelineB << *sdb << mpiDep;
+    pipelineB << std::move(tdb) << std::move(exml);
+    if(sdb) pipelineB << *sdb;
 
     // ExperimentXML doesn't support instruction-level metrics, so we need a
     // line-merging transformer. Since this only changes the Scope, we don't
