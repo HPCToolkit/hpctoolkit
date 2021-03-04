@@ -1047,10 +1047,6 @@ sanitizer_kernel_launch
 
   // Launch analysis function
   if (analysis_function != NULL) {
-    sanitizer_gpu_patch_buffer_device = sanitizer_context_map_entry_buffer_device_get(entry);
-    sanitizer_gpu_patch_buffer_addr_read_device = sanitizer_context_map_entry_buffer_addr_read_device_get(entry);
-    sanitizer_gpu_patch_buffer_addr_write_device = sanitizer_context_map_entry_buffer_addr_write_device_get(entry);
-
     void *args[] = { (void *)&sanitizer_gpu_patch_buffer_device, (void *)&sanitizer_gpu_patch_buffer_addr_read_device,
       (void *)&sanitizer_gpu_patch_buffer_addr_write_device };
 

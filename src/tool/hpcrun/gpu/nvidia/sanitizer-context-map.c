@@ -483,8 +483,10 @@ sanitizer_context_map_entry_priority_stream_get
  sanitizer_context_map_entry_t *entry
 )
 {
-  if (entry->context != NULL && entry->priority_stream == NULL) {
+  if (entry->priority_stream == NULL) {
+    spinlock_lock(&sanitizer_context_map_lock);
     entry->priority_stream = cuda_priority_stream_create();
+    spinlock_unlock(&sanitizer_context_map_lock);
   }
   return entry->priority_stream;
 }
@@ -496,8 +498,10 @@ sanitizer_context_map_entry_kernel_stream_get
  sanitizer_context_map_entry_t *entry
 )
 {
-  if (entry->context != NULL && entry->kernel_stream == NULL) {
+  if (entry->kernel_stream == NULL) {
+    spinlock_lock(&sanitizer_context_map_lock);
     entry->kernel_stream = cuda_stream_create();
+    spinlock_unlock(&sanitizer_context_map_lock);
   }
   return entry->kernel_stream;
 }
