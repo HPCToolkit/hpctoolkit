@@ -158,8 +158,10 @@ static const int DEFAULT_MEM_VIEWS = 30;
 static const int DEFAULT_KERNEL_SAMPLING_FREQUENCY = 1;
 // 0: cpu analysis
 static const int DEFAULT_GPU_ANALYSIS_BLOCKS = 0;
-// 1: trace read
-static const int DEFAULT_ANALYSIS_TRACE_READ_IGNORE = 0;
+// 0: trace read
+static const int DEFAULT_READ_TRACE_IGNORE = 0;
+// 0: no hashing
+static const int DEFAULT_DATA_FLOW_HASH = 0;
 
 //******************************************************************************
 // constants
@@ -503,7 +505,9 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     int gpu_analysis_blocks = control_knob_value_get_int(HPCRUN_SANITIZER_GPU_ANALYSIS_BLOCKS);
 
-    int analysis_trace_read_ignore = control_knob_value_get_int(HPCRUN_SANITIZER_ANALYSIS_TRACE_READ_IGNORE);
+    int read_trace_ignore = control_knob_value_get_int(HPCRUN_SANITIZER_READ_TRACE_IGNORE);
+
+    int data_flow_hash = control_knob_value_get_int(HPCRUN_SANITIZER_DATA_FLOW_HASH);
 
     kernel_sampling_frequency = control_knob_value_get_int(HPCRUN_SANITIZER_KERNEL_SAMPLING_FREQUENCY);
 
@@ -541,8 +545,12 @@ METHOD_FN(process_event_list, int lush_metrics)
       gpu_analysis_blocks = DEFAULT_GPU_ANALYSIS_BLOCKS;
     }
 
-    if (analysis_trace_read_ignore == 0) {
-      analysis_trace_read_ignore = DEFAULT_ANALYSIS_TRACE_READ_IGNORE;
+    if (read_trace_ignore == 0) {
+      read_trace_ignore = DEFAULT_READ_TRACE_IGNORE;
+    }
+
+    if (data_flow_hash == 0) {
+      data_flow_hash = DEFAULT_DATA_FLOW_HASH;
     }
 
     PRINT("gpu_patch_record_num %d\n", gpu_patch_record_num);
@@ -564,7 +572,9 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     sanitizer_gpu_analysis_config(gpu_analysis_blocks);
 
-    sanitizer_analysis_trace_read_ignore_config(analysis_trace_read_ignore);
+    sanitizer_read_trace_ignore_config(read_trace_ignore);
+
+    sanitizer_data_flow_hash_config(data_flow_hash);
 
     // Init random number generator
     srand(time(0));

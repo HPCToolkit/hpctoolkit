@@ -227,7 +227,8 @@ static int sanitizer_gpu_analysis_record_num = 0;
 static size_t sanitizer_gpu_analysis_record_size = 0;
 static uint32_t sanitizer_gpu_analysis_blocks = 0;
 static uint32_t sanitizer_gpu_analysis_type = GPU_PATCH_TYPE_ADDRESS_ANALYSIS;
-static bool sanitizer_analysis_trace_read_ignore = false;
+static bool sanitizer_read_trace_ignore = false;
+static bool sanitizer_data_flow_hash = false;
 
 static __thread bool sanitizer_stop_flag = false;
 static __thread uint32_t sanitizer_thread_id_self = (1 << 30);
@@ -750,7 +751,7 @@ sanitizer_buffer_init
       sanitizer_gpu_patch_buffer_reset->flags |= GPU_PATCH_ANALYSIS;
     }
 
-    if (sanitizer_analysis_trace_read_ignore) {
+    if (sanitizer_read_trace_ignore) {
       void *gpu_patch_aux = NULL;
       // Use a dict to filter read trace
       HPCRUN_SANITIZER_CALL(sanitizerAlloc, (context, (void **)(&(gpu_patch_aux)), sizeof(gpu_patch_aux_address_dict_t)));
@@ -1367,7 +1368,7 @@ sanitizer_kernel_launch_callback
         sanitizer_gpu_patch_buffer_addr_write_reset, sizeof(gpu_patch_buffer_t), priority_stream));
   }
 
-  if (sanitizer_analysis_trace_read_ignore) {
+  if (sanitizer_read_trace_ignore) {
     if (sanitizer_gpu_patch_aux_addr_dict_host == NULL) {
       sanitizer_gpu_patch_aux_addr_dict_host = (gpu_patch_aux_address_dict_t *)
         hpcrun_malloc_safe(sizeof(gpu_patch_aux_address_dict_t));
@@ -1744,7 +1745,8 @@ sanitizer_data_flow_analysis_enable()
   output_dir_config(dir_name, "/data_flow/");
 
   redshow_output_dir_config(REDSHOW_ANALYSIS_DATA_FLOW, dir_name);
-  redshow_analysis_trace_read_config(REDSHOW_ANALYSIS_DATA_FLOW, sanitizer_analysis_trace_read_ignore);
+  redshow_analysis_config(REDSHOW_ANALYSIS_DATA_FLOW, REDSHOW_ANALYSIS_DATA_FLOW_HASH, sanitizer_data_flow_hash);
+  redshow_analysis_config(REDSHOW_ANALYSIS_DATA_FLOW, REDSHOW_ANALYSIS_READ_TRACE_IGNORE, sanitizer_read_trace_ignore);
 
   sanitizer_gpu_patch_type = GPU_PATCH_TYPE_ADDRESS_PATCH;
   sanitizer_gpu_patch_record_size = sizeof(gpu_patch_record_address_t);
@@ -1981,9 +1983,16 @@ sanitizer_gpu_analysis_config(int gpu_analysis_blocks)
 
 
 void
-sanitizer_analysis_trace_read_ignore_config(int trace_read_ignore)
+sanitizer_read_trace_ignore_config(int read_trace_ignore)
 {
-  sanitizer_analysis_trace_read_ignore = trace_read_ignore == 1 ? true : false;
+  sanitizer_read_trace_ignore = read_trace_ignore == 1 ? true : false;
+}
+
+
+void
+sanitizer_data_flow_hash_config(int data_flow_hash)
+{
+  sanitizer_data_flow_hash = data_flow_hash == 1 ? true : false;
 }
 
 
