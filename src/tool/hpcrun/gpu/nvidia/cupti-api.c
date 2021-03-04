@@ -100,6 +100,8 @@
 
 #include <hpcrun/utilities/hpcrun-nanotime.h>
 
+#include <hpcrun/thread_data.h>
+
 #include "cuda-api.h"
 #include "cupti-api.h"
 #include "cupti-gpu-api.h"
@@ -1305,6 +1307,9 @@ cupti_buffer_completion_callback
  size_t validSize
 )
 {
+  
+  hpcrun_thread_init_mem_pool_once();
+
   // handle notifications
   cupti_buffer_completion_notify();
 
