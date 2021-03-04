@@ -1250,6 +1250,9 @@ cupti_buffer_completion_callback
  size_t validSize
 )
 {
+  
+  hpcrun_thread_init_mem_pool_once();
+
   // handle notifications
   cupti_buffer_completion_notify();
 

@@ -307,7 +307,7 @@ extern thread_data_t* hpcrun_safe_get_td(void);
 
 void hpcrun_unthreaded_data(void);
 void hpcrun_threaded_data(void);
-
+ void hpcrun_thread_init_mem_pool_once(void);
 
 extern thread_data_t* hpcrun_allocate_thread_data(int id);
 
