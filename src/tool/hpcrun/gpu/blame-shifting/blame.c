@@ -444,6 +444,8 @@ sync_epilogue
 ////////////////////////////////////////////////
 
 // how is this function called? which thread is monitored here?
+// application helper threads are also attributed GPU_IDLE_CAUSE(threads at thread root of viewer)
+// This is incorrect. Only program root should be getting these metrics
 void
 gpu_idle_blame
 (
@@ -453,11 +455,14 @@ gpu_idle_blame
  int metric_dc
 )
 {
+#if 1
   metric_desc_t* metric_desc = hpcrun_id2metric(metric_id);
 
   // Only blame shift idleness for time metric.
   if ( !metric_desc->properties.time )
     return;
+
+  spinlock_lock(&itimer_blame_lock);
 
   uint64_t cur_time_us = 0;
   int ret = time_getTimeReal(&cur_time_us);
@@ -471,8 +476,6 @@ gpu_idle_blame
   double metric_incr = cur_time_us - TD_GET(last_time_us);
   metric_incr *= msec_to_sec;
 
-  spinlock_lock(&itimer_blame_lock);
-
   uint32_t num_unfinished_kernels = get_count_of_unfinished_kernels();
   if (num_unfinished_kernels == 0) {
     gpu_blame_shift_t bs = {0, metric_incr, 0};
@@ -480,6 +483,7 @@ gpu_idle_blame
   }
 
   spinlock_unlock(&itimer_blame_lock);
+#endif
 }
 
 #endif	// ENABLE_OPENCL
