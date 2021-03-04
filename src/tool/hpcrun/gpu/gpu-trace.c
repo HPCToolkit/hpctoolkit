@@ -402,15 +402,9 @@ gpu_trace_create
 )
 {
   // Init variables
-  gpu_trace_t *trace = gpu_trace_alloc(device_id, context_id, stream_id);
-
-  // Create a new thread for the stream without libmonitor watching
-  monitor_disable_new_threads();
+  gpu_trace_t *trace = gpu_trace_alloc();
 
   trace->thread = gpu_trace_demultiplexer_push(trace->trace_channel);
-  atomic_fetch_add(&active_streams_counter, 1);
-
-  monitor_enable_new_threads();
 
   return trace;
 }

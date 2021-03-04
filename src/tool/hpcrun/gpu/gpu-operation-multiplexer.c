@@ -93,6 +93,7 @@ gpu_init_operation_channel(){
 }
 
 
+// OpenCL Monitoring thread
 static void *
 gpu_operation_record
 (
@@ -100,6 +101,8 @@ gpu_operation_record
 )
 {
   int current_operation_channels_count;
+  
+  hpcrun_thread_init_mem_pool_once();
 
   while (!atomic_load(&stop_operation_flag)){
     current_operation_channels_count = atomic_load(&operation_channels_count);
@@ -133,9 +136,11 @@ gpu_operation_multiplexer_create
 
   gpu_operation_channel_set_alloc(max_completion_cb_threads);
 
-  // You are the first to create monitor thread
+  monitor_disable_new_threads();
+  // Create monitor thread
   pthread_create(&thread, NULL, (pthread_start_routine_t) gpu_operation_record,
                  NULL);
+  monitor_enable_new_threads();
 }
 
 
