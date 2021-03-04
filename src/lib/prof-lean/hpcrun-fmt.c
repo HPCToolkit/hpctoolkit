@@ -339,7 +339,7 @@ hpcrun_fmt_metricTbl_fprint(metric_tbl_t* metric_tbl, metric_aux_info_t *aux_inf
   fprintf(fs, "[metric-tbl: (num-entries: %u)\n", metric_tbl->len);
   for (uint32_t i = 0; i < metric_tbl->len; i++) {
     metric_desc_t* x = &metric_tbl->lst[i];
-    hpcrun_fmt_metricDesc_fprint(x, &(aux_info[i]), fs, "  ");
+    hpcrun_fmt_metricDesc_fprint(x, &(aux_info[i]), fs, "  ", i);
   }
   fputs("]\n", fs);
 
@@ -430,12 +430,12 @@ hpcrun_fmt_metricDesc_fwrite(metric_desc_t* x, metric_aux_info_t *aux_info, FILE
 
 
 int
-hpcrun_fmt_metricDesc_fprint(metric_desc_t* x, metric_aux_info_t *aux_info, FILE* fs, const char* pre)
+hpcrun_fmt_metricDesc_fprint(metric_desc_t* x, metric_aux_info_t *aux_info, FILE* fs, const char* pre, uint32_t id)
 {
-  fprintf(fs, "%s[(nm: %s) (desc: %s) "
+  fprintf(fs, "%s[(id: %d) (nm: %s) (desc: %s) "
 	  "((ty: %d) (val-ty: %d) (val-fmt: %d) (partner: %u) (show: %d) (showPercent: %d)) "
 	  "(period: %"PRIu64") (formula: %s) (format: %s)\n" ,
-	  pre, hpcfmt_str_ensure(x->name), hpcfmt_str_ensure(x->description),
+	  pre, id, hpcfmt_str_ensure(x->name), hpcfmt_str_ensure(x->description),
 	  (int)x->flags.fields.ty, (int)x->flags.fields.valTy,
 	  (int)x->flags.fields.valFmt,
 	  (uint)x->flags.fields.partner, x->flags.fields.show, x->flags.fields.showPercent,
