@@ -443,7 +443,7 @@ hpcrun_loadmap_dump_dso_info_t(dso_info_t* x)
     fprintf(stderr, "\t\t end_addr %p\n", x->end_addr);
     fprintf(stderr, "\t\t map_size %lu\n", x->map_size);
     fprintf(stderr, "\t\t nsymbols %lu\n", x->nsymbols);
-    fprintf(stderr, "\t\t is_relocatable %p\n", x->is_relocatable);
+    fprintf(stderr, "\t\t is_relocatable %d\n", x->is_relocatable);
   }
 }
 
