@@ -54,6 +54,7 @@
 #include "module.hpp"
 
 #include "util/locked_unordered.hpp"
+#include "util/once.hpp"
 
 #include <map>
 #include <bitset>
@@ -106,26 +107,23 @@ protected:
   // All the Sinks, with notes on which callbacks they should be triggered for.
   struct SinkEntry {
     SinkEntry(DataClass d, DataClass w, ExtensionClass e, ProfileSink& s)
-      : dataLimit(d), waveLimit(w), extensionLimit(e), sink(s),
-        wavefrontDeps(0) {};
+      : dataLimit(d), waveLimit(w), extensionLimit(e), sink(s) {};
     SinkEntry(SinkEntry&& o)
       : dataLimit(o.dataLimit), waveLimit(o.waveLimit),
-        extensionLimit(o.extensionLimit), sink(o.sink),
-        wavefrontDeps(o.wavefrontDeps.load(std::memory_order_relaxed)),
-        wavefrontRDeps(std::move(o.wavefrontRDeps)) {};
+        extensionLimit(o.extensionLimit), sink(o.sink) {};
 
     DataClass dataLimit;
     DataClass waveLimit;
     ExtensionClass extensionLimit;
     std::reference_wrapper<ProfileSink> sink;
 
-    std::atomic<int> wavefrontDeps;  // Count
-    util::OnceFlag wavefrontRDepOnce;
-    std::vector<std::size_t> wavefrontRDeps;  // Indices in sinks
-
     std::mutex wavefrontStatusLock;
-    DataClass wavefrontStatus;
-    DataClass wavefrontFullStatus;
+    DataClass wavefrontState;
+    DataClass wavefrontPriorDelay;
+    DataClass wavefrontDelivered;
+
+    util::Once wavefrontDepOnce;
+    util::Once writeDepOnce;
 
     operator ProfileSink&() { return sink; }
     ProfileSink& operator()() { return sink; }
@@ -159,24 +157,6 @@ class ProfilePipeline final : public detail::ProfilePipelineBase {
 public:
   class Settings;
 
-  /// Variable type to use marking the beginning of an requested ordering
-  /// between the wavefront notifications of two or more Sinks.
-  class WavefrontOrdering final {
-  public:
-    WavefrontOrdering();
-
-    WavefrontOrdering(const WavefrontOrdering&) = delete;
-    WavefrontOrdering& operator=(const WavefrontOrdering&) = delete;
-    WavefrontOrdering(WavefrontOrdering&&);
-    WavefrontOrdering& operator=(WavefrontOrdering&&);
-
-  private:
-    friend class ProfilePipeline;
-    friend class Settings;
-    explicit WavefrontOrdering(std::size_t);
-    std::size_t arc;
-  };
-
   /// Setup structure for Pipelines. Roughly speaking, if the normal Pipeline
   /// is a compiled fast-as-lightning object, this is the source form.
   class Settings final : public detail::ProfilePipelineBase {
@@ -193,14 +173,6 @@ public:
     // MT: Externally Synchronized
     Settings& operator<<(ProfileSink&);
     Settings& operator<<(std::unique_ptr<ProfileSink>&&);
-
-    /// Obtain the WavefrontOrdering referencing the Sink last added.
-    // MT: Externally Synchronized
-    Settings& operator>>(WavefrontOrdering&);
-
-    /// Append a WavefrontOrdering dependency on the last added Sink.
-    // MT: Externally Synchronized
-    Settings& operator<<(const WavefrontOrdering&);
 
     /// Append a new Transformer to the future Pipeline, with optional ownership.
     // MT: Externally Synchronized
@@ -272,6 +244,15 @@ private:
   struct SourceLocal {
     std::vector<Thread::Temporary> threads;
     std::unordered_set<Metric*> thawedMetrics;
+
+    std::pair<bool, bool> orderedRegions;
+    util::Once orderedPrewaveRegionDepOnce;
+    bool orderedPrewaveRegionUnlocked = false;
+    std::size_t priorPrewaveRegionDep;
+
+    util::Once orderedPostwaveRegionDepOnce;
+    bool orderedPostwaveRegionUnlocked = false;
+    std::size_t priorPostwaveRegionDep;
   };
 
 public:
@@ -289,6 +270,16 @@ public:
     const decltype(Extensions::identifier)& identifier() const;
     const decltype(Extensions::mscopeIdentifiers)& mscopeIdentifiers() const;
     const decltype(Extensions::resolvedPath)& resolvedPath() const;
+
+    /// Wait for and enter a region used for ordering of pre-wavefront parts.
+    /// Only available if `Source::requiresOrderedRegion().first` returns true,
+    /// and only during an empty read request.
+    util::Once::Caller enterOrderedPrewaveRegion();
+
+    /// Wait for and enter a region used for ordering of post-wavefront parts.
+    /// Only available if `Source::requiresOrderedRegion().second` returns true,
+    /// and only after all possible wavefronts.
+    util::Once::Caller enterOrderedPostwaveRegion();
 
     /// Get the limits on this Source's emissions.
     DataClass limit() const noexcept { return dataLimit & pipe->scheduled; }
@@ -421,6 +412,15 @@ public:
     Sink();
     ~Sink() = default;
 
+    /// Register this Sink with the dependency ordering chains.
+    void registerOrderedWavefront();
+    void registerOrderedWrite();
+
+    /// Wait for the the previous element of the dependency ordering chain to
+    /// complete, and return a Once::Caller to signal when complete.
+    util::Once::Caller enterOrderedWavefront();
+    util::Once::Caller enterOrderedWrite();
+
     /// Access the Extensions available within the Pipeline.
     const decltype(Extensions::classification)& classification() const;
     const decltype(Extensions::identifier)& identifier() const;
@@ -451,6 +451,11 @@ public:
     DataClass dataLimit;
     ExtensionClass extensionLimit;
     std::size_t idx;
+
+    bool orderedWavefront;
+    std::size_t priorWavefrontDepOnce;
+    bool orderedWrite;
+    std::size_t priorWriteDepOnce;
   };
 
 private:
@@ -472,14 +477,13 @@ private:
     std::atomic<std::size_t> contexts;
   } waves;
 
-  // Sinks sorted by which early waves they want
-  struct {
-    std::vector<std::reference_wrapper<SinkEntry>> attributes;
-    std::vector<std::reference_wrapper<SinkEntry>> references;
-    std::vector<std::reference_wrapper<SinkEntry>> contexts;
-    std::vector<std::reference_wrapper<SinkEntry>> threads;
-    std::vector<std::reference_wrapper<SinkEntry>> unscheduled;
-  } sinkwaves;
+  // Chain pointers marking dependency chains
+  std::size_t sourcePrewaveRegionDepChain;
+  std::size_t sinkWavefrontDepChain;
+  DataClass sinkWavefrontDepClasses;
+  std::size_t sourcePostwaveRegionDepChain;
+  std::size_t sinkWriteDepChain;
+  bool depChainComplete;
 
   // Storage for the pointers to the SourceLocals.
   std::vector<SourceLocal> sourceLocals;

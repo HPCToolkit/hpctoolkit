@@ -59,12 +59,19 @@ RankTree::RankTree(std::size_t arity)
 Sender::Sender(RankTree& t) : tree(t), stash(nullptr) {};
 Sender::Sender(RankTree& t, std::vector<std::uint8_t>& s) : tree(t), stash(&s) {};
 
+void Sender::notifyPipeline() noexcept {
+  src.registerOrderedWrite();
+}
+
 void Sender::write() {
   std::vector<std::uint8_t> block;
   packAttributes(block);
   packReferences(block);
   packContexts(block);
-  mpi::send(block, tree.parent, 1);
+  {
+    auto mpiSem = src.enterOrderedWrite();
+    mpi::send(block, tree.parent, 1);
+  }
 
   if(stash) {
     packReferences(*stash);
@@ -76,7 +83,11 @@ Receiver::Receiver(std::size_t p) : peer(p), done(false) {};
 
 void Receiver::read(const DataClass&) {
   if(done) return;
-  auto block = mpi::receive_vector<std::uint8_t>(peer, 1);
+  std::vector<std::uint8_t> block;
+  {
+    auto mpiSem = sink.enterOrderedPrewaveRegion();
+    block = mpi::receive_vector<std::uint8_t>(peer, 1);
+  }
   iter_t it = block.begin();
   it = unpackAttributes(it);
   it = unpackReferences(it);
@@ -97,11 +108,16 @@ DataClass MetricSender::accepts() const noexcept {
          + (needsTimepoints ? data::timepoints : DataClass{});
 }
 
+void MetricSender::notifyPipeline() noexcept {
+  src.registerOrderedWrite();
+}
+
 void MetricSender::write() {
   std::vector<std::uint8_t> block;
   packAttributes(block);
   packMetrics(block);
   if(needsTimepoints) packTimepoints(block);
+  auto mpiSem = src.enterOrderedWrite();
   mpi::send(block, tree.parent, 3);
 }
 
@@ -125,7 +141,11 @@ void MetricReceiver::read(const DataClass& d) {
     it = unpackContexts(it);
   }
 
-  auto block = mpi::receive_vector<std::uint8_t>(peer, 3);
+  std::vector<std::uint8_t> block;
+  {
+    auto mpiSem = sink.enterOrderedPostwaveRegion();
+    block = mpi::receive_vector<std::uint8_t>(peer, 3);
+  }
   iter_t it = block.begin();
   it = unpackAttributes(it);
   it = unpackMetrics(it, cmap);

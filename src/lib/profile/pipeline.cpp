@@ -62,7 +62,6 @@ using namespace hpctoolkit;
 using Settings = ProfilePipeline::Settings;
 using Source = ProfilePipeline::Source;
 using Sink = ProfilePipeline::Sink;
-using WavefrontOrdering = ProfilePipeline::WavefrontOrdering;
 
 detail::ProfilePipelineBase::SourceEntry::SourceEntry(ProfileSource& s)
   : source(s), up_source(nullptr) {};
@@ -99,32 +98,6 @@ Settings& Settings::operator<<(std::unique_ptr<ProfileSink>&& sp) {
   return operator<<(*up_sinks.back());
 }
 
-WavefrontOrdering::WavefrontOrdering() : arc(std::numeric_limits<std::size_t>::max()) {};
-WavefrontOrdering::WavefrontOrdering(std::size_t i) : arc(i) {};
-WavefrontOrdering::WavefrontOrdering(WavefrontOrdering&& o)
-  : arc(o.arc) { o.arc = std::numeric_limits<std::size_t>::max(); }
-WavefrontOrdering& WavefrontOrdering::operator=(WavefrontOrdering&& o) {
-  arc = o.arc;
-  o.arc = std::numeric_limits<std::size_t>::max();
-  return *this;
-}
-
-Settings& Settings::operator>>(WavefrontOrdering& dep) {
-  if(sinks.empty())
-    util::log::fatal{} << "Attempt to extract a WavefrontOrdering without a Sink!";
-  dep = WavefrontOrdering{sinks.size() - 1};
-  return *this;
-}
-Settings& Settings::operator<<(const WavefrontOrdering& dep) {
-  if(sinks.empty())
-    util::log::fatal{} << "Attempt to assign a WavefrontOrdering without a Sink!";
-  if(dep.arc == std::numeric_limits<std::size_t>::max()
-     || dep.arc == sinks.size()-1) return *this;
-  sinks.back().wavefrontDeps.fetch_add(1, std::memory_order_relaxed);
-  sinks.at(dep.arc).wavefrontRDeps.emplace_back(sinks.size()-1);
-  return *this;
-}
-
 Settings& Settings::operator<<(ProfileFinalizer& f) {
   auto pro = f.provides();
   auto req = f.requires();
@@ -155,9 +128,13 @@ Settings& Settings::operator<<(std::unique_ptr<ProfileTransformer>&& tp) {
 }
 
 ProfilePipeline::ProfilePipeline(Settings&& b, std::size_t team_sz)
-  : detail::ProfilePipelineBase(std::move(b)),
-    team_size(team_sz), waves(sources.size()), sourceLocals(sources.size()),
-    cct(nullptr) {
+  : detail::ProfilePipelineBase(std::move(b)), team_size(team_sz),
+    waves(sources.size()),
+    sourcePrewaveRegionDepChain(std::numeric_limits<std::size_t>::max()),
+    sinkWavefrontDepChain(std::numeric_limits<std::size_t>::max()),
+    sourcePostwaveRegionDepChain(std::numeric_limits<std::size_t>::max()),
+    sinkWriteDepChain(std::numeric_limits<std::size_t>::max()),
+    depChainComplete(false), sourceLocals(sources.size()), cct(nullptr) {
   using namespace literals::data;
   // Prep the Extensions first thing.
   if(requested.hasClassification()) {
@@ -214,16 +191,13 @@ ProfilePipeline::ProfilePipeline(Settings&& b, std::size_t team_sz)
     scheduledWaves |= s.waveLimit;
     if(!(attributes + references + contexts + DataClass::threads).allOf(s.waveLimit))
       util::log::fatal() << "Early wavefronts for non-global data currently not supported!";
-    if(s.waveLimit.hasAttributes()) sinkwaves.attributes.emplace_back(s);
-    if(s.waveLimit.hasReferences()) sinkwaves.references.emplace_back(s);
-    if(s.waveLimit.hasContexts()) sinkwaves.contexts.emplace_back(s);
-    if(s.waveLimit.hasThreads()) sinkwaves.threads.emplace_back(s);
   }
   structs.file.freeze();
   structs.context.freeze();
   structs.module.freeze();
   structs.metric.freeze();
   structs.thread.freeze();
+  depChainComplete = true;
 
   // Make sure the Finalizers and Transformers are ready before anything enters.
   // Unlike Sources, we can bind these without worry of anything happening.
@@ -243,24 +217,21 @@ ProfilePipeline::ProfilePipeline(Settings&& b, std::size_t team_sz)
   std::size_t idx = 0;
   for(auto& ms: sources) {
     ms.dataLimit = ms().provides();
+    sourceLocals[idx].orderedRegions = ms().requiresOrderedRegions();
+    if(sourceLocals[idx].orderedRegions.first) {
+      sourceLocals[idx].priorPrewaveRegionDep = sourcePrewaveRegionDepChain;
+      sourcePrewaveRegionDepChain = idx;
+    }
+    if(sourceLocals[idx].orderedRegions.second) {
+      sourceLocals[idx].priorPostwaveRegionDep = sourcePostwaveRegionDepChain;
+      sourcePostwaveRegionDepChain = idx;
+    }
     ms().bindPipeline(Source(*this, ms.dataLimit, ExtensionClass::all(), sourceLocals[idx]));
     scheduled |= ms.dataLimit;
     idx++;
   }
   scheduled &= all_requested;
   unscheduledWaves = scheduledWaves - scheduled;
-  if(unscheduledWaves.hasAttributes())
-    sinkwaves.unscheduled.insert(sinkwaves.unscheduled.end(),
-      sinkwaves.attributes.begin(), sinkwaves.attributes.end());
-  if(unscheduledWaves.hasReferences())
-    sinkwaves.unscheduled.insert(sinkwaves.unscheduled.end(),
-      sinkwaves.references.begin(), sinkwaves.references.end());
-  if(unscheduledWaves.hasContexts())
-    sinkwaves.unscheduled.insert(sinkwaves.unscheduled.end(),
-      sinkwaves.contexts.begin(), sinkwaves.contexts.end());
-  if(unscheduledWaves.hasThreads())
-    sinkwaves.unscheduled.insert(sinkwaves.unscheduled.end(),
-      sinkwaves.threads.begin(), sinkwaves.threads.end());
   scheduledWaves &= scheduled;
 }
 
@@ -280,56 +251,51 @@ void ProfilePipeline::run() {
     ANNOTATE_HAPPENS_AFTER(&start_arc);
 
     // Function to notify a Sink for this wavefront, potentially recursing if needed.
-    std::function<void(SinkEntry&, DataClass)> notify =
-      [&](SinkEntry& e, DataClass newwaves) {
-        auto deps = e.wavefrontDeps.load(std::memory_order_acquire);
+    auto notify = [&](SinkEntry& e, DataClass newwaves) {
+      // Update this Sink's view of the current wave status, check if we care.
+      DataClass allwaves;
+      {
+        std::unique_lock<std::mutex> l(e.wavefrontStatusLock);
+        e.wavefrontState |= newwaves;
 
-        // Update this Sink's view of the current wave status, check if we care.
-        DataClass allwaves;
-        {
-          std::unique_lock<std::mutex> l(e.wavefrontStatusLock);
-          e.wavefrontFullStatus |= newwaves & e.waveLimit;
+        // Skip if we already delivered the current waveset
+        if(e.wavefrontDelivered.allOf(e.wavefrontState & e.waveLimit)) return;
 
-          // Skip if we already delivered the current waveset
-          if(e.wavefrontStatus.allOf(e.wavefrontFullStatus)) return;
+        // If we haven't hit the dependency delay yet, skip until later
+        if(!e.wavefrontState.allOf(e.wavefrontPriorDelay & scheduledWaves))
+          return;
 
-          // If the deps weren't complete, we can't do anything more, so exit
-          if(deps > 0) return;
+        // We intend to deliver all the waves that have passed so far.
+        allwaves = e.wavefrontDelivered |= e.wavefrontState & e.waveLimit;
+      }
 
-          // We intend to deliver all the waves that have passed so far.
-          allwaves = e.wavefrontStatus |= e.wavefrontFullStatus;
-        }
-
-        // Deliver a notification, potentially out of order
-        e().notifyWavefront(allwaves);
-
-        // If the Sink has had all of its waves, we can undo the rdeps
-        if(allwaves.allOf(e.waveLimit)) {
-          e.wavefrontRDepOnce.call_nowait([&]{
-            for(const auto& rd: e.wavefrontRDeps) {
-              sinks[rd].wavefrontDeps.fetch_sub(1, std::memory_order_release);
-              notify(sinks[rd], newwaves);
-            }
-          });
-        }
-      };
+      // Deliver a notification, potentially out of order
+      e().notifyWavefront(allwaves);
+    };
 
     // First issue a wavefront with just the unscheduled waves
     #pragma omp for schedule(dynamic) nowait
-    for(std::size_t i = 0; i < sinkwaves.unscheduled.size(); ++i)
-      notify(sinkwaves.unscheduled[i], unscheduledWaves);
+    for(std::size_t i = 0; i < sinks.size(); ++i)
+      notify(sinks[i], unscheduledWaves);
 
     // Unblock the finishing wave for any Sources that don't have waves.
+    // Also handle cases that require an initial pre-wavefront ordering
     #pragma omp for schedule(dynamic) nowait
     for(std::size_t i = 0; i < sources.size(); ++i) {
       if(!(scheduledWaves & sources[i].dataLimit).hasAny()) {
-        // util::log::debug{false} << "Pre-signaling " << i;
         sources[i].wavesComplete.signal();
+      }
+      auto& sl = sourceLocals[i];
+      if(sl.orderedRegions.first) {
+        std::unique_lock<std::mutex> l(sources[i].lock);
+        sl.orderedPrewaveRegionUnlocked = true;
+        sources[i]().read({});
+        sl.orderedPrewaveRegionUnlocked = false;
       }
     }
 
     // The rest of the waves have the same general format
-    auto wave = [&](DataClass d, std::size_t idx, const std::vector<std::reference_wrapper<SinkEntry>>& sinks) {
+    auto wave = [&](DataClass d, std::size_t idx) {
       if(!(d & scheduledWaves).hasAny()) return;
       #pragma omp for schedule(dynamic) nowait
       for(std::size_t i = 0; i < sources.size(); ++i) {
@@ -351,24 +317,25 @@ void ProfilePipeline::run() {
         }
       }
     };
-    wave(DataClass::attributes, 0, sinkwaves.attributes);
-    wave(DataClass::references, 1, sinkwaves.references);
-    wave(DataClass::threads, 2, sinkwaves.threads);
-    wave(DataClass::contexts, 3, sinkwaves.contexts);
+    wave(DataClass::attributes, 0);
+    wave(DataClass::references, 1);
+    wave(DataClass::threads, 2);
+    wave(DataClass::contexts, 3);
 
     // Now for the finishing wave
     #pragma omp for schedule(dynamic) nowait
     for(std::size_t i = 0; i < sources.size(); ++i) {
+      auto& sl = sourceLocals[i];
       {
         sources[i].wavesComplete.wait();
         std::unique_lock<std::mutex> l(sources[i].lock);
+        sl.orderedPostwaveRegionUnlocked = true;
         DataClass req = (sources[i]().finalizeRequest(scheduled - scheduledWaves)
                          - sources[i].read) & sources[i].dataLimit;
         sources[i].read |= req;
         if(req.hasAny()) sources[i]().read(req);
       }
 
-      auto& sl = sourceLocals[i];
       // Done first to set the stage for the Sinks to do things.
       for(auto& t: sl.threads) Metric::finalize(t);
       // Let the Sinks know that the Threads have finished.
@@ -457,6 +424,29 @@ Source::resolvedPath() const {
   if(!extensionLimit.hasResolvedPath())
     util::log::fatal() << "Source did not register for `resolvedPath` emission!";
   return pipe->uds.resolvedPath;
+}
+
+util::Once::Caller Source::enterOrderedPrewaveRegion() {
+  if(!slocal->orderedRegions.first)
+    util::log::fatal{} << "Source attempted to enter a prewave ordered region without registration!";
+  if(!slocal->orderedPrewaveRegionUnlocked)
+    util::log::fatal{} << "Source attempted to enter a prewave ordered region prior to wavefront completion!";
+  if(slocal->priorPrewaveRegionDep != std::numeric_limits<std::size_t>::max())
+    pipe->sourceLocals[slocal->priorPrewaveRegionDep].orderedPrewaveRegionDepOnce.wait();
+  return slocal->orderedPrewaveRegionDepOnce.signal();
+}
+util::Once::Caller Source::enterOrderedPostwaveRegion() {
+  if(!slocal->orderedRegions.second)
+    util::log::fatal{} << "Source attempted to enter a postwave ordered region without registration!";
+  if(!slocal->orderedPostwaveRegionUnlocked)
+    util::log::fatal{} << "Source attempted to enter a postwave ordered region prior to wavefront completion!";
+  if(slocal->priorPostwaveRegionDep != std::numeric_limits<std::size_t>::max())
+    pipe->sourceLocals[slocal->priorPostwaveRegionDep].orderedPostwaveRegionDepOnce.wait();
+  else if(pipe->sinkWavefrontDepChain != std::numeric_limits<std::size_t>::max())
+    pipe->sinks[pipe->sinkWavefrontDepChain].wavefrontDepOnce.wait();
+  else if(pipe->sourcePrewaveRegionDepChain != std::numeric_limits<std::size_t>::max())
+    pipe->sourceLocals[pipe->sourcePrewaveRegionDepChain].orderedPrewaveRegionDepOnce.wait();
+  return slocal->orderedPostwaveRegionDepOnce.signal();
 }
 
 void Source::attributes(const ProfileAttributes& as) {
@@ -681,7 +671,48 @@ Source& Source::operator=(Source&& o) {
 
 Sink::Sink() : pipe(nullptr), idx(0) {};
 Sink::Sink(ProfilePipeline& p, const DataClass& d, const ExtensionClass& e, std::size_t i)
-  : pipe(&p), dataLimit(d), extensionLimit(e), idx(i) {};
+  : pipe(&p), dataLimit(d), extensionLimit(e), idx(i), orderedWavefront(false),
+    priorWavefrontDepOnce(std::numeric_limits<std::size_t>::max()),
+    orderedWrite(false),
+    priorWriteDepOnce(std::numeric_limits<std::size_t>::max()) {};
+
+void Sink::registerOrderedWavefront() {
+  if(pipe->depChainComplete)
+    util::log::fatal{} << "Attempt to register a Sink for an ordered wavefront chain after notifyPipeline!";
+  if(!orderedWavefront) {
+    orderedWavefront = true;
+    priorWavefrontDepOnce = pipe->sinkWavefrontDepChain;
+    pipe->sinks[idx].wavefrontPriorDelay = pipe->sinkWavefrontDepClasses;
+    pipe->sinkWavefrontDepClasses |= pipe->sinks[idx].waveLimit;
+    pipe->sinkWavefrontDepChain = idx;
+  }
+}
+void Sink::registerOrderedWrite() {
+  if(pipe->depChainComplete)
+    util::log::fatal{} << "Attempt to register a Sink for an ordered write chain after notifyPipeline!";
+  if(!orderedWrite) {
+    orderedWrite = true;
+    priorWriteDepOnce = pipe->sinkWriteDepChain;
+    pipe->sinkWriteDepChain = idx;
+  }
+}
+
+util::Once::Caller Sink::enterOrderedWavefront() {
+  if(!orderedWavefront)
+    util::log::fatal{} << "Attempt to enter an ordered wavefront region without registering!";
+  if(priorWavefrontDepOnce != std::numeric_limits<std::size_t>::max())
+    pipe->sinks[priorWavefrontDepOnce].wavefrontDepOnce.wait();
+  else if(pipe->sourcePrewaveRegionDepChain != std::numeric_limits<std::size_t>::max())
+    pipe->sourceLocals[pipe->sourcePrewaveRegionDepChain].orderedPrewaveRegionDepOnce.wait();
+  return pipe->sinks[idx].wavefrontDepOnce.signal();
+}
+util::Once::Caller Sink::enterOrderedWrite() {
+  if(!orderedWrite)
+    util::log::fatal{} << "Attempt to enter an ordered write region without registering!";
+  if(priorWriteDepOnce != std::numeric_limits<std::size_t>::max())
+    pipe->sinks[priorWriteDepOnce].writeDepOnce.wait();
+  return pipe->sinks[idx].writeDepOnce.signal();
+}
 
 const decltype(ProfilePipeline::Extensions::classification)&
 Sink::classification() const {
@@ -756,5 +787,9 @@ Sink& Sink::operator=(Sink&& o) {
   dataLimit = o.dataLimit;
   extensionLimit = o.extensionLimit;
   idx = o.idx;
+  orderedWavefront = o.orderedWavefront;
+  priorWavefrontDepOnce = o.priorWavefrontDepOnce;
+  orderedWrite = o.orderedWrite;
+  priorWriteDepOnce = o.priorWriteDepOnce;
   return *this;
 }

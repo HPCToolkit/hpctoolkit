@@ -148,7 +148,7 @@ private:
   // trace_hdr
   //***************************************************************************
   #define INVALID_HDR    -1
-  #define MULTIPLE_8(v) (v + 7) & ~7
+  #define MULTIPLE_8(v) ((v + 7) & ~7)
 
   uint64_t trace_hdrs_size;
 
