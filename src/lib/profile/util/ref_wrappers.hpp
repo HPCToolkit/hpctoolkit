@@ -81,6 +81,8 @@ public:
   operator T&() const noexcept { return d.get(); }
   T& get() const noexcept { return d.get(); }
 
+  T* operator->() const noexcept { return &d.get(); }
+
   bool operator==(const reference_index& o) const noexcept { return &get() == &o.get(); }
   bool operator!=(const reference_index& o) const noexcept { return &get() != &o.get(); }
   bool operator<(const reference_index& o) const noexcept { return &get() < &o.get(); }
@@ -93,6 +95,7 @@ public:
 template<class T>
 class optional_ref : private std::optional<reference_index<T>> {
   using Base = std::optional<reference_index<T>>;
+  friend struct std::hash<optional_ref>;
 
 public:
   optional_ref() noexcept = default;
@@ -126,6 +129,25 @@ public:
   using Base::operator bool;
   using Base::has_value;
 
+  constexpr bool operator==(const optional_ref& o) const noexcept {
+    return ((const Base&)*this) == ((const Base&)o);
+  }
+  constexpr bool operator!=(const optional_ref& o) const noexcept {
+    return ((const Base&)*this) != ((const Base&)o);
+  }
+  constexpr bool operator<(const optional_ref& o) const noexcept {
+    return ((const Base&)*this) < ((const Base&)o);
+  }
+  constexpr bool operator<=(const optional_ref& o) const noexcept {
+    return ((const Base&)*this) <= ((const Base&)o);
+  }
+  constexpr bool operator>(const optional_ref& o) const noexcept {
+    return ((const Base&)*this) > ((const Base&)o);
+  }
+  constexpr bool operator>=(const optional_ref& o) const noexcept {
+    return ((const Base&)*this) >= ((const Base&)o);
+  }
+
   constexpr T& value() const { return Base::value().get(); }
 
   template<class U>
@@ -155,6 +177,7 @@ namespace {
 template<class... Ts>
 class variant_ref : private std::variant<vr_ref_wrapper<Ts>...> {
   using Base = std::variant<vr_ref_wrapper<Ts>...>;
+  friend struct std::hash<variant_ref>;
 
 public:
   ~variant_ref() = default;
@@ -300,14 +323,34 @@ namespace std {
 
 template<class T>
 struct hash<hpctoolkit::util::reference_index<T>> : private std::hash<T*> {
-  std::size_t operator()(const hpctoolkit::util::reference_index<T>& v) {
+  std::size_t operator()(const hpctoolkit::util::reference_index<T>& v) const noexcept {
     return std::hash<T*>::operator()(&v.get());
+  }
+};
+
+template<class T>
+class hash<hpctoolkit::util::optional_ref<T>> {
+  hash<typename hpctoolkit::util::optional_ref<T>::Base> realhash;
+
+public:
+  constexpr std::size_t operator()(const hpctoolkit::util::optional_ref<T>& v) const noexcept {
+    return realhash(v);
   }
 };
 
 template<class... Ts>
 struct variant_size<hpctoolkit::util::variant_ref<Ts...>>
   : std::integral_constant<std::size_t, sizeof...(Ts)> {};
+
+template<class... Ts>
+class hash<hpctoolkit::util::variant_ref<Ts...>> {
+  hash<typename hpctoolkit::util::variant_ref<Ts...>::Base> realhash;
+
+public:
+  constexpr std::size_t operator()(const hpctoolkit::util::variant_ref<Ts...>& v) const noexcept {
+    return realhash(v);
+  }
+};
 
 template<class T, class... Ts>
 constexpr bool holds_alternative(const hpctoolkit::util::variant_ref<Ts...>& v) noexcept {

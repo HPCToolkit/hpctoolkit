@@ -192,14 +192,14 @@ protected:
   real_t real;
 
 private:
-  std::pair<V&, bool> opget(K k, V&& v, std::unique_lock<M>&&) {
+  std::pair<V&, bool> opget(K k, V v, std::unique_lock<M>&&) {
     auto x = real.emplace(std::piecewise_construct,
                           std::forward_as_tuple(std::move(k)),
                           std::forward_as_tuple(std::move(v)));
     return {x.first->second, x.second};
   }
   template<class Mtx>
-  std::pair<V&, bool> opget(const K& k, V&& v, stdshim::shared_lock<Mtx>&& l) {
+  std::pair<V&, bool> opget(const K& k, V v, stdshim::shared_lock<Mtx>&& l) {
     {
       stdshim::shared_lock<Mtx> l2 = std::move(l);
       auto x = real.find(k);
@@ -208,7 +208,7 @@ private:
     return opget(k, std::move(v), std::unique_lock<Mtx>(lock));
   }
   template<class Mtx>
-  std::pair<V&, bool> opget(K&& k, V&& v, stdshim::shared_lock<Mtx>&& l) {
+  std::pair<V&, bool> opget(K&& k, V v, stdshim::shared_lock<Mtx>&& l) {
     {
       stdshim::shared_lock<Mtx> l2 = std::move(l);
       auto x = real.find(k);

@@ -174,7 +174,7 @@ void SparseDB::notifyThreadFinal(const Thread::Temporary& tt) {
       pre_val_size = values.size();
       auto& udc = c.userdata[ud];
       for(const auto& mx: accums->citerate()) {
-        const auto& m = *mx.first;
+        const Metric& m = mx.first;
         const auto& vv = mx.second;
         if(!m.scopes().has(MetricScope::function) || !m.scopes().has(MetricScope::execution))
           util::log::fatal{} << "Metric isn't function/execution!";
@@ -275,7 +275,7 @@ void SparseDB::write()
         coffsets.push_back(values.size());
       }
       for(const auto& mx: stats.citerate()) {
-        const auto& m = *mx.first;
+        const Metric& m = mx.first;
         if(!m.scopes().has(MetricScope::function) || !m.scopes().has(MetricScope::execution))
           util::log::fatal{} << "Metric isn't function/execution!";
         const auto& ids = m.userdata[src.mscopeIdentifiers()];

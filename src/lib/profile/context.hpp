@@ -95,7 +95,8 @@ private:
   SuperpositionedContext(Context&, std::vector<Target>);
 };
 
-// A single calling Context.
+/// A single calling Context, representing a single location in the physical
+/// execution of the application.
 class Context {
 public:
   using ud_t = util::ragged_vector<const Context&>;
@@ -126,8 +127,7 @@ public:
 
   /// Reference to the Statistic data for this Context.
   // MT: Safe (const), Unstable (before `metrics` wavefront)
-  const util::locked_unordered_map<const Metric*, StatisticAccumulator>&
-  statistics() const noexcept { return data; }
+  const auto& statistics() const noexcept { return data; }
 
   /// Traverse the subtree rooted at this Context.
   // MT: Safe (const), Unstable (before `contexts` wavefront)
@@ -141,20 +141,19 @@ private:
   util::locked_unordered_set<std::unique_ptr<SuperpositionedContext>> superpositionRoots;
 
   Context(ud_t::struct_t& rs) : userdata(rs, std::ref(*this)) {};
-  Context(ud_t::struct_t& rs, const Scope& l) : Context(rs, nullptr, l) {};
-  Context(ud_t::struct_t& rs, Scope&& l) : Context(rs, nullptr, l) {};
-  Context(ud_t::struct_t& rs, Context* p, const Scope& l)
-    : Context(rs, p, Scope(l)) {};
-  Context(ud_t::struct_t&, Context*, Scope&&);
+  Context(ud_t::struct_t& rs, Scope l) : Context(rs, nullptr, l) {};
+  Context(ud_t::struct_t&, Context*, Scope);
   Context(Context&& c);
 
   friend class Metric;
-  util::locked_unordered_map<const Metric*, StatisticAccumulator> data;
+  util::locked_unordered_map<util::reference_index<const Metric>,
+    StatisticAccumulator> data;
 
   friend class ProfilePipeline;
+  friend class CollaborativeContext;
   /// Get the child Context for a given Scope, creating one if none exists.
   // MT: Internally Synchronized
-  std::pair<Context&,bool> ensure(Scope&&);
+  std::pair<Context&,bool> ensure(Scope);
   template<class... Args> std::pair<Context&,bool> ensure(Args&&... args) {
     return ensure(Scope(std::forward<Args>(args)...));
   }

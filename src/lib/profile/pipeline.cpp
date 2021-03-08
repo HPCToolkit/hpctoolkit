@@ -566,14 +566,14 @@ Source::AccumulatorsRef Source::accumulateTo(ContextRef c, Thread::Temporary& t)
   if(!limit().hasMetrics())
     util::log::fatal() << "Source did not register for `metrics` emission!";
   if(auto pc = std::get_if<Context>(c))
-    return t.data[&*pc];
+    return t.data[*pc];
   else if(auto pc = std::get_if<SuperpositionedContext>(c))
-    return t.sp_data[&*pc];
+    return t.sp_data[*pc];
   else abort();  // unreachable
 }
 
 void Source::AccumulatorsRef::add(Metric& m, double v) {
-  map[&m].add(v);
+  map[m].add(v);
 }
 
 Source::StatisticsRef Source::accumulateTo(ContextRef c) {
@@ -588,7 +588,7 @@ template<class T>
 void Source::StatisticsRef::add(T& ctx, Metric& m, const StatisticPartial& sp,
                                 MetricScope ms, double v) {
   auto& a = ctx.data.emplace(std::piecewise_construct,
-                             std::forward_as_tuple(&m),
+                             std::forward_as_tuple(m),
                              std::forward_as_tuple(m)).first;
   a.get(sp).add(ms, v);
 }
