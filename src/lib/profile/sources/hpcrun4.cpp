@@ -52,6 +52,9 @@
 // TODO: Remove this after catching the develop commits
 #define HPCRUN_FMT_NV_traceOrdered "trace-time-ordered"
 
+// TODO: Remove and change this once new-cupti is finalized
+#define HPCRUN_GPU_RANGE_NODE 65533
+
 using namespace hpctoolkit;
 using namespace sources;
 using namespace literals::data;
@@ -347,7 +350,11 @@ void Hpcrun4::read(const DataClass& needed) {
 
       // Figure out the Scope for this node, if it has one.
       Scope scope;  // Default to the unknown Scope.
-      if(n.lm_id != 0) {
+      if(n.lm_id == HPCRUN_GPU_RANGE_NODE) {
+        // Special case, this is a collaborative marker node
+        nodes.emplace(id, sink.collaborate(par.value(), sink.collabContext(n.lm_ip)));
+        continue;
+      } else if(n.lm_id != 0) {
         auto it = modules.find(n.lm_id);
         if(it == modules.end())
           util::log::fatal() << "Erroneous module id " << n.lm_id << " in " << path.string() << "!";

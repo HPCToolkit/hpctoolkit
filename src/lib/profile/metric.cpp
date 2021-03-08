@@ -407,7 +407,7 @@ static bool pullsFunction(const Context& parent, const Context& child) {
   std::abort();  // unreachable
 }
 
-void Metric::finalize(Thread::Temporary& t) noexcept {
+void Metric::prefinalize(Thread::Temporary& t) noexcept {
   // Before anything else happens, we need to handle the Superpositions present
   // in the Context tree and distribute their data.
   for(const auto& cd: t.sp_data.citerate()) {
@@ -517,7 +517,44 @@ void Metric::finalize(Thread::Temporary& t) noexcept {
       groups = std::move(new_groups);
     }
   }
+}
 
+bool Metric::needsCrossfinalize(const Thread::Temporary& t) noexcept {
+  return !t.cb_data.empty();
+}
+
+void Metric::crossfinalize(std::vector<Thread::Temporary>& ts) noexcept {
+  if(ts.empty()) return;
+
+  // Reorganize by (unique) collabs
+  using CollabRef = std::pair<std::reference_wrapper<const Thread>,
+      std::reference_wrapper<const decltype(Thread::Temporary::cb_data)::mapped_type>>;
+  std::unordered_map<util::reference_index<const CollaborativeContext>, std::vector<CollabRef>>
+      collabs;
+  for(auto& t: ts)
+    for(auto& cbdata: t.cb_data.citerate())
+      collabs[cbdata.first].emplace_back(t.thread(), cbdata.second);
+
+  // TODO, for now just debug-dump stuff
+  for(const auto& cbdata: collabs) {
+    const CollaborativeContext& collab = cbdata.first;
+    util::log::debug d{true};
+    d << "Collab " << &collab << ":";
+    for(auto& tdata: cbdata.second) {
+      const Thread& t = tdata.first;
+      for(auto& cdata: tdata.second.get().citerate()) {
+        const Context& c = cdata.first;
+        for(auto& mdata: cdata.second.citerate()) {
+          const Metric& m = mdata.first;
+          double val = mdata.second.point.load(std::memory_order_relaxed);
+          d << "\n  " << t.attributes.threadid().value_or(0) << " " << c.scope() << " " << m.name() << " = " << val;
+        }
+      }
+    }
+  }
+}
+
+void Metric::finalize(Thread::Temporary& t) noexcept {
   // For each Context we need to know what its children are. But we only care
   // about ones that have decendants with actual data. So we construct a
   // temporary subtree with all the bits.

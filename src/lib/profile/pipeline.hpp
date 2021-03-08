@@ -320,6 +320,10 @@ public:
     // MT: Externally Synchronized (this), Internally Synchronized
     Context& global();
 
+  private:
+    void notifyContext(Context&);
+
+  public:
     /// Emit a new Context into the Pipeline, as a child of another.
     /// DataClass: `contexts`
     // MT: Externally Synchronized (this), Internally Synchronized
@@ -329,6 +333,17 @@ public:
     /// DataClass: `contexts`
     // MT: Externally Synchronized (this), Internally Synchronized
     ContextRef superposContext(ContextRef, std::vector<SuperpositionedContext::Target>);
+
+    /// Emit a new CollaborativeContext, identified by the given value.
+    /// DataClass: `contexts`
+    // MT: Externally Synchronized (this), Internally Synchronized
+    CollaborativeContext& collabContext(std::uint64_t);
+
+    /// Mark the given ContextRef as a targeted root of a CollaborativeContext,
+    /// and return the appropriately marked ContextRef.
+    /// DataClass: `contexts`
+    // MT: Externally Synchronized (this), Internally Synchronized
+    ContextRef collaborate(ContextRef, CollaborativeContext&);
 
     /// Emit a new Thread into the Pipeline.
     /// DataClass: `threads`
@@ -501,6 +516,8 @@ private:
   util::locked_unordered_uniqued_set<Metric> mets;
   util::locked_unordered_uniqued_set<ExtraStatistic> estats;
   std::unique_ptr<Context> cct;
+  struct Collab { CollaborativeContext ctx; };
+  util::locked_unordered_map<std::uint64_t, Collab> collabs;
 };
 
 }
