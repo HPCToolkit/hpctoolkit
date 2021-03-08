@@ -63,6 +63,7 @@
 #include "epoch.h"
 #include "handling_sample.h"
 
+#include <hpcrun/threadmgr.h>
 #include "thread_data.h"
 #include "trace.h"
 
@@ -91,6 +92,7 @@ static thread_data_t _local_td;
 static pthread_key_t _hpcrun_key;
 static int use_getspecific = 0;
 
+static __thread bool mem_pool_initialized = false;
 
 void
 hpcrun_init_pthread_key(void)
@@ -202,9 +204,8 @@ hpcrun_threaded_data(void)
 
 void
 hpcrun_thread_init_mem_pool_once(void){
-  static bool is_initialized = false;
 
-  if (is_initialized == false){
+  if (mem_pool_initialized == false){
     hpcrun_mmap_init();
 
     // ----------------------------------------
@@ -220,7 +221,7 @@ hpcrun_thread_init_mem_pool_once(void){
 
     hpcrun_threadMgr_data_get_safe(id, NULL, &td, has_trace, demand_new_thread);
     hpcrun_set_thread_data(td);
-    is_initialized = true;
+    mem_pool_initialized = true;
   }
 }
 
