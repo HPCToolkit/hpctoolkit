@@ -76,6 +76,9 @@ public:
 protected:
   bool enabled;
   std::stringbuf sbuf;
+
+  // Check whether this message is empty or not (i.e. has been moved from)
+  bool empty() noexcept;
 };
 }
 
@@ -133,9 +136,6 @@ struct info final : public detail::MessageBuffer {
 struct debug final : public detail::MessageBuffer {
   debug(bool);
   ~debug();
-
-  // Debug messages can be disabled prior to the end of scope
-  void disable() { enabled = false; }
 
   debug(debug&&) = default;
   debug(const debug&) = delete;

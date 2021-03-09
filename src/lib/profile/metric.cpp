@@ -559,7 +559,10 @@ void Metric::crossfinalize(const CollaborativeContext& cc) noexcept {
     for(const auto& sc: ctx.m_children)
       q.emplace(*sc.second, sc.first, indent.size());
   }
-  if(!output) d.disable();
+  if(!output) {
+    d = util::log::debug{true};
+    d << "Collab " << &cc << ": (no metrics) (no Thread contributors)";
+  }
 }
 
 void Metric::finalize(Thread::Temporary& t) noexcept {

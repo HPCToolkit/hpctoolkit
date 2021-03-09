@@ -70,6 +70,10 @@ MessageBuffer& MessageBuffer::operator=(MessageBuffer&& o) {
   return *this;
 }
 
+bool MessageBuffer::empty() noexcept {
+  return sbuf.pubseekoff(0, std::ios_base::cur, std::ios_base::out) <= 0;
+}
+
 fatal::fatal() { (*this) << "FATAL: "; }
 fatal::~fatal() {
   (*this) << '\n';
@@ -79,20 +83,26 @@ fatal::~fatal() {
 
 error::error() { (*this) << "ERROR: "; }
 error::~error() {
-  (*this) << '\n';
-  std::cerr << sbuf.str();
+  if(!empty()) {
+    (*this) << '\n';
+    std::cerr << sbuf.str();
+  }
 }
 
 warning::warning() { (*this) << "WARNING: "; }
 warning::~warning() {
-  (*this) << '\n';
-  std::cerr << sbuf.str();
+  if(!empty()) {
+    (*this) << '\n';
+    std::cerr << sbuf.str();
+  }
 }
 
 info::info() { (*this) << "INFO: "; }
 info::~info() {
-  (*this) << '\n';
-  std::cerr << sbuf.str();
+  if(!empty()) {
+    (*this) << '\n';
+    std::cerr << sbuf.str();
+  }
 }
 
 debug::debug(bool enable) : MessageBuffer(enable) {
@@ -102,7 +112,7 @@ debug::debug(bool enable) : MessageBuffer(enable) {
   (*this) << ": ";
 }
 debug::~debug() {
-  if(enabled) {
+  if(!empty()) {
     (*this) << '\n';
     std::cerr << sbuf.str();
   }
