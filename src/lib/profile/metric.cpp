@@ -369,8 +369,8 @@ const MetricAccumulator* Metric::getFor(const Thread::Temporary& t, const Contex
   return cd->find(*this);
 }
 
-static bool pullsFunction(const Context& parent, const Context& child) {
-  switch(child.scope().type()) {
+static bool pullsFunction(Scope parent, Scope child) {
+  switch(child.type()) {
   // Function-type Scopes, and unknown (which could be a function)
   case Scope::Type::function:
   case Scope::Type::inlined_function:
@@ -383,7 +383,7 @@ static bool pullsFunction(const Context& parent, const Context& child) {
   case Scope::Type::loop:
   case Scope::Type::line:
   case Scope::Type::concrete_line:
-    switch(parent.scope().type()) {
+    switch(parent.type()) {
     // Function-type scopes, and unknown (which could be a function)
     case Scope::Type::unknown:
     case Scope::Type::function:
@@ -524,7 +524,7 @@ void Metric::crossfinalize(const CollaborativeContext& cc) noexcept {
   if(!cc.m_shadow.data.empty())
     util::log::fatal{} << "Data got attributed to the shadow-root?";
 
-  // TODO, for now just debug-dump stuff
+  // TODO, for now mostly just debug-dump stuff
   util::log::debug d{true};
   bool output = false;
   d << "Collab " << &cc << ":";
@@ -538,26 +538,85 @@ void Metric::crossfinalize(const CollaborativeContext& cc) noexcept {
   }
   if(cc.data.empty())
     d << " (no Thread contributors)";
-  using frame_t = std::tuple<std::reference_wrapper<const CollaborativeSharedContext>,
-    Scope, std::size_t>;
-  std::stack<frame_t, std::vector<frame_t>> q;
-  for(const auto& sc: cc.m_shadow.m_children) {
-    q.emplace(*sc.second, sc.first, 2);
-  }
-  while(!q.empty()) {
-    const auto& ctx = std::get<0>(q.top()).get();
-    Scope s = std::get<1>(q.top());
-    std::string indent(std::get<2>(q.top()), ' ');
-    q.pop();
 
-    d << "\n" << indent << "`-" << s;
-    indent += "  ";
-    for(const auto& macc: ctx.data.citerate()) {
-      d << "\n" << indent << macc.first->name() << " = " << macc.second.point.load(std::memory_order_relaxed);
-      output = true;
+  // (Pre- and) Post-order travsersal of the SharedContext tree
+  struct frame_t {
+    frame_t(const CollaborativeSharedContext& shad, Scope s)
+      : shad(shad), scope(s), here(shad.m_children.begin()),
+        end(shad.m_children.end()) {};
+    const CollaborativeSharedContext& shad;
+    Scope scope;
+    decltype(CollaborativeSharedContext::m_children)::const_iterator here;
+    decltype(CollaborativeSharedContext::m_children)::const_iterator end;
+    bool first = true;
+  };
+  std::stack<frame_t, std::vector<frame_t>> stack;
+
+  for(const auto& sc: cc.m_shadow.m_children) {
+    stack.emplace(*sc.second, sc.first);
+    while(!stack.empty()) {
+      if(stack.top().first) {
+        // Pre-order side
+        std::string indent(stack.size()*2, ' ');
+        d << "\n" << indent << "`-" << stack.top().scope;
+        indent += "  ";
+        for(const auto& macc: stack.top().shad.data.citerate()) {
+          d << "\n" << indent << macc.first->name() << " = " << macc.second.point.load(std::memory_order_relaxed);
+          output = true;
+        }
+        stack.top().first = false;
+      }
+
+      if(stack.top().here != stack.top().end) {
+        auto scope = stack.top().here->first;
+        const auto& child = *stack.top().here->second;
+        ++stack.top().here;
+        stack.emplace(child, scope);
+        continue;
+      }
+
+      // Post-order side
+      auto& mdata = const_cast<CollaborativeSharedContext&>(stack.top().shad).data;
+
+      // Handle the internal propagation first, so we don't get mixed up.
+      for(auto& mx: mdata.iterate()) {
+        mx.second.execution = mx.second.function
+                            = mx.second.point.load(std::memory_order_relaxed);
+      }
+
+      // Go through our children and sum into our bits
+      for(auto& schild: stack.top().shad.m_children) {
+        const bool pullfunc = pullsFunction(stack.top().scope, schild.first);
+        for(const auto& mx: schild.second->data.citerate()) {
+          auto& accum = mdata[mx.first];
+          if(pullfunc) accum.function += mx.second.function;
+          accum.execution += mx.second.execution;
+        }
+      }
+
+      if(cc.data.empty()) {
+        // There are no Threads to distribute to, so just add into the Contexts
+        // themselves. Keeps from losing metric value.
+        for(const auto& rc: stack.top().shad.m_shadowing) {
+          auto& cdata = const_cast<Context&>(rc.second).data;
+          for(const auto& mx: mdata.citerate()) {
+            auto& accum = cdata.emplace(std::piecewise_construct,
+              std::forward_as_tuple(mx.first), std::forward_as_tuple(mx.first)).first;
+            for(size_t i = 0; i < mx.first->partials().size(); i++) {
+              auto& partial = mx.first->partials()[i];
+              auto& atomics = accum.partials[i];
+              atomic_op(atomics.point, partial.m_accum(mx.second.point.load(std::memory_order_relaxed)), partial.combinator());
+              atomic_op(atomics.function, partial.m_accum(mx.second.function), partial.combinator());
+              atomic_op(atomics.execution, partial.m_accum(mx.second.execution), partial.combinator());
+            }
+          }
+        }
+      } else {
+        // TODO: Implement proper Thread-level distribution
+      }
+
+      stack.pop();
     }
-    for(const auto& sc: ctx.m_children)
-      q.emplace(*sc.second, sc.first, indent.size());
   }
   if(!output) {
     d = util::log::debug{true};
@@ -635,7 +694,7 @@ void Metric::finalize(Thread::Temporary& t) noexcept {
     for(std::size_t i = 0; i < stack.top().submds.size(); i++) {
       const Context& cc = stack.top().submds[i].first;
       const md_t& ccmd = stack.top().submds[i].second;
-      const bool pullfunc = pullsFunction(c, cc);
+      const bool pullfunc = pullsFunction(c.scope(), cc.scope());
       for(const auto& mx: ccmd.citerate()) {
         auto& accum = data[mx.first];
         if(pullfunc) accum.function += mx.second.function;
