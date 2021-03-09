@@ -1208,7 +1208,6 @@ sanitizer_kernel_launch_sync
  int32_t persistent_id,
  uint64_t correlation_id,
  CUcontext context,
- Sanitizer_StreamHandle handle_stream,
  CUmodule module,
  CUfunction function,
  Sanitizer_StreamHandle priority_stream,
@@ -1624,9 +1623,13 @@ sanitizer_subscribe_callback
         kernel_stream = sanitizer_kernel_stream_get(ld->context);
 
         sanitizer_kernel_launch_sync(persistent_id, correlation_id,
-          ld->context, ld->hStream, ld->module, ld->function,
-          priority_stream, kernel_stream, grid_size, block_size);
+          ld->context, ld->module, ld->function, priority_stream,
+          kernel_stream, grid_size, block_size);
       }
+
+      // NOTICE: Need to synchronize this stream even when this kernel is not sampled.
+      // TO prevent data is incorrectly copied in the next round
+      HPCRUN_SANITIZER_CALL(sanitizerStreamSynchronize, (ld->hStream));
 
       redshow_kernel_end(sanitizer_thread_id_local, persistent_id, correlation_id);
 
@@ -1782,9 +1785,6 @@ sanitizer_callbacks_subscribe()
     (&sanitizer_subscriber_handle, sanitizer_subscribe_callback, NULL));
 
   HPCRUN_SANITIZER_CALL(sanitizerEnableDomain,
-    (1, sanitizer_subscriber_handle, SANITIZER_CB_DOMAIN_RUNTIME_API));
-
-  HPCRUN_SANITIZER_CALL(sanitizerEnableDomain,
     (1, sanitizer_subscriber_handle, SANITIZER_CB_DOMAIN_DRIVER_API));
 
   HPCRUN_SANITIZER_CALL(sanitizerEnableDomain,
@@ -1807,9 +1807,6 @@ sanitizer_callbacks_unsubscribe()
   sanitizer_correlation_callback = 0;
 
   HPCRUN_SANITIZER_CALL(sanitizerUnsubscribe, (sanitizer_subscriber_handle));
-
-  HPCRUN_SANITIZER_CALL(sanitizerEnableDomain,
-    (0, sanitizer_subscriber_handle, SANITIZER_CB_DOMAIN_RUNTIME_API));
 
   HPCRUN_SANITIZER_CALL(sanitizerEnableDomain,
     (0, sanitizer_subscriber_handle, SANITIZER_CB_DOMAIN_DRIVER_API));
