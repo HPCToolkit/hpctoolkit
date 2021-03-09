@@ -519,39 +519,47 @@ void Metric::prefinalize(Thread::Temporary& t) noexcept {
   }
 }
 
-bool Metric::needsCrossfinalize(const Thread::Temporary& t) noexcept {
-  return !t.cb_data.empty();
-}
-
-void Metric::crossfinalize(std::vector<Thread::Temporary>& ts) noexcept {
-  if(ts.empty()) return;
-
-  // Reorganize by (unique) collabs
-  using CollabRef = std::pair<std::reference_wrapper<const Thread>,
-      std::reference_wrapper<const decltype(Thread::Temporary::cb_data)::mapped_type>>;
-  std::unordered_map<util::reference_index<const CollaborativeContext>, std::vector<CollabRef>>
-      collabs;
-  for(auto& t: ts)
-    for(auto& cbdata: t.cb_data.citerate())
-      collabs[cbdata.first].emplace_back(t.thread(), cbdata.second);
+void Metric::crossfinalize(const CollaborativeContext& cc) noexcept {
+  // if(cc.data.empty()) return;
+  if(!cc.m_shadow.data.empty())
+    util::log::fatal{} << "Data got attributed to the shadow-root?";
 
   // TODO, for now just debug-dump stuff
-  for(const auto& cbdata: collabs) {
-    const CollaborativeContext& collab = cbdata.first;
-    util::log::debug d{true};
-    d << "Collab " << &collab << ":";
-    for(auto& tdata: cbdata.second) {
-      const Thread& t = tdata.first;
-      for(auto& cdata: tdata.second.get().citerate()) {
-        const Context& c = cdata.first;
-        for(auto& mdata: cdata.second.citerate()) {
-          const Metric& m = mdata.first;
-          double val = mdata.second.point.load(std::memory_order_relaxed);
-          d << "\n  " << t.attributes.threadid().value_or(0) << " " << c.scope() << " " << m.name() << " = " << val;
-        }
-      }
-    }
+  util::log::debug d{true};
+  bool output = false;
+  d << "Collab " << &cc << ":";
+  for(const auto& tcdata: cc.data.citerate()) {
+    const Thread& t = tcdata.first.first->thread();
+    const Context& c = tcdata.first.second;
+    d << "\n  Root " << c.scope() << " in thread " << t.attributes.threadid().value_or(-1) << ":";
+    for(const auto& macc: tcdata.second.citerate())
+      d << "\n    " << macc.first->name() << " = " << macc.second.point.load(std::memory_order_relaxed);
+    output = true;
   }
+  if(cc.data.empty())
+    d << " (no Thread contributors)";
+  using frame_t = std::tuple<std::reference_wrapper<const CollaborativeSharedContext>,
+    Scope, std::size_t>;
+  std::stack<frame_t, std::vector<frame_t>> q;
+  for(const auto& sc: cc.m_shadow.m_children) {
+    q.emplace(*sc.second, sc.first, 2);
+  }
+  while(!q.empty()) {
+    const auto& ctx = std::get<0>(q.top()).get();
+    Scope s = std::get<1>(q.top());
+    std::string indent(std::get<2>(q.top()), ' ');
+    q.pop();
+
+    d << "\n" << indent << "`-" << s;
+    indent += "  ";
+    for(const auto& macc: ctx.data.citerate()) {
+      d << "\n" << indent << macc.first->name() << " = " << macc.second.point.load(std::memory_order_relaxed);
+      output = true;
+    }
+    for(const auto& sc: ctx.m_children)
+      q.emplace(*sc.second, sc.first, indent.size());
+  }
+  if(!output) d.disable();
 }
 
 void Metric::finalize(Thread::Temporary& t) noexcept {

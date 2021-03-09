@@ -134,6 +134,9 @@ struct debug final : public detail::MessageBuffer {
   debug(bool);
   ~debug();
 
+  // Debug messages can be disabled prior to the end of scope
+  void disable() { enabled = false; }
+
   debug(debug&&) = default;
   debug(const debug&) = delete;
   debug& operator=(debug&&) = default;

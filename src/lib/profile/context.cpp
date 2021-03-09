@@ -161,87 +161,86 @@ SuperpositionedContext& Context::superposition(std::vector<SuperpositionedContex
   return *c;
 }
 
+static util::optional_ref<CollaborativeContext> collaborationFor(const ContextRef& v) {
+  if(auto pcc = std::get_if<Context, CollaborativeSharedContext>(v))
+    return pcc->second.get().collaboration();
+  if(auto pc = std::get_if<CollaborativeSharedContext>(v))
+    return pc->collaboration();
+  return std::nullopt;
+}
+
 SuperpositionedContext::SuperpositionedContext(Context& root, std::vector<Target> targets)
   : m_root(root), m_targets(std::move(targets)) {
   if(m_targets.size() < 2)
     util::log::fatal{} << "Attempt to create a Superposition without enough Targets!";
   if(std::any_of(++m_targets.begin(), m_targets.end(), [&](const auto& t){
-    return t.target.collaboration() != m_targets.front().target.collaboration();
+    return collaborationFor(t.target) != collaborationFor(m_targets.front().target);
   }))
     util::log::fatal{} << "Attempt to create a Superposition with inconsistent collaborations between Targets!";
 }
 
 SuperpositionedContext::Target::Target(std::vector<ContextRef> r, ContextRef t)
   : route(std::move(r)), target(t) {
+  if(std::holds_alternative<CollaborativeContext>(t))
+    util::log::fatal{} << "Attempt to create a Superposition target targeting a collaborative root!";
   if(std::any_of(route.begin(), route.end(), [&](const auto& r) {
-    return r.collaboration() != target.collaboration();
+    return std::holds_alternative<CollaborativeContext>(r);
+  }))
+    util::log::fatal{} << "Attempt to create a Superposition target with a collaborative root!";
+  if(std::any_of(route.begin(), route.end(), [&](const auto& r) {
+    return collaborationFor(r) != collaborationFor(target);
   }))
     util::log::fatal{} << "Attempt to create a Superposition target with inconsistent collaboration!";
 }
 
-Context& CollaborativeContext::ensure(Context& c, Scope s, const std::function<void(Context&)>& onadd) noexcept {
-  std::unique_lock<std::mutex> l(m_lock);
-  auto it = m_shadowMap.find(c);
-  if(it == m_shadowMap.end())
-    util::log::fatal{} << "Invalid attempt to expand a Collaborative subtree!";
-  auto& [root, shad] = it->second;
-  return shad.ensure(*this, s, onadd).m_shadowing.at(root);
+CollaborativeSharedContext& CollaborativeSharedContext::ensure(Scope s,
+    const std::function<void(Context&)>& onadd) noexcept {
+  std::unique_lock<std::mutex> l(m_root.m_lock);
+  return ensure(s, onadd, l);
 }
 
-CollaborativeContext::ShadowContext&
-CollaborativeContext::ShadowContext::ensure(CollaborativeContext& collab, Scope s,
-                                            const std::function<void(Context&)>& onadd) noexcept {
+CollaborativeSharedContext&
+CollaborativeSharedContext::ensure(Scope s, const std::function<void(Context&)>& onadd,
+                                   std::unique_lock<std::mutex>& l) noexcept {
   {
     auto it = m_children.find(s);
     if(it != m_children.end())
       return *it->second;
   }
-  auto& child = *m_children.emplace(s, std::make_unique<ShadowContext>()).first->second;
-  for(auto& [root, real]: m_shadowing)
-    child.update(collab, root, real, s, onadd);
+  auto& child = *m_children.emplace(s, new CollaborativeSharedContext(m_root)).first->second;
+  for(auto& [root, real]: m_shadowing) {
+    auto x = real.ensure(s);
+    if(x.second) onadd(x.first);
+    child.m_shadowing.emplace(root, x.first);
+  }
   return child;
 }
 
-void CollaborativeContext::ShadowContext::update(CollaborativeContext& collab,
-    Context& root, Context& par, Scope s, const std::function<void(Context&)>& onadd) noexcept {
-  auto x = par.ensure(s);
-  if(x.second) onadd(x.first);
-  m_shadowing.emplace(root, x.first);
-  if(!m_unique) m_unique = x.first;
-  collab.m_shadowMap.insert({x.first, {root, *this}});
-}
-
-void CollaborativeContext::addCollaboratorRoot(ContextRef root, const std::function<void(Context&)>& onadd) noexcept {
-  if(root.collaboration())
-    util::log::fatal{} << "Collaborator roots must not be part of collaborations already!";
-  if(!std::holds_alternative<Context>(root))
+CollaborativeSharedContext& CollaborativeContext::addCollaboratorRoot(ContextRef rootref,
+    const std::function<void(Context&)>& onadd) noexcept {
+  if(!std::holds_alternative<Context>(rootref))
     util::log::fatal{} << "Collaborator roots must be proper Contexts!";
   std::unique_lock<std::mutex> l(m_lock);
-  Context& rroot = std::get<Context>(root);
-  if(!m_shadow.m_shadowing.emplace(rroot, rroot).second) return;
-  if(!m_shadow.m_unique) m_shadow.m_unique = rroot;
-  m_shadowMap.insert({rroot, {rroot, m_shadow}});
+  Context& root = std::get<Context>(rootref);
+  if(!m_shadow.m_shadowing.emplace(root, root).second)
+    return m_shadow;  // Its already been added, don't continue
 
   // Make a copy of the shadow-tree rooted at root
-  std::stack<std::reference_wrapper<ShadowContext>,
-             std::vector<std::reference_wrapper<ShadowContext>>> q;
-  q.emplace(m_shadow);
+  using frame_t = std::pair<std::reference_wrapper<CollaborativeSharedContext>,
+                            std::reference_wrapper<Context>>;
+  std::stack<frame_t, std::vector<frame_t>> q;
+  q.emplace(m_shadow, root);
   while(!q.empty()) {
-    ShadowContext& shad = q.top();
+    auto& shad = q.top().first.get();
+    auto& par = q.top().second.get();
     q.pop();
 
-    Context& par = shad.m_shadowing.at(rroot);
     for(const auto& sc: shad.m_children) {
-      sc.second->update(*this, rroot, par, sc.first, onadd);
-      q.emplace(*sc.second);
+      auto x = par.ensure(sc.first);
+      if(x.second) onadd(x.first);
+      sc.second->m_shadowing.emplace(root, x.first);
+      q.emplace(*sc.second, x.first);
     }
   }
-}
-
-Context& CollaborativeContext::unique(Context& ctx) noexcept {
-  std::unique_lock<std::mutex> l(m_lock);
-  auto it = m_shadowMap.find(ctx);
-  if(it == m_shadowMap.end())
-    util::log::fatal{} << "Attempt to unique a Context that has not been shadowed!";
-  return it->second.second.m_unique.value();
+  return m_shadow;
 }

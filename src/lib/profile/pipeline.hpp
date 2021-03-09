@@ -242,7 +242,7 @@ public:
 private:
   // Internal Source-local storage structure. Externally Synchronized.
   struct SourceLocal {
-    std::vector<Thread::Temporary> threads;
+    std::forward_list<Thread::Temporary> threads;
     std::unordered_set<Metric*> thawedMetrics;
 
     std::pair<bool, bool> orderedRegions;

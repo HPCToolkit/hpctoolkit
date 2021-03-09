@@ -102,6 +102,8 @@ debug::debug(bool enable) : MessageBuffer(enable) {
   (*this) << ": ";
 }
 debug::~debug() {
-  (*this) << '\n';
-  std::cerr << sbuf.str();
+  if(enabled) {
+    (*this) << '\n';
+    std::cerr << sbuf.str();
+  }
 }

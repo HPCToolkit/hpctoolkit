@@ -285,14 +285,10 @@ private:
   // MT: Internally Synchronized
   static void prefinalize(Thread::Temporary& t) noexcept;
 
-  // Test whether crossfinalization is needed for this Thread.
-  // MT: Interally Synchronized
-  static bool needsCrossfinalize(const Thread::Temporary& t) noexcept;
-
-  // Partially finalize the MetricAccumulators for a set of Threads,
-  // distributing across Threads if needed.
+  // Partially finalize the MetricAccumulators referenced by a particular
+  // CollaborativeContext. Will affect the Accumulators for referenced Threads.
   // MT: Internally Synchronized
-  static void crossfinalize(std::vector<Thread::Temporary>& ts) noexcept;
+  static void crossfinalize(const CollaborativeContext&) noexcept;
 
   // Finalize the MetricAccumulators for a Thread.
   // MT: Internally Synchronized

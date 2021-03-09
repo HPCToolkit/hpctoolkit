@@ -240,7 +240,6 @@ void ProfilePipeline::run() {
   char start_arc;
   char barrier_arc;
   char single_arc;
-  char for_arc;
   char end_arc;
 #endif
 
@@ -248,7 +247,7 @@ void ProfilePipeline::run() {
   for(auto& c: countdowns) c.store(sources.size(), std::memory_order_relaxed);
 
   std::mutex delayedThreads_lock;
-  std::vector<Thread::Temporary> delayedThreads;
+  std::forward_list<Thread::Temporary> delayedThreads;
 
   ANNOTATE_HAPPENS_BEFORE(&start_arc);
   #pragma omp parallel num_threads(team_size)
@@ -341,17 +340,18 @@ void ProfilePipeline::run() {
         if(req.hasAny()) sources[i]().read(req);
       }
 
-      // Finalize all the Threads we can.
+      // Finalize all the Threads we can, stash the ones we can't for later
       for(auto& t: sl.threads) {
         Metric::prefinalize(t);
-        if(Metric::needsCrossfinalize(t)) {
-          std::unique_lock<std::mutex> l(delayedThreads_lock);
-          delayedThreads.emplace_back(std::move(t));
-          continue;
-        }
+        if(t.contributesToCollab) continue;
         Metric::finalize(t);
         for(auto& s: sinks)
           if(s.dataLimit.hasThreads()) s().notifyThreadFinal(t);
+      }
+      sl.threads.remove_if([](const auto& t){ return !t.contributesToCollab; });
+      if(!sl.threads.empty()) {
+        std::unique_lock<std::mutex> l(delayedThreads_lock);
+        delayedThreads.splice_after(delayedThreads.before_begin(), std::move(sl.threads));
       }
 
       // Clean up the Source-local data.
@@ -366,24 +366,21 @@ void ProfilePipeline::run() {
     #pragma omp barrier
     ANNOTATE_HAPPENS_AFTER(&barrier_arc);
 
-    // One thread works hard to do the cross-Thread distributions
+    // One thread works hard to do the cross-Thread distributions and finish
+    // everything up. Its slow but it'll work for now
     #pragma omp single
     {
-      Metric::crossfinalize(delayedThreads);
+      for(const auto& xc: collabs.iterate())
+        Metric::crossfinalize(xc.second.ctx);
+      for(auto& t: delayedThreads) {
+        Metric::finalize(t);
+        for(auto& s: sinks)
+          if(s.dataLimit.hasThreads()) s().notifyThreadFinal(t);
+      }
+      delayedThreads.clear();
       ANNOTATE_HAPPENS_BEFORE(&single_arc);
     }
     ANNOTATE_HAPPENS_AFTER(&single_arc);
-
-    // Once that's done, everybody works together to finish the job
-    #pragma omp for schedule(dynamic)
-    for(std::size_t i = 0; i < delayedThreads.size(); ++i) {
-      auto t = std::move(delayedThreads[i]);
-      Metric::finalize(t);
-      for(auto& s: sinks)
-        if(s.dataLimit.hasThreads()) s().notifyThreadFinal(t);
-      ANNOTATE_HAPPENS_BEFORE(&for_arc);
-    }
-    ANNOTATE_HAPPENS_AFTER(&for_arc);
 
     // Clean up the Sources early, to save some serialized time later
     #pragma omp for schedule(dynamic) nowait
@@ -564,13 +561,12 @@ ContextRef Source::context(ContextRef p, const Scope& s, bool recurse) {
       res = pipe->transformers[i].get().context(res, rs);
 
   auto newCtx = [&](ContextRef p, const Scope& s) -> ContextRef {
+    if(auto pcc = std::get_if<Context, CollaborativeSharedContext>(p))
+      p = pcc->second.get();
+      // fallthrough
+    if(auto pc = std::get_if<CollaborativeSharedContext>(p))
+      return pc->ensure(rs, [this](Context& c){ notifyContext(c); });
     if(auto pc = std::get_if<Context>(p)) {
-      if(p.collaboration()) {
-        auto& collab = *p.collaboration();
-        return {collab, collab.ensure(*pc, rs, [this](Context& c) {
-          notifyContext(c);
-        })};
-      }
       auto x = pc->ensure(rs);
       if(x.second) notifyContext(x.first);
       return x.first;
@@ -579,7 +575,9 @@ ContextRef Source::context(ContextRef p, const Scope& s, bool recurse) {
     abort();  // unreachable
   };
 
-  if(auto rc = std::get_if<Context>(res)) {
+  if(std::holds_alternative<Context>(res)
+     || std::holds_alternative<Context, CollaborativeSharedContext>(res)
+     || std::holds_alternative<CollaborativeSharedContext>(res)) {
     res = newCtx(res, rs);
   } else if(auto rc = std::get_if<SuperpositionedContext>(res)) {
     for(auto& t: rc->m_targets) t.target = newCtx(t.target, rs);
@@ -596,8 +594,6 @@ ContextRef Source::superposContext(ContextRef root, std::vector<SuperpositionedC
     util::log::fatal() << "Source did not register for `contexts` emission!";
   if(!std::holds_alternative<Context>(root))
     util::log::fatal{} << "Attempt to root a Superposition on an improper Context!";
-  if(root.collaboration())
-    util::log::fatal{} << "TODO: Support superpositions off of collaborations";
   return std::get<Context>(root).superposition(std::move(targets));
 }
 
@@ -609,23 +605,26 @@ CollaborativeContext& Source::collabContext(std::uint64_t id) {
 ContextRef Source::collaborate(ContextRef target, CollaborativeContext& collab) {
   if(!limit().hasContexts())
     util::log::fatal() << "Source did not register for `contexts` emission!";
-  collab.addCollaboratorRoot(target, [this](Context& c){ notifyContext(c); });
-  return {collab, target};
+  auto& shared = collab.addCollaboratorRoot(target, [this](Context& c){ notifyContext(c); });
+  return {std::get<Context>(target), shared};
 }
 
 Source::AccumulatorsRef Source::accumulateTo(ContextRef c, Thread::Temporary& t) {
   if(!limit().hasMetrics())
     util::log::fatal() << "Source did not register for `metrics` emission!";
-  if(auto collab = c.collaboration()) {
-    auto& data = t.cb_data[*collab];
-    if(auto pc = std::get_if<Context>(c))
-      return data[*pc];
-    else abort();  // unreachable
-  } else if(auto pc = std::get_if<Context>(c))
+  if(auto pc = std::get_if<Context>(c))
     return t.data[*pc];
-  else if(auto pc = std::get_if<SuperpositionedContext>(c))
+  if(auto pc = std::get_if<SuperpositionedContext>(c))
     return t.sp_data[*pc];
-  else abort();  // unreachable
+  if(auto pcc = std::get_if<Context, CollaborativeSharedContext>(c)) {
+    t.contributesToCollab = true;
+    return pcc->second.get().m_root.data[{t, pcc->first}];
+  }
+  if(auto pc = std::get_if<CollaborativeSharedContext>(c)) {
+    t.contributesToCollab = true;
+    return pc->data;
+  }
+  abort();  // unreachable
 }
 
 void Source::AccumulatorsRef::add(Metric& m, double v) {
@@ -662,8 +661,8 @@ Thread::Temporary& Source::thread(const ThreadAttributes& o) {
     if(s.dataLimit.hasThreads()) s().notifyThread(t);
   }
   t.userdata.initialize();
-  slocal->threads.emplace_back(Thread::Temporary(t));
-  return slocal->threads.back();
+  slocal->threads.emplace_front(Thread::Temporary(t));
+  return slocal->threads.front();
 }
 
 void Source::timepoint(Thread::Temporary& tt, ContextRef c, std::chrono::nanoseconds tm) {

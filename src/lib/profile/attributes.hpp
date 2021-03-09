@@ -167,6 +167,7 @@ public:
 
     friend class ProfilePipeline;
     Temporary(Thread& t) : m_thread(t) {};
+    bool contributesToCollab = false;
 
     friend class Metric;
     util::locked_unordered_map<util::reference_index<const Context>,
@@ -175,10 +176,6 @@ public:
     util::locked_unordered_map<util::reference_index<const SuperpositionedContext>,
       util::locked_unordered_map<util::reference_index<const Metric>,
         MetricAccumulator>> sp_data;
-    util::locked_unordered_map<util::reference_index<const CollaborativeContext>,
-      util::locked_unordered_map<util::reference_index<const Context>,
-        util::locked_unordered_map<util::reference_index<const Metric>,
-          MetricAccumulator>>> cb_data;
   };
 };
 
