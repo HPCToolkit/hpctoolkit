@@ -118,6 +118,10 @@ gpu_operation_record
   gpu_trace_fini(NULL, MONITOR_EXIT_NORMAL);
   atomic_store(&gpu_trace_finished, true);
 
+  // write out range profile
+  thread_data_t *cur_td = hpcrun_safe_get_td();
+  hpcrun_write_profile_data(&cur_td->core_profile_trace_data);
+
   return NULL;
 }
 
