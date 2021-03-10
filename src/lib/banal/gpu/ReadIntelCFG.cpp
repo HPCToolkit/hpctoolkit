@@ -231,10 +231,15 @@ readIntelCFG
  Dyninst::ParseAPI::CodeObject **code_obj
 )
 {
-  if (cfg_wanted) {
-    auto function_name = elfFile->getGPUKernelName();
-    addCustomFunctionObject(function_name, the_symtab); //adds a dummy function object
+  // An Intel GPU binary for a kernel does not contain a function symbol for the kernel
+  // in its symbol table. Without a function symbol in the symbol table, Dyninst will not
+  // associate line map entries with addresses in the kernel. To cope with this defect of
+  // binaries for Intel GPU kernels, we add a function symbol for the kernel to its Dyninst
+  // symbol table.	
+  auto function_name = elfFile->getGPUKernelName();
+  addCustomFunctionObject(function_name, the_symtab); //adds a dummy function object
 
+  if (cfg_wanted) {
     char *text_section = NULL;
     auto text_section_size = elfFile->getTextSection(&text_section);
     if (text_section_size == 0) {
