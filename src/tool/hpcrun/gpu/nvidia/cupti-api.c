@@ -795,6 +795,7 @@ cupti_unload_callback_cuda
   TMSG(CUPTI, "Context %p cubin_id %d unload", context, cubin_id);
   if (context != NULL) {
     // Flush records but not disable context
+    // No need to lock because the current operation is not on GPU
     uint32_t range_id = gpu_range_id();
     cupti_pc_sampling_range_correlation_collect(range_id, NULL, context);
   }
@@ -890,7 +891,11 @@ cupti_subscriber_callback
       int pc_sampling_frequency = cupti_pc_sampling_frequency_get();
       if (pc_sampling_frequency != -1) {
 #ifdef NEW_CUPTI
-        // TODO(Keren): Get the current range_id
+        // Flush records
+        // No need to lock because the current operation is on GPU
+        // Activities can be attributed to either the current or the previous range
+        uint32_t range_id = gpu_range_id();
+        cupti_pc_sampling_range_correlation_collect(range_id, NULL, rd->context);
         cupti_pc_sampling_disable2(rd->context);
 #else
         cupti_pc_sampling_disable(rd->context);
@@ -1135,7 +1140,7 @@ cupti_subscriber_callback
         if (gpu_range_interval_get() == 1) {
           // TODO(Keren): call synchronization for PAPI metrics
           if (is_kernel_op) {
-            cupti_pc_sampling_correlation_flush(cupti_kernel_ph);
+            cupti_pc_sampling_correlation_flush(cd->context, cupti_kernel_ph);
           }
         } else {
           if (gpu_range_is_lead()) {
@@ -1344,7 +1349,7 @@ cupti_subscriber_callback
         if (gpu_range_interval_get() == 1) {
           // TODO(Keren): call synchronization for PAPI metrics
           if (is_kernel_op) {
-            cupti_pc_sampling_correlation_flush(cupti_kernel_ph);
+            cupti_pc_sampling_correlation_flush(cd->context, cupti_kernel_ph);
           }
         } else {
           if (gpu_range_is_lead()) {

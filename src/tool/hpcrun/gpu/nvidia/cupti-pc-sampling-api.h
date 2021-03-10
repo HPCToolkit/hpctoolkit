@@ -71,14 +71,6 @@ cupti_pc_sampling_disable2
 
 
 void
-cupti_pc_sampling_range_disable2
-(
- uint32_t range_id,
- CUcontext context
-);
-
-
-void
 cupti_pc_sampling_range_correlation_collect
 (
  uint32_t range_id,
@@ -100,15 +92,8 @@ cupti_cubin_crc_get
  uint32_t cubin_size
 );
 
-// Stop pc sampling on all contexts
-// And reenable all contexts
-void
-cupti_pc_sampling_flush
-(
- void
-);
 
-
+// Continuous mode
 void
 cupti_pc_sampling_range_flush
 (
@@ -116,9 +101,11 @@ cupti_pc_sampling_range_flush
 );
 
 
+// Serialization mode
 void
 cupti_pc_sampling_correlation_flush
 (
+ CUcontext context,
  cct_node_t *cct_node
 );
 

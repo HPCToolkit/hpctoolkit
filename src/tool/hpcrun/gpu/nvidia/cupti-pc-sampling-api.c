@@ -614,18 +614,10 @@ cupti_pc_sampling_disable2
  CUcontext context
 )
 {
-  TMSG(CUPTI, "Disable context %p\n", context);
-  cupti_pc_sampling_range_disable2(0, context);
-}
+  uint32_t context_id = ((hpctoolkit_cuctx_st_t *)context)->context_id;
 
+  TMSG(CUPTI, "Disable context_id %u\n", context_id);
 
-void
-cupti_pc_sampling_range_disable2
-(
- uint32_t range_id,
- CUcontext context
-)
-{
   CUpti_PCSamplingDisableParams params = {
     .size = CUpti_PCSamplingDisableParamsSize,
     .ctx = context,
@@ -697,19 +689,9 @@ cupti_pc_sampling_range_flush
 void
 cupti_pc_sampling_correlation_flush
 (
+ CUcontext context,
  cct_node_t *cct_node
 )
 {
-  CUcontext context;
-  cuda_context_get(&context);
   cupti_pc_sampling_range_correlation_collect(0, cct_node, context);
-}
-
-
-void
-cupti_pc_sampling_flush
-(
-)
-{
-  cupti_pc_sampling_range_flush(0);
 }
