@@ -295,7 +295,7 @@ gpu_op_ccts_update
  cct_node_t *node
 )
 {
-  return gpu_op_ccts->ccts[type] = node;
+  gpu_op_ccts->ccts[type] = node;
 }
 
 

@@ -63,7 +63,8 @@
 #include <hpcrun/gpu/gpu-event-id-map.h>
 #include <hpcrun/gpu/gpu-function-id-map.h>
 #include <hpcrun/gpu/gpu-host-correlation-map.h>
-#include <hpcrun/gpu/gpu-operation-multiplexer.h>
+#include <hpcrun/gpu/gpu-operation-item.h>
+#include <hpcrun/gpu/gpu-operation-item-process.h>
 #include <hpcrun/hpcrun_stats.h>
 
 
@@ -96,7 +97,8 @@ attribute_activity
     gpu_host_correlation_map_entry_channel_get(hc);
   activity->cct_node = cct_node;
   activity->range_id = range_id;
-  gpu_operation_multiplexer_push(channel, NULL, activity);
+
+  gpu_operation_item_activity_process(activity, channel);
 }
 
 

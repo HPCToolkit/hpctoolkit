@@ -58,6 +58,15 @@ typedef struct gpu_operation_item_t gpu_operation_item_t;
 // interface operations
 //******************************************************************************
 
+
+void
+gpu_operation_item_activity_process
+(
+ gpu_activity_t *activity,
+ gpu_activity_channel_t *channel
+);
+
+
 void
 gpu_operation_item_process
 (
@@ -68,7 +77,7 @@ gpu_operation_item_process
 void
 gpu_pc_sampling_info2_process
 (
- gpu_operation_item_t *it
+ gpu_activity_t *activity
 );
 
 

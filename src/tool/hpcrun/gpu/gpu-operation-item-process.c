@@ -101,12 +101,10 @@ gpu_context_stream_trace
 static void
 gpu_memcpy_process
 (
- gpu_operation_item_t *it
+ gpu_activity_t *activity,
+ gpu_activity_channel_t *channel
 )
 {
-  gpu_activity_t *activity = &it->activity;
-  gpu_activity_channel_t *channel = it->channel;
-
   assert(activity->cct_node != NULL);
 
   gpu_trace_item_t entry_trace;
@@ -124,19 +122,17 @@ gpu_memcpy_process
 
   gpu_activity_channel_produce(channel, activity);
 
-  TMSG(GPU_RANGE, "Memcpy copy range %u\n", activity->range_id);
+  TMSG(GPU_OPERATION, "Memcpy copy range %u\n", activity->range_id);
 }
 
 
 static void
 gpu_kernel_process
 (
- gpu_operation_item_t *it
+ gpu_activity_t *activity,
+ gpu_activity_channel_t *channel
 )
 {
-  gpu_activity_t *activity = &it->activity;
-  gpu_activity_channel_t *channel = it->channel;
-
   gpu_trace_item_t entry_trace;
 
   gpu_trace_item_produce(&entry_trace,
@@ -152,21 +148,19 @@ gpu_kernel_process
 
   gpu_activity_channel_produce(channel, activity);
 
-  TMSG(GPU_RANGE, "Kernel execution range %u\n", activity->range_id);
-  TMSG(GPU_RANGE, "Kernel execution cct_node %p\n", activity->cct_node);
-  TMSG(GPU_RANGE, "Kernel execution deviceId %u\n", activity->details.kernel.device_id);
+  TMSG(GPU_OPERATION, "Kernel execution range %u\n", activity->range_id);
+  TMSG(GPU_OPERATION, "Kernel execution cct_node %p\n", activity->cct_node);
+  TMSG(GPU_OPERATION, "Kernel execution deviceId %u\n", activity->details.kernel.device_id);
 }
 
 
 static void
 gpu_synchronization_process
 (
- gpu_operation_item_t *it
+ gpu_activity_t *activity,
+ gpu_activity_channel_t *channel
 )
 {
-  gpu_activity_t *activity = &it->activity;
-  gpu_activity_channel_t *channel = it->channel;
-
   gpu_trace_item_t entry_trace;
 
   gpu_trace_item_produce(&entry_trace,
@@ -175,7 +169,7 @@ gpu_synchronization_process
                          activity->details.synchronization.end,
                          activity->cct_node);
 
-  TMSG(GPU_RANGE, "Sync range range %u\n", activity->range_id);
+  TMSG(GPU_OPERATION, "Sync range range %u\n", activity->range_id);
 
   if (activity->kind == GPU_ACTIVITY_SYNCHRONIZATION) {
     uint32_t context_id = activity->details.synchronization.context_id;
@@ -197,7 +191,7 @@ gpu_synchronization_process
         break;
       default:
         // invalid
-        TMSG(GPU_RANGE, "Invalid synchronization\n");
+        TMSG(GPU_OPERATION, "Invalid synchronization\n");
     }
   }
 
@@ -208,10 +202,9 @@ gpu_synchronization_process
 void
 gpu_pc_sampling_info2_process
 (
- gpu_operation_item_t *it
+ gpu_activity_t *activity
 )
 {
-  gpu_activity_t *activity = &it->activity;
   uint32_t range_id = activity->range_id;
   gpu_pc_sampling_info2_t *pc_sampling_info2 = &activity->details.pc_sampling_info2;
 
@@ -243,36 +236,36 @@ gpu_pc_sampling_info2_process
   }
   pc_sampling_info2->free(pc_sampling_data);
 
-  TMSG(GPU_RANGE, "PC sampling range %u\n", range_id);
+  TMSG(GPU_OPERATION, "PC sampling range %u\n", range_id);
 }
 
 
 static void
 gpu_flush_process
 (
- gpu_operation_item_t *it
+ gpu_activity_t *activity
 )
 {
-  gpu_activity_t *activity = &it->activity;
   // A special flush operation at the end of each thread
   // Set it false to indicate all previous activities have been processed
   if (atomic_load(activity->details.flush.wait)) {
     atomic_store(activity->details.flush.wait, false);
   }
+
+  TMSG(GPU_OPERATION, "Flush activity\n");
 }
 
 
 static void
 gpu_default_process
 (
- gpu_operation_item_t *it
+ gpu_activity_t *activity,
+ gpu_activity_channel_t *channel
 )
 {
-  gpu_activity_t *activity = &it->activity;
-  gpu_activity_channel_t *channel = it->channel;
   gpu_activity_channel_produce(channel, activity);
 
-  TMSG(GPU_RANGE, "Default activity range %u\n", activity->range_id);
+  TMSG(GPU_OPERATION, "Default activity range %u\n", activity->range_id);
 }
 
 //******************************************************************************
@@ -280,37 +273,48 @@ gpu_default_process
 //******************************************************************************
 
 void
+gpu_operation_item_activity_process
+(
+ gpu_activity_t *activity,
+ gpu_activity_channel_t *channel
+)
+{
+  switch (activity->kind) {
+
+    case GPU_ACTIVITY_MEMCPY:
+      gpu_memcpy_process(activity, channel);
+      break;
+
+    case GPU_ACTIVITY_KERNEL:
+      gpu_kernel_process(activity, channel);
+      break;
+
+    case GPU_ACTIVITY_SYNCHRONIZATION:
+      gpu_synchronization_process(activity, channel);
+      break;
+
+    case GPU_ACTIVITY_FLUSH:
+      gpu_flush_process(activity);
+      break;
+
+    case GPU_ACTIVITY_PC_SAMPLING_INFO2:
+      gpu_pc_sampling_info2_process(activity);
+      break;
+
+    default:
+      gpu_default_process(activity, channel);
+      break;
+  }
+}
+
+
+void
 gpu_operation_item_process
 (
  gpu_operation_item_t *it
 )
 {
-  switch (it->activity.kind) {
-
-    case GPU_ACTIVITY_MEMCPY:
-      gpu_memcpy_process(it);
-      break;
-
-    case GPU_ACTIVITY_KERNEL:
-      gpu_kernel_process(it);
-      break;
-
-    case GPU_ACTIVITY_SYNCHRONIZATION:
-      gpu_synchronization_process(it);
-      break;
-
-    case GPU_ACTIVITY_FLUSH:
-      gpu_flush_process(it);
-      break;
-
-    case GPU_ACTIVITY_PC_SAMPLING_INFO2:
-      gpu_pc_sampling_info2_process(it);
-      break;
-
-    default:
-      gpu_default_process(it);
-      break;
-  }
+  gpu_operation_item_activity_process(&(it->activity), it->channel);
 
   if (it->pending_operations) {
     atomic_fetch_add(it->pending_operations, -1);

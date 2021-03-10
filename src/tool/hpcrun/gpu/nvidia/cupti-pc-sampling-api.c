@@ -511,7 +511,7 @@ cupti_pc_sampling_range_correlation_collect
     if (user_buffer_pc->totalNumPcs > 0) {
       pc_sampling_activity_set(&op_item.activity, range_id, context_id, cct_node, pc_sampling_data);
       if (gpu_range_interval_get() == 1) {
-        gpu_pc_sampling_info2_process(&op_item);
+        gpu_pc_sampling_info2_process(&op_item.activity);
       } else {
         gpu_operation_multiplexer_push(NULL, NULL, &op_item.activity);
       }
@@ -533,7 +533,7 @@ cupti_pc_sampling_range_correlation_collect
       if (user_buffer_pc->totalNumPcs > 0) {
         pc_sampling_activity_set(&op_item.activity, range_id, context_id, cct_node, pc_sampling_data);
         if (gpu_range_interval_get() == 1) {
-          gpu_pc_sampling_info2_process(&op_item);
+          gpu_pc_sampling_info2_process(&op_item.activity);
         } else {
           gpu_operation_multiplexer_push(NULL, NULL, &op_item.activity);
         }

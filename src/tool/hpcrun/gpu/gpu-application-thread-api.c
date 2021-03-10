@@ -54,17 +54,6 @@
 #include "gpu-metrics.h"
 
 
-
-//******************************************************************************
-// macros
-//******************************************************************************
-
-#define DEBUG 0
-
-#include "gpu-print.h"
-
-
-
 //******************************************************************************
 // interface operations
 //******************************************************************************
@@ -75,6 +64,8 @@ gpu_application_thread_process_activities
  void
 )
 {
+  TMSG(GPU_OPERATION, "Attribute gpu activities\n");
+
   gpu_activity_channel_consume(gpu_metrics_attribute);
 }
 
@@ -85,7 +76,7 @@ gpu_application_thread_correlation_callback
  uint64_t correlation_id
 )
 {
-  PRINT("enter gpu_correlation_callback %u\n", correlation_id);
+  TMSG(GPU_OPERATION, "Enter gpu_correlation_callback %u\n", correlation_id);
 
   hpcrun_metricVal_t zero_metric_incr = {.i = 0};
   int zero_metric_id = 0; // nothing to see here

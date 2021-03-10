@@ -498,7 +498,6 @@ cupti_path
 )
 {
   const char *path = "libcupti.so";
-  int resolved = 0;
 
   static char buffer[PATH_MAX];
   buffer[0] = 0;
@@ -513,6 +512,7 @@ cupti_path
     path = buffer;
   }
 #else
+  int resolved = 0;
   // open an NVIDIA library to find the CUDA path with dl_iterate_phdr
   // note: a version of this file with a more specific name may
   // already be loaded. thus, even if the dlopen fails, we search with
@@ -677,7 +677,6 @@ cupti_load_callback_cuda
 
   // Create file name
   char file_name[PATH_MAX];
-  size_t i;
   size_t used = 0;
   used += sprintf(&file_name[used], "%s", hpcrun_files_output_directory());
   used += sprintf(&file_name[used], "%s", "/" GPU_BINARY_DIRECTORY "/");
@@ -1071,7 +1070,6 @@ cupti_subscriber_callback
         // Wait until operations of the previous region are done
         uint64_t correlation_id = 0;
         uint32_t range_id = 0;
-        uint32_t context_id = ((hpctoolkit_cuctx_st_t *)(cd->context))->context_id;
 
         if (gpu_range_interval_get() == 1) {
           // Fast mode
@@ -1277,7 +1275,6 @@ cupti_subscriber_callback
         // Wait until operations of the previous region are done
         uint64_t correlation_id = 0;
         uint32_t range_id = 0;
-        uint32_t context_id = ((hpctoolkit_cuctx_st_t *)(cd->context))->context_id;
 
         if (gpu_range_interval_get() == 1) {
           // Fast mode
@@ -1730,6 +1727,20 @@ void
 cupti_device_flush(void *args, int how)
 {
   cupti_activity_flush();
+
+  // Wait until operations are drained
+  // Operation channel is FIFO
+  atomic_bool wait;
+  atomic_store(&wait, true);
+  gpu_activity_t gpu_activity;
+  memset(&gpu_activity, 0, sizeof(gpu_activity_t));
+
+  gpu_activity.kind = GPU_ACTIVITY_FLUSH;
+  gpu_activity.details.flush.wait = &wait;
+  gpu_operation_multiplexer_push(NULL, NULL, &gpu_activity);
+
+  while (atomic_load(&wait)) {}
+
   // TODO(keren): replace cupti with sth. called device queue
   gpu_application_thread_process_activities();
 }
