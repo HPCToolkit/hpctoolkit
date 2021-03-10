@@ -354,6 +354,7 @@ typedef struct gpu_cdpkernel_t {
   uint32_t device_id;
   uint32_t context_id;
   uint32_t stream_id;
+  uint64_t submit_time;
 } gpu_cdpkernel_t;
 
 

@@ -1089,13 +1089,6 @@ cupti_subscriber_callback
 
         cct_node_t *api_node = cupti_correlation_callback(correlation_id);
 
-#ifdef NEW_CUPTI
-        if (gpu_range_interval_get() != 1) {
-          api_node = hpcrun_cct_insert_context(api_node, context_id);
-          api_node = hpcrun_cct_insert_range(api_node, range_id);
-        }
-#endif
-
         gpu_op_ccts_t gpu_op_ccts;
 
         hpcrun_safe_enter();
@@ -1303,13 +1296,6 @@ cupti_subscriber_callback
         // it is still possible that a cupti buffer is full and returned to the host
         // in the interval of a runtime api.
         cct_node_t *api_node = cupti_correlation_callback(correlation_id);
-
-#ifdef NEW_CUPTI
-        if (gpu_range_interval_get() != 1) {
-          api_node = hpcrun_cct_insert_context(api_node, context_id);
-          api_node = hpcrun_cct_insert_range(api_node, range_id);
-        }
-#endif
 
         gpu_op_ccts_t gpu_op_ccts;
 

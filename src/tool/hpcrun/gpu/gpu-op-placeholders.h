@@ -131,6 +131,15 @@ gpu_op_ccts_get
 
 
 void
+gpu_op_ccts_update
+(
+ gpu_op_ccts_t *gpu_op_ccts,
+ gpu_placeholder_type_t type,
+ cct_node_t *node
+);
+
+
+void
 gpu_op_placeholder_flags_set
 (
  gpu_op_placeholder_flags_t *flags,

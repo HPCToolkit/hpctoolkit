@@ -56,6 +56,7 @@
 #include <hpcrun/cct/cct.h>
 #include <hpcrun/gpu/gpu-activity.h>
 #include <hpcrun/gpu/gpu-activity-channel.h>
+#include <hpcrun/gpu/gpu-range.h>
 #include <hpcrun/gpu/gpu-trace-item.h>
 #include <hpcrun/gpu/gpu-correlation-id-map.h>
 #include <hpcrun/gpu/gpu-context-id-map.h>
@@ -142,6 +143,12 @@ gpu_memcpy_process
       activity->details.memcpy.submit_time = cpu_submit_time;
 
       uint32_t range_id = gpu_host_correlation_map_entry_range_id_get(host_op_entry);
+
+      if (gpu_range_interval_get() != 1) {
+        uint32_t context_id = activity->details.memcpy.context_id;
+        host_op_node = hpcrun_cct_insert_context(host_op_node, context_id);
+        host_op_node = hpcrun_cct_insert_context(host_op_node, range_id);
+      }
 
       attribute_activity(host_op_entry, activity, host_op_node, range_id);
       //FIXME(keren): In OpenMP, an external_id may maps to multiple cct_nodes
@@ -295,6 +302,12 @@ gpu_memset_process
 
       uint32_t range_id = gpu_host_correlation_map_entry_range_id_get(host_op_entry);
 
+      if (gpu_range_interval_get() != 1) {
+        uint32_t context_id = activity->details.memset.context_id;
+        host_op_node = hpcrun_cct_insert_context(host_op_node, context_id);
+        host_op_node = hpcrun_cct_insert_context(host_op_node, range_id);
+      }
+
       attribute_activity(host_op_entry, activity, host_op_node, range_id);
 
       //FIXME(keren): In OpenMP, an external_id may maps to multiple cct_nodes
@@ -359,6 +372,16 @@ gpu_kernel_process
         gpu_host_correlation_map_entry_op_cct_get(host_op_entry,
 						  gpu_placeholder_type_kernel);
 
+      cct_node_t *kernel_node = kernel_ph;
+      uint32_t range_id = gpu_host_correlation_map_entry_range_id_get(host_op_entry);
+      
+      if (gpu_range_interval_get() != 1) {
+        uint32_t context_id = activity->details.kernel.context_id;
+        kernel_node = hpcrun_cct_insert_context(kernel_node, context_id);
+        kernel_node = hpcrun_cct_insert_context(kernel_node, range_id);
+      }
+
+#if 0
       cct_node_t *kernel_node;
       if (func_node == func_ph) {
         // in case placeholder doesn't have a child
@@ -368,8 +391,7 @@ gpu_kernel_process
         cct_addr_t *addr = hpcrun_cct_addr(func_node);
         kernel_node = hpcrun_cct_insert_ip_norm(kernel_ph, addr->ip_norm);
       }
-
-      uint32_t range_id = gpu_host_correlation_map_entry_range_id_get(host_op_entry);
+#endif
 
       attribute_activity(host_op_entry, activity, kernel_node, range_id);
     }
@@ -435,6 +457,12 @@ gpu_synchronization_process
 
       uint32_t range_id = gpu_host_correlation_map_entry_range_id_get(host_op_entry);
 
+      if (gpu_range_interval_get() != 1) {
+        uint32_t context_id = activity->details.synchronization.context_id;
+        host_op_node = hpcrun_cct_insert_context(host_op_node, context_id);
+        host_op_node = hpcrun_cct_insert_context(host_op_node, range_id);
+      }
+
       if (activity->details.synchronization.syncKind == GPU_SYNC_EVENT) {
         uint32_t event_id = activity->details.synchronization.event_id;
         gpu_event_id_map_entry_t *event_id_entry = gpu_event_id_map_lookup(event_id);
@@ -484,9 +512,15 @@ gpu_cdpkernel_process
 
       uint64_t cpu_submit_time =
         gpu_host_correlation_map_entry_cpu_submit_time(host_op_entry);
-      activity->details.kernel.submit_time = cpu_submit_time;
+      activity->details.cdpkernel.submit_time = cpu_submit_time;
 
       uint32_t range_id = gpu_host_correlation_map_entry_range_id_get(host_op_entry);
+
+      if (gpu_range_interval_get() != 1) {
+        uint32_t context_id = activity->details.cdpkernel.context_id;
+        func_node = hpcrun_cct_insert_context(func_node, context_id);
+        func_node = hpcrun_cct_insert_context(func_node, range_id);
+      }
 
       attribute_activity(host_op_entry, activity, func_node, range_id);
     }
@@ -532,6 +566,12 @@ gpu_memory_process
       assert(host_op_node != NULL);
 
       uint32_t range_id = gpu_host_correlation_map_entry_range_id_get(host_op_entry);
+
+      if (gpu_range_interval_get() != 1) {
+        uint32_t context_id = activity->details.memory.context_id;
+        host_op_node = hpcrun_cct_insert_context(host_op_node, context_id);
+        host_op_node = hpcrun_cct_insert_context(host_op_node, range_id);
+      }
       // Memory allocation does not always happen on the device
       // Do not send it to trace channels
       attribute_activity(host_op_entry, activity, host_op_node, range_id);
