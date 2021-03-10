@@ -101,10 +101,6 @@
 #define ADDR(L)      (cct_addr_t) NON_LUSH_ADDR_INI(L)
 #define ADDR2_I(id, ip) NON_LUSH_ADDR_INI(id, ip)
 #define ADDR2(id, ip) (cct_addr_t) ADDR2_I(id, ip)
-#define HPCRUN_DUMMY_NODE 65534
-#define HPCRUN_RANGE_NODE 65533
-#define HPCRUN_CONTEXT_NODE 65532
-#define HPCRUN_STREAM_NODE 65531
 
 //***************************************************************************
 // Calling context tree node (abstract data type)

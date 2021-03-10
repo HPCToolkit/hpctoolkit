@@ -1091,8 +1091,8 @@ cupti_subscriber_callback
 
 #ifdef NEW_CUPTI
         if (gpu_range_interval_get() != 1) {
-          api_node = hpcrun_cct_insert_range(api_node, range_id);
           api_node = hpcrun_cct_insert_context(api_node, context_id);
+          api_node = hpcrun_cct_insert_range(api_node, range_id);
         }
 #endif
 
@@ -1306,8 +1306,8 @@ cupti_subscriber_callback
 
 #ifdef NEW_CUPTI
         if (gpu_range_interval_get() != 1) {
-          api_node = hpcrun_cct_insert_range(api_node, range_id);
           api_node = hpcrun_cct_insert_context(api_node, context_id);
+          api_node = hpcrun_cct_insert_range(api_node, range_id);
         }
 #endif
 

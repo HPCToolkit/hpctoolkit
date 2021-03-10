@@ -1,13 +1,17 @@
 #include "gpu-range.h"
 
+#include <unistd.h>
+
 #include <lib/prof-lean/stdatomic.h>
 #include <lib/prof-lean/spinlock.h>
 
 #include <hpcrun/cct/cct.h>
 #include <hpcrun/cct/cct_bundle.h>
+#include <hpcrun/rank.h>
+#include <hpcrun/safe-sampling.h>
 #include <hpcrun/threadmgr.h>
 #include <hpcrun/thread_data.h>
-#include <hpcrun/safe-sampling.h>
+#include <hpcrun/write_data.h>
 
 #include "gpu-metrics.h"
 
@@ -64,12 +68,12 @@ gpu_range_context_cct_get
 
   cct_bundle_t *cct_bundle = &(cur_td->core_profile_trace_data.epoch->csdata);
   cct_node_t *cct_root = cct_bundle->top;
-  cct_node_t *cct_range = hpcrun_cct_insert_range(cct_root, range_id);
-  cct_node_t *cct_context = hpcrun_cct_insert_context(cct_range, context_id);
+  cct_node_t *cct_context = hpcrun_cct_insert_context(cct_root, context_id);
+  cct_node_t *cct_range = hpcrun_cct_insert_range(cct_context, range_id);
 
   hpcrun_safe_exit();
 
-  return cct_context;
+  return cct_range;
 }
 
 

@@ -310,7 +310,6 @@ gpu_metrics_attribute_pc_sampling2
 {
   gpu_pc_sampling2_t *sinfo = &(activity->details.pc_sampling2);
   cct_node_t *cct_node = activity->cct_node;
-  cct_addr_t *addr = hpcrun_cct_addr(cct_node);
 
   // frequencly is handled already 
   uint64_t inst_count = sinfo->samples;
