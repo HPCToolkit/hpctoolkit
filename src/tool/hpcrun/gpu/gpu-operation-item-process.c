@@ -218,8 +218,6 @@ gpu_pc_sampling_info2_process
 {
   gpu_activity_t *activity = &it->activity;
   uint32_t range_id = activity->range_id;
-  cct_node_t *cct_node = activity->cct_node;
-
   gpu_pc_sampling_info2_t *pc_sampling_info2 = &activity->details.pc_sampling_info2;
 
   uint32_t context_id = pc_sampling_info2->context_id;
@@ -227,19 +225,24 @@ gpu_pc_sampling_info2_process
   uint32_t period = pc_sampling_info2->samplingPeriodInCycles;
   uint64_t total_num_pcs = pc_sampling_info2->totalNumPcs;
 
+  cct_node_t *cct_node = NULL;
+  if (gpu_range_interval_get() == 1) {
+    // Can do safe insert under kernel placeholder
+    cct_node = activity->cct_node;
+  } else {
+    // Don't insert anything under kernel placeholder
+    cct_node = gpu_range_context_cct_get(range_id, context_id);
+  }
+
   static gpu_activity_t gpu_activity[GPU_INST_STALL2_INVALID];
 
-  // 1. translate a pc sample activity for each record
+  // Translate a pc sample activity for each record
   for (uint64_t index = 0; index < total_num_pcs; ++index) {
     pc_sampling_info2->translate(pc_sampling_data, index, gpu_activity, period, range_id, cct_node);
 
     for (size_t i = 0; i < GPU_INST_STALL2_INVALID; ++i) {
       if (gpu_activity[i].details.pc_sampling2.samples != 0) {
-        if (gpu_range_interval_get() == 1) {
-          gpu_metrics_attribute(&gpu_activity[i]);
-        } else {
-          gpu_range_attribute(context_id, &gpu_activity[i]);
-        }
+        gpu_metrics_attribute(&gpu_activity[i]);
       }
     }
   }

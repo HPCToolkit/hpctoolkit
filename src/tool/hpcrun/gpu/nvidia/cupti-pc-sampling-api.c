@@ -686,8 +686,8 @@ cupti_pc_sampling_range_flush
 
   CUcontext context;
   cuda_context_get(&context);
+  cupti_context_map_process(pc_sampling_context_flush, (void *)&range_id);
   if (context != NULL) {
-    cupti_context_map_process(pc_sampling_context_flush, (void *)&range_id);
     // Reset the current context
     cuda_context_set(context);
   }

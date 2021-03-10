@@ -7,8 +7,8 @@
 #include <hpcrun/cct/cct_bundle.h>
 #include <hpcrun/threadmgr.h>
 #include <hpcrun/thread_data.h>
+#include <hpcrun/safe-sampling.h>
 
-#include "gpu-range-id-map.h"
 #include "gpu-metrics.h"
 
 static atomic_ullong correlation_id_lead = ATOMIC_VAR_INIT(0);
@@ -21,70 +21,26 @@ static uint32_t gpu_range_interval = 1;
 
 static spinlock_t count_lock = SPINLOCK_UNLOCKED;
 
-static uint32_t
-range_thread_id
+cct_node_t *
+gpu_range_context_cct_get
 (
- uint32_t range_id
-)
-{
-  // FIXME: this is a bad way to compute a stream id
-  uint32_t id = THREAD_ID_GPU_RANGE + range_id;
-
-  return id;
-}
-
-
-thread_data_t *
-gpu_range_thread_data_acquire
-(
- uint32_t range_id
-)
-{
-  bool demand_new_thread = false;
-  bool has_trace = false;
-
-  thread_data_t *td = NULL;
-
-  uint32_t thread_id = range_thread_id(range_id);
-
-  hpcrun_threadMgr_data_get_safe(thread_id, NULL, &td, has_trace, demand_new_thread);
-
-  return td;
-}
-
-
-void
-gpu_range_attribute
-(
- uint32_t context_id,
- gpu_activity_t *activity
+ uint32_t range_id,
+ uint32_t context_id
 )
 {
   // Set current thread data
   thread_data_t *cur_td = hpcrun_safe_get_td();
-  thread_data_t *range_td = NULL;
 
-  gpu_range_id_map_entry_t *entry = gpu_range_id_map_lookup(activity->range_id);
-  if (entry == NULL) {
-    range_td = gpu_range_thread_data_acquire(activity->range_id);
-    gpu_range_id_map_insert(activity->range_id, range_td);
-  } else {
-    range_td = gpu_range_id_map_entry_thread_data_get(entry);
-  }
-  hpcrun_set_thread_data(range_td);
+  hpcrun_safe_enter();
 
-  cct_bundle_t *cct_bundle = &(range_td->core_profile_trace_data.epoch->csdata);
+  cct_bundle_t *cct_bundle = &(cur_td->core_profile_trace_data.epoch->csdata);
   cct_node_t *cct_root = cct_bundle->top;
-  cct_node_t *cct_context = hpcrun_cct_insert_context(cct_root, (uint16_t)context_id);
+  cct_node_t *cct_range = hpcrun_cct_insert_range(cct_root, range_id);
+  cct_node_t *cct_context = hpcrun_cct_insert_context(cct_range, context_id);
 
-  // Set current activity data
-  activity->cct_node = cct_context;
+  hpcrun_safe_exit();
 
-  // TODO(Keren): Send this activity back
-  gpu_metrics_attribute(activity);
-
-  // Reset thread data and activity data
-  hpcrun_set_thread_data(cur_td);
+  return cct_context;
 }
 
 

@@ -543,11 +543,10 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	gpu/nvidia/cupti-gpu-api.c gpu/nvidia/cupti-pc-sampling-api.c \
 	gpu/nvidia/cupti-pc-sampling-data.c \
 	gpu/nvidia/cupti-context-map.c gpu/nvidia/cubin-crc-map.c \
-	gpu/gpu-range.c gpu/gpu-range-id-map.c sample-sources/upc.c \
-	sample-sources/amd.c gpu/amd/roctracer-activity-translate.c \
-	gpu/amd/roctracer-api.c gpu/amd/rocm-debug-api.c \
-	gpu/amd/rocm-binary-processing.c sample-sources/level0.c \
-	gpu/level0/level0-api.c \
+	gpu/gpu-range.c sample-sources/upc.c sample-sources/amd.c \
+	gpu/amd/roctracer-activity-translate.c gpu/amd/roctracer-api.c \
+	gpu/amd/rocm-debug-api.c gpu/amd/rocm-binary-processing.c \
+	sample-sources/level0.c gpu/level0/level0-api.c \
 	gpu/level0/level0-command-list-context-map.c \
 	gpu/level0/level0-command-list-map.c \
 	gpu/level0/level0-command-process.c \
@@ -751,8 +750,7 @@ am__objects_26 = trampoline/aarch64/libhpcrun_la-aarch64-tramp.lo \
 @OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cupti-pc-sampling-data.lo \
 @OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cupti-context-map.lo \
 @OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/nvidia/libhpcrun_la-cubin-crc-map.lo \
-@OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/libhpcrun_la-gpu-range.lo \
-@OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/libhpcrun_la-gpu-range-id-map.lo
+@OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/libhpcrun_la-gpu-range.lo
 @OPT_ENABLE_CUPTI_TRUE@@OPT_ENABLE_NEW_CUPTI_TRUE@am__objects_34 = $(am__objects_33)
 am__objects_35 = sample-sources/libhpcrun_la-upc.lo
 @OPT_ENABLE_UPC_TRUE@am__objects_36 = $(am__objects_35)
@@ -1040,7 +1038,7 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	gpu/nvidia/cupti-gpu-api.c gpu/nvidia/cupti-pc-sampling-api.c \
 	gpu/nvidia/cupti-pc-sampling-data.c \
 	gpu/nvidia/cupti-context-map.c gpu/nvidia/cubin-crc-map.c \
-	gpu/gpu-range.c gpu/gpu-range-id-map.c sample-sources/papi.c \
+	gpu/gpu-range.c sample-sources/papi.c \
 	sample-sources/papi-c-cupti.c sample-sources/papi-c.c \
 	sample-sources/papi-c-extended-info.c sample-sources/upc.c \
 	unwind/common/backtrace.c unwind/common/unw-throw.c \
@@ -1235,8 +1233,7 @@ am__objects_69 =  \
 @OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cupti-pc-sampling-data.$(OBJEXT) \
 @OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cupti-context-map.$(OBJEXT) \
 @OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/nvidia/libhpcrun_o-cubin-crc-map.$(OBJEXT) \
-@OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/libhpcrun_o-gpu-range.$(OBJEXT) \
-@OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/libhpcrun_o-gpu-range-id-map.$(OBJEXT)
+@OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/libhpcrun_o-gpu-range.$(OBJEXT)
 @OPT_ENABLE_CUPTI_TRUE@@OPT_ENABLE_NEW_CUPTI_TRUE@am__objects_74 = $(am__objects_73)
 @OPT_PAPI_CUPTI_TRUE@am__objects_75 = sample-sources/libhpcrun_o-papi-c-cupti.$(OBJEXT)
 @OPT_PAPI_COMPONENT_FALSE@am__objects_76 = sample-sources/libhpcrun_o-papi.$(OBJEXT) \
@@ -2007,8 +2004,7 @@ MY_AARCH64_FILES = \
 @OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/nvidia/cupti-pc-sampling-data.c \
 @OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/nvidia/cupti-context-map.c \
 @OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/nvidia/cubin-crc-map.c \
-@OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/gpu-range.c \
-@OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/gpu-range-id-map.c
+@OPT_ENABLE_NEW_CUPTI_TRUE@	gpu/gpu-range.c
 
 @OPT_ENABLE_OPENCL_TRUE@MY_OPENCL_FILES = \
 @OPT_ENABLE_OPENCL_TRUE@  sample-sources/opencl.c \
@@ -3032,8 +3028,6 @@ gpu/nvidia/libhpcrun_la-cubin-crc-map.lo: gpu/nvidia/$(am__dirstamp) \
 	gpu/nvidia/$(DEPDIR)/$(am__dirstamp)
 gpu/libhpcrun_la-gpu-range.lo: gpu/$(am__dirstamp) \
 	gpu/$(DEPDIR)/$(am__dirstamp)
-gpu/libhpcrun_la-gpu-range-id-map.lo: gpu/$(am__dirstamp) \
-	gpu/$(DEPDIR)/$(am__dirstamp)
 sample-sources/libhpcrun_la-upc.lo: sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
 sample-sources/libhpcrun_la-amd.lo: sample-sources/$(am__dirstamp) \
@@ -3630,8 +3624,6 @@ gpu/nvidia/libhpcrun_o-cubin-crc-map.$(OBJEXT):  \
 	gpu/nvidia/$(DEPDIR)/$(am__dirstamp)
 gpu/libhpcrun_o-gpu-range.$(OBJEXT): gpu/$(am__dirstamp) \
 	gpu/$(DEPDIR)/$(am__dirstamp)
-gpu/libhpcrun_o-gpu-range-id-map.$(OBJEXT): gpu/$(am__dirstamp) \
-	gpu/$(DEPDIR)/$(am__dirstamp)
 sample-sources/libhpcrun_o-papi.$(OBJEXT):  \
 	sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
@@ -4018,7 +4010,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_la-gpu-operation-item-process.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_la-gpu-operation-item.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_la-gpu-operation-multiplexer.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_la-gpu-range-id-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_la-gpu-range.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_la-gpu-splay-allocator.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_la-gpu-stream-id-map.Plo@am__quote@
@@ -4050,7 +4041,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_o-gpu-operation-item-process.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_o-gpu-operation-item.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_o-gpu-operation-multiplexer.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_o-gpu-range-id-map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_o-gpu-range.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_o-gpu-splay-allocator.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/$(DEPDIR)/libhpcrun_o-gpu-stream-id-map.Po@am__quote@
@@ -5721,13 +5711,6 @@ gpu/libhpcrun_la-gpu-range.lo: gpu/gpu-range.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/gpu-range.c' object='gpu/libhpcrun_la-gpu-range.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/libhpcrun_la-gpu-range.lo `test -f 'gpu/gpu-range.c' || echo '$(srcdir)/'`gpu/gpu-range.c
-
-gpu/libhpcrun_la-gpu-range-id-map.lo: gpu/gpu-range-id-map.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/libhpcrun_la-gpu-range-id-map.lo -MD -MP -MF gpu/$(DEPDIR)/libhpcrun_la-gpu-range-id-map.Tpo -c -o gpu/libhpcrun_la-gpu-range-id-map.lo `test -f 'gpu/gpu-range-id-map.c' || echo '$(srcdir)/'`gpu/gpu-range-id-map.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/$(DEPDIR)/libhpcrun_la-gpu-range-id-map.Tpo gpu/$(DEPDIR)/libhpcrun_la-gpu-range-id-map.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/gpu-range-id-map.c' object='gpu/libhpcrun_la-gpu-range-id-map.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/libhpcrun_la-gpu-range-id-map.lo `test -f 'gpu/gpu-range-id-map.c' || echo '$(srcdir)/'`gpu/gpu-range-id-map.c
 
 sample-sources/libhpcrun_la-upc.lo: sample-sources/upc.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_la-upc.lo -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_la-upc.Tpo -c -o sample-sources/libhpcrun_la-upc.lo `test -f 'sample-sources/upc.c' || echo '$(srcdir)/'`sample-sources/upc.c
@@ -8423,20 +8406,6 @@ gpu/libhpcrun_o-gpu-range.obj: gpu/gpu-range.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/gpu-range.c' object='gpu/libhpcrun_o-gpu-range.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/libhpcrun_o-gpu-range.obj `if test -f 'gpu/gpu-range.c'; then $(CYGPATH_W) 'gpu/gpu-range.c'; else $(CYGPATH_W) '$(srcdir)/gpu/gpu-range.c'; fi`
-
-gpu/libhpcrun_o-gpu-range-id-map.o: gpu/gpu-range-id-map.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT gpu/libhpcrun_o-gpu-range-id-map.o -MD -MP -MF gpu/$(DEPDIR)/libhpcrun_o-gpu-range-id-map.Tpo -c -o gpu/libhpcrun_o-gpu-range-id-map.o `test -f 'gpu/gpu-range-id-map.c' || echo '$(srcdir)/'`gpu/gpu-range-id-map.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/$(DEPDIR)/libhpcrun_o-gpu-range-id-map.Tpo gpu/$(DEPDIR)/libhpcrun_o-gpu-range-id-map.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/gpu-range-id-map.c' object='gpu/libhpcrun_o-gpu-range-id-map.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/libhpcrun_o-gpu-range-id-map.o `test -f 'gpu/gpu-range-id-map.c' || echo '$(srcdir)/'`gpu/gpu-range-id-map.c
-
-gpu/libhpcrun_o-gpu-range-id-map.obj: gpu/gpu-range-id-map.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT gpu/libhpcrun_o-gpu-range-id-map.obj -MD -MP -MF gpu/$(DEPDIR)/libhpcrun_o-gpu-range-id-map.Tpo -c -o gpu/libhpcrun_o-gpu-range-id-map.obj `if test -f 'gpu/gpu-range-id-map.c'; then $(CYGPATH_W) 'gpu/gpu-range-id-map.c'; else $(CYGPATH_W) '$(srcdir)/gpu/gpu-range-id-map.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/$(DEPDIR)/libhpcrun_o-gpu-range-id-map.Tpo gpu/$(DEPDIR)/libhpcrun_o-gpu-range-id-map.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/gpu-range-id-map.c' object='gpu/libhpcrun_o-gpu-range-id-map.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/libhpcrun_o-gpu-range-id-map.obj `if test -f 'gpu/gpu-range-id-map.c'; then $(CYGPATH_W) 'gpu/gpu-range-id-map.c'; else $(CYGPATH_W) '$(srcdir)/gpu/gpu-range-id-map.c'; fi`
 
 sample-sources/libhpcrun_o-papi.o: sample-sources/papi.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_o-papi.o -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_o-papi.Tpo -c -o sample-sources/libhpcrun_o-papi.o `test -f 'sample-sources/papi.c' || echo '$(srcdir)/'`sample-sources/papi.c

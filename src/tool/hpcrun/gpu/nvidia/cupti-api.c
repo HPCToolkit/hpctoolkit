@@ -1066,6 +1066,7 @@ cupti_subscriber_callback
         // Wait until operations of the previous region are done
         uint64_t correlation_id = 0;
         uint32_t range_id = 0;
+        uint32_t context_id = ((hpctoolkit_cuctx_st_t *)(cd->context))->context_id;
 
         if (gpu_range_interval_get() == 1) {
           // Fast mode
@@ -1086,6 +1087,7 @@ cupti_subscriber_callback
 #ifdef NEW_CUPTI
         if (gpu_range_interval_get() != 1) {
           api_node = hpcrun_cct_insert_range(api_node, range_id);
+          api_node = hpcrun_cct_insert_context(api_node, context_id);
         }
 #endif
 
@@ -1277,6 +1279,7 @@ cupti_subscriber_callback
         // Wait until operations of the previous region are done
         uint64_t correlation_id = 0;
         uint32_t range_id = 0;
+        uint32_t context_id = ((hpctoolkit_cuctx_st_t *)(cd->context))->context_id;
 
         if (gpu_range_interval_get() == 1) {
           // Fast mode
@@ -1299,6 +1302,7 @@ cupti_subscriber_callback
 #ifdef NEW_CUPTI
         if (gpu_range_interval_get() != 1) {
           api_node = hpcrun_cct_insert_range(api_node, range_id);
+          api_node = hpcrun_cct_insert_context(api_node, context_id);
         }
 #endif
 

@@ -5,23 +5,17 @@
 #include <stdbool.h>
 
 #include <hpcrun/thread_data.h>
+#include <hpcrun/cct/cct.h>
 
 #include "gpu-correlation-id.h"
 #include "gpu-activity.h"
 
 
-thread_data_t *
-gpu_range_thread_data_acquire
+cct_node_t *
+gpu_range_context_cct_get
 (
- uint32_t range_id
-);
-
-
-void
-gpu_range_attribute
-(
- uint32_t context_id,
- gpu_activity_t *activity
+ uint32_t range_id,
+ uint32_t context_id
 );
 
 
