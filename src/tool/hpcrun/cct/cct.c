@@ -629,7 +629,7 @@ hpcrun_cct_insert_dummy(cct_node_t* node, uint16_t lm_ip)
 }
 
 cct_node_t*
-hpcrun_cct_insert_range(cct_node_t* node, uint16_t lm_ip)
+hpcrun_cct_insert_range(cct_node_t* node, uintptr_t lm_ip)
 {
   ip_normalized_t ip = { .lm_id = HPCRUN_RANGE_NODE, .lm_ip = lm_ip };
   cct_addr_t frm = { .ip_norm = ip };
@@ -638,7 +638,7 @@ hpcrun_cct_insert_range(cct_node_t* node, uint16_t lm_ip)
 }
 
 cct_node_t*
-hpcrun_cct_insert_context(cct_node_t* node, uint16_t lm_ip)
+hpcrun_cct_insert_context(cct_node_t* node, uintptr_t lm_ip)
 {
   ip_normalized_t ip = { .lm_id = HPCRUN_CONTEXT_NODE, .lm_ip = lm_ip };
   cct_addr_t frm = { .ip_norm = ip };
