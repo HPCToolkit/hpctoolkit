@@ -21,6 +21,35 @@ static uint32_t gpu_range_interval = 1;
 
 static spinlock_t count_lock = SPINLOCK_UNLOCKED;
 
+
+void
+gpu_range_profile_dump
+(
+)
+{
+  thread_data_t *cur_td = hpcrun_safe_get_td();
+  core_profile_trace_data_t *cptd = &cur_td->core_profile_trace_data;
+
+  pms_id_t ids[IDTUPLE_MAXTYPES];
+  id_tuple_t id_tuple;
+
+  id_tuple_constructor(&id_tuple, ids, IDTUPLE_MAXTYPES);
+
+  id_tuple_push_back(&id_tuple, IDTUPLE_NODE, gethostid());
+
+  int rank = hpcrun_get_rank();
+  if (rank >= 0) id_tuple_push_back(&id_tuple, IDTUPLE_RANK, rank);
+
+  hpcrun_safe_enter();
+
+  id_tuple_copy(&(cptd->id_tuple), &id_tuple, hpcrun_malloc);
+
+  hpcrun_write_profile_data(cptd);
+
+  hpcrun_safe_exit();
+}
+
+
 cct_node_t *
 gpu_range_context_cct_get
 (

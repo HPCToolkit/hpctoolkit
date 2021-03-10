@@ -56,6 +56,7 @@
 #include "gpu-monitoring-thread-api.h"
 #include "gpu-operation-channel-set.h"
 #include "gpu-trace.h"
+#include "gpu-range.h"
 #include "gpu-print.h"
 #include "monitor.h"
 
@@ -119,8 +120,7 @@ gpu_operation_record
   atomic_store(&gpu_trace_finished, true);
 
   // write out range profile
-  thread_data_t *cur_td = hpcrun_safe_get_td();
-  hpcrun_write_profile_data(&cur_td->core_profile_trace_data);
+  gpu_range_profile_dump();
 
   return NULL;
 }

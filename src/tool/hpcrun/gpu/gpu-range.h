@@ -10,6 +10,11 @@
 #include "gpu-correlation-id.h"
 #include "gpu-activity.h"
 
+void
+gpu_range_profile_dump
+(
+);
+
 
 cct_node_t *
 gpu_range_context_cct_get
