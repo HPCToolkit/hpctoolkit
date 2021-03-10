@@ -124,10 +124,7 @@ gpu_memcpy_process
 
   gpu_activity_channel_produce(channel, activity);
 
-  PRINT("Memcpy copy range %u\n", activity->range_id);
-  PRINT("Memcpy copy cct_node %p\n", activity->cct_node);
-  PRINT("Memcpy copy kind %u\n", activity->details.memcpy.copyKind);
-  PRINT("Memcpy copy bytes %lu\n", activity->details.memcpy.bytes);
+  TMSG(GPU_RANGE, "Memcpy copy range %u\n", activity->range_id);
 }
 
 
@@ -155,9 +152,9 @@ gpu_kernel_process
 
   gpu_activity_channel_produce(channel, activity);
 
-  PRINT("Kernel execution range %u\n", activity->range_id);
-  PRINT("Kernel execution cct_node %p\n", activity->cct_node);
-  PRINT("Kernel execution deviceId %u\n", activity->details.kernel.device_id);
+  TMSG(GPU_RANGE, "Kernel execution range %u\n", activity->range_id);
+  TMSG(GPU_RANGE, "Kernel execution cct_node %p\n", activity->cct_node);
+  TMSG(GPU_RANGE, "Kernel execution deviceId %u\n", activity->details.kernel.device_id);
 }
 
 
@@ -178,7 +175,8 @@ gpu_synchronization_process
                          activity->details.synchronization.end,
                          activity->cct_node);
 
-  PRINT("Sync range range %u\n", activity->range_id);
+  TMSG(GPU_RANGE, "Sync range range %u\n", activity->range_id);
+
   if (activity->kind == GPU_ACTIVITY_SYNCHRONIZATION) {
     uint32_t context_id = activity->details.synchronization.context_id;
     uint32_t stream_id = activity->details.synchronization.stream_id;
@@ -187,22 +185,19 @@ gpu_synchronization_process
       case GPU_SYNC_STREAM:
       case GPU_SYNC_STREAM_EVENT_WAIT:
         // Insert a event for a specific stream
-        PRINT("Add context %u stream %u sync\n", context_id, stream_id);
         gpu_context_id_map_stream_process(IDTUPLE_INVALID, context_id, stream_id, gpu_trace_produce, &entry_trace);
         break;
       case GPU_SYNC_CONTEXT:
         // Insert events for all current active streams
         // TODO(Keren): What if the stream is created
-        PRINT("Add context %u sync\n", context_id);
         gpu_context_id_map_context_process(IDTUPLE_INVALID, context_id, gpu_trace_produce, &entry_trace);
         break;
       case GPU_SYNC_EVENT:
-        PRINT("Add context %u stream %u sync\n", context_id, stream_id);
         gpu_context_id_map_stream_process(IDTUPLE_INVALID, context_id, stream_id, gpu_trace_produce, &entry_trace);
         break;
       default:
         // invalid
-        PRINT("Invalid synchronization\n");
+        TMSG(GPU_RANGE, "Invalid synchronization\n");
     }
   }
 
@@ -248,7 +243,7 @@ gpu_pc_sampling_info2_process
   }
   pc_sampling_info2->free(pc_sampling_data);
 
-  PRINT("PC sampling range %u\n", range_id);
+  TMSG(GPU_RANGE, "PC sampling range %u\n", range_id);
 }
 
 
@@ -277,7 +272,7 @@ gpu_default_process
   gpu_activity_channel_t *channel = it->channel;
   gpu_activity_channel_produce(channel, activity);
 
-  PRINT("Default activity range %u\n", activity->range_id);
+  TMSG(GPU_RANGE, "Default activity range %u\n", activity->range_id);
 }
 
 //******************************************************************************
