@@ -319,8 +319,8 @@ convert_memcpy2
 static void
 convert_kernel
 (
-  gpu_activity_t *ga,
-  CUpti_ActivityKernel4 *activity
+ gpu_activity_t *ga,
+ CUpti_ActivityKernel4 *activity
 )
 {
   if (cuda_device_map_lookup(activity->deviceId) == NULL) {
@@ -379,8 +379,8 @@ convert_function
 static void
 convert_global_access
 (
-  gpu_activity_t *ga,
-  CUpti_ActivityGlobalAccess3 *activity
+ gpu_activity_t *ga,
+ CUpti_ActivityGlobalAccess3 *activity
 )
 {
   ga->kind = GPU_ACTIVITY_GLOBAL_ACCESS;
@@ -477,8 +477,8 @@ convert_synchronization
 static void
 convert_memory
 (
-  gpu_activity_t *ga,
-  CUpti_ActivityMemory *activity_mem
+ gpu_activity_t *ga,
+ CUpti_ActivityMemory *activity_mem
 )
 {
   ga->kind = GPU_ACTIVITY_MEMORY;
@@ -495,8 +495,8 @@ convert_memory
 static void
 convert_memset
 (
-  gpu_activity_t *ga,
-  CUpti_ActivityMemset *activity
+ gpu_activity_t *ga,
+ CUpti_ActivityMemset *activity
 )
 {
   ga->kind = GPU_ACTIVITY_MEMSET;
@@ -513,8 +513,8 @@ convert_memset
 static void
 convert_correlation
 (
-  gpu_activity_t *ga,
-  CUpti_ActivityExternalCorrelation* activity
+ gpu_activity_t *ga,
+ CUpti_ActivityExternalCorrelation* activity
 )
 {
   TMSG(CUPTI_ACTIVITY, "External CorrelationId %lu", activity->externalId);
@@ -528,8 +528,8 @@ convert_correlation
 static void
 convert_cdpkernel
 (
-  gpu_activity_t *ga,
-  CUpti_ActivityCdpKernel *activity
+ gpu_activity_t *ga,
+ CUpti_ActivityCdpKernel *activity
 )
 {
   ga->kind = GPU_ACTIVITY_CDP_KERNEL;

@@ -1448,6 +1448,8 @@ cupti_buffer_completion_callback
  size_t validSize
 )
 {
+  TMSG(CUPTI, "Enter CUPTI buffer complete");
+
   // handle notifications
   cupti_buffer_completion_notify();
 
@@ -1473,6 +1475,8 @@ cupti_buffer_completion_callback
   }
 
   free(buffer);
+
+  TMSG(CUPTI, "Exit CUPTI buffer complete");
 }
 
 
@@ -1726,23 +1730,14 @@ cupti_activity_flush
 void
 cupti_device_flush(void *args, int how)
 {
+  TMSG(CUPTI, "Enter CUPTI device flush");
+
   cupti_activity_flush();
-
-  // Wait until operations are drained
-  // Operation channel is FIFO
-  atomic_bool wait;
-  atomic_store(&wait, true);
-  gpu_activity_t gpu_activity;
-  memset(&gpu_activity, 0, sizeof(gpu_activity_t));
-
-  gpu_activity.kind = GPU_ACTIVITY_FLUSH;
-  gpu_activity.details.flush.wait = &wait;
-  gpu_operation_multiplexer_push(NULL, NULL, &gpu_activity);
-
-  while (atomic_load(&wait)) {}
 
   // TODO(keren): replace cupti with sth. called device queue
   gpu_application_thread_process_activities();
+
+  TMSG(CUPTI, "Exit CUPTI device flush");
 }
 
 

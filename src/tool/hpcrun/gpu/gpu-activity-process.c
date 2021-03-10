@@ -149,7 +149,7 @@ gpu_memcpy_process
       if (gpu_range_interval_get() != 1) {
         uint32_t context_id = activity->details.memcpy.context_id;
         host_op_node = hpcrun_cct_insert_context(host_op_node, context_id);
-        host_op_node = hpcrun_cct_insert_context(host_op_node, range_id);
+        host_op_node = hpcrun_cct_insert_range(host_op_node, range_id);
       }
 
       attribute_activity(host_op_entry, activity, host_op_node, range_id);
@@ -307,7 +307,7 @@ gpu_memset_process
       if (gpu_range_interval_get() != 1) {
         uint32_t context_id = activity->details.memset.context_id;
         host_op_node = hpcrun_cct_insert_context(host_op_node, context_id);
-        host_op_node = hpcrun_cct_insert_context(host_op_node, range_id);
+        host_op_node = hpcrun_cct_insert_range(host_op_node, range_id);
       }
 
       attribute_activity(host_op_entry, activity, host_op_node, range_id);
@@ -380,7 +380,7 @@ gpu_kernel_process
       if (gpu_range_interval_get() != 1) {
         uint32_t context_id = activity->details.kernel.context_id;
         kernel_node = hpcrun_cct_insert_context(kernel_node, context_id);
-        kernel_node = hpcrun_cct_insert_context(kernel_node, range_id);
+        kernel_node = hpcrun_cct_insert_range(kernel_node, range_id);
       }
 
 #if 0
@@ -396,6 +396,8 @@ gpu_kernel_process
 #endif
 
       attribute_activity(host_op_entry, activity, kernel_node, range_id);
+    } else {
+      assert(0);
     }
   } else {
     PRINT("Kernel execution correlation_id %u cannot be found\n", correlation_id);
@@ -462,7 +464,7 @@ gpu_synchronization_process
       if (gpu_range_interval_get() != 1) {
         uint32_t context_id = activity->details.synchronization.context_id;
         host_op_node = hpcrun_cct_insert_context(host_op_node, context_id);
-        host_op_node = hpcrun_cct_insert_context(host_op_node, range_id);
+        host_op_node = hpcrun_cct_insert_range(host_op_node, range_id);
       }
 
       if (activity->details.synchronization.syncKind == GPU_SYNC_EVENT) {
@@ -521,7 +523,7 @@ gpu_cdpkernel_process
       if (gpu_range_interval_get() != 1) {
         uint32_t context_id = activity->details.cdpkernel.context_id;
         func_node = hpcrun_cct_insert_context(func_node, context_id);
-        func_node = hpcrun_cct_insert_context(func_node, range_id);
+        func_node = hpcrun_cct_insert_range(func_node, range_id);
       }
 
       attribute_activity(host_op_entry, activity, func_node, range_id);
@@ -572,7 +574,7 @@ gpu_memory_process
       if (gpu_range_interval_get() != 1) {
         uint32_t context_id = activity->details.memory.context_id;
         host_op_node = hpcrun_cct_insert_context(host_op_node, context_id);
-        host_op_node = hpcrun_cct_insert_context(host_op_node, range_id);
+        host_op_node = hpcrun_cct_insert_range(host_op_node, range_id);
       }
       // Memory allocation does not always happen on the device
       // Do not send it to trace channels
