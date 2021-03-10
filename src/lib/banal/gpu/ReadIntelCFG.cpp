@@ -231,10 +231,13 @@ readIntelCFG
  Dyninst::ParseAPI::CodeObject **code_obj
 )
 {
-  if (cfg_wanted) {
-    auto function_name = elfFile->getGPUKernelName();
-    addCustomFunctionObject(function_name, the_symtab); //adds a dummy function object
+  // We need to create a dummy function object whether
+  // we want cfg or not. Otherwise, Dyninst will not
+  // generate line info
+  auto function_name = elfFile->getGPUKernelName();
+  addCustomFunctionObject(function_name, the_symtab); //adds a dummy function object
 
+  if (cfg_wanted) {
     char *text_section = NULL;
     auto text_section_size = elfFile->getTextSection(&text_section);
     if (text_section_size == 0) {
