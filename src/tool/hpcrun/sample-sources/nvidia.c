@@ -166,13 +166,13 @@ data_motion_implicit_activities[] = {
 CUpti_ActivityKind
 kernel_invocation_activities[] = {
   CUPTI_ACTIVITY_KIND_KERNEL,
-  CUPTI_ACTIVITY_KIND_SYNCHRONIZATION,
   CUPTI_ACTIVITY_KIND_INVALID
 };
 
 
 CUpti_ActivityKind
 kernel_execution_activities[] = {
+  CUPTI_ACTIVITY_KIND_SYNCHRONIZATION,
   CUPTI_ACTIVITY_KIND_CONTEXT,
   CUPTI_ACTIVITY_KIND_FUNCTION,
 // FIXME(keren): cupti does not allow the following activities to be profiled with pc sampling
@@ -358,19 +358,27 @@ METHOD_FN(process_event_list, int lush_metrics)
   hpcrun_extract_ev_thresh(event, sizeof(nvidia_name), nvidia_name,
     &frequency, frequency_default);
 
+  int range_interval = 1;
+  control_knob_value_get_int("HPCRUN_CUDA_RANGE_INTERVAL", &range_interval);
+  gpu_range_interval_set(range_interval);
+
   if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA)) {
     trace_frequency =
       (frequency == frequency_default) ? trace_frequency_default : frequency;
     gpu_monitoring_trace_sample_frequency_set(trace_frequency);
+
+    // Set enabling activities
+    cupti_enabled_activities |= CUPTI_DRIVER;
+    cupti_enabled_activities |= CUPTI_RUNTIME;
+    cupti_enabled_activities |= CUPTI_KERNEL_EXECUTION;
+    cupti_enabled_activities |= CUPTI_KERNEL_INVOCATION;
+    cupti_enabled_activities |= CUPTI_DATA_MOTION_EXPLICIT;
+    cupti_enabled_activities |= CUPTI_OVERHEAD;
   } else if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_PC_SAMPLING)) {
     pc_sampling_frequency = (frequency == frequency_default) ?
       pc_sampling_frequency_default : frequency;
 
     gpu_monitoring_instruction_sample_frequency_set(pc_sampling_frequency);
-
-    int range_interval = 1;
-    control_knob_value_get_int("HPCRUN_CUDA_RANGE_INTERVAL", &range_interval);
-    gpu_range_interval_set(range_interval);
 
     gpu_metrics_GPU_INST_enable(); // instruction counts
 
@@ -383,6 +391,10 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     gpu_metrics_GSAMP_enable(); // GPU utilization from sampling
 #endif
+    // Only profile kernel metrics
+    cupti_enabled_activities |= CUPTI_DRIVER;
+    cupti_enabled_activities |= CUPTI_RUNTIME;
+    cupti_enabled_activities |= CUPTI_KERNEL_INVOCATION;
   }
 
   gpu_metrics_default_enable();
@@ -434,14 +446,6 @@ METHOD_FN(process_event_list, int lush_metrics)
   cupti_init();
   cupti_callbacks_subscribe();
   cupti_start();
-
-  // Set enabling activities
-  cupti_enabled_activities |= CUPTI_DRIVER;
-  cupti_enabled_activities |= CUPTI_RUNTIME;
-  cupti_enabled_activities |= CUPTI_KERNEL_EXECUTION;
-  cupti_enabled_activities |= CUPTI_KERNEL_INVOCATION;
-  cupti_enabled_activities |= CUPTI_DATA_MOTION_EXPLICIT;
-  cupti_enabled_activities |= CUPTI_OVERHEAD;
 
   // Register shutdown functions to write trace files
   device_trace_finalizer_shutdown.fn = gpu_trace_fini;
