@@ -110,7 +110,6 @@ void IdPacker::notifyContextExpansion(ContextRef::const_t from, Scope s, Context
         case Scope::Type::classified_point:
         case Scope::Type::call:
         case Scope::Type::classified_call:
-        case Scope::Type::gpu_context:
           buffer.emplace_back(0);
           break;
         case Scope::Type::function:
@@ -144,11 +143,6 @@ void IdPacker::notifyContextExpansion(ContextRef::const_t from, Scope s, Context
     case Scope::Type::unknown:
       // Format: [magic]
       pack(buffer, (std::uint64_t)0xF0F1F2F3ULL << 32);
-      break;
-    case Scope::Type::gpu_context:
-      // Format: [magic] [index]
-      pack(buffer, (std::uint64_t)0xFFEEDDBBULL << 32);
-      pack(buffer, s.index_data());
       break;
     case Scope::Type::global:
     case Scope::Type::classified_point:

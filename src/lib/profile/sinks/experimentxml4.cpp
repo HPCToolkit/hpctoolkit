@@ -411,8 +411,7 @@ ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
     const auto pty = c.direct_parent()->scope().type();
     if(pty == Scope::Type::point || pty == Scope::Type::classified_point
        || pty == Scope::Type::line || pty == Scope::Type::concrete_line
-       || pty == Scope::Type::call || pty == Scope::Type::classified_call
-       || pty == Scope::Type::gpu_context) {
+       || pty == Scope::Type::call || pty == Scope::Type::classified_call) {
       if(proc.prep()) {  // We're in charge of the tag, and this is a tag we want.
         std::ostringstream ss;
         ss << fancynames::unknown_proc.first << " "
@@ -483,22 +482,6 @@ ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
     open = ss.str();
     close = "</PF>\n";
     partial = false;  // If we have a Function, we're not lost. Probably.
-    break;
-  }
-  case Scope::Type::gpu_context: {
-    const auto idx = s.index_data();
-    if(proc.prep()) {  // Our job to do the tag
-      std::ostringstream ss;
-      ss << "<gpu context " << idx << ">";
-      proc.setTag(ss.str(), 0, true);
-    }
-    std::ostringstream ss;
-    ss << "<PF i=\"" << c.userdata[exml.src.identifier()] << "\""
-             " n=\"" << proc.id << "\" s=\"" << proc.id << "\""
-             " f=\"" << exml.file_unknown.id << "\""
-             " l=\"0\"";
-    open = ss.str();
-    close = "</PF>\n";
     break;
   }
   }
@@ -638,7 +621,6 @@ void ExperimentXML4::write() {
     case Scope::Type::loop:
     case Scope::Type::inlined_function:
     case Scope::Type::function:
-    case Scope::Type::gpu_context:
       break;
     case Scope::Type::point:
     case Scope::Type::classified_point:
@@ -671,7 +653,6 @@ void ExperimentXML4::write() {
     case Scope::Type::function:
     case Scope::Type::inlined_function:
     case Scope::Type::loop:
-    case Scope::Type::gpu_context:
       break;
     case Scope::Type::point:
     case Scope::Type::classified_point:

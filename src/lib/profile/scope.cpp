@@ -71,8 +71,6 @@ Scope::Scope(const File& s, uint64_t l)
   : ty(Type::line), data(s,l) {};
 Scope::Scope(const File& s, uint64_t l, const Module& m, uint64_t o)
   : ty(Type::concrete_line), data(m,o,s,l) {};
-Scope::Scope(gpu_context_t, uint64_t idx)
-  : ty(Type::gpu_context), data(idx) {};
 Scope::Scope(ProfilePipeline&) : ty(Type::global), data() {};
 
 std::pair<const Module&, uint64_t> Scope::point_data() const {
@@ -116,16 +114,6 @@ std::pair<const File&, uint64_t> Scope::line_data() const {
   std::exit(-1);
 }
 
-uint64_t Scope::index_data() const {
-  switch(ty) {
-  case Type::gpu_context:
-    return data.index;
-  default: break;
-  }
-  util::log::fatal() << "index_data() called on non-index Scope!";
-  std::exit(-1);
-}
-
 bool Scope::operator==(const Scope& o) const noexcept {
   if(ty != o.ty) return false;
   switch(ty) {
@@ -143,8 +131,6 @@ bool Scope::operator==(const Scope& o) const noexcept {
   case Type::loop:
   case Type::line:
     return data.line == o.data.line;
-  case Type::gpu_context:
-    return data.index == o.data.index;
   }
   return false;  // unreachable
 }
@@ -198,11 +184,6 @@ operator()(const Scope &l) const noexcept {
     sponge = rotl(sponge ^ h_u64(l.data.point_line.line.l), 3);
     return sponge;
   }
-  case Scope::Type::gpu_context: {
-    std::size_t sponge = 0x19;
-    sponge = rotl(sponge ^ h_u64(l.data.index.index), 1);
-    return sponge;
-  }
   }
   return 0;  // unreachable
 };
@@ -246,8 +227,6 @@ std::ostream& std::operator<<(std::ostream& os, const Scope& s) noexcept {
   case Scope::Type::line: return os << "(line){" << line_str() << "}";
   case Scope::Type::concrete_line:
     return os << "(line){" << line_str() << " from " << point_str() << "}";
-  case Scope::Type::gpu_context:
-    return os << "(gpu_context){" << s.index_data() << "}";
   }
   return os;
 }

@@ -383,7 +383,6 @@ static bool pullsFunction(Scope parent, Scope child) {
   case Scope::Type::loop:
   case Scope::Type::line:
   case Scope::Type::concrete_line:
-  case Scope::Type::gpu_context:
     switch(parent.type()) {
     // Function-type scopes, and unknown (which could be a function)
     case Scope::Type::unknown:
@@ -398,7 +397,6 @@ static bool pullsFunction(Scope parent, Scope child) {
     case Scope::Type::classified_point:
     case Scope::Type::call:
     case Scope::Type::classified_call:
-    case Scope::Type::gpu_context:
       return false;
     }
     break;

@@ -159,7 +159,6 @@ void Packed::packContexts(std::vector<std::uint8_t>& out) noexcept {
     case Scope::Type::loop:
     case Scope::Type::line:
     case Scope::Type::concrete_line:
-    case Scope::Type::gpu_context:
       util::log::fatal() << "Unhandled Scope type encountered in Packed!";
     }
   }, [&](const Context& c){
