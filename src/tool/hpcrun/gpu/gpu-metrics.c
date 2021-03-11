@@ -271,10 +271,10 @@ gpu_metrics_attribute_pc_sampling
   uint64_t inst_count = sinfo->samples * sample_period;
 
   metric_data_list_t *inst_metric = 
-    hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_INST_ALL));
+    hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_INST_EXEC_COUNT));
 
   // instruction execution metric
-  gpu_metrics_attribute_metric_int(inst_metric, METRIC_ID(GPU_INST_ALL), 
+  gpu_metrics_attribute_metric_int(inst_metric, METRIC_ID(GPU_INST_EXEC_COUNT), 
            inst_count);
 
   if (sinfo->stallReason != GPU_INST_STALL_INVALID) {
@@ -477,9 +477,11 @@ gpu_metrics_attribute_kernel_block
   cct_node_t *cct_node = activity->cct_node;
 
   metric_data_list_t *metrics = 
-    hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_INST_ALL));
+    hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_INST_EXEC_COUNT));
 
-  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_INST_ALL), b->execution_count);
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_INST_EXEC_COUNT), b->execution_count);
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_INST_LATENCY), b->latency);
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_INST_ACT_SIMD_LANES), b->active_simd_lanes);
 }
 
 
