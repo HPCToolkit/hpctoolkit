@@ -128,6 +128,9 @@ static bool count_knob = false;
 static SimdSectionNode *SimdSectionNode_free_list = NULL;
 static SimdGroupNode *SimdGroupNode_free_list = NULL;
 
+static SimdSectionNode *SimdSectionNode_free_list = NULL;
+static SimdGroupNode *SimdGroupNode_free_list = NULL;
+
 static __thread uint64_t gtpin_correlation_id = 0;
 static __thread uint64_t gtpin_cpu_submit_time = 0;
 static __thread gpu_op_ccts_t gtpin_gpu_op_ccts;
@@ -483,6 +486,161 @@ kernelInstructionActivityProcess
     ga.cct_node = cct_child;
     gpu_operation_multiplexer_push(activity_channel, NULL, &ga);
   }
+}
+
+
+static GTPinMem
+addLatencyInstrumentation
+(
+ GTPinKernel kernel,
+ GTPinINS head,
+ GTPinINS tail,
+ uint32_t *availableLatencyRegisters,
+ bool *isInstrumented
+)
+{
+  GTPINTOOL_STATUS status = GTPINTOOL_STATUS_SUCCESS;
+  GTPinMem mem_latency;
+  *isInstrumented = false;
+  if (GTPin_InsIsEOT(head)) {
+    return mem_latency;
+  }
+
+  if (GTPin_InsIsChangingIP(tail)) {
+    if (head == tail) {
+      return mem_latency;
+    } else {
+      tail = GTPin_InsPrev(tail);
+      if (!GTPin_InsValid(tail)) {
+        printf("LATENCY instrumentation: instruction is invalid");
+        return mem_latency;
+      }
+    }
+  }
+
+  status = GTPin_LatencyInstrumentPre(head);
+  if (status != GTPINTOOL_STATUS_SUCCESS) {
+    return mem_latency;
+  }
+
+  status = GTPin_MemClaim(kernel, sizeof(LatencyDataInternal), &mem_latency);
+  if (status != GTPINTOOL_STATUS_SUCCESS) {
+    printf("LATENCY instrumentation: failed to claim memory");
+    return mem_latency;
+  }
+
+  status = GTPin_LatencyInstrumentPost_Mem(tail, mem_latency, *availableLatencyRegisters);
+  if (status != GTPINTOOL_STATUS_SUCCESS) {
+    return mem_latency;
+  }
+
+  if (*availableLatencyRegisters > 0) {
+    --(*availableLatencyRegisters);
+  }
+  *isInstrumented = true;
+  return mem_latency;
+}
+
+
+static GTPinMem
+addOpcodeInstrumentation
+(
+ GTPinKernel kernel,
+ GTPinINS head
+)
+{
+  GTPINTOOL_STATUS status = GTPINTOOL_STATUS_SUCCESS;
+  GTPinMem mem_opcode = NULL;
+  status = HPCRUN_GTPIN_CALL(GTPin_MemClaim, (kernel, sizeof(uint32_t), &mem_opcode));
+  ASSERT_GTPIN_STATUS(status);
+
+  status = HPCRUN_GTPIN_CALL(GTPin_OpcodeprofInstrument, (head, mem_opcode));
+  ASSERT_GTPIN_STATUS(status);
+
+  return mem_opcode;
+}
+
+
+static SimdSectionNode*
+addSimdInstrumentation
+(
+ GTPinKernel kernel,
+ GTPinINS head,
+ GTPinINS tail,
+ GTPinMem mem_opcode
+)
+{
+  GTPINTOOL_STATUS status = GTPINTOOL_STATUS_SUCCESS;
+  // Divide BBL into sections and groups:
+  //
+  // Section is a sequence of instructions within BBL, each of which gets the same dynamic
+  // input parameters for the SIMD operation calulator. In our case, such a parameter is the
+  // flag register value.
+  //
+  // Group is a sequence of instructions within a section, each of which has the same static
+  // input parameters for the SIMD operation calulator. In our case, group consists of instructions
+  // having the same SimdProfArgs values.
+  GTPinINS sectionHead = head; // head instruction of the current section
+  GTPinINS sectionTail = tail;
+
+  uint32_t headId, tailID;
+  GTPin_InsID(sectionHead, &headId);
+  GTPin_InsID(sectionTail, &tailID);
+  SimdSectionNode *sHead = NULL;
+
+  // Iterate through sections within the current BBL
+  do
+  {
+    // Find the upper bound of the current section, and compute number of instructions per each
+    // instruction group within the section
+    SimdGroupNode *groupHead = NULL;
+
+    bool isSectionEnd = false;
+    GTPinINS ins = sectionHead;
+    for (; GTPin_InsValid(ins) && !isSectionEnd; ins = GTPin_InsNext(ins)) {
+      uint32_t    execMask = GTPin_InsGetExecMask(ins);
+      GenPredArgs predArgs = GTPin_InsGetPredArgs(ins);
+      bool        maskCtrl = !GTPin_InsIsMaskEnabled(ins);
+      uint64_t key = (uint64_t)&execMask + (uint64_t)&predArgs + maskCtrl + (uint64_t)sectionHead;
+      simdgroup_map_entry_t *entry = simdgroup_map_lookup(key);
+      if (!entry) {
+        entry = simdgroup_map_insert(key, maskCtrl, execMask, predArgs);
+        SimdGroupNode *gn = simdgroup_node_alloc_helper(&SimdGroupNode_free_list);
+        gn->key = key;
+        gn->entry = entry;
+        gn->next = groupHead;
+        groupHead = gn;
+      }
+
+      isSectionEnd = GTPin_InsIsFlagModifier(ins);
+    }
+
+    // For each element in insCountsPerGroup, create the corresponding SimdProfGroup record,
+    // and insert SimdProf instrumentaion at the beginning of the current section
+    SimdGroupNode *curr = groupHead;
+    SimdGroupNode *next;
+    while (curr) {
+      next = curr->next;
+      GTPinMem mem_simd;
+      status = GTPin_MemClaim(kernel, sizeof(uint32_t), &mem_simd); ASSERT_GTPIN_STATUS(status);
+      curr->mem_simd = mem_simd;
+      
+      GenPredArgs pa = simdgroup_entry_getPredArgs(curr->entry);
+      status = GTPin_SimdProfInstrument(sectionHead, simdgroup_entry_getMaskCtrl(curr->entry), 
+          simdgroup_entry_getExecMask(curr->entry), &pa, mem_simd);
+      if (status != GTPINTOOL_STATUS_SUCCESS)	return false;
+
+      simdgroup_map_delete(curr->key);
+      curr = next;
+    }
+    SimdSectionNode *sn = simdsection_node_alloc_helper(&SimdSectionNode_free_list);
+    sn->groupHead = groupHead;
+    sn->next = sHead;
+    sHead = sn;
+
+    sectionHead = ins;
+  } while (GTPin_InsValid(sectionHead));
+  return sHead;
 }
 
 
