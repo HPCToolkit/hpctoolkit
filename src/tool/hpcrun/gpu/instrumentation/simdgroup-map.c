@@ -55,7 +55,10 @@ typedef struct typed_splay_node(simdgroup) {
   bool maskCtrl;
   uint32_t execMask;
   GenPredArgs predArgs;
+<<<<<<< HEAD
   uint32_t inst;
+=======
+>>>>>>> 9f778dee0... adding simd and latency instrumentation for intel GPU's. ISSUE: hpcrun does not terminate
 } typed_splay_node(simdgroup);
 
 typed_splay_impl(simdgroup);
@@ -98,7 +101,10 @@ simdgroup_new
   e->maskCtrl = maskCtrl;
   e->execMask = execMask;
   e->predArgs = predArgs;
+<<<<<<< HEAD
   e->inst = 1;
+=======
+>>>>>>> 9f778dee0... adding simd and latency instrumentation for intel GPU's. ISSUE: hpcrun does not terminate
   return e;
 }
 
