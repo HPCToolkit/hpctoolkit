@@ -731,9 +731,10 @@ logit(cct_node_t* n, cct_op_arg_t arg, size_t l)
 }
 
 void*
-hpcrun_thread_init(int id, local_thread_data_t* local_thread_data, bool has_trace)
+hpcrun_thread_init(int id, local_thread_data_t* local_thread_data, bool suppress)
 {
-  bool demand_new_thread = false;
+  bool demand_new_thread = suppress;
+  bool has_trace = ! suppress;
   cct_ctxt_t* thr_ctxt = local_thread_data ? local_thread_data->thr_ctxt : NULL;
 
   hpcrun_mmap_init();
@@ -1241,7 +1242,7 @@ monitor_init_thread(int tid, void* data)
   hpcrun_safe_enter();
 
   TMSG(THREAD,"init thread %d",tid);
-  void* thread_data = hpcrun_thread_init(tid, (local_thread_data_t*) data, ! hpcrun_thread_suppress_sample);
+  void* thread_data = hpcrun_thread_init(tid, (local_thread_data_t*) data, hpcrun_thread_suppress_sample);
   TMSG(THREAD,"back from init thread %d",tid);
 
   hpcrun_threadmgr_thread_new();
