@@ -237,4 +237,8 @@ private:
 
 }
 
+namespace std {
+  std::ostream& operator<<(std::ostream&, const hpctoolkit::ThreadAttributes&) noexcept;
+}
+
 #endif  // HPCTOOLKIT_PROFILE_ATTRIBUTES_H
