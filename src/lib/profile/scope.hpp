@@ -100,6 +100,12 @@ public:
   /// Constructor for single-line Scopes with an associated instruction.
   Scope(const File&, uint64_t line, const Module&, uint64_t offset);
 
+  struct gpu_context_t {};
+  static inline constexpr gpu_context_t gpu_context = {};
+
+  /// Constructor for GPU context Scopes
+  Scope(gpu_context_t, uint64_t index);
+
   /// Copy constructors
   Scope(const Scope& s) = default;
   Scope& operator=(const Scope&) = default;
@@ -117,6 +123,7 @@ public:
     loop,  ///< A loop-like construct, potentially source-level.
     line,  ///< A single line within the original source.
     concrete_line,  ///< A single line, that has a representative instruction.
+    gpu_context,  ///< TODO Work-in-progress context placeholder node
   };
 
   /// Get the Type of this Location. In case that happens to be interesting.
@@ -133,6 +140,10 @@ public:
   /// For Scopes with line info, get the line that created this Scope.
   /// Throws if the Scope is not a '*_line', 'loop' or 'classified_*' Scope.
   std::pair<const File&, uint64_t> line_data() const;
+
+  /// For Scopes with index info, get the index for this Scope.
+  /// Throws if the Scope is not a 'gpu_context' Scope.
+  uint64_t index_data() const;
 
   // Comparison, as usual
   bool operator==(const Scope& o) const noexcept;
@@ -185,6 +196,15 @@ private:
         return point == o.point && line == o.line;
       }
     } point_line;
+    struct index_u {
+      uint64_t index;
+      bool operator==(const index_u& o) {
+        return index == o.index;
+      }
+      operator uint64_t() const {
+        return index;
+      }
+    } index;
     Data() : empty{} {};
     Data(const Module& m, uint64_t o)
       : point{&m, o} {};
@@ -196,6 +216,8 @@ private:
       : function_line{{&f}, {&s, l}} {};
     Data(const File& s, uint64_t l)
       : line{&s, l} {};
+    Data(uint64_t idx)
+      : index{idx} {};
   } data;
 
   friend class std::hash<Scope>;

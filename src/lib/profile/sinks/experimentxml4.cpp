@@ -484,6 +484,22 @@ ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
     partial = false;  // If we have a Function, we're not lost. Probably.
     break;
   }
+  case Scope::Type::gpu_context: {
+    const auto idx = s.index_data();
+    if(proc.prep()) {  // Our job to do the tag
+      std::ostringstream ss;
+      ss << "<gpu context " << idx << ">";
+      proc.setTag(ss.str(), 0, true);
+    }
+    std::ostringstream ss;
+    ss << "<PF i=\"" << c.userdata[exml.src.identifier()] << "\""
+             " n=\"" << proc.id << "\" s=\"" << proc.id << "\""
+             " f=\"" << exml.file_unknown.id << "\""
+             " l=\"0\"";
+    open = ss.str();
+    close = "</PF>\n";
+    break;
+  }
   }
 }
 
@@ -621,6 +637,7 @@ void ExperimentXML4::write() {
     case Scope::Type::loop:
     case Scope::Type::inlined_function:
     case Scope::Type::function:
+    case Scope::Type::gpu_context:
       break;
     case Scope::Type::point:
     case Scope::Type::classified_point:
@@ -653,6 +670,7 @@ void ExperimentXML4::write() {
     case Scope::Type::function:
     case Scope::Type::inlined_function:
     case Scope::Type::loop:
+    case Scope::Type::gpu_context:
       break;
     case Scope::Type::point:
     case Scope::Type::classified_point:
