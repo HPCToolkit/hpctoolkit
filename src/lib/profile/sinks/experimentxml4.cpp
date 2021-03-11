@@ -411,7 +411,8 @@ ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
     const auto pty = c.direct_parent()->scope().type();
     if(pty == Scope::Type::point || pty == Scope::Type::classified_point
        || pty == Scope::Type::line || pty == Scope::Type::concrete_line
-       || pty == Scope::Type::call || pty == Scope::Type::classified_call) {
+       || pty == Scope::Type::call || pty == Scope::Type::classified_call
+       || pty == Scope::Type::gpu_context) {
       if(proc.prep()) {  // We're in charge of the tag, and this is a tag we want.
         std::ostringstream ss;
         ss << fancynames::unknown_proc.first << " "
