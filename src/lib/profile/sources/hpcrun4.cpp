@@ -338,6 +338,10 @@ void Hpcrun4::read(const DataClass& needed) {
       } else if(n.id_parent == partial_node_id || n.id_parent == unknown_node_id) {
         // Global unknown Scope, emitted lazily.
         par = sink.context(sink.global(), {});
+      } else if(n.lm_id == HPCRUN_GPU_RANGE_NODE) {
+        auto it = contextparents.find(n.id_parent);
+        if(it != contextparents.end())
+          par = it->second;
       } else {  // Just nab its parent
         auto ppar = nodes.find(n.id_parent);
         if(ppar == nodes.end()) {
@@ -362,33 +366,22 @@ void Hpcrun4::read(const DataClass& needed) {
       Scope scope;  // Default to the unknown Scope.
       if(n.lm_id == HPCRUN_GPU_RANGE_NODE) {
         // Special case, this is a collaborative marker node
-        uint64_t ci = 0;
-        if(par) {
-          if(!std::holds_alternative<Context>(*par))
-            util::log::fatal{} << "Range CCT node with non-Context parent!";
-          auto& ctx = std::get<Context>(*par);
-          if(ctx.scope().type() == Scope::Type::gpu_context)
-            ci = ctx.scope().index_data();
-          else
-            util::log::fatal{} << "Range CCT node has invalid parent, saw " << ctx.scope();
-        } else {
-          auto it = contextroots.find(n.id_parent);
-          if(it == contextroots.end())
-            util::log::fatal{} << "Outlined range CCT node without parent!";
-          ci = it->second;
-        }
-        auto& collab = sink.collabContext(ci, n.lm_ip);
+        auto it = contextids.find(n.id_parent);
+        if(it == contextids.end())
+          util::log::fatal{} << "Range CCT node with non-context node parent!";
+        auto& collab = sink.collabContext(it->second, n.lm_ip);
         nodes.emplace(id, par ? sink.collaborate(*par, collab) : collab);
         continue;
       } else if(n.lm_id == HPCRUN_GPU_CONTEXT_NODE) {
-        if(auto pc = std::get_if<Context>(par.value())) {
-          if(pc->scope().type() == Scope::Type::global) {
-            // Special case: this is a context root node, so no actual Context
-            contextroots.emplace(id, n.lm_ip);
-            continue;
-          }
+        // Special case, mark it down but don't emit the Context
+        contextids.emplace(id, n.lm_ip);
+        if(par) {
+          Scope s = std::holds_alternative<Context>(*par)
+                        ? std::get<Context>(*par).scope() : Scope();
+          if(s.type() != Scope::Type::global)
+            contextparents.emplace(id, *par);
         }
-        scope = {Scope::gpu_context, n.lm_ip};
+        continue;
       } else if(n.lm_id != 0) {
         auto it = modules.find(n.lm_id);
         if(it == modules.end())
