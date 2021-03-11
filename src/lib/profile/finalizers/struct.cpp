@@ -209,8 +209,6 @@ void StructFile::module(const Module& m, Classification& c) noexcept {
       stack.emplace(stack.top(), 'P');
       stack.top().scope = c.addScope(f, stack.top().scope);
       funcs.emplace(f.offset, stack.top().scope);
-      lscopes.emplace_back(f.offset, f.file, f.line);
-      c.setScope({f.offset, f.offset}, stack.top().scope);
     } else if(ename == "L") {
       const auto& f = sink.file(xmlstr(attr.getValue(XMLStr("f"))));
       auto l = std::stoll(xmlstr(attr.getValue(XMLStr("l"))));
