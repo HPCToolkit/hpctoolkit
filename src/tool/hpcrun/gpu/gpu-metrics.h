@@ -283,8 +283,12 @@ typedef enum {
 
 // gpu instruction count
 #define FORALL_GPU_INST(macro)			\
-  macro(GPU_INST_METRIC_NAME, GPU_INST_ALL,	\
-	"GPU instructions executed")
+  macro(GPU_INST_METRIC_NAME ": frequency", GPU_INST_EXEC_COUNT,	\
+	"GPU instructions executed")  \
+  macro(GPU_INST_METRIC_NAME ": latency", GPU_INST_LATENCY,	\
+	"GPU instruction latency")  \
+  macro(GPU_INST_METRIC_NAME ": simd lanes", GPU_INST_ACT_SIMD_LANES,	\
+	"GPU instruction active simd lanes")
 
 
 // gpu kernel characteristics

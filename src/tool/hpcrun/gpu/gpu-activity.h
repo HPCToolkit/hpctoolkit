@@ -275,6 +275,8 @@ typedef struct gpu_kernel_t {
 typedef struct gpu_kernel_block_t {
   uint64_t external_id;
   uint64_t execution_count;
+  uint64_t latency;
+  uint64_t active_simd_lanes;
   ip_normalized_t pc;
 } gpu_kernel_block_t;
 

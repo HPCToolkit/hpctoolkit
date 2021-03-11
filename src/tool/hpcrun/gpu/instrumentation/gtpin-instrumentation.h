@@ -48,11 +48,44 @@
 // local includes
 //******************************************************************************
 
+#include "simdgroup-map.h"
+
+
+
 //******************************************************************************
-// interface operations
+// type definitions
 //******************************************************************************
 
 typedef struct gpu_op_ccts_t gpu_op_ccts_t;
+
+
+typedef struct LatencyDataInternal
+{
+    uint32_t _freq;    ///< Kernel frequency
+    uint32_t _cycles;  ///< Total number of cycles
+    uint32_t _skipped; ///< Total number of skipped cycles
+    uint32_t _pad;     ///< Padding
+} LatencyDataInternal;
+
+
+typedef struct SimdGroupNode {
+  uint64_t key;
+  simdgroup_map_entry_t *entry;
+  GTPinMem mem_simd;
+  struct SimdGroupNode *next;
+} SimdGroupNode;
+
+
+typedef struct SimdSectionNode {
+  SimdGroupNode *groupHead;
+  struct SimdSectionNode *next;
+} SimdSectionNode;
+
+
+
+//******************************************************************************
+// interface operations
+//******************************************************************************
 
 void
 gtpin_enable_profiling

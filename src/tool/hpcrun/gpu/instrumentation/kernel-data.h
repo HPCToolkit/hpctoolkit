@@ -1,7 +1,25 @@
 #ifndef gpu_instrumentation_kernel_data_h
 #define gpu_instrumentation_kernel_data_h
 
+//******************************************************************************
+// system includes
+//******************************************************************************
+
 #include <gtpin.h>
+
+
+
+//******************************************************************************
+// local includes
+//******************************************************************************
+
+#include "gtpin-instrumentation.h"
+
+
+
+//******************************************************************************
+// type definitions
+//******************************************************************************
 
 typedef enum {
   KERNEL_DATA_GTPIN
@@ -15,7 +33,10 @@ typedef struct kernel_data_gtpin_inst {
 typedef struct kernel_data_gtpin_block {
   int32_t head_offset;
   int32_t tail_offset;
-  GTPinMem mem;
+  bool hasLatencyInstrumentation;
+  GTPinMem mem_latency;
+  GTPinMem mem_opcode;
+  SimdSectionNode *simd_mem_list;
   struct kernel_data_gtpin_inst *inst;
   struct kernel_data_gtpin_block *next;
 } kernel_data_gtpin_block_t; 
