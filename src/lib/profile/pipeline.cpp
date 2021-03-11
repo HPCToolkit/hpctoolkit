@@ -563,7 +563,8 @@ ContextRef Source::context(ContextRef p, const Scope& s, bool recurse) {
   auto newCtx = [&](ContextRef p, const Scope& s) -> ContextRef {
     if(auto pcc = std::get_if<Context, CollaborativeSharedContext>(p))
       p = pcc->second.get();
-      // fallthrough
+    if(auto pc = std::get_if<CollaborativeContext>(p))
+      p = pc->m_shadow;
     if(auto pc = std::get_if<CollaborativeSharedContext>(p))
       return pc->ensure(rs, [this](Context& c){ notifyContext(c); });
     if(auto pc = std::get_if<Context>(p)) {
@@ -577,6 +578,7 @@ ContextRef Source::context(ContextRef p, const Scope& s, bool recurse) {
 
   if(std::holds_alternative<Context>(res)
      || std::holds_alternative<Context, CollaborativeSharedContext>(res)
+     || std::holds_alternative<CollaborativeContext>(res)
      || std::holds_alternative<CollaborativeSharedContext>(res)) {
     res = newCtx(res, rs);
   } else if(auto rc = std::get_if<SuperpositionedContext>(res)) {
@@ -597,10 +599,10 @@ ContextRef Source::superposContext(ContextRef root, std::vector<SuperpositionedC
   return std::get<Context>(root).superposition(std::move(targets));
 }
 
-CollaborativeContext& Source::collabContext(std::uint64_t id) {
+CollaborativeContext& Source::collabContext(std::uint64_t ci, std::uint64_t ri) {
   if(!limit().hasContexts())
     util::log::fatal() << "Source did not register for `contexts` emission!";
-  return pipe->collabs[id].ctx;
+  return pipe->collabs[{ci, ri}].ctx;
 }
 ContextRef Source::collaborate(ContextRef target, CollaborativeContext& collab) {
   if(!limit().hasContexts())

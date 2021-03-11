@@ -337,7 +337,7 @@ public:
     /// Emit a new CollaborativeContext, identified by the given value.
     /// DataClass: `contexts`
     // MT: Externally Synchronized (this), Internally Synchronized
-    CollaborativeContext& collabContext(std::uint64_t);
+    CollaborativeContext& collabContext(std::uint64_t, std::uint64_t);
 
     /// Mark the given ContextRef as a targeted root of a CollaborativeContext,
     /// and return the appropriately marked ContextRef.
@@ -516,8 +516,15 @@ private:
   util::locked_unordered_uniqued_set<Metric> mets;
   util::locked_unordered_uniqued_set<ExtraStatistic> estats;
   std::unique_ptr<Context> cct;
+  struct CollabHash {
+    std::hash<std::uint64_t> h_u64;
+    std::size_t operator()(const std::pair<uint64_t, uint64_t>& v) const noexcept {
+      return h_u64(v.first) ^ h_u64(v.second);
+    }
+  };
   struct Collab { CollaborativeContext ctx; };
-  util::locked_unordered_map<std::uint64_t, Collab> collabs;
+  util::locked_unordered_map<std::pair<std::uint64_t, std::uint64_t>, Collab,
+                             stdshim::shared_mutex, CollabHash> collabs;
 };
 
 }

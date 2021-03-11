@@ -47,6 +47,7 @@
 #include "packedids.hpp"
 
 #include "util/log.hpp"
+#include "mpi/core.hpp"
 
 using namespace hpctoolkit;
 
@@ -172,8 +173,10 @@ void IdPacker::notifyContextExpansion(ContextRef::const_t from, Scope s, Context
 
     buffersize.fetch_add(buffer.size() - oldsz, std::memory_order_relaxed);
   } else if(std::holds_alternative<const Context, const CollaborativeSharedContext>(from)
+      || std::holds_alternative<const CollaborativeContext>(from)
       || std::holds_alternative<const CollaborativeSharedContext>(from)) {
-    // util::log::warning{} << "IdPacker ignoring Collaborative expansions!";
+    if(mpi::World::size() > 1)
+      util::log::fatal{} << "IdPacker ignoring Collaborative expansions!";
   } else
     util::log::fatal{} << "IdPacker does not support expansions starting at an improper Context!";
 }

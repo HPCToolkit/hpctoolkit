@@ -522,107 +522,59 @@ void Metric::prefinalize(Thread::Temporary& t) noexcept {
 }
 
 void Metric::crossfinalize(const CollaborativeContext& cc) noexcept {
-  // if(cc.data.empty()) return;
+  if(cc.data.empty())
+    util::log::fatal{} << "CollaborativeContext with no Threads to distribute to?";
   if(!cc.m_shadow.data.empty())
     util::log::fatal{} << "Data got attributed to the shadow-root?";
 
-  // TODO, for now mostly just debug-dump stuff
-  util::log::debug d{true};
-  bool output = false;
-  d << "Collab " << &cc << ":";
+  // Pregenerate the factors to use when distributing across the Threads
+  // Also sum the metrics for the roots back into the Threads
+  std::vector<std::pair<decltype(cc.data)::key_type, double>> tfactors;
+  tfactors.reserve(cc.data.size());
+  double total = 0;
   for(const auto& tcdata: cc.data.citerate()) {
-    const Thread& t = tcdata.first.first->thread();
+    Thread::Temporary& tt = tcdata.first.first;
     const Context& c = tcdata.first.second;
-    d << "\n  Root " << c.scope() << " in thread " << t.attributes.threadid().value_or(-1) << ":";
-    for(const auto& macc: tcdata.second.citerate())
-      d << "\n    " << macc.first->name() << " = " << macc.second.point.load(std::memory_order_relaxed);
-    output = true;
-  }
-  if(cc.data.empty())
-    d << " (no Thread contributors)";
-
-  // (Pre- and) Post-order travsersal of the SharedContext tree
-  struct frame_t {
-    frame_t(const CollaborativeSharedContext& shad, Scope s)
-      : shad(shad), scope(s), here(shad.m_children.begin()),
-        end(shad.m_children.end()) {};
-    const CollaborativeSharedContext& shad;
-    Scope scope;
-    decltype(CollaborativeSharedContext::m_children)::const_iterator here;
-    decltype(CollaborativeSharedContext::m_children)::const_iterator end;
-    bool first = true;
-  };
-  std::stack<frame_t, std::vector<frame_t>> stack;
-
-  for(const auto& sc: cc.m_shadow.m_children) {
-    stack.emplace(*sc.second, sc.first);
-    while(!stack.empty()) {
-      if(stack.top().first) {
-        // Pre-order side
-        std::string indent(stack.size()*2, ' ');
-        d << "\n" << indent << "`-" << stack.top().scope;
-        indent += "  ";
-        for(const auto& macc: stack.top().shad.data.citerate()) {
-          d << "\n" << indent << macc.first->name() << " = " << macc.second.point.load(std::memory_order_relaxed);
-          output = true;
-        }
-        stack.top().first = false;
-      }
-
-      if(stack.top().here != stack.top().end) {
-        auto scope = stack.top().here->first;
-        const auto& child = *stack.top().here->second;
-        ++stack.top().here;
-        stack.emplace(child, scope);
-        continue;
-      }
-
-      // Post-order side
-      auto& mdata = const_cast<CollaborativeSharedContext&>(stack.top().shad).data;
-
-      // Handle the internal propagation first, so we don't get mixed up.
-      for(auto& mx: mdata.iterate()) {
-        mx.second.execution = mx.second.function
-                            = mx.second.point.load(std::memory_order_relaxed);
-      }
-
-      // Go through our children and sum into our bits
-      for(auto& schild: stack.top().shad.m_children) {
-        const bool pullfunc = pullsFunction(stack.top().scope, schild.first);
-        for(const auto& mx: schild.second->data.citerate()) {
-          auto& accum = mdata[mx.first];
-          if(pullfunc) accum.function += mx.second.function;
-          accum.execution += mx.second.execution;
-        }
-      }
-
-      if(cc.data.empty()) {
-        // There are no Threads to distribute to, so just add into the Contexts
-        // themselves. Keeps from losing metric value.
-        for(const auto& rc: stack.top().shad.m_shadowing) {
-          auto& cdata = const_cast<Context&>(rc.second).data;
-          for(const auto& mx: mdata.citerate()) {
-            auto& accum = cdata.emplace(std::piecewise_construct,
-              std::forward_as_tuple(mx.first), std::forward_as_tuple(mx.first)).first;
-            for(size_t i = 0; i < mx.first->partials().size(); i++) {
-              auto& partial = mx.first->partials()[i];
-              auto& atomics = accum.partials[i];
-              atomic_op(atomics.point, partial.m_accum(mx.second.point.load(std::memory_order_relaxed)), partial.combinator());
-              atomic_op(atomics.function, partial.m_accum(mx.second.function), partial.combinator());
-              atomic_op(atomics.execution, partial.m_accum(mx.second.execution), partial.combinator());
-            }
-          }
-        }
-      } else {
-        // TODO: Implement proper Thread-level distribution
-      }
-
-      stack.pop();
+    auto& cdata = tt.data[c];
+    double factor = 0;
+    for(const auto& macc: tcdata.second.citerate()) {
+      auto val = macc.second.point.load(std::memory_order_relaxed);
+      atomic_add(cdata[macc.first].point, val);
+      if(macc.first->name() == "GKER:COUNT")
+        factor = val;
     }
+    total += factor;
+    if(factor > 0)
+      tfactors.emplace_back(tcdata.first, factor);
   }
-  if(!output) {
-    d = util::log::debug{true};
-    d << "Collab " << &cc << ": (no metrics) (no Thread contributors)";
+  for(auto& tf: tfactors) tf.second /= total;
+
+  // If none of the Threads seem to have value, distribute evenly to all
+  if(tfactors.empty()) {
+    double factor = 1 / cc.data.size();
+    for(const auto& tcdata: cc.data.citerate())
+      tfactors.emplace_back(tcdata.first, factor);
+  }
+
+  // Walk the SharedContext tree and sum the results back into the Threads
+  using frame_t = std::reference_wrapper<CollaborativeSharedContext>;
+  std::stack<frame_t, std::vector<frame_t>> queue;
+  for(const auto& sc: cc.m_shadow.m_children) queue.emplace(*sc.second);
+  while(!queue.empty()) {
+    auto& shad = queue.top().get();
+    queue.pop();
+
+    for(const auto& tf: tfactors) {
+      const Context& c = shad.m_shadowing.at(const_cast<Context&>(tf.first.second.get()));
+      auto& cdata = tf.first.first.get().data[c];
+      for(const auto& macc: shad.data.citerate()) {
+        const Metric& m = macc.first;
+        double val = macc.second.point.load(std::memory_order_relaxed);
+        atomic_add(cdata[m].point, val * tf.second);
+      }
+    }
+    for(const auto& sc: shad.m_children)
+      queue.emplace(*sc.second);
   }
 }
 

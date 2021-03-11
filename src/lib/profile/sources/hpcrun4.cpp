@@ -54,6 +54,7 @@
 
 // TODO: Remove and change this once new-cupti is finalized
 #define HPCRUN_GPU_RANGE_NODE 65533
+#define HPCRUN_GPU_CONTEXT_NODE 65532
 
 using namespace hpctoolkit;
 using namespace sources;
@@ -325,6 +326,10 @@ void Hpcrun4::read(const DataClass& needed) {
             // This really shouldn't happen.
             util::log::fatal() << "Unknown synthetic root!";
           }
+        } else if(n.lm_id == HPCRUN_GPU_CONTEXT_NODE) {
+          util::log::fatal{} << "Orphaned context node!";
+        } else if(n.lm_id == HPCRUN_GPU_RANGE_NODE) {
+          util::log::fatal{} << "Orphaned range node!";
         } else {
           // If it looks like a sample but doesn't have a parent,
           // stitch it to the global unknown.
@@ -338,22 +343,52 @@ void Hpcrun4::read(const DataClass& needed) {
         if(ppar == nodes.end()) {
           // It may be in template form, in which case promote it to a call
           auto tmp = templates.find(n.id_parent);
-          if(tmp == templates.end())
+          if(tmp == templates.end()) {
+            // Range nodes can have "parents" in contextroots
+            if(n.lm_id != HPCRUN_GPU_RANGE_NODE)
               util::log::fatal() << "CCT nodes not in a preorder!";
-          auto mo = tmp->second.second.point_data();
-          ppar = nodes.emplace(n.id_parent,
-            sink.context(tmp->second.first, {Scope::call, mo.first, mo.second})).first;
-          templates.erase(tmp);
+          } else {
+            auto mo = tmp->second.second.point_data();
+            ppar = nodes.emplace(n.id_parent,
+              sink.context(tmp->second.first, {Scope::call, mo.first, mo.second})).first;
+            templates.erase(tmp);
+          }
         }
-        par = ppar->second;
+        if(ppar != nodes.end())
+          par = ppar->second;
       }
 
       // Figure out the Scope for this node, if it has one.
       Scope scope;  // Default to the unknown Scope.
       if(n.lm_id == HPCRUN_GPU_RANGE_NODE) {
         // Special case, this is a collaborative marker node
-        nodes.emplace(id, sink.collaborate(par.value(), sink.collabContext(n.lm_ip)));
+        uint64_t ci = 0;
+        if(par) {
+          if(!std::holds_alternative<Context>(*par))
+            util::log::fatal{} << "Range CCT node with non-Context parent!";
+          auto& ctx = std::get<Context>(*par);
+          if(ctx.scope().type() == Scope::Type::gpu_context)
+            ci = ctx.scope().index_data();
+          else
+            util::log::fatal{} << "Range CCT node has invalid parent, saw " << ctx.scope();
+        } else {
+          auto it = contextroots.find(n.id_parent);
+          if(it == contextroots.end())
+            util::log::fatal{} << "Outlined range CCT node without parent!";
+          ci = it->second;
+        }
+        auto& collab = sink.collabContext(ci, n.lm_ip);
+        nodes.emplace(id, par ? sink.collaborate(*par, collab) : collab);
         continue;
+      } else if(n.lm_id == HPCRUN_GPU_CONTEXT_NODE) {
+        if(auto pc = std::get_if<Context>(par.value())) {
+          if(pc->scope().type() == Scope::Type::global) {
+            // Special case: this is a context root node, so no actual Context
+            contextroots.emplace(id, n.lm_ip);
+            continue;
+          }
+        }
+        scope = {Scope::gpu_context, n.lm_ip};
       } else if(n.lm_id != 0) {
         auto it = modules.find(n.lm_id);
         if(it == modules.end())
