@@ -358,6 +358,7 @@ simdsection_node_alloc_helper
     first = (SimdSectionNode *) hpcrun_malloc_safe(sizeof(SimdSectionNode));
   }
 
+  //printf("simdsection. use: %p\n", first);
   memset(first, 0, sizeof(SimdSectionNode));
   return first;
 }
@@ -370,6 +371,7 @@ simdsection_node_free_helper
  SimdSectionNode *node
 )
 {
+  //printf("simdsection. freed: %p\n", node);
   node->next = *free_list;
   *free_list = node;
 }
@@ -389,6 +391,7 @@ simdgroup_node_alloc_helper
     first = (SimdGroupNode *) hpcrun_malloc_safe(sizeof(SimdGroupNode));
   }
 
+  //printf("simdgroup. use: %p\n", first);
   memset(first, 0, sizeof(SimdGroupNode));
   return first;
 }
@@ -401,6 +404,7 @@ simdgroup_node_free_helper
  SimdGroupNode *node
 )
 {
+  //printf("simdgroup. freed: %p\n", node);
   node->next = *free_list;
   *free_list = node;
 }
@@ -756,6 +760,10 @@ onKernelComplete
     uint64_t bb_exec_count = 0, bb_latency_cycles = 0, bb_active_simd_lanes = 0;
     uint32_t opcodeData = 0, simdData = 0;
     LatencyDataInternal latencyData;
+    SimdSectionNode *shead, *curr_s, *next_s;
+    shead = block->simd_mem_list;
+    SimdGroupNode *curr_g, *next_g;
+
     for (uint32_t tid = 0; tid < thread_count; ++tid) {
       // execution frequency
       status = HPCRUN_GTPIN_CALL(GTPin_MemRead,
@@ -767,29 +775,41 @@ onKernelComplete
       // latency calculation of some basicblocks are skipped due to timer overflow
       // latencyData has _skipped and _freq(total exec count) values as well
       // if latencyData has _freq, do we need to do opcodeProf instrumentation?
-      status = GTPin_MemRead(block->mem_latency, tid, sizeof(LatencyDataInternal), (char*)&latencyData, NULL);
-      ASSERT_GTPIN_STATUS(status);
-      bb_latency_cycles += latencyData._cycles;
+      if (block->hasLatencyInstrumentation) {
+        status = GTPin_MemRead(block->mem_latency, tid, sizeof(LatencyDataInternal), (char*)&latencyData, NULL);
+        ASSERT_GTPIN_STATUS(status);
+        bb_latency_cycles += latencyData._cycles;
+      }
 
       // active simd lanes
-      SimdSectionNode *shead = block->simd_mem_list;
-      SimdSectionNode *curr_s = shead;
-      SimdSectionNode *next_s;
+      curr_s = shead;
       while (curr_s) {
         next_s = curr_s->next;
-        SimdGroupNode *curr_g = curr_s->groupHead;
-        SimdGroupNode *next_g;
+        curr_g = curr_s->groupHead;
         while (curr_g) {
           next_g = curr_g->next;
           status = GTPin_MemRead(curr_g->mem_simd, tid, sizeof(uint32_t), (char*)&simdData, NULL);
           bb_active_simd_lanes += simdData;
-          simdgroup_node_free_helper(&SimdGroupNode_free_list, curr_g);
           curr_g = next_g;
         }
-        simdsection_node_free_helper(&SimdSectionNode_free_list, curr_s);
         curr_s = next_s;
       }
     }
+#if 0
+    // cleanup
+    curr_s = shead;
+    while (curr_s) {
+      next_s = curr_s->next;
+      curr_g = curr_s->groupHead;
+      while (curr_g) {
+        next_g = curr_g->next;
+        simdgroup_node_free_helper(&SimdGroupNode_free_list, curr_g);
+        curr_g = next_g;
+      }
+      simdsection_node_free_helper(&SimdSectionNode_free_list, curr_s);
+      curr_s = next_s;
+    }
+#endif
 
     kernel_data_gtpin_inst_t *inst = block->inst;
     while (inst != NULL) {
