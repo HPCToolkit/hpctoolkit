@@ -1159,10 +1159,24 @@ onKernelComplete
           simdgroup_node_free_helper(&SimdGroupNode_free_list, curr_g);
           curr_g = next_g;
         }
-        simdsection_node_free_helper(&SimdSectionNode_free_list, curr_s);
         curr_s = next_s;
       }
     }
+#if 0
+    // cleanup
+    curr_s = shead;
+    while (curr_s) {
+      next_s = curr_s->next;
+      curr_g = curr_s->groupHead;
+      while (curr_g) {
+        next_g = curr_g->next;
+        simdgroup_node_free_helper(&SimdGroupNode_free_list, curr_g);
+        curr_g = next_g;
+      }
+      simdsection_node_free_helper(&SimdSectionNode_free_list, curr_s);
+      curr_s = next_s;
+    }
+#endif
 
     // scalar simd loss
     uint64_t bb_total_simd_lanes = 0, scalar_simd_loss = 0;
