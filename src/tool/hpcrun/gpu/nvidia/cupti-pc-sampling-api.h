@@ -109,6 +109,5 @@ cupti_pc_sampling_correlation_flush
  cct_node_t *cct_node
 );
 
-void gpu_pc_sampling_total_samples_print();
 
 #endif
