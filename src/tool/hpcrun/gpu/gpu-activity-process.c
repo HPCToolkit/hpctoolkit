@@ -66,6 +66,7 @@
 #include <hpcrun/gpu/gpu-operation-item.h>
 #include <hpcrun/gpu/gpu-operation-item-process.h>
 #include <hpcrun/hpcrun_stats.h>
+#include <hpcrun/trace.h>
 
 
 //******************************************************************************

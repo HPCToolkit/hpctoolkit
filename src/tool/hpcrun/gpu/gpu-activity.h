@@ -238,11 +238,10 @@ typedef struct gpu_activity_t gpu_activity_t;
 typedef void (*gpu_pc_sampling2_translate_fn_t)
 (
  void *pc_sampling_data,
- uint64_t index,
- gpu_activity_t *gpu_activity,
+ uint64_t total_num_pcs,
  uint32_t period,
  uint32_t range_id,
- cct_node_t *cct_node
+ cct_node_t *cct_node  // range node or api node
 );
 
 

@@ -222,18 +222,8 @@ gpu_pc_sampling_info2_process
     cct_node = gpu_range_context_cct_get(range_id, context_id);
   }
 
-  static gpu_activity_t gpu_activity[GPU_INST_STALL2_INVALID];
-
   // Translate a pc sample activity for each record
-  for (uint64_t index = 0; index < total_num_pcs; ++index) {
-    pc_sampling_info2->translate(pc_sampling_data, index, gpu_activity, period, range_id, cct_node);
-
-    for (size_t i = 0; i < GPU_INST_STALL2_INVALID; ++i) {
-      if (gpu_activity[i].details.pc_sampling2.samples != 0) {
-        gpu_metrics_attribute(&gpu_activity[i]);
-      }
-    }
-  }
+  pc_sampling_info2->translate(pc_sampling_data, total_num_pcs, period, range_id, cct_node);
   pc_sampling_info2->free(pc_sampling_data);
 
   TMSG(GPU_OPERATION, "PC sampling range %u\n", range_id);

@@ -131,6 +131,32 @@ void ThreadAttributes::idTuple(const std::vector<pms_id_t>& tuple) {
   m_idTuple = tuple;
 }
 
+// Stringification
+std::ostream& std::operator<<(std::ostream& os, const ThreadAttributes& ta) noexcept {
+  bool first = true;
+  for(const auto& kv: ta.idTuple()) {
+    if(!first) os << ' ';
+    else first = false;
+    switch(kv.kind) {
+    case IDTUPLE_SUMMARY:
+      os << "SUMMARY";
+      if(kv.index != 0) os << "(" << kv.index << ")";
+      break;
+    case IDTUPLE_NODE:
+      os << "NODE{" << std::hex << std::setw(8) << kv.index << std::dec << '}';
+      break;
+    case IDTUPLE_RANK: os << "RANK{" << kv.index << "}"; break;
+    case IDTUPLE_THREAD: os << "THREAD{" << kv.index << "}"; break;
+    case IDTUPLE_GPUDEVICE: os << "GPUDEVICE{" << kv.index << "}"; break;
+    case IDTUPLE_GPUCONTEXT: os << "GPUCONTEXT{" << kv.index << "}"; break;
+    case IDTUPLE_GPUSTREAM: os << "GPUSTREAM{" << kv.index << "}"; break;
+    case IDTUPLE_CORE: os << "CORE{" << kv.index << "}"; break;
+    default: os << "[" << kv.kind << "]{" << kv.index << "}"; break;
+    }
+  }
+  return os;
+}
+
 bool ProfileAttributes::merge(const ProfileAttributes& o) {
   bool ok = true;
   if(!m_name) m_name = o.m_name;

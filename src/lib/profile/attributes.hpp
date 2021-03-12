@@ -50,6 +50,7 @@
 #include "accumulators.hpp"
 
 #include "util/ragged_vector.hpp"
+#include "util/ref_wrappers.hpp"
 #include "lib/prof/pms-format.h"
 #include "lib/prof-lean/id-tuple.h"
 
@@ -62,6 +63,7 @@ namespace hpctoolkit {
 
 class Context;
 class SuperpositionedContext;
+class CollaborativeContext;
 class Metric;
 
 /// Attributes unique to a particular thread within a profile. Whether this is
@@ -152,28 +154,28 @@ public:
     /// Reference to the Metric data for a particular Context in this Thread.
     /// Returns `nullptr` if none is present.
     // MT: Safe (const), Unstable (before notifyThreadFinal)
-    const util::locked_unordered_map<const Metric*, MetricAccumulator>*
-    accumulatorsFor(const Context& c) const noexcept {
-      return data.find(&c);
+    const auto* accumulatorsFor(const Context& c) const noexcept {
+      return data.find(c);
     }
 
     /// Reference to all of the Metric data on Thread.
     // MT: Safe (const), Unstable (before notifyThreadFinal)
-    const util::locked_unordered_map<const Context*,
-      util::locked_unordered_map<const Metric*, MetricAccumulator>>&
-    accumulators() const noexcept { return data; }
+    const auto& accumulators() const noexcept { return data; }
 
   private:
     Thread& m_thread;
 
     friend class ProfilePipeline;
     Temporary(Thread& t) : m_thread(t) {};
+    bool contributesToCollab = false;
 
     friend class Metric;
-    util::locked_unordered_map<const Context*,
-      util::locked_unordered_map<const Metric*, MetricAccumulator>> data;
-    util::locked_unordered_map<const SuperpositionedContext*,
-      util::locked_unordered_map<const Metric*, MetricAccumulator>> sp_data;
+    util::locked_unordered_map<util::reference_index<const Context>,
+      util::locked_unordered_map<util::reference_index<const Metric>,
+        MetricAccumulator>> data;
+    util::locked_unordered_map<util::reference_index<const SuperpositionedContext>,
+      util::locked_unordered_map<util::reference_index<const Metric>,
+        MetricAccumulator>> sp_data;
   };
 };
 
@@ -233,6 +235,10 @@ private:
   std::unordered_map<std::string, std::string> m_env;
 };
 
+}
+
+namespace std {
+  std::ostream& operator<<(std::ostream&, const hpctoolkit::ThreadAttributes&) noexcept;
 }
 
 #endif  // HPCTOOLKIT_PROFILE_ATTRIBUTES_H

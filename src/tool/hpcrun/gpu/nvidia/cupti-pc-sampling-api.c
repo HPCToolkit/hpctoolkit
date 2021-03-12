@@ -17,6 +17,7 @@
 #include "../gpu/gpu-operation-item-process.h"
 #include "../gpu/gpu-operation-multiplexer.h"
 #include "../gpu/gpu-range.h"
+#include "../gpu/gpu-metrics.h"
 
 #include "cuda-api.h"
 #include "cubin-crc-map.h"
@@ -175,7 +176,6 @@ sampling_period_config
 }
 
 
-
 static void
 stall_reason_config
 (
@@ -283,47 +283,57 @@ static void
 pc_sampling2_translate
 (
  void *pc_sampling_data,
- uint64_t index,
- gpu_activity_t *gpu_activity,
+ uint64_t total_num_pcs,
  uint32_t period,
  uint32_t range_id,
  cct_node_t *cct_node
 )
 {
-  CUpti_PCSamplingData *buffer_pc = cupti_pc_sampling_buffer_pc_get((cupti_pc_sampling_data_t *)pc_sampling_data);
-  CUpti_PCSamplingPCData *pc_data = &buffer_pc->pPcData[index];
-  ip_normalized_t pc = cubin_crc_transform(pc_data->cubinCrc, pc_data->functionIndex, pc_data->pcOffset);
-  cct_node_t *cct_child = hpcrun_cct_insert_ip_norm(cct_node, pc);
+  cupti_pc_sampling_data_t *data = (cupti_pc_sampling_data_t *)pc_sampling_data;
+  CUpti_PCSamplingData *buffer_pc = cupti_pc_sampling_buffer_pc_get(data);
 
-  TMSG(CUPTI_ACTIVITY, "cubinCrc: %lu, lm_id: %u, lm_ip %p, functionName: %s, pcOffset: %p, count: %u", pc_data->cubinCrc,
-    pc.lm_id, pc.lm_ip, pc_data->functionName, pc_data->pcOffset, pc_data->stallReasonCount);
+  uint64_t sample_period = 1 << period;
+  uint64_t index;
+  for (index = 0; index < total_num_pcs; ++index) {
+    CUpti_PCSamplingPCData *pc_data = &buffer_pc->pPcData[index];
+    ip_normalized_t pc = cubin_crc_transform(pc_data->cubinCrc, pc_data->functionIndex, pc_data->pcOffset);
+    cct_node_t *cct_child = hpcrun_cct_insert_ip_norm(cct_node, pc);
 
-  for (size_t j = 0; j < GPU_INST_STALL2_INVALID; ++j) {
-    CUpti_PCSamplingStallReason *stall_reason = &pc_data->stallReason[j];
-    uint32_t stall_reason_index = stall_reason->pcSamplingStallReasonIndex;
-    // The first two stall reasons are count and drop, which we don't use
-    if (stall_reason_index < 2) {
-      continue;
-    }
-    stall_reason_index -= 2;
+    TMSG(CUPTI_ACTIVITY, "cubinCrc: %lu, lm_id: %u, lm_ip %p, functionName: %s, pcOffset: %p, count: %u", pc_data->cubinCrc,
+      pc.lm_id, pc.lm_ip, pc_data->functionName, pc_data->pcOffset, pc_data->stallReasonCount);
 
-    uint32_t samples = stall_reason->samples;
+    gpu_activity_t gpu_activity;
+    gpu_activity.kind = GPU_ACTIVITY_PC_SAMPLING2;
+    gpu_activity.cct_node = cct_child;
+    gpu_activity.range_id = range_id;
 
-    if (samples > 0) {
-      uint32_t st_index = stall_reason_index / 2 + 1;
-      // TODO(Keren): fix apportion host_correlation id and pc
-      if (stall_reason_index % 2 == 0) {
-        // non-latency sample
-        gpu_activity[st_index].details.pc_sampling2.samples = samples * period;
-      } else {
-        // latency sample 
-        gpu_activity[st_index].details.pc_sampling2.latencySamples = samples * period;
+    for (size_t j = 0; j < pc_data->stallReasonCount; ++j) {
+      CUpti_PCSamplingStallReason *stall_reason = &pc_data->stallReason[j];
+      uint32_t stall_reason_index = stall_reason->pcSamplingStallReasonIndex;
+      // The first two stall reasons are count and drop, which we don't use
+      if (stall_reason_index < 2) {
+        continue;
       }
+      stall_reason_index -= 2;
 
-      gpu_activity[st_index].details.pc_sampling2.stallReason = st_index;
-      gpu_activity[st_index].kind = GPU_ACTIVITY_PC_SAMPLING2;
-      gpu_activity[st_index].cct_node = cct_child;
-      gpu_activity[st_index].range_id = range_id;
+      uint64_t samples = stall_reason->samples * sample_period;
+      uint32_t st_index = stall_reason_index / 2 + 1;
+
+      if (samples > 0) {
+        // TODO(Keren): fix apportion host_correlation id and pc
+        if (stall_reason_index % 2 == 0) {
+          // non-latency sample
+          gpu_activity.details.pc_sampling2.samples = samples;
+          gpu_activity.details.pc_sampling2.latencySamples = 0;
+        } else {
+          // latency sample 
+          gpu_activity.details.pc_sampling2.samples = 0;
+          gpu_activity.details.pc_sampling2.latencySamples = samples;
+        }
+
+        gpu_activity.details.pc_sampling2.stallReason = st_index;
+        gpu_metrics_attribute(&gpu_activity);
+      }
     }
   }
 }
@@ -372,7 +382,7 @@ pc_sampling_data_debug
     TMSG(CUPTI_ACTIVITY, "cubinCrc: %lu, functionName: %s, pcOffset: %u, count: %u", pc_data->cubinCrc,
       pc_data->functionName, pc_data->pcOffset, pc_data->stallReasonCount);
 
-    for (size_t j = 0; j < num_stall_reasons; ++j) {
+    for (size_t j = 0; j < pc_data->stallReasonCount; ++j) {
       if (pc_data->stallReason[j].samples > 0) {
         TMSG(CUPTI_ACTIVITY, "stall index: %u, count: %d", pc_data->stallReason[j].pcSamplingStallReasonIndex,
           pc_data->stallReason[j].samples);
@@ -485,8 +495,8 @@ cupti_pc_sampling_range_correlation_collect
   uint32_t *stall_reason_index = cupti_context_map_entry_stall_reason_index_get(entry);
   char **stall_reason_names = cupti_context_map_entry_stall_reason_names_get(entry);
 
-  gpu_operation_item_t op_item;
-  memset(&op_item, 0, sizeof(op_item));
+  gpu_activity_t gpu_activity;
+  memset(&gpu_activity, 0, sizeof(gpu_activity_t));
 
   if (DEBUG) {
     for (size_t i = 0; i < num_stall_reasons; ++i) {
@@ -509,11 +519,11 @@ cupti_pc_sampling_range_correlation_collect
 
     HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiPCSamplingGetData, (&params));
     if (user_buffer_pc->totalNumPcs > 0) {
-      pc_sampling_activity_set(&op_item.activity, range_id, context_id, cct_node, pc_sampling_data);
+      pc_sampling_activity_set(&gpu_activity, range_id, context_id, cct_node, pc_sampling_data);
       if (gpu_range_interval_get() == 1) {
-        gpu_pc_sampling_info2_process(&op_item.activity);
+        gpu_pc_sampling_info2_process(&gpu_activity);
       } else {
-        gpu_operation_multiplexer_push(NULL, NULL, &op_item.activity);
+        gpu_operation_multiplexer_push(NULL, NULL, &gpu_activity);
       }
     }
 
@@ -531,11 +541,11 @@ cupti_pc_sampling_range_correlation_collect
 
       HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiPCSamplingGetData, (&params));
       if (user_buffer_pc->totalNumPcs > 0) {
-        pc_sampling_activity_set(&op_item.activity, range_id, context_id, cct_node, pc_sampling_data);
+        pc_sampling_activity_set(&gpu_activity, range_id, context_id, cct_node, pc_sampling_data);
         if (gpu_range_interval_get() == 1) {
-          gpu_pc_sampling_info2_process(&op_item.activity);
+          gpu_pc_sampling_info2_process(&gpu_activity);
         } else {
-          gpu_operation_multiplexer_push(NULL, NULL, &op_item.activity);
+          gpu_operation_multiplexer_push(NULL, NULL, &gpu_activity);
         }
       }
 

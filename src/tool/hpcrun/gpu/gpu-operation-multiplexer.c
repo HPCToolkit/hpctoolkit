@@ -115,12 +115,12 @@ gpu_operation_record
   current_operation_channels_count = atomic_load(&operation_channels_count);
   gpu_operation_channel_set_process(current_operation_channels_count);
 
+  // write out range profile
+  gpu_range_profile_dump();
+
   // even if this is not normal exit, gpu-trace-fini will behave as if it is a normal exit
   gpu_trace_fini(NULL, MONITOR_EXIT_NORMAL);
   atomic_store(&gpu_trace_finished, true);
-
-  // write out range profile
-  gpu_range_profile_dump();
 
   return NULL;
 }

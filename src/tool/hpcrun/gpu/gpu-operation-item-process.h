@@ -80,5 +80,4 @@ gpu_pc_sampling_info2_process
  gpu_activity_t *activity
 );
 
-
 #endif
