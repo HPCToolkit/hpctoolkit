@@ -20,11 +20,26 @@ Address GPUBlock::last() const {
 
 
 void GPUBlock::getInsns(Insns &insns) const {
+  entryID entry_id = _entry_ids_max_;
+
+  if (_arch == Arch_cuda) {
+    entry_id = cuda_op_general;
+  } else {
 #ifdef DYNINST_SUPPORTS_INTEL_GPU
+    if (_arch == Arch_intelGen9) {
+      entry_id = intel_gpu_op_general;
+    }
+#endif  // DYNINST_SUPPORTS_INTEL_GPU
+  }
+
+  // Don't construct CFG if Dyninst does not support this GPU arch
+  if (entry_id == _entry_ids_max_) {
+    return;
+  }
+
   unsigned char dummy_inst[MAX_INST_SIZE];
 
   for (auto &inst_offset : _inst_offsets) {
-    entryID entry_id = intel_gpu_op_general;
     InstructionAPI::Operation op(entry_id, "", _arch);
 
     auto offset = inst_offset.first;
@@ -33,7 +48,6 @@ void GPUBlock::getInsns(Insns &insns) const {
     InstructionAPI::Instruction inst(op, size, dummy_inst, _arch);
     insns.emplace(offset, inst);
   }
-#endif  // DYNINST_SUPPORTS_INTEL_GPU
 }
 
 }
