@@ -561,10 +561,10 @@ ContextRef Source::context(ContextRef p, const Scope& s, bool recurse) {
       res = pipe->transformers[i].get().context(res, rs);
 
   auto newCtx = [&](ContextRef p, const Scope& s) -> ContextRef {
-    if(auto pcc = std::get_if<Context, CollaborativeSharedContext>(p))
-      p = pcc->second.get();
+    if(auto pcc = std::get_if<Context, const CollaboratorRoot>(p))
+      p = pcc->second->second->collaboration();
     if(auto pc = std::get_if<CollaborativeContext>(p))
-      p = pc->m_shadow;
+      return *pc->ensure(rs, [this](Context& c){ notifyContext(c); }).second;
     if(auto pc = std::get_if<CollaborativeSharedContext>(p))
       return pc->ensure(rs, [this](Context& c){ notifyContext(c); });
     if(auto pc = std::get_if<Context>(p)) {
@@ -577,7 +577,7 @@ ContextRef Source::context(ContextRef p, const Scope& s, bool recurse) {
   };
 
   if(std::holds_alternative<Context>(res)
-     || std::holds_alternative<Context, CollaborativeSharedContext>(res)
+     || std::holds_alternative<Context, const CollaboratorRoot>(res)
      || std::holds_alternative<CollaborativeContext>(res)
      || std::holds_alternative<CollaborativeSharedContext>(res)) {
     res = newCtx(res, rs);
@@ -604,11 +604,12 @@ CollaborativeContext& Source::collabContext(std::uint64_t ci, std::uint64_t ri) 
     util::log::fatal() << "Source did not register for `contexts` emission!";
   return pipe->collabs[{ci, ri}].ctx;
 }
-ContextRef Source::collaborate(ContextRef target, CollaborativeContext& collab) {
+ContextRef Source::collaborate(ContextRef target, CollaborativeContext& collab, Scope s) {
   if(!limit().hasContexts())
     util::log::fatal() << "Source did not register for `contexts` emission!";
-  auto& shared = collab.addCollaboratorRoot(target, [this](Context& c){ notifyContext(c); });
-  return {std::get<Context>(target), shared};
+  collab.addCollaboratorRoot(target, [this](Context& c){ notifyContext(c); });
+  auto& sroot = collab.ensure(s, [this](Context& c){ notifyContext(c); });
+  return {std::get<Context>(target), sroot};
 }
 
 Source::AccumulatorsRef Source::accumulateTo(ContextRef c, Thread::Temporary& t) {
@@ -618,9 +619,9 @@ Source::AccumulatorsRef Source::accumulateTo(ContextRef c, Thread::Temporary& t)
     return t.data[*pc];
   if(auto pc = std::get_if<SuperpositionedContext>(c))
     return t.sp_data[*pc];
-  if(auto pcc = std::get_if<Context, CollaborativeSharedContext>(c)) {
+  if(auto pcc = std::get_if<Context, const CollaboratorRoot>(c)) {
     t.contributesToCollab = true;
-    return pcc->second.get().m_root.data[{t, pcc->first}];
+    return pcc->second->second->collaboration().data[pcc->second->first][{t, pcc->first}];
   }
   if(auto pc = std::get_if<CollaborativeSharedContext>(c)) {
     t.contributesToCollab = true;

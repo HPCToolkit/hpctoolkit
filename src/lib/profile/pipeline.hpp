@@ -343,7 +343,7 @@ public:
     /// and return the appropriately marked ContextRef.
     /// DataClass: `contexts`
     // MT: Externally Synchronized (this), Internally Synchronized
-    ContextRef collaborate(ContextRef, CollaborativeContext&);
+    ContextRef collaborate(ContextRef, CollaborativeContext&, Scope);
 
     /// Emit a new Thread into the Pipeline.
     /// DataClass: `threads`

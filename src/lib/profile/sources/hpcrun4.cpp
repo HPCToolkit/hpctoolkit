@@ -53,8 +53,9 @@
 #define HPCRUN_FMT_NV_traceOrdered "trace-time-ordered"
 
 // TODO: Remove and change this once new-cupti is finalized
-#define HPCRUN_GPU_RANGE_NODE 65533
-#define HPCRUN_GPU_CONTEXT_NODE 65532
+#define HPCRUN_GPU_ROOT_NODE 65533
+#define HPCRUN_GPU_RANGE_NODE 65532
+#define HPCRUN_GPU_CONTEXT_NODE 65531
 
 using namespace hpctoolkit;
 using namespace sources;
@@ -63,6 +64,7 @@ using namespace literals::data;
 Hpcrun4::Hpcrun4(const stdshim::filesystem::path& fn)
   : ProfileSource(), fileValid(true), attrsValid(true), tattrsValid(true),
     thread(nullptr), path(fn), partial_node_id(0), unknown_node_id(0),
+    range_root_node_id(0),
     tracepath(fn.parent_path() / fn.stem().concat(".hpctrace")),
     trace_sort(false) {
   // Try to open up the file. Errors handled inside somewhere.
@@ -311,12 +313,15 @@ void Hpcrun4::read(const DataClass& needed) {
     hpcrun_fmt_cct_node_t n;
     while((id = hpcrun_sparse_next_context(file, &n)) > 0) {
       // Figure out the parent of this node, if it has one.
+      std::optional<ContextRef> grandpar;
       std::optional<ContextRef> par;
+      Scope contextscope;
+      bool isrange = false;
       if(n.id_parent == 0) {  // Root of some kind
         if(n.lm_id == 0) {  // Synthetic root, remap to something useful.
           if(n.lm_ip == HPCRUN_FMT_LMIp_NULL) {
             // Global Scope, for full or "normal" unwinds. No actual node.
-            nodes.emplace(id, sink.global());
+            nodes.insert({id, {std::nullopt, sink.global()}});
             continue;
           } else if(n.lm_ip == HPCRUN_FMT_LMIp_Flag1) {
             // Global unknown Scope, for "partial" unwinds.
@@ -330,6 +335,10 @@ void Hpcrun4::read(const DataClass& needed) {
           util::log::fatal{} << "Orphaned context node!";
         } else if(n.lm_id == HPCRUN_GPU_RANGE_NODE) {
           util::log::fatal{} << "Orphaned range node!";
+        } else if(n.lm_id == HPCRUN_GPU_ROOT_NODE) {
+          // Range root, mark it as such
+          range_root_node_id = id;
+          continue;
         } else {
           // If it looks like a sample but doesn't have a parent,
           // stitch it to the global unknown.
@@ -341,25 +350,42 @@ void Hpcrun4::read(const DataClass& needed) {
       } else if(n.lm_id == HPCRUN_GPU_RANGE_NODE) {
         auto it = contextparents.find(n.id_parent);
         if(it != contextparents.end())
-          par = it->second;
-      } else {  // Just nab its parent
-        auto ppar = nodes.find(n.id_parent);
-        if(ppar == nodes.end()) {
+          std::tie(par, contextscope) = it->second;
+      } else {
+        // Use a lambda to not have to use goto
+        std::tie(grandpar, par) = [&]() -> std::pair<decltype(grandpar), decltype(par)> {
+          if(n.id_parent == range_root_node_id)
+            return {std::nullopt, std::nullopt};
+
+          // Does the parent already exist?
+          auto ppar = nodes.find(n.id_parent);
+          if(ppar != nodes.end())
+            return ppar->second;
+
           // It may be in template form, in which case promote it to a call
-          auto tmp = templates.find(n.id_parent);
-          if(tmp == templates.end()) {
-            // Range nodes can have "parents" in contextroots
-            if(n.lm_id != HPCRUN_GPU_RANGE_NODE)
-              util::log::fatal() << "CCT nodes not in a preorder!";
-          } else {
-            auto mo = tmp->second.second.point_data();
-            ppar = nodes.emplace(n.id_parent,
-              sink.context(tmp->second.first, {Scope::call, mo.first, mo.second})).first;
-            templates.erase(tmp);
+          auto temp = templates.find(n.id_parent);
+          if(temp != templates.end()) {
+            auto mo = temp->second.second.point_data();
+            ppar = nodes.insert({n.id_parent, {temp->second.first,
+                sink.context(temp->second.first, {Scope::call, mo.first, mo.second})
+              }}).first;
+            templates.erase(temp);
+            return ppar->second;
           }
-        }
-        if(ppar != nodes.end())
-          par = ppar->second;
+
+          // Last option: its part of an outlined range tree
+          auto range = rangeoutlined.find(n.id_parent);
+          if(range != rangeoutlined.end()) {
+            isrange = true;
+            return {std::nullopt, range->second};
+          }
+
+          if(n.lm_id == HPCRUN_GPU_RANGE_NODE)
+            return {std::nullopt, std::nullopt};
+
+          util::log::fatal() << "CCT nodes not in a preorder!";
+          std::abort();
+        }();
       }
 
       // Figure out the Scope for this node, if it has one.
@@ -370,17 +396,23 @@ void Hpcrun4::read(const DataClass& needed) {
         if(it == contextids.end())
           util::log::fatal{} << "Range CCT node with non-context node parent!";
         auto& collab = sink.collabContext(it->second, n.lm_ip);
-        nodes.emplace(id, par ? sink.collaborate(*par, collab) : collab);
+        if(par)
+          nodes.insert({id, {par, sink.collaborate(*par, collab, contextscope)}});
+        else
+          rangeoutlined.insert({id, collab});
         continue;
       } else if(n.lm_id == HPCRUN_GPU_CONTEXT_NODE) {
         // Special case, mark it down but don't emit the Context
         contextids.emplace(id, n.lm_ip);
-        if(par) {
-          Scope s = std::holds_alternative<Context>(*par)
-                        ? std::get<Context>(*par).scope() : Scope();
-          if(s.type() != Scope::Type::global)
-            contextparents.emplace(id, *par);
-        }
+        if(n.id_parent == range_root_node_id)
+          // This is an outlined context tree, so we don't mark a parent for here
+          continue;
+        if(!grandpar || !par)
+          util::log::fatal{} << "Inline context node without grandparent?";
+        std::reference_wrapper<Context> c = std::get<Context>(*par);
+        while(c.get().direct_parent() != &std::get<Context>(*grandpar))
+          c = *c.get().direct_parent();
+        contextparents.insert({id, {*grandpar, c.get().scope()}});
         continue;
       } else if(n.lm_id != 0) {
         auto it = modules.find(n.lm_id);
@@ -393,18 +425,31 @@ void Hpcrun4::read(const DataClass& needed) {
         continue;
       }
 
-      if(scope.type() == Scope::Type::point) {
+      if(isrange) {
+        // Very special case, this is an identifier node in an outlined range.
+        // We only want to use it if we don't have a better idea, so emit it and check if it expands.
+        ContextRef nextref = sink.context(*par, scope);
+        auto& next = std::get<CollaborativeSharedContext>(nextref);
+        if(next.direct_parent() == nullptr) {
+          // It didn't expand, so we'll use it. Mark it as a dummy and proceed.
+          next.makeDummy();
+          nodes.insert({id, {std::nullopt, next}});
+        } else {
+          // It expanded, so we don't use it. Rewire so the next guy emits directly.
+          nodes.insert({id, {std::nullopt, *par}});
+        }
+      } else if(scope.type() == Scope::Type::point) {
         // It might be a call node, it might not. Delay it until we know whether it has children.
         templates.insert({id, {*par, scope}});
       } else {  // Just emit it, it doesn't need much thought
-        nodes.emplace(id, sink.context(*par, scope));
+        nodes.insert({id, {*par, sink.context(*par, scope)}});
       }
     }
     if(id < 0) util::log::fatal() << "Hpcrun4: Error reading context entry!";
 
     // If there are remaining unpromoted templates, emit them as normal points.
     for(const auto& tmp: templates) {
-      nodes.emplace(tmp.first, sink.context(tmp.second.first, tmp.second.second));
+      nodes.insert({tmp.first, {tmp.second.first, sink.context(tmp.second.first, tmp.second.second)}});
     }
     templates.clear();
   }
@@ -418,7 +463,7 @@ void Hpcrun4::read(const DataClass& needed) {
         auto it = nodes.find(cid);
         if(it == nodes.end())
           util::log::fatal() << "Erroneous CCT id " << cid << " in " << path.string() << "!";
-        it->second;
+        it->second.second;
       });
       auto accum = sink.accumulateTo(here, *thread);
       while(mid > 0) {
@@ -446,12 +491,12 @@ void Hpcrun4::read(const DataClass& needed) {
       if(it != nodes.end()) {
         std::chrono::nanoseconds tp(HPCTRACE_FMT_GET_TIME(tpoint.comp));
         if(trace_sort)
-          tps.emplace_back(tp, it->second);
+          tps.emplace_back(tp, it->second.second);
         else {
           if(thread)
-            sink.timepoint(*thread, it->second, tp);
+            sink.timepoint(*thread, it->second.second, tp);
           else
-            sink.timepoint(it->second, tp);
+            sink.timepoint(it->second.second, tp);
         }
       }
     }

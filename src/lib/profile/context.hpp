@@ -66,6 +66,7 @@ class CollaborativeSharedContext;
 
 /// Generic reference to any of the Context-like classes.
 /// Use ContextRef::const_t for a constant reference to a Context-like.
+using CollaboratorRoot = std::pair<Scope, std::unique_ptr<CollaborativeSharedContext>>;
 using ContextRef = util::variant_ref<
   // Ordinary reference to a (physical) calling Context
   Context,
@@ -75,7 +76,9 @@ using ContextRef = util::variant_ref<
   CollaborativeContext,
   // Reference to a particular collaborator root for a Collaborative Context
   // Note that consistency between the two refs is assumed.
-  util::ref_pair<Context, CollaborativeSharedContext>,
+  // FIXME: This is really a giant hack, it should actually be a
+  // <Context&, CollaborativeContext&, Scope> tuple.
+  util::ref_pair<Context, const CollaboratorRoot>,
   // Reference to the shared Context under a Collaborative Context
   CollaborativeSharedContext
 >;
@@ -118,11 +121,17 @@ public:
   ~CollaborativeSharedContext() = default;
 
   CollaborativeContext& collaboration() noexcept { return m_root; }
+  CollaborativeSharedContext* direct_parent() noexcept { return m_parent; }
+
+  /// Mark this SharedContext as a "dummy" Context for Scope-based grouping.
+  /// Throws if *this is not a top-level SharedContext.
+  // MT: Internally Synchronized
+  void makeDummy();
 
 private:
   friend class CollaborativeContext;
-  CollaborativeSharedContext(CollaborativeContext& collab)
-    : m_root(collab) {};
+  CollaborativeSharedContext(CollaborativeContext& collab, CollaborativeSharedContext* parent)
+    : m_root(collab), m_parent(parent) {};
 
   CollaborativeSharedContext(CollaborativeSharedContext&&) = default;
   CollaborativeSharedContext& operator=(CollaborativeSharedContext&&) = default;
@@ -130,6 +139,8 @@ private:
   CollaborativeSharedContext& operator=(const CollaborativeSharedContext&) = delete;
 
   CollaborativeContext& m_root;
+  CollaborativeSharedContext* m_parent;
+  bool m_dummy = false;
   /// Children ShredContexts generated off of this one
   std::unordered_map<Scope, std::unique_ptr<CollaborativeSharedContext>> m_children;
   /// The set of actual Contexts this is shadowing, organized by their
@@ -170,22 +181,35 @@ private:
   friend class CollaborativeSharedContext;
   // Shadow-tree and protection lock
   std::mutex m_lock;
-  CollaborativeSharedContext m_shadow;
+  struct ShadowHash : std::hash<Scope> {
+    std::size_t operator()(const CollaboratorRoot& v) const noexcept {
+      return std::hash<Scope>::operator()(v.first);
+    }
+  };
+  std::unordered_set<CollaboratorRoot, ShadowHash> m_shadow;
+  std::unordered_set<util::reference_index<Context>> m_roots;
+
+  /// Wrapper for Context::ensure which creates shadows and copies as needed.
+  /// Calls the given function on any Contexts created as part of this call.
+  /// Returns the child SharedContext.
+  // MT: Externally Synchronized
+  const CollaboratorRoot& ensure(Scope, const std::function<void(Context&)>&) noexcept;
 
   /// Add a new "collaborator" subtree starting at the given root.
   /// Calls the given function on any Contexts created as part of this call.
   // MT: Internally Synchronized
-  CollaborativeSharedContext& addCollaboratorRoot(ContextRef, const std::function<void(Context&)>&) noexcept;
+  void addCollaboratorRoot(ContextRef, const std::function<void(Context&)>&) noexcept;
 
   friend class ProfilePipeline;
   friend class Metric;
-  CollaborativeContext() : m_shadow(*this) {};
+  CollaborativeContext() = default;
 
   /// Distributor metric values for each of the participating Threads + roots
-  util::locked_unordered_map<std::pair<util::reference_index<Thread::Temporary>,
-    util::reference_index<const Context>>,
-      util::locked_unordered_map<util::reference_index<const Metric>,
-       MetricAccumulator>> data;
+  util::locked_unordered_map<Scope,
+    util::locked_unordered_map<std::pair<util::reference_index<Thread::Temporary>,
+      util::reference_index<Context>>,
+        util::locked_unordered_map<util::reference_index<const Metric>,
+          MetricAccumulator>>> data;
 };
 
 /// A single calling Context, representing a single location in the physical
