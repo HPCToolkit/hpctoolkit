@@ -316,7 +316,6 @@ void Hpcrun4::read(const DataClass& needed) {
       std::optional<ContextRef> grandpar;
       std::optional<ContextRef> par;
       Scope contextscope;
-      bool isrange = false;
       if(n.id_parent == 0) {  // Root of some kind
         if(n.lm_id == 0) {  // Synthetic root, remap to something useful.
           if(n.lm_ip == HPCRUN_FMT_LMIp_NULL) {
@@ -373,13 +372,6 @@ void Hpcrun4::read(const DataClass& needed) {
             return ppar->second;
           }
 
-          // Last option: its part of an outlined range tree
-          auto range = rangeoutlined.find(n.id_parent);
-          if(range != rangeoutlined.end()) {
-            isrange = true;
-            return {std::nullopt, range->second};
-          }
-
           if(n.lm_id == HPCRUN_GPU_RANGE_NODE)
             return {std::nullopt, std::nullopt};
 
@@ -396,10 +388,7 @@ void Hpcrun4::read(const DataClass& needed) {
         if(it == contextids.end())
           util::log::fatal{} << "Range CCT node with non-context node parent!";
         auto& collab = sink.collabContext(it->second, n.lm_ip);
-        if(par)
-          nodes.insert({id, {par, sink.collaborate(*par, collab, contextscope)}});
-        else
-          rangeoutlined.insert({id, collab});
+        nodes.insert({id, {par, par ? sink.collaborate(*par, collab, contextscope) : collab}});
         continue;
       } else if(n.lm_id == HPCRUN_GPU_CONTEXT_NODE) {
         // Special case, mark it down but don't emit the Context
@@ -425,20 +414,7 @@ void Hpcrun4::read(const DataClass& needed) {
         continue;
       }
 
-      if(isrange) {
-        // Very special case, this is an identifier node in an outlined range.
-        // We only want to use it if we don't have a better idea, so emit it and check if it expands.
-        ContextRef nextref = sink.context(*par, scope);
-        auto& next = std::get<CollaborativeSharedContext>(nextref);
-        if(next.direct_parent() == nullptr) {
-          // It didn't expand, so we'll use it. Mark it as a dummy and proceed.
-          next.makeDummy();
-          nodes.insert({id, {std::nullopt, next}});
-        } else {
-          // It expanded, so we don't use it. Rewire so the next guy emits directly.
-          nodes.insert({id, {std::nullopt, *par}});
-        }
-      } else if(scope.type() == Scope::Type::point) {
+      if(scope.type() == Scope::Type::point) {
         // It might be a call node, it might not. Delay it until we know whether it has children.
         templates.insert({id, {*par, scope}});
       } else {  // Just emit it, it doesn't need much thought

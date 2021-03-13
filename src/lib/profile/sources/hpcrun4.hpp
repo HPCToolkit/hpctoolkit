@@ -99,7 +99,6 @@ private:
   std::unordered_map<unsigned int, std::pair<ContextRef, Scope>> templates;
   std::unordered_map<unsigned int, uint64_t> contextids;
   std::unordered_map<unsigned int, std::pair<ContextRef, Scope>> contextparents;
-  std::unordered_map<unsigned int, ContextRef> rangeoutlined;
   unsigned int partial_node_id;  // ID for the partial unwind fake root node
   unsigned int unknown_node_id;  // ID for unwinds that start from "nowhere," but somehow aren't partial.
   unsigned int range_root_node_id;
