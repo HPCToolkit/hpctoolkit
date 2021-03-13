@@ -83,9 +83,6 @@ public:
   void notifyTimepoint(const Thread&, ContextRef::const_t, std::chrono::nanoseconds) override;
   void notifyThreadFinal(const Thread::Temporary&) override;
 
-  /// Check whether a Context ever appears in the traces.
-  bool seen(const Context&);
-
   /// Return the tag for the experiment.xml, or an empty string if empty.
   std::string exmlTag();
 

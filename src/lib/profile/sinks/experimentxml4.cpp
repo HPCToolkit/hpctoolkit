@@ -358,7 +358,7 @@ std::string ExperimentXML4::eStatMetricTags(const ExtraStatistic& es, unsigned i
 // ud Context bits
 
 ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
-  : premetrics(false) {
+  : elidable(false), premetrics(false) {
   const auto& s = c.scope();
   auto& proc = exml.getProc(s);
   switch(s.type()) {
@@ -489,9 +489,9 @@ ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
 
 // ExperimentXML4 bits
 
-ExperimentXML4::ExperimentXML4(const fs::path& out, bool srcs, HPCTraceDB2* db)
+ExperimentXML4::ExperimentXML4(const fs::path& out, bool srcs, bool prune, HPCTraceDB2* db)
   : ProfileSink(), dir(out), of(), next_id(0x7FFFFFFF), tracedb(db),
-    include_sources(srcs), file_unknown(*this), next_procid(2),
+    include_sources(srcs), prune(prune), file_unknown(*this), next_procid(2),
     proc_unknown_proc(0), proc_partial_proc(1), unknown_module(*this),
     next_cid(0x7FFFFFFF) {
   if(dir.empty()) {  // Dry run
@@ -609,9 +609,24 @@ void ExperimentXML4::write() {
                        << src.contexts().userdata[src.identifier()]
                        << " != 0!";
 
+  // Prune out any elidable CCT elements
+  if(prune && tracedb == nullptr) {
+    src.contexts().citerate(nullptr, [&](const Context& c){
+      auto& udc = c.userdata[ud];
+      udc.elidable = [&]() -> bool{
+        if(!c.statistics().empty()) return false;
+        for(const auto& cc: c.children().citerate())
+          if(!cc().userdata[ud].elidable)
+            return false;
+        return true;
+      }();
+    });
+  }
+
   // Spit out the CCT
   src.contexts().citerate([&](const Context& c){
     auto& udc = c.userdata[ud];
+    if(udc.elidable) return;
 
     // First emit our tags, and whatever extensions are nessesary.
     of << udc.pre << udc.open;
@@ -645,6 +660,7 @@ void ExperimentXML4::write() {
     if(c.children().empty()) return;
 
     auto& udc = c.userdata[ud];
+    if(udc.elidable) return;
 
     // Close off this tag.
     switch(c.scope().type()) {

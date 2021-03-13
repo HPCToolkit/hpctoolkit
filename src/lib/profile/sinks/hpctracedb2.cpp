@@ -208,10 +208,6 @@ void HPCTraceDB2::notifyPipeline() noexcept {
   src.registerOrderedWrite();
 }
 
-bool HPCTraceDB2::seen(const Context& c) {
-  return true;
-}
-
 void HPCTraceDB2::mmupdate(std::chrono::nanoseconds tmin, std::chrono::nanoseconds tmax) {
   while(1) {
     auto val = min.load(std::memory_order_relaxed);
