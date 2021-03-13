@@ -66,7 +66,7 @@ public:
   ~ExperimentXML4() = default;
 
   /// Constructor, with a reference to the output database directory.
-  ExperimentXML4(const stdshim::filesystem::path&, bool, HPCTraceDB2*);
+  ExperimentXML4(const stdshim::filesystem::path&, bool, bool, HPCTraceDB2*);
 
   /// Write out as much data as possible. See ProfileSink::write.
   void write() override;
@@ -91,6 +91,7 @@ private:
   std::atomic<unsigned int> next_id;
   HPCTraceDB2* tracedb;
   bool include_sources;
+  bool prune;
 
   struct uds;
 
@@ -178,6 +179,7 @@ private:
     udContext(const Context&, ExperimentXML4&);
     ~udContext() = default;
 
+    bool elidable;
     std::string pre;
     std::string open;
     std::string attr;
