@@ -166,7 +166,7 @@ void IdPacker::notifyContextExpansion(ContextRef::const_t from, Scope s, Context
     } else abort();  // unreachable
 
     buffersize.fetch_add(buffer.size() - oldsz, std::memory_order_relaxed);
-  } else if(std::holds_alternative<const Context, const CollaborativeSharedContext>(from)
+  } else if(std::holds_alternative<const Context, const CollaboratorRoot>(from)
       || std::holds_alternative<const CollaborativeContext>(from)
       || std::holds_alternative<const CollaborativeSharedContext>(from)) {
     if(mpi::World::size() > 1)
