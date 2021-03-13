@@ -121,17 +121,11 @@ public:
   ~CollaborativeSharedContext() = default;
 
   CollaborativeContext& collaboration() noexcept { return m_root; }
-  CollaborativeSharedContext* direct_parent() noexcept { return m_parent; }
-
-  /// Mark this SharedContext as a "dummy" Context for Scope-based grouping.
-  /// Throws if *this is not a top-level SharedContext.
-  // MT: Internally Synchronized
-  void makeDummy();
 
 private:
   friend class CollaborativeContext;
-  CollaborativeSharedContext(CollaborativeContext& collab, CollaborativeSharedContext* parent)
-    : m_root(collab), m_parent(parent) {};
+  CollaborativeSharedContext(CollaborativeContext& collab)
+    : m_root(collab) {};
 
   CollaborativeSharedContext(CollaborativeSharedContext&&) = default;
   CollaborativeSharedContext& operator=(CollaborativeSharedContext&&) = default;
@@ -139,8 +133,6 @@ private:
   CollaborativeSharedContext& operator=(const CollaborativeSharedContext&) = delete;
 
   CollaborativeContext& m_root;
-  CollaborativeSharedContext* m_parent;
-  bool m_dummy = false;
   /// Children ShredContexts generated off of this one
   std::unordered_map<Scope, std::unique_ptr<CollaborativeSharedContext>> m_children;
   /// The set of actual Contexts this is shadowing, organized by their

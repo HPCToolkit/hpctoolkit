@@ -295,10 +295,8 @@ pc_sampling2_translate
   uint64_t index;
   for (index = 0; index < total_num_pcs; ++index) {
     CUpti_PCSamplingPCData *pc_data = &buffer_pc->pPcData[index];
-    ip_normalized_t first_pc = cubin_crc_transform(pc_data->cubinCrc, pc_data->functionIndex, 0);
     ip_normalized_t pc = cubin_crc_transform(pc_data->cubinCrc, pc_data->functionIndex, pc_data->pcOffset);
-    cct_node_t *cct_child = hpcrun_cct_insert_ip_norm(cct_node, first_pc);
-    cct_child = hpcrun_cct_insert_ip_norm(cct_child, pc);
+    cct_node_t *cct_child = hpcrun_cct_insert_ip_norm(cct_node, pc);
 
     TMSG(CUPTI_ACTIVITY, "cubinCrc: %lu, lm_id: %u, lm_ip %p, functionName: %s, pcOffset: %p, count: %u", pc_data->cubinCrc,
       pc.lm_id, pc.lm_ip, pc_data->functionName, pc_data->pcOffset, pc_data->stallReasonCount);

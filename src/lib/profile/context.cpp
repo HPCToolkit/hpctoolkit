@@ -208,24 +208,13 @@ CollaborativeSharedContext::ensure(Scope s, const std::function<void(Context&)>&
     if(it != m_children.end())
       return *it->second;
   }
-  auto& child = *m_children.emplace(s, new CollaborativeSharedContext(m_root, this)).first->second;
+  auto& child = *m_children.emplace(s, new CollaborativeSharedContext(m_root)).first->second;
   for(auto& [root, real]: m_shadowing) {
-    assert(!m_dummy || real.direct_parent() == &root.get());
-    auto x = m_dummy ? root->ensure(s) : real.ensure(s);
+    auto x = real.ensure(s);
     if(x.second) onadd(x.first);
     child.m_shadowing.emplace(root, x.first);
   }
   return child;
-}
-
-void CollaborativeSharedContext::makeDummy() {
-  if(m_parent != nullptr)
-    util::log::fatal{} << "Only top-level SharedContexts can be dummies!";
-  std::unique_lock<std::mutex> l(m_root.m_lock);
-  if(m_dummy) return;
-  if(!m_children.empty())
-    util::log::fatal{} << "Attempt to make a SharedContext a dummy after children had been added!";
-  m_dummy = true;
 }
 
 const CollaboratorRoot&
@@ -236,7 +225,7 @@ CollaborativeContext::ensure(Scope s, const std::function<void(Context&)>& onadd
     if(it != m_shadow.end())
       return *it;
   }
-  const auto& sroot = *m_shadow.emplace(s, new CollaborativeSharedContext(*this, nullptr)).first;
+  const auto& sroot = *m_shadow.emplace(s, new CollaborativeSharedContext(*this)).first;
   auto& child = *sroot.second;
   for(Context& root: m_roots) {
     auto x = root.ensure(s);
@@ -260,14 +249,10 @@ void CollaborativeContext::addCollaboratorRoot(ContextRef rootref,
                             std::reference_wrapper<Context>>;
   std::stack<frame_t, std::vector<frame_t>> q;
   for(const auto& sc: m_shadow) {
-    if(sc.second->m_dummy) {
-      q.emplace(*sc.second, root);
-    } else {
-      auto x = root.ensure(sc.first);
-      if(x.second) onadd(x.first);
-      sc.second->m_shadowing.emplace(root, x.first);
-      q.emplace(*sc.second, x.first);
-    }
+    auto x = root.ensure(sc.first);
+    if(x.second) onadd(x.first);
+    sc.second->m_shadowing.emplace(root, x.first);
+    q.emplace(*sc.second, x.first);
     while(!q.empty()) {
       auto& shad = q.top().first.get();
       auto& par = q.top().second.get();
