@@ -67,7 +67,11 @@ gpu_range_context_cct_get
   hpcrun_safe_enter();
 
   cct_bundle_t *cct_bundle = &(cur_td->core_profile_trace_data.epoch->csdata);
-  cct_node_t *cct_root = cct_bundle->top;
+  cct_node_t *cct_root = NULL;
+  if (cct_bundle->gpu_range_root == NULL) {
+    cct_bundle->gpu_range_root = hpcrun_cct_top_new(HPCRUN_FMT_GPU_RANGE_ROOT_NODE, 0);
+  }
+  cct_root = cct_bundle->gpu_range_root;
   cct_node_t *cct_context = hpcrun_cct_insert_context(cct_root, context_id);
   cct_node_t *cct_range = hpcrun_cct_insert_range(cct_context, range_id);
 

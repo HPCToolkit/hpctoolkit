@@ -78,6 +78,8 @@ typedef struct cct_bundle_t {
 
   cct_node_t* special_no_thread_node; // trace node when outside the thread
 
+  cct_node_t* gpu_range_root;     // A collection of flat GPU metrics cannot be attributed at runtime
+
   cct_ctxt_t* ctxt;               // creation context for bundle
 
   unsigned long num_nodes;        // utility to count nodes. NB: MIGHT go away

@@ -172,9 +172,10 @@ hpcrun_fmt_hdr_free(hpcrun_fmt_hdr_t* hdr, hpcfmt_free_fn dealloc);
 #define HPCRUN_FMT_METRIC_INVISIBLE       4
 
 #define HPCRUN_FMT_DUMMY_NODE 65534
-#define HPCRUN_FMT_GPU_RANGE_NODE 65533
-#define HPCRUN_FMT_GPU_CONTEXT_NODE 65532
-#define HPCRUN_FMT_GPU_STREAM_NODE 65531
+#define HPCRUN_FMT_GPU_RANGE_ROOT_NODE 65533
+#define HPCRUN_FMT_GPU_RANGE_NODE 65532
+#define HPCRUN_FMT_GPU_CONTEXT_NODE 65531
+#define HPCRUN_FMT_GPU_STREAM_NODE 65530
 
 //***************************************************************************
 // epoch-hdr

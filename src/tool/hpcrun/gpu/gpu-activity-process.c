@@ -210,6 +210,8 @@ gpu_sample_process
       cct_node_t *host_op_node =
         gpu_host_correlation_map_entry_op_function_get(host_op_entry);
 
+      // Fake range id, gpu_sample does not support range profiling
+      // New pc sampling does not use this function
       uint32_t range_id = gpu_host_correlation_map_entry_range_id_get(host_op_entry);
 
       cct_node_t *cct_child = hpcrun_cct_insert_ip_norm(host_op_node, ip);
@@ -244,8 +246,9 @@ gpu_sampling_info_process
       cct_node_t *host_op_node =
         gpu_host_correlation_map_entry_op_function_get(host_op_entry);
 
+      // Fake range id, gpu_instruction does not support range profiling
+      // New pc sampling does not use this function
       uint32_t range_id = gpu_host_correlation_map_entry_range_id_get(host_op_entry);
-
       attribute_activity(host_op_entry, sri, host_op_node, range_id);
     }
     // sample info is the last record for a given correlation id
@@ -359,33 +362,16 @@ gpu_kernel_process
       cct_node_t *func_ph =
         gpu_host_correlation_map_entry_op_cct_get(host_op_entry,
 						  gpu_placeholder_type_trace);
-
       cct_node_t *func_node = hpcrun_cct_children(func_ph); // only child
-
       if (func_node == NULL) {
-	// in case placeholder doesn't have a child
+        // in case placeholder doesn't have a child
         func_node = func_ph;
       }
-
-      uint64_t cpu_submit_time =
-        gpu_host_correlation_map_entry_cpu_submit_time(host_op_entry);
-      activity->details.kernel.submit_time = cpu_submit_time;
 
       cct_node_t *kernel_ph =
         gpu_host_correlation_map_entry_op_cct_get(host_op_entry,
 						  gpu_placeholder_type_kernel);
-
-      cct_node_t *kernel_node = kernel_ph;
-      uint32_t range_id = gpu_host_correlation_map_entry_range_id_get(host_op_entry);
-      
-      if (gpu_range_interval_get() != 1) {
-        uint32_t context_id = activity->details.kernel.context_id;
-        kernel_node = hpcrun_cct_insert_context(kernel_node, context_id);
-        kernel_node = hpcrun_cct_insert_range(kernel_node, range_id);
-      }
-
-#if 0
-      cct_node_t *kernel_node;
+      cct_node_t *kernel_node = NULL;
       if (func_node == func_ph) {
         // in case placeholder doesn't have a child
         kernel_node = kernel_ph;
@@ -394,8 +380,18 @@ gpu_kernel_process
         cct_addr_t *addr = hpcrun_cct_addr(func_node);
         kernel_node = hpcrun_cct_insert_ip_norm(kernel_ph, addr->ip_norm);
       }
-#endif
+      
+      // Range processing
+      uint32_t range_id = gpu_host_correlation_map_entry_range_id_get(host_op_entry);
+      if (gpu_range_interval_get() != 1) {
+        uint32_t context_id = activity->details.kernel.context_id;
+        kernel_node = hpcrun_cct_insert_context(kernel_node, context_id);
+        kernel_node = hpcrun_cct_insert_range(kernel_node, range_id);
+      }
 
+      uint64_t cpu_submit_time =
+        gpu_host_correlation_map_entry_cpu_submit_time(host_op_entry);
+      activity->details.kernel.submit_time = cpu_submit_time;
       attribute_activity(host_op_entry, activity, kernel_node, range_id);
     } else {
       assert(0);
@@ -427,6 +423,7 @@ gpu_kernel_block_process
     cct_node_t *host_op_node =
       gpu_host_correlation_map_entry_op_function_get(host_op_entry);
 
+    // Fake range id, gpu_kernel_block does not support range profiling
     uint32_t range_id = gpu_host_correlation_map_entry_range_id_get(host_op_entry);
 
     // create a child cct node that contains 2 metrics: offset of block head wrt. original binary, dynamic execution count of block
@@ -613,6 +610,7 @@ gpu_instruction_process
 
       cct_node_t *func_ins = hpcrun_cct_insert_ip_norm(func_ph, pc);
       
+      // Fake range id, gpu_instruction does not support range profiling
       uint32_t range_id = gpu_host_correlation_map_entry_range_id_get(host_op_entry);
       attribute_activity(host_op_entry, activity, func_ins, range_id);
     }
