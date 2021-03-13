@@ -345,8 +345,8 @@ std::string ExperimentXML4::eStatMetricTags(const ExtraStatistic& es, unsigned i
     }
   };
 
-  const auto exec_id = id++;
-  const auto func_id = id++;
+  const auto exec_id = ++id;
+  const auto func_id = ++id;
   f(MetricScope::execution, MetricScope::function, exec_id, func_id,
     " (I)", "inclusive");
   f(MetricScope::function, MetricScope::execution, func_id, exec_id,
