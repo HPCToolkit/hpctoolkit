@@ -818,7 +818,7 @@ void IntelAdvisor::write() {
     util::log::fatal{} << "Global Context id "
                        << src.contexts().userdata[src.identifier()]
                        << " != 0!";
-
+#if 0
   // Spit out the CCT
   src.contexts().citerate([&](const Context& c){
       if ((c.scope().type() == hpctoolkit::Scope::Type::point) || (c.scope().type() == hpctoolkit::Scope::Type::call) ||
@@ -916,6 +916,7 @@ void IntelAdvisor::write() {
     }
     of << udc.close << udc.post;
   });
+#endif
 
   of << "</SecCallPathProfile>\n"
         "</HPCToolkitExperiment>\n" << std::flush;
