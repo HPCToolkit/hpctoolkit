@@ -531,7 +531,7 @@ cupti_pc_sampling_range_correlation_collect
     }
 
     // TODO(Keren): check if remainingNumPcs is also updated
-    while (user_buffer_pc->remainingNumPcs >= HPCRUN_CUPTI_ACTIVITY_USER_BUFFER_PC_NUM) {
+    while (user_buffer_pc->remainingNumPcs > 0) {
       pc_sampling_data = cupti_pc_sampling_data_produce(
         HPCRUN_CUPTI_ACTIVITY_USER_BUFFER_PC_NUM, num_stall_reasons);
       user_buffer_pc = cupti_pc_sampling_buffer_pc_get(pc_sampling_data);
