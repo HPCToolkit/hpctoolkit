@@ -182,15 +182,20 @@ parseIntelCFG
     auto *block = function.blocks[i];
     auto *inst = block->insts.back();
     size_t jump_targets_count = kv.getInstTargets(inst->offset, jump_targets.data());
-    
-    // Add fall through edge
-    int next_block_start_offset = 0;
-    if (i != function.blocks.size() - 1) {
-      next_block_start_offset = function.blocks[i + 1]->insts.front()->offset;
-    }
-    jump_targets[jump_targets_count] = next_block_start_offset;
 
-    for (size_t j = 0; j < jump_targets_count + 1; j++) {
+    if (i != function.blocks.size() - 1) {
+      // Add a fall through edge
+      // The last block and the end of thread (EOT) block do not have a fall through
+      int next_block_start_offset = function.blocks[i + 1]->insts.front()->offset;
+
+      bool eot_inst = kv.getOpcodeGroup(inst->offset) == KV_OPGROUP_SEND_EOT;
+      if (jump_targets_count == 0 && !eot_inst) {
+        jump_targets[jump_targets_count] = next_block_start_offset;
+        jump_targets_count += 1;
+      }
+    }
+
+    for (size_t j = 0; j < jump_targets_count; j++) {
       auto *target_block = block_offset_map.at(jump_targets[j]);
       // TODO(Aaron): call edge
       auto type = GPUParse::TargetType::DIRECT;
