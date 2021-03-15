@@ -72,6 +72,7 @@ typedef struct SimdGroupNode {
   uint64_t key;
   simdgroup_map_entry_t *entry;
   GTPinMem mem_simd;
+  uint32_t instCount;
   struct SimdGroupNode *next;
 } SimdGroupNode;
 

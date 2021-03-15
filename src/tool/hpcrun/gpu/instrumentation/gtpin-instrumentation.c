@@ -54,6 +54,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <gtpin.h>
+#include <ged_ops.h>   // GTPin_InsGetExecSize
+#include <inttypes.h>
 
 
 
@@ -411,27 +413,57 @@ simdgroup_node_free_helper
 
 
 static void
-kernelBlockActivityTranslate
+kernelActivityTranslate
 (
  gpu_activity_t *ga,
  uint64_t correlation_id,
  uint32_t loadmap_module_id,
  uint64_t offset,
+ uint32_t bb_instruction_count,
  uint64_t execution_count,
  uint64_t latency,
- uint64_t active_simd_lanes
+ uint64_t active_simd_lanes,
+ uint64_t total_simd_lanes,
+ uint64_t scalar_simd_loss
 )
 {
   memset(&ga->details.kernel_block, 0, sizeof(gpu_kernel_block_t));
   ga->details.kernel_block.external_id = correlation_id;
   ga->details.kernel_block.pc.lm_id = (uint16_t)loadmap_module_id;
   ga->details.kernel_block.pc.lm_ip = (uintptr_t)offset;
+  ga->details.kernel_block.bb_instruction_count = bb_instruction_count;
   ga->details.kernel_block.execution_count = execution_count;
   ga->details.kernel_block.latency = latency;
   ga->details.kernel_block.active_simd_lanes = active_simd_lanes;
+  ga->details.kernel_block.total_simd_lanes = total_simd_lanes;
+  ga->details.kernel_block.scalar_simd_loss = scalar_simd_loss;
   ga->kind = GPU_ACTIVITY_KERNEL_BLOCK;
 
   cstack_ptr_set(&(ga->next), 0);
+}
+
+
+static void
+kernelInstructionActivityProcess
+(
+ uint64_t correlation_id,
+ uint32_t loadmap_module_id,
+ uint64_t offset,
+ uint64_t bb_execution_count,
+ gpu_activity_channel_t *activity_channel,
+ cct_node_t *host_op_node
+)
+{
+  gpu_activity_t ga;
+  kernelActivityTranslate(&ga, correlation_id, loadmap_module_id, offset,
+      0, bb_execution_count, 0, 0, 0, 0);
+
+  ip_normalized_t ip = ga.details.kernel_block.pc;
+  cct_node_t *cct_child = hpcrun_cct_insert_ip_norm(host_op_node, ip); // how to set the ip_norm
+  if (cct_child) {
+    ga.cct_node = cct_child;
+    gpu_operation_multiplexer_push(activity_channel, NULL, &ga);
+  }
 }
 
 
@@ -441,16 +473,19 @@ kernelBlockActivityProcess
  uint64_t correlation_id,
  uint32_t loadmap_module_id,
  uint64_t offset,
+ uint32_t bb_instruction_count,
  uint64_t bb_execution_count,
  uint64_t bb_latency_cycles,
  uint64_t bb_active_simd_lanes,
+ uint64_t bb_total_simd_lanes,
+ uint64_t scalar_simd_loss,
  gpu_activity_channel_t *activity_channel,
  cct_node_t *host_op_node
 )
 {
   gpu_activity_t ga;
-  kernelBlockActivityTranslate(&ga, correlation_id, loadmap_module_id, offset,
-      bb_execution_count, bb_latency_cycles, bb_active_simd_lanes);
+  kernelActivityTranslate(&ga, correlation_id, loadmap_module_id, offset,
+      bb_instruction_count, bb_execution_count, bb_latency_cycles, bb_active_simd_lanes, bb_total_simd_lanes, scalar_simd_loss);
 
   ip_normalized_t ip = ga.details.kernel_block.pc;
   cct_node_t *cct_child = hpcrun_cct_insert_ip_norm(host_op_node, ip); // how to set the ip_norm
@@ -539,7 +574,8 @@ addSimdInstrumentation
  GTPinKernel kernel,
  GTPinINS head,
  GTPinINS tail,
- GTPinMem mem_opcode
+ GTPinMem mem_opcode,
+ uint32_t *bb_scalar_instructions
 )
 {
   GTPINTOOL_STATUS status = GTPINTOOL_STATUS_SUCCESS;
@@ -554,10 +590,14 @@ addSimdInstrumentation
   // having the same SimdProfArgs values.
   GTPinINS sectionHead = head; // head instruction of the current section
   GTPinINS sectionTail = tail;
+  *bb_scalar_instructions = 0;
 
+
+#if 0
   uint32_t headId, tailID;
   GTPin_InsID(sectionHead, &headId);
   GTPin_InsID(sectionTail, &tailID);
+#endif
   SimdSectionNode *sHead = NULL;
 
   // Iterate through sections within the current BBL
@@ -570,10 +610,14 @@ addSimdInstrumentation
     bool isSectionEnd = false;
     GTPinINS ins = sectionHead;
     for (; GTPin_InsValid(ins) && !isSectionEnd; ins = GTPin_InsNext(ins)) {
+      uint32_t execSize = GTPin_InsGetExecSize(ins);
+      if (execSize == 1) {
+        (*bb_scalar_instructions)++;
+      }
       uint32_t    execMask = GTPin_InsGetExecMask(ins);
       GenPredArgs predArgs = GTPin_InsGetPredArgs(ins);
       bool        maskCtrl = !GTPin_InsIsMaskEnabled(ins);
-      uint64_t key = (uint64_t)&execMask + (uint64_t)&predArgs + maskCtrl + (uint64_t)sectionHead;
+      uint64_t key = (uint64_t)execMask + (uint64_t)&predArgs + maskCtrl + (uint64_t)sectionHead;
       simdgroup_map_entry_t *entry = simdgroup_map_lookup(key);
       if (!entry) {
         entry = simdgroup_map_insert(key, maskCtrl, execMask, predArgs);
@@ -582,6 +626,8 @@ addSimdInstrumentation
         gn->entry = entry;
         gn->next = groupHead;
         groupHead = gn;
+      } else {
+        simdgroup_entry_increment_inst_count(entry);
       }
 
       isSectionEnd = GTPin_InsIsFlagModifier(ins);
@@ -591,7 +637,9 @@ addSimdInstrumentation
     // and insert SimdProf instrumentaion at the beginning of the current section
     SimdGroupNode *curr = groupHead;
     SimdGroupNode *next;
+    int count = 0;
     while (curr) {
+      count++;
       next = curr->next;
       GTPinMem mem_simd;
       status = GTPin_MemClaim(kernel, sizeof(uint32_t), &mem_simd); ASSERT_GTPIN_STATUS(status);
@@ -601,7 +649,7 @@ addSimdInstrumentation
       status = GTPin_SimdProfInstrument(sectionHead, simdgroup_entry_getMaskCtrl(curr->entry), 
           simdgroup_entry_getExecMask(curr->entry), &pa, mem_simd);
       if (status != GTPINTOOL_STATUS_SUCCESS)	return false;
-
+      curr->instCount = simdgroup_entry_getInst(curr->entry);
       simdgroup_map_delete(curr->key);
       curr = next;
     }
@@ -641,11 +689,16 @@ onKernelBuild
     GTPinINS tail = HPCRUN_GTPIN_CALL(GTPin_InsTail,(block));
     assert(HPCRUN_GTPIN_CALL(GTPin_InsValid,(head)));
 
+    uint32_t bb_scalar_instructions = 0;
+
     GTPinMem mem_latency = addLatencyInstrumentation(kernel, head, tail, &regInst, &hasLatencyInstrumentation);
 
-    GTPinMem mem_opcode = addOpcodeInstrumentation(kernel, head);
-    
-    SimdSectionNode *shead = addSimdInstrumentation(kernel, head, tail, mem_opcode);
+    GTPinMem mem_opcode;
+    if (!hasLatencyInstrumentation) {
+      mem_opcode = addOpcodeInstrumentation(kernel, head);
+    }
+
+    SimdSectionNode *shead = addSimdInstrumentation(kernel, head, tail, mem_opcode, &bb_scalar_instructions);
     
     int32_t head_offset = HPCRUN_GTPIN_CALL(GTPin_InsOffset,(head));
     int32_t tail_offset = HPCRUN_GTPIN_CALL(GTPin_InsOffset,(tail));
@@ -658,6 +711,7 @@ onKernelBuild
     gtpin_block->mem_latency = mem_latency;
     gtpin_block->mem_opcode = mem_opcode;
     gtpin_block->simd_mem_list = shead;
+    gtpin_block->scalar_instructions = bb_scalar_instructions;
     gtpin_block->next = NULL;
 
     if (gtpin_block_head == NULL) {
@@ -688,6 +742,7 @@ onKernelBuild
   if (gtpin_block_head != NULL) {
     kernel_data_gtpin_t *kernel_data_gtpin = (kernel_data_gtpin_t *)hpcrun_malloc(sizeof(kernel_data_gtpin_t));
     kernel_data_gtpin->kernel_id = (uint64_t)kernel;
+    kernel_data_gtpin->simd_width = GTPin_KernelGetSIMD(kernel);
     kernel_data_gtpin->block = gtpin_block_head;
     kernel_data.data = kernel_data_gtpin; 
     kernel_data_map_insert((uint64_t)kernel, kernel_data);
@@ -753,32 +808,40 @@ onKernelComplete
   kernel_data_gtpin_t *kernel_data_gtpin = (kernel_data_gtpin_t *)kernel_data.data; 
   kernel_data_gtpin_block_t *block = kernel_data_gtpin->block;
 
+  int count = 0;
   while (block != NULL) {
-    uint32_t thread_count = HPCRUN_GTPIN_CALL(GTPin_MemSampleLength,(block->mem_opcode));
+    uint32_t thread_count;
+
+    if (block->hasLatencyInstrumentation) {
+      thread_count = HPCRUN_GTPIN_CALL(GTPin_MemSampleLength,(block->mem_latency));
+    } else {
+      thread_count = HPCRUN_GTPIN_CALL(GTPin_MemSampleLength,(block->mem_opcode));
+    }
     assert(thread_count > 0);
 
     uint64_t bb_exec_count = 0, bb_latency_cycles = 0, bb_active_simd_lanes = 0;
-    uint32_t opcodeData = 0, simdData = 0;
+    uint32_t opcodeData = 0, simdData = 0, bb_instruction_count = 0;
     LatencyDataInternal latencyData;
     SimdSectionNode *shead, *curr_s, *next_s;
     shead = block->simd_mem_list;
     SimdGroupNode *curr_g, *next_g;
 
     for (uint32_t tid = 0; tid < thread_count; ++tid) {
-      // execution frequency
-      status = HPCRUN_GTPIN_CALL(GTPin_MemRead,
-          (block->mem_opcode, tid, sizeof(uint32_t), (char*)(&opcodeData), NULL));
-      ASSERT_GTPIN_STATUS(status);
-      bb_exec_count += opcodeData;
 
-      // latency cycles
-      // latency calculation of some basicblocks are skipped due to timer overflow
-      // latencyData has _skipped and _freq(total exec count) values as well
-      // if latencyData has _freq, do we need to do opcodeProf instrumentation?
+      // latency cycles + execution_count
       if (block->hasLatencyInstrumentation) {
         status = GTPin_MemRead(block->mem_latency, tid, sizeof(LatencyDataInternal), (char*)&latencyData, NULL);
         ASSERT_GTPIN_STATUS(status);
         bb_latency_cycles += latencyData._cycles;
+        bb_exec_count += latencyData._freq;
+      } else {
+        // latency calculation of some basicblocks are skipped due to timer overflow
+        // latency probe couldnt be added for this block
+        // So using the opcodeprof probe to get execution count in such cases
+        status = HPCRUN_GTPIN_CALL(GTPin_MemRead,
+            (block->mem_opcode, tid, sizeof(uint32_t), (char*)(&opcodeData), NULL));
+        ASSERT_GTPIN_STATUS(status);
+        bb_exec_count += opcodeData;
       }
 
       // active simd lanes
@@ -789,7 +852,8 @@ onKernelComplete
         while (curr_g) {
           next_g = curr_g->next;
           status = GTPin_MemRead(curr_g->mem_simd, tid, sizeof(uint32_t), (char*)&simdData, NULL);
-          bb_active_simd_lanes += simdData;
+          bb_active_simd_lanes += (simdData * curr_g->instCount);
+          bb_instruction_count += curr_g->instCount;
           curr_g = next_g;
         }
         curr_s = next_s;
@@ -810,11 +874,24 @@ onKernelComplete
       curr_s = next_s;
     }
 #endif
-
+    bb_instruction_count /= thread_count;
+    if (kernel_data_gtpin->simd_width == 32) { // && GPU == Gen9
+      // reason for this block. Gen9 GPU's have 32width SIMD lanes
+      // but Gen9's ISA supports only SIMD16 instructions
+      // Thus we decrement the simd width to 16 (should be done only for Gen9 and other applicable GPU's)
+      kernel_data_gtpin->simd_width = 16;
+    }
+    uint64_t bb_total_simd_lanes = bb_exec_count * kernel_data_gtpin->simd_width * bb_instruction_count;
+    uint64_t scalar_simd_loss = block->scalar_instructions * bb_exec_count * (kernel_data_gtpin->simd_width - 1);
+    printf("scalar_instructions: %u, bb_exec_count: %u, width: %d, scalar_simd_loss: %u\n", block->scalar_instructions, bb_exec_count,
+        (kernel_data_gtpin->simd_width - 1), scalar_simd_loss);
     kernel_data_gtpin_inst_t *inst = block->inst;
+    kernelBlockActivityProcess(correlation_id, kernel_data.loadmap_module_id,
+        inst->offset, bb_instruction_count, bb_exec_count, bb_latency_cycles,
+        bb_active_simd_lanes, bb_total_simd_lanes, scalar_simd_loss, activity_channel, host_op_node);
     while (inst != NULL) {
-      kernelBlockActivityProcess(correlation_id, kernel_data.loadmap_module_id,
-        inst->offset, bb_exec_count, bb_latency_cycles, bb_active_simd_lanes, activity_channel, host_op_node);
+      kernelInstructionActivityProcess(correlation_id, kernel_data.loadmap_module_id,
+        inst->offset, bb_exec_count, activity_channel, host_op_node);
       inst = inst->next;
     }
     block = block->next;

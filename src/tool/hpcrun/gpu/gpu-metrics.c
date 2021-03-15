@@ -481,7 +481,20 @@ gpu_metrics_attribute_kernel_block
 
   gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_INST_EXEC_COUNT), b->execution_count);
   gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_INST_LATENCY), b->latency);
+
   gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_INST_ACT_SIMD_LANES), b->active_simd_lanes);
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_INST_TOT_SIMD_LANES), b->total_simd_lanes);
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_INST_WASTE_SIMD_LANES), b->total_simd_lanes - b->active_simd_lanes);
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_INST_SCALAR_SIMD_LOSS), b->scalar_simd_loss);
+
+  uint64_t covered_latency = b->bb_instruction_count * b->execution_count;
+  uint64_t uncovered_latency = (b->latency <= 0) ? 
+                                   0: b->latency - covered_latency;
+  long thr_needed_for_covering_latency = (covered_latency == 0 || uncovered_latency == 0) ? 
+                                              0 : (1 + (uncovered_latency/covered_latency));
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_INST_COVERED_LATENCY), covered_latency);
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_INST_UNCOVERED_LATENCY), uncovered_latency);
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_INST_THR_NEEDED_FOR_COVERING_LATENCY), thr_needed_for_covering_latency);
 }
 
 
