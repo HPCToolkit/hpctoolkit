@@ -11,6 +11,8 @@
 // dyninst
 #include <CFG.h>
 
+#include <include/hpctoolkit-config.h>
+
 namespace GPUParse {
 
 typedef Dyninst::Architecture Arch;
