@@ -87,6 +87,17 @@
 #include <lib/banal/gpu/ReadIntelCFG.hpp>
 #endif // ENABLE_IGC
 
+#include <lib/binutils/ElfHelper.hpp>
+#include <lib/binutils/InputFile.hpp>
+
+#include <lib/banal/Struct-Inline.hpp>
+
+#include <lib/banal/gpu/ReadCudaCFG.hpp>
+
+#ifdef ENABLE_IGC
+#include <lib/banal/gpu/ReadIntelCFG.hpp>
+#endif // ENABLE_IGC
+
 #include <include/hpctoolkit-config.h>
 
 #ifdef ENABLE_OPENMP
