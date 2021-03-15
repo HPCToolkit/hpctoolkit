@@ -60,4 +60,18 @@ simdgroup_entry_getPredArgs
  simdgroup_map_entry_t *entry
 );
 
+
+uint32_t
+simdgroup_entry_getInst
+(
+ simdgroup_map_entry_t *entry
+);
+
+
+void
+simdgroup_entry_increment_inst_count
+(
+ simdgroup_map_entry_t *entry
+);
+
 #endif

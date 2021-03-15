@@ -850,7 +850,8 @@ opencl_api_initialize
   atomic_store(&opencl_h2d_pending_operations, 0);
 }
 
-#ifdef ENABLE_GTPIN
+//#ifdef ENABLE_GTPIN
+#if 1
 // one downside of this appproach is that we may override the callback provided by user
 cl_int
 hpcrun_clBuildProgram

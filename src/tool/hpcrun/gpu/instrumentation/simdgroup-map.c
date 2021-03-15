@@ -55,6 +55,7 @@ typedef struct typed_splay_node(simdgroup) {
   bool maskCtrl;
   uint32_t execMask;
   GenPredArgs predArgs;
+  uint32_t inst;
 } typed_splay_node(simdgroup);
 
 typed_splay_impl(simdgroup);
@@ -97,6 +98,7 @@ simdgroup_new
   e->maskCtrl = maskCtrl;
   e->execMask = execMask;
   e->predArgs = predArgs;
+  e->inst = 1;
   return e;
 }
 
@@ -180,5 +182,25 @@ simdgroup_entry_getPredArgs
 )
 {
   return entry->predArgs;
+}
+
+
+uint32_t
+simdgroup_entry_getInst
+(
+ simdgroup_map_entry_t *entry
+)
+{
+  return entry->inst;
+}
+
+
+void
+simdgroup_entry_increment_inst_count
+(
+ simdgroup_map_entry_t *entry
+)
+{
+  entry->inst++;
 }
 

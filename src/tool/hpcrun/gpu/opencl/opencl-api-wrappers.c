@@ -52,7 +52,8 @@
 //******************************************************************************
 
 
-#ifdef ENABLE_GTPIN
+//#ifdef ENABLE_GTPIN
+#if 1
 // one downside of this appproach is that we may override the callback provided by user
 cl_int
 clBuildProgram

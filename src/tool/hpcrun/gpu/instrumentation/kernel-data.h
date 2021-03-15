@@ -37,12 +37,14 @@ typedef struct kernel_data_gtpin_block {
   GTPinMem mem_latency;
   GTPinMem mem_opcode;
   SimdSectionNode *simd_mem_list;
+  uint32_t scalar_instructions;
   struct kernel_data_gtpin_inst *inst;
   struct kernel_data_gtpin_block *next;
 } kernel_data_gtpin_block_t; 
 
 typedef struct kernel_data_gtpin {
   uint64_t kernel_id;
+  uint64_t simd_width;
   struct kernel_data_gtpin_block *block;
 } kernel_data_gtpin_t; 
   
