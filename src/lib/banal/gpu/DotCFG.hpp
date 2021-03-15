@@ -154,7 +154,6 @@ struct CudaInst : public Inst {
 
 struct Block;
 
-// TODO(Keren): consistent with dyninst
 typedef Dyninst::ParseAPI::EdgeTypeEnum TargetType;
 
 struct Target {
