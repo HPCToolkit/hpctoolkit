@@ -470,15 +470,43 @@ kernelInstructionActivityProcess
  uint64_t correlation_id,
  uint32_t loadmap_module_id,
  uint64_t offset,
- uint64_t execution_count,
- uint64_t inst_latency,
+ uint64_t bb_execution_count,
  gpu_activity_channel_t *activity_channel,
  cct_node_t *host_op_node
 )
 {
   gpu_activity_t ga;
-  kernelActivityTranslate(&ga, correlation_id, loadmap_module_id, offset, true,
-      0, execution_count, inst_latency, 0, 0, 0);
+  kernelActivityTranslate(&ga, correlation_id, loadmap_module_id, offset,
+      0, bb_execution_count, 0, 0, 0, 0);
+
+  ip_normalized_t ip = ga.details.kernel_block.pc;
+  cct_node_t *cct_child = hpcrun_cct_insert_ip_norm(host_op_node, ip); // how to set the ip_norm
+  if (cct_child) {
+    ga.cct_node = cct_child;
+    gpu_operation_multiplexer_push(activity_channel, NULL, &ga);
+  }
+}
+
+
+static void
+kernelBlockActivityProcess
+(
+ uint64_t correlation_id,
+ uint32_t loadmap_module_id,
+ uint64_t offset,
+ uint32_t bb_instruction_count,
+ uint64_t bb_execution_count,
+ uint64_t bb_latency_cycles,
+ uint64_t bb_active_simd_lanes,
+ uint64_t bb_total_simd_lanes,
+ uint64_t scalar_simd_loss,
+ gpu_activity_channel_t *activity_channel,
+ cct_node_t *host_op_node
+)
+{
+  gpu_activity_t ga;
+  kernelActivityTranslate(&ga, correlation_id, loadmap_module_id, offset,
+      bb_instruction_count, bb_execution_count, bb_latency_cycles, bb_active_simd_lanes, bb_total_simd_lanes, scalar_simd_loss);
 
   ip_normalized_t ip = ga.details.kernel_block.pc;
   cct_node_t *cct_child = hpcrun_cct_insert_ip_norm(host_op_node, ip); // how to set the ip_norm
@@ -567,7 +595,8 @@ addSimdInstrumentation
  GTPinKernel kernel,
  GTPinINS head,
  GTPinINS tail,
- GTPinMem mem_opcode
+ GTPinMem mem_opcode,
+ uint32_t *bb_scalar_instructions
 )
 {
   GTPINTOOL_STATUS status = GTPINTOOL_STATUS_SUCCESS;
@@ -582,10 +611,14 @@ addSimdInstrumentation
   // having the same SimdProfArgs values.
   GTPinINS sectionHead = head; // head instruction of the current section
   GTPinINS sectionTail = tail;
+  *bb_scalar_instructions = 0;
 
+
+#if 0
   uint32_t headId, tailID;
   GTPin_InsID(sectionHead, &headId);
   GTPin_InsID(sectionTail, &tailID);
+#endif
   SimdSectionNode *sHead = NULL;
 
   // Iterate through sections within the current BBL
@@ -598,10 +631,14 @@ addSimdInstrumentation
     bool isSectionEnd = false;
     GTPinINS ins = sectionHead;
     for (; GTPin_InsValid(ins) && !isSectionEnd; ins = GTPin_InsNext(ins)) {
+      uint32_t execSize = GTPin_InsGetExecSize(ins);
+      if (execSize == 1) {
+        (*bb_scalar_instructions)++;
+      }
       uint32_t    execMask = GTPin_InsGetExecMask(ins);
       GenPredArgs predArgs = GTPin_InsGetPredArgs(ins);
       bool        maskCtrl = !GTPin_InsIsMaskEnabled(ins);
-      uint64_t key = (uint64_t)&execMask + (uint64_t)&predArgs + maskCtrl + (uint64_t)sectionHead;
+      uint64_t key = (uint64_t)execMask + (uint64_t)&predArgs + maskCtrl + (uint64_t)sectionHead;
       simdgroup_map_entry_t *entry = simdgroup_map_lookup(key);
       if (!entry) {
         entry = simdgroup_map_insert(key, maskCtrl, execMask, predArgs);
@@ -610,6 +647,8 @@ addSimdInstrumentation
         gn->entry = entry;
         gn->next = groupHead;
         groupHead = gn;
+      } else {
+        simdgroup_entry_increment_inst_count(entry);
       }
 
       isSectionEnd = GTPin_InsIsFlagModifier(ins);
@@ -619,7 +658,9 @@ addSimdInstrumentation
     // and insert SimdProf instrumentaion at the beginning of the current section
     SimdGroupNode *curr = groupHead;
     SimdGroupNode *next;
+    int count = 0;
     while (curr) {
+      count++;
       next = curr->next;
       GTPinMem mem_simd;
       status = GTPin_MemClaim(kernel, sizeof(uint32_t), &mem_simd); ASSERT_GTPIN_STATUS(status);
@@ -629,7 +670,7 @@ addSimdInstrumentation
       status = GTPin_SimdProfInstrument(sectionHead, simdgroup_entry_getMaskCtrl(curr->entry), 
           simdgroup_entry_getExecMask(curr->entry), &pa, mem_simd);
       if (status != GTPINTOOL_STATUS_SUCCESS)	return false;
-
+      curr->instCount = simdgroup_entry_getInst(curr->entry);
       simdgroup_map_delete(curr->key);
       curr = next;
     }
@@ -1090,6 +1131,7 @@ onKernelComplete
   kernel_data_gtpin_t *kernel_data_gtpin = (kernel_data_gtpin_t *)kernel_data.data; 
   kernel_data_gtpin_block_t *block = kernel_data_gtpin->block;
 
+  int count = 0;
   while (block != NULL) {
     uint32_t thread_count;
 
@@ -1105,7 +1147,7 @@ onKernelComplete
     assert(thread_count > 0);
 
     uint64_t bb_exec_count = 0, bb_latency_cycles = 0, bb_active_simd_lanes = 0;
-    uint32_t opcodeData = 0, simdData = 0;
+    uint32_t opcodeData = 0, simdData = 0, bb_instruction_count = 0;
     LatencyDataInternal latencyData;
     SimdSectionNode *shead, *curr_s, *next_s;
     shead = block->simd_mem_list;

@@ -56,9 +56,13 @@ typedef struct typed_splay_node(simdgroup) {
   uint32_t execMask;
   GenPredArgs predArgs;
 <<<<<<< HEAD
+<<<<<<< HEAD
   uint32_t inst;
 =======
 >>>>>>> 9f778dee0... adding simd and latency instrumentation for intel GPU's. ISSUE: hpcrun does not terminate
+=======
+  uint32_t inst;
+>>>>>>> 93310208e... fixed incorrect simd and latency values. covered & uncovered latency visible. wasted simd lanes and scalar simd waste visible. ISSUES: not using gtpin wrappers in some places. temporarily removed ENABLE_GTPIN if guard
 } typed_splay_node(simdgroup);
 
 typed_splay_impl(simdgroup);
@@ -102,9 +106,13 @@ simdgroup_new
   e->execMask = execMask;
   e->predArgs = predArgs;
 <<<<<<< HEAD
+<<<<<<< HEAD
   e->inst = 1;
 =======
 >>>>>>> 9f778dee0... adding simd and latency instrumentation for intel GPU's. ISSUE: hpcrun does not terminate
+=======
+  e->inst = 1;
+>>>>>>> 93310208e... fixed incorrect simd and latency values. covered & uncovered latency visible. wasted simd lanes and scalar simd waste visible. ISSUES: not using gtpin wrappers in some places. temporarily removed ENABLE_GTPIN if guard
   return e;
 }
 
