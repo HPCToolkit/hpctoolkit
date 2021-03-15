@@ -152,7 +152,8 @@ parseIntelCFG
     block_offset_map[offset] = block;
 
     auto size = kv.getInstSize(offset);
-    auto *inst = new GPUParse::IntelInst(offset, size);
+    auto *inst_stat = getIntelInstructionStat(kv, offset);
+    auto *inst = new GPUParse::IntelInst(offset, size, inst_stat);
     block->insts.push_back(inst);
 
     while (!kv.isInstTarget(offset + size) && (offset + size < text_section_size)) {
@@ -163,7 +164,17 @@ parseIntelCFG
         break;
       }
 
-      inst = new GPUParse::IntelInst(offset, size);
+      char inst_asm_text[MAX_STR_SIZE] = { 0 };
+      size_t length;
+      int32_t size = kv.getInstSize(offset);
+      if (size == 0) {
+        return;
+      }
+
+      length = kv.getInstSyntax(offset, inst_asm_text, MAX_STR_SIZE);
+      assert(length > 0);
+      auto *inst_stat = getIntelInstructionStat(kv, offset);
+      inst = new GPUParse::IntelInst(offset, size, inst_stat);
       block->insts.push_back(inst);
     }
 
