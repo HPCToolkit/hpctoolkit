@@ -153,7 +153,7 @@ parseIntelCFG
     block_offset_map[offset] = block;
 
     size = kv.getInstSize(offset);
-    auto *inst = new GPUParse::Inst(offset, size);
+    auto *inst = new GPUParse::IntelInst(offset, size);
     block->insts.push_back(inst);
 
     while (!kv.isInstTarget(offset + size) && (offset + size < text_section_size)) {
@@ -164,7 +164,7 @@ parseIntelCFG
         break;
       }
 
-      inst = new GPUParse::Inst(offset, size);
+      inst = new GPUParse::IntelInst(offset, size);
       block->insts.push_back(inst);
     }
 
