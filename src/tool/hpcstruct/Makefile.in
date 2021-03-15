@@ -590,7 +590,11 @@ MYLDADD = \
 	$(BOOST_LFLAGS) \
 	$(MY_ELF_DWARF) \
 	@BINUTILS_LIBS@ \
+<<<<<<< HEAD
 	$(IGC_LDFLGS) \
+=======
+  $(IGC_LDFLGS) \
+>>>>>>> d65ea1d06... Enhance DotGraph.cpp to dump cfgs for GPU binaries, a few limitations include: 1. no end address of each block because dyninst::pdateBlockEnd is priviate; 2. Don't know which blocks are exit blocks
 	$(HPCLIB_gettext) \
 	$(LZMA_LDFLAGS_DYN) \
 	$(MBEDTLS_LIBS) \
