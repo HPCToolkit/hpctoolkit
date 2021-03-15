@@ -510,7 +510,7 @@ parseIntelCFG
 
     auto size = kv.getInstSize(offset);
     auto *inst_stat = getIntelInstructionStat(kv, offset);
-    auto *inst = new GPUParse::Inst(offset, size, Arch_intelGen9, inst_stat);
+    auto *inst = new GPUParse::IntelInst(offset, size, inst_stat);
     block->insts.push_back(inst);
 
     while (!kv.isInstTarget(offset + size) && (offset + size < text_section_size)) {
@@ -531,7 +531,7 @@ parseIntelCFG
       length = kv.getInstSyntax(offset, inst_asm_text, MAX_STR_SIZE);
       assert(length > 0);
       auto *inst_stat = getIntelInstructionStat(kv, offset);
-      inst = new GPUParse::Inst(offset, size, Arch_intelGen9, inst_stat);
+      inst = new GPUParse::IntelInst(offset, size, inst_stat);
       block->insts.push_back(inst);
     }
 

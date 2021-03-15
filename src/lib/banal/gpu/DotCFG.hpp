@@ -211,6 +211,8 @@ struct IntelInst : public Inst {
   // Constructor for dummy inst
   IntelInst(int offset, int size) : Inst(offset, size, Dyninst::Arch_intelGen9) {}
 
+  IntelInst(int offset, int size, InstructionStat *inst_stat) : Inst(offset, size, Dyninst::Arch_intelGen9, inst_stat) {}
+
   explicit IntelInst(int offset) : Inst(offset, 0, Dyninst::Arch_intelGen9) {}
 };
 
