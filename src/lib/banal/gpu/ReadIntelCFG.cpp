@@ -188,11 +188,14 @@ parseIntelCFG
       int next_block_start_offset = function.blocks[i + 1]->insts.front()->offset;
 
       bool eot_inst = kv.getOpcodeGroup(inst->offset) == KV_OPGROUP_SEND_EOT;
-      bool join_inst = kv.getOpcode(inst->offset) == iga::Op::JOIN;
       bool pred_inst = kv.getPredicate(inst->offset) != iga::PredCtrl::NONE;
-      if ((join_inst || pred_inst || jump_targets_count == 0) && !eot_inst) {
+      bool join_inst = kv.getOpcode(inst->offset) == iga::Op::JOIN;
+      if ((pred_inst || jump_targets_count == 0) && !eot_inst) {
         jump_targets[jump_targets_count] = next_block_start_offset;
         jump_targets_count += 1;
+      } else if (join_inst) {
+        // Join is not a branch
+        jump_targets[jump_targets_count - 1] = next_block_start_offset;
       }
     }
 
