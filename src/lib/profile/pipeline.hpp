@@ -242,7 +242,7 @@ public:
 private:
   // Internal Source-local storage structure. Externally Synchronized.
   struct SourceLocal {
-    std::vector<Thread::Temporary> threads;
+    std::forward_list<Thread::Temporary> threads;
     std::unordered_set<Metric*> thawedMetrics;
 
     std::pair<bool, bool> orderedRegions;
@@ -320,6 +320,10 @@ public:
     // MT: Externally Synchronized (this), Internally Synchronized
     Context& global();
 
+  private:
+    void notifyContext(Context&);
+
+  public:
     /// Emit a new Context into the Pipeline, as a child of another.
     /// DataClass: `contexts`
     // MT: Externally Synchronized (this), Internally Synchronized
@@ -329,6 +333,17 @@ public:
     /// DataClass: `contexts`
     // MT: Externally Synchronized (this), Internally Synchronized
     ContextRef superposContext(ContextRef, std::vector<SuperpositionedContext::Target>);
+
+    /// Emit a new CollaborativeContext, identified by the given value.
+    /// DataClass: `contexts`
+    // MT: Externally Synchronized (this), Internally Synchronized
+    CollaborativeContext& collabContext(std::uint64_t, std::uint64_t);
+
+    /// Mark the given ContextRef as a targeted root of a CollaborativeContext,
+    /// and return the appropriately marked ContextRef.
+    /// DataClass: `contexts`
+    // MT: Externally Synchronized (this), Internally Synchronized
+    ContextRef collaborate(ContextRef, CollaborativeContext&, Scope);
 
     /// Emit a new Thread into the Pipeline.
     /// DataClass: `threads`
@@ -355,9 +370,8 @@ public:
 
     private:
       friend class ProfilePipeline::Source;
-      util::locked_unordered_map<const Metric*, MetricAccumulator>& map;
-      AccumulatorsRef(util::locked_unordered_map<const Metric*, MetricAccumulator>& m)
-        : map(m) {};
+      decltype(Thread::Temporary::data)::mapped_type& map;
+      AccumulatorsRef(decltype(map)& m) : map(m) {};
     };
 
     /// Obtain a AccumulatorsRef for the given Thread and Context.
@@ -502,6 +516,15 @@ private:
   util::locked_unordered_uniqued_set<Metric> mets;
   util::locked_unordered_uniqued_set<ExtraStatistic> estats;
   std::unique_ptr<Context> cct;
+  struct CollabHash {
+    std::hash<std::uint64_t> h_u64;
+    std::size_t operator()(const std::pair<uint64_t, uint64_t>& v) const noexcept {
+      return h_u64(v.first) ^ h_u64(v.second);
+    }
+  };
+  struct Collab { CollaborativeContext ctx; };
+  util::locked_unordered_map<std::pair<std::uint64_t, std::uint64_t>, Collab,
+                             stdshim::shared_mutex, CollabHash> collabs;
 };
 
 }

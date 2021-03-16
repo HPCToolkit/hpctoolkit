@@ -76,6 +76,9 @@ public:
 protected:
   bool enabled;
   std::stringbuf sbuf;
+
+  // Check whether this message is empty or not (i.e. has been moved from)
+  bool empty() noexcept;
 };
 }
 

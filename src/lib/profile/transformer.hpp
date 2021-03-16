@@ -86,7 +86,7 @@ struct RouteExpansionTransformer : public ProfileTransformer {
   ~RouteExpansionTransformer() = default;
 
   ContextRef context(ContextRef cr, Scope& s) noexcept override {
-    if(std::holds_alternative<Context>(cr)) {
+    if(!std::holds_alternative<SuperpositionedContext>(cr)) {
       if(s.type() == Scope::Type::point || s.type() == Scope::Type::call) {
         auto mo = s.point_data();
         const auto& c = mo.first.userdata[sink.classification()];

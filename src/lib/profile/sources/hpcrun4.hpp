@@ -95,10 +95,13 @@ private:
   std::unordered_map<unsigned int, Metric&> metrics;
   std::unordered_map<unsigned int, bool> metricInt;
   std::unordered_map<unsigned int, Module&> modules;
-  std::unordered_map<unsigned int, ContextRef> nodes;
+  std::unordered_map<unsigned int, std::pair<std::optional<ContextRef>, ContextRef>> nodes;
   std::unordered_map<unsigned int, std::pair<ContextRef, Scope>> templates;
+  std::unordered_map<unsigned int, uint64_t> contextids;
+  std::unordered_map<unsigned int, std::pair<ContextRef, Scope>> contextparents;
   unsigned int partial_node_id;  // ID for the partial unwind fake root node
   unsigned int unknown_node_id;  // ID for unwinds that start from "nowhere," but somehow aren't partial.
+  unsigned int range_root_node_id;
 
   // Path to the tracefile, and offset of the actual data blob.
   stdshim::filesystem::path tracepath;

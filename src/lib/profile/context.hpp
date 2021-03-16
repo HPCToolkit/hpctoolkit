@@ -61,10 +61,27 @@ namespace hpctoolkit {
 
 class Context;
 class SuperpositionedContext;
+class CollaborativeContext;
+class CollaborativeSharedContext;
 
 /// Generic reference to any of the Context-like classes.
 /// Use ContextRef::const_t for a constant reference to a Context-like.
-using ContextRef = util::variant_ref<Context, SuperpositionedContext>;
+using CollaboratorRoot = std::pair<Scope, std::unique_ptr<CollaborativeSharedContext>>;
+using ContextRef = util::variant_ref<
+  // Ordinary reference to a (physical) calling Context
+  Context,
+  // Reference to a Superpositioned instance across multiple Contexts
+  SuperpositionedContext,
+  // Reference to a Collaborative Context, in particular its (shared) root
+  CollaborativeContext,
+  // Reference to a particular collaborator root for a Collaborative Context
+  // Note that consistency between the two refs is assumed.
+  // FIXME: This is really a giant hack, it should actually be a
+  // <Context&, CollaborativeContext&, Scope> tuple.
+  util::ref_pair<Context, const CollaboratorRoot>,
+  // Reference to the shared Context under a Collaborative Context
+  CollaborativeSharedContext
+>;
 
 /// A calling context (similar to Context) but that is "in superposition" across
 /// multiple individual target Contexts. The thread-local metrics associated
@@ -95,7 +112,100 @@ private:
   SuperpositionedContext(Context&, std::vector<Target>);
 };
 
-// A single calling Context.
+/// A calling context shared between the collaborators of a CollaborativeContext.
+/// To keep things simple, all of the "collaborators" have separate copies of
+/// the shared subtree. This structure shadows the real subtrees to maintain
+/// consistency between them.
+class CollaborativeSharedContext {
+public:
+  ~CollaborativeSharedContext() = default;
+
+  CollaborativeContext& collaboration() noexcept { return m_root; }
+
+private:
+  friend class CollaborativeContext;
+  CollaborativeSharedContext(CollaborativeContext& collab)
+    : m_root(collab) {};
+
+  CollaborativeSharedContext(CollaborativeSharedContext&&) = default;
+  CollaborativeSharedContext& operator=(CollaborativeSharedContext&&) = default;
+  CollaborativeSharedContext(const CollaborativeSharedContext&) = delete;
+  CollaborativeSharedContext& operator=(const CollaborativeSharedContext&) = delete;
+
+  CollaborativeContext& m_root;
+  /// Children ShredContexts generated off of this one
+  std::unordered_map<Scope, std::unique_ptr<CollaborativeSharedContext>> m_children;
+  /// The set of actual Contexts this is shadowing, organized by their
+  /// collaborator roots.
+  std::unordered_map<util::reference_index<Context>, Context&> m_shadowing;
+
+  CollaborativeSharedContext& ensure(Scope, const std::function<void(Context&)>&,
+                                     std::unique_lock<std::mutex>&) noexcept;
+
+  friend class ProfilePipeline;
+  /// Wrapper for Context::ensure which creates shadows and copies as needed.
+  /// Calls the given function on any Contexts created as part of this call.
+  /// Returns the child SharedContext.
+  // MT: Externally Synchronized
+  CollaborativeSharedContext& ensure(Scope, const std::function<void(Context&)>&) noexcept;
+
+  friend class Metric;
+  /// Data summed across all of the Threads, to be redistributed
+  util::locked_unordered_map<util::reference_index<const Metric>,
+    MetricAccumulator> data;
+};
+
+/// A calling context for metric data with some uncertainty in the exact Thread
+/// that produced the resulting measurements (and thus the exact calling context
+/// prefix). Context subtrees can be marked as "collaborators," between which
+/// measurements are redistributed in a per-CollaborativeContext manner across
+/// all Threads.
+class CollaborativeContext {
+public:
+  ~CollaborativeContext() = default;
+
+  CollaborativeContext(CollaborativeContext&&) = delete;
+  CollaborativeContext(const CollaborativeContext&) = delete;
+  CollaborativeContext& operator=(CollaborativeContext&&) = delete;
+  CollaborativeContext& operator=(const CollaborativeContext&) = delete;
+
+private:
+  friend class CollaborativeSharedContext;
+  // Shadow-tree and protection lock
+  std::mutex m_lock;
+  struct ShadowHash : std::hash<Scope> {
+    std::size_t operator()(const CollaboratorRoot& v) const noexcept {
+      return std::hash<Scope>::operator()(v.first);
+    }
+  };
+  std::unordered_set<CollaboratorRoot, ShadowHash> m_shadow;
+  std::unordered_set<util::reference_index<Context>> m_roots;
+
+  /// Wrapper for Context::ensure which creates shadows and copies as needed.
+  /// Calls the given function on any Contexts created as part of this call.
+  /// Returns the child SharedContext.
+  // MT: Externally Synchronized
+  const CollaboratorRoot& ensure(Scope, const std::function<void(Context&)>&) noexcept;
+
+  /// Add a new "collaborator" subtree starting at the given root.
+  /// Calls the given function on any Contexts created as part of this call.
+  // MT: Internally Synchronized
+  void addCollaboratorRoot(ContextRef, const std::function<void(Context&)>&) noexcept;
+
+  friend class ProfilePipeline;
+  friend class Metric;
+  CollaborativeContext() = default;
+
+  /// Distributor metric values for each of the participating Threads + roots
+  util::locked_unordered_map<Scope,
+    util::locked_unordered_map<std::pair<util::reference_index<Thread::Temporary>,
+      util::reference_index<Context>>,
+        util::locked_unordered_map<util::reference_index<const Metric>,
+          MetricAccumulator>>> data;
+};
+
+/// A single calling Context, representing a single location in the physical
+/// execution of the application.
 class Context {
 public:
   using ud_t = util::ragged_vector<const Context&>;
@@ -126,8 +236,7 @@ public:
 
   /// Reference to the Statistic data for this Context.
   // MT: Safe (const), Unstable (before `metrics` wavefront)
-  const util::locked_unordered_map<const Metric*, StatisticAccumulator>&
-  statistics() const noexcept { return data; }
+  const auto& statistics() const noexcept { return data; }
 
   /// Traverse the subtree rooted at this Context.
   // MT: Safe (const), Unstable (before `contexts` wavefront)
@@ -141,20 +250,20 @@ private:
   util::locked_unordered_set<std::unique_ptr<SuperpositionedContext>> superpositionRoots;
 
   Context(ud_t::struct_t& rs) : userdata(rs, std::ref(*this)) {};
-  Context(ud_t::struct_t& rs, const Scope& l) : Context(rs, nullptr, l) {};
-  Context(ud_t::struct_t& rs, Scope&& l) : Context(rs, nullptr, l) {};
-  Context(ud_t::struct_t& rs, Context* p, const Scope& l)
-    : Context(rs, p, Scope(l)) {};
-  Context(ud_t::struct_t&, Context*, Scope&&);
+  Context(ud_t::struct_t& rs, Scope l) : Context(rs, nullptr, l) {};
+  Context(ud_t::struct_t&, Context*, Scope);
   Context(Context&& c);
 
   friend class Metric;
-  util::locked_unordered_map<const Metric*, StatisticAccumulator> data;
+  util::locked_unordered_map<util::reference_index<const Metric>,
+    StatisticAccumulator> data;
 
   friend class ProfilePipeline;
+  friend class CollaborativeContext;
+  friend class CollaborativeSharedContext;
   /// Get the child Context for a given Scope, creating one if none exists.
   // MT: Internally Synchronized
-  std::pair<Context&,bool> ensure(Scope&&);
+  std::pair<Context&,bool> ensure(Scope);
   template<class... Args> std::pair<Context&,bool> ensure(Args&&... args) {
     return ensure(Scope(std::forward<Args>(args)...));
   }

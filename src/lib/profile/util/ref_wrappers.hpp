@@ -75,11 +75,15 @@ public:
   reference_index(const std::reference_wrapper<T>& o) noexcept : d(o) {};
 
   reference_index(const reference_index&) noexcept = default;
+  template<class U>
+  reference_index(const reference_index<U>& o) noexcept : d(o.get()) {};
 
   reference_index& operator=(const reference_index&) noexcept = default;
 
   operator T&() const noexcept { return d.get(); }
   T& get() const noexcept { return d.get(); }
+
+  T* operator->() const noexcept { return &d.get(); }
 
   bool operator==(const reference_index& o) const noexcept { return &get() == &o.get(); }
   bool operator!=(const reference_index& o) const noexcept { return &get() != &o.get(); }
@@ -93,6 +97,7 @@ public:
 template<class T>
 class optional_ref : private std::optional<reference_index<T>> {
   using Base = std::optional<reference_index<T>>;
+  friend struct std::hash<optional_ref>;
 
 public:
   optional_ref() noexcept = default;
@@ -126,6 +131,25 @@ public:
   using Base::operator bool;
   using Base::has_value;
 
+  constexpr bool operator==(const optional_ref& o) const noexcept {
+    return ((const Base&)*this) == ((const Base&)o);
+  }
+  constexpr bool operator!=(const optional_ref& o) const noexcept {
+    return ((const Base&)*this) != ((const Base&)o);
+  }
+  constexpr bool operator<(const optional_ref& o) const noexcept {
+    return ((const Base&)*this) < ((const Base&)o);
+  }
+  constexpr bool operator<=(const optional_ref& o) const noexcept {
+    return ((const Base&)*this) <= ((const Base&)o);
+  }
+  constexpr bool operator>(const optional_ref& o) const noexcept {
+    return ((const Base&)*this) > ((const Base&)o);
+  }
+  constexpr bool operator>=(const optional_ref& o) const noexcept {
+    return ((const Base&)*this) >= ((const Base&)o);
+  }
+
   constexpr T& value() const { return Base::value().get(); }
 
   template<class U>
@@ -135,16 +159,28 @@ public:
   using Base::reset;
 };
 
+/// Marker for variant_ref to store a pair of refs (instead of a ref to a pair)
+template<class X, class Y>
+struct ref_pair {
+  ref_pair() = delete;
+  ~ref_pair() = delete;
+};
+
 namespace {
   template<class T> struct vr_ref_wrapper_s { using type = reference_index<T>; };
+  template<class X, class Y>
+  struct vr_ref_wrapper_s<ref_pair<X, Y>> {
+    using type = std::pair<reference_index<X>, reference_index<Y>>;
+  };
   template<> struct vr_ref_wrapper_s<std::monostate> { using type = std::monostate; };
   template<class T>
   using vr_ref_wrapper = typename vr_ref_wrapper_s<T>::type;
 
-  template<class T> struct vr_ref_s { using type = T&; };
-  template<> struct vr_ref_s<std::monostate> { using type = std::monostate; };
+  template<class> struct is_standard_ref_s : std::true_type {};
+  template<class X, class Y>
+  struct is_standard_ref_s<ref_pair<X,Y>> : std::false_type {};
   template<class T>
-  using vr_ref = typename vr_ref_s<T>::type;
+  inline constexpr bool is_standard_ref = is_standard_ref_s<T>::value;
 
   template<class T, class... Ts>
   inline constexpr bool in_pack = std::disjunction_v<std::is_same<T, Ts>...>;
@@ -155,6 +191,7 @@ namespace {
 template<class... Ts>
 class variant_ref : private std::variant<vr_ref_wrapper<Ts>...> {
   using Base = std::variant<vr_ref_wrapper<Ts>...>;
+  friend struct std::hash<variant_ref>;
 
 public:
   ~variant_ref() = default;
@@ -163,27 +200,53 @@ public:
   constexpr variant_ref(const variant_ref&) = default;
   constexpr variant_ref(variant_ref&&) = default;
 
-  template<class T, std::enable_if_t<in_pack<T,Ts...>, std::nullptr_t> = nullptr>
+  template<class T, std::enable_if_t<in_pack<T,Ts...> && is_standard_ref<T>, std::nullptr_t> = nullptr>
   constexpr variant_ref(T& v)
     : Base(reference_index<T>(v)) {};
-  template<class T, std::enable_if_t<in_pack<T,Ts...>, std::nullptr_t> = nullptr>
+  template<class X, class Y, std::enable_if_t<in_pack<ref_pair<X,Y>,Ts...>, std::nullptr_t> = nullptr>
+  constexpr variant_ref(X& x, Y& y)
+    : Base(std::make_pair(reference_index<X>(x), reference_index<Y>(y))) {};
+  template<class T, std::enable_if_t<in_pack<T,Ts...> && is_standard_ref<T>, std::nullptr_t> = nullptr>
   constexpr variant_ref(reference_index<T> v)
-    : Base(reference_index<T>(v)) {};
-  template<class T, std::enable_if_t<in_pack<T,Ts...>, std::nullptr_t> = nullptr>
+    : Base(v) {};
+  template<class X, class Y, std::enable_if_t<in_pack<ref_pair<X,Y>,Ts...>, std::nullptr_t> = nullptr>
+  constexpr variant_ref(std::pair<reference_index<X>, reference_index<Y>> v)
+    : Base(v) {};
+  template<class T, std::enable_if_t<in_pack<T,Ts...> && is_standard_ref<T>, std::nullptr_t> = nullptr>
   constexpr variant_ref(std::reference_wrapper<T> v)
     : Base(reference_index<T>(v)) {};
+  template<class X, class Y, std::enable_if_t<in_pack<ref_pair<X,Y>,Ts...>, std::nullptr_t> = nullptr>
+  constexpr variant_ref(std::pair<std::reference_wrapper<X>, std::reference_wrapper<Y>> v)
+    : Base(std::make_pair(reference_index<X>(v.first), reference_index<Y>(v.second))) {};
 
-  template<std::size_t I, class T>
+  template<std::size_t I, class T, std::enable_if_t<is_standard_ref<T>, std::nullptr_t> = nullptr>
   constexpr variant_ref(std::in_place_index_t<I> i, T& v)
     : Base(i, reference_index<T>(v)) {};
+  template<std::size_t I, class X, class Y>
+  constexpr variant_ref(std::in_place_index_t<I> i, X& x, Y& y)
+    : Base(i, std::make_pair(reference_index<X>(x), reference_index<Y>(y))) {};
   template<std::size_t I, class T>
   constexpr variant_ref(std::in_place_index_t<I> i, reference_index<T> v)
-    : Base(i, reference_index<T>(v)) {};
+    : Base(i, v) {};
+  template<std::size_t I, class X, class Y>
+  constexpr variant_ref(std::in_place_index_t<I> i, std::pair<reference_index<X>, reference_index<Y>> v)
+    : Base(i, v) {};
 
   template<std::size_t I>
   constexpr variant_ref(std::in_place_index_t<I> i) : Base(i) {};
 
-  using const_t = variant_ref<std::add_const_t<Ts>...>;
+private:
+  template<class T>
+  struct ref_add_const : std::enable_if_t<is_standard_ref<T>, std::add_const<T>> {};
+  template<class X, class Y>
+  struct ref_add_const<ref_pair<X,Y>> {
+    using type = ref_pair<typename ref_add_const<X>::type, typename ref_add_const<Y>::type>;
+  };
+  template<class T>
+  using ref_add_const_t = typename ref_add_const<T>::type;
+
+public:
+  using const_t = variant_ref<ref_add_const_t<Ts>...>;
 
 private:
   template<class T, std::size_t I>
@@ -197,15 +260,17 @@ private:
   }
 
   template<class T, class N>
-  using const_compat_1 = std::bool_constant<
+  struct const_compat_1 : std::bool_constant<
     std::is_same_v<std::remove_const_t<T>, std::remove_const_t<N>>
     && (std::is_const_v<T> ? std::is_const_v<N> : true)
-  >;
+    && is_standard_ref<T> && is_standard_ref<N>
+  > {};
+  template<class TX, class TY, class NX, class NY>
+  struct const_compat_1<ref_pair<TX,TY>, ref_pair<NX,NY>>
+    : std::disjunction<const_compat_1<TX,NX>, const_compat_1<TY,NY>> {};
   template<class... Ns>
   struct const_compat_n {
-    static inline constexpr bool value = std::disjunction_v<std::bool_constant<
-      std::is_same_v<std::remove_const_t<Ts>, std::remove_const_t<Ns>>
-      && (std::is_const_v<Ts> ? std::is_const_v<Ns> : true)>...>;
+    static inline constexpr bool value = std::disjunction_v<const_compat_1<Ts,Ns>...>;
   };
   template<class... Ns>
   static inline constexpr bool const_compat =
@@ -228,8 +293,13 @@ public:
   }
 
   template<class T>
-  constexpr variant_ref operator=(std::enable_if_t<in_pack<T, Ts...>, T&> v) {
-    Base::operator=(std::reference_wrapper<T>(v));
+  constexpr variant_ref operator=(std::enable_if_t<in_pack<T, Ts...> && is_standard_ref<T>, T&> v) {
+    Base::operator=(reference_index<T>(v));
+    return *this;
+  }
+  template<class X, class Y>
+  constexpr variant_ref operator=(std::enable_if_t<in_pack<ref_pair<X,Y>, Ts...>, std::pair<X&, Y&>> v) {
+    Base::operator=(std::make_pair(reference_index<X>(v.first), reference_index<Y>(v.second)));
     return *this;
   }
 
@@ -267,6 +337,13 @@ private:
     return std::holds_alternative<vr_ref_wrapper<T>>((const Base&)*this);
   }
 
+  template<class X, class Y, class... Ns>
+  friend constexpr bool std::holds_alternative(const variant_ref<Ns...>& v) noexcept;
+  template<class X, class Y>
+  constexpr bool std_holds_alternative() const noexcept {
+    return std::holds_alternative<vr_ref_wrapper<ref_pair<X,Y>>>((const Base&)*this);
+  }
+
   template<class T, class... Ns>
   friend constexpr T& std::get(const variant_ref<Ns...>& v);
   template<class T>
@@ -276,6 +353,14 @@ private:
   template<class T>
   constexpr std::enable_if_t<std::is_same_v<T,std::monostate>,T&> std_get() const noexcept {
     return std::get<T>((const Base&)*this);
+  }
+
+  template<class X, class Y, class... Ns>
+  friend constexpr std::pair<X&, Y&> std::get(const variant_ref<Ns...>& v);
+  template<class X, class Y>
+  constexpr std::pair<X&, Y&> std_get() const noexcept {
+    auto x = std::get<std::pair<reference_index<X>, reference_index<Y>>>((const Base&)*this);
+    return {x.first.get(), x.second.get()};
   }
 
   template<class T, class... Ns>
@@ -292,6 +377,16 @@ private:
       return *pv;
     return std::nullopt;
   }
+
+  template<class X, class Y, class... Ns>
+  friend constexpr std::optional<std::pair<hpctoolkit::util::reference_index<X>, hpctoolkit::util::reference_index<Y>>>
+  std::get_if(const variant_ref<Ns...>& v) noexcept;
+  template<class X, class Y>
+  constexpr std::optional<std::pair<reference_index<X>, reference_index<Y>>> std_get_if() const noexcept {
+    if(auto pv = std::get_if<std::pair<reference_index<X>, reference_index<Y>>>(&(const Base&)*this))
+      return *pv;
+    return std::nullopt;
+  }
 };
 
 }
@@ -300,8 +395,18 @@ namespace std {
 
 template<class T>
 struct hash<hpctoolkit::util::reference_index<T>> : private std::hash<T*> {
-  std::size_t operator()(const hpctoolkit::util::reference_index<T>& v) {
+  std::size_t operator()(const hpctoolkit::util::reference_index<T>& v) const noexcept {
     return std::hash<T*>::operator()(&v.get());
+  }
+};
+
+template<class T>
+class hash<hpctoolkit::util::optional_ref<T>> {
+  hash<typename hpctoolkit::util::optional_ref<T>::Base> realhash;
+
+public:
+  constexpr std::size_t operator()(const hpctoolkit::util::optional_ref<T>& v) const noexcept {
+    return realhash(v);
   }
 };
 
@@ -309,19 +414,54 @@ template<class... Ts>
 struct variant_size<hpctoolkit::util::variant_ref<Ts...>>
   : std::integral_constant<std::size_t, sizeof...(Ts)> {};
 
+template<class X, class Y>
+class hash<std::pair<hpctoolkit::util::reference_index<X>, hpctoolkit::util::reference_index<Y>>> {
+  hash<hpctoolkit::util::reference_index<X>> hashx;
+  hash<hpctoolkit::util::reference_index<Y>> hashy;
+
+public:
+  constexpr std::size_t operator()(const std::pair<hpctoolkit::util::reference_index<X>,
+      hpctoolkit::util::reference_index<Y>>& v) const noexcept {
+    return hashx(v.first) ^ hashy(v.second);
+  }
+};
+
+template<class... Ts>
+class hash<hpctoolkit::util::variant_ref<Ts...>> {
+  hash<typename hpctoolkit::util::variant_ref<Ts...>::Base> realhash;
+
+public:
+  constexpr std::size_t operator()(const hpctoolkit::util::variant_ref<Ts...>& v) const noexcept {
+    return realhash(v);
+  }
+};
+
 template<class T, class... Ts>
 constexpr bool holds_alternative(const hpctoolkit::util::variant_ref<Ts...>& v) noexcept {
   return v.template std_holds_alternative<T>();
+}
+template<class X, class Y, class... Ts>
+constexpr bool holds_alternative(const hpctoolkit::util::variant_ref<Ts...>& v) noexcept {
+  return v.template std_holds_alternative<X, Y>();
 }
 
 template<class T, class... Ts>
 constexpr T& get(const hpctoolkit::util::variant_ref<Ts...>& v) {
   return v.template std_get<T>();
 }
+template<class X, class Y, class... Ts>
+constexpr std::pair<X&,Y&> get(const hpctoolkit::util::variant_ref<Ts...>& v) {
+  return v.template std_get<X, Y>();
+}
 
 template<class T, class... Ts>
 constexpr hpctoolkit::util::optional_ref<T> get_if(const hpctoolkit::util::variant_ref<Ts...>& v) noexcept {
   return v.template std_get_if<T>();
+}
+template<class X, class Y, class... Ts>
+constexpr std::optional<std::pair<hpctoolkit::util::reference_index<X>, hpctoolkit::util::reference_index<Y>>>
+get_if(const hpctoolkit::util::variant_ref<Ts...>& v) noexcept {
+  return v.template std_get_if<X, Y>();
 }
 
 }

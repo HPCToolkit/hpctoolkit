@@ -342,7 +342,7 @@ void StatisticAccumulator::Partial::validate() const noexcept {
 }
 
 const StatisticAccumulator* Metric::getFor(const Context& c) const noexcept {
-  return c.data.find(this);
+  return c.data.find(*this);
 }
 
 stdshim::optional<double> MetricAccumulator::get(MetricScope s) const noexcept {
@@ -364,13 +364,13 @@ void MetricAccumulator::validate() const noexcept {
 }
 
 const MetricAccumulator* Metric::getFor(const Thread::Temporary& t, const Context& c) const noexcept {
-  auto* cd = t.data.find(&c);
+  auto* cd = t.data.find(c);
   if(cd == nullptr) return nullptr;
-  return cd->find(this);
+  return cd->find(*this);
 }
 
-static bool pullsFunction(const Context& parent, const Context& child) {
-  switch(child.scope().type()) {
+static bool pullsFunction(Scope parent, Scope child) {
+  switch(child.type()) {
   // Function-type Scopes, and unknown (which could be a function)
   case Scope::Type::function:
   case Scope::Type::inlined_function:
@@ -383,7 +383,7 @@ static bool pullsFunction(const Context& parent, const Context& child) {
   case Scope::Type::loop:
   case Scope::Type::line:
   case Scope::Type::concrete_line:
-    switch(parent.scope().type()) {
+    switch(parent.type()) {
     // Function-type scopes, and unknown (which could be a function)
     case Scope::Type::unknown:
     case Scope::Type::function:
@@ -407,22 +407,22 @@ static bool pullsFunction(const Context& parent, const Context& child) {
   std::abort();  // unreachable
 }
 
-void Metric::finalize(Thread::Temporary& t) noexcept {
+void Metric::prefinalize(Thread::Temporary& t) noexcept {
   // Before anything else happens, we need to handle the Superpositions present
   // in the Context tree and distribute their data.
   for(const auto& cd: t.sp_data.citerate()) {
-    const SuperpositionedContext& c = *cd.first;
+    const SuperpositionedContext& c = cd.first;
 
     // Helper function to determine the factoring Metric used for the given Context.
     auto findDistributor = [&](ContextRef c) -> util::optional_ref<const Metric> {
       const decltype(t.data)::mapped_type* d = nullptr;
-      if(auto tc = std::get_if<Context>(c)) d = t.data.find(&*tc);
-      else if(auto tc = std::get_if<SuperpositionedContext>(c)) d = t.sp_data.find(&*tc);
+      if(auto tc = std::get_if<Context>(c)) d = t.data.find(*tc);
+      else if(auto tc = std::get_if<SuperpositionedContext>(c)) d = t.sp_data.find(*tc);
       else abort();  // unreachable
       if(d == nullptr) return {};
       util::optional_ref<const Metric> m;
       for(const auto& ma: d->citerate()) {
-        const Metric& cm = *ma.first;
+        const Metric& cm = ma.first;
         if(cm.name() == "GINS") {
           if(!m) m = cm;
           else if(&*m != &cm)
@@ -460,7 +460,7 @@ void Metric::finalize(Thread::Temporary& t) noexcept {
             auto rv = ma.second.point.load(std::memory_order_relaxed);
             auto v = rv * g.value;
             auto& tc = std::get<Context>(g.begin->get().target);
-            atomic_add(t.data[&tc][ma.first].point, v);
+            atomic_add(t.data[tc][ma.first].point, v);
           }
           continue;
         }
@@ -491,9 +491,9 @@ void Metric::finalize(Thread::Temporary& t) noexcept {
                   util::log::fatal{} << "Multiple distributing Metrics under the same Superposition:"
                     << distributor->name() << " != " << dm->name();
                 if(auto tc = std::get_if<Context>(vb[idx]))
-                  cur.value = t.data[&*tc][&*dm].point.load(std::memory_order_relaxed);
+                  cur.value = t.data[*tc][*dm].point.load(std::memory_order_relaxed);
                 else if(auto tc = std::get_if<SuperpositionedContext>(vb[idx]))
-                  cur.value = t.sp_data[&*tc][&*dm].point.load(std::memory_order_relaxed);
+                  cur.value = t.sp_data[*tc][*dm].point.load(std::memory_order_relaxed);
                 else abort();  // unreachable
                 totalValue += cur.value;
               }
@@ -517,65 +517,149 @@ void Metric::finalize(Thread::Temporary& t) noexcept {
       groups = std::move(new_groups);
     }
   }
+}
 
+void Metric::crossfinalize(const CollaborativeContext& cc) noexcept {
+  if(cc.data.empty())
+    util::log::fatal{} << "CollaborativeContext with no Threads to distribute to?";
+
+  // Collect together a set of all the possible targeted Threads we can
+  // distribute to, in the event that we have to fall back to flat distribution
+  std::vector<std::pair<decltype(cc.data)::mapped_type::key_type, double>> default_tfactors;
+  {
+    std::unordered_set<decltype(cc.data)::mapped_type::key_type> targets;
+    double total = 0;
+    for(const auto& sdata: cc.data.citerate()) {
+      for(const auto& tcdata: sdata.second.citerate()) {
+        if(!targets.emplace(tcdata.first).second) continue;
+        double factor = 0;
+        for(const auto& macc: tcdata.second.citerate()) {
+          if(macc.first->name() == "GKER:COUNT") {
+            factor = macc.second.point.load(std::memory_order_relaxed);
+            break;
+          }
+        }
+        total += factor;
+        if(factor > 0)
+          default_tfactors.emplace_back(tcdata.first, factor);
+      }
+    }
+    for(auto& tcf: default_tfactors) tcf.second /= total;
+  }
+
+  // Process everything one top-level Scope at a time
+  for(const auto& sc: cc.m_shadow) {
+    // Pregenerate the factors to use when distributing across the targets
+    // Also sum the metrics for the roots back into the Threads
+    std::vector<std::pair<decltype(cc.data)::mapped_type::key_type, double>> local_tfactors;
+    const decltype(cc.data)::mapped_type* sdata = cc.data.find(sc.first);
+    if(sdata != nullptr) {
+      local_tfactors.reserve(sdata->size());
+      double total = 0;
+      for(const auto& tcdata: sdata->citerate()) {
+        Thread::Temporary& tt = tcdata.first.first;
+        const Context& c = tcdata.first.second;
+        auto& cdata = tt.data[c];
+        double factor = 0;
+        for(const auto& macc: tcdata.second.citerate()) {
+          auto val = macc.second.point.load(std::memory_order_relaxed);
+          atomic_add(cdata[macc.first].point, val);
+          if(macc.first->name() == "GKER:COUNT")
+            factor = val;
+        }
+        total += factor;
+        if(factor > 0)
+          local_tfactors.emplace_back(tcdata.first, factor);
+      }
+      for(auto& tf: local_tfactors) tf.second /= total;
+    }
+    const auto& tfactors = local_tfactors.empty() ? default_tfactors : local_tfactors;
+
+    // Walk the SharedContext tree and sum the results back into the Threads
+    using frame_t = std::reference_wrapper<CollaborativeSharedContext>;
+    std::stack<frame_t, std::vector<frame_t>> queue;
+    queue.emplace(*sc.second);
+    while(!queue.empty()) {
+      auto& shad = queue.top().get();
+      queue.pop();
+
+      if(!shad.data.empty()) {
+        for(const auto& tf: tfactors) {
+          const Context& c = shad.m_shadowing.at(tf.first.second.get());
+          auto& cdata = tf.first.first.get().data[c];
+          for(const auto& macc: shad.data.citerate()) {
+            const Metric& m = macc.first;
+            auto val = macc.second.point.load(std::memory_order_relaxed);
+            atomic_add(cdata[m].point, val * tf.second);
+          }
+        }
+      }
+      for(const auto& sc: shad.m_children)
+        queue.emplace(*sc.second);
+    }
+  }
+}
+
+void Metric::finalize(Thread::Temporary& t) noexcept {
   // For each Context we need to know what its children are. But we only care
   // about ones that have decendants with actual data. So we construct a
   // temporary subtree with all the bits.
-  const Context* global = nullptr;
-  std::unordered_map<const Context*, std::unordered_set<const Context*>> children;
+  util::optional_ref<const Context> global;
+  std::unordered_map<util::reference_index<const Context>,
+    std::unordered_set<util::reference_index<const Context>>> children;
   {
-    std::vector<const Context*> newContexts;
+    std::vector<std::reference_wrapper<const Context>> newContexts;
     newContexts.reserve(t.data.size());
-    for(const auto& cx: t.data.citerate()) newContexts.emplace_back(cx.first);
+    for(const auto& cx: t.data.citerate()) newContexts.emplace_back(cx.first.get());
     while(!newContexts.empty()) {
       decltype(newContexts) next;
       next.reserve(newContexts.size());
-      for(const Context* cp: newContexts) {
-        if(!cp->direct_parent()) {
-          if(global != nullptr) util::log::fatal{} << "Multiple root contexts???";
-          global = cp;
+      for(const Context& c: newContexts) {
+        if(c.direct_parent() == nullptr) {
+          if(global) util::log::fatal{} << "Multiple root contexts???";
+          global = c;
           continue;
         }
-        auto x = children.emplace(cp->direct_parent(),
-                                  std::unordered_set<const Context*>{});
-        if(x.second) next.push_back(cp->direct_parent());
-        x.first->second.emplace(cp);
+        auto x = children.emplace(*c.direct_parent(),
+                                  decltype(children)::mapped_type{});
+        if(x.second) next.push_back(*c.direct_parent());
+        x.first->second.emplace(c);
       }
       next.shrink_to_fit();
       newContexts = std::move(next);
     }
   }
-  if(global == nullptr) return;  // Apparently there's nothing to propagate
+  if(!global) return;  // Apparently there's nothing to propagate
 
   // Now that the critical subtree is built, recursively propagate up.
-  using md_t = util::locked_unordered_map<const Metric*, MetricAccumulator>;
+  using md_t = decltype(t.data)::mapped_type;
   struct frame_t {
     frame_t(const Context& c) : ctx(c) {};
-    frame_t(const Context& c, std::unordered_set<const Context*>& v)
+    frame_t(const Context& c, const decltype(children)::mapped_type& v)
       : ctx(c), here(v.cbegin()), end(v.cend()) {};
     const Context& ctx;
-    std::unordered_set<const Context*>::const_iterator here;
-    std::unordered_set<const Context*>::const_iterator end;
+    decltype(children)::mapped_type::const_iterator here;
+    decltype(children)::mapped_type::const_iterator end;
     std::vector<std::pair<std::reference_wrapper<const Context>,
                           std::reference_wrapper<const md_t>>> submds;
   };
   std::stack<frame_t, std::vector<frame_t>> stack;
 
   // Post-order in-memory tree traversal
-  stack.emplace(*global, children.at(global));
+  stack.emplace(*global, children.at(*global));
   while(!stack.empty()) {
     if(stack.top().here != stack.top().end) {
       // This frame still has children to handle
-      const Context* c = *stack.top().here;
+      const Context& c = *stack.top().here;
       auto ccit = children.find(c);
       ++stack.top().here;
-      if(ccit == children.end()) stack.emplace(*c);
-      else stack.emplace(*c, ccit->second);
+      if(ccit == children.end()) stack.emplace(c);
+      else stack.emplace(c, ccit->second);
       continue;  // We'll come back eventually
     }
 
     const Context& c = stack.top().ctx;
-    md_t& data = t.data[&c];
+    md_t& data = t.data[c];
     // Handle the internal propagation first, so we don't get mixed up.
     for(auto& mx: data.iterate()) {
       mx.second.execution = mx.second.function
@@ -586,7 +670,7 @@ void Metric::finalize(Thread::Temporary& t) noexcept {
     for(std::size_t i = 0; i < stack.top().submds.size(); i++) {
       const Context& cc = stack.top().submds[i].first;
       const md_t& ccmd = stack.top().submds[i].second;
-      const bool pullfunc = pullsFunction(c, cc);
+      const bool pullfunc = pullsFunction(c.scope(), cc.scope());
       for(const auto& mx: ccmd.citerate()) {
         auto& accum = data[mx.first];
         if(pullfunc) accum.function += mx.second.function;
@@ -598,7 +682,7 @@ void Metric::finalize(Thread::Temporary& t) noexcept {
     auto& cdata = const_cast<Context&>(c).data;
     for(const auto& mx: data.citerate()) {
       auto& accum = cdata.emplace(std::piecewise_construct,
-        std::forward_as_tuple(mx.first), std::forward_as_tuple(*mx.first)).first;
+        std::forward_as_tuple(mx.first), std::forward_as_tuple(mx.first)).first;
       for(size_t i = 0; i < mx.first->partials().size(); i++) {
         auto& partial = mx.first->partials()[i];
         auto& atomics = accum.partials[i];
