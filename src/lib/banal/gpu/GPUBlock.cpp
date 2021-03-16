@@ -11,7 +11,14 @@ namespace ParseAPI {
 GPUBlock::GPUBlock(CodeObject * o, CodeRegion * r,
   Address start, std::vector<std::pair<Offset, size_t>> &offsets,
   Dyninst::Architecture arch) :
-  Block(o, r, start), _inst_offsets(offsets), _arch(arch) {}
+  Block(o, r, start), _inst_offsets(offsets), _arch(arch) {
+  // Update block end
+  auto last_offset = _inst_offsets.back();
+  auto offset = last_offset.first;
+  auto size = last_offset.second;
+
+  this->updateEnd(offset + size);
+}
 
 
 Address GPUBlock::last() const {
