@@ -1502,6 +1502,7 @@ sanitizer_subscribe_callback
             gpu_placeholder_type_alloc);
           gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags);
           api_node = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_alloc);
+          hpcrun_cct_retain(api_node);
 
           hpcrun_safe_exit();
 
