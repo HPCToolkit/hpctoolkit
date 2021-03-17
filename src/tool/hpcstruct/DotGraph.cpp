@@ -340,9 +340,6 @@ main(int argc, char **argv)
       gpu_file = true;
       #endif // ENABLE_IGC
     } else {
-      symtab->parseTypesNow();
-      symtab->parseFunctionRanges();
-
       code_src = new SymtabCodeSource(symtab);
       code_obj = new CodeObject(code_src);
       code_obj->parse();
