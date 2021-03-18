@@ -226,9 +226,24 @@ parseIntelCFG
   }
 
   if (DEBUG) {
+    // Instruction buffer
+    char inst_str[MAX_STR_SIZE];
+
     for (auto *block : function.blocks) {
       std::cout << std::hex;
       std::cout << block->name << ": [" << block->insts.front()->offset << ", " << block->insts.back()->offset << "]" << std::endl;
+
+      for (auto *inst : block->insts) {
+        size_t n = kv.getInstSyntax(inst->offset, NULL, 0);
+        assert(n < MAX_STR_SIZE);
+
+        inst_str[n] = '\0';
+        auto fmt_opts = IGA_FORMATTING_OPTS_DEFAULT; // see iga.h
+        kv.getInstSyntax(inst->offset, inst_str, n, fmt_opts);
+
+        std::cout << std::hex << inst->offset << std::dec << inst_str << std::endl;
+      }
+
       for (auto *target : block->targets) {
         std::cout << "\t" << block->name << "->" << target->block->name << std::endl;
       }
