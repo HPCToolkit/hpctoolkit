@@ -75,6 +75,7 @@
 #include "ompt-defer.h"
 #include "ompt-interface.h"
 #include "ompt-queues.h"
+#include "ompt-region.h"
 #include "ompt-region-debug.h"
 #include "ompt-placeholders.h"
 #include "ompt-thread.h"
