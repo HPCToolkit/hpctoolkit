@@ -271,6 +271,7 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
     case 'f': {
       std::string form(optarg);
       if(form == "sparse") format = Format::sparse;
+      else if (form == "intel_advisor") format = Format::intel_advisor;
       else {
         std::cerr << "Unrecognized output format '" << form << "'!\n";
         std::exit(2);

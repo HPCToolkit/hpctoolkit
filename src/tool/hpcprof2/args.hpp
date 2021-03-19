@@ -151,6 +151,7 @@ public:
   enum class Format {
     // experiment.xml + sparse thing, the current database format.
     sparse,
+    intel_advisor
   };
   /// Requested output format
   Format format;

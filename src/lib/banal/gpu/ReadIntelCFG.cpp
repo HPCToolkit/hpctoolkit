@@ -95,7 +95,7 @@ using namespace ParseAPI;
 using namespace SymtabAPI;
 using namespace InstructionAPI;
 
-static void 
+void 
 addCustomFunctionObject
 (
  const std::string &func_obj_name,
@@ -129,7 +129,7 @@ addCustomFunctionObject
 }
 
 
-static void
+void
 parseIntelCFG
 (
  char *text_section,
