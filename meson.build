@@ -43,7 +43,7 @@
 # ******************************************************* EndRiceCopyright *
 
 project('hpctoolkit', ['c', 'cpp'],
-        version: '2020.08-develop',
+        version: '2021.03.01-master',
         license: 'MIT',
         meson_version: '>=0.57.0',
         default_options: ['buildtype=release', 'b_staticpic=false',
