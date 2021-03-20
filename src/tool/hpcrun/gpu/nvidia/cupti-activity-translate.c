@@ -592,6 +592,7 @@ cupti_activity_translate
     break;
 
   case CUPTI_ACTIVITY_KIND_KERNEL:
+  case CUPTI_ACTIVITY_KIND_CONCURRENT_KERNEL:
     convert_kernel(ga, (CUpti_ActivityKernel4 *) activity);
     break;
 
