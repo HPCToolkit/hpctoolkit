@@ -52,13 +52,16 @@
 #include <algorithm>
 #include <sstream>
 #include <limits>
-#include <iostream>     // std, cout, endl
+#include <iostream>           // std, cout, endl
 #include <libelf.h>
-#include <fcntl.h>    // O_RDWR
-#include <unistd.h>   // open()
+#include <fcntl.h>            // O_RDWR
+#include <unistd.h>           // open()
 #include <Symtab.h>
 #include <CodeSource.h>
 #include <CodeObject.h>
+#include <AbslocInterface.h>  // AssignmentConverter
+#include <slicing.h>          // Slicer
+#include <Graph.h>            // printDOT
 
 
 
@@ -71,7 +74,7 @@
 #include "../util/xml.hpp"
 
 #include <iga/kv.hpp>
-#include <lib/binutils/intel/igc_binary_decoder.h>
+//#include <lib/binutils/intel/igc_binary_decoder.h>
 #include <lib/binutils/ElfHelper.hpp>               // ElfFile
 #include <lib/binutils/InputFile.hpp>               // InputFile
 #include <lib/banal/gpu/GPUCFGFactory.hpp>          // GPUCFGFactory
@@ -87,6 +90,7 @@
 
 #define LINE_WIDTH 130
 #define MAX_STR_SIZE 1024
+#define INSTRUCTION_ANALYZER_DEBUG 0
 
 
 
@@ -587,11 +591,47 @@ void IntelAdvisor::notifyPipeline() noexcept {
 }
 
 
+class IgnoreRegPred : public Dyninst::Slicer::Predicates {
+ public:
+  IgnoreRegPred(std::vector<Dyninst::AbsRegion> &rhs) : _rhs(rhs) {}
+
+  virtual bool modifyCurrentFrame(Dyninst::Slicer::SliceFrame &slice_frame,
+                                  Dyninst::GraphPtr graph_ptr, Dyninst::Slicer *slicer) {
+    std::vector<Dyninst::AbsRegion> delete_abs_regions;
+
+    for (auto &active_iter : slice_frame.active) {
+      // Filter unmatched regs
+      auto &abs_region = active_iter.first;
+      bool find = false;
+      for (auto &rhs_abs_region : _rhs) {
+        if (abs_region.absloc().reg() == rhs_abs_region.absloc().reg()) {
+          find = true;
+          break;
+        }
+      }
+      if (find == false) {
+        delete_abs_regions.push_back(abs_region);
+      }
+    }
+
+    for (auto &abs_region : delete_abs_regions) {
+      slice_frame.active.erase(abs_region);
+    }
+
+    return true;
+  }
+
+ private:
+  std::vector<Dyninst::AbsRegion> _rhs;
+};
+
+
 static void
 sliceIntelInstructions
 (
  const Dyninst::ParseAPI::CodeObject::funclist &func_set,
- std::vector<GPUParse::Function *> &functions 
+ std::vector<GPUParse::Function *> &functions,
+ std::string function_name
 )
 {
   // Build a instruction map
@@ -608,7 +648,56 @@ sliceIntelInstructions
       }    
     }    
   }
+  std::vector<std::pair<Dyninst::ParseAPI::Block *, Dyninst::ParseAPI::Function *>> block_vec;
+  for (auto dyn_func : func_set) {
+    for (auto *dyn_block : dyn_func->blocks()) {
+      block_vec.emplace_back(dyn_block, dyn_func);
+    }
+  }
 
+  // Prepare pass: create instruction cache for slicing
+  Dyninst::AssignmentConverter ac(true, false);
+  Dyninst::Slicer::InsnCache dyn_inst_cache;
+
+  // can be run in parallel
+  for (size_t i = 0; i < block_vec.size(); ++i) {
+    auto *dyn_block = block_vec[i].first;
+    auto *dyn_func = block_vec[i].second;
+    auto func_addr = dyn_func->addr();
+
+    Dyninst::ParseAPI::Block::Insns insns;
+    dyn_block->getInsns(insns);
+
+    int outerCount = 0;
+    for (auto &inst_iter : insns) {
+      auto &inst = inst_iter.second;
+      auto inst_addr = inst_iter.first;
+      auto *inst_stat = inst_stat_map.at(inst_addr);
+
+      if (INSTRUCTION_ANALYZER_DEBUG) {
+        std::cout << "try to find inst_addr " << inst_addr - func_addr << std::endl;
+      }
+
+      std::vector<Dyninst::Assignment::Ptr> assignments;
+      ac.convert(inst, inst_addr, dyn_func, dyn_block, assignments);
+
+      std::cout << "outside assigments: " << ++outerCount << std::endl;
+      int innerCount = 0;
+      for (auto a : assignments) {
+      std::cout << "inside assigments: " << ++innerCount << std::endl;
+#ifdef FAST_SLICING
+        FirstMatchPred p;
+#else
+        IgnoreRegPred p(a->inputs());
+#endif
+
+        Dyninst::Slicer s(a, dyn_block, dyn_func, &ac, &dyn_inst_cache);
+        Dyninst::GraphPtr g = s.backwardSlice(p);
+        bool status = g->printDOT(function_name + ".dot");
+        std::cout << "status of printDOT: " << status << std::endl;
+      }
+    }
+  }
 }
 
 
@@ -635,17 +724,7 @@ createBackwardSlicingInput
   Dyninst::ParseAPI::CodeObject *code_obj = new CodeObject(code_src, cfg_fact);
   code_obj->parse();
   
-  sliceIntelInstructions(code_obj->funcs(), functions);
-
-#if 0
-  KernelView kv(IGA_GEN9, text_section, text_section_size);
-  int32_t offset = 0;
-  char text[MAX_STR_SIZE] = { 0 };
-  size_t length;
-  length = kv.getInstSyntax(offset, text, MAX_STR_SIZE);
-  assert(length > 0);
-  std::cout << offset << ": " << text << std::endl;
-#endif
+  sliceIntelInstructions(code_obj->funcs(), functions, function_name);
 }
 
 
@@ -662,13 +741,9 @@ void IntelAdvisor::write() {
   // MetricTable: from the Metrics
   of << "<MetricTable>\n";
   unsigned int id = 0;
-  std::cout << std::string(LINE_WIDTH, '-') << std::endl;
-  std::cout << "udm.metric_tags" << std::endl;
-  std::cout << std::string(LINE_WIDTH, '-') << std::endl;
   for(const auto& m: src.metrics().iterate()) {
     const auto& udm = m().userdata[ud];
     of << udm.metric_tags;
-    std::cout << udm.metric_tags << std::endl;
     id = std::max(id, udm.maxId);
   }
   for(const auto& es: src.extraStatistics().iterate()) {
@@ -677,12 +752,8 @@ void IntelAdvisor::write() {
   of << "</MetricTable>\n";
 
   of << "<MetricDBTable>\n";
-  std::cout << std::string(LINE_WIDTH, '-') << std::endl;
-  std::cout << "metricdb_tags" << std::endl;
-  std::cout << std::string(LINE_WIDTH, '-') << std::endl;
   for(const auto& m: src.metrics().iterate()) {
     of << m().userdata[ud].metricdb_tags;
-    std::cout << m().userdata[ud].metricdb_tags << std::endl;
   }
   of << "</MetricDBTable>\n";
   of << "<LoadModuleTable>\n";
@@ -698,11 +769,11 @@ void IntelAdvisor::write() {
     if (strstr(udm.tag.c_str(), "gpubins")) {
       const char *delimiter1 = "n=\"";
       const char *delimiter2 = ".gpubin";
-      std::cout << udm.tag << std::endl;
+      std::cout << udm.tag; 
       size_t delim1_loc = udm.tag.find(delimiter1);
       size_t delim2_loc = udm.tag.find(delimiter2);
       std::string filePath = udm.tag.substr(delim1_loc + 3, delim2_loc + 7 - (delim1_loc + 3));
-      std::cout << filePath << std::endl;
+      std::cout << "filePath: " << filePath << std::endl;
       
       InputFile inputFile;
 
@@ -717,7 +788,6 @@ void IntelAdvisor::write() {
 
       char *text_section = NULL;
       auto text_section_size = elfFile->getTextSection(&text_section);
-      std::cout << text_section_size << std::endl;
       createBackwardSlicingInput(elfFile, text_section, text_section_size);
     }
   }
@@ -725,24 +795,16 @@ void IntelAdvisor::write() {
         "<FileTable>\n";
   // FileTable: from the Files
   if(file_unknown) of << file_unknown.tag;
-  std::cout << std::string(LINE_WIDTH, '-') << std::endl;
-  std::cout << "udf.tag" << std::endl;
-  std::cout << std::string(LINE_WIDTH, '-') << std::endl;
   for(const auto& f: src.files().iterate()) {
     auto& udf = f().userdata[ud];
     if(!udf) continue;
     of << udf.tag;
-    std::cout << udf.tag << std::endl;
   }
-  std::cout << std::string(LINE_WIDTH, '-') << std::endl;
-  std::cout << "udm.tag(unknown file)" << std::endl;
-  std::cout << std::string(LINE_WIDTH, '-') << std::endl;
 
   for(const auto& m: src.modules().iterate()) {
     auto& udm = m().userdata[ud].unknown_file;
     if(!udm) continue;
     of << udm.tag;
-    std::cout << udm.tag << std::endl;
   }
   of << "</FileTable>\n"
         "<ProcedureTable>\n";

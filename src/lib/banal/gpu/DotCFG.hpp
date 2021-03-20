@@ -148,6 +148,15 @@ struct InstructionStat {
     uassign_pcs(uassign_pcs),
     upassign_pcs(upassign_pcs),
     control(control) {}
+  
+  InstructionStat(const std::string &op, int pc, PredicateFlag predicate_flag,
+                  std::vector<int> dsts, std::vector<int> srcs)
+    : op(op),
+    pc(pc),
+    predicate_flag(predicate_flag),
+    dsts(dsts),
+    srcs(srcs) {}
+
 
   bool operator<(const InstructionStat &other) const { return this->pc < other.pc; }
 
@@ -182,6 +191,9 @@ struct Inst {
   std::vector<std::string> operands;
   Arch arch;
   InstructionStat *inst_stat;
+
+  Inst(int offset, int size, Arch arch, InstructionStat *inst_stat) : offset(offset), size(size), dual_first(false), dual_second(false),
+    is_call(false), is_jump(false), is_sync(false), arch(arch), inst_stat(inst_stat) {}
 
   // Constructor for dummy inst
   Inst(int offset, int size, Arch arch) : offset(offset), size(size), dual_first(false), dual_second(false),
