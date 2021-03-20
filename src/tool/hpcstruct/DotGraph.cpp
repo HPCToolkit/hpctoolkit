@@ -118,7 +118,7 @@ public:
 // procedure and write to the ostream 'dotFile'.
 //
 static void
-makeDotFile(ofstream * dotFile, CodeObject * code_obj, const char *only_func, bool gpu_file)
+makeDotFile(ofstream * dotFile, CodeObject * code_obj, const char *only_func)
 {
   const CodeObject::funclist & funcList = code_obj->funcs();
 
@@ -154,21 +154,8 @@ makeDotFile(ofstream * dotFile, CodeObject * code_obj, const char *only_func, bo
 
       blockNum[block] = num;
 
-      auto block_end = 0;
-      if (gpu_file) {
-        // GPUBlock does not inherit block->end() method
-        ParseAPI::Block::Insns insns;
-        block->getInsns(insns);
-        if (insns.size() > 0) {
-          auto last_insn = insns.rbegin();
-          block_end = last_insn->first + last_insn->second.size();
-        }
-      } else {
-        block_end = block->end();
-      }
-
       *dotFile << "  " << num << " [ label=\"0x" << hex << block->start()
-	       << "\\n0x" << block_end << dec << "\" ];\n";
+	       << "\\n0x" << block->end() << dec << "\" ];\n";
 
     }
     int endNum = num + 1;
@@ -321,7 +308,6 @@ main(int argc, char **argv)
 
     bool cuda_file = (symtab)->getArchitecture() == Dyninst::Arch_cuda;
     bool intel_file = elfFile->isIntelGPUFile();
-    bool gpu_file = false;
 
 #ifdef ENABLE_OPENMP
     omp_set_num_threads(opts.jobs);
@@ -333,11 +319,9 @@ main(int argc, char **argv)
 
     if (cuda_file) { // don't run parseapi on cuda binary
       parsable = readCudaCFG(search_path, elfFile, symtab, true, &code_src, &code_obj);
-      gpu_file = true;
     } else if (intel_file) { // don't run parseapi on intel binary
       #ifdef ENABLE_IGC
       parsable = readIntelCFG(search_path, elfFile, symtab, true, &code_src, &code_obj);
-      gpu_file = true;
       #endif // ENABLE_IGC
     } else {
       code_src = new SymtabCodeSource(symtab);
@@ -346,7 +330,7 @@ main(int argc, char **argv)
     }
 
     if (parsable) {
-      makeDotFile(&dotFile, code_obj, opts.func, gpu_file);
+      makeDotFile(&dotFile, code_obj, opts.func);
     }
   }
 
