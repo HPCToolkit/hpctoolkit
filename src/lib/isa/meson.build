@@ -48,7 +48,10 @@ _srcs = files(
 
 isa_lib = static_library('isa', _srcs, pic: true,
   include_directories: main_includes,
-  link_with: [support_lib],
   dependencies: [
+    support_dep,
     dependency('libbfd', required: false, disabler: true),
   ])
+isa_dep = declare_dependency(link_with: isa_lib, dependencies: [
+  dependency('libbfd', required: false).partial_dependency(compile_args: true, includes: true),
+])

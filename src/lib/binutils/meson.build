@@ -71,10 +71,13 @@ endif
 
 binutils_lib = static_library('binutils', _srcs, pic: true,
   include_directories: main_includes,
-  link_with: [support_lib, prof_lean_lib, support_lean_lib, isa_lib],
   dependencies: [
+    support_dep, prof_lean_dep, support_lean_dep, isa_dep,
     dependency('libbfd', required: false, disabler: true),
     dependency('libelf', required: false, disabler: true),
-    dependency('dyninst', required: false, disabler: true),
-    dependency('metrics-discovery', required: false),
+    dependency('dyninst', required: false, disabler: true).partial_dependency(compile_args: true, includes: true),
+    dependency('metrics-discovery', required: false).partial_dependency(compile_args: true, includes: true),
   ] + _igc_dep)
+binutils_dep = declare_dependency(link_with: binutils_lib, dependencies: [
+  isa_dep.partial_dependency(compile_args: true, includes: true),
+])

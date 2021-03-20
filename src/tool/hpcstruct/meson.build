@@ -55,9 +55,8 @@ _srcs += _gen.process(files('gpubin-analysis.txt'))
 if not get_option('hpcstruct').disabled()
   hpcstruct_exe = executable('hpcstruct', _srcs,
     include_directories: tool_includes,
-    link_with: [support_lib, banal_lib, analysis_lib],
     dependencies: [
-      dependency('libbfd', required: false).partial_dependency(compile_args: true, includes: true),
+      analysis_dep, banal_dep,
       dependency('OpenMP', required: get_option('openmp')),
     ],
     install: true)

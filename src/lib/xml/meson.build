@@ -56,4 +56,6 @@ _srcs += _dtdgen.process(
 
 xml_lib = static_library('xml', _srcs, pic: true,
   include_directories: main_includes,
-  link_with: [support_lib])
+  dependencies: [support_dep])
+xml_dep = declare_dependency(link_with: xml_lib, dependencies: [
+])

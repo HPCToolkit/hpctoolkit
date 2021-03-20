@@ -71,7 +71,9 @@ _srcs = files(
 
 prof_lib = static_library('prof', _srcs, pic: true,
   include_directories: main_includes,
-  link_with: [support_lib, xml_lib, binutils_lib],
   dependencies: [
-    dependency('libbfd', required: false).partial_dependency(compile_args: true, includes: true),
+    support_dep, xml_dep, binutils_dep, isa_dep,
   ])
+prof_dep = declare_dependency(link_with: prof_lib, dependencies: [
+  isa_dep.partial_dependency(compile_args: true, includes: true),
+])

@@ -55,8 +55,10 @@ _srcs = files(
 
 profxml_lib = static_library('profxml', _srcs, pic: true,
   include_directories: main_includes,
-  link_with: [prof_lib],
   dependencies: [
+    prof_dep,
     dependency('xerces-c', required: false, disabler: true),
-    dependency('libbfd', required: false).partial_dependency(compile_args: true, includes: true),
   ])
+profxml_dep = declare_dependency(link_with: profxml_lib, dependencies: [
+  prof_dep.partial_dependency(compile_args: true, includes: true),
+])

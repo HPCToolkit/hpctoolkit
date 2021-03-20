@@ -61,9 +61,11 @@ _srcs = files(
 
 analysis_lib = static_library('analysis', _srcs, pic: true,
   include_directories: main_includes,
-  link_with: [support_lib, xml_lib, prof_lib, profxml_lib, banal_simple_lib],
   dependencies: [
-    dependency('libbfd', required: false, disabler: true),
+    support_dep, xml_dep, prof_dep, profxml_dep, banal_simple_dep,
     dependency('xerces-c', required: false, disabler: true),
-    dependency('boost', required: false, disabler: true, modules: ['graph', 'regex', 'system']),
+    dependency('boost', required: false, disabler: true, modules: ['graph', 'regex', 'system']).partial_dependency(compile_args: true, includes: true),
   ])
+analysis_dep = declare_dependency(link_with: analysis_lib, dependencies: [
+  profxml_dep.partial_dependency(compile_args: true, includes: true),
+])

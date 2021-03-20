@@ -67,20 +67,19 @@ endif
 
 banal_lib = static_library('banal', _srcs, pic: true,
   include_directories: main_includes,
-  link_with: [xml_lib, support_lib, binutils_lib],
   dependencies: [
-    dependency('libbfd', required: false).partial_dependency(compile_args: true, includes: true),
-    dependency('libelf', required: false, disabler: true),
+    xml_dep, support_dep, binutils_dep,
     dependency('dyninst', required: false, disabler: true),
-    dependency('tbb', required: false, disabler: true),
-    dependency('boost', required: false, disabler: true, modules: ['graph', 'regex', 'system']),
     dependency('OpenMP', required: get_option('openmp')),
     dependency('valgrind', required: get_option('valgrind-annotations')),
     dependency('metrics-discovery', required: false),
   ] + _igc_dep)
+banal_dep = declare_dependency(link_with: banal_lib, dependencies: [
+])
 banal_simple_lib = static_library('banal_simple', _simple_srcs, pic: true,
   include_directories: main_includes,
-  link_with: [binutils_lib, support_lib, prof_lib],
   dependencies: [
-    dependency('libbfd', required: false).partial_dependency(compile_args: true, includes: true),
+    binutils_dep, support_dep, prof_dep,
   ])
+banal_simple_dep = declare_dependency(link_with: banal_simple_lib, dependencies: [
+])

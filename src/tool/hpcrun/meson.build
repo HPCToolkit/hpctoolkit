@@ -511,8 +511,8 @@ endforeach
 
 libhpcrun_lib = shared_library('hpcrun', _d_srcs.sources(),
   dependencies: _d_srcs.dependencies() + _d_ddep
+    + [prof_lean_dep, support_lean_dep]
     + [cc.find_library('dl'), cc.find_library('rt'), dependency('threads')],
-  link_with: [prof_lean_lib, support_lean_lib],
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
 libhpcrun_fake_audit_lib = shared_module('hpcrun_fake_audit',
@@ -649,8 +649,7 @@ foreach dep : _s_deps
 endforeach
 
 libhpcrun_static_lib = static_library('hpcrun_static', _s_srcs.sources(),
-  dependencies: _s_partial_ddeps,
-  link_with: [prof_lean_static_lib, support_lean_static_lib],
+  dependencies: _s_partial_ddeps + [prof_lean_static_dep, support_lean_static_dep],
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
 libhpcrun_wrap_lib = static_library('hpcrun_wrap',

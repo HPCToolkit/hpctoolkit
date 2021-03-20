@@ -51,9 +51,8 @@ _srcs = files(
 if not get_option('hpcprof').disabled()
   hpcprof_mpi_exe = executable('hpcprof-mpi', _srcs,
     include_directories: tool_includes,
-    link_with: [analysis_lib, support_lib, prof_lib, prof_lean_lib],
     dependencies: [
-      dependency('libbfd', required: false).partial_dependency(compile_args: true, includes: true),
+      prof_dep, analysis_dep,
       dependency('MPI', language: 'cpp', required: get_option('mpi'), disabler: true),
     ],
     install: true)

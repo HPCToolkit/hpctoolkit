@@ -50,10 +50,7 @@ _srcs = files(
 if not get_option('hpcprof').disabled()
   hpcprof_exe = executable('hpcprof', _srcs,
     include_directories: main_includes,
-    link_with: [support_lib, binutils_lib, prof_lib, analysis_lib],
-    dependencies: [
-      dependency('libbfd', required: false).partial_dependency(compile_args: true, includes: true),
-    ],
+    dependencies: [analysis_dep],
     install: true)
   all_apps += hpcprof_exe
 endif

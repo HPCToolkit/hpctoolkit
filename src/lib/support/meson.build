@@ -85,4 +85,6 @@ _srcs = files(
 
 support_lib = static_library('support', _srcs, pic: true,
   include_directories: main_includes,
-  link_with: [support_lean_lib, prof_lean_lib])
+  dependencies: [support_lean_dep, prof_lean_dep])
+support_dep = declare_dependency(link_with: support_lib, dependencies: [
+])

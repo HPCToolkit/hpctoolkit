@@ -65,12 +65,12 @@ endif
 if not get_option('hpcrun').disabled()
   hpcfnbounds_exe = executable('hpcfnbounds', _srcs,
     include_directories: tool_includes,
-    link_with: [prof_lean_lib],
     dependencies: [
+      prof_lean_dep,
+      dependency('boost', required: false, disabler: true, modules: ['graph', 'regex', 'system']),
       dependency('dyninst', required: false, disabler: true),
       dependency('OpenMP', required: get_option('openmp')),
-      dependency('libdwarf', required: false, disabler: true)
-        .partial_dependency(compile_args: true, includes: true),
+      dependency('libdwarf', required: false, disabler: true).partial_dependency(compile_args: true, includes: true),
       cc.find_library('dl'),
     ] + _deps,
     install: true, install_dir: get_option('libexecdir') / meson.project_name())

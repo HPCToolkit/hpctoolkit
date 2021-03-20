@@ -84,9 +84,13 @@ prof_lean_lib = static_library('prof_lean', _srcs, pic: true,
     dependency('libelf', required: false, disabler: true),
     dependency('mbedtls', required: false, disabler: true, static: true),
   ])
+prof_lean_dep = declare_dependency(link_with: prof_lean_lib, dependencies: [
+])
 prof_lean_static_lib = static_library('prof_lean_static', _srcs,
   include_directories: main_includes,
   dependencies: [
     dependency('libelf', required: false, disabler: true, static: true),
     dependency('mbedtls', required: false, disabler: true, static: true),
   ])
+prof_lean_static_dep = declare_dependency(link_with: prof_lean_static_lib,
+  dependencies: [prof_lean_dep.partial_dependency(compile_args: true, includes: true)])

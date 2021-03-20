@@ -61,29 +61,32 @@ _srcs = files(
   'main.cpp',
 )
 
-if not get_option('hpcserver').enabled()
+if not get_option('hpcserver').disabled()
   hpcserver_exe = executable('hpcserver', _srcs, files(
       'Communication-SingleThreaded.cpp',
     ),
     include_directories: tool_includes,
-    link_with: [support_lib],
     dependencies: [
+      analysis_dep,
       dependency('zlib', required: get_option('hpcserver'), disabler: true),
     ],
     install: true)
 
-  hpcserver_mpi_exe = executable('hpcserver-mpi', _srcs, files(
-      'Communication-MPI.cpp',
-      'Slave.cpp',
-    ),
-    cpp_args: '-DMPICH_IGNORE_CXX_SEEK',
-    include_directories: tool_includes,
-    link_with: [support_lib],
-    dependencies: [
-      dependency('zlib', required: get_option('hpcserver'), disabler: true),
-      dependency('MPI', language: 'cpp', required: get_option('mpi'), disabler: true),
-    ],
-    install: true)
+  # NOTE: Removed due to usage of deprecated MPI C++ interface
+  # hpcserver_mpi_exe = executable('hpcserver-mpi', _srcs, files(
+  #     'Communication-MPI.cpp',
+  #     'Slave.cpp',
+  #   ),
+  #   cpp_args: '-DMPICH_IGNORE_CXX_SEEK',
+  #   include_directories: tool_includes,
+  #   dependencies: [
+  #     analysis_dep,
+      # support_dep, analysis_dep,
+  #     dependency('zlib', required: get_option('hpcserver'), disabler: true),
+  #     dependency('MPI', language: 'cpp', required: get_option('mpi'), disabler: true),
+  #   ],
+  #   install: true)
+  hpcserver_mpi_exe = disabler()
   all_apps += [hpcserver_exe, hpcserver_mpi_exe]
 endif
 if get_option('hpcserver').enabled()
@@ -94,5 +97,3 @@ if get_option('hpcserver').enabled() and get_option('mpi').enabled()
 endif
 summary('hpcserver', is_variable('hpcserver_exe') and not is_disabler(hpcserver_exe), section: 'Applications', bool_yn: true)
 summary('hpcserver-mpi', is_variable('hpcserver_mpi_exe') and not is_disabler(hpcserver_mpi_exe), section: 'Applications', bool_yn: true)
-
-
