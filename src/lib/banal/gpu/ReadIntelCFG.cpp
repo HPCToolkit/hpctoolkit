@@ -397,7 +397,7 @@ getIntelInstructionStat
     int32_t status = kv.getDstRegion(offset, &horzStride);
     int elementSize = getElementSize(dstDataType);
 
-    dsts.reserve(execSize);
+    dsts.resize(execSize);
     int rowBase = (dstRegNo << 5) + dstSubRegNo * elementSize;
     for (int x=0; x < execSize; x++) {
       dsts[x] = rowBase;
@@ -411,6 +411,8 @@ getIntelInstructionStat
       << ", RegKind: " << getKindString(dstRegKind)
       << ", execSize: " << execSize << std::endl;
 #endif
+  } else {
+    // To be considered: How to deal with writes to ARF registers?
   }
 
   // barriers are executed using send instruction. example:
