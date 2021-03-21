@@ -397,7 +397,7 @@ getIntelInstructionStat
     int32_t status = kv.getDstRegion(offset, &horzStride);
     int elementSize = getElementSize(dstDataType);
 
-    dsts.reserve(execSize);
+    dsts.resize(execSize);
     int rowBase = (dstRegNo << 5) + dstSubRegNo * elementSize;
     for (int x=0; x < execSize; x++) {
       dsts[x] = rowBase;
@@ -411,6 +411,8 @@ getIntelInstructionStat
       << ", RegKind: " << getKindString(dstRegKind)
       << ", execSize: " << execSize << std::endl;
 #endif
+  } else {
+    // To be considered: How to deal with writes to ARF registers?
   }
 
   // barriers are executed using send instruction. example:
@@ -486,7 +488,6 @@ parseIntelCFG
     auto size = kv.getInstSize(offset);
     auto *inst_stat = getIntelInstructionStat(kv, offset);
     auto *inst = new GPUParse::Inst(offset, size, Arch_intelGen9, inst_stat);
-    //auto *inst = new GPUParse::Inst(inst_stat);
     block->insts.push_back(inst);
 
     while (!kv.isInstTarget(offset + size) && (offset + size < text_section_size)) {
