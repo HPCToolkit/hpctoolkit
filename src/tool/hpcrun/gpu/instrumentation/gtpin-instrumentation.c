@@ -128,9 +128,6 @@ static bool count_knob = false;
 static SimdSectionNode *SimdSectionNode_free_list = NULL;
 static SimdGroupNode *SimdGroupNode_free_list = NULL;
 
-static SimdSectionNode *SimdSectionNode_free_list = NULL;
-static SimdGroupNode *SimdGroupNode_free_list = NULL;
-
 static __thread uint64_t gtpin_correlation_id = 0;
 static __thread uint64_t gtpin_cpu_submit_time = 0;
 static __thread gpu_op_ccts_t gtpin_gpu_op_ccts;
@@ -610,15 +607,7 @@ addSimdInstrumentation
   // input parameters for the SIMD operation calulator. In our case, group consists of instructions
   // having the same SimdProfArgs values.
   GTPinINS sectionHead = head; // head instruction of the current section
-  GTPinINS sectionTail = tail;
   *bb_scalar_instructions = 0;
-
-
-#if 0
-  uint32_t headId, tailID;
-  GTPin_InsID(sectionHead, &headId);
-  GTPin_InsID(sectionTail, &tailID);
-#endif
   SimdSectionNode *sHead = NULL;
 
   // Iterate through sections within the current BBL
@@ -1135,6 +1124,7 @@ onKernelComplete
   while (block != NULL) {
     uint32_t thread_count;
 
+    // TODO: thread count for simd
     if (block->hasLatencyInstrumentation) {
       thread_count = HPCRUN_GTPIN_CALL(GTPin_MemSampleLength,(block->mem_latency));
     } else {
@@ -1183,13 +1173,14 @@ onKernelComplete
             next_g = curr_g->next;
             status = HPCRUN_GTPIN_CALL(GTPin_MemRead,(curr_g->mem_simd, tid, sizeof(uint32_t), (char*)&simdData, NULL));
             bb_active_simd_lanes += (simdData * curr_g->instCount);
+            bb_instruction_count += curr_g->instCount;
             curr_g = next_g;
           }
           curr_s = next_s;
         }
       }
     }
-
+#if 0
     // cleanup
     if (simd_knob) {
       curr_s = shead;
@@ -1201,30 +1192,16 @@ onKernelComplete
           simdgroup_node_free_helper(&SimdGroupNode_free_list, curr_g);
           curr_g = next_g;
         }
+        simdsection_node_free_helper(&SimdSectionNode_free_list, curr_s);
         curr_s = next_s;
       }
     }
-#if 0
-    // cleanup
-    curr_s = shead;
-    while (curr_s) {
-      next_s = curr_s->next;
-      curr_g = curr_s->groupHead;
-      while (curr_g) {
-        next_g = curr_g->next;
-        simdgroup_node_free_helper(&SimdGroupNode_free_list, curr_g);
-        curr_g = next_g;
-      }
-      simdsection_node_free_helper(&SimdSectionNode_free_list, curr_s);
-      curr_s = next_s;
-    }
 #endif
-
     // scalar simd loss
-    uint64_t bb_total_simd_lanes = 0, scalar_simd_loss = 0;
-
-    // we need count_knob to get the bb_exec_count
+    uint64_t bb_total_simd_lanes = 0;
+    uint64_t scalar_simd_loss = 0;
     if (simd_knob) {
+      bb_instruction_count /= thread_count;
       if (kernel_data_gtpin->simd_width == 32) { // && GPU == Gen9
         // reason for this block. Gen9 GPU's have 32width SIMD lanes
         // but Gen9's ISA supports only SIMD16 instructions
