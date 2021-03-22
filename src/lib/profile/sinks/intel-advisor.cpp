@@ -681,20 +681,16 @@ sliceIntelInstructions
       std::vector<Dyninst::Assignment::Ptr> assignments;
       ac.convert(inst, inst_addr, dyn_func, dyn_block, assignments);
 
-      std::cout << "outside assigments: " << ++outerCount << std::endl;
       int innerCount = 0;
       for (auto a : assignments) {
-      std::cout << "inside assigments: " << ++innerCount << std::endl;
 #ifdef FAST_SLICING
         FirstMatchPred p;
 #else
         IgnoreRegPred p(a->inputs());
 #endif
-
         Dyninst::Slicer s(a, dyn_block, dyn_func, &ac, &dyn_inst_cache);
         Dyninst::GraphPtr g = s.backwardSlice(p);
         bool status = g->printDOT(function_name + ".dot");
-        std::cout << "status of printDOT: " << status << std::endl;
       }
     }
   }

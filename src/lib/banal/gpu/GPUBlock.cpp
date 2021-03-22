@@ -6,6 +6,12 @@
 
 #include <include/hpctoolkit-config.h>
 
+
+//******************************************************************************
+// macros
+//******************************************************************************
+
+#define DEBUG 0
 #define MAX_INST_SIZE 32
 
 
@@ -18,7 +24,7 @@ static void
 appendOperandstoInst
 (
  GPUParse::Inst *inst,
- InstructionAPI::Instruction instruction
+ InstructionAPI::Instruction& instruction
 )
 {
   // Instruction predicate flags
@@ -37,38 +43,51 @@ appendOperandstoInst
       instruction.appendOperand(reg_ptr, true, false, false, false, true);
     }
 
-  if (inst->inst_stat->dsts.size() == 0) {
-    std::cout << "dst.size == 0\n";
-    // Fake register
-    MachRegister r(128 | intel::GPR | Arch_intelGen9);
-    InstructionAPI::RegisterAST::Ptr reg_ptr(new InstructionAPI::RegisterAST(r));
-    instruction.appendOperand(reg_ptr, false, true);
+#if DEBUG
+    std::cout << "dst register: ";
+#endif
+    if (inst->inst_stat->dsts.size() == 0)
+    {
+#if DEBUG
+      std::cout << 128;
+#endif
+      // Fake register
+      MachRegister r(128 | intel::GPR | Arch_intelGen9);
+      InstructionAPI::RegisterAST::Ptr reg_ptr(new InstructionAPI::RegisterAST(r));
+      instruction.appendOperand(reg_ptr, false, true);
   } else {
-    std::cout << "dst.size != 0\n";
     for (auto dst : inst->inst_stat->dsts) {
       if (dst != -1) {
+#if DEBUG
+        std::cout << dst << ", ";
+#endif
         MachRegister r(dst | intel::GPR | Arch_intelGen9);
         InstructionAPI::RegisterAST::Ptr reg_ptr(new InstructionAPI::RegisterAST(r));
         instruction.appendOperand(reg_ptr, false, true);
       }
     }
   }
+#if DEBUG
+  std::cout << std::endl;
+#endif
 
+#if DEBUG
+  std::cout << "src register: ";
+#endif
   for (auto src : inst->inst_stat->srcs) {
     if (src != -1) {
+#if DEBUG
+      std::cout << src << ", ";
+#endif
       MachRegister r(src | intel::GPR | Arch_intelGen9);
       InstructionAPI::RegisterAST::Ptr reg_ptr(new InstructionAPI::RegisterAST(r));
       instruction.appendOperand(reg_ptr, true, false);
     }
   }
 
-  for (auto bsrc : inst->inst_stat->bsrcs) {
-    if (bsrc != -1) {
-      MachRegister r(bsrc | intel::BR | Arch_intelGen9);
-      InstructionAPI::RegisterAST::Ptr reg_ptr(new InstructionAPI::RegisterAST(r));
-      instruction.appendOperand(reg_ptr, true, false);
-    }
-  }
+#if DEBUG
+  std::cout << std::endl;
+#endif
 }
 
 
