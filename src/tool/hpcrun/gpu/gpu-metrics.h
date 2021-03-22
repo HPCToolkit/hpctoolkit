@@ -283,23 +283,23 @@ typedef enum {
 
 // gpu instruction count
 #define FORALL_GPU_INST(macro)			\
-  macro(GPU_INST_METRIC_NAME ": frequency", GPU_INST_EXEC_COUNT,	\
+  macro(GPU_INST_METRIC_NAME ":EXC_CNT", GPU_INST_EXEC_COUNT,	\
 	"GPU instruction/basic-block execution count")  \
-  macro(GPU_INST_METRIC_NAME ": latency", GPU_INST_LATENCY,	\
+  macro(GPU_INST_METRIC_NAME ": LAT(cycles)", GPU_INST_LATENCY,	\
 	"GPU instruction latency")  \
-  macro(GPU_INST_METRIC_NAME ": active simd", GPU_INST_ACT_SIMD_LANES,	\
+  macro(GPU_INST_METRIC_NAME ": ACT_SIMD", GPU_INST_ACT_SIMD_LANES,	\
 	"GPU active simd lanes")  \
-  macro(GPU_INST_METRIC_NAME ": wasted simd", GPU_INST_WASTE_SIMD_LANES,	\
+  macro(GPU_INST_METRIC_NAME ": WAST_SIMD", GPU_INST_WASTE_SIMD_LANES,	\
 	"GPU wasted simd lanes")  \
-  macro(GPU_INST_METRIC_NAME ": total simd", GPU_INST_TOT_SIMD_LANES,	\
+  macro(GPU_INST_METRIC_NAME ": TOT_SIMD", GPU_INST_TOT_SIMD_LANES,	\
 	"GPU total simd lanes")   \
-  macro(GPU_INST_METRIC_NAME ": scalar simd loss", GPU_INST_SCALAR_SIMD_LOSS,	\
+  macro(GPU_INST_METRIC_NAME ": SIMD_SCLR_LOSS", GPU_INST_SCALAR_SIMD_LOSS,	\
 	"GPU simd lanes lost due to scalar instructions")   \
-  macro(GPU_INST_METRIC_NAME ": C", GPU_INST_COVERED_LATENCY,	\
+  macro(GPU_INST_METRIC_NAME ": COV_LAT(cycles)", GPU_INST_COVERED_LATENCY,	\
 	"GPU covered latency")  \
-  macro(GPU_INST_METRIC_NAME ": U", GPU_INST_UNCOVERED_LATENCY,	\
+  macro(GPU_INST_METRIC_NAME ": UNCOV_LAT(cycles)", GPU_INST_UNCOVERED_LATENCY,	\
 	"GPU uncovered latency")   \
-  macro(GPU_INST_METRIC_NAME ": threads for covering latency", GPU_INST_THR_NEEDED_FOR_COVERING_LATENCY,	\
+  macro(GPU_INST_METRIC_NAME ": THR_COV_LAT", GPU_INST_THR_NEEDED_FOR_COVERING_LATENCY,	\
 	"GPU threads for covering latency (1 + U/C)")
 
 
