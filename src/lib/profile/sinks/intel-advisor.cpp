@@ -690,7 +690,7 @@ sliceIntelInstructions
 #endif
         Dyninst::Slicer s(a, dyn_block, dyn_func, &ac, &dyn_inst_cache);
         Dyninst::GraphPtr g = s.backwardSlice(p);
-        bool status = g->printDOT(function_name + ".dot");
+        //bool status = g->printDOT(function_name + ".dot");
       }
     }
   }
