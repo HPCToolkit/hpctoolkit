@@ -182,11 +182,7 @@ static __thread bool opencl_api_flag = false;
 static spinlock_t opencl_h2d_lock = SPINLOCK_UNLOCKED;
 
 static bool instrumentation = false;
-<<<<<<< HEAD
 static bool optimization_check = false;
-=======
-
->>>>>>> 9f7c4c258... adding code refactorings related to blame-shifting
 static bool ENABLE_BLAME_SHIFTING = false;
 
 
@@ -1606,6 +1602,30 @@ opencl_blame_shifting_enable
 {
   ENABLE_BLAME_SHIFTING = true;
 	ETMSG(OPENCL, "Opencl Blame-Shifting enabled");
+}
+
+
+void
+opencl_instrumentation_simd_enable
+{
+  gtpin_simd_enable();
+}
+
+
+void
+opencl_instrumentation_latency_enable
+{
+  gtpin_latency_enable();
+}
+
+
+void
+opencl_instrumentation_count_enable
+(
+ void
+)
+{
+  gtpin_count_enable();
 }
 
 

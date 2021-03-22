@@ -108,4 +108,25 @@ gtpin_enable_instrumentation
  void
 );
 
+
+void
+gtpin_simd_enable
+(
+ void
+);
+
+
+void
+gtpin_latency_enable
+(
+ void
+);
+
+
+void
+gtpin_count_enable
+(
+ void
+);
+
 #endif
