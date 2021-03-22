@@ -373,15 +373,19 @@ getIntelInstructionStat
     int elementSize = getElementSize(srcDataType);
     int height = execSize / width;
     int channel = 0;
-    int rowBase = (srcRegNo << 5) + srcSubRegNo * elementSize;
-    std::vector<int> childSrc(execSize);
-    for (int y=0; y < height; y++) {
-      int addr = rowBase;
-      for (uint32_t x=0; x < width; x++) {
-        childSrc[channel++] = addr;
-        addr += horzStride*elementSize;
+    int base1 = (srcRegNo << 5) + srcSubRegNo * elementSize;
+    std::vector<int> childSrc(execSize * elementSize);
+    for (int x=0; x < height; x++) {
+      int addr_x = base1;
+      int base2 = base1;
+      for (uint32_t y=0; y < width; y++) {
+        int addr_y = base2;
+        for (int z=0;z<elementSize;z++) {
+          childSrc[channel++] = addr_y + z;
+        }
+        base2 += horzStride*elementSize;
       }
-      rowBase += vertStride * elementSize;
+      base1 +=vertStride*elementSize;
     }
     srcs.insert(srcs.end(), childSrc.begin(), childSrc.end());
   }
@@ -397,11 +401,15 @@ getIntelInstructionStat
     int32_t status = kv.getDstRegion(offset, &horzStride);
     int elementSize = getElementSize(dstDataType);
 
-    dsts.resize(execSize);
-    int rowBase = (dstRegNo << 5) + dstSubRegNo * elementSize;
+    dsts.resize(execSize * elementSize);
+    int channel = 0;
+    int base1 = (dstRegNo << 5) + dstSubRegNo * elementSize;
     for (int x=0; x < execSize; x++) {
-      dsts[x] = rowBase;
-      rowBase += horzStride;
+      int addr_x = base1;
+      for (int y=0;y<elementSize;y++) {
+        dsts[channel++] = addr_x + y;
+      }
+      base1 += (horzStride * elementSize);
     }
 
 #if DEBUG
