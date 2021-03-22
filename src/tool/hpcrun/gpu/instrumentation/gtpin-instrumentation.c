@@ -120,6 +120,9 @@ static spinlock_t files_lock = SPINLOCK_UNLOCKED;
 
 static bool instrumentation = false;
 static bool gtpin_use_runtime_callstack = false;
+static bool simd_knob = false;
+static bool latency_knob = false;
+static bool count_knob = false;
 
 static SimdSectionNode *SimdSectionNode_free_list = NULL;
 static SimdGroupNode *SimdGroupNode_free_list = NULL;
@@ -596,15 +599,7 @@ addSimdInstrumentation
   // input parameters for the SIMD operation calulator. In our case, group consists of instructions
   // having the same SimdProfArgs values.
   GTPinINS sectionHead = head; // head instruction of the current section
-  GTPinINS sectionTail = tail;
   *bb_scalar_instructions = 0;
-
-
-#if 0
-  uint32_t headId, tailID;
-  GTPin_InsID(sectionHead, &headId);
-  GTPin_InsID(sectionTail, &tailID);
-#endif
   SimdSectionNode *sHead = NULL;
 
   // Iterate through sections within the current BBL
@@ -687,7 +682,7 @@ onKernelBuild
   kernel_data_gtpin_block_t *gtpin_block_head = NULL;
   kernel_data_gtpin_block_t *gtpin_block_curr = NULL;
   uint32_t regInst = GTPin_LatencyAvailableRegInstrument(kernel);
-  bool hasLatencyInstrumentation;
+  bool hasLatencyInstrumentation = false;
 
   for (GTPinBBL block = HPCRUN_GTPIN_CALL(GTPin_BBLHead, (kernel)); 
        HPCRUN_GTPIN_CALL(GTPin_BBLValid, (block)); 
@@ -698,14 +693,21 @@ onKernelBuild
 
     uint32_t bb_scalar_instructions = 0;
 
-    GTPinMem mem_latency = addLatencyInstrumentation(kernel, head, tail, &regInst, &hasLatencyInstrumentation);
+    GTPinMem mem_latency;
+    if (latency_knob) {
+      mem_latency = addLatencyInstrumentation(kernel, head, tail, &regInst, &hasLatencyInstrumentation);
+    }
 
     GTPinMem mem_opcode;
-    if (!hasLatencyInstrumentation) {
+    // latency instrumentation can also retreive counts
+    if (count_knob && !hasLatencyInstrumentation) {
       mem_opcode = addOpcodeInstrumentation(kernel, head);
     }
 
-    SimdSectionNode *shead = addSimdInstrumentation(kernel, head, tail, mem_opcode, &bb_scalar_instructions);
+    SimdSectionNode *shead;
+    if (simd_knob) {
+      shead = addSimdInstrumentation(kernel, head, tail, mem_opcode, &bb_scalar_instructions);
+    }
     
     int32_t head_offset = HPCRUN_GTPIN_CALL(GTPin_InsOffset,(head));
     int32_t tail_offset = HPCRUN_GTPIN_CALL(GTPin_InsOffset,(tail));
@@ -824,6 +826,7 @@ onKernelComplete
   while (block != NULL) {
     uint32_t thread_count;
 
+    // TODO: thread count for simd
     if (block->hasLatencyInstrumentation) {
       thread_count = HPCRUN_GTPIN_CALL(GTPin_MemSampleLength,(block->mem_latency));
     } else {
@@ -840,16 +843,20 @@ onKernelComplete
 
     for (uint32_t tid = 0; tid < thread_count; ++tid) {
 
-      // latency cycles + execution_count
-      if (block->hasLatencyInstrumentation) {
+      // latency cycles
+      // latency calculation of some basicblocks are skipped due to timer overflow
+      if (latency_knob && block->hasLatencyInstrumentation) {
         status = GTPin_MemRead(block->mem_latency, tid, sizeof(LatencyDataInternal), (char*)&latencyData, NULL);
         ASSERT_GTPIN_STATUS(status);
         bb_latency_cycles += latencyData._cycles;
-        bb_exec_count += latencyData._freq;
-      } else {
-        // latency calculation of some basicblocks are skipped due to timer overflow
-        // latency probe couldnt be added for this block
-        // So using the opcodeprof probe to get execution count in such cases
+        // execution_count
+        if (count_knob) {
+          bb_exec_count += latencyData._freq;
+        }
+      }
+
+      // execution_count
+      if (count_knob && !block->hasLatencyInstrumentation) {
         status = HPCRUN_GTPIN_CALL(GTPin_MemRead,
             (block->mem_opcode, tid, sizeof(uint32_t), (char*)(&opcodeData), NULL));
         ASSERT_GTPIN_STATUS(status);
@@ -857,46 +864,56 @@ onKernelComplete
       }
 
       // active simd lanes
+      if (simd_knob) {
+        curr_s = shead;
+        while (curr_s) {
+          next_s = curr_s->next;
+          curr_g = curr_s->groupHead;
+          while (curr_g) {
+            next_g = curr_g->next;
+            status = GTPin_MemRead(curr_g->mem_simd, tid, sizeof(uint32_t), (char*)&simdData, NULL);
+            bb_active_simd_lanes += (simdData * curr_g->instCount);
+            bb_instruction_count += curr_g->instCount;
+            curr_g = next_g;
+          }
+          curr_s = next_s;
+        }
+      }
+    }
+#if 0
+    // cleanup
+    if (simd_knob) {
       curr_s = shead;
       while (curr_s) {
         next_s = curr_s->next;
         curr_g = curr_s->groupHead;
         while (curr_g) {
           next_g = curr_g->next;
-          status = GTPin_MemRead(curr_g->mem_simd, tid, sizeof(uint32_t), (char*)&simdData, NULL);
-          bb_active_simd_lanes += (simdData * curr_g->instCount);
-          bb_instruction_count += curr_g->instCount;
+          simdgroup_node_free_helper(&SimdGroupNode_free_list, curr_g);
           curr_g = next_g;
         }
+        simdsection_node_free_helper(&SimdSectionNode_free_list, curr_s);
         curr_s = next_s;
       }
     }
-#if 0
-    // cleanup
-    curr_s = shead;
-    while (curr_s) {
-      next_s = curr_s->next;
-      curr_g = curr_s->groupHead;
-      while (curr_g) {
-        next_g = curr_g->next;
-        simdgroup_node_free_helper(&SimdGroupNode_free_list, curr_g);
-        curr_g = next_g;
-      }
-      simdsection_node_free_helper(&SimdSectionNode_free_list, curr_s);
-      curr_s = next_s;
-    }
 #endif
-    bb_instruction_count /= thread_count;
-    if (kernel_data_gtpin->simd_width == 32) { // && GPU == Gen9
-      // reason for this block. Gen9 GPU's have 32width SIMD lanes
-      // but Gen9's ISA supports only SIMD16 instructions
-      // Thus we decrement the simd width to 16 (should be done only for Gen9 and other applicable GPU's)
-      kernel_data_gtpin->simd_width = 16;
+    // scalar simd loss
+    uint64_t bb_total_simd_lanes = 0;
+    uint64_t scalar_simd_loss = 0;
+    if (simd_knob) {
+      bb_instruction_count /= thread_count;
+      if (kernel_data_gtpin->simd_width == 32) { // && GPU == Gen9
+        // reason for this block. Gen9 GPU's have 32width SIMD lanes
+        // but Gen9's ISA supports only SIMD16 instructions
+        // Thus we decrement the simd width to 16 (should be done only for Gen9 and other applicable GPU's)
+        kernel_data_gtpin->simd_width = 16;
+      }
+      bb_total_simd_lanes = bb_exec_count * kernel_data_gtpin->simd_width * bb_instruction_count;
+      scalar_simd_loss = block->scalar_instructions * bb_exec_count * (kernel_data_gtpin->simd_width - 1);
+      printf("scalar_instructions: %u, bb_exec_count: %u, width: %d, scalar_simd_loss: %u\n", block->scalar_instructions, bb_exec_count,
+          (kernel_data_gtpin->simd_width - 1), scalar_simd_loss);
     }
-    uint64_t bb_total_simd_lanes = bb_exec_count * kernel_data_gtpin->simd_width * bb_instruction_count;
-    uint64_t scalar_simd_loss = block->scalar_instructions * bb_exec_count * (kernel_data_gtpin->simd_width - 1);
-    printf("scalar_instructions: %u, bb_exec_count: %u, width: %d, scalar_simd_loss: %u\n", block->scalar_instructions, bb_exec_count,
-        (kernel_data_gtpin->simd_width - 1), scalar_simd_loss);
+
     kernel_data_gtpin_inst_t *inst = block->inst;
     kernelBlockActivityProcess(correlation_id, kernel_data.loadmap_module_id,
         inst->offset, bb_instruction_count, bb_exec_count, bb_latency_cycles,
@@ -968,9 +985,36 @@ gtpin_produce_runtime_callstack
 
 void
 gtpin_enable_instrumentation
+{
+  instrumentation = true;
+}
+
+
+void
+gtpin_simd_enable
 (
  void
 )
 {
-  instrumentation = true;
+  simd_knob = true;
+}
+
+
+void
+gtpin_latency_enable
+(
+ void
+)
+{
+  latency_knob = true;
+}
+
+
+void
+gtpin_count_enable
+(
+ void
+)
+{
+  count_knob = true;
 }
