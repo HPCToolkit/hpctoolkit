@@ -167,28 +167,32 @@ METHOD_FN(process_event_list, int lush_metrics)
   char* evlist = METHOD_CALL(self, get_event_str);
   char* event = start_tok(evlist);
   for (event = start_tok(evlist); more_tok(); event = next_tok()) {
-		long th;
-		hpcrun_extract_ev_thresh(event, sizeof(opencl_name), opencl_name,
-			&th, NO_THRESHOLD);
+    long th;
+    hpcrun_extract_ev_thresh(event, sizeof(opencl_name), opencl_name,
+      &th, NO_THRESHOLD);
 
-		if (hpcrun_ev_is(opencl_name, GPU_STRING)) {
-		} else if (strstr(opencl_name, INSTRUMENTATION_PREFIX)) {
+    if (hpcrun_ev_is(opencl_name, GPU_STRING)) {
+    } else if (strstr(opencl_name, INSTRUMENTATION_PREFIX)) {
 
       int suffix_length = strlen(opencl_name) - strlen(INSTRUMENTATION_PREFIX);
       char instrumentation_suffix[suffix_length + 1];
       strncpy(instrumentation_suffix, opencl_name + strlen(INSTRUMENTATION_PREFIX), suffix_length);
       instrumentation_suffix[suffix_length] = 0;
 
+      bool validInst = false;
       char *inst = strtok(instrumentation_suffix, ",");
       while(inst) {
           if (strstr(inst, SIMD)) {
             printf("simd enabled\n");
+            validInst = true;
             opencl_instrumentation_simd_enable();
           } else if (strstr(inst, LATENCY)) {
             printf("latency enabled\n");
+            validInst = true;
             opencl_instrumentation_latency_enable();
           } else if (strstr(inst, EXECUTION_COUNT)) {
             printf("count enabled\n");
+            validInst = true;
             opencl_instrumentation_count_enable();
           } else {
             printf("Unrecognized intel GPU instrumentation knob\n");
@@ -196,8 +200,10 @@ METHOD_FN(process_event_list, int lush_metrics)
           inst = strtok(NULL, ",");
       }
 
-			gpu_metrics_GPU_INST_enable();
-			opencl_instrumentation_enable();
+			if (validInst) {
+        gpu_metrics_GPU_INST_enable();
+        opencl_instrumentation_enable();
+      }
 		} else if (hpcrun_ev_is(opencl_name, INTEL_OPTIMIZATION_CHECK)) {
       opencl_optimization_check_enable();
       gpu_metrics_INTEL_OPTIMIZATION_enable();
