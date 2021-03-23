@@ -67,8 +67,11 @@
 //******************************************************************************
 
 #define GPU_STRING "gpu=opencl"
+<<<<<<< HEAD
 #define INTEL_OPTIMIZATION_CHECK "intel_opt_check"
 #define ENABLE_OPENCL_BLAME_SHIFTING "opencl-blame"
+=======
+>>>>>>> f6b345e94... adding default instrumentation mode for intel GPU
 #define DEFAULT_INSTRUMENTATION "gpu=opencl,inst"
 #define INSTRUMENTATION_PREFIX "gpu=opencl,inst="
 #define EXECUTION_COUNT "count"
@@ -147,11 +150,16 @@ static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
   #ifndef HPCRUN_STATIC_LINK
+<<<<<<< HEAD
   return (hpcrun_ev_is(ev_str, GPU_STRING) || hpcrun_ev_is(ev_str, DEFAULT_INSTRUMENTATION)
                                            || strstr(ev_str, INSTRUMENTATION_PREFIX)
                                            || hpcrun_ev_is(ev_str, INTEL_OPTIMIZATION_CHECK)
                                            || hpcrun_ev_is(ev_str, ENABLE_OPENCL_BLAME_SHIFTING)
          );
+=======
+  return (hpcrun_ev_is(ev_str, GPU_STRING) || hpcrun_ev_is(ev_str, DEFAULT_INSTRUMENTATION) ||
+          strstr(ev_str, INSTRUMENTATION_PREFIX));
+>>>>>>> f6b345e94... adding default instrumentation mode for intel GPU
   #else
   return false;
   #endif
