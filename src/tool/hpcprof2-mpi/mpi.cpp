@@ -98,6 +98,7 @@ const Op& Op::min() noexcept { return o_min; }
 static BaseOp o_sum = MPI_SUM;
 const Op& Op::sum() noexcept { return o_sum; }
 
+
 std::size_t World::m_rank = 0;
 std::size_t World::m_size = 0;
 
@@ -262,4 +263,39 @@ void detail::recv(void* data, std::size_t cnt, const Datatype& ty,
   if(MPI_Recv(data, cnt, ty.value, src, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE)
      != MPI_SUCCESS)
     util::log::fatal{} << "Error while performing an MPI recieve!";
+}
+
+
+namespace hpctoolkit::mpi::detail {
+  struct Win{
+    Win(MPI_Win w) : win(w) {}
+
+    MPI_Win win;
+  };
+}
+
+SharedAccumulator::SharedAccumulator() {}
+
+SharedAccumulator::~SharedAccumulator() {
+  auto l = mpiLock();
+  MPI_Win_free(&(detail->win));
+}
+
+void SharedAccumulator::initialize(std::uint64_t * data) {
+  auto l = mpiLock();
+  MPI_Win win;
+  if(MPI_Win_create(data, sizeof(std::uint64_t), 1, MPI_INFO_NULL, MPI_COMM_WORLD, &win) != MPI_SUCCESS)
+    util::log::fatal{} << "Error while performing an MPI Window Creation!";
+  detail = std::make_unique<detail::Win>(win);
+}
+
+std::uint64_t SharedAccumulator::fetch_add(std::uint64_t val) {
+  auto l = mpiLock();
+  std::uint64_t r;
+
+  MPI_Win_lock(MPI_LOCK_SHARED, 0, 0, detail->win);
+  MPI_Fetch_and_op(&val, &r, MPI_UINT64_T, 0, 0, MPI_SUM, detail->win);
+  MPI_Win_unlock(0, detail->win);
+  
+  return r;
 }

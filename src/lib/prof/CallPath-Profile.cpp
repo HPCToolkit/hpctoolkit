@@ -1046,7 +1046,7 @@ Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
   fseek(infs, footer_position, SEEK_SET); 
   ret = hpcrun_fmt_footer_fread(&footer, infs);
   if(ret != HPCFMT_OK){
-    fprintf(stderr, "ERROR: error reading footer section in '%s'\n", filename);
+    fprintf(stderr, "ERROR: error reading footer section in '%s', maybe it is not complete\n", filename);
     prof_abort(-1);
   }
   if(getc(infs) != EOF){

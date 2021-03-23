@@ -94,6 +94,7 @@ private:
   static std::size_t m_size;
 };
 
+
 }  // namespace hpctoolkit::mpi
 
 #endif  // HPCTOOLKIT_PROFILE_MPI_CORE_H

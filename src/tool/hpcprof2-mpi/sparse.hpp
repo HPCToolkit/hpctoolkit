@@ -52,11 +52,13 @@
 #include <lib/profile/util/once.hpp>
 #include <lib/profile/util/locked_unordered.hpp>
 #include <lib/profile/util/file.hpp>
+#include <lib/profile/mpi/all.hpp>
 
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <lib/prof-lean/id-tuple.h>
 #include <lib/prof/pms-format.h>
 #include <lib/prof/cms-format.h>
+
 
 #include <vector>
 #include <mpi.h>
@@ -76,7 +78,7 @@ public:
 
   hpctoolkit::DataClass wavefronts() const noexcept override {
     using namespace hpctoolkit;
-    return DataClass::contexts;
+    return DataClass::contexts + DataClass::threads;
   }
 
   hpctoolkit::ExtensionClass requires() const noexcept override {
@@ -118,10 +120,10 @@ public:
   //***************************************************************************
   // Work with bytes  
   //***************************************************************************
-  void writeAsByte4(uint32_t val, hpctoolkit::util::File::Instance& fh, MPI_Offset off);
-  void writeAsByte8(uint64_t val, hpctoolkit::util::File::Instance& fh, MPI_Offset off);
-  uint32_t readAsByte4(hpctoolkit::util::File::Instance& fh, MPI_Offset off);
-  uint64_t readAsByte8(hpctoolkit::util::File::Instance& fh, MPI_Offset off);
+  void writeAsByte4(uint32_t val, hpctoolkit::util::File::Instance& fh, uint64_t off);
+  void writeAsByte8(uint64_t val, hpctoolkit::util::File::Instance& fh, uint64_t off);
+  uint32_t readAsByte4(hpctoolkit::util::File::Instance& fh, uint64_t off);
+  uint64_t readAsByte8(hpctoolkit::util::File::Instance& fh, uint64_t off);
   uint16_t interpretByte2(const char *input);
   uint32_t interpretByte4(const char *input);
   uint64_t interpretByte8(const char *input);
@@ -155,7 +157,7 @@ private:
   int cur_obuf_idx;
   std::optional<hpctoolkit::util::File> pmf;
   uint64_t fpos;
-  MPI_Win win;
+  hpctoolkit::mpi::SharedAccumulator acc;
 
   std::atomic<std::size_t> outputCnt;
   int team_size;
@@ -260,7 +262,7 @@ private:
   
   //rank 0 scatter the calculated id_tuple ptrs and prof_info_idx of each profile back to their coming ranks
   void scatterIdxPtrs(const std::vector<std::pair<uint32_t, uint64_t>>& idx_ptr_buffer,
-                      const size_t num_prof, const int world_size, const int world_rank,
+                      const int num_prof, const int world_size, const int world_rank,
                       const int threads);
 
   void sortIdTuples(std::vector<pms_id_tuple_t>& all_tuples);
@@ -326,7 +328,7 @@ private:
                                   const uint64_t prof_offset);
                                       
   void writeOneProfile(const std::pair<uint32_t, std::string>& tupleFn,
-                       const MPI_Offset my_prof_offset, 
+                       const uint64_t my_prof_offset, 
                        const std::pair<uint32_t,uint64_t>& prof_idx_tuple_ptr_pair,
                        std::vector<uint64_t>& ctx_nzval_cnts,
                        std::vector<std::set<uint16_t>>& ctx_nzmids,

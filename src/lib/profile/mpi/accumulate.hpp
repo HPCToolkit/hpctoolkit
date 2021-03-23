@@ -44,15 +44,36 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef HPCTOOLKIT_PROFILE_MPI_ALL_H
-#define HPCTOOLKIT_PROFILE_MPI_ALL_H
+#ifndef HPCTOOLKIT_PROFILE_MPI_ACCUMULATE_H
+#define HPCTOOLKIT_PROFILE_MPI_ACCUMULATE_H
 
 #include "core.hpp"
-#include "bcast.hpp"
-#include "reduce.hpp"
-#include "scan.hpp"
-#include "all2all.hpp"
-#include "one2one.hpp"
-#include "accumulate.hpp"
 
-#endif  // HPCTOOLKIT_PROFILE_MPI_ALL_H
+#include <atomic>
+#include <memory>
+
+
+namespace hpctoolkit::mpi {
+
+namespace detail {
+    struct Win;
+}  // namespace detail
+
+class SharedAccumulator {
+public:
+    SharedAccumulator();
+    ~SharedAccumulator();
+
+
+    void initialize(std::uint64_t* data);
+    std::uint64_t fetch_add(std::uint64_t val);
+
+private:
+    std::atomic<std::uint64_t> atom;
+    std::unique_ptr<detail::Win> detail;
+};
+
+
+}  // namespace hpctoolkit::mpi
+
+#endif  // HPCTOOLKIT_PROFILE_MPI_ACCUMULATE_H
