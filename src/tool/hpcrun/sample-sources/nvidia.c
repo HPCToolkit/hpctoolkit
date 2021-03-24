@@ -369,6 +369,9 @@ METHOD_FN(process_event_list, int lush_metrics)
     gpu_metrics_GPU_INST_STALL_enable(); // stall metrics
 
     gpu_metrics_GSAMP_enable(); // GPU utilization from sampling
+    
+    // pc sampling cannot be on with concurrent kernels
+    kernel_invocation_activities[0] = CUPTI_ACTIVITY_KIND_KERNEL;
   }
 
   gpu_metrics_default_enable();
