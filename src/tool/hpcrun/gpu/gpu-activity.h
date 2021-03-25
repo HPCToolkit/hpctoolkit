@@ -286,6 +286,7 @@ typedef struct gpu_kernel_t {
 
 
 typedef struct gpu_kernel_block_t {
+  bool instruction;
   uint64_t external_id;
   uint32_t bb_instruction_count;
   uint64_t execution_count;
