@@ -85,6 +85,13 @@
   macro(GTPin_InsValid)		     \
   macro(GTPin_InsOffset)	     \
   macro(GTPin_InsNext)		     \
+  macro(GTPin_InsPrev)         \
+  macro(GTPin_InsDisasm)       \
+  macro(GTPin_InsGetExecSize)   \
+  macro(GTPin_InsIsFlagModifier)    \
+  macro(GTPin_InsGED)   \
+  macro(GTPin_InsIsChangingIP)     \
+  macro(GTPin_InsIsEOT) \
   				     \
   macro(GTPin_OnKernelBuild)	     \
   macro(GTPin_OnKernelRun)	     \
@@ -95,14 +102,23 @@
 				     \
   macro(GTPin_KernelProfilingActive) \
   macro(GTPin_KernelGetName)	     \
+  macro(GTPin_KernelGetSIMD)    \
   				     \
   macro(GTPin_OpcodeprofInstrument)  \
+  macro(GTPin_LatencyInstrumentPre)   \
+  macro(GTPin_LatencyInstrumentPost_Mem)    \
+  macro(GTPin_SimdProfInstrument)   \
+  macro(GTPin_InsGetExecMask)   \
+  macro(GTPin_InsGetPredArgs)   \
+  macro(GTPin_InsIsMaskEnabled)   \
+  macro(GTPin_LatencyAvailableRegInstrument)    \
   				     \
   macro(GTPin_GetElf)		     \
   				     \
   macro(GTPin_MemSampleLength)	     \
   macro(GTPin_MemClaim)		     \
   macro(GTPin_MemRead)
+
 
 
 
@@ -213,6 +229,79 @@ GTPIN_FN
 
 GTPIN_FN
 (
+ GTPinINS, 
+ GTPin_InsPrev,
+ (
+  GTPinINS ins
+ )
+);
+
+
+GTPIN_FN
+(
+ GTPINTOOL_STATUS, 
+ GTPin_InsDisasm,
+ (
+  ged_ins_t* ged_ins,
+  uint32_t buf_size,
+  char* buf,
+  uint32_t* str_size
+ )
+);
+
+
+GTPIN_FN
+(
+ uint32_t, 
+ GTPin_InsGetExecSize,
+ (
+  GTPinINS ins
+ )
+);
+
+
+GTPIN_FN
+(
+ uint32_t, 
+ GTPin_InsIsFlagModifier,
+ (
+  GTPinINS ins
+ )
+);
+
+
+GTPIN_FN
+(
+ ged_ins_t, 
+ GTPin_InsGED,
+ (
+  GTPinINS ins
+ )
+);
+
+
+GTPIN_FN
+(
+ uint32_t, 
+ GTPin_InsIsChangingIP,
+ (
+  GTPinINS ins
+ )
+);
+
+
+GTPIN_FN
+(
+ uint32_t, 
+ GTPin_InsIsEOT,
+ (
+  GTPinINS ins
+ )
+);
+
+
+GTPIN_FN
+(
  uint32_t, 
  GTPin_InsValid,
  (
@@ -285,7 +374,6 @@ GTPIN_FN
 );
 
 
-
 GTPIN_FN
 (
  GTPINTOOL_STATUS, 
@@ -295,6 +383,16 @@ GTPIN_FN
   uint32_t buf_size, 
   char *buf, 
   uint32_t *str_size
+ )
+);
+
+
+GTPIN_FN
+(
+ GTPINTOOL_SIMD, 
+ GTPin_KernelGetSIMD,
+ (
+  GTPinKernel kernel
  )
 );
 
@@ -331,6 +429,82 @@ GTPIN_FN
  (
   GTPinINS ins, 
   GTPinMem countSlot
+ )
+);
+
+
+GTPIN_FN
+(
+ GTPINTOOL_STATUS, 
+ GTPin_LatencyInstrumentPre,
+ (
+  GTPinINS ins
+ )
+);
+
+
+GTPIN_FN
+(
+ GTPINTOOL_STATUS, 
+ GTPin_LatencyInstrumentPost_Mem,
+ (
+  GTPinINS ins,
+  GTPinMem mem,
+  uint32_t useReg
+ )
+);
+
+
+GTPIN_FN
+(
+ GTPINTOOL_STATUS, 
+ GTPin_SimdProfInstrument,
+ (
+  GTPinINS ins,
+  bool maskCtrl,
+  uint32_t execMask,
+  const GenPredArgs* predArgs,
+  GTPinMem countSlot
+ )
+);
+
+
+GTPIN_FN
+(
+ uint32_t, 
+ GTPin_InsGetExecMask,
+ (
+  GTPinINS ins
+ )
+);
+
+
+GTPIN_FN
+(
+ GenPredArgs, 
+ GTPin_InsGetPredArgs,
+ (
+  GTPinINS ins
+ )
+);
+
+
+GTPIN_FN
+(
+ bool, 
+ GTPin_InsIsMaskEnabled,
+ (
+  GTPinINS ins
+ )
+);
+
+
+GTPIN_FN
+(
+ uint32_t, 
+ GTPin_LatencyAvailableRegInstrument,
+ (
+  GTPinKernel kernel
  )
 );
 

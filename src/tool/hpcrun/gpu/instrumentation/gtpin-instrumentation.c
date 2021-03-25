@@ -527,34 +527,34 @@ addLatencyInstrumentation
   GTPINTOOL_STATUS status = GTPINTOOL_STATUS_SUCCESS;
   GTPinMem mem_latency;
   *isInstrumented = false;
-  if (GTPin_InsIsEOT(head)) {
+  if (HPCRUN_GTPIN_CALL(GTPin_InsIsEOT, (head))) {
     return mem_latency;
   }
 
-  if (GTPin_InsIsChangingIP(tail)) {
+  if (HPCRUN_GTPIN_CALL(GTPin_InsIsChangingIP, (tail))) {
     if (head == tail) {
       return mem_latency;
     } else {
-      tail = GTPin_InsPrev(tail);
-      if (!GTPin_InsValid(tail)) {
+      tail = HPCRUN_GTPIN_CALL(GTPin_InsPrev,(tail));
+      if (!HPCRUN_GTPIN_CALL(GTPin_InsValid, (tail))) {
         printf("LATENCY instrumentation: instruction is invalid");
         return mem_latency;
       }
     }
   }
 
-  status = GTPin_LatencyInstrumentPre(head);
+  status = HPCRUN_GTPIN_CALL(GTPin_LatencyInstrumentPre, (head));
   if (status != GTPINTOOL_STATUS_SUCCESS) {
     return mem_latency;
   }
 
-  status = GTPin_MemClaim(kernel, sizeof(LatencyDataInternal), &mem_latency);
+  status = HPCRUN_GTPIN_CALL(GTPin_MemClaim, (kernel, sizeof(LatencyDataInternal), &mem_latency));
   if (status != GTPINTOOL_STATUS_SUCCESS) {
     printf("LATENCY instrumentation: failed to claim memory");
     return mem_latency;
   }
 
-  status = GTPin_LatencyInstrumentPost_Mem(tail, mem_latency, *availableLatencyRegisters);
+  status = HPCRUN_GTPIN_CALL(GTPin_LatencyInstrumentPost_Mem, (tail, mem_latency, *availableLatencyRegisters));
   if (status != GTPINTOOL_STATUS_SUCCESS) {
     return mem_latency;
   }
@@ -619,14 +619,14 @@ addSimdInstrumentation
 
     bool isSectionEnd = false;
     GTPinINS ins = sectionHead;
-    for (; GTPin_InsValid(ins) && !isSectionEnd; ins = GTPin_InsNext(ins)) {
-      uint32_t execSize = GTPin_InsGetExecSize(ins);
+    for (; HPCRUN_GTPIN_CALL(GTPin_InsValid, (ins)) && !isSectionEnd; ins = HPCRUN_GTPIN_CALL(GTPin_InsNext, (ins))) {
+      uint32_t execSize = HPCRUN_GTPIN_CALL(GTPin_InsGetExecSize, (ins));
       if (execSize == 1) {
         (*bb_scalar_instructions)++;
       }
-      uint32_t    execMask = GTPin_InsGetExecMask(ins);
-      GenPredArgs predArgs = GTPin_InsGetPredArgs(ins);
-      bool        maskCtrl = !GTPin_InsIsMaskEnabled(ins);
+      uint32_t    execMask = HPCRUN_GTPIN_CALL(GTPin_InsGetExecMask,(ins));
+      GenPredArgs predArgs = HPCRUN_GTPIN_CALL(GTPin_InsGetPredArgs,(ins));
+      bool        maskCtrl = !HPCRUN_GTPIN_CALL(GTPin_InsIsMaskEnabled,(ins));
       uint64_t key = (uint64_t)execMask + (uint64_t)&predArgs + maskCtrl + (uint64_t)sectionHead;
       simdgroup_map_entry_t *entry = simdgroup_map_lookup(key);
       if (!entry) {
@@ -640,7 +640,7 @@ addSimdInstrumentation
         simdgroup_entry_increment_inst_count(entry);
       }
 
-      isSectionEnd = GTPin_InsIsFlagModifier(ins);
+      isSectionEnd = HPCRUN_GTPIN_CALL(GTPin_InsIsFlagModifier, (ins));
     }
 
     // For each element in insCountsPerGroup, create the corresponding SimdProfGroup record,
@@ -652,12 +652,12 @@ addSimdInstrumentation
       count++;
       next = curr->next;
       GTPinMem mem_simd;
-      status = GTPin_MemClaim(kernel, sizeof(uint32_t), &mem_simd); ASSERT_GTPIN_STATUS(status);
+      status = HPCRUN_GTPIN_CALL(GTPin_MemClaim, (kernel, sizeof(uint32_t), &mem_simd)); ASSERT_GTPIN_STATUS(status);
       curr->mem_simd = mem_simd;
       
       GenPredArgs pa = simdgroup_entry_getPredArgs(curr->entry);
-      status = GTPin_SimdProfInstrument(sectionHead, simdgroup_entry_getMaskCtrl(curr->entry), 
-          simdgroup_entry_getExecMask(curr->entry), &pa, mem_simd);
+      status = HPCRUN_GTPIN_CALL(GTPin_SimdProfInstrument, (sectionHead, simdgroup_entry_getMaskCtrl(curr->entry), 
+          simdgroup_entry_getExecMask(curr->entry), &pa, mem_simd));
       if (status != GTPINTOOL_STATUS_SUCCESS)	return false;
       curr->instCount = simdgroup_entry_getInst(curr->entry);
       simdgroup_map_delete(curr->key);
@@ -669,7 +669,7 @@ addSimdInstrumentation
     sHead = sn;
 
     sectionHead = ins;
-  } while (GTPin_InsValid(sectionHead));
+  } while (HPCRUN_GTPIN_CALL(GTPin_InsValid, (sectionHead)));
   return sHead;
 }
 
@@ -780,7 +780,7 @@ onKernelBuild
   bool hasLatencyInstrumentation = false;
   uint32_t regInst;
   if (latency_knob) {
-    regInst = GTPin_LatencyAvailableRegInstrument(kernel);
+    regInst = HPCRUN_GTPIN_CALL(GTPin_LatencyAvailableRegInstrument, (kernel));
   }
 
   for (GTPinBBL block = HPCRUN_GTPIN_CALL(GTPin_BBLHead, (kernel)); 
@@ -832,21 +832,21 @@ onKernelBuild
     // while loop that iterates for each instruction in the block and adds an offset entry in map
     int32_t offset = head_offset;
     int bb_instruction_count = 0;
-    GTPinINS inst = HPCRUN_GTPIN_CALL(GTPin_InsHead,(block));
+    GTPinINS inst = HPCRUN_GTPIN_CALL(GTPin_InsHead, (block));
     kernel_data_gtpin_inst_t *gtpin_inst_curr = NULL;
     while (offset <= tail_offset && offset != -1) {
       bb_instruction_count++;
       kernel_data_gtpin_inst_t *gtpin_inst = (kernel_data_gtpin_inst_t *)hpcrun_malloc(sizeof(kernel_data_gtpin_inst_t));
-      ged_ins_t gedInst = GTPin_InsGED(inst);
+      ged_ins_t gedInst = HPCRUN_GTPIN_CALL(GTPin_InsGED, (inst));
       uint32_t asm_str_size;
-      GTPin_InsDisasm(&gedInst, 0, NULL, &asm_str_size);
+      HPCRUN_GTPIN_CALL(GTPin_InsDisasm, (&gedInst, 0, NULL, &asm_str_size));
       char *asm_str = (char*) hpcrun_malloc(asm_str_size);
-      GTPin_InsDisasm(&gedInst, asm_str_size, asm_str, NULL);
+      HPCRUN_GTPIN_CALL(GTPin_InsDisasm, (&gedInst, asm_str_size, asm_str, NULL));
 
       gtpin_inst->offset = offset;
       gtpin_inst->isPredictable = isPredictable(asm_str);
       gtpin_inst->isComplex = isComplex(asm_str);
-      gtpin_inst->execSize = GTPin_InsGetExecSize(inst);
+      gtpin_inst->execSize = HPCRUN_GTPIN_CALL(GTPin_InsGetExecSize, (inst));
 
       if (gtpin_inst_curr == NULL) {
         gtpin_block_curr->inst = gtpin_inst;
@@ -863,7 +863,7 @@ onKernelBuild
   if (gtpin_block_head != NULL) {
     kernel_data_gtpin_t *kernel_data_gtpin = (kernel_data_gtpin_t *)hpcrun_malloc(sizeof(kernel_data_gtpin_t));
     kernel_data_gtpin->kernel_id = (uint64_t)kernel;
-    kernel_data_gtpin->simd_width = GTPin_KernelGetSIMD(kernel);
+    kernel_data_gtpin->simd_width = HPCRUN_GTPIN_CALL(GTPin_KernelGetSIMD, (kernel));
     kernel_data_gtpin->block = gtpin_block_head;
     kernel_data.data = kernel_data_gtpin; 
     kernel_data_map_insert((uint64_t)kernel, kernel_data);
@@ -960,7 +960,7 @@ onKernelComplete
       // latency cycles
       // latency calculation of some basicblocks are skipped due to timer overflow
       if (latency_knob && block->hasLatencyInstrumentation) {
-        status = GTPin_MemRead(block->mem_latency, tid, sizeof(LatencyDataInternal), (char*)&latencyData, NULL);
+        status = HPCRUN_GTPIN_CALL(GTPin_MemRead, (block->mem_latency, tid, sizeof(LatencyDataInternal), (char*)&latencyData, NULL));
         ASSERT_GTPIN_STATUS(status);
         bb_latency_cycles += latencyData._cycles;
         // execution_count
@@ -983,7 +983,7 @@ onKernelComplete
           curr_g = curr_s->groupHead;
           while (curr_g) {
             next_g = curr_g->next;
-            status = GTPin_MemRead(curr_g->mem_simd, tid, sizeof(uint32_t), (char*)&simdData, NULL);
+            status = HPCRUN_GTPIN_CALL(GTPin_MemRead,(curr_g->mem_simd, tid, sizeof(uint32_t), (char*)&simdData, NULL));
             bb_active_simd_lanes += (simdData * curr_g->instCount);
             curr_g = next_g;
           }
