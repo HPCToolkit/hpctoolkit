@@ -281,7 +281,7 @@ static void matchCCTNode(Prof::CallPath::CCTIdToCCTNodeMap &cctNodeMap, NodeMap 
             for (auto &name : alien_st) {
               // Get inline call stack
               cct_context.append(name);
-              cct_context.append("\n");
+              cct_context.append("#\n");
             }
           }
           auto *file_struct = strct->ancestorFile();
@@ -289,7 +289,7 @@ static void matchCCTNode(Prof::CallPath::CCTIdToCCTNodeMap &cctNodeMap, NodeMap 
           auto line = std::to_string(strct->begLine());
           auto name = file_name + ":" + line + "\t <op>";
           cct_context.append(name);
-          cct_context.append("\n");
+          cct_context.append("#\n");
         }
       } else {
         proc_frm = dynamic_cast<Prof::CCT::ProcFrm *>(cct);
@@ -323,7 +323,7 @@ static void matchCCTNode(Prof::CallPath::CCTIdToCCTNodeMap &cctNodeMap, NodeMap 
               for (auto &name : alien_st) {
                 // Get inline call stack
                 node.context.append(name);
-                node.context.append("\n");
+                node.context.append("#\n");
               }
 
               auto fname = call_strct->ancestorAlien()->fileName();
@@ -332,7 +332,7 @@ static void matchCCTNode(Prof::CallPath::CCTIdToCCTNodeMap &cctNodeMap, NodeMap 
               }
               auto name = file_name + ":" + line + "\t" + func_name;
               node.context.append(name);
-              node.context.append("\n");
+              node.context.append("#\n");
             } else if (call_strct->ancestorFile()) {
               auto fname = call_strct->ancestorFile()->name();
               if (fname.find("<unknown file>") == std::string::npos) {
@@ -340,7 +340,7 @@ static void matchCCTNode(Prof::CallPath::CCTIdToCCTNodeMap &cctNodeMap, NodeMap 
               }
               auto name = file_name + ":" + line + "\t" + func_name;
               node.context.append(name);
-              node.context.append("\n");
+              node.context.append("#\n");
             }
           }
         }
