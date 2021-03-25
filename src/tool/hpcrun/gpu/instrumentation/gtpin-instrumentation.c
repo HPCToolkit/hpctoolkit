@@ -467,14 +467,14 @@ kernelInstructionActivityProcess
  uint64_t correlation_id,
  uint32_t loadmap_module_id,
  uint64_t offset,
- uint64_t bb_execution_count,
+ uint64_t inst_latency,
  gpu_activity_channel_t *activity_channel,
  cct_node_t *host_op_node
 )
 {
   gpu_activity_t ga;
-  kernelActivityTranslate(&ga, correlation_id, loadmap_module_id, offset,
-      0, bb_execution_count, 0, 0, 0, 0);
+  kernelActivityTranslate(&ga, correlation_id, loadmap_module_id, offset, true,
+      0, 0, inst_latency, 0, 0, 0);
 
   ip_normalized_t ip = ga.details.kernel_block.pc;
   cct_node_t *cct_child = hpcrun_cct_insert_ip_norm(host_op_node, ip); // how to set the ip_norm
@@ -502,7 +502,7 @@ kernelBlockActivityProcess
 )
 {
   gpu_activity_t ga;
-  kernelActivityTranslate(&ga, correlation_id, loadmap_module_id, offset,
+  kernelActivityTranslate(&ga, correlation_id, loadmap_module_id, offset, false,
       bb_instruction_count, bb_execution_count, bb_latency_cycles, bb_active_simd_lanes, bb_total_simd_lanes, scalar_simd_loss);
 
   ip_normalized_t ip = ga.details.kernel_block.pc;
@@ -671,6 +671,93 @@ addSimdInstrumentation
     sectionHead = ins;
   } while (GTPin_InsValid(sectionHead));
   return sHead;
+}
+
+
+static bool
+isPredictable
+(
+ char *asm_str
+)
+{
+  if (strstr(asm_str, "send")) {
+    return false;
+  }
+  return true;
+}
+
+
+static bool
+isComplex
+(
+ char *asm_str
+)
+{
+  int SIZE = 10;
+  const char* const matches[10] = {"INV", "LOG", "EXP", "SQRT", "RSQ", "POW", "SIN", "COS", "INT DIV", "INVM/RSQRTM"};
+  for (int x = 0; x < SIZE; x++) {
+    if (strstr(asm_str, matches[x])) {
+      return true;
+    }
+  }
+  return false;
+}
+
+
+static float
+Div
+(
+ float n,
+ float d
+)
+{
+  if (d) {
+    return n / d;
+  } else {
+    return 0;
+  }
+}
+
+
+static void
+calculateInstructionWeights
+(
+  kernel_data_gtpin_block_t *bb
+)
+{
+  int unpredictable_instructions = 0, sum_predictable_latency = 0;
+  float bb_avg_latency = Div(bb->aggregated_latency, bb->execution_count);
+
+  for (struct kernel_data_gtpin_inst *inst = bb->inst; inst != NULL; inst = inst->next) {
+      int size = (inst->execSize <= 4) ? 4 : inst->execSize;
+      inst->W_ins = size * W_min / 4;
+      if (inst->isPredictable) {
+        if (inst->isComplex) {
+          inst->W_ins *= C;
+        }
+        sum_predictable_latency += inst->W_ins;
+      }
+      else {
+        unpredictable_instructions += 1;
+      }
+  }
+
+  float W_unpredictable_instruction = Div(bb_avg_latency - sum_predictable_latency, unpredictable_instructions);
+
+  float sum_instruction_weights = 0;
+  for (struct kernel_data_gtpin_inst *inst = bb->inst; inst != NULL; inst = inst->next) {
+    if (!inst->isPredictable && (W_unpredictable_instruction > 0)) {
+      inst->W_ins = W_unpredictable_instruction;
+    }
+    sum_instruction_weights += inst->W_ins;
+  }
+
+  float normalization_factor = Div(bb_avg_latency, sum_instruction_weights);
+
+  for (struct kernel_data_gtpin_inst *inst = bb->inst; inst != NULL; inst = inst->next) {
+    inst->W_ins *= normalization_factor;
+    inst->aggregated_latency = round(inst->W_ins * bb->execution_count);
+  }
 }
 
 
@@ -1120,11 +1207,9 @@ onKernelComplete
   kernel_data_gtpin_t *kernel_data_gtpin = (kernel_data_gtpin_t *)kernel_data.data; 
   kernel_data_gtpin_block_t *block = kernel_data_gtpin->block;
 
-  int count = 0;
   while (block != NULL) {
     uint32_t thread_count;
 
-    // TODO: thread count for simd
     if (block->hasLatencyInstrumentation) {
       thread_count = HPCRUN_GTPIN_CALL(GTPin_MemSampleLength,(block->mem_latency));
     } else {
@@ -1137,7 +1222,7 @@ onKernelComplete
     assert(thread_count > 0);
 
     uint64_t bb_exec_count = 0, bb_latency_cycles = 0, bb_active_simd_lanes = 0;
-    uint32_t opcodeData = 0, simdData = 0, bb_instruction_count = 0;
+    uint32_t opcodeData = 0, simdData = 0;
     LatencyDataInternal latencyData;
     SimdSectionNode *shead, *curr_s, *next_s;
     shead = block->simd_mem_list;
@@ -1173,7 +1258,6 @@ onKernelComplete
             next_g = curr_g->next;
             status = HPCRUN_GTPIN_CALL(GTPin_MemRead,(curr_g->mem_simd, tid, sizeof(uint32_t), (char*)&simdData, NULL));
             bb_active_simd_lanes += (simdData * curr_g->instCount);
-            bb_instruction_count += curr_g->instCount;
             curr_g = next_g;
           }
           curr_s = next_s;
@@ -1198,10 +1282,10 @@ onKernelComplete
     }
 #endif
     // scalar simd loss
-    uint64_t bb_total_simd_lanes = 0;
-    uint64_t scalar_simd_loss = 0;
+    uint64_t bb_total_simd_lanes = 0, scalar_simd_loss = 0;
+
+    // we need count_knob to get the bb_exec_count
     if (simd_knob) {
-      bb_instruction_count /= thread_count;
       if (kernel_data_gtpin->simd_width == 32) { // && GPU == Gen9
         // reason for this block. Gen9 GPU's have 32width SIMD lanes
         // but Gen9's ISA supports only SIMD16 instructions
@@ -1210,6 +1294,12 @@ onKernelComplete
       }
       bb_total_simd_lanes = bb_exec_count * kernel_data_gtpin->simd_width * block->instruction_count;
       scalar_simd_loss = block->scalar_instructions * bb_exec_count * (kernel_data_gtpin->simd_width - 1);
+    }
+
+    if (latency_knob) {
+      block->aggregated_latency = bb_latency_cycles;
+      block->execution_count = bb_exec_count;
+      calculateInstructionWeights(block);
     }
 
     if (latency_knob) {
