@@ -192,6 +192,8 @@ METHOD_FN(process_event_list, int lush_metrics)
           if (strstr(inst, SIMD)) {
             validInst = true;
             opencl_instrumentation_simd_enable();
+            // we need to enable insertion of count probes for calculating total available SIMD lanes 
+            opencl_instrumentation_count_enable();
           } else if (strstr(inst, LATENCY)) {
             validInst = true;
             opencl_instrumentation_latency_enable();

@@ -27,6 +27,11 @@ typedef enum {
 
 typedef struct kernel_data_gtpin_inst {
   int32_t offset;
+  int execSize;
+  float W_ins;
+  bool isPredictable;
+  bool isComplex;
+  uint32_t aggregated_latency;
   struct kernel_data_gtpin_inst *next;
 } kernel_data_gtpin_inst_t; 
 
@@ -38,6 +43,9 @@ typedef struct kernel_data_gtpin_block {
   GTPinMem mem_opcode;
   SimdSectionNode *simd_mem_list;
   uint32_t scalar_instructions;
+  uint64_t execution_count;
+  uint64_t aggregated_latency;
+  int instruction_count;
   struct kernel_data_gtpin_inst *inst;
   struct kernel_data_gtpin_block *next;
 } kernel_data_gtpin_block_t; 
