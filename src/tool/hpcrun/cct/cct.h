@@ -336,5 +336,6 @@ cct_node_t* hpcrun_cct_copy_just_addr(cct_node_t *cct);
 void hpcrun_cct_set_children(cct_node_t* cct, cct_node_t* children);
 void hpcrun_cct_set_parent(cct_node_t* cct, cct_node_t* parent);
 
+size_t hpcrun_cct_depth(cct_node_t *cct);
 
 #endif // cct_h

@@ -4818,6 +4818,27 @@ AC_MSG_RESULT([${OPT_ENABLE_NEW_CUPTI}])
 AM_CONDITIONAL(OPT_ENABLE_NEW_CUPTI, test "${OPT_ENABLE_NEW_CUPTI}" = "yes")
 
 #-------------------------------------------------
+# enable-new-cupti-analysis
+#-------------------------------------------------
+
+OPT_ENABLE_NEW_CUPTI_ANALYSIS=no
+
+AC_MSG_CHECKING([for new-cupti-analysis])
+
+AC_ARG_ENABLE([new_cupti_analysis],
+  AS_HELP_STRING([--enable-new-cupti-analysis],
+                 [Dump ccts for analysis]),
+  [case "${enableval}" in
+     yes) OPT_ENABLE_NEW_CUPTI_ANALYSIS="yes" ;;
+     no)  OPT_ENABLE_NEW_CUPTI_ANALYSIS="no" ;;
+     *) AC_MSG_ERROR([bad value ${enableval} for --enable-new-cupti-analysis]) ;;
+   esac],
+  [OPT_ENABLE_NEW_CUPTI_ANALYSIS=no])
+
+AC_MSG_RESULT([${OPT_ENABLE_NEW_CUPTI_ANALYSIS}])
+AM_CONDITIONAL(OPT_ENABLE_NEW_CUPTI_ANALYSIS, test "${OPT_ENABLE_NEW_CUPTI_ANALYSIS}" = "yes")
+
+#-------------------------------------------------
 # Option: --with-cupti=PATH
 #-------------------------------------------------
 

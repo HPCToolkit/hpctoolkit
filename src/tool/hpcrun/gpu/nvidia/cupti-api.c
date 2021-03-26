@@ -71,7 +71,6 @@
 #endif
 
 
-
 //***************************************************************************
 // local includes
 //***************************************************************************
@@ -104,6 +103,7 @@
 #include "cuda-api.h"
 #include "cupti-api.h"
 #include "cupti-gpu-api.h"
+#include "cupti-cct-map.h"
 #include "cubin-hash-map.h"
 #include "cubin-id-map.h"
 #include "cubin-crc-map.h"
@@ -1097,6 +1097,16 @@ cupti_subscriber_callback
           cupti_kernel_ph = 
             gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel);
 
+#ifdef NEW_CUPTI_ANALYSIS
+          //size_t depth = hpcrun_cct_depth(cupti_kernel_ph);
+          register long rsp asm ("rsp");
+          size_t depth = rsp;
+          cuLaunchKernel_params *params = (cuLaunchKernel_params *)cd->functionParams;
+          cupti_cct_map_insert(cupti_kernel_ph, kernel_ip, depth, cd->symbolName,
+            params->gridDimX, params->gridDimY, params->gridDimZ,
+            params->blockDimX, params->blockDimY, params->blockDimZ);
+#endif
+
           ensure_kernel_ip_present(cupti_kernel_ph, kernel_ip);
 
           cupti_trace_ph = 
@@ -1154,6 +1164,15 @@ cupti_subscriber_callback
       CUPTI_API_ENTER) {
       if (cupti_kernel_ph != NULL) {
         ensure_kernel_ip_present(cupti_kernel_ph, kernel_ip);
+#ifdef NEW_CUPTI_ANALYSIS
+        //size_t depth = hpcrun_cct_depth(cupti_kernel_ph);
+        register long rsp asm ("rsp");
+        size_t depth = rsp;
+        cuLaunchKernel_params *params = (cuLaunchKernel_params *)cd->functionParams;
+        cupti_cct_map_insert(cupti_kernel_ph, kernel_ip, depth, cd->symbolName,
+          params->gridDimX, params->gridDimY, params->gridDimZ,
+          params->blockDimX, params->blockDimY, params->blockDimZ);
+#endif
       }
       if (cupti_trace_ph != NULL) {
         ensure_kernel_ip_present(cupti_trace_ph, kernel_ip);
@@ -1738,6 +1757,10 @@ cupti_device_flush(void *args, int how)
   gpu_application_thread_process_activities();
 
   TMSG(CUPTI, "Exit CUPTI device flush");
+
+#ifdef NEW_CUPTI_ANALYSIS
+  cupti_cct_map_dump();
+#endif
 }
 
 

@@ -520,6 +520,7 @@ MY_NEW_CUPTI_FILES = gpu/nvidia/cupti-pc-sampling-api.c \
 	gpu/nvidia/cupti-pc-sampling-data.c \
 	gpu/nvidia/cupti-context-map.c \
 	gpu/nvidia/cubin-crc-map.c \
+	gpu/nvidia/cupti-cct-map.c \
 	gpu/gpu-range.c
 endif
 
@@ -996,6 +997,10 @@ if OPT_ENABLE_NEW_CUPTI
   libhpcrun_la_SOURCES  += $(MY_NEW_CUPTI_FILES)
   libhpcrun_o_SOURCES   += $(MY_NEW_CUPTI_FILES)
   libhpcrun_la_CFLAGS += -DNEW_CUPTI
+endif
+
+if OPT_ENABLE_NEW_CUPTI_ANALYSIS
+  libhpcrun_la_CFLAGS += -DNEW_CUPTI_ANALYSIS
 endif
 
 endif

@@ -1259,3 +1259,14 @@ hpcrun_cct_set_parent(cct_node_t* cct, cct_node_t* parent)
     return;
   cct->parent = parent;
 }
+
+size_t
+hpcrun_cct_depth(cct_node_t *cct)
+{
+  size_t depth = 0;
+  while (cct) {
+    cct = cct->parent;
+    ++depth;
+  }
+  return depth;
+}
