@@ -244,6 +244,7 @@ private:
   struct SourceLocal {
     std::forward_list<Thread::Temporary> threads;
     std::unordered_set<Metric*> thawedMetrics;
+    bool lastWave = false;
 
     std::pair<bool, bool> orderedRegions;
     util::Once orderedPrewaveRegionDepOnce;

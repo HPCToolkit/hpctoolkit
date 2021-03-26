@@ -96,7 +96,7 @@ public:
     /// Throws a fatal error on I/O errors.
     void writeat(std::uint_fast64_t offset, std::size_t size, const void* data) noexcept;
 
-  // private:
+  private:
     friend class File;
     Instance(const File&, bool) noexcept;
 

@@ -334,6 +334,7 @@ void ProfilePipeline::run() {
         sources[i].wavesComplete.wait();
         std::unique_lock<std::mutex> l(sources[i].lock);
         sl.orderedPostwaveRegionUnlocked = true;
+        sl.lastWave = true;
         DataClass req = (sources[i]().finalizeRequest(scheduled - scheduledWaves)
                          - sources[i].read) & sources[i].dataLimit;
         sources[i].read |= req;
@@ -615,6 +616,8 @@ ContextRef Source::collaborate(ContextRef target, CollaborativeContext& collab, 
 Source::AccumulatorsRef Source::accumulateTo(ContextRef c, Thread::Temporary& t) {
   if(!limit().hasMetrics())
     util::log::fatal() << "Source did not register for `metrics` emission!";
+  if(!slocal->lastWave)
+    util::log::fatal() << "Attempt to emit metrics before requested!";
   if(auto pc = std::get_if<Context>(c))
     return t.data[*pc];
   if(auto pc = std::get_if<SuperpositionedContext>(c))
@@ -671,6 +674,8 @@ Thread::Temporary& Source::thread(const ThreadAttributes& o) {
 void Source::timepoint(Thread::Temporary& tt, ContextRef c, std::chrono::nanoseconds tm) {
   if(!limit().hasTimepoints())
     util::log::fatal() << "Source did not register for `timepoints` emission!";
+  if(!slocal->lastWave)
+    util::log::fatal() << "Attempt to emit timepoints before requested!";
   for(auto& s: pipe->sinks) {
     if(!s.dataLimit.hasTimepoints()) continue;
     if(s.dataLimit.allOf(DataClass::threads + DataClass::contexts))
@@ -687,6 +692,8 @@ void Source::timepoint(Thread::Temporary& tt, ContextRef c, std::chrono::nanosec
 void Source::timepoint(Thread::Temporary& tt, std::chrono::nanoseconds tm) {
   if(!limit().hasTimepoints())
     util::log::fatal() << "Source did not register for `timepoints` emission!";
+  if(!slocal->lastWave)
+    util::log::fatal() << "Attempt to emit timepoints before requested!";
   for(auto& s: pipe->sinks) {
     if(!s.dataLimit.hasTimepoints()) continue;
     if(s.dataLimit.hasThreads())
@@ -699,6 +706,8 @@ void Source::timepoint(Thread::Temporary& tt, std::chrono::nanoseconds tm) {
 void Source::timepoint(ContextRef c, std::chrono::nanoseconds tm) {
   if(!limit().hasTimepoints())
     util::log::fatal() << "Source did not register for `timepoints` emission!";
+  if(!slocal->lastWave)
+    util::log::fatal() << "Attempt to emit timepoints before requested!";
   for(auto& s: pipe->sinks) {
     if(!s.dataLimit.hasTimepoints()) continue;
     if(s.dataLimit.hasContexts())
@@ -711,6 +720,8 @@ void Source::timepoint(ContextRef c, std::chrono::nanoseconds tm) {
 void Source::timepoint(std::chrono::nanoseconds tm) {
   if(!limit().hasTimepoints())
     util::log::fatal() << "Source did not register for `timepoints` emission!";
+  if(!slocal->lastWave)
+    util::log::fatal() << "Attempt to emit timepoints before requested!";
   for(auto& s: pipe->sinks) {
     if(!s.dataLimit.hasTimepoints()) continue;
     s().notifyTimepoint(tm);

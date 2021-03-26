@@ -65,7 +65,7 @@ public:
     ~SharedAccumulator();
 
 
-    void initialize(std::uint64_t* data);
+    void initialize(std::uint64_t init);
     std::uint64_t fetch_add(std::uint64_t val);
 
 private:
