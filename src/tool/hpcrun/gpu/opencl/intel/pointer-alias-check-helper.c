@@ -248,18 +248,12 @@ checkIfMemoryRegionsOverlap
 {
   Node *head = transformKernelParamNodesToSortableNodes(kernel_param_list);
 
-  printf("Unsorted Linked List is: \n"); 
-  printList(head);
- 
   /* Sort the above created Linked List.
   we have a boundary case where if a2 == b1, (where a2 is end of region a and b1 is start of region b)
   we want our algorithm to consider it as an overlap. So, we need to ensure all start nodes are before end nodes in the input list
   and we have a stable sort algorithm that wont swap equal nodes */
   MergeSort(&head); 
 
-  printf("Sorted Linked List is: \n"); 
-  printList(head); 
-  
   // check if there is overlap
   Node *curr = head;
   Node *next;
