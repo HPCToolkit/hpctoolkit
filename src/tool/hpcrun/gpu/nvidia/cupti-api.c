@@ -93,6 +93,7 @@
 #include <hpcrun/gpu/gpu-op-placeholders.h>
 #include <hpcrun/gpu/gpu-operation-multiplexer.h>
 #include <hpcrun/gpu/gpu-range.h>
+#include <hpcrun/gpu/gpu-metrics.h>
 
 #include <hpcrun/ompt/ompt-device.h>
 
@@ -819,7 +820,7 @@ cupti_func_ip_resolve
 }
 
 
-void
+static void
 ensure_kernel_ip_present
 (
  cct_node_t *kernel_ph, 
@@ -842,6 +843,24 @@ ensure_kernel_ip_present
       hpcrun_cct_insert_ip_norm(kernel_ph, kernel_ip);
     hpcrun_cct_retain(kernel);
   }
+}
+
+
+static void
+increase_kernel_count
+(
+ cct_node_t *kernel_ph,
+ uint32_t context_id,
+ uint32_t range_id
+)
+{
+  // Range processing
+  cct_node_t *kernel_node = hpcrun_cct_children(kernel_ph);
+  kernel_node = hpcrun_cct_insert_context(kernel_node, context_id);
+  kernel_node = hpcrun_cct_insert_range(kernel_node, range_id);
+
+  // Increase kernel count
+  gpu_metrics_attribute_kernel_count(kernel_node);
 }
 
 
@@ -1098,6 +1117,14 @@ cupti_subscriber_callback
             gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel);
 
           ensure_kernel_ip_present(cupti_kernel_ph, kernel_ip);
+          
+#ifdef NEW_CUPTI
+          if (gpu_range_interval_get() != 1) {
+            uint32_t context_id = cd->contextUid;
+            uint32_t range_id = gpu_range_id();
+            increase_kernel_count(cupti_kernel_ph, context_id, range_id);
+          }
+#endif
 
           cupti_trace_ph = 
             gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace);
@@ -1154,6 +1181,14 @@ cupti_subscriber_callback
       CUPTI_API_ENTER) {
       if (cupti_kernel_ph != NULL) {
         ensure_kernel_ip_present(cupti_kernel_ph, kernel_ip);
+
+#ifdef NEW_CUPTI
+        if (gpu_range_interval_get() != 1) {
+          uint32_t context_id = cd->contextUid;
+          uint32_t range_id = gpu_range_id();
+          increase_kernel_count(cupti_kernel_ph, context_id, range_id);
+        }
+#endif
       }
       if (cupti_trace_ph != NULL) {
         ensure_kernel_ip_present(cupti_trace_ph, kernel_ip);

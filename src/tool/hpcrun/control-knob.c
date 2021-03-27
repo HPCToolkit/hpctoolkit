@@ -35,7 +35,7 @@ control_knob_register(char *name, char *value, control_knob_type type)
 {
   control_knob_t *iter = control_knob_name_lookup(name);
 
-  if (iter == NULL){
+  if (iter == NULL) {
     iter = (control_knob_t*) malloc(sizeof(control_knob_t));
     iter->name = strdup(name);
     iter->next = control_knobs;
@@ -113,12 +113,12 @@ control_knob_value_get_float(char *in, float *value)
 
 
 int
-control_knob_value_get_string(char *in, char *value)
+control_knob_value_get_string(char *in, char **value)
 {
   control_knob_t *iter = control_knob_name_lookup(in);
   if (iter) {
     if (iter->type == ck_string) {
-      value = iter->value;
+      *value = iter->value;
       return 0;
     }else{
       fprintf(stderr,"Control register type is not string.\n");

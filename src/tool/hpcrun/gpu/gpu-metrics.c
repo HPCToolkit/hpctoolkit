@@ -457,6 +457,21 @@ gpu_metrics_attribute_memset
 }
 
 
+// Interface function, used on nvidia gpus when only pc sampling is used
+void
+gpu_metrics_attribute_kernel_count
+(
+ cct_node_t *cct_node
+)
+{
+  metric_data_list_t *metrics = 
+    hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_KINFO_STMEM_ACUMU));
+
+  // number of kernel launches
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_COUNT), 1);
+}
+
+
 static void
 gpu_metrics_attribute_kernel
 (

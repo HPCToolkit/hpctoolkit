@@ -549,7 +549,11 @@ gpu_metrics_attribute
  gpu_activity_t *activity
 );
 
-
+void
+gpu_metrics_attribute_kernel_count
+(
+ cct_node_t *cct_node
+);
 
 #endif
 
