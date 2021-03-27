@@ -1021,8 +1021,6 @@ onKernelComplete
       }
       bb_total_simd_lanes = bb_exec_count * kernel_data_gtpin->simd_width * block->instruction_count;
       scalar_simd_loss = block->scalar_instructions * bb_exec_count * (kernel_data_gtpin->simd_width - 1);
-      printf("scalar_instructions: %u, bb_exec_count: %"PRIu64", width: %d, scalar_simd_loss: %"PRIu64"\n", block->scalar_instructions, bb_exec_count,
-          (kernel_data_gtpin->simd_width - 1), scalar_simd_loss);
     }
 
     if (latency_knob) {
