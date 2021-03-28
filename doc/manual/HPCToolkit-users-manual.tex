@@ -1721,6 +1721,15 @@ is needlessly slowing your application. You can recompile your code without the
 argument to \hpcrun{} or \hpclink{} to disable \verb|gprof| instrumentation while 
 measuring performance with \HPCToolkit{}.
 
+\section{Problems Recovering Loops in NVIDIA GPU binaries}
+\label{section:hpcstruct-cubin}
+
+\begin{itemize}
+\item
+ When using the {\tt --gpucfg yes} option to analyze control flow to recover information about loops in CUDA binaries, \hpcstruct{} needs to use NVIDIA's {\tt nvdisasm} tool. It is important to note that \hpcstruct{} uses the version of {\tt nvdisasm} that is on your path. When using the {\tt --gpucfg yes} option to recover loops in CUBINs, you  can improve  \hpcstruct{}'s ability to recover loops by having a newer version of {\tt nvdisasm} on your path. Specifically, the version of {\tt nvdisasm} in CUDA 11.2  is much better than  {\tt nvdisasm} in CUDA 10.2. It will recover loops for more procedures and faster.
+\item While NVIDIA has improved the capability and speed of {\tt nvdisasm} in CUDA 11.2, it may still be too slow to be usable on large CUDA binaries.  Because of failures we have encountered with {\tt nvdisasm},  \hpcstruct{} launches {\tt nvdisasm} once for each procedure in a GPU binary to maximize the information it can extract. With this approach, we have  seen  \hpcstruct{}   take over 12 hours to analyze a CUBIN of roughly 800MB with 40K GPU functions. For large CUDA binaries, our advice is to skip the {\tt --gpucfg yes} option at present until we adjust  \hpcstruct{} launch multiple copies of {\tt nvdisasm} in parallel to reduce analysis time.
+\end{itemize}
+
 
 \section{Graphical User Interface Issues}
 
