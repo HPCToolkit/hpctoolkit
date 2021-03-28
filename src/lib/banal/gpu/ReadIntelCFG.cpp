@@ -122,7 +122,7 @@ addCustomFunctionObject
       -1, //int strindex
       false //bool cs
   );
-  
+
   //adding the custom symbol into the symtab object
   status = symtab->addSymbol(custom_symbol); //(Symbol *newsym)
   assert(status == true);
@@ -141,7 +141,6 @@ parseIntelCFG
   std::map<int, GPUParse::Block *> block_offset_map;
 
   int offset = 0;
-  int size = 0;
   int block_id = 0;
 
   // Construct basic blocks
@@ -152,7 +151,7 @@ parseIntelCFG
     function.blocks.push_back(block);
     block_offset_map[offset] = block;
 
-    size = kv.getInstSize(offset);
+    auto size = kv.getInstSize(offset);
     auto *inst = new GPUParse::IntelInst(offset, size);
     block->insts.push_back(inst);
 
@@ -170,11 +169,11 @@ parseIntelCFG
 
     if (kv.getOpcode(offset) == iga::Op::CALL || kv.getOpcode(offset) == iga::Op::CALLA) {
       inst->is_call = true;
-    } else {
-      inst->is_jump = true;
     }
     offset += size;
   }
+  
+  using TargetType = Dyninst::ParseAPI::EdgeTypeEnum;
 
   // Construct targets
   std::array<int, KV_MAX_TARGETS_PER_INSTRUCTION + 1> jump_targets;
@@ -182,18 +181,37 @@ parseIntelCFG
     auto *block = function.blocks[i];
     auto *inst = block->insts.back();
     size_t jump_targets_count = kv.getInstTargets(inst->offset, jump_targets.data());
-    
-    // Add fall through edge
-    int next_block_start_offset = 0;
-    if (i != function.blocks.size() - 1) {
-      next_block_start_offset = function.blocks[i + 1]->insts.front()->offset;
-    }
-    jump_targets[jump_targets_count] = next_block_start_offset;
 
-    for (size_t j = 0; j < jump_targets_count + 1; j++) {
+    if (i != function.blocks.size() - 1) {
+      // Add a fall through edge
+      // The last block and the end of thread (EOT) block do not have a fall through
+      int next_block_start_offset = function.blocks[i + 1]->insts.front()->offset;
+
+      bool eot_inst = kv.getOpcodeGroup(inst->offset) == KV_OPGROUP_SEND_EOT;
+      bool pred_inst = kv.getPredicate(inst->offset) != iga::PredCtrl::NONE;
+      bool join_inst = kv.getOpcode(inst->offset) == iga::Op::JOIN;
+      if ((pred_inst || jump_targets_count == 0) && !eot_inst) {
+        jump_targets[jump_targets_count] = next_block_start_offset;
+        jump_targets_count += 1;
+      } else if (join_inst) {
+        // Join is not a branch
+        jump_targets[jump_targets_count - 1] = next_block_start_offset;
+      }
+    }
+
+    for (size_t j = 0; j < jump_targets_count; j++) {
       auto *target_block = block_offset_map.at(jump_targets[j]);
-      // TODO(Aaron): call edge
-      auto type = GPUParse::TargetType::DIRECT;
+      
+      TargetType type = TargetType::COND_TAKEN;
+      if (inst->is_call) {
+        // XXX(Keren): since we parse each instruction individually,
+        // we only see CALL_FT edges within a function
+        type = TargetType::CALL_FT;
+      } else if (target_block->insts.front()->offset == inst->offset + inst->size) {
+        // Fallthrough
+        type = TargetType::DIRECT;
+      }
+
       // Jump
       bool added = false;
       for (auto *target : block->targets) {
@@ -208,9 +226,24 @@ parseIntelCFG
   }
 
   if (DEBUG) {
+    // Instruction buffer
+    char inst_str[MAX_STR_SIZE];
+
     for (auto *block : function.blocks) {
       std::cout << std::hex;
       std::cout << block->name << ": [" << block->insts.front()->offset << ", " << block->insts.back()->offset << "]" << std::endl;
+
+      for (auto *inst : block->insts) {
+        size_t n = kv.getInstSyntax(inst->offset, NULL, 0);
+        assert(n < MAX_STR_SIZE);
+
+        inst_str[n] = '\0';
+        auto fmt_opts = IGA_FORMATTING_OPTS_DEFAULT; // see iga.h
+        kv.getInstSyntax(inst->offset, inst_str, n, fmt_opts);
+
+        std::cout << std::hex << inst->offset << std::dec << inst_str << std::endl;
+      }
+
       for (auto *target : block->targets) {
         std::cout << "\t" << block->name << "->" << target->block->name << std::endl;
       }
