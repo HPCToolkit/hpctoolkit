@@ -1380,6 +1380,9 @@ gtpin_produce_runtime_callstack
 
 void
 gtpin_enable_instrumentation
+(
+ void
+)
 {
   instrumentation = true;
 }
