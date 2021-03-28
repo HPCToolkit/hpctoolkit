@@ -905,8 +905,10 @@ opencl_api_initialize
 )
 {
   ETMSG(OPENCL, "CL_TARGET_OPENCL_VERSION: %d", CL_TARGET_OPENCL_VERSION);
+  // we need this even when instrumentation is off inorder to get kernel names in hpcviewer
+  gtpin_enable_profiling();
   if (instrumentation) {
-    gtpin_enable_profiling();
+    gtpin_enable_instrumentation();
   }
   atomic_store(&correlation_id_counter, 0);
   atomic_store(&opencl_pending_operations, 0);
