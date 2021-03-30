@@ -77,6 +77,7 @@
 #include <hpcrun/gpu/gpu-metrics.h>
 #include <hpcrun/gpu/gpu-monitoring-thread-api.h>
 #include <hpcrun/utilities/hpcrun-nanotime.h>
+#include <hpcrun/gpu/opencl/opencl-api.h>
 
 #include <lib/prof-lean/crypto-hash.h>
 #include <lib/prof-lean/spinlock.h>
@@ -289,12 +290,15 @@ findOrAddKernelModule
  GTPinKernel kernel
 )
 {
-  char kernel_name[MAX_STR_SIZE];
+  uint32_t kernel_name_len;
   GTPINTOOL_STATUS status;
-
   status = HPCRUN_GTPIN_CALL(GTPin_KernelGetName,
-			     (kernel, MAX_STR_SIZE, kernel_name, NULL));
+			     (kernel, 0, NULL, &kernel_name_len));
 
+  char kernel_name[kernel_name_len];
+  status = HPCRUN_GTPIN_CALL(GTPin_KernelGetName,
+			     (kernel, kernel_name_len, kernel_name, NULL));
+  
   assert(status == GTPINTOOL_STATUS_SUCCESS);
 
   uint32_t kernel_elf_size = 0;
@@ -336,6 +340,8 @@ findOrAddKernelModule
     module_id = module->id;
   }
   hpcrun_loadmap_unlock();
+  uint64_t kernel_name_id = get_numeric_hash_id_for_string(kernel_name, (size_t)kernel_name_len);
+  opencl_kernel_loadmap_map_insert(kernel_name_id, module_id);
 
   return module_id;
 }

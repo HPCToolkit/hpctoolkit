@@ -525,6 +525,7 @@ MY_OPENCL_FILES = \
 	gpu/opencl/opencl-queue-map.c \
 	gpu/opencl/opencl-context-map.c \
 	gpu/opencl/intel/optimization-check.c \
+	gpu/opencl/opencl-kernel-loadmap-map.c \
 	gpu/opencl/intel/maps/queue-context-map.c \
 	gpu/opencl/intel/maps/kernel-queue-map.c	\
 	gpu/opencl/intel/maps/kernel-param-map.c	\
