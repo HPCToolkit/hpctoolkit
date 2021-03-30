@@ -41,142 +41,77 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef _OPENCL_API_H_
-#define _OPENCL_API_H_
+#ifndef opencl_kernel_loadmap_map_h
+#define opencl_kernel_loadmap_map_h
 
-//******************************************************************************
+
+//*****************************************************************************
+// system includes
+//*****************************************************************************
+
+#include <stdint.h>
+
+
+
+//*****************************************************************************
 // local includes
-//******************************************************************************
-
-#include <hpcrun/gpu/gpu-activity.h>
-#include <lib/prof-lean/hpcrun-opencl.h>
-#include "opencl-memory-manager.h"
+//*****************************************************************************
 
 
 
-//************************ Forward Declarations ******************************
+//*****************************************************************************
+// type definitions 
+//*****************************************************************************
 
-typedef struct opencl_object_t opencl_object_t;
+typedef struct opencl_kernel_loadmap_map_entry_t opencl_kernel_loadmap_map_entry_t;
 
 
 
-//******************************************************************************
+//*****************************************************************************
 // interface operations
-//******************************************************************************
+//*****************************************************************************
 
-cl_basic_callback_t
-opencl_cb_basic_get
+opencl_kernel_loadmap_map_entry_t *
+opencl_kernel_loadmap_map_lookup
 (
- opencl_object_t *cb_data
+ uint64_t
 );
 
 
 void
-opencl_cb_basic_print
+opencl_kernel_loadmap_map_insert
 (
- cl_basic_callback_t cb_basic,
- char *title
+ uint64_t, 
+ uint32_t
 );
 
 
 void
-opencl_initialize_correlation_id
+opencl_kernel_loadmap_map_delete
 (
- void
-);
-
-
-void
-opencl_subscriber_callback
-(
- opencl_object_t *cb_info
-);
-
-
-void
-opencl_activity_completion_callback
-(
- cl_event,
- cl_int,
- void *
-);
-
-
-void
-opencl_timing_info_get
-(
- gpu_interval_t *,
- cl_event
-);
-
-
-cct_node_t *
-opencl_api_node_get
-(
- void
-);
-
-
-void
-clSetEventCallback_wrapper
-(
- cl_event,
- cl_int,
- void (CL_CALLBACK*)(cl_event, cl_int, void *),
- void *
-);
-
-
-void
-opencl_api_initialize
-(
- void
-);
-
-
-int
-opencl_bind
-(
- void
+ uint64_t
 );
 
 
 uint64_t
-get_numeric_hash_id_for_string
+opencl_kernel_loadmap_map_entry_kernel_name_id_get
 (
- const char *str,
- size_t strlen
+ opencl_kernel_loadmap_map_entry_t *entry
 );
 
 
-void
-opencl_instrumentation_enable
+uint32_t
+opencl_kernel_loadmap_map_entry_module_id_get
+(
+ opencl_kernel_loadmap_map_entry_t *
+);
+
+
+uint64_t
+opencl_kernel_loadmap_map_count
 (
  void
 );
 
+#endif
 
-void
-opencl_optimization_check_enable
-(
- void
-);
-
-
-void
-opencl_api_thread_finalize
-(
- void *args,
- int how
-);
-
-
-void
-opencl_api_process_finalize
-(
- void *args,
- int how
-);
-
-
-#endif  //_OPENCL_API_H_
