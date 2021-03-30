@@ -53,6 +53,7 @@
 #include <sys/stat.h>  // mkdir
 #include <sys/types.h>
 #include <unistd.h>
+#include <math.h>      // pow
 
 
 
@@ -77,6 +78,7 @@
 #include <hpcrun/sample-sources/libdl.h>
 #include <hpcrun/files.h>
 #include <hpcrun/utilities/hpcrun-nanotime.h>
+#include <lib/prof-lean/crypto-hash.h>
 #include <lib/prof-lean/hpcrun-opencl.h>
 #include <lib/prof-lean/spinlock.h>
 #include <lib/prof-lean/splay-uint64.h>
@@ -89,6 +91,7 @@
 #include "opencl-h2d-map.h"
 #include "opencl-queue-map.h"
 #include "opencl-context-map.h"
+#include "opencl-kernel-loadmap-map.h"
 #include "intel/optimization-check.h"
 
 
@@ -420,7 +423,8 @@ static void
 initializeKernelCallBackInfo
 (
  opencl_object_t *ker_info,
- cl_command_queue command_queue
+ cl_command_queue command_queue,
+ uint32_t module_id
 )
 {
   opencl_queue_map_entry_t *qe = opencl_cl_queue_map_lookup((uint64_t)command_queue);
@@ -431,6 +435,7 @@ initializeKernelCallBackInfo
 
   ker_info->details.context_id = context_id;
   ker_info->details.stream_id = queue_id;
+  ker_info->details.module_id = module_id;
   ker_info->pending_operations = &opencl_self_pending_operations;
 }
 
@@ -837,6 +842,15 @@ opencl_subscriber_callback
   cct_node_t *cct_ph = gpu_op_ccts_get(&gpu_op_ccts, placeholder_type);
   hpcrun_safe_exit();
 
+  if (obj->kind == GPU_ACTIVITY_KERNEL && (hpcrun_cct_children(cct_ph) == NULL)) {
+    ip_normalized_t kernel_ip;
+    kernel_ip.lm_id = (uint16_t) obj->details.module_id;
+    kernel_ip.lm_ip = 0;  // offset=0
+    cct_node_t *kernel =
+      hpcrun_cct_insert_ip_norm(cct_ph, kernel_ip);
+    hpcrun_cct_retain(kernel);
+  }
+
   gpu_activity_channel_consume(gpu_metrics_attribute);
 
   obj->details.cct_node = cct_ph;
@@ -1067,6 +1081,22 @@ hpcrun_clCreateCommandQueueWithProperties
 }
 
 
+static uint32_t
+getKernelModuleId
+(
+ cl_kernel ocl_kernel 
+)
+{
+  size_t kernel_name_size;
+  cl_int status = clGetKernelInfo (ocl_kernel, CL_KERNEL_FUNCTION_NAME, 0, NULL, &kernel_name_size);
+  char kernel_name[kernel_name_size];
+  status = clGetKernelInfo (ocl_kernel, CL_KERNEL_FUNCTION_NAME, kernel_name_size, kernel_name, NULL);
+  uint64_t kernel_name_id = get_numeric_hash_id_for_string(kernel_name, kernel_name_size);
+  opencl_kernel_loadmap_map_entry_t *e = opencl_kernel_loadmap_map_lookup(kernel_name_id);
+  return opencl_kernel_loadmap_map_entry_module_id_get(e);
+}
+
+
 cl_int
 hpcrun_clEnqueueNDRangeKernel
 (
@@ -1081,8 +1111,10 @@ hpcrun_clEnqueueNDRangeKernel
  cl_event *event
 )
 {
+  uint32_t module_id = getKernelModuleId(ocl_kernel);
+
   opencl_object_t *kernel_info = opencl_malloc_kind(GPU_ACTIVITY_KERNEL);
-  INITIALIZE_CALLBACK_INFO(initializeKernelCallBackInfo, kernel_info, (kernel_info, command_queue))
+  INITIALIZE_CALLBACK_INFO(initializeKernelCallBackInfo, kernel_info, (kernel_info, command_queue, module_id))
 
   opencl_subscriber_callback(kernel_info);
 
@@ -1120,8 +1152,10 @@ hpcrun_clEnqueueTask
  cl_event* event
 )
 {
+  uint32_t module_id = getKernelModuleId(kernel);
+
   opencl_object_t *kernel_info = opencl_malloc_kind(GPU_ACTIVITY_KERNEL);
-  INITIALIZE_CALLBACK_INFO(initializeKernelCallBackInfo, kernel_info, (kernel_info, command_queue))
+  INITIALIZE_CALLBACK_INFO(initializeKernelCallBackInfo, kernel_info, (kernel_info, command_queue, module_id))
 
   opencl_subscriber_callback(kernel_info);
 
@@ -1384,6 +1418,26 @@ hpcrun_clReleaseCommandQueue
     clearQueueContext(command_queue);
   }
   return status;
+}
+
+
+uint64_t
+get_numeric_hash_id_for_string
+(
+ const char *mem_ptr,
+ size_t mem_size
+)
+{
+  // Compute hash for mem_ptr with mem_size
+  unsigned char hash[HASH_LENGTH];
+  crypto_hash_compute((const unsigned char *)mem_ptr, mem_size, hash, HASH_LENGTH);
+  
+  size_t i;
+  uint64_t num_hash = 0;
+  for (i = 0; i < HASH_LENGTH; ++i) {
+    num_hash += ((uint64_t)pow(hash[i], i+1) % 0xFFFFFFFF);
+  }
+  return num_hash;
 }
 
 
