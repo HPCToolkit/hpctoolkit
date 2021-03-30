@@ -1628,6 +1628,28 @@ hpcrun_clFinish
 }
 
 
+<<<<<<< HEAD
+=======
+uint64_t
+get_numeric_hash_id_for_string
+(
+ const char *mem_ptr,
+ size_t mem_size
+)
+{
+  // Compute hash for mem_ptr with mem_size
+  unsigned char hash[HASH_LENGTH];
+  crypto_hash_compute((const unsigned char *)mem_ptr, mem_size, hash, HASH_LENGTH);
+  
+  size_t i;
+  uint64_t num_hash = 0;
+  for (i = 0; i < HASH_LENGTH; ++i) {
+    num_hash += ((uint64_t)pow(hash[i], i+1) % 0xFFFFFFFF);
+  }
+  return num_hash;
+}
+
+>>>>>>> 96cb00086... kernel names are now showing up under <gpu kernel> cct nodes. TODO: to dump binaries from opencl and not gptin api
 
 void
 opencl_instrumentation_enable
