@@ -52,7 +52,8 @@
 //******************************************************************************
 
 
-#ifdef ENABLE_GTPIN
+//#ifdef ENABLE_GTPIN
+#if 1
 // one downside of this appproach is that we may override the callback provided by user
 cl_int
 clBuildProgram
@@ -70,6 +71,21 @@ clBuildProgram
 			user_data);
 }
 #endif // ENABLE_GTPIN
+
+
+cl_context
+clCreateContext
+(
+ const cl_context_properties *properties,
+ cl_uint num_devices,
+ const cl_device_id *devices,
+ void (CL_CALLBACK* pfn_notify) (const char *errinfo, const void *private_info, size_t cb, void *user_data),
+ void *user_data,
+ cl_int *errcode_ret
+)
+{
+  return hpcrun_clCreateContext(properties, num_devices, devices, pfn_notify, user_data, errcode_ret);
+}
 
 
 cl_command_queue
@@ -213,6 +229,7 @@ clCreateBuffer
   return hpcrun_clCreateBuffer(context, flags, size, host_ptr, errcode_ret);
 }
 
+
 // comment if opencl blame-shifting is disabled
 cl_int
 clWaitForEvents
@@ -222,6 +239,29 @@ clWaitForEvents
 )
 {
 	return hpcrun_clWaitForEvents(num_events, event_list);
+}
+
+
+cl_int
+clSetKernelArg
+(
+ cl_kernel kernel,
+ cl_uint arg_index,
+ size_t arg_size,
+ const void* arg_value
+)
+{
+  return hpcrun_clSetKernelArg(kernel, arg_index, arg_size, arg_value);
+}
+
+
+cl_int
+clReleaseMemObject
+(
+ cl_mem mem
+)
+{
+  return hpcrun_clReleaseMemObject(mem);
 }
 
 
@@ -236,11 +276,21 @@ clFinish
 
 
 cl_int
-clReleaseCommandQueue
+clReleaseKernel
 (
-	cl_command_queue command_queue
+ cl_kernel kernel
 )
 {
-	return hpcrun_clReleaseCommandQueue(command_queue);
+  return hpcrun_clReleaseKernel(kernel);
+}
+
+
+cl_int
+clReleaseCommandQueue
+(
+ cl_command_queue command_queue
+)
+{
+  return hpcrun_clReleaseCommandQueue(command_queue);
 }
 

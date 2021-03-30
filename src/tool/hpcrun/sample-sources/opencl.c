@@ -68,6 +68,7 @@
 
 #define GPU_STRING "gpu=opencl"
 #define ENABLE_INSTRUMENTATION "gpu=opencl,inst"
+#define INTEL_OPTIMIZATION_CHECK "intel_opt_check"
 #define NO_THRESHOLD  1L
 
 static device_finalizer_fn_entry_t device_finalizer_flush;
@@ -111,6 +112,7 @@ static void
 METHOD_FN(start)
 {
   TMSG(OPENCL, "start");
+  TD_GET(ss_state)[self->sel_idx] = START;
 }
 
 
@@ -140,9 +142,8 @@ static bool
 METHOD_FN(supports_event, const char *ev_str)
 {
   #ifndef HPCRUN_STATIC_LINK
-  return (hpcrun_ev_is(ev_str, GPU_STRING)
-					|| hpcrun_ev_is(ev_str, ENABLE_INSTRUMENTATION)
-				 );
+  return (hpcrun_ev_is(ev_str, GPU_STRING) || hpcrun_ev_is(ev_str, ENABLE_INSTRUMENTATION)
+                                           || hpcrun_ev_is(ev_str, INTEL_OPTIMIZATION_CHECK));
   #else
   return false;
   #endif
@@ -158,18 +159,21 @@ METHOD_FN(process_event_list, int lush_metrics)
   gpu_metrics_KINFO_enable();
 
   char* evlist = METHOD_CALL(self, get_event_str);
-  char* event;
+  char* event = start_tok(evlist);
   for (event = start_tok(evlist); more_tok(); event = next_tok()) {
-		long th;
-		hpcrun_extract_ev_thresh(event, sizeof(opencl_name), opencl_name,
-			&th, NO_THRESHOLD);
+    long th;
+    hpcrun_extract_ev_thresh(event, sizeof(opencl_name), opencl_name,
+        &th, NO_THRESHOLD);
 
-		if (hpcrun_ev_is(opencl_name, GPU_STRING)) {
-		} else if (hpcrun_ev_is(opencl_name, ENABLE_INSTRUMENTATION)) {
-			gpu_metrics_GPU_INST_enable();
-			opencl_instrumentation_enable();
-		} 
-	}
+    if (hpcrun_ev_is(opencl_name, GPU_STRING)) {
+    } else if (hpcrun_ev_is(opencl_name, ENABLE_INSTRUMENTATION)) {
+      gpu_metrics_GPU_INST_enable();
+      opencl_instrumentation_enable();
+    } else if (hpcrun_ev_is(opencl_name, INTEL_OPTIMIZATION_CHECK)) {
+      opencl_optimization_check_enable();
+      gpu_metrics_INTEL_OPTIMIZATION_enable();
+    }
+  }
 }
 
 

@@ -53,6 +53,7 @@
 #include <sys/stat.h>  // mkdir
 #include <sys/types.h>
 #include <unistd.h>
+#include <math.h>      // pow
 
 
 
@@ -78,6 +79,7 @@
 #include <hpcrun/gpu/blame-shifting/opencl/opencl-blame.h>
 #include <hpcrun/files.h>
 #include <hpcrun/utilities/hpcrun-nanotime.h>
+#include <lib/prof-lean/crypto-hash.h>
 #include <lib/prof-lean/hpcrun-opencl.h>
 #include <lib/prof-lean/spinlock.h>
 #include <lib/prof-lean/splay-uint64.h>
@@ -90,6 +92,9 @@
 #include "opencl-h2d-map.h"
 #include "opencl-queue-map.h"
 #include "opencl-context-map.h"
+#include "opencl-kernel-loadmap-map.h"
+#include "intel/optimization-check.h"
+
 
 
 //******************************************************************************
@@ -102,6 +107,7 @@
 
 #define FORALL_OPENCL_ROUTINES(macro)  \
   macro(clBuildProgram)  \
+  macro(clCreateContext)  \
   macro(clCreateCommandQueue)  \
   macro(clCreateCommandQueueWithProperties)  \
   macro(clEnqueueNDRangeKernel)  \
@@ -110,11 +116,14 @@
   macro(clEnqueueWriteBuffer)  \
   macro(clEnqueueMapBuffer) \
   macro(clCreateBuffer)  \
+  macro(clSetKernelArg)  \
+  macro(clReleaseMemObject)  \
   macro(clGetEventProfilingInfo)  \
   macro(clReleaseEvent)  \
   macro(clSetEventCallback) \
   macro(clWaitForEvents) \
   macro(clFinish)	\
+  macro(clReleaseKernel)  \
   macro(clReleaseCommandQueue)
 
 #define DYN_FN_NAME(f) f ## _fn
@@ -124,8 +133,8 @@
 #define OPENCL_FN(fn, args)      \
   static cl_int (*OPENCL_FN_NAME(fn)) args
 
-#define OPENCL_PROGRAM_FN(fn, args)      \
-  static cl_program (*OPENCL_FN_NAME(fn)) args
+#define OPENCL_CONTEXT_FN(fn, args)      \
+  static cl_context (*OPENCL_FN_NAME(fn)) args
 
 #define OPENCL_QUEUE_FN(fn, args)      \
   static cl_command_queue (*OPENCL_FN_NAME(fn)) args
@@ -173,6 +182,9 @@ static __thread bool opencl_api_flag = false;
 static spinlock_t opencl_h2d_lock = SPINLOCK_UNLOCKED;
 
 static bool instrumentation = false;
+static bool optimization_check = false;
+
+
 
 static bool ENABLE_BLAME_SHIFTING = false;
 
@@ -192,6 +204,20 @@ OPENCL_FN
    const char* options,
    void (CL_CALLBACK* pfn_notify)(cl_program program, void* user_data),
    void* user_data
+  )
+);
+
+
+OPENCL_CONTEXT_FN
+(
+  clCreateContext,
+  (
+   cl_context_properties *properties,
+   cl_uint num_devices,
+   const cl_device_id *devices,
+   void *pfn_notify (const char *errinfo, const void *private_info, size_t cb, void *user_data),
+   void *user_data,
+   cl_int *errcode_ret
   )
 );
 
@@ -317,6 +343,27 @@ OPENCL_CREATEBUFFER_FN
 
 OPENCL_FN
 (
+  clSetKernelArg,
+  (
+   cl_kernel kernel,
+   cl_uint arg_index,
+   size_t arg_size,
+   const void* arg_value
+  )
+);
+
+
+OPENCL_FN
+(
+  clReleaseMemObject,
+  (
+   cl_mem mem
+  )
+);
+
+
+OPENCL_FN
+(
   clGetEventProfilingInfo,
   (
    cl_event event,
@@ -362,6 +409,14 @@ OPENCL_FN
 
 OPENCL_FN
 (
+ clReleaseKernel,
+ (
+  cl_kernel kernel
+ )
+);
+
+OPENCL_FN
+(
   clFinish,
   (
    cl_command_queue command_queue
@@ -397,17 +452,19 @@ static void
 initializeKernelCallBackInfo
 (
  opencl_object_t *ker_info,
- cl_command_queue command_queue
+ cl_command_queue command_queue,
+ uint32_t module_id
 )
 {
   opencl_queue_map_entry_t *qe = opencl_cl_queue_map_lookup((uint64_t)command_queue);
   uint32_t context_id = opencl_cl_queue_map_entry_context_id_get(qe);
   uint32_t queue_id = opencl_cl_queue_map_entry_queue_id_get(qe);
 
-  ETMSG(OPENCL, "submit kernel to context %u queue %u\n", context_id, queue_id);
+  ETMSG(OPENCL, "submit kernel to context %" PRIu32 " queue %" PRIu32 "\n", context_id, queue_id);
 
   ker_info->details.context_id = context_id;
   ker_info->details.stream_id = queue_id;
+  ker_info->details.module_id = module_id;
   ker_info->pending_operations = &opencl_self_pending_operations;
 }
 
@@ -825,6 +882,15 @@ opencl_subscriber_callback
   cct_node_t *cct_ph = gpu_op_ccts_get(&gpu_op_ccts, placeholder_type);
   hpcrun_safe_exit();
 
+  if (obj->kind == GPU_ACTIVITY_KERNEL && (hpcrun_cct_children(cct_ph) == NULL)) {
+    ip_normalized_t kernel_ip;
+    kernel_ip.lm_id = (uint16_t) obj->details.module_id;
+    kernel_ip.lm_ip = 0;  // offset=0
+    cct_node_t *kernel =
+      hpcrun_cct_insert_ip_norm(cct_ph, kernel_ip);
+    hpcrun_cct_retain(kernel);
+  }
+
   gpu_activity_channel_consume(gpu_metrics_attribute);
 
   obj->details.cct_node = cct_ph;
@@ -898,15 +964,18 @@ opencl_api_initialize
 )
 {
   ETMSG(OPENCL, "CL_TARGET_OPENCL_VERSION: %d", CL_TARGET_OPENCL_VERSION);
+  // we need this even when instrumentation is off inorder to get kernel names in hpcviewer
+  gtpin_enable_profiling();
   if (instrumentation) {
-    gtpin_enable_profiling();
+    gtpin_enable_instrumentation();
   }
   atomic_store(&correlation_id_counter, 0);
   atomic_store(&opencl_pending_operations, 0);
   atomic_store(&opencl_h2d_pending_operations, 0);
 }
 
-#ifdef ENABLE_GTPIN
+//#ifdef ENABLE_GTPIN
+#if 1
 // one downside of this appproach is that we may override the callback provided by user
 cl_int
 hpcrun_clBuildProgram
@@ -940,6 +1009,27 @@ hpcrun_clBuildProgram
 #endif // ENABLE_GTPIN
 
 
+cl_context
+hpcrun_clCreateContext
+(
+  const cl_context_properties *properties,
+  cl_uint num_devices,
+  const cl_device_id *devices,
+  void (CL_CALLBACK* pfn_notify) (const char *errinfo, const void *private_info, size_t cb, void *user_data),
+  void *user_data,
+  cl_int *errcode_ret
+)
+{
+  ETMSG(OPENCL, "inside clCreateContext wrapper");
+  cl_context context = HPCRUN_OPENCL_CALL(clCreateContext,
+    (properties, num_devices, devices, pfn_notify, user_data, errcode_ret));
+  if (optimization_check && *errcode_ret == CL_SUCCESS) {
+    recordDeviceCount(num_devices, devices);
+  }
+  return context;
+}
+
+
 cl_command_queue
 hpcrun_clCreateCommandQueue
 (
@@ -955,8 +1045,15 @@ hpcrun_clCreateCommandQueue
   cl_command_queue queue = HPCRUN_OPENCL_CALL(clCreateCommandQueue, (context, device,
         properties,errcode_ret));
 
+  if (optimization_check && *errcode_ret == CL_SUCCESS) {
+    isQueueInInOrderExecutionMode(&properties);
+  }
+
   uint32_t context_id = opencl_cl_context_map_update((uint64_t)context);
   opencl_cl_queue_map_update((uint64_t)queue, context_id);
+  if (optimization_check && *errcode_ret == CL_SUCCESS) {
+    recordQueueContext(queue, context);
+  }
 
 	if(is_opencl_blame_shifting_enabled()) {
 		opencl_queue_prologue(queue);
@@ -1014,6 +1111,11 @@ hpcrun_clCreateCommandQueueWithProperties
     }
   }
   cl_command_queue queue = HPCRUN_OPENCL_CALL(clCreateCommandQueueWithProperties, (context, device, queue_properties, errcode_ret));
+
+  if (optimization_check && *errcode_ret == CL_SUCCESS) {
+    isQueueInInOrderExecutionMode(properties);
+  }
+
   if (queue_properties != NULL) {
     // The property is created by us
     free(queue_properties);
@@ -1026,7 +1128,26 @@ hpcrun_clCreateCommandQueueWithProperties
 		opencl_queue_prologue(queue);
 	}
 
+  if (optimization_check && *errcode_ret == CL_SUCCESS) {
+    recordQueueContext(queue, context);
+  }
   return queue;
+}
+
+
+static uint32_t
+getKernelModuleId
+(
+ cl_kernel ocl_kernel 
+)
+{
+  size_t kernel_name_size;
+  cl_int status = clGetKernelInfo (ocl_kernel, CL_KERNEL_FUNCTION_NAME, 0, NULL, &kernel_name_size);
+  char kernel_name[kernel_name_size];
+  status = clGetKernelInfo (ocl_kernel, CL_KERNEL_FUNCTION_NAME, kernel_name_size, kernel_name, NULL);
+  uint64_t kernel_name_id = get_numeric_hash_id_for_string(kernel_name, kernel_name_size);
+  opencl_kernel_loadmap_map_entry_t *e = opencl_kernel_loadmap_map_lookup(kernel_name_id);
+  return opencl_kernel_loadmap_map_entry_module_id_get(e);
 }
 
 
@@ -1044,8 +1165,10 @@ hpcrun_clEnqueueNDRangeKernel
  cl_event *event
 )
 {
+  uint32_t module_id = getKernelModuleId(ocl_kernel);
+
   opencl_object_t *kernel_info = opencl_malloc_kind(GPU_ACTIVITY_KERNEL);
-  INITIALIZE_CALLBACK_INFO(initializeKernelCallBackInfo, kernel_info, (kernel_info, command_queue))
+  INITIALIZE_CALLBACK_INFO(initializeKernelCallBackInfo, kernel_info, (kernel_info, command_queue, module_id))
 
   opencl_subscriber_callback(kernel_info);
 
@@ -1056,6 +1179,10 @@ hpcrun_clEnqueueNDRangeKernel
             HPCRUN_OPENCL_CALL(clEnqueueNDRangeKernel, (command_queue, ocl_kernel, work_dim,
                                 global_work_offset, global_work_size, local_work_size,
                                 num_events_in_wait_list, event_wait_list, eventp));
+  if (optimization_check && return_status == CL_SUCCESS) {
+    isKernelSubmittedToMultipleQueues(ocl_kernel, command_queue);
+    areKernelParamsAliased(ocl_kernel);
+  }
 
 	if(is_opencl_blame_shifting_enabled()) {
 		opencl_kernel_prologue(*eventp);
@@ -1083,8 +1210,10 @@ hpcrun_clEnqueueTask
  cl_event* event
 )
 {
+  uint32_t module_id = getKernelModuleId(kernel);
+
   opencl_object_t *kernel_info = opencl_malloc_kind(GPU_ACTIVITY_KERNEL);
-  INITIALIZE_CALLBACK_INFO(initializeKernelCallBackInfo, kernel_info, (kernel_info, command_queue))
+  INITIALIZE_CALLBACK_INFO(initializeKernelCallBackInfo, kernel_info, (kernel_info, command_queue, module_id))
 
   opencl_subscriber_callback(kernel_info);
 
@@ -1094,6 +1223,10 @@ hpcrun_clEnqueueTask
   cl_int return_status =
             HPCRUN_OPENCL_CALL(clEnqueueTask, (command_queue, kernel,
                                 num_events_in_wait_list, event_wait_list, eventp));
+  if (optimization_check && return_status == CL_SUCCESS) {
+    isKernelSubmittedToMultipleQueues(kernel, command_queue);
+    areKernelParamsAliased(kernel);
+  }
 
   ETMSG(OPENCL, "Registering callback for kind: Kernel. "
                 "Correlation id: %"PRIu64 "", kernel_info->details.ker_cb.correlation_id);
@@ -1134,6 +1267,9 @@ hpcrun_clEnqueueReadBuffer
     HPCRUN_OPENCL_CALL(clEnqueueReadBuffer,
       (command_queue, buffer, blocking_read, offset,
        cb, ptr, num_events_in_wait_list, event_wait_list, eventp));
+  if (optimization_check && return_status == CL_SUCCESS) {
+    recordD2HCall(buffer);
+  }
 
   ETMSG(OPENCL, "Registering callback for kind MEMCPY, type: D2H. "
                 "Correlation id: %"PRIu64 "", cpy_info->details.cpy_cb.correlation_id);
@@ -1176,6 +1312,9 @@ hpcrun_clEnqueueWriteBuffer
   HPCRUN_OPENCL_CALL(clEnqueueWriteBuffer,
                      (command_queue, buffer, blocking_write, offset, cb, ptr,
                           num_events_in_wait_list, event_wait_list, eventp));
+  if (optimization_check && return_status == CL_SUCCESS) {
+    recordH2DCall(buffer);
+  }
 
   ETMSG(OPENCL, "Registering callback for kind MEMCPY, type: H2D. "
                 "Correlation id: %"PRIu64 "", cpy_info->details.cpy_cb.correlation_id);
@@ -1309,6 +1448,37 @@ hpcrun_clWaitForEvents
 
 
 cl_int
+hpcrun_clSetKernelArg
+(
+ cl_kernel kernel,
+ cl_uint arg_index,
+ size_t arg_size,
+ const void* arg_value
+)
+{
+  cl_int status = HPCRUN_OPENCL_CALL(clSetKernelArg, (kernel, arg_index, arg_size, arg_value));
+  if (optimization_check && status == CL_SUCCESS) {
+    recordKernelParams(kernel, arg_value, arg_size);
+  }
+  return status;
+}
+
+
+cl_int
+hpcrun_clReleaseMemObject
+(
+ cl_mem mem
+)
+{
+  cl_int status = HPCRUN_OPENCL_CALL(clReleaseMemObject, (mem));
+  if (optimization_check && status == CL_SUCCESS) {
+    clearBufferEntry(mem);
+  }
+  return status;
+}
+
+
+cl_int
 hpcrun_clFinish
 (
 	cl_command_queue command_queue
@@ -1328,9 +1498,26 @@ hpcrun_clFinish
 
 
 cl_int
+hpcrun_clReleaseKernel
+(
+ cl_kernel kernel
+)
+{
+  ETMSG(OPENCL, "clReleaseKernel called for kernel: %"PRIu64 "", (uint64_t)kernel);
+
+  cl_int status = HPCRUN_OPENCL_CALL(clReleaseKernel, (kernel));
+  if (optimization_check && status == CL_SUCCESS) {
+    clearKernelQueues(kernel);
+    clearKernelParams(kernel);
+  }
+  return status;
+}
+
+
+cl_int
 hpcrun_clReleaseCommandQueue
 (
-	cl_command_queue command_queue
+ cl_command_queue command_queue
 )
 {
   ETMSG(OPENCL, "clReleaseCommandQueue called");
@@ -1339,7 +1526,30 @@ hpcrun_clReleaseCommandQueue
   if (is_opencl_blame_shifting_enabled() && status == CL_SUCCESS) {
     opencl_queue_epilogue(command_queue);
   }
+  if (optimization_check && status == CL_SUCCESS) {
+    clearQueueContext(command_queue);
+  }
   return status;
+}
+
+
+uint64_t
+get_numeric_hash_id_for_string
+(
+ const char *mem_ptr,
+ size_t mem_size
+)
+{
+  // Compute hash for mem_ptr with mem_size
+  unsigned char hash[HASH_LENGTH];
+  crypto_hash_compute((const unsigned char *)mem_ptr, mem_size, hash, HASH_LENGTH);
+  
+  size_t i;
+  uint64_t num_hash = 0;
+  for (i = 0; i < HASH_LENGTH; ++i) {
+    num_hash += ((uint64_t)pow(hash[i], i+1) % 0xFFFFFFFF);
+  }
+  return num_hash;
 }
 
 
@@ -1361,6 +1571,17 @@ opencl_blame_shifting_enable
 {
   ENABLE_BLAME_SHIFTING = true;
 	ETMSG(OPENCL, "Opencl Blame-Shifting enabled");
+}
+
+
+void
+opencl_optimization_check_enable
+(
+ void
+)
+{
+  optimization_check = true;
+  ETMSG(OPENCL, "Intel optimization check enabled");
 }
 
 
@@ -1404,5 +1625,12 @@ opencl_api_process_finalize
  int how
 )
 {
+  if (optimization_check) { // is this the right to do final optimization checks
+    // we cannot get cct nodes using gpu_application_thread_correlation_callback inside fini-thread callback
+    // monitor_block_shootdown() inside libmonitor blocks this call
+    isSingleDeviceUsed();
+    areAllDevicesUsed();
+  }
   gpu_operation_multiplexer_fini();
 }
+
