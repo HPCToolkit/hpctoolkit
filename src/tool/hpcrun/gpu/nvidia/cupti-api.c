@@ -602,6 +602,7 @@ cupti_error_callback_dummy // __attribute__((unused))
   
   EEMSG("FATAL: hpcrun failure: failure type = %s, "
       "function %s failed with error %s", type, fn, error_string);
+  EEMSG("See the 'FAQ and Troubleshooting' chapter in the HPCToolkit manual for guidance");
   exit(1);
 }
 
@@ -1250,6 +1251,9 @@ cupti_buffer_completion_callback
  size_t validSize
 )
 {
+  
+  hpcrun_thread_init_mem_pool_once();
+
   // handle notifications
   cupti_buffer_completion_notify();
 

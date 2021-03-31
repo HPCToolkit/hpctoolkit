@@ -223,22 +223,6 @@ gpu_trace_stream_append
                            td->prev_dLCA, time);
 }
 
-
-static void
-gpu_trace_first
-(
- thread_data_t* td,
- cct_node_t *no_activity,
- uint64_t start
-)
-{
-  if (td->gpu_trace_first_time == 0) {
-    td->gpu_trace_first_time = start - 1;
-    gpu_trace_stream_append(td, no_activity, start - 1);
-  }
-}
-
-
 static uint64_t
 gpu_trace_start_adjust
 (
@@ -358,6 +342,9 @@ gpu_trace_record
 {
   gpu_trace_channel_set_t *channel_set = (gpu_trace_channel_set_t *) args;
 
+  hpcrun_thread_init_mem_pool_once();
+  atomic_fetch_add(&active_streams_counter, 1);
+
   while (!atomic_load(&stop_trace_flag)) {
     //getting data from a trace channel
     gpu_trace_channel_set_process(channel_set);
@@ -378,14 +365,7 @@ gpu_trace_create
 {
   // Init variables
   gpu_trace_t *trace = gpu_trace_alloc();
-
-  // Create a new thread for the stream without libmonitor watching
-  monitor_disable_new_threads();
-
   trace->thread = gpu_trace_demultiplexer_push(trace->trace_channel);
-  atomic_fetch_add(&active_streams_counter, 1);
-
-  monitor_enable_new_threads();
 
   return trace;
 }
@@ -455,11 +435,11 @@ consume_one_trace_item
   }
 
   if (append) {
-    gpu_trace_first(td, no_activity, start);
-
+    gpu_trace_stream_append(td, no_activity, start - 1);
     gpu_trace_stream_append(td, leaf, start);
 
-    gpu_trace_stream_append(td, no_activity, end);
+    gpu_trace_stream_append(td, leaf, end);
+    gpu_trace_stream_append(td, no_activity, end + 1);
 
     PRINT("%p Append trace activity [%lu, %lu]\n", td, start, end);
   }

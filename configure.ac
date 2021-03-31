@@ -81,7 +81,7 @@ m4_include(config/hpc-cxxutils.m4)
 # Initialization:
 #----------------------------------------------------------------------------
 
-AC_INIT([hpctoolkit], [2020.08-develop],
+AC_INIT([hpctoolkit], [2021.03.01-master],
         [hpctoolkit-forum@rice.edu],
 	[hpctoolkit],
 	[http://hpctoolkit.org/])
@@ -4890,6 +4890,7 @@ AC_MSG_RESULT([$OPENCL])
 AC_SUBST([OPT_OPENCL_IFLAGS])
 
 
+
 #-------------------------------------------------
 # Option: --with-igc=PATH
 #-------------------------------------------------
@@ -5703,6 +5704,7 @@ AC_MSG_NOTICE([  xerces:       ${XERCES}])
 AC_MSG_NOTICE([  zlib:         ${ZLIB}])
 AC_MSG_NOTICE([  cuda:         ${CUDA}])
 AC_MSG_NOTICE([  cupti:        ${CUPTI}])
+AC_MSG_NOTICE([  opencl:        ${OPENCL}])
 AC_MSG_NOTICE([  igc:          ${IGC}])
 AC_MSG_NOTICE([  gtpin:        ${GTPIN}])
 AC_MSG_NOTICE([  metrics-discovery: ${METRICS_DISCOVERY}])

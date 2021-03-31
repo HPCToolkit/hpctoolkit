@@ -688,8 +688,6 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
   sample_val_t sv = hpcrun_sample_callpath(context, metric_id, metric_delta,
 					    0/*skipInner*/, 0/*isSync*/, NULL);
 
-  blame_shift_apply(metric_id, sv.sample_node, metric_incr);
-
   if(sv.sample_node) {
     blame_shift_apply(metric_id, sv.sample_node, metric_incr);
   }

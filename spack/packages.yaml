@@ -71,7 +71,7 @@ packages:
   # +papi uses papi instead of perfmon (now default).
   #
   # hpctoolkit:
-  #   version:  [2021.02.10, master]
+  #   version:  [2021.03.01, master]
   #   variants: +mpi +papi
 
 

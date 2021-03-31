@@ -200,6 +200,31 @@ hpcrun_threaded_data(void)
 }
 
 
+void
+hpcrun_thread_init_mem_pool_once(void){
+  static bool is_initialized = false;
+
+  if (is_initialized == false){
+    hpcrun_mmap_init();
+
+    // ----------------------------------------
+    // call thread manager to get a thread data. If there is unused thread data,
+    //  we can recycle it, otherwise we need to allocate a new one.
+    // If we allocate a new one, we need to initialize the data and trace file.
+    // ----------------------------------------
+
+    int id = 0;
+    thread_data_t* td = NULL;
+    bool has_trace = false;
+    bool demand_new_thread = true;
+
+    hpcrun_threadMgr_data_get_safe(id, NULL, &td, has_trace, demand_new_thread);
+    hpcrun_set_thread_data(td);
+    is_initialized = true;
+  }
+}
+
+
 //***************************************************************************
 // 
 //***************************************************************************
@@ -265,6 +290,7 @@ static inline void gpu_data_init(gpu_data_t * gpu_data)
   gpu_data->accum_num_sync_threads = 0;
 }
 #endif
+
 
 void
 hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child, size_t n_sources)
@@ -402,10 +428,9 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child, size_t n_sou
   // ----------------------------------------
   // gpu trace line support
   // ----------------------------------------
-  td->gpu_trace_first_time = 0;
   td->gpu_trace_prev_time = 0;
 
-#ifdef ENABLE_CUDA
+#if defined(ENABLE_CUDA)
   gpu_data_init(&(td->gpu_data));
 #endif
 }

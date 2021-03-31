@@ -164,6 +164,8 @@ XED2_HPCRUN_LIBS =  @XED2_HPCRUN_LIBS@
 XED2_HPCLINK_LIBS = @XED2_HPCLINK_LIBS@
 CUPTI_INC_FLGS = @OPT_CUPTI_IFLAGS@
 OPENCL_IFLAGS = @OPT_OPENCL_IFLAGS@
+OCL_BH_IFLAGS = @OPT_OCL_BH_IFLAGS@
+OCL_BH_LDFLGS = @OPT_OCL_BH_LDFLAGS@
 CUPTI_LD_FLGS = @OPT_CUPTI_LDFLAGS@
 CUPTI_BASE = @OPT_CUPTI@
 
@@ -315,6 +317,7 @@ MY_BASE_FILES =				\
         sample-sources/sync.c           \
 	sample_sources_registered.c	\
 	sample-sources/sample-filters.c \
+  sample-sources/cpu_gpu_idle.c	\
 	segv_handler.c			\
 	start-stop.c			\
 	term_handler.c			\
@@ -413,7 +416,14 @@ MY_BASE_FILES =				\
 	utilities/line_wrapping.c	\
 	utilities/timer.c		\
 	utilities/tokenize.h utilities/tokenize.c \
-	utilities/unlink.h utilities/unlink.c
+	utilities/unlink.h utilities/unlink.c \
+	\
+	gpu/blame-shifting/blame.c \
+	gpu/blame-shifting/blame-helper.c \
+	gpu/blame-shifting/blame-queue-map.c	\
+	gpu/blame-shifting/blame-kernel-map.c	\
+	gpu/blame-shifting/active-kernels-map.c \
+	gpu/blame-shifting/blame-kernel-cleanup-map.c
 
 # 	gpu/gpu-api.c
 #	trampoline/common/trampoline.c
@@ -523,12 +533,24 @@ MY_OPENCL_FILES = \
 	gpu/opencl/opencl-activity-translate.c \
 	gpu/opencl/opencl-h2d-map.c \
 	gpu/opencl/opencl-queue-map.c \
-	gpu/opencl/opencl-context-map.c
+	gpu/opencl/opencl-context-map.c \
+	\
+	gpu/blame-shifting/opencl/opencl-blame.c \
+	\
+	gpu/opencl/intel/optimization-check.c \
+	gpu/opencl/opencl-kernel-loadmap-map.c \
+	gpu/opencl/intel/maps/queue-context-map.c \
+	gpu/opencl/intel/maps/kernel-queue-map.c	\
+	gpu/opencl/intel/maps/kernel-param-map.c	\
+	gpu/opencl/intel/pointer-alias-check-helper.c \
+	gpu/opencl/intel/maps/buffer-map.c	\
+	gpu/opencl/intel/maps/device-map.c
 
 pkglib_LTLIBRARIES += libhpcrun_opencl.la
 libhpcrun_opencl_la_CPPFLAGS  = -I$(top_srcdir)/src $(OPENCL_IFLAGS)
 libhpcrun_opencl_la_SOURCES   = gpu/opencl/opencl-api-wrappers.c
 libhpcrun_opencl_la_LDFLAGS   = -Wl,-Bsymbolic
+libhpcrun_opencl_la_LDFLAGS   += $(OPT_OCL_BH_LDFLAGS)
 endif
 
 if OPT_ENABLE_GTPIN
@@ -1057,6 +1079,7 @@ endif
 if OPT_ENABLE_OPENCL
   libhpcrun_la_SOURCES  += $(MY_OPENCL_FILES)
   libhpcrun_la_CPPFLAGS += -DENABLE_OPENCL
+  libhpcrun_la_CPPFLAGS += $(OPT_OCL_BH_IFLAGS)
   libhpcrun_la_CFLAGS   += $(OPT_OPENCL_IFLAGS)
 
   MY_CPP_DEFINES  += -DHPCRUN_SS_OPENCL

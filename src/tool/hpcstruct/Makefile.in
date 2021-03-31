@@ -116,9 +116,7 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-@OPT_DYNINST_LIBDWARF_TRUE@am__append_1 = -I$(LIBDWARF_INC)
-@OPT_ENABLE_OPENMP_TRUE@am__append_2 = $(OPENMP_FLAG)
-@OPT_ENABLE_OPENMP_TRUE@am__append_3 = $(OPENMP_FLAG)
+@OPT_ENABLE_OPENMP_TRUE@am__append_1 = $(OPENMP_FLAG)
 pkglibexec_PROGRAMS = hpcstruct-bin$(EXEEXT) dotgraph-bin$(EXEEXT)
 subdir = src/tool/hpcstruct
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -143,31 +141,28 @@ PROGRAMS = $(pkglibexec_PROGRAMS)
 am_dotgraph_bin_OBJECTS = dotgraph_bin-DotGraph.$(OBJEXT)
 dotgraph_bin_OBJECTS = $(am_dotgraph_bin_OBJECTS)
 am__DEPENDENCIES_1 =
-am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+@HOST_CPU_X86_FAMILY_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
+am__DEPENDENCIES_3 = $(HPCLIB_Analysis) $(HPCLIB_Banal) \
+	$(HPCLIB_Banal_Simple) $(HPCLIB_Prof) $(HPCLIB_Binutils) \
+	$(HPCLIB_ProfLean) $(HPCLIB_ISA) $(am__DEPENDENCIES_2) \
+	$(HPCLIB_XML) $(HPCLIB_Support) $(HPCLIB_SupportLean) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) $(HPCLIB_gettext) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1)
-dotgraph_bin_DEPENDENCIES = $(am__DEPENDENCIES_2)
+dotgraph_bin_DEPENDENCIES = $(am__DEPENDENCIES_3)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
 dotgraph_bin_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(dotgraph_bin_CXXFLAGS) \
-	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+	$(CXXFLAGS) $(dotgraph_bin_LDFLAGS) $(LDFLAGS) -o $@
 am__objects_1 = hpcstruct_bin-main.$(OBJEXT) \
 	hpcstruct_bin-Args.$(OBJEXT)
 am_hpcstruct_bin_OBJECTS = $(am__objects_1)
 hpcstruct_bin_OBJECTS = $(am_hpcstruct_bin_OBJECTS)
-@HOST_CPU_X86_FAMILY_TRUE@am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1)
-am__DEPENDENCIES_4 = $(HPCLIB_Analysis) $(HPCLIB_Banal) \
-	$(HPCLIB_Banal_Simple) $(HPCLIB_Prof) $(HPCLIB_Binutils) \
-	$(HPCLIB_ProfLean) $(HPCLIB_ISA) $(am__DEPENDENCIES_3) \
-	$(HPCLIB_XML) $(HPCLIB_Support) $(HPCLIB_SupportLean) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(HPCLIB_gettext) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
-hpcstruct_bin_DEPENDENCIES = $(am__DEPENDENCIES_4)
+hpcstruct_bin_DEPENDENCIES = $(am__DEPENDENCIES_3)
 hpcstruct_bin_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(hpcstruct_bin_CXXFLAGS) $(CXXFLAGS) $(hpcstruct_bin_LDFLAGS) \
@@ -566,12 +561,11 @@ HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
 SYMTABAPI_LIB = @SYMTABAPI_LIB@
 SYMTABAPI_LIB_LIST = @SYMTABAPI_LIB_LIST@
 @OPT_ENABLE_IGC_TRUE@IGC_LDFLGS = @OPT_IGC_LDFLAGS@
+@OPT_ENABLE_IGC_TRUE@IGC_IFLAGS = @OPT_IGC_IFLAGS@
 MYSOURCES = main.cpp Args.cpp
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@ \
-	$(am__append_2)
-DOT_CXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) $(BOOST_IFLAGS) \
-	$(DYNINST_IFLAGS) -I$(LIBELF_INC) $(TBB_IFLAGS) \
-	$(am__append_1) $(am__append_3)
+	$(BOOST_IFLAGS) $(DYNINST_IFLAGS) -I$(LIBELF_INC) \
+	$(IGC_IFLAGS) $(TBB_IFLAGS) $(am__append_1)
 MYLDFLAGS = \
 	@HOST_CXXFLAGS@ \
 	-ldl
@@ -593,17 +587,10 @@ MYLDADD = \
 	$(BOOST_LFLAGS) \
 	$(MY_ELF_DWARF) \
 	@BINUTILS_LIBS@ \
+  $(IGC_LDFLGS) \
 	$(HPCLIB_gettext) \
 	$(LZMA_LDFLAGS_DYN) \
-	$(IGC_LDFLGS) \
 	$(MBEDTLS_LIBS) \
-	$(TBB_LFLAGS)
-
-DOT_LDADD = \
-	$(DYNINST_LFLAGS) \
-	$(BOOST_LFLAGS) \
-	$(MY_ELF_DWARF) \
-	$(LZMA_LDFLAGS_DYN) \
 	$(TBB_LFLAGS)
 
 @OPT_DYNINST_LIBDW_FALSE@MY_ELF_DWARF = -L$(LIBDWARF_LIB) -ldwarf -L$(LIBELF_LIB) -lelf
@@ -624,8 +611,9 @@ hpcstruct_bin_CXXFLAGS = $(MYCXXFLAGS)
 hpcstruct_bin_LDFLAGS = $(MYLDFLAGS)
 hpcstruct_bin_LDADD = $(MYLDADD)
 dotgraph_bin_SOURCES = DotGraph.cpp
-dotgraph_bin_CXXFLAGS = $(DOT_CXXFLAGS)
-dotgraph_bin_LDADD = $(DOT_LDADD)
+dotgraph_bin_CXXFLAGS = $(MYCXXFLAGS)
+dotgraph_bin_LDFLAGS = $(MYLDFLAGS)
+dotgraph_bin_LDADD = $(MYLDADD)
 MOSTLYCLEANFILES = $(MYCLEAN)
 
 # Assumes includer sets MYCXXFLAGS and MYCFLAGS

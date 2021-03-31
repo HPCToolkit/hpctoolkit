@@ -79,6 +79,7 @@ TBB_PROXY_LIB = @TBB_PROXY_LIB@
 
 if OPT_ENABLE_IGC
 IGC_LDFLGS = @OPT_IGC_LDFLAGS@
+IGC_IFLAGS = @OPT_IGC_IFLAGS@
 endif
 
 MYSOURCES = main.cpp Args.cpp
@@ -86,19 +87,12 @@ MYSOURCES = main.cpp Args.cpp
 MYCXXFLAGS = \
 	@HOST_CXXFLAGS@  \
 	$(HPC_IFLAGS)  \
-	@BINUTILS_IFLAGS@
-
-DOT_CXXFLAGS = \
-	@HOST_CXXFLAGS@  \
-	$(HPC_IFLAGS)    \
-	$(BOOST_IFLAGS)  \
-	$(DYNINST_IFLAGS) \
-	-I$(LIBELF_INC)  \
-	$(TBB_IFLAGS)
-
-if OPT_DYNINST_LIBDWARF
-DOT_CXXFLAGS += -I$(LIBDWARF_INC)
-endif
+	@BINUTILS_IFLAGS@ \
+  $(BOOST_IFLAGS)  \
+  $(DYNINST_IFLAGS) \
+  -I$(LIBELF_INC)  \
+  $(IGC_IFLAGS) \
+  $(TBB_IFLAGS)
 
 MYLDFLAGS = \
 	@HOST_CXXFLAGS@ \
@@ -121,17 +115,10 @@ MYLDADD = \
 	$(BOOST_LFLAGS) \
 	$(MY_ELF_DWARF) \
 	@BINUTILS_LIBS@ \
+  $(IGC_LDFLGS) \
 	$(HPCLIB_gettext) \
 	$(LZMA_LDFLAGS_DYN) \
-	$(IGC_LDFLGS) \
 	$(MBEDTLS_LIBS) \
-	$(TBB_LFLAGS)
-
-DOT_LDADD = \
-	$(DYNINST_LFLAGS) \
-	$(BOOST_LFLAGS) \
-	$(MY_ELF_DWARF) \
-	$(LZMA_LDFLAGS_DYN) \
 	$(TBB_LFLAGS)
 
 if OPT_DYNINST_LIBDW
@@ -142,7 +129,6 @@ endif
 
 if OPT_ENABLE_OPENMP
 MYCXXFLAGS += $(OPENMP_FLAG)
-DOT_CXXFLAGS += $(OPENMP_FLAG)
 endif
 
 if HOST_CPU_X86_FAMILY
@@ -175,8 +161,9 @@ hpcstruct_bin_LDFLAGS  = $(MYLDFLAGS)
 hpcstruct_bin_LDADD    = $(MYLDADD)
 
 dotgraph_bin_SOURCES  = DotGraph.cpp
-dotgraph_bin_CXXFLAGS = $(DOT_CXXFLAGS)
-dotgraph_bin_LDADD    = $(DOT_LDADD)
+dotgraph_bin_CXXFLAGS = $(MYCXXFLAGS)
+dotgraph_bin_LDFLAGS  = $(MYLDFLAGS)
+dotgraph_bin_LDADD    = $(MYLDADD)
 
 MOSTLYCLEANFILES = $(MYCLEAN)
 #############################################################################

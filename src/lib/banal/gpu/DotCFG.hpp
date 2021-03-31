@@ -11,6 +11,8 @@
 // dyninst
 #include <CFG.h>
 
+#include <include/hpctoolkit-config.h>
+
 namespace GPUParse {
 
 typedef Dyninst::Architecture Arch;
@@ -40,6 +42,18 @@ struct Inst {
 };
 
 
+#ifdef DYNINST_SUPPORTS_INTEL_GPU
+
+struct IntelInst : public Inst {
+  // Constructor for dummy inst
+  IntelInst(int offset, int size) : Inst(offset, size, Dyninst::Arch_intelGen9) {}
+
+  explicit IntelInst(int offset) : Inst(offset, 0, Dyninst::Arch_intelGen9) {}
+};
+
+#endif
+
+
 struct CudaInst : public Inst {
   // Constructor for dummy inst
   CudaInst(int offset, int size) : Inst(offset, size, Dyninst::Arch_cuda) {}
@@ -47,7 +61,7 @@ struct CudaInst : public Inst {
   explicit CudaInst(int offset) : Inst(offset, 0, Dyninst::Arch_cuda) {}
 
   // Cuda instruction constructor
-  CudaInst(std::string &inst_str) : Inst(0, 0) {
+  CudaInst(std::string &inst_str) : CudaInst(0, 0) {
     if (inst_str.find("{") != std::string::npos) {  // Dual first
       auto pos = inst_str.find("{");
       inst_str.replace(pos, 1, " ");
@@ -140,7 +154,6 @@ struct CudaInst : public Inst {
 
 struct Block;
 
-// TODO(Keren): consistent with dyninst
 typedef Dyninst::ParseAPI::EdgeTypeEnum TargetType;
 
 struct Target {

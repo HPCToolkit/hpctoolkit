@@ -34,7 +34,10 @@ Function *GPUCFGFactory::mkfunc(Address addr, FuncSource src,
           for (auto *inst : block->insts) {
             inst_offsets.emplace_back(std::make_pair(inst->offset, inst->size));
           }
-          ret_block = new GPUBlock(obj, region, block->address, inst_offsets, arch);
+          auto last_addr = inst_offsets.back().first;
+          auto block_end = last_addr + inst_offsets.back().second;
+          ret_block = new GPUBlock(obj, region, block->address,
+            block_end, last_addr, inst_offsets, arch);
           _block_filter[block->id] = ret_block;
           blocks_.add(ret_block);
         } else {
@@ -61,7 +64,10 @@ Function *GPUCFGFactory::mkfunc(Address addr, FuncSource src,
             for (auto *inst : target->block->insts) {
               inst_offsets.push_back(std::make_pair(inst->offset, inst->size));
             }
-            ret_target_block = new GPUBlock(obj, region, target->block->address, inst_offsets, arch);
+            auto last_addr = inst_offsets.back().first;
+            auto block_end = last_addr + inst_offsets.back().second;
+            ret_target_block = new GPUBlock(obj, region, target->block->address,
+              block_end, last_addr, inst_offsets, arch);
             _block_filter[target->block->id] = ret_target_block;
             blocks_.add(ret_target_block);
           } else {

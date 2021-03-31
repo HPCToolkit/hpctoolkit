@@ -2,9 +2,6 @@
 
 // * BeginRiceCopyright *****************************************************
 //
-// $HeadURL: https://outreach.scidac.gov/svn/hpctoolkit/branches/hpctoolkit-gpu-blame-shift-proto/src/tool/hpcrun/sample-sources/gpu_blame.h $
-// $Id: itimer.c 3784 2012-05-10 22:35:51Z mc29 $
-//
 // --------------------------------------------------------------------------
 // Part of HPCToolkit (hpctoolkit.org)
 //
@@ -42,49 +39,79 @@
 // or otherwise) arising in any way out of the use of this software, even
 // if advised of the possibility of such damage.
 //
-// **
+// ******************************************************* EndRiceCopyright *
 
-#ifndef __GPU_BLAME_H__
-#define __GPU_BLAME_H__
-#include <cuda.h>
-#include <cuda_runtime.h>
+#ifndef opencl_kernel_loadmap_map_h
+#define opencl_kernel_loadmap_map_h
 
-#ifdef ENABLE_CUDA
 
-#include "gpu_blame-cuda-runtime-header.h"
-#include "gpu_blame-cuda-driver-header.h"
-#include <hpcrun/core_profile_trace_data.h>
-#include <hpcrun/main.h>
+//*****************************************************************************
+// system includes
+//*****************************************************************************
 
-//
-// Blame shiting interface
-//
-#define MAX_STREAMS (500)
+#include <stdint.h>
 
-// Visible types
 
-// CPU GPU blame metrics
-extern int cpu_idle_metric_id;
-extern int gpu_time_metric_id;
-extern int cpu_idle_cause_metric_id;
-extern int gpu_idle_metric_id;
-extern int gpu_overload_potential_metric_id;
-extern int stream_special_metric_id;
-extern int h_to_h_data_xfer_metric_id;
-extern int h_to_d_data_xfer_metric_id;
-extern int d_to_d_data_xfer_metric_id;
-extern int d_to_h_data_xfer_metric_id;
-extern int uva_data_xfer_metric_id;
 
-extern bool g_cpu_gpu_enabled;
+//*****************************************************************************
+// local includes
+//*****************************************************************************
 
-// num threads in the process
-extern uint64_t g_active_threads;
 
-// Visible function declarations
-extern void gpu_blame_shifter(void* dc, int metric_id, cct_node_t* node, int  metric_incr);
-extern  void hpcrun_stream_finalize(void* st);
-extern void hpcrun_set_gpu_proxy_present();
+
+//*****************************************************************************
+// type definitions 
+//*****************************************************************************
+
+typedef struct opencl_kernel_loadmap_map_entry_t opencl_kernel_loadmap_map_entry_t;
+
+
+
+//*****************************************************************************
+// interface operations
+//*****************************************************************************
+
+opencl_kernel_loadmap_map_entry_t *
+opencl_kernel_loadmap_map_lookup
+(
+ uint64_t
+);
+
+
+void
+opencl_kernel_loadmap_map_insert
+(
+ uint64_t, 
+ uint32_t
+);
+
+
+void
+opencl_kernel_loadmap_map_delete
+(
+ uint64_t
+);
+
+
+uint64_t
+opencl_kernel_loadmap_map_entry_kernel_name_id_get
+(
+ opencl_kernel_loadmap_map_entry_t *entry
+);
+
+
+uint32_t
+opencl_kernel_loadmap_map_entry_module_id_get
+(
+ opencl_kernel_loadmap_map_entry_t *
+);
+
+
+uint64_t
+opencl_kernel_loadmap_map_count
+(
+ void
+);
 
 #endif
-#endif
+

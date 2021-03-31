@@ -76,6 +76,7 @@
  *****************************************************************************/
 #include "sample_source_obj.h"
 #include "common.h"
+#include <hpcrun/gpu/gpu-metrics.h>
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
 
@@ -100,9 +101,14 @@
 #include <lib/prof-lean/splay-macros.h>
 #include "blame-shift/blame-shift.h"
 
-#ifdef ENABLE_CUDA
-#include "gpu_blame.h"
-#endif // ENABLE_CUDA
+#include <hpcrun/gpu/blame-shifting/blame.h>
+#if defined(ENABLE_CUDA) || defined(ENABLE_OPENCL)
+#include "cpu_gpu_idle.h"
+#endif // ENABLE_CUDA || ENABLE_OPENCL
+
+#ifdef ENABLE_OPENCL
+#include <hpcrun/gpu/opencl/opencl-api.h>
+#endif // ENABLE_OPENCL
 
 // ****************** utility macros *********************
 #define Cuda_RTcall(fn) cudaRuntimeFunctionPointer[fn ## Enum].fn ## Real
@@ -114,21 +120,9 @@ int g_cpu_gpu_proxy_count = 0;
 bool g_cpu_gpu_enabled = false;
 
 
-// Various CPU-GPU metrics
-int cpu_idle_metric_id;
-int gpu_time_metric_id;
-int cpu_idle_cause_metric_id;
-int gpu_idle_metric_id;
-int gpu_overload_potential_metric_id;
-int stream_special_metric_id;
-int h_to_d_data_xfer_metric_id;
-int d_to_h_data_xfer_metric_id;
-int h_to_h_data_xfer_metric_id;
-int d_to_d_data_xfer_metric_id;
-int uva_data_xfer_metric_id;
+atomic_uint_fast64_t g_active_threads = { 1 };
 
 
-uint64_t g_active_threads;
 
 // blame shift registration info
 static bs_fn_entry_t bs_entry = {};
@@ -146,14 +140,13 @@ static void METHOD_FN(init)
     TMSG(CPU_GPU_BLAME_CTL, "setting up CPU_GPU_BLAME");
     //active threads represents the total number of threads in the system
     //including the main thread 
-    g_active_threads = 1;
     self->state = INIT;                                    
 }
 
 static void METHOD_FN(thread_init)
 {
     TMSG(CPU_GPU_BLAME_CTL, "thread init");
-    atomic_add_i64(&g_active_threads, 1L);
+    atomic_fetch_add(&g_active_threads, 1L);
 }
 
 static void METHOD_FN(thread_init_action)
@@ -176,7 +169,7 @@ METHOD_FN(start)
 static void METHOD_FN(thread_fini_action)
 {
     TMSG(CPU_GPU_BLAME_CTL, "thread action ");
-    atomic_add_i64(&g_active_threads, -1L);
+    atomic_fetch_add(&g_active_threads, -1L);
 }
 
 static void METHOD_FN(stop)
@@ -203,39 +196,27 @@ static void METHOD_FN(process_event_list, int lush_metrics)
 {
     
     TMSG(CPU_GPU_BLAME_CTL, "process event list, lush_metrics = %d", lush_metrics);
-    
-    kind_info_t *blame_kind = hpcrun_metrics_new_kind();
-    // Create metrics for CPU/GPU blame shifting
-    // cpu_idle_metric_id a.k.a CPU_IDLE measures the time when CPU is idle waiting for GPU to finish 
-    cpu_idle_metric_id = hpcrun_set_new_metric_info(blame_kind, "CPU_IDLE");
-    // gpu_idle_metric_id a.k.a GPU_IDLE_CAUSE measures the time when GPU is idle and blames CPU CCT node
-    // for not creating work
-    gpu_idle_metric_id = hpcrun_set_new_metric_info(blame_kind, "GPU_IDLE_CAUSE");
-    // cpu_idle_cause_metric_id a.k.a CPU_IDLE_CAUSE blames GPU kernels (CCT nodes which launched them) 
-    // that are keeping the CPU  idle 
-    cpu_idle_cause_metric_id = hpcrun_set_new_metric_info_and_period(blame_kind, "CPU_IDLE_CAUSE",
-								     MetricFlags_ValFmt_Real, 1, metric_property_none);
-    // gpu_time_metric_id a.k.a. GPU_ACTIVITY_TIME accounts the absolute running time of a kernel (CCT node which launched it)
-    gpu_time_metric_id = hpcrun_set_new_metric_info(blame_kind, "GPU_TIME");
-    // h_to_d_data_xfer_metric_id is the number of bytes xfered from CPU to GPU
-    h_to_d_data_xfer_metric_id = hpcrun_set_new__metric_info(blame_kind, "H_TO_D_BYTES");
-    // d_to_h_data_xfer_metric_id is the number of bytes xfered from GPU to CPU
-    d_to_h_data_xfer_metric_id = hpcrun_set_new_metric_info(blame_kind, "D_TO_H_BYTES");
-    // h_to_h_data_xfer_metric_id is the number of bytes xfered from CPU to CPU
-    h_to_h_data_xfer_metric_id = hpcrun_set_new_metric_info(blame_kind, "H_TO_H_BYTES");
-    // d_to_d_data_xfer_metric_id is the number of bytes xfered from GPU to GPU
-    d_to_d_data_xfer_metric_id = hpcrun_set_new_metric_info(blame_kind, "D_TO_D_BYTES");
-    // uva_data_xfer_metric_id is the number of bytes xfered over CUDA unified virtual address
-    uva_data_xfer_metric_id = hpcrun_set_new_metric_info(blame_kind, "UVA_BYTES");
-    // Accumulates the time between last kernel end to current Sync point as a potential GPU overload factor
-    gpu_overload_potential_metric_id = hpcrun_set_new_metric_info(blame_kind, "GPU_OVERLOAD_POTENTIAL");
 
-    hpcrun_close_kind(blame_kind);
-    
-    bs_entry.fn = dlsym(RTLD_DEFAULT, "gpu_blame_shifter");
+    gpu_metrics_BLAME_SHIFT_enable();
+    TMSG(OPENCL, "registering gpu_blame_shift callback with itimer");
+    bs_entry.fn = &gpu_idle_blame;
+    // bs_entry.fn = dlsym(RTLD_DEFAULT, "gpu_idle_blame");
     bs_entry.next = 0;
     blame_shift_register(&bs_entry);
+
+    // The blame-shift registration for OPENCL and CUDA are kept in separate if-blocks and not if-else'd because someone may want to enable both 
+		#ifdef ENABLE_OPENCL
+			opencl_blame_shifting_enable();
+		#endif
+		
+		#ifdef ENABLE_CUDA
+			// CUDA blame-shifting: (disabled because support is out-of-date)
+			// bs_entry.fn = dlsym(RTLD_DEFAULT, "gpu_blame_shifter");
+			// bs_entry.next = 0;
+			// blame_shift_register(&bs_entry);
+		#endif
 }
+
 
 static void
 METHOD_FN(finalize_event_list)

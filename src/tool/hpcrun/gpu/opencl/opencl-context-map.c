@@ -180,8 +180,9 @@ opencl_cl_context_map_update
  uint64_t context
 )
 {
-  uint32_t ret_context_id = 0;
   spinlock_lock(&opencl_context_map_lock);
+
+  uint32_t ret_context_id = 0;
 
   opencl_context_map_entry_t *entry = st_lookup(&map_root, context);
   if (entry) {

@@ -77,6 +77,7 @@ typedef struct {
 } sigjmp_buf_t;
 
 typedef struct gpu_data_t {
+	/* CUDA events */
   // True if this thread is at CuXXXXSynchronize.
   bool is_thread_at_cuda_sync;
   // maintains state to account for overload potential  
@@ -91,6 +92,7 @@ typedef struct gpu_data_t {
 	// holds the number of times the above accum_num_sync_threads
 	// is updated
   uint64_t accum_num_samples;
+	
 } gpu_data_t;
 
 
@@ -281,11 +283,10 @@ typedef struct thread_data_t {
 
 
 
-#ifdef ENABLE_CUDA
+#if defined(ENABLE_CUDA) || defined(ENABLE_OPENCL)
   gpu_data_t gpu_data;
 #endif
   
-  uint64_t gpu_trace_first_time;
   uint64_t gpu_trace_prev_time;
  
 } thread_data_t;
@@ -307,7 +308,7 @@ extern thread_data_t* hpcrun_safe_get_td(void);
 
 void hpcrun_unthreaded_data(void);
 void hpcrun_threaded_data(void);
-
+ void hpcrun_thread_init_mem_pool_once(void);
 
 extern thread_data_t* hpcrun_allocate_thread_data(int id);
 

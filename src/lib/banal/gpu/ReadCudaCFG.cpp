@@ -213,7 +213,7 @@ parseDotCFG
           block->begin_offset = cuda_arch >= 70 ? 16 : 8;
           max_block_id++;
           while (function_size < symbol_size) {
-            block->insts.push_back(new GPUParse::Inst(function_size + function->address, len));
+            block->insts.push_back(new GPUParse::CudaInst(function_size + function->address, len));
             function_size += len;
           } 
           if (function->blocks.size() > 0) {

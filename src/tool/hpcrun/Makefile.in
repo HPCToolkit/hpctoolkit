@@ -298,7 +298,8 @@ host_triplet = @host@
 @OPT_ENABLE_LEVEL0_TRUE@am__append_130 = $(OPT_LEVEL0_IFLAGS)
 @OPT_ENABLE_LEVEL0_TRUE@am__append_131 = -DHPCRUN_SS_LEVEL0
 @OPT_ENABLE_OPENCL_TRUE@am__append_132 = $(MY_OPENCL_FILES)
-@OPT_ENABLE_OPENCL_TRUE@am__append_133 = -DENABLE_OPENCL
+@OPT_ENABLE_OPENCL_TRUE@am__append_133 = -DENABLE_OPENCL \
+@OPT_ENABLE_OPENCL_TRUE@	$(OPT_OCL_BH_IFLAGS)
 @OPT_ENABLE_OPENCL_TRUE@am__append_134 = $(OPT_OPENCL_IFLAGS)
 @OPT_ENABLE_OPENCL_TRUE@am__append_135 = -DHPCRUN_SS_OPENCL
 @OPT_ENABLE_GTPIN_TRUE@am__append_136 = $(MY_GTPIN_FILES)
@@ -467,21 +468,21 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/memleak.c sample-sources/pthread-blame.c \
 	sample-sources/none.c sample-sources/retcnt.c \
 	sample-sources/sync.c sample_sources_registered.c \
-	sample-sources/sample-filters.c segv_handler.c start-stop.c \
-	term_handler.c thread_data.c thread_use.c thread_finalize.c \
-	control-knob.c control-knob.h device-finalizers.c \
-	device-initializers.c module-ignore-map.c threadmgr.c trace.c \
-	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
-	cct/cct-node-vector.c cct2metrics.c lush/lush-backtrace.h \
-	lush/lush-backtrace.c lush/lush.h lush/lush.c \
-	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
-	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
-	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
-	memory/mem.c memory/mmap.c messages/debug-flag.c \
-	messages/messages-sync.c messages/messages-async.c \
-	messages/fmt.c hpcrun-placeholders.c gpu/gpu-activity.c \
-	gpu/gpu-activity-channel.c gpu/gpu-activity-process.c \
-	gpu/gpu-application-thread-api.c \
+	sample-sources/sample-filters.c sample-sources/cpu_gpu_idle.c \
+	segv_handler.c start-stop.c term_handler.c thread_data.c \
+	thread_use.c thread_finalize.c control-knob.c control-knob.h \
+	device-finalizers.c device-initializers.c module-ignore-map.c \
+	threadmgr.c trace.c weak.c write_data.c cct/cct_bundle.c \
+	cct/cct_ctxt.c cct/cct.c cct/cct-node-vector.c cct2metrics.c \
+	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
+	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
+	lush/lush-pthread.c lush/lush-support-rt.h \
+	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
+	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
+	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
+	messages/messages-async.c messages/fmt.c hpcrun-placeholders.c \
+	gpu/gpu-activity.c gpu/gpu-activity-channel.c \
+	gpu/gpu-activity-process.c gpu/gpu-application-thread-api.c \
 	gpu/gpu-channel-item-allocator.c gpu/gpu-context-id-map.c \
 	gpu/gpu-correlation.c gpu/gpu-correlation-channel.c \
 	gpu/gpu-correlation-channel-set.c gpu/gpu-correlation-id.c \
@@ -507,6 +508,11 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	utilities/ip-normalized.c utilities/line_wrapping.c \
 	utilities/timer.c utilities/tokenize.h utilities/tokenize.c \
 	utilities/unlink.h utilities/unlink.c \
+	gpu/blame-shifting/blame.c gpu/blame-shifting/blame-helper.c \
+	gpu/blame-shifting/blame-queue-map.c \
+	gpu/blame-shifting/blame-kernel-map.c \
+	gpu/blame-shifting/active-kernels-map.c \
+	gpu/blame-shifting/blame-kernel-cleanup-map.c \
 	trampoline/common/trampoline_eager.c \
 	trampoline/common/trampoline_lazy.c \
 	sample-sources/perf/event_custom.c \
@@ -551,6 +557,15 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	gpu/opencl/opencl-activity-translate.c \
 	gpu/opencl/opencl-h2d-map.c gpu/opencl/opencl-queue-map.c \
 	gpu/opencl/opencl-context-map.c \
+	gpu/blame-shifting/opencl/opencl-blame.c \
+	gpu/opencl/intel/optimization-check.c \
+	gpu/opencl/opencl-kernel-loadmap-map.c \
+	gpu/opencl/intel/maps/queue-context-map.c \
+	gpu/opencl/intel/maps/kernel-queue-map.c \
+	gpu/opencl/intel/maps/kernel-param-map.c \
+	gpu/opencl/intel/pointer-alias-check-helper.c \
+	gpu/opencl/intel/maps/buffer-map.c \
+	gpu/opencl/intel/maps/device-map.c \
 	gpu/instrumentation/kernel-data-map.c \
 	gpu/instrumentation/gtpin-instrumentation.c \
 	gpu/instrumentation/gtpin-correlation-id-map.c \
@@ -624,6 +639,7 @@ am__objects_14 = utilities/libhpcrun_la-first_func.lo \
 	sample-sources/libhpcrun_la-sync.lo \
 	libhpcrun_la-sample_sources_registered.lo \
 	sample-sources/libhpcrun_la-sample-filters.lo \
+	sample-sources/libhpcrun_la-cpu_gpu_idle.lo \
 	libhpcrun_la-segv_handler.lo libhpcrun_la-start-stop.lo \
 	libhpcrun_la-term_handler.lo libhpcrun_la-thread_data.lo \
 	libhpcrun_la-thread_use.lo libhpcrun_la-thread_finalize.lo \
@@ -697,9 +713,16 @@ am__objects_14 = utilities/libhpcrun_la-first_func.lo \
 	utilities/libhpcrun_la-line_wrapping.lo \
 	utilities/libhpcrun_la-timer.lo \
 	utilities/libhpcrun_la-tokenize.lo \
-	utilities/libhpcrun_la-unlink.lo $(am__objects_7) \
-	$(am__objects_8) $(am__objects_9) $(am__objects_10) \
-	$(am__objects_11) $(am__objects_12) $(am__objects_13)
+	utilities/libhpcrun_la-unlink.lo \
+	gpu/blame-shifting/libhpcrun_la-blame.lo \
+	gpu/blame-shifting/libhpcrun_la-blame-helper.lo \
+	gpu/blame-shifting/libhpcrun_la-blame-queue-map.lo \
+	gpu/blame-shifting/libhpcrun_la-blame-kernel-map.lo \
+	gpu/blame-shifting/libhpcrun_la-active-kernels-map.lo \
+	gpu/blame-shifting/libhpcrun_la-blame-kernel-cleanup-map.lo \
+	$(am__objects_7) $(am__objects_8) $(am__objects_9) \
+	$(am__objects_10) $(am__objects_11) $(am__objects_12) \
+	$(am__objects_13)
 am__objects_15 = fnbounds/libhpcrun_la-fnbounds_client.lo \
 	fnbounds/libhpcrun_la-fnbounds_dynamic.lo \
 	monitor-exts/libhpcrun_la-openmp.lo \
@@ -768,7 +791,16 @@ am__objects_35 =
 @OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/libhpcrun_la-opencl-activity-translate.lo \
 @OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/libhpcrun_la-opencl-h2d-map.lo \
 @OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/libhpcrun_la-opencl-queue-map.lo \
-@OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/libhpcrun_la-opencl-context-map.lo
+@OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/libhpcrun_la-opencl-context-map.lo \
+@OPT_ENABLE_OPENCL_TRUE@	gpu/blame-shifting/opencl/libhpcrun_la-opencl-blame.lo \
+@OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/intel/libhpcrun_la-optimization-check.lo \
+@OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/libhpcrun_la-opencl-kernel-loadmap-map.lo \
+@OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/intel/maps/libhpcrun_la-queue-context-map.lo \
+@OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/intel/maps/libhpcrun_la-kernel-queue-map.lo \
+@OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/intel/maps/libhpcrun_la-kernel-param-map.lo \
+@OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/intel/libhpcrun_la-pointer-alias-check-helper.lo \
+@OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/intel/maps/libhpcrun_la-buffer-map.lo \
+@OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/intel/maps/libhpcrun_la-device-map.lo
 @OPT_ENABLE_OPENCL_TRUE@am__objects_41 = $(am__objects_40)
 @OPT_ENABLE_GTPIN_TRUE@am__objects_42 = gpu/instrumentation/libhpcrun_la-kernel-data-map.lo \
 @OPT_ENABLE_GTPIN_TRUE@	gpu/instrumentation/libhpcrun_la-gtpin-instrumentation.lo \
@@ -957,21 +989,21 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/memleak.c sample-sources/pthread-blame.c \
 	sample-sources/none.c sample-sources/retcnt.c \
 	sample-sources/sync.c sample_sources_registered.c \
-	sample-sources/sample-filters.c segv_handler.c start-stop.c \
-	term_handler.c thread_data.c thread_use.c thread_finalize.c \
-	control-knob.c control-knob.h device-finalizers.c \
-	device-initializers.c module-ignore-map.c threadmgr.c trace.c \
-	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
-	cct/cct-node-vector.c cct2metrics.c lush/lush-backtrace.h \
-	lush/lush-backtrace.c lush/lush.h lush/lush.c \
-	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
-	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
-	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
-	memory/mem.c memory/mmap.c messages/debug-flag.c \
-	messages/messages-sync.c messages/messages-async.c \
-	messages/fmt.c hpcrun-placeholders.c gpu/gpu-activity.c \
-	gpu/gpu-activity-channel.c gpu/gpu-activity-process.c \
-	gpu/gpu-application-thread-api.c \
+	sample-sources/sample-filters.c sample-sources/cpu_gpu_idle.c \
+	segv_handler.c start-stop.c term_handler.c thread_data.c \
+	thread_use.c thread_finalize.c control-knob.c control-knob.h \
+	device-finalizers.c device-initializers.c module-ignore-map.c \
+	threadmgr.c trace.c weak.c write_data.c cct/cct_bundle.c \
+	cct/cct_ctxt.c cct/cct.c cct/cct-node-vector.c cct2metrics.c \
+	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
+	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
+	lush/lush-pthread.c lush/lush-support-rt.h \
+	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
+	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
+	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
+	messages/messages-async.c messages/fmt.c hpcrun-placeholders.c \
+	gpu/gpu-activity.c gpu/gpu-activity-channel.c \
+	gpu/gpu-activity-process.c gpu/gpu-application-thread-api.c \
 	gpu/gpu-channel-item-allocator.c gpu/gpu-context-id-map.c \
 	gpu/gpu-correlation.c gpu/gpu-correlation-channel.c \
 	gpu/gpu-correlation-channel-set.c gpu/gpu-correlation-id.c \
@@ -997,6 +1029,11 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	utilities/ip-normalized.c utilities/line_wrapping.c \
 	utilities/timer.c utilities/tokenize.h utilities/tokenize.c \
 	utilities/unlink.h utilities/unlink.c \
+	gpu/blame-shifting/blame.c gpu/blame-shifting/blame-helper.c \
+	gpu/blame-shifting/blame-queue-map.c \
+	gpu/blame-shifting/blame-kernel-map.c \
+	gpu/blame-shifting/active-kernels-map.c \
+	gpu/blame-shifting/blame-kernel-cleanup-map.c \
 	trampoline/common/trampoline_eager.c \
 	trampoline/common/trampoline_lazy.c \
 	sample-sources/perf/event_custom.c \
@@ -1100,6 +1137,7 @@ am__objects_57 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	sample-sources/libhpcrun_o-sync.$(OBJEXT) \
 	libhpcrun_o-sample_sources_registered.$(OBJEXT) \
 	sample-sources/libhpcrun_o-sample-filters.$(OBJEXT) \
+	sample-sources/libhpcrun_o-cpu_gpu_idle.$(OBJEXT) \
 	libhpcrun_o-segv_handler.$(OBJEXT) \
 	libhpcrun_o-start-stop.$(OBJEXT) \
 	libhpcrun_o-term_handler.$(OBJEXT) \
@@ -1183,9 +1221,16 @@ am__objects_57 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	utilities/libhpcrun_o-line_wrapping.$(OBJEXT) \
 	utilities/libhpcrun_o-timer.$(OBJEXT) \
 	utilities/libhpcrun_o-tokenize.$(OBJEXT) \
-	utilities/libhpcrun_o-unlink.$(OBJEXT) $(am__objects_50) \
-	$(am__objects_51) $(am__objects_52) $(am__objects_53) \
-	$(am__objects_54) $(am__objects_55) $(am__objects_56)
+	utilities/libhpcrun_o-unlink.$(OBJEXT) \
+	gpu/blame-shifting/libhpcrun_o-blame.$(OBJEXT) \
+	gpu/blame-shifting/libhpcrun_o-blame-helper.$(OBJEXT) \
+	gpu/blame-shifting/libhpcrun_o-blame-queue-map.$(OBJEXT) \
+	gpu/blame-shifting/libhpcrun_o-blame-kernel-map.$(OBJEXT) \
+	gpu/blame-shifting/libhpcrun_o-active-kernels-map.$(OBJEXT) \
+	gpu/blame-shifting/libhpcrun_o-blame-kernel-cleanup-map.$(OBJEXT) \
+	$(am__objects_50) $(am__objects_51) $(am__objects_52) \
+	$(am__objects_53) $(am__objects_54) $(am__objects_55) \
+	$(am__objects_56)
 am__objects_58 = fnbounds/libhpcrun_o-fnbounds_static.$(OBJEXT) \
 	libhpcrun_o-custom-init-static.$(OBJEXT)
 am__objects_59 = unwind/common/libhpcrun_o-default_validation_summary.$(OBJEXT)
@@ -1782,6 +1827,8 @@ PAPI_INC_FLGS = @OPT_PAPI_IFLAGS@
 PAPI_LD_FLGS = @OPT_PAPI_LDFLAGS@
 CUPTI_INC_FLGS = @OPT_CUPTI_IFLAGS@
 OPENCL_IFLAGS = @OPT_OPENCL_IFLAGS@
+OCL_BH_IFLAGS = @OPT_OCL_BH_IFLAGS@
+OCL_BH_LDFLGS = @OPT_OCL_BH_LDFLAGS@
 CUPTI_LD_FLGS = @OPT_CUPTI_LDFLAGS@
 CUPTI_BASE = @OPT_CUPTI@
 HPCFNBOUNDS_INC = $(top_srcdir)/src/tool/hpcfnbounds
@@ -1884,21 +1931,21 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	sample-sources/memleak.c sample-sources/pthread-blame.c \
 	sample-sources/none.c sample-sources/retcnt.c \
 	sample-sources/sync.c sample_sources_registered.c \
-	sample-sources/sample-filters.c segv_handler.c start-stop.c \
-	term_handler.c thread_data.c thread_use.c thread_finalize.c \
-	control-knob.c control-knob.h device-finalizers.c \
-	device-initializers.c module-ignore-map.c threadmgr.c trace.c \
-	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
-	cct/cct-node-vector.c cct2metrics.c lush/lush-backtrace.h \
-	lush/lush-backtrace.c lush/lush.h lush/lush.c \
-	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
-	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
-	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
-	memory/mem.c memory/mmap.c messages/debug-flag.c \
-	messages/messages-sync.c messages/messages-async.c \
-	messages/fmt.c hpcrun-placeholders.c gpu/gpu-activity.c \
-	gpu/gpu-activity-channel.c gpu/gpu-activity-process.c \
-	gpu/gpu-application-thread-api.c \
+	sample-sources/sample-filters.c sample-sources/cpu_gpu_idle.c \
+	segv_handler.c start-stop.c term_handler.c thread_data.c \
+	thread_use.c thread_finalize.c control-knob.c control-knob.h \
+	device-finalizers.c device-initializers.c module-ignore-map.c \
+	threadmgr.c trace.c weak.c write_data.c cct/cct_bundle.c \
+	cct/cct_ctxt.c cct/cct.c cct/cct-node-vector.c cct2metrics.c \
+	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
+	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
+	lush/lush-pthread.c lush/lush-support-rt.h \
+	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
+	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
+	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
+	messages/messages-async.c messages/fmt.c hpcrun-placeholders.c \
+	gpu/gpu-activity.c gpu/gpu-activity-channel.c \
+	gpu/gpu-activity-process.c gpu/gpu-application-thread-api.c \
 	gpu/gpu-channel-item-allocator.c gpu/gpu-context-id-map.c \
 	gpu/gpu-correlation.c gpu/gpu-correlation-channel.c \
 	gpu/gpu-correlation-channel-set.c gpu/gpu-correlation-id.c \
@@ -1923,7 +1970,12 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	utilities/hpcrun-nanotime.c utilities/ip-normalized.h \
 	utilities/ip-normalized.c utilities/line_wrapping.c \
 	utilities/timer.c utilities/tokenize.h utilities/tokenize.c \
-	utilities/unlink.h utilities/unlink.c $(am__append_8) \
+	utilities/unlink.h utilities/unlink.c \
+	gpu/blame-shifting/blame.c gpu/blame-shifting/blame-helper.c \
+	gpu/blame-shifting/blame-queue-map.c \
+	gpu/blame-shifting/blame-kernel-map.c \
+	gpu/blame-shifting/active-kernels-map.c \
+	gpu/blame-shifting/blame-kernel-cleanup-map.c $(am__append_8) \
 	$(am__append_9) $(am__append_10) $(am__append_12) \
 	$(am__append_13) $(am__append_14) $(am__append_15)
 MY_DYNAMIC_FILES = \
@@ -1983,11 +2035,23 @@ MY_AARCH64_FILES = \
 @OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/opencl-activity-translate.c \
 @OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/opencl-h2d-map.c \
 @OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/opencl-queue-map.c \
-@OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/opencl-context-map.c
+@OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/opencl-context-map.c \
+@OPT_ENABLE_OPENCL_TRUE@	\
+@OPT_ENABLE_OPENCL_TRUE@	gpu/blame-shifting/opencl/opencl-blame.c \
+@OPT_ENABLE_OPENCL_TRUE@	\
+@OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/intel/optimization-check.c \
+@OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/opencl-kernel-loadmap-map.c \
+@OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/intel/maps/queue-context-map.c \
+@OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/intel/maps/kernel-queue-map.c	\
+@OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/intel/maps/kernel-param-map.c	\
+@OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/intel/pointer-alias-check-helper.c \
+@OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/intel/maps/buffer-map.c	\
+@OPT_ENABLE_OPENCL_TRUE@	gpu/opencl/intel/maps/device-map.c
 
 @OPT_ENABLE_OPENCL_TRUE@libhpcrun_opencl_la_CPPFLAGS = -I$(top_srcdir)/src $(OPENCL_IFLAGS)
 @OPT_ENABLE_OPENCL_TRUE@libhpcrun_opencl_la_SOURCES = gpu/opencl/opencl-api-wrappers.c
-@OPT_ENABLE_OPENCL_TRUE@libhpcrun_opencl_la_LDFLAGS = -Wl,-Bsymbolic
+@OPT_ENABLE_OPENCL_TRUE@libhpcrun_opencl_la_LDFLAGS = -Wl,-Bsymbolic \
+@OPT_ENABLE_OPENCL_TRUE@	$(OPT_OCL_BH_LDFLAGS)
 @OPT_ENABLE_GTPIN_TRUE@MY_GTPIN_FILES = \
 @OPT_ENABLE_GTPIN_TRUE@	gpu/instrumentation/kernel-data-map.c \
 @OPT_ENABLE_GTPIN_TRUE@	gpu/instrumentation/gtpin-instrumentation.c \
@@ -2615,6 +2679,9 @@ sample-sources/libhpcrun_la-sync.lo: sample-sources/$(am__dirstamp) \
 sample-sources/libhpcrun_la-sample-filters.lo:  \
 	sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
+sample-sources/libhpcrun_la-cpu_gpu_idle.lo:  \
+	sample-sources/$(am__dirstamp) \
+	sample-sources/$(DEPDIR)/$(am__dirstamp)
 cct/$(am__dirstamp):
 	@$(MKDIR_P) cct
 	@: > cct/$(am__dirstamp)
@@ -2803,6 +2870,30 @@ utilities/libhpcrun_la-tokenize.lo: utilities/$(am__dirstamp) \
 	utilities/$(DEPDIR)/$(am__dirstamp)
 utilities/libhpcrun_la-unlink.lo: utilities/$(am__dirstamp) \
 	utilities/$(DEPDIR)/$(am__dirstamp)
+gpu/blame-shifting/$(am__dirstamp):
+	@$(MKDIR_P) gpu/blame-shifting
+	@: > gpu/blame-shifting/$(am__dirstamp)
+gpu/blame-shifting/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) gpu/blame-shifting/$(DEPDIR)
+	@: > gpu/blame-shifting/$(DEPDIR)/$(am__dirstamp)
+gpu/blame-shifting/libhpcrun_la-blame.lo:  \
+	gpu/blame-shifting/$(am__dirstamp) \
+	gpu/blame-shifting/$(DEPDIR)/$(am__dirstamp)
+gpu/blame-shifting/libhpcrun_la-blame-helper.lo:  \
+	gpu/blame-shifting/$(am__dirstamp) \
+	gpu/blame-shifting/$(DEPDIR)/$(am__dirstamp)
+gpu/blame-shifting/libhpcrun_la-blame-queue-map.lo:  \
+	gpu/blame-shifting/$(am__dirstamp) \
+	gpu/blame-shifting/$(DEPDIR)/$(am__dirstamp)
+gpu/blame-shifting/libhpcrun_la-blame-kernel-map.lo:  \
+	gpu/blame-shifting/$(am__dirstamp) \
+	gpu/blame-shifting/$(DEPDIR)/$(am__dirstamp)
+gpu/blame-shifting/libhpcrun_la-active-kernels-map.lo:  \
+	gpu/blame-shifting/$(am__dirstamp) \
+	gpu/blame-shifting/$(DEPDIR)/$(am__dirstamp)
+gpu/blame-shifting/libhpcrun_la-blame-kernel-cleanup-map.lo:  \
+	gpu/blame-shifting/$(am__dirstamp) \
+	gpu/blame-shifting/$(DEPDIR)/$(am__dirstamp)
 trampoline/common/$(am__dirstamp):
 	@$(MKDIR_P) trampoline/common
 	@: > trampoline/common/$(am__dirstamp)
@@ -3054,6 +3145,51 @@ gpu/opencl/libhpcrun_la-opencl-queue-map.lo:  \
 gpu/opencl/libhpcrun_la-opencl-context-map.lo:  \
 	gpu/opencl/$(am__dirstamp) \
 	gpu/opencl/$(DEPDIR)/$(am__dirstamp)
+gpu/blame-shifting/opencl/$(am__dirstamp):
+	@$(MKDIR_P) gpu/blame-shifting/opencl
+	@: > gpu/blame-shifting/opencl/$(am__dirstamp)
+gpu/blame-shifting/opencl/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) gpu/blame-shifting/opencl/$(DEPDIR)
+	@: > gpu/blame-shifting/opencl/$(DEPDIR)/$(am__dirstamp)
+gpu/blame-shifting/opencl/libhpcrun_la-opencl-blame.lo:  \
+	gpu/blame-shifting/opencl/$(am__dirstamp) \
+	gpu/blame-shifting/opencl/$(DEPDIR)/$(am__dirstamp)
+gpu/opencl/intel/$(am__dirstamp):
+	@$(MKDIR_P) gpu/opencl/intel
+	@: > gpu/opencl/intel/$(am__dirstamp)
+gpu/opencl/intel/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) gpu/opencl/intel/$(DEPDIR)
+	@: > gpu/opencl/intel/$(DEPDIR)/$(am__dirstamp)
+gpu/opencl/intel/libhpcrun_la-optimization-check.lo:  \
+	gpu/opencl/intel/$(am__dirstamp) \
+	gpu/opencl/intel/$(DEPDIR)/$(am__dirstamp)
+gpu/opencl/libhpcrun_la-opencl-kernel-loadmap-map.lo:  \
+	gpu/opencl/$(am__dirstamp) \
+	gpu/opencl/$(DEPDIR)/$(am__dirstamp)
+gpu/opencl/intel/maps/$(am__dirstamp):
+	@$(MKDIR_P) gpu/opencl/intel/maps
+	@: > gpu/opencl/intel/maps/$(am__dirstamp)
+gpu/opencl/intel/maps/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) gpu/opencl/intel/maps/$(DEPDIR)
+	@: > gpu/opencl/intel/maps/$(DEPDIR)/$(am__dirstamp)
+gpu/opencl/intel/maps/libhpcrun_la-queue-context-map.lo:  \
+	gpu/opencl/intel/maps/$(am__dirstamp) \
+	gpu/opencl/intel/maps/$(DEPDIR)/$(am__dirstamp)
+gpu/opencl/intel/maps/libhpcrun_la-kernel-queue-map.lo:  \
+	gpu/opencl/intel/maps/$(am__dirstamp) \
+	gpu/opencl/intel/maps/$(DEPDIR)/$(am__dirstamp)
+gpu/opencl/intel/maps/libhpcrun_la-kernel-param-map.lo:  \
+	gpu/opencl/intel/maps/$(am__dirstamp) \
+	gpu/opencl/intel/maps/$(DEPDIR)/$(am__dirstamp)
+gpu/opencl/intel/libhpcrun_la-pointer-alias-check-helper.lo:  \
+	gpu/opencl/intel/$(am__dirstamp) \
+	gpu/opencl/intel/$(DEPDIR)/$(am__dirstamp)
+gpu/opencl/intel/maps/libhpcrun_la-buffer-map.lo:  \
+	gpu/opencl/intel/maps/$(am__dirstamp) \
+	gpu/opencl/intel/maps/$(DEPDIR)/$(am__dirstamp)
+gpu/opencl/intel/maps/libhpcrun_la-device-map.lo:  \
+	gpu/opencl/intel/maps/$(am__dirstamp) \
+	gpu/opencl/intel/maps/$(DEPDIR)/$(am__dirstamp)
 gpu/instrumentation/$(am__dirstamp):
 	@$(MKDIR_P) gpu/instrumentation
 	@: > gpu/instrumentation/$(am__dirstamp)
@@ -3331,6 +3467,9 @@ sample-sources/libhpcrun_o-sync.$(OBJEXT):  \
 sample-sources/libhpcrun_o-sample-filters.$(OBJEXT):  \
 	sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
+sample-sources/libhpcrun_o-cpu_gpu_idle.$(OBJEXT):  \
+	sample-sources/$(am__dirstamp) \
+	sample-sources/$(DEPDIR)/$(am__dirstamp)
 cct/libhpcrun_o-cct_bundle.$(OBJEXT): cct/$(am__dirstamp) \
 	cct/$(DEPDIR)/$(am__dirstamp)
 cct/libhpcrun_o-cct_ctxt.$(OBJEXT): cct/$(am__dirstamp) \
@@ -3472,6 +3611,24 @@ utilities/libhpcrun_o-tokenize.$(OBJEXT): utilities/$(am__dirstamp) \
 	utilities/$(DEPDIR)/$(am__dirstamp)
 utilities/libhpcrun_o-unlink.$(OBJEXT): utilities/$(am__dirstamp) \
 	utilities/$(DEPDIR)/$(am__dirstamp)
+gpu/blame-shifting/libhpcrun_o-blame.$(OBJEXT):  \
+	gpu/blame-shifting/$(am__dirstamp) \
+	gpu/blame-shifting/$(DEPDIR)/$(am__dirstamp)
+gpu/blame-shifting/libhpcrun_o-blame-helper.$(OBJEXT):  \
+	gpu/blame-shifting/$(am__dirstamp) \
+	gpu/blame-shifting/$(DEPDIR)/$(am__dirstamp)
+gpu/blame-shifting/libhpcrun_o-blame-queue-map.$(OBJEXT):  \
+	gpu/blame-shifting/$(am__dirstamp) \
+	gpu/blame-shifting/$(DEPDIR)/$(am__dirstamp)
+gpu/blame-shifting/libhpcrun_o-blame-kernel-map.$(OBJEXT):  \
+	gpu/blame-shifting/$(am__dirstamp) \
+	gpu/blame-shifting/$(DEPDIR)/$(am__dirstamp)
+gpu/blame-shifting/libhpcrun_o-active-kernels-map.$(OBJEXT):  \
+	gpu/blame-shifting/$(am__dirstamp) \
+	gpu/blame-shifting/$(DEPDIR)/$(am__dirstamp)
+gpu/blame-shifting/libhpcrun_o-blame-kernel-cleanup-map.$(OBJEXT):  \
+	gpu/blame-shifting/$(am__dirstamp) \
+	gpu/blame-shifting/$(DEPDIR)/$(am__dirstamp)
 trampoline/common/libhpcrun_o-trampoline_eager.$(OBJEXT):  \
 	trampoline/common/$(am__dirstamp) \
 	trampoline/common/$(DEPDIR)/$(am__dirstamp)
@@ -3766,6 +3923,10 @@ mostlyclean-compile:
 	-rm -f gpu/*.lo
 	-rm -f gpu/amd/*.$(OBJEXT)
 	-rm -f gpu/amd/*.lo
+	-rm -f gpu/blame-shifting/*.$(OBJEXT)
+	-rm -f gpu/blame-shifting/*.lo
+	-rm -f gpu/blame-shifting/opencl/*.$(OBJEXT)
+	-rm -f gpu/blame-shifting/opencl/*.lo
 	-rm -f gpu/instrumentation/*.$(OBJEXT)
 	-rm -f gpu/instrumentation/*.lo
 	-rm -f gpu/level0/*.$(OBJEXT)
@@ -3774,6 +3935,10 @@ mostlyclean-compile:
 	-rm -f gpu/nvidia/*.lo
 	-rm -f gpu/opencl/*.$(OBJEXT)
 	-rm -f gpu/opencl/*.lo
+	-rm -f gpu/opencl/intel/*.$(OBJEXT)
+	-rm -f gpu/opencl/intel/*.lo
+	-rm -f gpu/opencl/intel/maps/*.$(OBJEXT)
+	-rm -f gpu/opencl/intel/maps/*.lo
 	-rm -f lush-agents/*.$(OBJEXT)
 	-rm -f lush-agents/*.lo
 	-rm -f lush/*.$(OBJEXT)
@@ -3993,6 +4158,19 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/amd/$(DEPDIR)/libhpcrun_la-rocm-debug-api.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/amd/$(DEPDIR)/libhpcrun_la-roctracer-activity-translate.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/amd/$(DEPDIR)/libhpcrun_la-roctracer-api.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/blame-shifting/$(DEPDIR)/libhpcrun_la-active-kernels-map.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/blame-shifting/$(DEPDIR)/libhpcrun_la-blame-helper.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/blame-shifting/$(DEPDIR)/libhpcrun_la-blame-kernel-cleanup-map.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/blame-shifting/$(DEPDIR)/libhpcrun_la-blame-kernel-map.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/blame-shifting/$(DEPDIR)/libhpcrun_la-blame-queue-map.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/blame-shifting/$(DEPDIR)/libhpcrun_la-blame.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-active-kernels-map.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-blame-helper.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-blame-kernel-cleanup-map.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-blame-kernel-map.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-blame-queue-map.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-blame.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/blame-shifting/opencl/$(DEPDIR)/libhpcrun_la-opencl-blame.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/instrumentation/$(DEPDIR)/libhpcrun_la-gtpin-correlation-id-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/instrumentation/$(DEPDIR)/libhpcrun_la-gtpin-instrumentation.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/instrumentation/$(DEPDIR)/libhpcrun_la-kernel-data-map.Plo@am__quote@
@@ -4026,9 +4204,17 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/opencl/$(DEPDIR)/libhpcrun_la-opencl-api.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/opencl/$(DEPDIR)/libhpcrun_la-opencl-context-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/opencl/$(DEPDIR)/libhpcrun_la-opencl-h2d-map.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/opencl/$(DEPDIR)/libhpcrun_la-opencl-kernel-loadmap-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/opencl/$(DEPDIR)/libhpcrun_la-opencl-memory-manager.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/opencl/$(DEPDIR)/libhpcrun_la-opencl-queue-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@gpu/opencl/$(DEPDIR)/libhpcrun_opencl_la-opencl-api-wrappers.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/opencl/intel/$(DEPDIR)/libhpcrun_la-optimization-check.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/opencl/intel/$(DEPDIR)/libhpcrun_la-pointer-alias-check-helper.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/opencl/intel/maps/$(DEPDIR)/libhpcrun_la-buffer-map.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/opencl/intel/maps/$(DEPDIR)/libhpcrun_la-device-map.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/opencl/intel/maps/$(DEPDIR)/libhpcrun_la-kernel-param-map.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/opencl/intel/maps/$(DEPDIR)/libhpcrun_la-kernel-queue-map.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@gpu/opencl/intel/maps/$(DEPDIR)/libhpcrun_la-queue-context-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@lush-agents/$(DEPDIR)/libagent_cilk_la-agent-cilk.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@lush-agents/$(DEPDIR)/libagent_pthread_la-agent-pthread.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@lush-agents/$(DEPDIR)/libagent_tbb_la-agent-tbb.Plo@am__quote@
@@ -4090,6 +4276,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_io_wrap_a-io-over.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_la-amd.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_la-common.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_la-cpu_gpu_idle.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_la-display.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_la-ga.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_la-idle.Plo@am__quote@
@@ -4114,6 +4301,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_memleak_la-memleak-overrides.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_memleak_wrap_a-memleak-overrides.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_o-common.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_o-cpu_gpu_idle.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_o-display.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_o-ga.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_o-idle.Po@am__quote@
@@ -4748,6 +4936,13 @@ sample-sources/libhpcrun_la-sample-filters.lo: sample-sources/sample-filters.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/libhpcrun_la-sample-filters.lo `test -f 'sample-sources/sample-filters.c' || echo '$(srcdir)/'`sample-sources/sample-filters.c
 
+sample-sources/libhpcrun_la-cpu_gpu_idle.lo: sample-sources/cpu_gpu_idle.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_la-cpu_gpu_idle.lo -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_la-cpu_gpu_idle.Tpo -c -o sample-sources/libhpcrun_la-cpu_gpu_idle.lo `test -f 'sample-sources/cpu_gpu_idle.c' || echo '$(srcdir)/'`sample-sources/cpu_gpu_idle.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/$(DEPDIR)/libhpcrun_la-cpu_gpu_idle.Tpo sample-sources/$(DEPDIR)/libhpcrun_la-cpu_gpu_idle.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/cpu_gpu_idle.c' object='sample-sources/libhpcrun_la-cpu_gpu_idle.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/libhpcrun_la-cpu_gpu_idle.lo `test -f 'sample-sources/cpu_gpu_idle.c' || echo '$(srcdir)/'`sample-sources/cpu_gpu_idle.c
+
 libhpcrun_la-segv_handler.lo: segv_handler.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-segv_handler.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-segv_handler.Tpo -c -o libhpcrun_la-segv_handler.lo `test -f 'segv_handler.c' || echo '$(srcdir)/'`segv_handler.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libhpcrun_la-segv_handler.Tpo $(DEPDIR)/libhpcrun_la-segv_handler.Plo
@@ -5350,6 +5545,48 @@ utilities/libhpcrun_la-unlink.lo: utilities/unlink.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o utilities/libhpcrun_la-unlink.lo `test -f 'utilities/unlink.c' || echo '$(srcdir)/'`utilities/unlink.c
 
+gpu/blame-shifting/libhpcrun_la-blame.lo: gpu/blame-shifting/blame.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/blame-shifting/libhpcrun_la-blame.lo -MD -MP -MF gpu/blame-shifting/$(DEPDIR)/libhpcrun_la-blame.Tpo -c -o gpu/blame-shifting/libhpcrun_la-blame.lo `test -f 'gpu/blame-shifting/blame.c' || echo '$(srcdir)/'`gpu/blame-shifting/blame.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/blame-shifting/$(DEPDIR)/libhpcrun_la-blame.Tpo gpu/blame-shifting/$(DEPDIR)/libhpcrun_la-blame.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/blame-shifting/blame.c' object='gpu/blame-shifting/libhpcrun_la-blame.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/blame-shifting/libhpcrun_la-blame.lo `test -f 'gpu/blame-shifting/blame.c' || echo '$(srcdir)/'`gpu/blame-shifting/blame.c
+
+gpu/blame-shifting/libhpcrun_la-blame-helper.lo: gpu/blame-shifting/blame-helper.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/blame-shifting/libhpcrun_la-blame-helper.lo -MD -MP -MF gpu/blame-shifting/$(DEPDIR)/libhpcrun_la-blame-helper.Tpo -c -o gpu/blame-shifting/libhpcrun_la-blame-helper.lo `test -f 'gpu/blame-shifting/blame-helper.c' || echo '$(srcdir)/'`gpu/blame-shifting/blame-helper.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/blame-shifting/$(DEPDIR)/libhpcrun_la-blame-helper.Tpo gpu/blame-shifting/$(DEPDIR)/libhpcrun_la-blame-helper.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/blame-shifting/blame-helper.c' object='gpu/blame-shifting/libhpcrun_la-blame-helper.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/blame-shifting/libhpcrun_la-blame-helper.lo `test -f 'gpu/blame-shifting/blame-helper.c' || echo '$(srcdir)/'`gpu/blame-shifting/blame-helper.c
+
+gpu/blame-shifting/libhpcrun_la-blame-queue-map.lo: gpu/blame-shifting/blame-queue-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/blame-shifting/libhpcrun_la-blame-queue-map.lo -MD -MP -MF gpu/blame-shifting/$(DEPDIR)/libhpcrun_la-blame-queue-map.Tpo -c -o gpu/blame-shifting/libhpcrun_la-blame-queue-map.lo `test -f 'gpu/blame-shifting/blame-queue-map.c' || echo '$(srcdir)/'`gpu/blame-shifting/blame-queue-map.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/blame-shifting/$(DEPDIR)/libhpcrun_la-blame-queue-map.Tpo gpu/blame-shifting/$(DEPDIR)/libhpcrun_la-blame-queue-map.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/blame-shifting/blame-queue-map.c' object='gpu/blame-shifting/libhpcrun_la-blame-queue-map.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/blame-shifting/libhpcrun_la-blame-queue-map.lo `test -f 'gpu/blame-shifting/blame-queue-map.c' || echo '$(srcdir)/'`gpu/blame-shifting/blame-queue-map.c
+
+gpu/blame-shifting/libhpcrun_la-blame-kernel-map.lo: gpu/blame-shifting/blame-kernel-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/blame-shifting/libhpcrun_la-blame-kernel-map.lo -MD -MP -MF gpu/blame-shifting/$(DEPDIR)/libhpcrun_la-blame-kernel-map.Tpo -c -o gpu/blame-shifting/libhpcrun_la-blame-kernel-map.lo `test -f 'gpu/blame-shifting/blame-kernel-map.c' || echo '$(srcdir)/'`gpu/blame-shifting/blame-kernel-map.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/blame-shifting/$(DEPDIR)/libhpcrun_la-blame-kernel-map.Tpo gpu/blame-shifting/$(DEPDIR)/libhpcrun_la-blame-kernel-map.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/blame-shifting/blame-kernel-map.c' object='gpu/blame-shifting/libhpcrun_la-blame-kernel-map.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/blame-shifting/libhpcrun_la-blame-kernel-map.lo `test -f 'gpu/blame-shifting/blame-kernel-map.c' || echo '$(srcdir)/'`gpu/blame-shifting/blame-kernel-map.c
+
+gpu/blame-shifting/libhpcrun_la-active-kernels-map.lo: gpu/blame-shifting/active-kernels-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/blame-shifting/libhpcrun_la-active-kernels-map.lo -MD -MP -MF gpu/blame-shifting/$(DEPDIR)/libhpcrun_la-active-kernels-map.Tpo -c -o gpu/blame-shifting/libhpcrun_la-active-kernels-map.lo `test -f 'gpu/blame-shifting/active-kernels-map.c' || echo '$(srcdir)/'`gpu/blame-shifting/active-kernels-map.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/blame-shifting/$(DEPDIR)/libhpcrun_la-active-kernels-map.Tpo gpu/blame-shifting/$(DEPDIR)/libhpcrun_la-active-kernels-map.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/blame-shifting/active-kernels-map.c' object='gpu/blame-shifting/libhpcrun_la-active-kernels-map.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/blame-shifting/libhpcrun_la-active-kernels-map.lo `test -f 'gpu/blame-shifting/active-kernels-map.c' || echo '$(srcdir)/'`gpu/blame-shifting/active-kernels-map.c
+
+gpu/blame-shifting/libhpcrun_la-blame-kernel-cleanup-map.lo: gpu/blame-shifting/blame-kernel-cleanup-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/blame-shifting/libhpcrun_la-blame-kernel-cleanup-map.lo -MD -MP -MF gpu/blame-shifting/$(DEPDIR)/libhpcrun_la-blame-kernel-cleanup-map.Tpo -c -o gpu/blame-shifting/libhpcrun_la-blame-kernel-cleanup-map.lo `test -f 'gpu/blame-shifting/blame-kernel-cleanup-map.c' || echo '$(srcdir)/'`gpu/blame-shifting/blame-kernel-cleanup-map.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/blame-shifting/$(DEPDIR)/libhpcrun_la-blame-kernel-cleanup-map.Tpo gpu/blame-shifting/$(DEPDIR)/libhpcrun_la-blame-kernel-cleanup-map.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/blame-shifting/blame-kernel-cleanup-map.c' object='gpu/blame-shifting/libhpcrun_la-blame-kernel-cleanup-map.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/blame-shifting/libhpcrun_la-blame-kernel-cleanup-map.lo `test -f 'gpu/blame-shifting/blame-kernel-cleanup-map.c' || echo '$(srcdir)/'`gpu/blame-shifting/blame-kernel-cleanup-map.c
+
 trampoline/common/libhpcrun_la-trampoline_eager.lo: trampoline/common/trampoline_eager.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT trampoline/common/libhpcrun_la-trampoline_eager.lo -MD -MP -MF trampoline/common/$(DEPDIR)/libhpcrun_la-trampoline_eager.Tpo -c -o trampoline/common/libhpcrun_la-trampoline_eager.lo `test -f 'trampoline/common/trampoline_eager.c' || echo '$(srcdir)/'`trampoline/common/trampoline_eager.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) trampoline/common/$(DEPDIR)/libhpcrun_la-trampoline_eager.Tpo trampoline/common/$(DEPDIR)/libhpcrun_la-trampoline_eager.Plo
@@ -5755,6 +5992,69 @@ gpu/opencl/libhpcrun_la-opencl-context-map.lo: gpu/opencl/opencl-context-map.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/opencl/opencl-context-map.c' object='gpu/opencl/libhpcrun_la-opencl-context-map.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/opencl/libhpcrun_la-opencl-context-map.lo `test -f 'gpu/opencl/opencl-context-map.c' || echo '$(srcdir)/'`gpu/opencl/opencl-context-map.c
+
+gpu/blame-shifting/opencl/libhpcrun_la-opencl-blame.lo: gpu/blame-shifting/opencl/opencl-blame.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/blame-shifting/opencl/libhpcrun_la-opencl-blame.lo -MD -MP -MF gpu/blame-shifting/opencl/$(DEPDIR)/libhpcrun_la-opencl-blame.Tpo -c -o gpu/blame-shifting/opencl/libhpcrun_la-opencl-blame.lo `test -f 'gpu/blame-shifting/opencl/opencl-blame.c' || echo '$(srcdir)/'`gpu/blame-shifting/opencl/opencl-blame.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/blame-shifting/opencl/$(DEPDIR)/libhpcrun_la-opencl-blame.Tpo gpu/blame-shifting/opencl/$(DEPDIR)/libhpcrun_la-opencl-blame.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/blame-shifting/opencl/opencl-blame.c' object='gpu/blame-shifting/opencl/libhpcrun_la-opencl-blame.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/blame-shifting/opencl/libhpcrun_la-opencl-blame.lo `test -f 'gpu/blame-shifting/opencl/opencl-blame.c' || echo '$(srcdir)/'`gpu/blame-shifting/opencl/opencl-blame.c
+
+gpu/opencl/intel/libhpcrun_la-optimization-check.lo: gpu/opencl/intel/optimization-check.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/opencl/intel/libhpcrun_la-optimization-check.lo -MD -MP -MF gpu/opencl/intel/$(DEPDIR)/libhpcrun_la-optimization-check.Tpo -c -o gpu/opencl/intel/libhpcrun_la-optimization-check.lo `test -f 'gpu/opencl/intel/optimization-check.c' || echo '$(srcdir)/'`gpu/opencl/intel/optimization-check.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/opencl/intel/$(DEPDIR)/libhpcrun_la-optimization-check.Tpo gpu/opencl/intel/$(DEPDIR)/libhpcrun_la-optimization-check.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/opencl/intel/optimization-check.c' object='gpu/opencl/intel/libhpcrun_la-optimization-check.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/opencl/intel/libhpcrun_la-optimization-check.lo `test -f 'gpu/opencl/intel/optimization-check.c' || echo '$(srcdir)/'`gpu/opencl/intel/optimization-check.c
+
+gpu/opencl/libhpcrun_la-opencl-kernel-loadmap-map.lo: gpu/opencl/opencl-kernel-loadmap-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/opencl/libhpcrun_la-opencl-kernel-loadmap-map.lo -MD -MP -MF gpu/opencl/$(DEPDIR)/libhpcrun_la-opencl-kernel-loadmap-map.Tpo -c -o gpu/opencl/libhpcrun_la-opencl-kernel-loadmap-map.lo `test -f 'gpu/opencl/opencl-kernel-loadmap-map.c' || echo '$(srcdir)/'`gpu/opencl/opencl-kernel-loadmap-map.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/opencl/$(DEPDIR)/libhpcrun_la-opencl-kernel-loadmap-map.Tpo gpu/opencl/$(DEPDIR)/libhpcrun_la-opencl-kernel-loadmap-map.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/opencl/opencl-kernel-loadmap-map.c' object='gpu/opencl/libhpcrun_la-opencl-kernel-loadmap-map.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/opencl/libhpcrun_la-opencl-kernel-loadmap-map.lo `test -f 'gpu/opencl/opencl-kernel-loadmap-map.c' || echo '$(srcdir)/'`gpu/opencl/opencl-kernel-loadmap-map.c
+
+gpu/opencl/intel/maps/libhpcrun_la-queue-context-map.lo: gpu/opencl/intel/maps/queue-context-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/opencl/intel/maps/libhpcrun_la-queue-context-map.lo -MD -MP -MF gpu/opencl/intel/maps/$(DEPDIR)/libhpcrun_la-queue-context-map.Tpo -c -o gpu/opencl/intel/maps/libhpcrun_la-queue-context-map.lo `test -f 'gpu/opencl/intel/maps/queue-context-map.c' || echo '$(srcdir)/'`gpu/opencl/intel/maps/queue-context-map.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/opencl/intel/maps/$(DEPDIR)/libhpcrun_la-queue-context-map.Tpo gpu/opencl/intel/maps/$(DEPDIR)/libhpcrun_la-queue-context-map.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/opencl/intel/maps/queue-context-map.c' object='gpu/opencl/intel/maps/libhpcrun_la-queue-context-map.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/opencl/intel/maps/libhpcrun_la-queue-context-map.lo `test -f 'gpu/opencl/intel/maps/queue-context-map.c' || echo '$(srcdir)/'`gpu/opencl/intel/maps/queue-context-map.c
+
+gpu/opencl/intel/maps/libhpcrun_la-kernel-queue-map.lo: gpu/opencl/intel/maps/kernel-queue-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/opencl/intel/maps/libhpcrun_la-kernel-queue-map.lo -MD -MP -MF gpu/opencl/intel/maps/$(DEPDIR)/libhpcrun_la-kernel-queue-map.Tpo -c -o gpu/opencl/intel/maps/libhpcrun_la-kernel-queue-map.lo `test -f 'gpu/opencl/intel/maps/kernel-queue-map.c' || echo '$(srcdir)/'`gpu/opencl/intel/maps/kernel-queue-map.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/opencl/intel/maps/$(DEPDIR)/libhpcrun_la-kernel-queue-map.Tpo gpu/opencl/intel/maps/$(DEPDIR)/libhpcrun_la-kernel-queue-map.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/opencl/intel/maps/kernel-queue-map.c' object='gpu/opencl/intel/maps/libhpcrun_la-kernel-queue-map.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/opencl/intel/maps/libhpcrun_la-kernel-queue-map.lo `test -f 'gpu/opencl/intel/maps/kernel-queue-map.c' || echo '$(srcdir)/'`gpu/opencl/intel/maps/kernel-queue-map.c
+
+gpu/opencl/intel/maps/libhpcrun_la-kernel-param-map.lo: gpu/opencl/intel/maps/kernel-param-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/opencl/intel/maps/libhpcrun_la-kernel-param-map.lo -MD -MP -MF gpu/opencl/intel/maps/$(DEPDIR)/libhpcrun_la-kernel-param-map.Tpo -c -o gpu/opencl/intel/maps/libhpcrun_la-kernel-param-map.lo `test -f 'gpu/opencl/intel/maps/kernel-param-map.c' || echo '$(srcdir)/'`gpu/opencl/intel/maps/kernel-param-map.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/opencl/intel/maps/$(DEPDIR)/libhpcrun_la-kernel-param-map.Tpo gpu/opencl/intel/maps/$(DEPDIR)/libhpcrun_la-kernel-param-map.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/opencl/intel/maps/kernel-param-map.c' object='gpu/opencl/intel/maps/libhpcrun_la-kernel-param-map.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/opencl/intel/maps/libhpcrun_la-kernel-param-map.lo `test -f 'gpu/opencl/intel/maps/kernel-param-map.c' || echo '$(srcdir)/'`gpu/opencl/intel/maps/kernel-param-map.c
+
+gpu/opencl/intel/libhpcrun_la-pointer-alias-check-helper.lo: gpu/opencl/intel/pointer-alias-check-helper.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/opencl/intel/libhpcrun_la-pointer-alias-check-helper.lo -MD -MP -MF gpu/opencl/intel/$(DEPDIR)/libhpcrun_la-pointer-alias-check-helper.Tpo -c -o gpu/opencl/intel/libhpcrun_la-pointer-alias-check-helper.lo `test -f 'gpu/opencl/intel/pointer-alias-check-helper.c' || echo '$(srcdir)/'`gpu/opencl/intel/pointer-alias-check-helper.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/opencl/intel/$(DEPDIR)/libhpcrun_la-pointer-alias-check-helper.Tpo gpu/opencl/intel/$(DEPDIR)/libhpcrun_la-pointer-alias-check-helper.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/opencl/intel/pointer-alias-check-helper.c' object='gpu/opencl/intel/libhpcrun_la-pointer-alias-check-helper.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/opencl/intel/libhpcrun_la-pointer-alias-check-helper.lo `test -f 'gpu/opencl/intel/pointer-alias-check-helper.c' || echo '$(srcdir)/'`gpu/opencl/intel/pointer-alias-check-helper.c
+
+gpu/opencl/intel/maps/libhpcrun_la-buffer-map.lo: gpu/opencl/intel/maps/buffer-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/opencl/intel/maps/libhpcrun_la-buffer-map.lo -MD -MP -MF gpu/opencl/intel/maps/$(DEPDIR)/libhpcrun_la-buffer-map.Tpo -c -o gpu/opencl/intel/maps/libhpcrun_la-buffer-map.lo `test -f 'gpu/opencl/intel/maps/buffer-map.c' || echo '$(srcdir)/'`gpu/opencl/intel/maps/buffer-map.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/opencl/intel/maps/$(DEPDIR)/libhpcrun_la-buffer-map.Tpo gpu/opencl/intel/maps/$(DEPDIR)/libhpcrun_la-buffer-map.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/opencl/intel/maps/buffer-map.c' object='gpu/opencl/intel/maps/libhpcrun_la-buffer-map.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/opencl/intel/maps/libhpcrun_la-buffer-map.lo `test -f 'gpu/opencl/intel/maps/buffer-map.c' || echo '$(srcdir)/'`gpu/opencl/intel/maps/buffer-map.c
+
+gpu/opencl/intel/maps/libhpcrun_la-device-map.lo: gpu/opencl/intel/maps/device-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/opencl/intel/maps/libhpcrun_la-device-map.lo -MD -MP -MF gpu/opencl/intel/maps/$(DEPDIR)/libhpcrun_la-device-map.Tpo -c -o gpu/opencl/intel/maps/libhpcrun_la-device-map.lo `test -f 'gpu/opencl/intel/maps/device-map.c' || echo '$(srcdir)/'`gpu/opencl/intel/maps/device-map.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/opencl/intel/maps/$(DEPDIR)/libhpcrun_la-device-map.Tpo gpu/opencl/intel/maps/$(DEPDIR)/libhpcrun_la-device-map.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/opencl/intel/maps/device-map.c' object='gpu/opencl/intel/maps/libhpcrun_la-device-map.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o gpu/opencl/intel/maps/libhpcrun_la-device-map.lo `test -f 'gpu/opencl/intel/maps/device-map.c' || echo '$(srcdir)/'`gpu/opencl/intel/maps/device-map.c
 
 gpu/instrumentation/libhpcrun_la-kernel-data-map.lo: gpu/instrumentation/kernel-data-map.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/instrumentation/libhpcrun_la-kernel-data-map.lo -MD -MP -MF gpu/instrumentation/$(DEPDIR)/libhpcrun_la-kernel-data-map.Tpo -c -o gpu/instrumentation/libhpcrun_la-kernel-data-map.lo `test -f 'gpu/instrumentation/kernel-data-map.c' || echo '$(srcdir)/'`gpu/instrumentation/kernel-data-map.c
@@ -6609,6 +6909,20 @@ sample-sources/libhpcrun_o-sample-filters.obj: sample-sources/sample-filters.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/sample-filters.c' object='sample-sources/libhpcrun_o-sample-filters.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/libhpcrun_o-sample-filters.obj `if test -f 'sample-sources/sample-filters.c'; then $(CYGPATH_W) 'sample-sources/sample-filters.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/sample-filters.c'; fi`
+
+sample-sources/libhpcrun_o-cpu_gpu_idle.o: sample-sources/cpu_gpu_idle.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_o-cpu_gpu_idle.o -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_o-cpu_gpu_idle.Tpo -c -o sample-sources/libhpcrun_o-cpu_gpu_idle.o `test -f 'sample-sources/cpu_gpu_idle.c' || echo '$(srcdir)/'`sample-sources/cpu_gpu_idle.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/$(DEPDIR)/libhpcrun_o-cpu_gpu_idle.Tpo sample-sources/$(DEPDIR)/libhpcrun_o-cpu_gpu_idle.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/cpu_gpu_idle.c' object='sample-sources/libhpcrun_o-cpu_gpu_idle.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/libhpcrun_o-cpu_gpu_idle.o `test -f 'sample-sources/cpu_gpu_idle.c' || echo '$(srcdir)/'`sample-sources/cpu_gpu_idle.c
+
+sample-sources/libhpcrun_o-cpu_gpu_idle.obj: sample-sources/cpu_gpu_idle.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_o-cpu_gpu_idle.obj -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_o-cpu_gpu_idle.Tpo -c -o sample-sources/libhpcrun_o-cpu_gpu_idle.obj `if test -f 'sample-sources/cpu_gpu_idle.c'; then $(CYGPATH_W) 'sample-sources/cpu_gpu_idle.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/cpu_gpu_idle.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/$(DEPDIR)/libhpcrun_o-cpu_gpu_idle.Tpo sample-sources/$(DEPDIR)/libhpcrun_o-cpu_gpu_idle.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/cpu_gpu_idle.c' object='sample-sources/libhpcrun_o-cpu_gpu_idle.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/libhpcrun_o-cpu_gpu_idle.obj `if test -f 'sample-sources/cpu_gpu_idle.c'; then $(CYGPATH_W) 'sample-sources/cpu_gpu_idle.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/cpu_gpu_idle.c'; fi`
 
 libhpcrun_o-segv_handler.o: segv_handler.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-segv_handler.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-segv_handler.Tpo -c -o libhpcrun_o-segv_handler.o `test -f 'segv_handler.c' || echo '$(srcdir)/'`segv_handler.c
@@ -7814,6 +8128,90 @@ utilities/libhpcrun_o-unlink.obj: utilities/unlink.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o utilities/libhpcrun_o-unlink.obj `if test -f 'utilities/unlink.c'; then $(CYGPATH_W) 'utilities/unlink.c'; else $(CYGPATH_W) '$(srcdir)/utilities/unlink.c'; fi`
 
+gpu/blame-shifting/libhpcrun_o-blame.o: gpu/blame-shifting/blame.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT gpu/blame-shifting/libhpcrun_o-blame.o -MD -MP -MF gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-blame.Tpo -c -o gpu/blame-shifting/libhpcrun_o-blame.o `test -f 'gpu/blame-shifting/blame.c' || echo '$(srcdir)/'`gpu/blame-shifting/blame.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-blame.Tpo gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-blame.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/blame-shifting/blame.c' object='gpu/blame-shifting/libhpcrun_o-blame.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/blame-shifting/libhpcrun_o-blame.o `test -f 'gpu/blame-shifting/blame.c' || echo '$(srcdir)/'`gpu/blame-shifting/blame.c
+
+gpu/blame-shifting/libhpcrun_o-blame.obj: gpu/blame-shifting/blame.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT gpu/blame-shifting/libhpcrun_o-blame.obj -MD -MP -MF gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-blame.Tpo -c -o gpu/blame-shifting/libhpcrun_o-blame.obj `if test -f 'gpu/blame-shifting/blame.c'; then $(CYGPATH_W) 'gpu/blame-shifting/blame.c'; else $(CYGPATH_W) '$(srcdir)/gpu/blame-shifting/blame.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-blame.Tpo gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-blame.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/blame-shifting/blame.c' object='gpu/blame-shifting/libhpcrun_o-blame.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/blame-shifting/libhpcrun_o-blame.obj `if test -f 'gpu/blame-shifting/blame.c'; then $(CYGPATH_W) 'gpu/blame-shifting/blame.c'; else $(CYGPATH_W) '$(srcdir)/gpu/blame-shifting/blame.c'; fi`
+
+gpu/blame-shifting/libhpcrun_o-blame-helper.o: gpu/blame-shifting/blame-helper.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT gpu/blame-shifting/libhpcrun_o-blame-helper.o -MD -MP -MF gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-blame-helper.Tpo -c -o gpu/blame-shifting/libhpcrun_o-blame-helper.o `test -f 'gpu/blame-shifting/blame-helper.c' || echo '$(srcdir)/'`gpu/blame-shifting/blame-helper.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-blame-helper.Tpo gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-blame-helper.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/blame-shifting/blame-helper.c' object='gpu/blame-shifting/libhpcrun_o-blame-helper.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/blame-shifting/libhpcrun_o-blame-helper.o `test -f 'gpu/blame-shifting/blame-helper.c' || echo '$(srcdir)/'`gpu/blame-shifting/blame-helper.c
+
+gpu/blame-shifting/libhpcrun_o-blame-helper.obj: gpu/blame-shifting/blame-helper.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT gpu/blame-shifting/libhpcrun_o-blame-helper.obj -MD -MP -MF gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-blame-helper.Tpo -c -o gpu/blame-shifting/libhpcrun_o-blame-helper.obj `if test -f 'gpu/blame-shifting/blame-helper.c'; then $(CYGPATH_W) 'gpu/blame-shifting/blame-helper.c'; else $(CYGPATH_W) '$(srcdir)/gpu/blame-shifting/blame-helper.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-blame-helper.Tpo gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-blame-helper.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/blame-shifting/blame-helper.c' object='gpu/blame-shifting/libhpcrun_o-blame-helper.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/blame-shifting/libhpcrun_o-blame-helper.obj `if test -f 'gpu/blame-shifting/blame-helper.c'; then $(CYGPATH_W) 'gpu/blame-shifting/blame-helper.c'; else $(CYGPATH_W) '$(srcdir)/gpu/blame-shifting/blame-helper.c'; fi`
+
+gpu/blame-shifting/libhpcrun_o-blame-queue-map.o: gpu/blame-shifting/blame-queue-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT gpu/blame-shifting/libhpcrun_o-blame-queue-map.o -MD -MP -MF gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-blame-queue-map.Tpo -c -o gpu/blame-shifting/libhpcrun_o-blame-queue-map.o `test -f 'gpu/blame-shifting/blame-queue-map.c' || echo '$(srcdir)/'`gpu/blame-shifting/blame-queue-map.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-blame-queue-map.Tpo gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-blame-queue-map.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/blame-shifting/blame-queue-map.c' object='gpu/blame-shifting/libhpcrun_o-blame-queue-map.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/blame-shifting/libhpcrun_o-blame-queue-map.o `test -f 'gpu/blame-shifting/blame-queue-map.c' || echo '$(srcdir)/'`gpu/blame-shifting/blame-queue-map.c
+
+gpu/blame-shifting/libhpcrun_o-blame-queue-map.obj: gpu/blame-shifting/blame-queue-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT gpu/blame-shifting/libhpcrun_o-blame-queue-map.obj -MD -MP -MF gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-blame-queue-map.Tpo -c -o gpu/blame-shifting/libhpcrun_o-blame-queue-map.obj `if test -f 'gpu/blame-shifting/blame-queue-map.c'; then $(CYGPATH_W) 'gpu/blame-shifting/blame-queue-map.c'; else $(CYGPATH_W) '$(srcdir)/gpu/blame-shifting/blame-queue-map.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-blame-queue-map.Tpo gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-blame-queue-map.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/blame-shifting/blame-queue-map.c' object='gpu/blame-shifting/libhpcrun_o-blame-queue-map.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/blame-shifting/libhpcrun_o-blame-queue-map.obj `if test -f 'gpu/blame-shifting/blame-queue-map.c'; then $(CYGPATH_W) 'gpu/blame-shifting/blame-queue-map.c'; else $(CYGPATH_W) '$(srcdir)/gpu/blame-shifting/blame-queue-map.c'; fi`
+
+gpu/blame-shifting/libhpcrun_o-blame-kernel-map.o: gpu/blame-shifting/blame-kernel-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT gpu/blame-shifting/libhpcrun_o-blame-kernel-map.o -MD -MP -MF gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-blame-kernel-map.Tpo -c -o gpu/blame-shifting/libhpcrun_o-blame-kernel-map.o `test -f 'gpu/blame-shifting/blame-kernel-map.c' || echo '$(srcdir)/'`gpu/blame-shifting/blame-kernel-map.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-blame-kernel-map.Tpo gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-blame-kernel-map.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/blame-shifting/blame-kernel-map.c' object='gpu/blame-shifting/libhpcrun_o-blame-kernel-map.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/blame-shifting/libhpcrun_o-blame-kernel-map.o `test -f 'gpu/blame-shifting/blame-kernel-map.c' || echo '$(srcdir)/'`gpu/blame-shifting/blame-kernel-map.c
+
+gpu/blame-shifting/libhpcrun_o-blame-kernel-map.obj: gpu/blame-shifting/blame-kernel-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT gpu/blame-shifting/libhpcrun_o-blame-kernel-map.obj -MD -MP -MF gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-blame-kernel-map.Tpo -c -o gpu/blame-shifting/libhpcrun_o-blame-kernel-map.obj `if test -f 'gpu/blame-shifting/blame-kernel-map.c'; then $(CYGPATH_W) 'gpu/blame-shifting/blame-kernel-map.c'; else $(CYGPATH_W) '$(srcdir)/gpu/blame-shifting/blame-kernel-map.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-blame-kernel-map.Tpo gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-blame-kernel-map.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/blame-shifting/blame-kernel-map.c' object='gpu/blame-shifting/libhpcrun_o-blame-kernel-map.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/blame-shifting/libhpcrun_o-blame-kernel-map.obj `if test -f 'gpu/blame-shifting/blame-kernel-map.c'; then $(CYGPATH_W) 'gpu/blame-shifting/blame-kernel-map.c'; else $(CYGPATH_W) '$(srcdir)/gpu/blame-shifting/blame-kernel-map.c'; fi`
+
+gpu/blame-shifting/libhpcrun_o-active-kernels-map.o: gpu/blame-shifting/active-kernels-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT gpu/blame-shifting/libhpcrun_o-active-kernels-map.o -MD -MP -MF gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-active-kernels-map.Tpo -c -o gpu/blame-shifting/libhpcrun_o-active-kernels-map.o `test -f 'gpu/blame-shifting/active-kernels-map.c' || echo '$(srcdir)/'`gpu/blame-shifting/active-kernels-map.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-active-kernels-map.Tpo gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-active-kernels-map.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/blame-shifting/active-kernels-map.c' object='gpu/blame-shifting/libhpcrun_o-active-kernels-map.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/blame-shifting/libhpcrun_o-active-kernels-map.o `test -f 'gpu/blame-shifting/active-kernels-map.c' || echo '$(srcdir)/'`gpu/blame-shifting/active-kernels-map.c
+
+gpu/blame-shifting/libhpcrun_o-active-kernels-map.obj: gpu/blame-shifting/active-kernels-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT gpu/blame-shifting/libhpcrun_o-active-kernels-map.obj -MD -MP -MF gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-active-kernels-map.Tpo -c -o gpu/blame-shifting/libhpcrun_o-active-kernels-map.obj `if test -f 'gpu/blame-shifting/active-kernels-map.c'; then $(CYGPATH_W) 'gpu/blame-shifting/active-kernels-map.c'; else $(CYGPATH_W) '$(srcdir)/gpu/blame-shifting/active-kernels-map.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-active-kernels-map.Tpo gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-active-kernels-map.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/blame-shifting/active-kernels-map.c' object='gpu/blame-shifting/libhpcrun_o-active-kernels-map.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/blame-shifting/libhpcrun_o-active-kernels-map.obj `if test -f 'gpu/blame-shifting/active-kernels-map.c'; then $(CYGPATH_W) 'gpu/blame-shifting/active-kernels-map.c'; else $(CYGPATH_W) '$(srcdir)/gpu/blame-shifting/active-kernels-map.c'; fi`
+
+gpu/blame-shifting/libhpcrun_o-blame-kernel-cleanup-map.o: gpu/blame-shifting/blame-kernel-cleanup-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT gpu/blame-shifting/libhpcrun_o-blame-kernel-cleanup-map.o -MD -MP -MF gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-blame-kernel-cleanup-map.Tpo -c -o gpu/blame-shifting/libhpcrun_o-blame-kernel-cleanup-map.o `test -f 'gpu/blame-shifting/blame-kernel-cleanup-map.c' || echo '$(srcdir)/'`gpu/blame-shifting/blame-kernel-cleanup-map.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-blame-kernel-cleanup-map.Tpo gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-blame-kernel-cleanup-map.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/blame-shifting/blame-kernel-cleanup-map.c' object='gpu/blame-shifting/libhpcrun_o-blame-kernel-cleanup-map.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/blame-shifting/libhpcrun_o-blame-kernel-cleanup-map.o `test -f 'gpu/blame-shifting/blame-kernel-cleanup-map.c' || echo '$(srcdir)/'`gpu/blame-shifting/blame-kernel-cleanup-map.c
+
+gpu/blame-shifting/libhpcrun_o-blame-kernel-cleanup-map.obj: gpu/blame-shifting/blame-kernel-cleanup-map.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT gpu/blame-shifting/libhpcrun_o-blame-kernel-cleanup-map.obj -MD -MP -MF gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-blame-kernel-cleanup-map.Tpo -c -o gpu/blame-shifting/libhpcrun_o-blame-kernel-cleanup-map.obj `if test -f 'gpu/blame-shifting/blame-kernel-cleanup-map.c'; then $(CYGPATH_W) 'gpu/blame-shifting/blame-kernel-cleanup-map.c'; else $(CYGPATH_W) '$(srcdir)/gpu/blame-shifting/blame-kernel-cleanup-map.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-blame-kernel-cleanup-map.Tpo gpu/blame-shifting/$(DEPDIR)/libhpcrun_o-blame-kernel-cleanup-map.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gpu/blame-shifting/blame-kernel-cleanup-map.c' object='gpu/blame-shifting/libhpcrun_o-blame-kernel-cleanup-map.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o gpu/blame-shifting/libhpcrun_o-blame-kernel-cleanup-map.obj `if test -f 'gpu/blame-shifting/blame-kernel-cleanup-map.c'; then $(CYGPATH_W) 'gpu/blame-shifting/blame-kernel-cleanup-map.c'; else $(CYGPATH_W) '$(srcdir)/gpu/blame-shifting/blame-kernel-cleanup-map.c'; fi`
+
 trampoline/common/libhpcrun_o-trampoline_eager.o: trampoline/common/trampoline_eager.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT trampoline/common/libhpcrun_o-trampoline_eager.o -MD -MP -MF trampoline/common/$(DEPDIR)/libhpcrun_o-trampoline_eager.Tpo -c -o trampoline/common/libhpcrun_o-trampoline_eager.o `test -f 'trampoline/common/trampoline_eager.c' || echo '$(srcdir)/'`trampoline/common/trampoline_eager.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) trampoline/common/$(DEPDIR)/libhpcrun_o-trampoline_eager.Tpo trampoline/common/$(DEPDIR)/libhpcrun_o-trampoline_eager.Po
@@ -8777,10 +9175,14 @@ clean-libtool:
 	-rm -rf fnbounds/.libs fnbounds/_libs
 	-rm -rf gpu/.libs gpu/_libs
 	-rm -rf gpu/amd/.libs gpu/amd/_libs
+	-rm -rf gpu/blame-shifting/.libs gpu/blame-shifting/_libs
+	-rm -rf gpu/blame-shifting/opencl/.libs gpu/blame-shifting/opencl/_libs
 	-rm -rf gpu/instrumentation/.libs gpu/instrumentation/_libs
 	-rm -rf gpu/level0/.libs gpu/level0/_libs
 	-rm -rf gpu/nvidia/.libs gpu/nvidia/_libs
 	-rm -rf gpu/opencl/.libs gpu/opencl/_libs
+	-rm -rf gpu/opencl/intel/.libs gpu/opencl/intel/_libs
+	-rm -rf gpu/opencl/intel/maps/.libs gpu/opencl/intel/maps/_libs
 	-rm -rf lush/.libs lush/_libs
 	-rm -rf lush-agents/.libs lush-agents/_libs
 	-rm -rf memory/.libs memory/_libs
@@ -9036,6 +9438,10 @@ distclean-generic:
 	-rm -f gpu/$(am__dirstamp)
 	-rm -f gpu/amd/$(DEPDIR)/$(am__dirstamp)
 	-rm -f gpu/amd/$(am__dirstamp)
+	-rm -f gpu/blame-shifting/$(DEPDIR)/$(am__dirstamp)
+	-rm -f gpu/blame-shifting/$(am__dirstamp)
+	-rm -f gpu/blame-shifting/opencl/$(DEPDIR)/$(am__dirstamp)
+	-rm -f gpu/blame-shifting/opencl/$(am__dirstamp)
 	-rm -f gpu/instrumentation/$(DEPDIR)/$(am__dirstamp)
 	-rm -f gpu/instrumentation/$(am__dirstamp)
 	-rm -f gpu/level0/$(DEPDIR)/$(am__dirstamp)
@@ -9044,6 +9450,10 @@ distclean-generic:
 	-rm -f gpu/nvidia/$(am__dirstamp)
 	-rm -f gpu/opencl/$(DEPDIR)/$(am__dirstamp)
 	-rm -f gpu/opencl/$(am__dirstamp)
+	-rm -f gpu/opencl/intel/$(DEPDIR)/$(am__dirstamp)
+	-rm -f gpu/opencl/intel/$(am__dirstamp)
+	-rm -f gpu/opencl/intel/maps/$(DEPDIR)/$(am__dirstamp)
+	-rm -f gpu/opencl/intel/maps/$(am__dirstamp)
 	-rm -f lush-agents/$(DEPDIR)/$(am__dirstamp)
 	-rm -f lush-agents/$(am__dirstamp)
 	-rm -f lush/$(DEPDIR)/$(am__dirstamp)
@@ -9109,7 +9519,7 @@ clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
 	clean-pkglibLTLIBRARIES mostlyclean-am
 
 distclean: distclean-recursive
-	-rm -rf ./$(DEPDIR) audit/$(DEPDIR) cct/$(DEPDIR) dlmopen/$(DEPDIR) extern-real/$(DEPDIR) fnbounds/$(DEPDIR) gpu/$(DEPDIR) gpu/amd/$(DEPDIR) gpu/instrumentation/$(DEPDIR) gpu/level0/$(DEPDIR) gpu/nvidia/$(DEPDIR) gpu/opencl/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) ompt/$(DEPDIR) os/linux/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) sample-sources/perf/$(DEPDIR) syscalls/$(DEPDIR) trampoline/aarch64/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/libunwind/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) audit/$(DEPDIR) cct/$(DEPDIR) dlmopen/$(DEPDIR) extern-real/$(DEPDIR) fnbounds/$(DEPDIR) gpu/$(DEPDIR) gpu/amd/$(DEPDIR) gpu/blame-shifting/$(DEPDIR) gpu/blame-shifting/opencl/$(DEPDIR) gpu/instrumentation/$(DEPDIR) gpu/level0/$(DEPDIR) gpu/nvidia/$(DEPDIR) gpu/opencl/$(DEPDIR) gpu/opencl/intel/$(DEPDIR) gpu/opencl/intel/maps/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) ompt/$(DEPDIR) os/linux/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) sample-sources/perf/$(DEPDIR) syscalls/$(DEPDIR) trampoline/aarch64/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/libunwind/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -9158,7 +9568,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-recursive
-	-rm -rf ./$(DEPDIR) audit/$(DEPDIR) cct/$(DEPDIR) dlmopen/$(DEPDIR) extern-real/$(DEPDIR) fnbounds/$(DEPDIR) gpu/$(DEPDIR) gpu/amd/$(DEPDIR) gpu/instrumentation/$(DEPDIR) gpu/level0/$(DEPDIR) gpu/nvidia/$(DEPDIR) gpu/opencl/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) ompt/$(DEPDIR) os/linux/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) sample-sources/perf/$(DEPDIR) syscalls/$(DEPDIR) trampoline/aarch64/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/libunwind/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) audit/$(DEPDIR) cct/$(DEPDIR) dlmopen/$(DEPDIR) extern-real/$(DEPDIR) fnbounds/$(DEPDIR) gpu/$(DEPDIR) gpu/amd/$(DEPDIR) gpu/blame-shifting/$(DEPDIR) gpu/blame-shifting/opencl/$(DEPDIR) gpu/instrumentation/$(DEPDIR) gpu/level0/$(DEPDIR) gpu/nvidia/$(DEPDIR) gpu/opencl/$(DEPDIR) gpu/opencl/intel/$(DEPDIR) gpu/opencl/intel/maps/$(DEPDIR) lush-agents/$(DEPDIR) lush/$(DEPDIR) memory/$(DEPDIR) messages/$(DEPDIR) monitor-exts/$(DEPDIR) ompt/$(DEPDIR) os/linux/$(DEPDIR) sample-sources/$(DEPDIR) sample-sources/blame-shift/$(DEPDIR) sample-sources/perf/$(DEPDIR) syscalls/$(DEPDIR) trampoline/aarch64/$(DEPDIR) trampoline/common/$(DEPDIR) trampoline/x86-family/$(DEPDIR) unwind/common/$(DEPDIR) unwind/generic-libunwind/$(DEPDIR) unwind/ppc64/$(DEPDIR) unwind/x86-family/$(DEPDIR) unwind/x86-family/manual-intervals/$(DEPDIR) utilities/$(DEPDIR) utilities/arch/ia64/$(DEPDIR) utilities/arch/libunwind/$(DEPDIR) utilities/arch/ppc64/$(DEPDIR) utilities/arch/x86-family/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

@@ -340,7 +340,7 @@ static void
 perf_init()
 {
   // copy /proc/kallsyms file into hpctoolkit output directory
-  // only if the value of kptr_restric is zero
+  // only if the value of kptr_restrict is zero
 
   if (perf_util_is_ksym_available()) {
     //copy the kernel symbol table

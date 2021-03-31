@@ -1638,7 +1638,14 @@ doFunctionList(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo, bool fullGaps
 #endif
   }
 
-  if (cuda_arch == 0) {
+  // computeGaps relies Block::start() and Block::end() to have
+  // the correct address range for a block to detect gaps.
+  // We have subclass GPUBlock inheriting ParseAPI::Block.
+  // However, currently subclass of ParseAPI::Block cannot update
+  // block end, which leads to Block::end() == Block::start() for
+  // GPUBlock objects.
+  // Therefore, we cannot invoke gap computation for GPU binaries
+  if (cuda_arch == 0 && intel_gpu_arch == 0) {
     // add unclaimed regions (gaps) to the group leader, but skip groups
     // in an alternate file (handled in orig file).
     if (! ginfo->alt_file) {
