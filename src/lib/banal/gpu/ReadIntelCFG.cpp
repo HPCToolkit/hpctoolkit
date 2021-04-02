@@ -95,6 +95,7 @@ using namespace ParseAPI;
 using namespace SymtabAPI;
 using namespace InstructionAPI;
 
+
 static std::string
 getOpString(iga::Op op) {
   switch (op)
@@ -178,6 +179,7 @@ getOpString(iga::Op op) {
   }
 }
 
+#if DEBUG
 static std::string getKindString(iga::Kind kind) {
   switch (kind)
   {
@@ -245,6 +247,7 @@ static std::string getIGATypeString(iga::Type type)
     }
 }
 
+
 static std::string getIGAPredCtrlString(iga::PredCtrl predCtrl)
 {
     switch (predCtrl)
@@ -267,6 +270,7 @@ static std::string getIGAPredCtrlString(iga::PredCtrl predCtrl)
         return "PRED_NONE";
     }
 }
+#endif
 
 
 static int
@@ -353,15 +357,19 @@ getIntelInstructionStat
     int32_t srcSubRegNo = kv.getSrcSubRegNumber(offset, i);
     iga::Type srcDataType = kv.getSrcDataType(offset, i);
     iga::RegName srcRegType = kv.getSrcRegType(offset, i);
-    iga::Kind srcRegKind = kv.getSrcRegKind(offset, i);
 
     if (srcRegType != iga::RegName::GRF_R) {
       continue;
     }
     uint32_t vertStride, width, horzStride;
+    // Returns 0 if any of instruction's src operand region components
+    // (Src RgnVt, RgnWi, RgnHz) are succesfully determined.
+    // Otherwise returns -1.
     int32_t status = kv.getSrcRegion(offset, i, &vertStride, &width, &horzStride);
+    assert(status == 0);
 
 #if DEBUG
+    iga::Kind srcRegKind = kv.getSrcRegKind(offset, i);
     std::cout << "\nSrcreg no: " << i << "\n  register: " << srcRegNo << ", subregister: " << srcSubRegNo
       << ", srcDataType: " << getIGATypeString(srcDataType)
       << ", srcRegType: " << getRegNameString(srcRegType)
@@ -376,7 +384,6 @@ getIntelInstructionStat
     int base1 = (srcRegNo << 5) + srcSubRegNo * elementSize;
     std::vector<int> childSrc(execSize * elementSize);
     for (int x=0; x < height; x++) {
-      int addr_x = base1;
       int base2 = base1;
       for (uint32_t y=0; y < width; y++) {
         int addr_y = base2;
@@ -394,11 +401,14 @@ getIntelInstructionStat
   int32_t dstSubRegNo = kv.getDstSubRegNumber(offset);
   iga::Type dstDataType = kv.getDstDataType(offset);
   iga::RegName dstRegType = kv.getDstRegType(offset);
-  iga::Kind dstRegKind = kv.getDstRegKind(offset);
   std::vector<int> dsts;
   if (dstRegType == iga::RegName::GRF_R) {
     uint32_t horzStride;
+    // Returns 0 if instruction's destination operand horizontal stride
+    // (DstRgnHz) is succesfully returned.
+    // Otherwise returns -1.
     int32_t status = kv.getDstRegion(offset, &horzStride);
+    assert(status == 0);
     int elementSize = getElementSize(dstDataType);
 
     dsts.resize(execSize * elementSize);
@@ -413,6 +423,7 @@ getIntelInstructionStat
     }
 
 #if DEBUG
+  iga::Kind dstRegKind = kv.getDstRegKind(offset);
     std::cout << "\ndstRegNo: " << dstRegNo << ", subregister: " << dstSubRegNo
       << ", DataType: " << getIGATypeString(dstDataType)
       << ", RegType: " << getRegNameString(dstRegType)
@@ -431,6 +442,9 @@ getIntelInstructionStat
   // unlike CUDA, there is a single barrier register in intel instructions.
   // So is fine to send a vector of 1 entry when an instruction is a barrier and 
   // empty vector when the instruction is not a barrier?
+
+  // commenting this section since synchronization is not factored in backward slicing 
+#if 0
   bool instContainsBarrier = false;
   if (opcode == iga::Op::SEND || opcode == iga::Op::SENDC || opcode == iga::Op::SENDS || opcode == iga::Op::SENDSC) {
     char *output = strstr (inst_asm_text, "barrier");
@@ -438,6 +452,7 @@ getIntelInstructionStat
       instContainsBarrier = true;
     }
   }
+#endif
 
   // intel instructions follow SIMD model.
   // when predication is on for an instruction, flag register is used to check which SIMD lanes should be used by the instruction

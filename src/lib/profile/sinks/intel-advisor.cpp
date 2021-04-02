@@ -48,6 +48,7 @@
 // system includes
 //*****************************************************************************
 
+#include <unistd.h> // sleep(Aaron)
 #include <iomanip>
 #include <algorithm>
 #include <sstream>
@@ -668,7 +669,6 @@ sliceIntelInstructions
     Dyninst::ParseAPI::Block::Insns insns;
     dyn_block->getInsns(insns);
 
-    int outerCount = 0;
     for (auto &inst_iter : insns) {
       auto &inst = inst_iter.second;
       auto inst_addr = inst_iter.first;
@@ -681,7 +681,6 @@ sliceIntelInstructions
       std::vector<Dyninst::Assignment::Ptr> assignments;
       ac.convert(inst, inst_addr, dyn_func, dyn_block, assignments);
 
-      int innerCount = 0;
       for (auto a : assignments) {
 #ifdef FAST_SLICING
         FirstMatchPred p;
@@ -758,6 +757,7 @@ void IntelAdvisor::write() {
   std::cout << std::string(LINE_WIDTH, '-') << std::endl;
   std::cout << "udm.tag(load modules)" << std::endl;
   std::cout << std::string(LINE_WIDTH, '-') << std::endl;
+  std::string filePath;
   for(const auto& m: src.modules().iterate()) {
     auto& udm = m().userdata[ud];
     if(!udm) continue;
@@ -768,7 +768,7 @@ void IntelAdvisor::write() {
       std::cout << udm.tag; 
       size_t delim1_loc = udm.tag.find(delimiter1);
       size_t delim2_loc = udm.tag.find(delimiter2);
-      std::string filePath = udm.tag.substr(delim1_loc + 3, delim2_loc + 7 - (delim1_loc + 3));
+      filePath = udm.tag.substr(delim1_loc + 3, delim2_loc + 7 - (delim1_loc + 3));
       std::cout << "filePath: " << filePath << std::endl;
       
       InputFile inputFile;
@@ -821,6 +821,47 @@ void IntelAdvisor::write() {
 
   // Spit out the CCT
   src.contexts().citerate([&](const Context& c){
+      if ((c.scope().type() == hpctoolkit::Scope::Type::point) || (c.scope().type() == hpctoolkit::Scope::Type::call) ||
+          (c.scope().type() == hpctoolkit::Scope::Type::classified_point) || (c.scope().type() == hpctoolkit::Scope::Type::classified_call) ||
+          (c.scope().type() == hpctoolkit::Scope::Type::concrete_line)) {
+        std::string modulePath = c.scope().point_data().first.path();
+        if (strstr(modulePath.c_str(), filePath.c_str())) {
+        std::cout << " offset: " << c.scope().point_data().second;
+
+          std::vector<hpcrun_metricVal_t> values;
+          std::vector<uint16_t> mids;
+          const auto& stats = c.statistics();
+          for(const auto& mx: stats.citerate()) {
+            const auto& m = *mx.first;
+            std::cout << ", name: " << m.name();
+            if(!m.scopes().has(MetricScope::function) || !m.scopes().has(MetricScope::execution))
+            util::log::fatal{} << "Metric isn't function/execution!";
+            const auto& ids = m.userdata[src.mscopeIdentifiers()];
+            const auto& vv = mx.second;
+            size_t idx = 0;
+            for(const auto& sp: m.partials()) {
+              hpcrun_metricVal_t v;
+              if(auto vex = vv.get(sp).get(MetricScope::function)) {
+                v.r = *vex;
+                mids.push_back((ids.function << 8) + idx);
+                values.push_back(v);
+              }
+              if(auto vinc = vv.get(sp).get(MetricScope::execution)) {
+                v.r = *vinc;
+                mids.push_back((ids.execution << 8) + idx);
+                values.push_back(v);
+              }
+              idx++;
+            }
+          }
+          std::cout << ", values: [";
+          for(int i=0; i < values.size(); i++) {
+            std::cout << values.at(i).r << ' ';
+          }
+          std::cout << "]" << std::endl;
+        }
+      }
+
     auto& udc = c.userdata[ud];
 
     // First emit our tags, and whatever extensions are nessesary.
