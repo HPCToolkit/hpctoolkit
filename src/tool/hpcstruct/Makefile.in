@@ -587,7 +587,7 @@ MYLDADD = \
 	$(BOOST_LFLAGS) \
 	$(MY_ELF_DWARF) \
 	@BINUTILS_LIBS@ \
-  $(IGC_LDFLGS) \
+	$(IGC_LDFLGS) \
 	$(HPCLIB_gettext) \
 	$(LZMA_LDFLAGS_DYN) \
 	$(MBEDTLS_LIBS) \
