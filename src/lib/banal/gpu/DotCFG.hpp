@@ -11,6 +11,8 @@
 // dyninst
 #include <CFG.h>
 
+#include <include/hpctoolkit-config.h>
+
 namespace GPUParse {
 
 typedef Dyninst::Architecture Arch;
@@ -152,7 +154,6 @@ struct CudaInst : public Inst {
 
 struct Block;
 
-// TODO(Keren): consistent with dyninst
 typedef Dyninst::ParseAPI::EdgeTypeEnum TargetType;
 
 struct Target {

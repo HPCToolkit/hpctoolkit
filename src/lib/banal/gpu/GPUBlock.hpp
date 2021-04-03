@@ -8,14 +8,13 @@ namespace ParseAPI {
 
 class PARSER_EXPORT GPUBlock : public Block {
  public:
-  GPUBlock(CodeObject * o, CodeRegion * r, Address start,
+  GPUBlock(CodeObject * o, CodeRegion * r,
+    Address start, Address end, Address last,
     std::vector<std::pair<Offset, size_t>> &offsets, Architecture arch);
 
   virtual ~GPUBlock() {}
 
   virtual void getInsns(Insns &insns) const;
-
-  virtual Address last() const;
 
  private:
   // <offset, size> pair

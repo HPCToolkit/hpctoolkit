@@ -9,14 +9,10 @@ namespace Dyninst {
 namespace ParseAPI {
 
 GPUBlock::GPUBlock(CodeObject * o, CodeRegion * r,
-  Address start, std::vector<std::pair<Offset, size_t>> &offsets,
+  Address start, Address end, Address last, 
+  std::vector<std::pair<Offset, size_t>> &offsets,
   Dyninst::Architecture arch) :
-  Block(o, r, start), _inst_offsets(offsets), _arch(arch) {}
-
-
-Address GPUBlock::last() const {
-  return this->_inst_offsets.back().first;
-}
+  Block(o, r, start, end, last), _inst_offsets(offsets), _arch(arch) {}
 
 
 void GPUBlock::getInsns(Insns &insns) const {
