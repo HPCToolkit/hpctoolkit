@@ -273,6 +273,12 @@ METHOD_FN(display_events)
     INSTRUMENTATION_PREFIX, "<comma-separated instrumentation options>",
     EXECUTION_COUNT, LATENCY, SIMD, DEFAULT_INSTRUMENTATION);
   printf("\n");
+
+  printf("%s\tIntel Optimization suggestions.\n"
+    "\t\tprovides oneapi optimization suggestions from the optimization guide.\n"
+    "\t\tTo use it, pass '-e %s -e %s' to your hpcrun command\n",
+    INTEL_OPTIMIZATION_CHECK, GPU_STRING, INTEL_OPTIMIZATION_CHECK);
+  printf("\n");
 }
 
 
