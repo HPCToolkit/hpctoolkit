@@ -47,6 +47,7 @@ const char *GPU_COPYIN  = "<gpu copyin>";
 const char *GPU_COPYOUT = "<gpu copyout>";
 const char *GPU_ALLOC   = "<gpu alloc>";
 const char *GPU_DELETE  = "<gpu delete>";
+const char *GPU_MEMSET  = "<gpu memset>";
 const char *GPU_SYNC    = "<gpu sync>";
 const char *GPU_KERNEL  = "<gpu kernel>";
 
@@ -124,6 +125,7 @@ static NameMapping renamingTable[] = {
   { "gpu_op_copyout",      GPU_COPYOUT       ,  TYPE_PLACEHOLDER    },
   { "gpu_op_alloc",        GPU_ALLOC         ,  TYPE_PLACEHOLDER    },
   { "gpu_op_delete",       GPU_DELETE        ,  TYPE_PLACEHOLDER    },
+  { "gpu_op_memset",       GPU_MEMSET        ,  TYPE_PLACEHOLDER    },
   { "gpu_op_sync",         GPU_SYNC          ,  TYPE_PLACEHOLDER    },
   { "gpu_op_kernel",       GPU_KERNEL        ,  TYPE_PLACEHOLDER    },
   { "gpu_op_trace",        GPU_KERNEL        ,  TYPE_ELIDED         },
