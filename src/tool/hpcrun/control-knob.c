@@ -40,7 +40,6 @@ control_knob_register(char *name, char *value, control_knob_type type)
     iter->name = strdup(name);
     iter->type = type;
     iter->value = strdup(value);
-
     iter->next = control_knobs;
     control_knobs = iter;
   }else{
