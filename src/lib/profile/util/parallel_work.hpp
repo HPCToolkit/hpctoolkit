@@ -84,6 +84,11 @@ public:
       doneitemcnt(std::numeric_limits<std::size_t>::max()) {};
   ~ParallelForEach() = default;
 
+  ParallelForEach(ParallelForEach&&) = delete;
+  ParallelForEach(const ParallelForEach&) = delete;
+  ParallelForEach& operator=(ParallelForEach&&) = delete;
+  ParallelForEach& operator=(const ParallelForEach&) = delete;
+
   /// Fill the workqueue with work to be distributed among contributors.
   // MT: Externally Synchronized, Internally Synchronized with contribute().
   void fill(std::vector<T> items) noexcept {
@@ -155,6 +160,72 @@ private:
   std::vector<T> workitems;
   std::atomic<size_t> nextitem;
   std::atomic<size_t> doneitemcnt;
+};
+
+/// Variant of ParallelForEach that allows for `reset()` to be called in
+/// parallel with `contribute()`. As such, this is only "complete" after
+/// `complete()` has been called (usually by the main thread).
+template<class T>
+class ResettableParallelForEach : protected ParallelForEach<T> {
+public:
+  template<class... Args>
+  ResettableParallelForEach(Args&&... args)
+    : ParallelForEach<T>(std::forward<Args>(args)...), completed(false) {};
+  ~ResettableParallelForEach() = default;
+
+  ResettableParallelForEach(ResettableParallelForEach&&) = delete;
+  ResettableParallelForEach(const ResettableParallelForEach&) = delete;
+  ResettableParallelForEach& operator=(ResettableParallelForEach&&) = delete;
+  ResettableParallelForEach& operator=(const ResettableParallelForEach&) = delete;
+
+  using ParallelForEach<T>::fill;
+  using ParallelForEach<T>::wait;
+  using ParallelForEach<T>::loop;
+
+  /// Reset this workshare, allowing it to be filled and used again.
+  /// Calls `contribute(wait_t)` internally.
+  // MT: Internally Synchronized
+  void reset() noexcept {
+    ParallelForEach<T>::contribute(wait());
+    ParallelForEach<T>::reset();
+  }
+
+  /// Allow this workshare to complete. Do not call `fill` after this.
+  /// Note that this still requires a call to `fill` if the workshare is empty
+  /// (i.e. after construction or a call to `reset`).
+  // MT: Internally Synchronized
+  void complete() noexcept {
+    completed.store(true, std::memory_order_release);
+  }
+
+  /// Contribute to the workshare by processing a block of items, if any are
+  /// currently available. Returns the result of this request.
+  // MT: Internally Synchronized
+  [[nodiscard]] WorkshareResult contribute() noexcept {
+    auto res = ParallelForEach<T>::contribute();
+    if(res.completed) res.completed = completed.load(std::memory_order_acquire);
+    return res;
+  }
+
+  /// Contribute to the workshare until there is no more currently available
+  /// work to be shared.
+  /// Note that this does not wait for contributors to complete, just that there
+  /// is no more work to be allocated.
+  // MT: Internally Synchronized
+  [[nodiscard]] WorkshareResult contribute(typename ParallelForEach<T>::loop_t) noexcept {
+    ParallelForEach<T>::contribute(loop());
+    return {false, completed.load(std::memory_order_acquire)};
+  }
+
+  /// Contribute to the workshare and wait until all work has completed.
+  // MT: Internally Synchronized
+  [[nodiscard]] WorkshareResult contribute(typename ParallelForEach<T>::wait_t) noexcept {
+    ParallelForEach<T>::contribute(wait());
+    return {false, completed.load(std::memory_order_acquire)};
+  }
+
+private:
+  std::atomic<bool> completed;
 };
 
 }
