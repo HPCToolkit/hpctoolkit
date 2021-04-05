@@ -105,7 +105,7 @@ void detail::recv(void*, std::size_t, const Datatype&, std::size_t, std::size_t)
 namespace hpctoolkit::mpi::detail{ 
   struct Win {};
 }
-SharedAccumulator::SharedAccumulator() = default;
+SharedAccumulator::SharedAccumulator(int) {};
 SharedAccumulator::~SharedAccumulator() = default;
 
 void SharedAccumulator::initialize(std::uint64_t data) {

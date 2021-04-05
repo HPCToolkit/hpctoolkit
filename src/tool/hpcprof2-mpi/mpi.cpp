@@ -51,6 +51,7 @@
 #include <mpi.h>
 #include <mutex>
 #include <cstring>
+#include <thread>
 
 using namespace hpctoolkit::mpi;
 using namespace detail;
@@ -121,7 +122,7 @@ static std::unique_lock<std::mutex> mpiLock() {
 
 void World::initialize() noexcept {
   int available;
-  MPI_Init_thread(NULL, NULL, MPI_THREAD_SERIALIZED, &available);
+  MPI_Init_thread(NULL, NULL, MPI_THREAD_MULTIPLE, &available);
   std::atexit(escape);
   if(available < MPI_THREAD_SERIALIZED)
     util::log::fatal{} << "MPI does not have sufficient thread support!";
@@ -307,44 +308,62 @@ void detail::recv(void* data, std::size_t cnt, const Datatype& ty,
 
 namespace hpctoolkit::mpi::detail {
   struct Win{
-    Win(MPI_Win w) : win(w) {}
-
-    MPI_Win win;
+    Win(int tag) : tag(tag), active(false) {};
+    const int tag;
+    bool active;
+    std::thread t;
   };
 }
 
-SharedAccumulator::SharedAccumulator() {}
+SharedAccumulator::SharedAccumulator(int tag)
+  : detail(World::size() > 1 ? std::make_unique<detail::Win>(tag) : nullptr) {}
 
 SharedAccumulator::~SharedAccumulator() {
-  if(detail) {
-    auto l = mpiLock();
-    MPI_Win_free(&(detail->win));
+  if(detail && detail->active) {
+    // "Send" a message to the thread to stop, and then join it
+    {
+      auto l = mpiLock();
+      MPI_Send(nullptr, 0, MPI_UINT64_T, 0, detail->tag, MPI_COMM_WORLD);
+    }
+    detail->t.join();
   }
 }
 
 void SharedAccumulator::initialize(std::uint64_t init) {
-  if(World::size() == 1) {
-    atom.store(init, std::memory_order_relaxed);
-  } else {
-    auto l = mpiLock();
-    MPI_Win win;
-    void* ptr;
-    if(MPI_Win_allocate(sizeof(std::uint64_t), 1, MPI_INFO_NULL, MPI_COMM_WORLD, &ptr, &win) != MPI_SUCCESS)
-      util::log::fatal{} << "Error while performing an MPI Window Creation!";
-    *(std::uint64_t*)ptr = init;
-    MPI_Barrier(MPI_COMM_WORLD);
-    detail = std::make_unique<detail::Win>(win);
+  atom.store(init, std::memory_order_relaxed);
+  if(detail && World::rank() == 0) {
+    if(needsLock)  // Currently this part will deadlock if there are real locks
+      util::log::fatal{} << "TODO: Improve support for MPI_THREAD_SERIALIZED";
+    detail->active = true;
+    detail->t = std::thread([](detail::Win& w, std::atomic<std::uint64_t>& atom) {
+      while(1) {
+        std::uint64_t val;
+        MPI_Status stat;
+        if(MPI_Recv(&val, 1, MPI_UINT64_T, MPI_ANY_SOURCE, w.tag, MPI_COMM_WORLD, &stat) != MPI_SUCCESS)
+          util::log::fatal{} << "Error while waiting for accumulation request!";
+        int cnt;
+        if(MPI_Get_count(&stat, MPI_UINT64_T, &cnt) != MPI_SUCCESS)
+          util::log::fatal{} << "Error decoding accumulation request status!";
+        if(cnt == 0) return;  // Stop request, get out now.
+        std::uint64_t reply = atom.fetch_add(val, std::memory_order_relaxed);
+        if(MPI_Rsend(&reply, 1, MPI_UINT64_T, stat.MPI_SOURCE, w.tag, MPI_COMM_WORLD) != MPI_SUCCESS)
+          util::log::fatal{} << "Error while replying to an accumulation request!";
+      }
+    }, std::ref(*detail), std::ref(atom));
   }
 }
 
 std::uint64_t SharedAccumulator::fetch_add(std::uint64_t val) {
-  if(detail) {
-    std::uint64_t r;
-    auto l = mpiLock();
-    MPI_Win_lock(MPI_LOCK_SHARED, 0, 0, detail->win);
-    MPI_Fetch_and_op(&val, &r, MPI_UINT64_T, 0, 0, MPI_SUM, detail->win);
-    MPI_Win_unlock(0, detail->win);
-    return r;
-  }
-  return atom.fetch_add(val, std::memory_order_relaxed);
+  if(World::rank() == 0 || !detail)
+    return atom.fetch_add(val, std::memory_order_relaxed);
+
+  std::uint64_t result;
+  MPI_Request req;
+  if(MPI_Irecv(&result, 1, MPI_UINT64_T, 0, detail->tag, MPI_COMM_WORLD, &req) != MPI_SUCCESS)
+    util::log::fatal{} << "MPI error while preparing non-blocking recv!";
+  if(MPI_Send(&val, 1, MPI_UINT64_T, 0, detail->tag, MPI_COMM_WORLD) != MPI_SUCCESS)
+    util::log::fatal{} << "MPI error while sending accumulation request!";
+  if(MPI_Wait(&req, MPI_STATUS_IGNORE) != MPI_SUCCESS)
+    util::log::fatal{} << "MPI error while awaiting for accumulation reply!";
+  return result;
 }

@@ -65,8 +65,7 @@
 
 class SparseDB : public hpctoolkit::ProfileSink {
 public:
-  SparseDB(const hpctoolkit::stdshim::filesystem::path&, int threads);
-  SparseDB(hpctoolkit::stdshim::filesystem::path&&, int threads);
+  SparseDB(hpctoolkit::stdshim::filesystem::path, int threads);
   ~SparseDB() = default;
 
   void write() override;

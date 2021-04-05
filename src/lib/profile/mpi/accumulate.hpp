@@ -56,21 +56,21 @@
 namespace hpctoolkit::mpi {
 
 namespace detail {
-    struct Win;
+  struct Win;
 }  // namespace detail
 
 class SharedAccumulator {
 public:
-    SharedAccumulator();
-    ~SharedAccumulator();
+  SharedAccumulator(int tag);
+  ~SharedAccumulator();
 
 
-    void initialize(std::uint64_t init);
-    std::uint64_t fetch_add(std::uint64_t val);
+  void initialize(std::uint64_t init);
+  std::uint64_t fetch_add(std::uint64_t val);
 
 private:
-    std::atomic<std::uint64_t> atom;
-    std::unique_ptr<detail::Win> detail;
+  std::atomic<std::uint64_t> atom;
+  std::unique_ptr<detail::Win> detail;
 };
 
 
