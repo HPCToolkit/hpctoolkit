@@ -202,7 +202,8 @@ private:
 
   hpctoolkit::util::ParallelForEach<pms_profile_info_t> parForPi;
   struct ctxRange;
-  hpctoolkit::util::ParallelForEach<ctxRange> parForCtxs;
+  //hpctoolkit::util::ParallelForEach<ctxRange> parForCtxs;
+  hpctoolkit::util::ResettableParallelForEach<ctxRange> parForCtxs;
   struct profData;
   hpctoolkit::util::ResettableParallelForEach<profData> parForPd;
   struct profCtxIdIdxPairs;

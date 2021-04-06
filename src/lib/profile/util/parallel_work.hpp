@@ -67,6 +67,11 @@ struct WorkshareResult final {
   WorkshareResult& operator=(const WorkshareResult&) = default;
   WorkshareResult& operator=(WorkshareResult&&) = default;
 
+  /// Combine two Results, as if they came from a single (combined) Workshare.
+  WorkshareResult operator+(const WorkshareResult& o) const noexcept {
+    return {contributed || o.contributed, completed && o.completed};
+  }
+
   /// Whether the request managed to contribute any work to the workshare.
   bool contributed : 1;
   /// Whether any work remains in the workshare for later calls.

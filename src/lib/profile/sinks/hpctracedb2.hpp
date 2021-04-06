@@ -133,6 +133,7 @@ private:
     std::chrono::nanoseconds maxTime;
 
     std::FILE* trace_file;
+    std::uint_fast64_t trace_off;
     traceHdr trace_hdr;
     uint64_t tmcntr;
 

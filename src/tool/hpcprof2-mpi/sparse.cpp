@@ -83,9 +83,7 @@ util::WorkshareResult SparseDB::help() {
   if(!res.completed) return res;
   res = parForCiip.contribute();
   if(!res.completed) return res;
-  res = parForPd.contribute();
-  if(!res.completed) return res;
-  return parForCtxs.contribute();
+  return parForPd.contribute() + parForCtxs.contribute();
 }
 
 void SparseDB::notifyPipeline() noexcept {
@@ -235,7 +233,8 @@ void SparseDB::notifyThreadFinal(const Thread::Temporary& tt) {
   std::fclose(of);
 
   // Log the output for posterity
-  outputs.emplace(&t, std::move(outfile));*/
+  outputs.emplace(&t, std::move(outfile));
+  */
 }
 
 void SparseDB::write()
@@ -350,7 +349,7 @@ void SparseDB::write()
 
   if(mpi::World::rank() == 0){
     //footer to show completeness
-    auto pmfi = pmf->open(true);
+    auto pmfi = pmf->open(true, false);
     auto footer_val = PROFDBft;
     uint64_t footer_off = filePosFetchOp(sizeof(footer_val));
     pmfi.writeat(footer_off, sizeof(footer_val), &footer_val);
@@ -582,7 +581,7 @@ void SparseDB::writePMSHdr(const uint32_t total_num_prof, const util::File& fh)
   hdr.insert(hdr.end(), b.begin(), b.end());
   
   assert(hdr.size() == PMS_real_hdr_SIZE);
-  auto fhi = fh.open(true);
+  auto fhi = fh.open(true, false);
   fhi.writeat(0, PMS_real_hdr_SIZE, hdr.data());
   
 }
@@ -884,7 +883,7 @@ void SparseDB::writeAllIdTuples(const std::vector<pms_id_tuple_t>& all_tuples, c
     bytes.insert(bytes.end(), b.begin(), b.end());
   }
 
-  auto fhi = fh.open(true);
+  auto fhi = fh.open(true, false);
   fhi.writeat(id_tuples_sec_ptr, bytes.size(), bytes.data());
 
   //set class private variable 
@@ -957,7 +956,7 @@ void SparseDB::workIdTuplesSection1(const int total_num_prof)
     bytes.insert(bytes.end(), b.begin(), b.end());
   }
 
-  auto fhi = pmf->open(true);
+  auto fhi = pmf->open(true, false);
   fhi.writeat(id_tuples_sec_ptr + my_offset, bytes.size(), bytes.data());
 
   //set class private variable 
@@ -1064,7 +1063,7 @@ uint64_t SparseDB::writeProf(const std::vector<char>& prof_bytes, uint32_t prof_
 
 
     //write
-    auto pmfi = pmf->open(true);
+    auto pmfi = pmf->open(true, true);
     pmfi.writeat(wrt_off, ob.buf.size(), ob.buf.data());
     for(auto pi : ob.buffered_pidxs)
       prof_infos[pi-min_prof_info_idx].offset += wrt_off;
@@ -1082,7 +1081,7 @@ uint64_t SparseDB::writeProf(const std::vector<char>& prof_bytes, uint32_t prof_
 
     // take care all previous profs in buffer
     bool write = false;
-    if((prof_bytes.size() + ob.cur_pos) >= (1024 * 1024 * 1024)){ 
+    if((prof_bytes.size() + ob.cur_pos) >= (64 * 1024 * 1024)){
       cur_obuf_idx = 1 - cur_obuf_idx;
       write = true;
 
@@ -1103,7 +1102,7 @@ uint64_t SparseDB::writeProf(const std::vector<char>& prof_bytes, uint32_t prof_
     ob.cur_pos += prof_bytes.size();
 
     if(write){
-      auto pmfi = pmf->open(true);
+      auto pmfi = pmf->open(true, true);
       pmfi.writeat(wrt_off, ob.buf.size(), ob.buf.data());
       for(auto pi : ob.buffered_pidxs)
         prof_infos[pi-min_prof_info_idx].offset += wrt_off;
@@ -1215,7 +1214,7 @@ void SparseDB::handleItemPi(pms_profile_info_t& pi)
   b = convertToByte8(pi.offset);
   info_bytes.insert(info_bytes.end(), b.begin(), b.end());
 
-  auto fhi = pmf->open(true);
+  auto fhi = pmf->open(true, false);
   fhi.writeat(prof_info_sec_ptr + pi.prof_info_idx * PMS_prof_info_SIZE, PMS_prof_info_SIZE, info_bytes.data());
 }
 
@@ -1313,7 +1312,7 @@ void SparseDB::writeProfiles(const util::File& fh,const int threads,
 
   #pragma omp parallel num_threads(threads)
   {
-    auto fhi = fh.open(true);
+    auto fhi = fh.open(true, true);
 
     std::set<uint16_t> empty;
     std::vector<std::set<uint16_t>> thread_ctx_nzmids (ctx_nzmids.size(), empty);
@@ -1379,7 +1378,7 @@ void SparseDB::writeProfileMajor(const int threads, const int world_rank,
   mpi::barrier();
   if(world_rank != world_size - 1) return;
 
-  auto pmfi = profile_major_f.open(true);
+  auto pmfi = profile_major_f.open(true, false);
   auto footer_off = prof_offsets.back() + profile_sizes.back();
   uint64_t footer_val = PROFDBft;
   pmfi.writeat(footer_off, sizeof(footer_val), &footer_val);
@@ -1654,7 +1653,7 @@ void SparseDB::buildCtxGroupList()
   uint64_t cur_size = 0;
   uint64_t total_size = ctx_off1.back();
   uint64_t size_limit = std::min<uint64_t>((uint64_t)1024*1024*1024*3,\
-                        round(total_size/(5 * mpi::World::size())));
+                        round(total_size/(3 * mpi::World::size())));
 
   ctx_group_list.emplace_back(0);
   for(uint i = 0; i < ctx_off1.size() - 1; i++){
@@ -1702,7 +1701,7 @@ pms_profile_info_t SparseDB::profInfo(const char *input)
 std::vector<pms_profile_info_t> SparseDB::profInfoList(const int threads, const util::File& fh)
 {
   std::vector<pms_profile_info_t> prof_info;
-  auto fhi = fh.open(false);
+  auto fhi = fh.open(false, false);
 
   //read the number of profiles
   uint32_t num_prof = readAsByte4(fhi, (HPCPROFILESPARSE_FMT_MagicLen + HPCPROFILESPARSE_FMT_VersionLen));
@@ -1762,7 +1761,7 @@ SparseDB::allProfileCtxIdIdxPairs(const util::File& fh, const int threads,
 
   #pragma omp parallel for num_threads(threads)
   for(uint i = 0; i < prof_info.size(); i++){
-    auto fhi = fh.open(false);
+    auto fhi = fh.open(false, false);
     all_prof_ctx_pairs[i] = std::move(ctxIdIdxPairs(fhi, prof_info[i]));
   }
 
@@ -1772,7 +1771,7 @@ SparseDB::allProfileCtxIdIdxPairs(const util::File& fh, const int threads,
 
 void SparseDB::handleItemCiip(profCtxIdIdxPairs& ciip)
 {
-  auto pmfi = pmf->open(false);
+  auto pmfi = pmf->open(false, false);
   *(ciip.prof_ctx_pairs) = std::move(ctxIdIdxPairs(pmfi, *(ciip.pi)));
 }
 
@@ -1892,7 +1891,7 @@ SparseDB::profilesData(const std::vector<uint32_t>& ctx_ids, const std::vector<p
   //read all profiles for this ctx_ids group
   #pragma omp parallel for num_threads(threads) 
   for(uint i = 0; i < prof_info_list.size(); i++){
-    auto fhi = fh.open(false);
+    auto fhi = fh.open(false, false);
 
     pms_profile_info_t pi = prof_info_list[i];
     std::vector<PMS_CtxIdIdxPair> prof_ctx_pairs = all_prof_ctx_pairs[i];
@@ -1934,7 +1933,7 @@ SparseDB::profilesData1(std::vector<uint32_t>& ctx_ids, std::vector<pms_profile_
 void SparseDB::handleItemPd(profData& pd)
 {
   uint i = pd.i;
-  auto pmfi = pmf->open(false);
+  auto pmfi = pmf->open(false, false);
 
   auto poff = pd.pi_list->at(i).offset;
 
@@ -2103,7 +2102,8 @@ void SparseDB::writeOneCtx(const uint32_t& ctx_id, const std::vector<uint64_t>& 
 
 void SparseDB::handleItemCtxs(ctxRange& cr)
 {
-  auto ofhi = cmf->open(true);
+  auto ofhi = cmf->open(true, true);
+  std::vector<char> ctxRangeBytes;
 
   uint my_start = cr.start;
   uint my_end = cr.end;
@@ -2128,6 +2128,7 @@ void SparseDB::handleItemCtxs(ctxRange& cr)
     }
     heap.shrink_to_fit();
     std::make_heap(heap.begin(), heap.end());
+    uint32_t first_ctx_id = heap.front().ctx_id;
 
     while(1){
       //get the min ctx_id in the heap
@@ -2159,9 +2160,15 @@ void SparseDB::handleItemCtxs(ctxRange& cr)
 
       }
 
-      writeOneCtx(ctx_id, ctx_off1, cmb, ofhi);
+      //writeOneCtx(ctx_id, ctx_off1, cmb, ofhi);
+      auto b = std::move(cmbBytes(cmb, ctx_off1, ctx_id));
+      ctxRangeBytes.insert(ctxRangeBytes.end(), b.begin(), b.end());
 
     }//END of while
+    if((first_ctx_id != LastNodeEnd) && ctxRangeBytes.size() > 0){
+      uint64_t ctxRangeBytes_off = ctx_off1[CTX_VEC_IDX(first_ctx_id)];
+      ofhi.writeat(ctxRangeBytes_off, ctxRangeBytes.size(), ctxRangeBytes.data());
+    }
 
   } //END of if my_start < my_end
 }
@@ -2220,7 +2227,7 @@ void SparseDB::rwOneCtxGroup(const std::vector<uint32_t>& ctx_ids,
   //----------------------------------
   #pragma omp parallel num_threads(threads)
   {
-    auto ofhi = ofh.open(true);
+    auto ofhi = ofh.open(true, true);
 
     //each thread is responsible for a group of ctx_ids, idx from [my_start, my_end)
     int thread_num = omp_get_thread_num();
@@ -2347,7 +2354,8 @@ void SparseDB::rwOneCtxGroup1(std::vector<uint32_t>& ctx_ids,
     crs[i] = std::move(cr);
   }
   parForCtxs.fill(std::move(crs));
-  parForCtxs.contribute(parForCtxs.wait());
+  //parForCtxs.contribute(parForCtxs.wait());
+  parForCtxs.reset();
   
 }
 
@@ -2425,6 +2433,10 @@ void SparseDB::rwAllCtxGroup1(std::vector<pms_profile_info_t>& prof_info,
   parForPd.fill({});  // Make sure the workshare is non-empty
   parForPd.complete();
 
+  //try to use new parForCtxs correctly
+  parForCtxs.fill({});
+  parForCtxs.complete();
+
 /*
   if(my_ctxs.size() == 0) return;
   //For each ctx group (< memory limit) this rank is in charge of, read and write
@@ -2486,7 +2498,7 @@ void SparseDB::writeCCTMajor(const std::vector<uint64_t>& ctx_nzval_cnts,
   util::File cct_major_f(dir / "cct.db", true);
   
   if(world_rank == 0){
-    auto cct_major_fi = cct_major_f.open(true);
+    auto cct_major_fi = cct_major_f.open(true, true);
     // Write hdr
     writeCMSHdr(cct_major_fi);
     // Write ctx info section
@@ -2506,7 +2518,7 @@ void SparseDB::writeCCTMajor(const std::vector<uint64_t>& ctx_nzval_cnts,
   mpi::barrier();
   if(world_rank != world_size - 1) return;
 
-  auto cmfi = cct_major_f.open(true);
+  auto cmfi = cct_major_f.open(true, false);
   auto footer_off = ctx_offs.back();
   uint64_t footer_val = CCTDBftr;
   cmfi.writeat(footer_off, sizeof(footer_val), &footer_val);
@@ -2531,7 +2543,7 @@ void SparseDB::writeCCTMajor1()
   cmf = util::File(dir / "cct1.db", true);
   
   if(world_rank == 0){
-    auto cct_major_fi = cmf->open(true);
+    auto cct_major_fi = cmf->open(true, true);
     // Write hdr
     writeCMSHdr(cct_major_fi);
     // Write ctx info section
@@ -2551,7 +2563,7 @@ void SparseDB::writeCCTMajor1()
   mpi::barrier();
   if(world_rank != world_size - 1) return;
 
-  auto cmfi = cmf->open(true);
+  auto cmfi = cmf->open(true, false);
   auto footer_off = ctx_off1.back();
   uint64_t footer_val = CCTDBftr;
   cmfi.writeat(footer_off, sizeof(footer_val), &footer_val);

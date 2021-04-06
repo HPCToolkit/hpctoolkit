@@ -71,8 +71,8 @@ public:
 
   /// Open the File, potentially for write access. Read access is always implied.
   // MT: Internally Synchronized
-  Instance open(bool writable) const noexcept {
-    return Instance(*this, writable);
+  Instance open(bool writable, bool mapped) const noexcept {
+    return Instance(*this, writable, mapped);
   }
 
   /// Instance of the opened file, which can be used for file access.
@@ -98,7 +98,7 @@ public:
 
   private:
     friend class File;
-    Instance(const File&, bool) noexcept;
+    Instance(const File&, bool, bool) noexcept;
 
     // The actual implementation is decided at link time, so the needed internal
     // size is not known. So we allocate a void* for ease of use.

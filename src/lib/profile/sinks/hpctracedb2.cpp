@@ -52,7 +52,7 @@
 #include "lib/prof-lean/tracedb.h"
 #include "lib/prof-lean/hpcrun-fmt.h"
 #include "lib/prof-lean/hpcfmt.h"
-#include "lib/profile/mpi/all.hpp"
+#include "../mpi/all.hpp"
 
 
 #include <iomanip>
@@ -82,6 +82,7 @@ HPCTraceDB2::udThread::udThread(const Thread& t, HPCTraceDB2& tdb)
     maxTime(std::chrono::nanoseconds::min()),
     trace_file(nullptr),
     trace_hdr(traceHdr(t, tdb)),
+    trace_off(-1),
     tmcntr(0) {}
 
 void HPCTraceDB2::notifyWavefront(DataClass d){
@@ -108,7 +109,7 @@ void HPCTraceDB2::notifyWavefront(DataClass d){
 
     //open the trace.db for writing, and write magic string, version number and number of tracelines
     if(mpi::World::rank() == 0) {
-      trace_f = std::fopen(trace_p.c_str(), "wb");
+      trace_f = std::fopen(trace_p.c_str(), "wbm");
       if(!trace_f) util::log::fatal() << "Unable to open trace.db file for output!";
       tracedb_hdr_fwrite(&hdr,trace_f);
     }
@@ -122,7 +123,7 @@ void HPCTraceDB2::notifyWavefront(DataClass d){
     auto& hdr = t->userdata[uds.thread].trace_hdr;
     if(hdr.start == hdr.end) {
       if(!trace_f) {
-        trace_f = std::fopen(trace_p.c_str(), "rb+");
+        trace_f = std::fopen(trace_p.c_str(), "rb+m");
         if(!trace_f) util::log::fatal() << "Unable to open trace.db file for output!";
       }
 
@@ -157,7 +158,7 @@ void HPCTraceDB2::notifyTimepoint(const Thread& t, ContextRef::const_t cr, std::
     ud.has_trace = true;
     if(!dir.empty()) {
       //open the file
-      ud.trace_file = std::fopen(trace_p.c_str(), "rb+");
+      ud.trace_file = std::fopen(trace_p.c_str(), "rb+m");
       if(!ud.trace_file){
         char buf[1024];
         char* err = strerror_r(errno, buf, sizeof buf);
@@ -175,6 +176,7 @@ void HPCTraceDB2::notifyTimepoint(const Thread& t, ContextRef::const_t cr, std::
       uint64_t off = (ud.trace_hdr.prof_info_idx - 1) * trace_hdr_SIZE + HPCTRACEDB_FMT_HeaderLen;
       std::fseek(ud.trace_file, off, SEEK_SET);
       trace_hdr_fwrite(hdr, ud.trace_file);
+      ud.trace_off = ftello(ud.trace_file);
     }
   }
 
@@ -188,8 +190,9 @@ void HPCTraceDB2::notifyTimepoint(const Thread& t, ContextRef::const_t cr, std::
   if(!dir.empty()){
     uint64_t off = ud.trace_hdr.start + ud.tmcntr * timepoint_SIZE;
     assert(off < ud.trace_hdr.end);
-    std::fseek(ud.trace_file, off, SEEK_SET);
+    if(off != ud.trace_off) std::fseek(ud.trace_file, off, SEEK_SET);
     hpctrace_fmt_datum_fwrite(&datum, {0}, ud.trace_file);
+    ud.trace_off = off + 8 + 4;
     ud.tmcntr++;
   }
     
