@@ -86,6 +86,7 @@ MYSOURCES = \
 	Util.hpp Util.cpp \
 	TextUtil.hpp TextUtil.cpp \
 	\
+	MetricNameProfMap.cpp \
 	advisor/intel/GPUAdvisor-Init.cpp \
 	advisor/intel/GPUAdvisor-Blame.cpp
 
