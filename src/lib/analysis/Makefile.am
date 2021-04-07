@@ -58,7 +58,7 @@
 #############################################################################
 
 # We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)
-AUTOMAKE_OPTIONS = foreign
+AUTOMAKE_OPTIONS = foreign subdir-objects
 
 #############################################################################
 # Common settings
@@ -84,11 +84,14 @@ MYSOURCES = \
 	ArgsHPCProf.hpp ArgsHPCProf.cpp \
 	\
 	Util.hpp Util.cpp \
-	TextUtil.hpp TextUtil.cpp
+	TextUtil.hpp TextUtil.cpp \
+	\
+	advisor/intel/GPUAdvisor-Init.cpp \
+	advisor/intel/GPUAdvisor-Blame.cpp
 
 # GNU binutils flags are needed for HPCLIB_ISA.
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @BINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@ @XERCES_IFLAGS@ @BOOST_IFLAGS@
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@ @XERCES_IFLAGS@ @BOOST_IFLAGS@ @DYNINST_IFLAGS@ @TBB_IFLAGS@
 
 if IS_HOST_AR
   MYAR = @HOST_AR@
@@ -96,7 +99,7 @@ else
   MYAR = $(AR) cru
 endif
 
-MYLIBADD = @HOST_LIBTREPOSITORY@
+MYLIBADD = @HOST_LIBTREPOSITORY@ $(HPCLIB_Prof)
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
 

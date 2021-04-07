@@ -63,6 +63,7 @@
 
 #include <iostream>
 #include <stack>
+#include <unistd.h> // sleep(Aaron)
 
 using namespace hpctoolkit;
 using namespace hpctoolkit::literals;
@@ -74,6 +75,7 @@ static std::unique_ptr<T> make_unique_x(Args&&... args) {
 }
 
 int rank0(ProfArgs&& args) {
+  sleep(10);
   // We only have one Pipeline, this is its builder.
   ProfilePipeline::Settings pipelineB;
   for(auto& sp: args.sources) pipelineB << std::move(sp.first);

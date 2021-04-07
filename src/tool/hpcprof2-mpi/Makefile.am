@@ -119,10 +119,6 @@ MYLDFLAGS = \
 MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
 	$(HPCLIB_Profile) \
-	$(HPCLIB_Binutils) \
-	$(HPCLIB_ProfLean) \
-	$(HPCLIB_Support) \
-	$(HPCLIB_SupportLean) \
 	$(MY_ELF_DWARF) \
 	@LZMA_PROF_MPI_LIBS@ \
 	@XERCES_LDLIBS@ \
@@ -131,8 +127,15 @@ MYLDADD = \
 	@HOST_HPCPROF_LDFLAGS@ \
 	$(IGA_LDFLGS) \
 	$(DYNINST_LFLAGS) \
-	@MBEDTLS_LIBS@ \
 	$(HPCLIB_Banal) \
+	$(HPCLIB_Analysis) \
+	$(HPCLIB_Prof) \
+	$(HPCLIB_Binutils) \
+	$(HPCLIB_ProfLean) \
+	@MBEDTLS_LIBS@ \
+	$(HPCLIB_XML) \
+	$(HPCLIB_Support) \
+	$(HPCLIB_SupportLean) \
 	@TBB_LFLAGS@
 
 if OPT_ENABLE_OPENMP
