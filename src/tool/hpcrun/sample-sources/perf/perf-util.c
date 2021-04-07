@@ -185,8 +185,8 @@ perf_get_kernel_lm_id()
     if (perf_kernel_lm_id == 0) {
 
       // in case of kptr_restrict = 0, we want to copy kernel symbol for each node
-      // if the value of kptr_restric != 0, all nodes has <vmlinux> module, and
-      //   all calls to the kernel will be from address zero
+      // if the value of kptr_restrict != 0, all nodes have the <vmlinux> module, and
+      // all functions in the kernel have their address shown as zero
 
       if (perf_util_get_kptr_restrict() == 0) {
 
@@ -337,15 +337,15 @@ perf_util_init()
   ksym_status = PERF_UNAVAILABLE;
 
   // Conditions for the sample to include kernel if:
-  // 1. kptr_restric   = 0    (zero)
-  // 2. paranoid_level < 2    (zero or one)
+  // 1. kptr_restrict  = 0
+  // 2. paranoid_level < 2
   // 3. linux version  > 3.7
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,7,0)
   int level     = perf_util_kernel_syms_avail();
   int krestrict = perf_util_get_kptr_restrict();
 
-  if (krestrict == 0 && (level == 0 || level == 1)) {
+  if (krestrict == 0 && level < 2) {
     hpcrun_kernel_callpath_register(perf_add_kernel_callchain);
     ksym_status = PERF_AVAILABLE;
   }
