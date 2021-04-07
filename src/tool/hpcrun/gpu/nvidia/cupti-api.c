@@ -813,19 +813,86 @@ cupti_subscriber_callback
     ip_normalized_t kernel_ip;
 
     switch (cb_id) {
-      //FIXME(Keren): do not support memory allocate and free for current CUPTI version
-      // FIXME(Dejan): here find #bytes from func argument list and atribute it to node in cct(corr_id)
-      //case CUPTI_DRIVER_TRACE_CBID_cuMemAlloc:
-      //case CUPTI_DRIVER_TRACE_CBID_cu64MemAlloc:
-      //case CUPTI_DRIVER_TRACE_CBID_cuMemAllocPitch:
-      //case CUPTI_DRIVER_TRACE_CBID_cu64MemAllocPitch:
-      //case CUPTI_DRIVER_TRACE_CBID_cuMemAlloc_v2:
-      //case CUPTI_DRIVER_TRACE_CBID_cuMemAllocPitch_v2:
-      //  {
-      //    cuda_state = cuda_placeholders.cuda_memalloc_state;
-      //    is_valid_op = true;
-      //    break;
-      //  }
+      // alloc apis
+      case CUPTI_DRIVER_TRACE_CBID_cuMemAlloc:
+      case CUPTI_DRIVER_TRACE_CBID_cu64MemAlloc:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemAllocPitch:
+      case CUPTI_DRIVER_TRACE_CBID_cu64MemAllocPitch:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemAlloc_v2:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemAllocPitch_v2:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemAllocManaged: 
+      case CUPTI_DRIVER_TRACE_CBID_cuMemAllocAsync:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemAllocAsync_ptsz:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemAllocFromPoolAsync:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemAllocFromPoolAsync_ptsz:
+        {
+          gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
+            gpu_placeholder_type_alloc);
+          is_valid_op = true;
+          break;
+        }
+      // free apis
+      case CUPTI_DRIVER_TRACE_CBID_cuMemFree:
+      case CUPTI_DRIVER_TRACE_CBID_cu64MemFree:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemFreeHost:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemFree_v2:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemFreeAsync:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemFreeAsync_ptsz:
+        {
+          gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
+            gpu_placeholder_type_delete);
+          is_valid_op = true;
+          break;
+        }
+      // memset apis
+      case CUPTI_DRIVER_TRACE_CBID_cuMemsetD8:
+      case CUPTI_DRIVER_TRACE_CBID_cu64MemsetD8:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemsetD16:
+      case CUPTI_DRIVER_TRACE_CBID_cu64MemsetD16:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemsetD32:
+      case CUPTI_DRIVER_TRACE_CBID_cu64MemsetD32:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemsetD2D8:
+      case CUPTI_DRIVER_TRACE_CBID_cu64MemsetD2D8:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemsetD2D16:
+      case CUPTI_DRIVER_TRACE_CBID_cu64MemsetD2D16:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemsetD2D32:
+      case CUPTI_DRIVER_TRACE_CBID_cu64MemsetD2D32:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemsetD8Async:
+      case CUPTI_DRIVER_TRACE_CBID_cu64MemsetD8Async:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemsetD16Async:
+      case CUPTI_DRIVER_TRACE_CBID_cu64MemsetD16Async:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemsetD32Async:
+      case CUPTI_DRIVER_TRACE_CBID_cu64MemsetD32Async:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemsetD2D8Async:
+      case CUPTI_DRIVER_TRACE_CBID_cu64MemsetD2D8Async:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemsetD2D16Async:
+      case CUPTI_DRIVER_TRACE_CBID_cu64MemsetD2D16Async:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemsetD2D32Async:
+      case CUPTI_DRIVER_TRACE_CBID_cu64MemsetD2D32Async:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemsetD8_v2:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemsetD16_v2:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemsetD32_v2:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemsetD2D8_v2:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemsetD2D16_v2:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemsetD2D32_v2:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemsetD8_v2_ptds:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemsetD16_v2_ptds:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemsetD32_v2_ptds:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemsetD2D8_v2_ptds:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemsetD2D16_v2_ptds:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemsetD2D32_v2_ptds:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemsetD8Async_ptsz:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemsetD16Async_ptsz:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemsetD32Async_ptsz:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemsetD2D8Async_ptsz:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemsetD2D16Async_ptsz:
+      case CUPTI_DRIVER_TRACE_CBID_cuMemsetD2D32Async_ptsz:
+        {
+          gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags,
+            gpu_placeholder_type_memset);
+          is_valid_op = true;
+          break;
+        }
       // synchronize apis
       case CUPTI_DRIVER_TRACE_CBID_cuCtxSynchronize:
       case CUPTI_DRIVER_TRACE_CBID_cuEventSynchronize:
@@ -948,10 +1015,13 @@ cupti_subscriber_callback
           if (cd->callbackSite == CUPTI_API_ENTER) {
             gpu_application_thread_process_activities();
 
-            // XXX(Keren): cannot parse this kind of kernel launch
-            //if (cb_id != CUPTI_DRIVER_TRACE_CBID_cuLaunchCooperativeKernelMultiDevice)
-            // CUfunction is the first param
-            CUfunction function_ptr = *(CUfunction *)((CUfunction)cd->functionParams);
+            CUfunction function_ptr;
+            if (cb_id == CUPTI_DRIVER_TRACE_CBID_cuLaunchCooperativeKernelMultiDevice) {
+              CUDA_LAUNCH_PARAMS *launch_params = (CUDA_LAUNCH_PARAMS *)cd->functionParams;
+              function_ptr = *(CUfunction *)(launch_params->function);
+            } else {
+              function_ptr = *(CUfunction *)((CUfunction)cd->functionParams);
+            }
             kernel_ip = cupti_func_ip_resolve(function_ptr);
           }
           break;
@@ -981,12 +1051,12 @@ cupti_subscriber_callback
         if (is_kernel_op) {
           cct_node_t *kernel_ph = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel);
 
-	  ensure_kernel_ip_present(kernel_ph, kernel_ip);
+          ensure_kernel_ip_present(kernel_ph, kernel_ip);
 
           cct_node_t *trace_ph = 
-	    gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace);
+            gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace);
 
-	  ensure_kernel_ip_present(trace_ph, kernel_ip);
+          ensure_kernel_ip_present(trace_ph, kernel_ip);
         }
 
         hpcrun_safe_exit();
@@ -1008,7 +1078,7 @@ cupti_subscriber_callback
         ensure_kernel_ip_present(cupti_kernel_ph, kernel_ip);
       }
       if (cupti_trace_ph != NULL) {
-	ensure_kernel_ip_present(cupti_trace_ph, kernel_ip);
+        ensure_kernel_ip_present(cupti_trace_ph, kernel_ip);
       }
     } else if (is_kernel_op && ompt_runtime_api_flag && cd->callbackSite ==
       CUPTI_API_ENTER) {
@@ -1025,19 +1095,38 @@ cupti_subscriber_callback
 
     bool is_valid_op = false;
     bool is_kernel_op __attribute__((unused)) = false; // used only by PRINT when debugging
+
     switch (cb_id) {
-      // FIXME(Keren): do not support memory allocate and free for
-      // current CUPTI version
-      //case CUPTI_RUNTIME_TRACE_CBID_cudaMalloc_v3020:
-      //case CUPTI_RUNTIME_TRACE_CBID_cudaMallocPitch_v3020:
-      //case CUPTI_RUNTIME_TRACE_CBID_cudaMallocArray_v3020:
-      //case CUPTI_RUNTIME_TRACE_CBID_cudaMalloc3D_v3020:
-      //case CUPTI_RUNTIME_TRACE_CBID_cudaMalloc3DArray_v3020:
-      //  {
-      //    cuda_state = cuda_placeholders.cuda_memalloc_state;
-      //    is_valid_op = true;
-      //    break;
-      //  }
+      // cuda alloc apis
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMalloc_v3020:
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMallocPitch_v3020:
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMallocArray_v3020:
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMalloc3D_v3020:
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMalloc3DArray_v3020:
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMallocManaged_v6000:
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMallocAsync_v11020:
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMallocAsync_ptsz_v11020:
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMallocFromPoolAsync_v11020:
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMallocFromPoolAsync_ptsz_v11020:
+      // cuda free apis
+      case CUPTI_RUNTIME_TRACE_CBID_cudaFree_v3020:
+      case CUPTI_RUNTIME_TRACE_CBID_cudaFreeArray_v3020:
+      case CUPTI_RUNTIME_TRACE_CBID_cudaFreeHost_v3020:
+      case CUPTI_RUNTIME_TRACE_CBID_cudaFreeAsync_v11020:
+      case CUPTI_RUNTIME_TRACE_CBID_cudaFreeAsync_ptsz_v11020:
+      // cuda memset apis
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemset_v3020:
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemset2D_v3020:
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemsetAsync_v3020:
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemset2DAsync_v3020:
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemset3D_v3020:
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemset3DAsync_v3020:
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemset_ptds_v7000:
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemset2D_ptds_v7000:
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemsetAsync_ptsz_v7000:
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemset2DAsync_ptsz_v7000:
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemset3D_ptds_v7000:
+      case CUPTI_RUNTIME_TRACE_CBID_cudaMemset3DAsync_ptsz_v7000:
       // cuda synchronize apis
       case CUPTI_RUNTIME_TRACE_CBID_cudaEventSynchronize_v3020:
       case CUPTI_RUNTIME_TRACE_CBID_cudaStreamSynchronize_v3020:
@@ -1100,11 +1189,9 @@ cupti_subscriber_callback
       case CUPTI_RUNTIME_TRACE_CBID_cudaLaunchKernel_v7000:
       case CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_ptsz_v7000:
       case CUPTI_RUNTIME_TRACE_CBID_cudaLaunchKernel_ptsz_v7000:
-      #if CUPTI_API_VERSION >= 10
       case CUPTI_RUNTIME_TRACE_CBID_cudaLaunchCooperativeKernel_v9000:
       case CUPTI_RUNTIME_TRACE_CBID_cudaLaunchCooperativeKernel_ptsz_v9000:
       case CUPTI_RUNTIME_TRACE_CBID_cudaLaunchCooperativeKernelMultiDevice_v9000:
-      #endif
         {
           is_valid_op = true;
           is_kernel_op = true;
