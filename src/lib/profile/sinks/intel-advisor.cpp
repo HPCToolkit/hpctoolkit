@@ -48,7 +48,6 @@
 // system includes
 //*****************************************************************************
 
-#include <unistd.h> // sleep(Aaron)
 #include <iomanip>
 #include <algorithm>
 #include <sstream>
@@ -71,6 +70,7 @@
 //*****************************************************************************
 
 #include "intel-advisor.hpp"
+#include <lib/analysis/advisor/intel/GPUAdvisor.hpp>
 #include "hpctracedb2.hpp"
 #include "../util/xml.hpp"
 
@@ -92,6 +92,14 @@
 #define LINE_WIDTH 130
 #define MAX_STR_SIZE 1024
 #define INSTRUCTION_ANALYZER_DEBUG 0
+#define FAST_SLICING 0
+
+
+
+//*****************************************************************************
+// local definitions
+//*****************************************************************************
+static int TRACK_LIMIT = 8;
 
 
 
@@ -592,6 +600,12 @@ void IntelAdvisor::notifyPipeline() noexcept {
 }
 
 
+class FirstMatchPred : public Dyninst::Slicer::Predicates {
+ public:
+  virtual bool endAtPoint(Dyninst::Assignment::Ptr ap) { return true; }
+};
+
+
 class IgnoreRegPred : public Dyninst::Slicer::Predicates {
  public:
   IgnoreRegPred(std::vector<Dyninst::AbsRegion> &rhs) : _rhs(rhs) {}
@@ -625,6 +639,87 @@ class IgnoreRegPred : public Dyninst::Slicer::Predicates {
  private:
   std::vector<Dyninst::AbsRegion> _rhs;
 };
+
+
+static void
+trackDependency
+(
+ const std::map<int, GPUParse::InstructionStat *> &inst_stat_map,
+ Dyninst::Address inst_addr,
+ Dyninst::Address func_addr,
+ std::map<int, int> &predicate_map,
+ Dyninst::NodeIterator exit_node_iter,
+ GPUParse::InstructionStat *inst_stat,
+ int barriers,
+ int step
+)
+{
+  if (step >= TRACK_LIMIT) {
+    return;
+  }
+  Dyninst::NodeIterator in_begin, in_end;
+  (*exit_node_iter)->ins(in_begin, in_end);
+  for (; in_begin != in_end; ++in_begin) {
+    auto slice_node = boost::dynamic_pointer_cast<Dyninst::SliceNode>(*in_begin);
+    auto addr = slice_node->addr();
+    auto *slice_inst = inst_stat_map.at(addr);
+
+    if (INSTRUCTION_ANALYZER_DEBUG) {
+      std::cout << "find inst_addr " << inst_addr - func_addr << " <- addr: " << addr - func_addr;
+    }
+
+    Dyninst::Assignment::Ptr aptr = slice_node->assign();
+    auto reg = aptr->out().absloc().reg();
+    auto reg_id = reg.val() & 0xFF;
+
+    for (size_t i = 0; i < inst_stat->srcs.size(); ++i) {
+      if (reg_id == inst_stat->srcs[i]) {
+        auto beg = inst_stat->assign_pcs[reg_id].begin();
+        auto end = inst_stat->assign_pcs[reg_id].end();
+        if (std::find(beg, end, addr - func_addr) == end) {
+          inst_stat->assign_pcs[reg_id].push_back(addr - func_addr);
+        }
+        break;
+      }
+    }
+
+    if (INSTRUCTION_ANALYZER_DEBUG) {
+      std::cout << " reg " << reg_id << std::endl;
+    }
+
+    if (slice_inst->predicate_flag == GPUParse::InstructionStat::PREDICATE_NONE && barriers == -1) {
+      // 1. No predicate, stop immediately
+    } else if (inst_stat->predicate == slice_inst->predicate &&
+        inst_stat->predicate_flag == slice_inst->predicate_flag && barriers == -1) {
+      // 2. Find an exact match, stop immediately
+    } else {
+      if (((slice_inst->predicate_flag == GPUParse::InstructionStat::PREDICATE_TRUE &&
+              predicate_map[-(slice_inst->predicate + 1)] > 0) ||
+            (slice_inst->predicate_flag == GPUParse::InstructionStat::PREDICATE_FALSE &&
+             predicate_map[(slice_inst->predicate + 1)] > 0)) && barriers == -1) {
+        // 3. Stop if find both !@PI and @PI=
+        // add one to avoid P0
+      } else {
+        // 4. Continue search
+        if (slice_inst->predicate_flag == GPUParse::InstructionStat::PREDICATE_TRUE) {
+          predicate_map[slice_inst->predicate + 1]++;
+        } else {
+          predicate_map[-(slice_inst->predicate + 1)]++;
+        }
+
+        trackDependency(inst_stat_map, inst_addr, func_addr, predicate_map, in_begin, inst_stat,
+            barriers, step + 1);
+
+        // Clear
+        if (slice_inst->predicate_flag == GPUParse::InstructionStat::PREDICATE_TRUE) {
+          predicate_map[slice_inst->predicate + 1]--;
+        } else {
+          predicate_map[-(slice_inst->predicate + 1)]--;
+        }
+      }
+    }
+  }
+}
 
 
 static void
@@ -690,13 +785,31 @@ sliceIntelInstructions
         Dyninst::Slicer s(a, dyn_block, dyn_func, &ac, &dyn_inst_cache);
         Dyninst::GraphPtr g = s.backwardSlice(p);
         //bool status = g->printDOT(function_name + ".dot");
+        Dyninst::NodeIterator exit_begin, exit_end;
+        g->exitNodes(exit_begin, exit_end);
+
+        for (; exit_begin != exit_end; ++exit_begin) {
+          std::map<int, int> predicate_map;
+          // DFS to iterate the whole dependency graph
+          if (inst_stat->predicate_flag == GPUParse::InstructionStat::PredicateFlag::PREDICATE_TRUE) {
+            predicate_map[inst_stat->predicate + 1]++;
+          } else if (inst_stat->predicate_flag == GPUParse::InstructionStat::PredicateFlag::PREDICATE_TRUE) {
+            predicate_map[-(inst_stat->predicate + 1)]++;
+          }
+#ifdef FAST_SLICING
+          TRACK_LIMIT = 1;
+#endif
+          auto barrier_threshold = inst_stat->barrier_threshold;
+          trackDependency(inst_stat_map, inst_addr, func_addr, predicate_map, exit_begin, inst_stat,
+                          barrier_threshold, 0);
+        }
       }
     }
   }
 }
 
 
-static void
+static std::vector<GPUParse::Function *> 
 createBackwardSlicingInput
 (
  ElfFile *elfFile,
@@ -706,7 +819,7 @@ createBackwardSlicingInput
 {
   Symtab *symtab = Inline::openSymtab(elfFile);
   if (symtab == NULL) {
-    return;
+    return std::vector<GPUParse::Function *>();
   }
   auto function_name = elfFile->getGPUKernelName();
   addCustomFunctionObject(function_name, symtab); //adds a dummy function object
@@ -720,6 +833,9 @@ createBackwardSlicingInput
   code_obj->parse();
   
   sliceIntelInstructions(code_obj->funcs(), functions, function_name);
+
+  // return value to be passed to configInst
+  return functions;
 }
 
 
@@ -757,7 +873,11 @@ void IntelAdvisor::write() {
   std::cout << std::string(LINE_WIDTH, '-') << std::endl;
   std::cout << "udm.tag(load modules)" << std::endl;
   std::cout << std::string(LINE_WIDTH, '-') << std::endl;
+
+  // filepath of intel gpubin loadmodule
   std::string filePath;
+  std::vector<GPUParse::Function *> functions;
+
   for(const auto& m: src.modules().iterate()) {
     auto& udm = m().userdata[ud];
     if(!udm) continue;
@@ -784,7 +904,7 @@ void IntelAdvisor::write() {
 
       char *text_section = NULL;
       auto text_section_size = elfFile->getTextSection(&text_section);
-      createBackwardSlicingInput(elfFile, text_section, text_section_size);
+      functions = createBackwardSlicingInput(elfFile, text_section, text_section_size);
     }
   }
   of << "</LoadModuleTable>\n"
@@ -833,7 +953,7 @@ void IntelAdvisor::write() {
           const auto& stats = c.statistics();
           for(const auto& mx: stats.citerate()) {
             const auto& m = *mx.first;
-            std::cout << ", name: " << m.name();
+            std::cout << ", metric: " << m.name();
             if(!m.scopes().has(MetricScope::function) || !m.scopes().has(MetricScope::execution))
             util::log::fatal{} << "Metric isn't function/execution!";
             const auto& ids = m.userdata[src.mscopeIdentifiers()];
@@ -841,11 +961,7 @@ void IntelAdvisor::write() {
             size_t idx = 0;
             for(const auto& sp: m.partials()) {
               hpcrun_metricVal_t v;
-              if(auto vex = vv.get(sp).get(MetricScope::function)) {
-                v.r = *vex;
-                mids.push_back((ids.function << 8) + idx);
-                values.push_back(v);
-              }
+              // MetricScope::execution stands for inclusive metrics. We wont process MetricScope::function(stands for exclusive metrics)
               if(auto vinc = vv.get(sp).get(MetricScope::execution)) {
                 v.r = *vinc;
                 mids.push_back((ids.execution << 8) + idx);
@@ -854,8 +970,8 @@ void IntelAdvisor::write() {
               idx++;
             }
           }
-          std::cout << ", values: [";
-          for(int i=0; i < values.size(); i++) {
+          std::cout << ", values: [ ";
+          for(size_t i=0; i < values.size(); i++) {
             std::cout << values.at(i).r << ' ';
           }
           std::cout << "]" << std::endl;
@@ -920,4 +1036,10 @@ void IntelAdvisor::write() {
 
   of << "</SecCallPathProfile>\n"
         "</HPCToolkitExperiment>\n" << std::flush;
+  
+  GPUAdvisor gpu_advisor;
+  gpu_advisor.configInst(filePath, functions);
+
+  KernelBlame kernel_blame; 
+  gpu_advisor.blame(kernel_blame);
 }

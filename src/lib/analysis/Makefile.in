@@ -136,8 +136,9 @@ CONFIG_HEADER = $(top_builddir)/src/include/hpctoolkit-config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 LTLIBRARIES = $(noinst_LTLIBRARIES)
-am__DEPENDENCIES_1 =
+am__DEPENDENCIES_1 = $(HPCLIB_Prof)
 libHPCanalysis_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
+am__dirstamp = $(am__leading_dot)dirstamp
 am__objects_1 = libHPCanalysis_la-CallPath.lo \
 	libHPCanalysis_la-CallPath-MetricComponentsFact.lo \
 	libHPCanalysis_la-CallPath-CudaCFG.lo \
@@ -145,7 +146,9 @@ am__objects_1 = libHPCanalysis_la-CallPath.lo \
 	libHPCanalysis_la-Flat-ObjCorrelation.lo \
 	libHPCanalysis_la-Raw.lo libHPCanalysis_la-Args.lo \
 	libHPCanalysis_la-ArgsHPCProf.lo libHPCanalysis_la-Util.lo \
-	libHPCanalysis_la-TextUtil.lo
+	libHPCanalysis_la-TextUtil.lo \
+	advisor/intel/libHPCanalysis_la-GPUAdvisor-Init.lo \
+	advisor/intel/libHPCanalysis_la-GPUAdvisor-Blame.lo
 am_libHPCanalysis_la_OBJECTS = $(am__objects_1)
 libHPCanalysis_la_OBJECTS = $(am_libHPCanalysis_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -500,7 +503,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 
 # We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)
-AUTOMAKE_OPTIONS = foreign
+AUTOMAKE_OPTIONS = foreign subdir-objects
 HPC_IFLAGS = -I@abs_top_srcdir@/src -I@abs_top_builddir@/src
 
 ############################################################
@@ -554,15 +557,18 @@ MYSOURCES = \
 	ArgsHPCProf.hpp ArgsHPCProf.cpp \
 	\
 	Util.hpp Util.cpp \
-	TextUtil.hpp TextUtil.cpp
+	TextUtil.hpp TextUtil.cpp \
+	\
+	advisor/intel/GPUAdvisor-Init.cpp \
+	advisor/intel/GPUAdvisor-Blame.cpp
 
 
 # GNU binutils flags are needed for HPCLIB_ISA.
 MYCFLAGS = @HOST_CFLAGS@   $(HPC_IFLAGS) @BINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@ @XERCES_IFLAGS@ @BOOST_IFLAGS@
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@ @XERCES_IFLAGS@ @BOOST_IFLAGS@ @DYNINST_IFLAGS@ @TBB_IFLAGS@
 @IS_HOST_AR_FALSE@MYAR = $(AR) cru
 @IS_HOST_AR_TRUE@MYAR = @HOST_AR@
-MYLIBADD = @HOST_LIBTREPOSITORY@
+MYLIBADD = @HOST_LIBTREPOSITORY@ $(HPCLIB_Prof)
 MYCLEAN = @HOST_LIBTREPOSITORY@
 
 #############################################################################
@@ -628,12 +634,26 @@ clean-noinstLTLIBRARIES:
 	  echo rm -f $${locs}; \
 	  rm -f $${locs}; \
 	}
+advisor/intel/$(am__dirstamp):
+	@$(MKDIR_P) advisor/intel
+	@: > advisor/intel/$(am__dirstamp)
+advisor/intel/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) advisor/intel/$(DEPDIR)
+	@: > advisor/intel/$(DEPDIR)/$(am__dirstamp)
+advisor/intel/libHPCanalysis_la-GPUAdvisor-Init.lo:  \
+	advisor/intel/$(am__dirstamp) \
+	advisor/intel/$(DEPDIR)/$(am__dirstamp)
+advisor/intel/libHPCanalysis_la-GPUAdvisor-Blame.lo:  \
+	advisor/intel/$(am__dirstamp) \
+	advisor/intel/$(DEPDIR)/$(am__dirstamp)
 
 libHPCanalysis.la: $(libHPCanalysis_la_OBJECTS) $(libHPCanalysis_la_DEPENDENCIES) $(EXTRA_libHPCanalysis_la_DEPENDENCIES) 
 	$(AM_V_CXXLD)$(libHPCanalysis_la_LINK)  $(libHPCanalysis_la_OBJECTS) $(libHPCanalysis_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
+	-rm -f advisor/intel/*.$(OBJEXT)
+	-rm -f advisor/intel/*.lo
 
 distclean-compile:
 	-rm -f *.tab.c
@@ -648,24 +668,29 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-Raw.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-TextUtil.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCanalysis_la-Util.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@advisor/intel/$(DEPDIR)/libHPCanalysis_la-GPUAdvisor-Blame.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@advisor/intel/$(DEPDIR)/libHPCanalysis_la-GPUAdvisor-Init.Plo@am__quote@
 
 .cpp.o:
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
+@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXXCOMPILE) -c -o $@ $<
 
 .cpp.obj:
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.obj$$||'`;\
+@am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ `$(CYGPATH_W) '$<'` &&\
+@am__fastdepCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
 .cpp.lo:
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LTCXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.lo$$||'`;\
+@am__fastdepCXX_TRUE@	$(LTCXXCOMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
+@am__fastdepCXX_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Plo
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LTCXXCOMPILE) -c -o $@ $<
@@ -740,11 +765,26 @@ libHPCanalysis_la-TextUtil.lo: TextUtil.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCanalysis_la-TextUtil.lo `test -f 'TextUtil.cpp' || echo '$(srcdir)/'`TextUtil.cpp
 
+advisor/intel/libHPCanalysis_la-GPUAdvisor-Init.lo: advisor/intel/GPUAdvisor-Init.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -MT advisor/intel/libHPCanalysis_la-GPUAdvisor-Init.lo -MD -MP -MF advisor/intel/$(DEPDIR)/libHPCanalysis_la-GPUAdvisor-Init.Tpo -c -o advisor/intel/libHPCanalysis_la-GPUAdvisor-Init.lo `test -f 'advisor/intel/GPUAdvisor-Init.cpp' || echo '$(srcdir)/'`advisor/intel/GPUAdvisor-Init.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) advisor/intel/$(DEPDIR)/libHPCanalysis_la-GPUAdvisor-Init.Tpo advisor/intel/$(DEPDIR)/libHPCanalysis_la-GPUAdvisor-Init.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='advisor/intel/GPUAdvisor-Init.cpp' object='advisor/intel/libHPCanalysis_la-GPUAdvisor-Init.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -c -o advisor/intel/libHPCanalysis_la-GPUAdvisor-Init.lo `test -f 'advisor/intel/GPUAdvisor-Init.cpp' || echo '$(srcdir)/'`advisor/intel/GPUAdvisor-Init.cpp
+
+advisor/intel/libHPCanalysis_la-GPUAdvisor-Blame.lo: advisor/intel/GPUAdvisor-Blame.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -MT advisor/intel/libHPCanalysis_la-GPUAdvisor-Blame.lo -MD -MP -MF advisor/intel/$(DEPDIR)/libHPCanalysis_la-GPUAdvisor-Blame.Tpo -c -o advisor/intel/libHPCanalysis_la-GPUAdvisor-Blame.lo `test -f 'advisor/intel/GPUAdvisor-Blame.cpp' || echo '$(srcdir)/'`advisor/intel/GPUAdvisor-Blame.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) advisor/intel/$(DEPDIR)/libHPCanalysis_la-GPUAdvisor-Blame.Tpo advisor/intel/$(DEPDIR)/libHPCanalysis_la-GPUAdvisor-Blame.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='advisor/intel/GPUAdvisor-Blame.cpp' object='advisor/intel/libHPCanalysis_la-GPUAdvisor-Blame.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCanalysis_la_CXXFLAGS) $(CXXFLAGS) -c -o advisor/intel/libHPCanalysis_la-GPUAdvisor-Blame.lo `test -f 'advisor/intel/GPUAdvisor-Blame.cpp' || echo '$(srcdir)/'`advisor/intel/GPUAdvisor-Blame.cpp
+
 mostlyclean-libtool:
 	-rm -f *.lo
 
 clean-libtool:
 	-rm -rf .libs _libs
+	-rm -rf advisor/intel/.libs advisor/intel/_libs
 
 ID: $(am__tagged_files)
 	$(am__define_uniq_tagged_files); mkid -fID $$unique
@@ -859,6 +899,8 @@ clean-generic:
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
+	-rm -f advisor/intel/$(DEPDIR)/$(am__dirstamp)
+	-rm -f advisor/intel/$(am__dirstamp)
 
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
@@ -869,7 +911,7 @@ clean-am: clean-generic clean-libtool clean-noinstLTLIBRARIES \
 	mostlyclean-am
 
 distclean: distclean-am
-	-rm -rf ./$(DEPDIR)
+	-rm -rf ./$(DEPDIR) advisor/intel/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -915,7 +957,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-	-rm -rf ./$(DEPDIR)
+	-rm -rf ./$(DEPDIR) advisor/intel/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
