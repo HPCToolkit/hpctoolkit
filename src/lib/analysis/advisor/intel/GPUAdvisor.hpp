@@ -3,6 +3,7 @@
 #include <lib/prof/CCT-Tree.hpp>                               // ADynNode
 #include <lib/analysis/advisor/intel/CCTGraph.hpp>             // CCTGraph
 #include <lib/analysis/advisor/intel/GPUArchitecture.hpp>      // GPUArchitecture
+#include <lib/analysis/MetricNameProfMap.hpp>                  // CCTGraph
 
 struct InstructionBlame {
   GPUParse::InstructionStat *src_inst, *dst_inst;
@@ -141,7 +142,16 @@ class GPUAdvisor {
   typedef std::map<VMA, VMAProperty> VMAPropertyMap;
   typedef std::map<VMA, Prof::Struct::Stmt *> VMAStructureMap;
 
+  // lat
+  std::string _lat_metric;
+
+  // inst
+  std::string _inst_exe_pred_metric;
+
   Prof::CallPath::Profile *_prof;
+  Analysis::MetricNameProfMap *_metric_name_prof_map;
+
+  Prof::CCT::ADynNode *_gpu_root;
 
   std::map<int, int> _function_offset;
   Analysis::CCTGraph<GPUParse::InstructionStat *> _inst_dep_graph;

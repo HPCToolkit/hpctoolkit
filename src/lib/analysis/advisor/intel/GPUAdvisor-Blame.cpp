@@ -9,7 +9,108 @@ GPUAdvisor::initCCTDepGraph
  Analysis::CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph
 )
 {
-  // to be filled
+  // Init nodes
+  for (auto &iter : _vma_prop_map) {
+    auto *prof_node = iter.second.prof_node;
+    if (prof_node != NULL) {
+      cct_dep_graph.addNode(prof_node);
+    }
+  }
+
+  auto inst_exe_pred_index =
+    _metric_name_prof_map->metric_id(0, 0, _inst_exe_pred_metric);  // mpi rank and thread id set to 0
+
+  std::vector<std::pair<Prof::CCT::ADynNode *, Prof::CCT::ADynNode *>> edge_vec;
+  // Insert all possible edges
+  // If a node has samples, we find all possible causes.
+  // Even for instructions that are not sampled, we assign them one issued sample, but no latency
+  // sample. Since no latency sample is associated with these nodes, we do not need to propogate in
+  // the grpah.
+  for (auto iter = cct_dep_graph.nodeBegin(); iter != cct_dep_graph.nodeEnd(); ++iter) {
+    auto *node = *iter;
+    auto node_vma = node->lmIP();
+
+    // Find its dependent instructions
+    auto *node_inst = _vma_prop_map.at(node_vma).inst;
+    auto inst_iter = _inst_dep_graph.incoming_nodes(node_inst);
+
+    if (inst_iter != _inst_dep_graph.incoming_nodes_end()) {
+      for (auto *inst : inst_iter->second) {
+        auto vma = inst->pc;
+        auto vma_prop_iter = _vma_prop_map.find(vma);
+
+        Prof::CCT::ADynNode *prof_node = NULL;
+
+        if (inst_exe_pred_index != -1) {
+          // Accurate mode
+          if (vma_prop_iter->second.prof_node != NULL &&
+              vma_prop_iter->second.prof_node->hasMetricSlow(inst_exe_pred_index)) {
+            // Only add prof node it is executed
+            prof_node = vma_prop_iter->second.prof_node;
+          }
+        } else {
+          // Fast mode
+          if (vma_prop_iter->second.prof_node == NULL) {
+            // Create a new prof node
+            Prof::Metric::IData metric_data(_prof->metricMgr()->size());
+            metric_data.clearMetrics();
+            prof_node =
+              new Prof::CCT::Stmt(node->parent(), HPCRUN_FMT_CCTNodeId_NULL, lush_assoc_info_NULL,
+                  _gpu_root->lmId(), vma, 0, NULL, metric_data);
+            vma_prop_iter->second.prof_node = prof_node;
+          } else {
+            prof_node = vma_prop_iter->second.prof_node;
+          }
+        }
+
+        if (prof_node != NULL) {
+          edge_vec.push_back(
+              std::pair<Prof::CCT::ADynNode *, Prof::CCT::ADynNode *>(prof_node, node));
+        }
+      }
+    }
+  }
+
+  for (auto &edge : edge_vec) {
+    auto *from_node = edge.first;
+    auto *to_node = edge.second;
+
+    cct_dep_graph.addEdge(from_node, to_node);
+  }
+
+  auto lat_index = _metric_name_prof_map->metric_id(0, 0, _lat_metric);  // mpi rank and thread id set to 0
+
+  // Special handling for depbar
+  for (auto iter = cct_dep_graph.nodeBegin(); iter != cct_dep_graph.nodeEnd(); ++iter) {
+    auto *node = *iter;
+    auto node_vma = node->lmIP();
+    auto *prof_node = _vma_prop_map.at(node_vma).prof_node;
+
+    if (prof_node != NULL && cct_dep_graph.incoming_nodes_size(node) == 0 &&
+        prof_node->hasMetricSlow(lat_index) != 0.0) {
+      auto bar_vma = node_vma - _arch->inst_size();
+      auto bar_vma_prop_iter = _vma_prop_map.find(bar_vma);
+      auto *bar_inst = bar_vma_prop_iter->second.inst;
+
+      if (bar_inst->op.find("BAR") == std::string::npos) {
+        continue;
+      }
+
+      decltype(prof_node) bar_node = bar_vma_prop_iter->second.prof_node;
+      if (bar_node == NULL) {
+        // Create a node
+        Prof::Metric::IData metric_data(_prof->metricMgr()->size());
+        metric_data.clearMetrics();
+        bar_node = new Prof::CCT::Stmt(node->parent(), HPCRUN_FMT_CCTNodeId_NULL, lush_assoc_info_NULL,
+            _gpu_root->lmId(), bar_vma, 0, NULL, metric_data);
+        bar_vma_prop_iter->second.prof_node = bar_node;
+      }
+
+      // Move mem dep metrics
+      bar_node->demandMetric(lat_index) = prof_node->demandMetric(lat_index);
+      prof_node->demandMetric(lat_index) = 0;
+    }
+  }
 }
 
 
