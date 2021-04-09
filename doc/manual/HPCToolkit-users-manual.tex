@@ -1524,9 +1524,28 @@ To fix this, set the permission of the library to 0755, and launch again the vie
 % ===========================================================================
 % ===========================================================================
 
+\section{Launching \hpcviewer{} is very slow on Windows}
+
+There is a known issue that Windows Defender significantly slow down Java-based applications.
+See the github issue at \url{https://github.com/microsoft/java-wdb/issues/9}.
+
+A temporary solution is to add \hpcviewer{} in the Windows' exclusion list:
+\begin{enumerate}
+  \item Open Windows 10 settings.
+  \item Search for "Virus and threat protection" and open it.
+  \item Now click on "Manage settings" under "Virus and threat protection settings" section.
+  \item Now click "Add or remove exclusions" under "Exclusions" section.
+  \item Now click "Add an exclusion" then select "Folder"
+  \item Point to \hpcviewer{} directory and press "Select Folder"
+\end{enumerate}
+
+
+% ===========================================================================
+% ===========================================================================
+
 \section{Mac only: \hpcviewer{} runs on Java $X$ instead of ``Java 11"}
 
-If your system has multiple versions of Java and Java 8 is not the newer version, you need to set Java 8 as the default JVM:
+If your system has multiple versions of Java and Java 11 or newer is not the default, you need to set Java 11 as the default JVM:
 
 \begin{enumerate}
 \item Leave all JDKs at their default location (usually under \texttt{/Library/Java/JavaVirtualMachines}). The system will pick the highest version by default.
