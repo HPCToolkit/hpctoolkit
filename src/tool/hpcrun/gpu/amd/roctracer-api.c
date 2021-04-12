@@ -98,7 +98,9 @@
 typedef const char* (*hip_kernel_name_fnt)(const hipFunction_t f);
 typedef const char* (*hip_kernel_name_ref_fnt)(const void* hostFunction, hipStream_t stream);
 
-#define DEBUG 0
+#define HSA_OP_ID_COPY 1
+
+#define DEBUG 1
 
 #include "hpcrun/gpu/gpu-print.h"
 
@@ -302,7 +304,7 @@ roctracer_subscriber_callback
   bool is_valid_op = false;
   bool is_kernel_op = false;
   const hip_api_data_t* data = (const hip_api_data_t*)(callback_data);
-  const char* kernel_name = NULL;  
+  const char* kernel_name = NULL;
 
   switch (callback_id) {
   case HIP_API_ID_hipMemcpy:
@@ -386,7 +388,7 @@ roctracer_subscriber_callback
 				 gpu_placeholder_type_trace);
     is_valid_op = true;
     is_kernel_op = true;
-    kernel_name = hip_kernel_name_ref_fn(data->args.hipLaunchKernel.function_address, 
+    kernel_name = hip_kernel_name_ref_fn(data->args.hipLaunchKernel.function_address,
       data->args.hipLaunchKernel.stream);
     break;
   }
@@ -398,9 +400,11 @@ roctracer_subscriber_callback
 				 gpu_placeholder_type_sync);
     is_valid_op = true;
     break;
-  default:
-    PRINT("HIP API tracing: Unhandled op %u, domain %u\n", callback_id, domain);
+  default: {
+    const char * name = roctracer_op_string(domain, callback_id, 0);
+    PRINT("AMD tracing: Unhandled op %u, domain %u, string name %s, correlation %d\n", callback_id, domain, name, data->correlation_id);
     break;
+  }
   }
 
   if (!is_valid_op) return;
@@ -478,6 +482,15 @@ roctracer_buffer_completion_callback
     roctracer_activity_process(record);
     record++;
   }
+}
+
+void hsa_activity_callback(
+  uint32_t op,
+  activity_record_t* record,
+  void* arg)
+{
+  fprintf(stderr, "Enter hsa_activity_callback\n");
+  roctracer_activity_process(record);
 }
 
 
@@ -568,14 +581,61 @@ roctracer_init
   HPCRUN_ROCTRACER_CALL(roctracer_enable_domain_activity_expl, (ACTIVITY_DOMAIN_HIP_API, NULL));
   HPCRUN_ROCTRACER_CALL(roctracer_enable_domain_activity_expl, (ACTIVITY_DOMAIN_HCC_OPS, NULL));
 
-  // Enable PC sampling
-  //HPCRUN_ROCTRACER_CALL(roctracer_enable_op_activity, (ACTIVITY_DOMAIN_HSA_OPS, HSA_OP_ID_PCSAMPLE));
+  HPCRUN_ROCTRACER_CALL(roctracer_enable_domain_activity_expl, (ACTIVITY_DOMAIN_HSA_OPS, NULL));
   // Enable KFD API tracing
   HPCRUN_ROCTRACER_CALL(roctracer_enable_domain_callback, (ACTIVITY_DOMAIN_KFD_API, roctracer_subscriber_callback, NULL));
   // Enable rocTX
   HPCRUN_ROCTRACER_CALL(roctracer_enable_domain_callback, (ACTIVITY_DOMAIN_ROCTX, roctracer_subscriber_callback, NULL));
 }
 
+typedef struct {
+  void* table;
+  activity_async_callback_t async_copy_callback_fun;
+  void* async_copy_callback_arg;
+  const char* output_prefix;
+} hpcrun_ops_properties_t;
+
+bool
+OnLoad
+(
+  void* table,
+  uint64_t runtime_version,
+  uint64_t failed_tool_count,
+  const char* const* failed_tool_names
+)
+{
+  HPCRUN_ROCTRACER_CALL(roctracer_set_properties, (ACTIVITY_DOMAIN_HIP_API, NULL));
+  // Allocating tracing pool
+  roctracer_properties_t properties;
+  memset(&properties, 0, sizeof(roctracer_properties_t));
+  properties.buffer_size = 0x1000;
+  properties.buffer_callback_fun = roctracer_buffer_completion_callback;
+  HPCRUN_ROCTRACER_CALL(roctracer_open_pool_expl, (&properties, NULL));
+  // Enable HIP API callbacks
+  HPCRUN_ROCTRACER_CALL(roctracer_enable_domain_callback, (ACTIVITY_DOMAIN_HIP_API, roctracer_subscriber_callback, NULL));
+
+  HPCRUN_ROCTRACER_CALL(roctracer_set_properties, (ACTIVITY_DOMAIN_HSA_API, table));
+
+  hpcrun_ops_properties_t ops_properties;
+  ops_properties.table = table;
+  ops_properties.async_copy_callback_fun = hsa_activity_callback;
+  ops_properties.async_copy_callback_arg = NULL;
+  ops_properties.output_prefix = NULL;
+  HPCRUN_ROCTRACER_CALL(roctracer_set_properties, (ACTIVITY_DOMAIN_HSA_OPS, &ops_properties));
+  HPCRUN_ROCTRACER_CALL(roctracer_enable_domain_callback, (ACTIVITY_DOMAIN_HSA_API, roctracer_subscriber_callback, NULL));
+  // Enable HIP activity tracing
+  HPCRUN_ROCTRACER_CALL(roctracer_enable_domain_activity_expl, (ACTIVITY_DOMAIN_HIP_API, NULL));
+  HPCRUN_ROCTRACER_CALL(roctracer_enable_domain_activity_expl, (ACTIVITY_DOMAIN_HCC_OPS, NULL));
+
+  for (int i = 0; i < 150; ++i) {
+    roctracer_enable_op_activity_expl(ACTIVITY_DOMAIN_HSA_OPS, i, NULL);
+  }
+
+  // Enable KFD API tracing
+  HPCRUN_ROCTRACER_CALL(roctracer_enable_domain_callback, (ACTIVITY_DOMAIN_KFD_API, roctracer_subscriber_callback, NULL));
+  // Enable rocTX
+  HPCRUN_ROCTRACER_CALL(roctracer_enable_domain_callback, (ACTIVITY_DOMAIN_ROCTX, roctracer_subscriber_callback, NULL));
+}
 void
 roctracer_fini
 (
@@ -589,6 +649,7 @@ roctracer_fini
   HPCRUN_ROCTRACER_CALL(roctracer_disable_domain_activity, (ACTIVITY_DOMAIN_HSA_OPS));
   HPCRUN_ROCTRACER_CALL(roctracer_disable_domain_callback, (ACTIVITY_DOMAIN_KFD_API));
   HPCRUN_ROCTRACER_CALL(roctracer_disable_domain_callback, (ACTIVITY_DOMAIN_ROCTX));
+  HPCRUN_ROCTRACER_CALL(roctracer_disable_domain_callback, (ACTIVITY_DOMAIN_HSA_API));
   HPCRUN_ROCTRACER_CALL(roctracer_flush_activity_expl, (NULL));
 
   gpu_application_thread_process_activities();

@@ -167,7 +167,7 @@ METHOD_FN(finalize_event_list)
     char* evlist = METHOD_CALL(self, get_event_str);
     char* event = start_tok(evlist);
 #endif
-    roctracer_init();
+    //roctracer_init();
 
     // Init records
     gpu_trace_init();

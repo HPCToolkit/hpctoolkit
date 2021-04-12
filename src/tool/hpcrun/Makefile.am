@@ -1177,7 +1177,7 @@ endif
 
 MONITOR_NAMES = -G 'monitor_*'
 HPCRUN_NAMES =  -G 'hpcrun_*' -G 'hpctoolkit_*'
-MISC_NAMES =    -G 'debug_flag_*' -G 'messages_*' -G ompt_start_tool
+MISC_NAMES =    -G 'debug_flag_*' -G 'messages_*' -G ompt_start_tool -G OnLoad
 OPENCL_NAMES = -G 'clBuildProgram' -G 'clCreate*' -G 'clEnqueue*' -G 'clSetKernelArg' -G 'cl*Event*'
 
 DYN_SYSCALL_LIST = poll ppoll pselect select

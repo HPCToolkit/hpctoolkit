@@ -47,7 +47,7 @@
 
 #include "roctracer-activity-translate.h"
 
-#define DEBUG 0
+#define DEBUG 1
 
 #include <hpcrun/gpu/gpu-print.h>
 
@@ -133,6 +133,7 @@ roctracer_activity_translate
  roctracer_record_t *record
 )
 {
+  fprintf(stderr, "enter roctracer_activity_translate\n");
   const char * name = roctracer_op_string(record->domain, record->op, record->kind);
   memset(ga, 0, sizeof(gpu_activity_t));
 
@@ -159,8 +160,8 @@ roctracer_activity_translate
     convert_unknown(ga);
   } else {
     convert_unknown(ga);
-    PRINT("roctracer buffer enent: Unhandled activity %s, domain %u, op %u, kind %u\n", 
-      name, record->domain, record->op, record->kind);
+    PRINT("roctracer buffer enent: Unhandled activity %s, domain %u, op %u, kind %u , correlation id %d\n", 
+      name, record->domain, record->op, record->kind, record->correlation_id);
   }
   cstack_ptr_set(&(ga->next), 0);
 }
