@@ -58,7 +58,7 @@ sourceset = import('sourceset')
 pkgconfig = import('pkgconfig')
 
 # Various bits we need require the use of Python 3, so get it early
-python = import('python').find_installation('python3')
+python = find_program('python3', 'python', version: '>=3.0.0')
 
 # The hpc* launch scripts don't work if the libdir or libexecdir are altered
 # from their defaults.

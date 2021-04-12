@@ -1,5 +1,9 @@
+from __future__ import print_function
 import sys
-assert(sys.version_info > (3,0))
+import shlex
+import os.path
+import spack
+
 spackpath = sys.argv[1]
 mode = sys.argv[2]
 package = sys.argv[3]
@@ -12,10 +16,6 @@ if len(user_spec) > 0:
 
 assert(len(sys.argv) == 6)
 assert(mode == '--unique' or mode == '--any')
-
-import shlex
-import os.path
-import spack
 
 db = spack.store.store.db
 
