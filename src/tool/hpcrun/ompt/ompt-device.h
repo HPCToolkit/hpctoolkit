@@ -51,7 +51,7 @@
 #include <include/hpctoolkit-config.h>
 #include <cct/cct.h>
 
-#if HAVE_CUPTI_H 
+#if HAVE_CUPTI_H | HAVE_ROCM_H
 
 void 
 prepare_device

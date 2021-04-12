@@ -87,7 +87,7 @@
 // debug print
 //******************************************************************************
 
-#define DEBUG 0
+#define DEBUG 1
 
 #include "hpcrun/gpu/gpu-print.h"
 

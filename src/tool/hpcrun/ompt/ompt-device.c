@@ -47,7 +47,7 @@
 
 #include "ompt-device.h"
 
-#if HAVE_CUPTI_H
+#if HAVE_CUPTI_H | HAVE_ROCM_H
 
 /******************************************************************************
  * global include files
@@ -85,7 +85,7 @@
 // macros
 //*****************************************************************************
 
-#define OMPT_ACTIVITY_DEBUG 0
+#define OMPT_ACTIVITY_DEBUG 1
 
 #if OMPT_ACTIVITY_DEBUG
 #define PRINT(...) fprintf(stderr, __VA_ARGS__)

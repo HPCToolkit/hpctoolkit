@@ -732,22 +732,24 @@ ompt_backtrace_finalize
  int isSync
 ) 
 {
-  // ompt: elide runtime frames
-  // if that is the case, then it will later become available in a deferred fashion.
-  int master = TD_GET(master);
-  if (!master) {
-    if (need_defer_cntxt()) {
-//      resolve_cntxt();
+  if (ompt_thread_computes()) {
+    // ompt: elide runtime frames
+    // if that is the case, then it will later become available in a deferred fashion.
+    int master = TD_GET(master);
+    if (!master) {
+      if (need_defer_cntxt()) {
+	//      resolve_cntxt();
+      }
+      if (!ompt_eager_context)
+	resolve_cntxt();
     }
-    if (!ompt_eager_context)
-      resolve_cntxt();
-  }
-  uint64_t region_id = TD_GET(region_id);
+    uint64_t region_id = TD_GET(region_id);
 
-  ompt_elide_runtime_frame(bt, region_id, isSync);
+    ompt_elide_runtime_frame(bt, region_id, isSync);
 
-  if(!isSync && !ompt_eager_context_p() && !bt->collapsed){
-    register_to_all_regions();
+    if(!isSync && !ompt_eager_context_p() && !bt->collapsed){
+      register_to_all_regions();
+    }
   }
 }
 
