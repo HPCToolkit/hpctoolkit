@@ -51,14 +51,16 @@ _gen = generator(find_program('stringify.sh', native: true),
                  arguments: ['@INPUT@'],
                  output: '@BASENAME@.h', capture: true)
 _srcs += _gen.process(files('gpubin-analysis.txt'))
+_deps = [
+  analysis_dep, banal_dep,
+  dependency('dyninst', required: false, disabler: true),
+  dependency('OpenMP', required: get_option('openmp')),
+]
 
 if not get_option('hpcstruct').disabled()
   hpcstruct_exe = executable('hpcstruct', _srcs,
     include_directories: tool_includes,
-    dependencies: [
-      analysis_dep, banal_dep,
-      dependency('OpenMP', required: get_option('openmp')),
-    ],
+    dependencies: _deps,
     install: true)
   all_apps += hpcstruct_exe
 endif
@@ -70,10 +72,7 @@ summary('hpcstruct', is_variable('hpcstruct_exe') and not is_disabler(hpcstruct_
 if not get_option('devtools').disabled()
   dotgraph_exe = executable('dotgraph', files('DotGraph.cpp'),
     include_directories: tool_includes,
-    dependencies: [
-      dependency('dyninst', required: get_option('devtools'), disabler: true),
-      dependency('OpenMP', required: get_option('openmp')),
-    ],
+    dependencies: _deps,
     install: true, install_dir: get_option('libexecdir') / meson.project_name())
   all_apps += dotgraph_exe
 endif
