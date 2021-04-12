@@ -74,6 +74,18 @@
 #include <CodeSource.h>
 #include <Function.h>
 #include <Symtab.h>
+#include <Instruction.h>
+
+#include <lib/binutils/ElfHelper.hpp>
+#include <lib/binutils/InputFile.hpp>
+
+#include <lib/banal/Struct-Inline.hpp>
+
+#include <lib/banal/gpu/ReadCudaCFG.hpp>
+
+#ifdef ENABLE_IGC
+#include <lib/banal/gpu/ReadIntelCFG.hpp>
+#endif // ENABLE_IGC
 
 #include <include/hpctoolkit-config.h>
 
@@ -141,8 +153,10 @@ makeDotFile(ofstream * dotFile, CodeObject * code_obj, const char *only_func)
       num++;
 
       blockNum[block] = num;
+
       *dotFile << "  " << num << " [ label=\"0x" << hex << block->start()
 	       << "\\n0x" << block->end() << dec << "\" ];\n";
+
     }
     int endNum = num + 1;
     *dotFile << "  " << endNum << " [ label=\"end\" shape=\"diamond\" ];\n";
@@ -255,7 +269,7 @@ getOptions(int argc, char **argv, Options & opts)
 //----------------------------------------------------------------------
 
 // Usage:  dotgraph  [-j num]  <binary>
-// output:  <binary>.dot
+// output:  <binary>.dot.<0-n>
 int
 main(int argc, char **argv)
 {
@@ -263,38 +277,62 @@ main(int argc, char **argv)
 
   getOptions(argc, argv, opts);
 
-  // open <filename>.dot for output
-  char * base = basename(strdup(opts.filename));
-  string dotname = string(base) + ".dot";
-  ofstream dotFile;
+  InputFile inputFile;
+  auto filename = std::string(opts.filename);
+  inputFile.openFile(filename, InputFileError_Error);
+  ElfFileVector * elfFileVector = inputFile.fileVector();
 
-  dotFile.open(dotname, ios::out | ios::trunc);
-  if (! dotFile.is_open()) {
-    errx(1, "unable to open for output: %s", dotname.c_str());
-  }
+  // Output structure files under the current directory
+  auto search_path = "./";
+  for (uint i = 0; i < elfFileVector->size(); i++) {
+    auto * elfFile = (*elfFileVector)[i];
+    // open <filename>.dot.<i> for output
+    char * base = basename(strdup(opts.filename));
+    string dotname = string(base) + ".dot." + std::to_string(i);
+    ofstream dotFile;
 
-#ifdef ENABLE_OPENMP
-  omp_set_num_threads(1);
-#endif
-
-  // read input file and parse
-  Symtab * symtab = NULL;
-
-  if (! Symtab::openFile(symtab, opts.filename)) {
-    errx(1, "Symtab::openFile failed: %s", opts.filename);
-  }
-  symtab->parseTypesNow();
-  symtab->parseFunctionRanges();
+    dotFile.open(dotname, ios::out | ios::trunc);
+    if (! dotFile.is_open()) {
+      errx(1, "unable to open for output: %s", dotname.c_str());
+    }
 
 #ifdef ENABLE_OPENMP
-  omp_set_num_threads(opts.jobs);
+    omp_set_num_threads(1);
 #endif
 
-  SymtabCodeSource * code_src = new SymtabCodeSource(symtab);
-  CodeObject * code_obj = new CodeObject(code_src);
-  code_obj->parse();
+    // read input file and parse
+    Symtab * symtab = Inline::openSymtab(elfFile);
+    if (symtab == NULL) {
+      errx(1, "Inline::openSymtab failed: %s", elfFile->getFileName().c_str());
+    }
 
-  makeDotFile(&dotFile, code_obj, opts.func);
+    bool cuda_file = (symtab)->getArchitecture() == Dyninst::Arch_cuda;
+    bool intel_file = elfFile->isIntelGPUFile();
+
+#ifdef ENABLE_OPENMP
+    omp_set_num_threads(opts.jobs);
+#endif
+
+    bool parsable = true;
+    CodeSource *code_src = NULL;
+    CodeObject *code_obj = NULL;
+
+    if (cuda_file) { // don't run parseapi on cuda binary
+      parsable = readCudaCFG(search_path, elfFile, symtab, true, &code_src, &code_obj);
+    } else if (intel_file) { // don't run parseapi on intel binary
+      #ifdef ENABLE_IGC
+      parsable = readIntelCFG(search_path, elfFile, symtab, true, &code_src, &code_obj);
+      #endif // ENABLE_IGC
+    } else {
+      code_src = new SymtabCodeSource(symtab);
+      code_obj = new CodeObject(code_src);
+      code_obj->parse();
+    }
+
+    if (parsable) {
+      makeDotFile(&dotFile, code_obj, opts.func);
+    }
+  }
 
   return 0;
 }

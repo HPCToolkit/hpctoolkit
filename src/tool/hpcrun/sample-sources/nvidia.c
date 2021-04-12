@@ -161,7 +161,7 @@ data_motion_implicit_activities[] = {
 
 CUpti_ActivityKind
 kernel_invocation_activities[] = {
-  CUPTI_ACTIVITY_KIND_KERNEL,
+  CUPTI_ACTIVITY_KIND_CONCURRENT_KERNEL,
   CUPTI_ACTIVITY_KIND_SYNCHRONIZATION,
   CUPTI_ACTIVITY_KIND_INVALID
 };
@@ -266,6 +266,7 @@ METHOD_FN(init)
 
   control_knob_register("HPCRUN_CUDA_DEVICE_BUFFER_SIZE", "8388608", ck_int);
   control_knob_register("HPCRUN_CUDA_DEVICE_SEMAPHORE_SIZE", "65536", ck_int);
+  control_knob_register("HPCRUN_CUDA_KERNEL_SERIALIZATION", "FALSE", ck_string);
 
   // Reset cupti flags
   cupti_device_init();
@@ -368,6 +369,9 @@ METHOD_FN(process_event_list, int lush_metrics)
     gpu_metrics_GPU_INST_STALL_enable(); // stall metrics
 
     gpu_metrics_GSAMP_enable(); // GPU utilization from sampling
+    
+    // pc sampling cannot be on with concurrent kernels
+    kernel_invocation_activities[0] = CUPTI_ACTIVITY_KIND_KERNEL;
   }
 
   gpu_metrics_default_enable();
@@ -400,11 +404,25 @@ METHOD_FN(process_event_list, int lush_metrics)
     monitor_real_exit(-1);
 
   int device_semaphore_size;
-  if(control_knob_value_get_int("HPCRUN_CUDA_DEVICE_SEMAPHORE_SIZE", &device_semaphore_size) != 0)
+  if (control_knob_value_get_int("HPCRUN_CUDA_DEVICE_SEMAPHORE_SIZE", &device_semaphore_size) != 0)
+    monitor_real_exit(-1);
+
+  char *kernel_serialization = NULL;
+  if (control_knob_value_get_string("HPCRUN_CUDA_KERNEL_SERIALIZATION", &kernel_serialization) != 0)
     monitor_real_exit(-1);
 
   TMSG(CUDA, "Device buffer size %d", device_buffer_size);
   TMSG(CUDA, "Device semaphore size %d", device_semaphore_size);
+  TMSG(CUDA, "Kernel serialization %s", kernel_serialization);
+
+  // By default we enable concurrent kernel monitoring,
+  // which instruments the begin and exit of a block to measure running time.
+  // It introduces not neglibile overhead if a kernel has many short-lived blocks.
+  // Force kernels to serialize will reduce the measurement overhead and improve
+  // accuracy for applications that use a single stream.
+  if (strcmp(kernel_serialization, "TRUE") == 0) {
+    kernel_invocation_activities[0] = CUPTI_ACTIVITY_KIND_KERNEL;
+  }
 
   cupti_device_buffer_config(device_buffer_size, device_semaphore_size);
 
