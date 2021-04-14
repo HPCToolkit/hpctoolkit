@@ -1,115 +1,34 @@
 #include "GPUAdvisor.hpp"
-#include <lib/prof/CCT-Tree.hpp>                    // ADynNode
-#include <lib/analysis/advisor/intel/CCTGraph.hpp>  // CCTGraph
+//#include <lib/prof/CCT-Tree.hpp>                    // ADynNode
+#include <lib/analysis/CCTGraph.hpp>                // CCTGraph
 
 
 void
 GPUAdvisor::initCCTDepGraph
 (
- Analysis::CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph
+ CCTGraph &cct_dep_graph
 )
 {
-  // Init nodes
-  for (auto &iter : _vma_prop_map) {
-    auto *prof_node = iter.second.prof_node;
-    if (prof_node != NULL) {
-      cct_dep_graph.addNode(prof_node);
-    }
-  }
-
-  auto inst_exe_pred_index =
-    _metric_name_prof_map->metric_id(0, 0, _inst_exe_pred_metric);  // mpi rank and thread id set to 0
-
-  std::vector<std::pair<Prof::CCT::ADynNode *, Prof::CCT::ADynNode *>> edge_vec;
+  std::vector<std::pair<int, int>> edge_vec;
   // Insert all possible edges
   // If a node has samples, we find all possible causes.
-  // Even for instructions that are not sampled, we assign them one issued sample, but no latency
-  // sample. Since no latency sample is associated with these nodes, we do not need to propogate in
-  // the grpah.
-  for (auto iter = cct_dep_graph.nodeBegin(); iter != cct_dep_graph.nodeEnd(); ++iter) {
-    auto *node = *iter;
-    auto node_vma = node->lmIP();
-
-    // Find its dependent instructions
-    auto *node_inst = _vma_prop_map.at(node_vma).inst;
-    auto inst_iter = _inst_dep_graph.incoming_nodes(node_inst);
-
-    if (inst_iter != _inst_dep_graph.incoming_nodes_end()) {
-      for (auto *inst : inst_iter->second) {
-        auto vma = inst->pc;
-        auto vma_prop_iter = _vma_prop_map.find(vma);
-
-        Prof::CCT::ADynNode *prof_node = NULL;
-
-        if (inst_exe_pred_index != -1) {
-          // Accurate mode
-          if (vma_prop_iter->second.prof_node != NULL &&
-              vma_prop_iter->second.prof_node->hasMetricSlow(inst_exe_pred_index)) {
-            // Only add prof node it is executed
-            prof_node = vma_prop_iter->second.prof_node;
-          }
-        } else {
-          // Fast mode
-          if (vma_prop_iter->second.prof_node == NULL) {
-            // Create a new prof node
-            Prof::Metric::IData metric_data(_prof->metricMgr()->size());
-            metric_data.clearMetrics();
-            prof_node =
-              new Prof::CCT::Stmt(node->parent(), HPCRUN_FMT_CCTNodeId_NULL, lush_assoc_info_NULL,
-                  _gpu_root->lmId(), vma, 0, NULL, metric_data);
-            vma_prop_iter->second.prof_node = prof_node;
-          } else {
-            prof_node = vma_prop_iter->second.prof_node;
-          }
-        }
-
-        if (prof_node != NULL) {
-          edge_vec.push_back(
-              std::pair<Prof::CCT::ADynNode *, Prof::CCT::ADynNode *>(prof_node, node));
-        }
+  for (auto &iter : _node_map) {
+    auto *inst = iter.second.inst;
+    int to = inst->pc;
+    cct_dep_graph.addNode(iter.second);
+    for (auto reg_vector: inst->assign_pcs) {
+      for (int from: reg_vector.second) {
+        edge_vec.push_back(std::pair<int,int>(from, to));
+        cct_dep_graph.addNode(_node_map[from]);
       }
     }
   }
 
   for (auto &edge : edge_vec) {
-    auto *from_node = edge.first;
-    auto *to_node = edge.second;
+    int from_node = edge.first;
+    int to_node = edge.second;
 
     cct_dep_graph.addEdge(from_node, to_node);
-  }
-
-  auto lat_index = _metric_name_prof_map->metric_id(0, 0, _lat_metric);  // mpi rank and thread id set to 0
-
-  // Special handling for depbar
-  for (auto iter = cct_dep_graph.nodeBegin(); iter != cct_dep_graph.nodeEnd(); ++iter) {
-    auto *node = *iter;
-    auto node_vma = node->lmIP();
-    auto *prof_node = _vma_prop_map.at(node_vma).prof_node;
-
-    if (prof_node != NULL && cct_dep_graph.incoming_nodes_size(node) == 0 &&
-        prof_node->hasMetricSlow(lat_index) != 0.0) {
-      auto bar_vma = node_vma - _arch->inst_size();
-      auto bar_vma_prop_iter = _vma_prop_map.find(bar_vma);
-      auto *bar_inst = bar_vma_prop_iter->second.inst;
-
-      if (bar_inst->op.find("BAR") == std::string::npos) {
-        continue;
-      }
-
-      decltype(prof_node) bar_node = bar_vma_prop_iter->second.prof_node;
-      if (bar_node == NULL) {
-        // Create a node
-        Prof::Metric::IData metric_data(_prof->metricMgr()->size());
-        metric_data.clearMetrics();
-        bar_node = new Prof::CCT::Stmt(node->parent(), HPCRUN_FMT_CCTNodeId_NULL, lush_assoc_info_NULL,
-            _gpu_root->lmId(), bar_vma, 0, NULL, metric_data);
-        bar_vma_prop_iter->second.prof_node = bar_node;
-      }
-
-      // Move mem dep metrics
-      bar_node->demandMetric(lat_index) = prof_node->demandMetric(lat_index);
-      prof_node->demandMetric(lat_index) = 0;
-    }
   }
 }
 
@@ -172,7 +91,7 @@ GPUAdvisor::trackDep
 
   // Iterate inst until reaching the use inst
   while (start_vma <= end_vma) {
-    auto *inst = _vma_prop_map.at(start_vma).inst;
+    auto *inst = _node_map.at(start_vma).inst;
     // 1: instruction issue
     if (fixed) {
       latency_issue += 1;
@@ -240,12 +159,12 @@ void GPUAdvisor::trackDepInit(int to_vma, int from_vma, int dst, CCTEdgePathMap 
   // Two constraints:
   // 1. A path is eliminated if an instruction on the way uses dst
   // 2. A path is eliminated if the throughput cycles is greater than latency
-  auto *from_block = _vma_prop_map.at(from_vma).block;
-  auto *to_block = _vma_prop_map.at(to_vma).block;
+  auto *from_block = _node_map.at(from_vma).block;
+  auto *to_block = _node_map.at(to_vma).block;
   std::set<GPUParse::Block *> visited_blocks;
   std::vector<GPUParse::Block *> path;
   std::vector<std::vector<GPUParse::Block *>> paths;
-  auto latency = fixed ? _vma_prop_map.at(from_vma).latency_lower : _vma_prop_map.at(from_vma).latency_upper;
+  auto latency = _node_map.at(from_vma).latency;
   trackDep(from_vma, to_vma, dst, from_block, to_block, 0, latency, visited_blocks, path, paths,
       track_type, fixed, barrier_threshold);
 
@@ -285,10 +204,12 @@ void GPUAdvisor::trackDepInit(int to_vma, int from_vma, int dst, CCTEdgePathMap 
 void
 GPUAdvisor::pruneCCTDepGraphLatency
 (
- Analysis::CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph,
+ CCTGraph &cct_dep_graph,
  CCTEdgePathMap &cct_edge_path_map
 )
 {
+  // commented for now
+#if 0
   std::vector<std::set<Analysis::CCTEdge<Prof::CCT::ADynNode *>>::iterator> remove_edges;
   for (auto iter = cct_dep_graph.edgeBegin(); iter != cct_dep_graph.edgeEnd(); ++iter) {
     auto edge = *iter;
@@ -296,8 +217,8 @@ GPUAdvisor::pruneCCTDepGraphLatency
     auto from_vma = from->lmIP();
     auto *to = edge.to;
     auto to_vma = to->lmIP();
-    auto *to_inst = _vma_prop_map.at(to_vma).inst;
-    auto *from_inst = _vma_prop_map.at(from_vma).inst;
+    auto *to_inst = _node_map.at(to_vma).inst;
+    auto *from_inst = _node_map.at(from_vma).inst;
     auto barrier_threshold = to_inst->barrier_threshold;
     bool fixed = from_inst->control.read == GPUParse::InstructionStat::BARRIER_NONE &&
       from_inst->control.write == GPUParse::InstructionStat::BARRIER_NONE;
@@ -355,18 +276,38 @@ GPUAdvisor::pruneCCTDepGraphLatency
   for (auto &iter : remove_edges) {
     cct_dep_graph.removeEdge(iter);
   }
+#endif
 }
 
 
 void
 GPUAdvisor::blameCCTDepGraph
 (
- Analysis::CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph,
+ CCTGraph &cct_dep_graph,
  CCTEdgePathMap &cct_edge_path_map,
  InstBlames &inst_blames
 )
 {
-  // to be filled
+  // latency blaming
+
+  // nodes = sorted list of def-use vertices
+  std::map<int, CCTNode> nodes = cct_dep_graph.nodes();
+  std::map<int, std::set<int> > incoming_nodes = cct_dep_graph.incoming_nodes();
+  for (auto iter = nodes.rbegin(); iter != nodes.rend(); ++iter) {  
+    CCTNode n = iter->second;
+    float sum_freq_path_inv = 0;
+    for (auto &i: incoming_nodes[n.vma]) {
+      CCTNode i_node = nodes[i];
+      sum_freq_path_inv += i_node.frequency * i_node.path_length_inv;
+    }
+    for (auto &i: incoming_nodes[n.vma]) {
+      // latency_blame calculations for incoming node i
+      CCTNode &i_node = nodes[i];
+      i_node.latency_blame += (i_node.frequency * i_node.path_length_inv * n.latency / sum_freq_path_inv);
+      // for debugging
+      _node_map[i].latency_blame = i_node.latency_blame;
+    }
+  }
 }
 
 
@@ -379,11 +320,11 @@ GPUAdvisor::overlayInstBlames
 {
   for (auto &inst_blame : inst_blames) {
     auto *from_inst = inst_blame.src_inst;
-    auto *from_block = _vma_prop_map.at(from_inst->pc).block;
-    auto *from_function = _vma_prop_map.at(from_inst->pc).function;
+    auto *from_block = _node_map.at(from_inst->pc).block;
+    auto *from_function = _node_map.at(from_inst->pc).function;
     auto *to_inst = inst_blame.dst_inst;
-    auto *to_block = _vma_prop_map.at(to_inst->pc).block;
-    auto *to_function = _vma_prop_map.at(to_inst->pc).function;
+    auto *to_block = _node_map.at(to_inst->pc).block;
+    auto *to_function = _node_map.at(to_inst->pc).function;
 
     // Update block and function
     inst_blame.src_block = from_block;
@@ -408,25 +349,49 @@ GPUAdvisor::overlayInstBlames
 
 
 void
+GPUAdvisor::printNodes
+(
+ CCTGraph cct_dep_graph
+)
+{
+  std::map<int, std::set<int> > incoming_nodes = cct_dep_graph.incoming_nodes();
+  std::map<int, CCTNode > nodes = cct_dep_graph.nodes();
+  for (auto &iter : _node_map) {
+    std::set<int> iter_incoming_nodes = incoming_nodes[iter.second.vma];
+    std::cout << "offset: " << iter.second.vma <<
+                 ", latency: " << iter.second.latency <<
+                 ", latency_blame: " << iter.second.latency_blame <<
+                 ", path_length: " << nodes[iter.second.vma].path_length <<
+                 ", incoming edges: [";
+    for (int i_node : iter_incoming_nodes) {
+      std::cout << i_node << ", ";
+    }
+    std::cout << "]\n";
+  }
+}
+
+
+void
 GPUAdvisor::blame
 (
  KernelBlame &kernel_blame
 )
 {
   // 1. Init a CCT dependency graph
-  Analysis::CCTGraph<Prof::CCT::ADynNode *> cct_dep_graph;
+  CCTGraph cct_dep_graph;
   initCCTDepGraph(cct_dep_graph);
 
   // 2.3 Issue constraints
   CCTEdgePathMap cct_edge_path_map;
-  pruneCCTDepGraphLatency(cct_dep_graph, cct_edge_path_map);
+  //pruneCCTDepGraphLatency(cct_dep_graph, cct_edge_path_map);
 
   // 3. Accumulate blames and record significant pairs and paths
   // Apportion based on block latency coverage and def inst issue count
   InstBlames inst_blames;
   blameCCTDepGraph(cct_dep_graph, cct_edge_path_map, inst_blames);
 
+  printNodes(cct_dep_graph);
   // 5. Overlay blames
   //auto &kernel_blame = cct_blames[mpi_rank][thread_id];
-  overlayInstBlames(inst_blames, kernel_blame);
+  //overlayInstBlames(inst_blames, kernel_blame);
 }
