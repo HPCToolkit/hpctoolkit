@@ -814,7 +814,8 @@ createBackwardSlicingInput
 (
  ElfFile *elfFile,
  char *text_section,
- size_t text_section_size
+ size_t text_section_size,
+ std::map<int, std::pair<int, int>> kernel_latency_frequency_map
 )
 {
   Symtab *symtab = Inline::openSymtab(elfFile);
@@ -835,7 +836,158 @@ createBackwardSlicingInput
   sliceIntelInstructions(code_obj->funcs(), functions, function_name);
 
   // return value to be passed to configInst
+  GPUAdvisor gpu_advisor;
+  gpu_advisor.init("intelGen9");
+  gpu_advisor.configInst(function_name, functions, kernel_latency_frequency_map);
+
+  KernelBlame kernel_blame; 
+  gpu_advisor.blame(kernel_blame);
   return functions;
+}
+
+
+std::map<int, std::pair<int, int>>
+IntelAdvisor::getLatencyFrequencyDataForKernel
+(
+ std::string filePath
+)
+{
+  std::map<int, std::pair<int, int>> kernel_latency_frequency_map;
+  // Spit out the CCT
+  src.contexts().citerate([&](const Context& c){
+      if ((c.scope().type() == hpctoolkit::Scope::Type::point) || (c.scope().type() == hpctoolkit::Scope::Type::call) ||
+          (c.scope().type() == hpctoolkit::Scope::Type::classified_point) || (c.scope().type() == hpctoolkit::Scope::Type::classified_call) ||
+          (c.scope().type() == hpctoolkit::Scope::Type::concrete_line)) {
+        std::string modulePath = c.scope().point_data().first.path();
+        if (strstr(modulePath.c_str(), filePath.c_str())) {
+          int offset = c.scope().point_data().second;
+          std::cout << " offset: " << offset;
+
+          const std::string latency_metric_name = "GINS: LAT(cycles)";
+          const std::string frequency_metric_name = "GINS:EXC_CNT";
+          int latency = -1, frequency = -1;
+          std::vector<hpcrun_metricVal_t> values;
+          std::vector<uint16_t> mids;
+          const auto& stats = c.statistics();
+
+          for(const auto& mx: stats.citerate()) {
+            const auto& m = *mx.first;
+            std::cout << ", metric: " << m.name();
+            if(!m.scopes().has(MetricScope::function) || !m.scopes().has(MetricScope::execution))
+            util::log::fatal{} << "Metric isn't function/execution!";
+            const auto& ids = m.userdata[src.mscopeIdentifiers()];
+            const auto& vv = mx.second;
+            size_t idx = 0;
+
+            if (m.name().find(latency_metric_name) != std::string::npos) {
+              latency = *(vv.get(m.partials()[0]).get(MetricScope::execution));
+            } else if (m.name().find(frequency_metric_name) != std::string::npos) {
+              frequency = *(vv.get(m.partials()[0]).get(MetricScope::execution));
+            }
+
+            for(const auto& sp: m.partials()) {
+              hpcrun_metricVal_t v;
+              // MetricScope::execution stands for inclusive metrics. We wont process MetricScope::function(stands for exclusive metrics)
+              if(auto vinc = vv.get(sp).get(MetricScope::execution)) {
+                v.r = *vinc;
+                mids.push_back((ids.execution << 8) + idx);
+                values.push_back(v);
+              }
+              idx++;
+            }
+          }
+          kernel_latency_frequency_map[offset] = std::pair(latency, frequency);
+          std::cout << ", values: [ ";
+          for(size_t i=0; i < values.size(); i++) {
+            std::cout << values.at(i).r << ' ';
+          }
+          std::cout << "]" << std::endl;
+      }
+    }
+
+    auto& udc = c.userdata[ud];
+
+    // First emit our tags, and whatever extensions are nessesary.
+    of << udc.pre << udc.open;
+    switch(c.scope().type()) {
+      case Scope::Type::unknown:
+      case Scope::Type::global:
+      case Scope::Type::loop:
+      case Scope::Type::inlined_function:
+      case Scope::Type::function:
+        break;
+      case Scope::Type::point:
+      case Scope::Type::classified_point:
+      case Scope::Type::call:
+      case Scope::Type::classified_call:
+      case Scope::Type::line:
+      case Scope::Type::concrete_line:
+        of << (c.children().empty() ? 'S' : 'C') << udc.attr;
+        break;
+    }
+    if(c.scope().type() != Scope::Type::global)
+      of << " it=\"" << c.userdata[src.identifier()] << "\"";
+
+    // If this is an empty tag, use the shorter form, otherwise close the tag.
+    if(c.children().empty()) {
+      of << "/>\n" << udc.post;
+      return;
+    }
+    of << ">\n";
+  }, [&](const Context& c){
+    // If this is the shorter form, we have no ending tag
+    if(c.children().empty()) return;
+
+    auto& udc = c.userdata[ud];
+
+    // Close off this tag.
+    switch(c.scope().type()) {
+      case Scope::Type::unknown:
+      case Scope::Type::global:
+      case Scope::Type::function:
+      case Scope::Type::inlined_function:
+      case Scope::Type::loop:
+        break;
+      case Scope::Type::point:
+      case Scope::Type::classified_point:
+      case Scope::Type::call:
+      case Scope::Type::classified_call:
+      case Scope::Type::line:
+      case Scope::Type::concrete_line:
+        of << "</" << (c.children().empty() ? 'S' : 'C') << ">\n";
+        break;
+    }
+    of << udc.close << udc.post;
+  });
+  return kernel_latency_frequency_map;
+}
+
+
+static void
+processFrequencyValues
+(
+ std::map<int, std::pair<int, int>> &kernel_latency_frequency_map
+)
+{
+  if (kernel_latency_frequency_map.size() == 0)
+    return;
+
+  int block_frequency_value = kernel_latency_frequency_map[0].second;
+
+  for (auto &val: kernel_latency_frequency_map) {
+    if (val.second.second == -1) {
+      if (val.second.first == -1) {
+        // this offset has no values. i.e latency and frequency == 0
+        val.second.first = 0;
+        val.second.second = 0;
+      } else {
+        // this instruction doesnt have frequency recorded. Assign the frequency of basic-block's 1st instruction
+        val.second.second = block_frequency_value;
+      }
+    } else if (val.second.second != block_frequency_value) {
+      block_frequency_value = val.second.second;
+    }
+  }
 }
 
 
@@ -880,6 +1032,7 @@ void IntelAdvisor::write() {
 
   for(const auto& m: src.modules().iterate()) {
     auto& udm = m().userdata[ud];
+    auto& tmp = m().userdata[src.classification()];
     if(!udm) continue;
     of << udm.tag;
     if (strstr(udm.tag.c_str(), "gpubins")) {
@@ -904,7 +1057,9 @@ void IntelAdvisor::write() {
 
       char *text_section = NULL;
       auto text_section_size = elfFile->getTextSection(&text_section);
-      functions = createBackwardSlicingInput(elfFile, text_section, text_section_size);
+      std::map<int, std::pair<int, int>> kernel_latency_frequency_map = getLatencyFrequencyDataForKernel(filePath);
+      processFrequencyValues(kernel_latency_frequency_map);
+      functions = createBackwardSlicingInput(elfFile, text_section, text_section_size, kernel_latency_frequency_map);
     }
   }
   of << "</LoadModuleTable>\n"
@@ -1037,9 +1192,4 @@ void IntelAdvisor::write() {
   of << "</SecCallPathProfile>\n"
         "</HPCToolkitExperiment>\n" << std::flush;
   
-  GPUAdvisor gpu_advisor;
-  gpu_advisor.configInst(filePath, functions);
-
-  KernelBlame kernel_blame; 
-  gpu_advisor.blame(kernel_blame);
 }

@@ -71,19 +71,45 @@
 
 #include <include/uint.h>
 
-#include <lib/prof/CallPath-Profile.hpp>
 #include <lib/prof/Struct-Tree.hpp>
 
 
-namespace Analysis {
+struct CCTNode {
+  VMA vma;
+  GPUParse::InstructionStat *inst;
+  GPUParse::Function *function;
+  GPUParse::Block *block;
+  int latency;
+  int frequency;
+  int path_length;    // for debugging
+  float path_length_inv;
+  long latency_blame;
+
+  CCTNode()
+    : vma(0),
+    inst(NULL),
+    function(NULL),
+    block(NULL),
+    latency(0),
+    frequency(0),
+    path_length(1),
+    path_length_inv(1),
+    latency_blame(0) {}
+
+  bool operator < (const CCTNode &other) const {
+    if (this->inst->pc < other.inst->pc) {
+      return true;
+    }
+    return false;
+  }
+};
 
 // Directed edge
-template<class T>
 struct CCTEdge {
-  T from;
-  T to;
+  int from;
+  int to;
 
-  CCTEdge(T from, T to) : from(from), to(to) {}
+  CCTEdge(int from, int to) : from(from), to(to) {}
 
   bool operator < (const CCTEdge &other) const {
     if (this->from < other.from) {
@@ -96,94 +122,90 @@ struct CCTEdge {
 };
 
 
-template<class T>
 class CCTGraph {
  public:
-  typedef std::map<T, std::set<T> > NeighborNodeMap;
+  typedef std::map<int, std::set<int> > NeighborNodeMap;
 
  public:
   CCTGraph() {}
 
-  typename std::set<CCTEdge<T> >::iterator edgeBegin() {
+  typename std::set<CCTEdge >::iterator edgeBegin() {
     return _edges.begin();
   }
 
-  typename std::set<CCTEdge<T> >::iterator edgeEnd() {
+  typename std::set<CCTEdge >::iterator edgeEnd() {
     return _edges.end();
   }
 
-  std::set<T> nodes() {
+  std::map<int, CCTNode> nodes() {
     return _nodes;
   }
 
-  typename std::set<T>::iterator nodeBegin() {
+#if 0
+  typename std::set<CCTNode>::iterator nodeBegin() {
     return _nodes.begin();
   }
 
-  typename std::set<T>::iterator nodeEnd() {
+  typename std::set<CCTNode>::iterator nodeEnd() {
     return _nodes.end();
   }
-
-  typename NeighborNodeMap::iterator incoming_nodes(T node) {
-    return _incoming_nodes.find(node);
-  }
+#endif
 
   typename NeighborNodeMap::iterator incoming_nodes_end() {
     return _incoming_nodes.end();
   }
 
-  size_t outgoing_nodes_size(T node) const {
-    auto iter = _outgoing_nodes.find(node);
-    if (iter == _outgoing_nodes.end()) {
-      return 0;
-    }
-    return iter->second.size();
+  NeighborNodeMap incoming_nodes() {
+    return _incoming_nodes;
   }
 
-  size_t incoming_nodes_size(T node) const {
-    auto iter = _incoming_nodes.find(node);
-    if (iter == _incoming_nodes.end()) {
-      return 0;
-    }
-    return iter->second.size();
-  }
-
-  typename NeighborNodeMap::iterator outgoing_nodes(T node) const {
-    return _outgoing_nodes.find(node);
-  }
-
-  typename NeighborNodeMap::iterator outgoing_nodes_end() const {
+  typename NeighborNodeMap::const_iterator outgoing_nodes_end() const {
     return _outgoing_nodes.end();
-  }
-
-  typename NeighborNodeMap::iterator outgoing_nodes(T node) {
-    return _outgoing_nodes.find(node);
   }
 
   typename NeighborNodeMap::iterator outgoing_nodes_end() {
     return _outgoing_nodes.end();
   }
 
-  void addEdge(T from, T to) {
-    if (_nodes.find(from) == _nodes.end()) {
-      _nodes.insert(from);
-    }
-
-    if (_nodes.find(to) == _nodes.end()) {
-      _nodes.insert(to);
-    }
-
-    CCTEdge<T> edge(from, to);
-    if (_edges.find(edge) == _edges.end()) {
-      _edges.insert(std::move(edge));
-      _incoming_nodes[to].insert(from);
-      _outgoing_nodes[from].insert(to);
+  void
+  updateChildPathLength
+  (
+   int from,
+   int fromPathLength
+  )
+  {
+    for (int to: _outgoing_nodes[from]) {
+      int oldPathLength = _nodes[to].path_length;
+      int newPathLength = std::max(oldPathLength, fromPathLength + 1); // incrementing the path length of the 'to' node
+      if (newPathLength != oldPathLength) {
+        _nodes[to].path_length = newPathLength;
+        _nodes[to].path_length_inv = 1.0 / newPathLength;
+        updateChildPathLength(to, newPathLength);
+      }
     }
   }
 
-  void removeEdge(typename std::set<CCTEdge<T> >::iterator edge) {
-    T from = edge->from;
-    T to = edge->to;
+
+  void addEdge(int from, int to) {
+    CCTEdge edge(from, to);
+    if (_edges.find(edge) == _edges.end()) {
+      _edges.insert(std::move(edge));
+      _incoming_nodes[to].insert(from);
+      _outgoing_nodes[from].insert(to); // is outgoing edges needed?
+      int oldPathLength = _nodes[to].path_length;
+      int newPathLength= std::max(oldPathLength, _nodes[from].path_length + 1); // incrementing the path length of the 'to' node
+      if (newPathLength != oldPathLength) {
+        _nodes[to].path_length = newPathLength;
+        _nodes[to].path_length_inv = 1.0 / newPathLength;
+        // update path length of outgoing edges from to
+        updateChildPathLength(to, newPathLength);
+      }
+    }
+  }
+
+  void removeEdge(typename std::set<CCTEdge >::iterator edge) {
+    int from = edge->from;
+    int to = edge->to;
     // Erase edges
     _incoming_nodes[to].erase(from);
     _outgoing_nodes[from].erase(to);
@@ -191,9 +213,10 @@ class CCTGraph {
     // XXX(Keren): do not erase nodes
   }
 
-  void addNode(T node) {
-    if (_nodes.find(node) == _nodes.end()) {
-      _nodes.insert(node);
+  void addNode(CCTNode node) {
+    std::map<int, CCTNode>::iterator it = _nodes.find(node.vma);
+    if (it == _nodes.end()) {
+      _nodes[node.vma] = node;
     }
   }
 
@@ -215,10 +238,8 @@ class CCTGraph {
  private:
   NeighborNodeMap _incoming_nodes;
   NeighborNodeMap _outgoing_nodes;
-  typename std::set<CCTEdge<T> > _edges;
-  std::set<T> _nodes;
+  typename std::set<CCTEdge > _edges;
+  std::map<int, CCTNode> _nodes;
 };
-
-}  // Analysis
 
 #endif  // Analysis_CCTGraph_hpp

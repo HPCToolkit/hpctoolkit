@@ -84,6 +84,8 @@ public:
   void notifyPipeline() noexcept override;
 
 private:
+  std::map<int, std::pair<int, int>> getLatencyFrequencyDataForKernel(std::string filePath);
+
   stdshim::filesystem::path dir;
   std::ofstream of;
   std::atomic<unsigned int> next_id;
