@@ -93,14 +93,19 @@ logical_region_t* hpcrun_logical_stack_push(logical_region_stack_t* s,
 
   // Copy over the region data, and return the new top
   memcpy(next, r, sizeof *next);
+  s->depth++;
+  ETMSG(LOGICAL_CTX, "Pushed region [%d] %p, enter = %p", s->depth, next, next->enter);
   return next;
 }
 
 size_t hpcrun_logical_stack_settop(logical_region_stack_t* s, size_t n) {
   if(n >= s->depth) return n - s->depth;
-  // Pop off segments until we've got the high order bits
+  // Pop off segments until we've got the right number
   size_t n_segs = n / REGIONS_PER_SEGMENT;
-  for(; s->depth / REGIONS_PER_SEGMENT > n_segs; s->depth -= REGIONS_PER_SEGMENT) {
+  if(n % REGIONS_PER_SEGMENT > 0) n_segs++; // Partially-filled segment
+  size_t s_segs = s->depth / REGIONS_PER_SEGMENT;
+  if(s->depth % REGIONS_PER_SEGMENT > 0) s_segs++;  // Partially-filled segment
+  for(; s_segs > n_segs; s_segs--) {
     struct logical_region_segment_t* newhead = s->head->prev;
     s->head->prev = s->spare;
     s->spare = s->head;
@@ -108,6 +113,7 @@ size_t hpcrun_logical_stack_settop(logical_region_stack_t* s, size_t n) {
   }
   // We're within the right segment, so we can just set the depth now.
   s->depth = n;
+  ETMSG(LOGICAL_CTX, "Settop to [%d]", s->depth);
   return 0;
 }
 
@@ -128,5 +134,83 @@ static void logicalize_bt(backtrace_info_t* bt, int isSync) {
   thread_data_t* td = hpcrun_get_thread_data();
   if(td->logical.depth == 0) return;  // No need for our services
 
-  ETMSG(LOGICAL_CTX, "Logicalization routine called, logical depth = %d", td->logical.depth);
+  ETMSG(LOGICAL_CTX, "========= Logicalizing backtrace =========");
+
+  frame_t* bt_cur = bt->begin;
+
+  struct logical_region_segment_t* seg;
+  size_t off = td->logical.depth % REGIONS_PER_SEGMENT;
+  bool first = true;
+  for(seg = td->logical.head; seg != NULL; seg = seg->prev) {
+    for(; off > 0; off--) {
+      logical_region_t* cur = &seg->regions[off-1];
+
+      // Progress the cursor until the first frame_t within this logical segment
+      if(cur->exit != NULL) {
+        while(bt_cur->cursor.sp != cur->exit) {
+          ETMSG(LOGICAL_CTX, " sp = %p ip = %s +0x%x", bt_cur->cursor.sp,
+                hpcrun_loadmap_findById(bt_cur->ip_norm.lm_id)->name, bt_cur->ip_norm.lm_ip);
+          if(bt_cur == bt->last) goto earlyexit;
+          bt_cur++;
+        }
+        ETMSG(LOGICAL_CTX, "== Exit from logical range @ %p ==", cur->exit);
+      } else {
+        assert(first && "Only the topmost logical region can have exit = NULL!");
+        ETMSG(LOGICAL_CTX, "== Within logical range ==");
+      }
+      first = false;
+      frame_t* logical_start = bt_cur;
+
+      // Scan through until we've seen everything including the enter
+      while(bt_cur->cursor.sp != cur->enter) {
+        ETMSG(LOGICAL_CTX, " sp = %p ip = %s +0x%x", bt_cur->cursor.sp,
+              hpcrun_loadmap_findById(bt_cur->ip_norm.lm_id)->name, bt_cur->ip_norm.lm_ip);
+        if(bt_cur == bt->last) goto earlyexit;
+        bt_cur++;
+      }
+      ETMSG(LOGICAL_CTX, " sp = %p ip = %s +0x%x", bt_cur->cursor.sp,
+            hpcrun_loadmap_findById(bt_cur->ip_norm.lm_id)->name, bt_cur->ip_norm.lm_ip);
+      if(bt_cur == bt->last) goto earlyexit;
+      bt_cur++;
+      frame_t* logical_end = bt_cur;
+
+      // Overwrite the physical frames with logical ones
+      ETMSG(LOGICAL_CTX, "== Logically the above is replaced by the following ==");
+      assert(cur->expected > 0 && "Logical regions should always have at least 1 logical frame!");
+      assert(cur->expected <= logical_end - logical_start && "Logical regions should always collapse frames (for now)");
+      void* store = NULL;
+      size_t index = 0;
+      while(cur->generator(cur->generator_arg, &store, index, logical_start + index)) {
+        ETMSG(LOGICAL_CTX, "(logical) ip = %d +0x%x", (logical_start+index)->ip_norm.lm_id, (logical_start+index)->ip_norm.lm_ip);
+        assert(index < cur->expected && "Expected number of logical frames is too low!");
+        index++;
+      }
+      ETMSG(LOGICAL_CTX, "(logical) ip = %d +0x%x", (logical_start+index)->ip_norm.lm_id, (logical_start+index)->ip_norm.lm_ip);
+      ETMSG(LOGICAL_CTX, "== Entry to logical range @ %p ==", cur->enter);
+
+      // Shift the physical frames down to fill the gap
+      bt_cur = logical_start + index + 1;
+      memmove(bt_cur, logical_end, (bt->last - logical_end + 1)*sizeof(frame_t));
+      bt->last = bt_cur + (bt->last - logical_end);
+    }
+    off = REGIONS_PER_SEGMENT;
+  }
+
+earlyexit:
+  if(seg != NULL) {
+    ETMSG(LOGICAL_CTX, "WARNING: The following logical regions did not match:");
+    for(; seg != NULL; seg = seg->prev) {
+      for(; off > 0; off--) {
+        logical_region_t* cur = &seg->regions[off-1];
+        ETMSG(LOGICAL_CTX, " sp @ exit = 0x%x, sp @ enter = 0x%x",
+              cur->exit, cur->enter);
+      }
+    }
+  }
+
+  for(; bt_cur != bt->last; bt_cur++)
+    ETMSG(LOGICAL_CTX, " sp = %p ip = %s +0x%x", bt_cur->cursor.sp,
+          hpcrun_loadmap_findById(bt_cur->ip_norm.lm_id)->name, bt_cur->ip_norm.lm_ip);
+
+  ETMSG(LOGICAL_CTX, "========= END Logicalizing backtrace =========");
 }

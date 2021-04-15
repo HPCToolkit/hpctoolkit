@@ -267,6 +267,7 @@ typedef struct thread_data_t {
   // Logical unwinding v2
   // ----------------------------------------
   logical_region_stack_t logical;
+  void* python_function_cache;
 
   // ----------------------------------------
   // debug stuff
