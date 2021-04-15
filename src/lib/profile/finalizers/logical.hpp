@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2019-2022, Rice University
+// Copyright ((c)) 2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,44 +44,23 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#include "lib/profile/util/vgannotations.hpp"
+#ifndef HPCTOOLKIT_PROFILE_FINALIZERS_LOGICAL_H
+#define HPCTOOLKIT_PROFILE_FINALIZERS_LOGICAL_H
 
-#include "tree.hpp"
-#include "../hpcprof/args.hpp"
+#include "../finalizer.hpp"
 
-#include "lib/profile/pipeline.hpp"
-#include "lib/profile/source.hpp"
-#include "lib/profile/packedids.hpp"
-#include "lib/profile/sinks/packed.hpp"
-#include "lib/profile/sinks/hpctracedb2.hpp"
-#include "lib/profile/sinks/sparsedb.hpp"
-#include "lib/profile/finalizers/denseids.hpp"
-#include "lib/profile/finalizers/directclassification.hpp"
-#include "lib/profile/util/log.hpp"
-#include "lib/profile/mpi/all.hpp"
+namespace hpctoolkit::finalizers {
 
-#include "lib/profile/stdshim/filesystem.hpp"
-#include <mpi.h>
-#include <iostream>
+class LogicalFile final : public ProfileFinalizer {
+public:
+  LogicalFile();
+  ~LogicalFile() = default;
 
-using namespace hpctoolkit;
-using namespace hpctoolkit::literals;
-namespace fs = stdshim::filesystem;
+  ExtensionClass provides() const noexcept override { return ExtensionClass::classification; }
+  ExtensionClass requires() const noexcept override { return ExtensionClass::resolvedPath; }
+  void module(const Module&, Classification&) noexcept override;
+};
 
-static constexpr unsigned int bits = std::numeric_limits<std::size_t>::digits;
-static constexpr unsigned int mask = bits - 1;
-static_assert(0 == (bits & (bits - 1)), "value to rotate must be a power of 2");
-static constexpr std::size_t rotl(std::size_t n, unsigned int c) noexcept {
-  return (n << (mask & c)) | (n >> (-(mask & c)) & mask);
 }
 
-template<class T, class... Args>
-static std::unique_ptr<T> make_unique_x(Args&&... args) {
-  return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
-}
-
-int rankN(ProfArgs&& args) {
-
-
-  return 0;
-}
+#endif  // HPCTOOLKIT_PROFILE_FINALIZERS_LOGICAL_H

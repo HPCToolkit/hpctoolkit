@@ -794,6 +794,7 @@ hpcrun_fini_internal()
       lush_agent_pool__fini(lush_agents);
       lush_agents = NULL;
     }
+    hpcrun_logical_fini();
 
     // N.B. short-circuit, if monitoring is disabled
     if (hpcrun_get_disabled()) {
@@ -1044,6 +1045,9 @@ monitor_init_process(int *argc, char **argv, void* data)
     // init callbacks for each device //Module_ignore_map is here
     hpcrun_initializer_init();
     hpcrun_module_ignore_map_uninitialized = false;
+
+    // set up the logical context generation
+    hpcrun_logical_init();
 
     // fnbounds must be after module_ignore_map
     fnbounds_init(process_name);

@@ -24,6 +24,9 @@
 /* Support for CLOCK_REALTIME and SIGEV_THREAD_ID */
 #undef ENABLE_CLOCK_REALTIME
 
+/* Support for Python logical unwinding */
+#undef ENABLE_LOGICAL_PYTHON
+
 /* ParseAPI supports openmp (for hpcstruct) */
 #undef ENABLE_OPENMP
 

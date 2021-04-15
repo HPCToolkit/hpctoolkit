@@ -195,6 +195,12 @@ void DirectClassification::load(const Module& m, udModule& ud) noexcept {
   Elf* elf = elf_begin(fd, HPC_ELF_C_READ, nullptr);
   if(elf == nullptr) {
     close(fd);
+    util::log::error{} << "Internal elfutils error opening " << mpath.string();
+    return;
+  }
+  if(elf_kind(elf) != ELF_K_ELF) {
+    elf_end(elf);
+    close(fd);
     return;  // We only work with ELF files.
   }
 

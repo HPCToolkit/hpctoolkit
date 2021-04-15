@@ -501,6 +501,11 @@ hpcrun_thread_data_init
   lushPthr_init(&td->pthr_metrics);
   lushPthr_thread_init(&td->pthr_metrics);
 
+  // ----------------------------------------
+  // Logical unwinding v2
+  // ----------------------------------------
+  hpcrun_logical_stack_init(&td->logical);
+  td->python_function_cache = NULL;
 
   // ----------------------------------------
   // debug support

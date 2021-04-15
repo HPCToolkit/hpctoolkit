@@ -170,7 +170,8 @@ am__objects_1 = stdshim/libHPCprofile_la-shared_mutex.lo \
 	finalizers/libHPCprofile_la-struct.lo \
 	finalizers/libHPCprofile_la-directclassification.lo \
 	finalizers/libHPCprofile_la-denseids.lo \
-	finalizers/libHPCprofile_la-kernelsyms.lo
+	finalizers/libHPCprofile_la-kernelsyms.lo \
+	finalizers/libHPCprofile_la-logical.lo
 am_libHPCprofile_la_OBJECTS = $(am__objects_1)
 libHPCprofile_la_OBJECTS = $(am_libHPCprofile_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -417,6 +418,7 @@ OPT_PAPI_IFLAGS = @OPT_PAPI_IFLAGS@
 OPT_PAPI_LDFLAGS = @OPT_PAPI_LDFLAGS@
 OPT_PAPI_LIBPATH = @OPT_PAPI_LIBPATH@
 OPT_PAPI_LIBS_STAT = @OPT_PAPI_LIBS_STAT@
+OPT_PYTHON_IFLAGS = @OPT_PYTHON_IFLAGS@
 OPT_ROCM_IFLAGS = @OPT_ROCM_IFLAGS@
 OPT_ROCM_LD_LIB_PATH = @OPT_ROCM_LD_LIB_PATH@
 OPT_UPC_IFLAGS = @OPT_UPC_IFLAGS@
@@ -585,7 +587,7 @@ MYSOURCES = \
 	sinks/sparsedb.cpp sinks/metricsyaml.cpp sinks/metadb.cpp \
 	\
 	finalizers/struct.cpp finalizers/directclassification.cpp \
-	finalizers/denseids.cpp finalizers/kernelsyms.cpp
+	finalizers/denseids.cpp finalizers/kernelsyms.cpp finalizers/logical.cpp
 
 MYSTANDALONESOURCES = mpi/standalone.cpp
 
@@ -750,6 +752,8 @@ finalizers/libHPCprofile_la-denseids.lo: finalizers/$(am__dirstamp) \
 	finalizers/$(DEPDIR)/$(am__dirstamp)
 finalizers/libHPCprofile_la-kernelsyms.lo: finalizers/$(am__dirstamp) \
 	finalizers/$(DEPDIR)/$(am__dirstamp)
+finalizers/libHPCprofile_la-logical.lo: finalizers/$(am__dirstamp) \
+	finalizers/$(DEPDIR)/$(am__dirstamp)
 
 libHPCprofile.la: $(libHPCprofile_la_OBJECTS) $(libHPCprofile_la_DEPENDENCIES) $(EXTRA_libHPCprofile_la_DEPENDENCIES) 
 	$(AM_V_CXXLD)$(libHPCprofile_la_LINK)  $(libHPCprofile_la_OBJECTS) $(libHPCprofile_la_LIBADD) $(LIBS)
@@ -794,6 +798,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@finalizers/$(DEPDIR)/libHPCprofile_la-denseids.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@finalizers/$(DEPDIR)/libHPCprofile_la-directclassification.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@finalizers/$(DEPDIR)/libHPCprofile_la-kernelsyms.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@finalizers/$(DEPDIR)/libHPCprofile_la-logical.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@finalizers/$(DEPDIR)/libHPCprofile_la-struct.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@mpi/$(DEPDIR)/libHPCprofile_la-accumulate-thread.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@mpi/$(DEPDIR)/libHPCprofile_standalone_la-standalone.Plo@am__quote@
@@ -1114,6 +1119,13 @@ finalizers/libHPCprofile_la-kernelsyms.lo: finalizers/kernelsyms.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='finalizers/kernelsyms.cpp' object='finalizers/libHPCprofile_la-kernelsyms.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_la_CXXFLAGS) $(CXXFLAGS) -c -o finalizers/libHPCprofile_la-kernelsyms.lo `test -f 'finalizers/kernelsyms.cpp' || echo '$(srcdir)/'`finalizers/kernelsyms.cpp
+
+finalizers/libHPCprofile_la-logical.lo: finalizers/logical.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_la_CXXFLAGS) $(CXXFLAGS) -MT finalizers/libHPCprofile_la-logical.lo -MD -MP -MF finalizers/$(DEPDIR)/libHPCprofile_la-logical.Tpo -c -o finalizers/libHPCprofile_la-logical.lo `test -f 'finalizers/logical.cpp' || echo '$(srcdir)/'`finalizers/logical.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) finalizers/$(DEPDIR)/libHPCprofile_la-logical.Tpo finalizers/$(DEPDIR)/libHPCprofile_la-logical.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='finalizers/logical.cpp' object='finalizers/libHPCprofile_la-logical.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_la_CXXFLAGS) $(CXXFLAGS) -c -o finalizers/libHPCprofile_la-logical.lo `test -f 'finalizers/logical.cpp' || echo '$(srcdir)/'`finalizers/logical.cpp
 
 mpi/libHPCprofile_standalone_la-standalone.lo: mpi/standalone.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_standalone_la_CXXFLAGS) $(CXXFLAGS) -MT mpi/libHPCprofile_standalone_la-standalone.lo -MD -MP -MF mpi/$(DEPDIR)/libHPCprofile_standalone_la-standalone.Tpo -c -o mpi/libHPCprofile_standalone_la-standalone.lo `test -f 'mpi/standalone.cpp' || echo '$(srcdir)/'`mpi/standalone.cpp

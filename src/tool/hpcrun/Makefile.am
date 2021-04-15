@@ -350,6 +350,7 @@ MY_BASE_FILES =				\
 	\
 	lush/lushi.h \
 	lush/lushi-cb.h	lush/lushi-cb.c	\
+	logical/common.c \
 	\
 	fnbounds/fnbounds_common.c	\
 	\
@@ -822,7 +823,7 @@ endif
 # cflags
 #-----------------------------------------------------------
 
-libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(PERFMON_CFLAGS)
+libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(PERFMON_CFLAGS) `python3-config --includes`
 libhpcrun_o_CFLAGS  = $(CFLAGS) $(HOST_CFLAGS) $(PERFMON_CFLAGS)
 
 libhpcrun_fake_audit_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)
@@ -1084,6 +1085,11 @@ if UNW_PPC64
   UNW_INCLUDE_DIRS = $(UNW_PPC64_INCLUDE_DIRS)
   UNW_DYNAMIC_LD_FLAGS = $(UNW_PPC64_LD_FLAGS)
   UNW_STATIC_LD_FLAGS =  $(UNW_PPC64_LD_FLAGS)
+endif
+
+if OPT_ENABLE_PYTHON
+  libhpcrun_la_SOURCES += logical/python.c
+  libhpcrun_la_CFLAGS += @OPT_PYTHON_IFLAGS@
 endif
 
 if OPT_ENABLE_CUDA

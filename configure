@@ -687,6 +687,9 @@ OPT_CUDA_IFLAGS
 OPT_HAVE_CUDA
 OPT_ENABLE_CUDA_FALSE
 OPT_ENABLE_CUDA_TRUE
+OPT_PYTHON_IFLAGS
+OPT_ENABLE_PYTHON_FALSE
+OPT_ENABLE_PYTHON_TRUE
 hpclink_extra_wrap_names
 OPT_ENABLE_LUSH_PTHREADS_FALSE
 OPT_ENABLE_LUSH_PTHREADS_TRUE
@@ -1068,6 +1071,7 @@ enable_mpi_wrapper
 enable_lush
 with_cilk
 enable_lush_pthreads
+with_python
 enable_xop
 with_cuda
 with_cupti
@@ -1827,6 +1831,7 @@ Optional Packages:
                           temp option for dyninst version (old, libdw, cuda),
                           only needed if autoconf fails to detect correctly
   --with-cilk=PATH        use given (MIT) Cilk installation for LUSH agents
+  --with-python=PATH      path to Python config tool (python-config)
   --with-cuda=PATH        path to cuda install directory
   --with-cupti=PATH       path to cupti install directory, default is from
                           cuda
@@ -23179,6 +23184,53 @@ fi
 
 
 
+#-------------------------------------------------
+# with-python: support for Python callstack unwinding
+#-------------------------------------------------
+
+PYTHON_CONFIG=no
+OPT_ENABLE_PYTHON=no
+OPT_PYTHON_IFLAGS=
+
+
+# Check whether --with-python was given.
+if test "${with_python+set}" = set; then :
+  withval=$with_python; PYTHON_CONFIG="$withval"
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for python" >&5
+$as_echo_n "checking for python... " >&6; }
+
+case "$PYTHON_CONFIG" in
+  no )
+    ;;
+  * )
+    # TODO: Check that its Python >= 3.8, which is needed for our injection method
+    OPT_PYTHON_IFLAGS="`$PYTHON_CONFIG --includes`"
+    OPT_ENABLE_PYTHON=yes
+    ;;
+esac
+
+ if test "$OPT_ENABLE_PYTHON" = yes; then
+  OPT_ENABLE_PYTHON_TRUE=
+  OPT_ENABLE_PYTHON_FALSE='#'
+else
+  OPT_ENABLE_PYTHON_TRUE='#'
+  OPT_ENABLE_PYTHON_FALSE=
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $PYTHON_CONFIG" >&5
+$as_echo "$PYTHON_CONFIG" >&6; }
+
+
+
+if test "x$OPT_ENABLE_PYTHON" = xyes ; then
+
+$as_echo "#define ENABLE_LOGICAL_PYTHON 1" >>confdefs.h
+
+fi
 
 #-------------------------------------------------
 # enable-xop: support for AMD XOP instructions
@@ -24820,6 +24872,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_LUSH_PTHREADS_TRUE}" && test -z "${OPT_ENABLE_LUSH_PTHREADS_FALSE}"; then
   as_fn_error $? "conditional \"OPT_ENABLE_LUSH_PTHREADS\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPT_ENABLE_PYTHON_TRUE}" && test -z "${OPT_ENABLE_PYTHON_FALSE}"; then
+  as_fn_error $? "conditional \"OPT_ENABLE_PYTHON\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OPT_ENABLE_CUDA_TRUE}" && test -z "${OPT_ENABLE_CUDA_FALSE}"; then

@@ -100,7 +100,7 @@ MYSOURCES = \
 	sinks/sparsedb.cpp sinks/metricsyaml.cpp sinks/metadb.cpp \
 	\
 	finalizers/struct.cpp finalizers/directclassification.cpp \
-	finalizers/denseids.cpp finalizers/kernelsyms.cpp
+	finalizers/denseids.cpp finalizers/kernelsyms.cpp finalizers/logical.cpp
 
 MYSTANDALONESOURCES = mpi/standalone.cpp
 

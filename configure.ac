@@ -4302,6 +4302,41 @@ AM_CONDITIONAL([OPT_ENABLE_LUSH_PTHREADS], [test "$enable_lush_pthreads" = yes])
 
 AC_SUBST([hpclink_extra_wrap_names])
 
+#-------------------------------------------------
+# with-python: support for Python callstack unwinding
+#-------------------------------------------------
+
+PYTHON_CONFIG=no
+OPT_ENABLE_PYTHON=no
+OPT_PYTHON_IFLAGS=
+
+AC_ARG_WITH([python],
+  [AS_HELP_STRING([--with-python=PATH],
+      [path to Python config tool (python-config)])],
+  [PYTHON_CONFIG="$withval"],
+  [])
+
+AC_MSG_CHECKING([for python])
+
+case "$PYTHON_CONFIG" in
+  no )
+    ;;
+  * )
+    # TODO: Check that its Python >= 3.8, which is needed for our injection method
+    OPT_PYTHON_IFLAGS="`$PYTHON_CONFIG --includes`"
+    OPT_ENABLE_PYTHON=yes
+    ;;
+esac
+
+AM_CONDITIONAL([OPT_ENABLE_PYTHON], [test "$OPT_ENABLE_PYTHON" = yes])
+
+AC_MSG_RESULT([$PYTHON_CONFIG])
+
+AC_SUBST([OPT_PYTHON_IFLAGS])
+
+if test "x$OPT_ENABLE_PYTHON" = xyes ; then
+  AC_DEFINE([ENABLE_LOGICAL_PYTHON], [1], [Support for Python logical unwinding])
+fi
 
 #-------------------------------------------------
 # enable-xop: support for AMD XOP instructions
