@@ -174,10 +174,30 @@ static void logicalize_bt(backtrace_info_t* bt, int isSync) {
       bt_cur++;
       frame_t* logical_end = bt_cur;
 
-      // Overwrite the physical frames with logical ones
       ETMSG(LOGICAL_CTX, "== Logically the above is replaced by the following ==");
       assert(cur->expected > 0 && "Logical regions should always have at least 1 logical frame!");
-      assert(cur->expected <= logical_end - logical_start && "Logical regions should always collapse frames (for now)");
+
+      // If needed, move later physical frames down to make room for the logical ones
+      if(logical_start + cur->expected > logical_end) {
+        size_t newused = bt->last - bt->begin + (logical_start + cur->expected - logical_end);
+        ptrdiff_t bt_begin_diff = bt->begin - td->btbuf_beg;
+        ptrdiff_t bt_last_diff = bt->last - td->btbuf_beg;
+        ptrdiff_t bt_cur_diff = bt_cur - td->btbuf_beg;
+        ptrdiff_t logical_start_diff = logical_start - td->btbuf_beg;
+        ptrdiff_t logical_end_diff = logical_end - td->btbuf_beg;
+        while(td->btbuf_end - td->btbuf_beg < newused) hpcrun_expand_btbuf();
+        logical_end = td->btbuf_beg + logical_end_diff;
+        logical_start = td->btbuf_beg + logical_start_diff;
+        bt_cur = td->btbuf_beg + bt_cur_diff;
+        bt->last = td->btbuf_beg + bt_last_diff;
+        bt->begin = td->btbuf_beg + bt_begin_diff;
+
+        memmove(logical_start + cur->expected, logical_end, (bt->last - logical_end + 1)*sizeof(frame_t));
+        bt->last = logical_start + cur->expected + (bt->last - logical_end);
+        logical_end = logical_start + cur->expected;
+      }
+
+      // Overwrite the physical frames with logical ones
       void* store = NULL;
       size_t index = 0;
       while(cur->generator(cur->generator_arg, &store, index, logical_start + index)) {

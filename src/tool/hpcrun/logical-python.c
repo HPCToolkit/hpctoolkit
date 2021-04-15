@@ -173,7 +173,7 @@ static bool python_unwind(void* vp_state, void** store, unsigned int index, fram
       ETMSG(LOGICAL_CTX_PYTHON, "Exited Python through C function %s",
             DL(PyEval_GetFuncName)(state->cfunc));
       frame->ip_norm.lm_id = 0;
-      frame->ip_norm.lm_ip = 0x100;
+      frame->ip_norm.lm_ip = 0x600;
       return true;
     }
     index--;
@@ -239,7 +239,7 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
     // Update the top region to note that we have exited Python
     ((python_unwind_state_t*)top->generator_arg)->cfunc = arg;
     top->expected++;
-    top->exit = STACK_MARK(1);
+    top->exit = STACK_MARK(2);
     break;
   }
   case PyTrace_C_RETURN: {
