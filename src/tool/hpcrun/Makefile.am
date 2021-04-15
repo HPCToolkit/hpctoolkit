@@ -345,6 +345,7 @@ MY_BASE_FILES =				\
 	\
 	lush/lushi.h \
 	lush/lushi-cb.h	lush/lushi-cb.c	\
+	logical.c \
 	\
 	fnbounds/fnbounds_common.c	\
 	\
@@ -459,6 +460,7 @@ MY_DYNAMIC_FILES = 			\
 	fnbounds/fnbounds_client.c	\
 	fnbounds/fnbounds_dynamic.c	\
 	monitor-exts/openmp.c		\
+	logical-python.c                \
         custom-init-dynamic.c
 
 MY_STATIC_FILES = 			\
@@ -774,7 +776,7 @@ endif
 # cflags
 #-----------------------------------------------------------
 
-libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(PERFMON_CFLAGS)
+libhpcrun_la_CFLAGS = $(CFLAGS) $(HOST_CFLAGS) $(PERFMON_CFLAGS) `python3-config --includes`
 libhpcrun_o_CFLAGS  = $(CFLAGS) $(HOST_CFLAGS) $(PERFMON_CFLAGS)
 
 libhpcrun_wrap_a_CFLAGS = $(CFLAGS) $(HOST_CFLAGS)

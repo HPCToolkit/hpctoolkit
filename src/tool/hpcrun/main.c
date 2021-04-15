@@ -136,6 +136,7 @@
 
 #include <lush/lush-backtrace.h>
 #include <lush/lush-pthread.h>
+#include "logical.h"
 
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <lib/prof-lean/hpcio.h>

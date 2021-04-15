@@ -427,6 +427,10 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child, size_t n_sou
   lushPthr_init(&td->pthr_metrics);
   lushPthr_thread_init(&td->pthr_metrics);
 
+  // ----------------------------------------
+  // Logical unwinding v2
+  // ----------------------------------------
+  hpcrun_logical_stack_init(&td->logical);
 
   // ----------------------------------------
   // debug support
