@@ -443,6 +443,8 @@ bool Hpcrun4::realread(const DataClass& needed) try {
           return false;
         }
         scope = {it->second, n.lm_ip};
+      } else if(n.lm_ip > 0x100) {
+        scope = {sink.file("<logical>"), n.lm_ip-0x100};
       } else if(!par) {
         // Special case: merge global -> unknown to the global unknown.
         unknown_node_id = id;

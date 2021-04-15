@@ -154,7 +154,8 @@ int rank0(ProfArgs&& args) {
     }
     Detector& detector;
   } spacker(detector);
-  pipelineB << spacker;
+  if(mpi::World::size() > 1)
+    pipelineB << spacker;
 
   // For unpacking metrics, we need to be able to map the IDs back to their
   // Contexts. This does the magic for us.

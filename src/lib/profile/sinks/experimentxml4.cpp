@@ -416,9 +416,16 @@ ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
        || pty == Scope::Type::call || pty == Scope::Type::classified_call) {
       if(proc.prep()) {  // We're in charge of the tag, and this is a tag we want.
         std::ostringstream ss;
-        ss << fancynames::unknown_proc.first << " "
-              "0x" << std::hex << mo.second << " "
-              "[" << (mo.first ? mo.first->path().filename().string() : "unknown module") << "]";
+        if(mo.first != nullptr) {
+          ss << fancynames::unknown_proc.first << " "
+                "0x" << std::hex << mo.second << " "
+                "[" << mo.first->path().filename().string() << "]";
+        } else if(fl.first != nullptr) {
+          ss << fl.first->path().filename().string() << ":" << fl.second;
+        } else {
+          ss << fancynames::unknown_proc.first << " "
+                "0x" << std::hex << mo.second << " [unknown module]";
+        }
         proc.setTag(ss.str(), mo.second, fancynames::unknown_proc.second);
       }
       auto& udm = mo.first ? mo.first->userdata[exml.ud] : exml.unknown_module;
