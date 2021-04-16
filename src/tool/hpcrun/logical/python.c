@@ -48,9 +48,16 @@
 
 #include "logical/common.h"
 
+#include "loadmap.h"
 #include "messages/messages.h"
 #include "thread_data.h"
 #include "safe-sampling.h"
+
+#include <libelf.h>
+#include <gelf.h>
+
+#include <fcntl.h>
+#include <sys/mman.h>
 
 #include <assert.h>
 #include <dlfcn.h>
@@ -60,27 +67,21 @@
 
 // dl* macros for using Python functions. We don't link Python so this is needed
 
-#define DL_DEF(NAME) static typeof(NAME)* dl_##NAME = NULL;
-#define DL_NOERROR(NAME) ({                                     \
-  if(dl_##NAME == NULL) dl_##NAME = dlsym(RTLD_DEFAULT, #NAME); \
-  dl_##NAME;                                                    \
-})
-#define DL(NAME) ({                                             \
-  DL_NOERROR(NAME);                                             \
-  if(dl_##NAME == NULL) {                                       \
-    EMSG("Python dl error: %s", dlerror());                     \
-    abort();                                                    \
-  }                                                             \
-  dl_##NAME;                                                    \
-})
+#define DL(NAME) dl_##NAME
 
-DL_DEF(PyEval_GetFuncName)
-DL_DEF(PyEval_SetProfile)
-DL_DEF(PyFrame_GetBack)
-DL_DEF(PyFrame_GetCode)
-DL_DEF(PyFrame_GetLineNumber)
-DL_DEF(PySys_AddAuditHook)
-DL_DEF(PyUnicode_AsUTF8)
+#define PYFUNCS(F) \
+  F(PyEval_GetFuncName) \
+  F(PyEval_SetProfile) \
+  F(PyFrame_GetBack) \
+  F(PyFrame_GetCode) \
+  F(PyFrame_GetLineNumber) \
+  F(PySys_AddAuditHook) \
+  F(PyUnicode_AsUTF8) \
+// END PYFUNCS
+
+#define DL_DEF(NAME) static typeof(NAME)* dl_##NAME = NULL;
+PYFUNCS(DL_DEF)
+#undef DL_DEF
 
 // -----------------------------
 // Python unwinder
@@ -239,14 +240,103 @@ static int python_audit(const char* event, PyObject* args, void* ud) {
   return 0;
 }
 
-__attribute__((constructor))
-static void python_hook_init() {
-  // If there is no Python for us, don't bother
-  if(DL_NOERROR(PySys_AddAuditHook) == NULL) return;
+// Search for a particular symbol in an ELF dynamic section
+// Copied from the module-ignore-map code
+static bool has_symbol(Elf *e, GElf_Shdr* secHead, Elf_Scn *section, const char* target) {
+  Elf_Data *data;
+  char *symName;
+  uint64_t count;
+  GElf_Sym curSym;
+  uint64_t ii,symType, symBind;
+  // char *marmite;
 
-  // Try to add a hook for when the interpreter is initialized
-  if(DL(PySys_AddAuditHook)(python_audit, NULL) != 0) {
-    EMSG("Python error while adding audit hook!");
+  data = elf_getdata(section, NULL);           // use it to get the data
+  if (data == NULL || secHead->sh_entsize == 0) return -1;
+  count = (secHead->sh_size)/(secHead->sh_entsize);
+  for (ii=0; ii<count; ii++) {
+    gelf_getsym(data, ii, &curSym);
+    symName = elf_strptr(e, secHead->sh_link, curSym.st_name);
+    symType = GELF_ST_TYPE(curSym.st_info);
+    symBind = GELF_ST_BIND(curSym.st_info);
+
+    // the .dynsym section can contain undefined symbols that represent imported symbols.
+    // We need to find functions defined in the module.
+    if ( (symType == STT_FUNC) && (symBind == STB_GLOBAL) && (curSym.st_value != 0)) {
+      if(strcmp(symName, target) == 0) {
+        return true;
+      }
+    }
+	}
+  return false;
+}
+
+static void python_notify_mapped(load_module_t* lm) {
+  // Determine whether this is a Python 3.8 or higher
+  // Copied from the module-ignore-map code
+  {
+    int fd = open (lm->name, O_RDONLY);
+    if (fd < 0) return;
+    struct stat stat;
+    if (fstat (fd, &stat) < 0) {
+      close(fd);
+      return;
+    }
+
+    char* buffer = (char*) mmap (NULL, stat.st_size, PROT_READ | PROT_WRITE, MAP_PRIVATE, fd, 0);
+    if (buffer == NULL) {
+      close(fd);
+      return;
+    }
+    elf_version(EV_CURRENT);
+    Elf *elf = elf_memory(buffer, stat.st_size);
+    Elf_Scn *scn = NULL;
+    GElf_Shdr secHead;
+
+    bool matches = false;
+    while ((scn = elf_nextscn(elf, scn)) != NULL) {
+      gelf_getshdr(scn, &secHead);
+      // Only search .dynsym section
+      if (secHead.sh_type != SHT_DYNSYM) continue;
+      if (has_symbol(elf, &secHead, scn, "PySys_AddAuditHook")) {
+        matches = true;
+        break;
+      }
+    }
+    munmap(buffer, stat.st_size);
+    close(fd);
+
+    if(!matches) return;
+  }
+
+  // Pop open the module and nab out the symbols we need
+  void* libpy = dlopen(lm->name, RTLD_LAZY | RTLD_NOLOAD);
+  if(libpy == NULL) {
+    // This might be the main executable, so look there too
+    libpy = dlopen(NULL, RTLD_LAZY | RTLD_NOLOAD);
+    if(dlsym(libpy, "PySys_AddAuditHook") == NULL)
+      libpy = NULL;
+  }
+  if(libpy == NULL) {
+    EEMSG("WARNING: Python found but failed to dlopen, Python unwinding not enabled: %s", lm->name);
     return;
   }
+  #define SAVE(NAME) \
+    dl_##NAME = dlsym(libpy, #NAME); \
+    if(dl_##NAME == NULL) { \
+      EEMSG("WARNING: Python does not have symbol " #NAME ", Python unwinding not enabled"); \
+      return; \
+    }
+  PYFUNCS(SAVE)
+  #undef SAVE
+
+  // If all went well, we can now register our Python audit hook
+  if(DL(PySys_AddAuditHook)(python_audit, NULL) != 0)
+    EEMSG("Python error while adding audit hook, Python unwinding may not be enabled");
+}
+
+static loadmap_notify_t python_loadmap_notify = {
+  .map = python_notify_mapped, .unmap = NULL,
+};
+void hpcrun_logical_python_init() {
+  hpcrun_loadmap_notify_register(&python_loadmap_notify);
 }

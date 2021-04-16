@@ -928,6 +928,9 @@ monitor_init_process(int *argc, char **argv, void* data)
     // init callbacks for each device //Module_ignore_map is here
     hpcrun_initializer_init();
 
+    // set up the logical context generation
+    hpcrun_logical_init();
+
     // fnbounds must be after module_ignore_map
     fnbounds_init();
 #ifndef HPCRUN_STATIC_LINK

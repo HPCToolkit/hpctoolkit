@@ -63,4 +63,6 @@ typedef struct logical_python_region_t {
   void* cfunc;
 } logical_python_region_t;
 
+extern void hpcrun_logical_python_init();
+
 #endif  // LOGICAL_PYTHON_H

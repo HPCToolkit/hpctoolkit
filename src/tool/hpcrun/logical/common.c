@@ -51,7 +51,15 @@
 #include "messages/messages.h"
 #include "thread_data.h"
 
-static void logicalize_bt(backtrace_info_t*, int);
+// ---------------------------------------
+// Initialization
+// ---------------------------------------
+
+void hpcrun_logical_init() {
+#ifdef ENABLE_LOGICAL_PYTHON
+  hpcrun_logical_python_init();
+#endif
+}
 
 // ---------------------------------------
 // Logical stack mutation functions
@@ -177,6 +185,7 @@ size_t hpcrun_logical_substack_settop(logical_region_stack_t* s, logical_region_
 // Backtrace modification engine
 // ---------------------------------------
 
+static void logicalize_bt(backtrace_info_t*, int);
 static bool logicalize_bt_registered = false;
 static cct_backtrace_finalize_entry_t logicalize_bt_entry = {logicalize_bt};
 void hpcrun_logical_register() {

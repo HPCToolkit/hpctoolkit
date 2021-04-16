@@ -57,6 +57,10 @@
 #ifndef LOGICAL_COMMON_H
 #define LOGICAL_COMMON_H
 
+// --------------------------------------
+// Logical stack and mutator functions
+// --------------------------------------
+
 typedef union logical_frame_t {
   uintptr_t generic;
 #ifdef ENABLE_LOGICAL_PYTHON
@@ -120,9 +124,6 @@ typedef struct logical_region_stack_t {
   struct logical_frame_segment_t* subspare;
 } logical_region_stack_t;
 
-// Register the nessesary handler for modifying backtraces
-extern void hpcrun_logical_register();
-
 // Initialize an empty logical region stack
 extern void hpcrun_logical_stack_init(logical_region_stack_t*);
 
@@ -156,5 +157,15 @@ extern size_t hpcrun_logical_substack_settop(logical_region_stack_t*, logical_re
 static inline void hpcrun_logical_substack_pop(logical_region_stack_t* s, logical_region_t* r, size_t n) {
   hpcrun_logical_substack_settop(s, r, r->subdepth > n ? r->subdepth - n : 0);
 }
+
+// --------------------------------------
+// Hook registration functions
+// --------------------------------------
+
+// Initialize all available logical context generators
+extern void hpcrun_logical_init();
+
+// Register the nessesary handler for modifying backtraces based on the logical stack
+extern void hpcrun_logical_register();
 
 #endif  // LOGICAL_COMMON_H
