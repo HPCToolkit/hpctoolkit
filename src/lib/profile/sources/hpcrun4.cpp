@@ -320,10 +320,26 @@ bool Hpcrun4::realread(const DataClass& needed) try {
     for(const auto& im: metrics) sink.metricFreeze(im.second);
   }
   if(needed.hasReferences()) {
+    Module& logicalmod = sink.module("<logical>");
+    Classification& logicalclas = logicalmod.userdata[sink.classification()];
     int id;
     loadmap_entry_t lm;
     while((id = hpcrun_sparse_next_lm(file, &lm)) > 0) {
-      modules.emplace(id, sink.module(lm.name));
+      if(lm.name[0] == '$' && lm.name[1] == 'P' && lm.name[2] == 'Y' && lm.name[3] == '$') {
+        // Special case: this is a logical frame
+        std::string funcname = &lm.name[4];
+        auto delm = funcname.find("$FILE$");
+        if(delm == std::string::npos) {
+          // Just a function, no other information.
+          logicalfuncs.emplace(id, logicalclas.addFunction(logicalmod, funcname));
+        } else {
+          // Function + filename
+          File& f = sink.file(funcname.substr(delm+6));
+          funcname.resize(delm);
+          logicalfuncs.emplace(id, logicalclas.addFunction(logicalmod, funcname, 0, &f));
+        }
+      } else
+        modules.emplace(id, sink.module(lm.name));
       hpcrun_fmt_loadmapEntry_free(&lm, std::free);
     }
     if(id < 0) {
@@ -439,12 +455,20 @@ bool Hpcrun4::realread(const DataClass& needed) try {
       } else if(n.lm_id != 0) {
         auto it = modules.find(n.lm_id);
         if(it == modules.end()) {
-          util::log::info{} << "Invalid load module id: " << n.lm_id;
-          return false;
-        }
-        scope = {it->second, n.lm_ip};
-      } else if(n.lm_ip > 0x100) {
-        scope = {sink.file("<logical>"), n.lm_ip-0x100};
+          auto lit = logicalfuncs.find(n.lm_id);
+          if(lit == logicalfuncs.end()) {
+            util::log::info{} << "Invalid load module id: " << n.lm_id;
+            return false;
+          }
+          // Logical frames take a bit more work to pull off
+          scope = Scope(lit->second);
+          if(lit->second.file != nullptr) {
+            if(!par) abort();
+            par = sink.context(*par, scope);  // Function scope
+            scope = {*lit->second.file, n.lm_ip};
+          }
+        } else
+          scope = {it->second, n.lm_ip};
       } else if(!par) {
         // Special case: merge global -> unknown to the global unknown.
         unknown_node_id = id;

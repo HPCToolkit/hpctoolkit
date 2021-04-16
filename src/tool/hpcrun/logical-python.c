@@ -166,14 +166,29 @@ typedef struct python_unwind_state_t {
   PyObject* cfunc;  // If not NULL, the C function used to exit Python
 } python_unwind_state_t;
 
+static uint16_t get_lm(const char* funcname, const char* filename) {
+  char name[4096];
+  strcpy(name, "$PY$");
+  strcat(name, funcname);
+  if(filename != NULL) {
+    strcat(name, "$FILE$");
+    strcat(name, filename);
+  }
+  ETMSG(LOGICAL_CTX, "Using LM name %s", name);
+
+  load_module_t* lm = hpcrun_loadmap_findByName(name);
+  if(lm != NULL) return lm->id;
+  return hpcrun_loadModule_add(name);
+}
+
 static bool python_unwind(void* vp_state, void** store, unsigned int index, frame_t* frame) {
   python_unwind_state_t* state = vp_state;
   if(state->cfunc != NULL) {
     if(index == 0) {
       ETMSG(LOGICAL_CTX_PYTHON, "Exited Python through C function %s",
             DL(PyEval_GetFuncName)(state->cfunc));
-      frame->ip_norm.lm_id = 0;
-      frame->ip_norm.lm_ip = 0x600;
+      frame->ip_norm.lm_id = get_lm(DL(PyEval_GetFuncName)(state->cfunc), NULL);
+      frame->ip_norm.lm_ip = 0;
       return true;
     }
     index--;
@@ -185,8 +200,8 @@ static bool python_unwind(void* vp_state, void** store, unsigned int index, fram
   ETMSG(LOGICAL_CTX_PYTHON, "Unwinding Python frame: %s:%d in function %s",
         DL(PyUnicode_AsUTF8)(code->co_filename), DL(PyFrame_GetLineNumber)(pyframe),
         DL(PyUnicode_AsUTF8)(code->co_name));
-  frame->ip_norm.lm_id = 0;
-  frame->ip_norm.lm_ip = 0x100 + DL(PyFrame_GetLineNumber)(pyframe);
+  frame->ip_norm.lm_id = get_lm(DL(PyUnicode_AsUTF8)(code->co_name), DL(PyUnicode_AsUTF8)(code->co_filename));
+  frame->ip_norm.lm_ip = DL(PyFrame_GetLineNumber)(pyframe);
   *store = pyframe->f_back;
   return *store != state->caller;
 }
