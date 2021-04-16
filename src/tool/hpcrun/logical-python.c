@@ -74,10 +74,12 @@
   dl_##NAME;                                                    \
 })
 
+DL_DEF(PyEval_GetFuncName)
 DL_DEF(PyEval_SetProfile)
+DL_DEF(PyFrame_GetBack)
+DL_DEF(PyFrame_GetCode)
 DL_DEF(PyFrame_GetLineNumber)
 DL_DEF(PySys_AddAuditHook)
-DL_DEF(PyEval_GetFuncName)
 DL_DEF(PyUnicode_AsUTF8)
 
 #if 0
@@ -196,24 +198,28 @@ static bool python_unwind(void* vp_state, void** store, unsigned int index, fram
   if(index == 0) *store = state->frame;
 
   PyFrameObject* pyframe = *store;
-  PyCodeObject* code = pyframe->f_code;
+  PyCodeObject* code = DL(PyFrame_GetCode)(pyframe);
   ETMSG(LOGICAL_CTX_PYTHON, "Unwinding Python frame: %s:%d in function %s",
         DL(PyUnicode_AsUTF8)(code->co_filename), DL(PyFrame_GetLineNumber)(pyframe),
         DL(PyUnicode_AsUTF8)(code->co_name));
   frame->ip_norm.lm_id = get_lm(DL(PyUnicode_AsUTF8)(code->co_name), DL(PyUnicode_AsUTF8)(code->co_filename));
   frame->ip_norm.lm_ip = DL(PyFrame_GetLineNumber)(pyframe);
-  *store = pyframe->f_back;
+  *store = DL(PyFrame_GetBack)(pyframe);
   return *store != state->caller;
 }
 
 // Python integration hooks
 
-#define STACK_MARK(N) ({                       \
+#define STACK_MARK_2() ({                      \
   ucontext_t context;                          \
   assert(getcontext(&context) == 0);           \
-  backtrace_info_t bt;                         \
-  hpcrun_generate_backtrace(&bt, &context, 1); \
-  bt.begin[N].cursor.sp;                       \
+  int steps_taken = 0;                         \
+  hpcrun_unw_cursor_t cursor;                  \
+  hpcrun_unw_init_cursor(&cursor, &context);   \
+  hpcrun_unw_step(&cursor, &steps_taken);      \
+  hpcrun_unw_step(&cursor, &steps_taken);      \
+  hpcrun_unw_step(&cursor, &steps_taken);      \
+  cursor.sp;                                   \
 })
 
 static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject* arg) {
@@ -222,7 +228,7 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
   logical_region_stack_t* lstack = &td->logical;
   switch(what) {
   case PyTrace_CALL: {
-    PyCodeObject* code = frame->f_code;
+    PyCodeObject* code = DL(PyFrame_GetCode)(frame);
     ETMSG(LOGICAL_CTX_PYTHON, "call of Python function %s (%s:%d), now at frame = %p",
       DL(PyUnicode_AsUTF8)(code->co_name),
       DL(PyUnicode_AsUTF8)(code->co_filename),
@@ -232,12 +238,12 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
       // We have entered a new Python region for the first time. Push it.
       python_unwind_state_t* unwind = malloc(sizeof *unwind);
       *unwind = (python_unwind_state_t){
-        .caller = frame->f_back, .frame = frame, .cfunc = NULL,
+        .caller = DL(PyFrame_GetBack)(frame), .frame = frame, .cfunc = NULL,
       };
       hpcrun_logical_stack_push(lstack, &(logical_region_t){
         .generator = python_unwind, .generator_arg = unwind,
         .expected = 1,  // This should be a top-level frame
-        .enter = STACK_MARK(2), .exit = NULL,
+        .enter = STACK_MARK_2(), .exit = NULL,
       });
     } else {
       // Update the top region with the new frame
@@ -254,7 +260,7 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
     // Update the top region to note that we have exited Python
     ((python_unwind_state_t*)top->generator_arg)->cfunc = arg;
     top->expected++;
-    top->exit = STACK_MARK(2);
+    top->exit = STACK_MARK_2();
     break;
   }
   case PyTrace_C_RETURN: {
@@ -269,10 +275,10 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
   }
   case PyTrace_RETURN: {
     ETMSG(LOGICAL_CTX_PYTHON, "(about to) return from Python frame = %p, now at frame %p", frame,
-          frame->f_back);
+          DL(PyFrame_GetBack)(frame));
     logical_region_t* top = hpcrun_logical_stack_top(lstack);
     assert(top != NULL && "Python RETURN without a logical stack???");
-    PyFrameObject* prevframe = frame->f_back;
+    PyFrameObject* prevframe = DL(PyFrame_GetBack)(frame);
     if(prevframe == ((python_unwind_state_t*)top->generator_arg)->caller) {
       // We are exiting a Python region. Pop it from the stack.
       hpcrun_logical_stack_pop(lstack, 1);
