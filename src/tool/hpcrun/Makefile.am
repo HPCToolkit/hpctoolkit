@@ -345,7 +345,7 @@ MY_BASE_FILES =				\
 	\
 	lush/lushi.h \
 	lush/lushi-cb.h	lush/lushi-cb.c	\
-	logical.c \
+	logical/common.c \
 	\
 	fnbounds/fnbounds_common.c	\
 	\
@@ -460,7 +460,7 @@ MY_DYNAMIC_FILES = 			\
 	fnbounds/fnbounds_client.c	\
 	fnbounds/fnbounds_dynamic.c	\
 	monitor-exts/openmp.c		\
-	logical-python.c                \
+	logical/python.c                \
         custom-init-dynamic.c
 
 MY_STATIC_FILES = 			\
@@ -1030,6 +1030,11 @@ if UNW_PPC64
   UNW_INCLUDE_DIRS = $(UNW_PPC64_INCLUDE_DIRS)
   UNW_DYNAMIC_LD_FLAGS = $(UNW_PPC64_LD_FLAGS)
   UNW_STATIC_LD_FLAGS =  $(UNW_PPC64_LD_FLAGS)
+endif
+
+if OPT_ENABLE_PYTHON
+  libhpcrun_la_SOURCES += logical/python.c
+  libhpcrun_la_CFLAGS += @OPT_PYTHON_IFLAGS@
 endif
 
 if OPT_ENABLE_CUDA

@@ -44,7 +44,7 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#include "logical.h"
+#include "logical/common.h"
 
 #include "cct_backtrace_finalize.h"
 #include "hpcrun-malloc.h"

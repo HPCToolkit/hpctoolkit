@@ -64,7 +64,7 @@
 #include "cct2metrics.h"
 #include "core_profile_trace_data.h"
 #include "ompt/omp-tools.h"
-#include "logical.h"
+#include "logical/common.h"
 
 #include <lush/lush-pthread.i>
 #include <unwind/common/backtrace.h>

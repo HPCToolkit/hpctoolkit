@@ -46,7 +46,7 @@
 
 #define _GNU_SOURCE 1
 
-#include "logical.h"
+#include "logical/common.h"
 
 #include "messages/messages.h"
 #include "thread_data.h"
