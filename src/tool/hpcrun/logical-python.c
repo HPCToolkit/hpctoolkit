@@ -176,20 +176,21 @@ static uint16_t get_lm(const char* funcname, const char* filename) {
     strcat(name, "$FILE$");
     strcat(name, filename);
   }
-  ETMSG(LOGICAL_CTX, "Using LM name %s", name);
 
   load_module_t* lm = hpcrun_loadmap_findByName(name);
   if(lm != NULL) return lm->id;
   return hpcrun_loadModule_add(name);
 }
 
-static bool python_unwind(void* vp_state, void** store, unsigned int index, frame_t* frame) {
+static_assert(UINTPTR_MAX >= UINT16_MAX, "Is this an 8-bit machine?");
+static bool python_unwind(void* vp_state, void** store, unsigned int index, uintptr_t* lframe, frame_t* frame) {
   python_unwind_state_t* state = vp_state;
   if(state->cfunc != NULL) {
     if(index == 0) {
       ETMSG(LOGICAL_CTX_PYTHON, "Exited Python through C function %s",
             DL(PyEval_GetFuncName)(state->cfunc));
-      frame->ip_norm.lm_id = get_lm(DL(PyEval_GetFuncName)(state->cfunc), NULL);
+      if(*lframe == 0) *lframe = get_lm(DL(PyEval_GetFuncName)(state->cfunc), NULL);
+      frame->ip_norm.lm_id = *lframe;
       frame->ip_norm.lm_ip = 0;
       return true;
     }
@@ -202,7 +203,8 @@ static bool python_unwind(void* vp_state, void** store, unsigned int index, fram
   ETMSG(LOGICAL_CTX_PYTHON, "Unwinding Python frame: %s:%d in function %s",
         DL(PyUnicode_AsUTF8)(code->co_filename), DL(PyFrame_GetLineNumber)(pyframe),
         DL(PyUnicode_AsUTF8)(code->co_name));
-  frame->ip_norm.lm_id = get_lm(DL(PyUnicode_AsUTF8)(code->co_name), DL(PyUnicode_AsUTF8)(code->co_filename));
+  if(*lframe == 0) *lframe = get_lm(DL(PyUnicode_AsUTF8)(code->co_name), DL(PyUnicode_AsUTF8)(code->co_filename));
+  frame->ip_norm.lm_id = *lframe;
   frame->ip_norm.lm_ip = DL(PyFrame_GetLineNumber)(pyframe);
   *store = DL(PyFrame_GetBack)(pyframe);
   return *store != state->caller;
@@ -210,16 +212,16 @@ static bool python_unwind(void* vp_state, void** store, unsigned int index, fram
 
 // Python integration hooks
 
-#define STACK_MARK_2() ({                      \
-  ucontext_t context;                          \
-  assert(getcontext(&context) == 0);           \
-  int steps_taken = 0;                         \
-  hpcrun_unw_cursor_t cursor;                  \
-  hpcrun_unw_init_cursor(&cursor, &context);   \
-  hpcrun_unw_step(&cursor, &steps_taken);      \
-  hpcrun_unw_step(&cursor, &steps_taken);      \
-  hpcrun_unw_step(&cursor, &steps_taken);      \
-  cursor.sp;                                   \
+#define STACK_MARK_2() ({                    \
+  ucontext_t context;                        \
+  assert(getcontext(&context) == 0);         \
+  int steps_taken = 0;                       \
+  hpcrun_unw_cursor_t cursor;                \
+  hpcrun_unw_init_cursor(&cursor, &context); \
+  hpcrun_unw_step(&cursor, &steps_taken);    \
+  hpcrun_unw_step(&cursor, &steps_taken);    \
+  hpcrun_unw_step(&cursor, &steps_taken);    \
+  cursor.sp;                                 \
 })
 
 static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject* arg) {
@@ -240,7 +242,7 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
       *unwind = (python_unwind_state_t){
         .caller = DL(PyFrame_GetBack)(frame), .frame = frame, .cfunc = NULL,
       };
-      hpcrun_logical_stack_push(lstack, &(logical_region_t){
+      top = hpcrun_logical_stack_push(lstack, &(logical_region_t){
         .generator = python_unwind, .generator_arg = unwind,
         .expected = 1,  // This should be a top-level frame
         .enter = STACK_MARK_2(), .exit = NULL,
@@ -250,6 +252,7 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
       ((python_unwind_state_t*)top->generator_arg)->frame = frame;
       top->expected++;
     }
+    hpcrun_logical_substack_push(lstack, top, 0);
     break;
   }
   case PyTrace_C_CALL: {
@@ -261,6 +264,7 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
     ((python_unwind_state_t*)top->generator_arg)->cfunc = arg;
     top->expected++;
     top->exit = STACK_MARK_2();
+    hpcrun_logical_substack_push(lstack, top, 0);
     break;
   }
   case PyTrace_C_RETURN: {
@@ -271,6 +275,7 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
     ((python_unwind_state_t*)top->generator_arg)->cfunc = NULL;
     top->expected--;
     top->exit = NULL;
+    hpcrun_logical_substack_pop(lstack, top, 1);
     break;
   }
   case PyTrace_RETURN: {
@@ -281,12 +286,14 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
     PyFrameObject* prevframe = DL(PyFrame_GetBack)(frame);
     if(prevframe == ((python_unwind_state_t*)top->generator_arg)->caller) {
       // We are exiting a Python region. Pop it from the stack.
+      hpcrun_logical_substack_settop(lstack, hpcrun_logical_stack_top(lstack), 0);
       hpcrun_logical_stack_pop(lstack, 1);
       free(top->generator_arg);
     } else {
       // Update the top region with the new frame
       ((python_unwind_state_t*)top->generator_arg)->frame = prevframe;
       top->expected--;
+      hpcrun_logical_substack_pop(lstack, top, 1);
     }
     break;
   }

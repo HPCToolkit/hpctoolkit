@@ -60,16 +60,25 @@ static void logicalize_bt(backtrace_info_t*, int);
 #define REGIONS_PER_SEGMENT \
   (sizeof( ((struct logical_region_segment_t*)0)->regions ) \
    / sizeof( ((struct logical_region_segment_t*)0)->regions[0] ))
+#define FRAMES_PER_SEGMENT \
+  (sizeof( ((struct logical_frame_segment_t*)0)->frames ) \
+   / sizeof( ((struct logical_frame_segment_t*)0)->frames[0] ))
 
 void hpcrun_logical_stack_init(logical_region_stack_t* s) {
   s->depth = 0;
   s->head = NULL;
   s->spare = NULL;
+  s->subspare = NULL;
 }
 
-logical_region_t* hpcrun_logical_stack_top(logical_region_stack_t* s) {
+logical_region_t* hpcrun_logical_stack_top(const logical_region_stack_t* s) {
   if(s->depth == 0) return NULL;
   return &s->head->regions[(s->depth-1) % REGIONS_PER_SEGMENT];
+}
+
+uintptr_t* hpcrun_logical_substack_top(const logical_region_t* r) {
+  if(r->subdepth == 0) return NULL;
+  return &r->substack->frames[(r->subdepth-1) % FRAMES_PER_SEGMENT];
 }
 
 logical_region_t* hpcrun_logical_stack_push(logical_region_stack_t* s,
@@ -94,7 +103,35 @@ logical_region_t* hpcrun_logical_stack_push(logical_region_stack_t* s,
   // Copy over the region data, and return the new top
   memcpy(next, r, sizeof *next);
   s->depth++;
+  next->subdepth = 0;
+  next->substack = NULL;
   ETMSG(LOGICAL_CTX, "Pushed region [%d] %p, enter = %p", s->depth, next, next->enter);
+  return next;
+}
+
+uintptr_t* hpcrun_logical_substack_push(logical_region_stack_t* s,
+                                        logical_region_t* r, uintptr_t f) {
+  // Figure out where the next element goes, allocate some space if we must
+  if(r->subdepth % FRAMES_PER_SEGMENT == 0) {
+    if(s->subspare != NULL) {
+      // Pop from spare for the next segment
+      struct logical_frame_segment_t* newhead = s->subspare;
+      s->subspare = newhead->prev;
+      newhead->prev = r->substack;
+      r->substack = newhead;
+    } else {
+      // Allocate a new entry for the next segment
+      struct logical_frame_segment_t* newhead = hpcrun_malloc(sizeof *newhead);
+      newhead->prev = r->substack;
+      r->substack = newhead;
+    }
+  }
+  uintptr_t* next = &r->substack->frames[r->subdepth % FRAMES_PER_SEGMENT];
+
+  // Copy over the frame data, and return the new top
+  *next = f;
+  r->subdepth++;
+  ETMSG(LOGICAL_CTX, "Pushed frame [%d] [%d] %p", s->depth, r->subdepth, next);
   return next;
 }
 
@@ -114,6 +151,25 @@ size_t hpcrun_logical_stack_settop(logical_region_stack_t* s, size_t n) {
   // We're within the right segment, so we can just set the depth now.
   s->depth = n;
   ETMSG(LOGICAL_CTX, "Settop to [%d]", s->depth);
+  return 0;
+}
+
+size_t hpcrun_logical_substack_settop(logical_region_stack_t* s, logical_region_t* r, size_t n) {
+  if(n >= r->subdepth) return n - r->subdepth;
+  // Pop off segments until we've got the right number
+  size_t n_segs = n / FRAMES_PER_SEGMENT;
+  if(n % FRAMES_PER_SEGMENT > 0) n_segs++; // Partially-filled segment
+  size_t r_segs = r->subdepth / FRAMES_PER_SEGMENT;
+  if(r->subdepth % FRAMES_PER_SEGMENT > 0) r_segs++;  // Partially-filled segment
+  for(; r_segs > n_segs; r_segs--) {
+    struct logical_frame_segment_t* newhead = r->substack->prev;
+    r->substack->prev = s->subspare;
+    s->subspare = r->substack;
+    r->substack = newhead;
+  }
+  // We're within the right segment, so we can just set the depth now.
+  r->subdepth = n;
+  ETMSG(LOGICAL_CTX, "Settop to [%d] [%d]", s->depth, r->subdepth);
   return 0;
 }
 
@@ -200,10 +256,16 @@ static void logicalize_bt(backtrace_info_t* bt, int isSync) {
       // Overwrite the physical frames with logical ones
       void* store = NULL;
       size_t index = 0;
-      while(cur->generator(cur->generator_arg, &store, index, logical_start + index)) {
+      struct logical_frame_segment_t* subseg = cur->substack;
+      size_t suboff = cur->subdepth % FRAMES_PER_SEGMENT;
+      while(cur->generator(cur->generator_arg, &store, index,
+          subseg == NULL ? NULL : &subseg->frames[suboff-1], logical_start + index)) {
         ETMSG(LOGICAL_CTX, "(logical) ip = %d +0x%x", (logical_start+index)->ip_norm.lm_id, (logical_start+index)->ip_norm.lm_ip);
         assert(index < cur->expected && "Expected number of logical frames is too low!");
         index++;
+        if(suboff > 0) suboff--;
+        if(suboff == 0 && subseg != NULL)
+          subseg = subseg->prev, suboff = FRAMES_PER_SEGMENT;
       }
       ETMSG(LOGICAL_CTX, "(logical) ip = %d +0x%x", (logical_start+index)->ip_norm.lm_id, (logical_start+index)->ip_norm.lm_ip);
       ETMSG(LOGICAL_CTX, "== Entry to logical range @ %p ==", cur->enter);
