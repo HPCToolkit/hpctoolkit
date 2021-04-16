@@ -78,7 +78,7 @@ logical_region_t* hpcrun_logical_stack_top(const logical_region_stack_t* s) {
 
 uintptr_t* hpcrun_logical_substack_top(const logical_region_t* r) {
   if(r->subdepth == 0) return NULL;
-  return &r->substack->frames[(r->subdepth-1) % FRAMES_PER_SEGMENT];
+  return &r->subhead->frames[(r->subdepth-1) % FRAMES_PER_SEGMENT];
 }
 
 logical_region_t* hpcrun_logical_stack_push(logical_region_stack_t* s,
@@ -104,7 +104,7 @@ logical_region_t* hpcrun_logical_stack_push(logical_region_stack_t* s,
   memcpy(next, r, sizeof *next);
   s->depth++;
   next->subdepth = 0;
-  next->substack = NULL;
+  next->subhead = NULL;
   ETMSG(LOGICAL_CTX, "Pushed region [%d] %p, enter = %p", s->depth, next, next->enter);
   return next;
 }
@@ -117,16 +117,16 @@ uintptr_t* hpcrun_logical_substack_push(logical_region_stack_t* s,
       // Pop from spare for the next segment
       struct logical_frame_segment_t* newhead = s->subspare;
       s->subspare = newhead->prev;
-      newhead->prev = r->substack;
-      r->substack = newhead;
+      newhead->prev = r->subhead;
+      r->subhead = newhead;
     } else {
       // Allocate a new entry for the next segment
       struct logical_frame_segment_t* newhead = hpcrun_malloc(sizeof *newhead);
-      newhead->prev = r->substack;
-      r->substack = newhead;
+      newhead->prev = r->subhead;
+      r->subhead = newhead;
     }
   }
-  uintptr_t* next = &r->substack->frames[r->subdepth % FRAMES_PER_SEGMENT];
+  uintptr_t* next = &r->subhead->frames[r->subdepth % FRAMES_PER_SEGMENT];
 
   // Copy over the frame data, and return the new top
   *next = f;
@@ -162,10 +162,10 @@ size_t hpcrun_logical_substack_settop(logical_region_stack_t* s, logical_region_
   size_t r_segs = r->subdepth / FRAMES_PER_SEGMENT;
   if(r->subdepth % FRAMES_PER_SEGMENT > 0) r_segs++;  // Partially-filled segment
   for(; r_segs > n_segs; r_segs--) {
-    struct logical_frame_segment_t* newhead = r->substack->prev;
-    r->substack->prev = s->subspare;
-    s->subspare = r->substack;
-    r->substack = newhead;
+    struct logical_frame_segment_t* newhead = r->subhead->prev;
+    r->subhead->prev = s->subspare;
+    s->subspare = r->subhead;
+    r->subhead = newhead;
   }
   // We're within the right segment, so we can just set the depth now.
   r->subdepth = n;
@@ -256,7 +256,7 @@ static void logicalize_bt(backtrace_info_t* bt, int isSync) {
       // Overwrite the physical frames with logical ones
       void* store = NULL;
       size_t index = 0;
-      struct logical_frame_segment_t* subseg = cur->substack;
+      struct logical_frame_segment_t* subseg = cur->subhead;
       size_t suboff = cur->subdepth % FRAMES_PER_SEGMENT;
       while(cur->generator(cur->generator_arg, &store, index,
           subseg == NULL ? NULL : &subseg->frames[suboff-1], logical_start + index)) {

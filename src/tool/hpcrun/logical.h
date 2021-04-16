@@ -81,7 +81,7 @@ typedef struct logical_region_t {
   // Logical frames residing in this region. Can be used by logical unwinders to
   // store additional per-frame state.
   size_t subdepth;
-  struct logical_frame_segment_t* substack;
+  struct logical_frame_segment_t* subhead;
 } logical_region_t;
 
 struct logical_region_segment_t {
