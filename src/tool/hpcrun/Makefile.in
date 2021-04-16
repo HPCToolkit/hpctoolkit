@@ -522,8 +522,8 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/perf/kernel_blocking.c \
 	sample-sources/perf/kernel_blocking_stub.c \
 	fnbounds/fnbounds_client.c fnbounds/fnbounds_dynamic.c \
-	monitor-exts/openmp.c logical/python.c custom-init-dynamic.c \
-	os/linux/dylib.c unwind/common/default_validation_summary.c \
+	monitor-exts/openmp.c custom-init-dynamic.c os/linux/dylib.c \
+	unwind/common/default_validation_summary.c \
 	trampoline/ppc64/ppc64-tramp.s \
 	utilities/arch/ppc64/ppc64-context-pc.c \
 	trampoline/x86-family/x86-tramp.S \
@@ -540,10 +540,10 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	gpu/nvidia/cupti-activity-translate.c \
 	gpu/nvidia/cupti-analysis.c gpu/nvidia/cupti-api.c \
 	gpu/nvidia/cupti-gpu-api.c sample-sources/upc.c \
-	sample-sources/amd.c gpu/amd/roctracer-activity-translate.c \
-	gpu/amd/roctracer-api.c gpu/amd/rocm-debug-api.c \
-	gpu/amd/rocm-binary-processing.c sample-sources/level0.c \
-	gpu/level0/level0-api.c \
+	logical/python.c sample-sources/amd.c \
+	gpu/amd/roctracer-activity-translate.c gpu/amd/roctracer-api.c \
+	gpu/amd/rocm-debug-api.c gpu/amd/rocm-binary-processing.c \
+	sample-sources/level0.c gpu/level0/level0-api.c \
 	gpu/level0/level0-command-list-context-map.c \
 	gpu/level0/level0-command-list-map.c \
 	gpu/level0/level0-command-process.c \
@@ -705,7 +705,6 @@ am__objects_14 = utilities/libhpcrun_la-first_func.lo \
 am__objects_15 = fnbounds/libhpcrun_la-fnbounds_client.lo \
 	fnbounds/libhpcrun_la-fnbounds_dynamic.lo \
 	monitor-exts/libhpcrun_la-openmp.lo \
-	logical/libhpcrun_la-python.lo \
 	libhpcrun_la-custom-init-dynamic.lo
 am__objects_16 = os/linux/libhpcrun_la-dylib.lo
 @HOST_OS_LINUX_TRUE@am__objects_17 = $(am__objects_16)
@@ -1939,7 +1938,6 @@ MY_DYNAMIC_FILES = \
 	fnbounds/fnbounds_client.c	\
 	fnbounds/fnbounds_dynamic.c	\
 	monitor-exts/openmp.c		\
-	logical/python.c                \
         custom-init-dynamic.c
 
 MY_STATIC_FILES = \
@@ -2876,8 +2874,6 @@ fnbounds/libhpcrun_la-fnbounds_dynamic.lo: fnbounds/$(am__dirstamp) \
 	fnbounds/$(DEPDIR)/$(am__dirstamp)
 monitor-exts/libhpcrun_la-openmp.lo: monitor-exts/$(am__dirstamp) \
 	monitor-exts/$(DEPDIR)/$(am__dirstamp)
-logical/libhpcrun_la-python.lo: logical/$(am__dirstamp) \
-	logical/$(DEPDIR)/$(am__dirstamp)
 os/linux/$(am__dirstamp):
 	@$(MKDIR_P) os/linux
 	@: > os/linux/$(am__dirstamp)
@@ -3007,6 +3003,8 @@ gpu/nvidia/libhpcrun_la-cupti-gpu-api.lo: gpu/nvidia/$(am__dirstamp) \
 	gpu/nvidia/$(DEPDIR)/$(am__dirstamp)
 sample-sources/libhpcrun_la-upc.lo: sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
+logical/libhpcrun_la-python.lo: logical/$(am__dirstamp) \
+	logical/$(DEPDIR)/$(am__dirstamp)
 sample-sources/libhpcrun_la-amd.lo: sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
 gpu/amd/$(am__dirstamp):
@@ -5490,13 +5488,6 @@ monitor-exts/libhpcrun_la-openmp.lo: monitor-exts/openmp.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o monitor-exts/libhpcrun_la-openmp.lo `test -f 'monitor-exts/openmp.c' || echo '$(srcdir)/'`monitor-exts/openmp.c
 
-logical/libhpcrun_la-python.lo: logical/python.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT logical/libhpcrun_la-python.lo -MD -MP -MF logical/$(DEPDIR)/libhpcrun_la-python.Tpo -c -o logical/libhpcrun_la-python.lo `test -f 'logical/python.c' || echo '$(srcdir)/'`logical/python.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) logical/$(DEPDIR)/libhpcrun_la-python.Tpo logical/$(DEPDIR)/libhpcrun_la-python.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='logical/python.c' object='logical/libhpcrun_la-python.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o logical/libhpcrun_la-python.lo `test -f 'logical/python.c' || echo '$(srcdir)/'`logical/python.c
-
 libhpcrun_la-custom-init-dynamic.lo: custom-init-dynamic.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-custom-init-dynamic.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-custom-init-dynamic.Tpo -c -o libhpcrun_la-custom-init-dynamic.lo `test -f 'custom-init-dynamic.c' || echo '$(srcdir)/'`custom-init-dynamic.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libhpcrun_la-custom-init-dynamic.Tpo $(DEPDIR)/libhpcrun_la-custom-init-dynamic.Plo
@@ -5657,6 +5648,13 @@ sample-sources/libhpcrun_la-upc.lo: sample-sources/upc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/upc.c' object='sample-sources/libhpcrun_la-upc.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/libhpcrun_la-upc.lo `test -f 'sample-sources/upc.c' || echo '$(srcdir)/'`sample-sources/upc.c
+
+logical/libhpcrun_la-python.lo: logical/python.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT logical/libhpcrun_la-python.lo -MD -MP -MF logical/$(DEPDIR)/libhpcrun_la-python.Tpo -c -o logical/libhpcrun_la-python.lo `test -f 'logical/python.c' || echo '$(srcdir)/'`logical/python.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) logical/$(DEPDIR)/libhpcrun_la-python.Tpo logical/$(DEPDIR)/libhpcrun_la-python.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='logical/python.c' object='logical/libhpcrun_la-python.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o logical/libhpcrun_la-python.lo `test -f 'logical/python.c' || echo '$(srcdir)/'`logical/python.c
 
 sample-sources/libhpcrun_la-amd.lo: sample-sources/amd.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_la-amd.lo -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_la-amd.Tpo -c -o sample-sources/libhpcrun_la-amd.lo `test -f 'sample-sources/amd.c' || echo '$(srcdir)/'`sample-sources/amd.c

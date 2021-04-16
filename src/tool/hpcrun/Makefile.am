@@ -460,7 +460,6 @@ MY_DYNAMIC_FILES = 			\
 	fnbounds/fnbounds_client.c	\
 	fnbounds/fnbounds_dynamic.c	\
 	monitor-exts/openmp.c		\
-	logical/python.c                \
         custom-init-dynamic.c
 
 MY_STATIC_FILES = 			\
