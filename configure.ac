@@ -4672,6 +4672,10 @@ AC_MSG_RESULT([$PYTHON_CONFIG])
 
 AC_SUBST([OPT_PYTHON_IFLAGS])
 
+if test "x$OPT_ENABLE_PYTHON" = xyes ; then
+  AC_DEFINE([ENABLE_LOGICAL_PYTHON], [1], [Support for Python logical unwinding])
+fi
+
 #-------------------------------------------------
 # enable-xop: support for AMD XOP instructions
 #-------------------------------------------------

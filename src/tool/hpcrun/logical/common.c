@@ -76,7 +76,7 @@ logical_region_t* hpcrun_logical_stack_top(const logical_region_stack_t* s) {
   return &s->head->regions[(s->depth-1) % REGIONS_PER_SEGMENT];
 }
 
-uintptr_t* hpcrun_logical_substack_top(const logical_region_t* r) {
+logical_frame_t* hpcrun_logical_substack_top(const logical_region_t* r) {
   if(r->subdepth == 0) return NULL;
   return &r->subhead->frames[(r->subdepth-1) % FRAMES_PER_SEGMENT];
 }
@@ -109,8 +109,8 @@ logical_region_t* hpcrun_logical_stack_push(logical_region_stack_t* s,
   return next;
 }
 
-uintptr_t* hpcrun_logical_substack_push(logical_region_stack_t* s,
-                                        logical_region_t* r, uintptr_t f) {
+logical_frame_t* hpcrun_logical_substack_push(logical_region_stack_t* s,
+                                              logical_region_t* r, const logical_frame_t* f) {
   // Figure out where the next element goes, allocate some space if we must
   if(r->subdepth % FRAMES_PER_SEGMENT == 0) {
     if(s->subspare != NULL) {
@@ -126,10 +126,10 @@ uintptr_t* hpcrun_logical_substack_push(logical_region_stack_t* s,
       r->subhead = newhead;
     }
   }
-  uintptr_t* next = &r->subhead->frames[r->subdepth % FRAMES_PER_SEGMENT];
+  logical_frame_t* next = &r->subhead->frames[r->subdepth % FRAMES_PER_SEGMENT];
 
   // Copy over the frame data, and return the new top
-  *next = f;
+  memcpy(next, r, sizeof *next);
   r->subdepth++;
   ETMSG(LOGICAL_CTX, "Pushed frame [%d] [%d] %p", s->depth, r->subdepth, next);
   return next;
@@ -258,8 +258,7 @@ static void logicalize_bt(backtrace_info_t* bt, int isSync) {
       size_t index = 0;
       struct logical_frame_segment_t* subseg = cur->subhead;
       size_t suboff = cur->subdepth % FRAMES_PER_SEGMENT;
-      while(cur->generator(cur->generator_arg, &store, index,
-          subseg == NULL ? NULL : &subseg->frames[suboff-1], logical_start + index)) {
+      while(cur->generator(cur, &store, index, subseg == NULL ? NULL : &subseg->frames[suboff-1], logical_start + index)) {
         ETMSG(LOGICAL_CTX, "(logical) ip = %d +0x%x", (logical_start+index)->ip_norm.lm_id, (logical_start+index)->ip_norm.lm_ip);
         assert(index < cur->expected && "Expected number of logical frames is too low!");
         index++;

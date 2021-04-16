@@ -23800,6 +23800,12 @@ $as_echo "$PYTHON_CONFIG" >&6; }
 
 
 
+if test "x$OPT_ENABLE_PYTHON" = xyes ; then
+
+$as_echo "#define ENABLE_LOGICAL_PYTHON 1" >>confdefs.h
+
+fi
+
 #-------------------------------------------------
 # enable-xop: support for AMD XOP instructions
 #-------------------------------------------------

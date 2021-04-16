@@ -82,13 +82,9 @@ DL_DEF(PyFrame_GetLineNumber)
 DL_DEF(PySys_AddAuditHook)
 DL_DEF(PyUnicode_AsUTF8)
 
+// -----------------------------
 // Python unwinder
-
-typedef struct python_unwind_state_t {
-  PyFrameObject* caller;  // Latest Python frame NOT to report (or NULL)
-  PyFrameObject* frame;  // Latest Python frame
-  PyObject* cfunc;  // If not NULL, the C function used to exit Python
-} python_unwind_state_t;
+// -----------------------------
 
 static uint16_t get_lm(const char* funcname, const char* filename) {
   char name[4096];
@@ -105,14 +101,16 @@ static uint16_t get_lm(const char* funcname, const char* filename) {
 }
 
 static_assert(UINTPTR_MAX >= UINT16_MAX, "Is this an 8-bit machine?");
-static bool python_unwind(void* vp_state, void** store, unsigned int index, uintptr_t* lframe, frame_t* frame) {
-  python_unwind_state_t* state = vp_state;
+static bool python_unwind(logical_region_t* region, void** store,
+    unsigned int index, logical_frame_t* in_lframe, frame_t* frame) {
+  logical_python_region_t* state = &region->specific.python;
+  logical_python_frame_t* lframe = &in_lframe->python;
   if(state->cfunc != NULL) {
     if(index == 0) {
       ETMSG(LOGICAL_CTX_PYTHON, "Exited Python through C function %s",
             DL(PyEval_GetFuncName)(state->cfunc));
-      if(*lframe == 0) *lframe = get_lm(DL(PyEval_GetFuncName)(state->cfunc), NULL);
-      frame->ip_norm.lm_id = *lframe;
+      if(lframe->lm == 0) lframe->lm = get_lm(DL(PyEval_GetFuncName)(state->cfunc), NULL);
+      frame->ip_norm.lm_id = lframe->lm;
       frame->ip_norm.lm_ip = 0;
       return true;
     }
@@ -125,14 +123,16 @@ static bool python_unwind(void* vp_state, void** store, unsigned int index, uint
   ETMSG(LOGICAL_CTX_PYTHON, "Unwinding Python frame: %s:%d in function %s",
         DL(PyUnicode_AsUTF8)(code->co_filename), DL(PyFrame_GetLineNumber)(pyframe),
         DL(PyUnicode_AsUTF8)(code->co_name));
-  if(*lframe == 0) *lframe = get_lm(DL(PyUnicode_AsUTF8)(code->co_name), DL(PyUnicode_AsUTF8)(code->co_filename));
-  frame->ip_norm.lm_id = *lframe;
+  if(lframe->lm == 0) lframe->lm = get_lm(DL(PyUnicode_AsUTF8)(code->co_name), DL(PyUnicode_AsUTF8)(code->co_filename));
+  frame->ip_norm.lm_id = lframe->lm;
   frame->ip_norm.lm_ip = DL(PyFrame_GetLineNumber)(pyframe);
   *store = DL(PyFrame_GetBack)(pyframe);
   return *store != state->caller;
 }
 
+// -----------------------------
 // Python integration hooks
+// -----------------------------
 
 #define STACK_MARK_2() ({                    \
   ucontext_t context;                        \
@@ -160,18 +160,16 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
     logical_region_t* top = hpcrun_logical_stack_top(lstack);
     if(top == NULL || top->exit != NULL) {
       // We have entered a new Python region for the first time. Push it.
-      python_unwind_state_t* unwind = malloc(sizeof *unwind);
-      *unwind = (python_unwind_state_t){
-        .caller = DL(PyFrame_GetBack)(frame), .frame = frame, .cfunc = NULL,
-      };
       top = hpcrun_logical_stack_push(lstack, &(logical_region_t){
-        .generator = python_unwind, .generator_arg = unwind,
+        .generator = python_unwind, .specific = {.python = {
+          .caller = DL(PyFrame_GetBack)(frame), .frame = frame, .cfunc = NULL,
+        }},
         .expected = 1,  // This should be a top-level frame
         .enter = STACK_MARK_2(), .exit = NULL,
       });
     } else {
       // Update the top region with the new frame
-      ((python_unwind_state_t*)top->generator_arg)->frame = frame;
+      top->specific.python.frame = frame;
       top->expected++;
     }
     hpcrun_logical_substack_push(lstack, top, 0);
@@ -183,7 +181,7 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
     logical_region_t* top = hpcrun_logical_stack_top(lstack);
     assert(top != NULL && "Python C_CALL without a logical stack???");
     // Update the top region to note that we have exited Python
-    ((python_unwind_state_t*)top->generator_arg)->cfunc = arg;
+    top->specific.python.cfunc = arg;
     top->expected++;
     top->exit = STACK_MARK_2();
     hpcrun_logical_substack_push(lstack, top, 0);
@@ -194,7 +192,7 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
     logical_region_t* top = hpcrun_logical_stack_top(lstack);
     assert(top != NULL && "Python C_RETURN without a logical stack???");
     // Update the top region to note that we have re-entered Python
-    ((python_unwind_state_t*)top->generator_arg)->cfunc = NULL;
+    top->specific.python.cfunc = NULL;
     top->expected--;
     top->exit = NULL;
     hpcrun_logical_substack_pop(lstack, top, 1);
@@ -206,14 +204,13 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
     logical_region_t* top = hpcrun_logical_stack_top(lstack);
     assert(top != NULL && "Python RETURN without a logical stack???");
     PyFrameObject* prevframe = DL(PyFrame_GetBack)(frame);
-    if(prevframe == ((python_unwind_state_t*)top->generator_arg)->caller) {
+    if(prevframe == top->specific.python.caller) {
       // We are exiting a Python region. Pop it from the stack.
       hpcrun_logical_substack_settop(lstack, hpcrun_logical_stack_top(lstack), 0);
       hpcrun_logical_stack_pop(lstack, 1);
-      free(top->generator_arg);
     } else {
       // Update the top region with the new frame
-      ((python_unwind_state_t*)top->generator_arg)->frame = prevframe;
+      top->specific.python.frame = prevframe;
       top->expected--;
       hpcrun_logical_substack_pop(lstack, top, 1);
     }
