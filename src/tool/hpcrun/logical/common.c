@@ -51,14 +51,23 @@
 #include "messages/messages.h"
 #include "thread_data.h"
 
+static void drain_metadata_store(logical_metadata_store_t*);
+
+static logical_metadata_store_t* metadata = NULL;
+
 // ---------------------------------------
-// Initialization
+// Initialization & finalization
 // ---------------------------------------
 
 void hpcrun_logical_init() {
 #ifdef ENABLE_LOGICAL_PYTHON
   hpcrun_logical_python_init();
 #endif
+}
+
+void hpcrun_logical_fini() {
+  for(logical_metadata_store_t* m = metadata; m != NULL; m = m->next)
+    drain_metadata_store(m);
 }
 
 // ---------------------------------------
@@ -137,7 +146,7 @@ logical_frame_t* hpcrun_logical_substack_push(logical_region_stack_t* s,
   logical_frame_t* next = &r->subhead->frames[r->subdepth % FRAMES_PER_SEGMENT];
 
   // Copy over the frame data, and return the new top
-  memcpy(next, r, sizeof *next);
+  memcpy(next, f, sizeof *next);
   r->subdepth++;
   ETMSG(LOGICAL_CTX, "Pushed frame [%d] [%d] %p", s->depth, r->subdepth, next);
   return next;
@@ -303,4 +312,44 @@ earlyexit:
           hpcrun_loadmap_findById(bt_cur->ip_norm.lm_id)->name, bt_cur->ip_norm.lm_ip);
 
   ETMSG(LOGICAL_CTX, "========= END Logicalizing backtrace =========");
+}
+
+// ---------------------------------------
+// Logical metadata mangagement
+// ---------------------------------------
+
+void hpcrun_logical_metadata_register(logical_metadata_store_t* store, const char* generator) {
+  store->used = 0;
+  atomic_init(&store->nextid, 1);  // 0 is reserved for the logical unknown
+  store->idtable = NULL;
+  store->generator = generator;
+  store->lm_id = 0;
+  store->file = NULL;
+  store->next = metadata;
+  // metadata = store;
+}
+
+void hpcrun_logical_metadata_generate_lmid(logical_metadata_store_t* store) {
+  assert(false && "TODO generate_lmid");
+}
+
+uint32_t hpcrun_logical_metadata_fid(logical_metadata_store_t* store,
+    const char* funcname, const char* filename, uint32_t lineno) {
+  if(funcname == NULL && filename == NULL)
+    return 0;
+  char name[4096];
+  name[0] = '\0';
+  if(funcname != NULL)
+    sprintf(name, "$PY$%s$LINE$%d", funcname, lineno);
+  if(filename != NULL)
+    sprintf(name+strlen(name), "$FILE$%s", filename);
+
+  load_module_t* lm = hpcrun_loadmap_findByName(name);
+  if(lm != NULL) return lm->id;
+  uint16_t id = hpcrun_loadModule_add(name);
+  return id;
+}
+
+static void drain_metadata_store(logical_metadata_store_t* store) {
+  assert(false && "TODO drain_metadata");
 }

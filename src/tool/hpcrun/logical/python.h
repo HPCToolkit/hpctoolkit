@@ -50,8 +50,10 @@
 #define LOGICAL_PYTHON_H
 
 typedef struct logical_python_frame_t {
-  // Cached lm_id for this frame
-  uint16_t lm;
+  // Cached fid for this frame
+  uint32_t fid;
+  // Line number for the function in this frame
+  uint32_t lineno;
 } logical_python_frame_t;
 
 typedef struct logical_python_region_t {

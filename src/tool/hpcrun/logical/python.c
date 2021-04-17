@@ -65,7 +65,9 @@
 #include <frameobject.h>
 #include <stddef.h>
 
-// dl* macros for using Python functions. We don't link Python so this is needed
+// -----------------------------
+// Local variables
+// -----------------------------
 
 #define DL(NAME) dl_##NAME
 
@@ -83,23 +85,11 @@
 PYFUNCS(DL_DEF)
 #undef DL_DEF
 
+static logical_metadata_store_t python_metastore;
+
 // -----------------------------
 // Python unwinder
 // -----------------------------
-
-static uint16_t get_lm(const char* funcname, const char* filename) {
-  char name[4096];
-  strcpy(name, "$PY$");
-  strcat(name, funcname);
-  if(filename != NULL) {
-    strcat(name, "$FILE$");
-    strcat(name, filename);
-  }
-
-  load_module_t* lm = hpcrun_loadmap_findByName(name);
-  if(lm != NULL) return lm->id;
-  return hpcrun_loadModule_add(name);
-}
 
 static_assert(UINTPTR_MAX >= UINT16_MAX, "Is this an 8-bit machine?");
 static bool python_unwind(logical_region_t* region, void** store,
@@ -110,9 +100,9 @@ static bool python_unwind(logical_region_t* region, void** store,
     if(index == 0) {
       ETMSG(LOGICAL_CTX_PYTHON, "Exited Python through C function %s",
             DL(PyEval_GetFuncName)(state->cfunc));
-      if(lframe->lm == 0) lframe->lm = get_lm(DL(PyEval_GetFuncName)(state->cfunc), NULL);
-      frame->ip_norm.lm_id = lframe->lm;
-      frame->ip_norm.lm_ip = 0;
+      if(lframe->fid == 0)
+        lframe->fid = hpcrun_logical_metadata_fid(&python_metastore, DL(PyEval_GetFuncName)(state->cfunc), NULL, 0);
+      frame->ip_norm = hpcrun_logical_metadata_ipnorm(&python_metastore, lframe->fid, 0);
       return true;
     }
     index--;
@@ -124,9 +114,14 @@ static bool python_unwind(logical_region_t* region, void** store,
   ETMSG(LOGICAL_CTX_PYTHON, "Unwinding Python frame: %s:%d in function %s",
         DL(PyUnicode_AsUTF8)(code->co_filename), DL(PyFrame_GetLineNumber)(pyframe),
         DL(PyUnicode_AsUTF8)(code->co_name));
-  if(lframe->lm == 0) lframe->lm = get_lm(DL(PyUnicode_AsUTF8)(code->co_name), DL(PyUnicode_AsUTF8)(code->co_filename));
-  frame->ip_norm.lm_id = lframe->lm;
-  frame->ip_norm.lm_ip = DL(PyFrame_GetLineNumber)(pyframe);
+  if(lframe->fid == 0) {
+    const char* name = DL(PyUnicode_AsUTF8)(code->co_name);
+    if(strcmp(name, "<module>") == 0)
+      name = NULL;  // Special case, the main module should just have its filename
+    lframe->fid = hpcrun_logical_metadata_fid(&python_metastore,
+      name, DL(PyUnicode_AsUTF8)(code->co_filename), lframe->lineno);
+  }
+  frame->ip_norm = hpcrun_logical_metadata_ipnorm(&python_metastore, lframe->fid, DL(PyFrame_GetLineNumber)(pyframe));
   *store = DL(PyFrame_GetBack)(pyframe);
   return *store != state->caller;
 }
@@ -173,7 +168,9 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
       top->specific.python.frame = frame;
       top->expected++;
     }
-    hpcrun_logical_substack_push(lstack, top, 0);
+    hpcrun_logical_substack_push(lstack, top, &(logical_frame_t){.python = {
+      .fid = 0, .lineno = DL(PyFrame_GetLineNumber)(frame),
+    }});
     break;
   }
   case PyTrace_C_CALL: {
@@ -185,7 +182,9 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
     top->specific.python.cfunc = arg;
     top->expected++;
     top->exit = STACK_MARK_2();
-    hpcrun_logical_substack_push(lstack, top, 0);
+    hpcrun_logical_substack_push(lstack, top, &(logical_frame_t){.python = {
+      .fid = 0, .lineno = 0,
+    }});
     break;
   }
   case PyTrace_C_RETURN: {
@@ -338,5 +337,6 @@ static loadmap_notify_t python_loadmap_notify = {
   .map = python_notify_mapped, .unmap = NULL,
 };
 void hpcrun_logical_python_init() {
+  hpcrun_logical_metadata_register(&python_metastore, "python");
   hpcrun_loadmap_notify_register(&python_loadmap_notify);
 }

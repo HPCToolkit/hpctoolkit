@@ -46,6 +46,7 @@
 
 #include "frame.h"
 #include "hpctoolkit-config.h"
+#include "utilities/ip-normalized.h"
 
 #ifdef ENABLE_LOGICAL_PYTHON
 #include "logical/python.h"
@@ -53,6 +54,7 @@
 
 #include <stdint.h>
 #include <stdbool.h>
+#include "lib/prof-lean/stdatomic.h"
 
 #ifndef LOGICAL_COMMON_H
 #define LOGICAL_COMMON_H
@@ -159,6 +161,79 @@ static inline void hpcrun_logical_substack_pop(logical_region_stack_t* s, logica
 }
 
 // --------------------------------------
+// Logical load module management
+// NOTE: All of these may use malloc internally, don't call within the signal handler
+// --------------------------------------
+
+struct logical_metadata_store_hashentry_t {
+  size_t hash;  // Full hash value for this entry
+  size_t keysize;  // Size of the `key` buffer
+  char* key;  // Full key for this entry (use memcmp)
+  uint32_t id;  // Identifier for this key
+};
+
+// There will generally be one of these per logical context generator
+// The actual initialization is handled in hpcrun_logical_metadata_register
+typedef struct logical_metadata_store_t {
+  // Amount of `buffer` currently filled
+  size_t used;
+
+  // Next identifier to be allocated somewhere
+  _Atomic(uint32_t) nextid;
+  // Hash table for function/file name identifiers
+  struct logical_metadata_store_hashentry_t* idtable;
+
+  // Generator identifier for this store
+  const char* generator;
+  // Load module identifier used to refer to this particular metadata store
+  // Use hpcrun_logical_metadata_lmid to get the correct value for this
+  uint16_t lm_id;
+  // FILE* for the (left open) metadata storage file
+  FILE* file;
+
+  // Pointer to the next metadata storage (for cleanup by fini())
+  struct logical_metadata_store_t* next;
+
+  // Buffer of to-be-written data (keep at the end)
+  char buffer[4096];
+} logical_metadata_store_t;
+
+// Register a logical metadata store with the given identifier
+// NOTE: The given string must be a data-constant, its referred to after this call
+extern void hpcrun_logical_metadata_register(logical_metadata_store_t*, const char* generator);
+
+// Generate a new load module id for a metadata store. Expensive
+extern void hpcrun_logical_metadata_generate_lmid(logical_metadata_store_t*);
+
+// Get the load module id for a metadata store. Caches properly
+static inline uint16_t hpcrun_logical_metadata_lmid(logical_metadata_store_t* store) {
+  if(store->lm_id == 0) hpcrun_logical_metadata_generate_lmid(store);
+  return store->lm_id;
+}
+
+// Get a unique identifier for:
+//  - (NULL, NULL, <ignored>): Unknown logical region (always 0)
+//  - (NULL, "file", <ignored>): A source file "file" with no known function information
+//  - ("func", NULL, <ignored>): A function "func" with no known source file
+//  - ("func", "file", lineno): A function "func" defined in "file" at line `lineno`
+// This is nearly useless alone, pass to hpcrun_logical_metadata_ipnorm
+extern uint32_t hpcrun_logical_metadata_fid(logical_metadata_store_t*,
+    const char* func, const char* file, uint32_t lineno);
+
+// Compose a full normalized ip for a particular line number within a logical function/file.
+static inline ip_normalized_t hpcrun_logical_metadata_ipnorm(
+    logical_metadata_store_t* store, uint32_t fid, uint32_t lineno) {
+  ip_normalized_t ip = {
+    // .lm_id = hpcrun_logical_metadata_lmid(store),
+    // .lm_ip = fid,
+    // XXX: TMP for testing purposes
+    .lm_id = fid, .lm_ip = lineno,
+  };
+  // ip.lm_ip = (ip.lm_ip << 32) + lineno;
+  return ip;
+}
+
+// --------------------------------------
 // Hook registration functions
 // --------------------------------------
 
@@ -167,5 +242,8 @@ extern void hpcrun_logical_init();
 
 // Register the nessesary handler for modifying backtraces based on the logical stack
 extern void hpcrun_logical_register();
+
+// Finalize any of the logical bits that need to be finalized for this process
+extern void hpcrun_logical_fini();
 
 #endif  // LOGICAL_COMMON_H

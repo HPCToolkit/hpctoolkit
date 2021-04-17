@@ -325,19 +325,27 @@ bool Hpcrun4::realread(const DataClass& needed) try {
     int id;
     loadmap_entry_t lm;
     while((id = hpcrun_sparse_next_lm(file, &lm)) > 0) {
-      if(lm.name[0] == '$' && lm.name[1] == 'P' && lm.name[2] == 'Y' && lm.name[3] == '$') {
+      if(std::string_view(lm.name, 4) == "$PY$") {
         // Special case: this is a logical frame
         std::string funcname = &lm.name[4];
+        auto linedelm = funcname.find("$LINE$");
+        if(linedelm == std::string::npos)
+          util::log::fatal{} << "Truncated logical lm name: " << lm.name;
         auto delm = funcname.find("$FILE$");
         if(delm == std::string::npos) {
           // Just a function, no other information.
-          logicalfuncs.emplace(id, logicalclas.addFunction(logicalmod, funcname));
+          funcname.resize(linedelm);
+          logicalfuncs.emplace(id, logicalclas.addFunction(logicalmod, std::move(funcname)));
         } else {
           // Function + filename
+          uint32_t lineno = std::stol(funcname.substr(linedelm+6, delm-linedelm-6));
           File& f = sink.file(funcname.substr(delm+6));
-          funcname.resize(delm);
-          logicalfuncs.emplace(id, logicalclas.addFunction(logicalmod, funcname, 0, &f));
+          funcname.resize(linedelm);
+          logicalfuncs.emplace(id, logicalclas.addFunction(logicalmod, std::move(funcname), lineno, &f));
         }
+      } else if(std::string_view(lm.name, 6) == "$FILE$") {
+        // Still a logical frame, but with just a file
+        logicalfiles.emplace(id, sink.file(&lm.name[6]));
       } else
         modules.emplace(id, sink.module(lm.name));
       hpcrun_fmt_loadmapEntry_free(&lm, std::free);
@@ -457,15 +465,21 @@ bool Hpcrun4::realread(const DataClass& needed) try {
         if(it == modules.end()) {
           auto lit = logicalfuncs.find(n.lm_id);
           if(lit == logicalfuncs.end()) {
-            util::log::info{} << "Invalid load module id: " << n.lm_id;
-            return false;
-          }
-          // Logical frames take a bit more work to pull off
-          scope = Scope(lit->second);
-          if(lit->second.file != nullptr) {
-            if(!par) abort();
-            par = sink.context(*par, scope);  // Function scope
-            scope = {*lit->second.file, n.lm_ip};
+            auto llit = logicalfiles.find(n.lm_id);
+            if(llit == logicalfiles.end()) {
+              util::log::info{} << "Invalid load module id: " << n.lm_id;
+              return false;
+            }
+            // Special functionless logical frame
+            scope = {llit->second, n.lm_ip};
+          } else {
+            // Logical frames take a bit more work to pull off
+            scope = Scope(lit->second);
+            if(lit->second.file != nullptr) {
+              if(!par) abort();
+              par = sink.context(*par, scope);  // Function scope
+              scope = {*lit->second.file, n.lm_ip};
+            }
           }
         } else
           scope = {it->second, n.lm_ip};
