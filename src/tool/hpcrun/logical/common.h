@@ -166,22 +166,22 @@ static inline void hpcrun_logical_substack_pop(logical_region_stack_t* s, logica
 // --------------------------------------
 
 struct logical_metadata_store_hashentry_t {
+  char* funcname;  // funcname used for this entry
+  char* filename;  // filename used for this entry
+  uint32_t lineno; // lineno used for this entry
   size_t hash;  // Full hash value for this entry
-  size_t keysize;  // Size of the `key` buffer
-  char* key;  // Full key for this entry (use memcmp)
-  uint32_t id;  // Identifier for this key
+  uint32_t id;  // value: Identifier for this key
 };
 
 // There will generally be one of these per logical context generator
 // The actual initialization is handled in hpcrun_logical_metadata_register
 typedef struct logical_metadata_store_t {
-  // Amount of `buffer` currently filled
-  size_t used;
-
   // Next identifier to be allocated somewhere
-  _Atomic(uint32_t) nextid;
+  uint32_t nextid;
   // Hash table for function/file name identifiers
   struct logical_metadata_store_hashentry_t* idtable;
+  // Current size of the hash table, must always be a power of 2
+  size_t tablesize;
 
   // Generator identifier for this store
   const char* generator;
@@ -193,9 +193,6 @@ typedef struct logical_metadata_store_t {
 
   // Pointer to the next metadata storage (for cleanup by fini())
   struct logical_metadata_store_t* next;
-
-  // Buffer of to-be-written data (keep at the end)
-  char buffer[4096];
 } logical_metadata_store_t;
 
 // Register a logical metadata store with the given identifier
@@ -224,12 +221,9 @@ extern uint32_t hpcrun_logical_metadata_fid(logical_metadata_store_t*,
 static inline ip_normalized_t hpcrun_logical_metadata_ipnorm(
     logical_metadata_store_t* store, uint32_t fid, uint32_t lineno) {
   ip_normalized_t ip = {
-    // .lm_id = hpcrun_logical_metadata_lmid(store),
-    // .lm_ip = fid,
-    // XXX: TMP for testing purposes
-    .lm_id = fid, .lm_ip = lineno,
+    .lm_id = hpcrun_logical_metadata_lmid(store), .lm_ip = fid,
   };
-  // ip.lm_ip = (ip.lm_ip << 32) + lineno;
+  ip.lm_ip = (ip.lm_ip << 32) + lineno;
   return ip;
 }
 

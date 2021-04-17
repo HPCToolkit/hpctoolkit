@@ -47,11 +47,17 @@
 #include "logical/common.h"
 
 #include "cct_backtrace_finalize.h"
+#include "files.h"
 #include "hpcrun-malloc.h"
 #include "messages/messages.h"
 #include "thread_data.h"
 
-static void drain_metadata_store(logical_metadata_store_t*);
+#include <errno.h>
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+
+static void cleanup_metadata_store(logical_metadata_store_t*);
 
 static logical_metadata_store_t* metadata = NULL;
 
@@ -67,7 +73,7 @@ void hpcrun_logical_init() {
 
 void hpcrun_logical_fini() {
   for(logical_metadata_store_t* m = metadata; m != NULL; m = m->next)
-    drain_metadata_store(m);
+    cleanup_metadata_store(m);
 }
 
 // ---------------------------------------
@@ -319,37 +325,165 @@ earlyexit:
 // ---------------------------------------
 
 void hpcrun_logical_metadata_register(logical_metadata_store_t* store, const char* generator) {
-  store->used = 0;
-  atomic_init(&store->nextid, 1);  // 0 is reserved for the logical unknown
+  store->nextid = 1;  // 0 is reserved for the logical unknown
   store->idtable = NULL;
+  store->tablesize = 0;
   store->generator = generator;
   store->lm_id = 0;
   store->file = NULL;
   store->next = metadata;
-  // metadata = store;
+  metadata = store;
 }
 
 void hpcrun_logical_metadata_generate_lmid(logical_metadata_store_t* store) {
-  assert(false && "TODO generate_lmid");
+  // Storage for the path we will be generating
+  // <output dir> + /logical/ + <generator> + . + <8 random hex digits> + \0
+  char path[strlen(hpcrun_files_output_directory())
+            + 9 + strlen(store->generator) + 1 + 8 + 1];
+
+  // First make sure the directory is created
+  char* next = path+sprintf(path, "%s/logical", hpcrun_files_output_directory());
+  int ret = mkdir(path, 0755);
+  if(ret != 0 && errno != EEXIST) {
+    hpcrun_abort("hpcrun: error creating logical metadata output directory `%s`: %s",
+                 path, strerror(errno));
+  }
+
+  next += sprintf(next, "/%s.", store->generator);
+  int fd = -1;
+  do {
+    // Create the file where all the bits will be dumped
+    // The last part is just randomly generated to not conflict
+    sprintf(next, "%016lx", random());
+    fd = open(path, O_WRONLY | O_EXCL | O_CREAT, 0644);
+    if(fd == -1) {
+      if(errno == EEXIST) continue;  // Try again
+      hpcrun_abort("hpcrun: error creating logical metadata output `%s`: %s",
+                   path, strerror(errno));
+    }
+  } while(1);
+
+  // Cache the fd as a FILE* for later
+  store->file = fdopen(fd, "wb");
+  if(store->file == NULL)
+    hpcrun_abort("hpcrun: error in fdopen: %s", strerror(errno));
+
+  // Register the path with the loadmap
+  store->lm_id = hpcrun_loadModule_add(path);
+}
+
+// Roughly the FNV-1a hashing algorithm, simplified slightly for ease of use
+static size_t string_hash(const char* data) {
+  size_t sponge = (size_t)0x2002100120021001ULL;
+  if(data == NULL) return sponge;
+  const size_t sz = strlen(data);
+  const size_t prime = _Generic((sponge),
+      uint32_t: UINT32_C(0x01000193),
+      uint64_t: UINT64_C(0x00000100000001b3));
+  size_t i;
+  for(i = 0; i < sz; i += sizeof sponge) {
+    sponge ^= *(size_t*)&data[i];
+    sponge *= prime;
+  }
+  i -= sizeof sponge;
+  size_t last = (size_t)0x1000000110000001ULL;
+  memcpy(&last, data+i, sz-i);
+  return (sponge ^ last) * prime;
+}
+
+// Integer mixer from https://stackoverflow.com/a/12996028
+static size_t int_hash(uint32_t x) {
+  x = ((x >> 16) ^ x) * UINT32_C(0x45d9f3b);
+  x = ((x >> 16) ^ x) * UINT32_C(0x45d9f3b);
+  x = (x >> 16) ^ x;
+  return _Generic((size_t)0,
+    uint32_t: x,
+    uint64_t: ((uint64_t)x << 32) | x);
+}
+
+static struct logical_metadata_store_hashentry_t* hashtable_probe(
+    logical_metadata_store_t* store, const struct logical_metadata_store_hashentry_t* needle) {
+  for(size_t i = 0; i < store->tablesize/2; i++) {
+    // Quadratic probe
+    struct logical_metadata_store_hashentry_t* entry =
+        &store->idtable[(needle->hash+i*i) & (store->tablesize-1)];
+    if(entry->id == 0) return entry;  // Empty entry
+    if(needle->hash != entry->hash) continue;
+    if((needle->funcname == NULL) != (entry->funcname == NULL)) continue;
+    if((needle->filename == NULL) != (entry->filename == NULL)) continue;
+    if(needle->lineno != entry->lineno) continue;
+    if(needle->funcname != NULL && strcmp(needle->funcname, entry->funcname) != 0)
+      continue;
+    if(needle->filename != NULL && strcmp(needle->filename, entry->filename) != 0)
+      continue;
+    return entry;  // Found it!
+  }
+  return NULL;  // Ran out of probes
+}
+
+static void hashtable_grow(logical_metadata_store_t* store) {
+  if(store->idtable == NULL) { // First one's easy
+    store->tablesize = 1<<6;  // Start off with 64
+    store->idtable = calloc(store->tablesize, sizeof store->idtable[0]);
+    return;
+  }
+
+  size_t oldsize = store->tablesize;
+  struct logical_metadata_store_hashentry_t* oldtable = store->idtable;
+  store->tablesize *= 2;
+  store->idtable = calloc(store->tablesize, sizeof store->idtable[0]);
+  for(size_t i = 0; i < oldsize; i++) {
+    if(oldtable[i].id != 0) {
+      struct logical_metadata_store_hashentry_t* e = hashtable_probe(store, &oldtable[i]);
+      assert(e != NULL && "Failure while repopulating hash table!");
+      *e = oldtable[i];
+    }
+  }
+  free(oldtable);
 }
 
 uint32_t hpcrun_logical_metadata_fid(logical_metadata_store_t* store,
     const char* funcname, const char* filename, uint32_t lineno) {
   if(funcname == NULL && filename == NULL)
-    return 0;
-  char name[4096];
-  name[0] = '\0';
-  if(funcname != NULL)
-    sprintf(name, "$PY$%s$LINE$%d", funcname, lineno);
-  if(filename != NULL)
-    sprintf(name+strlen(name), "$FILE$%s", filename);
+    return 0; // Specially reserved for this case
+  if(funcname == NULL) lineno = 0;  // It should be ignored
 
-  load_module_t* lm = hpcrun_loadmap_findByName(name);
-  if(lm != NULL) return lm->id;
-  uint16_t id = hpcrun_loadModule_add(name);
-  return id;
+  // We're looking for an entry that looks roughly like this
+  struct logical_metadata_store_hashentry_t pattern = {
+    .funcname = (char*)funcname, .filename = (char*)filename, .lineno = lineno,
+    .hash = string_hash(funcname) ^ string_hash(filename) ^ int_hash(lineno),
+  };
+
+  // Probe for the entry, or where it should be.
+  struct logical_metadata_store_hashentry_t* entry = hashtable_probe(store, &pattern);
+  if(entry->id != 0) return entry->id;  // We have it!
+  if(entry == NULL) {
+    hashtable_grow(store);
+    entry = hashtable_probe(store, &pattern);
+    assert(entry != NULL && "Entry still not found after growth!");
+  }
+  *entry = pattern;
+
+  // Make sure the entry has copies of the strings for later, and assign an id
+  if(entry->funcname != NULL) entry->funcname = strdup(entry->funcname);
+  if(entry->filename != NULL) entry->filename = strdup(entry->filename);
+  entry->id = store->nextid++;
+
+  // Write a stanza in the metadata storage file about this
+  if(!store->file) hpcrun_logical_metadata_generate_lmid(store);
+  hpcfmt_int4_fwrite(entry->id, store->file);
+  hpcfmt_str_fwrite(entry->funcname, store->file);
+  hpcfmt_str_fwrite(entry->filename, store->file);
+  hpcfmt_int4_fwrite(entry->lineno, store->file);
+
+  return entry->id;
 }
 
-static void drain_metadata_store(logical_metadata_store_t* store) {
-  assert(false && "TODO drain_metadata");
+static void cleanup_metadata_store(logical_metadata_store_t* store) {
+  if(store->file != NULL) fclose(store->file);
+  for(size_t i = 0; i < store->tablesize; i++) {
+    if(store->idtable[i].id == 0) continue;  // Early-skip empty entries
+    if(store->idtable[i].funcname != NULL) free(store->idtable[i].funcname);
+    if(store->idtable[i].filename != NULL) free(store->idtable[i].filename);
+  }
 }
