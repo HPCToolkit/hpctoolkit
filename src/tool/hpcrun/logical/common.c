@@ -325,11 +325,12 @@ earlyexit:
 // ---------------------------------------
 
 void hpcrun_logical_metadata_register(logical_metadata_store_t* store, const char* generator) {
+  spinlock_init(&store->lock);
   store->nextid = 1;  // 0 is reserved for the logical unknown
   store->idtable = NULL;
   store->tablesize = 0;
   store->generator = generator;
-  store->lm_id = 0;
+  atomic_init(&store->lm_id, 0);
   store->file = NULL;
   store->next = metadata;
   metadata = store;
@@ -354,13 +355,14 @@ void hpcrun_logical_metadata_generate_lmid(logical_metadata_store_t* store) {
   do {
     // Create the file where all the bits will be dumped
     // The last part is just randomly generated to not conflict
-    sprintf(next, "%016lx", random());
+    sprintf(next, "%08lx", random());
     fd = open(path, O_WRONLY | O_EXCL | O_CREAT, 0644);
     if(fd == -1) {
       if(errno == EEXIST) continue;  // Try again
       hpcrun_abort("hpcrun: error creating logical metadata output `%s`: %s",
                    path, strerror(errno));
     }
+    break;
   } while(1);
 
   // Cache the fd as a FILE* for later
@@ -369,7 +371,7 @@ void hpcrun_logical_metadata_generate_lmid(logical_metadata_store_t* store) {
     hpcrun_abort("hpcrun: error in fdopen: %s", strerror(errno));
 
   // Register the path with the loadmap
-  store->lm_id = hpcrun_loadModule_add(path);
+  atomic_store_explicit(&store->lm_id, hpcrun_loadModule_add(path), memory_order_release);
 }
 
 // Roughly the FNV-1a hashing algorithm, simplified slightly for ease of use
@@ -423,15 +425,17 @@ static struct logical_metadata_store_hashentry_t* hashtable_probe(
 
 static void hashtable_grow(logical_metadata_store_t* store) {
   if(store->idtable == NULL) { // First one's easy
-    store->tablesize = 1<<6;  // Start off with 64
-    store->idtable = calloc(store->tablesize, sizeof store->idtable[0]);
+    store->tablesize = 1<<8;  // Start off with 256
+    store->idtable = hpcrun_malloc(store->tablesize * sizeof store->idtable[0]);
+    memset(store->idtable, 0, store->tablesize * sizeof store->idtable[0]);
     return;
   }
 
   size_t oldsize = store->tablesize;
   struct logical_metadata_store_hashentry_t* oldtable = store->idtable;
-  store->tablesize *= 2;
-  store->idtable = calloc(store->tablesize, sizeof store->idtable[0]);
+  store->tablesize *= 4;  // We want to reduce grows, to reduce our leak
+  store->idtable = hpcrun_malloc(store->tablesize * sizeof store->idtable[0]);
+  memset(store->idtable, 0, store->tablesize * sizeof store->idtable[0]);
   for(size_t i = 0; i < oldsize; i++) {
     if(oldtable[i].id != 0) {
       struct logical_metadata_store_hashentry_t* e = hashtable_probe(store, &oldtable[i]);
@@ -439,7 +443,7 @@ static void hashtable_grow(logical_metadata_store_t* store) {
       *e = oldtable[i];
     }
   }
-  free(oldtable);
+  // free(oldtable);  // hpcrun_malloc memory isn't freeable
 }
 
 uint32_t hpcrun_logical_metadata_fid(logical_metadata_store_t* store,
@@ -447,6 +451,8 @@ uint32_t hpcrun_logical_metadata_fid(logical_metadata_store_t* store,
   if(funcname == NULL && filename == NULL)
     return 0; // Specially reserved for this case
   if(funcname == NULL) lineno = 0;  // It should be ignored
+
+  spinlock_lock(&store->lock);
 
   // We're looking for an entry that looks roughly like this
   struct logical_metadata_store_hashentry_t pattern = {
@@ -456,7 +462,10 @@ uint32_t hpcrun_logical_metadata_fid(logical_metadata_store_t* store,
 
   // Probe for the entry, or where it should be.
   struct logical_metadata_store_hashentry_t* entry = hashtable_probe(store, &pattern);
-  if(entry->id != 0) return entry->id;  // We have it!
+  if(entry != NULL && entry->id != 0) {  // We have it!
+    spinlock_unlock(&store->lock);
+    return entry->id;
+  }
   if(entry == NULL) {
     hashtable_grow(store);
     entry = hashtable_probe(store, &pattern);
@@ -465,8 +474,16 @@ uint32_t hpcrun_logical_metadata_fid(logical_metadata_store_t* store,
   *entry = pattern;
 
   // Make sure the entry has copies of the strings for later, and assign an id
-  if(entry->funcname != NULL) entry->funcname = strdup(entry->funcname);
-  if(entry->filename != NULL) entry->filename = strdup(entry->filename);
+  if(entry->funcname != NULL) {
+    const char* base = entry->funcname;
+    entry->funcname = hpcrun_malloc(strlen(base)+1);
+    strcpy(entry->funcname, base);
+  }
+  if(entry->filename != NULL) {
+    const char* base = entry->filename;
+    entry->filename = hpcrun_malloc(strlen(base)+1);
+    strcpy(entry->filename, base);
+  }
   entry->id = store->nextid++;
 
   // Write a stanza in the metadata storage file about this
@@ -476,14 +493,10 @@ uint32_t hpcrun_logical_metadata_fid(logical_metadata_store_t* store,
   hpcfmt_str_fwrite(entry->filename, store->file);
   hpcfmt_int4_fwrite(entry->lineno, store->file);
 
+  spinlock_unlock(&store->lock);
   return entry->id;
 }
 
 static void cleanup_metadata_store(logical_metadata_store_t* store) {
   if(store->file != NULL) fclose(store->file);
-  for(size_t i = 0; i < store->tablesize; i++) {
-    if(store->idtable[i].id == 0) continue;  // Early-skip empty entries
-    if(store->idtable[i].funcname != NULL) free(store->idtable[i].funcname);
-    if(store->idtable[i].filename != NULL) free(store->idtable[i].filename);
-  }
 }

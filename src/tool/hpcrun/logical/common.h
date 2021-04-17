@@ -52,6 +52,8 @@
 #include "logical/python.h"
 #endif
 
+#include "lib/prof-lean/spinlock.h"
+
 #include <stdint.h>
 #include <stdbool.h>
 #include "lib/prof-lean/stdatomic.h"
@@ -162,7 +164,6 @@ static inline void hpcrun_logical_substack_pop(logical_region_stack_t* s, logica
 
 // --------------------------------------
 // Logical load module management
-// NOTE: All of these may use malloc internally, don't call within the signal handler
 // --------------------------------------
 
 struct logical_metadata_store_hashentry_t {
@@ -176,6 +177,9 @@ struct logical_metadata_store_hashentry_t {
 // There will generally be one of these per logical context generator
 // The actual initialization is handled in hpcrun_logical_metadata_register
 typedef struct logical_metadata_store_t {
+  // Lock used to protect everything in here
+  spinlock_t lock;
+
   // Next identifier to be allocated somewhere
   uint32_t nextid;
   // Hash table for function/file name identifiers
@@ -187,7 +191,7 @@ typedef struct logical_metadata_store_t {
   const char* generator;
   // Load module identifier used to refer to this particular metadata store
   // Use hpcrun_logical_metadata_lmid to get the correct value for this
-  uint16_t lm_id;
+  _Atomic(uint16_t) lm_id;
   // FILE* for the (left open) metadata storage file
   FILE* file;
 
@@ -200,12 +204,22 @@ typedef struct logical_metadata_store_t {
 extern void hpcrun_logical_metadata_register(logical_metadata_store_t*, const char* generator);
 
 // Generate a new load module id for a metadata store. Expensive
+// Requires that the lock is held, in practice just use the wrapper below
 extern void hpcrun_logical_metadata_generate_lmid(logical_metadata_store_t*);
 
 // Get the load module id for a metadata store. Caches properly
 static inline uint16_t hpcrun_logical_metadata_lmid(logical_metadata_store_t* store) {
-  if(store->lm_id == 0) hpcrun_logical_metadata_generate_lmid(store);
-  return store->lm_id;
+  uint16_t ret = atomic_load_explicit(&store->lm_id, memory_order_relaxed);
+  if(ret == 0) {
+    spinlock_lock(&store->lock);
+    ret = atomic_load_explicit(&store->lm_id, memory_order_relaxed);
+    if(ret == 0) {
+      hpcrun_logical_metadata_generate_lmid(store);
+      ret = atomic_load_explicit(&store->lm_id, memory_order_relaxed);
+    }
+    spinlock_unlock(&store->lock);
+  }
+  return ret;
 }
 
 // Get a unique identifier for:
