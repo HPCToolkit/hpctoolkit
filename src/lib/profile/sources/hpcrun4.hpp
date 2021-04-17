@@ -97,8 +97,6 @@ private:
   std::unordered_map<unsigned int, Metric&> metrics;
   std::unordered_map<unsigned int, bool> metricInt;
   std::unordered_map<unsigned int, Module&> modules;
-  std::unordered_map<unsigned int, Function&> logicalfuncs;
-  std::unordered_map<unsigned int, File&> logicalfiles;
   std::unordered_map<unsigned int, std::pair<std::optional<ContextRef>, ContextRef>> nodes;
   std::unordered_map<unsigned int, std::pair<ContextRef, Scope>> templates;
   std::unordered_map<unsigned int, uint64_t> contextids;

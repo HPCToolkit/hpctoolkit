@@ -56,6 +56,7 @@
 #include "lib/profile/sinks/sparsedb.hpp"
 #include "lib/profile/finalizers/denseids.hpp"
 #include "lib/profile/finalizers/directclassification.hpp"
+#include "lib/profile/finalizers/logical.hpp"
 #include "lib/profile/transformer.hpp"
 
 #include <iostream>
@@ -91,7 +92,8 @@ int main(int argc, char* const argv[]) {
 
   // Insert the proper Finalizer for drawing data directly from the Modules.
   finalizers::DirectClassification dc(args.dwarfMaxSize);
-  pipelineB << dc;
+  finalizers::LogicalFile lf;
+  pipelineB << dc << lf;
 
   // Now that Modules will be Classified during Finalization, add a Transformer
   // to expand the Contexts as they enter the Pipe.

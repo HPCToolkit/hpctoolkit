@@ -85,7 +85,7 @@ MYSOURCES = \
 	sinks/sparsedb.cpp \
 	\
 	finalizers/struct.cpp finalizers/directclassification.cpp \
-	finalizers/denseids.cpp
+	finalizers/denseids.cpp finalizers/logical.cpp
 
 MYSTANDALONESOURCES = mpi/standalone.cpp
 

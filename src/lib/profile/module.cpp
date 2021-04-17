@@ -86,16 +86,21 @@ Scope Classification::classifyLine(Scope s) const noexcept {
   assert((s.type() == Scope::Type::point || s.type() == Scope::Type::call)
          && "Attempt to call classifyLine on a non-point type Scope!");
   auto mo = s.point_data();
-  auto lsp = getLineScope(mo.second);
-  if(lsp == nullptr || lsp->file == nullptr) return s;
-  return lsp->isCall || s.type() == Scope::Type::call
-    ? Scope{Scope::call, mo.first, mo.second, *lsp->file, lsp->line}
-    : Scope{mo.first, mo.second, *lsp->file, lsp->line};
+  auto flc = getLine(mo.second);
+  auto [file,line,isCall] = flc;
+  if(file != nullptr)
+    s = isCall || s.type() == Scope::Type::call
+      ? Scope{Scope::call, mo.first, mo.second, *file, line}
+      : Scope{mo.first, mo.second, *file, line};
+  if(lll_post) s = lll_post(s, mo.second, flc);
+  return s;
 }
 
 const Classification::LineScope* Classification::getLineScope(uint64_t pos) const noexcept {
   auto it = std::lower_bound(lll_scopes.begin(), lll_scopes.end(),
-                             LineScope(pos, nullptr, 0));
+      LineScope(pos, nullptr, 0), [](const LineScope& a, const LineScope& b) -> bool {
+        return a.addr < b.addr;
+      });
   if(it != lll_scopes.end() && it->addr == pos) return &*it;
   if(it == lll_scopes.begin()) return nullptr;
   --it;
@@ -189,4 +194,8 @@ void Classification::setLines(std::vector<LineScope>&& lscopes) {
       llb = std::move(ls);
   }
   lll_scopes.shrink_to_fit();
+}
+
+void Classification::setLinePost(std::function<Scope(Scope, uint64_t, std::tuple<const File*, uint64_t, bool>)> f) {
+  lll_post = std::move(f);
 }

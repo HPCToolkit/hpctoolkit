@@ -138,7 +138,7 @@ public:
   std::tuple<const File*, uint64_t, bool> getLine(uint64_t) const noexcept;
 
   /// Turn the given Scope into a `classified_*` variant, based on the offset
-  /// contained within. Does not add additional
+  /// contained within. Does not add additional outer Scopes.
   Scope classifyLine(Scope) const noexcept;
 
   /// The master table for Functions. These can be used to generate Scopes for
@@ -203,11 +203,16 @@ public:
   // MT: Externally Synchronized
   void setLines(std::vector<LineScope>&& lscopes);
 
+  /// Additional post-process for line lookups
+  // MT: Externally Synchronized
+  void setLinePost(std::function<Scope(Scope, uint64_t, std::tuple<const File*, uint64_t, bool>)>);
+
 private:
   const Module& mod;
   std::map<Interval, Block*> ll_scopeblocks;
   std::forward_list<Block> blocks;
   std::vector<LineScope> lll_scopes;
+  std::function<Scope(Scope, uint64_t, std::tuple<const File*, uint64_t, bool>)> lll_post;
 };
 
 // Just a simple load module class, nothing to see here

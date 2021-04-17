@@ -369,6 +369,7 @@ void hpcrun_logical_metadata_generate_lmid(logical_metadata_store_t* store) {
   store->file = fdopen(fd, "wb");
   if(store->file == NULL)
     hpcrun_abort("hpcrun: error in fdopen: %s", strerror(errno));
+  fprintf(store->file, "HPCLOGICAL");
 
   // Register the path with the loadmap
   atomic_store_explicit(&store->lm_id, hpcrun_loadModule_add(path), memory_order_release);
