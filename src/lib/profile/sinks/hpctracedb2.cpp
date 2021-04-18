@@ -81,8 +81,8 @@ HPCTraceDB2::udThread::udThread(const Thread& t, HPCTraceDB2& tdb)
     minTime(std::chrono::nanoseconds::max()),
     maxTime(std::chrono::nanoseconds::min()),
     trace_file(nullptr),
-    trace_hdr(traceHdr(t, tdb)),
     trace_off(-1),
+    trace_hdr(traceHdr(t, tdb)),
     tmcntr(0) {}
 
 void HPCTraceDB2::notifyWavefront(DataClass d){

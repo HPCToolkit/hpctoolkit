@@ -1709,7 +1709,7 @@ std::vector<pms_profile_info_t> SparseDB::profInfoList(const int threads, const 
 
   //read the whole Profile Information section
   int count = num_prof * PMS_prof_info_SIZE; 
-  char input[count];
+  char *input = new char[count];
   fhi.readat(PMS_hdr_SIZE + PMS_prof_info_SIZE, count, input); //skip one prof_info (summary)
 
   //interpret the section and store in a vector of pms_profile_info_t
@@ -1720,6 +1720,7 @@ std::vector<pms_profile_info_t> SparseDB::profInfoList(const int threads, const 
     pi.prof_info_idx = i/PMS_prof_info_SIZE + 1; // the first one is summary profile
     prof_info[i/PMS_prof_info_SIZE] = std::move(pi);
   }
+  delete []input;
 
   return prof_info;
 }
