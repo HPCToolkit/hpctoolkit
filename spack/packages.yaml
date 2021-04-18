@@ -19,7 +19,7 @@
 #    https://spack.readthedocs.io/en/latest/configuration.html
 #    https://spack.readthedocs.io/en/latest/build_settings.html
 #
-#  Last revised: February 9, 2021.
+#  Last revised: April 18, 2021.
 #
 packages:
 
@@ -86,7 +86,7 @@ packages:
   # ~nls is used to avoid building gettext.
   #
   binutils:
-    version:  [2.34]
+    version:  [2.36.1]
     variants: +libiberty ~nls
 
 
@@ -127,14 +127,13 @@ packages:
   # and Dyninst issues releases infrequently, so sometimes it's
   # necessary to use master for the best results.
   #
-  # Need >= 10.2.0 for important bug fixes and features.
-  # Need >= 10.1.0 for full cuda CFG support.
+  # Latest hpctoolkit needs >= 11.0.0 or later.
   # On Blue Gene, with default gcc 4.4 compilers, use version 9.3.2.
   #
   # +openmp is to support openmp threads in parseapi.
   #
   dyninst:
-    version:  [10.2.1, master]
+    version:  [11.0.0, master]
     variants: +openmp build_type=RelWithDebInfo
 
 
