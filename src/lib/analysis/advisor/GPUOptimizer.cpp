@@ -682,8 +682,10 @@ std::vector<BlameStats> GPUAsyncCopyOptimizer::match_impl(const KernelBlame &ker
   for (auto *inst_blame : kernel_blame.stall_inst_blame_ptrs) {
     auto *from_inst = inst_blame->src_inst;
     auto *to_inst = inst_blame->dst_inst;
-    if (from_inst->op.find("LOAD.GLOBAL") != std::string::npos &&
-        to_inst->op.find(".SHARED") != std::string::npos) {
+    if ((from_inst->op.find("LOAD.GLOBAL") != std::string::npos &&
+        to_inst->op.find(".SHARED") != std::string::npos) ||
+        (from_inst->op.find("GLOBAL.BAR") != std::string::npos &&
+         to_inst->op.find("CONTROL.BAR") != std::string::npos)) {
       bool find = false;
       for (auto dst : from_inst->dsts) {
         for (auto src : to_inst->srcs) {
@@ -696,6 +698,9 @@ std::vector<BlameStats> GPUAsyncCopyOptimizer::match_impl(const KernelBlame &ker
           }
         }
         if (find) {
+          if (_inspection.regions.size() < _top_regions) {
+            _inspection.regions.push_back(*inst_blame);
+          }
           break;
         }
       }
@@ -709,10 +714,6 @@ std::vector<BlameStats> GPUAsyncCopyOptimizer::match_impl(const KernelBlame &ker
       lat_blame_stats.blame += inst_blame->lat_blame;
       lat_blame_stats.active_samples += inst_blame->lat_blame;
       lat_blame_stats.total_samples += inst_blame->lat_blame;
-
-      if (_inspection.regions.size() < _top_regions) {
-        _inspection.regions.push_back(*inst_blame);
-      }
     }
   }
 
@@ -727,6 +728,12 @@ std::vector<BlameStats> GPUAsyncCopyOptimizer::match_impl(const KernelBlame &ker
 
   _inspection.loop = false;
   _inspection.stall = true;
+
+  _inspection.hint =
+      "Long time spent in loading values from global memory and storing to shared memory directly.\n"
+      "    To reduce global memory latency:\n"
+      "    1. Use asynchoronus memory copy instructions to eliminate shared memory stores.\n"
+      "    2. Increase the distance between the memory transaction commit and wait.\n";
 
   return blame_stats_vec;
 }
