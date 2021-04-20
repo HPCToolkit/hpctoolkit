@@ -100,7 +100,7 @@ struct RouteExpansionTransformer : public ProfileTransformer {
         std::vector<SuperpositionedContext::Target> paths;
         paths.reserve(routes.size());
         for(const auto& r: routes) {
-          paths.push_back({{}, cr});
+          paths.push_back({{}, cr, 1});
           for(const auto& s: r) {
             paths.back().target = sink.context(paths.back().target, s);
             paths.back().route.emplace_back(sink.context(cr, s, true));
@@ -113,6 +113,55 @@ struct RouteExpansionTransformer : public ProfileTransformer {
   }
 };
 
+
+/// Transformer for expanding routes for def-use `point` Contexts.
+struct DefUseTransformer : public ProfileTransformer {
+  DefUseTransformer() = default;
+  ~DefUseTransformer() = default;
+
+  ContextRef context(ContextRef cr, Scope& s) noexcept override {
+    if(std::holds_alternative<Context>(cr)) {
+      if(s.type() == Scope::Type::point || s.type() == Scope::Type::call) {
+        auto mo = s.point_data();
+        const auto& c = mo.first.userdata[sink.classification()];
+
+        std::vector<SuperpositionedContext::Target> targets;
+        
+        uint64_t offset = mo.second;
+        const std::vector<std::pair<uint64_t, uint32_t>> empty_edges = {};
+        auto iter = c._def_use_graph.find(offset);
+        const std::vector<std::pair<uint64_t, uint32_t>> &incoming_edges = (iter != c._def_use_graph.end()) ?
+                                                                      iter->second: empty_edges;
+
+        for (auto edge: incoming_edges) {
+          double path_length_inv = (double) 1 / (edge.second);
+          ContextRef ctx = sink.context(cr, {mo.first, edge.first});
+          targets.push_back({{ctx}, ctx, path_length_inv});
+        }
+#if 0
+        auto routes = c.getRoutes(mo.second);
+        if(routes.empty()) return cr;
+        if(routes.size() == 1) {
+          for(const auto& s: routes.front()) cr = sink.context(cr, s);
+          return cr;
+        }
+
+        std::vector<SuperpositionedContext::Target> paths;
+        paths.reserve(routes.size());
+        for(const auto& r: routes) {
+          paths.push_back({{}, cr});
+          for(const auto& s: r) {
+            paths.back().target = sink.context(paths.back().target, s);
+            paths.back().route.emplace_back(sink.context(cr, s, true));
+          }
+        }
+#endif
+        return sink.superposContext(cr, std::move(targets));
+      }
+    }
+    return cr;
+  }
+};
 /// Transformer for expanding `point` Contexts with Classification data.
 struct ClassificationTransformer : public ProfileTransformer {
   ClassificationTransformer() = default;

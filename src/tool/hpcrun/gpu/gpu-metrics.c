@@ -488,7 +488,6 @@ gpu_metrics_attribute_kernel_block
     // calculations at instruction level
     gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_INST_LATENCY), b->latency);
     gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_INST_EXEC_COUNT), b->execution_count);
-
     uint64_t covered_latency = (b->latency <= 0) ?
                                     0: (ALU_cycles * b->execution_count);
     uint64_t uncovered_latency = (b->latency <= 0) ? 

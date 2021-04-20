@@ -406,7 +406,7 @@ void Metric::prefinalize(Thread::Temporary& t) noexcept {
       util::optional_ref<const Metric> m;
       for(const auto& ma: d->citerate()) {
         const Metric& cm = ma.first;
-        if(cm.name() == "GINS") {
+        if(cm.name() == "GINS:EXC_CNT" || cm.name() == "GINS") {
           if(!m) m = cm;
           else if(&*m != &cm)
             util::log::fatal{} << "Multiple distributing Metrics in the same Context: "
