@@ -182,7 +182,7 @@ std::string SimpleInspectionFormatter::format(const Inspection &inspection) {
       inst_blame_ratio = inst_blame_metric / inspection.total;
 
       ss << indent + prefix << "Hot " << inst_blame.blame_name << " code, ratio "
-         << inst_blame_ratio * 100 << "%, distance " << inst_blame.distance << " efficiency, "
+         << inst_blame_ratio * 100 << "%, distance " << inst_blame.distance << ", efficiency "
          << inst_blame.efficiency * 100 << "%" << std::endl;
 
       auto *src_struct = inst_blame.src_struct;
