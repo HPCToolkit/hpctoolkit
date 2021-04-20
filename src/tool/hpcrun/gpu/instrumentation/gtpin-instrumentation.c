@@ -467,6 +467,7 @@ kernelInstructionActivityProcess
  uint64_t correlation_id,
  uint32_t loadmap_module_id,
  uint64_t offset,
+ uint64_t bb_execution_count,
  uint64_t inst_latency,
  gpu_activity_channel_t *activity_channel,
  cct_node_t *host_op_node
@@ -474,7 +475,7 @@ kernelInstructionActivityProcess
 {
   gpu_activity_t ga;
   kernelActivityTranslate(&ga, correlation_id, loadmap_module_id, offset, true,
-      0, 0, inst_latency, 0, 0, 0);
+      0, bb_execution_count, inst_latency, 0, 0, 0);
 
   ip_normalized_t ip = ga.details.kernel_block.pc;
   cct_node_t *cct_child = hpcrun_cct_insert_ip_norm(host_op_node, ip); // how to set the ip_norm
