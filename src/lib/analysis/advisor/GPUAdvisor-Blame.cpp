@@ -1316,7 +1316,7 @@ double GPUAdvisor::computeEfficiency(int mpi_rank, int thread_id, CudaParse::Ins
       auto trans = smem_load_trans + smem_store_trans;
       auto trans_theor = smem_load_trans_theor + smem_store_trans_theor;
 
-      efficiency = (trans_theor == 0) ? 1.0 : trans / trans_theor;
+      efficiency = (trans_theor == 0) ? 1.0 : trans_theor / trans;
     } else {
       // gmem
       auto gmem_cache_load_trans_index =
@@ -1345,7 +1345,7 @@ double GPUAdvisor::computeEfficiency(int mpi_rank, int thread_id, CudaParse::Ins
       auto trans_theor = gmem_cache_load_trans_theor + gmem_cache_store_trans_theor +
                          gmem_uncache_load_trans_theor;
 
-      efficiency = (trans_theor == 0) ? 1.0 : trans / trans_theor;
+      efficiency = (trans_theor == 0) ? 1.0 : trans_theor / trans;
     }
   } else if (inst->op.find(".BRANCH") != std::string::npos) {
     // branch

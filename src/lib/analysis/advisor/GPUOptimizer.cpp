@@ -748,8 +748,7 @@ std::vector<BlameStats> GPUGlobalMemoryCoalesceOptimizer::match_impl(
   for (auto *inst_blame : kernel_blame.lat_inst_blame_ptrs) {
     auto *inst = inst_blame->src_inst;
     if (inst->op.find(".GLOBAL") != std::string::npos &&
-        inst_blame->blame_name.find(":LAT_MTHR") != std::string::npos &&
-        inst_blame->efficiency < COALSECE_LIMIT) {
+      inst_blame->efficiency < COALSECE_LIMIT) {
       blame_stats_vec.push_back(BlameStats(inst_blame->lat_blame * (1 - inst_blame->efficiency),
                                            kernel_stats.active_samples,
                                            kernel_stats.total_samples));
