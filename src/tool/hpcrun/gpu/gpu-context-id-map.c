@@ -91,7 +91,7 @@
   typed_splay_free(free_list, node)
 
 #undef typed_splay_node
-#define typed_splay_node(context_id) gpu_context_id_map_entry_t 
+#define typed_splay_node(context_id) gpu_context_id_map_entry_t
 
 
 
@@ -106,7 +106,7 @@ struct gpu_context_id_map_entry_t {
   uint64_t first_time;
   uint64_t time_offset;
   gpu_stream_id_map_entry_t *streams;
-}; 
+};
 
 
 typedef struct trace_fn_helper_t {
@@ -133,11 +133,7 @@ typed_splay_impl(context_id)
 
 
 static gpu_context_id_map_entry_t *
-gpu_context_id_map_entry_new(
- uint32_t device_id,
- uint32_t context_id,
- uint32_t stream_id
-)
+gpu_context_id_map_entry_new(uint32_t context_id, uint32_t stream_id)
 {
   gpu_context_id_map_entry_t *e;
   e = st_alloc(&free_list);
@@ -145,7 +141,7 @@ gpu_context_id_map_entry_new(
   memset(e, 0, sizeof(gpu_context_id_map_entry_t));
 
   e->context_id = context_id;
-  e->streams = gpu_stream_id_map_entry_new(device_id, context_id, stream_id);
+  e->streams = gpu_stream_id_map_entry_new(stream_id);
 
   return e;
 }
@@ -154,7 +150,6 @@ gpu_context_id_map_entry_new(
 static void
 gpu_context_id_map_insert
 (
- uint32_t device_id,
  uint32_t context_id,
  uint32_t stream_id
 )
@@ -162,7 +157,7 @@ gpu_context_id_map_insert
   gpu_context_id_map_entry_t *entry = st_lookup(&map_root, context_id);
 
   if (entry == NULL) {
-    entry = gpu_context_id_map_entry_new(device_id, context_id, stream_id);
+    entry = gpu_context_id_map_entry_new(context_id, stream_id);
     st_insert(&map_root, entry);
   }
 }
@@ -226,7 +221,7 @@ gpu_context_id_map_lookup
 {
   gpu_context_id_map_entry_t *result = st_lookup(&map_root, context_id);
 
-  TMSG(DEFER_CTXT, "context map lookup: context=0x%lx (record %p)", 
+  TMSG(DEFER_CTXT, "context map lookup: context=0x%lx (record %p)",
        context_id, result);
 
   return result;
@@ -261,17 +256,16 @@ gpu_context_id_map_stream_delete
 void
 gpu_context_id_map_stream_process
 (
- uint32_t device_id,
  uint32_t context_id,
  uint32_t stream_id,
  gpu_trace_fn_t fn,
  gpu_trace_item_t *ti
 )
 {
-  gpu_context_id_map_insert(device_id, context_id, stream_id);
+  gpu_context_id_map_insert(context_id, stream_id);
   gpu_context_id_map_adjust_times(map_root, ti);
   gpu_stream_id_map_stream_process(&(map_root->streams),
-                                   device_id, context_id, stream_id, fn, ti);
+				   stream_id, fn, ti);
 }
 
 
