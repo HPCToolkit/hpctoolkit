@@ -62,7 +62,7 @@ typedef struct gpu_trace_channel_t gpu_trace_channel_t;
 
 
 //******************************************************************************
-// interface operations 
+// interface operations
 //******************************************************************************
 
 thread_data_t *
@@ -82,7 +82,7 @@ gpu_trace_channel_get_stream_id
 gpu_trace_channel_t *
 gpu_trace_channel_alloc
 (
- gpu_tag_t tag
+ void
 );
 
 
