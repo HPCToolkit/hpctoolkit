@@ -295,6 +295,8 @@ typedef enum {
 	"GPU simd lanes lost due to scalar instructions")   \
   macro(GPU_INST_METRIC_NAME ": LAT(cycles)", GPU_INST_LATENCY,	\
 	"GPU instruction latency")  \
+  macro(GPU_INST_METRIC_NAME ": LAT_BLAME(cycles)", GPU_INST_LATENCY_BLAME,	\
+	"GPU instruction latency blame")  \
   macro(GPU_INST_METRIC_NAME ": COV_LAT(cycles)", GPU_INST_COVERED_LATENCY,	\
 	"GPU covered latency")  \
   macro(GPU_INST_METRIC_NAME ": UNCOV_LAT(cycles)", GPU_INST_UNCOVERED_LATENCY,	\
