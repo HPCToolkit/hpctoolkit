@@ -285,8 +285,6 @@ typedef enum {
 #define FORALL_GPU_INST(macro)			\
   macro(GPU_INST_METRIC_NAME ":EXC_CNT", GPU_INST_EXEC_COUNT,	\
 	"GPU instruction/basic-block execution count")  \
-  macro(GPU_INST_METRIC_NAME ": LAT(cycles)", GPU_INST_LATENCY,	\
-	"GPU instruction latency")  \
   macro(GPU_INST_METRIC_NAME ": ACT_SIMD", GPU_INST_ACT_SIMD_LANES,	\
 	"GPU active simd lanes")  \
   macro(GPU_INST_METRIC_NAME ": WAST_SIMD", GPU_INST_WASTE_SIMD_LANES,	\
@@ -295,6 +293,8 @@ typedef enum {
 	"GPU total simd lanes")   \
   macro(GPU_INST_METRIC_NAME ": SIMD_SCLR_LOSS", GPU_INST_SCALAR_SIMD_LOSS,	\
 	"GPU simd lanes lost due to scalar instructions")   \
+  macro(GPU_INST_METRIC_NAME ": LAT(cycles)", GPU_INST_LATENCY,	\
+	"GPU instruction latency")  \
   macro(GPU_INST_METRIC_NAME ": COV_LAT(cycles)", GPU_INST_COVERED_LATENCY,	\
 	"GPU covered latency")  \
   macro(GPU_INST_METRIC_NAME ": UNCOV_LAT(cycles)", GPU_INST_UNCOVERED_LATENCY,	\
