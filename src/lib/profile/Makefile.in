@@ -159,6 +159,7 @@ am__objects_1 = stdshim/libHPCprofile_la-shared_mutex.lo \
 	sinks/libHPCprofile_la-hpctracedb2.lo \
 	sinks/libHPCprofile_la-packed.lo \
 	sinks/libHPCprofile_la-experimentxml4.lo \
+	sinks/libHPCprofile_la-sparsedb.lo \
 	finalizers/libHPCprofile_la-struct.lo \
 	finalizers/libHPCprofile_la-directclassification.lo \
 	finalizers/libHPCprofile_la-denseids.lo
@@ -578,6 +579,7 @@ MYSOURCES = \
 	sources/hpcrun.cpp sources/packed.cpp sources/hpcrun4.cpp \
 	\
 	sinks/hpctracedb2.cpp sinks/packed.cpp sinks/experimentxml4.cpp \
+	sinks/sparsedb.cpp \
 	\
 	finalizers/struct.cpp finalizers/directclassification.cpp \
 	finalizers/denseids.cpp
@@ -715,6 +717,8 @@ sinks/libHPCprofile_la-packed.lo: sinks/$(am__dirstamp) \
 	sinks/$(DEPDIR)/$(am__dirstamp)
 sinks/libHPCprofile_la-experimentxml4.lo: sinks/$(am__dirstamp) \
 	sinks/$(DEPDIR)/$(am__dirstamp)
+sinks/libHPCprofile_la-sparsedb.lo: sinks/$(am__dirstamp) \
+	sinks/$(DEPDIR)/$(am__dirstamp)
 finalizers/$(am__dirstamp):
 	@$(MKDIR_P) finalizers
 	@: > finalizers/$(am__dirstamp)
@@ -778,6 +782,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@sinks/$(DEPDIR)/libHPCprofile_la-experimentxml4.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sinks/$(DEPDIR)/libHPCprofile_la-hpctracedb2.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sinks/$(DEPDIR)/libHPCprofile_la-packed.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sinks/$(DEPDIR)/libHPCprofile_la-sparsedb.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sources/$(DEPDIR)/libHPCprofile_la-hpcrun.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sources/$(DEPDIR)/libHPCprofile_la-hpcrun4.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sources/$(DEPDIR)/libHPCprofile_la-packed.Plo@am__quote@
@@ -1005,6 +1010,13 @@ sinks/libHPCprofile_la-experimentxml4.lo: sinks/experimentxml4.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='sinks/experimentxml4.cpp' object='sinks/libHPCprofile_la-experimentxml4.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_la_CXXFLAGS) $(CXXFLAGS) -c -o sinks/libHPCprofile_la-experimentxml4.lo `test -f 'sinks/experimentxml4.cpp' || echo '$(srcdir)/'`sinks/experimentxml4.cpp
+
+sinks/libHPCprofile_la-sparsedb.lo: sinks/sparsedb.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_la_CXXFLAGS) $(CXXFLAGS) -MT sinks/libHPCprofile_la-sparsedb.lo -MD -MP -MF sinks/$(DEPDIR)/libHPCprofile_la-sparsedb.Tpo -c -o sinks/libHPCprofile_la-sparsedb.lo `test -f 'sinks/sparsedb.cpp' || echo '$(srcdir)/'`sinks/sparsedb.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) sinks/$(DEPDIR)/libHPCprofile_la-sparsedb.Tpo sinks/$(DEPDIR)/libHPCprofile_la-sparsedb.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='sinks/sparsedb.cpp' object='sinks/libHPCprofile_la-sparsedb.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_la_CXXFLAGS) $(CXXFLAGS) -c -o sinks/libHPCprofile_la-sparsedb.lo `test -f 'sinks/sparsedb.cpp' || echo '$(srcdir)/'`sinks/sparsedb.cpp
 
 finalizers/libHPCprofile_la-struct.lo: finalizers/struct.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_la_CXXFLAGS) $(CXXFLAGS) -MT finalizers/libHPCprofile_la-struct.lo -MD -MP -MF finalizers/$(DEPDIR)/libHPCprofile_la-struct.Tpo -c -o finalizers/libHPCprofile_la-struct.lo `test -f 'finalizers/struct.cpp' || echo '$(srcdir)/'`finalizers/struct.cpp

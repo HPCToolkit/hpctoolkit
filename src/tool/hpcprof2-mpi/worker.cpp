@@ -47,7 +47,6 @@
 #include "lib/profile/util/vgannotations.hpp"
 
 #include "tree.hpp"
-#include "sparse.hpp"
 #include "../hpcprof2/args.hpp"
 
 #include "lib/profile/pipeline.hpp"
@@ -55,6 +54,7 @@
 #include "lib/profile/packedids.hpp"
 #include "lib/profile/sinks/packed.hpp"
 #include "lib/profile/sinks/hpctracedb2.hpp"
+#include "lib/profile/sinks/sparsedb.hpp"
 #include "lib/profile/finalizers/denseids.hpp"
 #include "lib/profile/finalizers/directclassification.hpp"
 #include "lib/profile/transformer.hpp"
@@ -181,18 +181,16 @@ int rankN(ProfArgs&& args) {
     MetricReceiver::append(pipelineB2, tree, cmap, stash);
 
     // We only emit our part of the MetricDB and TraceDB.
-    std::unique_ptr<SparseDB> sdb;
     switch(args.format) {
     case ProfArgs::Format::sparse:
       if(args.include_traces)
         pipelineB2 << make_unique_x<sinks::HPCTraceDB2>(args.output);
-      pipelineB2 << *(sdb = make_unique_x<SparseDB>(args.output, args.threads));
+      pipelineB2 << make_unique_x<sinks::SparseDB>(args.output, args.threads);
       break;
     }
 
     ProfilePipeline pipeline(std::move(pipelineB2), args.threads);
     pipeline.run();
-    if(sdb) sdb->merge(args.threads, args.sparse_debug);
 
     if(args.valgrindUnclean) {
       mpi::World::finalize();

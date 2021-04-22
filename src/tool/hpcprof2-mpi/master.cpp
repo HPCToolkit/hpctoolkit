@@ -47,7 +47,6 @@
 #include "lib/profile/util/vgannotations.hpp"
 
 #include "tree.hpp"
-#include "sparse.hpp"
 #include "../hpcprof2/args.hpp"
 
 #include "lib/profile/pipeline.hpp"
@@ -56,6 +55,7 @@
 #include "lib/profile/sources/packed.hpp"
 #include "lib/profile/sinks/experimentxml4.hpp"
 #include "lib/profile/sinks/hpctracedb2.hpp"
+#include "lib/profile/sinks/sparsedb.hpp"
 #include "lib/profile/finalizers/denseids.hpp"
 #include "lib/profile/finalizers/directclassification.hpp"
 #include "lib/profile/transformer.hpp"
@@ -167,17 +167,15 @@ int rank0(ProfArgs&& args) {
   MetricReceiver::append(pipelineB, tree, cmap);
 
   // Finally, eventually we get to actually write stuff out.
-  std::unique_ptr<SparseDB> sdb;
   switch(args.format) {
   case ProfArgs::Format::sparse: {
     std::unique_ptr<sinks::HPCTraceDB2> tdb;
     if(args.include_traces)
       tdb = make_unique_x<sinks::HPCTraceDB2>(args.output);
-    sdb = make_unique_x<SparseDB>(args.output, args.threads);
-    auto exml = make_unique_x<sinks::ExperimentXML4>(args.output, args.include_sources,
-                                                     tdb.get());
-    pipelineB << std::move(tdb) << std::move(exml);
-    if(sdb) pipelineB << *sdb;
+    pipelineB << make_unique_x<sinks::ExperimentXML4>(args.output, args.include_sources,
+                                                      tdb.get());
+    pipelineB << std::move(tdb);
+    pipelineB << make_unique_x<sinks::SparseDB>(args.output, args.threads);
 
     // ExperimentXML doesn't support instruction-level metrics, so we need a
     // line-merging transformer. Since this only changes the Scope, we don't
@@ -191,7 +189,6 @@ int rank0(ProfArgs&& args) {
   // Create and drain the Pipeline, that's all we do.
   ProfilePipeline pipeline(std::move(pipelineB), args.threads);
   pipeline.run();
-  if(sdb) sdb->merge(args.threads, args.sparse_debug);
 
   if(args.valgrindUnclean) {
     mpi::World::finalize();

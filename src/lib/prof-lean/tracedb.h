@@ -103,6 +103,9 @@ typedef struct tracedb_hdr_t{
 int 
 tracedb_hdr_fwrite(tracedb_hdr_t* hdr, FILE* fs);
 
+char*
+tracedb_hdr_swrite(tracedb_hdr_t* hdr, char* buf);
+
 int
 tracedb_hdr_fread(tracedb_hdr_t* hdr, FILE* infs);
 
@@ -125,7 +128,10 @@ typedef struct trace_hdr_t{
 int 
 trace_hdr_fwrite(trace_hdr_t x, FILE* fs);
 
-int 
+char*
+trace_hdr_swrite(trace_hdr_t x, char* buf);
+
+int
 trace_hdr_fread(trace_hdr_t* x, FILE* fs);
 
 int 

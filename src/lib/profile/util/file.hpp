@@ -54,22 +54,35 @@
 
 namespace hpctoolkit::util {
 
+namespace detail {
+struct FileImpl;
+struct FileInstanceImpl;
+}
+
 /// This represents a file available for access on the filesystem.
 class File final {
 public:
   class Instance;
 
-  /// Create a File for the given path. Acts as an MPI synchronization point.
-  /// If `create` is true and the exists, it will be cleared.
+  /// Create a File for the given path. May delay the creation of the file until
+  /// synchronize().
+  /// If `create` is true and the file already exists, it will be cleared.
   File(stdshim::filesystem::path, bool create) noexcept;
-  ~File() = default;
+  ~File();
 
   File(const File&) = delete;
   File& operator=(const File&) = delete;
-  File(File&&) = default;
-  File& operator=(File&&) = default;
+  File(File&&);
+  File& operator=(File&&);
+
+  /// Synchronize this File's state between MPI ranks and the filesystem.
+  /// This should be called once and only once per File.
+  /// Acts as an MPI sychronization point.
+  // MT: Externally Synchronized
+  void synchronize() noexcept;
 
   /// Open the File, potentially for write access. Read access is always implied.
+  /// Only valid after synchronize() has been called for this File.
   // MT: Internally Synchronized
   Instance open(bool writable, bool mapped) const noexcept {
     return Instance(*this, writable, mapped);
@@ -80,13 +93,13 @@ public:
   class Instance final {
   public:
     /// Constructs an empty Instance.
-    Instance() : data(nullptr) {};
+    Instance();
     ~Instance();
 
     Instance(const Instance&) = delete;
     Instance& operator=(const Instance&) = delete;
-    Instance(Instance&&) = default;
-    Instance& operator=(Instance&&) = default;
+    Instance(Instance&&);
+    Instance& operator=(Instance&&);
 
     /// Read a block of bytes from the given file offset, into the given buffer.
     /// Throws a fatal error on I/O errors.
@@ -96,17 +109,21 @@ public:
     /// Throws a fatal error on I/O errors.
     void writeat(std::uint_fast64_t offset, std::size_t size, const void* data) noexcept;
 
+    /// Wrapper for writeat for things like std::array and std::vector
+    template<class T>
+    void writeat(std::uint_fast64_t offset, const T& data) noexcept {
+      return writeat(offset, data.size(), data.data());
+    }
+
   private:
     friend class File;
     Instance(const File&, bool, bool) noexcept;
 
-    // The actual implementation is decided at link time, so the needed internal
-    // size is not known. So we allocate a void* for ease of use.
-    std::unique_ptr<void, std::function<void(void*)>> data;
+    std::unique_ptr<detail::FileInstanceImpl> impl;
   };
 
 private:
-  std::unique_ptr<void, std::function<void(void*)>> data;
+  std::unique_ptr<detail::FileImpl> impl;
 };
 
 }

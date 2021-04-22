@@ -879,6 +879,10 @@ int
 hpctrace_fmt_datum_fwrite(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
 			  FILE* outfs);
 
+char*
+hpctrace_fmt_datum_swrite(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
+			  char* buf);
+
 int
 hpctrace_fmt_datum_fprint(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
 			  FILE* fs);

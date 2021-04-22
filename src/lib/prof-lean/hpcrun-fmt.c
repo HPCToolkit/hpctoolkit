@@ -1518,6 +1518,18 @@ hpctrace_fmt_datum_fwrite(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
   return HPCFMT_OK;
 }
 
+char*
+hpctrace_fmt_datum_swrite(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
+			  char* buf)
+{
+  buf = hpcfmt_int8_swrite(x->comp, buf);
+  buf = hpcfmt_int4_swrite(x->cpId, buf);
+  if (HPCTRACE_HDR_FLAGS_GET_BIT(flags, HPCTRACE_HDR_FLAGS_DATA_CENTRIC_BIT_POS)) {
+    buf = hpcfmt_int4_swrite(x->metricId, buf);
+  }
+  return buf;
+}
+
 
 int
 hpctrace_fmt_datum_fprint(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,

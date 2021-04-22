@@ -173,6 +173,38 @@ hpcio_beX_fwrite(uint8_t* val, size_t size, FILE* fs);
 
 //***************************************************************************
 
+// hpcio_beX_swrite: Write 'X' number of bytes from 'val' to the
+// big-endian buffer 'buf', correctly ordering the bytes before
+// writing.  Returns an offset to the next byte after those written.
+
+char*
+hpcio_be2_sread(uint16_t val, char* buf);
+
+char*
+hpcio_be4_sread(uint32_t val, char* buf);
+
+char*
+hpcio_be8_sread(uint64_t val, char* buf);
+
+char*
+hpcio_beX_sread(uint8_t* val, size_t size, char* buf);
+
+
+char*
+hpcio_be2_swrite(uint16_t val, char* buf);
+
+char*
+hpcio_be4_swrite(uint32_t val, char* buf);
+
+char*
+hpcio_be8_swrite(uint64_t val, char* buf);
+
+char*
+hpcio_beX_swrite(uint8_t* val, size_t size, char* buf);
+
+
+//***************************************************************************
+
 #if defined(__cplusplus)
 } /* extern "C" */
 #endif
