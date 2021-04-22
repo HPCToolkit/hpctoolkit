@@ -140,8 +140,7 @@ struct DefUseTransformer : public ProfileTransformer {
         }
         if(targets.empty()) return cr;
         if(targets.size() == 1) {
-          cr = sink.context(cr, s);
-          return cr;
+          return targets.front().target;
         }
         return sink.superposContext(cr, std::move(targets));
       }
@@ -149,6 +148,8 @@ struct DefUseTransformer : public ProfileTransformer {
     return cr;
   }
 };
+
+
 /// Transformer for expanding `point` Contexts with Classification data.
 struct ClassificationTransformer : public ProfileTransformer {
   ClassificationTransformer() = default;
