@@ -240,6 +240,7 @@ kernel_param_map_delete
   kernel_param_map_entry_t *node = st_delete(&map_root, kernel_id);
   if (!node) {
     // This kernel could have no params or clReleaseKernel has been called more than once
+    spinlock_unlock(&kernel_param_map_lock);
     return;
   }
   // clear all nodes inside node->kp_list

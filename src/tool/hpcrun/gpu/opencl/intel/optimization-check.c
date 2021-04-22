@@ -217,6 +217,10 @@ areKernelParamsAliased
     i.intelOptKind = KERNEL_PARAMS_NOT_ALIASED;
     record_intel_optimization_metrics(cct_node, &i);
   }
+  // this check happens during kernel execution.
+  // after a kernel is executed, new params could be added for the kernel
+  // so we need to clear the previously set params
+  clearKernelParams(kernel);
 }
 
 
