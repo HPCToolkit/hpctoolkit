@@ -478,6 +478,7 @@ void Metric::prefinalize(Thread::Temporary& t) noexcept {
                 else if(auto tc = std::get_if<SuperpositionedContext>(vb[idx]))
                   cur.value = t.sp_data[*tc][*dm].point.load(std::memory_order_relaxed);
                 else abort();  // unreachable
+                cur.value *= g.begin->get().factor;
                 totalValue += cur.value;
               }
               next.push_front(cur);
