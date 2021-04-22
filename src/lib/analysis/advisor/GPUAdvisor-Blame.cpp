@@ -49,6 +49,8 @@ using std::string;
 #define DEBUG_GPUADVISOR 0
 #define DEBUG_GPUADVISOR_DETAILS 0
 
+#define DEBUG_FALSE_POSITIVE 0
+
 #define MAX2(x, y) (x > y ? x : y)
 
 namespace Analysis {
@@ -359,13 +361,17 @@ void GPUAdvisor::debugInstDepGraph() {
   }
 }
 
-void GPUAdvisor::debugInstBlames(InstBlames &inst_blames) {
+void GPUAdvisor::debugInstBlames(int mpi_rank, int thread_id, InstBlames &inst_blames) {
+  auto inst_exe_pred_index =
+      _metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_exe_pred_metric);
+
   // <blame_id, blame_sum>
   double lat_blame_sum = 0.0;
   double stall_blame_sum = 0.0;
   double lat_mem_blame_sum = 0.0;
   double lat_exec_blame_sum = 0.0;
   double lat_exec_sche_blame_sum = 0.0;
+
   for (auto &inst_blame : inst_blames) {
     lat_blame_sum += inst_blame.lat_blame;
     stall_blame_sum += inst_blame.stall_blame;
@@ -388,14 +394,41 @@ void GPUAdvisor::debugInstBlames(InstBlames &inst_blames) {
   std::cout << "sche " << lat_exec_sche_blame_sum << " ("
             << static_cast<double>(lat_exec_sche_blame_sum) / lat_blame_sum * 100 << "%)" << std::endl;
 
+  double lat_false_positive_sum = 0.0;
+  if (DEBUG_FALSE_POSITIVE) {
+    for (auto &inst_blame : inst_blames) {
+      auto vma = inst_blame.src_inst->pc;
+      auto *prof_node = _vma_prop_map.at(vma).prof_node;
+
+      if (prof_node != NULL && prof_node->demandMetric(inst_exe_pred_index) == 0) {
+        if (inst_blame.src_block == inst_blame.src_function->blocks.back()) {
+          // Skip last block
+          continue;
+        }
+
+        lat_false_positive_sum += inst_blame.lat_blame;
+
+        std::cout << "false positive: ";
+        std::cout << debugInstOffset(inst_blame.src_inst->pc) << " -> ";
+        std::cout << inst_blame.blame_name << ": " << inst_blame.lat_blame << "("
+                  << static_cast<double>(inst_blame.lat_blame) / lat_blame_sum * 100
+                  << "%, "
+                  << static_cast<double>(inst_blame.stall_blame) / stall_blame_sum * 100 << "%)"
+                  << std::endl;
+      }
+    }
+  }
+
+  std::cout << "Total false positive " << lat_false_positive_sum << " ("
+            << static_cast<double>(lat_false_positive_sum) / lat_blame_sum * 100 << "%)" << std::endl;
+
   if (DEBUG_GPUADVISOR_DETAILS) {
     for (auto &inst_blame : inst_blames) {
       std::cout << debugInstOffset(inst_blame.src_inst->pc) << " -> "
                 << debugInstOffset(inst_blame.dst_inst->pc) << ", ";
       std::cout << inst_blame.blame_name << ": " << inst_blame.lat_blame << "("
                 << static_cast<double>(inst_blame.lat_blame) / lat_blame_sum * 100
-                << "%"
-                   ", "
+                << "%, "
                 << static_cast<double>(inst_blame.stall_blame) / stall_blame_sum * 100 << "%)"
                 << std::endl;
     }
@@ -452,6 +485,10 @@ void GPUAdvisor::initCCTDepGraph(int mpi_rank, int thread_id,
 
   auto inst_exe_pred_index =
       _metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_exe_pred_metric);
+
+  if (DEBUG_FALSE_POSITIVE) {
+    inst_exe_pred_index = -1;
+  }
 
   std::vector<std::pair<Prof::CCT::ADynNode *, Prof::CCT::ADynNode *>> edge_vec;
   // Insert all possible edges
@@ -1296,68 +1333,72 @@ double GPUAdvisor::computeEfficiency(int mpi_rank, int thread_id, CudaParse::Ins
                                      Prof::CCT::ADynNode *node) {
   double efficiency = 0.0;
 
-  if (inst->op.find("MEMORY") != std::string::npos) {
-    if (inst->op.find(".SHARED") != std::string::npos) {
-      // smem
-      auto smem_load_trans_index =
-          _metric_name_prof_map->metric_id(mpi_rank, thread_id, _smem_load_trans_metric);
-      auto smem_load_trans_theor_index =
-          _metric_name_prof_map->metric_id(mpi_rank, thread_id, _smem_load_trans_theor_metric);
-      auto smem_store_trans_index =
-          _metric_name_prof_map->metric_id(mpi_rank, thread_id, _smem_store_trans_metric);
-      auto smem_store_trans_theor_index =
-          _metric_name_prof_map->metric_id(mpi_rank, thread_id, _smem_store_trans_theor_metric);
+  if (DEBUG_FALSE_POSITIVE) {
+    efficiency = 1.0;
+  } else {
+    if (inst->op.find("MEMORY") != std::string::npos) {
+      if (inst->op.find(".SHARED") != std::string::npos) {
+        // smem
+        auto smem_load_trans_index =
+            _metric_name_prof_map->metric_id(mpi_rank, thread_id, _smem_load_trans_metric);
+        auto smem_load_trans_theor_index =
+            _metric_name_prof_map->metric_id(mpi_rank, thread_id, _smem_load_trans_theor_metric);
+        auto smem_store_trans_index =
+            _metric_name_prof_map->metric_id(mpi_rank, thread_id, _smem_store_trans_metric);
+        auto smem_store_trans_theor_index =
+            _metric_name_prof_map->metric_id(mpi_rank, thread_id, _smem_store_trans_theor_metric);
 
-      auto smem_load_trans = node->demandMetric(smem_load_trans_index);
-      auto smem_load_trans_theor = node->demandMetric(smem_load_trans_theor_index);
-      auto smem_store_trans = node->demandMetric(smem_store_trans_index);
-      auto smem_store_trans_theor = node->demandMetric(smem_store_trans_theor_index);
+        auto smem_load_trans = node->demandMetric(smem_load_trans_index);
+        auto smem_load_trans_theor = node->demandMetric(smem_load_trans_theor_index);
+        auto smem_store_trans = node->demandMetric(smem_store_trans_index);
+        auto smem_store_trans_theor = node->demandMetric(smem_store_trans_theor_index);
 
-      auto trans = smem_load_trans + smem_store_trans;
-      auto trans_theor = smem_load_trans_theor + smem_store_trans_theor;
+        auto trans = smem_load_trans + smem_store_trans;
+        auto trans_theor = smem_load_trans_theor + smem_store_trans_theor;
 
-      efficiency = (trans_theor == 0) ? 1.0 : trans_theor / trans;
-    } else {
-      // gmem
-      auto gmem_cache_load_trans_index =
-          _metric_name_prof_map->metric_id(mpi_rank, thread_id, _gmem_cache_load_trans_metric);
-      auto gmem_cache_load_trans_theor_index = _metric_name_prof_map->metric_id(
-          mpi_rank, thread_id, _gmem_cache_load_trans_theor_metric);
-      auto gmem_uncache_load_trans_index =
-          _metric_name_prof_map->metric_id(mpi_rank, thread_id, _gmem_uncache_load_trans_metric);
-      auto gmem_uncache_load_trans_theor_index = _metric_name_prof_map->metric_id(
-          mpi_rank, thread_id, _gmem_uncache_load_trans_theor_metric);
-      auto gmem_cache_store_trans_index =
-          _metric_name_prof_map->metric_id(mpi_rank, thread_id, _gmem_cache_store_trans_metric);
-      auto gmem_cache_store_trans_theor_index = _metric_name_prof_map->metric_id(
-          mpi_rank, thread_id, _gmem_cache_store_trans_theor_metric);
+        efficiency = (trans_theor == 0) ? 1.0 : trans_theor / trans;
+      } else {
+        // gmem
+        auto gmem_cache_load_trans_index =
+            _metric_name_prof_map->metric_id(mpi_rank, thread_id, _gmem_cache_load_trans_metric);
+        auto gmem_cache_load_trans_theor_index = _metric_name_prof_map->metric_id(
+            mpi_rank, thread_id, _gmem_cache_load_trans_theor_metric);
+        auto gmem_uncache_load_trans_index =
+            _metric_name_prof_map->metric_id(mpi_rank, thread_id, _gmem_uncache_load_trans_metric);
+        auto gmem_uncache_load_trans_theor_index = _metric_name_prof_map->metric_id(
+            mpi_rank, thread_id, _gmem_uncache_load_trans_theor_metric);
+        auto gmem_cache_store_trans_index =
+            _metric_name_prof_map->metric_id(mpi_rank, thread_id, _gmem_cache_store_trans_metric);
+        auto gmem_cache_store_trans_theor_index = _metric_name_prof_map->metric_id(
+            mpi_rank, thread_id, _gmem_cache_store_trans_theor_metric);
 
-      // global or tex
-      // If tex, trans may equal 0
-      auto gmem_cache_load_trans = node->demandMetric(gmem_cache_load_trans_index);
-      auto gmem_cache_load_trans_theor = node->demandMetric(gmem_cache_load_trans_theor_index);
-      auto gmem_uncache_load_trans = node->demandMetric(gmem_uncache_load_trans_index);
-      auto gmem_uncache_load_trans_theor = node->demandMetric(gmem_uncache_load_trans_theor_index);
-      auto gmem_cache_store_trans = node->demandMetric(gmem_cache_store_trans_index);
-      auto gmem_cache_store_trans_theor = node->demandMetric(gmem_cache_store_trans_theor_index);
+        // global or tex
+        // If tex, trans may equal 0
+        auto gmem_cache_load_trans = node->demandMetric(gmem_cache_load_trans_index);
+        auto gmem_cache_load_trans_theor = node->demandMetric(gmem_cache_load_trans_theor_index);
+        auto gmem_uncache_load_trans = node->demandMetric(gmem_uncache_load_trans_index);
+        auto gmem_uncache_load_trans_theor = node->demandMetric(gmem_uncache_load_trans_theor_index);
+        auto gmem_cache_store_trans = node->demandMetric(gmem_cache_store_trans_index);
+        auto gmem_cache_store_trans_theor = node->demandMetric(gmem_cache_store_trans_theor_index);
 
-      auto trans = gmem_cache_load_trans + gmem_cache_store_trans + gmem_uncache_load_trans;
-      auto trans_theor = gmem_cache_load_trans_theor + gmem_cache_store_trans_theor +
-                         gmem_uncache_load_trans_theor;
+        auto trans = gmem_cache_load_trans + gmem_cache_store_trans + gmem_uncache_load_trans;
+        auto trans_theor = gmem_cache_load_trans_theor + gmem_cache_store_trans_theor +
+                           gmem_uncache_load_trans_theor;
 
-      efficiency = (trans_theor == 0) ? 1.0 : trans_theor / trans;
+        efficiency = (trans_theor == 0) ? 1.0 : trans_theor / trans;
+      }
+    } else if (inst->op.find(".BRANCH") != std::string::npos) {
+      // branch
+      auto branch_div_index =
+          _metric_name_prof_map->metric_id(mpi_rank, thread_id, _branch_div_metric);
+      auto branch_exe_index =
+          _metric_name_prof_map->metric_id(mpi_rank, thread_id, _branch_exe_metric);
+
+      auto div = node->demandMetric(branch_div_index);
+      auto exe = node->demandMetric(branch_exe_index);
+
+      efficiency = (exe == 0) ? 1.0 : 1 - div / exe;
     }
-  } else if (inst->op.find(".BRANCH") != std::string::npos) {
-    // branch
-    auto branch_div_index =
-        _metric_name_prof_map->metric_id(mpi_rank, thread_id, _branch_div_metric);
-    auto branch_exe_index =
-        _metric_name_prof_map->metric_id(mpi_rank, thread_id, _branch_exe_metric);
-
-    auto div = node->demandMetric(branch_div_index);
-    auto exe = node->demandMetric(branch_exe_index);
-
-    efficiency = (exe == 0) ? 1.0 : 1 - div / exe;
   }
 
   return efficiency;
@@ -1371,7 +1412,7 @@ double GPUAdvisor::computePredTrue(int mpi_rank, int thread_id, CudaParse::Instr
   auto inst_exe_pred_index =
       _metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_exe_pred_metric);
 
-  if (inst_exe_index != -1) {
+  if (!DEBUG_FALSE_POSITIVE && inst_exe_index != -1) {
     auto exe = node->demandMetric(inst_exe_index);
     auto exe_pred = node->demandMetric(inst_exe_pred_index);
 
@@ -1398,6 +1439,10 @@ void GPUAdvisor::blameCCTDepGraph(int mpi_rank, int thread_id,
 
   auto inst_exe_pred_index =
       _metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_exe_pred_metric);
+
+  if (DEBUG_FALSE_POSITIVE) {
+    inst_exe_pred_index = -1;
+  }
 
   for (auto iter = cct_dep_graph.nodeBegin(); iter != cct_dep_graph.nodeEnd(); ++iter) {
     auto *to_node = *iter;
@@ -1849,7 +1894,9 @@ void GPUAdvisor::blame(CCTBlames &cct_blames) {
 
       // 2.5 Branch constraints
       if (_metric_name_prof_map->metric_id(mpi_rank, thread_id, _inst_exe_metric) != -1) {
-        pruneCCTDepGraphBranch(mpi_rank, thread_id, cct_dep_graph, cct_edge_path_map);
+        if (!DEBUG_FALSE_POSITIVE) {
+          pruneCCTDepGraphBranch(mpi_rank, thread_id, cct_dep_graph, cct_edge_path_map);
+        }
 
         if (DEBUG_GPUADVISOR_DETAILS) {
           std::cout << "CCT no path: " << std::endl;
@@ -1875,15 +1922,15 @@ void GPUAdvisor::blame(CCTBlames &cct_blames) {
       InstBlames inst_blames;
       blameCCTDepGraph(mpi_rank, thread_id, cct_dep_graph, cct_edge_path_map, inst_blames);
 
-      if (DEBUG_GPUADVISOR) {
-        std::cout << "Inst blames: " << std::endl;
-        debugInstBlames(inst_blames);
-        std::cout << std::endl;
-      }
-
       // 5. Overlay blames
       auto &kernel_blame = cct_blames[mpi_rank][thread_id];
       overlayInstBlames(inst_blames, kernel_blame);
+
+      if (DEBUG_GPUADVISOR) {
+        std::cout << "Inst blames: " << std::endl;
+        debugInstBlames(mpi_rank, thread_id, inst_blames);
+        std::cout << std::endl;
+      }
     }
   }
 }
