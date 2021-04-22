@@ -989,7 +989,7 @@ onKernelComplete
         }
       }
     }
-#if 0
+
     // cleanup
     if (simd_knob) {
       curr_s = shead;
@@ -1005,7 +1005,7 @@ onKernelComplete
         curr_s = next_s;
       }
     }
-#endif
+
     // scalar simd loss
     uint64_t bb_total_simd_lanes = 0, scalar_simd_loss = 0;
 
