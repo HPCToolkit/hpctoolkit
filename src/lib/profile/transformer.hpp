@@ -138,24 +138,11 @@ struct DefUseTransformer : public ProfileTransformer {
           ContextRef ctx = sink.context(cr, {mo.first, edge.first});
           targets.push_back({{ctx}, ctx, path_length_inv});
         }
-#if 0
-        auto routes = c.getRoutes(mo.second);
-        if(routes.empty()) return cr;
-        if(routes.size() == 1) {
-          for(const auto& s: routes.front()) cr = sink.context(cr, s);
+        if(targets.empty()) return cr;
+        if(targets.size() == 1) {
+          cr = sink.context(cr, s);
           return cr;
         }
-
-        std::vector<SuperpositionedContext::Target> paths;
-        paths.reserve(routes.size());
-        for(const auto& r: routes) {
-          paths.push_back({{}, cr});
-          for(const auto& s: r) {
-            paths.back().target = sink.context(paths.back().target, s);
-            paths.back().route.emplace_back(sink.context(cr, s, true));
-          }
-        }
-#endif
         return sink.superposContext(cr, std::move(targets));
       }
     }

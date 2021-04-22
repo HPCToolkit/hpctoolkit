@@ -77,7 +77,7 @@ static std::unique_ptr<T> make_unique_x(Args&&... args) {
 }
 
 int rank0(ProfArgs&& args) {
-  sleep(10);
+  //sleep(10);
   // We only have one Pipeline, this is its builder.
   ProfilePipeline::Settings pipelineB;
   for(auto& sp: args.sources) pipelineB << std::move(sp.first);
@@ -114,10 +114,9 @@ int rank0(ProfArgs&& args) {
   // Now that Modules will be Classified during Finalization, add a Transformer
   // to expand the Contexts as they enter the Pipe.
   RouteExpansionTransformer retrans;
-  ClassificationTransformer ctrans;
   DefUseTransformer dutrans;
-  pipelineB << retrans << ctrans;
-  pipelineB << dutrans;
+  ClassificationTransformer ctrans;
+  pipelineB << retrans << dutrans << ctrans;
 
   // Ids for everything are pulled from the void. We call the shots here.
   finalizers::DenseIds dids;
