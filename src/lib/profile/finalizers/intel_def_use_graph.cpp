@@ -387,19 +387,27 @@ void IntelDefUseGraphClassification::createDefUseEdges
             if (c._def_use_graph.find(from) == c._def_use_graph.end()) {
               path_length = 1;
             } else {
-              std::vector<std::pair<uint64_t, uint32_t>> &from_incoming_edges = c._def_use_graph[from];
+              std::map<uint64_t, uint32_t> &from_incoming_edges = c._def_use_graph[from];
               for (auto edge: from_incoming_edges) {
                 if (edge.second > path_length) {
                   path_length = edge.second;
                 }
               }
             }
-            c._def_use_graph[to].push_back(std::pair(from, path_length + 1));
+            c._def_use_graph[to][from] = path_length + 1;
           }
         }
       }
     }
   }
+  std::cout << "def-use graph begin" << std::endl;
+  for (auto iter: c._def_use_graph) {
+    int to = iter.first;
+    for (auto from: iter.second) {
+      std::cout << from.first << " -> " << to << std::endl;
+    }
+  }
+  std::cout << "def-use graph end" << std::endl;
 }
 
 

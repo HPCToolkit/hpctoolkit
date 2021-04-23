@@ -366,7 +366,9 @@ getIntelInstructionStat
     // (Src RgnVt, RgnWi, RgnHz) are succesfully determined.
     // Otherwise returns -1.
     int32_t status = kv.getSrcRegion(offset, i, &vertStride, &width, &horzStride);
-    assert(status == 0);
+    if (status != 0) {
+      continue;
+    }
 
 #if DEBUG
     iga::Kind srcRegKind = kv.getSrcRegKind(offset, i);
@@ -408,28 +410,29 @@ getIntelInstructionStat
     // (DstRgnHz) is succesfully returned.
     // Otherwise returns -1.
     int32_t status = kv.getDstRegion(offset, &horzStride);
-    assert(status == 0);
-    int elementSize = getElementSize(dstDataType);
+    if (status == 0) {
+      int elementSize = getElementSize(dstDataType);
 
-    dsts.resize(execSize * elementSize);
-    int channel = 0;
-    int base1 = (dstRegNo << 5) + dstSubRegNo * elementSize;
-    for (int x=0; x < execSize; x++) {
-      int addr_x = base1;
-      for (int y=0;y<elementSize;y++) {
-        dsts[channel++] = addr_x + y;
+      dsts.resize(execSize * elementSize);
+      int channel = 0;
+      int base1 = (dstRegNo << 5) + dstSubRegNo * elementSize;
+      for (int x=0; x < execSize; x++) {
+        int addr_x = base1;
+        for (int y=0;y<elementSize;y++) {
+          dsts[channel++] = addr_x + y;
+        }
+        base1 += (horzStride * elementSize);
       }
-      base1 += (horzStride * elementSize);
-    }
 
 #if DEBUG
-  iga::Kind dstRegKind = kv.getDstRegKind(offset);
-    std::cout << "\ndstRegNo: " << dstRegNo << ", subregister: " << dstSubRegNo
-      << ", DataType: " << getIGATypeString(dstDataType)
-      << ", RegType: " << getRegNameString(dstRegType)
-      << ", RegKind: " << getKindString(dstRegKind)
-      << ", execSize: " << execSize << std::endl;
+      iga::Kind dstRegKind = kv.getDstRegKind(offset);
+      std::cout << "\ndstRegNo: " << dstRegNo << ", subregister: " << dstSubRegNo
+        << ", DataType: " << getIGATypeString(dstDataType)
+        << ", RegType: " << getRegNameString(dstRegType)
+        << ", RegKind: " << getKindString(dstRegKind)
+        << ", execSize: " << execSize << std::endl;
 #endif
+    }
   } else {
     // To be considered: How to deal with writes to ARF registers?
   }
