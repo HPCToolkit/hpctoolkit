@@ -1,3 +1,4 @@
+#if 0
 // -*-Mode: C++;-*-
 
 // * BeginRiceCopyright *****************************************************
@@ -1192,3 +1193,4 @@ void IntelAdvisor::write() {
         "</HPCToolkitExperiment>\n" << std::flush;
   
 }
+#endif

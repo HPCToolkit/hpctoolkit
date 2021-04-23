@@ -86,9 +86,7 @@ MYSOURCES = \
 	Util.hpp Util.cpp \
 	TextUtil.hpp TextUtil.cpp \
 	\
-	MetricNameProfMap.cpp \
-	advisor/intel/GPUAdvisor-Init.cpp \
-	advisor/intel/GPUAdvisor-Blame.cpp
+	MetricNameProfMap.cpp
 
 # GNU binutils flags are needed for HPCLIB_ISA.
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @BINUTILS_IFLAGS@
