@@ -200,7 +200,7 @@ private:
   // for edge i->j: <offset for node j, vec<pair(offset for node i, path_length_inv)>>
 
 public:
-  std::map<uint64_t , std::vector<std::pair<uint64_t, uint32_t>>> _def_use_graph;
+  std::map<uint64_t , std::map<uint64_t, uint32_t>> _def_use_graph;
 };
 
 // Just a simple load module class, nothing to see here

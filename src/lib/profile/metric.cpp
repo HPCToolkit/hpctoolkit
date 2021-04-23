@@ -407,6 +407,7 @@ void Metric::prefinalize(Thread::Temporary& t) noexcept {
       for(const auto& ma: d->citerate()) {
         const Metric& cm = ma.first;
         if(cm.name() == "GINS:EXC_CNT" || cm.name() == "GINS") {
+          util::log::debug{true} << "Distributor metric: " << cm.name() ; 
           if(!m) m = cm;
           else if(&*m != &cm)
             util::log::fatal{} << "Multiple distributing Metrics in the same Context: "
@@ -461,7 +462,9 @@ void Metric::prefinalize(Thread::Temporary& t) noexcept {
           for(; cur.end != g.end; cur.end++) {
             const auto& vb = cur.begin->get().route;
             const auto& ve = cur.end->get().route;
-            if(vb.size() <= idx && ve.size() <= idx) continue;
+            if(vb.size() <= idx && ve.size() <= idx) {
+              continue;
+            }
             if(vb.size() <= idx) {
               next.push_front(cur);
               nextCnt++;
@@ -473,6 +476,7 @@ void Metric::prefinalize(Thread::Temporary& t) noexcept {
                 else if(&*distributor != &*dm)
                   util::log::fatal{} << "Multiple distributing Metrics under the same Superposition:"
                     << distributor->name() << " != " << dm->name();
+                util::log::debug{true} << "Distributor metric: " << distributor->name() ; 
                 if(auto tc = std::get_if<Context>(vb[idx]))
                   cur.value = t.data[*tc][*dm].point.load(std::memory_order_relaxed);
                 else if(auto tc = std::get_if<SuperpositionedContext>(vb[idx]))
@@ -484,6 +488,7 @@ void Metric::prefinalize(Thread::Temporary& t) noexcept {
               next.push_front(cur);
               nextCnt++;
               cur.begin = cur.end;
+            } else {
             }
           }
         }
@@ -591,18 +596,30 @@ void Metric::finalize(Thread::Temporary& t) noexcept {
   util::optional_ref<const Context> global;
   std::unordered_map<util::reference_index<const Context>,
     std::unordered_set<util::reference_index<const Context>>> children;
-  for(const auto& cx: t.data.citerate()) {
-    std::reference_wrapper<const Context> c = cx.first;
-    while(auto p = c.get().direct_parent()) {
-      auto x = children.insert({*p, {}});
-      x.first->second.emplace(c.get());
-      if(!x.second) break;
-      c = *p;
-    }
-    if(!c.get().direct_parent()) {
-      assert((!global || global == &c.get()) && "Multiple root contexts???");
-      assert(c.get().scope().type() == Scope::Type::global && "Root context without (global) Scope!");
-      global = c.get();
+  {
+    std::vector<std::reference_wrapper<const Context>> newContexts;
+    newContexts.reserve(t.data.size());
+    for(const auto& cx: t.data.citerate()) newContexts.emplace_back(cx.first.get());
+    while(!newContexts.empty()) {
+      decltype(newContexts) next;
+      next.reserve(newContexts.size());
+      for(const Context& c: newContexts) {
+        if(c.direct_parent() == nullptr) {
+          //util::log::debug{true} << "scope: " << c.scope() << ", address: " << &c;
+          if(global == decltype(global)(c)) continue;
+          if(global) {
+            util::log::fatal{} << "Multiple root contexts???";
+          }
+          global = c;
+          continue;
+        }
+        auto x = children.emplace(*c.direct_parent(),
+                                  decltype(children)::mapped_type{});
+        if(x.second) next.push_back(*c.direct_parent());
+        x.first->second.emplace(c);
+      }
+      next.shrink_to_fit();
+      newContexts = std::move(next);
     }
   }
   if(!global) return;  // Apparently there's nothing to propagate

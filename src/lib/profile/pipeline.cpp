@@ -547,8 +547,12 @@ ContextRef Source::context(ContextRef p, const Scope& s, bool recurse) {
   ContextRef res = p;
   Scope rs = s;
   for(std::size_t i = 0; i < pipe->transformers.size(); i++)
-    if(recurse || i != tskip)
-      res = pipe->transformers[i].get().context(res, rs);
+    if(recurse || i != tskip) {
+      // res = pipe->transformers[i].get().context(res, rs);
+      auto x = pipe->transformers[i].get().context(res, rs);
+      if (x.second) return x.first;
+      res = x.first;
+    }
 
   auto newCtx = [&](ContextRef p, const Scope& s) -> ContextRef {
     if(auto pcc = std::get_if<Context, const CollaboratorRoot>(p))
