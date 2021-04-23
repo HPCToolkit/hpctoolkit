@@ -53,6 +53,7 @@
 #include <algorithm>
 #include <sstream>
 #include <limits>
+#include <iostream>
 
 using namespace hpctoolkit;
 using namespace sinks;
