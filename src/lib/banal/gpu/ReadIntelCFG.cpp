@@ -90,6 +90,18 @@
 #define MAX_STR_SIZE 1024
 #define INTEL_GPU_DEBUG_SECTION_NAME "Intel(R) OpenCL Device Debug"
 
+
+
+//******************************************************************************
+// local definitions
+//******************************************************************************
+
+static bool latency_blame_enabled = false;
+
+
+
+//******************************************************************************
+
 using namespace Dyninst;
 using namespace ParseAPI;
 using namespace SymtabAPI;
@@ -512,9 +524,14 @@ parseIntelCFG
     block_offset_map[offset] = block;
 
     auto size = kv.getInstSize(offset);
-    auto *inst_stat = getIntelInstructionStat(kv, offset);
-    auto *inst = new GPUParse::IntelInst(offset, size, inst_stat);
-    block->insts.push_back(inst);
+    GPUParse::Inst *inst;
+    if (latency_blame_enabled) {
+      auto *inst_stat = getIntelInstructionStat(kv, offset);
+      inst = new GPUParse::IntelInst(offset, size, inst_stat);
+    } else {
+      inst = new GPUParse::IntelInst(offset, size);
+    }
+    block->insts.push_back(std::move(inst));
 
     while (!kv.isInstTarget(offset + size) && (offset + size < text_section_size)) {
       offset += size;  
@@ -535,7 +552,7 @@ parseIntelCFG
       assert(length > 0);
       auto *inst_stat = getIntelInstructionStat(kv, offset);
       inst = new GPUParse::IntelInst(offset, size, inst_stat);
-      block->insts.push_back(inst);
+      block->insts.push_back(std::move(inst));
     }
 
     if (kv.getOpcode(offset) == iga::Op::CALL || kv.getOpcode(offset) == iga::Op::CALLA) {
@@ -670,6 +687,16 @@ readIntelCFG
   *code_obj = new CodeObject(*code_src, NULL, NULL, false, true);
 
   return false;
+}
+
+
+void
+enable_latency_blame
+(
+ void 
+)
+{
+  latency_blame_enabled = true;
 }
 
 #endif // ENABLE_IGC

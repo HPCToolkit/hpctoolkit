@@ -17,9 +17,12 @@ class PARSER_EXPORT GPUBlock : public Block {
 
   virtual void getInsns(Insns &insns) const;
 
+  virtual void enable_latency_blame();
+
  private:
   std::vector<GPUParse::Inst *> _insts;
   Architecture _arch;
+  bool latency_blame_enabled = false;
 };
 
 }

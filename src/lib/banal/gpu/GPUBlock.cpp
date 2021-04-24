@@ -16,6 +16,7 @@
 
 
 
+//******************************************************************************
 
 namespace Dyninst {
 namespace ParseAPI {
@@ -93,13 +94,9 @@ appendOperandstoInst
 
 GPUBlock::GPUBlock(CodeObject * o, CodeRegion * r,
   Address start, Address end, Address last, 
-  std::vector<GPUParse::Inst *> insts,
+  std::vector<GPUParse::Inst*> insts,
   Dyninst::Architecture arch) :
-  Block(o, r, start, end, last),  _arch(arch) {
-    for (auto *inst: insts) {
-      _insts.push_back(inst);
-    }
-  }
+  Block(o, r, start, end, last), _insts(std::move(insts)), _arch(arch) {}
 
 #if 0
 Address GPUBlock::last() const {
@@ -110,16 +107,22 @@ Address GPUBlock::last() const {
 
 void GPUBlock::getInsns(Insns &insns) const {
   unsigned char dummy_inst[MAX_INST_SIZE];
-//#ifdef DYNINST_SUPPORTS_INTEL_GPU
+#ifdef DYNINST_SUPPORTS_INTEL_GPU
   entryID entry_id = _entry_ids_max_;
+  
+  if (_arch == Arch_cuda) {
+    entry_id = cuda_op_general;
+  } else if (_arch == Arch_intelGen9) {
+    entry_id = intel_gpu_op_general;
+  }
+
+  // Don't construct CFG if Dyninst does not support this GPU arch
+  if (entry_id == _entry_ids_max_) {
+    return;
+  }
+#endif  // DYNINST_SUPPORTS_INTEL_GPU
 
   for (auto &ins : _insts) {
-    entryID entry_id = intel_gpu_op_general;
-
-    const std::string &op_class = ins->inst_stat->op;
-    if (op_class.find("CALL") != std::string::npos) {
-      entry_id = intel_gpu_op_call;
-    }
 
     auto offset = ins->offset;
     auto size = ins->size;
@@ -131,11 +134,18 @@ void GPUBlock::getInsns(Insns &insns) const {
     InstructionAPI::Operation op;
 #endif
 
+    std::cout << "offset3: " << offset << ", size3: " << size << std::endl;
     InstructionAPI::Instruction inst(op, size, dummy_inst, _arch);
-    appendOperandstoInst(ins, inst);
+    if (latency_blame_enabled) {
+      appendOperandstoInst(ins, inst);
+    }
     insns.emplace(offset, inst);
   }
 }
 
+
+void GPUBlock::enable_latency_blame() {
+  latency_blame_enabled = true;
+}
 }
 }

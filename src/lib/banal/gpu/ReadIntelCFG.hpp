@@ -111,4 +111,11 @@ readIntelCFG
  Dyninst::ParseAPI::CodeObject **code_obj
 );
 
+
+void
+enable_latency_blame
+(
+ void 
+);
+
 #endif
