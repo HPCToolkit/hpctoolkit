@@ -315,8 +315,9 @@ sliceIntelInstructions
   // Prepare pass: create instruction cache for slicing
   Dyninst::AssignmentConverter ac(true, false);
   Dyninst::Slicer::InsnCache dyn_inst_cache;
+  int threads = 16; // what is the best value to set, and the right way to set it
 
-  // can be run in parallel
+#pragma omp parallel for schedule(dynamic) firstprivate(ac, dyn_inst_cache) num_threads(threads)
   for (size_t i = 0; i < block_vec.size(); ++i) {
     ParseAPI::GPUBlock *dyn_block = block_vec[i].first;
     auto *dyn_func = block_vec[i].second;
