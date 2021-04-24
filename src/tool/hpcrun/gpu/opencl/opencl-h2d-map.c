@@ -110,7 +110,7 @@ typedef struct typed_splay_node(correlation_id) {
 
   uint64_t corr_id;
   size_t size;
-  opencl_object_t *cb_info
+  opencl_object_t *cb_info;
 } typed_splay_node(correlation_id); 
 
 

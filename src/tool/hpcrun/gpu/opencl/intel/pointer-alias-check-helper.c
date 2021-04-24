@@ -5,6 +5,7 @@
 
 #include <stdio.h> 
 #include <stdlib.h> 
+#include <string.h>                         // memset
 
 
 
@@ -27,6 +28,14 @@ typedef struct Node {
   bool isStart; 
   struct Node* next; 
 } Node; 
+
+
+
+//******************************************************************************
+// macros
+//******************************************************************************
+
+#define DEBUG 0
 
 
 
@@ -154,6 +163,8 @@ static void FrontBackSplit(struct Node* source,
   slow->next = NULL; 
 } 
 
+
+#if DEBUG
 /* Function to print nodes in a given linked list */
 static void printList(struct Node* node) 
 { 
@@ -163,6 +174,8 @@ static void printList(struct Node* node)
   }
   printf("\n"); 
 } 
+#endif
+
 
 /* Function to insert a node at the beginging of the linked list */
 static void push(struct Node** head_ref, Node new_data) 

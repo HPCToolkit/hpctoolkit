@@ -60,7 +60,7 @@
 typedef struct kernel_param_map_entry_t kernel_param_map_entry_t;
 
 typedef struct kp_node_t {
-  void *mem;
+  const void *mem;
   size_t size;
   struct kp_node_t *next;
 } kp_node_t;
@@ -82,7 +82,7 @@ kernel_param_map_entry_t*
 kernel_param_map_insert
 (
  uint64_t, 
- void *, 
+ const void *, 
  size_t
 );
 

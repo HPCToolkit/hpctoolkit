@@ -81,6 +81,7 @@
 #include <hpcrun/gpu/gpu-monitoring-thread-api.h>
 #include <hpcrun/utilities/hpcrun-nanotime.h>
 #include <hpcrun/gpu/opencl/opencl-api.h>
+#include <hpcrun/gpu/opencl/opencl-kernel-loadmap-map.h>
 
 #include <lib/prof-lean/crypto-hash.h>
 #include <lib/prof-lean/spinlock.h>
@@ -179,16 +180,6 @@ initializeInstrumentation
   }
 
   atomic_store(&correlation_id, 100000000);  // to avoid conflict with opencl operation correlation ids, we start instrumentation ids with 5000 (TODO(Aaron):FIX)
-}
-
-
-static uint64_t
-getCorrelationId
-(
- void
-)
-{
-  return atomic_fetch_add(&correlation_id, 1);
 }
 
 

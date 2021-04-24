@@ -73,7 +73,7 @@ record_intel_optimization_metrics
 void
 isQueueInInOrderExecutionMode
 (
-	cl_command_queue_properties *properties
+	const cl_command_queue_properties *properties
 )
 {
   // if properties is not specified an in-order host command queue is created for the specified device
@@ -191,7 +191,7 @@ void
 recordKernelParams
 (
  cl_kernel kernel,
- void *mem,
+ const void *mem,
  size_t size
 )
 {

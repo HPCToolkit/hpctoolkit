@@ -87,6 +87,7 @@
 #include <lib/prof-lean/usec_time.h>
 
 #include "opencl-api.h"
+#include "opencl-api-wrappers.h"
 #include "opencl-activity-translate.h"
 #include "opencl-memory-manager.h"
 #include "opencl-h2d-map.h"
@@ -210,10 +211,10 @@ OPENCL_CONTEXT_FN
 (
   clCreateContext,
   (
-   cl_context_properties *properties,
+   const cl_context_properties *properties,
    cl_uint num_devices,
    const cl_device_id *devices,
-   void *pfn_notify (const char *errinfo, const void *private_info, size_t cb, void *user_data),
+   void (CL_CALLBACK* pfn_notify) (const char *errinfo, const void *private_info, size_t cb, void *user_data),
    void *user_data,
    cl_int *errcode_ret
   )
@@ -1169,6 +1170,7 @@ getKernelModuleId
   cl_int status = clGetKernelInfo (ocl_kernel, CL_KERNEL_FUNCTION_NAME, 0, NULL, &kernel_name_size);
   char kernel_name[kernel_name_size];
   status = clGetKernelInfo (ocl_kernel, CL_KERNEL_FUNCTION_NAME, kernel_name_size, kernel_name, NULL);
+  assert(status == CL_SUCCESS);
   uint64_t kernel_name_id = get_numeric_hash_id_for_string(kernel_name, kernel_name_size);
   opencl_kernel_loadmap_map_entry_t *e = opencl_kernel_loadmap_map_lookup(kernel_name_id);
   return opencl_kernel_loadmap_map_entry_module_id_get(e);
