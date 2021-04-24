@@ -134,7 +134,6 @@ void GPUBlock::getInsns(Insns &insns) const {
     InstructionAPI::Operation op;
 #endif
 
-    std::cout << "offset3: " << offset << ", size3: " << size << std::endl;
     InstructionAPI::Instruction inst(op, size, dummy_inst, _arch);
     if (latency_blame_enabled) {
       appendOperandstoInst(ins, inst);
