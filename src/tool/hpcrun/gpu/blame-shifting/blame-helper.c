@@ -3,6 +3,7 @@
 //******************************************************************************
 
 #include <stdbool.h>												// bool
+#include <math.h>												    // pow
 
 
 
@@ -25,6 +26,7 @@
 
 #define NEXT(node) node->next
 #define SYNC 0
+#define DEBUG 0
 
 
 
@@ -61,6 +63,7 @@ static Node *node_free_list = NULL;
 // linkedlist sort functions: https://www.geeksforgeeks.org/quicksort-on-singly-linked-list/
 //******************************************************************************
 
+#if DEBUG
 /* A utility function to print linked list */
 static void
 printList
@@ -74,6 +77,7 @@ printList
   }
   printf("\n");
 }
+#endif
 
 
 static Node*

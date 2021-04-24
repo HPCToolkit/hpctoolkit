@@ -470,11 +470,9 @@ void IntelDefUseGraphClassification::module(const Module& m, Classification& c) 
     close(fd);
 #endif
 
-    const char *delimiter1 = "n=\"";
-    const char *delimiter2 = ".gpubin";
+    const char *delimiter1 = ".gpubin";
     std::cout << mpath_str << std::endl;
-    //size_t delim1_loc = mpath_str.find(delimiter1);
-    size_t delim2_loc = mpath_str.find(delimiter2);
+    size_t delim2_loc = mpath_str.find(delimiter1);
     std::string filePath = mpath_str.substr(0, delim2_loc + 7);
     std::cout << "filePath: " << filePath << std::endl;
 

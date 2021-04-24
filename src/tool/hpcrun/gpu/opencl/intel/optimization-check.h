@@ -24,7 +24,7 @@
 void
 isQueueInInOrderExecutionMode
 (
-	cl_command_queue_properties *properties
+	const cl_command_queue_properties *properties
 );
 
 
@@ -62,7 +62,7 @@ void
 recordKernelParams
 (
  cl_kernel kernel,
- void *mem,
+ const void *mem,
  size_t size
 );
 

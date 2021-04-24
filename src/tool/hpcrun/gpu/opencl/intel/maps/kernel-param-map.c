@@ -205,7 +205,7 @@ kernel_param_map_entry_t*
 kernel_param_map_insert
 (
  uint64_t kernel_id, 
- void *mem, 
+ const void *mem, 
  size_t size
 )
 {

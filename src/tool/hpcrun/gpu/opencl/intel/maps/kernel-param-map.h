@@ -90,7 +90,7 @@ kernel_param_map_entry_t*
 kernel_param_map_insert
 (
  uint64_t, 
- void *, 
+ const void *, 
  size_t
 );
 
