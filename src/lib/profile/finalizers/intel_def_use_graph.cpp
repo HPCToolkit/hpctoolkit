@@ -58,7 +58,7 @@
 #include <lib/banal/gpu/GPUCFGFactory.hpp>          // GPUCFGFactory
 #include <lib/banal/gpu/GPUCodeSource.hpp>          // GPUCodeSource
 #include <lib/banal/gpu/ReadIntelCFG.hpp>           // parseIntelCFG, addCustomFunctionObject
-#include <lib/analysis/advisor/intel/GPUAdvisor.hpp>
+#include <lib/banal/gpu/GPUBlock.hpp>
 
 #include "lib/support-lean/demangle.h"
 #include "pipeline.hpp"
@@ -305,10 +305,10 @@ sliceIntelInstructions
       }    
     }    
   }
-  std::vector<std::pair<Dyninst::ParseAPI::Block *, Dyninst::ParseAPI::Function *>> block_vec;
+  std::vector<std::pair<Dyninst::ParseAPI::GPUBlock *, Dyninst::ParseAPI::Function *>> block_vec;
   for (auto dyn_func : func_set) {
     for (auto *dyn_block : dyn_func->blocks()) {
-      block_vec.emplace_back(dyn_block, dyn_func);
+      block_vec.emplace_back(static_cast<Dyninst::ParseAPI::GPUBlock*>(dyn_block), dyn_func);
     }
   }
 
@@ -318,11 +318,12 @@ sliceIntelInstructions
 
   // can be run in parallel
   for (size_t i = 0; i < block_vec.size(); ++i) {
-    auto *dyn_block = block_vec[i].first;
+    ParseAPI::GPUBlock *dyn_block = block_vec[i].first;
     auto *dyn_func = block_vec[i].second;
     auto func_addr = dyn_func->addr();
 
     Dyninst::ParseAPI::Block::Insns insns;
+    dyn_block->enable_latency_blame();
     dyn_block->getInsns(insns);
 
     for (auto &inst_iter : insns) {
@@ -423,6 +424,7 @@ void IntelDefUseGraphClassification::createBackwardSlicingInput
   if (symtab == NULL) {
     return;
   }
+  enable_latency_blame();
   auto function_name = elfFile->getGPUKernelName();
   addCustomFunctionObject(function_name, symtab); //adds a dummy function object
   GPUParse::Function function(0, function_name);
