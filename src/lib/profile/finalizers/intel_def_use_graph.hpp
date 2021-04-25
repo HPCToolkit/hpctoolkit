@@ -48,8 +48,6 @@
 #define HPCTOOLKIT_PROFILE_FINALIZERS_INTEL_DEF_USE_GRAPH_H
 
 #include "../finalizer.hpp"
-#include <lib/binutils/ElfHelper.hpp>               // ElfFile
-#include <lib/banal/gpu/DotCFG.hpp>                 // GPUParse
 
 namespace hpctoolkit::finalizers {
 
@@ -57,8 +55,6 @@ namespace hpctoolkit::finalizers {
 // itself. This handles the little details.
 class IntelDefUseGraphClassification final : public ProfileFinalizer {
 public:
-  // `dwarfThreshold` is in the units of bytes.
-  // If dwarfThreshold == std::numeric_limits<uintmax_t>::max(), no limit.
   IntelDefUseGraphClassification();
 
   ExtensionClass provides() const noexcept override { return ExtensionClass::classification; }
@@ -66,11 +62,8 @@ public:
   void module(const Module&, Classification&) noexcept override;
 
 private:
-  //uintmax_t dwarfThreshold;
-  //void fullDwarf(void* dw, const Module&, Classification&);
-  //void symtab(void* elf, const Module&, Classification&);
-  void createBackwardSlicingInput(ElfFile *elfFile, char *text_section, size_t text_section_size, Classification& c);
-  void createDefUseEdges(std::vector<GPUParse::Function *> functions, Classification& c);
+  void readDefUseGraphEdges(std::string fileName, Classification& c);
+
 };
 
 }

@@ -83,23 +83,6 @@ enum SHT_OPENCL : uint32_t {
 // interface functions
 //******************************************************************************
 
-void 
-addCustomFunctionObject
-(
- const std::string &func_obj_name,
- Dyninst::SymtabAPI::Symtab *symtab
-);
-
-
-void
-parseIntelCFG
-(
- char *text_section,
- int text_section_size,
- GPUParse::Function &function
-);
-
-
 bool
 readIntelCFG
 (
