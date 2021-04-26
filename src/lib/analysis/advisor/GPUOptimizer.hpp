@@ -103,6 +103,7 @@ struct InstructionBlame {
   double stall_blame;
   double lat_blame;
   // TODO(Keren): only care about src efficiency
+  // TODO(Keren): use std::optional in the furture
   double efficiency;
   double pred_true;
   std::string blame_name;

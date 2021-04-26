@@ -258,7 +258,7 @@ class GPUAdvisor {
 
   void debugCCTDepGraphSinglePath(CCTGraph<Prof::CCT::ADynNode *> &cct_dep_graph);
 
-  void debugInstBlames(int mpi_rank, int thread_id, InstBlames &inst_blames);
+  void debugInstBlames(InstBlames &inst_blames);
 
  private:
   std::string _inst_metric;
