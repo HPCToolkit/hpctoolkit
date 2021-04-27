@@ -41,8 +41,8 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef kernel_queue_map_h
-#define kernel_queue_map_h
+#ifndef kernel_context_map_h
+#define kernel_context_map_h
 
 
 //*****************************************************************************
@@ -57,13 +57,12 @@
 // type definitions 
 //*****************************************************************************
 
-typedef struct kernel_queue_map_entry_t kernel_queue_map_entry_t;
+typedef struct kernel_context_map_entry_t kernel_context_map_entry_t;
 
-typedef struct qc_node_t {
-  uint64_t queue_id;
+typedef struct context_node_t {
   uint64_t context_id;
-  struct qc_node_t *next;
-} qc_node_t;
+  struct context_node_t *next;
+} context_node_t;
 
 
 
@@ -71,41 +70,40 @@ typedef struct qc_node_t {
 // interface operations
 //*****************************************************************************
 
-kernel_queue_map_entry_t *
-kernel_queue_map_lookup
+kernel_context_map_entry_t *
+kernel_context_map_lookup
 (
  uint64_t
 );
 
 
-kernel_queue_map_entry_t*
-kernel_queue_map_insert
+kernel_context_map_entry_t*
+kernel_context_map_insert
 (
- uint64_t, 
  uint64_t, 
  uint64_t
 );
 
 
 void
-kernel_queue_map_delete
+kernel_context_map_delete
 (
  uint64_t
 );
 
 
 uint64_t
-kernel_queue_map_entry_kernel_id_get
+kernel_context_map_entry_kernel_id_get
 (
- kernel_queue_map_entry_t *entry
+ kernel_context_map_entry_t *entry
 );
 
 
-qc_node_t*
-kernel_queue_map_entry_qc_list_get
+context_node_t*
+kernel_context_map_entry_qc_list_get
 (
- kernel_queue_map_entry_t *entry
+ kernel_context_map_entry_t *entry
 );
 
-#endif  // kernel_queue_map_h
+#endif  // kernel_context_map_h
 

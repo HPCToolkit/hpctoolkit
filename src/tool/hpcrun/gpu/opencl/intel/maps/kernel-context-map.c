@@ -58,7 +58,7 @@
 #include <hpcrun/gpu/gpu-splay-allocator.h>
 #include <hpcrun/memory/hpcrun-malloc.h>    // hpcrun_malloc_safe
 
-#include "kernel-queue-map.h"
+#include "kernel-context-map.h"
 
 
 
@@ -69,22 +69,22 @@
 #define DEBUG 0
 
 #define st_insert				\
-  typed_splay_insert(queue)
+  typed_splay_insert(context)
 
 #define st_lookup				\
-  typed_splay_lookup(queue)
+  typed_splay_lookup(context)
 
 #define st_delete				\
-  typed_splay_delete(queue)
+  typed_splay_delete(context)
 
 #define st_forall				\
-  typed_splay_forall(queue)
+  typed_splay_forall(context)
 
 #define st_count				\
-  typed_splay_count(queue)
+  typed_splay_count(context)
 
 #define st_alloc(free_list)			\
-  typed_splay_alloc(free_list, kernel_queue_map_entry_t)
+  typed_splay_alloc(free_list, kernel_context_map_entry_t)
 
 #define st_free(free_list, node)		\
   typed_splay_free(free_list, node)
@@ -96,26 +96,26 @@
 //*****************************************************************************
 
 #undef typed_splay_node
-#define typed_splay_node(queue) kernel_queue_map_entry_t
+#define typed_splay_node(context) kernel_context_map_entry_t
 
-typedef struct typed_splay_node(queue) {
-  struct typed_splay_node(queue) *left;
-  struct typed_splay_node(queue) *right;
+typedef struct typed_splay_node(context) {
+  struct typed_splay_node(context) *left;
+  struct typed_splay_node(context) *right;
   uint64_t kernel_id; // key
 
-  qc_node_t *qc_list;
-} typed_splay_node(queue); 
+  context_node_t *context_list;
+} typed_splay_node(context); 
 
 
 //******************************************************************************
 // local data
 //******************************************************************************
 
-static kernel_queue_map_entry_t *map_root = NULL;
-static kernel_queue_map_entry_t *free_list = NULL;
+static kernel_context_map_entry_t *map_root = NULL;
+static kernel_context_map_entry_t *free_list = NULL;
 
-static qc_node_t *qc_node_free_list = NULL;
-static spinlock_t kernel_queue_map_lock = SPINLOCK_UNLOCKED;
+static context_node_t *qc_node_free_list = NULL;
+static spinlock_t kernel_context_map_lock = SPINLOCK_UNLOCKED;
 
 
 
@@ -123,46 +123,46 @@ static spinlock_t kernel_queue_map_lock = SPINLOCK_UNLOCKED;
 // private operations
 //*****************************************************************************
 
-typed_splay_impl(queue)
+typed_splay_impl(context)
 
 
-static kernel_queue_map_entry_t *
-kernel_queue_map_entry_alloc()
+static kernel_context_map_entry_t *
+kernel_context_map_entry_alloc()
 {
   return st_alloc(&free_list);
 }
 
 
-static kernel_queue_map_entry_t *
-kernel_queue_map_entry_new
+static kernel_context_map_entry_t *
+kernel_context_map_entry_new
 (
  uint64_t kernel_id
 )
 {
-  kernel_queue_map_entry_t *e = kernel_queue_map_entry_alloc();
+  kernel_context_map_entry_t *e = kernel_context_map_entry_alloc();
 
   e->kernel_id = kernel_id;
-  e->qc_list = NULL;
+  e->context_list = NULL;
   
   return e;
 }
 
 
-static qc_node_t*
+static context_node_t*
 qc_node_alloc_helper
 (
- qc_node_t **free_list
+ context_node_t **free_list
 )
 {
-  qc_node_t *first = *free_list; 
+  context_node_t *first = *free_list; 
 
   if (first) { 
     *free_list = first->next;
   } else {
-    first = (qc_node_t *) hpcrun_malloc_safe(sizeof(qc_node_t));
+    first = (context_node_t *) hpcrun_malloc_safe(sizeof(context_node_t));
   }
 
-  memset(first, 0, sizeof(qc_node_t));
+  memset(first, 0, sizeof(context_node_t));
   return first;
 }
 
@@ -170,8 +170,8 @@ qc_node_alloc_helper
 static void
 qc_node_free_helper
 (
- qc_node_t **free_list, 
- qc_node_t *node 
+ context_node_t **free_list, 
+ context_node_t *node 
 )
 {
   node->next = *free_list;
@@ -184,65 +184,77 @@ qc_node_free_helper
 // interface operations
 //*****************************************************************************
 
-kernel_queue_map_entry_t *
-kernel_queue_map_lookup
+kernel_context_map_entry_t *
+kernel_context_map_lookup
 (
  uint64_t kernel_id
 )
 {
-  spinlock_lock(&kernel_queue_map_lock);
+  spinlock_lock(&kernel_context_map_lock);
 
   uint64_t id = kernel_id;
-  kernel_queue_map_entry_t *result = st_lookup(&map_root, id);
+  kernel_context_map_entry_t *result = st_lookup(&map_root, id);
 
-  spinlock_unlock(&kernel_queue_map_lock);
+  spinlock_unlock(&kernel_context_map_lock);
 
   return result;
 }
 
 
 // called on clEnqueueNDRangeKernel
-kernel_queue_map_entry_t*
-kernel_queue_map_insert
+kernel_context_map_entry_t*
+kernel_context_map_insert
 (
  uint64_t kernel_id, 
- uint64_t queue_id, 
  uint64_t context_id
 )
 {
-  spinlock_lock(&kernel_queue_map_lock);
+  spinlock_lock(&kernel_context_map_lock);
 
-  kernel_queue_map_entry_t *entry = st_lookup(&map_root, kernel_id);
+  kernel_context_map_entry_t *entry = st_lookup(&map_root, kernel_id);
   if (!entry) {
-    entry = kernel_queue_map_entry_new(kernel_id);
+    entry = kernel_context_map_entry_new(kernel_id);
     st_insert(&map_root, entry);
-    entry->qc_list = NULL;
+    entry->context_list = NULL;
   }
 
-  qc_node_t *node = qc_node_alloc_helper(&qc_node_free_list);
-  node->queue_id = queue_id;
-  node->context_id = context_id;
-  node->next = entry->qc_list;
-  entry->qc_list = node;
+  bool isContextPresent = false;
+  context_node_t *c_curr = entry->context_list;
+  while (c_curr) {
+    if (c_curr->context_id == context_id) {
+      isContextPresent = true;
+      break;
+    }
+    c_curr = c_curr->next;
+  }
 
-  spinlock_unlock(&kernel_queue_map_lock);
+  if (isContextPresent) {
+    spinlock_unlock(&kernel_context_map_lock);
+    return NULL;
+  }
+  context_node_t *node = qc_node_alloc_helper(&qc_node_free_list);
+  node->context_id = context_id;
+  node->next = entry->context_list;
+  entry->context_list = node;
+
+  spinlock_unlock(&kernel_context_map_lock);
   return entry;
 }
 
 
 // called on clReleaseKernel
 void
-kernel_queue_map_delete
+kernel_context_map_delete
 (
  uint64_t kernel_id
 )
 {
-  spinlock_lock(&kernel_queue_map_lock);
+  spinlock_lock(&kernel_context_map_lock);
   
-  kernel_queue_map_entry_t *node = st_delete(&map_root, kernel_id);
-  // clear all nodes inside node->qc_list
-  qc_node_t *qn = node->qc_list;
-  qc_node_t *next;
+  kernel_context_map_entry_t *node = st_delete(&map_root, kernel_id);
+  // clear all nodes inside node->context_list
+  context_node_t *qn = node->context_list;
+  context_node_t *next;
   while (qn) {
     next = qn->next;
     qc_node_free_helper(&qc_node_free_list, qn);
@@ -250,27 +262,27 @@ kernel_queue_map_delete
   }
   st_free(&free_list, node);
 
-  spinlock_unlock(&kernel_queue_map_lock);
+  spinlock_unlock(&kernel_context_map_lock);
 }
 
 
 uint64_t
-kernel_queue_map_entry_kernel_id_get
+kernel_context_map_entry_kernel_id_get
 (
- kernel_queue_map_entry_t *entry
+ kernel_context_map_entry_t *entry
 )
 {
   return entry->kernel_id;
 }
 
 
-qc_node_t*
-kernel_queue_map_entry_qc_list_get
+context_node_t*
+kernel_context_map_entry_qc_list_get
 (
- kernel_queue_map_entry_t *entry
+ kernel_context_map_entry_t *entry
 )
 {
-  return entry->qc_list;
+  return entry->context_list;
 }
 
 
@@ -280,7 +292,7 @@ kernel_queue_map_entry_qc_list_get
 //*****************************************************************************
 
 uint64_t
-kernel_queue_map_count
+kernel_context_map_count
 (
  void
 )
