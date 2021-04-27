@@ -74,7 +74,7 @@ namespace {
 
   // Helper: expands to the most read-friendly lock supported by a mutex.
   template<class M> using su_lock = typename std::conditional<
-    SharedMutex<M>::value, stdshim::shared_lock<M>, std::unique_lock<M>>::type;
+    SharedMutex<M>::value, std::shared_lock<M>, std::unique_lock<M>>::type;
 }
 
 /// A simple parallel wrapper around a std::unordered_map.
@@ -199,18 +199,18 @@ private:
     return {x.first->second, x.second};
   }
   template<class Mtx>
-  std::pair<V&, bool> opget(const K& k, V v, stdshim::shared_lock<Mtx>&& l) {
+  std::pair<V&, bool> opget(const K& k, V v, std::shared_lock<Mtx>&& l) {
     {
-      stdshim::shared_lock<Mtx> l2 = std::move(l);
+      std::shared_lock<Mtx> l2 = std::move(l);
       auto x = real.find(k);
       if(x != real.end()) return {x->second, false};
     }
     return opget(k, std::move(v), std::unique_lock<Mtx>(lock));
   }
   template<class Mtx>
-  std::pair<V&, bool> opget(K&& k, V v, stdshim::shared_lock<Mtx>&& l) {
+  std::pair<V&, bool> opget(K&& k, V v, std::shared_lock<Mtx>&& l) {
     {
-      stdshim::shared_lock<Mtx> l2 = std::move(l);
+      std::shared_lock<Mtx> l2 = std::move(l);
       auto x = real.find(k);
       if(x != real.end()) return {x->second, false};
     }
@@ -224,18 +224,18 @@ private:
     return {x.first->second, x.second};
   }
   template<class Mtx>
-  std::pair<V&, bool> opget(const K& k, stdshim::shared_lock<Mtx>&& l) {
+  std::pair<V&, bool> opget(const K& k, std::shared_lock<Mtx>&& l) {
     {
-      stdshim::shared_lock<Mtx> l2 = std::move(l);
+      std::shared_lock<Mtx> l2 = std::move(l);
       auto x = real.find(k);
       if(x != real.end()) return {x->second, false};
     }
     return opget(k, std::unique_lock<Mtx>(lock));
   }
   template<class Mtx>
-  std::pair<V&, bool> opget(K&& k, stdshim::shared_lock<Mtx>&& l) {
+  std::pair<V&, bool> opget(K&& k, std::shared_lock<Mtx>&& l) {
     {
-      stdshim::shared_lock<Mtx> l2 = std::move(l);
+      std::shared_lock<Mtx> l2 = std::move(l);
       auto x = real.find(k);
       if(x != real.end()) return {x->second, false};
     }
@@ -339,18 +339,18 @@ private:
     return {*x.first, x.second};
   }
   template<class Mtx>
-  std::pair<const K&, bool> opget(const K& k, stdshim::shared_lock<Mtx>&& l) {
+  std::pair<const K&, bool> opget(const K& k, std::shared_lock<Mtx>&& l) {
     {
-      stdshim::shared_lock<Mtx> l2 = std::move(l);
+      std::shared_lock<Mtx> l2 = std::move(l);
       auto x = real.find(k);
       if(x != real.end()) return {*x, false};
     }
     return opget(k, std::unique_lock<Mtx>(lock));
   }
   template<class Mtx>
-  std::pair<const K&, bool> opget(K&& k, stdshim::shared_lock<Mtx>&& l) {
+  std::pair<const K&, bool> opget(K&& k, std::shared_lock<Mtx>&& l) {
     {
-      stdshim::shared_lock<Mtx> l2 = std::move(l);
+      std::shared_lock<Mtx> l2 = std::move(l);
       auto x = real.find(k);
       if(x != real.end()) return {*x, false};
     }

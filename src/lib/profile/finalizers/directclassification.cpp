@@ -76,7 +76,7 @@ DirectClassification::DirectClassification(uintmax_t dt)
 // Search for an alternative debug file to load. Roughly copied from
 // dwarf_getalt, which is a rough copy of GDB's handling.
 static stdshim::filesystem::path altfile(const stdshim::filesystem::path& path, Elf* elf) {
-  stdshim::filesystemx::error_code ec;
+  std::error_code ec;
   path.lexically_normal();
 
   // Attempt 1: build-id
@@ -133,7 +133,10 @@ void DirectClassification::module(const Module& m, Classification& c) noexcept {
   const auto& rpath = m.userdata[sink.resolvedPath()];
   const auto& mpath = rpath.empty() ? m.path() : rpath;
   fd = open(mpath.c_str(), O_RDONLY);
-  if(fd == -1) return;  // Can't do anything if we can't open it.
+  if(fd == -1) {  // Can't do anything if we can't open it.
+    if(c.empty())
+      util::log::error{} << "Unable to find binary, no lexical information available for " << mpath.string();
+  }
 
   struct stat sbuf;
   fstat(fd, &sbuf);
@@ -153,10 +156,11 @@ void DirectClassification::module(const Module& m, Classification& c) noexcept {
   Dwarf* dbg = dwarf_begin_elf(elf, DWARF_C_READ, nullptr);
   if(dbg != nullptr) {
     if(dwarfThreshold == std::numeric_limits<uintmax_t>::max()
-       || baseweight < dwarfThreshold)
-      fullDwarf(dbg, m, c);
-    else util::log::warning{} << "Skipping DWARF for " << mpath.string() << ","
-      " over threshold (" << baseweight << " > " << dwarfThreshold << ")";
+       || baseweight < dwarfThreshold) {
+      if(!fullDwarf(dbg, m, c))
+        util::log::error{} << "Error parsing DWARF for " << mpath.string();
+    } else util::log::warning{} << "Skipping DWARF for " << mpath.string() << ","
+        " over threshold (" << baseweight << " > " << dwarfThreshold << ")";
     dwarf_end(dbg);
   } else {
     auto altpath = altfile(mpath, elf);
@@ -175,48 +179,39 @@ void DirectClassification::module(const Module& m, Classification& c) noexcept {
             " " << (baseweight + altweight) << " > " << dwarfThreshold << ")";
           dwarf_end(altdbg);
         }
-        close(fd);
+        close(altfd);
       }
     }
   }
 
-  symtab(elf, m, c);
+  if(!symtab(elf, m, c))
+    util::log::error{} << "Error parsing ELF symbols for " << mpath.string();
 
   elf_end(elf);
   close(fd);
 }
 
-void DirectClassification::symtab(void* elf_vp, const Module& m, Classification& c) {
-  Elf* elf = (Elf*)elf_vp;
-
-  if(elf_kind(elf) != ELF_K_ELF) return;
-  // TODO: Eventually accept 32-bit files too.
-  if(elf_getident(elf, nullptr)[EI_CLASS] != ELFCLASS64) {
-    util::log::warning()
-      << "Skipping symbol table extraction of non-64-bit ELF file "
-      << m.path().string() << ", excessive unknown procedures may ensue.\n";
-    return;
-  }
-
+template<class Elf_Shdr, class Elf_Sym, auto elf_getshdr>
+static bool parse(Elf* elf, const Module& m, Classification& c) {
   // Try our best to find the symbol table.
   Elf_Scn* s_symtab = nullptr;
   Elf_Scn* s_dynsym = nullptr;
   for(Elf_Scn* s = elf_nextscn(elf, nullptr); s != nullptr; s = elf_nextscn(elf, s)) {
-    Elf64_Shdr* hdr = elf64_getshdr(s);
+    Elf_Shdr* hdr = elf_getshdr(s);
     if(hdr->sh_type == SHT_SYMTAB) { s_symtab = s; break; }
     else if(hdr->sh_type == SHT_DYNSYM) { s_dynsym = s; }
   }
-  if(!s_symtab) s_symtab = s_dynsym;
-  if(!s_symtab) return;
-  Elf64_Shdr* sh_symtab = elf64_getshdr(s_symtab);
+  if(s_symtab == nullptr) s_symtab = s_dynsym;
+  if(s_symtab == nullptr) return false;
+  Elf_Shdr* sh_symtab = elf_getshdr(s_symtab);
 
   // Get handles for the contained data, so we can start working
   Elf_Data* symtab = elf_getdata(s_symtab, nullptr);
-  if(symtab == nullptr) return;  // Internal error
+  if(symtab == nullptr) return false;  // Internal error
 
   // Walk though the symbols
-  for(std::size_t off = 0; off < sh_symtab->sh_size; off += sizeof(Elf64_Sym)) {
-    Elf64_Sym* sym = (Elf64_Sym*)&((const char*)symtab->d_buf)[off];
+  for(std::size_t off = 0; off < sh_symtab->sh_size; off += sizeof(Elf_Sym)) {
+    Elf_Sym* sym = (Elf_Sym*)&((const char*)symtab->d_buf)[off];
     if(sym->st_size == 0) continue;  // Just skip over weird symbols
     Classification::Interval range(sym->st_value, sym->st_value + sym->st_size - 1);  // Maybe?
     if(c.filled(range)) continue;  // Skip over previously filled symbols
@@ -237,6 +232,19 @@ void DirectClassification::symtab(void* elf_vp, const Module& m, Classification&
 
     // Add our Classification as usual.
     c.setScope(range, c.addScope(func));
+  }
+  return true;
+}
+
+bool DirectClassification::symtab(void* elf_vp, const Module& m, Classification& c) {
+  Elf* elf = (Elf*)elf_vp;
+
+  if(elf_kind(elf) != ELF_K_ELF) return false;
+
+  switch(elf_getident(elf, nullptr)[EI_CLASS]) {
+  case ELFCLASS32: return parse<Elf32_Shdr, Elf32_Sym, elf32_getshdr>(elf, m, c);
+  case ELFCLASS64: return parse<Elf64_Shdr, Elf64_Sym, elf64_getshdr>(elf, m, c);
+  default: return false;
   }
 }
 
@@ -272,7 +280,7 @@ void dwarfwalk(Dwarf_Die die, const std::function<T(Dwarf_Die&, T)>& pre,
   } while(dwarf_siblingof(&die, &die) == 0);
 }
 
-void DirectClassification::fullDwarf(void* dbg_vp, const Module& m, Classification& c) try {
+bool DirectClassification::fullDwarf(void* dbg_vp, const Module& m, Classification& c) try {
   std::unordered_map<Dwarf_Off, std::reference_wrapper<Function>> funcs;
   std::vector<Classification::LineScope> lscopes;
 
@@ -429,10 +437,12 @@ void DirectClassification::fullDwarf(void* dbg_vp, const Module& m, Classificati
 
   // Overwrite everything with our new line info.
   c.setLines(std::move(lscopes));
+  return true;
 } catch(std::exception& e) {
   const auto& rpath = m.userdata[sink.resolvedPath()];
-  util::log::error() << "Exception caught during DWARF parsing for "
-    << m.path().filename().string() << ", information may not be complete.\n"
+  util::log::info{} << "Exception caught during DWARF parsing for "
+    << m.path().filename().string() << "\n"
        "  what(): " << e.what() << "\n"
        "  Full path: " << (rpath.empty() ? m.path() : rpath).string();
+  return false;
 }

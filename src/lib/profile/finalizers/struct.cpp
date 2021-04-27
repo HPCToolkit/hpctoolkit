@@ -104,6 +104,7 @@ static std::atomic<unsigned int> xmlusers;
 
 StructFile::StructFile(const stdshim::filesystem::path& p) : path(p) {
   util::call_once(xmlinit, [](){ XMLPlatformUtils::Initialize(); });
+  xmlusers.fetch_add(1, std::memory_order_relaxed);
 
   std::string lm;
   LHandler handler([&](const std::string& ename, const Attributes& attr){
@@ -115,15 +116,21 @@ StructFile::StructFile(const stdshim::filesystem::path& p) : path(p) {
   parser->setErrorHandler(&handler);
 
   XMLPScanToken token;
-  if(!parser->parseFirst(XMLStr(p.string()), token))
-    util::log::fatal() << "Unable to parse prologue!";
+  if(!parser->parseFirst(XMLStr(p.string()), token)) {
+    util::log::info{} << "Error while parsing Structfile XML prologue";
+    util::log::error{} << "Error while parsing Structfile " << p.filename().string();
+    return;
+  }
 
-  while(lm.empty())
-    if(!parser->parseNext(token))
-      util::log::fatal() << "Unable to parse something!";
+  while(lm.empty()) {
+    if(!parser->parseNext(token)) {
+      util::log::info{} << "Error while parsing Structfile XML prologue element";
+      util::log::error{} << "Error while parsing Structfile " << p.filename().string();
+      return;
+    }
+  }
 
   modpath = std::move(lm);
-  xmlusers.fetch_add(1, std::memory_order_relaxed);
 }
 
 StructFile::~StructFile() {
@@ -134,21 +141,21 @@ StructFile::~StructFile() {
 static std::vector<Classification::Interval> parseVs(const std::string& vs) {
   // General format: {[0xstart-0xend) ...}
   if(vs.at(0) != '{' || vs.size() < 2)
-    util::log::fatal() << "Bad VMA description in struct file: bad start!";
+    throw std::invalid_argument("Bad VMA description: bad start");
   std::vector<Classification::Interval> vals;
   const char* c = vs.data() + 1;
   while(*c != '}') {
     char* cx;
     if(std::isspace(*c)) { c++; continue; }
-    if(*c != '[') util::log::fatal() << "Bad VMA description in struct file: bad segment opening!";
+    if(*c != '[') throw std::invalid_argument("Bad VMA description: bad segment opening");
     c++;
     auto lo = std::strtoll(c, &cx, 16);
     c = cx;
-    if(*c != '-') util::log::fatal() << "Bad VMA description in struct file: bad segment middle!";
+    if(*c != '-') throw std::invalid_argument("Bad VMA description: bad segment middle");
     c++;
     auto hi = std::strtoll(c, &cx, 16);
     c = cx;
-    if(*c != ')') util::log::fatal() << "Bad VMA description in struct file: bad segment closing!";
+    if(*c != ')') throw std::invalid_argument("Bad VMA description: bad segment closing");
     c++;
 
     vals.emplace_back(lo, hi-1);  // Because its a half-open interval
@@ -157,18 +164,24 @@ static std::vector<Classification::Interval> parseVs(const std::string& vs) {
 }
 
 void StructFile::module(const Module& m, Classification& c) noexcept {
+  if(modpath.empty()) return;  // This one failed
   bool matches = false;
   if(m.path() == modpath) matches = true;
   if(m.userdata[sink.resolvedPath()] == modpath) matches = true;
   if(!matches) return;
 
   if(!c.empty()) {
-    util::log::warning()
+    util::log::warning{}
     << "Multiple Structure files (may) apply for " << m.path().filename() << "!\n"
        " Original path: " << m.path() << "\n"
        "Alternate path: " << m.userdata[sink.resolvedPath()];
   }
 
+  if(!parse(m, c))
+    util::log::error{} << "Error while parsing Structfile " << path.string();
+}
+
+bool StructFile::parse(const Module& m, Classification& c) try {
   struct Ctx {
     char tag;
     const File* file;
@@ -181,7 +194,8 @@ void StructFile::module(const Module& m, Classification& c) noexcept {
     Classification::Block* rootScope() const {
       for(const auto& ctx: c)
         if(ctx.scope != nullptr) return ctx.scope;
-      util::log::fatal{} << "No root Scope!";
+      assert(false && "No root Scope!");
+      std::abort();
     }
   } stack;
   bool seenhts = false;
@@ -189,13 +203,13 @@ void StructFile::module(const Module& m, Classification& c) noexcept {
   std::vector<Classification::LineScope> lscopes;
   std::unordered_map<uint64_t, Classification::Block*> funcs;
   std::forward_list<std::tuple<Classification::Block*, uint64_t, uint64_t>> cfg;
-  LHandler handler([&](const std::string& ename, const Attributes& attr) noexcept {
+  LHandler handler([&](const std::string& ename, const Attributes& attr) {
     if(ename == "HPCToolkitStructure") {
       stack.emplace();
-      if(seenhts) util::log::fatal() << "Only one HPCToolkitStructure tag is allowed!";
+      if(seenhts) throw std::logic_error("More than one HPCToolkitStructure tag seen");
       seenhts = true;
     } else if(ename == "LM") {
-      if(seenlm) util::log::fatal() << "Only one LM tag is allowed!";
+      if(seenlm) throw std::logic_error("More than one LM tag seen");
       seenlm = true;
     } else if(ename == "F") {
       stack.emplace(stack.top(), 'F');
@@ -238,7 +252,7 @@ void StructFile::module(const Module& m, Classification& c) noexcept {
     } else if(ename == "C") {
       auto l = std::stoll(xmlstr(attr.getValue(XMLStr("l"))));
       auto is = parseVs(xmlstr(attr.getValue(XMLStr("v"))));
-      if(is.size() != 1) util::log::fatal{} << "Structfile contains C tag with multiple v ranges!";
+      if(is.size() != 1) throw std::logic_error("C tags should only have a single v range");
       auto i = is[0];
       lscopes.emplace_back(i.lo, Scope::call, stack.top().file, l);
       c.setScope(i, stack.top().scope);
@@ -248,7 +262,7 @@ void StructFile::module(const Module& m, Classification& c) noexcept {
         auto t = std::strtoll(&tstr.c_str()[2], nullptr, 16);
         cfg.emplace_front(stack.rootScope(), i.lo, t);
       }
-    } else util::log::fatal() << "Unknown tag in struct file!";
+    } else throw std::logic_error("Unknown tag " + ename);
   }, [&](const std::string& ename){
     if(ename == "LM") return;
     if(ename == "S") return;
@@ -259,7 +273,7 @@ void StructFile::module(const Module& m, Classification& c) noexcept {
   parser->setContentHandler(&handler);
   parser->setErrorHandler(&handler);
   parser->parse(XMLStr(path.string()));
-  if(stack.size() != 0) util::log::fatal() << "Too many pushes!";
+  assert(stack.size() == 0 && "Inconsistent stack handling!");
   c.setLines(std::move(lscopes));
 
   // Build the reverse call graph/CFG from the data we've gathered thus far
@@ -308,4 +322,17 @@ void StructFile::module(const Module& m, Classification& c) noexcept {
     };
     dfs(root);
   }
+  return true;
+} catch(std::exception& e) {
+  util::log::info{} << "Exception caught while parsing Structfile "
+    << path.string() << "\n"
+       "  what(): " << e.what() << "\n"
+       "  for binary: " << modpath.string();
+  return false;
+} catch(xercesc::SAXException& e) {
+  util::log::info{} << "Exception caught while parsing Structfile "
+    << path.string() << "\n"
+       "  msg: " << xmlstr(e.getMessage()) << "\n"
+       "  for binary: " << modpath.string();
+  return false;
 }

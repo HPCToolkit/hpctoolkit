@@ -50,7 +50,6 @@
 #include "accumulators.hpp"
 #include "attributes.hpp"
 
-#include "util/atomic_unordered.hpp"
 #include "util/locked_unordered.hpp"
 #include "util/uniqable.hpp"
 #include "util/ragged_vector.hpp"
@@ -58,7 +57,7 @@
 #include <atomic>
 #include <bitset>
 #include <functional>
-#include "stdshim/optional.hpp"
+#include <optional>
 #include <variant>
 #include <vector>
 

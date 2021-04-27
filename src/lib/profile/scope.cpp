@@ -49,6 +49,7 @@
 #include "util/log.hpp"
 #include "module.hpp"
 
+#include <cassert>
 #include <stdexcept>
 
 using namespace hpctoolkit;
@@ -82,20 +83,20 @@ std::pair<const Module&, uint64_t> Scope::point_data() const {
   case Type::classified_call:
   case Type::concrete_line:
     return data.point_line.point;
-  default: break;
+  default:
+    assert(false && "point_data is only valid on point Scopes!");
+    std::abort();
   }
-  util::log::fatal() << "point_data() called on non-point Scope!";
-  std::exit(-1);
 }
 
 const Function& Scope::function_data() const {
   switch(ty) {
   case Type::function: return data.function;
   case Type::inlined_function: return data.function_line.function;
-  default: break;
+  default:
+    assert(false && "function_data is only valid on function Scopes!");
+    std::abort();
   }
-  util::log::fatal() << "function_data() called on non-function Scope!";
-  std::exit(-1);
 }
 
 std::pair<const File&, uint64_t> Scope::line_data() const {
@@ -108,10 +109,10 @@ std::pair<const File&, uint64_t> Scope::line_data() const {
   case Type::loop:
   case Type::line:
     return data.line;
-  default: break;
+  default:
+    assert(false && "line_data is only valid on line Scopes!");
+    std::abort();
   }
-  util::log::fatal() << "line_data() called on non-line Scope!";
-  std::exit(-1);
 }
 
 bool Scope::operator==(const Scope& o) const noexcept {
@@ -132,7 +133,8 @@ bool Scope::operator==(const Scope& o) const noexcept {
   case Type::line:
     return data.line == o.data.line;
   }
-  return false;  // unreachable
+  assert(false && "Invalid ty while comparing Scopes!");
+  std::abort();
 }
 
 // Hashes

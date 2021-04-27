@@ -56,13 +56,13 @@
 
 using namespace hpctoolkit;
 
-Context::Context(ud_t::struct_t& rs, Context* p, Scope s)
+Context::Context(ud_t::struct_t& rs, util::optional_ref<Context> p, Scope s)
   : userdata(rs, std::ref(*this)), children_p(new children_t()),
-    u_parent(p), u_scope(s) {};
+    m_parent(p), u_scope(s) {};
 Context::Context(Context&& c)
   : userdata(std::move(c.userdata), std::ref(*this)),
     children_p(new children_t()),
-    u_parent(c.direct_parent()), u_scope(c.scope()) {};
+    m_parent(c.direct_parent()), u_scope(c.scope()) {};
 
 Context::~Context() noexcept {
   // C++ generates a recursive algorithm for this by default
@@ -133,7 +133,7 @@ void Context::citerate(const std::function<void(const Context&)>& pre,
 }
 
 std::pair<Context&,bool> Context::ensure(Scope s) {
-  auto x = children_p->emplace(userdata.base(), this, std::move(s));
+  auto x = children_p->emplace(userdata.base(), *this, std::move(s));
   return {x.first(), x.second};
 }
 
@@ -141,20 +141,17 @@ SuperpositionedContext& Context::superposition(std::vector<SuperpositionedContex
   for(const auto& targ: targets) {
     for(ContextRef t: targ.route) {
       if(auto tc = std::get_if<Context>(t)) {
-        Context* c = &*tc;
-        for(; c != nullptr && c != this; c = c->direct_parent());
-        if(c == nullptr)
-          util::log::fatal{} << "Attempt to route via a non-decendant Context in a Superposition: "
-            << tc->scope() << " is not a child of " << scope();
+        util::optional_ref<Context> c = *tc;
+        for(; c && c != this; c = c->direct_parent());
+        assert(c && "Attempt to route via a non-decendant Context!");
       } else if(auto tc = std::get_if<SuperpositionedContext>(t)) {
-        if(&tc->m_root != this)
-          util::log::fatal{} << "Attempt to route via an incorrectly rooted Superposition in a Superposition: "
-            << tc->m_root.scope() << " is not " << scope();
-      } else
-        util::log::fatal{} << "Attempt to route via an unsupported Context in a Superposition!";
+        assert(&tc->m_root == this && "Attempt to route via an incorrectly rooted Superposition!");
+      } else {
+        assert(false && "Attempt to route via an unsupported Context!");
+        std::abort();
+      }
     }
-    if(!std::holds_alternative<Context>(targ.target))
-      util::log::fatal{} << "Attempt to target an improper Context in a Superposition!";
+    assert(std::holds_alternative<Context>(targ.target) && "Attempt to superpos-target an improper Context!");
   }
 
   auto c = new SuperpositionedContext(*this, std::move(targets));
@@ -172,26 +169,21 @@ static util::optional_ref<CollaborativeContext> collaborationFor(const ContextRe
 
 SuperpositionedContext::SuperpositionedContext(Context& root, std::vector<Target> targets)
   : m_root(root), m_targets(std::move(targets)) {
-  if(m_targets.size() < 2)
-    util::log::fatal{} << "Attempt to create a Superposition without enough Targets!";
-  if(std::any_of(++m_targets.begin(), m_targets.end(), [&](const auto& t){
-    return collaborationFor(t.target) != collaborationFor(m_targets.front().target);
-  }))
-    util::log::fatal{} << "Attempt to create a Superposition with inconsistent collaborations between Targets!";
+  assert(m_targets.size() > 1 && "Attempt to Superposition without enough Targets!");
+  assert(std::all_of(++m_targets.begin(), m_targets.end(), [&](const auto& t){
+    return collaborationFor(t.target) == collaborationFor(m_targets.front().target);
+  }) && "Attempt to Superposition with inconsistent collaborations between Targets!");
 }
 
 SuperpositionedContext::Target::Target(std::vector<ContextRef> r, ContextRef t)
   : route(std::move(r)), target(t) {
-  if(std::holds_alternative<CollaborativeContext>(t))
-    util::log::fatal{} << "Attempt to create a Superposition target targeting a collaborative root!";
-  if(std::any_of(route.begin(), route.end(), [&](const auto& r) {
-    return std::holds_alternative<CollaborativeContext>(r);
-  }))
-    util::log::fatal{} << "Attempt to create a Superposition target with a collaborative root!";
-  if(std::any_of(route.begin(), route.end(), [&](const auto& r) {
-    return collaborationFor(r) != collaborationFor(target);
-  }))
-    util::log::fatal{} << "Attempt to create a Superposition target with inconsistent collaboration!";
+  assert(!std::holds_alternative<CollaborativeContext>(t) && "Attempt to superpos-target a Collaborative root!");
+  assert(std::all_of(route.begin(), route.end(), [&](const auto& r) {
+    return !std::holds_alternative<CollaborativeContext>(r);
+  }) && "Attempt to superpos-target a Collaborative root!");
+  assert(std::all_of(route.begin(), route.end(), [&](const auto& r) {
+    return collaborationFor(r) == collaborationFor(target);
+  }) && "Attempt to superpos-target with inconsistent Collaborations!");
 }
 
 CollaborativeSharedContext& CollaborativeSharedContext::ensure(Scope s,
@@ -237,8 +229,8 @@ CollaborativeContext::ensure(Scope s, const std::function<void(Context&)>& onadd
 
 void CollaborativeContext::addCollaboratorRoot(ContextRef rootref,
     const std::function<void(Context&)>& onadd) noexcept {
-  if(!std::holds_alternative<Context>(rootref))
-    util::log::fatal{} << "Collaborator roots must be proper Contexts!";
+  assert(std::holds_alternative<Context>(rootref)
+         && "Collaborator roots must be proper Contexts!");
   std::unique_lock<std::mutex> l(m_lock);
   Context& root = std::get<Context>(rootref);
   if(!m_roots.emplace(root).second)

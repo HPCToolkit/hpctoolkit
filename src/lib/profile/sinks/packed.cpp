@@ -159,7 +159,8 @@ void Packed::packContexts(std::vector<std::uint8_t>& out) noexcept {
     case Scope::Type::loop:
     case Scope::Type::line:
     case Scope::Type::concrete_line:
-      util::log::fatal() << "Unhandled Scope type encountered in Packed!";
+      assert(false && "Unhandled Scope type in Packed!");
+      std::abort();
     }
   }, [&](const Context& c){
     pack(out, (std::uint64_t)0xFEF1F0F3ULL << 32);
@@ -208,7 +209,7 @@ void Packed::packTimepoints(std::vector<std::uint8_t>& out) noexcept {
   auto max = maxTime.load(std::memory_order_relaxed);
   bool minValid = min < std::chrono::nanoseconds::max();
   bool maxValid = max > std::chrono::nanoseconds::min();
-  if(minValid != maxValid) util::log::fatal() << "Timepoint half invalid???";
+  assert(minValid == maxValid && "Packed timepoints appear half invalid?");
   if(minValid) {
     pack(out, (std::uint64_t)min.count());
     pack(out, (std::uint64_t)max.count());

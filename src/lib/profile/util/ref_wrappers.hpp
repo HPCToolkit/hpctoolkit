@@ -85,18 +85,43 @@ public:
 
   T* operator->() const noexcept { return &d.get(); }
 
-  bool operator==(const reference_index& o) const noexcept { return &get() == &o.get(); }
-  bool operator!=(const reference_index& o) const noexcept { return &get() != &o.get(); }
-  bool operator<(const reference_index& o) const noexcept { return &get() < &o.get(); }
-  bool operator<=(const reference_index& o) const noexcept { return &get() <= &o.get(); }
-  bool operator>(const reference_index& o) const noexcept { return &get() > &o.get(); }
-  bool operator>=(const reference_index& o) const noexcept { return &get() >= &o.get(); }
+  friend constexpr bool operator==(const reference_index& a, const reference_index& b) noexcept { return &a.get() == &b.get(); }
+  friend constexpr bool operator==(const reference_index&, T&) = delete;
+  friend constexpr bool operator==(T&, const reference_index&) = delete;
+  friend constexpr bool operator==(const reference_index& a, T* b) noexcept { return &a.get() == b; }
+  friend constexpr bool operator==(T* a, const reference_index& b) noexcept { return a == &b.get(); }
+  friend constexpr bool operator!=(const reference_index& a, const reference_index& b) noexcept { return &a.get() != &b.get(); }
+  friend constexpr bool operator!=(const reference_index&, T&) = delete;
+  friend constexpr bool operator!=(T&, const reference_index&) = delete;
+  friend constexpr bool operator!=(const reference_index& a, T* b) noexcept { return &a.get() == b; }
+  friend constexpr bool operator!=(T* a, const reference_index& b) noexcept { return a == &b.get(); }
+  friend constexpr bool operator<(const reference_index& a, const reference_index& b) noexcept { return &a.get() < &b.get(); }
+  friend constexpr bool operator<(const reference_index&, T&) = delete;
+  friend constexpr bool operator<(T&, const reference_index&) = delete;
+  friend constexpr bool operator<(const reference_index& a, T* b) noexcept { return &a.get() == b; }
+  friend constexpr bool operator<(T* a, const reference_index& b) noexcept { return a == &b.get(); }
+  friend constexpr bool operator<=(const reference_index& a, const reference_index& b) noexcept { return &a.get() <= &b.get(); }
+  friend constexpr bool operator<=(const reference_index&, T&) = delete;
+  friend constexpr bool operator<=(T&, const reference_index&) = delete;
+  friend constexpr bool operator<=(const reference_index& a, T* b) noexcept { return &a.get() == b; }
+  friend constexpr bool operator<=(T* a, const reference_index& b) noexcept { return a == &b.get(); }
+  friend constexpr bool operator>(const reference_index& a, const reference_index& b) noexcept { return &a.get() > &b.get(); }
+  friend constexpr bool operator>(const reference_index&, T&) = delete;
+  friend constexpr bool operator>(T&, const reference_index&) = delete;
+  friend constexpr bool operator>(const reference_index& a, T* b) noexcept { return &a.get() == b; }
+  friend constexpr bool operator>(T* a, const reference_index& b) noexcept { return a == &b.get(); }
+  friend constexpr bool operator>=(const reference_index& a, const reference_index& b) noexcept { return &a.get() >= &b.get(); }
+  friend constexpr bool operator>=(const reference_index&, T&) = delete;
+  friend constexpr bool operator>=(T&, const reference_index&) = delete;
+  friend constexpr bool operator>=(const reference_index& a, T* b) noexcept { return &a.get() == b; }
+  friend constexpr bool operator>=(T* a, const reference_index& b) noexcept { return a == &b.get(); }
 };
 
 /// Semi-equivalent to std::optional<T&>, without the errors.
 template<class T>
-class optional_ref : private std::optional<reference_index<T>> {
-  using Base = std::optional<reference_index<T>>;
+class optional_ref {
+private:
+  std::optional<reference_index<T>> d;
   friend struct std::hash<optional_ref>;
 
 public:
@@ -104,59 +129,63 @@ public:
   optional_ref(std::nullopt_t) noexcept {};
   optional_ref(const optional_ref&) noexcept = default;
   optional_ref(optional_ref&&) noexcept = default;
-  optional_ref(T& v) noexcept : Base(v) {};
+  optional_ref(T& v) noexcept : d(v) {};
   ~optional_ref() = default;
 
-  optional_ref& operator=(std::nullopt_t n) noexcept {
-    Base::operator=(n);
-    return *this;
-  }
-  optional_ref& operator=(const optional_ref& o) noexcept {
-    Base::operator=((const Base&)o);
-    return *this;
-  }
-  optional_ref& operator=(optional_ref&& o) noexcept {
-    Base::operator=((Base&&)std::move(o));
-    return *this;
+  optional_ref& operator=(std::nullopt_t n) noexcept { d = n; return *this; }
+  optional_ref& operator=(const optional_ref& o) noexcept { d = o.d; return *this; }
+  optional_ref& operator=(optional_ref&& o) noexcept { d = std::move(o.d); return *this; }
+
+  optional_ref& operator=(T& v) noexcept { d = v; return *this; }
+
+  constexpr T* operator->() const { return &d->get(); }
+  constexpr T& operator*() const { return d->get(); }
+
+  constexpr explicit operator bool() const noexcept { return d.has_value(); }
+  constexpr bool has_value() const noexcept { return d.has_value(); }
+
+  constexpr operator optional_ref<const T>() const noexcept {
+    return d ? optional_ref<const T>(d->get()) : std::nullopt;
   }
 
-  optional_ref& operator=(T& v) noexcept {
-    Base::operator=(v);
-    return *this;
-  }
+  friend constexpr bool operator==(const optional_ref& a, const optional_ref& b) noexcept { return a.d == b.d; }
+  friend constexpr bool operator==(const optional_ref&, T&) = delete;
+  friend constexpr bool operator==(T&, const optional_ref&) = delete;
+  friend constexpr bool operator==(const optional_ref& a, T* b) noexcept { return a == optional_ref(*b); }
+  friend constexpr bool operator==(T* a, const optional_ref& b) noexcept { return optional_ref(*a) == b; }
+  friend constexpr bool operator!=(const optional_ref& a, const optional_ref& b) noexcept { return a.d != b.d; }
+  friend constexpr bool operator!=(const optional_ref&, T&) = delete;
+  friend constexpr bool operator!=(T&, const optional_ref&) = delete;
+  friend constexpr bool operator!=(const optional_ref& a, T* b) noexcept { return a != optional_ref(*b); }
+  friend constexpr bool operator!=(T* a, const optional_ref& b) noexcept { return optional_ref(*a) != b; }
+  friend constexpr bool operator<(const optional_ref& a, const optional_ref& b) noexcept { return a.d < b.d; }
+  friend constexpr bool operator<(const optional_ref&, T&) = delete;
+  friend constexpr bool operator<(T&, const optional_ref&) = delete;
+  friend constexpr bool operator<(const optional_ref& a, T* b) noexcept { return a < optional_ref(*b); }
+  friend constexpr bool operator<(T* a, const optional_ref& b) noexcept { return optional_ref(*a) < b; }
+  friend constexpr bool operator<=(const optional_ref& a, const optional_ref& b) noexcept { return a.d <= b.d; }
+  friend constexpr bool operator<=(const optional_ref&, T&) = delete;
+  friend constexpr bool operator<=(T&, const optional_ref&) = delete;
+  friend constexpr bool operator<=(const optional_ref& a, T* b) noexcept { return a <= optional_ref(*b); }
+  friend constexpr bool operator<=(T* a, const optional_ref& b) noexcept { return optional_ref(*a) <= b; }
+  friend constexpr bool operator>(const optional_ref& a, const optional_ref& b) noexcept { return a.d > b.d; }
+  friend constexpr bool operator>(const optional_ref&, T&) = delete;
+  friend constexpr bool operator>(T&, const optional_ref&) = delete;
+  friend constexpr bool operator>(const optional_ref& a, T* b) noexcept { return a > optional_ref(*b); }
+  friend constexpr bool operator>(T* a, const optional_ref& b) noexcept { return optional_ref(*a) > b; }
+  friend constexpr bool operator>=(const optional_ref& a, const optional_ref& b) noexcept { return a.d >= b.d; }
+  friend constexpr bool operator>=(const optional_ref&, T&) = delete;
+  friend constexpr bool operator>=(T&, const optional_ref&) = delete;
+  friend constexpr bool operator>=(const optional_ref& a, T* b) noexcept { return a >= optional_ref(*b); }
+  friend constexpr bool operator>=(T* a, const optional_ref& b) noexcept { return optional_ref(*a) >= b; }
 
-  constexpr T* operator->() const { return &Base::operator->()->get(); }
-  constexpr T& operator*() const { return Base::operator*().get(); }
-
-  using Base::operator bool;
-  using Base::has_value;
-
-  constexpr bool operator==(const optional_ref& o) const noexcept {
-    return ((const Base&)*this) == ((const Base&)o);
-  }
-  constexpr bool operator!=(const optional_ref& o) const noexcept {
-    return ((const Base&)*this) != ((const Base&)o);
-  }
-  constexpr bool operator<(const optional_ref& o) const noexcept {
-    return ((const Base&)*this) < ((const Base&)o);
-  }
-  constexpr bool operator<=(const optional_ref& o) const noexcept {
-    return ((const Base&)*this) <= ((const Base&)o);
-  }
-  constexpr bool operator>(const optional_ref& o) const noexcept {
-    return ((const Base&)*this) > ((const Base&)o);
-  }
-  constexpr bool operator>=(const optional_ref& o) const noexcept {
-    return ((const Base&)*this) >= ((const Base&)o);
-  }
-
-  constexpr T& value() const { return Base::value().get(); }
+  constexpr T& value() const { return d.value().get(); }
 
   template<class U>
-  constexpr T& value_or(U& d) { return Base::value_or(d).get(); }
+  constexpr T& value_or(U& u) { return d.value_or(u).get(); }
 
-  using Base::swap;
-  using Base::reset;
+  void swap(optional_ref& o) noexcept { d.swap(o.d); }
+  void reset() noexcept { d.reset(); }
 };
 
 /// Marker for variant_ref to store a pair of refs (instead of a ref to a pair)
@@ -189,8 +218,8 @@ namespace {
 /// Semi-equivalent to std::variant<Ts&...>, without the errors.
 /// Also contains an automatic conversion to std::variant<const Ts&...>.
 template<class... Ts>
-class variant_ref : private std::variant<vr_ref_wrapper<Ts>...> {
-  using Base = std::variant<vr_ref_wrapper<Ts>...>;
+class variant_ref {
+  std::variant<vr_ref_wrapper<Ts>...> d;
   friend struct std::hash<variant_ref>;
 
 public:
@@ -202,38 +231,38 @@ public:
 
   template<class T, std::enable_if_t<in_pack<T,Ts...> && is_standard_ref<T>, std::nullptr_t> = nullptr>
   constexpr variant_ref(T& v)
-    : Base(reference_index<T>(v)) {};
+    : d(reference_index<T>(v)) {};
   template<class X, class Y, std::enable_if_t<in_pack<ref_pair<X,Y>,Ts...>, std::nullptr_t> = nullptr>
   constexpr variant_ref(X& x, Y& y)
-    : Base(std::make_pair(reference_index<X>(x), reference_index<Y>(y))) {};
+    : d(std::make_pair(reference_index<X>(x), reference_index<Y>(y))) {};
   template<class T, std::enable_if_t<in_pack<T,Ts...> && is_standard_ref<T>, std::nullptr_t> = nullptr>
   constexpr variant_ref(reference_index<T> v)
-    : Base(v) {};
+    : d(v) {};
   template<class X, class Y, std::enable_if_t<in_pack<ref_pair<X,Y>,Ts...>, std::nullptr_t> = nullptr>
   constexpr variant_ref(std::pair<reference_index<X>, reference_index<Y>> v)
-    : Base(v) {};
+    : d(v) {};
   template<class T, std::enable_if_t<in_pack<T,Ts...> && is_standard_ref<T>, std::nullptr_t> = nullptr>
   constexpr variant_ref(std::reference_wrapper<T> v)
-    : Base(reference_index<T>(v)) {};
+    : d(reference_index<T>(v)) {};
   template<class X, class Y, std::enable_if_t<in_pack<ref_pair<X,Y>,Ts...>, std::nullptr_t> = nullptr>
   constexpr variant_ref(std::pair<std::reference_wrapper<X>, std::reference_wrapper<Y>> v)
-    : Base(std::make_pair(reference_index<X>(v.first), reference_index<Y>(v.second))) {};
+    : d(std::make_pair(reference_index<X>(v.first), reference_index<Y>(v.second))) {};
 
   template<std::size_t I, class T, std::enable_if_t<is_standard_ref<T>, std::nullptr_t> = nullptr>
   constexpr variant_ref(std::in_place_index_t<I> i, T& v)
-    : Base(i, reference_index<T>(v)) {};
+    : d(i, reference_index<T>(v)) {};
   template<std::size_t I, class X, class Y>
   constexpr variant_ref(std::in_place_index_t<I> i, X& x, Y& y)
-    : Base(i, std::make_pair(reference_index<X>(x), reference_index<Y>(y))) {};
+    : d(i, std::make_pair(reference_index<X>(x), reference_index<Y>(y))) {};
   template<std::size_t I, class T>
   constexpr variant_ref(std::in_place_index_t<I> i, reference_index<T> v)
-    : Base(i, v) {};
+    : d(i, v) {};
   template<std::size_t I, class X, class Y>
   constexpr variant_ref(std::in_place_index_t<I> i, std::pair<reference_index<X>, reference_index<Y>> v)
-    : Base(i, v) {};
+    : d(i, v) {};
 
   template<std::size_t I>
-  constexpr variant_ref(std::in_place_index_t<I> i) : Base(i) {};
+  constexpr variant_ref(std::in_place_index_t<I> i) : d(i) {};
 
 private:
   template<class T>
@@ -255,7 +284,7 @@ private:
   }
   template<class T, std::size_t I, class N0, class... Ns>
   T convert() const {
-    if(index() == I) return {std::in_place_index<I>, std::get<I>((const Base&)*this)};
+    if(index() == I) return {std::in_place_index<I>, std::get<I>(d)};
     return convert<T, I+1, Ns...>();
   }
 
@@ -283,83 +312,62 @@ public:
     return convert<variant_ref<Ns...>, 0, Ts...>();
   }
 
-  constexpr variant_ref& operator=(const variant_ref& o) {
-    Base::operator=(o);
-    return *this;
-  }
-  constexpr variant_ref& operator=(variant_ref&& o) {
-    Base::operator=(std::move(o));
-    return *this;
-  }
+  constexpr variant_ref& operator=(const variant_ref& o) { d = o.d; return *this; }
+  constexpr variant_ref& operator=(variant_ref&& o) { d = std::move(o.d); return *this; }
 
   template<class T>
   constexpr variant_ref operator=(std::enable_if_t<in_pack<T, Ts...> && is_standard_ref<T>, T&> v) {
-    Base::operator=(reference_index<T>(v));
+    d = reference_index<T>(v);
     return *this;
   }
   template<class X, class Y>
   constexpr variant_ref operator=(std::enable_if_t<in_pack<ref_pair<X,Y>, Ts...>, std::pair<X&, Y&>> v) {
-    Base::operator=(std::make_pair(reference_index<X>(v.first), reference_index<Y>(v.second)));
+    d = std::make_pair(reference_index<X>(v.first), reference_index<Y>(v.second));
     return *this;
   }
 
-  using Base::index;
-  using Base::valueless_by_exception;
-  using Base::swap;
+  constexpr std::size_t index() const noexcept { return d.index(); }
+  constexpr bool valueless_by_exception() const noexcept { return d.valueless_by_exception(); }
+  void swap(variant_ref& o) { d.swap(o.d); }
 
-  constexpr bool operator==(const variant_ref& o) const noexcept {
-    return ((const Base&)*this) == ((const Base&)o);
-  }
-  constexpr bool operator!=(const variant_ref& o) const noexcept {
-    return ((const Base&)*this) != ((const Base&)o);
-  }
-  constexpr bool operator<(const variant_ref& o) const noexcept {
-    return ((const Base&)*this) < ((const Base&)o);
-  }
-  constexpr bool operator<=(const variant_ref& o) const noexcept {
-    return ((const Base&)*this) <= ((const Base&)o);
-  }
-  constexpr bool operator>(const variant_ref& o) const noexcept {
-    return ((const Base&)*this) > ((const Base&)o);
-  }
-  constexpr bool operator>=(const variant_ref& o) const noexcept {
-    return ((const Base&)*this) >= ((const Base&)o);
-  }
+  friend constexpr bool operator==(const variant_ref& a, const variant_ref& b) noexcept { return a.d == b.d; }
+  friend constexpr bool operator!=(const variant_ref& a, const variant_ref& b) noexcept { return a.d != b.d; }
+  friend constexpr bool operator<(const variant_ref& a, const variant_ref& b) noexcept { return a.d < b.d; }
+  friend constexpr bool operator<=(const variant_ref& a, const variant_ref& b) noexcept { return a.d <= b.d; }
+  friend constexpr bool operator>(const variant_ref& a, const variant_ref& b) noexcept { return a.d > b.d; }
+  friend constexpr bool operator>=(const variant_ref& a, const variant_ref& b) noexcept { return a.d >= b.d; }
 
 private:
-  template<class V, class... Vs>
-  friend constexpr decltype(auto) std::visit(V&&, Vs&&...);
-
   template<class T, class... Ns>
   friend constexpr bool std::holds_alternative(const variant_ref<Ns...>& v) noexcept;
   template<class T>
   constexpr bool std_holds_alternative() const noexcept {
-    return std::holds_alternative<vr_ref_wrapper<T>>((const Base&)*this);
+    return std::holds_alternative<vr_ref_wrapper<T>>(d);
   }
 
   template<class X, class Y, class... Ns>
   friend constexpr bool std::holds_alternative(const variant_ref<Ns...>& v) noexcept;
   template<class X, class Y>
   constexpr bool std_holds_alternative() const noexcept {
-    return std::holds_alternative<vr_ref_wrapper<ref_pair<X,Y>>>((const Base&)*this);
+    return std::holds_alternative<vr_ref_wrapper<ref_pair<X,Y>>>(d);
   }
 
   template<class T, class... Ns>
   friend constexpr T& std::get(const variant_ref<Ns...>& v);
   template<class T>
   constexpr std::enable_if_t<!std::is_same_v<T,std::monostate>,T&> std_get() const noexcept {
-    return std::get<reference_index<T>>((const Base&)*this).get();
+    return std::get<reference_index<T>>(d).get();
   }
   template<class T>
   constexpr std::enable_if_t<std::is_same_v<T,std::monostate>,T&> std_get() const noexcept {
-    return std::get<T>((const Base&)*this);
+    return std::get<T>(d);
   }
 
   template<class X, class Y, class... Ns>
   friend constexpr std::pair<X&, Y&> std::get(const variant_ref<Ns...>& v);
   template<class X, class Y>
   constexpr std::pair<X&, Y&> std_get() const noexcept {
-    auto x = std::get<std::pair<reference_index<X>, reference_index<Y>>>((const Base&)*this);
+    auto x = std::get<std::pair<reference_index<X>, reference_index<Y>>>(d);
     return {x.first.get(), x.second.get()};
   }
 
@@ -367,13 +375,13 @@ private:
   friend constexpr hpctoolkit::util::optional_ref<T> std::get_if(const variant_ref<Ns...>& v) noexcept;
   template<class T>
   constexpr std::enable_if_t<!std::is_same_v<T,std::monostate>,optional_ref<T>> std_get_if() const noexcept {
-    if(auto pv = std::get_if<reference_index<T>>(&(const Base&)*this))
+    if(auto pv = std::get_if<reference_index<T>>(&d))
       return pv->get();
     return std::nullopt;
   }
   template<class T>
   constexpr std::enable_if_t<std::is_same_v<T,std::monostate>,optional_ref<T>> std_get_if() const noexcept {
-    if(auto pv = std::get_if<T>(&(const Base&)*this))
+    if(auto pv = std::get_if<T>(&d))
       return *pv;
     return std::nullopt;
   }
@@ -383,7 +391,7 @@ private:
   std::get_if(const variant_ref<Ns...>& v) noexcept;
   template<class X, class Y>
   constexpr std::optional<std::pair<reference_index<X>, reference_index<Y>>> std_get_if() const noexcept {
-    if(auto pv = std::get_if<std::pair<reference_index<X>, reference_index<Y>>>(&(const Base&)*this))
+    if(auto pv = std::get_if<std::pair<reference_index<X>, reference_index<Y>>>(&d))
       return *pv;
     return std::nullopt;
   }

@@ -84,14 +84,13 @@ unsigned int Metric::ScopedIdentifiers::get(MetricScope s) const noexcept {
   case MetricScope::function: return function;
   case MetricScope::execution: return execution;
   }
-  util::log::fatal{} << "Invalid Metric::scope value!";
-  std::abort();  // unreachable
+  assert(false && "Invalid MetricScope value!");
+  std::abort();
 }
 
 ExtraStatistic::ExtraStatistic(Settings s)
   : u_settings(std::move(s)) {
-  if(u_settings().formula.empty())
-    util::log::fatal{} << "ExtraStatistics must have a non-empty formula!";
+  assert(!u_settings().formula.empty() && "ExtraStatistics must have a non-empty formula!");
 
   const auto& fmt = u_settings().format;
   size_t pos = 0;
@@ -100,7 +99,7 @@ ExtraStatistic::ExtraStatistic(Settings s)
     if(fmt[pos+1] == '%') pos += 2;
     else {
       if(found)
-        util::log::fatal{} << "Multiple arguments in format string: " << fmt;
+        util::log::fatal{} << "Multiple arguments in format string for ExtraStatistic: " << fmt;
       found = true;
       pos += 1;
     }
@@ -166,27 +165,20 @@ std::unique_lock<std::mutex> Metric::StatsAccess::synchronize() {
 void Metric::StatsAccess::requestStatistics(Statistics ss) {
   // If the Metric is invisible, we don't actually need to do anything
   if(m.visibility() == Settings::visibility_t::invisible) {
-    if(ss.sum || ss.mean || ss.max || ss.min || ss.stddev || ss.cfvar)
-      util::log::fatal{} << "Attempt to request Statistics from an invisible Metric!";
+    assert(!ss.sum && !ss.mean && !ss.min && !ss.max && !ss.stddev && !ss.cfvar
+           && "Attempt to request Statistics from an invisible Metric!");
     return;
   }
 
   auto l = synchronize();
   if(!l) {
     // If we're already frozen, this operation must be idempotent.
-    // This is really just a vauge attempt at sanity checking.
-    if(ss.sum && !m.m_thawed_stats.sum)
-      util::log::fatal{} << "Attempt to request :Sum from a frozen Metric!";
-    if(ss.mean && !m.m_thawed_stats.sum)
-      util::log::fatal{} << "Attempt to request :Mean from a frozen Metric!";
-    if(ss.min && !m.m_thawed_stats.sum)
-      util::log::fatal{} << "Attempt to request :Min from a frozen Metric!";
-    if(ss.max && !m.m_thawed_stats.sum)
-      util::log::fatal{} << "Attempt to request :Max from a frozen Metric!";
-    if(ss.stddev && !m.m_thawed_stats.sum)
-      util::log::fatal{} << "Attempt to request :StdDev from a frozen Metric!";
-    if(ss.cfvar && !m.m_thawed_stats.cfvar)
-      util::log::fatal{} << "Attempt to request :CfVar from a frozen Metric!";
+    assert((!ss.sum    || m.m_thawed_stats.sum)    && "Attempt to request :Sum from a frozen Metric!");
+    assert((!ss.mean   || m.m_thawed_stats.mean)   && "Attempt to request :Mean from a frozen Metric!");
+    assert((!ss.min    || m.m_thawed_stats.min)    && "Attempt to request :Min from a frozen Metric!");
+    assert((!ss.max    || m.m_thawed_stats.max)    && "Attempt to request :Max from a frozen Metric!");
+    assert((!ss.stddev || m.m_thawed_stats.stddev) && "Attempt to request :StdDev from a frozen Metric!");
+    assert((!ss.cfvar  || m.m_thawed_stats.cfvar)  && "Attempt to request :CfVar from a frozen Metric!");
     return;
   }
   m.m_thawed_stats.sum = m.m_thawed_stats.sum || ss.sum;
@@ -201,8 +193,7 @@ std::size_t Metric::StatsAccess::requestSumPartial() {
   auto l = synchronize();
   if(m.m_thawed_sumPartial != std::numeric_limits<std::size_t>::max())
     return m.m_thawed_sumPartial;
-  if(!l)
-    util::log::fatal{} << "Unable to satifify :Sum Partial request on frozen Metric!";
+  assert(l && "Unable to satisfy :Sum Partial request on a frozen Metric!");
 
   m.m_thawed_sumPartial = m.m_partials.size();
   m.m_partials.push_back({[](double x) -> double { return x; },
@@ -274,13 +265,11 @@ bool Metric::freeze() {
 }
 
 const std::vector<StatisticPartial>& Metric::partials() const noexcept {
-  if(!m_frozen.load(std::memory_order_relaxed))
-    util::log::fatal{} << "Attempt to access a Metric's Partials before freezing!";
+  assert(m_frozen.load(std::memory_order_relaxed) && "Attempt to access a Metric's Partials before a freeze!");
   return m_partials;
 }
 const std::vector<Statistic>& Metric::statistics() const noexcept {
-  if(!m_frozen.load(std::memory_order_relaxed))
-    util::log::fatal{} << "Attempt to access a Metric's Statistics before freezing!";
+  assert(m_frozen.load(std::memory_order_relaxed) && "Attempt to access a Metric's Statistics before a freeze!");
   return m_stats;
 }
 
@@ -288,13 +277,14 @@ StatisticAccumulator::StatisticAccumulator(const Metric& m)
   : partials(m.partials().size()) {};
 
 void StatisticAccumulator::PartialRef::add(MetricScope s, double v) noexcept {
-  if(v == 0) util::log::warning{} << "Adding a 0-metric value!";
+  assert(v > 0 && "Attempt to add 0 value to a Partial!");
   switch(s) {
   case MetricScope::point: atomic_op(partial.point, v, statpart.combinator()); return;
   case MetricScope::function: atomic_op(partial.function, v, statpart.combinator()); return;
   case MetricScope::execution: atomic_op(partial.execution, v, statpart.combinator()); return;
   }
-  util::log::fatal{} << "Invalid MetricScope!";
+  assert(false && "Invalid MetricScope!");
+  std::abort();
 }
 
 StatisticAccumulator::PartialCRef StatisticAccumulator::get(const StatisticPartial& p) const noexcept {
@@ -309,29 +299,29 @@ void MetricAccumulator::add(double v) noexcept {
   atomic_add(point, v);
 }
 
-static stdshim::optional<double> opt0(double d) {
-  return d == 0 ? stdshim::optional<double>{} : d;
+static std::optional<double> opt0(double d) {
+  return d == 0 ? std::optional<double>{} : d;
 }
 
-stdshim::optional<double> StatisticAccumulator::PartialRef::get(MetricScope s) const noexcept {
+std::optional<double> StatisticAccumulator::PartialRef::get(MetricScope s) const noexcept {
   partial.validate();
   switch(s) {
   case MetricScope::point: return opt0(partial.point.load(std::memory_order_relaxed));
   case MetricScope::function: return opt0(partial.function.load(std::memory_order_relaxed));
   case MetricScope::execution: return opt0(partial.execution.load(std::memory_order_relaxed));
   };
-  util::log::fatal{} << "Invalid MetricScope value!";
-  std::abort();  // unreachable
+  assert(false && "Invalid MetricScope!");
+  std::abort();
 }
-stdshim::optional<double> StatisticAccumulator::PartialCRef::get(MetricScope s) const noexcept {
+std::optional<double> StatisticAccumulator::PartialCRef::get(MetricScope s) const noexcept {
   partial.validate();
   switch(s) {
   case MetricScope::point: return opt0(partial.point.load(std::memory_order_relaxed));
   case MetricScope::function: return opt0(partial.function.load(std::memory_order_relaxed));
   case MetricScope::execution: return opt0(partial.execution.load(std::memory_order_relaxed));
   };
-  util::log::fatal{} << "Invalid MetricScope value!";
-  std::abort();  // unreachable
+  assert(false && "Invalid MetricScope!");
+  std::abort();
 }
 
 void StatisticAccumulator::Partial::validate() const noexcept {
@@ -345,15 +335,15 @@ const StatisticAccumulator* Metric::getFor(const Context& c) const noexcept {
   return c.data.find(*this);
 }
 
-stdshim::optional<double> MetricAccumulator::get(MetricScope s) const noexcept {
+std::optional<double> MetricAccumulator::get(MetricScope s) const noexcept {
   validate();
   switch(s) {
   case MetricScope::point: return opt0(point.load(std::memory_order_relaxed));
   case MetricScope::function: return opt0(function);
   case MetricScope::execution: return opt0(execution);
   }
-  util::log::fatal{} << "Invalid MetricScope value!";
-  std::abort();  // unreachable
+  assert(false && "Invalid MetricScope!");
+  std::abort();
 }
 
 void MetricAccumulator::validate() const noexcept {
@@ -401,10 +391,11 @@ static bool pullsFunction(Scope parent, Scope child) {
     }
     break;
   case Scope::Type::global:
-    util::log::fatal{} << "Operation invalid for the global Context!";
-    break;
+    assert(false && "global Context should have no parent!");
+    std::abort();
   }
-  std::abort();  // unreachable
+  assert(false && "Unhandled Scope type!");
+  std::abort();
 }
 
 void Metric::prefinalize(Thread::Temporary& t) noexcept {
@@ -607,26 +598,18 @@ void Metric::finalize(Thread::Temporary& t) noexcept {
   util::optional_ref<const Context> global;
   std::unordered_map<util::reference_index<const Context>,
     std::unordered_set<util::reference_index<const Context>>> children;
-  {
-    std::vector<std::reference_wrapper<const Context>> newContexts;
-    newContexts.reserve(t.data.size());
-    for(const auto& cx: t.data.citerate()) newContexts.emplace_back(cx.first.get());
-    while(!newContexts.empty()) {
-      decltype(newContexts) next;
-      next.reserve(newContexts.size());
-      for(const Context& c: newContexts) {
-        if(c.direct_parent() == nullptr) {
-          if(global) util::log::fatal{} << "Multiple root contexts???";
-          global = c;
-          continue;
-        }
-        auto x = children.emplace(*c.direct_parent(),
-                                  decltype(children)::mapped_type{});
-        if(x.second) next.push_back(*c.direct_parent());
-        x.first->second.emplace(c);
-      }
-      next.shrink_to_fit();
-      newContexts = std::move(next);
+  for(const auto& cx: t.data.citerate()) {
+    std::reference_wrapper<const Context> c = cx.first;
+    while(auto p = c.get().direct_parent()) {
+      auto x = children.insert({*p, {}});
+      x.first->second.emplace(c.get());
+      if(!x.second) break;
+      c = *p;
+    }
+    if(!c.get().direct_parent()) {
+      assert((!global || global == &c.get()) && "Multiple root contexts???");
+      assert(c.get().scope().type() == Scope::Type::global && "Root context without (global) Scope!");
+      global = c.get();
     }
   }
   if(!global) return;  // Apparently there's nothing to propagate
@@ -646,7 +629,11 @@ void Metric::finalize(Thread::Temporary& t) noexcept {
   std::stack<frame_t, std::vector<frame_t>> stack;
 
   // Post-order in-memory tree traversal
-  stack.emplace(*global, children.at(*global));
+  {
+    auto git = children.find(*global);
+    if(git == children.end()) stack.emplace(*global);
+    else stack.emplace(*global, git->second);
+  }
   while(!stack.empty()) {
     if(stack.top().here != stack.top().end) {
       // This frame still has children to handle

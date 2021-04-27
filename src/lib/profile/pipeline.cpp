@@ -83,8 +83,7 @@ Settings& Settings::operator<<(std::unique_ptr<ProfileSource>&& sp) {
 Settings& Settings::operator<<(ProfileSink& s) {
   auto req = s.requires();
   requested += req;
-  if((req - available).hasAny())
-    util::log::fatal() << "Sink requires unavailable extended data!";
+  assert(req - available == ExtensionClass() && "Sink requires unavailable extended data!");
   auto wav = s.wavefronts();
   auto acc = s.accepts();
   if(acc.hasMetrics()) acc += DataClass::attributes + DataClass::threads;
@@ -101,8 +100,7 @@ Settings& Settings::operator<<(std::unique_ptr<ProfileSink>&& sp) {
 Settings& Settings::operator<<(ProfileFinalizer& f) {
   auto pro = f.provides();
   auto req = f.requires();
-  if((req - available).hasAny())
-    util::log::fatal() << "Finalizer requires unavailable extended data!";
+  assert(req - available == ExtensionClass() && "Finalizer requires unavailable extended data!");
   available += pro;
   finalizers.all.emplace_back(f);
   if(pro.hasClassification()) finalizers.classification.emplace_back(f);
@@ -189,8 +187,8 @@ ProfilePipeline::ProfilePipeline(Settings&& b, std::size_t team_sz)
     s().bindPipeline(Sink(*this, s.dataLimit, s.extensionLimit, i));
     all_requested |= s.dataLimit;
     scheduledWaves |= s.waveLimit;
-    if(!(attributes + references + contexts + DataClass::threads).allOf(s.waveLimit))
-      util::log::fatal() << "Early wavefronts for non-global data currently not supported!";
+    assert((attributes + references + contexts + DataClass::threads).allOf(s.waveLimit)
+           && "Early wavefronts requested for invalid dataclasses!");
   }
   structs.file.freeze();
   structs.context.freeze();
@@ -357,8 +355,7 @@ void ProfilePipeline::run() {
 
       // Clean up the Source-local data.
       sl.threads.clear();
-      if(!sl.thawedMetrics.empty())
-        util::log::fatal{} << "Source exited without freezing all its Metrics!";
+      assert(sl.thawedMetrics.empty() && "Source exited before freezing all of its referenced Metrics!");
       sl.thawedMetrics.clear();
     }
 
@@ -432,43 +429,35 @@ Source::Source(ProfilePipeline& p, const DataClass& ds, const ExtensionClass& es
 
 const decltype(ProfilePipeline::Extensions::classification)&
 Source::classification() const {
-  if(!extensionLimit.hasClassification())
-    util::log::fatal() << "Source did not register for `classification` emission!";
+  assert(extensionLimit.hasClassification() && "Source did not register for `classification` emission!");
   return pipe->uds.classification;
 }
 const decltype(ProfilePipeline::Extensions::identifier)&
 Source::identifier() const {
-  if(!extensionLimit.hasIdentifier())
-    util::log::fatal() << "Source did not register for `identifier` emission!";
+  assert(extensionLimit.hasIdentifier() && "Source did not register for `identifier` emission!");
   return pipe->uds.identifier;
 }
 const decltype(ProfilePipeline::Extensions::mscopeIdentifiers)&
 Source::mscopeIdentifiers() const {
-  if(!extensionLimit.hasMScopeIdentifiers())
-    util::log::fatal() << "Source did not register for `mscopeIdentifiers` emission!";
+  assert(extensionLimit.hasMScopeIdentifiers() && "Source did not register for `mscopeIdentifiers` emission!");
   return pipe->uds.mscopeIdentifiers;
 }
 const decltype(ProfilePipeline::Extensions::resolvedPath)&
 Source::resolvedPath() const {
-  if(!extensionLimit.hasResolvedPath())
-    util::log::fatal() << "Source did not register for `resolvedPath` emission!";
+  assert(extensionLimit.hasResolvedPath() && "Source did not register for `resolvedPath` emission!");
   return pipe->uds.resolvedPath;
 }
 
 util::Once::Caller Source::enterOrderedPrewaveRegion() {
-  if(!slocal->orderedRegions.first)
-    util::log::fatal{} << "Source attempted to enter a prewave ordered region without registration!";
-  if(!slocal->orderedPrewaveRegionUnlocked)
-    util::log::fatal{} << "Source attempted to enter a prewave ordered region prior to wavefront completion!";
+  assert(slocal->orderedRegions.first && "Source attempted to enter a prewave ordered region without registration!");
+  assert(slocal->orderedPrewaveRegionUnlocked && "Source attempted to enter a prewave ordered region prior to wavefront completion!");
   if(slocal->priorPrewaveRegionDep != std::numeric_limits<std::size_t>::max())
     pipe->sourceLocals[slocal->priorPrewaveRegionDep].orderedPrewaveRegionDepOnce.wait();
   return slocal->orderedPrewaveRegionDepOnce.signal();
 }
 util::Once::Caller Source::enterOrderedPostwaveRegion() {
-  if(!slocal->orderedRegions.second)
-    util::log::fatal{} << "Source attempted to enter a postwave ordered region without registration!";
-  if(!slocal->orderedPostwaveRegionUnlocked)
-    util::log::fatal{} << "Source attempted to enter a postwave ordered region prior to wavefront completion!";
+  assert(slocal->orderedRegions.second && "Source attempted to enter a postwave ordered region without registration!");
+  assert(slocal->orderedPostwaveRegionUnlocked && "Source attempted to enter a postwave ordered region prior to wavefront completion!");
   if(slocal->priorPostwaveRegionDep != std::numeric_limits<std::size_t>::max())
     pipe->sourceLocals[slocal->priorPostwaveRegionDep].orderedPostwaveRegionDepOnce.wait();
   else if(pipe->sinkWavefrontDepChain != std::numeric_limits<std::size_t>::max())
@@ -479,15 +468,13 @@ util::Once::Caller Source::enterOrderedPostwaveRegion() {
 }
 
 void Source::attributes(const ProfileAttributes& as) {
-  if(!limit().hasAttributes())
-    util::log::fatal() << "Source did not register for `attributes` emission!";
+  assert(limit().hasAttributes() && "Source did not register for `attributes` emission!");
   std::unique_lock<std::mutex> l(pipe->attrsLock);
   pipe->attrs.merge(as);
 }
 
 Module& Source::module(const stdshim::filesystem::path& p) {
-  if(!limit().hasReferences())
-    util::log::fatal() << "Source did not register for `references` emission!";
+  assert(limit().hasReferences() && "Source did not register for `references` emission!");
   auto x = pipe->mods.emplace(pipe->structs.module, p);
   auto r = &x.first();
   if(x.second) {
@@ -500,8 +487,7 @@ Module& Source::module(const stdshim::filesystem::path& p) {
 }
 
 File& Source::file(const stdshim::filesystem::path& p) {
-  if(!limit().hasReferences())
-    util::log::fatal() << "Source did not register for `references` emission!";
+  assert(limit().hasReferences() && "Source did not register for `references` emission!");
   auto x = pipe->files.emplace(pipe->structs.file, p);
   auto r = &x.first();
   if(x.second) {
@@ -514,8 +500,7 @@ File& Source::file(const stdshim::filesystem::path& p) {
 }
 
 Metric& Source::metric(Metric::Settings s) {
-  if(!limit().hasAttributes())
-    util::log::fatal() << "Source did not register for `attributes` emission!";
+  assert(limit().hasAttributes() && "Source did not register for `attributes` emission!");
   auto x = pipe->mets.emplace(pipe->structs.metric, std::move(s));
   slocal->thawedMetrics.insert(&x.first());
   for(ProfileTransformer& t: pipe->transformers)
@@ -524,8 +509,7 @@ Metric& Source::metric(Metric::Settings s) {
 }
 
 ExtraStatistic& Source::extraStatistic(ExtraStatistic::Settings s) {
-  if(!limit().hasAttributes())
-    util::log::fatal() << "Source did not register for `attributes` emission!";
+  assert(limit().hasAttributes() && "Source did not register for `attributes` emission!");
   auto x = pipe->estats.emplace(std::move(s));
   if(x.second) {
     for(auto& s: pipe->sinks) {
@@ -553,8 +537,7 @@ void Source::notifyContext(Context& c) {
   c.userdata.initialize();
 }
 ContextRef Source::context(ContextRef p, const Scope& s, bool recurse) {
-  if(!limit().hasContexts())
-    util::log::fatal() << "Source did not register for `contexts` emission!";
+  assert(limit().hasContexts() && "Source did not register for `contexts` emission!");
   ContextRef res = p;
   Scope rs = s;
   for(std::size_t i = 0; i < pipe->transformers.size(); i++)
@@ -573,8 +556,8 @@ ContextRef Source::context(ContextRef p, const Scope& s, bool recurse) {
       if(x.second) notifyContext(x.first);
       return x.first;
     }
-    util::log::fatal{} << "Attempt to create a Context from an improper Context!";
-    abort();  // unreachable
+    assert(false && "Attempt to create a Context from an improper Context!");
+    std::abort();
   };
 
   if(std::holds_alternative<Context>(res)
@@ -593,31 +576,25 @@ ContextRef Source::context(ContextRef p, const Scope& s, bool recurse) {
 }
 
 ContextRef Source::superposContext(ContextRef root, std::vector<SuperpositionedContext::Target> targets) {
-  if(!limit().hasContexts())
-    util::log::fatal() << "Source did not register for `contexts` emission!";
-  if(!std::holds_alternative<Context>(root))
-    util::log::fatal{} << "Attempt to root a Superposition on an improper Context!";
+  assert(limit().hasContexts() && "Source did not register for `contexts` emission!");
+  assert(std::holds_alternative<Context>(root) && "Attempt to root a Superposition on an improper Context!");
   return std::get<Context>(root).superposition(std::move(targets));
 }
 
 CollaborativeContext& Source::collabContext(std::uint64_t ci, std::uint64_t ri) {
-  if(!limit().hasContexts())
-    util::log::fatal() << "Source did not register for `contexts` emission!";
+  assert(limit().hasContexts() && "Source did not register for `contexts` emission!");
   return pipe->collabs[{ci, ri}].ctx;
 }
 ContextRef Source::collaborate(ContextRef target, CollaborativeContext& collab, Scope s) {
-  if(!limit().hasContexts())
-    util::log::fatal() << "Source did not register for `contexts` emission!";
+  assert(limit().hasContexts() && "Source did not register for `contexts` emission!");
   collab.addCollaboratorRoot(target, [this](Context& c){ notifyContext(c); });
   auto& sroot = collab.ensure(s, [this](Context& c){ notifyContext(c); });
   return {std::get<Context>(target), sroot};
 }
 
 Source::AccumulatorsRef Source::accumulateTo(ContextRef c, Thread::Temporary& t) {
-  if(!limit().hasMetrics())
-    util::log::fatal() << "Source did not register for `metrics` emission!";
-  if(!slocal->lastWave)
-    util::log::fatal() << "Attempt to emit metrics before requested!";
+  assert(limit().hasMetrics() && "Source did not register for `metrics` emission!");
+  assert(slocal->lastWave && "Attempt to emit metrics before requested!");
   if(auto pc = std::get_if<Context>(c))
     return t.data[*pc];
   if(auto pc = std::get_if<SuperpositionedContext>(c))
@@ -638,10 +615,8 @@ void Source::AccumulatorsRef::add(Metric& m, double v) {
 }
 
 Source::StatisticsRef Source::accumulateTo(ContextRef c) {
-  if(!limit().hasMetrics())
-    util::log::fatal() << "Source did not register for `metrics` emission!";
-  if(!std::holds_alternative<Context>(c))
-    util::log::fatal{} << "Statistics are only present on proper Contexts!";
+  assert(limit().hasMetrics() && "Source did not register for `metrics` emission!");
+  assert(std::holds_alternative<Context>(c) && "Statistics are only present on proper Contexts!");
   return {c};
 }
 
@@ -660,8 +635,7 @@ void Source::StatisticsRef::add(Metric& m, const StatisticPartial& sp,
 }
 
 Thread::Temporary& Source::thread(const ThreadAttributes& o) {
-  if(!limit().hasThreads())
-    util::log::fatal() << "Source did not register for `threads` emission!";
+  assert(limit().hasThreads() && "Source did not register for `threads` emission!");
   auto& t = *pipe->threads.emplace(new Thread(pipe->structs.thread, o)).first;
   for(auto& s: pipe->sinks) {
     if(s.dataLimit.hasThreads()) s().notifyThread(t);
@@ -672,10 +646,8 @@ Thread::Temporary& Source::thread(const ThreadAttributes& o) {
 }
 
 void Source::timepoint(Thread::Temporary& tt, ContextRef c, std::chrono::nanoseconds tm) {
-  if(!limit().hasTimepoints())
-    util::log::fatal() << "Source did not register for `timepoints` emission!";
-  if(!slocal->lastWave)
-    util::log::fatal() << "Attempt to emit timepoints before requested!";
+  assert(limit().hasTimepoints() && "Source did not register for `timepoints` emission!");
+  assert(slocal->lastWave && "Attempt to emit timepoints before requested!");
   for(auto& s: pipe->sinks) {
     if(!s.dataLimit.hasTimepoints()) continue;
     if(s.dataLimit.allOf(DataClass::threads + DataClass::contexts))
@@ -690,10 +662,8 @@ void Source::timepoint(Thread::Temporary& tt, ContextRef c, std::chrono::nanosec
 }
 
 void Source::timepoint(Thread::Temporary& tt, std::chrono::nanoseconds tm) {
-  if(!limit().hasTimepoints())
-    util::log::fatal() << "Source did not register for `timepoints` emission!";
-  if(!slocal->lastWave)
-    util::log::fatal() << "Attempt to emit timepoints before requested!";
+  assert(limit().hasTimepoints() && "Source did not register for `timepoints` emission!");
+  assert(slocal->lastWave && "Attempt to emit timepoints before requested!");
   for(auto& s: pipe->sinks) {
     if(!s.dataLimit.hasTimepoints()) continue;
     if(s.dataLimit.hasThreads())
@@ -704,10 +674,8 @@ void Source::timepoint(Thread::Temporary& tt, std::chrono::nanoseconds tm) {
 }
 
 void Source::timepoint(ContextRef c, std::chrono::nanoseconds tm) {
-  if(!limit().hasTimepoints())
-    util::log::fatal() << "Source did not register for `timepoints` emission!";
-  if(!slocal->lastWave)
-    util::log::fatal() << "Attempt to emit timepoints before requested!";
+  assert(limit().hasTimepoints() && "Source did not register for `timepoints` emission!");
+  assert(slocal->lastWave && "Attempt to emit timepoints before requested!");
   for(auto& s: pipe->sinks) {
     if(!s.dataLimit.hasTimepoints()) continue;
     if(s.dataLimit.hasContexts())
@@ -718,10 +686,8 @@ void Source::timepoint(ContextRef c, std::chrono::nanoseconds tm) {
 }
 
 void Source::timepoint(std::chrono::nanoseconds tm) {
-  if(!limit().hasTimepoints())
-    util::log::fatal() << "Source did not register for `timepoints` emission!";
-  if(!slocal->lastWave)
-    util::log::fatal() << "Attempt to emit timepoints before requested!";
+  assert(limit().hasTimepoints() && "Source did not register for `timepoints` emission!");
+  assert(slocal->lastWave && "Attempt to emit timepoints before requested!");
   for(auto& s: pipe->sinks) {
     if(!s.dataLimit.hasTimepoints()) continue;
     s().notifyTimepoint(tm);
@@ -729,7 +695,7 @@ void Source::timepoint(std::chrono::nanoseconds tm) {
 }
 
 Source& Source::operator=(Source&& o) {
-  if(pipe != nullptr) util::log::fatal() << "Attempt to rebind a Source!";
+  assert(pipe == nullptr && "Attempt to rebind a Source!");
   pipe = o.pipe;
   slocal = o.slocal;
   dataLimit = o.dataLimit;
@@ -746,8 +712,7 @@ Sink::Sink(ProfilePipeline& p, const DataClass& d, const ExtensionClass& e, std:
     priorWriteDepOnce(std::numeric_limits<std::size_t>::max()) {};
 
 void Sink::registerOrderedWavefront() {
-  if(pipe->depChainComplete)
-    util::log::fatal{} << "Attempt to register a Sink for an ordered wavefront chain after notifyPipeline!";
+  assert(!pipe->depChainComplete && "Attempt to register a Sink for an ordered wavefront chain after notifyPipeline!");
   if(!orderedWavefront) {
     orderedWavefront = true;
     priorWavefrontDepOnce = pipe->sinkWavefrontDepChain;
@@ -757,8 +722,7 @@ void Sink::registerOrderedWavefront() {
   }
 }
 void Sink::registerOrderedWrite() {
-  if(pipe->depChainComplete)
-    util::log::fatal{} << "Attempt to register a Sink for an ordered write chain after notifyPipeline!";
+  assert(!pipe->depChainComplete && "Attempt to register a Sink for an ordered write chain after notifyPipeline!");
   if(!orderedWrite) {
     orderedWrite = true;
     priorWriteDepOnce = pipe->sinkWriteDepChain;
@@ -767,8 +731,7 @@ void Sink::registerOrderedWrite() {
 }
 
 util::Once::Caller Sink::enterOrderedWavefront() {
-  if(!orderedWavefront)
-    util::log::fatal{} << "Attempt to enter an ordered wavefront region without registering!";
+  assert(orderedWavefront && "Attempt to enter an ordered wavefront region without registering!");
   if(priorWavefrontDepOnce != std::numeric_limits<std::size_t>::max())
     pipe->sinks[priorWavefrontDepOnce].wavefrontDepOnce.wait();
   else if(pipe->sourcePrewaveRegionDepChain != std::numeric_limits<std::size_t>::max())
@@ -776,8 +739,7 @@ util::Once::Caller Sink::enterOrderedWavefront() {
   return pipe->sinks[idx].wavefrontDepOnce.signal();
 }
 util::Once::Caller Sink::enterOrderedWrite() {
-  if(!orderedWrite)
-    util::log::fatal{} << "Attempt to enter an ordered write region without registering!";
+  assert(orderedWrite && "Attempt to enter an ordered write region without registering!");
   if(priorWriteDepOnce != std::numeric_limits<std::size_t>::max())
     pipe->sinks[priorWriteDepOnce].writeDepOnce.wait();
   return pipe->sinks[idx].writeDepOnce.signal();
@@ -785,73 +747,62 @@ util::Once::Caller Sink::enterOrderedWrite() {
 
 const decltype(ProfilePipeline::Extensions::classification)&
 Sink::classification() const {
-  if(!extensionLimit.hasClassification())
-    util::log::fatal() << "Sink did not register for `classification` absorption!";
+  assert(extensionLimit.hasClassification() && "Sink did not register for `classification` absorption!");
   return pipe->uds.classification;
 }
 const decltype(ProfilePipeline::Extensions::identifier)&
 Sink::identifier() const {
-  if(!extensionLimit.hasIdentifier())
-    util::log::fatal() << "Sink did not register for `identifier` absorption!";
+  assert(extensionLimit.hasIdentifier() && "Sink did not register for `identifier` absorption!");
   return pipe->uds.identifier;
 }
 const decltype(ProfilePipeline::Extensions::mscopeIdentifiers)&
 Sink::mscopeIdentifiers() const {
-  if(!extensionLimit.hasMScopeIdentifiers())
-    util::log::fatal() << "Sink did not register for `mscopeIdentifiers` absorption!";
+  assert(extensionLimit.hasMScopeIdentifiers() && "Sink did not register for `mscopeIdentifiers` absorption!");
   return pipe->uds.mscopeIdentifiers;
 }
 const decltype(ProfilePipeline::Extensions::resolvedPath)&
 Sink::resolvedPath() const {
-  if(!extensionLimit.hasResolvedPath())
-    util::log::fatal() << "Sink did not register for `resolvedPath` absorption!";
+  assert(extensionLimit.hasResolvedPath() && "Sink did not register for `resolvedPath` absorption!");
   return pipe->uds.resolvedPath;
 }
 
 const ProfileAttributes& Sink::attributes() {
-  if(!dataLimit.hasAttributes())
-    util::log::fatal() << "Sink did not register for `attributes` absorption!";
+  assert(dataLimit.hasAttributes() && "Sink did not register for `attributes` absorption!");
   return pipe->attrs;
 }
 
 const util::locked_unordered_uniqued_set<Module>& Sink::modules() {
-  if(!dataLimit.hasReferences())
-    util::log::fatal() << "Sink did not register for `references` absorption!";
+  assert(dataLimit.hasReferences() && "Sink did not register for `references` absorption!");
   return pipe->mods;
 }
 
 const util::locked_unordered_uniqued_set<File>& Sink::files() {
-  if(!dataLimit.hasReferences())
-    util::log::fatal() << "Sink did not register for `references` absorption!";
+  assert(dataLimit.hasReferences() && "Sink did not register for `references` absorption!");
   return pipe->files;
 }
 
 const util::locked_unordered_uniqued_set<Metric>& Sink::metrics() {
-  if(!dataLimit.hasAttributes())
-    util::log::fatal() << "Sink did not register for `attributes` absorption!";
+  assert(dataLimit.hasAttributes() && "Sink did not register for `attributes` absorption!");
   return pipe->mets;
 }
 
 const util::locked_unordered_uniqued_set<ExtraStatistic>& Sink::extraStatistics() {
-  if(!dataLimit.hasAttributes())
-    util::log::fatal() << "Sink did not register for `attributes` absorption!";
+  assert(dataLimit.hasAttributes() && "Sink did not register for `attributes` absorption!");
   return pipe->estats;
 }
 
 const Context& Sink::contexts() {
-  if(!dataLimit.hasContexts())
-    util::log::fatal() << "Sink did not register for `contexts` absorption!";
+  assert(dataLimit.hasContexts() && "Sink did not register for `contexts` absorption!");
   return *pipe->cct;
 }
 
 const util::locked_unordered_set<std::unique_ptr<Thread>>& Sink::threads() {
-  if(!dataLimit.hasThreads())
-    util::log::fatal() << "Sink did not register for `threads` absorption!";
+  assert(dataLimit.hasThreads() && "Sink did not register for `threads` absorption!");
   return pipe->threads;
 }
 
 Sink& Sink::operator=(Sink&& o) {
-  if(pipe != nullptr) util::log::fatal() << "Attempt to rebind a Sink!";
+  assert(pipe == nullptr && "Attempt to rebind a Sink!");
   pipe = o.pipe;
   dataLimit = o.dataLimit;
   extensionLimit = o.extensionLimit;

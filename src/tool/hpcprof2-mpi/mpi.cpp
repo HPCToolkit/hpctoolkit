@@ -49,8 +49,10 @@
 #include "lib/profile/util/log.hpp"
 
 #include <mpi.h>
-#include <mutex>
+
+#include <cassert>
 #include <cstring>
+#include <mutex>
 #include <thread>
 
 using namespace hpctoolkit::mpi;
@@ -209,7 +211,7 @@ void detail::exscan(void* data, std::size_t cnt, const Datatype& ty,
 }
 void detail::gather_root(void* recv, std::size_t cnt, const Datatype& ty,
                     std::size_t rootRank) {
-  if(World::rank() != rootRank) util::log::fatal{} << "Only valid at root!";
+  assert(World::rank() == rootRank && "mpi::detail::gather_root is only valid at the root!");
   SmallMem send(cnt * ty.sz);
   std::memcpy(send, (char*)recv + cnt * ty.sz * rootRank, cnt * ty.sz);
   auto l = mpiLock();
@@ -219,7 +221,7 @@ void detail::gather_root(void* recv, std::size_t cnt, const Datatype& ty,
 }
 void detail::gather(void* send, std::size_t cnt, const Datatype& ty,
                     std::size_t rootRank) {
-  if(World::rank() == rootRank) util::log::fatal{} << "Not valid at root!";
+  assert(World::rank() != rootRank && "mpi::detail::gather is not valid at the root!");
   auto l = mpiLock();
   if(MPI_Gather(send, cnt, ty.value, nullptr, 0, 0, rootRank,
                 MPI_COMM_WORLD) != MPI_SUCCESS)
@@ -227,7 +229,7 @@ void detail::gather(void* send, std::size_t cnt, const Datatype& ty,
 }
 void detail::gatherv_root(void* recv, const std::size_t* cnts,
                           const Datatype& ty, std::size_t rootRank) {
-  if(World::rank() != rootRank) util::log::fatal{} << "Only valid at root!";
+  assert(World::rank() == rootRank && "mpi::detail::gatherv_root is only valid at the root!");
   std::vector<int> icnts(World::size());
   std::vector<int> ioffsets(World::size());
   for(std::size_t i = 0, idx = 0; i < World::size(); i++) {
@@ -244,7 +246,7 @@ void detail::gatherv_root(void* recv, const std::size_t* cnts,
 }
 void detail::gatherv(void* send, std::size_t cnt, const Datatype& ty,
                      std::size_t rootRank) {
-  if(World::rank() == rootRank) util::log::fatal{} << "Not valid at root!";
+  assert(World::rank() != rootRank && "mpi::detail::gatherv is not valid at the root!");
   auto l = mpiLock();
   if(MPI_Gatherv(send, cnt, ty.value, nullptr, nullptr, nullptr, 0,
                  rootRank, MPI_COMM_WORLD) != MPI_SUCCESS)
@@ -252,7 +254,7 @@ void detail::gatherv(void* send, std::size_t cnt, const Datatype& ty,
 }
 void detail::scatter_root(void* send, std::size_t cnt, const Datatype& ty,
                           std::size_t rootRank) {
-  if(World::rank() != rootRank) util::log::fatal{} << "Only valid at root!";
+  assert(World::rank() == rootRank && "mpi::detail::scatter_root is only valid at the root!");
   SmallMem recv(cnt * ty.sz);
   auto l = mpiLock();
   if(MPI_Scatter(send, cnt, ty.value, recv, cnt, ty.value, rootRank,
@@ -261,7 +263,7 @@ void detail::scatter_root(void* send, std::size_t cnt, const Datatype& ty,
 }
 void detail::scatter(void* data, std::size_t cnt, const Datatype& ty,
                     std::size_t rootRank) {
-  if(World::rank() == rootRank) util::log::fatal{} << "Not valid at root!";
+  assert(World::rank() != rootRank && "mpi::detail::scatter is not valid at the root!");
   auto l = mpiLock();
   if(MPI_Scatter(nullptr, 0, 0, data, cnt, ty.value, rootRank,
                  MPI_COMM_WORLD) != MPI_SUCCESS)
@@ -269,7 +271,7 @@ void detail::scatter(void* data, std::size_t cnt, const Datatype& ty,
 }
 void detail::scatterv_root(void* send, const std::size_t* cnts, const Datatype& ty,
                       std::size_t rootRank) {
-  if(World::rank() != rootRank) util::log::fatal{} << "Only valid at root!";
+  assert(World::rank() == rootRank && "mpi::detail::scatterv_root is only valid at the root!");
   std::vector<int> icnts(World::size());
   std::vector<int> ioffsets(World::size());
   for(std::size_t i = 0, idx = 0; i < World::size(); i++) {
@@ -285,7 +287,7 @@ void detail::scatterv_root(void* send, const std::size_t* cnts, const Datatype& 
 }
 void detail::scatterv(void* data, std::size_t cnt, const Datatype& ty,
                       std::size_t rootRank) {
-  if(World::rank() == rootRank) util::log::fatal{} << "Not valid at root!";
+  assert(World::rank() != rootRank && "mpi::detail::scatterv is not valid at the root!");
   auto l = mpiLock();
   if(MPI_Scatterv(nullptr, nullptr, nullptr, 0,
                   data, cnt, ty.value, rootRank, MPI_COMM_WORLD) != MPI_SUCCESS)
@@ -332,8 +334,10 @@ SharedAccumulator::~SharedAccumulator() {
 void SharedAccumulator::initialize(std::uint64_t init) {
   atom.store(init, std::memory_order_relaxed);
   if(detail && World::rank() == 0) {
-    if(needsLock)  // Currently this part will deadlock if there are real locks
-      util::log::fatal{} << "TODO: Improve support for MPI_THREAD_SERIALIZED";
+    // TODO: Figure out how to support MPI_THREAD_SERIALIZED here.
+    // Currently this part with deadlock if there are real locks.
+    if(needsLock)
+      util::log::fatal{} << "MPI thread support insufficient, requires MPI_THREAD_MULTIPLE!";
     detail->active = true;
     detail->t = std::thread([](detail::Win& w, std::atomic<std::uint64_t>& atom) {
       while(1) {

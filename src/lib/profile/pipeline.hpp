@@ -58,7 +58,7 @@
 
 #include <map>
 #include <bitset>
-#include "stdshim/optional.hpp"
+#include <optional>
 #include <memory>
 #include <chrono>
 #include <stdexcept>

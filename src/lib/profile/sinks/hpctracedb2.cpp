@@ -60,8 +60,8 @@
 #include <cassert>
 #include <cerrno>
 #include <cstring>
+#include <cmath>
 #include <unistd.h>
-
 
 using namespace hpctoolkit;
 using namespace sinks;

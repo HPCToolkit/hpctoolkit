@@ -50,7 +50,6 @@
 #include "metric.hpp"
 
 #include "util/locked_unordered.hpp"
-#include "util/atomic_unordered.hpp"
 #include "scope.hpp"
 #include "util/ragged_vector.hpp"
 #include "util/ref_wrappers.hpp"
@@ -223,8 +222,8 @@ public:
 
   /// The direct parent of this Context.
   // MT: Safe (const)
-  Context* direct_parent() noexcept { return u_parent; }
-  const Context* direct_parent() const noexcept { return u_parent; }
+  util::optional_ref<Context> direct_parent() noexcept { return m_parent; }
+  util::optional_ref<const Context> direct_parent() const noexcept { return m_parent; }
 
   /// The Scope that this Context represents in the tree.
   // MT: Safe (const)
@@ -250,8 +249,8 @@ private:
   util::locked_unordered_set<std::unique_ptr<SuperpositionedContext>> superpositionRoots;
 
   Context(ud_t::struct_t& rs) : userdata(rs, std::ref(*this)) {};
-  Context(ud_t::struct_t& rs, Scope l) : Context(rs, nullptr, l) {};
-  Context(ud_t::struct_t&, Context*, Scope);
+  Context(ud_t::struct_t& rs, Scope l) : Context(rs, std::nullopt, l) {};
+  Context(ud_t::struct_t&, util::optional_ref<Context>, Scope);
   Context(Context&& c);
 
   friend class Metric;
@@ -274,7 +273,7 @@ private:
   /// depositing onto the last element of each route.
   SuperpositionedContext& superposition(std::vector<SuperpositionedContext::Target>);
 
-  util::uniqable_key<Context*> u_parent;
+  const util::optional_ref<Context> m_parent;
   util::uniqable_key<Scope> u_scope;
 
   friend class util::uniqued<Context>;

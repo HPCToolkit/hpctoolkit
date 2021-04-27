@@ -48,6 +48,7 @@
 
 #include "mpi/core.hpp"
 
+#include <cassert>
 #include <cstdlib>
 #include <iostream>
 
@@ -74,14 +75,25 @@ bool MessageBuffer::empty() noexcept {
   return sbuf.pubseekoff(0, std::ios_base::cur, std::ios_base::out) <= 0;
 }
 
-fatal::fatal() { (*this) << "FATAL: "; }
+static bool settings_set = false;
+static Settings settings = Settings::none;
+Settings Settings::get() {
+  assert(settings_set && "Logging is not available before calling util::log::Settings::set!");
+  return settings;
+}
+void Settings::set(Settings s) {
+  settings = std::move(s);
+  settings_set = true;
+}
+
+fatal::fatal() : detail::MessageBuffer(true) { (*this) << "FATAL: "; }
 fatal::~fatal() {
   (*this) << '\n';
   std::cerr << sbuf.str();
   std::abort();
 }
 
-error::error() { (*this) << "ERROR: "; }
+error::error() : detail::MessageBuffer(Settings::get().error()) { (*this) << "ERROR: "; }
 error::~error() {
   if(!empty()) {
     (*this) << '\n';
@@ -89,7 +101,7 @@ error::~error() {
   }
 }
 
-warning::warning() { (*this) << "WARNING: "; }
+warning::warning() : detail::MessageBuffer(Settings::get().warning()) { (*this) << "WARNING: "; }
 warning::~warning() {
   if(!empty()) {
     (*this) << '\n';
@@ -97,7 +109,7 @@ warning::~warning() {
   }
 }
 
-info::info() { (*this) << "INFO: "; }
+info::info() : detail::MessageBuffer(Settings::get().info()) { (*this) << "INFO: "; }
 info::~info() {
   if(!empty()) {
     (*this) << '\n';

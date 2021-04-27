@@ -83,8 +83,8 @@ std::tuple<const File*, uint64_t, bool> Classification::getLine(uint64_t pos) co
 }
 
 Scope Classification::classifyLine(Scope s) const noexcept {
-  if(s.type() != Scope::Type::point && s.type() != Scope::Type::call)
-    util::log::fatal{} << "Attempt to line-classify a non-point type Scope: " << s;
+  assert((s.type() == Scope::Type::point || s.type() == Scope::Type::call)
+         && "Attempt to call classifyLine on a non-point type Scope!");
   auto mo = s.point_data();
   auto lsp = getLineScope(mo.second);
   if(lsp == nullptr || lsp->file == nullptr) return s;
@@ -103,8 +103,7 @@ const Classification::LineScope* Classification::getLineScope(uint64_t pos) cons
 }
 
 void Classification::Block::addRoute(std::vector<route_t> from) noexcept {
-  if(parent != nullptr)
-    util::log::fatal{} << "Attempt to add route to a non-root Block!";
+  assert(parent == nullptr && "Attempt to add route to a non-root Block!");
   if(from.empty()) return;
   routes.emplace_front(std::move(from));
   routeCnt += 1;

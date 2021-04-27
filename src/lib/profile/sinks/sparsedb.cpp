@@ -46,21 +46,21 @@
 
 #include "sparsedb.hpp"
 
-#include <lib/profile/util/log.hpp>
-#include <lib/profile/mpi/all.hpp>
+#include "../mpi/all.hpp"
+#include "../util/log.hpp"
 
+#include <lib/prof/cms-format.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
 #include <lib/prof-lean/id-tuple.h>
 #include <lib/prof/pms-format.h>
-#include <lib/prof/cms-format.h>
 
-
+#include <cassert>
+#include <cmath>
 #include <fstream>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <omp.h>
-#include <assert.h>
 #include <stdexcept>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 using namespace hpctoolkit;
 using namespace hpctoolkit::sinks;
@@ -104,9 +104,8 @@ void SparseDB::notifyWavefront(DataClass d) noexcept {
   src.contexts().citerate([&](const Context& c){
     auto id = c.userdata[src.identifier()];
     ctxMaxId = std::max(ctxMaxId, id);
-    if(!cs.emplace(id, c).second)
-      util::log::fatal() << "Duplicate Context identifier "
-                         << c.userdata[src.identifier()] << "!";
+    auto x = cs.emplace(id, c);
+    assert(x.second && "Context identifiers not unique!");
   }, nullptr);
 
   contexts.reserve(cs.size());

@@ -59,7 +59,7 @@
 // For now. Change later when things break on some compiler in the future.
 #if __cplusplus >= 201903L
 #define _HPCTOOLKIT_STDSHIM_HAS_atomic_wait
-#endif
+#endif  // __cplusplus >= 201903L
 #if __cplusplus >= 201703L
 
 #if defined(__has_include)
@@ -78,13 +78,7 @@
 #ifndef HPCTOOLKIT_SLOW_LIBC
 #define _HPCTOOLKIT_STDSHIM_HAS_shared_mutex
 #endif
-#endif
-#if __cplusplus >= 201402L
-#ifndef HPCTOOLKIT_SLOW_LIBC
-#define _HPCTOOLKIT_STDSHIM_HAS_shared_timed_mutex
-#endif
-#define _HPCTOOLKIT_STDSHIM_HAS_shared_lock
-#endif
+#endif  // __cplusplus >= 201703L
 
 #define _HPCTOOLKIT_STDSHIM_STD_HAS(X) defined(_HPCTOOLKIT_STDSHIM_HAS_ ## X)
 

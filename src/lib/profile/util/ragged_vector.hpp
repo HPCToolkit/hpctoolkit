@@ -53,6 +53,7 @@
 
 #include "../stdshim/shared_mutex.hpp"
 
+#include <cassert>
 #include <cstddef>
 #include <functional>
 #include <stdexcept>
@@ -145,8 +146,7 @@ public:
   /// `init` is called to initialize the block, `des` to destroy it.
   // MT: Internally Synchronized
   generic_member add(std::size_t sz, std::size_t align, initializer_t&& init, destructor_t&& des) {
-    if(complete)
-      util::log::fatal() << "Cannot add entries to a frozen ragged_struct!";
+    assert(!complete && "Cannot add entries to a frozen ragged_struct!");
     std::unique_lock<stdshim::shared_mutex> l(m_mtex);
     auto idx = m_entries.size();
     m_size = (m_size + (align - 1)) & -align;
@@ -228,8 +228,7 @@ public:
   /// Check whether the ragged_struct is frozen and ready for actual use.
   // MT: Externally Synchronized (after freeze())
   void valid() {
-    if(!complete)
-      util::log::fatal() << "Cannot use a ragged_struct before freezing!";
+    assert(complete && "Cannot use a ragged_struct before freezing!");
   }
 
   /// Check whether a member (or typed_member) is valid with respect to this
@@ -237,10 +236,8 @@ public:
   /// NOTE: For ragged_* only.
   // MT: Safe (const)
   void valid(const member& m) const {
-    if(!m.m_base)
-      util::log::fatal() << "Attempt to use an empty member!";
-    if(m.m_base != this)
-      util::log::fatal() << "Attempt to use an incompatible member!";
+    assert(m.m_base && "Attempt to use an empty member!");
+    assert(m.m_base == this && "Attempt to use an incompatible member!");
   }
 
   /// Initialize the given member in the given data block. Adding `direct` means

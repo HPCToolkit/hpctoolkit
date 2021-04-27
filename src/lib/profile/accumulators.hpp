@@ -49,7 +49,7 @@
 
 #include <atomic>
 #include <bitset>
-#include "stdshim/optional.hpp"
+#include <optional>
 #include <vector>
 
 namespace hpctoolkit {
@@ -120,7 +120,7 @@ public:
 
   /// Get the Thread-local (:Sum) Statistic accumulation, for a particular Metric Scope.
   // MT: Safe (const), Unstable (before ThreadFinal wavefront)
-  stdshim::optional<double> get(MetricScope) const noexcept;
+  std::optional<double> get(MetricScope) const noexcept;
 
 private:
   void validate() const noexcept;
@@ -169,7 +169,7 @@ public:
 
     /// Get this Partial's accumulation, for a particular MetricScope.
     // MT: Safe (const), Unstable (before `metrics` wavefront)
-    stdshim::optional<double> get(MetricScope) const noexcept;
+    std::optional<double> get(MetricScope) const noexcept;
 
   private:
     friend class StatisticAccumulator;
@@ -190,7 +190,7 @@ public:
 
     /// Get this Partial's accumulation, for a particular MetricScope.
     // MT: Safe (const), Unstable (before `metrics` wavefront)
-    stdshim::optional<double> get(MetricScope) const noexcept;
+    std::optional<double> get(MetricScope) const noexcept;
 
   private:
     friend class StatisticAccumulator;

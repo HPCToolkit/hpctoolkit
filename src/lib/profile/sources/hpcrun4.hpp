@@ -76,6 +76,8 @@ public:
   DataClass finalizeRequest(const DataClass&) const noexcept override;
 
 private:
+  bool realread(const DataClass&);
+
   // Transfer of attributes from header-open time to read-time.
   bool fileValid;
   bool attrsValid;

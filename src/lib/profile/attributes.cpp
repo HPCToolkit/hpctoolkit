@@ -63,24 +63,19 @@ ProfileAttributes::ProfileAttributes() = default;
 ThreadAttributes::ThreadAttributes() = default;
 
 void ProfileAttributes::name(std::string&& s) {
-  if(s.empty())
-    util::log::fatal() << "Attempt to give a Profile an empty name!";
-  if(m_name)
-    util::log::fatal() << "Attempt to reset a Profile's name!";
+  assert(!s.empty() && "Attempt to give a profile an empty name!");
+  assert(!m_name && "Attempt to overwrite a previously set profile name!");
   m_name = std::move(s);
 }
 
 void ProfileAttributes::path(stdshim::filesystem::path&& p) {
-  if(p.empty())
-    util::log::fatal() << "Attempt to give a Profile an empty path!";
-  if(m_path)
-    util::log::fatal() << "Attempt to reset a Profile's path!";
+  assert(!p.empty() && "Attempt to give a profile an empty path!");
+  assert(!m_path && "Attempt to overwrite a previously set profile path!");
   m_path = std::move(p);
 }
 
 void ProfileAttributes::job(unsigned long j) {
-  if(m_job)
-    util::log::fatal() << "Attempt to reset a Profile's job id!";
+  assert(!m_job && "Attempt to overwrite a previously set profile job id!");
   m_job = j;
 }
 
@@ -91,34 +86,28 @@ const std::string* ProfileAttributes::environment(const std::string& v) const no
 }
 void ProfileAttributes::environment(const std::string& var,
                                     const std::string& val) {
-  if(m_env.count(var) != 0)
-    util::log::fatal() << "Attempt to directly give a Profile values for an environment variable twice!";
+  assert(m_env.count(var) == 0 && "Attempt to overwrite a previously set profile environment variable!");
   m_env.emplace(var, val);
 }
 
 void ThreadAttributes::procid(unsigned long pid) {
-  if(m_procid)
-    util::log::fatal() << "Attempt to reset a process id value!";
+  assert(!m_procid && "Attempt to overwrite a previously set profile process id!");
   m_procid = pid;
 }
 
 void ThreadAttributes::timepointCnt(unsigned long long cnt) {
-  if(m_timepointCnt)
-    util::log::fatal() << "Attempt to reset a timepoint count!";
+  assert(!m_timepointCnt && "Attempt to overwrite a previously set timepoint count!");
   m_timepointCnt = cnt;
 }
 
 const std::vector<pms_id_t>& ThreadAttributes::idTuple() const noexcept {
-  if(m_idTuple.empty())
-    util::log::fatal{} << "Thread with an empty tuple!";
+  assert(!m_idTuple.empty() && "Thread has an empty hierarchical id tuple!");
   return m_idTuple;
 }
 
 void ThreadAttributes::idTuple(const std::vector<pms_id_t>& tuple) {
-  if(!m_idTuple.empty())
-    util::log::fatal{} << "Attempt to reset a hierarchical tuple!";
-  if(tuple.empty())
-    util::log::fatal{} << "Attempt to set an empty hierarchical tuple!";
+  assert(m_idTuple.empty() && "Attempt to overwrite a previously set thread hierarchical id tuple!");
+  assert(!tuple.empty() && "No tuple given to ThreadAttributes::idTuple");
   for(const auto& t: tuple) {
     switch(t.kind) {
     case IDTUPLE_NODE: m_hostid = t.index; break;
