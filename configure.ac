@@ -2249,7 +2249,7 @@ BOOST_COPY=no
 # missing library, so it doesn't have to be exact.
 
 BOOST_COPY_LIST='atomic chrono date_time filesystem graph regex system thread timer'
-BOOST_NEEDED_LIST='filesystem graph regex system'
+BOOST_NEEDED_LIST='graph regex system'
 
 AC_MSG_CHECKING([for boost])
 
