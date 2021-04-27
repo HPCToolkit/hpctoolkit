@@ -5,14 +5,13 @@
 #include <ucontext.h>               // getcontext
 
 
-
 //******************************************************************************
 // local includes
 //******************************************************************************
 
 #include "optimization-check.h"
 #include "maps/queue-context-map.h"
-#include "maps/kernel-queue-map.h"
+#include "maps/kernel-context-map.h"
 #include "maps/kernel-param-map.h"
 #include "pointer-alias-check-helper.h"
 #include "maps/buffer-map.h"
@@ -141,31 +140,30 @@ isKernelSubmittedToMultipleQueues
   
   queue_context_map_entry_t *qc_entry = queue_context_map_lookup((uint64_t)queue);
   uint64_t queue_context = queue_context_map_entry_context_id_get(qc_entry);
-  kernel_queue_map_entry_t *kq_entry = kernel_queue_map_insert((uint64_t)kernel, (uint64_t)queue, queue_context);
-  qc_node_t *list_head = kernel_queue_map_entry_qc_list_get(kq_entry);
+  kernel_context_map_entry_t *kc_entry = kernel_context_map_insert((uint64_t)kernel, queue_context);
+  if (!kc_entry) {
+    // insertion failed; the entry already exists
+    return;
+  }
+  context_node_t *list_head = kernel_context_map_entry_qc_list_get(kc_entry);
 
   // check if the list has multiple queues. If yes, are the contexts same or different?
-  qc_node_t *curr = list_head;
+  context_node_t *curr = list_head;
   while (curr) {
-    uint64_t queue_id = curr->queue_id;
     uint64_t context_id = curr->context_id;
-    if (queue_id != (uint64_t)queue) {
+    if (context_id != (uint64_t)queue_context) {
+#if 0
       queue_context_map_entry_t *qce = queue_context_map_lookup(queue_id);
       if (!qce) {
-        // this queue has been deleted. We need to delete this qc_node_t 
+        // this queue has been deleted. We need to delete this context_node_t 
         continue;
       }
-      // warning 1: kernel being passed to multiple queues
+#endif
       cct_node_t *cct_node = gpu_application_thread_correlation_callback(0);
       intel_optimization_t i;
-      i.intelOptKind = KERNEL_TO_MULTIPLE_QUEUES;
+      i.intelOptKind = KERNEL_TO_MULTIPLE_QUEUES_MULTIPLE_CONTEXTS;
       record_intel_optimization_metrics(cct_node, &i);
-
-      if (context_id != (uint64_t)queue_context) {
-        // warning 2: kernel passed to multiple queues with different context  
-        i.intelOptKind = KERNEL_TO_MULTIPLE_QUEUES_MULTIPLE_CONTEXTS;
-        record_intel_optimization_metrics(cct_node, &i);
-      }
+      break;
     }
     curr = curr->next;
   }
@@ -178,7 +176,7 @@ clearKernelQueues
  cl_kernel kernel
 )
 {
-  kernel_queue_map_delete((uint64_t)kernel);
+  kernel_context_map_delete((uint64_t)kernel);
 }
 
 
