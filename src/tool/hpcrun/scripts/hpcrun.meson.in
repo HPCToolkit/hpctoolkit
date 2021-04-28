@@ -24,6 +24,17 @@ if test $host_arm = "yes"; then
 fi
 
 #------------------------------------------------------------
+# Recent versions of MPI use UCX as a communication 
+# substrate. Prevent UCX from catching SEGV by dropping it 
+# from UCX's list of error signals. If UCX catches SEGV, 
+# it will terminate the program. We can't allow UCX to
+# do that since hpcrun may encounter a SEGV as part of its
+# operation and want to drop a sample rather than 
+# terminate the program.
+#------------------------------------------------------------
+export UCX_ERROR_SIGNALS=ILL,FPE,BUS
+
+#------------------------------------------------------------
 # Find path to this script
 #------------------------------------------------------------
 
