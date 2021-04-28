@@ -128,6 +128,13 @@ ompt_thread_type_get
 );
 
 
+_Bool
+ompt_thread_computes
+(
+ void
+);
+
+
 region_stack_el_t * 
 top_region_stack
 (

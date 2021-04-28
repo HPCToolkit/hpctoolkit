@@ -117,6 +117,26 @@ ompt_thread_type_get
 }
 
 
+_Bool
+ompt_thread_computes
+(
+ void
+)
+{
+  switch(ompt_thread_type_get()) {
+  case ompt_thread_initial:
+  case ompt_thread_worker:
+    return true;
+  case ompt_thread_other:
+  case ompt_thread_unknown:
+  default:
+    break;
+  }
+  return false;
+}
+
+
+
 region_stack_el_t*
 top_region_stack
 (
