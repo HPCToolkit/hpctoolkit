@@ -1081,6 +1081,8 @@ with_rocm
 with_rocm_hip
 with_rocm_dbgapi
 with_rocm_tracer
+with_rocm_profiler
+with_rocm_hsa
 with_level0
 enable_data_centric_tracing
 enable_devtools
@@ -1839,6 +1841,9 @@ Optional Packages:
   --with-rocm-hip=PATH    path to hip install directory
   --with-rocm-dbgapi=PATH path to rocm-dbgapi install directory
   --with-rocm-tracer=PATH path to roctracer-dev install directory
+  --with-rocm-profiler=PATH
+                          path to rocprofiler-dev install directory
+  --with-rocm-hsa=PATH    path to hsa-dev install directory
   --with-level0=PATH      use given Level Zero installation (absolute path)
                           with hpcrun (default is NO)
   --with-valgrind=PATH    path to Valgrind install directory
@@ -24383,6 +24388,8 @@ ROCM=
 ROCM_HIP=
 ROCM_DBGAPI=
 ROCM_TRACER=
+ROCM_PROFILER=
+ROCM_HSA=
 
 
 # Check whether --with-rocm was given.
@@ -24412,17 +24419,39 @@ if test "${with_rocm_tracer+set}" = set; then :
 fi
 
 
+
+# Check whether --with-rocm-profiler was given.
+if test "${with_rocm_profiler+set}" = set; then :
+  withval=$with_rocm_profiler; ROCM_PROFILER="$withval"
+fi
+
+
+
+# Check whether --with-rocm-hsa was given.
+if test "${with_rocm_hsa+set}" = set; then :
+  withval=$with_rocm_hsa; ROCM_HSA="$withval"
+fi
+
+
+
+
 ROCM_HIP_IFLAGS=
 ROCM_DBGAPI_IFLAGS=
 ROCM_TRACER_IFLAGS=
+ROCM_PROFILER_IFLAGS=
+ROCM_HSA_IFLAGS=
 
 ROCM_HIP_LD_DIR=
 ROCM_DBGAPI_LD_DIR=
 ROCM_TRACER_LD_DIR=
+ROCM_PROFILER_LD_DIR=
+ROCM_HSA_LD_DIR=
 
 ROCM_HIP_MESG=
 ROCM_DBGAPI_MESG=
 ROCM_TRACER_MESG=
+ROCM_PROFILER_MESG=
+ROCM_HSA_MESG=
 
 require_rocm=no
 
@@ -24482,6 +24511,38 @@ $as_echo "$as_me: found $ROCM/roctracer/include/roctracer_hip.h" >&6;}
 $as_echo "$as_me: found $ROCM/roctracer/lib/libroctracer64.so" >&6;}
       ROCM_TRACER_LD_DIR="$ROCM/roctracer/lib"
       ROCM_TRACER_MESG="$ROCM/roctracer"
+      found=yes
+    fi
+
+    # ROCPROFILER
+    if test -f "$ROCM/rocprofiler/include/rocprofiler.h" ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM/rocprofiler/include/rocprofiler.h" >&5
+$as_echo "$as_me: found $ROCM/rocprofiler/include/rocprofiler.h" >&6;}
+      ROCM_PROFILER_IFLAGS="-I$ROCM/rocprofiler/include"
+      ROCM_PROFILER_MESG="$ROCM/rocprofiler"
+      found=yes
+    fi
+    if test -f "$ROCM/rocprofiler/lib/librocprofiler64.so" ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM/rocprofiler/lib/librocprofiler64.so" >&5
+$as_echo "$as_me: found $ROCM/rocprofiler/lib/librocprofiler64.so" >&6;}
+      ROCM_PROFILER_LD_DIR="$ROCM/rocprofiler/lib"
+      ROCM_PROFILER_MESG="$ROCM/rocprofiler"
+      found=yes
+    fi
+
+    # HSA
+    if test -f "$ROCM/hsa/include/hsa/hsa.h" ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM/hsa/include/hsa/hsa.h" >&5
+$as_echo "$as_me: found $ROCM/hsa/include/hsa/hsa.h" >&6;}
+      ROCM_HSA_IFLAGS="-I$ROCM/hsa/include/hsa"
+      ROCM_HSA_MESG="$ROCM/hsa"
+      found=yes
+    fi
+    if test -f "$ROCM/hsa/lib/libhsa-runtime64.so" ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM/hsa/lib/libhsa-runtime64.so" >&5
+$as_echo "$as_me: found $ROCM/hsa/lib/libhsa-runtime64.so" >&6;}
+      ROCM_HSA_LD_DIR="$ROCM/hsa/lib"
+      ROCM_HSA_MESG="$ROCM/hsa"
       found=yes
     fi
 
@@ -24586,6 +24647,64 @@ $as_echo "$as_me: WARNING: found nothing useful in $ROCM_TRACER" >&2;}
     ;;
 esac
 
+case "$ROCM_PROFILER" in
+  /* )
+    require_rocm=yes
+    found=no
+
+    if test -f "$ROCM_PROFILER/rocprofiler/include/rocprofiler.h" ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM_PROFILER/rocprofiler/include/rocprofiler.h" >&5
+$as_echo "$as_me: found $ROCM_PROFILER/rocprofiler/include/rocprofiler.h" >&6;}
+      ROCM_PROFILER_IFLAGS="-I$ROCM_PROFILER/rocprofiler/include"
+      ROCM_PROFILER_MESG="$ROCM_PROFILER/rocprofiler"
+      found=yes
+    fi
+    if test -f "$ROCM_PROFILER/rocprofiler/lib/librocprofiler64.so" ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM_PROFILER/rocprofiler/lib/librocprofiler64.so" >&5
+$as_echo "$as_me: found $ROCM_PROFILER/rocprofiler/lib/librocprofiler64.so" >&6;}
+      ROCM_PROFILER_LD_DIR="$ROCM_PROFILER/rocprofiler/lib"
+      ROCM_PROFILER_MESG="$ROCM_PROFILER/rocprofiler"
+      found=yes
+    fi
+    if test "$found" = no ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: found nothing useful in $ROCM_PROFILER" >&5
+$as_echo "$as_me: WARNING: found nothing useful in $ROCM_PROFILER" >&2;}
+    fi
+    ;;
+  * )
+    ROCM_PROFILER=no
+    ;;
+esac
+
+case "$ROCM_HSA" in
+  /* )
+    require_rocm=yes
+    found=no
+
+    if test -f "$ROCM_HSA/include/hsa/hsa.h" ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM_HSA/include/hsa/hsa.h" >&5
+$as_echo "$as_me: found $ROCM_HSA/include/hsa/hsa.h" >&6;}
+      ROCM_HSA_IFLAGS="-I$ROCM_HSA/include/hsa"
+      ROCM_HSA_MESG="$ROCM_HSA"
+      found=yes
+    fi
+    if test -f "$ROCM_HSA/lib/libhsa-runtime64.so" ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: found $ROCM_HSA/lib/libhsa-runtime64.so" >&5
+$as_echo "$as_me: found $ROCM_HSA/lib/libhsa-runtime64.so" >&6;}
+      ROCM_HSA_LD_DIR="$ROCM_HSA/lib"
+      ROCM_HSA_MESG="$ROCM_HSA"
+      found=yes
+    fi
+    if test "$found" = no ; then
+      { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: found nothing useful in $ROCM_HSA" >&5
+$as_echo "$as_me: WARNING: found nothing useful in $ROCM_HSA" >&2;}
+    fi
+    ;;
+  * )
+    ROCM_HSA=no
+    ;;
+esac
+
 #
 # Check that we found all the pieces.
 #
@@ -24602,6 +24721,12 @@ then
   if test "x$ROCM_TRACER_IFLAGS" = x ; then
     as_fn_error $? "unable to find roctracer_hip.h" "$LINENO" 5
   fi
+  if test "x$ROCM_PROFILER_IFLAGS" = x ; then
+    as_fn_error $? "unable to find rocprofiler.h" "$LINENO" 5
+  fi
+  if test "x$ROCM_HSA_IFLAGS" = x ; then
+    as_fn_error $? "unable to find hsa.h" "$LINENO" 5
+  fi
 
   if test "x$ROCM_HIP_LD_DIR" = x ; then
     as_fn_error $? "unable to find libamdhip64.so" "$LINENO" 5
@@ -24612,10 +24737,16 @@ then
   if test "x$ROCM_TRACER_LD_DIR" = x ; then
     as_fn_error $? "unable to find libroctracer64.so" "$LINENO" 5
   fi
+  if test "x$ROCM_PROFILER_LD_DIR" = x ; then
+    as_fn_error $? "unable to find librocprofiler64.so" "$LINENO" 5
+  fi
+  if test "x$ROCM_HSA_LD_DIR" = x ; then
+    as_fn_error $? "unable to find libhsa-runtime64.so" "$LINENO" 5
+  fi
 
   OPT_HAVE_ROCM=yes
-  OPT_ROCM_IFLAGS="$ROCM_HIP_IFLAGS  $ROCM_DBGAPI_IFLAGS  $ROCM_TRACER_IFLAGS"
-  OPT_ROCM_LD_LIB_PATH="${ROCM_HIP_LD_DIR}:${ROCM_DBGAPI_LD_DIR}:${ROCM_TRACER_LD_DIR}"
+  OPT_ROCM_IFLAGS="$ROCM_HIP_IFLAGS  $ROCM_DBGAPI_IFLAGS  $ROCM_TRACER_IFLAGS $ROCM_PROFILER_IFLAGS $ROCM_HSA_IFLAGS"
+  OPT_ROCM_LD_LIB_PATH="${ROCM_HIP_LD_DIR}:${ROCM_DBGAPI_LD_DIR}:${ROCM_TRACER_LD_DIR}:${ROCM_PROFILER_LD_DIR}:${ROCM_HSA_LD_DIR}"
 fi
 
 #
@@ -28008,6 +28139,10 @@ $as_echo "$as_me:   rocm hip:     $ROCM_HIP_MESG" >&6;}
 $as_echo "$as_me:   rocm dbgapi:  $ROCM_DBGAPI_MESG" >&6;}
   { $as_echo "$as_me:${as_lineno-$LINENO}:   rocm tracer:  $ROCM_TRACER_MESG" >&5
 $as_echo "$as_me:   rocm tracer:  $ROCM_TRACER_MESG" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}:   rocm profiler:$ROCM_PROFILER_MESG" >&5
+$as_echo "$as_me:   rocm profiler:$ROCM_PROFILER_MESG" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}:   rocm hsa:     $ROCM_HSA_MESG" >&5
+$as_echo "$as_me:   rocm hsa:     $ROCM_HSA_MESG" >&6;}
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}:   valgrind:     ${VALGRIND}" >&5
 $as_echo "$as_me:   valgrind:     ${VALGRIND}" >&6;}

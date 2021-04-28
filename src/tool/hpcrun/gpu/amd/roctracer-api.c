@@ -66,6 +66,9 @@
 
 #include <hpcrun/utilities/hpcrun-nanotime.h>
 
+
+#include "rocprofiler-api.h"
+
 //******************************************************************************
 // macros
 //******************************************************************************
@@ -433,6 +436,10 @@ roctracer_subscriber_callback
     // Generate notification entry
     uint64_t cpu_submit_time = hpcrun_nanotime();
     gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, cpu_submit_time);
+
+    rocprofiler_start_kernel();
+  }else if (data->phase == ACTIVITY_API_PHASE_EXIT){
+    rocprofiler_end_kernel();
   }
 }
 
