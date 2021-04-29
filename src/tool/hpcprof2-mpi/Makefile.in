@@ -148,11 +148,8 @@ am__objects_1 = hpcprof2_mpi-main.$(OBJEXT) \
 am_hpcprof2_mpi_OBJECTS = $(am__objects_1)
 hpcprof2_mpi_OBJECTS = $(am_hpcprof2_mpi_OBJECTS)
 am__DEPENDENCIES_1 =
-am__DEPENDENCIES_2 = $(HPCLIB_Profile) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) $(HPCLIB_Banal) \
-	$(HPCLIB_Analysis) $(HPCLIB_Prof) $(HPCLIB_Binutils) \
-	$(HPCLIB_ProfLean) $(HPCLIB_XML) $(HPCLIB_Support) \
-	$(HPCLIB_SupportLean)
+am__DEPENDENCIES_2 = $(HPCLIB_Profile) $(HPCLIB_ProfLean) \
+	$(HPCLIB_SupportLean) $(am__DEPENDENCIES_1)
 hpcprof2_mpi_DEPENDENCIES = $(am__DEPENDENCIES_2)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
@@ -532,10 +529,8 @@ HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
 # Local settings
 #############################################################################
 EXT_LIBS = lib/hpctoolkit/ext-libs
-@OPT_DYNINST_LIBDWARF_TRUE@DWARF_IFLAGS = -I$(LIBDWARF_INC)
 @OPT_DYNINST_LIBDW_FALSE@MY_ELF_DWARF = -L$(LIBDWARF_LIB) -ldwarf -L$(LIBELF_LIB) -lelf
 @OPT_DYNINST_LIBDW_TRUE@MY_ELF_DWARF = -L$(LIBELF_LIB) -ldw -lelf
-@OPT_ENABLE_IGC_TRUE@IGA_LDFLGS = @OPT_IGC_LDFLAGS@
 MYSOURCES = \
 	main.cpp master.cpp worker.cpp tree.cpp \
 	mpi.cpp ../hpcprof2/args.cpp
@@ -543,8 +538,7 @@ MYSOURCES = \
 MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@ \
 	@VALGRIND_IFLAGS@ $(am__append_1)
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@ \
-	$(BOOST_IFLAGS) $(DYNINST_IFLAGS) $(TBB_IFLAGS) \
-	@VALGRIND_IFLAGS@ -std=gnu++17 $(am__append_2)
+	@BOOST_IFLAGS@ @VALGRIND_IFLAGS@ -std=gnu++17 $(am__append_2)
 MYLDFLAGS = \
 	-Wl,-rpath='$(prefix)/$(EXT_LIBS)' \
 	-Wl,-rpath='$$ORIGIN/../$(EXT_LIBS)' \
@@ -558,24 +552,14 @@ MYLDFLAGS = \
 MYLDADD = \
 	@HOST_LIBTREPOSITORY@ \
 	$(HPCLIB_Profile) \
+	$(HPCLIB_ProfLean) \
+	$(HPCLIB_SupportLean) \
 	$(MY_ELF_DWARF) \
 	@LZMA_PROF_MPI_LIBS@ \
 	@XERCES_LDLIBS@ \
 	@BINUTILS_LIBS@ \
 	@BOOST_LFLAGS@ \
-	@HOST_HPCPROF_LDFLAGS@ \
-	$(IGA_LDFLGS) \
-	$(DYNINST_LFLAGS) \
-	$(HPCLIB_Banal) \
-	$(HPCLIB_Analysis) \
-	$(HPCLIB_Prof) \
-	$(HPCLIB_Binutils) \
-	$(HPCLIB_ProfLean) \
-	@MBEDTLS_LIBS@ \
-	$(HPCLIB_XML) \
-	$(HPCLIB_Support) \
-	$(HPCLIB_SupportLean) \
-	@TBB_LFLAGS@
+	@HOST_HPCPROF_LDFLAGS@
 
 MYCLEAN = @HOST_LIBTREPOSITORY@
 hpcprof2_mpi_SOURCES = $(MYSOURCES)

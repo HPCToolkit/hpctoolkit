@@ -58,7 +58,7 @@
 #############################################################################
 
 # We do not want the standard GNU files (NEWS README AUTHORS ChangeLog...)
-AUTOMAKE_OPTIONS = foreign subdir-objects
+AUTOMAKE_OPTIONS = foreign
 
 #############################################################################
 # Common settings
@@ -84,13 +84,11 @@ MYSOURCES = \
 	ArgsHPCProf.hpp ArgsHPCProf.cpp \
 	\
 	Util.hpp Util.cpp \
-	TextUtil.hpp TextUtil.cpp \
-	\
-	MetricNameProfMap.cpp
+	TextUtil.hpp TextUtil.cpp
 
 # GNU binutils flags are needed for HPCLIB_ISA.
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @BINUTILS_IFLAGS@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@ @XERCES_IFLAGS@ @BOOST_IFLAGS@ @DYNINST_IFLAGS@ @TBB_IFLAGS@
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BINUTILS_IFLAGS@ @XERCES_IFLAGS@ @BOOST_IFLAGS@
 
 if IS_HOST_AR
   MYAR = @HOST_AR@
