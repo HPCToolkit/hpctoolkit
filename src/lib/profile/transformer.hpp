@@ -48,6 +48,7 @@
 #define HPCTOOLKIT_PROFILE_TRANSFORMER_H
 
 #include "pipeline.hpp"
+#include <iostream>
 
 namespace hpctoolkit {
 
@@ -138,7 +139,7 @@ struct DefUseTransformer : public ProfileTransformer {
           ContextRef ctx = sink.context(cr, {mo.first, edge.first});
           targets.push_back({{ctx}, ctx, path_length_inv});
         }
-        if(targets.empty()) return std::pair(cr, true);
+        if(targets.empty()) return std::pair(cr, false);
         if(targets.size() == 1) {
           return std::pair(targets.front().target, true);
         }

@@ -622,7 +622,7 @@ void Metric::finalize(Thread::Temporary& t) noexcept {
       newContexts = std::move(next);
     }
   }
-  if(!global) return;  // Apparently there's nothing to propagate
+  if(!global || children.empty()) return;  // Apparently there's nothing to propagate
 
   // Now that the critical subtree is built, recursively propagate up.
   using md_t = decltype(t.data)::mapped_type;
