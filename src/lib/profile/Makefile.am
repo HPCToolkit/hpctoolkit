@@ -48,8 +48,6 @@
 ##
 ## File:
 ##   $HeadURL$
-##
-## Description:
 ##   *Process with automake to produce Makefile.in*
 ##
 ##   Note: All local variables are prefixed with MY to prevent name
@@ -69,14 +67,6 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 # Local settings
 #############################################################################
-
-sinks/FORMATS.md.inc: $(srcdir)/../../../doc/FORMATS.md $(srcdir)/../../tool/hpcstruct/stringify.sh
-	echo -n "static const char FORMATS_md[] = " > $@
-	$(srcdir)/../../tool/hpcstruct/stringify.sh < $< >> $@
-	echo ';' >> $@
-
-noinst_HEADERS = sinks/FORMATS.md.inc
-BUILT_SOURCES = sinks/FORMATS.md.inc
 
 MYSOURCES = \
 	stdshim/shared_mutex.cpp stdshim/atomic.cpp stdshim/futex-detail.c \
