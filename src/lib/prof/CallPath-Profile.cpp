@@ -1583,7 +1583,9 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
      filename);
      prof_abort(-1);
   }
-  hpcrun_fmt_sparse_metrics_fprint(&sparse_metrics,outfs, &metricTbl, "  ", sm_easyToGrep);
+  if (outfs) {
+    hpcrun_fmt_sparse_metrics_fprint(&sparse_metrics,outfs, &metricTbl, "  ", sm_easyToGrep);
+  }
   hpcrun_fmt_sparse_metrics_free(&sparse_metrics, free);
 
   //YUMENG: no epoch info 
