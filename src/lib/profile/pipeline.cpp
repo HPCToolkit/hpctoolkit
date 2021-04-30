@@ -644,6 +644,8 @@ void Source::metricFreeze(Metric& m) {
     for(auto& s: pipe->sinks) {
       if(s.dataLimit.hasAttributes()) s().notifyMetric(m);
     }
+    ProfileAnalyzer pa;
+    pa.analysisMetricsFor(m);
     m.userdata.initialize();
   }
   slocal->thawedMetrics.erase(&m);
