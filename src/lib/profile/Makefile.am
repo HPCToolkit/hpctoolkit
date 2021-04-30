@@ -75,6 +75,7 @@ MYSOURCES = \
 	util/file-posix.cpp util/lzmastream.cpp \
 	\
 	pipeline.cpp source.cpp context.cpp scope.cpp metric.cpp \
+	analyzer.cpp \
 	module.cpp attributes.cpp dataclass.cpp sink.cpp packedids.cpp \
 	\
 	sources/packed.cpp sources/hpcrun4.cpp \

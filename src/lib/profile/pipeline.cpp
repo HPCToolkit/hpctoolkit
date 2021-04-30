@@ -52,6 +52,7 @@
 #include "source.hpp"
 #include "sink.hpp"
 #include "transformer.hpp"
+#include "analyzer.hpp"
 #include "finalizer.hpp"
 
 #include <iomanip>
@@ -349,6 +350,8 @@ void ProfilePipeline::run() {
       for(auto& t: sl.threads) {
         Metric::prefinalize(t);
         if(t.contributesToCollab) continue;
+        ProfileAnalyzer pa;
+        pa.analyze(t);
         Metric::finalize(t);
         for(auto& s: sinks)
           if(s.dataLimit.hasThreads()) s().notifyThreadFinal(t);
@@ -530,6 +533,8 @@ void Source::metricFreeze(Metric& m) {
     for(auto& s: pipe->sinks) {
       if(s.dataLimit.hasAttributes()) s().notifyMetric(m);
     }
+    ProfileAnalyzer pa;
+    pa.analysisMetricsFor(m);
     m.userdata.initialize();
   }
   slocal->thawedMetrics.erase(&m);
