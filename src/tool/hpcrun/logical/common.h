@@ -104,6 +104,9 @@ typedef struct logical_region_t {
   void* enter;  // First frame to elide (inclusive)
   void* exit;   // Last frame to elide (inclusive)
 
+  // How many frames after exit to additionally elide.
+  size_t afterexit;
+
   // Logical frames residing in this region. Can be used by logical unwinders to
   // store additional per-frame state.
   size_t subdepth;

@@ -90,14 +90,12 @@ void LogicalFile::module(const Module& m, Classification& c) noexcept {
         f = &sink.file(filename), l = lineno;
         lines.emplace_back(lo, f, 0);
         lines.emplace_back(hi-1, nullptr, 0);
-        util::log::debug{true} << "range " << std::hex << lo << " " << hi-1 << " is " << f->path();
       }
-      c.setScope({lo, hi}, c.addScope(c.addFunction(m, funcname, 0, f, l)));
+      c.setScope({lo, hi-1}, c.addScope(c.addFunction(m, funcname, 0, f, l)));
     } else if(filename[0] != '\0') {
       File* f = &sink.file(filename);
       lines.emplace_back(lo, f, 0);
       lines.emplace_back(hi-1, nullptr, 0);
-      util::log::debug{true} << "range " << std::hex << lo << " " << hi-1 << " is " << f->path();
     } else
       util::log::fatal{} << "Invalid logical stanza, both names are empty!";
 
@@ -116,7 +114,6 @@ void LogicalFile::module(const Module& m, Classification& c) noexcept {
   c.setLinePost([](Scope orig, uint64_t off, std::tuple<const File*, uint64_t, bool> res){
     if(std::get<0>(res) == nullptr) return orig;
     Scope ret = {*std::get<0>(res), off & UINT32_C(0xFFFFFFFF)};
-    util::log::debug{true} << orig << " -> " << ret;
     return ret;
   });
 }

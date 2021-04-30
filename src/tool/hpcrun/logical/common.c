@@ -128,7 +128,7 @@ logical_region_t* hpcrun_logical_stack_push(logical_region_stack_t* s,
   s->depth++;
   next->subdepth = 0;
   next->subhead = NULL;
-  ETMSG(LOGICAL_CTX, "Pushed region [%d] %p, enter = %p", s->depth, next, next->enter);
+  TMSG(LOGICAL_CTX, "Pushed region [%d] %p, enter = %p", s->depth, next, next->enter);
   return next;
 }
 
@@ -154,7 +154,7 @@ logical_frame_t* hpcrun_logical_substack_push(logical_region_stack_t* s,
   // Copy over the frame data, and return the new top
   memcpy(next, f, sizeof *next);
   r->subdepth++;
-  ETMSG(LOGICAL_CTX, "Pushed frame [%d] [%d] %p", s->depth, r->subdepth, next);
+  TMSG(LOGICAL_CTX, "Pushed frame [%d] [%d] %p", s->depth, r->subdepth, next);
   return next;
 }
 
@@ -173,7 +173,7 @@ size_t hpcrun_logical_stack_settop(logical_region_stack_t* s, size_t n) {
   }
   // We're within the right segment, so we can just set the depth now.
   s->depth = n;
-  ETMSG(LOGICAL_CTX, "Settop to [%d]", s->depth);
+  TMSG(LOGICAL_CTX, "Settop to [%d]", s->depth);
   return 0;
 }
 
@@ -192,7 +192,7 @@ size_t hpcrun_logical_substack_settop(logical_region_stack_t* s, logical_region_
   }
   // We're within the right segment, so we can just set the depth now.
   r->subdepth = n;
-  ETMSG(LOGICAL_CTX, "Settop to [%d] [%d]", s->depth, r->subdepth);
+  TMSG(LOGICAL_CTX, "Settop to [%d] [%d]", s->depth, r->subdepth);
   return 0;
 }
 
@@ -214,7 +214,7 @@ static void logicalize_bt(backtrace_info_t* bt, int isSync) {
   thread_data_t* td = hpcrun_get_thread_data();
   if(td->logical.depth == 0) return;  // No need for our services
 
-  ETMSG(LOGICAL_CTX, "========= Logicalizing backtrace =========");
+  TMSG(LOGICAL_UNWIND, "========= Logicalizing backtrace =========");
 
   frame_t* bt_cur = bt->begin;
 
@@ -228,33 +228,35 @@ static void logicalize_bt(backtrace_info_t* bt, int isSync) {
       // Progress the cursor until the first frame_t within this logical segment
       if(cur->exit != NULL) {
         while(bt_cur->cursor.sp != cur->exit) {
-          ETMSG(LOGICAL_CTX, " sp = %p ip = %s +0x%x", bt_cur->cursor.sp,
+          TMSG(LOGICAL_UNWIND, " sp = %p ip = %s +%p", bt_cur->cursor.sp,
                 hpcrun_loadmap_findById(bt_cur->ip_norm.lm_id)->name, bt_cur->ip_norm.lm_ip);
           if(bt_cur == bt->last) goto earlyexit;
           bt_cur++;
         }
-        ETMSG(LOGICAL_CTX, "== Exit from logical range @ %p ==", cur->exit);
+        if(cur->afterexit > 0)
+          for(size_t i = 0; i < cur->afterexit && bt_cur != bt->begin; i++, bt_cur--);
+        TMSG(LOGICAL_UNWIND, "== Exit from logical range @ %p (>=%d from top) ==", cur->exit, cur->afterexit);
       } else {
         assert(first && "Only the topmost logical region can have exit = NULL!");
-        ETMSG(LOGICAL_CTX, "== Within logical range ==");
+        TMSG(LOGICAL_UNWIND, "== Within logical range ==");
       }
       first = false;
       frame_t* logical_start = bt_cur;
 
       // Scan through until we've seen everything including the enter
       while(bt_cur->cursor.sp != cur->enter) {
-        ETMSG(LOGICAL_CTX, " sp = %p ip = %s +0x%x", bt_cur->cursor.sp,
+        TMSG(LOGICAL_UNWIND, " sp = %p ip = %s +%p", bt_cur->cursor.sp,
               hpcrun_loadmap_findById(bt_cur->ip_norm.lm_id)->name, bt_cur->ip_norm.lm_ip);
         if(bt_cur == bt->last) goto earlyexit;
         bt_cur++;
       }
-      ETMSG(LOGICAL_CTX, " sp = %p ip = %s +0x%x", bt_cur->cursor.sp,
+      TMSG(LOGICAL_UNWIND, " sp = %p ip = %s +%p", bt_cur->cursor.sp,
             hpcrun_loadmap_findById(bt_cur->ip_norm.lm_id)->name, bt_cur->ip_norm.lm_ip);
       if(bt_cur == bt->last) goto earlyexit;
       bt_cur++;
       frame_t* logical_end = bt_cur;
 
-      ETMSG(LOGICAL_CTX, "== Logically the above is replaced by the following ==");
+      TMSG(LOGICAL_UNWIND, "== Logically the above is replaced by the following ==");
       assert(cur->expected > 0 && "Logical regions should always have at least 1 logical frame!");
 
       // If needed, move later physical frames down to make room for the logical ones
@@ -283,15 +285,18 @@ static void logicalize_bt(backtrace_info_t* bt, int isSync) {
       struct logical_frame_segment_t* subseg = cur->subhead;
       size_t suboff = cur->subdepth % FRAMES_PER_SEGMENT;
       while(cur->generator(cur, &store, index, subseg == NULL ? NULL : &subseg->frames[suboff-1], logical_start + index)) {
-        ETMSG(LOGICAL_CTX, "(logical) ip = %d +0x%x", (logical_start+index)->ip_norm.lm_id, (logical_start+index)->ip_norm.lm_ip);
+        TMSG(LOGICAL_UNWIND, "(logical) ip = %d +%p", (logical_start+index)->ip_norm.lm_id, (logical_start+index)->ip_norm.lm_ip);
         assert(index < cur->expected && "Expected number of logical frames is too low!");
         index++;
         if(suboff > 0) suboff--;
         if(suboff == 0 && subseg != NULL)
           subseg = subseg->prev, suboff = FRAMES_PER_SEGMENT;
       }
-      ETMSG(LOGICAL_CTX, "(logical) ip = %d +0x%x", (logical_start+index)->ip_norm.lm_id, (logical_start+index)->ip_norm.lm_ip);
-      ETMSG(LOGICAL_CTX, "== Entry to logical range @ %p ==", cur->enter);
+      TMSG(LOGICAL_UNWIND, "(logical) ip = %d +%p", (logical_start+index)->ip_norm.lm_id, (logical_start+index)->ip_norm.lm_ip);
+      TMSG(LOGICAL_UNWIND, "== Entry to logical range @ %p (%d frames of %d expected) ==", cur->enter, index+1, cur->expected);
+      IF_ENABLED(LOGICAL_UNWIND)
+        if(index+1 < cur->expected)
+          TMSG(LOGICAL_UNWIND, "== WARNING less frames than expected generated above! == ");
 
       // Shift the physical frames down to fill the gap
       bt_cur = logical_start + index + 1;
@@ -303,21 +308,21 @@ static void logicalize_bt(backtrace_info_t* bt, int isSync) {
 
 earlyexit:
   if(seg != NULL) {
-    ETMSG(LOGICAL_CTX, "WARNING: The following logical regions did not match:");
+    TMSG(LOGICAL_UNWIND, "WARNING: The following logical regions did not match: (partial: %s)", bt->partial_unwind ? "yes" : "no");
     for(; seg != NULL; seg = seg->prev) {
       for(; off > 0; off--) {
         logical_region_t* cur = &seg->regions[off-1];
-        ETMSG(LOGICAL_CTX, " sp @ exit = 0x%x, sp @ enter = 0x%x",
-              cur->exit, cur->enter);
+        TMSG(LOGICAL_UNWIND, " sp @ exit = %p, sp @ enter = %p",
+             cur->exit, cur->enter);
       }
     }
   }
 
   for(; bt_cur != bt->last; bt_cur++)
-    ETMSG(LOGICAL_CTX, " sp = %p ip = %s +0x%x", bt_cur->cursor.sp,
+    TMSG(LOGICAL_UNWIND, " sp = %p ip = %s +%p", bt_cur->cursor.sp,
           hpcrun_loadmap_findById(bt_cur->ip_norm.lm_id)->name, bt_cur->ip_norm.lm_ip);
 
-  ETMSG(LOGICAL_CTX, "========= END Logicalizing backtrace =========");
+  TMSG(LOGICAL_UNWIND, "========= END Logicalizing backtrace =========");
 }
 
 // ---------------------------------------

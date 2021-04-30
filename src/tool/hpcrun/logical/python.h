@@ -52,8 +52,6 @@
 typedef struct logical_python_frame_t {
   // Cached fid for this frame
   uint32_t fid;
-  // Line number for the function in this frame
-  uint32_t lineno;
 } logical_python_frame_t;
 
 typedef struct logical_python_region_t {
