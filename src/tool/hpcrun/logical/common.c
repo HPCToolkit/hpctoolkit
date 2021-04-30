@@ -56,6 +56,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 static void cleanup_metadata_store(logical_metadata_store_t*);
 
@@ -336,7 +337,7 @@ void hpcrun_logical_metadata_register(logical_metadata_store_t* store, const cha
   store->tablesize = 0;
   store->generator = generator;
   atomic_init(&store->lm_id, 0);
-  store->file = NULL;
+  store->path = NULL;
   store->next = metadata;
   metadata = store;
 }
@@ -344,15 +345,17 @@ void hpcrun_logical_metadata_register(logical_metadata_store_t* store, const cha
 void hpcrun_logical_metadata_generate_lmid(logical_metadata_store_t* store) {
   // Storage for the path we will be generating
   // <output dir> + /logical/ + <generator> + . + <8 random hex digits> + \0
-  char path[strlen(hpcrun_files_output_directory())
-            + 9 + strlen(store->generator) + 1 + 8 + 1];
+  store->path = hpcrun_malloc(strlen(hpcrun_files_output_directory())
+                              + 9 + strlen(store->generator) + 1 + 8 + 1);
+  if(store->path == NULL)
+    hpcrun_abort("hpcrun: error allocating space for logical metadata path");
 
   // First make sure the directory is created
-  char* next = path+sprintf(path, "%s/logical", hpcrun_files_output_directory());
-  int ret = mkdir(path, 0755);
+  char* next = store->path+sprintf(store->path, "%s/logical", hpcrun_files_output_directory());
+  int ret = mkdir(store->path, 0755);
   if(ret != 0 && errno != EEXIST) {
     hpcrun_abort("hpcrun: error creating logical metadata output directory `%s`: %s",
-                 path, strerror(errno));
+                 store->path, strerror(errno));
   }
 
   next += sprintf(next, "/%s.", store->generator);
@@ -361,23 +364,18 @@ void hpcrun_logical_metadata_generate_lmid(logical_metadata_store_t* store) {
     // Create the file where all the bits will be dumped
     // The last part is just randomly generated to not conflict
     sprintf(next, "%08lx", random());
-    fd = open(path, O_WRONLY | O_EXCL | O_CREAT, 0644);
+    fd = open(store->path, O_WRONLY | O_EXCL | O_CREAT, 0644);
     if(fd == -1) {
       if(errno == EEXIST) continue;  // Try again
       hpcrun_abort("hpcrun: error creating logical metadata output `%s`: %s",
-                   path, strerror(errno));
+                   store->path, strerror(errno));
     }
     break;
   } while(1);
-
-  // Cache the fd as a FILE* for later
-  store->file = fdopen(fd, "wb");
-  if(store->file == NULL)
-    hpcrun_abort("hpcrun: error in fdopen: %s", strerror(errno));
-  fprintf(store->file, "HPCLOGICAL");
+  close(fd);
 
   // Register the path with the loadmap
-  atomic_store_explicit(&store->lm_id, hpcrun_loadModule_add(path), memory_order_release);
+  atomic_store_explicit(&store->lm_id, hpcrun_loadModule_add(store->path), memory_order_release);
 }
 
 // Roughly the FNV-1a hashing algorithm, simplified slightly for ease of use
@@ -492,17 +490,21 @@ uint32_t hpcrun_logical_metadata_fid(logical_metadata_store_t* store,
   }
   entry->id = store->nextid++;
 
-  // Write a stanza in the metadata storage file about this
-  if(!store->file) hpcrun_logical_metadata_generate_lmid(store);
-  hpcfmt_int4_fwrite(entry->id, store->file);
-  hpcfmt_str_fwrite(entry->funcname, store->file);
-  hpcfmt_str_fwrite(entry->filename, store->file);
-  hpcfmt_int4_fwrite(entry->lineno, store->file);
-
   spinlock_unlock(&store->lock);
   return entry->id;
 }
 
 static void cleanup_metadata_store(logical_metadata_store_t* store) {
-  if(store->file != NULL) fclose(store->file);
+  FILE* f = fopen(store->path, "wb");
+  if(f == NULL) return;
+  fprintf(f, "HPCLOGICAL");
+  for(size_t idx = 0; idx < store->tablesize; idx++) {
+    struct logical_metadata_store_hashentry_t* entry = &store->idtable[idx];
+    if(entry->id == 0) continue;
+    hpcfmt_int4_fwrite(entry->id, f);
+    hpcfmt_str_fwrite(entry->funcname, f);
+    hpcfmt_str_fwrite(entry->filename, f);
+    hpcfmt_int4_fwrite(entry->lineno, f);
+  }
+  fclose(f);
 }

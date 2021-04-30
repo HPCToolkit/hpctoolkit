@@ -195,8 +195,8 @@ typedef struct logical_metadata_store_t {
   // Load module identifier used to refer to this particular metadata store
   // Use hpcrun_logical_metadata_lmid to get the correct value for this
   _Atomic(uint16_t) lm_id;
-  // FILE* for the (left open) metadata storage file
-  FILE* file;
+  // Path to the metadata storage file
+  char* path;
 
   // Pointer to the next metadata storage (for cleanup by fini())
   struct logical_metadata_store_t* next;
