@@ -47,6 +47,7 @@
 #include "frame.h"
 #include "hpctoolkit-config.h"
 #include "utilities/ip-normalized.h"
+#include "unwind/common/unwind.h"
 
 #ifdef ENABLE_LOGICAL_PYTHON
 #include "logical/python.h"
@@ -54,6 +55,7 @@
 
 #include "lib/prof-lean/spinlock.h"
 
+#include <assert.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include "lib/prof-lean/stdatomic.h"
@@ -99,13 +101,25 @@ typedef struct logical_region_t {
   // Can be an overestimate, but should never be an underestimate.
   size_t expected;
 
-  // Range of physical stack frames that need to be replaced by logical ones.
-  // This is always calculated based on the stack pointer.
-  void* enter;  // First frame to elide (inclusive)
-  void* exit;   // Last frame to elide (inclusive)
+  // First (earliest) frame NOT part of the logical region. In other words the
+  // physical caller of the logical bits.
+  hpcrun_unw_cursor_t beforeenter;
 
-  // How many frames after exit to additionally elide.
-  size_t afterexit;
+  // Optional finalizer called on beforeenter during the first unwind with this
+  // region. Set to NULL after use.
+  void (*beforeenter_fixup)(struct logical_region_t*, hpcrun_unw_cursor_t*);
+
+  // If not NULL, the last (latest) frame part of the logical region. In other
+  // words the caller of the physical code called from the logical scope.
+  // Stored as the cursor's sp field.
+  // If NULL, indicates that we are still within the logical region.
+  void* exit;
+
+  // Optional finalizer for exit, returns the last (latest) frame part of the
+  // logical region. Frames at lower offsets are newer. Must not return a frame
+  // later (less) than top.
+  const frame_t* (*afterexit)(struct logical_region_t*, const frame_t* cur,
+                              const frame_t* top);
 
   // Logical frames residing in this region. Can be used by logical unwinders to
   // store additional per-frame state.
@@ -164,6 +178,29 @@ extern size_t hpcrun_logical_substack_settop(logical_region_stack_t*, logical_re
 static inline void hpcrun_logical_substack_pop(logical_region_stack_t* s, logical_region_t* r, size_t n) {
   hpcrun_logical_substack_settop(s, r, r->subdepth > n ? r->subdepth - n : 0);
 }
+
+// Get the unwind cursor for the Nth caller frame. Helper for filling beforeenter.
+#define hpcrun_logical_frame_cursor(CUR, N) ({    \
+  ucontext_t ctx;                                 \
+  assert(getcontext(&ctx) == 0);                  \
+  hpcrun_logical_frame_cursor_real(&ctx, CUR, N); \
+})
+__attribute__((always_inline))
+static inline void hpcrun_logical_frame_cursor_real(ucontext_t* ctx, hpcrun_unw_cursor_t* cur, size_t n) {
+  int steps_taken = 0;
+  hpcrun_unw_init_cursor(cur, ctx);
+  for(size_t i = 0; i < n; i++) {
+    if(hpcrun_unw_step(cur, &steps_taken) <= STEP_STOP)
+      break;
+  }
+}
+
+// Get the stack pointer for the Nth caller frame. Helper for filling exit.
+#define hpcrun_logical_frame_sp(N) ({             \
+  hpcrun_unw_cursor_t cur;                        \
+  hpcrun_logical_frame_cursor(&cur, N);           \
+  cur.sp;                                         \
+})
 
 // --------------------------------------
 // Logical load module management

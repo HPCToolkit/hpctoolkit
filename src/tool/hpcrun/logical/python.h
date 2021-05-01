@@ -55,6 +55,8 @@ typedef struct logical_python_frame_t {
 } logical_python_frame_t;
 
 typedef struct logical_python_region_t {
+  // Load module id for the Python infrastructure itself
+  int16_t lm;
   // Latest PyFrameObject NOT to report (or NULL)
   void* caller;
   // Latest PyFrameObject (top of the stack)
