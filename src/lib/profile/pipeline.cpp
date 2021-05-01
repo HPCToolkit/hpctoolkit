@@ -641,11 +641,12 @@ ExtraStatistic& Source::extraStatistic(ExtraStatistic::Settings s) {
 
 void Source::metricFreeze(Metric& m) {
   if(m.freeze()) {
+    for(auto& a: pipe->analyzers) {
+      a.analysisMetricsFor(m);
+    }
     for(auto& s: pipe->sinks) {
       if(s.dataLimit.hasAttributes()) s().notifyMetric(m);
     }
-    ProfileAnalyzer pa;
-    pa.analysisMetricsFor(m);
     m.userdata.initialize();
   }
   slocal->thawedMetrics.erase(&m);
@@ -653,6 +654,9 @@ void Source::metricFreeze(Metric& m) {
 
 Context& Source::global() { return *pipe->cct; }
 void Source::notifyContext(Context& c) {
+  for(auto& a: pipe->analyzers) {
+    a.context(c);
+  }
   for(auto& s: pipe->sinks) {
     if(s.dataLimit.hasContexts()) s().notifyContext(c);
   }

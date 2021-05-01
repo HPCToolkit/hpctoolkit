@@ -152,12 +152,11 @@ am__objects_1 = stdshim/libHPCprofile_la-shared_mutex.lo \
 	mpi/libHPCprofile_la-accumulate-thread.lo \
 	libHPCprofile_la-pipeline.lo libHPCprofile_la-source.lo \
 	libHPCprofile_la-context.lo libHPCprofile_la-scope.lo \
-	libHPCprofile_la-metric.lo libHPCprofile_la-analyzer.lo \
-	libHPCprofile_la-module.lo libHPCprofile_la-attributes.lo \
-	libHPCprofile_la-dataclass.lo libHPCprofile_la-sink.lo \
-	libHPCprofile_la-packedids.lo libHPCprofile_la-accumulators.lo \
-	libHPCprofile_la-finalizer.lo libHPCprofile_la-lexical.lo \
-	sources/libHPCprofile_la-packed.lo \
+	libHPCprofile_la-metric.lo libHPCprofile_la-module.lo \
+	libHPCprofile_la-attributes.lo libHPCprofile_la-dataclass.lo \
+	libHPCprofile_la-sink.lo libHPCprofile_la-packedids.lo \
+	libHPCprofile_la-accumulators.lo libHPCprofile_la-finalizer.lo \
+	libHPCprofile_la-lexical.lo sources/libHPCprofile_la-packed.lo \
 	sources/libHPCprofile_la-hpcrun4.lo \
 	sinks/libHPCprofile_la-hpctracedb2.lo \
 	sinks/libHPCprofile_la-packed.lo \
@@ -580,7 +579,6 @@ MYSOURCES = \
 	mpi/accumulate-thread.cpp \
 	\
 	pipeline.cpp source.cpp context.cpp scope.cpp metric.cpp \
-	analyzer.cpp \
 	module.cpp attributes.cpp dataclass.cpp sink.cpp packedids.cpp \
 	accumulators.cpp finalizer.cpp lexical.cpp \
 	\
@@ -779,7 +777,6 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprofile_la-accumulators.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprofile_la-analyzer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprofile_la-attributes.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprofile_la-context.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprofile_la-dataclass.Plo@am__quote@
@@ -965,13 +962,6 @@ libHPCprofile_la-metric.lo: metric.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='metric.cpp' object='libHPCprofile_la-metric.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprofile_la-metric.lo `test -f 'metric.cpp' || echo '$(srcdir)/'`metric.cpp
-
-libHPCprofile_la-analyzer.lo: analyzer.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprofile_la-analyzer.lo -MD -MP -MF $(DEPDIR)/libHPCprofile_la-analyzer.Tpo -c -o libHPCprofile_la-analyzer.lo `test -f 'analyzer.cpp' || echo '$(srcdir)/'`analyzer.cpp
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCprofile_la-analyzer.Tpo $(DEPDIR)/libHPCprofile_la-analyzer.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='analyzer.cpp' object='libHPCprofile_la-analyzer.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_la_CXXFLAGS) $(CXXFLAGS) -c -o libHPCprofile_la-analyzer.lo `test -f 'analyzer.cpp' || echo '$(srcdir)/'`analyzer.cpp
 
 libHPCprofile_la-module.lo: module.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprofile_la-module.lo -MD -MP -MF $(DEPDIR)/libHPCprofile_la-module.Tpo -c -o libHPCprofile_la-module.lo `test -f 'module.cpp' || echo '$(srcdir)/'`module.cpp

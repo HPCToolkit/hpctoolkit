@@ -59,6 +59,7 @@
 #include "lib/profile/finalizers/directclassification.hpp"
 #include "lib/profile/finalizers/intel_def_use_graph.hpp"
 #include "lib/profile/transformer.hpp"
+#include "lib/profile/analyzer.hpp"
 #include "lib/profile/util/log.hpp"
 #include "lib/profile/mpi/all.hpp"
 
@@ -113,9 +114,12 @@ int rank0(ProfArgs&& args) {
   // Now that Modules will be Classified during Finalization, add a Transformer
   // to expand the Contexts as they enter the Pipe.
   RouteExpansionTransformer retrans;
-  DefUseTransformer dutrans;
+  // DefUseTransformer dutrans;
   ClassificationTransformer ctrans;
-  pipelineB << retrans << dutrans << ctrans;
+  pipelineB << retrans << ctrans;
+
+  LatencyBlameAnalyzer lb_analyzer;
+  pipelineB << lb_analyzer;
 
   // Ids for everything are pulled from the void. We call the shots here.
   finalizers::DenseIds dids;

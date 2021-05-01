@@ -77,7 +77,6 @@ MYSOURCES = \
 	mpi/accumulate-thread.cpp \
 	\
 	pipeline.cpp source.cpp context.cpp scope.cpp metric.cpp \
-	analyzer.cpp \
 	module.cpp attributes.cpp dataclass.cpp sink.cpp packedids.cpp \
 	accumulators.cpp finalizer.cpp lexical.cpp \
 	\
