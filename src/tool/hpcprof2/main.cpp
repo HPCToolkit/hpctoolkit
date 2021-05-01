@@ -57,6 +57,7 @@
 #include "lib/profile/finalizers/denseids.hpp"
 #include "lib/profile/finalizers/directclassification.hpp"
 #include "lib/profile/transformer.hpp"
+#include "lib/profile/analyzer.hpp"
 
 #include <iostream>
 
@@ -94,11 +95,18 @@ int main(int argc, char* const argv[]) {
   finalizers::DirectClassification dc(args.dwarfMaxSize);
   pipelineB << dc;
 
+  // Finalizer for filling intel def-use graph directly from the Modules.
+  finalizers::IntelDefUseGraphClassification du_graph;
+  pipelineB << du_graph;
+
   // Now that Modules will be Classified during Finalization, add a Transformer
   // to expand the Contexts as they enter the Pipe.
   RouteExpansionTransformer retrans;
   ClassificationTransformer ctrans;
   pipelineB << retrans << ctrans;
+
+  LatencyBlameAnalyzer lb_analyzer;
+  pipelineB << lb_analyzer;
 
   switch(args.format) {
   case ProfArgs::Format::sparse: {

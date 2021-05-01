@@ -51,33 +51,9 @@
 
 namespace hpctoolkit {
 
-/// Base class for all sources of metric data. Not to be confused with "sample
-/// sources" which are the mechanisms hpcrun uses to get any data at all.
-/// Since the rest of the system really doesn't care how the data gets there,
-/// but the formats could (potentially) differ widely, this uses a virtual table
-/// to hide the difference.
 class ProfileAnalyzer {
 public:
-  ~ProfileAnalyzer() {}
-
-  /// Instantiates the proper Source for the given arguments. In time more
-  /// overloadings may be added that will handle more interesting cases.
-  // MT: Internally Synchronized
-  //static std::unique_ptr<ProfileAnalyzer> create_for(const stdshim::filesystem::path&);
-
-  /// Most format errors from a Source can be handled within the Source itself,
-  /// but if errors happen during construction callers (create_for) will want to
-  /// know. This gives a path for that information.
-  // MT: Externally Synchronized
-  virtual bool valid() const noexcept;
-
-  /// Bind this Source to a Pipeline to emit the actual bits and bobs.
-  // MT: Externally Sychronized
-  void bindPipeline(ProfilePipeline::Source&& se) noexcept;
-
-  /// Query whether this Source requires a pre- and/or post-wavefront ordered region.
-  // MT: Safe (const)
-  virtual std::pair<bool, bool> requiresOrderedRegions() const noexcept;
+  virtual ~ProfileAnalyzer() = default;
 
   /// Query what Classes this Source can actually provide to the Pipeline.
   // MT: Safe (const)
@@ -85,25 +61,110 @@ public:
     return DataClass::metrics + DataClass::attributes;
   }
 
-  //virtual void read(const DataClass&) = 0;
-  void analysisMetricsFor(const Metric&);
-  void analyze(Thread::Temporary&);
+  virtual void context(Context& c) {}
+  virtual void analysisMetricsFor(const Metric& m) {}
+  virtual void analyze(Thread::Temporary& t) {}
 
-  /// In many cases there are dependencies between data reads, due to the nature
-  /// of the conversion. This call allows a Source to adjust its request input
-  /// based on the dependencies it requires. Note that tracking of previously
-  /// requested data is done automatically, so keep this simple and constant.
-  //virtual DataClass finalizeRequest(const DataClass&) const noexcept = 0;
+protected:
+  // Use a subclass to implement the bits.
+  ProfileAnalyzer() = default;
 
-//protected:
-  /// Destination for read data. Since Sources may have various needs and orders
-  /// for their outputs, they need constant access to a "sink" for whatever they
-  /// happen to pull out.
-  // MT Internally Sychronized (Implicit)
+  // Source of the Pipeline to use for inserting data: our sink.
   ProfilePipeline::Source sink;
+};
 
-  // You should never create a ProfileAnalyzer directly
-  ProfileAnalyzer() {}
+struct LatencyBlameAnalyzer : public ProfileAnalyzer {
+  LatencyBlameAnalyzer() = default;
+  ~LatencyBlameAnalyzer() = default;
+
+  void context(Context& ctx) noexcept override {
+    uint64_t offset = ctx.scope().point_data().second;
+
+    const Scope& s = ctx.scope();
+    if(s.type() == Scope::Type::point || s.type() == Scope::Type::call) {
+      auto mo = s.point_data();
+      const auto& c = mo.first.userdata[sink.classification()];
+      const std::map<uint64_t, uint32_t> empty_edges = {};
+      auto iter = c._def_use_graph.find(offset);
+      const std::map<uint64_t, uint32_t> &incoming_edges = (iter != c._def_use_graph.end()) ?
+        iter->second: empty_edges;
+
+      for (auto edge: incoming_edges) {
+        uint64_t from = edge.first;
+        ContextRef cr = sink.context(*ctx.direct_parent(), {ctx.scope().point_data().first, from}, false);
+        context_map[offset][from] = cr;
+      }
+    }
+  }
+
+  void analysisMetricsFor(const Metric& m) noexcept override {
+    const std::string latency_metric_name = "GINS: LAT(cycles)";
+    const std::string frequency_metric_name = "GINS: EXC_CNT";
+    const std::string name = "GINS: LAT_BLAME(cycles)";
+    const std::string desc = "Accumulates the latency blame for a given context";
+    if (m.name().find(latency_metric_name) != std::string::npos) {
+      latency_metric = &m;
+      latency_blame_metric = &(sink.metric(Metric::Settings(name, desc)));
+    } else if (m.name().find(frequency_metric_name) != std::string::npos) {
+      frequency_metric = &m;
+    }
+  }
+
+  void analyze(Thread::Temporary& t) noexcept override {
+    for(const auto& cd: t.accumulators().citerate()) {
+      const Context& c = cd.first;
+      const MetricAccumulator *m = cd.second.find(latency_metric);
+      if(m == nullptr) return;
+      const Scope& s = c.scope();
+
+      if(s.type() == Scope::Type::point || s.type() == Scope::Type::call) {
+        auto mo = s.point_data();
+        const auto& c = mo.first.userdata[sink.classification()];
+
+        uint64_t offset = mo.second;
+        const std::map<uint64_t, uint32_t> empty_edges = {};
+        auto iter = c._def_use_graph.find(offset);
+        const std::map<uint64_t, uint32_t> &incoming_edges = (iter != c._def_use_graph.end()) ?
+          iter->second: empty_edges;
+
+        double denominator;
+        for (auto edge: incoming_edges) {
+          uint64_t from = edge.first;
+          ContextRef cr = context_map[offset][from];
+          std::optional<double> ef_ptr = t.accumulators()[std::get<Context>(cr)][frequency_metric].get(MetricScope::point);
+          if (ef_ptr) {
+            double execution_frequency = *ef_ptr;
+            double path_length_inv = (double) 1 / (edge.second);
+            denominator += execution_frequency * path_length_inv;
+          }
+        }
+        int latency;
+        std::optional<double> l_ptr = t.accumulators()[c][latency_metric].get(MetricScope::point);
+        if (l_ptr) {
+          latency = *l_ptr;
+        }
+        for (auto edge: incoming_edges) {
+          uint64_t from = edge.first;
+          ContextRef cr = context_map[offset][from];
+          std::optional<double> ef_ptr = t.accumulators()[cr][frequency_metric].get(MetricScope::point);
+          if (ef_ptr) {
+            double execution_frequency = *ef_ptr;
+            double path_length_inv = (double) 1 / (edge.second);
+            double latency_blame = execution_frequency * path_length_inv / denominator * latency;
+            sink.accumulateTo(cr, t).add(*latency_blame_metric, latency_blame);
+          }
+        }
+      }
+    }
+  }
+
+public:
+  // offset -> ContextRef
+  std::unordered_map <uint64_t, std::unordered_map<uint64_t, ContextRef>>context_map;
+
+  const Metric *latency_metric;
+  const Metric *frequency_metric;
+  Metric *latency_blame_metric;
 };
 
 }

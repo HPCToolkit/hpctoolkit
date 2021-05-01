@@ -68,6 +68,7 @@ namespace hpctoolkit {
 class ProfileSource;
 class ProfileSink;
 class ProfileTransformer;
+class ProfileAnalyzer;
 class ProfileFinalizer;
 
 namespace detail {
@@ -103,6 +104,8 @@ protected:
 
   // All the transformers. These don't register limits, so they can be together.
   std::vector<std::reference_wrapper<ProfileTransformer>> transformers;
+
+  std::vector<std::reference_wrapper<ProfileAnalyzer>> analyzers;
 
   // All the Sinks, with notes on which callbacks they should be triggered for.
   struct SinkEntry {
@@ -145,6 +148,7 @@ protected:
   // Storage for the unique_ptrs
   std::vector<std::unique_ptr<ProfileSink>> up_sinks;
   std::vector<std::unique_ptr<ProfileTransformer>> up_transformers;
+  std::vector<std::unique_ptr<ProfileAnalyzer>> up_analyzers;
   std::vector<std::unique_ptr<ProfileFinalizer>> up_finalizers;
 };
 
@@ -178,6 +182,9 @@ public:
     // MT: Externally Synchronized
     Settings& operator<<(ProfileTransformer&);
     Settings& operator<<(std::unique_ptr<ProfileTransformer>&&);
+
+    Settings& operator<<(ProfileAnalyzer&);
+    Settings& operator<<(std::unique_ptr<ProfileAnalyzer>&&);
 
     /// Append a new Finalizer to the future Pipeline, with optional ownership.
     // MT: Externally Synchronized
