@@ -642,7 +642,7 @@ ExtraStatistic& Source::extraStatistic(ExtraStatistic::Settings s) {
 void Source::metricFreeze(Metric& m) {
   if(m.freeze()) {
     for(auto& a: pipe->analyzers) {
-      a.analysisMetricsFor(m);
+      a.get().analysisMetricsFor(m);
     }
     for(auto& s: pipe->sinks) {
       if(s.dataLimit.hasAttributes()) s().notifyMetric(m);
@@ -655,7 +655,7 @@ void Source::metricFreeze(Metric& m) {
 Context& Source::global() { return *pipe->cct; }
 void Source::notifyContext(Context& c) {
   for(auto& a: pipe->analyzers) {
-    a.context(c);
+    a.get().context(c);
   }
   for(auto& s: pipe->sinks) {
     if(s.dataLimit.hasContexts()) s().notifyContext(c);
