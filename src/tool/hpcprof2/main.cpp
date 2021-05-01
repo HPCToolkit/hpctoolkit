@@ -56,6 +56,7 @@
 #include "lib/profile/sinks/sparsedb.hpp"
 #include "lib/profile/finalizers/denseids.hpp"
 #include "lib/profile/finalizers/directclassification.hpp"
+#include "lib/profile/finalizers/intel_def_use_graph.hpp"
 #include "lib/profile/transformer.hpp"
 #include "lib/profile/analyzer.hpp"
 
