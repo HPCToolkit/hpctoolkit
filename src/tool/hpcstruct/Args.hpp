@@ -116,6 +116,7 @@ public:
   bool show_time;
   long gpu_size;
   bool compute_gpu_cfg;
+  bool du_graph;
 
   // Parsed Data: optional arguments
   std::string searchPathStr;          // default: "."

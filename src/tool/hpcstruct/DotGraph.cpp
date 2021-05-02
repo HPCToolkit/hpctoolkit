@@ -321,7 +321,7 @@ main(int argc, char **argv)
       parsable = readCudaCFG(search_path, elfFile, symtab, true, &code_src, &code_obj);
     } else if (intel_file) { // don't run parseapi on intel binary
       #ifdef ENABLE_IGC
-      parsable = readIntelCFG(search_path, elfFile, symtab, true, &code_src, &code_obj);
+      parsable = readIntelCFG(search_path, elfFile, symtab, true, false, &code_src, &code_obj);
       #endif // ENABLE_IGC
     } else {
       code_src = new SymtabCodeSource(symtab);

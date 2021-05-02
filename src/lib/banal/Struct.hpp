@@ -68,6 +68,7 @@ public:
   bool show_time;
   long gpu_size;
   bool compute_gpu_cfg;
+  bool du_graph;
   bool ourDemangle;
 
   Options()
@@ -79,6 +80,7 @@ public:
     show_time = false;
     gpu_size = 0;
     compute_gpu_cfg = false;
+    du_graph = false;
     ourDemangle = false;
   }
 };

@@ -166,10 +166,12 @@ doMeasurementsDir(string measurements_dir, BAnal::Struct::Options & opts)
   }
 
   string gpucfg = opts.compute_gpu_cfg ? "yes" : "no";
+  string du_graph = opts.du_graph ? "yes" : "no";
 
   makefile << "GPUBIN_DIR =  " << gpubin_dir << "\n"
 	   << "STRUCTS_DIR = " << structs_dir << "\n"
 	   << "GPUBIN_CFG = " << gpucfg << "\n"
+	   << "DU_GRAPH = " << du_graph << "\n"
 	   << "GPU_SIZE = " << opts.gpu_size << "\n"
 	   << "JOBS = " << opts.jobs << "\n\n"
 	   << gpubin_analysis_makefile << endl;
@@ -262,6 +264,7 @@ realmain(int argc, char* argv[])
 
   opts.show_time = args.show_time;
   opts.compute_gpu_cfg = args.compute_gpu_cfg;
+  opts.du_graph = args.du_graph;
   opts.gpu_size = args.gpu_size;
 
   // ------------------------------------------------------------

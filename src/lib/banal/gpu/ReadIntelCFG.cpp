@@ -101,7 +101,6 @@
 // local definitions
 //******************************************************************************
 
-static bool latency_blame_enabled = false;
 static int TRACK_LIMIT = 8;
 
 
@@ -774,7 +773,8 @@ parseIntelCFG
 (
  char *text_section,
  int text_section_size,
- GPUParse::Function &function
+ GPUParse::Function &function,
+ bool du_graph_wanted
 )
 {
   KernelView kv(IGA_GEN9, text_section, text_section_size);
@@ -793,7 +793,7 @@ parseIntelCFG
 
     auto size = kv.getInstSize(offset);
     GPUParse::Inst *inst;
-    if (latency_blame_enabled) {
+    if (du_graph_wanted) {
       auto *inst_stat = getIntelInstructionStat(kv, offset);
       inst = new GPUParse::IntelInst(offset, size, inst_stat);
     } else {
@@ -921,6 +921,7 @@ readIntelCFG
  ElfFile *elfFile,
  Dyninst::SymtabAPI::Symtab *the_symtab, 
  bool cfg_wanted,
+ bool du_graph_wanted,
  Dyninst::ParseAPI::CodeSource **code_src, 
  Dyninst::ParseAPI::CodeObject **code_obj
 )
@@ -944,7 +945,7 @@ readIntelCFG
     }
 
     GPUParse::Function function(0, function_name);
-    parseIntelCFG(text_section, text_section_size, function);
+    parseIntelCFG(text_section, text_section_size, function, du_graph_wanted);
     std::vector<GPUParse::Function *> functions = {&function};
 
     CFGFactory *cfg_fact = new GPUCFGFactory(functions);
@@ -952,7 +953,7 @@ readIntelCFG
     *code_obj = new CodeObject(*code_src, cfg_fact);
     (*code_obj)->parse();
 
-    if (latency_blame_enabled) {
+    if (du_graph_wanted) {
       std::string elf_filePath = elfFile->getFileName();
       const char *delimiter = ".gpubin";
       size_t delim_loc = elf_filePath.find(delimiter);
@@ -969,16 +970,6 @@ readIntelCFG
   *code_obj = new CodeObject(*code_src, NULL, NULL, false, true);
 
   return false;
-}
-
-
-void
-enable_latency_blame
-(
- void 
-)
-{
-  latency_blame_enabled = true;
 }
 
 #endif // ENABLE_IGC

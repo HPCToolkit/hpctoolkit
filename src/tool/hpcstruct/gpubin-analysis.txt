@@ -55,7 +55,7 @@ $(STRUCTS_DIR)/%.hpcstruct: $(GPUBIN_DIR)/%
 		else
 			echo msg: begin serial analysis of $$gpubin_name
 		fi
-		hpcstruct -j $(THREADS) --gpucfg $(GPUBIN_CFG) -o $$struct_name $< > $$warn_name 2>&1
+		hpcstruct -j $(THREADS) --gpucfg $(GPUBIN_CFG) --du-graph $(DU_GRAPH) -o $$struct_name $< > $$warn_name 2>&1
 		if test -s $$warn_name ; then
 			echo WARNING: incomplete analysis of $$gpubin_name\\; see $$warn_name for details
 			if test ! -s $$struct_name ; then
