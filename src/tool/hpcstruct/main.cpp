@@ -182,11 +182,13 @@ doMeasurementsDir(string measurements_dir, BAnal::Struct::Options & opts)
   }
     
   string gpucfg = opts.compute_gpu_cfg ? "yes" : "no";
+  string du_graph = opts.du_graph ? "yes" : "no";
 
   makefile << "MEAS_DIR =  "    << measurements_dir << "\n"
 	   << "GPUBIN_CFG = "   << gpucfg << "\n"
 	   << "CPU_ANALYZE = "  << opts.analyze_cpu_binaries << "\n"
 	   << "GPU_ANALYZE = "  << opts.analyze_gpu_binaries << "\n"
+     << "DU_GRAPH = "  << opts.du_graph << "\n"
 	   << "PAR_SIZE = "     << opts.parallel_analysis_threshold << "\n"
 	   << "JOBS = "         << jobs << "\n"
 	   << "PTHREADS = "     << pthreads << "\n"
@@ -275,7 +277,7 @@ realmain(int argc, char* argv[])
 
   opts.set(args.jobs, jobs_struct, jobs_parse, jobs_symtab, args.show_time,
 	   args.analyze_cpu_binaries, args.analyze_gpu_binaries,
-	   args.compute_gpu_cfg, args.parallel_analysis_threshold);
+	   args.compute_gpu_cfg, args.du_graph, args.parallel_analysis_threshold);
 
   // ------------------------------------------------------------
   // If in_filenm is a directory, then analyze separately

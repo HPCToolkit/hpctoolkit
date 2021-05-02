@@ -129,6 +129,7 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   // Output options
   { 'o', "output",        CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL,
      NULL },
+  { '0', "du-graph",        CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL, NULL },
 
   // General
   { 'v', "verbose",       CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL,
@@ -179,6 +180,7 @@ Args::Ctor()
   searchPathStr = ".";
   show_gaps = false;
   compute_gpu_cfg = false;
+  du_graph = false;
 }
 
 
@@ -315,6 +317,14 @@ Args::parse(int argc, const char* const argv[])
       bool no = strcasecmp("no", arg.c_str()) == 0;
       if (!yes && !no) ARG_ERROR("cpu argument must be 'yes' or 'no'.");
       analyze_cpu_binaries = yes;
+    }
+
+    if (parser.isOpt("du-graph")) {
+      const string & arg = parser.getOptArg("du-graph");
+      bool yes = strcasecmp("yes", arg.c_str()) == 0;
+      bool no = strcasecmp("no", arg.c_str()) == 0;
+      if (!yes && !no) ARG_ERROR("du-graph argument must be 'yes' or 'no'.");
+      du_graph = yes;
     }
 
     if (parser.isOpt("time")) {

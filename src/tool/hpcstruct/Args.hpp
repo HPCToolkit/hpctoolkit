@@ -118,6 +118,7 @@ public:
   bool analyze_cpu_binaries ;     // default: true
   bool analyze_gpu_binaries ;     // default: true
   bool compute_gpu_cfg;
+  bool du_graph;
 
   // Parsed Data: optional arguments
   std::string searchPathStr;          // default: "."

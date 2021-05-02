@@ -90,15 +90,9 @@ readIntelCFG
  ElfFile *elfFile,
  Dyninst::SymtabAPI::Symtab *the_symtab, 
  bool cfg_wanted,
+ bool du_graph_wanted,
  Dyninst::ParseAPI::CodeSource **code_src, 
  Dyninst::ParseAPI::CodeObject **code_obj
-);
-
-
-void
-enable_latency_blame
-(
- void 
 );
 
 #endif
