@@ -64,6 +64,10 @@ using Settings = ProfilePipeline::Settings;
 using Source = ProfilePipeline::Source;
 using Sink = ProfilePipeline::Sink;
 
+detail::ProfilePipelineBase::ProfilePipelineBase() = default;
+detail::ProfilePipelineBase::ProfilePipelineBase(ProfilePipelineBase&&) = default;
+detail::ProfilePipelineBase::~ProfilePipelineBase() = default;
+
 detail::ProfilePipelineBase::SourceEntry::SourceEntry(ProfileSource& s)
   : source(s), up_source(nullptr) {};
 detail::ProfilePipelineBase::SourceEntry::SourceEntry(std::unique_ptr<ProfileSource>&& up)
@@ -125,6 +129,7 @@ Settings& Settings::operator<<(std::unique_ptr<ProfileTransformer>&& tp) {
   up_transformers.emplace_back(std::move(tp));
   return operator<<(*up_transformers.back());
 }
+
 Settings& Settings::operator<<(ProfileAnalyzer& a) {
   analyzers.emplace_back(a);
   return *this;

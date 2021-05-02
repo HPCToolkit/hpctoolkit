@@ -78,10 +78,10 @@ namespace detail {
 class ProfilePipelineBase {
 protected:
   // This class (and subclasses) are move-only and highly controlled.
-  ProfilePipelineBase() = default;
+  ProfilePipelineBase();
   ProfilePipelineBase(const ProfilePipelineBase&) = delete;
-  ProfilePipelineBase(ProfilePipelineBase&&) = default;
-  ~ProfilePipelineBase() = default;
+  ProfilePipelineBase(ProfilePipelineBase&&);
+  ~ProfilePipelineBase();
 
   // All the Sources. These don't have callbacks, so they can be together.
   struct SourceEntry {
