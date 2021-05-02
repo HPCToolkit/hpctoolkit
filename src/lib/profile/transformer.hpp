@@ -48,7 +48,6 @@
 #define HPCTOOLKIT_PROFILE_TRANSFORMER_H
 
 #include "pipeline.hpp"
-#include <iostream>
 
 namespace hpctoolkit {
 
@@ -67,7 +66,7 @@ public:
 
   /// Callback issued when a new Context is emitted into the Pipe.
   // MT: Internally Synchronized
-  virtual std::pair<ContextRef, bool> context(ContextRef c, Scope&) noexcept { return std::pair(c, false); }
+  virtual ContextRef context(ContextRef c, Scope&) noexcept { return c; }
 
   /// Append additional Statistics to the given Metric.
   // MT: Internally Synchronized
@@ -86,84 +85,47 @@ struct RouteExpansionTransformer : public ProfileTransformer {
   RouteExpansionTransformer() = default;
   ~RouteExpansionTransformer() = default;
 
-  std::pair<ContextRef, bool> context(ContextRef cr, Scope& s) noexcept override {
+  ContextRef context(ContextRef cr, Scope& s) noexcept override {
     if(!std::holds_alternative<SuperpositionedContext>(cr)) {
       if(s.type() == Scope::Type::point) {
         auto mo = s.point_data();
         const auto& c = mo.first.userdata[sink.classification()];
         auto routes = c.getRoutes(mo.second);
-        if(routes.empty()) return std::pair(cr, false);
+        if(routes.empty()) return cr;
         if(routes.size() == 1) {
           for(const auto& s: routes.front()) cr = sink.context(cr, s);
-          return std::pair(cr, false);
+          return cr;
         }
 
         std::vector<SuperpositionedContext::Target> paths;
         paths.reserve(routes.size());
         for(const auto& r: routes) {
-          paths.push_back({{}, cr, 1});
+          paths.push_back({{}, cr});
           for(const auto& s: r) {
             paths.back().target = sink.context(paths.back().target, s);
             paths.back().route.emplace_back(sink.context(cr, s, true));
           }
         }
-        return std::pair(sink.superposContext(cr, std::move(paths)), false);
+        return sink.superposContext(cr, std::move(paths));
       }
     }
-    return std::pair(cr, false);
+    return cr;
   }
 };
-
-
-/// Transformer for expanding routes for def-use `point` Contexts.
-struct DefUseTransformer : public ProfileTransformer {
-  DefUseTransformer() = default;
-  ~DefUseTransformer() = default;
-
-  std::pair<ContextRef, bool> context(ContextRef cr, Scope& s) noexcept override {
-    if(std::holds_alternative<Context>(cr)) {
-      if(s.type() == Scope::Type::point || s.type() == Scope::Type::call) {
-        auto mo = s.point_data();
-        const auto& c = mo.first.userdata[sink.classification()];
-
-        std::vector<SuperpositionedContext::Target> targets;
-        
-        uint64_t offset = mo.second;
-        const std::map<uint64_t, uint32_t> empty_edges = {};
-        auto iter = c._def_use_graph.find(offset);
-        const std::map<uint64_t, uint32_t> &incoming_edges = (iter != c._def_use_graph.end()) ?
-                                                                      iter->second: empty_edges;
-
-        for (auto edge: incoming_edges) {
-          double path_length_inv = (double) 1 / (edge.second);
-          ContextRef ctx = sink.context(cr, {mo.first, edge.first});
-          targets.push_back({{ctx}, ctx, path_length_inv});
-        }
-        if(targets.empty()) return std::pair(cr, false);
-        if(targets.size() == 1) {
-          return std::pair(targets.front().target, true);
-        }
-        return std::pair(sink.superposContext(cr, std::move(targets)), true);
-      }
-    }
-    return std::pair(cr, true);
-  }
-};
-
 
 /// Transformer for expanding `point` Contexts with Classification data.
 struct ClassificationTransformer : public ProfileTransformer {
   ClassificationTransformer() = default;
   ~ClassificationTransformer() = default;
 
-  std::pair<ContextRef, bool> context(ContextRef c, Scope& s) noexcept override {
+  ContextRef context(ContextRef c, Scope& s) noexcept override {
     if(s.type() == Scope::Type::point || s.type() == Scope::Type::call) {
       auto mo = s.point_data();
       const auto& cl = mo.first.userdata[sink.classification()];
       for(const auto& s: cl.getScopes(mo.second)) c = sink.context(c, s);
       s = cl.classifyLine(s);
     }
-    return std::pair(c, false);
+    return c;
   }
 };
 
@@ -172,14 +134,14 @@ struct LineMergeTransformer final : public ProfileTransformer {
   LineMergeTransformer() = default;
   ~LineMergeTransformer() = default;
 
-  std::pair<ContextRef, bool> context(ContextRef c, Scope& s) noexcept override {
+  ContextRef context(ContextRef c, Scope& s) noexcept override {
     if(s.type() == Scope::Type::classified_point) {
       auto mo = s.point_data();
       auto fl = s.line_data();
       // Change it to a concrete_line, which merges based on the line.
       s = {fl.first, fl.second, mo.first, mo.second};
     }
-    return std::pair(c, false);
+    return c;
   }
 };
 
