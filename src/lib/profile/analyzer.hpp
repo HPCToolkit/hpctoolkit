@@ -78,10 +78,10 @@ struct LatencyBlameAnalyzer : public ProfileAnalyzer {
   ~LatencyBlameAnalyzer() = default;
 
   void context(Context& ctx) noexcept override {
-    uint64_t offset = ctx.scope().point_data().second;
 
     const Scope& s = ctx.scope();
     if(s.type() == Scope::Type::point || s.type() == Scope::Type::call) {
+      uint64_t offset = ctx.scope().point_data().second;
       auto mo = s.point_data();
       const auto& c = mo.first.userdata[sink.classification()];
       const std::map<uint64_t, uint32_t> empty_edges = {};
@@ -91,10 +91,8 @@ struct LatencyBlameAnalyzer : public ProfileAnalyzer {
 
       for (auto edge: incoming_edges) {
         uint64_t from = edge.first;
-#if 0
         ContextRef cr = sink.context(*ctx.direct_parent(), {ctx.scope().point_data().first, from}, false);
-        context_map[offset][from] = cr;
-#endif
+        context_map[offset].insert({from, cr});
       }
     }
   }
@@ -113,12 +111,11 @@ struct LatencyBlameAnalyzer : public ProfileAnalyzer {
   }
 
   void analyze(Thread::Temporary& t) noexcept override {
-#if 0
     for(const auto& cd: t.accumulators().citerate()) {
-      const Context& c = cd.first;
+      const Context& ctx = cd.first;
       const MetricAccumulator *m = cd.second.find(*latency_metric);
       if(m == nullptr) return;
-      const Scope& s = c.scope();
+      const Scope& s = ctx.scope();
 
       if(s.type() == Scope::Type::point || s.type() == Scope::Type::call) {
         auto mo = s.point_data();
@@ -133,7 +130,7 @@ struct LatencyBlameAnalyzer : public ProfileAnalyzer {
         double denominator;
         for (auto edge: incoming_edges) {
           uint64_t from = edge.first;
-          ContextRef cr = context_map[offset][from];
+          ContextRef cr = context_map[offset].find(from)->second;
           const std::optional<double> ef_ptr = t.accumulators().find(std::get<Context>(cr))->find(*frequency_metric)->get(MetricScope::point);
           if (ef_ptr) {
             double execution_frequency = *ef_ptr;
@@ -142,14 +139,14 @@ struct LatencyBlameAnalyzer : public ProfileAnalyzer {
           }
         }
         int latency;
-        const std::optional<double> l_ptr = t.accumulators().find(c)->find(*latency_metric)->get(MetricScope::point);
+        const std::optional<double> l_ptr = t.accumulators().find(ctx)->find(*latency_metric)->get(MetricScope::point);
         if (l_ptr) {
           latency = *l_ptr;
         }
         for (auto edge: incoming_edges) {
           uint64_t from = edge.first;
-          ContextRef cr = context_map[offset][from];
-          const std::optional<double> ef_ptr = t.accumulators().find(cr)->find(*frequency_metric)->get(MetricScope::point);
+          ContextRef cr = context_map[offset].find(from)->second;
+          const std::optional<double> ef_ptr = t.accumulators().find(std::get<Context>(cr))->find(*frequency_metric)->get(MetricScope::point);
           if (ef_ptr) {
             double execution_frequency = *ef_ptr;
             double path_length_inv = (double) 1 / (edge.second);
@@ -159,7 +156,6 @@ struct LatencyBlameAnalyzer : public ProfileAnalyzer {
         }
       }
     }
-#endif
   }
 
 public:
