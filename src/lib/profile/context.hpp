@@ -92,11 +92,9 @@ public:
 
   struct Target {
     Target(std::vector<ContextRef>, ContextRef);
-    Target(std::vector<ContextRef>, ContextRef, double);
 
     std::vector<ContextRef> route;
     ContextRef target;
-    double factor;
   };
 
   const std::vector<Target>& targets() const noexcept {

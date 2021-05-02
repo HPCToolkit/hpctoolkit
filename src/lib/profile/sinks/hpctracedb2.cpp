@@ -79,7 +79,6 @@ HPCTraceDB2::udThread::udThread(const Thread& t, HPCTraceDB2& tdb)
   : uds(tdb.uds), hdr(t, tdb) {}
 
 void HPCTraceDB2::notifyWavefront(DataClass d){
-  //util::log::debug{true} << "TraceDB wave " << d;
   if(!d.hasThreads()) return;
   auto wd_sem = threadsReady.signal();
   util::File::Instance traceinst;

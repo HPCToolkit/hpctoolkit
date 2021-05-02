@@ -99,7 +99,7 @@ public:
     Expander(IdUnpacker& s) : shared(s) {};
     ~Expander() = default;
 
-    std::pair<ContextRef, bool> context(ContextRef, Scope&) noexcept override;
+    ContextRef context(ContextRef, Scope&) noexcept override;
 
   private:
     IdUnpacker& shared;

@@ -279,7 +279,6 @@ void ProfilePipeline::run() {
         if(e.wavefrontDelivered.allOf(e.wavefrontState & e.waveLimit)) return;
 
         // If we haven't hit the dependency delay yet, skip until later
-        //util::log::debug{true} << "State for " << typeid(e()).name() << ": now at " << e.wavefrontState << ", may be delayed by " << e.wavefrontPriorDelay << ", wave limit is " << e.waveLimit; 
         if(!e.wavefrontState.allOf(e.wavefrontPriorDelay & scheduledWaves))
           return;
 
@@ -314,11 +313,9 @@ void ProfilePipeline::run() {
 
     // The rest of the waves have the same general format
     auto wave = [&](DataClass d, std::size_t idx) {
-      //util::log::debug{true} << "Considering wave " << d << ", scheduled = " << scheduledWaves;
       if(!(d & scheduledWaves).hasAny()) return;
       //#pragma omp for schedule(dynamic) nowait
       for(std::size_t i = 0; i < sources.size(); ++i) {
-        //util::log::debug{true} << "Processing Source " << i << "/" << sources.size();
         {
           std::unique_lock<std::mutex> l(sources[i].lock);
           DataClass req = (sources[i]().finalizeRequest(d) - sources[i].read)
@@ -332,13 +329,10 @@ void ProfilePipeline::run() {
               sources[i].wavesComplete.signal();
           }
         }
-        auto mine = countdowns[idx].fetch_sub(1, std::memory_order_acq_rel)-1;
-        //util::log::debug{true} << "Countdown for " << d << " now at " << mine;
-        if(mine == 0) {
+        if(countdowns[idx].fetch_sub(1, std::memory_order_acq_rel)-1 == 0) {
           for(SinkEntry& e: sinks) notify(e, d);
         }
       }
-      //util::log::debug{true} << "Wave " << d << " complete";
     };
     wave(DataClass::attributes, 0);
     wave(DataClass::references, 1);
@@ -571,12 +565,8 @@ ContextRef Source::context(ContextRef p, const Scope& s, bool recurse) {
   ContextRef res = p;
   Scope rs = s;
   for(std::size_t i = 0; i < pipe->transformers.size(); i++)
-    if(recurse || i != tskip) {
-      // res = pipe->transformers[i].get().context(res, rs);
-      auto x = pipe->transformers[i].get().context(res, rs);
-      if (x.second) return x.first;
-      res = x.first;
-    }
+    if(recurse || i != tskip)
+      res = pipe->transformers[i].get().context(res, rs);
 
   auto newCtx = [&](ContextRef p, const Scope& s) -> ContextRef {
     if(auto pcc = std::get_if<Context, const CollaboratorRoot>(p))

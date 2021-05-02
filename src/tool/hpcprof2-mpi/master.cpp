@@ -113,7 +113,6 @@ int rank0(ProfArgs&& args) {
   // Now that Modules will be Classified during Finalization, add a Transformer
   // to expand the Contexts as they enter the Pipe.
   RouteExpansionTransformer retrans;
-  // DefUseTransformer dutrans;
   ClassificationTransformer ctrans;
   pipelineB << retrans << ctrans;
 

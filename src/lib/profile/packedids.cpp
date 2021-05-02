@@ -292,7 +292,7 @@ void IdUnpacker::unpack(ProfilePipeline::Source& sink) noexcept {
   ctxtree.clear();
 }
 
-std::pair<ContextRef, bool> IdUnpacker::Expander::context(ContextRef c, Scope& s) noexcept {
+ContextRef IdUnpacker::Expander::context(ContextRef c, Scope& s) noexcept {
   if(auto co = std::get_if<Context>(c)) {
     util::call_once(shared.once, [this]{ shared.unpack(sink); });
     bool first = true;
@@ -306,9 +306,9 @@ std::pair<ContextRef, bool> IdUnpacker::Expander::context(ContextRef c, Scope& s
       s = next;
       first = false;
     }
-    return std::pair(r, false);
+    return r;
   }
-  return std::pair(c, false);
+  return c;
 }
 
 void IdUnpacker::Finalizer::context(const Context& c, unsigned int& id) noexcept {

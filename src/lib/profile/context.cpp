@@ -174,18 +174,15 @@ SuperpositionedContext::SuperpositionedContext(Context& root, std::vector<Target
   }) && "Attempt to Superposition with inconsistent collaborations between Targets!");
 }
 
-SuperpositionedContext::Target::Target(std::vector<ContextRef> r, ContextRef t, double factor)
-  : route(std::move(r)), target(t), factor(factor) {
-  if(std::holds_alternative<CollaborativeContext>(t))
-    util::log::fatal{} << "Attempt to create a Superposition target targeting a collaborative root!";
-  if(std::any_of(route.begin(), route.end(), [&](const auto& r) {
-    return std::holds_alternative<CollaborativeContext>(r);
-  }))
-    util::log::fatal{} << "Attempt to create a Superposition target with a collaborative root!";
-  if(std::any_of(route.begin(), route.end(), [&](const auto& r) {
-    return collaborationFor(r) != collaborationFor(target);
-  }))
-    util::log::fatal{} << "Attempt to create a Superposition target with inconsistent collaboration!";
+SuperpositionedContext::Target::Target(std::vector<ContextRef> r, ContextRef t)
+  : route(std::move(r)), target(t) {
+  assert(!std::holds_alternative<CollaborativeContext>(t) && "Attempt to superpos-target a Collaborative root!");
+  assert(std::all_of(route.begin(), route.end(), [&](const auto& r) {
+    return !std::holds_alternative<CollaborativeContext>(r);
+  }) && "Attempt to superpos-target a Collaborative root!");
+  assert(std::all_of(route.begin(), route.end(), [&](const auto& r) {
+    return collaborationFor(r) == collaborationFor(target);
+  }) && "Attempt to superpos-target with inconsistent Collaborations!");
 }
 
 CollaborativeSharedContext& CollaborativeSharedContext::ensure(Scope s,
