@@ -398,7 +398,7 @@ void ProfilePipeline::run() {
     // The rest of the waves have the same general format
     auto wave = [&](DataClass d, std::size_t idx) {
       if(!(d & scheduledWaves).hasAny()) return;
-      //#pragma omp for schedule(dynamic) nowait
+      #pragma omp for schedule(dynamic) nowait
       for(std::size_t i = 0; i < sources.size(); ++i) {
         {
           std::unique_lock<std::mutex> l(sources[i].lock);
@@ -643,7 +643,9 @@ void Source::metricFreeze(Metric& m) {
     }
     m.userdata.initialize();
   }
-  slocal->thawedMetrics.erase(&m);
+  if (slocal != nullptr) {
+    slocal->thawedMetrics.erase(&m);
+  }
 }
 
 Context& Source::global() { return *pipe->cct; }
