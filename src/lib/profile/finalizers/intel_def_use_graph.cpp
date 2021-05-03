@@ -48,24 +48,10 @@
 // system includes
 //******************************************************************************
 
-#if 0
-#include <algorithm>
-#include <dwarf.h>
-#include <fcntl.h>
-#include <iomanip>
-#include <libelf.h>
-#include <limits>
-#endif
 #include <fstream>                  // ifstream
 #include <iostream>                 // cout
 #include <map>
-#if 0
-#include <sstream>
-#include <stdexcept>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#endif
+
 
 
 //******************************************************************************
