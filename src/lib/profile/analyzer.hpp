@@ -118,9 +118,10 @@ struct LatencyBlameAnalyzer : public ProfileAnalyzer {
 
   void analysisMetricsFor(const Metric& m) noexcept override {
     const std::string latency_metric_name = "GINS: LAT(cycles)";
-    const std::string frequency_metric_name = "GINS: EXC_CNT";
+    const std::string frequency_metric_name = "GINS:EXC_CNT";
     const std::string name = "GINS: LAT_BLAME(cycles)";
     const std::string desc = "Accumulates the latency blame for a given context";
+    std::cout << "metric name: " << m.name() << std::endl;
     if (m.name().find(latency_metric_name) != std::string::npos) {
       latency_metric = &m;
       latency_blame_metric = &(sink.metric(Metric::Settings(name, desc)));
@@ -141,7 +142,16 @@ struct LatencyBlameAnalyzer : public ProfileAnalyzer {
       for (auto iter2: iter1.second) {
         uint64_t from = iter2.first;
         ContextRef cr = iter2.second;
-        const std::optional<double> ef_ptr = t.accumulators().find(std::get<Context>(cr))->find(*frequency_metric)->get(MetricScope::point);
+        // const std::optional<double> ef_ptr = t.accumulators().find(std::get<Context>(cr))->find(*frequency_metric)->get(MetricScope::point);
+        auto from_ctx = t.accumulators().find(std::get<Context>(cr));
+        if (!from_ctx) {
+          continue;
+        }
+        auto from_freq_metric = from_ctx->find(*frequency_metric);
+        if (!from_freq_metric) {
+          continue;
+        }
+        const std::optional<double> ef_ptr = from_freq_metric->get(MetricScope::point);
         if (ef_ptr) {
           double execution_frequency = *ef_ptr;
           double path_length_inv = (double) 1 / (def_use_graph[to][from]);
@@ -155,7 +165,16 @@ struct LatencyBlameAnalyzer : public ProfileAnalyzer {
       uint64_t to = to_obj.first;
       ContextRef to_context = to_obj.second;
       int latency;
-      const std::optional<double> l_ptr = t.accumulators().find(std::get<Context>(to_context))->find(*latency_metric)->get(MetricScope::point);
+      // const std::optional<double> l_ptr = t.accumulators().find(std::get<Context>(to_context))->find(*latency_metric)->get(MetricScope::point);
+      auto to_ctx = t.accumulators().find(std::get<Context>(to_context));
+      if (!to_ctx) {
+        continue;
+      }
+      auto to_lat_metric = to_ctx->find(*latency_metric);
+      if (!to_lat_metric) {
+        continue;
+      }
+      const std::optional<double> l_ptr = to_lat_metric->get(MetricScope::point);
       if (l_ptr) {
         latency = *l_ptr;
       }
@@ -163,7 +182,16 @@ struct LatencyBlameAnalyzer : public ProfileAnalyzer {
       for (auto iter2: iter1.second) {
         uint64_t from = iter2.first;
         ContextRef cr = iter2.second;
-        const std::optional<double> ef_ptr = t.accumulators().find(std::get<Context>(cr))->find(*frequency_metric)->get(MetricScope::point);
+        // const std::optional<double> ef_ptr = t.accumulators().find(std::get<Context>(cr))->find(*frequency_metric)->get(MetricScope::point);
+        auto from_ctx = t.accumulators().find(std::get<Context>(cr));
+        if (!from_ctx) {
+          continue;
+        }
+        auto from_freq_metric = from_ctx->find(*frequency_metric);
+        if (!from_freq_metric) {
+          continue;
+        }
+        const std::optional<double> ef_ptr = from_freq_metric->get(MetricScope::point);
         if (ef_ptr) {
           double execution_frequency = *ef_ptr;
           double path_length_inv = (double) 1 / (def_use_graph[to][from]);
