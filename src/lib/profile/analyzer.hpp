@@ -47,6 +47,7 @@
 #ifndef HPCTOOLKIT_PROFILE_ANALYZE_H
 #define HPCTOOLKIT_PROFILE_ANALYZE_H
 
+#include <iostream>   //cout
 #include "pipeline.hpp"
 
 namespace hpctoolkit {
@@ -54,6 +55,10 @@ namespace hpctoolkit {
 class ProfileAnalyzer {
 public:
   virtual ~ProfileAnalyzer() = default;
+
+  void bindPipeline(ProfilePipeline::Source&& se) noexcept {
+    sink = std::move(se);
+  }
 
   /// Query what Classes this Source can actually provide to the Pipeline.
   // MT: Safe (const)
@@ -105,6 +110,7 @@ struct LatencyBlameAnalyzer : public ProfileAnalyzer {
     if (m.name().find(latency_metric_name) != std::string::npos) {
       latency_metric = &m;
       latency_blame_metric = &(sink.metric(Metric::Settings(name, desc)));
+      sink.metricFreeze(*latency_blame_metric);
     } else if (m.name().find(frequency_metric_name) != std::string::npos) {
       frequency_metric = &m;
     }
@@ -151,6 +157,7 @@ struct LatencyBlameAnalyzer : public ProfileAnalyzer {
             double execution_frequency = *ef_ptr;
             double path_length_inv = (double) 1 / (edge.second);
             double latency_blame = execution_frequency * path_length_inv / denominator * latency;
+            std::cout << "LAT_BLAME (analyze):: offset: " << from << ", val: " << latency_blame;
             sink.accumulateTo(cr, t).add(*latency_blame_metric, latency_blame);
           }
         }

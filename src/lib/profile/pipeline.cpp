@@ -218,6 +218,8 @@ ProfilePipeline::ProfilePipeline(Settings&& b, std::size_t team_sz)
     f.bindPipeline(Source(*this, DataClass::all(), ExtensionClass::all()));
   for(std::size_t i = 0; i < transformers.size(); i++)
     transformers[i].get().bindPipeline(Source(*this, DataClass::all(), ExtensionClass::all(), i));
+  for(std::size_t i = 0; i < analyzers.size(); i++)
+    analyzers[i].get().bindPipeline(Source(*this, DataClass::all(), ExtensionClass::all()));
 
   // Make sure the global Context is ready before letting any data in.
   cct.reset(new Context(structs.context, Scope(*this)));
@@ -314,7 +316,7 @@ void ProfilePipeline::run() {
     // The rest of the waves have the same general format
     auto wave = [&](DataClass d, std::size_t idx) {
       if(!(d & scheduledWaves).hasAny()) return;
-      //#pragma omp for schedule(dynamic) nowait
+      #pragma omp for schedule(dynamic) nowait
       for(std::size_t i = 0; i < sources.size(); ++i) {
         {
           std::unique_lock<std::mutex> l(sources[i].lock);
@@ -520,7 +522,9 @@ File& Source::file(const stdshim::filesystem::path& p) {
 Metric& Source::metric(Metric::Settings s) {
   assert(limit().hasAttributes() && "Source did not register for `attributes` emission!");
   auto x = pipe->mets.emplace(pipe->structs.metric, std::move(s));
-  slocal->thawedMetrics.insert(&x.first());
+  if (slocal != nullptr) {
+    slocal->thawedMetrics.insert(&x.first());
+  }
   for(ProfileTransformer& t: pipe->transformers)
     t.metric(x.first(), x.first().statsAccess());
   return x.first();
@@ -547,7 +551,9 @@ void Source::metricFreeze(Metric& m) {
     }
     m.userdata.initialize();
   }
-  slocal->thawedMetrics.erase(&m);
+  if (slocal != nullptr) {
+    slocal->thawedMetrics.erase(&m);
+  }
 }
 
 Context& Source::global() { return *pipe->cct; }
