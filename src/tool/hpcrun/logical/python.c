@@ -91,7 +91,6 @@ static logical_metadata_store_t python_metastore;
 // Python unwinder
 // -----------------------------
 
-static_assert(UINTPTR_MAX >= UINT16_MAX, "Is this an 8-bit machine?");
 static bool python_unwind(logical_region_t* region, void** store,
     unsigned int index, logical_frame_t* in_lframe, frame_t* frame) {
   logical_python_region_t* state = &region->specific.python;
@@ -111,15 +110,18 @@ static bool python_unwind(logical_region_t* region, void** store,
 
   PyFrameObject* pyframe = *store;
   PyCodeObject* code = DL(PyFrame_GetCode)(pyframe);
-  TMSG(LOGICAL_CTX_PYTHON, "Unwinding Python frame %p: %s:%d in function %s",
+  TMSG(LOGICAL_CTX_PYTHON, "Unwinding Python frame %p: %s:%d in function %s (starting at line %d)",
        pyframe, DL(PyUnicode_AsUTF8)(code->co_filename),
-       DL(PyFrame_GetLineNumber)(pyframe), DL(PyUnicode_AsUTF8)(code->co_name));
-  if(lframe->fid == 0) {
+       DL(PyFrame_GetLineNumber)(pyframe), DL(PyUnicode_AsUTF8)(code->co_name),
+       code->co_firstlineno);
+  if(lframe->fid == 0 || lframe->code != code) {
     const char* name = DL(PyUnicode_AsUTF8)(code->co_name);
     if(strcmp(name, "<module>") == 0)
       name = NULL;  // Special case, the main module should just have its filename
     lframe->fid = hpcrun_logical_metadata_fid(&python_metastore,
       name, DL(PyUnicode_AsUTF8)(code->co_filename), code->co_firstlineno);
+    lframe->code = code;
+    TMSG(LOGICAL_CTX_PYTHON, "Registered the above as Python fid #%x", lframe->fid);
   }
   frame->ip_norm = hpcrun_logical_metadata_ipnorm(&python_metastore, lframe->fid, DL(PyFrame_GetLineNumber)(pyframe));
   *store = DL(PyFrame_GetBack)(pyframe);
@@ -159,14 +161,15 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
   logical_region_stack_t* lstack = &td->logical;
   switch(what) {
   case PyTrace_CALL: {
+    logical_region_t* top = hpcrun_logical_stack_top(lstack);
     IF_ENABLED(LOGICAL_CTX_PYTHON) {
       PyCodeObject* code = DL(PyFrame_GetCode)(frame);
-      TMSG(LOGICAL_CTX_PYTHON, "call of Python function %s (%s:%d), now at frame = %p",
+      TMSG(LOGICAL_CTX_PYTHON, "[%d -> %d] call of Python function %s (%s:%d), now at frame = %p",
+           top == NULL ? -1 : top->expected, top == NULL ? 1 : top->expected+1,
            DL(PyUnicode_AsUTF8)(code->co_name),
            DL(PyUnicode_AsUTF8)(code->co_filename),
            DL(PyFrame_GetLineNumber)(frame), frame);
     }
-    logical_region_t* top = hpcrun_logical_stack_top(lstack);
     if(top == NULL || top->exit != NULL) {
       // We have entered a new Python region for the first time. Push it.
       logical_region_t reg = {
@@ -186,24 +189,25 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
       top->specific.python.frame = frame;
       top->expected++;
     }
-    hpcrun_logical_substack_push(lstack, top, &(logical_frame_t){.python={0}});
+    hpcrun_logical_substack_push(lstack, top, &(logical_frame_t){.python={0, NULL}});
     break;
   }
   case PyTrace_C_CALL: {
-    TMSG(LOGICAL_CTX_PYTHON, "call into C via function %s from frame = %p",
-         DL(PyEval_GetFuncName)(arg), frame);
     logical_region_t* top = hpcrun_logical_stack_top(lstack);
+    TMSG(LOGICAL_CTX_PYTHON, "[%d -> %d] call into C via function %s from frame = %p",
+         top->expected, top->expected+1, DL(PyEval_GetFuncName)(arg), frame);
     assert(top != NULL && "Python C_CALL without a logical stack???");
     // Update the top region to note that we have exited Python
     top->specific.python.cfunc = arg;
     top->expected++;
     top->exit = hpcrun_logical_frame_sp(1);
-    hpcrun_logical_substack_push(lstack, top, &(logical_frame_t){.python={0}});
+    hpcrun_logical_substack_push(lstack, top, &(logical_frame_t){.python={0, NULL}});
     break;
   }
   case PyTrace_C_RETURN: {
-    TMSG(LOGICAL_CTX_PYTHON, "return from C into Python frame = %p", frame);
     logical_region_t* top = hpcrun_logical_stack_top(lstack);
+    TMSG(LOGICAL_CTX_PYTHON, "[%d -> %d] return from C into Python frame = %p",
+         top->expected, top->expected-1, frame);
     assert(top != NULL && "Python C_RETURN without a logical stack???");
     // Update the top region to note that we have re-entered Python
     top->specific.python.cfunc = NULL;
@@ -213,9 +217,9 @@ static int python_profile(PyObject* ud, PyFrameObject* frame, int what, PyObject
     break;
   }
   case PyTrace_RETURN: {
-    TMSG(LOGICAL_CTX_PYTHON, "(about to) return from Python frame = %p, now at frame %p", frame,
-         DL(PyFrame_GetBack)(frame));
     logical_region_t* top = hpcrun_logical_stack_top(lstack);
+    TMSG(LOGICAL_CTX_PYTHON, "[%d -> %d] (about to) return from Python frame = %p, now at frame %p",
+         top->expected, top->expected-1, frame, DL(PyFrame_GetBack)(frame));
     assert(top != NULL && "Python RETURN without a logical stack???");
     PyFrameObject* prevframe = DL(PyFrame_GetBack)(frame);
     if(prevframe == top->specific.python.caller) {
