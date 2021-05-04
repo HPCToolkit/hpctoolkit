@@ -82,7 +82,7 @@
   macro(roctracer_enable_domain_activity_expl) \
   macro(roctracer_disable_domain_callback) \
   macro(roctracer_disable_domain_activity) \
-  macro(roctracer_set_properties)
+  macro(roctracer_set_properties) 
 
 
 #define ROCTRACER_FN_NAME(f) DYN_FN_NAME(f)
@@ -439,7 +439,7 @@ roctracer_subscriber_callback
 
     rocprofiler_start_kernel();
   }else if (data->phase == ACTIVITY_API_PHASE_EXIT){
-    rocprofiler_end_kernel();
+    rocprofiler_stop_kernel();
   }
 }
 

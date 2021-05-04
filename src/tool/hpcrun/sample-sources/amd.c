@@ -163,6 +163,10 @@ METHOD_FN(finalize_event_list)
     EEMSG("hpcrun: unable to bind to AMD roctracer library %s\n", dlerror());
     monitor_real_exit(-1);
   }
+  if (rocprofiler_bind() != DYNAMIC_BINDING_STATUS_OK) {
+    EEMSG("hpcrun: unable to bind to AMD rocprofiler library %s\n", dlerror());
+    monitor_real_exit(-1);
+  }
 #endif
 
 #if 0

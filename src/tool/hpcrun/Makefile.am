@@ -1178,7 +1178,7 @@ endif
 # Don't use LDFLAGS for static case.
 
 MONITOR_NAMES = -G 'monitor_*'
-HPCRUN_NAMES =  -G 'hpcrun_*' -G 'hpctoolkit_*'
+HPCRUN_NAMES =  -G 'hpcrun_*' -G 'hpctoolkit_*' -G 'OnLoadToolProp'
 MISC_NAMES =    -G 'debug_flag_*' -G 'messages_*' -G ompt_start_tool
 OPENCL_NAMES = -G 'clBuildProgram' -G 'clCreate*' -G 'clEnqueue*' -G 'clSetKernelArg' -G 'cl*Event*'
 

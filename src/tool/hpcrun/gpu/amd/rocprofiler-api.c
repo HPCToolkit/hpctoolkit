@@ -435,7 +435,7 @@ hsa_status_t dispatch_callback(const rocprofiler_callback_data_t* callback_data,
 }
 
 
-static void initialize() {
+static void rocp_inicialize() {
   // Getting profiling features
   rocprofiler_feature_t* features = NULL;
   unsigned feature_count = metrics_input(&features);
@@ -449,7 +449,7 @@ static void initialize() {
   callbacks_ptrs.dispatch = dispatch_callback;
   rocprofiler_set_queue_callbacks(callbacks_ptrs, NULL);
 
-  // Initialize recursive mutex_context
+  // rocp_inicialize recursive mutex_context
   pthread_mutexattr_t Attr;
   pthread_mutexattr_init(&Attr);
   pthread_mutexattr_settype(&Attr, PTHREAD_MUTEX_RECURSIVE);
@@ -460,7 +460,7 @@ static void initialize() {
 // This is necessary for rocprofiler callback to work
 extern PUBLIC_API void OnLoadToolProp(rocprofiler_settings_t* settings){
   printf("Rocprofiler OnLoadToolProp______________________\n");  
-  initialize();
+  rocp_inicialize();
 }
 
 
@@ -493,7 +493,7 @@ rocprofiler_init
 )
 {
   printf("Rocprofiler INIT\n");  
-  // initialize();
+  // rocp_inicialize();
   return; 
 }
 
