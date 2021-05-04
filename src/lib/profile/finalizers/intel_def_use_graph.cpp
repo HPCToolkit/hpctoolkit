@@ -49,7 +49,6 @@
 //******************************************************************************
 
 #include <fstream>                  // ifstream
-#include <iostream>                 // cout
 #include <map>
 
 
@@ -92,12 +91,6 @@ void IntelDefUseGraphClassification::readDefUseGraphEdges
     }
     c._def_use_graph[to][from] = path_length + 1;
   }
-  for (auto iter: c._def_use_graph) {
-    int to = iter.first;
-    for (auto from: iter.second) {
-      std::cout << from.first << "->" << to << std::endl;
-    }
-  }
 }
 
 
@@ -108,12 +101,9 @@ void IntelDefUseGraphClassification::module(const Module& m, Classification& c) 
   if (strstr(mpath_str.c_str(), "gpubins")) {
 
     const char *delimiter = ".gpubin";
-    std::cout << mpath_str << std::endl;
     size_t delim2_loc = mpath_str.find(delimiter);
     std::string filePath = mpath_str.substr(0, delim2_loc + 7);
-    std::cout << "filePath: " << filePath << std::endl;
     std::string du_filePath = filePath + ".du";
-    std::cout << "du_filePath: " << du_filePath << std::endl;
 
     readDefUseGraphEdges(du_filePath, c);
   }

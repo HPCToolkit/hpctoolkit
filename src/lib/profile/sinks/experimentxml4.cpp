@@ -689,7 +689,7 @@ void ExperimentXML4::write() {
 
         if (m->name().find(latency_blame_metric_name) != std::string::npos) {
           int latency = *(vv.get(m->partials()[0]).get(MetricScope::point));
-          std::cout << "LATENCY_BLAME:: module: " << c.scope() << ", parent module: " << c.direct_parent()->scope() << ", offset: " << offset << ", val: " << latency << std::endl;
+          // std::cout << "LATENCY_BLAME:: module: " << c.scope() << ", parent module: " << c.direct_parent()->scope() << ", offset: " << offset << ", val: " << latency << std::endl;
         }
       }
     }

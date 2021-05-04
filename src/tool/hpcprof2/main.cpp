@@ -72,7 +72,7 @@ static std::unique_ptr<T> make_unique_x(Args&&... args) {
 }
 
 int main(int argc, char* const argv[]) {
-  sleep(10);
+  //sleep(10);
   // Read in the arguments.
   ProfArgs args(argc, argv);
 

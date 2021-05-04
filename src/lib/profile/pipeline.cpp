@@ -624,7 +624,9 @@ ContextRef Source::collaborate(ContextRef target, CollaborativeContext& collab, 
 
 Source::AccumulatorsRef Source::accumulateTo(ContextRef c, Thread::Temporary& t) {
   assert(limit().hasMetrics() && "Source did not register for `metrics` emission!");
-  assert(slocal->lastWave && "Attempt to emit metrics before requested!");
+  if (slocal) {
+    assert(slocal->lastWave && "Attempt to emit metrics before requested!");
+  }
   if(auto pc = std::get_if<Context>(c))
     return t.data[*pc];
   if(auto pc = std::get_if<SuperpositionedContext>(c))
