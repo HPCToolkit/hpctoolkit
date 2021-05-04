@@ -103,25 +103,35 @@ struct LatencyBlameAnalyzer : public ProfileAnalyzer {
       auto iter = c._def_use_graph.find(offset);
       const std::map<uint64_t, uint32_t> &incoming_edges = (iter != c._def_use_graph.end()) ?
         iter->second: empty_edges;
-      if (!def_use_initialized) {
+      if (!def_use_initialized && c._def_use_graph.size() > 0) {
         def_use_graph = c._def_use_graph;
         def_use_initialized = true;
       }
 
       for (auto edge: incoming_edges) {
         uint64_t from = edge.first;
-        ContextRef cr = sink.context(*ctx.direct_parent(), {ctx.scope().point_data().first, from}, false);
-        context_map[{offset, ContextRef(ctx)}].insert({from, cr});
+        auto parent = ctx.direct_parent();
+        while (parent) {
+          const Scope& s = parent->scope();
+          if(s.type() == Scope::Type::point || s.type() == Scope::Type::call || s.type() == Scope::Type::classified_point || s.type() == Scope::Type::classified_call) {
+            break;
+          }
+          parent = parent->direct_parent();
+        }
+        if (parent) {
+          ContextRef cr = sink.context(*parent, {ctx.scope().point_data().first, from}, false);
+          context_map[{offset, ContextRef(ctx)}].insert({from, cr});
+        }
       }
     }
   }
 
   void analysisMetricsFor(const Metric& m) noexcept override {
     const std::string latency_metric_name = "GINS: LAT(cycles)";
-    const std::string frequency_metric_name = "GINS:EXC_CNT";
+    const std::string frequency_metric_name = "GINS: EXC_CNT";
     const std::string name = "GINS: LAT_BLAME(cycles)";
     const std::string desc = "Accumulates the latency blame for a given context";
-    std::cout << "metric name: " << m.name() << std::endl;
+    // std::cout << "metric name: " << m.name() << std::endl;
     if (m.name().find(latency_metric_name) != std::string::npos) {
       latency_metric = &m;
       latency_blame_metric = &(sink.metric(Metric::Settings(name, desc)));
@@ -142,7 +152,6 @@ struct LatencyBlameAnalyzer : public ProfileAnalyzer {
       for (auto iter2: iter1.second) {
         uint64_t from = iter2.first;
         ContextRef cr = iter2.second;
-        // const std::optional<double> ef_ptr = t.accumulators().find(std::get<Context>(cr))->find(*frequency_metric)->get(MetricScope::point);
         auto from_ctx = t.accumulators().find(std::get<Context>(cr));
         if (!from_ctx) {
           continue;
@@ -165,7 +174,6 @@ struct LatencyBlameAnalyzer : public ProfileAnalyzer {
       uint64_t to = to_obj.first;
       ContextRef to_context = to_obj.second;
       int latency;
-      // const std::optional<double> l_ptr = t.accumulators().find(std::get<Context>(to_context))->find(*latency_metric)->get(MetricScope::point);
       auto to_ctx = t.accumulators().find(std::get<Context>(to_context));
       if (!to_ctx) {
         continue;
@@ -178,11 +186,9 @@ struct LatencyBlameAnalyzer : public ProfileAnalyzer {
       if (l_ptr) {
         latency = *l_ptr;
       }
-      double denominator = 0;
       for (auto iter2: iter1.second) {
         uint64_t from = iter2.first;
         ContextRef cr = iter2.second;
-        // const std::optional<double> ef_ptr = t.accumulators().find(std::get<Context>(cr))->find(*frequency_metric)->get(MetricScope::point);
         auto from_ctx = t.accumulators().find(std::get<Context>(cr));
         if (!from_ctx) {
           continue;
@@ -196,61 +202,11 @@ struct LatencyBlameAnalyzer : public ProfileAnalyzer {
           double execution_frequency = *ef_ptr;
           double path_length_inv = (double) 1 / (def_use_graph[to][from]);
           double latency_blame = execution_frequency * path_length_inv / denominator_map[to] * latency;
-          std::cout << "LAT_BLAME (analyze):: offset: " << from << ", val: " << latency_blame;
+          // std::cout << "LAT_BLAME (analyze):: offset: " << from << ", val: " << latency_blame << std::endl;
           sink.accumulateTo(cr, t).add(*latency_blame_metric, latency_blame);
         }
       }
-      denominator_map[to] = denominator;
     }
-#if 0
-    for(const auto& cd: t.accumulators().citerate()) {
-      const Context& ctx = cd.first;
-      const MetricAccumulator *m = cd.second.find(*latency_metric);
-      if(m == nullptr) return;
-      const Scope& s = ctx.scope();
-
-      if(s.type() == Scope::Type::point || s.type() == Scope::Type::call ||
-          s.type() == Scope::Type::classified_point || s.type() == Scope::Type::classified_call) {
-        auto mo = s.point_data();
-        const auto& c = mo.first.userdata[sink.classification()];
-
-        uint64_t offset = mo.second;
-        const std::map<uint64_t, uint32_t> empty_edges = {};
-        auto iter = def_use_graph.find(offset);
-        const std::map<uint64_t, uint32_t> &incoming_edges = (iter != def_use_graph.end()) ?
-          iter->second: empty_edges;
-
-        double denominator;
-        for (auto edge: incoming_edges) {
-          uint64_t from = edge.first;
-          ContextRef cr = context_map[offset].find(from)->second;
-          const std::optional<double> ef_ptr = t.accumulators().find(std::get<Context>(cr))->find(*frequency_metric)->get(MetricScope::point);
-          if (ef_ptr) {
-            double execution_frequency = *ef_ptr;
-            double path_length_inv = (double) 1 / (edge.second);
-            denominator += execution_frequency * path_length_inv;
-          }
-        }
-        int latency;
-        const std::optional<double> l_ptr = t.accumulators().find(ctx)->find(*latency_metric)->get(MetricScope::point);
-        if (l_ptr) {
-          latency = *l_ptr;
-        }
-        for (auto edge: incoming_edges) {
-          uint64_t from = edge.first;
-          ContextRef cr = context_map[offset].find(from)->second;
-          const std::optional<double> ef_ptr = t.accumulators().find(std::get<Context>(cr))->find(*frequency_metric)->get(MetricScope::point);
-          if (ef_ptr) {
-            double execution_frequency = *ef_ptr;
-            double path_length_inv = (double) 1 / (edge.second);
-            double latency_blame = execution_frequency * path_length_inv / denominator * latency;
-            std::cout << "LAT_BLAME (analyze):: offset: " << from << ", val: " << latency_blame;
-            sink.accumulateTo(cr, t).add(*latency_blame_metric, latency_blame);
-          }
-        }
-      }
-    }
-#endif
   }
 
 private:
