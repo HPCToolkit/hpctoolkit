@@ -50,6 +50,7 @@
 
 #include <fstream>                  // ifstream
 #include <map>
+#include <iostream>   //cout
 
 
 
@@ -91,6 +92,7 @@ void IntelDefUseGraphClassification::readDefUseGraphEdges
     }
     c._def_use_graph[to][from] = path_length + 1;
   }
+  // std::cout << "graph creation: " << fileName << ", size: " << c._def_use_graph.size() << std::endl;
 }
 
 

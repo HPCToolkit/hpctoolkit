@@ -96,6 +96,9 @@ struct LatencyBlameAnalyzer : public ProfileAnalyzer {
     const Scope& s = ctx.scope();
     if(s.type() == Scope::Type::point || s.type() == Scope::Type::call ||
         s.type() == Scope::Type::classified_point || s.type() == Scope::Type::classified_call) {
+      //std::cout << "context: " << ctx.scope() << std::endl;
+      std::string scopeFile = s.point_data().first.path().filename().string();
+      size_t scopeHash = std::hash<std::string>{}(scopeFile);
       uint64_t offset = ctx.scope().point_data().second;
       auto mo = s.point_data();
       const auto& c = mo.first.userdata[sink.classification()];
@@ -103,9 +106,9 @@ struct LatencyBlameAnalyzer : public ProfileAnalyzer {
       auto iter = c._def_use_graph.find(offset);
       const std::map<uint64_t, uint32_t> &incoming_edges = (iter != c._def_use_graph.end()) ?
         iter->second: empty_edges;
-      if (!def_use_initialized && c._def_use_graph.size() > 0) {
-        def_use_graph = c._def_use_graph;
-        def_use_initialized = true;
+      if (def_use_graph[scopeHash].size() == 0 && c._def_use_graph.size() > 0) {
+        // std::cout << "scope: " << scopeFile << ", incoming edges: " << incoming_edges.size() << ", graph size: " << c._def_use_graph.size() << std::endl;
+        def_use_graph[scopeHash] = c._def_use_graph;
       }
 
       for (auto edge: incoming_edges) {
@@ -118,6 +121,7 @@ struct LatencyBlameAnalyzer : public ProfileAnalyzer {
           }
           parent = parent->direct_parent();
         }
+        // std::cout << "incoming edges" << std::endl;
         if (parent) {
           ContextRef cr = sink.context(*parent, {ctx.scope().point_data().first, from}, false);
           context_map[{offset, ContextRef(ctx)}].insert({from, cr});
@@ -142,20 +146,29 @@ struct LatencyBlameAnalyzer : public ProfileAnalyzer {
   }
 
   void analyze(Thread::Temporary& t) noexcept override {
-    std::map<uint64_t, double> denominator_map;
+    std::map<size_t, std::map<uint64_t, double>> denominator_map;
 
+    // std::cout << "analyze" << std::endl;
     for (auto iter1: context_map) {
+      // std::cout << "iter1" << std::endl;
       const std::pair<uint64_t, ContextRef> to_obj = iter1.first;
       uint64_t to = to_obj.first;
       ContextRef to_context = to_obj.second;
+      const Scope& s = std::get<Context>(to_context).scope();
+      std::string scopeFile = s.point_data().first.path().filename().string();
+      size_t scopeHash = std::hash<std::string>{}(scopeFile);
+
       double denominator = 0;
       for (auto iter2: iter1.second) {
+        // std::cout << "iter2" << std::endl;
         uint64_t from = iter2.first;
         ContextRef cr = iter2.second;
         auto from_ctx = t.accumulators().find(std::get<Context>(cr));
         if (!from_ctx) {
+          // std::cout << "from ctx1 null" << std::endl;
           continue;
         }
+        // std::cout << "from ctx1 not null" << std::endl;
         auto from_freq_metric = from_ctx->find(*frequency_metric);
         if (!from_freq_metric) {
           continue;
@@ -163,21 +176,27 @@ struct LatencyBlameAnalyzer : public ProfileAnalyzer {
         const std::optional<double> ef_ptr = from_freq_metric->get(MetricScope::point);
         if (ef_ptr) {
           double execution_frequency = *ef_ptr;
-          double path_length_inv = (double) 1 / (def_use_graph[to][from]);
+          double path_length_inv = (double) 1 / (def_use_graph[scopeHash][to][from]);
           denominator += execution_frequency * path_length_inv;
         }
       }
-      denominator_map[to] = denominator;
+      denominator_map[scopeHash][to] = denominator;
     }
     for (auto iter1: context_map) {
       std::pair<uint64_t, ContextRef> to_obj = iter1.first;
       uint64_t to = to_obj.first;
       ContextRef to_context = to_obj.second;
+      const Scope& s = std::get<Context>(to_context).scope();
+      std::string scopeFile = s.point_data().first.path().filename().string();
+      size_t scopeHash = std::hash<std::string>{}(scopeFile);
+
       int latency;
       auto to_ctx = t.accumulators().find(std::get<Context>(to_context));
       if (!to_ctx) {
+        // std::cout << "to ctx null" << std::endl;
         continue;
       }
+      // std::cout << "to ctx not null" << std::endl;
       auto to_lat_metric = to_ctx->find(*latency_metric);
       if (!to_lat_metric) {
         continue;
@@ -191,8 +210,10 @@ struct LatencyBlameAnalyzer : public ProfileAnalyzer {
         ContextRef cr = iter2.second;
         auto from_ctx = t.accumulators().find(std::get<Context>(cr));
         if (!from_ctx) {
+          // std::cout << "from ctx2 null" << std::endl;
           continue;
         }
+        // std::cout << "from ctx2 not null" << std::endl;
         auto from_freq_metric = from_ctx->find(*frequency_metric);
         if (!from_freq_metric) {
           continue;
@@ -200,9 +221,9 @@ struct LatencyBlameAnalyzer : public ProfileAnalyzer {
         const std::optional<double> ef_ptr = from_freq_metric->get(MetricScope::point);
         if (ef_ptr) {
           double execution_frequency = *ef_ptr;
-          double path_length_inv = (double) 1 / (def_use_graph[to][from]);
-          double latency_blame = execution_frequency * path_length_inv / denominator_map[to] * latency;
-          // std::cout << "LAT_BLAME (analyze):: offset: " << from << ", val: " << latency_blame << std::endl;
+          double path_length_inv = (double) 1 / (def_use_graph[scopeHash][to][from]);
+          double latency_blame = execution_frequency * path_length_inv / denominator_map[scopeHash][to] * latency;
+          // std::cout << "LAT_BLAME (analyze):: scope: " << scopeFile << ", graph size: " << def_use_graph[scopeHash].size() << ", offset: " << from << ", val: " << latency_blame << std::endl;
           sink.accumulateTo(cr, t).add(*latency_blame_metric, latency_blame);
         }
       }
@@ -217,8 +238,7 @@ private:
   const Metric *frequency_metric;
   Metric *latency_blame_metric;
 
-  bool def_use_initialized = false;
-  std::map<uint64_t , std::map<uint64_t, uint32_t>> def_use_graph;
+  std::map<size_t, std::map<uint64_t , std::map<uint64_t, uint32_t>>> def_use_graph;
 };
 
 }
