@@ -127,6 +127,13 @@ struct LatencyBlameAnalyzer : public ProfileAnalyzer {
           context_map[{offset, ContextRef(ctx)}].insert({from, cr});
         }
       }
+      if (c._def_use_graph.size() > 0 && incoming_edges.size() == 0) {
+        // no predecessor to blame, self blaming  
+        std::cout << "self offsets: " << offset << std::endl;
+        context_map[{offset, ContextRef(ctx)}].insert({offset, ContextRef(ctx)});
+      } else if (c._def_use_graph.size() > 0) {
+        std::cout << "non-self offsets: " << offset << ", parent edges: " << incoming_edges.begin()->first << std::endl;
+      }
     }
   }
 
@@ -222,8 +229,14 @@ struct LatencyBlameAnalyzer : public ProfileAnalyzer {
         if (ef_ptr) {
           double execution_frequency = *ef_ptr;
           double path_length_inv = (double) 1 / (def_use_graph[scopeHash][to][from]);
-          double latency_blame = execution_frequency * path_length_inv / denominator_map[scopeHash][to] * latency;
-          // std::cout << "LAT_BLAME (analyze):: scope: " << scopeFile << ", graph size: " << def_use_graph[scopeHash].size() << ", offset: " << from << ", val: " << latency_blame << std::endl;
+          double latency_blame;
+          if (to == from) {
+            // no predecessor to blame, self blaming  
+            latency_blame = latency;
+          } else {
+            latency_blame = execution_frequency * path_length_inv / denominator_map[scopeHash][to] * latency;
+          }
+          std::cout << "LAT_BLAME (analyze):: scope: " << scopeFile << ", graph size: " << def_use_graph[scopeHash].size() << ", offset: " << from << ", val: " << latency_blame << std::endl;
           sink.accumulateTo(cr, t).add(*latency_blame_metric, latency_blame);
         }
       }
