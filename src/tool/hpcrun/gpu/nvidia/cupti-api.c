@@ -73,6 +73,71 @@
 
 
 //***************************************************************************
+// workaround for cuptiFlushAll hang
+//***************************************************************************
+
+#define CUPTI_FLUSH_HANG_WORKAROUND 1
+
+#if CUPTI_FLUSH_HANG_WORKAROUND
+#include <setjmp.h>
+#include <signal.h>
+#include <unistd.h>
+
+#include <messages/messages.h>
+#include <utilities/linuxtimer.h>
+
+
+//----------------------------------------------
+// flush alarm enabled
+//----------------------------------------------
+__thread jmp_buf flush_jump_buf;
+
+int flush_signal;
+
+#define FLUSH_ALARM_SECONDS 4
+
+#define FLUSH_ALARM_DECLARE() \
+  linuxtimer_t flush_alarm
+
+#define FLUSH_ALARM_SET()						\
+  linuxtimer_create(&flush_alarm, CLOCK_REALTIME, flush_signal);	\
+  monitor_sigaction(linuxtimer_getsignal(&flush_alarm),			\
+		    &flush_alarm_handler, 0, NULL);			\
+  linuxtimer_set(&flush_alarm, FLUSH_ALARM_SECONDS, 0, 0)
+
+#define FLUSH_ALARM_CLEAR()			\
+  sleep(20);					\
+  linuxtimer_set(&flush_alarm, 0, 0, 0)
+
+#define FLUSH_ALARM_DELETE()			\
+  linuxtimer_delete(&flush_alarm)
+
+#define FLUSH_ALARM_FIRED() \
+  setjmp(flush_jump_buf)
+
+static int
+flush_alarm_handler(int sig, siginfo_t* siginfo, void* context)
+{
+  STDERR_MSG("hpcrun: NVIDIA's CUPTI event flush didn't return; some GPU event data may be lost.");
+  longjmp(flush_jump_buf, 1);
+  return 0; /* keep compiler happy, but can't get here */
+}
+
+#else
+
+//----------------------------------------------
+// flush alarm disabled
+//----------------------------------------------
+#define FLUSH_ALARM_DECLARE()
+#define FLUSH_ALARM_SET()
+#define FLUSH_ALARM_CLEAR()
+#define FLUSH_ALARM_FIRED() 0
+
+#endif
+
+
+
+//***************************************************************************
 // local includes
 //***************************************************************************
 
@@ -129,6 +194,12 @@
     cupti_error_report(status, #fn);  \
   }  \
 }
+
+#define HPCRUN_CUPTI_CALL_NOERROR(fn, args)  \
+{  \
+  CUPTI_FN_NAME(fn) args;  \
+}
+
 
 #define DISPATCH_CALLBACK(fn, args) if (fn) fn args
 
@@ -1339,6 +1410,10 @@ cupti_init
  void
 )
 {
+#if CUPTI_FLUSH_HANG_WORKAROUND
+  flush_signal = linuxtimer_newsignal();
+#endif
+  
   cupti_activity_enabled.buffer_request = cupti_buffer_alloc;
   cupti_activity_enabled.buffer_complete = cupti_buffer_completion_callback;
 }
@@ -1513,6 +1588,7 @@ cupti_pc_sampling_disable
 // finalizer
 //******************************************************************************
 
+
 void
 cupti_activity_flush
 (
@@ -1520,7 +1596,13 @@ cupti_activity_flush
 {
   if (cupti_stop_flag) {
     cupti_stop_flag_unset();
-    HPCRUN_CUPTI_CALL(cuptiActivityFlushAll, (CUPTI_ACTIVITY_FLAG_FLUSH_FORCED));
+    FLUSH_ALARM_DECLARE();
+    if (!FLUSH_ALARM_FIRED()) {
+      FLUSH_ALARM_SET();
+      HPCRUN_CUPTI_CALL_NOERROR
+	(cuptiActivityFlushAll, (CUPTI_ACTIVITY_FLAG_FLUSH_FORCED));
+      FLUSH_ALARM_CLEAR();
+    }
   }
 }
 
