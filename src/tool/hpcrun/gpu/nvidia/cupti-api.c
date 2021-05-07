@@ -99,6 +99,9 @@ int flush_signal;
 #define FLUSH_ALARM_DECLARE() \
   linuxtimer_t flush_alarm
 
+#define FLUSH_ALARM_SIGALLOC() \
+  flush_signal = linuxtimer_newsignal()
+
 #define FLUSH_ALARM_SET()						\
   linuxtimer_create(&flush_alarm, CLOCK_REALTIME, flush_signal);	\
   monitor_sigaction(linuxtimer_getsignal(&flush_alarm),			\
@@ -129,6 +132,7 @@ flush_alarm_handler(int sig, siginfo_t* siginfo, void* context)
 // flush alarm disabled
 //----------------------------------------------
 #define FLUSH_ALARM_DECLARE()
+#define FLUSH_ALARM_SIGALLOC()
 #define FLUSH_ALARM_SET()
 #define FLUSH_ALARM_CLEAR()
 #define FLUSH_ALARM_FIRED() 0
@@ -1410,9 +1414,7 @@ cupti_init
  void
 )
 {
-#if CUPTI_FLUSH_HANG_WORKAROUND
-  flush_signal = linuxtimer_newsignal();
-#endif
+  FLUSH_ALARM_SIGALLOC();
   
   cupti_activity_enabled.buffer_request = cupti_buffer_alloc;
   cupti_activity_enabled.buffer_complete = cupti_buffer_completion_callback;
