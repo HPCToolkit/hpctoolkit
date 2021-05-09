@@ -77,6 +77,7 @@
 //***************************************************************************
 
 #define CUPTI_FLUSH_HANG_WORKAROUND 1
+#define CUPTI_FLUSH_HANG_WORKAROUND_TEST 0
 
 #if CUPTI_FLUSH_HANG_WORKAROUND
 #include <setjmp.h>
@@ -96,7 +97,7 @@ int flush_signal;
 
 #define FLUSH_ALARM_SECONDS 4
 
-#define FLUSH_ALARM_DECLARE() \
+#define FLUSH_ALARM_INIT() \
   linuxtimer_t flush_alarm
 
 #define FLUSH_ALARM_SIGALLOC() \
@@ -109,14 +110,14 @@ int flush_signal;
   linuxtimer_set(&flush_alarm, FLUSH_ALARM_SECONDS, 0, 0)
 
 #define FLUSH_ALARM_CLEAR()			\
-  sleep(20);					\
   linuxtimer_set(&flush_alarm, 0, 0, 0)
-
-#define FLUSH_ALARM_DELETE()			\
-  linuxtimer_delete(&flush_alarm)
 
 #define FLUSH_ALARM_FIRED() \
   setjmp(flush_jump_buf)
+
+#define FLUSH_ALARM_FINI()			\
+  linuxtimer_delete(&flush_alarm)
+
 
 static int
 flush_alarm_handler(int sig, siginfo_t* siginfo, void* context)
@@ -131,12 +132,20 @@ flush_alarm_handler(int sig, siginfo_t* siginfo, void* context)
 //----------------------------------------------
 // flush alarm disabled
 //----------------------------------------------
-#define FLUSH_ALARM_DECLARE()
+#define FLUSH_ALARM_INIT()
 #define FLUSH_ALARM_SIGALLOC()
 #define FLUSH_ALARM_SET()
 #define FLUSH_ALARM_CLEAR()
 #define FLUSH_ALARM_FIRED() 0
+#define FLUSH_ALARM_FINI()
 
+#endif
+
+#if CUPTI_FLUSH_HANG_WORKAROUND_TEST
+#define FLUSH_ALARM_TEST()			\
+  sleep(20)
+#else
+#define FLUSH_ALARM_TEST()
 #endif
 
 
@@ -1598,13 +1607,15 @@ cupti_activity_flush
 {
   if (cupti_stop_flag) {
     cupti_stop_flag_unset();
-    FLUSH_ALARM_DECLARE();
+    FLUSH_ALARM_INIT();
     if (!FLUSH_ALARM_FIRED()) {
       FLUSH_ALARM_SET();
       HPCRUN_CUPTI_CALL_NOERROR
 	(cuptiActivityFlushAll, (CUPTI_ACTIVITY_FLAG_FLUSH_FORCED));
+      FLUSH_ALARM_TEST();
       FLUSH_ALARM_CLEAR();
     }
+    FLUSH_ALARM_FINI();			\
   }
 }
 
