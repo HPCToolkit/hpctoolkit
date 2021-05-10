@@ -126,7 +126,8 @@ linuxtimer_newsignal
  void
 )
 {
-  return SIGRTMIN + 4;
+  // avoid signal conflict with papi (2), itimer (3), perf (4)
+  return SIGRTMIN + 5; 
 }
 
 
