@@ -146,8 +146,9 @@ data_motion_explicit_activities[] = {
   CUPTI_ACTIVITY_KIND_MEMCPY2,
   CUPTI_ACTIVITY_KIND_MEMCPY,
   CUPTI_ACTIVITY_KIND_MEMSET,
-// FIXME(keren): memory activity does not have a correlation id
-// CUPTI_ACTIVITY_KIND_MEMORY,
+//#if CUPTI_API_VERSION >= 14
+//  CUPTI_ACTIVITY_KIND_MEMORY2,
+//#endif
   CUPTI_ACTIVITY_KIND_INVALID
 };
 

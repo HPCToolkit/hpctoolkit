@@ -472,19 +472,32 @@ convert_synchronization
 }
 
 
+#if CUPTI_API_VERSION >= 14
 static void
 convert_memory
 (
-  gpu_activity_t *ga,
-  CUpti_ActivityMemory *activity_mem
+ gpu_activity_t *ga,
+ CUpti_ActivityMemory2 *activity_mem
 )
 {
   ga->kind = GPU_ACTIVITY_MEMORY;
+  ga->details.memory.start = activity_mem->timestamp;
+  // XXX(Keren): no end timestamp currently
+  //ga->details.memory.end = activity_mem->end;
+  ga->details.memory.bytes = activity_mem->bytes;
+  ga->details.memory.address = activity_mem->address;
+  ga->details.memory.correlation_id = activity_mem->correlationId;
+  ga->details.memory.device_id = activity_mem->deviceId;
+  ga->details.memory.context_id = activity_mem->contextId;
+  ga->details.memory.stream_id = activity_mem->streamId;
   ga->details.memory.memKind = activity_mem->memoryKind;
   ga->details.memory.bytes = activity_mem->bytes;
 
-  gpu_interval_set(&ga->details.interval, activity_mem->start, activity_mem->end);
+  // XXX(Keren): no end timestamp currently
+  //ga->details.memory.end = activity_mem->end;
+  //gpu_interval_set(&ga->details.interval, ga->details.memory.start, ga->details.memory.end);
 }
+#endif
 
 
 static void
@@ -616,9 +629,11 @@ cupti_activity_translate
     convert_synchronization(ga, (CUpti_ActivitySynchronization *) activity);
     break;
 
-  case CUPTI_ACTIVITY_KIND_MEMORY:
-    convert_memory(ga, (CUpti_ActivityMemory *) activity);
+  #if CUPTI_API_VERSION >= 14
+  case CUPTI_ACTIVITY_KIND_MEMORY2:
+    convert_memory(ga, (CUpti_ActivityMemory2 *) activity);
     break;
+  #endif
 
   case CUPTI_ACTIVITY_KIND_MEMSET:
     convert_memset(ga, (CUpti_ActivityMemset *) activity);

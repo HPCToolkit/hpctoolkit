@@ -327,15 +327,15 @@ gpu_memset_process
       gpu_host_correlation_map_lookup(external_id);
     if (host_op_entry != NULL) {
       cct_node_t *host_op_node =
-	gpu_host_correlation_map_entry_op_cct_get(host_op_entry,
-						  gpu_placeholder_type_memset);
+        gpu_host_correlation_map_entry_op_cct_get(host_op_entry,
+          gpu_placeholder_type_memset);
 
       gpu_trace_item_t entry_trace;
       trace_item_set(&entry_trace, activity, host_op_entry, host_op_node);
 
       gpu_context_stream_trace
-	(activity->details.memset.context_id, activity->details.memset.stream_id,
-	 &entry_trace);
+        (activity->details.memset.context_id, activity->details.memset.stream_id,
+         &entry_trace);
 
       attribute_activity(host_op_entry, activity, host_op_node);
 
@@ -595,9 +595,15 @@ gpu_memory_process
       cct_node_t *host_op_node =
         gpu_host_correlation_map_entry_op_cct_get(host_op_entry, ph);
       assert(host_op_node != NULL);
-      // Memory allocation does not always happen on the device
-      // Do not send it to trace channels
+
       attribute_activity(host_op_entry, activity, host_op_node);
+
+      gpu_trace_item_t entry_trace;
+      trace_item_set(&entry_trace, activity, host_op_entry, host_op_node);
+
+      gpu_context_stream_trace
+        (activity->details.memory.context_id, activity->details.memory.stream_id,
+         &entry_trace);
     }
     gpu_correlation_id_map_delete(correlation_id);
   } else {
