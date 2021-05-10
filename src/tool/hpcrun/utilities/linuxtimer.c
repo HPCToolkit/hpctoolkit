@@ -126,9 +126,7 @@ linuxtimer_newsignal
  void
 )
 {
-  static __thread int next_signal = 4;
-
-  return SIGRTMIN + next_signal++;
+  return SIGRTMIN + 4;
 }
 
 
