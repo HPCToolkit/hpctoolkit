@@ -68,7 +68,7 @@
 #include <sample-sources/ss-obj-name.h>
 #include "papi-c.h"
 #include "papi-c-extended-info.h"
-
+#include <hpcrun/gpu/amd/hip-api.h>
 
 
 //******************************************************************************
@@ -158,7 +158,7 @@ papi_c_rocm_start()
 void
 papi_c_rocm_read(long long *values)
 {
-  // hip_dev_sync(); // TODO:Dejan check this out
+  hip_dev_sync(); // TODO:Dejan check this out
   int ret = PAPI_read(my_event_set, values);
   if (ret != PAPI_OK) {
     hpcrun_abort("PAPI_read of event set %d failed with %s (%d)",

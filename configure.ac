@@ -3562,6 +3562,7 @@ then
     OPT_PAPI_LIBPATH=
     use_papi_c=no
     use_papi_c_cupti=no
+    use_papi_c_rocm=no
   fi
 fi
 

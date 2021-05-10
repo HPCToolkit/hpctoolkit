@@ -61,8 +61,7 @@
 #include <string.h>    // memset
 
 #include <roctracer_hip.h>
-
-
+// #include <hip/hip_runtime.h>
 
 //*****************************************************************************
 // local include files

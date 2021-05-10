@@ -57,10 +57,11 @@
 
 
 //*****************************************************************************
-// nvidia includes
+// rocm includes
 //*****************************************************************************
 
 #include <roctracer_hip.h>
+// #include <hip/hip_runtime.h>
 
 
 
@@ -106,6 +107,6 @@ hip_device_property_query
 );
 
 int
-hip_dev_sync ();
+hip_dev_sync();
 
 #endif //hip_api_h

@@ -48,7 +48,7 @@
 #include "roctracer-api.h"
 #include "roctracer-activity-translate.h"
 
-// #include "hip-api.h"
+#include "hip-api.h"
 #include "rocm-debug-api.h"
 #include "rocm-binary-processing.h"
 #include "tool_state.h"

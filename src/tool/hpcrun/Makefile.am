@@ -163,6 +163,9 @@ XED2_INC = @XED2_INC@
 XED2_HPCRUN_LIBS =  @XED2_HPCRUN_LIBS@
 XED2_HPCLINK_LIBS = @XED2_HPCLINK_LIBS@
 CUPTI_INC_FLGS = @OPT_CUPTI_IFLAGS@
+
+ROCM_INC_FLGS = @OPT_ROCM_IFLAGS@
+
 OPENCL_IFLAGS = @OPT_OPENCL_IFLAGS@
 CUPTI_LD_FLGS = @OPT_CUPTI_LDFLAGS@
 CUPTI_BASE = @OPT_CUPTI@
@@ -548,6 +551,7 @@ endif
 if OPT_ENABLE_ROCM
 MY_ROCM_FILES =\
 	sample-sources/amd.c \
+	gpu/amd/hip-api.c \	
 	gpu/amd/roctracer-activity-translate.c \
 	gpu/amd/roctracer-api.c 	\
 	gpu/amd/rocm-debug-api.c \
@@ -999,6 +1003,7 @@ MY_CPP_DEFINES += -DHPCRUN_SS_PAPI_C_CUPTI
 endif
 
 if OPT_PAPI_ROCM
+libhpcrun_la_CPPFLAGS   += $(ROCM_INC_FLGS)
 MY_CPP_DEFINES += -DHPCRUN_SS_PAPI_C_ROCM
 endif
 
@@ -1006,7 +1011,7 @@ if OPT_PAPI_STATIC
   libhpcrun_o_SOURCES   += $(MY_PAPI_FILES)
   libhpcrun_o_CPPFLAGS  += $(PAPI_INC_FLGS)
   libhpcrun_o_LDADD     += $(OPT_PAPI_LIBS_STAT)
-
+  
   MY_CPP_DEFINES  += -DHPCRUN_SS_PAPI
 endif
 

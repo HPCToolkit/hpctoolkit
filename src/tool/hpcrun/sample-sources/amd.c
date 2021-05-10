@@ -43,7 +43,7 @@
 #include <hpcrun/control-knob.h>
 #include <hpcrun/device-finalizers.h>
 #include <hpcrun/gpu/amd/roctracer-api.h>
-// #include <hpcrun/gpu/amd/hip-api.h>
+#include <hpcrun/gpu/amd/hip-api.h>
 #include <hpcrun/gpu/gpu-activity.h>
 #include <hpcrun/gpu/gpu-metrics.h>
 #include <hpcrun/gpu/gpu-trace.h>
@@ -152,12 +152,12 @@ METHOD_FN(process_event_list, int lush_metrics)
     TMSG(CUDA,"nevents = %d", nevents);
 
 
-// #ifndef HPCRUN_STATIC_LINK
-//   if (hip_bind()) {
-//     EEMSG("hpcrun: unable to bind to HIP AMD library %s\n", dlerror());
-//     monitor_real_exit(-1);
-//   }
-// #endif
+#ifndef HPCRUN_STATIC_LINK
+  if (hip_bind()) {
+    EEMSG("hpcrun: unable to bind to HIP AMD library %s\n", dlerror());
+    monitor_real_exit(-1);
+  }
+#endif
 }
 
 static void

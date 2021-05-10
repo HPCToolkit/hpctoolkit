@@ -21736,6 +21736,7 @@ case "$OPT_PAPI" in
     fi
     OPT_PAPI_IFLAGS="-I${OPT_PAPI}/include"
 
+
     for lib in $multilib_path ; do
       lib_dir="${OPT_PAPI}/$lib"
       if test -f "${lib_dir}/libpapi.so" || test -f "${lib_dir}/libpapi.a"
