@@ -63,6 +63,7 @@
 #include <hpcrun/gpu/gpu-function-id-map.h>
 #include <hpcrun/gpu/gpu-host-correlation-map.h>
 #include <hpcrun/hpcrun_stats.h>
+#include <hpcrun/trace.h>
 
 
 

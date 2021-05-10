@@ -71,7 +71,7 @@ typedef void *(*pthread_start_routine_t)(void *);
 //******************************************************************************
 
 static _Atomic(bool) stop_operation_flag;
-static _Atomic(bool) gpu_trace_finished;
+static _Atomic(bool) gpu_trace_finished = ATOMIC_VAR_INIT(true);
 
 static atomic_uint operation_channels_count;
 static __thread uint32_t my_operation_channel_id = -1;

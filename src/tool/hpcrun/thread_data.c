@@ -402,7 +402,6 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child, size_t n_sou
   // ----------------------------------------
   // gpu trace line support
   // ----------------------------------------
-  td->gpu_trace_first_time = 0;
   td->gpu_trace_prev_time = 0;
 
 #ifdef ENABLE_CUDA
