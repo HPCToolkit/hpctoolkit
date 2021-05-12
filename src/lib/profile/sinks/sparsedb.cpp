@@ -768,7 +768,7 @@ uint64_t SparseDB::writeProf(const std::vector<char>& prof_bytes, uint32_t prof_
   std::unique_lock<std::mutex> lck (ob.mtx);
 
   bool flush = false;
-  if((prof_bytes.size() + ob.cur_pos) >= (64 * 1024 * 1024)){
+  if((prof_bytes.size() + ob.cur_pos) >= (1024 * 1024)){
     cur_obuf_idx = 1 - cur_obuf_idx;
     flush = true;
 
