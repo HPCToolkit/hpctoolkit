@@ -14,6 +14,25 @@
   <title>HPCToolkit Software</title>
 
   <link rel="stylesheet" type="text/css" href="style/style.css" />
+<style>
+table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+th, td {
+  text-align: left;
+  padding: 8px;
+}
+
+tr:nth-child(even){background-color: #f2f2f2}
+tr:hover {background-color: #05f5f5;}
+
+th {
+  background-color: darkblue;
+  color: white;
+}
+</style>
 </head>
 
 <body>
@@ -50,53 +69,28 @@ The instructions to install Java:
 	</li>
 </ol>
 
-<h2>x86-64 (Linux)</h2>
-<ul>
-<li><a href="download/hpcviewer/latest/hpcviewer-linux.gtk.x86_64.tgz">hpcviewer-linux.gtk.x86_64.tgz</a></li>
-</ul>
-<h2>x86-64 (MacOS)</h2>
-<p>
-Downloading and installing the MacOS binaries provided below with a web browser results in broken executables, courtesy of Apple's security precautions. The recommended download procedure is to copy the shell commands below and then paste and execute them in a terminal window in a directory where you have write permission.
-</p>
-<blockquote>
-<pre>
-mkdir hpctoolkit-gui-latest
-cd hpctoolkit-gui-latest
-curl -O http://hpctoolkit.org/download/hpcviewer/latest/hpcviewer-macosx.cocoa.x86_64.zip
-unzip hpcviewer-macosx.cocoa.x86_64.zip
-</pre>
-</blockquote>
-<ul>
-<li>
-<a href="download/hpcviewer/latest/hpcviewer-macosx.cocoa.x86_64.zip">hpcviewer-macosx.cocoa.x86_64.zip</a>
-</li>
-</ul>
-<h2>x86-64 (Windows)</h2>
-<ul>
-<li>
-<a href="download/hpcviewer/latest/hpcviewer-win32.win32.x86_64.zip">hpcviewer-win32.win32.x86_64.zip</a>
-</li>
-</ul>
 
+<h2>Latest version</h2>
 
-<h2>Power, Little Endian (Linux)</h2>
-<ul>
-<li><a href="download/hpcviewer/latest/hpcviewer-linux.gtk.ppc64le.tgz">hpcviewer-linux.gtk.ppc64le.tgz</a>
-</li>
-</ul>
-
-
-<h2>ARM (beta release)</h2>
-This is an experimental version of hpcviewer for ARM platform.
-<ul>
-<li><a href="download/hpcviewer/latest/hpcviewer-linux.gtk.aarch64.tgz">hpcviewer-linux.gtk.aarch64.tgz</a>
-</li>
-</ul>
+<table>
+  <thead>
+    <tr> <th>OS</th> <th>Platform</th> <th>Download link</th></tr>
+  </thead>
+  <tbody>
+    <tr><td><b>Linux</b></td> <td>x86-64</td> <td><a href="download/hpcviewer/latest/hpcviewer-linux.gtk.x86_64.tgz">hpcviewer-linux.gtk.x86_64.tgz</a></td> </tr>
+    <tr><td><b>Linux</b></td> <td> Power Little endian 64</td> <td><a href="download/hpcviewer/latest/hpcviewer-linux.gtk.ppc64le.tgz">hpcviewer-linux.gtk.ppc64le.tgz</a></td> </tr>
+    <tr><td><b>Linux</b></td> <td> ARM 64 (experimental)</td> <td><a href="download/hpcviewer/latest/hpcviewer-linux.gtk.aarch64.tgz">hpcviewer-linux.gtk.aarch64.tgz</a></td> </tr>
+    <tr><td><b>MacOS</b></td> <td> x86-64</td> <td><a href="download/hpcviewer/latest/hpcviewer-macosx.cocoa.x86_64.dmg">hpcviewer-macosx.cocoa.x86_64.dmg</a></td> </tr>
+    <tr><td><b>Windows</b></td> <td> x86-64</td> <td><a href="download/hpcviewer/latest/hpcviewer-win32.win32.x86_64.zip">hpcviewer-win32.win32.x86_64.zip</a></td> </tr>
+  </tbody>
+</table>
 
 
 <h2>Older versions</h2>
 
 <blockquote>
+<a href="download/hpcviewer/2021.03"><tt>2021.03 Release</tt></a>
+<br/>
 <a href="download/hpcviewer/2020.12"><tt>2020.12 Release</tt></a>
 <br/>
 <a href="download/hpcviewer/2020.07"><tt>2020.07 Release</tt></a>
@@ -123,7 +117,7 @@ This is an experimental version of hpcviewer for ARM platform.
 <a href="download/hpcviewer/Archive"><tt>Prior versions</tt></a>
 </blockquote>
 
-<p>[<span class="lastupdated">Page last updated: 2020/12/04</span>]
+<p>[<span class="lastupdated">Page last updated: 2021/04/07</span>]
 </p>
 <!-- ********************************************************************** -->
 
