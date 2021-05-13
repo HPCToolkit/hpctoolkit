@@ -428,7 +428,29 @@ ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
         premetrics = true;
         post = "</PF>\n";
       }
+      auto& udm = mo.first ? mo.first->userdata[exml.ud] : exml.unknown_module;
+      auto& udf = fl.first ? fl.first->userdata[exml.ud] : udm.unknown_file;
+      udf.incr(exml);
+      std::ostringstream ss;
+      ss << "<PF i=\"" << c.userdata[exml.src.identifier()] << "\""
+               " lm=\"" << udm.id << "\""
+               " n=\"" << proc.id << "\" s=\"" << proc.id << "\""
+               " l=\"" << fl.second << "\""
+               " f=\"" << udf.id << "\">\n";
+      pre = ss.str();
+      premetrics = true;
+      post = "</PF>\n";
+    } else {
+      auto fl = s.line_data();
+      auto parent_file = c.direct_parent()->scope().function_data().file;
+      if (&fl.first != parent_file) {
+        std::ostringstream ss;
+        ss << "<F>\n";
+        pre = ss.str();
+        post = "</F>\n";
+      }
     }
+
     open = "<";
     std::ostringstream ss;
     ss << " i=\"" << c.userdata[exml.src.identifier()] << "\""
