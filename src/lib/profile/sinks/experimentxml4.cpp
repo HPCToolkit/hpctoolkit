@@ -441,11 +441,26 @@ ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
       premetrics = true;
       post = "</PF>\n";
     } else {
-      auto fl = s.line_data();
-      auto parent_file = c.direct_parent()->scope().function_data().file;
-      if (&fl.first != parent_file) {
+      const File *file, *parent_file;
+      bool skip= false;
+
+      if (s.type() == Scope::Type::point || s.type() == Scope::Type::call) {
+        skip = true;
+      } else {
+        auto fl = s.line_data();
+        file = &fl.first;
+      }
+      if (pty == Scope::Type::function || pty == Scope::Type::inlined_function) {
+        parent_file = c.direct_parent()->scope().function_data().file;
+      } else if (pty == Scope::Type::loop) {
+        auto fl = c.direct_parent()->scope().line_data();
+        parent_file = &fl.first;
+      } else {
+        skip = true;
+      }
+      if (!skip && file != parent_file) {
         std::ostringstream ss;
-        ss << "<F>\n";
+        ss << "<F i=\"" << c.userdata[exml.src.identifier()] << "\">\n";
         pre = ss.str();
         post = "</F>\n";
       }
