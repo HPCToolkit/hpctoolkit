@@ -1505,8 +1505,8 @@ IBM's Spectrum MPI uses a special library {\tt libpami\_cudahook.so} to intercep
 Unfortunately, the mechanism used by Spectrum MPI to do so (wrapping {\tt dlsym}) interferes with performance tools that use {\tt dlopen} and {\tt dlsym}. 
 This interference causes measurement of a GPU-accelerated MPI application using HPCToolkit to deadlock when an application uses both Spectrum MPI and and CUDA on an NVIDIA GPU. 
 
-To avoid this deadlock, Spectrum MPI provides a flag {\tt -disable\_gpu\_hooks} to disable the PAMI CUDA hook library.  
-This flag cannot be used with the {\tt -gpu} flag. 
+To avoid this deadlock on systems when launching a program that uses Spectrum MPI with  {\tt jsrun}, use {\tt --smpiargs="-x PAMI\_DISABLE\_CUDA\_HOOK=1 -disable\_gpu\_hooks"} to disable the PAMI CUDA hook library.  
+These flags  cannot be used with the {\tt -gpu} flag. 
 
 Note however that disabling Spectrum MPI's CUDA hook will cause trouble if CUDA device memory is passed into the MPI library as a send or receive buffer. 
 An additional restriction is that memory obtained with a call to {\tt cudaMallocHost} may not be passed as a send or receive buffer. 
