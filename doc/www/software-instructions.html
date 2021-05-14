@@ -69,7 +69,7 @@
   <li><a name="toc-Blue-Gene" href="#Blue-Gene">11.1 Blue Gene</a></li>
   <li><a name="toc-Cray" href="#Cray">11.2 Cray</a></li>
 </ul></li>
-<li><a name="toc-Hpcviewer-and-Hpctraceviewer" href="#Hpcviewer-and-Hpctraceviewer">12 Hpcviewer and Hpctraceviewer</a>
+<li><a name="toc-HPCToolkit-GUI-Interface-_0028Hpcviewer_0029" href="#HPCToolkit-GUI-Interface-_0028Hpcviewer_0029">12 HPCToolkit GUI Interface (Hpcviewer)</a>
 <ul class="no-bullet">
   <li><a name="toc-Spack-Install-1" href="#Spack-Install-1">12.1 Spack Install</a></li>
   <li><a name="toc-Manual-Install-1" href="#Manual-Install-1">12.2 Manual Install</a></li>
@@ -1077,24 +1077,28 @@ similar to the following.
 </pre></div>
 
 
-<a name="Hpcviewer-and-Hpctraceviewer"></a>
-<h3 class="section">12 Hpcviewer and Hpctraceviewer</h3>
-
-<p>We provide binary distributions for hpcviewer and hpctraceviewer on
-Linux (x86_64, ppc64/le and now aarch64), Windows and MacOS.  HPCToolkit
-databases are platform-independent and it is common to run hpcrun on one
-machine and then view the results on another machine.
+<a name="HPCToolkit-GUI-Interface-_0028Hpcviewer_0029"></a>
+<h3 class="section">12 HPCToolkit GUI Interface (Hpcviewer)</h3>
+<p>Since 2021.04 release, HPCToolkit GUI interface provides both profile
+and trace views in a single application, i.e. hpcviewer. Prior to
+that, each view is a separate program: hpcviewer to analyze the
+profile database, and hpctraceviewer to display the traces.
 </p>
-<p>Starting with 2021.01, the viewers now require Java 11 or later (but not
-15), plus GTK+ 3.20 or later on Linux.  Older viewers, up through
+<p>We provide binary distributions for hpcviewer on Linux (x86_64,
+ppc64/le and now aarch64), Windows and MacOS.  HPCToolkit databases
+are platform-independent and it is common to run hpcrun on one machine
+and then view the results on another machine.
+</p>
+<p>Starting with 2021.01, the viewer now requires Java 11 or later (but
+not 15), plus GTK+ 3.20 or later on Linux.  Older viewers, up through
 2020.12, require Java 8 (not 9 or later), plus GTK+ 2.x for Linux.
 </p>
 <a name="Spack-Install-1"></a>
 <h4 class="subsection">12.1 Spack Install</h4>
 
-<p>The spack install is available on Linux x86_64, little-endian powerpc64
-(power8 and 9) and now aarch64 ARM.  This installs both hpcviewer and
-hpctraceviewer and includes the Java prerequisite.
+<p>The spack install is available on Linux x86_64, little-endian
+powerpc64 (power8 and 9) and now aarch64 ARM.  This installs hpcviewer
+and includes the Java prerequisite.
 </p>
 <p>For the current viewers, use openjdk with the most recent version of
 Java 11 for all platforms.  Currently, this is the default, but if not,
@@ -1138,9 +1142,10 @@ prefix.
 </pre></div>
 
 <p>On Windows and MacOS, download the <code>win32</code> or <code>macosx.cocoa</code>
-versions and unpack the zip files in the desired directory.  Due to
-Apple&rsquo;s security precautions, on MacOS, you will need to use curl or
-wget instead of a web browser.
+versions and unpack the zip or dmg files in the desired directory.
+For older versions prior to 2021.04 release, due to Apple&rsquo;s security
+precautions, on MacOS, you will need to use curl or wget instead of a
+web browser.
 </p>
 
 <a name="Building-a-New-Compiler"></a>

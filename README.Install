@@ -20,7 +20,7 @@ Installing HPCToolkit with Spack
 11 Platform Specific Notes
 11.1 Blue Gene
 11.2 Cray
-12 Hpcviewer and Hpctraceviewer
+12 HPCToolkit GUI Interface (Hpcviewer)
 12.1 Spack Install
 12.2 Manual Install
 13 Building a New Compiler
@@ -875,15 +875,20 @@ to the following.
          --enable-all-static  \
          MPICXX=CC
 
-12 Hpcviewer and Hpctraceviewer
-===============================
+12 HPCToolkit GUI Interface (Hpcviewer)
+=======================================
 
-We provide binary distributions for hpcviewer and hpctraceviewer on
-Linux (x86_64, ppc64/le and now aarch64), Windows and MacOS. HPCToolkit
-databases are platform-independent and it is common to run hpcrun on one
-machine and then view the results on another machine.
+Since 2021.04 release, HPCToolkit GUI interface provides both profile
+and trace views in a single application, i.e.  hpcviewer.  Prior to
+that, each view is a separate program: hpcviewer to analyze the profile
+database, and hpctraceviewer to display the traces.
 
-   Starting with 2021.01, the viewers now require Java 11 or later (but
+   We provide binary distributions for hpcviewer on Linux (x86_64,
+ppc64/le and now aarch64), Windows and MacOS. HPCToolkit databases are
+platform-independent and it is common to run hpcrun on one machine and
+then view the results on another machine.
+
+   Starting with 2021.01, the viewer now requires Java 11 or later (but
 not 15), plus GTK+ 3.20 or later on Linux.  Older viewers, up through
 2020.12, require Java 8 (not 9 or later), plus GTK+ 2.x for Linux.
 
@@ -891,8 +896,8 @@ not 15), plus GTK+ 3.20 or later on Linux.  Older viewers, up through
 ------------------
 
 The spack install is available on Linux x86_64, little-endian powerpc64
-(power8 and 9) and now aarch64 ARM. This installs both hpcviewer and
-hpctraceviewer and includes the Java prerequisite.
+(power8 and 9) and now aarch64 ARM. This installs hpcviewer and includes
+the Java prerequisite.
 
    For the current viewers, use openjdk with the most recent version of
 Java 11 for all platforms.  Currently, this is the default, but if not,
@@ -927,9 +932,9 @@ prefix.
      ./install /path/to/install/directory
 
 On Windows and MacOS, download the 'win32' or 'macosx.cocoa' versions
-and unpack the zip files in the desired directory.  Due to Apple's
-security precautions, on MacOS, you will need to use curl or wget
-instead of a web browser.
+and unpack the zip or dmg files in the desired directory.  For older
+versions prior to 2021.04 release, due to Apple's security precautions,
+on MacOS, you will need to use curl or wget instead of a web browser.
 
 13 Building a New Compiler
 ==========================
