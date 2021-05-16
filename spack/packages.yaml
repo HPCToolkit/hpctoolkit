@@ -322,15 +322,17 @@ packages:
 
   # cuda -- nvidia cuda, now in master
   #
-  # Requires: 10.x or later, 11.x preferred.
+  # Requires: 10.x or later, 11.1 preferred. 
+  # Note: 11.2 uses a different format for line maps that is not yet
+  #       supported by elfutils, dyninst, and hpctoolkit 
   #
   # cuda:
-  #   version: [11.2.0]
+  #   version: [11.1.0]
   #
   # cuda:
   #   externals:
-  #   - spec: cuda@11.2.0
-  #     prefix: /path/to/cuda-11.2.0/directory
+  #   - spec: cuda@11.1
+  #     prefix: /path/to/cuda-11.1/directory
 
   #------------------------------------------------------------
 
