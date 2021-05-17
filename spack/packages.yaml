@@ -127,13 +127,17 @@ packages:
   # and Dyninst issues releases infrequently, so sometimes it's
   # necessary to use master for the best results.
   #
-  # Latest hpctoolkit needs >= 11.0.0 or later.
+  # Latest hpctoolkit needs > 11.0.0. several problems with were
+  # discovered in dyninst 11.0.0 that caused failures in 
+  # HPCToolkit's hpcstruct. Until there is a new release of dyninst,
+  # we recommend building hpctoolkit atop dyninst master. 
+  #
   # On Blue Gene, with default gcc 4.4 compilers, use version 9.3.2.
   #
   # +openmp is to support openmp threads in parseapi.
   #
   dyninst:
-    version:  [11.0.0, master]
+    version:  [master]
     variants: +openmp build_type=RelWithDebInfo
 
 
@@ -322,15 +326,17 @@ packages:
 
   # cuda -- nvidia cuda, now in master
   #
-  # Requires: 10.x or later, 11.x preferred.
+  # Requires: 10.x or later, 11.1 preferred. 
+  # Note: 11.2 uses a different format for line maps that is not yet
+  #       supported by elfutils, dyninst, and hpctoolkit 
   #
   # cuda:
-  #   version: [11.2.0]
+  #   version: [11.1.0]
   #
   # cuda:
   #   externals:
-  #   - spec: cuda@11.2.0
-  #     prefix: /path/to/cuda-11.2.0/directory
+  #   - spec: cuda@11.1
+  #     prefix: /path/to/cuda-11.1/directory
 
   #------------------------------------------------------------
 
