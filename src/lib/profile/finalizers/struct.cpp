@@ -238,7 +238,7 @@ bool StructFile::parse(const Module& m, Classification& c) try {
     } else if(ename == "A") {
       if(stack.top().tag != 'A') {  // Single A, just changes the file
         stack.emplace(stack.top(), 'A');
-        stack.top().file = &sink.file(xmlstr(attr.getValue(XMLStr("n"))));
+        stack.top().file = &sink.file(xmlstr(attr.getValue(XMLStr("f"))));
         stack.top().a_line = std::stoll(xmlstr(attr.getValue(XMLStr("l"))));
       } else {  // Double A, inlined function
         auto& f = c.addFunction(m);

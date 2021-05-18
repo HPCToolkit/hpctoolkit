@@ -442,40 +442,41 @@ ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
       post = "</PF>\n";
     } else {
       const File *file, *parent_file;
-      bool skip= false;
-
       if (s.type() == Scope::Type::point || s.type() == Scope::Type::call) {
-        skip = true;
+        file = nullptr;
       } else {
-        auto fl = s.line_data();
-        file = &fl.first;
+        file = &(s.line_data()).first;
       }
       if (pty == Scope::Type::function || pty == Scope::Type::inlined_function) {
         parent_file = c.direct_parent()->scope().function_data().file;
       } else if (pty == Scope::Type::loop) {
-        auto fl = c.direct_parent()->scope().line_data();
-        parent_file = &fl.first;
+        parent_file = &(c.direct_parent()->scope().line_data()).first;
       } else {
-        skip = true;
+        parent_file = nullptr;
       }
-      if (!skip && file != parent_file) {
+      if (file && parent_file && file != parent_file) {
+        if(proc.prep()) {  // We're in charge of the tag, and this is a tag we want.
+          proc.setTag("inlined from " + file->path().filename().string(), mo.second, fancynames::unknown_proc.second);
+        }
+        auto& udm = mo.first ? mo.first->userdata[exml.ud] : exml.unknown_module;
+        auto& udf = fl.first ? fl.first->userdata[exml.ud] : udm.unknown_file;
+        udf.incr(exml);
+
         std::ostringstream ss;
-        ss << "<F i=\"" << c.userdata[exml.src.identifier()] << "\">\n";
+        ss << "<Pr i=\"" << c.userdata[exml.src.identifier()] << "\""
+              " n=\"" << proc.id << "\""
+              " f=\"" << udf.id << "\""
+              " a=\"1\">\n";
         pre = ss.str();
-        post = "</F>\n";
+        post = "</Pr>\n";
       }
     }
 
     open = "<";
     std::ostringstream ss;
     ss << " i=\"" << c.userdata[exml.src.identifier()] << "\""
-          " s=\"" << proc.id << "\"";
-    if(s.type() == Scope::Type::line) {
-      ss << " l=\"" << s.line_data().second << "\"";
-    } else {
-      s.point_data().first.userdata[exml.ud].incr(s.point_data().first, exml);
-      ss << " l=\"0\"";
-    }
+          " s=\"" << proc.id << "\""
+          " l=\"" << fl.second << "\"";
     attr = ss.str();
     break;
   }
