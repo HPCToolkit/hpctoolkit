@@ -601,6 +601,7 @@ MY_INCLUDE_DIRS =			\
 	-I$(HPCFNBOUNDS_INC)		\
         $(OPT_CUDA_IFLAGS)             \
         $(OPT_CUPTI_IFLAGS)             \
+		$(ROCM_INC_FLGS) \
 	-I$(LIBELF_INC)			\
 	-I$(LIBMONITOR_INC)	\
 	$(GOTCHA_IFLAGS)	\
@@ -1057,7 +1058,7 @@ endif
 if OPT_ENABLE_ROCM
   libhpcrun_la_SOURCES  += $(MY_ROCM_FILES)
   libhpcrun_la_CPPFLAGS += -DENABLE_ROCM
-  libhpcrun_la_CFLAGS   += $(OPT_ROCM_IFLAGS)
+  libhpcrun_la_CFLAGS   += $(ROCM_INC_FLGS)
 
   MY_CPP_DEFINES  += -DHPCRUN_SS_AMD
 endif

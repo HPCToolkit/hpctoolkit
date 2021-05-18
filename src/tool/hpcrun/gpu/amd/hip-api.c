@@ -60,8 +60,8 @@
 #include <stdio.h>
 #include <string.h>    // memset
 
-#include <roctracer_hip.h>
-// #include <hip/hip_runtime.h>
+// #include <roctracer_hip.h>
+#include <hip/hip_runtime.h>
 
 //*****************************************************************************
 // local include files
@@ -164,7 +164,7 @@ void
 {
 #ifndef HPCRUN_STATIC_LINK
   // dynamic libraries only availabile in non-static case
-  CHK_DLOPEN(hip, "libhip_hcc.so", RTLD_NOW | RTLD_GLOBAL);
+  CHK_DLOPEN(hip, "libamdhip64.so", RTLD_NOW | RTLD_GLOBAL);
 
 #define HIP_BIND(fn) \
   CHK_DLSYM(hip, fn);

@@ -21736,7 +21736,6 @@ case "$OPT_PAPI" in
     fi
     OPT_PAPI_IFLAGS="-I${OPT_PAPI}/include"
 
-
     for lib in $multilib_path ; do
       lib_dir="${OPT_PAPI}/$lib"
       if test -f "${lib_dir}/libpapi.so" || test -f "${lib_dir}/libpapi.a"
@@ -22306,6 +22305,7 @@ $as_echo "$as_me: WARNING: disable papi due to possible conflict with perfmon" >
     OPT_PAPI_LIBPATH=
     use_papi_c=no
     use_papi_c_cupti=no
+    use_papi_c_rocm=no
   fi
 fi
 

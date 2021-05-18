@@ -60,8 +60,8 @@
 // rocm includes
 //*****************************************************************************
 
-#include <roctracer_hip.h>
-// #include <hip/hip_runtime.h>
+// #include <roctracer_hip.h>
+#include <hip/hip_runtime.h>
 
 
 
