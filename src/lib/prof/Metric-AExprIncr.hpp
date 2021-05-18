@@ -97,7 +97,7 @@
 
 //****************************************************************************
 
-#define epsilon  (0.000001)
+#define hpc_epsilon  (0.000001)
 
 namespace Prof {
 
@@ -841,7 +841,7 @@ public:
     double sdev = finalizeStdDev(mdata);
     double mean = accumVar(1, mdata);
     double z = 0.0;
-    if (mean > epsilon) {
+    if (mean > hpc_epsilon) {
       z = sdev / mean;
     }
     accumVar(0, mdata) = z;
@@ -927,7 +927,7 @@ public:
     double sdev = finalizeStdDev(mdata);
     double mean = accumVar(1, mdata);
     double z = 0.0;
-    if (mean > epsilon) {
+    if (mean > hpc_epsilon) {
       z = (sdev / mean) * 100;
     }
     accumVar(0, mdata) = z;
