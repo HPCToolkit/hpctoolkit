@@ -75,7 +75,7 @@ namespace HPC {
 // compare the strings, not the pointers
 class StringCompare {
 public:
-  bool operator() (const std::string *s1, const std::string *s2)
+  bool operator() (const std::string *s1, const std::string *s2) const
   {
     return *s1 < *s2;
   }
