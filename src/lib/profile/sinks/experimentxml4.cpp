@@ -465,6 +465,7 @@ ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
         std::ostringstream ss;
         ss << "<Pr i=\"" << c.userdata[exml.src.identifier()] << "\""
               " n=\"" << proc.id << "\""
+              " s=\"" << proc.id << "\""
               " f=\"" << udf.id << "\""
               " a=\"1\">\n";
         pre = ss.str();
