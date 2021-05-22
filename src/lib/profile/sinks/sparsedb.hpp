@@ -66,7 +66,7 @@ namespace hpctoolkit::sinks {
 
 class SparseDB : public hpctoolkit::ProfileSink {
 public:
-  SparseDB(hpctoolkit::stdshim::filesystem::path, int threads);
+  SparseDB(hpctoolkit::stdshim::filesystem::path);
   ~SparseDB() = default;
 
   void write() override;

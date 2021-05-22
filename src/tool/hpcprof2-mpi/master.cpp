@@ -175,7 +175,7 @@ int rank0(ProfArgs&& args) {
     pipelineB << make_unique_x<sinks::ExperimentXML4>(args.output, args.include_sources,
                                                       tdb.get());
     pipelineB << std::move(tdb);
-    pipelineB << make_unique_x<sinks::SparseDB>(args.output, args.threads);
+    pipelineB << make_unique_x<sinks::SparseDB>(args.output);
 
     // ExperimentXML doesn't support instruction-level metrics, so we need a
     // line-merging transformer. Since this only changes the Scope, we don't

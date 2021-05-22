@@ -455,6 +455,10 @@ public:
     const Context& contexts();
     const util::locked_unordered_set<std::unique_ptr<Thread>>& threads();
 
+    /// Get the size of the worker team in use by the connected Pipeline. Useful
+    /// for tuning sizes of things based on the number of available threads.
+    std::size_t teamSize() const noexcept;
+
     // Disable copy-assignment, and allow move assignment.
     Sink& operator=(const Sink&) = delete;
     Sink& operator=(Sink&&);

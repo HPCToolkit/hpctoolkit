@@ -65,8 +65,8 @@
 using namespace hpctoolkit;
 using namespace hpctoolkit::sinks;
 
-SparseDB::SparseDB(stdshim::filesystem::path p, int threads)
-  : dir(std::move(p)), team_size(threads), rank(mpi::World::rank()), ctxMaxId(0),
+SparseDB::SparseDB(stdshim::filesystem::path p)
+  : dir(std::move(p)), rank(mpi::World::rank()), ctxMaxId(0),
     parForPi([&](pms_profile_info_t& item){ handleItemPi(item); }),
     fpos(0), accFpos(1000),
     parForCiip([&](profCtxIdIdxPairs& item){ handleItemCiip(item); }),
@@ -1419,17 +1419,17 @@ void SparseDB::rwOneCtxGroup(std::vector<uint32_t>& ctx_ids, std::vector<pms_pro
   //assign ctx_ids to diffrent threads based on size
   uint first_ctx_off = ctx_off[ctx_ids.front()];
   uint total_ctx_ids_size = ctx_off[ctx_ids.back() + 1] - first_ctx_off;
-  uint thread_ctx_ids_size = round(total_ctx_ids_size/team_size);
+  uint thread_ctx_ids_size = round(total_ctx_ids_size/src.teamSize());
 
   //record the start and end position of each thread's ctxs
-  std::vector<uint64_t> t_starts (team_size, 0);
-  std::vector<uint64_t> t_ends (team_size, 0);
-  int cur_thread = 0;
+  std::vector<uint64_t> t_starts (src.teamSize(), 0);
+  std::vector<uint64_t> t_ends (src.teamSize(), 0);
+  std::size_t cur_thread = 0;
 
   //make sure first thread at least gets one ctx
   size_t cur_size = ctx_off[ctx_ids.front() + 1] - first_ctx_off; //size of first ctx
   t_starts[cur_thread] = 0; //the first ctx goes to t_starts[0]
-  if(team_size > 1){
+  if(src.teamSize() > 1){
     for(uint i = 2; i <= ctx_ids.size(); i++){
       auto cid = (i == ctx_ids.size()) ? ctx_ids[i-1] + 1 : ctx_ids[i];
       auto cid_size = ctx_off[cid] - ctx_off[ctx_ids[i-1]];
@@ -1442,18 +1442,18 @@ void SparseDB::rwOneCtxGroup(std::vector<uint32_t>& ctx_ids, std::vector<pms_pro
       }else{
         cur_size += cid_size;
       }
-      if(cur_thread == team_size - 1) break;
+      if(cur_thread == src.teamSize() - 1) break;
     }
   }
   t_ends[cur_thread] = ctx_ids.size();
 
 
   // prepare for the real work
-  std::vector<ctxRange> crs(team_size);
+  std::vector<ctxRange> crs(src.teamSize());
   auto pdptr = &profiles_data;
   auto cidsptr = &ctx_ids;
   auto pisptr = &prof_info_list;
-  for(int i = 0; i < team_size; i++){
+  for(std::size_t i = 0; i < src.teamSize(); i++){
     ctxRange cr;
     cr.start = t_starts[i];
     cr.end = t_ends[i];

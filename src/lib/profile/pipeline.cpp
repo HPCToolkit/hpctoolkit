@@ -801,6 +801,10 @@ const util::locked_unordered_set<std::unique_ptr<Thread>>& Sink::threads() {
   return pipe->threads;
 }
 
+std::size_t Sink::teamSize() const noexcept {
+  return pipe->team_size;
+}
+
 Sink& Sink::operator=(Sink&& o) {
   assert(pipe == nullptr && "Attempt to rebind a Sink!");
   pipe = o.pipe;
