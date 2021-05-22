@@ -100,7 +100,8 @@ void Receiver::append(ProfilePipeline::Settings& pB, RankTree& tree) {
     pB << std::make_unique<Receiver>(peer);
 }
 
-MetricSender::MetricSender(RankTree& t, bool n) : tree(t), needsTimepoints(n) {};
+MetricSender::MetricSender(RankTree& t, bool n)
+  : sinks::ParallelPacked(false, true), tree(t), needsTimepoints(n) {};
 
 DataClass MetricSender::accepts() const noexcept {
   using namespace hpctoolkit::literals;
@@ -109,6 +110,7 @@ DataClass MetricSender::accepts() const noexcept {
 }
 
 void MetricSender::notifyPipeline() noexcept {
+  sinks::ParallelPacked::notifyPipeline();
   src.registerOrderedWrite();
 }
 
@@ -119,6 +121,10 @@ void MetricSender::write() {
   if(needsTimepoints) packTimepoints(block);
   auto mpiSem = src.enterOrderedWrite();
   mpi::send(block, tree.parent, 3);
+}
+
+util::WorkshareResult MetricSender::help() {
+  return helpPackMetrics();
 }
 
 MetricReceiver::MetricReceiver(std::size_t p, ctx_map_t& c)

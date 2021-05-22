@@ -70,11 +70,23 @@ static void pack(std::vector<std::uint8_t>& out, const std::uint64_t v) noexcept
   for(int shift = 0x00; shift < 0x40; shift += 0x08)
     out.push_back((v >> shift) & 0xff);
 }
+static std::uint8_t* pack(std::uint8_t* out, const std::uint64_t v) noexcept {
+  // Little-endian order. Just in case the compiler can optimize it away.
+  for(int shift = 0x00; shift < 0x40; shift += 0x08)
+    *(out++) = (v >> shift) & 0xff;
+  return out;
+}
 static void pack(std::vector<std::uint8_t>& out, const double v) noexcept {
   // Assumes doubles are compatible across systems
   union { double d; std::uint64_t u; } x;
   x.d = v;
   pack(out, x.u);
+}
+static std::uint8_t* pack(std::uint8_t* out, const double v) noexcept {
+  // Assumes doubles are compatible across systems
+  union { double d; std::uint64_t u; } x;
+  x.d = v;
+  return pack(out, x.u);
 }
 
 Packed::Packed()
@@ -216,5 +228,83 @@ void Packed::packTimepoints(std::vector<std::uint8_t>& out) noexcept {
   } else {
     pack(out, (std::uint64_t)0);
     pack(out, (std::uint64_t)0);
+  }
+}
+
+ParallelPacked::ParallelPacked(bool doContexts, bool doMetrics)
+    : doContexts(doContexts), doMetrics(doMetrics), ctxCnt(0),
+      fePackMetrics([this](auto& group){ packMetricGroup(group); }) {}
+
+void ParallelPacked::notifyPipeline() noexcept {
+  if(doContexts || doMetrics) {
+    groupLocks = std::vector<std::mutex>(src.teamSize() * 5);
+    if(doMetrics) packMetricsGroups = decltype(packMetricsGroups)(groupLocks.size());
+  }
+}
+
+void ParallelPacked::notifyContext(const Context& ctx) {
+  if(doContexts || doMetrics) {
+    auto idx = ctxCnt.fetch_add(1, std::memory_order_relaxed) % groupLocks.size();
+    std::unique_lock<std::mutex> l(groupLocks[idx]);
+    if(doMetrics) packMetricsGroups[idx].push_back(ctx);
+  }
+}
+
+void ParallelPacked::packAttributes(std::vector<std::uint8_t>& out) noexcept {
+  Packed::packAttributes(out);
+  bytesPerCtx = 8;
+  for(const Metric& m: metrics)
+    bytesPerCtx += m.partials().size() * 3 * 8;
+}
+
+void ParallelPacked::packMetrics(std::vector<std::uint8_t>& out) noexcept {
+  assert(doMetrics && "packMetrics is invalid if doMetrics was false!");
+  assert(!packMetricsGroups.empty() && "packMetrics can only be called once!");
+  std::size_t cCnt = ctxCnt.load(std::memory_order_relaxed);
+  pack(out, (std::uint64_t)cCnt);
+
+  // Its dense, so we know the exact size already. Allocate the space we need
+  auto startIdx = out.size();
+  out.reserve(out.size() + cCnt * bytesPerCtx);
+  out.insert(out.end(), cCnt * bytesPerCtx, 0);
+  output = &out[startIdx];
+
+  // Stitch together the workitems from the bits we've collected previously
+  std::vector<std::pair<std::size_t, std::vector<std::reference_wrapper<const Context>>>> workitems;
+  workitems.reserve(packMetricsGroups.size());
+  std::size_t prev = 0;
+  for(auto& g: packMetricsGroups) {
+    auto sz = g.size();
+    workitems.emplace_back(prev, std::move(g));
+    prev += sz;
+  }
+
+  fePackMetrics.fill(std::move(workitems));
+  packMetricsGroups.clear();
+  fePackMetrics.contribute(fePackMetrics.wait());
+  output = nullptr;
+}
+
+util::WorkshareResult ParallelPacked::helpPackMetrics() noexcept {
+  return fePackMetrics.contribute();
+}
+
+void ParallelPacked::packMetricGroup(std::pair<std::size_t, std::vector<std::reference_wrapper<const Context>>>& task) noexcept {
+  std::uint8_t* out = output + task.first * bytesPerCtx;
+  for(const Context& c: std::move(task.second)) {
+    out = pack(out, (std::uint64_t)c.userdata[src.identifier()]);
+    for(const Metric& m: metrics) {
+      for(const auto& p: m.partials()) {
+        if(auto v = m.getFor(c)) {
+          out = pack(out, (double)v->get(p).get(MetricScope::point).value_or(0));
+          out = pack(out, (double)v->get(p).get(MetricScope::function).value_or(0));
+          out = pack(out, (double)v->get(p).get(MetricScope::execution).value_or(0));
+        } else {
+          out = pack(out, (double)0);
+          out = pack(out, (double)0);
+          out = pack(out, (double)0);
+        }
+      }
+    }
   }
 }

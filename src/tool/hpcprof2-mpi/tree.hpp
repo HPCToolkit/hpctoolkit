@@ -108,7 +108,7 @@ private:
 };
 
 /// Sink for sending Statistic data up the tree.
-class MetricSender : public hpctoolkit::sinks::Packed {
+class MetricSender : public hpctoolkit::sinks::ParallelPacked {
 public:
   MetricSender(RankTree&, bool);
   ~MetricSender() = default;
@@ -116,6 +116,7 @@ public:
   hpctoolkit::DataClass accepts() const noexcept override;
   void notifyPipeline() noexcept override;
   void write() override;
+  hpctoolkit::util::WorkshareResult help() override;
 
 private:
   RankTree& tree;
