@@ -92,7 +92,8 @@ public:
   void notifyWavefront(hpctoolkit::DataClass) noexcept override;
   void notifyThreadFinal(const hpctoolkit::Thread::Temporary&) override;
 
-  void writeCCTMajor();
+  void cctdbSetUp();
+  void writeCCTDB();
   void merge(int threads, bool debug);
 
 
@@ -183,7 +184,7 @@ private:
   std::mutex outputs_l;
 
   //help collect cct major data
-  std::vector<uint64_t> ctx_nzval_cnts1;
+  std::vector<uint64_t> ctx_nzval_cnts;
   std::vector<uint16_t> ctx_nzmids_cnts;
 
   class udContext {
@@ -228,8 +229,10 @@ private:
   void writeCtxInfoSec();
 
   // helper - gather prof infos
+  std::vector<pms_profile_info_t> prof_info_list;
+
   pms_profile_info_t profInfo(const char *input);
-  std::vector<pms_profile_info_t> profInfoList();
+  void fillProfInfoList();
 
   // helper - gather ctx id idx pairs
   struct PMS_CtxIdIdxPair{
@@ -241,11 +244,11 @@ private:
     pms_profile_info_t * pi;
   };
   hpctoolkit::util::ParallelForEach<profCtxIdIdxPairs> parForCiip;
+  std::vector<std::vector<SparseDB::PMS_CtxIdIdxPair>> all_prof_ctx_pairs;
 
   PMS_CtxIdIdxPair ctxIdIdxPair(const char *input);
   void handleItemCiip(profCtxIdIdxPairs& ciip);
-  std::vector<std::vector<SparseDB::PMS_CtxIdIdxPair>>
-  allProfileCtxIdIdxPairs(std::vector<pms_profile_info_t>& prof_info);
+  void fillAllProfileCtxIdIdxPairs();
 
 
   // helper - extract one profile data
@@ -272,8 +275,7 @@ private:
   void handleItemPd(profData& pd);
 
   std::vector<std::pair<std::vector<std::pair<uint32_t,uint64_t>>, std::vector<char>>>
-  profilesData(std::vector<uint32_t>& ctx_ids, std::vector<pms_profile_info_t>& prof_info_list,
-               std::vector<std::vector<PMS_CtxIdIdxPair>>& all_prof_ctx_pairs);
+  profilesData(std::vector<uint32_t>& ctx_ids);
 
 
   // helper - convert one profile data to a CtxMetricBlock
@@ -331,12 +333,10 @@ private:
   hpctoolkit::util::ResettableParallelForEach<ctxRange> parForCtxs;
 
   void handleItemCtxs(ctxRange& cr);
-  void rwOneCtxGroup(std::vector<uint32_t>& ctx_ids, std::vector<pms_profile_info_t>& prof_info_list,
-                     std::vector<std::vector<PMS_CtxIdIdxPair>>& all_prof_ctx_pairs);
+  void rwOneCtxGroup(std::vector<uint32_t>& ctx_ids);
   void buildCtxGroupList();
   uint32_t ctxGrpIdFetch();
-  void rwAllCtxGroup(std::vector<pms_profile_info_t>& prof_info,
-                     std::vector<std::vector<PMS_CtxIdIdxPair>>& all_prof_ctx_pairs);
+  void rwAllCtxGroup();
 
 };
 
