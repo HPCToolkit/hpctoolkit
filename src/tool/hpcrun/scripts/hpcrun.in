@@ -22,6 +22,7 @@ perfmon_libdir='@PERFMON_LIB@'
 roctracer_lib_path='@OPT_ROCM_LD_LIB_PATH@'
 gtpin_lib_path='@OPT_GTPIN_LIBDIR@'
 # gotcha_lib_path='@GOTCHA_LIBDIR@'
+memkind_libdir='@MEMKIND_LIBDIR@'
 host_arm='@HOST_CPU_AARCH64@'
 prog_name=hpcrun
 
@@ -219,6 +220,10 @@ Options to consider only when hpcrun causes an application to fail:
                        it is believed that the rewriting is causing the
                        application to fail.
 
+  --memkind            Workaround a problem where openmpi dlopens libmemkind.so
+                       causing the auditor to crash.  Mainly a problem on some
+                       Cray x86_64 systems.
+
   --namespace-single   dlmopen may load a shared library into an alternate
                        namespace.  Use of dlmopen to create multiple namespaces
                        can cause an application to crash when using glibc < 2.32
@@ -281,6 +286,7 @@ gtpin_libdir=
 namespace_default=multiple
 namespace_multiple=
 namespace_single=
+use_memkind=no
 
 HPCRUN_DEBUG_FLAGS=
 HPCRUN_EVENT_LIST=
@@ -419,7 +425,6 @@ do
 	    export HPCRUN_OMP_SERIAL_ONLY=1
 	    ;;
 
-
 	# --------------------------------------------------
 
 	--namespace-multiple )
@@ -485,11 +490,20 @@ do
 	--disable-auditor )
 	    export HPCRUN_AUDIT_FAKE_AUDITOR=1
 	    ;;
-    --enable-auditor )
-        unset HPCRUN_AUDIT_FAKE_AUDITOR
-        ;;
 
-	# --------------------------------------------------
+        --enable-auditor )
+            unset HPCRUN_AUDIT_FAKE_AUDITOR
+            ;;
+
+        --memkind )
+            if test "x$memkind_libdir" = x ; then
+                echo "hpcrun warning: memkind workaround is not available" >&2
+            else
+                use_memkind=yes
+            fi
+            ;;
+
+        # --------------------------------------------------
 
 	-- )
 	    break
@@ -629,6 +643,9 @@ hpc_ld_library_path="${hpc_ld_library_path}${ext_libdir:+:${ext_libdir}}"
 hpc_ld_library_path="${hpc_ld_library_path}${perfmon_libdir:+:${perfmon_libdir}}"
 hpc_ld_library_path="${hpc_ld_library_path}${roctracer_libdir:+:${roctracer_libdir}}"
 hpc_ld_library_path="${hpc_ld_library_path}${gtpin_libdir:+:${gtpin_libdir}}"
+if test "$use_memkind" = yes ; then
+    hpc_ld_library_path="${hpc_ld_library_path}${memkind_libdir:+:${memkind_libdir}}"
+fi
 
 #------------------------------------------------------------
 # assemble preload list

@@ -772,6 +772,7 @@ OPT_PAPI_LIBS_STAT
 OPT_PAPI_LDFLAGS
 OPT_PAPI_IFLAGS
 OPT_PAPI
+MEMKIND_LIBDIR
 MBEDTLS_LIBS
 MBEDTLS_IFLAGS
 MBEDTLS_LIB
@@ -1047,6 +1048,7 @@ with_libmonitor
 with_libunwind
 with_lzma
 with_mbedtls
+with_memkind
 with_papi
 enable_force_papi
 enable_papi_c
@@ -1814,6 +1816,7 @@ Optional Packages:
   --with-libunwind=PATH   path to libunwind install directory
   --with-lzma=PATH        path to lzma (xz utils) install directory
   --with-mbedtls=PATH     path to mbedtls install directory
+  --with-memkind=PATH     path to memkind install directory
   --with-papi=PATH        path to papi install directory
   --with-perfmon=PATH     path to perfmon2 (libpfm4) install directory
   --with-tbb=PATH         path to intel tbb install directory
@@ -20279,6 +20282,7 @@ default_libmonitor_prefix=no
 default_libunwind_prefix=no
 default_lzma_prefix=no
 default_mbedtls_prefix=no
+default_memkind_prefix=no
 default_papi_prefix=no
 default_perfmon_prefix=no
 default_tbb_prefix=no
@@ -20393,6 +20397,9 @@ $as_echo "$as_me: checking spack packages ..." >&6;}
   fi
   if find_spack_pkg mbedtls ; then
     default_mbedtls_prefix="$spack_ans"
+  fi
+  if find_spack_pkg memkind ; then
+    default_memkind_prefix="$spack_ans"
   fi
   if find_spack_pkg papi ; then
     default_papi_prefix="$spack_ans"
@@ -21690,6 +21697,56 @@ esac
 
 
 
+
+
+#-------------------------------------------------
+# Option: --with-memkind=PATH
+#-------------------------------------------------
+
+# For memkind, we only want the lib dir for LD_LIBRARY_PATH.
+
+MEMKIND="$default_memkind_prefix"
+
+
+# Check whether --with-memkind was given.
+if test "${with_memkind+set}" = set; then :
+  withval=$with_memkind; MEMKIND="$withval"
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for memkind" >&5
+$as_echo_n "checking for memkind... " >&6; }
+
+MEMKIND_LIBDIR=
+
+case "$MEMKIND" in
+  /* )
+    for lib in $multilib_path ; do
+      if test -f "${MEMKIND}/${lib}/libmemkind.so" ; then
+        MEMKIND_LIBDIR="${MEMKIND}/$lib"
+	break
+      fi
+    done
+    if test "x$MEMKIND_LIBDIR" = x ; then
+      as_fn_error $? "unable to find libmemkind.so in $MEMKIND" "$LINENO" 5
+    fi
+    ;;
+  no )
+    ;;
+  * )
+    as_fn_error $? "memkind directory must be absolute path: $MEMKIND" "$LINENO" 5
+    ;;
+esac
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $MEMKIND" >&5
+$as_echo "$MEMKIND" >&6; }
+
+
+
+if test "x$MEMKIND" = x ; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: memkind workaround is not available" >&5
+$as_echo "$as_me: WARNING: memkind workaround is not available" >&2;}
+fi
 
 
 #-------------------------------------------------
@@ -27855,6 +27912,8 @@ $as_echo "$as_me:   libunwind:    ${LIBUNWIND}" >&6;}
 $as_echo "$as_me:   lzma:         ${LZMA}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   mbedtls:      ${MBEDTLS}" >&5
 $as_echo "$as_me:   mbedtls:      ${MBEDTLS}" >&6;}
+{ $as_echo "$as_me:${as_lineno-$LINENO}:   memkind:      ${MEMKIND}" >&5
+$as_echo "$as_me:   memkind:      ${MEMKIND}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   papi:         ${papi_mesg}" >&5
 $as_echo "$as_me:   papi:         ${papi_mesg}" >&6;}
 { $as_echo "$as_me:${as_lineno-$LINENO}:   perfmon:      ${perfmon_mesg}" >&5
