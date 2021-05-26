@@ -220,9 +220,9 @@ Options to consider only when hpcrun causes an application to fail:
                        it is believed that the rewriting is causing the
                        application to fail.
 
-  --memkind            Workaround a problem where openmpi dlopens libmemkind.so
-                       causing the auditor to crash.  Mainly a problem on some
-                       Cray x86_64 systems.
+  --memkind            Works around a glibc bug triggered when an application
+                       dlopens libmemkind.so when LD_AUDIT is in use.  This issue
+                       has only been observed as a problem on Cray x86_64 systems.
 
   --namespace-single   dlmopen may load a shared library into an alternate
                        namespace.  Use of dlmopen to create multiple namespaces
