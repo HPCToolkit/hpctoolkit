@@ -463,6 +463,14 @@ extern PUBLIC_API void OnLoadToolProp(rocprofiler_settings_t* settings){
   rocp_inicialize();
 }
 
+extern PUBLIC_API void OnUnloadTool(){
+  printf("Rocprofiler OnUnloadTool______________________\n");  
+  // rocp_inicialize();
+}
+
+extern PUBLIC_API void OnLoad(){
+  printf("Rocprofiler OnLoad______________________\n");  
+}
 
 static void cleanup() {
   // Unregister dispatch callback
