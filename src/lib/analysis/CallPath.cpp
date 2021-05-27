@@ -1231,6 +1231,18 @@ makeDatabase(Prof::CallPath::Profile& prof, const Analysis::Args& args)
   Analysis::CallPath::write(prof, *os, args);
   IOUtil::CloseStream(os);
 
+  // 5. Create 'experiment.dtd' file
+  string dtd_fnm = db_dir + "/" + Analysis_OUT_DB_DTD;
+  os = IOUtil::OpenOStream(dtd_fnm.c_str());
+  os_buf = os->rdbuf();
+  os_buf->pubsetbuf(outBuf, HPCIO_RWBufferSz);
+
+  static const char* experimentDTD =
+#include <lib/xml/hpc-experiment.dtd.h>
+  *os << experimentDTD;
+  
+  IOUtil::CloseStream(os);
+  
   delete[] outBuf;
 }
 
@@ -1239,9 +1251,6 @@ static void
 write(Prof::CallPath::Profile& prof, std::ostream& os,
       const Analysis::Args& args)
 {
-  static const char* experimentDTD =
-#include <lib/xml/hpc-experiment.dtd.h>
-
   using namespace Prof;
 
   int oFlags = 0; // CCT::Tree::OFlg_LeafMetricsOnly;
@@ -1269,9 +1278,9 @@ write(Prof::CallPath::Profile& prof, std::ostream& os,
   string name = (args.title.empty()) ? prof.name() : args.title;
 
   os << "<?xml version=\"1.0\"?>\n";
-  os << "<!DOCTYPE HPCToolkitExperiment [\n" << experimentDTD << "]>\n";
 
   os << "<HPCToolkitExperiment version=\"" DATABASE_VERSION "\">\n";
+  os << "<!--DTD file=\"" Analysis_OUT_DB_DTD "\"-->\n";
   os << "<Header n" << MakeAttrStr(name) << ">\n";
   os << "  <Info/>\n";
   os << "</Header>\n";
