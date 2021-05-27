@@ -108,9 +108,9 @@ public:
   uint16_t interpretByte2(const char *input);
   uint32_t interpretByte4(const char *input);
   uint64_t interpretByte8(const char *input);
-  std::vector<char> convertToByte2(uint16_t val);
-  std::vector<char> convertToByte4(uint32_t val);
-  std::vector<char> convertToByte8(uint64_t val);
+  std::array<char, 2> convertToByte2(uint16_t val);
+  std::array<char, 4> convertToByte4(uint32_t val);
+  std::array<char, 8> convertToByte8(uint64_t val);
 
 
 private:

@@ -437,8 +437,8 @@ uint64_t SparseDB::interpretByte8(const char *input){
   return v;
 }
 
-std::vector<char> SparseDB::convertToByte2(uint16_t val){
-  std::vector<char> bytes(2);
+std::array<char, 2> SparseDB::convertToByte2(uint16_t val){
+  std::array<char, 2> bytes;
   int shift = 0, num_writes = 0;
 
   for (shift = 8; shift >= 0; shift -= 8) {
@@ -448,8 +448,8 @@ std::vector<char> SparseDB::convertToByte2(uint16_t val){
   return bytes;
 }
 
-std::vector<char> SparseDB::convertToByte4(uint32_t val){
-  std::vector<char> bytes(4);
+std::array<char, 4> SparseDB::convertToByte4(uint32_t val){
+  std::array<char, 4> bytes;
   int shift = 0, num_writes = 0;
 
   for (shift = 24; shift >= 0; shift -= 8) {
@@ -459,8 +459,8 @@ std::vector<char> SparseDB::convertToByte4(uint32_t val){
   return bytes;
 }
 
-std::vector<char> SparseDB::convertToByte8(uint64_t val){
-  std::vector<char> bytes(8);
+std::array<char, 8> SparseDB::convertToByte8(uint64_t val){
+  std::array<char, 8> bytes;
   int shift = 0, num_writes = 0;
 
   for (shift = 56; shift >= 0; shift -= 8) {
@@ -470,6 +470,10 @@ std::vector<char> SparseDB::convertToByte8(uint64_t val){
   return bytes;
 }
 
+template<class T, class A>
+static void append(std::vector<T>& out, const A& in) {
+  out.insert(out.end(), in.begin(), in.end());
+}
 
 
 //***************************************************************************
@@ -522,27 +526,22 @@ void SparseDB::writePMSHdr(const uint32_t total_num_prof, const util::File& fh)
   if(mpi::World::rank() != 0) return;
 
   std::vector<char> hdr;
+  hdr.reserve(PMS_real_hdr_SIZE);
 
   hdr.insert(hdr.end(), HPCPROFILESPARSE_FMT_Magic, HPCPROFILESPARSE_FMT_Magic + HPCPROFILESPARSE_FMT_MagicLen);
 
   hdr.emplace_back(HPCPROFILESPARSE_FMT_VersionMajor);
   hdr.emplace_back(HPCPROFILESPARSE_FMT_VersionMinor);
 
-  auto b = convertToByte4(total_num_prof);
-  hdr.insert(hdr.end(), b.begin(), b.end());
+  append(hdr, convertToByte4(total_num_prof));
 
-  b = convertToByte2(HPCPROFILESPARSE_FMT_NumSec);
-  hdr.insert(hdr.end(), b.begin(), b.end());
+  append(hdr, convertToByte2(HPCPROFILESPARSE_FMT_NumSec));
 
-  b = convertToByte8(prof_info_sec_size);
-  hdr.insert(hdr.end(), b.begin(), b.end());
-  b = convertToByte8(prof_info_sec_ptr);
-  hdr.insert(hdr.end(), b.begin(), b.end());
+  append(hdr, convertToByte8(prof_info_sec_size));
+  append(hdr, convertToByte8(prof_info_sec_ptr));
 
-  b = convertToByte8(id_tuples_sec_size);
-  hdr.insert(hdr.end(), b.begin(), b.end());
-  b = convertToByte8(id_tuples_sec_ptr);
-  hdr.insert(hdr.end(), b.begin(), b.end());
+  append(hdr, convertToByte8(id_tuples_sec_size));
+  append(hdr, convertToByte8(id_tuples_sec_ptr));
 
   assert(hdr.size() == PMS_real_hdr_SIZE);
   auto fhi = fh.open(true, false);
@@ -558,16 +557,15 @@ std::vector<char> SparseDB::convertTuple2Bytes(const id_tuple_t& tuple)
   std::vector<char> bytes;
 
   uint16_t len = tuple.length;
-  auto b = convertToByte2(len);
-  bytes.insert(bytes.end(), b.begin(), b.end());
+  bytes.reserve(2 + 10 * len);
+
+  append(bytes, convertToByte2(len));
 
   for(uint i = 0; i < len; i++){
     auto& id = tuple.ids[i];
 
-    b = convertToByte2(id.kind);
-    bytes.insert(bytes.end(), b.begin(), b.end());
-    b = convertToByte8(id.index);
-    bytes.insert(bytes.end(), b.begin(), b.end());
+    append(bytes, convertToByte2(id.kind));
+    append(bytes, convertToByte8(id.index));
   }
 
   assert(bytes.size() == (size_t)PMS_id_tuple_len_SIZE + len * PMS_id_SIZE);
@@ -673,27 +671,21 @@ void SparseDB::setMinProfInfoIdx(const int total_num_prof)
 void SparseDB::handleItemPi(pms_profile_info_t& pi)
 {
   std::vector<char> info_bytes;
+  info_bytes.reserve(PMS_prof_info_SIZE);
 
-  auto b = convertToByte8(pi.id_tuple_ptr);
-  info_bytes.insert(info_bytes.end(), b.begin(), b.end());
+  append(info_bytes, convertToByte8(pi.id_tuple_ptr));
 
-  b = convertToByte8(pi.metadata_ptr);
-  info_bytes.insert(info_bytes.end(), b.begin(), b.end());
+  append(info_bytes, convertToByte8(pi.metadata_ptr));
 
-  b = convertToByte8(pi.spare_one);
-  info_bytes.insert(info_bytes.end(), b.begin(), b.end());
+  append(info_bytes, convertToByte8(pi.spare_one));
 
-  b = convertToByte8(pi.spare_two);
-  info_bytes.insert(info_bytes.end(), b.begin(), b.end());
+  append(info_bytes, convertToByte8(pi.spare_two));
 
-  b = convertToByte8(pi.num_vals);
-  info_bytes.insert(info_bytes.end(), b.begin(), b.end());
+  append(info_bytes, convertToByte8(pi.num_vals));
 
-  b = convertToByte4(pi.num_nzctxs);
-  info_bytes.insert(info_bytes.end(), b.begin(), b.end());
+  append(info_bytes, convertToByte4(pi.num_nzctxs));
 
-  b = convertToByte8(pi.offset);
-  info_bytes.insert(info_bytes.end(), b.begin(), b.end());
+  append(info_bytes, convertToByte8(pi.offset));
 
   auto fhi = pmf->open(true, false);
   fhi.writeat(prof_info_sec_ptr + pi.prof_info_idx * PMS_prof_info_SIZE, PMS_prof_info_SIZE, info_bytes.data());
@@ -714,20 +706,16 @@ void SparseDB::writeProfInfos()
 std::vector<char> SparseDB::profBytes(hpcrun_fmt_sparse_metrics_t* sm)
 {
   std::vector<char> out;
-  std::vector<char> b;
+  out.reserve(sm->num_vals * 10 + (sm->num_nz_cct_nodes+1) * 12);
 
   for (uint i = 0; i < sm->num_vals; ++i) {
-    b = convertToByte8(sm->values[i].bits);
-    out.insert(out.end(), b.begin(), b.end());
-    b = convertToByte2(sm->mids[i]);
-    out.insert(out.end(), b.begin(), b.end());
+    append(out, convertToByte8(sm->values[i].bits));
+    append(out, convertToByte2(sm->mids[i]));
   }
 
   for (uint i = 0; i < sm->num_nz_cct_nodes + 1; ++i) {
-    b = convertToByte4(sm->cct_node_ids[i]);
-    out.insert(out.end(), b.begin(), b.end());
-    b = convertToByte8(sm->cct_node_idxs[i]);
-    out.insert(out.end(), b.begin(), b.end());
+    append(out, convertToByte4(sm->cct_node_ids[i]));
+    append(out, convertToByte8(sm->cct_node_idxs[i]));
   }
 
   return out;
@@ -916,20 +904,18 @@ void SparseDB::updateCtxOffsets()
 void SparseDB::writeCMSHdr()
 {
   std::vector<char> hdr;
+  hdr.reserve(CMS_real_hdr_SIZE);
+
   hdr.insert(hdr.end(), HPCCCTSPARSE_FMT_Magic, HPCCCTSPARSE_FMT_Magic + HPCCCTSPARSE_FMT_MagicLen);
   hdr.emplace_back(HPCCCTSPARSE_FMT_VersionMajor);
   hdr.emplace_back(HPCCCTSPARSE_FMT_VersionMinor);
 
-  auto b = convertToByte4(ctxcnt);
-  hdr.insert(hdr.end(), b.begin(), b.end());
+  append(hdr, convertToByte4(ctxcnt));
 
-  b = convertToByte2(HPCCCTSPARSE_FMT_NumSec);
-  hdr.insert(hdr.end(), b.begin(), b.end());
+  append(hdr, convertToByte2(HPCCCTSPARSE_FMT_NumSec));
 
-  b = convertToByte8(ctxcnt * CMS_ctx_info_SIZE); // ctx_info_sec_size
-  hdr.insert(hdr.end(), b.begin(), b.end());
-  b = convertToByte8(CMS_hdr_SIZE); //ctx_info_sec_ptr
-  hdr.insert(hdr.end(), b.begin(), b.end());
+  append(hdr, convertToByte8(ctxcnt * CMS_ctx_info_SIZE));  // ctx_info_sec_size
+  append(hdr, convertToByte8(CMS_hdr_SIZE));  //ctx_info_sec_ptr
 
   assert(hdr.size() == CMS_real_hdr_SIZE);
 
@@ -944,15 +930,12 @@ void SparseDB::writeCMSHdr()
 std::vector<char> SparseDB::ctxInfoBytes(const cms_ctx_info_t& ctx_info)
 {
   std::vector<char> bytes;
+  bytes.reserve(4 + 8 + 2 + 8);
 
-  auto b = convertToByte4(ctx_info.ctx_id);
-  bytes.insert(bytes.end(), b.begin(), b.end());
-  b = convertToByte8(ctx_info.num_vals);
-  bytes.insert(bytes.end(), b.begin(), b.end());
-  b = convertToByte2(ctx_info.num_nzmids);
-  bytes.insert(bytes.end(), b.begin(), b.end());
-  b = convertToByte8(ctx_info.offset);
-  bytes.insert(bytes.end(), b.begin(), b.end());
+  append(bytes, convertToByte4(ctx_info.ctx_id));
+  append(bytes, convertToByte8(ctx_info.num_vals));
+  append(bytes, convertToByte2(ctx_info.num_nzmids));
+  append(bytes, convertToByte8(ctx_info.offset));
 
   return bytes;
 }
@@ -1256,14 +1239,12 @@ std::vector<char> SparseDB::mvbBytes(const MetricValBlock& mvb)
 {
   uint64_t num_vals = mvb.values_prof_idxs.size();
   std::vector<char> bytes;
-  std::vector<char> b;
+  bytes.reserve(num_vals * 12);
 
   for(uint i = 0; i < num_vals; i++){
     auto& pair = mvb.values_prof_idxs[i];
-    b = convertToByte8(pair.first.bits);
-    bytes.insert(bytes.end(), b.begin(), b.end());
-    b = convertToByte4(pair.second);
-    bytes.insert(bytes.end(), b.begin(), b.end());
+    append(bytes, convertToByte8(pair.first.bits));
+    append(bytes, convertToByte4(pair.second));
   }
 
   assert(bytes.size() == num_vals * CMS_val_prof_idx_pair_SIZE);
@@ -1292,23 +1273,19 @@ std::vector<char> SparseDB::mvbsBytes(std::map<uint16_t, MetricValBlock>& metric
 std::vector<char> SparseDB::metIdIdxPairsBytes(const std::map<uint16_t, MetricValBlock>& metrics)
 {
   std::vector<char> bytes;
-  std::vector<char> b;
+  bytes.reserve((metrics.size()+1) * 10);
 
   uint64_t m_idx = 0;
   for(auto i = metrics.begin(); i != metrics.end(); i++){
     uint16_t mid = i->first;
-    b = convertToByte2(mid);
-    bytes.insert(bytes.end(), b.begin(), b.end());
-    b = convertToByte8(m_idx);
-    bytes.insert(bytes.end(), b.begin(), b.end());
+    append(bytes, convertToByte2(mid));
+    append(bytes, convertToByte8(m_idx));
     m_idx += i->second.num_values;
   }
 
    uint16_t mid = LastMidEnd;
-   b = convertToByte2(mid);
-   bytes.insert(bytes.end(), b.begin(), b.end());
-   b = convertToByte8(m_idx);
-   bytes.insert(bytes.end(), b.begin(), b.end());
+   append(bytes, convertToByte2(mid));
+   append(bytes, convertToByte8(m_idx));
 
   assert(bytes.size() == ((metrics.size() + 1) * CMS_m_pair_SIZE));
   return bytes;
