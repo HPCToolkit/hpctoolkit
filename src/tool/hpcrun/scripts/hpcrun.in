@@ -220,9 +220,12 @@ Options to consider only when hpcrun causes an application to fail:
                        it is believed that the rewriting is causing the
                        application to fail.
 
-  --memkind            Works around a glibc bug triggered when an application
-                       dlopens libmemkind.so when LD_AUDIT is in use.  This issue
-                       has only been observed as a problem on Cray x86_64 systems.
+  --default-memkind    By default, hpcrun uses its own copy of libmemkind.so. It
+                       does so to sidestep a Glibc bug that causes programs to SEGV
+                       when loading libraries with properties commonly
+                       found in libmemkind.so on Cray x86_64 platforms. This option
+                       can be used to ensure that your program loads the default
+                       version of libmemkind.so.
 
   --namespace-single   dlmopen may load a shared library into an alternate
                        namespace.  Use of dlmopen to create multiple namespaces
@@ -286,7 +289,20 @@ gtpin_libdir=
 namespace_default=multiple
 namespace_multiple=
 namespace_single=
-use_memkind=no
+
+# All versions of glibc currently have a bug handling R_X86_64_TLSDESC
+# relocations when LD_AUDIT is used. This bug causes programs to crash
+# in the dynamic loader when loading any shared library that has
+# R_X86_64_TLSDESC relocations. Such relocations are often found in
+# libmemkind.so on Cray platforms. To avoid trouble, HPCToolkit uses
+# spack to build its own libmemkind.so library without such relocations.
+# If present, use HPCToolkit's copy of libmemkind.so with the
+# hope of avoiding trouble.
+if test "x$memkind_libdir" != x ; then
+    use_memkind=yes
+else
+    use_memkind=no
+fi
 
 HPCRUN_DEBUG_FLAGS=
 HPCRUN_EVENT_LIST=
@@ -495,12 +511,8 @@ do
             unset HPCRUN_AUDIT_FAKE_AUDITOR
             ;;
 
-        --memkind )
-            if test "x$memkind_libdir" = x ; then
-                echo "hpcrun warning: memkind workaround is not available" >&2
-            else
-                use_memkind=yes
-            fi
+        --default-memkind )
+            use_memkind=no
             ;;
 
         # --------------------------------------------------
