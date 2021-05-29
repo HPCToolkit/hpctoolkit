@@ -50,14 +50,14 @@
 // interface operations
 //******************************************************************************
 
-void 
+void
 rocprofiler_start_kernel
 (
-  void
+  uint64_t
 );
 
 
-void 
+void
 rocprofiler_stop_kernel
 (
 	void
@@ -85,6 +85,11 @@ rocprofile_bind
   void
 );
 
+void
+rocprofiler_wait_context_callback
+(
+  void
+);
 
 
 #endif

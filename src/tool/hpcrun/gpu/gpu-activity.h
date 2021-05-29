@@ -95,7 +95,8 @@ typedef enum {
   GPU_ACTIVITY_EXTERNAL_CORRELATION    = 14,
   GPU_ACTIVITY_EVENT                   = 15,
   GPU_ACTIVITY_FUNCTION                = 16,
-  GPU_ACTIVITY_FLUSH                   = 17
+  GPU_ACTIVITY_FLUSH                   = 17,
+  GPU_ACTIVITY_COUNTER                 = 18
 } gpu_activity_kind_t;
 
 
@@ -346,6 +347,12 @@ typedef struct gpu_host_correlation_t {
   uint64_t host_correlation_id;
 } gpu_host_correlation_t;
 
+typedef struct gpu_counter_t {
+  uint32_t correlation_id;
+  uint64_t cycles;
+  uint64_t l2_cache_hit;
+  uint64_t l2_cache_miss;
+} gpu_counter_t;
 
 // a type that can be used to access start and end times
 // for a subset of activity kinds including kernel execution,
@@ -383,6 +390,7 @@ typedef struct gpu_activity_details_t {
     gpu_synchronization_t synchronization;
     gpu_host_correlation_t correlation;
     gpu_flush_t flush;
+    gpu_counter_t counters;
 
     /* Access short cut for activitiy fields shared by multiple kinds */
 

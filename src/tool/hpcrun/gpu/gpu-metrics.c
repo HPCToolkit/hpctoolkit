@@ -84,7 +84,8 @@
   macro(GPU_INST, 9)  \
   macro(GTIMES, 10)  \
   macro(KINFO, 12)  \
-  macro(GSAMP, 13)
+  macro(GSAMP, 13) \
+  macro(CTR, 3)
 
 
 #define FORALL_METRIC_KINDS(macro)  \
@@ -592,6 +593,27 @@ gpu_metrics_attribute_branch
            b->executed);
 }
 
+static void
+gpu_metrics_attribute_counter
+(
+  gpu_activity_t *activity
+)
+{
+  gpu_counter_t * c = &(activity->details.counters);
+  cct_node_t *cct_node = activity->cct_node;
+
+  metric_data_list_t *metrics =
+    hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_CTR_CYCLES));
+
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_CTR_CYCLES),
+           c->cycles);
+
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_CTR_L2_CACHE_HIT),
+           c->l2_cache_hit);
+
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_CTR_L2_CACHE_MISS),
+           c->l2_cache_miss);
+}
 
 //******************************************************************************
 // interface operations
@@ -652,6 +674,9 @@ gpu_metrics_attribute
     gpu_metrics_attribute_branch(activity);
     break;
 
+  case GPU_ACTIVITY_COUNTER:
+    gpu_metrics_attribute_counter(activity);
+    break;
   default:
     break;
   }
@@ -895,6 +920,22 @@ gpu_metrics_GPU_INST_STALL_enable
 
   SET_DISPLAY_INDEXED_METRIC(GPU_INST_STALL_ANY, GPU_INST_STALL_ANY, 
            HPCRUN_FMT_METRIC_SHOW);
+
+  FINALIZE_METRIC_KIND();
+}
+
+void
+gpu_metrics_GPU_CTR_enable
+(
+ void
+)
+{
+#undef CURRENT_METRIC
+#define CURRENT_METRIC CTR
+
+  INITIALIZE_METRIC_KIND();
+
+  FORALL_CTR(INITIALIZE_SCALAR_METRIC_INT);
 
   FINALIZE_METRIC_KIND();
 }

@@ -85,7 +85,7 @@ Returned API status:
 
 Loading and Configuring, loadable plugin on-load/unload methods:
 - rocprofiler_settings_t – global properties
-- OnLoadTool 
+- OnLoadTool
 - OnLoadToolProp
 - OnUnloadTool
 
@@ -94,7 +94,7 @@ Info API:
 - rocprofiler_info_query_t - profiling info query
 - rocprofiler_info_data_t - profiling info data
 - rocprofiler_get_info - return the info for a given info kind
-- rocprofiler_iterote_inf_ - iterate over the info for a given info kind 
+- rocprofiler_iterote_inf_ - iterate over the info for a given info kind
 - rocprofiler_query_info - iterate over the info for a given info query
 
 Context API:
@@ -155,8 +155,8 @@ Context pool API:
   macro(rocprofiler_set_queue_callbacks) \
   macro(rocprofiler_start_queue_callbacks) \
   macro(rocprofiler_stop_queue_callbacks) \
-  macro(rocprofiler_remove_queue_callbacks) 
-  
+  macro(rocprofiler_remove_queue_callbacks)
+
 
 
 #define ROCPROFILER_FN_NAME(f) DYN_FN_NAME(f)
@@ -167,11 +167,11 @@ Context pool API:
 #define HPCRUN_ROCPROFILER_CALL(fn, args) \
 {      \
   hsa_status_t status = ROCPROFILER_FN_NAME(fn) args;	\
-  if (status != HSA_STATUS_SUCCESS) {		\    
+  if (status != HSA_STATUS_SUCCESS) {		\
     const char* error_string = NULL; \
     rocprofiler_error_string(&error_string); \
     fprintf(stderr, "ERROR: %s\n", error_string); \
-    abort(); \    
+    abort(); \
   }						\
 }
 
@@ -179,35 +179,25 @@ Context pool API:
 typedef const char* (*hip_kernel_name_fnt)(const hipFunction_t f);
 typedef const char* (*hip_kernel_name_ref_fnt)(const void* hostFunction, hipStream_t stream);
 
-
-// Context stored entry type
 typedef struct {
   bool valid;
   hsa_agent_t agent;
   rocprofiler_group_t group;
   rocprofiler_callback_data_t data;
-}context_entry_t;
-
-// Context callback arg
-typedef struct {
-  rocprofiler_pool_t** pools;
-}callbacks_arg_t;
-
-// Handler callback arg
-typedef struct {
-  rocprofiler_feature_t* features;
-  unsigned feature_count;
-}handler_arg_t;
-
-
+} hpcrun_amd_counter_data_t;
 
 //******************************************************************************
 // local variables
 //******************************************************************************
 
+// Currently we serialize kernel execution when collecting counters
+static hpcrun_amd_counter_data_t counter_data;
+static uint64_t rocprofiler_correlation_id;
+static volatile int context_callback_finish;
+
+
 static hip_kernel_name_fnt hip_kernel_name_fn;
 static hip_kernel_name_ref_fnt hip_kernel_name_ref_fn;
-pthread_mutex_t mutex_context;
 
 //----------------------------------------------------------
 // rocprofiler function pointers for late binding
@@ -230,7 +220,7 @@ ROCPROFILER_FN
 (
   rocprofiler_close,
   (
-	  rocprofiler_t* context		// [in] profiling context  
+	  rocprofiler_t* context		// [in] profiling context
   )
 );
 
@@ -294,7 +284,7 @@ rocprofiler_path
 
 unsigned metrics_input(rocprofiler_feature_t** ret) {
   // Profiling feature objects
-  const unsigned feature_count = 6;
+  const unsigned feature_count = 4;
   rocprofiler_feature_t* features = (rocprofiler_feature_t*) malloc(sizeof(rocprofiler_feature_t) * feature_count);
   memset(features, 0, feature_count * sizeof(rocprofiler_feature_t));
 
@@ -304,172 +294,126 @@ unsigned metrics_input(rocprofiler_feature_t** ret) {
   features[1].kind = ROCPROFILER_FEATURE_KIND_METRIC;
   features[1].name = "GRBM_GUI_ACTIVE";
   features[2].kind = ROCPROFILER_FEATURE_KIND_METRIC;
-  features[2].name = "GPUBusy";
+  features[2].name = "TCC_HIT_sum";
   features[3].kind = ROCPROFILER_FEATURE_KIND_METRIC;
-  features[3].name = "SQ_WAVES";
-  features[4].kind = ROCPROFILER_FEATURE_KIND_METRIC;
-  features[4].name = "SQ_INSTS_VALU";
-  features[5].kind = ROCPROFILER_FEATURE_KIND_METRIC;
-  features[5].name = "VALUInsts";
-//  features[6].kind = ROCPROFILER_FEATURE_KIND_METRIC;
-//  features[6].name = "TCC_HIT_sum";
-//  features[7].kind = ROCPROFILER_FEATURE_KIND_METRIC;
-//  features[7].name = "TCC_MISS_sum";
-//  features[8].kind = ROCPROFILER_FEATURE_KIND_METRIC;
-//  features[8].name = "WRITE_SIZE";
+  features[3].name = "TCC_MISS_sum";
 
   *ret = features;
   return feature_count;
 }
 
-
-// Dump stored context entry
-static void dump_context_entry(context_entry_t* entry, rocprofiler_feature_t* features, unsigned feature_count) {
-  volatile bool valid = entry->valid;
-  while (valid == false) sched_yield();
-
-  const char *kernel_name = entry->data.kernel_name;
-  const rocprofiler_dispatch_record_t* record = entry->data.record;
-
-  fflush(stdout);
-  fprintf(stdout, "kernel symbol(0x%lx) name(\"%s\") tid(%u) queue-id(%u)) ", // gpu-id(%u) ",
-    entry->data.kernel_object,
-    kernel_name,
-    entry->data.thread_id,
-    entry->data.queue_id);
-    // HsaRsrcFactory::Instance().GetAgentInfo(entry->agent)->dev_index);
-  if (record) fprintf(stdout, "time(%lu,%lu,%lu,%lu)",
-    record->dispatch,
-    record->begin,
-    record->end,
-    record->complete);
-  fprintf(stdout, "\n");
-  fflush(stdout);
-
-  rocprofiler_group_t *group = &entry->group;
-  if (group->context == NULL) {
-    EMSG("error: AMD group->context = NULL");    
-  }
-  if (feature_count > 0) {
-    HPCRUN_ROCPROFILER_CALL(rocprofiler_group_get_data, (group));  
-    HPCRUN_ROCPROFILER_CALL(rocprofiler_get_metrics, (group->context));    
-  }
-
-  for (unsigned i = 0; i < feature_count; ++i) {
-    const rocprofiler_feature_t* p = &features[i];
-    fprintf(stdout, ">  %s ", p->name);
-    switch (p->data.kind) {
-      // Output metrics results
-      case ROCPROFILER_DATA_KIND_INT64:
-        fprintf(stdout, "= (%lu)\n", p->data.result_int64);
-        break;
-      default:
-        fprintf(stderr, "Undefined data kind(%u)\n", p->data.kind);
-        abort();
-    }
-  }
-}
-
-
 // Profiling completion handler
 // Dump and delete the context entry
 // Return true if the context was dumped successfully
 static bool context_handler1(rocprofiler_group_t group, void* arg) {
-  context_entry_t* ctx_entry = (context_entry_t*)arg;
 
-  if (pthread_mutex_lock(&mutex_context) != 0) {
-    perror("pthread_mutex_lock");
-    abort();
+  volatile bool valid = counter_data.valid;
+  while (!valid) {
+    sched_yield();
+    valid = counter_data.valid;
   }
 
-  rocprofiler_feature_t* features = ctx_entry->group.features[0];
-  unsigned feature_count = ctx_entry->group.feature_count;
-  dump_context_entry(ctx_entry, features, feature_count);
+  rocprofiler_feature_t** features = counter_data.group.features;
+  unsigned feature_count = counter_data.group.feature_count;
 
-  if (pthread_mutex_unlock(&mutex_context) != 0) {
-    perror("pthread_mutex_unlock");
-    abort();
+
+  if (counter_data.group.context == NULL) {
+    EMSG("error: AMD group->context = NULL");
+  }
+  if (feature_count > 0) {
+    //HPCRUN_ROCPROFILER_CALL(rocprofiler_group_get_data, (group));
+    rocprofiler_group_get_data(&counter_data.group);
+    HPCRUN_ROCPROFILER_CALL(rocprofiler_get_metrics, (counter_data.group.context));
   }
 
+  gpu_monitoring_thread_activities_ready();
+
+  gpu_activity_t ga;
+  memset(&ga, 0, sizeof(gpu_activity_t));
+  cstack_ptr_set(&(ga.next), 0);
+
+  ga.kind = GPU_ACTIVITY_COUNTER;
+  ga.details.counters.correlation_id = rocprofiler_correlation_id;
+
+  for (unsigned i = 0; i < feature_count; ++i) {
+    const rocprofiler_feature_t* p = features[i];
+    if (strcmp(p->name, "GRBM_COUNT") == 0) {
+      ga.details.counters.cycles = p->data.result_int64;
+    } else if (strstr(p->name, "TCC_HIT") != NULL) {
+      ga.details.counters.l2_cache_hit += p->data.result_int64;
+    } else if (strstr(p->name, "TCC_MISS") != NULL) {
+      ga.details.counters.l2_cache_miss += p->data.result_int64;
+    }
+  }
+
+  if (gpu_correlation_id_map_lookup(rocprofiler_correlation_id) == NULL) {
+    gpu_correlation_id_map_insert(rocprofiler_correlation_id, rocprofiler_correlation_id);
+  }
+  gpu_activity_process(&ga);
+
+  context_callback_finish = 1;
   return false;
 }
 
-
-// Kernel disoatch callback
-hsa_status_t dispatch_callback(const rocprofiler_callback_data_t* callback_data, void* arg,
-                               rocprofiler_group_t* group) {
-
+static hsa_status_t
+dispatch_callback
+(
+  const rocprofiler_callback_data_t* callback_data,
+  void* arg,
+  rocprofiler_group_t* group
+) {
   printf("Rocprofiler dispatch_callback\n\n");
   // Passed tool data
   hsa_agent_t agent = callback_data->agent;
   // HSA status
   hsa_status_t status = HSA_STATUS_ERROR;
 
-  // Open profiling context
-  // context properties
-  context_entry_t* entry = (context_entry_t*) malloc(sizeof(context_entry_t));
   rocprofiler_t* context = NULL;
   rocprofiler_properties_t properties = {};
   properties.handler = context_handler1;
-  properties.handler_arg = (void*)entry;
+  properties.handler_arg = NULL;
 
   rocprofiler_feature_t *features;
   unsigned feature_count = metrics_input(&features);
 
+  counter_data.valid = false;
   HPCRUN_ROCPROFILER_CALL(rocprofiler_open, (agent, features, feature_count,
                             &context, 0 /*ROCPROFILER_MODE_SINGLEGROUP*/, &properties));
-  
+
 
   // Get group[0]
-  HPCRUN_ROCPROFILER_CALL(rocprofiler_get_group, (context, 0, group));
-  
+  //HPCRUN_ROCPROFILER_CALL(rocprofiler_get_group, (context, 0, group));
+  rocprofiler_get_group(context, 0, group);
 
   // Fill profiling context entry
-  entry->agent = agent;
-  entry->group = *group;
-  entry->data = *callback_data;
-  entry->data.kernel_name = strdup(callback_data->kernel_name);
-  entry->valid = true;
+  counter_data.agent = agent;
+  counter_data.group = *group;
+  counter_data.data = *callback_data;
+  counter_data.valid = true;
 
   return HSA_STATUS_SUCCESS;
 }
 
 
 static void rocp_inicialize() {
-  // Getting profiling features
-  rocprofiler_feature_t* features = NULL;
-  unsigned feature_count = metrics_input(&features);
-
-  // Handler arg
-  handler_arg_t* handler_arg = (handler_arg_t*) malloc(sizeof(handler_arg_t));
-  handler_arg->features = features;
-  handler_arg->feature_count = feature_count;
-
   rocprofiler_queue_callbacks_t callbacks_ptrs = {};
   callbacks_ptrs.dispatch = dispatch_callback;
   rocprofiler_set_queue_callbacks(callbacks_ptrs, NULL);
-
-  // rocp_inicialize recursive mutex_context
-  pthread_mutexattr_t Attr;
-  pthread_mutexattr_init(&Attr);
-  pthread_mutexattr_settype(&Attr, PTHREAD_MUTEX_RECURSIVE);
-  pthread_mutex_init(&mutex_context, &Attr);
-
 }
 
 // This is necessary for rocprofiler callback to work
 extern PUBLIC_API void OnLoadToolProp(rocprofiler_settings_t* settings){
-  printf("Rocprofiler OnLoadToolProp______________________\n");  
+  printf("Rocprofiler OnLoadToolProp______________________\n");
   rocp_inicialize();
 }
 
 extern PUBLIC_API void OnUnloadTool(){
-  printf("Rocprofiler OnUnloadTool______________________\n");  
+  printf("Rocprofiler OnUnloadTool______________________\n");
   // rocp_inicialize();
 }
 
 extern PUBLIC_API void OnLoad(){
-  printf("Rocprofiler OnLoad______________________\n");  
+  printf("Rocprofiler OnLoad______________________\n");
 }
 
 static void cleanup() {
@@ -484,7 +428,14 @@ static void cleanup() {
 //******************************************************************************
 
 
-void rocprofiler_start_kernel(){
+void
+rocprofiler_start_kernel
+(
+  uint64_t cor
+)
+{
+  rocprofiler_correlation_id = cor;
+  context_callback_finish = 0;
   HPCRUN_ROCPROFILER_CALL(rocprofiler_start_queue_callbacks, ());
 }
 
@@ -500,9 +451,9 @@ rocprofiler_init
  void
 )
 {
-  printf("Rocprofiler INIT\n");  
+  printf("Rocprofiler INIT\n");
   // rocp_inicialize();
-  return; 
+  return;
 }
 
 
@@ -513,7 +464,7 @@ rocprofiler_fini
  int how
 )
 {
-  printf("Rocprofiler FINI\n");  
+  printf("Rocprofiler FINI\n");
   cleanup();
   return;
 }
@@ -570,3 +521,11 @@ rocprofiler_bind
 #endif // ! HPCRUN_STATIC_LINK
 }
 
+void
+rocprofiler_wait_context_callback
+(
+  void
+)
+{
+  while (context_callback_finish == 0);
+}

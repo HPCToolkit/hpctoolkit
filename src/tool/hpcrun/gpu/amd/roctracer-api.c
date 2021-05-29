@@ -112,6 +112,11 @@ typedef const char* (*hip_kernel_name_ref_fnt)(const void* hostFunction, hipStre
 static hip_kernel_name_fnt hip_kernel_name_fn;
 static hip_kernel_name_ref_fnt hip_kernel_name_ref_fn;
 
+// If we collect counters for GPU kernels,
+// we will serilize kernel executions.
+// Hopefully, AMD tool support will improve this the future
+static bool collect_counter = true;
+
 //----------------------------------------------------------
 // roctracer function pointers for late binding
 //----------------------------------------------------------
@@ -305,7 +310,8 @@ roctracer_subscriber_callback
   bool is_valid_op = false;
   bool is_kernel_op = false;
   const hip_api_data_t* data = (const hip_api_data_t*)(callback_data);
-  const char* kernel_name = NULL;  
+  const char* kernel_name = NULL;
+  hipStream_t kernel_stream = 0;
 
   switch (callback_id) {
   case HIP_API_ID_hipMemcpy:
@@ -380,6 +386,9 @@ roctracer_subscriber_callback
     is_valid_op = true;
     is_kernel_op = true;
     kernel_name = hip_kernel_name_fn(data->args.hipModuleLaunchKernel.f);
+    if (collect_counter) {
+      kernel_stream = data->args.hipModuleLaunchKernel.stream;
+    }
     break;
   }
   case HIP_API_ID_hipLaunchKernel: {
@@ -391,6 +400,9 @@ roctracer_subscriber_callback
     is_kernel_op = true;
     kernel_name = hip_kernel_name_ref_fn(data->args.hipLaunchKernel.function_address, 
       data->args.hipLaunchKernel.stream);
+    if (collect_counter) {
+      kernel_stream = data->args.hipLaunchKernel.stream;
+    }
     break;
   }
   case HIP_API_ID_hipCtxSynchronize:
@@ -426,6 +438,10 @@ roctracer_subscriber_callback
 
       cct_node_t *trace_ph = gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace);
       ensure_kernel_ip_present(trace_ph, kernel_ip);
+
+      if (collect_counter) {
+        rocprofiler_start_kernel(correlation_id);
+      }
     }
 
     hpcrun_safe_exit();
@@ -436,10 +452,13 @@ roctracer_subscriber_callback
     // Generate notification entry
     uint64_t cpu_submit_time = hpcrun_nanotime();
     gpu_correlation_channel_produce(correlation_id, &gpu_op_ccts, cpu_submit_time);
-
-    rocprofiler_start_kernel();
+    
   }else if (data->phase == ACTIVITY_API_PHASE_EXIT){
-    rocprofiler_stop_kernel();
+    if (is_kernel_op && collect_counter) {
+      hipStreamSynchronize(kernel_stream);
+      rocprofiler_wait_context_callback();
+      rocprofiler_stop_kernel();
+    }
   }
 }
 
@@ -479,6 +498,9 @@ roctracer_buffer_completion_callback
 )
 {
   hpcrun_thread_init_mem_pool_once(0, NULL, false, true);
+  if (collect_counter) {
+    return;
+  }
   roctracer_buffer_completion_notify();
   roctracer_record_t* record = (roctracer_record_t*)(begin);
   roctracer_record_t* end_record = (roctracer_record_t*)(end);

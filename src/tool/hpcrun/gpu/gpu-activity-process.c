@@ -636,6 +636,39 @@ gpu_instruction_process
   PRINT("Instruction correlation_id %u\n", correlation_id);
 }
 
+static void
+gpu_counter_process
+(
+ gpu_activity_t *activity
+)
+{
+  uint32_t correlation_id = activity->details.counters.correlation_id;
+  gpu_correlation_id_map_entry_t *cid_map_entry =
+    gpu_correlation_id_map_lookup(correlation_id);
+  if (cid_map_entry != NULL) {
+    uint64_t external_id =
+      gpu_correlation_id_map_entry_external_id_get(cid_map_entry);
+    gpu_host_correlation_map_entry_t *host_op_entry =
+      gpu_host_correlation_map_lookup(external_id);
+    if (host_op_entry != NULL) {
+      gpu_placeholder_type_t ph = gpu_placeholder_type_kernel;
+      cct_node_t *host_op_node =
+        gpu_host_correlation_map_entry_op_cct_get(host_op_entry, ph);
+      assert(host_op_node != NULL);
+      // Memory allocation does not always happen on the device
+      // Do not send it to trace channels
+      attribute_activity(host_op_entry, activity, host_op_node);
+    }
+    gpu_correlation_id_map_delete(correlation_id);
+  } else {
+    PRINT("Counter correlation_id %u cannot be found\n", correlation_id);
+  }
+  PRINT("Counter CorrelationId %u\n", correlation_id);
+  PRINT("Counter cycles %lu\n", activity->details.counters.cycles);
+  PRINT("Counter l2 cache hit %lu\n", activity->details.counters.l2_cache_hit);
+  PRINT("Counter l2 cache miss %lu\n", activity->details.counters.l2._cache_miss);
+}
+
 
 //******************************************************************************
 // interface operations
@@ -711,6 +744,10 @@ gpu_activity_process
 
   case GPU_ACTIVITY_EVENT:
     gpu_event_process(ga);
+    break;
+
+  case GPU_ACTIVITY_COUNTER:
+    gpu_counter_process(ga);
     break;
 
   case GPU_ACTIVITY_MEMCPY2:
