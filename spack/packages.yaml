@@ -19,7 +19,7 @@
 #    https://spack.readthedocs.io/en/latest/configuration.html
 #    https://spack.readthedocs.io/en/latest/build_settings.html
 #
-#  Last revised: April 18, 2021.
+#  Last revised: May 28, 2021.
 #
 packages:
 
@@ -27,11 +27,17 @@ packages:
   # all builds, then you can set those here.  For example, a generic
   # target might be useful for a shared install acrosss multiple
   # machine types.
+  #
   # generic families: aarch64, ppc64, ppc64le, x86_64
+  #
+  # Selecting a specific provider for a virtual package (eg, openmpi
+  # for mpi) also goes here under 'all'.
   #
   # all:
   #   target: [x86_64]
   #   compiler: [gcc@8.3.1]
+  #   providers:
+  #     mpi: [openmpi]
 
 
   #------------------------------------------------------------
@@ -69,10 +75,12 @@ packages:
   #
   # +mpi builds hpcprof-mpi (requires mpi).
   # +papi uses papi instead of perfmon (now default).
+  # +viewer also installs hpcviewer (default).
+  # +cuda, +rocm for GPU support.
   #
   # hpctoolkit:
-  #   version:  [2021.03.01, master]
-  #   variants: +mpi +papi
+  #   version:  [2021.05.15, master]
+  #   variants: +mpi +papi +viewer
 
 
   # binutils -- used by hpcprof and struct simple (for functions and
@@ -137,7 +145,7 @@ packages:
   # +openmp is to support openmp threads in parseapi.
   #
   dyninst:
-    version:  [master]
+    version:  [master, 11.0.0]
     variants: +openmp build_type=RelWithDebInfo
 
 
