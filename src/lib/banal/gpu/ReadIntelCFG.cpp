@@ -555,7 +555,6 @@ trackDependency
 (
  const std::map<int, GPUParse::InstructionStat *> &inst_stat_map,
  Dyninst::Address inst_addr,
- Dyninst::Address func_addr,
  std::map<int, int> &predicate_map,
  Dyninst::NodeIterator exit_node_iter,
  GPUParse::InstructionStat *inst_stat,
@@ -574,7 +573,7 @@ trackDependency
     auto *slice_inst = inst_stat_map.at(addr);
 
     if (INSTRUCTION_ANALYZER_DEBUG) {
-      std::cout << "find inst_addr " << inst_addr - func_addr << " <- addr: " << addr - func_addr;
+      std::cout << "find inst_addr " << inst_addr << " <- addr: " << addr;
     }
 
     Dyninst::Assignment::Ptr aptr = slice_node->assign();
@@ -585,8 +584,8 @@ trackDependency
       if (reg_id == inst_stat->srcs[i]) {
         auto beg = inst_stat->assign_pcs[reg_id].begin();
         auto end = inst_stat->assign_pcs[reg_id].end();
-        if (std::find(beg, end, addr - func_addr) == end) {
-          inst_stat->assign_pcs[reg_id].push_back(addr - func_addr);
+        if (std::find(beg, end, addr) == end) {
+          inst_stat->assign_pcs[reg_id].push_back(addr);
         }
         break;
       }
@@ -616,7 +615,7 @@ trackDependency
           predicate_map[-(slice_inst->predicate + 1)]++;
         }
 
-        trackDependency(inst_stat_map, inst_addr, func_addr, predicate_map, in_begin, inst_stat,
+        trackDependency(inst_stat_map, inst_addr, predicate_map, in_begin, inst_stat,
             barriers, step + 1);
 
         // Clear
@@ -667,13 +666,16 @@ sliceIntelInstructions
 
 #pragma omp parallel for schedule(dynamic) firstprivate(ac, dyn_inst_cache) num_threads(threads)
   for (size_t i = 0; i < block_vec.size(); ++i) {
+    Dyninst::GraphPtr g;
+    Dyninst::NodeIterator exit_begin, exit_end;
     ParseAPI::GPUBlock *dyn_block = block_vec[i].first;
     auto *dyn_func = block_vec[i].second;
-    auto func_addr = dyn_func->addr();
 
     Dyninst::ParseAPI::Block::Insns insns;
     dyn_block->enable_latency_blame();
     dyn_block->getInsns(insns);
+
+    std::unordered_set<size_t> sliced;
 
     for (auto &inst_iter : insns) {
       auto &inst = inst_iter.second;
@@ -681,22 +683,31 @@ sliceIntelInstructions
       auto *inst_stat = inst_stat_map.at(inst_addr);
 
       if (INSTRUCTION_ANALYZER_DEBUG) {
-        std::cout << "try to find inst_addr " << inst_addr - func_addr << std::endl;
+        std::cout << "try to find inst_addr " << inst_addr << std::endl;
       }
 
       std::vector<Dyninst::Assignment::Ptr> assignments;
       ac.convert(inst, inst_addr, dyn_func, dyn_block, assignments);
 
       for (auto a : assignments) {
+        std::hash<std::string> str_hasher;
+        size_t input_hash = a->addr();
+        for (auto i: a->inputs()) {
+          input_hash += str_hasher(i.format());
+        }
+        if (input_hash != 0 && sliced.find(input_hash) != sliced.end()) {
+          continue;
+        } else {
+          sliced.insert(input_hash);
+        }
 #ifdef FAST_SLICING
         FirstMatchPred p;
 #else
         IgnoreRegPred p(a->inputs());
 #endif
         Dyninst::Slicer s(a, dyn_block, dyn_func, &ac, &dyn_inst_cache);
-        Dyninst::GraphPtr g = s.backwardSlice(p);
+        g = s.backwardSlice(p);
         //bool status = g->printDOT(function_name + ".dot");
-        Dyninst::NodeIterator exit_begin, exit_end;
         g->exitNodes(exit_begin, exit_end);
 
         for (; exit_begin != exit_end; ++exit_begin) {
@@ -711,7 +722,7 @@ sliceIntelInstructions
           TRACK_LIMIT = 1;
 #endif
           auto barrier_threshold = inst_stat->barrier_threshold;
-          trackDependency(inst_stat_map, inst_addr, func_addr, predicate_map, exit_begin, inst_stat,
+          trackDependency(inst_stat_map, inst_addr, predicate_map, exit_begin, inst_stat,
                           barrier_threshold, 0);
         }
       }
