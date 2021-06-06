@@ -459,15 +459,15 @@ gpu_idle_blame
   metric_desc_t* metric_desc = hpcrun_id2metric(metric_id);
 
   // Only blame shift idleness for time metric.
-  if ( !metric_desc->properties.time )
+  if (!metric_desc->properties.time)
     return;
 
   spinlock_lock(&itimer_blame_lock);
 
   uint64_t cur_time_us = 0;
-  int ret = time_getTimeReal(&cur_time_us);
+  int ret = time_getTimeCPU(&cur_time_us);
   if (ret != 0) {
-    EMSG("time_getTimeReal (clock_gettime) failed!");
+    EMSG("time_getTimeCPU (clock_gettime) failed!");
     monitor_real_abort();
   }
 
