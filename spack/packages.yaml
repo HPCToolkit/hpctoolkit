@@ -19,7 +19,7 @@
 #    https://spack.readthedocs.io/en/latest/configuration.html
 #    https://spack.readthedocs.io/en/latest/build_settings.html
 #
-#  Last revised: May 28, 2021.
+#  Last revised: June 9, 2021.
 #
 packages:
 
@@ -140,8 +140,6 @@ packages:
   # HPCToolkit's hpcstruct. Until there is a new release of dyninst,
   # we recommend building hpctoolkit atop dyninst master. 
   #
-  # On Blue Gene, with default gcc 4.4 compilers, use version 9.3.2.
-  #
   # +openmp is to support openmp threads in parseapi.
   #
   dyninst:
@@ -152,14 +150,14 @@ packages:
   # elfutils -- used by dyninst for reading ELF sections.
   #
   # Dyninst requires >= 0.173 and we want a recent version for best
-  # support for output from current compilers.  On Blue Gene, 0.176
-  # doesn't build, so use 0.175.
+  # support for output from current compilers.
+  # 0.184 fixes a bug in binaries compiled with gcc 11.x.
   #
   # +bzip2, +xz are for reading compressed sections.
   # ~nls is used to avoid building gettext.
   #
   elfutils:
-    version:  [0.182]
+    version:  [0.185]
     variants: +bzip2 +xz ~nls
 
 
