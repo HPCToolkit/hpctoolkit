@@ -635,7 +635,8 @@ sliceIntelInstructions
 (
  const Dyninst::ParseAPI::CodeObject::funclist &func_set,
  std::vector<GPUParse::Function *> &functions,
- std::string function_name
+ std::string function_name,
+ int threads
 )
 {
   // Build a instruction map
@@ -662,9 +663,8 @@ sliceIntelInstructions
   // Prepare pass: create instruction cache for slicing
   Dyninst::AssignmentConverter ac(true, false);
   Dyninst::Slicer::InsnCache dyn_inst_cache;
-  int threads = 16; // what is the best value to set, and the right way to set it
 
-#pragma omp parallel for schedule(dynamic) firstprivate(ac, dyn_inst_cache) num_threads(threads)
+#pragma omp parallel for schedule(dynamic) firstprivate(ac, dyn_inst_cache) shared(block_vec, inst_stat_map) default(none) num_threads(threads)
   for (size_t i = 0; i < block_vec.size(); ++i) {
     Dyninst::GraphPtr g;
     Dyninst::NodeIterator exit_begin, exit_end;
@@ -675,6 +675,7 @@ sliceIntelInstructions
     dyn_block->enable_latency_blame();
     dyn_block->getInsns(insns);
 
+    // used to keep track of assignments that are already backwardsliced (to avoid redundant computations)
     std::unordered_set<size_t> sliced;
 
     for (auto &inst_iter : insns) {
@@ -683,7 +684,7 @@ sliceIntelInstructions
       auto *inst_stat = inst_stat_map.at(inst_addr);
 
       if (INSTRUCTION_ANALYZER_DEBUG) {
-        std::cout << "try to find inst_addr " << inst_addr << std::endl;
+        //std::cout << "try to find inst_addr " << inst_addr << std::endl;
       }
 
       std::vector<Dyninst::Assignment::Ptr> assignments;
@@ -933,6 +934,7 @@ readIntelCFG
  Dyninst::SymtabAPI::Symtab *the_symtab, 
  bool cfg_wanted,
  bool du_graph_wanted,
+ int jobs,
  Dyninst::ParseAPI::CodeSource **code_src, 
  Dyninst::ParseAPI::CodeObject **code_obj
 )
@@ -970,7 +972,7 @@ readIntelCFG
       size_t delim_loc = elf_filePath.find(delimiter);
       std::string du_filePath = elf_filePath.substr(0, delim_loc + 7);
       du_filePath += ".du";
-      sliceIntelInstructions((*code_obj)->funcs(), functions, function_name);
+      sliceIntelInstructions((*code_obj)->funcs(), functions, function_name, jobs);
       createDefUseEdges(functions, du_filePath);
     }
 

@@ -664,7 +664,7 @@ makeStructure(string filename,
 
       #ifdef ENABLE_IGC
       parsable = readIntelCFG(search_path, elfFile, the_symtab,
-        structOpts.compute_gpu_cfg, structOpts.du_graph, &code_src, &code_obj);
+        structOpts.compute_gpu_cfg, structOpts.du_graph, structOpts.jobs, &code_src, &code_obj);
       #endif // ENABLE_IGC
     } else {
       code_src = new SymtabCodeSource(symtab);
