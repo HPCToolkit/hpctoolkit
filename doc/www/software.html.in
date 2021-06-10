@@ -65,37 +65,19 @@ the hpctoolkit and spack repositories are available on GitHub.
 </ul>
 
 
-<h2>Binary releases for HPCToolkit GUI interfaces (recommended for tool users)</h2>
+<h2><a href="download.html">Binary releases of HPCToolkit's <tt>hpcviewer</tt> graphical user interface (recommended for tool users)</a></h2>
+Note: Trace views provided previously by HPCToolkit's <tt>hpctraceviewer</tt> interface have been integrated into <tt>hpcviewer</tt> in recent releases.
 
-We provide binary releases for these tools.
-
-<ul>
-  <table cellpadding="2" cellspacing="2" border="1" width="100%">
-
-  <tr>
-    <td>
-      <a href="download.html">
-       hpcviewer-&lt;version&gt;-&lt;platform&gt;.tgz</a>
-    </td>
-    <td>
-     Select the appropriate binary releases for your target platforms of choice.  
-    </td>
-  </tr>
-
-  </table>
-</li>
-</ul>
-
-
-<h2>Source code for HPCToolkit GUI interfaces (recommended for tool developers only)</h2>
+<h2>Source code for HPCToolkit's <tt>hpcviewer</tt> graphical user interface (recommended for tool developers only)</h2>
 
 Source code for HPCToolkit's hpcviewer graphical
-user interfaces is available from the
-<a href="https://github.com/HPCToolkit/hpcviewer.e4">HPCViewer repository</a>
+user interface is available from the
+<a href="https://github.com/HPCToolkit/hpcviewer.e4">hpcviewer.e4 repository</a>
 on GitHub.  Unless you are a tool developer who wants to modify the
 capabilities of these graphical user interfaces, we recommend
 downloading the binary releases.
-See the README (<a href="https://github.com/HPCToolkit/hpcviewer.e4/blob/master/README.md">https://github.com/HPCToolkit/hpcviewer.e4/blob/master/README.md</a>) on how to build hpcviewer.
+See the repository's 
+<a href="https://github.com/HPCToolkit/hpcviewer.e4/blob/master/README.md">README.md</a> for information about how to build <tt>hpcviewer</tt> from source code.
 <ul>
   <table cellpadding="2" cellspacing="2" border="1" width="100%">
   <tr>
