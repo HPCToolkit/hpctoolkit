@@ -7,6 +7,65 @@
 
 %% Saved with string encoding Unicode (UTF-8) 
 
+@inproceedings{10.1145/3437801.3441604, 
+author = {Meng, Xiaozhu and Anderson, Jonathon M. and Mellor-Crummey, John and Krentel, Mark W. and Miller, Barton P. and Milakovic, Srdan}, 
+title = {Parallel Binary Code Analysis}, 
+year = {2021}, 
+isbn = {9781450382946}, 
+publisher = {Association for Computing Machinery}, 
+address = {New York, NY, USA}, 
+url = {https://doi.org/10.1145/3437801.3441604}, 
+doi = {10.1145/3437801.3441604}, 
+abstract = {Binary code analysis is widely used to help assess a program's correctness, performance, and provenance. Binary analysis applications often construct control flow graphs, analyze data flow, and use debugging information to understand how machine code relates to source lines, inlined functions, and data types. To date, binary analysis has been single-threaded, which is too slow for convenient use in performance tuning workflows where it is used to help attribute performance to complex applications with large binaries.This paper describes our design and implementation for accelerating the task of constructing control flow graphs (CFGs) from binaries by using multithreading. Prior research focuses on algorithms for analysis of challenging code constructs encountered while constructing CFGs, including functions sharing code, jump tables, non-returning functions, and tail calls. These algorithms are described from a program analysis perspective and are not suitable for direct parallel implementation. We abstract the task of constructing CFGs as repeated applications of several core CFG operations that include creating functions, basic blocks, and edges. We then derive CFG operation dependency, commutativity, and monotonicity. These operation properties guide our design of a new parallel analysis for constructing CFGs. Using 64 threads, we achieved as much as 25\texttimes{} speedup for constructing CFGs and 8\texttimes{} for a performance analysis tool that leverages our new analysis to recover program structure.}, 
+booktitle = {Proceedings of the 26th ACM SIGPLAN Symposium on Principles and Practice of Parallel Programming}, 
+pages = {76–89}, 
+numpages = {14}, 
+keywords = {performance analysis, operation dependencies and properties, control flow graph construction}, 
+location = {Virtual Event, Republic of Korea}, 
+series = {PPoPP '21} }
+
+@INPROCEEDINGS{9355258,
+author = {K. Zhou and Y. Hao and J. Mellor-Crummey and X. Meng and X. Liu},
+booktitle = {2020 {SC20}: International Conference for High Performance Computing, Networking, Storage and Analysis (SC)},
+title = {{GVPROF}: A Value Profiler for GPU-Based Clusters},
+year = {2020},
+volume = {},
+issn = {},
+pages = {1-16},
+keywords = {redundancy;graphics processing units;machine learning;production;kernel;optimization;monitoring},
+doi = {10.1109/SC41405.2020.00093},
+url = {https://doi.ieeecomputersociety.org/10.1109/SC41405.2020.00093},
+publisher = {IEEE Computer Society},
+address = {Los Alamitos, CA, USA},
+month = {nov}
+}
+
+@INPROCEEDINGS{9307876,
+  author={Sai, Ryuichi and Mellor-Crummey, John and Meng, Xiaozhu and Araya-Polo, Mauricio and Meng, Jie},
+  booktitle={2020 IEEE/ACM Performance Modeling, Benchmarking and Simulation of High Performance Computer Systems (PMBS)}, 
+  title={Accelerating High-Order Stencils on GPUs}, 
+  year={2020},
+  volume={},
+  number={},
+  pages={86-108},
+  doi={10.1109/PMBS51919.2020.00014}}
+
+
+@inproceedings{10.1145/3392717.3392752, 
+author = {Zhou, Keren and Krentel, Mark W. and Mellor-Crummey, John}, 
+title = {Tools for Top-down Performance Analysis of {GPU}-Accelerated Applications}, 
+year = {2020}, isbn = {9781450379830}, 
+publisher = {Association for Computing Machinery}, 
+address = {New York, NY, USA}, url = {https://doi.org/10.1145/3392717.3392752}, 
+doi = {10.1145/3392717.3392752}, 
+abstract = {This paper describes extensions to Rice University's HPCToolkit performance tools to support measurement and analysis of GPU-accelerated applications. To help developers understand the performance of accelerated applications as a whole, HPCToolkit's measurement and analysis tools attribute metrics to calling contexts that span both CPUs and GPUs. To measure GPU-accelerated applications efficiently, HPCToolkit employs a novel wait-free data structure to coordinate monitoring and attribution of GPU performance metrics. To help developers understand the performance of complex GPU code generated from high-level programming models, HPCToolkit's hpcprof constructs sophisticated approximations of call path profiles for GPU computations. To support fine-grain analysis and tuning, HPCToolkit attributes GPU performance metrics to source lines and loops. Also, HPCToolkit uses GPU PC samples to derive and attribute a collection of useful GPU performance metrics. We illustrate HPCToolkit's new capabilities for analyzing GPU- accelerated applications with three case studies.}, 
+booktitle = {Proceedings of the 34th ACM International Conference on Supercomputing}, 
+articleno = {26}, 
+numpages = {12}, 
+keywords = {GPU, wait-free, roofline, calling context tree, profiler, HPC}, 
+location = {Barcelona, Spain}, 
+series = {ICS '20} }
+
 @inproceedings{10.5555/3433701.3433819,
 	author = {Zhou, Keren and Hao, Yueming and Mellor-Crummey, John and Meng, Xiaozhu and Liu, Xu},
 	title = {{GVProf}: A Value Profiler for {GPU}-Based Clusters},

@@ -63,6 +63,10 @@ HPCToolkit: Tools for performance analysis of optimized parallel programs.
 <!-- BEGIN CITATIONS pubs-hpctoolkit-a -->
 <!-- 
     
+     \citation{10.1145/3437801.3441604}
+     \citation{9355258}
+     \citation{9307876}
+     \citation{10.1145/3392717.3392752}
      \citation{10.5555/3433701.3433819}
      \citation{10.1145/3332466.3374534}
      \citation{zhou2020gpa}
