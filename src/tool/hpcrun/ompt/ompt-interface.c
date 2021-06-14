@@ -477,14 +477,11 @@ init_threads
  void
 )
 {
-  int retval;
-  retval = ompt_set_callback_fn(ompt_callback_thread_begin,
-		    (ompt_callback_t)ompt_thread_begin);
-  assert(ompt_event_may_occur(retval));
+  ompt_set_callback_fn
+    (ompt_callback_thread_begin, (ompt_callback_t)ompt_thread_begin);
 
-  retval = ompt_set_callback_fn(ompt_callback_thread_end,
-		    (ompt_callback_t)ompt_thread_end);
-  assert(ompt_event_may_occur(retval));
+  ompt_set_callback_fn
+    (ompt_callback_thread_end, (ompt_callback_t) ompt_thread_end);
 }
 
 

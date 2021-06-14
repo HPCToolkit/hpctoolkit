@@ -1,5 +1,5 @@
 ----------------------------------------
-HPCToolkit 2021.05.01 
+HPCToolkit 2021.05.15 
 ----------------------------------------
 
 Bug fixes
@@ -13,6 +13,8 @@ Bug fixes
         sample
       - fix initialization of control knobs when a process forks but
         does not exec
+      - add a timeout to interrupt a hung cuptiActivityFlushAll and so a program
+        can terminate and write out all performance data already collected.
     Intel GPUs
       - always dump Intel GPU binaries so we can extract kernel names 
         even if not using GTPin binary instrumentation
@@ -24,9 +26,47 @@ Bug fixes
   hpcstruct
     - correct reconstruction of loop nests for Intel GPU binaries
 
+  hpcviewer
+    - Fix issue #80 and #81 (null pointer exception for empty databases)
+    - Fix issue #79 (CCT filter on the trace view, preserve tree expansion)
+    - Fix issue #73 (sort direction is not shown on Linux for the first appearance)
+    - Fix issue #75 (closing only a window in multiple windows mode)
+    - Fix issue #74 (no sort direction on Linux/GTK)
+    - Fix issue #85 (keyboard shortcut to minimize the window)
+    - Fix filtering CCT nodes for thread views
+    - Fix hot path to select the child node instead of the parent
+    - Fix merging GPU databases which contain aggregate and derived metrics 
+      by deep copying the metric descriptors.
+    - Fix build script to include notarization for mac
+    - Fix storing recent open database: store the absolute path, not the relative one.
+    - Fix SWT resource leaks
+    - Fix flickering issue on Windows when splitting the hpcviewer window.
+    - Fix trace view’s color map changes to also refresh other panes and windows
+    - Fix Find dialog layout on Linux/GTK
+    - Fix merging GPU databases 
+    - Fix a procedure-color mapping bug in the trace view
+    - Partial fix issue 42: Fix a performance bug when sorting a table
+
+Improvements
+
+  hpcviewer
+    - Improve the performance of hot-path operation by not re-revealing the tree path.
+    - Default window size is 1400x1000 or the screen size
+    - Trace view: Move depth field into a separate pane so users can change the depth easily 
+      even when call stack view is not visible.
+    - Reduce memory consumption.
+    - Use Java XML parser to slightly improve XML parsing performance and avoid using 
+      the old Apache xerces. 
+    - Code clean-up, remove dead code and remove unused variables
+    - Issue 77: Add support for different color mapping policy in the trace view. 
+      Default: procedure-name color instead of random color.
+    - Warn users when filtering is enabled 
+    - Default is to build with Eclipse 4.19 (2021.03) except for Linux 
+      ppc64le (built with Eclipse 4.16). Some fixes include improved dark color theme.
+      
   dotgraph
     - enhance dotgraph to dump control flow graphs for GPU binaries
-      
+
 
 ----------------------------------------
 HPCToolkit 2021.03.01 

@@ -190,6 +190,7 @@ public:
 
 #define Analysis_OUT_DB_EXPERIMENT "experiment.xml"
 #define Analysis_OUT_DB_CSV        "experiment.csv"
+#define Analysis_OUT_DB_DTD        "experiment.dtd"
 
 #define Analysis_DB_DIR_pfx        "hpctoolkit"
 #define Analysis_DB_DIR_nm         "database"

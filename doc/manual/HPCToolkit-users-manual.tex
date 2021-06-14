@@ -120,7 +120,7 @@
 % ***************************************************************************
 % ***************************************************************************
 
-\title{\HPCToolkit{} User's Manual\\[.5in]Version 2021.03.01}
+\title{\HPCToolkit{} User's Manual\\[.5in]Version 2021.05.15}
 %\subtitle{}
 
 \author{John Mellor-Crummey,\\
@@ -135,7 +135,7 @@ Rice University\\
 %For \HPCToolkit{} 5.3.2 ($Revision$)
 }
 
-\date{March 01, 2021}
+\date{May 15, 2021}
 
 \maketitle
 
@@ -1494,21 +1494,28 @@ measuring performance with \HPCToolkit{}.
 
 To cope with {\tt gprof} instrumentation in dynamically-linked programs, you can use \hpcrun{}'s \verb|--disable-gprof| option.
 
-
-% ===========================================================================
-% ===========================================================================
-
-
-
-
 % ===========================================================================
 % ===========================================================================
 
 \section{Measurement Failures using NVIDIA GPUs}
 
+\subsection{Deadlock while monitoring a program that uses IBM Spectrum MPI and NVIDIA GPUs}
+
+IBM's Spectrum MPI uses a special library {\tt libpami\_cudahook.so} to intercept allocations of GPU memory so that Spectrum MPI knows when data is allocated on an NVIDIA GPU. 
+Unfortunately, the mechanism used by Spectrum MPI to do so (wrapping {\tt dlsym}) interferes with performance tools that use {\tt dlopen} and {\tt dlsym}. 
+This interference causes measurement of a GPU-accelerated MPI application using HPCToolkit to deadlock when an application uses both Spectrum MPI and and CUDA on an NVIDIA GPU. 
+
+To avoid this deadlock on systems when launching a program that uses Spectrum MPI with  {\tt jsrun}, use {\tt --smpiargs="-x PAMI\_DISABLE\_CUDA\_HOOK=1 -disable\_gpu\_hooks"} to disable the PAMI CUDA hook library.  
+These flags  cannot be used with the {\tt -gpu} flag. 
+
+Note however that disabling Spectrum MPI's CUDA hook will cause trouble if CUDA device memory is passed into the MPI library as a send or receive buffer. 
+An additional restriction is that memory obtained with a call to {\tt cudaMallocHost} may not be passed as a send or receive buffer. 
+Functionally similar memory may be obtained with any host allocation function followed by a call the {\tt cudaHostRegister}. 
+
+% ===========================================================================
+% ===========================================================================
+
 \subsection{Ensuring permission to use GPU performance counters}
-
-
 
 Your Administrator or a recent NVIDIA driver installation may have disabled access to GPU Performance due to Security Notice: NVIDIA Response to ``Rendered Insecure: GPU Side Channel Attacks are Practical'' \url{https://nvidia.custhelp.com/app/answers/detail/a_id/4738} - November 2018.
 If that is the case, HPCToolkit cannot access NVIDIA GPU performance counters when using a Linux 418.43 or later driver. This may cause an error message when you try to use PC sampling on an NVIDIA GPU.
@@ -1746,7 +1753,26 @@ To fix this, set the permission of the library to 0755, and launch again the vie
 % ===========================================================================
 % ===========================================================================
 
-\subsection{On my Mac, \hpcviewer{} runs on Java $X$ instead of ``Java 11"}
+\section{Launching \hpcviewer{} is very slow on Windows}
+
+There is a known issue that Windows Defender significantly slow down Java-based applications.
+See the github issue at \url{https://github.com/microsoft/java-wdb/issues/9}.
+
+A temporary solution is to add \hpcviewer{} in the Windows' exclusion list:
+\begin{enumerate}
+  \item Open Windows 10 settings.
+  \item Search for "Virus and threat protection" and open it.
+  \item Now click on "Manage settings" under "Virus and threat protection settings" section.
+  \item Now click "Add or remove exclusions" under "Exclusions" section.
+  \item Now click "Add an exclusion" then select "Folder"
+  \item Point to \hpcviewer{} directory and press "Select Folder"
+\end{enumerate}
+
+
+% ===========================================================================
+% ===========================================================================
+
+\section{Mac only: \hpcviewer{} runs on Java $X$ instead of ``Java 11"}
 
 \hpcviewer{} has only been tested on Java 11. If you are running an older or newer version of Java than Java 11, obtain a version of Java 11 from \url{https://adoptopenjdk.net}.
 

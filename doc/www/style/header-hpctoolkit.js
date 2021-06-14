@@ -9,14 +9,15 @@ document.write('\
   <div style="position: relative; margin-top: 60px; width: 100%; text-align: right;"> \
   <p style="margin: 0px; font-size: small;"> \
     [ <a href="index.html">Home</a> \
-    | <a href="overview.html">Overview</a> \
-    | <a href="publications.html">Publications</a> ] \
+      | <a href="overview.html">Overview</a> \
+      | <a href="publications.html">Publications</a> \
+      | <a href="software.html">Software/Downloads</a> ] \
     &bull; \
-    [ <a href="software.html">Software/Downloads</a> \
-    | <a href="documentation.html">Documentation/Questions</a> ] \
+    [ <a href="documentation.html">Documentation/Questions</a> \
+      | <a href="training.html">Training Videos and Slides</a> ] \
     &bull; \
-    [ <a href="info-people.html">People</a> | \
-      <a href="info-acks.html">Acks</a> ] \
+    [ <a href="info-people.html">People</a> \
+      | <a href="info-acks.html">Acks</a> ] \
   </p> \
   </div> \
   <div style="width: 100%;"> \
