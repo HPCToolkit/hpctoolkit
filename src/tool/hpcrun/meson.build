@@ -183,6 +183,7 @@ _srcset.add([
     'utilities/hpcrun-nanotime.c',
     'utilities/ip-normalized.c',
     'utilities/line_wrapping.c',
+    'utilities/linuxtimer.c',
     'utilities/timer.c',
     'utilities/tokenize.c',
     'utilities/unlink.c',

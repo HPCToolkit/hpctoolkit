@@ -52,6 +52,7 @@ _srcs = [files(
   'examples.html',
   'overview.html',
   'software.html',
+  'training.html',
 
   'info-acks.html',
   'info-people.html',
