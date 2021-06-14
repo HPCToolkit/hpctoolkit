@@ -157,7 +157,7 @@ In <cite>2021 IEEE/ACM International Symposium on Code Generation and
   Y.&nbsp;Hao, J.&nbsp;Mellor-Crummey,
   X.&nbsp;Meng, and X.&nbsp;Liu.
 <a href="https://doi.ieeecomputersociety.org/10.1109/SC41405.2020.00093">GVPROF:
-  A value profiler for gpu-based clusters</a>.
+  A value profiler for GPU-based clusters</a>.
 In <cite>2020 SC20: International Conference for High Performance Computing,
   Networking, Storage and Analysis (SC)</cite>, pages 1&ndash;16, Los Alamitos, CA,
   USA, nov 2020. IEEE Computer Society.
@@ -168,7 +168,7 @@ In <cite>2020 SC20: International Conference for High Performance Computing,
 <dt><a name="9307876">[4]</a></dt><dd>Ryuichi Sai,
   John Mellor-Crummey, Xiaozhu Meng,
   Mauricio Araya-Polo, and Jie Meng.
-Accelerating high-order stencils on GPUs.
+Accelerating high-order stencils on gpus.
 In <cite>2020 IEEE/ACM Performance Modeling, Benchmarking and Simulation of
   High Performance Computer Systems (PMBS)</cite>, pages 86&ndash;108, 2020.
 (<a href="http://dx.doi.org/10.1109/PMBS51919.2020.00014">doi:10.1109/PMBS51919.2020.00014</a>)</dd>
