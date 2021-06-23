@@ -102,9 +102,9 @@
 #include "blame-shift/blame-shift.h"
 
 #include <hpcrun/gpu/blame-shifting/blame.h>
-#if defined(ENABLE_CUDA) || defined(ENABLE_OPENCL)
+#if defined(ENABLE_CUDA)
 #include "cpu_gpu_idle.h"
-#endif // ENABLE_CUDA || ENABLE_OPENCL
+#endif // ENABLE_CUDA
 
 #ifdef ENABLE_OPENCL
 #include <hpcrun/gpu/opencl/opencl-api.h>
