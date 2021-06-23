@@ -590,30 +590,18 @@ void Metric::finalize(Thread::Temporary& t) noexcept {
   util::optional_ref<const Context> global;
   std::unordered_map<util::reference_index<const Context>,
     std::unordered_set<util::reference_index<const Context>>> children;
-  {
-    std::vector<std::reference_wrapper<const Context>> newContexts;
-    newContexts.reserve(t.data.size());
-    for(const auto& cx: t.data.citerate()) newContexts.emplace_back(cx.first.get());
-    while(!newContexts.empty()) {
-      decltype(newContexts) next;
-      next.reserve(newContexts.size());
-      for(const Context& c: newContexts) {
-        if(c.direct_parent() == nullptr) {
-          //util::log::debug{true} << "scope: " << c.scope() << ", address: " << &c;
-          if(global == decltype(global)(c)) continue;
-          if(global) {
-            util::log::fatal{} << "Multiple root contexts???";
-          }
-          global = c;
-          continue;
-        }
-        auto x = children.emplace(*c.direct_parent(),
-                                  decltype(children)::mapped_type{});
-        if(x.second) next.push_back(*c.direct_parent());
-        x.first->second.emplace(c);
-      }
-      next.shrink_to_fit();
-      newContexts = std::move(next);
+  for(const auto& cx: t.data.citerate()) {
+    std::reference_wrapper<const Context> c = cx.first.get();
+    while(auto p = c.get().direct_parent()) {
+      auto x = children.insert({*p, {}});
+      x.first->second.emplace(c.get());
+      if(!x.second) break;
+      c = *p;
+    }
+    if(!c.get().direct_parent()) {
+      assert((!global || global == &c.get()) && "Multiple root contexts???");
+      assert(c.get().scope().type() == Scope::Type::global && "Root context without (global) Scope!");
+      global = c.get();
     }
   }
   if(!global) return;  // Apparently there's nothing to propagate
