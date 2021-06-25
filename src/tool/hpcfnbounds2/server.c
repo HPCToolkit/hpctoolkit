@@ -263,13 +263,6 @@ send_cached_funcs (int fdcache)
     errx(1, "fdcache - Server fnb_into write_all to fdout failed - failed loading in");}
   ret = write_all(fdout, &fnb_info_cache, sizeof(fnb_info_cache));  
 
-  //write a footer
-  char * ftr[7];
-  ret = read_all(fdcache, ftr, 6);
-  if (ret != SUCCESS || (ret == SUCCESS && strcmp(ftr, "footer") != 0)){ 
-    errx(1, "Server write footer to fdcache failed");
-  }
-
 }
 
 
@@ -432,12 +425,6 @@ send_funcs (int fdcache)
     if (ret != SUCCESS) {
       err(1, "Server fnb_into write_all to fdcache failed");
     } 
-
-    //write a footer
-    ret = write_all(fdcache, "footer", 6);
-    if (ret != SUCCESS){ 
-      errx(1, "Server write footer to fdcache failed");
-    }
   }
 }
 

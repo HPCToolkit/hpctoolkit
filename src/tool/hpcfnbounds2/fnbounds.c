@@ -228,20 +228,25 @@ fnbounds_create
 ) 
 {
   int success = 0;
-  char * ret;
+  char *ret;
 
-  int fdcache = open(cached_loadmodule_pathname, O_CREAT | O_RDWR, RW_R__R__);
+  char tmp_name[strlen(cached_loadmodule_pathname) + 8];
+  sprintf(tmp_name, "%s%d", cached_loadmodule_pathname, (int)getpid());
+  //int fdcache = mkstemp(tmp_name);
+  int fdcache = open(tmp_name, O_CREAT | O_RDWR, RW_R__R__);
+
   if (fdcache == -1) {
     // the open failed
-     sprintf( "open %s as %s failed -- %s", loadmodule_pathname, cached_loadmodule_pathname, strerror(errno) );
+     printf( "open %s as %s failed -- %s", loadmodule_pathname, cached_loadmodule_pathname, strerror(errno) );
   }else{
     success = 1;
     success &= get_funclist(loadmodule_pathname, fdcache) == NULL;
-    close (fdcache);
+    success &= close (fdcache) == 0;
+    success &= rename(tmp_name, cached_loadmodule_pathname) == 0;
   }
 
-  //printf("cache write (%s) of %s\n", success ? "success" : "failure", 
-	// cached_loadmodule_pathname); 
+  printf("cache write (%s) of %s\n", success ? "success" : "failure", 
+	 cached_loadmodule_pathname); 
 
   return success;
 }
@@ -256,14 +261,6 @@ get_cached_funclist(char *name)
   if(avail == 2){ 
     // file already exist
     int fdcache = open(cached_loadmodule_pathname_get(name), O_RDONLY);
-
-    // make sure the file is complete
-    char * res[7];// = (char *) malloc (sizeof(char) * 6);
-    do{
-      lseek(fdcache, -6, SEEK_END);
-      memset(res, 0, 7);  
-      read(fdcache, res, 6);
-    }while(strcmp(res,"footer"));
 
     // send the cached results
     send_cached_funcs(fdcache);
