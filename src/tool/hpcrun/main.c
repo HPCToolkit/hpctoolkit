@@ -47,7 +47,7 @@
 //***************************************************************************
 // system include files 
 //***************************************************************************
-
+#define _GNU_SOURCE
 #include <sys/types.h>
 #include <pthread.h>
 #include <unistd.h>
@@ -58,6 +58,18 @@
 #include <dlfcn.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include <sys/syscall.h>
+
+pid_t gettid(){
+  #ifdef SYS_gettid
+pid_t tid = syscall(SYS_gettid);
+#else
+#error "SYS_gettid unavailable on this system"
+#endif
+  return tid;
+}
+
 
 #ifdef LINUX
 #include <linux/unistd.h>
@@ -169,6 +181,7 @@ extern void hpcrun_dump_intervals(void* addr);
     assert(0 && "entry into hpctoolkit prior to initialization");
 #endif
 
+pthread_mutex_t l = PTHREAD_MUTEX_INITIALIZER;
 
 //***************************************************************************
 // local data types. Primarily for passing data between pre_PHASE, PHASE, and post_PHASE
@@ -450,6 +463,12 @@ hpcrun_init_internal(bool is_child)
 
   hpcrun_trace_init(); // this must go after thread initialization
   hpcrun_trace_open(&(TD_GET(core_profile_trace_data)));
+  /*
+  uint64_t start_time = hpcrun_nanotime();
+  hpcrun_trace_open(&(TD_GET(core_profile_trace_data)));
+  uint64_t end_time = hpcrun_nanotime();
+  printf("SETUP TIME: trace open: %ld nanoseconds\n", (end_time - start_time));
+  */
 
   // Decide whether to retain full single recursion, or collapse recursive calls to
   // first instance of recursive call
@@ -692,7 +711,10 @@ hpcrun_fini_internal()
     hpcrun_id_tuple_cputhread(td);
 
     // write all threads' profile data and close trace file
+    //uint64_t start_time = hpcrun_nanotime();
     hpcrun_threadMgr_data_fini(hpcrun_get_thread_data());
+    //uint64_t end_time = hpcrun_nanotime();
+    //printf("FILE WRITING TIME: fini: %ld nanoseconds\n", (end_time - start_time));
 
     fnbounds_fini();
     hpcrun_stats_print_summary();
@@ -856,6 +878,7 @@ hpcrun_wait()
 void*
 monitor_init_process(int *argc, char **argv, void* data)
 {
+  //uint64_t start_setup = hpcrun_nanotime();
   char* process_name;
   char  buf[PROC_NAME_LEN];
 
@@ -972,6 +995,9 @@ monitor_init_process(int *argc, char **argv, void* data)
 
   hpcrun_init_internal(is_child);
 
+  //uint64_t end_setup = hpcrun_nanotime();
+  //printf("SETUP TIME: monitor process init: %ld nanoseconds %f seconds\n", (end_setup - start_setup), (end_setup - start_setup)/(double)1000000000);
+
   if (ENABLED(TST)){
     EEMSG("TST debug ctl is active!");
     STDERR_MSG("Std Err message appears");
@@ -998,6 +1024,8 @@ monitor_fini_process(int how, void* data)
   hpcrun_fini_internal();
 
   hpcrun_safe_exit();
+
+  //check_cpuset();
 }
 
 void
@@ -1266,6 +1294,8 @@ monitor_fini_thread(void* init_thread_data)
   epoch_t *epoch = (epoch_t *)init_thread_data;
   hpcrun_thread_fini(epoch);
   hpcrun_safe_exit();
+
+  //check_cpuset();
 }
 
 
@@ -1750,3 +1780,37 @@ cplus_demangle(char *str, int opts)
 
 #endif
 
+void check_cpuset()
+{
+  cpu_set_t new_set;        
+  sched_getaffinity(0, sizeof(cpu_set_t), &new_set);
+
+  FILE *fptr;
+  char filename[25];
+  cpu_set_t *cs = &new_set;
+  int j;
+  pthread_mutex_lock(&l);
+
+  sprintf(filename, "cpu_%d.txt", getpid());
+  fptr = fopen(filename, "a");
+
+#if 1
+  unsigned cpu, numanode;
+  syscall(SYS_getcpu, &cpu, &numanode, NULL);
+  printf("(location: numanode %u, thread %u)", numanode, cpu);
+#endif
+
+  fprintf(fptr, "(%ld, %ld): {", getpid(), gettid());
+  char *space="";
+  for (j = 0; j < CPU_SETSIZE; j++) 
+    if (CPU_ISSET(j, cs)) {
+       fprintf(fptr, "%s%d", space, j);
+       space =" ";
+    }
+  fprintf(fptr, "} \n");
+
+  fclose(fptr);
+
+
+  pthread_mutex_unlock(&l);
+}

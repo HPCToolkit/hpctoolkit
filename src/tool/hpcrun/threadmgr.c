@@ -312,7 +312,10 @@ hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data, bo
   // -----------------------------------------------------------------
 
   if (!is_compact_thread() || demand_new_thread) {
+    //uint64_t start_time = hpcrun_nanotime();
     *data = allocate_and_init_thread_data(id, thr_ctxt, has_trace);
+    //uint64_t end_time = hpcrun_nanotime();
+    //printf("SETUP TIME: not compact: %ld nanoseconds\n", (end_time - start_time));
     return true;
   }
 
@@ -326,9 +329,11 @@ hpcrun_threadMgr_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_t **data, bo
   bool need_to_allocate = (*data == NULL);
 
   if (need_to_allocate) {
-
+    //uint64_t start_time = hpcrun_nanotime();
     adjust_num_logical_threads(1);
     *data = allocate_and_init_thread_data(id, thr_ctxt, has_trace);
+    //uint64_t end_time = hpcrun_nanotime();
+    //printf("SETUP TIME: need to allocate: %ld nanoseconds\n", (end_time - start_time));
   }
 
 #if HPCRUN_THREADS_DEBUG

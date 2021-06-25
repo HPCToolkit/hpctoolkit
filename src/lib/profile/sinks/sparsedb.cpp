@@ -1300,14 +1300,22 @@ std::vector<char> SparseDB::cmbBytes(const CtxMetricBlock& cmb, const uint32_t& 
   std::map<uint16_t, MetricValBlock> metrics = cmb.metrics;
   auto bytes = std::move(mvbsBytes(metrics));
 
+  auto s1 = bytes.size();
+
   //convert MetricValBlocks to metric Id & Idx pairs bytes
   auto miip_bytes = std::move(metIdIdxPairsBytes(metrics));
   bytes.insert(bytes.end(), miip_bytes.begin(), miip_bytes.end());
+ 
+  //auto s2 = bytes.size();
+  //auto s3 = metrics.size();
+  //auto s4 = miip_bytes.size();
+
+ // printf("s1 %d = num_vals %d, s4 % ld = num nzmids %d, all size %d\n", s1, s1/CMS_val_prof_idx_pair_SIZE, s4, s3, s2);
 
   //check if the previous calculations for offsets and newly collected data match
   if(ctx_off[ctx_id] + bytes.size() !=  ctx_off[ctx_id+1]){
     util::log::fatal() << __FUNCTION__ << ": (ctx id: " << ctx_id
-       << ") (num_vals: " << bytes.size()/CMS_val_prof_idx_pair_SIZE
+       << ") (num_vals: " << s1/CMS_val_prof_idx_pair_SIZE
        << ") (num_nzmids: " << metrics.size()
        << ") (ctx_off: " << ctx_off[ctx_id]
        << ") (next_ctx_off: " << ctx_off[ctx_id + 1] << ")";

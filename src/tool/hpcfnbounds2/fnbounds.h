@@ -63,6 +63,8 @@
 #include 	<dwarf.h>
 #include	<sys/auxv.h>
 #include	"code-ranges.h"
+#include  <lib/prof-lean/fnbounds-cache.h>
+#include  <lib/prof-lean/file-permissions.h>
 
 // Local typedefs
 typedef struct Function {
@@ -73,9 +75,10 @@ typedef struct Function {
 } Function_t;
 
 // prototypes
-char	*get_funclist(char *);
-char	*process_vdso();
-char	*process_mapped_header(Elf *e);
+char	*get_cached_funclist(char *);
+char	*get_funclist(char *, int);
+char	*process_vdso(int);
+char	*process_mapped_header(Elf *e, int);
 void	print_funcs();
 void	write_cc_funcs();
 void	add_function(uint64_t, char *, char *, uint8_t);

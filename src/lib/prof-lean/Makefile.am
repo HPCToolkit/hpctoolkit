@@ -71,6 +71,8 @@ include $(top_srcdir)/src/Makeinclude.config
 #############################################################################
 
 MYSOURCES = \
+    file-permissions.h file-permissions.c \
+	fnbounds-cache.h fnbounds-cache.c \
 	hpcrun-metric.h \
 	\
 	hpcrun-fmt.h hpcrun-fmt.c \

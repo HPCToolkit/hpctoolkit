@@ -53,7 +53,8 @@
 
 uint64_t	init_server(DiscoverFnTy, int, int);
 void	do_query(DiscoverFnTy , struct syserv_mesg *);
-void  send_funcs();
+void  send_cached_funcs (int);
+void  send_funcs(int);
 
 void	signal_handler_init();
 int	read_all(int, void*, size_t);

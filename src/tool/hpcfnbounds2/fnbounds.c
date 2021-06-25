@@ -203,7 +203,10 @@ main(int argc, char **argv, char **envp)
      if (verbose) {
        fprintf(stderr, "\nFNB2: Begin processing load-object %s\n", *p);
      }
-     ret = get_funclist (*p);
+
+     //ret = get_funclist (*p);
+     ret = get_cached_funclist(*p);
+
      if ( ret != NULL) {
        fprintf(stderr, "\nFNB2: Failure processing load-object %s: %s\n", *p, ret );
      } else {
@@ -217,8 +220,71 @@ main(int argc, char **argv, char **envp)
   return 0;
 }
 
+int 
+fnbounds_create
+(
+ const char *loadmodule_pathname, 
+ const char *cached_loadmodule_pathname
+) 
+{
+  int success = 0;
+  char * ret;
+
+  int fdcache = open(cached_loadmodule_pathname, O_CREAT | O_RDWR, RW_R__R__);
+  if (fdcache == -1) {
+    // the open failed
+     sprintf( "open %s as %s failed -- %s", loadmodule_pathname, cached_loadmodule_pathname, strerror(errno) );
+  }else{
+    success = 1;
+    success &= get_funclist(loadmodule_pathname, fdcache) == NULL;
+    close (fdcache);
+  }
+
+  //printf("cache write (%s) of %s\n", success ? "success" : "failure", 
+	// cached_loadmodule_pathname); 
+
+  return success;
+}
+
+struct fnbounds_create_t fnbounds_creator = { fnbounds_create };
+
 char *
-get_funclist(char *name)
+get_cached_funclist(char *name)
+{
+
+  int avail = fnbounds_cache_insert(name, &fnbounds_creator);
+  if(avail == 2){ 
+    // file already exist
+    int fdcache = open(cached_loadmodule_pathname_get(name), O_RDONLY);
+
+    // make sure the file is complete
+    char * res[7];// = (char *) malloc (sizeof(char) * 6);
+    do{
+      lseek(fdcache, -6, SEEK_END);
+      memset(res, 0, 7);  
+      read(fdcache, res, 6);
+    }while(strcmp(res,"footer"));
+
+    // send the cached results
+    send_cached_funcs(fdcache);
+
+    // close the cache file 
+    close(fdcache);
+
+    return NULL;
+  }
+
+  if(avail == 1) return NULL;
+
+
+  // no cache directory or the previous get_funclist didn't work
+  return get_funclist(name, -1);
+
+}
+
+
+char *
+get_funclist(char *name, int fdcache)
 {
   int fd;
   char  *ret = NULL;
@@ -252,7 +318,7 @@ get_funclist(char *name)
 
   // Special-case the name "[vdso]"
   if (strcmp (name, "[vdso]") == 0 ) {
-    ret = process_vdso();
+    ret = process_vdso(fdcache);
     cleanup();
     return ret;
   }
@@ -284,7 +350,7 @@ get_funclist(char *name)
   // ret points to either a char error buffer or is NULL,
   // in which case just return it to indicate success
   //
-  ret = process_mapped_header(e);
+  ret = process_mapped_header(e, fdcache);
 
   cleanup();
   (void) elf_end(e);
@@ -314,7 +380,7 @@ cleanup()
 }
 
 char  *
-process_vdso()
+process_vdso(int fdcache)
 {
   Elf *e = (Elf *)getauxval(AT_SYSINFO_EHDR);
 #if 1
@@ -327,13 +393,13 @@ process_vdso()
     return ebuf2;
   }
 #endif
-  char* ret = process_mapped_header(e);
+  char* ret = process_mapped_header(e, fdcache);
   return ret;
 }
 
 // process_mapped_header -- verify the header, and read the functions
 char *
-process_mapped_header(Elf *lelf)
+process_mapped_header(Elf *lelf, int fdcache)
 {
   int i;
   size_t secHeadStringIndex,nsec;
@@ -352,7 +418,6 @@ process_mapped_header(Elf *lelf)
   char elfclass;
 
   // verify the header is as it should be
-
   if (gelf_getehdr(lelf, &ehdr) == NULL) {
     sprintf(ebuf2,"%s %s\n", elfGenericErr, elf_errmsg(-1));
     return ebuf2;
@@ -544,12 +609,12 @@ process_mapped_header(Elf *lelf)
 #endif
 
   // We have the complete function table, now sort it
-  qsort( (void *)farray, nfunc, sizeof(Function_t), &func_cmp );
+  qsort( (void *)farray, nfunc, sizeof(Function_t), &func_cmp ); //temporary commented
 
   // output the result
   if (server_mode != 0) {
     // send list to server
-    send_funcs();
+    send_funcs(fdcache);
   } else {
     // Print the function list
     print_funcs();

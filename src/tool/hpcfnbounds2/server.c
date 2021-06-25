@@ -200,7 +200,10 @@ do_query(DiscoverFnTy fn_discovery, struct syserv_mesg *mesg)
   if (verbose) {
     fprintf(stderr, "FNB2: begin processing %s -- %s\n", strrchr(inbuf, '/'), inbuf );
   }
-  ret = get_funclist(inbuf);
+
+  //ret = get_funclist(inbuf);
+  ret = get_cached_funclist(inbuf);
+
   if ( ret != NULL) {
     fprintf(stderr, "\nFNB2: Server failure processing %s: %s\n", inbuf, ret );
 
@@ -214,10 +217,58 @@ do_query(DiscoverFnTy fn_discovery, struct syserv_mesg *mesg)
 }
 
 
-
-// Send the list of functions to the client
+// Send the list of functions to the client from the cache
 void
-send_funcs ()
+send_cached_funcs (int fdcache)
+{
+  int ret;
+  lseek(fdcache, 0, SEEK_SET);
+
+  // send the OK mesg with the count of addresses
+  struct syserv_mesg mesg;
+  memset(&mesg, 0, sizeof(mesg));
+  ret = read_all(fdcache, &mesg, sizeof(mesg));
+  if (ret != SUCCESS || (ret == SUCCESS && mesg.magic != SYSERV_MAGIC)) {
+    ret = FAILURE;
+    errx(1, "Server write to fdout failed - failed loading from fdcache");
+    return;
+  } 
+  ret = write_mesg(mesg.type, mesg.len);
+  if (ret != SUCCESS) {
+    errx(1, "Server write to fdout failed");
+  }
+ 
+
+  // send the list of unique addresses
+  uint64_t cache_addr_buf[ADDR_SIZE];
+  num_addrs = mesg.len;
+  ret = read_all(fdcache, cache_addr_buf, num_addrs * sizeof(void *));
+  if (ret != SUCCESS) {
+    errx(1, "fdcache - Server write_all to fdout failed - failed loading in");
+  }
+  ret = write_all(fdout, cache_addr_buf, num_addrs * sizeof(void *));
+
+  // send the fnb_info
+  struct syserv_fnbounds_info fnb_info_cache;
+  ret = read_all(fdcache, &fnb_info_cache, sizeof(fnb_info_cache));
+  if (ret != SUCCESS) {
+    errx(1, "fdcache - Server fnb_into write_all to fdout failed - failed loading in");}
+  ret = write_all(fdout, &fnb_info_cache, sizeof(fnb_info_cache));  
+
+  //write a footer
+  char * ftr[7];
+  ret = read_all(fdcache, ftr, 6);
+  if (ret != SUCCESS || (ret == SUCCESS && strcmp(ftr, "footer") != 0)){ 
+    errx(1, "Server write footer to fdcache failed");
+  }
+
+}
+
+
+
+// Send the list of functions to the client and the cache
+void
+send_funcs (int fdcache)
 {
   int ret;
   int i;
@@ -240,6 +291,18 @@ send_funcs ()
   if (ret != SUCCESS) {
     errx(1, "Server write to fdout failed");
   }
+  if(fdcache != -1){
+    // record the OK mesg with the count of addresses into cache
+    struct syserv_mesg mesg;
+    mesg.magic = SYSERV_MAGIC;
+    mesg.type = SYSERV_OK;
+    mesg.len = np+1;
+    write_all(fdcache, &mesg, sizeof(mesg));
+    if (ret != SUCCESS) {
+      errx(1, "Server write to fdcache failed");
+    }
+  }
+  
 
   // Now go through the list, and add each unique address
   // see if buffer needs to be flushed
@@ -252,7 +315,9 @@ send_funcs ()
     }
     lastaddr = farray[i].fadd;
     if (num_addrs >= ADDR_SIZE) {
+      // send the filled buffer 
       ret = write_all(fdout, addr_buf, num_addrs * sizeof(void *));
+      
       if (ret != SUCCESS) {
         errx(1, "Server write_all to fdout failed");
 #if DEBUG
@@ -262,6 +327,15 @@ send_funcs ()
 	}
 #endif
       }
+      
+      if(fdcache != -1){
+        // write the filled buffer to fdcache
+        ret = write_all(fdcache, addr_buf, num_addrs * sizeof(void *));
+        if (ret != SUCCESS){ 
+          errx(1, "Server flush write_all to fdcache failed");
+        }
+      }
+      
       num_addrs = 0;
     }
 
@@ -269,8 +343,10 @@ send_funcs ()
     num_addrs++;
     total_num_addrs++;
   }
+
   // we've done the full list, check for buffer filled by the last entry
   if (num_addrs >= ADDR_SIZE) {
+    // send
     ret = write_all(fdout, addr_buf, num_addrs * sizeof(void *));
     if (ret != SUCCESS) {
       errx(1, "Server write_all to fdout failed");
@@ -281,6 +357,15 @@ send_funcs ()
       }
 #endif
     }
+
+    if(fdcache != -1){
+      // write the filled buffer to fdcache
+      ret = write_all(fdcache, addr_buf, num_addrs * sizeof(void *));
+      if (ret != SUCCESS){ 
+        errx(1, "Server flush write_all to fdcache failed");
+      }
+    }
+
     num_addrs = 0;
   }
 
@@ -300,6 +385,15 @@ send_funcs ()
 #endif
   }
 
+  if(fdcache != -1){
+    // write/flush the buffer to fdcache
+    ret = write_all(fdcache, addr_buf, num_addrs * sizeof(void *));
+    if (ret != SUCCESS){ 
+      errx(1, "Server flush write_all to fdcache failed");
+    }
+  }
+
+
   // now send the fnb end record
   struct rusage usage;
   if (getrusage(RUSAGE_SELF, &usage) == 0) {
@@ -313,6 +407,7 @@ send_funcs ()
 
   fnb_info.magic = FNBOUNDS_MAGIC;
   fnb_info.status = SYSERV_OK;
+
   ret = write_all(fdout, &fnb_info, sizeof(fnb_info));
   if (ret != SUCCESS) {
     err(1, "Server fnb_into write_all to fdout failed");
@@ -322,6 +417,19 @@ send_funcs ()
       fprintf(stderr, "FNB2: Server fnb_info write_all %ld bytes\n", sizeof(fnb_info) );
     }
 #endif
+  }
+
+  if(fdcache != -1){
+    ret = write_all(fdcache, &fnb_info, sizeof(fnb_info));
+    if (ret != SUCCESS) {
+      err(1, "Server fnb_into write_all to fdcache failed");
+    } 
+
+    //write a footer
+    ret = write_all(fdcache, "footer", 6);
+    if (ret != SUCCESS){ 
+      errx(1, "Server write footer to fdcache failed");
+    }
   }
 }
 
@@ -422,6 +530,7 @@ write_mesg(int32_t type, int64_t len)
 	    type, len);
   }
 #endif
+
   return write_all(fdout, &mesg, sizeof(mesg));
 }
 

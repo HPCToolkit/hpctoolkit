@@ -667,11 +667,13 @@ hpcrun_syserv_query(const char *fname, struct fnbounds_file_header *fh)
     shutdown_server();
     return NULL;
   }
+
   if (read_all(fdin, addr, num_bytes) != SUCCESS) {
     EMSG("FNBOUNDS_CLIENT ERROR: lost contact with server");
     shutdown_server();
     return NULL;
   }
+
 
   // Read the trailing fnbounds file header.
   struct syserv_fnbounds_info fnb_info;
