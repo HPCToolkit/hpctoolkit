@@ -316,7 +316,7 @@ fnbounds_cache_loadmodule_filename
   unsigned char hash_string[hash_length * 2];
 
   memset(hash_string, 0, sizeof(hash_string));
-
+/*
   map_info_t *mapinfo = file_map(lm_path);
 
   if (mapinfo) {
@@ -326,6 +326,17 @@ fnbounds_cache_loadmodule_filename
 			&hash_string[hash_length], hash_length);
     file_unmap(mapinfo);
   }
+*/
+
+  struct stat stats;
+
+  if(stat(path, &stats) == 0){
+    crypto_hash_compute(lm_path, strlen(lm_path), hash_string, hash_length);
+
+    crypto_hash_compute(&stats, sizeof(struct stat), 
+			&hash_string[hash_length], hash_length);
+  }
+
 
   int buffer_length = sizeof(hash_string) * 2; // size in hex is 2x size in bytes
   buffer_length += 1; // space for NULL;

@@ -232,6 +232,7 @@ fnbounds_create
 
   char tmp_name[strlen(cached_loadmodule_pathname) + 8];
   sprintf(tmp_name, "%s%d", cached_loadmodule_pathname, (int)getpid());
+  //sprintf(tmp_name, "%s%s", cached_loadmodule_pathname, "XXXXXX");
   //int fdcache = mkstemp(tmp_name);
   int fdcache = open(tmp_name, O_CREAT | O_RDWR, RW_R__R__);
 
@@ -245,8 +246,8 @@ fnbounds_create
     success &= rename(tmp_name, cached_loadmodule_pathname) == 0;
   }
 
-  printf("cache write (%s) of %s\n", success ? "success" : "failure", 
-	 cached_loadmodule_pathname); 
+  printf("cache write %s of %s (%s)\n", success ? "success" : "failure", 
+	 loadmodule_pathname, cached_loadmodule_pathname); 
 
   return success;
 }
