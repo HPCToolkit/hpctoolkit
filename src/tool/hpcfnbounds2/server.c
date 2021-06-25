@@ -242,11 +242,19 @@ send_cached_funcs (int fdcache)
   // send the list of unique addresses
   uint64_t cache_addr_buf[ADDR_SIZE];
   num_addrs = mesg.len;
-  ret = read_all(fdcache, cache_addr_buf, num_addrs * sizeof(void *));
-  if (ret != SUCCESS) {
-    errx(1, "fdcache - Server write_all to fdout failed - failed loading in");
-  }
-  ret = write_all(fdout, cache_addr_buf, num_addrs * sizeof(void *));
+  long cur_num_addrs = (num_addrs >= ADDR_SIZE) ? (ADDR_SIZE - 1) : num_addrs;
+  do{
+    ret = read_all(fdcache, cache_addr_buf, cur_num_addrs * sizeof(void *));
+    if (ret != SUCCESS) {
+      errx(1, "fdcache - Server write_all to fdout failed - failed loading in");
+    }
+    ret = write_all(fdout, cache_addr_buf, cur_num_addrs * sizeof(void *));
+    
+    num_addrs -= cur_num_addrs;
+    cur_num_addrs = (num_addrs >= ADDR_SIZE) ? (ADDR_SIZE - 1) : num_addrs;
+  }while(num_addrs);
+
+
 
   // send the fnb_info
   struct syserv_fnbounds_info fnb_info_cache;
