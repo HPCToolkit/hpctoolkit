@@ -327,8 +327,7 @@ gpu_memset_process
       gpu_host_correlation_map_lookup(external_id);
     if (host_op_entry != NULL) {
       cct_node_t *host_op_node =
-        gpu_host_correlation_map_entry_op_cct_get(host_op_entry,
-          gpu_placeholder_type_memset);
+        gpu_host_correlation_map_entry_op_cct_get(host_op_entry, gpu_placeholder_type_memset);
 
       gpu_trace_item_t entry_trace;
       trace_item_set(&entry_trace, activity, host_op_entry, host_op_node);
