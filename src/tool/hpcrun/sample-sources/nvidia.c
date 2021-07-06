@@ -146,8 +146,9 @@ data_motion_explicit_activities[] = {
   CUPTI_ACTIVITY_KIND_MEMCPY2,
   CUPTI_ACTIVITY_KIND_MEMCPY,
   CUPTI_ACTIVITY_KIND_MEMSET,
-// FIXME(keren): memory activity does not have a correlation id
-// CUPTI_ACTIVITY_KIND_MEMORY,
+#if CUPTI_API_VERSION >= 14
+  CUPTI_ACTIVITY_KIND_MEMORY2,
+#endif
   CUPTI_ACTIVITY_KIND_INVALID
 };
 
@@ -208,8 +209,8 @@ typedef enum cupti_activities_flags {
   CUPTI_KERNEL_INVOCATION    = 4,
   CUPTI_KERNEL_EXECUTION     = 8,
   CUPTI_DRIVER               = 16,
-  CUPTI_RUNTIME	             = 32,
-  CUPTI_OVERHEAD	     = 64
+  CUPTI_RUNTIME              = 32,
+  CUPTI_OVERHEAD             = 64
 } cupti_activities_flags_t;
 
 
@@ -358,6 +359,8 @@ METHOD_FN(process_event_list, int lush_metrics)
     trace_frequency =
       (frequency == frequency_default) ? trace_frequency_default : frequency;
     gpu_monitoring_trace_sample_frequency_set(trace_frequency);
+
+    gpu_metrics_GICOPY_enable();
   } else if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA_PC_SAMPLING)) {
     pc_sampling_frequency = (frequency == frequency_default) ?
       pc_sampling_frequency_default : frequency;
