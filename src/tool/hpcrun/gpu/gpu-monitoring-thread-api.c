@@ -62,4 +62,3 @@ gpu_monitoring_thread_activities_ready
 {
   gpu_correlation_channel_set_consume();
 }
-
