@@ -65,6 +65,9 @@
 #include <hpcrun/sample-sources/libdl.h>
 
 #include <hpcrun/utilities/hpcrun-nanotime.h>
+#include <monitor.h>
+
+
 
 //******************************************************************************
 // macros
@@ -471,6 +474,8 @@ roctracer_buffer_completion_callback
  void* arg
 )
 {
+  hpcrun_thread_init_mem_pool_once();
+
   roctracer_buffer_completion_notify();
   roctracer_record_t* record = (roctracer_record_t*)(begin);
   roctracer_record_t* end_record = (roctracer_record_t*)(end);

@@ -342,6 +342,9 @@ gpu_trace_record
 {
   gpu_trace_channel_set_t *channel_set = (gpu_trace_channel_set_t *) args;
 
+  hpcrun_thread_init_mem_pool_once();
+  atomic_fetch_add(&active_streams_counter, 1);
+
   while (!atomic_load(&stop_trace_flag)) {
     //getting data from a trace channel
     gpu_trace_channel_set_process(channel_set);
@@ -362,14 +365,7 @@ gpu_trace_create
 {
   // Init variables
   gpu_trace_t *trace = gpu_trace_alloc();
-
-  // Create a new thread for the stream without libmonitor watching
-  monitor_disable_new_threads();
-
   trace->thread = gpu_trace_demultiplexer_push(trace->trace_channel);
-  atomic_fetch_add(&active_streams_counter, 1);
-
-  monitor_enable_new_threads();
 
   return trace;
 }
