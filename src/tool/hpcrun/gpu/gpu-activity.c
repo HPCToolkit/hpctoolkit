@@ -69,14 +69,14 @@
 #define DEBUG 0
 
 
-#define FORALL_OPENCL_KINDS(macro)					\
-  macro(GPU_ACTIVITY_UNKNOWN)							\
-  macro(GPU_ACTIVITY_KERNEL)           \
+#define FORALL_OPENCL_KINDS(macro)  \
+  macro(GPU_ACTIVITY_UNKNOWN)       \
+  macro(GPU_ACTIVITY_KERNEL)        \
   macro(GPU_ACTIVITY_MEMCPY)
 
-#define FORALL_OPENCL_MEM_TYPES(macro)					\
-  macro(GPU_MEMCPY_UNK)							\
-  macro(GPU_MEMCPY_H2D)           \
+#define FORALL_OPENCL_MEM_TYPES(macro) \
+  macro(GPU_MEMCPY_UNK)                \
+  macro(GPU_MEMCPY_H2D)                \
   macro(GPU_MEMCPY_D2H)
 
 #define CODE_TO_STRING(e) case e: return #e;
@@ -166,7 +166,7 @@ gpu_interval_set
 const char*
 gpu_kind_to_string
 (
-gpu_activity_kind_t kind
+ gpu_activity_kind_t kind
 )
 {
   switch (kind)
@@ -180,7 +180,7 @@ gpu_activity_kind_t kind
 const char*
 gpu_type_to_string
 (
-gpu_memcpy_type_t type
+ gpu_memcpy_type_t type
 )
 {
   switch (type)

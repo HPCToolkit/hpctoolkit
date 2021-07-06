@@ -1616,7 +1616,6 @@ void
 cupti_device_flush(void *args, int how)
 {
   cupti_activity_flush();
-  // TODO(keren): replace cupti with sth. called device queue
   gpu_application_thread_process_activities();
 }
 

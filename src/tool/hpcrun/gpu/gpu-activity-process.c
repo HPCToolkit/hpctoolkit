@@ -596,6 +596,10 @@ gpu_memory_process
         gpu_host_correlation_map_entry_op_cct_get(host_op_entry, ph);
       assert(host_op_node != NULL);
 
+      // Use the start of this API as approximate start time
+      activity->details.memory.start =
+        gpu_host_correlation_map_entry_cpu_submit_time(host_op_entry);
+
       attribute_activity(host_op_entry, activity, host_op_node);
 
       gpu_trace_item_t entry_trace;

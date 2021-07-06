@@ -481,9 +481,7 @@ convert_memory
 )
 {
   ga->kind = GPU_ACTIVITY_MEMORY;
-  ga->details.memory.start = activity_mem->timestamp;
-  // XXX(Keren): no end timestamp currently
-  //ga->details.memory.end = activity_mem->end;
+  ga->details.memory.end = activity_mem->timestamp;
   ga->details.memory.bytes = activity_mem->bytes;
   ga->details.memory.address = activity_mem->address;
   ga->details.memory.correlation_id = activity_mem->correlationId;
@@ -492,10 +490,6 @@ convert_memory
   ga->details.memory.stream_id = activity_mem->streamId;
   ga->details.memory.memKind = activity_mem->memoryKind;
   ga->details.memory.bytes = activity_mem->bytes;
-
-  // XXX(Keren): no end timestamp currently
-  //ga->details.memory.end = activity_mem->end;
-  //gpu_interval_set(&ga->details.interval, ga->details.memory.start, ga->details.memory.end);
 }
 #endif
 
@@ -562,6 +556,17 @@ convert_event
   ga->details.event.stream_id = activity->streamId;
 }
 
+
+static void
+convert_unified_memory
+(
+ gpu_activity_t *ga,
+ CUpti_ActivityUnifiedMemoryCounter2 *activity
+)
+{
+}
+
+
 void
 convert_unknown
 (
@@ -571,7 +576,6 @@ convert_unknown
 {
   ga->kind = GPU_ACTIVITY_UNKNOWN;
 }
-
 
 
 //******************************************************************************
@@ -649,6 +653,10 @@ cupti_activity_translate
 
   case CUPTI_ACTIVITY_KIND_CUDA_EVENT:
     convert_event(ga, (CUpti_ActivityCudaEvent *) activity);
+    break;
+
+  case CUPTI_ACTIVITY_KIND_UNIFIED_MEMORY_COUNTER:
+    convert_unified_memory(ga, (CUpti_ActivityUnifiedMemoryCounter2 *) activity);
     break;
 
   default:

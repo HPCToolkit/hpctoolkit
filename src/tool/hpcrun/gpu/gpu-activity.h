@@ -149,6 +149,20 @@ typedef enum {
 } gpu_memcpy_type_t;
 
 
+typedef enum {
+  GPU_ICOPY_UNKNOWN   = 0,
+  GPU_ICOPY_H2D_BYTES = 1,
+  GPU_ICOPY_D2H_BYTES = 2,
+  GPU_ICOPY_D2D_BYTES = 3,
+  GPU_ICOPY_CPU_PF    = 4,
+  GPU_ICOPY_GPU_PF    = 5,
+  GPU_ICOPY_THRASH    = 6,
+  GPU_ICOPY_THROT     = 7,
+  GPU_ICOPY_RMAP      = 8,
+  GPU_ICOPY_PF_COUNT  = 9,
+} gpu_unified_memory_type_t;
+
+
 typedef enum {    
   GPU_INST_STALL_NONE         = 1,
   GPU_INST_STALL_IFETCH       = 2,
@@ -223,6 +237,16 @@ typedef struct gpu_memcpy_t {
   gpu_memcpy_type_t copyKind;
 } gpu_memcpy_t;
 
+
+typedef struct gpu_unified_memory_t {
+  uint64_t start;
+  uint64_t end;
+  uint64_t bytes;
+  uint32_t correlation_id;
+  uint32_t context_id;
+  uint32_t stream_id;
+  gpu_unified_memory_type_t copyKind;
+} gpu_unified_memory_t;
 
 // memory allocation or free operation
 // gpu_mem_t is a prefix 
@@ -369,6 +393,7 @@ typedef struct gpu_activity_details_t {
     gpu_pc_sampling_t pc_sampling;
     gpu_pc_sampling_info_t pc_sampling_info;
     gpu_memcpy_t memcpy;
+    gpu_unified_memory_t unified_memory;
     gpu_memory_t memory;
     gpu_memset_t memset;
     gpu_kernel_t kernel;
@@ -458,14 +483,14 @@ gpu_context_activity_dump
 const char*
 gpu_kind_to_string
 (
-gpu_activity_kind_t kind
+ gpu_activity_kind_t kind
 );
 
 
 const char*
 gpu_type_to_string
 (
-gpu_memcpy_type_t type
+ gpu_memcpy_type_t type
 );
 
 #endif
