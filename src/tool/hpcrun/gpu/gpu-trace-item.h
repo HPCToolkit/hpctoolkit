@@ -90,7 +90,8 @@ typedef void (*gpu_trace_item_consume_fn_t)
  thread_data_t *td,
  cct_node_t *call_path_leaf,
  uint64_t start_time,
- uint64_t end_time
+ uint64_t end_time,
+ cct_node_t *no_activity
 );
 
 
@@ -115,7 +116,8 @@ gpu_trace_item_consume
 (
  gpu_trace_item_consume_fn_t trace_item_consume,
  thread_data_t *td,
- gpu_trace_item_t *ti
+ gpu_trace_item_t *ti,
+ cct_node_t *no_activity
 );
 
 
