@@ -172,19 +172,6 @@ gpu_trace_cct_root
 
 
 static cct_node_t *
-gpu_trace_cct_no_activity
-(
- thread_data_t* td
-)
-{
-  cct_node_t *no_activity =
-    hpcrun_cct_bundle_get_no_activity_node(&(td->core_profile_trace_data.epoch->csdata));
-
-  return no_activity;
-}
-
-
-static cct_node_t *
 gpu_trace_cct_insert_context
 (
  thread_data_t* td,
@@ -261,6 +248,19 @@ gpu_trace_stream_id
   int id = 500 + atomic_fetch_add(&num_streams, 1);
 
   return id;
+}
+
+
+cct_node_t *
+gpu_trace_cct_no_activity
+(
+ thread_data_t* td
+)
+{
+  cct_node_t *no_activity =
+    hpcrun_cct_bundle_get_no_activity_node(&(td->core_profile_trace_data.epoch->csdata));
+
+  return no_activity;
 }
 
 
@@ -402,13 +402,12 @@ consume_one_trace_item
  thread_data_t* td,
  cct_node_t *call_path,
  uint64_t start_time,
- uint64_t end_time
+ uint64_t end_time,
+ cct_node_t *no_activity
 )
 {
 
   cct_node_t *leaf = gpu_trace_cct_insert_context(td, call_path);
-
-  cct_node_t *no_activity = gpu_trace_cct_no_activity(td);
 
   uint64_t start = gpu_trace_time(start_time);
   uint64_t end   = gpu_trace_time(end_time);
