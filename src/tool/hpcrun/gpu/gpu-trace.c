@@ -47,6 +47,7 @@
 
 #include <assert.h>
 #include <pthread.h>
+#include <unistd.h>
 
 
 
@@ -67,6 +68,7 @@
 #include <hpcrun/cct/cct.h>
 #include <hpcrun/utilities/hpcrun-nanotime.h>
 #include <hpcrun/control-knob.h>
+#include <hpcrun/rank.h>
 #include <hpcrun/thread_data.h>
 #include <hpcrun/threadmgr.h>
 #include <hpcrun/trace.h>
@@ -100,6 +102,7 @@
 typedef struct gpu_trace_t {
   pthread_t thread;
   gpu_trace_channel_t *trace_channel;
+  gpu_tag_t tag;
 } gpu_trace_t;
 
 typedef struct gpu_stream_set_t {
@@ -152,11 +155,17 @@ stream_start_get
 static gpu_trace_t *
 gpu_trace_alloc
 (
- void
+ uint32_t device_id,
+ uint32_t context_id,
+ uint32_t stream_id
 )
 {
   gpu_trace_t *trace = hpcrun_malloc_safe(sizeof(gpu_trace_t));
-  trace->trace_channel = gpu_trace_channel_alloc();
+  trace->tag.device_id = device_id;
+  trace->tag.context_id = context_id;
+  trace->tag.stream_id = stream_id;
+
+  trace->trace_channel = gpu_trace_channel_alloc(trace->tag);
   return trace;
 }
 
@@ -263,11 +272,41 @@ gpu_trace_cct_no_activity
   return no_activity;
 }
 
+static void
+gpu_compute_profile_name
+(
+ gpu_tag_t tag,
+ core_profile_trace_data_t * cptd
+)
+{
+  pms_id_t ids[IDTUPLE_MAXTYPES];
+  id_tuple_t id_tuple;
+
+  id_tuple_constructor(&id_tuple, ids, IDTUPLE_MAXTYPES);
+
+  id_tuple_push_back(&id_tuple, IDTUPLE_COMPOSE(IDTUPLE_NODE, IDTUPLE_IDS_LOGIC_LOCAL), gethostid(), 0);
+
+#if 0
+  if (tag.device_id != IDTUPLE_INVALID) {
+    id_tuple_push_back(&id_tuple, IDTUPLE_GPUDEVICE, tag.device_id);
+  }
+#endif
+
+  int rank = hpcrun_get_rank();
+  if (rank >= 0) id_tuple_push_back(&id_tuple, IDTUPLE_COMPOSE(IDTUPLE_RANK, IDTUPLE_IDS_LOGIC_ONLY), rank, rank);
+
+  id_tuple_push_back(&id_tuple, IDTUPLE_COMPOSE(IDTUPLE_GPUCONTEXT, IDTUPLE_IDS_LOGIC_ONLY), tag.context_id, tag.context_id);
+
+  id_tuple_push_back(&id_tuple, IDTUPLE_COMPOSE(IDTUPLE_GPUSTREAM, IDTUPLE_IDS_LOGIC_ONLY), tag.stream_id, tag.stream_id);
+
+  id_tuple_copy(&cptd->id_tuple, &id_tuple, hpcrun_malloc);
+}
+
 
 thread_data_t *
 gpu_trace_stream_acquire
 (
- void
+ gpu_tag_t tag
 )
 {
   bool demand_new_thread = true;
@@ -280,6 +319,8 @@ gpu_trace_stream_acquire
   // XXX(Keren): This API calls allocate_and_init_thread_data to bind td with the current thread
 
   hpcrun_threadMgr_data_get_safe(id, NULL, &td, has_trace, demand_new_thread);
+
+  gpu_compute_profile_name(tag, &td->core_profile_trace_data);
 
   return td;
 }
@@ -357,11 +398,13 @@ gpu_trace_record
 gpu_trace_t *
 gpu_trace_create
 (
- void
+ uint32_t device_id,
+ uint32_t context_id,
+ uint32_t stream_id
 )
 {
   // Init variables
-  gpu_trace_t *trace = gpu_trace_alloc();
+  gpu_trace_t *trace = gpu_trace_alloc(device_id, context_id, stream_id);
 
   // Create a new thread for the stream without libmonitor watching
   monitor_disable_new_threads();

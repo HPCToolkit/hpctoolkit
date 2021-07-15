@@ -128,12 +128,14 @@ static void
 gpu_stream_id_map_insert
 (
  gpu_stream_id_map_entry_t **root,
+ uint32_t device_id,
+ uint32_t context_id,
  uint32_t stream_id
 )
 {
   if (st_lookup(root, stream_id) == NULL) {
     // stream_id is not already present
-    gpu_stream_id_map_entry_t *entry = gpu_stream_id_map_entry_new(stream_id);
+    gpu_stream_id_map_entry_t *entry = gpu_stream_id_map_entry_new(device_id, context_id, stream_id);
     st_insert(root, entry);
   }
 }
@@ -200,18 +202,25 @@ void
 gpu_stream_id_map_stream_process
 (
  gpu_stream_id_map_entry_t **root,
+ uint32_t device_id,
+ uint32_t context_id,
  uint32_t stream_id,
  gpu_trace_fn_t fn,
  gpu_trace_item_t *ti
 )
 {
-  gpu_stream_id_map_insert(root, stream_id);
+  gpu_stream_id_map_insert(root, device_id, context_id, stream_id);
   fn((*root)->trace, ti); 
 }
 
 
 gpu_stream_id_map_entry_t *
-gpu_stream_id_map_entry_new(uint32_t stream_id)
+gpu_stream_id_map_entry_new
+(
+ uint32_t device_id,
+ uint32_t context_id,
+ uint32_t stream_id
+)
 {
   PRINT("Create a new trace with stream id %u\n", stream_id);
 
@@ -221,7 +230,7 @@ gpu_stream_id_map_entry_new(uint32_t stream_id)
   memset(e, 0, sizeof(gpu_stream_id_map_entry_t));
 
   e->stream_id = stream_id;
-  e->trace = gpu_trace_create();
+  e->trace = gpu_trace_create(device_id, context_id, stream_id);
 
   return e;
 }
