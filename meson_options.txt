@@ -1,0 +1,46 @@
+# External dependency options
+option('spack', type: 'string', value: '',
+       description: 'Find external dependencies via the given Spack command.')
+option('papi-c', type: 'feature',
+       description: 'Use PAPI\'s newer component API (PAPI >=5.1).')
+
+# Top-level targets/applications
+option('hpcrun', type: 'feature',
+       description: 'Enable the HPCToolkit measurement application, hpcrun')
+option('hpclink', type: 'feature',
+       description: 'Enable the HPCToolkit measurement linker script for static applications, hpclink')
+option('hpcstruct', type: 'feature',
+       description: 'Enable the HPCToolkit binary analysis application, hpcstruct')
+option('hpcprof', type: 'feature',
+       description: 'Enable the HPCToolkit profile analysis application, hpcprof')
+option('devtools', type: 'feature', value: 'disabled',
+       description: 'Enable extra tools useful for debugging.')
+option('hpcserver', type: 'feature', value: 'disabled',
+       description: 'Enable the (old and experimental) hpcserver application.')
+
+# Application options (hpcstruct + hpcprof)
+option('openmp', type: 'feature',
+       description: 'Accelerate applications using OpenMP where applicable.')
+option('valgrind-annotations', type: 'feature', value: 'disabled',
+       description: 'Enable Valgrind annotations where applicable.')
+option('mpi', type: 'feature',
+       description: 'Accelerate applications using MPI where applicable.')
+
+# Profiling options (hpcrun + hpclink)
+option('cuda-monitoring', type: 'feature',
+       description: 'Allow profiling CUDA activity.')
+option('papi-c-cupti', type: 'feature',
+       description: 'Allow profiling CUDA activity via PAPI.')
+option('kernel-blocking', type: 'feature',
+       description: 'Allow monitoring kernel blocked time (Linux >=4.3).')
+option('perf-events', type: 'feature',
+       description: 'Allow monitoring kernel perf events (Linux >=2.6.32).')
+option('xop', type: 'boolean', value: true,
+       description: 'Support decoding of AMD XOP instructions on x86-64.')
+# TODO: Currently not used anywhere
+option('lush', type: 'boolean', value: false,
+       description: 'Enable LUSH logical unwind support.')
+option('lush-pthreads', type: 'boolean', value: false,
+       description: 'Enable LUSH Pthread logical unwind support.')
+option('data-centric-tracing', type: 'boolean', value: false,
+       description: 'Enable data-centric profiling.')

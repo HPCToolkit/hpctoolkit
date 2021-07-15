@@ -51,7 +51,7 @@
 #include <include/hpctoolkit-config.h>
 #include <cct/cct.h>
 
-#if HAVE_CUPTI_H 
+#if HPCRUN_SS_NVIDIA
 
 void 
 prepare_device
