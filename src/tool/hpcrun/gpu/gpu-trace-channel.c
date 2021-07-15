@@ -167,7 +167,7 @@ gpu_trace_channel_get_stream_id
 gpu_trace_channel_t *
 gpu_trace_channel_alloc
 (
- void
+ gpu_tag_t tag
 )
 {
   gpu_trace_channel_t *channel =
@@ -177,7 +177,7 @@ gpu_trace_channel_alloc
 
   channel_init(channel);
 
-  channel->td = gpu_trace_stream_acquire();
+  channel->td = gpu_trace_stream_acquire(tag);
 
   pthread_mutex_init(&channel->mutex, NULL);
   pthread_cond_init(&channel->cond, NULL);
