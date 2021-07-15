@@ -41,38 +41,123 @@ on the hpctoolkit web site.
 @end example
 
 @noindent
-Last revised: October 26, 2020.
+Last revised: July 11, 2021.
 
 @c ------------------------------------------------------------
 
 @section Current Issues
 
-@subsection (2020-10-20) Binutils 2.35 spews errors in hpcprof
+@subsection (2021-07-11) Dyninst cannot find Libiberty libraries
 
-There is a bug in binutils 2.35 that causes hpcprof to spew BFD errors
-about ``could not find variable specification.''  For example,
+Rarely, on some systems, dyninst cmake is unable to find the libiberty
+libraries and fails with a message similar to the following.
 
 @example
-$ hpcprof hpctoolkit-foo-measurements
-BFD: DWARF error: could not find variable specification at offset 13df
-BFD: DWARF error: could not find variable specification at offset 1455
-BFD: DWARF error: could not find variable specification at offset 291f
+-- Could NOT find LibIberty (missing: LibIberty_LIBRARIES) 
+CMake Error at cmake/LibIberty.cmake:53 (message):
+  LibIberty not found and cannot be downloaded because build is sterile.
+Call Stack (most recent call first):
+  CMakeLists.txt:34 (include)
 @end example
 
 @noindent
-@b{Workaround:} This is broken in the 2.35 and 2.35.1 releases but fixed
-in binutils master.  Until 2.36 (or 2.35.2) are released, use binutils
-version 2.34.
+This problem is infrequent and not well understood.  It seems to happen
+more often on some Debian or Ubuntu systems, but certainly not all such
+systems.  So, if you run into this problem and can reproduce it, please
+report this to @code{hpctoolkit-forum} as above.
 
-@uref{https://sourceware.org/bugzilla/show_bug.cgi?id=26520}
+@noindent
+@b{Workaround:} Apply the following patch to the spack repository, or
+just hand-edit the dyninst @code{package.py} file to add the one line.
+(Note: the last context line in the patch is a blank line.)
+
+@example
+diff --git a/var/spack/repos/builtin/packages/dyninst/package.py b/var/spack/repos/builtin/packages/dyninst/package.py
+index 38c664d500..0b71d332a8 100644
+--- a/var/spack/repos/builtin/packages/dyninst/package.py
++++ b/var/spack/repos/builtin/packages/dyninst/package.py
+@@@@ -103,6 +103,7 @@@@ def cmake_args(self):
+             '-DBoost_ROOT_DIR=%s'     % spec['boost'].prefix,
+             '-DElfUtils_ROOT_DIR=%s'  % spec['elf'].prefix,
+             '-DLibIberty_ROOT_DIR=%s' % spec['libiberty'].prefix,
++            '-DLibIberty_LIBRARIES=%s' % spec['libiberty'].libs,
+             '-DTBB_ROOT_DIR=%s'       % spec['tbb'].prefix,
+         ]
+
+@end example
+
+@c ------------------------------------------------------------
+
+@subsection (2021-07-11) HPCToolkit build fails in hpcrun-fmt.h
+
+Very rarely, the hpctoolkit build fails in @code{hpcrun-fmt.c} or
+@code{hpcrun-fmt.h} with a spew of messages similar to the following.
+
+@example
+In file included from hpcrun-fmt.c:84:
+hpcrun-fmt.h:1:1: error: expected identifier or '(' before string constant
+ "$Id$\n"
+ ^~~~~~~~
+hpcrun-fmt.c: In function 'hpcrun_fmt_hdr_fwrite':
+hpcrun-fmt.c:131:10: error: 'HPCRUN_FMT_Magic' undeclared (first use in this function)
+   fwrite(HPCRUN_FMT_Magic,   1, HPCRUN_FMT_MagicLen, fs);
+@end example
+
+@noindent
+The problem is that @code{git clone} resulted in a corrupted copy of
+@code{hpcrun-fmt.h}.  This file should be a C/C++ header file beginning
+with a copyright notice in comments.
+
+@example
+// -*-Mode: C++;-*- // technically C99
+
+// * BeginRiceCopyright *****************************************************
+//
+// $HeadURL$
+// $Id$
+//
+...
+@end example
+
+@noindent
+The corrupted copy is the same as @code{hpcrun-fmt.txt} except that
+every line begins and ends with double quotes.
+
+@example
+"$Id$\n"
+"\n"
+"=============================================================================\n"
+"hpcrun binary data format (see "Abbreviation notes" below)\n"
+"=============================================================================\n"
+"\n"
+"fmt-hdr @{epoch@}*\n"
+"  \n"
+...
+@end example
+
+@noindent
+This problem is rare, non-deterministic, not at all understood, and
+impossible to reproduce on demand.  So again, if you can reproduce the
+problem, even non-deterministically, please report this as above.
+
+@noindent
+@b{Workaround:} The only workaround is to retry the git clone.  If
+building outside of spack, the delete the source tree and repeat git
+clone.  If building with spack, first remove spack's downloaded copy
+with @code{spack clean -d}, then retry @code{spack install}.
+
+@c ------------------------------------------------------------
+
+@section Recently Resolved Issues
 
 @subsection (2020-09-05) Configure fails without -fPIC in dependencies
 
-As of commit @uref{https://github.com/HPCToolkit/hpctoolkit/pull/317, b2d3d067ecad} 
-on 2020-09-05, the master branch now requires libunwind and xz (lzma) to
-be built with variant @code{+pic}.  This is used to better separate and
-hide third-party libraries in hpcrun from the application.  If not, then
-configure will fail with an error such as:
+As of commit @uref{https://github.com/HPCToolkit/hpctoolkit/pull/317,
+b2d3d067ecad} on 2020-09-05, the hpctoolkit master branch now requires
+libunwind and xz (lzma) to be built with variant @code{+pic}.  This is
+used to better separate and hide third-party libraries in hpcrun from
+the application.  If not, then configure will fail with an error such
+as:
 
 @example
 configure: libunwind.a static archive: yes
@@ -86,7 +171,7 @@ For example, in @code{packages.yaml},
 
 @example
 libunwind:
-  version:  [1.4.0]
+  version:  [1.5.0]
   variants: +xz +pic
 xz:
   version:  [5.2.5]
@@ -94,8 +179,6 @@ xz:
 @end example
 
 @c ------------------------------------------------------------
-
-@section Recently Resolved Issues
 
 @subsection (2020-06-29) Cray front-end compilers
 
@@ -178,22 +261,6 @@ before the breakage.
 
 @c ------------------------------------------------------------
 
-@section Long Term Issues
-
-@subsection Boost 1.68.0
-
-Avoid boost version 1.68.0, it breaks the build for hpctoolkit.  Version
-1.70.0 works with the latest version of dyninst (10.1.0), or else 1.66.0
-is good and works with all versions of dyninst.
-
-@subsection Elfutils 0.176
-
-Elfutils 0.176 requires glibc 2.16 or later (for @code{aligned_alloc})
-and won't work with an older glibc, including RedHat or CentOS 6.x and
-Blue Gene.  On systems with an old glibc, use version 0.175.
-
-@c ------------------------------------------------------------
-
 @subsection IBM-Java fails to fetch (powerpc)
 
 IBM is fairly aggressive about taking down old versions, so you may find
@@ -221,5 +288,25 @@ If not, then manually download the latest 8.0.x.y version, compute a
 @code{sha256sum} checksum for the file and then edit the
 @code{ibm-java/package.py} file to add this version.  And then report
 the problem to the spack maintainer.
+
+@c ------------------------------------------------------------
+
+@section Issues with specific versions
+
+@subsection Binutils 2.35
+
+Avoid binutils versions 2.35 and 2.35.1, they contain a bug that causes
+hpcprof to spew BFD Dwarf errors about ``could not find variable
+specification at offset xxxx.''  This is fixed in release 2.35.2 or 2.36
+or later.
+
+@subsection Boost 1.68.0
+
+Avoid boost version 1.68.0, it breaks the build for hpctoolkit.
+
+@subsection Elfutils 0.176
+
+Beginning with 0.176, elfutils requires glibc 2.16 or later and won't
+work with an older glibc, including RedHat or CentOS 6.x and Blue Gene.
 
 @bye

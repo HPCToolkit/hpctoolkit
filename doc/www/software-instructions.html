@@ -20,16 +20,15 @@
 <div style="position: relative; margin-top: 60px; width: 100%; text-align: right;">
 <p style="margin: 0px; font-size: small;">
   [ <a href="index.html">Home</a>
-  | <a href="overview.html">Overview</a>
-  | <a href="publications.html">Publications</a> ]
+    | <a href="overview.html">Overview</a>
+    | <a href="publications.html">Publications</a>
+    | <a href="software.html">Software/Downloads</a> ]
   &bull;
-  [ <a href="examples.html">Examples</a> ]
+  [ <a href="documentation.html">Documentation/Questions</a>
+    | <a href="training.html">Training Videos and Slides</a> ]
   &bull;
-  [ <a href="software.html">Software/Downloads</a>
-  | <a href="documentation.html">Documentation/Questions</a> ]
-  &bull;
-  [ <a href="info-people.html">People</a> |
-    <a href="info-acks.html">Acks</a> ]
+  [ <a href="info-people.html">People</a>
+    | <a href="info-acks.html">Acks</a> ]
 </p>
 </div>
 <div style="width: 100%;">
@@ -48,7 +47,7 @@
 <li><a name="toc-Prerequisites" href="#Prerequisites">2 Prerequisites</a></li>
 <li><a name="toc-Spack-Notation" href="#Spack-Notation">3 Spack Notation</a></li>
 <li><a name="toc-Clone-Spack-and-HPCToolkit" href="#Clone-Spack-and-HPCToolkit">4 Clone Spack and HPCToolkit</a></li>
-<li><a name="toc-Config_002eyaml" href="#Config_002eyaml">5 Config.yaml</a></li>
+<li><a name="toc-Config_002eyaml-and-Install-Roots" href="#Config_002eyaml-and-Install-Roots">5 Config.yaml and Install Roots</a></li>
 <li><a name="toc-Packages_002eyaml" href="#Packages_002eyaml">6 Packages.yaml</a>
 <ul class="no-bullet">
   <li><a name="toc-External-Packages" href="#External-Packages">6.1 External Packages</a></li>
@@ -144,7 +143,7 @@ your own needs.
 <pre class="example"><a href="http://hpctoolkit.org/spack-issues.html">http://hpctoolkit.org/spack-issues.html</a>
 </pre></div>
 
-<p>Last revised: February 14, 2021.
+<p>Last revised: July 13, 2021.
 </p>
 
 <a name="Prerequisites"></a>
@@ -303,8 +302,8 @@ spack launch script).  Sourcing the <code>setup-env</code> script adds extra
 support for modules built by spack.
 </p>
 
-<a name="Config_002eyaml"></a>
-<h3 class="section">5 Config.yaml</h3>
+<a name="Config_002eyaml-and-Install-Roots"></a>
+<h3 class="section">5 Config.yaml and Install Roots</h3>
 
 <p><code>config.yaml</code> is the top-level spack config file.  This specifies
 the directory layout for installed files and the top-level spack
@@ -314,29 +313,59 @@ in a public directory.  For a module to be available, both the
 <code>install_tree</code> and <code>module_roots</code> directories must be
 accessible.
 </p>
-<ol>
-<li> <code>install_tree/root</code> &ndash; by default, spack installs packages inside
-the spack repository at <code>spack/opt/spack</code>.  If you want to use
-another location, then set the <code>root</code> field under
-<code>install_tree</code>.
+<p>By default, spack installs packages inside the spack repository at
+<code>spack/opt/spack</code>.  To use another location, set the <code>root</code>
+field under <code>install_tree</code> in <code>config.yaml</code>.
+</p>
+<div class="example">
+<pre class="example">config:
+  install_tree:
+    root: /path/to/top-level/install/directory
+</pre></div>
 
-</li><li> <code>module_roots</code> &ndash; by default, spack installs module files inside
-the spack repository at <code>spack/share/spack</code>.  If you want to use
-another location, then set this.
-</li></ol>
+<p>By default, spack installs module files inside the spack repository at
+<code>spack/share/spack</code>.  The syntax for resetting this is changing.
+In the old syntax, you put the top-level directory in
+<code>config.yaml</code> and enable the module type(s) in
+<code>modules.yaml</code>.
+</p>
+<div class="example">
+<pre class="example">config:
+  module_roots:
+    # normally, need only one of these
+    tcl:  /path/to/top-level/tcl-module/directory
+    lmod: /path/to/top-level/lmod-module/directory
 
-<p>There are two other fields that you may want to set for you local
+modules:
+  enable:
+   - tcl  (or lmod)
+</pre></div>
+
+<p>In the new syntax, the paths go in <code>modules.yaml</code>, and there is
+one extra step in the hierarchy (<code>default:</code>).
+</p>
+<div class="example">
+<pre class="example">modules:
+  default:
+    roots:
+      # normally, need only one of these
+      tcl:  /path/to/top-level/tcl-module/directory
+      lmod: /path/to/top-level/lmod-module/directory
+    enable:
+     - tcl  (or lmod)
+</pre></div>
+
+<p>There are two other fields that you may want to set for your local
 system.
 </p>
-<ol start="3">
+<ol>
 <li> <code>connect_timeout</code> &ndash; some download sites, especially sourceforge
 are often slow to connect.  If you find that connections are timing out,
 then increase this time to 30 or 60 seconds (default is 10 seconds).
 
 </li><li> <code>build_jobs</code> &ndash; by default, spack uses all available hardware
-threads for parallel make, up to a limit of 16.  If you&rsquo;re using a
-shared machine and don&rsquo;t want to use the entire machine, then set this
-to a smaller number.
+threads for parallel make, up to a limit of 16.  If you want to use a
+different number, then set this.
 </li></ol>
 
 <p>There are also parameters for the locations of the build directories,
@@ -414,10 +443,10 @@ change depending on your system.  But always check the current
 <li> <code>binutils</code> &ndash; avoid versions 2.35 and 2.35.1, they have a bug
 that spews errors from hpcprof.  Use 2.34 until 2.36 is available.
 
-<p><code>intel-tbb</code> &ndash; for very old Intel or AMD systems that don&rsquo;t support
+</li><li> <code>intel-tbb</code> &ndash; for very old Intel or AMD systems that don&rsquo;t support
 transactional memory, change <code>+tm</code> to <code>~tm</code>.  (This option has
 no effect on non-x86 systems.)
-</p>
+
 </li></ol>
 
 <a name="External-Packages"></a>
@@ -1161,17 +1190,20 @@ yourself.
 subdirectories for the spack packages and module files.  In this
 example, I&rsquo;m using <code>/opt/spack/Modules</code> as my top-level directory
 and subdirectories <code>packages</code> and <code>modules</code>.  Edit
-<code>config.yaml</code> to add these paths.
+<code>config.yaml</code> and <code>modules.yaml</code> to add these paths.
 </p>
 <div class="example">
 <pre class="example">config:
   install_tree:
     root: /opt/spack/Modules/packages
 
-  # just use one of these
-  module_roots:
-    tcl:  /opt/spack/Modules/modules
-    lmod: /opt/spack/Modules/modules
+modules:
+  default:
+    roots:
+      # just use one of these
+      module_roots:
+        tcl:  /opt/spack/Modules/modules
+        lmod: /opt/spack/Modules/modules
 </pre></div>
 
 <p>Determine if your system uses TCL (environment) or Lmod modules.
@@ -1183,9 +1215,10 @@ LLNL).
 </p>
 <div class="example">
 <pre class="example">modules:
-  enable:
-   - tcl
-   - lmod
+  default:
+    enable:
+     - tcl
+     - lmod
 </pre></div>
 
 <p>Then, choose a version of gcc and use the default compiler (normally

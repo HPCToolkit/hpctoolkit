@@ -20,16 +20,15 @@
 <div style="position: relative; margin-top: 60px; width: 100%; text-align: right;">
 <p style="margin: 0px; font-size: small;">
   [ <a href="index.html">Home</a>
-  | <a href="overview.html">Overview</a>
-  | <a href="publications.html">Publications</a> ]
+    | <a href="overview.html">Overview</a>
+    | <a href="publications.html">Publications</a>
+    | <a href="software.html">Software/Downloads</a> ]
   &bull;
-  [ <a href="examples.html">Examples</a> ]
+  [ <a href="documentation.html">Documentation/Questions</a>
+    | <a href="training.html">Training Videos and Slides</a> ]
   &bull;
-  [ <a href="software.html">Software/Downloads</a>
-  | <a href="documentation.html">Documentation/Questions</a> ]
-  &bull;
-  [ <a href="info-people.html">People</a> |
-    <a href="info-acks.html">Acks</a> ]
+  [ <a href="info-people.html">People</a>
+    | <a href="info-acks.html">Acks</a> ]
 </p>
 </div>
 <div style="width: 100%;">
@@ -47,12 +46,13 @@
 <li><a name="toc-Introduction" href="#Introduction">1 Introduction</a></li>
 <li><a name="toc-Current-Issues" href="#Current-Issues">2 Current Issues</a>
 <ul class="no-bullet">
-  <li><a name="toc-_00282020_002d10_002d20_0029-Binutils-2_002e35-spews-errors-in-hpcprof" href="#g_t_00282020_002d10_002d20_0029-Binutils-2_002e35-spews-errors-in-hpcprof">2.1 (2020-10-20) Binutils 2.35 spews errors in hpcprof</a></li>
-  <li><a name="toc-_00282020_002d09_002d05_0029-Configure-fails-without-_002dfPIC-in-dependencies" href="#g_t_00282020_002d09_002d05_0029-Configure-fails-without-_002dfPIC-in-dependencies">2.2 (2020-09-05) Configure fails without -fPIC in dependencies</a></li>
+  <li><a name="toc-_00282021_002d07_002d11_0029-Dyninst-cannot-find-Libiberty-libraries" href="#g_t_00282021_002d07_002d11_0029-Dyninst-cannot-find-Libiberty-libraries">2.1 (2021-07-11) Dyninst cannot find Libiberty libraries</a></li>
+  <li><a name="toc-_00282021_002d07_002d11_0029-HPCToolkit-build-fails-in-hpcrun_002dfmt_002eh" href="#g_t_00282021_002d07_002d11_0029-HPCToolkit-build-fails-in-hpcrun_002dfmt_002eh">2.2 (2021-07-11) HPCToolkit build fails in hpcrun-fmt.h</a></li>
 </ul></li>
 <li><a name="toc-Recently-Resolved-Issues" href="#Recently-Resolved-Issues">3 Recently Resolved Issues</a>
 <ul class="no-bullet">
-  <li><a name="toc-_00282020_002d06_002d29_0029-Cray-front_002dend-compilers" href="#g_t_00282020_002d06_002d29_0029-Cray-front_002dend-compilers">3.1 (2020-06-29) Cray front-end compilers</a></li>
+  <li><a name="toc-_00282020_002d09_002d05_0029-Configure-fails-without-_002dfPIC-in-dependencies" href="#g_t_00282020_002d09_002d05_0029-Configure-fails-without-_002dfPIC-in-dependencies">3.1 (2020-09-05) Configure fails without -fPIC in dependencies</a></li>
+  <li><a name="toc-_00282020_002d06_002d29_0029-Cray-front_002dend-compilers" href="#g_t_00282020_002d06_002d29_0029-Cray-front_002dend-compilers">3.2 (2020-06-29) Cray front-end compilers</a></li>
 </ul></li>
 <li><a name="toc-General-Problems" href="#General-Problems">4 General Problems</a>
 <ul class="no-bullet">
@@ -60,12 +60,13 @@
   <li><a name="toc-Connection-timeout" href="#Connection-timeout">4.2 Connection timeout</a></li>
   <li><a name="toc-New-version-breaks-the-build" href="#New-version-breaks-the-build">4.3 New version breaks the build</a></li>
   <li><a name="toc-Spack-core-breaks-the-build" href="#Spack-core-breaks-the-build">4.4 Spack core breaks the build</a></li>
+  <li><a name="toc-IBM_002dJava-fails-to-fetch-_0028powerpc_0029" href="#IBM_002dJava-fails-to-fetch-_0028powerpc_0029">4.5 IBM-Java fails to fetch (powerpc)</a></li>
 </ul></li>
-<li><a name="toc-Long-Term-Issues" href="#Long-Term-Issues">5 Long Term Issues</a>
+<li><a name="toc-Issues-with-specific-versions" href="#Issues-with-specific-versions">5 Issues with specific versions</a>
 <ul class="no-bullet">
-  <li><a name="toc-Boost-1_002e68_002e0" href="#Boost-1_002e68_002e0">5.1 Boost 1.68.0</a></li>
-  <li><a name="toc-Elfutils-0_002e176" href="#Elfutils-0_002e176">5.2 Elfutils 0.176</a></li>
-  <li><a name="toc-IBM_002dJava-fails-to-fetch-_0028powerpc_0029" href="#IBM_002dJava-fails-to-fetch-_0028powerpc_0029">5.3 IBM-Java fails to fetch (powerpc)</a></li>
+  <li><a name="toc-Binutils-2_002e35" href="#Binutils-2_002e35">5.1 Binutils 2.35</a></li>
+  <li><a name="toc-Boost-1_002e68_002e0" href="#Boost-1_002e68_002e0">5.2 Boost 1.68.0</a></li>
+  <li><a name="toc-Elfutils-0_002e176" href="#Elfutils-0_002e176">5.3 Elfutils 0.176</a></li>
 </ul></li>
 
 </ul>
@@ -94,39 +95,118 @@ on the hpctoolkit web site.
 <pre class="example"><a href="http://hpctoolkit.org/spack-issues.html">http://hpctoolkit.org/spack-issues.html</a>
 </pre></div>
 
-<p>Last revised: October 26, 2020.
+<p>Last revised: July 11, 2021.
 </p>
 
 <a name="Current-Issues"></a>
 <h3 class="section">2 Current Issues</h3>
 
-<a name="g_t_00282020_002d10_002d20_0029-Binutils-2_002e35-spews-errors-in-hpcprof"></a>
-<h4 class="subsection">2.1 (2020-10-20) Binutils 2.35 spews errors in hpcprof</h4>
+<a name="g_t_00282021_002d07_002d11_0029-Dyninst-cannot-find-Libiberty-libraries"></a>
+<h4 class="subsection">2.1 (2021-07-11) Dyninst cannot find Libiberty libraries</h4>
 
-<p>There is a bug in binutils 2.35 that causes hpcprof to spew BFD errors
-about &ldquo;could not find variable specification.&rdquo;  For example,
+<p>Rarely, on some systems, dyninst cmake is unable to find the libiberty
+libraries and fails with a message similar to the following.
 </p>
 <div class="example">
-<pre class="example">$ hpcprof hpctoolkit-foo-measurements
-BFD: DWARF error: could not find variable specification at offset 13df
-BFD: DWARF error: could not find variable specification at offset 1455
-BFD: DWARF error: could not find variable specification at offset 291f
+<pre class="example">-- Could NOT find LibIberty (missing: LibIberty_LIBRARIES) 
+CMake Error at cmake/LibIberty.cmake:53 (message):
+  LibIberty not found and cannot be downloaded because build is sterile.
+Call Stack (most recent call first):
+  CMakeLists.txt:34 (include)
 </pre></div>
 
-<p><b>Workaround:</b> This is broken in the 2.35 and 2.35.1 releases but fixed
-in binutils master.  Until 2.36 (or 2.35.2) are released, use binutils
-version 2.34.
+<p>This problem is infrequent and not well understood.  It seems to happen
+more often on some Debian or Ubuntu systems, but certainly not all such
+systems.  So, if you run into this problem and can reproduce it, please
+report this to <code>hpctoolkit-forum</code> as above.
 </p>
-<p><a href="https://sourceware.org/bugzilla/show_bug.cgi?id=26520">https://sourceware.org/bugzilla/show_bug.cgi?id=26520</a>
+<p><b>Workaround:</b> Apply the following patch to the spack repository, or
+just hand-edit the dyninst <code>package.py</code> file to add the one line.
+(Note: the last context line in the patch is a blank line.)
 </p>
-<a name="g_t_00282020_002d09_002d05_0029-Configure-fails-without-_002dfPIC-in-dependencies"></a>
-<h4 class="subsection">2.2 (2020-09-05) Configure fails without -fPIC in dependencies</h4>
+<div class="example">
+<pre class="example">diff --git a/var/spack/repos/builtin/packages/dyninst/package.py b/var/spack/repos/builtin/packages/dyninst/package.py
+index 38c664d500..0b71d332a8 100644
+--- a/var/spack/repos/builtin/packages/dyninst/package.py
++++ b/var/spack/repos/builtin/packages/dyninst/package.py
+@@ -103,6 +103,7 @@ def cmake_args(self):
+             '-DBoost_ROOT_DIR=%s'     % spec['boost'].prefix,
+             '-DElfUtils_ROOT_DIR=%s'  % spec['elf'].prefix,
+             '-DLibIberty_ROOT_DIR=%s' % spec['libiberty'].prefix,
++            '-DLibIberty_LIBRARIES=%s' % spec['libiberty'].libs,
+             '-DTBB_ROOT_DIR=%s'       % spec['tbb'].prefix,
+         ]
 
-<p>As of commit <a href="https://github.com/HPCToolkit/hpctoolkit/pull/317">b2d3d067ecad</a> 
-on 2020-09-05, the master branch now requires libunwind and xz (lzma) to
-be built with variant <code>+pic</code>.  This is used to better separate and
-hide third-party libraries in hpcrun from the application.  If not, then
-configure will fail with an error such as:
+</pre></div>
+
+
+<a name="g_t_00282021_002d07_002d11_0029-HPCToolkit-build-fails-in-hpcrun_002dfmt_002eh"></a>
+<h4 class="subsection">2.2 (2021-07-11) HPCToolkit build fails in hpcrun-fmt.h</h4>
+
+<p>Very rarely, the hpctoolkit build fails in <code>hpcrun-fmt.c</code> or
+<code>hpcrun-fmt.h</code> with a spew of messages similar to the following.
+</p>
+<div class="example">
+<pre class="example">In file included from hpcrun-fmt.c:84:
+hpcrun-fmt.h:1:1: error: expected identifier or '(' before string constant
+ &quot;$Id$\n&quot;
+ ^~~~~~~~
+hpcrun-fmt.c: In function 'hpcrun_fmt_hdr_fwrite':
+hpcrun-fmt.c:131:10: error: 'HPCRUN_FMT_Magic' undeclared (first use in this function)
+   fwrite(HPCRUN_FMT_Magic,   1, HPCRUN_FMT_MagicLen, fs);
+</pre></div>
+
+<p>The problem is that <code>git clone</code> resulted in a corrupted copy of
+<code>hpcrun-fmt.h</code>.  This file should be a C/C++ header file beginning
+with a copyright notice in comments.
+</p>
+<div class="example">
+<pre class="example">// -*-Mode: C++;-*- // technically C99
+
+// * BeginRiceCopyright *****************************************************
+//
+// $HeadURL$
+// $Id$
+//
+...
+</pre></div>
+
+<p>The corrupted copy is the same as <code>hpcrun-fmt.txt</code> except that
+every line begins and ends with double quotes.
+</p>
+<div class="example">
+<pre class="example">&quot;$Id$\n&quot;
+&quot;\n&quot;
+&quot;=============================================================================\n&quot;
+&quot;hpcrun binary data format (see &quot;Abbreviation notes&quot; below)\n&quot;
+&quot;=============================================================================\n&quot;
+&quot;\n&quot;
+&quot;fmt-hdr {epoch}*\n&quot;
+&quot;  \n&quot;
+...
+</pre></div>
+
+<p>This problem is rare, non-deterministic, not at all understood, and
+impossible to reproduce on demand.  So again, if you can reproduce the
+problem, even non-deterministically, please report this as above.
+</p>
+<p><b>Workaround:</b> The only workaround is to retry the git clone.  If
+building outside of spack, the delete the source tree and repeat git
+clone.  If building with spack, first remove spack&rsquo;s downloaded copy
+with <code>spack clean -d</code>, then retry <code>spack install</code>.
+</p>
+
+<a name="Recently-Resolved-Issues"></a>
+<h3 class="section">3 Recently Resolved Issues</h3>
+
+<a name="g_t_00282020_002d09_002d05_0029-Configure-fails-without-_002dfPIC-in-dependencies"></a>
+<h4 class="subsection">3.1 (2020-09-05) Configure fails without -fPIC in dependencies</h4>
+
+<p>As of commit <a href="https://github.com/HPCToolkit/hpctoolkit/pull/317">b2d3d067ecad</a> on 2020-09-05, the hpctoolkit master branch now requires
+libunwind and xz (lzma) to be built with variant <code>+pic</code>.  This is
+used to better separate and hide third-party libraries in hpcrun from
+the application.  If not, then configure will fail with an error such
+as:
 </p>
 <div class="example">
 <pre class="example">configure: libunwind.a static archive: yes
@@ -139,7 +219,7 @@ For example, in <code>packages.yaml</code>,
 </p>
 <div class="example">
 <pre class="example">libunwind:
-  version:  [1.4.0]
+  version:  [1.5.0]
   variants: +xz +pic
 xz:
   version:  [5.2.5]
@@ -147,11 +227,8 @@ xz:
 </pre></div>
 
 
-<a name="Recently-Resolved-Issues"></a>
-<h3 class="section">3 Recently Resolved Issues</h3>
-
 <a name="g_t_00282020_002d06_002d29_0029-Cray-front_002dend-compilers"></a>
-<h4 class="subsection">3.1 (2020-06-29) Cray front-end compilers</h4>
+<h4 class="subsection">3.2 (2020-06-29) Cray front-end compilers</h4>
 
 <p><code>Spack compiler find</code> was previously broken for detecting the
 front-end compilers on Cray that HPCToolkit uses.
@@ -232,26 +309,8 @@ through the spack git log and revert the repository to a recent commit
 before the breakage.
 </p>
 
-<a name="Long-Term-Issues"></a>
-<h3 class="section">5 Long Term Issues</h3>
-
-<a name="Boost-1_002e68_002e0"></a>
-<h4 class="subsection">5.1 Boost 1.68.0</h4>
-
-<p>Avoid boost version 1.68.0, it breaks the build for hpctoolkit.  Version
-1.70.0 works with the latest version of dyninst (10.1.0), or else 1.66.0
-is good and works with all versions of dyninst.
-</p>
-<a name="Elfutils-0_002e176"></a>
-<h4 class="subsection">5.2 Elfutils 0.176</h4>
-
-<p>Elfutils 0.176 requires glibc 2.16 or later (for <code>aligned_alloc</code>)
-and won&rsquo;t work with an older glibc, including RedHat or CentOS 6.x and
-Blue Gene.  On systems with an old glibc, use version 0.175.
-</p>
-
 <a name="IBM_002dJava-fails-to-fetch-_0028powerpc_0029"></a>
-<h4 class="subsection">5.3 IBM-Java fails to fetch (powerpc)</h4>
+<h4 class="subsection">4.5 IBM-Java fails to fetch (powerpc)</h4>
 
 <p>IBM is fairly aggressive about taking down old versions, so you may find
 that fetching ibm-java fails while trying to install hpcviewer (powerpc
@@ -276,6 +335,29 @@ download, then use that.
 <code>sha256sum</code> checksum for the file and then edit the
 <code>ibm-java/package.py</code> file to add this version.  And then report
 the problem to the spack maintainer.
+</p>
+
+<a name="Issues-with-specific-versions"></a>
+<h3 class="section">5 Issues with specific versions</h3>
+
+<a name="Binutils-2_002e35"></a>
+<h4 class="subsection">5.1 Binutils 2.35</h4>
+
+<p>Avoid binutils versions 2.35 and 2.35.1, they contain a bug that causes
+hpcprof to spew BFD Dwarf errors about &ldquo;could not find variable
+specification at offset xxxx.&rdquo;  This is fixed in release 2.35.2 or 2.36
+or later.
+</p>
+<a name="Boost-1_002e68_002e0"></a>
+<h4 class="subsection">5.2 Boost 1.68.0</h4>
+
+<p>Avoid boost version 1.68.0, it breaks the build for hpctoolkit.
+</p>
+<a name="Elfutils-0_002e176"></a>
+<h4 class="subsection">5.3 Elfutils 0.176</h4>
+
+<p>Beginning with 0.176, elfutils requires glibc 2.16 or later and won&rsquo;t
+work with an older glibc, including RedHat or CentOS 6.x and Blue Gene.
 </p>
 <hr>
 
