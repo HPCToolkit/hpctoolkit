@@ -126,7 +126,7 @@ static kind_info_t *first_kind = NULL;
 static kind_info_t **next_kind = &first_kind;
 typedef enum { KIND_UNINITIALIZED, KIND_INITIALIZING, KIND_INITIALIZED } kind_state_t;
 static _Atomic(kind_state_t) kind_state = ATOMIC_VAR_INIT(KIND_UNINITIALIZED);
-static int num_kind_metrics;
+static int num_kind_metrics; //YUMENG：change to num_total_metrics?
 static struct dmap {
   metric_desc_t *desc;
   int id;
@@ -583,6 +583,103 @@ hpcrun_metric_set_dense_copy(cct_metric_data_t* dest,
     dest += curr_k->idx;
   }
 }
+
+//
+// make a sparse copy - YUMENG 
+//
+
+//used to show what the datalist looks like, test purpose
+#if 0
+void
+datalist_display(metric_data_list_t *data_list)
+{
+  metric_data_list_t *curr;
+  metric_desc_list_t *curr_l;
+  for (curr = data_list; curr != NULL; curr = curr->next){
+
+    metric_desc_list_t *metric_list = curr->kind->metric_data;
+    printf("; kind info - name:");
+    for (curr_l = metric_list; curr_l != NULL; curr_l = curr_l->next) {
+      printf("%s ",metric_list->val.name);
+    }
+    printf("; metrics vals:");
+    metric_set_t* actual = curr->metrics;
+    for (int i = 0; i < curr->kind->idx; ++i) {
+      uint64_t v = actual[i].v1.bits; // local copy of val
+      printf(" %d",v);
+    /*int shift = 0, num_write = 0, c;
+  
+    for (shift = 56; shift >= 0; shift -= 8) {
+      printf("%ld : ", ((v >> shift) & 0xff));
+    }*/
+    }
+    printf("\n");
+  }
+  printf("END\n");
+  
+}
+#endif
+
+uint64_t
+hpcrun_metric_sparse_count(metric_data_list_t* list)
+{
+  
+  kind_info_t *curr_k;
+  metric_data_list_t *curr;
+  uint64_t num_nzval = 0;
+  
+  for (curr_k = first_kind; curr_k != NULL; curr_k = curr_k->link) {
+    for (curr = list; curr != NULL && curr->kind != curr_k; curr = curr->next);
+    if(curr){
+      metric_set_t* actual = curr->metrics;
+      for(int i = 0; i < curr_k->idx; i++ ){
+        if(actual[i].v1.i != 0){
+          num_nzval++;         
+        }
+      }
+    }
+  }
+  return num_nzval;
+
+}
+
+
+uint64_t
+hpcrun_metric_set_sparse_copy(cct_metric_data_t* val, uint16_t* metric_ids,
+			     metric_data_list_t* list, int initializing_idx)
+{
+  
+  kind_info_t *curr_k;
+  metric_data_list_t *curr;
+  
+  cct_metric_data_t curr_m;
+
+  int curr_id = 0;//global id of metrics
+  uint64_t num_nzval = 0;//current number of non-zero values
+
+  for (curr_k = first_kind; curr_k != NULL; curr_k = curr_k->link) {
+    for (curr = list; curr != NULL && curr->kind != curr_k; curr = curr->next);
+    if(curr){     
+      metric_set_t* actual = curr->metrics;
+      for(int i = 0; i < curr_k->idx; i++ ){
+        curr_m = actual[i].v1;
+        if(curr_m.i != 0){ 
+          val[initializing_idx + num_nzval] = curr_m;
+          metric_ids[initializing_idx + num_nzval] = (uint16_t)curr_id;
+          num_nzval++;
+        }
+        curr_id++;
+      }
+    }else{//if curr not exist, meaning no metrics for this kind, still needs to update the metric id to match the kind
+      curr_id += curr_k->idx;
+    } 
+  }
+
+  //num_nzval will be offset for next cct's metrics
+  return num_nzval;
+
+}
+
 
 //
 // merge two metrics list
