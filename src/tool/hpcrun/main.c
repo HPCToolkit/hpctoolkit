@@ -687,6 +687,10 @@ hpcrun_fini_internal()
 // FIXME: this isn't in master-gpu-trace. how is it managed?
     // stream_tracing_fini();
 
+    // assign id tuple for main thread
+    thread_data_t* td = hpcrun_get_thread_data();
+    hpcrun_id_tuple_cputhread(td);
+
     // write all threads' profile data and close trace file
     hpcrun_threadMgr_data_fini(hpcrun_get_thread_data());
 
@@ -805,6 +809,10 @@ hpcrun_thread_fini(epoch_t *epoch)
     // or flush the data into hpcrun file
     int add_separator = 0;
     thread_data_t* td = hpcrun_get_thread_data();
+
+    // assign id tuple for pthreads
+    hpcrun_id_tuple_cputhread(td);
+
     hpcrun_threadMgr_data_put(epoch, td, add_separator);
 
     TMSG(PROCESS, "End of thread");

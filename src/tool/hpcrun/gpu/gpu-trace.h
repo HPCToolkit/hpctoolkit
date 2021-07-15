@@ -82,6 +82,13 @@ typedef void (*gpu_trace_fn_t)
 );
 
 
+typedef struct gpu_tag_t {
+  uint32_t device_id;
+  uint32_t context_id;
+  uint32_t stream_id;
+}gpu_tag_t;
+
+
 
 //******************************************************************************
 // interface operations
@@ -112,7 +119,9 @@ gpu_trace_record
 gpu_trace_t *
 gpu_trace_create
 (
- void
+ uint32_t device_id,
+ uint32_t context_id,
+ uint32_t stream_id
 );
 
 
@@ -152,7 +161,7 @@ gpu_trace_cct_no_activity
 thread_data_t *
 gpu_trace_stream_acquire
 (
- void
+ gpu_tag_t tag
 );
 
 

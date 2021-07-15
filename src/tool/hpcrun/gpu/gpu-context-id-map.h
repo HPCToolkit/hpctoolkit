@@ -99,6 +99,7 @@ gpu_context_id_map_stream_delete
 void
 gpu_context_id_map_stream_process
 (
+ uint32_t device_id,
  uint32_t context_id,
  uint32_t stream_id,
  gpu_trace_fn_t fn,

@@ -203,8 +203,9 @@ finalize_all_thread_data(void *arg)
 
   while (data != NULL) {
     core_profile_trace_data_t *cptd = &data->thread_data->core_profile_trace_data;
+    hpcrun_set_thread_data(data->thread_data); //YUMENG: added to make sure writer can hpcrun_malloc(pretend I am this thread)
     finalize_thread_data(cptd);
-
+    
     TMSG(PROCESS, "%d: write thread data", cptd->id);
 
     data = grab_thread_data();

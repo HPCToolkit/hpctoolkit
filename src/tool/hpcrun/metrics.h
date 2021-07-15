@@ -81,6 +81,13 @@ typedef void metric_upd_proc_t(int metric_id, metric_data_list_t* set, cct_metri
 
 typedef cct_metric_data_t (*metric_bin_fn)(cct_metric_data_t v1, cct_metric_data_t v2);
 
+//YUMENG
+struct metric_position_t{
+  uint16_t mid;
+  uint64_t offset;
+};
+typedef struct metric_position_t metric_position_t;
+
 //
 // To accomodate block sparse representation,
 // use 'kinds' == dense subarrays of metrics
@@ -170,6 +177,18 @@ extern metric_data_list_t* hpcrun_new_metric_data_list_kind_final(kind_info_t *k
 extern void hpcrun_metric_set_dense_copy(cct_metric_data_t* dest,
 					 metric_data_list_t* list,
 					 int num_metrics);
+
+//
+// make a sparse copy - YUMENG
+//
+//extern void datalist_display(metric_data_list_t *data_list);
+
+extern uint64_t hpcrun_metric_set_sparse_copy(cct_metric_data_t* val, uint16_t* metric_ids,
+					 metric_data_list_t* list, int initializing_offset);
+
+extern uint64_t hpcrun_metric_sparse_count(metric_data_list_t* list);
+
+
 
 extern metric_data_list_t *hpcrun_merge_cct_metrics(metric_data_list_t *dest, metric_data_list_t *source);
 
