@@ -74,7 +74,7 @@ static int
 realmain(int argc, char* const* argv);
 
 static int
-main_rawData(const std::vector<string>& profileFiles);
+main_rawData(const std::vector<string>& profileFiles, bool sm_easyToGrep);
 
 
 //****************************************************************************
@@ -122,7 +122,7 @@ static int
 realmain(int argc, char* const* argv) 
 {
   Args args(argc, argv);  // exits if error on command line
-  return main_rawData(args.profileFiles); 
+  return main_rawData(args.profileFiles, args.sm_easyToGrep); 
 }
 
 
@@ -130,8 +130,9 @@ realmain(int argc, char* const* argv)
 //
 //****************************************************************************
 
+//YUMENG: second argument: if more flags are needed, maybe build a struct to include all flags and pass the struct around
 static int
-main_rawData(const std::vector<string>& profileFiles)
+main_rawData(const std::vector<string>& profileFiles, bool sm_easyToGrep)
 {
   std::ostream& os = std::cout;
 
@@ -143,7 +144,7 @@ main_rawData(const std::vector<string>& profileFiles)
     os << fnm << std::endl;
     os << std::setfill('=') << std::setw(77) << "=" << std::endl;
 
-    Analysis::Raw::writeAsText(fnm); // pass os FIXME
+    Analysis::Raw::writeAsText(fnm, sm_easyToGrep); // pass os FIXME
   }
   return 0;
 }

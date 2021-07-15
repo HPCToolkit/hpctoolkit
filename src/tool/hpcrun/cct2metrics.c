@@ -142,6 +142,7 @@ hpcrun_get_metric_data_list_specific(cct2metrics_t **map, cct_node_id_t cct_id)
   else
     THREAD_LOCAL_MAP() = current_map;
 
+
   TMSG(CCT2METRICS, " -- After Splay map = %p", cct_id, current_map);
 
   if (current_map->node == cct_id) {

@@ -147,7 +147,8 @@ am__objects_1 = libHPCprof_la-Metric-Mgr.lo \
 	libHPCprof_la-Struct-TreeIterator.lo libHPCprof_la-CCT-Tree.lo \
 	libHPCprof_la-CCT-TreeIterator.lo libHPCprof_la-CCT-Merge.lo \
 	libHPCprof_la-Flat-ProfileData.lo \
-	libHPCprof_la-CallPath-Profile.lo libHPCprof_la-StringSet.lo \
+	libHPCprof_la-CallPath-Profile.lo libHPCprof_la-pms-format.lo \
+	libHPCprof_la-cms-format.lo libHPCprof_la-StringSet.lo \
 	libHPCprof_la-NameMappings.lo
 am_libHPCprof_la_OBJECTS = $(am__objects_1)
 libHPCprof_la_OBJECTS = $(am_libHPCprof_la_OBJECTS)
@@ -175,24 +176,6 @@ DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src/include
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__depfiles_maybe = depfiles
 am__mv = mv -f
-CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
-	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
-LTCXXCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) \
-	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
-	$(AM_CXXFLAGS) $(CXXFLAGS)
-AM_V_CXX = $(am__v_CXX_@AM_V@)
-am__v_CXX_ = $(am__v_CXX_@AM_DEFAULT_V@)
-am__v_CXX_0 = @echo "  CXX     " $@;
-am__v_CXX_1 = 
-CXXLD = $(CXX)
-CXXLINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
-	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-AM_V_CXXLD = $(am__v_CXXLD_@AM_V@)
-am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
-am__v_CXXLD_0 = @echo "  CXXLD   " $@;
-am__v_CXXLD_1 = 
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
@@ -211,6 +194,24 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
+CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
+	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
+LTCXXCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) \
+	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
+	$(AM_CXXFLAGS) $(CXXFLAGS)
+AM_V_CXX = $(am__v_CXX_@AM_V@)
+am__v_CXX_ = $(am__v_CXX_@AM_DEFAULT_V@)
+am__v_CXX_0 = @echo "  CXX     " $@;
+am__v_CXX_1 = 
+CXXLD = $(CXX)
+CXXLINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CXXLD) $(AM_CXXFLAGS) \
+	$(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+AM_V_CXXLD = $(am__v_CXXLD_@AM_V@)
+am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
+am__v_CXXLD_0 = @echo "  CXXLD   " $@;
+am__v_CXXLD_1 = 
 SOURCES = $(libHPCprof_la_SOURCES)
 DIST_SOURCES = $(libHPCprof_la_SOURCES)
 am__can_run_installinfo = \
@@ -525,6 +526,8 @@ HPCLIB_Analysis = $(top_builddir)/src/lib/analysis/libHPCanalysis.la
 HPCLIB_Banal = $(top_builddir)/src/lib/banal/libHPCbanal.la
 HPCLIB_Banal_Simple = $(top_builddir)/src/lib/banal/libHPCbanal_simple.la
 HPCLIB_Prof = $(top_builddir)/src/lib/prof/libHPCprof.la
+HPCLIB_Profile = $(top_builddir)/src/lib/profile/libHPCprofile.la
+HPCLIB_ProfileStandalone = $(top_builddir)/src/lib/profile/libHPCprofile_standalone.la
 HPCLIB_ProfXML = $(top_builddir)/src/lib/profxml/libHPCprofxml.la
 HPCLIB_ProfLean = $(top_builddir)/src/lib/prof-lean/libHPCprof-lean.la
 HPCLIB_Binutils = $(top_builddir)/src/lib/binutils/libHPCbinutils.la
@@ -563,6 +566,8 @@ MYSOURCES = \
 	Flat-ProfileData.hpp Flat-ProfileData.cpp \
 	\
 	CallPath-Profile.hpp CallPath-Profile.cpp \
+	pms-format.c pms-format.h \
+	cms-format.c cms-format.h \
 	\
 	StringSet.hpp StringSet.cpp \
 	NameMappings.hpp NameMappings.cpp 
@@ -597,7 +602,7 @@ MYCPPFLAGS_0_CC = $(MYCPPFLAGS_0) $(AM_CFLAGS)   $(CFLAGS)   $(MYCFLAGS)
 all: all-am
 
 .SUFFIXES:
-.SUFFIXES: .cpp .lo .o .obj
+.SUFFIXES: .c .cpp .lo .o .obj
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am $(top_srcdir)/src/Makeinclude.config $(top_srcdir)/src/Makeinclude.rules $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -666,6 +671,43 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_la-StringSet.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_la-Struct-Tree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_la-Struct-TreeIterator.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_la-cms-format.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_la-pms-format.Plo@am__quote@
+
+.c.o:
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ $<
+
+.c.obj:
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+
+.c.lo:
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LTCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
+
+libHPCprof_la-pms-format.lo: pms-format.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CFLAGS) $(CFLAGS) -MT libHPCprof_la-pms-format.lo -MD -MP -MF $(DEPDIR)/libHPCprof_la-pms-format.Tpo -c -o libHPCprof_la-pms-format.lo `test -f 'pms-format.c' || echo '$(srcdir)/'`pms-format.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCprof_la-pms-format.Tpo $(DEPDIR)/libHPCprof_la-pms-format.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pms-format.c' object='libHPCprof_la-pms-format.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_la-pms-format.lo `test -f 'pms-format.c' || echo '$(srcdir)/'`pms-format.c
+
+libHPCprof_la-cms-format.lo: cms-format.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CFLAGS) $(CFLAGS) -MT libHPCprof_la-cms-format.lo -MD -MP -MF $(DEPDIR)/libHPCprof_la-cms-format.Tpo -c -o libHPCprof_la-cms-format.lo `test -f 'cms-format.c' || echo '$(srcdir)/'`cms-format.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCprof_la-cms-format.Tpo $(DEPDIR)/libHPCprof_la-cms-format.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='cms-format.c' object='libHPCprof_la-cms-format.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_la-cms-format.lo `test -f 'cms-format.c' || echo '$(srcdir)/'`cms-format.c
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -1021,7 +1063,7 @@ uninstall-am:
 
 
 ############################################################
-# 
+#
 ############################################################
 
 # arguments: ($1: from) ($2: to)

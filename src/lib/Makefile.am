@@ -75,6 +75,7 @@ SUBDIRS += \
 	binutils \
 	isa \
 	prof \
+	profile \
 	profxml \
 	xml \
 	support \
