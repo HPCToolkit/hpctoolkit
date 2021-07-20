@@ -71,11 +71,11 @@
 
 #include "ElfHelper.hpp"
 #include "RelocateCubin.hpp"
+#include "Fatbin.hpp"
 
 #include <Elf_X.h> // ensure EM_CUDA defined
 
 #include <include/hpctoolkit-config.h>
-
 
 //******************************************************************************
 // macros
@@ -126,6 +126,12 @@ ElfFile::open
     origPtr = (char *) malloc(memLen);
     memcpy(origPtr, memPtr, memLen);
     relocateCubin(memPtr, memLen, elf);
+
+    /*
+    FILE *f = fopen("/home/xm13/hpctoolkit-tests/dyninst/qs.relocated.cubin", "w");
+    fwrite(getMemory(), getLength(), 1, f);
+    fclose(f);
+    */
 #else
     result = false;
     memPtr = 0;

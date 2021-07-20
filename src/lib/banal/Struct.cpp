@@ -512,7 +512,7 @@ getStatement(StatementVector & svec, Offset vma, SymtabAPI::Function * sym_func)
     Module * mod = sym_func->getModule();
 
     if (mod != NULL) {
-      mod->getSourceLines(svec, vma + cubin_size);
+      mod->getSourceLines(svec, vma /*+ cubin_size*/);
     }
   }
 
@@ -522,7 +522,7 @@ getStatement(StatementVector & svec, Offset vma, SymtabAPI::Function * sym_func)
     the_symtab->findModuleByOffset(modSet, vma);
 
     for (auto mit = modSet.begin(); mit != modSet.end(); ++mit) {
-      (*mit)->getSourceLines(svec, vma + cubin_size);
+      (*mit)->getSourceLines(svec, vma /*+ cubin_size*/);
       if (! svec.empty()) {
         break;
       }
