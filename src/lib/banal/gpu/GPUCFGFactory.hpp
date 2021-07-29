@@ -2,10 +2,11 @@
 #define BANAL_GPU_GPU_CFG_FACTORY_H
 
 #include <CFGFactory.h>
-#include <unordered_map>
 
 #include "GPUBlock.hpp"
 #include "DotCFG.hpp"
+
+#include "tbb/concurrent_hash_map.h"
 
 namespace Dyninst {
 namespace ParseAPI {
@@ -23,7 +24,7 @@ class PARSER_EXPORT GPUCFGFactory : public CFGFactory {
 
  private:
   std::vector<GPUParse::Function *> &_functions;
-  std::unordered_map<size_t, GPUBlock *> _block_filter; 
+  tbb::concurrent_hash_map<size_t, GPUBlock *> _block_filter;
 };
 
 }
