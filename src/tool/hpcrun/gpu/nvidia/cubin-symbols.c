@@ -204,6 +204,8 @@ relocateSymbolsHelper
 	      switch(symtype) {
 	        case STT_FUNC:
 	          {
+              //FIX20210714: should be symbol original offset + section offset
+              // symbol_values->symbols[i] = sym.st_value + sectionOffset(sections, section_index(section_index));
 	            symbol_values->symbols[i] = sectionOffset(sections, section_index(section_index));
 	          }
 	        default: break;
