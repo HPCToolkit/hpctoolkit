@@ -127,11 +127,12 @@ ElfFile::open
     memcpy(origPtr, memPtr, memLen);
     relocateCubin(memPtr, memLen, elf);
 
-    /*
-    FILE *f = fopen("/home/xm13/hpctoolkit-tests/dyninst/qs.relocated.cubin", "w");
-    fwrite(getMemory(), getLength(), 1, f);
-    fclose(f);
-    */
+    if (getenv("HPCSTRUCT_CUBIN_RELOCATION")) {
+      std::string newname = fileName + ".relocated";
+      FILE *f = fopen(newname.c_str(), "w");
+      fwrite(getMemory(), getLength(), 1, f);
+      fclose(f);
+    }
 #else
     result = false;
     memPtr = 0;
