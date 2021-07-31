@@ -35,12 +35,17 @@ Bug fixes
     - Fix issue #85 (keyboard shortcut to minimize the window)
     - Fix filtering CCT nodes for thread views
     - Fix hot path to select the child node instead of the parent
-    - Fix merging GPU databases which contain aggregate and derived metrics by deep copying the metric descriptors.
+    - Fix merging GPU databases which contain aggregate and derived metrics 
+      by deep copying the metric descriptors.
     - Fix build script to include notarization for mac
     - Fix storing recent open database: store the absolute path, not the relative one.
     - Fix SWT resource leaks
     - Fix flickering issue on Windows when splitting the hpcviewer window.
     - Fix trace view’s color map changes to also refresh other panes and windows
+    - Fix Find dialog layout on Linux/GTK
+    - Fix merging GPU databases 
+    - Fix a procedure-color mapping bug in the trace view
+    - Partial fix issue 42: Fix a performance bug when sorting a table
 
 Improvements
 
@@ -53,6 +58,11 @@ Improvements
     - Use Java XML parser to slightly improve XML parsing performance and avoid using 
       the old Apache xerces. 
     - Code clean-up, remove dead code and remove unused variables
+    - Issue 77: Add support for different color mapping policy in the trace view. 
+      Default: procedure-name color instead of random color.
+    - Warn users when filtering is enabled 
+    - Default is to build with Eclipse 4.19 (2021.03) except for Linux 
+      ppc64le (built with Eclipse 4.16). Some fixes include improved dark color theme.
       
   dotgraph
     - enhance dotgraph to dump control flow graphs for GPU binaries

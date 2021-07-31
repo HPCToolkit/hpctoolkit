@@ -225,6 +225,7 @@ gpu_trace_channel_consume
   // reverse them so that they are in FIFO order
   channel_reverse(channel, bichannel_direction_forward);
 
+  cct_node_t *no_activity = gpu_trace_cct_no_activity(channel->td);
   // consume all elements enqueued before this function was called
   for (;;) {
     gpu_trace_item_t *ti = channel_pop(channel, bichannel_direction_forward);
@@ -236,7 +237,7 @@ gpu_trace_channel_consume
            ti->start,
            ti->end,
            ti->call_path_leaf);
-    gpu_trace_item_consume(consume_one_trace_item, channel->td, ti);
+    gpu_trace_item_consume(consume_one_trace_item, channel->td, ti, no_activity);
     gpu_trace_item_free(channel, ti);
   }
 }
