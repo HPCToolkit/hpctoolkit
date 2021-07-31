@@ -5,7 +5,7 @@ Installing HPCToolkit with Spack
 2 Prerequisites
 3 Spack Notation
 4 Clone Spack and HPCToolkit
-5 Config.yaml
+5 Config.yaml and Install Roots
 6 Packages.yaml
 6.1 External Packages
 6.2 Micro-Architecture Targets
@@ -79,7 +79,7 @@ The current status of using Spack for HPCToolkit is at:
 
      <http://hpctoolkit.org/spack-issues.html>
 
-Last revised: February 14, 2021.
+Last revised: July 13, 2021.
 
 2 Prerequisites
 ===============
@@ -208,8 +208,8 @@ It suffices to add 'spack/bin' to your PATH (or even symlink the spack
 launch script).  Sourcing the 'setup-env' script adds extra support for
 modules built by spack.
 
-5 Config.yaml
-=============
+5 Config.yaml and Install Roots
+===============================
 
 'config.yaml' is the top-level spack config file.  This specifies the
 directory layout for installed files and the top-level spack parameters.
@@ -218,26 +218,52 @@ want to install packages and modules for hpctoolkit in a public
 directory.  For a module to be available, both the 'install_tree' and
 'module_roots' directories must be accessible.
 
-  1. 'install_tree/root' - by default, spack installs packages inside
-     the spack repository at 'spack/opt/spack'.  If you want to use
-     another location, then set the 'root' field under 'install_tree'.
+   By default, spack installs packages inside the spack repository at
+'spack/opt/spack'.  To use another location, set the 'root' field under
+'install_tree' in 'config.yaml'.
 
-  2. 'module_roots' - by default, spack installs module files inside the
-     spack repository at 'spack/share/spack'.  If you want to use
-     another location, then set this.
+     config:
+       install_tree:
+         root: /path/to/top-level/install/directory
 
-There are two other fields that you may want to set for you local
+By default, spack installs module files inside the spack repository at
+'spack/share/spack'.  The syntax for resetting this is changing.  In the
+old syntax, you put the top-level directory in 'config.yaml' and enable
+the module type(s) in 'modules.yaml'.
+
+     config:
+       module_roots:
+         # normally, need only one of these
+         tcl:  /path/to/top-level/tcl-module/directory
+         lmod: /path/to/top-level/lmod-module/directory
+
+     modules:
+       enable:
+        - tcl  (or lmod)
+
+In the new syntax, the paths go in 'modules.yaml', and there is one
+extra step in the hierarchy ('default:').
+
+     modules:
+       default:
+         roots:
+           # normally, need only one of these
+           tcl:  /path/to/top-level/tcl-module/directory
+           lmod: /path/to/top-level/lmod-module/directory
+         enable:
+          - tcl  (or lmod)
+
+There are two other fields that you may want to set for your local
 system.
 
-  3. 'connect_timeout' - some download sites, especially sourceforge are
+  1. 'connect_timeout' - some download sites, especially sourceforge are
      often slow to connect.  If you find that connections are timing
      out, then increase this time to 30 or 60 seconds (default is 10
      seconds).
 
-  4. 'build_jobs' - by default, spack uses all available hardware
-     threads for parallel make, up to a limit of 16.  If you're using a
-     shared machine and don't want to use the entire machine, then set
-     this to a smaller number.
+  2. 'build_jobs' - by default, spack uses all available hardware
+     threads for parallel make, up to a limit of 16.  If you want to use
+     a different number, then set this.
 
 There are also parameters for the locations of the build directories,
 the cache of downloaded tar files, etc, which you may wish to set.
@@ -304,7 +330,7 @@ change depending on your system.  But always check the current
   1. 'binutils' - avoid versions 2.35 and 2.35.1, they have a bug that
      spews errors from hpcprof.  Use 2.34 until 2.36 is available.
 
-     'intel-tbb' - for very old Intel or AMD systems that don't support
+  2. 'intel-tbb' - for very old Intel or AMD systems that don't support
      transactional memory, change '+tm' to '~tm'.  (This option has no
      effect on non-x86 systems.)
 
@@ -947,17 +973,20 @@ compilers, then you may need to build a new compiler yourself.
    First, pick a directory in which to install the modules and make
 subdirectories for the spack packages and module files.  In this
 example, I'm using '/opt/spack/Modules' as my top-level directory and
-subdirectories 'packages' and 'modules'.  Edit 'config.yaml' to add
-these paths.
+subdirectories 'packages' and 'modules'.  Edit 'config.yaml' and
+'modules.yaml' to add these paths.
 
      config:
        install_tree:
          root: /opt/spack/Modules/packages
 
-       # just use one of these
-       module_roots:
-         tcl:  /opt/spack/Modules/modules
-         lmod: /opt/spack/Modules/modules
+     modules:
+       default:
+         roots:
+           # just use one of these
+           module_roots:
+             tcl:  /opt/spack/Modules/modules
+             lmod: /opt/spack/Modules/modules
 
 Determine if your system uses TCL (environment) or Lmod modules.
 Normally, the 'module' command is a shell function.  TCL modules use
@@ -966,9 +995,10 @@ enable the module type for your system.  Again, you only need one of
 these (and don't use dotkit unless you work at LLNL).
 
      modules:
-       enable:
-        - tcl
-        - lmod
+       default:
+         enable:
+          - tcl
+          - lmod
 
 Then, choose a version of gcc and use the default compiler (normally
 '/usr/bin/gcc') to build the newer version.  Currently, gcc 8.x is a
