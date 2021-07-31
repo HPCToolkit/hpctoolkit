@@ -450,6 +450,12 @@ METHOD_FN(supports_event, const char *ev_str)
   long th;
 
   hpcrun_extract_ev_thresh(ev_str, sizeof(evtmp), evtmp, &th, DEFAULT_THRESHOLD);
+
+  // corner case: check if it isn't a misspelling event
+  if (strcmp("realtime", evtmp)==0) {
+    return false;
+  }
+
   return PAPI_event_name_to_code(evtmp, &ec) == PAPI_OK;
 }
  

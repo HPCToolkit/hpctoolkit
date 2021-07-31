@@ -772,6 +772,12 @@ METHOD_FN(supports_event, const char *ev_str)
 
   hpcrun_extract_ev_thresh(ev_tmp, strlen(ev_tmp), ev_tmp, &thresh, 0) ;
 
+  // corner case: check if it isn't a misspelling event
+  if (strcmp("realtime", ev_tmp)==0) {
+    free(ev_tmp);
+    return false;
+  }
+
   // check if the event is a predefined event
   if (event_custom_find(ev_tmp) != NULL) {
     free(ev_tmp);
