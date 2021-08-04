@@ -88,6 +88,7 @@
 #include "sample-sources/simple_oo.h"
 #include "sample-sources/sample_source_obj.h"
 #include "sample-sources/common.h"
+#include "sample-sources/exclude.h"
 #include "sample-sources/ss-errno.h"
  
 #include <hpcrun/main.h>
@@ -771,6 +772,12 @@ METHOD_FN(supports_event, const char *ev_str)
   perf_skid_parse_event(ev_str, &ev_tmp);
 
   hpcrun_extract_ev_thresh(ev_tmp, strlen(ev_tmp), ev_tmp, &thresh, 0) ;
+
+  // corner case: check if it isn't a misspelling event
+  if (is_event_to_exclude(ev_tmp)) {
+    free(ev_tmp);
+    return false;
+  }
 
   // check if the event is a predefined event
   if (event_custom_find(ev_tmp) != NULL) {

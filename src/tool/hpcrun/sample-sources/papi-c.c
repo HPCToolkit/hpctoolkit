@@ -79,6 +79,7 @@
 #include "sample_source_obj.h"
 #include "common.h"
 #include "display.h"
+#include "exclude.h"
 #include "papi-c-extended-info.h"
 #include "sample-filters.h"
 
@@ -450,6 +451,12 @@ METHOD_FN(supports_event, const char *ev_str)
   long th;
 
   hpcrun_extract_ev_thresh(ev_str, sizeof(evtmp), evtmp, &th, DEFAULT_THRESHOLD);
+
+  // corner case: check if it isn't a misspelling event
+  if (is_event_to_exclude(evtmp)) {
+    return false;
+  }
+
   return PAPI_event_name_to_code(evtmp, &ec) == PAPI_OK;
 }
  

@@ -304,6 +304,7 @@ MY_BASE_FILES =				\
 	sample-sources/omp-idle.c       \
         sample-sources/common.c         \
 	sample-sources/display.c		\
+	sample-sources/exclude.c	\
 	sample-sources/ga.c		\
 	sample-sources/io.c 		\
 	sample-sources/itimer.c		\
