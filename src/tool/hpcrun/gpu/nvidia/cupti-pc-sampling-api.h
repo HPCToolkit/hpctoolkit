@@ -93,6 +93,20 @@ cupti_cubin_crc_get
 );
 
 
+void
+cupti_pc_sampling_start
+(
+ CUcontext context
+);
+
+
+void
+cupti_pc_sampling_stop
+(
+ CUcontext context
+);
+
+
 // Continuous mode
 void
 cupti_pc_sampling_range_flush

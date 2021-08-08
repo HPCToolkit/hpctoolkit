@@ -909,9 +909,7 @@ cupti_subscriber_callback
       int pc_sampling_frequency = cupti_pc_sampling_frequency_get();
       if (pc_sampling_frequency != -1) {
 #ifdef NEW_CUPTI
-        // Flush records
-        // No need to lock because the current operation is on GPU
-        // Activities can be attributed to either the current or the previous range
+        // Flush final records for this context and remove it from the context map
         uint32_t range_id = gpu_range_id();
         cupti_pc_sampling_range_correlation_collect(range_id, NULL, rd->context);
         cupti_pc_sampling_disable2(rd->context);
@@ -935,8 +933,7 @@ cupti_subscriber_callback
     ip_normalized_t kernel_ip;
 
     switch (cb_id) {
-      //FIXME(Keren): do not support memory allocate and free for current CUPTI version
-      // FIXME(Dejan): here find #bytes from func argument list and atribute it to node in cct(corr_id)
+      // FIXME(Keren): do not support memory allocate and free for current CUPTI version
       //case CUPTI_DRIVER_TRACE_CBID_cuMemAlloc:
       //case CUPTI_DRIVER_TRACE_CBID_cu64MemAlloc:
       //case CUPTI_DRIVER_TRACE_CBID_cuMemAllocPitch:
@@ -949,6 +946,24 @@ cupti_subscriber_callback
       //    break;
       //  }
       // synchronize apis
+#ifdef NEW_CUPTI
+      case CUPTI_DRIVER_TRACE_CBID_cuCtxSetCurrent:
+      case CUPTI_DRIVER_TRACE_CBID_cuCtxPushCurrent:
+      case CUPTI_DRIVER_TRACE_CBID_cuCtxPushCurrent_v2:
+        {
+          CUcontext context;
+          cuda_context_get(&context);
+          if (context != NULL) {
+            if (cd->callbackSite == CUPTI_API_ENTER) {
+              cupti_pc_sampling_stop(context);
+            } else {
+              cupti_pc_sampling_start(context);
+            }
+          }
+          is_valid_op = false;
+          break;
+        }
+#endif
       case CUPTI_DRIVER_TRACE_CBID_cuCtxSynchronize:
       case CUPTI_DRIVER_TRACE_CBID_cuEventSynchronize:
       case CUPTI_DRIVER_TRACE_CBID_cuStreamSynchronize:
