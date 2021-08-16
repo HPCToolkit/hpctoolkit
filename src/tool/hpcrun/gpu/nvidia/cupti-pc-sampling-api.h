@@ -70,15 +70,6 @@ cupti_pc_sampling_disable2
 );
 
 
-void
-cupti_pc_sampling_range_correlation_collect
-(
- uint32_t range_id,
- cct_node_t *cct_node,
- CUcontext context
-);
-
-
 int
 cupti_pc_sampling_bind
 (
@@ -94,34 +85,32 @@ cupti_cubin_crc_get
 
 
 void
-cupti_pc_sampling_start
+cupti_pc_sampling_correlation_context_collect
 (
+ cct_node_t *cct_node,
  CUcontext context
 );
 
 
 void
-cupti_pc_sampling_stop
+cupti_pc_sampling_range_context_collect
 (
+ uint32_t range_id,
  CUcontext context
 );
 
 
-// Continuous mode
 void
-cupti_pc_sampling_range_flush
+cupti_pc_sampling_range_collect
 (
  uint32_t range_id
 );
 
 
-// Serialization mode
 void
-cupti_pc_sampling_correlation_flush
+cupti_pc_sampling_free
 (
- CUcontext context,
- cct_node_t *cct_node
+ CUcontext context
 );
-
 
 #endif

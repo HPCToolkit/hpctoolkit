@@ -797,7 +797,7 @@ cupti_unload_callback_cuda
     // Flush records but not disable context
     // No need to lock because the current operation is not on GPU
     uint32_t range_id = gpu_range_id();
-    cupti_pc_sampling_range_correlation_collect(range_id, NULL, context);
+    cupti_pc_sampling_range_context_collect(range_id, context);
   }
 #endif
   //cubin_id_map_delete(cubin_id);
@@ -846,6 +846,7 @@ ensure_kernel_ip_present
 }
 
 
+#ifdef NEW_CUPTI
 static void
 increase_kernel_count
 (
@@ -862,6 +863,7 @@ increase_kernel_count
   // Increase kernel count
   gpu_metrics_attribute_kernel_count(kernel_node);
 }
+#endif
 
 
 static void
@@ -911,8 +913,9 @@ cupti_subscriber_callback
 #ifdef NEW_CUPTI
         // Flush final records for this context and remove it from the context map
         uint32_t range_id = gpu_range_id();
-        cupti_pc_sampling_range_correlation_collect(range_id, NULL, rd->context);
+        cupti_pc_sampling_range_context_collect(range_id, rd->context);
         cupti_pc_sampling_disable2(rd->context);
+        cupti_pc_sampling_free(rd->context);
 #else
         cupti_pc_sampling_disable(rd->context);
 #endif
@@ -946,24 +949,6 @@ cupti_subscriber_callback
       //    break;
       //  }
       // synchronize apis
-#ifdef NEW_CUPTI
-      case CUPTI_DRIVER_TRACE_CBID_cuCtxSetCurrent:
-      case CUPTI_DRIVER_TRACE_CBID_cuCtxPushCurrent:
-      case CUPTI_DRIVER_TRACE_CBID_cuCtxPushCurrent_v2:
-        {
-          CUcontext context;
-          cuda_context_get(&context);
-          if (context != NULL) {
-            if (cd->callbackSite == CUPTI_API_ENTER) {
-              cupti_pc_sampling_stop(context);
-            } else {
-              cupti_pc_sampling_start(context);
-            }
-          }
-          is_valid_op = false;
-          break;
-        }
-#endif
       case CUPTI_DRIVER_TRACE_CBID_cuCtxSynchronize:
       case CUPTI_DRIVER_TRACE_CBID_cuEventSynchronize:
       case CUPTI_DRIVER_TRACE_CBID_cuStreamSynchronize:
@@ -1173,7 +1158,7 @@ cupti_subscriber_callback
         if (gpu_range_interval_get() == 1) {
           // TODO(Keren): call synchronization for PAPI metrics
           if (is_kernel_op) {
-            cupti_pc_sampling_correlation_flush(cd->context, cupti_kernel_ph);
+            cupti_pc_sampling_correlation_context_collect(cupti_kernel_ph, cd->context);
           }
         } else {
           if (gpu_range_is_lead()) {
@@ -1182,7 +1167,7 @@ cupti_subscriber_callback
             // TODO(Keren): call synchronization for PAPI metrics
             uint32_t range_id = gpu_range_id();
             // collect pc samples from all contexts
-            cupti_pc_sampling_range_flush(range_id);
+            cupti_pc_sampling_range_collect(range_id);
           }
 
           // Release the lock
@@ -1382,7 +1367,7 @@ cupti_subscriber_callback
         if (gpu_range_interval_get() == 1) {
           // TODO(Keren): call synchronization for PAPI metrics
           if (is_kernel_op) {
-            cupti_pc_sampling_correlation_flush(cd->context, cupti_kernel_ph);
+            cupti_pc_sampling_correlation_context_collect(cupti_kernel_ph, cd->context);
           }
         } else {
           if (gpu_range_is_lead()) {
@@ -1391,7 +1376,7 @@ cupti_subscriber_callback
             // TODO(Keren): call synchronization for PAPI metrics
             uint32_t range_id = gpu_range_id();
             // collect pc samples from all contexts
-            cupti_pc_sampling_range_flush(range_id);
+            cupti_pc_sampling_range_collect(range_id);
           }
 
           // Release the lock
@@ -1875,8 +1860,10 @@ cupti_device_shutdown(void *args, int how)
     // Flush pc samples of all contexts
     // Get the current range
     gpu_range_enter();
+    
     uint32_t range_id = gpu_range_id();
-    cupti_pc_sampling_range_flush(range_id);
+    cupti_pc_sampling_range_collect(range_id);
+
     gpu_range_exit();
 
     // Wait until operations are drained
