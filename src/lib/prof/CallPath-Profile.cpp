@@ -114,8 +114,6 @@ using namespace xml;
 #include <lib/support/RealPathMgr.hpp>
 #include <lib/support/StrUtil.hpp>
 
-#include <lib/support/ExprEval.hpp>
-#include <lib/support/VarMap.hpp>
 
 //*************************** Forward Declarations **************************
 
