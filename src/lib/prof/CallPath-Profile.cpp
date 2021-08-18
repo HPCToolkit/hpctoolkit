@@ -1103,7 +1103,8 @@ Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
   // ------------------------------------------------------------
 
   if (outfs) {
-    fprintf(outfs, "\n[You look fine today! (num-epochs: %u)]\n", num_epochs);
+    if (Analysis::Util::option == Analysis::Util::Print_All) 
+      fprintf(outfs, "\n[You look fine today! (num-epochs: %u)]\n", num_epochs);
   }
 
   hpcrun_fmt_hdr_free(&hdr, free);
@@ -1170,11 +1171,15 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     DIAG_Throw("error reading 'loadmap'");
   }
   if (outfs) {
-    hpcrun_fmt_loadmap_fprint(&loadmap_tbl, outfs);
     if (Analysis::Util::option == Analysis::Util::Print_LoadModule_Only) {
+      for (uint32_t i = 0; i < loadmap_tbl.len; i++) {
+        loadmap_entry_t* x = &loadmap_tbl.lst[i];
+        fprintf(outfs, "%s\n", x->name );
+      }
       // hack: case for hpcproftt with --lm option
       return HPCFMT_EOF;
     }
+    hpcrun_fmt_loadmap_fprint(&loadmap_tbl, outfs);
   }
 
   // ------------------------------------------------------------
