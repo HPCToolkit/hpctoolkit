@@ -174,6 +174,17 @@ copyTraceFiles(const std::string& dstDir,
 	       const std::set<std::string>& srcFiles);
 
 
+// --------------------------------------------------------------------------
+// Output options
+// --------------------------------------------------------------------------
+
+enum OutputOption_t {
+   Print_All,
+   Print_LoadModule_Only
+};
+
+extern OutputOption_t option;
+
 } // namespace Util
 
 } // namespace Analysis

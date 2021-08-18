@@ -103,6 +103,7 @@ using std::string;
 #include <lib/xml/xml.hpp>
 using namespace xml;
 
+#include <lib/analysis/Util.hpp>
 
 #include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
@@ -1049,7 +1050,8 @@ Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
   }
 
   if (outfs) {
-    hpcrun_fmt_hdr_fprint(&hdr, outfs);
+    if (Analysis::Util::option == Analysis::Util::Print_All) 
+      hpcrun_fmt_hdr_fprint(&hdr, outfs);
   }
 
 
@@ -1138,7 +1140,8 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     DIAG_Throw("error reading 'epoch-hdr'");
   }
   if (outfs) {
-    hpcrun_fmt_epochHdr_fprint(&ehdr, outfs);
+    if (Analysis::Util::option == Analysis::Util::Print_All) 
+      hpcrun_fmt_epochHdr_fprint(&ehdr, outfs);
   }
 
   // ----------------------------------------
@@ -1152,7 +1155,8 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     DIAG_Throw("error reading 'metric-tbl'");
   }
   if (outfs) {
-    hpcrun_fmt_metricTbl_fprint(&metricTbl, aux_info, outfs);
+    if (Analysis::Util::option == Analysis::Util::Print_All) 
+      hpcrun_fmt_metricTbl_fprint(&metricTbl, aux_info, outfs);
   }
 
   const uint numMetricsSrc = metricTbl.len;
@@ -1167,6 +1171,10 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   }
   if (outfs) {
     hpcrun_fmt_loadmap_fprint(&loadmap_tbl, outfs);
+    if (Analysis::Util::option == Analysis::Util::Print_LoadModule_Only) {
+      // hack: case for hpcproftt with --lm option
+      return HPCFMT_EOF;
+    }
   }
 
   // ------------------------------------------------------------
