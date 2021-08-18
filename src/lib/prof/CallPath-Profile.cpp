@@ -1173,10 +1173,16 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
   if (outfs) {
     if (Analysis::Util::option == Analysis::Util::Print_LoadModule_Only) {
       for (uint32_t i = 0; i < loadmap_tbl.len; i++) {
+
         loadmap_entry_t* x = &loadmap_tbl.lst[i];
-        fprintf(outfs, "%s\n", x->name );
+        
+	// make sure we eliminate the <vmlinux> and <vdso> load modules
+	// These modules have prefix '<' and hopefully it doesn't change
+	if (x->name != NULL && x->name[0] != '<')
+          fprintf(outfs, "%s\n", x->name );
       }
       // hack: case for hpcproftt with --lm option
+      // by returning HPCFMT_EOF we force hpcproftt to exit the loop
       return HPCFMT_EOF;
     }
     hpcrun_fmt_loadmap_fprint(&loadmap_tbl, outfs);
