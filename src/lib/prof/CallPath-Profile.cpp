@@ -103,6 +103,7 @@ using std::string;
 #include <lib/xml/xml.hpp>
 using namespace xml;
 
+#include <lib/analysis/Util.hpp>
 
 #include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
@@ -114,8 +115,6 @@ using namespace xml;
 #include <lib/support/RealPathMgr.hpp>
 #include <lib/support/StrUtil.hpp>
 
-#include <lib/support/ExprEval.hpp>
-#include <lib/support/VarMap.hpp>
 
 //*************************** Forward Declarations **************************
 
@@ -1051,7 +1050,8 @@ Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
   }
 
   if (outfs) {
-    hpcrun_fmt_hdr_fprint(&hdr, outfs);
+    if (Analysis::Util::option == Analysis::Util::Print_All) 
+      hpcrun_fmt_hdr_fprint(&hdr, outfs);
   }
 
 
@@ -1103,7 +1103,8 @@ Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
   // ------------------------------------------------------------
 
   if (outfs) {
-    fprintf(outfs, "\n[You look fine today! (num-epochs: %u)]\n", num_epochs);
+    if (Analysis::Util::option == Analysis::Util::Print_All) 
+      fprintf(outfs, "\n[You look fine today! (num-epochs: %u)]\n", num_epochs);
   }
 
   hpcrun_fmt_hdr_free(&hdr, free);
@@ -1140,7 +1141,8 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     DIAG_Throw("error reading 'epoch-hdr'");
   }
   if (outfs) {
-    hpcrun_fmt_epochHdr_fprint(&ehdr, outfs);
+    if (Analysis::Util::option == Analysis::Util::Print_All) 
+      hpcrun_fmt_epochHdr_fprint(&ehdr, outfs);
   }
 
   // ----------------------------------------
@@ -1154,7 +1156,8 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     DIAG_Throw("error reading 'metric-tbl'");
   }
   if (outfs) {
-    hpcrun_fmt_metricTbl_fprint(&metricTbl, aux_info, outfs);
+    if (Analysis::Util::option == Analysis::Util::Print_All) 
+      hpcrun_fmt_metricTbl_fprint(&metricTbl, aux_info, outfs);
   }
 
   const uint numMetricsSrc = metricTbl.len;
@@ -1168,6 +1171,20 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
     DIAG_Throw("error reading 'loadmap'");
   }
   if (outfs) {
+    if (Analysis::Util::option == Analysis::Util::Print_LoadModule_Only) {
+      for (uint32_t i = 0; i < loadmap_tbl.len; i++) {
+
+        loadmap_entry_t* x = &loadmap_tbl.lst[i];
+        
+	// make sure we eliminate the <vmlinux> and <vdso> load modules
+	// These modules have prefix '<' and hopefully it doesn't change
+	if (x->name != NULL && x->name[0] != '<')
+          fprintf(outfs, "%s\n", x->name );
+      }
+      // hack: case for hpcproftt with --lm option
+      // by returning HPCFMT_EOF we force hpcproftt to exit the loop
+      return HPCFMT_EOF;
+    }
     hpcrun_fmt_loadmap_fprint(&loadmap_tbl, outfs);
   }
 
