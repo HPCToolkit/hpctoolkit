@@ -391,8 +391,9 @@ hpcrun_set_safe_to_sync(void)
 static int
 abort_timeout_handler(int sig, siginfo_t* siginfo, void* context)
 {
-  EEMSG("hpcrun: abort timeout activated - context pc %p", 
-    hpcrun_context_pc(context)); 
+  long pid = (long) getpid();
+  EEMSG("hpcrun: abort timeout activated in process %ld - context pc %p", 
+    pid, hpcrun_context_pc(context)); 
   monitor_real_abort();
   
   return 0; /* keep compiler happy, but can't get here */
@@ -402,11 +403,18 @@ abort_timeout_handler(int sig, siginfo_t* siginfo, void* context)
 static void 
 hpcrun_set_abort_timeout()
 {
-  char *error_timeout = getenv("HPCRUN_ABORT_TIMEOUT");
-  if (error_timeout) {
-     int seconds = atoi(error_timeout);
+  static process_index = 0;
+
+  char *abort_timeout = getenv("HPCRUN_ABORT_TIMEOUT");
+
+  char *abort_process_str = getenv("HPCRUN_ABORT_PROCESS_INDEX");
+  int abort_process_index = abort_process_str ? atoi(abort_process_str) : 0;
+
+  if (abort_timeout && process_index++ >= abort_process_index) {
+     int seconds = atoi(abort_timeout);
      if (seconds != 0) {
-       EEMSG("hpcrun: abort timeout armed");
+       long pid = (long) getpid();
+       EEMSG("hpcrun: abort timeout armed in process %ld", pid);
        monitor_sigaction(SIGALRM, &abort_timeout_handler, 0, NULL);
        alarm(seconds);
      }
@@ -910,7 +918,7 @@ monitor_init_process(int *argc, char **argv, void* data)
 
     // must initialize unwind recipe map before initializing fnbounds
     // because mapping of load modules affects the recipe map.
-    hpcrun_unw_init();
+    if (!is_child) hpcrun_unw_init();
 
     // We need to save vdso before initializing fnbounds this
     // is because fnbounds_init will iterate over the load map
