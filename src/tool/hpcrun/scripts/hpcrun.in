@@ -167,10 +167,10 @@ Options: Profiling (Defaults shown in curly brackets {})
 
   -fnbs, --fnbounds-shutdown
                        Hpcrun uses hpcfnbounds to calculate function bounds. By default,
-					   this process remains throughout the execution. 
-					   If running out of memory, this command lets hpcfnbounds 
-					   shutdown after the application started and each shared library 
-					   processed. Note enabling shutdown adds runtime overhead.
+                       this process remains throughout the execution. 
+                       If running out of memory, this command lets hpcfnbounds 
+                       shutdown after the application started and each shared library 
+                       processed. Note enabling shutdown adds runtime overhead.
 
   -js <num>, --jobs-symtab <num>
                        Use <num> openmp threads for Symtab in hpcfnbounds,
