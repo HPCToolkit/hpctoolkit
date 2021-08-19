@@ -165,6 +165,13 @@ Options: Profiling (Defaults shown in curly brackets {})
                        Use <path> as alternate hpcfnbounds command.
                        (mostly for developers)
 
+  -fnbs, --fnbounds-shutdown
+                       Hpcrun uses hpcfnbounds to calculate function bounds. By default,
+					   this process remains throughout the execution. 
+					   If running out of memory, this command lets hpcfnbounds 
+					   shutdown after the application started and each shared library 
+					   processed. Note enabling shutdown adds runtime overhead.
+
   -js <num>, --jobs-symtab <num>
                        Use <num> openmp threads for Symtab in hpcfnbounds,
                        if Symtab supports openmp (default 1).
@@ -412,6 +419,12 @@ do
 	-fnb | --fnbounds )
 	    HPCRUN_FNBOUNDS_CMD="$1"
 	    shift
+	    ;;
+
+	# --------------------------------------------------
+
+	-fnbs | --fnbounds-shutdown )
+	    export HPCRUN_FNBOUNDS_SHUTDOWN=1
 	    ;;
 
 	# --------------------------------------------------
