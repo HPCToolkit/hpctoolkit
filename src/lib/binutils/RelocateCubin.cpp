@@ -631,14 +631,6 @@ relocateCubin
     relocateProgramDataSegments(cubin_elf, sections, &eh);
     Elf_SymbolVector *symbol_values = relocateSymbols(cubin_elf, sections, &eh);
     if (symbol_values) {
-      // Add function offset with cubin_size
-      // to handle the cases in which we have multiple compliation units
-      /*
-      for (auto &symbol : *symbol_values) {
-        symbol += cubin_size;
-      }
-      */
-      
       relocateLineMap(cubin_ptr, cubin_elf, sections, symbol_values, &eh);
       relocateDebugInfo(cubin_ptr, cubin_elf, sections, symbol_values, &eh);
       delete symbol_values;
