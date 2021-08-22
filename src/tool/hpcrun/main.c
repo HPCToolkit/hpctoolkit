@@ -1711,7 +1711,8 @@ static void auditor_close(auditor_map_entry_t* entry) {
 static void auditor_stable(bool additive) {
   if(!hpcrun_td_avail()) return;
   hpcrun_safe_enter();
-  if(additive) fnbounds_fini();
+  bool fnbounds_shutdown = hpcrun_get_env_bool("HPCRUN_FNBOUNDS_SHUTDOWN");
+  if(fnbounds_shutdown && additive) fnbounds_fini();
   hpcrun_safe_exit();
 }
 
