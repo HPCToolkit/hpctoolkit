@@ -1,14 +1,9 @@
-PROFTT=/autofs/nccsopen-svm1_proj/gen161/.hpctoolkit-install/spack-2021.08/opt/spack/linux-rhel7-ppc64le/gcc-7.4.0/hpctoolkit-master-amofomninst4yg6fl6tlgcybmm534nn3/libexec/hpctoolkit/hpcproftt 
 
-MEAS_DIR = /autofs/nccsopen-svm1_proj/gen161/.hpctoolkit-install/hpctoolkit-tests/applications/loop-mpi/hpctoolkit-loop-mpi-measurements-70035
-GPUBIN_DIR =  $(MEAS_DIR)/gpubins
+#-------------------------------------------------------------------------------
+# set up subdirectory paths
+#-------------------------------------------------------------------------------
+GPUBIN_DIR  = $(MEAS_DIR)/gpubins
 STRUCTS_DIR = $(MEAS_DIR)/structs
-LM_DIR = $(MEAS_DIR)/lm
-CPUBIN_DIR = $(MEAS_DIR)/cpubins
-GPUBIN_CFG = no
-GPU_SIZE = 100000000
-CPU_SIZE = 100000000
-JOBS = 1
 
 #*******************************************************************************
 # a helper template makefile used by hpcstruct at runtime
@@ -23,20 +18,45 @@ JOBS = 1
 # makefile at runtime in an hpctoolkit installation.
 #*******************************************************************************
 
+#*******************************************************************************
+#*******************************************************************************
+
+#*******************************************************************************
+# enable analysis of GPU binaries
+#*******************************************************************************
+ifeq ($(GPU_ANALYZE),1)
+
 #-------------------------------------------------------------------------------
 # $(GB): gpubin files
 #-------------------------------------------------------------------------------
 GB := $(wildcard $(GPUBIN_DIR)/*.gpubin)
 
 #-------------------------------------------------------------------------------
-# $(H): hpcrun file for thread 0 in each process
-#-------------------------------------------------------------------------------
-H := $(wildcard $(MEAS_DIR)/*-000000-000-*.hpcrun)
-
-#-------------------------------------------------------------------------------
 # $(GS): hpcstruct files for gpubins
 #-------------------------------------------------------------------------------
 GS := $(patsubst $(GPUBIN_DIR)/%,$(STRUCTS_DIR)/%.hpcstruct,$(GB))
+
+#-------------------------------------------------------------------------------
+# $(GW): warning files that may be generated during structure analysis of gpubins
+#-------------------------------------------------------------------------------
+GW := $(patsubst %.hpcstruct,%.warnings,$(GS))
+
+endif
+
+#*******************************************************************************
+#*******************************************************************************
+
+#*******************************************************************************
+# enable analysis of CPU binaries
+#*******************************************************************************
+ifeq ($(CPU_ANALYZE),1)
+CPUBIN_DIR  = $(MEAS_DIR)/cpubins
+LM_DIR      = $(MEAS_DIR)/lm
+
+#-------------------------------------------------------------------------------
+# $(H): hpcrun file for thread 0 in each process
+#-------------------------------------------------------------------------------
+H := $(wildcard $(MEAS_DIR)/*-000000-000-*.hpcrun)
 
 #-------------------------------------------------------------------------------
 # $(L): load modules for hpcrun files
@@ -47,7 +67,7 @@ L := $(patsubst $(MEAS_DIR)/%.hpcrun,$(LM_DIR)/%.lm,$(H))
 # create $(LM_DIR)/all.lm: a list of all load modules involved in the execution
 #-------------------------------------------------------------------------------
 $(LM_DIR)/all.lm: $(L)
-	cat $(L) | sort -u > $(LM_DIR)/all.lm
+	cat $(L) | sort -u | grep -v gpubin > $(LM_DIR)/all.lm
 	rm -f $(L)
 
 #-------------------------------------------------------------------------------
@@ -72,11 +92,7 @@ CS := $(patsubst $(CPUBIN_DIR)/%,$(STRUCTS_DIR)/%.hpcstruct,$(CB))
 #-------------------------------------------------------------------------------
 CW := $(patsubst %.hpcstruct,%.warnings,$(CS))
 
-#-------------------------------------------------------------------------------
-# $(GW): warning files that may be generated during structure analysis of gpubins
-#-------------------------------------------------------------------------------
-GW := $(patsubst %.hpcstruct,%.warnings,$(GS))
-
+endif
 #-------------------------------------------------------------------------------
 # execute the sequence of commands for each target in a single shell
 #-------------------------------------------------------------------------------
@@ -98,13 +114,13 @@ $(STRUCTS_DIR)/%.hpcstruct: $(CPUBIN_DIR)/%
 	warn_name=$(STRUCTS_DIR)/$$cpubin_name.warnings
 	if test `du -b $< | tail -1 | awk '{ print $$1 }'` -gt $(CPAR_SIZE) ; then
 		if test $(THREADS) -gt 1 ; then
-			echo msg: begin parallel analysis of $$cpubin_name \($(THREADS) threads\)
+			echo msg: begin parallel analysis of $$cpubin_name \\(using $(THREADS) threads\\)
 		else
-			echo msg: begin serial analysis of $$cpubin_name
+			echo msg: begin concurrent analysis of $$cpubin_name \\(using 1 of $(JOBS) threads\\)
 		fi
 		hpcstruct -j $(THREADS) -o $$struct_name $< > $$warn_name 2>&1
 		if test -s $$warn_name ; then
-			echo WARNING: incomplete analysis of $$cpubin_name\; see $$warn_name for details
+			echo WARNING: incomplete analysis of $$cpubin_name';' see $$warn_name for details
 			if test ! -s $$struct_name ; then
 				rm -f $$struct_name
 			fi
@@ -114,7 +130,7 @@ $(STRUCTS_DIR)/%.hpcstruct: $(CPUBIN_DIR)/%
 		if test $(THREADS) -gt 1 ; then
 			echo msg: end parallel analysis of $$cpubin_name
 		else
-			echo msg: end serial analysis of $$cpubin_name
+			echo msg: end concurrent analysis of $$cpubin_name
 		fi
 	fi
 
@@ -131,13 +147,13 @@ $(STRUCTS_DIR)/%.hpcstruct: $(GPUBIN_DIR)/%
 	warn_name=$(STRUCTS_DIR)/$$gpubin_name.warnings
 	if test `du -b $< | tail -1 | awk '{ print $$1 }'` -gt $(GPAR_SIZE) ; then
 		if test $(THREADS) -gt 1 ; then
-			echo msg: begin parallel analysis of $$gpubin_name \($(THREADS) threads\)
+			echo msg: begin parallel analysis of $$gpubin_name \\(using $(THREADS) threads\\)
 		else
-			echo msg: begin serial analysis of $$gpubin_name
+			echo msg: begin concurrent analysis of $$gpubin_name \\(using 1 of $(JOBS) threads\\)
 		fi
 		hpcstruct -j $(THREADS) --gpucfg $(GPUBIN_CFG) -o $$struct_name $< > $$warn_name 2>&1
 		if test -s $$warn_name ; then
-			echo WARNING: incomplete analysis of $$gpubin_name\; see $$warn_name for details
+			echo WARNING: incomplete analysis of $$gpubin_name';' see $$warn_name for details
 			if test ! -s $$struct_name ; then
 				rm -f $$struct_name
 			fi
@@ -147,7 +163,7 @@ $(STRUCTS_DIR)/%.hpcstruct: $(GPUBIN_DIR)/%
 		if test $(THREADS) -gt 1 ; then
 			echo msg: end parallel analysis of $$gpubin_name
 		else
-			echo msg: end serial analysis of $$gpubin_name
+			echo msg: end concurrent analysis of $$gpubin_name
 		fi
 	fi
 
@@ -155,8 +171,8 @@ $(STRUCTS_DIR)/%.hpcstruct: $(GPUBIN_DIR)/%
 # analyze all gpubins to create structure files
 #-------------------------------------------------------------------------------
 all: $(CPUBIN_DIR)
-	$(MAKE) -j 1 THREADS=$(JOBS)  GPAR_SIZE=$(GPU_SIZE) CPAR_SIZE=$(CPU_SIZE) analyze
-	$(MAKE) -j $(JOBS) THREADS=1  GPAR_SIZE=0 CPAR_SIZE=0 analyze
+	$(MAKE) -j 1 JOBS=1 THREADS=$(JOBS)  GPAR_SIZE=$(PAR_SIZE) CPAR_SIZE=$(PAR_SIZE) analyze
+	$(MAKE) -j $(JOBS) JOBS=$(JOBS) THREADS=1  GPAR_SIZE=0 CPAR_SIZE=0 analyze
 
 analyze: $(GS) $(CS) 
 
@@ -178,4 +194,5 @@ clean:
 	@rm -rf $(CPUBIN_DIR)
 	@rm -rf $(LM_DIR)
 	@echo removing all warnings in $(STRUCTS_DIR)
+	@rm -f $(CW)
 	@rm -f $(GW)
