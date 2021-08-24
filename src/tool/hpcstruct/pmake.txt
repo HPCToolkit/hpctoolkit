@@ -56,7 +56,7 @@ LM_DIR      = $(MEAS_DIR)/lm
 #-------------------------------------------------------------------------------
 # $(H): hpcrun file for thread 0 in each process
 #-------------------------------------------------------------------------------
-H := $(wildcard $(MEAS_DIR)/*-000000-000-*.hpcrun)
+H := $(wildcard $(MEAS_DIR)/*.hpcrun)
 
 #-------------------------------------------------------------------------------
 # $(L): load modules for hpcrun files
@@ -68,14 +68,13 @@ L := $(patsubst $(MEAS_DIR)/%.hpcrun,$(LM_DIR)/%.lm,$(H))
 #-------------------------------------------------------------------------------
 $(LM_DIR)/all.lm: $(L)
 	cat $(L) | sort -u | grep -v gpubin > $(LM_DIR)/all.lm
-	rm -f $(L)
 
 #-------------------------------------------------------------------------------
 # create cpubins directory containing links to all CPU binaries
 #-------------------------------------------------------------------------------
 $(CPUBIN_DIR): $(LM_DIR)/all.lm
 	-@mkdir $(CPUBIN_DIR) >& /dev/null 
-	-@pushd $(CPUBIN_DIR); for i in `cat $(LM_DIR)/all.lm`; do ln -s $$i; done >& /dev/null 
+	-@pushd $(CPUBIN_DIR) >& /dev/null; for i in `cat $(LM_DIR)/all.lm`; do ln -s $$i; done >& /dev/null 
 
 #-------------------------------------------------------------------------------
 # $(CB): cpubin files
