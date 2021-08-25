@@ -106,7 +106,7 @@ static const char* analysis_makefile =
 
 //
 // For a measurements directory, write a Makefile and launch hpcstruct
-// for each GPU binary (gpubin).
+// to analyze CPU and GPU binaries associated with the measurements
 //
 static void
 doMeasurementsDir(string measurements_dir, BAnal::Struct::Options & opts)
@@ -119,35 +119,30 @@ doMeasurementsDir(string measurements_dir, BAnal::Struct::Options & opts)
 
   string gpubin_dir = measurements_dir + "/" GPU_BINARY_DIRECTORY;
   struct dirent *ent;
-  bool found = false;
+  bool has_gpubin = false;
 
   DIR *dir = opendir(gpubin_dir.c_str());
-  if (dir == NULL) {
-    PRINT_ERROR("Unable to open measurements directory: " << gpubin_dir);
-    exit(1);
-  }
-
-  while ((ent = readdir(dir)) != NULL) {
-    string file_name(ent->d_name);
-    if (file_name.find(GPU_BINARY_SUFFIX) != string::npos) {
-      found = true;
-      break;
+  if (dir != NULL) {
+    while ((ent = readdir(dir)) != NULL) {
+      string file_name(ent->d_name);
+      if (file_name.find(GPU_BINARY_SUFFIX) != string::npos) {
+        has_gpubin = true;
+        break;
+      }
     }
+    closedir(dir);
   }
-
-  if (! found) {
-    PRINT_ERROR("Measurements directory does not contain gpubin: " << gpubin_dir);
-    exit(1);
-  }
-  closedir(dir);
 
   //
-  // Put hpctoolkit and cuda (nvdisasm) on path.
+  // Put hpctoolkit on PATH
   //
   char *path = getenv("PATH");
-  string new_path = string(HPCTOOLKIT_INSTALL_PREFIX) + "/bin"
-    + ":" + path
-    + ":" + CUDA_INSTALL_PREFIX + "/bin";
+  string new_path = string(HPCTOOLKIT_INSTALL_PREFIX) + "/bin" + ":" + path;
+
+  if (has_gpubin) {
+    // Put cuda (nvdisasm) on path.
+    new_path = new_path +":" + CUDA_INSTALL_PREFIX + "/bin";
+  }
 
   setenv("PATH", new_path.c_str(), 1);
 
