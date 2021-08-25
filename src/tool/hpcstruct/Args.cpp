@@ -89,8 +89,10 @@ using std::string;
 //***************************************************************************
 
 // Size in bytes for parallel analysis of gpu binaries
-#define DEFAULT_GPU_SIZE   100000000
-#define GPU_SIZE_STR      "100000000"
+#define DEFAULT_PSIZE     100000000
+
+#undef STRINGIFY
+#define STRINGIFY(x) #x
 
 static const char* version_info = HPCTOOLKIT_VERSION_STRING;
 
@@ -137,12 +139,16 @@ Options: General\n\
 \n\
 Options: Parallel usage\n\
   -j <num>, --jobs <num>  Use <num> threads for all phases in hpcstruct. {1}\n\
-  --gpu-size <n>       Size (bytes) of a GPU binary that will cause hpcstruct\n\
+  --psize <n>          Size (bytes) of a binary that will cause hpcstruct\n\
                        to use <num> threads to analyze a binary in parallel.\n\
-                       GPU binaries with fewer than <n> bytes will be analyzed\n\
-                       concurrently, <num> at a time.  {" GPU_SIZE_STR "}\n\
+                       binaries with fewer than <n> bytes will be analyzed\n\
+                       concurrently, <num> at a time.  {" STRINGIFY(DEFAULT_PSIZE) "}\n\
 \n\
 Options: Structure recovery\n\
+  --cpu <yes/no>       Analyze CPU binaries referenced by a measurements\n\
+                       directory. {yes} \n\
+  --gpu <yes/no>       Analyze GPU binaries referenced by a measurements\n\
+                       directory. {yes} \n\
   --gpucfg <yes/no>    Compute loop nesting structure for GPU machine code.\n\
                        Loop nesting structure is only useful with\n\
                        instruction-level measurements collected using PC\n\
@@ -178,36 +184,38 @@ Options for Developers:\n\
 
 // Note: Changing the option name requires changing the name in Parse()
 CmdLineParser::OptArgDesc Args::optArgs[] = {
-  { 'j',  "jobs",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
+  { 'j',  "jobs",         CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
   {  0 ,  "jobs-struct",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
   {  0 ,  "jobs-parse",   CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
   {  0 ,  "jobs-symtab",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
-  {  0 ,  "gpu-size",     CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
+  {  0 ,  "psize",        CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
   {  0 ,  "time",         CLP::ARG_NONE, CLP::DUPOPT_CLOB,  NULL,  NULL },
 
   // Structure recovery options
-  {  0 ,  "gpucfg",         CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
-  { 'I', "include",         CLP::ARG_REQ,  CLP::DUPOPT_CAT,  ":",
+  {  0 ,  "gpucfg",       CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
+  {  1 ,  "gpu",          CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
+  {  1 ,  "cpu",          CLP::ARG_REQ,  CLP::DUPOPT_CLOB,  NULL,  NULL },
+  { 'I', "include",       CLP::ARG_REQ,  CLP::DUPOPT_CAT,  ":",
      NULL },
-  { 'R', "replace-path",    CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
+  { 'R', "replace-path",  CLP::ARG_REQ,  CLP::DUPOPT_CAT,  CLP_SEPARATOR,
      NULL},
-  {  0 , "show-gaps",       CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
+  {  0 , "show-gaps",     CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
      NULL },
 
   // Output options
-  { 'o', "output",          CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL,
+  { 'o', "output",        CLP::ARG_REQ , CLP::DUPOPT_CLOB, NULL,
      NULL },
 
   // General
-  { 'v', "verbose",     CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL,
+  { 'v', "verbose",       CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL,
      CLP::isOptArg_long },
-  { 'V', "version",     CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
+  { 'V', "version",       CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
      NULL },
-  { 'h', "help",        CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
+  { 'h', "help",          CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
      NULL },
-  {  0 , "debug",       CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL,
+  {  0 , "debug",         CLP::ARG_OPT,  CLP::DUPOPT_CLOB, NULL,
      CLP::isOptArg_long },
-  {  0 , "debug-proc",  CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
+  {  0 , "debug-proc",    CLP::ARG_REQ,  CLP::DUPOPT_CLOB, NULL,
      NULL },
 
   CmdLineParser_OptArgDesc_NULL_MACRO // SGI's compiler requires this version
@@ -241,7 +249,9 @@ Args::Ctor()
   jobs_parse = -1;
   jobs_symtab = -1;
   show_time = false;
-  gpu_size = DEFAULT_GPU_SIZE;
+  analyze_cpu_binaries = 1;
+  analyze_gpu_binaries = 1;
+  parallel_analysis_threshold = DEFAULT_PSIZE;
   searchPathStr = ".";
   show_gaps = false;
   compute_gpu_cfg = false;
@@ -349,9 +359,9 @@ Args::parse(int argc, const char* const argv[])
       const string & arg = parser.getOptArg("jobs-symtab");
       jobs_symtab = (int) CmdLineParser::toLong(arg);
     }
-    if (parser.isOpt("gpu-size")) {
-      const string & arg = parser.getOptArg("gpu-size");
-      gpu_size = CmdLineParser::toLong(arg);
+    if (parser.isOpt("psize")) {
+      const string & arg = parser.getOptArg("psize");
+      parallel_analysis_threshold = CmdLineParser::toLong(arg);
     }
     if (parser.isOpt("gpucfg")) {
       const string & arg = parser.getOptArg("gpucfg");
@@ -359,6 +369,20 @@ Args::parse(int argc, const char* const argv[])
       bool no = strcasecmp("no", arg.c_str()) == 0;
       if (!yes && !no) ARG_ERROR("gpucfg argument must be 'yes' or 'no'.");
       compute_gpu_cfg = yes;
+    }
+    if (parser.isOpt("gpu")) {
+      const string & arg = parser.getOptArg("gpu");
+      bool yes = strcasecmp("yes", arg.c_str()) == 0;
+      bool no = strcasecmp("no", arg.c_str()) == 0;
+      if (!yes && !no) ARG_ERROR("gpu argument must be 'yes' or 'no'.");
+      analyze_gpu_binaries = yes;
+    }
+    if (parser.isOpt("cpu")) {
+      const string & arg = parser.getOptArg("cpu");
+      bool yes = strcasecmp("yes", arg.c_str()) == 0;
+      bool no = strcasecmp("no", arg.c_str()) == 0;
+      if (!yes && !no) ARG_ERROR("cpu argument must be 'yes' or 'no'.");
+      analyze_cpu_binaries = yes;
     }
     if (parser.isOpt("time")) {
       show_time = true;
