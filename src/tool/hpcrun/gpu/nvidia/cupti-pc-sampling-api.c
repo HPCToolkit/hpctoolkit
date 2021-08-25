@@ -30,35 +30,35 @@
 #define CUPTI_FN_NAME(f) DYN_FN_NAME(f)
 
 #define CUPTI_FN(fn, args) \
-  static CUptiResult (*CUPTI_FN_NAME(fn)) args
+	static CUptiResult (*CUPTI_FN_NAME(fn)) args
 
 #define HPCRUN_CUPTI_PC_SAMPLING_CALL(fn, args) \
 { \
-  CUptiResult status = CUPTI_FN_NAME(fn) args; \
-  if (status != CUPTI_SUCCESS) { \
-    const char *errstr; \
-    cuptiGetResultString(status, &errstr); \
-    fprintf(stderr, "error: function %s failed with error %s.\n", #fn, errstr); \
-    exit(-1); \
-  } \
+	CUptiResult status = CUPTI_FN_NAME(fn) args; \
+	if (status != CUPTI_SUCCESS) { \
+		const char *errstr; \
+		cuptiGetResultString(status, &errstr); \
+		fprintf(stderr, "error: function %s failed with error %s.\n", #fn, errstr); \
+		exit(-1); \
+	} \
 }
 
 #define FORALL_CUPTI_PC_SAMPLING_ROUTINES(macro) \
-  macro(cuptiPCSamplingGetNumStallReasons) \
-  macro(cuptiPCSamplingGetStallReasons) \
-  macro(cuptiPCSamplingSetConfigurationAttribute) \
-  macro(cuptiPCSamplingEnable) \
-  macro(cuptiPCSamplingDisable) \
-  macro(cuptiPCSamplingGetData) \
-  macro(cuptiPCSamplingStart) \
-  macro(cuptiPCSamplingStop) \
-  macro(cuptiGetCubinCrc)
+	macro(cuptiPCSamplingGetNumStallReasons) \
+	macro(cuptiPCSamplingGetStallReasons) \
+	macro(cuptiPCSamplingSetConfigurationAttribute) \
+	macro(cuptiPCSamplingEnable) \
+	macro(cuptiPCSamplingDisable) \
+	macro(cuptiPCSamplingGetData) \
+	macro(cuptiPCSamplingStart) \
+	macro(cuptiPCSamplingStop) \
+	macro(cuptiGetCubinCrc)
 
 CUPTI_FN
 (
  cuptiGetCubinCrc,
  (
-  CUpti_GetCubinCrcParams *pParams
+	CUpti_GetCubinCrcParams *pParams
  );
 );
 
@@ -66,7 +66,7 @@ CUPTI_FN
 (
  cuptiPCSamplingGetNumStallReasons,
  (
-  CUpti_PCSamplingGetNumStallReasonsParams *pParams
+	CUpti_PCSamplingGetNumStallReasonsParams *pParams
  )
 );
 
@@ -74,7 +74,7 @@ CUPTI_FN
 (
  cuptiPCSamplingGetStallReasons,
  (
-  CUpti_PCSamplingGetStallReasonsParams *pParams
+	CUpti_PCSamplingGetStallReasonsParams *pParams
  )
 );
 
@@ -82,7 +82,7 @@ CUPTI_FN
 (
  cuptiPCSamplingSetConfigurationAttribute,
  (
-  CUpti_PCSamplingConfigurationInfoParams *pParams
+	CUpti_PCSamplingConfigurationInfoParams *pParams
  )
 );
 
@@ -90,7 +90,7 @@ CUPTI_FN
 (
  cuptiPCSamplingGetData,
  (
-  CUpti_PCSamplingGetDataParams *pParams
+	CUpti_PCSamplingGetDataParams *pParams
  )
 );
 
@@ -98,7 +98,7 @@ CUPTI_FN
 (
  cuptiPCSamplingEnable,
  (
-  CUpti_PCSamplingEnableParams *pParams
+	CUpti_PCSamplingEnableParams *pParams
  )
 );
 
@@ -106,7 +106,7 @@ CUPTI_FN
 (
  cuptiPCSamplingDisable,
  (
-  CUpti_PCSamplingDisableParams *pParams
+	CUpti_PCSamplingDisableParams *pParams
  )
 );
 
@@ -114,7 +114,7 @@ CUPTI_FN
 (
  cuptiPCSamplingStart,
  (
-  CUpti_PCSamplingStartParams *pParams
+	CUpti_PCSamplingStartParams *pParams
  )
 );
 
@@ -122,7 +122,7 @@ CUPTI_FN
 (
  cuptiPCSamplingStop,
  (
-  CUpti_PCSamplingStopParams *pParams
+	CUpti_PCSamplingStopParams *pParams
  )
 );
 
@@ -132,24 +132,28 @@ CUPTI_FN
 #define HPCRUN_CUPTI_ACTIVITY_USER_BUFFER_PC_NUM 2000
 
 #define FORALL_CONFIG_INFO(macro) \
-  macro(COLLECTION_MODE, 0) \
-  macro(SAMPLING_PERIOD, 1) \
-  macro(STALL_REASONS, 2) \
-  macro(SAMPLING_BUFFER, 3) \
-  macro(SCRATCH_BUFFER_SIZE, 4) \
-  macro(HARDWARE_BUFFER_SIZE, 5) \
-  macro(STOP_CONTROL, 6)
+	macro(COLLECTION_MODE, 0) \
+	macro(SAMPLING_PERIOD, 1) \
+	macro(STALL_REASONS, 2) \
+	macro(SAMPLING_BUFFER, 3) \
+	macro(SCRATCH_BUFFER_SIZE, 4) \
+	macro(HARDWARE_BUFFER_SIZE, 5) \
+	macro(STOP_CONTROL, 6)
 
 #define FORALL_CONFIG_INFO_COUNT(macro) \
-  macro(CONFIG_INFO_COUNT, 7)
+	macro(CONFIG_INFO_COUNT, 7)
 
 #define DECLARE_CONFIG_INFO(TYPE, VALUE) \
-  TYPE = VALUE,
+	TYPE = VALUE,
 
 typedef enum {
-  FORALL_CONFIG_INFO(DECLARE_CONFIG_INFO)
-  FORALL_CONFIG_INFO_COUNT(DECLARE_CONFIG_INFO)
+	FORALL_CONFIG_INFO(DECLARE_CONFIG_INFO)
+	FORALL_CONFIG_INFO_COUNT(DECLARE_CONFIG_INFO)
 } config_info_t;
+
+//******************************************************************************
+// internal operations
+//******************************************************************************
 
 static void
 collection_mode_config
@@ -158,8 +162,8 @@ collection_mode_config
  CUpti_PCSamplingConfigurationInfo *info
 )
 {
-  info->attributeType = CUPTI_PC_SAMPLING_CONFIGURATION_ATTR_TYPE_COLLECTION_MODE;
-  info->attributeData.collectionModeData.collectionMode = collection_mode;
+	info->attributeType = CUPTI_PC_SAMPLING_CONFIGURATION_ATTR_TYPE_COLLECTION_MODE;
+	info->attributeData.collectionModeData.collectionMode = collection_mode;
 }
 
 
@@ -170,8 +174,8 @@ sampling_period_config
  CUpti_PCSamplingConfigurationInfo *info
 )
 {
-  info->attributeType = CUPTI_PC_SAMPLING_CONFIGURATION_ATTR_TYPE_SAMPLING_PERIOD;
-  info->attributeData.samplingPeriodData.samplingPeriod = sampling_period;
+	info->attributeType = CUPTI_PC_SAMPLING_CONFIGURATION_ATTR_TYPE_SAMPLING_PERIOD;
+	info->attributeData.samplingPeriodData.samplingPeriod = sampling_period;
 }
 
 
@@ -182,42 +186,42 @@ stall_reason_config
  CUpti_PCSamplingConfigurationInfo *info
 )
 {
-  // Collect all stall reasons for now
-  size_t num_stall_reasons = 0;
-  CUpti_PCSamplingGetNumStallReasonsParams num_stall_reasons_params = {
-    .size = CUpti_PCSamplingGetNumStallReasonsParamsSize,
-    .ctx = context,
-    .numStallReasons = &num_stall_reasons,
-    .pPriv = NULL
-  };
-  HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiPCSamplingGetNumStallReasons, (&num_stall_reasons_params));
+	// Collect all stall reasons for now
+	size_t num_stall_reasons = 0;
+	CUpti_PCSamplingGetNumStallReasonsParams num_stall_reasons_params = {
+		.size = CUpti_PCSamplingGetNumStallReasonsParamsSize,
+		.ctx = context,
+		.numStallReasons = &num_stall_reasons,
+		.pPriv = NULL
+	};
+	HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiPCSamplingGetNumStallReasons, (&num_stall_reasons_params));
 
-  char **stall_reason_names = calloc(num_stall_reasons, sizeof(char *));
-  for (size_t i = 0; i < num_stall_reasons; i++)
-  {
-    stall_reason_names[i] = calloc(CUPTI_STALL_REASON_STRING_SIZE, sizeof(char));
-  }
-  uint32_t *stall_reason_index = calloc(num_stall_reasons, sizeof(uint32_t));
+	char **stall_reason_names = calloc(num_stall_reasons, sizeof(char *));
+	for (size_t i = 0; i < num_stall_reasons; i++)
+	{
+		stall_reason_names[i] = calloc(CUPTI_STALL_REASON_STRING_SIZE, sizeof(char));
+	}
+	uint32_t *stall_reason_index = calloc(num_stall_reasons, sizeof(uint32_t));
 
-  CUpti_PCSamplingGetStallReasonsParams stall_reasons_params = {
-    .size = CUpti_PCSamplingGetStallReasonsParamsSize,
-    .ctx = context,
-    .numStallReasons = num_stall_reasons,
-    .stallReasonIndex = stall_reason_index,
-    .stallReasons = stall_reason_names,
-    .pPriv = NULL
-  };
-  HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiPCSamplingGetStallReasons, (&stall_reasons_params));
+	CUpti_PCSamplingGetStallReasonsParams stall_reasons_params = {
+		.size = CUpti_PCSamplingGetStallReasonsParamsSize,
+		.ctx = context,
+		.numStallReasons = num_stall_reasons,
+		.stallReasonIndex = stall_reason_index,
+		.stallReasons = stall_reason_names,
+		.pPriv = NULL
+	};
+	HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiPCSamplingGetStallReasons, (&stall_reasons_params));
 
-  info->attributeType = CUPTI_PC_SAMPLING_CONFIGURATION_ATTR_TYPE_STALL_REASON;
-  info->attributeData.stallReasonData.stallReasonCount = num_stall_reasons;
-  info->attributeData.stallReasonData.pStallReasonIndex = stall_reason_index;
+	info->attributeType = CUPTI_PC_SAMPLING_CONFIGURATION_ATTR_TYPE_STALL_REASON;
+	info->attributeData.stallReasonData.stallReasonCount = num_stall_reasons;
+	info->attributeData.stallReasonData.pStallReasonIndex = stall_reason_index;
 
-  cupti_pc_sampling_data_t *pc_sampling_data =
-    cupti_pc_sampling_data_produce(HPCRUN_CUPTI_ACTIVITY_BUFFER_PC_NUM, num_stall_reasons);
+	cupti_pc_sampling_data_t *pc_sampling_data =
+		cupti_pc_sampling_data_produce(HPCRUN_CUPTI_ACTIVITY_BUFFER_PC_NUM, num_stall_reasons);
 
-  cupti_context_map_pc_sampling_insert(context, num_stall_reasons, stall_reason_index,
-    stall_reason_names, HPCRUN_CUPTI_ACTIVITY_BUFFER_PC_NUM, pc_sampling_data);
+	cupti_context_map_pc_sampling_insert(context, num_stall_reasons, stall_reason_index,
+		stall_reason_names, HPCRUN_CUPTI_ACTIVITY_BUFFER_PC_NUM, pc_sampling_data);
 }
 
 
@@ -228,17 +232,16 @@ sampling_buffer_config
  CUpti_PCSamplingConfigurationInfo *info
 )
 {
-  // User buffer to hold collected PC Sampling data in PC-To-Counter format
-  cupti_context_map_entry_t *entry = cupti_context_map_lookup(context);
-  assert(entry != NULL);
-  cupti_pc_sampling_data_t *pc_sampling_data = cupti_context_map_entry_pc_sampling_data_get(entry);
-  CUpti_PCSamplingData *buffer_pc = cupti_pc_sampling_buffer_pc_get(pc_sampling_data);
-  
-  if (buffer_pc != NULL) {
-    TMSG(CUPTI, "Set sampling data buffer");
-    info->attributeType = CUPTI_PC_SAMPLING_CONFIGURATION_ATTR_TYPE_SAMPLING_DATA_BUFFER;
-    info->attributeData.samplingDataBufferData.samplingDataBuffer = (void *)buffer_pc;
-  }
+	// User buffer to hold collected PC Sampling data in PC-To-Counter format
+	cupti_context_map_entry_t *entry = cupti_context_map_lookup(context);
+	assert(entry != NULL);
+	cupti_pc_sampling_data_t *pc_sampling_data = cupti_context_map_entry_pc_sampling_data_get(entry);
+	CUpti_PCSamplingData *buffer_pc = cupti_pc_sampling_buffer_pc_get(pc_sampling_data);
+
+	if (buffer_pc != NULL) {
+		info->attributeType = CUPTI_PC_SAMPLING_CONFIGURATION_ATTR_TYPE_SAMPLING_DATA_BUFFER;
+		info->attributeData.samplingDataBufferData.samplingDataBuffer = (void *)buffer_pc;
+	}
 }
 
 
@@ -249,8 +252,8 @@ scratch_buffer_size_config
  CUpti_PCSamplingConfigurationInfo *info
 )
 {
-  info->attributeType = CUPTI_PC_SAMPLING_CONFIGURATION_ATTR_TYPE_SCRATCH_BUFFER_SIZE;
-  info->attributeData.scratchBufferSizeData.scratchBufferSize = scratch_buffer_size;
+	info->attributeType = CUPTI_PC_SAMPLING_CONFIGURATION_ATTR_TYPE_SCRATCH_BUFFER_SIZE;
+	info->attributeData.scratchBufferSizeData.scratchBufferSize = scratch_buffer_size;
 }
 
 
@@ -261,20 +264,20 @@ hardware_buffer_size_config
  CUpti_PCSamplingConfigurationInfo *info
 )
 {
-  info->attributeType = CUPTI_PC_SAMPLING_CONFIGURATION_ATTR_TYPE_HARDWARE_BUFFER_SIZE;
-  info->attributeData.hardwareBufferSizeData.hardwareBufferSize = hardware_buffer_size;
+	info->attributeType = CUPTI_PC_SAMPLING_CONFIGURATION_ATTR_TYPE_HARDWARE_BUFFER_SIZE;
+	info->attributeData.hardwareBufferSizeData.hardwareBufferSize = hardware_buffer_size;
 }
 
 
 static void
 start_stop_control_config
 (
- bool enable_start_stop_control,
+ uint32_t enable_start_stop_control,
  CUpti_PCSamplingConfigurationInfo *info
 )
 {
- info->attributeType = CUPTI_PC_SAMPLING_CONFIGURATION_ATTR_TYPE_ENABLE_START_STOP_CONTROL;
- info->attributeData.enableStartStopControlData.enableStartStopControl = enable_start_stop_control;
+	info->attributeType = CUPTI_PC_SAMPLING_CONFIGURATION_ATTR_TYPE_ENABLE_START_STOP_CONTROL;
+	info->attributeData.enableStartStopControlData.enableStartStopControl = enable_start_stop_control;
 }
 
 
@@ -288,53 +291,52 @@ pc_sampling2_translate
  cct_node_t *cct_node
 )
 {
-  cupti_pc_sampling_data_t *data = (cupti_pc_sampling_data_t *)pc_sampling_data;
-  CUpti_PCSamplingData *buffer_pc = cupti_pc_sampling_buffer_pc_get(data);
+	cupti_pc_sampling_data_t *data = (cupti_pc_sampling_data_t *)pc_sampling_data;
+	CUpti_PCSamplingData *buffer_pc = cupti_pc_sampling_buffer_pc_get(data);
 
-  uint64_t sample_period = 1 << period;
-  uint64_t index;
-  for (index = 0; index < total_num_pcs; ++index) {
-    CUpti_PCSamplingPCData *pc_data = &buffer_pc->pPcData[index];
-    ip_normalized_t pc = cubin_crc_transform(pc_data->cubinCrc, pc_data->functionIndex, pc_data->pcOffset);
-    cct_node_t *cct_child = hpcrun_cct_insert_ip_norm(cct_node, pc);
+	uint64_t sample_period = 1 << period;
+	uint64_t index;
+	for (index = 0; index < total_num_pcs; ++index) {
+		CUpti_PCSamplingPCData *pc_data = &buffer_pc->pPcData[index];
+		ip_normalized_t pc = cubin_crc_transform(pc_data->cubinCrc, pc_data->functionIndex, pc_data->pcOffset);
+		cct_node_t *cct_child = hpcrun_cct_insert_ip_norm(cct_node, pc);
 
-    TMSG(CUPTI_ACTIVITY, "cubinCrc: %lu, lm_id: %u, lm_ip %p, functionName: %s, pcOffset: %p, count: %u", pc_data->cubinCrc,
-      pc.lm_id, pc.lm_ip, pc_data->functionName, pc_data->pcOffset, pc_data->stallReasonCount);
+		TMSG(CUPTI_ACTIVITY, "cubinCrc: %lu, lm_id: %u, lm_ip %p, functionName: %s, pcOffset: %p, count: %u", pc_data->cubinCrc,
+			pc.lm_id, pc.lm_ip, pc_data->functionName, pc_data->pcOffset, pc_data->stallReasonCount);
 
-    gpu_activity_t gpu_activity;
-    gpu_activity.kind = GPU_ACTIVITY_PC_SAMPLING2;
-    gpu_activity.cct_node = cct_child;
-    gpu_activity.range_id = range_id;
+		gpu_activity_t gpu_activity;
+		gpu_activity.kind = GPU_ACTIVITY_PC_SAMPLING2;
+		gpu_activity.cct_node = cct_child;
+		gpu_activity.range_id = range_id;
 
-    for (size_t j = 0; j < pc_data->stallReasonCount; ++j) {
-      CUpti_PCSamplingStallReason *stall_reason = &pc_data->stallReason[j];
-      uint32_t stall_reason_index = stall_reason->pcSamplingStallReasonIndex;
-      // The first two stall reasons are count and drop, which we don't use
-      if (stall_reason_index < 2) {
-        continue;
-      }
-      stall_reason_index -= 2;
+		for (size_t j = 0; j < pc_data->stallReasonCount; ++j) {
+			CUpti_PCSamplingStallReason *stall_reason = &pc_data->stallReason[j];
+			uint32_t stall_reason_index = stall_reason->pcSamplingStallReasonIndex;
+			// The first two stall reasons are count and drop, which we don't use
+			if (stall_reason_index < 2) {
+				continue;
+			}
+			stall_reason_index -= 2;
 
-      uint64_t samples = stall_reason->samples * sample_period;
-      uint32_t st_index = stall_reason_index / 2 + 1;
+			uint64_t samples = stall_reason->samples * sample_period;
+			uint32_t st_index = stall_reason_index / 2 + 1;
 
-      if (samples > 0) {
-        // TODO(Keren): fix apportion host_correlation id and pc
-        if (stall_reason_index % 2 == 0) {
-          // non-latency sample
-          gpu_activity.details.pc_sampling2.samples = samples;
-          gpu_activity.details.pc_sampling2.latencySamples = 0;
-        } else {
-          // latency sample 
-          gpu_activity.details.pc_sampling2.samples = 0;
-          gpu_activity.details.pc_sampling2.latencySamples = samples;
-        }
+			if (samples > 0) {
+				if (stall_reason_index % 2 == 0) {
+					// non-latency sample
+					gpu_activity.details.pc_sampling2.samples = samples;
+					gpu_activity.details.pc_sampling2.latencySamples = 0;
+				} else {
+					// latency sample 
+					gpu_activity.details.pc_sampling2.samples = 0;
+					gpu_activity.details.pc_sampling2.latencySamples = samples;
+				}
 
-        gpu_activity.details.pc_sampling2.stallReason = st_index;
-        gpu_metrics_attribute(&gpu_activity);
-      }
-    }
-  }
+				gpu_activity.details.pc_sampling2.stallReason = st_index;
+				gpu_metrics_attribute(&gpu_activity);
+			}
+		}
+	}
 }
 
 
@@ -348,21 +350,19 @@ pc_sampling_activity_set
  cupti_pc_sampling_data_t *pc_sampling_data
 )
 {
-  CUpti_PCSamplingData *buffer_pc = cupti_pc_sampling_buffer_pc_get(pc_sampling_data);
+	CUpti_PCSamplingData *buffer_pc = cupti_pc_sampling_buffer_pc_get(pc_sampling_data);
 
-  // When pc sampling is disabled or pcs exceed collectNumPCs limit
-  activity->kind = GPU_ACTIVITY_PC_SAMPLING_INFO2;
-  activity->range_id = range_id;
-  activity->cct_node = cct_node;
-  activity->details.pc_sampling_info2.context_id = context_id;
-  activity->details.pc_sampling_info2.droppedSamples = buffer_pc->droppedSamples;
-  activity->details.pc_sampling_info2.samplingPeriodInCycles = cupti_pc_sampling_frequency_get();
-  activity->details.pc_sampling_info2.totalSamples = buffer_pc->totalSamples;
-  activity->details.pc_sampling_info2.totalNumPcs = buffer_pc->totalNumPcs;
-  // TODO(Keren): allocate and free pcSamplingData using channels
-  activity->details.pc_sampling_info2.pc_sampling_data = pc_sampling_data;
-  activity->details.pc_sampling_info2.translate = pc_sampling2_translate;
-  activity->details.pc_sampling_info2.free = cupti_pc_sampling_data_free;
+	activity->kind = GPU_ACTIVITY_PC_SAMPLING_INFO2;
+	activity->range_id = range_id;
+	activity->cct_node = cct_node;
+	activity->details.pc_sampling_info2.context_id = context_id;
+	activity->details.pc_sampling_info2.droppedSamples = buffer_pc->droppedSamples;
+	activity->details.pc_sampling_info2.samplingPeriodInCycles = cupti_pc_sampling_frequency_get();
+	activity->details.pc_sampling_info2.totalSamples = buffer_pc->totalSamples;
+	activity->details.pc_sampling_info2.totalNumPcs = buffer_pc->totalNumPcs;
+	activity->details.pc_sampling_info2.pc_sampling_data = pc_sampling_data;
+	activity->details.pc_sampling_info2.translate = pc_sampling2_translate;
+	activity->details.pc_sampling_info2.free = cupti_pc_sampling_data_free;
 }
 
 
@@ -373,21 +373,21 @@ pc_sampling_data_debug
  size_t num_stall_reasons
 )
 {
-  TMSG(CUPTI_ACTIVITY, "NEW CUPTI totalNumPcs: %lu, totalSamples: %lu, collectNumPcs: %lu, remainingNumPcs: %lu",
-    buffer_pc->totalNumPcs, buffer_pc->totalSamples, buffer_pc->collectNumPcs, buffer_pc->remainingNumPcs);
+	TMSG(CUPTI_ACTIVITY, "totalNumPcs: %lu, totalSamples: %lu, collectNumPcs: %lu, remainingNumPcs: %lu",
+		buffer_pc->totalNumPcs, buffer_pc->totalSamples, buffer_pc->collectNumPcs, buffer_pc->remainingNumPcs);
 
-  for (size_t i = 0; i < buffer_pc->totalNumPcs; ++i) {
-    CUpti_PCSamplingPCData *pc_data = &buffer_pc->pPcData[i];
-    TMSG(CUPTI_ACTIVITY, "cubinCrc: %lu, functionName: %s, pcOffset: %u, count: %u", pc_data->cubinCrc,
-      pc_data->functionName, pc_data->pcOffset, pc_data->stallReasonCount);
+	for (size_t i = 0; i < buffer_pc->totalNumPcs; ++i) {
+		CUpti_PCSamplingPCData *pc_data = &buffer_pc->pPcData[i];
+		TMSG(CUPTI_ACTIVITY, "cubinCrc: %lu, functionName: %s, pcOffset: %u, count: %u", pc_data->cubinCrc,
+			pc_data->functionName, pc_data->pcOffset, pc_data->stallReasonCount);
 
-    for (size_t j = 0; j < pc_data->stallReasonCount; ++j) {
-      if (pc_data->stallReason[j].samples > 0) {
-        TMSG(CUPTI_ACTIVITY, "stall index: %u, count: %d", pc_data->stallReason[j].pcSamplingStallReasonIndex,
-          pc_data->stallReason[j].samples);
-      }
-    }
-  }
+		for (size_t j = 0; j < pc_data->stallReasonCount; ++j) {
+			if (pc_data->stallReason[j].samples > 0) {
+				TMSG(CUPTI_ACTIVITY, "stall index: %u, count: %d", pc_data->stallReason[j].pcSamplingStallReasonIndex,
+					pc_data->stallReason[j].samples);
+			}
+		}
+	}
 }
 
 
@@ -397,12 +397,15 @@ pc_sampling_start
  CUcontext context
 )
 {
-  CUpti_PCSamplingStartParams params = {
-    .size = CUpti_PCSamplingStartParamsSize,
-    .ctx = context,
-    .pPriv = NULL
-  };
-  HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiPCSamplingStart, (&params));
+	uint32_t context_id = ((hpctoolkit_cuctx_st_t *)context)->context_id;
+	TMSG(CUPTI, "Start context_id %u", context_id);
+
+	CUpti_PCSamplingStartParams params = {
+		.size = CUpti_PCSamplingStartParamsSize,
+		.ctx = context,
+		.pPriv = NULL
+	};
+	HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiPCSamplingStart, (&params));
 }
 
 
@@ -412,13 +415,102 @@ pc_sampling_stop
  CUcontext context
 )
 {
-  CUpti_PCSamplingStopParams params = {
-    .size = CUpti_PCSamplingStopParamsSize,
-    .ctx = context,
-    .pPriv = NULL
-  };
-  HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiPCSamplingStop, (&params));
+	uint32_t context_id = ((hpctoolkit_cuctx_st_t *)context)->context_id;
+	TMSG(CUPTI, "Config context_id %u", context_id);
+
+	CUpti_PCSamplingStopParams params = {
+		.size = CUpti_PCSamplingStopParamsSize,
+		.ctx = context,
+		.pPriv = NULL
+	};
+	HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiPCSamplingStop, (&params));
 }
+
+
+void
+pc_sampling_collect
+(
+ uint32_t range_id,
+ cct_node_t *cct_node,
+ CUcontext context
+)
+{
+	cupti_context_map_entry_t *entry = cupti_context_map_lookup(context);
+	if (entry == NULL) {
+		// PC sampling not enabled
+		return;
+	}
+
+	uint32_t context_id = ((hpctoolkit_cuctx_st_t *)context)->context_id;
+	TMSG(CUPTI, "Collect context_id %u, range_id %u", context_id, range_id);
+
+	cupti_pc_sampling_data_t *device_pc_sampling_data = cupti_context_map_entry_pc_sampling_data_get(entry);
+	CUpti_PCSamplingData *buffer_pc = cupti_pc_sampling_buffer_pc_get(device_pc_sampling_data);
+	size_t num_stall_reasons = cupti_context_map_entry_num_stall_reasons_get(entry);
+	uint32_t *stall_reason_index = cupti_context_map_entry_stall_reason_index_get(entry);
+	char **stall_reason_names = cupti_context_map_entry_stall_reason_names_get(entry);
+
+	gpu_activity_t gpu_activity;
+	memset(&gpu_activity, 0, sizeof(gpu_activity_t));
+
+	if (DEBUG) {
+		for (size_t i = 0; i < num_stall_reasons; ++i) {
+			TMSG(CUPTI_ACTIVITY, "stall name %u : %s", stall_reason_index[i], stall_reason_names[i]);
+		}
+		TMSG(CUPTI_ACTIVITY, "device totalNumPcs: %lu, totalSamples: %lu, collectNumPcs: %lu, remainingNumPcs: %lu",
+			buffer_pc->totalNumPcs, buffer_pc->totalSamples, buffer_pc->collectNumPcs, buffer_pc->remainingNumPcs);
+	}
+
+	if (buffer_pc != NULL && (buffer_pc->totalNumPcs > 0 || buffer_pc->remainingNumPcs > 0)) {
+		cupti_pc_sampling_data_t *pc_sampling_data = cupti_pc_sampling_data_produce(
+			HPCRUN_CUPTI_ACTIVITY_BUFFER_PC_NUM, num_stall_reasons);
+		CUpti_PCSamplingData *user_buffer_pc = cupti_pc_sampling_buffer_pc_get(pc_sampling_data);
+
+		// Need to copy back buffer now, otherwise buffer_pc is not big enough to hold all samples
+		CUpti_PCSamplingGetDataParams params = {
+			.size = CUpti_PCSamplingGetDataParamsSize,
+			.ctx = context,
+			.pcSamplingData = user_buffer_pc,
+			.pPriv = NULL
+		};
+
+		HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiPCSamplingGetData, (&params));
+		pc_sampling_activity_set(&gpu_activity, range_id, context_id, cct_node, pc_sampling_data);
+		if (gpu_range_interval_get() == 1) {
+			gpu_pc_sampling_info2_process(&gpu_activity);
+		} else {
+			gpu_operation_multiplexer_push(NULL, NULL, &gpu_activity);
+		}
+
+		if (DEBUG) {
+			pc_sampling_data_debug(user_buffer_pc, num_stall_reasons);
+		}
+
+		while ((user_buffer_pc->totalNumPcs > 0 || user_buffer_pc->remainingNumPcs > 0)) {
+			pc_sampling_data = cupti_pc_sampling_data_produce(
+				HPCRUN_CUPTI_ACTIVITY_USER_BUFFER_PC_NUM, num_stall_reasons);
+			user_buffer_pc = cupti_pc_sampling_buffer_pc_get(pc_sampling_data);
+
+			params.pcSamplingData = user_buffer_pc;
+
+			HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiPCSamplingGetData, (&params));
+			pc_sampling_activity_set(&gpu_activity, range_id, context_id, cct_node, pc_sampling_data);
+			if (gpu_range_interval_get() == 1) {
+				gpu_pc_sampling_info2_process(&gpu_activity);
+			} else {
+				gpu_operation_multiplexer_push(NULL, NULL, &gpu_activity);
+			}
+
+			if (DEBUG) {
+				pc_sampling_data_debug(user_buffer_pc, num_stall_reasons);
+			}
+		}
+	}
+}
+
+//******************************************************************************
+// interface operations
+//******************************************************************************
 
 
 void
@@ -428,131 +520,60 @@ cupti_pc_sampling_config
  int frequency
 )
 {
-  cupti_context_map_init(context);
+	uint32_t context_id = ((hpctoolkit_cuctx_st_t *)context)->context_id;
+	TMSG(CUPTI, "Config context_id %u frequency %d", context_id, frequency);
 
-  CUpti_PCSamplingConfigurationInfo *config_info = (CUpti_PCSamplingConfigurationInfo *)
-    calloc(CONFIG_INFO_COUNT, sizeof(CUpti_PCSamplingConfigurationInfo));
-    
-  CUpti_PCSamplingConfigurationInfo *collection_mode_info = &config_info[COLLECTION_MODE];
-  CUpti_PCSamplingConfigurationInfo *sampling_period_info = &config_info[SAMPLING_PERIOD];
-  CUpti_PCSamplingConfigurationInfo *stall_reason_info = &config_info[STALL_REASONS];
-  CUpti_PCSamplingConfigurationInfo *sampling_buffer_info = &config_info[SAMPLING_BUFFER];
-  CUpti_PCSamplingConfigurationInfo *scratch_buffer_size_info = &config_info[SCRATCH_BUFFER_SIZE];
-  CUpti_PCSamplingConfigurationInfo *hw_buffer_size_info = &config_info[HARDWARE_BUFFER_SIZE];
-  CUpti_PCSamplingConfigurationInfo *start_stop_control_info = &config_info[STOP_CONTROL];
+	cupti_context_map_init(context);
 
-  if (gpu_range_interval_get() == 1) {
-    collection_mode_config(CUPTI_PC_SAMPLING_COLLECTION_MODE_KERNEL_SERIALIZED, collection_mode_info);
-  } else {
-    collection_mode_config(CUPTI_PC_SAMPLING_COLLECTION_MODE_CONTINUOUS, collection_mode_info);
-  }
+	CUpti_PCSamplingConfigurationInfo *config_info = (CUpti_PCSamplingConfigurationInfo *)
+		calloc(CONFIG_INFO_COUNT, sizeof(CUpti_PCSamplingConfigurationInfo));
 
-  sampling_period_config(cupti_pc_sampling_frequency_get(), sampling_period_info);
+	CUpti_PCSamplingConfigurationInfo *collection_mode_info = &config_info[COLLECTION_MODE];
+	CUpti_PCSamplingConfigurationInfo *sampling_period_info = &config_info[SAMPLING_PERIOD];
+	CUpti_PCSamplingConfigurationInfo *stall_reason_info = &config_info[STALL_REASONS];
+	CUpti_PCSamplingConfigurationInfo *sampling_buffer_info = &config_info[SAMPLING_BUFFER];
+	CUpti_PCSamplingConfigurationInfo *scratch_buffer_size_info = &config_info[SCRATCH_BUFFER_SIZE];
+	CUpti_PCSamplingConfigurationInfo *hw_buffer_size_info = &config_info[HARDWARE_BUFFER_SIZE];
+	CUpti_PCSamplingConfigurationInfo *start_stop_control_info = &config_info[STOP_CONTROL];
 
-  stall_reason_config(context, stall_reason_info);
+	sampling_period_config(frequency, sampling_period_info);
 
-  sampling_buffer_config(context, sampling_buffer_info);
+	stall_reason_config(context, stall_reason_info);
 
-  scratch_buffer_size_config(HPCRUN_CUPTI_ACTIVITY_SW_BUFFER_SIZE, scratch_buffer_size_info);
+	sampling_buffer_config(context, sampling_buffer_info);
 
-  hardware_buffer_size_config(HPCRUN_CUPTI_ACTIVITY_HW_BUFFER_SIZE, hw_buffer_size_info);
+	scratch_buffer_size_config(HPCRUN_CUPTI_ACTIVITY_SW_BUFFER_SIZE, scratch_buffer_size_info);
 
-  start_stop_control_config(true, start_stop_control_info);
+	hardware_buffer_size_config(HPCRUN_CUPTI_ACTIVITY_HW_BUFFER_SIZE, hw_buffer_size_info);
 
-  CUpti_PCSamplingConfigurationInfoParams info_params = {
-    .size = CUpti_PCSamplingConfigurationInfoParamsSize,
-    .pPriv = NULL,
-    .ctx = context,
-    .numAttributes = CONFIG_INFO_COUNT,
-    .pPCSamplingConfigurationInfo = config_info
-  };
+	// If range == 1 (by default), we serialize every kernel launch and
+  // attribute pc samples at the end of each kernel.
+	// This mode works for apps with multiple cuda contexts.
+	// If range != 1 (controlled by control knob `-ck HPCRUN_CUDA_RANGE_INTERVAL`,
+	// we collect pc samples at the end of each range and attribute pc samples postmortem.
+	// This mode requires user controlled pc sampling start/stop support and only
+  // works for apps with a single cuda context due to the limitation of CUPTI (<=11.5).
+	if (gpu_range_interval_get() == 1) {
+		collection_mode_config(CUPTI_PC_SAMPLING_COLLECTION_MODE_KERNEL_SERIALIZED, collection_mode_info);
+		start_stop_control_config(0, start_stop_control_info);
+	} else {
+		collection_mode_config(CUPTI_PC_SAMPLING_COLLECTION_MODE_CONTINUOUS, collection_mode_info);
+		start_stop_control_config(1, start_stop_control_info);
+	}
 
-  HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiPCSamplingSetConfigurationAttribute, (&info_params));
+	CUpti_PCSamplingConfigurationInfoParams info_params = {
+		.size = CUpti_PCSamplingConfigurationInfoParamsSize,
+		.pPriv = NULL,
+		.ctx = context,
+		.numAttributes = CONFIG_INFO_COUNT,
+		.pPCSamplingConfigurationInfo = config_info
+	};
 
-  pc_sampling_start(context);
-}
+	HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiPCSamplingSetConfigurationAttribute, (&info_params));
 
-
-void
-cupti_pc_sampling_range_correlation_collect
-(
- uint32_t range_id,
- cct_node_t *cct_node,
- CUcontext context
-)
-{
-  cupti_context_map_entry_t *entry = cupti_context_map_lookup(context);
-  if (entry == NULL) {
-    // PC sampling not enabled
-    return;
-  }
-
-  uint32_t context_id = ((hpctoolkit_cuctx_st_t *)context)->context_id;
-  cupti_pc_sampling_data_t *device_pc_sampling_data = cupti_context_map_entry_pc_sampling_data_get(entry);
-  CUpti_PCSamplingData *buffer_pc = cupti_pc_sampling_buffer_pc_get(device_pc_sampling_data);
-  size_t num_stall_reasons = cupti_context_map_entry_num_stall_reasons_get(entry);
-  uint32_t *stall_reason_index = cupti_context_map_entry_stall_reason_index_get(entry);
-  char **stall_reason_names = cupti_context_map_entry_stall_reason_names_get(entry);
-
-  gpu_activity_t gpu_activity;
-  memset(&gpu_activity, 0, sizeof(gpu_activity_t));
-
-  if (DEBUG) {
-    for (size_t i = 0; i < num_stall_reasons; ++i) {
-      TMSG(CUPTI_ACTIVITY, "stall name %u : %s", stall_reason_index[i], stall_reason_names[i]);
-    }
-  }
-
-  if (buffer_pc != NULL && buffer_pc->totalNumPcs > 0) {
-    cupti_pc_sampling_data_t *pc_sampling_data = cupti_pc_sampling_data_produce(
-      HPCRUN_CUPTI_ACTIVITY_BUFFER_PC_NUM, num_stall_reasons);
-    CUpti_PCSamplingData *user_buffer_pc = cupti_pc_sampling_buffer_pc_get(pc_sampling_data);
-
-    // Need to copy back buffer now, otherwise buffer_pc is not big enough to hold all samples
-    CUpti_PCSamplingGetDataParams params = {
-      .size = CUpti_PCSamplingGetDataParamsSize,
-      .ctx = context,
-      .pcSamplingData = user_buffer_pc,
-      .pPriv = NULL
-    };
-
-    HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiPCSamplingGetData, (&params));
-    if (user_buffer_pc->totalNumPcs > 0) {
-      pc_sampling_activity_set(&gpu_activity, range_id, context_id, cct_node, pc_sampling_data);
-      if (gpu_range_interval_get() == 1) {
-        gpu_pc_sampling_info2_process(&gpu_activity);
-      } else {
-        gpu_operation_multiplexer_push(NULL, NULL, &gpu_activity);
-      }
-    }
-
-    if (DEBUG) {
-      pc_sampling_data_debug(user_buffer_pc, num_stall_reasons);
-    }
-
-    // TODO(Keren): check if remainingNumPcs is also updated
-    while (user_buffer_pc->remainingNumPcs > 0) {
-      pc_sampling_data = cupti_pc_sampling_data_produce(
-        HPCRUN_CUPTI_ACTIVITY_USER_BUFFER_PC_NUM, num_stall_reasons);
-      user_buffer_pc = cupti_pc_sampling_buffer_pc_get(pc_sampling_data);
-
-      params.pcSamplingData = user_buffer_pc;
-
-      HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiPCSamplingGetData, (&params));
-      if (user_buffer_pc->totalNumPcs > 0) {
-        pc_sampling_activity_set(&gpu_activity, range_id, context_id, cct_node, pc_sampling_data);
-        if (gpu_range_interval_get() == 1) {
-          gpu_pc_sampling_info2_process(&gpu_activity);
-        } else {
-          gpu_operation_multiplexer_push(NULL, NULL, &gpu_activity);
-        }
-      }
-
-      if (DEBUG) {
-        pc_sampling_data_debug(user_buffer_pc, num_stall_reasons);
-      }
-    }
-  }
+	if (gpu_range_interval_get() != 1) {
+		pc_sampling_start(context);
+	}
 }
 
 
@@ -562,21 +583,21 @@ cupti_pc_sampling_bind
 )
 {
 #ifndef HPCRUN_STATIC_LINK
-  // dynamic libraries only availabile in non-static case
-  hpcrun_force_dlopen(true);
-  CHK_DLOPEN(cupti, cupti_path(), RTLD_NOW | RTLD_GLOBAL);
-  hpcrun_force_dlopen(false);
+	// dynamic libraries only availabile in non-static case
+	hpcrun_force_dlopen(true);
+	CHK_DLOPEN(cupti, cupti_path(), RTLD_NOW | RTLD_GLOBAL);
+	hpcrun_force_dlopen(false);
 
 #define CUPTI_PC_SAMPLING_BIND(fn) \
-  CHK_DLSYM(cupti, fn);
+	CHK_DLSYM(cupti, fn);
 
-  FORALL_CUPTI_PC_SAMPLING_ROUTINES(CUPTI_PC_SAMPLING_BIND)
+	FORALL_CUPTI_PC_SAMPLING_ROUTINES(CUPTI_PC_SAMPLING_BIND)
 
 #undef CUPTI_PC_SAMPLING_BIND
 
-  return 0;
+	return 0;
 #else
-  return -1;
+	return -1;
 #endif // ! HPCRUN_STATIC_LINK
 
 }
@@ -589,15 +610,15 @@ cupti_cubin_crc_get
  uint32_t cubin_size
 )
 {
-  CUpti_GetCubinCrcParams params = {
-    .size = CUpti_GetCubinCrcParamsSize,
-    .cubinSize = cubin_size,
-    .cubin = cubin
-  };
+	CUpti_GetCubinCrcParams params = {
+		.size = CUpti_GetCubinCrcParamsSize,
+		.cubinSize = cubin_size,
+		.cubin = cubin
+	};
 
-  HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiGetCubinCrc, (&params));
+	HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiGetCubinCrc, (&params));
 
-  return params.cubinCrc;
+	return params.cubinCrc;
 }
 
 
@@ -607,13 +628,16 @@ cupti_pc_sampling_enable2
  CUcontext context
 )
 {
-  CUpti_PCSamplingEnableParams params = {
-    .size = CUpti_PCSamplingEnableParamsSize,
-    .ctx = context,
-    .pPriv = NULL
-  };
+	uint32_t context_id = ((hpctoolkit_cuctx_st_t *)context)->context_id;
+	TMSG(CUPTI, "Enable context_id %u", context_id);
 
-  HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiPCSamplingEnable, (&params));
+	CUpti_PCSamplingEnableParams params = {
+		.size = CUpti_PCSamplingEnableParamsSize,
+		.ctx = context,
+		.pPriv = NULL
+	};
+
+	HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiPCSamplingEnable, (&params));
 }
 
 
@@ -623,84 +647,100 @@ cupti_pc_sampling_disable2
  CUcontext context
 )
 {
-  uint32_t context_id = ((hpctoolkit_cuctx_st_t *)context)->context_id;
+	uint32_t context_id = ((hpctoolkit_cuctx_st_t *)context)->context_id;
+	TMSG(CUPTI, "Disable context_id %u", context_id);
 
-  TMSG(CUPTI, "Disable context_id %u\n", context_id);
-
-  CUpti_PCSamplingDisableParams params = {
-    .size = CUpti_PCSamplingDisableParamsSize,
-    .ctx = context,
-    .pPriv = NULL
-  };
-  HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiPCSamplingDisable, (&params));
-
-  // Remove the entry
-  cupti_context_map_entry_t *entry = cupti_context_map_lookup(context);
-  if (entry) {
-    cupti_pc_sampling_data_t *pc_sampling_data = cupti_context_map_entry_pc_sampling_data_get(entry);
-    size_t num_stall_reasons = cupti_context_map_entry_num_stall_reasons_get(entry);
-    uint32_t *stall_reason_index = cupti_context_map_entry_stall_reason_index_get(entry);
-    char **stall_reason_names = cupti_context_map_entry_stall_reason_names_get(entry);
-
-    // Push it to a cstack for reuse
-    cupti_pc_sampling_data_free(pc_sampling_data);
-    // Data is calloced
-    free(stall_reason_index);
-    for (size_t i = 0; i < num_stall_reasons; ++i) {
-      free(stall_reason_names[i]);
-    }
-    free(stall_reason_names);
-
-    // Safe to delete this entry now
-    cupti_context_map_delete(context);
-  }
+	CUpti_PCSamplingDisableParams params = {
+		.size = CUpti_PCSamplingDisableParamsSize,
+		.ctx = context,
+		.pPriv = NULL
+	};
+	HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiPCSamplingDisable, (&params));
 }
 
 
+void
+cupti_pc_sampling_free
+(
+ CUcontext context
+)
+{
+	uint32_t context_id = ((hpctoolkit_cuctx_st_t *)context)->context_id;
+	TMSG(CUPTI, "Free context_id %u", context_id);
+
+	cupti_context_map_entry_t *entry = cupti_context_map_lookup(context);
+
+	if (!entry) {
+		return;
+	}
+
+	cupti_pc_sampling_data_t *pc_sampling_data = cupti_context_map_entry_pc_sampling_data_get(entry);
+	size_t num_stall_reasons = cupti_context_map_entry_num_stall_reasons_get(entry);
+	uint32_t *stall_reason_index = cupti_context_map_entry_stall_reason_index_get(entry);
+	char **stall_reason_names = cupti_context_map_entry_stall_reason_names_get(entry);
+
+	// Push it to a cstack for reuse
+	cupti_pc_sampling_data_free(pc_sampling_data);
+	// Data is calloced
+	free(stall_reason_index);
+	for (size_t i = 0; i < num_stall_reasons; ++i) {
+		free(stall_reason_names[i]);
+	}
+	free(stall_reason_names);
+
+	// Safe to delete this entry now
+	cupti_context_map_delete(context);
+}
+
+
+void
+cupti_pc_sampling_correlation_context_collect
+(
+ cct_node_t *cct_node,
+ CUcontext context
+)
+{
+	pc_sampling_collect(0, cct_node, context);
+}
+
+
+void
+cupti_pc_sampling_range_context_collect
+(
+ uint32_t range_id,
+ CUcontext context
+)
+{
+	pc_sampling_collect(range_id, NULL, context);
+}
+
+
+// A callback function for pc sampling context map
 static void
-pc_sampling_context_flush
+pc_sampling_context_collect
 (
  CUcontext context,
  void *args
 )
 {
-  uint32_t range_id = *(uint32_t *)args;
-  // 1. Set current ctx
-  // 2. Sync current ctx
-  // 3. Flush all pc samples
-  cuda_context_set(context);
-  //XXX(Keren): when this sync is necessary?
-  cuda_context_sync(context);
-  pc_sampling_stop(context);
-  cupti_pc_sampling_range_correlation_collect(range_id, NULL, context);
-  pc_sampling_start(context);
+	if (gpu_range_interval_get() != 1) {
+		pc_sampling_stop(context);
+	}
+
+	uint32_t range_id = *(uint32_t *)args;
+	pc_sampling_collect(range_id, NULL, context);
+
+	if (gpu_range_interval_get() != 1) {
+		pc_sampling_start(context);
+	}
 }
 
 
 void
-cupti_pc_sampling_range_flush
+cupti_pc_sampling_range_collect
 (
  uint32_t range_id
 )
 {
-  TMSG(CUPTI, "Collect range %u", range_id);
-
-  CUcontext context;
-  cuda_context_get(&context);
-  cupti_context_map_process(pc_sampling_context_flush, (void *)&range_id);
-  if (context != NULL) {
-    // Reset the current context
-    cuda_context_set(context);
-  }
-}
-
-
-void
-cupti_pc_sampling_correlation_flush
-(
- CUcontext context,
- cct_node_t *cct_node
-)
-{
-  cupti_pc_sampling_range_correlation_collect(0, cct_node, context);
+	cupti_context_map_process(pc_sampling_context_collect, (void *)&range_id);
 }

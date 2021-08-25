@@ -92,6 +92,7 @@
 #include <hpcrun/gpu/gpu-op-placeholders.h>
 #include <hpcrun/gpu/gpu-operation-multiplexer.h>
 #include <hpcrun/gpu/gpu-range.h>
+#include <hpcrun/gpu/gpu-metrics.h>
 
 #include <hpcrun/ompt/ompt-device.h>
 
@@ -796,7 +797,7 @@ cupti_unload_callback_cuda
     // Flush records but not disable context
     // No need to lock because the current operation is not on GPU
     uint32_t range_id = gpu_range_id();
-    cupti_pc_sampling_range_correlation_collect(range_id, NULL, context);
+    cupti_pc_sampling_range_context_collect(range_id, context);
   }
 #endif
   //cubin_id_map_delete(cubin_id);
@@ -819,7 +820,7 @@ cupti_func_ip_resolve
 }
 
 
-void
+static void
 ensure_kernel_ip_present
 (
  cct_node_t *kernel_ph, 
@@ -843,6 +844,26 @@ ensure_kernel_ip_present
     hpcrun_cct_retain(kernel);
   }
 }
+
+
+#ifdef NEW_CUPTI
+static void
+increase_kernel_count
+(
+ cct_node_t *kernel_ph,
+ uint32_t context_id,
+ uint32_t range_id
+)
+{
+  // Range processing
+  cct_node_t *kernel_node = hpcrun_cct_children(kernel_ph);
+  kernel_node = hpcrun_cct_insert_context(kernel_node, context_id);
+  kernel_node = hpcrun_cct_insert_range(kernel_node, range_id);
+
+  // Increase kernel count
+  gpu_metrics_attribute_kernel_count(kernel_node);
+}
+#endif
 
 
 static void
@@ -890,12 +911,11 @@ cupti_subscriber_callback
       int pc_sampling_frequency = cupti_pc_sampling_frequency_get();
       if (pc_sampling_frequency != -1) {
 #ifdef NEW_CUPTI
-        // Flush records
-        // No need to lock because the current operation is on GPU
-        // Activities can be attributed to either the current or the previous range
+        // Flush final records for this context and remove it from the context map
         uint32_t range_id = gpu_range_id();
-        cupti_pc_sampling_range_correlation_collect(range_id, NULL, rd->context);
+        cupti_pc_sampling_range_context_collect(range_id, rd->context);
         cupti_pc_sampling_disable2(rd->context);
+        cupti_pc_sampling_free(rd->context);
 #else
         cupti_pc_sampling_disable(rd->context);
 #endif
@@ -916,8 +936,7 @@ cupti_subscriber_callback
     ip_normalized_t kernel_ip;
 
     switch (cb_id) {
-      //FIXME(Keren): do not support memory allocate and free for current CUPTI version
-      // FIXME(Dejan): here find #bytes from func argument list and atribute it to node in cct(corr_id)
+      // FIXME(Keren): do not support memory allocate and free for current CUPTI version
       //case CUPTI_DRIVER_TRACE_CBID_cuMemAlloc:
       //case CUPTI_DRIVER_TRACE_CBID_cu64MemAlloc:
       //case CUPTI_DRIVER_TRACE_CBID_cuMemAllocPitch:
@@ -1108,6 +1127,14 @@ cupti_subscriber_callback
 #endif
 
           ensure_kernel_ip_present(cupti_kernel_ph, kernel_ip);
+          
+#ifdef NEW_CUPTI
+          if (gpu_range_interval_get() != 1) {
+            uint32_t context_id = cd->contextUid;
+            uint32_t range_id = gpu_range_id();
+            increase_kernel_count(cupti_kernel_ph, context_id, range_id);
+          }
+#endif
 
           cupti_trace_ph = 
             gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace);
@@ -1141,7 +1168,7 @@ cupti_subscriber_callback
         if (gpu_range_interval_get() == 1) {
           // TODO(Keren): call synchronization for PAPI metrics
           if (is_kernel_op) {
-            cupti_pc_sampling_correlation_flush(cd->context, cupti_kernel_ph);
+            cupti_pc_sampling_correlation_context_collect(cupti_kernel_ph, cd->context);
           }
         } else {
           if (gpu_range_is_lead()) {
@@ -1150,7 +1177,7 @@ cupti_subscriber_callback
             // TODO(Keren): call synchronization for PAPI metrics
             uint32_t range_id = gpu_range_id();
             // collect pc samples from all contexts
-            cupti_pc_sampling_range_flush(range_id);
+            cupti_pc_sampling_range_collect(range_id);
           }
 
           // Release the lock
@@ -1172,6 +1199,14 @@ cupti_subscriber_callback
         cupti_cct_map_insert(cupti_kernel_ph, kernel_ip, depth, cd->symbolName,
           params->gridDimX, params->gridDimY, params->gridDimZ,
           params->blockDimX, params->blockDimY, params->blockDimZ);
+#endif
+
+#ifdef NEW_CUPTI
+        if (gpu_range_interval_get() != 1) {
+          uint32_t context_id = cd->contextUid;
+          uint32_t range_id = gpu_range_id();
+          increase_kernel_count(cupti_kernel_ph, context_id, range_id);
+        }
 #endif
       }
       if (cupti_trace_ph != NULL) {
@@ -1351,7 +1386,7 @@ cupti_subscriber_callback
         if (gpu_range_interval_get() == 1) {
           // TODO(Keren): call synchronization for PAPI metrics
           if (is_kernel_op) {
-            cupti_pc_sampling_correlation_flush(cd->context, cupti_kernel_ph);
+            cupti_pc_sampling_correlation_context_collect(cupti_kernel_ph, cd->context);
           }
         } else {
           if (gpu_range_is_lead()) {
@@ -1360,7 +1395,7 @@ cupti_subscriber_callback
             // TODO(Keren): call synchronization for PAPI metrics
             uint32_t range_id = gpu_range_id();
             // collect pc samples from all contexts
-            cupti_pc_sampling_range_flush(range_id);
+            cupti_pc_sampling_range_collect(range_id);
           }
 
           // Release the lock
@@ -1848,8 +1883,10 @@ cupti_device_shutdown(void *args, int how)
     // Flush pc samples of all contexts
     // Get the current range
     gpu_range_enter();
+    
     uint32_t range_id = gpu_range_id();
-    cupti_pc_sampling_range_flush(range_id);
+    cupti_pc_sampling_range_collect(range_id);
+
     gpu_range_exit();
 
     // Wait until operations are drained
