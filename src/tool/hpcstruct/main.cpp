@@ -100,13 +100,13 @@ realmain(int argc, char* argv[]);
 
 //***************************** Analyze Cubins ******************************
 
-static const char* gpubin_analysis_makefile =
-#include "gpubin-analysis.h"
+static const char* analysis_makefile =
+#include "pmake.h"
 ;
 
 //
 // For a measurements directory, write a Makefile and launch hpcstruct
-// for each GPU binary (gpubin).
+// to analyze CPU and GPU binaries associated with the measurements
 //
 static void
 doMeasurementsDir(string measurements_dir, BAnal::Struct::Options & opts)
@@ -119,36 +119,35 @@ doMeasurementsDir(string measurements_dir, BAnal::Struct::Options & opts)
 
   string gpubin_dir = measurements_dir + "/" GPU_BINARY_DIRECTORY;
   struct dirent *ent;
-  bool found = false;
+  bool has_gpubin = false;
 
   DIR *dir = opendir(gpubin_dir.c_str());
-  if (dir == NULL) {
-    PRINT_ERROR("Unable to open measurements directory: " << gpubin_dir);
-    exit(1);
-  }
-
-  while ((ent = readdir(dir)) != NULL) {
-    string file_name(ent->d_name);
-    if (file_name.find(GPU_BINARY_SUFFIX) != string::npos) {
-      found = true;
-      break;
+  if (dir != NULL) {
+    while ((ent = readdir(dir)) != NULL) {
+      string file_name(ent->d_name);
+      if (file_name.find(GPU_BINARY_SUFFIX) != string::npos) {
+        has_gpubin = true;
+        break;
+      }
     }
+    closedir(dir);
   }
-
-  if (! found) {
-    PRINT_ERROR("Measurements directory does not contain gpubin: " << gpubin_dir);
-    exit(1);
-  }
-  closedir(dir);
 
   //
-  // Put hpctoolkit and cuda (nvdisasm) on path.
+  // Put hpctoolkit on PATH
   //
   char *path = getenv("PATH");
-  string new_path = string(HPCTOOLKIT_INSTALL_PREFIX) + "/bin/"
-    + ":" + path + ":" + CUDA_INSTALL_PREFIX + "/bin/";
+  string new_path = string(HPCTOOLKIT_INSTALL_PREFIX) + "/bin" + ":" + path;
+
+  if (has_gpubin) {
+    // Put cuda (nvdisasm) on path.
+    new_path = new_path +":" + CUDA_INSTALL_PREFIX + "/bin";
+  }
 
   setenv("PATH", new_path.c_str(), 1);
+
+  string hpcproftt_path = string(HPCTOOLKIT_INSTALL_PREFIX) 
+    + "/libexec/hpctoolkit/hpcproftt";
 
   //
   // Write Makefile and launch analysis.
@@ -167,12 +166,14 @@ doMeasurementsDir(string measurements_dir, BAnal::Struct::Options & opts)
 
   string gpucfg = opts.compute_gpu_cfg ? "yes" : "no";
 
-  makefile << "GPUBIN_DIR =  " << gpubin_dir << "\n"
-	   << "STRUCTS_DIR = " << structs_dir << "\n"
-	   << "GPUBIN_CFG = " << gpucfg << "\n"
-	   << "GPU_SIZE = " << opts.gpu_size << "\n"
-	   << "JOBS = " << opts.jobs << "\n\n"
-	   << gpubin_analysis_makefile << endl;
+  makefile << "MEAS_DIR =  "   << measurements_dir << "\n"
+	   << "GPUBIN_CFG = "  << gpucfg << "\n"
+	   << "CPU_ANALYZE = " << opts.analyze_cpu_binaries << "\n"
+	   << "GPU_ANALYZE = " << opts.analyze_gpu_binaries << "\n"
+	   << "PAR_SIZE = "    << opts.parallel_analysis_threshold << "\n"
+	   << "JOBS = "        << opts.jobs << "\n\n"
+	   << "PROFTT = "      << hpcproftt_path << "\n\n"
+	   << analysis_makefile << endl;
   makefile.close();
 
   string make_cmd = string("make -C ") + structs_dir + " -k --silent "
@@ -262,7 +263,9 @@ realmain(int argc, char* argv[])
 
   opts.show_time = args.show_time;
   opts.compute_gpu_cfg = args.compute_gpu_cfg;
-  opts.gpu_size = args.gpu_size;
+  opts.analyze_cpu_binaries = args.analyze_cpu_binaries;
+  opts.analyze_gpu_binaries = args.analyze_gpu_binaries;
+  opts.parallel_analysis_threshold = args.parallel_analysis_threshold;
 
   // ------------------------------------------------------------
   // If in_filenm is a directory, then analyze separately

@@ -31,12 +31,12 @@ if test $host_arm = "yes"; then
 fi
 
 #------------------------------------------------------------
-# Recent versions of MPI use UCX as a communication 
-# substrate. Prevent UCX from catching SEGV by dropping it 
-# from UCX's list of error signals. If UCX catches SEGV, 
+# Recent versions of MPI use UCX as a communication
+# substrate. Prevent UCX from catching SEGV by dropping it
+# from UCX's list of error signals. If UCX catches SEGV,
 # it will terminate the program. We can't allow UCX to
 # do that since hpcrun may encounter a SEGV as part of its
-# operation and want to drop a sample rather than 
+# operation and want to drop a sample rather than
 # terminate the program.
 #------------------------------------------------------------
 export UCX_ERROR_SIGNALS=ILL,FPE,BUS
@@ -127,7 +127,7 @@ Options: Profiling (Defaults shown in curly brackets {})
                       software event supported by Linux perf, a native hardware
                       counter event, a hardware counter event supported by the
                       PAPI library, or a Linux  system timer (CPUTIME and REALTIME).
-                      This option may be given multiple times to profile several events 
+                      This option may be given multiple times to profile several events
                       at once. If the value for <howoften> is a number, it will be
                       interpreted as a sample period. For Linux perf events, one
                       may specify a sampling frequency for 'howoften' by writing f
@@ -164,7 +164,6 @@ Options: Profiling (Defaults shown in curly brackets {})
   -fnb <path>, --fnbounds <path>
                        Use <path> as alternate hpcfnbounds command.
                        (mostly for developers)
-
   -js <num>, --jobs-symtab <num>
                        Use <num> openmp threads for Symtab in hpcfnbounds,
                        if Symtab supports openmp (default 1).
@@ -192,7 +191,7 @@ Options: Profiling (Defaults shown in curly brackets {})
                              option is enabled: RETCNT implies *all* elements of
                              call chains, including recursive elements, are recorded.
 
-  -nu, --no-unwind     Disable unwinding and collect a flat profile of leaf 
+  -nu, --no-unwind     Disable unwinding and collect a flat profile of leaf
                        procedures only instead of full calling contexts.
 
 
@@ -227,6 +226,16 @@ Options to consider only when hpcrun causes an application to fail:
                        can be used to ensure that your program loads the default
                        version of libmemkind.so.
 
+  --fnbounds-eager-shutdown
+                       Hpcrun uses a helper process 'hpcfnbounds' to calculate
+                       function bounds in each load module at runtime.  By
+                       default, hpcfnbounds is live throughout a program
+                       execution.  If your application runs out of memory when
+                       using hpcrun, you can use this option to have hpcrun shut
+                       down hpcfnbounds after analyzing an application's initial
+                       load modules and each dynamically-loaded shared library.
+                       Using this option will likely increase runtime overhead.
+
   --namespace-single   dlmopen may load a shared library into an alternate
                        namespace.  Use of dlmopen to create multiple namespaces
                        can cause an application to crash when using glibc < 2.32
@@ -255,8 +264,8 @@ NOTES:
 
 * By default, hpcrun use LD_AUDIT to monitor an application's use of dynamic
   libraries. Use of LD_AUDIT is needed to properly interpret a load module's
-  RUNPATH attribute. However, use of LD_AUDIT will cause dlmopen to fail 
-  for glibc < 2.32. Intel's GTPin library for instrumentation of Intel GPU 
+  RUNPATH attribute. However, use of LD_AUDIT will cause dlmopen to fail
+  for glibc < 2.32. Intel's GTPin library for instrumentation of Intel GPU
   binaries uses dlmopen.
 
 EOF
@@ -412,6 +421,12 @@ do
 	-fnb | --fnbounds )
 	    HPCRUN_FNBOUNDS_CMD="$1"
 	    shift
+	    ;;
+
+	# --------------------------------------------------
+
+	--fnbounds-eager-shutdown )
+	    export HPCRUN_FNBOUNDS_SHUTDOWN=1
 	    ;;
 
 	# --------------------------------------------------

@@ -1,4 +1,4 @@
-// -*-Mode: C++;-*-
+// -*-Mode: C++;-*- // technically C99
 
 // * BeginRiceCopyright *****************************************************
 //
@@ -44,30 +44,31 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef __VARMAP_HPP__
-#define __VARMAP_HPP__
-
-#include <lib/prof-lean/hpcrun-fmt.h> // metric stuffs
-#include <lib/support/BaseVarMap.hpp>   // basic var map class
-
-class VarMap : public BaseVarMap {
-
-private:
-  // metrics for variable substitution
-  hpcrun_metricVal_t *m_metrics;	   // metric values
-  metric_desc_t*      m_list_metric_desc;  // metric descriptions
-
-  int m_num_metrics;
-  int    m_error_code;
-
-public:
-  bool   isVariable(char *expr);
-  double getValue(int var);
-  int    getErrorCode();
-
-  VarMap(hpcrun_metricVal_t *metrics, 
-    metric_desc_t* m_list_metric_desc, unsigned int num_metrics);
-};
+//------------------------------------------------------------------------------
+// File: sysv_signal.c
+//
+// Purpose:
+//   translate calls to deprecated __sysv_signal into calls to signal,
+//   which gets intercepted by libmonitor. __sysv_signal is not intercepted
+//   by libmonitor.
+//------------------------------------------------------------------------------
 
 
-#endif
+//******************************************************************************
+// system includes
+//******************************************************************************
+
+#include <signal.h>
+#include <stdio.h>
+
+
+
+//******************************************************************************
+// interface functions
+//******************************************************************************
+
+__sighandler_t
+__sysv_signal(int signo, __sighandler_t handler)
+{
+  return signal(signo, handler);
+}
