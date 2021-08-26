@@ -24,12 +24,12 @@ if test $host_arm = "yes"; then
 fi
 
 #------------------------------------------------------------
-# Recent versions of MPI use UCX as a communication 
-# substrate. Prevent UCX from catching SEGV by dropping it 
-# from UCX's list of error signals. If UCX catches SEGV, 
+# Recent versions of MPI use UCX as a communication
+# substrate. Prevent UCX from catching SEGV by dropping it
+# from UCX's list of error signals. If UCX catches SEGV,
 # it will terminate the program. We can't allow UCX to
 # do that since hpcrun may encounter a SEGV as part of its
-# operation and want to drop a sample rather than 
+# operation and want to drop a sample rather than
 # terminate the program.
 #------------------------------------------------------------
 export UCX_ERROR_SIGNALS=ILL,FPE,BUS
@@ -143,7 +143,6 @@ Options: Profiling (Defaults shown in curly brackets {})
   -fnb <path>, --fnbounds <path>
                        Use <path> as alternate hpcfnbounds command.
                        (mostly for developers)
-
   -js <num>, --jobs-symtab <num>
                        Use <num> openmp threads for Symtab in hpcfnbounds,
                        if Symtab supports openmp (default 1).
@@ -198,6 +197,16 @@ Options to consider only when hpcrun causes an application to fail:
                        This option can be used to disable GOT rewriting if
                        it is believed that the rewriting is causing the
                        application to fail.
+
+  --fnbounds-eager-shutdown
+                       Hpcrun uses a helper process 'hpcfnbounds' to calculate
+                       function bounds in each load module at runtime.  By
+                       default, hpcfnbounds is live throughout a program
+                       execution.  If your application runs out of memory when
+                       using hpcrun, you can use this option to have hpcrun shut
+                       down hpcfnbounds after analyzing an application's initial
+                       load modules and each dynamically-loaded shared library.
+                       Using this option will likely increase runtime overhead.
 
   --namespace-single   dlmopen may load a shared library into an alternate
                        namespace.  Use of dlmopen to create multiple namespaces
@@ -370,6 +379,12 @@ do
 	-fnb | --fnbounds )
 	    HPCRUN_FNBOUNDS_CMD="$1"
 	    shift
+	    ;;
+
+	# --------------------------------------------------
+
+	--fnbounds-eager-shutdown )
+	    export HPCRUN_FNBOUNDS_SHUTDOWN=1
 	    ;;
 
 	# --------------------------------------------------
