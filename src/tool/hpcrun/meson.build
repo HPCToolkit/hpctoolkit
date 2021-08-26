@@ -178,6 +178,7 @@ _srcset.add([
     'syscalls/poll.c',
     'syscalls/ppoll.c',
     'syscalls/select.c',
+    'syscalls/sysv_signal.c',
 
     'utilities/executable-path.c',
     'utilities/hpcrun-nanotime.c',

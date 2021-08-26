@@ -78,9 +78,6 @@ _srcs = files(
   'PointerStack.cpp',
   'QuickSort.cpp',
   'Unique.cpp',
-
-  'VarMap.cpp',
-  'ExprEval.cpp',
 )
 
 support_lib = static_library('support', _srcs, pic: true,
