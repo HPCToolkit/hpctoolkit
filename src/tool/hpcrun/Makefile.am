@@ -512,6 +512,7 @@ MY_CUPTI_FILES = sample-sources/nvidia.c	\
 	gpu/nvidia/cupti-activity-translate.c	\
 	gpu/nvidia/cupti-analysis.c		\
 	gpu/nvidia/cupti-api.c			\
+	gpu/nvidia/cupti-subscribers.c			\
 	gpu/nvidia/cupti-gpu-api.c		
 endif
 

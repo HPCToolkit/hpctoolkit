@@ -105,6 +105,7 @@
 #include "cupti-api.h"
 #include "cupti-gpu-api.h"
 #include "cupti-cct-map.h"
+#include "cupti-subscribers.h"
 #include "cubin-hash-map.h"
 #include "cubin-id-map.h"
 #include "cubin-crc-map.h"
@@ -153,6 +154,7 @@
   macro(cuptiActivityRegisterCallbacks)          \
   macro(cuptiGetTimestamp)                       \
   macro(cuptiEnableDomain)                       \
+  macro(cuptiEnableCallback)                     \
   macro(cuptiFinalize)                           \
   macro(cuptiGetResultString)                    \
   macro(cuptiSubscribe)                          \
@@ -246,7 +248,6 @@ static cupti_activity_buffer_state_t cupti_activity_enabled = { 0, 0 };
 static cupti_load_callback_t cupti_load_callback = 0;
 
 static cupti_load_callback_t cupti_unload_callback = 0;
-
 
 static CUpti_SubscriberHandle cupti_subscriber;
 
@@ -400,6 +401,18 @@ CUPTI_FN
   uint32_t enable,
   CUpti_SubscriberHandle subscriber,
   CUpti_CallbackDomain domain
+ )
+);
+
+
+CUPTI_FN
+(
+ cuptiEnableCallback,
+ (
+  uint32_t enable,
+  CUpti_SubscriberHandle subscriber,
+  CUpti_CallbackDomain domain,
+  CUpti_CallbackId cbid
  )
 );
 
@@ -1681,6 +1694,31 @@ cupti_num_dropped_records_get
 //-------------------------------------------------------------
 // correlation callback control
 //-------------------------------------------------------------
+
+
+void
+cupti_callback_enable
+(
+ CUpti_SubscriberHandle subscriber,
+ CUpti_CallbackId cbid,
+ CUpti_CallbackDomain domain
+)
+{
+  HPCRUN_CUPTI_CALL(cuptiEnableCallback, (1, subscriber, domain, cbid));
+}
+
+
+void
+cupti_callback_disable
+(
+ CUpti_SubscriberHandle subscriber,
+ CUpti_CallbackId cbid,
+ CUpti_CallbackDomain domain
+)
+{
+  HPCRUN_CUPTI_CALL(cuptiEnableCallback, (0, subscriber, domain, cbid));
+}
+
 
 void
 cupti_callbacks_subscribe

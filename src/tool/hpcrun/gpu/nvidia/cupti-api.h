@@ -51,7 +51,7 @@
 //******************************************************************************
 
 #include <cupti.h>
-
+#include <stdbool.h>
 
 
 //******************************************************************************
@@ -117,6 +117,24 @@ cupti_buffer_alloc
 
 
 void
+cupti_callback_enable
+(
+ CUpti_SubscriberHandle subscriber,
+ CUpti_CallbackId cbid,
+ CUpti_CallbackDomain domain
+);
+
+
+void
+cupti_callback_disable
+(
+ CUpti_SubscriberHandle subscriber,
+ CUpti_CallbackId cbid,
+ CUpti_CallbackDomain domain
+);
+
+
+void
 cupti_callbacks_subscribe
 (
  void
@@ -162,7 +180,7 @@ cupti_pc_sampling_disable
 cupti_set_status_t 
 cupti_monitoring_set
 (
- const  CUpti_ActivityKind activity_kinds[],
+ const CUpti_ActivityKind activity_kinds[],
  bool enable
 );
 
@@ -173,6 +191,7 @@ cupti_device_timestamp_get
  CUcontext context,
  uint64_t *time
 );
+
 
 void cupti_activity_timestamp_get
 (
