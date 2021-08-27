@@ -103,9 +103,11 @@ struct cupti_cct_map_entry_s {
   uint64_t cct;
 
   ip_normalized_t function_id;
-  size_t depth;
+  size_t stack_length;
   char function_name[MAX_STR_LEN];
   size_t count;
+  size_t tool_depth;
+  size_t api_depth;
   size_t grid_dim_x;
   size_t grid_dim_y;
   size_t grid_dim_z;
@@ -133,7 +135,9 @@ cupti_cct_map_entry_new
 (
  cct_node_t *cct,
  ip_normalized_t function_id,
- size_t depth,
+ size_t stack_length,
+ size_t tool_depth,
+ size_t api_depth,
  char *function_name,
  uint32_t grid_dim_x,
  uint32_t grid_dim_y,
@@ -150,7 +154,9 @@ cupti_cct_map_entry_new
 
   e->cct = (uint64_t)cct;
   e->function_id = function_id;
-  e->depth = depth;
+  e->stack_length = stack_length;
+  e->tool_depth = tool_depth;
+  e->api_depth = api_depth;
   size_t str_len = strlen(function_name);
   size_t copy_len = MAX_STR_LEN > str_len ? str_len : MAX_STR_LEN - 1;
   strncpy(e->function_name, function_name, copy_len);
@@ -174,9 +180,9 @@ dump_fn_helper
  void *args
 )
 {
-  printf("%p, %u, %p, %s, %zu, %zu, %zu, %zu, %zu, %zu, %zu, %zu\n", 
+  printf("%p, %u, %p, %s, %zu, %zu, %zu, %zu, %zu, %zu, %zu, %zu, %zu, %zu\n", 
     entry->cct, entry->function_id.lm_id, entry->function_id.lm_ip,
-    entry->function_name, entry->depth,
+    entry->function_name, entry->stack_length, entry->tool_depth, entry->api_depth,
     entry->grid_dim_x / entry->count, entry->grid_dim_y / entry->count, entry->grid_dim_z / entry->count,
     entry->block_dim_x / entry->count, entry->block_dim_y / entry->count, entry->block_dim_z / entry->count,
     entry->count);
@@ -203,11 +209,13 @@ cupti_cct_map_lookup
 
 
 void
-cupti_cct_map_insert
+cupti_cct_map_kernel_insert
 (
  cct_node_t *cct,
  ip_normalized_t function_id,
- size_t depth,
+ size_t stack_length,
+ size_t tool_depth,
+ size_t api_depth,
  char *function_name,
  uint32_t grid_dim_x,
  uint32_t grid_dim_y,
@@ -220,8 +228,8 @@ cupti_cct_map_insert
   cupti_cct_map_entry_t *entry = st_lookup(&map_root, (uint64_t)cct);
 
   if (entry == NULL) {
-    entry = cupti_cct_map_entry_new(cct, function_id, depth, function_name,
-      grid_dim_x, grid_dim_y, grid_dim_z, block_dim_x, block_dim_y, block_dim_z);
+    entry = cupti_cct_map_entry_new(cct, function_id, stack_length, tool_depth, api_depth,
+      function_name, grid_dim_x, grid_dim_y, grid_dim_z, block_dim_x, block_dim_y, block_dim_z);
     st_insert(&map_root, entry);
   } 
 
@@ -240,7 +248,8 @@ cupti_cct_map_dump
 (
 )
 {
-  printf("cct, cubin_id, function_pc, function_name, depth, "
+  printf("cct, cubin_id, function_pc, function_name, stack_length, "
+    "tool_depth, api_depth, "
     "grid_dim_x, grid_dim_y, grid_dim_z,"
     "block_dim_x, block_dim_y, block_dim_z\n");
   st_forall(map_root, splay_inorder, dump_fn_helper, NULL);

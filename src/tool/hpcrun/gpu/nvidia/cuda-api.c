@@ -71,9 +71,11 @@
 
 #include <hpcrun/sample-sources/libdl.h>
 #include <hpcrun/messages/messages.h>
+#include <hpcrun/safe-sampling.h>
+#include <hpcrun/sample_event.h>
+#include <hpcrun/cct/cct.h>
 
 #include "cuda-api.h"
-
 
 
 //*****************************************************************************
@@ -135,6 +137,7 @@
 #define RUNTIME_MINOR_VERSION(rt_version) (rt_version % 10) 
 
 static __thread bool api_internal = false;
+static __thread cct_node_t *cuda_api_node = NULL;
 
 //******************************************************************************
 // static data
@@ -172,9 +175,37 @@ CUDA_FN
 
 CUDA_FN
 (
+ cuCtxSetCurrent,
+ (
+  CUcontext context
+ )
+);
+
+
+CUDA_FN
+(
  cuCtxSynchronize,
  (
   void
+ )
+);
+
+
+CUDA_FN
+(
+ cuLaunchKernel,
+ (
+  CUfunction f,
+  unsigned int gridDimX,
+  unsigned int gridDimY,
+  unsigned int gridDimZ,
+  unsigned int blockDimX,
+  unsigned int blockDimY,
+  unsigned int blockDimZ,
+  unsigned int sharedMemBytes,
+  CUstream hStream,
+  void** kernelParams,
+  void** extra
  )
 );
 
@@ -193,6 +224,20 @@ CUDA_RUNTIME_FN
  cudaRuntimeGetVersion,
  ( 
   int* runtimeVersion
+ )
+);
+
+
+CUDA_RUNTIME_FN
+(
+ cudaLaunchKernel,
+ (
+  const void *func,
+  dim3 gridDim,
+  dim3 blockDim,
+  void **args,
+  size_t sharedMem,
+  cudaStream_t stream
  )
 );
 
@@ -218,11 +263,13 @@ cuda_bind
   CHK_DLSYM(cuda, cuCtxGetCurrent);
   CHK_DLSYM(cuda, cuCtxSetCurrent);
   CHK_DLSYM(cuda, cuCtxSynchronize);
+  CHK_DLSYM(cuda, cuLaunchKernel);
 
   CHK_DLOPEN(cudart, "libcudart.so", RTLD_NOW | RTLD_GLOBAL);
 
   CHK_DLSYM(cudart, cudaGetDevice);
   CHK_DLSYM(cudart, cudaRuntimeGetVersion);
+  CHK_DLSYM(cudart, cudaLaunchKernel);
 
   return DYNAMIC_BINDING_STATUS_OK;
 #else
@@ -421,18 +468,12 @@ cuda_context_sync
 )
 {
 #ifndef HPCRUN_STATIC_LINK
-  int ret = 0;
   api_internal = true;
-  if (cuda_context_set(ctx)) {
-    HPCRUN_CUDA_API_CALL(cuCtxSynchronize, ());
-    ret = 0;
-  } else {
-    ret = -1;
-  }
+  HPCRUN_CUDA_API_CALL(cuCtxSynchronize, ());
   api_internal = false;
-  return ret;
+  return HPCTOOLKIT_CUDA_SUCCESS;
 #else
-  return -1;
+  return HPCTOOLKIT_CUDA_FAIL;
 #endif
 }
 
@@ -447,17 +488,107 @@ cuda_context_set
   api_internal = true;
   HPCRUN_CUDA_API_CALL(cuCtxSetCurrent, (ctx));  
   api_internal = false;
-  return 0;
+  return HPCTOOLKIT_CUDA_SUCCESS;
 #else
-  return -1;
+  return HPCTOOLKIT_CUDA_FAIL;
 #endif
 }
 
 
 bool
-cuda_api_internal
+cuda_api_internal_get
 (
 )
 {
   return api_internal;
+}
+
+
+void
+cuda_api_enter_callback
+(
+)
+{
+  if (cuda_api_node != NULL) {
+    return;
+  }
+
+  hpcrun_metricVal_t zero_metric_incr = {.i = 0};
+  int zero_metric_id = 0; // nothing to see here
+
+  ucontext_t uc;
+  getcontext(&uc); // current context, where unwind will begin 
+
+  // prevent self a sample interrupt while gathering calling context
+  hpcrun_safe_enter(); 
+
+  cct_node_t *node = 
+    hpcrun_sample_callpath(&uc, zero_metric_id,
+			   zero_metric_incr, 0, 1, NULL).sample_node;
+
+  hpcrun_safe_exit();
+
+  cuda_api_node = node;
+}
+
+
+void
+cuda_api_exit_callback
+(
+)
+{
+  cuda_api_node = NULL;
+}
+
+
+cct_node_t *
+cuda_api_node_get
+(
+)
+{
+  return cuda_api_node;
+}
+
+
+cudaError_t
+hpcrun_cudaLaunchKernel
+(
+ const void *func,
+ dim3 gridDim,
+ dim3 blockDim,
+ void **args,
+ size_t sharedMem,
+ cudaStream_t stream
+)
+{
+#ifndef HPCRUN_STATIC_LINK
+  return cudaLaunchKernel_fn(func, gridDim, blockDim, args, sharedMem, stream);
+#else
+  return CUDA_SUCCESS;
+#endif
+}
+
+
+CUresult
+hpcrun_cuLaunchKernel
+(
+ CUfunction f,
+ unsigned int gridDimX,
+ unsigned int gridDimY,
+ unsigned int gridDimZ,
+ unsigned int blockDimX,
+ unsigned int blockDimY,
+ unsigned int blockDimZ,
+ unsigned int sharedMemBytes,
+ CUstream hStream,
+ void **kernelParams,
+ void **extra
+)
+{
+#ifndef HPCRUN_STATIC_LINK
+  return cuLaunchKernel_fn(f, gridDimX, gridDimZ, gridDimZ,
+      blockDimX, blockDimY, blockDimZ, sharedMemBytes, hStream, kernelParams, extra);
+#else
+  return CUDA_SUCCESS;
+#endif
 }

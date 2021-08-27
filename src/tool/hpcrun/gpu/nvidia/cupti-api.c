@@ -386,10 +386,10 @@ CUPTI_FN
 
 CUPTI_FN
 (
-  cuptiGetTimestamp,
-  (
-    uint64_t* timestamp
-  )
+ cuptiGetTimestamp,
+ (
+  uint64_t* timestamp
+ )
 );
 
 
@@ -866,6 +866,52 @@ increase_kernel_count
 #endif
 
 
+#ifdef NEW_CUPTI_ANALYSIS
+void
+analyze_cupti_api
+(
+ const CUpti_CallbackData *cd,
+ cct_node_t *api_node,
+ ip_normalized_t kernel_ip,
+ gpu_op_placeholder_flags_t flags
+)
+{
+  hpcrun_metricVal_t zero_metric_incr = {.i = 0};
+  int zero_metric_id = 0; // nothing to see here
+
+  ucontext_t uc;
+  getcontext(&uc); // current context, where unwind will begin 
+
+  // prevent self a sample interrupt while gathering calling context
+  hpcrun_safe_enter(); 
+
+  cct_node_t *node = 
+    hpcrun_sample_callpath(&uc, zero_metric_id,
+      zero_metric_incr, 0, 1, NULL).sample_node;
+
+  hpcrun_safe_exit();
+
+  size_t node_depth = 0;
+  size_t api_node_depth = hpcrun_cct_depth(api_node);
+  while (node != NULL && node != api_node) {
+    ++node_depth;
+    node = hpcrun_cct_parent(node);
+  }
+
+  register long rsp asm("rsp");
+  size_t stack_length = rsp;
+
+  if (gpu_op_placeholder_flags_is_set(flags, gpu_placeholder_type_kernel)) {
+    cuLaunchKernel_params *params = (cuLaunchKernel_params *)cd->functionParams;
+    cupti_cct_map_kernel_insert(api_node, kernel_ip,
+      stack_length, node_depth, api_node_depth,
+      cd->symbolName, params->gridDimX, params->gridDimY, params->gridDimZ,
+      params->blockDimX, params->blockDimY, params->blockDimZ);
+    //printf("(%p, %u, %p)", api_node, kernel_ip.lm_id, kernel_ip.lm_ip);
+  }
+}
+#endif
+
 static void
 cupti_subscriber_callback
 (
@@ -875,7 +921,7 @@ cupti_subscriber_callback
  const void *cb_info
 )
 {
-  if (cuda_api_internal()) {
+  if (cuda_api_internal_get()) {
     return;
   }
 
@@ -1104,7 +1150,11 @@ cupti_subscriber_callback
         // and unwind when the API is entered
         cupti_correlation_id_push(correlation_id);
 
-        cct_node_t *api_node = cupti_correlation_callback(correlation_id);
+        cct_node_t *api_node = cuda_api_node_get();
+        // cct_node_t *api_node = NULL;
+        if (api_node == NULL) {
+          api_node = cupti_correlation_callback(correlation_id);
+        }
 
         gpu_op_ccts_t gpu_op_ccts;
 
@@ -1116,16 +1166,6 @@ cupti_subscriber_callback
           cupti_kernel_ph = 
             gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel);
 
-#ifdef NEW_CUPTI_ANALYSIS
-          //size_t depth = hpcrun_cct_depth(cupti_kernel_ph);
-          register long rsp asm ("rsp");
-          size_t depth = rsp;
-          cuLaunchKernel_params *params = (cuLaunchKernel_params *)cd->functionParams;
-          cupti_cct_map_insert(cupti_kernel_ph, kernel_ip, depth, cd->symbolName,
-            params->gridDimX, params->gridDimY, params->gridDimZ,
-            params->blockDimX, params->blockDimY, params->blockDimZ);
-#endif
-
           ensure_kernel_ip_present(cupti_kernel_ph, kernel_ip);
           
 #ifdef NEW_CUPTI
@@ -1135,11 +1175,14 @@ cupti_subscriber_callback
             increase_kernel_count(cupti_kernel_ph, context_id, range_id);
           }
 #endif
-
           cupti_trace_ph = 
             gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace);
 
           ensure_kernel_ip_present(cupti_trace_ph, kernel_ip);
+
+#ifdef NEW_CUPTI_ANALYSIS
+          analyze_cupti_api(cd, cupti_kernel_ph, kernel_ip, gpu_op_placeholder_flags);
+#endif
         }
 
         hpcrun_safe_exit();
@@ -1191,14 +1234,11 @@ cupti_subscriber_callback
       CUPTI_API_ENTER) {
       if (cupti_kernel_ph != NULL) {
         ensure_kernel_ip_present(cupti_kernel_ph, kernel_ip);
+
 #ifdef NEW_CUPTI_ANALYSIS
-        //size_t depth = hpcrun_cct_depth(cupti_kernel_ph);
-        register long rsp asm ("rsp");
-        size_t depth = rsp;
-        cuLaunchKernel_params *params = (cuLaunchKernel_params *)cd->functionParams;
-        cupti_cct_map_insert(cupti_kernel_ph, kernel_ip, depth, cd->symbolName,
-          params->gridDimX, params->gridDimY, params->gridDimZ,
-          params->blockDimX, params->blockDimY, params->blockDimZ);
+        gpu_op_placeholder_flags_t gpu_op_placeholder_flags = 0;
+        gpu_op_placeholder_flags_set(&gpu_op_placeholder_flags, gpu_placeholder_type_kernel);
+        analyze_cupti_api(cd, cupti_kernel_ph, kernel_ip, gpu_op_placeholder_flags);
 #endif
 
 #ifdef NEW_CUPTI
@@ -1346,7 +1386,11 @@ cupti_subscriber_callback
         // Though unlikely in most cases,
         // it is still possible that a cupti buffer is full and returned to the host
         // in the interval of a runtime api.
-        cct_node_t *api_node = cupti_correlation_callback(correlation_id);
+        cct_node_t *api_node = cuda_api_node_get();
+        //cct_node_t *api_node = NULL;
+        if (api_node == NULL) {
+          api_node = cupti_correlation_callback(correlation_id);
+        }
 
         gpu_op_ccts_t gpu_op_ccts;
 

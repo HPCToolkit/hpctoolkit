@@ -334,6 +334,8 @@ do
 		MPI* )     preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_mpi.so" ;;
 		gpu=amd) roctracer_libdir="${roctracer_lib_path}"
 			 export HIP_ENABLE_DEFERRED_LOADING=0;;
+    gpu=nvidia) preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_cuda.so" ;;
+    gpu=nvidia,pc) preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_cuda.so" ;;
 		gpu=opencl)	 preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_opencl.so" ;;
 
 		gpu=opencl,inst) gtpin_libdir="${gtpin_lib_path}"

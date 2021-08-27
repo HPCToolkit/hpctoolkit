@@ -28,11 +28,13 @@ cupti_cct_map_lookup
 
 
 void
-cupti_cct_map_insert
+cupti_cct_map_kernel_insert
 (
  cct_node_t *cct,
  ip_normalized_t function_id,
- size_t depth,
+ size_t stack_length,
+ size_t tool_depth,
+ size_t api_depth,
  char *function_name,
  uint32_t grid_dim_x,
  uint32_t grid_dim_y,

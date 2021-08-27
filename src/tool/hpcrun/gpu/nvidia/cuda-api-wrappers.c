@@ -44,154 +44,17 @@
 //***************************************************************************
 //
 // File:
-//   cuda-api.h
+//   cuda-api-wrappers.c
 //
 // Purpose:
-//   interface definitions for wrapper around NVIDIA CUDA layer
-//  
+//   intercept cuda api calls
+//
 //***************************************************************************
 
-#ifndef cuda_api_h
-#define cuda_api_h
-
-//*****************************************************************************
-// nvidia includes
-//*****************************************************************************
-
-#include <cuda.h>
-#include <cuda_runtime.h>
-#include <stdbool.h>
-
-#define HPCTOOLKIT_CUDA_SUCCESS 0
-#define HPCTOOLKIT_CUDA_FAIL -1
-
-//*****************************************************************************
-// interface operations
-//*****************************************************************************
-
-typedef struct cuda_device_property {
-  int sm_count;
-  int sm_clock_rate;
-  int sm_shared_memory;
-  int sm_registers;
-  int sm_threads;
-  int sm_blocks;
-  int num_threads_per_warp;
-} cuda_device_property_t;
-
-
-// DRIVER_UPDATE_CHECK(Keren): reverse engineered
-typedef struct {
-  uint32_t unknown_field1[4];
-  uint32_t function_index;
-  uint32_t unknown_field2[3];
-  CUmodule cumod;
-} hpctoolkit_cufunc_st_t;
-
-
-typedef struct {
-  uint32_t cubin_id;
-} hpctoolkit_cumod_st_t;
-
-
-typedef struct {
-  uint32_t unknown_field1[25];
-  uint32_t context_id;
-} hpctoolkit_cuctx_st_t;
-
-//*****************************************************************************
-// forward declaration
-//*****************************************************************************
-
-typedef struct cct_node_t cct_node_t;
-
-// returns 0 on success
-
-int 
-cuda_bind
-(
- void
-);
-
-
-int 
-cuda_device_property_query
-(
- int device_id, 
- cuda_device_property_t *property
-);
-
-
-int
-cuda_global_pc_sampling_required
-(
-  int *required
-);
-
-
-int
-cuda_context_sync
-(
- CUcontext ctx
-);
-
-
-int
-cuda_context_get
-(
- CUcontext *ctx
-);
-
-
-int
-cuda_context_set
-(
- CUcontext ctx
-);
-
-
-bool
-cuda_api_internal_get
-(
-);
-
-
-void
-cuda_api_enter_callback
-(
-);
-
-
-void
-cuda_api_exit_callback
-(
-);
-
-
-cct_node_t *
-cuda_api_node_get
-(
-);
-
-//*****************************************************************************
-// CUDA API operations
-//*****************************************************************************
-//
-// returns 0 on success
-
-cudaError_t
-hpcrun_cudaLaunchKernel
-(
- const void *func,
- dim3 gridDim,
- dim3 blockDim,
- void **args,
- size_t sharedMem,
- cudaStream_t stream
-);
+#include "cuda-api.h"
 
 CUresult
-hpcrun_cuLaunchKernel
+cuLaunchKernel
 (
  CUfunction f,
  unsigned int gridDimX,
@@ -204,6 +67,29 @@ hpcrun_cuLaunchKernel
  CUstream hStream,
  void **kernelParams,
  void **extra
-);
+)
+{
+  cuda_api_enter_callback();
+  CUresult result = hpcrun_cuLaunchKernel(f, gridDimX, gridDimY, gridDimZ,
+    blockDimX, blockDimY, blockDimZ,
+    sharedMemBytes, hStream, kernelParams, extra);
+  cuda_api_exit_callback();
+  return result;
+}
 
-#endif
+cudaError_t
+cudaLaunchKernel
+(
+ const void *func,
+ dim3 gridDim,
+ dim3 blockDim,
+ void **args,
+ size_t sharedMem,
+ cudaStream_t stream
+)
+{
+  cuda_api_enter_callback();
+  cudaError_t cuda_error = hpcrun_cudaLaunchKernel(func, gridDim, blockDim, args, sharedMem, stream);
+  cuda_api_exit_callback();
+  return cuda_error;
+}
