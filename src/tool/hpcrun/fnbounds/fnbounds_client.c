@@ -396,12 +396,6 @@ shutdown_server(void)
 static int
 hpcfnbounds_grandchild(void* fds_vp)
 {
-  //
-  // child process: disable profiling, dup the log file fd onto
-  // stderr and exec hpcfnbounds in server mode.
-  //
-  hpcrun_set_disabled();
-
   struct {
     int sendfd[2], recvfd[2];
   }* fds = fds_vp;
@@ -463,7 +457,7 @@ hpcfnbounds_child(void* fds_vp) {
                 ? (void*)&fds - 256 : (void*)&fds + 256;
 
   // Do the clone, and pass the result back to our parent through the shared memory space
-  fds->pid = auditor_exports->clone(hpcfnbounds_grandchild, stack, SIGCHLD, fds_vp);
+  fds->pid = auditor_exports->clone(hpcfnbounds_grandchild, stack, SIGCHLD | CLONE_VM, fds_vp);
   return 0;
 }
 
