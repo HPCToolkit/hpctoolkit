@@ -15,16 +15,33 @@
 
 #include "gpu-metrics.h"
 
-static atomic_ullong correlation_id_lead = ATOMIC_VAR_INIT(0);
+static atomic_ullong lead_correlation_id = ATOMIC_VAR_INIT(0);
 static atomic_ullong correlation_id_done = ATOMIC_VAR_INIT(0);
+static atomic_uint range_id = ATOMIC_VAR_INIT(GPU_RANGE_DEFAULT_RANGE);
 
-static __thread uint64_t thread_correlation_id = 0;
-static __thread uint32_t thread_range_id = 0;
-
-static uint32_t gpu_range_interval = 1;
+static __thread uint64_t thread_correlation_id = GPU_RANGE_DEFAULT_RANGE;
+static __thread uint32_t thread_range_id = GPU_RANGE_DEFAULT_RANGE;
 
 static spinlock_t count_lock = SPINLOCK_UNLOCKED;
 
+static bool gpu_range_enable_status = false;
+
+static bool
+gpu_range_callback_default
+(
+ uint64_t correlation_id
+)
+{
+  return false;
+}
+
+static gpu_range_callback_t gpu_range_pre_enter_callback = gpu_range_callback_default;
+
+static gpu_range_callback_t gpu_range_post_enter_callback = gpu_range_callback_default;
+
+static gpu_range_callback_t gpu_range_pre_exit_callback = gpu_range_callback_default;
+
+static gpu_range_callback_t gpu_range_post_exit_callback = gpu_range_callback_default;
 
 void
 gpu_range_profile_dump
@@ -36,9 +53,7 @@ gpu_range_profile_dump
 
   pms_id_t ids[IDTUPLE_MAXTYPES];
   id_tuple_t id_tuple;
-
   id_tuple_constructor(&id_tuple, ids, IDTUPLE_MAXTYPES);
-
   id_tuple_push_back(&id_tuple, IDTUPLE_NODE, gethostid());
 
   int rank = hpcrun_get_rank();
@@ -47,7 +62,6 @@ gpu_range_profile_dump
   hpcrun_safe_enter();
 
   id_tuple_copy(&(cptd->id_tuple), &id_tuple, hpcrun_malloc);
-
   hpcrun_write_profile_data(cptd);
 
   hpcrun_safe_exit();
@@ -82,8 +96,9 @@ gpu_range_context_cct_get
 
 
 uint32_t
-gpu_range_id
+gpu_range_id_get
 (
+ void
 )
 {
   return thread_range_id;
@@ -91,92 +106,128 @@ gpu_range_id
 
 
 uint64_t
-gpu_range_correlation_id
-(
-)
-{
-  return thread_correlation_id;
-}
-
-
-uint64_t
 gpu_range_enter
 (
+ void
 )
 {
+  if (!gpu_range_enabled()) {
+    return GPU_RANGE_DEFAULT_RANGE;
+  } 
+
+  if (!gpu_range_pre_enter_callback(thread_correlation_id)) {
+    return GPU_RANGE_DEFAULT_RANGE;
+  }
+
   spinlock_lock(&count_lock);
 
-  uint64_t correlation_id = gpu_correlation_id();
-  if (GPU_CORRELATION_ID_UNMASK(correlation_id) % gpu_range_interval == 0) {
+  thread_correlation_id = gpu_correlation_id();
+
+  bool is_lead = gpu_range_post_enter_callback(thread_correlation_id);
+  if (is_lead) {
     // If lead is set, don't do anything
-    while (atomic_load(&correlation_id_lead) != 0) {}
+    while (atomic_load(&lead_correlation_id) != 0) {}
     // The last call in this range
-    atomic_store(&correlation_id_lead, correlation_id);
+    atomic_store(&lead_correlation_id, thread_correlation_id);
+
+    atomic_fetch_add(&range_id, 1);
   }
 
   spinlock_unlock(&count_lock);
 
-  thread_correlation_id = correlation_id;
-  thread_range_id = (GPU_CORRELATION_ID_UNMASK(correlation_id) - 1) / gpu_range_interval;
+  thread_range_id = atomic_load(&range_id);
 
-  uint64_t old_correlation_id_lead = atomic_load(&correlation_id_lead);
-  // Wait until correlation_id_lead is done
-  // If correlation_id_lead is not set, we are good to go
-  while (old_correlation_id_lead != 0 && old_correlation_id_lead < correlation_id) {
-    old_correlation_id_lead = atomic_load(&correlation_id_lead);
-  }
-
-  return correlation_id;
-}
-
-
-void
-gpu_range_exit
-(
-)
-{
-  atomic_fetch_add(&correlation_id_done, 1);
-
-  if (gpu_range_is_lead()) {
-    // unleash wait operations
-    atomic_store(&correlation_id_lead, 0);
-  }
-}
-
-
-void
-gpu_range_lead_barrier
-(
-)
-{
-  // Wait until correlation id before me have done
-  while (atomic_load(&correlation_id_done) != GPU_CORRELATION_ID_UNMASK(thread_correlation_id) - 1);
+  return thread_correlation_id;
 }
 
 
 bool
 gpu_range_is_lead
 (
+ void
 )
 {
-  return atomic_load(&correlation_id_lead) == thread_correlation_id;
+  return thread_correlation_id == atomic_load(&lead_correlation_id);
 }
 
-
-uint32_t
-gpu_range_interval_get
+void
+gpu_range_exit
 (
+ void
 )
 {
-  return gpu_range_interval;
+  if (!gpu_range_enabled()) {
+    return;
+  } 
+
+  if (!gpu_range_pre_exit_callback(thread_correlation_id)) {
+    return;
+  }
+
+  // Wait until correlation id before me have done
+  atomic_fetch_add(&correlation_id_done, 1);
+  uint64_t cur_lead_correlation_id = atomic_load(&lead_correlation_id);
+  while (cur_lead_correlation_id != 0 && cur_lead_correlation_id != atomic_load(&correlation_id_done)) {
+    cur_lead_correlation_id = atomic_load(&lead_correlation_id);
+  }
+
+  gpu_range_post_exit_callback(thread_correlation_id);
+
+  // Unleash wait operations in range enter
+  if (gpu_range_is_lead()) {
+    atomic_store(&lead_correlation_id, 0);
+  } 
+}
+
+bool
+gpu_range_enabled
+(
+ void
+)
+{
+  return gpu_range_enable_status;
+}
+
+// Enables range profiling
+void
+gpu_range_enable
+(
+ void
+)
+{
+  gpu_range_enable_status = true;
 }
 
 
 void
-gpu_range_interval_set
+gpu_range_disable
 (
- uint32_t interval
+ void
 )
 {
-  gpu_range_interval = interval;
+  gpu_range_enable_status = false;
+}
+
+
+void
+gpu_range_pre_enter_callback_register
+(
+ gpu_range_callback_t pre_callback,
+ gpu_range_callback_t post_callback
+)
+{
+  gpu_range_pre_enter_callback = pre_callback;
+  gpu_range_post_enter_callback = post_callback;
+}
+
+
+void
+gpu_range_pre_exit_callback_register
+(
+ gpu_range_callback_t pre_callback,
+ gpu_range_callback_t post_callback
+)
+{
+  gpu_range_pre_exit_callback = pre_callback;
+  gpu_range_post_exit_callback = post_callback;
 }

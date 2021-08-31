@@ -86,7 +86,9 @@
 #include <hpcrun/gpu/gpu-range.h>
 #include <hpcrun/gpu/nvidia/cuda-api.h>
 #include <hpcrun/gpu/nvidia/cupti-api.h>
+
 #ifdef NEW_CUPTI
+#include <hpcrun/gpu/nvidia/cupti-range.h>
 #include <hpcrun/gpu/nvidia/cupti-pc-sampling-api.h>
 #endif
 
@@ -272,6 +274,7 @@ METHOD_FN(init)
   control_knob_register("HPCRUN_CUDA_DEVICE_BUFFER_SIZE", "8388608", ck_int);
   control_knob_register("HPCRUN_CUDA_DEVICE_SEMAPHORE_SIZE", "65536", ck_int);
   control_knob_register("HPCRUN_CUDA_RANGE_INTERVAL", "1", ck_int);
+  control_knob_register("HPCRUN_CUDA_RANGE_MODE", "EVEN", ck_int);
   control_knob_register("HPCRUN_CUDA_KERNEL_SERIALIZATION", "FALSE", ck_string);
 
   // Reset cupti flags
@@ -360,10 +363,6 @@ METHOD_FN(process_event_list, int lush_metrics)
   hpcrun_extract_ev_thresh(event, sizeof(nvidia_name), nvidia_name,
     &frequency, frequency_default);
 
-  int range_interval = 1;
-  control_knob_value_get_int("HPCRUN_CUDA_RANGE_INTERVAL", &range_interval);
-  gpu_range_interval_set(range_interval);
-
   if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA)) {
     trace_frequency =
       (frequency == frequency_default) ? trace_frequency_default : frequency;
@@ -396,6 +395,20 @@ METHOD_FN(process_event_list, int lush_metrics)
     // Only profile pc sampling metrics
     cupti_enabled_activities |= CUPTI_DRIVER;
     cupti_enabled_activities |= CUPTI_RUNTIME;
+
+#ifdef NEW_CUPTI
+    char *range_mode = NULL;
+    if (control_knob_value_get_string("HPCRUN_CUDA_RANGE_MODE", &range_mode) != 0) {
+      monitor_real_exit(-1);
+    }
+
+    int interval = CUPTI_RANGE_DEFAULT_INTERVAL;
+    if (control_knob_value_get_int("HPCRUN_CUDA_RANGE_INTERVAL", &interval) != 0) {
+      monitor_real_exit(-1);
+    }
+
+    cupti_range_config(range_mode, interval);
+#endif
   }
 
   gpu_metrics_default_enable();

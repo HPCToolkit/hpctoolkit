@@ -379,6 +379,7 @@ MY_BASE_FILES =				\
 	gpu/gpu-operation-channel.c \
 	gpu/gpu-operation-channel-set.c \
 	gpu/gpu-operation-multiplexer.c 	\
+	gpu/gpu-range.c \
 	gpu/gpu-splay-allocator.c	\
 	gpu/gpu-stream-id-map.c		\
 	gpu/gpu-trace.c			\
@@ -512,7 +513,6 @@ MY_CUPTI_FILES = sample-sources/nvidia.c	\
 	gpu/nvidia/cupti-activity-translate.c	\
 	gpu/nvidia/cupti-analysis.c		\
 	gpu/nvidia/cupti-api.c			\
-	gpu/nvidia/cupti-subscribers.c			\
 	gpu/nvidia/cupti-gpu-api.c		
 endif
 
@@ -520,9 +520,10 @@ if OPT_ENABLE_NEW_CUPTI
 MY_NEW_CUPTI_FILES = gpu/nvidia/cupti-pc-sampling-api.c \
 	gpu/nvidia/cupti-pc-sampling-data.c \
 	gpu/nvidia/cupti-context-map.c \
+	gpu/nvidia/cupti-subscribers.c \
+	gpu/nvidia/cupti-range.c \
 	gpu/nvidia/cubin-crc-map.c \
-	gpu/nvidia/cupti-cct-map.c \
-	gpu/gpu-range.c
+	gpu/nvidia/cupti-cct-map.c
 endif
 
 if OPT_ENABLE_OPENCL

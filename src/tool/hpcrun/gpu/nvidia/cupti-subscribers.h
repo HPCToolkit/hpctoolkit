@@ -53,48 +53,70 @@
 void
 cupti_driver_memcpy_htod_callbacks_subscribe
 (
+ uint32_t enable,
  CUpti_SubscriberHandle subscriber
 );
 
 void
 cupti_driver_memcpy_dtoh_callbacks_subscribe
 (
+ uint32_t enable,
  CUpti_SubscriberHandle subscriber
 );
 
 void
 cupti_driver_memcpy_callbacks_subscribe
 (
+ uint32_t enable,
  CUpti_SubscriberHandle subscriber
 );
 
 void
 cupti_driver_sync_callbacks_subscribe
 (
+ uint32_t enable,
  CUpti_SubscriberHandle subscriber
 );
 
 void
 cupti_driver_kernel_callbacks_subscribe
 (
+ uint32_t enable,
  CUpti_SubscriberHandle subscriber
 );
 
 void
 cupti_runtime_memcpy_callbacks_subscribe
 (
+ uint32_t enable,
  CUpti_SubscriberHandle subscriber
 );
 
 void
 cupti_runtime_sync_callbacks_subscribe
 (
+ uint32_t enable,
  CUpti_SubscriberHandle subscriber
 );
 
 void
 cupti_runtime_kernel_callbacks_subscribe
 (
+ uint32_t enable,
+ CUpti_SubscriberHandle subscriber
+);
+
+void
+cupti_resource_module_subscribe
+(
+ uint32_t enable,
+ CUpti_SubscriberHandle subscriber
+);
+
+void
+cupti_resource_context_subscribe
+(
+ uint32_t enable,
  CUpti_SubscriberHandle subscriber
 );
 

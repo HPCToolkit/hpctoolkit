@@ -23,6 +23,7 @@
 #include "cubin-crc-map.h"
 #include "cupti-api.h"
 #include "cupti-context-map.h"
+#include "cupti-range.h"
 #include "cupti-pc-sampling-data.h"
 
 #define DEBUG 1
@@ -476,7 +477,7 @@ pc_sampling_collect
 
 		HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiPCSamplingGetData, (&params));
 		pc_sampling_activity_set(&gpu_activity, range_id, context_id, cct_node, pc_sampling_data);
-		if (gpu_range_interval_get() == 1) {
+		if (cupti_range_interval_get() == 1) {
 			gpu_pc_sampling_info2_process(&gpu_activity);
 		} else {
 			gpu_operation_multiplexer_push(NULL, NULL, &gpu_activity);
@@ -495,7 +496,7 @@ pc_sampling_collect
 
 			HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiPCSamplingGetData, (&params));
 			pc_sampling_activity_set(&gpu_activity, range_id, context_id, cct_node, pc_sampling_data);
-			if (gpu_range_interval_get() == 1) {
+			if (cupti_range_interval_get() == CUPTI_RANGE_DEFAULT_INTERVAL) {
 				gpu_pc_sampling_info2_process(&gpu_activity);
 			} else {
 				gpu_operation_multiplexer_push(NULL, NULL, &gpu_activity);
@@ -553,7 +554,7 @@ cupti_pc_sampling_config
 	// we collect pc samples at the end of each range and attribute pc samples postmortem.
 	// This mode requires user controlled pc sampling start/stop support and only
   // works for apps with a single cuda context due to the limitation of CUPTI (<=11.5).
-	if (gpu_range_interval_get() == 1) {
+	if (cupti_range_interval_get() == CUPTI_RANGE_DEFAULT_INTERVAL) {
 		collection_mode_config(CUPTI_PC_SAMPLING_COLLECTION_MODE_KERNEL_SERIALIZED, collection_mode_info);
 		start_stop_control_config(0, start_stop_control_info);
 	} else {
@@ -571,7 +572,7 @@ cupti_pc_sampling_config
 
 	HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiPCSamplingSetConfigurationAttribute, (&info_params));
 
-	if (gpu_range_interval_get() != 1) {
+	if (cupti_range_interval_get() != CUPTI_RANGE_DEFAULT_INTERVAL) {
 		pc_sampling_start(context);
 	}
 }
@@ -723,16 +724,12 @@ pc_sampling_context_collect
  void *args
 )
 {
-	if (gpu_range_interval_get() != 1) {
-		pc_sampling_stop(context);
-	}
+  pc_sampling_stop(context);
 
 	uint32_t range_id = *(uint32_t *)args;
 	pc_sampling_collect(range_id, NULL, context);
 
-	if (gpu_range_interval_get() != 1) {
-		pc_sampling_start(context);
-	}
+  pc_sampling_start(context);
 }
 
 

@@ -121,8 +121,6 @@ gpu_memcpy_process
                            &entry_trace);
 
   gpu_activity_channel_produce(channel, activity);
-
-  TMSG(GPU_OPERATION, "Memcpy copy range %u\n", activity->range_id);
 }
 
 
@@ -214,12 +212,12 @@ gpu_pc_sampling_info2_process
   uint64_t total_num_pcs = pc_sampling_info2->totalNumPcs;
 
   cct_node_t *cct_node = NULL;
-  if (gpu_range_interval_get() == 1) {
-    // Can do safe insert under kernel placeholder
-    cct_node = activity->cct_node;
-  } else {
+  if (gpu_range_enabled()) {
     // Don't insert anything under kernel placeholder
     cct_node = gpu_range_context_cct_get(range_id, context_id);
+  } else {
+    // Can do safe insert under kernel placeholder
+    cct_node = activity->cct_node;
   }
 
   // Translate a pc sample activity for each record

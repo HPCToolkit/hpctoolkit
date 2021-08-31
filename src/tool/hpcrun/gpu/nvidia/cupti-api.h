@@ -53,6 +53,7 @@
 #include <cupti.h>
 #include <stdbool.h>
 
+#include <hpcrun/cct/cct.h>
 
 //******************************************************************************
 // constants
@@ -323,18 +324,23 @@ cupti_device_init
 //******************************************************************************
 
 void
-cupti_stop_flag_set
+cupti_activity_flag_set
 (
  void
 );
 
 
 void
-cupti_stop_flag_unset
+cupti_activity_flag_unset
 (
  void
 );
 
+bool
+cupti_runtime_api_flag_get
+(
+ void
+);
 
 void
 cupti_runtime_api_flag_unset
@@ -347,6 +353,34 @@ void
 cupti_runtime_api_flag_set
 (
  void
+);
+
+
+cct_node_t *
+cupti_kernel_ph_get
+(
+ void
+);
+
+
+void
+cupti_kernel_ph_set
+(
+ cct_node_t *node
+);
+
+
+cct_node_t *
+cupti_trace_ph_get
+(
+ void
+);
+
+
+void
+cupti_trace_ph_set
+(
+ cct_node_t *node
 );
 
 
