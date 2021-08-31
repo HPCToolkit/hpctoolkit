@@ -58,10 +58,9 @@
 // local includes
 //******************************************************************************
 
+#include <hpcrun/cct/cct.h>
 #include <hpcrun/utilities/ip-normalized.h>
 #include <hpcrun/hpcrun-placeholders.h>
-
-
 
 //******************************************************************************
 // type declarations

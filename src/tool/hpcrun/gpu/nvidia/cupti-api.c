@@ -248,25 +248,7 @@ static cupti_load_callback_t cupti_load_callback = 0;
 
 static cupti_load_callback_t cupti_unload_callback = 0;
 
-#ifdef NEW_CUPTI
-static CUpti_SubscriberHandle cupti_driver_memcpy_htod_subscriber;
-static CUpti_SubscriberHandle cupti_driver_memcpy_dtoh_subscriber;
-static CUpti_SubscriberHandle cupti_driver_memcpy_subscriber;
-static CUpti_SubscriberHandle cupti_driver_sync_subscriber;
-static CUpti_SubscriberHandle cupti_driver_kernel_subscriber;
-static CUpti_SubscriberHandle cupti_runtime_memcpy_subscriber;
-static CUpti_SubscriberHandle cupti_runtime_sync_subscriber;
-static CUpti_SubscriberHandle cupti_runtime_kernel_subscriber;
-static CUpti_SubscriberHandle cupti_resource_context_subscriber;
-static CUpti_SubscriberHandle cupti_resource_module_subscriber;
-
-static gpu_op_placeholder_flags_t cupti_memcpy_htod_flags = gpu_placeholder_type_copyin;
-static gpu_op_placeholder_flags_t cupti_memcpy_dtoh_flags = gpu_placeholder_type_copyout;
-static gpu_op_placeholder_flags_t cupti_memcpy_flags = gpu_placeholder_type_copy;
-static gpu_op_placeholder_flags_t cupti_sync_flags = gpu_placeholder_type_sync;
-#else
 static CUpti_SubscriberHandle cupti_subscriber;
-#endif
 
 //----------------------------------------------------------
 // cupti function pointers for late binding
@@ -928,7 +910,7 @@ analyze_cupti_api
 #ifdef NEW_CUPTI
 
 static void
-cupti_resource_module_subscriber_callback
+cupti_resource_subscriber_callback
 (
  void *userdata,
  CUpti_CallbackDomain domain,
@@ -936,12 +918,9 @@ cupti_resource_module_subscriber_callback
  const void *cb_info
 )
 {
-  if (cuda_api_internal_get()) {
-    return;
-  }
-
   const CUpti_ResourceData *rd = (const CUpti_ResourceData *)cb_info;
   CUpti_ModuleResourceData *mrd = (CUpti_ModuleResourceData *)rd->resourceDescriptor;
+  int pc_sampling_frequency = cupti_pc_sampling_frequency_get();
   if (cb_id == CUPTI_CBID_RESOURCE_MODULE_LOADED) {
     TMSG(CUPTI, "Context %p loaded module id %d, cubin size %" PRIu64 ", cubin %p",
       rd->context, mrd->moduleId, mrd->cubinSize, mrd->pCubin);
@@ -950,27 +929,7 @@ cupti_resource_module_subscriber_callback
     TMSG(CUPTI, "Context %p unloaded module id %d, cubin size %" PRIu64 ", cubin %p",
       rd->context, mrd->moduleId, mrd->cubinSize, mrd->pCubin);
     DISPATCH_CALLBACK(cupti_unload_callback, (rd->context, mrd->moduleId, mrd->pCubin, mrd->cubinSize));
-  }
-}
-
-
-static void
-cupti_resource_context_subscriber_callback
-(
- void *userdata,
- CUpti_CallbackDomain domain,
- CUpti_CallbackId cb_id,
- const void *cb_info
-)
-{
-  if (cuda_api_internal_get()) {
-    return;
-  }
-
-  const CUpti_ResourceData *rd = (const CUpti_ResourceData *)cb_info;
-  int pc_sampling_frequency = cupti_pc_sampling_frequency_get();
-
-  if (cb_id == CUPTI_CBID_RESOURCE_CONTEXT_CREATED) {
+  } else if (cb_id == CUPTI_CBID_RESOURCE_CONTEXT_CREATED) {
     TMSG(CUPTI, "Context %p created", rd->context);
     if (pc_sampling_frequency != -1) {
       cupti_pc_sampling_enable2(rd->context);
@@ -1066,21 +1025,16 @@ cupti_api_exit_callback_cuda
 static void
 cupti_driver_api_subscriber_callback_cuda
 (
- void *userdata,
+ gpu_op_placeholder_flags_t flags,
  CUpti_CallbackDomain domain,
  CUpti_CallbackId cb_id,
  const void *cb_info
 )
 {
-  if (cuda_api_internal_get()) {
-    return;
-  }
-
   if (!cupti_runtime_api_flag_get() && !ompt_runtime_status_get()) {
     const CUpti_CallbackData *cd = (const CUpti_CallbackData *)cb_info;
     if (cd->callbackSite == CUPTI_API_ENTER) {
-      gpu_op_placeholder_flags_t flag = *((gpu_op_placeholder_flags_t *)userdata);
-      cupti_api_enter_callback_cuda(flag, cb_id, cb_info);
+      cupti_api_enter_callback_cuda(flags, cb_id, cb_info);
     } else {
       cupti_api_exit_callback_cuda(cb_id);
     }
@@ -1092,20 +1046,12 @@ cupti_driver_api_subscriber_callback_cuda
 static void
 cupti_driver_api_subscriber_callback_cuda_kernel
 (
- void *userdata,
+ gpu_op_placeholder_flags_t flags,
  CUpti_CallbackDomain domain,
  CUpti_CallbackId cb_id,
  const void *cb_info
 )
 {
-  if (cuda_api_internal_get()) {
-    return;
-  }
-
-  gpu_op_placeholder_flags_t flags;
-  gpu_op_placeholder_flags_set(&flags, gpu_placeholder_type_kernel);
-  gpu_op_placeholder_flags_set(&flags, gpu_placeholder_type_trace);
-
   const CUpti_CallbackData *cd = (const CUpti_CallbackData *) cb_info;
   if (cd->callbackSite == CUPTI_API_ENTER) {
     gpu_application_thread_process_activities();
@@ -1153,22 +1099,17 @@ cupti_driver_api_subscriber_callback_cuda_kernel
 static void
 cupti_runtime_api_subscriber_callback_cuda
 (
- void *userdata,
+ gpu_op_placeholder_flags_t flags,
  CUpti_CallbackDomain domain,
  CUpti_CallbackId cb_id,
  const void *cb_info
 )
 {
-  if (cuda_api_internal_get()) {
-    return;
-  }
-
   const CUpti_CallbackData *cd = (const CUpti_CallbackData *)cb_info;
   if (cd->callbackSite == CUPTI_API_ENTER) {
     // Enter a CUDA runtime api
     cupti_runtime_api_flag_set();
-    gpu_op_placeholder_flags_t flag = *((gpu_op_placeholder_flags_t *)userdata);
-    cupti_api_enter_callback_cuda(flag, cb_id, cb_info);
+    cupti_api_enter_callback_cuda(flags, cb_id, cb_info);
   } else {
     // Exit an CUDA runtime api
     cupti_runtime_api_flag_unset();
@@ -1180,22 +1121,17 @@ cupti_runtime_api_subscriber_callback_cuda
 static void
 cupti_runtime_api_subscriber_callback_cuda_kernel
 (
- void *userdata,
+ gpu_op_placeholder_flags_t flags,
  CUpti_CallbackDomain domain,
  CUpti_CallbackId cb_id,
  const void *cb_info
 )
 {
-  if (cuda_api_internal_get()) {
-    return;
-  }
-
   const CUpti_CallbackData *cd = (const CUpti_CallbackData *)cb_info;
   if (cd->callbackSite == CUPTI_API_ENTER) {
     // Enter a CUDA runtime api
     cupti_runtime_api_flag_set();
-    gpu_op_placeholder_flags_t flag = *((gpu_op_placeholder_flags_t *)userdata);
-    gpu_op_ccts_t gpu_op_ccts = cupti_api_enter_callback_cuda(flag, cb_id, cb_info);
+    gpu_op_ccts_t gpu_op_ccts = cupti_api_enter_callback_cuda(flags, cb_id, cb_info);
 
     cupti_kernel_ph_set(gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel));
     cupti_trace_ph_set(gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace));
@@ -1206,6 +1142,41 @@ cupti_runtime_api_subscriber_callback_cuda_kernel
     cupti_trace_ph_set(NULL);
 
     cupti_api_exit_callback_cuda(cb_id);
+  }
+}
+
+
+static void
+cupti_subscriber_callback_cuda
+(
+ void *userdata,
+ CUpti_CallbackDomain domain,
+ CUpti_CallbackId cb_id,
+ const void *cb_info
+)
+{
+  if (cuda_api_internal_get()) {
+    return;
+  }
+
+  if (domain == CUPTI_CB_DOMAIN_RESOURCE) {
+    cupti_resource_subscriber_callback(userdata, domain, cb_id, cb_info);
+  } else if (domain == CUPTI_CB_DOMAIN_DRIVER_API) {
+    gpu_op_placeholder_flags_t flags = cupti_driver_flags_get(cb_id);
+
+    if (gpu_op_placeholder_flags_is_set(flags, gpu_placeholder_type_kernel)) {
+      cupti_driver_api_subscriber_callback_cuda_kernel(flags, domain, cb_id, cb_info);
+    } else if (flags != 0) {
+      cupti_driver_api_subscriber_callback_cuda(flags, domain, cb_id, cb_info);
+    }
+  } else if (domain == CUPTI_CB_DOMAIN_RUNTIME_API) {
+    gpu_op_placeholder_flags_t flags = cupti_runtime_flags_get(cb_id);
+
+    if (gpu_op_placeholder_flags_is_set(flags, gpu_placeholder_type_kernel)) {
+      cupti_runtime_api_subscriber_callback_cuda_kernel(flags, domain, cb_id, cb_info);
+    } else if (flags != 0) {
+      cupti_runtime_api_subscriber_callback_cuda(flags, domain, cb_id, cb_info);
+    }
   }
 }
 
@@ -1225,34 +1196,34 @@ cupti_subscriber_callback_cuda
   }
 
   if (domain == CUPTI_CB_DOMAIN_RESOURCE) {
-    const CUpti_ResourceData *rd = (const CUpti_ResourceData *) cb_info;
-    if (cb_id == CUPTI_CBID_RESOURCE_MODULE_LOADED) {
-      CUpti_ModuleResourceData *mrd = (CUpti_ModuleResourceData *)
-        rd->resourceDescriptor;
+		const CUpti_ResourceData *rd = (const CUpti_ResourceData *) cb_info;
+		if (cb_id == CUPTI_CBID_RESOURCE_MODULE_LOADED) {
+			CUpti_ModuleResourceData *mrd = (CUpti_ModuleResourceData *)
+				rd->resourceDescriptor;
 
-      TMSG(CUPTI, "Context %p loaded module id %d, cubin size %" PRIu64 ", cubin %p",
-        rd->context, mrd->moduleId, mrd->cubinSize, mrd->pCubin);
-      DISPATCH_CALLBACK(cupti_load_callback, (rd->context, mrd->moduleId, mrd->pCubin, mrd->cubinSize));
-    } else if (cb_id == CUPTI_CBID_RESOURCE_MODULE_UNLOAD_STARTING) {
-      CUpti_ModuleResourceData *mrd = (CUpti_ModuleResourceData *)
-        rd->resourceDescriptor;
+			TMSG(CUPTI, "Context %p loaded module id %d, cubin size %" PRIu64 ", cubin %p",
+				rd->context, mrd->moduleId, mrd->cubinSize, mrd->pCubin);
+			DISPATCH_CALLBACK(cupti_load_callback, (rd->context, mrd->moduleId, mrd->pCubin, mrd->cubinSize));
+		} else if (cb_id == CUPTI_CBID_RESOURCE_MODULE_UNLOAD_STARTING) {
+			CUpti_ModuleResourceData *mrd = (CUpti_ModuleResourceData *)
+				rd->resourceDescriptor;
 
-      TMSG(CUPTI, "Context %p unloaded module id %d, cubin size %" PRIu64 ", cubin %p",
-        rd->context, mrd->moduleId, mrd->cubinSize, mrd->pCubin);
-      DISPATCH_CALLBACK(cupti_unload_callback, (rd->context, mrd->moduleId, mrd->pCubin, mrd->cubinSize));
-    } else if (cb_id == CUPTI_CBID_RESOURCE_CONTEXT_CREATED) {
-      TMSG(CUPTI, "Context %p created", rd->context);
-      int pc_sampling_frequency = cupti_pc_sampling_frequency_get();
-      if (pc_sampling_frequency != -1) {
-        cupti_pc_sampling_enable(rd->context, pc_sampling_frequency);
-      }
-    } else if (cb_id == CUPTI_CBID_RESOURCE_CONTEXT_DESTROY_STARTING) {
-      TMSG(CUPTI, "Context %lu destroyed", rd->context);
-      int pc_sampling_frequency = cupti_pc_sampling_frequency_get();
-      if (pc_sampling_frequency != -1) {
-        cupti_pc_sampling_disable(rd->context);
-      }
-    }
+			TMSG(CUPTI, "Context %p unloaded module id %d, cubin size %" PRIu64 ", cubin %p",
+				rd->context, mrd->moduleId, mrd->cubinSize, mrd->pCubin);
+			DISPATCH_CALLBACK(cupti_unload_callback, (rd->context, mrd->moduleId, mrd->pCubin, mrd->cubinSize));
+		} else if (cb_id == CUPTI_CBID_RESOURCE_CONTEXT_CREATED) {
+			TMSG(CUPTI, "Context %p created", rd->context);
+			int pc_sampling_frequency = cupti_pc_sampling_frequency_get();
+			if (pc_sampling_frequency != -1) {
+				cupti_pc_sampling_enable(rd->context, pc_sampling_frequency);
+			}
+		} else if (cb_id == CUPTI_CBID_RESOURCE_CONTEXT_DESTROY_STARTING) {
+			TMSG(CUPTI, "Context %lu destroyed", rd->context);
+			int pc_sampling_frequency = cupti_pc_sampling_frequency_get();
+			if (pc_sampling_frequency != -1) {
+				cupti_pc_sampling_disable(rd->context);
+			}
+		}
   } else if (domain == CUPTI_CB_DOMAIN_DRIVER_API) {
     // stop flag is only set if a driver or runtime api called
     cupti_activity_flag_set();
@@ -1268,18 +1239,6 @@ cupti_subscriber_callback_cuda
     ip_normalized_t kernel_ip;
 
     switch (cb_id) {
-      // FIXME(Keren): do not support memory allocate and free for current CUPTI version
-      //case CUPTI_DRIVER_TRACE_CBID_cuMemAlloc:
-      //case CUPTI_DRIVER_TRACE_CBID_cu64MemAlloc:
-      //case CUPTI_DRIVER_TRACE_CBID_cuMemAllocPitch:
-      //case CUPTI_DRIVER_TRACE_CBID_cu64MemAllocPitch:
-      //case CUPTI_DRIVER_TRACE_CBID_cuMemAlloc_v2:
-      //case CUPTI_DRIVER_TRACE_CBID_cuMemAllocPitch_v2:
-      //  {
-      //    cuda_state = cuda_placeholders.cuda_memalloc_state;
-      //    is_valid_op = true;
-      //    break;
-      //  }
       // synchronize apis
       case CUPTI_DRIVER_TRACE_CBID_cuCtxSynchronize:
       case CUPTI_DRIVER_TRACE_CBID_cuEventSynchronize:
@@ -1887,60 +1846,20 @@ cupti_callbacks_subscribe
   cupti_unload_callback = cupti_unload_callback_cuda;
   cupti_correlation_callback = gpu_application_thread_correlation_callback;
 
-  HPCRUN_CUPTI_CALL(cuptiSubscribe, (&cupti_driver_memcpy_htod_subscriber,
-                   (CUpti_CallbackFunc) cupti_driver_api_subscriber_callback_cuda,
-                   (void *) &cupti_memcpy_htod_flags));
-
-  HPCRUN_CUPTI_CALL(cuptiSubscribe, (&cupti_driver_memcpy_dtoh_subscriber,
-                   (CUpti_CallbackFunc) cupti_driver_api_subscriber_callback_cuda,
-                   (void *) &cupti_memcpy_dtoh_flags));
-
-  HPCRUN_CUPTI_CALL(cuptiSubscribe, (&cupti_driver_memcpy_subscriber,
-                   (CUpti_CallbackFunc) cupti_driver_api_subscriber_callback_cuda,
-                   (void *) &cupti_memcpy_flags));
-
-  HPCRUN_CUPTI_CALL(cuptiSubscribe, (&cupti_driver_sync_subscriber,
-                   (CUpti_CallbackFunc) cupti_driver_api_subscriber_callback_cuda,
-                   (void *) &cupti_sync_flags));
-
-  HPCRUN_CUPTI_CALL(cuptiSubscribe, (&cupti_driver_kernel_subscriber,
-                   (CUpti_CallbackFunc) cupti_driver_api_subscriber_callback_cuda_kernel,
+  HPCRUN_CUPTI_CALL(cuptiSubscribe, (&cupti_subscriber,
+                   (CUpti_CallbackFunc) cupti_subscriber_callback_cuda,
                    (void *) NULL));
 
-  HPCRUN_CUPTI_CALL(cuptiSubscribe, (&cupti_runtime_memcpy_subscriber,
-                   (CUpti_CallbackFunc) cupti_runtime_api_subscriber_callback_cuda,
-                   (void *) &cupti_memcpy_flags));
-
-  HPCRUN_CUPTI_CALL(cuptiSubscribe, (&cupti_runtime_sync_subscriber,
-                   (CUpti_CallbackFunc) cupti_runtime_api_subscriber_callback_cuda,
-                   (void *) &cupti_sync_flags));
-
-  HPCRUN_CUPTI_CALL(cuptiSubscribe, (&cupti_runtime_kernel_subscriber,
-                   (CUpti_CallbackFunc) cupti_runtime_api_subscriber_callback_cuda_kernel,
-                   (void *) NULL));
-
-  HPCRUN_CUPTI_CALL(cuptiSubscribe, (&cupti_runtime_kernel_subscriber,
-                   (CUpti_CallbackFunc) cupti_runtime_api_subscriber_callback_cuda_kernel,
-                   (void *) NULL));
-
-  HPCRUN_CUPTI_CALL(cuptiSubscribe, (&cupti_resource_context_subscriber,
-                   (CUpti_CallbackFunc) cupti_resource_context_subscriber_callback,
-                   (void *) NULL));
-
-  HPCRUN_CUPTI_CALL(cuptiSubscribe, (&cupti_resource_module_subscriber,
-                   (CUpti_CallbackFunc) cupti_resource_module_subscriber_callback,
-                   (void *) NULL));
-
-  cupti_driver_memcpy_htod_callbacks_subscribe(1, cupti_driver_memcpy_htod_subscriber);
-  cupti_driver_memcpy_dtoh_callbacks_subscribe(1, cupti_driver_memcpy_dtoh_subscriber);
-  cupti_driver_memcpy_callbacks_subscribe(1, cupti_driver_memcpy_subscriber);
-  cupti_driver_sync_callbacks_subscribe(1, cupti_driver_sync_subscriber);
-  cupti_driver_kernel_callbacks_subscribe(1, cupti_driver_kernel_subscriber);
-  cupti_runtime_memcpy_callbacks_subscribe(1, cupti_runtime_memcpy_subscriber);
-  cupti_runtime_sync_callbacks_subscribe(1, cupti_runtime_sync_subscriber);
-  cupti_runtime_kernel_callbacks_subscribe(1, cupti_runtime_kernel_subscriber);
-  cupti_resource_module_subscribe(1, cupti_resource_module_subscriber);
-  cupti_resource_context_subscribe(1, cupti_resource_context_subscriber);
+  cupti_subscribers_driver_memcpy_htod_callbacks_subscribe(1, cupti_subscriber);
+  cupti_subscribers_driver_memcpy_dtoh_callbacks_subscribe(1, cupti_subscriber);
+  cupti_subscribers_driver_memcpy_callbacks_subscribe(1, cupti_subscriber);
+  cupti_subscribers_driver_sync_callbacks_subscribe(1, cupti_subscriber);
+  cupti_subscribers_driver_kernel_callbacks_subscribe(1, cupti_subscriber);
+  cupti_subscribers_runtime_memcpy_callbacks_subscribe(1, cupti_subscriber);
+  cupti_subscribers_runtime_sync_callbacks_subscribe(1, cupti_subscriber);
+  cupti_subscribers_runtime_kernel_callbacks_subscribe(1, cupti_subscriber);
+  cupti_subscribers_resource_module_subscribe(1, cupti_subscriber);
+  cupti_subscribers_resource_context_subscribe(1, cupti_subscriber);
 }
 
 
@@ -1953,27 +1872,18 @@ cupti_callbacks_unsubscribe
   cupti_unload_callback = 0;
   cupti_correlation_callback = 0;
 
-  HPCRUN_CUPTI_CALL(cuptiUnsubscribe, (cupti_driver_memcpy_htod_subscriber));
-  HPCRUN_CUPTI_CALL(cuptiUnsubscribe, (cupti_driver_memcpy_dtoh_subscriber));
-  HPCRUN_CUPTI_CALL(cuptiUnsubscribe, (cupti_driver_memcpy_subscriber));
-  HPCRUN_CUPTI_CALL(cuptiUnsubscribe, (cupti_driver_sync_subscriber));
-  HPCRUN_CUPTI_CALL(cuptiUnsubscribe, (cupti_driver_kernel_subscriber));
-  HPCRUN_CUPTI_CALL(cuptiUnsubscribe, (cupti_runtime_memcpy_subscriber));
-  HPCRUN_CUPTI_CALL(cuptiUnsubscribe, (cupti_runtime_sync_subscriber));
-  HPCRUN_CUPTI_CALL(cuptiUnsubscribe, (cupti_runtime_kernel_subscriber));
-  HPCRUN_CUPTI_CALL(cuptiUnsubscribe, (cupti_resource_module_subscriber));
-  HPCRUN_CUPTI_CALL(cuptiUnsubscribe, (cupti_resource_context_subscriber));
+  HPCRUN_CUPTI_CALL(cuptiUnsubscribe, (cupti_subscriber));
 
-  cupti_driver_memcpy_htod_callbacks_subscribe(0, cupti_driver_memcpy_htod_subscriber);
-  cupti_driver_memcpy_dtoh_callbacks_subscribe(0, cupti_driver_memcpy_dtoh_subscriber);
-  cupti_driver_memcpy_callbacks_subscribe(0, cupti_driver_memcpy_subscriber);
-  cupti_driver_sync_callbacks_subscribe(0, cupti_driver_sync_subscriber);
-  cupti_driver_kernel_callbacks_subscribe(0, cupti_driver_kernel_subscriber);
-  cupti_runtime_memcpy_callbacks_subscribe(0, cupti_runtime_memcpy_subscriber);
-  cupti_runtime_sync_callbacks_subscribe(0, cupti_runtime_sync_subscriber);
-  cupti_runtime_kernel_callbacks_subscribe(0, cupti_runtime_kernel_subscriber);
-  cupti_resource_module_subscribe(0, cupti_resource_module_subscriber);
-  cupti_resource_context_subscribe(0, cupti_resource_context_subscriber);
+  cupti_subscribers_driver_memcpy_htod_callbacks_subscribe(0, cupti_subscriber);
+  cupti_subscribers_driver_memcpy_dtoh_callbacks_subscribe(0, cupti_subscriber);
+  cupti_subscribers_driver_memcpy_callbacks_subscribe(0, cupti_subscriber);
+  cupti_subscribers_driver_sync_callbacks_subscribe(0, cupti_subscriber);
+  cupti_subscribers_driver_kernel_callbacks_subscribe(0, cupti_subscriber);
+  cupti_subscribers_runtime_memcpy_callbacks_subscribe(0, cupti_subscriber);
+  cupti_subscribers_runtime_sync_callbacks_subscribe(0, cupti_subscriber);
+  cupti_subscribers_runtime_kernel_callbacks_subscribe(0, cupti_subscriber);
+  cupti_subscribers_resource_module_subscribe(0, cupti_subscriber);
+  cupti_subscribers_resource_context_subscribe(0, cupti_subscriber);
 }
 
 #else

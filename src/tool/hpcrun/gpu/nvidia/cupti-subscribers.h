@@ -44,6 +44,8 @@
 #ifndef cupti_subscribers_h
 #define cupti_subscribers_h
 
+#include <hpcrun/gpu/gpu-op-placeholders.h>
+
 //******************************************************************************
 // nvidia includes
 //******************************************************************************
@@ -51,73 +53,85 @@
 #include <cupti.h>
 
 void
-cupti_driver_memcpy_htod_callbacks_subscribe
+cupti_subscribers_driver_memcpy_htod_callbacks_subscribe
 (
  uint32_t enable,
  CUpti_SubscriberHandle subscriber
 );
 
 void
-cupti_driver_memcpy_dtoh_callbacks_subscribe
+cupti_subscribers_driver_memcpy_dtoh_callbacks_subscribe
 (
  uint32_t enable,
  CUpti_SubscriberHandle subscriber
 );
 
 void
-cupti_driver_memcpy_callbacks_subscribe
+cupti_subscribers_driver_memcpy_callbacks_subscribe
 (
  uint32_t enable,
  CUpti_SubscriberHandle subscriber
 );
 
 void
-cupti_driver_sync_callbacks_subscribe
+cupti_subscribers_driver_sync_callbacks_subscribe
 (
  uint32_t enable,
  CUpti_SubscriberHandle subscriber
 );
 
 void
-cupti_driver_kernel_callbacks_subscribe
+cupti_subscribers_driver_kernel_callbacks_subscribe
 (
  uint32_t enable,
  CUpti_SubscriberHandle subscriber
 );
 
 void
-cupti_runtime_memcpy_callbacks_subscribe
+cupti_subscribers_runtime_memcpy_callbacks_subscribe
 (
  uint32_t enable,
  CUpti_SubscriberHandle subscriber
 );
 
 void
-cupti_runtime_sync_callbacks_subscribe
+cupti_subscribers_runtime_sync_callbacks_subscribe
 (
  uint32_t enable,
  CUpti_SubscriberHandle subscriber
 );
 
 void
-cupti_runtime_kernel_callbacks_subscribe
+cupti_subscribers_runtime_kernel_callbacks_subscribe
 (
  uint32_t enable,
  CUpti_SubscriberHandle subscriber
 );
 
 void
-cupti_resource_module_subscribe
+cupti_subscribers_resource_module_subscribe
 (
  uint32_t enable,
  CUpti_SubscriberHandle subscriber
 );
 
 void
-cupti_resource_context_subscribe
+cupti_subscribers_resource_context_subscribe
 (
  uint32_t enable,
  CUpti_SubscriberHandle subscriber
+);
+
+gpu_op_placeholder_flags_t 
+cupti_runtime_flags_get
+(
+ CUpti_CallbackId cb_id
+);
+
+gpu_op_placeholder_flags_t 
+cupti_driver_flags_get
+(
+ CUpti_CallbackId cb_id
 );
 
 #endif

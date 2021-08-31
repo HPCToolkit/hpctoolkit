@@ -44,266 +44,375 @@
 //***************************************************************************
 //
 // File, CUPTI_CB_DOMAIN_DRIVER_API));
-//   cupti-api-subscribers.c
+//   cupti-subscribers.c
 //
 // Purpose, CUPTI_CB_DOMAIN_DRIVER_API));
 //   Register CUPTI callbacks for interesting CUDA APIs
 //
 //***************************************************************************
 
+
 #include "cupti-subscribers.h"
 #include "cupti-api.h"
 
-
 #define DISPATCH_CALLBACK(enable, args) \
   if (enable == 0) { \
-    cupti_callback_enable args; \
-  } else { \
     cupti_callback_disable args; \
+  } else { \
+    cupti_callback_enable args; \
   }
 
+#define REGISTER_DRIVER_CALLBACK(CB_ID) \
+  DISPATCH_CALLBACK(enable, (subscriber, CB_ID, CUPTI_CB_DOMAIN_DRIVER_API))
+
+#define REGISTER_RUNTIME_CALLBACK(CB_ID) \
+  DISPATCH_CALLBACK(enable, (subscriber, CB_ID, CUPTI_CB_DOMAIN_RUNTIME_API))
+
+#define REGISTER_RESOURCE_CALLBACK(CB_ID) \
+  DISPATCH_CALLBACK(enable, (subscriber, CB_ID, CUPTI_CB_DOMAIN_RESOURCE))
+
+#define CASE_SEQUENCE(CB_ID) \
+  case CB_ID: 
+
+#define FOREACH_DRIVER_MEMCPY_H2D(macro) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoD) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoDAsync) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoD_v2) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoDAsync_v2) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoD_v2_ptds) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoDAsync_v2_ptsz)
+
+#define FOREACH_DRIVER_MEMCPY_D2H(macro) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoH) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoHAsync) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoH_v2) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoHAsync_v2) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoH_v2_ptds) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoHAsync_v2_ptsz)
+
+#define FOREACH_DRIVER_MEMCPY(macro) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoD) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoA) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoD) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoA) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoH) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoA) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpy2D) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpy2DUnaligned) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpy3D) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoDAsync) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoAAsync) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoHAsync) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpy2DAsync) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpy3DAsync) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpy_v2) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoD_v2) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoDAsync_v2) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoH_v2) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoHAsync_v2) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoD_v2) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoA_v2) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoA_v2) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpy2D_v2) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpy2DUnaligned_v2) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpy2DAsync_v2) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpy3D_v2) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpy3DAsync_v2) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoA_v2) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoAAsync_v2) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpy) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyAsync) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyPeer) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyPeerAsync) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpy3DPeer) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpy3DPeerAsync) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoD_v2_ptds) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoA_v2_ptds) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoD_v2_ptds) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoA_v2_ptds) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoH_v2_ptds) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoA_v2_ptds) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpy2D_v2_ptds) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpy2DUnaligned_v2_ptds) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpy3D_v2_ptds) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpy_ptds) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyPeer_ptds) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpy3DPeer_ptds) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyAsync_ptsz) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoAAsync_v2_ptsz) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoHAsync_v2_ptsz) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoDAsync_v2_ptsz) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpy2DAsync_v2_ptsz) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpy3DAsync_v2_ptsz) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyPeerAsync_ptsz) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpy3DPeerAsync_ptsz)
+
+#define FOREACH_DRIVER_SYNC(macro) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuCtxSynchronize) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuEventSynchronize) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuStreamSynchronize) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuStreamSynchronize_ptsz) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuStreamWaitEvent) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuStreamWaitEvent_ptsz)
+
+#define FOREACH_DRIVER_KERNEL(macro) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuLaunch) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuLaunchGrid) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuLaunchGridAsync) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuLaunchKernel) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuLaunchKernel_ptsz) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuLaunchCooperativeKernel) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuLaunchCooperativeKernel_ptsz) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cuLaunchCooperativeKernelMultiDevice)
+
+#define FOREACH_RUNTIME_MEMCPY(macro) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy_ptds_v7000) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy_v3020) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyPeer_v4000) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyPeerAsync_v4000) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy3DPeer_v4000) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy3DPeerAsync_v4000) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy3D_v3020) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy3DAsync_v3020) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy3D_ptds_v7000) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy3DAsync_ptsz_v7000) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy3DPeer_ptds_v7000) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy3DPeerAsync_ptsz_v7000) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy2D_v3020) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyToArray_v3020) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy2DToArray_v3020) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyFromArray_v3020) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy2DFromArray_v3020) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyArrayToArray_v3020) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy2DArrayToArray_v3020) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyToSymbol_v3020) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyFromSymbol_v3020) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyAsync_v3020) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyToArrayAsync_v3020) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyFromArrayAsync_v3020) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy2DAsync_v3020) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy2DToArrayAsync_v3020) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy2DFromArrayAsync_v3020) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyToSymbolAsync_v3020) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyFromSymbolAsync_v3020) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy2D_ptds_v7000) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyToArray_ptds_v7000) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy2DToArray_ptds_v7000) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyFromArray_ptds_v7000) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy2DFromArray_ptds_v7000) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyArrayToArray_ptds_v7000) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy2DArrayToArray_ptds_v7000) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyToSymbol_ptds_v7000) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyFromSymbol_ptds_v7000) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyAsync_ptsz_v7000) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyToArrayAsync_ptsz_v7000) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyFromArrayAsync_ptsz_v7000) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy2DAsync_ptsz_v7000) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy2DToArrayAsync_ptsz_v7000) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy2DFromArrayAsync_ptsz_v7000) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyToSymbolAsync_ptsz_v7000) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyFromSymbolAsync_ptsz_v7000)
+
+#define FOREACH_RUNTIME_SYNC(macro) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaEventSynchronize_v3020) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaStreamSynchronize_v3020) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaStreamSynchronize_ptsz_v7000) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaStreamWaitEvent_v3020) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaDeviceSynchronize_v3020)
+
+#define FOREACH_RUNTIME_KERNEL(macro) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_v3020) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaLaunchKernel_v7000) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_ptsz_v7000) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaLaunchKernel_ptsz_v7000) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaLaunchCooperativeKernel_v9000) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaLaunchCooperativeKernel_ptsz_v9000) \
+  macro(CUPTI_RUNTIME_TRACE_CBID_cudaLaunchCooperativeKernelMultiDevice_v9000)
+
 void
-cupti_driver_memcpy_htod_callbacks_subscribe
+cupti_subscribers_driver_memcpy_htod_callbacks_subscribe
 (
  uint32_t enable,
  CUpti_SubscriberHandle subscriber
 )
 {
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoD, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoDAsync, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoD_v2, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoDAsync_v2, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoD_v2_ptds, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoDAsync_v2_ptsz, CUPTI_CB_DOMAIN_DRIVER_API));
+  FOREACH_DRIVER_MEMCPY_H2D(REGISTER_DRIVER_CALLBACK)
 }
 
 
 void
-cupti_driver_memcpy_dtoh_callbacks_subscribe
+cupti_subscribers_driver_memcpy_dtoh_callbacks_subscribe
 (
  uint32_t enable,
  CUpti_SubscriberHandle subscriber
 )
 {
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoH, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoHAsync, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoH_v2, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoHAsync_v2, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoH_v2_ptds, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoHAsync_v2_ptsz, CUPTI_CB_DOMAIN_DRIVER_API));
+  FOREACH_DRIVER_MEMCPY_D2H(REGISTER_DRIVER_CALLBACK)
 }
 
 
 void
-cupti_driver_memcpy_callbacks_subscribe
+cupti_subscribers_driver_memcpy_callbacks_subscribe
 (
  uint32_t enable,
  CUpti_SubscriberHandle subscriber
 )
 {
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoD, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoA, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoD, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoA, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoH, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoA, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpy2D, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpy2DUnaligned, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpy3D, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoDAsync, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoAAsync, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoHAsync, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpy2DAsync, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpy3DAsync, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpy_v2, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoD_v2, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoDAsync_v2, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoH_v2, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoHAsync_v2, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoD_v2, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoA_v2, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoA_v2, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpy2D_v2, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpy2DUnaligned_v2, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpy2DAsync_v2, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpy3D_v2, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpy3DAsync_v2, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoA_v2, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoAAsync_v2, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpy, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyAsync, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyPeer, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyPeerAsync, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpy3DPeer, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpy3DPeerAsync, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoD_v2_ptds, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoA_v2_ptds, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoD_v2_ptds, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoA_v2_ptds, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoH_v2_ptds, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoA_v2_ptds, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpy2D_v2_ptds, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpy2DUnaligned_v2_ptds, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpy3D_v2_ptds, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpy_ptds, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyPeer_ptds, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpy3DPeer_ptds, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyAsync_ptsz, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoAAsync_v2_ptsz, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyAtoHAsync_v2_ptsz, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoDAsync_v2_ptsz, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpy2DAsync_v2_ptsz, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpy3DAsync_v2_ptsz, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpyPeerAsync_ptsz, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuMemcpy3DPeerAsync_ptsz, CUPTI_CB_DOMAIN_DRIVER_API));
+  FOREACH_DRIVER_MEMCPY(REGISTER_DRIVER_CALLBACK)
 }
 
 
 void
-cupti_driver_sync_callbacks_subscribe
+cupti_subscribers_driver_sync_callbacks_subscribe
 (
  uint32_t enable,
  CUpti_SubscriberHandle subscriber
 )
 {
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuCtxSynchronize, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuEventSynchronize, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuStreamSynchronize, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuStreamSynchronize_ptsz, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuStreamWaitEvent, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuStreamWaitEvent_ptsz, CUPTI_CB_DOMAIN_DRIVER_API));
+  FOREACH_DRIVER_SYNC(REGISTER_DRIVER_CALLBACK)
 }
 
 
 void
-cupti_driver_kernel_callbacks_subscribe
+cupti_subscribers_driver_kernel_callbacks_subscribe
 (
  uint32_t enable,
  CUpti_SubscriberHandle subscriber
 )
 {
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuLaunch, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuLaunchGrid, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuLaunchGridAsync, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuLaunchKernel, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuLaunchKernel_ptsz, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuLaunchCooperativeKernel, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuLaunchCooperativeKernel_ptsz, CUPTI_CB_DOMAIN_DRIVER_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_DRIVER_TRACE_CBID_cuLaunchCooperativeKernelMultiDevice, CUPTI_CB_DOMAIN_DRIVER_API));
+  FOREACH_DRIVER_KERNEL(REGISTER_DRIVER_CALLBACK)
 }
 
 
 void
-cupti_runtime_memcpy_callbacks_subscribe
+cupti_subscribers_runtime_memcpy_callbacks_subscribe
 (
  uint32_t enable,
  CUpti_SubscriberHandle subscriber
 )
 {
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyPeer_v4000, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyPeerAsync_v4000, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy3DPeer_v4000, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy3DPeerAsync_v4000, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy3D_v3020, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy3DAsync_v3020, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy3D_ptds_v7000, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy3DAsync_ptsz_v7000, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy3DPeer_ptds_v7000, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy3DPeerAsync_ptsz_v7000, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy_v3020, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy2D_v3020, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyToArray_v3020, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy2DToArray_v3020, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyFromArray_v3020, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy2DFromArray_v3020, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyArrayToArray_v3020, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy2DArrayToArray_v3020, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyToSymbol_v3020, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyFromSymbol_v3020, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyAsync_v3020, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyToArrayAsync_v3020, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyFromArrayAsync_v3020, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy2DAsync_v3020, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy2DToArrayAsync_v3020, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy2DFromArrayAsync_v3020, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyToSymbolAsync_v3020, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyFromSymbolAsync_v3020, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy_ptds_v7000, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy2D_ptds_v7000, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyToArray_ptds_v7000, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy2DToArray_ptds_v7000, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyFromArray_ptds_v7000, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy2DFromArray_ptds_v7000, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyArrayToArray_ptds_v7000, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy2DArrayToArray_ptds_v7000, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyToSymbol_ptds_v7000, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyFromSymbol_ptds_v7000, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyAsync_ptsz_v7000, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyToArrayAsync_ptsz_v7000, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyFromArrayAsync_ptsz_v7000, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy2DAsync_ptsz_v7000, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy2DToArrayAsync_ptsz_v7000, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpy2DFromArrayAsync_ptsz_v7000, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyToSymbolAsync_ptsz_v7000, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaMemcpyFromSymbolAsync_ptsz_v7000, CUPTI_CB_DOMAIN_RUNTIME_API));
+  FOREACH_RUNTIME_MEMCPY(REGISTER_RUNTIME_CALLBACK)
 }
 
 
 void
-cupti_runtime_sync_callbacks_subscribe
+cupti_subscribers_runtime_sync_callbacks_subscribe
 (
  uint32_t enable,
  CUpti_SubscriberHandle subscriber
 )
 {
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaEventSynchronize_v3020, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaStreamSynchronize_v3020, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaStreamSynchronize_ptsz_v7000, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaStreamWaitEvent_v3020, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaDeviceSynchronize_v3020, CUPTI_CB_DOMAIN_RUNTIME_API));
+  FOREACH_RUNTIME_SYNC(REGISTER_RUNTIME_CALLBACK)
 }
 
 
 void
-cupti_runtime_kernel_callbacks_subscribe
+cupti_subscribers_runtime_kernel_callbacks_subscribe
 (
  uint32_t enable,
  CUpti_SubscriberHandle subscriber
 )
 {
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_v3020, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaLaunchKernel_v7000, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaLaunch_ptsz_v7000, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaLaunchKernel_ptsz_v7000, CUPTI_CB_DOMAIN_RUNTIME_API));
-
-#if CUPTI_API_VERSION >= 10
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaLaunchCooperativeKernel_v9000, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaLaunchCooperativeKernel_ptsz_v9000, CUPTI_CB_DOMAIN_RUNTIME_API));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_RUNTIME_TRACE_CBID_cudaLaunchCooperativeKernelMultiDevice_v9000, CUPTI_CB_DOMAIN_RUNTIME_API));
-#endif
+  FOREACH_RUNTIME_KERNEL(REGISTER_RUNTIME_CALLBACK)
 }
 
 
 void
-cupti_resource_module_subscribe
+cupti_subscribers_resource_module_subscribe
 (
  uint32_t enable,
  CUpti_SubscriberHandle subscriber
 )
 {
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_CBID_RESOURCE_MODULE_LOADED, CUPTI_CB_DOMAIN_RESOURCE));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_CBID_RESOURCE_MODULE_UNLOAD_STARTING, CUPTI_CB_DOMAIN_RESOURCE));
+  REGISTER_RESOURCE_CALLBACK(CUPTI_CBID_RESOURCE_MODULE_LOADED)
+  REGISTER_RESOURCE_CALLBACK(CUPTI_CBID_RESOURCE_MODULE_UNLOAD_STARTING)
 }
 
 
 void
-cupti_resource_context_subscribe
+cupti_subscribers_resource_context_subscribe
 (
  uint32_t enable,
  CUpti_SubscriberHandle subscriber
 )
 {
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_CBID_RESOURCE_CONTEXT_CREATED, CUPTI_CB_DOMAIN_RESOURCE));
-  DISPATCH_CALLBACK(enable, (subscriber, CUPTI_CBID_RESOURCE_CONTEXT_DESTROY_STARTING, CUPTI_CB_DOMAIN_RESOURCE));
+  REGISTER_RESOURCE_CALLBACK(CUPTI_CBID_RESOURCE_CONTEXT_CREATED)
+  REGISTER_RESOURCE_CALLBACK(CUPTI_CBID_RESOURCE_CONTEXT_DESTROY_STARTING)
 }
 
+gpu_op_placeholder_flags_t 
+cupti_runtime_flags_get
+(
+ CUpti_CallbackId cb_id
+)
+{
+  gpu_op_placeholder_flags_t flags = 0;
+  switch (cb_id) {
+    FOREACH_RUNTIME_KERNEL(CASE_SEQUENCE)
+    {
+      gpu_op_placeholder_flags_set(&flags, gpu_placeholder_type_kernel);
+      gpu_op_placeholder_flags_set(&flags, gpu_placeholder_type_trace);
+      break;
+    }
+    FOREACH_RUNTIME_MEMCPY(CASE_SEQUENCE)
+    {
+      gpu_op_placeholder_flags_set(&flags, gpu_placeholder_type_copy);
+      break;
+    }
+    FOREACH_DRIVER_SYNC(CASE_SEQUENCE)
+    {
+      gpu_op_placeholder_flags_set(&flags, gpu_placeholder_type_sync);
+      break;
+    }
+    default:
+    {
+      break;
+    }
+  }
+
+  return flags;
+}
+
+
+gpu_op_placeholder_flags_t 
+cupti_driver_flags_get
+(
+ CUpti_CallbackId cb_id
+)
+{
+  gpu_op_placeholder_flags_t flags = 0;
+  switch (cb_id) {
+    FOREACH_DRIVER_KERNEL(CASE_SEQUENCE)
+    {
+      gpu_op_placeholder_flags_set(&flags, gpu_placeholder_type_kernel);
+      gpu_op_placeholder_flags_set(&flags, gpu_placeholder_type_trace);
+      break;
+    }
+    FOREACH_DRIVER_MEMCPY_H2D(CASE_SEQUENCE)
+    {
+      gpu_op_placeholder_flags_set(&flags, gpu_placeholder_type_copyin);
+      break;
+    }
+    FOREACH_DRIVER_MEMCPY_D2H(CASE_SEQUENCE)
+    {
+      gpu_op_placeholder_flags_set(&flags, gpu_placeholder_type_copyout);
+      break;
+    }
+    FOREACH_DRIVER_MEMCPY(CASE_SEQUENCE)
+    {
+      gpu_op_placeholder_flags_set(&flags, gpu_placeholder_type_copy);
+      break;
+    }
+    FOREACH_DRIVER_SYNC(CASE_SEQUENCE)
+    {
+      gpu_op_placeholder_flags_set(&flags, gpu_placeholder_type_sync);
+      break;
+    }
+    default:
+    {
+      break;
+    }
+  }
+
+  return flags;
+}
