@@ -210,6 +210,39 @@ CUDA_FN
 );
 
 
+CUDA_FN
+(
+ cuMemcpy,
+ (
+  CUdeviceptr dst,
+  CUdeviceptr src,
+  size_t ByteCount
+ )
+);
+
+
+CUDA_FN
+(
+ cuMemcpyHtoD_v2,
+ (
+  CUdeviceptr dstDevice,
+  const void *srcHost,
+  size_t ByteCount
+ )
+);
+
+
+CUDA_FN
+(
+ cuMemcpyDtoH_v2,
+ (
+  void *dstHost,
+  CUdeviceptr srcDevice,
+  size_t ByteCount
+ )
+);
+
+
 CUDA_RUNTIME_FN
 (
  cudaGetDevice,
@@ -241,6 +274,18 @@ CUDA_RUNTIME_FN
  )
 );
 
+
+CUDA_RUNTIME_FN
+(
+ cudaMemcpy,
+ (
+  void *dst,
+  const void *src,
+  size_t count,
+  enum cudaMemcpyKind kind
+ )
+);
+
 #endif
 
 
@@ -264,12 +309,16 @@ cuda_bind
   CHK_DLSYM(cuda, cuCtxSetCurrent);
   CHK_DLSYM(cuda, cuCtxSynchronize);
   CHK_DLSYM(cuda, cuLaunchKernel);
+  CHK_DLSYM(cuda, cuMemcpy);
+  CHK_DLSYM(cuda, cuMemcpyHtoD_v2);
+  CHK_DLSYM(cuda, cuMemcpyDtoH_v2);
 
   CHK_DLOPEN(cudart, "libcudart.so", RTLD_NOW | RTLD_GLOBAL);
 
   CHK_DLSYM(cudart, cudaGetDevice);
   CHK_DLSYM(cudart, cudaRuntimeGetVersion);
   CHK_DLSYM(cudart, cudaLaunchKernel);
+  CHK_DLSYM(cudart, cudaMemcpy);
 
   return DYNAMIC_BINDING_STATUS_OK;
 #else
@@ -528,7 +577,12 @@ cuda_api_enter_callback
 
   hpcrun_safe_exit();
 
-  cuda_api_node = node;
+  cct_node_t *parent = hpcrun_cct_parent(node);
+  if (parent != NULL) {
+    cuda_api_node = parent;
+  } else {
+    cuda_api_node = node;
+  }
 }
 
 
@@ -569,6 +623,23 @@ hpcrun_cudaLaunchKernel
 }
 
 
+cudaError_t
+hpcrun_cudaMemcpy
+(
+ void *dst,
+ const void *src,
+ size_t count,
+ enum cudaMemcpyKind kind
+)
+{
+#ifndef HPCRUN_STATIC_LINK
+  return cudaMemcpy_fn(dst, src, count, kind);
+#else
+  return CUDA_SUCCESS;
+#endif
+}
+
+
 CUresult
 hpcrun_cuLaunchKernel
 (
@@ -588,6 +659,54 @@ hpcrun_cuLaunchKernel
 #ifndef HPCRUN_STATIC_LINK
   return cuLaunchKernel_fn(f, gridDimX, gridDimZ, gridDimZ,
       blockDimX, blockDimY, blockDimZ, sharedMemBytes, hStream, kernelParams, extra);
+#else
+  return CUDA_SUCCESS;
+#endif
+}
+
+
+CUresult
+hpcrun_cuMemcpy
+(
+ CUdeviceptr dst,
+ CUdeviceptr src,
+ size_t ByteCount
+)
+{
+#ifndef HPCRUN_STATIC_LINK
+  return cuMemcpy_fn(dst, src, ByteCount);
+#else
+  return CUDA_SUCCESS;
+#endif
+}
+
+
+CUresult
+hpcrun_cuMemcpyHtoD_v2
+(
+ CUdeviceptr dstDevice,
+ const void *srcHost,
+ size_t ByteCount
+)
+{
+#ifndef HPCRUN_STATIC_LINK
+  return cuMemcpyHtoD_v2_fn(dstDevice, srcHost, ByteCount);
+#else
+  return CUDA_SUCCESS;
+#endif
+}
+
+
+CUresult
+hpcrun_cuMemcpyDtoH_v2
+(
+ void *dstHost,
+ CUdeviceptr srcDevice,
+ size_t ByteCount
+)
+{
+#ifndef HPCRUN_STATIC_LINK
+  return cuMemcpyDtoH_v2_fn(dstHost, srcDevice, ByteCount);
 #else
   return CUDA_SUCCESS;
 #endif

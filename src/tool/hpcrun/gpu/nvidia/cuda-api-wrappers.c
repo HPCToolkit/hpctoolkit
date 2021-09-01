@@ -77,6 +77,50 @@ cuLaunchKernel
   return result;
 }
 
+CUresult
+cuMemcpy
+(
+ CUdeviceptr dst,
+ CUdeviceptr src,
+ size_t ByteCount
+)
+{
+  cuda_api_enter_callback();
+  CUresult result = hpcrun_cuMemcpy(dst, src, ByteCount);
+  cuda_api_exit_callback();
+}
+
+
+CUresult
+cuMemcpyHtoD_v2
+(
+ CUdeviceptr dstDevice,
+ const void *srcHost,
+ size_t ByteCount
+)
+{
+  cuda_api_enter_callback();
+  cudaError_t cuda_error = hpcrun_cuMemcpyHtoD_v2(dstDevice, srcHost, ByteCount);
+  cuda_api_exit_callback();
+  return cuda_error;
+}
+
+
+CUresult
+cuMemcpyDtoH_v2
+(
+ void *dstHost,
+ CUdeviceptr srcDevice,
+ size_t ByteCount
+)
+{
+  cuda_api_enter_callback();
+  cudaError_t cuda_error = hpcrun_cuMemcpyDtoH_v2(dstHost, srcDevice, ByteCount);
+  cuda_api_exit_callback();
+  return cuda_error;
+}
+
+
 cudaError_t
 cudaLaunchKernel
 (
@@ -90,6 +134,22 @@ cudaLaunchKernel
 {
   cuda_api_enter_callback();
   cudaError_t cuda_error = hpcrun_cudaLaunchKernel(func, gridDim, blockDim, args, sharedMem, stream);
+  cuda_api_exit_callback();
+  return cuda_error;
+}
+
+
+cudaError_t
+cudaMemcpy
+(
+ void *dst,
+ const void *src,
+ size_t count,
+ enum cudaMemcpyKind kind
+)
+{
+  cuda_api_enter_callback();
+  cudaError_t cuda_error = hpcrun_cudaMemcpy(dst, src, count, kind);
   cuda_api_exit_callback();
   return cuda_error;
 }

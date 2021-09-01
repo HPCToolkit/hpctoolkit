@@ -190,6 +190,15 @@ hpcrun_cudaLaunchKernel
  cudaStream_t stream
 );
 
+cudaError_t
+hpcrun_cudaMemcpy
+(
+ void *dst,
+ const void *src,
+ size_t count,
+ enum cudaMemcpyKind kind
+);
+
 CUresult
 hpcrun_cuLaunchKernel
 (
@@ -204,6 +213,30 @@ hpcrun_cuLaunchKernel
  CUstream hStream,
  void **kernelParams,
  void **extra
+);
+
+CUresult
+hpcrun_cuMemcpy
+(
+ CUdeviceptr dst,
+ CUdeviceptr src,
+ size_t ByteCount
+);
+
+CUresult
+hpcrun_cuMemcpyHtoD_v2
+(
+ CUdeviceptr dstDevice,
+ const void *srcHost,
+ size_t ByteCount
+);
+
+CUresult
+hpcrun_cuMemcpyDtoH_v2
+(
+ void *dstHost,
+ CUdeviceptr srcDevice,
+ size_t ByteCount
 );
 
 #endif
