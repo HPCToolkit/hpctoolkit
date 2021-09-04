@@ -138,6 +138,7 @@
 
 static __thread bool api_internal = false;
 static __thread cct_node_t *cuda_api_node = NULL;
+static __thread cct_node_t *cuda_prev_api_node = NULL;
 
 //******************************************************************************
 // static data
@@ -591,6 +592,7 @@ cuda_api_exit_callback
 (
 )
 {
+  cuda_prev_api_node = cuda_api_node;
   cuda_api_node = NULL;
 }
 
@@ -601,6 +603,15 @@ cuda_api_node_get
 )
 {
   return cuda_api_node;
+}
+
+
+cct_node_t *
+cuda_prev_api_node_get
+(
+)
+{
+  return cuda_prev_api_node;
 }
 
 

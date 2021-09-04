@@ -102,6 +102,11 @@ struct cupti_cct_map_entry_s {
   struct cupti_cct_map_entry_s *right;
   uint64_t cct;
 
+  cct_node_t *p1;
+  cct_node_t *p2;
+  cct_node_t *p3;
+  cct_node_t *prev;
+
   ip_normalized_t function_id;
   size_t stack_length;
   char function_name[MAX_STR_LEN];
@@ -134,6 +139,10 @@ static cupti_cct_map_entry_t *
 cupti_cct_map_entry_new
 (
  cct_node_t *cct,
+ cct_node_t *p1,
+ cct_node_t *p2,
+ cct_node_t *p3,
+ cct_node_t *prev,
  ip_normalized_t function_id,
  size_t stack_length,
  size_t tool_depth,
@@ -153,6 +162,10 @@ cupti_cct_map_entry_new
   memset(e, 0, sizeof(cupti_cct_map_entry_t));
 
   e->cct = (uint64_t)cct;
+  e->p1 = p1;
+  e->p2 = p2;
+  e->p3 = p3;
+  e->prev = prev;
   e->function_id = function_id;
   e->stack_length = stack_length;
   e->tool_depth = tool_depth;
@@ -180,12 +193,24 @@ dump_fn_helper
  void *args
 )
 {
-  printf("%p, %u, %p, %s, %zu, %zu, %zu, %zu, %zu, %zu, %zu, %zu, %zu, %zu\n", 
-    entry->cct, entry->function_id.lm_id, entry->function_id.lm_ip,
+  ip_normalized_t ip1;
+  ip_normalized_t ip2;
+  ip_normalized_t ip3;
+  if (entry->p1 != NULL) {
+    ip1 = hpcrun_cct_addr(entry->p1)->ip_norm;
+  }
+  if (entry->p2 != NULL) {
+    ip2 = hpcrun_cct_addr(entry->p2)->ip_norm;
+  }
+  if (entry->p3 != NULL) {
+    ip3 = hpcrun_cct_addr(entry->p3)->ip_norm;
+  }
+  printf("%p, %p, %u, %p, %s, %zu, %zu, %zu, %zu, %zu, %zu, %zu, %zu, %zu, %zu, %zu, %p, %zu, %p, %zu, %p\n", 
+    entry->cct, entry->prev, entry->function_id.lm_id, entry->function_id.lm_ip,
     entry->function_name, entry->stack_length, entry->tool_depth, entry->api_depth,
     entry->grid_dim_x / entry->count, entry->grid_dim_y / entry->count, entry->grid_dim_z / entry->count,
     entry->block_dim_x / entry->count, entry->block_dim_y / entry->count, entry->block_dim_z / entry->count,
-    entry->count);
+    entry->count, ip1.lm_id, ip1.lm_ip, ip2.lm_id, ip2.lm_ip, ip3.lm_id, ip3.lm_ip);
 }
 
 
@@ -212,6 +237,10 @@ void
 cupti_cct_map_kernel_insert
 (
  cct_node_t *cct,
+ cct_node_t *p1,
+ cct_node_t *p2,
+ cct_node_t *p3,
+ cct_node_t *prev,
  ip_normalized_t function_id,
  size_t stack_length,
  size_t tool_depth,
@@ -228,7 +257,8 @@ cupti_cct_map_kernel_insert
   cupti_cct_map_entry_t *entry = st_lookup(&map_root, (uint64_t)cct);
 
   if (entry == NULL) {
-    entry = cupti_cct_map_entry_new(cct, function_id, stack_length, tool_depth, api_depth,
+    entry = cupti_cct_map_entry_new(cct, p1, p2, p3, prev,
+      function_id, stack_length, tool_depth, api_depth,
       function_name, grid_dim_x, grid_dim_y, grid_dim_z, block_dim_x, block_dim_y, block_dim_z);
     st_insert(&map_root, entry);
   } 
@@ -248,9 +278,9 @@ cupti_cct_map_dump
 (
 )
 {
-  printf("cct, cubin_id, function_pc, function_name, stack_length, "
+  printf("cct, prev, cubin_id, function_pc, function_name, stack_length, "
     "tool_depth, api_depth, "
     "grid_dim_x, grid_dim_y, grid_dim_z,"
-    "block_dim_x, block_dim_y, block_dim_z\n");
+    "block_dim_x, block_dim_y, block_dim_z, cnt, p1, p2, p3\n");
   st_forall(map_root, splay_inorder, dump_fn_helper, NULL);
 }

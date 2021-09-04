@@ -867,34 +867,29 @@ analyze_cupti_api
  gpu_op_placeholder_flags_t flags
 )
 {
-  hpcrun_metricVal_t zero_metric_incr = {.i = 0};
-  int zero_metric_id = 0; // nothing to see here
-
-  ucontext_t uc;
-  getcontext(&uc); // current context, where unwind will begin 
-
-  // prevent self a sample interrupt while gathering calling context
-  hpcrun_safe_enter(); 
-
-  cct_node_t *node = 
-    hpcrun_sample_callpath(&uc, zero_metric_id,
-      zero_metric_incr, 0, 1, NULL).sample_node;
-
-  hpcrun_safe_exit();
-
   size_t node_depth = 0;
-  size_t api_node_depth = hpcrun_cct_depth(api_node);
-  while (node != NULL && node != api_node) {
-    ++node_depth;
-    node = hpcrun_cct_parent(node);
-  }
-
+  size_t api_node_depth = 0;
   register long rsp asm("rsp");
   size_t stack_length = rsp;
 
+  cct_node_t *p1 = NULL;
+  cct_node_t *p2 = NULL;
+  cct_node_t *p3 = NULL;
+
+  p1 = hpcrun_cct_parent(api_node);
+  p1 = hpcrun_cct_parent(p1);
+  if (p1 != NULL) {
+    p2 = hpcrun_cct_parent(p1);
+  }
+  if (p2 != NULL) {
+    p3 = hpcrun_cct_parent(p2);
+  }
+
+  cct_node_t *prev = cuda_prev_api_node_get();
+
   if (gpu_op_placeholder_flags_is_set(flags, gpu_placeholder_type_kernel)) {
     cuLaunchKernel_params *params = (cuLaunchKernel_params *)cd->functionParams;
-    cupti_cct_map_kernel_insert(api_node, kernel_ip,
+    cupti_cct_map_kernel_insert(api_node, p1, p2, p3, prev, kernel_ip,
       stack_length, node_depth, api_node_depth,
       cd->symbolName, params->gridDimX, params->gridDimY, params->gridDimZ,
       params->blockDimX, params->blockDimY, params->blockDimZ);

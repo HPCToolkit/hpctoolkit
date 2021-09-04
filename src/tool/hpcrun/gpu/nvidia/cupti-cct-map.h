@@ -31,6 +31,10 @@ void
 cupti_cct_map_kernel_insert
 (
  cct_node_t *cct,
+ cct_node_t *p1,
+ cct_node_t *p2,
+ cct_node_t *p3,
+ cct_node_t *prev,
  ip_normalized_t function_id,
  size_t stack_length,
  size_t tool_depth,
