@@ -512,7 +512,7 @@ getStatement(StatementVector & svec, Offset vma, SymtabAPI::Function * sym_func)
     Module * mod = sym_func->getModule();
 
     if (mod != NULL) {
-      mod->getSourceLines(svec, vma + cubin_size);
+      mod->getSourceLines(svec, vma /*+ cubin_size*/);
     }
   }
 
@@ -522,7 +522,7 @@ getStatement(StatementVector & svec, Offset vma, SymtabAPI::Function * sym_func)
     the_symtab->findModuleByOffset(modSet, vma);
 
     for (auto mit = modSet.begin(); mit != modSet.end(); ++mit) {
-      (*mit)->getSourceLines(svec, vma + cubin_size);
+      (*mit)->getSourceLines(svec, vma /*+ cubin_size*/);
       if (! svec.empty()) {
         break;
       }
@@ -1641,11 +1641,13 @@ doFunctionList(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo, bool fullGaps
   // computeGaps relies Block::start() and Block::end() to have
   // the correct address range for a block to detect gaps.
   //
-  // As of April 3, 2021, GPUBlock should have correct Block::start()
-  // and Block::end() results. However, since we have not tested gap
-  // computation with any GPU binaries, we choose to disable
-  // gap computation for GPU binaries at this point.
-  if (cuda_arch == 0 && intel_gpu_arch == 0) {
+  // Cubins often have branch instructions used as delay slots after
+  // the return instruction of a function. These branches may have PC
+  // samples. However, the CFGs from nvdisasm (at least for cuda-11.2)
+  // do not include delay slot instructions, which causes samples taken
+  // for delay slot instructions to be out of function ranges.
+  // We use gap computation to mitigate this problem.
+  if (intel_gpu_arch == 0) {
     // add unclaimed regions (gaps) to the group leader, but skip groups
     // in an alternate file (handled in orig file).
     if (! ginfo->alt_file) {

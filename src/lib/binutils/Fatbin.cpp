@@ -285,8 +285,8 @@ writeElfFile
  ElfFile *elfFile,
  const char *suffix
 )
-{
-  std::string filename = elfFile->getFileName() + suffix;
+{  
+  std::string filename = elfFile->getFileName() + suffix;  
   FILE *f = fopen(filename.c_str(), "w");
   fwrite(elfFile->getMemory(), elfFile->getLength(), 1, f);
   fclose(f);
