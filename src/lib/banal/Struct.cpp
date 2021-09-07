@@ -1184,7 +1184,7 @@ static FileMap *
 makeSkeleton(CodeObject * code_obj, const string & basename)
 {
   FileMap * fileMap = new FileMap;
-  string unknown_base = unknown_file + " [" + basename + "]";
+  string unknown_base = "[" + basename + "]";
   bool is_shared = ! (the_symtab->isExec());
 
   // map of code regions to find end of region
@@ -1265,71 +1265,73 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
       }
 
       if (vma == sym_start) {
-	//
-	// case 1 -- group leader of a valid symtab func.  take proc
-	// names from symtab func.  this is the normal case (but other
-	// cases are also valid).
-	//
-	DEBUG_SKEL("(case 1)\n");
+        //
+        // case 1 -- group leader of a valid symtab func.  take proc
+        // names from symtab func.  this is the normal case (but other
+        // cases are also valid).
+        //
+        DEBUG_SKEL("(case 1)\n");
 
-	getFuncNames(sym_func, prettynm, linknm);
-	if (is_shared) {
-	  prettynm += " [" + basename + "]";
-	}
+        getFuncNames(sym_func, prettynm, linknm);
+        if (is_shared) {
+          prettynm += " [" + basename + "]";
+        }
 
-	ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, line,
-					sym_func->getFirstSymbol()->getIndex());
-	addProc(fileMap, pinfo, filenm, sym_func, sym_start, sym_end);
+        ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, line,
+                sym_func->getFirstSymbol()->getIndex());
+        addProc(fileMap, pinfo, filenm, sym_func, sym_start, sym_end);
       }
       else {
-	// outline func -- see if parseapi and symtab file names match
-	string parse_filenm = unknown_base;
-	SrcFile::ln parse_line = 0;
+        // outline func -- see if parseapi and symtab file names match
+        string parse_filenm = unknown_base;
+        SrcFile::ln parse_line = 0;
 
-	// line map for parseapi func
-	vector <Statement::Ptr> pvec;
-	getProcLineMap(pvec, vma, sym_end, sym_func);
+        // line map for parseapi func
+        vector <Statement::Ptr> pvec;
+        getProcLineMap(pvec, vma, sym_end, sym_func);
 
-	if (! pvec.empty()) {
-	  parse_filenm = pvec[0]->getFile();
-	  parse_line = pvec[0]->getLine();
-	  RealPathMgr::singleton().realpath(parse_filenm);
-	}
+        stringstream buf;
+        buf << "<unknown procedure> " << vma_str;
+        if (! pvec.empty()) {
+          parse_filenm = pvec[0]->getFile();
+          parse_line = pvec[0]->getLine();
+          RealPathMgr::singleton().realpath(parse_filenm);
+          string parse_base = FileUtil::basename(parse_filenm.c_str());
+          buf << " " << parse_base;
+          if (parse_line > 0) buf << ":" << parse_line;
+        }
 
-	string parse_base = FileUtil::basename(parse_filenm.c_str());
-	stringstream buf;
-	buf << "outline " << parse_base << ":" << parse_line << " (" << vma_str << ")";
-	if (is_shared) {
-	  buf << " [" << basename << "]";
-	}
+        if (is_shared) {
+          buf << " [" << basename << "]";
+        }
 
-	linknm = func->name();
-	prettynm = buf.str();
+        linknm = func->name();
+        prettynm = buf.str();
 
-	if (filenm == parse_filenm) {
-	  //
-	  // case 2 -- outline func inside symtab func with same file
-	  // name.  use 'outline 0xxxxxx' proc name.
-	  //
-	  DEBUG_SKEL("(case 2)\n");
+        if (filenm == parse_filenm) {
+          //
+          // case 2 -- outline func inside symtab func with same file
+          // name.  use 'outline 0xxxxxx' proc name.
+          //
+          DEBUG_SKEL("(case 2)\n");
 
-	  ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, parse_line);
-	  addProc(fileMap, pinfo, filenm, sym_func, sym_start, sym_end);
-	}
-	else {
-	  //
-	  // case 3 -- outline func but from a different file name.
-	  // add proc info to both files: outline file for full parse
-	  // (but no gaps), and symtab file for gap only.
-	  //
-	  DEBUG_SKEL("(case 3)\n");
+          ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, parse_line);
+          addProc(fileMap, pinfo, filenm, sym_func, sym_start, sym_end);
+        }
+        else {
+          //
+          // case 3 -- outline func but from a different file name.
+          // add proc info to both files: outline file for full parse
+          // (but no gaps), and symtab file for gap only.
+          //
+          DEBUG_SKEL("(case 3)\n");
 
-	  ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, parse_line);
-	  addProc(fileMap, pinfo, parse_filenm, sym_func, sym_start, sym_end, true);
+          ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, parse_line);
+          addProc(fileMap, pinfo, parse_filenm, sym_func, sym_start, sym_end, true);
 
-	  pinfo = new ProcInfo(func, NULL, "", "", 0, 0, true);
-	  addProc(fileMap, pinfo, filenm, sym_func, sym_start, sym_end);
-	}
+          pinfo = new ProcInfo(func, NULL, "", "", 0, 0, true);
+          addProc(fileMap, pinfo, filenm, sym_func, sym_start, sym_end);
+        }
       }
     }
     else {
@@ -1344,7 +1346,7 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
 
       // symtab doesn't offer any guidance on demangling in this case
       if (linknm != prettynm
-	  && prettynm.find_first_of("()<>") == string::npos) {
+          && prettynm.find_first_of("()<>") == string::npos) {
         prettynm = linknm;
       }
 
@@ -1372,16 +1374,16 @@ makeSkeleton(CodeObject * code_obj, const string & basename)
       // stub.  not an ideal test, but I (krentel) can't find any
       // counter examples.
       if (end - vma <= 32) {
-	int len = linknm.length();
-	const char *str = linknm.c_str();
+        int len = linknm.length();
+        const char *str = linknm.c_str();
 
-	if (len < 5 || strncasecmp(&str[len-4], "@plt", 4) != 0) {
-	  linknm += "@plt";
-	  prettynm += "@plt";
-	}
+        if (len < 5 || strncasecmp(&str[len-4], "@plt", 4) != 0) {
+          linknm += "@plt";
+          prettynm += "@plt";
+        }
       }
       if (is_shared) {
-	prettynm += " [" + basename + "]";
+        prettynm += " [" + basename + "]";
       }
 
       ProcInfo * pinfo = new ProcInfo(func, NULL, linknm, prettynm, 0);
