@@ -612,9 +612,12 @@ cupti_activity_translate
     convert_branch(ga, (CUpti_ActivityBranch2 *) activity);
     break;
 
+  /*
+  Ignore sychronization events as the time stamps are from the host.
   case CUPTI_ACTIVITY_KIND_SYNCHRONIZATION:
     convert_synchronization(ga, (CUpti_ActivitySynchronization *) activity);
     break;
+  */
 
   case CUPTI_ACTIVITY_KIND_MEMORY:
     convert_memory(ga, (CUpti_ActivityMemory *) activity);
