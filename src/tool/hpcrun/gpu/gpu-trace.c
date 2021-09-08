@@ -269,8 +269,7 @@ gpu_trace_cct_no_activity
 static void
 gpu_compute_profile_name
 (
- gpu_tag_t tag,
- core_profile_trace_data_t * cptd
+ thread_data_t* td
 )
 {
   pms_id_t ids[IDTUPLE_MAXTYPES];
@@ -293,7 +292,7 @@ gpu_compute_profile_name
 
   id_tuple_push_back(&id_tuple, IDTUPLE_COMPOSE(IDTUPLE_GPUSTREAM, IDTUPLE_IDS_LOGIC_ONLY), tag.stream_id, tag.stream_id);
 
-  id_tuple_copy(&cptd->id_tuple, &id_tuple, hpcrun_malloc);
+  return no_activity;
 }
 
 
