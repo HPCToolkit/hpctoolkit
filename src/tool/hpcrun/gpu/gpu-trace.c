@@ -266,31 +266,13 @@ gpu_trace_cct_no_activity
 static void
 gpu_compute_profile_name
 (
- gpu_tag_t tag,
- core_profile_trace_data_t * cptd
+ thread_data_t* td
 )
 {
-  pms_id_t ids[IDTUPLE_MAXTYPES];
-  id_tuple_t id_tuple;
+  cct_node_t *no_activity =
+    hpcrun_cct_bundle_get_no_activity_node(&(td->core_profile_trace_data.epoch->csdata));
 
-  id_tuple_constructor(&id_tuple, ids, IDTUPLE_MAXTYPES);
-
-  id_tuple_push_back(&id_tuple, IDTUPLE_COMPOSE(IDTUPLE_NODE, IDTUPLE_IDS_LOGIC_LOCAL), gethostid(), 0);
-
-#if 0
-  if (tag.device_id != IDTUPLE_INVALID) {
-    id_tuple_push_back(&id_tuple, IDTUPLE_GPUDEVICE, tag.device_id);
-  }
-#endif
-
-  int rank = hpcrun_get_rank();
-  if (rank >= 0) id_tuple_push_back(&id_tuple, IDTUPLE_COMPOSE(IDTUPLE_RANK, IDTUPLE_IDS_LOGIC_ONLY), rank, rank);
-
-  id_tuple_push_back(&id_tuple, IDTUPLE_COMPOSE(IDTUPLE_GPUCONTEXT, IDTUPLE_IDS_LOGIC_ONLY), tag.context_id, tag.context_id);
-
-  id_tuple_push_back(&id_tuple, IDTUPLE_COMPOSE(IDTUPLE_GPUSTREAM, IDTUPLE_IDS_LOGIC_ONLY), tag.stream_id, tag.stream_id);
-
-  id_tuple_copy(&cptd->id_tuple, &id_tuple, hpcrun_malloc);
+  return no_activity;
 }
 
 

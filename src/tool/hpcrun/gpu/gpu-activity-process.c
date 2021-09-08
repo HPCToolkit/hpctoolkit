@@ -307,7 +307,7 @@ gpu_correlation_process
   } else {
     gpu_correlation_id_map_external_id_replace(gpu_correlation_id, host_correlation_id);
   }
-  PRINT("Correlation: native_correlation %u --> host_correlation %lu\n",
+  PRINT("Correlation: native_correlation %u --> host_correlation %lu\n", 
       gpu_correlation_id, host_correlation_id);
 }
 
