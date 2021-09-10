@@ -108,7 +108,7 @@
 // where any GPU can indicate that its functions should be added to
 // the module ignore map when that type of GPU is being monitored.
 
-#define NUM_FNS 8
+#define NUM_FNS ( sizeof(IGNORE_FNS) / sizeof(char *) )
 
 
 
@@ -128,7 +128,7 @@ typedef struct module_ignore_entry {
 //***************************************************************************
 
 
-static const char *IGNORE_FNS[NUM_FNS] = {
+static const char *IGNORE_FNS[] = {
   "cuLaunchKernel",
   "cudaLaunchKernel",
   "cuptiActivityEnable",
@@ -136,7 +136,8 @@ static const char *IGNORE_FNS[NUM_FNS] = {
   "amd_dbgapi_initialize",     // amd debug library
   "hipKernelNameRefByPtr",     // amd hip runtime
   "hsa_queue_create",           // amd hsa runtime
-  "hsa_init"
+  "hsa_init",
+  "hpcrun_malloc"
 };
 
 static module_ignore_entry_t modules[NUM_FNS];
