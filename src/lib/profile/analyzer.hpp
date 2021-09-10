@@ -93,8 +93,7 @@ struct LatencyBlameAnalyzer : public ProfileAnalyzer {
   void context(Context& ctx) noexcept override {
 
     const Scope& s = ctx.scope();
-    if(s.type() == Scope::Type::point || s.type() == Scope::Type::call ||
-        s.type() == Scope::Type::classified_point || s.type() == Scope::Type::classified_call) {
+    if(s.type() == Scope::Type::point) {
       std::string scopeFile = s.point_data().first.path().filename().string();
       size_t scopeHash = std::hash<std::string>{}(scopeFile);
       uint64_t offset = ctx.scope().point_data().second;
@@ -113,7 +112,7 @@ struct LatencyBlameAnalyzer : public ProfileAnalyzer {
         auto parent = ctx.direct_parent();
         while (parent) {
           const Scope& s = parent->scope();
-          if(s.type() == Scope::Type::point || s.type() == Scope::Type::call || s.type() == Scope::Type::classified_point || s.type() == Scope::Type::classified_call) {
+          if(s.type() == Scope::Type::point) {
             break;
           }
           parent = parent->direct_parent();

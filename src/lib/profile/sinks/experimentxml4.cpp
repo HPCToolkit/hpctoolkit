@@ -428,58 +428,19 @@ ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
         premetrics = true;
         post = "</PF>\n";
       }
-      auto& udm = mo.first ? mo.first->userdata[exml.ud] : exml.unknown_module;
-      auto& udf = fl.first ? fl.first->userdata[exml.ud] : udm.unknown_file;
-      udf.incr(exml);
+      open = "<";
       std::ostringstream ss;
-      ss << "<PF i=\"" << c.userdata[exml.src.identifier()] << "\""
-               " lm=\"" << udm.id << "\""
-               " n=\"" << proc.id << "\" s=\"" << proc.id << "\""
-               " l=\"" << fl.second << "\""
-               " f=\"" << udf.id << "\">\n";
-      pre = ss.str();
-      premetrics = true;
-      post = "</PF>\n";
-    } else {
-      const File *file, *parent_file;
-      if (s.type() == Scope::Type::point || s.type() == Scope::Type::call) {
-        file = nullptr;
+      ss << " i=\"" << c.userdata[exml.src.identifier()] << "\""
+            " s=\"" << proc.id << "\"";
+      if(s.type() == Scope::Type::line) {
+        ss << " l=\"" << s.line_data().second << "\"";
       } else {
-        file = &(s.line_data()).first;
+        s.point_data().first.userdata[exml.ud].incr(s.point_data().first, exml);
+        ss << " l=\"0\"";
       }
-      if (pty == Scope::Type::function || pty == Scope::Type::inlined_function) {
-        parent_file = c.direct_parent()->scope().function_data().file;
-      } else if (pty == Scope::Type::loop) {
-        parent_file = &(c.direct_parent()->scope().line_data()).first;
-      } else {
-        parent_file = nullptr;
-      }
-      if (file && parent_file && file != parent_file) {
-        if(proc.prep()) {  // We're in charge of the tag, and this is a tag we want.
-          proc.setTag("inlined from " + file->path().filename().string(), mo.second, fancynames::unknown_proc.second);
-        }
-        auto& udm = mo.first ? mo.first->userdata[exml.ud] : exml.unknown_module;
-        auto& udf = fl.first ? fl.first->userdata[exml.ud] : udm.unknown_file;
-        udf.incr(exml);
-
-        std::ostringstream ss;
-        ss << "<Pr i=\"" << c.userdata[exml.src.identifier()] << "\""
-              " n=\"" << proc.id << "\""
-              " s=\"" << proc.id << "\""
-              " f=\"" << udf.id << "\""
-              " a=\"1\">\n";
-        pre = ss.str();
-        post = "</Pr>\n";
-      }
+      attr = ss.str();
+      break;
     }
-
-    open = "<";
-    std::ostringstream ss;
-    ss << " i=\"" << c.userdata[exml.src.identifier()] << "\""
-          " s=\"" << proc.id << "\""
-          " l=\"" << fl.second << "\"";
-    attr = ss.str();
-    break;
   }
   case Scope::Type::inlined_function: {
     auto fl = s.line_data();
@@ -713,9 +674,7 @@ void ExperimentXML4::write() {
     if(c.scope().type() != Scope::Type::global)
       of << " it=\"" << c.userdata[src.identifier()] << "\"";
 
-    if ((c.scope().type() == hpctoolkit::Scope::Type::point) || (c.scope().type() == hpctoolkit::Scope::Type::call) ||
-        (c.scope().type() == hpctoolkit::Scope::Type::classified_point) || (c.scope().type() == hpctoolkit::Scope::Type::classified_call) ||
-        (c.scope().type() == hpctoolkit::Scope::Type::concrete_line)) {
+    if (c.scope().type() == hpctoolkit::Scope::Type::point) {
       uint64_t offset = c.scope().point_data().second;
       const std::string latency_blame_metric_name = "GINS: LAT_BLAME(cycles)";
       const auto& stats = c.statistics();

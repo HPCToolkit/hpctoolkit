@@ -188,13 +188,6 @@ int rank0(ProfArgs&& args) {
            tdb.get());
        pipelineB << std::move(tdb) << std::move(exml);
        if(sdb) pipelineB << *sdb;
-
-       // ExperimentXML doesn't support instruction-level metrics, so we need a
-       // line-merging transformer. Since this only changes the Scope, we don't
-       // need to track it.
-       if(!args.instructionGrain)
-         pipelineB << make_unique_x<LineMergeTransformer>();
-       break;
      }
   }
 
