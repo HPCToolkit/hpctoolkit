@@ -1500,58 +1500,7 @@ hpcrun_clReleaseMemObject
   if (optimization_check && status == CL_SUCCESS) {
     clearBufferEntry(mem);
   }
-	if(is_opencl_blame_shifting_enabled()) {
-		opencl_sync_epilogue(queue);
-	}
 	return status;
-}
-
-
-cl_int
-hpcrun_clReleaseKernel
-(
- cl_kernel kernel
-)
-{
-  ETMSG(OPENCL, "clReleaseKernel called for kernel: %"PRIu64 "", (uint64_t)kernel);
-
-  cl_int status = HPCRUN_OPENCL_CALL(clReleaseKernel, (kernel));
-  if (optimization_check && status == CL_SUCCESS) {
-    clearKernelQueues(kernel);
-    clearKernelParams(kernel);
-  }
-  return status;
-}
-
-
-cl_int
-hpcrun_clSetKernelArg
-(
- cl_kernel kernel,
- cl_uint arg_index,
- size_t arg_size,
- const void* arg_value
-)
-{
-  cl_int status = HPCRUN_OPENCL_CALL(clSetKernelArg, (kernel, arg_index, arg_size, arg_value));
-  if (optimization_check && status == CL_SUCCESS) {
-    recordKernelParams(kernel, arg_value, arg_size);
-  }
-  return status;
-}
-
-
-cl_int
-hpcrun_clReleaseMemObject
-(
- cl_mem mem
-)
-{
-  cl_int status = HPCRUN_OPENCL_CALL(clReleaseMemObject, (mem));
-  if (optimization_check && status == CL_SUCCESS) {
-    clearBufferEntry(mem);
-  }
-  return status;
 }
 
 
@@ -1664,6 +1613,9 @@ opencl_blame_shifting_enable
 
 void
 opencl_instrumentation_simd_enable
+(
+ void
+)
 {
   gtpin_simd_enable();
 }
@@ -1671,6 +1623,9 @@ opencl_instrumentation_simd_enable
 
 void
 opencl_instrumentation_latency_enable
+(
+ void
+)
 {
   gtpin_latency_enable();
 }
@@ -1683,28 +1638,6 @@ opencl_instrumentation_count_enable
 )
 {
   gtpin_count_enable();
-}
-
-
-void
-opencl_blame_shifting_enable
-(
- void
-)
-{
-  ENABLE_BLAME_SHIFTING = true;
-	ETMSG(OPENCL, "Opencl Blame-Shifting enabled");
-}
-
-
-void
-opencl_optimization_check_enable
-(
- void
-)
-{
-  optimization_check = true;
-  ETMSG(OPENCL, "Intel optimization check enabled");
 }
 
 
