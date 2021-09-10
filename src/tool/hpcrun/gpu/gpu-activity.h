@@ -417,7 +417,6 @@ typedef struct gpu_activity_details_t {
     gpu_flush_t flush;
     intel_optimization_t intel_optimization;
     gpu_blame_shift_t blame_shift;
-    intel_optimization_t intel_optimization;
 
     /* Access short cut for activitiy fields shared by multiple kinds */
 

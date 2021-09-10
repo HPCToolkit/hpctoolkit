@@ -359,7 +359,7 @@ std::string ExperimentXML4::eStatMetricTags(const ExtraStatistic& es, unsigned i
 
 ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
   : premetrics(false), prelmFromChildren(false) {
-  const auto& s = c.scope();
+  const auto s = c.scope();
   auto& proc = exml.getProc(s);
   switch(s.type()) {
   case Scope::Type::unknown: {
