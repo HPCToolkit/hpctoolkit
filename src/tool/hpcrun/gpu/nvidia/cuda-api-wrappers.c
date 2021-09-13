@@ -52,6 +52,7 @@
 //***************************************************************************
 
 #include "cuda-api.h"
+#include <stdio.h>
 
 CUresult
 cuLaunchKernel
@@ -70,6 +71,7 @@ cuLaunchKernel
 )
 {
   cuda_api_enter_callback();
+  fprintf(stderr, "here\n");
   CUresult result = hpcrun_cuLaunchKernel(f, gridDimX, gridDimY, gridDimZ,
     blockDimX, blockDimY, blockDimZ,
     sharedMemBytes, hStream, kernelParams, extra);

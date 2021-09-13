@@ -175,7 +175,7 @@ kernel_invocation_activities[] = {
 
 CUpti_ActivityKind
 kernel_execution_activities[] = {
-  CUPTI_ACTIVITY_KIND_SYNCHRONIZATION,
+// CUPTI_ACTIVITY_KIND_SYNCHRONIZATION,
   CUPTI_ACTIVITY_KIND_CONTEXT,
   CUPTI_ACTIVITY_KIND_FUNCTION,
 // FIXME(keren): cupti does not allow the following activities to be profiled with pc sampling

@@ -113,6 +113,7 @@
 #include "cupti-range.h"
 #include "cupti-subscribers.h"
 #include "cupti-pc-sampling-api.h"
+#include "cupti-unwind-map.h"
 #endif
 
 //******************************************************************************
@@ -232,6 +233,8 @@ static __thread bool cupti_activity_flag = false;
 static __thread bool cupti_runtime_api_flag = false;
 static __thread cct_node_t *cupti_kernel_ph = NULL;
 static __thread cct_node_t *cupti_trace_ph = NULL;
+
+static __thread cct_node_t *cupti_prev_api_node = NULL;
 
 static bool cupti_correlation_enabled = false;
 static bool cupti_pc_sampling_enabled = false;
@@ -958,6 +961,46 @@ cupti_callback_init
 // Runtime and driver API callbacks
 //******************************************************************************
 
+static cct_node_t *
+cupti_api_node_get
+(
+ gpu_op_placeholder_flags_t flags,
+ uint64_t correlation_id,
+ const void *cb_info
+)
+{
+  const CUpti_CallbackData *cd = (const CUpti_CallbackData *) cb_info;
+  cct_node_t *api_node = NULL;
+
+  // 1. Query key for the unwind map
+  register long rsp asm("rsp");
+
+  unwind_key_t unwind_key;
+  unwind_key.stack_length = rsp;
+  unwind_key.prev = cupti_prev_api_node;
+
+  if (gpu_op_placeholder_flags_is_set(flags, gpu_placeholder_type_kernel)) {
+    CUfunction function_ptr = *(CUfunction *)(cd->functionParams);
+    unwind_key.function_id = cupti_func_ip_resolve(function_ptr);
+  } else {
+    unwind_key.function_id.lm_id = 0;
+    unwind_key.function_id.lm_ip = flags;
+  }
+
+  api_node = cupti_unwind_map_cct_node_lookup(unwind_key);
+  
+  // 3. If not matched, unwind and memoize
+  if (api_node == NULL) {
+    api_node = cupti_correlation_callback(correlation_id);
+    cupti_prev_api_node = api_node;
+    cupti_unwind_map_insert(unwind_key, api_node);
+  }
+
+
+  return api_node;
+}
+
+
 static gpu_op_ccts_t
 cupti_api_enter_callback_cuda
 (
@@ -982,10 +1025,7 @@ cupti_api_enter_callback_cuda
 
   // If this API is intercepted by our cuda wrapper, we only unwinding at the 
   // intercepter to reduce the unwinding cost
-  cct_node_t *api_node = cuda_api_node_get();
-  if (api_node == NULL) {
-    api_node = cupti_correlation_callback(correlation_id);
-  }
+  cct_node_t *api_node = cupti_api_node_get(flags, correlation_id, cb_info);
 
   gpu_op_ccts_t gpu_op_ccts;
 
@@ -1057,15 +1097,7 @@ cupti_driver_api_subscriber_callback_cuda_kernel
     CUfunction function_ptr = *(CUfunction *)(cd->functionParams);
     ip_normalized_t kernel_ip = cupti_func_ip_resolve(function_ptr);
 
-    if (cupti_runtime_api_flag_get()) {
-      // Update kernel_ip for the runtime API
-      if (cupti_trace_ph_get() != NULL) {
-        ensure_kernel_ip_present(cupti_trace_ph_get(), kernel_ip);
-      }
-      if (cupti_kernel_ph_get() != NULL) {
-        ensure_kernel_ip_present(cupti_kernel_ph_get(), kernel_ip);
-      }
-    } else if (ompt_runtime_status_get()) {
+    if (ompt_runtime_status_get()) {
       // Update kernel_ip for the ompt API
       cct_node_t *ompt_trace_node = ompt_trace_node_get();
       if (ompt_trace_node != NULL) {
@@ -1084,7 +1116,7 @@ cupti_driver_api_subscriber_callback_cuda_kernel
 #ifdef NEW_CUPTI_ANALYSIS
     analyze_cupti_api(cd, cupti_kernel_ph_get(), kernel_ip, flags);
 #endif
-  } else if (!cupti_runtime_api_flag_get() && !ompt_runtime_status_get()) {
+  } else if (!ompt_runtime_status_get()) {
     cupti_api_exit_callback_cuda(cb_id);
   }
 }
@@ -1126,17 +1158,11 @@ cupti_runtime_api_subscriber_callback_cuda_kernel
   if (cd->callbackSite == CUPTI_API_ENTER) {
     // Enter a CUDA runtime api
     cupti_runtime_api_flag_set();
-    gpu_op_ccts_t gpu_op_ccts = cupti_api_enter_callback_cuda(flags, cb_id, cb_info);
-
-    cupti_kernel_ph_set(gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel));
-    cupti_trace_ph_set(gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace));
   } else {
     // Exit an CUDA runtime api
     cupti_runtime_api_flag_unset();
     cupti_kernel_ph_set(NULL);
     cupti_trace_ph_set(NULL);
-
-    cupti_api_exit_callback_cuda(cb_id);
   }
 }
 
@@ -1845,16 +1871,21 @@ cupti_callbacks_subscribe
                    (CUpti_CallbackFunc) cupti_subscriber_callback_cuda,
                    (void *) NULL));
 
-  cupti_subscribers_driver_memcpy_htod_callbacks_subscribe(1, cupti_subscriber);
-  cupti_subscribers_driver_memcpy_dtoh_callbacks_subscribe(1, cupti_subscriber);
-  cupti_subscribers_driver_memcpy_callbacks_subscribe(1, cupti_subscriber);
-  cupti_subscribers_driver_sync_callbacks_subscribe(1, cupti_subscriber);
+  // With gpu=nvidia,pc monitoring only kernel activities
+  // With gpu=nvidia, monitoring all gpu activities
   cupti_subscribers_driver_kernel_callbacks_subscribe(1, cupti_subscriber);
-  cupti_subscribers_runtime_memcpy_callbacks_subscribe(1, cupti_subscriber);
-  cupti_subscribers_runtime_sync_callbacks_subscribe(1, cupti_subscriber);
   cupti_subscribers_runtime_kernel_callbacks_subscribe(1, cupti_subscriber);
   cupti_subscribers_resource_module_subscribe(1, cupti_subscriber);
   cupti_subscribers_resource_context_subscribe(1, cupti_subscriber);
+
+  if (cupti_pc_sampling_frequency_get() == -1) {
+    cupti_subscribers_driver_memcpy_htod_callbacks_subscribe(1, cupti_subscriber);
+    cupti_subscribers_driver_memcpy_dtoh_callbacks_subscribe(1, cupti_subscriber);
+    cupti_subscribers_driver_memcpy_callbacks_subscribe(1, cupti_subscriber);
+    cupti_subscribers_driver_sync_callbacks_subscribe(1, cupti_subscriber);
+    cupti_subscribers_runtime_memcpy_callbacks_subscribe(1, cupti_subscriber);
+    cupti_subscribers_runtime_sync_callbacks_subscribe(1, cupti_subscriber);
+  }
 }
 
 
