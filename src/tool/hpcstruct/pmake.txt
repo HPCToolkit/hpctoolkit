@@ -66,8 +66,14 @@ L := $(patsubst $(MEAS_DIR)/%.hpcrun,$(LM_DIR)/%.lm,$(H))
 #-------------------------------------------------------------------------------
 # create $(LM_DIR)/all.lm: a list of all load modules involved in the execution
 #-------------------------------------------------------------------------------
+ifneq ($(L),)
 $(LM_DIR)/all.lm: $(L)
 	cat $(L) | sort -u | grep -v gpubin | grep -v libhpcrun | grep -v libmonitor | grep -v libxed | grep -v libpfm | grep -v libcuda | grep -v libcupti > $(LM_DIR)/all.lm
+else
+$(LM_DIR)/all.lm: $(L)
+	-@mkdir $(LM_DIR) >& /dev/null
+	touch $(LM_DIR)/all.lm 
+endif
 
 #-------------------------------------------------------------------------------
 # create cpubins directory containing links to all CPU binaries
