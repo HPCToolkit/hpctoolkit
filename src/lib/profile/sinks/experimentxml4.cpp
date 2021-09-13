@@ -53,7 +53,6 @@
 #include <algorithm>
 #include <sstream>
 #include <limits>
-#include <iostream>
 
 using namespace hpctoolkit;
 using namespace sinks;
@@ -359,7 +358,7 @@ std::string ExperimentXML4::eStatMetricTags(const ExtraStatistic& es, unsigned i
 
 ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
   : premetrics(false), prelmFromChildren(false) {
-  const auto s = c.scope();
+  const auto& s = c.scope();
   auto& proc = exml.getProc(s);
   switch(s.type()) {
   case Scope::Type::unknown: {
@@ -428,19 +427,19 @@ ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
         premetrics = true;
         post = "</PF>\n";
       }
-      open = "<";
-      std::ostringstream ss;
-      ss << " i=\"" << c.userdata[exml.src.identifier()] << "\""
-            " s=\"" << proc.id << "\"";
-      if(s.type() == Scope::Type::line) {
-        ss << " l=\"" << s.line_data().second << "\"";
-      } else {
-        s.point_data().first.userdata[exml.ud].incr(s.point_data().first, exml);
-        ss << " l=\"0\"";
-      }
-      attr = ss.str();
-      break;
     }
+    open = "<";
+    std::ostringstream ss;
+    ss << " i=\"" << c.userdata[exml.src.identifier()] << "\""
+          " s=\"" << proc.id << "\"";
+    if(s.type() == Scope::Type::line) {
+      ss << " l=\"" << s.line_data().second << "\"";
+    } else {
+      s.point_data().first.userdata[exml.ud].incr(s.point_data().first, exml);
+      ss << " l=\"0\"";
+    }
+    attr = ss.str();
+    break;
   }
   case Scope::Type::inlined_function: {
     auto fl = s.line_data();
@@ -674,26 +673,11 @@ void ExperimentXML4::write() {
     if(c.scope().type() != Scope::Type::global)
       of << " it=\"" << c.userdata[src.identifier()] << "\"";
 
-    if (c.scope().type() == hpctoolkit::Scope::Type::point) {
-      uint64_t offset = c.scope().point_data().second;
-      const std::string latency_blame_metric_name = "GINS: LAT_BLAME(cycles)";
-      const auto& stats = c.statistics();
-
-      for(const auto& mx: stats.citerate()) {
-        const auto& m = mx.first;
-        if(!m->scopes().has(MetricScope::function) || !m->scopes().has(MetricScope::execution))
-          util::log::fatal{} << "Metric isn't function/execution!";
-        const auto& vv = mx.second;
-
-        if (m->name().find(latency_blame_metric_name) != std::string::npos) {
-          int latency = *(vv.get(m->partials()[0]).get(MetricScope::point));
-          // std::cout << "LATENCY_BLAME:: module: " << c.scope() << ", parent module: " << c.direct_parent()->scope() << ", offset: " << offset << ", val: " << latency << std::endl;
-        }
-      }
-    }
-    // If this is an empty tag, use the shorter form, otherwise close the tag.
-    if(c.children().empty()) {
-      of << "/>\n" << udc.post;
+    // S tags are funny, they need to be empty but the child Contexts need to
+    // share the pre-post bits.
+    if(isS) {
+      assert(udc.close.empty());
+      of << "/>\n";
       return;
     }
 
