@@ -202,8 +202,13 @@ buffer_map_delete
 {
   spinlock_lock(&buffer_map_lock);
   
-  buffer_map_entry_t *node = st_delete(&map_root, buffer_id);
-  st_free(&free_list, node);
+  buffer_map_entry_t *entry = st_lookup(&map_root, buffer_id);
+  if (entry) {
+    // in some cases, we observed clReleaseMemObject is called on H2D buffers without calls to clEnqueueWriteBuffer.
+    // For avoiding a segfault for those cases, we use this if-clause
+    buffer_map_entry_t *node = st_delete(&map_root, buffer_id);
+    st_free(&free_list, node);
+  }
 
   spinlock_unlock(&buffer_map_lock);
 }
