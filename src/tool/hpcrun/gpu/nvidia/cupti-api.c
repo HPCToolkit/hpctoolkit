@@ -235,6 +235,8 @@ static __thread cct_node_t *cupti_kernel_ph = NULL;
 static __thread cct_node_t *cupti_trace_ph = NULL;
 
 static __thread cct_node_t *cupti_prev_api_node = NULL;
+static __thread cct_node_t *cupti_prev_kernel_node = NULL;
+static __thread cct_node_t *cupti_prev_prev_kernel_node = NULL;
 
 static bool cupti_correlation_enabled = false;
 static bool cupti_pc_sampling_enabled = false;
@@ -252,6 +254,11 @@ static cupti_load_callback_t cupti_load_callback = 0;
 static cupti_load_callback_t cupti_unload_callback = 0;
 
 static CUpti_SubscriberHandle cupti_subscriber;
+
+#ifdef NEW_CUPTI_ANALYSIS
+static uint64_t total_unwinds = 0;
+static uint64_t correct_unwinds = 0;
+#endif
 
 //----------------------------------------------------------
 // cupti function pointers for late binding
@@ -888,7 +895,7 @@ analyze_cupti_api
     p3 = hpcrun_cct_parent(p2);
   }
 
-  cct_node_t *prev = cuda_prev_api_node_get();
+  cct_node_t *prev = cupti_prev_api_node;
 
   if (gpu_op_placeholder_flags_is_set(flags, gpu_placeholder_type_kernel)) {
     cuLaunchKernel_params *params = (cuLaunchKernel_params *)cd->functionParams;
@@ -954,7 +961,7 @@ cupti_callback_init
   cupti_activity_flag_set();
 
   // channel is only initialized if a driver or a runtime api has been called
-  gpu_operation_multiplexer_my_channel_init();
+  //gpu_operation_multiplexer_my_channel_init();
 }
 
 //******************************************************************************
@@ -977,7 +984,9 @@ cupti_api_node_get
 
   unwind_key_t unwind_key;
   unwind_key.stack_length = rsp;
-  unwind_key.prev = cupti_prev_api_node;
+  unwind_key.prev_kernel = cupti_prev_kernel_node;
+  unwind_key.prev_prev_kernel = cupti_prev_prev_kernel_node;
+	unwind_key.prev_api = cupti_prev_api_node;
 
   if (gpu_op_placeholder_flags_is_set(flags, gpu_placeholder_type_kernel)) {
     CUfunction function_ptr = *(CUfunction *)(cd->functionParams);
@@ -992,10 +1001,64 @@ cupti_api_node_get
   // 3. If not matched, unwind and memoize
   if (api_node == NULL) {
     api_node = cupti_correlation_callback(correlation_id);
-    cupti_prev_api_node = api_node;
-    cupti_unwind_map_insert(unwind_key, api_node);
+		cupti_unwind_map_insert(unwind_key, api_node);
   }
 
+	if (gpu_op_placeholder_flags_is_set(flags, gpu_placeholder_type_kernel)) {
+		cupti_prev_prev_kernel_node = cupti_prev_kernel_node;
+		cupti_prev_kernel_node = api_node;
+		if (api_node == cupti_prev_kernel_node) {
+			// Detect a single loop-> fallback
+			api_node = cupti_correlation_callback(correlation_id);
+			// Shall we update or not?
+			//cupti_unwind_map_insert(unwind_key, api_node);
+		}
+	} else {
+		cupti_prev_api_node = api_node;
+	}
+
+#ifdef NEW_CUPTI_ANALYSIS
+  cct_node_t *actual_node = cupti_correlation_callback(correlation_id);
+  total_unwinds++;
+  if (actual_node == api_node) {
+    correct_unwinds++; 
+  } else {
+		printf("Actual ");
+		while (actual_node != NULL) {
+			cct_addr_t* addr = hpcrun_cct_addr(actual_node);
+			printf("lm_id %d lm_ip %p, ", addr->ip_norm.lm_id, addr->ip_norm.lm_ip);
+			actual_node = hpcrun_cct_parent(actual_node);
+		}
+		printf("\n");
+
+		printf("Unwind ");
+		cct_node_t *node = api_node;
+		while (node != NULL) {
+			cct_addr_t* addr = hpcrun_cct_addr(node);
+			printf("lm_id %d lm_ip %p, ", addr->ip_norm.lm_id, addr->ip_norm.lm_ip);
+			node = hpcrun_cct_parent(node);
+		}
+		printf("\n");
+
+		//printf("Prev prev api ");
+		//node = unwind_key.prev_prev_api;
+		//while (node != NULL) {
+		//	cct_addr_t* addr = hpcrun_cct_addr(node);
+		//	printf("lm_id %d lm_ip %p, ", addr->ip_norm.lm_id, addr->ip_norm.lm_ip);
+		//	node = hpcrun_cct_parent(node);
+		//}
+		//printf("\n");
+
+		//printf("Prev api ");
+		//node = unwind_key.prev_api;
+		//while (node != NULL) {
+		//	cct_addr_t* addr = hpcrun_cct_addr(node);
+		//	printf("lm_id %d lm_ip %p, ", addr->ip_norm.lm_id, addr->ip_norm.lm_ip);
+		//	node = hpcrun_cct_parent(node);
+		//}
+		//printf("\n");
+	}
+#endif
 
   return api_node;
 }
@@ -1249,7 +1312,7 @@ cupti_subscriber_callback_cuda
     // stop flag is only set if a driver or runtime api called
     cupti_activity_flag_set();
 
-    gpu_operation_multiplexer_my_channel_init();
+    //gpu_operation_multiplexer_my_channel_init();
 
     const CUpti_CallbackData *cd = (const CUpti_CallbackData *) cb_info;
 
@@ -1457,7 +1520,7 @@ cupti_subscriber_callback_cuda
     // stop flag is only set if a driver or runtime api called
     cupti_activity_flag_set();
 
-    gpu_operation_multiplexer_my_channel_init();
+    //gpu_operation_multiplexer_my_channel_init();
 
     const CUpti_CallbackData *cd = (const CUpti_CallbackData *)cb_info;
 
@@ -1882,9 +1945,10 @@ cupti_callbacks_subscribe
     cupti_subscribers_driver_memcpy_htod_callbacks_subscribe(1, cupti_subscriber);
     cupti_subscribers_driver_memcpy_dtoh_callbacks_subscribe(1, cupti_subscriber);
     cupti_subscribers_driver_memcpy_callbacks_subscribe(1, cupti_subscriber);
-    cupti_subscribers_driver_sync_callbacks_subscribe(1, cupti_subscriber);
     cupti_subscribers_runtime_memcpy_callbacks_subscribe(1, cupti_subscriber);
-    cupti_subscribers_runtime_sync_callbacks_subscribe(1, cupti_subscriber);
+    // XXX(Keren): timestamps for sync are captured on CPU
+    //cupti_subscribers_driver_sync_callbacks_subscribe(1, cupti_subscriber);
+    //cupti_subscribers_runtime_sync_callbacks_subscribe(1, cupti_subscriber);
   }
 }
 
@@ -2072,6 +2136,8 @@ cupti_device_flush(void *args, int how)
 
 #ifdef NEW_CUPTI_ANALYSIS
   cupti_cct_map_dump();
+		
+  printf("Total cct unwinds %lu, correct unwinds %lu\n", total_unwinds, correct_unwinds);
 #endif
 }
 
@@ -2222,14 +2288,14 @@ cupti_device_shutdown(void *args, int how)
 
     gpu_activity.kind = GPU_ACTIVITY_FLUSH;
     gpu_activity.details.flush.wait = &wait;
-    gpu_operation_multiplexer_push(NULL, NULL, &gpu_activity);
+    //gpu_operation_multiplexer_push(NULL, NULL, &gpu_activity);
 
     while (atomic_load(&wait)) {}
   }
 #endif
 
   // Terminate monitor thread
-  gpu_operation_multiplexer_fini();
+  //gpu_operation_multiplexer_fini();
 
   TMSG(CUPTI, "CUPTI shutdown end");
 }
