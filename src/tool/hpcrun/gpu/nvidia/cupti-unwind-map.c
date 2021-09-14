@@ -141,8 +141,16 @@ unwind_cmp_gt
       if (left.function_id.lm_ip > right.function_id.lm_ip) {
         return true;
       } else if (left.function_id.lm_ip == right.function_id.lm_ip) {
-        if (left.prev > right.prev) {
+        if (left.prev_kernel > right.prev_kernel) {
           return true;
+        } else if (left.prev_kernel == right.prev_kernel) {
+          if (left.prev_prev_kernel > right.prev_prev_kernel) {
+            return true;
+          } else if (left.prev_prev_kernel == right.prev_prev_kernel) {
+            if (left.prev_api > right.prev_api) {
+              return true;
+            }
+          }
         }
       }
     }
@@ -167,8 +175,16 @@ unwind_cmp_lt
       if (left.function_id.lm_ip < right.function_id.lm_ip) {
         return true;
       } else if (left.function_id.lm_ip == right.function_id.lm_ip) {
-        if (left.prev < right.prev) {
+        if (left.prev_kernel < right.prev_kernel) {
           return true;
+        } else if (left.prev_kernel == right.prev_kernel) {
+          if (left.prev_prev_kernel < right.prev_prev_kernel) {
+            return true;
+          } else if (left.prev_prev_kernel == right.prev_prev_kernel) {
+            if (left.prev_api < right.prev_api) {
+              return true;
+            }
+          }
         }
       }
     }
@@ -185,7 +201,8 @@ unwind_cmp_eq
 )
 {
   return left.stack_length == right.stack_length && left.function_id.lm_id == right.function_id.lm_id &&
-    left.function_id.lm_ip && right.function_id.lm_ip && left.prev == right.prev;
+    left.function_id.lm_ip && right.function_id.lm_ip && left.prev_prev_kernel == right.prev_prev_kernel &&
+    left.prev_kernel == right.prev_kernel && left.prev_api == right.prev_api;
 }
 
 

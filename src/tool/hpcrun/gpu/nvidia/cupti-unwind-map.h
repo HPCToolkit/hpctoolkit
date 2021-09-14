@@ -10,7 +10,9 @@
 typedef struct unwind_key_t {
   size_t stack_length;
   ip_normalized_t function_id;
-  cct_node_t *prev;
+  cct_node_t *prev_prev_kernel;
+  cct_node_t *prev_kernel;
+  cct_node_t *prev_api;
 } unwind_key_t;
 
 
