@@ -1,7 +1,7 @@
 #ifndef HPCRUN_CONTROL_KNOB_H
 #define HPCRUN_CONTROL_KNOB_H
 
-typedef enum{
+typedef enum {
   ck_int,
   ck_float,
   ck_string
