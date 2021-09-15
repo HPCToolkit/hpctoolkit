@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{2018/09/30}
+\setDate{2021/09/11}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -267,6 +267,9 @@ often dramatically slowing the application and potentially distorting the measur
 
 \item[\Opt{-md}, \Opt{--monitor-debug}]
 Enable debug tracing of \Prog{libmonitor}, the \Prog{hpcrun} subsystem which implements process/thread control.
+
+\item[\Opt{--fnbounds-eager-shutdown}]
+Terminate the  \Prog{hpcfnbounds} server when it goes idle.  By default, it is kept alive during the entire run.
 
 \end{Description}
 

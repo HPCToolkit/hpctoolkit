@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{2018/06/28}
+\setDate{2021/09/11}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -78,13 +78,14 @@ For statically linked applications \HTMLhref{hpclink.html}{\Cmd{hpclink}{1}} ser
 
 \item \textbf{Analyzing source code structure.} 
 \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} discovers static program structure such as procedures and loop nests
-from binary code in the application's executable.
+from binary code in the application's executable and the shared libraries and compiled GPU binaries.
 It takes into account optimizing compiler transformations such as restructuring of procedures and loops
 for inlining, software pipelining, multicore parallelization, and offloading to GPUs.
 
 \item \textbf{Attributing measured costs to source code structure.} 
-\HTMLhref{hpcprof.html}{\Cmd{hpcprof}{1}} combines \Prog{hpcrun}'s dynamic profiles
-with \Prog{hpcstruct}'s static program structure
+\HTMLhref{hpcprof.html}{\Cmd{hpcprof}{1}} or \HTMLhref{hpcprof-mpi.html}{\Cmd{hpcprof-mpi}{1}}
+combines \Prog{hpcrun}'s dynamic profiles
+with \Prog{hpcstruct}'s static program structure information
 to attribute measured costs incurred by the optimized object code
 to meaningful source code constructs such as procedures, loop nests, and individual lines of code.
 The result of attribution is an \emph{experiment database} stored in a file system directory.
@@ -138,26 +139,24 @@ named \File{hpctoolkit-appname-measurements},
 so the two sets of measurements are combined automatically.
 
 \item \textbf{Analyze}. 
-Use \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} to discover program structure
-and write it to the file \File{zoo.hpcstruct}.
+Use \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} to discover program structure of the program
+and the shared libraries and GPU binaries it used during the run.
 Although \Prog{hpcstruct} has a number of advanced options, it is typically run with none.
-The application's source code directory is passed as the last argument.
-\begin{verbatim}
-  hpcstruct zoo
-\end{verbatim}
+The  \File{hpctoolkit-appname-measurements} directory is passed as the last argument.
 
-By default the generated structure file is named \File{zoo.hpcstruct}.
+By default the generated structure files are put into subirectories of the measurements directory.
 
 \item \textbf{Attribute}.
-Create an experiment database using \HTMLhref{hpcprof.html}{\Cmd{hpcprof}{1}}.
-(The version of \HTMLhref{hpcprof.html}{\Cmd{hpcprof}{1}} must match
+Create an experiment database using \HTMLhref{hpcprof.html}{\Cmd{hpcprof}{1}}
+or \HTMLhref{hpcprof-mpi.html}{\Cmd{hpcprof-mpi}{1}}.
+(The version of \HTMLhref{hpcprof.html}{\Cmd{hpcprof}{1}}
+or \HTMLhref{hpcprof-mpi.html}{\Cmd{hpcprof-mpi}{1}} must match
 the version of \HTMLhref{hpcrun.html}{\Cmd{hpcrun}{1}}.)
-Use the \Prog{-I} option to specify the location of \Prog{zoo}'s source code
-and the \Prog{-S} option to specify the structure file produced in the previous step.
+Use the \Prog{-I} option to specify the location of \Prog{zoo}'s source code.
 The measurement directory is specified as the last argument.
 By default the generated experiment database is named \File{hpctoolkit-zoo-database}.
 \begin{verbatim}
-  hpcprof -I path-to-zoo/+ -S zoo.hpcstruct hpctoolkit-zoo-measurements
+  hpcprof -I path-to-zoo/+ hpctoolkit-zoo-measurements
 \end{verbatim}
 
 \item \textbf{Visualize}.
@@ -185,7 +184,6 @@ See \emph{The hpcviewer User Interface} Guide for more information.
 \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} \\
 \HTMLhref{hpcprof.html}{\Cmd{hpcprof}{1}},
   \HTMLhref{hpcprof-mpi.html}{\Cmd{hpcprof-mpi}{1}} \\
-  \SP\SP \HTMLhref{hpcsummary.html}{\Cmd{hpcsummary}{1}} \\
 \HTMLhref{hpcviewer.html}{\Cmd{hpcviewer}{1}}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

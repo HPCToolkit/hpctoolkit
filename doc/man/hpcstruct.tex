@@ -30,7 +30,7 @@
 \rcsInfo $Id$
 \setDate{\rcsInfoLongDate}
 }{
-\setDate{2020/07/15}
+\setDate{2021/09/15}
 \message{package rcsinfo not present, discard it}
 }
 
@@ -44,7 +44,9 @@
 
 \begin{Name}{1}{hpcstruct}{The HPCToolkit Performance Tools}{The HPCToolkit Performance Tools}{hpcstruct:\\ Recovery of Static Program Structure}
 
-\Prog{hpcstruct} - recovers the static program structure of a CPU or GPU binary, including procedures, inlined functions, loops, and source lines
+\Prog{hpcstruct} - recovers the static program structure of CPU or GPU binaries, as cited in a recorded measurements directory, or
+in a single CPU or GPU binary.
+The static structure includes procedures, inlined functions, loops, and source lines
 
 See \HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}} for an overview of \textbf{HPCToolkit}.
 
@@ -53,48 +55,49 @@ See \HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}} for an overview of \textbf{H
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Synopsis}
 
-\Prog{hpcstruct} \oOpt{options} \Arg{binary}
+\Prog{hpcstruct} \oOpt{options} \Arg{measurement-directory}
 
-\Prog{hpcstruct} \oOpt{options} \Arg{measurement directory of GPU-accelerated application}
+\Prog{hpcstruct} \oOpt{options} \Arg{binary}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Description}
 
-Given an application binary, a shared library, or a GPU binary, \Prog{hpcstruct}
+Given a measurement directory, an application binary, a shared library, or a GPU binary, \Prog{hpcstruct}
 recovers the program structure of its object code by analyzing available information
 about loop nests, inlined functions, and the mapping between machine instructions and 
-source lines.  Program structure is a
-mapping of a program's object code to its static source-level structure.
+source lines.  Program structure is a mapping of a program's object code to its static source-level structure.
 
-When analyzing a CPU binary \Arg{b}, by default, 
-\Prog{hpcstruct} writes its results to the file 'basename(\Arg{b}).hpcstruct'.
-To improve attribution of performance measurements to program source code, one can
-pass one or more program structure files (e.g., for an executable and/or 
-one or more shared libraries) to HPCToolkit's analysis tool \Prog{hpcprof}
-along with one or more HPCToolkit performance measurement directories.
+During execution of a any application, HPCToolkit records the name of the application binary,
+and the names of any shared-libraries used.
+During execution of a GPU-accelerated application, HPCToolkit also records GPU binaries
+in the application's measurement directory.
 
-During execution of a GPU-accelerated application on an NVIDIA GPU, HPCToolkit
-records NVIDIA 'cubin' GPU binaries in the application's measurement directory.
-To attribute performance to GPU functions in a GPU-accelerated application, one
-should apply \Prog{hpcstruct} to the application's HPCToolkit measurement directory to
-analyze all GPU binaries recorded within. When analyzing a measurement directory
-that includes GPU binaries, any program structure files produced will be recorded
-inside the measurement directory. When \Prog{hpcprof} is applied to a measurement
-directory that contains program structure files for GPU binaries, these program
-structure files will be used to help attribute any GPU performance measurements.
+Normally, \Prog{hpcstruct} is run against an application's HPCToolkit \Arg{measurement-directory} directing
+it to analyze all CPU and GPU binaries recorded within.
+
+When analyzing a \Arg{measurement-directory},  \Prog{hpcstruct} writes its results into a subdirectory of the directory.
+It analyzes the application and all the shared libraries used during the run, as well as any
+GPU binaries recorded in the directory.  It also puts links to all shared libraries in another subdirectory.
+When \Prog{hpcprof} is applied to a measurement directory that contains program structure files,
+those program structure files will be used to help attribute performance measurements.
+
+When analyzing a CPU or GPU binary \Arg{b}, \Prog{hpcstruct} only writes its results to the file
+'basename(\Arg{b}).hpcstruct', and does not link to the binary.
 
 \Prog{hpcstruct} is designed primarily for highly optimized binaries created from
-C, C++, Fortran, and CUDA source code. Because \Prog{hpcstruct}'s algorithms exploit a
+C, C++, Fortran, CUDA, and HIP source code. Because \Prog{hpcstruct}'s algorithms exploit a
 binary's debugging information, for best results, binary should be compiled
 with standard debugging information or, at a minimum, line map information.
 Note: although a CPU or GPU binary may be optimized, it must also be
 compiled with line mappings for the results to be useful, e.g., normally using the -g
 flag when compiling CPU binaries. 
 
-For faster analysis of large binaries or many GPU binaries, we recommend using
-the -j option to employ multithreading. As many as 32 cores can be used profitably
-to analyze large CPU or GPU binaries in the measurements directory for a
-GPU-accelerated application.
+By default, \Prog{hpcstruct} is multi-threaded to <tnum>, which is set to the smaller
+of 16, or 1/2 the number of HW threads in the users CPUSET.  That number may be reduced
+to the -j argument value, but may not be increased by it.
+
+It uses <tnum> threads to analyze any binaries larget than the --psize default, and it
+runs <tnum> jobs in parallel to analyze up to <tnum> smaller CPU or GPU binaries.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -113,17 +116,19 @@ GPU-accelerated application.
 %%    use-binutils
 
 \begin{Description}
+\item[\Arg{measurement directory}]
+A measurement directory of an application, either GPU-accelerated or not.
+Applying \Prog{hpcstruct} to a measurement directory analyzes the application, all shared libraries referenced
+during the data-collection run, as well as any GPU binaries recorded 
+in the measurement directory during execution. 
+When a GPU-accelerated application runs on an Nvidia GPU, its 'cubin' GPU binaries are recorded into 
+HPCToolkit's measurement directory.
+
 \item[\Arg{binary}] File containing an executable or dynamically-linked shared library.
 Note that \Prog{hpcstruct} does not recover program structure for libraries that \Arg{binary} depends on.
 To recover that structure, run \Prog{hpcstruct} on each dynamically-linked shared library
-or relink your program with static versions of the libraries.
-
-\item[\Arg{measurement directory of GPU-accelerated application}] 
-A measurement directory of a GPU-accelerated application that employed NVIDIA GPUs.
-When a GPU-accelerated application runs on an NVIDIA GPU, its 'cubin' GPU binaries are recorded into 
-HPCToolkit's measurement directory.
-Applying \Prog{hpcstruct} to a measurement directory analyzes any GPU binaries recorded 
-in the measurement directory during execution. 
+or relink your program with static versions of the libraries.  Invoking \Prog{hpcstruct} on a binary
+is normally not used.
 
 \end{Description}
 
@@ -139,14 +144,19 @@ Print version information.
 \item[\Opt{-h}, \Opt{--help}]
 Print help message.
 
+\item[\Opt{-v (num)}, \Opt{--verbose (num)}]
+Generate progress messages to stderr, at verbosity level <num>. {1}
+
 \end{Description}
 
 \subsection{Options: Parallel Usage}
 \item[\OptArg{-j}{num}, \OptArg{--jobs}{num}]
-Use \Arg{num} threads for all phases in \Prog{hpcstruct}. {1}
+Use a maximum of \Arg{num} threads in \Prog{hpcstruct}.
+The number of threads actually used is the minimum of 1/2 the number of CPU is the current CPUSET,
+16, and num.
 
-\item[\OptArg{--gpu-size}{n}]
-Size (bytes) of a GPU binary that will cause \Prog{hpcstruct}
+\item[\OptArg{--psize}{n}]
+Size (bytes) of a binary that will cause \Prog{hpcstruct}
 to use \Arg{num} threads to analyze a binary in parallel.
 GPU binaries with fewer than \Arg{n} bytes will be analyzed
 concurrently, \Arg{num} at a time.  {100000000}
@@ -155,22 +165,18 @@ concurrently, \Arg{num} at a time.  {100000000}
 
 \begin{Description}
 
-% No longer exist.
-%
-% \item[\OptArg{--demangle-library}{libpath}]
-% Use a function from the library at \emph{libpath} to demangle C++ names.
-% By default the library function used is \Prog{__cxa_demangle}.
-% A different function may be specified with the \Prog{--demangle-function} option.
-% 
-% \item[\OptArg{--demangle-function}{funcname}]
-% Call the function named \emph{funcname} in the specified demangler library to demangle C++ names.
-% This option may only be given if the \Prog{--demangle-library} option is also given.
+\item[\OptArg{--cpu}{"yes"/"no"}]
+Analyze CPU binaries references in a measurements directory. {"yes"}
 
-\item[\OptArg{--gpucfg}{yes/no}]
-Compute loop nesting structure for GPU machine code.  Currently,
-this applies only to NVIDIA CUDA binaries (cubins). Loop nesting
-structure is only useful with instruction-level measurements
-collected using PC sampling. \{no\}
+\item[\OptArg{--gpu}{"yes"/"no"}]
+Analyze GPU binaries references in a measurements directory. {"yes"}
+
+\item[\OptArg{--gpucfg}{"yes"/"no"}]
+Compute loop nesting structure for GPU machine code.  By default, this option
+is set to "no" for Nvidia GPUs, but set to "yes" for other vendors.
+It is set for Nvidia CUDA binaries (cubins), because there is no
+efficient GPU provided by Nvidia to analyzer their binaries.
+{"no" for Nvidia GPUs; "yes" for others.}
 
 \item[\OptArg{-I}{path}, \OptArg{--include}{path}] 
 Use \Arg{path} when resolving source file names. 
@@ -190,30 +196,21 @@ such as might occur with a file system change.
 
 \end{Description}
 
-\subsection{Options: Output}
-
-\begin{Description}
-
-\item[\OptArg{-o}{file}, \OptArg{--output}{file}]
-Write results to \Arg{file}.  \{\Arg{basename(binary)}\File{.hpcstruct}\}
-
-% \item[\Opt{--compact}]
-% Generate compact output by eliminating extra white space.
-
-\end{Description}
-
 \subsection{Options for Developers:}
 
 \begin{Description}
-\item[\OptArg{--jobs-struct}{num}]
-Use num threads for the program structure analysis phase of \Prog{hpcstruct}.
+\item[\OptArg{--debug}{<n>}]
+Use debug level <n>.  {1}
 
-\item[\OptArg{--jobs-parse}{num}]
-Use num threads for the parse phase of \Prog{hpcstruct}.
-
-\item[\OptArg{--jobs-symtab}{num}]
-Use num threads for the symbol table analysis phase of \Prog{hpcstruct}.
-
+% \item[\OptArg{--jobs-struct}{num}]
+% Use num threads for the program structure analysis phase of \Prog{hpcstruct}.
+% 
+% \item[\OptArg{--jobs-parse}{num}]
+% Use num threads for the parse phase of \Prog{hpcstruct}.
+% 
+% \item[\OptArg{--jobs-symtab}{num}]
+% Use num threads for the symbol table analysis phase of \Prog{hpcstruct}.
+%
 \item[\Opt{--show-gaps}]
 Developer option to
 write a text file describing all the "gaps" found by \Prog{hpcstruct},
@@ -239,58 +236,44 @@ Assume we have used HPCToolkit to collect performance measurements for the (opti
 directory \File{hpctoolkit-sweep3d-measurements}. 
 Assume that \File{sweep3d} was compiled with debugging information using the -g compiler flag in addition to any
 optimization flags. 
-We wish to recover program structure in \File{sweep3d}
-for use with \HTMLhref{hpcprof.html}{\Cmd{hpcprof}{1}}.
-To do this, execute:
+To recover program structure in \File{sweep3d} and any shared libraries used during the run
+for use with \HTMLhref{hpcprof.html}{\Cmd{hpcprof}{1}}, execute:
 
 \begin{verbatim}
-    hpcstruct sweep3d
+    hpcstruct hpctoolkit-sweep3d-measurements
 \end{verbatim}
 
-By default, the output is placed in a file named \File{sweep3d.hpcstruct}. 
+The output is placed in a subdirectory of the measurements directory.
 
-To use the program structure file to help interpret performance measurements in \File{hpctoolkit-sweep3d-measurements}, 
-provide the program structure file to \Prog{hpcprof} using the -S option, as shown below:
+These program structure files are used to interpret performance measurements in \File{hpctoolkit-sweep3d-measurements}. 
 
 \begin{verbatim}
-    hpcprof -S sweep3d.hpcstruct hpctoolkit-sweep3d-measurements
+    hpcprof hpctoolkit-sweep3d-measurements
 \end{verbatim}
 
-Additional program structure files for any shared libraries used by \Prog{sweep3d} 
-can be passed to \Prog{hpcprof} using additional -S options. 
 
 \item
 Assume we have used HPCToolkit to collect performance measurements for the (optimized) GPU-accelerated 
-CPU binary \File{laghos}, which offloaded computation onto one or more NVIDIA GPUs.
+CPU binary \File{laghos}, which offloaded computation onto one or more Nvidia GPUs.
 Assume that performance measurement data for the application is in the measurement 
 directory \File{hpctoolkit-laghos-measurements}. 
-
 
 Assume that the CPU code for \File{laghos} was compiled with debugging information using the -g compiler flag in addition to any
 optimization flags and that the GPU code the application contains was compiled with line map information (-lineinfo).
 
-To recover program structure information for the laghost CPU binary, execute:
-
-\begin{verbatim}
-    hpcstruct laghos
-\end{verbatim}
-
-By default, the output is placed in a file named \File{laghos.hpcstruct}.
-
-To recover program structure information for the GPU binaries used by laghos, execute:
+To recover program structure information for the laghos CPU binary, and any shared libraries it used
+during the run, as well as any GPU binaries it used, execute:
 
 \begin{verbatim}
     hpcstruct hpctoolkit-laghos-measurements
 \end{verbatim}
 
-The measurement directory will be augmented with program structure information recovered for the GPU binaries.
-
-As shown below, one can provide the program structure files to \Prog{hpcprof} by passing the 
-CPU program structure file explicitly using the -S argument and passing the program structure files for the GPU binaries
-implicitly by passing the measurement directory. 
+The measurement directory will be augmented with program structure information recovered for the
+laghos binary, any shared libraries it used, and any GPU binaries it used.  All will be
+stored in subdirectories of the measurements directory.
 
 \begin{verbatim}
-    hpcprof -S laghos.hpcstruct hpctoolkit-laghos-measurements
+    hpcprof hpctoolkit-laghos-measurements
 \end{verbatim}
 
 \end{enumerate}
@@ -308,7 +291,7 @@ use the appropriate variant of \verb+-g+ for the following compilers:
 \item Intel compilers: \verb+-g -debug inline_debug_info+
 \item IBM compilers: \verb+-g -fstandalone-debug -qfulldebug -qfullpath+
 \item PGI compilers: \verb+-gopt+
-\item NVIDIA's nvcc: \\
+\item Nvidia's nvcc: \\
 ~~~~\verb+-lineinfo+ provides line mappings for optimized or unoptimized code\\
 ~~~~\verb+-G+ provides line mappings and inline information for unoptimized code
 \end{itemize}
