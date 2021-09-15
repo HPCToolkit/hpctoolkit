@@ -458,7 +458,7 @@ launch_server(void)
   struct {
     int sendfd[2], recvfd[2];
   } fds;
-  bool sampling_is_running;
+  bool sampling_is_running = false;
   pid_t pid;
 
   // already running
@@ -476,13 +476,15 @@ launch_server(void)
     return -1;
   }
 
-  // some sample sources need to be stopped in the parent, or else
-  // they cause problems in the child.
-  sampling_is_running = SAMPLE_SOURCES(started);
-  if (sampling_is_running) {
-    SAMPLE_SOURCES(stop);
+  if (hpcrun_is_initialized()){
+    // some sample sources need to be stopped in the parent, or else
+    // they cause problems in the child.
+    sampling_is_running = SAMPLE_SOURCES(started);
+    if (sampling_is_running) {
+      SAMPLE_SOURCES(stop);
+    }
   }
-
+  
   // For safety, we don't assume the direction of stack growth
   pid = auditor_exports->clone(hpcfnbounds_child,
     &server_stack[SERVER_STACK_SIZE * 1024], SIGCHLD, &fds);

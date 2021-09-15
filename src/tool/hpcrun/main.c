@@ -931,6 +931,8 @@ monitor_init_process(int *argc, char **argv, void* data)
     #ifndef HPCRUN_STATIC_LINK
       auditor_exports->mainlib_connected(get_saved_vdso_path());
     #endif
+  }else{
+    hpcrun_initializer_init();
   }
   
  fork_data_t* fork_data = (fork_data_t*) data;

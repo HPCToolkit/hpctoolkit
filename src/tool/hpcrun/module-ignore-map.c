@@ -108,7 +108,7 @@
 // where any GPU can indicate that its functions should be added to
 // the module ignore map when that type of GPU is being monitored.
 
-#define NUM_FNS ( sizeof(IGNORE_FNS) / sizeof(char *) )
+#define NUM_FNS 10 //( sizeof(IGNORE_FNS) / sizeof(char *) )
 
 
 
@@ -132,6 +132,7 @@ static const char *IGNORE_FNS[] = {
   "cuLaunchKernel",
   "cudaLaunchKernel",
   "cuptiActivityEnable",
+  "rocprofiler_iterate_info",
   "roctracer_set_properties",  // amd roctracer library
   "amd_dbgapi_initialize",     // amd debug library
   "hipKernelNameRefByPtr",     // amd hip runtime
