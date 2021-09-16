@@ -334,6 +334,35 @@ static void optimize_object_plt(struct link_map* map) {
   }
 }
 
+static CUresult (*real_cuLaunchKernel)(CUfunction f,
+  unsigned int gridDimX,
+  unsigned int gridDimY,
+  unsigned int gridDimZ,
+  unsigned int blockDimX,
+  unsigned int blockDimY,
+  unsigned int blockDimZ,
+  unsigned int sharedMemBytes,
+  CUstream hStream,
+  void **kernelParams,
+  void **extra);
+
+// Exports from libcuda
+static CUresult CUDAAPI auditor_cuLaunchKernel(CUfunction f,
+  unsigned int gridDimX,
+  unsigned int gridDimY,
+  unsigned int gridDimZ,
+  unsigned int blockDimX,
+  unsigned int blockDimY,
+  unsigned int blockDimZ,
+  unsigned int sharedMemBytes,
+  CUstream hStream,
+  void **kernelParams,
+  void **extra) {
+  printf("pre launch\n");
+  real_cuLaunchKernel(f, gridDimX, gridDimY, gridDimZ, blockDimX, blockDimY, blockDimZ, sharedMemBytes, hStream, kernelParams, extra);
+  printf("post launch\n");
+}
+
 uintptr_t la_symbind32(Elf32_Sym *sym, unsigned int ndx,
                        uintptr_t *refcook, uintptr_t *defcook,
                        unsigned int *flags, const char *symname) {
@@ -341,11 +370,17 @@ uintptr_t la_symbind32(Elf32_Sym *sym, unsigned int ndx,
     optimize_object_plt(state < state_connected ? (struct link_map*)*refcook : ((auditor_map_entry_t*)*refcook)->map);
   return sym->st_value;
 }
+
 uintptr_t la_symbind64(Elf64_Sym *sym, unsigned int ndx,
                        uintptr_t *refcook, uintptr_t *defcook,
                        unsigned int *flags, const char *symname) {
   if(*refcook != 0 && dl_runtime_resolver_ptr != 0)
     optimize_object_plt(state < state_connected ? (struct link_map*)*refcook : ((auditor_map_entry_t*)*refcook)->map);
+  if (strcmp(symname, "cuLaunchKernel") == 0) {
+    fprintf(stderr, "bind symbol %x %p\n", *flags, auditor_cuLaunchKernel);
+    real_cuLaunchKernel = sym->st_value;
+    return auditor_cuLaunchKernel;
+  }
   return sym->st_value;
 }
 

@@ -49,6 +49,7 @@
 
 #include <link.h>
 #include <stdbool.h>
+#include <cuda.h>
 
 #include "include/hpctoolkit-config.h"
 
