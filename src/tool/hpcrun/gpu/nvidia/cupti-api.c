@@ -1007,12 +1007,13 @@ cupti_api_node_get
 	if (gpu_op_placeholder_flags_is_set(flags, gpu_placeholder_type_kernel)) {
 		cupti_prev_prev_kernel_node = cupti_prev_kernel_node;
 		cupti_prev_kernel_node = api_node;
-		if (api_node == cupti_prev_kernel_node) {
-			// Detect a single loop-> fallback
-			api_node = cupti_correlation_callback(correlation_id);
-			// Shall we update or not?
-			//cupti_unwind_map_insert(unwind_key, api_node);
-		}
+		//if (api_node == cupti_prev_kernel_node) {
+		//	// Detect a single loop-> fallback
+		//	api_node = cupti_correlation_callback(correlation_id);
+    //  cupti_prev_kernel_node = api_node;
+		//	// Shall we update or not?
+		//	//cupti_unwind_map_insert(unwind_key, api_node);
+		//}
 	} else {
 		cupti_prev_api_node = api_node;
 	}
