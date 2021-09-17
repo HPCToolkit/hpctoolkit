@@ -100,6 +100,19 @@ typedef struct auditor_hooks_t {
   // previous modifications. If `additive` is true, the link map was being
   // added to directly before this call.
   void (*stable)(bool additive);
+
+  CUresult (*cuLaunchKernel)(
+    CUfunction f,
+    unsigned int gridDimX,
+    unsigned int gridDimY,
+    unsigned int gridDimZ,
+    unsigned int blockDimX,
+    unsigned int blockDimY,
+    unsigned int blockDimZ,
+    unsigned int sharedMemBytes,
+    CUstream hStream,
+    void **kernelParams,
+    void **extra);
 } auditor_hooks_t;
 
 typedef struct auditor_exports_t {
@@ -115,6 +128,18 @@ typedef struct auditor_exports_t {
   pid_t (*waitpid)(pid_t, int*, int);
   int (*clone)(int (*)(void*), void*, int, void*, ...);
   int (*execve)(const char*, char* const[], char* const[]);
+  CUresult (*cuLaunchKernel)(
+    CUfunction f,
+    unsigned int gridDimX,
+    unsigned int gridDimY,
+    unsigned int gridDimZ,
+    unsigned int blockDimX,
+    unsigned int blockDimY,
+    unsigned int blockDimZ,
+    unsigned int sharedMemBytes,
+    CUstream hStream,
+    void **kernelParams,
+    void **extra);
 } auditor_exports_t;
 
 // Called as early as possible in the process startup, before any static

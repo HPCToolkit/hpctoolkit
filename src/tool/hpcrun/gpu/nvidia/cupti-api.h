@@ -286,6 +286,14 @@ cupti_unload_callback_cuda
 );
 
 
+cct_node_t *
+cupti_unwind
+(
+ gpu_op_placeholder_flags_t flags,
+ long rsp, 
+ void *args
+);
+
 //******************************************************************************
 // finalizer and initializer
 //******************************************************************************

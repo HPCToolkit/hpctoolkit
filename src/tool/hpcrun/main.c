@@ -147,6 +147,8 @@
 
 #include <loadmap.h>
 
+#include "gpu/nvidia/cuda-api.h"
+
 // The auditor only applies to the dynamic case.
 #ifndef HPCRUN_STATIC_LINK
 #include "audit/audit-api.h"
@@ -1695,6 +1697,7 @@ MONITOR_EXT_WRAP_NAME(pthread_cond_broadcast)(pthread_cond_t* cond)
 
 
 #ifndef HPCRUN_STATIC_LINK
+const auditor_exports_t* auditor_exports;
 
 static void auditor_open(auditor_map_entry_t* entry) {
   hpcrun_safe_enter();
@@ -1721,13 +1724,31 @@ static void auditor_init() {
     monitor_initialize();
 }
 
-const auditor_exports_t* auditor_exports;
+// Exports from libcuda
+static CUresult CUDAAPI auditor_cuLaunchKernel(
+  CUfunction f,
+  unsigned int gridDimX,
+  unsigned int gridDimY,
+  unsigned int gridDimZ,
+  unsigned int blockDimX,
+  unsigned int blockDimY,
+  unsigned int blockDimZ,
+  unsigned int sharedMemBytes,
+  CUstream hStream,
+  void **kernelParams,
+  void **extra) {
+  cuda_api_enter_callback((void *)f, gpu_placeholder_type_kernel);
+  auditor_exports->cuLaunchKernel(f, gridDimX, gridDimY, gridDimZ, blockDimX, blockDimY, blockDimZ, sharedMemBytes, hStream, kernelParams, extra);
+  cuda_api_exit_callback((void *)f, gpu_placeholder_type_kernel);
+}
+
 void hpcrun_auditor_attach(const auditor_exports_t* exports, auditor_hooks_t* hooks) {
   auditor_exports = exports;
   hooks->initialize = auditor_init;
   hooks->open = auditor_open;
   hooks->close = auditor_close;
   hooks->stable = auditor_stable;
+  hooks->cuLaunchKernel = auditor_cuLaunchKernel;
 }
 
 #endif /* ! HPCRUN_STATIC_LINK */

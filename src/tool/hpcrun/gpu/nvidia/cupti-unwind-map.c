@@ -330,12 +330,13 @@ splay_unwind_free_helper
 #undef typed_splay_node
 #define typed_splay_node(unwind) cupti_unwind_map_entry_t
 
-typedef struct cupti_unwind_map_entry_t {
-  struct cupti_unwind_map_entry_t *left;
-  struct cupti_unwind_map_entry_t *right;
+struct cupti_unwind_map_entry_s {
+  struct cupti_unwind_map_entry_s *left;
+  struct cupti_unwind_map_entry_s *right;
   unwind_key_t key;
   cct_node_t *cct_node;
-} cupti_unwind_map_entry_t;
+  int backoff;  // base-4 based backoff policy, if failed backoff = 1, otherwise backoff += 1
+};
 
 static __thread cupti_unwind_map_entry_t *map_root = NULL;
 static __thread cupti_unwind_map_entry_t *free_list = NULL;
@@ -355,6 +356,7 @@ cupti_unwind_map_new
 
   entry->key = key;
   entry->cct_node = cct_node;
+  entry->backoff = 1;
 
   return entry;
 }
@@ -384,17 +386,55 @@ cupti_unwind_map_insert
 }
 
 
-cct_node_t *
-cupti_unwind_map_cct_node_lookup
+cupti_unwind_map_entry_t *
+cupti_unwind_map_lookup
 (
  unwind_key_t key
 )
 {
   cupti_unwind_map_entry_t *entry = st_lookup(&map_root, key);
-
-  if (entry == NULL) {
-    return NULL; 
-  }
   
+  return entry;
+}
+
+
+cct_node_t *
+cupti_unwind_map_entry_cct_node_get
+(
+ cupti_unwind_map_entry_t *entry
+)
+{
   return entry->cct_node;
+}
+
+
+int
+cupti_unwind_map_entry_backoff_get
+(
+ cupti_unwind_map_entry_t *entry
+)
+{
+  return entry->backoff;
+}
+
+
+void
+cupti_unwind_map_entry_backoff_update
+(
+ cupti_unwind_map_entry_t *entry,
+ int backoff
+)
+{
+  entry->backoff = backoff;
+}
+
+
+void
+cupti_unwind_map_entry_cct_node_update
+(
+ cupti_unwind_map_entry_t *entry,
+ cct_node_t *cct_node
+)
+{
+  entry->cct_node = cct_node;
 }

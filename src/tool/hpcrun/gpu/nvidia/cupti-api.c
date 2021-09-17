@@ -184,7 +184,6 @@ typedef CUptiResult (*cupti_activity_enable_t)
 
 typedef cct_node_t *(*cupti_correlation_callback_t)
 (
- uint64_t id
 );
 
 
@@ -226,6 +225,10 @@ cupti_correlation_callback_dummy
 //******************************************************************************
 // static data
 //******************************************************************************
+
+// Do not backoff after 4 trials
+const static int CUPTI_BACKOFF_THRESHOLD = 4;
+const static int CUPTI_BACKOFF_BASE = 4;
 
 static spinlock_t files_lock = SPINLOCK_UNLOCKED;
 
@@ -968,6 +971,60 @@ cupti_callback_init
 // Runtime and driver API callbacks
 //******************************************************************************
 
+cct_node_t *
+cupti_unwind
+(
+ gpu_op_placeholder_flags_t flags,
+ long rsp, 
+ void *args
+)
+{
+  unwind_key_t unwind_key;
+  unwind_key.stack_length = rsp;
+  unwind_key.prev_kernel = cupti_prev_kernel_node;
+  unwind_key.prev_prev_kernel = cupti_prev_prev_kernel_node;
+	unwind_key.prev_api = cupti_prev_api_node;
+
+  if (gpu_op_placeholder_flags_is_set(flags, gpu_placeholder_type_kernel)) {
+    CUfunction function_ptr = (CUfunction)args;
+    unwind_key.function_id = cupti_func_ip_resolve(function_ptr);
+  } else {
+    unwind_key.function_id.lm_id = 0;
+    unwind_key.function_id.lm_ip = flags;
+  }
+
+  cupti_unwind_map_entry_t *entry = cupti_unwind_map_lookup(unwind_key);
+
+  // If not matched, unwind and memoize.
+  // If memoized, generated a random number and see if it falls into the 
+  // backoff range. If yes, unwind the cct and check if the two api nodes
+  // match, if not, backoff is descreased. Otherwise, backoff is increased. 
+  cct_node_t *api_node = NULL;
+  if (entry == NULL) {
+    api_node = cupti_correlation_callback();
+		cupti_unwind_map_insert(unwind_key, api_node);
+  } else {
+    api_node = cupti_unwind_map_entry_cct_node_get(entry);
+    int backoff = cupti_unwind_map_entry_backoff_get(entry);
+    if (backoff < CUPTI_BACKOFF_THRESHOLD) {
+      int threshold = pow(CUPTI_BACKOFF_BASE, backoff);
+      int left = rand() % threshold;
+      if (left == 0) {
+        cct_node_t *actual_node = cupti_correlation_callback();
+        if (actual_node != api_node) {
+          cupti_unwind_map_entry_cct_node_update(entry, actual_node);
+          cupti_unwind_map_entry_backoff_update(entry, 0);
+        } else {
+          cupti_unwind_map_entry_backoff_update(entry, backoff + 1);
+        }
+      }
+      api_node = cupti_unwind_map_entry_cct_node_get(entry);
+    }
+  }
+
+  return api_node;
+}
+
 static cct_node_t *
 cupti_api_node_get
 (
@@ -979,47 +1036,25 @@ cupti_api_node_get
   const CUpti_CallbackData *cd = (const CUpti_CallbackData *) cb_info;
   cct_node_t *api_node = NULL;
 
-  // 1. Query key for the unwind map
-  register long rsp asm("rsp");
-
-  unwind_key_t unwind_key;
-  unwind_key.stack_length = rsp;
-  unwind_key.prev_kernel = cupti_prev_kernel_node;
-  unwind_key.prev_prev_kernel = cupti_prev_prev_kernel_node;
-	unwind_key.prev_api = cupti_prev_api_node;
-
-  if (gpu_op_placeholder_flags_is_set(flags, gpu_placeholder_type_kernel)) {
-    CUfunction function_ptr = *(CUfunction *)(cd->functionParams);
-    unwind_key.function_id = cupti_func_ip_resolve(function_ptr);
+  if (cuda_api_node_get() != NULL) {
+    // Unwind already at audit wrappers
+    api_node = cuda_api_node_get();
   } else {
-    unwind_key.function_id.lm_id = 0;
-    unwind_key.function_id.lm_ip = flags;
+    // Query key for the unwind map
+    register long rsp asm("rsp");
+    api_node = cupti_unwind(flags, rsp, *(CUfunction *)(cd->functionParams));
   }
 
-  api_node = cupti_unwind_map_cct_node_lookup(unwind_key);
-  
-  // 3. If not matched, unwind and memoize
-  if (api_node == NULL) {
-    api_node = cupti_correlation_callback(correlation_id);
-		cupti_unwind_map_insert(unwind_key, api_node);
-  }
-
+  // Update prev indicators
 	if (gpu_op_placeholder_flags_is_set(flags, gpu_placeholder_type_kernel)) {
 		cupti_prev_prev_kernel_node = cupti_prev_kernel_node;
 		cupti_prev_kernel_node = api_node;
-		//if (api_node == cupti_prev_kernel_node) {
-		//	// Detect a single loop-> fallback
-		//	api_node = cupti_correlation_callback(correlation_id);
-    //  cupti_prev_kernel_node = api_node;
-		//	// Shall we update or not?
-		//	//cupti_unwind_map_insert(unwind_key, api_node);
-		//}
 	} else {
 		cupti_prev_api_node = api_node;
 	}
 
 #ifdef NEW_CUPTI_ANALYSIS
-  cct_node_t *actual_node = cupti_correlation_callback(correlation_id);
+  cct_node_t *actual_node = cupti_correlation_callback();
   total_unwinds++;
   if (actual_node == api_node) {
     correct_unwinds++; 
@@ -1469,7 +1504,7 @@ cupti_subscriber_callback_cuda
         cct_node_t *api_node = cuda_api_node_get();
         // cct_node_t *api_node = NULL;
         if (api_node == NULL) {
-          api_node = cupti_correlation_callback(correlation_id);
+          api_node = cupti_correlation_callback();
         }
 
         gpu_op_ccts_t gpu_op_ccts;
@@ -1633,7 +1668,7 @@ cupti_subscriber_callback_cuda
         cct_node_t *api_node = cuda_api_node_get();
         //cct_node_t *api_node = NULL;
         if (api_node == NULL) {
-          api_node = cupti_correlation_callback(correlation_id);
+          api_node = cupti_correlation_callback();
         }
 
         gpu_op_ccts_t gpu_op_ccts;

@@ -62,6 +62,8 @@
 #include <cuda_runtime.h>
 #include <stdbool.h>
 
+#include "../gpu-op-placeholders.h"
+
 #define HPCTOOLKIT_CUDA_SUCCESS 0
 #define HPCTOOLKIT_CUDA_FAIL -1
 
@@ -159,23 +161,21 @@ cuda_api_internal_get
 void
 cuda_api_enter_callback
 (
+ void *args,
+ gpu_op_placeholder_flags_t flags
 );
 
 
 void
 cuda_api_exit_callback
 (
+ void *args,
+ gpu_op_placeholder_flags_t flags
 );
 
 
 cct_node_t *
 cuda_api_node_get
-(
-);
-
-
-cct_node_t *
-cuda_prev_api_node_get
 (
 );
 

@@ -1001,10 +1001,10 @@ if OPT_ENABLE_NEW_CUPTI
   libhpcrun_o_SOURCES   += $(MY_NEW_CUPTI_FILES)
   libhpcrun_la_CFLAGS += -DNEW_CUPTI
 
-pkglib_LTLIBRARIES += libhpcrun_cuda.la
-libhpcrun_cuda_la_CPPFLAGS  = $(CUPTI_INC_FLGS)
-libhpcrun_cuda_la_SOURCES   = gpu/nvidia/cuda-api-wrappers.c
-libhpcrun_cuda_la_LDFLAGS   = -Wl,-Bsymbolic
+#pkglib_LTLIBRARIES += libhpcrun_cuda.la
+#libhpcrun_cuda_la_CPPFLAGS  = $(CUPTI_INC_FLGS)
+#libhpcrun_cuda_la_SOURCES   = gpu/nvidia/cuda-api-wrappers.c
+#libhpcrun_cuda_la_LDFLAGS   = -Wl,-Bsymbolic
 endif
 
 if OPT_ENABLE_NEW_CUPTI_ANALYSIS

@@ -363,6 +363,9 @@ METHOD_FN(process_event_list, int lush_metrics)
   hpcrun_extract_ev_thresh(event, sizeof(nvidia_name), nvidia_name,
     &frequency, frequency_default);
 
+  // Init random number generator
+  srand(time(0));
+
   if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA)) {
     trace_frequency =
       (frequency == frequency_default) ? trace_frequency_default : frequency;

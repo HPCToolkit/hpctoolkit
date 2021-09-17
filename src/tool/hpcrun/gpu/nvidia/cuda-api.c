@@ -64,7 +64,6 @@
 #include <cuda_runtime.h>
 
 
-
 //*****************************************************************************
 // local include files
 //*****************************************************************************
@@ -76,7 +75,8 @@
 #include <hpcrun/cct/cct.h>
 
 #include "cuda-api.h"
-
+#include "cupti-api.h"
+#include "cupti-unwind-map.h"
 
 //*****************************************************************************
 // macros
@@ -138,7 +138,6 @@
 
 static __thread bool api_internal = false;
 static __thread cct_node_t *cuda_api_node = NULL;
-static __thread cct_node_t *cuda_prev_api_node = NULL;
 
 //******************************************************************************
 // static data
@@ -557,42 +556,24 @@ cuda_api_internal_get
 void
 cuda_api_enter_callback
 (
+ void *args,
+ gpu_op_placeholder_flags_t flags
 )
 {
-  if (cuda_api_node != NULL) {
-    return;
-  }
+  // 1. Query key for the unwind map
+  volatile register long rsp asm("rsp");
 
-  hpcrun_metricVal_t zero_metric_incr = {.i = 0};
-  int zero_metric_id = 0; // nothing to see here
-
-  ucontext_t uc;
-  getcontext(&uc); // current context, where unwind will begin 
-
-  // prevent self a sample interrupt while gathering calling context
-  hpcrun_safe_enter(); 
-
-  cct_node_t *node = 
-    hpcrun_sample_callpath(&uc, zero_metric_id,
-			   zero_metric_incr, 0, 1, NULL).sample_node;
-
-  hpcrun_safe_exit();
-
-  cct_node_t *parent = hpcrun_cct_parent(node);
-  if (parent != NULL) {
-    cuda_api_node = parent;
-  } else {
-    cuda_api_node = node;
-  }
+  cuda_api_node = cupti_unwind(flags, rsp, args);
 }
 
 
 void
 cuda_api_exit_callback
 (
+ void *args,
+ gpu_op_placeholder_flags_t flags
 )
 {
-  cuda_prev_api_node = cuda_api_node;
   cuda_api_node = NULL;
 }
 
@@ -603,15 +584,6 @@ cuda_api_node_get
 )
 {
   return cuda_api_node;
-}
-
-
-cct_node_t *
-cuda_prev_api_node_get
-(
-)
-{
-  return cuda_prev_api_node;
 }
 
 
