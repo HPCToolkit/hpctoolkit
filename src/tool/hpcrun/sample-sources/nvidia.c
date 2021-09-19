@@ -162,7 +162,8 @@ data_motion_implicit_activities[] = {
 CUpti_ActivityKind
 kernel_invocation_activities[] = {
   CUPTI_ACTIVITY_KIND_CONCURRENT_KERNEL,
-  CUPTI_ACTIVITY_KIND_SYNCHRONIZATION,
+  // CUPTI currently provides host side time stamps for synchronization.
+  //CUPTI_ACTIVITY_KIND_SYNCHRONIZATION,
   CUPTI_ACTIVITY_KIND_INVALID
 };
 
