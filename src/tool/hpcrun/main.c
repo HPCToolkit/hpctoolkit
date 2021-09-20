@@ -1738,8 +1738,94 @@ static CUresult CUDAAPI auditor_cuLaunchKernel(
   void **kernelParams,
   void **extra) {
   cuda_api_enter_callback((void *)f, gpu_placeholder_type_kernel);
-  auditor_exports->cuLaunchKernel(f, gridDimX, gridDimY, gridDimZ, blockDimX, blockDimY, blockDimZ, sharedMemBytes, hStream, kernelParams, extra);
+  CUresult result = auditor_exports->cuLaunchKernel(f, gridDimX, gridDimY, gridDimZ, blockDimX, blockDimY, blockDimZ,
+    sharedMemBytes, hStream, kernelParams, extra);
   cuda_api_exit_callback((void *)f, gpu_placeholder_type_kernel);
+  return result;
+}
+
+static CUresult CUDAAPI auditor_cuMemcpy(
+  CUdeviceptr dst,
+  CUdeviceptr src,
+  size_t ByteCount) {
+  cuda_api_enter_callback(NULL, gpu_placeholder_type_copy);
+  CUresult result = auditor_exports->cuMemcpy(dst, src, ByteCount);
+  cuda_api_exit_callback(NULL, gpu_placeholder_type_copy);
+  return result;
+}
+
+static CUresult CUDAAPI auditor_cuMemcpyAsync(
+  CUdeviceptr dst,
+  CUdeviceptr src,
+  size_t ByteCount,
+  CUstream hStream) {
+  cuda_api_enter_callback(NULL, gpu_placeholder_type_copy);
+  CUresult result = auditor_exports->cuMemcpyAsync(dst, src, ByteCount, hStream);
+  cuda_api_exit_callback(NULL, gpu_placeholder_type_copy);
+  return result;
+}
+
+static CUresult CUDAAPI auditor_cuMemcpyDtoH(
+  void* dstHost,
+  CUdeviceptr srcDevice,
+  size_t ByteCount) {
+  cuda_api_enter_callback(NULL, gpu_placeholder_type_copyout);
+  CUresult result = auditor_exports->cuMemcpyDtoH(dstHost, srcDevice, ByteCount);
+  cuda_api_exit_callback(NULL, gpu_placeholder_type_copyout);
+  return result;
+}
+
+static CUresult CUDAAPI auditor_cuMemcpyDtoHAsync(
+  void* dstHost,
+  CUdeviceptr srcDevice,
+  size_t ByteCount,
+  CUstream hStream) {
+  cuda_api_enter_callback(NULL, gpu_placeholder_type_copyout);
+  CUresult result = auditor_exports->cuMemcpyDtoHAsync(dstHost, srcDevice, ByteCount, hStream);
+  cuda_api_exit_callback(NULL, gpu_placeholder_type_copyout);
+  return result;
+}
+
+static CUresult CUDAAPI auditor_cuMemcpyDtoD(
+  CUdeviceptr dstDevice,
+  CUdeviceptr srcDevice,
+  size_t ByteCount) {
+  cuda_api_enter_callback(NULL, gpu_placeholder_type_copy);
+  CUresult result = auditor_exports->cuMemcpyDtoD(dstDevice, srcDevice, ByteCount);
+  cuda_api_exit_callback(NULL, gpu_placeholder_type_copy);
+  return result;
+}
+
+static CUresult CUDAAPI auditor_cuMemcpyDtoDAsync(
+  CUdeviceptr dstDevice,
+  CUdeviceptr srcDevice,
+  size_t ByteCount,
+  CUstream hStream) {
+  cuda_api_enter_callback(NULL, gpu_placeholder_type_copy);
+  CUresult result = auditor_exports->cuMemcpyDtoDAsync(dstDevice, srcDevice, ByteCount, hStream);
+  cuda_api_exit_callback(NULL, gpu_placeholder_type_copy);
+  return result;
+}
+
+static CUresult CUDAAPI auditor_cuMemcpyHtoD(
+  CUdeviceptr dstDevice,
+  const void* srcHost,
+  size_t ByteCount) {
+  cuda_api_enter_callback(NULL, gpu_placeholder_type_copyin);
+  CUresult result = auditor_exports->cuMemcpyHtoD(dstDevice, srcHost, ByteCount);
+  cuda_api_exit_callback(NULL, gpu_placeholder_type_copyin);
+  return result;
+}
+
+static CUresult CUDAAPI auditor_cuMemcpyHtoDAsync(
+  CUdeviceptr dstDevice,
+  const void* srcHost,
+  size_t ByteCount,
+  CUstream hStream) {
+  cuda_api_enter_callback(NULL, gpu_placeholder_type_copyin);
+  CUresult result = auditor_exports->cuMemcpyHtoDAsync(dstDevice, srcHost, ByteCount, hStream);
+  cuda_api_exit_callback(NULL, gpu_placeholder_type_copyin);
+  return result;
 }
 
 void hpcrun_auditor_attach(const auditor_exports_t* exports, auditor_hooks_t* hooks) {
@@ -1749,6 +1835,13 @@ void hpcrun_auditor_attach(const auditor_exports_t* exports, auditor_hooks_t* ho
   hooks->close = auditor_close;
   hooks->stable = auditor_stable;
   hooks->cuLaunchKernel = auditor_cuLaunchKernel;
+  //hooks->cuMemcpy = auditor_cuMemcpy;
+  //hooks->cuMemcpyDtoH = auditor_cuMemcpyDtoH;
+  //hooks->cuMemcpyDtoHAsync = auditor_cuMemcpyAsync;
+  //hooks->cuMemcpyDtoD = auditor_cuMemcpyDtoD;
+  //hooks->cuMemcpyDtoDAsync = auditor_cuMemcpyDtoDAsync;
+  //hooks->cuMemcpyHtoD = auditor_cuMemcpyHtoD;
+  //hooks->cuMemcpyHtoDAsync = auditor_cuMemcpyHtoDAsync;
 }
 
 #endif /* ! HPCRUN_STATIC_LINK */

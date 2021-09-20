@@ -29,7 +29,8 @@ static bool gpu_range_enable_status = false;
 static bool
 gpu_range_callback_default
 (
- uint64_t correlation_id
+ uint64_t correlation_id,
+ void *args
 )
 {
   return false;
@@ -108,14 +109,14 @@ gpu_range_id_get
 uint64_t
 gpu_range_enter
 (
- void
+ cct_node_t *api_node
 )
 {
   if (!gpu_range_enabled()) {
     return GPU_RANGE_DEFAULT_RANGE;
   } 
 
-  if (!gpu_range_pre_enter_callback(thread_correlation_id)) {
+  if (!gpu_range_pre_enter_callback(thread_correlation_id, api_node)) {
     return GPU_RANGE_DEFAULT_RANGE;
   }
 
@@ -123,7 +124,7 @@ gpu_range_enter
 
   thread_correlation_id = gpu_correlation_id();
 
-  bool is_lead = gpu_range_post_enter_callback(thread_correlation_id);
+  bool is_lead = gpu_range_post_enter_callback(thread_correlation_id, api_node);
   if (is_lead) {
     // If lead is set, don't do anything
     while (atomic_load(&lead_correlation_id) != 0) {}
@@ -160,7 +161,7 @@ gpu_range_exit
     return;
   } 
 
-  if (!gpu_range_pre_exit_callback(thread_correlation_id)) {
+  if (!gpu_range_pre_exit_callback(thread_correlation_id, NULL)) {
     return;
   }
 
@@ -169,7 +170,7 @@ gpu_range_exit
   atomic_fetch_add(&correlation_id_done, 1);
   while (cur_lead_correlation_id != 0 && cur_lead_correlation_id != atomic_load(&correlation_id_done));
 
-  gpu_range_post_exit_callback(thread_correlation_id);
+  gpu_range_post_exit_callback(thread_correlation_id, NULL);
 
   // Unleash wait operations in range enter
   if (gpu_range_is_lead()) {

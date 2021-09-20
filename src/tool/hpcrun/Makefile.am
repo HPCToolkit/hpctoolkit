@@ -524,7 +524,8 @@ MY_NEW_CUPTI_FILES = gpu/nvidia/cupti-pc-sampling-api.c \
 	gpu/nvidia/cupti-range.c \
 	gpu/nvidia/cupti-unwind-map.c \
 	gpu/nvidia/cubin-crc-map.c \
-	gpu/nvidia/cupti-cct-map.c
+	gpu/nvidia/cupti-cct-map.c \
+	gpu/nvidia/cupti-cct-set.c
 endif
 
 if OPT_ENABLE_OPENCL

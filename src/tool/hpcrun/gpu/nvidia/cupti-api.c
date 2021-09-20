@@ -1025,6 +1025,7 @@ cupti_unwind
   return api_node;
 }
 
+
 static cct_node_t *
 cupti_api_node_get
 (
@@ -1034,12 +1035,9 @@ cupti_api_node_get
 )
 {
   const CUpti_CallbackData *cd = (const CUpti_CallbackData *) cb_info;
-  cct_node_t *api_node = NULL;
+  cct_node_t *api_node = cuda_api_node_get();
 
-  if (cuda_api_node_get() != NULL) {
-    // Unwind already at audit wrappers
-    api_node = cuda_api_node_get();
-  } else {
+  if (api_node == NULL) {
     // Query key for the unwind map
     register long rsp asm("rsp");
     api_node = cupti_unwind(flags, rsp, *(CUfunction *)(cd->functionParams));
@@ -1110,8 +1108,6 @@ cupti_api_enter_callback_cuda
 {
   cupti_callback_init();
 
-  gpu_range_enter();
-
   // In the default mode, range_id is always be zero
   uint32_t range_id = gpu_range_id_get();
 
@@ -1135,6 +1131,8 @@ cupti_api_enter_callback_cuda
   // Generate a notification entry
   uint64_t cpu_submit_time = hpcrun_nanotime();
   gpu_correlation_channel_range_produce(correlation_id, &gpu_op_ccts, cpu_submit_time, range_id);
+
+  gpu_range_enter(api_node);
 
   return gpu_op_ccts;
 }

@@ -20,6 +20,8 @@ static uint32_t cupti_range_interval = CUPTI_RANGE_DEFAULT_INTERVAL;
 static bool
 cupti_range_pre_enter_callback
 (
+ uint64_t correlation_id,
+ void *args
 )
 {
   return cupti_kernel_ph_get() != NULL && cupti_range_mode != CUPTI_RANGE_MODE_NONE;
@@ -57,7 +59,8 @@ cupti_range_mode_even_is_enter
 static bool
 cupti_range_post_enter_callback
 (
- uint64_t correlation_id
+ uint64_t correlation_id,
+ void *args
 )
 {
   CUcontext context;
@@ -85,7 +88,8 @@ cupti_range_post_enter_callback
 static bool
 cupti_range_pre_exit_callback
 (
- uint64_t correlation_id
+ uint64_t correlation_id,
+ void *args
 )
 {
   return cupti_kernel_ph_get() != NULL;
@@ -95,7 +99,8 @@ cupti_range_pre_exit_callback
 static bool
 cupti_range_post_exit_callback
 (
- uint64_t correlation_id
+ uint64_t correlation_id,
+ void *args
 )
 {
   if (cupti_range_mode == CUPTI_RANGE_MODE_NONE) {

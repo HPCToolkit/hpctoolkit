@@ -16,7 +16,8 @@
 // Range enter/exit callbacks
 typedef bool (*gpu_range_callback_t)
 (
- uint64_t correlation_id
+ uint64_t correlation_id,
+ void *args
 );
 
 // Writes a range profile to disk
@@ -53,7 +54,7 @@ gpu_range_correlation_id_get
 uint64_t
 gpu_range_enter
 (
- void
+ cct_node_t *api_node
 );
 
 // Exits a GPU range and invokes gpu_range_exit_callback

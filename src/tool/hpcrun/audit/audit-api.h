@@ -113,6 +113,50 @@ typedef struct auditor_hooks_t {
     CUstream hStream,
     void **kernelParams,
     void **extra);
+
+  CUresult (*cuMemcpy)(
+    CUdeviceptr dst,
+    CUdeviceptr src,
+    size_t ByteCount);
+
+  CUresult (*cuMemcpyAsync)(
+    CUdeviceptr dst,
+    CUdeviceptr src,
+    size_t ByteCount,
+    CUstream hStream);
+
+  CUresult (*cuMemcpyDtoH)(
+    void* dstHost,
+    CUdeviceptr srcDevice,
+    size_t ByteCount);
+
+  CUresult (*cuMemcpyDtoHAsync)(
+    void* dstHost,
+    CUdeviceptr srcDevice,
+    size_t ByteCount,
+    CUstream hStream);
+
+  CUresult (*cuMemcpyDtoD)(
+    CUdeviceptr dstDevice,
+    CUdeviceptr srcDevice,
+    size_t ByteCount);
+
+  CUresult (*cuMemcpyDtoDAsync)(
+    CUdeviceptr dstDevice,
+    CUdeviceptr srcDevice,
+    size_t ByteCount,
+    CUstream hStream);
+
+  CUresult (*cuMemcpyHtoD)(
+    CUdeviceptr dstDevice,
+    const void* srcHost,
+    size_t ByteCount);
+
+  CUresult (*cuMemcpyHtoDAsync)(
+    CUdeviceptr dstDevice,
+    const void* srcHost,
+    size_t ByteCount,
+    CUstream hStream);
 } auditor_hooks_t;
 
 typedef struct auditor_exports_t {
@@ -128,6 +172,7 @@ typedef struct auditor_exports_t {
   pid_t (*waitpid)(pid_t, int*, int);
   int (*clone)(int (*)(void*), void*, int, void*, ...);
   int (*execve)(const char*, char* const[], char* const[]);
+
   CUresult (*cuLaunchKernel)(
     CUfunction f,
     unsigned int gridDimX,
@@ -140,6 +185,50 @@ typedef struct auditor_exports_t {
     CUstream hStream,
     void **kernelParams,
     void **extra);
+
+  CUresult (*cuMemcpy)(
+    CUdeviceptr dst,
+    CUdeviceptr src,
+    size_t ByteCount);
+
+  CUresult (*cuMemcpyAsync)(
+    CUdeviceptr dst,
+    CUdeviceptr src,
+    size_t ByteCount,
+    CUstream hStream);
+
+  CUresult (*cuMemcpyDtoH)(
+    void* dstHost,
+    CUdeviceptr srcDevice,
+    size_t ByteCount);
+
+  CUresult (*cuMemcpyDtoHAsync)(
+    void* dstHost,
+    CUdeviceptr srcDevice,
+    size_t ByteCount,
+    CUstream hStream);
+
+  CUresult (*cuMemcpyDtoD)(
+    CUdeviceptr dstDevice,
+    CUdeviceptr srcDevice,
+    size_t ByteCount);
+
+  CUresult (*cuMemcpyDtoDAsync)(
+    CUdeviceptr dstDevice,
+    CUdeviceptr srcDevice,
+    size_t ByteCount,
+    CUstream hStream);
+
+  CUresult (*cuMemcpyHtoD)(
+    CUdeviceptr dstDevice,
+    const void* srcHost,
+    size_t ByteCount);
+
+  CUresult (*cuMemcpyHtoDAsync)(
+    CUdeviceptr dstDevice,
+    const void* srcHost,
+    size_t ByteCount,
+    CUstream hStream);
 } auditor_exports_t;
 
 // Called as early as possible in the process startup, before any static
