@@ -216,7 +216,7 @@ typedef enum cupti_activities_flags {
   CUPTI_KERNEL_EXECUTION     = 8,
   CUPTI_DRIVER               = 16,
   CUPTI_RUNTIME	             = 32,
-  CUPTI_OVERHEAD	     = 64
+  CUPTI_OVERHEAD	           = 64
 } cupti_activities_flags_t;
 
 

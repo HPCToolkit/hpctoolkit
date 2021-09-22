@@ -722,8 +722,11 @@ cupti_pc_sampling_range_context_collect
  CUcontext context
 )
 {
-  cupti_pc_sampling_stop(context);
-	pc_sampling_collect(range_id, NULL, context);
+  if (cupti_pc_sampling_active()) {
+    cupti_pc_sampling_stop(context);
+  }
+
+  pc_sampling_collect(range_id, NULL, context);
 }
 
 

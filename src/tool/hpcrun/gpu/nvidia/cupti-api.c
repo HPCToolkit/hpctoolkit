@@ -1263,16 +1263,18 @@ cupti_runtime_api_subscriber_callback_cuda_kernel
   const CUpti_CallbackData *cd = (const CUpti_CallbackData *)cb_info;
   if (cd->callbackSite == CUPTI_API_ENTER) {
     // Enter a CUDA runtime api
+    // Runtime and driver APIs use different correlation ids.
+    // For GPU kernels, we memoize a runtime API's correlation id and use it for its driver APIs
     uint64_t correlation_id = gpu_correlation_id();
     cupti_correlation_id_push(correlation_id);
     cupti_runtime_correlation_id_set(correlation_id);
 
     cupti_runtime_api_flag_set();
   } else {
+    // Exit an CUDA runtime api
     cupti_correlation_id_pop();
     cupti_runtime_correlation_id_set(0);
 
-    // Exit an CUDA runtime api
     cupti_runtime_api_flag_unset();
     cupti_kernel_ph_set(NULL);
     cupti_trace_ph_set(NULL);
