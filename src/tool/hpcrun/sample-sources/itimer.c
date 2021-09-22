@@ -501,7 +501,11 @@ METHOD_FN(process_event_list, int lush_metrics)
   }
 
   // extract event threshold
-  hpcrun_extract_ev_thresh(event, sizeof(name), name, &period, DEFAULT_PERIOD);
+  if (hpcrun_extract_ev_thresh(event, sizeof(name), name, &period, DEFAULT_PERIOD) == THRESH_FREQ) {
+    // if the event is specified with a frequency,
+    // we convert frequency to period
+    period = (long) (1000000.0 / period);
+  }
 
   // store event threshold
   METHOD_CALL(self, store_event, ITIMER_EVENT, period);
@@ -667,9 +671,11 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
   // get the current time for the appropriate clock
   uint64_t cur_time_us = 0;
   int ret;
+  uint64_t sample_interval = 0;
 
   if (use_cputime) {
     ret = time_getTimeCPU(&cur_time_us);
+    sample_interval = period * 1000;
   } else {
     ret = time_getTimeReal(&cur_time_us);
   }
@@ -685,8 +691,16 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
   hpcrun_metricVal_t metric_delta = {.r = metric_incr / 1.0e6}; 
 
   int metric_id = hpcrun_event2metric(self, ITIMER_EVENT);
+
+  sampling_info_t info = {
+    .sample_clock = 0,
+    .sample_data = NULL,
+    .sampling_period = sample_interval,
+    .is_time_based_metric = 1
+  };
+
   sample_val_t sv = hpcrun_sample_callpath(context, metric_id, metric_delta,
-					    0/*skipInner*/, 0/*isSync*/, NULL);
+					    0/*skipInner*/, 0/*isSync*/, &info);
 
   blame_shift_apply(metric_id, sv.sample_node, metric_incr);
 

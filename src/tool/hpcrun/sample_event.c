@@ -166,6 +166,12 @@ hpcrun_sample_callpath(void* context, int metricId,
 		       hpcrun_metricVal_t metricIncr,
 		       int skipInner, int isSync, sampling_info_t *data)
 {
+  uint64_t sampling_period = 0;
+  int is_time_based_metric = 0;
+  if (data != NULL) {
+    sampling_period = data->sampling_period;
+    is_time_based_metric = data->is_time_based_metric;
+  }
 
   sample_val_t ret;
   hpcrun_sample_val_init(&ret);
@@ -273,7 +279,7 @@ hpcrun_sample_callpath(void* context, int metricId,
 
   bool trace_ok = ! td->deadlock_drop;
   TMSG(TRACE1, "trace ok (!deadlock drop) = %d", trace_ok);
-  if (trace_ok && hpcrun_trace_isactive() && !isSync) {
+  if (trace_ok && hpcrun_trace_isactive() && !isSync && is_time_based_metric > 0) {
     TMSG(TRACE, "Sample event encountered");
 
     cct_addr_t frm;
@@ -287,7 +293,7 @@ hpcrun_sample_callpath(void* context, int metricId,
     ret.trace_node = func_proxy;
 
     TMSG(TRACE, "Changed persistent id to indicate mutation of func_proxy node");
-    hpcrun_trace_append(&td->core_profile_trace_data, func_proxy, metricId, td->prev_dLCA);
+    hpcrun_trace_append(&td->core_profile_trace_data, func_proxy, metricId, td->prev_dLCA, sampling_period);
     TMSG(TRACE, "Appended func_proxy node to trace");
   }
 
