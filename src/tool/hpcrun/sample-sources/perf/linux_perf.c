@@ -212,6 +212,9 @@ static struct event_threshold_s default_threshold = {DEFAULT_THRESHOLD, FREQUENC
 
 static kind_info_t *lnux_kind;
 
+static int hpcrun_cycles_metric_id = -1;
+static uint64_t hpcrun_cycles_cmd_period = 0;
+
 //******************************************************************************
 // private operations 
 //******************************************************************************
@@ -551,8 +554,13 @@ record_sample(event_thread_t *current, perf_mmap_data_t *mmap_data,
   // ----------------------------------------------------------------------------
   // update the cct and add callchain if necessary
   // ----------------------------------------------------------------------------
-  sampling_info_t info = {.sample_clock = 0, .sample_data = mmap_data};
-
+  int time_based_metric = (hpcrun_cycles_metric_id == current->event->hpcrun_metric_id) ? 1 : 0;
+  sampling_info_t info = {
+    .sample_clock = 0,
+    .sample_data = mmap_data,
+    .sampling_period = hpcrun_cycles_cmd_period,
+    .is_time_based_metric = time_based_metric
+  };
   *sv = hpcrun_sample_callpath(context, current->event->hpcrun_metric_id,
         (hpcrun_metricVal_t) {.r=counter},
         0/*skipInner*/, 0/*isSync*/, &info);
@@ -873,9 +881,12 @@ METHOD_FN(process_event_list, int lush_metrics)
     //  this assumption is not true, but it's quite closed
     // ------------------------------------------------------------
 
+    //TODO: what about CYCLES_NOT_IN_HALT?
+    int isCycles = 0;
     if (strcasestr(name, "CYCLES") != NULL) {
       prop = metric_property_cycles;
       blame_shift_source_register(bs_type_cycles);
+      isCycles = 1;
     } else {
       prop = metric_property_none;
     }
@@ -898,6 +909,18 @@ METHOD_FN(process_event_list, int lush_metrics)
     // set the metric for this perf event
     event_desc[i].hpcrun_metric_id = hpcrun_set_new_metric_desc_and_period(lnux_kind, name_dup,
             desc, MetricFlags_ValFmt_Real, metric_period, prop);
+
+    if (isCycles) {
+      hpcrun_cycles_metric_id = event_desc[i].hpcrun_metric_id;
+      if (is_period) {
+        // period is specified in the number of cycles per sample
+        hpcrun_cycles_cmd_period = (uint64_t) (1000000000.0 * threshold / HPCRUN_CPU_FREQUENCY);
+      } else {
+        // default is frequency
+        // frequency is specified in samples per second
+        hpcrun_cycles_cmd_period = (uint64_t) (1000000000.0 / threshold);
+      }
+    }
    
     METHOD_CALL(self, store_event, event_attr->config, metric_period);
     free(name);
