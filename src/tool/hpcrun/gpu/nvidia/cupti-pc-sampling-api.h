@@ -113,4 +113,24 @@ cupti_pc_sampling_free
  CUcontext context
 );
 
+
+void
+cupti_pc_sampling_start
+(
+ CUcontext context
+);
+
+
+void
+cupti_pc_sampling_stop
+(
+ CUcontext context
+);
+
+
+bool
+cupti_pc_sampling_active
+(
+);
+
 #endif

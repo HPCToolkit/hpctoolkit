@@ -525,7 +525,8 @@ MY_NEW_CUPTI_FILES = gpu/nvidia/cupti-pc-sampling-api.c \
 	gpu/nvidia/cupti-unwind-map.c \
 	gpu/nvidia/cubin-crc-map.c \
 	gpu/nvidia/cupti-cct-map.c \
-	gpu/nvidia/cupti-cct-set.c
+	gpu/nvidia/cupti-cct-set.c \
+	gpu/nvidia/cupti-cct-trie.c
 endif
 
 if OPT_ENABLE_OPENCL
@@ -1001,6 +1002,7 @@ if OPT_ENABLE_NEW_CUPTI
   libhpcrun_la_SOURCES  += $(MY_NEW_CUPTI_FILES)
   libhpcrun_o_SOURCES   += $(MY_NEW_CUPTI_FILES)
   libhpcrun_la_CFLAGS += -DNEW_CUPTI
+  libhpcrun_la_CPPFLAGS += -DNEW_CUPTI
 
 #pkglib_LTLIBRARIES += libhpcrun_cuda.la
 #libhpcrun_cuda_la_CPPFLAGS  = $(CUPTI_INC_FLGS)

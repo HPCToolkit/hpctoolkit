@@ -273,7 +273,10 @@ METHOD_FN(init)
 
   control_knob_register("HPCRUN_CUDA_DEVICE_BUFFER_SIZE", "8388608", ck_int);
   control_knob_register("HPCRUN_CUDA_DEVICE_SEMAPHORE_SIZE", "65536", ck_int);
-  control_knob_register("HPCRUN_CUDA_RANGE_INTERVAL", "1", ck_int);
+#ifdef NEW_CUPTI
+  control_knob_register("HPCRUN_CUDA_RANGE_INTERVAL", CUPTI_RANGE_DEFAULT_INTERVAL_STR, ck_int);
+  control_knob_register("HPCRUN_CUDA_RANGE_SAMPLING_PERIOD", CUPTI_RANGE_DEFAULT_SAMPLING_PERIOD_STR, ck_int);
+#endif
   control_knob_register("HPCRUN_CUDA_RANGE_MODE", "EVEN", ck_int);
   control_knob_register("HPCRUN_CUDA_KERNEL_SERIALIZATION", "FALSE", ck_string);
 
@@ -410,7 +413,12 @@ METHOD_FN(process_event_list, int lush_metrics)
       monitor_real_exit(-1);
     }
 
-    cupti_range_config(range_mode, interval);
+    int sampling_period = CUPTI_RANGE_DEFAULT_SAMPLING_PERIOD;
+    if (control_knob_value_get_int("HPCRUN_CUDA_RANGE_SAMPLING_PERIOD", &interval) != 0) {
+      monitor_real_exit(-1);
+    }
+
+    cupti_range_config(range_mode, interval, sampling_period);
 #endif
   }
 

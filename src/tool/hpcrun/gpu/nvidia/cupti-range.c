@@ -10,12 +10,15 @@
 
 #include "cuda-api.h"
 #include "cupti-api.h"
+#include "cupti-cct-set.h"
+#include "cupti-cct-trie.h"
 #include "cupti-pc-sampling-api.h"
 
 
 static cupti_range_mode_t cupti_range_mode = CUPTI_RANGE_MODE_NONE;
 
 static uint32_t cupti_range_interval = CUPTI_RANGE_DEFAULT_INTERVAL;
+static uint32_t cupti_range_sampling_period = CUPTI_RANGE_DEFAULT_SAMPLING_PERIOD;
 
 static bool
 cupti_range_pre_enter_callback
@@ -57,6 +60,66 @@ cupti_range_mode_even_is_enter
 
 
 static bool
+cupti_range_mode_context_sensitive_is_sampled
+(
+)
+{
+  int left = rand() % cupti_range_sampling_period;
+  if (left == 0) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
+
+static bool
+cupti_range_mode_context_sensitive_is_enter
+(
+ uint64_t correlation_id,
+ void *args,
+ uint32_t range_id
+)
+{
+  cct_node_t *api_node = args;
+  bool exist_inset = cupti_cct_set_lookup(api_node);
+  bool exist_intrie = cupti_cct_trie_insert(api_node);
+
+  bool do_flush = false;
+  if (exist_inset) {
+    // Duplicate ccts
+    cupti_cct_set_clear();
+    if (cupti_pc_sampling_active()) {
+      // If active, we encounter a new range and have to flush
+      do_flush = true;
+    }
+  } else {
+    // No such a node
+    cupti_cct_set_insert(api_node);
+  }
+
+  CUcontext context;
+  cuda_context_get(&context);
+
+  if (do_flush) {
+    // Early collection, different than other modes
+    cupti_pc_sampling_range_context_collect(range_id, context);
+  }
+
+  if (exist_intrie) {
+    // The next node is already in the trie, so no need to turn on pc sampling
+    // unless sampling is turned on
+    if (cupti_range_mode_context_sensitive_is_sampled()) {
+      cupti_pc_sampling_start(context);
+    }
+  } else {
+    // Entering a new path, turn on pc sampling
+    cupti_pc_sampling_start(context);
+  }
+}
+
+
+static bool
 cupti_range_post_enter_callback
 (
  uint64_t correlation_id,
@@ -73,6 +136,7 @@ cupti_range_post_enter_callback
   if (cupti_range_mode == CUPTI_RANGE_MODE_EVEN) {
     ret = cupti_range_mode_even_is_enter(correlation_id);
   } else if (cupti_range_mode == CUPTI_RANGE_MODE_CONTEXT_SENSITIVE) {
+    ret = cupti_range_mode_context_sensitive_is_enter(correlation_id, args, range_id);
   }
 
   // TODO(Keren): check if pc sampling buffer is full
@@ -103,16 +167,20 @@ cupti_range_post_exit_callback
  void *args
 )
 {
+  CUcontext context;
+  cuda_context_get(&context);
+
   if (cupti_range_mode == CUPTI_RANGE_MODE_NONE) {
     // Collect pc samples from the current context
-    CUcontext context;
-    cuda_context_get(&context);
     cupti_pc_sampling_correlation_context_collect(cupti_kernel_ph_get(), context);
-  } else if (cupti_range_mode == CUPTI_RANGE_MODE_EVEN || CUPTI_RANGE_MODE_CONTEXT_SENSITIVE) {
+  } else if (cupti_range_mode == CUPTI_RANGE_MODE_EVEN) {
     if (gpu_range_is_lead()) {
       // Collect pc samples from all contexts
       uint32_t range_id = gpu_range_id_get();
-      cupti_pc_sampling_range_collect(range_id);
+
+      cupti_pc_sampling_range_context_collect(range_id, context);
+      // Start pc sampling immediately
+      cupti_pc_sampling_start(context);
     }
   }
 
@@ -124,10 +192,14 @@ void
 cupti_range_config
 (
  const char *mode_str,
- int interval
+ int interval,
+ int sampling_period
 )
 {
   gpu_range_enable();
+
+  cupti_range_interval = interval;
+  cupti_range_sampling_period = interval;
 
   // Range mode is only enabled with option "gpu=nvidia,pc"
   //
@@ -140,7 +212,6 @@ cupti_range_config
   // We don't flush pc samples unless a kernel in the range is launched
   // by two different contexts.
   if (strcmp(mode_str, "EVEN") == 0 && interval > CUPTI_RANGE_DEFAULT_INTERVAL) {
-    cupti_range_interval = interval;
     cupti_range_mode = CUPTI_RANGE_MODE_EVEN;
   } else if (strcmp(mode_str, "CONTEXT_SENSITIVE") == 0) {
     cupti_range_mode = CUPTI_RANGE_MODE_CONTEXT_SENSITIVE;
@@ -172,4 +243,14 @@ cupti_range_interval_get
 )
 {
   return cupti_range_interval;
+}
+
+
+uint32_t
+cupti_range_sampling_period_get
+(
+ void
+)
+{
+  return cupti_range_sampling_period;
 }

@@ -20,7 +20,7 @@
 //
 typedef struct cupti_cct_set_entry_s cupti_cct_set_entry_t;
 
-cupti_cct_set_entry_t *
+bool
 cupti_cct_set_lookup
 (
  cct_node_t *cct

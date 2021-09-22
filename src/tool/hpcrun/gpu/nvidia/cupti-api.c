@@ -241,6 +241,8 @@ static __thread cct_node_t *cupti_prev_api_node = NULL;
 static __thread cct_node_t *cupti_prev_kernel_node = NULL;
 static __thread cct_node_t *cupti_prev_prev_kernel_node = NULL;
 
+static __thread uint64_t cupti_runtime_correlation_id = 0;
+
 static bool cupti_correlation_enabled = false;
 static bool cupti_pc_sampling_enabled = false;
 
@@ -818,7 +820,7 @@ cupti_unload_callback_cuda
 #ifdef NEW_CUPTI
   TMSG(CUPTI, "Context %p cubin_id %d unload", context, cubin_id);
   if (context != NULL) {
-    // Flush records but not disable context
+    // Flush records but not stop context.
     // No need to lock because the current operation is not on GPU
     uint32_t range_id = gpu_range_id_get();
     cupti_pc_sampling_range_context_collect(range_id, context);
@@ -1113,10 +1115,13 @@ cupti_api_enter_callback_cuda
 
   // A driver API cannot be implemented by other driver APIs, so we get an id
   // and unwind when the API is entered
-  uint64_t correlation_id = gpu_correlation_id();
-  cupti_correlation_id_push(correlation_id);
+  uint64_t correlation_id = cupti_runtime_correlation_id_get();
+  if (correlation_id == 0) {
+    correlation_id = gpu_correlation_id();
+    cupti_correlation_id_push(correlation_id);
+  }
 
-  TMSG(CUPTI_TRACE, "Driver push externalId %lu (cb_id = %u, range_id = %u)", correlation_id, cb_id, range_id);
+  TMSG(CUPTI_TRACE, "Push externalId %lu (cb_id = %u, range_id = %u)", correlation_id, cb_id, range_id);
 
   // If this API is intercepted by our cuda wrapper, we only unwinding at the 
   // intercepter to reduce the unwinding cost
@@ -1144,7 +1149,11 @@ cupti_api_exit_callback_cuda
  CUpti_CallbackId cb_id
 )
 {
-  uint64_t correlation_id = cupti_correlation_id_pop();
+  uint64_t correlation_id = cupti_runtime_correlation_id_get();
+  if (correlation_id == 0) { 
+    correlation_id = cupti_correlation_id_pop();
+  }
+
   uint32_t range_id = gpu_range_id_get();
 
   TMSG(CUPTI_TRACE, "Driver pop externalId %lu (cb_id = %u, %u)", correlation_id, cb_id, range_id);
@@ -1254,8 +1263,15 @@ cupti_runtime_api_subscriber_callback_cuda_kernel
   const CUpti_CallbackData *cd = (const CUpti_CallbackData *)cb_info;
   if (cd->callbackSite == CUPTI_API_ENTER) {
     // Enter a CUDA runtime api
+    uint64_t correlation_id = gpu_correlation_id();
+    cupti_correlation_id_push(correlation_id);
+    cupti_runtime_correlation_id_set(correlation_id);
+
     cupti_runtime_api_flag_set();
   } else {
+    cupti_correlation_id_pop();
+    cupti_runtime_correlation_id_set(0);
+
     // Exit an CUDA runtime api
     cupti_runtime_api_flag_unset();
     cupti_kernel_ph_set(NULL);
@@ -2256,6 +2272,26 @@ cupti_trace_ph_set
 }
 
 
+uint64_t
+cupti_runtime_correlation_id_get
+(
+ void
+)
+{
+  return cupti_runtime_correlation_id;
+}
+
+
+void
+cupti_runtime_correlation_id_set
+(
+ uint64_t correlation_id
+)
+{
+  cupti_runtime_correlation_id = correlation_id;
+}
+
+
 void
 cupti_correlation_id_push(uint64_t id)
 {
@@ -2309,7 +2345,9 @@ cupti_device_shutdown(void *args, int how)
 
 #ifdef NEW_CUPTI
   if (cupti_range_mode_get() != CUPTI_RANGE_MODE_NONE) {
-    // Flush pc samples of all contexts
+    // Collect pc samples for all contexts in a range
+    // XXX(Keren): Currently CUPTI does not support
+    // multiple contexts in the same range
     uint32_t range_id = gpu_range_id_get();
     cupti_pc_sampling_range_collect(range_id);
 

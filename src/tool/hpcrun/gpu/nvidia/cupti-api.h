@@ -413,4 +413,18 @@ cupti_path
 );
 
 
+uint64_t
+cupti_runtime_correlation_id_get
+(
+ void
+);
+
+
+void
+cupti_runtime_correlation_id_set
+(
+ uint64_t
+);
+
+
 #endif

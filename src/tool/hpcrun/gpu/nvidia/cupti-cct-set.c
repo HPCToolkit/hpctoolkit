@@ -62,7 +62,7 @@ flush_fn_helper
 }
 
 
-cupti_cct_set_entry_t *
+bool
 cupti_cct_set_lookup
 (
  cct_node_t *cct
@@ -70,7 +70,7 @@ cupti_cct_set_lookup
 {
   cupti_cct_set_entry_t *result = st_lookup(&map_root, (uint64_t)cct);
 
-  return result;
+  return result != NULL;
 }
 
 

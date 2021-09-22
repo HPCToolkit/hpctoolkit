@@ -99,7 +99,8 @@ attribute_activity
   activity->cct_node = cct_node;
   activity->range_id = range_id;
 
-  gpu_operation_item_activity_process(activity, channel);
+  gpu_activity_channel_produce(channel, activity);
+  //gpu_operation_item_activity_process(activity, channel);
 }
 
 
@@ -197,8 +198,6 @@ gpu_sample_process
       gpu_host_correlation_map_lookup(external_id);
 
     if (host_op_entry != NULL) {
-      PRINT("external_id %lu\n", external_id);
-
       bool more_samples =
         gpu_host_correlation_map_samples_increase
         (external_id, sample->details.pc_sampling.samples);
@@ -216,7 +215,6 @@ gpu_sample_process
 
       cct_node_t *cct_child = hpcrun_cct_insert_ip_norm(host_op_node, ip);
       if (cct_child) {
-        PRINT("cct_child %p\n", cct_child);
         attribute_activity(host_op_entry, sample, cct_child, range_id);
       }
     } else {
@@ -418,8 +416,6 @@ gpu_kernel_block_process
     gpu_host_correlation_map_lookup(external_id);
 
   if (host_op_entry != NULL) {
-    PRINT("external_id %lu\n", external_id);
-
     cct_node_t *host_op_node =
       gpu_host_correlation_map_entry_op_function_get(host_op_entry);
 
@@ -429,7 +425,6 @@ gpu_kernel_block_process
     // create a child cct node that contains 2 metrics: offset of block head wrt. original binary, dynamic execution count of block
     cct_node_t *cct_child = hpcrun_cct_insert_ip_norm(host_op_node, ip); // how to set the ip_norm
     if (cct_child) {
-      PRINT("cct_child %p\n", cct_child);
       attribute_activity(host_op_entry, activity, cct_child, range_id);
     }
   } else {
@@ -601,7 +596,6 @@ gpu_instruction_process
   if (cid_map_entry != NULL) {
     uint64_t external_id =
       gpu_correlation_id_map_entry_external_id_get(cid_map_entry);
-    PRINT("external_id %lu\n", external_id);
     gpu_host_correlation_map_entry_t *host_op_entry =
       gpu_host_correlation_map_lookup(external_id);
     if (host_op_entry != NULL) {

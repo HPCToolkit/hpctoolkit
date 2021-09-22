@@ -152,6 +152,9 @@ typedef enum {
 	FORALL_CONFIG_INFO_COUNT(DECLARE_CONFIG_INFO)
 } config_info_t;
 
+
+static bool pc_sampling_active = false;
+
 //******************************************************************************
 // internal operations
 //******************************************************************************
@@ -392,14 +395,16 @@ pc_sampling_data_debug
 }
 
 
-static void
-pc_sampling_start
+void
+cupti_pc_sampling_start
 (
  CUcontext context
 )
 {
 	uint32_t context_id = ((hpctoolkit_cuctx_st_t *)context)->context_id;
 	TMSG(CUPTI, "Start context_id %u", context_id);
+
+  pc_sampling_active = true;
 
 	CUpti_PCSamplingStartParams params = {
 		.size = CUpti_PCSamplingStartParamsSize,
@@ -410,14 +415,16 @@ pc_sampling_start
 }
 
 
-static void
-pc_sampling_stop
+void
+cupti_pc_sampling_stop
 (
  CUcontext context
 )
 {
 	uint32_t context_id = ((hpctoolkit_cuctx_st_t *)context)->context_id;
 	TMSG(CUPTI, "Config context_id %u", context_id);
+
+  pc_sampling_active = false;
 
 	CUpti_PCSamplingStopParams params = {
 		.size = CUpti_PCSamplingStopParamsSize,
@@ -554,7 +561,8 @@ cupti_pc_sampling_config
 	// we collect pc samples at the end of each range and attribute pc samples postmortem.
 	// This mode requires user controlled pc sampling start/stop support and only
   // works for apps with a single cuda context due to the limitation of CUPTI (<=11.5).
-	if (cupti_range_interval_get() == CUPTI_RANGE_DEFAULT_INTERVAL) {
+	if (cupti_range_mode_get() == CUPTI_RANGE_MODE_EVEN &&
+    cupti_range_interval_get() == CUPTI_RANGE_DEFAULT_INTERVAL) {
 		collection_mode_config(CUPTI_PC_SAMPLING_COLLECTION_MODE_KERNEL_SERIALIZED, collection_mode_info);
 		start_stop_control_config(0, start_stop_control_info);
 	} else {
@@ -573,7 +581,7 @@ cupti_pc_sampling_config
 	HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiPCSamplingSetConfigurationAttribute, (&info_params));
 
 	if (cupti_range_interval_get() != CUPTI_RANGE_DEFAULT_INTERVAL) {
-		pc_sampling_start(context);
+		cupti_pc_sampling_start(context);
 	}
 }
 
@@ -701,6 +709,8 @@ cupti_pc_sampling_correlation_context_collect
  CUcontext context
 )
 {
+  // In the correlation mode, we serialize every kernel.
+  // So we don't have to explicitly call pc_sampling_stop.
 	pc_sampling_collect(0, cct_node, context);
 }
 
@@ -712,6 +722,7 @@ cupti_pc_sampling_range_context_collect
  CUcontext context
 )
 {
+  cupti_pc_sampling_stop(context);
 	pc_sampling_collect(range_id, NULL, context);
 }
 
@@ -724,15 +735,12 @@ pc_sampling_context_collect
  void *args
 )
 {
-  pc_sampling_stop(context);
-
 	uint32_t range_id = *(uint32_t *)args;
-	pc_sampling_collect(range_id, NULL, context);
-
-  pc_sampling_start(context);
+  cupti_pc_sampling_range_context_collect(range_id, context);
 }
 
 
+// Flush every context in this range, if any
 void
 cupti_pc_sampling_range_collect
 (
@@ -740,4 +748,13 @@ cupti_pc_sampling_range_collect
 )
 {
 	cupti_context_map_process(pc_sampling_context_collect, (void *)&range_id);
+}
+
+
+bool
+cupti_pc_sampling_active
+(
+)
+{
+  return pc_sampling_active;
 }
