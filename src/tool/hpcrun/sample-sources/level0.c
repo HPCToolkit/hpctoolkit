@@ -184,6 +184,7 @@ static void
 METHOD_FN(process_event_list, int lush_metrics)
 {
   int nevents = (self->evl).nevents;
+  hpcrun_set_trace_metric();
   gpu_metrics_default_enable();
   TMSG(CUDA,"nevents = %d", nevents);
 }

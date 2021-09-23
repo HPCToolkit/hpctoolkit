@@ -465,6 +465,8 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   TMSG(ITIMER_CTL, "process event list, lush_metrics = %d", lush_metrics);
 
+  hpcrun_set_trace_metric();
+
   // fetch the event string for the sample source
   char* evlist = METHOD_CALL(self, get_event_str);
   char* event = start_tok(evlist);
