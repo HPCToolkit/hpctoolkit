@@ -63,6 +63,14 @@ void hpcrun_trace_append_stream(core_profile_trace_data_t *cptd, cct_node_t *nod
 
 int hpcrun_trace_isactive();
 
+// When a sample source finds that a metric suitable for tracing
+// is specified, we call this function to indicate we can do tracing
+void hpcrun_set_trace_metric();
+
+// After processing all command line events, we call this function
+// to check whether a metric suitable for tracing exists
+int hpcrun_get_trace_metric();
+
 #endif // hpcrun_trace_h
 
 

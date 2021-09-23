@@ -107,6 +107,7 @@ static inline void hpcrun_trace_append_with_time_real(core_profile_trace_data_t 
 //*********************************************************************
 
 static int tracing = 0;
+static int trace_suitable_metric = 0;
 
 //*********************************************************************
 // interface operations
@@ -305,4 +306,20 @@ hpcrun_trace_file_validate(int valid, char *op)
     EMSG("unable to %s trace file\n", op);
     monitor_real_abort();
   }
+}
+
+void
+hpcrun_set_trace_metric
+(
+)
+{
+  trace_suitable_metric = 1;
+}
+
+int
+hpcrun_get_trace_metric
+(
+)
+{
+  return trace_suitable_metric;
 }

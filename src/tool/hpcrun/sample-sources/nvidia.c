@@ -345,6 +345,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   int nevents = (self->evl).nevents;
 
   TMSG(CUDA,"nevents = %d", nevents);
+  hpcrun_set_trace_metric();
 
   // Fetch the event string for the sample source
   // only one event is allowed
