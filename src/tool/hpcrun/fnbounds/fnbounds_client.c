@@ -394,14 +394,8 @@ shutdown_server(void)
 }
 
 static int
-hpcfnbounds_child(void* fds_vp)
+hpcfnbounds_grandchild(void* fds_vp)
 {
-  //
-  // child process: disable profiling, dup the log file fd onto
-  // stderr and exec hpcfnbounds in server mode.
-  //
-  hpcrun_set_disabled();
-
   struct {
     int sendfd[2], recvfd[2];
   }* fds = fds_vp;
@@ -451,15 +445,32 @@ hpcfnbounds_child(void* fds_vp)
   err(1, "hpcrun system server: exec(%s) failed", server);
 }
 
+static int
+hpcfnbounds_child(void* fds_vp) {
+  struct {
+    int sendfd[2], recvfd[2];
+    pid_t pid;
+  }* fds = fds_vp;
+
+  // We should be roughly able to figure out which direction the stack grows.
+  void* stack = (void*)&fds < (void*)&server_stack[SERVER_STACK_SIZE * 1024]
+                ? (void*)&fds - 256 : (void*)&fds + 256;
+
+  // Do the clone, and pass the result back to our parent through the shared memory space
+  fds->pid = auditor_exports->clone(hpcfnbounds_grandchild, stack, SIGCHLD | CLONE_VM, fds_vp);
+  return 0;
+}
+
 // Returns: 0 on success, else -1 on failure.
 static int
 launch_server(void)
 {
   struct {
     int sendfd[2], recvfd[2];
+    pid_t pid;
   } fds;
   bool sampling_is_running;
-  pid_t pid;
+  pid_t child_pid;
 
   // already running
   if (client_status == SYSERV_ACTIVE && my_pid == getpid()) {
@@ -484,14 +495,50 @@ launch_server(void)
   }
 
   // For safety, we don't assume the direction of stack growth
-  pid = auditor_exports->clone(hpcfnbounds_child,
-    &server_stack[SERVER_STACK_SIZE * 1024], SIGCHLD, &fds);
+  child_pid = auditor_exports->clone(hpcfnbounds_child,
+    &server_stack[SERVER_STACK_SIZE * 1024], SIGCHLD | CLONE_VM, &fds);
 
-  if (pid < 0) {
+  if (child_pid < 0) {
     //
     // clone failed
     //
     EMSG("FNBOUNDS_CLIENT ERROR: syserv launch failed: clone failed");
+    return -1;
+  }
+
+  // Wait for the child to successfully clone the grandchild
+  int status;
+  if (auditor_exports->waitpid(child_pid, &status, 0) < 0) {
+    //
+    // waitpid failed
+    //
+    EMSG("FNBOUNDS_CLIENT ERROR: syserv launch failed: waitpid failed");
+    return -1;
+  }
+  if(!WIFEXITED(status)) {
+    //
+    // child died mysteriously
+    //
+    if(WIFSIGNALED(status))
+      EMSG("FNBOUNDS_CLIENT ERROR: syserv launch failed: child shim died by signal %d", WTERMSIG(status));
+    else
+      EMSG("FNBOUNDS_CLIENT ERROR: syserv launch failed: child shim died mysteriously");
+    return -1;
+  }
+  if(WEXITSTATUS(status) != 0) {
+    //
+    // child failed for some other reason
+    //
+    EMSG("FNBOUNDS_CLIENT ERROR: syserv launch failed: child exited mysteriously");
+    return -1;
+  }
+
+  // Check the result the child passed back to us
+  if(fds.pid < 0) {
+    //
+    // gradchild clone failed
+    //
+    EMSG("FNBOUNDS_CLIENT ERROR: syserv launch failed: grandchild clone failed");
     return -1;
   }
 
@@ -503,10 +550,10 @@ launch_server(void)
   fdout = fds.sendfd[1];
   fdin = fds.recvfd[0];
   my_pid = getpid();
-  server_pid = pid;
+  server_pid = fds.pid;
   client_status = SYSERV_ACTIVE;
 
-  TMSG(FNBOUNDS_CLIENT, "syserv launch: success, server: %d", (int) server_pid);
+  TMSG(FNBOUNDS_CLIENT, "syserv launch: success, child shim: %d, server: %d", (int) child_pid, (int) server_pid);
 
   // restart sample sources
   if (sampling_is_running) {
