@@ -452,12 +452,9 @@ hpcfnbounds_child(void* fds_vp) {
     pid_t pid;
   }* fds = fds_vp;
 
-  // We should be roughly able to figure out which direction the stack grows.
-  void* stack = (void*)&fds < (void*)&server_stack[SERVER_STACK_SIZE * 1024]
-                ? (void*)&fds - 256 : (void*)&fds + 256;
-
   // Do the clone, and pass the result back to our parent through the shared memory space
-  fds->pid = auditor_exports->clone(hpcfnbounds_grandchild, stack, SIGCHLD | CLONE_VM, fds_vp);
+  fds->pid = auditor_exports->clone(hpcfnbounds_grandchild,
+    &server_stack[SERVER_STACK_SIZE * 1024], SIGCHLD | CLONE_VM, fds_vp);
   return 0;
 }
 
@@ -494,9 +491,12 @@ launch_server(void)
     SAMPLE_SOURCES(stop);
   }
 
+  // Give up a bit of our stack for the child shim. It doesn't need much.
+  char child_stack[4 * 1024 * 2];
+
   // For safety, we don't assume the direction of stack growth
   child_pid = auditor_exports->clone(hpcfnbounds_child,
-    &server_stack[SERVER_STACK_SIZE * 1024], SIGCHLD | CLONE_VM, &fds);
+    &child_stack[4 * 1024], SIGCHLD | CLONE_VM, &fds);
 
   if (child_pid < 0) {
     //
