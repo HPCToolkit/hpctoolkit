@@ -60,9 +60,7 @@ if len(specs) > 1:
   summary += ' (multiple match)'
 
 # Parse each fragment of the environment modifications, clean and save them
-env = spack.util.environment.EnvironmentModifications()
-spack.build_environment.set_build_environment_variables(spec.package, env, True)
-shellcode = env.shell_modifications()
+shellcode = spack.user_environment.environment_modifications_for_spec(spec).shell_modifications()
 environs = {}
 for var in shlex.split(shellcode, comments=True):
   if var == 'export': continue
