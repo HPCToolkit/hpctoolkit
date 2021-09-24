@@ -109,7 +109,7 @@ static const char* analysis_makefile =
 // to analyze CPU and GPU binaries associated with the measurements
 //
 static void
-doMeasurementsDir(string measurements_dir, BAnal::Struct::Options & opts)
+doMeasurementsDir(string measurements_dir, BAnal::Struct::Options & opts, string arg0)
 {
   measurements_dir = RealPath(measurements_dir.c_str());
 
@@ -133,21 +133,22 @@ doMeasurementsDir(string measurements_dir, BAnal::Struct::Options & opts)
     closedir(dir);
   }
 
-  //
-  // Put hpctoolkit on PATH
-  //
-  char *path = getenv("PATH");
-  string new_path = string(HPCTOOLKIT_INSTALL_PREFIX) + "/bin" + ":" + path;
-
   if (has_gpubin) {
     // Put cuda (nvdisasm) on path.
-    new_path = new_path +":" + CUDA_INSTALL_PREFIX + "/bin";
+    string new_path = getenv("PATH");
+    new_path = new_path + ":" + CUDA_INSTALL_PREFIX + "/bin";
+    setenv("PATH", new_path.c_str(), 1);
   }
 
-  setenv("PATH", new_path.c_str(), 1);
-
-  string hpcproftt_path = string(HPCTOOLKIT_INSTALL_PREFIX) 
-    + "/libexec/hpctoolkit/hpcproftt";
+  //
+  // Find ourselves and our friends via the $0 argument
+  //
+  string hpcstruct_path;
+  {
+    char* rpath = realpath(arg0.c_str(), NULL);
+    hpcstruct_path = string(rpath);
+    free(rpath);
+  }
 
   //
   // Write Makefile and launch analysis.
@@ -172,7 +173,7 @@ doMeasurementsDir(string measurements_dir, BAnal::Struct::Options & opts)
 	   << "GPU_ANALYZE = " << opts.analyze_gpu_binaries << "\n"
 	   << "PAR_SIZE = "    << opts.parallel_analysis_threshold << "\n"
 	   << "JOBS = "        << opts.jobs << "\n\n"
-	   << "PROFTT = "      << hpcproftt_path << "\n\n"
+	   << "STRUCT = "      << hpcstruct_path << "\n\n"
 	   << analysis_makefile << endl;
   makefile.close();
 
@@ -273,7 +274,11 @@ realmain(int argc, char* argv[])
   struct stat sb;
 
   if (stat(args.in_filenm.c_str(), &sb) == 0 && S_ISDIR(sb.st_mode)) {
-    doMeasurementsDir(args.in_filenm, opts);
+    if(argc < 1) {
+      DIAG_EMsg("Bad exec arguments, must have a $0 argument");
+      exit(2);
+    }
+    doMeasurementsDir(args.in_filenm, opts, argv[0]);
     return 0;
   }
 

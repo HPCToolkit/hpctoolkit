@@ -55,7 +55,7 @@ _deps = [
   analysis_dep, banal_dep,
   dependency('dyninst', required: false, disabler: true),
   dependency('OpenMP', required: get_option('openmp')),
-]
+] + (is_disabler(hpcproftt_exe) ? [disabler()] : [])
 
 if not get_option('hpcstruct').disabled()
   hpcstruct_exe = executable('hpcstruct', _srcs,

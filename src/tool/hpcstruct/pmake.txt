@@ -13,6 +13,14 @@
 #*******************************************************************************
 
 #-------------------------------------------------------------------------------
+# set up executable paths
+#-------------------------------------------------------------------------------
+PROFTT := $(dir $(STRUCT))hpcproftt
+ifeq ($(wildcard $(PROFTT)),)
+  PROFTT := $(dir $(STRUCT))../libexec/hpctoolkit/hpcproftt
+endif
+
+#-------------------------------------------------------------------------------
 # set up subdirectory paths
 #-------------------------------------------------------------------------------
 GPUBIN_DIR  = $(MEAS_DIR)/gpubins
@@ -123,7 +131,7 @@ $(STRUCTS_DIR)/%.hpcstruct: $(CPUBIN_DIR)/%
 		else
 			echo msg: begin concurrent analysis of $$cpubin_name \\(using 1 of $(JOBS) threads\\)
 		fi
-		hpcstruct -j $(THREADS) -o $$struct_name $< > $$warn_name 2>&1
+		$(STRUCT) -j $(THREADS) -o $$struct_name $< > $$warn_name 2>&1
 		if test -s $$warn_name ; then
 			echo WARNING: incomplete analysis of $$cpubin_name';' see $$warn_name for details
 			if test ! -s $$struct_name ; then
@@ -156,7 +164,7 @@ $(STRUCTS_DIR)/%.hpcstruct: $(GPUBIN_DIR)/%
 		else
 			echo msg: begin concurrent analysis of $$gpubin_name \\(using 1 of $(JOBS) threads\\)
 		fi
-		hpcstruct -j $(THREADS) --gpucfg $(GPUBIN_CFG) -o $$struct_name $< > $$warn_name 2>&1
+		$(STRUCT) -j $(THREADS) --gpucfg $(GPUBIN_CFG) -o $$struct_name $< > $$warn_name 2>&1
 		if test -s $$warn_name ; then
 			echo WARNING: incomplete analysis of $$gpubin_name';' see $$warn_name for details
 			if test ! -s $$struct_name ; then

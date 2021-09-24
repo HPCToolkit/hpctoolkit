@@ -47,17 +47,24 @@ _srcs = files(
   'Args.cpp',
 )
 
-if not get_option('devtools').disabled()
+# hpcproftt is (now) required for hpcstruct operation. So our controlling option
+# is the stronger of the two possible options (devtools + hpcstruct).
+_option = get_option('devtools')
+if _option.disabled() or (not _option.enabled() and get_option('hpcstruct').enabled())
+  _option = get_option('hpcstruct')
+endif
+
+if not _option.disabled()
   hpcproftt_exe = executable('hpcproftt', _srcs,
     include_directories: tool_includes,
     dependencies: [
       analysis_dep,
-      dependency('xerces-c', required: get_option('devtools'), disabler: true),
+      dependency('xerces-c', required: _option, disabler: true),
     ],
     install: true, install_dir: get_option('libexecdir') / meson.project_name())
   all_apps += hpcproftt_exe
 endif
-if get_option('devtools').enabled()
+if _option.enabled()
   assert(not is_disabler(hpcproftt_exe), 'hpcproftt required but disabled')
 endif
 summary('hpcproftt', is_variable('hpcproftt_exe') and not is_disabler(hpcproftt_exe), section: 'Applications', bool_yn: true)

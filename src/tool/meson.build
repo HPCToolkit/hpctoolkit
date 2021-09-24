@@ -236,10 +236,10 @@ launch_config.set('hpclink_extra_wrap_names', get_option('lush-pthreads')
   + 'pthread_cond_timedwait pthread_cond_signal pthread_cond_broadcast'
   : '')
 
+subdir('hpcproftt')
 subdir('hpcstruct')
 subdir('hpcprof')
 subdir('hpcprof-mpi')
-subdir('hpcproftt')
 subdir('hpclump')
 subdir('hpctracedump')
 
