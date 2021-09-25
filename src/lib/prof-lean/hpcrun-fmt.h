@@ -786,11 +786,11 @@ typedef struct sampling_info_s {
 
   // sampling period in nanoseconds.
   // This is used for adding <no activity> to traces where threads are idle
-  // 0 means not a time-based metric or a REALTIME sample, in which case
-  // we do not add <no activity> to trace.
+  // 0 means not a time-based metric, in which case we do not add 
+  // <no activity> to the trace.
   uint64_t sampling_period;
 
-  // 1 if we get a sample for a time based metric
+  // 1 if the sample is for a time-based metric
   // 0 otherwise
   int is_time_based_metric;
 } sampling_info_t;

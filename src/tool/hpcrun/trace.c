@@ -330,7 +330,7 @@ hpcrun_cpu_trace_on
 (
 )
 {
-  return (trace_suitable_metric & HPCRUN_CPU_TRACE_MASK) ? 1 : 0;
+  return (trace_suitable_metric & HPCRUN_CPU_TRACE_FLAG) ? 1 : 0;
 }
 
 int
@@ -338,5 +338,5 @@ hpcrun_gpu_trace_on
 (
 )
 {
-  return (trace_suitable_metric & HPCRUN_GPU_TRACE_MASK) ? 1 : 0;
+  return (trace_suitable_metric & HPCRUN_GPU_TRACE_FLAG) ? 1 : 0;
 }

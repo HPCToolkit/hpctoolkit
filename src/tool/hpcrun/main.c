@@ -572,15 +572,15 @@ hpcrun_init_internal(bool is_child)
   hpcrun_set_safe_to_sync();
 
   if (hpcrun_trace_isactive() && hpcrun_cpu_trace_on()) {
-    // if we enable CPU tracing,
-    // we append a <no activity> at the begnning of the execution.
-    // In this way, if there is a long period during which sampling is disable,
-    // the traces will not be cut short.
-    // We should not add <no activity> when only GPU tracing is enabled.
+    // If tracing on the CPU, insert <no activity> at the beginning of the 
+    // trace.  This ensures that if there is a long interval at the 
+    // beginning of the trace when sampling is disabled, the trace will 
+    // not be artificially short.  Don't add <no activity> to a CPU trace 
+    // line when only tracing on a GPU.
     core_profile_trace_data_t * cptd = &(TD_GET(core_profile_trace_data));
     cct_bundle_t* cct_bundle = &(cptd->epoch->csdata);
-    cct_node_t* idle_node = hpcrun_cct_bundle_get_no_activity_node(cct_bundle);
-    hpcrun_trace_append(cptd, idle_node, 0, INT_MAX, 0);
+    cct_node_t* no_activity = hpcrun_cct_bundle_get_no_activity_node(cct_bundle);
+    hpcrun_trace_append(cptd, no_activity, 0, INT_MAX, 0);
   }
 
   // release the wallclock handler -for this thread-

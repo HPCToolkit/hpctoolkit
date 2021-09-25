@@ -149,7 +149,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 {
     int nevents = (self->evl).nevents;
     gpu_metrics_default_enable();
-    hpcrun_set_trace_metric(HPCRUN_GPU_TRACE_MASK);
+    hpcrun_set_trace_metric(HPCRUN_GPU_TRACE_FLAG);
     TMSG(CUDA,"nevents = %d", nevents);
 }
 
