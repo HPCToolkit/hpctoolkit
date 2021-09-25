@@ -91,6 +91,7 @@
 #include <hpcrun/sample_event.h>
 #include <hpcrun/thread_data.h>
 #include <hpcrun/threadmgr.h>
+#include <hpcrun/trace.h>
 
 #include <sample-sources/blame-shift/blame-shift.h>
 #include <utilities/tokenize.h>
@@ -570,7 +571,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     METHOD_CALL(self, store_metric_id, i, metric_id);
     if (isCycles) {
       hpcrun_cycles_metric_id = metric_id;
-      hpcrun_set_trace_metric();
+      hpcrun_set_trace_metric(HPCRUN_CPU_TRACE_MASK);
     }
 
     // FIXME:LUSH: need a more flexible metric interface

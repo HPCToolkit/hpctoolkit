@@ -103,6 +103,7 @@
 #include <hpcrun/sample-sources/blame-shift/blame-shift.h>
 #include <hpcrun/utilities/tokenize.h>
 #include <hpcrun/utilities/arch/context-pc.h>
+#include <hpcrun/trace.h>
 
 #include <evlist.h>
 #include <limits.h>   // PATH_MAX
@@ -911,7 +912,7 @@ METHOD_FN(process_event_list, int lush_metrics)
             desc, MetricFlags_ValFmt_Real, metric_period, prop);
 
     if (isCycles) {
-      hpcrun_set_trace_metric();
+      hpcrun_set_trace_metric(HPCRUN_CPU_TRACE_MASK);
       hpcrun_cycles_metric_id = event_desc[i].hpcrun_metric_id;
       if (is_period) {
         // period is specified in the number of cycles per sample
