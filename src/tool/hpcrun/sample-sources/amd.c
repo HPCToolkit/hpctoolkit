@@ -55,6 +55,7 @@
 #include <hpcrun/sample_sources_registered.h>
 #include <hpcrun/sample_event.h>
 #include <hpcrun/thread_data.h>
+#include <hpcrun/trace.h>
 
 #include <utilities/tokenize.h>
 #include <messages/messages.h>
@@ -148,7 +149,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 {
     int nevents = (self->evl).nevents;
     gpu_metrics_default_enable();
-    hpcrun_set_trace_metric();
+    hpcrun_set_trace_metric(HPCRUN_GPU_TRACE_MASK);
     TMSG(CUDA,"nevents = %d", nevents);
 }
 

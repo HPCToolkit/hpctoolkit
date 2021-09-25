@@ -98,6 +98,7 @@
 #include <hpcrun/sample_sources_registered.h>
 #include <hpcrun/thread_data.h>
 #include <hpcrun/ompt/ompt-region.h>
+#include <hpcrun/trace.h>
 
 #include <lush/lush-backtrace.h>
 #include <messages/messages.h>
@@ -465,7 +466,7 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   TMSG(ITIMER_CTL, "process event list, lush_metrics = %d", lush_metrics);
 
-  hpcrun_set_trace_metric();
+  hpcrun_set_trace_metric(HPCRUN_CPU_TRACE_MASK);
 
   // fetch the event string for the sample source
   char* evlist = METHOD_CALL(self, get_event_str);
@@ -673,11 +674,9 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
   // get the current time for the appropriate clock
   uint64_t cur_time_us = 0;
   int ret;
-  uint64_t sample_interval = 0;
 
   if (use_cputime) {
     ret = time_getTimeCPU(&cur_time_us);
-    sample_interval = period * 1000;
   } else {
     ret = time_getTimeReal(&cur_time_us);
   }
@@ -697,7 +696,7 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
   sampling_info_t info = {
     .sample_clock = 0,
     .sample_data = NULL,
-    .sampling_period = sample_interval,
+    .sampling_period = period * 1000,
     .is_time_based_metric = 1
   };
 

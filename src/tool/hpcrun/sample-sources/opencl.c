@@ -55,6 +55,7 @@
 #include <hpcrun/gpu/gpu-trace.h>
 #include <hpcrun/gpu/opencl/opencl-api.h>
 #include <hpcrun/thread_data.h>
+#include <hpcrun/trace.h>
 
 #include <messages/messages.h>
 
@@ -154,7 +155,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   TMSG(OPENCL,"nevents = %d", nevents);
   gpu_metrics_default_enable();
   gpu_metrics_KINFO_enable();
-  hpcrun_set_trace_metric();
+  hpcrun_set_trace_metric(HPCRUN_GPU_TRACE_MASK);
 
   char* evlist = METHOD_CALL(self, get_event_str);
   char* event = start_tok(evlist);

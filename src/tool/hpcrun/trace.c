@@ -311,15 +311,32 @@ hpcrun_trace_file_validate(int valid, char *op)
 void
 hpcrun_set_trace_metric
 (
+  hpcrun_trace_type_masks_t m
 )
 {
-  trace_suitable_metric = 1;
+  trace_suitable_metric |= m;
 }
 
 int
-hpcrun_get_trace_metric
+hpcrun_has_trace_metric
 (
 )
 {
-  return trace_suitable_metric;
+  return (trace_suitable_metric > 0) ? 1 : 0;
+}
+
+int
+hpcrun_cpu_trace_on
+(
+)
+{
+  return (trace_suitable_metric & HPCRUN_CPU_TRACE_MASK) ? 1 : 0;
+}
+
+int
+hpcrun_gpu_trace_on
+(
+)
+{
+  return (trace_suitable_metric & HPCRUN_GPU_TRACE_MASK) ? 1 : 0;
 }
