@@ -53,8 +53,8 @@
 #include <include/uint.h>
 
 typedef enum hpcrun_trace_type_masks {
-    HPCRUN_CPU_TRACE_MASK = 1,
-    HPCRUN_GPU_TRACE_MASK = 2
+    HPCRUN_CPU_TRACE_FLAG = 1,
+    HPCRUN_GPU_TRACE_FLAG = 2
 } hpcrun_trace_type_masks_t;
 
 void trace_other_close(void *thread_data);

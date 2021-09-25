@@ -571,7 +571,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     METHOD_CALL(self, store_metric_id, i, metric_id);
     if (isCycles) {
       hpcrun_cycles_metric_id = metric_id;
-      hpcrun_set_trace_metric(HPCRUN_CPU_TRACE_MASK);
+      hpcrun_set_trace_metric(HPCRUN_CPU_TRACE_FLAG);
     }
 
     // FIXME:LUSH: need a more flexible metric interface

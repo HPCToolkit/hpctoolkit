@@ -298,7 +298,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   int i, ret;
   int num_lush_metrics = 0;
 
-  hpcrun_set_trace_metric(HPCRUN_GPU_TRACE_MASK);
+  hpcrun_set_trace_metric(HPCRUN_GPU_TRACE_FLAG);
   char* evlist = METHOD_CALL(self, get_event_str);
   for (event = start_tok(evlist); more_tok(); event = next_tok()) {
     char name[1024];
