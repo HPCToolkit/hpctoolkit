@@ -151,7 +151,7 @@ static NameMapping renamingTable[] = {
   { "gpu_op_trace",        GPU_KERNEL        ,  TYPE_ELIDED         },
 
   { "hpcrun_no_activity",  NO_ACTIVITY       ,  TYPE_ELIDED         },
-  { PARTIAL_CALLPATH,      PARTIAL_CALLPATH  ,  TYPE_PLACEHOLDER    }
+  { PARTIAL_CALLPATH,      PARTIAL_CALLPATH  ,  TYPE_TOPDOWN_PLACEHOLDER }
 };
 
 
