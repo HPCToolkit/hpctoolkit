@@ -91,9 +91,6 @@ using std::string;
 // Size in bytes for parallel analysis of binaries
 #define DEFAULT_PSIZE     100000000   // 100MB
 
-#undef STRINGIFY
-#define STRINGIFY(x) #x
-
 static const char* version_info = HPCTOOLKIT_VERSION_STRING;
 
 static const char* usage_summary =

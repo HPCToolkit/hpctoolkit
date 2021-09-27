@@ -1,14 +1,16 @@
 Description:
-  hpcstruct recovers the program structure for an individual CPU or GPU
-  binary or all CPU and GPU binaries referenced by a directory containing
-  HPCToolkit performance measurements.
+  hpcstruct recovers the program structure or all CPU and GPU
+  binaries referenced by a directory containing HPCToolkit performance
+  measurements. If needed, one can apply hpcstruct to recover program
+  structure for an individual CPU or GPU binary.
 
   Program structure is a mapping from addresses of machine instructions
   in a binary to source code contexts; this mapping is used to attribute
-  measured performance metrics back to source code. A strength of hpcstruct
-  is its ability to attribute metrics to inlined functions and loops; such
-  mappings are essential for understanding the performance of programs
-  generated using template-based programming models.
+  measured performance metrics back to source code. A strength of
+  hpcstruct is its ability to attribute metrics to inlined functions
+  and loops; such mappings are especially useful for understanding the
+  performance of programs generated using template-based programming
+  models.
 
   hpcstruct is designed for analysis of optimized binaries created from
   C, C++, Fortran, CUDA, HIP, and DPC++ source code. Because hpcstruct's
@@ -20,14 +22,14 @@ Description:
   HPCToolkit manual for more information.
 
   To accelerate analysis of a measurement directory, which contains
-  references to an application as well as any shared libraries and/or GPU
-  binaries it uses, hpcstruct employs multiple threads by default. Multiple
-  small binaries are analyzed concurrently, using one thread per binary.
-  By default, this analysis will use half of the threads in the CPU set for
-  the process. Binaries larger than a certain threshold (see the --psize
-  option and its default) are analyzed using multiple threads. By default,
-  large binaries will be analyzed using the min(half of the threads in
-  the CPU set for the process, 16) threads.
+  references to an application as well as any shared libraries
+  and/or GPU binaries it uses, hpcstruct employs multiple threads by
+  default. Multiple small binaries are analyzed concurrently, using one
+  thread per binary.  By default, this analysis will use half of the
+  threads in the CPU set for the process. Binaries larger than a certain
+  threshold (see the --psize option and its default) are analyzed using
+  multiple threads. By default, large binaries will be analyzed using
+  min(half of the threads in the CPU set for the process, 16) threads.
 
 Options: General
   -V, --version        Print version information.
@@ -40,7 +42,7 @@ Options: Override parallelism defaults
   --psize <psize>      Size (bytes) of a binary that will cause hpcstruct
                        to use threads to analyze a binary in parallel.
                        Binaries with fewer than <psize> bytes will be analyzed
-                       concurrently, {" STRINGIFY(DEFAULT_PSIZE) "}
+                       concurrently, {100000000}
 
 Options: Override structure recovery defaults
   --cpu <yes/no>       Analyze CPU binaries referenced by a measurements
