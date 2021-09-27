@@ -1,66 +1,68 @@
-Given an application binary, a shared library, or an hpctoolkit
-measurement directory collected for a GPU-accelerated program that run
-on NVIDIA GPUs, hpcstruct recovers the program structure of its object
-code.  Program structure is a mapping of a program's static source-level
-structure to its object code.  By default, hpcstruct writes its results
-to the file 'basename(<binary>).hpcstruct'.  This file is typically
-passed to HPCToolkit's correlation tool hpcprof.
+Description:
+  hpcstruct recovers the program structure for an individual CPU or GPU
+  binary or all CPU and GPU binaries referenced by a directory containing
+  HPCToolkit performance measurements.
 
-hpcstruct is designed for highly optimized binaries created from
-compiled languages such as C, C++, Fortran, and CUDA source code. Because
-hpcstruct's algorithms exploit a binary's debugging information, for best
-results, binary should be compiled with standard debugging information.
-See the documentation for more information.
+  Program structure is a mapping from addresses of machine instructions
+  in a binary to source code contexts; this mapping is used to attribute
+  measured performance metrics back to source code. A strength of hpcstruct
+  is its ability to attribute metrics to inlined functions and loops; such
+  mappings are essential for understanding the performance of programs
+  generated using template-based programming models.
+
+  hpcstruct is designed for analysis of optimized binaries created from
+  C, C++, Fortran, CUDA, HIP, and DPC++ source code. Because hpcstruct's
+  algorithms exploit the line map and debug information recorded in an
+  application binary during compilation, for best results, we recommend that
+  binaries be compiled with standard debug information or at a minimum,
+  line map information. Typically, this is accomplished by pasing a '-g'
+  option to each compiler along with any optimization flags. See the
+  HPCToolkit manual for more information.
+
+  To accelerate analysis of a measurement directory, which contains
+  references to an application as well as any shared libraries and/or GPU
+  binaries it uses, hpcstruct employs multiple threads by default. Multiple
+  small binaries are analyzed concurrently, using one thread per binary.
+  By default, this analysis will use half of the threads in the CPU set for
+  the process. Binaries larger than a certain threshold (see the --psize
+  option and its default) are analyzed using multiple threads. By default,
+  large binaries will be analyzed using the min(half of the threads in
+  the CPU set for the process, 16) threads.
 
 Options: General
-  -v [<n>], --verbose [<n>]
-                       Verbose: generate progress messages to stderr at
-                       verbosity level <n>. {1}
   -V, --version        Print version information.
-  -h, --help           Print this help.
-  --debug=[<n>]        Debug: use debug level <n>. {1}
-  --debug-proc <glob>  Debug structure recovery for procedures matching
-                       the procedure glob <glob>
-  -j <num>, --jobs <num>  Use <num> openmp threads (jobs), default 1.
-  --jobs-parse <num>   Use <num> openmp threads for ParseAPI::parse(),
-                       default is same value for --jobs.
-  --jobs-symtab <num>  Use <num> openmp threads for Symtab methods.
-  --time               Display stats on time and space usage.
+  -h, --help           Print this help message.
 
-Options: Structure recovery
-  -I <path>, --include <path>
-                       Use <path> when resolving source file names. For a
-                       recursive search, append a '*' after the last slash,
-                       e.g., '/mypath/*' (quote or escape to protect from
-                       the shell.) May pass multiple times.
+Options: Override parallelism defaults
+  -j <num>, --jobs <num> Use <num> threads for for concurrent analysis of
+                       small binaries. Use <num> threads for parallel
+		       analysis of binaries of greater than <psize>.
+  --psize <psize>      Size (bytes) of a binary that will cause hpcstruct
+                       to use threads to analyze a binary in parallel.
+                       Binaries with fewer than <psize> bytes will be analyzed
+                       concurrently, {" STRINGIFY(DEFAULT_PSIZE) "}
 
-  -R '<old-path>=<new-path>', --replace-path '<old-path>=<new-path>'
-                       Substitute instances of <old-path> with <new-path>;
-                       apply to all paths (profile's load map, source code)
-                       for which <old-path> is a prefix.  Use '\\' to escape
-                       instances of '=' within a path. May pass multiple
-                       times.
-  --use-binutils       Use binutils as the default binary instruction decoder
-                       On x86 default is Intel XED library.
-  --show-gaps          Experimental feature to show unclaimed vma ranges (gaps)
-                       in the control-flow graph.
+Options: Override structure recovery defaults
+  --cpu <yes/no>       Analyze CPU binaries referenced by a measurements
+                       directory. {yes} 
+  --gpu <yes/no>       Analyze GPU binaries referenced by a measurements
+                       directory. {yes} 
+  --gpucfg <yes/no>    Compute loop nesting structure for GPU machine code.
+                       Loop nesting structure is only useful with
+                       instruction-level measurements collected using PC
+                       sampling or instrumentation. {no} 
 
-Options: Demangling
-  --demangle-library <path to demangling library>
-                       Specify the pathname for a dynamically-linked
-                       library whose demangler function should 
-                       be used for demangling. By default, the demangler used
-                       is __cxa_demangle in the C++ Standard Library linked into
-                       hpcstruct.
-
-  --demangle-function <name of the demangler>
-                       By default, the demangler used is __cxa_demangle, a function
-                       provided by the C++ Standard Library. This option enables
-                       one to specify an alternate demangler, e.g., cplus_demangle
-                       provided by the BFD library.
-
-Options: Output:
+Options: Specify output file when analyzing a single binary
   -o <file>, --output <file>
                        Write hpcstruct file to <file>.
                        Use '--output=-' to write output to stdout.
-  --compact            Generate compact output, eliminating extra white space
+                       Note: this option may only be used when analyzing
+		       a single binary.
+
+Options: Developers only
+  --jobs-struct <num>  Use <num> threads for the MakeStructure() phase only.
+  --jobs-parse  <num>  Use <num> threads for the ParseAPI::parse() phase only.
+  --jobs-symtab <num>  Use <num> threads for the Symtab phase (if possible).
+  --show-gaps          Feature to show unclaimed vma ranges (gaps)
+                       in the control-flow graph.
+  --time               Display stats on hpcstruct's time and space usage.

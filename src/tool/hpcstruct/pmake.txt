@@ -66,14 +66,8 @@ L := $(patsubst $(MEAS_DIR)/%.hpcrun,$(LM_DIR)/%.lm,$(H))
 #-------------------------------------------------------------------------------
 # create $(LM_DIR)/all.lm: a list of all load modules involved in the execution
 #-------------------------------------------------------------------------------
-ifneq ($(L),)
 $(LM_DIR)/all.lm: $(L)
 	cat $(L) | sort -u | grep -v gpubin | grep -v libhpcrun | grep -v libmonitor | grep -v libxed | grep -v libpfm | grep -v libcuda | grep -v libcupti > $(LM_DIR)/all.lm
-else
-$(LM_DIR)/all.lm: $(L)
-	-@mkdir $(LM_DIR) >& /dev/null
-	touch $(LM_DIR)/all.lm 
-endif
 
 #-------------------------------------------------------------------------------
 # create cpubins directory containing links to all CPU binaries
@@ -123,7 +117,7 @@ $(STRUCTS_DIR)/%.hpcstruct: $(CPUBIN_DIR)/%
 		else
 			echo msg: begin concurrent analysis of $$cpubin_name \\(using 1 of $(JOBS) threads\\)
 		fi
-		hpcstruct -j $(THREADS) -o $$struct_name $< > $$warn_name 2>&1
+		$(STRUCT) -j $(THREADS) -o $$struct_name $< > $$warn_name 2>&1
 		if test -s $$warn_name ; then
 			echo WARNING: incomplete analysis of $$cpubin_name';' see $$warn_name for details
 			if test ! -s $$struct_name ; then
@@ -156,7 +150,7 @@ $(STRUCTS_DIR)/%.hpcstruct: $(GPUBIN_DIR)/%
 		else
 			echo msg: begin concurrent analysis of $$gpubin_name \\(using 1 of $(JOBS) threads\\)
 		fi
-		hpcstruct -j $(THREADS) --gpucfg $(GPUBIN_CFG) -o $$struct_name $< > $$warn_name 2>&1
+		$(STRUCT) -j $(THREADS) --gpucfg $(GPUBIN_CFG) -o $$struct_name $< > $$warn_name 2>&1
 		if test -s $$warn_name ; then
 			echo WARNING: incomplete analysis of $$gpubin_name';' see $$warn_name for details
 			if test ! -s $$struct_name ; then
@@ -173,11 +167,23 @@ $(STRUCTS_DIR)/%.hpcstruct: $(GPUBIN_DIR)/%
 	fi
 
 #-------------------------------------------------------------------------------
-# analyze all gpubins to create structure files
+# analyze files to create structure files
 #-------------------------------------------------------------------------------
+DOMAKE=1
+
+ifeq ($(CPU_ANALYZE),1)
+ifeq ($(L),)
+all:
+	echo ERROR: directory $(MEAS_DIR) does not contain any hpcrun measurement files
+DOMAKE=0
+endif
+endif
+
+ifeq ($(DOMAKE),1)
 all: $(CPUBIN_DIR)
-	$(MAKE) -j 1 JOBS=1 THREADS=$(JOBS)  GPAR_SIZE=$(PAR_SIZE) CPAR_SIZE=$(PAR_SIZE) analyze
+	$(MAKE) -j 1 JOBS=1 THREADS=$(PTHREADS)  GPAR_SIZE=$(PAR_SIZE) CPAR_SIZE=$(PAR_SIZE) analyze
 	$(MAKE) -j $(JOBS) JOBS=$(JOBS) THREADS=1  GPAR_SIZE=0 CPAR_SIZE=0 analyze
+endif
 
 analyze: $(GS) $(CS) 
 
