@@ -1,5 +1,5 @@
 Description:
-  hpcstruct recovers the program structure or all CPU and GPU
+  hpcstruct recovers the program structure for all CPU and GPU
   binaries referenced by a directory containing HPCToolkit performance
   measurements. If needed, one can apply hpcstruct to recover program
   structure for an individual CPU or GPU binary.
