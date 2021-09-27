@@ -1,6 +1,5 @@
-#ifndef cupti_cct_set_h
-#define cupti_cct_set_h
-
+#ifndef cupti_cct_trace_h
+#define cupti_cct_trace_h
 
 //*****************************************************************************
 // system includes
@@ -14,32 +13,23 @@
 
 #include <hpcrun/cct/cct.h>
 
-//*****************************************************************************
-// interface operations
-//*****************************************************************************
-//
-typedef struct cupti_cct_set_entry_s cupti_cct_set_entry_t;
+typedef struct cupti_cct_trace_s cupti_cct_trace_t;
 
+// Append a cct and shrink if necessary
+// Returns true if shrink is performed
 bool
-cupti_cct_set_lookup
-(
- cct_node_t *cct
-); 
-
-
-void
-cupti_cct_set_insert
+cupti_cct_trace_append
 (
  cct_node_t *cct
 );
 
 
+// The previous ccts are marked as a range
+// The same range can be taken out
 void
-cupti_cct_set_clear
+cupti_cct_trace_flush
 (
 );
 
 
 #endif
-
-

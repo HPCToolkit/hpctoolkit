@@ -1,7 +1,7 @@
+#include "cupti-unwind-map.h"
+
 #include <lib/prof-lean/splay-macros.h>
 #include <hpcrun/memory/hpcrun-malloc.h>
-
-#include "cupti-unwind-map.h"
 
 //******************************************************************************
 // type declarations
@@ -352,8 +352,6 @@ cupti_unwind_map_new
 {
   cupti_unwind_map_entry_t *entry = st_alloc(&free_list);
   
-  memset(entry, 0, sizeof(cupti_unwind_map_entry_t));
-
   entry->key = key;
   entry->cct_node = cct_node;
   entry->backoff = 1;
