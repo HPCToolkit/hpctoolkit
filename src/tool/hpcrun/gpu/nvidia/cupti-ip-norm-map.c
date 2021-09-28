@@ -35,8 +35,8 @@ typedef void (*splay_fn_t)
 );
 
 
-bool ip_norm_cmp_lt(ip_norm_key_t left, ip_norm_key_t right);
-bool ip_norm_cmp_gt(ip_norm_key_t left, ip_norm_key_t right);
+static bool ip_norm_cmp_lt(ip_normalized_t left, ip_normalized_t right);
+static bool ip_norm_cmp_gt(ip_normalized_t left, ip_normalized_t right);
 
 #define ip_norm_builtin_lt(a, b) (ip_norm_cmp_lt(a, b))
 #define ip_norm_builtin_gt(a, b) (ip_norm_cmp_gt(a, b))
@@ -105,7 +105,7 @@ bool ip_norm_cmp_gt(ip_norm_key_t left, ip_norm_key_t right);
 \
   static typed_splay_node(type) * \
   typed_splay_lookup(type) \
-  (typed_splay_node(type) **root, ip_norm_key_t key) \
+  (typed_splay_node(type) **root, ip_normalized_t key) \
   macro({ \
     typed_splay_node(type) *result = (typed_splay_node(type) *) \
       splay_op(lookup)((splay_ip_norm_node_t **) root, key); \
@@ -132,7 +132,7 @@ bool ip_norm_cmp_gt(ip_norm_key_t left, ip_norm_key_t right);
 // interface operations
 //******************************************************************************
 
-bool
+static bool
 ip_norm_cmp_gt
 (
  ip_normalized_t left,
@@ -150,7 +150,7 @@ ip_norm_cmp_gt
 }
 
 
-bool
+static bool
 ip_norm_cmp_lt
 (
  ip_normalized_t left,
@@ -168,7 +168,7 @@ ip_norm_cmp_lt
 }
 
 
-bool
+static bool
 ip_norm_cmp_eq
 (
  ip_normalized_t left,
@@ -179,11 +179,11 @@ ip_norm_cmp_eq
 }
 
 
-splay_ip_norm_node_t *
-splay_splay
+static splay_ip_norm_node_t *
+splay_ip_norm_splay
 (
  splay_ip_norm_node_t *root,
- ip_norm_key_t splay_key
+ ip_normalized_t splay_key
 )
 {
   IP_NORM_SPLAY_TREE(splay_ip_norm_node_t, root, splay_key, key, left, right);
@@ -192,7 +192,7 @@ splay_splay
 }
 
 
-bool
+static bool
 splay_ip_norm_insert
 (
  splay_ip_norm_node_t **root,
@@ -202,7 +202,7 @@ splay_ip_norm_insert
   node->left = node->right = NULL;
 
   if (*root != NULL) {
-    *root = splay_splay(*root, node->key);
+    *root = splay_ip_norm_splay(*root, node->key);
     
     if (ip_norm_cmp_lt(node->key, (*root)->key)) {
       node->left = (*root)->left;
@@ -224,7 +224,7 @@ splay_ip_norm_insert
 }
 
 
-splay_ip_norm_node_t *
+static splay_ip_norm_node_t *
 splay_ip_norm_lookup
 (
  splay_ip_norm_node_t **root,
@@ -233,7 +233,7 @@ splay_ip_norm_lookup
 {
   splay_ip_norm_node_t *result = 0;
 
-  *root = splay_splay(*root, key);
+  *root = splay_ip_norm_splay(*root, key);
 
   if (*root && ip_norm_cmp_eq((*root)->key, key)) {
     result = *root;
@@ -243,7 +243,44 @@ splay_ip_norm_lookup
 }
 
 
-splay_ip_norm_node_t *
+static void
+splay_forall_allorder
+(
+ splay_ip_norm_node_t *node,
+ splay_fn_t fn,
+ void *arg
+)
+{
+  if (node) {
+    fn(node, splay_preorder_visit, arg);
+    splay_forall_allorder(node->left, fn, arg);
+    fn(node, splay_inorder_visit, arg);
+    splay_forall_allorder(node->right, fn, arg);
+    fn(node, splay_postorder_visit, arg);
+  }
+}
+
+
+static void
+splay_ip_norm_forall
+(
+ splay_ip_norm_node_t *root,
+ splay_order_t order,
+ splay_fn_t fn,
+ void *arg
+)
+{
+  switch (order) {
+    case splay_allorder: 
+      splay_forall_allorder(root, fn, arg);
+      break;
+    default:
+      break;
+  }
+}
+
+
+static splay_ip_norm_node_t *
 splay_ip_norm_alloc_helper
 (
  splay_ip_norm_node_t **free_list, 
@@ -264,7 +301,7 @@ splay_ip_norm_alloc_helper
 }
 
 
-void
+static void
 splay_ip_norm_free_helper
 (
  splay_ip_norm_node_t **free_list, 
@@ -302,7 +339,7 @@ splay_ip_norm_free_helper
   typed_splay_free(free_list, node)
 
 #undef typed_splay_node
-#define typed_splay_node(ip_norm) cupti_ip_norm_set_entry_t 
+#define typed_splay_node(ip_norm) cupti_ip_norm_map_entry_t 
 
 struct cupti_ip_norm_map_entry_s {
   struct cupti_ip_norm_map_entry_s *left;
@@ -315,13 +352,13 @@ static cupti_ip_norm_map_entry_t *map_root = NULL;
 static cupti_ip_norm_map_entry_t *free_list = NULL;
 
 
-typed_splay_impl(cct)
+typed_splay_impl(ip_norm)
 
 
 static void
 flush_fn_helper
 (
- cupti_ip_norm_entry_t *entry,
+ cupti_ip_norm_map_entry_t *entry,
  splay_visit_t visit_type,
  void *args
 )
@@ -340,7 +377,7 @@ cupti_ip_norm_map_lookup
 {
   cct_addr_t *addr = hpcrun_cct_addr(cct);
   ip_normalized_t ip_norm = addr->ip_norm;
-  cupti_ip_norm_entry_t *result = st_lookup(&map_root, ip_norm);
+  cupti_ip_norm_map_entry_t *result = st_lookup(&map_root, ip_norm);
 
   if (result == NULL) {
     return CUPTI_IP_NORM_MAP_NOT_EXIST;
@@ -360,11 +397,11 @@ cupti_ip_norm_map_insert
 {
   cct_addr_t *addr = hpcrun_cct_addr(cct);
   ip_normalized_t ip_norm = addr->ip_norm;
-  cupti_ip_norm_entry_t *entry = st_lookup(&map_root, ip_norm);
+  cupti_ip_norm_map_entry_t *entry = st_lookup(&map_root, ip_norm);
 
   if (entry == NULL) {
     entry = st_alloc(&free_list);
-    entry->ip_norm = ip_norm
+    entry->ip_norm = ip_norm;
     entry->cct = cct;
     st_insert(&map_root, entry);
   }
@@ -379,4 +416,3 @@ cupti_ip_norm_map_clear
   st_forall(map_root, splay_allorder, flush_fn_helper, NULL);
   map_root = NULL;
 }
-#endif

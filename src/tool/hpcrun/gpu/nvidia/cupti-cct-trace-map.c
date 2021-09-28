@@ -91,8 +91,8 @@ typedef void (*splay_fn_t)
 );
 
 
-bool cct_trace_cmp_lt(cct_trace_key_t left, cct_trace_key_t right);
-bool cct_trace_cmp_gt(cct_trace_key_t left, cct_trace_key_t right);
+static bool cct_trace_cmp_lt(cct_trace_key_t left, cct_trace_key_t right);
+static bool cct_trace_cmp_gt(cct_trace_key_t left, cct_trace_key_t right);
 
 #define cct_trace_builtin_lt(a, b) (cct_trace_cmp_lt(a, b))
 #define cct_trace_builtin_gt(a, b) (cct_trace_cmp_gt(a, b))
@@ -190,7 +190,7 @@ bool cct_trace_cmp_gt(cct_trace_key_t left, cct_trace_key_t right);
 // interface operations
 //******************************************************************************
 
-bool
+static bool
 cct_trace_cmp_gt
 (
  cct_trace_key_t left,
@@ -208,7 +208,7 @@ cct_trace_cmp_gt
 }
 
 
-bool
+static bool
 cct_trace_cmp_lt
 (
  cct_trace_key_t left,
@@ -226,7 +226,7 @@ cct_trace_cmp_lt
 }
 
 
-bool
+static bool
 cct_trace_cmp_eq
 (
  cct_trace_key_t left,
@@ -237,8 +237,8 @@ cct_trace_cmp_eq
 }
 
 
-splay_cct_trace_node_t *
-splay_splay
+static splay_cct_trace_node_t *
+splay_cct_trace_splay
 (
  splay_cct_trace_node_t *root,
  cct_trace_key_t splay_key
@@ -250,7 +250,52 @@ splay_splay
 }
 
 
-bool
+static void
+splay_delete_root
+(
+ splay_cct_trace_node_t **root
+)
+{
+  splay_cct_trace_node_t *map_root = *root;
+
+  if (map_root->left == NULL) {
+    map_root = map_root->right;
+  } else {
+    map_root->left = splay_cct_trace_splay(map_root->left, map_root->key);
+    map_root->left->right = map_root->right;
+    map_root = map_root->left;
+  }
+
+  // detach deleted node from others
+  (*root)->left = (*root)->right = NULL; 
+
+  // set new root
+  *root = map_root; 
+}
+
+
+static splay_cct_trace_node_t *
+splay_cct_trace_delete
+(
+ splay_cct_trace_node_t **root,
+ cct_trace_key_t key
+)
+{
+  splay_cct_trace_node_t *removed = NULL;
+  
+  if (*root) {
+    *root = splay_cct_trace_splay(*root, key);
+
+    if (cct_trace_cmp_eq((*root)->key, key)) {
+      removed = *root;
+      splay_delete_root(root);
+    }
+  }
+
+  return removed;
+}
+
+static bool
 splay_cct_trace_insert
 (
  splay_cct_trace_node_t **root,
@@ -260,7 +305,7 @@ splay_cct_trace_insert
   node->left = node->right = NULL;
 
   if (*root != NULL) {
-    *root = splay_splay(*root, node->key);
+    *root = splay_cct_trace_splay(*root, node->key);
     
     if (cct_trace_cmp_lt(node->key, (*root)->key)) {
       node->left = (*root)->left;
@@ -282,7 +327,7 @@ splay_cct_trace_insert
 }
 
 
-splay_cct_trace_node_t *
+static splay_cct_trace_node_t *
 splay_cct_trace_lookup
 (
  splay_cct_trace_node_t **root,
@@ -291,7 +336,7 @@ splay_cct_trace_lookup
 {
   splay_cct_trace_node_t *result = 0;
 
-  *root = splay_splay(*root, key);
+  *root = splay_cct_trace_splay(*root, key);
 
   if (*root && cct_trace_cmp_eq((*root)->key, key)) {
     result = *root;
@@ -301,7 +346,7 @@ splay_cct_trace_lookup
 }
 
 
-splay_cct_trace_node_t *
+static splay_cct_trace_node_t *
 splay_cct_trace_alloc_helper
 (
  splay_cct_trace_node_t **free_list, 
@@ -322,7 +367,7 @@ splay_cct_trace_alloc_helper
 }
 
 
-void
+static void
 splay_cct_trace_free_helper
 (
  splay_cct_trace_node_t **free_list, 
@@ -365,7 +410,7 @@ struct cupti_cct_trace_map_entry_s {
   struct cupti_cct_trace_map_entry_s *left;
   struct cupti_cct_trace_map_entry_s *right;
   cct_trace_key_t key;
-  cupti_cct_trace_map_entry_t *trace_node;
+  cupti_cct_trace_node_t *trace_node;
 };
 
 static __thread cupti_cct_trace_map_entry_t *map_root = NULL;
@@ -424,6 +469,11 @@ cupti_cct_trace_map_delete
  cct_trace_key_t key
 )
 {
+  cupti_cct_trace_map_entry_t *node = st_delete(&map_root, key);
+  
+  if (node != NULL) {
+    st_free(&free_list, node);
+  }
 }
 
 

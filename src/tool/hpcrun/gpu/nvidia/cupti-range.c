@@ -11,8 +11,8 @@
 #include "cuda-api.h"
 #include "cupti-api.h"
 #include "cupti-ip-norm-map.h"
-#include "cupti-cct-trie.h"
 #include "cupti-pc-sampling-api.h"
+#include "cupti-cct-trace.h"
 
 
 static cupti_range_mode_t cupti_range_mode = CUPTI_RANGE_MODE_NONE;
@@ -82,19 +82,19 @@ cupti_range_mode_context_sensitive_is_enter
 )
 {
   cct_node_t *api_node = args;
-  cupti_ip_norm_map_ret_t map_ret_type = cupti_cct_set_lookup(api_node);
+  cupti_ip_norm_map_ret_t map_ret_type = cupti_ip_norm_map_lookup(api_node);
 
   bool do_flush = false;
   if (map_ret_type == CUPTI_IP_NORM_MAP_DUPLICATE) {
     // Duplicate ccts
-    cupti_cct_set_clear();
+    cupti_ip_norm_map_clear();
     if (cupti_pc_sampling_active()) {
       // If active, we encounter a new range and have to flush
       do_flush = true;
     }
   } else if (map_ret_type == CUPTI_IP_NORM_MAP_NOT_EXIST) {
     // No such a node
-    cupti_cct_set_insert(api_node);
+    cupti_ip_norm_map_insert(api_node);
   }
 
   CUcontext context;
@@ -106,11 +106,14 @@ cupti_range_mode_context_sensitive_is_enter
     cupti_cct_trace_flush();
   }
 
-  bool sampled = cupti_cct_trace_append(api_node);
-  if (sampled) {
-    cupti_pc_sampling_start(context);
+  if (!cupti_pc_sampling_active()) {
+    bool sampled = cupti_cct_trace_append(api_node) && cupti_range_mode_context_sensitive_is_sampled();
+    if (sampled) {
+      cupti_pc_sampling_start(context);
+    }
   }
 
+  return do_flush;
 #if 0
   bool exist_intrie = cupti_cct_trie_lookup(api_node);
   bool do_flush = false;

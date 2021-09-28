@@ -60,6 +60,7 @@
 #include <sys/stat.h>  // mkdir
 #include <sys/types.h>
 #include <unistd.h>
+#include <math.h>
 
 #ifndef HPCRUN_STATIC_LINK
 #include <dlfcn.h>
@@ -114,6 +115,7 @@
 #include "cupti-subscribers.h"
 #include "cupti-pc-sampling-api.h"
 #include "cupti-unwind-map.h"
+#include "cupti-cct-trace.h"
 #endif
 
 //******************************************************************************
@@ -2187,9 +2189,15 @@ cupti_device_flush(void *args, int how)
   TMSG(CUPTI, "Exit CUPTI device flush");
 
 #ifdef NEW_CUPTI_ANALYSIS
-  cupti_cct_map_dump();
-		
   printf("Total cct unwinds %lu, correct unwinds %lu\n", total_unwinds, correct_unwinds);
+
+  cupti_cct_map_dump();
+
+  printf("-----------------------------------------------------------------\n");
+
+  printf("CCT trace\n");
+
+  cupti_cct_trace_dump();
 #endif
 }
 

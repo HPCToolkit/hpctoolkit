@@ -1,5 +1,5 @@
-#ifndef cupti_ip_norm_set_h
-#define cupti_ip_norm_set_h
+#ifndef cupti_ip_norm_map_h
+#define cupti_ip_norm_map_h
 
 
 //*****************************************************************************
@@ -18,7 +18,7 @@
 // interface operations
 //*****************************************************************************
 //
-typedef struct cupti_ip_norm_set_entry_s cupti_ip_norm_set_entry_t;
+typedef struct cupti_ip_norm_map_entry_s cupti_ip_norm_map_entry_t;
 
 typedef enum {
   CUPTI_IP_NORM_MAP_NOT_EXIST = 0,

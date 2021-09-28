@@ -13,7 +13,7 @@
 
 #include <hpcrun/cct/cct.h>
 
-typedef struct cupti_cct_trace_s cupti_cct_trace_t;
+typedef struct cupti_cct_trace_node_s cupti_cct_trace_node_t;
 
 // Append a cct and shrink if necessary
 // Returns true if shrink is performed
@@ -31,5 +31,10 @@ cupti_cct_trace_flush
 (
 );
 
+
+void
+cupti_cct_trace_dump
+(
+);
 
 #endif
