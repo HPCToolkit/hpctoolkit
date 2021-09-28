@@ -457,6 +457,7 @@ hpcrun_init_internal(bool is_child)
   hpcrun_options__getopts(&opts);
 
   hpcrun_trace_init(); // this must go after thread initialization
+
   hpcrun_trace_open(&(TD_GET(core_profile_trace_data)));
 
   // Decide whether to retain full single recursion, or collapse recursive calls to
@@ -525,6 +526,14 @@ hpcrun_init_internal(bool is_child)
   }
   SAMPLE_SOURCES(gen_event_set, lush_metrics);
 
+  // Check whether tracing is enabled and metrics suitable for tracing are specified
+  if (hpcrun_trace_isactive() && hpcrun_has_trace_metric() == 0) {
+    fprintf(stderr, "Error: Tracing is specified at the command line without a sutable metric for tracing.\n");
+    fprintf(stderr, "\tCPU tracing is only meaningful when a time based metric is given, such as REALTIME, CPUTIME, and CYCLES\n");
+    fprintf(stderr, "\tGPU tracing is always meaningful.\n");
+    monitor_real_exit(1);
+  }
+
   // set up initial 'epoch'
 
   TMSG(EPOCH,"process init setting up initial epoch/loadmap");
@@ -561,6 +570,18 @@ hpcrun_init_internal(bool is_child)
 
   hpcrun_enable_sampling();
   hpcrun_set_safe_to_sync();
+
+  if (hpcrun_trace_isactive() && hpcrun_cpu_trace_on()) {
+    // If tracing on the CPU, insert <no activity> at the beginning of the 
+    // trace.  This ensures that if there is a long interval at the 
+    // beginning of the trace when sampling is disabled, the trace will 
+    // not be artificially short.  Don't add <no activity> to a CPU trace 
+    // line when only tracing on a GPU.
+    core_profile_trace_data_t * cptd = &(TD_GET(core_profile_trace_data));
+    cct_bundle_t* cct_bundle = &(cptd->epoch->csdata);
+    cct_node_t* no_activity = hpcrun_cct_bundle_get_no_activity_node(cct_bundle);
+    hpcrun_trace_append(cptd, no_activity, 0, INT_MAX, 0);
+  }
 
   // release the wallclock handler -for this thread-
   hpcrun_itimer_wallclock_ok(true);

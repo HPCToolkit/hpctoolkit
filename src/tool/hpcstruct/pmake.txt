@@ -73,8 +73,8 @@ $(LM_DIR)/all.lm: $(L)
 # create cpubins directory containing links to all CPU binaries
 #-------------------------------------------------------------------------------
 $(CPUBIN_DIR): $(LM_DIR)/all.lm
-	-@mkdir $(CPUBIN_DIR) >& /dev/null 
-	-@pushd $(CPUBIN_DIR) >& /dev/null; for i in `cat $(LM_DIR)/all.lm`; do ln -s $$i; done >& /dev/null 
+	-@mkdir $(CPUBIN_DIR) >&- 2>&-
+	-@cd $(CPUBIN_DIR) >&- 2>&-; for i in `cat $(LM_DIR)/all.lm`; do ln -s $$i; done >&- 2>&-
 
 #-------------------------------------------------------------------------------
 # $(CB): cpubin files
@@ -191,7 +191,7 @@ analyze: $(GS) $(CS)
 # rule for listing load modules in hpcrun files
 #-------------------------------------------------------------------------------
 $(LM_DIR)/%.lm: $(MEAS_DIR)/%.hpcrun
-	-@mkdir $(LM_DIR) >& /dev/null
+	-@mkdir $(LM_DIR) >&- 2>&-
 	$(PROFTT) -l $< > $@
 
 #-------------------------------------------------------------------------------

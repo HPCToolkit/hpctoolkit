@@ -98,6 +98,7 @@
 #include <hpcrun/sample_sources_registered.h>
 #include <hpcrun/thread_data.h>
 #include <hpcrun/ompt/ompt-region.h>
+#include <hpcrun/trace.h>
 
 #include <lush/lush-backtrace.h>
 #include <messages/messages.h>
@@ -465,6 +466,8 @@ METHOD_FN(process_event_list, int lush_metrics)
 
   TMSG(ITIMER_CTL, "process event list, lush_metrics = %d", lush_metrics);
 
+  hpcrun_set_trace_metric(HPCRUN_CPU_TRACE_FLAG);
+
   // fetch the event string for the sample source
   char* evlist = METHOD_CALL(self, get_event_str);
   char* event = start_tok(evlist);
@@ -501,7 +504,11 @@ METHOD_FN(process_event_list, int lush_metrics)
   }
 
   // extract event threshold
-  hpcrun_extract_ev_thresh(event, sizeof(name), name, &period, DEFAULT_PERIOD);
+  if (hpcrun_extract_ev_thresh(event, sizeof(name), name, &period, DEFAULT_PERIOD) == THRESH_FREQ) {
+    // if the event is specified with a frequency,
+    // we convert frequency to period
+    period = (long) (1000000.0 / period);
+  }
 
   // store event threshold
   METHOD_CALL(self, store_event, ITIMER_EVENT, period);
@@ -685,8 +692,16 @@ itimer_signal_handler(int sig, siginfo_t* siginfo, void* context)
   hpcrun_metricVal_t metric_delta = {.r = metric_incr / 1.0e6}; 
 
   int metric_id = hpcrun_event2metric(self, ITIMER_EVENT);
+
+  sampling_info_t info = {
+    .sample_clock = 0,
+    .sample_data = NULL,
+    .sampling_period = period * 1000,
+    .is_time_based_metric = 1
+  };
+
   sample_val_t sv = hpcrun_sample_callpath(context, metric_id, metric_delta,
-					    0/*skipInner*/, 0/*isSync*/, NULL);
+					    0/*skipInner*/, 0/*isSync*/, &info);
 
   blame_shift_apply(metric_id, sv.sample_node, metric_incr);
 
