@@ -151,6 +151,7 @@ am__objects_1 = libHPCprof_lean_la-hpcrun-fmt.lo \
 	lush/libHPCprof_lean_la-lush-support.lo \
 	libHPCprof_lean_la-binarytree.lo \
 	libHPCprof_lean_la-cskiplist.lo \
+	libHPCprof_lean_la-cpuset_hwthreads.lo \
 	libHPCprof_lean_la-crypto-hash.lo libHPCprof_lean_la-queues.lo \
 	libHPCprof_lean_la-stacks.lo libHPCprof_lean_la-bistack.lo \
 	libHPCprof_lean_la-bichannel.lo \
@@ -560,6 +561,7 @@ MYSOURCES = \
 	\
 	binarytree.h binarytree.c \
 	cskiplist.h cskiplist.c \
+	cpuset_hwthreads.h cpuset_hwthreads.c \
 	crypto-hash.h crypto-hash.c \
 	queues.h queues.c \
 	stacks.h stacks.c \
@@ -679,6 +681,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-bichannel.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-binarytree.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-bistack.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-cpuset_hwthreads.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-crypto-hash.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-cskiplist.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libHPCprof_lean_la-elf-helper.Plo@am__quote@
@@ -823,6 +826,13 @@ libHPCprof_lean_la-cskiplist.lo: cskiplist.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='cskiplist.c' object='libHPCprof_lean_la-cskiplist.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-cskiplist.lo `test -f 'cskiplist.c' || echo '$(srcdir)/'`cskiplist.c
+
+libHPCprof_lean_la-cpuset_hwthreads.lo: cpuset_hwthreads.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-cpuset_hwthreads.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-cpuset_hwthreads.Tpo -c -o libHPCprof_lean_la-cpuset_hwthreads.lo `test -f 'cpuset_hwthreads.c' || echo '$(srcdir)/'`cpuset_hwthreads.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libHPCprof_lean_la-cpuset_hwthreads.Tpo $(DEPDIR)/libHPCprof_lean_la-cpuset_hwthreads.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='cpuset_hwthreads.c' object='libHPCprof_lean_la-cpuset_hwthreads.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -c -o libHPCprof_lean_la-cpuset_hwthreads.lo `test -f 'cpuset_hwthreads.c' || echo '$(srcdir)/'`cpuset_hwthreads.c
 
 libHPCprof_lean_la-crypto-hash.lo: crypto-hash.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprof_lean_la_CFLAGS) $(CFLAGS) -MT libHPCprof_lean_la-crypto-hash.lo -MD -MP -MF $(DEPDIR)/libHPCprof_lean_la-crypto-hash.Tpo -c -o libHPCprof_lean_la-crypto-hash.lo `test -f 'crypto-hash.c' || echo '$(srcdir)/'`crypto-hash.c

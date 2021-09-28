@@ -57,7 +57,7 @@
 //
 //***************************************************************************
 
-//************************* System Include Files ****************************
+//************************* System Include Files *******************
 
 #include <iostream>
 using std::cerr;
@@ -80,7 +80,7 @@ using std::string;
 //*************************** Forward Declarations **************************
 
 // Cf. DIAG_Die.
-#define ARG_ERROR(streamArgs)                                        \
+#define ARG_ERROR(streamArgs)					     \
   { std::ostringstream WeIrDnAmE;                                    \
     WeIrDnAmE << streamArgs /*<< std::ends*/;                        \
     printError(std::cerr, WeIrDnAmE.str());                          \
@@ -88,96 +88,20 @@ using std::string;
 
 //***************************************************************************
 
-// Size in bytes for parallel analysis of gpu binaries
-#define DEFAULT_PSIZE     100000000
-
-#undef STRINGIFY
-#define STRINGIFY(x) #x
+// Size in bytes for parallel analysis of binaries
+#define DEFAULT_PSIZE     100000000   // 100MB
 
 static const char* version_info = HPCTOOLKIT_VERSION_STRING;
 
 static const char* usage_summary =
-"hpcstruct [options] <binary>\n\
-   or: hpcstruct [options] <measurement directory for GPU-accelerated application>\n";
+  "  hpcstruct [options] <measurement directory>\n"
+  "  hpcstruct [optiuons] <binary>\n";
 
-static const char* usage_details = "\
-Given an application binary, a shared library, or a GPU binary, hpcstruct\n\
-recovers the program structure of its object code.  Program structure is a\n\
-mapping of a program's object code to its static source-level structure.\n\
-By default, hpcstruct writes its results to the file 'basename(<binary>).hpcstruct'.\n\
-To improve attribution of performance measurements to program source code, one can\n\
-pass one or more program structure files to HPCToolkit's analysis tool hpcprof\n\
-along with one or more HPCToolkit performance measurement directories.\n\
-\n\
-During execution of a GPU-accelerated application, HPCToolkit records\n\
-GPU binaries in the application's measurement directory. To attribute\n\
-performance to GPU functions in a GPU-accelerated application, one should \n\
-apply hpcstruct to the application's HPCToolkit measurement directory to\n\
-analyze all GPU binaries recorded within. When analyzing a measurement directory\n\
-that includes GPU binaries, any program structure files produced will be recorded\n\
-inside the measurement directory. When hpcprof is applied to a measurement\n\
-directory that contains program structure files for GPU binaries, these program\n\
-structure files will be used to help attribute any GPU performance measurements.\n\
-\n\
-hpcstruct is designed primarily for highly optimized binaries created from\n\
-C, C++, Fortran, CUDA, and HIP source code. Because hpcstruct's algorithms exploit a\n\
-binary's debugging information, for best results, binary should be compiled\n\
-with standard debugging information or at a minimum, line map information.\n\
-See the HPCToolkit manual for more information.\n\
-\n\
-For faster analysis of large binaries or many GPU binaries, we recommend using\n\
-the -j option to employ multithreading. As many as 32 cores can be used profitably\n\
-to analyze large CPU or GPU binaries in the measurements directory for a\n\
-GPU-accelerated application.\n\
-\n\
-Options: General\n\
-  -V, --version        Print version information.\n\
-  -h, --help           Print this help message.\n\
-  --debug=[<n>]        Debug: use debug level <n>. {1}\n\
-  -v [<n>], --verbose [<n>]  Verbose: generate progress messages to stderr\n\
-                       at verbosity level <n>. {1}\n\
-\n\
-Options: Parallel usage\n\
-  -j <num>, --jobs <num>  Use <num> threads for all phases in hpcstruct. {1}\n\
-  --psize <n>          Size (bytes) of a binary that will cause hpcstruct\n\
-                       to use <num> threads to analyze a binary in parallel.\n\
-                       binaries with fewer than <n> bytes will be analyzed\n\
-                       concurrently, <num> at a time.  {" STRINGIFY(DEFAULT_PSIZE) "}\n\
-\n\
-Options: Structure recovery\n\
-  --cpu <yes/no>       Analyze CPU binaries referenced by a measurements\n\
-                       directory. {yes} \n\
-  --gpu <yes/no>       Analyze GPU binaries referenced by a measurements\n\
-                       directory. {yes} \n\
-  --gpucfg <yes/no>    Compute loop nesting structure for GPU machine code.\n\
-                       Loop nesting structure is only useful with\n\
-                       instruction-level measurements collected using PC\n\
-                       sampling or instrumentation. {no} \n\
-  -I <path>, --include <path>\n\
-                       Use <path> when resolving source file names. For a\n\
-                       recursive search, append a '*' after the last slash,\n\
-                       e.g., '/mypath/*' (quote or escape to protect from\n\
-                       the shell.) May pass multiple times.\n\
-  -R '<old-path>=<new-path>', --replace-path '<old-path>=<new-path>'\n\
-                       Substitute instances of <old-path> with <new-path>;\n\
-                       apply to all paths (profile's load map, source code)\n\
-                       for which <old-path> is a prefix.  Use '\\' to escape\n\
-                       instances of '=' within a path. May pass multiple\n\
-                       times.\n\
-\n\
-Options: Output files\n\
-  -o <file>, --output <file>\n\
-                       Write hpcstruct file to <file>.\n\
-                       Use '--output=-' to write output to stdout.\n\
-\n\
-Options for Developers:\n\
-  --jobs-struct <num>  Use <num> threads for the MakeStructure() phase only.\n\
-  --jobs-parse  <num>  Use <num> threads for the ParseAPI::parse() phase only.\n\
-  --jobs-symtab <num>  Use <num> threads for the Symtab phase (if possible).\n\
-  --show-gaps          Feature to show unclaimed vma ranges (gaps)\n\
-                       in the control-flow graph.\n\
-  --time               Display stats on hpcstruct's time and space usage.\n\
-";
+
+static const char* usage_details =
+#include "usage.h"
+;
+
 
 #define CLP CmdLineParser
 #define CLP_SEPARATOR "!!!"
@@ -244,10 +168,10 @@ Args::Args(int argc, const char* const argv[])
 void
 Args::Ctor()
 {
-  jobs = -1;
-  jobs_struct = -1;
-  jobs_parse = -1;
-  jobs_symtab = -1;
+  jobs = 0;
+  jobs_struct = 0;
+  jobs_parse = 0;
+  jobs_symtab = 0;
   show_time = false;
   analyze_cpu_binaries = 1;
   analyze_gpu_binaries = 1;
@@ -273,7 +197,8 @@ Args::printVersion(std::ostream& os) const
 void
 Args::printUsage(std::ostream& os) const
 {
-  os << "Usage: " << usage_summary << endl
+  os << "Usage: " << endl
+     << usage_summary << endl
      << usage_details << endl;
 }
 
@@ -347,22 +272,27 @@ Args::parse(int argc, const char* const argv[])
       const string & arg = parser.getOptArg("jobs");
       jobs = (int) CmdLineParser::toLong(arg);
     }
+
     if (parser.isOpt("jobs-struct")) {
       const string & arg = parser.getOptArg("jobs-struct");
       jobs_struct = (int) CmdLineParser::toLong(arg);
     }
+
     if (parser.isOpt("jobs-parse")) {
       const string & arg = parser.getOptArg("jobs-parse");
       jobs_parse = (int) CmdLineParser::toLong(arg);
     }
+
     if (parser.isOpt("jobs-symtab")) {
       const string & arg = parser.getOptArg("jobs-symtab");
       jobs_symtab = (int) CmdLineParser::toLong(arg);
     }
+
     if (parser.isOpt("psize")) {
       const string & arg = parser.getOptArg("psize");
       parallel_analysis_threshold = CmdLineParser::toLong(arg);
     }
+
     if (parser.isOpt("gpucfg")) {
       const string & arg = parser.getOptArg("gpucfg");
       bool yes = strcasecmp("yes", arg.c_str()) == 0;
@@ -370,6 +300,7 @@ Args::parse(int argc, const char* const argv[])
       if (!yes && !no) ARG_ERROR("gpucfg argument must be 'yes' or 'no'.");
       compute_gpu_cfg = yes;
     }
+
     if (parser.isOpt("gpu")) {
       const string & arg = parser.getOptArg("gpu");
       bool yes = strcasecmp("yes", arg.c_str()) == 0;
@@ -377,6 +308,7 @@ Args::parse(int argc, const char* const argv[])
       if (!yes && !no) ARG_ERROR("gpu argument must be 'yes' or 'no'.");
       analyze_gpu_binaries = yes;
     }
+
     if (parser.isOpt("cpu")) {
       const string & arg = parser.getOptArg("cpu");
       bool yes = strcasecmp("yes", arg.c_str()) == 0;
@@ -384,10 +316,12 @@ Args::parse(int argc, const char* const argv[])
       if (!yes && !no) ARG_ERROR("cpu argument must be 'yes' or 'no'.");
       analyze_cpu_binaries = yes;
     }
+
     if (parser.isOpt("time")) {
       show_time = true;
     }
 
+#if 0
     // Check for other options: Structure recovery
     if (parser.isOpt("include")) {
       searchPathStr += ":" + parser.getOptArg("include");
@@ -410,6 +344,7 @@ Args::parse(int argc, const char* const argv[])
 	}
       }
     }
+#endif
 
     if (parser.isOpt("show-gaps")) {
       show_gaps = true;
@@ -426,9 +361,12 @@ Args::parse(int argc, const char* const argv[])
     }
     in_filenm = parser.getArg(0);
 
-    if (out_filenm.empty()) {
-      string base_filenm = FileUtil::basename(in_filenm);
-      out_filenm = base_filenm + ".hpcstruct";
+    struct stat sb;
+    if (stat(in_filenm.c_str(), &sb) == 0 && !S_ISDIR(sb.st_mode)) {
+      if (out_filenm.empty()) {
+	string base_filenm = FileUtil::basename(in_filenm);
+	out_filenm = base_filenm + ".hpcstruct";
+      }
     }
   }
   catch (const CmdLineParser::ParseError& x) {

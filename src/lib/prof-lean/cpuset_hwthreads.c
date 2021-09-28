@@ -1,4 +1,4 @@
-// -*-Mode: C++;-*-
+// -*-Mode: C++;-*- // technically C99
 
 // * BeginRiceCopyright *****************************************************
 //
@@ -44,71 +44,53 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-// This file defines the external API that Struct.cpp provides for
-// tool/hpcstruct/main.cpp.
 
-//***************************************************************************
+//******************************************************************************
+// system include files
+//******************************************************************************
 
-#ifndef BAnal_Struct_hpp
-#define BAnal_Struct_hpp
+#define _GNU_SOURCE
+#include <pthread.h>
 
-#include <ostream>
-#include <string>
 
-namespace BAnal {
-namespace Struct {
 
-// Parameters on how to run makeStructure().
-class Options {
-public:
-  unsigned int jobs;
+//******************************************************************************
+// local include files
+//******************************************************************************
 
-  unsigned int jobs_struct;
-  unsigned int jobs_parse;
-  unsigned int jobs_symtab;
+#include "cpuset_hwthreads.h"
 
-  bool show_time;
 
-  bool analyze_cpu_binaries;
 
-  bool analyze_gpu_binaries;
-  bool compute_gpu_cfg;
+//******************************************************************************
+// public operations
+//******************************************************************************
 
-  unsigned long parallel_analysis_threshold;
+//------------------------------------------------------------------------------
+//   Function cpuset_hwthreads
+//   Purpose:
+//     return the number of hardware threads available to this process
+//     return 1 if no other value can be computed
+//------------------------------------------------------------------------------
+unsigned int 
+cpuset_hwthreads
+(
+  void
+)
+{  
+  int processors = 1;
+  pthread_t thread = pthread_self();
 
-  void set
-  (
-   unsigned int _jobs,
-   unsigned int _jobs_struct,
-   unsigned int _jobs_parse,
-   unsigned int _jobs_symtab,
-   bool _show_time,
-   bool _analyze_cpu_binaries,
-   bool _analyze_gpu_binaries,
-   bool _compute_gpu_cfg,
-   unsigned long _parallel_analysis_threshold
-  ) {
-   jobs = _jobs;
-   jobs_struct = _jobs_struct;
-   jobs_parse  = _jobs_parse;
-   jobs_symtab = _jobs_symtab;
-   show_time = _show_time;
-   analyze_cpu_binaries = _analyze_cpu_binaries;
-   analyze_gpu_binaries = _analyze_gpu_binaries;
-   compute_gpu_cfg = _compute_gpu_cfg;
-   parallel_analysis_threshold = _parallel_analysis_threshold;
-  };
-};
+  cpu_set_t cpuset;
+  CPU_ZERO(&cpuset);
 
-void
-makeStructure(std::string filename,
-	      std::ostream * outFile,
-	      std::ostream * gapsFile,
-	      std::string gaps_filenm,
-	      std::string search_path,
-	      Struct::Options & opts);
+  int err = pthread_getaffinity_np(thread, sizeof(cpu_set_t), &cpuset);
 
-} // namespace Struct
-} // namespace BAnal
+  if (err == 0) {
+    int j;
+    for (j = 0; j < CPU_SETSIZE; j++)
+      if (CPU_ISSET(j, &cpuset)) processors++;
+  }
 
-#endif // BAnal_Struct_hpp
+  return processors;
+}
