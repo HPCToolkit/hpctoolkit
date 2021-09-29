@@ -579,7 +579,7 @@ cupti_pc_sampling_config
 
 	HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiPCSamplingSetConfigurationAttribute, (&info_params));
 
-	if (cupti_range_interval_get() != CUPTI_RANGE_DEFAULT_INTERVAL) {
+	if (cupti_range_mode_get() == CUPTI_RANGE_MODE_EVEN) {
 		cupti_pc_sampling_start(context);
 	}
 }

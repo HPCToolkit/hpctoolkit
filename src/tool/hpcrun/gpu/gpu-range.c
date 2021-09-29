@@ -109,20 +109,21 @@ gpu_range_id_get
 uint64_t
 gpu_range_enter
 (
- cct_node_t *api_node
+ cct_node_t *api_node,
+ uint64_t correlation_id
 )
 {
   if (!gpu_range_enabled()) {
     return GPU_RANGE_DEFAULT_RANGE;
   } 
 
+  thread_correlation_id = correlation_id;
+
   if (!gpu_range_pre_enter_callback(thread_correlation_id, api_node)) {
     return GPU_RANGE_DEFAULT_RANGE;
   }
 
   spinlock_lock(&count_lock);
-
-  thread_correlation_id = gpu_correlation_id();
 
   bool is_lead = gpu_range_post_enter_callback(thread_correlation_id, api_node);
   if (is_lead) {
@@ -138,7 +139,7 @@ gpu_range_enter
 
   thread_range_id = atomic_load(&range_id);
 
-  return thread_correlation_id;
+  return thread_range_id;
 }
 
 
@@ -166,7 +167,7 @@ gpu_range_exit
   }
 
   // Wait until correlation id before me have done
-  uint64_t cur_lead_correlation_id = atomic_load(&lead_correlation_id);
+  uint64_t cur_lead_correlation_id = GPU_CORRELATION_ID_UNMASK(atomic_load(&lead_correlation_id));
   atomic_fetch_add(&correlation_id_done, 1);
   while (cur_lead_correlation_id != 0 && cur_lead_correlation_id != atomic_load(&correlation_id_done));
 

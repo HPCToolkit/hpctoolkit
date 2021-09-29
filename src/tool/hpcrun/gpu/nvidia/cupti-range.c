@@ -28,12 +28,12 @@ cupti_range_pre_enter_callback
 )
 {
   TMSG(CUPTI_TRACE, "Enter CUPTI range pre correlation_id %lu", correlation_id);
-  return cupti_kernel_ph_get() != NULL && cupti_range_mode != CUPTI_RANGE_MODE_NONE;
+  return cupti_range_mode != CUPTI_RANGE_MODE_NONE;
 }
 
 
 static void
-increase_kernel_count
+cupti_range_kernel_count_increase
 (
  cct_node_t *kernel_ph,
  uint32_t context_id,
@@ -41,12 +41,12 @@ increase_kernel_count
 )
 {
   // Range processing
-  cct_node_t *kernel_node = hpcrun_cct_children(kernel_ph);
-  kernel_node = hpcrun_cct_insert_context(kernel_node, context_id);
-  kernel_node = hpcrun_cct_insert_range(kernel_node, range_id);
+  cct_node_t *node = hpcrun_cct_children(kernel_ph);
+  node = hpcrun_cct_insert_context(node, context_id);
+  node = hpcrun_cct_insert_range(node, range_id);
 
   // Increase kernel count
-  gpu_metrics_attribute_kernel_count(kernel_node);
+  gpu_metrics_attribute_kernel_count(node);
 }
 
 
@@ -56,7 +56,7 @@ cupti_range_mode_even_is_enter
  uint64_t correlation_id
 )
 {
-  return GPU_CORRELATION_ID_UNMASK(correlation_id) % cupti_range_interval;
+  return (GPU_CORRELATION_ID_UNMASK(correlation_id) % cupti_range_interval) == 0;
 }
 
 
@@ -77,13 +77,12 @@ cupti_range_mode_context_sensitive_is_sampled
 static bool
 cupti_range_mode_context_sensitive_is_enter
 (
+ cct_node_t *kernel_ph,
  uint64_t correlation_id,
- void *args,
  uint32_t range_id
 )
 {
-  cct_node_t *api_node = args;
-  cupti_ip_norm_map_ret_t map_ret_type = cupti_ip_norm_map_lookup(api_node);
+  cupti_ip_norm_map_ret_t map_ret_type = cupti_ip_norm_map_lookup(kernel_ph);
 
   bool do_flush = false;
   if (map_ret_type == CUPTI_IP_NORM_MAP_DUPLICATE) {
@@ -95,7 +94,7 @@ cupti_range_mode_context_sensitive_is_enter
     }
   } else if (map_ret_type == CUPTI_IP_NORM_MAP_NOT_EXIST) {
     // No such a node
-    cupti_ip_norm_map_insert(api_node);
+    cupti_ip_norm_map_insert(kernel_ph);
   }
 
   CUcontext context;
@@ -108,7 +107,7 @@ cupti_range_mode_context_sensitive_is_enter
   }
 
   if (!cupti_pc_sampling_active()) {
-    bool sampled = cupti_cct_trace_append(api_node) && cupti_range_mode_context_sensitive_is_sampled();
+    bool sampled = cupti_cct_trace_append(kernel_ph) && cupti_range_mode_context_sensitive_is_sampled();
     if (sampled) {
       cupti_pc_sampling_start(context);
     }
@@ -116,7 +115,7 @@ cupti_range_mode_context_sensitive_is_enter
 
   return do_flush;
 #if 0
-  bool exist_intrie = cupti_cct_trie_lookup(api_node);
+  bool exist_intrie = cupti_cct_trie_lookup(kernel_ph);
   bool do_flush = false;
   bool unwind = false;
   if (map_ret_type == CUPTI_IP_NORM_MAP_DUPLICATE) {
@@ -129,19 +128,19 @@ cupti_range_mode_context_sensitive_is_enter
 
     // We unwind CCT to the root
     cupti_cct_trie_unwind();
-    exist_intrie = cupti_cct_trie_lookup(api_node);
+    exist_intrie = cupti_cct_trie_lookup(kernel_ph);
     unwind = true;
   } else if (map_ret_type == CUPTI_IP_NORM_MAP_NOT_EXIST) {
     // No such a node
-    cupti_cct_set_insert(api_node);
+    cupti_cct_set_insert(kernel_ph);
   } else {
     // Same cct, this is a repeated string
     // We unwind CCT to the root
     cupti_cct_trie_unwind();
-    exist_intrie = cupti_cct_trie_lookup(api_node);
+    exist_intrie = cupti_cct_trie_lookup(kernel_ph);
     unwind = true;
   }
-  cupti_cct_trie_insert(api_node);
+  cupti_cct_trie_insert(kernel_ph);
 
   CUcontext context;
   cuda_context_get(&context);
@@ -187,20 +186,24 @@ cupti_range_post_enter_callback
   cuda_context_get(&context);
 	uint32_t context_id = ((hpctoolkit_cuctx_st_t *)context)->context_id;
   uint32_t range_id = gpu_range_id_get();
+  cct_node_t *kernel_ph = (cct_node_t *)args;
 
   bool ret = false;
 
   if (cupti_range_mode == CUPTI_RANGE_MODE_EVEN) {
     ret = cupti_range_mode_even_is_enter(correlation_id);
+
+    // Increase kernel count for postmortem apportion based on counts
+    cupti_range_kernel_count_increase(kernel_ph, context_id, range_id);
   } else if (cupti_range_mode == CUPTI_RANGE_MODE_CONTEXT_SENSITIVE) {
-    ret = cupti_range_mode_context_sensitive_is_enter(correlation_id, args, range_id);
+    ret = cupti_range_mode_context_sensitive_is_enter(kernel_ph, correlation_id, range_id);
+
+    // Just create a placeholder range node
+    cupti_range_kernel_count_increase(kernel_ph, context_id, range_id);
   }
 
   // TODO(Keren): check if pc sampling buffer is full
   // If full, ret = true
-
-  // Increase kernel count for postmortem apportion based on counts
-  increase_kernel_count(cupti_kernel_ph_get(), context_id, range_id);
 
   return ret;
 }
@@ -240,7 +243,7 @@ cupti_range_post_exit_callback
       uint32_t range_id = gpu_range_id_get();
 
       cupti_pc_sampling_range_context_collect(range_id, context);
-      // Start pc sampling immediately
+      // Restart pc sampling immediately
       cupti_pc_sampling_start(context);
     }
   }

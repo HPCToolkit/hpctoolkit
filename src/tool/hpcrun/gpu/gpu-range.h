@@ -54,7 +54,8 @@ gpu_range_correlation_id_get
 uint64_t
 gpu_range_enter
 (
- cct_node_t *api_node
+ cct_node_t *api_node,
+ uint64_t correlation_id
 );
 
 // Exits a GPU range and invokes gpu_range_exit_callback

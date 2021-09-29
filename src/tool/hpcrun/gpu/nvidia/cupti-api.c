@@ -1139,7 +1139,7 @@ cupti_api_enter_callback_cuda
   uint64_t cpu_submit_time = hpcrun_nanotime();
   gpu_correlation_channel_range_produce(correlation_id, &gpu_op_ccts, cpu_submit_time, range_id);
 
-  gpu_range_enter(api_node);
+  gpu_range_enter(gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel), correlation_id);
 
   return gpu_op_ccts;
 }
