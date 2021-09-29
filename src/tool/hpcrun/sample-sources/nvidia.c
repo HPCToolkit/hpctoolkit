@@ -277,7 +277,7 @@ METHOD_FN(init)
   control_knob_register("HPCRUN_CUDA_RANGE_INTERVAL", CUPTI_RANGE_DEFAULT_INTERVAL_STR, ck_int);
   control_knob_register("HPCRUN_CUDA_RANGE_SAMPLING_PERIOD", CUPTI_RANGE_DEFAULT_SAMPLING_PERIOD_STR, ck_int);
 #endif
-  control_knob_register("HPCRUN_CUDA_RANGE_MODE", "EVEN", ck_int);
+  control_knob_register("HPCRUN_CUDA_RANGE_MODE", "EVEN", ck_string);
   control_knob_register("HPCRUN_CUDA_KERNEL_SERIALIZATION", "FALSE", ck_string);
 
   // Reset cupti flags
@@ -414,7 +414,7 @@ METHOD_FN(process_event_list, int lush_metrics)
     }
 
     int sampling_period = CUPTI_RANGE_DEFAULT_SAMPLING_PERIOD;
-    if (control_knob_value_get_int("HPCRUN_CUDA_RANGE_SAMPLING_PERIOD", &interval) != 0) {
+    if (control_knob_value_get_int("HPCRUN_CUDA_RANGE_SAMPLING_PERIOD", &sampling_period) != 0) {
       monitor_real_exit(-1);
     }
 

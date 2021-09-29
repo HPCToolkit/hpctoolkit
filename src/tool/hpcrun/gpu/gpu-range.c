@@ -209,7 +209,7 @@ gpu_range_disable
 
 
 void
-gpu_range_pre_enter_callback_register
+gpu_range_enter_callbacks_register
 (
  gpu_range_callback_t pre_callback,
  gpu_range_callback_t post_callback
@@ -221,7 +221,7 @@ gpu_range_pre_enter_callback_register
 
 
 void
-gpu_range_pre_exit_callback_register
+gpu_range_exit_callbacks_register
 (
  gpu_range_callback_t pre_callback,
  gpu_range_callback_t post_callback

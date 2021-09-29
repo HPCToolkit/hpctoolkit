@@ -42,7 +42,12 @@ control_knob_register(char *name, char *value, control_knob_type type)
     iter->type = type;
     control_knobs = iter;
   }
-  iter->value = strdup(value);
+  if (iter->type == ck_string) {
+    iter->value = strdup(value);
+  } else {
+    iter->value = (char *) malloc(sizeof(char) * (strlen(value) + 1));
+    strcpy(iter->value, value);
+  }
 }
 
 

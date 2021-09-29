@@ -210,6 +210,8 @@ cupti_range_pre_exit_callback
  void *args
 )
 {
+  TMSG(CUPTI_TRACE, "Exit CUPTI range pre");
+
   return cupti_kernel_ph_get() != NULL;
 }
 
@@ -221,10 +223,12 @@ cupti_range_post_exit_callback
  void *args
 )
 {
+  TMSG(CUPTI_TRACE, "Exit CUPTI range post");
+
   CUcontext context;
   cuda_context_get(&context);
 
-  if (cupti_range_mode == CUPTI_RANGE_MODE_NONE) {
+  if (cupti_range_mode == CUPTI_RANGE_MODE_SERIAL) {
     // Collect pc samples from the current context
     cupti_pc_sampling_correlation_context_collect(cupti_kernel_ph_get(), context);
   } else if (cupti_range_mode == CUPTI_RANGE_MODE_EVEN) {
@@ -253,7 +257,7 @@ cupti_range_config
   gpu_range_enable();
 
   cupti_range_interval = interval;
-  cupti_range_sampling_period = interval;
+  cupti_range_sampling_period = sampling_period;
 
   // Range mode is only enabled with option "gpu=nvidia,pc"
   //
@@ -265,8 +269,12 @@ cupti_range_config
   // the number of kernels belong to different contexts.
   // We don't flush pc samples unless a kernel in the range is launched
   // by two different contexts.
-  if (strcmp(mode_str, "EVEN") == 0 && interval > CUPTI_RANGE_DEFAULT_INTERVAL) {
-    cupti_range_mode = CUPTI_RANGE_MODE_EVEN;
+  if (strcmp(mode_str, "EVEN") == 0) {
+    if (interval > CUPTI_RANGE_DEFAULT_INTERVAL) {
+      cupti_range_mode = CUPTI_RANGE_MODE_EVEN;
+    } else {
+      cupti_range_mode = CUPTI_RANGE_MODE_SERIAL;
+    }
   } else if (strcmp(mode_str, "CONTEXT_SENSITIVE") == 0) {
     cupti_range_mode = CUPTI_RANGE_MODE_CONTEXT_SENSITIVE;
   }

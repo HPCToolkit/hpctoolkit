@@ -246,7 +246,6 @@ static __thread cct_node_t *cupti_prev_prev_kernel_node = NULL;
 static __thread uint64_t cupti_runtime_correlation_id = 0;
 
 static bool cupti_correlation_enabled = false;
-static bool cupti_pc_sampling_enabled = false;
 
 static cupti_correlation_callback_t cupti_correlation_callback =
   cupti_correlation_callback_dummy;
@@ -967,8 +966,10 @@ cupti_callback_init
   // stop flag is only set if a driver or a runtime api has been called
   cupti_activity_flag_set();
 
-  // channel is only initialized if a driver or a runtime api has been called
-  //gpu_operation_multiplexer_my_channel_init();
+  if (cupti_pc_sampling_frequency_get() != -1) {
+    // channel is only initialized if a driver or a runtime api has been called
+    gpu_operation_multiplexer_my_channel_init();
+  }
 }
 
 //******************************************************************************
@@ -1855,7 +1856,7 @@ cupti_monitoring_set
  bool enable
 )
 {
-  TMSG(CUPTI, "enter cupti_set_monitoring");
+  TMSG(CUPTI, "Enter cupti_set_monitoring");
   int failed = 0;
   int succeeded = 0;
 
@@ -2085,7 +2086,7 @@ cupti_correlation_enable
 (
 )
 {
-  TMSG(CUPTI, "enter cupti_correlation_enable");
+  TMSG(CUPTI, "Enter cupti_correlation_enable");
   cupti_correlation_enabled = true;
 
   // For unknown reasons, external correlation ids do not return using
@@ -2093,7 +2094,7 @@ cupti_correlation_enable
   HPCRUN_CUPTI_CALL(cuptiActivityEnable,
                    (CUPTI_ACTIVITY_KIND_EXTERNAL_CORRELATION));
 
-  TMSG(CUPTI, "exit cupti_correlation_enable");
+  TMSG(CUPTI, "Exit cupti_correlation_enable");
 }
 
 
@@ -2117,8 +2118,7 @@ cupti_pc_sampling_enable
  int frequency
 )
 {
-  TMSG(CUPTI, "enter cupti_pc_sampling_enable");
-  cupti_pc_sampling_enabled = true;
+  TMSG(CUPTI, "Enter cupti_pc_sampling_enable");
   CUpti_ActivityPCSamplingConfig config;
   config.samplingPeriod = 0;
   config.samplingPeriod2 = frequency;
@@ -2139,7 +2139,7 @@ cupti_pc_sampling_enable
      }
   }
 
-  TMSG(CUPTI, "exit cupti_pc_sampling_enable");
+  TMSG(CUPTI, "Exit cupti_pc_sampling_enable");
 }
 
 
@@ -2149,12 +2149,8 @@ cupti_pc_sampling_disable
  CUcontext context
 )
 {
-  if (cupti_pc_sampling_enabled) {
-    HPCRUN_CUPTI_CALL(cuptiActivityDisableContext,
-                     (context, CUPTI_ACTIVITY_KIND_PC_SAMPLING));
-
-    cupti_pc_sampling_enabled = false;
-  }
+  HPCRUN_CUPTI_CALL(cuptiActivityDisableContext,
+                   (context, CUPTI_ACTIVITY_KIND_PC_SAMPLING));
 }
 
 
@@ -2348,7 +2344,7 @@ cupti_device_init()
 void
 cupti_device_shutdown(void *args, int how)
 {
-  TMSG(CUPTI, "CUPTI shutdown begin");
+  TMSG(CUPTI, "Enter CUPTI shutdown");
 
   cupti_callbacks_unsubscribe();
   cupti_device_flush(args, how);
@@ -2370,15 +2366,20 @@ cupti_device_shutdown(void *args, int how)
 
     gpu_activity.kind = GPU_ACTIVITY_FLUSH;
     gpu_activity.details.flush.wait = &wait;
-    //gpu_operation_multiplexer_push(NULL, NULL, &gpu_activity);
+
+    if (cupti_pc_sampling_frequency_get() != -1) {
+      gpu_operation_multiplexer_push(NULL, NULL, &gpu_activity);
+    }
 
     while (atomic_load(&wait)) {}
   }
 #endif
 
-  // Terminate monitor thread
-  //gpu_operation_multiplexer_fini();
+  if (cupti_pc_sampling_frequency_get() != -1) {
+    // Terminate monitor thread
+    gpu_operation_multiplexer_fini();
+  }
 
-  TMSG(CUPTI, "CUPTI shutdown end");
+  TMSG(CUPTI, "Exit CUPTI shutdown");
 }
 
