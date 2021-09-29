@@ -151,12 +151,12 @@
  E(CPU_GPU_BLAME_CTL),
  E(CUDA),
  E(CUDA_DEVICE),
- E(CUPTI),
+ E(CUPTI), // Basic CUPTI operations
  E(OPENCL),
- E(CUPTI_TRACE),
+ E(CUPTI_TRACE), // Every GPU API monitored by CUPTI
  E(CUDA_CUBIN),
  E(GPU_OPERATION),
- E(CUPTI_ACTIVITY),
+ E(CUPTI_ACTIVITY),  // GPU activity records or PC sampling records
  E(DATACENTRIC),
  E(IDLE),
  E(MAIN_BOUNDS),

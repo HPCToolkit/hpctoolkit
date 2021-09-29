@@ -27,6 +27,7 @@ cupti_range_pre_enter_callback
  void *args
 )
 {
+  TMSG(CUPTI_TRACE, "Enter CUPTI range pre correlation_id %lu", correlation_id);
   return cupti_kernel_ph_get() != NULL && cupti_range_mode != CUPTI_RANGE_MODE_NONE;
 }
 
@@ -180,6 +181,8 @@ cupti_range_post_enter_callback
  void *args
 )
 {
+  TMSG(CUPTI_TRACE, "Enter CUPTI range post correlation_id %lu", correlation_id);
+
   CUcontext context;
   cuda_context_get(&context);
 	uint32_t context_id = ((hpctoolkit_cuctx_st_t *)context)->context_id;
@@ -210,7 +213,7 @@ cupti_range_pre_exit_callback
  void *args
 )
 {
-  TMSG(CUPTI_TRACE, "Exit CUPTI range pre");
+  TMSG(CUPTI_TRACE, "Exit CUPTI range pre correlation_id %lu", correlation_id);
 
   return cupti_kernel_ph_get() != NULL;
 }
@@ -223,7 +226,7 @@ cupti_range_post_exit_callback
  void *args
 )
 {
-  TMSG(CUPTI_TRACE, "Exit CUPTI range post");
+  TMSG(CUPTI_TRACE, "Exit CUPTI range post correlation_id %lu", correlation_id);
 
   CUcontext context;
   cuda_context_get(&context);
@@ -254,6 +257,8 @@ cupti_range_config
  int sampling_period
 )
 {
+  TMSG(CUPTI, "Enter cupti_range_config mode %s, interval %d, sampling period %d", mode_str, interval, sampling_period);
+
   gpu_range_enable();
 
   cupti_range_interval = interval;
@@ -285,6 +290,8 @@ cupti_range_config
     gpu_range_exit_callbacks_register(cupti_range_pre_exit_callback,
       cupti_range_post_exit_callback);
   }
+
+  TMSG(CUPTI, "Enter cupti_range_config");
 }
 
 

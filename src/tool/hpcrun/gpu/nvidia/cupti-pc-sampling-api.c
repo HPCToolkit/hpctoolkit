@@ -402,7 +402,7 @@ cupti_pc_sampling_start
 )
 {
 	uint32_t context_id = ((hpctoolkit_cuctx_st_t *)context)->context_id;
-	TMSG(CUPTI, "Start pc sampling context_id %u", context_id);
+	TMSG(CUPTI, "PC sampling context_id %u start", context_id);
 
   pc_sampling_active = true;
 
@@ -422,7 +422,7 @@ cupti_pc_sampling_stop
 )
 {
 	uint32_t context_id = ((hpctoolkit_cuctx_st_t *)context)->context_id;
-	TMSG(CUPTI, "Config pc sampling context_id %u", context_id);
+	TMSG(CUPTI, "PC sampling context_id %u stop", context_id);
 
   pc_sampling_active = false;
 
@@ -450,7 +450,7 @@ pc_sampling_collect
 	}
 
 	uint32_t context_id = ((hpctoolkit_cuctx_st_t *)context)->context_id;
-	TMSG(CUPTI, "Collect pc sampling context_id %u, range_id %u", context_id, range_id);
+	TMSG(CUPTI_TRACE, "PC sampling collect context_id %u, range_id %u", context_id, range_id);
 
 	cupti_pc_sampling_data_t *device_pc_sampling_data = cupti_context_map_entry_pc_sampling_data_get(entry);
 	CUpti_PCSamplingData *buffer_pc = cupti_pc_sampling_buffer_pc_get(device_pc_sampling_data);
@@ -529,7 +529,7 @@ cupti_pc_sampling_config
 )
 {
 	uint32_t context_id = ((hpctoolkit_cuctx_st_t *)context)->context_id;
-	TMSG(CUPTI, "Config pc sampling context_id %u frequency %d", context_id, frequency);
+	TMSG(CUPTI, "PC sampling config context_id %u frequency %d", context_id, frequency);
 
 	cupti_context_map_init(context);
 
@@ -637,7 +637,7 @@ cupti_pc_sampling_enable2
 )
 {
 	uint32_t context_id = ((hpctoolkit_cuctx_st_t *)context)->context_id;
-	TMSG(CUPTI, "Enable pc sampling context_id %u", context_id);
+	TMSG(CUPTI, "PC sampling enable context_id %u", context_id);
 
 	CUpti_PCSamplingEnableParams params = {
 		.size = CUpti_PCSamplingEnableParamsSize,
@@ -656,7 +656,7 @@ cupti_pc_sampling_disable2
 )
 {
 	uint32_t context_id = ((hpctoolkit_cuctx_st_t *)context)->context_id;
-	TMSG(CUPTI, "Disable pc sampling context_id %u", context_id);
+	TMSG(CUPTI, "PC sampling disable context_id %u", context_id);
 
 	CUpti_PCSamplingDisableParams params = {
 		.size = CUpti_PCSamplingDisableParamsSize,
@@ -674,7 +674,7 @@ cupti_pc_sampling_free
 )
 {
 	uint32_t context_id = ((hpctoolkit_cuctx_st_t *)context)->context_id;
-	TMSG(CUPTI, "Free pc sampling context_id %u", context_id);
+	TMSG(CUPTI, "PC sampling free context_id %u", context_id);
 
 	cupti_context_map_entry_t *entry = cupti_context_map_lookup(context);
 

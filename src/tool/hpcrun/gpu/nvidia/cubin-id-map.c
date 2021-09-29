@@ -129,7 +129,7 @@ cubin_id_map_splay(cubin_id_map_entry_t *root, uint64_t key)
 static void
 cubin_id_map_delete_root()
 {
-  TMSG(DEFER_CTXT, "cubin_id %d: delete", cubin_id_map_root->cubin_id);
+  TMSG(CUDA_CUBIN, "cubin_id %d: delete", cubin_id_map_root->cubin_id);
 
   if (cubin_id_map_root->left == NULL) {
     cubin_id_map_root = cubin_id_map_root->right;
@@ -183,7 +183,7 @@ cubin_id_map_lookup
     result = hash_entry->entry;
   }
 
-  TMSG(DEFER_CTXT, "cubin_id map lookup: id=0x%lx (record %p)", id, result);
+  TMSG(CUDA_CUBIN, "cubin_id map lookup: id=0x%lx (record %p)", id, result);
   return result;
 }
 
@@ -204,7 +204,7 @@ cubin_id_map_insert
 
     if (cubin_id < cubin_id_map_root->cubin_id) {
       cubin_id_map_entry_t *entry = cubin_id_map_entry_new(cubin_id, vector);
-      TMSG(DEFER_CTXT, "cubin_id map insert: id=0x%lx (record %p)", cubin_id, entry);
+      TMSG(CUDA_CUBIN, "cubin_id map insert: id=0x%lx (record %p)", cubin_id, entry);
       entry->left = entry->right = NULL;
       entry->hpctoolkit_module_id = hpctoolkit_module_id;
       entry->left = cubin_id_map_root->left;
@@ -213,7 +213,7 @@ cubin_id_map_insert
       cubin_id_map_root = entry;
     } else if (cubin_id > cubin_id_map_root->cubin_id) {
       cubin_id_map_entry_t *entry = cubin_id_map_entry_new(cubin_id, vector);
-      TMSG(DEFER_CTXT, "cubin_id map insert: id=0x%lx (record %p)", cubin_id, entry);
+      TMSG(CUDA_CUBIN, "cubin_id map insert: id=0x%lx (record %p)", cubin_id, entry);
       entry->left = entry->right = NULL;
       entry->hpctoolkit_module_id = hpctoolkit_module_id;
       entry->left = cubin_id_map_root;

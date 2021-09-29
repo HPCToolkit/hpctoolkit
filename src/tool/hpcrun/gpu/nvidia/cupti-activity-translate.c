@@ -221,7 +221,7 @@ convert_pcsampling
 )
 {
   TMSG(CUPTI_ACTIVITY, "source %u, functionId %u, pc 0x%x, corr %u, "
-	"samples %u, latencySamples %u, stallReason %u\n",
+    "samples %u, latencySamples %u, stallReason %u\n",
 	activity->sourceLocatorId,
 	activity->functionId,
 	activity->pcOffset,

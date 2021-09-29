@@ -531,8 +531,6 @@ cupti_path
   buffer[0] = 0;
 
 #ifdef NEW_CUPTI
-  TMSG(CUPTI, "New cupti enabled");
-
   cupti_set_default_path(buffer);
   if (library_path_resolves(buffer)) {
     fprintf(stderr, "NOTE: Using builtin path for NVIDIA's CUPTI tools "
@@ -711,7 +709,7 @@ cupti_load_callback_cuda
   mkdir(file_name, S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH);
   used += sprintf(&file_name[used], "%"PRIu64"", cubin_crc);
   used += sprintf(&file_name[used], "%s", GPU_BINARY_SUFFIX);
-  TMSG(CUPTI, "cubin_crc %s", file_name);
+  TMSG(CUDA_CUBIN, "cubin_crc %s", file_name);
 
   // Write a file if does not exist
   bool file_flag;
@@ -731,7 +729,7 @@ cupti_load_callback_cuda
       hpctoolkit_module_id = module->id;
     }
     hpcrun_loadmap_unlock();
-    TMSG(CUPTI, "cubin_crc %d -> hpctoolkit_module_id %d", cubin_crc, hpctoolkit_module_id);
+    TMSG(CUDA_CUBIN, "cubin_crc %d -> hpctoolkit_module_id %d", cubin_crc, hpctoolkit_module_id);
     cubin_crc_map_entry_t *crc_entry = cubin_crc_map_lookup(cubin_crc);
     if (crc_entry == NULL) {
       Elf_SymbolVector *vector = computeCubinFunctionOffsets(cubin, cubin_size);
@@ -777,7 +775,7 @@ cupti_load_callback_cuda
     used += sprintf(&file_name[used], "%02x", hash[i]);
   }
   used += sprintf(&file_name[used], "%s", GPU_BINARY_SUFFIX);
-  TMSG(CUPTI, "cubin_id %d hash %s", cubin_id, file_name);
+  TMSG(CUDA_CUBIN, "cubin_id %d hash %s", cubin_id, file_name);
 
   // Write a file if does not exist
   bool file_flag;
@@ -797,7 +795,7 @@ cupti_load_callback_cuda
       hpctoolkit_module_id = module->id;
     }
     hpcrun_loadmap_unlock();
-    TMSG(CUPTI, "cubin_id %d -> hpctoolkit_module_id %d", cubin_id, hpctoolkit_module_id);
+    TMSG(CUDA_CUBIN, "cubin_id %d -> hpctoolkit_module_id %d", cubin_id, hpctoolkit_module_id);
     cubin_id_map_entry_t *entry = cubin_id_map_lookup(cubin_id);
     if (entry == NULL) {
       Elf_SymbolVector *vector = computeCubinFunctionOffsets(cubin, cubin_size);
@@ -819,7 +817,7 @@ cupti_unload_callback_cuda
 )
 {
 #ifdef NEW_CUPTI
-  TMSG(CUPTI, "Context %p cubin_id %d unload", context, cubin_id);
+  TMSG(CUDA_CUBIN, "Context %p cubin_id %d unload", context, cubin_id);
   if (context != NULL) {
     // Flush records but not stop context.
     // No need to lock because the current operation is not on GPU
@@ -1122,9 +1120,10 @@ cupti_api_enter_callback_cuda
   if (correlation_id == 0) {
     correlation_id = gpu_correlation_id();
     cupti_correlation_id_push(correlation_id);
+    TMSG(CUPTI_TRACE, "Driver push externalId %lu (cb_id = %u, range_id = %u)", correlation_id, cb_id, range_id);
+  } else {
+    TMSG(CUPTI_TRACE, "Runtime push externalId %lu (cb_id = %u, range_id = %u)", correlation_id, cb_id, range_id);
   }
-
-  TMSG(CUPTI_TRACE, "Push externalId %lu (cb_id = %u, range_id = %u)", correlation_id, cb_id, range_id);
 
   // If this API is intercepted by our cuda wrapper, we only unwinding at the 
   // intercepter to reduce the unwinding cost
@@ -1153,13 +1152,14 @@ cupti_api_exit_callback_cuda
 )
 {
   uint64_t correlation_id = cupti_runtime_correlation_id_get();
-  if (correlation_id == 0) { 
-    correlation_id = cupti_correlation_id_pop();
-  }
-
   uint32_t range_id = gpu_range_id_get();
 
-  TMSG(CUPTI_TRACE, "Driver pop externalId %lu (cb_id = %u, %u)", correlation_id, cb_id, range_id);
+  if (correlation_id == 0) { 
+    correlation_id = cupti_correlation_id_pop();
+    TMSG(CUPTI_TRACE, "Driver pop externalId %lu (cb_id = %u, %u)", correlation_id, cb_id, range_id);
+  } else {
+    TMSG(CUPTI_TRACE, "Runtime pop externalId %lu (cb_id = %u, %u)", correlation_id, cb_id, range_id);
+  }
 
   gpu_range_exit();
 }
@@ -1813,7 +1813,7 @@ cupti_buffer_completion_callback
  size_t validSize
 )
 {
-  TMSG(CUPTI, "Enter CUPTI buffer complete");
+  TMSG(CUPTI, "Enter CUPTI_buffer_completion");
 
   // handle notifications
   cupti_buffer_completion_notify();
@@ -1841,7 +1841,7 @@ cupti_buffer_completion_callback
 
   free(buffer);
 
-  TMSG(CUPTI, "Exit CUPTI buffer complete");
+  TMSG(CUPTI, "Exit cupti_buffer_completion");
 }
 
 
@@ -1890,7 +1890,7 @@ cupti_monitoring_set
     if (failed == 0) return cupti_set_all;
     else return cupti_set_some;
   }
-  TMSG(CUPTI, "leave cupti_set_monitoring");
+  TMSG(CUPTI, "Exit cupti_set_monitoring");
   return cupti_set_none;
 }
 
@@ -2103,11 +2103,15 @@ cupti_correlation_disable
 (
 )
 {
+  TMSG(CUPTI, "Enter cupti_correlation_disable");
+
   if (cupti_correlation_enabled) {
     HPCRUN_CUPTI_CALL(cuptiActivityDisable,
                      (CUPTI_ACTIVITY_KIND_EXTERNAL_CORRELATION));
     cupti_correlation_enabled = false;
   }
+
+  TMSG(CUPTI, "Exit cupti_correlation_disable");
 }
 
 
@@ -2119,6 +2123,7 @@ cupti_pc_sampling_enable
 )
 {
   TMSG(CUPTI, "Enter cupti_pc_sampling_enable");
+
   CUpti_ActivityPCSamplingConfig config;
   config.samplingPeriod = 0;
   config.samplingPeriod2 = frequency;
@@ -2164,18 +2169,22 @@ cupti_activity_flush
 (
 )
 {
+  TMSG(CUPTI, "Enter cupti_activity_flush");
+
   if (cupti_activity_flag) {
     cupti_activity_flag_unset();
 
     HPCRUN_CUPTI_CALL(cuptiActivityFlushAll, (CUPTI_ACTIVITY_FLAG_FLUSH_FORCED));
   }
+
+  TMSG(CUPTI, "Exit cupti_activity_flush");
 }
 
 
 void
 cupti_device_flush(void *args, int how)
 {
-  TMSG(CUPTI, "Enter CUPTI device flush");
+  TMSG(CUPTI, "Enter cupti_device_flush");
 
   cupti_activity_flush();
 
@@ -2344,7 +2353,7 @@ cupti_device_init()
 void
 cupti_device_shutdown(void *args, int how)
 {
-  TMSG(CUPTI, "Enter CUPTI shutdown");
+  TMSG(CUPTI, "Enter cupti_device_shutdown");
 
   cupti_callbacks_unsubscribe();
   cupti_device_flush(args, how);
@@ -2380,6 +2389,6 @@ cupti_device_shutdown(void *args, int how)
     gpu_operation_multiplexer_fini();
   }
 
-  TMSG(CUPTI, "Exit CUPTI shutdown");
+  TMSG(CUPTI, "Exit cupti_device_shutdown");
 }
 

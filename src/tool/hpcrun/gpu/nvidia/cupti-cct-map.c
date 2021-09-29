@@ -226,9 +226,6 @@ cupti_cct_map_lookup
 {
   cupti_cct_map_entry_t *result = st_lookup(&map_root, (uint64_t)cct);
 
-  TMSG(DEFER_CTXT, "cct map lookup: cct=0x%lx (record %p)", 
-       cct, result);
-
   return result;
 }
 

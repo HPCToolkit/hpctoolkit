@@ -174,8 +174,7 @@ cupti_context_map_lookup
 
   cupti_context_map_entry_t *result = st_lookup(&map_root, (uint64_t)context);
 
-  TMSG(DEFER_CTXT, "context map lookup: context=0x%lx (record %p)", 
-       context, result);
+  TMSG(CUDA_CUBIN, "context map lookup: context=0x%lx (record %p)", context, result);
 
   spinlock_unlock(&spinlock);
 
