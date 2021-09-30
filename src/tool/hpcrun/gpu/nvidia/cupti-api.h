@@ -427,4 +427,16 @@ cupti_runtime_correlation_id_set
 );
 
 
+void
+cupti_correlation_threshold_set
+(
+ int32_t
+);
+
+
+int32_t
+cupti_correlation_threshold_get
+(
+);
+
 #endif

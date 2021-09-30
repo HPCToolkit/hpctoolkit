@@ -56,7 +56,6 @@
 #include <hpcrun/cct/cct.h>
 #include <hpcrun/gpu/gpu-activity.h>
 #include <hpcrun/gpu/gpu-activity-channel.h>
-#include <hpcrun/gpu/gpu-range.h>
 #include <hpcrun/gpu/gpu-trace-item.h>
 #include <hpcrun/gpu/gpu-correlation-id-map.h>
 #include <hpcrun/gpu/gpu-context-id-map.h>
@@ -90,14 +89,12 @@ attribute_activity
 (
  gpu_host_correlation_map_entry_t *hc,
  gpu_activity_t *activity,
- cct_node_t *cct_node,
- uint32_t range_id
+ cct_node_t *cct_node
 )
 {
   gpu_activity_channel_t *channel =
     gpu_host_correlation_map_entry_channel_get(hc);
   activity->cct_node = cct_node;
-  activity->range_id = range_id;
 
   gpu_activity_channel_produce(channel, activity);
   //gpu_operation_item_activity_process(activity, channel);
@@ -146,15 +143,7 @@ gpu_memcpy_process
         gpu_host_correlation_map_entry_cpu_submit_time(host_op_entry);
       activity->details.memcpy.submit_time = cpu_submit_time;
 
-      uint32_t range_id = gpu_host_correlation_map_entry_range_id_get(host_op_entry);
-
-      if (gpu_range_enabled()) {
-        uint32_t context_id = activity->details.memcpy.context_id;
-        host_op_node = hpcrun_cct_insert_context(host_op_node, context_id);
-        host_op_node = hpcrun_cct_insert_range(host_op_node, range_id);
-      }
-
-      attribute_activity(host_op_entry, activity, host_op_node, range_id);
+      attribute_activity(host_op_entry, activity, host_op_node);
       //FIXME(keren): In OpenMP, an external_id may maps to multiple cct_nodes
       //gpu_host_correlation_map_delete(external_id);
     }
@@ -209,13 +198,10 @@ gpu_sample_process
       cct_node_t *host_op_node =
         gpu_host_correlation_map_entry_op_function_get(host_op_entry);
 
-      // Fake range id, gpu_sample does not support range profiling
       // New pc sampling does not use this function
-      uint32_t range_id = gpu_host_correlation_map_entry_range_id_get(host_op_entry);
-
       cct_node_t *cct_child = hpcrun_cct_insert_ip_norm(host_op_node, ip);
       if (cct_child) {
-        attribute_activity(host_op_entry, sample, cct_child, range_id);
+        attribute_activity(host_op_entry, sample, cct_child);
       }
     } else {
       PRINT("host_map_entry %lu not found\n", external_id);
@@ -244,10 +230,8 @@ gpu_sampling_info_process
       cct_node_t *host_op_node =
         gpu_host_correlation_map_entry_op_function_get(host_op_entry);
 
-      // Fake range id, gpu_instruction does not support range profiling
       // New pc sampling does not use this function
-      uint32_t range_id = gpu_host_correlation_map_entry_range_id_get(host_op_entry);
-      attribute_activity(host_op_entry, sri, host_op_node, range_id);
+      attribute_activity(host_op_entry, sri, host_op_node);
     }
     // sample info is the last record for a given correlation id
     bool more_samples =
@@ -304,15 +288,7 @@ gpu_memset_process
         gpu_host_correlation_map_entry_cpu_submit_time(host_op_entry);
       activity->details.memset.submit_time = cpu_submit_time;
 
-      uint32_t range_id = gpu_host_correlation_map_entry_range_id_get(host_op_entry);
-
-      if (gpu_range_enabled()) {
-        uint32_t context_id = activity->details.memset.context_id;
-        host_op_node = hpcrun_cct_insert_context(host_op_node, context_id);
-        host_op_node = hpcrun_cct_insert_range(host_op_node, range_id);
-      }
-
-      attribute_activity(host_op_entry, activity, host_op_node, range_id);
+      attribute_activity(host_op_entry, activity, host_op_node);
 
       //FIXME(keren): In OpenMP, an external_id may maps to multiple cct_nodes
       //gpu_host_correlation_map_delete(external_id);
@@ -379,18 +355,10 @@ gpu_kernel_process
         kernel_node = hpcrun_cct_insert_ip_norm(kernel_ph, addr->ip_norm);
       }
       
-      // Range processing
-      uint32_t range_id = gpu_host_correlation_map_entry_range_id_get(host_op_entry);
-      if (gpu_range_enabled()) {
-        uint32_t context_id = activity->details.kernel.context_id;
-        kernel_node = hpcrun_cct_insert_context(kernel_node, context_id);
-        kernel_node = hpcrun_cct_insert_range(kernel_node, range_id);
-      }
-
       uint64_t cpu_submit_time =
         gpu_host_correlation_map_entry_cpu_submit_time(host_op_entry);
       activity->details.kernel.submit_time = cpu_submit_time;
-      attribute_activity(host_op_entry, activity, kernel_node, range_id);
+      attribute_activity(host_op_entry, activity, kernel_node);
     } else {
       assert(0);
     }
@@ -419,13 +387,10 @@ gpu_kernel_block_process
     cct_node_t *host_op_node =
       gpu_host_correlation_map_entry_op_function_get(host_op_entry);
 
-    // Fake range id, gpu_kernel_block does not support range profiling
-    uint32_t range_id = gpu_host_correlation_map_entry_range_id_get(host_op_entry);
-
     // create a child cct node that contains 2 metrics: offset of block head wrt. original binary, dynamic execution count of block
     cct_node_t *cct_child = hpcrun_cct_insert_ip_norm(host_op_node, ip); // how to set the ip_norm
     if (cct_child) {
-      attribute_activity(host_op_entry, activity, cct_child, range_id);
+      attribute_activity(host_op_entry, activity, cct_child);
     }
   } else {
     PRINT("host_map_entry %lu not found\n", external_id);
@@ -452,14 +417,6 @@ gpu_synchronization_process
         gpu_host_correlation_map_entry_op_cct_get(host_op_entry,
           gpu_placeholder_type_sync);
 
-      uint32_t range_id = gpu_host_correlation_map_entry_range_id_get(host_op_entry);
-
-      if (gpu_range_enabled()) {
-        uint32_t context_id = activity->details.synchronization.context_id;
-        host_op_node = hpcrun_cct_insert_context(host_op_node, context_id);
-        host_op_node = hpcrun_cct_insert_range(host_op_node, range_id);
-      }
-
       if (activity->details.synchronization.syncKind == GPU_SYNC_EVENT) {
         uint32_t event_id = activity->details.synchronization.event_id;
         gpu_event_id_map_entry_t *event_id_entry = gpu_event_id_map_lookup(event_id);
@@ -468,10 +425,10 @@ gpu_synchronization_process
           uint32_t stream_id = gpu_event_id_map_entry_stream_id_get(event_id_entry);
           activity->details.synchronization.context_id = context_id;
           activity->details.synchronization.stream_id = stream_id;
-          attribute_activity(host_op_entry, activity, host_op_node, range_id);
+          attribute_activity(host_op_entry, activity, host_op_node);
         }
       } else {
-        attribute_activity(host_op_entry, activity, host_op_node, range_id);
+        attribute_activity(host_op_entry, activity, host_op_node);
       }
 
       //FIXME(keren): In OpenMP, an external_id may maps to multiple cct_nodes
@@ -511,15 +468,7 @@ gpu_cdpkernel_process
         gpu_host_correlation_map_entry_cpu_submit_time(host_op_entry);
       activity->details.cdpkernel.submit_time = cpu_submit_time;
 
-      uint32_t range_id = gpu_host_correlation_map_entry_range_id_get(host_op_entry);
-
-      if (gpu_range_enabled()) {
-        uint32_t context_id = activity->details.cdpkernel.context_id;
-        func_node = hpcrun_cct_insert_context(func_node, context_id);
-        func_node = hpcrun_cct_insert_range(func_node, range_id);
-      }
-
-      attribute_activity(host_op_entry, activity, func_node, range_id);
+      attribute_activity(host_op_entry, activity, func_node);
     }
     gpu_correlation_id_map_delete(correlation_id);
   }
@@ -562,16 +511,9 @@ gpu_memory_process
         gpu_host_correlation_map_entry_op_cct_get(host_op_entry, ph);
       assert(host_op_node != NULL);
 
-      uint32_t range_id = gpu_host_correlation_map_entry_range_id_get(host_op_entry);
-
-      if (gpu_range_enabled()) {
-        uint32_t context_id = activity->details.memory.context_id;
-        host_op_node = hpcrun_cct_insert_context(host_op_node, context_id);
-        host_op_node = hpcrun_cct_insert_range(host_op_node, range_id);
-      }
       // Memory allocation does not always happen on the device
       // Do not send it to trace channels
-      attribute_activity(host_op_entry, activity, host_op_node, range_id);
+      attribute_activity(host_op_entry, activity, host_op_node);
     }
     gpu_correlation_id_map_delete(correlation_id);
   } else {
@@ -604,9 +546,7 @@ gpu_instruction_process
 
       cct_node_t *func_ins = hpcrun_cct_insert_ip_norm(func_ph, pc);
       
-      // Fake range id, gpu_instruction does not support range profiling
-      uint32_t range_id = gpu_host_correlation_map_entry_range_id_get(host_op_entry);
-      attribute_activity(host_op_entry, activity, func_ins, range_id);
+      attribute_activity(host_op_entry, activity, func_ins);
     }
   }
   PRINT("Instruction correlation_id %u\n", correlation_id);

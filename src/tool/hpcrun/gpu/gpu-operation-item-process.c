@@ -211,13 +211,10 @@ gpu_pc_sampling_info2_process
   uint32_t period = pc_sampling_info2->samplingPeriodInCycles;
   uint64_t total_num_pcs = pc_sampling_info2->totalNumPcs;
 
-  cct_node_t *cct_node = NULL;
-  if (gpu_range_enabled()) {
-    // Don't insert anything under kernel placeholder
+  cct_node_t *cct_node = activity->cct_node;
+  if (cct_node == NULL) {
+    // Placeholder is not provided, init range placeholders
     cct_node = gpu_range_context_cct_get(range_id, context_id);
-  } else {
-    // Can do safe insert under kernel placeholder
-    cct_node = activity->cct_node;
   }
 
   // Translate a pc sample activity for each record

@@ -228,9 +228,8 @@ cupti_correlation_callback_dummy
 // static data
 //******************************************************************************
 
-// Do not backoff after 4 trials
-const static int CUPTI_BACKOFF_THRESHOLD = 4;
 const static int CUPTI_BACKOFF_BASE = 4;
+static int cupti_correlation_threshold = -1;
 
 static spinlock_t files_lock = SPINLOCK_UNLOCKED;
 
@@ -982,6 +981,12 @@ cupti_unwind
  void *args
 )
 {
+  if (cupti_correlation_threshold_get() == -1) {
+    // Slow path to generate a cct
+    return cupti_correlation_callback();
+  }
+
+  // Fast path to generate a cct
   unwind_key_t unwind_key;
   unwind_key.stack_length = rsp;
   unwind_key.prev_kernel = cupti_prev_kernel_node;
@@ -1009,7 +1014,7 @@ cupti_unwind
   } else {
     api_node = cupti_unwind_map_entry_cct_node_get(entry);
     int backoff = cupti_unwind_map_entry_backoff_get(entry);
-    if (backoff < CUPTI_BACKOFF_THRESHOLD) {
+    if (backoff < cupti_correlation_threshold_get()) {
       int threshold = pow(CUPTI_BACKOFF_BASE, backoff);
       int left = rand() % threshold;
       if (left == 0) {
@@ -2304,6 +2309,25 @@ cupti_runtime_correlation_id_set
 )
 {
   cupti_runtime_correlation_id = correlation_id;
+}
+
+
+void
+cupti_correlation_threshold_set
+(
+ int32_t correlation_threshold
+)
+{
+  cupti_correlation_threshold = correlation_threshold;
+}
+
+
+int32_t
+cupti_correlation_threshold_get
+(
+)
+{
+  return cupti_correlation_threshold;
 }
 
 

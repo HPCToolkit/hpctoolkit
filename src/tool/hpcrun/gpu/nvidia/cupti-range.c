@@ -218,7 +218,7 @@ cupti_range_pre_exit_callback
 {
   TMSG(CUPTI_TRACE, "Exit CUPTI range pre correlation_id %lu", correlation_id);
 
-  return cupti_kernel_ph_get() != NULL;
+  return cupti_range_mode != CUPTI_RANGE_MODE_NONE;
 }
 
 
