@@ -163,6 +163,12 @@ For Linux perf events, if no value for \Arg{howoften} is specified, \Prog{hpcrun
   \item See the ``Sample sources'' under \textbf{NOTES} for additional details.
 \end{itemize}
 
+\item[\OptArg{-e}{gpu=nvidia\Lbr,pc\Rbr}, \OptArg{--event}{gpu=nvidia\Lbr,pc\Rbr}]
+Collect comprehensive operation-level data, including timing of GPU kernel invocations,
+memory copies (implicit and explicit), driver and runtime activity, and overhead.
+If the optional \Arg{pc} is used, PC sampling on the GPU is used inaddition to the operation-level data.
+PC sampling attributes STALL reasons to individual GPU instructions.
+
 \item[\OptArg{-c}{howoften}, \OptArg{--count}{howoften}]
                        Only available for events managed by Linux perf. This option
                        specifies a default value for how often to sample. The value for \Arg{howoften} may be a number that will be used as a default
@@ -172,12 +178,6 @@ By default, \Prog{hpcrun} will allow attribution of hardware counter events to h
 Some processor architectures, e.g., ARM,  don't support attribution with any higher level of precision.
 If a processor does not support the specified level of attribution precision for a hardware counter event, 
 \Prog{hpcrun} may record 0 occurrences of the event without reporting an error.
-
-\item[\OptArg{-e}{gpu=nvidia\Lbr,pc\Rbr}, \OptArg{--event}{gpu=nvidia\Lbr,pc\Rbr}]
-Collect comprehensive operation-level data, including timing of GPU kernel invocations,
-memory copies (implicit and explicit), driver and runtime activity, and overhead.
-If the optional \Arg{pc} is used, PC sampling on the GPU is used inaddition to the operation-level data.
-PC sampling attributes STALL reasons to individual GPU instructions.
 
 \item[\OptArg{-f}{frac}, \OptArg{-fp}{frac}, \OptArg{--process-fraction}{frac}]
 Measure only a fraction \Arg{frac} of the execution's processes.
