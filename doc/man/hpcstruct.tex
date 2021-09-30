@@ -1,4 +1,4 @@
-%% $Id$
+% $Id$
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -62,15 +62,14 @@ See \HTMLhref{hpctoolkit.html}{\Cmd{hpctoolkit}{1}} for an overview of \textbf{H
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Description}
 
-Given a measurement directory, an application binary, a shared library, or a GPU binary, \Prog{hpcstruct}
-recovers the program structure of its object code by analyzing available information
-about loop nests, inlined functions, and the mapping between machine instructions and 
-source lines.  Program structure is a mapping of a program's object code to its static source-level structure.
+\Prog{hpcstruct} recovers the program structure for all CPU and GPU
+binaries referenced by a directory containing HPCToolkit performance
+measurements. If needed, one can apply \Prog{hpcstruct} to recover program
+structure for an individual CPU or GPU binary.
 
 During execution of a any application, HPCToolkit records the name of the application binary,
-and the names of any shared-libraries used.
-During execution of a GPU-accelerated application, HPCToolkit also records GPU binaries
-in the application's measurement directory.
+and the names of any shared-libraries used. During execution of a GPU-accelerated application,
+HPCToolkit also records GPU binaries in the application's measurement directory.
 
 Normally, \Prog{hpcstruct} is run against an application's HPCToolkit \Arg{measurement-directory} directing
 it to analyze all CPU and GPU binaries recorded within.
@@ -84,36 +83,35 @@ those program structure files will be used to help attribute performance measure
 When analyzing a CPU or GPU binary \Arg{b}, \Prog{hpcstruct} only writes its results to the file
 'basename(\Arg{b}).hpcstruct', and does not link to the binary.
 
-\Prog{hpcstruct} is designed primarily for highly optimized binaries created from
-C, C++, Fortran, CUDA, and HIP source code. Because \Prog{hpcstruct}'s algorithms exploit a
-binary's debugging information, for best results, binary should be compiled
-with standard debugging information or, at a minimum, line map information.
-Note: although a CPU or GPU binary may be optimized, it must also be
-compiled with line mappings for the results to be useful, e.g., normally using the -g
-flag when compiling CPU binaries. 
+Program structure is a mapping from addresses of machine instructions
+in a binary to source code contexts; this mapping is used to attribute
+measured performance metrics back to source code. A strength of
+\Prog{hpcstruct} is its ability to attribute metrics to inlined functions
+and loops; such mappings are especially useful for understanding the
+performance of programs generated using template-based programming
+models.
 
-By default, \Prog{hpcstruct} is multi-threaded to <tnum>, which is set to the smaller
-of 16, or 1/2 the number of HW threads in the users CPUSET.  That number may be reduced
-to the -j argument value, but may not be increased by it.
+\Prog{hpcstruct} is designed for analysis of optimized binaries created from
+C, C++, Fortran, CUDA, HIP, and DPC++ source code. Because \Prog{hpcstruct}'s
+algorithms exploit the line map and debug information recorded in an
+application binary during compilation, for best results, we recommend that
+binaries be compiled with standard debug information or at a minimum,
+line map information. Typically, this is accomplished by pasing a '-g'
+option to each compiler along with any optimization flags. See the
+HPCToolkit manual for more information.
 
-It uses <tnum> threads to analyze any binaries larget than the --psize default, and it
-runs <tnum> jobs in parallel to analyze up to <tnum> smaller CPU or GPU binaries.
-
+To accelerate analysis of a measurement directory, which contains
+references to an application as well as any shared libraries
+and/or GPU binaries it uses, \Prog{hpcstruct} employs multiple threads by
+default. Multiple small binaries are analyzed concurrently, using one
+thread per binary. By default, this analysis will use half of the
+threads in the CPU set for the process. Binaries larger than a certain
+threshold (see the --psize option and its default) are analyzed using
+multiple threads. By default, large binaries will be analyzed using
+min(half of the threads in the CPU set for the process, 16) threads.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Arguments}
-
-%% SKW 7/6/18:
-%% 
-%% The following arguments are implemented in hpcstruct's "Args.cpp" but are deprecated
-%% and so not documented here, per JohnMC
-%% 
-%%    agent-c++
-%%    agent-cilk
-%%    loop-intvl
-%%    loop-fwd-subst
-%%    normalize
-%%    use-binutils
 
 \begin{Description}
 \item[\Arg{measurement directory}]
@@ -121,8 +119,6 @@ A measurement directory of an application, either GPU-accelerated or not.
 Applying \Prog{hpcstruct} to a measurement directory analyzes the application, all shared libraries referenced
 during the data-collection run, as well as any GPU binaries recorded 
 in the measurement directory during execution. 
-When a GPU-accelerated application runs on an Nvidia GPU, its 'cubin' GPU binaries are recorded into 
-HPCToolkit's measurement directory.
 
 \item[\Arg{binary}] File containing an executable or dynamically-linked shared library.
 Note that \Prog{hpcstruct} does not recover program structure for libraries that \Arg{binary} depends on.
@@ -144,24 +140,22 @@ Print version information.
 \item[\Opt{-h}, \Opt{--help}]
 Print help message.
 
-\item[\Opt{-v (num)}, \Opt{--verbose (num)}]
-Generate progress messages to stderr, at verbosity level <num>. {1}
+\item[\OptArg{-v}{num}, \OptArg{--verbose}{num}]
+Generate progress messages to stderr, at verbosity level \Arg{num}. {1}
 
 \end{Description}
 
-\subsection{Options: Parallel Usage}
+\subsection{Options: Override parallel defaults}
 \item[\OptArg{-j}{num}, \OptArg{--jobs}{num}]
-Use a maximum of \Arg{num} threads in \Prog{hpcstruct}.
-The number of threads actually used is the minimum of 1/2 the number of CPU is the current CPUSET,
-16, and num.
+Use \Arg{num} threads in \Prog{hpcstruct}.
 
 \item[\OptArg{--psize}{n}]
-Size (bytes) of a binary that will cause \Prog{hpcstruct}
-to use \Arg{num} threads to analyze a binary in parallel.
-GPU binaries with fewer than \Arg{n} bytes will be analyzed
-concurrently, \Arg{num} at a time.  {100000000}
+Size, in bytes, of a binary that will cause \Prog{hpcstruct}
+to analyze a binary in parallel.
+Binaries with fewer than \Arg{n} bytes will be analyzed
+concurrently. {100000000}
 
-\subsection{Options: Structure recovery}
+\subsection{Options: override structure recovery defaults}
 
 \begin{Description}
 
@@ -172,45 +166,50 @@ Analyze CPU binaries references in a measurements directory. {"yes"}
 Analyze GPU binaries references in a measurements directory. {"yes"}
 
 \item[\OptArg{--gpucfg}{"yes"/"no"}]
-Compute loop nesting structure for GPU machine code.  By default, this option
-is set to "no" for Nvidia GPUs, but set to "yes" for other vendors.
-It is set for Nvidia CUDA binaries (cubins), because there is no
-efficient GPU provided by Nvidia to analyzer their binaries.
-{"no" for Nvidia GPUs; "yes" for others.}
+Compute loop nesting structure for GPU machine code. {"no"}
 
-\item[\OptArg{-I}{path}, \OptArg{--include}{path}] 
-Use \Arg{path} when resolving source file names. 
-This option is useful when a compiler records the same filename in different ways within the symbolic information.
-(Yes, this does happen.)
-For a recursive search, append a '+' after the last slash, e.g., \texttt{/mypath/+}. 
-This option may appear multiple times.
+% \item[\OptArg{-I}{path}, \OptArg{--include}{path}] 
+% Use \Arg{path} when resolving source file names. 
+% This option is useful when a compiler records the same filename in different ways within the symbolic information.
+% (Yes, this does happen.)
+% For a recursive search, append a '+' after the last slash, e.g., \texttt{/mypath/+}. 
+% This option may appear multiple times.
 
-\item[\OptArg{-R}{'old-path=new-path'}, \OptArg{--replace-path}{'old-path=new-path'}]
-Replace instances of \Arg{old-path} with \Arg{new-path} in all paths with \Arg{old-path} is a prefix
-(e.g., a profile's load map and source code).
-Use \verb+'\'+ to escape instances of '=' within specified paths.
-This option may appear multiple times.
-  
-Use this when a profile or executable references files that have been relocated,
-such as might occur with a file system change.
+% \item[\OptArg{-R}{'old-path=new-path'}, \OptArg{--replace-path}{'old-path=new-path'}]
+% Replace instances of \Arg{old-path} with \Arg{new-path} in all paths with \Arg{old-path} is a prefix
+% (e.g., a profile's load map and source code).
+% Use \verb+'\'+ to escape instances of '=' within specified paths.
+% This option may appear multiple times.
+% 
+% Use this when a profile or executable references files that have been relocated,
+% such as might occur with a file system change.
+
+\end{Description}
+
+\subsection{Options to control output:}
+\begin{Description}
+
+\item[\OptArg{-o}{filename}, \OptArg{--output}{filename}]
+Write the output to to \Arg{filename}.  This option is only applicable when invoking
+\Prog{hpcstruct} on a single binary.
 
 \end{Description}
 
 \subsection{Options for Developers:}
 
 \begin{Description}
-\item[\OptArg{--debug}{<n>}]
-Use debug level <n>.  {1}
+% \item[\OptArg{--debug}{<n>}]
+% Use debug level <n>.  {1}
 
-% \item[\OptArg{--jobs-struct}{num}]
-% Use num threads for the program structure analysis phase of \Prog{hpcstruct}.
-% 
-% \item[\OptArg{--jobs-parse}{num}]
-% Use num threads for the parse phase of \Prog{hpcstruct}.
-% 
-% \item[\OptArg{--jobs-symtab}{num}]
-% Use num threads for the symbol table analysis phase of \Prog{hpcstruct}.
-%
+\item[\OptArg{--jobs-struct}{num}]
+Use \Arg{num} threads for the program structure analysis phase of \Prog{hpcstruct}.
+
+\item[\OptArg{--jobs-parse}{num}]
+Use \Arg{num} threads for the parse phase of \Prog{hpcstruct}.
+
+\item[\OptArg{--jobs-symtab}{num}]
+Use \Arg{num} threads for the symbol table analysis phase of \Prog{hpcstruct}.
+
 \item[\Opt{--show-gaps}]
 Developer option to
 write a text file describing all the "gaps" found by \Prog{hpcstruct},
@@ -231,6 +230,7 @@ Display the time and space usage per phase in \Prog{hpcstruct}.
 
 \begin{enumerate}
 \item 
+
 Assume we have used HPCToolkit to collect performance measurements for the (optimized) CPU binary 
 \File{sweep3d} and that performance measurement data for the application is in the measurement 
 directory \File{hpctoolkit-sweep3d-measurements}. 
