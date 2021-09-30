@@ -3,6 +3,7 @@
 #include <stdio.h>
 
 #include <hpcrun/memory/hpcrun-malloc.h>
+#include <hpcrun/messages/messages.h>
 
 #include "cupti-cct-trace-map.h"
 
@@ -135,7 +136,6 @@ trace_append
 )
 {
   trace_insert(head->left, next);
-  trace_insert(next, head);
 }
 
 
@@ -374,6 +374,8 @@ cupti_cct_trace_append
  cct_node_t *cct
 )
 {
+  TMSG(CUPTI_CCT_TRACE, "Append cct trace %p", cct);
+
   trace_init();
 
   cupti_cct_trace_node_t *trace_node = trace_new(CUPTI_CCT_TRACE_NODE_TERMINAL, cct);
@@ -390,6 +392,8 @@ cupti_cct_trace_flush
 (
 )
 {
+  TMSG(CUPTI_CCT_TRACE, "Flush cct trace");
+
   trace_init();
 
   cupti_cct_trace_node_t *trace_node = trace_new(CUPTI_CCT_TRACE_NODE_FLUSH, NULL);
@@ -405,12 +409,13 @@ cupti_cct_trace_dump
 )
 {
   cupti_cct_trace_node_t *node = root->right;
+  printf("root->");
   while (node != root) {
     printf("%p", node->cct);
     if (node->rule) {
       printf("(%p)", node->rule);
     }
-    if (node->right) {
+    if (node->right != root) {
       printf("->");
     } else {
       printf("\n");

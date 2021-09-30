@@ -157,6 +157,7 @@
  E(CUDA_CUBIN),
  E(GPU_OPERATION),
  E(CUPTI_ACTIVITY),  // GPU activity records or PC sampling records
+ E(CUPTI_CCT_TRACE),
  E(DATACENTRIC),
  E(IDLE),
  E(MAIN_BOUNDS),

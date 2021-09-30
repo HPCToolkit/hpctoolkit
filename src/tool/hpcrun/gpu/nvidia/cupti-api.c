@@ -1065,23 +1065,23 @@ cupti_api_node_get
   if (actual_node == api_node) {
     correct_unwinds++; 
   } else {
-		printf("Actual ");
-		while (actual_node != NULL) {
-			cct_addr_t* addr = hpcrun_cct_addr(actual_node);
-			printf("lm_id %d lm_ip %p, ", addr->ip_norm.lm_id, addr->ip_norm.lm_ip);
-			actual_node = hpcrun_cct_parent(actual_node);
-		}
-		printf("\n");
-
-		printf("Unwind ");
-		cct_node_t *node = api_node;
-		while (node != NULL) {
-			cct_addr_t* addr = hpcrun_cct_addr(node);
-			printf("lm_id %d lm_ip %p, ", addr->ip_norm.lm_id, addr->ip_norm.lm_ip);
-			node = hpcrun_cct_parent(node);
-		}
-		printf("\n");
-
+//		printf("Actual ");
+//		while (actual_node != NULL) {
+//			cct_addr_t* addr = hpcrun_cct_addr(actual_node);
+//			printf("lm_id %d lm_ip %p, ", addr->ip_norm.lm_id, addr->ip_norm.lm_ip);
+//			actual_node = hpcrun_cct_parent(actual_node);
+//		}
+//		printf("\n");
+//
+//		printf("Unwind ");
+//		cct_node_t *node = api_node;
+//		while (node != NULL) {
+//			cct_addr_t* addr = hpcrun_cct_addr(node);
+//			printf("lm_id %d lm_ip %p, ", addr->ip_norm.lm_id, addr->ip_norm.lm_ip);
+//			node = hpcrun_cct_parent(node);
+//		}
+//		printf("\n");
+//
 		//printf("Prev prev api ");
 		//node = unwind_key.prev_prev_api;
 		//while (node != NULL) {
@@ -2199,9 +2199,9 @@ cupti_device_flush(void *args, int how)
   TMSG(CUPTI, "Exit CUPTI device flush");
 
 #ifdef NEW_CUPTI_ANALYSIS
-  printf("Total cct unwinds %lu, correct unwinds %lu\n", total_unwinds, correct_unwinds);
+  //printf("Total cct unwinds %lu, correct unwinds %lu\n", total_unwinds, correct_unwinds);
 
-  cupti_cct_map_dump();
+  //cupti_cct_map_dump();
 
   printf("-----------------------------------------------------------------\n");
 

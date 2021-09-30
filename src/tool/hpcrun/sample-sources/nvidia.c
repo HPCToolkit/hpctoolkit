@@ -279,6 +279,7 @@ METHOD_FN(init)
 #endif
   control_knob_register("HPCRUN_CUDA_RANGE_MODE", "EVEN", ck_string);
   control_knob_register("HPCRUN_CUDA_KERNEL_SERIALIZATION", "FALSE", ck_string);
+  control_knob_register("HPCRUN_CUDA_CORRELATION_THRESHOLD", "-1", ck_int);
 
   // Reset cupti flags
   cupti_device_init();
@@ -466,9 +467,14 @@ METHOD_FN(process_event_list, int lush_metrics)
   if (control_knob_value_get_string("HPCRUN_CUDA_KERNEL_SERIALIZATION", &kernel_serialization) != 0)
     monitor_real_exit(-1);
 
+  int correlation_threshold;
+  if (control_knob_value_get_int("HPCRUN_CUDA_CORRELATION_THRESHOLD", &correlation_threshold) != 0)
+    monitor_real_exit(-1);
+
   TMSG(CUDA, "Device buffer size %d", device_buffer_size);
   TMSG(CUDA, "Device semaphore size %d", device_semaphore_size);
   TMSG(CUDA, "Kernel serialization %s", kernel_serialization);
+  TMSG(CUDA, "Correlation threshold %d", correlation_threshold);
 
   // By default we enable concurrent kernel monitoring,
   // which instruments the begin and exit of a block to measure running time.
@@ -480,6 +486,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   }
 
   cupti_device_buffer_config(device_buffer_size, device_semaphore_size);
+  cupti_correlation_threshold_set(correlation_threshold);
 
   // Register cupti callbacks
   cupti_init();
