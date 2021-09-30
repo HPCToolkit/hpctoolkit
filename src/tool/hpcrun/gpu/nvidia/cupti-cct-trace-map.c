@@ -59,6 +59,13 @@
 
 #include "cupti-cct-trace-map.h"
 
+#define DEBUG
+#ifdef DEBUG
+#define TRACE_MAP_MSG(...) TMSG(__VA_ARGS__)
+#else
+#define TRACE_MAP_MSG(...)
+#endif
+
 //******************************************************************************
 // type declarations
 //******************************************************************************
@@ -442,6 +449,8 @@ cupti_cct_trace_map_lookup
 )
 {
   cupti_cct_trace_map_entry_t *entry = st_lookup(&map_root, key);
+
+  TRACE_MAP_MSG(CUPTI_CCT_TRACE, "Trace map lookup (cct1: %p, cct1: %p)->(entry: %p)", key.cct1, key.cct2, entry);
   
   return entry;
 } 
@@ -460,6 +469,8 @@ cupti_cct_trace_map_insert
     entry = cupti_cct_trace_map_new(key, trace_node);
     st_insert(&map_root, entry);
   }
+
+  TRACE_MAP_MSG(CUPTI_CCT_TRACE, "Trace map insert (cct1: %p, cct1: %p)->(trace_node: %p)", key.cct1, key.cct2, trace_node);
 }
 
 
@@ -469,11 +480,13 @@ cupti_cct_trace_map_delete
  cct_trace_key_t key
 )
 {
-  cupti_cct_trace_map_entry_t *node = st_delete(&map_root, key);
-  
-  if (node != NULL) {
-    st_free(&free_list, node);
+  cupti_cct_trace_map_entry_t *entry = st_delete(&map_root, key);
+
+  if (entry != NULL) {
+    st_free(&free_list, entry);
   }
+  
+  TRACE_MAP_MSG(CUPTI_CCT_TRACE, "Trace map delete (cct1: %p, cct1: %p)->(trace_node: %p)", key.cct1, key.cct2, entry->trace_node);
 }
 
 

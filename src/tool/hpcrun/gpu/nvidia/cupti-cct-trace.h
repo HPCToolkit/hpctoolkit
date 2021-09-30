@@ -26,7 +26,8 @@ cupti_cct_trace_append
 
 // The previous ccts are marked as a range
 // The same range can be taken out
-void
+// Returns true if the trace is condensed
+bool
 cupti_cct_trace_flush
 (
 );

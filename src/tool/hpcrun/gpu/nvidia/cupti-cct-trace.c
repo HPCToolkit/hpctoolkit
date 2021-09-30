@@ -7,11 +7,14 @@
 
 #include "cupti-cct-trace-map.h"
 
-//#define DEBUG
+#define DEBUG
+
 #ifdef DEBUG
 #define TRACE_ASSERT(x) assert(x)
+#define TRACE_MSG(...) TMSG(__VA_ARGS__)
 #else
 #define TRACE_ASSERT(x)
+#define TRACE_MSG(...)
 #endif
 
 
@@ -99,6 +102,11 @@ trace_new
   node->left = node;
   node->right = node;
 
+  if (type == CUPTI_CCT_TRACE_NODE_NON_TERMINAL) {
+    node->ref_left = node;
+    node->ref_right = node;
+  }
+
   return node;
 }
 
@@ -139,6 +147,33 @@ trace_append
 }
 
 
+static void
+trace_ref_insert
+(
+ cupti_cct_trace_node_t *cur,
+ cupti_cct_trace_node_t *next
+)
+{
+  cur->ref_right->ref_left = next;
+  next->ref_right = cur->ref_right;
+  cur->ref_right = next;
+  next->ref_left = cur;
+}
+
+
+static void
+trace_ref_append
+(
+ cupti_cct_trace_node_t *head,
+ cupti_cct_trace_node_t *next
+)
+{
+  ++head->ref_count;
+  next->rule = head;
+  trace_ref_insert(head->ref_left, next);
+}
+
+
 // Splice two rules
 static void
 trace_splice
@@ -155,6 +190,20 @@ trace_splice
 
 
 static void
+trace_unlink
+(
+ cupti_cct_trace_node_t *node
+)
+{
+  node->left->right = node->right;
+  node->right->left = node->left;
+
+  node->left = node;
+  node->right = node;
+}
+
+
+static void
 trace_delete
 (
  cupti_cct_trace_node_t *node
@@ -163,7 +212,8 @@ trace_delete
   node->left->right = node->right;
   node->right->left = node->left;
 
-  if (node->type == CUPTI_CCT_TRACE_NODE_NON_TERMINAL_REF) {
+  if (node->type == CUPTI_CCT_TRACE_NODE_NON_TERMINAL_REF || 
+    node->type == CUPTI_CCT_TRACE_NODE_NON_TERMINAL) {
     node->ref_left->ref_right = node->ref_right;
     node->ref_right->ref_left = node->ref_left;
   }
@@ -232,6 +282,7 @@ trace_rule_delete
     cupti_cct_trace_node_t *left = rule->ref_right->left;
     trace_delete(rule->ref_right);
     trace_splice(left, rule);
+    trace_delete(rule);
   }
 }
 
@@ -268,23 +319,26 @@ trace_shrink
     cupti_cct_trace_node_t *rule = NULL;
 
     if (prev_pattern_node->right == pattern_node) {
+      TRACE_MSG(CUPTI_CCT_TRACE, "Trace overlapped (prev_pattern_node: %p, pattern_node: %p)", prev_pattern_node, pattern_node);
       // Overlapped
       // root->...aaa
       break;
     }
 
     if (prev_pattern_node->left->type != CUPTI_CCT_TRACE_NODE_NON_TERMINAL) {
+      // root->BAa...Aa
+      // Delete the index of BA
       trace_map_delete(prev_pattern_node->left->cct, prev_pattern_node->cct);
-
-      cupti_cct_trace_node_t *rule = prev_pattern_node->left->rule;
-      trace_rule_delete(rule);
     }
 
     bool contiguous = false;
     if (prev_pattern_node->cct == prev_pattern_node->right->cct &&
-      prev_pattern_node->right->cct == prev_pattern_node->right->right->cct) {
+      prev_pattern_node->right->right == pattern_node) {
       // root->...aaaa
+      // Don't delete the index of aa
       contiguous = true;
+      TRACE_MSG(CUPTI_CCT_TRACE, "Trace contiguous (prev_pattern_node: %p, pattern_node: %p) (cct: %p)",
+        prev_pattern_node, pattern_node, prev_pattern_node->cct);
     }
 
     if (!(prev_pattern_node->left == prev_pattern_node->right->right)) {
@@ -292,27 +346,49 @@ trace_shrink
       // root->ab....ab, or
       // A->cab
       // Construct a rule using prev_pattern_nodes
+      
+      TRACE_MSG(CUPTI_CCT_TRACE, "Trace partial before replacement (left: %p->%p->%p->%p) (cct: %p->%p->%p->%p)",
+        prev_pattern_node->left, prev_pattern_node, prev_pattern_node->right, prev_pattern_node->right->right,
+        prev_pattern_node->left->cct, prev_pattern_node->cct, prev_pattern_node->right->cct, prev_pattern_node->right->right->cct);
 
       // 1. Replace prev_pattern_nodes with rule_ref
       cupti_cct_trace_node_t *rule_ref = trace_new(CUPTI_CCT_TRACE_NODE_NON_TERMINAL_REF, NULL); 
       cupti_cct_trace_node_t *right = prev_pattern_node->right->right;
-      trace_insert(prev_pattern_node->left, rule_ref);
-      trace_insert(rule_ref, right);
+      cupti_cct_trace_node_t *left = prev_pattern_node->left;
+      cupti_cct_trace_node_t *node1 = prev_pattern_node;
+      cupti_cct_trace_node_t *node2 = prev_pattern_node->right;
+      trace_unlink(node1);
+      trace_unlink(node2);
+      trace_insert(left, rule_ref);
+
+      TRACE_MSG(CUPTI_CCT_TRACE, "Trace partial after replacement (left: %p->%p->%p->%p) (cct: %p->%p->%p->%p)",
+        left, left->right, left->right->right, left->right->right->right,
+        left->cct, left->right->cct, left->right->right->cct, left->right->right->right->cct);
 
       // 2. Delete the index of the subsequent pattern
       // root->Aab
       // Delete the index of ab
       if (!contiguous) {
-        trace_map_delete(prev_pattern_node->right->cct,
-          prev_pattern_node->right->right->cct);
+        // root->AaAa
+        trace_map_delete(node1->cct, node2->cct);
       }
 
       // Utility rule
-      trace_rule_delete(prev_pattern_node->rule);
+      trace_rule_delete(node1->rule);
 
       // 3. Move prev_pattern nodes from the trace to the rule
       // root->Aa...................Aa
       rule = trace_new(CUPTI_CCT_TRACE_NODE_NON_TERMINAL, NULL);
+      trace_append(rule, node1);
+      trace_append(rule, node2);
+      trace_ref_append(rule, rule_ref);
+
+      TRACE_MSG(CUPTI_CCT_TRACE, "Trace partial new (rule: %p->%p->%p) (cct: %p->%p->%p)",
+        rule, rule->right, rule->right->right,
+        rule->cct, rule->right->cct, rule->right->right->cct);
+      TRACE_MSG(CUPTI_CCT_TRACE, "Trace partial new (rule_ref: %p->%p) (cct: %p->%p)",
+        rule, rule->ref_right,
+        rule->cct, rule->ref_right->cct);
     } else {
       // B->Aa
       // Replace the current pattern appearance
@@ -321,21 +397,34 @@ trace_shrink
       TRACE_ASSERT(rule->type == CUPTI_CCT_TRACE_NODE_NON_TERMINAL);
     }
 
-    ++rule->ref_count;
-
+    cupti_cct_trace_node_t *pattern_node_left = pattern_node->left;
     if (!contiguous) {
       // root->...AbBAb
       // Delete BA
       // Don't delete B
-      trace_map_delete(pattern_node->left->cct, pattern_node->cct);
+      trace_map_delete(pattern_node_left->cct, pattern_node->cct);
     }
+
+    TRACE_MSG(CUPTI_CCT_TRACE, "Trace partial before delete (left: %p->%p->%p) (cct: %p->%p->%p)",
+      pattern_node_left, pattern_node_left->right, pattern_node_left->right->right,
+      pattern_node_left->cct, pattern_node_left->right->cct, pattern_node_left->right->right->cct);
 
     // Make a ref node
     cupti_cct_trace_node_t *rule_ref = trace_new(CUPTI_CCT_TRACE_NODE_NON_TERMINAL_REF, NULL);
+
     trace_delete(pattern_node->right);
     trace_delete(pattern_node);
+
+    TRACE_MSG(CUPTI_CCT_TRACE, "Trace partial after delete (left: %p->%p->%p) (cct: %p->%p->%p)",
+      pattern_node_left, pattern_node_left->right, pattern_node_left->right->right,
+      pattern_node_left->cct, pattern_node_left->right->cct, pattern_node_left->right->right->cct);
+
     trace_append(root, rule_ref);
-    trace_append(rule, rule_ref);
+    trace_ref_append(rule, rule_ref);
+
+    TRACE_MSG(CUPTI_CCT_TRACE, "Trace partial after append (left: %p->%p->%p) (cct: %p->%p->%p)",
+      pattern_node_left, pattern_node_left->right, pattern_node_left->right->right,
+      pattern_node_left->cct, pattern_node_left->right->cct, pattern_node_left->right->right->cct);
 
     // There must be another A, otherwise, A should have been replaced
     // No need to enfore utility rule
@@ -348,7 +437,7 @@ trace_shrink
 }
 
 
-static void
+static bool
 trace_condense
 (
 )
@@ -361,7 +450,10 @@ trace_condense
     trace_delete(current->left);
     trace_delete(current);
     // Don't remove the rule itself
+    return true;
   }
+
+  return false;
 }
 
 //*****************************************************************************
@@ -374,32 +466,42 @@ cupti_cct_trace_append
  cct_node_t *cct
 )
 {
-  TMSG(CUPTI_CCT_TRACE, "Append cct trace %p", cct);
+  TRACE_MSG(CUPTI_CCT_TRACE, "Enter cupti_cct_trace_append %p", cct);
 
   trace_init();
 
   cupti_cct_trace_node_t *trace_node = trace_new(CUPTI_CCT_TRACE_NODE_TERMINAL, cct);
   trace_append(root, trace_node);
 
+  TRACE_MSG(CUPTI_CCT_TRACE, "Trace partial after append (root: %p<-%p<-%p<-%p), (cct: %p<-%p<-%p<-%p)",
+    root, root->left, root->left->left, root->left->left->left,
+    root->cct, root->left->cct, root->left->left->cct, root->left->left->left->cct);
+
   bool ret = trace_shrink();
+
+  TRACE_MSG(CUPTI_CCT_TRACE, "Exit cupti_cct_trace_append %p shrunk %d", cct, ret);
 
   return ret;
 }
 
 
-void
+bool
 cupti_cct_trace_flush
 (
 )
 {
-  TMSG(CUPTI_CCT_TRACE, "Flush cct trace");
+  TRACE_MSG(CUPTI_CCT_TRACE, "Enter flush cct trace");
 
   trace_init();
 
   cupti_cct_trace_node_t *trace_node = trace_new(CUPTI_CCT_TRACE_NODE_FLUSH, NULL);
   trace_append(root, trace_node);
 
-  trace_condense();
+  bool condensed = trace_condense();
+
+  TRACE_MSG(CUPTI_CCT_TRACE, "Exit flush cct trace condensed %d", condensed);
+
+  return condensed;
 }
 
 
