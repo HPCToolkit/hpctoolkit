@@ -65,12 +65,13 @@ cupti_range_mode_context_sensitive_is_sampled
 (
 )
 {
-  int left = rand() % cupti_range_sampling_period;
-  if (left == 0) {
-    return true;
-  } else {
-    return false;
-  }
+  return true;
+  //int left = rand() % cupti_range_sampling_period;
+  //if (left == 0) {
+  //  return true;
+  //} else {
+  //  return false;
+  //}
 }
 
 
@@ -82,6 +83,8 @@ cupti_range_mode_context_sensitive_is_enter
  uint32_t range_id
 )
 {
+  static __thread bool repeated_range = true;
+
   cupti_ip_norm_map_ret_t map_ret_type = cupti_ip_norm_map_lookup(kernel_ph);
 
   bool do_flush = false;
@@ -104,10 +107,16 @@ cupti_range_mode_context_sensitive_is_enter
     // Early collection, different than other modes
     cupti_pc_sampling_range_context_collect(range_id, context);
     cupti_cct_trace_flush();
+    repeated_range = true;
+  }
+
+  bool repeated = cupti_cct_trace_append(kernel_ph);
+  if (!repeated) {
+    repeated_range = false;
   }
 
   if (!cupti_pc_sampling_active()) {
-    bool sampled = cupti_cct_trace_append(kernel_ph) && cupti_range_mode_context_sensitive_is_sampled();
+    bool sampled = !repeated_range || cupti_range_mode_context_sensitive_is_sampled();
     if (sampled) {
       cupti_pc_sampling_start(context);
     }

@@ -23,11 +23,11 @@
 typedef struct cupti_cct_trace_map_entry_s cupti_cct_trace_map_entry_t;
 
 typedef struct cct_trace_key_t {
- cct_node_t *cct1;
- cct_node_t *cct2;
+ uint64_t node1;
+ uint64_t node2;
 } cct_trace_key_t;
 
-// Look up a pair <cct1, cct2>
+// Look up a pair <node1, node2>
 cupti_cct_trace_map_entry_t *
 cupti_cct_trace_map_lookup
 (

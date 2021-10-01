@@ -36,7 +36,7 @@ struct cupti_cct_trace_node_s {
   struct cupti_cct_trace_node_s *ref_right;
   uint64_t ref_count;
 
-  cct_node_t *cct;
+  uint64_t key;
 };
 
 __thread cupti_cct_trace_node_t *root = NULL;
@@ -92,12 +92,12 @@ static cupti_cct_trace_node_t *
 trace_new
 (
  cupti_cct_trace_node_type_t type,
- cct_node_t *cct
+ uint64_t key
 )
 {
   cupti_cct_trace_node_t *node = trace_alloc(&free_list);
   node->type = type;
-  node->cct = cct;
+  node->key = key;
   node->ref_count = 1;
   node->left = node;
   node->right = node;
@@ -170,6 +170,7 @@ trace_ref_append
 {
   ++head->ref_count;
   next->rule = head;
+  next->key = head;
   trace_ref_insert(head->ref_left, next);
 }
 
@@ -225,13 +226,13 @@ trace_delete
 static cupti_cct_trace_map_entry_t *
 trace_map_lookup
 (
- cct_node_t *cct1,
- cct_node_t *cct2
+ uint64_t node1,
+ uint64_t node2
 )
 {
   cct_trace_key_t key = {
-    .cct1 = cct1,
-    .cct2 = cct2
+    .node1 = node1,
+    .node2 = node2
   };
 
   return cupti_cct_trace_map_lookup(key);
@@ -241,14 +242,14 @@ trace_map_lookup
 static void
 trace_map_insert
 (
- cct_node_t *cct1,
- cct_node_t *cct2,
+ uint64_t node1,
+ uint64_t node2,
  cupti_cct_trace_node_t *trace_node
 )
 {
   cct_trace_key_t key = {
-    .cct1 = cct1,
-    .cct2 = cct2
+    .node1 = node1,
+    .node2 = node2
   };
 
   cupti_cct_trace_map_insert(key, trace_node);
@@ -258,13 +259,13 @@ trace_map_insert
 static void
 trace_map_delete
 (
- cct_node_t *cct1,
- cct_node_t *cct2
+ uint64_t node1,
+ uint64_t node2
 )
 {
   cct_trace_key_t key = {
-    .cct1 = cct1,
-    .cct2 = cct2
+    .node1 = node1,
+    .node2 = node2
   };
 
   cupti_cct_trace_map_delete(key);
@@ -299,12 +300,12 @@ trace_shrink
 
   // Don't merge across ranges
   while (current->left->type != CUPTI_CCT_TRACE_NODE_NON_TERMINAL && current->left->type != CUPTI_CCT_TRACE_NODE_FLUSH) {
-    cupti_cct_trace_map_entry_t *entry = trace_map_lookup(current->left->cct, current->cct);
+    cupti_cct_trace_map_entry_t *entry = trace_map_lookup(current->left->key, current->key);
 
     if (entry == NULL) {
       // No such an pattern yet, we index it
       // No need to create a rule, so break out from the loop
-      trace_map_insert(current->left->cct, current->cct, current->left);
+      trace_map_insert(current->left->key, current->key, current->left);
       break;
     } 
 
@@ -328,17 +329,17 @@ trace_shrink
     if (prev_pattern_node->left->type != CUPTI_CCT_TRACE_NODE_NON_TERMINAL) {
       // root->BAa...Aa
       // Delete the index of BA
-      trace_map_delete(prev_pattern_node->left->cct, prev_pattern_node->cct);
+      trace_map_delete(prev_pattern_node->left->key, prev_pattern_node->key);
     }
 
     bool contiguous = false;
-    if (prev_pattern_node->cct == prev_pattern_node->right->cct &&
+    if (prev_pattern_node->key == prev_pattern_node->right->key &&
       prev_pattern_node->right->right == pattern_node) {
       // root->...aaaa
       // Don't delete the index of aa
       contiguous = true;
-      TRACE_MSG(CUPTI_CCT_TRACE, "Trace contiguous (prev_pattern_node: %p, pattern_node: %p) (cct: %p)",
-        prev_pattern_node, pattern_node, prev_pattern_node->cct);
+      TRACE_MSG(CUPTI_CCT_TRACE, "Trace contiguous (prev_pattern_node: %p, pattern_node: %p) (key: %p)",
+        prev_pattern_node, pattern_node, prev_pattern_node->key);
     }
 
     if (!(prev_pattern_node->left == prev_pattern_node->right->right)) {
@@ -347,9 +348,9 @@ trace_shrink
       // A->cab
       // Construct a rule using prev_pattern_nodes
       
-      TRACE_MSG(CUPTI_CCT_TRACE, "Trace partial before replacement (left: %p->%p->%p->%p) (cct: %p->%p->%p->%p)",
+      TRACE_MSG(CUPTI_CCT_TRACE, "Trace partial before replacement (left: %p->%p->%p->%p) (key: %p->%p->%p->%p)",
         prev_pattern_node->left, prev_pattern_node, prev_pattern_node->right, prev_pattern_node->right->right,
-        prev_pattern_node->left->cct, prev_pattern_node->cct, prev_pattern_node->right->cct, prev_pattern_node->right->right->cct);
+        prev_pattern_node->left->key, prev_pattern_node->key, prev_pattern_node->right->key, prev_pattern_node->right->right->key);
 
       // 1. Replace prev_pattern_nodes with rule_ref
       cupti_cct_trace_node_t *rule_ref = trace_new(CUPTI_CCT_TRACE_NODE_NON_TERMINAL_REF, NULL); 
@@ -361,16 +362,12 @@ trace_shrink
       trace_unlink(node2);
       trace_insert(left, rule_ref);
 
-      TRACE_MSG(CUPTI_CCT_TRACE, "Trace partial after replacement (left: %p->%p->%p->%p) (cct: %p->%p->%p->%p)",
-        left, left->right, left->right->right, left->right->right->right,
-        left->cct, left->right->cct, left->right->right->cct, left->right->right->right->cct);
-
       // 2. Delete the index of the subsequent pattern
       // root->Aab
       // Delete the index of ab
       if (!contiguous) {
         // root->AaAa
-        trace_map_delete(node1->cct, node2->cct);
+        trace_map_delete(node1->key, node2->key);
       }
 
       // Utility rule
@@ -383,12 +380,15 @@ trace_shrink
       trace_append(rule, node2);
       trace_ref_append(rule, rule_ref);
 
-      TRACE_MSG(CUPTI_CCT_TRACE, "Trace partial new (rule: %p->%p->%p) (cct: %p->%p->%p)",
+      TRACE_MSG(CUPTI_CCT_TRACE, "Trace partial after replacement (left: %p->%p->%p->%p) (key: %p->%p->%p->%p)",
+        left, left->right, left->right->right, left->right->right->right,
+        left->key, left->right->key, left->right->right->key, left->right->right->right->key);
+      TRACE_MSG(CUPTI_CCT_TRACE, "Trace partial new (rule: %p->%p->%p) (key: %p->%p->%p)",
         rule, rule->right, rule->right->right,
-        rule->cct, rule->right->cct, rule->right->right->cct);
-      TRACE_MSG(CUPTI_CCT_TRACE, "Trace partial new (rule_ref: %p->%p) (cct: %p->%p)",
-        rule, rule->ref_right,
-        rule->cct, rule->ref_right->cct);
+        rule->key, rule->right->key, rule->right->right->key);
+      TRACE_MSG(CUPTI_CCT_TRACE, "Trace partial new (rule_ref: %p->%p) (key: %p->%p)",
+        rule_ref->rule, rule->ref_right,
+        rule->key, rule->ref_right->key);
     } else {
       // B->Aa
       // Replace the current pattern appearance
@@ -402,12 +402,12 @@ trace_shrink
       // root->...AbBAb
       // Delete BA
       // Don't delete B
-      trace_map_delete(pattern_node_left->cct, pattern_node->cct);
+      trace_map_delete(pattern_node_left->key, pattern_node->key);
     }
 
-    TRACE_MSG(CUPTI_CCT_TRACE, "Trace partial before delete (left: %p->%p->%p) (cct: %p->%p->%p)",
+    TRACE_MSG(CUPTI_CCT_TRACE, "Trace partial before delete (left: %p->%p->%p) (key: %p->%p->%p)",
       pattern_node_left, pattern_node_left->right, pattern_node_left->right->right,
-      pattern_node_left->cct, pattern_node_left->right->cct, pattern_node_left->right->right->cct);
+      pattern_node_left->key, pattern_node_left->right->key, pattern_node_left->right->right->key);
 
     // Make a ref node
     cupti_cct_trace_node_t *rule_ref = trace_new(CUPTI_CCT_TRACE_NODE_NON_TERMINAL_REF, NULL);
@@ -415,16 +415,16 @@ trace_shrink
     trace_delete(pattern_node->right);
     trace_delete(pattern_node);
 
-    TRACE_MSG(CUPTI_CCT_TRACE, "Trace partial after delete (left: %p->%p->%p) (cct: %p->%p->%p)",
+    TRACE_MSG(CUPTI_CCT_TRACE, "Trace partial after delete (left: %p->%p->%p) (key: %p->%p->%p)",
       pattern_node_left, pattern_node_left->right, pattern_node_left->right->right,
-      pattern_node_left->cct, pattern_node_left->right->cct, pattern_node_left->right->right->cct);
+      pattern_node_left->key, pattern_node_left->right->key, pattern_node_left->right->right->key);
 
     trace_append(root, rule_ref);
     trace_ref_append(rule, rule_ref);
 
-    TRACE_MSG(CUPTI_CCT_TRACE, "Trace partial after append (left: %p->%p->%p) (cct: %p->%p->%p)",
+    TRACE_MSG(CUPTI_CCT_TRACE, "Trace partial after append (left: %p->%p->%p) (key: %p->%p->%p)",
       pattern_node_left, pattern_node_left->right, pattern_node_left->right->right,
-      pattern_node_left->cct, pattern_node_left->right->cct, pattern_node_left->right->right->cct);
+      pattern_node_left->key, pattern_node_left->right->key, pattern_node_left->right->right->key);
 
     // There must be another A, otherwise, A should have been replaced
     // No need to enfore utility rule
@@ -470,12 +470,11 @@ cupti_cct_trace_append
 
   trace_init();
 
-  cupti_cct_trace_node_t *trace_node = trace_new(CUPTI_CCT_TRACE_NODE_TERMINAL, cct);
+  cupti_cct_trace_node_t *trace_node = trace_new(CUPTI_CCT_TRACE_NODE_TERMINAL, (uint64_t)cct);
   trace_append(root, trace_node);
 
-  TRACE_MSG(CUPTI_CCT_TRACE, "Trace partial after append (root: %p<-%p<-%p<-%p), (cct: %p<-%p<-%p<-%p)",
-    root, root->left, root->left->left, root->left->left->left,
-    root->cct, root->left->cct, root->left->left->cct, root->left->left->left->cct);
+  TRACE_MSG(CUPTI_CCT_TRACE, "Trace partial after append (root: %p<-%p<-%p<-%p)",
+    root->key, root->left->key, root->left->left->key, root->left->left->left->key);
 
   bool ret = trace_shrink();
 
@@ -490,7 +489,7 @@ cupti_cct_trace_flush
 (
 )
 {
-  TRACE_MSG(CUPTI_CCT_TRACE, "Enter flush cct trace");
+  TRACE_MSG(CUPTI_CCT_TRACE, "Enter flush key trace");
 
   trace_init();
 
@@ -499,7 +498,7 @@ cupti_cct_trace_flush
 
   bool condensed = trace_condense();
 
-  TRACE_MSG(CUPTI_CCT_TRACE, "Exit flush cct trace condensed %d", condensed);
+  TRACE_MSG(CUPTI_CCT_TRACE, "Exit flush key trace condensed %d", condensed);
 
   return condensed;
 }
@@ -513,10 +512,7 @@ cupti_cct_trace_dump
   cupti_cct_trace_node_t *node = root->right;
   printf("root->");
   while (node != root) {
-    printf("%p", node->cct);
-    if (node->rule) {
-      printf("(%p)", node->rule);
-    }
+    printf("%p", node->key);
     if (node->right != root) {
       printf("->");
     } else {

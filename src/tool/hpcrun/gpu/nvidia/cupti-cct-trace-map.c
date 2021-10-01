@@ -204,10 +204,10 @@ cct_trace_cmp_gt
  cct_trace_key_t right
 )
 {
-  if (left.cct1 > right.cct1) {
+  if (left.node1 > right.node1) {
     return true;
-  } else if (left.cct1 == right.cct1) {
-    if (left.cct2 > right.cct2) {
+  } else if (left.node1 == right.node1) {
+    if (left.node2 > right.node2) {
       return true;
     }
   }
@@ -222,10 +222,10 @@ cct_trace_cmp_lt
  cct_trace_key_t right
 )
 {
-  if (left.cct1 < right.cct1) {
+  if (left.node1 < right.node1) {
     return true;
-  } else if (left.cct1 == right.cct1) {
-    if (left.cct2 < right.cct2) {
+  } else if (left.node1 == right.node1) {
+    if (left.node2 < right.node2) {
       return true;
     }
   }
@@ -240,7 +240,7 @@ cct_trace_cmp_eq
  cct_trace_key_t right
 )
 {
-  return left.cct1 == right.cct1 && left.cct2 == right.cct2;
+  return left.node1 == right.node1 && left.node2 == right.node2;
 }
 
 
@@ -450,7 +450,7 @@ cupti_cct_trace_map_lookup
 {
   cupti_cct_trace_map_entry_t *entry = st_lookup(&map_root, key);
 
-  TRACE_MAP_MSG(CUPTI_CCT_TRACE, "Trace map lookup (cct1: %p, cct1: %p)->(entry: %p)", key.cct1, key.cct2, entry);
+  TRACE_MAP_MSG(CUPTI_CCT_TRACE, "Trace map lookup (node1: %p, node2: %p)->(entry: %p)", key.node1, key.node2, entry);
   
   return entry;
 } 
@@ -470,7 +470,7 @@ cupti_cct_trace_map_insert
     st_insert(&map_root, entry);
   }
 
-  TRACE_MAP_MSG(CUPTI_CCT_TRACE, "Trace map insert (cct1: %p, cct1: %p)->(trace_node: %p)", key.cct1, key.cct2, trace_node);
+  TRACE_MAP_MSG(CUPTI_CCT_TRACE, "Trace map insert (node1: %p, node2: %p)->(trace_node: %p)", key.node1, key.node2, trace_node);
 }
 
 
@@ -486,7 +486,7 @@ cupti_cct_trace_map_delete
     st_free(&free_list, entry);
   }
   
-  TRACE_MAP_MSG(CUPTI_CCT_TRACE, "Trace map delete (cct1: %p, cct1: %p)->(trace_node: %p)", key.cct1, key.cct2, entry->trace_node);
+  TRACE_MAP_MSG(CUPTI_CCT_TRACE, "Trace map delete (node1: %p, node2: %p)->(trace_node: %p)", key.node1, key.node2, entry->trace_node);
 }
 
 
