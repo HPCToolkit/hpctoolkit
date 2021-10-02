@@ -243,6 +243,7 @@ static __thread cct_node_t *cupti_prev_kernel_node = NULL;
 static __thread cct_node_t *cupti_prev_prev_kernel_node = NULL;
 
 static __thread uint64_t cupti_runtime_correlation_id = 0;
+static __thread uint64_t cupti_driver_correlation_id = 0;
 
 static bool cupti_correlation_enabled = false;
 
@@ -1124,6 +1125,7 @@ cupti_api_enter_callback_cuda
   uint64_t correlation_id = cupti_runtime_correlation_id_get();
   if (correlation_id == 0) {
     correlation_id = gpu_correlation_id();
+    cupti_driver_correlation_id_set(correlation_id);
     cupti_correlation_id_push(correlation_id);
     TMSG(CUPTI_TRACE, "Driver push externalId %lu (cb_id = %u, range_id = %u)", correlation_id, cb_id, range_id);
   } else {
@@ -1144,8 +1146,6 @@ cupti_api_enter_callback_cuda
   uint64_t cpu_submit_time = hpcrun_nanotime();
   gpu_correlation_channel_range_produce(correlation_id, &gpu_op_ccts, cpu_submit_time, range_id);
 
-  gpu_range_enter(gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel), correlation_id);
-
   return gpu_op_ccts;
 }
 
@@ -1165,8 +1165,6 @@ cupti_api_exit_callback_cuda
   } else {
     TMSG(CUPTI_TRACE, "Runtime pop externalId %lu (cb_id = %u, %u)", correlation_id, cb_id, range_id);
   }
-
-  gpu_range_exit();
 }
 
 
@@ -1225,6 +1223,9 @@ cupti_driver_api_subscriber_callback_cuda_kernel
 
       cupti_trace_ph_set(gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_trace));
       ensure_kernel_ip_present(cupti_trace_ph_get(), kernel_ip);
+
+      // Ranges are only divided by kernels but not other GPU APIs
+      gpu_range_enter(gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel), cupti_driver_correlation_id_get());
     }
 
 #ifdef NEW_CUPTI_ANALYSIS
@@ -1232,6 +1233,8 @@ cupti_driver_api_subscriber_callback_cuda_kernel
 #endif
   } else if (!ompt_runtime_status_get()) {
     cupti_api_exit_callback_cuda(cb_id);
+
+    gpu_range_exit();
   }
 }
 
@@ -2309,6 +2312,26 @@ cupti_runtime_correlation_id_set
 )
 {
   cupti_runtime_correlation_id = correlation_id;
+}
+
+
+uint64_t
+cupti_driver_correlation_id_get
+(
+ void
+)
+{
+  return cupti_driver_correlation_id;
+}
+
+
+void
+cupti_driver_correlation_id_set
+(
+ uint64_t correlation_id
+)
+{
+  cupti_driver_correlation_id = correlation_id;
 }
 
 

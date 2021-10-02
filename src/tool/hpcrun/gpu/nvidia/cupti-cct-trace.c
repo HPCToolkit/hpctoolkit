@@ -302,6 +302,7 @@ trace_shrink
   while (current->left->type != CUPTI_CCT_TRACE_NODE_NON_TERMINAL && current->left->type != CUPTI_CCT_TRACE_NODE_FLUSH) {
     cupti_cct_trace_map_entry_t *entry = trace_map_lookup(current->left->key, current->key);
 
+
     if (entry == NULL) {
       // No such an pattern yet, we index it
       // No need to create a rule, so break out from the loop
@@ -354,7 +355,6 @@ trace_shrink
 
       // 1. Replace prev_pattern_nodes with rule_ref
       cupti_cct_trace_node_t *rule_ref = trace_new(CUPTI_CCT_TRACE_NODE_NON_TERMINAL_REF, NULL); 
-      cupti_cct_trace_node_t *right = prev_pattern_node->right->right;
       cupti_cct_trace_node_t *left = prev_pattern_node->left;
       cupti_cct_trace_node_t *node1 = prev_pattern_node;
       cupti_cct_trace_node_t *node2 = prev_pattern_node->right;
@@ -389,6 +389,16 @@ trace_shrink
       TRACE_MSG(CUPTI_CCT_TRACE, "Trace partial new (rule_ref: %p->%p) (key: %p->%p)",
         rule_ref->rule, rule->ref_right,
         rule->key, rule->ref_right->key);
+
+      // 4. Index new sequences
+      // root->...bAa...
+      // Index bA and Aa
+      if (left->type != CUPTI_CCT_TRACE_NODE_NON_TERMINAL) {
+        trace_map_insert(left->key, left->right->key, left);
+      }
+      if (left->right->right->type != CUPTI_CCT_TRACE_NODE_NON_TERMINAL) {
+        trace_map_insert(left->right->key, left->right->right->key, left->right);
+      }
     } else {
       // B->Aa
       // Replace the current pattern appearance

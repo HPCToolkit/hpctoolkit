@@ -84,8 +84,11 @@ cupti_range_mode_context_sensitive_is_enter
 )
 {
   static __thread bool repeated_range = true;
+  cct_node_t *kernel_node = hpcrun_cct_children(kernel_ph);
+  ip_normalized_t kernel_ip = hpcrun_cct_addr(kernel_node)->ip_norm;
+  cct_node_t *api_node = hpcrun_cct_parent(kernel_ph);
 
-  cupti_ip_norm_map_ret_t map_ret_type = cupti_ip_norm_map_lookup(kernel_ph);
+  cupti_ip_norm_map_ret_t map_ret_type = cupti_ip_norm_map_lookup(kernel_ip, api_node);
 
   bool do_flush = false;
   if (map_ret_type == CUPTI_IP_NORM_MAP_DUPLICATE) {
@@ -97,7 +100,7 @@ cupti_range_mode_context_sensitive_is_enter
     }
   } else if (map_ret_type == CUPTI_IP_NORM_MAP_NOT_EXIST) {
     // No such a node
-    cupti_ip_norm_map_insert(kernel_ph);
+    cupti_ip_norm_map_insert(kernel_ip, api_node);
   }
 
   CUcontext context;
@@ -110,7 +113,7 @@ cupti_range_mode_context_sensitive_is_enter
     repeated_range = true;
   }
 
-  bool repeated = cupti_cct_trace_append(kernel_ph);
+  bool repeated = cupti_cct_trace_append(api_node);
   if (!repeated) {
     repeated_range = false;
   }

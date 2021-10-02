@@ -427,6 +427,20 @@ cupti_runtime_correlation_id_set
 );
 
 
+uint64_t
+cupti_driver_correlation_id_get
+(
+ void
+);
+
+
+void
+cupti_driver_correlation_id_set
+(
+ uint64_t correlation_id
+);
+
+
 void
 cupti_correlation_threshold_set
 (

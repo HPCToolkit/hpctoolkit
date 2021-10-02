@@ -1,7 +1,15 @@
 #include "cupti-ip-norm-map.h"
 
 #include <lib/prof-lean/splay-macros.h>
+#include <hpcrun/messages/messages.h>
 #include <hpcrun/memory/hpcrun-malloc.h>
+
+#define DEBUG
+#ifdef DEBUG
+#define TRACE_IP_NORM_MAP_MSG(...) TMSG(__VA_ARGS__)
+#else
+#define TRACE_IP_NORM_MAP_MSG(...)
+#endif
 
 //******************************************************************************
 // type declarations
@@ -175,7 +183,7 @@ ip_norm_cmp_eq
  ip_normalized_t right
 )
 {
-  return left.lm_id == right.lm_id && left.lm_ip && right.lm_ip;
+  return left.lm_id == right.lm_id && left.lm_ip == right.lm_ip;
 }
 
 
@@ -372,31 +380,35 @@ flush_fn_helper
 cupti_ip_norm_map_ret_t
 cupti_ip_norm_map_lookup
 (
+ ip_normalized_t ip_norm,
  cct_node_t *cct
 )
 {
-  cct_addr_t *addr = hpcrun_cct_addr(cct);
-  ip_normalized_t ip_norm = addr->ip_norm;
   cupti_ip_norm_map_entry_t *result = st_lookup(&map_root, ip_norm);
 
+  cupti_ip_norm_map_ret_t ret;
   if (result == NULL) {
-    return CUPTI_IP_NORM_MAP_NOT_EXIST;
+    ret = CUPTI_IP_NORM_MAP_NOT_EXIST;
   } else if (result->cct != cct) {
-    return CUPTI_IP_NORM_MAP_DUPLICATE;
+    ret = CUPTI_IP_NORM_MAP_DUPLICATE;
   } else {
-    return CUPTI_IP_NORM_MAP_EXIST;
+    ret = CUPTI_IP_NORM_MAP_EXIST;
   }
+
+  TRACE_IP_NORM_MAP_MSG(CUPTI_CCT_TRACE, "IP norm map lookup (lm_id: %d, lm_ip: %p, cct: %p)->(ret: %d)",
+    ip_norm.lm_id, ip_norm.lm_ip, cct, ret);
+
+  return ret;
 }
 
 
 void
 cupti_ip_norm_map_insert
 (
+ ip_normalized_t ip_norm,
  cct_node_t *cct
 )
 {
-  cct_addr_t *addr = hpcrun_cct_addr(cct);
-  ip_normalized_t ip_norm = addr->ip_norm;
   cupti_ip_norm_map_entry_t *entry = st_lookup(&map_root, ip_norm);
 
   if (entry == NULL) {
@@ -405,6 +417,9 @@ cupti_ip_norm_map_insert
     entry->cct = cct;
     st_insert(&map_root, entry);
   }
+
+  TRACE_IP_NORM_MAP_MSG(CUPTI_CCT_TRACE, "IP norm map insert (lm_id: %d, lm_ip: %p, cct: %p)->(entry: %p)",
+    ip_norm.lm_id, ip_norm.lm_ip, cct, entry);
 }
 
 
