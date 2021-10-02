@@ -504,7 +504,8 @@ MY_AARCH64_FILES = \
 if OPT_PAPI_COMPONENT
 MY_PAPI_FILES = \
     sample-sources/papi-c.c \
-    sample-sources/papi-c-extended-info.c
+    sample-sources/papi-c-extended-info.c \
+	sample-sources/papi-c-intel.c
 else
     MY_PAPI_FILES = sample-sources/papi.c
 endif

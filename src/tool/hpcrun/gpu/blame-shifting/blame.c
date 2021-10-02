@@ -480,6 +480,12 @@ gpu_idle_blame
   if (num_unfinished_kernels == 0) {
     gpu_blame_shift_t bs = {0, metric_incr, 0};
     record_blame_shift_metrics(node, &bs);
+  } else {
+    // this below loop should be run only for Intel programs  (unless the used runtime supports PAPI with active/stall metrics)
+    // gpu_monitors_apply(api_node, gpu_monitor_type_enter);
+    // PAPI_read(metrics);
+    // work on a list on incomplete_kernel_list_head; parse through this list and increment all of the kernel values by metrics
+    // PAPI_reset();
   }
 
   spinlock_unlock(&itimer_blame_lock);
