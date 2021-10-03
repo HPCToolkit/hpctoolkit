@@ -125,12 +125,19 @@ It is normally not needed if {\Cmd{hpcstruct}{1}} was run on the measurements di
 
 \item[\OptArg{-R}{'old-path=new-path'}, \OptArg{--replace-path}{'old-path=new-path'}]
 Replace every instance of \Arg{old-path} by \Arg{new-path}
-in all paths for which \Arg{old-path} is a prefix (e.g., in a profile's load map and source code).
+in all paths for which \Arg{old-path} is a prefix of a path to a binary measured by HPCToolkit
+or a source file used to produce a binary measured by HPCToolkit. 
 Use '\Bs'\ to escape instances of '=' within a path.
 This option may be given multiple times.
-  
-Use this option when a profile or binary contains references to files that have been relocated,
-such as might occur with a file system change.
+\medskip
+Use this option when a profile or binary contains references to files no 
+longer present at their original path. 
+For instance, a library may have been compiled by a system administrator and 
+distributed with line map information containing file paths that point to a 
+build directory that no longer exists. 
+If you can locate a copy of the source code for the library, you can unpack 
+it anywhere and provide a -R option that maps the prefix of the build 
+directory to the prefix of the directory where you unpacked a copy of the library sources.
 \end{Description}
 
 \subsection{Options: Metrics}
