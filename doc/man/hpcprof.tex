@@ -66,13 +66,12 @@ use \HTMLhref{hpcprof-mpi.html}{\Cmd{hpcprof-mpi}{1}}, a parallel version of \Pr
 
 \Prog{hpcprof} expects a list of \emph{measurement groups},
 each of which is either a call path profile directory or an individual profile file.
-For best results, one other option should be given:
-\textbf{-I} to specify search directories for source code files.
-If no search directory arguments are given,
-\Prog{hpcprof} will find only those source files that are specified via
-either an absolute path still preseent in the file system
-or a relative path w.r.t. the current working directory.
-If {\Cmd{hpcstruct}{1}} was run on the measurements directory, no \textbf{-S} arguments are needed.
+For best results, you may need to specify one or more
+\textbf{-I} options to specify search directories for source code files.
+If no search directories are specified,
+\Prog{hpcprof} will find only source files whose paths are recorded in an application binary, shared library, or GPU binary 
+as an absolute path still present in the file system or a relative path with respect to the current working directory.
+If \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} was run on the measurements directory, no \textbf{-S} arguments are needed.
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -113,7 +112,7 @@ Set the database's name (title) to \Arg{name}.
 Use \Arg{dir} as a search directory to find source files.
 For a recursive search, append a '+' after the last slash, e.g., \texttt{/mypath/+}.
 This option may be given multiple times.
-
+\medskip
 If a file appears in more than one search directory,
 the ambiguity is resolved in favor of the search directory which occurred first on the command line.
 
@@ -122,16 +121,24 @@ Use the structure file \Arg{file} produced by \HTMLhref{hpcstruct.html}{\Cmd{hpc
 to identify source code elements for attribution of performance.
 This option may be given multiple times,
 e.g. to provide structure for shared libraries in addition to the application executable.
-If  {\Cmd{hpcstruct}{1}} was run on the measurements directory, no such arguments are needed.
+If \HTMLhref{hpcstruct.html}{\Cmd{hpcstruct}{1}} was run on the measurements directory, no such arguments are needed.
 
 \item[\OptArg{-R}{'old-path=new-path'}, \OptArg{--replace-path}{'old-path=new-path'}]
 Replace every instance of \Arg{old-path} by \Arg{new-path}
-in all paths for which \Arg{old-path} is a prefix (e.g., in a profile's load map and source code).
+in all paths for which \Arg{old-path} is a prefix of a path to a binary measured by HPCToolkit
+or a source file used to produce a binary measured by HPCToolkit. 
 Use '\Bs'\ to escape instances of '=' within a path.
 This option may be given multiple times.
-  
-Use this option when a profile or binary contains references to files that have been relocated,
-such as might occur with a file system change.
+\medskip
+Use this option when a profile or binary contains references to files no 
+longer present at their original path. 
+For instance, a library may have been compiled by a system administrator and 
+distributed with line map information containing file paths that point to a 
+build directory that no longer exists. 
+If you can locate a copy of the source code for the library, you can unpack 
+it anywhere and provide a -R option that maps the prefix of the build 
+directory to the prefix of the directory where you unpacked a copy of the library sources.
+
 \end{Description}
 
 \subsection{Options: Metrics}
