@@ -314,6 +314,7 @@ public:
   long  file_index;
   long  base_index;
   long  line_num;
+  vector <FLPIndex> flp_path;
 
   HeaderInfo(Block * blk = NULL)
   {
@@ -324,6 +325,7 @@ public:
     file_index = 0;
     base_index = 0;
     line_num = 0;
+    flp_path.clear();
   }
 };
 
@@ -2020,6 +2022,7 @@ findLoopHeader(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo,
       string filenm = "";
       SrcFile::ln line = 0;
 
+      // terminal line map info
       StatementVector svec;
       getStatement(svec, src_vma, ginfo->sym_func);
 
@@ -2038,6 +2041,13 @@ findLoopHeader(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo,
       clist[src_vma].file_index = strTab->str2index(filenm);
       clist[src_vma].base_index = strTab->str2index(FileUtil::basename(filenm));
       clist[src_vma].line_num = line;
+
+      // inline sequence as vector of flp index
+      clist[src_vma].flp_path.clear();
+      for (auto it = seqn.begin(); it != seqn.end(); ++it) {
+	InlineNode node = *it;
+	clist[src_vma].flp_path.push_back(FLPIndex(*strTab, node));
+      }
     }
   }
 
@@ -2063,7 +2073,6 @@ findLoopHeader(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo,
        << "file:  '" << finfo->fileName << "'\n\n";
   debugInlineTree(root, NULL, *strTab, 0, false);
   debugLoop(ginfo, func, loop, loopName, backEdges, clist, env.realPath);
-  cout << "\nsearching inline tree:\n";
 #endif
 
   //------------------------------------------------------------
@@ -2081,6 +2090,8 @@ findLoopHeader(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo,
   StmtMap  stmts;
   int  depth_root = 0;
 
+  DEBUG_CFG("\nsearching for loop depth ...\n");
+
   while (root->nodeMap.size() == 1 && root->loopList.size() == 0) {
     FLPIndex flp = root->nodeMap.begin()->first;
 
@@ -2089,12 +2100,14 @@ findLoopHeader(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo,
       VMA vma = cit->first;
 
       if (root->stmtMap.member(vma)) {
+	DEBUG_CFG("exit cond at this level:  0x" << hex << vma << dec << "\n");
         goto found_level;
       }
 
       // reparented stmts must also match file name
       StmtInfo * sinfo = stmts.findStmt(vma);
       if (sinfo != NULL && sinfo->base_index == flp.base_index) {
+	DEBUG_CFG("unable to reparent stmts:  0x" << hex << vma << dec << "\n");
         goto found_level;
       }
     }
@@ -2117,6 +2130,21 @@ findLoopHeader(WorkEnv & env, FileInfo * finfo, GroupInfo * ginfo,
 	      << "'  p='" << debugPrettyName(strTab->index2str(flp.pretty_index))
 	      << "'\n");
   }
+#if DEBUG_CFG_SOURCE
+  if (root->nodeMap.size() > 1) {
+    cout << "inline split\n";
+  }
+  else if (root->nodeMap.size() == 0) {
+    cout << "end of inline steps\n";
+  }
+  else if (root->loopList.size() > 0) {
+    cout << "subloop\n";
+  }
+  else {
+    cout << "unknown end\n";
+  }
+#endif
+
 found_level:
 
 #if DEBUG_CFG_SOURCE
@@ -2159,6 +2187,8 @@ found_level:
   long base_ans = empty_index;
   long line_ans = 0;
 
+  DEBUG_CFG("\nsearching for loop file and line ...\n");
+
   // first choice is the file for the enclosing func that matches some
   // exit cond at top-level, but only if no inline steps
   if (depth_root == 0) {
@@ -2169,6 +2199,7 @@ found_level:
 	  && info->base_index == proc_base) {
         file_ans = proc_file;
         base_ans = proc_base;
+	DEBUG_CFG("file: exit cond at top-level func\n");
         goto found_file;
       }
     }
@@ -2185,6 +2216,7 @@ found_level:
 	  && info->base_index == flp.base_index) {
         file_ans = flp.file_index;
         base_ans = flp.base_index;
+	DEBUG_CFG("file: exit cond at inline subtree\n");
         goto found_file;
       }
     }
@@ -2198,6 +2230,7 @@ found_level:
     if (info->depth == depth_root && info->base_index != empty_index) {
       file_ans = info->file_index;
       base_ans = info->base_index;
+      DEBUG_CFG("file: unmatched exit cond\n");
       goto found_file;
     }
   }
@@ -2206,6 +2239,7 @@ found_level:
   if (depth_root == 0 && proc_file != empty_index) {
     file_ans = proc_file;
     base_ans = proc_base;
+    DEBUG_CFG("file: enclosing func but no exit cond\n");
     goto found_file;
   }
 
@@ -2216,6 +2250,7 @@ found_level:
     if (flp.file_index != empty_index) {
       file_ans = flp.file_index;
       base_ans = flp.base_index;
+      DEBUG_CFG("file: inline subtree but no exit cond\n");
       goto found_file;
     }
   }
@@ -2227,6 +2262,7 @@ found_level:
     if (linfo->file_index != empty_index) {
       file_ans = linfo->file_index;
       base_ans = linfo->base_index;
+      DEBUG_CFG("file: any subloop\n");
       goto found_file;
     }
   }
@@ -2239,43 +2275,80 @@ found_level:
       file_ans = sinfo->file_index;
       base_ans = sinfo->base_index;
       line_ans = sinfo->line_num;
-      break;
+      DEBUG_CFG("file: any stmt\n");
+      goto found_file;
     }
   }
 found_file:
 
-  // min line of inline callsites
-  // fixme: code motion breaks this
-#if 0
-  for (auto nit = root->nodeMap.begin(); nit != root->nodeMap.end(); ++nit) {
-    FLPIndex flp = nit->first;
-
-    if (flp.base_index == base_ans
-	&& (line_ans == 0 || (flp.line_num > 0 && flp.line_num < line_ans))) {
-      line_ans = flp.line_num;
-    }
-  }
-#endif
-
-  // min line of subloops
-  for (auto lit = root->loopList.begin(); lit != root->loopList.end(); ++lit) {
-    LoopInfo * linfo = *lit;
-
-    if (linfo->base_index == base_ans
-	&& (line_ans == 0 || (linfo->line_num > 0 && linfo->line_num < line_ans))) {
-      line_ans = linfo->line_num;
-    }
+  // if we can't find a file name, then don't look for a line
+  if (file_ans == empty_index) {
+    DEBUG_CFG("unable to find file, skipping line\n");
+    line_ans = 0;
+    goto found_line;
   }
 
-  // min line of exit cond stmts at root level
+  //
+  // line num -- the best answer is an exit cond at this level where
+  // the file name matches (with terminal line map).  it's ok to have
+  // multiple exit conds, pick the one with the min line number.
+  //
   for (auto cit = clist.begin(); cit != clist.end(); ++cit) {
     HeaderInfo * info = &(cit->second);
 
     if (info->depth == depth_root
-	&& (line_ans == 0 || (info->line_num > 0 && info->line_num < line_ans))) {
-      line_ans = info->line_num;
+	&& info->base_index == base_ans
+	&& info->line_num > 0)
+    {
+      long line = info->line_num;
+
+      if (line_ans == 0 || line < line_ans) {
+	line_ans = line;
+      }
+      DEBUG_CFG("line:  " << line << "  (exit cond at loop level)  0x"
+		<< hex << cit->first << dec << "\n");
     }
   }
+
+  //
+  // equally good is an exit cond that is inlined below the current
+  // depth if the file matches the next inline step.
+  //
+  for (auto cit = clist.begin(); cit != clist.end(); ++cit) {
+    HeaderInfo * info = &(cit->second);
+
+    if (info->depth > depth_root
+	&& info->flp_path[depth_root].base_index == base_ans
+	&& info->flp_path[depth_root].line_num > 0)
+    {
+      long line = info->flp_path[depth_root].line_num;
+
+      if (line_ans == 0 || line < line_ans) {
+	line_ans = line;
+      }
+      DEBUG_CFG("line:  " << line << "  (exit cond at loop +"
+		<< (info->depth - depth_root) << ")  0x"
+		<< hex << cit->first << dec << "\n");
+    }
+  }
+
+  //
+  // never locate the loop at a higher line number than a subloop
+  //
+  for (auto lit = root->loopList.begin(); lit != root->loopList.end(); ++lit) {
+    LoopInfo * linfo = *lit;
+
+    if (linfo->base_index == base_ans && linfo->line_num > 0)
+    {
+      long line = linfo->line_num;
+
+      if (line_ans == 0 || line < line_ans) {
+	line_ans = line;
+      }
+      DEBUG_CFG("line:  "  << line_ans << "  (subloop)  " << linfo->name << "\n");
+    }
+  }
+found_line:
 
   DEBUG_CFG("\nheader:  l=" << line_ans << "  f='"
 	    << strTab->index2str(file_ans) << "'\n");
@@ -2692,9 +2765,6 @@ debugLoop(GroupInfo * ginfo, ParseAPI::Function * func,
     HeaderInfo * info = &(cit->second);
     SrcFile::ln line = 0;
     string filenm = "";
-
-    InlineSeqn seqn;
-    analyzeAddr(seqn, vma, realPath);
 
     StatementVector svec;
     getStatement(svec, vma, ginfo->sym_func);

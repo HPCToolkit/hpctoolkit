@@ -79,6 +79,7 @@ using std::endl;
 
 #include <lib/banal/Struct.hpp>
 #include <lib/prof-lean/hpcio.h>
+#include <lib/prof-lean/cpuset_hwthreads.h>
 #include <lib/support/diagnostics.h>
 #include <lib/support/realpath.h>
 #include <lib/support/FileUtil.hpp>
@@ -165,6 +166,18 @@ doMeasurementsDir(string measurements_dir, BAnal::Struct::Options & opts, string
     exit(1);
   }
 
+  unsigned int pthreads;
+  unsigned int jobs;
+
+  if (opts.jobs == 0) { // not specified
+    unsigned int hwthreads = cpuset_hwthreads();
+    jobs = std::max(hwthreads/2, 1U);
+    pthreads = std::min(jobs, 16U);
+  } else {
+    jobs = opts.jobs;
+    pthreads = jobs;
+  }
+
   string gpucfg = opts.compute_gpu_cfg ? "yes" : "no";
 
   makefile << "MEAS_DIR =  "   << measurements_dir << "\n"
@@ -181,7 +194,7 @@ doMeasurementsDir(string measurements_dir, BAnal::Struct::Options & opts, string
       + " --no-print-directory all";
 
   if (system(make_cmd.c_str()) != 0) {
-    DIAG_EMsg("Make hpcstruct files for GPU binaries failed.");
+    DIAG_EMsg("Make hpcstruct files for measurement directory failed.");
     exit(1);
   }
 }
@@ -217,7 +230,6 @@ static int
 realmain(int argc, char* argv[])
 {
   Args args(argc, argv);
-  BAnal::Struct::Options opts;
 
   RealPathMgr::singleton().searchPaths(args.searchPathStr);
   RealPathMgr::singleton().realpath(args.in_filenm);
@@ -226,47 +238,39 @@ realmain(int argc, char* argv[])
   // Parameters on how to run hpcstruct
   // ------------------------------------------------------------
 
+  unsigned int jobs_struct;
+  unsigned int jobs_parse;
+  unsigned int jobs_symtab;
+
 #ifdef ENABLE_OPENMP
   //
   // Translate the args jobs to the struct opts jobs.  The specific
   // overrides the general: for example, -j sets all three phases,
   // --jobs-parse overrides just that one phase.
   //
-  int jobs = (args.jobs >= 1) ? args.jobs : 1;
 
-  opts.jobs = jobs;
-  opts.jobs_struct = jobs;
-  opts.jobs_parse = jobs;
-  opts.jobs_symtab = jobs;
-
-  if (args.jobs_struct >= 1) {
-    opts.jobs_struct = args.jobs_struct;
-  }
-  if (args.jobs_parse >= 1) {
-    opts.jobs_parse = args.jobs_parse;
-  }
-  if (args.jobs_symtab >= 1) {
-    opts.jobs_symtab = args.jobs_symtab;
-  }
+  jobs_struct = (args.jobs_struct >= 1) ? args.jobs_struct : args.jobs;
+  jobs_parse  = (args.jobs_parse >= 1)  ? args.jobs_parse  : args.jobs;
 
 #ifndef ENABLE_OPENMP_SYMTAB
-  opts.jobs_symtab = 1;
+  jobs_symtab = 1;
+#else
+  jobs_symtab = (args.jobs_symtab >= 1) ? args.jobs_symtab : args.jobs;
 #endif
 
   omp_set_num_threads(1);
 
 #else
-  opts.jobs = 1;
-  opts.jobs_struct = 1;
-  opts.jobs_parse = 1;
-  opts.jobs_symtab = 1;
+  jobs_struct = 1;
+  jobs_parse = 1;
+  jobs_symtab = 1;
 #endif
 
-  opts.show_time = args.show_time;
-  opts.compute_gpu_cfg = args.compute_gpu_cfg;
-  opts.analyze_cpu_binaries = args.analyze_cpu_binaries;
-  opts.analyze_gpu_binaries = args.analyze_gpu_binaries;
-  opts.parallel_analysis_threshold = args.parallel_analysis_threshold;
+  BAnal::Struct::Options opts;
+
+  opts.set(args.jobs, jobs_struct, jobs_parse, jobs_symtab, args.show_time,
+	   args.analyze_cpu_binaries, args.analyze_gpu_binaries,
+	   args.compute_gpu_cfg, args.parallel_analysis_threshold);
 
   // ------------------------------------------------------------
   // If in_filenm is a directory, then analyze separately
@@ -277,6 +281,10 @@ realmain(int argc, char* argv[])
     if(argc < 1) {
       DIAG_EMsg("Bad exec arguments, must have a $0 argument");
       exit(2);
+    }
+    if (!args.out_filenm.empty()) {
+      DIAG_EMsg("Outfile file may not be specified when analyziing a measurement directory.");
+      exit(1);
     }
     doMeasurementsDir(args.in_filenm, opts, argv[0]);
     return 0;
