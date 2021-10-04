@@ -1225,7 +1225,7 @@ cupti_driver_api_subscriber_callback_cuda_kernel
       ensure_kernel_ip_present(cupti_trace_ph_get(), kernel_ip);
 
       // Ranges are only divided by kernels but not other GPU APIs
-      gpu_range_enter(gpu_op_ccts_get(&gpu_op_ccts, gpu_placeholder_type_kernel), cupti_driver_correlation_id_get());
+      gpu_range_enter(cupti_kernel_ph_get(), cupti_driver_correlation_id_get());
     }
 
 #ifdef NEW_CUPTI_ANALYSIS

@@ -88,6 +88,15 @@ cupti_range_mode_context_sensitive_is_enter
   ip_normalized_t kernel_ip = hpcrun_cct_addr(kernel_node)->ip_norm;
   cct_node_t *api_node = hpcrun_cct_parent(kernel_ph);
 
+  //cct_node_t *debug_node = api_node;
+  //while (debug_node) {
+  //  cct_addr_t *addr = hpcrun_cct_addr(debug_node);
+  //  ip_normalized_t ip_norm = addr->ip_norm;
+  //  printf("(%u %p)->", ip_norm.lm_id, ip_norm.lm_ip);
+  //  debug_node = hpcrun_cct_parent(debug_node); 
+  //} 
+  //printf("\n");
+
   cupti_ip_norm_map_ret_t map_ret_type = cupti_ip_norm_map_lookup(kernel_ip, api_node);
 
   bool do_flush = false;
