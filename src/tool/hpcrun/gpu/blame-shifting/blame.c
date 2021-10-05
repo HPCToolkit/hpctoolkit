@@ -54,6 +54,8 @@ static _Atomic(kernel_node_t*) incomplete_kernel_list_head = { NULL };
 static queue_node_t *queue_node_free_list = NULL;
 static kernel_node_t *kernel_node_free_list = NULL;
 
+__thread bool gpu_utilization_enabled = false;
+
 
 
 //******************************************************************************
@@ -490,6 +492,16 @@ sync_epilogue
 }
 
 
+void
+gpu_blame_gpu_utilization_enable
+(
+ void
+)
+{
+  gpu_utilization_enabled = true;
+}
+
+
 
 ////////////////////////////////////////////////
 // CPU-GPU blame shift itimer callback interface
@@ -533,7 +545,9 @@ gpu_idle_blame
     gpu_blame_shift_t bs = {0, metric_incr, 0};
     record_blame_shift_metrics(node, &bs);
   } else {
-    accumulate_gpu_utilization_metrics_to_incomplete_kernels(num_unfinished_kernels);
+    if (gpu_utilization_enabled) {
+      accumulate_gpu_utilization_metrics_to_incomplete_kernels(num_unfinished_kernels);
+    }
   }
 
   spinlock_unlock(&itimer_blame_lock);
