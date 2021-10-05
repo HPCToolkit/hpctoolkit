@@ -54,6 +54,7 @@
 #include <hpcrun/gpu/gpu-metrics.h>
 #include <hpcrun/gpu/gpu-trace.h>
 #include <hpcrun/gpu/opencl/opencl-api.h>
+#include <hpcrun/gpu/blame-shifting/blame.h>
 #include <hpcrun/thread_data.h>
 #include <hpcrun/trace.h>
 
@@ -76,6 +77,7 @@
 #define LATENCY "latency"
 #define SIMD "simd"
 #define INTEL_OPTIMIZATION_CHECK "intel_opt_check"
+#define ENABLE_INTEL_GPU_UTILIZATION "intel_gpu_util"
 #define NO_THRESHOLD  1L
 
 static device_finalizer_fn_entry_t device_finalizer_flush;
@@ -153,6 +155,7 @@ METHOD_FN(supports_event, const char *ev_str)
                                            || strstr(ev_str, INSTRUMENTATION_PREFIX)
                                            || hpcrun_ev_is(ev_str, INTEL_OPTIMIZATION_CHECK)
                                            || hpcrun_ev_is(ev_str, ENABLE_OPENCL_BLAME_SHIFTING)
+                                           || hpcrun_ev_is(ev_str, ENABLE_INTEL_GPU_UTILIZATION)
          );
   #else
   return false;
@@ -218,6 +221,9 @@ METHOD_FN(process_event_list, int lush_metrics)
       gpu_metrics_INTEL_OPTIMIZATION_enable();
     } else if (hpcrun_ev_is(opencl_name, ENABLE_OPENCL_BLAME_SHIFTING)) {
 			opencl_blame_shifting_enable();
+		} else if (hpcrun_ev_is(opencl_name, ENABLE_INTEL_GPU_UTILIZATION)) {
+      gpu_metrics_gpu_utilization_enable();
+			gpu_blame_gpu_utilization_enable();
 		}
 	}
 }
@@ -280,6 +286,12 @@ METHOD_FN(display_events)
     "\t\tprovides oneapi optimization suggestions from the optimization guide.\n"
     "\t\tTo use it, pass '-e %s -e %s' to your hpcrun command\n",
     INTEL_OPTIMIZATION_CHECK, GPU_STRING, INTEL_OPTIMIZATION_CHECK);
+  printf("\n");
+
+  printf("%s\tIntel GPU utilization metrics.\n"
+    "\t\tprovides GPU active, stalled and idle times for kernel executions.\n"
+    "\t\tTo use it, pass '-e %s' to your hpcrun command\n",
+    ENABLE_INTEL_GPU_UTILIZATION, GPU_STRING, ENABLE_INTEL_GPU_UTILIZATION);
   printf("\n");
 }
 

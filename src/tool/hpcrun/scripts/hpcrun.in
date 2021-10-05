@@ -383,6 +383,10 @@ do
 			preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_opencl.so"
 		    namespace_default=single_if_auditing ;;
 
+		intel_gpu_util) gtpin_libdir="${gtpin_lib_path}"
+			preload_list="${preload_list:+${preload_list}:}${hpcrun_dir}/libhpcrun_opencl.so"
+		    namespace_default=single_if_auditing ;;
+
 		gpu=level0,inst) gtpin_libdir="${gtpin_lib_path}"
 		    namespace_default=single_if_auditing ;;
 

@@ -69,4 +69,11 @@ sync_epilogue
  struct timespec sync_end
 );
 
+
+void
+gpu_blame_gpu_utilization_enable
+(
+ void
+);
+
 #endif 	//blame_h
