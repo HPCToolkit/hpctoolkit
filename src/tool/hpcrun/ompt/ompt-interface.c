@@ -222,24 +222,6 @@ ompt_get_idle_count_ptr
 // identify whether a thread is an OpenMP thread or not
 //----------------------------------------------------------------------------
 
-static _Bool
-ompt_thread_participates
-(
- void
-)
-{
-  switch(ompt_thread_type_get()) {
-  case ompt_thread_initial:
-  case ompt_thread_worker:
-    return true;
-  case ompt_thread_other:
-  case ompt_thread_unknown:
-  default:
-    break;
-  }
-  return false;
-}
-
 
 static _Bool
 ompt_thread_needs_blame
@@ -340,7 +322,7 @@ ompt_idle_blame_shift_register
   idle_bs_entry.arg = &omp_idle_blame_info;
 
   omp_idle_blame_info.get_idle_count_ptr = ompt_get_idle_count_ptr;
-  omp_idle_blame_info.participates = ompt_thread_participates;
+  omp_idle_blame_info.participates = ompt_thread_computes;
   omp_idle_blame_info.working = ompt_thread_needs_blame;
 
   blame_shift_register(&idle_bs_entry);
@@ -495,14 +477,11 @@ init_threads
  void
 )
 {
-  int retval;
-  retval = ompt_set_callback_fn(ompt_callback_thread_begin,
-		    (ompt_callback_t)ompt_thread_begin);
-  assert(ompt_event_may_occur(retval));
+  ompt_set_callback_fn
+    (ompt_callback_thread_begin, (ompt_callback_t)ompt_thread_begin);
 
-  retval = ompt_set_callback_fn(ompt_callback_thread_end,
-		    (ompt_callback_t)ompt_thread_end);
-  assert(ompt_event_may_occur(retval));
+  ompt_set_callback_fn
+    (ompt_callback_thread_end, (ompt_callback_t) ompt_thread_end);
 }
 
 

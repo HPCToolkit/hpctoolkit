@@ -66,6 +66,9 @@ public:
   /// Sources and corrosponding paths specified as arguments.
   std::vector<std::pair<std::unique_ptr<ProfileSource>, stdshim::filesystem::path>> sources;
 
+  /// KernelSymbols Finalizers from properly named measurements directories
+  std::vector<std::unique_ptr<ProfileFinalizer>> ksyms;
+
   /// (Structfile) Finalizers and corrosponding paths specified as arguments.
   std::vector<std::pair<std::unique_ptr<ProfileFinalizer>, stdshim::filesystem::path>> structs;
 
@@ -119,9 +122,6 @@ public:
   /// Number of threads to use for processing
   unsigned int threads;
 
-  /// Whether to emit line-level or instruction-level data
-  bool instructionGrain;
-
   /// Summary Statistics to include in the output
   struct Stats final {
     bool sum : 1;
@@ -160,10 +160,6 @@ public:
 
   /// Whether to enable "Valgrind-unclean" mode, which disables some deallocations.
   bool valgrindUnclean;
-
-  /// Whether to enable debugging options for sparse output, such as retaining temporaries.
-  /// Temporary option until SparseDB is pushed into the Pipeline proper.
-  bool sparse_debug;
 
 private:
   std::unordered_map<stdshim::filesystem::path, std::vector<stdshim::filesystem::path>> structheads;

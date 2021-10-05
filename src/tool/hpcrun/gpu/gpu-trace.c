@@ -181,19 +181,6 @@ gpu_trace_cct_root
 
 
 static cct_node_t *
-gpu_trace_cct_no_activity
-(
- thread_data_t* td
-)
-{
-  cct_node_t *no_activity =
-    hpcrun_cct_bundle_get_no_activity_node(&(td->core_profile_trace_data.epoch->csdata));
-
-  return no_activity;
-}
-
-
-static cct_node_t *
 gpu_trace_cct_insert_context
 (
  thread_data_t* td,
@@ -273,6 +260,18 @@ gpu_trace_stream_id
 }
 
 
+cct_node_t *
+gpu_trace_cct_no_activity
+(
+ thread_data_t* td
+)
+{
+  cct_node_t *no_activity =
+    hpcrun_cct_bundle_get_no_activity_node(&(td->core_profile_trace_data.epoch->csdata));
+
+  return no_activity;
+}
+
 static void
 gpu_compute_profile_name
 (
@@ -285,7 +284,7 @@ gpu_compute_profile_name
 
   id_tuple_constructor(&id_tuple, ids, IDTUPLE_MAXTYPES);
 
-  id_tuple_push_back(&id_tuple, IDTUPLE_NODE, gethostid());
+  id_tuple_push_back(&id_tuple, IDTUPLE_COMPOSE(IDTUPLE_NODE, IDTUPLE_IDS_LOGIC_LOCAL), gethostid(), 0);
 
 #if 0
   if (tag.device_id != IDTUPLE_INVALID) {
@@ -294,11 +293,11 @@ gpu_compute_profile_name
 #endif
 
   int rank = hpcrun_get_rank();
-  if (rank >= 0) id_tuple_push_back(&id_tuple, IDTUPLE_RANK, rank);
+  if (rank >= 0) id_tuple_push_back(&id_tuple, IDTUPLE_COMPOSE(IDTUPLE_RANK, IDTUPLE_IDS_LOGIC_ONLY), rank, rank);
 
-  id_tuple_push_back(&id_tuple, IDTUPLE_GPUCONTEXT, tag.context_id);
+  id_tuple_push_back(&id_tuple, IDTUPLE_COMPOSE(IDTUPLE_GPUCONTEXT, IDTUPLE_IDS_LOGIC_ONLY), tag.context_id, tag.context_id);
 
-  id_tuple_push_back(&id_tuple, IDTUPLE_GPUSTREAM, tag.stream_id);
+  id_tuple_push_back(&id_tuple, IDTUPLE_COMPOSE(IDTUPLE_GPUSTREAM, IDTUPLE_IDS_LOGIC_ONLY), tag.stream_id, tag.stream_id);
 
   id_tuple_copy(&cptd->id_tuple, &id_tuple, hpcrun_malloc);
 }
@@ -446,13 +445,12 @@ consume_one_trace_item
  thread_data_t* td,
  cct_node_t *call_path,
  uint64_t start_time,
- uint64_t end_time
+ uint64_t end_time,
+ cct_node_t *no_activity
 )
 {
 
   cct_node_t *leaf = gpu_trace_cct_insert_context(td, call_path);
-
-  cct_node_t *no_activity = gpu_trace_cct_no_activity(td);
 
   uint64_t start = gpu_trace_time(start_time);
   uint64_t end   = gpu_trace_time(end_time);

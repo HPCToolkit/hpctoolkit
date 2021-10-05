@@ -76,6 +76,8 @@ public:
   DataClass finalizeRequest(const DataClass&) const noexcept override;
 
 private:
+  bool realread(const DataClass&);
+
   // Transfer of attributes from header-open time to read-time.
   bool fileValid;
   bool attrsValid;
@@ -96,7 +98,6 @@ private:
   std::unordered_map<unsigned int, bool> metricInt;
   std::unordered_map<unsigned int, Module&> modules;
   std::unordered_map<unsigned int, std::pair<std::optional<ContextRef>, ContextRef>> nodes;
-  std::unordered_map<unsigned int, std::pair<ContextRef, Scope>> templates;
   std::unordered_map<unsigned int, uint64_t> contextids;
   std::unordered_map<unsigned int, std::pair<ContextRef, Scope>> contextparents;
   unsigned int partial_node_id;  // ID for the partial unwind fake root node

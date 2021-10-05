@@ -52,6 +52,11 @@
 // TODO: Remove this after catching the develop commits
 #define HPCRUN_FMT_NV_traceOrdered "trace-time-ordered"
 
+// TODO: Remove and change this once new-cupti is finalized
+#define HPCRUN_GPU_ROOT_NODE 65533
+#define HPCRUN_GPU_RANGE_NODE 65532
+#define HPCRUN_GPU_CONTEXT_NODE 65531
+
 using namespace hpctoolkit;
 using namespace sources;
 using namespace literals::data;
@@ -82,9 +87,9 @@ Hpcrun4::Hpcrun4(const stdshim::filesystem::path& fn)
     fileValid = false;
     return;
   }
-  stdshim::optional<unsigned long> mpirank;
-  stdshim::optional<unsigned long> threadid;
-  stdshim::optional<unsigned long> hostid;
+  std::optional<unsigned long> mpirank;
+  std::optional<unsigned long> threadid;
+  std::optional<unsigned long> hostid;
   for(uint32_t i = 0; i < hdr.nvps.len; i++) {
     const std::string k(hdr.nvps.lst[i].name);
     const auto v = hdr.nvps.lst[i].val;
@@ -113,31 +118,36 @@ Hpcrun4::Hpcrun4(const stdshim::filesystem::path& fn)
     }
   }
   hpcrun_fmt_hdr_free(&hdr, std::free);
-  // Try to read the hierarchical tuple, if we fail synth from the header data
-  id_tuple_t sfTuple;
-  if(hpcrun_sparse_read_id_tuple(file, &sfTuple) == SF_SUCCEED) {
+  // Try to read the hierarchical tuple, failure is fatal for this Source
+  {
+    id_tuple_t sfTuple;
+    if(hpcrun_sparse_read_id_tuple(file, &sfTuple) != SF_SUCCEED) {
+      util::log::error{} << "Invalid profile identifier tuple in: "
+                           << path.string();
+      hpcrun_sparse_close(file);
+      fileValid = false;
+      return;
+    }
     std::vector<pms_id_t> tuple;
     tuple.reserve(sfTuple.length);
     for(size_t i = 0; i < sfTuple.length; i++)
       tuple.push_back(sfTuple.ids[i]);
     id_tuple_free(&sfTuple);
     tattrs.idTuple(std::move(tuple));
-  } else {
-    util::log::warning{} << "Synthesizing hierarchical tuple for: "
-                         << path.string();
-    std::vector<pms_id_t> tuple;
-    if(hostid) tuple.push_back({.kind = IDTUPLE_NODE, .index=*hostid});
-    if(threadid && *threadid >= 500)  // GPUDEVICE goes before RANK
-      tuple.push_back({.kind = IDTUPLE_GPUDEVICE, .index=0});
-    if(mpirank) tuple.push_back({.kind = IDTUPLE_RANK, .index=*mpirank});
-    if(threadid) {
-      if(*threadid >= 500) {  // GPU stream
-        tuple.push_back({.kind = IDTUPLE_GPUCONTEXT, .index=0});
-        tuple.push_back({.kind = IDTUPLE_GPUSTREAM, .index=*threadid - 500});
-      } else
-        tuple.push_back({.kind = IDTUPLE_THREAD, .index=*threadid});
+  }
+  // Try and read the dictionary for the tuple, failure is fatal for this Source
+  {
+    hpcrun_fmt_idtuple_dxnry_t dict;
+    if(hpcrun_sparse_read_idtuple_dxnry(file, &dict) != SF_SUCCEED) {
+      util::log::error{} << "Invalid profile identifier dictionary in: "
+                           << path.string();
+      hpcrun_sparse_close(file);
+      fileValid = false;
+      return;
     }
-    tattrs.idTuple(std::move(tuple));
+    for(int i = 0; i < dict.num_entries; i++)
+      attrs.idtupleName(dict.dictionary[i].kind, dict.dictionary[i].kindStr);
+    hpcrun_fmt_idtuple_dxnry_free(&dict, std::free);
   }
   // If all went well, we can pause the file here.
   hpcrun_sparse_pause(file);
@@ -198,6 +208,14 @@ bool Hpcrun4::setupTrace() noexcept {
 }
 
 void Hpcrun4::read(const DataClass& needed) {
+  if(!fileValid) return;  // We don't have anything more to say
+  if(!realread(needed)) {
+    util::log::error{} << "Error while parsing measurement profile " << path.filename().string();
+    fileValid = false;
+  }
+}
+
+bool Hpcrun4::realread(const DataClass& needed) try {
   // If attributes or threads are requested, we emit 'em.
   if(needed.hasAttributes() && attrsValid) {
     sink.attributes(std::move(attrs));
@@ -249,13 +267,19 @@ void Hpcrun4::read(const DataClass& needed) {
         bool isInt = false;
         if(m.flags.fields.valFmt == MetricFlags_ValFmt_Real) isInt = false;
         else if(m.flags.fields.valFmt == MetricFlags_ValFmt_Int) isInt = true;
-        else util::log::fatal() << "Invalid metric value format!";
+        else {
+          util::log::info{} << "Invalid metric value format: " << m.flags.fields.valFmt;
+          return false;
+        }
         metricInt.emplace(id, isInt);
         metrics.emplace(id, sink.metric(std::move(settings)));
       }
       hpcrun_fmt_metricDesc_free(&m, std::free);
     }
-    if(id < 0) util::log::fatal() << "Hpcrun4: Error reading metric entry!";
+    if(id < 0) {
+      util::log::info{} << "Error while trying to read a metric entry";
+      return false;
+    }
 
     for(auto&& [rawFormula, es_settings]: std::move(estats)) {
       const auto& ct = std::use_facet<std::ctype<char>>(std::locale::classic());
@@ -272,12 +296,18 @@ void Hpcrun4::read(const DataClass& needed) {
               id += rawFormula[idx];
               idx++;
             }
-            if(id.size() == 0) util::log::fatal{} << "Invalid formula string!";
+            if(id.size() == 0) {
+              util::log::info{} << "Invalid empty formula string";
+              return false;
+            }
             std::stoll(id);
           });
           id += 1;  // Adjust to sparse metric ids
           const auto it = metrics.find(id);
-          if(it == metrics.end()) util::log::fatal{} << "Unknown metric id " << id;
+          if(it == metrics.end()) {
+            util::log::info{} << "Value for unknown metric id: " << id;
+            return false;
+          }
           es_settings.formula.emplace_back(ExtraStatistic::MetricPartialRef{
             it->second, it->second.statsAccess().requestSumPartial()});
         } else {
@@ -301,7 +331,10 @@ void Hpcrun4::read(const DataClass& needed) {
       modules.emplace(id, sink.module(lm.name));
       hpcrun_fmt_loadmapEntry_free(&lm, std::free);
     }
-    if(id < 0) util::log::fatal() << "Hpcrun4: Error reading load module entry!";
+    if(id < 0) {
+      util::log::info{} << "Error while reading a load module entry";
+      return false;
+    }
   }
   if(needed.hasContexts()) {
     int id;
@@ -323,13 +356,16 @@ void Hpcrun4::read(const DataClass& needed) {
             continue;
           } else {
             // This really shouldn't happen.
-            util::log::fatal() << "Unknown synthetic root!";
+            util::log::info{} << "Unknown synthetic root: lm_ip = " << n.lm_ip;
+            return false;
           }
-        } else if(n.lm_id == HPCRUN_FMT_GPU_CONTEXT_NODE) {
-          util::log::fatal{} << "Orphaned context node!";
-        } else if(n.lm_id == HPCRUN_FMT_GPU_RANGE_NODE) {
-          util::log::fatal{} << "Orphaned range node!";
-        } else if(n.lm_id == HPCRUN_FMT_GPU_RANGE_ROOT_NODE) {
+        } else if(n.lm_id == HPCRUN_GPU_CONTEXT_NODE) {
+          util::log::info{} << "Invalid GPU_CONTEXT cct node, cannot be an orphan";
+          return false;
+        } else if(n.lm_id == HPCRUN_GPU_RANGE_NODE) {
+          util::log::info{} << "Invalid GPU_RANGE cct node, cannot be an orphan";
+          return false;
+        } else if(n.lm_id == HPCRUN_GPU_ROOT_NODE) {
           // Range root, mark it as such
           range_root_node_id = id;
           continue;
@@ -341,12 +377,13 @@ void Hpcrun4::read(const DataClass& needed) {
       } else if(n.id_parent == partial_node_id || n.id_parent == unknown_node_id) {
         // Global unknown Scope, emitted lazily.
         par = sink.context(sink.global(), {});
-      } else if(n.lm_id == HPCRUN_FMT_GPU_RANGE_NODE) {
+      } else if(n.lm_id == HPCRUN_GPU_RANGE_NODE) {
         auto it = contextparents.find(n.id_parent);
         if(it != contextparents.end())
           std::tie(par, contextscope) = it->second;
       } else {
         // Use a lambda to not have to use goto
+        bool ok = true;
         std::tie(grandpar, par) = [&]() -> std::pair<decltype(grandpar), decltype(par)> {
           if(n.id_parent == range_root_node_id)
             return {std::nullopt, std::nullopt};
@@ -356,43 +393,38 @@ void Hpcrun4::read(const DataClass& needed) {
           if(ppar != nodes.end())
             return ppar->second;
 
-          // It may be in template form, in which case promote it to a call
-          auto temp = templates.find(n.id_parent);
-          if(temp != templates.end()) {
-            auto mo = temp->second.second.point_data();
-            ppar = nodes.insert({n.id_parent, {temp->second.first,
-                sink.context(temp->second.first, {Scope::call, mo.first, mo.second})
-              }}).first;
-            templates.erase(temp);
-            return ppar->second;
-          }
-
-          if(n.lm_id == HPCRUN_FMT_GPU_RANGE_NODE)
+          if(n.lm_id == HPCRUN_GPU_RANGE_NODE)
             return {std::nullopt, std::nullopt};
 
-          util::log::fatal() << "CCT nodes not in a preorder!";
-          std::abort();
+          util::log::info{} << "CCT nodes are not in a preorder: " << n.id_parent << " is not before " << n.id;
+          ok = false;
+          return {std::nullopt, std::nullopt};
         }();
+        if(!ok) return false;
       }
 
       // Figure out the Scope for this node, if it has one.
       Scope scope;  // Default to the unknown Scope.
-      if(n.lm_id == HPCRUN_FMT_GPU_RANGE_NODE) {
+      if(n.lm_id == HPCRUN_GPU_RANGE_NODE) {
         // Special case, this is a collaborative marker node
         auto it = contextids.find(n.id_parent);
-        if(it == contextids.end())
-          util::log::fatal{} << "Range CCT node with non-context node parent!";
+        if(it == contextids.end()) {
+          util::log::info{} << "GPU_RANGE CCT node with non-context parent";
+          return false;
+        }
         auto& collab = sink.collabContext(it->second, n.lm_ip);
         nodes.insert({id, {par, par ? sink.collaborate(*par, collab, contextscope) : collab}});
         continue;
-      } else if(n.lm_id == HPCRUN_FMT_GPU_CONTEXT_NODE) {
+      } else if(n.lm_id == HPCRUN_GPU_CONTEXT_NODE) {
         // Special case, mark it down but don't emit the Context
         contextids.emplace(id, n.lm_ip);
         if(n.id_parent == range_root_node_id)
           // This is an outlined context tree, so we don't mark a parent for here
           continue;
-        if(!grandpar || !par)
-          util::log::fatal{} << "Inline context node without grandparent?";
+        if(!grandpar || !par) {
+          util::log::info{} << "Inline GPU_CONTEXT cct node with no grandparent";
+          return false;
+        }
         std::reference_wrapper<Context> c = std::get<Context>(*par);
         while(c.get().direct_parent() != &std::get<Context>(*grandpar))
           c = *c.get().direct_parent();
@@ -400,8 +432,10 @@ void Hpcrun4::read(const DataClass& needed) {
         continue;
       } else if(n.lm_id != 0) {
         auto it = modules.find(n.lm_id);
-        if(it == modules.end())
-          util::log::fatal() << "Erroneous module id " << n.lm_id << " in " << path.string() << "!";
+        if(it == modules.end()) {
+          util::log::info{} << "Invalid load module id: " << n.lm_id;
+          return false;
+        }
         scope = {it->second, n.lm_ip};
       } else if(!par) {
         // Special case: merge global -> unknown to the global unknown.
@@ -409,20 +443,12 @@ void Hpcrun4::read(const DataClass& needed) {
         continue;
       }
 
-      if(scope.type() == Scope::Type::point) {
-        // It might be a call node, it might not. Delay it until we know whether it has children.
-        templates.insert({id, {*par, scope}});
-      } else {  // Just emit it, it doesn't need much thought
-        nodes.insert({id, {*par, sink.context(*par, scope)}});
-      }
+      nodes.insert({id, {*par, sink.context(*par, scope)}});
     }
-    if(id < 0) util::log::fatal() << "Hpcrun4: Error reading context entry!";
-
-    // If there are remaining unpromoted templates, emit them as normal points.
-    for(const auto& tmp: templates) {
-      nodes.insert({tmp.first, {tmp.second.first, sink.context(tmp.second.first, tmp.second.second)}});
+    if(id < 0) {
+      util::log::info{} << "Error while reading cct node entry";
+      return false;
     }
-    templates.clear();
   }
   if(needed.hasMetrics()) {
     int cid;
@@ -432,8 +458,10 @@ void Hpcrun4::read(const DataClass& needed) {
       if(mid == 0) continue;
       ContextRef here = !sink.limit().hasContexts() ? sink.global() : ({
         auto it = nodes.find(cid);
-        if(it == nodes.end())
-          util::log::fatal() << "Erroneous CCT id " << cid << " in " << path.string() << "!";
+        if(it == nodes.end()) {
+          util::log::info{} << "Found value for invalid cct node id: " << cid;
+          return false;
+        }
         it->second.second;
       });
       auto accum = sink.accumulateTo(here, *thread);
@@ -456,8 +484,11 @@ void Hpcrun4::read(const DataClass& needed) {
     while(1) {
       int err = hpctrace_fmt_datum_fread(&tpoint, {0}, f);
       if(err == HPCFMT_EOF) break;
-      else if(err != HPCFMT_OK)
-        util::log::fatal() << "Hpcrun4: Error reading trace datum in " << tracepath.string() << "!";
+      else if(err != HPCFMT_OK) {
+        util::log::info{} << "Error reading trace datum from "
+                          << tracepath.filename().string();
+        return false;
+      }
       auto it = nodes.find(tpoint.cpId);
       if(it != nodes.end()) {
         std::chrono::nanoseconds tp(HPCTRACE_FMT_GET_TIME(tpoint.comp));
@@ -486,4 +517,10 @@ void Hpcrun4::read(const DataClass& needed) {
       }
     }
   }
+  return true;
+} catch(std::exception& e) {
+  util::log::info{} << "Exception caught while reading measurement profile "
+    << path.string() << "\n"
+       "  what(): " << e.what();
+  return false;
 }

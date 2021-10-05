@@ -58,7 +58,7 @@
 
 #include <map>
 #include <bitset>
-#include "stdshim/optional.hpp"
+#include <optional>
 #include <memory>
 #include <chrono>
 #include <stdexcept>
@@ -244,6 +244,7 @@ private:
   struct SourceLocal {
     std::forward_list<Thread::Temporary> threads;
     std::unordered_set<Metric*> thawedMetrics;
+    bool lastWave = false;
 
     std::pair<bool, bool> orderedRegions;
     util::Once orderedPrewaveRegionDepOnce;
@@ -453,6 +454,10 @@ public:
     const util::locked_unordered_uniqued_set<ExtraStatistic>& extraStatistics();
     const Context& contexts();
     const util::locked_unordered_set<std::unique_ptr<Thread>>& threads();
+
+    /// Get the size of the worker team in use by the connected Pipeline. Useful
+    /// for tuning sizes of things based on the number of available threads.
+    std::size_t teamSize() const noexcept;
 
     // Disable copy-assignment, and allow move assignment.
     Sink& operator=(const Sink&) = delete;

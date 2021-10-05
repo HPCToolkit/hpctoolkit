@@ -132,15 +132,6 @@ public:
   // MT: Safe (const)
   std::vector<std::vector<Scope>> getRoutes(uint64_t) const noexcept;
 
-  /// Look up the file, line and is_call info for the given address. If unknown,
-  /// responds with a `nullptr` file at line 0.
-  // MT: Safe (const)
-  std::tuple<const File*, uint64_t, bool> getLine(uint64_t) const noexcept;
-
-  /// Turn the given Scope into a `classified_*` variant, based on the offset
-  /// contained within. Does not add additional
-  Scope classifyLine(Scope) const noexcept;
-
   /// The master table for Functions. These can be used to generate Scopes for
   /// various addScope and setScope.
   // MT: Externally Synchronized
@@ -182,8 +173,6 @@ public:
     bool isCall;
     LineScope(uint64_t a, const File* f, uint64_t l)
       : addr(a), file(f), line(l), isCall(false) {};
-    LineScope(uint64_t a, Scope::call_t, const File* f, uint64_t l)
-      : addr(a), file(f), line(l), isCall(true) {};
     bool operator<(const LineScope& o) const noexcept {
       if(addr != o.addr) return addr < o.addr;
       if(file != o.file) {

@@ -70,15 +70,15 @@ namespace fancynames {
   static const type omp_task_wait    = {"<omp task wait>", 1};
   static const type omp_mutex_wait   = {"<omp mutex wait>", 1};
   static const type no_thread        = {"<no thread>", 1};
-  static const type partial_unwind   = {"<partial call paths>", 4};
-  static const type no_activity      = {"<no activity>", 1};
+  static const type partial_unwind   = {"<partial call paths>", 1};
+  static const type no_activity      = {"<no activity>", 3};
   static const type gpu_copy         = {"<gpu copy>", 1};
   static const type gpu_copyin       = {"<gpu copyin>", 1};
   static const type gpu_copyout      = {"<gpu copyout>", 1};
   static const type gpu_alloc        = {"<gpu alloc>", 1};
   static const type gpu_delete       = {"<gpu delete>", 1};
   static const type gpu_sync         = {"<gpu sync>", 1};
-  static const type gpu_kernel       = {"<gpu kernel>", 1};
+  static const type gpu_kernel       = {"<gpu kernel>", 3};
 
   static const type unknown_proc     = {"<unknown procedure>", 0};
 }
@@ -152,7 +152,6 @@ ExperimentXML4::udFile::udFile(ExperimentXML4& exml)
 
 void ExperimentXML4::udFile::incr(ExperimentXML4& exml) {
   namespace fs = stdshim::filesystem;
-  namespace fsx = stdshim::filesystemx;
   if(!used.exchange(true, std::memory_order_relaxed)) {
     std::ostringstream ss;
     if(fl == nullptr) {
@@ -168,7 +167,7 @@ void ExperimentXML4::udFile::incr(ExperimentXML4& exml) {
         p = exml.dir / p;
         if(!exml.dir.empty()) {
           fs::create_directories(p.parent_path());
-          fs::copy_file(rp, p, fsx::copy_options::overwrite_existing);
+          fs::copy_file(rp, p, fs::copy_options::overwrite_existing);
         }
       } else ss << util::xmlquoted(fl->path().string());
       ss << "/>\n";
@@ -358,7 +357,7 @@ std::string ExperimentXML4::eStatMetricTags(const ExtraStatistic& es, unsigned i
 // ud Context bits
 
 ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
-  : elidable(false), premetrics(false) {
+  : premetrics(false), prelmFromChildren(false) {
   const auto& s = c.scope();
   auto& proc = exml.getProc(s);
   switch(s.type()) {
@@ -370,14 +369,18 @@ ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
     ss << "<PF i=\"" << c.userdata[exml.src.identifier()] << "\""
              " n=\"" << uproc.id << "\" s=\"" << uproc.id << "\""
              " f=\"" << exml.file_unknown.id << "\""
-             " l=\"0\"";
+             " l=\"0\">\n"
+          "<C i=\"" << c.userdata[exml.src.identifier()] << "\""
+             " s=\"" << uproc.id << "\" v=\"0\" l=\"0\"";
     open = ss.str();
-    close = "</PF>\n";
+    close = "</C>\n";
+    post = "</PF>\n";
     break;
   }
   case Scope::Type::loop: {
     auto fl = s.line_data();
     std::ostringstream ss;
+    fl.first.userdata[exml.ud].incr(exml);
     ss << "<L i=\"" << c.userdata[exml.src.identifier()] << "\""
              " s=\"" << proc.id << "\" v=\"0\""
              " l=\"" << fl.second << "\""
@@ -391,54 +394,51 @@ ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
     close = "</SecCallPathProfileData>\n";
     break;
   case Scope::Type::point:
-  case Scope::Type::classified_point:
-  case Scope::Type::line:
-  case Scope::Type::concrete_line:
-  case Scope::Type::call:
-  case Scope::Type::classified_call: {
-    std::pair<const Module*, uint64_t> mo{nullptr, 0};
-    if(s.type() != Scope::Type::line) {
-      auto mmo = s.point_data();
-      mo.first = &mmo.first;
-      mo.second = mmo.second;
-    }
-    std::pair<const File*, uint64_t> fl{nullptr, 0};
-    if(s.type() != Scope::Type::point && s.type() != Scope::Type::call) {
-      auto ffl = s.line_data();
-      fl.first = &ffl.first;
-      fl.second = ffl.second;
-    }
+  case Scope::Type::line: {
     const auto pty = c.direct_parent()->scope().type();
-    if(pty == Scope::Type::point || pty == Scope::Type::classified_point
-       || pty == Scope::Type::line || pty == Scope::Type::concrete_line
-       || pty == Scope::Type::call || pty == Scope::Type::classified_call) {
+    if(pty == Scope::Type::point) {
+      // We're missing some source-level context, fake it with a PF tag
       if(proc.prep()) {  // We're in charge of the tag, and this is a tag we want.
         std::ostringstream ss;
-        ss << fancynames::unknown_proc.first << " "
-              "0x" << std::hex << mo.second << " "
-              "[" << (mo.first ? mo.first->path().filename().string() : "unknown module") << "]";
-        proc.setTag(ss.str(), mo.second, fancynames::unknown_proc.second);
+        ss << fancynames::unknown_proc.first;
+        uint64_t offset = 0;
+        if(s.type() == Scope::Type::point) {
+          auto mo = s.point_data();
+          ss << " 0x" << std::hex << mo.second
+             << " [" << mo.first.path().filename().string() << "]";
+          offset = mo.second;
+        }
+        proc.setTag(ss.str(), offset, fancynames::unknown_proc.second);
       }
-      auto& udm = mo.first ? mo.first->userdata[exml.ud] : exml.unknown_module;
-      auto& udf = fl.first ? fl.first->userdata[exml.ud] : udm.unknown_file;
-      udf.incr(exml);
-      std::ostringstream ss;
-      ss << "<PF i=\"" << c.userdata[exml.src.identifier()] << "\""
-               " lm=\"" << udm.id << "\""
-               " n=\"" << proc.id << "\" s=\"" << proc.id << "\""
-               " l=\"" << fl.second << "\""
-               " f=\"" << udf.id << "\">\n";
-      pre = ss.str();
-      premetrics = true;
-      post = "</PF>\n";
+      {
+        auto& udf = s.type() == Scope::Type::point ? s.point_data().first.userdata[exml.ud].unknown_file
+                                                   : s.line_data().first.userdata[exml.ud];
+        udf.incr(exml);
+        std::ostringstream ss;
+        ss << "<PF i=\"" << c.userdata[exml.src.identifier()] << "\""
+                 " n=\"" << proc.id << "\" s=\"" << proc.id << "\""
+                 " l=\"0\""
+                 " f=\"" << udf.id << "\"";
+        if(s.type() == Scope::Type::point)
+          ss << " lm=\"" << s.point_data().first.userdata[exml.ud].id << "\">\n";
+        else
+          prelmFromChildren = true;
+        pre = ss.str();
+        premetrics = true;
+        post = "</PF>\n";
+      }
     }
     open = "<";
     std::ostringstream ss;
     ss << " i=\"" << c.userdata[exml.src.identifier()] << "\""
-          " s=\"" << proc.id << "\""
-          " l=\"" << fl.second << "\"";
+          " s=\"" << proc.id << "\"";
+    if(s.type() == Scope::Type::line) {
+      ss << " l=\"" << s.line_data().second << "\"";
+    } else {
+      s.point_data().first.userdata[exml.ud].incr(s.point_data().first, exml);
+      ss << " l=\"0\"";
+    }
     attr = ss.str();
-    if(mo.first) mo.first->userdata[exml.ud].incr(*mo.first, exml);
     break;
   }
   case Scope::Type::inlined_function: {
@@ -489,9 +489,9 @@ ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
 
 // ExperimentXML4 bits
 
-ExperimentXML4::ExperimentXML4(const fs::path& out, bool srcs, bool prune, HPCTraceDB2* db)
+ExperimentXML4::ExperimentXML4(const fs::path& out, bool srcs, HPCTraceDB2* db)
   : ProfileSink(), dir(out), of(), next_id(0x7FFFFFFF), tracedb(db),
-    include_sources(srcs), prune(prune), file_unknown(*this), next_procid(2),
+    include_sources(srcs), file_unknown(*this), next_procid(2),
     proc_unknown_proc(0), proc_partial_proc(1), unknown_module(*this),
     next_cid(0x7FFFFFFF) {
   if(dir.empty()) {  // Dry run
@@ -552,6 +552,11 @@ void ExperimentXML4::write() {
         "<SecCallPathProfile i=\"0\" n=" << util::xmlquoted(name) << ">\n"
         "<SecHeader>\n";
 
+  of << "<IdentifierNameTable>\n";
+  for(const auto& kv: src.attributes().idtupleNames())
+    of << "<Identifier i=\"" << kv.first << "\" n=" << util::xmlquoted(kv.second) << "/>\n";
+  of << "</IdentifierNameTable>\n";
+
   // MetricTable: from the Metrics
   of << "<MetricTable>\n";
   unsigned int id = 0;
@@ -572,7 +577,7 @@ void ExperimentXML4::write() {
     of << "<TraceDBTable>\n" << tracedb->exmlTag() << "</TraceDBTable>\n";
   of << "<LoadModuleTable>\n";
   // LoadModuleTable: from the Modules
-  if(unknown_module) of << unknown_module.tag;
+  of << unknown_module.tag;
   for(const auto& m: src.modules().iterate()) {
     auto& udm = m().userdata[ud];
     if(!udm) continue;
@@ -604,82 +609,84 @@ void ExperimentXML4::write() {
         "</SecHeader>\n";
 
   // Early check: the global Context must have id 0
-  if(src.contexts().userdata[src.identifier()] != 0)
-    util::log::fatal{} << "Global Context id "
-                       << src.contexts().userdata[src.identifier()]
-                       << " != 0!";
-
-  // Prune out any elidable CCT elements
-  if(prune && tracedb == nullptr) {
-    src.contexts().citerate(nullptr, [&](const Context& c){
-      auto& udc = c.userdata[ud];
-      udc.elidable = [&]() -> bool{
-        if(!c.statistics().empty()) return false;
-        for(const auto& cc: c.children().citerate())
-          if(!cc().userdata[ud].elidable)
-            return false;
-        return true;
-      }();
-    });
-  }
+  assert(src.contexts().userdata[src.identifier()] == 0 && "Global Context must have id 0!");
 
   // Spit out the CCT
   src.contexts().citerate([&](const Context& c){
     auto& udc = c.userdata[ud];
-    if(udc.elidable) return;
 
-    // First emit our tags, and whatever extensions are nessesary.
-    of << udc.pre << udc.open;
+    of << udc.pre;
+    if(udc.prelmFromChildren) {
+      // Special case where we need to steal lm from child point Scopes
+      bool done = false;
+      for(const Context& cc: c.children().citerate()) {
+        if(cc.scope().type() == Scope::Type::point) {
+          of << " lm=\"" << cc.scope().point_data().first.userdata[ud].id << "\">\n";
+          done = true;
+          break;
+        }
+      }
+      if(!done) {
+        of << " lm=\"" << unknown_module.id << "\">\n";
+      }
+    }
+
+    bool isS = false;
     switch(c.scope().type()) {
     case Scope::Type::unknown:
     case Scope::Type::global:
     case Scope::Type::loop:
     case Scope::Type::inlined_function:
     case Scope::Type::function:
+      of << udc.open;
       break;
     case Scope::Type::point:
-    case Scope::Type::classified_point:
-    case Scope::Type::call:
-    case Scope::Type::classified_call:
+      if(udc.pre.empty()) {
+        if(c.children().empty()) {
+          // We have some kind of source-level context but have no children, so
+          // we don't need to be emitted, the parent line handles the S tag.
+          return;
+        }
+
+        // If this isn't a leaf Context, we reemit the closest enclosing line
+        // Scope as a C tag. If we can't find one use this Context's fake.
+        util::optional_ref<const Context> pc = c.direct_parent();
+        while(pc && pc->scope().type() != Scope::Type::line
+                 && pc->scope().type() != Scope::Type::point)
+          pc = pc->direct_parent();
+        if(!pc || pc->scope().type() == Scope::Type::point) pc = c;
+        auto& udpc = pc->userdata[ud];
+        of << udpc.open << 'C' << udpc.attr;
+        assert(udc.close.empty());  // We shouldn't overwrite anything
+        udc.close = "</C>\n";
+        break;
+      }
+      // If we get here we have no source-level Context, in which case we treat
+      // this point Scope as if it was a line Scope.
+      // fallthrough
     case Scope::Type::line:
-    case Scope::Type::concrete_line:
-      of << (c.children().empty() ? 'S' : 'C') << udc.attr;
+      // We always emit an S tag for line Scopes, for traces to attach to
+      isS = true;
+      of << udc.open << 'S' << udc.attr;
       break;
     }
     if(c.scope().type() != Scope::Type::global)
       of << " it=\"" << c.userdata[src.identifier()] << "\"";
 
-    // If this is an empty tag, use the shorter form, otherwise close the tag.
-    if(c.children().empty()) {
-      of << "/>\n" << udc.post;
+    // S tags are funny, they need to be empty but the child Contexts need to
+    // share the pre-post bits.
+    if(isS) {
+      assert(udc.close.empty());
+      of << "/>\n";
       return;
     }
-    of << ">\n";
+
+    // Close the tag. If we have no children, use the shortened tag syntax.
+    of << (c.children().empty() ? "/>\n" : ">\n");
   }, [&](const Context& c){
-    // If this is the shorter form, we have no ending tag
-    if(c.children().empty()) return;
-
     auto& udc = c.userdata[ud];
-    if(udc.elidable) return;
-
-    // Close off this tag.
-    switch(c.scope().type()) {
-    case Scope::Type::unknown:
-    case Scope::Type::global:
-    case Scope::Type::function:
-    case Scope::Type::inlined_function:
-    case Scope::Type::loop:
-      break;
-    case Scope::Type::point:
-    case Scope::Type::classified_point:
-    case Scope::Type::call:
-    case Scope::Type::classified_call:
-    case Scope::Type::line:
-    case Scope::Type::concrete_line:
-      of << "</" << (c.children().empty() ? 'S' : 'C') << ">\n";
-      break;
-    }
-    of << udc.close << udc.post;
+    if(!c.children().empty()) of << udc.close;
+    of << udc.post;
   });
 
   of << "</SecCallPathProfile>\n"

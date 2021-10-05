@@ -20,7 +20,7 @@
 
 <!-- ********************************************************************** -->
 
-<!-- HPCToolkit Image (height = 71 pixels) --> <img style="position: absolute; top: 0px; left: 0px" src="style/header.gif" alt="hpctoolkit" /> <div style="position: relative; margin-top: 60px; width: 100%; text-align: right;"> <p style="margin: 0px; font-size: small;">   [ <a href="index.html">Home</a>   | <a href="overview.html">Overview</a>   | <a href="publications.html">Publications</a> ]   &bull;   [ <a href="examples.html">Examples</a> ]   &bull;   [ <a href="software.html">Software/Downloads</a>   | <a href="documentation.html">Documentation/Questions</a> ]   &bull;   [ <a href="info-people.html">People</a> |     <a href="info-acks.html">Acks</a> ] </p> </div> <div style="width: 100%;">   <hr /> </div> 
+<!-- HPCToolkit Image (height = 71 pixels) --> <img style="position: absolute; top: 0px; left: 0px" src="style/header.gif" alt="hpctoolkit" /> <div style="position: relative; margin-top: 60px; width: 100%; text-align: right;"> <p style="margin: 0px; font-size: small;">   [ <a href="index.html">Home</a>     | <a href="overview.html">Overview</a>     | <a href="publications.html">Publications</a>     | <a href="software.html">Software/Downloads</a> ]   &bull;   [ <a href="documentation.html">Documentation/Questions</a>     | <a href="training.html">Training Videos and Slides</a> ]   &bull;   [ <a href="info-people.html">People</a>     | <a href="info-acks.html">Acks</a> ] </p> </div> <div style="width: 100%;">   <hr /> </div> 
 <!-- ********************************************************************** -->
 
 <h1>The HPCToolkit Elevator Speech</h1>
@@ -54,15 +54,25 @@ HPCToolkit supports performance analysis of fully optimized code -- the only for
 The low overhead of HPCToolkit's sampling-based measurement is particularly important for parallel programs because measurement overhead can distort program behavior.
 </p>
 
-<p>HPCToolkit is also especially good at pinpointing scaling losses in parallel codes, both within multicore nodes and across the nodes in a parallel system.
+<p>HPCToolkit is especially good at pinpointing scaling losses in parallel codes, both within multicore nodes and across the nodes in a parallel system.
 Using differential analysis of call path profiles collected on different numbers of threads or processes enables one to quantify scalability losses and pinpoint their causes to individual lines of code executed in particular calling contexts.
 We have used this technique to quantify scaling losses in leading science applications (e.g., FLASH, MILC, and PFLOTRAN) across thousands of processor cores on Cray XT and IBM Blue Gene/P systems and associate them with individual lines of source code in full calling context, as well as to quantify scaling losses in science applications (e.g., S3D) within nodes at the loop nest level due to competition for memory bandwidth in multicore processors.
 </p>
 
-<p>HPCToolkit is deployed on several DOE leadership class machines, including IBM BG/Q (Mira) and Cray (Theta) at Argonne's Leadership Computing Facility and Cray XK-7 (Titan) systems at ORNL and NERSC (Cori and Franklin).
-It is also deployed on the NSF TeraGrid system at TACC (Ranger).
-</p>
+<p>HPCToolkit also includes support for measurement and analysis of
+applications on GPU-accelerated systems. On systems using AMD, Intel,
+or NVIDIA GPUs, HPCToolkit can profile and trace GPU operations including
+kernel executions, memory copies, and synchronization. On NVIDIA GPUs,
+HPCToolkit can use PC sampling to measure instruction execution and
+stalls. Using results from analysis of both CPU and GPU binaries,
+HPCToolkit can attribute fine-grain measurements of GPU computations
+to heterogeneous calling contexts that may include host procedures,
+GPU kernels, device procedures, inlined templates and functions, loops,
+and source lines.</p>
 
+<p>HPCToolkit is deployed on several DOE leadership class machines, including a Theta (Cray XC40) and ThetaGPU (NVIDIA DGX A100) at Argonne's Leadership Computing Facility, Summit (IBM Power 9 + NVIDIA V100) at ORNL, 
+as well as Cori (Cray XC40) and Cori-GPU at NERSC.
+</p>
 
 <!--
 <p>Some screen shots are shown below.
@@ -71,7 +81,7 @@ It is also deployed on the NSF TeraGrid system at TACC (Ranger).
 
 <!-- ********************************************************************** -->
 
-<p>[<span class="lastupdated">Page last updated: 2018/10/22</span>]
+<p>[<span class="lastupdated">Page last updated: 2021/06/12</span>]
 </p>
 
 <!-- ********************************************************************** -->

@@ -215,14 +215,9 @@ lazy_open_data_file(core_profile_trace_data_t * cptd)
   return fs;
 }
 
-#if 0
-static int
-write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch)
-#else
 //YUMENG: add footer
 static int
 write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_fmt_footer_t* footer)
-#endif
 {
   //YUMENG: no epoch info needed
   //uint32_t num_epochs = 0;
@@ -386,6 +381,18 @@ write_epochs(FILE* fs, core_profile_trace_data_t * cptd, epoch_t* epoch, hpcrun_
 #endif    
 
     //
+    // == id-tuple dictionary ==
+    //
+    if(footer) footer->idtpl_dxnry_start = ftell(fs); 
+
+    hpcrun_fmt_idtuple_dxnry_fwrite(fs);
+
+    if(footer) {
+      footer->idtpl_dxnry_end = ftell(fs);
+      fseek(fs, MULTIPLE_1024(footer->idtpl_dxnry_end), SEEK_SET);
+    }
+
+    //
     // ==  sparse_metrics == YUMENG
     //
 
@@ -459,7 +466,6 @@ hpcrun_write_profile_data(core_profile_trace_data_t * cptd)
   FILE* fs = lazy_open_data_file(cptd);
 
   //YUMENG: set footer
-  //footer[SF_FOOTER_lm] = ftell(fs);
   footer.hdr_end = ftell(fs);
   fseek(fs, MULTIPLE_1024(footer.hdr_end), SEEK_SET);
   

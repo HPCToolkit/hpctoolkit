@@ -532,18 +532,18 @@ hpcrun_id_tuple_cputhread
 
   id_tuple_constructor(&id_tuple, ids, IDTUPLE_MAXTYPES);
 
-  id_tuple_push_back(&id_tuple, IDTUPLE_NODE, gethostid()); 
+  id_tuple_push_back(&id_tuple, IDTUPLE_COMPOSE(IDTUPLE_NODE, IDTUPLE_IDS_LOGIC_LOCAL), gethostid(), 0);
 
   int core = hpcrun_thread_core_bindings();
   if (core >= 0) {
-    id_tuple_push_back(&id_tuple, IDTUPLE_CORE, core); 
+    id_tuple_push_back(&id_tuple, IDTUPLE_COMPOSE(IDTUPLE_CORE, IDTUPLE_IDS_LOGIC_ONLY), core, core);
   }
 
   if (rank >= 0) {
-    id_tuple_push_back(&id_tuple, IDTUPLE_RANK, rank); 
+    id_tuple_push_back(&id_tuple, IDTUPLE_COMPOSE(IDTUPLE_RANK, IDTUPLE_IDS_LOGIC_ONLY), rank, rank);
   }
 
-  id_tuple_push_back(&id_tuple, IDTUPLE_THREAD, cptd->id); 
+  id_tuple_push_back(&id_tuple, IDTUPLE_COMPOSE(IDTUPLE_THREAD, IDTUPLE_IDS_LOGIC_ONLY), cptd->id, cptd->id);
 
   id_tuple_copy(&cptd->id_tuple, &id_tuple, hpcrun_malloc);
 }

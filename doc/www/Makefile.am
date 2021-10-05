@@ -77,6 +77,7 @@ MYSOURCES = \
 	overview.html \
 	publications.html \
 	software.html \
+	training.html \
 	\
 	info-acks.html \
 	info-people.html

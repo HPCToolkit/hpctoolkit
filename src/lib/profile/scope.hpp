@@ -70,18 +70,6 @@ public:
   /// Constructor for single-instruction "point" Scopes.
   Scope(const Module&, uint64_t offset);
 
-  /// Constructor for point Scopes with additional line information.
-  Scope(const Module&, uint64_t offset, const File&, uint64_t line);
-
-  struct call_t {};
-  static inline constexpr call_t call = {};
-
-  /// Constructor for call Scopes.
-  Scope(call_t, const Module&, uint64_t offset);
-
-  /// Constructor for call Scopes with additional line information.
-  Scope(call_t, const Module&, uint64_t offset, const File&, uint64_t line);
-
   /// Constructor for Function-wide Scopes.
   explicit Scope(const Function&);
 
@@ -97,9 +85,6 @@ public:
   /// Constructor for single-line Scopes.
   Scope(const File&, uint64_t line);
 
-  /// Constructor for single-line Scopes with an associated instruction.
-  Scope(const File&, uint64_t line, const Module&, uint64_t offset);
-
   /// Copy constructors
   Scope(const Scope& s) = default;
   Scope& operator=(const Scope&) = default;
@@ -109,14 +94,10 @@ public:
     unknown,  ///< Some amount of missing Context data, of unknown depth.
     global,  ///< Scope of the global Context, root of the entire execution.
     point,  ///< A single instruction within the application, thus a "point".
-    call,  ///< A point Scope, limited to call or similar control-flow instructions.
-    classified_point,  ///< A single instruction with a known source line.
-    classified_call,  ///< Same as classified_point + call.
     function,  ///< A normal ordinary function within the application.
     inlined_function,  ///< A function that has been inlined into an inclosing function Scope.
     loop,  ///< A loop-like construct, potentially source-level.
     line,  ///< A single line within the original source.
-    concrete_line,  ///< A single line, that has a representative instruction.
   };
 
   /// Get the Type of this Location. In case that happens to be interesting.
@@ -178,18 +159,9 @@ private:
         return function == o.function && line == o.line;
       }
     } function_line;
-    struct point_line_u {
-      point_u point;
-      line_u line;
-      bool operator==(const point_line_u& o) const {
-        return point == o.point && line == o.line;
-      }
-    } point_line;
     Data() : empty{} {};
     Data(const Module& m, uint64_t o)
       : point{&m, o} {};
-    Data(const Module& m, uint64_t o, const File& s, uint64_t l)
-      : point_line{{&m, o}, {&s, l}} {};
     Data(const Function& f)
       : function{&f} {};
     Data(const Function& f, const File& s, uint64_t l)

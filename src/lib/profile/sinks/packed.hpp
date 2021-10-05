@@ -49,6 +49,10 @@
 
 #include "../sink.hpp"
 
+#include "../util/parallel_work.hpp"
+#include "../util/ref_wrappers.hpp"
+
+#include <atomic>
 #include <vector>
 
 namespace hpctoolkit::sinks {
@@ -104,6 +108,55 @@ protected:
 private:
   std::atomic<std::chrono::nanoseconds> minTime;
   std::atomic<std::chrono::nanoseconds> maxTime;
+};
+
+/// Extension of Packed that uses parallel algorithms for packing contexts and
+/// metrics dataclasses.
+class ParallelPacked : public Packed {
+public:
+  /// TODO: Implement `doContexts` once a parallel Context format is written
+  /// If `doMetrics` is false, calling `packMetrics` is an error.
+  ParallelPacked(bool doContexts, bool doMetrics);
+  ~ParallelPacked() = default;
+
+  // Make sure to call these for subclass overrides
+  void notifyPipeline() noexcept override;
+  void notifyContext(const Context&) override;
+
+protected:
+  /// Packs the available `attributes` data on the end of the given vector.
+  /// Fills `metrics` with the proper Metric order.
+  // MT: Externally Synchronized
+  void packAttributes(std::vector<std::uint8_t>&) noexcept;
+
+  /// Packs the available `metrics` data on the end of the given vector.
+  /// Note that this packs the statistic accumulators, not the input metrics.
+  /// Note also that this relies on identifiers being the same as on the
+  /// reading end.
+  /// Must only be called after the `write()` barrier. Can only be called once.
+  // MT: Externally Synchronized, Internally Synchronized with helpPackMetrics()
+  void packMetrics(std::vector<std::uint8_t>&) noexcept;
+
+  /// Help a packMetrics call in another thread.
+  // MT: Internally Synchronized
+  util::WorkshareResult helpPackMetrics() noexcept;
+
+private:
+  bool doContexts;
+  bool doMetrics;
+  std::size_t bytesPerCtx;
+
+  // Round-robin parallel buffers for Context groups
+  std::atomic<std::size_t> ctxCnt;
+  std::vector<std::mutex> groupLocks;
+  std::vector<std::vector<std::reference_wrapper<const Context>>> packMetricsGroups;
+
+  // Parallel workshares for the Context groups
+  std::uint8_t* output = nullptr;
+  util::ParallelForEach<std::pair<std::size_t,
+      std::vector<std::reference_wrapper<const Context>>>> fePackMetrics;
+
+  void packMetricGroup(std::pair<std::size_t, std::vector<std::reference_wrapper<const Context>>>&) noexcept;
 };
 
 }

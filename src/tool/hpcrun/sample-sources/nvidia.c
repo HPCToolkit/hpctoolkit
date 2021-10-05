@@ -168,7 +168,7 @@ data_motion_implicit_activities[] = {
 CUpti_ActivityKind
 kernel_invocation_activities[] = {
   CUPTI_ACTIVITY_KIND_CONCURRENT_KERNEL,
-  CUPTI_ACTIVITY_KIND_SYNCHRONIZATION,
+//  CUPTI_ACTIVITY_KIND_SYNCHRONIZATION,
   CUPTI_ACTIVITY_KIND_INVALID
 };
 
@@ -276,10 +276,10 @@ METHOD_FN(init)
 #ifdef NEW_CUPTI
   control_knob_register("HPCRUN_CUDA_RANGE_INTERVAL", CUPTI_RANGE_DEFAULT_INTERVAL_STR, ck_int);
   control_knob_register("HPCRUN_CUDA_RANGE_SAMPLING_PERIOD", CUPTI_RANGE_DEFAULT_SAMPLING_PERIOD_STR, ck_int);
-#endif
   control_knob_register("HPCRUN_CUDA_RANGE_MODE", "EVEN", ck_string);
   control_knob_register("HPCRUN_CUDA_KERNEL_SERIALIZATION", "FALSE", ck_string);
   control_knob_register("HPCRUN_CUDA_CORRELATION_THRESHOLD", "-1", ck_int);
+#endif
 
   // Reset cupti flags
   cupti_device_init();
@@ -392,8 +392,6 @@ METHOD_FN(process_event_list, int lush_metrics)
 
 #ifdef NEW_CUPTI
     gpu_metrics_GPU_INST_STALL2_enable(); // stall metrics
-    
-    // TODO(keren): gsamp in new_cupti
 #else
     gpu_metrics_GPU_INST_STALL_enable(); // stall metrics
 

@@ -59,19 +59,13 @@
 
 #if STD_HAS(filesystem)
 #include <filesystem>
-#include <system_error>
 
 namespace hpctoolkit::stdshim {
 namespace filesystem = std::filesystem;
-namespace filesystemx {
-  using error_code = std::error_code;
-  using copy_options = std::filesystem::copy_options;
-}
 }
 
 #elif STD_HAS(experimental_filesystem)
 #include <experimental/filesystem>
-#include <system_error>
 
 namespace hpctoolkit::stdshim {
 namespace filesystem {
@@ -85,10 +79,7 @@ namespace filesystem {
 
     path relative_path() const { return base::relative_path(); }
 
-    path lexically_normal() const {
-      std::string p = *this;
-      return *this;
-    }
+    path lexically_normal() const { return (std::string)*this; }
   };
 
   using std::experimental::filesystem::filesystem_error;
@@ -142,38 +133,10 @@ namespace filesystem {
   using std::experimental::filesystem::is_symlink;
   using std::experimental::filesystem::status_known;
 }
-namespace filesystemx {
-  using error_code = std::error_code;
-  using copy_options = std::experimental::filesystem::copy_options;
-}
 }
 
 #else  // STD_HAS(filesystem)
-
-// The filesystem library was developed under Boost and then copied fairly
-// verbatim into C++17.
-#ifndef BOOST_ERROR_CODE_HEADER_ONLY
-#define BOOST_ERROR_CODE_HEADER_ONLY
-#define BOOST_ERROR_CODE_HEADER_ONLY_NEEDS_UNDEF
-#endif
-#include <boost/filesystem.hpp>
-#include <boost/functional/hash.hpp>
-#ifdef BOOST_ERROR_CODE_HEADER_ONLY_NEEDS_UNDEF
-#undef BOOST_ERROR_CODE_HEADER_ONLY
-#undef BOOST_ERROR_CODE_HEADER_ONLY_NEEDS_UNDEF
-#endif
-
-namespace hpctoolkit::stdshim {
-namespace filesystem = boost::filesystem;
-namespace filesystemx {
-  using error_code = boost::system::error_code;
-  namespace copy_options {
-    static constexpr auto none = boost::filesystem::copy_option::none;
-    static constexpr auto overwrite_existing = boost::filesystem::copy_option::overwrite_if_exists;
-  }
-}
-}
-
+#error HPCToolkit requires C++17 std::filesystem support!
 #endif  // STD_HAS(filesystem)
 
 // For some reason both the STL and Boost don't specialize std::hash for

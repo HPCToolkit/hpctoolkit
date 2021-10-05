@@ -65,16 +65,33 @@ static void pack(std::vector<std::uint8_t>& out, const std::string& s) noexcept 
 static void pack(std::vector<std::uint8_t>& out, const std::uint8_t v) noexcept {
   out.push_back(v);
 }
+static void pack(std::vector<std::uint8_t>& out, const std::uint16_t v) noexcept {
+  // Little-endian order. Just in case the compiler can optimize it away.
+  for(int shift = 0; shift < 16; shift += 8)
+    out.push_back((v >> shift) & 0xff);
+}
 static void pack(std::vector<std::uint8_t>& out, const std::uint64_t v) noexcept {
   // Little-endian order. Just in case the compiler can optimize it away.
-  for(int shift = 0x00; shift < 0x40; shift += 0x08)
+  for(int shift = 0; shift < 64; shift += 8)
     out.push_back((v >> shift) & 0xff);
+}
+static std::uint8_t* pack(std::uint8_t* out, const std::uint64_t v) noexcept {
+  // Little-endian order. Just in case the compiler can optimize it away.
+  for(int shift = 0x00; shift < 0x40; shift += 0x08)
+    *(out++) = (v >> shift) & 0xff;
+  return out;
 }
 static void pack(std::vector<std::uint8_t>& out, const double v) noexcept {
   // Assumes doubles are compatible across systems
   union { double d; std::uint64_t u; } x;
   x.d = v;
   pack(out, x.u);
+}
+static std::uint8_t* pack(std::uint8_t* out, const double v) noexcept {
+  // Assumes doubles are compatible across systems
+  union { double d; std::uint64_t u; } x;
+  x.d = v;
+  return pack(out, x.u);
 }
 
 Packed::Packed()
@@ -87,9 +104,14 @@ void Packed::packAttributes(std::vector<std::uint8_t>& out) noexcept {
   pack(out, (std::uint64_t)attr.job().value_or(0xFEF1F0F3ULL << 32));
   pack(out, attr.name().value_or(""));
   pack(out, attr.path() ? attr.path()->string() : "");
-  pack(out, attr.environment().size());
+  pack(out, (std::uint64_t)attr.environment().size());
   for(const auto& kv: attr.environment()) {
     pack(out, kv.first);
+    pack(out, kv.second);
+  }
+  pack(out, (std::uint64_t)attr.idtupleNames().size());
+  for(const auto& kv: attr.idtupleNames()) {
+    pack(out, (std::uint16_t)kv.first);
     pack(out, kv.second);
   }
 
@@ -140,8 +162,7 @@ void Packed::packContexts(std::vector<std::uint8_t>& out) noexcept {
   src.contexts().citerate([&](const Context& c){
     pack(out, (std::uint64_t)c.scope().type());
     switch(c.scope().type()) {
-    case Scope::Type::point:
-    case Scope::Type::call: {
+    case Scope::Type::point: {
       // Format: <type> [module id] [offset] children... [sentinal]
       auto mo = c.scope().point_data();
       pack(out, moduleIDs.at(&mo.first));
@@ -152,14 +173,12 @@ void Packed::packContexts(std::vector<std::uint8_t>& out) noexcept {
     case Scope::Type::global:
       // Format: <type> children... [sentinal]
       break;
-    case Scope::Type::classified_point:
-    case Scope::Type::classified_call:
     case Scope::Type::function:
     case Scope::Type::inlined_function:
     case Scope::Type::loop:
     case Scope::Type::line:
-    case Scope::Type::concrete_line:
-      util::log::fatal() << "Unhandled Scope type encountered in Packed!";
+      assert(false && "Unhandled Scope type in Packed!");
+      std::abort();
     }
   }, [&](const Context& c){
     pack(out, (std::uint64_t)0xFEF1F0F3ULL << 32);
@@ -208,12 +227,90 @@ void Packed::packTimepoints(std::vector<std::uint8_t>& out) noexcept {
   auto max = maxTime.load(std::memory_order_relaxed);
   bool minValid = min < std::chrono::nanoseconds::max();
   bool maxValid = max > std::chrono::nanoseconds::min();
-  if(minValid != maxValid) util::log::fatal() << "Timepoint half invalid???";
+  assert(minValid == maxValid && "Packed timepoints appear half invalid?");
   if(minValid) {
     pack(out, (std::uint64_t)min.count());
     pack(out, (std::uint64_t)max.count());
   } else {
     pack(out, (std::uint64_t)0);
     pack(out, (std::uint64_t)0);
+  }
+}
+
+ParallelPacked::ParallelPacked(bool doContexts, bool doMetrics)
+    : doContexts(doContexts), doMetrics(doMetrics), ctxCnt(0),
+      fePackMetrics([this](auto& group){ packMetricGroup(group); }) {}
+
+void ParallelPacked::notifyPipeline() noexcept {
+  if(doContexts || doMetrics) {
+    groupLocks = std::vector<std::mutex>(src.teamSize() * 5);
+    if(doMetrics) packMetricsGroups = decltype(packMetricsGroups)(groupLocks.size());
+  }
+}
+
+void ParallelPacked::notifyContext(const Context& ctx) {
+  if(doContexts || doMetrics) {
+    auto idx = ctxCnt.fetch_add(1, std::memory_order_relaxed) % groupLocks.size();
+    std::unique_lock<std::mutex> l(groupLocks[idx]);
+    if(doMetrics) packMetricsGroups[idx].push_back(ctx);
+  }
+}
+
+void ParallelPacked::packAttributes(std::vector<std::uint8_t>& out) noexcept {
+  Packed::packAttributes(out);
+  bytesPerCtx = 8;
+  for(const Metric& m: metrics)
+    bytesPerCtx += m.partials().size() * 3 * 8;
+}
+
+void ParallelPacked::packMetrics(std::vector<std::uint8_t>& out) noexcept {
+  assert(doMetrics && "packMetrics is invalid if doMetrics was false!");
+  assert(!packMetricsGroups.empty() && "packMetrics can only be called once!");
+  std::size_t cCnt = ctxCnt.load(std::memory_order_relaxed);
+  pack(out, (std::uint64_t)cCnt);
+
+  // Its dense, so we know the exact size already. Allocate the space we need
+  auto startIdx = out.size();
+  out.reserve(out.size() + cCnt * bytesPerCtx);
+  out.insert(out.end(), cCnt * bytesPerCtx, 0);
+  output = &out[startIdx];
+
+  // Stitch together the workitems from the bits we've collected previously
+  std::vector<std::pair<std::size_t, std::vector<std::reference_wrapper<const Context>>>> workitems;
+  workitems.reserve(packMetricsGroups.size());
+  std::size_t prev = 0;
+  for(auto& g: packMetricsGroups) {
+    auto sz = g.size();
+    workitems.emplace_back(prev, std::move(g));
+    prev += sz;
+  }
+
+  fePackMetrics.fill(std::move(workitems));
+  packMetricsGroups.clear();
+  fePackMetrics.contribute(fePackMetrics.wait());
+  output = nullptr;
+}
+
+util::WorkshareResult ParallelPacked::helpPackMetrics() noexcept {
+  return fePackMetrics.contribute();
+}
+
+void ParallelPacked::packMetricGroup(std::pair<std::size_t, std::vector<std::reference_wrapper<const Context>>>& task) noexcept {
+  std::uint8_t* out = output + task.first * bytesPerCtx;
+  for(const Context& c: std::move(task.second)) {
+    out = pack(out, (std::uint64_t)c.userdata[src.identifier()]);
+    for(const Metric& m: metrics) {
+      for(const auto& p: m.partials()) {
+        if(auto v = m.getFor(c)) {
+          out = pack(out, (double)v->get(p).get(MetricScope::point).value_or(0));
+          out = pack(out, (double)v->get(p).get(MetricScope::function).value_or(0));
+          out = pack(out, (double)v->get(p).get(MetricScope::execution).value_or(0));
+        } else {
+          out = pack(out, (double)0);
+          out = pack(out, (double)0);
+          out = pack(out, (double)0);
+        }
+      }
+    }
   }
 }

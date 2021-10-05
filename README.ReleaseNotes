@@ -1,185 +1,238 @@
-$Id$
-
-=============================================================================
-=============================================================================
-
-HPCToolkit/README.ReleaseNotes
-
-=============================================================================
-=============================================================================
-
-Contents:
-  0. General Notes
-  1. Tool Notes
-  2. Revision History
-
-=============================================================================
-
-------------------------------------------------------------
-0. General Notes
-------------------------------------------------------------
-
 ----------------------------------------
-0.1
+HPCToolkit 2021.05.15 
 ----------------------------------------
 
-- If you are having problems, please see "For More Information" in the
-  README file.
+Bug fixes
 
+  hpcrun
+    CPU issues
+      - avoid deadlock by not sampling an openmp thread before it finishes 
+        setting up TLS 
+      - avoid having the UCX communication library used by MPI terminate
+        a program when an unwind fails rather than just dropping a
+        sample
+      - fix initialization of control knobs when a process forks but
+        does not exec
+      - add a timeout to interrupt a hung cuptiActivityFlushAll and so a program
+        can terminate and write out all performance data already collected.
+    Intel GPUs
+      - always dump Intel GPU binaries so we can extract kernel names 
+        even if not using GTPin binary instrumentation
+    NVIDIA GPUs
+      - avoid introducing kernel serialization while using coarse-grain
+        measurement by monitoring CUPTI_ACTIVITY_KIND_CONCURRENT_KERNEL rather
+        than CUPTI_ACTIVITY_KIND_KERNEL
 
-----------------------------------------
-0.2. Unsupported experimental features
-----------------------------------------
+  hpcstruct
+    - correct reconstruction of loop nests for Intel GPU binaries
 
-- HPCToolkit can be used to analyze the performance of code parallelized
-  using CilkPlus features available in Intel and GNU compilers. Without 
-  runtime support, HPCToolkit shows an implementation-level view where
-  call stacks for worker threads contain whatever computation fragments
-  they stole rooted at the stolen frames.
- 
-- We are not yet supporting measurement and analysis of Pthreads lock
-  contention, though you are free to try it out.  (PPoPP '10)
+  hpcviewer
+    - Fix issue #80 and #81 (null pointer exception for empty databases)
+    - Fix issue #79 (CCT filter on the trace view, preserve tree expansion)
+    - Fix issue #73 (sort direction is not shown on Linux for the first appearance)
+    - Fix issue #75 (closing only a window in multiple windows mode)
+    - Fix issue #74 (no sort direction on Linux/GTK)
+    - Fix issue #85 (keyboard shortcut to minimize the window)
+    - Fix filtering CCT nodes for thread views
+    - Fix hot path to select the child node instead of the parent
+    - Fix merging GPU databases which contain aggregate and derived metrics 
+      by deep copying the metric descriptors.
+    - Fix build script to include notarization for mac
+    - Fix storing recent open database: store the absolute path, not the relative one.
+    - Fix SWT resource leaks
+    - Fix flickering issue on Windows when splitting the hpcviewer window.
+    - Fix trace view’s color map changes to also refresh other panes and windows
+    - Fix Find dialog layout on Linux/GTK
+    - Fix merging GPU databases 
+    - Fix a procedure-color mapping bug in the trace view
+    - Partial fix issue 42: Fix a performance bug when sorting a table
 
-- We do not yet support MPI blame shifting on IBM BG/P. (SC '10)
+Improvements
 
-- We have added prototype support for memory leak detection to hpcrun.
-  You can invoke this using the hpcrun options "-e MEMLEAK". The core
-  functionality is operational, but it will be faster and have
-  a better user interface in a forthcoming release.
-
-
-=============================================================================
-
-------------------------------------------------------------
-1. Tool Notes
-------------------------------------------------------------
-
-----------------------------------------
-1.1. hpcrun
-----------------------------------------
-
-1.1.1. Usage limitations:
-
-- The user should choose a sampling period so that the total number of
-  samples is statistically significant, but so that the overhead is
-  not too high.  Typically, this means targeting a sampling frequency
-  of hundreds of samples per second; thousands for short runs; tens
-  for longer runs.
-
-- Unless you are using HPCToolkit to measure the performance of a
-  an application running as a Cobalt or PBS batch job, HPCToolkit 
-  will not place measurement data in a unique directory. Therefore,
-  when re-profiling an application, it is advisable to rename any
-  prior measurement directory.
-
-- In a threaded program, hpcrun may cause some syscalls to return
-  EINTR.  This happens only in a threaded program and mainly with
-  "slow" syscalls such as select(), poll() or sem_wait().
-
-
-1.1.2. Measurement limitations:
-
-- Tail calls and inlining.  Both of these compiler optimizations avoid
-  creating procedure frames and thus generate run-time stacks that do
-  not correspond to the user-level context.  hpcrun does not
-  reconstruct the user-level stack.  Note that using hpcstruct's
-  structure information enables hpcprof to identify inlined frames
-  within the call path.
-
-- There are currently two blind spots in hpcrun.  First, static
-  initializers are not profiled because sampling begins just before
-  "main" is called.  Second, sampling is turned off for OS calls.
-
-- Debugging messages. When hpcrun is invoked with debugging options
-  turned on, it may print log messages not only when processing
-  samples, but also when threads are created or dynamic loading of
-  shared libraries occurs. Presently hpcrun's messaging subsystem
-  acquires a lock before writing to stderr or a log file to avoid
-  unwanted interleaving of output from different threads. It is
-  possible (though it has never been observed) that a sample event may
-  occur while an output lock is held. If the thread holding a
-  messaging subsystem lock is hit with a sample event while holding
-  the lock, this can cause deadlock. This situation has never been
-  encountered in practice, but it is possible. Presently, the
-  messaging system is being overhauled and the interaction between
-  synchronous and asynchronous entries into hpcrun's run-time library
-  is being overhauled to avoid the potential for such race conditions.
+  hpcviewer
+    - Improve the performance of hot-path operation by not re-revealing the tree path.
+    - Default window size is 1400x1000 or the screen size
+    - Trace view: Move depth field into a separate pane so users can change the depth easily 
+      even when call stack view is not visible.
+    - Reduce memory consumption.
+    - Use Java XML parser to slightly improve XML parsing performance and avoid using 
+      the old Apache xerces. 
+    - Code clean-up, remove dead code and remove unused variables
+    - Issue 77: Add support for different color mapping policy in the trace view. 
+      Default: procedure-name color instead of random color.
+    - Warn users when filtering is enabled 
+    - Default is to build with Eclipse 4.19 (2021.03) except for Linux 
+      ppc64le (built with Eclipse 4.16). Some fixes include improved dark color theme.
+      
+  dotgraph
+    - enhance dotgraph to dump control flow graphs for GPU binaries
 
 
 ----------------------------------------
-1.2. hpcstruct
+HPCToolkit 2021.03.01 
 ----------------------------------------
 
+The principal objective of this release was to support profiling for
+various GPU-based applications, under a variety of programming methods,
+and for a variety of GPUs.
 
-1.2.1. Limitations
+New and Improved functionality
+  hpcrun
+    Support for GPU Profiling and Tracing
+    - Intel GPUs
+      - Coarse-grain profiling of GPU operations 
+        (kernel launch, memory copy, synchronization, etc.)
+        - for OpenCL programs
+        - For dpcpp programs using either OpenCL or Level 0 runtimes
 
-- Incorrect or erroneous debugging information.  The most important
-  requirement for hpcstruct to generate good static structure is good
-  debugging information.  Ensure that you compile with as much
-  debugging information as possible.  Even then, some compiler
-  generate erroneous information.  hpcstruct attempts to ignore such
-  information, but this is only successful if the bulk of the
-  information is correct.
+            Tracing of GPU operations for OpenCL programs or dpcpp programs 
+            when using the OpenCL runtime
+  
+            Fine-grain measurements (instruction counts) using GT-Pin
+            on OpenCL or dpcpp programs using the OpenCL runtime
 
-- Inlining recovery: Given accurate debugging information, hpcstruct
-  can detect almost all inlining.  However, it does not attempt to
-  recover call path relationships between the inlined code.  For
-  example, if a call path consisting of two procedures (a calls b) is
-  inlined into a third procedure x, hpcstruct shows that two routines
-  are inlined into x, but does not indicate that a called b.
+          Support for instruction counts with GT-Pin
+            For OpenCL or dpcpp  programs using the OpenCL runtime,
+            including attribution of performance to source lines
 
-- Incomplete binary analysis.  hpcstruct does not analyze indirect
-  jumps which means it does not completely account for switch
-  statements and indirect jumps.  This is very rarely a problem.
+    - AMD GPUs
+      - Profiling and tracing of GPU operations for HIP programs
+      - Support for OpenCL programs
+    - Nvidia GPUs
+      - Profiling and tracing of OpenCL programs
+      - Fine-grain measurement of GPU kernels with PC sampling  
+   Support for CPU profiling
+   - Improved Handling of Dynamic Libraries
+     - Use LD_AUDIT to track loading and unloading of shared libraries;
+       enabled by default; may be disabled if necessary.
+   - Data Collection for Flat-profiles
+     - Adds resilience by bypassing stack unwind to avoid problems with new OSs,
+       libraries, compilers, etc.
+   - Improved Handling of Exported and Imported Interfaces
+     - Avoids conflicts with applications and other tools.
+  hpcstruct
+    Support for Intel and AMD GPU binaries
+    - Improved Processing of All GPU binaries
+      - Better handling of line-numbers, inlining information, loops, and 
+        statements.
+    - Improved Handling of Paths
+    - Improved Performance by Analyzing Binaries in Parallel
+
+  hpcprof
+    Adjustments to Hide Detailed GPU Metrics by Default
+
+  hpcviewer and hpctraceviewer
+    Merge the Two Views into a Single hpcviewer Command
+    - The integrated interface enables one to view both profiles and traces. 
+      The new user interface, based on Eclipse 4, works with Java versions 8-14. 
+      The integrated interface can be built from source on MacOS, Windows, and 
+      Linux using Apache Maven.
+    Enhance Filter Panel
+    - Make Panel resizable, and add an “Apply” button.  Trace filters can use a 
+      regular expression for filtering ranks.
+    Improved Preferences, About, Info, and Log Dialog Boxes
+    - New support for log files using slf4j.  Logs are stored in the same 
+      workspace and can be cleared.
+    Improved Color Management
+    - Colors are now allocated lazily.
+    Improved Performance
+    - Especially with respect to expanding or contracting trees, and for handling
+      very many metrics.  Reduced memory usage for the viewers.
+    Beta Support for ARM Machines
+    - Eclipse has beta support for ARM.
+    Additional Release Notes for hpcviewer 
+     For more information, see https://github.com/HPCToolkit/hpcviewer.e4/releases
+
+Fixed Issues
+
+- Overestimation of CPU time for a Thread that is Sleeping
+  - Previously CPU time for a sleeping thread would be incremented by the 
+    real-time the thread was sleeping; it is now correctly incremented only by 
+    CPU-time.  The issue is not yet fixed in Trace View.
+- Mishandling of map/unmap/map of Dynamic Libraries
+  - When a dynamic library is unmapped and a second dynamic library is mapped to 
+    the same region of the address space, samples may not be properly attributed.
+- Conflicts with Application Libraries 
+  - HPCToolkit uses libunwind to interpret compiler-recorded unwinding 
+    information and libxz for compression. An application using a different 
+    version of these libraries could fail if its calls are bound to HPCToolkit’s 
+    copies. The entry-points in HPCToolkit’s copies of libunwind and libxz are 
+    now invisible to applications.
+- Incorrect Interactions with UCX
+  - UCX is a communication substrate used by OpenMPI. UCX wraps mmap and munmap 
+    and calls from an HPCToolkit signal-handler to mmap or munmap could be 
+    intercepted by UCX and cause a program to hang or fail. HPCToolkit now uses 
+    private versions of mmap and munmap that cannot be intercepted by other 
+    layers in the software stack.
+- libmonitor Problems Relating to fork and Thread-Termination
+  - Patches were issued to fix crashes or deadlocks relating to these issues.
+- Problems with Applications Using RUNPATH
+  - The RUNPATH settings are now properly handled to find dynamic libraries
+- Workaround for LD_AUDIT Bug Present before glibc 2.32
+
+  - LD_AUDIT transparently converts dlmopen calls to dlopen to merge all shared 
+    libraries into the global namespace. If that
+    doesn’t work, you ask hpcrun to use an alternative to LD_AUDIT
+    using --disable-auditor. This alternative provides full support
+    for dlmopen with multiple namespaces. However, any executables or
+    libraries that depend upon a RUNPATH attribute will only work when
+    HPCToolkit uses LD_AUDIT to track dynamic library operations. When using
+    --disable-auditor, one can use --namespace-single or --namespace-multiple
+    to explicitly control whether dlmopen calls should be converted to
+    dlopen or not, respectively.
+
+- Workaround for LD_AUDIT Performance Degradation
+  - Applications with many interlibrary calls suffer a performance degradation
+    when LD_AUDIT is used. To address this issue, hpcrun rewrites an
+    application’s Global Offset Table (GOT). As a new feature, there is
+    a potential that this may cause something to go wrong and cause your
+    application to crash. If that happens, the rewriting can be disabled
+    with the hpcrun argument --disable-auditor-got-rewriting to diagnose
+    whether that was why hpcrun caused your application to crash.
+  
+Open Issues
+- CPU Time is Shown Continuously in Trace View
+  - CPU time is divided between the last event before the thread sleeps and 
+    the next event after the sleep; it should be blank when thread is sleeping
+- Problems with PC Samples from NVIDIA GPUs and CUDA 11.2
+  - HPCToolkit does not properly attribute PC samples collected for binaries 
+    generated by CUDA 11.2. NVIDIA changed the format of line map information 
+    produced by nvcc in CUDA 11.2. HPCToolkit uses Red Hat’s Elfutils to parse 
+    line map information in CPU and GPU binaries. Elfutils does not yet parse 
+    NVIDIA’s extensions to the line map, which leads to incorrect attribution.
+- Problems Installing for  AMD GPUs
+  - Installation of ROCm either as an installed version or as spack-build 
+    package requires a two-step build, specifying ROCm as external packages.
+- Problems Installing for  Intel GPUs
+  - Installation for Intel GPUs requires manual configuration and build of 
+    HPCToolkit. Spack can be used to build all HPCToolkit dependencies other 
+    than Intel components. Intel’s software (oneapi, GT-Pin, Metrics Discovery 
+    API, and Intel Graphics compiler) must be built manually and have their 
+    paths provided to HPCToolkit’s configure as they are not available as spack 
+    packages.
+- Problems with Instruction-level Analysis of Intel GPU Binaries
+  - Instruction-level analysis only works with Intel’s newest compute runtime,
+    which has not been publicly released.
+- Moving Measurements Directories may Cause Problems
+  - Recorded data contains absolute paths, and processing the data may not find 
+    the files needed to generate the database.
+- Issues Concerning with hpcviewer
+  - hpcviewer requires Java 8 or newer; it may fail on MacOS Big Sur because of
+    Eclipse bugs.
+
+Improved Installation, Configuration, and Build
+- Restructure Build to Hide Symbols from Third-party Libraries
+  - Use objcopy, and +pic options for those libraries to avoid conflicts with
+    applications using the same libraries.
+  - Rewrite Configure Script to Remove Manual Dependencies
+- Update Dependencies to Latest Versions and Options
+  - Specify spack packages for intel-xed, libunwind, libmonitor, comgr, 
+    llvm-amdgpu, libpfm4 (perfmon), and xz (lzma).  Use binutils+nls to avoid 
+    spack conflicts with other packages.
+- Update Build of hpcviewer to use Maven
+  - Build can now be done from the command line.
 
 
-----------------------------------------
-1.3. hpcprof/hpcprof-mpi
-----------------------------------------
-
-1.3.1. Limitations
-
-- Experiment databases can still be quite large.
-
-- hpcprof currently does not generate 'metric databases' for hpcviewer
-  scatter plots.
-
-
-1.3.2. Bugs
-
-- hpcprof/mpi currently does not properly combine multiple trace
-  measurement databases.
-
-- When processing in parallel measurements for a *dynamically linked
-  binary*, hpcprof-mpi may abort with an MPI error.  The problem is
-  that GNU binutils does not always return the same debug information
-  for a given object code address.  We are working on a patch.
-
-  Workarounds:
-  1) Use hpcprof or hpcprof-mpi with one MPI process.
-  2) Use a statically linked binary.
-  3) Supply all static structure to hpcprof-mpi (-S option) by running
-     hpcstruct on the application and all DSOs
-  4) Run hpcprof-mpi in parallel only on one node.  (Usually, GNU
-     binutils is deterministic during one execution on one node.)
-
-
-----------------------------------------
-1.4. hpcviewer
-----------------------------------------
-
-1.4.1. Bugs
-
-- hpcviewer's attribution of inclusive costs in the caller's view
-  works for programs with simple recursion; however, costs can
-  be incorrect in the presence of mutual recursion.
-
-
-=============================================================================
-
-------------------------------------------------------------
-2. Revision History
-------------------------------------------------------------
 
 ----------------------------------------
 HPCToolkit 2019.08 + some earlier

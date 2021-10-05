@@ -49,9 +49,8 @@
 
 #include "core.hpp"
 
-#include "../stdshim/optional.hpp"
-
 #include <array>
+#include <optional>
 
 namespace hpctoolkit::mpi {
 
@@ -73,7 +72,7 @@ T scan(T data, const Op& op) {
 /// the current process's contribution. Note that no value is returned in rank
 /// 0, thus the need for an optional return value.
 template<class T, std::void_t<decltype(detail::asDatatype<T>())>* = nullptr>
-stdshim::optional<T> exscan(T data, const Op& op) {
+std::optional<T> exscan(T data, const Op& op) {
   detail::exscan(&data, 1, detail::asDatatype<T>(), op);
   if(World::rank() == 0) return {};
   return data;
@@ -96,7 +95,7 @@ std::array<T, N> scan(std::array<T, N> data, const Op& op) {
 
 /// Exclusive scan operation. Variant to allow for the usage of std::array.
 template<class T, std::size_t N>
-stdshim::optional<std::array<T, N>> exscan(std::array<T, N> data, const Op& op) {
+std::optional<std::array<T, N>> exscan(std::array<T, N> data, const Op& op) {
   detail::exscan(data.data(), N, detail::asDatatype<T>(), op);
   if(World::rank() == 0) return {};
   return data;

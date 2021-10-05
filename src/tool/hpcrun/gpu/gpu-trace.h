@@ -146,7 +146,15 @@ consume_one_trace_item
 thread_data_t* td,
 cct_node_t *call_path,
 uint64_t start_time,
-uint64_t end_time
+uint64_t end_time,
+cct_node_t *no_activity
+);
+
+
+cct_node_t *
+gpu_trace_cct_no_activity
+(
+ thread_data_t* td
 );
 
 

@@ -124,7 +124,7 @@ public:
   };
 
 private:
-  void unpack(ProfilePipeline::Source&);
+  void unpack(ProfilePipeline::Source&) noexcept;
   std::vector<uint8_t> ctxtree;
 
   std::once_flag once;

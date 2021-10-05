@@ -47,6 +47,7 @@
 #ifndef HPCTOOLKIT_PROFILE_UTIL_LOG_H
 #define HPCTOOLKIT_PROFILE_UTIL_LOG_H
 
+#include <bitset>
 #include <sstream>
 #include <string>
 
@@ -57,7 +58,7 @@ namespace detail {
 class MessageBuffer : public std::ostream {
 protected:
   // Subclasses should mess with these as needed.
-  MessageBuffer(bool enabled = true);
+  MessageBuffer(bool enabled);
   ~MessageBuffer() = default;
 
 public:
@@ -82,8 +83,53 @@ protected:
 };
 }
 
+/// Structure for logging settings. Makes it easier to change and set up.
+class Settings final {
+public:
+  ~Settings() = default;
+
+  struct all_t {};
+  static inline constexpr all_t all = {};
+  struct none_t {};
+  static inline constexpr none_t none = {};
+
+  /// Initialize with all or none of the message types enabled
+  Settings(all_t) : bits(~decltype(bits)(0)) {};
+  Settings(none_t) : bits(0) {};
+
+  /// Full initialization
+  Settings(bool v_error, bool v_warning, bool v_info)
+    : bits((v_error ? 1 : 0) | (v_warning ? 2 : 0) | (v_info ? 4 : 0)) {}
+
+  /// Bitwise operators
+  friend Settings operator&(Settings a, Settings b) noexcept { return a.bits & b.bits; }
+  Settings& operator&=(Settings o) noexcept { bits &= o.bits; return *this; }
+  friend Settings operator|(Settings a, Settings b) noexcept { return a.bits | b.bits; }
+  Settings& operator|=(Settings o) noexcept { bits |= o.bits; return *this; }
+  friend Settings operator^(Settings a, Settings b) noexcept { return a.bits ^ b.bits; }
+  Settings& operator^=(Settings o) noexcept { bits ^= o.bits; return *this; }
+  friend Settings operator~(Settings a) noexcept { return ~a.bits; }
+
+  /// Get or set the current Settings used for logging.
+  /// Note that set() must be called before using any of the logging facilities.
+  // MT: Externally Synchronized (global)
+  static Settings get();
+  static void set(Settings);
+
+  /// Named versions of the individual bits
+  auto error() { return bits[0]; }
+  auto warning() { return bits[1]; }
+  auto info() { return bits[2]; }
+
+private:
+  Settings(std::bitset<3> bits) : bits(bits) {};
+
+  std::bitset<3> bits;
+};
+
 /// Fatal error message buffer. When destructed, the program is terminated after
 /// the message is written. For cases where things have gone horribly wrong.
+/// These will always be printed and cannot be disabled.
 struct fatal final : public detail::MessageBuffer {
   fatal();
   [[noreturn]] ~fatal();

@@ -53,5 +53,6 @@
 #include "scan.hpp"
 #include "all2all.hpp"
 #include "one2one.hpp"
+#include "accumulate.hpp"
 
 #endif  // HPCTOOLKIT_PROFILE_MPI_ALL_H

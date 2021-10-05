@@ -331,6 +331,12 @@ cupti_device_init
 // cupti status
 //******************************************************************************
 
+bool
+cupti_activity_flag_get
+(
+ void
+);
+
 void
 cupti_activity_flag_set
 (

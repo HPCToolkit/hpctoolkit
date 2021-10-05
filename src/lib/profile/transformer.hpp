@@ -87,7 +87,7 @@ struct RouteExpansionTransformer : public ProfileTransformer {
 
   ContextRef context(ContextRef cr, Scope& s) noexcept override {
     if(!std::holds_alternative<SuperpositionedContext>(cr)) {
-      if(s.type() == Scope::Type::point || s.type() == Scope::Type::call) {
+      if(s.type() == Scope::Type::point) {
         auto mo = s.point_data();
         const auto& c = mo.first.userdata[sink.classification()];
         auto routes = c.getRoutes(mo.second);
@@ -119,27 +119,10 @@ struct ClassificationTransformer : public ProfileTransformer {
   ~ClassificationTransformer() = default;
 
   ContextRef context(ContextRef c, Scope& s) noexcept override {
-    if(s.type() == Scope::Type::point || s.type() == Scope::Type::call) {
+    if(s.type() == Scope::Type::point) {
       auto mo = s.point_data();
       const auto& cl = mo.first.userdata[sink.classification()];
       for(const auto& s: cl.getScopes(mo.second)) c = sink.context(c, s);
-      s = cl.classifyLine(s);
-    }
-    return c;
-  }
-};
-
-/// Transformer for merging `classified_point` Contexts based on their line information.
-struct LineMergeTransformer final : public ProfileTransformer {
-  LineMergeTransformer() = default;
-  ~LineMergeTransformer() = default;
-
-  ContextRef context(ContextRef c, Scope& s) noexcept override {
-    if(s.type() == Scope::Type::classified_point) {
-      auto mo = s.point_data();
-      auto fl = s.line_data();
-      // Change it to a concrete_line, which merges based on the line.
-      s = {fl.first, fl.second, mo.first, mo.second};
     }
     return c;
   }

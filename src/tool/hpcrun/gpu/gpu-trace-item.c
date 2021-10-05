@@ -96,10 +96,11 @@ gpu_trace_item_consume
 (
  gpu_trace_item_consume_fn_t trace_item_consume,
  thread_data_t *td,
- gpu_trace_item_t *ti
+ gpu_trace_item_t *ti,
+ cct_node_t *no_activity
 )
 {
-  trace_item_consume(td, ti->call_path_leaf, ti->start, ti->end);
+  trace_item_consume(td, ti->call_path_leaf, ti->start, ti->end, no_activity);
 }
 
 

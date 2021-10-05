@@ -65,8 +65,8 @@ public:
 
 private:
   uintmax_t dwarfThreshold;
-  void fullDwarf(void* dw, const Module&, Classification&);
-  void symtab(void* elf, const Module&, Classification&);
+  bool fullDwarf(void* dw, const Module&, Classification&);
+  bool symtab(void* elf, const Module&, Classification&);
 };
 
 }

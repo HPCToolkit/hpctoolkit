@@ -51,6 +51,9 @@
 #include "lib/profile/pipeline.hpp"
 #include "lib/profile/source.hpp"
 #include "lib/profile/sink.hpp"
+#include "lib/profile/sinks/experimentxml4.hpp"
+#include "lib/profile/sinks/hpctracedb2.hpp"
+#include "lib/profile/sinks/sparsedb.hpp"
 #include "lib/profile/finalizers/denseids.hpp"
 #include "lib/profile/finalizers/directclassification.hpp"
 #include "lib/profile/transformer.hpp"
@@ -72,6 +75,7 @@ int main(int argc, char* const argv[]) {
   // Get the main core of the Pipeline set up.
   ProfilePipeline::Settings pipelineB;
   for(auto& sp : args.sources) pipelineB << std::move(sp.first);
+  for(auto& sp : args.ksyms) pipelineB << std::move(sp);
   for(auto& sp : args.structs) pipelineB << std::move(sp.first);
   ProfArgs::StructWarner sw(args);
   pipelineB << sw;
@@ -97,9 +101,16 @@ int main(int argc, char* const argv[]) {
   pipelineB << retrans << ctrans;
 
   switch(args.format) {
-  case ProfArgs::Format::sparse:
-    util::log::fatal{} << "Sparse output currently only for Prof2-MPI!";
+  case ProfArgs::Format::sparse: {
+    std::unique_ptr<sinks::HPCTraceDB2> tdb;
+    if(args.include_traces)
+      tdb = make_unique_x<sinks::HPCTraceDB2>(args.output);
+    pipelineB << make_unique_x<sinks::ExperimentXML4>(args.output, args.include_sources,
+                                                      tdb.get());
+    pipelineB << std::move(tdb);
+    pipelineB << make_unique_x<sinks::SparseDB>(args.output);
     break;
+  }
   }
 
   // Create the Pipeline, let the fun begin.

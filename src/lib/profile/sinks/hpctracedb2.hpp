@@ -49,6 +49,8 @@
 
 #include "../sink.hpp"
 
+#include "../util/file.hpp"
+
 #include <chrono>
 
 namespace hpctoolkit::sinks {
@@ -83,15 +85,17 @@ public:
   void notifyTimepoint(const Thread&, ContextRef::const_t, std::chrono::nanoseconds) override;
   void notifyThreadFinal(const Thread::Temporary&) override;
 
+  /// Check whether a Context ever appears in the traces.
+  bool seen(const Context&);
+
   /// Return the tag for the experiment.xml, or an empty string if empty.
   std::string exmlTag();
 
 private:
-  stdshim::filesystem::path dir;
-  stdshim::filesystem::path trace_p;
-  std::atomic<bool> has_traces;
-  std::atomic<std::chrono::nanoseconds> min;
-  std::atomic<std::chrono::nanoseconds> max;
+  std::optional<hpctoolkit::util::File> tracefile;
+  std::atomic<bool> has_traces{false};
+  std::atomic<std::chrono::nanoseconds> min{std::chrono::nanoseconds::max()};
+  std::atomic<std::chrono::nanoseconds> max{std::chrono::nanoseconds::min()};
 
   void mmupdate(std::chrono::nanoseconds min, std::chrono::nanoseconds max);
 
@@ -108,7 +112,7 @@ private:
     uint16_t trace_idx;
     uint64_t start;
     uint64_t end;
-  }; 
+  };
 
   class udContext {
   public:
@@ -125,14 +129,16 @@ private:
     ~udThread() = default;
 
     struct uds& uds;
-    bool has_trace;
-    std::chrono::nanoseconds minTime;
-    std::chrono::nanoseconds maxTime;
+    bool has_trace = false;
+    std::chrono::nanoseconds minTime = std::chrono::nanoseconds::max();
+    std::chrono::nanoseconds maxTime = std::chrono::nanoseconds::min();
 
-    std::FILE* trace_file;
-    traceHdr trace_hdr;
-    uint64_t tmcntr;
-
+    traceHdr hdr;
+    std::optional<hpctoolkit::util::File::Instance> inst;
+    std::uint_fast64_t off = -1;
+    std::array<char, 12 * 1024 * 86> buffer;
+    char* cursor = buffer.data();
+    uint64_t tmcntr = 0;
   };
 
   struct uds {

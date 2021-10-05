@@ -49,6 +49,7 @@
 #include "../util/log.hpp"
 #include "once.hpp"
 
+#include <cassert>
 #include <stdexcept>
 #include <thread>
 #include <vector>
@@ -65,16 +66,16 @@ Once::Caller::~Caller() {
 
 Once::Caller Once::signal() {
   std::thread::id old;
-  if(!callerId.compare_exchange_strong(old, std::this_thread::get_id(),
-                                        std::memory_order_acquire,
-                                        std::memory_order_relaxed))
-    util::log::fatal() << "Once cannot be signal()'d more than once!";
+  auto ok = callerId.compare_exchange_strong(old, std::this_thread::get_id(),
+                                             std::memory_order_acquire,
+                                             std::memory_order_relaxed);
+  assert(ok && "Once cannot be signal()'d more than once!");
   return Caller(*this);
 }
 
 void Once::wait() const {
-  if(callerId.load(std::memory_order_relaxed) == std::this_thread::get_id())
-    util::log::fatal() << "Single-thread deadlock detected on Once!";
+  assert(callerId.load(std::memory_order_relaxed) != std::this_thread::get_id()
+         && "Single-thread deadlock detected on Once!");
   future.wait();
   ANNOTATE_HAPPENS_AFTER(this);
 }

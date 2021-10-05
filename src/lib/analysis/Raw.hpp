@@ -85,10 +85,6 @@ void
 writeAsText(/*destination,*/ const char* filenm, bool sm_easyToGrep);
 //YUMENG: second arg: if more flags, maybe build a struct to include all flags and pass the struct around
 
-static inline void 
-writeAsText(/*destination,*/ const std::string& filenm)
-{ writeAsText(filenm.c_str()); }
-
 void
 writeAsText_callpath(/*destination,*/ const char* filenm, bool sm_easyToGrep);
 

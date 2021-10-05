@@ -212,6 +212,12 @@ hpcfmt_int2_fwrite(uint16_t val, FILE* outfs)
   return HPCFMT_OK;
 }
 
+static inline char*
+hpcfmt_int2_swrite(uint16_t val, char* buf)
+{
+  return hpcio_be2_swrite(val, buf);
+}
+
 
 static inline int
 hpcfmt_int4_fwrite(uint32_t val, FILE* outfs)
@@ -220,6 +226,12 @@ hpcfmt_int4_fwrite(uint32_t val, FILE* outfs)
     return HPCFMT_ERR;
   }
   return HPCFMT_OK;
+}
+
+static inline char*
+hpcfmt_int4_swrite(uint32_t val, char* buf)
+{
+  return hpcio_be4_swrite(val, buf);
 }
 
 
@@ -232,6 +244,12 @@ hpcfmt_int8_fwrite(uint64_t val, FILE* outfs)
   return HPCFMT_OK;
 }
 
+static inline char*
+hpcfmt_int8_swrite(uint64_t val, char* buf)
+{
+  return hpcio_be8_swrite(val, buf);
+}
+
 
 static inline int
 hpcfmt_intX_fwrite(uint8_t* val, size_t size, FILE* outfs)
@@ -240,6 +258,12 @@ hpcfmt_intX_fwrite(uint8_t* val, size_t size, FILE* outfs)
     return HPCFMT_ERR;
   }
   return HPCFMT_OK;
+}
+
+static inline char*
+hpcfmt_intX_swrite(uint8_t* val, size_t size, char* buf)
+{
+  return hpcio_beX_swrite(val, size, buf);
 }
 
 

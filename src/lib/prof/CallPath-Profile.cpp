@@ -1046,7 +1046,7 @@ Profile::fmt_fread(Profile* &prof, FILE* infs, uint rFlags,
   fseek(infs, footer_position, SEEK_SET); 
   ret = hpcrun_fmt_footer_fread(&footer, infs);
   if(ret != HPCFMT_OK){
-    fprintf(stderr, "ERROR: error reading footer section in '%s'\n", filename);
+    fprintf(stderr, "ERROR: error reading footer section in '%s', maybe it is not complete\n", filename);
     prof_abort(-1);
   }
   if(getc(infs) != EOF){
@@ -1547,6 +1547,24 @@ Profile::fmt_epoch_fread(Profile* &prof, FILE* infs, uint rFlags,
       m->dbNumMetrics(mMgr->size());
     }
   }
+
+  // ----------------------------------------
+  // id-tuple dictionary
+  // ----------------------------------------
+  fseek(infs, footer.idtpl_dxnry_start, SEEK_SET);
+
+  hpcrun_fmt_idtuple_dxnry_t idtuple_dxnry;
+  ret = hpcrun_fmt_idtuple_dxnry_fread(&idtuple_dxnry, infs, malloc);
+  if (ret != HPCFMT_OK) {
+    DIAG_Throw("error reading 'id-tuple dxnry'");
+  }
+  if((uint64_t)ftell(infs) != footer.idtpl_dxnry_end){
+    fprintf(stderr, "ERROR: 'id-tuple dxnry' is succesfully read but the data seems off the recorded location in '%s'\n",
+     filename);
+     prof_abort(-1);
+  }
+  hpcrun_fmt_idtuple_dxnry_fprint(&idtuple_dxnry, outfs);
+  hpcrun_fmt_idtuple_dxnry_free(&idtuple_dxnry, free);
 
   // ----------------------------------------
   // cct_metrics_sparse_values - YUMENG

@@ -70,7 +70,7 @@ The current status of using Spack for HPCToolkit is at:
 @end example
 
 @noindent
-Last revised: February 14, 2021.
+Last revised: July 13, 2021.
 
 @c ------------------------------------------------------------
 
@@ -248,7 +248,7 @@ support for modules built by spack.
 
 @c ------------------------------------------------------------
 
-@section Config.yaml
+@section Config.yaml and Install Roots
 
 @code{config.yaml} is the top-level spack config file.  This specifies
 the directory layout for installed files and the top-level spack
@@ -258,24 +258,55 @@ in a public directory.  For a module to be available, both the
 @code{install_tree} and @code{module_roots} directories must be
 accessible.
 
-@enumerate
-@item
-@code{install_tree/root} -- by default, spack installs packages inside
-the spack repository at @code{spack/opt/spack}.  If you want to use
-another location, then set the @code{root} field under
-@code{install_tree}.
+By default, spack installs packages inside the spack repository at
+@code{spack/opt/spack}.  To use another location, set the @code{root}
+field under @code{install_tree} in @code{config.yaml}.
 
-@item
-@code{module_roots} -- by default, spack installs module files inside
-the spack repository at @code{spack/share/spack}.  If you want to use
-another location, then set this.
-@end enumerate
+@example
+config:
+  install_tree:
+    root: /path/to/top-level/install/directory
+@end example
 
 @noindent
-There are two other fields that you may want to set for you local
+By default, spack installs module files inside the spack repository at
+@code{spack/share/spack}.  The syntax for resetting this is changing.
+In the old syntax, you put the top-level directory in
+@code{config.yaml} and enable the module type(s) in
+@code{modules.yaml}.
+
+@example
+config:
+  module_roots:
+    # normally, need only one of these
+    tcl:  /path/to/top-level/tcl-module/directory
+    lmod: /path/to/top-level/lmod-module/directory
+
+modules:
+  enable:
+   - tcl  (or lmod)
+@end example
+
+@noindent
+In the new syntax, the paths go in @code{modules.yaml}, and there is
+one extra step in the hierarchy (@code{default:}).
+
+@example
+modules:
+  default:
+    roots:
+      # normally, need only one of these
+      tcl:  /path/to/top-level/tcl-module/directory
+      lmod: /path/to/top-level/lmod-module/directory
+    enable:
+     - tcl  (or lmod)
+@end example
+
+@noindent
+There are two other fields that you may want to set for your local
 system.
 
-@enumerate 3
+@enumerate
 @item
 @code{connect_timeout} -- some download sites, especially sourceforge
 are often slow to connect.  If you find that connections are timing out,
@@ -283,9 +314,8 @@ then increase this time to 30 or 60 seconds (default is 10 seconds).
 
 @item
 @code{build_jobs} -- by default, spack uses all available hardware
-threads for parallel make, up to a limit of 16.  If you're using a
-shared machine and don't want to use the entire machine, then set this
-to a smaller number.
+threads for parallel make, up to a limit of 16.  If you want to use a
+different number, then set this.
 @end enumerate
 
 @noindent
@@ -368,6 +398,7 @@ change depending on your system.  But always check the current
 @code{binutils} -- avoid versions 2.35 and 2.35.1, they have a bug
 that spews errors from hpcprof.  Use 2.34 until 2.36 is available.
 
+@item
 @code{intel-tbb} -- for very old Intel or AMD systems that don't support
 transactional memory, change @code{+tm} to @code{~tm}.  (This option has
 no effect on non-x86 systems.)
@@ -1065,22 +1096,26 @@ configure  \
 
 @c ------------------------------------------------------------
 
-@section Hpcviewer and Hpctraceviewer
+@section HPCToolkit GUI Interface (Hpcviewer)
+Since 2021.04 release, HPCToolkit GUI interface provides both profile
+and trace views in a single application, i.e. hpcviewer. Prior to
+that, each view is a separate program: hpcviewer to analyze the
+profile database, and hpctraceviewer to display the traces.
 
-We provide binary distributions for hpcviewer and hpctraceviewer on
-Linux (x86_64, ppc64/le and now aarch64), Windows and MacOS.  HPCToolkit
-databases are platform-independent and it is common to run hpcrun on one
-machine and then view the results on another machine.
+We provide binary distributions for hpcviewer on Linux (x86_64,
+ppc64/le and now aarch64), Windows and MacOS.  HPCToolkit databases
+are platform-independent and it is common to run hpcrun on one machine
+and then view the results on another machine.
 
-Starting with 2021.01, the viewers now require Java 11 or later (but not
-15), plus GTK+ 3.20 or later on Linux.  Older viewers, up through
+Starting with 2021.01, the viewer now requires Java 11 or later (but
+not 15), plus GTK+ 3.20 or later on Linux.  Older viewers, up through
 2020.12, require Java 8 (not 9 or later), plus GTK+ 2.x for Linux.
 
 @subsection Spack Install
 
-The spack install is available on Linux x86_64, little-endian powerpc64
-(power8 and 9) and now aarch64 ARM.  This installs both hpcviewer and
-hpctraceviewer and includes the Java prerequisite.
+The spack install is available on Linux x86_64, little-endian
+powerpc64 (power8 and 9) and now aarch64 ARM.  This installs hpcviewer
+and includes the Java prerequisite.
 
 For the current viewers, use openjdk with the most recent version of
 Java 11 for all platforms.  Currently, this is the default, but if not,
@@ -1126,9 +1161,10 @@ prefix.
 
 @noindent
 On Windows and MacOS, download the @code{win32} or @code{macosx.cocoa}
-versions and unpack the zip files in the desired directory.  Due to
-Apple's security precautions, on MacOS, you will need to use curl or
-wget instead of a web browser.
+versions and unpack the zip or dmg files in the desired directory.
+For older versions prior to 2021.04 release, due to Apple's security
+precautions, on MacOS, you will need to use curl or wget instead of a
+web browser.
 
 @c ------------------------------------------------------------
 
@@ -1144,17 +1180,20 @@ First, pick a directory in which to install the modules and make
 subdirectories for the spack packages and module files.  In this
 example, I'm using @code{/opt/spack/Modules} as my top-level directory
 and subdirectories @code{packages} and @code{modules}.  Edit
-@code{config.yaml} to add these paths.
+@code{config.yaml} and @code{modules.yaml} to add these paths.
 
 @example
 config:
   install_tree:
     root: /opt/spack/Modules/packages
 
-  # just use one of these
-  module_roots:
-    tcl:  /opt/spack/Modules/modules
-    lmod: /opt/spack/Modules/modules
+modules:
+  default:
+    roots:
+      # just use one of these
+      module_roots:
+        tcl:  /opt/spack/Modules/modules
+        lmod: /opt/spack/Modules/modules
 @end example
 
 @noindent
@@ -1167,9 +1206,10 @@ LLNL).
 
 @example
 modules:
-  enable:
-   - tcl
-   - lmod
+  default:
+    enable:
+     - tcl
+     - lmod
 @end example
 
 @noindent

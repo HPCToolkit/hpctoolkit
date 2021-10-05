@@ -70,28 +70,36 @@ include $(top_srcdir)/src/Makeinclude.config
 # Local settings
 #############################################################################
 
+sinks/FORMATS.md.inc: $(srcdir)/../../../doc/FORMATS.md $(srcdir)/../../tool/hpcstruct/stringify.sh
+	echo -n "static const char FORMATS_md[] = " > $@
+	$(srcdir)/../../tool/hpcstruct/stringify.sh < $< >> $@
+	echo ';' >> $@
+
+noinst_HEADERS = sinks/FORMATS.md.inc
+BUILT_SOURCES = sinks/FORMATS.md.inc
+
 MYSOURCES = \
 	stdshim/shared_mutex.cpp stdshim/atomic.cpp stdshim/futex-detail.c \
 	\
 	util/ragged_vector.cpp util/once.cpp util/xml.cpp util/log.cpp \
-	util/file-posix.cpp \
+	util/file-posix.cpp util/lzmastream.cpp \
 	\
 	pipeline.cpp source.cpp context.cpp scope.cpp metric.cpp \
 	module.cpp attributes.cpp dataclass.cpp sink.cpp packedids.cpp \
 	\
-	sources/hpcrun.cpp sources/packed.cpp sources/hpcrun4.cpp \
+	sources/packed.cpp sources/hpcrun4.cpp \
 	\
 	sinks/hpctracedb2.cpp sinks/packed.cpp sinks/experimentxml4.cpp \
+	sinks/sparsedb.cpp \
 	\
 	finalizers/struct.cpp finalizers/directclassification.cpp \
-	finalizers/denseids.cpp
+	finalizers/denseids.cpp finalizers/kernelsyms.cpp
 
 MYSTANDALONESOURCES = mpi/standalone.cpp
 
 # GNU binutils flags are needed for HPCLIB_ISA.
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @VALGRIND_IFLAGS@ -I@LIBELF_INC@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @BOOST_IFLAGS@ @VALGRIND_IFLAGS@ \
-	     @XERCES_IFLAGS@ -I@LIBELF_INC@ -std=gnu++17
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @VALGRIND_IFLAGS@ @XERCES_IFLAGS@ -I@LIBELF_INC@ -std=gnu++17
 
 if OPT_ENABLE_OPENMP
 MYCFLAGS += $(OPENMP_FLAG)

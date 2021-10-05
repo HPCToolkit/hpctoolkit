@@ -52,7 +52,7 @@
 #include "lib/prof-lean/tracedb.h"
 #include "lib/prof-lean/hpcrun-fmt.h"
 #include "lib/prof-lean/hpcfmt.h"
-#include "lib/profile/mpi/all.hpp"
+#include "../mpi/all.hpp"
 
 
 #include <iomanip>
@@ -60,36 +60,34 @@
 #include <cassert>
 #include <cerrno>
 #include <cstring>
-
+#include <cmath>
+#include <unistd.h>
 
 using namespace hpctoolkit;
 using namespace sinks;
 
-HPCTraceDB2::HPCTraceDB2(const stdshim::filesystem::path& p)
-  : ProfileSink(), dir(p), has_traces(false),
-  min(std::chrono::nanoseconds::max()), max(std::chrono::nanoseconds::min()) {
-  if(dir.empty()) {
-    util::log::info() << "TraceDB issuing a dry run!";
-  } else {
+HPCTraceDB2::HPCTraceDB2(const stdshim::filesystem::path& dir) {
+  if(!dir.empty()) {
     stdshim::filesystem::create_directory(dir);
-    trace_p = dir / "trace.db";
+    tracefile = util::File(dir / "trace.db", true);
+  } else {
+    util::log::info() << "TraceDB issuing a dry run!";
   }
 }
 
 HPCTraceDB2::udThread::udThread(const Thread& t, HPCTraceDB2& tdb)
-  : uds(tdb.uds), has_trace(false),
-    minTime(std::chrono::nanoseconds::max()),
-    maxTime(std::chrono::nanoseconds::min()),
-    trace_file(nullptr),
-    trace_hdr(traceHdr(t, tdb)),
-    tmcntr(0) {}
+  : uds(tdb.uds), hdr(t, tdb) {}
 
 void HPCTraceDB2::notifyWavefront(DataClass d){
   if(!d.hasThreads()) return;
   auto wd_sem = threadsReady.signal();
-  std::FILE* trace_f = nullptr;
+  util::File::Instance traceinst;
   {
     auto mpiSem = src.enterOrderedWavefront();
+    if(tracefile) {
+      tracefile->synchronize();
+      traceinst = tracefile->open(true, true);
+    }
 
     //initialize the hdr to write
     tracedb_hdr_t hdr;
@@ -101,16 +99,14 @@ void HPCTraceDB2::notifyWavefront(DataClass d){
     hdr.trace_hdr_sec_size = trace_hdrs_size;
 
     //calculate the offsets for later stored in start and end
-    std::vector<uint64_t> trace_offs = calcStartEnd();
-
     //assign the values of the hdrs
-    assignHdrs(trace_offs);
+    assignHdrs(calcStartEnd());
 
     //open the trace.db for writing, and write magic string, version number and number of tracelines
     if(mpi::World::rank() == 0) {
-      trace_f = std::fopen(trace_p.c_str(), "wb");
-      if(!trace_f) util::log::fatal() << "Unable to open trace.db file for output!";
-      tracedb_hdr_fwrite(&hdr,trace_f);
+      std::array<char, HPCTRACEDB_FMT_Real_HeaderLen> buf;
+      tracedb_hdr_swrite(&hdr, buf.data());
+      if(tracefile) traceinst.writeat(0, buf);
     }
 
     // Ensure the file is truncated by rank 0 before proceeding.
@@ -119,26 +115,16 @@ void HPCTraceDB2::notifyWavefront(DataClass d){
 
   // Write out the headers for threads that have no timepoints
   for(const auto& t : src.threads().iterate()) {
-    auto& hdr = t->userdata[uds.thread].trace_hdr;
-    if(hdr.start == hdr.end) {
-      if(!trace_f) {
-        trace_f = std::fopen(trace_p.c_str(), "rb+");
-        if(!trace_f) util::log::fatal() << "Unable to open trace.db file for output!";
-      }
-
+    const auto& hdr = t->userdata[uds.thread].hdr;
+    if(hdr.start == hdr.end && tracefile) {
       trace_hdr_t thdr = {
-        hdr.prof_info_idx,
-        hdr.trace_idx,
-        hdr.start,
-        hdr.end
+        hdr.prof_info_idx, hdr.trace_idx, hdr.start, hdr.end
       };
-      uint64_t off = (hdr.prof_info_idx - 1) * trace_hdr_SIZE + HPCTRACEDB_FMT_HeaderLen;
-      std::fseek(trace_f, off, SEEK_SET);
-      trace_hdr_fwrite(thdr, trace_f);
+      std::array<char, trace_hdr_SIZE> buf;
+      trace_hdr_swrite(thdr, buf.data());
+      traceinst.writeat((hdr.prof_info_idx - 1) * trace_hdr_SIZE + HPCTRACEDB_FMT_HeaderLen, buf);
     }
   }
-
-  if(trace_f) std::fclose(trace_f);
 }
 
 void HPCTraceDB2::notifyThread(const Thread& t) {
@@ -149,32 +135,33 @@ void HPCTraceDB2::notifyTimepoint(const Thread& t, ContextRef::const_t cr, std::
   // Skip timepoints at locations we can't represent currently.
   if(!std::holds_alternative<const Context>(cr)) return;
 
-  const Context& c = std::get<const Context>(cr);
   threadsReady.wait();
   auto& ud = t.userdata[uds.thread];
   if(!ud.has_trace) {
     has_traces.exchange(true, std::memory_order_relaxed);
     ud.has_trace = true;
-    if(!dir.empty()) {
-      //open the file
-      ud.trace_file = std::fopen(trace_p.c_str(), "rb+");
-      if(!ud.trace_file){
-        char buf[1024];
-        char* err = strerror_r(errno, buf, sizeof buf);
-        util::log::fatal() << "Unable to open trace file for output: " << err << "!";
-      } 
-    
+    if(tracefile) {
+      ud.inst = tracefile->open(true, true);
+
       //write the hdr
       trace_hdr_t hdr = {
-        ud.trace_hdr.prof_info_idx,
-        ud.trace_hdr.trace_idx,
-        ud.trace_hdr.start,
-        ud.trace_hdr.end
+        ud.hdr.prof_info_idx, ud.hdr.trace_idx, ud.hdr.start, ud.hdr.end
       };
       assert((hdr.start != (uint64_t)INVALID_HDR) | (hdr.end != (uint64_t)INVALID_HDR));
-      uint64_t off = (ud.trace_hdr.prof_info_idx - 1) * trace_hdr_SIZE + HPCTRACEDB_FMT_HeaderLen;
-      std::fseek(ud.trace_file, off, SEEK_SET);
-      trace_hdr_fwrite(hdr, ud.trace_file);
+      std::array<char, trace_hdr_SIZE> buf;
+      trace_hdr_swrite(hdr, buf.data());
+      ud.inst->writeat((ud.hdr.prof_info_idx - 1) * trace_hdr_SIZE + HPCTRACEDB_FMT_HeaderLen, buf);
+    }
+  }
+
+  util::optional_ref<const Context> c = std::get<const Context>(cr);
+  // HACK to work around experiment.xml. If this Context is a point and its
+  // parent isn't, we emit a trace point for the parent (which will usually be
+  // a line Scope).
+  if(c->scope().type() == Scope::Type::point) {
+    if(auto pc = c->direct_parent()) {
+      if(pc->scope().type() != Scope::Type::point)
+        c = pc;
     }
   }
 
@@ -182,30 +169,39 @@ void HPCTraceDB2::notifyTimepoint(const Thread& t, ContextRef::const_t cr, std::
   if(ud.maxTime < tm) ud.maxTime = tm;
   hpctrace_fmt_datum_t datum = {
     static_cast<uint64_t>(tm.count()),  // Point in time
-    c.userdata[src.identifier()],  // Point in the CCT
+    c->userdata[src.identifier()],  // Point in the CCT
     0  // MetricID (for datacentric, I guess)
   };
-  if(!dir.empty()){
-    uint64_t off = ud.trace_hdr.start + ud.tmcntr * timepoint_SIZE;
-    assert(off < ud.trace_hdr.end);
-    std::fseek(ud.trace_file, off, SEEK_SET);
-    hpctrace_fmt_datum_fwrite(&datum, {0}, ud.trace_file);
+  if(ud.inst) {
+    if(ud.cursor == ud.buffer.data())
+      ud.off = ud.hdr.start + ud.tmcntr * timepoint_SIZE;
+    assert(ud.hdr.start + ud.tmcntr * timepoint_SIZE < ud.hdr.end);
+    ud.cursor = hpctrace_fmt_datum_swrite(&datum, {0}, ud.cursor);
+    if(ud.cursor == &ud.buffer[ud.buffer.size()]) {
+      ud.inst->writeat(ud.off, ud.buffer);
+      ud.cursor = ud.buffer.data();
+    }
     ud.tmcntr++;
   }
-    
 }
 
 void HPCTraceDB2::notifyThreadFinal(const Thread::Temporary& tt) {
   auto& ud = tt.thread().userdata[uds.thread];
-  if(ud.trace_file) std::fclose(ud.trace_file);
-  ud.trace_file = nullptr;
+  if(ud.inst) {
+    if(ud.cursor != ud.buffer.data())
+      ud.inst->writeat(ud.off, ud.cursor - ud.buffer.data(), ud.buffer.data());
+    ud.inst = std::nullopt;
+  }
 }
 
 void HPCTraceDB2::notifyPipeline() noexcept {
   auto& ss = src.structs();
   uds.thread = ss.thread.add<udThread>(std::ref(*this));
   src.registerOrderedWavefront();
-  src.registerOrderedWrite();
+}
+
+bool HPCTraceDB2::seen(const Context& c) {
+  return true;
 }
 
 void HPCTraceDB2::mmupdate(std::chrono::nanoseconds tmin, std::chrono::nanoseconds tmax) {
@@ -241,27 +237,7 @@ std::string HPCTraceDB2::exmlTag() {
   return ss.str();
 }
 
-void HPCTraceDB2::write() {
-  //make sure all processes finished
-  {
-    auto mpiSem = src.enterOrderedWrite();
-    mpi::barrier();
-  }
-
-  //write the footer
-  if(mpi::World::rank() == 0) {
-    std::FILE* trace_f = nullptr;
-    trace_f = std::fopen(trace_p.c_str(), "ab+");
-    if(!trace_f) util::log::fatal() << "Unable to open trace.db file for footer!";
-    
-    std::fseek(trace_f, 0, SEEK_END);
-    uint64_t footer_val = TRACDBft;
-    std::fwrite(&footer_val, sizeof(footer_val), 1, trace_f);
-
-    std::fclose(trace_f);
-  }
-  
-};
+void HPCTraceDB2::write() {}
 
 
 //***************************************************************************
@@ -304,7 +280,7 @@ std::vector<uint64_t> HPCTraceDB2::calcStartEnd() {
 void HPCTraceDB2::assignHdrs(const std::vector<uint64_t>& trace_offs) {
   int i = 0;
   for(const auto& t : src.threads().iterate()){
-    auto& hdr = t->userdata[uds.thread].trace_hdr;
+    auto& hdr = t->userdata[uds.thread].hdr;
     hdr.start = trace_offs[i];
     hdr.end = trace_offs[i+1];
     i++;

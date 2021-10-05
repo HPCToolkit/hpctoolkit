@@ -814,6 +814,104 @@ hpcrun_fmt_lip_fprint(lush_lip_t* x, FILE* fs, const char* pre)
 ]
 */
 //***************************************************************************
+// id_tuple dictionary
+//***************************************************************************
+int
+hpcrun_fmt_idtuple_dxnry_fread(hpcrun_fmt_idtuple_dxnry_t* dxnry, FILE* infs, hpcfmt_alloc_fn alloc)
+{
+  HPCFMT_ThrowIfError(hpcfmt_int2_fread(&(dxnry->num_entries), infs));
+
+  if (alloc != NULL) {
+    dxnry->dictionary = (hpcrun_fmt_idtuple_dxnry_entry_t*) alloc(dxnry->num_entries * sizeof(hpcrun_fmt_idtuple_dxnry_entry_t));
+  }
+
+  for (uint16_t i = 0; i < dxnry->num_entries; i++) {
+    hpcrun_fmt_idtuple_dxnry_entry_t* inp = &(dxnry->dictionary[i]);
+    hpcfmt_int2_fread(&(inp->kind), infs);
+    hpcfmt_str_fread(&(inp->kindStr), infs, alloc);
+  }
+  return HPCFMT_OK;
+}
+
+
+int
+hpcrun_fmt_idtuple_dxnry_fwrite(FILE* outfs)
+{
+  HPCFMT_ThrowIfError(hpcfmt_int2_fwrite(HPCRUN_IDTUPLE_COUNT, outfs));
+
+  hpcfmt_int2_fwrite(IDTUPLE_SUMMARY, outfs);
+  hpcfmt_str_fwrite(HPCRUN_IDTUPLE_SUMMARY, outfs);
+
+  hpcfmt_int2_fwrite(IDTUPLE_NODE, outfs);
+  hpcfmt_str_fwrite(HPCRUN_IDTUPLE_NODE, outfs);
+
+  hpcfmt_int2_fwrite(IDTUPLE_RANK, outfs);
+  hpcfmt_str_fwrite(HPCRUN_IDTUPLE_RANK, outfs);
+
+  hpcfmt_int2_fwrite(IDTUPLE_THREAD, outfs);
+  hpcfmt_str_fwrite(HPCRUN_IDTUPLE_THREAD, outfs);
+
+  hpcfmt_int2_fwrite(IDTUPLE_GPUDEVICE, outfs);
+  hpcfmt_str_fwrite(HPCRUN_IDTUPLE_GPUDEVICE, outfs);
+
+  hpcfmt_int2_fwrite(IDTUPLE_GPUCONTEXT, outfs);
+  hpcfmt_str_fwrite(HPCRUN_IDTUPLE_GPUCONTEXT, outfs);
+
+  hpcfmt_int2_fwrite(IDTUPLE_GPUSTREAM, outfs);
+  hpcfmt_str_fwrite(HPCRUN_IDTUPLE_GPUSTREAM, outfs);
+
+  hpcfmt_int2_fwrite(IDTUPLE_CORE, outfs);
+  hpcfmt_str_fwrite(HPCRUN_IDTUPLE_CORE, outfs);
+
+  return HPCFMT_OK;
+}
+
+int
+hpcrun_fmt_idtuple_dxnry_fprint(hpcrun_fmt_idtuple_dxnry_t* dxnry, FILE* outf)
+{
+  fprintf(outf, "[id-tuple dxnry: (number of kinds: %d)\n", dxnry->num_entries);
+  for (uint16_t i = 0; i < dxnry->num_entries; i++) {
+    hpcrun_fmt_idtuple_dxnry_entry_t* x = &dxnry->dictionary[i];
+    fprintf(outf, "  (kind: %d) (kindStr: %s)\n", x->kind, x->kindStr);
+  }
+  fprintf(outf, "]\n");
+
+  return HPCFMT_OK;
+}
+
+void
+hpcrun_fmt_idtuple_dxnry_free(hpcrun_fmt_idtuple_dxnry_t* dxnry, hpcfmt_free_fn dealloc)
+{
+  for (uint16_t i = 0; i < dxnry->num_entries; i++) {
+    hpcfmt_str_free(dxnry->dictionary[i].kindStr, dealloc);
+  }
+  dealloc(dxnry->dictionary);
+}
+
+//***************************************************************************
+// sparse metircs - YUMENG
+// 
+/* EXAMPLE
+[sparse metrics:
+  [basic information:
+    (...)
+    (number of non-zero metrics: 13)
+    (number of non-zero cct nodes: 13)
+  ]
+  [metrics:
+  (NOTES: printed in file order, help checking if hpcrun file is correct)
+    (value: 0.000157, metric id: 0)
+    (value: 0.000107, metric id: 0)
+    ...
+  ]
+  [cct node indices:
+    (cct node id: 1504, index: 0)
+    (cct node id: 2300, index: 1)
+    ...
+  ]
+]
+*/
+//***************************************************************************
 
 int
 hpcrun_fmt_sparse_metrics_fread(hpcrun_fmt_sparse_metrics_t* x, FILE* fs)
@@ -845,7 +943,7 @@ hpcrun_fmt_sparse_metrics_fread(hpcrun_fmt_sparse_metrics_t* x, FILE* fs)
 int
 hpcrun_fmt_sparse_metrics_fwrite(hpcrun_fmt_sparse_metrics_t* x,FILE* fs)
 {
-  //HPCFMT_ThrowIfError(hpcfmt_int4_fwrite(x->tid, fs));
+
   HPCFMT_ThrowIfError(id_tuple_fwrite(&(x->id_tuple), fs));
   HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->num_vals, fs));
   HPCFMT_ThrowIfError(hpcfmt_int4_fwrite(x->num_nz_cct_nodes, fs));
@@ -997,6 +1095,8 @@ hpcrun_fmt_footer_fwrite(hpcrun_fmt_footer_t* x, FILE* fs)
   HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->cct_end,fs));
   HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->met_tbl_start,fs));
   HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->met_tbl_end,fs));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->idtpl_dxnry_start,fs));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->idtpl_dxnry_end,fs));
   HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->sm_start,fs));
   HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->sm_end,fs));
   HPCFMT_ThrowIfError(hpcfmt_int8_fwrite(x->footer_start,fs));
@@ -1016,6 +1116,8 @@ hpcrun_fmt_footer_fread(hpcrun_fmt_footer_t* x, FILE* fs)
   HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->cct_end,fs));
   HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->met_tbl_start,fs));
   HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->met_tbl_end,fs));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->idtpl_dxnry_start,fs));
+  HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->idtpl_dxnry_end,fs));
   HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->sm_start,fs));
   HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->sm_end,fs));
   HPCFMT_ThrowIfError(hpcfmt_int8_fread(&x->footer_start,fs));
@@ -1037,6 +1139,7 @@ hpcrun_fmt_footer_fprint(hpcrun_fmt_footer_t* x, FILE* fs, const char* pre)
   fprintf(fs, "%s[       loadmap start: %ld, end: %ld]\n", pre, x->loadmap_start, x->loadmap_end);
   fprintf(fs, "%s[           cct start: %ld, end: %ld]\n", pre, x->cct_start, x->cct_end);
   fprintf(fs, "%s[    metric-tbl start: %ld, end: %ld]\n", pre, x->met_tbl_start, x->met_tbl_end);
+  fprintf(fs, "%s[id-tuple dxnry start: %ld, end: %ld]\n", pre, x->idtpl_dxnry_start, x->idtpl_dxnry_end);
   fprintf(fs, "%s[sparse metrics start: %ld, end: %ld]\n", pre, x->sm_start, x->sm_end);
   fprintf(fs, "%s[        footer start: %ld]\n", pre, x->footer_start);
 
@@ -1101,17 +1204,19 @@ hpcrun_sparse_file_t* hpcrun_sparse_open(const char* path, size_t start_pos, siz
 // the footer info should already be correct
 void hpcrun_sparse_footer_update_w_start(hpcrun_fmt_footer_t *f, size_t start_pos)
 {
-  f->hdr_start     += start_pos;
-  f->hdr_end       += start_pos;
-  f->loadmap_start += start_pos;
-  f->loadmap_end   += start_pos;
-  f->cct_start     += start_pos;
-  f->cct_end       += start_pos;
-  f->met_tbl_start += start_pos;
-  f->met_tbl_end   += start_pos;
-  f->sm_start      += start_pos;
-  f->sm_end        += start_pos;
-  f->footer_start  += start_pos;
+  f->hdr_start         += start_pos;
+  f->hdr_end           += start_pos;
+  f->loadmap_start     += start_pos;
+  f->loadmap_end       += start_pos;
+  f->cct_start         += start_pos;
+  f->cct_end           += start_pos;
+  f->met_tbl_start     += start_pos;
+  f->met_tbl_end       += start_pos;
+  f->idtpl_dxnry_start += start_pos;
+  f->idtpl_dxnry_end   += start_pos;
+  f->sm_start          += start_pos;
+  f->sm_end            += start_pos;
+  f->footer_start      += start_pos;
   
 }
 
@@ -1232,6 +1337,19 @@ int hpcrun_sparse_next_context(hpcrun_sparse_file_t* sparse_fs, hpcrun_fmt_cct_n
   HPCFMT_ThrowIfError(hpcrun_fmt_cct_node_fread(node, fake, sparse_fs->file));
   sparse_fs->cct_nodes_read ++;
   return node->id;
+}
+
+/* succeed: returns 0; error while reading: returns -1 */
+int hpcrun_sparse_read_idtuple_dxnry(hpcrun_sparse_file_t* sparse_fs, hpcrun_fmt_idtuple_dxnry_t* dxnry)
+{
+  int ret = hpcrun_sparse_check_mode(sparse_fs, OPENED, __func__);
+  if(ret != SF_SUCCEED) return SF_ERR;
+
+  fseek(sparse_fs->file, sparse_fs->footer.idtpl_dxnry_start, SEEK_SET);
+  ret = hpcrun_fmt_idtuple_dxnry_fread(dxnry, sparse_fs->file, malloc);
+  if(ret != HPCFMT_OK) return SF_ERR;
+  if(ftell(sparse_fs->file) != sparse_fs->footer.idtpl_dxnry_end) return SF_ERR;
+  return SF_SUCCEED;
 }
 
 /* succeed: returns 0; error while reading, or length == 0: returns -1 */
@@ -1516,6 +1634,18 @@ hpctrace_fmt_datum_fwrite(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
   }
 
   return HPCFMT_OK;
+}
+
+char*
+hpctrace_fmt_datum_swrite(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
+			  char* buf)
+{
+  buf = hpcfmt_int8_swrite(x->comp, buf);
+  buf = hpcfmt_int4_swrite(x->cpId, buf);
+  if (HPCTRACE_HDR_FLAGS_GET_BIT(flags, HPCTRACE_HDR_FLAGS_DATA_CENTRIC_BIT_POS)) {
+    buf = hpcfmt_int4_swrite(x->metricId, buf);
+  }
+  return buf;
 }
 
 

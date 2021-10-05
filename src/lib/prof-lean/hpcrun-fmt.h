@@ -595,6 +595,47 @@ hpcrun_fmt_lip_fprint(lush_lip_t* x, FILE* fs, const char* pre);
 
 
 //***************************************************************************
+// id_tuple dictionary
+//***************************************************************************
+static const uint16_t HPCRUN_IDTUPLE_COUNT     = 8;
+static const int  HPCRUN_IDTUPLE_COUNT_LEN     = 2;
+
+static const char HPCRUN_IDTUPLE_SUMMARY[]     = "SUMMARY"; 
+static const char HPCRUN_IDTUPLE_NODE[]        = "NODE";              
+static const char HPCRUN_IDTUPLE_RANK[]        = "RANK";         
+static const char HPCRUN_IDTUPLE_THREAD[]      = "THREAD";     
+static const char HPCRUN_IDTUPLE_GPUDEVICE[]   = "GPUDEVICE"; 
+static const char HPCRUN_IDTUPLE_GPUCONTEXT[]  = "GPUCONTEXT"; 
+static const char HPCRUN_IDTUPLE_GPUSTREAM[]   = "GPUSTREAM";  
+static const char HPCRUN_IDTUPLE_CORE[]        = "CORE";     
+
+typedef struct hpcrun_fmt_idtuple_dxnry_entry_t 
+{
+  uint16_t kind;
+  char* kindStr;
+} hpcrun_fmt_idtuple_dxnry_entry_t;
+
+typedef struct hpcrun_fmt_idtuple_dxnry_t 
+{
+  uint16_t num_entries;
+  hpcrun_fmt_idtuple_dxnry_entry_t* dictionary;
+} hpcrun_fmt_idtuple_dxnry_t;
+
+
+extern int
+hpcrun_fmt_idtuple_dxnry_fread(hpcrun_fmt_idtuple_dxnry_t* dxnry, FILE* infs, hpcfmt_alloc_fn alloc);
+
+extern int
+hpcrun_fmt_idtuple_dxnry_fwrite(FILE* outfs);
+
+extern int
+hpcrun_fmt_idtuple_dxnry_fprint(hpcrun_fmt_idtuple_dxnry_t* dxnry, FILE* outf);
+
+extern void
+hpcrun_fmt_idtuple_dxnry_free(hpcrun_fmt_idtuple_dxnry_t* dxnry, hpcfmt_free_fn dealloc);
+
+
+//***************************************************************************
 // sparse metrics - YUMENG
 //***************************************************************************
 
@@ -654,6 +695,8 @@ typedef struct hpcrun_fmt_footer_t{
   uint64_t cct_end;
   uint64_t met_tbl_start;
   uint64_t met_tbl_end;
+  uint64_t idtpl_dxnry_start;
+  uint64_t idtpl_dxnry_end;
   uint64_t sm_start;
   uint64_t sm_end;
   uint64_t footer_start;
@@ -683,7 +726,7 @@ static const int SF_END     = 0;
 static const int SF_FAIL    = 1;
 static const int SF_ERR     = -1;
 
-static const int SF_footer_SIZE           = 96; 
+static const int SF_footer_SIZE           = 7 * 16; 
 static const int SF_num_lm_SIZE           = 4; 
 static const int SF_num_metric_SIZE       = 4;
 static const int SF_num_cct_SIZE          = 8;
@@ -737,6 +780,7 @@ int hpcrun_sparse_read_hdr(hpcrun_sparse_file_t* sparse_fs, hpcrun_fmt_hdr_t* hd
 int hpcrun_sparse_next_lm(hpcrun_sparse_file_t* sparse_fs, loadmap_entry_t* lm);
 int hpcrun_sparse_next_metric(hpcrun_sparse_file_t* sparse_fs, metric_desc_t* m, metric_aux_info_t* perf_info,double fmtVersion);
 int hpcrun_sparse_next_context(hpcrun_sparse_file_t* sparse_fs, hpcrun_fmt_cct_node_t* node);
+int hpcrun_sparse_read_idtuple_dxnry(hpcrun_sparse_file_t* sparse_fs, hpcrun_fmt_idtuple_dxnry_t* dxnry);
 int hpcrun_sparse_read_id_tuple(hpcrun_sparse_file_t* sparse_fs, id_tuple_t* id_tuple);
 int hpcrun_sparse_next_block(hpcrun_sparse_file_t* sparse_fs);
 int hpcrun_sparse_next_entry(hpcrun_sparse_file_t* sparse_fs, hpcrun_metricVal_t* val);
@@ -882,6 +926,10 @@ hpctrace_fmt_datum_outbuf(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
 int
 hpctrace_fmt_datum_fwrite(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
 			  FILE* outfs);
+
+char*
+hpctrace_fmt_datum_swrite(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,
+			  char* buf);
 
 int
 hpctrace_fmt_datum_fprint(hpctrace_fmt_datum_t* x, hpctrace_hdr_flags_t flags,

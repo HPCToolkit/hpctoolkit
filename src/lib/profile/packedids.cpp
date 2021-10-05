@@ -92,24 +92,20 @@ void IdPacker::notifyContextExpansion(ContextRef::const_t from, Scope s, Context
     // Helper function to trace an expansion and record it
     auto trace = [&](const Context& leaf) {
       std::vector<std::reference_wrapper<const Context>> stack;
-      const Context* c;
-      for(c = &leaf; c != &*fc && c != nullptr; c = c->direct_parent())
+      util::optional_ref<const Context> c;
+      for(c = leaf; c && c != fc; c = c->direct_parent())
         stack.emplace_back(*c);
-      if(c == nullptr)
-        util::log::fatal{} << "Found nullptr while mapping expansion, is someone trying to be clever?";
+      assert(c && "Found NULL while mapping expansion, is someone trying to be clever?");
 
       pack(buffer, (std::uint64_t)stack.size());
       for(auto it = stack.crbegin(), ite = stack.crend(); it != ite; ++it) {
         const Context& c = it->get();
         switch(c.scope().type()) {
         case Scope::Type::global:
-          util::log::fatal{} << "Global Contexts shouldn't come out of expansion!";
-          break;
+          assert(false && "Global Contexts shouldn't come out of expansion!");
+          std::abort();
         case Scope::Type::unknown:
         case Scope::Type::point:
-        case Scope::Type::classified_point:
-        case Scope::Type::call:
-        case Scope::Type::classified_call:
           buffer.emplace_back(0);
           break;
         case Scope::Type::function:
@@ -118,7 +114,6 @@ void IdPacker::notifyContextExpansion(ContextRef::const_t from, Scope s, Context
           break;
         case Scope::Type::loop:
         case Scope::Type::line:
-        case Scope::Type::concrete_line:
           buffer.emplace_back(2);
           break;
         }
@@ -131,11 +126,9 @@ void IdPacker::notifyContextExpansion(ContextRef::const_t from, Scope s, Context
     auto cid = fc->userdata[src.identifier()];
     pack(buffer, (std::uint64_t)cid);
     switch(s.type()) {
-    case Scope::Type::point:
-    case Scope::Type::call: {
-      // Format: [call] [module id] [offset]
+    case Scope::Type::point: {
+      // Format: [module id] [offset]
       auto mo = s.point_data();
-      pack(buffer, (std::uint64_t)(s.type() == Scope::Type::call ? 1 : 0));
       pack(buffer, (std::uint64_t)mo.first.userdata[src.identifier()]);
       pack(buffer, (std::uint64_t)mo.second);
       break;
@@ -145,14 +138,12 @@ void IdPacker::notifyContextExpansion(ContextRef::const_t from, Scope s, Context
       pack(buffer, (std::uint64_t)0xF0F1F2F3ULL << 32);
       break;
     case Scope::Type::global:
-    case Scope::Type::classified_point:
-    case Scope::Type::classified_call:
     case Scope::Type::function:
     case Scope::Type::inlined_function:
     case Scope::Type::loop:
     case Scope::Type::line:
-    case Scope::Type::concrete_line:
-      util::log::fatal{} << "PackedIds can't handle non-point Contexts, saw " << s;
+      assert(false && "PackedIds can't handle non-point Contexts!");
+      std::abort();
     }
 
     if(auto tc = std::get_if<const Context>(to)) {
@@ -166,13 +157,10 @@ void IdPacker::notifyContextExpansion(ContextRef::const_t from, Scope s, Context
     } else abort();  // unreachable
 
     buffersize.fetch_add(buffer.size() - oldsz, std::memory_order_relaxed);
-  } else if(std::holds_alternative<const Context, const CollaboratorRoot>(from)
-      || std::holds_alternative<const CollaborativeContext>(from)
-      || std::holds_alternative<const CollaborativeSharedContext>(from)) {
-    if(mpi::World::size() > 1)
-      util::log::fatal{} << "IdPacker ignoring Collaborative expansions!";
-  } else
-    util::log::fatal{} << "IdPacker does not support expansions starting at an improper Context!";
+  } else {
+    assert(false && "IdPacker does not support expansions starting at an improper Context!");
+    std::abort();
+  }
 }
 
 void IdPacker::notifyWavefront(DataClass ds) {
@@ -236,7 +224,7 @@ IdUnpacker::IdUnpacker(std::vector<uint8_t>&& c) : ctxtree(std::move(c)) {
   globalid = ::unpack<std::uint64_t>(it);
 }
 
-void IdUnpacker::unpack(ProfilePipeline::Source& sink) {
+void IdUnpacker::unpack(ProfilePipeline::Source& sink) noexcept {
   auto it = ctxtree.cbegin();
   ::unpack<std::uint64_t>(it);  // Skip over the global id
 
@@ -259,14 +247,16 @@ void IdUnpacker::unpack(ProfilePipeline::Source& sink) {
       s = {};  // Unknown Scope
     } else {
       // Format: [module id] [offset]
-      auto midx = ::unpack<std::uint64_t>(it);
       auto off = ::unpack<std::uint64_t>(it);
-      if(next) s = {Scope::call, modmap.at(midx), off};
-      else s = {modmap.at(midx), off};
+      s = {modmap.at(next), off};
     }
     std::size_t cnt = ::unpack<std::uint64_t>(it);
     auto& scopes = exmap[parent][s];
-    if(cnt == 0) util::log::fatal{} << "TODO IdUnpacker does not support Superpositions yet!";
+    if(cnt == 0) {
+      // TODO: Figure out how to handle Superpositions in IdPacker and IdUnpacker
+      assert(false && "IdUnpacker currently doesn't handle Superpositions!");
+      std::abort();
+    }
     for(std::size_t x = 0; x < cnt; x++) {
       auto ty = *it;
       it++;
@@ -282,7 +272,8 @@ void IdUnpacker::unpack(ProfilePipeline::Source& sink) {
         scopes.emplace_back(*exfile, id);
         break;
       default:
-        util::log::fatal{} << "Unrecognized packed Scope type " << ty;
+        assert(false && "Invalid packed Scope type!");
+        std::abort();
       }
     }
   }
@@ -306,9 +297,9 @@ ContextRef IdUnpacker::Expander::context(ContextRef c, Scope& s) noexcept {
     util::call_once(shared.once, [this]{ shared.unpack(sink); });
     bool first = true;
     auto x = shared.exmap.find(co->userdata[sink.identifier()]);
-    if(x == shared.exmap.end()) util::log::fatal{} << "No data for context id " << co->userdata[sink.identifier()];
+    assert(x != shared.exmap.end() && "Missing data for Context `co`!");
     auto y = x->second.find(s);
-    if(y == x->second.end()) util::log::fatal{} << "No data for scope " << s << " from context " << co->userdata[sink.identifier()];
+    assert(y != x->second.end() && "Missing data for Scope `s` from Context `co`!");
     ContextRef r = *co;
     for(const auto& next: y->second) {
       if(!first) r = sink.context(r, s);
@@ -327,39 +318,35 @@ void IdUnpacker::Finalizer::context(const Context& c, unsigned int& id) noexcept
     return;
   case Scope::Type::point: {
     auto mo = c.scope().point_data();
-    if(&mo.first != shared.exmod)
-      util::log::fatal{} << "Point scope with real Module in IdUnpacker!";
+    assert(&mo.first == shared.exmod && "point Scopes must reference the marker Module!");
     id = mo.second;
     return;
   }
   case Scope::Type::inlined_function:
-    if(&c.scope().function_data() != shared.exfunc.get())
-      util::log::fatal{} << "inlined_function scope with real Function in IdUnpacker!";
+    assert(&c.scope().function_data() == shared.exfunc.get() && "inlined_function Scopes must reference the marker Function!");
     // fallthrough
   case Scope::Type::line: {
     auto fl = c.scope().line_data();
-    if(&fl.first != shared.exfile)
-      util::log::fatal{} << "inlined_function scope with real File in IdUnpacker!";
+    assert(&fl.first == shared.exfile && "line Scopes must reference the marker File!");
     id = fl.second;
     return;
   }
   default:
-    util::log::fatal{} << "Unrecognized Scope in IdUnpacker: " << c.scope();
+    assert(false && "Unhandled Scope in IdUnpacker");
+    std::abort();
   }
 }
 
 void IdUnpacker::Finalizer::metric(const Metric& m, unsigned int& id) noexcept {
   util::call_once(shared.once, [this]{ shared.unpack(sink); });
   auto it = shared.metmap.find(m.name());
-  if(it == shared.metmap.end())
-    util::log::fatal{} << "Unrecognized metric in IdUnpacker: " << m.name();
+  assert(it != shared.metmap.end() && "No data for Metric `m`!");
   id = it->second.first;
 }
 
 void IdUnpacker::Finalizer::metric(const Metric& m, Metric::ScopedIdentifiers& ids) noexcept {
   util::call_once(shared.once, [this]{ shared.unpack(sink); });
   auto it = shared.metmap.find(m.name());
-  if(it == shared.metmap.end())
-    util::log::fatal{} << "Unrecognized metric in IdUnpacker: " << m.name();
+  assert(it != shared.metmap.end() && "No data for Metric `m`!");
   ids = it->second.second;
 }

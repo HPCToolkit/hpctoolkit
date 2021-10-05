@@ -66,6 +66,8 @@ public:
   const stdshim::filesystem::path& forPath() const noexcept { return modpath; }
 
 private:
+  bool parse(const Module&, Classification&);
+
   stdshim::filesystem::path path;
   stdshim::filesystem::path modpath;
 };

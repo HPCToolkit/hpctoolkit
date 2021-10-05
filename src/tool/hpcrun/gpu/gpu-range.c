@@ -55,10 +55,10 @@ gpu_range_profile_dump
   pms_id_t ids[IDTUPLE_MAXTYPES];
   id_tuple_t id_tuple;
   id_tuple_constructor(&id_tuple, ids, IDTUPLE_MAXTYPES);
-  id_tuple_push_back(&id_tuple, IDTUPLE_NODE, gethostid());
+  id_tuple_push_back(&id_tuple, IDTUPLE_COMPOSE(IDTUPLE_NODE, IDTUPLE_IDS_LOGIC_LOCAL), gethostid(), 0);
 
   int rank = hpcrun_get_rank();
-  if (rank >= 0) id_tuple_push_back(&id_tuple, IDTUPLE_RANK, rank);
+  if (rank >= 0) id_tuple_push_back(&id_tuple, IDTUPLE_RANK, rank, rank);
 
   hpcrun_safe_enter();
 

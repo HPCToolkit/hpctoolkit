@@ -83,10 +83,10 @@ extern "C" {
 //***************************************************************************
 // hdr
 //***************************************************************************
-#define HPCPROFILESPARSE_FMT_Magic   "HPCPROF-pmsdb___" //16 bytes
+#define HPCPROFILESPARSE_FMT_Magic   "HPCPROF-profdb__" //16 bytes
 #define HPCPROFILESPARSE_FMT_VersionMajor 1             //1  byte
 #define HPCPROFILESPARSE_FMT_VersionMinor 0             //1  byte
-#define HPCPROFILESPARSE_FMT_NumSec 2                   //2  byte
+#define HPCPROFILESPARSE_FMT_NumSec       2             //2  byte
 
 #define HPCPROFILESPARSE_FMT_MagicLen     (sizeof(HPCPROFILESPARSE_FMT_Magic) - 1)
 #define HPCPROFILESPARSE_FMT_VersionLen   2

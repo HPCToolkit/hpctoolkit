@@ -101,6 +101,21 @@ tracedb_hdr_fwrite(tracedb_hdr_t* hdr,FILE* fs)
   return HPCFMT_OK;
 }
 
+char*
+tracedb_hdr_swrite(tracedb_hdr_t* hdr, char* buf)
+{
+  buf = memcpy(buf, HPCTRACEDB_FMT_Magic, HPCTRACEDB_FMT_MagicLen)+HPCTRACEDB_FMT_MagicLen;
+  *(buf++) = HPCTRACEDB_FMT_VersionMajor;
+  *(buf++) = HPCTRACEDB_FMT_VersionMinor;
+
+  buf = hpcfmt_int4_swrite(hdr->num_trace, buf);
+  buf = hpcfmt_int2_swrite(HPCTRACEDB_FMT_NumSec, buf);
+
+  buf = hpcfmt_int8_swrite(hdr->trace_hdr_sec_size, buf);
+  buf = hpcfmt_int8_swrite(HPCTRACEDB_FMT_HeaderLen, buf);
+  return buf;
+}
+
 int
 tracedb_hdr_fread(tracedb_hdr_t* hdr, FILE* infs)
 {
@@ -164,7 +179,17 @@ trace_hdr_fwrite(trace_hdr_t x, FILE* fs)
   return HPCFMT_OK;
 }
 
-int 
+char*
+trace_hdr_swrite(trace_hdr_t x, char* buf)
+{
+  buf = hpcfmt_int4_swrite(x.prof_info_idx, buf);
+  buf = hpcfmt_int2_swrite(x.trace_idx, buf);
+  buf = hpcfmt_int8_swrite(x.start, buf);
+  buf = hpcfmt_int8_swrite(x.end, buf);
+  return buf;
+}
+
+int
 trace_hdr_fread(trace_hdr_t* x, FILE* fs)
 {
 

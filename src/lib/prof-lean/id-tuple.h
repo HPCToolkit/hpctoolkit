@@ -83,23 +83,31 @@
 // macros
 //***************************************************************************
 
-#define IDTUPLE_INVALID        UINT16_MAX
+#define IDTUPLE_INVALID             UINT16_MAX
 
-#define IDTUPLE_SUMMARY        0
-#define IDTUPLE_NODE           1
-#define IDTUPLE_RANK           2
-#define IDTUPLE_THREAD         3
-#define IDTUPLE_GPUDEVICE      4
-#define IDTUPLE_GPUCONTEXT     5
-#define IDTUPLE_GPUSTREAM      6
-#define IDTUPLE_CORE           7
-
-#define IDTUPLE_MAXTYPES       8
-
-#define PMS_id_tuple_len_SIZE  2
-#define PMS_id_SIZE            10
+#define IDTUPLE_SUMMARY             0
+#define IDTUPLE_NODE                1
+#define IDTUPLE_RANK                2
+#define IDTUPLE_THREAD              3
+#define IDTUPLE_GPUDEVICE           4
+#define IDTUPLE_GPUCONTEXT          5
+#define IDTUPLE_GPUSTREAM           6
+#define IDTUPLE_CORE                7
 
 
+#define IDTUPLE_MAXTYPES            8
+
+#define PMS_id_tuple_len_SIZE       2
+#define PMS_id_SIZE                 18
+
+#define IDTUPLE_IDS_BOTH_VALID      0  
+#define IDTUPLE_IDS_LOGIC_LOCAL     1 
+#define IDTUPLE_IDS_LOGIC_GLOBAL    2 
+#define IDTUPLE_IDS_LOGIC_ONLY      3 
+
+#define IDTUPLE_GET_INTERPRET(kind) (((kind)>>14) & 0x3)
+#define IDTUPLE_GET_KIND(kind)      ((kind) & ((1<<14)-1))
+#define IDTUPLE_COMPOSE(kind, intr) (((uint16_t)(intr) << 14) | (kind))
 
 //***************************************************************************
 // types
@@ -107,7 +115,8 @@
 
 typedef struct pms_id_t {
   uint16_t kind;
-  uint64_t index;
+  uint64_t physical_index;
+  uint64_t logical_index;
 } pms_id_t;
 
 
@@ -133,8 +142,11 @@ extern "C" {
 
 
 
-const char *kindStr(const uint16_t kind);
-
+const char *
+kindStr
+(
+  const uint16_t kind
+);
 
 //---------------------------------------------------------------------------
 // tuple initialization
@@ -154,7 +166,8 @@ id_tuple_push_back
 (
  id_tuple_t *tuple, 
  uint16_t kind, 
- uint64_t index
+ uint64_t physical_index,
+ uint64_t logical_index
 );
 
 
@@ -188,7 +201,7 @@ id_tuple_free(id_tuple_t* x);
 
 
 //---------------------------------------------------------------------------
-// for thread.db (thread major sparse)
+// for profile.db 
 //---------------------------------------------------------------------------
 
 int 

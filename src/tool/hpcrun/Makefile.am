@@ -412,6 +412,7 @@ MY_BASE_FILES =				\
 	utilities/hpcrun-nanotime.h  utilities/hpcrun-nanotime.c  \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
 	utilities/line_wrapping.c	\
+	utilities/linuxtimer.c		\
 	utilities/timer.c		\
 	utilities/tokenize.h utilities/tokenize.c \
 	utilities/unlink.h utilities/unlink.c
