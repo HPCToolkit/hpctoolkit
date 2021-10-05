@@ -16,7 +16,7 @@ typedef enum {
 } gpu_monitor_type_t;
 
 
-typedef void (*gpu_monitor_enter_fn_t)(papi_component_info_t *ci, cct_node_t *cct_node);
+typedef void (*gpu_monitor_enter_fn_t)(papi_component_info_t *ci, cct_node_t **cct_nodes, uint32_t num_unfinished_kernels);
 typedef void (*gpu_monitor_exit_fn_t)(papi_component_info_t *ci);
 
 

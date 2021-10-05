@@ -505,7 +505,8 @@ if OPT_PAPI_COMPONENT
 MY_PAPI_FILES = \
     sample-sources/papi-c.c \
     sample-sources/papi-c-extended-info.c \
-	sample-sources/papi-c-intel.c
+	sample-sources/papi-c-intel.c	\
+	gpu-monitors.c
 else
     MY_PAPI_FILES = sample-sources/papi.c
 endif
