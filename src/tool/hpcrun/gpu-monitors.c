@@ -21,13 +21,13 @@ gpu_monitor_register(	gpu_monitor_node_t node)
 
 
 void
-gpu_monitors_apply(cct_node_t *cct_node, gpu_monitor_type_t type)
+gpu_monitors_apply(cct_node_t **cct_nodes, uint32_t num_unfinished_kernels, gpu_monitor_type_t type)
 {
   gpu_monitor_node_t *node = gpu_monitor_list;
 
   if (type == gpu_monitor_type_enter){
     while (node != NULL) {
-      node->enter_fn(node->ci, cct_node);
+      node->enter_fn(node->ci, cct_nodes, num_unfinished_kernels);
       node = node->next;
     }
   }

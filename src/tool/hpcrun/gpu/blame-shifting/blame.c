@@ -20,6 +20,7 @@
 #include "blame-helper.h"              				// calculate_blame_for_active_kernels
 #include "blame.h"
 
+#include <hpcrun/gpu-monitors.h>              // gpu_monitors_apply, gpu_monitor_type_enter
 #include <hpcrun/cct/cct.h>                   // cct_node_t
 #include <hpcrun/gpu/gpu-activity.h>          // gpu_activity_t
 #include <hpcrun/gpu/gpu-metrics.h>           // gpu_metrics_attribute
@@ -48,6 +49,7 @@ static _Atomic(uint32_t) g_unfinished_kernels = { 0 };
 _Atomic(unsigned long) latest_kernel_end_time = { 0 }; // in nanoseconds
 
 static _Atomic(kernel_node_t*) completed_kernel_list_head = { NULL };
+static _Atomic(kernel_node_t*) incomplete_kernel_list_head = { NULL };
 
 static queue_node_t *queue_node_free_list = NULL;
 static kernel_node_t *kernel_node_free_list = NULL;
@@ -171,6 +173,7 @@ create_and_insert_kernel_entry
   kernel_node_t *kernel_node = kernel_node_alloc_helper(&kernel_node_free_list);
   kernel_node->kernel_id = kernelexec_id;
   kernel_node->launcher_cct = launcher_cct;
+  kernel_node->marked_for_deletion = false;
   atomic_init(&kernel_node->next, NULL);
   kernel_map_insert(kernelexec_id, kernel_node);
 }
@@ -199,6 +202,22 @@ add_kernel_to_completed_list
     kernel_node_t *current_head = atomic_load(&completed_kernel_list_head);
     atomic_store(&kernel_node->next, current_head);
     if (atomic_compare_exchange_strong(&completed_kernel_list_head, &current_head, kernel_node)) {
+      break;
+    }
+  }
+}
+
+
+static void
+add_kernel_to_incomplete_list
+(
+ kernel_node_t *kernel_node
+)
+{
+  while (true) {
+    kernel_node_t *current_head = atomic_load(&incomplete_kernel_list_head);
+    atomic_store(&kernel_node->next, current_head);
+    if (atomic_compare_exchange_strong(&incomplete_kernel_list_head, &current_head, kernel_node)) {
       break;
     }
   }
@@ -290,6 +309,38 @@ get_count_of_unfinished_kernels
 }
 
 
+static void
+accumulate_gpu_utilization_metrics_to_incomplete_kernels
+(
+  uint32_t num_unfinished_kernels
+)
+{
+  // this function should be run only for Intel programs (unless the used runtime supports PAPI with active/stall metrics)
+    cct_node_t* cct_array_of_incomplete_kernels[num_unfinished_kernels];
+    kernel_node_t *private_incomplete_kernel_head = atomic_load(&incomplete_kernel_list_head);
+    kernel_node_t *curr, *prev, *next;
+    curr = private_incomplete_kernel_head;
+    prev = NULL;
+    uint32_t index = 0;
+
+    /* We iterate over the list of unfinished kernels. For all kernels, we:
+     * 1. add the cct_node for the kernel to an array of cct_nodes and accumulate the utilization metrics to that node
+     * 2. delete the entry from the list if marked for deletion (i.e. the kernel has completed)
+    */
+    while (curr) {
+      next = atomic_load(&curr->next);
+			cct_array_of_incomplete_kernels[index++] = curr->launcher_cct;
+      if (curr->marked_for_deletion && prev != NULL) {
+        atomic_store(&prev->next, next);
+      } else {
+        prev = curr;
+      }
+      curr = next;
+    }
+    gpu_monitors_apply(cct_array_of_incomplete_kernels, num_unfinished_kernels, gpu_monitor_type_enter);
+}
+
+
 
 //******************************************************************************
 // interface operations
@@ -371,6 +422,7 @@ kernel_epilogue
 	kernel_node_t *kernel_node = kernel_map_entry_kernel_node_get(e_entry);
 	kernel_node->kernel_start_time = kernel_start;
 	kernel_node->kernel_end_time = kernel_end;
+  kernel_node->marked_for_deletion = true;
 
 	record_latest_kernel_end_time(kernel_node->kernel_end_time);
 	add_kernel_to_completed_list(kernel_node);
@@ -481,11 +533,7 @@ gpu_idle_blame
     gpu_blame_shift_t bs = {0, metric_incr, 0};
     record_blame_shift_metrics(node, &bs);
   } else {
-    // this below loop should be run only for Intel programs  (unless the used runtime supports PAPI with active/stall metrics)
-    // gpu_monitors_apply(api_node, gpu_monitor_type_enter);
-    // PAPI_read(metrics);
-    // work on a list on incomplete_kernel_list_head; parse through this list and increment all of the kernel values by metrics
-    // PAPI_reset();
+    accumulate_gpu_utilization_metrics_to_incomplete_kernels(num_unfinished_kernels);
   }
 
   spinlock_unlock(&itimer_blame_lock);

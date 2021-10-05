@@ -53,6 +53,9 @@
 
 #include "papi-c-extended-info.h"
 
+#include "sample_source_obj.h"
+#include <hpcrun/cct/cct.h>
+
 
 
 /******************************************************************************
@@ -60,18 +63,21 @@
  *****************************************************************************/
 
 typedef struct {
+  const char *name;
   bool inUse;
   int eventSet;
   source_state_t state;
   int some_derived;
   bool scale_by_thread_count;
   long long prev_values[MAX_EVENTS];
+  cct_node_t **cct_nodes;
   bool is_sync;
   bool setup_process_only;
   get_event_set_proc_t get_event_set;
   add_event_proc_t add_event;
   finalize_event_set_proc_t finalize_event_set;
   start_proc_t sync_start;
+  read_proc_t read;
   stop_proc_t sync_stop;
   setup_proc_t sync_setup;
   teardown_proc_t sync_teardown;
