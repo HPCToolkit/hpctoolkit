@@ -449,6 +449,19 @@ typedef enum {
 	"all avaiable devices are not getting utilized. Offload computations to all devices to reduce total application execution time: bool")
 
 
+// gpu-utilization metrics
+#define FORALL_GPU_UTILIZATION(macro)					\
+  macro("GPU_ACT (%)",              GPU_ACT,		\
+	"\% of EU's in the GPU that are active")  \
+  macro("GPU_STL (%)",               GPU_STL,			\
+	"\% of EU's in the GPU that are stalled")			\
+  macro("GPU_IDLE (%)",              GPU_IDLE,		\
+	"\% of EU's in the GPU that are idle")    \
+  macro("GPU_UTIL_DENOMINATOR (%)",              GPU_UTIL_DENOMINATOR,		\
+	"this is a helper metric that increments the metric value by 100 for the corresponding CCT. This can be denominator to the above three \
+  to metrics to get the \% of GPU utilization")
+
+
 
 //******************************************************************************
 // interface operations

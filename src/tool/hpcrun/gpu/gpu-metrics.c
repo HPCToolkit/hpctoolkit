@@ -86,7 +86,8 @@
   macro(KINFO, 12)  \
   macro(GSAMP, 13)  \
   macro(INTEL_OPTIMIZATION, 14) \
-  macro(BLAME_SHIFT, 15)
+  macro(BLAME_SHIFT, 15)  \
+  macro(GPU_UTILIZATION, 16)
 
 
 #define FORALL_METRIC_KINDS(macro)  \
@@ -650,6 +651,23 @@ gpu_metrics_attribute_blame_shift
 }
 
 
+static void
+gpu_metrics_attribute_gpu_utilization
+(
+ gpu_activity_t *activity
+)
+{
+  gpu_utlization_t *gpu_info = &(activity->details.gpu_utilization_info);
+  cct_node_t *cct_node = activity->cct_node;
+
+  metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_ACT));
+  gpu_metrics_attribute_metric_real(metrics, METRIC_ID(GPU_ACT), gpu_info->active);
+  gpu_metrics_attribute_metric_real(metrics, METRIC_ID(GPU_STL), gpu_info->stalled);
+  gpu_metrics_attribute_metric_real(metrics, METRIC_ID(GPU_IDLE), gpu_info->idle);
+  gpu_metrics_attribute_metric_real(metrics, METRIC_ID(GPU_UTIL_DENOMINATOR), 100);
+}
+
+
 
 //******************************************************************************
 // interface operations
@@ -716,6 +734,10 @@ gpu_metrics_attribute
 
   case GPU_ACTIVITY_BLAME_SHIFT:
     gpu_metrics_attribute_blame_shift(activity);
+    break;
+
+  case GPU_ACTIVITY_INTEL_GPU_UTILIZATION:
+    gpu_metrics_attribute_gpu_utilization(activity);
     break;
 
   default:
@@ -997,3 +1019,17 @@ gpu_metrics_BLAME_SHIFT_enable
   FORALL_BLAME_SHIFT(INITIALIZE_SCALAR_METRIC_REAL)
 }
 
+
+void
+gpu_metrics_gpu_utilization_enable
+(
+ void
+)
+{
+  #undef CURRENT_METRIC
+  #define CURRENT_METRIC GPU_UTILIZATION
+
+  INITIALIZE_METRIC_KIND();
+
+  FORALL_GPU_UTILIZATION(INITIALIZE_SCALAR_METRIC_REAL)
+}

@@ -82,6 +82,7 @@
 #include "papi-c-extended-info.h"
 #include "sample-filters.h"
 
+#include <hpcrun/gpu-monitors.h>
 #include <hpcrun/main.h>
 #include <hpcrun/hpcrun_options.h>
 #include <hpcrun/hpcrun_stats.h>
@@ -114,6 +115,9 @@
  * forward declarations 
  *****************************************************************************/
 static void papi_event_handler(int event_set, void *pc, long long ovec, void *context);
+static void papi_monitor_enter(papi_component_info_t *ci, cct_node_t **cct_nodes, uint32_t num_unfinished_kernels);
+static void papi_monitor_exit(papi_component_info_t *ci);
+
 static int  event_is_derived(int ev_code);
 static void event_fatal_error(int ev_code, int papi_ret);
 
@@ -189,6 +193,18 @@ thread_count_scaling_for_component(int cidx)
   if (strcmp(pci->name, "bgpm/L2Unit") == 0) return true;
   return 0;
 }
+
+
+static void
+papi_register_sync_callback(papi_component_info_t *ci)
+{
+  gpu_monitor_node_t node;
+  node.ci = ci;
+  node.enter_fn = papi_monitor_enter;
+  node.exit_fn = papi_monitor_exit;
+  gpu_monitor_register(node);
+}
+
 
 
 /******************************************************************************
@@ -624,7 +640,9 @@ METHOD_FN(gen_event_set, int lush_metrics)
   for (i = 0; i < nevents; i++) {
     int evcode = self->evl.events[i].event;
     int cidx = PAPI_get_event_component(evcode);
-    
+    papi_component_info_t *ci = &(psi->component_info[cidx]);
+    papi_register_sync_callback(ci);
+
     ret = component_add_event(psi, cidx, evcode);
     psi->component_info[cidx].some_derived |= event_is_derived(evcode);
     TMSG(PAPI, "Added event code %x to component %d", evcode, cidx);
@@ -943,4 +961,34 @@ papi_event_handler(int event_set, void *pc, long long ovec,
   }
 
   hpcrun_safe_exit();
+}
+
+
+static void
+papi_monitor_enter(papi_component_info_t *ci, cct_node_t **cct_nodes, uint32_t num_unfinished_kernels)
+{
+  // if sampling disabled explicitly for this thread, skip all processing
+  if (hpcrun_suppress_sample() || sample_filters_apply()) return;
+
+  ci->cct_nodes = cct_nodes;
+
+  // Save counts on the end so we could substract that from next call (we don't want to measure ourselves)
+  if (ci->inUse) {
+    ci->read(cct_nodes, num_unfinished_kernels, ci->prev_values);
+  }
+}
+
+
+static void
+papi_monitor_exit(papi_component_info_t *ci)
+{
+  long long collected_values[MAX_EVENTS];
+
+  // if sampling disabled explicitly for this thread, skip all processing
+  if (hpcrun_suppress_sample() || sample_filters_apply()) return;
+
+  if (ci->inUse){
+    ci->read(NULL, 0, collected_values);
+    attribute_counters(ci, collected_values, ci->cct_nodes);
+  }
 }

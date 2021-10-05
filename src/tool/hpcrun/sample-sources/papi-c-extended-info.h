@@ -1,12 +1,16 @@
 #ifndef PAPI_C_EXTENDED_INFO_H
 #define PAPI_C_EXTENDED_INFO_H
 
+#include <hpcrun/cct/cct.h>
+
+
 typedef void (*get_event_set_proc_t)(int* ev_s);
 typedef int (*add_event_proc_t)(int ev_s, int evcode);
 typedef void (*finalize_event_set_proc_t)(void);
 typedef void (*setup_proc_t)(void);
 typedef void (*teardown_proc_t)(void);
 typedef void (*start_proc_t)(void);
+typedef void (*read_proc_t)(cct_node_t **cct_nodes, uint32_t num_ccts, long long *prev_values);
 typedef void (*stop_proc_t)(void);
 typedef bool (*pred_proc_t)(const char* name);
 
@@ -18,6 +22,7 @@ typedef struct sync_info_list_t {
   const setup_proc_t sync_setup;
   const teardown_proc_t sync_teardown;
   const start_proc_t sync_start;
+  const read_proc_t read;
   const stop_proc_t sync_stop;
   const bool process_only;
   struct sync_info_list_t* next;
@@ -30,6 +35,7 @@ extern finalize_event_set_proc_t component_finalize_event_set(int cidx);
 extern setup_proc_t sync_setup_for_component(int cidx);
 extern teardown_proc_t sync_teardown_for_component(int cidx);
 extern start_proc_t sync_start_for_component(int cidx);
+extern read_proc_t sync_read_for_component(int cidx);
 extern stop_proc_t sync_stop_for_component(int cidx);
 extern void papi_c_sync_register(sync_info_list_t* info);
 

@@ -24,6 +24,7 @@
 #include <hpcrun/sample_event.h>
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_sources_all.h>
+#include <hpcrun/gpu/gpu-activity.h>
 #include <sample-sources/common.h>
 #include <sample-sources/ss-obj-name.h>
 
@@ -37,6 +38,8 @@
 //******************************************************************************
 
 #define numMetrics 3
+#define ACTIVE_INDEX 1
+#define STALL_INDEX 1
 #define MAX_STR_LEN     128
 static spinlock_t setup_lock = SPINLOCK_UNLOCKED;
 int eventset;
@@ -144,6 +147,37 @@ papi_c_intel_teardown(void)
 }
 
 
+static void
+attribute_gpu_utilization(cct_node_t *cct_node, long long *current_values, long long *previous_values)
+{
+  gpu_activity_t ga;
+  gpu_activity_t *ga_ptr = &ga;
+  ga_ptr->kind = GPU_ACTIVITY_INTEL_GPU_UTILIZATION;
+  ga_ptr->cct_node = cct_node;
+
+  ga_ptr->details.gpu_utilization_info.active = current_values[ACTIVE_INDEX];
+  ga_ptr->details.gpu_utilization_info.stalled = current_values[STALL_INDEX];
+  ga_ptr->details.gpu_utilization_info.idle = 100 - (current_values[ACTIVE_INDEX] + current_values[STALL_INDEX]);
+  gpu_metrics_attribute(ga_ptr);
+}
+
+
+static long long *
+papi_c_intel_read(cct_node_t **cct_nodes, uint32_t num_ccts, long long *previous_values)
+{
+  long long *metric_values = (long long *)hpcrun_malloc(numMetrics * sizeof(long long));
+  int retval = PAPI_read(eventset, metric_values);
+  if (retval!=PAPI_OK) {
+    TMSG(INTEL, "Error stopping:  %s\n", PAPI_strerror(retval));
+    return NULL;
+  }
+  for(int i=0; i<num_ccts; i++) {
+    attribute_gpu_utilization(cct_nodes[i], metric_values, previous_values);
+  }
+  return metric_values;
+}
+
+
 static sync_info_list_t intel_component = {
   .pred = is_papi_c_intel,
   .get_event_set = papi_c_intel_get_event_set,
@@ -152,6 +186,7 @@ static sync_info_list_t intel_component = {
   .sync_setup = papi_c_intel_setup,
   .sync_teardown = papi_c_intel_teardown,
   .sync_start = papi_c_no_action,
+  .read = papi_c_intel_read,
   .sync_stop = papi_c_no_action,
   .process_only = true,
   .next = NULL,
