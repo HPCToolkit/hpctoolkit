@@ -2517,6 +2517,8 @@ cupti_device_shutdown(void *args, int how)
       gpu_operation_multiplexer_push(NULL, NULL, &gpu_activity);
     }
 
+    // TODO(Keren): wait for only a few seconds
+    // Special case: monitoring an application without any kernel using gpu=nvidia,pc
     while (atomic_load(&wait)) {}
   }
 #endif

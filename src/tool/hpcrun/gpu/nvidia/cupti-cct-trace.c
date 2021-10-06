@@ -299,7 +299,7 @@ trace_shrink
   cupti_cct_trace_node_t *current = root->left;
 
   // Don't merge across ranges
-  while (current->left->type != CUPTI_CCT_TRACE_NODE_NON_TERMINAL && current->left->type != CUPTI_CCT_TRACE_NODE_FLUSH) {
+  while (current->left->type != CUPTI_CCT_TRACE_NODE_NON_TERMINAL) {
     cupti_cct_trace_map_entry_t *entry = trace_map_lookup(current->left->key, current->key);
 
 
@@ -450,30 +450,6 @@ trace_shrink
   return shrinked;
 }
 
-
-static bool
-trace_condense
-(
-)
-{
-  cupti_cct_trace_node_t *current = root->left;
-  // S->R|
-  // S->....|R|
-  if (current->left->left != root && current->left->left->type == CUPTI_CCT_TRACE_NODE_FLUSH) {
-    // A range cannot be compressed further
-    TRACE_MSG(CUPTI_CCT_TRACE, "Trace condensed (left: %p->%p->%p) (key: %p->%p->%p)",
-      current->left->left, current->left, current,
-      current->left->left->key, current->left->key, current->key);
-
-    trace_delete(current->left);
-    trace_delete(current);
-    // Don't remove the rule itself
-    return true;
-  }
-
-  return false;
-}
-
 //*****************************************************************************
 // interface operations
 //*****************************************************************************
@@ -515,11 +491,11 @@ cupti_cct_trace_flush
   cupti_cct_trace_node_t *trace_node = trace_new(CUPTI_CCT_TRACE_NODE_FLUSH, NULL);
   trace_append(root, trace_node);
 
-  bool condensed = trace_condense();
+  bool ret = trace_shrink();
 
   TRACE_MSG(CUPTI_CCT_TRACE, "Exit flush key trace condensed %d", condensed);
 
-  return condensed;
+  return ret;
 }
 
 

@@ -484,9 +484,9 @@ cupti_cct_trace_map_delete
 
   if (entry != NULL) {
     st_free(&free_list, entry);
-  }
   
-  TRACE_MAP_MSG(CUPTI_CCT_TRACE, "Trace map delete (node1: %p, node2: %p)->(trace_node: %p)", key.node1, key.node2, entry->trace_node);
+    TRACE_MAP_MSG(CUPTI_CCT_TRACE, "Trace map delete (node1: %p, node2: %p)->(trace_node: %p)", key.node1, key.node2, entry->trace_node);
+  }
 }
 
 
