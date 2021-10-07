@@ -284,10 +284,15 @@ setup_main_bounds_check(void* main_addr)
   // dynamic symbol named 'main' (if any).
   // passed into libc_start_main as real_main. this might be a
   // trampoline in the PLT.
-  dlerror();
-  main_addr_dl = dlsym(RTLD_NEXT,"main");
-  if (main_addr_dl) {
-    fnbounds_enclosing_addr(main_addr_dl, &main_lower_dl, &main_upper_dl, &lm);
+  //
+  // dlsym("main") fails on some broken glibc (early access summit),
+  // but we only use this when CHECK_MAIN is enabled.
+  if (ENABLED(CHECK_MAIN)) {
+    dlerror();
+    main_addr_dl = dlsym(RTLD_NEXT,"main");
+    if (main_addr_dl) {
+      fnbounds_enclosing_addr(main_addr_dl, &main_lower_dl, &main_upper_dl, &lm);
+    }
   }
 #endif
 }
