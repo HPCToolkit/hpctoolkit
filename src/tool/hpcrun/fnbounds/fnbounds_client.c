@@ -555,6 +555,10 @@ launch_server(void)
 
   TMSG(FNBOUNDS_CLIENT, "syserv launch: success, child shim: %d, server: %d", (int) child_pid, (int) server_pid);
 
+  // Server talks first, but we don't care about the actual message
+  struct syserv_mesg mesg;
+  read_mesg(&mesg);
+
   // restart sample sources
   if (sampling_is_running) {
     SAMPLE_SOURCES(start);
