@@ -555,9 +555,16 @@ launch_server(void)
 
   TMSG(FNBOUNDS_CLIENT, "syserv launch: success, child shim: %d, server: %d", (int) child_pid, (int) server_pid);
 
-  // Server talks first, but we don't care about the actual message
+  // Fnbounds talks first with a READY message
   struct syserv_mesg mesg;
-  read_mesg(&mesg);
+  if (read_mesg(&mesg) != SUCCESS) {
+    EMSG("FNBOUNDS_CLIENT ERROR: syserv did not give READY message");
+    return -1;
+  }
+  if (mesg.type != SYSERV_READY) {
+    EMSG("FNBOUNDS_CLIENT ERROR: syserv gave bad initial message: expected %d, got %d", SYSERV_READY, mesg.type);
+    return -1;
+  }
 
   // restart sample sources
   if (sampling_is_running) {
