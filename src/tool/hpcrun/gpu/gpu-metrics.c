@@ -461,14 +461,48 @@ gpu_metrics_attribute_memset
 void
 gpu_metrics_attribute_kernel_count
 (
+ cct_node_t *cct_node,
+ uint64_t sampled_count,
+ uint64_t count
+)
+{
+  metric_data_list_t *metrics = 
+    hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_KINFO_STMEM_ACUMU));
+
+  // number of sampled kernel launches
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_SAMPLED_COUNT), sampled_count);
+  // number of kernel launches
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_COUNT), count);
+}
+
+
+uint64_t
+gpu_metrics_get_kernel_count
+(
  cct_node_t *cct_node
 )
 {
   metric_data_list_t *metrics = 
     hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_KINFO_STMEM_ACUMU));
 
-  // number of kernel launches
-  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_KINFO_COUNT), 1);
+  hpcrun_metricVal_t val = hpcrun_metric_std_get(metrics, METRIC_ID(GPU_KINFO_COUNT));
+
+  return val.i;
+}
+
+
+uint64_t
+gpu_metrics_get_kernel_sampled_count
+(
+ cct_node_t *cct_node
+)
+{
+  metric_data_list_t *metrics = 
+    hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_KINFO_STMEM_ACUMU));
+
+  hpcrun_metricVal_t val = hpcrun_metric_std_get(metrics, METRIC_ID(GPU_KINFO_SAMPLED_COUNT));
+
+  return val.i;
 }
 
 

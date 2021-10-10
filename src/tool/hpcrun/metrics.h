@@ -167,6 +167,7 @@ extern void hpcrun_metric_std_set(int metric_id, metric_data_list_t* set,
 				  hpcrun_metricVal_t value);
 extern void hpcrun_metric_std_inc(int metric_id, metric_data_list_t* set,
 				  hpcrun_metricVal_t incr);
+extern hpcrun_metricVal_t hpcrun_metric_std_get(int metric_id, metric_data_list_t* set);
 extern metric_data_list_t* hpcrun_new_metric_data_list(int metric_id);
 extern metric_data_list_t* hpcrun_new_metric_data_list_kind(kind_info_t *kind);
 extern metric_data_list_t* hpcrun_new_metric_data_list_kind_final(kind_info_t *kind);

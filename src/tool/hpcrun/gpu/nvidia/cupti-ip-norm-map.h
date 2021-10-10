@@ -29,15 +29,24 @@ typedef enum {
 
 
 cupti_ip_norm_map_ret_t
-cupti_ip_norm_map_lookup
+cupti_ip_norm_map_lookup_thread
 (
  ip_normalized_t ip_norm,
  cct_node_t *cct
 ); 
 
 
+cupti_ip_norm_map_ret_t
+cupti_ip_norm_map_lookup
+(
+ cupti_ip_norm_map_entry_t **root,
+ ip_normalized_t ip_norm,
+ cct_node_t *cct
+); 
+
+
 void
-cupti_ip_norm_map_insert
+cupti_ip_norm_map_insert_thread
 (
  ip_normalized_t ip_norm,
  cct_node_t *cct
@@ -45,10 +54,44 @@ cupti_ip_norm_map_insert
 
 
 void
-cupti_ip_norm_map_clear
+cupti_ip_norm_map_insert
 (
+ cupti_ip_norm_map_entry_t **root,
+ ip_normalized_t ip_norm,
+ cct_node_t *cct
 );
 
+
+void
+cupti_ip_norm_map_merge
+(
+ cupti_ip_norm_map_entry_t **root,
+ uint32_t prev_range_id,
+ uint32_t range_id,
+ bool sampled
+);
+
+
+void
+cupti_ip_norm_map_merge_thread
+(
+ uint32_t prev_range_id,
+ uint32_t range_id,
+ bool sampled
+);
+
+
+void
+cupti_ip_norm_map_clear
+(
+ cupti_ip_norm_map_entry_t **root
+);
+
+
+void
+cupti_ip_norm_map_clear_thread
+(
+);
 
 #endif
 

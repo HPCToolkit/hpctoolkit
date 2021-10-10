@@ -366,10 +366,12 @@ typedef enum {
 	"GPU kernel: thread register count")				\
   macro("GKER:BLK_THR",           GPU_KINFO_BLK_THREADS,		\
 	"GPU kernel: thread count")					\
-  macro("GKER:BLK_SM (B)",            GPU_KINFO_BLK_SMEM,		\
+  macro("GKER:BLK_SM (B)",        GPU_KINFO_BLK_SMEM,		\
 	"GPU kernel: block local memory (bytes)")			\
-  macro("GKER:BLKS",            GPU_KINFO_BLKS,		\
+  macro("GKER:BLKS",              GPU_KINFO_BLKS,		\
 	"GPU kernel: block count")			\
+  macro("GKER:SAMPLED_COUNT",     GPU_KINFO_SAMPLED_COUNT,  			\
+	"GPU kernel: sampled launch count (only used in continuous pc sampling)")					\
   macro("GKER:COUNT",             GPU_KINFO_COUNT,  			\
 	"GPU kernel: launch count")					\
   macro("GKER:OCC_THR",               GPU_KINFO_OCCUPANCY_THR,		\
@@ -551,6 +553,20 @@ gpu_metrics_attribute
 
 void
 gpu_metrics_attribute_kernel_count
+(
+ cct_node_t *cct_node,
+ uint64_t sampled_count,
+ uint64_t count
+);
+
+uint64_t
+gpu_metrics_get_kernel_count
+(
+ cct_node_t *cct_node
+);
+
+uint64_t
+gpu_metrics_get_kernel_sampled_count
 (
  cct_node_t *cct_node
 );

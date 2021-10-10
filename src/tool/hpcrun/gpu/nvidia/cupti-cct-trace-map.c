@@ -263,21 +263,21 @@ splay_delete_root
  splay_cct_trace_node_t **root
 )
 {
-  splay_cct_trace_node_t *map_root = *root;
+  splay_cct_trace_node_t *splay_map_root = *root;
 
-  if (map_root->left == NULL) {
-    map_root = map_root->right;
+  if (splay_map_root->left == NULL) {
+    splay_map_root = splay_map_root->right;
   } else {
-    map_root->left = splay_cct_trace_splay(map_root->left, map_root->key);
-    map_root->left->right = map_root->right;
-    map_root = map_root->left;
+    splay_map_root->left = splay_cct_trace_splay(splay_map_root->left, splay_map_root->key);
+    splay_map_root->left->right = splay_map_root->right;
+    splay_map_root = splay_map_root->left;
   }
 
   // detach deleted node from others
   (*root)->left = (*root)->right = NULL; 
 
   // set new root
-  *root = map_root; 
+  *root = splay_map_root; 
 }
 
 
@@ -418,6 +418,7 @@ struct cupti_cct_trace_map_entry_s {
   struct cupti_cct_trace_map_entry_s *right;
   cct_trace_key_t key;
   cupti_cct_trace_node_t *trace_node;
+  uint32_t range_id;
 };
 
 static __thread cupti_cct_trace_map_entry_t *map_root = NULL;
@@ -430,13 +431,15 @@ static cupti_cct_trace_map_entry_t *
 cupti_cct_trace_map_new
 (
  cct_trace_key_t key,
- cupti_cct_trace_node_t *trace_node
+ cupti_cct_trace_node_t *trace_node,
+ uint32_t range_id
 )
 {
   cupti_cct_trace_map_entry_t *entry = st_alloc(&free_list);
   
   entry->key = key;
   entry->trace_node = trace_node;
+  entry->range_id = range_id;
 
   return entry;
 }
@@ -445,29 +448,42 @@ cupti_cct_trace_map_new
 cupti_cct_trace_map_entry_t *
 cupti_cct_trace_map_lookup
 (
+ cupti_cct_trace_map_entry_t **root,
  cct_trace_key_t key
 )
 {
-  cupti_cct_trace_map_entry_t *entry = st_lookup(&map_root, key);
+  cupti_cct_trace_map_entry_t *entry = st_lookup(root, key);
 
   TRACE_MAP_MSG(CUPTI_CCT_TRACE, "Trace map lookup (node1: %p, node2: %p)->(entry: %p)", key.node1, key.node2, entry);
-  
+
   return entry;
+}
+
+
+cupti_cct_trace_map_entry_t *
+cupti_cct_trace_map_lookup_thread
+(
+ cct_trace_key_t key
+)
+{
+  return cupti_cct_trace_map_lookup(&map_root, key);
 } 
 
 
 void
 cupti_cct_trace_map_insert
 (
+ cupti_cct_trace_map_entry_t **root,
  cct_trace_key_t key,
- cupti_cct_trace_node_t *trace_node
+ cupti_cct_trace_node_t *trace_node,
+ uint32_t range_id
 )
 {
-  cupti_cct_trace_map_entry_t *entry = st_lookup(&map_root, key);
+  cupti_cct_trace_map_entry_t *entry = st_lookup(root, key);
 
   if (entry == NULL) {
-    entry = cupti_cct_trace_map_new(key, trace_node);
-    st_insert(&map_root, entry);
+    entry = cupti_cct_trace_map_new(key, trace_node, range_id);
+    st_insert(root, entry);
   }
 
   TRACE_MAP_MSG(CUPTI_CCT_TRACE, "Trace map insert (node1: %p, node2: %p)->(trace_node: %p)", key.node1, key.node2, trace_node);
@@ -475,18 +491,41 @@ cupti_cct_trace_map_insert
 
 
 void
+cupti_cct_trace_map_insert_thread
+(
+ cct_trace_key_t key,
+ cupti_cct_trace_node_t *trace_node,
+ uint32_t range_id
+)
+{
+  cupti_cct_trace_map_insert(&map_root, key, trace_node, range_id);
+}
+
+
+void
 cupti_cct_trace_map_delete
 (
+ cupti_cct_trace_map_entry_t **root,
  cct_trace_key_t key
 )
 {
-  cupti_cct_trace_map_entry_t *entry = st_delete(&map_root, key);
+  cupti_cct_trace_map_entry_t *entry = st_delete(root, key);
 
   if (entry != NULL) {
     st_free(&free_list, entry);
   
     TRACE_MAP_MSG(CUPTI_CCT_TRACE, "Trace map delete (node1: %p, node2: %p)->(trace_node: %p)", key.node1, key.node2, entry->trace_node);
   }
+}
+
+
+void
+cupti_cct_trace_map_delete_thread
+(
+ cct_trace_key_t key
+)
+{
+  cupti_cct_trace_map_delete(&map_root, key);
 }
 
 
@@ -497,4 +536,14 @@ cupti_cct_trace_map_entry_cct_trace_node_get
 )
 {
   return entry->trace_node;
+}
+
+
+uint32_t
+cupti_cct_trace_map_entry_range_id_get
+(
+ cupti_cct_trace_map_entry_t *entry
+)
+{
+  return entry->range_id;
 }

@@ -4,6 +4,8 @@
 #include <hpcrun/messages/messages.h>
 #include <hpcrun/memory/hpcrun-malloc.h>
 
+#include "../gpu-metrics.h"
+
 #define DEBUG
 #ifdef DEBUG
 #define TRACE_IP_NORM_MAP_MSG(...) TMSG(__VA_ARGS__)
@@ -356,8 +358,8 @@ struct cupti_ip_norm_map_entry_s {
   cct_node_t *cct;
 };
 
-static cupti_ip_norm_map_entry_t *map_root = NULL;
-static cupti_ip_norm_map_entry_t *free_list = NULL;
+static __thread cupti_ip_norm_map_entry_t *map_root = NULL;
+static __thread cupti_ip_norm_map_entry_t *free_list = NULL;
 
 
 typed_splay_impl(ip_norm)
@@ -377,14 +379,54 @@ flush_fn_helper
 }
 
 
+typedef struct merge_args_s {
+ uint32_t prev_range_id;
+ uint32_t range_id;
+ bool sampled;
+} merge_args_t;
+
+
+static void
+merge_fn_helper
+(
+ cupti_ip_norm_map_entry_t *entry,
+ splay_visit_t visit_type,
+ void *args
+)
+{
+  if (visit_type == splay_postorder_visit) {
+    merge_args_t *merge_args = (merge_args_t *)args;
+
+    ip_normalized_t prev_range_ip = { .lm_id = HPCRUN_FMT_GPU_RANGE_NODE, .lm_ip = merge_args->prev_range_id };
+    ip_normalized_t range_ip = { .lm_id = HPCRUN_FMT_GPU_RANGE_NODE, .lm_ip = merge_args->range_id };
+
+    cct_node_t *api_node = entry->cct;
+    cct_node_t *kernel_ip = hpcrun_cct_children(api_node);
+    cct_node_t *context = hpcrun_cct_children(kernel_ip);
+
+    // Mutate functions
+    cct_node_t *prev_range_node = hpcrun_cct_insert_ip_norm(context, prev_range_ip);
+    cct_node_t *range_node = hpcrun_cct_insert_ip_norm(context, range_ip);
+    
+    uint64_t kernel_count = gpu_metrics_get_kernel_count(range_node);
+    uint64_t sampled_kernel_count = merge_args->sampled ? kernel_count : 0;
+
+    gpu_metrics_attribute_kernel_count(prev_range_node, sampled_kernel_count, kernel_count);
+    // XXX(Keren): is this function stable?
+    hpcrun_cct_delete_self(range_node);
+  }
+}
+
+
 cupti_ip_norm_map_ret_t
 cupti_ip_norm_map_lookup
 (
+ cupti_ip_norm_map_entry_t **root,
  ip_normalized_t ip_norm,
  cct_node_t *cct
 )
 {
-  cupti_ip_norm_map_entry_t *result = st_lookup(&map_root, ip_norm);
+  cupti_ip_norm_map_entry_t *result = st_lookup(root, ip_norm);
 
   cupti_ip_norm_map_ret_t ret;
   if (result == NULL) {
@@ -402,20 +444,32 @@ cupti_ip_norm_map_lookup
 }
 
 
-void
-cupti_ip_norm_map_insert
+cupti_ip_norm_map_ret_t
+cupti_ip_norm_map_lookup_thread
 (
  ip_normalized_t ip_norm,
  cct_node_t *cct
 )
 {
-  cupti_ip_norm_map_entry_t *entry = st_lookup(&map_root, ip_norm);
+  cupti_ip_norm_map_lookup(&map_root, ip_norm, cct);
+}
+
+
+void
+cupti_ip_norm_map_insert
+(
+ cupti_ip_norm_map_entry_t **root,
+ ip_normalized_t ip_norm,
+ cct_node_t *cct
+)
+{
+  cupti_ip_norm_map_entry_t *entry = st_lookup(root, ip_norm);
 
   if (entry == NULL) {
     entry = st_alloc(&free_list);
     entry->ip_norm = ip_norm;
     entry->cct = cct;
-    st_insert(&map_root, entry);
+    st_insert(root, entry);
   }
 
   TRACE_IP_NORM_MAP_MSG(CUPTI_CCT_TRACE, "IP norm map insert (lm_id: %d, lm_ip: %p, cct: %p)->(entry: %p)",
@@ -424,10 +478,61 @@ cupti_ip_norm_map_insert
 
 
 void
+cupti_ip_norm_map_insert_thread
+(
+ ip_normalized_t ip_norm,
+ cct_node_t *cct
+)
+{
+  cupti_ip_norm_map_insert(&map_root, ip_norm, cct);
+}
+
+
+void
 cupti_ip_norm_map_clear
+(
+ cupti_ip_norm_map_entry_t **root
+)
+{
+  st_forall((*root), splay_allorder, flush_fn_helper, NULL);
+  (*root) = NULL;
+}
+
+
+void
+cupti_ip_norm_map_clear_thread
 (
 )
 {
-  st_forall(map_root, splay_allorder, flush_fn_helper, NULL);
-  map_root = NULL;
+  cupti_ip_norm_map_clear(&map_root);
+}
+
+
+void
+cupti_ip_norm_map_merge
+(
+ cupti_ip_norm_map_entry_t **root,
+ uint32_t prev_range_id,
+ uint32_t range_id,
+ bool sampled
+)
+{
+  merge_args_t merge_args = {
+    .prev_range_id = prev_range_id,
+    .range_id = range_id,
+    .sampled = sampled
+  };
+  st_forall((*root), splay_allorder, merge_fn_helper, &merge_args);
+}
+
+
+void
+cupti_ip_norm_map_merge_thread
+(
+ uint32_t prev_range_id,
+ uint32_t range_id,
+ bool sampled
+)
+{
+  cupti_ip_norm_map_merge(&map_root, prev_range_id, range_id, sampled);
 }

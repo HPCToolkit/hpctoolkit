@@ -6,6 +6,7 @@
 #include <hpcrun/messages/messages.h>
 
 #include "cupti-cct-trace-map.h"
+#include "cupti-ip-norm-map.h"
 
 #define DEBUG
 
@@ -39,8 +40,8 @@ struct cupti_cct_trace_node_s {
   uint64_t key;
 };
 
-__thread cupti_cct_trace_node_t *root = NULL;
-__thread cupti_cct_trace_node_t *free_list = NULL;
+static __thread cupti_cct_trace_node_t *thread_root = NULL;
+static __thread cupti_cct_trace_node_t *free_list = NULL;
 
 //*****************************************************************************
 // local operations
@@ -112,17 +113,6 @@ trace_new
 
 
 static void
-trace_init
-(
-)
-{
-  if (root == NULL) {
-    root = trace_new(CUPTI_CCT_TRACE_NODE_NON_TERMINAL, NULL);
-  }
-}
-
-
-static void
 trace_insert
 (
  cupti_cct_trace_node_t *cur,
@@ -144,6 +134,19 @@ trace_append
 )
 {
   trace_insert(head->left, next);
+}
+
+
+static void
+trace_init
+(
+)
+{
+  if (thread_root == NULL) {
+    thread_root = trace_new(CUPTI_CCT_TRACE_NODE_NON_TERMINAL, 0);
+    cupti_cct_trace_node_t *flush_node = trace_new(CUPTI_CCT_TRACE_NODE_FLUSH, 0);
+    trace_append(thread_root, flush_node);
+  }
 }
 
 
@@ -170,7 +173,7 @@ trace_ref_append
 {
   ++head->ref_count;
   next->rule = head;
-  next->key = head;
+  next->key = (uint64_t)head;
   trace_ref_insert(head->ref_left, next);
 }
 
@@ -235,7 +238,7 @@ trace_map_lookup
     .node2 = node2
   };
 
-  return cupti_cct_trace_map_lookup(key);
+  return cupti_cct_trace_map_lookup_thread(key);
 }
 
 
@@ -244,7 +247,8 @@ trace_map_insert
 (
  uint64_t node1,
  uint64_t node2,
- cupti_cct_trace_node_t *trace_node
+ cupti_cct_trace_node_t *trace_node,
+ uint32_t range_id
 )
 {
   cct_trace_key_t key = {
@@ -252,7 +256,7 @@ trace_map_insert
     .node2 = node2
   };
 
-  cupti_cct_trace_map_insert(key, trace_node);
+  cupti_cct_trace_map_insert_thread(key, trace_node, range_id);
 }
 
 
@@ -268,7 +272,7 @@ trace_map_delete
     .node2 = node2
   };
 
-  cupti_cct_trace_map_delete(key);
+  cupti_cct_trace_map_delete_thread(key);
 }
 
 
@@ -291,22 +295,22 @@ trace_rule_delete
 static bool
 trace_shrink
 (
+ uint32_t range_id
 )
 {
-  bool shrinked = false;
+  bool shrunk = false;
 
   // root->left is the last node
-  cupti_cct_trace_node_t *current = root->left;
+  cupti_cct_trace_node_t *current = thread_root->left;
 
   // Don't merge across ranges
   while (current->left->type != CUPTI_CCT_TRACE_NODE_NON_TERMINAL) {
     cupti_cct_trace_map_entry_t *entry = trace_map_lookup(current->left->key, current->key);
 
-
     if (entry == NULL) {
       // No such an pattern yet, we index it
       // No need to create a rule, so break out from the loop
-      trace_map_insert(current->left->key, current->key, current->left);
+      trace_map_insert(current->left->key, current->key, current->left, range_id);
       break;
     } 
 
@@ -354,7 +358,7 @@ trace_shrink
         prev_pattern_node->left->key, prev_pattern_node->key, prev_pattern_node->right->key, prev_pattern_node->right->right->key);
 
       // 1. Replace prev_pattern_nodes with rule_ref
-      cupti_cct_trace_node_t *rule_ref = trace_new(CUPTI_CCT_TRACE_NODE_NON_TERMINAL_REF, NULL); 
+      cupti_cct_trace_node_t *rule_ref = trace_new(CUPTI_CCT_TRACE_NODE_NON_TERMINAL_REF, 0); 
       cupti_cct_trace_node_t *left = prev_pattern_node->left;
       cupti_cct_trace_node_t *right = prev_pattern_node->right->right;
       cupti_cct_trace_node_t *node1 = prev_pattern_node;
@@ -376,7 +380,7 @@ trace_shrink
 
       // 3. Move prev_pattern nodes from the trace to the rule
       // root->Aa...................Aa
-      rule = trace_new(CUPTI_CCT_TRACE_NODE_NON_TERMINAL, NULL);
+      rule = trace_new(CUPTI_CCT_TRACE_NODE_NON_TERMINAL, 0);
       trace_append(rule, node1);
       trace_append(rule, node2);
       trace_ref_append(rule, rule_ref);
@@ -395,10 +399,10 @@ trace_shrink
       // root->...bAa...
       // Index bA and Aa
       if (left->type != CUPTI_CCT_TRACE_NODE_NON_TERMINAL) {
-        trace_map_insert(left->key, left->right->key, left);
+        trace_map_insert(left->key, left->right->key, left, range_id);
       }
       if (left->right->right->type != CUPTI_CCT_TRACE_NODE_NON_TERMINAL) {
-        trace_map_insert(left->right->key, left->right->right->key, left->right);
+        trace_map_insert(left->right->key, left->right->right->key, left->right, range_id);
       }
     } else {
       // B->Aa
@@ -424,7 +428,7 @@ trace_shrink
       pattern_node_left->key, pattern_node_left->right->key, pattern_node_left->right->right->key);
 
     // Make a ref node
-    cupti_cct_trace_node_t *rule_ref = trace_new(CUPTI_CCT_TRACE_NODE_NON_TERMINAL_REF, NULL);
+    cupti_cct_trace_node_t *rule_ref = trace_new(CUPTI_CCT_TRACE_NODE_NON_TERMINAL_REF, 0);
 
     trace_delete(pattern_node->right);
     trace_delete(pattern_node);
@@ -433,7 +437,7 @@ trace_shrink
       pattern_node_left, pattern_node_left->right, pattern_node_left->right->right,
       pattern_node_left->key, pattern_node_left->right->key, pattern_node_left->right->right->key);
 
-    trace_append(root, rule_ref);
+    trace_append(thread_root, rule_ref);
     trace_ref_append(rule, rule_ref);
 
     TRACE_MSG(CUPTI_CCT_TRACE, "Trace partial after append (left: %p->%p->%p) (key: %p->%p->%p)",
@@ -442,12 +446,32 @@ trace_shrink
 
     // There must be another A, otherwise, A should have been replaced
     // No need to enfore utility rule
-    current = root->left;
+    current = thread_root->left;
 
-    shrinked = true;
+    shrunk = true;
   }
 
-  return shrinked;
+  return shrunk;
+}
+
+
+static void
+trace_condense
+(
+ uint32_t range_id,
+ bool sampled
+)
+{
+  cupti_cct_trace_node_t *current = thread_root->left;
+
+  // |A|
+  if (current->left->left->type == CUPTI_CCT_TRACE_NODE_FLUSH) {
+    // Single node, must be repeated with another range
+    cupti_cct_trace_map_entry_t *entry = trace_map_lookup(current->left->left->key, current->left->key);
+    assert(entry != NULL);
+    uint32_t prev_range_id = cupti_cct_trace_map_entry_range_id_get(entry);
+    cupti_ip_norm_map_merge_thread(prev_range_id, range_id, sampled);
+  }
 }
 
 //*****************************************************************************
@@ -457,21 +481,26 @@ trace_shrink
 bool
 cupti_cct_trace_append
 (
+ uint32_t range_id,
  cct_node_t *cct
 )
 {
+  // 1. Compress trace
+  // Aa | Aa
+  // 2. Index without compression
+  // |A ... |A
   TRACE_MSG(CUPTI_CCT_TRACE, "Enter cupti_cct_trace_append %p", cct);
 
   trace_init();
 
   cupti_cct_trace_node_t *trace_node = trace_new(CUPTI_CCT_TRACE_NODE_TERMINAL, (uint64_t)cct);
-  trace_append(root, trace_node);
+  trace_append(thread_root, trace_node);
 
-  TRACE_MSG(CUPTI_CCT_TRACE, "Trace partial after append (root: %p<-%p<-%p<-%p) (key: %p<-%p<-%p<-%p)",
-    root, root->left, root->left->left, root->left->left->left,
-    root->key, root->left->key, root->left->left->key, root->left->left->left->key);
+  TRACE_MSG(CUPTI_CCT_TRACE, "Trace partial after append (thread_root: %p<-%p<-%p<-%p) (key: %p<-%p<-%p<-%p)",
+    thread_root, thread_root->left, thread_root->left->left, thread_root->left->left->left,
+    thread_root->key, thread_root->left->key, thread_root->left->left->key, thread_root->left->left->left->key);
 
-  bool ret = trace_shrink();
+  bool ret = trace_shrink(range_id);
 
   TRACE_MSG(CUPTI_CCT_TRACE, "Exit cupti_cct_trace_append %p shrunk %d", cct, ret);
 
@@ -479,23 +508,24 @@ cupti_cct_trace_append
 }
 
 
-bool
+void
 cupti_cct_trace_flush
 (
+ uint32_t range_id,
+ bool sampled
 )
 {
   TRACE_MSG(CUPTI_CCT_TRACE, "Enter flush key trace");
 
   trace_init();
 
-  cupti_cct_trace_node_t *trace_node = trace_new(CUPTI_CCT_TRACE_NODE_FLUSH, NULL);
-  trace_append(root, trace_node);
+  cupti_cct_trace_node_t *trace_node = trace_new(CUPTI_CCT_TRACE_NODE_FLUSH, 0);
+  trace_append(thread_root, trace_node);
+  // Don't index A|
+  
+  trace_condense(range_id, sampled);
 
-  bool ret = trace_shrink();
-
-  TRACE_MSG(CUPTI_CCT_TRACE, "Exit flush key trace condensed %d", condensed);
-
-  return ret;
+  TRACE_MSG(CUPTI_CCT_TRACE, "Exit flush key trace");
 }
 
 
@@ -504,14 +534,14 @@ cupti_cct_trace_dump
 (
 )
 {
-  if (!root) {
+  if (!thread_root) {
     return;
   }
-  cupti_cct_trace_node_t *node = root->right;
-  printf("root->");
-  while (node != root) {
+  cupti_cct_trace_node_t *node = thread_root->right;
+  printf("thread_root->");
+  while (node != thread_root) {
     printf("%p", node->key);
-    if (node->right != root) {
+    if (node->right != thread_root) {
       printf("->");
     } else {
       printf("\n");
