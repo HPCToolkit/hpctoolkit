@@ -895,13 +895,12 @@ software packages, then constructing
 a module for \HPCToolkit{} to initialize these environment variables to appropriate settings
 would be convenient for users.
 
-\section{Platform-Specific Notes}
+\section{Cray System Specific Notes}
 \label{sec:platform-specific}
 
 %
 % system specific notes for titan, keenland?
 %
-\subsection{Cray Systems}
 
 If you are trying to profile a dynamically-linked executable on a Cray that is still using the ALPS job launcher and you see an error like the following 
 
@@ -952,5 +951,3 @@ correct settings for \verb|PATH|, \verb|HPCTOOLKIT|, etc.  In that case,
 the easiest solution is to load the \verb|hpctoolkit| module.  Try
 ``\verb|module show hpctoolkit|'' to see if it sets \verb|HPCTOOLKIT|.
 
-\subsection{ARM Systems}
-\HPCToolkit{}'s measurement infrastructure depends upon \verb|libunwind| for call stack unwinding on ARM.
