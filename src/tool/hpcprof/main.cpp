@@ -154,10 +154,6 @@ realmain(int argc, char* const* argv)
     exit(-1);
   }
 
-  if (nArgs.paths->size() == 1 && !args.hpcprof_isMetricArg) {
-    args.prof_metrics = Analysis::Args::MetricFlg_Thread;
-  }
-
   if (Analysis::Args::MetricFlg_isThread(args.prof_metrics)
       && nArgs.paths->size() > 16
       && !args.hpcprof_forceMetrics) {
