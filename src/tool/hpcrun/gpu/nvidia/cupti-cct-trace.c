@@ -476,6 +476,16 @@ trace_condense
     assert(entry != NULL);
     uint32_t prev_range_id = cupti_cct_trace_map_entry_range_id_get(entry);
     cupti_ip_norm_map_merge_thread(prev_range_id, range_id, sampled);
+
+    cupti_cct_trace_node_t *trace_node = cupti_cct_trace_map_entry_cct_trace_node_get(entry);
+    if (trace_node != current->left->left) {
+      // Not the current range, I can take it out
+      cupti_cct_trace_node_t *node1 = current->left->left;
+      cupti_cct_trace_node_t *node2 = current->left;
+
+      trace_delete(node1);
+      trace_delete(node2);
+    }
   }
 }
 
