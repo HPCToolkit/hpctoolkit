@@ -314,6 +314,11 @@ trace_shrink
       break;
     } 
 
+    if (current->left->type == CUPTI_CCT_TRACE_NODE_FLUSH) {
+      // Don't compress |A
+      break;
+    }
+
     // Such a pattern exists
     // root->Aa...................Aa
     // prev_pattern_node    pattern_node

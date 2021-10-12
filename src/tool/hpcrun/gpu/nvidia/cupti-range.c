@@ -67,13 +67,13 @@ cupti_range_mode_context_sensitive_is_sampled
 (
 )
 {
-  //return true;
-  int left = rand() % cupti_range_sampling_period;
-  if (left == 0) {
-    return true;
-  } else {
-    return false;
-  }
+  return true;
+  //int left = rand() % cupti_range_sampling_period;
+  //if (left == 0) {
+  //  return true;
+  //} else {
+  //  return false;
+  //}
 }
 
 
@@ -109,6 +109,7 @@ cupti_range_mode_context_sensitive_is_enter
     cupti_cct_trace_flush(range_id, active);
     // After flushing, we clean up ccts in the previous range
     cupti_ip_norm_map_clear_thread();
+    cupti_ip_norm_map_insert_thread(kernel_ip, api_node);
   } else if (map_ret_type == CUPTI_IP_NORM_MAP_NOT_EXIST) {
     // No such a node
     cupti_ip_norm_map_insert_thread(kernel_ip, api_node);

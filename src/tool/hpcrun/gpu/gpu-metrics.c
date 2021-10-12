@@ -485,7 +485,7 @@ gpu_metrics_get_kernel_count
   metric_data_list_t *metrics = 
     hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_KINFO_STMEM_ACUMU));
 
-  hpcrun_metricVal_t val = hpcrun_metric_std_get(metrics, METRIC_ID(GPU_KINFO_COUNT));
+  hpcrun_metricVal_t val = hpcrun_metric_std_get(METRIC_ID(GPU_KINFO_COUNT), metrics);
 
   return val.i;
 }
@@ -500,7 +500,7 @@ gpu_metrics_get_kernel_sampled_count
   metric_data_list_t *metrics = 
     hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_KINFO_STMEM_ACUMU));
 
-  hpcrun_metricVal_t val = hpcrun_metric_std_get(metrics, METRIC_ID(GPU_KINFO_SAMPLED_COUNT));
+  hpcrun_metricVal_t val = hpcrun_metric_std_get(METRIC_ID(GPU_KINFO_SAMPLED_COUNT), metrics);
 
   return val.i;
 }
