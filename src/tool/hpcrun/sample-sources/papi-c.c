@@ -415,7 +415,8 @@ METHOD_FN(stop)
     papi_component_info_t *ci = &(psi->component_info[cidx]);
     if (ci->inUse) {
       if (component_uses_sync_samples(cidx)) {
-	TMSG(PAPI, "component %d is synchronous, stop is trivial", cidx);
+	      TMSG(PAPI, "component %d is synchronous, stop is trivial", cidx);
+        ci->sync_stop();
       }
       else {
 	TMSG(PAPI,"stop w event set = %d", ci->eventSet);
@@ -629,6 +630,7 @@ METHOD_FN(gen_event_set, int lush_metrics)
     ci->sync_setup = sync_setup_for_component(i);
     ci->sync_teardown = sync_teardown_for_component(i);
     ci->sync_start = sync_start_for_component(i);
+    ci->read = sync_read_for_component(i);
     ci->sync_stop = sync_stop_for_component(i);
     memset(ci->prev_values, 0, sizeof(ci->prev_values));
   }
@@ -933,9 +935,11 @@ papi_event_handler(int event_set, void *pc, long long ovec,
       metricIncrement = 1;
     }
 
+    hpcrun_safe_enter();
     sample_val_t sv = hpcrun_sample_callpath(context, metric_id, 
 			(hpcrun_metricVal_t) {.i=metricIncrement},
 			0/*skipInner*/, 0/*isSync*/, NULL);
+    hpcrun_safe_exit();
 
     blame_shift_apply(metric_id, sv.sample_node, 1 /*metricIncr*/);
   }
@@ -948,9 +952,11 @@ papi_event_handler(int event_set, void *pc, long long ovec,
   if (ci->some_derived) {
     for (i = 0; i < nevents; i++) {
       if (derived[i]) {
-	      hpcrun_sample_callpath(context, hpcrun_event2metric(self, i),
-			(hpcrun_metricVal_t) {.i=values[i] - ci->prev_values[i]},
-			0, 0, NULL);
+        hpcrun_safe_enter();
+        hpcrun_sample_callpath(context, hpcrun_event2metric(self, i),
+            (hpcrun_metricVal_t) {.i=values[i] - ci->prev_values[i]},
+            0, 0, NULL);
+        hpcrun_safe_exit();
       }
     }
 
