@@ -67,13 +67,12 @@ cupti_range_mode_context_sensitive_is_sampled
 (
 )
 {
-  return true;
-  //int left = rand() % cupti_range_sampling_period;
-  //if (left == 0) {
-  //  return true;
-  //} else {
-  //  return false;
-  //}
+  int left = rand() % cupti_range_sampling_period;
+  if (left == 0) {
+    return true;
+  } else {
+    return false;
+  }
 }
 
 
@@ -128,62 +127,6 @@ cupti_range_mode_context_sensitive_is_enter
   }
 
   return do_flush;
-#if 0
-  bool exist_intrie = cupti_cct_trie_lookup(kernel_ph);
-  bool do_flush = false;
-  bool unwind = false;
-  if (map_ret_type == CUPTI_IP_NORM_MAP_DUPLICATE) {
-    // Duplicate ccts
-    cupti_cct_set_clear();
-    if (cupti_pc_sampling_active()) {
-      // If active, we encounter a new range and have to flush
-      do_flush = true;
-    }
-
-    // We unwind CCT to the root
-    cupti_cct_trie_unwind();
-    exist_intrie = cupti_cct_trie_lookup(kernel_ph);
-    unwind = true;
-  } else if (map_ret_type == CUPTI_IP_NORM_MAP_NOT_EXIST) {
-    // No such a node
-    cupti_cct_set_insert(kernel_ph);
-  } else {
-    // Same cct, this is a repeated string
-    // We unwind CCT to the root
-    cupti_cct_trie_unwind();
-    exist_intrie = cupti_cct_trie_lookup(kernel_ph);
-    unwind = true;
-  }
-  cupti_cct_trie_insert(kernel_ph);
-
-  CUcontext context;
-  cuda_context_get(&context);
-
-  if (do_flush) {
-    // Early collection, different than other modes
-    cupti_pc_sampling_range_context_collect(range_id, context);
-  }
-
-  bool sampled = false;
-  if (unwind) {
-    // I was unwind because of loop or flushing
-    if (exist_intrie) {
-      // The next node is already in the trie.
-      // This means we have seen this range before, move forward and sample only if necessary
-      if (cupti_range_mode_context_sensitive_is_sampled()) {
-        // I was flushed because 
-        sampled = true;
-      }
-    } else {
-      // I haven't seen this node bofore, must sample this range
-      sampled = true;
-    }
-  }
-  if (sampled) {
-    // No need to turn on pc sampling unless sampled
-    cupti_pc_sampling_start(context);
-  }
-#endif
 }
 
 
