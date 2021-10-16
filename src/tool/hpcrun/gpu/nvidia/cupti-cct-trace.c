@@ -313,7 +313,9 @@ trace_shrink
       // No need to create a rule, so break out from the loop
       trace_map_insert(current->left->key, current->key, current->left, range_id);
       break;
-    } 
+    } else {
+      shrunk = true;
+    }
 
     if (current->left->type == CUPTI_CCT_TRACE_NODE_FLUSH) {
       // Don't compress |A
@@ -337,7 +339,8 @@ trace_shrink
       break;
     }
 
-    if (prev_pattern_node->left->type != CUPTI_CCT_TRACE_NODE_NON_TERMINAL) {
+    if (prev_pattern_node->left->type != CUPTI_CCT_TRACE_NODE_NON_TERMINAL &&
+      prev_pattern_node->left->type != CUPTI_CCT_TRACE_NODE_FLUSH) {
       // root->BAa...Aa
       // Delete the index of BA
       trace_map_delete(prev_pattern_node->left->key, prev_pattern_node->key);
@@ -375,6 +378,7 @@ trace_shrink
 
       // 2. Delete the index of the subsequent pattern
       // root->Aab
+      // Current pattern Aa
       // Delete the index of ab
       if (!contiguous) {
         // Not root->AaAa
@@ -422,8 +426,9 @@ trace_shrink
     }
 
     cupti_cct_trace_node_t *pattern_node_left = pattern_node->left;
-    if (!contiguous) {
+    if (!contiguous && pattern_node_left->type != CUPTI_CCT_TRACE_NODE_FLUSH) {
       // root->...AbBAb
+      // Current pattern Ab
       // Delete BA
       // Don't delete B
       trace_map_delete(pattern_node_left->key, pattern_node->key);

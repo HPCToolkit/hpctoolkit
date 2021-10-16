@@ -89,8 +89,6 @@ cupti_range_mode_context_sensitive_is_enter
  uint32_t range_id
 )
 {
-  static __thread bool repeated_range = true;
-
   thread_data_t *cur_td = hpcrun_safe_get_td();
   core_profile_trace_data_t *cptd = &cur_td->core_profile_trace_data;
   cupti_range_thread_list_add(cptd->id);
@@ -113,7 +111,6 @@ cupti_range_mode_context_sensitive_is_enter
         // It is an early collection mode different than other modes
         cupti_pc_sampling_range_context_collect(range_id, context);
         do_flush = true;
-        repeated_range = true;
       }
       cupti_retained_ranges++;
       if (cupti_retained_ranges == cupti_range_thread_retain_range) {
@@ -127,18 +124,18 @@ cupti_range_mode_context_sensitive_is_enter
     // After flushing, we clean up ccts in the previous range
     cupti_ip_norm_map_clear_thread();
     cupti_ip_norm_map_insert_thread(kernel_ip, api_node);
+    // Update active status
+    active = cupti_pc_sampling_active();
   } else if (map_ret_type == CUPTI_IP_NORM_MAP_NOT_EXIST) {
     // No such a node
     cupti_ip_norm_map_insert_thread(kernel_ip, api_node);
   }
 
   bool repeated = cupti_cct_trace_append(range_id, api_node);
-  if (!repeated) {
-    repeated_range = false;
-  }
-
   if (is_cur && !active) {
-    bool sampled = !repeated_range || cupti_range_mode_context_sensitive_is_sampled();
+    // 1. abc | (a1)bc
+    // 2. abc | ... | abc
+    bool sampled = !repeated || (do_flush && cupti_range_mode_context_sensitive_is_sampled());
     if (sampled) {
       cupti_pc_sampling_start(context);
     }
