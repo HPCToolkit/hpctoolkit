@@ -13,12 +13,17 @@
 #include "cupti-ip-norm-map.h"
 #include "cupti-pc-sampling-api.h"
 #include "cupti-cct-trace.h"
+#include "cupti-range-thread-list.h"
 
 
 static cupti_range_mode_t cupti_range_mode = CUPTI_RANGE_MODE_NONE;
 
 static uint32_t cupti_range_interval = CUPTI_RANGE_DEFAULT_INTERVAL;
 static uint32_t cupti_range_sampling_period = CUPTI_RANGE_DEFAULT_SAMPLING_PERIOD;
+static uint32_t cupti_range_thread_retain_range = CUPTI_RANGE_THREAD_RETAIN_RANGE;
+
+static uint32_t cupti_retained_ranges = 0;
+
 
 static bool
 cupti_range_pre_enter_callback
@@ -86,6 +91,11 @@ cupti_range_mode_context_sensitive_is_enter
 {
   static __thread bool repeated_range = true;
 
+  thread_data_t *cur_td = hpcrun_safe_get_td();
+  core_profile_trace_data_t *cptd = &cur_td->core_profile_trace_data;
+  cupti_range_thread_list_add(cptd->id);
+  bool is_cur = cupti_range_thread_list_is_cur(cptd->id);
+
   cct_node_t *kernel_node = hpcrun_cct_children(kernel_ph);
   ip_normalized_t kernel_ip = hpcrun_cct_addr(kernel_node)->ip_norm;
   cct_node_t *api_node = hpcrun_cct_parent(kernel_ph);
@@ -97,15 +107,23 @@ cupti_range_mode_context_sensitive_is_enter
   bool active = cupti_pc_sampling_active();
 
   if (map_ret_type == CUPTI_IP_NORM_MAP_DUPLICATE) {
-    if (active) {
-      // If active, we encounter a new range and have to flush.
-      // It is an early collection mode different than other modes
-      cupti_pc_sampling_range_context_collect(range_id, context);
-      do_flush = true;
-      repeated_range = true;
+    if (is_cur) {
+      if (active) {
+        // If active, we encounter a new range and have to flush.
+        // It is an early collection mode different than other modes
+        cupti_pc_sampling_range_context_collect(range_id, context);
+        do_flush = true;
+        repeated_range = true;
+      }
+      cupti_retained_ranges++;
+      if (cupti_retained_ranges == cupti_range_thread_retain_range) {
+        cupti_retained_ranges = 0;
+        cupti_range_thread_list_advance_cur(); 
+        is_cur = cupti_range_thread_list_is_cur(cptd->id);
+      }
     }
     // There must be a logical flush
-    cupti_cct_trace_flush(range_id, active);
+    cupti_cct_trace_flush(range_id, active, is_cur);
     // After flushing, we clean up ccts in the previous range
     cupti_ip_norm_map_clear_thread();
     cupti_ip_norm_map_insert_thread(kernel_ip, api_node);
@@ -119,7 +137,7 @@ cupti_range_mode_context_sensitive_is_enter
     repeated_range = false;
   }
 
-  if (!active) {
+  if (is_cur && !active) {
     bool sampled = !repeated_range || cupti_range_mode_context_sensitive_is_sampled();
     if (sampled) {
       cupti_pc_sampling_start(context);

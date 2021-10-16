@@ -127,15 +127,11 @@ gpu_range_enter
 
   bool is_lead = gpu_range_post_enter_callback(thread_correlation_id, api_node);
   if (is_lead) {
-    // If lead is set, don't do anything
-    while (atomic_load(&lead_correlation_id) != 0) {}
     // The last call in this range
     atomic_store(&lead_correlation_id, thread_correlation_id);
 
     atomic_fetch_add(&range_id, 1);
   }
-
-  spinlock_unlock(&count_lock);
 
   thread_range_id = atomic_load(&range_id);
 
@@ -167,16 +163,14 @@ gpu_range_exit
   }
 
   // Wait until correlation id before me have done
-  uint64_t cur_lead_correlation_id = GPU_CORRELATION_ID_UNMASK(atomic_load(&lead_correlation_id));
-  atomic_fetch_add(&correlation_id_done, 1);
-  while (cur_lead_correlation_id != 0 && cur_lead_correlation_id != atomic_load(&correlation_id_done));
-
   gpu_range_post_exit_callback(thread_correlation_id, NULL);
 
   // Unleash wait operations in range enter
   if (gpu_range_is_lead()) {
     atomic_store(&lead_correlation_id, 0);
   } 
+
+  spinlock_unlock(&count_lock);
 }
 
 bool

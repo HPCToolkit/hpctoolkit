@@ -316,6 +316,7 @@ const static int CUPTI_BACKOFF_BASE = 4;
 static int cupti_correlation_threshold = -1;
 
 static spinlock_t files_lock = SPINLOCK_UNLOCKED;
+static spinlock_t print_lock = SPINLOCK_UNLOCKED;
 
 static __thread bool cupti_activity_flag = false;
 static __thread bool cupti_runtime_api_flag = false;
@@ -2293,6 +2294,8 @@ cupti_device_flush(void *args, int how)
   TMSG(CUPTI, "Exit CUPTI device flush");
 
 #ifdef NEW_CUPTI_ANALYSIS
+  spinlock_lock(&print_lock);
+
   //printf("Total cct unwinds %lu, correct unwinds %lu\n", total_unwinds, correct_unwinds);
 
   //cupti_cct_map_dump();
@@ -2302,6 +2305,8 @@ cupti_device_flush(void *args, int how)
   printf("CCT trace\n");
 
   cupti_cct_trace_dump();
+
+  spinlock_unlock(&print_lock);
 #endif
 }
 

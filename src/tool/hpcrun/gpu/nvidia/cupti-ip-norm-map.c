@@ -6,7 +6,8 @@
 
 #include "../gpu-metrics.h"
 
-#define DEBUG
+//#define DEBUG
+
 #ifdef DEBUG
 #define TRACE_IP_NORM_MAP_MSG(...) TMSG(__VA_ARGS__)
 #else
@@ -382,6 +383,7 @@ flush_fn_helper
 typedef struct merge_args_s {
  uint32_t prev_range_id;
  uint32_t range_id;
+ uint32_t num_threads;
  bool sampled;
 } merge_args_t;
 
@@ -408,8 +410,8 @@ merge_fn_helper
     cct_node_t *prev_range_node = hpcrun_cct_insert_ip_norm(context, prev_range_ip);
     cct_node_t *range_node = hpcrun_cct_insert_ip_norm(context, range_ip);
     
-    uint64_t kernel_count = gpu_metrics_get_kernel_count(range_node);
-    uint64_t sampled_kernel_count = merge_args->sampled ? kernel_count : 0;
+    uint64_t kernel_count = gpu_metrics_get_kernel_count(range_node) * merge_args->num_threads;
+    uint64_t sampled_kernel_count = merge_args->sampled ? kernel_count * merge_args->num_threads : 0;
 
     gpu_metrics_attribute_kernel_count(prev_range_node, sampled_kernel_count, kernel_count);
     // XXX(Keren): is this function stable?
@@ -451,7 +453,7 @@ cupti_ip_norm_map_lookup_thread
  cct_node_t *cct
 )
 {
-  cupti_ip_norm_map_lookup(&map_root, ip_norm, cct);
+  return cupti_ip_norm_map_lookup(&map_root, ip_norm, cct);
 }
 
 
@@ -514,13 +516,15 @@ cupti_ip_norm_map_merge
  cupti_ip_norm_map_entry_t **root,
  uint32_t prev_range_id,
  uint32_t range_id,
+ uint32_t num_threads,
  bool sampled
 )
 {
   merge_args_t merge_args = {
     .prev_range_id = prev_range_id,
     .range_id = range_id,
-    .sampled = sampled
+    .sampled = sampled,
+    .num_threads = num_threads
   };
   st_forall((*root), splay_allorder, merge_fn_helper, &merge_args);
 }
@@ -531,8 +535,9 @@ cupti_ip_norm_map_merge_thread
 (
  uint32_t prev_range_id,
  uint32_t range_id,
+ uint32_t num_threads,
  bool sampled
 )
 {
-  cupti_ip_norm_map_merge(&map_root, prev_range_id, range_id, sampled);
+  cupti_ip_norm_map_merge(&map_root, prev_range_id, range_id, num_threads, sampled);
 }

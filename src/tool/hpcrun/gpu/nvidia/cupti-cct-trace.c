@@ -7,8 +7,9 @@
 
 #include "cupti-cct-trace-map.h"
 #include "cupti-ip-norm-map.h"
+#include "cupti-range-thread-list.h"
 
-#define DEBUG
+//#define DEBUG
 
 #ifdef DEBUG
 #define TRACE_ASSERT(x) assert(x)
@@ -464,7 +465,8 @@ static void
 trace_condense
 (
  uint32_t range_id,
- bool sampled
+ bool sampled,
+ bool merge
 )
 {
   cupti_cct_trace_node_t *current = thread_root->left;
@@ -474,8 +476,12 @@ trace_condense
     // Single node, must be repeated with another range
     cupti_cct_trace_map_entry_t *entry = trace_map_lookup(current->left->left->key, current->left->key);
     assert(entry != NULL);
-    uint32_t prev_range_id = cupti_cct_trace_map_entry_range_id_get(entry);
-    cupti_ip_norm_map_merge_thread(prev_range_id, range_id, sampled);
+
+    if (merge) {
+      uint32_t prev_range_id = cupti_cct_trace_map_entry_range_id_get(entry);
+      uint32_t num_threads = cupti_range_thread_list_num_threads();
+      cupti_ip_norm_map_merge_thread(prev_range_id, range_id, sampled, num_threads);
+    }
 
     cupti_cct_trace_node_t *trace_node = cupti_cct_trace_map_entry_cct_trace_node_get(entry);
     if (trace_node != current->left->left) {
@@ -527,7 +533,8 @@ void
 cupti_cct_trace_flush
 (
  uint32_t range_id,
- bool sampled
+ bool sampled,
+ bool merge
 )
 {
   TRACE_MSG(CUPTI_CCT_TRACE, "Enter flush key trace");
@@ -538,7 +545,7 @@ cupti_cct_trace_flush
   trace_append(thread_root, trace_node);
   // Don't index A|
   
-  trace_condense(range_id, sampled);
+  trace_condense(range_id, sampled, merge);
 
   TRACE_MSG(CUPTI_CCT_TRACE, "Exit flush key trace");
 }
@@ -552,10 +559,11 @@ cupti_cct_trace_dump
   if (!thread_root) {
     return;
   }
+
   cupti_cct_trace_node_t *node = thread_root->right;
   printf("thread_root->");
   while (node != thread_root) {
-    printf("%p", node->key);
+    printf("%p", (void *)node->key);
     if (node->right != thread_root) {
       printf("->");
     } else {

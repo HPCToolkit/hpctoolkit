@@ -68,6 +68,7 @@ cupti_ip_norm_map_merge
  cupti_ip_norm_map_entry_t **root,
  uint32_t prev_range_id,
  uint32_t range_id,
+ uint32_t num_threads,
  bool sampled
 );
 
@@ -77,6 +78,7 @@ cupti_ip_norm_map_merge_thread
 (
  uint32_t prev_range_id,
  uint32_t range_id,
+ uint32_t num_threads,
  bool sampled
 );
 

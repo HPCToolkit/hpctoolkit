@@ -59,7 +59,8 @@
 
 #include "cupti-cct-trace-map.h"
 
-#define DEBUG
+//#define DEBUG
+
 #ifdef DEBUG
 #define TRACE_MAP_MSG(...) TMSG(__VA_ARGS__)
 #else

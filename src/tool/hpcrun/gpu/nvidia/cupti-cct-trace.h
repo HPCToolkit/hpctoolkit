@@ -31,7 +31,8 @@ void
 cupti_cct_trace_flush
 (
  uint32_t range_id,
- bool sampled
+ bool sampled,
+ bool merge
 );
 
 
