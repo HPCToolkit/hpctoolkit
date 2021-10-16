@@ -101,7 +101,6 @@ cupti_range_mode_context_sensitive_is_enter
   CUcontext context;
   cuda_context_get(&context);
   cupti_ip_norm_map_ret_t map_ret_type = cupti_ip_norm_map_lookup_thread(kernel_ip, api_node);
-  bool do_flush = false;
   bool active = cupti_pc_sampling_active();
 
   if (map_ret_type == CUPTI_IP_NORM_MAP_DUPLICATE) {
@@ -110,7 +109,6 @@ cupti_range_mode_context_sensitive_is_enter
         // If active, we encounter a new range and have to flush.
         // It is an early collection mode different than other modes
         cupti_pc_sampling_range_context_collect(range_id, context);
-        do_flush = true;
       }
       cupti_retained_ranges++;
       if (cupti_retained_ranges == cupti_range_thread_retain_range) {
@@ -135,13 +133,14 @@ cupti_range_mode_context_sensitive_is_enter
   if (is_cur && !active) {
     // 1. abc | (a1)bc
     // 2. abc | ... | abc
-    bool sampled = !repeated || (do_flush && cupti_range_mode_context_sensitive_is_sampled());
+    bool sampled = !repeated ||
+      (map_ret_type == CUPTI_IP_NORM_MAP_DUPLICATE && cupti_range_mode_context_sensitive_is_sampled());
     if (sampled) {
       cupti_pc_sampling_start(context);
     }
   }
 
-  return do_flush;
+  return map_ret_type == CUPTI_IP_NORM_MAP_DUPLICATE;
 }
 
 
