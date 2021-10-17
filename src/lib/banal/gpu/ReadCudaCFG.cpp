@@ -180,7 +180,7 @@ parseDotCFG
   for (auto &iter : function_map) {
     functions.push_back(iter.second);
     const std::string& symbol_name = iter.first.first;
-    int counter = symbol_name_counter[symbol_name]++;
+    size_t counter = symbol_name_counter[symbol_name]++;
     if (counter < symbols_by_name[symbol_name].size()) {
       parsed_func_symbol_map[iter.second] = symbols_by_name[symbol_name][counter];
     }
