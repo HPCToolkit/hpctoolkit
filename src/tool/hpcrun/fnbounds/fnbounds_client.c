@@ -386,7 +386,7 @@ shutdown_server(void)
   // collect the server's exit status to reduce zombies.  but we must
   // do it only for the fnbounds server, not any application child.
   if (server_pid > 0) {
-    auditor_exports->waitpid(server_pid, NULL, 0);
+    auditor_exports->waitpid(server_pid, NULL, __WCLONE);
   }
   server_pid = 0;
 
@@ -454,7 +454,7 @@ hpcfnbounds_child(void* fds_vp) {
 
   // Do the clone, and pass the result back to our parent through the shared memory space
   fds->pid = auditor_exports->clone(hpcfnbounds_grandchild,
-    &server_stack[SERVER_STACK_SIZE * 1024], SIGCHLD | CLONE_VM, fds_vp);
+    &server_stack[SERVER_STACK_SIZE * 1024], CLONE_UNTRACED | CLONE_VM, fds_vp);
   return 0;
 }
 
@@ -496,7 +496,7 @@ launch_server(void)
 
   // For safety, we don't assume the direction of stack growth
   child_pid = auditor_exports->clone(hpcfnbounds_child,
-    &child_stack[4 * 1024], SIGCHLD | CLONE_VM, &fds);
+    &child_stack[4 * 1024], CLONE_UNTRACED | CLONE_VM, &fds);
 
   if (child_pid < 0) {
     //
@@ -508,7 +508,7 @@ launch_server(void)
 
   // Wait for the child to successfully clone the grandchild
   int status;
-  if (auditor_exports->waitpid(child_pid, &status, 0) < 0) {
+  if (auditor_exports->waitpid(child_pid, &status, __WCLONE) < 0) {
     //
     // waitpid failed
     //
