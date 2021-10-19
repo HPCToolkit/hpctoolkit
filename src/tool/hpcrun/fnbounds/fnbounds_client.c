@@ -168,7 +168,6 @@ static int fdout = -1;
 static int fdin = -1;
 
 static pid_t my_pid;
-static pid_t server_pid = 0;
 
 #if 0
 // Limit on memory use at which we restart the server in Meg.
@@ -383,13 +382,6 @@ shutdown_server(void)
   fdin = -1;
   client_status = SYSERV_INACTIVE;
 
-  // collect the server's exit status to reduce zombies.  but we must
-  // do it only for the fnbounds server, not any application child.
-  if (server_pid > 0) {
-    auditor_exports->waitpid(server_pid, NULL, __WCLONE);
-  }
-  server_pid = 0;
-
   TMSG(FNBOUNDS_CLIENT, "syserv shutdown");
 }
 
@@ -449,11 +441,10 @@ static int
 hpcfnbounds_child(void* fds_vp) {
   struct {
     int sendfd[2], recvfd[2];
-    pid_t pid;
   }* fds = fds_vp;
 
-  // Do the clone, and pass the result back to our parent through the shared memory space
-  fds->pid = auditor_exports->clone(hpcfnbounds_grandchild,
+  // Clone the grandchild. We can share the memory space here since we're exiting soon.
+  auditor_exports->clone(hpcfnbounds_grandchild,
     &server_stack[SERVER_STACK_SIZE * 1024], CLONE_UNTRACED | CLONE_VM, fds_vp);
   return 0;
 }
@@ -494,9 +485,11 @@ launch_server(void)
   // Give up a bit of our stack for the child shim. It doesn't need much.
   char child_stack[4 * 1024 * 2];
 
-  // For safety, we don't assume the direction of stack growth
+  // Clone the child shim. With Glibc <2.24 there is a bug (https://sourceware.org/bugzilla/show_bug.cgi?id=18862)
+  // where this will reset the pthreads state in the parent if CLONE_VM is used.
+  // Clone the memory space to avoid feedback effects.
   child_pid = auditor_exports->clone(hpcfnbounds_child,
-    &child_stack[4 * 1024], CLONE_UNTRACED | CLONE_VM, &fds);
+    &child_stack[4 * 1024], CLONE_UNTRACED, &fds);
 
   if (child_pid < 0) {
     //
@@ -550,10 +543,9 @@ launch_server(void)
   fdout = fds.sendfd[1];
   fdin = fds.recvfd[0];
   my_pid = getpid();
-  server_pid = fds.pid;
   client_status = SYSERV_ACTIVE;
 
-  TMSG(FNBOUNDS_CLIENT, "syserv launch: success, child shim: %d, server: %d", (int) child_pid, (int) server_pid);
+  TMSG(FNBOUNDS_CLIENT, "syserv launch: success, child shim: %d, server: ???", (int) child_pid;
 
   // Fnbounds talks first with a READY message
   struct syserv_mesg mesg;
@@ -883,7 +875,7 @@ main(int argc, char *argv[])
     errx(1, "fnbounds server failed");
   }
   fprintf(outf, "server: %s\n", server);
-  fprintf(outf, "parent: %d, child: %d\n", my_pid, server_pid);
+  fprintf(outf, "parent: %d, child: ???\n", my_pid);
   fprintf(outf, "connected\n");
 
   query_loop();
