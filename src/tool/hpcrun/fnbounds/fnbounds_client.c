@@ -545,7 +545,7 @@ launch_server(void)
   my_pid = getpid();
   client_status = SYSERV_ACTIVE;
 
-  TMSG(FNBOUNDS_CLIENT, "syserv launch: success, child shim: %d, server: ???", (int) child_pid;
+  TMSG(FNBOUNDS_CLIENT, "syserv launch: success, child shim: %d, server: ???", (int) child_pid);
 
   // Fnbounds talks first with a READY message
   struct syserv_mesg mesg;
