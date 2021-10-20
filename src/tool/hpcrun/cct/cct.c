@@ -129,6 +129,10 @@ struct cct_node_t {
   struct cct_node_t* left;
   struct cct_node_t* right;
 
+  // parent sibling in the splay tree of siblings. Updated during a walk.
+  struct cct_node_t* up;
+  // sibling used to get back to this node. Updated during a walk.
+  struct cct_node_t* prev;
 };
 
 #if 0
@@ -185,6 +189,8 @@ cct_node_create(cct_addr_t* addr, bool unwound, cct_node_t* parent)
   node->children = NULL;
   node->left = NULL;
   node->right = NULL;
+  node->up = NULL;
+  node->prev = NULL;
 
   node->is_leaf = false;
   node->unwound = unwound;
@@ -225,25 +231,57 @@ splay(cct_node_t* cct, cct_addr_t* addr)
 //
 // lrs abbreviation for "left-right-self"
 //
-static void
-walk_child_lrs(cct_node_t* cct,
-               cct_op_t op, cct_op_arg_t arg, size_t level,
-               void (*wf)(cct_node_t* n, cct_op_t o, cct_op_arg_t a, size_t l))
-{
-  if (!cct) return;
 
-  walk_child_lrs(cct->left, op, arg, level, wf);
-  walk_child_lrs(cct->right, op, arg, level, wf);
-  wf(cct, op, arg, level);
-}
+// Get the next node to process within a splay tree of siblings, given the
+// previous returned node. Pass a root node to start a walk.
+//
+// This modifies cct_node_t state, do not run more than one walk through a
+// splay subtree at a time. Note also that this clears state as it progresses,
+// aborting an incomplete walk will leave the tree in an invalid state.
+//
+// Returns NULL when no more nodes are available to walk.
+static cct_node_t*
+walk_child_lrs(cct_node_t* cur) {
+  // Invariant: Before and after a walk, all nodes must have up and prev set to
+  // NULL. These should be reset while completing a walk.
 
-static void
-walkset_l(cct_node_t* cct, cct_op_t fn, cct_op_arg_t arg, size_t level)
-{
-  if (! cct) return;
-  walkset_l(cct->left, fn, arg, level);
-  walkset_l(cct->right, fn, arg, level);
-  fn(cct, arg, level);
+  while(cur != NULL) {
+    if(cur->prev == cur->up) {  // Going down
+      // We haven't seen cur's children yet. If it has any they go first.
+      if(cur->left != NULL) {
+        cur->left->up = cur->left->prev = cur;  // Going down
+        cur = cur->left;
+        continue;
+      }
+      if(cur->right != NULL) {
+        cur->right->up = cur->right->prev = cur;  // Going down
+        cur = cur->right;
+        continue;
+      }
+      // If cur has no children cur goes next. Set prev to cur so we go up.
+      cur->prev = cur;
+      return cur;
+    } else {  // Going up
+      // We've seen cur's children, we've handled cur. This subtree is
+      // guaranteed to be done, so clean up.
+      cct_node_t* up = cur->up;
+      cur->up = cur->prev = NULL;
+
+      // If there is no up from here, the walk has completed.
+      if(up == NULL) return NULL;
+      // If we're a left child, our right sibling goes next
+      if(cur == up->left && up->right != NULL) {
+        up->right->up = up->right->prev = up;  // Going down
+        return up->right;
+      }
+      // Otherwise up goes next. Set prev to cur so we go up.
+      up->prev = cur;
+      return up;
+    }
+  }
+
+  // If cur ever is NULL, we're done here.
+  return NULL;
 }
 
 //
@@ -774,8 +812,32 @@ void
 hpcrun_cct_walk_child_1st_w_level(cct_node_t* cct, cct_op_t op, cct_op_arg_t arg, size_t level)
 {
   if (!cct) return;
-  walk_child_lrs(cct->children, op, arg, level+1,
-		 hpcrun_cct_walk_child_1st_w_level);
+
+  cct_node_t* cur = cct;
+  do {
+    // cur has not been walked yet. If it has children, them and their children go first.
+    if(cur->children != NULL) {
+      cur = walk_child_lrs(cur->children);
+      level++;
+      continue;
+    }
+
+    while(cur != cct) {
+      // It's cur's turn now
+      op(cur, arg, level);
+      // If cur has a next sibling, it (and its children) go next
+      cct_node_t* next = walk_child_lrs(cur);
+      if(next != NULL) {
+        cur = next;
+        break;
+      }
+      // Otherwise the parent goes next, but not its children
+      cur = cur->parent;
+      level--;
+    }
+  } while(cur != cct);  // Exit condition is to reach the root again
+
+  // At this point we've processed everything except cct. Do that last;
   op(cct, arg, level);
 }
 
@@ -786,9 +848,30 @@ void
 hpcrun_cct_walk_node_1st_w_level(cct_node_t* cct, cct_op_t op, cct_op_arg_t arg, size_t level)
 {
   if (!cct) return;
-  op(cct, arg, level);
-  walk_child_lrs(cct->children, op, arg, level+1,
-		 hpcrun_cct_walk_node_1st_w_level);
+
+  cct_node_t* cur = cct;
+  do {
+    // It's cur's turn now
+    op(cur, arg, level);
+    // If cur has children, they go next.
+    if(cur->children != NULL) {
+      cur = walk_child_lrs(cur->children);
+      level++;
+      continue;
+    }
+
+    while(cur != cct) {
+      // If cur has a next sibling, it (and its children) go next
+      cct_node_t* next = walk_child_lrs(cur);
+      if(next != NULL) {
+        cur = next;
+        break;
+      }
+      // Otherwise the parent goes next, but not its children
+      cur = cur->parent;
+      level--;
+    }
+  } while(cur != cct);  // Exit condition is to reach the root again
 }
 
 //
@@ -797,8 +880,9 @@ hpcrun_cct_walk_node_1st_w_level(cct_node_t* cct, cct_op_t op, cct_op_arg_t arg,
 void
 hpcrun_cct_walkset(cct_node_t* cct, cct_op_t fn, cct_op_arg_t arg)
 {
-  if(!cct->children) return;
-  walkset_l(cct->children, fn, arg, 0);
+  cct = cct->children;
+  while((cct = walk_child_lrs(cct)) != NULL)
+    fn(cct, arg, 0);
 }
 
 //
@@ -988,41 +1072,6 @@ hpcrun_cct_find_addr(cct_node_t* cct, cct_addr_t* addr)
     return found;
   }
   return NULL;
-}
-
-//
-// Merging operation: Given 2 ccts : CCT_A, CCT_B,
-//    merge means add all paths in CCT_B that are NOT in CCT_A
-//    to CCT_A. For paths that are common, perform the merge operation on
-//    each common node, using auxiliary arg merge_arg
-//
-//    NOTE: this merge operation presumes
-//       cct_addr_data(CCT_A) == cct_addr_data(CCT_B)
-//
-
-// vi3: Added by vi3
-static cct_node_t*
-walkset_l_merge(cct_node_t* cct, cct_op_merge_t fn, cct_op_arg_t arg, size_t level)
-{
-  // if node is NULL, the return NULL
-  if (! cct) return NULL;
-  // if left should be disconnected
-  if (! walkset_l_merge(cct->left, fn, arg, level))
-    cct->left = NULL;
-  // if right should be disconnected
-  if(! walkset_l_merge(cct->right, fn, arg, level))
-    cct->right = NULL;
-  // fn is going to decide if cct should be disconnected from parent or not
-  return fn(cct, arg, level);
-}
-
-void
-hpcrun_cct_walkset_merge(cct_node_t* cct, cct_op_merge_t fn, cct_op_arg_t arg)
-{
-  if(! cct->children) return;
-  // should children be disconnected
-  if(! walkset_l_merge(cct->children, fn, arg, 0))
-    cct->children = NULL;
 }
 
 
