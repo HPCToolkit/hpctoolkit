@@ -209,7 +209,9 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
   hpcrun_unw_init_cursor(&cursor, context);
 
   int steps_taken = 0;
+  int attempts = 0;
   do {	// loop over frames in the callstack
+    int last_steps_taken = steps_taken;
     void* ip;
     hpcrun_unw_get_ip_unnorm_reg(&cursor, &ip);
 
@@ -264,6 +266,13 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
 
     } else {
       ret = hpcrun_unw_step ( &cursor, &steps_taken);
+    }
+
+    // If we've "unwound" too many frames, probably something is wrong.
+    attempts++;
+    if(attempts > 300) {
+      EMSG("Unwind took too many attempts, aborting unwind (taken: %d > %d)", steps_taken, last_steps_taken);
+      ret = STEP_ERROR;
     }
 
     switch (ret) {
