@@ -91,6 +91,7 @@
 #include <hpcrun/sample_sources_registered.h>
 #include <hpcrun/utilities/tokenize.h>
 #include <hpcrun/thread_data.h>
+#include <hpcrun/trace.h>
 
 
 
@@ -162,7 +163,8 @@ data_motion_implicit_activities[] = {
 CUpti_ActivityKind
 kernel_invocation_activities[] = {
   CUPTI_ACTIVITY_KIND_CONCURRENT_KERNEL,
-  CUPTI_ACTIVITY_KIND_SYNCHRONIZATION,
+  // CUPTI currently provides host side time stamps for synchronization.
+  //CUPTI_ACTIVITY_KIND_SYNCHRONIZATION,
   CUPTI_ACTIVITY_KIND_INVALID
 };
 
@@ -344,6 +346,7 @@ METHOD_FN(process_event_list, int lush_metrics)
   int nevents = (self->evl).nevents;
 
   TMSG(CUDA,"nevents = %d", nevents);
+  hpcrun_set_trace_metric(HPCRUN_GPU_TRACE_FLAG);
 
   // Fetch the event string for the sample source
   // only one event is allowed

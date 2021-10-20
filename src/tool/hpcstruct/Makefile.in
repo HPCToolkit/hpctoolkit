@@ -602,7 +602,7 @@ MYLDADD = \
 @HOST_CPU_X86_FAMILY_TRUE@MY_LIB_XED = $(XED2_LIB_FLAGS)
 MYCLEAN = @HOST_LIBTREPOSITORY@
 GENHEADERS = \
-	gpubin-analysis.h \
+	pmake.h \
 	usage.h
 
 noinst_HEADERS = $(GENHEADERS)

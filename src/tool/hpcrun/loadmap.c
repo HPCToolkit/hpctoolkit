@@ -292,7 +292,11 @@ hpcrun_loadmap_print(hpcrun_loadmap_t* loadmap)
 load_module_t*
 hpcrun_loadmap_findByAddr(void* begin, void* end)
 {
+  // don't waste effort on an obviously invalid address
+  if (begin == 0) return NULL; 
+
   TMSG(LOADMAP, "find by address %p -- %p", begin, end);
+
   for (load_module_t* x = s_loadmap_ptr->lm_head; (x); x = x->next) {
     TMSG(LOADMAP, "\tload module %s", x->name);
     if (x->dso_info) {
@@ -565,12 +569,19 @@ hpcrun_loadModule_add(const char* name)
 void
 hpcrun_initLoadmap()
 {
-  notification_recipients = NULL; // necessary for forked executable
+  // all processes (initial and forked processes)
+  notification_recipients = NULL; 
 
-  s_loadmap_ptr = &s_loadmap;
-  hpcrun_loadmap_init(s_loadmap_ptr);
+  // initial process only
+  if (s_loadmap_ptr == NULL) { 
 
-  s_dso_free_list = NULL;
+    // initialize load map itself
+    s_loadmap_ptr = &s_loadmap;
+    hpcrun_loadmap_init(s_loadmap_ptr);
+
+    // initialize free list for shared libraries
+    s_dso_free_list = NULL;
+  }
 }
 
 

@@ -70,7 +70,7 @@ The current status of using Spack for HPCToolkit is at:
 @end example
 
 @noindent
-Last revised: July 13, 2021.
+Last revised: October 19, 2021.
 
 @c ------------------------------------------------------------
 
@@ -94,7 +94,7 @@ you couldn't compile anything.
 
 @item
 Cmake version 3.4 or later, perl version 5.x, and python version
-3.4 or later.  On systems that are missing these tools or have versions
+3.5 or later.  On systems that are missing these tools or have versions
 that are too old, you can use spack to build a later version.
 
 @item
@@ -175,12 +175,12 @@ hpctoolkit@@master ^dyninst@@10.1.0+openmp
 @end example
 
 @item
-'arch', 'platform', 'os' and 'target' are special options for the system
-architecture and machine type.  Platform is normally 'linux', or else
-'cray' (or even 'darwin').  OS is the Linux
-distribution, 'rhel7', 'sles15', etc, and target is the machine type,
-'x86_64', 'ppc64le', etc.  Arch is a triple of platform, os and target
-separated by dashes.
+'arch', 'platform', 'os' and 'target' are special options for the
+system architecture and machine type.  Platform is normally 'linux',
+or else 'cray' (or even 'darwin').  OS is the Linux distribution,
+'rhel7', 'sles15', etc, and target is the machine type, 'x86_64',
+'ppc64le', etc.  Arch is a triple of platform, os and target separated
+by dashes.
 
 Normally, a system has only one arch type and you don't need to
 specify this.  However, for systems with separate front and back-end
@@ -199,6 +199,14 @@ x86_64 or a specific CPU type.  For example:
 
 @example
 amg2013 target=x86_64    lulesh target=ivybridge
+@end example
+
+@noindent
+You can use @code{spack arch} to display the generic, top-level
+families and the micro-arch targets.
+
+@example
+spack arch --known-targets
 @end example
 @end enumerate
 
@@ -222,7 +230,7 @@ spack spec hpctoolkit@@master ^binutils@@2.34 ^boost@@1.72.0
 @section Clone Spack and HPCToolkit
 
 Spack is available via git clone from GitHub.  This includes the core
-spack machinery and recipes for building more than 5,000 packages (and
+spack machinery and recipes for building almost 6,000 packages (and
 growing).  You should also clone HPCToolkit for the
 @code{packages.yaml} file which is used to configure the spack build.
 
@@ -409,7 +417,7 @@ no effect on non-x86 systems.)
 
 The other sections in @code{packages.yaml} specify paths or modules
 for other packages and system build tools.  Building hpctoolkit's
-prerequisites requires cmake 3.4 or later, perl 5.x and python 3.4 or
+prerequisites requires cmake 3.4 or later, perl 5.x and python 3.5 or
 later.  There are three ways to satisfy these requirements: a system
 installed version (eg, /usr), a pre-built module or build from
 scratch.
@@ -419,12 +427,24 @@ version is perfectly fine.  If you already have an installed version
 and prefer to use that instead, then you can specify this in
 @code{packages.yaml}.
 
-For example, this entry says that cmake 3.7.2 is available from module
-@code{CMake/3.7.2} and that spack should use this instead of building
-its own copy.  You may use more than one spec per package and more
-than one module per spec, if needed.  @code{buildable: False} is
-optional and means that spack must find a matching external spec or
-else fail the build.
+The easiest way to use a pre-built package is to let spack find the
+package itself.  Make sure the program is on your PATH and run
+@code{spack external}.  For example, to search for @code{cmake}, use:
+
+@example
+spack external find cmake
+@end example
+
+@noindent
+This does not work for every spack package, but it does work with
+@code{cmake}, @code{perl} and @code{python}.  Note: spack puts these
+entries in @code{packages.yaml} in the @code{.spack} subdirectory of
+your home directory.
+
+You can also add these entries manually to @code{packages.yaml}.  For
+example, this entry says that cmake 3.7.2 is available from module
+@code{CMake/3.7.2}.  @code{buildable: False} is optional and means
+that spack must find a matching external spec or else fail the build.
 
 @example
 cmake:
@@ -436,31 +456,22 @@ cmake:
 @end example
 
 @noindent
-This example says that perl v5.16.3 is installed at
-@code{/usr/bin/perl}.  Note that the @code{prefix} entry is the parent
+This example says that python2 and python3 are both available in
+@code{/usr/bin}.  Note that the @code{prefix} entry is the parent
 directory of @code{bin}, not the bin directory itself.
-
-@example
-perl:
-  externals:
-  - spec: perl@@5.16.3
-    prefix: /usr
-  buildable: False
-@end example
-
-@noindent
-Note that you may specify more than one spec for a package.  For
-example, your system might have both python2 and python3.
 
 @example
 python:
   externals:
-  - spec: python@@3.6.5
+  - spec: python@@2.7.18
     prefix: /usr
-  - spec: python@@2.7.15
+  - spec: python@@3.6.8
     prefix: /usr
-  buildable: False
 @end example
+
+@noindent
+Note: as a special rule for python, use package name @code{python},
+even though the program name is python2 or python3.
 
 @subsection Micro-Architecture Targets
 
@@ -507,6 +518,88 @@ Dependencies'.
 @example
 @uref{https://spack.readthedocs.io/en/latest/build_settings.html}
 @uref{https://spack.readthedocs.io/en/latest/basic_usage.html#specs-dependencies}
+@end example
+
+@section Bootstrapping Clingo
+
+The 'concretizer' is the part of spack that converts a partial spec
+into a full spec with values for the version and variants of every
+package in the spec plus all dependencies.  The new concretizer for
+spack (clingo) is a third-party python library for solving answer set
+logic problems (eg, satisfiability).
+
+The easiest way to install clingo it to use spack's pre-built
+libraries.  These are available for Linux (x86_64, ppc64le, aarch64)
+and Macos/Darwin (x86_64) for python 3.5 or later.  The Macos version
+also requires Macos 10.13 or later and the Xcode developer package
+(for python and other programs).
+
+By default, spack will automatically install (bootstrap) clingo the
+first time you run a command that uses it (eg, @code{spec} or
+@code{solve}).  However, if this fails or you want to verify the steps
+yourself, then follow these steps.
+
+In @code{config.yaml}, set @code{concretizer} to @code{clingo}.
+
+@example
+config:
+  concretizer: clingo
+@end example
+
+@noindent
+In @code{bootstrap.yaml}, disable @code{spack-install} to force spack
+to use a pre-built binary instead of building from source.
+
+@example
+bootstrap:
+  trusted:
+    github-actions: true
+    spack-install:  false
+@end example
+
+@noindent
+Spack needs at least one compiler configured (see below).  If this is
+your first time running spack on this machine, then use @code{compiler
+find} to detect a compiler.  Finally, use @code{spack solve} to
+trigger bootstrapping.
+
+@example
+spack compiler list    (to display known compilers)
+spack compiler find    (to add a compiler, if needed)
+spack solve zlib
+==> Bootstrapping clingo from pre-built binaries
+...
+zlib@@1.2.11%gcc@@8.4.1+optimize+pic+shared arch=linux-rhel8-zen
+@end example
+
+@noindent
+Spack stores the clingo bootstrap files in @code{~/.spack/bootstrap}.
+You can check on the status of these files or clean (reset) them with
+the @code{find} or @code{clean} commands.
+
+@example
+spack find -b     (displays the status of the bootstrap files)
+spack clean -b    (erases the current bootstrap files)
+@end example
+
+@noindent
+If the binary bootstrap fails, then try the @code{solve} step with
+debugging turned on.
+
+@example
+spack -d solve zlib
+@end example
+
+@indent
+If the binary bootstrap fails or if your system is not supported, then
+you will need to let spack build clingo from source.  Reset
+@code{spack-install} to true and rerun @code{spack solve zlib}.  This
+requires a compiler with support for C++14 and takes maybe 30-45
+minutes to install all the packages.
+
+@example
+@uref{https://spack.readthedocs.io/en/latest/getting_started.html#bootstrapping-clingo}
+@uref{https://github.com/alalazo/spack-bootstrap-mirrors#supported-platforms}
 @end example
 
 @c ------------------------------------------------------------
@@ -1097,25 +1190,25 @@ configure  \
 @c ------------------------------------------------------------
 
 @section HPCToolkit GUI Interface (Hpcviewer)
-Since 2021.04 release, HPCToolkit GUI interface provides both profile
-and trace views in a single application, i.e. hpcviewer. Prior to
-that, each view is a separate program: hpcviewer to analyze the
+Since 2020.12 release, the HPCToolkit GUI interface provides both
+profile and trace views in a single application, i.e. hpcviewer. Prior
+to that, each view was a separate program: hpcviewer to analyze the
 profile database, and hpctraceviewer to display the traces.
 
 We provide binary distributions for hpcviewer on Linux (x86_64,
-ppc64/le and now aarch64), Windows and MacOS.  HPCToolkit databases
-are platform-independent and it is common to run hpcrun on one machine
-and then view the results on another machine.
+ppc64le and aarch64), Windows and MacOS (x86_64 and M1).  HPCToolkit
+databases are platform-independent and it is common to run hpcrun on
+one machine and then view the results on another machine.
 
-Starting with 2021.01, the viewer now requires Java 11 or later (but
-not 15), plus GTK+ 3.20 or later on Linux.  Older viewers, up through
+Starting with 2021.01, the viewer now requires Java 11 or later,
+plus GTK+ 3.20 or later on Linux.  Older viewers, up through
 2020.12, require Java 8 (not 9 or later), plus GTK+ 2.x for Linux.
 
 @subsection Spack Install
 
-The spack install is available on Linux x86_64, little-endian
-powerpc64 (power8 and 9) and now aarch64 ARM.  This installs hpcviewer
-and includes the Java prerequisite.
+The spack install is available on Linux x86_64, little-endian ppc64le
+(power8 and 9) and aarch64 ARM, and also MacOS on x86_64.  This
+installs hpcviewer and includes the Java prerequisite.
 
 For the current viewers, use openjdk with the most recent version of
 Java 11 for all platforms.  Currently, this is the default, but if not,
@@ -1125,20 +1218,22 @@ with @code{spack info} and @code{spack spec}.
 @example
 spack info openjdk
 spack install hpcviewer
-spack install hpcviewer ^openjdk @@11.0.8_10
+spack install hpcviewer ^openjdk @@11.0.12_7    (if needed)
 @end example
 
 @noindent
-For older viewers, up through 2020.12, the choice of Java depends on the
-platform.  On x86_64, use openjdk, the most recent version of Java 8
-(not 9).  For powerpc, use ibm-java, again the latest version 8.  Older
-viewers are not supported on ARM.  For example (the versions may
-change):
+For older viewers, up through 2020.12, use the latest verion of
+openjdk Java 8 (version 1.8).  For example (the versions may change):
 
 @example
-(x86)  spack install hpcviewer ^openjdk @@1.8.0_265-b01
-(ppc)  spack install hpcviewer ^ibm-java @@8.0.6.20
+spack install hpcviewer ^openjdk @@1.8.0_265-b01
 @end example
+
+@noindent
+Note: to run the viewer on Macos, you can either open the Finder and
+click your way to the @code{hpcviewer.app} directory and double-click
+on the hpcviewer icon, or else use @code{spack load hpcviewer} to put
+@code{hpcviewer} on your PATH.
 
 @subsection Manual Install
 
@@ -1162,9 +1257,13 @@ prefix.
 @noindent
 On Windows and MacOS, download the @code{win32} or @code{macosx.cocoa}
 versions and unpack the zip or dmg files in the desired directory.
-For older versions prior to 2021.04 release, due to Apple's security
-precautions, on MacOS, you will need to use curl or wget instead of a
-web browser.
+Due to Apple's security precautions, on MacOS, you may need to use
+curl or wget instead of a web browser.
+
+Note: the manual install uses the existing system version of Java (or
+one of several versions with modules), whereas the spack install
+includes the java prerequisite.  That is, the spack install is
+self-contained and does not need to change the system java.
 
 @c ------------------------------------------------------------
 

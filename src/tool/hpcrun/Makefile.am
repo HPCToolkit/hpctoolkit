@@ -407,6 +407,7 @@ MY_BASE_FILES =				\
 	syscalls/poll.c	\
 	syscalls/ppoll.c \
 	syscalls/select.c \
+	syscalls/sysv_signal.c \
 	\
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/hpcrun-nanotime.h  utilities/hpcrun-nanotime.c  \
@@ -1182,7 +1183,7 @@ HPCRUN_NAMES =  -G 'hpcrun_*' -G 'hpctoolkit_*'
 MISC_NAMES =    -G 'debug_flag_*' -G 'messages_*' -G ompt_start_tool
 OPENCL_NAMES = -G 'clBuildProgram' -G 'clCreate*' -G 'clEnqueue*' -G 'clSetKernelArg' -G 'cl*Event*'
 
-DYN_SYSCALL_LIST = poll ppoll pselect select
+DYN_SYSCALL_LIST = poll ppoll pselect select __sysv_signal
 DYN_SYSCALL_NAMES = $(foreach name,$(DYN_SYSCALL_LIST),-G $(name))
 
 STAT_WRAP_NAMES = -w -G '__wrap_*'
