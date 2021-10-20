@@ -298,10 +298,6 @@ void hpcrun_cct_node_free(cct_node_t* cct);
 // remove Children from cct
 void cct_remove_my_subtree(cct_node_t* cct);
 
-// for hpcrun_cct_walkset_merge
-typedef cct_node_t* (*cct_op_merge_t)(cct_node_t* cct, cct_op_arg_t arg, size_t level);
-extern void hpcrun_cct_walkset_merge(cct_node_t* cct, cct_op_merge_t fn, cct_op_arg_t arg);
-
 // copy cct node
 cct_node_t* hpcrun_cct_copy_just_addr(cct_node_t* cct);
 void hpcrun_cct_set_children(cct_node_t* cct, cct_node_t* children);
