@@ -492,6 +492,8 @@ static ip_normalized_t cupti_func_ip_resolve(CUfunction function) {
 
 static void cupti_subscriber_callback(
     void* userdata, CUpti_CallbackDomain domain, CUpti_CallbackId cb_id, const void* cb_info) {
+  int oursafe = hpcrun_safe_enter();
+
   if (domain == CUPTI_CB_DOMAIN_RESOURCE) {
     const CUpti_ResourceData* rd = (const CUpti_ResourceData*)cb_info;
     if (cb_id == CUPTI_CBID_RESOURCE_MODULE_LOADED) {
@@ -880,6 +882,9 @@ static void cupti_subscriber_callback(
           is_kernel_op, is_valid_op, cupti_runtime_api_flag);
     }
   }
+
+  if (oursafe)
+    hpcrun_safe_exit();
 }
 
 void cupti_device_timestamp_get(CUcontext context, uint64_t* time) {
