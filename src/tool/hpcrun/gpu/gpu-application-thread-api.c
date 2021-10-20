@@ -102,6 +102,8 @@ gpu_application_thread_correlation_callback
 
   if(oursafe) hpcrun_safe_exit();
 
+  if(node == NULL) return node;
+
   cct_addr_t *node_addr = hpcrun_cct_addr(node);
 
   // elide unwanted context from GPU calling context: frames from 
