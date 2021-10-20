@@ -439,14 +439,12 @@ hpcfnbounds_grandchild(void* fds_vp)
 
 static int
 hpcfnbounds_child(void* fds_vp) {
-  struct {
-    int sendfd[2], recvfd[2];
-  }* fds = fds_vp;
-
   // Clone the grandchild. We can share the memory space here since we're exiting soon.
-  auditor_exports->clone(hpcfnbounds_grandchild,
+  errno = 0;
+  pid_t grandchild_pid = auditor_exports->clone(hpcfnbounds_grandchild,
     &server_stack[SERVER_STACK_SIZE * 1024], CLONE_UNTRACED | CLONE_VM, fds_vp);
-  return 0;
+  // If the grandchild clone failed, pass the error back to the parent.
+  return grandchild_pid < 0 ? errno != 0 ? errno : -1 : 0;
 }
 
 // Returns: 0 on success, else -1 on failure.
@@ -455,7 +453,6 @@ launch_server(void)
 {
   struct {
     int sendfd[2], recvfd[2];
-    pid_t pid;
   } fds;
   bool sampling_is_running;
   pid_t child_pid;
@@ -522,16 +519,7 @@ launch_server(void)
     //
     // child failed for some other reason
     //
-    EMSG("FNBOUNDS_CLIENT ERROR: syserv launch failed: child exited mysteriously");
-    return -1;
-  }
-
-  // Check the result the child passed back to us
-  if(fds.pid < 0) {
-    //
-    // gradchild clone failed
-    //
-    EMSG("FNBOUNDS_CLIENT ERROR: syserv launch failed: grandchild clone failed");
+    EMSG("FNBOUNDS_CLIENT ERROR: syserv launch failed: child exited with %d", WEXITSTATUS(status));
     return -1;
   }
 
