@@ -47,6 +47,7 @@
 #include "backtrace_info.h"
 #include "dbg_backtrace.h"
 
+#include "hpcrun/control-knob.h"
 #include "hpcrun/hpcrun_stats.h"
 
 #include "../../thread_data.h"
@@ -140,6 +141,14 @@ frame_t* hpcrun_skip_chords(frame_t* bt_outer, frame_t* bt_inner, int skip) {
   return &bt_inner[skip];
 }
 
+static int max_unwind_attempts = 0;
+
+void hpcrun_backtrace_setup() {
+  control_knob_value_get_int("MAX_UNWIND_DEPTH", &max_unwind_attempts);
+  if (max_unwind_attempts <= 0)
+    max_unwind_attempts = 1000;
+}
+
 //
 // Generate a backtrace, store it in the thread local data
 // Return true/false success code
@@ -177,6 +186,8 @@ bool hpcrun_generate_backtrace_no_trampoline(
   hpcrun_unw_init_cursor(&cursor, context);
 
   int steps_taken = 0;
+  int attempts = 0;
+  const int max_attempts = max_unwind_attempts == 0 ? 1000 : max_unwind_attempts;
   do {  // loop over frames in the callstack
     void* ip;
     hpcrun_unw_get_ip_unnorm_reg(&cursor, &ip);
@@ -229,6 +240,13 @@ bool hpcrun_generate_backtrace_no_trampoline(
       bt->fence = cursor.fence;
     } else {
       ret = hpcrun_unw_step(&cursor, &steps_taken);
+    }
+
+    // If we've "unwound" too many frames, probably something is wrong.
+    attempts++;
+    if (attempts > max_attempts) {
+      EMSG("Unwind took too many attempts, aborting unwind ");
+      ret = STEP_ERROR;
     }
 
     switch (ret) {

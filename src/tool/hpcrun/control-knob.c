@@ -89,6 +89,7 @@ void control_knob_register(char* name, char* value, control_knob_type type) {
 static void control_knob_default_register() {
   control_knob_register("STREAMS_PER_TRACING_THREAD", "256", ck_int);
   control_knob_register("MAX_COMPLETION_CALLBACK_THREADS", "1000", ck_int);
+  control_knob_register("MAX_UNWIND_DEPTH", "1000", ck_int);
 }
 
 void control_knob_init() {

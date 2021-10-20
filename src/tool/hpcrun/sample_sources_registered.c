@@ -129,9 +129,6 @@ void hpcrun_registered_sources_init(void) {
     METHOD_CALL(ss, init);
     TMSG(SS_COMMON, "sample source \"%s\": init", ss->name);
   }
-
-  // set user-defined control_knobs for the sample sources
-  control_knob_init();
 }
 
 void hpcrun_display_avail_events(void) {

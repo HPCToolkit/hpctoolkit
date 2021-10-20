@@ -62,6 +62,7 @@
 
 #include "cct/cct.h"
 #include "cct_insert_backtrace.h"
+#include "control-knob.h"
 #include "custom-init.h"
 #include "device-finalizers.h"
 #include "device-initializers.h"
@@ -785,6 +786,10 @@ void* monitor_init_process(int* argc, char** argv, void* data) {
     hpcrun_init_fake_auditor();
 #endif
 
+  // We need to initialize the control-knob framework early so we can use it
+  // to provide settings just about anywhere.
+  control_knob_init();
+
 #if 0
   // temporary patch to avoid deadlock within PAMI's optimized implementation
     // of all-to-all. a problem was observed when PAMI's optimized all-to-all
@@ -828,6 +833,7 @@ void* monitor_init_process(int* argc, char** argv, void* data) {
     // because mapping of load modules affects the recipe map.
     if (!is_child)
       hpcrun_unw_init();
+    hpcrun_backtrace_setup();
 
     // We need to save vdso before initializing fnbounds this
     // is because fnbounds_init will iterate over the load map
