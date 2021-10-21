@@ -61,6 +61,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <math.h>
+#include <time.h>
 
 #ifndef HPCRUN_STATIC_LINK
 #include <dlfcn.h>
@@ -347,6 +348,8 @@ static cupti_load_callback_t cupti_unload_callback = 0;
 static CUpti_SubscriberHandle cupti_subscriber;
 
 #ifdef NEW_CUPTI_ANALYSIS
+static uint64_t slow_unwinds = 0;
+static uint64_t fast_unwinds = 0;
 static uint64_t total_unwinds = 0;
 static uint64_t correct_unwinds = 0;
 #endif
@@ -1069,6 +1072,9 @@ cupti_unwind
 {
   if (cupti_correlation_threshold_get() == -1) {
     // Slow path to generate a cct
+#ifdef NEW_CUPTI_ANALYSIS
+    slow_unwinds += 1;
+#endif
     return cupti_correlation_callback();
   }
 
@@ -1097,6 +1103,9 @@ cupti_unwind
   if (entry == NULL) {
     api_node = cupti_correlation_callback();
 		cupti_unwind_map_insert(unwind_key, api_node);
+#ifdef NEW_CUPTI_ANALYSIS
+    fast_unwinds += 1;
+#endif
   } else {
     api_node = cupti_unwind_map_entry_cct_node_get(entry);
     int backoff = cupti_unwind_map_entry_backoff_get(entry);
@@ -1104,6 +1113,9 @@ cupti_unwind
       int threshold = pow(CUPTI_BACKOFF_BASE, backoff);
       int left = rand() % threshold;
       if (left == 0) {
+#ifdef NEW_CUPTI_ANALYSIS
+        slow_unwinds += 1;
+#endif
         cct_node_t *actual_node = cupti_correlation_callback();
         if (actual_node != api_node) {
           cupti_unwind_map_entry_cct_node_update(entry, actual_node);
@@ -1112,6 +1124,11 @@ cupti_unwind
           cupti_unwind_map_entry_backoff_update(entry, backoff + 1);
         }
       }
+#ifdef NEW_CUPTI_ANALYSIS
+      else {
+        fast_unwinds += 1;
+      }
+#endif
       api_node = cupti_unwind_map_entry_cct_node_get(entry);
     }
   }
@@ -2296,15 +2313,16 @@ cupti_device_flush(void *args, int how)
 #ifdef NEW_CUPTI_ANALYSIS
   spinlock_lock(&print_lock);
 
-  //printf("Total cct unwinds %lu, correct unwinds %lu\n", total_unwinds, correct_unwinds);
+  printf("Total cct unwinds %lu, correct unwinds %lu, fast unwinds %lu, slow unwinds %lu\n",
+    total_unwinds, correct_unwinds, fast_unwinds, slow_unwinds);
 
   //cupti_cct_map_dump();
 
-  printf("-----------------------------------------------------------------\n");
+  //printf("-----------------------------------------------------------------\n");
 
-  printf("CCT trace\n");
+  //printf("CCT trace\n");
 
-  cupti_cct_trace_dump();
+  //cupti_cct_trace_dump();
 
   spinlock_unlock(&print_lock);
 #endif
