@@ -1059,13 +1059,13 @@ monitor_fini_process(int how, void* data)
     return;
   }
 
-  hpcrun_safe_enter();
+  int oursafe = hpcrun_safe_enter();
 
   monitor_fini_process_how = how;
 
   hpcrun_fini_internal();
 
-  hpcrun_safe_exit();
+  if(oursafe) hpcrun_safe_exit();
 }
 
 void
@@ -1106,7 +1106,7 @@ monitor_pre_fork(void)
     monitor_initialize();
   }
 
-  hpcrun_safe_enter();
+  int oursafe = hpcrun_safe_enter();
 
   TMSG(PRE_FORK,"pre_fork call");
 
@@ -1119,7 +1119,7 @@ monitor_pre_fork(void)
   TMSG(PRE_FORK,"finished pre_fork call");
   from_fork.is_child = true;
 
-  hpcrun_safe_exit();
+  if(oursafe) hpcrun_safe_exit();
 
   return (void *)(&from_fork);
 }
@@ -1131,7 +1131,7 @@ monitor_post_fork(pid_t child, void* data)
   if (! hpcrun_is_initialized()) {
     return;
   }
-  hpcrun_safe_enter();
+  int oursafe = hpcrun_safe_enter();
 
   TMSG(POST_FORK,"Post fork call");
 
@@ -1143,7 +1143,7 @@ monitor_post_fork(pid_t child, void* data)
   }
 
   TMSG(POST_FORK,"Finished post fork");
-  hpcrun_safe_exit();
+  if(oursafe) hpcrun_safe_exit();
 }
 
 
@@ -1164,7 +1164,7 @@ monitor_mpi_pre_init(void)
     monitor_initialize();
   }
 
-  hpcrun_safe_enter();
+  int oursafe = hpcrun_safe_enter();
 
   TMSG(MPI, "Pre MPI_Init");
   if (! ENABLED(MPI_RISKY)) {
@@ -1172,14 +1172,14 @@ monitor_mpi_pre_init(void)
     TMSG(MPI, "Stopping Sample Sources");
     SAMPLE_SOURCES(stop);
   }
-  hpcrun_safe_exit();
+  if(oursafe) hpcrun_safe_exit();
 }
 
 
 void
 monitor_init_mpi(int *argc, char ***argv)
 {
-  hpcrun_safe_enter();
+  int oursafe = hpcrun_safe_enter();
 
   TMSG(MPI, "Post MPI_Init");
   if (! ENABLED(MPI_RISKY)) {
@@ -1187,7 +1187,7 @@ monitor_init_mpi(int *argc, char ***argv)
     TMSG(MPI, "Restart Sample Sources");
     SAMPLE_SOURCES(start);
   }
-  hpcrun_safe_exit();
+  if(oursafe) hpcrun_safe_exit();
 }
 
 
@@ -1198,14 +1198,14 @@ monitor_init_mpi(int *argc, char ***argv)
 void
 monitor_init_thread_support(void)
 {
-  hpcrun_safe_enter();
+  int oursafe = hpcrun_safe_enter();
 
   TMSG(THREAD,"REALLY init_thread_support ---");
   hpcrun_init_thread_support();
   hpcrun_set_using_threads(1);
   TMSG(THREAD,"Init thread support done");
 
-  hpcrun_safe_exit();
+  if(oursafe) hpcrun_safe_exit();
 }
 
 
@@ -1230,7 +1230,7 @@ monitor_thread_pre_create(void)
   // outer initialization
   hpcrun_prepare_measurement_subsystem(is_child);
 
-  hpcrun_safe_enter();
+  int oursafe = hpcrun_safe_enter();
   local_thread_data_t* rv = hpcrun_malloc(sizeof(local_thread_data_t));
 
   // INVARIANTS at this point:
@@ -1267,7 +1267,7 @@ monitor_thread_pre_create(void)
  fini:
 
   TMSG(THREAD,"->finish pre create");
-  hpcrun_safe_exit();
+  if(oursafe) hpcrun_safe_exit();
 
   return rv;
 }
@@ -1279,12 +1279,12 @@ monitor_thread_post_create(void* data)
   if (! hpcrun_is_initialized()) {
     return;
   }
-  hpcrun_safe_enter();
+  int oursafe = hpcrun_safe_enter();
 
   TMSG(THREAD,"post create");
   TMSG(THREAD,"done post create");
 
-  hpcrun_safe_exit();
+  if(oursafe) hpcrun_safe_exit();
 }
 
 void* 
@@ -1311,14 +1311,13 @@ monitor_init_thread(int tid, void* data)
     hpcrun_thread_suppress_sample = true;
   }
 
-  hpcrun_safe_enter();
-
   TMSG(THREAD,"init thread %d",tid);
   void* thread_data = hpcrun_thread_init(tid, (local_thread_data_t*) data, ! hpcrun_thread_suppress_sample);
   TMSG(THREAD,"back from init thread %d",tid);
 
   hpcrun_threadmgr_thread_new();
 
+  // The new thread is initialized as "inside hpcrun", so we have to switch back
   hpcrun_safe_exit();
 
   return thread_data;
@@ -1334,11 +1333,11 @@ monitor_fini_thread(void* init_thread_data)
     return;
   }
 
-  hpcrun_safe_enter();
+  int oursafe = hpcrun_safe_enter();
 
   epoch_t *epoch = (epoch_t *)init_thread_data;
   hpcrun_thread_fini(epoch);
-  hpcrun_safe_exit();
+  if(oursafe) hpcrun_safe_exit();
 }
 
 
@@ -1769,24 +1768,24 @@ MONITOR_EXT_WRAP_NAME(pthread_cond_broadcast)(pthread_cond_t* cond)
 #ifndef HPCRUN_STATIC_LINK
 
 static void auditor_open(auditor_map_entry_t* entry) {
-  hpcrun_safe_enter();
+  int oursafe = hpcrun_safe_enter();
   entry->load_module = fnbounds_map_dso(entry->path,
     entry->start, entry->end, &entry->dl_info);
-  hpcrun_safe_exit();
+  if(oursafe) hpcrun_safe_exit();
 }
 
 static void auditor_close(auditor_map_entry_t* entry) {
-  hpcrun_safe_enter();
+  int oursafe = hpcrun_safe_enter();
   hpcrun_loadmap_unmap(entry->load_module);
-  hpcrun_safe_exit();
+  if(oursafe) hpcrun_safe_exit();
 }
 
 static void auditor_stable(bool additive) {
   if(!hpcrun_td_avail()) return;
-  hpcrun_safe_enter();
+  int oursafe = hpcrun_safe_enter();
   bool fnbounds_shutdown = hpcrun_get_env_bool("HPCRUN_FNBOUNDS_SHUTDOWN");
   if(fnbounds_shutdown && additive) fnbounds_fini();
-  hpcrun_safe_exit();
+  if(oursafe) hpcrun_safe_exit();
 }
 
 const auditor_exports_t* auditor_exports;

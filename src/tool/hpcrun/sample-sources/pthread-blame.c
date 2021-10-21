@@ -282,11 +282,11 @@ pthread_directed_blame_accept(void* obj)
   if (blame && hpctoolkit_sampling_is_active()) {
     ucontext_t uc;
     getcontext(&uc);
-    hpcrun_safe_enter();
+    int oursafe = hpcrun_safe_enter();
     hpcrun_sample_callpath(&uc, get_blame_metric_id(), 
 	(hpcrun_metricVal_t) {.i=blame}, 
         SKIP_ONE_FRAME, 1, NULL);
-    hpcrun_safe_exit();
+    if(oursafe) hpcrun_safe_exit();
   }
 }
 

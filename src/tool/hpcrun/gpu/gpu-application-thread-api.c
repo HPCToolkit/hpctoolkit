@@ -94,13 +94,13 @@ gpu_application_thread_correlation_callback
   getcontext(&uc); // current context, where unwind will begin 
 
   // prevent self a sample interrupt while gathering calling context
-  hpcrun_safe_enter(); 
+  int oursafe = hpcrun_safe_enter();
 
   cct_node_t *node = 
     hpcrun_sample_callpath(&uc, zero_metric_id,
 			   zero_metric_incr, 0, 1, NULL).sample_node;
 
-  hpcrun_safe_exit();
+  if(oursafe) hpcrun_safe_exit();
 
   cct_addr_t *node_addr = hpcrun_cct_addr(node);
 

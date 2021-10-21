@@ -594,7 +594,7 @@ ompt_initialize
  ompt_data_t *tool_data
 )
 {
-  hpcrun_safe_enter();
+  int oursafe = hpcrun_safe_enter();
 
 #if OMPT_DEBUG_STARTUP
   printf("Initializing OMPT interface\n");
@@ -639,7 +639,7 @@ ompt_initialize
     sample_filters_register(&serial_only_sf_entry);
   }
 
-  hpcrun_safe_exit();
+  if(oursafe) hpcrun_safe_exit();
 
   return 1;
 }
@@ -651,13 +651,13 @@ ompt_finalize
  ompt_data_t *tool_data
 )
 {
-  hpcrun_safe_enter();
+  int oursafe = hpcrun_safe_enter();
 
 #if OMPT_DEBUG_STARTUP
   printf("Finalizing OMPT interface\n");
 #endif
 
-  hpcrun_safe_exit();
+  if(oursafe) hpcrun_safe_exit();
 }
 
 
