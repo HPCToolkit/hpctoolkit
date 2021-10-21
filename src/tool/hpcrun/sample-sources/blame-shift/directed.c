@@ -88,10 +88,10 @@ directed_blame_accept(void *arg, uint64_t obj)
       // attribute blame to the current context
       ucontext_t uc;
       getcontext(&uc);
-      hpcrun_safe_enter();
+      int oursafe = hpcrun_safe_enter();
       hpcrun_metricVal_t blame_incr = {.i = blame};
       hpcrun_sample_callpath(&uc, bi->blame_metric_id, blame_incr, bi->levels_to_skip, 1, NULL);
-      hpcrun_safe_exit();
+      if(oursafe) hpcrun_safe_exit();
     }
   }
 }

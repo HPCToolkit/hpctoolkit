@@ -258,11 +258,11 @@ ompt_parallel_begin
  const void *codeptr_ra
 )
 {
-  hpcrun_safe_enter();
+  int oursafe = hpcrun_safe_enter();
 
   ompt_parallel_begin_internal(parallel_data, flags);
 
-  hpcrun_safe_exit();
+  if(oursafe) hpcrun_safe_exit();
 }
 
 
@@ -275,7 +275,7 @@ ompt_parallel_end
  const void *codeptr_ra
 )
 {
-  hpcrun_safe_enter();
+  int oursafe = hpcrun_safe_enter();
 
 #if 0
   uint64_t parallel_id = parallel_data->value;
@@ -292,7 +292,7 @@ ompt_parallel_end
 
   ompt_parallel_end_internal(parallel_data, flag);
 
-  hpcrun_safe_exit();
+  if(oursafe) hpcrun_safe_exit();
 }
 
 
@@ -368,7 +368,7 @@ ompt_implicit_task
     return;
   }
 
-  hpcrun_safe_enter();
+  int oursafe = hpcrun_safe_enter();
 
   if (endpoint == ompt_scope_begin) {
     ompt_implicit_task_internal_begin(parallel_data, task_data, team_size, index);
@@ -378,7 +378,7 @@ ompt_implicit_task
     // should never occur. should we add a message to the log?
   }
 
-  hpcrun_safe_exit();
+  if(oursafe) hpcrun_safe_exit();
 }
 
 
