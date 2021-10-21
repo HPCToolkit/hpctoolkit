@@ -114,7 +114,7 @@
 //
 // Returns: true if safe, ie, not already inside our code.
 //
-static inline int hpcrun_safe_enter(void) {
+static inline int __attribute__((warn_unused_result)) hpcrun_safe_enter(void) {
   thread_data_t* td;
   int prev;
 

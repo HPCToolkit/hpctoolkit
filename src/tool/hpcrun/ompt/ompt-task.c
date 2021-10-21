@@ -100,7 +100,7 @@ static void ompt_task_create(
     const ompt_frame_t* parent_frame,  // frame data for parent task
     ompt_data_t* new_task_data,        // data of created task
     ompt_task_flag_t type, int has_dependences, const void* codeptr_ra) {
-  hpcrun_safe_enter();
+  int oursafe = hpcrun_safe_enter();
 
   new_task_data->ptr = NULL;
 
@@ -108,7 +108,8 @@ static void ompt_task_create(
     ompt_task_begin_internal(new_task_data);
   }
 
-  hpcrun_safe_exit();
+  if (oursafe)
+    hpcrun_safe_exit();
 }
 
 void ompt_task_register_callbacks(ompt_set_callback_t ompt_set_callback_fn) {

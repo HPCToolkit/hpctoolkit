@@ -418,7 +418,7 @@ static void __attribute__((unused)) init_idle_blame_shift(const char* version) {
 
 static int
 ompt_initialize(ompt_function_lookup_t lookup, int initial_device_num, ompt_data_t* tool_data) {
-  hpcrun_safe_enter();
+  int oursafe = hpcrun_safe_enter();
 
 #if OMPT_DEBUG_STARTUP
   printf("Initializing OMPT interface\n");
@@ -462,19 +462,21 @@ ompt_initialize(ompt_function_lookup_t lookup, int initial_device_num, ompt_data
     sample_filters_register(&serial_only_sf_entry);
   }
 
-  hpcrun_safe_exit();
+  if (oursafe)
+    hpcrun_safe_exit();
 
   return 1;
 }
 
 void ompt_finalize(ompt_data_t* tool_data) {
-  hpcrun_safe_enter();
+  int oursafe = hpcrun_safe_enter();
 
 #if OMPT_DEBUG_STARTUP
   printf("Finalizing OMPT interface\n");
 #endif
 
-  hpcrun_safe_exit();
+  if (oursafe)
+    hpcrun_safe_exit();
 }
 
 ompt_start_tool_result_t* ompt_start_tool(unsigned int omp_version, const char* runtime_version) {

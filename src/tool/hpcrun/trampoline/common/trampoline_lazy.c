@@ -209,7 +209,7 @@ bool hpcrun_trampoline_update(frame_t* stop_frame) {
 
 void* hpcrun_trampoline_handler(void) {
   // probably not possible to get here from inside our code.
-  hpcrun_safe_enter();
+  int oursafe = hpcrun_safe_enter();
 
   TMSG(TRAMP, "Trampoline fired!");
   thread_data_t* td = hpcrun_get_thread_data();
@@ -232,7 +232,8 @@ void* hpcrun_trampoline_handler(void) {
   }
 #endif
   hpcrun_trampoline_advance();
-  hpcrun_safe_exit();
+  if (oursafe)
+    hpcrun_safe_exit();
 
   return ra;  // our assembly code caller will return to ra
 }

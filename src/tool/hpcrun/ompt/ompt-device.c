@@ -160,7 +160,7 @@ static void hpcrun_ompt_op_id_notify(
     gpu_op_ccts_t gpu_op_ccts;
     memset(&gpu_op_ccts, 0, sizeof(gpu_op_ccts_t));
 
-    hpcrun_safe_enter();
+    int oursafe = hpcrun_safe_enter();
 
     cct_addr_t frm;
     memset(&frm, 0, sizeof(cct_addr_t));
@@ -169,7 +169,8 @@ static void hpcrun_ompt_op_id_notify(
 
     gpu_op_ccts_insert(api_node, &gpu_op_ccts, gpu_op_placeholder_flags_all);
 
-    hpcrun_safe_exit();
+    if (oursafe)
+      hpcrun_safe_exit();
 
     trace_node = gpu_op_ccts.ccts[gpu_placeholder_type_trace];
 
@@ -432,7 +433,7 @@ void ompt_target_callback_emi(
   thread_data_t* td = hpcrun_get_thread_data();
   td->overhead++;
   // NOTE(keren): hpcrun_safe_enter prevent self interruption
-  hpcrun_safe_enter();
+  int oursafe = hpcrun_safe_enter();
 
   int skip_this_frame = 1;  // omit this procedure frame on the call path
   target_node =
@@ -452,7 +453,8 @@ void ompt_target_callback_emi(
   }
 #endif
 
-  hpcrun_safe_exit();
+  if (oursafe)
+    hpcrun_safe_exit();
   td->overhead--;
 }
 

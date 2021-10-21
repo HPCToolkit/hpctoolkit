@@ -140,13 +140,14 @@ ssize_t MONITOR_EXT_WRAP_NAME(read)(int fd, void* buf, size_t count) {
   hpcrun_safe_exit();
   ret = real_read(fd, buf, count);
   save_errno = errno;
-  hpcrun_safe_enter();
+  int oursafe = hpcrun_safe_enter();
 
   // FIXME: the second sample should not do a full unwind.
   TMSG(IO, "read: fd: %d, buf: %p, count: %ld, actual: %ld", fd, buf, count, ret);
   hpcrun_sample_callpath(
       &uc, metric_id_read, (hpcrun_metricVal_t){.i = (ret > 0 ? ret : 0)}, 0, 1, NULL);
-  hpcrun_safe_exit();
+  if (oursafe)
+    hpcrun_safe_exit();
 
   errno = save_errno;
   return ret;
@@ -170,13 +171,14 @@ ssize_t MONITOR_EXT_WRAP_NAME(write)(int fd, const void* buf, size_t count) {
   hpcrun_safe_exit();
   ret = real_write(fd, buf, count);
   save_errno = errno;
-  hpcrun_safe_enter();
+  int oursafe = hpcrun_safe_enter();
 
   // FIXME: the second sample should not do a full unwind.
   TMSG(IO, "write: fd: %d, buf: %p, count: %ld, actual: %ld", fd, buf, count, ret);
   hpcrun_sample_callpath(
       &uc, metric_id_write, (hpcrun_metricVal_t){.i = (ret > 0 ? ret : 0)}, 0, 1, NULL);
-  hpcrun_safe_exit();
+  if (oursafe)
+    hpcrun_safe_exit();
 
   errno = save_errno;
   return ret;
@@ -199,14 +201,15 @@ size_t MONITOR_EXT_WRAP_NAME(fread)(void* ptr, size_t size, size_t count, FILE* 
 
   hpcrun_safe_exit();
   ret = real_fread(ptr, size, count, stream);
-  hpcrun_safe_enter();
+  int oursafe = hpcrun_safe_enter();
 
   // FIXME: the second sample should not do a full unwind.
   TMSG(
       IO, "fread: size: %ld, count: %ld, bytes: %ld, actual: %ld", size, count, count * size,
       ret * size);
   hpcrun_sample_callpath(&uc, metric_id_read, (hpcrun_metricVal_t){.i = ret * size}, 0, 1, NULL);
-  hpcrun_safe_exit();
+  if (oursafe)
+    hpcrun_safe_exit();
 
   return ret;
 }
@@ -227,14 +230,15 @@ size_t MONITOR_EXT_WRAP_NAME(fwrite)(const void* ptr, size_t size, size_t count,
 
   hpcrun_safe_exit();
   ret = real_fwrite(ptr, size, count, stream);
-  hpcrun_safe_enter();
+  int oursafe = hpcrun_safe_enter();
 
   // FIXME: the second sample should not do a full unwind.
   TMSG(
       IO, "fwrite: size: %ld, count: %ld, bytes: %ld, actual: %ld", size, count, count * size,
       ret * size);
   hpcrun_sample_callpath(&uc, metric_id_write, (hpcrun_metricVal_t){.i = ret * size}, 0, 1, NULL);
-  hpcrun_safe_exit();
+  if (oursafe)
+    hpcrun_safe_exit();
 
   return ret;
 }
