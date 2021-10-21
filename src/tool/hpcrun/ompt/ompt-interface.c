@@ -70,6 +70,8 @@
 #include <hpcrun/sample-sources/sample-filters.h>
 #include <hpcrun/thread_data.h>
 
+#include <monitor.h>
+
 #include "ompt-callstack.h"
 #include "ompt-defer.h"
 #include "ompt-interface.h"
@@ -89,7 +91,7 @@
 #define ompt_event_may_occur(r) \
   ((r ==  ompt_set_sometimes) | (r ==  ompt_set_always))
 
-#define OMPT_DEBUG_STARTUP 0
+#define OMPT_DEBUG_STARTUP 1
 #define OMPT_DEBUG_TASK 0
 
 
@@ -668,10 +670,13 @@ ompt_start_tool
  const char *runtime_version
 )
 {
+  // force hpctoolkit initialization
+  monitor_initialize();
+  // post-condition: hpctoolkit is initialized
 
- if (getenv("OMPT_DEBUG_WAIT")) {
+  if (getenv("OMPT_DEBUG_WAIT")) {
     while (ompt_debug_wait);
- }
+  }
  
 #if OMPT_DEBUG_STARTUP
   printf("Starting tool...\n");

@@ -73,7 +73,7 @@
 
 #define UNIT_TEST 0
 
-#define DEBUG 0
+#define DEBUG 1
 
 #include "gpu-print.h"
 
@@ -140,7 +140,55 @@ attribute_activity
   gpu_activity_channel_t *channel =
     gpu_host_correlation_map_entry_channel_get(hc);
   activity->cct_node = cct_node;
+
+  PRINT("attributing activity to %p time = [%lu,%lu)\n",
+	cct_node, activity->details.interval.start, activity->details.interval.end);
+
   gpu_activity_channel_produce(channel, activity);
+}
+
+static void
+gpu_memcpy_process_helper
+(
+ gpu_activity_t *activity,
+ gpu_host_correlation_map_entry_t *host_op_entry
+)
+{
+  gpu_placeholder_type_t mct;
+  switch (activity->details.memcpy.copyKind) {
+  case GPU_MEMCPY_H2D:
+    mct = gpu_placeholder_type_copyin;
+    break;
+  case GPU_MEMCPY_D2H:
+    mct = gpu_placeholder_type_copyout;
+    break;
+  default:
+    mct = gpu_placeholder_type_copy;
+    break;
+  }
+  cct_node_t *host_op_node =
+    gpu_host_correlation_map_entry_op_cct_get(host_op_entry, mct);
+  if (host_op_node == NULL) {
+    // If we cannot find a perfect match for the operation
+    // e.g. cuMemcpy
+    host_op_node = gpu_host_correlation_map_entry_op_cct_get(host_op_entry,
+							     gpu_placeholder_type_copy);
+  }
+
+  assert(host_op_node != NULL);
+  gpu_trace_item_t entry_trace;
+  trace_item_set(&entry_trace, activity, host_op_entry, host_op_node);
+
+  gpu_context_stream_trace
+    (activity->details.memcpy.context_id, activity->details.memcpy.stream_id,
+     &entry_trace);
+
+  uint32_t correlation_id = activity->details.memcpy.correlation_id;
+  PRINT("attributing memcpy activity %llu host_op_entry %p time = [%llu,%llu)\n",
+	correlation_id, activity->details.interval.start, activity->details.interval.end);
+  attribute_activity(host_op_entry, activity, host_op_node);
+  //FIXME(keren): In OpenMP, an external_id may maps to multiple cct_nodes
+  //gpu_host_correlation_map_delete(external_id);
 }
 
 
@@ -159,6 +207,7 @@ gpu_memcpy_process
     gpu_host_correlation_map_entry_t *host_op_entry =
       gpu_host_correlation_map_lookup(external_id);
     if (host_op_entry != NULL) {
+#if 0
       gpu_placeholder_type_t mct;
       switch (activity->details.memcpy.copyKind) {
         case GPU_MEMCPY_H2D:
@@ -191,10 +240,20 @@ gpu_memcpy_process
       attribute_activity(host_op_entry, activity, host_op_node);
       //FIXME(keren): In OpenMP, an external_id may maps to multiple cct_nodes
       //gpu_host_correlation_map_delete(external_id);
+#else
+      gpu_memcpy_process_helper(activity, host_op_entry);
+#endif
     }
     gpu_correlation_id_map_delete(correlation_id);
   } else {
-    PRINT("Memcpy copy correlation_id %u cannot be found\n", correlation_id);
+    gpu_host_correlation_map_entry_t *host_op_entry =
+      gpu_host_correlation_map_lookup(correlation_id);
+    if (host_op_entry != NULL) {
+      PRINT("INVOKING memcpy helper %llu\n", correlation_id);
+      gpu_memcpy_process_helper(activity, host_op_entry);
+    } else {
+      PRINT("Memcpy copy correlation_id %u cannot be found\n", correlation_id);
+    }
   }
   PRINT("Memcpy copy CorrelationId %u\n", correlation_id);
   PRINT("Memcpy copy kind %u\n", activity->details.memcpy.copyKind);
@@ -597,6 +656,15 @@ gpu_memory_process
       assert(host_op_node != NULL);
       // Memory allocation does not always happen on the device
       // Do not send it to trace channels
+
+      gpu_trace_item_t entry_trace;
+      trace_item_set(&entry_trace, activity, host_op_entry, host_op_node);
+
+      gpu_context_stream_trace
+	(activity->details.memory.context_id,
+	 activity->details.memory.stream_id,
+	 &entry_trace);
+
       attribute_activity(host_op_entry, activity, host_op_node);
     }
     gpu_correlation_id_map_delete(correlation_id);
