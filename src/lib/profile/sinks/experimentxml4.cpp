@@ -82,7 +82,7 @@ namespace fancynames {
 
   static const type unknown_proc     = {"<unknown procedure>", 0};
 }
-static const std::unordered_map<std::string, const fancynames::type&> nametrans = {
+static const std::unordered_map<std::string_view, const fancynames::type&> nametrans = {
   {"monitor_main", fancynames::program_root},
   {"monitor_main_fence1", fancynames::program_root},
   {"monitor_main_fence2", fancynames::program_root},
@@ -357,131 +357,189 @@ std::string ExperimentXML4::eStatMetricTags(const ExtraStatistic& es, unsigned i
 // ud Context bits
 
 ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
-  : premetrics(false), prelmFromChildren(false) {
+  : onlyOutputWithChildren(false), openIsClosedTag(false) {
   const auto& s = c.scope();
   auto& proc = exml.getProc(s);
   switch(s.type()) {
+  case Scope::Type::global:
+    open = "<SecCallPathProfileData";
+    close = "</SecCallPathProfileData>\n";
+    break;
   case Scope::Type::unknown: {
     auto& uproc = (c.direct_parent()->scope().type() == Scope::Type::global)
                    ? exml.proc_partial() : exml.proc_unknown();
     exml.file_unknown.incr(exml);
     std::ostringstream ss;
-    ss << "<PF i=\"" << c.userdata[exml.src.identifier()] << "\""
+    ss << "<PF i=\"-" << c.userdata[exml.src.identifier()] << "\""
              " n=\"" << uproc.id << "\" s=\"" << uproc.id << "\""
              " f=\"" << exml.file_unknown.id << "\""
              " l=\"0\">\n"
-          "<C i=\"" << c.userdata[exml.src.identifier()] << "\""
-             " s=\"" << uproc.id << "\" v=\"0\" l=\"0\"";
+           "<C i=\"" << c.userdata[exml.src.identifier()] << "\""
+             " s=\"" << uproc.id << "\" v=\"0\" l=\"0\""
+             " it=\"" << c.userdata[exml.src.identifier()] << "\"";
     open = ss.str();
     close = "</C>\n";
     post = "</PF>\n";
+    onlyOutputWithChildren = true;
+    break;
+  }
+  case Scope::Type::point: {
+    auto mo = s.point_data();
+    std::ostringstream ss;
+    const auto pty = c.direct_parent()->scope().type();
+    if(pty == Scope::Type::point || pty == Scope::Type::unknown
+       || pty == Scope::Type::global) {
+      // Points without *any* lexical context are noted as <unknown proc>
+      if(proc.prep()) {  // Create a Procedure for this special <unknown proc>
+        std::ostringstream ss;
+        ss << fancynames::unknown_proc.first
+           << " 0x" << std::hex << mo.second
+           << " [" << mo.first.path().filename().string() << "]";
+        proc.setTag(ss.str(), mo.second, fancynames::unknown_proc.second);
+      }
+      auto& udm = mo.first.userdata[exml.ud];
+      udm.unknown_file.incr(exml);
+      udm.incr(mo.first, exml);
+      ss << "<PF i=\"-" << c.userdata[exml.src.identifier()] << "\""
+               " n=\"" << proc.id << "\" s=\"" << proc.id << "\""
+               " l=\"0\" f=\"" << udm.unknown_file.id << "\""
+               " lm=\"" << udm.id << "\">\n";
+      post = "</PF>\n";
+    }
+    std::ostringstream ssattr;
+    ssattr << " i=\"" << c.userdata[exml.src.identifier()] << "\""
+              " s=\"" << proc.id << "\""
+              " v=\"0x" << std::hex << mo.second << std::dec << "\""
+              " it=\"" << c.userdata[exml.src.identifier()] << "\"";
+    if(pty == Scope::Type::line) {
+      // With a line Context, we're only needed to separate between children
+      ss << "<C" << ssattr.str() << " l=\"" << c.direct_parent()->userdata[exml.ud].adjusted_line << "\"";
+      onlyOutputWithChildren = true;
+      close = "</C>\n";
+    } else {
+      ssattr << " l=\"0\"";
+      attr = ssattr.str();
+    }
+    open = ss.str();
+    break;
+  }
+  case Scope::Type::line: {
+    auto fl = s.line_data();
+    std::ostringstream ss;
+    adjusted_line = fl.second;
+
+    const auto pty = c.direct_parent()->scope().type();
+    if(pty == Scope::Type::point || pty == Scope::Type::unknown
+       || pty == Scope::Type::global) {
+      // Lines without *any* lexical context are noted as <unknown proc>
+      auto& fproc = exml.proc_unknown();
+      auto& udf = fl.first.userdata[exml.ud];
+      udf.incr(exml);
+      ss << "<PF i=\"-" << c.userdata[exml.src.identifier()] << "\""
+               " n=\"" << fproc.id << "\" s=\"" << fproc.id << "\""
+               " f=\"" << udf.id << "\" l=\"" << fl.second << "\""
+               " lm=\"" << exml.unknown_module.id << "\">\n";
+      post = "</PF>\n";
+    }
+
+    // Since <C> tags don't set the file, throw in an error if it doesn't match
+    // what we want it to.
+    auto p = c.direct_parent();
+    while(p->scope().type() == Scope::Type::line) p = p->direct_parent();
+    util::optional_ref<const File> pf;
+    switch(p->scope().type()) {
+    case Scope::Type::global:
+    case Scope::Type::unknown:
+    case Scope::Type::point:
+      break;
+    case Scope::Type::function: {
+      const auto* f = p->scope().function_data().file;
+      if(f != nullptr) pf = *f;
+      break;
+    }
+    case Scope::Type::inlined_function:
+    case Scope::Type::loop:
+    case Scope::Type::line:
+      pf = p->scope().line_data().first;
+      break;
+    }
+    if(pf && &*pf != &fl.first) {
+      ss << "<!-- EXMLv4 ERROR: Inconsistent file, following tag is really part of file "
+         << fl.first.path().string() << " -->\n";
+      adjusted_line = 0;  // The line doesn't help in this case
+    }
+
+    ss << "<S i=\"" << c.userdata[exml.src.identifier()] << "\""
+            " it=\"" << c.userdata[exml.src.identifier()] << "\""
+            " l=\"" << adjusted_line << "\" s=\"" << proc.id << "\""
+            " v=\"0\"/>\n";
+    open = ss.str();
+    openIsClosedTag = true;
     break;
   }
   case Scope::Type::loop: {
-    auto fl = s.line_data();
+    const auto fl = s.line_data();
+    auto& udf = fl.first.userdata[exml.ud];
+    udf.incr(exml);
     std::ostringstream ss;
-    fl.first.userdata[exml.ud].incr(exml);
     ss << "<L i=\"" << c.userdata[exml.src.identifier()] << "\""
-             " s=\"" << proc.id << "\" v=\"0\""
-             " l=\"" << fl.second << "\""
-             " f=\"" << fl.first.userdata[exml.ud].id << "\"";
+            " s=\"" << proc.id << "\" v=\"0\""
+            " f=\"" << udf.id << "\" l=\"" << fl.second << "\"";
     open = ss.str();
     close = "</L>\n";
     break;
   }
-  case Scope::Type::global:
-    open = "<SecCallPathProfileData";
-    close = "</SecCallPathProfileData>\n";
-    break;
-  case Scope::Type::point:
-  case Scope::Type::line: {
-    const auto pty = c.direct_parent()->scope().type();
-    if(pty == Scope::Type::point) {
-      // We're missing some source-level context, fake it with a PF tag
-      if(proc.prep()) {  // We're in charge of the tag, and this is a tag we want.
-        std::ostringstream ss;
-        ss << fancynames::unknown_proc.first;
-        uint64_t offset = 0;
-        if(s.type() == Scope::Type::point) {
-          auto mo = s.point_data();
-          ss << " 0x" << std::hex << mo.second
-             << " [" << mo.first.path().filename().string() << "]";
-          offset = mo.second;
-        }
-        proc.setTag(ss.str(), offset, fancynames::unknown_proc.second);
-      }
-      {
-        auto& udf = s.type() == Scope::Type::point ? s.point_data().first.userdata[exml.ud].unknown_file
-                                                   : s.line_data().first.userdata[exml.ud];
-        udf.incr(exml);
-        std::ostringstream ss;
-        ss << "<PF i=\"" << c.userdata[exml.src.identifier()] << "\""
-                 " n=\"" << proc.id << "\" s=\"" << proc.id << "\""
-                 " l=\"0\""
-                 " f=\"" << udf.id << "\"";
-        if(s.type() == Scope::Type::point)
-          ss << " lm=\"" << s.point_data().first.userdata[exml.ud].id << "\">\n";
-        else
-          prelmFromChildren = true;
-        pre = ss.str();
-        premetrics = true;
-        post = "</PF>\n";
-      }
-    }
-    open = "<";
-    std::ostringstream ss;
-    ss << " i=\"" << c.userdata[exml.src.identifier()] << "\""
-          " s=\"" << proc.id << "\"";
-    if(s.type() == Scope::Type::line) {
-      ss << " l=\"" << s.line_data().second << "\"";
-    } else {
-      s.point_data().first.userdata[exml.ud].incr(s.point_data().first, exml);
-      ss << " l=\"0\"";
-    }
-    attr = ss.str();
-    break;
-  }
+  case Scope::Type::function:
   case Scope::Type::inlined_function: {
-    auto fl = s.line_data();
-    std::ostringstream ss;
-    ss << "<C i=\"" << c.userdata[exml.src.identifier()] << "\""
-            " s=\"" << proc.id << "\""
-            " v=\"0\""
-            " l=\"" << fl.second << "\">\n";
-    pre = ss.str();
-    premetrics = true;
-    post = "</C>\n";
-    (s.line_data().first).userdata[exml.ud].incr(exml);
-    // fallthrough
-  }
-  case Scope::Type::function: {
     const auto& f = s.function_data();
-    if(proc.prep()) {  // Our job to do the tag
+    auto& fproc = exml.getProc(Scope(f));
+    if(fproc.prep()) {  // Create the Procedure for this Function
       if(f.name.empty()) { // Anonymous function, write as an <unknown proc>
         std::ostringstream ss;
         ss << fancynames::unknown_proc.first << " "
               "0x" << std::hex << f.offset << " "
               "[" << f.module().path().string() << "]";
-        proc.setTag(ss.str(), f.offset, fancynames::unknown_proc.second);
+        fproc.setTag(ss.str(), f.offset, fancynames::unknown_proc.second);
       } else {  // Normal function, but might have a name translation
-        auto it = nametrans.find(f.name);
-        if(it != nametrans.end()) proc.setTag(it->second.first, 0, it->second.second);
-        else proc.setTag(f.name, f.offset, 0);
+        std::string_view name = f.name;
+        auto pos = name.find(' ');
+        if(pos != std::string_view::npos) name = name.substr(0, pos);
+        auto it = nametrans.find(name);
+        if(it != nametrans.end())
+          fproc.setTag(it->second.first, 0, it->second.second);
+        else
+          fproc.setTag(f.name, f.offset, 0);
       }
     }
+
+    std::ostringstream ss;
+    if(s.type() == Scope::Type::inlined_function) {
+      const auto fl = s.line_data();
+      auto& udf = fl.first.userdata[exml.ud];
+      udf.incr(exml);
+      ss << "<C i=\"-" << c.userdata[exml.src.identifier()] << "\""
+              " it=\"" << c.userdata[exml.src.identifier()] << "\""
+              " s=\"" << proc.id << "\" v=\"0\""
+              // " f=\"" << udf.id << "\""
+              " l=\"" << fl.second << "\">\n"
+            "<PF";
+      close = "</PF>\n";
+      post = "</C>\n";
+    } else {
+      ss << "<PF";
+      close = "</PF>\n";
+    }
+
     auto& udm = f.module().userdata[exml.ud];
     auto& udf = f.file ? f.file->userdata[exml.ud] : udm.unknown_file;
     udm.incr(f.module(), exml);
     udf.incr(exml);
-    std::ostringstream ss;
-    ss << "<PF i=\"" << c.userdata[exml.src.identifier()] << "\""
-             " l=\"" << f.line << "\""
-             " f=\"" << udf.id << "\""
-             " n=\"" << proc.id << "\" s=\"" << proc.id << "\""
-             " lm=\"" << udm.id << "\"";
+    ss << " i=\"" << c.userdata[exml.src.identifier()] << "\""
+          " s=\"" << fproc.id << "\" n=\"" << fproc.id << "\""
+          " v=\"0x" << std::hex << f.offset << std::dec << "\""
+          " f=\"" << udf.id << "\" l=\"" << f.line << "\""
+          " lm=\"" << udm.id << "\"";
     open = ss.str();
-    close = "</PF>\n";
-    partial = false;  // If we have a Function, we're not lost. Probably.
     break;
   }
   }
@@ -614,79 +672,26 @@ void ExperimentXML4::write() {
   // Spit out the CCT
   src.contexts().citerate([&](const Context& c){
     auto& udc = c.userdata[ud];
-
-    of << udc.pre;
-    if(udc.prelmFromChildren) {
-      // Special case where we need to steal lm from child point Scopes
-      bool done = false;
-      for(const Context& cc: c.children().citerate()) {
-        if(cc.scope().type() == Scope::Type::point) {
-          of << " lm=\"" << cc.scope().point_data().first.userdata[ud].id << "\">\n";
-          done = true;
-          break;
-        }
-      }
-      if(!done) {
-        of << " lm=\"" << unknown_module.id << "\">\n";
-      }
-    }
-
-    bool isS = false;
-    switch(c.scope().type()) {
-    case Scope::Type::unknown:
-    case Scope::Type::global:
-    case Scope::Type::loop:
-    case Scope::Type::inlined_function:
-    case Scope::Type::function:
-      of << udc.open;
-      break;
-    case Scope::Type::point:
-      if(udc.pre.empty()) {
-        if(c.children().empty()) {
-          // We have some kind of source-level context but have no children, so
-          // we don't need to be emitted, the parent line handles the S tag.
-          return;
-        }
-
-        // If this isn't a leaf Context, we reemit the closest enclosing line
-        // Scope as a C tag. If we can't find one use this Context's fake.
-        util::optional_ref<const Context> pc = c.direct_parent();
-        while(pc && pc->scope().type() != Scope::Type::line
-                 && pc->scope().type() != Scope::Type::point)
-          pc = pc->direct_parent();
-        if(!pc || pc->scope().type() == Scope::Type::point) pc = c;
-        auto& udpc = pc->userdata[ud];
-        of << udpc.open << 'C' << udpc.attr;
-        assert(udc.close.empty());  // We shouldn't overwrite anything
-        udc.close = "</C>\n";
-        break;
-      }
-      // If we get here we have no source-level Context, in which case we treat
-      // this point Scope as if it was a line Scope.
-      // fallthrough
-    case Scope::Type::line:
-      // We always emit an S tag for line Scopes, for traces to attach to
-      isS = true;
-      of << udc.open << 'S' << udc.attr;
-      break;
-    }
-    if(c.scope().type() != Scope::Type::global)
-      of << " it=\"" << c.userdata[src.identifier()] << "\"";
-
-    // S tags are funny, they need to be empty but the child Contexts need to
-    // share the pre-post bits.
-    if(isS) {
-      assert(udc.close.empty());
-      of << "/>\n";
+    if(udc.onlyOutputWithChildren && c.children().empty())
       return;
-    }
+
+    of << udc.open;
+    if(udc.attr.empty()) {
+      if(udc.open.empty() || udc.openIsClosedTag)
+        return;
+    } else
+      of << (c.children().empty() ? "<S" : "<C") << udc.attr;
 
     // Close the tag. If we have no children, use the shortened tag syntax.
     of << (c.children().empty() ? "/>\n" : ">\n");
   }, [&](const Context& c){
     auto& udc = c.userdata[ud];
-    if(!c.children().empty()) of << udc.close;
-    of << udc.post;
+    if(!c.children().empty()) {
+      if(!udc.attr.empty()) of << "</C>\n";
+      of << udc.close;
+      if(udc.onlyOutputWithChildren) of << udc.post;
+    }
+    if(!udc.onlyOutputWithChildren) of << udc.post;
   });
 
   of << "</SecCallPathProfile>\n"

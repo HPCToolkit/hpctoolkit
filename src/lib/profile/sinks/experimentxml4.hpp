@@ -169,7 +169,6 @@ private:
     std::atomic<bool> used;
   };
 
-  util::OnceFlag mod_unknown_flag;
   udModule unknown_module;
 
   std::atomic<unsigned int> next_cid;
@@ -178,15 +177,15 @@ private:
     udContext(const Context&, ExperimentXML4&);
     ~udContext() = default;
 
-    std::string pre;
     std::string open;
     std::string attr;
-    bool premetrics;
     std::string close;
     std::string post;
-    bool partial;
+    bool onlyOutputWithChildren;
+    bool openIsClosedTag;
 
-    bool prelmFromChildren;
+  private:
+    uint64_t adjusted_line;
   };
 
   struct {

@@ -160,7 +160,7 @@ void HPCTraceDB2::notifyTimepoint(const Thread& t, ContextRef::const_t cr, std::
   // a line Scope).
   if(c->scope().type() == Scope::Type::point) {
     if(auto pc = c->direct_parent()) {
-      if(pc->scope().type() != Scope::Type::point)
+      if(pc->scope().type() == Scope::Type::line)
         c = pc;
     }
   }

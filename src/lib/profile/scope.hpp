@@ -89,13 +89,27 @@ public:
   Scope(const Scope& s) = default;
   Scope& operator=(const Scope&) = default;
 
-  /// Types of possible Scopes, roughly corrosponding to their sources.
+  /// Types of possible Scopes, which are associated with Contexts.
+  ///
+  /// Excepting global, every Scope adds semantic context to every descendant
+  /// Context. Currently the following nesting patterns have well-known semantics:
+  /// - `* A > unknown > * B`: `B` was called from (zero or more) unknown locations/calling contexts, which is known to have been called from `A`.
+  /// - `point > *`: Operations called from a physical instruction,
+  /// - `function > (inlined_function|loop|line|point)`: Operations within the lexical bounds of a function(-like construct),
+  /// - `inlined_function > (loop|line|point)`: Operations within the lexical bounds of a function(-like) called from an inlined function call,
+  /// - `loop > (inlined_function|loop|line|point)`: Operations within the lexical bounds of a loop construct,
+  /// - `line > point`: Instruction generated from a single source line.
+  ///
+  /// The following patterns do not yet have solid semantics:
+  /// - `(function|loop|inlined_function) > function`: Nested function construct (C++ lambda or GNU nested function extension)?
+  /// - `line > (inlined_function|loop|line)`: Macro expansion?
+  /// - `line > function`: Macro-expanded nested function construct? Not a call to the given function.
   enum class Type {
     unknown,  ///< Some amount of missing Context data, of unknown depth.
     global,  ///< Scope of the global Context, root of the entire execution.
     point,  ///< A single instruction within the application, thus a "point".
     function,  ///< A normal ordinary function within the application.
-    inlined_function,  ///< A function that has been inlined into an inclosing function Scope.
+    inlined_function,  ///< A function call that was inlined.
     loop,  ///< A loop-like construct, potentially source-level.
     line,  ///< A single line within the original source.
   };
