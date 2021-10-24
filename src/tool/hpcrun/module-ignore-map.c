@@ -128,15 +128,27 @@ typedef struct module_ignore_entry {
 //***************************************************************************
 
 static const char *IGNORE_FNS[NUM_FNS] = {
-  "cuLaunchKernel",
-  "cudaLaunchKernel",
-  "cuptiActivityEnable",
+  "cuLaunchKernel",            // cuda driver
+  "cudaLaunchKernel",          // cuda runtime
+  "cuptiActivityEnable",       // cupti
   "roctracer_set_properties",  // amd roctracer library
   "amd_dbgapi_initialize",     // amd debug library
   "hipKernelNameRefByPtr",     // amd hip runtime
   "hsa_queue_create",          // amd hsa runtime
   "hpcrun_malloc"              // hpcrun library
 };
+
+static bool COMPACT_FNS[NUM_FNS] = {
+  false,  // cuda driver
+  false,  // cuda runtime
+  true,   // cupti
+  false,  // amd roctracer library
+  false,  // amd debug library
+  false,  // amd hip runtime
+  false,  // amd hsa runtime
+  false   // hpcrun library
+};
+
 static module_ignore_entry_t modules[NUM_FNS];
 static pfq_rwlock_t modules_lock;
 
@@ -173,7 +185,7 @@ module_ignore_map_init
  void
 )
 {
-  size_t i;
+  int i;
   for (i = 0; i < NUM_FNS; ++i) {
     modules[i].empty = true;
     modules[i].module = NULL;
@@ -189,7 +201,7 @@ module_ignore_map_module_id_lookup
 )
 {
   // Read path
-  size_t i;
+  int i;
   bool result = false;
   pfq_rwlock_read_lock(&modules_lock);
   for (i = 0; i < NUM_FNS; ++i) {
@@ -210,8 +222,9 @@ module_ignore_map_module_lookup
  load_module_t *module
 )
 {
-  return module_ignore_map_lookup(module->dso_info->start_addr,
-				  module->dso_info->end_addr);
+  int module_index = module_ignore_map_lookup(module->dso_info->start_addr, 
+                                              module->dso_info->end_addr);
+  return module_index != -1;
 }
 
 
@@ -221,11 +234,23 @@ module_ignore_map_inrange_lookup
  void *addr
 )
 {
-  return module_ignore_map_lookup(addr, addr);
+  int module_index = module_ignore_map_lookup(addr, addr);
+  return module_index != -1;
 }
 
 
 bool
+module_ignore_map_compact_lookup
+(
+ void *addr
+)
+{
+  int module_index = module_ignore_map_lookup(addr, addr);
+  return module_index != -1 && module_index < NUM_FNS && COMPACT_FNS[module_index] == true;
+}
+
+
+int
 module_ignore_map_lookup
 (
  void *start,
@@ -233,15 +258,15 @@ module_ignore_map_lookup
 )
 {
   // Read path
-  size_t i;
-  bool result = false;
+  int i;
+  int result = -1;
   pfq_rwlock_read_lock(&modules_lock);
   for (i = 0; i < NUM_FNS; ++i) {
     if (modules[i].empty == false &&
       modules[i].module->dso_info->start_addr <= start &&
       modules[i].module->dso_info->end_addr >= end) {
       /* current module should be ignored */
-      result = true;
+      result = i;
       break;
     }
   }
@@ -354,7 +379,7 @@ module_ignore_map_delete
  load_module_t* lm
 )
 {
-  size_t i;
+  int i;
   bool result = false;
   pfq_rwlock_node_t me;
   pfq_rwlock_write_lock(&modules_lock, &me);
