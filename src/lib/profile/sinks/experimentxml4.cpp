@@ -58,63 +58,6 @@ using namespace hpctoolkit;
 using namespace sinks;
 namespace fs = stdshim::filesystem;
 
-// Function name transformation table
-namespace fancynames {
-  using type = std::pair<std::string, int>;
-
-  static const type program_root     = {"<program root>", 4};
-  static const type thread_root      = {"<thread root>", 4};
-  static const type omp_idle         = {"<omp idle>", 1};
-  static const type omp_overhead     = {"<omp overhead>", 1};
-  static const type omp_barrier_wait = {"<omp barrier wait>", 1};
-  static const type omp_task_wait    = {"<omp task wait>", 1};
-  static const type omp_mutex_wait   = {"<omp mutex wait>", 1};
-  static const type no_thread        = {"<no thread>", 1};
-  static const type partial_unwind   = {"<partial call paths>", 1};
-  static const type no_activity      = {"<no activity>", 3};
-  static const type gpu_copy         = {"<gpu copy>", 1};
-  static const type gpu_copyin       = {"<gpu copyin>", 1};
-  static const type gpu_copyout      = {"<gpu copyout>", 1};
-  static const type gpu_alloc        = {"<gpu alloc>", 1};
-  static const type gpu_delete       = {"<gpu delete>", 1};
-  static const type gpu_sync         = {"<gpu sync>", 1};
-  static const type gpu_kernel       = {"<gpu kernel>", 3};
-
-  static const type unknown_proc     = {"<unknown procedure>", 0};
-}
-static const std::unordered_map<std::string_view, const fancynames::type&> nametrans = {
-  {"monitor_main", fancynames::program_root},
-  {"monitor_main_fence1", fancynames::program_root},
-  {"monitor_main_fence2", fancynames::program_root},
-  {"monitor_main_fence3", fancynames::program_root},
-  {"monitor_main_fence4", fancynames::program_root},
-  {"monitor_begin_thread", fancynames::thread_root},
-  {"monitor_thread_fence1", fancynames::thread_root},
-  {"monitor_thread_fence2", fancynames::thread_root},
-  {"monitor_thread_fence3", fancynames::thread_root},
-  {"monitor_thread_fence4", fancynames::thread_root},
-  {"ompt_idle_state", fancynames::omp_idle},
-  {"ompt_idle", fancynames::omp_idle},
-  {"ompt_overhead_state", fancynames::omp_overhead},
-  {"omp_overhead", fancynames::omp_overhead},
-  {"ompt_barrier_wait_state", fancynames::omp_barrier_wait},
-  {"ompt_barrier_wait", fancynames::omp_barrier_wait},
-  {"ompt_task_wait_state", fancynames::omp_task_wait},
-  {"ompt_task_wait", fancynames::omp_task_wait},
-  {"ompt_mutex_wait_state", fancynames::omp_mutex_wait},
-  {"ompt_mutex_wait", fancynames::omp_mutex_wait},
-  {"NO_THREAD", fancynames::no_thread},
-  {"gpu_op_copy", fancynames::gpu_copy},
-  {"gpu_op_copyin", fancynames::gpu_copyin},
-  {"gpu_op_copyout", fancynames::gpu_copyout},
-  {"gpu_op_alloc", fancynames::gpu_alloc},
-  {"gpu_op_delete", fancynames::gpu_delete},
-  {"gpu_op_sync", fancynames::gpu_sync},
-  {"gpu_op_kernel", fancynames::gpu_kernel},
-  {"gpu_op_trace", fancynames::gpu_kernel},
-  {"hpcrun_no_activity", fancynames::no_activity},
-};
-
 // ud Module bits
 
 ExperimentXML4::udModule::udModule(const Module& m, ExperimentXML4& exml)
@@ -383,6 +326,32 @@ ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
     onlyOutputWithChildren = true;
     break;
   }
+  case Scope::Type::placeholder: {
+    if(proc.prep()) {  // Create a (fake) Procedure for this marker context
+      auto pretty = s.enumerated_pretty_name();
+      if(!pretty.empty())
+        proc.setTag(std::string(pretty), 0, 1);
+      else {
+        std::ostringstream ss;
+        ss << "<unrecognized placeholder: " << s.enumerated_fallback_name() << ">";
+        proc.setTag(ss.str(), 0, 1);
+      }
+    }
+    exml.file_unknown.incr(exml);
+    std::ostringstream ss;
+    ss << "<PF i=\"" << c.userdata[exml.src.identifier()] << "\""
+             " n=\"" << proc.id << "\" s=\"" << proc.id << "\""
+             " f=\"" << exml.file_unknown.id << "\""
+             " l=\"0\">\n";
+    open = ss.str();
+    std::ostringstream ssattr;
+    ssattr << " i=\"-" << c.userdata[exml.src.identifier()] << "\""
+              " s=\"" << proc.id << "\" v=\"0\" l=\"0\""
+              " it=\"" << c.userdata[exml.src.identifier()] << "\"";
+    attr = ssattr.str();
+    post = "</PF>\n";
+    break;
+  }
   case Scope::Type::point: {
     auto mo = s.point_data();
     std::ostringstream ss;
@@ -392,10 +361,9 @@ ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
       // Points without *any* lexical context are noted as <unknown proc>
       if(proc.prep()) {  // Create a Procedure for this special <unknown proc>
         std::ostringstream ss;
-        ss << fancynames::unknown_proc.first
-           << " 0x" << std::hex << mo.second
+        ss << "<unknown procedure> 0x" << std::hex << mo.second
            << " [" << mo.first.path().filename().string() << "]";
-        proc.setTag(ss.str(), mo.second, fancynames::unknown_proc.second);
+        proc.setTag(ss.str(), mo.second, 1);
       }
       auto& udm = mo.first.userdata[exml.ud];
       udm.unknown_file.incr(exml);
@@ -451,6 +419,7 @@ ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
     case Scope::Type::global:
     case Scope::Type::unknown:
     case Scope::Type::point:
+    case Scope::Type::placeholder:
       break;
     case Scope::Type::function: {
       const auto* f = p->scope().function_data().file;
@@ -496,19 +465,11 @@ ExperimentXML4::udContext::udContext(const Context& c, ExperimentXML4& exml)
     if(fproc.prep()) {  // Create the Procedure for this Function
       if(f.name.empty()) { // Anonymous function, write as an <unknown proc>
         std::ostringstream ss;
-        ss << fancynames::unknown_proc.first << " "
-              "0x" << std::hex << f.offset << " "
-              "[" << f.module().path().string() << "]";
-        fproc.setTag(ss.str(), f.offset, fancynames::unknown_proc.second);
-      } else {  // Normal function, but might have a name translation
-        std::string_view name = f.name;
-        auto pos = name.find(' ');
-        if(pos != std::string_view::npos) name = name.substr(0, pos);
-        auto it = nametrans.find(name);
-        if(it != nametrans.end())
-          fproc.setTag(it->second.first, 0, it->second.second);
-        else
-          fproc.setTag(f.name, f.offset, 0);
+        ss << "<unknown procedure> 0x" << std::hex << f.offset
+           << " [" << f.module().path().string() << "]";
+        fproc.setTag(ss.str(), f.offset, 1);
+      } else {  // Normal function
+        fproc.setTag(f.name, f.offset, 0);
       }
     }
 
@@ -566,14 +527,14 @@ ExperimentXML4::Proc& ExperimentXML4::getProc(const Scope& k) {
 
 const ExperimentXML4::Proc& ExperimentXML4::proc_unknown() {
   proc_unknown_flag.call_nowait([&](){
-    proc_unknown_proc.setTag(fancynames::unknown_proc.first, 0, fancynames::unknown_proc.second);
+    proc_unknown_proc.setTag("<unknown>", 0, 1);
   });
   return proc_unknown_proc;
 }
 
 const ExperimentXML4::Proc& ExperimentXML4::proc_partial() {
   proc_partial_flag.call_nowait([&](){
-    proc_partial_proc.setTag(fancynames::partial_unwind.first, 0, fancynames::partial_unwind.second);
+    proc_partial_proc.setTag("<partial call paths>", 0, 1);
   });
   return proc_partial_proc;
 }

@@ -106,6 +106,7 @@ void IdPacker::notifyContextExpansion(ContextRef::const_t from, Scope s, Context
           std::abort();
         case Scope::Type::unknown:
         case Scope::Type::point:
+        case Scope::Type::placeholder:
           buffer.emplace_back(0);
           break;
         case Scope::Type::function:
@@ -133,6 +134,11 @@ void IdPacker::notifyContextExpansion(ContextRef::const_t from, Scope s, Context
       pack(buffer, (std::uint64_t)mo.second);
       break;
     }
+    case Scope::Type::placeholder:
+      // Format: [magic] [placeholder]
+      pack(buffer, (std::uint64_t)0xF3F2F1F0ULL << 32);
+      pack(buffer, (std::uint64_t)s.enumerated_data());
+      break;
     case Scope::Type::unknown:
       // Format: [magic]
       pack(buffer, (std::uint64_t)0xF0F1F2F3ULL << 32);
@@ -245,6 +251,9 @@ void IdUnpacker::unpack(ProfilePipeline::Source& sink) noexcept {
     if(next == (0xF0F1F2F3ULL << 32)) {
       // Format: [magic]
       s = {};  // Unknown Scope
+    } else if(next == (0xF3F2F1F0ULL << 32)) {
+      // Format: [magic] [placeholder]
+      s = {Scope::placeholder, ::unpack<std::uint64_t>(it)};
     } else {
       // Format: [module id] [offset]
       auto off = ::unpack<std::uint64_t>(it);
@@ -262,7 +271,7 @@ void IdUnpacker::unpack(ProfilePipeline::Source& sink) noexcept {
       it++;
       auto id = ::unpack<std::uint64_t>(it);
       switch(ty) {
-      case 0:  // unknown or point or call -> point
+      case 0:  // unknown or point or placeholder -> point
         scopes.emplace_back(*exmod, id);
         break;
       case 1:  // function or inlined_function -> inlined_function

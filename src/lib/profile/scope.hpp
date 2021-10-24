@@ -51,6 +51,8 @@
 #include "util/ragged_vector.hpp"
 
 #include "stdshim/filesystem.hpp"
+#include <string>
+#include <string_view>
 
 namespace hpctoolkit {
 
@@ -60,7 +62,7 @@ class Module;
 class Function;
 class File;
 
-/// The Location of some Context, roughly. Basically its an indentifier of a
+/// The Location of some Context, roughly. Basically its an identifier of a
 /// scope in the source (or binary) code.
 class Scope {
 public:
@@ -85,6 +87,12 @@ public:
   /// Constructor for single-line Scopes.
   Scope(const File&, uint64_t line);
 
+  struct placeholder_t {};
+  static inline constexpr placeholder_t placeholder = {};
+
+  /// Constructor for placeholder Scopes.
+  Scope(placeholder_t, uint64_t value);
+
   /// Copy constructors
   Scope(const Scope& s) = default;
   Scope& operator=(const Scope&) = default;
@@ -93,17 +101,21 @@ public:
   ///
   /// Excepting global, every Scope adds semantic context to every descendant
   /// Context. Currently the following nesting patterns have well-known semantics:
-  /// - `* A > unknown > * B`: `B` was called from (zero or more) unknown locations/calling contexts, which is known to have been called from `A`.
-  /// - `point > *`: Operations called from a physical instruction,
-  /// - `function > (inlined_function|loop|line|point)`: Operations within the lexical bounds of a function(-like construct),
-  /// - `inlined_function > (loop|line|point)`: Operations within the lexical bounds of a function(-like) called from an inlined function call,
-  /// - `loop > (inlined_function|loop|line|point)`: Operations within the lexical bounds of a loop construct,
+  /// - `* A > unknown > * B`: `B` was called from (zero or more) unknown locations/calling contexts,
+  ///                          which is known to have been called from `A`.
+  /// - `point > *`: Operations called from a physical instruction.
+  /// - `placeholder > *`: Operations bounded within a marked context.
+  /// - `function > (inlined_function|loop|line|point)`: Operations within the lexical bounds of a function(-like construct).
+  /// - `inlined_function > (loop|line|point)`: Operations within the lexical bounds of a function(-like construct),
+  ///                                           called from an inlined function call.
+  /// - `loop > (inlined_function|loop|line|point)`: Operations within the lexical bounds of a loop construct.
   /// - `line > point`: Instruction generated from a single source line.
   ///
   /// The following patterns do not yet have solid semantics:
   /// - `(function|loop|inlined_function) > function`: Nested function construct (C++ lambda or GNU nested function extension)?
   /// - `line > (inlined_function|loop|line)`: Macro expansion?
   /// - `line > function`: Macro-expanded nested function construct? Not a call to the given function.
+  /// - `(function|loop|inlined_function|line) > placeholder`: ??? Currently can never happen.
   enum class Type {
     unknown,  ///< Some amount of missing Context data, of unknown depth.
     global,  ///< Scope of the global Context, root of the entire execution.
@@ -112,6 +124,7 @@ public:
     inlined_function,  ///< A function call that was inlined.
     loop,  ///< A loop-like construct, potentially source-level.
     line,  ///< A single line within the original source.
+    placeholder,  ///< A marker context with special meaning (and nothing else).
   };
 
   /// Get the Type of this Location. In case that happens to be interesting.
@@ -128,6 +141,25 @@ public:
   /// For Scopes with line info, get the line that created this Scope.
   /// Throws if the Scope is not a '*_line', 'loop' or 'classified_*' Scope.
   std::pair<const File&, uint64_t> line_data() const;
+
+  /// For Scopes with enumerated info, get the raw enumeration value.
+  /// Throws if the Scope is not a 'placeholder' Scope.
+  uint64_t enumerated_data() const;
+
+  /// For Scopes with enumerated info, get the constant "pretty" name for the
+  /// value if one exists, otherwise returns an empty string.
+  ///
+  /// Exact meaning is slightly different depending on the Scope Type:
+  ///  - 'placeholder': Standardized name (`<...>`) for the placeholder.
+  /// Throws if the Scope is not one of the above types.
+  std::string_view enumerated_pretty_name() const;
+
+  /// For Scopes with enumerated info, get the fallback name for the value.
+  ///
+  /// Exact meaning is slightly different depending on the Scope Type:
+  ///  - 'placeholder': "Shortcode" generated from the placeholder value.
+  /// Throws if the Scope is not one of the above types.
+  std::string enumerated_fallback_name() const;
 
   // Comparison, as usual
   bool operator==(const Scope& o) const noexcept;
@@ -173,6 +205,7 @@ private:
         return function == o.function && line == o.line;
       }
     } function_line;
+    uint64_t enumerated;
     Data() : empty{} {};
     Data(const Module& m, uint64_t o)
       : point{&m, o} {};
@@ -182,6 +215,8 @@ private:
       : function_line{{&f}, {&s, l}} {};
     Data(const File& s, uint64_t l)
       : line{&s, l} {};
+    Data(uint64_t l)
+      : enumerated{l} {};
   } data;
 
   friend class std::hash<Scope>;

@@ -49,6 +49,8 @@
 // local includes  
 //******************************************************************************
 
+#include <lib/prof-lean/placeholders.h>
+
 #include <hpcrun/cct_backtrace_finalize.h>
 #include <hpcrun/hpcrun-initializers.h>
 #include <hpcrun/sample_event.h>
@@ -60,7 +62,6 @@
 #include "ompt-callstack.h"
 #include "ompt-defer.h"
 #include "ompt-interface.h"
-#include "ompt-placeholders.h"
 #include "ompt-thread.h"
 
 #if defined(HOST_CPU_PPC) 
@@ -246,12 +247,12 @@ static void
 set_frame
 (
  frame_t *f, 
- ompt_placeholder_t *ph
+ uint64_t placeholder
 )
 {
-  f->cursor.pc_unnorm = ph->pc;
-  f->ip_norm = ph->pc_norm;
-  f->the_function = ph->pc_norm;
+  f->cursor.pc_unnorm = NULL;
+  f->ip_norm = get_placeholder_norm(placeholder);
+  f->the_function = get_placeholder_norm(placeholder);
 }
 
 
@@ -259,7 +260,7 @@ static void
 collapse_callstack
 (
  backtrace_info_t *bt, 
- ompt_placeholder_t *placeholder
+ uint64_t placeholder
 )
 {
   set_frame(bt->last, placeholder);
@@ -302,14 +303,14 @@ ompt_elide_runtime_frame(
     case ompt_state_wait_barrier_explicit:
       // collapse barriers on non-master ranks 
       if (hpcrun_ompt_get_thread_num(0) != 0) {
-	collapse_callstack(bt, &ompt_placeholders.ompt_barrier_wait_state);
+	collapse_callstack(bt, hpcrun_placeholder_ompt_barrier_wait_state);
 	goto return_label;
       }
       break; 
     case ompt_state_idle:
       // collapse idle state
       TD_GET(omp_task_context) = 0;
-      collapse_callstack(bt, &ompt_placeholders.ompt_idle_state);
+      collapse_callstack(bt, hpcrun_placeholder_ompt_idle_state);
       goto return_label;
     default:
       break;
@@ -528,7 +529,7 @@ ompt_elide_runtime_frame(
       //------------------------------------------------------------------------
       *bt_outer = *bt_inner;
       TD_GET(omp_task_context) = 0;
-      collapse_callstack(bt, &ompt_placeholders.ompt_idle_state);
+      collapse_callstack(bt, hpcrun_placeholder_ompt_idle_state);
     }
   }
 
@@ -539,7 +540,7 @@ ompt_elide_runtime_frame(
   {
     int master = TD_GET(master);
     if (!master) {
-      set_frame(*bt_outer, &ompt_placeholders.ompt_idle_state);
+      set_frame(*bt_outer, hpcrun_placeholder_ompt_idle_state);
       *bt_inner = *bt_outer;
       bt->bottom_frame_elided = false;
       bt->partial_unwind = false;
@@ -645,6 +646,8 @@ ompt_adjust_calling_context
   // the outlined task in the master
   if (se_type == ompt_scope_begin) {
     void *ip = hpcrun_denormalize_ip(&(n->ip_norm));
+    // If the denormalization failed, skip the adjustment.
+    if (ip == NULL) return node;
     uint64_t offset = offset_to_pc_after_next_call(ip);
     master_outlined_fn_return_addr = lm_ip + offset;
   } else { 

@@ -358,13 +358,13 @@ Profile::merge_fixCCT(const std::vector<LoadMap::MergeEffect>* mrgEffects)
 
       LoadMap::LMId_t lmId1, lmId2;
       lmId1 = n_dyn->lmId_real();
-      lmId2 = (lip) ? lush_lip_getLMId(lip) : LoadMap::LMId_NULL;
+      lmId2 = (lip) ? lush_lip_getLMId(lip) : HPCRUN_PLACEHOLDER_LM;
       
       for (uint i = 0; i < mrgEffects->size(); ++i) {
 	const LoadMap::MergeEffect& chg = (*mrgEffects)[i];
 	if (chg.old_id == lmId1) {
 	  n_dyn->lmId_real(chg.new_id);
-	  if (lmId2 == LoadMap::LMId_NULL) {
+	  if (lmId2 == HPCRUN_PLACEHOLDER_LM) {
 	    break; // quick exit in the common case
 	  }
 	}
@@ -1764,7 +1764,7 @@ Profile::fmt_cct_fread(Profile& prof, FILE* infs, uint rFlags,
     if (node_parent) {
       // If 'node' is not the secondary root, perform sanity check
       if (!node->isSecondarySynthRoot()) {
-        if (node->lmId_real() == LoadMap::LMId_NULL) {
+        if (node->lmId_real() == HPCRUN_PLACEHOLDER_LM) {
           DIAG_WMsg(2, ctxtStr << ": CCT (non-root) node " << nodeId << " has invalid normalized IP: " << node->nameDyn());
         }
       }
@@ -2125,7 +2125,7 @@ cct_makeNode(Prof::CallPath::Profile& prof,
   if (! (lmId <= loadmap.size() /*1-based*/) ) {
     DIAG_WMsg(1, ctxtStr << ": CCT node " << nodeId
 	      << " has invalid load module: " << lmId);
-    lmId = LoadMap::LMId_NULL;
+    lmId = HPCRUN_PLACEHOLDER_LM;
   }
   loadmap.lm(lmId)->isUsed(true); // ok if LoadMap::LMId_NULL
 
@@ -2145,7 +2145,7 @@ cct_makeNode(Prof::CallPath::Profile& prof,
     if (! (lip_lmId <= loadmap.size() /*1-based*/) ) {
       DIAG_WMsg(1, ctxtStr << ": CCT node " << nodeId
 		<< " has invalid (logical) load module: " << lip_lmId);
-      lip_lmId = LoadMap::LMId_NULL;
+      lip_lmId = HPCRUN_PLACEHOLDER_LM;
     }
     loadmap.lm(lip_lmId)->isUsed(true); // ok if LoadMap::LMId_NULL
   }
@@ -2258,7 +2258,7 @@ fmt_cct_makeNode(hpcrun_fmt_cct_node_t& n_fmt, const Prof::CCT::ANode& n,
     dynamic_cast<const Prof::CCT::ADynNode*>(&n);
   if (typeid(n) == typeid(Prof::CCT::Root)) {
     n_fmt.as_info = lush_assoc_info_NULL;
-    n_fmt.lm_id   = Prof::LoadMap::LMId_NULL;
+    n_fmt.lm_id   = HPCRUN_PLACEHOLDER_LM;
     n_fmt.lm_ip   = 0;
     lush_lip_init(&(n_fmt.lip));
     memset(n_fmt.metrics, 0, n_fmt.num_metrics * sizeof(hpcrun_metricVal_t));

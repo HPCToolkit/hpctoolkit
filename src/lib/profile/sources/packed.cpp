@@ -184,7 +184,7 @@ std::vector<uint8_t>::const_iterator Packed::unpackReferences(iter_t it) noexcep
 
 std::vector<uint8_t>::const_iterator Packed::unpackContexts(iter_t it) noexcept {
   std::stack<ContextRef, std::vector<ContextRef>> tip;
-  // Format: <global> children... [sentinal]
+  // Format: <global> children... [sentinel]
   auto globalTy = unpack<std::uint64_t>(it);
   assert(globalTy == (std::uint64_t)Scope::Type::global && "Packed Contexts claim root is non-global?");
   while(1) {
@@ -198,10 +198,16 @@ std::vector<uint8_t>::const_iterator Packed::unpackContexts(iter_t it) noexcept 
     Scope s;
     switch(next) {
     case (std::uint64_t)Scope::Type::point: {
-      // Format: [module id] [offset] children... [sentinal]
+      // Format: [module id] [offset] children... [sentinel]
       auto midx = unpack<std::uint64_t>(it);
       auto off = unpack<std::uint64_t>(it);
       s = Scope{modules.at(midx), off};
+      break;
+    }
+    case (std::uint64_t)Scope::Type::placeholder: {
+      // Format: [placeholder] children... [sentinel]
+      auto ph = unpack<std::uint64_t>(it);
+      s = Scope{Scope::placeholder, ph};
       break;
     }
     case (std::uint64_t)Scope::Type::unknown:

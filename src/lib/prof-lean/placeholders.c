@@ -44,50 +44,109 @@
 //
 // ******************************************************* EndRiceCopyright *
 
+#include "placeholders.h"
+
 //*****************************************************************************
 // global includes 
 //*****************************************************************************
 
 #include <hpctoolkit-config.h>
 
-
+#include <stdlib.h>
 
 //*****************************************************************************
-// macros 
+// local variables
 //*****************************************************************************
 
-// When a kernel sample is attached below a CCT node, we don't want to
-// turn a CCT leaf into an interior node because, at present, interior
-// nodes don't't have any associated persistent ID preserved; such IDs
-// are needed when a node appears in a trace record.  For that reason,
-// a kernel sample below a leaf at PC creates a sibling to the leaf
-// with PC - 1. If PC is the first PC in a routine, the node with
-// address PC - 1 might be attributed to the preceding
-// routine.
-//
-// To avoid such a misattribution with a placeholder, rather
-// than representing the placeholder with the first address of a
-// routine, use the routine address + 2 so that if a kernel sample is
-// hung below the placeholder, the interior node will still map to the
-// right placeholder.
-#define ADJUST_PLACEHOLDER_PC(x) (((char *)x) + 1)
+static const char phname_no_activity[] = "<no activity>";
 
+static const char phname_program_root[] = "<program root>";
+static const char phname_thread_root[]  = "<thread root>";
 
+static const char phname_omp_idle[]              = "<omp idle>";
+static const char phname_omp_overhead[]          = "<omp overhead>";
+static const char phname_omp_barrier_wait[]      = "<omp barrier wait>";
+static const char phname_omp_task_wait[]         = "<omp task wait>";
+static const char phname_omp_mutex_wait[]        = "<omp mutex wait>";
+static const char phname_omp_region_unresolved[] = "<omp region unresolved>";
+
+static const char phname_omp_tgt_copyin[]  = "<omp tgt copyin>";
+static const char phname_omp_tgt_copyout[] = "<omp tgt copyout>";
+static const char phname_omp_tgt_alloc[]   = "<omp tgt alloc>";
+static const char phname_omp_tgt_delete[]  = "<omp tgt delete>";
+static const char phname_omp_tgt_kernel[]  = "<omp tgt kernel>";
+
+static const char phname_gpu_copy[]    = "<gpu copy>";
+static const char phname_gpu_copyin[]  = "<gpu copyin>";
+static const char phname_gpu_copyout[] = "<gpu copyout>";
+static const char phname_gpu_alloc[]   = "<gpu alloc>";
+static const char phname_gpu_delete[]  = "<gpu delete>";
+static const char phname_gpu_sync[]    = "<gpu sync>";
+static const char phname_gpu_kernel[]  = "<gpu kernel>";
+static const char phname_gpu_memset[]  = "<gpu memset>";
 
 //*****************************************************************************
 // interface operations 
 //*****************************************************************************
 
-void *
-canonicalize_placeholder(void *routine)
-{
-#if defined(HOST_BIG_ENDIAN) && defined(HOST_CPU_PPC)
-    // with the PPC 64-bit ABI on big-endian systems, functions are
-    // represented by D symbols and require one level of indirection
-    void *routine_addr = *(void**) routine;
-#else
-    void *routine_addr = (void *) routine;
-#endif
-    return ADJUST_PLACEHOLDER_PC(routine_addr);
+const char *
+get_placeholder_name(uint64_t placeholder) {
+  // Cast to enum to generate warnings when cases aren't covered
+  switch((enum hpcrun_placeholder)placeholder) {
+  case hpcrun_placeholder_unnormalized_ip:
+  case hpcrun_placeholder_root_primary:
+  case hpcrun_placeholder_root_partial:
+    // These three are special cases among the special cases
+    return NULL;
+  case hpcrun_placeholder_fence_main:
+    return phname_program_root;
+  case hpcrun_placeholder_fence_thread:
+    return phname_thread_root;
+  case hpcrun_placeholder_no_activity:
+    return phname_no_activity;
+  case hpcrun_placeholder_ompt_idle_state:
+    return phname_omp_idle;
+  case hpcrun_placeholder_ompt_overhead_state:
+    return phname_omp_overhead;
+  case hpcrun_placeholder_ompt_barrier_wait_state:
+    return phname_omp_barrier_wait;
+  case hpcrun_placeholder_ompt_task_wait_state:
+    return phname_omp_task_wait;
+  case hpcrun_placeholder_ompt_mutex_wait_state:
+    return phname_omp_mutex_wait;
+  case hpcrun_placeholder_gpu_alloc:
+    return phname_gpu_alloc;
+  case hpcrun_placeholder_ompt_tgt_alloc:
+    return phname_omp_tgt_alloc;
+  case hpcrun_placeholder_gpu_delete:
+    return phname_gpu_delete;
+  case hpcrun_placeholder_ompt_tgt_delete:
+    return phname_omp_tgt_delete;
+  case hpcrun_placeholder_gpu_copyin:
+    return phname_gpu_copyin;
+  case hpcrun_placeholder_ompt_tgt_copyin:
+    return phname_omp_tgt_copyin;
+  case hpcrun_placeholder_gpu_copyout:
+    return phname_gpu_copyout;
+  case hpcrun_placeholder_ompt_tgt_copyout:
+    return phname_omp_tgt_copyout;
+  case hpcrun_placeholder_gpu_kernel:
+    return phname_gpu_kernel;
+  case hpcrun_placeholder_ompt_tgt_kernel:
+    return phname_omp_tgt_kernel;
+  case hpcrun_placeholder_gpu_copy:
+    return phname_gpu_copy;
+  case hpcrun_placeholder_gpu_memset:
+    return phname_gpu_memset;
+  case hpcrun_placeholder_gpu_sync:
+    return phname_gpu_sync;
+  case hpcrun_placeholder_gpu_trace:
+    return phname_gpu_kernel;
+  case hpcrun_placeholder_ompt_tgt_none:
+    // Not in NameMappings.cpp
+    return NULL;
+  case hpcrun_placeholder_ompt_region_unresolved:
+    return phname_omp_region_unresolved;
+  }
+  return NULL;
 }
-

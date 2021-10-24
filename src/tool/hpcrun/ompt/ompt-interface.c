@@ -75,7 +75,6 @@
 #include "ompt-interface.h"
 #include "ompt-queues.h"
 #include "ompt-region.h"
-#include "ompt-placeholders.h"
 #include "ompt-task.h"
 #include "ompt-thread.h"
 #include "ompt-device.h"
@@ -606,7 +605,6 @@ ompt_initialize
   ompt_initialized = 1;
 
   ompt_init_inquiry_fn_ptrs(lookup);
-  ompt_init_placeholders();
 
   init_threads();
   init_parallel_regions();

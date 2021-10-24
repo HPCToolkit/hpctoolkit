@@ -479,9 +479,9 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
 	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
 	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
-	messages/messages-async.c messages/fmt.c hpcrun-placeholders.c \
-	gpu/gpu-activity.c gpu/gpu-activity-channel.c \
-	gpu/gpu-activity-process.c gpu/gpu-application-thread-api.c \
+	messages/messages-async.c messages/fmt.c gpu/gpu-activity.c \
+	gpu/gpu-activity-channel.c gpu/gpu-activity-process.c \
+	gpu/gpu-application-thread-api.c \
 	gpu/gpu-channel-item-allocator.c gpu/gpu-context-id-map.c \
 	gpu/gpu-correlation.c gpu/gpu-correlation-channel.c \
 	gpu/gpu-correlation-channel-set.c gpu/gpu-correlation-id.c \
@@ -498,10 +498,9 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	ompt/ompt-callstack.c ompt/ompt-defer.c ompt/ompt-device.c \
 	ompt/ompt-defer-write.c ompt/ompt-interface.c \
 	ompt/ompt-queues.c ompt/ompt-region.c ompt/ompt-region-debug.c \
-	ompt/ompt-placeholders.c ompt/ompt-device-map.c \
-	ompt/ompt-task.c ompt/ompt-thread.c extern-real/dl-iterate.c \
-	extern-real/mmap.c syscalls/poll.c syscalls/ppoll.c \
-	syscalls/select.c syscalls/sysv_signal.c \
+	ompt/ompt-device-map.c ompt/ompt-task.c ompt/ompt-thread.c \
+	extern-real/dl-iterate.c extern-real/mmap.c syscalls/poll.c \
+	syscalls/ppoll.c syscalls/select.c syscalls/sysv_signal.c \
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/hpcrun-nanotime.h utilities/hpcrun-nanotime.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
@@ -646,9 +645,7 @@ am__objects_14 = utilities/libhpcrun_la-first_func.lo \
 	messages/libhpcrun_la-debug-flag.lo \
 	messages/libhpcrun_la-messages-sync.lo \
 	messages/libhpcrun_la-messages-async.lo \
-	messages/libhpcrun_la-fmt.lo \
-	libhpcrun_la-hpcrun-placeholders.lo \
-	gpu/libhpcrun_la-gpu-activity.lo \
+	messages/libhpcrun_la-fmt.lo gpu/libhpcrun_la-gpu-activity.lo \
 	gpu/libhpcrun_la-gpu-activity-channel.lo \
 	gpu/libhpcrun_la-gpu-activity-process.lo \
 	gpu/libhpcrun_la-gpu-application-thread-api.lo \
@@ -686,7 +683,6 @@ am__objects_14 = utilities/libhpcrun_la-first_func.lo \
 	ompt/libhpcrun_la-ompt-queues.lo \
 	ompt/libhpcrun_la-ompt-region.lo \
 	ompt/libhpcrun_la-ompt-region-debug.lo \
-	ompt/libhpcrun_la-ompt-placeholders.lo \
 	ompt/libhpcrun_la-ompt-device-map.lo \
 	ompt/libhpcrun_la-ompt-task.lo \
 	ompt/libhpcrun_la-ompt-thread.lo \
@@ -973,9 +969,9 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
 	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
 	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
-	messages/messages-async.c messages/fmt.c hpcrun-placeholders.c \
-	gpu/gpu-activity.c gpu/gpu-activity-channel.c \
-	gpu/gpu-activity-process.c gpu/gpu-application-thread-api.c \
+	messages/messages-async.c messages/fmt.c gpu/gpu-activity.c \
+	gpu/gpu-activity-channel.c gpu/gpu-activity-process.c \
+	gpu/gpu-application-thread-api.c \
 	gpu/gpu-channel-item-allocator.c gpu/gpu-context-id-map.c \
 	gpu/gpu-correlation.c gpu/gpu-correlation-channel.c \
 	gpu/gpu-correlation-channel-set.c gpu/gpu-correlation-id.c \
@@ -992,10 +988,9 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	ompt/ompt-callstack.c ompt/ompt-defer.c ompt/ompt-device.c \
 	ompt/ompt-defer-write.c ompt/ompt-interface.c \
 	ompt/ompt-queues.c ompt/ompt-region.c ompt/ompt-region-debug.c \
-	ompt/ompt-placeholders.c ompt/ompt-device-map.c \
-	ompt/ompt-task.c ompt/ompt-thread.c extern-real/dl-iterate.c \
-	extern-real/mmap.c syscalls/poll.c syscalls/ppoll.c \
-	syscalls/select.c syscalls/sysv_signal.c \
+	ompt/ompt-device-map.c ompt/ompt-task.c ompt/ompt-thread.c \
+	extern-real/dl-iterate.c extern-real/mmap.c syscalls/poll.c \
+	syscalls/ppoll.c syscalls/select.c syscalls/sysv_signal.c \
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/hpcrun-nanotime.h utilities/hpcrun-nanotime.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
@@ -1135,7 +1130,6 @@ am__objects_57 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	messages/libhpcrun_o-messages-sync.$(OBJEXT) \
 	messages/libhpcrun_o-messages-async.$(OBJEXT) \
 	messages/libhpcrun_o-fmt.$(OBJEXT) \
-	libhpcrun_o-hpcrun-placeholders.$(OBJEXT) \
 	gpu/libhpcrun_o-gpu-activity.$(OBJEXT) \
 	gpu/libhpcrun_o-gpu-activity-channel.$(OBJEXT) \
 	gpu/libhpcrun_o-gpu-activity-process.$(OBJEXT) \
@@ -1174,7 +1168,6 @@ am__objects_57 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-queues.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-region.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-region-debug.$(OBJEXT) \
-	ompt/libhpcrun_o-ompt-placeholders.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-device-map.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-task.$(OBJEXT) \
 	ompt/libhpcrun_o-ompt-thread.$(OBJEXT) \
@@ -1907,9 +1900,9 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
 	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
 	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
-	messages/messages-async.c messages/fmt.c hpcrun-placeholders.c \
-	gpu/gpu-activity.c gpu/gpu-activity-channel.c \
-	gpu/gpu-activity-process.c gpu/gpu-application-thread-api.c \
+	messages/messages-async.c messages/fmt.c gpu/gpu-activity.c \
+	gpu/gpu-activity-channel.c gpu/gpu-activity-process.c \
+	gpu/gpu-application-thread-api.c \
 	gpu/gpu-channel-item-allocator.c gpu/gpu-context-id-map.c \
 	gpu/gpu-correlation.c gpu/gpu-correlation-channel.c \
 	gpu/gpu-correlation-channel-set.c gpu/gpu-correlation-id.c \
@@ -1926,10 +1919,9 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	ompt/ompt-callstack.c ompt/ompt-defer.c ompt/ompt-device.c \
 	ompt/ompt-defer-write.c ompt/ompt-interface.c \
 	ompt/ompt-queues.c ompt/ompt-region.c ompt/ompt-region-debug.c \
-	ompt/ompt-placeholders.c ompt/ompt-device-map.c \
-	ompt/ompt-task.c ompt/ompt-thread.c extern-real/dl-iterate.c \
-	extern-real/mmap.c syscalls/poll.c syscalls/ppoll.c \
-	syscalls/select.c syscalls/sysv_signal.c \
+	ompt/ompt-device-map.c ompt/ompt-task.c ompt/ompt-thread.c \
+	extern-real/dl-iterate.c extern-real/mmap.c syscalls/poll.c \
+	syscalls/ppoll.c syscalls/select.c syscalls/sysv_signal.c \
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/hpcrun-nanotime.h utilities/hpcrun-nanotime.c \
 	utilities/ip-normalized.h utilities/ip-normalized.c \
@@ -2774,8 +2766,6 @@ ompt/libhpcrun_la-ompt-region.lo: ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_la-ompt-region-debug.lo: ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
-ompt/libhpcrun_la-ompt-placeholders.lo: ompt/$(am__dirstamp) \
-	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_la-ompt-device-map.lo: ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_la-ompt-task.lo: ompt/$(am__dirstamp) \
@@ -3461,8 +3451,6 @@ ompt/libhpcrun_o-ompt-region.$(OBJEXT): ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_o-ompt-region-debug.$(OBJEXT): ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
-ompt/libhpcrun_o-ompt-placeholders.$(OBJEXT): ompt/$(am__dirstamp) \
-	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_o-ompt-device-map.$(OBJEXT): ompt/$(am__dirstamp) \
 	ompt/$(DEPDIR)/$(am__dirstamp)
 ompt/libhpcrun_o-ompt-task.$(OBJEXT): ompt/$(am__dirstamp) \
@@ -3872,7 +3860,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-files.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-handling_sample.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-hpcrun-initializers.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-hpcrun-placeholders.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-hpcrun_options.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-hpcrun_stats.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_la-loadmap.Plo@am__quote@
@@ -3910,7 +3897,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-files.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-handling_sample.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-hpcrun-initializers.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-hpcrun-placeholders.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-hpcrun_options.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-hpcrun_stats.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libhpcrun_o-loadmap.Po@am__quote@
@@ -4091,7 +4077,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-device-map.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-device.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-interface.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-placeholders.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-queues.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-region-debug.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_la-ompt-region.Plo@am__quote@
@@ -4103,7 +4088,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-device-map.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-device.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-interface.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-placeholders.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-queues.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-region-debug.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ompt/$(DEPDIR)/libhpcrun_o-ompt-region.Po@am__quote@
@@ -5004,13 +4988,6 @@ messages/libhpcrun_la-fmt.lo: messages/fmt.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o messages/libhpcrun_la-fmt.lo `test -f 'messages/fmt.c' || echo '$(srcdir)/'`messages/fmt.c
 
-libhpcrun_la-hpcrun-placeholders.lo: hpcrun-placeholders.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT libhpcrun_la-hpcrun-placeholders.lo -MD -MP -MF $(DEPDIR)/libhpcrun_la-hpcrun-placeholders.Tpo -c -o libhpcrun_la-hpcrun-placeholders.lo `test -f 'hpcrun-placeholders.c' || echo '$(srcdir)/'`hpcrun-placeholders.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libhpcrun_la-hpcrun-placeholders.Tpo $(DEPDIR)/libhpcrun_la-hpcrun-placeholders.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='hpcrun-placeholders.c' object='libhpcrun_la-hpcrun-placeholders.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o libhpcrun_la-hpcrun-placeholders.lo `test -f 'hpcrun-placeholders.c' || echo '$(srcdir)/'`hpcrun-placeholders.c
-
 gpu/libhpcrun_la-gpu-activity.lo: gpu/gpu-activity.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT gpu/libhpcrun_la-gpu-activity.lo -MD -MP -MF gpu/$(DEPDIR)/libhpcrun_la-gpu-activity.Tpo -c -o gpu/libhpcrun_la-gpu-activity.lo `test -f 'gpu/gpu-activity.c' || echo '$(srcdir)/'`gpu/gpu-activity.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/$(DEPDIR)/libhpcrun_la-gpu-activity.Tpo gpu/$(DEPDIR)/libhpcrun_la-gpu-activity.Plo
@@ -5276,13 +5253,6 @@ ompt/libhpcrun_la-ompt-region-debug.lo: ompt/ompt-region-debug.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/ompt-region-debug.c' object='ompt/libhpcrun_la-ompt-region-debug.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_la-ompt-region-debug.lo `test -f 'ompt/ompt-region-debug.c' || echo '$(srcdir)/'`ompt/ompt-region-debug.c
-
-ompt/libhpcrun_la-ompt-placeholders.lo: ompt/ompt-placeholders.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_la-ompt-placeholders.lo -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_la-ompt-placeholders.Tpo -c -o ompt/libhpcrun_la-ompt-placeholders.lo `test -f 'ompt/ompt-placeholders.c' || echo '$(srcdir)/'`ompt/ompt-placeholders.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) ompt/$(DEPDIR)/libhpcrun_la-ompt-placeholders.Tpo ompt/$(DEPDIR)/libhpcrun_la-ompt-placeholders.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/ompt-placeholders.c' object='ompt/libhpcrun_la-ompt-placeholders.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_la-ompt-placeholders.lo `test -f 'ompt/ompt-placeholders.c' || echo '$(srcdir)/'`ompt/ompt-placeholders.c
 
 ompt/libhpcrun_la-ompt-device-map.lo: ompt/ompt-device-map.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_la-ompt-device-map.lo -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_la-ompt-device-map.Tpo -c -o ompt/libhpcrun_la-ompt-device-map.lo `test -f 'ompt/ompt-device-map.c' || echo '$(srcdir)/'`ompt/ompt-device-map.c
@@ -7111,20 +7081,6 @@ messages/libhpcrun_o-fmt.obj: messages/fmt.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o messages/libhpcrun_o-fmt.obj `if test -f 'messages/fmt.c'; then $(CYGPATH_W) 'messages/fmt.c'; else $(CYGPATH_W) '$(srcdir)/messages/fmt.c'; fi`
 
-libhpcrun_o-hpcrun-placeholders.o: hpcrun-placeholders.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-hpcrun-placeholders.o -MD -MP -MF $(DEPDIR)/libhpcrun_o-hpcrun-placeholders.Tpo -c -o libhpcrun_o-hpcrun-placeholders.o `test -f 'hpcrun-placeholders.c' || echo '$(srcdir)/'`hpcrun-placeholders.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libhpcrun_o-hpcrun-placeholders.Tpo $(DEPDIR)/libhpcrun_o-hpcrun-placeholders.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='hpcrun-placeholders.c' object='libhpcrun_o-hpcrun-placeholders.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-hpcrun-placeholders.o `test -f 'hpcrun-placeholders.c' || echo '$(srcdir)/'`hpcrun-placeholders.c
-
-libhpcrun_o-hpcrun-placeholders.obj: hpcrun-placeholders.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT libhpcrun_o-hpcrun-placeholders.obj -MD -MP -MF $(DEPDIR)/libhpcrun_o-hpcrun-placeholders.Tpo -c -o libhpcrun_o-hpcrun-placeholders.obj `if test -f 'hpcrun-placeholders.c'; then $(CYGPATH_W) 'hpcrun-placeholders.c'; else $(CYGPATH_W) '$(srcdir)/hpcrun-placeholders.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libhpcrun_o-hpcrun-placeholders.Tpo $(DEPDIR)/libhpcrun_o-hpcrun-placeholders.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='hpcrun-placeholders.c' object='libhpcrun_o-hpcrun-placeholders.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o libhpcrun_o-hpcrun-placeholders.obj `if test -f 'hpcrun-placeholders.c'; then $(CYGPATH_W) 'hpcrun-placeholders.c'; else $(CYGPATH_W) '$(srcdir)/hpcrun-placeholders.c'; fi`
-
 gpu/libhpcrun_o-gpu-activity.o: gpu/gpu-activity.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT gpu/libhpcrun_o-gpu-activity.o -MD -MP -MF gpu/$(DEPDIR)/libhpcrun_o-gpu-activity.Tpo -c -o gpu/libhpcrun_o-gpu-activity.o `test -f 'gpu/gpu-activity.c' || echo '$(srcdir)/'`gpu/gpu-activity.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) gpu/$(DEPDIR)/libhpcrun_o-gpu-activity.Tpo gpu/$(DEPDIR)/libhpcrun_o-gpu-activity.Po
@@ -7656,20 +7612,6 @@ ompt/libhpcrun_o-ompt-region-debug.obj: ompt/ompt-region-debug.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/ompt-region-debug.c' object='ompt/libhpcrun_o-ompt-region-debug.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_o-ompt-region-debug.obj `if test -f 'ompt/ompt-region-debug.c'; then $(CYGPATH_W) 'ompt/ompt-region-debug.c'; else $(CYGPATH_W) '$(srcdir)/ompt/ompt-region-debug.c'; fi`
-
-ompt/libhpcrun_o-ompt-placeholders.o: ompt/ompt-placeholders.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_o-ompt-placeholders.o -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_o-ompt-placeholders.Tpo -c -o ompt/libhpcrun_o-ompt-placeholders.o `test -f 'ompt/ompt-placeholders.c' || echo '$(srcdir)/'`ompt/ompt-placeholders.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) ompt/$(DEPDIR)/libhpcrun_o-ompt-placeholders.Tpo ompt/$(DEPDIR)/libhpcrun_o-ompt-placeholders.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/ompt-placeholders.c' object='ompt/libhpcrun_o-ompt-placeholders.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_o-ompt-placeholders.o `test -f 'ompt/ompt-placeholders.c' || echo '$(srcdir)/'`ompt/ompt-placeholders.c
-
-ompt/libhpcrun_o-ompt-placeholders.obj: ompt/ompt-placeholders.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_o-ompt-placeholders.obj -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_o-ompt-placeholders.Tpo -c -o ompt/libhpcrun_o-ompt-placeholders.obj `if test -f 'ompt/ompt-placeholders.c'; then $(CYGPATH_W) 'ompt/ompt-placeholders.c'; else $(CYGPATH_W) '$(srcdir)/ompt/ompt-placeholders.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) ompt/$(DEPDIR)/libhpcrun_o-ompt-placeholders.Tpo ompt/$(DEPDIR)/libhpcrun_o-ompt-placeholders.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompt/ompt-placeholders.c' object='ompt/libhpcrun_o-ompt-placeholders.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o ompt/libhpcrun_o-ompt-placeholders.obj `if test -f 'ompt/ompt-placeholders.c'; then $(CYGPATH_W) 'ompt/ompt-placeholders.c'; else $(CYGPATH_W) '$(srcdir)/ompt/ompt-placeholders.c'; fi`
 
 ompt/libhpcrun_o-ompt-device-map.o: ompt/ompt-device-map.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT ompt/libhpcrun_o-ompt-device-map.o -MD -MP -MF ompt/$(DEPDIR)/libhpcrun_o-ompt-device-map.Tpo -c -o ompt/libhpcrun_o-ompt-device-map.o `test -f 'ompt/ompt-device-map.c' || echo '$(srcdir)/'`ompt/ompt-device-map.c

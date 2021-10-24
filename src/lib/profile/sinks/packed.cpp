@@ -167,15 +167,19 @@ void Packed::packContexts(std::vector<std::uint8_t>& out) noexcept {
     pack(out, (std::uint64_t)c.scope().type());
     switch(c.scope().type()) {
     case Scope::Type::point: {
-      // Format: <type> [module id] [offset] children... [sentinal]
+      // Format: <type> [module id] [offset] children... [sentinel]
       auto mo = c.scope().point_data();
       pack(out, moduleIDs.at(&mo.first));
       pack(out, mo.second);
       break;
     }
+    case Scope::Type::placeholder:
+      // Format: <type> [placeholder] children... [sentinel]
+      pack(out, (uint64_t)c.scope().enumerated_data());
+      break;
     case Scope::Type::unknown:
     case Scope::Type::global:
-      // Format: <type> children... [sentinal]
+      // Format: <type> children... [sentinel]
       break;
     case Scope::Type::function:
     case Scope::Type::inlined_function:
