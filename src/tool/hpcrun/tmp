@@ -1,0 +1,28 @@
+diff --git a/src/tool/hpcrun/gpu/nvidia/cupti-api.c b/src/tool/hpcrun/gpu/nvidia/cupti-api.c
+index bc62d0b19..efc8b1204 100644
+--- a/src/tool/hpcrun/gpu/nvidia/cupti-api.c
++++ b/src/tool/hpcrun/gpu/nvidia/cupti-api.c
+@@ -1151,6 +1151,7 @@ cupti_api_node_get
+   if (api_node == NULL) {
+     // Query key for the unwind map
+     register long rsp asm("rsp");
++    printf("NULL\n");
+     api_node = cupti_unwind(flags, rsp, *(CUfunction *)(cd->functionParams));
+   }
+ 
+@@ -1303,6 +1304,7 @@ cupti_driver_api_subscriber_callback_cuda_kernel
+ {
+   const CUpti_CallbackData *cd = (const CUpti_CallbackData *) cb_info;
+   if (cd->callbackSite == CUPTI_API_ENTER) {
++    printf("GPU function %s start\n", cd->functionName);
+     gpu_application_thread_process_activities();
+ 
+     // CUfunction is the first param
+@@ -1333,6 +1335,7 @@ cupti_driver_api_subscriber_callback_cuda_kernel
+ #ifdef NEW_CUPTI_ANALYSIS
+     analyze_cupti_api(cd, cupti_kernel_ph_get(), kernel_ip, flags);
+ #endif
++    printf("GPU function %s end\n", cd->functionName);
+   } else if (!ompt_runtime_status_get()) {
+     cupti_api_exit_callback_cuda(cb_id);
+ 

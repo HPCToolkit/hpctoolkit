@@ -26,8 +26,8 @@ cupti_cct_trace_append
 
 
 // The previous ccts are marked as a range
-// The same range can be taken out
-void
+// Return prev range_id
+int32_t
 cupti_cct_trace_flush
 (
  uint32_t range_id,

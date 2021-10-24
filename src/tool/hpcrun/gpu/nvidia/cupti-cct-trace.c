@@ -466,7 +466,7 @@ trace_shrink
 }
 
 
-static void
+static int32_t
 trace_condense
 (
  uint32_t range_id,
@@ -474,6 +474,7 @@ trace_condense
  bool merge
 )
 {
+  int32_t prev_range_id = -1;
   cupti_cct_trace_node_t *current = thread_root->left;
 
   // |A|
@@ -483,7 +484,7 @@ trace_condense
     assert(entry != NULL);
 
     if (merge) {
-      uint32_t prev_range_id = cupti_cct_trace_map_entry_range_id_get(entry);
+      prev_range_id = cupti_cct_trace_map_entry_range_id_get(entry);
       uint32_t num_threads = cupti_range_thread_list_num_threads();
       cupti_ip_norm_map_merge_thread(prev_range_id, range_id, sampled, num_threads);
     }
@@ -498,6 +499,8 @@ trace_condense
       trace_delete(node2);
     }
   }
+  
+  return prev_range_id;
 }
 
 //*****************************************************************************
@@ -534,7 +537,7 @@ cupti_cct_trace_append
 }
 
 
-void
+int32_t
 cupti_cct_trace_flush
 (
  uint32_t range_id,
@@ -550,9 +553,11 @@ cupti_cct_trace_flush
   trace_append(thread_root, trace_node);
   // Don't index A|
   
-  trace_condense(range_id, sampled, merge);
+  int32_t prev_range_id = trace_condense(range_id, sampled, merge);
 
   TRACE_MSG(CUPTI_CCT_TRACE, "Exit flush key trace");
+
+  return prev_range_id;
 }
 
 

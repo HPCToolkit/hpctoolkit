@@ -104,11 +104,17 @@ cupti_range_mode_context_sensitive_is_enter
   bool active = cupti_pc_sampling_active();
 
   if (map_ret_type == CUPTI_IP_NORM_MAP_DUPLICATE) {
+    // There must be a logical flush
+    int32_t prev_range_id = cupti_cct_trace_flush(range_id, active, is_cur);
     if (is_cur) {
       if (active) {
         // If active, we encounter a new range and have to flush.
         // It is an early collection mode different than other modes
-        cupti_pc_sampling_range_context_collect(range_id, context);
+        if (prev_range_id != -1) {
+          cupti_pc_sampling_range_context_collect(prev_range_id, context);
+        } else {
+          cupti_pc_sampling_range_context_collect(range_id, context);
+        }
       }
       cupti_retained_ranges++;
       if (cupti_retained_ranges == cupti_range_thread_retain_range) {
@@ -117,8 +123,6 @@ cupti_range_mode_context_sensitive_is_enter
         is_cur = cupti_range_thread_list_is_cur(cptd->id);
       }
     }
-    // There must be a logical flush
-    cupti_cct_trace_flush(range_id, active, is_cur);
     // After flushing, we clean up ccts in the previous range
     cupti_ip_norm_map_clear_thread();
     cupti_ip_norm_map_insert_thread(kernel_ip, api_node);
