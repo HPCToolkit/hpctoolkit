@@ -397,9 +397,6 @@ METHOD_FN(process_event_list, int lush_metrics)
 
     gpu_metrics_GSAMP_enable(); // GPU utilization from sampling
 #endif
-    // Only profile pc sampling metrics
-    cupti_enabled_activities |= CUPTI_DRIVER;
-    cupti_enabled_activities |= CUPTI_RUNTIME;
 
 #ifdef NEW_CUPTI
     char *range_mode = NULL;
@@ -483,13 +480,16 @@ METHOD_FN(process_event_list, int lush_metrics)
     kernel_invocation_activities[0] = CUPTI_ACTIVITY_KIND_KERNEL;
   }
 
-  cupti_device_buffer_config(device_buffer_size, device_semaphore_size);
   cupti_correlation_threshold_set(correlation_threshold);
 
   // Register cupti callbacks
   cupti_init();
   cupti_callbacks_subscribe();
-  cupti_start();
+
+  if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA)) {
+    cupti_start();
+    cupti_device_buffer_config(device_buffer_size, device_semaphore_size);
+  }
 
   // Register shutdown functions to write trace files
   device_trace_finalizer_shutdown.fn = gpu_trace_fini;
@@ -500,7 +500,9 @@ METHOD_FN(process_event_list, int lush_metrics)
 static void
 METHOD_FN(finalize_event_list)
 {
-  cupti_enable_activities();
+  if (hpcrun_ev_is(nvidia_name, NVIDIA_CUDA)) {
+    cupti_enable_activities();
+  }
 }
 
 static void
