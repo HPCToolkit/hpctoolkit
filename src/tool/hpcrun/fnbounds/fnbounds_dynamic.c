@@ -170,7 +170,7 @@ fnbounds_compute(const char *filename, void *start, void *end);
 //---------------------------------------------------------------------
 
 int 
-fnbounds_init()
+fnbounds_init(const char *executable_name)
 {
   if (hpcrun_get_disabled()) return 0;
 

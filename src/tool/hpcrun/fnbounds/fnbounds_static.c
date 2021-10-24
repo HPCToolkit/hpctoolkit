@@ -86,7 +86,7 @@ static load_module_t* fnbounds_executable_dso = NULL;
 // interface functions
 //-------------------------------------------------------------------------
 int
-fnbounds_init()
+fnbounds_init(const char *executable_name)
 {
   void *lm_beg_fn = (void*)hpcrun_nm_addrs[0];
   void *lm_end_fn = (void*)hpcrun_nm_addrs[hpcrun_nm_addrs_len - 1];
@@ -99,7 +99,7 @@ fnbounds_init()
   fh.mmap_size = 0;
 
   dso_info_t *dso =
-    hpcrun_dso_make(hpcrun_files_executable_pathname(), (void*)hpcrun_nm_addrs, 
+    hpcrun_dso_make(executable_name, (void*)hpcrun_nm_addrs, 
 		    &fh, lm_beg_fn, lm_end_fn, lm_size);
   fnbounds_executable_dso = hpcrun_loadmap_map(dso);
 

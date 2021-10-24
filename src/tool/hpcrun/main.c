@@ -297,6 +297,20 @@ setup_main_bounds_check(void* main_addr)
 #endif
 }
 
+
+static const char *
+get_process_name()
+{
+  static char buf[PROC_NAME_LEN];
+  buf[0] = 0;
+  int process_name_len = readlink("/proc/self/exe", buf, PROC_NAME_LEN - 1);
+  if (process_name_len >= 0) {
+    buf[process_name_len] = 0;
+  }
+  return buf;
+}
+
+
 //
 // Derive the full executable name from the
 // process name. Store in a local variable.
@@ -883,7 +897,6 @@ void*
 monitor_init_process(int *argc, char **argv, void* data)
 {
   char* process_name;
-  char  buf[PROC_NAME_LEN];
 
   hpcrun_thread_suppress_sample = false;
 
@@ -906,19 +919,7 @@ monitor_init_process(int *argc, char **argv, void* data)
 
   hpcrun_sample_prob_init();
 
-  // FIXME: if the process fork()s before main, then argc and argv
-  // will be NULL in the child here.  MPT on CNL does this.
-  process_name = "unknown";
-  if (argv != NULL && argv[0] != NULL) {
-    process_name = argv[0];
-  }
-  else {
-    int len = readlink("/proc/self/exe", buf, PROC_NAME_LEN - 1);
-    if (len > 1) {
-      buf[len] = 0;
-      process_name = buf;
-    }
-  }
+  process_name = get_process_name();
 
   hpcrun_set_using_threads(false);
 
@@ -955,7 +956,7 @@ monitor_init_process(int *argc, char **argv, void* data)
     hpcrun_initializer_init();
 
     // fnbounds must be after module_ignore_map
-    fnbounds_init();
+    fnbounds_init(process_name);
 #ifndef HPCRUN_STATIC_LINK
     auditor_exports->mainlib_connected(get_saved_vdso_path());
 #endif
