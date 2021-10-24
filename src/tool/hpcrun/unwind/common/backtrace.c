@@ -288,6 +288,19 @@ hpcrun_generate_backtrace_no_trampoline(backtrace_info_t* bt,
   frame_t* bt_beg  = td->btbuf_beg;      // innermost, inclusive
   frame_t* bt_last = td->btbuf_cur - 1; // outermost, inclusive
 
+  switch(bt->fence) {
+  case FENCE_NONE:
+  case FENCE_BAD:
+  case FENCE_TRAMP:
+    break;
+  case FENCE_MAIN:
+    bt_last->ip_norm = get_placeholder_norm(hpcrun_placeholder_fence_main);
+    break;
+  case FENCE_THREAD:
+    bt_last->ip_norm = get_placeholder_norm(hpcrun_placeholder_fence_thread);
+    break;
+  }
+
   if (skipInner) {
     if (ENABLED(USE_TRAMP)){
       //

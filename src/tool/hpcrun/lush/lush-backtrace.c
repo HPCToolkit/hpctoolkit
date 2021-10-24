@@ -279,7 +279,7 @@ canonicalize_chord(frame_t* chord_beg, lush_assoc_t as,
   frame_t* pchord_end = chord_beg + pchord_len;
   frame_t* lchord_end = chord_beg + lchord_len;
 
-  ip_normalized_t ip_norm = ip_normalized_NULL;
+  ip_normalized_t ip_norm = {0, 0};
   lush_lip_t* lip = NULL;
 
   if (as == LUSH_ASSOC_1_to_M) {

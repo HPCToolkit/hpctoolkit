@@ -61,6 +61,8 @@
 // local includes
 //*****************************************************************************
 
+#include <lib/prof-lean/placeholders.h>
+
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/thread_data.h>
 #include <hpcrun/device-finalizers.h>
@@ -69,7 +71,6 @@
 
 #include "ompt-interface.h"
 #include "ompt-device-map.h"
-#include "ompt-placeholders.h"
 
 #include "gpu/gpu-op-placeholders.h"
 #include "gpu/gpu-correlation-channel.h"
@@ -426,10 +427,10 @@ ompt_target_callback
 }
 
 #define FOREACH_OMPT_DATA_OP(macro)				     \
-  macro(op, ompt_target_data_alloc, ompt_tgt_alloc)		     \
-  macro(op, ompt_target_data_delete, ompt_tgt_delete)		     \
-  macro(op, ompt_target_data_transfer_to_device, ompt_tgt_copyin)    \
-  macro(op, ompt_target_data_transfer_from_device, ompt_tgt_copyout) 
+  macro(ph, ompt_target_data_alloc, ompt_tgt_alloc)		     \
+  macro(ph, ompt_target_data_delete, ompt_tgt_delete)		     \
+  macro(ph, ompt_target_data_transfer_to_device, ompt_tgt_copyin)    \
+  macro(ph, ompt_target_data_transfer_from_device, ompt_tgt_copyout)
 
 void
 ompt_data_op_callback
@@ -446,11 +447,11 @@ ompt_data_op_callback
  const void *codeptr_ra
 )
 {
-  ompt_placeholder_t op = ompt_placeholders.ompt_tgt_none;
+  uint64_t ph = hpcrun_placeholder_ompt_tgt_none;
   switch (optype) {                       
 #define ompt_op_macro(op, ompt_op_type, ompt_op_class) \
     case ompt_op_type:                                 \
-      op = ompt_placeholders.ompt_op_class;                              \
+      op = hpcrun_placeholder_##ompt_op_class;                              \
       break;
     
     FOREACH_OMPT_DATA_OP(ompt_op_macro);
@@ -460,7 +461,7 @@ ompt_data_op_callback
       break;
   }
 
-  hpcrun_ompt_op_id_notify(endpoint, host_op_id, op.pc_norm);
+  hpcrun_ompt_op_id_notify(endpoint, host_op_id, get_placeholder_norm(ph));
 }
 
 
@@ -474,7 +475,7 @@ ompt_submit_callback
 )
 {
   PRINT("ompt_submit_callback enter->target_id %" PRIu64 "\n", target_id);
-  hpcrun_ompt_op_id_notify(endpoint, host_op_id, ompt_placeholders.ompt_tgt_kernel.pc_norm);
+  hpcrun_ompt_op_id_notify(endpoint, host_op_id, get_placeholder_norm(hpcrun_placeholder_ompt_tgt_kernel));
   PRINT("ompt_submit_callback exit->target_id %" PRIu64 "\n", target_id);
 }
 

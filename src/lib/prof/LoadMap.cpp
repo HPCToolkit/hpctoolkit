@@ -90,13 +90,14 @@ LoadMap::LoadMap(uint sz)
 
   LM* nullLM = new LM(Prof::Struct::Tree::UnknownLMNm);
   lm_insert(nullLM);
-  DIAG_Assert(nullLM->id() == LoadMap::LMId_NULL, "LoadMap::LoadMap");
+  DIAG_Assert(nullLM->id() == HPCRUN_PLACEHOLDER_LM, "LoadMap::LoadMap");
 }
 
 
 LoadMap::~LoadMap()
 {
-  for (LMId_t i = LoadMap::LMId_NULL; i <= size(); ++i) {
+  static_assert(HPCRUN_PLACEHOLDER_LM == 0);
+  for (LMId_t i = 0; i <= size(); ++i) {
     LoadMap::LM* lm = this->lm(i);
     delete lm;
   }
@@ -136,7 +137,8 @@ LoadMap::merge(const LoadMap& y)
   
   LoadMap& x = *this;
 
-  for (LMId_t i = LoadMap::LMId_NULL; i <= y.size(); ++i) {
+  static_assert(HPCRUN_PLACEHOLDER_LM == 0);
+  for (LMId_t i = 0; i <= y.size(); ++i) {
     LoadMap::LM* y_lm = y.lm(i);
     
     LMSet_nm::iterator x_fnd = x.lm_find(y_lm->name());
@@ -176,7 +178,8 @@ LoadMap::dump(std::ostream& os) const
   std::string pre = "  ";
 
   os << "{ Prof::LoadMap\n";
-  for (LMId_t i = LoadMap::LMId_NULL; i <= size(); ++i) {
+  static_assert(HPCRUN_PLACEHOLDER_LM == 0);
+  for (LMId_t i = 0; i <= size(); ++i) {
     LoadMap::LM* lm = this->lm(i);
     os << pre << i << " : " << lm->toString() << std::endl;
   }
@@ -196,7 +199,7 @@ LoadMap::ddump() const
 //****************************************************************************
 
 LoadMap::LM::LM(const std::string& name)
-  : m_id(LMId_NULL), m_name(name), m_isUsed(false)
+  : m_id(HPCRUN_PLACEHOLDER_LM), m_name(name), m_isUsed(false)
 {
 }
 

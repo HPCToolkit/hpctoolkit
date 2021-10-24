@@ -49,8 +49,12 @@
 #include "util/log.hpp"
 #include "module.hpp"
 
+#include "lib/prof-lean/placeholders.h"
+
 #include <cassert>
+#include <cctype>
 #include <stdexcept>
+#include <sstream>
 
 using namespace hpctoolkit;
 
@@ -64,6 +68,8 @@ Scope::Scope(loop_t, const File& s, uint64_t l)
   : ty(Type::loop), data(s,l) {};
 Scope::Scope(const File& s, uint64_t l)
   : ty(Type::line), data(s,l) {};
+Scope::Scope(placeholder_t, uint64_t v)
+  : ty(Type::placeholder), data(v) {};
 Scope::Scope(ProfilePipeline&) : ty(Type::global), data() {};
 
 std::pair<const Module&, uint64_t> Scope::point_data() const {
@@ -98,6 +104,46 @@ std::pair<const File&, uint64_t> Scope::line_data() const {
   }
 }
 
+uint64_t Scope::enumerated_data() const {
+  switch(ty) {
+  case Type::placeholder: return data.enumerated;
+  default:
+    assert(false && "enumerated_data is only valid on placeholder Scopes!");
+    std::abort();
+  }
+}
+
+std::string_view Scope::enumerated_pretty_name() const {
+  switch(ty) {
+  case Type::placeholder: {
+    const char* stdname = get_placeholder_name(data.enumerated);
+    if(stdname == NULL) return std::string_view();
+    return stdname;
+  }
+  default:
+    assert(false && "enumerated_pretty_name is only valid on placeholder Scopes!");
+    std::abort();
+  }
+}
+
+std::string Scope::enumerated_fallback_name() const {
+  switch(ty) {
+  case Type::placeholder: {
+    std::ostringstream ss;
+    ss << std::hex;
+    for(int shift = 56; shift >= 0; shift -= 8) {
+      unsigned char c = (unsigned char)((data.enumerated >> shift) & 0xff);
+      if(std::isprint(c)) ss << c;
+      else ss << '\\' << std::setw(2) << c;
+    }
+    return ss.str();
+  }
+  default:
+    assert(false && "enumerated_fallback_name is only valid on placeholder Scopes!");
+    std::abort();
+  }
+}
+
 bool Scope::operator==(const Scope& o) const noexcept {
   if(ty != o.ty) return false;
   switch(ty) {
@@ -110,6 +156,8 @@ bool Scope::operator==(const Scope& o) const noexcept {
   case Type::loop:
   case Type::line:
     return data.line == o.data.line;
+  case Type::placeholder:
+    return data.enumerated == o.data.enumerated;
   }
   assert(false && "Invalid ty while comparing Scopes!");
   std::abort();
@@ -148,6 +196,8 @@ operator()(const Scope &l) const noexcept {
     sponge = rotl(sponge ^ h_u64(l.data.line.l), 3);
     return sponge;
   }
+  case Scope::Type::placeholder:
+    return rotl(0x15 ^ h_u64(l.data.enumerated), 1);
   }
   return 0;  // unreachable
 };
@@ -174,6 +224,15 @@ std::ostream& std::operator<<(std::ostream& os, const Scope& s) noexcept {
     ss << fl.first.path().filename().string() << ":" << fl.second;
     return ss.str();
   };
+  auto enumerated_str = [&]() -> std::string {
+    std::ostringstream ss;
+    ss << "0x" << std::hex << s.enumerated_data() << std::dec
+       << " '" << s.enumerated_fallback_name() << "'";
+    auto pretty = s.enumerated_pretty_name();
+    if(!pretty.empty())
+      ss << " \"" << pretty << "\"";
+    return ss.str();
+  };
 
   switch(s.type()) {
   case Scope::Type::unknown: return os << "(unknown)";
@@ -184,6 +243,7 @@ std::ostream& std::operator<<(std::ostream& os, const Scope& s) noexcept {
     return os << "(inlined_func){" << func_str() << " called at " << line_str() << "}";
   case Scope::Type::loop: return os << "(loop){" << line_str() << "}";
   case Scope::Type::line: return os << "(line){" << line_str() << "}";
+  case Scope::Type::placeholder: return os << "(placeholder){" << enumerated_str() << "}";
   }
   return os;
 }

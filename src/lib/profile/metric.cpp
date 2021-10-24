@@ -361,16 +361,17 @@ const MetricAccumulator* Metric::getFor(const Thread::Temporary& t, const Contex
 
 static bool pullsFunction(Scope parent, Scope child) {
   switch(child.type()) {
-  // Function-type Scopes, and unknown (which could be a function)
+  // Function-type Scopes, placeholder and unknown (which could be a call)
   case Scope::Type::function:
   case Scope::Type::inlined_function:
   case Scope::Type::unknown:
+  case Scope::Type::placeholder:
     return false;
   case Scope::Type::point:
   case Scope::Type::loop:
   case Scope::Type::line:
     switch(parent.type()) {
-    // Function-type scopes, and unknown (which could be a function)
+    // Function-type scopes, and unknown (which could be a call)
     case Scope::Type::unknown:
     case Scope::Type::function:
     case Scope::Type::inlined_function:
@@ -379,6 +380,7 @@ static bool pullsFunction(Scope parent, Scope child) {
       return true;
     case Scope::Type::global:
     case Scope::Type::point:
+    case Scope::Type::placeholder:
       return false;
     }
     break;

@@ -712,7 +712,7 @@ public:
     : ANode(type, parent, strct),
       m_cpId(cpId),
       m_as_info(lush_assoc_info_NULL),
-      m_lmId(LoadMap::LMId_NULL), m_lmIP(0), m_opIdx(0), m_lip(NULL)
+      m_lmId(HPCRUN_PLACEHOLDER_LM), m_lmIP(0), m_opIdx(0), m_lip(NULL)
   { }
 
   ADynNode(ANodeTy type, ANode* parent, Struct::ACodeNode* strct,
@@ -895,14 +895,14 @@ public:
   bool
   isPrimarySynthRoot() const
   {
-    return (m_lmId == LoadMap::LMId_NULL && m_lmIP == HPCRUN_FMT_LMIp_NULL);
+    return (m_lmId == 0 && m_lmIP == hpcrun_placeholder_root_primary);
   }
 
 
   bool
   isSecondarySynthRoot() const
   {
-    return (m_lmId == LoadMap::LMId_NULL && m_lmIP == HPCRUN_FMT_LMIp_Flag1);
+    return (m_lmId == 0 && m_lmIP == hpcrun_placeholder_root_partial);
   }
 
 

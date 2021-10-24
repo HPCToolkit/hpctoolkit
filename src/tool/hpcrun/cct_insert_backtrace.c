@@ -112,7 +112,7 @@ cct_insert_raw_backtrace(cct_node_t* cct,
 
   // FIXME: POGLEDAJ KOLIKO ON PUTA KROZ OVO PRODJE
 
-  ip_normalized_t parent_routine = ip_normalized_NULL;
+  ip_normalized_t parent_routine = {0, 0};
   for(; path_beg >= path_end; path_beg--){
     if ( (! retain_recursion) &&
 	 (path_beg >= path_end + 1) && 

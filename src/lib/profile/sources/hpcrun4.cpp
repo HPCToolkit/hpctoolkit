@@ -48,6 +48,7 @@
 
 #include "../util/log.hpp"
 #include "lib/prof-lean/hpcrun-fmt.h"
+#include "lib/prof-lean/placeholders.h"
 
 // TODO: Remove and change this once new-cupti is finalized
 #define HPCRUN_GPU_ROOT_NODE 65533
@@ -333,12 +334,12 @@ bool Hpcrun4::realread(const DataClass& needed) try {
       std::optional<ContextRef> par;
       Scope contextscope;
       if(n.id_parent == 0) {  // Root of some kind
-        if(n.lm_id == 0) {  // Synthetic root, remap to something useful.
-          if(n.lm_ip == HPCRUN_FMT_LMIp_NULL) {
+        if(n.lm_id == HPCRUN_PLACEHOLDER_LM) {  // Synthetic root, remap to something useful.
+          if(n.lm_ip == hpcrun_placeholder_root_primary) {
             // Global Scope, for full or "normal" unwinds. No actual node.
             nodes.insert({id, {std::nullopt, sink.global()}});
             continue;
-          } else if(n.lm_ip == HPCRUN_FMT_LMIp_Flag1) {
+          } else if(n.lm_ip == hpcrun_placeholder_root_partial) {
             // Global unknown Scope, for "partial" unwinds.
             partial_node_id = id;
             continue;
@@ -393,7 +394,15 @@ bool Hpcrun4::realread(const DataClass& needed) try {
 
       // Figure out the Scope for this node, if it has one.
       Scope scope;  // Default to the unknown Scope.
-      if(n.lm_id == HPCRUN_GPU_RANGE_NODE) {
+      if(n.lm_id == HPCRUN_PLACEHOLDER_LM) {
+        if(n.lm_ip == hpcrun_placeholder_root_partial && (!par || !grandpar)) {
+          // Special case: the partial root is global -> unknown in our world.
+          unknown_node_id = id;
+          continue;
+        }
+        // Special case, this is a placeholder node
+        scope = {Scope::placeholder, n.lm_ip};
+      } else if(n.lm_id == HPCRUN_GPU_RANGE_NODE) {
         // Special case, this is a collaborative marker node
         auto it = contextids.find(n.id_parent);
         if(it == contextids.end()) {
@@ -418,17 +427,13 @@ bool Hpcrun4::realread(const DataClass& needed) try {
           c = *c.get().direct_parent();
         contextparents.insert({id, {*grandpar, c.get().scope()}});
         continue;
-      } else if(n.lm_id != 0) {
+      } else {
         auto it = modules.find(n.lm_id);
         if(it == modules.end()) {
           util::log::info{} << "Invalid load module id: " << n.lm_id;
           return false;
         }
         scope = {it->second, n.lm_ip};
-      } else if(!par) {
-        // Special case: merge global -> unknown to the global unknown.
-        unknown_node_id = id;
-        continue;
       }
 
       nodes.insert({id, {*par, sink.context(*par, scope)}});

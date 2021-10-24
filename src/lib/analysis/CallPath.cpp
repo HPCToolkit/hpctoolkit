@@ -448,7 +448,8 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
   // Overlay static structure. N.B. To process spurious samples,
   // iteration includes LoadMap::LMId_NULL
   // -------------------------------------------------------
-  for (Prof::LoadMap::LMId_t i = Prof::LoadMap::LMId_NULL;
+  static_assert(HPCRUN_PLACEHOLDER_LM == 0);
+  for (Prof::LoadMap::LMId_t i = 0;
       i <= loadmap->size(); ++i) {
     Prof::LoadMap::LM* lm = loadmap->lm(i);
 
@@ -512,7 +513,7 @@ overlayStaticStructureMain(Prof::CallPath::Profile& prof,
 
   if (useStruct) {
     DIAG_MsgIf(printProgress, "STRUCTURE: " << lm_pretty_name);
-  } else if (loadmap_lm->id() == Prof::LoadMap::LMId_NULL) {
+  } else if (loadmap_lm->id() == HPCRUN_PLACEHOLDER_LM) {
     // no-op for this case
   } else {
     try {

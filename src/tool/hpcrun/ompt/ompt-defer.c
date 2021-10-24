@@ -68,6 +68,8 @@
 #include "ompt-parallel-region-map.h"
 #endif
 
+#include <lib/prof-lean/placeholders.h>
+
 #include <hpcrun/unresolved.h>
 #include <hpcrun/utilities/timer.h>
 
@@ -77,7 +79,6 @@
 #include "ompt-queues.h"
 #include "ompt-region.h"
 #include "ompt-region-debug.h"
-#include "ompt-placeholders.h"
 #include "ompt-thread.h"
 
 
@@ -772,10 +773,7 @@ update_unresolved_node
   // Note: GCC7 statically evaluates this as false and dead code
   // eliminates the body without the cast on UNRESOLVED
   if (addr->ip_norm.lm_id == (uint16_t) UNRESOLVED) { 
-    addr->ip_norm.lm_ip = 
-      ompt_placeholders.ompt_region_unresolved.pc_norm.lm_ip;
-    addr->ip_norm.lm_id = 
-      ompt_placeholders.ompt_region_unresolved.pc_norm.lm_id;
+    addr->ip_norm = get_placeholder_norm(hpcrun_placeholder_ompt_region_unresolved);
   }
 }
 
