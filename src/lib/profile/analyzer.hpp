@@ -184,7 +184,7 @@ struct LatencyBlameAnalyzer : public ProfileAnalyzer {
       std::string scopeFile = s.point_data().first.path().filename().string();
       size_t scopeHash = std::hash<std::string>{}(scopeFile);
 
-      int latency;
+      long latency;
       auto to_ctx = t.accumulators().find(std::get<Context>(to_context));
       if (!to_ctx) {
         continue;
