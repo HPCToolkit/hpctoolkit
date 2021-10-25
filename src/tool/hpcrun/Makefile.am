@@ -502,6 +502,7 @@ MY_AARCH64_FILES = \
 	utilities/arch/libunwind/libunwind-context-pc.c
 
 if OPT_PAPI_COMPONENT
+MY_CPP_DEFINES += -DHPCRUN_SS_PAPI_C_INTEL
 MY_PAPI_FILES = \
     sample-sources/papi-c.c \
     sample-sources/papi-c-extended-info.c \

@@ -662,10 +662,10 @@ gpu_metrics_attribute_gpu_utilization
   cct_node_t *cct_node = activity->cct_node;
 
   metric_data_list_t *metrics = hpcrun_reify_metric_set(cct_node, METRIC_ID(GPU_ACT));
-  gpu_metrics_attribute_metric_real(metrics, METRIC_ID(GPU_ACT), gpu_info->active);
-  gpu_metrics_attribute_metric_real(metrics, METRIC_ID(GPU_STL), gpu_info->stalled);
-  gpu_metrics_attribute_metric_real(metrics, METRIC_ID(GPU_IDLE), gpu_info->idle);
-  gpu_metrics_attribute_metric_real(metrics, METRIC_ID(GPU_UTIL_DENOMINATOR), 100);
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_ACT), gpu_info->active);
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_STL), gpu_info->stalled);
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_IDLE), gpu_info->idle);
+  gpu_metrics_attribute_metric_int(metrics, METRIC_ID(GPU_UTIL_DENOMINATOR), 100);
 }
 
 
@@ -1032,5 +1032,5 @@ gpu_metrics_gpu_utilization_enable
 
   INITIALIZE_METRIC_KIND();
 
-  FORALL_GPU_UTILIZATION(INITIALIZE_SCALAR_METRIC_REAL)
+  FORALL_GPU_UTILIZATION(INITIALIZE_SCALAR_METRIC_INT)
 }
