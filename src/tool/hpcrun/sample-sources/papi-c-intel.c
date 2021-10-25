@@ -39,10 +39,10 @@
 
 #define numMetrics 3
 #define ACTIVE_INDEX 1
-#define STALL_INDEX 1
+#define STALL_INDEX 2
 #define MAX_STR_LEN     128
 static spinlock_t setup_lock = SPINLOCK_UNLOCKED;
-int eventset;
+int eventset = PAPI_NULL;
 
 char const *metric_name[MAX_STR_LEN] = {
            "ComputeBasic.GpuTime",
@@ -73,7 +73,7 @@ is_papi_c_intel(const char* name)
 static void
 papi_c_intel_setup(void)
 {
-  TMSG(INTEL, "Started: setup intel PAPI");
+  ETMSG(INTEL, "Started: setup intel PAPI");
   spinlock_lock(&setup_lock);
   eventset = PAPI_NULL;
   int retval=PAPI_library_init(PAPI_VER_CURRENT);
@@ -82,21 +82,21 @@ papi_c_intel_setup(void)
     pthread_exit(NULL);
   }
   spinlock_unlock(&setup_lock);
-  TMSG(INTEL, "Completed: setup intel PAPI");
+  ETMSG(INTEL, "Completed: setup intel PAPI");
 }
 
 
 void
 papi_c_intel_get_event_set(int* ev_s)
 {
-  TMSG(INTEL, "Started: create intel PAPI event set");
+  ETMSG(INTEL, "Started: create intel PAPI event set");
   spinlock_lock(&setup_lock);
   int retval=PAPI_create_eventset(&eventset);
   if (retval!=PAPI_OK) {
     fprintf(stderr,"Error creating eventset! %s\n", PAPI_strerror(retval));
   }
   spinlock_unlock(&setup_lock);
-  TMSG(INTEL, "Completed: create intel PAPI event set");
+  ETMSG(INTEL, "Completed: create intel PAPI event set");
 }
 
 
@@ -105,7 +105,7 @@ papi_c_intel_add_event(int ev_s, int ev)
 {
   int rv = PAPI_OK;
   int retval;
-  TMSG(INTEL, "Started: add event to intel PAPI event set");
+  ETMSG(INTEL, "Started: add event to intel PAPI event set");
   spinlock_lock(&setup_lock);
   for (int i=0; i<numMetrics; i++) {
     retval=PAPI_add_named_event(eventset, metric_name[i]);
@@ -114,15 +114,15 @@ papi_c_intel_add_event(int ev_s, int ev)
     }
   }
   spinlock_unlock(&setup_lock);
-  TMSG(INTEL, "Completed: add event to intel PAPI event set");
+  ETMSG(INTEL, "Completed: add event to intel PAPI event set");
   return rv;
 }
 
 
 void
-papi_c_intel_finalize_event_set(void)
+papi_c_intel_start(void)
 {
-  TMSG(INTEL, "Started: finalize PAPI event set");
+  ETMSG(INTEL, "Started: start PAPI collection");
   spinlock_lock(&setup_lock);
   PAPI_reset(eventset);
   int retval=PAPI_start(eventset);
@@ -130,20 +130,34 @@ papi_c_intel_finalize_event_set(void)
     fprintf(stderr,"Error starting papi collection: %s\n", PAPI_strerror(retval));
   }
   spinlock_unlock(&setup_lock);
-  TMSG(INTEL, "Completed: finalize PAPI event set");
+  ETMSG(INTEL, "Completed: start PAPI collection");
+}
+
+
+void
+papi_c_intel_stop(void)
+{
+  ETMSG(INTEL, "Started: stop PAPI collection");
+  spinlock_lock(&setup_lock);
+  int retval=PAPI_stop(eventset, NULL);
+  if (retval!=PAPI_OK) {
+    fprintf(stderr,"Error stopping papi collection: %s\n", PAPI_strerror(retval));
+  }
+  spinlock_unlock(&setup_lock);
+  ETMSG(INTEL, "Completed: stop PAPI collection");
 }
 
 
 static void
 papi_c_intel_teardown(void)
 {
-  TMSG(INTEL, "Started: teardown of intel PAPI datastructures");
+  ETMSG(INTEL, "Started: teardown of intel PAPI datastructures");
   spinlock_lock(&setup_lock);
   // free(metric_values);
   PAPI_cleanup_eventset(eventset);
   PAPI_destroy_eventset(&eventset);
   spinlock_unlock(&setup_lock);
-  TMSG(INTEL, "Completed: teardown of intel PAPI datastructures");
+  ETMSG(INTEL, "Completed: teardown of intel PAPI datastructures");
 }
 
 
@@ -168,9 +182,10 @@ papi_c_intel_read(cct_node_t **cct_nodes, uint32_t num_ccts, long long *previous
   long long *metric_values = (long long *)hpcrun_malloc(numMetrics * sizeof(long long));
   int retval = PAPI_read(eventset, metric_values);
   if (retval!=PAPI_OK) {
-    TMSG(INTEL, "Error stopping:  %s\n", PAPI_strerror(retval));
+    ETMSG(INTEL, "Error stopping:  %s\n", PAPI_strerror(retval));
     return NULL;
   }
+  printf("%s: %lld, %s: %lld, %s: %lld\n", metric_name[0], metric_values[0], metric_name[1], metric_values[1], metric_name[2], metric_values[2]);
   for(int i=0; i<num_ccts; i++) {
     attribute_gpu_utilization(cct_nodes[i], metric_values, previous_values);
   }
@@ -182,12 +197,12 @@ static sync_info_list_t intel_component = {
   .pred = is_papi_c_intel,
   .get_event_set = papi_c_intel_get_event_set,
   .add_event = papi_c_intel_add_event,
-  .finalize_event_set = papi_c_intel_finalize_event_set,
-  .sync_setup = papi_c_intel_setup,
+  .finalize_event_set = papi_c_no_action,
+  .sync_setup = papi_c_no_action, //papi_c_intel_setup,
   .sync_teardown = papi_c_intel_teardown,
-  .sync_start = papi_c_no_action,
+  .sync_start = papi_c_intel_start,
   .read = papi_c_intel_read,
-  .sync_stop = papi_c_no_action,
+  .sync_stop = papi_c_intel_stop,
   .process_only = true,
   .next = NULL,
 };

@@ -123,6 +123,18 @@ sync_start_for_component(int cidx)
   return no_action;
 }
 
+read_proc_t
+sync_read_for_component(int cidx)
+{
+  const char* name = PAPI_get_component_info(cidx)->name;
+
+  TMSG(PAPI, "looking for sync start for component idx=%d(%s)", cidx, name);
+  for(sync_info_list_t* item=registered_sync_components; item; item = item->next) {
+    if (item->pred(name)) return item->read;
+  }
+  return NULL;
+}
+
 stop_proc_t
 sync_stop_for_component(int cidx)
 {

@@ -164,6 +164,22 @@ add_queue_node_to_splay_tree
 }
 
 
+static void
+add_kernel_to_incomplete_list
+(
+ kernel_node_t *kernel_node
+)
+{
+  while (true) {
+    kernel_node_t *current_head = atomic_load(&incomplete_kernel_list_head);
+    atomic_store(&kernel_node->next, current_head);
+    if (atomic_compare_exchange_strong(&incomplete_kernel_list_head, &current_head, kernel_node)) {
+      break;
+    }
+  }
+}
+
+
 // Insert a new node in kernel_map corresponding to a kernel
 static void
 create_and_insert_kernel_entry
@@ -178,6 +194,7 @@ create_and_insert_kernel_entry
   kernel_node->marked_for_deletion = false;
   atomic_init(&kernel_node->next, NULL);
   kernel_map_insert(kernelexec_id, kernel_node);
+	add_kernel_to_incomplete_list(kernel_node);
 }
 
 
@@ -204,22 +221,6 @@ add_kernel_to_completed_list
     kernel_node_t *current_head = atomic_load(&completed_kernel_list_head);
     atomic_store(&kernel_node->next, current_head);
     if (atomic_compare_exchange_strong(&completed_kernel_list_head, &current_head, kernel_node)) {
-      break;
-    }
-  }
-}
-
-
-static void
-add_kernel_to_incomplete_list
-(
- kernel_node_t *kernel_node
-)
-{
-  while (true) {
-    kernel_node_t *current_head = atomic_load(&incomplete_kernel_list_head);
-    atomic_store(&kernel_node->next, current_head);
-    if (atomic_compare_exchange_strong(&incomplete_kernel_list_head, &current_head, kernel_node)) {
       break;
     }
   }
@@ -282,7 +283,6 @@ attributing_cpu_idle_cause_metric_at_sync_epilogue
     curr = private_completed_kernel_head;
 
     while (curr) {
-      //printf("cpu_idle_cause_metric_id: %f\n", curr->cpu_idle_blame);
       gpu_blame_shift_t bs = {0, 0, curr->cpu_idle_blame};
       record_blame_shift_metrics(curr->launcher_cct, &bs);
 
