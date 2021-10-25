@@ -1834,7 +1834,9 @@ void hpcrun_auditor_attach(const auditor_exports_t* exports, auditor_hooks_t* ho
   hooks->open = auditor_open;
   hooks->close = auditor_close;
   hooks->stable = auditor_stable;
+#ifdef NEW_CUPTI
   hooks->cuLaunchKernel = auditor_cuLaunchKernel;
+#endif
   //hooks->cuMemcpy = auditor_cuMemcpy;
   //hooks->cuMemcpyDtoH = auditor_cuMemcpyDtoH;
   //hooks->cuMemcpyDtoHAsync = auditor_cuMemcpyAsync;
