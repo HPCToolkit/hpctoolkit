@@ -198,7 +198,6 @@ gpu_operation_channel_produce
   channel_push(channel, bichannel_direction_forward, new_item);
 
   gpu_operation_channel_signal_consumer_when_full(channel);
-
 }
 
 
