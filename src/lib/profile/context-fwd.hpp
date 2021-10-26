@@ -12,7 +12,7 @@
 // HPCToolkit is at 'hpctoolkit.org' and in 'README.Acknowledgments'.
 // --------------------------------------------------------------------------
 //
-// Copyright ((c)) 2020, Rice University
+// Copyright ((c)) 2019-2020, Rice University
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -44,34 +44,39 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#include "sink.hpp"
+#ifndef HPCTOOLKIT_PROFILE_CONTEXT_FWD_H
+#define HPCTOOLKIT_PROFILE_CONTEXT_FWD_H
 
-#include "util/log.hpp"
+#include "scope.hpp"
 
-using namespace hpctoolkit;
+#include "util/ref_wrappers.hpp"
 
-util::WorkshareResult ProfileSink::help() {
-  // Unless specified otherwise, Sinks are single-threaded
-  return {false, true};
+namespace hpctoolkit {
+
+class Context;
+class SuperpositionedContext;
+class CollaborativeContext;
+class CollaborativeSharedContext;
+
+/// Generic reference to any of the Context-like classes.
+/// Use ContextRef::const_t for a constant reference to a Context-like.
+using CollaboratorRoot = std::pair<Scope, std::unique_ptr<CollaborativeSharedContext>>;
+using ContextRef = util::variant_ref<
+  // Ordinary reference to a (physical) calling Context
+  Context,
+  // Reference to a Superpositioned instance across multiple Contexts
+  SuperpositionedContext,
+  // Reference to a Collaborative Context, in particular its (shared) root
+  CollaborativeContext,
+  // Reference to a particular collaborator root for a Collaborative Context
+  // Note that consistency between the two refs is assumed.
+  // FIXME: This is really a giant hack, it should actually be a
+  // <Context&, CollaborativeContext&, Scope> tuple.
+  util::ref_pair<Context, const CollaboratorRoot>,
+  // Reference to the shared Context under a Collaborative Context
+  CollaborativeSharedContext
+>;
+
 }
 
-void ProfileSink::bindPipeline(ProfilePipeline::Sink&& se) noexcept {
-  src = std::move(se);
-  notifyPipeline();
-}
-
-DataClass ProfileSink::wavefronts() const noexcept { return {}; }
-
-void ProfileSink::notifyPipeline() noexcept {};
-
-void ProfileSink::notifyWavefront(DataClass) {};
-void ProfileSink::notifyModule(const Module&) {};
-void ProfileSink::notifyFile(const File&) {};
-void ProfileSink::notifyMetric(const Metric&) {};
-void ProfileSink::notifyExtraStatistic(const ExtraStatistic&) {};
-void ProfileSink::notifyContext(const Context&) {};
-void ProfileSink::notifyContextExpansion(ContextRef::const_t, Scope, ContextRef::const_t) {};
-void ProfileSink::notifyThread(const Thread&) {};
-void ProfileSink::notifyTimepoint(const Thread& t, ContextRef::const_t c, std::chrono::nanoseconds n) {};
-void ProfileSink::notifyTimepointRewindStart(const Thread&) {};
-void ProfileSink::notifyThreadFinal(const Thread::Temporary&) {};
+#endif // HPCTOOLKIT_PROFILE_CONTEXT_FWD_H

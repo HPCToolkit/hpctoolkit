@@ -69,7 +69,7 @@ public:
 
   DataClass accepts() const noexcept override {
     using ds = DataClass;
-    return ds::threads | ds::contexts | ds::timepoints;
+    return ds::attributes | ds::threads | ds::contexts | ds::timepoints;
   }
 
   ExtensionClass requires() const noexcept override {
@@ -81,12 +81,9 @@ public:
 
   void notifyWavefront(DataClass) override;
   void notifyThread(const Thread&) override;
-  void notifyTimepoint(std::chrono::nanoseconds);
   void notifyTimepoint(const Thread&, ContextRef::const_t, std::chrono::nanoseconds) override;
+  void notifyTimepointRewindStart(const Thread&) override;
   void notifyThreadFinal(const Thread::Temporary&) override;
-
-  /// Check whether a Context ever appears in the traces.
-  bool seen(const Context&);
 
   /// Return the tag for the experiment.xml, or an empty string if empty.
   std::string exmlTag();
@@ -94,10 +91,6 @@ public:
 private:
   std::optional<hpctoolkit::util::File> tracefile;
   std::atomic<bool> has_traces{false};
-  std::atomic<std::chrono::nanoseconds> min{std::chrono::nanoseconds::max()};
-  std::atomic<std::chrono::nanoseconds> max{std::chrono::nanoseconds::min()};
-
-  void mmupdate(std::chrono::nanoseconds min, std::chrono::nanoseconds max);
 
   util::Once threadsReady;
 
@@ -130,8 +123,6 @@ private:
 
     struct uds& uds;
     bool has_trace = false;
-    std::chrono::nanoseconds minTime = std::chrono::nanoseconds::max();
-    std::chrono::nanoseconds maxTime = std::chrono::nanoseconds::min();
 
     traceHdr hdr;
     std::optional<hpctoolkit::util::File::Instance> inst;

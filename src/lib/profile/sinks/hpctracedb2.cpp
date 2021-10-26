@@ -140,24 +140,12 @@ void HPCTraceDB2::notifyTimepoint(const Thread& t, ContextRef::const_t cr, std::
   if(!ud.has_trace) {
     has_traces.exchange(true, std::memory_order_relaxed);
     ud.has_trace = true;
-    if(tracefile) {
-      ud.inst = tracefile->open(true, true);
-
-      //write the hdr
-      trace_hdr_t hdr = {
-        ud.hdr.prof_info_idx, ud.hdr.trace_idx, ud.hdr.start, ud.hdr.end
-      };
-      assert((hdr.start != (uint64_t)INVALID_HDR) | (hdr.end != (uint64_t)INVALID_HDR));
-      std::array<char, trace_hdr_SIZE> buf;
-      trace_hdr_swrite(hdr, buf.data());
-      ud.inst->writeat((ud.hdr.prof_info_idx - 1) * trace_hdr_SIZE + HPCTRACEDB_FMT_HeaderLen, buf);
-    }
+    if(tracefile) ud.inst = tracefile->open(true, true);
   }
 
   util::optional_ref<const Context> c = std::get<const Context>(cr);
   // HACK to work around experiment.xml. If this Context is a point and its
-  // parent isn't, we emit a trace point for the parent (which will usually be
-  // a line Scope).
+  // parent is a line, emit a trace point for the line instead.
   if(c->scope().type() == Scope::Type::point) {
     if(auto pc = c->direct_parent()) {
       if(pc->scope().type() == Scope::Type::line)
@@ -165,8 +153,6 @@ void HPCTraceDB2::notifyTimepoint(const Thread& t, ContextRef::const_t cr, std::
     }
   }
 
-  if(tm < ud.minTime) ud.minTime = tm;
-  if(ud.maxTime < tm) ud.maxTime = tm;
   hpctrace_fmt_datum_t datum = {
     static_cast<uint64_t>(tm.count()),  // Point in time
     c->userdata[src.identifier()],  // Point in the CCT
@@ -185,11 +171,31 @@ void HPCTraceDB2::notifyTimepoint(const Thread& t, ContextRef::const_t cr, std::
   }
 }
 
+void HPCTraceDB2::notifyTimepointRewindStart(const Thread& t) {
+  auto& ud = t.userdata[uds.thread];
+  ud.cursor = ud.buffer.data();
+  ud.off = -1;
+  ud.tmcntr = 0;
+}
+
 void HPCTraceDB2::notifyThreadFinal(const Thread::Temporary& tt) {
   auto& ud = tt.thread().userdata[uds.thread];
   if(ud.inst) {
     if(ud.cursor != ud.buffer.data())
       ud.inst->writeat(ud.off, ud.cursor - ud.buffer.data(), ud.buffer.data());
+
+    //write the hdr
+    auto new_end = ud.hdr.start + ud.tmcntr * timepoint_SIZE;
+    assert(new_end <= ud.hdr.end);
+    ud.hdr.end = new_end;
+    trace_hdr_t hdr = {
+      ud.hdr.prof_info_idx, ud.hdr.trace_idx, ud.hdr.start, ud.hdr.end
+    };
+    assert((hdr.start != (uint64_t)INVALID_HDR) | (hdr.end != (uint64_t)INVALID_HDR));
+    std::array<char, trace_hdr_SIZE> buf;
+    trace_hdr_swrite(hdr, buf.data());
+    ud.inst->writeat((ud.hdr.prof_info_idx - 1) * trace_hdr_SIZE + HPCTRACEDB_FMT_HeaderLen, buf);
+
     ud.inst = std::nullopt;
   }
 }
@@ -200,39 +206,15 @@ void HPCTraceDB2::notifyPipeline() noexcept {
   src.registerOrderedWavefront();
 }
 
-bool HPCTraceDB2::seen(const Context& c) {
-  return true;
-}
-
-void HPCTraceDB2::mmupdate(std::chrono::nanoseconds tmin, std::chrono::nanoseconds tmax) {
-  while(1) {
-    auto val = min.load(std::memory_order_relaxed);
-    if(min.compare_exchange_weak(val, std::min(val, tmin), std::memory_order_relaxed))
-      break;
-  }
-  while(1) {
-    auto val = max.load(std::memory_order_relaxed);
-    if(max.compare_exchange_weak(val, std::max(val, tmax), std::memory_order_relaxed))
-      break;
-  }
-}
-
-void HPCTraceDB2::notifyTimepoint(std::chrono::nanoseconds tm) {
-  has_traces.exchange(true, std::memory_order_relaxed);
-  mmupdate(tm, tm);
-}
-
 std::string HPCTraceDB2::exmlTag() {
   if(!has_traces.load(std::memory_order_relaxed)) return "";
-  for(const auto& t: src.threads().iterate()) {
-    auto& ud = t->userdata[uds.thread];
-    if(ud.has_trace) mmupdate(ud.minTime, ud.maxTime);
-  }
+  auto [min, max] = src.timepointBounds().value_or(std::make_pair(
+      std::chrono::nanoseconds::zero(), std::chrono::nanoseconds::zero()));
   std::ostringstream ss;
   ss << "<TraceDB"
         " i=\"0\""
-        " db-min-time=\"" << min.load(std::memory_order_relaxed).count() << "\""
-        " db-max-time=\"" << max.load(std::memory_order_relaxed).count() << "\""
+        " db-min-time=\"" << min.count() << "\""
+        " db-max-time=\"" << max.count() << "\""
         " u=\"1000000000\"/>\n";
   return ss.str();
 }
@@ -257,7 +239,7 @@ std::vector<uint64_t> HPCTraceDB2::calcStartEnd() {
   std::vector<uint64_t> trace_sizes;
   uint64_t total_size = 0;
   for(const auto& t : src.threads().iterate()){
-    uint64_t trace_sz = t->attributes.timepointCnt().value_or(0) * timepoint_SIZE;
+    uint64_t trace_sz = t->attributes.timepointMaxCount() * timepoint_SIZE;
     trace_sizes.emplace_back(trace_sz);
     total_size += trace_sz;
   }

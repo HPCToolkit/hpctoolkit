@@ -95,8 +95,7 @@ static std::uint8_t* pack(std::uint8_t* out, const double v) noexcept {
 }
 
 Packed::Packed()
-  : metrics(), moduleIDs(), minTime(std::chrono::nanoseconds::max()),
-    maxTime(std::chrono::nanoseconds::min()) {};
+  : metrics(), moduleIDs() {};
 
 void Packed::packAttributes(std::vector<std::uint8_t>& out) noexcept {
   // Format: [job or magic] [name] [path] [env cnt] ([env key] [env val]...)
@@ -146,6 +145,11 @@ void Packed::packAttributes(std::vector<std::uint8_t>& out) noexcept {
       }
     }
   }
+
+  auto [min, max] = src.timepointBounds().value_or(std::make_pair(
+      std::chrono::nanoseconds::zero(), std::chrono::nanoseconds::zero()));
+  pack(out, (std::uint64_t)min.count());
+  pack(out, (std::uint64_t)max.count());
 }
 
 void Packed::packReferences(std::vector<std::uint8_t>& out) noexcept {
@@ -211,30 +215,6 @@ void Packed::packMetrics(std::vector<std::uint8_t>& out) noexcept {
   std::vector<std::uint8_t> tmp;
   pack(tmp, cnt);
   for(const auto b: tmp) out[start++] = b;
-}
-
-void Packed::notifyTimepoint(std::chrono::nanoseconds tp) {
-  std::chrono::nanoseconds old = minTime.load(std::memory_order_relaxed);
-  while(tp < old
-        && !minTime.compare_exchange_weak(old, tp, std::memory_order_relaxed));
-  old = maxTime.load(std::memory_order_relaxed);
-  while(old < tp
-        && !maxTime.compare_exchange_weak(old, tp, std::memory_order_relaxed));
-}
-
-void Packed::packTimepoints(std::vector<std::uint8_t>& out) noexcept {
-  auto min = minTime.load(std::memory_order_relaxed);
-  auto max = maxTime.load(std::memory_order_relaxed);
-  bool minValid = min < std::chrono::nanoseconds::max();
-  bool maxValid = max > std::chrono::nanoseconds::min();
-  assert(minValid == maxValid && "Packed timepoints appear half invalid?");
-  if(minValid) {
-    pack(out, (std::uint64_t)min.count());
-    pack(out, (std::uint64_t)max.count());
-  } else {
-    pack(out, (std::uint64_t)0);
-    pack(out, (std::uint64_t)0);
-  }
 }
 
 ParallelPacked::ParallelPacked(bool doContexts, bool doMetrics)

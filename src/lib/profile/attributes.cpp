@@ -56,8 +56,10 @@
 
 using namespace hpctoolkit;
 
-static constexpr auto max_ulong = std::numeric_limits<unsigned long>::max();
-static constexpr auto max_uint32 = std::numeric_limits<uint32_t>::max();
+Thread::Thread(ud_t::struct_t& rs, ThreadAttributes attr)
+  : userdata(rs, std::cref(*this)), attributes(std::move(attr)) {
+  assert(attributes.ok());
+}
 
 ProfileAttributes::ProfileAttributes() = default;
 ThreadAttributes::ThreadAttributes() = default;
@@ -94,21 +96,25 @@ void ProfileAttributes::idtupleName(uint16_t kind, std::string name) {
   m_idtupleNames.emplace(kind, std::move(name));
 }
 
-void ThreadAttributes::procid(unsigned long pid) {
-  assert(!m_procid && "Attempt to overwrite a previously set profile process id!");
-  m_procid = pid;
+bool ThreadAttributes::ok() const noexcept {
+  return !m_idTuple.empty();
 }
 
-void ThreadAttributes::timepointCnt(unsigned long long cnt) {
-  assert(!m_timepointCnt && "Attempt to overwrite a previously set timepoint count!");
-  m_timepointCnt = cnt;
+unsigned long long ThreadAttributes::timepointMaxCount() const noexcept {
+  return m_timepointStats ? m_timepointStats->first : 0;
+}
+unsigned int ThreadAttributes::timepointDisorder() const noexcept {
+  return m_timepointStats ? m_timepointStats->second : 0;
+}
+void ThreadAttributes::timepointStats(unsigned long long cnt, unsigned int disorder) noexcept {
+  assert(!m_timepointStats && "Attempt to overwrite previously set timepoint stats!");
+  m_timepointStats = {cnt, disorder};
 }
 
 const std::vector<pms_id_t>& ThreadAttributes::idTuple() const noexcept {
   assert(!m_idTuple.empty() && "Thread has an empty hierarchical id tuple!");
   return m_idTuple;
 }
-
 void ThreadAttributes::idTuple(std::vector<pms_id_t> tuple) {
   assert(m_idTuple.empty() && "Attempt to overwrite a previously set thread hierarchical id tuple!");
   assert(!tuple.empty() && "No tuple given to ThreadAttributes::idTuple");

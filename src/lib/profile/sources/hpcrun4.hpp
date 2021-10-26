@@ -86,7 +86,7 @@ private:
   ThreadAttributes tattrs;
 
   // Tracefile setup and arrangements.
-  bool setupTrace() noexcept;
+  bool setupTrace(unsigned int) noexcept;
   Thread::Temporary* thread;
 
   // The actual file. Details for reading handled in prof-lean.

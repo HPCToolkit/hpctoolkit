@@ -48,9 +48,11 @@
 #define HPCTOOLKIT_PROFILE_ATTRIBUTES_H
 
 #include "accumulators.hpp"
+#include "context-fwd.hpp"
 
 #include "util/ragged_vector.hpp"
 #include "util/ref_wrappers.hpp"
+#include "util/streaming_sort.hpp"
 #include "lib/prof/pms-format.h"
 #include "lib/prof-lean/id-tuple.h"
 
@@ -71,36 +73,37 @@ class Metric;
 /// roughly represents a single serial execution within the profile.
 class ThreadAttributes {
 public:
-  /// Default (empty) constructor. No news is no news.
+  // Default (empty) constructor.
   ThreadAttributes();
-  ThreadAttributes(const ThreadAttributes& o) = default;
   ~ThreadAttributes() = default;
 
-  /// Get or set the process id of this Thread.
-  // MT: Externally Synchronized
-  const std::optional<unsigned long>& procid() const noexcept { return m_procid; }
-  void procid(unsigned long);
+  ThreadAttributes(const ThreadAttributes& o) = default;
+  ThreadAttributes& operator=(const ThreadAttributes& o) = default;
+  ThreadAttributes(ThreadAttributes&& o) = default;
+  ThreadAttributes& operator=(ThreadAttributes&& o) = default;
 
-  /// Get or set the number of timepoints emitted that are local to this Thread.
-  // MT: Externally Synchronized
-  const std::optional<unsigned long long>& timepointCnt() const noexcept { return m_timepointCnt; }
-  void timepointCnt(unsigned long long);
+  /// Check whether this ThreadAttributes is suitable for creating a Thread.
+  // MT: Safe (const)
+  bool ok() const noexcept;
 
-  /// Get or set the hierarchical tuple assigned to this Thread. Should never
-  /// be empty.
+  /// Get or set the hierarchical tuple assigned to this Thread.
+  /// Cannot be set to an empty vector.
   // MT: Externally Synchronized
   const std::vector<pms_id_t>& idTuple() const noexcept;
   void idTuple(std::vector<pms_id_t>);
 
+  /// Get or set the vital timepoint statistics (maximum count and expected
+  /// disorder) for this Thread.
+  // MT: Externally Synchronized
+  unsigned long long timepointMaxCount() const noexcept;
+  void timepointStats(unsigned long long cnt, unsigned int disorder) noexcept;
+
 private:
-  // TODO: Remove these 4 fields and replace the bits above with functions that
-  // scan m_idTuple for the relevant fields. Also make idTuples mandatory and
-  // set once, probably during construction. All after the the other kind
-  // constants are set up.
-  // Then, later, remove those shims and just use idTuples moving forward.
-  std::optional<unsigned long> m_procid;
-  std::optional<unsigned long long> m_timepointCnt;
-  mutable std::vector<pms_id_t> m_idTuple;
+  std::vector<pms_id_t> m_idTuple;
+  std::optional<std::pair<unsigned long long, unsigned int>> m_timepointStats;
+
+  friend class ProfilePipeline;
+  unsigned int timepointDisorder() const noexcept;
 };
 
 /// A single Thread within a Profile. Or something like that.
@@ -108,19 +111,14 @@ class Thread {
 public:
   using ud_t = util::ragged_vector<const Thread&>;
 
-  Thread(ud_t::struct_t& rs)
-    : Thread(rs, ThreadAttributes()) {};
-  Thread(ud_t::struct_t& rs, const ThreadAttributes& attr)
-    : Thread(rs, ThreadAttributes(attr)) {};
-  Thread(ud_t::struct_t& rs, ThreadAttributes&& attr)
-    : userdata(rs, std::cref(*this)), attributes(std::move(attr)) {};
+  Thread(ud_t::struct_t& rs, ThreadAttributes attr);
   Thread(Thread&& o)
     : userdata(std::move(o.userdata), std::cref(*this)),
       attributes(std::move(o.attributes)) {};
 
   mutable ud_t userdata;
 
-  // Attributes accociated with this Thread.
+  /// Attributes accociated with this Thread.
   ThreadAttributes attributes;
 
   /// Thread-local data that is temporary and should be removed quickly.
@@ -153,6 +151,16 @@ public:
     friend class ProfilePipeline;
     Temporary(Thread& t) : m_thread(t) {};
     bool contributesToCollab = false;
+
+    // Bits needed for handling timepoints
+    bool unboundedDisorder = false;
+    util::bounded_streaming_sort_buffer<
+      std::pair<ContextRef, std::chrono::nanoseconds>,
+      util::compare_only_second<std::pair<ContextRef, std::chrono::nanoseconds>>
+      > timepointSortBuf;
+    std::vector<std::pair<ContextRef, std::chrono::nanoseconds>> timepointStaging;
+    std::chrono::nanoseconds minTime = std::chrono::nanoseconds::max();
+    std::chrono::nanoseconds maxTime = std::chrono::nanoseconds::min();
 
     friend class Metric;
     util::locked_unordered_map<util::reference_index<const Context>,
