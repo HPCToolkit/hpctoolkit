@@ -230,8 +230,8 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
         std::cerr << "Invalid structure file '" << optarg << "'!\n";
         std::exit(2);
       }
-      const auto& p = c->forPath();
-      structheads[p.filename()].emplace_back(p.parent_path());
+      for(const auto& p : c->forPaths())
+        structheads[p.filename()].emplace_back(p.parent_path());
       structs.emplace_back(std::move(c), path);
       break;
     }

@@ -102,40 +102,149 @@ struct LHandler : public DefaultHandler {
 static std::once_flag xmlinit;
 static std::atomic<unsigned int> xmlusers;
 
-StructFile::StructFile(const stdshim::filesystem::path& p) : path(p) {
+namespace hpctoolkit::finalizers::detail {
+class StructFileParser {
+public:
+  StructFileParser(const stdshim::filesystem::path&) noexcept;
+  ~StructFileParser() = default;
+
+  StructFileParser(StructFileParser&&) = default;
+  StructFileParser& operator=(StructFileParser&&) = default;
+  StructFileParser(const StructFileParser&) = delete;
+  StructFileParser& operator=(const StructFileParser&) = delete;
+
+  operator bool() const noexcept { return ok; }
+
+  std::string seekToNextLM() noexcept;
+  void parse(ProfilePipeline::Source&, const Module&, Classification&) noexcept;
+
+private:
+  std::unique_ptr<SAX2XMLReader> parser;
+  XMLPScanToken token;
+  bool ok;
+};
+}
+
+using StructFileParser = hpctoolkit::finalizers::detail::StructFileParser;
+
+StructFile::StructFile(stdshim::filesystem::path p) : path(std::move(p)) {
   util::call_once(xmlinit, [](){ XMLPlatformUtils::Initialize(); });
   xmlusers.fetch_add(1, std::memory_order_relaxed);
 
-  std::string lm;
-  LHandler handler([&](const std::string& ename, const Attributes& attr){
-    if(ename == "LM") lm = xmlstr(attr.getValue(XMLStr("n")));
-  });
-
-  std::unique_ptr<SAX2XMLReader> parser(XMLReaderFactory::createXMLReader());
-  parser->setContentHandler(&handler);
-  parser->setErrorHandler(&handler);
-
-  XMLPScanToken token;
-  if(!parser->parseFirst(XMLStr(p.string()), token)) {
-    util::log::info{} << "Error while parsing Structfile XML prologue";
-    util::log::error{} << "Error while parsing Structfile " << p.filename().string();
-    return;
-  }
-
-  while(lm.empty()) {
-    if(!parser->parseNext(token)) {
-      util::log::info{} << "Error while parsing Structfile XML prologue element";
-      util::log::error{} << "Error while parsing Structfile " << p.filename().string();
+  while(1) {  // Exit on EOF or error
+    auto parser = std::make_unique<StructFileParser>(path);
+    if(!*parser) {
+      util::log::error{} << "Error while parsing Structfile " << path.filename().string();
       return;
     }
-  }
 
-  modpath = std::move(lm);
+    std::string lm;
+    do {
+      lm = parser->seekToNextLM();
+      if(lm.empty()) {
+        // EOF or error
+        if(!*parser)
+          util::log::error{} << "Error while parsing Structfile " << path.filename().string();
+        return;
+      }
+    } while(lms.find(lm) != lms.end());
+
+    lms.emplace(std::move(lm), std::move(parser));
+  }
 }
 
 StructFile::~StructFile() {
   if(xmlusers.fetch_sub(1, std::memory_order_relaxed) == 1)
     XMLPlatformUtils::Terminate();
+}
+
+std::vector<stdshim::filesystem::path> StructFile::forPaths() const {
+  std::vector<stdshim::filesystem::path> out;
+  out.reserve(lms.size());
+  for(const auto& lm: lms) out.emplace_back(lm.first);
+  return out;
+}
+
+void StructFile::module(const Module& m, Classification& c) noexcept {
+  auto it = lms.find(m.path());
+  if(it == lms.end()) it = lms.find(m.userdata[sink.resolvedPath()]);
+  if(it == lms.end()) return;  // We got nothing
+
+  if(!c.empty()) {
+    util::log::warning{}
+    << "Multiple Structure files (may) apply for " << m.path().filename() << "!\n"
+       " Original path: " << m.path() << "\n"
+       "Alternate path: " << m.userdata[sink.resolvedPath()];
+  }
+
+  it->second->parse(sink, m, c);
+  if(!it->second)
+    util::log::error{} << "Error while parsing Structfile " << path.string();
+
+  lms.erase(it);
+}
+
+StructFileParser::StructFileParser(const stdshim::filesystem::path& path) noexcept
+  : parser(XMLReaderFactory::createXMLReader()) {
+  try {
+    if(!parser) { ok = false; return; }
+
+    ok = parser->parseFirst(XMLStr(path.string()), token);
+    if(!ok) {
+      util::log::info{} << "Error while parsing Structfile XML prologue";
+      return;
+    }
+  } catch(std::exception& e) {
+    util::log::info{} << "Exception caught while parsing Structfile prologue\n"
+         "  what(): " << e.what() << "\n";
+    ok = false;
+  } catch(xercesc::SAXException& e) {
+    util::log::info{} << "Exception caught while parsing Structfile prologue\n"
+         "  msg: " << xmlstr(e.getMessage()) << "\n";
+    ok = false;
+  }
+}
+
+std::string StructFileParser::seekToNextLM() noexcept try {
+  assert(ok);
+  std::string lm;
+  bool eof = false;
+  LHandler handler([&](const std::string& ename, const Attributes& attr){
+    if(ename == "LM") lm = xmlstr(attr.getValue(XMLStr("n")));
+  }, [&](const std::string& ename){
+    if(ename == "HPCToolkitStructure") eof = true;
+  });
+  parser->setContentHandler(&handler);
+  parser->setErrorHandler(&handler);
+
+  while(lm.empty()) {
+    if(!parser->parseNext(token)) {
+      if(!eof) {
+        util::log::info{} << "Error while parsing for Structfile LM";
+        ok = false;
+      }
+      parser->setContentHandler(nullptr);
+      parser->setErrorHandler(nullptr);
+      return std::string();
+    }
+  }
+  parser->setContentHandler(nullptr);
+  parser->setErrorHandler(nullptr);
+  return lm;
+} catch(std::exception& e) {
+  util::log::info{} << "Exception caught while parsing Structfile for LM\n"
+       "  what(): " << e.what() << "\n";
+  ok = false;
+  parser->setContentHandler(nullptr);
+  parser->setErrorHandler(nullptr);
+  return std::string();
+} catch(xercesc::SAXException& e) {
+  util::log::info{} << "Exception caught while parsing Structfile for LM\n"
+       "  msg: " << xmlstr(e.getMessage()) << "\n";
+  ok = false;
+  parser->setContentHandler(nullptr);
+  parser->setErrorHandler(nullptr);
+  return std::string();
 }
 
 static std::vector<Classification::Interval> parseVs(const std::string& vs) {
@@ -163,25 +272,9 @@ static std::vector<Classification::Interval> parseVs(const std::string& vs) {
   return vals;
 }
 
-void StructFile::module(const Module& m, Classification& c) noexcept {
-  if(modpath.empty()) return;  // This one failed
-  bool matches = false;
-  if(m.path() == modpath) matches = true;
-  if(m.userdata[sink.resolvedPath()] == modpath) matches = true;
-  if(!matches) return;
-
-  if(!c.empty()) {
-    util::log::warning{}
-    << "Multiple Structure files (may) apply for " << m.path().filename() << "!\n"
-       " Original path: " << m.path() << "\n"
-       "Alternate path: " << m.userdata[sink.resolvedPath()];
-  }
-
-  if(!parse(m, c))
-    util::log::error{} << "Error while parsing Structfile " << path.string();
-}
-
-bool StructFile::parse(const Module& m, Classification& c) try {
+void StructFileParser::parse(ProfilePipeline::Source& sink, const Module& m,
+                             Classification& c) noexcept try {
+  assert(ok);
   struct Ctx {
     char tag;
     const File* file;
@@ -198,19 +291,13 @@ bool StructFile::parse(const Module& m, Classification& c) try {
       std::abort();
     }
   } stack;
-  bool seenhts = false;
-  bool seenlm = false;
+  bool done = false;
   std::vector<Classification::LineScope> lscopes;
   std::unordered_map<uint64_t, Classification::Block*> funcs;
   std::forward_list<std::tuple<Classification::Block*, uint64_t, uint64_t>> cfg;
   LHandler handler([&](const std::string& ename, const Attributes& attr) {
-    if(ename == "HPCToolkitStructure") {
-      stack.emplace();
-      if(seenhts) throw std::logic_error("More than one HPCToolkitStructure tag seen");
-      seenhts = true;
-    } else if(ename == "LM") {
-      if(seenlm) throw std::logic_error("More than one LM tag seen");
-      seenlm = true;
+    if(ename == "LM") {
+      throw std::logic_error("More than one LM tag seen");
     } else if(ename == "F") {
       stack.emplace(stack.top(), 'F');
       stack.top().file = &sink.file(xmlstr(attr.getValue(XMLStr("n"))));
@@ -264,15 +351,24 @@ bool StructFile::parse(const Module& m, Classification& c) try {
       }
     } else throw std::logic_error("Unknown tag " + ename);
   }, [&](const std::string& ename){
-    if(ename == "LM") return;
+    if(ename == "LM") {
+      done = true;
+      return;
+    }
     if(ename == "S") return;
     if(ename == "C") return;
     stack.pop();
   });
-  std::unique_ptr<SAX2XMLReader> parser(XMLReaderFactory::createXMLReader());
   parser->setContentHandler(&handler);
   parser->setErrorHandler(&handler);
-  parser->parse(XMLStr(path.string()));
+  stack.emplace();
+  while((ok = parser->parseNext(token)) && !done);
+  stack.pop();
+  if(!ok) {
+    util::log::info{} << "Error while parsing Structfile\n";
+    return;
+  }
+
   assert(stack.size() == 0 && "Inconsistent stack handling!");
   c.setLines(std::move(lscopes));
 
@@ -322,17 +418,21 @@ bool StructFile::parse(const Module& m, Classification& c) try {
     };
     dfs(x.second);
   }
-  return true;
+
+  parser->setContentHandler(nullptr);
+  parser->setErrorHandler(nullptr);
 } catch(std::exception& e) {
-  util::log::info{} << "Exception caught while parsing Structfile "
-    << path.string() << "\n"
+  util::log::info{} << "Exception caught while parsing Structfile\n"
        "  what(): " << e.what() << "\n"
-       "  for binary: " << modpath.string();
-  return false;
+       "  for binary: " << m.path().string();
+  parser->setContentHandler(nullptr);
+  parser->setErrorHandler(nullptr);
+  ok = false;
 } catch(xercesc::SAXException& e) {
-  util::log::info{} << "Exception caught while parsing Structfile "
-    << path.string() << "\n"
+  util::log::info{} << "Exception caught while parsing Structfile\n"
        "  msg: " << xmlstr(e.getMessage()) << "\n"
-       "  for binary: " << modpath.string();
-  return false;
+       "  for binary: " << m.path().string();
+  parser->setContentHandler(nullptr);
+  parser->setErrorHandler(nullptr);
+  ok = false;
 }
