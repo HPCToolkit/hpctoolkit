@@ -90,10 +90,14 @@ __thread int monitor_tid = -1;
 static thread_data_t _local_td;
 static pthread_key_t _hpcrun_key;
 static int use_getspecific = 0;
+static __thread bool mem_pool_initialized = false;
 
 
 void
-hpcrun_init_pthread_key(void)
+hpcrun_init_pthread_key
+(
+  void
+)
 {
   TMSG(THREAD_SPECIFIC,"creating _hpcrun_key");
   int bad = pthread_key_create(&_hpcrun_key, NULL);
@@ -105,7 +109,10 @@ hpcrun_init_pthread_key(void)
 
 
 void
-hpcrun_set_thread0_data(void)
+hpcrun_set_thread0_data
+(
+  void
+)
 {
   TMSG(THREAD_SPECIFIC,"set thread0 data");
   hpcrun_set_thread_data(&_local_td);
@@ -113,7 +120,10 @@ hpcrun_set_thread0_data(void)
 
 
 void
-hpcrun_set_thread_data(thread_data_t *td)
+hpcrun_set_thread_data
+(
+  thread_data_t *td
+)
 {
   TMSG(THREAD_SPECIFIC,"setting td");
   pthread_setspecific(_hpcrun_key, (void *) td);
@@ -123,21 +133,30 @@ hpcrun_set_thread_data(thread_data_t *td)
 //***************************************************************************
 
 static thread_data_t*
-hpcrun_get_thread_data_local(void)
+hpcrun_get_thread_data_local
+(
+  void
+)
 {
   return &_local_td;
 }
 
 
 static bool
-hpcrun_get_thread_data_local_avail(void)
+hpcrun_get_thread_data_local_avail
+(
+  void
+)
 {
   return true;
 }
 
 
 thread_data_t*
-hpcrun_safe_get_td(void)
+hpcrun_safe_get_td
+(
+  void
+)
 {
   if (use_getspecific) {
     return (thread_data_t *) pthread_getspecific(_hpcrun_key);
@@ -147,8 +166,12 @@ hpcrun_safe_get_td(void)
   }
 }
 
+
 static thread_data_t*
-hpcrun_get_thread_data_specific(void)
+hpcrun_get_thread_data_specific
+(
+  void
+)
 {
   thread_data_t *ret = (thread_data_t *) pthread_getspecific(_hpcrun_key);
   if (!ret){
@@ -157,12 +180,17 @@ hpcrun_get_thread_data_specific(void)
   return ret;
 }
 
+
 static bool
-hpcrun_get_thread_data_specific_avail(void)
+hpcrun_get_thread_data_specific_avail
+(
+  void
+)
 {
   thread_data_t *ret = (thread_data_t *) pthread_getspecific(_hpcrun_key);
   return !(ret == NULL);
 }
+
 
 
 thread_data_t* (*hpcrun_get_thread_data)(void) = &hpcrun_get_thread_data_local;
@@ -184,7 +212,10 @@ hpcrun_get_thread_data()
 
 
 void
-hpcrun_unthreaded_data(void)
+hpcrun_unthreaded_data
+(
+  void
+)
 {
   hpcrun_get_thread_data = &hpcrun_get_thread_data_local;
   hpcrun_td_avail        = &hpcrun_get_thread_data_local_avail;
@@ -192,7 +223,10 @@ hpcrun_unthreaded_data(void)
 
 
 void
-hpcrun_threaded_data(void)
+hpcrun_threaded_data
+(
+  void
+)
 {
   assert(hpcrun_get_thread_data == &hpcrun_get_thread_data_local);
   hpcrun_get_thread_data = &hpcrun_get_thread_data_specific;
@@ -200,19 +234,65 @@ hpcrun_threaded_data(void)
 }
 
 
+void
+hpcrun_thread_init_mem_pool
+(
+  int id, 
+  cct_ctxt_t *thr_ctxt,
+  bool has_trace, 
+  bool demand_new_thread
+)
+{ 
+  thread_data_t* td = NULL;
+  
+  hpcrun_mmap_init();
+  hpcrun_threadMgr_data_get_safe(id, thr_ctxt, &td, has_trace, demand_new_thread);
+  hpcrun_set_thread_data(td);
+  td->inside_hpcrun = 1;  // safe enter, disable signals
+}
+
+
+void
+hpcrun_thread_init_mem_pool_once
+(
+)
+{ 
+  // Should be called every time hpcrun tooling thread is created
+  int id = 0;
+  cct_ctxt_t *thr_ctxt = NULL;
+  bool has_trace = false;
+  bool demand_new_thread = true;
+
+  if (mem_pool_initialized == false){
+    hpcrun_thread_init_mem_pool(id, thr_ctxt, has_trace, demand_new_thread);
+    mem_pool_initialized = true;
+  }
+}
+
+
+
 //***************************************************************************
 // 
 //***************************************************************************
 
 thread_data_t*
-hpcrun_allocate_thread_data(int id)
+hpcrun_allocate_thread_data
+(
+  int id
+)
 {
   TMSG(THREAD_SPECIFIC,"malloc thread data for thread %d", id);
   return hpcrun_mmap_anon(sizeof(thread_data_t));
 }
 
+
 static inline void
-core_profile_trace_data_init(core_profile_trace_data_t * cptd, int id, cct_ctxt_t* thr_ctxt) 
+core_profile_trace_data_init
+(
+  core_profile_trace_data_t * cptd, 
+  int id, 
+  cct_ctxt_t* thr_ctxt
+) 
 {
   // ----------------------------------------
   // id
@@ -266,8 +346,15 @@ static inline void gpu_data_init(gpu_data_t * gpu_data)
 }
 #endif
 
+
 void
-hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child, size_t n_sources)
+hpcrun_thread_data_init
+(
+  int id, 
+  cct_ctxt_t* thr_ctxt, 
+  int is_child, 
+  size_t n_sources
+)
 {
   hpcrun_meminfo_t memstore;
   thread_data_t* td = hpcrun_get_thread_data();
@@ -415,7 +502,10 @@ hpcrun_thread_data_init(int id, cct_ctxt_t* thr_ctxt, int is_child, size_t n_sou
 //***************************************************************************
 
 void
-hpcrun_cached_bt_adjust_size(size_t n)
+hpcrun_cached_bt_adjust_size
+(
+  size_t n
+)
 {
   thread_data_t *td = hpcrun_get_thread_data();
   if ((td->cached_bt_buf_frame_end - td->cached_bt_buf_beg) >= n) {
@@ -433,7 +523,10 @@ hpcrun_cached_bt_adjust_size(size_t n)
 
 
 frame_t*
-hpcrun_expand_btbuf(void)
+hpcrun_expand_btbuf
+(
+  void
+)
 {
   thread_data_t* td = hpcrun_get_thread_data();
   frame_t* unwind = td->btbuf_cur;
@@ -469,7 +562,10 @@ hpcrun_expand_btbuf(void)
 
 
 void
-hpcrun_ensure_btbuf_avail(void)
+hpcrun_ensure_btbuf_avail
+(
+  void
+)
 {
   thread_data_t* td = hpcrun_get_thread_data();
   if (td->btbuf_cur == td->btbuf_end) {
