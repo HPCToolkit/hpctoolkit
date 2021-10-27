@@ -64,6 +64,7 @@ _srcs = files(
 
   'binarytree.c',
   'cskiplist.c',
+  'cpuset_hwthreads.c',
   'crypto-hash.c',
   'queues.c',
   'stacks.c',

@@ -50,7 +50,7 @@ _srcs = [files(
 _gen = generator(find_program('stringify.sh', native: true),
                  arguments: ['@INPUT@'],
                  output: '@BASENAME@.h', capture: true)
-_srcs += _gen.process(files('pmake.txt'))
+_srcs += [_gen.process(files('pmake.txt')), _gen.process(files('usage.txt'))]
 _deps = [
   analysis_dep, banal_dep,
   dependency('dyninst', required: false, disabler: true),

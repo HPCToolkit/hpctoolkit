@@ -53,7 +53,6 @@ _srcs = [
   {'src': files('hpcprof.tex'), 'if': 'hpcprof_exe'},
   {'src': files('hpcprof-mpi.tex'), 'if': 'hpcprof_mpi_exe'},
   {'src': files('hpcproftt.tex'), 'if': 'hpcproftt_exe'},
-  {'src': files('hpcsummary.tex'), 'if': 'hpcsummary_script', 'stem': 'hpcsummary'},
 
   {'src': files('hpcviewer.tex'), 'stem': 'hpcviewer'},
 ]
