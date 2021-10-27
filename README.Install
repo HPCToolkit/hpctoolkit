@@ -9,28 +9,29 @@ Installing HPCToolkit with Spack
 6 Packages.yaml
 6.1 External Packages
 6.2 Micro-Architecture Targets
-7 Compilers and compilers.yaml
-8 Spack Install
-9 Manual Install
-10 Advanced Options
-10.1 CUDA
-10.2 ROCM
-10.3 MPI
-10.4 PAPI vs Perfmon
-11 Platform Specific Notes
-11.1 Blue Gene
-11.2 Cray
-12 HPCToolkit GUI Interface (Hpcviewer)
-12.1 Spack Install
-12.2 Manual Install
-13 Building a New Compiler
-13.1 Using the New Compiler
-13.2 Bootstrapping Environment Modules
-14 Spack Mirrors
-15 Common Problems
-15.1 Unable to fetch tar file
-15.2 New releases break the build
-15.3 Failure to load modules
+7 Bootstrapping Clingo
+8 Compilers and compilers.yaml
+9 Spack Install
+10 Manual Install
+11 Advanced Options
+11.1 CUDA
+11.2 ROCM
+11.3 MPI
+11.4 PAPI vs Perfmon
+12 Platform Specific Notes
+12.1 Blue Gene
+12.2 Cray
+13 HPCToolkit GUI Interface (Hpcviewer)
+13.1 Spack Install
+13.2 Manual Install
+14 Building a New Compiler
+14.1 Using the New Compiler
+14.2 Bootstrapping Environment Modules
+15 Spack Mirrors
+16 Common Problems
+16.1 Unable to fetch tar file
+16.2 New releases break the build
+16.3 Failure to load modules
     
 
 1 Introduction
@@ -79,7 +80,7 @@ The current status of using Spack for HPCToolkit is at:
 
      <http://hpctoolkit.org/spack-issues.html>
 
-Last revised: July 13, 2021.
+Last revised: October 19, 2021.
 
 2 Prerequisites
 ===============
@@ -98,7 +99,7 @@ Building HPCToolkit requires the following prerequisites.
      these tools, or else you couldn't compile anything.
 
   4. Cmake version 3.4 or later, perl version 5.x, and python version
-     3.4 or later.  On systems that are missing these tools or have
+     3.5 or later.  On systems that are missing these tools or have
      versions that are too old, you can use spack to build a later
      version.
 
@@ -176,6 +177,11 @@ both on the command line and in config files.
 
           amg2013 target=x86_64    lulesh target=ivybridge
 
+     You can use 'spack arch' to display the generic, top-level families
+     and the micro-arch targets.
+
+          spack arch --known-targets
+
 When writing a spec (for 'spack install' or other), spack will fully
 resolve all possible choices for the package and all of its dependencies
 and create a unique hash value for that exact configuration.  This
@@ -190,7 +196,7 @@ spec, use 'spack spec'.
 ============================
 
 Spack is available via git clone from GitHub.  This includes the core
-spack machinery and recipes for building more than 5,000 packages (and
+spack machinery and recipes for building almost 6,000 packages (and
 growing).  You should also clone HPCToolkit for the 'packages.yaml' file
 which is used to configure the spack build.
 
@@ -339,7 +345,7 @@ change depending on your system.  But always check the current
 
 The other sections in 'packages.yaml' specify paths or modules for other
 packages and system build tools.  Building hpctoolkit's prerequisites
-requires cmake 3.4 or later, perl 5.x and python 3.4 or later.  There
+requires cmake 3.4 or later, perl 5.x and python 3.5 or later.  There
 are three ways to satisfy these requirements: a system installed version
 (eg, /usr), a pre-built module or build from scratch.
 
@@ -348,12 +354,20 @@ version is perfectly fine.  If you already have an installed version and
 prefer to use that instead, then you can specify this in
 'packages.yaml'.
 
-   For example, this entry says that cmake 3.7.2 is available from
-module 'CMake/3.7.2' and that spack should use this instead of building
-its own copy.  You may use more than one spec per package and more than
-one module per spec, if needed.  'buildable: False' is optional and
-means that spack must find a matching external spec or else fail the
-build.
+   The easiest way to use a pre-built package is to let spack find the
+package itself.  Make sure the program is on your PATH and run 'spack
+external'.  For example, to search for 'cmake', use:
+
+     spack external find cmake
+
+This does not work for every spack package, but it does work with
+'cmake', 'perl' and 'python'.  Note: spack puts these entries in
+'packages.yaml' in the '.spack' subdirectory of your home directory.
+
+   You can also add these entries manually to 'packages.yaml'.  For
+example, this entry says that cmake 3.7.2 is available from module
+'CMake/3.7.2'.  'buildable: False' is optional and means that spack must
+find a matching external spec or else fail the build.
 
      cmake:
        externals:
@@ -362,26 +376,19 @@ build.
          - CMake/3.7.2
        buildable: False
 
-This example says that perl v5.16.3 is installed at '/usr/bin/perl'.
-Note that the 'prefix' entry is the parent directory of 'bin', not the
-bin directory itself.
-
-     perl:
-       externals:
-       - spec: perl@5.16.3
-         prefix: /usr
-       buildable: False
-
-Note that you may specify more than one spec for a package.  For
-example, your system might have both python2 and python3.
+This example says that python2 and python3 are both available in
+'/usr/bin'.  Note that the 'prefix' entry is the parent directory of
+'bin', not the bin directory itself.
 
      python:
        externals:
-       - spec: python@3.6.5
+       - spec: python@2.7.18
          prefix: /usr
-       - spec: python@2.7.15
+       - spec: python@3.6.8
          prefix: /usr
-       buildable: False
+
+Note: as a special rule for python, use package name 'python', even
+though the program name is python2 or python3.
 
 6.2 Micro-Architecture Targets
 ------------------------------
@@ -419,7 +426,73 @@ Dependencies'.
      <https://spack.readthedocs.io/en/latest/build_settings.html>
      <https://spack.readthedocs.io/en/latest/basic_usage.html#specs-dependencies>
 
-7 Compilers and compilers.yaml
+7 Bootstrapping Clingo
+======================
+
+The 'concretizer' is the part of spack that converts a partial spec into
+a full spec with values for the version and variants of every package in
+the spec plus all dependencies.  The new concretizer for spack (clingo)
+is a third-party python library for solving answer set logic problems
+(eg, satisfiability).
+
+   The easiest way to install clingo it to use spack's pre-built
+libraries.  These are available for Linux (x86_64, ppc64le, aarch64) and
+Macos/Darwin (x86_64) for python 3.5 or later.  The Macos version also
+requires Macos 10.13 or later and the Xcode developer package (for
+python and other programs).
+
+   By default, spack will automatically install (bootstrap) clingo the
+first time you run a command that uses it (eg, 'spec' or 'solve').
+However, if this fails or you want to verify the steps yourself, then
+follow these steps.
+
+   In 'config.yaml', set 'concretizer' to 'clingo'.
+
+     config:
+       concretizer: clingo
+
+In 'bootstrap.yaml', disable 'spack-install' to force spack to use a
+pre-built binary instead of building from source.
+
+     bootstrap:
+       trusted:
+         github-actions: true
+         spack-install:  false
+
+Spack needs at least one compiler configured (see below).  If this is
+your first time running spack on this machine, then use 'compiler find'
+to detect a compiler.  Finally, use 'spack solve' to trigger
+bootstrapping.
+
+     spack compiler list    (to display known compilers)
+     spack compiler find    (to add a compiler, if needed)
+     spack solve zlib
+     ==> Bootstrapping clingo from pre-built binaries
+     ...
+     zlib@1.2.11%gcc@8.4.1+optimize+pic+shared arch=linux-rhel8-zen
+
+Spack stores the clingo bootstrap files in '~/.spack/bootstrap'.  You
+can check on the status of these files or clean (reset) them with the
+'find' or 'clean' commands.
+
+     spack find -b     (displays the status of the bootstrap files)
+     spack clean -b    (erases the current bootstrap files)
+
+If the binary bootstrap fails, then try the 'solve' step with debugging
+turned on.
+
+     spack -d solve zlib
+
+   If the binary bootstrap fails or if your system is not supported,
+then you will need to let spack build clingo from source.  Reset
+'spack-install' to true and rerun 'spack solve zlib'.  This requires a
+compiler with support for C++14 and takes maybe 30-45 minutes to install
+all the packages.
+
+     <https://spack.readthedocs.io/en/latest/getting_started.html#bootstrapping-clingo>
+     <https://github.com/alalazo/spack-bootstrap-mirrors#supported-platforms>
+
+8 Compilers and compilers.yaml
 ==============================
 
 Building HPCToolkit requires GNU gcc/g++ version 7.3 or later.  By
@@ -488,7 +561,7 @@ See the spack docs on 'Compiler Configuration'.
 
      <https://spack.readthedocs.io/en/latest/getting_started.html#compiler-configuration>
 
-8 Spack Install
+9 Spack Install
 ===============
 
 First, set up your 'config.yaml', 'packages.yaml' and 'compilers.yaml'
@@ -508,8 +581,8 @@ install.
 
      spack fetch -D hpctoolkit
 
-9 Manual Install
-================
+10 Manual Install
+=================
 
 The manual method uses spack to build hpctoolkit's prerequisites and
 then uses the traditional autotools 'configure && make && make install'
@@ -563,10 +636,10 @@ recent directory time stamp (and issue a warning).  If this is not what
 you want, then you will need to specify the correct version with a
 '--with-package' option.
 
-10 Advanced Options
+11 Advanced Options
 ===================
 
-10.1 CUDA
+11.1 CUDA
 ---------
 
 Beginning with the 2020.03.01 version, HPCToolkit now supports profiling
@@ -594,7 +667,7 @@ automatically (but check the summary at the end of the configure
 output).  If you are using CUDA from a separate system module, then you
 will need the '--with-cuda' option.
 
-10.2 ROCM
+11.2 ROCM
 ---------
 
 Beginning with version 2021.02.01, HPCToolkit now supports profiling AMD
@@ -667,7 +740,7 @@ option.  Otherwise, use the three other options.
 It is allowed to mix the all-in-one option with the individual packages.
 The rule is that the specific overrides the general.
 
-10.3 MPI
+11.3 MPI
 --------
 
 HPCToolkit always supports profiling MPI applications.  For hpctoolkit,
@@ -681,7 +754,7 @@ and add this to 'packages.yaml'.  The MPI module should be built with
 the same version of GNU gcc/g++ used to build hpctoolkit (to keep the
 C++ libraries in sync).
 
-10.4 PAPI vs Perfmon
+11.4 PAPI vs Perfmon
 --------------------
 
 HPCToolkit can access the Hardware Performance Counters with either PAPI
@@ -701,10 +774,10 @@ automatically detect this, so if you build hpctoolkit with a recent
 enough version of PAPI, then both the PAPI and perfmon interfaces will
 be available.
 
-11 Platform Specific Notes
+12 Platform Specific Notes
 ==========================
 
-11.1 Blue Gene
+12.1 Blue Gene
 --------------
 
 Support for Blue Gene/Q is now deprecated and versions 2020.03.01 and
@@ -808,7 +881,7 @@ to the following.
          --enable-all-static  \
          MPICXX=mpicxx
 
-11.2 Cray
+12.2 Cray
 ---------
 
 Cray systems, like Blue Gene, have separate front and back-end
@@ -901,29 +974,29 @@ to the following.
          --enable-all-static  \
          MPICXX=CC
 
-12 HPCToolkit GUI Interface (Hpcviewer)
+13 HPCToolkit GUI Interface (Hpcviewer)
 =======================================
 
-Since 2021.04 release, HPCToolkit GUI interface provides both profile
-and trace views in a single application, i.e.  hpcviewer.  Prior to
-that, each view is a separate program: hpcviewer to analyze the profile
-database, and hpctraceviewer to display the traces.
+Since 2020.12 release, the HPCToolkit GUI interface provides both
+profile and trace views in a single application, i.e.  hpcviewer.  Prior
+to that, each view was a separate program: hpcviewer to analyze the
+profile database, and hpctraceviewer to display the traces.
 
    We provide binary distributions for hpcviewer on Linux (x86_64,
-ppc64/le and now aarch64), Windows and MacOS. HPCToolkit databases are
-platform-independent and it is common to run hpcrun on one machine and
-then view the results on another machine.
+ppc64le and aarch64), Windows and MacOS (x86_64 and M1).  HPCToolkit
+databases are platform-independent and it is common to run hpcrun on one
+machine and then view the results on another machine.
 
-   Starting with 2021.01, the viewer now requires Java 11 or later (but
-not 15), plus GTK+ 3.20 or later on Linux.  Older viewers, up through
-2020.12, require Java 8 (not 9 or later), plus GTK+ 2.x for Linux.
+   Starting with 2021.01, the viewer now requires Java 11 or later, plus
+GTK+ 3.20 or later on Linux.  Older viewers, up through 2020.12, require
+Java 8 (not 9 or later), plus GTK+ 2.x for Linux.
 
-12.1 Spack Install
+13.1 Spack Install
 ------------------
 
-The spack install is available on Linux x86_64, little-endian powerpc64
-(power8 and 9) and now aarch64 ARM. This installs hpcviewer and includes
-the Java prerequisite.
+The spack install is available on Linux x86_64, little-endian ppc64le
+(power8 and 9) and aarch64 ARM, and also MacOS on x86_64.  This installs
+hpcviewer and includes the Java prerequisite.
 
    For the current viewers, use openjdk with the most recent version of
 Java 11 for all platforms.  Currently, this is the default, but if not,
@@ -932,17 +1005,19 @@ with 'spack info' and 'spack spec'.
 
      spack info openjdk
      spack install hpcviewer
-     spack install hpcviewer ^openjdk @11.0.8_10
+     spack install hpcviewer ^openjdk @11.0.12_7    (if needed)
 
-For older viewers, up through 2020.12, the choice of Java depends on the
-platform.  On x86_64, use openjdk, the most recent version of Java 8
-(not 9).  For powerpc, use ibm-java, again the latest version 8.  Older
-viewers are not supported on ARM. For example (the versions may change):
+For older viewers, up through 2020.12, use the latest verion of openjdk
+Java 8 (version 1.8).  For example (the versions may change):
 
-     (x86)  spack install hpcviewer ^openjdk @1.8.0_265-b01
-     (ppc)  spack install hpcviewer ^ibm-java @8.0.6.20
+     spack install hpcviewer ^openjdk @1.8.0_265-b01
 
-12.2 Manual Install
+Note: to run the viewer on Macos, you can either open the Finder and
+click your way to the 'hpcviewer.app' directory and double-click on the
+hpcviewer icon, or else use 'spack load hpcviewer' to put 'hpcviewer' on
+your PATH.
+
+13.2 Manual Install
 -------------------
 
 Binary distributions of the viewers for all supported platforms are
@@ -958,11 +1033,16 @@ prefix.
      ./install /path/to/install/directory
 
 On Windows and MacOS, download the 'win32' or 'macosx.cocoa' versions
-and unpack the zip or dmg files in the desired directory.  For older
-versions prior to 2021.04 release, due to Apple's security precautions,
-on MacOS, you will need to use curl or wget instead of a web browser.
+and unpack the zip or dmg files in the desired directory.  Due to
+Apple's security precautions, on MacOS, you may need to use curl or wget
+instead of a web browser.
 
-13 Building a New Compiler
+   Note: the manual install uses the existing system version of Java (or
+one of several versions with modules), whereas the spack install
+includes the java prerequisite.  That is, the spack install is
+self-contained and does not need to change the system java.
+
+14 Building a New Compiler
 ==========================
 
 Some systems may have compilers that are too old for building HPCToolkit
@@ -1009,7 +1089,7 @@ too new to cause problems for some packages.  For example,
 
 Note: it is not necessary to rebuild the new compiler with itself.
 
-13.1 Using the New Compiler
+14.1 Using the New Compiler
 ---------------------------
 
 After building a new compiler, then you need to tell spack how to find
@@ -1070,7 +1150,7 @@ and re-add the appropriate modules automatically.
 
      <https://spack.readthedocs.io/en/latest/getting_started.html#compiler-configuration>
 
-13.2 Bootstrapping Environment Modules
+14.2 Bootstrapping Environment Modules
 --------------------------------------
 
 If your system does not support modules, then you will have to add it.
@@ -1087,7 +1167,7 @@ example,
 
 Again, add the setup command to your shell's startup scripts.
 
-14 Spack Mirrors
+15 Spack Mirrors
 ================
 
 A spack mirror allows you to download and save a source tar file in
@@ -1152,10 +1232,10 @@ above and copy it into the spack file cache.
 
      <https://spack.readthedocs.io/en/latest/mirrors.html>
 
-15 Common Problems
+16 Common Problems
 ==================
 
-15.1 Unable to fetch tar file
+16.1 Unable to fetch tar file
 -----------------------------
 
 Spack is somewhat fragile for how it downloads tar files and will often
@@ -1176,7 +1256,7 @@ manually download the file(s) by some other means and copy them to
 spack's cache directory 'spack/var/spack/cache/<package>' or to a spack
 mirror.
 
-15.2 New releases break the build
+16.2 New releases break the build
 ---------------------------------
 
 Normally, HPCToolkit should build and work correctly with the latest
@@ -1189,7 +1269,7 @@ build.
    The solution is to use 'packages.yaml' to specify an earlier version
 until the rest of the code adapts to the change.
 
-15.3 Failure to load modules
+16.3 Failure to load modules
 ----------------------------
 
 Spack is quite aggressive about compiling with a clean environment and

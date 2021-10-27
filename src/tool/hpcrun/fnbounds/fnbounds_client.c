@@ -168,7 +168,6 @@ static int fdout = -1;
 static int fdin = -1;
 
 static pid_t my_pid;
-static pid_t server_pid = 0;
 
 #if 0
 // Limit on memory use at which we restart the server in Meg.
@@ -383,13 +382,6 @@ shutdown_server(void)
   fdin = -1;
   client_status = SYSERV_INACTIVE;
 
-  // collect the server's exit status to reduce zombies.  but we must
-  // do it only for the fnbounds server, not any application child.
-  if (server_pid > 0) {
-    auditor_exports->waitpid(server_pid, NULL, 0);
-  }
-  server_pid = 0;
-
   TMSG(FNBOUNDS_CLIENT, "syserv shutdown");
 }
 
@@ -447,15 +439,12 @@ hpcfnbounds_grandchild(void* fds_vp)
 
 static int
 hpcfnbounds_child(void* fds_vp) {
-  struct {
-    int sendfd[2], recvfd[2];
-    pid_t pid;
-  }* fds = fds_vp;
-
-  // Do the clone, and pass the result back to our parent through the shared memory space
-  fds->pid = auditor_exports->clone(hpcfnbounds_grandchild,
-    &server_stack[SERVER_STACK_SIZE * 1024], SIGCHLD | CLONE_VM, fds_vp);
-  return 0;
+  // Clone the grandchild. We can share the memory space here since we're exiting soon.
+  errno = 0;
+  pid_t grandchild_pid = auditor_exports->clone(hpcfnbounds_grandchild,
+    &server_stack[SERVER_STACK_SIZE * 1024], CLONE_UNTRACED | CLONE_VM, fds_vp);
+  // If the grandchild clone failed, pass the error back to the parent.
+  return grandchild_pid < 0 ? errno != 0 ? errno : -1 : 0;
 }
 
 // Returns: 0 on success, else -1 on failure.
@@ -464,7 +453,6 @@ launch_server(void)
 {
   struct {
     int sendfd[2], recvfd[2];
-    pid_t pid;
   } fds;
   bool sampling_is_running;
   pid_t child_pid;
@@ -494,9 +482,11 @@ launch_server(void)
   // Give up a bit of our stack for the child shim. It doesn't need much.
   char child_stack[4 * 1024 * 2];
 
-  // For safety, we don't assume the direction of stack growth
+  // Clone the child shim. With Glibc <2.24 there is a bug (https://sourceware.org/bugzilla/show_bug.cgi?id=18862)
+  // where this will reset the pthreads state in the parent if CLONE_VM is used.
+  // Clone the memory space to avoid feedback effects.
   child_pid = auditor_exports->clone(hpcfnbounds_child,
-    &child_stack[4 * 1024], SIGCHLD | CLONE_VM, &fds);
+    &child_stack[4 * 1024], CLONE_UNTRACED, &fds);
 
   if (child_pid < 0) {
     //
@@ -508,7 +498,7 @@ launch_server(void)
 
   // Wait for the child to successfully clone the grandchild
   int status;
-  if (auditor_exports->waitpid(child_pid, &status, 0) < 0) {
+  if (auditor_exports->waitpid(child_pid, &status, __WCLONE) < 0) {
     //
     // waitpid failed
     //
@@ -529,16 +519,7 @@ launch_server(void)
     //
     // child failed for some other reason
     //
-    EMSG("FNBOUNDS_CLIENT ERROR: syserv launch failed: child exited mysteriously");
-    return -1;
-  }
-
-  // Check the result the child passed back to us
-  if(fds.pid < 0) {
-    //
-    // gradchild clone failed
-    //
-    EMSG("FNBOUNDS_CLIENT ERROR: syserv launch failed: grandchild clone failed");
+    EMSG("FNBOUNDS_CLIENT ERROR: syserv launch failed: child exited with %d", WEXITSTATUS(status));
     return -1;
   }
 
@@ -550,10 +531,20 @@ launch_server(void)
   fdout = fds.sendfd[1];
   fdin = fds.recvfd[0];
   my_pid = getpid();
-  server_pid = fds.pid;
   client_status = SYSERV_ACTIVE;
 
-  TMSG(FNBOUNDS_CLIENT, "syserv launch: success, child shim: %d, server: %d", (int) child_pid, (int) server_pid);
+  TMSG(FNBOUNDS_CLIENT, "syserv launch: success, child shim: %d, server: ???", (int) child_pid);
+
+  // Fnbounds talks first with a READY message
+  struct syserv_mesg mesg;
+  if (read_mesg(&mesg) != SUCCESS) {
+    EMSG("FNBOUNDS_CLIENT ERROR: syserv did not give READY message");
+    return -1;
+  }
+  if (mesg.type != SYSERV_READY) {
+    EMSG("FNBOUNDS_CLIENT ERROR: syserv gave bad initial message: expected %d, got %d", SYSERV_READY, mesg.type);
+    return -1;
+  }
 
   // restart sample sources
   if (sampling_is_running) {
@@ -872,7 +863,7 @@ main(int argc, char *argv[])
     errx(1, "fnbounds server failed");
   }
   fprintf(outf, "server: %s\n", server);
-  fprintf(outf, "parent: %d, child: %d\n", my_pid, server_pid);
+  fprintf(outf, "parent: %d, child: ???\n", my_pid);
   fprintf(outf, "connected\n");
 
   query_loop();
