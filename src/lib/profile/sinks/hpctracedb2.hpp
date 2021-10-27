@@ -81,7 +81,7 @@ public:
 
   void notifyWavefront(DataClass) override;
   void notifyThread(const Thread&) override;
-  void notifyTimepoint(const Thread&, ContextRef::const_t, std::chrono::nanoseconds) override;
+  void notifyTimepoints(const Thread&, const std::vector<std::pair<ContextRef::const_t, std::chrono::nanoseconds>>&) override;
   void notifyTimepointRewindStart(const Thread&) override;
   void notifyThreadFinal(const Thread::Temporary&) override;
 

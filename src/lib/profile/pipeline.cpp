@@ -352,22 +352,18 @@ void ProfilePipeline::run() {
             std::sort(tps.begin(), tps.end(),
                 util::compare_only_second<decltype(tt.timepointStaging)::value_type>());
           }
-          for(auto [c, tm]: tps) {
-            for(auto& s: sinks) {
-              if(!s.dataLimit.hasTimepoints()) continue;
-              s().notifyTimepoint(tt.thread(), c, tm);
-            }
+          for(auto& s: sinks) {
+            if(!s.dataLimit.hasTimepoints()) continue;
+            s().notifyTimepoints(tt.thread(), tps);
           }
           tps.clear();
         }
         // Then drain the timepoints from the sorting buffer
         if(!tt.timepointSortBuf.empty()) {
           auto tps = std::move(tt.timepointSortBuf).sorted();
-          for(auto [c, tm]: tps) {
-            for(auto& s: sinks) {
-              if(!s.dataLimit.hasTimepoints()) continue;
-              s().notifyTimepoint(tt.thread(), c, tm);
-            }
+          for(auto& s: sinks) {
+            if(!s.dataLimit.hasTimepoints()) continue;
+            s().notifyTimepoints(tt.thread(), tps);
           }
         }
 
@@ -704,6 +700,7 @@ Thread::Temporary& Source::thread(const ThreadAttributes& o) {
   t.userdata.initialize();
   slocal->threads.emplace_front(Thread::Temporary(t));
   auto& tt = slocal->threads.front();
+  tt.timepointStaging.reserve(4096);
   if(tt.thread().attributes.timepointDisorder() > 0) {
     // We need K+1 to detect the case when it was >K-disordered
     // Then another +1 to so disorder is treated properly by the algorithm
@@ -713,9 +710,10 @@ Thread::Temporary& Source::thread(const ThreadAttributes& o) {
   return slocal->threads.front();
 }
 
-Source::TimepointStatus Source::timepoint(Thread::Temporary& tt, ContextRef c, std::chrono::nanoseconds tm) {
+Source::TimepointStatus Source::timepoint(Thread::Temporary& tt, ContextRef mc, std::chrono::nanoseconds tm) {
   assert(limit().hasTimepoints() && "Source did not register for `timepoints` emission!");
   assert(slocal->lastWave && "Attempt to emit timepoints before requested!");
+  ContextRef::const_t c = mc;
 
   tt.minTime = std::min(tt.minTime, tm);
   tt.maxTime = std::max(tt.maxTime, tm);
@@ -739,6 +737,7 @@ Source::TimepointStatus Source::timepoint(Thread::Temporary& tt, ContextRef c, s
     if(over) {
       // We hit the disorder bound. Reset in preparation for fallbacks.
       tt.timepointSortBuf.clear();
+      tt.timepointStaging.clear();
 
       if(sortBuf.bound() < 800) {
         // Our fallback is 1023, but we only try it if the previous attempt was
@@ -764,10 +763,16 @@ Source::TimepointStatus Source::timepoint(Thread::Temporary& tt, ContextRef c, s
     std::tie(c, tm) = elem;
   }
 
-  // Finally pass the timepoint to the Sinks for them to do stuff with
-  for(auto& s: pipe->sinks) {
-    if(!s.dataLimit.hasTimepoints()) continue;
-    s().notifyTimepoint(tt.thread(), c, tm);
+  // Tack it onto the end of the staging vector. If its full enough let the
+  // Sinks at it for a bit.
+  tt.timepointStaging.push_back({c, tm});
+  if(tt.timepointStaging.size() >= 4096) {
+    for(auto& s: pipe->sinks) {
+      if(!s.dataLimit.hasTimepoints()) continue;
+      s().notifyTimepoints(tt.thread(), tt.timepointStaging);
+    }
+    tt.timepointStaging.clear();
+    tt.timepointStaging.reserve(4096);
   }
   return TimepointStatus::next;
 }

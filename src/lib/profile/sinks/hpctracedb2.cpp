@@ -49,11 +49,11 @@
 #include "hpctracedb2.hpp"
 
 #include "../util/log.hpp"
+#include "../util/cache.hpp"
 #include "lib/prof-lean/tracedb.h"
 #include "lib/prof-lean/hpcrun-fmt.h"
 #include "lib/prof-lean/hpcfmt.h"
 #include "../mpi/all.hpp"
-
 
 #include <iomanip>
 #include <sstream>
@@ -131,9 +131,8 @@ void HPCTraceDB2::notifyThread(const Thread& t) {
   t.userdata[uds.thread].has_trace = false; 
 }
 
-void HPCTraceDB2::notifyTimepoint(const Thread& t, ContextRef::const_t cr, std::chrono::nanoseconds tm) {
-  // Skip timepoints at locations we can't represent currently.
-  if(!std::holds_alternative<const Context>(cr)) return;
+void HPCTraceDB2::notifyTimepoints(const Thread& t, const std::vector<std::pair<ContextRef::const_t, std::chrono::nanoseconds>>& tps) {
+  assert(!tps.empty());
 
   threadsReady.wait();
   auto& ud = t.userdata[uds.thread];
@@ -143,31 +142,42 @@ void HPCTraceDB2::notifyTimepoint(const Thread& t, ContextRef::const_t cr, std::
     if(tracefile) ud.inst = tracefile->open(true, true);
   }
 
-  util::optional_ref<const Context> c = std::get<const Context>(cr);
-  // HACK to work around experiment.xml. If this Context is a point and its
-  // parent is a line, emit a trace point for the line instead.
-  if(c->scope().type() == Scope::Type::point) {
-    if(auto pc = c->direct_parent()) {
-      if(pc->scope().type() == Scope::Type::line)
-        c = pc;
-    }
-  }
+  util::linear_lru_cache<util::reference_index<const Context>, unsigned int,
+                         2> cache;
 
-  hpctrace_fmt_datum_t datum = {
-    static_cast<uint64_t>(tm.count()),  // Point in time
-    c->userdata[src.identifier()],  // Point in the CCT
-    0  // MetricID (for datacentric, I guess)
-  };
-  if(ud.inst) {
-    if(ud.cursor == ud.buffer.data())
-      ud.off = ud.hdr.start + ud.tmcntr * timepoint_SIZE;
-    assert(ud.hdr.start + ud.tmcntr * timepoint_SIZE < ud.hdr.end);
-    ud.cursor = hpctrace_fmt_datum_swrite(&datum, {0}, ud.cursor);
-    if(ud.cursor == &ud.buffer[ud.buffer.size()]) {
-      ud.inst->writeat(ud.off, ud.buffer);
-      ud.cursor = ud.buffer.data();
+  for(const auto& [cr, tm]: tps) {
+    // Skip timepoints at locations we can't represent currently.
+    if(auto c = std::get_if<const Context>(cr)) {
+      // Try to cache our work as much as possible
+      auto id = cache.lookup(*c, [&](util::reference_index<const Context> c){
+        // HACK to work around experiment.xml. If this Context is a point and
+        // its parent is a line, emit a trace point for the line instead.
+        if(c->scope().type() == Scope::Type::point) {
+          if(auto pc = c->direct_parent()) {
+            if(pc->scope().type() == Scope::Type::line)
+              c = *pc;
+          }
+        }
+        return c.get().userdata[src.identifier()];
+      });
+
+      hpctrace_fmt_datum_t datum = {
+        static_cast<uint64_t>(tm.count()),  // Point in time
+        id,  // Point in the CCT
+        0  // MetricID (for datacentric, I guess)
+      };
+      if(ud.inst) {
+        if(ud.cursor == ud.buffer.data())
+          ud.off = ud.hdr.start + ud.tmcntr * timepoint_SIZE;
+        assert(ud.hdr.start + ud.tmcntr * timepoint_SIZE < ud.hdr.end);
+        ud.cursor = hpctrace_fmt_datum_swrite(&datum, {0}, ud.cursor);
+        if(ud.cursor == &ud.buffer[ud.buffer.size()]) {
+          ud.inst->writeat(ud.off, ud.buffer);
+          ud.cursor = ud.buffer.data();
+        }
+        ud.tmcntr++;
+      }
     }
-    ud.tmcntr++;
   }
 }
 

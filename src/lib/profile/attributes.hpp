@@ -155,10 +155,10 @@ public:
     // Bits needed for handling timepoints
     bool unboundedDisorder = false;
     util::bounded_streaming_sort_buffer<
-      std::pair<ContextRef, std::chrono::nanoseconds>,
-      util::compare_only_second<std::pair<ContextRef, std::chrono::nanoseconds>>
+      std::pair<ContextRef::const_t, std::chrono::nanoseconds>,
+      util::compare_only_second<std::pair<ContextRef::const_t, std::chrono::nanoseconds>>
       > timepointSortBuf;
-    std::vector<std::pair<ContextRef, std::chrono::nanoseconds>> timepointStaging;
+    std::vector<std::pair<ContextRef::const_t, std::chrono::nanoseconds>> timepointStaging;
     std::chrono::nanoseconds minTime = std::chrono::nanoseconds::max();
     std::chrono::nanoseconds maxTime = std::chrono::nanoseconds::min();
 
