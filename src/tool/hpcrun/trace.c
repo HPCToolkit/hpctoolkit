@@ -267,6 +267,11 @@ hpcrun_trace_append_with_time_real(core_profile_trace_data_t *cptd, unsigned int
         cptd->trace_max_time_us = nanotime;
     }
     
+    if(cptd->trace_last_time > nanotime) {
+      cptd->trace_is_ordered = false;
+    }
+    cptd->trace_last_time = nanotime;
+
     hpctrace_fmt_datum_t trace_datum;
     trace_datum.cpId = (uint32_t)call_path_id;
     //TODO: was not in GPU version

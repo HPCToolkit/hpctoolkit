@@ -193,6 +193,9 @@ lazy_open_data_file(core_profile_trace_data_t * cptd)
   char traceMaxTimeStr[bufSZ];
   snprintf(traceMaxTimeStr, bufSZ, "%"PRIu64, cptd->trace_max_time_us);
 
+  char traceDisorderStr[bufSZ];
+  snprintf(traceDisorderStr, bufSZ, "%"PRIu64, cptd->trace_expected_disorder);
+
   //
   // ==== file hdr =====
   //
@@ -209,7 +212,8 @@ lazy_open_data_file(core_profile_trace_data_t * cptd)
                         HPCRUN_FMT_NV_pid, pidStr,
                         HPCRUN_FMT_NV_traceMinTime, traceMinTimeStr,
                         HPCRUN_FMT_NV_traceMaxTime, traceMaxTimeStr,
-                        HPCRUN_FMT_NV_traceOrdered, cptd->traceOrdered?"1":"0",
+                        HPCRUN_FMT_NV_traceDisorder,
+                          cptd->trace_is_ordered ? "0" : traceDisorderStr,
                         NULL);
   
   return fs;

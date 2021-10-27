@@ -30,7 +30,12 @@ typedef struct core_profile_trace_data_t {
   // ----------------------------------------
   uint64_t trace_min_time_us;
   uint64_t trace_max_time_us;
-  bool traceOrdered;
+
+  // Whether the trace is ordered, and if not how disordered we expect it to be
+  bool trace_is_ordered;
+  unsigned int trace_expected_disorder;
+  // Last timestamp in the trace, so we can tell if its ordered
+  uint64_t trace_last_time;
 
   // ----------------------------------------
   // IO support

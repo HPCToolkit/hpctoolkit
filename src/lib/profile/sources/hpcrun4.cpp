@@ -95,8 +95,8 @@ Hpcrun4::Hpcrun4(const stdshim::filesystem::path& fn)
       attrs.environment("PATH", std::string(v));
     else if(k == HPCRUN_FMT_NV_jobId)
       attrs.job(std::strtol(v, nullptr, 10));
-    else if(k == HPCRUN_FMT_NV_traceOrdered) {
-      if(std::string(v) == "0") traceDisorder = 50;
+    else if(k == HPCRUN_FMT_NV_traceDisorder) {
+      traceDisorder = std::strtoul(v, nullptr, 10);
     } else if(k != HPCRUN_FMT_NV_traceMinTime && k != HPCRUN_FMT_NV_traceMaxTime
               && k != HPCRUN_FMT_NV_mpiRank && k != HPCRUN_FMT_NV_tid
               && k != HPCRUN_FMT_NV_hostid && k != HPCRUN_FMT_NV_pid) {
