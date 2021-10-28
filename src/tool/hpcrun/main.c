@@ -782,6 +782,9 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data, bool has_trac
 
   hpcrun_thread_init_mem_pool_once(id, thr_ctxt, has_trace, demand_new_thread);
   
+  hpcrun_get_thread_data()->inside_hpcrun = 1;
+  
+  
   if (ENABLED(THREAD_CTXT)) {
     if (thr_ctxt) {
       hpcrun_walk_path(thr_ctxt->context, logit, (cct_op_arg_t) (intptr_t) id);
