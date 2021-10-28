@@ -42,7 +42,6 @@ void cupti_range_thread_list_add(int thread_id) {
     head = cupti_range_thread_list_alloc(thread_id);
     cur = head;
     head->next = head;
-    TMSG(CUPTI_CCT_TRACE, "Range cur thread id %d", thread_id);
   } else {
     cupti_range_thread_t *next = head->next;
     cupti_range_thread_t *prev = head;
@@ -62,7 +61,6 @@ void cupti_range_thread_list_add(int thread_id) {
 void cupti_range_thread_list_advance_cur() {
   if (cur != NULL) {
     cur = cur->next;
-    TMSG(CUPTI_CCT_TRACE, "Range cur thread id %d", cur->thread_id);
   }
 }
 
