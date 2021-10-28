@@ -68,7 +68,7 @@
 //***************************************************************************
 
 #include <stddef.h>
-
+#include <inttypes.h>
 
 
 //***************************************************************************
@@ -83,7 +83,7 @@
 // macros
 //***************************************************************************
 
-#define HOSTID_FORMAT "%08lx"
+#define HOSTID_FORMAT "%08" PRIx32
 
 
 
@@ -101,7 +101,7 @@ OSUtil_pid();
 const char*
 OSUtil_jobid();
 
-long
+uint32_t
 OSUtil_hostid();
 
 // set the buffer into the customized kernel name
