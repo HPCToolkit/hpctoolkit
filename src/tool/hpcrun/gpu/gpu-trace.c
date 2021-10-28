@@ -64,6 +64,7 @@
 //******************************************************************************
 
 #include <lib/prof-lean/stdatomic.h>
+#include <lib/support-lean/OSUtil.h>
 
 #include <hpcrun/cct/cct.h>
 #include <hpcrun/utilities/hpcrun-nanotime.h>
@@ -277,7 +278,7 @@ gpu_compute_profile_name
 
   id_tuple_constructor(&id_tuple, ids, IDTUPLE_MAXTYPES);
 
-  id_tuple_push_back(&id_tuple, IDTUPLE_COMPOSE(IDTUPLE_NODE, IDTUPLE_IDS_LOGIC_LOCAL), gethostid(), 0);
+  id_tuple_push_back(&id_tuple, IDTUPLE_COMPOSE(IDTUPLE_NODE, IDTUPLE_IDS_LOGIC_LOCAL), OSUtil_hostid(), 0);
 
 #if 0
   if (tag.device_id != IDTUPLE_INVALID) {
