@@ -48,6 +48,7 @@
 #define HPCTOOLKIT_PROFILE_CONTEXT_H
 
 #include "metric.hpp"
+#include "context-fwd.hpp"
 
 #include "util/locked_unordered.hpp"
 #include "scope.hpp"
@@ -57,30 +58,6 @@
 #include <unordered_set>
 
 namespace hpctoolkit {
-
-class Context;
-class SuperpositionedContext;
-class CollaborativeContext;
-class CollaborativeSharedContext;
-
-/// Generic reference to any of the Context-like classes.
-/// Use ContextRef::const_t for a constant reference to a Context-like.
-using CollaboratorRoot = std::pair<Scope, std::unique_ptr<CollaborativeSharedContext>>;
-using ContextRef = util::variant_ref<
-  // Ordinary reference to a (physical) calling Context
-  Context,
-  // Reference to a Superpositioned instance across multiple Contexts
-  SuperpositionedContext,
-  // Reference to a Collaborative Context, in particular its (shared) root
-  CollaborativeContext,
-  // Reference to a particular collaborator root for a Collaborative Context
-  // Note that consistency between the two refs is assumed.
-  // FIXME: This is really a giant hack, it should actually be a
-  // <Context&, CollaborativeContext&, Scope> tuple.
-  util::ref_pair<Context, const CollaboratorRoot>,
-  // Reference to the shared Context under a Collaborative Context
-  CollaborativeSharedContext
->;
 
 /// A calling context (similar to Context) but that is "in superposition" across
 /// multiple individual target Contexts. The thread-local metrics associated

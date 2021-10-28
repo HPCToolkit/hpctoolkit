@@ -229,13 +229,6 @@ gpu_trace_start_adjust
 {
   uint64_t last_end = td->gpu_trace_prev_time;
 
-  if (end < last_end){
-    // If stream becomes unordered, mark it (it will be sorted in prof)
-    PRINT("TRACE NOT ORDERED: Trace_id = %u\n", td->core_profile_trace_data.id);
-    td->core_profile_trace_data.traceOrdered = false;
-    return start;
-  }
-
   if(start < last_end) {    // If we have a hardware measurement error (Power9),
     // set the offset as the end of the last activity
     start = last_end + 1;
@@ -321,6 +314,8 @@ gpu_trace_stream_acquire
   hpcrun_threadMgr_data_get_safe(id, NULL, &td, has_trace, demand_new_thread);
 
   gpu_compute_profile_name(tag, &td->core_profile_trace_data);
+
+  td->core_profile_trace_data.trace_expected_disorder = 30;
 
   return td;
 }

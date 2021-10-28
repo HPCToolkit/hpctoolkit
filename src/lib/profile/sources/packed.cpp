@@ -160,6 +160,13 @@ std::vector<uint8_t>::const_iterator Packed::unpackAttributes(iter_t it) noexcep
     sink.extraStatistic(std::move(s));
   }
 
+  auto min = unpack<std::uint64_t>(it);
+  auto max = unpack<std::uint64_t>(it);
+  if(min != 0 && max != 0) {
+    sink.timepointBounds(std::chrono::nanoseconds(min),
+                         std::chrono::nanoseconds(max));
+  }
+
   for(auto& m: metrics) sink.metricFreeze(m);
   return it;
 }
@@ -233,13 +240,5 @@ std::vector<uint8_t>::const_iterator Packed::unpackMetrics(iter_t it, const ctx_
       }
     }
   }
-  return it;
-}
-
-std::vector<uint8_t>::const_iterator Packed::unpackTimepoints(iter_t it) noexcept {
-  auto min = unpack<std::uint64_t>(it);
-  auto max = unpack<std::uint64_t>(it);
-  if(min != 0) sink.timepoint(std::chrono::nanoseconds(min));
-  if(max != 0) sink.timepoint(std::chrono::nanoseconds(max));
   return it;
 }

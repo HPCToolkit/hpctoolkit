@@ -105,8 +105,7 @@ MetricSender::MetricSender(RankTree& t, bool n)
 
 DataClass MetricSender::accepts() const noexcept {
   using namespace hpctoolkit::literals;
-  return data::attributes + data::contexts + data::metrics
-         + (needsTimepoints ? data::timepoints : DataClass{});
+  return data::attributes + data::contexts + data::metrics;
 }
 
 void MetricSender::notifyPipeline() noexcept {
@@ -118,7 +117,6 @@ void MetricSender::write() {
   std::vector<std::uint8_t> block;
   packAttributes(block);
   packMetrics(block);
-  if(needsTimepoints) packTimepoints(block);
   auto mpiSem = src.enterOrderedWrite();
   mpi::send(block, tree.parent, 3);
 }
@@ -134,7 +132,7 @@ MetricReceiver::MetricReceiver(std::size_t p, ctx_map_t& c, const std::vector<st
 
 DataClass MetricReceiver::provides() const noexcept {
   using namespace hpctoolkit::literals;
-  return data::attributes + data::metrics + data::timepoints
+  return data::attributes + data::metrics
          + (stash ? data::references + data::contexts : DataClass{});
 }
 
@@ -155,7 +153,6 @@ void MetricReceiver::read(const DataClass& d) {
   iter_t it = block.begin();
   it = unpackAttributes(it);
   it = unpackMetrics(it, cmap);
-  if(sink.limit().hasTimepoints()) it = unpackTimepoints(it);
   done = true;
 }
 

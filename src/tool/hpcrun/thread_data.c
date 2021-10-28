@@ -275,7 +275,9 @@ core_profile_trace_data_init(core_profile_trace_data_t * cptd, int id, cct_ctxt_
   // ----------------------------------------
   cptd->trace_min_time_us = 0;
   cptd->trace_max_time_us = 0;
-  cptd->traceOrdered = true;
+  cptd->trace_is_ordered = true;
+  cptd->trace_expected_disorder = 5;
+  cptd->trace_last_time = 0;
 
   // ----------------------------------------
   // IO support

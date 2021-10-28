@@ -124,13 +124,13 @@ public:
   // MT: Internally Synchronized
   virtual void notifyThread(const Thread&);
 
-  /// Notify the Sink that a timepoint has been registered. The overload called
-  /// is the one with the most arguments as allowed by the result of accepts().
+  /// Notify the Sink that some number of timepoints have been emitted.
   // MT: Internally Synchronized
-  virtual void notifyTimepoint(std::chrono::nanoseconds);
-  virtual void notifyTimepoint(const Thread&, std::chrono::nanoseconds);
-  virtual void notifyTimepoint(ContextRef::const_t, std::chrono::nanoseconds);
-  virtual void notifyTimepoint(const Thread&, ContextRef::const_t, std::chrono::nanoseconds);
+  virtual void notifyTimepoints(const Thread&, const std::vector<std::pair<ContextRef::const_t, std::chrono::nanoseconds>>&);
+
+  /// Notify the Sink that the next timepoint will not be the sequentially next,
+  /// but instead be rewound back to the first.
+  virtual void notifyTimepointRewindStart(const Thread&);
 
   /// Notify the Sink that a Thread has finished.
   // MT: Internally Synchronized
