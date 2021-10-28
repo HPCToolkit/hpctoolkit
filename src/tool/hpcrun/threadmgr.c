@@ -350,7 +350,7 @@ hpcrun_threadMgr_non_compact_data_get(int id, cct_ctxt_t* thr_ctxt, thread_data_
 }
 
 void
-hpcrun_threadMgr_data_put( epoch_t *epoch, thread_data_t *data, int no_separator)
+hpcrun_threadMgr_data_put( epoch_t *epoch, thread_data_t *data, bool add_separator)
 {
 
   // ---------------------------------------------------------------------
@@ -376,7 +376,7 @@ hpcrun_threadMgr_data_put( epoch_t *epoch, thread_data_t *data, int no_separator
 
   // step 1: get the dummy node that marks the end of the thread trace
 
-  if (!no_separator) {
+  if (add_separator) {
     cct_node_t *node  = hpcrun_cct_bundle_get_no_activity_node(&epoch->csdata);
     if (node) {
       hpcrun_trace_append(&(data->core_profile_trace_data), node, 0, 

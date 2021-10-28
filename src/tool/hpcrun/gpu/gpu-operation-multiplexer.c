@@ -109,6 +109,7 @@ gpu_operation_record
   while (!atomic_load(&stop_operation_flag)) {
     current_operation_channels_count = atomic_load(&operation_channels_count);
     gpu_operation_channel_set_process(current_operation_channels_count);
+    gpu_operation_channel_set_await(current_operation_channels_count);
   }
 
   current_operation_channels_count = atomic_load(&operation_channels_count);
@@ -205,6 +206,8 @@ gpu_operation_multiplexer_push
  gpu_activity_t *gpu_activity
 )
 {
+  PRINT("gpu_operation_multiplexer_push called\n");
+
   if (gpu_operation_multiplexer_my_channel_initialized() == false) {
     gpu_operation_multiplexer_my_channel_init();
   }

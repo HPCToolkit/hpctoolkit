@@ -484,7 +484,7 @@ pc_sampling_collect
 
 		HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiPCSamplingGetData, (&params));
 		pc_sampling_activity_set(&gpu_activity, range_id, context_id, cct_node, pc_sampling_data);
-		if (cupti_range_interval_get() == 1) {
+		if (cupti_range_mode_get() == CUPTI_RANGE_MODE_SERIAL) {
 			gpu_pc_sampling_info2_process(&gpu_activity);
 		} else {
 			gpu_operation_multiplexer_push(NULL, NULL, &gpu_activity);
@@ -503,7 +503,7 @@ pc_sampling_collect
 
 			HPCRUN_CUPTI_PC_SAMPLING_CALL(cuptiPCSamplingGetData, (&params));
 			pc_sampling_activity_set(&gpu_activity, range_id, context_id, cct_node, pc_sampling_data);
-			if (cupti_range_interval_get() == CUPTI_RANGE_DEFAULT_INTERVAL) {
+			if (cupti_range_mode_get() == CUPTI_RANGE_MODE_SERIAL) {
 				gpu_pc_sampling_info2_process(&gpu_activity);
 			} else {
 				gpu_operation_multiplexer_push(NULL, NULL, &gpu_activity);

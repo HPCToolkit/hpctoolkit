@@ -92,8 +92,6 @@
 //#include "../ompt/ompt-interface.h"
 //#include "../memory/hpcrun-malloc.h"
 
-#define HPCRUN_CCT_KEEP_DUMMY 1
-
 //***************************** concrete data structure definition **********
 
 struct cct_node_t {
@@ -245,7 +243,6 @@ walkset_l(cct_node_t* cct, cct_op_t fn, cct_op_arg_t arg, size_t level)
 // walker op used by counting utility
 //
 typedef struct {
-  bool count_dummy;
   size_t n;
 
   //YUMENG: help count number of non-zero values for each cct
@@ -258,9 +255,6 @@ static void
 l_count(cct_node_t* n, cct_op_arg_t arg, size_t level)
 {
   count_arg_t *count_arg = (count_arg_t *)arg;
-  if (hpcrun_cct_is_dummy(n) && !count_arg->count_dummy) {
-    return;
-  }
 
   //YUMENG: count the number of non-zero values
   metric_data_list_t *data_list =
@@ -298,42 +292,6 @@ typedef struct {
 } write_arg_t;
 
 
-//
-// Merge the metrics of dummy nodes to their parents
-//
-static void
-collapse_dummy_node(cct_node_t *node, cct_op_arg_t arg, size_t level)
-{
-  if (!hpcrun_cct_is_dummy(node)) {
-    return;
-  }
-
-  // get thread specific map
-  write_arg_t *write_arg = (write_arg_t *)arg;
-  cct2metrics_t **map = &(write_arg->cct2metrics_map);
-
-  // merge dummy child metrics
-  cct_node_t* parent = hpcrun_cct_parent(node);
-  metric_data_list_t *node_metrics = hpcrun_get_metric_data_list_specific(map, node);
-  if (node_metrics != NULL) {
-    metric_data_list_t *parent_metrics = hpcrun_get_metric_data_list_specific(map, parent);
-    if (parent_metrics != NULL) {
-      hpcrun_merge_cct_metrics(parent_metrics, node_metrics);
-    } else {
-      hpcrun_move_metric_data_list_specific(map, parent, node);
-    }
-  }
-}
-
-static void
-l_dummy(cct_node_t* n, cct_op_arg_t arg, size_t level)
-{
-  bool *dummy = (bool *)arg;
-  if (!hpcrun_cct_is_dummy(n)) {
-    *dummy = false;
-  }
-}
-
 
 #if 0
 //YUMENG: count non_zero values for each cct, already merged with l_count
@@ -360,29 +318,7 @@ lcount_nzval(cct_node_t* node, cct_op_arg_t arg, size_t level)
 static void
 lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
 {
-  // avoid writing dummy nodes
-  if (!HPCRUN_CCT_KEEP_DUMMY) {
-    if (hpcrun_cct_is_dummy(node)) {
-      return;
-    }
-  }
-
-  // skip all the dummy parents
   cct_node_t* parent = hpcrun_cct_parent(node);
-
-  if (!HPCRUN_CCT_KEEP_DUMMY) {
-    while (parent != NULL && hpcrun_cct_is_dummy(parent)) {
-      parent = hpcrun_cct_parent(parent);
-    }
-  }
-
-  bool all_children_dummy;
-  if (!HPCRUN_CCT_KEEP_DUMMY) {
-    all_children_dummy = true;
-    hpcrun_cct_walk_node_1st(node, l_dummy, &all_children_dummy);
-  } else {
-    all_children_dummy = false;
-  }
 
   write_arg_t* my_arg = (write_arg_t*) arg;
   hpcrun_fmt_sparse_metrics_t* sparse_metrics = my_arg->sparse_metrics;
@@ -861,11 +797,7 @@ hpcrun_cct_fwrite(cct2metrics_t* cct2metrics_map, cct_node_t* cct, FILE* fs, epo
   size_t nodes = 0;
   uint64_t num_nzval = 0;
   uint32_t num_nz_cct_nodes = 0;
-  if (HPCRUN_CCT_KEEP_DUMMY) {
-    nodes = hpcrun_cct_num_nodes(cct, true, &cct2metrics_map, &num_nzval, &num_nz_cct_nodes);
-  } else {
-    nodes = hpcrun_cct_num_nodes(cct, false, &cct2metrics_map, &num_nzval, &num_nz_cct_nodes);
-  }
+  nodes = hpcrun_cct_num_nodes(cct, &cct2metrics_map, &num_nzval, &num_nz_cct_nodes);
   sparse_metrics->num_cct_nodes = nodes;
 
   //YUMENG: record cct_node_ids:cct_node_idxs pair
@@ -907,9 +839,6 @@ hpcrun_cct_fwrite(cct2metrics_t* cct2metrics_map, cct_node_t* cct, FILE* fs, epo
   tmp_node.metrics = &(metrics[0]);
 #endif
 
-  if (!HPCRUN_CCT_KEEP_DUMMY) {
-    hpcrun_cct_walk_child_1st(cct, collapse_dummy_node, &write_arg);
-  }
   hpcrun_cct_walk_node_1st(cct, lwrite, &write_arg);
 
   //one extra entry in cct_node_id&idx pairs to mark the end index of the last cct node
@@ -951,10 +880,9 @@ void hpcrun_cct_fwrite_errmsg_w_fn(FILE* fs, uint32_t tid, char* msg)
 // Utilities
 //
 size_t
-hpcrun_cct_num_nodes(cct_node_t* cct, bool count_dummy, cct2metrics_t **cct2metrics_map,uint64_t* num_nzval, uint32_t* num_nz_cct_nodes)
+hpcrun_cct_num_nodes(cct_node_t* cct, cct2metrics_t **cct2metrics_map, uint64_t* num_nzval, uint32_t* num_nz_cct_nodes)
 {
   count_arg_t count_arg = {
-    .count_dummy = count_dummy,
     .n = 0,
 
     //YUMENG: count number of non-zero values
