@@ -336,20 +336,13 @@ hpcrun_threaded_data
 );
 
 
-void
-hpcrun_thread_init_mem_pool
+void 
+hpcrun_thread_init_mem_pool_once
 (
   int id, 
   cct_ctxt_t *thr_ctxt,
   bool has_trace, 
   bool demand_new_thread
-);
-
-
-void 
-hpcrun_thread_init_mem_pool_once
-(
-  void
 );
 
 

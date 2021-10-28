@@ -780,7 +780,7 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data, bool has_trac
   bool demand_new_thread = false;
   cct_ctxt_t* thr_ctxt = local_thread_data ? local_thread_data->thr_ctxt : NULL;
 
-  hpcrun_thread_init_mem_pool(id, thr_ctxt, has_trace, demand_new_thread);
+  hpcrun_thread_init_mem_pool_once(id, thr_ctxt, has_trace, demand_new_thread);
   
   if (ENABLED(THREAD_CTXT)) {
     if (thr_ctxt) {

@@ -65,11 +65,13 @@
 
 #include "thread_data.h"
 #include "trace.h"
+#include "threadmgr.h"
 
 #include <lush/lush-pthread.h>
 #include <messages/messages.h>
 #include <trampoline/common/trampoline.h>
 #include <memory/mmap.h>
+
 
 //***************************************************************************
 
@@ -235,7 +237,7 @@ hpcrun_threaded_data
 
 
 void
-hpcrun_thread_init_mem_pool
+hpcrun_thread_init_mem_pool_once
 (
   int id, 
   cct_ctxt_t *thr_ctxt,
@@ -244,27 +246,12 @@ hpcrun_thread_init_mem_pool
 )
 { 
   thread_data_t* td = NULL;
-  
-  hpcrun_mmap_init();
-  hpcrun_threadMgr_data_get_safe(id, thr_ctxt, &td, has_trace, demand_new_thread);
-  hpcrun_set_thread_data(td);
-  td->inside_hpcrun = 1;  // safe enter, disable signals
-}
-
-
-void
-hpcrun_thread_init_mem_pool_once
-(
-)
-{ 
-  // Should be called every time hpcrun tooling thread is created
-  int id = 0;
-  cct_ctxt_t *thr_ctxt = NULL;
-  bool has_trace = false;
-  bool demand_new_thread = true;
 
   if (mem_pool_initialized == false){
-    hpcrun_thread_init_mem_pool(id, thr_ctxt, has_trace, demand_new_thread);
+    hpcrun_mmap_init();
+    hpcrun_threadMgr_data_get_safe(id, thr_ctxt, &td, has_trace, demand_new_thread);
+    hpcrun_set_thread_data(td);
+
     mem_pool_initialized = true;
   }
 }
