@@ -69,6 +69,7 @@ cupti_cct_trace_map_delete_thread
 );
 
 
+// Logical delete, the index still maintains
 void
 cupti_cct_trace_map_delete
 (

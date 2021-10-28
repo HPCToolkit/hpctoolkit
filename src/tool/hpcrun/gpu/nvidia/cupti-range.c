@@ -24,6 +24,7 @@ static uint32_t cupti_range_thread_retain_range = CUPTI_RANGE_THREAD_RETAIN_RANG
 
 static uint32_t cupti_retained_ranges = 0;
 
+static __thread cct_node_t *prev_api_node = NULL;
 
 static bool
 cupti_range_pre_enter_callback
@@ -140,6 +141,7 @@ cupti_range_mode_context_sensitive_is_enter
     bool sampled = !repeated ||
       (map_ret_type == CUPTI_IP_NORM_MAP_DUPLICATE && cupti_range_mode_context_sensitive_is_sampled());
     if (sampled) {
+      TMSG(CUPTI_TRACE, "Range repeated %d, map_ret_type %d, api_node %p", repeated, map_ret_type, api_node);
       cupti_pc_sampling_start(context);
     }
   }

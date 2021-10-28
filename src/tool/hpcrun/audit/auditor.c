@@ -351,12 +351,10 @@ uintptr_t la_symbind64(Elf64_Sym *sym, unsigned int ndx,
                        unsigned int *flags, const char *symname) {
   if(*refcook != 0 && dl_runtime_resolver_ptr != 0)
     optimize_object_plt(state < state_connected ? (struct link_map*)*refcook : ((auditor_map_entry_t*)*refcook)->map);
-#ifdef NEW_CUPTI
   if (strcmp(symname, "cuLaunchKernel") == 0) {
     exports.cuLaunchKernel = sym->st_value;
     return hooks.cuLaunchKernel;
   }
-#endif
   //else if (strcmp(symname, "cuMemcpy") == 0) {
   //  exports.cuMemcpy = sym->st_value;
   //  return hooks.cuMemcpy;

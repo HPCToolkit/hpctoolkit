@@ -126,6 +126,7 @@ struct cupti_cct_map_entry_s {
 //******************************************************************************
 
 static __thread cupti_cct_map_entry_t *map_root = NULL;
+static __thread map_size = 0;
 static cupti_cct_map_entry_t *free_list = NULL;
 
 //******************************************************************************
@@ -231,7 +232,7 @@ cupti_cct_map_lookup
 
 
 void
-cupti_cct_map_kernel_insert
+cupti_cct_map_insert
 (
  cct_node_t *cct,
  cct_node_t *p1,
@@ -258,6 +259,7 @@ cupti_cct_map_kernel_insert
       function_id, stack_length, tool_depth, api_depth,
       function_name, grid_dim_x, grid_dim_y, grid_dim_z, block_dim_x, block_dim_y, block_dim_z);
     st_insert(&map_root, entry);
+    ++map_size;
   } 
 
   entry->count += 1;
@@ -281,3 +283,13 @@ cupti_cct_map_dump
     "block_dim_x, block_dim_y, block_dim_z, cnt, p1, p2, p3\n");
   st_forall(map_root, splay_inorder, dump_fn_helper, NULL);
 }
+
+
+size_t
+cupti_cct_map_size_get
+(
+)
+{
+  return map_size;
+}
+

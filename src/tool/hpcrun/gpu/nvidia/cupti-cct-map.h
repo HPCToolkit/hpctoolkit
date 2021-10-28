@@ -28,7 +28,7 @@ cupti_cct_map_lookup
 
 
 void
-cupti_cct_map_kernel_insert
+cupti_cct_map_insert
 (
  cct_node_t *cct,
  cct_node_t *p1,
@@ -51,6 +51,11 @@ cupti_cct_map_kernel_insert
 
 void
 cupti_cct_map_dump
+(
+);
+
+size_t
+cupti_cct_map_size_get
 (
 );
 

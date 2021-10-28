@@ -391,6 +391,7 @@ trace_shrink
       // 3. Move prev_pattern nodes from the trace to the rule
       // root->Aa...................Aa
       rule = trace_new(CUPTI_CCT_TRACE_NODE_NON_TERMINAL, 0);
+      rule_ref->key = (uint64_t)rule;
       trace_append(rule, node1);
       trace_append(rule, node2);
       trace_ref_append(rule, rule_ref);
@@ -440,6 +441,7 @@ trace_shrink
 
     // Make a ref node
     cupti_cct_trace_node_t *rule_ref = trace_new(CUPTI_CCT_TRACE_NODE_NON_TERMINAL_REF, 0);
+    rule_ref->key = (uint64_t)rule;
 
     trace_delete(pattern_node->right);
     trace_delete(pattern_node);

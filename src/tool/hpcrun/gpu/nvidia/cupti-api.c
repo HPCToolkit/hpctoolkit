@@ -991,11 +991,17 @@ analyze_cupti_api
 
   if (gpu_op_placeholder_flags_is_set(flags, gpu_placeholder_type_kernel)) {
     cuLaunchKernel_params *params = (cuLaunchKernel_params *)cd->functionParams;
-    cupti_cct_map_kernel_insert(api_node, p1, p2, p3, prev, kernel_ip,
+    cupti_cct_map_insert(api_node, p1, p2, p3, prev, kernel_ip,
       stack_length, node_depth, api_node_depth,
       cd->symbolName, params->gridDimX, params->gridDimY, params->gridDimZ,
       params->blockDimX, params->blockDimY, params->blockDimZ);
-    //printf("(%p, %u, %p)", api_node, kernel_ip.lm_id, kernel_ip.lm_ip);
+  } else {
+    ip_normalized_t ip_norm = {
+      .lm_id = 0,
+      .lm_ip = 0
+    };
+    cupti_cct_map_insert(api_node, p1, p2, p3, prev, ip_norm,
+      0, 0, api_node_depth, 0, 0, 0, 0, 0, 0, 0);
   }
 }
 #endif
@@ -1062,6 +1068,20 @@ cupti_callback_init
 // Runtime and driver API callbacks
 //******************************************************************************
 
+//#define PRINT_UNWIND_TIME
+
+#ifdef PRINT_UNWIND_TIME
+static uint64_t get_timestamp() {
+  struct timeval tv;
+  int ret = gettimeofday(&tv, NULL);
+  uint64_t nanotime = ((uint64_t)tv.tv_usec
+    + (((uint64_t)tv.tv_sec) * 1000000)) * 1000;
+  return nanotime;
+}
+
+static __thread uint64_t unwind_time = 0;
+#endif
+
 cct_node_t *
 cupti_unwind
 (
@@ -1070,12 +1090,19 @@ cupti_unwind
  void *args
 )
 {
+#ifdef PRINT_UNWIND_TIME
+  uint64_t start_time = get_timestamp();
+#endif
   if (cupti_correlation_threshold_get() == -1) {
     // Slow path to generate a cct
 #ifdef NEW_CUPTI_ANALYSIS
     slow_unwinds += 1;
 #endif
-    return cupti_correlation_callback();
+    cct_node_t *node = cupti_correlation_callback();
+#ifdef PRINT_UNWIND_TIME
+    unwind_time += get_timestamp() - start_time;
+#endif
+    return node;
   }
 
   // Fast path to generate a cct
@@ -1118,6 +1145,7 @@ cupti_unwind
 #endif
         cct_node_t *actual_node = cupti_correlation_callback();
         if (actual_node != api_node) {
+          api_node = actual_node;
           cupti_unwind_map_entry_cct_node_update(entry, actual_node);
           cupti_unwind_map_entry_backoff_update(entry, 0);
         } else {
@@ -1129,10 +1157,25 @@ cupti_unwind
         fast_unwinds += 1;
       }
 #endif
-      api_node = cupti_unwind_map_entry_cct_node_get(entry);
     }
+#ifdef NEW_CUPTI_ANALYSIS
+    else {
+      fast_unwinds += 1;
+    }
+#endif
   }
 
+#ifdef PRINT_UNWIND_TIME
+  unwind_time += get_timestamp() - start_time;
+#endif
+
+#ifdef NEW_CUPTI_ANALYSIS
+  cct_node_t *actual_node = cupti_correlation_callback();
+  total_unwinds++;
+  if (actual_node == api_node) {
+    correct_unwinds++; 
+  }
+#endif
   return api_node;
 }
 
@@ -1161,49 +1204,6 @@ cupti_api_node_get
 	} else {
 		cupti_prev_api_node = api_node;
 	}
-
-#ifdef NEW_CUPTI_ANALYSIS
-  cct_node_t *actual_node = cupti_correlation_callback();
-  total_unwinds++;
-  if (actual_node == api_node) {
-    correct_unwinds++; 
-  } else {
-//		printf("Actual ");
-//		while (actual_node != NULL) {
-//			cct_addr_t* addr = hpcrun_cct_addr(actual_node);
-//			printf("lm_id %d lm_ip %p, ", addr->ip_norm.lm_id, addr->ip_norm.lm_ip);
-//			actual_node = hpcrun_cct_parent(actual_node);
-//		}
-//		printf("\n");
-//
-//		printf("Unwind ");
-//		cct_node_t *node = api_node;
-//		while (node != NULL) {
-//			cct_addr_t* addr = hpcrun_cct_addr(node);
-//			printf("lm_id %d lm_ip %p, ", addr->ip_norm.lm_id, addr->ip_norm.lm_ip);
-//			node = hpcrun_cct_parent(node);
-//		}
-//		printf("\n");
-//
-		//printf("Prev prev api ");
-		//node = unwind_key.prev_prev_api;
-		//while (node != NULL) {
-		//	cct_addr_t* addr = hpcrun_cct_addr(node);
-		//	printf("lm_id %d lm_ip %p, ", addr->ip_norm.lm_id, addr->ip_norm.lm_ip);
-		//	node = hpcrun_cct_parent(node);
-		//}
-		//printf("\n");
-
-		//printf("Prev api ");
-		//node = unwind_key.prev_api;
-		//while (node != NULL) {
-		//	cct_addr_t* addr = hpcrun_cct_addr(node);
-		//	printf("lm_id %d lm_ip %p, ", addr->ip_norm.lm_id, addr->ip_norm.lm_ip);
-		//	node = hpcrun_cct_parent(node);
-		//}
-		//printf("\n");
-	}
-#endif
 
   return api_node;
 }
@@ -2310,19 +2310,25 @@ cupti_device_flush(void *args, int how)
 
   TMSG(CUPTI, "Exit CUPTI device flush");
 
-#ifdef NEW_CUPTI_ANALYSIS
+#ifdef NEW_CUPTI
   spinlock_lock(&print_lock);
 
-  printf("Total cct unwinds %lu, correct unwinds %lu, fast unwinds %lu, slow unwinds %lu\n",
-    total_unwinds, correct_unwinds, fast_unwinds, slow_unwinds);
+#ifdef PRINT_UNWIND_TIME
+  printf("Unwind time %lu\n", unwind_time);
+#endif
+
+#ifdef NEW_CUPTI_ANALYSIS
+  printf("Total cct unwinds %lu, correct unwinds %lu, fast unwinds %lu, slow unwinds %lu, unique ccts %zu\n",
+    total_unwinds, correct_unwinds, fast_unwinds, slow_unwinds, cupti_cct_map_size_get());
 
   //cupti_cct_map_dump();
 
-  //printf("-----------------------------------------------------------------\n");
+  printf("-----------------------------------------------------------------\n");
 
-  //printf("CCT trace\n");
+  printf("CCT trace\n");
 
-  //cupti_cct_trace_dump();
+  cupti_cct_trace_dump();
+#endif
 
   spinlock_unlock(&print_lock);
 #endif
