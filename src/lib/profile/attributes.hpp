@@ -56,10 +56,11 @@
 #include "lib/prof/pms-format.h"
 #include "lib/prof-lean/id-tuple.h"
 
-#include <functional>
-#include <unordered_map>
 #include "stdshim/filesystem.hpp"
+#include <functional>
 #include <optional>
+#include <thread>
+#include <unordered_map>
 
 namespace hpctoolkit {
 
@@ -104,6 +105,43 @@ private:
 
   friend class ProfilePipeline;
   unsigned int timepointDisorder() const noexcept;
+
+  class FinalizeState {
+  public:
+    FinalizeState();
+    ~FinalizeState();
+
+    FinalizeState(FinalizeState&&) = delete;
+    FinalizeState& operator=(FinalizeState&&) = delete;
+    FinalizeState(const FinalizeState&) = delete;
+    FinalizeState& operator=(const FinalizeState&) = delete;
+
+  private:
+    friend class ThreadAttributes;
+
+    class CountingLookupMap {
+      std::mutex lock;
+      std::unordered_map<uint64_t, uint64_t> map;
+    public:
+      CountingLookupMap() = default;
+      ~CountingLookupMap() = default;
+
+      uint64_t get(uint64_t);
+    };
+    struct LocalHash {
+      std::hash<uint16_t> h_u16;
+      std::size_t operator()(const std::vector<uint16_t>& v) const noexcept;
+    };
+    util::locked_unordered_map<uint16_t, CountingLookupMap> globalIdxMap;
+    util::locked_unordered_map<std::vector<uint16_t>, CountingLookupMap,
+                               std::shared_mutex, LocalHash> localIdxMap;
+
+    std::thread server;
+    std::mutex mpilock;
+  };
+
+  // Finalize this ThreadAttributes using the given shared state.
+  void finalize(FinalizeState&);
 };
 
 /// A single Thread within a Profile. Or something like that.

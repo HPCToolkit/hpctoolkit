@@ -98,20 +98,9 @@ void detail::scatter_root(void* data, std::size_t cnt, const Datatype&, std::siz
 void detail::scatter(void* data, std::size_t cnt, const Datatype&, std::size_t rootRank) {};
 void detail::scatterv_root(void* data, const std::size_t* cnts, const Datatype&, std::size_t rootRank) {};
 void detail::scatterv(void* data, std::size_t cnt, const Datatype&, std::size_t rootRank) {};
-void detail::send(const void*, std::size_t, const Datatype&, std::size_t, std::size_t) {};
-void detail::recv(void*, std::size_t, const Datatype&, std::size_t, std::size_t) {};
-
-
-namespace hpctoolkit::mpi::detail{ 
-  struct Win {};
+void detail::send(const void*, std::size_t, const Datatype&, Tag, std::size_t) {};
+void detail::recv(void*, std::size_t, const Datatype&, Tag, std::size_t) {};
+std::optional<std::size_t> detail::recv_server(void*, std::size_t, const Datatype&, Tag) {
+  return std::nullopt;
 }
-SharedAccumulator::SharedAccumulator(int) {};
-SharedAccumulator::~SharedAccumulator() = default;
-
-void SharedAccumulator::initialize(std::uint64_t data) {
-  atom.store(data, std::memory_order_relaxed);
-}
-
-std::uint64_t SharedAccumulator::fetch_add(std::uint64_t val){
-  return atom.fetch_add(val, std::memory_order_relaxed);
-}
+void detail::cancel_server(const Datatype&, Tag) {};

@@ -354,7 +354,7 @@ public:
     /// Emit a new Thread into the Pipeline.
     /// DataClass: `threads`
     // MT: Externally Synchronized (this), Internally Synchronized
-    Thread::Temporary& thread(const ThreadAttributes&);
+    Thread::Temporary& thread(ThreadAttributes);
 
     /// Return codes for timepoint-related functions
     enum class TimepointStatus {
@@ -519,6 +519,9 @@ private:
 
   // Storage for the pointers to the SourceLocals.
   std::vector<SourceLocal> sourceLocals;
+
+  // Bits needed for ThreadAttributes to finalize
+  ThreadAttributes::FinalizeState threadAttrFinalizeState;
 
   // Userdata structures for the various bits. Must be above the data itself.
   Structs structs;

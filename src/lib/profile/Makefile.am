@@ -84,6 +84,8 @@ MYSOURCES = \
 	util/ragged_vector.cpp util/once.cpp util/xml.cpp util/log.cpp \
 	util/file-posix.cpp util/lzmastream.cpp \
 	\
+	mpi/accumulate-thread.cpp \
+	\
 	pipeline.cpp source.cpp context.cpp scope.cpp metric.cpp \
 	module.cpp attributes.cpp dataclass.cpp sink.cpp packedids.cpp \
 	\

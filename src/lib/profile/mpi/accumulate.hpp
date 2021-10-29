@@ -61,7 +61,7 @@ namespace detail {
 
 class SharedAccumulator {
 public:
-  SharedAccumulator(int tag);
+  SharedAccumulator(Tag tag);
   ~SharedAccumulator();
 
 

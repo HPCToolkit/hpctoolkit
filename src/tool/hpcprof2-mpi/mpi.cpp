@@ -294,80 +294,52 @@ void detail::scatterv(void* data, std::size_t cnt, const Datatype& ty,
     util::log::fatal{} << "Error while performing an MPI vectorized scatter (non-root)!";
 }
 void detail::send(const void* data, std::size_t cnt, const Datatype& ty,
-                  std::size_t tag, std::size_t dst) {
+                  Tag tag, std::size_t dst) {
   auto l = mpiLock();
-  if(MPI_Send(data, cnt, ty.value, dst, tag, MPI_COMM_WORLD) != MPI_SUCCESS)
+  if(MPI_Send(data, cnt, ty.value, dst, static_cast<int>(tag), MPI_COMM_WORLD) != MPI_SUCCESS)
     util::log::fatal{} << "Error while performing an MPI send!";
 }
 void detail::recv(void* data, std::size_t cnt, const Datatype& ty,
-                  std::size_t tag, std::size_t src) {
+                  Tag tag, std::size_t src) {
   auto l = mpiLock();
-  if(MPI_Recv(data, cnt, ty.value, src, tag, MPI_COMM_WORLD, MPI_STATUS_IGNORE)
+  if(MPI_Recv(data, cnt, ty.value, src, static_cast<int>(tag), MPI_COMM_WORLD, MPI_STATUS_IGNORE)
      != MPI_SUCCESS)
-    util::log::fatal{} << "Error while performing an MPI recieve!";
+    util::log::fatal{} << "Error while performing an MPI receive!";
 }
 
 
-namespace hpctoolkit::mpi::detail {
-  struct Win{
-    Win(int tag) : tag(tag), active(false) {};
-    const int tag;
-    bool active;
-    std::thread t;
-  };
-}
-
-SharedAccumulator::SharedAccumulator(int tag)
-  : detail(World::size() > 1 ? std::make_unique<detail::Win>(tag) : nullptr) {}
-
-SharedAccumulator::~SharedAccumulator() {
-  if(detail && detail->active) {
-    // "Send" a message to the thread to stop, and then join it
-    {
-      auto l = mpiLock();
-      MPI_Send(nullptr, 0, MPI_UINT64_T, 0, detail->tag, MPI_COMM_WORLD);
+std::optional<std::size_t> detail::recv_server(void* data, std::size_t cnt,
+    const Datatype& ty, Tag tag) {
+  auto l = mpiLock();
+  MPI_Status stat;
+  if(l) {
+    // Slow version, try to release the lock as often as possible.
+    MPI_Request req;
+    if(MPI_Irecv(data, cnt, ty.value, MPI_ANY_SOURCE, static_cast<int>(tag), MPI_COMM_WORLD, &req) != MPI_SUCCESS)
+      util::log::fatal{} << "Error while performing an MPI non-blocking receive!";
+    int done = 0;
+    while(1) {
+      if(MPI_Test(&req, &done, &stat) != MPI_SUCCESS)
+        util::log::fatal{} << "Error while testing an MPI non-blocking receive!";
+      if(done) break;
+      l.unlock();
+      std::this_thread::yield();
+      l.lock();
     }
-    detail->t.join();
+  } else {
+    if(MPI_Recv(data, cnt, ty.value, MPI_ANY_SOURCE, static_cast<int>(tag), MPI_COMM_WORLD, &stat) != MPI_SUCCESS)
+      util::log::fatal{} << "Error while performing an MPI server receive!";
   }
+  int cntrecvd;
+  if(MPI_Get_count(&stat, ty.value, &cntrecvd) != MPI_SUCCESS)
+    util::log::fatal{} << "Error decoding a server message status!";
+  if(cntrecvd == 0)
+    return std::nullopt;  // Cancellation message is a 0-length message
+  return stat.MPI_SOURCE;
 }
 
-void SharedAccumulator::initialize(std::uint64_t init) {
-  atom.store(init, std::memory_order_relaxed);
-  if(detail && World::rank() == 0) {
-    // TODO: Figure out how to support MPI_THREAD_SERIALIZED here.
-    // Currently this part with deadlock if there are real locks.
-    if(needsLock)
-      util::log::fatal{} << "MPI thread support insufficient, requires MPI_THREAD_MULTIPLE!";
-    detail->active = true;
-    detail->t = std::thread([](detail::Win& w, std::atomic<std::uint64_t>& atom) {
-      while(1) {
-        std::uint64_t val;
-        MPI_Status stat;
-        if(MPI_Recv(&val, 1, MPI_UINT64_T, MPI_ANY_SOURCE, w.tag, MPI_COMM_WORLD, &stat) != MPI_SUCCESS)
-          util::log::fatal{} << "Error while waiting for accumulation request!";
-        int cnt;
-        if(MPI_Get_count(&stat, MPI_UINT64_T, &cnt) != MPI_SUCCESS)
-          util::log::fatal{} << "Error decoding accumulation request status!";
-        if(cnt == 0) return;  // Stop request, get out now.
-        std::uint64_t reply = atom.fetch_add(val, std::memory_order_relaxed);
-        if(MPI_Rsend(&reply, 1, MPI_UINT64_T, stat.MPI_SOURCE, w.tag, MPI_COMM_WORLD) != MPI_SUCCESS)
-          util::log::fatal{} << "Error while replying to an accumulation request!";
-      }
-    }, std::ref(*detail), std::ref(atom));
-  }
-}
-
-std::uint64_t SharedAccumulator::fetch_add(std::uint64_t val) {
-  if(World::rank() == 0 || !detail)
-    return atom.fetch_add(val, std::memory_order_relaxed);
-
-  std::uint64_t result;
-  MPI_Request req;
-  if(MPI_Irecv(&result, 1, MPI_UINT64_T, 0, detail->tag, MPI_COMM_WORLD, &req) != MPI_SUCCESS)
-    util::log::fatal{} << "MPI error while preparing non-blocking recv!";
-  if(MPI_Send(&val, 1, MPI_UINT64_T, 0, detail->tag, MPI_COMM_WORLD) != MPI_SUCCESS)
-    util::log::fatal{} << "MPI error while sending accumulation request!";
-  if(MPI_Wait(&req, MPI_STATUS_IGNORE) != MPI_SUCCESS)
-    util::log::fatal{} << "MPI error while awaiting for accumulation reply!";
-  return result;
+void detail::cancel_server(const Datatype& ty, Tag tag) {
+  auto l = mpiLock();
+  if(MPI_Send(nullptr, 0, ty.value, World::rank(), static_cast<int>(tag), MPI_COMM_WORLD) != MPI_SUCCESS)
+    util::log::fatal{} << "Error while self-sending a cancellation message!";
 }

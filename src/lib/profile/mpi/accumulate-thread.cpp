@@ -44,66 +44,50 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef HPCTOOLKIT_PROFILE_MPI_CORE_H
-#define HPCTOOLKIT_PROFILE_MPI_CORE_H
+#include "all.hpp"
 
-#include <cstdint>
-#include <type_traits>
+#include <thread>
 
-namespace hpctoolkit::mpi {
+using namespace hpctoolkit::mpi;
+using namespace detail;
 
-namespace detail {
+namespace hpctoolkit::mpi::detail {
+  struct Win{
+    Win(Tag tag) : tag(tag), active(false) {};
+    const Tag tag;
+    bool active;
+    std::thread t;
+  };
+}
 
-struct Datatype;
+SharedAccumulator::SharedAccumulator(Tag tag)
+  : detail(World::size() > 1 ? std::make_unique<detail::Win>(tag) : nullptr) {}
 
-// Conversion from C++ types to MPI type handles.
-template<class T, typename std::enable_if<
-    std::is_arithmetic<T>::value && std::is_same<
-      typename std::remove_cv<typename std::remove_reference<T>::type>::type,
-      T>::value
-  >::type* = nullptr>
-const Datatype& asDatatype();
+SharedAccumulator::~SharedAccumulator() {
+  if(detail && detail->active) {
+    cancel_server<std::uint64_t>(detail->tag);
+    detail->t.join();
+  }
+}
 
-}  // namespace detail
+void SharedAccumulator::initialize(std::uint64_t init) {
+  atom.store(init, std::memory_order_relaxed);
+  if(detail && World::rank() == 0) {
+    detail->active = true;
+    detail->t = std::thread([](detail::Win& w, std::atomic<std::uint64_t>& atom) {
+      while(auto query = receive_server<std::uint64_t>(w.tag)) {
+        auto [val, src] = *query;
+        val = atom.fetch_add(val, std::memory_order_relaxed);
+        send<std::uint64_t>(val, src, w.tag);
+      }
+    }, std::ref(*detail), std::ref(atom));
+  }
+}
 
-/// Operation handle. Represents a single binary operation.
-class Op {
-public:
-  static const Op& max() noexcept;
-  static const Op& min() noexcept;
-  static const Op& sum() noexcept;
-};
+std::uint64_t SharedAccumulator::fetch_add(std::uint64_t val) {
+  if(World::rank() == 0 || !detail)
+    return atom.fetch_add(val, std::memory_order_relaxed);
 
-/// Singleton class representing the current MPI global communicator.
-class World {
-public:
-  /// Fire up MPI. Needed before calling anything else.
-  static void initialize() noexcept;
-
-  /// Close down MPI. Needed after everything else is done.
-  static void finalize() noexcept;
-
-  /// Get the rank of the current process within the global communicator.
-  static std::size_t rank() noexcept { return m_rank; }
-
-  /// Get the number of processes within the global communicator.
-  static std::size_t size() noexcept { return m_size; }
-
-private:
-  static std::size_t m_rank;
-  static std::size_t m_size;
-};
-
-/// MPI tag enumeration, to make sure no one gets mixed up.
-enum class Tag : int {
-  // 0 is skipped
-  ThreadAttributes_1 = 1,  // For attributes.cpp
-
-  SparseDB_1, SparseDB_2,  // For sinks/sparsedb.cpp
-  RankTree_1, RankTree_2,  // For hpcprof2-mpi/tree.cpp
-};
-
-
-}  // namespace hpctoolkit::mpi
-
-#endif  // HPCTOOLKIT_PROFILE_MPI_CORE_H
+  send<std::uint64_t>(val, 0, detail->tag);
+  return receive<std::uint64_t>(0, detail->tag);
+}

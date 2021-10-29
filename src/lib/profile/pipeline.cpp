@@ -690,9 +690,10 @@ void Source::StatisticsRef::add(Metric& m, const StatisticPartial& sp,
   else abort();  // unreachable
 }
 
-Thread::Temporary& Source::thread(const ThreadAttributes& o) {
+Thread::Temporary& Source::thread(ThreadAttributes o) {
   assert(limit().hasThreads() && "Source did not register for `threads` emission!");
   assert(o.ok() && "Source did not fill out enough of the ThreadAttributes!");
+  o.finalize(pipe->threadAttrFinalizeState);
   auto& t = *pipe->threads.emplace(new Thread(pipe->structs.thread, o)).first;
   for(auto& s: pipe->sinks) {
     if(s.dataLimit.hasThreads()) s().notifyThread(t);

@@ -46,6 +46,8 @@
 
 #include "attributes.hpp"
 
+#include "mpi/one2one.hpp"
+
 #include "util/log.hpp"
 
 #include <limits>
@@ -119,6 +121,90 @@ void ThreadAttributes::idTuple(std::vector<pms_id_t> tuple) {
   assert(m_idTuple.empty() && "Attempt to overwrite a previously set thread hierarchical id tuple!");
   assert(!tuple.empty() && "No tuple given to ThreadAttributes::idTuple");
   m_idTuple = std::move(tuple);
+}
+
+void ThreadAttributes::finalize(ThreadAttributes::FinalizeState& state) {
+  for(size_t i = 0; i < m_idTuple.size(); i++) {
+    auto& id = m_idTuple[i];
+    switch(IDTUPLE_GET_INTERPRET(id.kind)) {
+    case IDTUPLE_IDS_BOTH_VALID:
+    case IDTUPLE_IDS_LOGIC_ONLY:
+      break;
+    case IDTUPLE_IDS_LOGIC_GLOBAL: {
+      uint16_t kind = IDTUPLE_GET_KIND(id.kind);
+      if(mpi::World::rank() == 0) {
+        id.logical_index = state.globalIdxMap[kind].get(id.physical_index);
+      } else {
+        std::unique_lock<std::mutex> l(state.mpilock);
+        mpi::send<std::uint16_t>(kind, 0, mpi::Tag::ThreadAttributes_1);
+        mpi::send<std::uint64_t>(id.physical_index, 0, mpi::Tag::ThreadAttributes_1);
+        id.logical_index = mpi::receive<std::uint64_t>(0, mpi::Tag::ThreadAttributes_1);
+      }
+      id.kind = IDTUPLE_COMPOSE(kind, IDTUPLE_IDS_BOTH_VALID);
+      break;
+    }
+    case IDTUPLE_IDS_LOGIC_LOCAL: {
+      uint16_t kind = IDTUPLE_GET_KIND(id.kind);
+      std::vector<uint16_t> key;
+      key.reserve(i * 5 + 1);
+      for(size_t j = 0; j < i; j++) {
+        key.push_back(IDTUPLE_GET_KIND(m_idTuple[j].kind));
+        key.push_back((uint16_t)((m_idTuple[j].physical_index >> 48) & 0xffff));
+        key.push_back((uint16_t)((m_idTuple[j].physical_index >> 32) & 0xffff));
+        key.push_back((uint16_t)((m_idTuple[j].physical_index >> 16) & 0xffff));
+        key.push_back((uint16_t)(m_idTuple[j].physical_index & 0xffff));
+      }
+      key.push_back(kind);
+      if(mpi::World::rank() == 0) {
+        id.logical_index = state.localIdxMap[std::move(key)].get(id.physical_index);
+      } else {
+        std::unique_lock<std::mutex> l(state.mpilock);
+        mpi::send<std::uint16_t>(IDTUPLE_INVALID, 0, mpi::Tag::ThreadAttributes_1);
+        mpi::send(std::move(key), 0, mpi::Tag::ThreadAttributes_1);
+        mpi::send<std::uint64_t>(id.physical_index, 0, mpi::Tag::ThreadAttributes_1);
+        id.logical_index = mpi::receive<std::uint64_t>(0, mpi::Tag::ThreadAttributes_1);
+      }
+      id.kind = IDTUPLE_COMPOSE(kind, IDTUPLE_IDS_BOTH_VALID);
+      break;
+    }
+    }
+  }
+}
+
+ThreadAttributes::FinalizeState::FinalizeState() {
+  if(mpi::World::size() > 1 && mpi::World::rank() == 0) {
+    server = std::thread([this]{
+      while(auto query = mpi::receive_server<std::uint16_t>(mpi::Tag::ThreadAttributes_1)) {
+        auto [kind, src] = *query;
+        auto& cmap = kind != IDTUPLE_INVALID ? globalIdxMap[kind]
+            : localIdxMap[mpi::receive_vector<std::uint16_t>(src, mpi::Tag::ThreadAttributes_1)];
+        mpi::send<std::uint64_t>(cmap.get(mpi::receive<std::uint64_t>(src, mpi::Tag::ThreadAttributes_1)),
+                                 src, mpi::Tag::ThreadAttributes_1);
+      }
+    });
+  }
+}
+ThreadAttributes::FinalizeState::~FinalizeState() {
+  if(server.joinable()) {
+    mpi::cancel_server<std::uint16_t>(mpi::Tag::ThreadAttributes_1);
+    server.join();
+  }
+}
+
+uint64_t ThreadAttributes::FinalizeState::CountingLookupMap::get(uint64_t k) {
+  std::unique_lock<std::mutex> l(lock);
+  auto it = map.find(k);
+  if(it != map.end()) return it->second;
+  uint64_t v = map.size();
+  bool ok = map.insert({k, v}).second;
+  assert(ok);
+  return v;
+}
+
+size_t ThreadAttributes::FinalizeState::LocalHash::operator()(const std::vector<uint16_t>& v) const noexcept {
+  size_t sponge = 0x15;
+  for(auto x: v) sponge = (sponge << 5) ^ (sponge >> 33) ^ x;
+  return sponge;
 }
 
 // Stringification

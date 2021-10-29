@@ -70,7 +70,7 @@ void Sender::write() {
   packContexts(block);
   {
     auto mpiSem = src.enterOrderedWrite();
-    mpi::send(block, tree.parent, 1);
+    mpi::send(block, tree.parent, mpi::Tag::RankTree_1);
   }
 
   if(stash) {
@@ -86,7 +86,7 @@ void Receiver::read(const DataClass&) {
   std::vector<std::uint8_t> block;
   {
     auto mpiSem = sink.enterOrderedPrewaveRegion();
-    block = mpi::receive_vector<std::uint8_t>(peer, 1);
+    block = mpi::receive_vector<std::uint8_t>(peer, mpi::Tag::RankTree_1);
   }
   iter_t it = block.begin();
   it = unpackAttributes(it);
@@ -118,7 +118,7 @@ void MetricSender::write() {
   packAttributes(block);
   packMetrics(block);
   auto mpiSem = src.enterOrderedWrite();
-  mpi::send(block, tree.parent, 3);
+  mpi::send(block, tree.parent, mpi::Tag::RankTree_2);
 }
 
 util::WorkshareResult MetricSender::help() {
@@ -148,7 +148,7 @@ void MetricReceiver::read(const DataClass& d) {
   std::vector<std::uint8_t> block;
   {
     auto mpiSem = sink.enterOrderedPostwaveRegion();
-    block = mpi::receive_vector<std::uint8_t>(peer, 3);
+    block = mpi::receive_vector<std::uint8_t>(peer, mpi::Tag::RankTree_2);
   }
   iter_t it = block.begin();
   it = unpackAttributes(it);

@@ -151,6 +151,7 @@ am__objects_1 = stdshim/libHPCprofile_la-shared_mutex.lo \
 	util/libHPCprofile_la-log.lo \
 	util/libHPCprofile_la-file-posix.lo \
 	util/libHPCprofile_la-lzmastream.lo \
+	mpi/libHPCprofile_la-accumulate-thread.lo \
 	libHPCprofile_la-pipeline.lo libHPCprofile_la-source.lo \
 	libHPCprofile_la-context.lo libHPCprofile_la-scope.lo \
 	libHPCprofile_la-metric.lo libHPCprofile_la-module.lo \
@@ -572,6 +573,8 @@ MYSOURCES = \
 	util/ragged_vector.cpp util/once.cpp util/xml.cpp util/log.cpp \
 	util/file-posix.cpp util/lzmastream.cpp \
 	\
+	mpi/accumulate-thread.cpp \
+	\
 	pipeline.cpp source.cpp context.cpp scope.cpp metric.cpp \
 	module.cpp attributes.cpp dataclass.cpp sink.cpp packedids.cpp \
 	\
@@ -695,6 +698,14 @@ util/libHPCprofile_la-file-posix.lo: util/$(am__dirstamp) \
 	util/$(DEPDIR)/$(am__dirstamp)
 util/libHPCprofile_la-lzmastream.lo: util/$(am__dirstamp) \
 	util/$(DEPDIR)/$(am__dirstamp)
+mpi/$(am__dirstamp):
+	@$(MKDIR_P) mpi
+	@: > mpi/$(am__dirstamp)
+mpi/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) mpi/$(DEPDIR)
+	@: > mpi/$(DEPDIR)/$(am__dirstamp)
+mpi/libHPCprofile_la-accumulate-thread.lo: mpi/$(am__dirstamp) \
+	mpi/$(DEPDIR)/$(am__dirstamp)
 sources/$(am__dirstamp):
 	@$(MKDIR_P) sources
 	@: > sources/$(am__dirstamp)
@@ -737,12 +748,6 @@ finalizers/libHPCprofile_la-kernelsyms.lo: finalizers/$(am__dirstamp) \
 
 libHPCprofile.la: $(libHPCprofile_la_OBJECTS) $(libHPCprofile_la_DEPENDENCIES) $(EXTRA_libHPCprofile_la_DEPENDENCIES) 
 	$(AM_V_CXXLD)$(libHPCprofile_la_LINK)  $(libHPCprofile_la_OBJECTS) $(libHPCprofile_la_LIBADD) $(LIBS)
-mpi/$(am__dirstamp):
-	@$(MKDIR_P) mpi
-	@: > mpi/$(am__dirstamp)
-mpi/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) mpi/$(DEPDIR)
-	@: > mpi/$(DEPDIR)/$(am__dirstamp)
 mpi/libHPCprofile_standalone_la-standalone.lo: mpi/$(am__dirstamp) \
 	mpi/$(DEPDIR)/$(am__dirstamp)
 
@@ -781,6 +786,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@finalizers/$(DEPDIR)/libHPCprofile_la-directclassification.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@finalizers/$(DEPDIR)/libHPCprofile_la-kernelsyms.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@finalizers/$(DEPDIR)/libHPCprofile_la-struct.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@mpi/$(DEPDIR)/libHPCprofile_la-accumulate-thread.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@mpi/$(DEPDIR)/libHPCprofile_standalone_la-standalone.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sinks/$(DEPDIR)/libHPCprofile_la-experimentxml4.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sinks/$(DEPDIR)/libHPCprofile_la-hpctracedb2.Plo@am__quote@
@@ -908,6 +914,13 @@ util/libHPCprofile_la-lzmastream.lo: util/lzmastream.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='util/lzmastream.cpp' object='util/libHPCprofile_la-lzmastream.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_la_CXXFLAGS) $(CXXFLAGS) -c -o util/libHPCprofile_la-lzmastream.lo `test -f 'util/lzmastream.cpp' || echo '$(srcdir)/'`util/lzmastream.cpp
+
+mpi/libHPCprofile_la-accumulate-thread.lo: mpi/accumulate-thread.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_la_CXXFLAGS) $(CXXFLAGS) -MT mpi/libHPCprofile_la-accumulate-thread.lo -MD -MP -MF mpi/$(DEPDIR)/libHPCprofile_la-accumulate-thread.Tpo -c -o mpi/libHPCprofile_la-accumulate-thread.lo `test -f 'mpi/accumulate-thread.cpp' || echo '$(srcdir)/'`mpi/accumulate-thread.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) mpi/$(DEPDIR)/libHPCprofile_la-accumulate-thread.Tpo mpi/$(DEPDIR)/libHPCprofile_la-accumulate-thread.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='mpi/accumulate-thread.cpp' object='mpi/libHPCprofile_la-accumulate-thread.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_la_CXXFLAGS) $(CXXFLAGS) -c -o mpi/libHPCprofile_la-accumulate-thread.lo `test -f 'mpi/accumulate-thread.cpp' || echo '$(srcdir)/'`mpi/accumulate-thread.cpp
 
 libHPCprofile_la-pipeline.lo: pipeline.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_la_CXXFLAGS) $(CXXFLAGS) -MT libHPCprofile_la-pipeline.lo -MD -MP -MF $(DEPDIR)/libHPCprofile_la-pipeline.Tpo -c -o libHPCprofile_la-pipeline.lo `test -f 'pipeline.cpp' || echo '$(srcdir)/'`pipeline.cpp

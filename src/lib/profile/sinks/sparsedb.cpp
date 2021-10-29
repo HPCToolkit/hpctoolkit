@@ -70,10 +70,10 @@ using namespace hpctoolkit::sinks;
 SparseDB::SparseDB(stdshim::filesystem::path p)
   : dir(std::move(p)), rank(mpi::World::rank()), ctxMaxId(0),
     parForPi([&](pms_profile_info_t& item){ handleItemPi(item); }),
-    fpos(0), accFpos(1000),
+    fpos(0), accFpos(mpi::Tag::SparseDB_1),
     parForCiip([&](profCtxIdIdxPairs& item){ handleItemCiip(item); }),
     parForPd([&](profData& item){ handleItemPd(item); }),
-    ctxGrpId(0), accCtxGrp(1001),
+    ctxGrpId(0), accCtxGrp(mpi::Tag::SparseDB_1),
     parForCtxs([&](ctxRange& item){ handleItemCtxs(item); }) {
 
   if(dir.empty())
