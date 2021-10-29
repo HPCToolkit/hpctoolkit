@@ -9,7 +9,7 @@
 #include "cupti-ip-norm-map.h"
 #include "cupti-range-thread-list.h"
 
-//#define DEBUG
+#define DEBUG
 
 #ifdef DEBUG
 #define TRACE_ASSERT(x) assert(x)
@@ -333,7 +333,8 @@ trace_shrink
     cupti_cct_trace_node_t *rule = NULL;
 
     if (prev_pattern_node->right == pattern_node) {
-      TRACE_MSG(CUPTI_CCT_TRACE, "Trace overlapped (prev_pattern_node: %p, pattern_node: %p)", prev_pattern_node, pattern_node);
+      TRACE_MSG(CUPTI_CCT_TRACE, "Trace overlapped (prev_pattern_node: %p, pattern_node: %p), (key: %p, %p)",
+        prev_pattern_node, pattern_node, prev_pattern_node->key, pattern_node->key);
       // Overlapped
       // root->...aaa
       break;
@@ -341,7 +342,7 @@ trace_shrink
 
     if (prev_pattern_node->left->type != CUPTI_CCT_TRACE_NODE_NON_TERMINAL &&
       prev_pattern_node->left->type != CUPTI_CCT_TRACE_NODE_FLUSH) {
-      // root->BAa...Aa
+      // root->...BAa...Aa
       // Delete the index of BA
       trace_map_delete(prev_pattern_node->left->key, prev_pattern_node->key);
     }
@@ -387,6 +388,7 @@ trace_shrink
 
       // Utility rule
       trace_rule_delete(node1->rule);
+      trace_rule_delete(node2->rule);
 
       // 3. Move prev_pattern nodes from the trace to the rule
       // root->Aa...................Aa
