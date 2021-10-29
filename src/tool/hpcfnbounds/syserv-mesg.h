@@ -67,7 +67,8 @@ enum {
   SYSERV_QUERY,
   SYSERV_EXIT,
   SYSERV_OK,
-  SYSERV_ERR
+  SYSERV_ERR,
+  SYSERV_READY
 };
 
 struct syserv_mesg {
