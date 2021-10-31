@@ -1227,12 +1227,12 @@ cupti_api_enter_callback_cuda
   uint64_t correlation_id = cupti_runtime_correlation_id_get();
   if (correlation_id == 0) {
     correlation_id = gpu_correlation_id();
-    cupti_driver_correlation_id_set(correlation_id);
     cupti_correlation_id_push(correlation_id);
     TMSG(CUPTI_TRACE, "Driver push externalId %lu (cb_id = %u, range_id = %u)", correlation_id, cb_id, range_id);
   } else {
     TMSG(CUPTI_TRACE, "Runtime push externalId %lu (cb_id = %u, range_id = %u)", correlation_id, cb_id, range_id);
   }
+  cupti_driver_correlation_id_set(correlation_id);
 
   // If this API is intercepted by our cuda wrapper, we only unwinding at the 
   // intercepter to reduce the unwinding cost
