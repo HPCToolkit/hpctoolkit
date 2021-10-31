@@ -81,6 +81,7 @@
 #include <trampoline/common/trampoline.h>
 #include <memory/mmap.h>
 #include <lib/prof-lean/id-tuple.h>
+#include <lib/support-lean/OSUtil.h>
 
 //***************************************************************************
 // macros
@@ -275,7 +276,9 @@ core_profile_trace_data_init(core_profile_trace_data_t * cptd, int id, cct_ctxt_
   // ----------------------------------------
   cptd->trace_min_time_us = 0;
   cptd->trace_max_time_us = 0;
-  cptd->traceOrdered = true;
+  cptd->trace_is_ordered = true;
+  cptd->trace_expected_disorder = 5;
+  cptd->trace_last_time = 0;
 
   // ----------------------------------------
   // IO support
@@ -532,7 +535,7 @@ hpcrun_id_tuple_cputhread
 
   id_tuple_constructor(&id_tuple, ids, IDTUPLE_MAXTYPES);
 
-  id_tuple_push_back(&id_tuple, IDTUPLE_COMPOSE(IDTUPLE_NODE, IDTUPLE_IDS_LOGIC_LOCAL), gethostid(), 0);
+  id_tuple_push_back(&id_tuple, IDTUPLE_COMPOSE(IDTUPLE_NODE, IDTUPLE_IDS_LOGIC_LOCAL), OSUtil_hostid(), 0);
 
   int core = hpcrun_thread_core_bindings();
   if (core >= 0) {

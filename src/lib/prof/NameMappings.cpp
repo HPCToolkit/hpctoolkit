@@ -67,7 +67,27 @@ const int  TYPE_TOPDOWN_PLACEHOLDER  = 4;  // special place holder for top-down 
 class NameMapCompare {
 public:
   bool operator()(const char *n1,  const char *n2) const {
-    return strcmp(n1,n2) < 0;
+    // consider n1 and n2 equivalent (returning false) if
+    // n1 and n2 are the same or if the first character
+    // where they differ is a blank
+    int l1 = strlen(n1);
+    int l2 = strlen(n2);
+    int min_len;
+    if (l1 < l2) {
+      min_len = l1;
+    } else {
+      min_len = l2;
+    }
+
+    int result = strncmp(n1, n2, min_len);
+
+    if (result != 0 || l1 == l2) return result < 0;
+
+    if (l1 == min_len) {
+      return n2[min_len] == ' ' ? false : true;
+    }
+
+    return false;
   }
 };
 
@@ -131,7 +151,7 @@ static NameMapping renamingTable[] = {
   { "gpu_op_trace",        GPU_KERNEL        ,  TYPE_ELIDED         },
 
   { "hpcrun_no_activity",  NO_ACTIVITY       ,  TYPE_ELIDED         },
-  { PARTIAL_CALLPATH,      PARTIAL_CALLPATH  ,  TYPE_PLACEHOLDER    }
+  { PARTIAL_CALLPATH,      PARTIAL_CALLPATH  ,  TYPE_TOPDOWN_PLACEHOLDER }
 };
 
 

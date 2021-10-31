@@ -472,26 +472,26 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/blame-shift/undirected.c \
 	sample-sources/omp-mutex.c sample-sources/omp-idle.c \
 	sample-sources/common.c sample-sources/display.c \
-	sample-sources/ga.c sample-sources/io.c \
-	sample-sources/itimer.c sample-sources/idle.c \
-	sample-sources/memleak.c sample-sources/pthread-blame.c \
-	sample-sources/none.c sample-sources/retcnt.c \
-	sample-sources/sync.c sample_sources_registered.c \
-	sample-sources/sample-filters.c segv_handler.c start-stop.c \
-	term_handler.c thread_data.c thread_use.c thread_finalize.c \
-	control-knob.c control-knob.h device-finalizers.c \
-	device-initializers.c module-ignore-map.c threadmgr.c trace.c \
-	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
-	cct/cct-node-vector.c cct2metrics.c lush/lush-backtrace.h \
-	lush/lush-backtrace.c lush/lush.h lush/lush.c \
-	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
-	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
-	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
-	memory/mem.c memory/mmap.c messages/debug-flag.c \
-	messages/messages-sync.c messages/messages-async.c \
-	messages/fmt.c hpcrun-placeholders.c gpu/gpu-activity.c \
-	gpu/gpu-activity-channel.c gpu/gpu-activity-process.c \
-	gpu/gpu-application-thread-api.c \
+	sample-sources/exclude.c sample-sources/ga.c \
+	sample-sources/io.c sample-sources/itimer.c \
+	sample-sources/idle.c sample-sources/memleak.c \
+	sample-sources/pthread-blame.c sample-sources/none.c \
+	sample-sources/retcnt.c sample-sources/sync.c \
+	sample_sources_registered.c sample-sources/sample-filters.c \
+	segv_handler.c start-stop.c term_handler.c thread_data.c \
+	thread_use.c thread_finalize.c control-knob.c control-knob.h \
+	device-finalizers.c device-initializers.c module-ignore-map.c \
+	threadmgr.c trace.c weak.c write_data.c cct/cct_bundle.c \
+	cct/cct_ctxt.c cct/cct.c cct/cct-node-vector.c cct2metrics.c \
+	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
+	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
+	lush/lush-pthread.c lush/lush-support-rt.h \
+	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
+	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
+	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
+	messages/messages-async.c messages/fmt.c hpcrun-placeholders.c \
+	gpu/gpu-activity.c gpu/gpu-activity-channel.c \
+	gpu/gpu-activity-process.c gpu/gpu-application-thread-api.c \
 	gpu/gpu-channel-item-allocator.c gpu/gpu-context-id-map.c \
 	gpu/gpu-correlation.c gpu/gpu-correlation-channel.c \
 	gpu/gpu-correlation-channel-set.c gpu/gpu-correlation-id.c \
@@ -511,12 +511,13 @@ am__libhpcrun_la_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	ompt/ompt-placeholders.c ompt/ompt-device-map.c \
 	ompt/ompt-task.c ompt/ompt-thread.c extern-real/dl-iterate.c \
 	extern-real/mmap.c syscalls/poll.c syscalls/ppoll.c \
-	syscalls/select.c utilities/executable-path.h \
-	utilities/executable-path.c utilities/hpcrun-nanotime.h \
-	utilities/hpcrun-nanotime.c utilities/ip-normalized.h \
-	utilities/ip-normalized.c utilities/line_wrapping.c \
-	utilities/linuxtimer.c utilities/timer.c utilities/tokenize.h \
-	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
+	syscalls/select.c syscalls/sysv_signal.c \
+	utilities/executable-path.h utilities/executable-path.c \
+	utilities/hpcrun-nanotime.h utilities/hpcrun-nanotime.c \
+	utilities/ip-normalized.h utilities/ip-normalized.c \
+	utilities/line_wrapping.c utilities/linuxtimer.c \
+	utilities/timer.c utilities/tokenize.h utilities/tokenize.c \
+	utilities/unlink.h utilities/unlink.c \
 	trampoline/common/trampoline_eager.c \
 	trampoline/common/trampoline_lazy.c \
 	sample-sources/perf/event_custom.c \
@@ -630,6 +631,7 @@ am__objects_14 = utilities/libhpcrun_la-first_func.lo \
 	sample-sources/libhpcrun_la-omp-idle.lo \
 	sample-sources/libhpcrun_la-common.lo \
 	sample-sources/libhpcrun_la-display.lo \
+	sample-sources/libhpcrun_la-exclude.lo \
 	sample-sources/libhpcrun_la-ga.lo \
 	sample-sources/libhpcrun_la-io.lo \
 	sample-sources/libhpcrun_la-itimer.lo \
@@ -709,6 +711,7 @@ am__objects_14 = utilities/libhpcrun_la-first_func.lo \
 	extern-real/libhpcrun_la-dl-iterate.lo \
 	extern-real/libhpcrun_la-mmap.lo syscalls/libhpcrun_la-poll.lo \
 	syscalls/libhpcrun_la-ppoll.lo syscalls/libhpcrun_la-select.lo \
+	syscalls/libhpcrun_la-sysv_signal.lo \
 	utilities/libhpcrun_la-executable-path.lo \
 	utilities/libhpcrun_la-hpcrun-nanotime.lo \
 	utilities/libhpcrun_la-ip-normalized.lo \
@@ -984,26 +987,26 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	sample-sources/blame-shift/undirected.c \
 	sample-sources/omp-mutex.c sample-sources/omp-idle.c \
 	sample-sources/common.c sample-sources/display.c \
-	sample-sources/ga.c sample-sources/io.c \
-	sample-sources/itimer.c sample-sources/idle.c \
-	sample-sources/memleak.c sample-sources/pthread-blame.c \
-	sample-sources/none.c sample-sources/retcnt.c \
-	sample-sources/sync.c sample_sources_registered.c \
-	sample-sources/sample-filters.c segv_handler.c start-stop.c \
-	term_handler.c thread_data.c thread_use.c thread_finalize.c \
-	control-knob.c control-knob.h device-finalizers.c \
-	device-initializers.c module-ignore-map.c threadmgr.c trace.c \
-	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
-	cct/cct-node-vector.c cct2metrics.c lush/lush-backtrace.h \
-	lush/lush-backtrace.c lush/lush.h lush/lush.c \
-	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
-	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
-	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
-	memory/mem.c memory/mmap.c messages/debug-flag.c \
-	messages/messages-sync.c messages/messages-async.c \
-	messages/fmt.c hpcrun-placeholders.c gpu/gpu-activity.c \
-	gpu/gpu-activity-channel.c gpu/gpu-activity-process.c \
-	gpu/gpu-application-thread-api.c \
+	sample-sources/exclude.c sample-sources/ga.c \
+	sample-sources/io.c sample-sources/itimer.c \
+	sample-sources/idle.c sample-sources/memleak.c \
+	sample-sources/pthread-blame.c sample-sources/none.c \
+	sample-sources/retcnt.c sample-sources/sync.c \
+	sample_sources_registered.c sample-sources/sample-filters.c \
+	segv_handler.c start-stop.c term_handler.c thread_data.c \
+	thread_use.c thread_finalize.c control-knob.c control-knob.h \
+	device-finalizers.c device-initializers.c module-ignore-map.c \
+	threadmgr.c trace.c weak.c write_data.c cct/cct_bundle.c \
+	cct/cct_ctxt.c cct/cct.c cct/cct-node-vector.c cct2metrics.c \
+	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
+	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
+	lush/lush-pthread.c lush/lush-support-rt.h \
+	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
+	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
+	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
+	messages/messages-async.c messages/fmt.c hpcrun-placeholders.c \
+	gpu/gpu-activity.c gpu/gpu-activity-channel.c \
+	gpu/gpu-activity-process.c gpu/gpu-application-thread-api.c \
 	gpu/gpu-channel-item-allocator.c gpu/gpu-context-id-map.c \
 	gpu/gpu-correlation.c gpu/gpu-correlation-channel.c \
 	gpu/gpu-correlation-channel-set.c gpu/gpu-correlation-id.c \
@@ -1023,12 +1026,13 @@ am__libhpcrun_o_SOURCES_DIST = utilities/first_func.c main.h main.c \
 	ompt/ompt-placeholders.c ompt/ompt-device-map.c \
 	ompt/ompt-task.c ompt/ompt-thread.c extern-real/dl-iterate.c \
 	extern-real/mmap.c syscalls/poll.c syscalls/ppoll.c \
-	syscalls/select.c utilities/executable-path.h \
-	utilities/executable-path.c utilities/hpcrun-nanotime.h \
-	utilities/hpcrun-nanotime.c utilities/ip-normalized.h \
-	utilities/ip-normalized.c utilities/line_wrapping.c \
-	utilities/linuxtimer.c utilities/timer.c utilities/tokenize.h \
-	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
+	syscalls/select.c syscalls/sysv_signal.c \
+	utilities/executable-path.h utilities/executable-path.c \
+	utilities/hpcrun-nanotime.h utilities/hpcrun-nanotime.c \
+	utilities/ip-normalized.h utilities/ip-normalized.c \
+	utilities/line_wrapping.c utilities/linuxtimer.c \
+	utilities/timer.c utilities/tokenize.h utilities/tokenize.c \
+	utilities/unlink.h utilities/unlink.c \
 	trampoline/common/trampoline_eager.c \
 	trampoline/common/trampoline_lazy.c \
 	sample-sources/perf/event_custom.c \
@@ -1128,6 +1132,7 @@ am__objects_59 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	sample-sources/libhpcrun_o-omp-idle.$(OBJEXT) \
 	sample-sources/libhpcrun_o-common.$(OBJEXT) \
 	sample-sources/libhpcrun_o-display.$(OBJEXT) \
+	sample-sources/libhpcrun_o-exclude.$(OBJEXT) \
 	sample-sources/libhpcrun_o-ga.$(OBJEXT) \
 	sample-sources/libhpcrun_o-io.$(OBJEXT) \
 	sample-sources/libhpcrun_o-itimer.$(OBJEXT) \
@@ -1217,6 +1222,7 @@ am__objects_59 = utilities/libhpcrun_o-first_func.$(OBJEXT) \
 	syscalls/libhpcrun_o-poll.$(OBJEXT) \
 	syscalls/libhpcrun_o-ppoll.$(OBJEXT) \
 	syscalls/libhpcrun_o-select.$(OBJEXT) \
+	syscalls/libhpcrun_o-sysv_signal.$(OBJEXT) \
 	utilities/libhpcrun_o-executable-path.$(OBJEXT) \
 	utilities/libhpcrun_o-hpcrun-nanotime.$(OBJEXT) \
 	utilities/libhpcrun_o-ip-normalized.$(OBJEXT) \
@@ -1938,26 +1944,26 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	sample-sources/blame-shift/undirected.c \
 	sample-sources/omp-mutex.c sample-sources/omp-idle.c \
 	sample-sources/common.c sample-sources/display.c \
-	sample-sources/ga.c sample-sources/io.c \
-	sample-sources/itimer.c sample-sources/idle.c \
-	sample-sources/memleak.c sample-sources/pthread-blame.c \
-	sample-sources/none.c sample-sources/retcnt.c \
-	sample-sources/sync.c sample_sources_registered.c \
-	sample-sources/sample-filters.c segv_handler.c start-stop.c \
-	term_handler.c thread_data.c thread_use.c thread_finalize.c \
-	control-knob.c control-knob.h device-finalizers.c \
-	device-initializers.c module-ignore-map.c threadmgr.c trace.c \
-	weak.c write_data.c cct/cct_bundle.c cct/cct_ctxt.c cct/cct.c \
-	cct/cct-node-vector.c cct2metrics.c lush/lush-backtrace.h \
-	lush/lush-backtrace.c lush/lush.h lush/lush.c \
-	lush/lush-pthread.h lush/lush-pthread.i lush/lush-pthread.c \
-	lush/lush-support-rt.h lush/lush-support-rt.c lush/lushi.h \
-	lush/lushi-cb.h lush/lushi-cb.c fnbounds/fnbounds_common.c \
-	memory/mem.c memory/mmap.c messages/debug-flag.c \
-	messages/messages-sync.c messages/messages-async.c \
-	messages/fmt.c hpcrun-placeholders.c gpu/gpu-activity.c \
-	gpu/gpu-activity-channel.c gpu/gpu-activity-process.c \
-	gpu/gpu-application-thread-api.c \
+	sample-sources/exclude.c sample-sources/ga.c \
+	sample-sources/io.c sample-sources/itimer.c \
+	sample-sources/idle.c sample-sources/memleak.c \
+	sample-sources/pthread-blame.c sample-sources/none.c \
+	sample-sources/retcnt.c sample-sources/sync.c \
+	sample_sources_registered.c sample-sources/sample-filters.c \
+	segv_handler.c start-stop.c term_handler.c thread_data.c \
+	thread_use.c thread_finalize.c control-knob.c control-knob.h \
+	device-finalizers.c device-initializers.c module-ignore-map.c \
+	threadmgr.c trace.c weak.c write_data.c cct/cct_bundle.c \
+	cct/cct_ctxt.c cct/cct.c cct/cct-node-vector.c cct2metrics.c \
+	lush/lush-backtrace.h lush/lush-backtrace.c lush/lush.h \
+	lush/lush.c lush/lush-pthread.h lush/lush-pthread.i \
+	lush/lush-pthread.c lush/lush-support-rt.h \
+	lush/lush-support-rt.c lush/lushi.h lush/lushi-cb.h \
+	lush/lushi-cb.c fnbounds/fnbounds_common.c memory/mem.c \
+	memory/mmap.c messages/debug-flag.c messages/messages-sync.c \
+	messages/messages-async.c messages/fmt.c hpcrun-placeholders.c \
+	gpu/gpu-activity.c gpu/gpu-activity-channel.c \
+	gpu/gpu-activity-process.c gpu/gpu-application-thread-api.c \
 	gpu/gpu-channel-item-allocator.c gpu/gpu-context-id-map.c \
 	gpu/gpu-correlation.c gpu/gpu-correlation-channel.c \
 	gpu/gpu-correlation-channel-set.c gpu/gpu-correlation-id.c \
@@ -1977,15 +1983,15 @@ MY_BASE_FILES = utilities/first_func.c main.h main.c disabled.c \
 	ompt/ompt-placeholders.c ompt/ompt-device-map.c \
 	ompt/ompt-task.c ompt/ompt-thread.c extern-real/dl-iterate.c \
 	extern-real/mmap.c syscalls/poll.c syscalls/ppoll.c \
-	syscalls/select.c utilities/executable-path.h \
-	utilities/executable-path.c utilities/hpcrun-nanotime.h \
-	utilities/hpcrun-nanotime.c utilities/ip-normalized.h \
-	utilities/ip-normalized.c utilities/line_wrapping.c \
-	utilities/linuxtimer.c utilities/timer.c utilities/tokenize.h \
-	utilities/tokenize.c utilities/unlink.h utilities/unlink.c \
-	$(am__append_8) $(am__append_9) $(am__append_10) \
-	$(am__append_12) $(am__append_13) $(am__append_14) \
-	$(am__append_15)
+	syscalls/select.c syscalls/sysv_signal.c \
+	utilities/executable-path.h utilities/executable-path.c \
+	utilities/hpcrun-nanotime.h utilities/hpcrun-nanotime.c \
+	utilities/ip-normalized.h utilities/ip-normalized.c \
+	utilities/line_wrapping.c utilities/linuxtimer.c \
+	utilities/timer.c utilities/tokenize.h utilities/tokenize.c \
+	utilities/unlink.h utilities/unlink.c $(am__append_8) \
+	$(am__append_9) $(am__append_10) $(am__append_12) \
+	$(am__append_13) $(am__append_14) $(am__append_15)
 MY_DYNAMIC_FILES = \
 	fnbounds/fnbounds_client.c	\
 	fnbounds/fnbounds_dynamic.c	\
@@ -2408,7 +2414,7 @@ HPCRUN_NAMES = -G 'hpcrun_*' -G 'hpctoolkit_*'
 MISC_NAMES = -G 'debug_flag_*' -G 'messages_*' -G ompt_start_tool
 OPENCL_NAMES = -G 'clBuildProgram' -G 'clCreate*' -G 'clEnqueue*' -G 'clSetKernelArg' -G 'cl*Event*'
 CUDA_NAMES = -G 'cuda_api_exit_callback' -G 'cuda_api_enter_callback'
-DYN_SYSCALL_LIST = poll ppoll pselect select
+DYN_SYSCALL_LIST = poll ppoll pselect select __sysv_signal
 DYN_SYSCALL_NAMES = $(foreach name,$(DYN_SYSCALL_LIST),-G $(name))
 STAT_WRAP_NAMES = -w -G '__wrap_*'
 WORK_DYN = work-dyn
@@ -2667,6 +2673,9 @@ sample-sources/libhpcrun_la-common.lo: sample-sources/$(am__dirstamp) \
 sample-sources/libhpcrun_la-display.lo:  \
 	sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
+sample-sources/libhpcrun_la-exclude.lo:  \
+	sample-sources/$(am__dirstamp) \
+	sample-sources/$(DEPDIR)/$(am__dirstamp)
 sample-sources/libhpcrun_la-ga.lo: sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
 sample-sources/libhpcrun_la-io.lo: sample-sources/$(am__dirstamp) \
@@ -2865,6 +2874,8 @@ syscalls/libhpcrun_la-poll.lo: syscalls/$(am__dirstamp) \
 syscalls/libhpcrun_la-ppoll.lo: syscalls/$(am__dirstamp) \
 	syscalls/$(DEPDIR)/$(am__dirstamp)
 syscalls/libhpcrun_la-select.lo: syscalls/$(am__dirstamp) \
+	syscalls/$(DEPDIR)/$(am__dirstamp)
+syscalls/libhpcrun_la-sysv_signal.lo: syscalls/$(am__dirstamp) \
 	syscalls/$(DEPDIR)/$(am__dirstamp)
 utilities/libhpcrun_la-executable-path.lo: utilities/$(am__dirstamp) \
 	utilities/$(DEPDIR)/$(am__dirstamp)
@@ -3413,6 +3424,9 @@ sample-sources/libhpcrun_o-common.$(OBJEXT):  \
 sample-sources/libhpcrun_o-display.$(OBJEXT):  \
 	sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
+sample-sources/libhpcrun_o-exclude.$(OBJEXT):  \
+	sample-sources/$(am__dirstamp) \
+	sample-sources/$(DEPDIR)/$(am__dirstamp)
 sample-sources/libhpcrun_o-ga.$(OBJEXT):  \
 	sample-sources/$(am__dirstamp) \
 	sample-sources/$(DEPDIR)/$(am__dirstamp)
@@ -3571,6 +3585,8 @@ syscalls/libhpcrun_o-poll.$(OBJEXT): syscalls/$(am__dirstamp) \
 syscalls/libhpcrun_o-ppoll.$(OBJEXT): syscalls/$(am__dirstamp) \
 	syscalls/$(DEPDIR)/$(am__dirstamp)
 syscalls/libhpcrun_o-select.$(OBJEXT): syscalls/$(am__dirstamp) \
+	syscalls/$(DEPDIR)/$(am__dirstamp)
+syscalls/libhpcrun_o-sysv_signal.$(OBJEXT): syscalls/$(am__dirstamp) \
 	syscalls/$(DEPDIR)/$(am__dirstamp)
 utilities/libhpcrun_o-executable-path.$(OBJEXT):  \
 	utilities/$(am__dirstamp) utilities/$(DEPDIR)/$(am__dirstamp)
@@ -4269,6 +4285,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_la-amd.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_la-common.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_la-display.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_la-exclude.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_la-ga.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_la-idle.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_la-io.Plo@am__quote@
@@ -4293,6 +4310,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_memleak_wrap_a-memleak-overrides.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_o-common.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_o-display.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_o-exclude.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_o-ga.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_o-idle.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sample-sources/$(DEPDIR)/libhpcrun_o-io.Po@am__quote@
@@ -4344,9 +4362,11 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@syscalls/$(DEPDIR)/libhpcrun_la-poll.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@syscalls/$(DEPDIR)/libhpcrun_la-ppoll.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@syscalls/$(DEPDIR)/libhpcrun_la-select.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@syscalls/$(DEPDIR)/libhpcrun_la-sysv_signal.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@syscalls/$(DEPDIR)/libhpcrun_o-poll.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@syscalls/$(DEPDIR)/libhpcrun_o-ppoll.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@syscalls/$(DEPDIR)/libhpcrun_o-select.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@syscalls/$(DEPDIR)/libhpcrun_o-sysv_signal.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@trampoline/aarch64/$(DEPDIR)/libhpcrun_la-aarch64-tramp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@trampoline/aarch64/$(DEPDIR)/libhpcrun_o-aarch64-tramp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@trampoline/common/$(DEPDIR)/libhpcrun_la-trampoline_eager.Plo@am__quote@
@@ -4850,6 +4870,13 @@ sample-sources/libhpcrun_la-display.lo: sample-sources/display.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/display.c' object='sample-sources/libhpcrun_la-display.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/libhpcrun_la-display.lo `test -f 'sample-sources/display.c' || echo '$(srcdir)/'`sample-sources/display.c
+
+sample-sources/libhpcrun_la-exclude.lo: sample-sources/exclude.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_la-exclude.lo -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_la-exclude.Tpo -c -o sample-sources/libhpcrun_la-exclude.lo `test -f 'sample-sources/exclude.c' || echo '$(srcdir)/'`sample-sources/exclude.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/$(DEPDIR)/libhpcrun_la-exclude.Tpo sample-sources/$(DEPDIR)/libhpcrun_la-exclude.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/exclude.c' object='sample-sources/libhpcrun_la-exclude.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o sample-sources/libhpcrun_la-exclude.lo `test -f 'sample-sources/exclude.c' || echo '$(srcdir)/'`sample-sources/exclude.c
 
 sample-sources/libhpcrun_la-ga.lo: sample-sources/ga.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_la-ga.lo -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_la-ga.Tpo -c -o sample-sources/libhpcrun_la-ga.lo `test -f 'sample-sources/ga.c' || echo '$(srcdir)/'`sample-sources/ga.c
@@ -5487,6 +5514,13 @@ syscalls/libhpcrun_la-select.lo: syscalls/select.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='syscalls/select.c' object='syscalls/libhpcrun_la-select.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o syscalls/libhpcrun_la-select.lo `test -f 'syscalls/select.c' || echo '$(srcdir)/'`syscalls/select.c
+
+syscalls/libhpcrun_la-sysv_signal.lo: syscalls/sysv_signal.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT syscalls/libhpcrun_la-sysv_signal.lo -MD -MP -MF syscalls/$(DEPDIR)/libhpcrun_la-sysv_signal.Tpo -c -o syscalls/libhpcrun_la-sysv_signal.lo `test -f 'syscalls/sysv_signal.c' || echo '$(srcdir)/'`syscalls/sysv_signal.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) syscalls/$(DEPDIR)/libhpcrun_la-sysv_signal.Tpo syscalls/$(DEPDIR)/libhpcrun_la-sysv_signal.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='syscalls/sysv_signal.c' object='syscalls/libhpcrun_la-sysv_signal.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -c -o syscalls/libhpcrun_la-sysv_signal.lo `test -f 'syscalls/sysv_signal.c' || echo '$(srcdir)/'`syscalls/sysv_signal.c
 
 utilities/libhpcrun_la-executable-path.lo: utilities/executable-path.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_la_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_la_CFLAGS) $(CFLAGS) -MT utilities/libhpcrun_la-executable-path.lo -MD -MP -MF utilities/$(DEPDIR)/libhpcrun_la-executable-path.Tpo -c -o utilities/libhpcrun_la-executable-path.lo `test -f 'utilities/executable-path.c' || echo '$(srcdir)/'`utilities/executable-path.c
@@ -6733,6 +6767,20 @@ sample-sources/libhpcrun_o-display.obj: sample-sources/display.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/display.c' object='sample-sources/libhpcrun_o-display.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/libhpcrun_o-display.obj `if test -f 'sample-sources/display.c'; then $(CYGPATH_W) 'sample-sources/display.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/display.c'; fi`
+
+sample-sources/libhpcrun_o-exclude.o: sample-sources/exclude.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_o-exclude.o -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_o-exclude.Tpo -c -o sample-sources/libhpcrun_o-exclude.o `test -f 'sample-sources/exclude.c' || echo '$(srcdir)/'`sample-sources/exclude.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/$(DEPDIR)/libhpcrun_o-exclude.Tpo sample-sources/$(DEPDIR)/libhpcrun_o-exclude.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/exclude.c' object='sample-sources/libhpcrun_o-exclude.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/libhpcrun_o-exclude.o `test -f 'sample-sources/exclude.c' || echo '$(srcdir)/'`sample-sources/exclude.c
+
+sample-sources/libhpcrun_o-exclude.obj: sample-sources/exclude.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_o-exclude.obj -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_o-exclude.Tpo -c -o sample-sources/libhpcrun_o-exclude.obj `if test -f 'sample-sources/exclude.c'; then $(CYGPATH_W) 'sample-sources/exclude.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/exclude.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) sample-sources/$(DEPDIR)/libhpcrun_o-exclude.Tpo sample-sources/$(DEPDIR)/libhpcrun_o-exclude.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='sample-sources/exclude.c' object='sample-sources/libhpcrun_o-exclude.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o sample-sources/libhpcrun_o-exclude.obj `if test -f 'sample-sources/exclude.c'; then $(CYGPATH_W) 'sample-sources/exclude.c'; else $(CYGPATH_W) '$(srcdir)/sample-sources/exclude.c'; fi`
 
 sample-sources/libhpcrun_o-ga.o: sample-sources/ga.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT sample-sources/libhpcrun_o-ga.o -MD -MP -MF sample-sources/$(DEPDIR)/libhpcrun_o-ga.Tpo -c -o sample-sources/libhpcrun_o-ga.o `test -f 'sample-sources/ga.c' || echo '$(srcdir)/'`sample-sources/ga.c
@@ -8007,6 +8055,20 @@ syscalls/libhpcrun_o-select.obj: syscalls/select.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='syscalls/select.c' object='syscalls/libhpcrun_o-select.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o syscalls/libhpcrun_o-select.obj `if test -f 'syscalls/select.c'; then $(CYGPATH_W) 'syscalls/select.c'; else $(CYGPATH_W) '$(srcdir)/syscalls/select.c'; fi`
+
+syscalls/libhpcrun_o-sysv_signal.o: syscalls/sysv_signal.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT syscalls/libhpcrun_o-sysv_signal.o -MD -MP -MF syscalls/$(DEPDIR)/libhpcrun_o-sysv_signal.Tpo -c -o syscalls/libhpcrun_o-sysv_signal.o `test -f 'syscalls/sysv_signal.c' || echo '$(srcdir)/'`syscalls/sysv_signal.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) syscalls/$(DEPDIR)/libhpcrun_o-sysv_signal.Tpo syscalls/$(DEPDIR)/libhpcrun_o-sysv_signal.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='syscalls/sysv_signal.c' object='syscalls/libhpcrun_o-sysv_signal.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o syscalls/libhpcrun_o-sysv_signal.o `test -f 'syscalls/sysv_signal.c' || echo '$(srcdir)/'`syscalls/sysv_signal.c
+
+syscalls/libhpcrun_o-sysv_signal.obj: syscalls/sysv_signal.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT syscalls/libhpcrun_o-sysv_signal.obj -MD -MP -MF syscalls/$(DEPDIR)/libhpcrun_o-sysv_signal.Tpo -c -o syscalls/libhpcrun_o-sysv_signal.obj `if test -f 'syscalls/sysv_signal.c'; then $(CYGPATH_W) 'syscalls/sysv_signal.c'; else $(CYGPATH_W) '$(srcdir)/syscalls/sysv_signal.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) syscalls/$(DEPDIR)/libhpcrun_o-sysv_signal.Tpo syscalls/$(DEPDIR)/libhpcrun_o-sysv_signal.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='syscalls/sysv_signal.c' object='syscalls/libhpcrun_o-sysv_signal.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -c -o syscalls/libhpcrun_o-sysv_signal.obj `if test -f 'syscalls/sysv_signal.c'; then $(CYGPATH_W) 'syscalls/sysv_signal.c'; else $(CYGPATH_W) '$(srcdir)/syscalls/sysv_signal.c'; fi`
 
 utilities/libhpcrun_o-executable-path.o: utilities/executable-path.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libhpcrun_o_CPPFLAGS) $(CPPFLAGS) $(libhpcrun_o_CFLAGS) $(CFLAGS) -MT utilities/libhpcrun_o-executable-path.o -MD -MP -MF utilities/$(DEPDIR)/libhpcrun_o-executable-path.Tpo -c -o utilities/libhpcrun_o-executable-path.o `test -f 'utilities/executable-path.c' || echo '$(srcdir)/'`utilities/executable-path.c

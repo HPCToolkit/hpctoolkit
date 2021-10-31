@@ -79,6 +79,7 @@
 #include "sample_source_obj.h"
 #include "common.h"
 #include "display.h"
+#include "exclude.h"
 #include "papi-c-extended-info.h"
 #include "sample-filters.h"
 
@@ -91,6 +92,7 @@
 #include <hpcrun/sample_event.h>
 #include <hpcrun/thread_data.h>
 #include <hpcrun/threadmgr.h>
+#include <hpcrun/trace.h>
 
 #include <sample-sources/blame-shift/blame-shift.h>
 #include <utilities/tokenize.h>
@@ -134,6 +136,9 @@ static int papi_unavail = 0;
 static bool disable_papi_cuda = false;
 
 static kind_info_t *papi_kind;
+
+static int hpcrun_cycles_metric_id = -1;
+static uint64_t hpcrun_cycles_cmd_period = 0;
 
 
 /******************************************************************************
@@ -450,6 +455,12 @@ METHOD_FN(supports_event, const char *ev_str)
   long th;
 
   hpcrun_extract_ev_thresh(ev_str, sizeof(evtmp), evtmp, &th, DEFAULT_THRESHOLD);
+
+  // corner case: check if it isn't a misspelling event
+  if (is_event_to_exclude(evtmp)) {
+    return false;
+  }
+
   return PAPI_event_name_to_code(evtmp, &ec) == PAPI_OK;
 }
  
@@ -476,12 +487,13 @@ METHOD_FN(process_event_list, int lush_metrics)
     TMSG(PAPI,"checking event spec = %s",event);
     // FIXME: restore checking will require deciding if the event is synchronous or not
 #ifdef USE_PAPI_CHECKING
-    if (! hpcrun_extract_ev_thresh(event, sizeof(name), name, &thresh, DEFAULT_THRESHOLD)) {
+    int period_type = hpcrun_extract_ev_thresh(event, sizeof(name), name, &thresh, DEFAULT_THRESHOLD);
+    if (!period_type) {
       AMSG("WARNING: %s using default threshold %ld, "
 	   "better to use an explicit threshold.", name, DEFAULT_THRESHOLD);
     }
 #else
-    hpcrun_extract_ev_thresh(event, sizeof(name), name, &thresh, DEFAULT_THRESHOLD);
+    int period_type = hpcrun_extract_ev_thresh(event, sizeof(name), name, &thresh, DEFAULT_THRESHOLD);
 #endif // USE_PAPI_CHECKING
     ret = PAPI_event_name_to_code(name, &evcode);
     if (ret != PAPI_OK) {
@@ -499,6 +511,17 @@ METHOD_FN(process_event_list, int lush_metrics)
       num_lush_metrics++;
     }
 
+    if (strncmp(event, "PAPI_TOT_CYC", 12) == 0) {
+      if (period_type == THRESH_FREQ) {
+        // frequency is specified in samples per second
+        hpcrun_cycles_cmd_period = (uint64_t) (1000000000.0 / thresh);
+      } else {
+        // default is period.
+        // period is specified in the number of cycles per sample
+        hpcrun_cycles_cmd_period = (uint64_t) (1000000000.0 * thresh / HPCRUN_CPU_FREQUENCY);
+      }
+    }
+
     TMSG(PAPI,"event %s -> event code = %x, thresh = %ld", event, evcode, thresh);
     METHOD_CALL(self, store_event, evcode, thresh);
   }
@@ -514,10 +537,12 @@ METHOD_FN(process_event_list, int lush_metrics)
     PAPI_event_code_to_name(self->evl.events[i].event, buffer);
     TMSG(PAPI, "metric for event %d = %s", i, buffer);
 
+    int isCycles = 0;
     // blame shifting needs to know if there is a cycles metric
     if (strcmp(buffer, "PAPI_TOT_CYC") == 0) {
       prop = metric_property_cycles;
       blame_shift_source_register(bs_type_cycles);
+      isCycles = 1;
     }
 
     // allow derived events (proxy sampling), as long as some event
@@ -551,6 +576,10 @@ METHOD_FN(process_event_list, int lush_metrics)
 					    MetricFlags_ValFmt_Int,
 					    threshold, prop);
     METHOD_CALL(self, store_metric_id, i, metric_id);
+    if (isCycles) {
+      hpcrun_cycles_metric_id = metric_id;
+      hpcrun_set_trace_metric(HPCRUN_CPU_TRACE_FLAG);
+    }
 
     // FIXME:LUSH: need a more flexible metric interface
     if (num_lush_metrics > 0 && strcmp(buffer, "PAPI_TOT_CYC") == 0) {
@@ -915,9 +944,17 @@ papi_event_handler(int event_set, void *pc, long long ovec,
       metricIncrement = 1;
     }
 
+    int time_based_metric = (hpcrun_cycles_metric_id == metric_id) ? 1 : 0;
+
+    sampling_info_t info = {
+      .sample_clock = 0,
+      .sample_data = NULL,
+      .sampling_period = hpcrun_cycles_cmd_period,
+      .is_time_based_metric = time_based_metric
+    };
     sample_val_t sv = hpcrun_sample_callpath(context, metric_id, 
 			(hpcrun_metricVal_t) {.i=metricIncrement},
-			0/*skipInner*/, 0/*isSync*/, NULL);
+			0/*skipInner*/, 0/*isSync*/, &info);
 
     blame_shift_apply(metric_id, sv.sample_node, 1 /*metricIncr*/);
   }

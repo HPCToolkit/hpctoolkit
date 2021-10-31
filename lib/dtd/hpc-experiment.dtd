@@ -28,7 +28,7 @@
   <!-- ****************************************************************** -->
   <!-- Section Header							  -->
   <!-- ****************************************************************** -->
-  <!ELEMENT SecHeader (MetricTable?, MetricDBTable?, TraceDBTable?, LoadModuleTable?, FileTable?, ProcedureTable?, Info*)>
+  <!ELEMENT SecHeader (IdentifierNameTable?, MetricTable?, MetricDBTable?, TraceDBTable?, LoadModuleTable?, FileTable?, ProcedureTable?, Info*)>
 
     <!-- MetricTable: -->
     <!ELEMENT MetricTable (Metric)*>
@@ -149,6 +149,13 @@
 	      f CDATA #IMPLIED
 	      v CDATA #IMPLIED>
 
+    <!-- IdentifierNameTable: -->
+    <!ELEMENT IdentifierNameTable (Identifier)*>
+    <!ELEMENT Identifier EMPTY>
+    <!ATTLIST Identifier
+	      i CDATA #REQUIRED
+	      n CDATA #REQUIRED>
+
   <!-- ****************************************************************** -->
   <!-- Section: Call path profile					  -->
   <!-- ****************************************************************** -->
@@ -194,6 +201,7 @@
       <!ELEMENT C (PF|M)*>
       <!ATTLIST C
 		i CDATA #IMPLIED
+		it CDATA #IMPLIED
 		s CDATA #IMPLIED
 		l CDATA #IMPLIED
 		str CDATA #IMPLIED

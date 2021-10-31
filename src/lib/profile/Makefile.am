@@ -84,6 +84,8 @@ MYSOURCES = \
 	util/ragged_vector.cpp util/once.cpp util/xml.cpp util/log.cpp \
 	util/file-posix.cpp util/lzmastream.cpp \
 	\
+	mpi/accumulate-thread.cpp \
+	\
 	pipeline.cpp source.cpp context.cpp scope.cpp metric.cpp \
 	module.cpp attributes.cpp dataclass.cpp sink.cpp packedids.cpp \
 	\
@@ -98,8 +100,10 @@ MYSOURCES = \
 MYSTANDALONESOURCES = mpi/standalone.cpp
 
 # GNU binutils flags are needed for HPCLIB_ISA.
-MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @VALGRIND_IFLAGS@ -I@LIBELF_INC@
-MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @VALGRIND_IFLAGS@ @XERCES_IFLAGS@ -I@LIBELF_INC@ -std=gnu++17
+MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) @VALGRIND_IFLAGS@ -I@LIBELF_INC@ \
+             @LZMA_IFLAGS@
+MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @VALGRIND_IFLAGS@ @XERCES_IFLAGS@ \
+             @LZMA_IFLAGS@ -I@LIBELF_INC@ -std=gnu++17
 
 if OPT_ENABLE_OPENMP
 MYCFLAGS += $(OPENMP_FLAG)

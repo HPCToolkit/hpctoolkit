@@ -163,7 +163,7 @@ hpcrun_fmt_hdr_free(hpcrun_fmt_hdr_t* hdr, hpcfmt_free_fn dealloc);
 
 #define HPCRUN_FMT_NV_traceMinTime "trace-min-time"
 #define HPCRUN_FMT_NV_traceMaxTime "trace-max-time"
-#define HPCRUN_FMT_NV_traceOrdered "trace-time-ordered"
+#define HPCRUN_FMT_NV_traceDisorder "trace-disorder"
 
 #define HPCRUN_FMT_METRIC_HIDE            0
 #define HPCRUN_FMT_METRIC_SHOW            1
@@ -990,6 +990,16 @@ hpcmetricDB_fmt_hdr_fprint(hpcmetricDB_fmt_hdr_t* hdr, FILE* outfs);
 typedef struct sampling_info_s {
   uint64_t  sample_clock;
   void     *sample_data;
+
+  // sampling period in nanoseconds.
+  // This is used for adding <no activity> to traces where threads are idle
+  // 0 means not a time-based metric, in which case we do not add 
+  // <no activity> to the trace.
+  uint64_t sampling_period;
+
+  // 1 if the sample is for a time-based metric
+  // 0 otherwise
+  int is_time_based_metric;
 } sampling_info_t;
 
 

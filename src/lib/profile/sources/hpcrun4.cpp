@@ -49,9 +49,6 @@
 #include "../util/log.hpp"
 #include "lib/prof-lean/hpcrun-fmt.h"
 
-// TODO: Remove this after catching the develop commits
-#define HPCRUN_FMT_NV_traceOrdered "trace-time-ordered"
-
 // TODO: Remove and change this once new-cupti is finalized
 #define HPCRUN_GPU_ROOT_NODE 65533
 #define HPCRUN_GPU_RANGE_NODE 65532
@@ -87,9 +84,7 @@ Hpcrun4::Hpcrun4(const stdshim::filesystem::path& fn)
     fileValid = false;
     return;
   }
-  std::optional<unsigned long> mpirank;
-  std::optional<unsigned long> threadid;
-  std::optional<unsigned long> hostid;
+  unsigned int traceDisorder = 0;  // Assume traces are ordered.
   for(uint32_t i = 0; i < hdr.nvps.len; i++) {
     const std::string k(hdr.nvps.lst[i].name);
     const auto v = hdr.nvps.lst[i].val;
@@ -100,18 +95,11 @@ Hpcrun4::Hpcrun4(const stdshim::filesystem::path& fn)
       attrs.environment("PATH", std::string(v));
     else if(k == HPCRUN_FMT_NV_jobId)
       attrs.job(std::strtol(v, nullptr, 10));
-    else if(k == HPCRUN_FMT_NV_mpiRank)
-      mpirank = std::strtol(v, nullptr, 10);
-    else if(k == HPCRUN_FMT_NV_tid)
-      threadid = std::strtol(v, nullptr, 10);
-    else if(k == HPCRUN_FMT_NV_hostid)
-      hostid = std::strtol(v, nullptr, 16);
-    else if(k == HPCRUN_FMT_NV_pid)
-      tattrs.procid(std::strtol(v, nullptr, 10));
-    else if(k == HPCRUN_FMT_NV_traceOrdered) {
-      if(std::string(v) == "1") trace_sort = true;
-    } else if(k != HPCRUN_FMT_NV_traceMinTime
-            && k != HPCRUN_FMT_NV_traceMaxTime) {
+    else if(k == HPCRUN_FMT_NV_traceDisorder) {
+      traceDisorder = std::strtoul(v, nullptr, 10);
+    } else if(k != HPCRUN_FMT_NV_traceMinTime && k != HPCRUN_FMT_NV_traceMaxTime
+              && k != HPCRUN_FMT_NV_mpiRank && k != HPCRUN_FMT_NV_tid
+              && k != HPCRUN_FMT_NV_hostid && k != HPCRUN_FMT_NV_pid) {
       util::log::warning()
       << "Unknown file attribute in " << path.string() << ":\n"
           "  '" << k << "'='" << std::string(v) << "'!";
@@ -154,7 +142,7 @@ Hpcrun4::Hpcrun4(const stdshim::filesystem::path& fn)
 
   // Also check for a corrosponding tracefile. If anything goes wrong, we'll
   // just skip it.
-  if(!setupTrace()) tracepath.clear();
+  if(!setupTrace(traceDisorder)) tracepath.clear();
 }
 
 bool Hpcrun4::valid() const noexcept { return fileValid; }
@@ -177,7 +165,7 @@ DataClass Hpcrun4::finalizeRequest(const DataClass& d) const noexcept {
   return o;
 }
 
-bool Hpcrun4::setupTrace() noexcept {
+bool Hpcrun4::setupTrace(unsigned int traceDisorder) noexcept {
   std::FILE* file = std::fopen(tracepath.c_str(), "rb");
   if(!file) return false;
   // Read in the file header.
@@ -201,7 +189,7 @@ bool Hpcrun4::setupTrace() noexcept {
     std::fclose(file);
     return false;
   }
-  tattrs.timepointCnt((trace_end - trace_off) / (8+4));
+  tattrs.timepointStats((trace_end - trace_off) / (8+4), traceDisorder);
 
   std::fclose(file);
   return true;
@@ -476,7 +464,7 @@ bool Hpcrun4::realread(const DataClass& needed) try {
   hpcrun_sparse_pause(file);
 
   if(needed.hasTimepoints() && !tracepath.empty()) {
-    std::vector<std::pair<std::chrono::nanoseconds, ContextRef>> tps;
+    assert(thread);
 
     std::FILE* f = std::fopen(tracepath.c_str(), "rb");
     std::fseek(f, trace_off, SEEK_SET);
@@ -491,31 +479,18 @@ bool Hpcrun4::realread(const DataClass& needed) try {
       }
       auto it = nodes.find(tpoint.cpId);
       if(it != nodes.end()) {
-        std::chrono::nanoseconds tp(HPCTRACE_FMT_GET_TIME(tpoint.comp));
-        if(trace_sort)
-          tps.emplace_back(tp, it->second.second);
-        else {
-          if(thread)
-            sink.timepoint(*thread, it->second.second, tp);
-          else
-            sink.timepoint(it->second.second, tp);
+        switch(sink.timepoint(*thread, it->second.second,
+            std::chrono::nanoseconds(HPCTRACE_FMT_GET_TIME(tpoint.comp)))) {
+        case ProfilePipeline::Source::TimepointStatus::next:
+          break;  // 'Round the loop
+        case ProfilePipeline::Source::TimepointStatus::rewindStart:
+          // Put the cursor back at the beginning
+          std::fseek(f, trace_off, SEEK_SET);
+          break;
         }
       }
     }
     std::fclose(f);
-
-    if(trace_sort) {
-      std::sort(tps.begin(), tps.end(),
-        [](const decltype(tps)::value_type& a, const decltype(tps)::value_type& b) -> bool {
-          return a.first < b.first;
-        });
-      for(const auto& tp: tps) {
-        if(thread)
-          sink.timepoint(*thread, tp.second, tp.first);
-        else
-          sink.timepoint(tp.second, tp.first);
-      }
-    }
   }
   return true;
 } catch(std::exception& e) {

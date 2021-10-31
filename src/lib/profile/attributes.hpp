@@ -48,6 +48,7 @@
 #define HPCTOOLKIT_PROFILE_ATTRIBUTES_H
 
 #include "accumulators.hpp"
+<<<<<<< HEAD
 
 #include "util/ragged_vector.hpp"
 #include "util/ref_wrappers.hpp"
@@ -58,6 +59,21 @@
 #include <unordered_map>
 #include "stdshim/filesystem.hpp"
 #include <optional>
+=======
+#include "context-fwd.hpp"
+
+#include "util/ragged_vector.hpp"
+#include "util/ref_wrappers.hpp"
+#include "util/streaming_sort.hpp"
+#include "lib/prof/pms-format.h"
+#include "lib/prof-lean/id-tuple.h"
+
+#include "stdshim/filesystem.hpp"
+#include <functional>
+#include <optional>
+#include <thread>
+#include <unordered_map>
+>>>>>>> 48ad9c63916bee835c74688f8291f586f5de1d78
 
 namespace hpctoolkit {
 
@@ -71,6 +87,7 @@ class Metric;
 /// roughly represents a single serial execution within the profile.
 class ThreadAttributes {
 public:
+<<<<<<< HEAD
   /// Default (empty) constructor. No news is no news.
   ThreadAttributes();
   ThreadAttributes(const ThreadAttributes& o) = default;
@@ -88,10 +105,28 @@ public:
 
   /// Get or set the hierarchical tuple assigned to this Thread. Should never
   /// be empty.
+=======
+  // Default (empty) constructor.
+  ThreadAttributes();
+  ~ThreadAttributes() = default;
+
+  ThreadAttributes(const ThreadAttributes& o) = default;
+  ThreadAttributes& operator=(const ThreadAttributes& o) = default;
+  ThreadAttributes(ThreadAttributes&& o) = default;
+  ThreadAttributes& operator=(ThreadAttributes&& o) = default;
+
+  /// Check whether this ThreadAttributes is suitable for creating a Thread.
+  // MT: Safe (const)
+  bool ok() const noexcept;
+
+  /// Get or set the hierarchical tuple assigned to this Thread.
+  /// Cannot be set to an empty vector.
+>>>>>>> 48ad9c63916bee835c74688f8291f586f5de1d78
   // MT: Externally Synchronized
   const std::vector<pms_id_t>& idTuple() const noexcept;
   void idTuple(std::vector<pms_id_t>);
 
+<<<<<<< HEAD
 private:
   // TODO: Remove these 4 fields and replace the bits above with functions that
   // scan m_idTuple for the relevant fields. Also make idTuples mandatory and
@@ -101,6 +136,57 @@ private:
   std::optional<unsigned long> m_procid;
   std::optional<unsigned long long> m_timepointCnt;
   mutable std::vector<pms_id_t> m_idTuple;
+=======
+  /// Get or set the vital timepoint statistics (maximum count and expected
+  /// disorder) for this Thread.
+  // MT: Externally Synchronized
+  unsigned long long timepointMaxCount() const noexcept;
+  void timepointStats(unsigned long long cnt, unsigned int disorder) noexcept;
+
+private:
+  std::vector<pms_id_t> m_idTuple;
+  std::optional<std::pair<unsigned long long, unsigned int>> m_timepointStats;
+
+  friend class ProfilePipeline;
+  unsigned int timepointDisorder() const noexcept;
+
+  class FinalizeState {
+  public:
+    FinalizeState();
+    ~FinalizeState();
+
+    FinalizeState(FinalizeState&&) = delete;
+    FinalizeState& operator=(FinalizeState&&) = delete;
+    FinalizeState(const FinalizeState&) = delete;
+    FinalizeState& operator=(const FinalizeState&) = delete;
+
+  private:
+    friend class ThreadAttributes;
+
+    class CountingLookupMap {
+      std::mutex lock;
+      std::unordered_map<uint64_t, uint64_t> map;
+    public:
+      CountingLookupMap() = default;
+      ~CountingLookupMap() = default;
+
+      uint64_t get(uint64_t);
+    };
+    struct LocalHash {
+      std::hash<uint16_t> h_u16;
+      std::size_t operator()(const std::vector<uint16_t>& v) const noexcept;
+    };
+    util::locked_unordered_map<uint16_t, CountingLookupMap> globalIdxMap;
+    util::locked_unordered_map<std::vector<uint16_t>, CountingLookupMap,
+                               std::shared_mutex, LocalHash> localIdxMap;
+
+    std::thread server;
+    std::mutex mpilock;
+  };
+
+  // Finalize this ThreadAttributes using the given shared state.
+  void finalize(FinalizeState&);
+>>>>>>> 48ad9c63916bee835c74688f8291f586f5de1d78
 };
 
 /// A single Thread within a Profile. Or something like that.
@@ -108,19 +194,27 @@ class Thread {
 public:
   using ud_t = util::ragged_vector<const Thread&>;
 
+<<<<<<< HEAD
   Thread(ud_t::struct_t& rs)
     : Thread(rs, ThreadAttributes()) {};
   Thread(ud_t::struct_t& rs, const ThreadAttributes& attr)
     : Thread(rs, ThreadAttributes(attr)) {};
   Thread(ud_t::struct_t& rs, ThreadAttributes&& attr)
     : userdata(rs, std::cref(*this)), attributes(std::move(attr)) {};
+=======
+  Thread(ud_t::struct_t& rs, ThreadAttributes attr);
+>>>>>>> 48ad9c63916bee835c74688f8291f586f5de1d78
   Thread(Thread&& o)
     : userdata(std::move(o.userdata), std::cref(*this)),
       attributes(std::move(o.attributes)) {};
 
   mutable ud_t userdata;
 
+<<<<<<< HEAD
   // Attributes accociated with this Thread.
+=======
+  /// Attributes accociated with this Thread.
+>>>>>>> 48ad9c63916bee835c74688f8291f586f5de1d78
   ThreadAttributes attributes;
 
   /// Thread-local data that is temporary and should be removed quickly.
@@ -154,6 +248,19 @@ public:
     Temporary(Thread& t) : m_thread(t) {};
     bool contributesToCollab = false;
 
+<<<<<<< HEAD
+=======
+    // Bits needed for handling timepoints
+    bool unboundedDisorder = false;
+    util::bounded_streaming_sort_buffer<
+      std::pair<ContextRef::const_t, std::chrono::nanoseconds>,
+      util::compare_only_second<std::pair<ContextRef::const_t, std::chrono::nanoseconds>>
+      > timepointSortBuf;
+    std::vector<std::pair<ContextRef::const_t, std::chrono::nanoseconds>> timepointStaging;
+    std::chrono::nanoseconds minTime = std::chrono::nanoseconds::max();
+    std::chrono::nanoseconds maxTime = std::chrono::nanoseconds::min();
+
+>>>>>>> 48ad9c63916bee835c74688f8291f586f5de1d78
     friend class Metric;
     util::locked_unordered_map<util::reference_index<const Context>,
       util::locked_unordered_map<util::reference_index<const Metric>,

@@ -693,9 +693,19 @@ gpu_activity_process
     gpu_kernel_block_process(ga);
     break;
 
+  /*
+  2021-09-08:
+  The timestamps for GPU synchronziation operations are currently
+  taken when entering and exiting synchronization APIs on the host.
+  Such timestamps are useless for GPU monitoring.
+  This is the case for NVIDIA and AMD.
+  We should revisit this if we start to get GPU side time stamps
+  regarding inter-stream synchronization.
+
   case GPU_ACTIVITY_SYNCHRONIZATION:
     gpu_synchronization_process(ga);
     break;
+  */
 
   case GPU_ACTIVITY_MEMORY:
     gpu_memory_process(ga);

@@ -290,6 +290,11 @@ public:
     // MT: Externally Synchronized (this), Internally Synchronized
     void attributes(const ProfileAttributes&);
 
+    /// Emit some Thread-less timepoint bounds into the Pipeline.
+    /// DataClass: `attributes`
+    // MT: Externally Synchronized (this), Internally Synchronized
+    void timepointBounds(std::chrono::nanoseconds min, std::chrono::nanoseconds max);
+
     /// Emit a new Module into the Pipeline, returning the canonical copy.
     /// DataClass: `references`
     // MT: Externally Synchronized (this), Internally Synchronized
@@ -349,15 +354,21 @@ public:
     /// Emit a new Thread into the Pipeline.
     /// DataClass: `threads`
     // MT: Externally Synchronized (this), Internally Synchronized
-    Thread::Temporary& thread(const ThreadAttributes&);
+    Thread::Temporary& thread(ThreadAttributes);
+
+    /// Return codes for timepoint-related functions
+    enum class TimepointStatus {
+      /// The next timepoint should be a new not-yet-emitted timepoint.
+      next,
+      /// The next timepoint should be the first timepoint. Reemit all timepoints.
+      rewindStart,
+    };
 
     /// Emit a timepoint into the Pipeline. Overloads allow for less data.
+    /// Returns the expected next timepoint the caller should inject.
     /// DataClass: `timepoints`
     // MT: Externally Synchronized (this), Internally Synchronized
-    void timepoint(Thread::Temporary&, ContextRef, std::chrono::nanoseconds);
-    void timepoint(Thread::Temporary&, std::chrono::nanoseconds);
-    void timepoint(ContextRef, std::chrono::nanoseconds);
-    void timepoint(std::chrono::nanoseconds);
+    [[nodiscard]] TimepointStatus timepoint(Thread::Temporary&, ContextRef, std::chrono::nanoseconds);
 
     /// Reference to the Thread-local metric data for a particular Context.
     /// Allows for efficient emmission of multiple Metrics' data to one location.
@@ -448,6 +459,8 @@ public:
     /// Access to the canonical copies of the data within the Pipeline. Can only
     /// be used after the write() barrier.
     const ProfileAttributes& attributes();
+    std::optional<std::pair<std::chrono::nanoseconds, std::chrono::nanoseconds>>
+      timepointBounds();
     const util::locked_unordered_uniqued_set<Module>& modules();
     const util::locked_unordered_uniqued_set<File>& files();
     const util::locked_unordered_uniqued_set<Metric>& metrics();
@@ -507,6 +520,9 @@ private:
   // Storage for the pointers to the SourceLocals.
   std::vector<SourceLocal> sourceLocals;
 
+  // Bits needed for ThreadAttributes to finalize
+  ThreadAttributes::FinalizeState threadAttrFinalizeState;
+
   // Userdata structures for the various bits. Must be above the data itself.
   Structs structs;
   Extensions uds;
@@ -515,6 +531,8 @@ private:
   // reference counts is a downright pain.
   std::mutex attrsLock;
   ProfileAttributes attrs;
+  std::optional<std::pair<std::chrono::nanoseconds, std::chrono::nanoseconds>>
+    timepointBounds;
   util::locked_unordered_set<std::unique_ptr<Thread>> threads;
   util::locked_unordered_uniqued_set<Module> mods;
   util::locked_unordered_uniqued_set<File> files;

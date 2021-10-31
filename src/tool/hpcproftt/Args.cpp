@@ -105,6 +105,7 @@ static const char* usage_details =
 		 "Options:\n"
 		 "  -V, --version        Print version information.\n"
 		 "  -h, --help           Print this help.\n"
+		 "  -l, --lm             Print the load modules only.\n"
      "  -g, --grep           Show the sparse metrics in a format that is easy to grep.\n";
 
 #define CLP CmdLineParser
@@ -118,6 +119,8 @@ CmdLineParser::OptArgDesc Args::optArgs[] = {
   { 'h', "help",            CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
      NULL },
   { 'g', "grep",            CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,  //YUMENG
+     NULL },
+  { 'l', "lm",              CLP::ARG_NONE, CLP::DUPOPT_CLOB, NULL,
      NULL },
   CmdLineParser_OptArgDesc_NULL_MACRO // SGI's compiler requires this version
 };
@@ -233,6 +236,10 @@ Args::parse(int argc, const char* const argv[])
     }
     if (parser.isOpt("grep")) { //YUMENG
       sm_easyToGrep = true;
+    }
+    if (parser.isOpt("lm")) {
+      // print the load modules only
+      Analysis::Util::option = Analysis::Util::OutputOption_t::Print_LoadModule_Only;
     }
 
     // FIXME: sanity check that options correspond to mode

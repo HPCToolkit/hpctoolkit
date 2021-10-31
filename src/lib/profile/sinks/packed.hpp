@@ -71,9 +71,6 @@ public:
     return ExtensionClass::identifier;
   }
 
-  // Make sure to call this for subclass overrides.
-  void notifyTimepoint(std::chrono::nanoseconds) override;
-
 protected:
   std::vector<std::reference_wrapper<const Metric>> metrics;
 
@@ -99,15 +96,6 @@ protected:
   /// reading end.
   // MT: Externally Synchronized
   void packMetrics(std::vector<std::uint8_t>&) noexcept;
-
-  /// Packs the available `timepoints` data on the end of the given vector.
-  /// Note that this only saves the "range" of data.
-  // MT: Externally Synchronized
-  void packTimepoints(std::vector<std::uint8_t>&) noexcept;
-
-private:
-  std::atomic<std::chrono::nanoseconds> minTime;
-  std::atomic<std::chrono::nanoseconds> maxTime;
 };
 
 /// Extension of Packed that uses parallel algorithms for packing contexts and

@@ -96,6 +96,7 @@ MYSOURCES = \
 	\
 	binarytree.h binarytree.c \
 	cskiplist.h cskiplist.c \
+	cpuset_hwthreads.h cpuset_hwthreads.c \
 	crypto-hash.h crypto-hash.c \
 	queues.h queues.c \
 	stacks.h stacks.c \

@@ -49,12 +49,18 @@
 
 #include "../finalizer.hpp"
 
+#include <vector>
+
 namespace hpctoolkit::finalizers {
+
+namespace detail {
+class StructFileParser;
+}
 
 // When a struct file is around, this draws data from it to Classify a Module.
 class StructFile final : public ProfileFinalizer {
 public:
-  StructFile(const stdshim::filesystem::path& p);
+  StructFile(stdshim::filesystem::path path);
   ~StructFile();
 
   ExtensionClass provides() const noexcept override {
@@ -63,13 +69,15 @@ public:
   ExtensionClass requires() const noexcept override { return {}; }
   void module(const Module&, Classification&) noexcept override;
 
-  const stdshim::filesystem::path& forPath() const noexcept { return modpath; }
+  std::vector<stdshim::filesystem::path> forPaths() const;
 
 private:
-  bool parse(const Module&, Classification&);
-
   stdshim::filesystem::path path;
-  stdshim::filesystem::path modpath;
+
+  // Structfiles can have data on multiple load modules (LM tags), this maps
+  // each binary path with the properly initialized Parser for that tag.
+  std::unordered_map<stdshim::filesystem::path,
+                     std::unique_ptr<finalizers::detail::StructFileParser>> lms;
 };
 
 }

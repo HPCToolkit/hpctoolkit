@@ -72,15 +72,6 @@ void ProfileSink::notifyExtraStatistic(const ExtraStatistic&) {};
 void ProfileSink::notifyContext(const Context&) {};
 void ProfileSink::notifyContextExpansion(ContextRef::const_t, Scope, ContextRef::const_t) {};
 void ProfileSink::notifyThread(const Thread&) {};
-void ProfileSink::notifyTimepoint(std::chrono::nanoseconds) {};
-void ProfileSink::notifyTimepoint(const Thread&, std::chrono::nanoseconds n) {
-  notifyTimepoint(n);
-}
-void ProfileSink::notifyTimepoint(ContextRef::const_t, std::chrono::nanoseconds n) {
-  notifyTimepoint(n);
-}
-void ProfileSink::notifyTimepoint(const Thread& t, ContextRef::const_t c, std::chrono::nanoseconds n) {
-  notifyTimepoint(t, n);
-  notifyTimepoint(c, n);
-}
+void ProfileSink::notifyTimepoints(const Thread& t, const std::vector<std::pair<ContextRef::const_t, std::chrono::nanoseconds>>&) {};
+void ProfileSink::notifyTimepointRewindStart(const Thread&) {};
 void ProfileSink::notifyThreadFinal(const Thread::Temporary&) {};

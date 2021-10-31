@@ -67,6 +67,28 @@ dumpCubin
   return retval;
 }
 
+static void
+splitFunctionName
+(
+  const std::unordered_map<std::string, std::vector<Symbol*> > &symbols_by_name,
+  const std::string& name,
+  std::string& symbol_name,
+  int& suffix
+)
+{
+  auto iter = symbols_by_name.find(name);
+  // If the function name can be found in the symbol table,
+  // then we assume it is a function name without a suffix
+  symbol_name = name;
+  suffix = 0;
+  if (iter == symbols_by_name.end()) {
+    auto pos = name.rfind("__");
+    if (pos != std::string::npos) {
+      suffix = stoi(name.substr(pos + 2));
+      symbol_name = name.substr(0, pos);
+    }
+  }
+}
 
 // Iterate all the functions in the symbol table.
 // Parse the ones that can be dumped by nvdisasm in sequence;
@@ -88,6 +110,13 @@ parseDotCFG
   std::vector<Symbol *> symbols;
   the_symtab->getAllDefinedSymbols(symbols); // skipping undefined symbols
 
+  // Ensure that the symbols are processed in its symbol table index order
+  sort(symbols.begin(), symbols.end(),
+    [] (Symbol* a, Symbol *b) {
+      return a->getIndex() < b->getIndex();
+    }
+  );
+
   if (DEBUG_CFG_PARSE) {
     std::cout << "Debug symbols: " << std::endl;
     for (auto *symbol : symbols) {
@@ -102,8 +131,20 @@ parseDotCFG
   std::vector<Symbol *> unparsable_function_symbols;
   // Store functions that are parsed by nvdisasm
   std::vector<Symbol *> parsed_function_symbols;
-  // Remove functions that share the same names
-  std::map<std::string, GPUParse::Function *> function_map;
+  // nvdisasm add suffix such as "__1" and "__3" to funciton names
+  // that are shared by multiple functions.
+  // Here we split such name into its symbol name and its suffix
+  // and use the pair as the key for the function map
+  std::map< std::pair<std::string, int>, GPUParse::Function *> function_map;
+  // cubin may have multiple symbols that share the same name
+  std::unordered_map<std::string, std::vector<Symbol*> > symbols_by_name;
+
+  for (auto *symbol : symbols) {
+    if (symbol->getType() == Dyninst::SymtabAPI::Symbol::ST_FUNCTION) {
+      symbols_by_name[symbol->getMangledName()].emplace_back(symbol);
+    }
+  }
+
   // Test valid symbols
   for (auto *symbol : symbols) {
     if (symbol->getType() == Dyninst::SymtabAPI::Symbol::ST_FUNCTION) {
@@ -120,9 +161,10 @@ parseDotCFG
         cfg_parser.parse(graph, funcs);
         // Local functions inside a global function cannot be independently parsed
         for (auto *func : funcs) {
-          if (function_map.find(func->name) == function_map.end()) {
-            function_map[func->name] = func;
-          }
+          std::string symbol_name;
+          int nvdisasm_suffix;
+          splitFunctionName(symbols_by_name, func->name, symbol_name, nvdisasm_suffix);
+          function_map.emplace(std::make_pair(symbol_name, nvdisasm_suffix), func);
         }
       } else {
         unparsable_function_symbols.push_back(symbol);
@@ -131,28 +173,34 @@ parseDotCFG
     }
   }
 
+  std::unordered_map<GPUParse::Function *, Symbol*> parsed_func_symbol_map;
+  std::unordered_map<std::string, int> symbol_name_counter;
+  // Function objects are sorted based on the pair of symbol name and suffix.
+  // The suffix is incremented in the symbol table index order
   for (auto &iter : function_map) {
     functions.push_back(iter.second);
+    const std::string& symbol_name = iter.first.first;
+    size_t counter = symbol_name_counter[symbol_name]++;
+    if (counter < symbols_by_name[symbol_name].size()) {
+      parsed_func_symbol_map[iter.second] = symbols_by_name[symbol_name][counter];
+    }
   }
 
   // Step 2: Relocate functions
-  for (auto *symbol : symbols) {
-    for (auto *function : functions) {
-      if (function->name == symbol->getMangledName() &&
-        symbol->getType() == Dyninst::SymtabAPI::Symbol::ST_FUNCTION) {
-        auto begin_offset = function->blocks[0]->begin_offset;
-        for (auto *block : function->blocks) {
-          for (auto *inst : block->insts) {
-            inst->offset = (inst->offset - begin_offset) + symbol->getOffset();
-            inst->size = cuda_arch >= 70 ? 16 : 8;
-          }
-          block->address = block->insts[0]->offset;
-        }
-        // Allow gaps between a function begining and the first block?
-        //function->blocks[0]->address = symbol->getOffset();
-        function->address = symbol->getOffset();
+  for (auto &iter : parsed_func_symbol_map) {
+    auto symbol = iter.second;
+    auto function = iter.first;
+    auto begin_offset = function->blocks[0]->begin_offset;
+    for (auto *block : function->blocks) {
+      for (auto *inst : block->insts) {
+        inst->offset = (inst->offset - begin_offset) + symbol->getOffset();
+        inst->size = cuda_arch >= 70 ? 16 : 8;
       }
+      block->address = block->insts[0]->offset;
     }
+    // Allow gaps between a function begining and the first block?
+    //function->blocks[0]->address = symbol->getOffset();
+    function->address = symbol->getOffset();
   }
 
   if (DEBUG_CFG_PARSE) {
@@ -193,36 +241,36 @@ parseDotCFG
     }
     function->blocks.push_back(block);
     functions.push_back(function);
+    parsed_func_symbol_map[function] = symbol;
   }
 
   // Step4: add compensate blocks that only contains nop instructions
-  for (auto *symbol : symbols) {
-    for (auto *function : functions) {
-      if (function->name == symbol->getMangledName() && symbol->getSize() > 0 &&
-        symbol->getType() == Dyninst::SymtabAPI::Symbol::ST_FUNCTION) {
-        int len = cuda_arch >= 70 ? 16 : 8;
-        int function_size = function->blocks.back()->insts.back()->offset + len - function->address;
-        int symbol_size = symbol->getSize();
-        if (function_size < symbol_size) {
-          if (DEBUG_CFG_PARSE) {
-            std::cout << function->name << " append nop instructions" << std::endl;
-            std::cout << "function_size: " << function_size << " < " << "symbol_size: " << symbol_size << std::endl;
-          }
-          auto *block = new GPUParse::Block(max_block_id, ".L_" + std::to_string(max_block_id));
-          block->address = function_size + function->address;
-          block->begin_offset = cuda_arch >= 70 ? 16 : 8;
-          max_block_id++;
-          while (function_size < symbol_size) {
-            block->insts.push_back(new GPUParse::CudaInst(function_size + function->address, len));
-            function_size += len;
-          } 
-          if (function->blocks.size() > 0) {
-            auto *last_block = function->blocks.back();
-            last_block->targets.push_back(
-              new GPUParse::Target(last_block->insts.back(), block, GPUParse::TargetType::DIRECT));
-          }
-          function->blocks.push_back(block);
+  for (auto &iter : parsed_func_symbol_map) {
+    auto symbol = iter.second;
+    auto function = iter.first;
+    if (symbol->getSize() > 0) {
+      int len = cuda_arch >= 70 ? 16 : 8;
+      int function_size = function->blocks.back()->insts.back()->offset + len - function->address;
+      int symbol_size = symbol->getSize();
+      if (function_size < symbol_size) {
+        if (DEBUG_CFG_PARSE) {
+          std::cout << function->name << " append nop instructions" << std::endl;
+          std::cout << "function_size: " << function_size << " < " << "symbol_size: " << symbol_size << std::endl;
         }
+        auto *block = new GPUParse::Block(max_block_id, ".L_" + std::to_string(max_block_id));
+        block->address = function_size + function->address;
+        block->begin_offset = cuda_arch >= 70 ? 16 : 8;
+        max_block_id++;
+        while (function_size < symbol_size) {
+          block->insts.push_back(new GPUParse::CudaInst(function_size + function->address, len));
+          function_size += len;
+        }
+        if (function->blocks.size() > 0) {
+          auto *last_block = function->blocks.back();
+          last_block->targets.push_back(
+            new GPUParse::Target(last_block->insts.back(), block, GPUParse::TargetType::DIRECT));
+        }
+        function->blocks.push_back(block);
       }
     }
   }

@@ -78,6 +78,15 @@
 #include <lib/prof-lean/hpcio.h>
 #include <lib/prof-lean/hpcio-buffer.h>
 
+//*********************************************************************
+// local macros
+//*********************************************************************
+
+// We add <no activity> to cpu traces
+// when there is no sample for a long period.
+// This constant controls how many sample periods
+// without a sample are considered as a gap.
+#define TRACE_GAP_FACTOR 5
 
 //*********************************************************************
 // type declarations
@@ -98,6 +107,7 @@ static inline void hpcrun_trace_append_with_time_real(core_profile_trace_data_t 
 //*********************************************************************
 
 static int tracing = 0;
+static int trace_suitable_metric = 0;
 
 //*********************************************************************
 // interface operations
@@ -173,16 +183,25 @@ hpcrun_trace_append_with_time(core_profile_trace_data_t *st, unsigned int call_p
 	}
 }
 
+__thread uint64_t prev_nanotime = 0;
 
 void
-hpcrun_trace_append(core_profile_trace_data_t *cptd, cct_node_t* node, uint metric_id, uint32_t dLCA)
+hpcrun_trace_append(core_profile_trace_data_t *cptd, cct_node_t* node, uint metric_id, uint32_t dLCA, uint64_t sampling_period)
 {
   if (tracing && hpcrun_sample_prob_active()) {
     struct timeval tv;
     int ret = gettimeofday(&tv, NULL);
     assert(ret == 0 && "in trace_append: gettimeofday failed!");
     uint64_t nanotime = ((uint64_t)tv.tv_usec
-			  + (((uint64_t)tv.tv_sec) * 1000000)) * 1000;
+                         + (((uint64_t)tv.tv_sec) * 1000000)) * 1000;
+    if (sampling_period > 0 && prev_nanotime != 0 && nanotime - prev_nanotime > TRACE_GAP_FACTOR * sampling_period) {
+      cct_bundle_t* cct_bundle = &(cptd->epoch->csdata);
+      cct_node_t* idle_node = hpcrun_cct_bundle_get_no_activity_node(cct_bundle);
+      hpcrun_cct_retain(idle_node);
+      int32_t no_activity_call_path_id = hpcrun_cct_persistent_id(idle_node);
+      hpcrun_trace_append_with_time_real(cptd, no_activity_call_path_id, metric_id, dLCA, prev_nanotime + sampling_period);
+    }
+    prev_nanotime = nanotime;
 
     // mark the leaf of a call path recorded in a trace record for retention
     // so that the call path associated with the trace record can be recovered.
@@ -191,6 +210,7 @@ hpcrun_trace_append(core_profile_trace_data_t *cptd, cct_node_t* node, uint metr
     int32_t call_path_id = hpcrun_cct_persistent_id(node);
 
     hpcrun_trace_append_with_time_real(cptd, call_path_id, metric_id, dLCA, nanotime);
+
   }
 }
 
@@ -247,6 +267,11 @@ hpcrun_trace_append_with_time_real(core_profile_trace_data_t *cptd, unsigned int
         cptd->trace_max_time_us = nanotime;
     }
     
+    if(cptd->trace_last_time > nanotime) {
+      cptd->trace_is_ordered = false;
+    }
+    cptd->trace_last_time = nanotime;
+
     hpctrace_fmt_datum_t trace_datum;
     trace_datum.cpId = (uint32_t)call_path_id;
     //TODO: was not in GPU version
@@ -286,4 +311,37 @@ hpcrun_trace_file_validate(int valid, char *op)
     EMSG("unable to %s trace file\n", op);
     monitor_real_abort();
   }
+}
+
+void
+hpcrun_set_trace_metric
+(
+  hpcrun_trace_type_masks_t m
+)
+{
+  trace_suitable_metric |= m;
+}
+
+int
+hpcrun_has_trace_metric
+(
+)
+{
+  return (trace_suitable_metric > 0) ? 1 : 0;
+}
+
+int
+hpcrun_cpu_trace_on
+(
+)
+{
+  return (trace_suitable_metric & HPCRUN_CPU_TRACE_FLAG) ? 1 : 0;
+}
+
+int
+hpcrun_gpu_trace_on
+(
+)
+{
+  return (trace_suitable_metric & HPCRUN_GPU_TRACE_FLAG) ? 1 : 0;
 }

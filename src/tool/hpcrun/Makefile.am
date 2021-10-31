@@ -304,6 +304,7 @@ MY_BASE_FILES =				\
 	sample-sources/omp-idle.c       \
         sample-sources/common.c         \
 	sample-sources/display.c		\
+	sample-sources/exclude.c	\
 	sample-sources/ga.c		\
 	sample-sources/io.c 		\
 	sample-sources/itimer.c		\
@@ -407,6 +408,7 @@ MY_BASE_FILES =				\
 	syscalls/poll.c	\
 	syscalls/ppoll.c \
 	syscalls/select.c \
+	syscalls/sysv_signal.c \
 	\
 	utilities/executable-path.h utilities/executable-path.c \
 	utilities/hpcrun-nanotime.h  utilities/hpcrun-nanotime.c  \
@@ -1215,7 +1217,7 @@ MISC_NAMES =    -G 'debug_flag_*' -G 'messages_*' -G ompt_start_tool
 OPENCL_NAMES = -G 'clBuildProgram' -G 'clCreate*' -G 'clEnqueue*' -G 'clSetKernelArg' -G 'cl*Event*'
 CUDA_NAMES = -G 'cuda_api_exit_callback' -G 'cuda_api_enter_callback'
 
-DYN_SYSCALL_LIST = poll ppoll pselect select
+DYN_SYSCALL_LIST = poll ppoll pselect select __sysv_signal
 DYN_SYSCALL_NAMES = $(foreach name,$(DYN_SYSCALL_LIST),-G $(name))
 
 STAT_WRAP_NAMES = -w -G '__wrap_*'

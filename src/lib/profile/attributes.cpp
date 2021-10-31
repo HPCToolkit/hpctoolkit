@@ -46,6 +46,8 @@
 
 #include "attributes.hpp"
 
+#include "mpi/one2one.hpp"
+
 #include "util/log.hpp"
 
 #include <limits>
@@ -56,8 +58,10 @@
 
 using namespace hpctoolkit;
 
-static constexpr auto max_ulong = std::numeric_limits<unsigned long>::max();
-static constexpr auto max_uint32 = std::numeric_limits<uint32_t>::max();
+Thread::Thread(ud_t::struct_t& rs, ThreadAttributes attr)
+  : userdata(rs, std::cref(*this)), attributes(std::move(attr)) {
+  assert(attributes.ok());
+}
 
 ProfileAttributes::ProfileAttributes() = default;
 ThreadAttributes::ThreadAttributes() = default;
@@ -94,25 +98,113 @@ void ProfileAttributes::idtupleName(uint16_t kind, std::string name) {
   m_idtupleNames.emplace(kind, std::move(name));
 }
 
-void ThreadAttributes::procid(unsigned long pid) {
-  assert(!m_procid && "Attempt to overwrite a previously set profile process id!");
-  m_procid = pid;
+bool ThreadAttributes::ok() const noexcept {
+  return !m_idTuple.empty();
 }
 
-void ThreadAttributes::timepointCnt(unsigned long long cnt) {
-  assert(!m_timepointCnt && "Attempt to overwrite a previously set timepoint count!");
-  m_timepointCnt = cnt;
+unsigned long long ThreadAttributes::timepointMaxCount() const noexcept {
+  return m_timepointStats ? m_timepointStats->first : 0;
+}
+unsigned int ThreadAttributes::timepointDisorder() const noexcept {
+  return m_timepointStats ? m_timepointStats->second : 0;
+}
+void ThreadAttributes::timepointStats(unsigned long long cnt, unsigned int disorder) noexcept {
+  assert(!m_timepointStats && "Attempt to overwrite previously set timepoint stats!");
+  m_timepointStats = {cnt, disorder};
 }
 
 const std::vector<pms_id_t>& ThreadAttributes::idTuple() const noexcept {
   assert(!m_idTuple.empty() && "Thread has an empty hierarchical id tuple!");
   return m_idTuple;
 }
-
 void ThreadAttributes::idTuple(std::vector<pms_id_t> tuple) {
   assert(m_idTuple.empty() && "Attempt to overwrite a previously set thread hierarchical id tuple!");
   assert(!tuple.empty() && "No tuple given to ThreadAttributes::idTuple");
   m_idTuple = std::move(tuple);
+}
+
+void ThreadAttributes::finalize(ThreadAttributes::FinalizeState& state) {
+  for(size_t i = 0; i < m_idTuple.size(); i++) {
+    auto& id = m_idTuple[i];
+    switch(IDTUPLE_GET_INTERPRET(id.kind)) {
+    case IDTUPLE_IDS_BOTH_VALID:
+    case IDTUPLE_IDS_LOGIC_ONLY:
+      break;
+    case IDTUPLE_IDS_LOGIC_GLOBAL: {
+      uint16_t kind = IDTUPLE_GET_KIND(id.kind);
+      if(mpi::World::rank() == 0) {
+        id.logical_index = state.globalIdxMap[kind].get(id.physical_index);
+      } else {
+        std::unique_lock<std::mutex> l(state.mpilock);
+        mpi::send<std::uint16_t>(kind, 0, mpi::Tag::ThreadAttributes_1);
+        mpi::send<std::uint64_t>(id.physical_index, 0, mpi::Tag::ThreadAttributes_1);
+        id.logical_index = mpi::receive<std::uint64_t>(0, mpi::Tag::ThreadAttributes_1);
+      }
+      id.kind = IDTUPLE_COMPOSE(kind, IDTUPLE_IDS_BOTH_VALID);
+      break;
+    }
+    case IDTUPLE_IDS_LOGIC_LOCAL: {
+      uint16_t kind = IDTUPLE_GET_KIND(id.kind);
+      std::vector<uint16_t> key;
+      key.reserve(i * 5 + 1);
+      for(size_t j = 0; j < i; j++) {
+        key.push_back(IDTUPLE_GET_KIND(m_idTuple[j].kind));
+        key.push_back((uint16_t)((m_idTuple[j].physical_index >> 48) & 0xffff));
+        key.push_back((uint16_t)((m_idTuple[j].physical_index >> 32) & 0xffff));
+        key.push_back((uint16_t)((m_idTuple[j].physical_index >> 16) & 0xffff));
+        key.push_back((uint16_t)(m_idTuple[j].physical_index & 0xffff));
+      }
+      key.push_back(kind);
+      if(mpi::World::rank() == 0) {
+        id.logical_index = state.localIdxMap[std::move(key)].get(id.physical_index);
+      } else {
+        std::unique_lock<std::mutex> l(state.mpilock);
+        mpi::send<std::uint16_t>(IDTUPLE_INVALID, 0, mpi::Tag::ThreadAttributes_1);
+        mpi::send(std::move(key), 0, mpi::Tag::ThreadAttributes_1);
+        mpi::send<std::uint64_t>(id.physical_index, 0, mpi::Tag::ThreadAttributes_1);
+        id.logical_index = mpi::receive<std::uint64_t>(0, mpi::Tag::ThreadAttributes_1);
+      }
+      id.kind = IDTUPLE_COMPOSE(kind, IDTUPLE_IDS_BOTH_VALID);
+      break;
+    }
+    }
+  }
+}
+
+ThreadAttributes::FinalizeState::FinalizeState() {
+  if(mpi::World::size() > 1 && mpi::World::rank() == 0) {
+    server = std::thread([this]{
+      while(auto query = mpi::receive_server<std::uint16_t>(mpi::Tag::ThreadAttributes_1)) {
+        auto [kind, src] = *query;
+        auto& cmap = kind != IDTUPLE_INVALID ? globalIdxMap[kind]
+            : localIdxMap[mpi::receive_vector<std::uint16_t>(src, mpi::Tag::ThreadAttributes_1)];
+        mpi::send<std::uint64_t>(cmap.get(mpi::receive<std::uint64_t>(src, mpi::Tag::ThreadAttributes_1)),
+                                 src, mpi::Tag::ThreadAttributes_1);
+      }
+    });
+  }
+}
+ThreadAttributes::FinalizeState::~FinalizeState() {
+  if(server.joinable()) {
+    mpi::cancel_server<std::uint16_t>(mpi::Tag::ThreadAttributes_1);
+    server.join();
+  }
+}
+
+uint64_t ThreadAttributes::FinalizeState::CountingLookupMap::get(uint64_t k) {
+  std::unique_lock<std::mutex> l(lock);
+  auto it = map.find(k);
+  if(it != map.end()) return it->second;
+  uint64_t v = map.size();
+  bool ok = map.insert({k, v}).second;
+  assert(ok);
+  return v;
+}
+
+size_t ThreadAttributes::FinalizeState::LocalHash::operator()(const std::vector<uint16_t>& v) const noexcept {
+  size_t sponge = 0x15;
+  for(auto x: v) sponge = (sponge << 5) ^ (sponge >> 33) ^ x;
+  return sponge;
 }
 
 // Stringification

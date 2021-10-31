@@ -64,6 +64,7 @@
 //******************************************************************************
 
 #include <lib/prof-lean/stdatomic.h>
+#include <lib/support-lean/OSUtil.h>
 
 #include <hpcrun/cct/cct.h>
 #include <hpcrun/utilities/hpcrun-nanotime.h>
@@ -229,13 +230,6 @@ gpu_trace_start_adjust
 {
   uint64_t last_end = td->gpu_trace_prev_time;
 
-  if (end < last_end){
-    // If stream becomes unordered, mark it (it will be sorted in prof)
-    PRINT("TRACE NOT ORDERED: Trace_id = %u\n", td->core_profile_trace_data.id);
-    td->core_profile_trace_data.traceOrdered = false;
-    return start;
-  }
-
   if(start < last_end) {    // If we have a hardware measurement error (Power9),
     // set the offset as the end of the last activity
     start = last_end + 1;
@@ -284,7 +278,7 @@ gpu_compute_profile_name
 
   id_tuple_constructor(&id_tuple, ids, IDTUPLE_MAXTYPES);
 
-  id_tuple_push_back(&id_tuple, IDTUPLE_COMPOSE(IDTUPLE_NODE, IDTUPLE_IDS_LOGIC_LOCAL), gethostid(), 0);
+  id_tuple_push_back(&id_tuple, IDTUPLE_COMPOSE(IDTUPLE_NODE, IDTUPLE_IDS_LOGIC_LOCAL), OSUtil_hostid(), 0);
 
 #if 0
   if (tag.device_id != IDTUPLE_INVALID) {
@@ -321,6 +315,8 @@ gpu_trace_stream_acquire
   hpcrun_threadMgr_data_get_safe(id, NULL, &td, has_trace, demand_new_thread);
 
   gpu_compute_profile_name(tag, &td->core_profile_trace_data);
+
+  td->core_profile_trace_data.trace_expected_disorder = 30;
 
   return td;
 }
@@ -481,10 +477,7 @@ consume_one_trace_item
   }
 
   if (append) {
-    gpu_trace_stream_append(td, no_activity, start - 1);
     gpu_trace_stream_append(td, leaf, start);
-
-    gpu_trace_stream_append(td, leaf, end);
     gpu_trace_stream_append(td, no_activity, end + 1);
 
     PRINT("%p Append trace activity [%lu, %lu]\n", td, start, end);

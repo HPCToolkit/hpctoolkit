@@ -684,4 +684,17 @@ copyTraceFiles(const std::string& dstDir, const std::set<string>& srcFiles)
 } // end of Analysis namespace
 
 
+//***************************************************************************
+//
+//***************************************************************************
+
+namespace Analysis {
+namespace Util {
+
+OutputOption_t option = Print_All;
+
+} // end of Util namespace
+} // end of Analysis namespace
+
+
 //****************************************************************************

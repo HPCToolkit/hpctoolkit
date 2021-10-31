@@ -70,7 +70,7 @@ void Sender::write() {
   packContexts(block);
   {
     auto mpiSem = src.enterOrderedWrite();
-    mpi::send(block, tree.parent, 1);
+    mpi::send(block, tree.parent, mpi::Tag::RankTree_1);
   }
 
   if(stash) {
@@ -86,7 +86,7 @@ void Receiver::read(const DataClass&) {
   std::vector<std::uint8_t> block;
   {
     auto mpiSem = sink.enterOrderedPrewaveRegion();
-    block = mpi::receive_vector<std::uint8_t>(peer, 1);
+    block = mpi::receive_vector<std::uint8_t>(peer, mpi::Tag::RankTree_1);
   }
   iter_t it = block.begin();
   it = unpackAttributes(it);
@@ -105,8 +105,7 @@ MetricSender::MetricSender(RankTree& t, bool n)
 
 DataClass MetricSender::accepts() const noexcept {
   using namespace hpctoolkit::literals;
-  return data::attributes + data::contexts + data::metrics
-         + (needsTimepoints ? data::timepoints : DataClass{});
+  return data::attributes + data::contexts + data::metrics;
 }
 
 void MetricSender::notifyPipeline() noexcept {
@@ -118,9 +117,8 @@ void MetricSender::write() {
   std::vector<std::uint8_t> block;
   packAttributes(block);
   packMetrics(block);
-  if(needsTimepoints) packTimepoints(block);
   auto mpiSem = src.enterOrderedWrite();
-  mpi::send(block, tree.parent, 3);
+  mpi::send(block, tree.parent, mpi::Tag::RankTree_2);
 }
 
 util::WorkshareResult MetricSender::help() {
@@ -134,7 +132,7 @@ MetricReceiver::MetricReceiver(std::size_t p, ctx_map_t& c, const std::vector<st
 
 DataClass MetricReceiver::provides() const noexcept {
   using namespace hpctoolkit::literals;
-  return data::attributes + data::metrics + data::timepoints
+  return data::attributes + data::metrics
          + (stash ? data::references + data::contexts : DataClass{});
 }
 
@@ -150,12 +148,11 @@ void MetricReceiver::read(const DataClass& d) {
   std::vector<std::uint8_t> block;
   {
     auto mpiSem = sink.enterOrderedPostwaveRegion();
-    block = mpi::receive_vector<std::uint8_t>(peer, 3);
+    block = mpi::receive_vector<std::uint8_t>(peer, mpi::Tag::RankTree_2);
   }
   iter_t it = block.begin();
   it = unpackAttributes(it);
   it = unpackMetrics(it, cmap);
-  if(sink.limit().hasTimepoints()) it = unpackTimepoints(it);
   done = true;
 }
 

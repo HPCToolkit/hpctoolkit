@@ -74,7 +74,7 @@ public:
   static const Op& sum() noexcept;
 };
 
-/// Singlton class representing the current MPI global communicator.
+/// Singleton class representing the current MPI global communicator.
 class World {
 public:
   /// Fire up MPI. Needed before calling anything else.
@@ -93,6 +93,16 @@ private:
   static std::size_t m_rank;
   static std::size_t m_size;
 };
+
+/// MPI tag enumeration, to make sure no one gets mixed up.
+enum class Tag : int {
+  // 0 is skipped
+  ThreadAttributes_1 = 1,  // For attributes.cpp
+
+  SparseDB_1, SparseDB_2,  // For sinks/sparsedb.cpp
+  RankTree_1, RankTree_2,  // For hpcprof2-mpi/tree.cpp
+};
+
 
 }  // namespace hpctoolkit::mpi
 

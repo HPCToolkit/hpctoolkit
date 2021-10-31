@@ -105,11 +105,7 @@ MYSOURCES = \
 	\
 	PointerStack.hpp PointerStack.cpp \
 	QuickSort.hpp QuickSort.cpp \
-	Unique.hpp Unique.cpp \
-	\
-	BaseVarMap.hpp \
-	VarMap.hpp VarMap.cpp \
-	ExprEval.hpp ExprEval.cpp
+	Unique.hpp Unique.cpp
 
 MYCFLAGS   = @HOST_CFLAGS@   $(HPC_IFLAGS) 
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS)

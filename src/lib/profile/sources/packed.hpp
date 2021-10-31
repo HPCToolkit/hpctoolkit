@@ -86,10 +86,6 @@ protected:
   // MT: Externally Synchronized
   iter_t unpackMetrics(iter_t, const ctx_map_t&) noexcept;
 
-  /// Unpacks and emits a vector's `timepoints` data.
-  // MT: Externally Synchronized
-  iter_t unpackTimepoints(iter_t) noexcept;
-
 public:
   /// Helper Finalizer to fill the identifier to Context table.
   class ContextTracker : public ProfileFinalizer {

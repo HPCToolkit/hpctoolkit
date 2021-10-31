@@ -88,6 +88,7 @@ Settings& Settings::operator<<(ProfileSink& s) {
   auto acc = s.accepts();
   if(acc.hasMetrics()) acc += DataClass::attributes + DataClass::threads;
   if(acc.hasContexts()) acc += DataClass::references;
+  if(acc.hasTimepoints()) acc += DataClass::threads;
   sinks.emplace_back(acc, acc & wav, req, s);
   return *this;
 }
@@ -324,6 +325,9 @@ void ProfilePipeline::run() {
     wave(DataClass::threads, 2);
     wave(DataClass::contexts, 3);
 
+    std::optional<std::pair<std::chrono::nanoseconds, std::chrono::nanoseconds>>
+      localTimepointBounds;
+
     // Now for the finishing wave
     #pragma omp for schedule(dynamic) nowait
     for(std::size_t i = 0; i < sources.size(); ++i) {
@@ -340,12 +344,44 @@ void ProfilePipeline::run() {
       }
 
       // Finalize all the Threads we can, stash the ones we can't for later
-      for(auto& t: sl.threads) {
-        Metric::prefinalize(t);
-        if(t.contributesToCollab) continue;
-        Metric::finalize(t);
+      for(auto& tt: sl.threads) {
+        // Drain the remaining timepoints from the staging buffer first
+        if(!tt.timepointStaging.empty()) {
+          auto& tps = tt.timepointStaging;
+          if(tt.unboundedDisorder) {
+            std::sort(tps.begin(), tps.end(),
+                util::compare_only_second<decltype(tt.timepointStaging)::value_type>());
+          }
+          for(auto& s: sinks) {
+            if(!s.dataLimit.hasTimepoints()) continue;
+            s().notifyTimepoints(tt.thread(), tps);
+          }
+          tps.clear();
+        }
+        // Then drain the timepoints from the sorting buffer
+        if(!tt.timepointSortBuf.empty()) {
+          auto tps = std::move(tt.timepointSortBuf).sorted();
+          for(auto& s: sinks) {
+            if(!s.dataLimit.hasTimepoints()) continue;
+            s().notifyTimepoints(tt.thread(), tps);
+          }
+        }
+
+        // Update our thread-local timepoint min-max bounds
+        if(tt.minTime > std::chrono::nanoseconds::min()) {
+          if(localTimepointBounds) {
+            localTimepointBounds->first = std::min(localTimepointBounds->first, tt.minTime);
+            localTimepointBounds->second = std::max(localTimepointBounds->second, tt.maxTime);
+          } else
+            localTimepointBounds = {tt.minTime, tt.maxTime};
+        }
+
+        // Finish off the Thread's metrics and let the Sinks know
+        Metric::prefinalize(tt);
+        if(tt.contributesToCollab) continue;
+        Metric::finalize(tt);
         for(auto& s: sinks)
-          if(s.dataLimit.hasThreads()) s().notifyThreadFinal(t);
+          if(s.dataLimit.hasThreads()) s().notifyThreadFinal(tt);
       }
       sl.threads.remove_if([](const auto& t){ return !t.contributesToCollab; });
       if(!sl.threads.empty()) {
@@ -357,6 +393,16 @@ void ProfilePipeline::run() {
       sl.threads.clear();
       assert(sl.thawedMetrics.empty() && "Source exited before freezing all of its referenced Metrics!");
       sl.thawedMetrics.clear();
+    }
+
+    // Update the main timepoint bounds with our thread-local data
+    if(localTimepointBounds) {
+      std::unique_lock<std::mutex> l(attrsLock);
+      if(timepointBounds) {
+        timepointBounds->first = std::min(timepointBounds->first, localTimepointBounds->first);
+        timepointBounds->second = std::min(timepointBounds->second, localTimepointBounds->second);
+      } else
+        timepointBounds = localTimepointBounds;
     }
 
     // Make sure everything has been read before we cross-distribute
@@ -471,6 +517,16 @@ void Source::attributes(const ProfileAttributes& as) {
   assert(limit().hasAttributes() && "Source did not register for `attributes` emission!");
   std::unique_lock<std::mutex> l(pipe->attrsLock);
   pipe->attrs.merge(as);
+}
+
+void Source::timepointBounds(std::chrono::nanoseconds min, std::chrono::nanoseconds max) {
+  assert(limit().hasAttributes() && "Source did not register for `attributes` emission!");
+  std::unique_lock<std::mutex> l(pipe->attrsLock);
+  if(pipe->timepointBounds) {
+    pipe->timepointBounds->first = std::min(min, pipe->timepointBounds->first);
+    pipe->timepointBounds->second = std::max(max, pipe->timepointBounds->second);
+  } else
+    pipe->timepointBounds = std::make_pair(min, max);
 }
 
 Module& Source::module(const stdshim::filesystem::path& p) {
@@ -634,64 +690,92 @@ void Source::StatisticsRef::add(Metric& m, const StatisticPartial& sp,
   else abort();  // unreachable
 }
 
-Thread::Temporary& Source::thread(const ThreadAttributes& o) {
+Thread::Temporary& Source::thread(ThreadAttributes o) {
   assert(limit().hasThreads() && "Source did not register for `threads` emission!");
+  assert(o.ok() && "Source did not fill out enough of the ThreadAttributes!");
+  o.finalize(pipe->threadAttrFinalizeState);
   auto& t = *pipe->threads.emplace(new Thread(pipe->structs.thread, o)).first;
   for(auto& s: pipe->sinks) {
     if(s.dataLimit.hasThreads()) s().notifyThread(t);
   }
   t.userdata.initialize();
   slocal->threads.emplace_front(Thread::Temporary(t));
+  auto& tt = slocal->threads.front();
+  tt.timepointStaging.reserve(4096);
+  if(tt.thread().attributes.timepointDisorder() > 0) {
+    // We need K+1 to detect the case when it was >K-disordered
+    // Then another +1 to so disorder is treated properly by the algorithm
+    tt.timepointSortBuf = decltype(tt.timepointSortBuf)(
+        tt.thread().attributes.timepointDisorder() + 2);
+  }
   return slocal->threads.front();
 }
 
-void Source::timepoint(Thread::Temporary& tt, ContextRef c, std::chrono::nanoseconds tm) {
+Source::TimepointStatus Source::timepoint(Thread::Temporary& tt, ContextRef mc, std::chrono::nanoseconds tm) {
   assert(limit().hasTimepoints() && "Source did not register for `timepoints` emission!");
   assert(slocal->lastWave && "Attempt to emit timepoints before requested!");
-  for(auto& s: pipe->sinks) {
-    if(!s.dataLimit.hasTimepoints()) continue;
-    if(s.dataLimit.allOf(DataClass::threads + DataClass::contexts))
-      s().notifyTimepoint(tt.thread(), c, tm);
-    else if(s.dataLimit.hasContexts())
-      s().notifyTimepoint(c, tm);
-    else if(s.dataLimit.hasThreads())
-      s().notifyTimepoint(tt.thread(), tm);
-    else
-      s().notifyTimepoint(tm);
-  }
-}
+  ContextRef::const_t c = mc;
 
-void Source::timepoint(Thread::Temporary& tt, std::chrono::nanoseconds tm) {
-  assert(limit().hasTimepoints() && "Source did not register for `timepoints` emission!");
-  assert(slocal->lastWave && "Attempt to emit timepoints before requested!");
-  for(auto& s: pipe->sinks) {
-    if(!s.dataLimit.hasTimepoints()) continue;
-    if(s.dataLimit.hasThreads())
-      s().notifyTimepoint(tt.thread(), tm);
-    else
-      s().notifyTimepoint(tm);
-  }
-}
+  tt.minTime = std::min(tt.minTime, tm);
+  tt.maxTime = std::max(tt.maxTime, tm);
 
-void Source::timepoint(ContextRef c, std::chrono::nanoseconds tm) {
-  assert(limit().hasTimepoints() && "Source did not register for `timepoints` emission!");
-  assert(slocal->lastWave && "Attempt to emit timepoints before requested!");
-  for(auto& s: pipe->sinks) {
-    if(!s.dataLimit.hasTimepoints()) continue;
-    if(s.dataLimit.hasContexts())
-      s().notifyTimepoint(c, tm);
-    else
-      s().notifyTimepoint(tm);
+  if(tt.unboundedDisorder) {
+    // Stash in the staging buffer until we have 'em all to sort together
+    tt.timepointStaging.push_back({c, tm});
+    return TimepointStatus::next;
   }
-}
 
-void Source::timepoint(std::chrono::nanoseconds tm) {
-  assert(limit().hasTimepoints() && "Source did not register for `timepoints` emission!");
-  assert(slocal->lastWave && "Attempt to emit timepoints before requested!");
-  for(auto& s: pipe->sinks) {
-    if(!s.dataLimit.hasTimepoints()) continue;
-    s().notifyTimepoint(tm);
+  auto& sortBuf = tt.timepointSortBuf;
+  if(sortBuf.bound() > 0) {
+    if(!sortBuf.full()) {
+      // The buffer hasn't filled yet. Add the new point and continue.
+      sortBuf.push({c, tm});
+      return TimepointStatus::next;
+    }
+
+    // Replace an element and see if we're over the bound
+    auto [elem, over] = sortBuf.replace({c, tm});
+    if(over) {
+      // We hit the disorder bound. Reset in preparation for fallbacks.
+      tt.timepointSortBuf.clear();
+      tt.timepointStaging.clear();
+
+      if(sortBuf.bound() < 800) {
+        // Our fallback is 1023, but we only try it if the previous attempt was
+        // with a significantly smaller bound. Rewinds are expensive.
+        tt.timepointSortBuf = decltype(tt.timepointSortBuf)(1023);
+      } else {
+        // Fall back to loading the whole thing in memory
+        util::log::warning{} << "Trace for a thread is unexpectedly extremely"
+             " unordered, falling back to an in-memory sort.\n"
+             "  This may indicate an issue during measurement, and WILL"
+             " significantly increase memory usage!\n"
+             "  Affected thread: " << tt.thread().attributes;
+        tt.unboundedDisorder = true;
+      }
+
+      for(auto& s: pipe->sinks) {
+        if(!s.dataLimit.hasTimepoints()) continue;
+        s().notifyTimepointRewindStart(tt.thread());
+      }
+      return TimepointStatus::rewindStart;
+    }
+
+    std::tie(c, tm) = elem;
   }
+
+  // Tack it onto the end of the staging vector. If its full enough let the
+  // Sinks at it for a bit.
+  tt.timepointStaging.push_back({c, tm});
+  if(tt.timepointStaging.size() >= 4096) {
+    for(auto& s: pipe->sinks) {
+      if(!s.dataLimit.hasTimepoints()) continue;
+      s().notifyTimepoints(tt.thread(), tt.timepointStaging);
+    }
+    tt.timepointStaging.clear();
+    tt.timepointStaging.reserve(4096);
+  }
+  return TimepointStatus::next;
 }
 
 Source& Source::operator=(Source&& o) {
@@ -769,6 +853,12 @@ Sink::resolvedPath() const {
 const ProfileAttributes& Sink::attributes() {
   assert(dataLimit.hasAttributes() && "Sink did not register for `attributes` absorption!");
   return pipe->attrs;
+}
+
+std::optional<std::pair<std::chrono::nanoseconds, std::chrono::nanoseconds>>
+Sink::timepointBounds() {
+  assert(dataLimit.hasAttributes() && "Sink did not register for `attributes` absorption!");
+  return pipe->timepointBounds;
 }
 
 const util::locked_unordered_uniqued_set<Module>& Sink::modules() {
