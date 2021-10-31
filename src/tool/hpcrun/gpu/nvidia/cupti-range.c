@@ -135,10 +135,11 @@ cupti_range_mode_context_sensitive_is_enter
   }
 
   bool repeated = cupti_cct_trace_append(range_id, api_node);
+  bool sampled = false;
   if (is_cur && !active) {
     // 1. abc | (a1)bc
     // 2. abc | ... | abc
-    bool sampled = !repeated ||
+    sampled = !repeated ||
       (map_ret_type == CUPTI_IP_NORM_MAP_DUPLICATE && cupti_range_mode_context_sensitive_is_sampled());
     if (sampled) {
       TMSG(CUPTI_TRACE, "Range repeated %d, map_ret_type %d, api_node %p", repeated, map_ret_type, api_node);
@@ -146,7 +147,7 @@ cupti_range_mode_context_sensitive_is_enter
     }
   }
 
-  return map_ret_type == CUPTI_IP_NORM_MAP_DUPLICATE;
+  return sampled;
 }
 
 
