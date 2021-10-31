@@ -45,7 +45,6 @@
 // ******************************************************* EndRiceCopyright *
 
 
-#include "ompt-device.h"
 
 /******************************************************************************
  * global include files
@@ -68,11 +67,13 @@
 #include "ompt-interface.h"
 #include "ompt-device-map.h"
 #include "ompt-placeholders.h"
+#include "ompt-device.h"
 
 #include "gpu/gpu-op-placeholders.h"
 #include "gpu/gpu-application-thread-api.h"
 #include "gpu/gpu-correlation-channel.h"
 #include "gpu/gpu-correlation-channel-set.h"
+#include "gpu/gpu-correlation-id.h"
 #include "gpu/gpu-metrics.h"
 #include "gpu/gpu-monitoring.h"
 #include "gpu/gpu-monitoring-thread-api.h"
@@ -282,7 +283,7 @@ ompt_dump
 )
 {
   if (r) { 
-    printf("r=%p type=%d time=%lu thread_id=%lu target_id=%lu\n",
+    printf("r=%p type=%d time=%lu thread_id=%lu target_id=0x%lx\n",
 	   r, r->type, r->time, r->thread_id, r->target_id);
 
     switch (r->type) {
@@ -290,7 +291,7 @@ ompt_dump
       // case ompt_callback_target_emi:
       {
 	ompt_record_target_t target_rec = r->record.target;
-	printf("\tTarget task: kind=%d endpoint=%d device=%d task_id=%lu target_id=%lu codeptr=%p\n",
+	printf("\tTarget task: kind=%d endpoint=%d device=%d task_id=%lu target_id=0x%lx codeptr=%p\n",
 	       target_rec.kind, target_rec.endpoint, target_rec.device_num,
 	       target_rec.task_id, target_rec.target_id, target_rec.codeptr_ra);
 	break;
@@ -432,7 +433,10 @@ ompt_buffer_complete
       // status will be 0 if there is no next record
       status = ompt_advance_buffer_cursor(device, buffer, bytes, current,
 					  &current);
+#if 0
+      // obsolete with changes from AMD
       if (BUFFER_EMPTY(record, buffer, bytes)) break;
+#endif
     }
   }
 
@@ -446,7 +450,7 @@ void
 ompt_trace_configure(ompt_device_t *device)
 {
   // indicate desired monitoring
-  // ompt_set_trace_ompt(device, 1, 0);
+  ompt_set_trace_ompt(device, 1, 0);
   
   // turn on monitoring previously indicated
   ompt_start_trace(device, ompt_buffer_request,
@@ -518,22 +522,24 @@ get_load_module
 
 
 void 
-ompt_target_callback
+ompt_target_callback_emi
 (
   ompt_target_t kind,
   ompt_scope_endpoint_t endpoint,
   int device_num,
   ompt_data_t *task_data,
-  ompt_id_t target_id,
+  ompt_data_t *target_task_data,
+  ompt_data_t *target_data,
   const void *codeptr_ra
 )
 {
-  PRINT("ompt_target_callback->target_id %" PRIu64 "\n", target_id);
-
   if (endpoint == ompt_scope_end) {
     target_node = NULL;
     return;
   }
+
+  uint64_t target_id = target_data->value = gpu_correlation_id();
+  PRINT("ompt_target_callback->target_id 0x%lx\n", target_id);
 
   // XXX(Keren): Do not use openmp callbacks to consume and produce records
   // HPCToolkit always subscribes its own cupti callback
@@ -582,21 +588,27 @@ ompt_target_callback
   macro(op, ompt_target_data_transfer_from_device, ompt_tgt_copyout) 
 
 void
-ompt_data_op_callback
+ompt_data_op_callback_emi
 (
- ompt_scope_endpoint_t endpoint,
- ompt_id_t target_id,
- ompt_id_t host_op_id,
- ompt_target_data_op_t optype,
- void *src_addr,
- int src_device_num,
- void *dest_addr,
- int dest_device_num,
- size_t bytes,
- const void *codeptr_ra
+  ompt_scope_endpoint_t endpoint,
+  ompt_data_t *target_task_data,
+  ompt_data_t *target_data,
+  ompt_id_t *host_op_id,
+  ompt_target_data_op_t optype,
+  void *src_addr,
+  int src_device_num,
+  void *dest_addr,
+  int dest_device_num,
+  size_t bytes,
+  const void *codeptr_ra
 )
 {
-  PRINT("ompt_data_op enter->target_id %" PRIu64 "\n", target_id);
+  if (endpoint == ompt_scope_end) return;
+
+  uint64_t target_id = target_data->value;
+  uint64_t op_id = *host_op_id = gpu_correlation_id(); 
+
+  PRINT("ompt_data_op enter->target_id 0x%lx\n", target_id);
   ompt_placeholder_t op = ompt_placeholders.ompt_tgt_none;
   switch (optype) {                       
 #define ompt_op_macro(op, ompt_op_type, ompt_op_class) \
@@ -611,23 +623,28 @@ ompt_data_op_callback
       break;
   }
 
-  hpcrun_ompt_op_id_notify(endpoint, host_op_id, op.pc_norm);
-  PRINT("ompt_data_op exit->target_id %" PRIu64 "\n", target_id);
+  hpcrun_ompt_op_id_notify(endpoint, op_id, op.pc_norm);
+  PRINT("ompt_data_op exit->target_id 0x%lx\n", target_id);
 }
 
 
 void
-ompt_submit_callback
+ompt_submit_callback_emi
 (
  ompt_scope_endpoint_t endpoint,
- ompt_id_t target_id,
- ompt_id_t host_op_id,
+ ompt_data_t *target_data,
+ ompt_id_t *host_op_id,
  unsigned int requested_num_teams
 )
 {
-  PRINT("ompt_submit_callback enter->target_id %" PRIu64 "\n", target_id);
-  hpcrun_ompt_op_id_notify(endpoint, host_op_id, ompt_placeholders.ompt_tgt_kernel.pc_norm);
-  PRINT("ompt_submit_callback exit->target_id %" PRIu64 "\n", target_id);
+  uint64_t target_id = target_data->value;
+  PRINT("ompt_submit_callback enter->target_id 0x%lx\n", target_id);
+  if (endpoint == ompt_scope_begin) {
+    *host_op_id = gpu_correlation_id();
+    hpcrun_ompt_op_id_notify(endpoint, *host_op_id,
+      ompt_placeholders.ompt_tgt_kernel.pc_norm);
+  }
+  PRINT("ompt_submit_callback exit->target_id 0x%lx\n", target_id);
 }
 
 
@@ -681,14 +698,22 @@ prepare_device
   device_finalizer_register(device_finalizer_type_shutdown,
 			    &device_finalizer_trace);
 
-  ompt_set_callback(ompt_callback_device_initialize, ompt_device_initialize);
-  ompt_set_callback(ompt_callback_device_finalize, ompt_device_finalize);
-  ompt_set_callback(ompt_callback_device_load, ompt_device_load);
-  ompt_set_callback(ompt_callback_device_unload, ompt_device_unload);
-  ompt_set_callback(ompt_callback_target, ompt_target_callback);
-  ompt_set_callback(ompt_callback_target_data_op, ompt_data_op_callback);
-  ompt_set_callback(ompt_callback_target_submit, ompt_submit_callback);
-  ompt_set_callback(ompt_callback_target_map, ompt_map_callback);
+  ompt_set_callback
+    (ompt_callback_device_initialize, ompt_device_initialize);
+  ompt_set_callback
+    (ompt_callback_device_finalize, ompt_device_finalize);
+  ompt_set_callback
+    (ompt_callback_device_load, ompt_device_load);
+  ompt_set_callback
+    (ompt_callback_device_unload, ompt_device_unload);
+  ompt_set_callback
+    (ompt_callback_target_emi, ompt_target_callback_emi);
+  ompt_set_callback
+    (ompt_callback_target_data_op_emi, ompt_data_op_callback_emi);
+  ompt_set_callback
+    (ompt_callback_target_submit_emi, ompt_submit_callback_emi);
+  ompt_set_callback
+    (ompt_callback_target_map, ompt_map_callback);
 
   PRINT("ompt_initialize->prepare_device exit\n");
 }
