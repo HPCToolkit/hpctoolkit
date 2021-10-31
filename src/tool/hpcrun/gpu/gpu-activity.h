@@ -181,7 +181,7 @@ typedef enum {
 
 // pc sampling
 typedef struct gpu_pc_sampling_t {
-  uint32_t correlation_id;
+  uint64_t correlation_id;
   ip_normalized_t pc;
   uint32_t samples;
   uint32_t latencySamples;
@@ -190,7 +190,7 @@ typedef struct gpu_pc_sampling_t {
 
 
 typedef struct gpu_pc_sampling_info_t {
-  uint32_t correlation_id;
+  uint64_t correlation_id;
   uint64_t droppedSamples;
   uint64_t samplingPeriodInCycles;
   uint64_t totalSamples;
@@ -217,7 +217,7 @@ typedef struct gpu_memcpy_t {
   uint64_t end;
   uint64_t bytes;
   uint64_t submit_time;
-  uint32_t correlation_id;
+  uint64_t correlation_id;
   uint32_t context_id;
   uint32_t stream_id;
   gpu_memcpy_type_t copyKind;
@@ -230,7 +230,9 @@ typedef struct gpu_memory_t {
   uint64_t start;
   uint64_t end;
   uint64_t bytes;
-  uint32_t correlation_id;
+  uint64_t correlation_id;
+  uint32_t context_id;
+  uint32_t stream_id;
   gpu_mem_type_t memKind;
 } gpu_memory_t;
 
@@ -240,7 +242,7 @@ typedef struct gpu_memset_t {
   uint64_t start;
   uint64_t end;
   uint64_t bytes;
-  uint32_t correlation_id;
+  uint64_t correlation_id;
   uint32_t context_id;
   uint32_t stream_id;
   gpu_mem_type_t memKind;
@@ -252,7 +254,7 @@ typedef struct gpu_kernel_t {
   uint64_t start;
   uint64_t end;
   uint64_t submit_time;
-  uint32_t correlation_id;
+  uint64_t correlation_id;
   uint32_t device_id;
   uint32_t context_id;
   uint32_t stream_id;
@@ -278,7 +280,7 @@ typedef struct gpu_kernel_block_t {
 typedef struct gpu_cdpkernel_t {
   uint64_t start;
   uint64_t end;
-  uint32_t correlation_id;
+  uint64_t correlation_id;
   uint32_t context_id;
   uint32_t stream_id;
 } gpu_cdpkernel_t;
@@ -298,7 +300,7 @@ typedef struct gpu_event_t {
 
 
 typedef struct gpu_global_access_t {
-  uint32_t correlation_id;
+  uint64_t correlation_id;
   ip_normalized_t pc;
   uint64_t l2_transactions;
   uint64_t theoreticalL2Transactions;
@@ -308,7 +310,7 @@ typedef struct gpu_global_access_t {
 
 
 typedef struct gpu_local_access_t {
-  uint32_t correlation_id;
+  uint64_t correlation_id;
   ip_normalized_t pc;
   uint64_t sharedTransactions;
   uint64_t theoreticalSharedTransactions;
@@ -318,7 +320,7 @@ typedef struct gpu_local_access_t {
 
 
 typedef struct gpu_branch_t {
-  uint32_t correlation_id;
+  uint64_t correlation_id;
   ip_normalized_t pc;
   uint32_t diverged;
   uint32_t executed;
@@ -328,7 +330,7 @@ typedef struct gpu_branch_t {
 typedef struct gpu_synchronization_t {
   uint64_t start;
   uint64_t end;
-  uint32_t correlation_id;
+  uint64_t correlation_id;
   uint32_t context_id;
   uint32_t stream_id;
   uint32_t event_id;
@@ -337,7 +339,7 @@ typedef struct gpu_synchronization_t {
 
 
 typedef struct gpu_host_correlation_t {
-  uint32_t correlation_id;
+  uint64_t correlation_id;
   uint64_t host_correlation_id;
 } gpu_host_correlation_t;
 
@@ -352,7 +354,7 @@ typedef struct gpu_interval_t {
 
 
 typedef struct gpu_instruction_t {
-  uint32_t correlation_id;
+  uint64_t correlation_id;
   ip_normalized_t pc;
 } gpu_instruction_t;
 
