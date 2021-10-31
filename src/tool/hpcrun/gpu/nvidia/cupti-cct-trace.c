@@ -90,6 +90,55 @@ cupti_cct_trace_free_helper
    (cupti_cct_trace_node_t *) node)
 
 
+static cupti_cct_trace_map_entry_t *
+trace_map_lookup
+(
+ uint64_t node1,
+ uint64_t node2
+)
+{
+  cct_trace_key_t key = {
+    .node1 = node1,
+    .node2 = node2
+  };
+
+  return cupti_cct_trace_map_lookup_thread(key);
+}
+
+
+static void
+trace_map_insert
+(
+ uint64_t node1,
+ uint64_t node2,
+ cupti_cct_trace_node_t *trace_node,
+ uint32_t range_id
+)
+{
+  cct_trace_key_t key = {
+    .node1 = node1,
+    .node2 = node2
+  };
+
+  cupti_cct_trace_map_insert_thread(key, trace_node, range_id);
+}
+
+
+static void
+trace_map_delete
+(
+ uint64_t node1,
+ uint64_t node2
+)
+{
+  cct_trace_key_t key = {
+    .node1 = node1,
+    .node2 = node2
+  };
+
+  cupti_cct_trace_map_delete_thread(key);
+}
+
 static cupti_cct_trace_node_t *
 trace_new
 (
@@ -100,7 +149,7 @@ trace_new
   cupti_cct_trace_node_t *node = trace_alloc(&free_list);
   node->type = type;
   node->key = key;
-  node->ref_count = 1;
+  node->ref_count = 0;
   node->left = node;
   node->right = node;
 
@@ -184,13 +233,20 @@ static void
 trace_splice
 (
  cupti_cct_trace_node_t *to,
- cupti_cct_trace_node_t *from_head
+ cupti_cct_trace_node_t *from_head,
+ uint32_t range_id
 )
 {
   cupti_cct_trace_node_t *left = to;
   cupti_cct_trace_node_t *right = to->right;
   trace_insert(left, from_head->right);
-  trace_insert(right, from_head->left);
+  if (left->type != CUPTI_CCT_TRACE_NODE_NON_TERMINAL) {
+    trace_map_insert(left->key, from_head->right->key, left, range_id);
+  }
+  trace_insert(from_head->left, right);
+  if (from_head->left->type != CUPTI_CCT_TRACE_NODE_NON_TERMINAL) {
+    trace_map_insert(from_head->left->key, right->key, from_head->left, range_id);
+  }
 }
 
 
@@ -219,76 +275,36 @@ trace_delete
 
   if (node->type == CUPTI_CCT_TRACE_NODE_NON_TERMINAL_REF || 
     node->type == CUPTI_CCT_TRACE_NODE_NON_TERMINAL) {
-    node->ref_left->ref_right = node->ref_right;
-    node->ref_right->ref_left = node->ref_left;
+    if (node->ref_left != NULL) {
+      node->ref_left->ref_right = node->ref_right;
+    }
+    if (node->ref_right != NULL) {
+      node->ref_right->ref_left = node->ref_left;
+    }
   }
 
   trace_free(&free_list, node);
 }
 
 
-static cupti_cct_trace_map_entry_t *
-trace_map_lookup
-(
- uint64_t node1,
- uint64_t node2
-)
-{
-  cct_trace_key_t key = {
-    .node1 = node1,
-    .node2 = node2
-  };
-
-  return cupti_cct_trace_map_lookup_thread(key);
-}
-
-
-static void
-trace_map_insert
-(
- uint64_t node1,
- uint64_t node2,
- cupti_cct_trace_node_t *trace_node,
- uint32_t range_id
-)
-{
-  cct_trace_key_t key = {
-    .node1 = node1,
-    .node2 = node2
-  };
-
-  cupti_cct_trace_map_insert_thread(key, trace_node, range_id);
-}
-
-
-static void
-trace_map_delete
-(
- uint64_t node1,
- uint64_t node2
-)
-{
-  cct_trace_key_t key = {
-    .node1 = node1,
-    .node2 = node2
-  };
-
-  cupti_cct_trace_map_delete_thread(key);
-}
-
 
 static void
 trace_rule_delete
 (
- cupti_cct_trace_node_t *rule
+ cupti_cct_trace_node_t *rule,
+ uint32_t range_id
 )
 {
-  if (rule != NULL && rule->ref_count == 1) {
-    // There must be only one ref node only
-    cupti_cct_trace_node_t *left = rule->ref_right->left;
-    trace_delete(rule->ref_right);
-    trace_splice(left, rule);
-    trace_delete(rule);
+  if (rule != NULL && rule->ref_count >= 1) {
+    if (rule->ref_count == 1) {
+      // There must be only one ref node only
+      cupti_cct_trace_node_t *left = rule->ref_right->left;
+      trace_delete(rule->ref_right);
+      trace_splice(left, rule, range_id);
+      trace_delete(rule);
+    } else {
+      --rule->ref_count;
+    }
   }
 }
 
@@ -378,22 +394,21 @@ trace_shrink
       trace_insert(left, rule_ref);
 
       // 2. Delete the index of the subsequent pattern
-      // root->Aab
+      // root->bAab
       // Current pattern Aa
       // Delete the index of ab
       if (!contiguous) {
-        // Not root->AaAa
+        // Not root->taaaa
         trace_map_delete(node2->key, right->key);
       }
 
       // Utility rule
-      trace_rule_delete(node1->rule);
-      trace_rule_delete(node2->rule);
+      trace_rule_delete(node1->rule, range_id);
+      trace_rule_delete(node2->rule, range_id);
 
       // 3. Move prev_pattern nodes from the trace to the rule
       // root->Aa...................Aa
       rule = trace_new(CUPTI_CCT_TRACE_NODE_NON_TERMINAL, 0);
-      rule_ref->key = (uint64_t)rule;
       trace_append(rule, node1);
       trace_append(rule, node2);
       trace_ref_append(rule, rule_ref);
@@ -429,7 +444,7 @@ trace_shrink
     }
 
     cupti_cct_trace_node_t *pattern_node_left = pattern_node->left;
-    if (!contiguous && pattern_node_left->type != CUPTI_CCT_TRACE_NODE_FLUSH) {
+    if (pattern_node_left->type != CUPTI_CCT_TRACE_NODE_FLUSH) {
       // root->...AbBAb
       // Current pattern Ab
       // Delete BA
@@ -443,7 +458,6 @@ trace_shrink
 
     // Make a ref node
     cupti_cct_trace_node_t *rule_ref = trace_new(CUPTI_CCT_TRACE_NODE_NON_TERMINAL_REF, 0);
-    rule_ref->key = (uint64_t)rule;
 
     trace_delete(pattern_node->right);
     trace_delete(pattern_node);
@@ -460,7 +474,7 @@ trace_shrink
       pattern_node_left->key, pattern_node_left->right->key, pattern_node_left->right->right->key);
 
     // There must be another A, otherwise, A should have been replaced
-    // No need to enfore utility rule
+    // Since rules have been deleted before, no need to enfore utility rule here
     current = thread_root->left;
 
     shrunk = true;
