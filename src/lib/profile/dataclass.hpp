@@ -60,10 +60,10 @@ public:
   // Default constructor corrosponds to the empty set
   constexpr DataClass() noexcept : mask() {};
 
-  // Enum-like class hierarchy for singleton sets.
 private:
+  // Enum-like class hierarchy for singleton sets.
   class singleton_c { protected: singleton_c() = default; };
-#define CONTENTS : public singleton_c {                  \
+#define CONTENTS(BIT) : public singleton_c {             \
   DataClass operator|(const DataClass& o) const noexcept \
     { return DataClass(*this) | o; }                     \
   DataClass operator+(const DataClass& o) const noexcept \
@@ -72,24 +72,22 @@ private:
     { return DataClass(*this) - o; }                     \
   DataClass operator&(const DataClass& o) const noexcept \
     { return DataClass(*this) & o; }                     \
+  constexpr operator DataClass() const noexcept          \
+    { return DataClass(1ULL << BIT); }                   \
+private:                                                 \
+  friend class DataClass;                                \
+  static constexpr int bit = BIT;                        \
 }
-  struct attributes_c CONTENTS;
-  struct threads_c    CONTENTS;
-  struct references_c CONTENTS;
-  struct metrics_c    CONTENTS;
-  struct contexts_c   CONTENTS;
-  struct timepoints_c CONTENTS;
+  struct attributes_c CONTENTS(0);
+  struct threads_c    CONTENTS(1);
+  struct references_c CONTENTS(2);
+  struct metrics_c    CONTENTS(3);
+  struct contexts_c   CONTENTS(4);
+  struct timepoints_c CONTENTS(5);
+  std::bitset<6> mask;
 #undef CONTENTS
 
 public:
-  using singleton_t  = const singleton_c&;
-  using attributes_t = const attributes_c&;
-  using threads_t    = const threads_c&;
-  using references_t = const references_c&;
-  using metrics_t    = const metrics_c&;
-  using contexts_t   = const contexts_c&;
-  using timepoints_t = const timepoints_c&;
-
   /// Emits the execution context for the Profile itself.
   static constexpr attributes_c attributes = {};
   /// Emits execution contexts for each Thread within the Profile.
@@ -100,31 +98,27 @@ public:
   static constexpr metrics_c    metrics    = {};
   /// Emits the locations in which data was gathered.
   static constexpr contexts_c   contexts   = {};
-  /// Emits the moments in time in which data was gathered.
+  /// Emits the locations in which data was gathered, over time.
   static constexpr timepoints_c timepoints = {};
 
-  constexpr DataClass(const singleton_t& o) : mask(
-    &o == &attributes ? 1<<0 :
-    &o == &threads    ? 1<<1 :
-    &o == &references ? 1<<2 :
-    &o == &metrics    ? 1<<3 :
-    &o == &contexts   ? 1<<4 :
-    &o == &timepoints ? 1<<5 : 0) {};
-
   // Universal set
-  static DataClass constexpr all() { return DataClass((1<<6) - 1); }
+  static DataClass constexpr all() {
+    return (1ULL<<decltype(mask)(0).size()) - 1;
+  }
 
   // Named queries for particular elements
   bool hasAny()        const noexcept { return mask.any(); }
-  bool hasAttributes() const noexcept { return mask[0]; }
-  bool hasThreads()    const noexcept { return mask[1]; }
-  bool hasReferences() const noexcept { return mask[2]; }
-  bool hasMetrics()    const noexcept { return mask[3]; }
-  bool hasContexts()   const noexcept { return mask[4]; }
-  bool hasTimepoints() const noexcept { return mask[5]; }
+  bool hasAttributes() const noexcept { return has(attributes); }
+  bool hasThreads()    const noexcept { return has(threads); }
+  bool hasReferences() const noexcept { return has(references); }
+  bool hasMetrics()    const noexcept { return has(metrics); }
+  bool hasContexts()   const noexcept { return has(contexts); }
+  bool hasTimepoints() const noexcept { return has(timepoints); }
 
   // Query for whether there are any of such and so
-  bool has(singleton_t o) const noexcept { return allOf(o); }
+  template<class Singleton>
+  std::enable_if_t<std::is_base_of_v<singleton_c, Singleton>, bool>
+  has(Singleton o) const noexcept { return mask[Singleton::bit]; }
   bool anyOf(const DataClass& o) const noexcept { return operator&(o).hasAny(); }
   bool allOf(const DataClass& o) const noexcept { return operator&(o) == o; }
 
@@ -149,32 +143,31 @@ public:
   friend std::basic_ostream<C,T>& operator<<(std::basic_ostream<C,T>& os,
                                              const DataClass& d) {
     os << '[';
-    if(d.hasAttributes()) os << 'A';
-    if(d.hasThreads()) os << 'T';
-    if(d.hasReferences()) os << 'R';
-    if(d.hasContexts()) os << 'C';
+    if(d.has(attributes)) os << 'A';
+    if(d.has(threads)) os << 'T';
+    if(d.has(references)) os << 'R';
+    if(d.has(contexts)) os << 'C';
     if(d.anyOf(attributes | threads | references | contexts)
        && d.anyOf(metrics | timepoints)) os << ' ';
-    if(d.hasMetrics()) os << 'm';
-    if(d.hasTimepoints()) os << 't';
+    if(d.has(metrics)) os << 'm';
+    if(d.has(timepoints)) os << 't';
     os << ']';
     return os;
   }
 
 private:
   constexpr DataClass(unsigned long long v) : mask(v) {};
-  std::bitset<6> mask;
-  constexpr DataClass(const decltype(mask)& m) : mask(m) {};
+  constexpr DataClass(decltype(mask) m) : mask(m) {};
 };
 
 namespace literals::data {
 using Class = DataClass;
-static constexpr Class::attributes_t attributes = Class::attributes;
-static constexpr Class::threads_t    threads    = Class::threads;
-static constexpr Class::references_t references = Class::references;
-static constexpr Class::metrics_t    metrics    = Class::metrics;
-static constexpr Class::contexts_t   contexts   = Class::contexts;
-static constexpr Class::timepoints_t timepoints = Class::timepoints;
+static constexpr auto attributes = Class::attributes;
+static constexpr auto threads    = Class::threads;
+static constexpr auto references = Class::references;
+static constexpr auto metrics    = Class::metrics;
+static constexpr auto contexts   = Class::contexts;
+static constexpr auto timepoints = Class::timepoints;
 }
 
 /// Classification of the various kinds of data Pipelines can extend the
@@ -186,32 +179,32 @@ public:
   // Default constructor corrosponds to the empty set
   ExtensionClass() noexcept : mask() {};
 
-  // Enum-like class hierarchy for singleton sets.
 private:
+  // Enum-like class hierarchy for singleton sets.
   class singleton_c { protected: singleton_c() = default; };
-#define CONTENTS {                                       \
+#define CONTENTS(BIT) : public singleton_c {                       \
   ExtensionClass operator|(const ExtensionClass& o) const noexcept \
-    { return ExtensionClass(*this) | o; }                     \
+    { return ExtensionClass(*this) | o; }                          \
   ExtensionClass operator+(const ExtensionClass& o) const noexcept \
-    { return ExtensionClass(*this) + o; }                     \
+    { return ExtensionClass(*this) + o; }                          \
   ExtensionClass operator-(const ExtensionClass& o) const noexcept \
-    { return ExtensionClass(*this) - o; }                     \
+    { return ExtensionClass(*this) - o; }                          \
   ExtensionClass operator&(const ExtensionClass& o) const noexcept \
-    { return ExtensionClass(*this) & o; }                     \
+    { return ExtensionClass(*this) & o; }                          \
+  constexpr operator ExtensionClass() const noexcept               \
+    { return ExtensionClass(1<<BIT); }                             \
+private:                                                           \
+  friend class ExtensionClass;                                     \
+  static constexpr int bit = BIT;                                  \
 }
-  struct classification_c    : public singleton_c CONTENTS;
-  struct identifier_c        : public singleton_c CONTENTS;
-  struct mscopeIdentifiers_c : public singleton_c CONTENTS;
-  struct resolvedPath_c      : public singleton_c CONTENTS;
+  struct classification_c    CONTENTS(0);
+  struct identifier_c        CONTENTS(1);
+  struct mscopeIdentifiers_c CONTENTS(2);
+  struct resolvedPath_c      CONTENTS(3);
+  std::bitset<4> mask;
 #undef CONTENTS
 
 public:
-  using singleton_t         = const singleton_c&;
-  using classification_t    = const classification_c&;
-  using identifier_t        = const identifier_c&;
-  using mscopeIdentifiers_t = const mscopeIdentifiers_c&;
-  using resolvedPath_t      = const resolvedPath_c&;
-
   /// Extends Modules with information on source lines and Functions.
   static constexpr classification_c    classification    = {};
   /// Extends most data with unique numerical identifiers.
@@ -221,23 +214,22 @@ public:
   /// Extends Files and Modules with the real path in the current filesystem.
   static constexpr resolvedPath_c      resolvedPath      = {};
 
-  constexpr ExtensionClass(const singleton_t& o) : mask(
-    &o == &classification    ? 1<<0 :
-    &o == &identifier        ? 1<<1 :
-    &o == &resolvedPath      ? 1<<2 :
-    &o == &mscopeIdentifiers ? 1<<3 : 0) {};
-
   // Universal set
-  static ExtensionClass constexpr all() { return ExtensionClass((1<<4) - 1); }
+  static ExtensionClass constexpr all() {
+    return (1ULL<<decltype(mask)(0).size()) - 1;
+  }
 
   // Named queries for particular elements
   bool hasAny()               const noexcept { return mask.any(); }
-  bool hasClassification()    const noexcept { return mask[0]; }
-  bool hasIdentifier()        const noexcept { return mask[1]; }
-  bool hasResolvedPath()      const noexcept { return mask[2]; }
-  bool hasMScopeIdentifiers() const noexcept { return mask[3]; }
+  bool hasClassification()    const noexcept { return has(classification); }
+  bool hasIdentifier()        const noexcept { return has(identifier); }
+  bool hasMScopeIdentifiers() const noexcept { return has(mscopeIdentifiers); }
+  bool hasResolvedPath()      const noexcept { return has(resolvedPath); }
 
   // Query for whether there are any of such and so
+  template<class Singleton>
+  std::enable_if_t<std::is_base_of_v<singleton_c, Singleton>, bool>
+  has(Singleton s) const noexcept { return mask[Singleton::bit]; }
   bool anyOf(const ExtensionClass& o) const noexcept { return operator&(o).hasAny(); }
   bool allOf(const ExtensionClass& o) const noexcept { return operator&(o) == o; }
 
@@ -262,28 +254,27 @@ public:
   friend std::basic_ostream<C,T>& operator<<(std::basic_ostream<C,T>& os,
                                              const ExtensionClass& e) {
     os << '[';
-    if(e.hasIdentifier()) os << 'i';
-    if(e.hasMScopeIdentifiers()) os << 'm';
+    if(e.has(identifier)) os << 'i';
+    if(e.has(mscopeIdentifiers)) os << 'm';
     if(e.anyOf(identifier | mscopeIdentifiers)
        && e.anyOf(classification | resolvedPath)) os << ' ';
-    if(e.hasClassification()) os << 'c';
-    if(e.hasResolvedPath()) os << 'r';
+    if(e.has(classification)) os << 'c';
+    if(e.has(resolvedPath)) os << 'r';
     os << ']';
     return os;
   }
 
 private:
   constexpr ExtensionClass(unsigned long long v) : mask(v) {};
-  std::bitset<4> mask;
-  constexpr ExtensionClass(const decltype(mask)& m) : mask(m) {};
+  constexpr ExtensionClass(decltype(mask) m) : mask(m) {};
 };
 
 namespace literals::extensions {
 using Class = ExtensionClass;
-static constexpr Class::classification_t    classification    = Class::classification;
-static constexpr Class::identifier_t        identifier        = Class::identifier;
-static constexpr Class::mscopeIdentifiers_t mscopeIdentifiers = Class::mscopeIdentifiers;
-static constexpr Class::resolvedPath_t      resolvedPath      = Class::resolvedPath;
+static constexpr auto classification    = Class::classification;
+static constexpr auto identifier        = Class::identifier;
+static constexpr auto mscopeIdentifiers = Class::mscopeIdentifiers;
+static constexpr auto resolvedPath      = Class::resolvedPath;
 }
 }  // namespace hpctoolkit
 
