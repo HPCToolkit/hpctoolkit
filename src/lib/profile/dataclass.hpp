@@ -78,28 +78,28 @@ private:                                                 \
   friend class DataClass;                                \
   static constexpr int bit = BIT;                        \
 }
-  struct attributes_c CONTENTS(0);
-  struct threads_c    CONTENTS(1);
-  struct references_c CONTENTS(2);
-  struct metrics_c    CONTENTS(3);
-  struct contexts_c   CONTENTS(4);
-  struct timepoints_c CONTENTS(5);
+  struct attributes_c    CONTENTS(0);
+  struct threads_c       CONTENTS(1);
+  struct references_c    CONTENTS(2);
+  struct metrics_c       CONTENTS(3);
+  struct contexts_c      CONTENTS(4);
+  struct ctxTimepoints_c CONTENTS(5);
   std::bitset<6> mask;
 #undef CONTENTS
 
 public:
   /// Emits the execution context for the Profile itself.
-  static constexpr attributes_c attributes = {};
+  static constexpr attributes_c    attributes = {};
   /// Emits execution contexts for each Thread within the Profile.
-  static constexpr threads_c    threads = {};
+  static constexpr threads_c       threads = {};
   /// Emits the Profile's references to the outside filesystem.
-  static constexpr references_c references = {};
+  static constexpr references_c    references = {};
   /// Emits the individual measurements
-  static constexpr metrics_c    metrics    = {};
+  static constexpr metrics_c       metrics    = {};
   /// Emits the locations in which data was gathered.
-  static constexpr contexts_c   contexts   = {};
+  static constexpr contexts_c      contexts   = {};
   /// Emits the locations in which data was gathered, over time.
-  static constexpr timepoints_c timepoints = {};
+  static constexpr ctxTimepoints_c ctxTimepoints = {};
 
   // Universal set
   static DataClass constexpr all() {
@@ -107,13 +107,13 @@ public:
   }
 
   // Named queries for particular elements
-  bool hasAny()        const noexcept { return mask.any(); }
-  bool hasAttributes() const noexcept { return has(attributes); }
-  bool hasThreads()    const noexcept { return has(threads); }
-  bool hasReferences() const noexcept { return has(references); }
-  bool hasMetrics()    const noexcept { return has(metrics); }
-  bool hasContexts()   const noexcept { return has(contexts); }
-  bool hasTimepoints() const noexcept { return has(timepoints); }
+  bool hasAny()           const noexcept { return mask.any(); }
+  bool hasAttributes()    const noexcept { return has(attributes); }
+  bool hasThreads()       const noexcept { return has(threads); }
+  bool hasReferences()    const noexcept { return has(references); }
+  bool hasMetrics()       const noexcept { return has(metrics); }
+  bool hasContexts()      const noexcept { return has(contexts); }
+  bool hasCtxTimepoints() const noexcept { return has(ctxTimepoints); }
 
   // Query for whether there are any of such and so
   template<class Singleton>
@@ -148,9 +148,9 @@ public:
     if(d.has(references)) os << 'R';
     if(d.has(contexts)) os << 'C';
     if(d.anyOf(attributes | threads | references | contexts)
-       && d.anyOf(metrics | timepoints)) os << ' ';
+       && d.anyOf(metrics | ctxTimepoints)) os << ' ';
     if(d.has(metrics)) os << 'm';
-    if(d.has(timepoints)) os << 't';
+    if(d.has(ctxTimepoints)) os << 't';
     os << ']';
     return os;
   }
@@ -162,12 +162,12 @@ private:
 
 namespace literals::data {
 using Class = DataClass;
-static constexpr auto attributes = Class::attributes;
-static constexpr auto threads    = Class::threads;
-static constexpr auto references = Class::references;
-static constexpr auto metrics    = Class::metrics;
-static constexpr auto contexts   = Class::contexts;
-static constexpr auto timepoints = Class::timepoints;
+static constexpr auto attributes    = Class::attributes;
+static constexpr auto threads       = Class::threads;
+static constexpr auto references    = Class::references;
+static constexpr auto metrics       = Class::metrics;
+static constexpr auto contexts      = Class::contexts;
+static constexpr auto ctxTimepoints = Class::ctxTimepoints;
 }
 
 /// Classification of the various kinds of data Pipelines can extend the

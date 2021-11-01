@@ -364,9 +364,16 @@ public:
       rewindStart,
     };
 
-    /// Emit a timepoint into the Pipeline. Overloads allow for less data.
+  private:
+    // Helper template to merge common code for all timepoint types
+    template<class Tp, class Rw, class Nt, class Sg>
+    [[nodiscard]] TimepointStatus timepoint(Thread::Temporary&,
+        Thread::Temporary::TimepointsData<Tp>&, Tp, Sg, const Rw&, const Nt&);
+
+  public:
+    /// Emit a Context-type timepoint into the Pipeline.
     /// Returns the expected next timepoint the caller should inject.
-    /// DataClass: `timepoints`
+    /// DataClass: `ctxTimepoints`
     // MT: Externally Synchronized (this), Internally Synchronized
     [[nodiscard]] TimepointStatus timepoint(Thread::Temporary&, ContextRef, std::chrono::nanoseconds);
 

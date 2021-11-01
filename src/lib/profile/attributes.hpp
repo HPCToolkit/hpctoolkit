@@ -93,18 +93,18 @@ public:
   const std::vector<pms_id_t>& idTuple() const noexcept;
   void idTuple(std::vector<pms_id_t>);
 
-  /// Get or set the vital timepoint statistics (maximum count and expected
-  /// disorder) for this Thread.
+  /// Get or set the vital statistics (maximum count and expected disorder) for
+  /// the Context-type timepoints in this Thread.
   // MT: Externally Synchronized
-  unsigned long long timepointMaxCount() const noexcept;
-  void timepointStats(unsigned long long cnt, unsigned int disorder) noexcept;
+  unsigned long long ctxTimepointMaxCount() const noexcept;
+  void ctxTimepointStats(unsigned long long cnt, unsigned int disorder) noexcept;
 
 private:
   std::vector<pms_id_t> m_idTuple;
-  std::optional<std::pair<unsigned long long, unsigned int>> m_timepointStats;
+  std::optional<std::pair<unsigned long long, unsigned int>> m_ctxTimepointStats;
 
   friend class ProfilePipeline;
-  unsigned int timepointDisorder() const noexcept;
+  unsigned int ctxTimepointDisorder() const noexcept;
 
   class FinalizeState {
   public:
@@ -191,14 +191,15 @@ public:
     bool contributesToCollab = false;
 
     // Bits needed for handling timepoints
-    bool unboundedDisorder = false;
-    util::bounded_streaming_sort_buffer<
-      std::pair<ContextRef::const_t, std::chrono::nanoseconds>,
-      util::compare_only_second<std::pair<ContextRef::const_t, std::chrono::nanoseconds>>
-      > timepointSortBuf;
-    std::vector<std::pair<ContextRef::const_t, std::chrono::nanoseconds>> timepointStaging;
     std::chrono::nanoseconds minTime = std::chrono::nanoseconds::max();
     std::chrono::nanoseconds maxTime = std::chrono::nanoseconds::min();
+    template<class Tp>
+    struct TimepointsData {
+      bool unboundedDisorder = false;
+      util::bounded_streaming_sort_buffer<Tp, util::compare_only_first<Tp>> sortBuf;
+      std::vector<Tp> staging;
+    };
+    TimepointsData<std::pair<std::chrono::nanoseconds, ContextRef::const_t>> ctxTpData;
 
     friend class Metric;
     util::locked_unordered_map<util::reference_index<const Context>,

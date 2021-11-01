@@ -124,13 +124,13 @@ public:
   // MT: Internally Synchronized
   virtual void notifyThread(const Thread&);
 
-  /// Notify the Sink that some number of timepoints have been emitted.
+  /// Notify the Sink that some number of Context-type timepoints have been emitted.
   // MT: Internally Synchronized
-  virtual void notifyTimepoints(const Thread&, const std::vector<std::pair<ContextRef::const_t, std::chrono::nanoseconds>>&);
+  virtual void notifyTimepoints(const Thread&, const std::vector<std::pair<std::chrono::nanoseconds, ContextRef::const_t>>&);
 
-  /// Notify the Sink that the next timepoint will not be the sequentially next,
+  /// Notify the Sink that the next Context-type timepoint will not be the sequentially next,
   /// but instead be rewound back to the first.
-  virtual void notifyTimepointRewindStart(const Thread&);
+  virtual void notifyCtxTimepointRewindStart(const Thread&);
 
   /// Notify the Sink that a Thread has finished.
   // MT: Internally Synchronized

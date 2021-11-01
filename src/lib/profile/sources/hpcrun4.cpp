@@ -57,7 +57,6 @@
 
 using namespace hpctoolkit;
 using namespace sources;
-using namespace literals::data;
 
 Hpcrun4::Hpcrun4(const stdshim::filesystem::path& fn)
   : ProfileSource(), fileValid(true), attrsValid(true), tattrsValid(true),
@@ -153,15 +152,17 @@ Hpcrun4::~Hpcrun4() {
 }
 
 DataClass Hpcrun4::provides() const noexcept {
+  using namespace literals::data;
   Class ret = attributes + references + contexts + DataClass::metrics + threads;
-  if(!tracepath.empty()) ret += timepoints;
+  if(!tracepath.empty()) ret += ctxTimepoints;
   return ret;
 }
 
 DataClass Hpcrun4::finalizeRequest(const DataClass& d) const noexcept {
+  using namespace literals::data;
   DataClass o = d;
   if(o.hasMetrics()) o += attributes + contexts + threads;
-  if(o.hasTimepoints()) o += contexts;
+  if(o.hasCtxTimepoints()) o += contexts + threads;
   if(o.hasContexts()) o += references;
   return o;
 }
@@ -190,7 +191,7 @@ bool Hpcrun4::setupTrace(unsigned int traceDisorder) noexcept {
     std::fclose(file);
     return false;
   }
-  tattrs.timepointStats((trace_end - trace_off) / (8+4), traceDisorder);
+  tattrs.ctxTimepointStats((trace_end - trace_off) / (8+4), traceDisorder);
 
   std::fclose(file);
   return true;
@@ -468,7 +469,7 @@ bool Hpcrun4::realread(const DataClass& needed) try {
   // Pause the file, we're at a good point here
   hpcrun_sparse_pause(file);
 
-  if(needed.hasTimepoints() && !tracepath.empty()) {
+  if(needed.hasCtxTimepoints() && !tracepath.empty()) {
     assert(thread);
 
     std::FILE* f = std::fopen(tracepath.c_str(), "rb");
