@@ -54,7 +54,7 @@
 //*********************************************************************
 
 int
-fnbounds_init();
+fnbounds_init(const char *executable_name);
 
 // fnbounds_enclosing_addr(): Given an instruction pointer (IP) 'ip',
 // return the bounds [start, end) of the function that contains 'ip'.

@@ -297,6 +297,20 @@ setup_main_bounds_check(void* main_addr)
 #endif
 }
 
+
+static const char *
+get_process_name()
+{
+  static char buf[PROC_NAME_LEN];
+  buf[0] = 0;
+  int process_name_len = readlink("/proc/self/exe", buf, PROC_NAME_LEN - 1);
+  if (process_name_len >= 0) {
+    buf[process_name_len] = 0;
+  }
+  return buf;
+}
+
+
 //
 // Derive the full executable name from the
 // process name. Store in a local variable.
@@ -770,20 +784,10 @@ hpcrun_thread_init(int id, local_thread_data_t* local_thread_data, bool has_trac
   bool demand_new_thread = false;
   cct_ctxt_t* thr_ctxt = local_thread_data ? local_thread_data->thr_ctxt : NULL;
 
-  hpcrun_mmap_init();
-
-  // ----------------------------------------
-  // call thread manager to get a thread data. If there is unused thread data,
-  //  we can recycle it, otherwise we need to allocate a new one.
-  // If we allocate a new one, we need to initialize the data and trace file.
-  // ----------------------------------------
-
-  thread_data_t* td = NULL;
-  hpcrun_threadMgr_data_get_safe(id, thr_ctxt, &td, has_trace, demand_new_thread);
-  hpcrun_set_thread_data(td);
-
-  td->inside_hpcrun = 1;  // safe enter, disable signals
-
+  hpcrun_thread_init_mem_pool_once(id, thr_ctxt, has_trace, demand_new_thread);
+  
+  hpcrun_get_thread_data()->inside_hpcrun = 1;
+  
   
   if (ENABLED(THREAD_CTXT)) {
     if (thr_ctxt) {
@@ -891,7 +895,6 @@ void*
 monitor_init_process(int *argc, char **argv, void* data)
 {
   char* process_name;
-  char  buf[PROC_NAME_LEN];
 
   hpcrun_thread_suppress_sample = false;
 
@@ -914,19 +917,7 @@ monitor_init_process(int *argc, char **argv, void* data)
 
   hpcrun_sample_prob_init();
 
-  // FIXME: if the process fork()s before main, then argc and argv
-  // will be NULL in the child here.  MPT on CNL does this.
-  process_name = "unknown";
-  if (argv != NULL && argv[0] != NULL) {
-    process_name = argv[0];
-  }
-  else {
-    int len = readlink("/proc/self/exe", buf, PROC_NAME_LEN - 1);
-    if (len > 1) {
-      buf[len] = 0;
-      process_name = buf;
-    }
-  }
+  process_name = get_process_name();
 
   hpcrun_set_using_threads(false);
 
@@ -963,7 +954,7 @@ monitor_init_process(int *argc, char **argv, void* data)
     hpcrun_initializer_init();
 
     // fnbounds must be after module_ignore_map
-    fnbounds_init();
+    fnbounds_init(process_name);
 #ifndef HPCRUN_STATIC_LINK
     auditor_exports->mainlib_connected(get_saved_vdso_path());
 #endif
