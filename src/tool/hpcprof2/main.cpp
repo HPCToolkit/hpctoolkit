@@ -52,6 +52,7 @@
 #include "lib/profile/source.hpp"
 #include "lib/profile/sink.hpp"
 #include "lib/profile/sinks/experimentxml4.hpp"
+#include "lib/profile/sinks/hatchet-literal.hpp"
 #include "lib/profile/sinks/hpctracedb2.hpp"
 #include "lib/profile/sinks/sparsedb.hpp"
 #include "lib/profile/finalizers/denseids.hpp"
@@ -109,6 +110,10 @@ int main(int argc, char* const argv[]) {
                                                       tdb.get());
     pipelineB << std::move(tdb);
     pipelineB << make_unique_x<sinks::SparseDB>(args.output);
+    break;
+  }
+  case ProfArgs::Format::hatchet_literal: {
+    pipelineB << make_unique_x<sinks::HatchetLiteral>(args.output);
     break;
   }
   }
