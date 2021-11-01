@@ -463,6 +463,7 @@ ProfArgs::ProfArgs(int argc, char* const argv[])
           if(fs::exists(sp)) {
             for(const auto& de: fs::directory_iterator(sp)) {
               std::unique_ptr<ProfileFinalizer> c;
+              if(de.path().extension() != ".hpcstruct") continue;
               try {
                 c.reset(new finalizers::StructFile(de));
               } catch(...) { continue; }
