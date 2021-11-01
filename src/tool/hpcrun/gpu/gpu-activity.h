@@ -179,6 +179,13 @@ typedef enum {
 } gpu_mem_type_t;
 
 
+typedef enum {
+  GPU_MEM_OP_ALLOC        = 0,
+  GPU_MEM_OP_DELETE       = 1,
+  GPU_MEM_OP_UNKNOWN      = 2
+} gpu_mem_op_t;
+
+
 // pc sampling
 typedef struct gpu_pc_sampling_t {
   uint64_t correlation_id;
@@ -234,6 +241,7 @@ typedef struct gpu_memory_t {
   uint32_t context_id;
   uint32_t stream_id;
   gpu_mem_type_t memKind;
+  gpu_mem_op_t mem_op;
 } gpu_memory_t;
 
 

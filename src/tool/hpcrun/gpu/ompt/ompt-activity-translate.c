@@ -131,6 +131,7 @@ convert_memory
 (
   gpu_activity_t *ga,
   ompt_record_ompt_t *r,
+  gpu_mem_op_t mem_op,
   uint64_t *cid_ptr
 )
 {
@@ -139,6 +140,7 @@ convert_memory
   ga->kind = GPU_ACTIVITY_MEMORY;
   ga->details.memory.memKind = GPU_MEM_UNKNOWN;
   ga->details.memory.correlation_id = d->host_op_id;
+  ga->details.memory.mem_op = mem_op;
   *cid_ptr = d->host_op_id;
 
   ga->details.memory.bytes = d->bytes;
@@ -153,7 +155,7 @@ convert_alloc
   uint64_t *cid_ptr
 )
 {
-  convert_memory(ga,r, cid_ptr);
+  convert_memory(ga, r, GPU_MEM_OP_ALLOC, cid_ptr);
 }
 
 
@@ -165,7 +167,7 @@ convert_delete
   uint64_t *cid_ptr
 )
 {
-  convert_memory(ga,r, cid_ptr);
+  convert_memory(ga, r, GPU_MEM_OP_DELETE, cid_ptr);
 }
 
 
