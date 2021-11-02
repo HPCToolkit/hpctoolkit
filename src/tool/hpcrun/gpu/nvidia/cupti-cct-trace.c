@@ -351,6 +351,7 @@ trace_shrink
     if (prev_pattern_node->right == pattern_node) {
       TRACE_MSG(CUPTI_CCT_TRACE, "Trace overlapped (prev_pattern_node: %p, pattern_node: %p), (key: %p, %p)",
         prev_pattern_node, pattern_node, prev_pattern_node->key, pattern_node->key);
+      shrunk = false;
       // Overlapped
       // root->...aaa
       break;
