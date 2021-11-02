@@ -222,7 +222,6 @@ bool hpcrun_no_unwind = false;
  * (public declaration) thread-local variables
  *****************************************************************************/
 static __thread bool hpcrun_thread_suppress_sample = true;
-static __thread bool hpcrun_thread_data_reuse = false;
 
 
 //***************************************************************************
@@ -299,6 +298,20 @@ setup_main_bounds_check(void* main_addr)
   }
 #endif
 }
+
+
+static const char *
+get_process_name()
+{
+  static char buf[PROC_NAME_LEN];
+  buf[0] = 0;
+  int process_name_len = readlink("/proc/self/exe", buf, PROC_NAME_LEN - 1);
+  if (process_name_len >= 0) {
+    buf[process_name_len] = 0;
+  }
+  return buf;
+}
+
 
 //
 // Derive the full executable name from the
@@ -768,27 +781,14 @@ logit(cct_node_t* n, cct_op_arg_t arg, size_t l)
 }
 
 void*
-hpcrun_thread_init(int id, local_thread_data_t* local_thread_data)
+hpcrun_thread_init(int id, local_thread_data_t* local_thread_data, bool has_trace)
 {
+  bool demand_new_thread = false;
   cct_ctxt_t* thr_ctxt = local_thread_data ? local_thread_data->thr_ctxt : NULL;
 
-  hpcrun_mmap_init();
-
-  // ----------------------------------------
-  // call thread manager to get a thread data. If there is unused thread data,
-  //  we can recycle it, otherwise we need to allocate a new one.
-  // If we allocate a new one, we need to initialize the data and trace file.
-  // ----------------------------------------
-
-  thread_data_t* td = NULL;
-
-  bool has_trace = ! hpcrun_thread_suppress_sample;
-  bool demand_new_thread = ! hpcrun_thread_data_reuse;
-  hpcrun_threadMgr_data_get_safe(id, thr_ctxt, &td, has_trace, demand_new_thread);
-
-  hpcrun_set_thread_data(td);
-
-  td->inside_hpcrun = 1;  // safe enter, disable signals
+  hpcrun_thread_init_mem_pool_once(id, thr_ctxt, has_trace, demand_new_thread);
+  
+  hpcrun_get_thread_data()->inside_hpcrun = 1;
   
   if (ENABLED(THREAD_CTXT)) {
     if (thr_ctxt) {
@@ -842,9 +842,7 @@ hpcrun_thread_fini(epoch_t *epoch)
 
     int is_process = 0;
     thread_finalize(is_process);
-  }
 
-  if (!hpcrun_thread_suppress_sample || hpcrun_thread_data_reuse) {
     // inform thread manager that we are terminating the thread
     // thread manager may enqueue the thread_data (in compact mode)
     // or flush the data into hpcrun file
@@ -856,7 +854,7 @@ hpcrun_thread_fini(epoch_t *epoch)
     // add separator for each compact thread
     bool add_separator = true;
     hpcrun_threadMgr_data_put(epoch, td, add_separator);
-  } 
+  }
 
   TMSG(PROCESS, "End of thread");
 }
@@ -899,7 +897,6 @@ void*
 monitor_init_process(int *argc, char **argv, void* data)
 {
   char* process_name;
-  char  buf[PROC_NAME_LEN];
 
   hpcrun_thread_suppress_sample = false;
 
@@ -922,19 +919,7 @@ monitor_init_process(int *argc, char **argv, void* data)
 
   hpcrun_sample_prob_init();
 
-  // FIXME: if the process fork()s before main, then argc and argv
-  // will be NULL in the child here.  MPT on CNL does this.
-  process_name = "unknown";
-  if (argv != NULL && argv[0] != NULL) {
-    process_name = argv[0];
-  }
-  else {
-    int len = readlink("/proc/self/exe", buf, PROC_NAME_LEN - 1);
-    if (len > 1) {
-      buf[len] = 0;
-      process_name = buf;
-    }
-  }
+  process_name = get_process_name();
 
   hpcrun_set_using_threads(false);
 
@@ -971,7 +956,7 @@ monitor_init_process(int *argc, char **argv, void* data)
     hpcrun_initializer_init();
 
     // fnbounds must be after module_ignore_map
-    fnbounds_init();
+    fnbounds_init(process_name);
 #ifndef HPCRUN_STATIC_LINK
     auditor_exports->mainlib_connected(get_saved_vdso_path());
 #endif
@@ -1196,7 +1181,7 @@ monitor_thread_pre_create(void)
   void *thread_pre_create_address = mti.mti_create_return_addr;
 
   if (module_ignore_map_inrange_lookup(thread_pre_create_address)) {
-    return NULL;
+    return MONITOR_IGNORE_NEW_THREAD;
   }
   
   hpcrun_safe_enter();
@@ -1280,18 +1265,10 @@ monitor_init_thread(int tid, void* data)
     hpcrun_thread_suppress_sample = true;
   }
 
-  /*
-   * For threads created by certain modules (CUPTI), we use compact thread data allocation.
-   */
-  hpcrun_thread_data_reuse = !hpcrun_thread_suppress_sample;
-  if (module_ignore_map_compact_lookup(thread_begin_address)) {
-    hpcrun_thread_data_reuse = true;
-  }
-
   hpcrun_safe_enter();
 
   TMSG(THREAD,"init thread %d",tid);
-  void* thread_data = hpcrun_thread_init(tid, (local_thread_data_t*) data);
+  void* thread_data = hpcrun_thread_init(tid, (local_thread_data_t*) data, !hpcrun_thread_suppress_sample);
   TMSG(THREAD,"back from init thread %d",tid);
 
   hpcrun_threadmgr_thread_new();

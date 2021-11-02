@@ -88,7 +88,8 @@ Settings& Settings::operator<<(ProfileSink& s) {
   auto acc = s.accepts();
   if(acc.hasMetrics()) acc += DataClass::attributes + DataClass::threads;
   if(acc.hasContexts()) acc += DataClass::references;
-  if(acc.hasTimepoints()) acc += DataClass::threads;
+  if(acc.hasCtxTimepoints()) acc += DataClass::contexts + DataClass::threads;
+  if(acc.hasMetricTimepoints()) acc += DataClass::attributes + DataClass::threads;
   sinks.emplace_back(acc, acc & wav, req, s);
   return *this;
 }
@@ -345,35 +346,44 @@ void ProfilePipeline::run() {
 
       // Finalize all the Threads we can, stash the ones we can't for later
       for(auto& tt: sl.threads) {
-        // Drain the remaining timepoints from the staging buffer first
-        if(!tt.timepointStaging.empty()) {
-          auto& tps = tt.timepointStaging;
-          if(tt.unboundedDisorder) {
-            std::sort(tps.begin(), tps.end(),
-                util::compare_only_second<decltype(tt.timepointStaging)::value_type>());
+        auto drain = [&](auto& tpd, auto type, auto notify) {
+          // Drain the remaining timepoints from the staging buffer first
+          if(!tpd.staging.empty()) {
+            if(tpd.unboundedDisorder) {
+              std::sort(tpd.staging.begin(), tpd.staging.end(),
+                  util::compare_only_first<typename decltype(tpd.staging)::value_type>());
+            }
+            for(auto& s: sinks) {
+              if(!s.dataLimit.has(type)) continue;
+              notify(s(), tpd.staging);
+            }
+            tpd.staging.clear();
           }
-          for(auto& s: sinks) {
-            if(!s.dataLimit.hasTimepoints()) continue;
-            s().notifyTimepoints(tt.thread(), tps);
+          // Then drain the timepoints from the sorting buffer
+          if(!tpd.sortBuf.empty()) {
+            auto tps = std::move(tpd.sortBuf).sorted();
+            for(auto& s: sinks) {
+              if(!s.dataLimit.has(type)) continue;
+              notify(s(), tps);
+            }
           }
-          tps.clear();
-        }
-        // Then drain the timepoints from the sorting buffer
-        if(!tt.timepointSortBuf.empty()) {
-          auto tps = std::move(tt.timepointSortBuf).sorted();
-          for(auto& s: sinks) {
-            if(!s.dataLimit.hasTimepoints()) continue;
-            s().notifyTimepoints(tt.thread(), tps);
-          }
-        }
 
-        // Update our thread-local timepoint min-max bounds
-        if(tt.minTime > std::chrono::nanoseconds::min()) {
-          if(localTimepointBounds) {
-            localTimepointBounds->first = std::min(localTimepointBounds->first, tt.minTime);
-            localTimepointBounds->second = std::max(localTimepointBounds->second, tt.maxTime);
-          } else
-            localTimepointBounds = {tt.minTime, tt.maxTime};
+          // Update our thread-local timepoint min-max bounds
+          if(tt.minTime > std::chrono::nanoseconds::min()) {
+            if(localTimepointBounds) {
+              localTimepointBounds->first = std::min(localTimepointBounds->first, tt.minTime);
+              localTimepointBounds->second = std::max(localTimepointBounds->second, tt.maxTime);
+            } else
+              localTimepointBounds = {tt.minTime, tt.maxTime};
+          }
+        };
+        drain(tt.ctxTpData, DataClass::ctxTimepoints, [&](ProfileSink& s, const auto& tps){
+          s.notifyTimepoints(tt.thread(), tps);
+        });
+        for(auto& [m, tpd]: tt.metricTpData.iterate()) {
+          drain(tpd, DataClass::metricTimepoints, [&](ProfileSink& s, const auto& tps){
+            s.notifyTimepoints(tt.thread(), m, tps);
+          });
         }
 
         // Finish off the Thread's metrics and let the Sinks know
@@ -701,49 +711,46 @@ Thread::Temporary& Source::thread(ThreadAttributes o) {
   t.userdata.initialize();
   slocal->threads.emplace_front(Thread::Temporary(t));
   auto& tt = slocal->threads.front();
-  tt.timepointStaging.reserve(4096);
-  if(tt.thread().attributes.timepointDisorder() > 0) {
+  tt.ctxTpData.staging.reserve(4096);
+  if(tt.thread().attributes.ctxTimepointDisorder() > 0) {
     // We need K+1 to detect the case when it was >K-disordered
     // Then another +1 to so disorder is treated properly by the algorithm
-    tt.timepointSortBuf = decltype(tt.timepointSortBuf)(
-        tt.thread().attributes.timepointDisorder() + 2);
+    tt.ctxTpData.sortBuf = decltype(tt.ctxTpData.sortBuf)(
+        tt.thread().attributes.ctxTimepointDisorder() + 2);
   }
   return slocal->threads.front();
 }
 
-Source::TimepointStatus Source::timepoint(Thread::Temporary& tt, ContextRef mc, std::chrono::nanoseconds tm) {
-  assert(limit().hasTimepoints() && "Source did not register for `timepoints` emission!");
-  assert(slocal->lastWave && "Attempt to emit timepoints before requested!");
-  ContextRef::const_t c = mc;
+template<class Tp, class Rewind, class Notify, class Singleton>
+Source::TimepointStatus Source::timepoint(Thread::Temporary& tt, Thread::Temporary::TimepointsData<Tp>& tpd,
+    Tp tp, Singleton type, const Rewind& rewind, const Notify& notify) {
+  tt.minTime = std::min(tt.minTime, std::get<0>(tp));
+  tt.maxTime = std::max(tt.maxTime, std::get<0>(tp));
 
-  tt.minTime = std::min(tt.minTime, tm);
-  tt.maxTime = std::max(tt.maxTime, tm);
-
-  if(tt.unboundedDisorder) {
+  if(tpd.unboundedDisorder) {
     // Stash in the staging buffer until we have 'em all to sort together
-    tt.timepointStaging.push_back({c, tm});
+    tpd.staging.push_back(std::move(tp));
     return TimepointStatus::next;
   }
 
-  auto& sortBuf = tt.timepointSortBuf;
-  if(sortBuf.bound() > 0) {
-    if(!sortBuf.full()) {
+  if(tpd.sortBuf.bound() > 0) {
+    if(!tpd.sortBuf.full()) {
       // The buffer hasn't filled yet. Add the new point and continue.
-      sortBuf.push({c, tm});
+      tpd.sortBuf.push(std::move(tp));
       return TimepointStatus::next;
     }
 
     // Replace an element and see if we're over the bound
-    auto [elem, over] = sortBuf.replace({c, tm});
+    auto [elem, over] = tpd.sortBuf.replace(std::move(tp));
     if(over) {
       // We hit the disorder bound. Reset in preparation for fallbacks.
-      tt.timepointSortBuf.clear();
-      tt.timepointStaging.clear();
+      tpd.sortBuf.clear();
+      tpd.staging.clear();
 
-      if(sortBuf.bound() < 800) {
+      if(tpd.sortBuf.bound() < 800) {
         // Our fallback is 1023, but we only try it if the previous attempt was
         // with a significantly smaller bound. Rewinds are expensive.
-        tt.timepointSortBuf = decltype(tt.timepointSortBuf)(1023);
+        tpd.sortBuf = decltype(tpd.sortBuf)(1023);
       } else {
         // Fall back to loading the whole thing in memory
         util::log::warning{} << "Trace for a thread is unexpectedly extremely"
@@ -751,31 +758,58 @@ Source::TimepointStatus Source::timepoint(Thread::Temporary& tt, ContextRef mc, 
              "  This may indicate an issue during measurement, and WILL"
              " significantly increase memory usage!\n"
              "  Affected thread: " << tt.thread().attributes;
-        tt.unboundedDisorder = true;
+        tpd.unboundedDisorder = true;
       }
 
       for(auto& s: pipe->sinks) {
-        if(!s.dataLimit.hasTimepoints()) continue;
-        s().notifyTimepointRewindStart(tt.thread());
+        if(!s.dataLimit.has(type)) continue;
+        rewind(s());
       }
       return TimepointStatus::rewindStart;
     }
 
-    std::tie(c, tm) = elem;
+    tp = elem;
   }
 
   // Tack it onto the end of the staging vector. If its full enough let the
   // Sinks at it for a bit.
-  tt.timepointStaging.push_back({c, tm});
-  if(tt.timepointStaging.size() >= 4096) {
+  tpd.staging.push_back(std::move(tp));
+  if(tpd.staging.size() >= 4096) {
     for(auto& s: pipe->sinks) {
-      if(!s.dataLimit.hasTimepoints()) continue;
-      s().notifyTimepoints(tt.thread(), tt.timepointStaging);
+      if(!s.dataLimit.has(type)) continue;
+      notify(s(), tpd.staging);
     }
-    tt.timepointStaging.clear();
-    tt.timepointStaging.reserve(4096);
+    tpd.staging.clear();
+    tpd.staging.reserve(4096);
   }
   return TimepointStatus::next;
+}
+
+Source::TimepointStatus Source::timepoint(Thread::Temporary& tt, ContextRef c, std::chrono::nanoseconds tm) {
+  assert(limit().hasCtxTimepoints() && "Source did not register for `ctxTimepoints` emission!");
+  assert(slocal->lastWave && "Attempt to emit timepoints before requested!");
+  return timepoint(tt, tt.ctxTpData, {tm, c}, DataClass::ctxTimepoints,
+    [&](ProfileSink& s) { s.notifyCtxTimepointRewindStart(tt.thread()); },
+    [&](ProfileSink& s, const auto& tps) { s.notifyTimepoints(tt.thread(), tps); });
+}
+
+Source::TimepointStatus Source::timepoint(Thread::Temporary& tt, Metric& m, double v, std::chrono::nanoseconds tm) {
+  assert(limit().hasMetricTimepoints() && "Source did not register for `ctxTimepoints` emission!");
+  assert(slocal->lastWave && "Attempt to emit timepoints before requested!");
+  auto x = tt.metricTpData.try_emplace(m);
+  auto& tpd = x.first;
+  if(x.second) {
+    tpd.staging.reserve(4096);
+    auto dis = tt.thread().attributes.metricTimepointDisorder(m);
+    if(dis > 0) {
+      // We need K+1 to detect the case when it was >K-disordered
+      // Then another +1 to so disorder is treated properly by the algorithm
+      tpd.sortBuf = decltype(tpd.sortBuf)(dis + 2);
+    }
+  }
+  return timepoint(tt, tpd, {tm, v}, DataClass::metricTimepoints,
+    [&](ProfileSink& s) { s.notifyMetricTimepointRewindStart(tt.thread(), m); },
+    [&](ProfileSink& s, const auto& tps) { s.notifyTimepoints(tt.thread(), m, tps); });
 }
 
 Source& Source::operator=(Source&& o) {

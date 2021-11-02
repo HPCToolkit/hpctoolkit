@@ -356,7 +356,6 @@ MY_BASE_FILES =				\
 	messages/messages-sync.c	\
 	messages/messages-async.c	\
 	messages/fmt.c	                \
-	hpcrun-placeholders.c 		\
 	gpu/gpu-activity.c 		\
 	gpu/gpu-activity-channel.c 	\
 	gpu/gpu-activity-process.c 	\
@@ -397,7 +396,6 @@ MY_BASE_FILES =				\
 	ompt/ompt-queues.c              \
 	ompt/ompt-region.c              \
 	ompt/ompt-region-debug.c        \
-	ompt/ompt-placeholders.c        \
 	ompt/ompt-device-map.c          \
 	ompt/ompt-task.c                \
 	ompt/ompt-thread.c              \

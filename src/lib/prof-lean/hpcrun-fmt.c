@@ -82,6 +82,7 @@
 #include "hpcio-buffer.h"
 #include "hpcfmt.h"
 #include "hpcrun-fmt.h"
+#include "placeholders.h"
 #include "id-tuple.h"
 
 //***************************************************************************
@@ -716,6 +717,21 @@ hpcrun_fmt_cct_node_fprint(hpcrun_fmt_cct_node_t* x, FILE* fs,
   }
 
   fprintf(fs, "(lm-id: %u) (lm-ip: 0x%"PRIx64") ", (uint)x->lm_id, x->lm_ip);
+
+  if(x->lm_id == HPCRUN_PLACEHOLDER_LM) {
+    fprintf(fs, "'%c%c%c%c%c%c%c%c' ",
+            (char)((x->lm_ip >> 56) & 0xff),
+            (char)((x->lm_ip >> 48) & 0xff),
+            (char)((x->lm_ip >> 40) & 0xff),
+            (char)((x->lm_ip >> 32) & 0xff),
+            (char)((x->lm_ip >> 24) & 0xff),
+            (char)((x->lm_ip >> 16) & 0xff),
+            (char)((x->lm_ip >> 8) & 0xff),
+            (char)((x->lm_ip) & 0xff));
+    const char* pretty = get_placeholder_name(x->lm_ip);
+    if(pretty != NULL)
+      fprintf(fs, "\"%s\" ", pretty);
+  }
 
   if (flags.fields.isLogicalUnwind) {
     hpcrun_fmt_lip_fprint(&x->lip, fs, "");

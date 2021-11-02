@@ -89,14 +89,15 @@
 #include <lib/prof-lean/hpcio.h>
 #include <lib/prof-lean/hpcfmt.h>
 #include <lib/prof-lean/hpcrun-fmt.h>
+#include <lib/prof-lean/placeholders.h>
 
 #include "cct_addr.h"
 
 //
 // Readability Macros (to facilitate coding initialization operations)
 //
-#define CCT_ROOT HPCRUN_FMT_LMId_NULL, HPCRUN_FMT_LMIp_NULL
-#define PARTIAL_ROOT HPCRUN_FMT_LMId_NULL, HPCRUN_FMT_LMIp_Flag1
+#define CCT_ROOT HPCRUN_PLACEHOLDER_LM, hpcrun_placeholder_root_primary
+#define PARTIAL_ROOT HPCRUN_PLACEHOLDER_LM, hpcrun_placeholder_root_partial
 #define ADDR_I(L)     NON_LUSH_ADDR_INI(L)
 #define ADDR(L)      (cct_addr_t) NON_LUSH_ADDR_INI(L)
 #define ADDR2_I(id, ip) NON_LUSH_ADDR_INI(id, ip)
@@ -108,8 +109,8 @@
 
 
 #define IS_PARTIAL_ROOT(addr) \
-	(addr->ip_norm.lm_id == HPCRUN_FMT_LMId_NULL) && \
-	(addr->ip_norm.lm_ip == HPCRUN_FMT_LMIp_Flag1)
+	(addr->ip_norm.lm_id == HPCRUN_PLACEHOLDER_LM) && \
+	(addr->ip_norm.lm_ip == hpcrun_placeholder_root_partial)
 
 typedef struct cct_node_t cct_node_t;
 //

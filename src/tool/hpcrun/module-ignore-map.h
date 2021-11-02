@@ -89,13 +89,6 @@ module_ignore_map_inrange_lookup
 );
 
 
-bool
-module_ignore_map_compact_lookup
-(
- void *addr
-);
-
-
 int
 module_ignore_map_lookup
 (

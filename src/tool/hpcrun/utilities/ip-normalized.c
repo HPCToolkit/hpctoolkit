@@ -46,6 +46,7 @@
 
 //************************* System Include Files ****************************
 
+#include <assert.h>
 #include <stdint.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -53,6 +54,8 @@
 #include <string.h>
 
 //*************************** User Include Files ****************************
+
+#include "lib/prof-lean/placeholders.h"
 
 #include "ip-normalized.h"
 #include <messages/messages.h>
@@ -62,9 +65,6 @@
 //***************************************************************************
 
 #define NULL_OR_NAME(v) ((v) ? (v)->name : "(NULL)")
-
-const ip_normalized_t ip_normalized_NULL_lval = ip_normalized_NULL;
-
 
 ip_normalized_t
 hpcrun_normalize_ip(void* unnormalized_ip, load_module_t* lm)
@@ -98,14 +98,13 @@ hpcrun_normalize_ip(void* unnormalized_ip, load_module_t* lm)
     fclose(loadmap);
   }
 
-  return (ip_normalized_t) {.lm_id = HPCRUN_FMT_LMId_NULL,
-			    .lm_ip = (uintptr_t) unnormalized_ip};
+  return (ip_normalized_t){HPCRUN_PLACEHOLDER_LM, hpcrun_placeholder_unnormalized_ip};
 }
 
 void *
 hpcrun_denormalize_ip(ip_normalized_t *normalized_ip)
 {
-  if (normalized_ip->lm_id != HPCRUN_FMT_LMId_NULL) {
+  if (normalized_ip->lm_id != HPCRUN_PLACEHOLDER_LM) {
     load_module_t* lm = hpcrun_loadmap_findById(normalized_ip->lm_id);
     if (lm != 0) {
       uint64_t offset = lm->dso_info->start_to_ref_dist;
@@ -113,5 +112,6 @@ hpcrun_denormalize_ip(ip_normalized_t *normalized_ip)
       return denormalized_ip;
     }
   } 
-  return (void *) normalized_ip->lm_ip;
+  // Unable to denormalize, return a bad value
+  return NULL;
 }

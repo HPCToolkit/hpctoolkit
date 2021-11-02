@@ -138,17 +138,6 @@ static const char *IGNORE_FNS[NUM_FNS] = {
   "hpcrun_malloc"              // hpcrun library
 };
 
-static bool COMPACT_FNS[NUM_FNS] = {
-  false,  // cuda driver
-  false,  // cuda runtime
-  true,   // cupti
-  false,  // amd roctracer library
-  false,  // amd debug library
-  false,  // amd hip runtime
-  false,  // amd hsa runtime
-  false   // hpcrun library
-};
-
 static module_ignore_entry_t modules[NUM_FNS];
 static pfq_rwlock_t modules_lock;
 
@@ -236,17 +225,6 @@ module_ignore_map_inrange_lookup
 {
   int module_index = module_ignore_map_lookup(addr, addr);
   return module_index != -1;
-}
-
-
-bool
-module_ignore_map_compact_lookup
-(
- void *addr
-)
-{
-  int module_index = module_ignore_map_lookup(addr, addr);
-  return module_index != -1 && module_index < NUM_FNS && COMPACT_FNS[module_index] == true;
 }
 
 

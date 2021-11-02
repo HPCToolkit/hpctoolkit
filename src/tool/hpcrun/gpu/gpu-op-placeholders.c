@@ -57,6 +57,7 @@
 
 #include <hpcrun/cct/cct.h>
 
+#include "lib/prof-lean/placeholders.h"
 #include "gpu-op-placeholders.h"
 
 
@@ -66,17 +67,6 @@
 //******************************************************************************
 
 #define SET_LOW_N_BITS(n, type) (~(((type) ~0) << n))
-
-
-
-//******************************************************************************
-// type declarations
-//******************************************************************************
-
-typedef struct gpu_op_placeholders_t {
-  placeholder_t ph[gpu_placeholder_type_count];
-} gpu_op_placeholders_t;
-
 
 
 //******************************************************************************
@@ -89,160 +79,9 @@ gpu_op_placeholder_flags_t gpu_op_placeholder_flags_all =
   SET_LOW_N_BITS(gpu_placeholder_type_count, gpu_op_placeholder_flags_t);
 
 
-
-//******************************************************************************
-// local data
-//******************************************************************************
-
-static gpu_op_placeholders_t gpu_op_placeholders;
-
-
-static pthread_once_t is_initialized = PTHREAD_ONCE_INIT;
-
-
-
-//******************************************************************************
-// placeholder functions
-// 
-// note: 
-//   placeholder functions are not declared static so that the compiler 
-//   doesn't eliminate their names from the symbol table. we need their
-//   names in the symbol table to convert them into the appropriate placeholder 
-//   strings in hpcprof
-//******************************************************************************
-
-void 
-gpu_op_copy
-(
-  void
-)
-{
-  // this function is not meant to be called
-  assert(0);
-}
-
-
-void 
-gpu_op_copyin
-(
-  void
-)
-{
-  // this function is not meant to be called
-  assert(0);
-}
-
-
-void 
-gpu_op_copyout
-(
-  void
-)
-{
-  // this function is not meant to be called
-  assert(0);
-}
-
-
-void 
-gpu_op_alloc
-(
-  void
-)
-{
-  // this function is not meant to be called
-  assert(0);
-}
-
-
-void
-gpu_op_delete
-(
- void
-)
-{
-  // this function is not meant to be called
-  assert(0);
-}
-
-
-void
-gpu_op_kernel
-(
- void
-)
-{
-  // this function is not meant to be called
-  assert(0);
-}
-
-
-void
-gpu_op_memset
-(
- void
-)
-{
-  // this function is not meant to be called
-  assert(0);
-}
-
-
-void
-gpu_op_sync
-(
- void
-)
-{
-  // this function is not meant to be called
-  assert(0);
-}
-
-
-void
-gpu_op_trace
-(
- void
-)
-{
-  // this function is not meant to be called
-  assert(0);
-}
-
-
-
 //******************************************************************************
 // private operations
 //******************************************************************************
-
-static void 
-gpu_op_placeholder_init
-(
- gpu_placeholder_type_t type,
- void *pc
- )
-{
-  init_placeholder(&gpu_op_placeholders.ph[type], pc);
-}
-
-
-static void
-gpu_op_placeholders_init
-(
- void
-)
-{
-  gpu_op_placeholder_init(gpu_placeholder_type_copy,    &gpu_op_copy);
-  gpu_op_placeholder_init(gpu_placeholder_type_copyin,  &gpu_op_copyin);
-  gpu_op_placeholder_init(gpu_placeholder_type_copyout, &gpu_op_copyout);
-  gpu_op_placeholder_init(gpu_placeholder_type_alloc,   &gpu_op_alloc);
-  gpu_op_placeholder_init(gpu_placeholder_type_delete,  &gpu_op_delete);
-  gpu_op_placeholder_init(gpu_placeholder_type_kernel,  &gpu_op_kernel);
-  gpu_op_placeholder_init(gpu_placeholder_type_memset,  &gpu_op_memset);
-  gpu_op_placeholder_init(gpu_placeholder_type_sync,    &gpu_op_sync);
-  gpu_op_placeholder_init(gpu_placeholder_type_trace,   &gpu_op_trace);
-}
-
 
 // debugging support
 bool
@@ -270,9 +109,23 @@ gpu_op_placeholder_ip
  gpu_placeholder_type_t type
 )
 {
-  pthread_once(&is_initialized, gpu_op_placeholders_init);
-
-  return gpu_op_placeholders.ph[type].pc_norm;
+  switch(type) {
+  #define CASE(N) case gpu_placeholder_type_##N: return get_placeholder_norm(hpcrun_placeholder_gpu_##N);
+  CASE(copy)
+  CASE(copyin)
+  CASE(copyout)
+  CASE(alloc)
+  CASE(delete)
+  CASE(kernel)
+  CASE(memset)
+  CASE(sync)
+  CASE(trace)
+  #undef CASE
+  case gpu_placeholder_type_count:
+    break;
+  }
+  assert(false && "Invalid GPU placeholder type!");
+  abort();
 }
 
 

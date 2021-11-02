@@ -97,6 +97,7 @@ gpu_init_operation_channel
   }
 }
 
+#define OPERATION_THREAD_ID 10000
 
 static void *
 gpu_operation_record
@@ -105,6 +106,8 @@ gpu_operation_record
 )
 {
   int current_operation_channels_count;
+
+  hpcrun_thread_init_mem_pool_once(OPERATION_THREAD_ID, NULL, false, true);
 
   while (!atomic_load(&stop_operation_flag)) {
     current_operation_channels_count = atomic_load(&operation_channels_count);

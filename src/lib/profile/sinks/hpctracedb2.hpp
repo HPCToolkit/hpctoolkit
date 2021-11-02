@@ -69,7 +69,7 @@ public:
 
   DataClass accepts() const noexcept override {
     using ds = DataClass;
-    return ds::attributes | ds::threads | ds::contexts | ds::timepoints;
+    return ds::attributes | ds::threads | ds::contexts | ds::ctxTimepoints;
   }
 
   ExtensionClass requires() const noexcept override {
@@ -81,8 +81,8 @@ public:
 
   void notifyWavefront(DataClass) override;
   void notifyThread(const Thread&) override;
-  void notifyTimepoints(const Thread&, const std::vector<std::pair<ContextRef::const_t, std::chrono::nanoseconds>>&) override;
-  void notifyTimepointRewindStart(const Thread&) override;
+  void notifyTimepoints(const Thread&, const std::vector<std::pair<std::chrono::nanoseconds, ContextRef::const_t>>&) override;
+  void notifyCtxTimepointRewindStart(const Thread&) override;
   void notifyThreadFinal(const Thread::Temporary&) override;
 
   /// Return the tag for the experiment.xml, or an empty string if empty.

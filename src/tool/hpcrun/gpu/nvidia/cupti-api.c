@@ -1925,6 +1925,8 @@ cupti_buffer_completion_callback
 {
   TMSG(CUPTI, "Enter CUPTI_buffer_completion");
 
+  hpcrun_thread_init_mem_pool_once(0, NULL, false, true);
+
   // handle notifications
   cupti_buffer_completion_notify();
 

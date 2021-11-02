@@ -102,16 +102,32 @@ bool ThreadAttributes::ok() const noexcept {
   return !m_idTuple.empty();
 }
 
-unsigned long long ThreadAttributes::timepointMaxCount() const noexcept {
-  return m_timepointStats ? m_timepointStats->first : 0;
+unsigned long long ThreadAttributes::ctxTimepointMaxCount() const noexcept {
+  return m_ctxTimepointStats ? m_ctxTimepointStats->first : 0;
 }
-unsigned int ThreadAttributes::timepointDisorder() const noexcept {
-  return m_timepointStats ? m_timepointStats->second : 0;
+unsigned int ThreadAttributes::ctxTimepointDisorder() const noexcept {
+  return m_ctxTimepointStats ? m_ctxTimepointStats->second : 0;
 }
-void ThreadAttributes::timepointStats(unsigned long long cnt, unsigned int disorder) noexcept {
-  assert(!m_timepointStats && "Attempt to overwrite previously set timepoint stats!");
-  m_timepointStats = {cnt, disorder};
+void ThreadAttributes::ctxTimepointStats(unsigned long long cnt, unsigned int disorder) noexcept {
+  assert(!m_ctxTimepointStats && "Attempt to overwrite previously set timepoint stats!");
+  m_ctxTimepointStats = {cnt, disorder};
 }
+
+unsigned long long ThreadAttributes::metricTimepointMaxCount(const Metric& m) const noexcept {
+  auto it = m_metricTimepointStats.find(m);
+  if(it == m_metricTimepointStats.end()) return 0;
+  return it->second.first;
+}
+unsigned int ThreadAttributes::metricTimepointDisorder(const Metric& m) const noexcept {
+  auto it = m_metricTimepointStats.find(m);
+  if(it == m_metricTimepointStats.end()) return 0;
+  return it->second.second;
+}
+void ThreadAttributes::metricTimepointStats(const Metric& m, unsigned long long cnt, unsigned int disorder) {
+  bool newElem = m_metricTimepointStats.insert({m, {cnt, disorder}}).second;
+  assert(newElem && "Attempt to overwrite previously set timepoint stats!");
+}
+
 
 const std::vector<pms_id_t>& ThreadAttributes::idTuple() const noexcept {
   assert(!m_idTuple.empty() && "Thread has an empty hierarchical id tuple!");

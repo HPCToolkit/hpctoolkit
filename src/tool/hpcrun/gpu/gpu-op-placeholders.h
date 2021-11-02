@@ -59,7 +59,6 @@
 //******************************************************************************
 
 #include <hpcrun/utilities/ip-normalized.h>
-#include <hpcrun/hpcrun-placeholders.h>
 
 //******************************************************************************
 // type declarations

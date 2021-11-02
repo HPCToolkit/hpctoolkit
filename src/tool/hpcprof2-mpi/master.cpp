@@ -135,10 +135,10 @@ int rank0(ProfArgs&& args) {
   // No-op Source to detect whether the Pipeline requires timepoints
   // It should be args.include_traces, but you can never be too certain
   struct Detector : public ProfileSource {
-    DataClass provides() const noexcept override { return DataClass::timepoints; }
+    DataClass provides() const noexcept override { return DataClass::ctxTimepoints; }
     DataClass finalizeRequest(const DataClass& d) const noexcept override { return d; }
     void read(const DataClass&) override {};
-    bool needsTimepoints() const { return sink.limit().hasTimepoints(); }
+    bool needsTimepoints() const { return sink.limit().hasCtxTimepoints(); }
   } detector;
   pipelineB << detector;
 

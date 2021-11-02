@@ -131,7 +131,7 @@ void HPCTraceDB2::notifyThread(const Thread& t) {
   t.userdata[uds.thread].has_trace = false; 
 }
 
-void HPCTraceDB2::notifyTimepoints(const Thread& t, const std::vector<std::pair<ContextRef::const_t, std::chrono::nanoseconds>>& tps) {
+void HPCTraceDB2::notifyTimepoints(const Thread& t, const std::vector<std::pair<std::chrono::nanoseconds, ContextRef::const_t>>& tps) {
   assert(!tps.empty());
 
   threadsReady.wait();
@@ -145,7 +145,7 @@ void HPCTraceDB2::notifyTimepoints(const Thread& t, const std::vector<std::pair<
   util::linear_lru_cache<util::reference_index<const Context>, unsigned int,
                          2> cache;
 
-  for(const auto& [cr, tm]: tps) {
+  for(const auto& [tm, cr]: tps) {
     // Skip timepoints at locations we can't represent currently.
     if(auto c = std::get_if<const Context>(cr)) {
       // Try to cache our work as much as possible
@@ -181,7 +181,7 @@ void HPCTraceDB2::notifyTimepoints(const Thread& t, const std::vector<std::pair<
   }
 }
 
-void HPCTraceDB2::notifyTimepointRewindStart(const Thread& t) {
+void HPCTraceDB2::notifyCtxTimepointRewindStart(const Thread& t) {
   auto& ud = t.userdata[uds.thread];
   ud.cursor = ud.buffer.data();
   ud.off = -1;
@@ -249,7 +249,7 @@ std::vector<uint64_t> HPCTraceDB2::calcStartEnd() {
   std::vector<uint64_t> trace_sizes;
   uint64_t total_size = 0;
   for(const auto& t : src.threads().iterate()){
-    uint64_t trace_sz = t->attributes.timepointMaxCount() * timepoint_SIZE;
+    uint64_t trace_sz = t->attributes.ctxTimepointMaxCount() * timepoint_SIZE;
     trace_sizes.emplace_back(trace_sz);
     total_size += trace_sz;
   }

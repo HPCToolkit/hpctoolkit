@@ -81,6 +81,7 @@
 #include <lib/binutils/LM.hpp>
 
 #include <lib/prof-lean/hpcrun-fmt.h>
+#include <lib/prof-lean/placeholders.h>
 
 #include <lib/support/diagnostics.h>
 #include <lib/support/Unique.hpp>
@@ -105,7 +106,6 @@ public:
 
   // N.B.: Life is much easier if this is consistent with hpcrun-fmt
   typedef uint LMId_t;
-  static const LMId_t LMId_NULL = HPCRUN_FMT_LMId_NULL;
 
   //*************************************************************************
 

@@ -517,15 +517,6 @@ hpcrun_fmt_doRetainId(uint32_t id)
 // hpcrun_fmt_cct_node_t
 // --------------------------------------------------------------------------
 
-#define HPCRUN_FMT_LMId_NULL (0)
-
-#define HPCRUN_FMT_LMIp_NULL  (0)
-#define HPCRUN_FMT_LMIp_Flag1 (1)
-
-// Primary syntethic root:   <lm-id: NULL, lm-ip: NULL>
-// Secondary synthetic root: <lm-id: NULL, lm-ip: Flag1>
-
-
 typedef struct hpcrun_fmt_cct_node_t {
 
   // id and parent id.  0 is reserved as a NULL value
