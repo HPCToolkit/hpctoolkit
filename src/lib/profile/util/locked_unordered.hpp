@@ -114,8 +114,8 @@ public:
 
   /// Get the value for a key, creating an entry if nessesary.
   // MT: Internally Synchronized
-  V& operator[](const K& k) { return opget(k, su_lock<M>(lock)).first; }
-  V& operator[](K&& k) { return opget(std::move(k), su_lock<M>(lock)).first; }
+  V& operator[](const K& k) { return opget(su_lock<M>(lock), k).first; }
+  V& operator[](K&& k) { return opget(su_lock<M>(lock), std::move(k)).first; }
 
   /// Get the value for a key, throwing if it doesn't exist.
   // MT: Internally Synchronized
@@ -128,7 +128,7 @@ public:
   /// Insert an entry into the map, if it didn't already exist.
   // MT: Internally Synchronized
   std::pair<V&,bool> insert(const typename real_t::value_type& v) {
-    return opget(v.first, v.second, su_lock<M>(lock));
+    return opget(su_lock<M>(lock), v.first, v.second);
   }
 
   /// Add a new pair to the map, if it didn't already exist.
@@ -136,13 +136,23 @@ public:
   template<class... Args>
   std::pair<V&,bool> emplace(Args&&... args) {
     typename real_t::value_type v(std::forward<Args>(args)...);
-    return opget(std::move(v.first), std::move(v.second), su_lock<M>(lock));
+    return opget(su_lock<M>(lock), std::move(v.first), std::move(v.second));
+  }
+
+  // Add a new element to the map, if the key was not found before.
+  template<class... Args>
+  std::pair<V&,bool> try_emplace(const K& k, Args&&... args) {
+    return opget(su_lock<M>(lock), k, std::forward<Args>(args)...);
+  }
+  template<class... Args>
+  std::pair<V&,bool> try_emplace(K&& k, Args&&... args) {
+    return opget(su_lock<M>(lock), std::move(k), std::forward<Args>(args)...);
   }
 
   /// Look up an entry in the map, returning a pointer or nullptr.
   // MT: Internally Synchronized, Unstable
-  V* find(const K& k) { return opget_r(k, su_lock<M>(lock)); }
-  const V* find(const K& k) const { return opget_r(k, su_lock<M>(lock)); }
+  V* find(const K& k) { return opget_r(su_lock<M>(lock), k); }
+  const V* find(const K& k) const { return opget_r(su_lock<M>(lock), k); }
 
   /// Clear the map.
   // MT: Externally Synchronized
@@ -192,61 +202,28 @@ protected:
   real_t real;
 
 private:
-  std::pair<V&, bool> opget(K k, V v, std::unique_lock<M>&&) {
+  template<class KA, class... Args>
+  std::pair<V&, bool> opget(std::unique_lock<M>&&, KA&& k, Args&&... args) {
     auto x = real.emplace(std::piecewise_construct,
-                          std::forward_as_tuple(std::move(k)),
-                          std::forward_as_tuple(std::move(v)));
+                          std::forward_as_tuple(std::forward<KA>(k)),
+                          std::forward_as_tuple(std::forward<Args>(args)...));
     return {x.first->second, x.second};
   }
-  template<class Mtx>
-  std::pair<V&, bool> opget(const K& k, V v, std::shared_lock<Mtx>&& l) {
+  template<class Mtx, class KA, class... Args>
+  std::pair<V&, bool> opget(std::shared_lock<Mtx>&& l, KA&& k, Args&&... args) {
     {
       std::shared_lock<Mtx> l2 = std::move(l);
       auto x = real.find(k);
       if(x != real.end()) return {x->second, false};
     }
-    return opget(k, std::move(v), std::unique_lock<Mtx>(lock));
-  }
-  template<class Mtx>
-  std::pair<V&, bool> opget(K&& k, V v, std::shared_lock<Mtx>&& l) {
-    {
-      std::shared_lock<Mtx> l2 = std::move(l);
-      auto x = real.find(k);
-      if(x != real.end()) return {x->second, false};
-    }
-    return opget(std::move(k), std::move(v), std::unique_lock<Mtx>(lock));
+    return opget(std::unique_lock<Mtx>(lock), std::forward<KA>(k), std::forward<Args>(args)...);
   }
 
-  std::pair<V&, bool> opget(K k, std::unique_lock<M>&&) {
-    auto x = real.emplace(std::piecewise_construct,
-                          std::forward_as_tuple(std::move(k)),
-                          std::forward_as_tuple());
-    return {x.first->second, x.second};
-  }
-  template<class Mtx>
-  std::pair<V&, bool> opget(const K& k, std::shared_lock<Mtx>&& l) {
-    {
-      std::shared_lock<Mtx> l2 = std::move(l);
-      auto x = real.find(k);
-      if(x != real.end()) return {x->second, false};
-    }
-    return opget(k, std::unique_lock<Mtx>(lock));
-  }
-  template<class Mtx>
-  std::pair<V&, bool> opget(K&& k, std::shared_lock<Mtx>&& l) {
-    {
-      std::shared_lock<Mtx> l2 = std::move(l);
-      auto x = real.find(k);
-      if(x != real.end()) return {x->second, false};
-    }
-    return opget(std::move(k), std::unique_lock<Mtx>(lock));
-  }
-
-  V* opget_r(K k, su_lock<M>&&) {
+  V* opget_r(su_lock<M>&&, K k) {
     auto x = real.find(std::move(k));
     return x == real.end() ? nullptr : &x->second;
   }
-  const V* opget_r(K k, su_lock<M>&&) const {
+  const V* opget_r(su_lock<M>&&, K k) const {
     auto x = real.find(std::move(k));
     return x == real.end() ? nullptr : &x->second;
   }
