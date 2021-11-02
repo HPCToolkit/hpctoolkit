@@ -89,6 +89,7 @@ Settings& Settings::operator<<(ProfileSink& s) {
   if(acc.hasMetrics()) acc += DataClass::attributes + DataClass::threads;
   if(acc.hasContexts()) acc += DataClass::references;
   if(acc.hasCtxTimepoints()) acc += DataClass::contexts + DataClass::threads;
+  if(acc.hasMetricTimepoints()) acc += DataClass::attributes + DataClass::threads;
   sinks.emplace_back(acc, acc & wav, req, s);
   return *this;
 }
@@ -379,6 +380,11 @@ void ProfilePipeline::run() {
         drain(tt.ctxTpData, DataClass::ctxTimepoints, [&](ProfileSink& s, const auto& tps){
           s.notifyTimepoints(tt.thread(), tps);
         });
+        for(auto& [m, tpd]: tt.metricTpData.iterate()) {
+          drain(tpd, DataClass::metricTimepoints, [&](ProfileSink& s, const auto& tps){
+            s.notifyTimepoints(tt.thread(), m, tps);
+          });
+        }
 
         // Finish off the Thread's metrics and let the Sinks know
         Metric::prefinalize(tt);
@@ -785,6 +791,25 @@ Source::TimepointStatus Source::timepoint(Thread::Temporary& tt, ContextRef c, s
   return timepoint(tt, tt.ctxTpData, {tm, c}, DataClass::ctxTimepoints,
     [&](ProfileSink& s) { s.notifyCtxTimepointRewindStart(tt.thread()); },
     [&](ProfileSink& s, const auto& tps) { s.notifyTimepoints(tt.thread(), tps); });
+}
+
+Source::TimepointStatus Source::timepoint(Thread::Temporary& tt, Metric& m, double v, std::chrono::nanoseconds tm) {
+  assert(limit().hasMetricTimepoints() && "Source did not register for `ctxTimepoints` emission!");
+  assert(slocal->lastWave && "Attempt to emit timepoints before requested!");
+  auto x = tt.metricTpData.try_emplace(m);
+  auto& tpd = x.first;
+  if(x.second) {
+    tpd.staging.reserve(4096);
+    auto dis = tt.thread().attributes.metricTimepointDisorder(m);
+    if(dis > 0) {
+      // We need K+1 to detect the case when it was >K-disordered
+      // Then another +1 to so disorder is treated properly by the algorithm
+      tpd.sortBuf = decltype(tpd.sortBuf)(dis + 2);
+    }
+  }
+  return timepoint(tt, tpd, {tm, v}, DataClass::metricTimepoints,
+    [&](ProfileSink& s) { s.notifyMetricTimepointRewindStart(tt.thread(), m); },
+    [&](ProfileSink& s, const auto& tps) { s.notifyTimepoints(tt.thread(), m, tps); });
 }
 
 Source& Source::operator=(Source&& o) {

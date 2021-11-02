@@ -74,4 +74,6 @@ void ProfileSink::notifyContextExpansion(ContextRef::const_t, Scope, ContextRef:
 void ProfileSink::notifyThread(const Thread&) {};
 void ProfileSink::notifyTimepoints(const Thread& t, const std::vector<std::pair<std::chrono::nanoseconds, ContextRef::const_t>>&) {};
 void ProfileSink::notifyCtxTimepointRewindStart(const Thread&) {};
+void ProfileSink::notifyTimepoints(const Thread& t, const Metric&, const std::vector<std::pair<std::chrono::nanoseconds, double>>&) {};
+void ProfileSink::notifyMetricTimepointRewindStart(const Thread&, const Metric&) {};
 void ProfileSink::notifyThreadFinal(const Thread::Temporary&) {};

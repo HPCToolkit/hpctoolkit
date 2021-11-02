@@ -78,28 +78,31 @@ private:                                                 \
   friend class DataClass;                                \
   static constexpr int bit = BIT;                        \
 }
-  struct attributes_c    CONTENTS(0);
-  struct threads_c       CONTENTS(1);
-  struct references_c    CONTENTS(2);
-  struct metrics_c       CONTENTS(3);
-  struct contexts_c      CONTENTS(4);
-  struct ctxTimepoints_c CONTENTS(5);
-  std::bitset<6> mask;
+  struct attributes_c       CONTENTS(0);
+  struct threads_c          CONTENTS(1);
+  struct references_c       CONTENTS(2);
+  struct metrics_c          CONTENTS(3);
+  struct contexts_c         CONTENTS(4);
+  struct ctxTimepoints_c    CONTENTS(5);
+  struct metricTimepoints_c CONTENTS(6);
+  std::bitset<7> mask;
 #undef CONTENTS
 
 public:
   /// Emits the execution context for the Profile itself.
-  static constexpr attributes_c    attributes = {};
+  static constexpr attributes_c       attributes = {};
   /// Emits execution contexts for each Thread within the Profile.
-  static constexpr threads_c       threads = {};
+  static constexpr threads_c          threads = {};
   /// Emits the Profile's references to the outside filesystem.
-  static constexpr references_c    references = {};
+  static constexpr references_c       references = {};
   /// Emits the individual measurements
-  static constexpr metrics_c       metrics    = {};
+  static constexpr metrics_c          metrics    = {};
   /// Emits the locations in which data was gathered.
-  static constexpr contexts_c      contexts   = {};
+  static constexpr contexts_c         contexts   = {};
   /// Emits the locations in which data was gathered, over time.
-  static constexpr ctxTimepoints_c ctxTimepoints = {};
+  static constexpr ctxTimepoints_c    ctxTimepoints = {};
+  /// Emits values for gathered measurements, over time.
+  static constexpr metricTimepoints_c metricTimepoints = {};
 
   // Universal set
   static DataClass constexpr all() {
@@ -107,13 +110,14 @@ public:
   }
 
   // Named queries for particular elements
-  bool hasAny()           const noexcept { return mask.any(); }
-  bool hasAttributes()    const noexcept { return has(attributes); }
-  bool hasThreads()       const noexcept { return has(threads); }
-  bool hasReferences()    const noexcept { return has(references); }
-  bool hasMetrics()       const noexcept { return has(metrics); }
-  bool hasContexts()      const noexcept { return has(contexts); }
-  bool hasCtxTimepoints() const noexcept { return has(ctxTimepoints); }
+  bool hasAny()              const noexcept { return mask.any(); }
+  bool hasAttributes()       const noexcept { return has(attributes); }
+  bool hasThreads()          const noexcept { return has(threads); }
+  bool hasReferences()       const noexcept { return has(references); }
+  bool hasMetrics()          const noexcept { return has(metrics); }
+  bool hasContexts()         const noexcept { return has(contexts); }
+  bool hasCtxTimepoints()    const noexcept { return has(ctxTimepoints); }
+  bool hasMetricTimepoints() const noexcept { return has(metricTimepoints); }
 
   // Query for whether there are any of such and so
   template<class Singleton>
@@ -151,6 +155,7 @@ public:
        && d.anyOf(metrics | ctxTimepoints)) os << ' ';
     if(d.has(metrics)) os << 'm';
     if(d.has(ctxTimepoints)) os << 't';
+    if(d.has(metricTimepoints)) os << 'v';
     os << ']';
     return os;
   }
@@ -162,12 +167,13 @@ private:
 
 namespace literals::data {
 using Class = DataClass;
-static constexpr auto attributes    = Class::attributes;
-static constexpr auto threads       = Class::threads;
-static constexpr auto references    = Class::references;
-static constexpr auto metrics       = Class::metrics;
-static constexpr auto contexts      = Class::contexts;
-static constexpr auto ctxTimepoints = Class::ctxTimepoints;
+static constexpr auto attributes       = Class::attributes;
+static constexpr auto threads          = Class::threads;
+static constexpr auto references       = Class::references;
+static constexpr auto metrics          = Class::metrics;
+static constexpr auto contexts         = Class::contexts;
+static constexpr auto ctxTimepoints    = Class::ctxTimepoints;
+static constexpr auto metricTimepoints = Class::metricTimepoints;
 }
 
 /// Classification of the various kinds of data Pipelines can extend the

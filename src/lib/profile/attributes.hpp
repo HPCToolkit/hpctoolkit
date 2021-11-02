@@ -99,12 +99,24 @@ public:
   unsigned long long ctxTimepointMaxCount() const noexcept;
   void ctxTimepointStats(unsigned long long cnt, unsigned int disorder) noexcept;
 
+  /// Get or set the vital statistics (maximum count and expected disorder) for
+  /// the Metric-type timepoints in this Thread for the given Metric.
+  // MT: Externally Synchronized
+  unsigned long long metricTimepointMaxCount(const Metric&) const noexcept;
+  void metricTimepointStats(const Metric&, unsigned long long cnt, unsigned int disorder);
+
 private:
   std::vector<pms_id_t> m_idTuple;
   std::optional<std::pair<unsigned long long, unsigned int>> m_ctxTimepointStats;
+  std::unordered_map<util::reference_index<const Metric>,
+      std::pair<unsigned long long, unsigned int>> m_metricTimepointStats;
 
   friend class ProfilePipeline;
   unsigned int ctxTimepointDisorder() const noexcept;
+  unsigned int metricTimepointDisorder(const Metric&) const noexcept;
+  const auto& metricTimepointDisorders() const noexcept {
+    return m_metricTimepointStats;
+  }
 
   class FinalizeState {
   public:
@@ -200,6 +212,8 @@ public:
       std::vector<Tp> staging;
     };
     TimepointsData<std::pair<std::chrono::nanoseconds, ContextRef::const_t>> ctxTpData;
+    util::locked_unordered_map<util::reference_index<const Metric>,
+      TimepointsData<std::pair<std::chrono::nanoseconds, double>>> metricTpData;
 
     friend class Metric;
     util::locked_unordered_map<util::reference_index<const Context>,

@@ -377,6 +377,12 @@ public:
     // MT: Externally Synchronized (this), Internally Synchronized
     [[nodiscard]] TimepointStatus timepoint(Thread::Temporary&, ContextRef, std::chrono::nanoseconds);
 
+    /// Emit a Metric-value timepoint into the Pipeline.
+    /// Returns the expected next timepoint the caller should inject.
+    /// DataClass: `metricTimepoints`
+    // MT: Externally Synchronized (this), Internally Synchronized
+    [[nodiscard]] TimepointStatus timepoint(Thread::Temporary&, Metric&, double, std::chrono::nanoseconds);
+
     /// Reference to the Thread-local metric data for a particular Context.
     /// Allows for efficient emmission of multiple Metrics' data to one location.
     class AccumulatorsRef final {

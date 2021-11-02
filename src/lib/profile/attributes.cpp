@@ -113,6 +113,22 @@ void ThreadAttributes::ctxTimepointStats(unsigned long long cnt, unsigned int di
   m_ctxTimepointStats = {cnt, disorder};
 }
 
+unsigned long long ThreadAttributes::metricTimepointMaxCount(const Metric& m) const noexcept {
+  auto it = m_metricTimepointStats.find(m);
+  if(it == m_metricTimepointStats.end()) return 0;
+  return it->second.first;
+}
+unsigned int ThreadAttributes::metricTimepointDisorder(const Metric& m) const noexcept {
+  auto it = m_metricTimepointStats.find(m);
+  if(it == m_metricTimepointStats.end()) return 0;
+  return it->second.second;
+}
+void ThreadAttributes::metricTimepointStats(const Metric& m, unsigned long long cnt, unsigned int disorder) {
+  bool newElem = m_metricTimepointStats.insert({m, {cnt, disorder}}).second;
+  assert(newElem && "Attempt to overwrite previously set timepoint stats!");
+}
+
+
 const std::vector<pms_id_t>& ThreadAttributes::idTuple() const noexcept {
   assert(!m_idTuple.empty() && "Thread has an empty hierarchical id tuple!");
   return m_idTuple;
