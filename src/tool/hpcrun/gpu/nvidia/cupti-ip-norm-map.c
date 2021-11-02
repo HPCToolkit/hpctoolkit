@@ -5,6 +5,7 @@
 #include <hpcrun/memory/hpcrun-malloc.h>
 
 #include "../gpu-metrics.h"
+#include "cuda-api.h"
 
 //#define DEBUG
 
@@ -382,6 +383,7 @@ flush_fn_helper
 
 typedef struct merge_args_s {
  uint32_t prev_range_id;
+ uint32_t context_id;
  uint32_t range_id;
  uint32_t num_threads;
  bool sampled;
@@ -399,22 +401,21 @@ merge_fn_helper
   if (visit_type == splay_postorder_visit) {
     merge_args_t *merge_args = (merge_args_t *)args;
 
-    ip_normalized_t prev_range_ip = { .lm_id = HPCRUN_FMT_GPU_RANGE_NODE, .lm_ip = merge_args->prev_range_id };
-    ip_normalized_t range_ip = { .lm_id = HPCRUN_FMT_GPU_RANGE_NODE, .lm_ip = merge_args->range_id };
-
-    cct_node_t *api_node = entry->cct;
-    cct_node_t *kernel_ip = hpcrun_cct_children(api_node);
-    cct_node_t *context = hpcrun_cct_children(kernel_ip);
+    ip_normalized_t kernel_ip = gpu_op_placeholder_ip(gpu_placeholder_type_kernel);
+    cct_node_t *kernel_ph = hpcrun_cct_insert_ip_norm(entry->cct, kernel_ip);
+    cct_node_t *kernel_ph_children = hpcrun_cct_children(kernel_ph);
+    cct_node_t *context = hpcrun_cct_insert_context(kernel_ph_children, merge_args->context_id);
 
     // Mutate functions
-    cct_node_t *prev_range_node = hpcrun_cct_insert_ip_norm(context, prev_range_ip);
-    cct_node_t *range_node = hpcrun_cct_insert_ip_norm(context, range_ip);
+    cct_node_t *prev_range_node = hpcrun_cct_insert_range(context, merge_args->prev_range_id);
+    cct_node_t *range_node = hpcrun_cct_insert_range(context, merge_args->range_id);
     
     uint64_t kernel_count = gpu_metrics_get_kernel_count(range_node) * merge_args->num_threads;
     uint64_t sampled_kernel_count = merge_args->sampled ? kernel_count * merge_args->num_threads : 0;
 
     gpu_metrics_attribute_kernel_count(prev_range_node, sampled_kernel_count, kernel_count);
     // XXX(Keren): is this function stable?
+    // No, it does not delete entries in cct2metrics
     hpcrun_cct_delete_self(range_node);
   }
 }
@@ -520,8 +521,13 @@ cupti_ip_norm_map_merge
  bool sampled
 )
 {
+  CUcontext context;
+  cuda_context_get(&context);
+	uint32_t context_id = ((hpctoolkit_cuctx_st_t *)context)->context_id;
+
   merge_args_t merge_args = {
     .prev_range_id = prev_range_id,
+    .context_id = context_id,
     .range_id = range_id,
     .sampled = sampled,
     .num_threads = num_threads

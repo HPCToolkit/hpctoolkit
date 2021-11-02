@@ -45,4 +45,10 @@ cupti_range_sampling_period_get
  void
 );
 
+void
+cupti_range_last
+(
+ void
+);
+
 #endif

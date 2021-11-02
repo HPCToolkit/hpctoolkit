@@ -2529,8 +2529,7 @@ cupti_device_shutdown(void *args, int how)
     // Collect pc samples for all contexts in a range
     // XXX(Keren): Currently CUPTI does not support
     // multiple contexts in the same range
-    uint32_t range_id = gpu_range_id_get();
-    cupti_pc_sampling_range_collect(range_id);
+    cupti_range_last();
 
     // Wait until operations are drained
     // Operation channel is FIFO

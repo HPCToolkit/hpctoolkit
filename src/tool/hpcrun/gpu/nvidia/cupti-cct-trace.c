@@ -489,29 +489,33 @@ trace_condense
 (
  uint32_t range_id,
  bool sampled,
- bool merge
+ bool merge,
+ bool logic
 )
 {
   int32_t prev_range_id = -1;
   cupti_cct_trace_node_t *current = thread_root->left;
+  cupti_cct_trace_node_t *pattern_node = logic ? current->left : current->left->left;
 
+  // Must be a single node
   // |A|
-  if (current->left->left->type == CUPTI_CCT_TRACE_NODE_FLUSH) {
-    // Single node, must be repeated with another range
-    cupti_cct_trace_map_entry_t *entry = trace_map_lookup(current->left->left->key, current->left->key);
+  if (pattern_node->type == CUPTI_CCT_TRACE_NODE_FLUSH) {
+    cupti_cct_trace_map_entry_t *entry = trace_map_lookup(pattern_node->key, pattern_node->right->key);
     assert(entry != NULL);
 
     if (merge) {
       prev_range_id = cupti_cct_trace_map_entry_range_id_get(entry);
-      uint32_t num_threads = cupti_range_thread_list_num_threads();
-      cupti_ip_norm_map_merge_thread(prev_range_id, range_id, sampled, num_threads);
+      if (prev_range_id != range_id) {
+        uint32_t num_threads = cupti_range_thread_list_num_threads();
+        cupti_ip_norm_map_merge_thread(prev_range_id, range_id, num_threads, sampled);
+      }
     }
 
     cupti_cct_trace_node_t *trace_node = cupti_cct_trace_map_entry_cct_trace_node_get(entry);
-    if (trace_node != current->left->left) {
+    if (trace_node != pattern_node) {
       // Not the current range, I can take it out
-      cupti_cct_trace_node_t *node1 = current->left->left;
-      cupti_cct_trace_node_t *node2 = current->left;
+      cupti_cct_trace_node_t *node1 = pattern_node;
+      cupti_cct_trace_node_t *node2 = pattern_node->right;
 
       trace_delete(node1);
       trace_delete(node2);
@@ -560,18 +564,21 @@ cupti_cct_trace_flush
 (
  uint32_t range_id,
  bool sampled,
- bool merge
+ bool merge,
+ bool logic
 )
 {
   TRACE_MSG(CUPTI_CCT_TRACE, "Enter flush key trace");
 
   trace_init();
 
-  cupti_cct_trace_node_t *trace_node = trace_new(CUPTI_CCT_TRACE_NODE_FLUSH, 0);
-  trace_append(thread_root, trace_node);
+  if (!logic) {
+    cupti_cct_trace_node_t *trace_node = trace_new(CUPTI_CCT_TRACE_NODE_FLUSH, 0);
+    trace_append(thread_root, trace_node);
+  }
   // Don't index A|
   
-  int32_t prev_range_id = trace_condense(range_id, sampled, merge);
+  int32_t prev_range_id = trace_condense(range_id, sampled, merge, logic);
 
   TRACE_MSG(CUPTI_CCT_TRACE, "Exit flush key trace");
 

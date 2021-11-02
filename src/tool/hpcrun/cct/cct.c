@@ -596,11 +596,11 @@ hpcrun_cct_delete_addr(cct_node_t* node, cct_addr_t* frm)
 
   if(node->children->left == NULL) {
     node->children = node->children->right;
-    return found;
+  } else {
+    node->children->left = splay(node->children->left, frm);
+    node->children->left->right = node->children->right;
+    node->children = node->children->left;
   }
-  node->children->left = splay(node->children->left, frm);
-  node->children->left->right = node->children->right;
-  node->children = node->children->left;
   return found;
 }
 
@@ -621,6 +621,7 @@ hpcrun_cct_insert_path_return_leaf(cct_node_t *root, cct_node_t *path)
 void
 hpcrun_cct_delete_self(cct_node_t *cct)
 {
+  // TODO(Keren): cct related metrics should also be removed
   hpcrun_cct_delete_addr(cct->parent, &cct->addr);
   // FIXME vi3: I think below should be added, because of freelist
   // cause previous function remove node from parent tree,
