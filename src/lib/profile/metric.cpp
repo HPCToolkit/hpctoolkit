@@ -508,33 +508,40 @@ void Metric::crossfinalize(const CollaborativeContext& cc) noexcept {
 
   // Collect together a set of all the possible targeted Threads we can
   // distribute to, in the event that we have to fall back to flat distribution
-  std::vector<std::pair<decltype(cc.data)::mapped_type::key_type, double>> default_tfactors;
+  // Factor = <kernel_count, sampled_kernel_count>
+  using Factor = std::pair<double, double>;
+  std::vector<std::pair<decltype(cc.data)::mapped_type::key_type, Factor>> default_tfactors;
   {
     std::unordered_set<decltype(cc.data)::mapped_type::key_type> targets;
     double total = 0;
     for(const auto& sdata: cc.data.citerate()) {
       for(const auto& tcdata: sdata.second.citerate()) {
         if(!targets.emplace(tcdata.first).second) continue;
-        double factor = 0;
+        Factor factor = {0.0, 1.0};
         for(const auto& macc: tcdata.second.citerate()) {
-          if(macc.first->name() == "GKER:COUNT") {
-            factor = macc.second.point.load(std::memory_order_relaxed);
-            break;
+          if (macc.first->name() == "GKER:COUNT") {
+            factor.first = macc.second.point.load(std::memory_order_relaxed);
+          } else if (macc.first->name() == "GKER::SAMPLED_COUNT") {
+            factor.second = macc.second.point.load(std::memory_order_relaxed);
           }
         }
-        total += factor;
-        if(factor > 0)
+        total += factor.first;
+        if(factor.first > 0) {
+          if(factor.second > 0) {
+            factor.second = factor.first / factor.second;
+          }
           default_tfactors.emplace_back(tcdata.first, factor);
+        }
       }
     }
-    for(auto& tcf: default_tfactors) tcf.second /= total;
+    for(auto& tcf: default_tfactors) tcf.second.first /= total;
   }
 
   // Process everything one top-level Scope at a time
   for(const auto& sc: cc.m_shadow) {
     // Pregenerate the factors to use when distributing across the targets
     // Also sum the metrics for the roots back into the Threads
-    std::vector<std::pair<decltype(cc.data)::mapped_type::key_type, double>> local_tfactors;
+    std::vector<std::pair<decltype(cc.data)::mapped_type::key_type, Factor>> local_tfactors;
     const decltype(cc.data)::mapped_type* sdata = cc.data.find(sc.first);
     if(sdata != nullptr) {
       local_tfactors.reserve(sdata->size());
@@ -543,18 +550,24 @@ void Metric::crossfinalize(const CollaborativeContext& cc) noexcept {
         Thread::Temporary& tt = tcdata.first.first;
         const Context& c = tcdata.first.second;
         auto& cdata = tt.data[c];
-        double factor = 0;
+        Factor factor = {0.0, 1.0};
         for(const auto& macc: tcdata.second.citerate()) {
           auto val = macc.second.point.load(std::memory_order_relaxed);
           atomic_add(cdata[macc.first].point, val);
           if(macc.first->name() == "GKER:COUNT")
-            factor = val;
+            factor.first = val;
+          if(macc.first->name() == "GKER:SAMPLED_COUNT")
+            factor.second = val;
         }
-        total += factor;
-        if(factor > 0)
+        total += factor.first;
+        if(factor.first > 0) {
+          if(factor.second > 0) {
+            factor.second = factor.first / factor.second;
+          }
           local_tfactors.emplace_back(tcdata.first, factor);
+        }
       }
-      for(auto& tf: local_tfactors) tf.second /= total;
+      for(auto& tf: local_tfactors) tf.second.first /= total;
     }
     const auto& tfactors = local_tfactors.empty() ? default_tfactors : local_tfactors;
 
@@ -573,7 +586,7 @@ void Metric::crossfinalize(const CollaborativeContext& cc) noexcept {
           for(const auto& macc: shad.data.citerate()) {
             const Metric& m = macc.first;
             auto val = macc.second.point.load(std::memory_order_relaxed);
-            atomic_add(cdata[m].point, val * tf.second);
+            atomic_add(cdata[m].point, val * tf.second.first * tf.second.second);
           }
         }
       }

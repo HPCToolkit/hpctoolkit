@@ -187,6 +187,8 @@ int rankN(ProfArgs&& args) {
         pipelineB2 << make_unique_x<sinks::HPCTraceDB2>(args.output);
       pipelineB2 << make_unique_x<sinks::SparseDB>(args.output);
       break;
+    case ProfArgs::Format::hatchet_literal:
+      break;
     }
 
     ProfilePipeline pipeline(std::move(pipelineB2), args.threads);
