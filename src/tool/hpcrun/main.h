@@ -82,4 +82,8 @@ extern void special_cuda_ctxt_actions(bool enable);
 
 extern bool hpcrun_suppress_sample();
 
+extern void hpcrun_thread_monitor_force_on();
+
+extern void hpcrun_thread_monitor_force_off();
+
 #endif  // ! main_h

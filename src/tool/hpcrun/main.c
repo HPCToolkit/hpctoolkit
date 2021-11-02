@@ -222,6 +222,7 @@ bool hpcrun_no_unwind = false;
  * (public declaration) thread-local variables
  *****************************************************************************/
 static __thread bool hpcrun_thread_suppress_sample = true;
+static __thread bool hpcrun_thread_monitor_forced = false;
 
 
 //***************************************************************************
@@ -1167,6 +1168,14 @@ monitor_init_thread_support(void)
   hpcrun_safe_exit();
 }
 
+void hpcrun_thread_monitor_force_on() {
+  hpcrun_thread_monitor_forced = true;
+}
+
+void hpcrun_thread_monitor_force_off() {
+  hpcrun_thread_monitor_forced = false;
+}
+
 void*
 monitor_thread_pre_create(void)
 {
@@ -1180,8 +1189,10 @@ monitor_thread_pre_create(void)
   monitor_get_new_thread_info(&mti);
   void *thread_pre_create_address = mti.mti_create_return_addr;
 
-  if (module_ignore_map_inrange_lookup(thread_pre_create_address)) {
-    return MONITOR_IGNORE_NEW_THREAD;
+  if (!hpcrun_thread_monitor_forced) {
+    if (module_ignore_map_inrange_lookup(thread_pre_create_address)) {
+      return MONITOR_IGNORE_NEW_THREAD;
+    }
   }
   
   hpcrun_safe_enter();
@@ -1261,8 +1272,10 @@ monitor_init_thread(int tid, void* data)
 
   void *thread_begin_address = monitor_get_addr_thread_start();
 
-  if (module_ignore_map_inrange_lookup(thread_begin_address)) {
-    hpcrun_thread_suppress_sample = true;
+  if (!hpcrun_thread_monitor_forced) {
+    if (module_ignore_map_inrange_lookup(thread_begin_address)) {
+      hpcrun_thread_suppress_sample = true;
+    }
   }
 
   hpcrun_safe_enter();
