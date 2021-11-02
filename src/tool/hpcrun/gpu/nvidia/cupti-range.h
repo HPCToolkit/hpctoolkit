@@ -19,6 +19,13 @@ typedef enum cupti_range_mode {
   CUPTI_RANGE_MODE_COUNT = 4
 } cupti_range_mode_t;
 
+typedef enum cupti_range_algorithm {
+  CUPTI_RANGE_ALGORITHM_TRIE = 0,
+  CUPTI_RANGE_ALGORITHM_SEQUITUR = 1,
+  CUPTI_RANGE_ALGORITHM_SEQ_TRIE = 2,
+  CUPTI_RANGE_ALGORITHM_COUNT = 3
+} cupti_range_algorithm_t;
+
 void
 cupti_range_config
 (

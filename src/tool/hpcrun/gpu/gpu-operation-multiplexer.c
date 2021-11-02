@@ -97,8 +97,6 @@ gpu_init_operation_channel
   }
 }
 
-#define OPERATION_THREAD_ID 10000
-
 static void *
 gpu_operation_record
 (
@@ -106,8 +104,6 @@ gpu_operation_record
 )
 {
   int current_operation_channels_count;
-
-  hpcrun_thread_init_mem_pool_once(OPERATION_THREAD_ID, NULL, false, true);
 
   while (!atomic_load(&stop_operation_flag)) {
     current_operation_channels_count = atomic_load(&operation_channels_count);
@@ -118,8 +114,10 @@ gpu_operation_record
   current_operation_channels_count = atomic_load(&operation_channels_count);
   gpu_operation_channel_set_process(current_operation_channels_count);
 
+  printf("range profile dump begin\n");
   // write out range profile
   gpu_range_profile_dump();
+  printf("range profile dump end\n");
 
   // even if this is not normal exit, gpu-trace-fini will behave as if it is a normal exit
   gpu_trace_fini(NULL, MONITOR_EXIT_NORMAL);
@@ -145,8 +143,12 @@ gpu_operation_multiplexer_create
 
   gpu_operation_channel_set_alloc(max_completion_cb_threads);
 
+  hpcrun_thread_monitor_force_on();
+
   // You are the first to create monitor thread
   pthread_create(&thread, NULL, (pthread_start_routine_t) gpu_operation_record, NULL);
+
+  hpcrun_thread_monitor_force_off();
 }
 
 

@@ -126,7 +126,7 @@ struct cupti_cct_map_entry_s {
 //******************************************************************************
 
 static __thread cupti_cct_map_entry_t *map_root = NULL;
-static __thread map_size = 0;
+static __thread int map_size = 0;
 static cupti_cct_map_entry_t *free_list = NULL;
 
 //******************************************************************************

@@ -195,6 +195,7 @@ flush_alarm_handler(int sig, siginfo_t* siginfo, void* context)
 #include "cupti-pc-sampling-api.h"
 #include "cupti-unwind-map.h"
 #include "cupti-cct-trace.h"
+#include "cupti-cct-trie.h"
 #endif
 
 //******************************************************************************
@@ -2329,7 +2330,8 @@ cupti_device_flush(void *args, int how)
 
   printf("CCT trace\n");
 
-  cupti_cct_trace_dump();
+  //cupti_cct_trace_dump();
+  cupti_cct_trie_dump();
 #endif
 
   spinlock_unlock(&print_lock);

@@ -529,6 +529,7 @@ MY_NEW_CUPTI_FILES = gpu/nvidia/cupti-pc-sampling-api.c \
 	gpu/nvidia/cupti-cct-map.c \
 	gpu/nvidia/cupti-cct-trace.c \
 	gpu/nvidia/cupti-cct-trace-map.c \
+	gpu/nvidia/cupti-cct-trie.c \
 	gpu/nvidia/cupti-range-thread-list.c
 endif
 
