@@ -519,7 +519,7 @@ void Metric::crossfinalize(const CollaborativeContext& cc) noexcept {
     for(const auto& sdata: cc.data.citerate()) {
       for(const auto& tcdata: sdata.second.citerate()) {
         if(!targets.emplace(tcdata.first).second) continue;
-        Factor factor = {0.0, 1.0};
+        Factor factor = {0.0, 0.0};
         for(const auto& macc: tcdata.second.citerate()) {
           if (macc.first->name() == "GKER:COUNT") {
             factor.first = macc.second.point.load(std::memory_order_relaxed);
@@ -531,6 +531,8 @@ void Metric::crossfinalize(const CollaborativeContext& cc) noexcept {
         if(factor.first > 0) {
           if(factor.second > 0) {
             factor.second = factor.first / factor.second;
+          } else {
+            factor.second = 1.0;
           }
           default_tfactors.emplace_back(tcdata.first, factor);
         }
@@ -552,7 +554,7 @@ void Metric::crossfinalize(const CollaborativeContext& cc) noexcept {
         Thread::Temporary& tt = tcdata.first.first;
         const Context& c = tcdata.first.second;
         auto& cdata = tt.data[c];
-        Factor factor = {0.0, 1.0};
+        Factor factor = {0.0, 0.0};
         for(const auto& macc: tcdata.second.citerate()) {
           auto val = macc.second.point.load(std::memory_order_relaxed);
           atomic_add(cdata[macc.first].point, val);
@@ -565,6 +567,8 @@ void Metric::crossfinalize(const CollaborativeContext& cc) noexcept {
         if(factor.first > 0) {
           if(factor.second > 0) {
             factor.second = factor.first / factor.second;
+          } else {
+            factor.second = 1.0;
           }
           local_tfactors.emplace_back(tcdata.first, factor);
         }
