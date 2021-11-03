@@ -184,7 +184,7 @@ flush_alarm_handler(int sig, siginfo_t* siginfo, void* context)
 #include "cuda-api.h"
 #include "cupti-api.h"
 #include "cupti-gpu-api.h"
-#include "cupti-cct-map.h"
+#include "cupti-cct-analysis-map.h"
 #include "cubin-hash-map.h"
 #include "cubin-id-map.h"
 #include "cubin-crc-map.h"
@@ -992,7 +992,7 @@ analyze_cupti_api
 
   if (gpu_op_placeholder_flags_is_set(flags, gpu_placeholder_type_kernel)) {
     cuLaunchKernel_params *params = (cuLaunchKernel_params *)cd->functionParams;
-    cupti_cct_map_insert(api_node, p1, p2, p3, prev, kernel_ip,
+    cupti_cct_analysis_map_insert(api_node, p1, p2, p3, prev, kernel_ip,
       stack_length, node_depth, api_node_depth,
       cd->symbolName, params->gridDimX, params->gridDimY, params->gridDimZ,
       params->blockDimX, params->blockDimY, params->blockDimZ);
@@ -1001,7 +1001,7 @@ analyze_cupti_api
       .lm_id = 0,
       .lm_ip = 0
     };
-    cupti_cct_map_insert(api_node, p1, p2, p3, prev, ip_norm,
+    cupti_cct_analysis_map_insert(api_node, p1, p2, p3, prev, ip_norm,
       0, 0, api_node_depth, 0, 0, 0, 0, 0, 0, 0);
   }
 }
@@ -2322,9 +2322,9 @@ cupti_device_flush(void *args, int how)
 
 #ifdef NEW_CUPTI_ANALYSIS
   printf("Total cct unwinds %lu, correct unwinds %lu, fast unwinds %lu, slow unwinds %lu, unique ccts %zu\n",
-    total_unwinds, correct_unwinds, fast_unwinds, slow_unwinds, cupti_cct_map_size_get());
+    total_unwinds, correct_unwinds, fast_unwinds, slow_unwinds, cupti_cct_analysis_map_size_get());
 
-  //cupti_cct_map_dump();
+  //cupti_cct_analysis_map_dump();
 
   printf("-----------------------------------------------------------------\n");
 

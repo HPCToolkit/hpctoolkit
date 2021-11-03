@@ -1,5 +1,5 @@
-#ifndef cupti_cct_map_h
-#define cupti_cct_map_h
+#ifndef cupti_cct_analysis_map_h
+#define cupti_cct_analysis_map_h
 
 
 //*****************************************************************************
@@ -18,17 +18,17 @@
 // interface operations
 //*****************************************************************************
 //
-typedef struct cupti_cct_map_entry_s cupti_cct_map_entry_t;
+typedef struct cupti_cct_analysis_map_entry_s cupti_cct_analysis_map_entry_t;
 
-cupti_cct_map_entry_t *
-cupti_cct_map_lookup
+cupti_cct_analysis_map_entry_t *
+cupti_cct_analysis_map_lookup
 (
  cct_node_t *cct
 ); 
 
 
 void
-cupti_cct_map_insert
+cupti_cct_analysis_map_insert
 (
  cct_node_t *cct,
  cct_node_t *p1,
@@ -50,12 +50,12 @@ cupti_cct_map_insert
 
 
 void
-cupti_cct_map_dump
+cupti_cct_analysis_map_dump
 (
 );
 
 size_t
-cupti_cct_map_size_get
+cupti_cct_analysis_map_size_get
 (
 );
 

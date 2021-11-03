@@ -170,6 +170,11 @@ cupti_cct_trie_flush
 )
 {
   cct_trie_init();
+  
+  if (trie_cur->range_id == -1) {
+    trie_cur->range_id = range_id;
+  }
+
   int32_t prev_range_id = trie_cur->range_id;
 
   if (!logic) {
@@ -177,11 +182,9 @@ cupti_cct_trie_flush
     trie_cur = root;
   }
 
-  if (prev_range_id != range_id) {
-    if (merge) {
-      uint32_t num_threads = cupti_range_thread_list_num_threads();
-      cupti_ip_norm_map_merge_thread(prev_range_id, range_id, num_threads, sampled);
-    }
+  if (merge) {
+    uint32_t num_threads = cupti_range_thread_list_num_threads();
+    cupti_ip_norm_map_merge_thread(prev_range_id, range_id, num_threads, sampled);
     return prev_range_id;
   } else {
     return -1;

@@ -57,7 +57,7 @@
 #include <hpcrun/messages/messages.h>
 #include <hpcrun/memory/hpcrun-malloc.h>
 
-#include "cupti-cct-map.h"
+#include "cupti-cct-analysis-map.h"
 #include "../gpu-splay-allocator.h"
 
 
@@ -87,7 +87,7 @@
   typed_splay_free(free_list, node)
 
 #undef typed_splay_node
-#define typed_splay_node(cct) cupti_cct_map_entry_t 
+#define typed_splay_node(cct) cupti_cct_analysis_map_entry_t 
 
 
 
@@ -97,9 +97,9 @@
 
 #define MAX_STR_LEN 1024
 
-struct cupti_cct_map_entry_s {
-  struct cupti_cct_map_entry_s *left;
-  struct cupti_cct_map_entry_s *right;
+struct cupti_cct_analysis_map_entry_s {
+  struct cupti_cct_analysis_map_entry_s *left;
+  struct cupti_cct_analysis_map_entry_s *right;
   uint64_t cct;
 
   cct_node_t *p1;
@@ -125,9 +125,9 @@ struct cupti_cct_map_entry_s {
 // local data
 //******************************************************************************
 
-static __thread cupti_cct_map_entry_t *map_root = NULL;
+static __thread cupti_cct_analysis_map_entry_t *map_root = NULL;
 static __thread int map_size = 0;
-static cupti_cct_map_entry_t *free_list = NULL;
+static cupti_cct_analysis_map_entry_t *free_list = NULL;
 
 //******************************************************************************
 // private operations
@@ -136,8 +136,8 @@ static cupti_cct_map_entry_t *free_list = NULL;
 typed_splay_impl(cct)
 
 
-static cupti_cct_map_entry_t *
-cupti_cct_map_entry_new
+static cupti_cct_analysis_map_entry_t *
+cupti_cct_analysis_map_entry_new
 (
  cct_node_t *cct,
  cct_node_t *p1,
@@ -157,10 +157,10 @@ cupti_cct_map_entry_new
  uint32_t block_dim_z
 )
 {
-  cupti_cct_map_entry_t *e;
+  cupti_cct_analysis_map_entry_t *e;
   e = st_alloc(&free_list);
 
-  memset(e, 0, sizeof(cupti_cct_map_entry_t));
+  memset(e, 0, sizeof(cupti_cct_analysis_map_entry_t));
 
   e->cct = (uint64_t)cct;
   e->p1 = p1;
@@ -189,7 +189,7 @@ cupti_cct_map_entry_new
 static void
 dump_fn_helper
 (
- cupti_cct_map_entry_t *entry,
+ cupti_cct_analysis_map_entry_t *entry,
  splay_visit_t visit_type,
  void *args
 )
@@ -219,20 +219,20 @@ dump_fn_helper
 // interface operations
 //******************************************************************************
 
-cupti_cct_map_entry_t *
-cupti_cct_map_lookup
+cupti_cct_analysis_map_entry_t *
+cupti_cct_analysis_map_lookup
 (
  cct_node_t *cct
 )
 {
-  cupti_cct_map_entry_t *result = st_lookup(&map_root, (uint64_t)cct);
+  cupti_cct_analysis_map_entry_t *result = st_lookup(&map_root, (uint64_t)cct);
 
   return result;
 }
 
 
 void
-cupti_cct_map_insert
+cupti_cct_analysis_map_insert
 (
  cct_node_t *cct,
  cct_node_t *p1,
@@ -252,10 +252,10 @@ cupti_cct_map_insert
  uint32_t block_dim_z
 )
 {
-  cupti_cct_map_entry_t *entry = st_lookup(&map_root, (uint64_t)cct);
+  cupti_cct_analysis_map_entry_t *entry = st_lookup(&map_root, (uint64_t)cct);
 
   if (entry == NULL) {
-    entry = cupti_cct_map_entry_new(cct, p1, p2, p3, prev,
+    entry = cupti_cct_analysis_map_entry_new(cct, p1, p2, p3, prev,
       function_id, stack_length, tool_depth, api_depth,
       function_name, grid_dim_x, grid_dim_y, grid_dim_z, block_dim_x, block_dim_y, block_dim_z);
     st_insert(&map_root, entry);
@@ -273,7 +273,7 @@ cupti_cct_map_insert
 
 
 void
-cupti_cct_map_dump
+cupti_cct_analysis_map_dump
 (
 )
 {
@@ -286,7 +286,7 @@ cupti_cct_map_dump
 
 
 size_t
-cupti_cct_map_size_get
+cupti_cct_analysis_map_size_get
 (
 )
 {

@@ -24,6 +24,9 @@ static uint32_t cupti_range_sampling_period = CUPTI_RANGE_DEFAULT_SAMPLING_PERIO
 static uint32_t cupti_range_thread_retain_range = CUPTI_RANGE_THREAD_RETAIN_RANGE;
 
 static uint32_t cupti_retained_ranges = 0;
+#ifdef NEW_CUPTI_ANALYSIS
+static __thread int sampled_times = 0;
+#endif
 
 static bool
 cupti_range_pre_enter_callback
@@ -107,8 +110,6 @@ cupti_range_mode_context_sensitive_is_enter
   bool active = cupti_pc_sampling_active();
 
   if (map_ret_type == CUPTI_IP_NORM_MAP_DUPLICATE) {
-    // The next api must be in a different range
-    cupti_range_kernel_count_increase(kernel_ph, context_id, range_id + 1, active, 1);
     // Ranges must be divided
     int32_t prev_range_id = -1;
     if (cupti_range_algorithm == CUPTI_RANGE_ALGORITHM_SEQUITUR) {
@@ -135,11 +136,11 @@ cupti_range_mode_context_sensitive_is_enter
       }
     }
     // After flushing, we clean up ccts in the previous range
+    range_id += 1;
     cupti_ip_norm_map_clear_thread();
     cupti_ip_norm_map_insert_thread(kernel_ip, api_node);
     // Update active status
     active = cupti_pc_sampling_active();
-    range_id += 1;
   } else if (map_ret_type == CUPTI_IP_NORM_MAP_NOT_EXIST) {
     if (!active && !first_range) {
       // A logic flush, just to attribute samples to the previous range
@@ -151,20 +152,20 @@ cupti_range_mode_context_sensitive_is_enter
       // If first range or is actively collecting samples, no need to increase range id
       range_id += 1;
     }
-    cupti_range_kernel_count_increase(kernel_ph, context_id, range_id, active, 1);
     // No such a node, insert it
     cupti_ip_norm_map_insert_thread(kernel_ip, api_node);
   } else {
-    cupti_range_kernel_count_increase(kernel_ph, context_id, range_id, active, 1);
+    // We've seen this node before
+    cupti_ip_norm_map_count_increase_thread(kernel_ip);
   }
 
   bool repeated = false;
   bool sampled = false;
   
   if (cupti_range_algorithm == CUPTI_RANGE_ALGORITHM_SEQUITUR) {
-    cupti_cct_trace_append(range_id, api_node);
+    repeated = cupti_cct_trace_append(range_id, api_node);
   } else if (cupti_range_algorithm == CUPTI_RANGE_ALGORITHM_TRIE) {
-    cupti_cct_trie_append(range_id, api_node);
+    repeated = cupti_cct_trie_append(range_id, api_node);
   }
   if (is_cur && !active) {
     // 1. abc | (a1)bc
@@ -173,6 +174,9 @@ cupti_range_mode_context_sensitive_is_enter
       (map_ret_type == CUPTI_IP_NORM_MAP_DUPLICATE && cupti_range_mode_context_sensitive_is_sampled());
     if (sampled) {
       TMSG(CUPTI_TRACE, "Range repeated %d, map_ret_type %d, api_node %p", repeated, map_ret_type, api_node);
+#ifdef NEW_CUPTI_ANALYSIS
+      ++sampled_times;
+#endif
       cupti_pc_sampling_start(context);
     }
   }
@@ -369,4 +373,7 @@ cupti_range_last
       }
     }
   }
+#ifdef NEW_CUPTI_ANALYSIS
+  printf("sampled times %d\n", sampled_times);
+#endif
 }

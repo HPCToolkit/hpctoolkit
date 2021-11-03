@@ -506,10 +506,8 @@ trace_condense
 
     if (merge) {
       prev_range_id = cupti_cct_trace_map_entry_range_id_get(entry);
-      if (prev_range_id != range_id) {
-        uint32_t num_threads = cupti_range_thread_list_num_threads();
-        cupti_ip_norm_map_merge_thread(prev_range_id, range_id, num_threads, sampled);
-      }
+      uint32_t num_threads = cupti_range_thread_list_num_threads();
+      cupti_ip_norm_map_merge_thread(prev_range_id, range_id, num_threads, sampled);
     }
 
     cupti_cct_trace_node_t *trace_node = cupti_cct_trace_map_entry_cct_trace_node_get(entry);
