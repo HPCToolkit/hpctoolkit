@@ -1179,7 +1179,7 @@ monitor_thread_pre_create(void)
   void *thread_pre_create_address = mti.mti_create_return_addr;
 
   if (module_ignore_map_inrange_lookup(thread_pre_create_address)) {
-    return NULL;
+    return MONITOR_IGNORE_NEW_THREAD;
   }
   
   hpcrun_safe_enter();
