@@ -84,6 +84,21 @@ cupti_ip_norm_map_merge_thread
 
 
 void
+cupti_ip_norm_map_count_increase
+(
+ cupti_ip_norm_map_entry_t **root,
+ ip_normalized_t ip_norm
+);
+
+
+void
+cupti_ip_norm_map_count_increase_thread
+(
+ ip_normalized_t ip_norm
+);
+
+
+void
 cupti_ip_norm_map_clear
 (
  cupti_ip_norm_map_entry_t **root

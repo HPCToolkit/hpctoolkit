@@ -358,6 +358,7 @@ struct cupti_ip_norm_map_entry_s {
   struct cupti_ip_norm_map_entry_s *right;
   ip_normalized_t ip_norm;
   cct_node_t *cct;
+  int count;
 };
 
 static __thread cupti_ip_norm_map_entry_t *map_root = NULL;
@@ -408,15 +409,11 @@ merge_fn_helper
 
     // Mutate functions
     cct_node_t *prev_range_node = hpcrun_cct_insert_range(context, merge_args->prev_range_id);
-    cct_node_t *range_node = hpcrun_cct_insert_range(context, merge_args->range_id);
     
-    uint64_t kernel_count = gpu_metrics_get_kernel_count(range_node) * merge_args->num_threads;
+    uint64_t kernel_count = entry->count;
     uint64_t sampled_kernel_count = merge_args->sampled ? kernel_count * merge_args->num_threads : 0;
 
     gpu_metrics_attribute_kernel_count(prev_range_node, sampled_kernel_count, kernel_count);
-    // XXX(Keren): is this function stable?
-    // No, it does not delete entries in cct2metrics
-    hpcrun_cct_delete_self(range_node);
   }
 }
 
@@ -472,6 +469,7 @@ cupti_ip_norm_map_insert
     entry = st_alloc(&free_list);
     entry->ip_norm = ip_norm;
     entry->cct = cct;
+    entry->count = 1;
     st_insert(root, entry);
   }
 
@@ -546,4 +544,32 @@ cupti_ip_norm_map_merge_thread
 )
 {
   cupti_ip_norm_map_merge(&map_root, prev_range_id, range_id, num_threads, sampled);
+}
+
+
+void
+cupti_ip_norm_map_count_increase
+(
+ cupti_ip_norm_map_entry_t **root,
+ ip_normalized_t ip_norm
+)
+{
+  cupti_ip_norm_map_entry_t *entry = st_lookup(root, ip_norm);
+
+  if (entry != NULL) {
+    entry->count++;
+  }
+
+  TRACE_IP_NORM_MAP_MSG(CUPTI_CCT_TRACE, "IP norm map insert (lm_id: %d, lm_ip: %p, cct: %p)->(entry: %p)",
+    ip_norm.lm_id, ip_norm.lm_ip, cct, entry);
+}
+
+
+void
+cupti_ip_norm_map_count_increase_thread
+(
+ ip_normalized_t ip_norm
+)
+{
+  cupti_ip_norm_map_count_increase(&map_root, ip_norm);
 }
