@@ -38,6 +38,13 @@ cupti_cct_trie_flush
 
 
 void
+cupti_cct_trie_cur_range_set
+(
+ uint32_t range_id
+);
+
+
+void
 cupti_cct_trie_dump
 (
 );

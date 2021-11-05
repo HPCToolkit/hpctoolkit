@@ -6,6 +6,7 @@
 #include <hpcrun/messages/messages.h>
 #include <lib/prof-lean/splay-macros.h>
 
+#include "cupti-range.h"
 #include "cupti-ip-norm-map.h"
 #include "cupti-range-thread-list.h"
 
@@ -189,6 +190,17 @@ cupti_cct_trie_flush
   } else {
     return -1;
   }
+}
+
+
+void
+cupti_cct_trie_cur_range_set
+(
+ uint32_t range_id
+)
+{
+  cct_trie_init();
+  trie_cur->range_id = range_id;
 }
 
 static void

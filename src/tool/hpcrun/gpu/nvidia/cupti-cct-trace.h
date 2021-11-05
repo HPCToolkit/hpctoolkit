@@ -36,6 +36,11 @@ cupti_cct_trace_flush
  bool logic
 );
 
+void
+cupti_cct_trace_cur_range_set
+(
+ uint32_t range_id
+);
 
 void
 cupti_cct_trace_dump

@@ -47,14 +47,19 @@ void cupti_range_thread_list_add(int thread_id) {
     cupti_range_thread_t *prev = head;
     while (next != head) {
       if (next->thread_id == thread_id) {
+        // Duplicate id
         return;
       }
       prev = next;
       next = next->next;
     }
-    next = cupti_range_thread_list_alloc(thread_id);
-    prev->next = next;
-    next->next = head;
+    if (next->thread_id == thread_id) {
+      // Single node
+      return;
+    }
+    cupti_range_thread_t *node = cupti_range_thread_list_alloc(thread_id);
+    prev->next = node;
+    node->next = next;
   }
 }
 
@@ -83,7 +88,8 @@ void cupti_range_thread_list_clear() {
     next = next->next;
     free_list_free(prev);
   }
-  free_list_free(prev);
+  free_list_free(head);
+  head = NULL;
 }
 
 int cupti_range_thread_list_num_threads() {

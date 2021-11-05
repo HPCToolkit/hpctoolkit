@@ -586,6 +586,19 @@ cupti_cct_trace_flush
 
 
 void
+cupti_cct_trace_cur_range_set
+(
+ uint32_t range_id
+)
+{
+  trace_init();
+  cupti_cct_trace_node_t *current = thread_root->left;
+  trace_map_delete(current->left->key, current->key);
+  trace_map_insert(current->left->key, current->key, current->left, range_id);
+}
+
+
+void
 cupti_cct_trace_dump
 (
 )
