@@ -66,6 +66,7 @@ AUTOMAKE_OPTIONS = foreign
 
 LOOSEDOCS = \
 	FORMATS.md
+	METRICS.yaml
 
 #############################################################################
 # Automake rules

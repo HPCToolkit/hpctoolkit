@@ -1,0 +1,310 @@
+%YAML 1.2
+# This format gives most information through key:value pairs, the comments
+# before the first use of a pair indicate the value's meaning and whether it is
+# required or not (and if not, its default if not given).
+
+# Explicit types are given in this example to indicate what types are allowed
+# for the value. They match the default-resolved type from YAML's core schema
+# and could be removed without changing the final representation.
+
+---  # Only one document per file
+### Basic annotated example
+
+# (Optional) Version of the format (not the YAML version).
+# If not given, defaults to the highest version supported by the Viewer.
+version: !!int 0
+
+# (Required) Sequence of all input metrics used by this taxonomy. All input
+# metrics when referenced later must "point to" a node in this sequence. Order
+# does not matter.
+inputs: !!seq
+  - &in-perf-cycles-Ex
+    # (Required) Name of the metric, as listed in experiment.xml.
+    metric: !!str perf::cycles::x::exclusive
+
+  - &in-perf-cycles-Ix
+    metric: perf::cycles::x::inclusive
+  - &in-perf-l1-miss-Ex
+    metric: perf::l1-cache-miss::x::exclusive
+  - &in-perf-l1-miss-Ix
+    metric: perf::l1-cache-miss::x::inclusive
+  - &in-perf-l2-miss-Ex
+    metric: perf::l2-cache-miss::x::exclusive
+  - &in-perf-l2-miss-Ix
+    metric: perf::l2-cache-miss::x::inclusive
+  - &in-perf-l3-miss-Ex
+    metric: perf::l3-cache-miss::x::exclusive
+  - &in-perf-l3-miss-Ix
+    metric: perf::l3-cache-miss::x::inclusive
+
+# (Required) Sequence of all root taxonomic metrics. Order indicates the initial
+# order of the columns (left-to-right).
+roots:
+  - # (Required) Name of the taxonomic metric, as will be listed in the header.
+    name: !!str CPU Cycles
+    # (Optional) Description of the taxonomic metric, as will be given on cursor
+    # hover over the column header. May contain newlines for very long + complex
+    # descriptions.
+    # If omitted, defaults to the `short description:` if given, otherwise ''.
+    description: !!str Cycles spent in the CPU. Includes memory stalls.
+    description: >
+      Cycles spent in the CPU. Or outside the CPU (like in memory). But not on a
+      GPU, because that's different.
+
+      This is a second paragraph, for really complication explanations.
+        This block is indented a bit because indents are cool.
+    # (Optional) Shortened description to use for cases where rendering multiple
+    # lines would not be good.
+    # If omitted, defaults to `description:` up to the first period or newline
+    # if given, otherwise ''.
+    short description: !!str Cycles spent in the CPU.
+
+    # (Optional) How the values in the taxonomy rooted here should be presented
+    # to the user (by default). Only valid for root taxonomic metrics. One of:
+    #  - 'column': Columns that can be expanded to show inner metrics.
+    #  - 'pane': Pane that can be opened under a context row, listing values
+    #    for metrics in a nested format based on the structure.
+    # If omitted, defaults to 'column'.
+    presentation: !!str column
+
+    # (Optional) Sequence of child taxonomic metrics. Format is recursive and
+    # nearly identical to this one.
+    # If omitted defaults to [].
+    children: !!seq
+    - name: L2 Bound
+      description: Rough cycles spent accessing the L2 cache
+
+      # (Required) Information that may vary based on the "enabled variant" of
+      # the metric. Variants can be switched between but only one will be used
+      # at any given time.
+      variants: !!map
+        # (Key) Name of the variant, to be presented when swapping variants.
+        !!str Sum:
+          # (Required) How the value (or each of the values) for this metric
+          # should be rendered. Orderless set of flags, each of which is one of:
+          #  - 'hidden': Mark to indicate hidden inner values (`*`).
+          #  - 'number': Plain number (rendered as determined by `format:`).
+          #  - 'percentage': Percentage of the global inclusive value. Only
+          #    if this metric has an inclusive column.
+          #  - 'colorbar': Color bar indicating the relative sizes of child
+          #    values. Unless `formula:` is 'sum', an additional "gray" color is
+          #    added to fill the difference between sum-of-children and this
+          #    metric's value.
+          render: !!seq [number, percent]  # 1.23e+04 56.7%
+          # If a !!str, equivalent to specifying a single-element !!seq
+          render: !!str number  # 1.23e+04
+
+          # (Optional) Exact printf-like format to use when rendering the
+          # metric value for `render: number`. The input to "printf" is a single
+          # C double value. If omitted, the default is '%.2e'
+          #
+          # In practice this means this string must be of the form:
+          #     [prefix]%[flags][field width][.precision](eEfFgGaA)[suffix]
+          # Where [prefix] and [suffix] can use %% as an escape for literal %.
+          format: !!str '%.2e'
+
+          # (Optional) Which variant to use to obtain child values, and also the
+          # "enabled variant" used when first expanding this metric. Gives a
+          # variant name for every child metric in the order they are listed:
+          child variant: !!seq
+            - Sum  # Child 1 will use Sum
+            - Mean # Child 2 will use Mean
+          # If a !!str, that variant name will be used for all children.
+          child variant: !!str Sum  # All children will use Sum
+          # If omitted, defaults to the enclosing variant.
+
+          # (Required unless `render:` only contains 'hidden') How the value for
+          # this metric should be generated. If a !!str, must be one of:
+          #  - 'first': Values are taken from the first child.
+          #    Invalid if `render:` contains 'colorbar'.
+          #  - 'sum': Values are the sum of child values, taken vector-wise
+          #    (i.e. inclusive+inclusive and exclusive+exclusive, etc.)
+          formula: !!str first
+          # If a !!map, this specifies the full formulas used to generate the
+          # value(s). This !!map may not be empty.
+          #
+          # The formulas themselves are more complicated, see the later
+          # "About Formulas" section for details.
+          formula: !!map
+            # (Optional) Formula to use for "inclusive cost."
+            # In Prof2 core this is called the "(whole) execution" MetricScope.
+            inclusive: &l2-bound-sum-I
+              [4*,*in-perf-l1-miss-Ix,-,*in-perf-l2-miss-Ix]
+
+            # (Optional) Formula to use for "exclusive cost."
+            # In Prof2 core this is called the "function" MetricScope.
+            exclusive: &l2-bound-sum-E
+              [4*,*in-perf-l1-miss-Ex,-,*in-perf-l2-miss-Ex]
+
+            # (Optional) Formula to use for the Prof2 core "point" MetricScope.
+            # The Viewer doesn't have this exactly, see the following comment.
+            point: null  # (Not a valid formula, just here to show off the key.)
+
+            # Any of the keys listed above may be omitted, the specified set
+            # defines how the metric should be interpreted:
+            # - The most common case of "cost-like" metrics (eg. REALTIME)
+            #   have `inclusive:` and `exclusive:` given. (`point:` can be
+            #   ignored if it won't be presented.)
+            # - Metrics that are bound to functions (eg. GPU register count)
+            #   will only have `exclusive:` given.
+            # - Metrics that don't propagate to upper contexts (eg. metrics used
+            #   for optimization suggestions) will only have `point:` given.
+            # Prof2 uses a bitset for MetricScope, so the other combinations
+            # (`exclusive:/point:`, `inclusive:/point:`) are possible but don't
+            # yet have any known use.
+            #
+            # It is up to the Viewer to decide which columns to show by default.
+
+
+    # Without all the comments and default options, a very similar metric looks
+    # like this
+    - name: L3 Bound
+      description: Rough cycles spent accessing L3 cache
+      variants:
+        Sum:
+          render: [number, percent]
+          formula:
+            inclusive: &l3-bound-sum-I
+                       [64*,*in-perf-l2-miss-Ix,-,*in-perf-l3-miss-Ix]
+            exclusive: &l3-bound-sum-E
+                       [64*,*in-perf-l2-miss-Ex,-,*in-perf-l3-miss-Ex]
+
+    # In general an "other" child metric isn't needed, but one is here to show
+    # off a little.
+    - name: Other Cycles
+      description: Rough cycles spent doing anything else
+      variants:
+        Sum:
+          render: [number, percent]
+          # These are valid formulas since the referenced values are treated as
+          # subexpressions. Not only does this reduce repetition, it also
+          # adds edges in the node-graph which could be used to optimize
+          # computations when multiple related columns need to be calculated.
+          formula:
+            inclusive: {-:[*in-perf-cycles-Ix, *l2-bound-sum-I, *l3-bound-sum-I]}
+            exclusive: {-:[*in-perf-cycles-Ex, *l2-bound-sum-E, *l3-bound-sum-E]}
+
+    # Many inner metrics will look something like this.
+    variants:
+      Sum:
+        render: [number, percent, colorbar]
+        formula: sum
+
+---
+metrics:
+  - &in-x
+    metric: perf::x
+  - &in-y
+    metric: perf::y
+
+### About formulas
+
+# To support ease of human-writability while still producing a suitable
+# node-graph from the YAML, formulas are a bit complex. That probably means
+# I've overthought them a bit, but here's the design anyway.
+
+# When boiled down, every formula takes on the form of a tree of operations on
+# some ordered series of arguments (think prefix-notation). The full list of
+# operations is as follows:
+formula:
+  # Sum of all the arguments
+  - '+': [X, Y, Z] # = X + Y + Z
+  - sum: [X, Y, Z]
+  # Subtraction of later arguments from the first, or unary minus
+  - '-': [X, Y, Z] # = X - Y - Z = X + (-Y) + (-Z)
+  - '-': [X] # = -X
+  # Product of all the arguments
+  - '*': [X, Y, Z] # = X * Y * Z
+  - prod: [X, Y, Z]
+  # Division of later arguments from the first
+  - '/': [X, Y, Z] # = X / Y / Z = X * (1/Y) * (1/Z)
+  # Exponentiation of the arguments in right-associative order
+  - '^': [X, Y, Z] # = X ^ Y ^ Z = X ^ (Y ^ Z)
+  - pow: [X, Y] # = X ^ Y
+  # Continuous-derivative math functions
+  - sqrt: [X] # = X ^ 0.5
+  - log: [X] # = ln X
+  - log: [X, B] # = log_B X
+  # Continuous math functions
+  - min: [X, Y, Z] # = smallest of the arguments
+  - max: [X, Y, Z] # = largest of the arguments
+  # Other math functions
+  - floor: [X] # = largest integer <= X
+  - strict floor: [X] # = largest integer < X = floor(X) == X ? X-1 : floor(X)
+  - ceil: [X] # = smallest integer >= X
+  - strict ceil: [X] # = smallest integer > X = ceil(X) == X ? X+1 : ceil(X)
+# Rationale:
+#  - The operations written infix in C-like languages (+-*/^) treat their
+#    their arguments with the usual associativity. This eases parsing when this
+#    representation is used internally and is easier to write than forced
+#    two-argument operation trees.
+#  - Conditionals are not included, they seem like they could get overly complex
+#    very quickly. `strict floor` and `strict ceil` are included to easily work
+#    around a common use case for conditionals.
+#  - Trionometric functions and $e$ are not included, they don't (currently)
+#    seem useful in a computing context. Natural log is included mostly just to
+#    give a "complete" version of log.
+
+# Other than operations, the only other valid components of a formula are
+# constants (!!int and !!float) or input metrics, which must refer to a node in
+# the top-level `metrics:` key. So all of these are valid:
+formula'1: !!int 42
+formula'2: !!float 4.2
+formula'3: *in-x
+
+# Any operation can be written as a single-element !!map, where the key is the
+# operation and the value is a !!seq of arguments. The arguments may be any
+# other operation, constant or input metric. So these are valid and equivalent
+# to the C expression
+#     42 + 4.2 + (2.4 - (2 * perf::x * perf::y))
+formula'4:
+  sum:
+  - 42
+  - 4.2
+  - '-':
+    - 2.4
+    - prod:
+      - 2
+      - *in-x
+      - *in-y
+formula'5: { sum: [42, 4.2, '-': [2.4, prod: [2, *in-x, *in-y]]] }
+
+# The (+-*/^) operations can also be written infix by enclosing the operation(s)
+# in a !!seq container and using !!str elements for the operations. So these are
+# valid and equivalent:
+formula'6: { sum: [42, 4.2, *in-x] }
+formula'7: [42, '+', 4.2, '+', *in-x]
+# Precedence for the infix operations (+-*/^) follows the usual C-like
+# rules, from lowest to highest:
+#   + and -
+#   * and /
+#   ^
+# Most are left-associative, ^ is right-associative.
+formula'8: { sum: [42, pow: [2, pow: [*in-x, *in-y]]] }
+formula'9: [42,'+',2,'^',*in-x,'^',*in-y]
+# Additional !!seq containers can be nested to reorder operations, or !!str
+# parantheticals can be used for the same effect. Adjacent !!str elements can
+# be concatinated at will (element break is like whitespace).
+formula'10: { sum: [42, pow: [pow: [2, *in-x], *in-y]] }
+formula'11: [42,'+',[2,'^',*in-x],'^',*in-y]
+formula'12: [42,'+','(',2,'^',*in-x,')','^',*in-y]
+formula'13: [42,+(,2,^,*in-x,)^,*in-y]
+# Constants can be given as !!str and concatinated as well.
+formula'14: [42+(2^,*in-x,)^,*in-y]
+# Whitespace can be added wherever a concatination (could have) happened.
+# Leading and trailing whitespace in !!str elements is inconsequential.
+formula'15: [42 + (2^,*in-x, ) ^,*in-y]
+# And, of course, infix-style operations can be mixed with !!map-style ops. The
+# !!map-style ops are considered subexpressions (as if surrounded by `()`).
+formula'16: [42 +,^:[2,*in-x],^,*in-y]
+# Conversely, infix-style operations can be used in arguments by adding an extra
+# !!seq container around the subexpression.
+formula'17: {+:[42,[2^,*in-x,^,*in-y]]}
+
+# Note that the other operations *cannot* be written in C-like function calls,
+# mostly because commas are the YAML list element separator so in practice you
+# end up with a mess that looks like:
+not formula'18: ['sum(42,',*in-x,',pow(',*in-x,',',*in-y,))]
+# Note the additional quotes and confusing number of commas. The !!map notation
+# is much cleaner and has the same rough shape (just with different delimiters).
+formula'18: {sum:[42, *in-x, pow:[*in-x, *in-y]]}

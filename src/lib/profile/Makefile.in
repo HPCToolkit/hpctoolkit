@@ -163,6 +163,7 @@ am__objects_1 = stdshim/libHPCprofile_la-shared_mutex.lo \
 	sinks/libHPCprofile_la-packed.lo \
 	sinks/libHPCprofile_la-experimentxml4.lo \
 	sinks/libHPCprofile_la-sparsedb.lo \
+	sinks/libHPCprofile_la-metricsyaml.lo \
 	finalizers/libHPCprofile_la-struct.lo \
 	finalizers/libHPCprofile_la-directclassification.lo \
 	finalizers/libHPCprofile_la-denseids.lo \
@@ -465,6 +466,12 @@ XERCES_IFLAGS = @XERCES_IFLAGS@
 XERCES_LDFLAGS = @XERCES_LDFLAGS@
 XERCES_LDLIBS = @XERCES_LDLIBS@
 XERCES_LIB = @XERCES_LIB@
+YAMLCPP = @YAMLCPP@
+YAMLCPP_COPY = @YAMLCPP_COPY@
+YAMLCPP_IFLAGS = @YAMLCPP_IFLAGS@
+YAMLCPP_LDFLAGS = @YAMLCPP_LDFLAGS@
+YAMLCPP_LDLIBS = @YAMLCPP_LDLIBS@
+YAMLCPP_LIB = @YAMLCPP_LIB@
 ZLIB_COPY = @ZLIB_COPY@
 ZLIB_HPCLINK_LIB = @ZLIB_HPCLINK_LIB@
 ZLIB_INC = @ZLIB_INC@
@@ -565,8 +572,8 @@ HPCLIB_ISA = $(top_builddir)/src/lib/isa/libHPCisa.la
 HPCLIB_XML = $(top_builddir)/src/lib/xml/libHPCxml.la
 HPCLIB_Support = $(top_builddir)/src/lib/support/libHPCsupport.la
 HPCLIB_SupportLean = $(top_builddir)/src/lib/support-lean/libHPCsupport-lean.la
-noinst_HEADERS = sinks/FORMATS.md.inc
-BUILT_SOURCES = sinks/FORMATS.md.inc
+noinst_HEADERS = sinks/FORMATS.md.inc sinks/METRICS.yaml.inc
+BUILT_SOURCES = sinks/FORMATS.md.inc sinks/METRICS.yaml.inc
 MYSOURCES = \
 	stdshim/shared_mutex.cpp stdshim/atomic.cpp stdshim/futex-detail.c \
 	\
@@ -581,7 +588,7 @@ MYSOURCES = \
 	sources/packed.cpp sources/hpcrun4.cpp \
 	\
 	sinks/hpctracedb2.cpp sinks/packed.cpp sinks/experimentxml4.cpp \
-	sinks/sparsedb.cpp \
+	sinks/sparsedb.cpp sinks/metricsyaml.cpp \
 	\
 	finalizers/struct.cpp finalizers/directclassification.cpp \
 	finalizers/denseids.cpp finalizers/kernelsyms.cpp
@@ -592,8 +599,8 @@ MYSTANDALONESOURCES = mpi/standalone.cpp
 MYCFLAGS = @HOST_CFLAGS@ $(HPC_IFLAGS) @VALGRIND_IFLAGS@ \
 	-I@LIBELF_INC@ @LZMA_IFLAGS@ $(am__append_1)
 MYCXXFLAGS = @HOST_CXXFLAGS@ $(HPC_IFLAGS) @VALGRIND_IFLAGS@ \
-	@XERCES_IFLAGS@ @LZMA_IFLAGS@ -I@LIBELF_INC@ -std=gnu++17 \
-	$(am__append_2)
+	@XERCES_IFLAGS@ @LZMA_IFLAGS@ -I@LIBELF_INC@ @YAMLCPP_IFLAGS@ \
+	-std=gnu++17 $(am__append_2)
 @IS_HOST_AR_FALSE@MYAR = $(AR) cru
 @IS_HOST_AR_TRUE@MYAR = @HOST_AR@
 MYLIBADD = @HOST_LIBTREPOSITORY@ -L@LIBELF_LIB@ -ldw -lelf
@@ -730,6 +737,8 @@ sinks/libHPCprofile_la-experimentxml4.lo: sinks/$(am__dirstamp) \
 	sinks/$(DEPDIR)/$(am__dirstamp)
 sinks/libHPCprofile_la-sparsedb.lo: sinks/$(am__dirstamp) \
 	sinks/$(DEPDIR)/$(am__dirstamp)
+sinks/libHPCprofile_la-metricsyaml.lo: sinks/$(am__dirstamp) \
+	sinks/$(DEPDIR)/$(am__dirstamp)
 finalizers/$(am__dirstamp):
 	@$(MKDIR_P) finalizers
 	@: > finalizers/$(am__dirstamp)
@@ -790,6 +799,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@mpi/$(DEPDIR)/libHPCprofile_standalone_la-standalone.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sinks/$(DEPDIR)/libHPCprofile_la-experimentxml4.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sinks/$(DEPDIR)/libHPCprofile_la-hpctracedb2.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@sinks/$(DEPDIR)/libHPCprofile_la-metricsyaml.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sinks/$(DEPDIR)/libHPCprofile_la-packed.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sinks/$(DEPDIR)/libHPCprofile_la-sparsedb.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@sources/$(DEPDIR)/libHPCprofile_la-hpcrun4.Plo@am__quote@
@@ -1033,6 +1043,13 @@ sinks/libHPCprofile_la-sparsedb.lo: sinks/sparsedb.cpp
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='sinks/sparsedb.cpp' object='sinks/libHPCprofile_la-sparsedb.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_la_CXXFLAGS) $(CXXFLAGS) -c -o sinks/libHPCprofile_la-sparsedb.lo `test -f 'sinks/sparsedb.cpp' || echo '$(srcdir)/'`sinks/sparsedb.cpp
+
+sinks/libHPCprofile_la-metricsyaml.lo: sinks/metricsyaml.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_la_CXXFLAGS) $(CXXFLAGS) -MT sinks/libHPCprofile_la-metricsyaml.lo -MD -MP -MF sinks/$(DEPDIR)/libHPCprofile_la-metricsyaml.Tpo -c -o sinks/libHPCprofile_la-metricsyaml.lo `test -f 'sinks/metricsyaml.cpp' || echo '$(srcdir)/'`sinks/metricsyaml.cpp
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) sinks/$(DEPDIR)/libHPCprofile_la-metricsyaml.Tpo sinks/$(DEPDIR)/libHPCprofile_la-metricsyaml.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='sinks/metricsyaml.cpp' object='sinks/libHPCprofile_la-metricsyaml.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_la_CXXFLAGS) $(CXXFLAGS) -c -o sinks/libHPCprofile_la-metricsyaml.lo `test -f 'sinks/metricsyaml.cpp' || echo '$(srcdir)/'`sinks/metricsyaml.cpp
 
 finalizers/libHPCprofile_la-struct.lo: finalizers/struct.cpp
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libHPCprofile_la_CXXFLAGS) $(CXXFLAGS) -MT finalizers/libHPCprofile_la-struct.lo -MD -MP -MF finalizers/$(DEPDIR)/libHPCprofile_la-struct.Tpo -c -o finalizers/libHPCprofile_la-struct.lo `test -f 'finalizers/struct.cpp' || echo '$(srcdir)/'`finalizers/struct.cpp
@@ -1327,6 +1344,10 @@ endef
 
 sinks/FORMATS.md.inc: $(srcdir)/../../../doc/FORMATS.md $(srcdir)/../../tool/hpcstruct/stringify.sh
 	echo -n "static const char FORMATS_md[] = " > $@
+	$(srcdir)/../../tool/hpcstruct/stringify.sh < $< >> $@
+	echo ';' >> $@
+sinks/METRICS.yaml.inc: $(srcdir)/../../../doc/METRICS.yaml $(srcdir)/../../tool/hpcstruct/stringify.sh
+	echo -n "static const char METRICS_yaml[] = " > $@
 	$(srcdir)/../../tool/hpcstruct/stringify.sh < $< >> $@
 	echo ';' >> $@
 
