@@ -369,7 +369,7 @@ typed_splay_impl(ip_norm)
 
 
 static void
-flush_fn_helper
+clear_fn_helper
 (
  cupti_ip_norm_map_entry_t *entry,
  splay_visit_t visit_type,
@@ -412,6 +412,7 @@ merge_fn_helper
     
     uint64_t kernel_count = entry->count;
     uint64_t sampled_kernel_count = merge_args->sampled ? kernel_count * merge_args->num_threads : 0;
+    //printf("range id %d sampled %d\n", merge_args->prev_range_id, merge_args->sampled);
 
     gpu_metrics_attribute_kernel_count(prev_range_node, sampled_kernel_count, kernel_count);
   }
@@ -495,7 +496,7 @@ cupti_ip_norm_map_clear
  cupti_ip_norm_map_entry_t **root
 )
 {
-  st_forall((*root), splay_allorder, flush_fn_helper, NULL);
+  st_forall((*root), splay_allorder, clear_fn_helper, NULL);
   (*root) = NULL;
 }
 
