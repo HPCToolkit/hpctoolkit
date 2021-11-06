@@ -135,11 +135,16 @@ public:
   StatisticPartial& operator=(const StatisticPartial&) = delete;
   StatisticPartial& operator=(StatisticPartial&&) = default;
 
+  /// Get a (name for) the "accumulate" function for this Partial
+  // MT: Safe (const)
+  const std::string& accumulate() const noexcept { return m_accum_name; }
+
   /// Get the combination function used for this Partial
   // MT: Safe (const)
   Statistic::combination_t combinator() const noexcept { return m_combin; }
 
 private:
+  const std::string m_accum_name;
   const Statistic::accumulate_t m_accum;
   const Statistic::combination_t m_combin;
   const std::size_t m_idx;
@@ -147,8 +152,10 @@ private:
   friend class Metric;
   friend class StatisticAccumulator;
   StatisticPartial() = default;
-  StatisticPartial(Statistic::accumulate_t a, Statistic::combination_t c, std::size_t idx)
-    : m_accum(std::move(a)), m_combin(std::move(c)), m_idx(idx) {};
+  StatisticPartial(std::string an, Statistic::accumulate_t a,
+                   Statistic::combination_t c, std::size_t idx)
+    : m_accum_name(std::move(an)), m_accum(std::move(a)),
+      m_combin(std::move(c)), m_idx(idx) {};
 };
 
 /// Metrics represent something that is measured at execution.

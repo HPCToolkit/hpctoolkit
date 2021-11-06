@@ -196,7 +196,7 @@ std::size_t Metric::StatsAccess::requestSumPartial() {
   assert(l && "Unable to satisfy :Sum Partial request on a frozen Metric!");
 
   m.m_thawed_sumPartial = m.m_partials.size();
-  m.m_partials.push_back({[](double x) -> double { return x; },
+  m.m_partials.push_back({"x", [](double x) -> double { return x; },
                           Statistic::combination_t::sum, m.m_thawed_sumPartial});
   return m.m_thawed_sumPartial;
 }
@@ -211,31 +211,31 @@ bool Metric::freeze() {
   size_t cntIdx = -1;
   if(ss.mean || ss.stddev || ss.cfvar) {
     cntIdx = m_partials.size();
-    m_partials.push_back({[](double x) -> double { return x == 0 ? 0 : 1; },
+    m_partials.push_back({"1", [](double x) -> double { return x == 0 ? 0 : 1; },
                           Statistic::combination_t::sum, cntIdx});
   }
   if(m_thawed_sumPartial == std::numeric_limits<std::size_t>::max()
      && (ss.sum || ss.mean || ss.stddev || ss.cfvar)) {
     m_thawed_sumPartial = m_partials.size();
-    m_partials.push_back({[](double x) -> double { return x; },
+    m_partials.push_back({"x", [](double x) -> double { return x; },
                           Statistic::combination_t::sum, m_thawed_sumPartial});
   }
   size_t x2Idx = -1;
   if(ss.stddev || ss.cfvar) {
     x2Idx = m_partials.size();
-    m_partials.push_back({[](double x) -> double { return x * x; },
+    m_partials.push_back({"x^2", [](double x) -> double { return x * x; },
                           Statistic::combination_t::sum, x2Idx});
   }
   size_t minIdx = -1;
   if(ss.min) {
     minIdx = m_partials.size();
-    m_partials.push_back({[](double x) -> double { return x; },
+    m_partials.push_back({"x", [](double x) -> double { return x; },
                           Statistic::combination_t::min, minIdx});
   }
   size_t maxIdx = -1;
   if(ss.max) {
     maxIdx = m_partials.size();
-    m_partials.push_back({[](double x) -> double { return x; },
+    m_partials.push_back({"x", [](double x) -> double { return x; },
                           Statistic::combination_t::max, maxIdx});
   }
 
