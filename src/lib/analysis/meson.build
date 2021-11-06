@@ -64,7 +64,7 @@ analysis_lib = static_library('analysis', _srcs, pic: true,
   dependencies: [
     support_dep, xml_dep, prof_dep, profxml_dep, banal_simple_dep,
     dependency('xerces-c', required: false, disabler: true),
-    dependency('boost', required: false, disabler: true, modules: ['graph', 'regex', 'system']).partial_dependency(compile_args: true, includes: true),
+    get_variable('boost_dep', disabler()).partial_dependency(compile_args: true, includes: true),
   ])
 analysis_dep = declare_dependency(link_with: analysis_lib, dependencies: [
   profxml_dep.partial_dependency(compile_args: true, includes: true),

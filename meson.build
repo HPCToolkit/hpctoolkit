@@ -45,7 +45,7 @@
 project('hpctoolkit', ['c', 'cpp'],
         version: '2021.10.15-master',
         license: 'MIT',
-        meson_version: '>=0.57.0',
+        meson_version: '>=0.60.0',
         default_options: ['buildtype=release', 'b_staticpic=false',
                           'libdir=lib', 'libexecdir=libexec',
                           'c_std=gnu11', 'cpp_std=gnu++11'])
@@ -208,6 +208,7 @@ _deps = {
              'libs': ['boost_graph', 'boost_regex', 'boost_system'],
              'headers': ['boost/shared_ptr.hpp'],
              'modules': ['graph', 'regex', 'system'],
+             'out_var': 'boost_dep',
              'cc': cpp,
            },
   'xerces': { 'propstems': ['xerces'], 'spack': 'xerces-c', 'dependency': 'xerces-c',
@@ -363,15 +364,12 @@ foreach var, dep : deps
         if _spack_paths.stderr().strip() != ''
           warning(_spack_paths.stderr().strip())
         endif
-        if dep.has_key('static')
-          assert(not dep.has_key('modules'), 'TODO: \'static\' and \'modules\' are currently incompatible!')
-          meson.override_dependency(_dep_name, dependency('', required: false),
-            static: dep['static'])
-        elif dep.has_key('modules')
-          meson.override_dependency(_dep_name, dependency('', required: false),
-            modules: dep['modules'])
+        if dep.has_key('out_var') or dep.has_key('modules')
+          assert(dep.has_key('out_var'), 'Dependencies requiring modules must use an out_ver instead of override_dependency!')
+          set_variable(dep['out_var'], dependency('', required: false))
         else
-          meson.override_dependency(_dep_name, dependency('', required: false))
+          meson.override_dependency(_dep_name, dependency('', required: false),
+            static: dep.get('static', false))
         endif
         _resolved_deps += {var: dependency('', required: false)}
         continue
@@ -481,13 +479,11 @@ foreach var, dep : deps
     if is_disabler(_dep)
       _dep = dependency('', required: false)
     endif
-    if dep.has_key('static')
-      assert(not dep.has_key('modules'), 'TODO: \'static\' and \'modules\' are currently incompatible!')
-      meson.override_dependency(_dep_name, _dep, static: dep['static'])
-    elif dep.has_key('modules')
-      meson.override_dependency(_dep_name, _dep, modules: dep['modules'])
+    if dep.has_key('out_var') or dep.has_key('modules')
+      assert(dep.has_key('out_var'), 'Dependencies requiring modules must use an out_ver instead of override_dependency!')
+      set_variable(dep['out_var'], _dep)
     else
-      meson.override_dependency(_dep_name, _dep)
+      meson.override_dependency(_dep_name, _dep, static: dep.get('static', false))
     endif
     _resolved_deps += {var: _dep}
   else

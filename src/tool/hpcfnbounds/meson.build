@@ -67,7 +67,7 @@ if not get_option('hpcrun').disabled()
     include_directories: tool_includes,
     dependencies: [
       prof_lean_dep,
-      dependency('boost', required: false, disabler: true, modules: ['graph', 'regex', 'system']),
+      get_variable('boost_dep', disabler()),
       dependency('dyninst', required: false, disabler: true),
       dependency('OpenMP', required: get_option('openmp')),
       dependency('libdwarf', required: false, disabler: true).partial_dependency(compile_args: true, includes: true),
