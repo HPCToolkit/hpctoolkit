@@ -265,15 +265,12 @@ foreach var, dep : deps
     endif
   endforeach
   if not _dep_enabled
-    if dep.has_key('static')
-      assert(not dep.has_key('modules'), 'TODO: \'static\' and \'modules\' are currently incompatible!')
-      meson.override_dependency(_dep_name, dependency('', required: false),
-        static: dep['static'])
-    elif dep.has_key('modules')
-      meson.override_dependency(_dep_name, dependency('', required: false),
-        modules: dep['modules'])
+    if dep.has_key('out_var') or dep.has_key('modules')
+      assert(dep.has_key('out_var'), 'Dependencies requiring modules must use an out_ver instead of override_dependency!')
+      set_variable(dep['out_var'], dependency('', required: false))
     else
-      meson.override_dependency(_dep_name, dependency('', required: false))
+      meson.override_dependency(_dep_name, dependency('', required: false),
+        static: dep.get('static', false))
     endif
     _resolved_deps += {var: dependency('', required: false)}
     continue
