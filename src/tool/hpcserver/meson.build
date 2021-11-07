@@ -62,7 +62,7 @@ _srcs = files(
 )
 
 if not get_option('hpcserver').disabled()
-  hpcserver_exe = executable('hpcserver', _srcs, files(
+  hpcserver_exe = executable('hpcserver', _srcs, hpctoolkit_config_h, files(
       'Communication-SingleThreaded.cpp',
     ),
     include_directories: tool_includes,

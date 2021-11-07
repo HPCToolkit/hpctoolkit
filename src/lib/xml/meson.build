@@ -54,7 +54,7 @@ _srcs += _dtdgen.process(
   meson.project_source_root() / 'lib' / 'dtd' / 'hpc-structure.dtd',
 )
 
-xml_lib = static_library('xml', _srcs, pic: true,
+xml_lib = static_library('xml', _srcs, hpctoolkit_config_h, pic: true,
   include_directories: main_includes,
   dependencies: [support_dep])
 xml_dep = declare_dependency(link_with: xml_lib, dependencies: [

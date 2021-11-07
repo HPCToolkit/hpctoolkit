@@ -46,7 +46,7 @@ _srcs = files(
   'ISA.cpp',
 )
 
-isa_lib = static_library('isa', _srcs, pic: true,
+isa_lib = static_library('isa', _srcs, hpctoolkit_config_h, pic: true,
   include_directories: main_includes,
   dependencies: [
     support_dep,

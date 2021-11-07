@@ -55,7 +55,7 @@ if _option.disabled() or (not _option.enabled() and get_option('hpcstruct').enab
 endif
 
 if not _option.disabled()
-  hpcproftt_exe = executable('hpcproftt', _srcs,
+  hpcproftt_exe = executable('hpcproftt', _srcs, hpctoolkit_config_h,
     include_directories: tool_includes,
     dependencies: [
       analysis_dep,

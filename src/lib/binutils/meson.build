@@ -69,7 +69,7 @@ if _igc_dep[0].found()
   _igc_dep = [_igc_dep, declare_dependency(compile_args: ['-DENABLE_IGC'])]
 endif
 
-binutils_lib = static_library('binutils', _srcs, pic: true,
+binutils_lib = static_library('binutils', _srcs, hpctoolkit_config_h, pic: true,
   include_directories: main_includes,
   dependencies: [
     support_dep, prof_lean_dep, support_lean_dep, isa_dep,

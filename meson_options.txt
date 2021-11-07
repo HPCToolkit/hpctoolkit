@@ -44,3 +44,7 @@ option('lush-pthreads', type: 'boolean', value: false,
        description: 'Enable LUSH Pthread logical unwind support.')
 option('data-centric-tracing', type: 'boolean', value: false,
        description: 'Enable data-centric profiling.')
+
+# Miscellaneous options
+option('version_spack_spec', type: 'string', value: 'unknown (not a spack build)',
+       description: 'Spack spec used to build this Toolkit (note: not useful outside of a Spack build)')

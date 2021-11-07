@@ -168,14 +168,9 @@ hpctoolkit_config.set('HOST_PLATFORM_MIPS64LE_LINUX',
 # TODO: Remove, we no longer support this
 hpctoolkit_config.set('HOST_SYSTEM_IBM_BLUEGENE', false ? 1 : false)
 
-# TODO: Base this on the output from vcs_tag
-hpctoolkit_config.set_quoted('HPCTOOLKIT_GIT_VERSION', '(Git TODO)')
+hpctoolkit_config.set_quoted('HPCTOOLKIT_GIT_VERSION', '@VCS_TAG@')
 
-# TODO: This really needs to be removed because of DESTDIR
-hpctoolkit_config.set_quoted('HPCTOOLKIT_INSTALL_PREFIX', get_option('prefix'))
-
-# TODO: This one is going to be a headache at some point
-hpctoolkit_config.set_quoted('HPCTOOLKIT_SPACK_SPEC', '(Spack TODO)')
+hpctoolkit_config.set_quoted('HPCTOOLKIT_SPACK_SPEC', get_option('version_spack_spec'))
 
 hpctoolkit_config.set_quoted('HPCTOOLKIT_VERSION', meson.project_version())
 hpctoolkit_config.set_quoted('HPCTOOLKIT_VERSION_STRING',
@@ -195,5 +190,9 @@ hpctoolkit_config.set('SIZEOF_VOIDP', cc.sizeof('void*'))
 
 hpctoolkit_config.set('USE_ROCM', _rocm_dep.found() ? 1 : false)
 
-configure_file(configuration: hpctoolkit_config, output: 'hpctoolkit-config.h')
+hpctoolkit_config_h = custom_target(
+  input: configure_file(configuration: hpctoolkit_config, output: 'hpctoolkit-config.h.in'),
+  output: 'hpctoolkit-config.h',
+  command: hpctoolkit_vcs, feed: true, capture: true,
+)
 main_includes += include_directories('.')

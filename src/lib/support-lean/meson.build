@@ -49,7 +49,7 @@ _srcs = files(
   'demangle.c',
 )
 
-support_lean_lib = static_library('support_lean', _srcs, pic: true,
+support_lean_lib = static_library('support_lean', _srcs, hpctoolkit_config_h, pic: true,
   include_directories: main_includes,
   dependencies: [
     dependency('liblzma', required: false, disabler: true),
@@ -57,7 +57,7 @@ support_lean_lib = static_library('support_lean', _srcs, pic: true,
   ])
 support_lean_dep = declare_dependency(link_with: support_lean_lib, dependencies: [
 ])
-support_lean_static_lib = static_library('support_lean_static', _srcs,
+support_lean_static_lib = static_library('support_lean_static', _srcs, hpctoolkit_config_h,
   include_directories: main_includes,
   dependencies: [
     dependency('liblzma', required: false, disabler: true, static: true),

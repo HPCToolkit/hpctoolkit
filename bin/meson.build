@@ -76,8 +76,12 @@ if is_variable('hpcrun_script')
   ''')
   custom_target('in-tree copy of hpcrun',
     command: [_cp_exec, '@INPUT@', '@OUTPUT@'],
-    input: configure_file(input: hpcrun_script, output: 'hpcrun.sh',
-                          configuration: _hpcrun_intree_launch_config),
+    input: custom_target(
+      input: configure_file(input: hpcrun_script, output: '.hpcrun.prevcs',
+                            configuration: _hpcrun_intree_launch_config),
+      output: '.hpcrun.postvcs',
+      command: hpctoolkit_vcs, feed: true, capture: true,
+    ),
     output: 'hpcrun', build_by_default: true)
 endif
 
@@ -92,7 +96,11 @@ if is_variable('hpclink_script')
   ''')
   custom_target('in-tree copy of hpclink',
     command: [_cp_exec, '@INPUT@', '@OUTPUT@'],
-    input: configure_file(input: hpclink_script, output: 'hpclink.sh',
-                          configuration: _hpclink_intree_launch_config),
+    input: custom_target(
+      input: configure_file(input: hpclink_script, output: '.hpclink.prevcs',
+                            configuration: _hpclink_intree_launch_config),
+      output: '.hpclink.postvcs',
+      command: hpctoolkit_vcs, feed: true, capture: true,
+    ),
     output: 'hpclink', build_by_default: true)
 endif

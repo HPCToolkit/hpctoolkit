@@ -48,7 +48,7 @@ _srcs = files(
 )
 
 if not get_option('devtools').disabled()
-  hpclump_exe = executable('hpclump', _srcs,
+  hpclump_exe = executable('hpclump', _srcs, hpctoolkit_config_h,
     include_directories: tool_includes,
     dependencies: [isa_dep, binutils_dep],
     install: true, install_dir: get_option('libexecdir') / meson.project_name())

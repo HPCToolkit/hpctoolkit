@@ -415,16 +415,10 @@ foreach var, dep : deps
     _dep_idirs = include_directories(_dep_search['idirs'])
     _dep_libs = []
     foreach lib : dep['libs']
-      if dep.has_key('static')
-        _dep_libs += dep.get('cc', cc).find_library(lib, disabler: true,
-          has_headers: dep['headers'], header_include_directories: _dep_idirs,
-          dirs: _dep_search['ldirs'], required: _dep_search.get('required', true),
-          static: dep['static'])
-      else
-        _dep_libs += dep.get('cc', cc).find_library(lib, disabler: true,
-          has_headers: dep['headers'], header_include_directories: _dep_idirs,
-          dirs: _dep_search['ldirs'], required: _dep_search.get('required', true))
-      endif
+      _dep_libs += dep.get('cc', cc).find_library(lib, disabler: true,
+        has_headers: dep['headers'], header_include_directories: _dep_idirs,
+        dirs: _dep_search['ldirs'], required: _dep_search.get('required', true),
+        static: dep.get('static', false))
     endforeach
     # Special case: make sure we scan for header-only dependencies
     if dep['libs'].length() == 0
@@ -593,6 +587,13 @@ install_data(files(
   'README.md', 'README.Install', 'README.License',
   'README.ReleaseNotes', 'README.Acknowledgments',
 ), install_dir: get_option('datadir') / 'doc' / meson.project_name())
+
+# Compose a command to help overwrite bits with the Git version
+hpctoolkit_vcs = vcs_tag(input: files('meson/vcs.sed.in'), output: 'vcs.sed',
+  command: find_program(files('meson/vcs-query.sh')).path(),
+  replace_string: '@REAL_VCS_TAG@',
+  fallback: 'unknown (failed to fetch Git revision)')
+hpctoolkit_vcs = [find_program('sed'), '-f', hpctoolkit_vcs]
 
 # Recurse into subdirectories
 subdir('lib')

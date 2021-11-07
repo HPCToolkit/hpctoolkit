@@ -58,7 +58,7 @@ _deps = [
 ] + (is_disabler(hpcproftt_exe) ? [disabler()] : [])
 
 if not get_option('hpcstruct').disabled()
-  hpcstruct_exe = executable('hpcstruct', _srcs,
+  hpcstruct_exe = executable('hpcstruct', _srcs, hpctoolkit_config_h,
     include_directories: tool_includes,
     dependencies: _deps,
     install: true)
@@ -70,7 +70,7 @@ endif
 summary('hpcstruct', is_variable('hpcstruct_exe') and not is_disabler(hpcstruct_exe), section: 'Applications', bool_yn: true)
 
 if not get_option('devtools').disabled()
-  dotgraph_exe = executable('dotgraph', files('DotGraph.cpp'),
+  dotgraph_exe = executable('dotgraph', files('DotGraph.cpp'), hpctoolkit_config_h,
     include_directories: tool_includes,
     dependencies: _deps,
     install: true, install_dir: get_option('libexecdir') / meson.project_name())

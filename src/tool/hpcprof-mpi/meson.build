@@ -49,7 +49,7 @@ _srcs = files(
 )
 
 if not get_option('hpcprof').disabled()
-  hpcprof_mpi_exe = executable('hpcprof-mpi', _srcs,
+  hpcprof_mpi_exe = executable('hpcprof-mpi', _srcs, hpctoolkit_config_h,
     include_directories: tool_includes,
     dependencies: [
       prof_dep, analysis_dep,

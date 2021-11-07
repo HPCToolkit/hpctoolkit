@@ -80,7 +80,7 @@ _srcs = files(
   'Unique.cpp',
 )
 
-support_lib = static_library('support', _srcs, pic: true,
+support_lib = static_library('support', _srcs, hpctoolkit_config_h, pic: true,
   include_directories: main_includes,
   dependencies: [support_lean_dep, prof_lean_dep])
 support_dep = declare_dependency(link_with: support_lib, dependencies: [

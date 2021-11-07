@@ -48,7 +48,7 @@ _srcs = files(
 )
 
 if not get_option('hpcprof').disabled()
-  hpcprof_exe = executable('hpcprof', _srcs,
+  hpcprof_exe = executable('hpcprof', _srcs, hpctoolkit_config_h,
     include_directories: main_includes,
     dependencies: [analysis_dep],
     install: true)

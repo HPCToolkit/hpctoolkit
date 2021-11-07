@@ -65,7 +65,7 @@ if _igc_dep[0].found()
   _igc_dep = [_igc_dep, declare_dependency(compile_args: ['-DENABLE_IGC'])]
 endif
 
-banal_lib = static_library('banal', _srcs, pic: true,
+banal_lib = static_library('banal', _srcs, hpctoolkit_config_h, pic: true,
   include_directories: main_includes,
   dependencies: [
     xml_dep, support_dep, binutils_dep,
@@ -76,7 +76,7 @@ banal_lib = static_library('banal', _srcs, pic: true,
   ] + _igc_dep)
 banal_dep = declare_dependency(link_with: banal_lib, dependencies: [
 ])
-banal_simple_lib = static_library('banal_simple', _simple_srcs, pic: true,
+banal_simple_lib = static_library('banal_simple', _simple_srcs, hpctoolkit_config_h, pic: true,
   include_directories: main_includes,
   dependencies: [
     binutils_dep, support_dep, prof_dep,

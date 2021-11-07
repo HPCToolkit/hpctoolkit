@@ -53,7 +53,7 @@ _srcs = files(
   'MathMLExprParser.cpp',
 )
 
-profxml_lib = static_library('profxml', _srcs, pic: true,
+profxml_lib = static_library('profxml', _srcs, hpctoolkit_config_h, pic: true,
   include_directories: main_includes,
   dependencies: [
     prof_dep,

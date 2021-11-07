@@ -63,7 +63,7 @@ else
 endif
 
 if not get_option('hpcrun').disabled()
-  hpcfnbounds_exe = executable('hpcfnbounds', _srcs,
+  hpcfnbounds_exe = executable('hpcfnbounds', _srcs, hpctoolkit_config_h,
     include_directories: tool_includes,
     dependencies: [
       prof_lean_dep,

@@ -50,7 +50,7 @@ _srcs = files(
 )
 
 if not get_option('hpcrun').disabled()
-  hpcfnbounds2_exe = executable('hpcfnbounds2', _srcs,
+  hpcfnbounds2_exe = executable('hpcfnbounds2', _srcs, hpctoolkit_config_h,
     include_directories: tool_includes,
     dependencies: [
       dependency('libelf', required: get_option('hpcrun'), disabler: true),

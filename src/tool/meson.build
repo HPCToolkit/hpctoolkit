@@ -217,8 +217,8 @@ prefix=''' + '\'' + get_option('prefix') + '\'' + '''
 hash_value=''' + '\'' + _launch_hash_value + '\'' + '''
 
 VERSION=''' + '\'' + meson.project_version() + '\'' + '''
-git_version='(Git TODO)'
-spack_spec='(Spack TODO)'
+git_version='@VCS_TAG@'
+spack_spec=''' + hpctoolkit_config.get('HPCTOOLKIT_SPACK_SPEC') + '''
 ''')
 launch_config.set('HOST_CPU_AARCH64', host_machine.cpu_family() == 'aarch64' ? 'yes' : 'no')
 configure_file(input: '../../meson/hash-file.in', output: 'hash-file',

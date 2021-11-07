@@ -59,7 +59,7 @@ _srcs = files(
   'TextUtil.cpp',
 )
 
-analysis_lib = static_library('analysis', _srcs, pic: true,
+analysis_lib = static_library('analysis', _srcs, hpctoolkit_config_h, pic: true,
   include_directories: main_includes,
   dependencies: [
     support_dep, xml_dep, prof_dep, profxml_dep, banal_simple_dep,

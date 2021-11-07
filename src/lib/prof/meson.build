@@ -69,7 +69,7 @@ _srcs = files(
   'NameMappings.cpp',
 )
 
-prof_lib = static_library('prof', _srcs, pic: true,
+prof_lib = static_library('prof', _srcs, hpctoolkit_config_h, pic: true,
   include_directories: main_includes,
   dependencies: [
     support_dep, xml_dep, binutils_dep, isa_dep,

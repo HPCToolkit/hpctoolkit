@@ -211,6 +211,7 @@ _srcset.add([
       '-D__HIP_PLATFORM_HCC__=1',
     ],
   ),
+  hpctoolkit_config_h,
 ])
 
 _d_srcset.add(
@@ -548,8 +549,10 @@ summary('hpcrun', not is_disabler(libhpcrun_lib)
 if not is_disabler(libhpcrun_lib)
   # Set for bin/meson.build
   hpcrun_script = files('scripts/hpcrun.meson.in')
-  configure_file(input: hpcrun_script, output: 'hpcrun',
-    configuration: launch_config,
+  custom_target(
+    input: configure_file(input: hpcrun_script, output: 'hpcrun.in',
+                          configuration: launch_config),
+    output: 'hpcrun', command: hpctoolkit_vcs, feed: true, capture: true,
     install: true, install_dir: get_option('bindir'),
     install_mode: 'rwxr-xr-x')
 endif
@@ -689,8 +692,10 @@ if not is_disabler(libhpcrun_static_lib) and not is_disabler(libhpcrun_wrap_lib)
 
   # Set for bin/meson.build
   hpclink_script = files('scripts/hpclink.meson.in')
-  configure_file(input: hpclink_script, output: 'hpclink',
-    configuration: launch_config,
+  custom_target(
+    input: configure_file(input: hpclink_script, output: 'hpclink.in',
+                          configuration: launch_config),
+    output: 'hpclink', command: hpctoolkit_vcs, feed: true, capture: true,
     install: true, install_dir: get_option('bindir'),
     install_mode: 'rwxr-xr-x')
 endif
