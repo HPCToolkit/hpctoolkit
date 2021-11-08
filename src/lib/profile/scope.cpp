@@ -59,6 +59,14 @@
 
 using namespace hpctoolkit;
 
+File::File(File&& f)
+  : userdata(std::move(f.userdata), std::ref(*this)),
+    u_path(std::move(f.path())) {};
+File::File(ud_t::struct_t& rs, stdshim::filesystem::path p)
+  : userdata(rs, std::ref(*this)), u_path(std::move(p)) {
+  assert(!u_path().empty() && "Attempt to create a File with an empty path!");
+}
+
 Scope::Scope() : ty(Type::unknown), data() {};
 Scope::Scope(const Module& m, uint64_t o)
   : ty(Type::point), data(m, o) {};

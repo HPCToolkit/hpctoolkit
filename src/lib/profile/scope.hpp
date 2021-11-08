@@ -263,13 +263,8 @@ class File {
 public:
   using ud_t = util::ragged_vector<const File&>;
 
-  File(ud_t::struct_t& rs) : userdata(rs, std::ref(*this)), u_path() {};
-  File(File&& f)
-    : userdata(std::move(f.userdata), std::ref(*this)), u_path(std::move(f.path())) {};
-  File(ud_t::struct_t& rs, const stdshim::filesystem::path& p)
-    : userdata(rs, std::ref(*this)), u_path(p) {};
-  File(ud_t::struct_t& rs, stdshim::filesystem::path&& p)
-    : userdata(rs, std::ref(*this)), u_path(p) {};
+  File(File&& f);
+  File(ud_t::struct_t& rs, stdshim::filesystem::path p);
   ~File() = default;
 
   // Full-ish path to the file in question
