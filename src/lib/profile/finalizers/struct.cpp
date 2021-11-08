@@ -300,7 +300,9 @@ void StructFileParser::parse(ProfilePipeline::Source& sink, const Module& m,
       throw std::logic_error("More than one LM tag seen");
     } else if(ename == "F") {
       stack.emplace(stack.top(), 'F');
-      stack.top().file = &sink.file(xmlstr(attr.getValue(XMLStr("n"))));
+      auto file = xmlstr(attr.getValue(XMLStr("n")));
+      if(file.empty()) throw std::logic_error("Bad <F> tag seen");
+      stack.top().file = &sink.file(std::move(file));
     } else if(ename == "P") {
       auto& f = c.addFunction(m);
       f.name = xmlstr(attr.getValue(XMLStr("n")));
@@ -311,7 +313,9 @@ void StructFileParser::parse(ProfilePipeline::Source& sink, const Module& m,
       stack.top().scope = c.addScope(f, stack.top().scope);
       funcs.emplace(f.offset, stack.top().scope);
     } else if(ename == "L") {
-      const auto& f = sink.file(xmlstr(attr.getValue(XMLStr("f"))));
+      auto file = xmlstr(attr.getValue(XMLStr("f")));
+      const auto& f = !file.empty() ? sink.file(std::move(file))
+                                    : *stack.top().file;
       auto l = std::stoll(xmlstr(attr.getValue(XMLStr("l"))));
       stack.emplace(stack.top(), 'L');
       stack.top().scope = c.addScope(Scope::loop, f, l, stack.top().scope);
@@ -325,13 +329,16 @@ void StructFileParser::parse(ProfilePipeline::Source& sink, const Module& m,
     } else if(ename == "A") {
       if(stack.top().tag != 'A') {  // Single A, just changes the file
         stack.emplace(stack.top(), 'A');
-        stack.top().file = &sink.file(xmlstr(attr.getValue(XMLStr("n"))));
+        auto file = xmlstr(attr.getValue(XMLStr("f")));
+        if(!file.empty())
+          stack.top().file = &sink.file(std::move(file));
         stack.top().a_line = std::stoll(xmlstr(attr.getValue(XMLStr("l"))));
       } else {  // Double A, inlined function
         auto& f = c.addFunction(m);
         f.name = xmlstr(attr.getValue(XMLStr("n")));
         f.offset = 0;  // Struct doesn't match it up with the original
-        f.file = &sink.file(xmlstr(attr.getValue(XMLStr("f"))));
+        auto file = xmlstr(attr.getValue(XMLStr("f")));
+        f.file = !file.empty() ? &sink.file(std::move(file)) : stack.top().file;
         f.line = std::stoll(xmlstr(attr.getValue(XMLStr("l"))));
         stack.emplace(stack.top(), 'B');
         stack.top().scope = c.addScope(f, *stack.top().file, stack.top().a_line, stack.top().scope);
