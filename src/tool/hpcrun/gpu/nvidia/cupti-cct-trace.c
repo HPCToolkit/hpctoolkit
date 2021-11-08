@@ -494,7 +494,7 @@ trace_condense
  bool logic
 )
 {
-  int32_t prev_range_id = -1;
+  int32_t prev_range_id = range_id;
   cupti_cct_trace_node_t *current = thread_root->left;
   cupti_cct_trace_node_t *pattern_node = logic ? current->left : current->left->left;
 
@@ -520,7 +520,7 @@ trace_condense
       trace_delete(node2);
     }
   }
-  
+   
   return prev_range_id;
 }
 

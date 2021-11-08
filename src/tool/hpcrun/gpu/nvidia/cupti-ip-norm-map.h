@@ -63,6 +63,21 @@ cupti_ip_norm_map_insert
 
 
 void
+cupti_ip_norm_map_delete_thread
+(
+ ip_normalized_t ip_norm
+);
+
+
+void
+cupti_ip_norm_map_delete
+(
+ cupti_ip_norm_map_entry_t **root,
+ ip_normalized_t ip_norm
+);
+
+
+void
 cupti_ip_norm_map_merge
 (
  cupti_ip_norm_map_entry_t **root,

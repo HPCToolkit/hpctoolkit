@@ -6,9 +6,12 @@
 #include <hpcrun/messages/messages.h>
 #include <lib/prof-lean/splay-macros.h>
 
+#include "cuda-api.h"
 #include "cupti-range.h"
 #include "cupti-ip-norm-map.h"
 #include "cupti-range-thread-list.h"
+#include "../gpu-metrics.h"
+#include "../gpu-op-placeholders.h"
 
 struct cupti_cct_trie_node_s {
   cct_node_t *key;
@@ -144,6 +147,7 @@ cupti_cct_trie_append
   cupti_cct_trie_node_t *new = cct_trie_new(trie_cur, cct);
   trie_cur->children = new;
   trie_cur = new;
+  trie_cur->range_id = range_id;
 
   if (!found) {
     // Do nothing
@@ -161,6 +165,47 @@ cupti_cct_trie_append
 }
 
 
+void
+cupti_cct_trie_unwind
+(
+)
+{
+  if (trie_cur != root) {
+    trie_cur = trie_cur->parent;
+  }
+}
+
+
+void
+cupti_cct_trie_merge_thread
+(
+ uint32_t num_threads,
+ bool sampled
+)
+{
+  cupti_cct_trie_node_t *cur = trie_cur;
+
+  ip_normalized_t kernel_ip = gpu_op_placeholder_ip(gpu_placeholder_type_kernel);
+  CUcontext context;
+  cuda_context_get(&context);
+	uint32_t context_id = ((hpctoolkit_cuctx_st_t *)context)->context_id;
+
+  while (cur != root) {
+    cct_node_t *kernel_ph = hpcrun_cct_insert_ip_norm(cur->key, kernel_ip);
+    cct_node_t *kernel_ph_children = hpcrun_cct_children(kernel_ph);
+    cct_node_t *context = hpcrun_cct_insert_context(kernel_ph_children, context_id);
+
+    cct_node_t *prev_range_node = hpcrun_cct_insert_range(context, cur->range_id);
+    
+    uint64_t kernel_count = num_threads;
+    uint64_t sampled_kernel_count = sampled ? kernel_count : 0;
+    gpu_metrics_attribute_kernel_count(prev_range_node, sampled_kernel_count, kernel_count);
+
+    cur = cur->parent;
+  }
+}
+
+
 int32_t
 cupti_cct_trie_flush
 (
@@ -171,25 +216,18 @@ cupti_cct_trie_flush
 )
 {
   cct_trie_init();
-  
-  if (trie_cur->range_id == -1) {
-    trie_cur->range_id = range_id;
-  }
-
   int32_t prev_range_id = trie_cur->range_id;
+  uint32_t num_threads = cupti_range_thread_list_num_threads();
 
-  if (!logic) {
+  if (logic) {
+    // Traverse up and use original range_id to merge
+    cupti_cct_trie_merge_thread(num_threads, sampled);
+  } else {
     // Unwind
     trie_cur = root;
-  }
-
-  if (merge) {
-    uint32_t num_threads = cupti_range_thread_list_num_threads();
     cupti_ip_norm_map_merge_thread(prev_range_id, range_id, num_threads, sampled);
-    return prev_range_id;
-  } else {
-    return -1;
   }
+  return prev_range_id;
 }
 
 
@@ -204,30 +242,28 @@ cupti_cct_trie_cur_range_set
 }
 
 static void
-cct_trie_walk(cupti_cct_trie_node_t* trie_node, int *num_nodes, int *single_path_nodes, int *num_ranges);
+cct_trie_walk(cupti_cct_trie_node_t* trie_node, int *num_nodes, int *single_path_nodes);
 
 static void
-cct_trie_walk_child(cupti_cct_trie_node_t* trie_node, int *num_nodes, int *single_path_nodes, int *num_ranges)
+cct_trie_walk_child(cupti_cct_trie_node_t* trie_node, int *num_nodes, int *single_path_nodes)
 {
   if (!trie_node) return;
 
-  cct_trie_walk_child(trie_node->left, num_nodes, single_path_nodes, num_ranges);
-  cct_trie_walk_child(trie_node->right, num_nodes, single_path_nodes, num_ranges);
-  cct_trie_walk(trie_node, num_nodes, single_path_nodes, num_ranges);
+  cct_trie_walk_child(trie_node->left, num_nodes, single_path_nodes);
+  cct_trie_walk_child(trie_node->right, num_nodes, single_path_nodes);
+  printf("cct %p, parent %p, range_id %d\n", trie_node->key, trie_node->parent->key, trie_node->range_id);
+  cct_trie_walk(trie_node, num_nodes, single_path_nodes);
 }
 
 static void
-cct_trie_walk(cupti_cct_trie_node_t* trie_node, int *num_nodes, int *single_path_nodes, int *num_ranges)
+cct_trie_walk(cupti_cct_trie_node_t* trie_node, int *num_nodes, int *single_path_nodes)
 {
   if (!trie_node) return;
   ++(*num_nodes);
   if (trie_node->children != NULL && trie_node->children->left == NULL && trie_node->children->right == NULL) {
     ++(*single_path_nodes);
   }
-  if (trie_node->range_id != -1) {
-    ++(*num_ranges);
-  }
-  cct_trie_walk_child(trie_node->children, num_nodes, single_path_nodes, num_ranges);
+  cct_trie_walk_child(trie_node->children, num_nodes, single_path_nodes);
 }
 
 void
@@ -237,7 +273,6 @@ cupti_cct_trie_dump
 {
   int num_nodes = 0;
   int single_path_nodes = 0;
-  int num_ranges = 0;
-  cct_trie_walk(root, &num_nodes, &single_path_nodes, &num_ranges);
-  printf("num_nodes %d, single_path_nodes %d, num_ranges %d\n", num_nodes, single_path_nodes, num_ranges);
+  cct_trie_walk(root, &num_nodes, &single_path_nodes);
+  printf("num_nodes %d, single_path_nodes %d\n", num_nodes, single_path_nodes);
 }

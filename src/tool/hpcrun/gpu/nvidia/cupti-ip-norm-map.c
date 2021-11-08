@@ -129,6 +129,15 @@ static bool ip_norm_cmp_gt(ip_normalized_t left, ip_normalized_t right);
   (typed_splay_node(type) *root, splay_order_t order, void (*fn)(typed_splay_node(type) *, splay_visit_t visit, void *), void *arg) \
   macro({ \
     splay_op(forall)((splay_ip_norm_node_t *) root, order, (splay_fn_t) fn, arg); \
+  }) \
+\
+  static typed_splay_node(type) * \
+  typed_splay_delete(type) \
+  (typed_splay_node(type) **root, ip_normalized_t key) \
+  macro({ \
+    typed_splay_node(type) *result = (typed_splay_node(type) *) \
+      splay_op(delete)((splay_ip_norm_node_t **) root, key); \
+    return result; \
   }) 
 
 #define typed_splay_alloc(free_list, splay_node_type)		\
@@ -201,6 +210,52 @@ splay_ip_norm_splay
   IP_NORM_SPLAY_TREE(splay_ip_norm_node_t, root, splay_key, key, left, right);
 
   return root;
+}
+
+
+static void
+splay_delete_root
+(
+ splay_ip_norm_node_t **root
+)
+{
+  splay_ip_norm_node_t *splay_map_root = *root;
+
+  if (splay_map_root->left == NULL) {
+    splay_map_root = splay_map_root->right;
+  } else {
+    splay_map_root->left = splay_ip_norm_splay(splay_map_root->left, splay_map_root->key);
+    splay_map_root->left->right = splay_map_root->right;
+    splay_map_root = splay_map_root->left;
+  }
+
+  // detach deleted node from others
+  (*root)->left = (*root)->right = NULL; 
+
+  // set new root
+  *root = splay_map_root; 
+}
+
+
+static splay_ip_norm_node_t *
+splay_ip_norm_delete
+(
+ splay_ip_norm_node_t **root,
+ ip_normalized_t key
+)
+{
+  splay_ip_norm_node_t *removed = NULL;
+  
+  if (*root) {
+    *root = splay_ip_norm_splay(*root, key);
+
+    if (ip_norm_cmp_eq((*root)->key, key)) {
+      removed = *root;
+      splay_delete_root(root);
+    }
+  }
+
+  return removed;
 }
 
 
@@ -410,9 +465,8 @@ merge_fn_helper
     // Mutate functions
     cct_node_t *prev_range_node = hpcrun_cct_insert_range(context, merge_args->prev_range_id);
     
-    uint64_t kernel_count = entry->count;
-    uint64_t sampled_kernel_count = merge_args->sampled ? kernel_count * merge_args->num_threads : 0;
-    //printf("range id %d sampled %d\n", merge_args->prev_range_id, merge_args->sampled);
+    uint64_t kernel_count = entry->count * merge_args->num_threads;
+    uint64_t sampled_kernel_count = merge_args->sampled ? kernel_count : 0;
 
     gpu_metrics_attribute_kernel_count(prev_range_node, sampled_kernel_count, kernel_count);
   }
@@ -487,6 +541,31 @@ cupti_ip_norm_map_insert_thread
 )
 {
   cupti_ip_norm_map_insert(&map_root, ip_norm, cct);
+}
+
+
+void
+cupti_ip_norm_map_delete_thread
+(
+ ip_normalized_t ip_norm
+)
+{
+  cupti_ip_norm_map_delete(&map_root, ip_norm);
+}
+
+
+void
+cupti_ip_norm_map_delete
+(
+ cupti_ip_norm_map_entry_t **root,
+ ip_normalized_t ip_norm
+)
+{
+  cupti_ip_norm_map_entry_t *entry = st_delete(root, ip_norm);
+
+  if (entry != NULL) {
+    st_free(&free_list, entry);
+  }
 }
 
 

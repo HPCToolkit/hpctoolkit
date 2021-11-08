@@ -109,9 +109,9 @@ cupti_range_mode_context_sensitive_is_enter
   cupti_ip_norm_map_ret_t map_ret_type = cupti_ip_norm_map_lookup_thread(kernel_ip, api_node);
   bool active = cupti_pc_sampling_active();
 
+  int32_t prev_range_id = -1;
   if (map_ret_type == CUPTI_IP_NORM_MAP_DUPLICATE) {
     // Ranges must be divided
-    int32_t prev_range_id = -1;
     if (cupti_range_algorithm == CUPTI_RANGE_ALGORITHM_SEQUITUR) {
       prev_range_id = cupti_cct_trace_flush(range_id, active, is_cur, false);
     } else if (cupti_range_algorithm == CUPTI_RANGE_ALGORITHM_TRIE) {
@@ -121,12 +121,8 @@ cupti_range_mode_context_sensitive_is_enter
       if (active) {
         // If active, we encounter a new range and have to flush pc samples
         // It is an early collection mode different than other modes
-        if (prev_range_id != -1) {
-          // The whole range is repeated with a previous range
-          cupti_pc_sampling_range_context_collect(prev_range_id, context);
-        } else {
-          cupti_pc_sampling_range_context_collect(range_id, context);
-        }
+        // The whole range is repeated with a previous range
+        cupti_pc_sampling_range_context_collect(prev_range_id, context);
       }
       cupti_retained_ranges++;
       if (cupti_retained_ranges == cupti_range_thread_retain_range) {
@@ -142,27 +138,17 @@ cupti_range_mode_context_sensitive_is_enter
     // Update active status
     active = cupti_pc_sampling_active();
   } else if (map_ret_type == CUPTI_IP_NORM_MAP_NOT_EXIST) {
-    //if (!active && !first_range) {
-    //  // A logic flush, just to attribute samples to the previous range
-    //  if (cupti_range_algorithm == CUPTI_RANGE_ALGORITHM_SEQUITUR) {
-    //    cupti_cct_trace_flush(range_id, active, is_cur, true);
-    //  } else if (cupti_range_algorithm == CUPTI_RANGE_ALGORITHM_TRIE) {
-    //    cupti_cct_trie_flush(range_id, active, is_cur, true);
-    //  }
-    //  // If first range or is actively collecting samples, no need to increase range id
-    //  range_id += 1;
-    //}
     // No such a node, insert it
-    if (active || first_range) {
-      cupti_ip_norm_map_insert_thread(kernel_ip, api_node);
-    }
+    cupti_ip_norm_map_insert_thread(kernel_ip, api_node);
   } else {
     // We've seen this node before
     cupti_ip_norm_map_count_increase_thread(kernel_ip);
   }
 
+  
   bool repeated = false;
   bool sampled = false;
+  bool new_range = false;
   
   if (cupti_range_algorithm == CUPTI_RANGE_ALGORITHM_SEQUITUR) {
     repeated = cupti_cct_trace_append(range_id, api_node);
@@ -170,23 +156,28 @@ cupti_range_mode_context_sensitive_is_enter
     repeated = cupti_cct_trie_append(range_id, api_node);
   }
   if (is_cur && !active) {
-    if (!repeated) {
-      // abc | abc | d
+    if (map_ret_type == CUPTI_IP_NORM_MAP_DUPLICATE) {
+      // 1. abc | (a1)bc
+      new_range = true;
+      if (cupti_range_mode_context_sensitive_is_sampled()) {
+        sampled = true;
+      }
+    } else if (!repeated) {
+      // 2. abc | abc | d
       sampled = true;
 
-      if (map_ret_type == CUPTI_IP_NORM_MAP_NOT_EXIST) {
+      if (!first_range && map_ret_type == CUPTI_IP_NORM_MAP_NOT_EXIST) {
+        cupti_ip_norm_map_delete_thread(kernel_ip);
         if (cupti_range_algorithm == CUPTI_RANGE_ALGORITHM_SEQUITUR) {
           cupti_cct_trace_flush(range_id, active, is_cur, true);
         } else if (cupti_range_algorithm == CUPTI_RANGE_ALGORITHM_TRIE) {
+          cupti_cct_trie_unwind();
           cupti_cct_trie_flush(range_id, active, is_cur, true);
+          cupti_cct_trie_append(range_id, api_node);
         }
+        cupti_ip_norm_map_insert_thread(kernel_ip, api_node);
       }
-      cupti_ip_norm_map_insert_thread(kernel_ip, api_node);
-    } else if (map_ret_type == CUPTI_IP_NORM_MAP_DUPLICATE &&
-      cupti_range_mode_context_sensitive_is_sampled()) {
-      // abc | (a1)bc
-      sampled = true;
-    }
+    } 
       
     if (sampled) {
 #ifdef NEW_CUPTI_ANALYSIS
@@ -201,7 +192,6 @@ cupti_range_mode_context_sensitive_is_enter
   }
 
   // The first range does not increase range_id
-  bool new_range = sampled;
   if (first_range) {
     first_range = false;
     new_range = false;
