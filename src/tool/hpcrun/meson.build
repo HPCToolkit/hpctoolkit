@@ -519,17 +519,17 @@ libhpcrun_lib = shared_library('hpcrun', _d_srcs.sources(),
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
 libhpcrun_fake_audit_lib = shared_module('hpcrun_fake_audit',
-  files('audit/fake-auditor.c'),
+  files('audit/fake-auditor.c'), hpctoolkit_config_h,
   dependencies: _d_partial_deps + _d_ddep + [cc.find_library('dl')],
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
 libhpcrun_audit_lib = shared_module('hpcrun_audit',
-  files('audit/auditor.c'),
+  files('audit/auditor.c'), hpctoolkit_config_h,
   dependencies: _d_partial_deps + _d_ddep + [cc.find_library('dl')],
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
 libhpcrun_dlmopen_lib = shared_module('hpcrun_dlmopen',
-  files('dlmopen/dlmopen.c'),
+  files('dlmopen/dlmopen.c'), hpctoolkit_config_h,
   dependencies: _d_partial_deps + _d_ddep + [cc.find_library('dl')],
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
@@ -558,7 +558,7 @@ if not is_disabler(libhpcrun_lib)
 endif
 
 libhpcrun_ga_lib = shared_module('hpcrun_ga',
-  files('sample-sources/ga-overrides.c'),
+  files('sample-sources/ga-overrides.c'), hpctoolkit_config_h,
   dependencies: _d_srcs.dependencies() + _d_ddep,
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
@@ -566,7 +566,7 @@ summary('Global Arrays (hpcrun)', not is_disabler(libhpcrun_ga_lib),
         section: 'Plugins', bool_yn: true)
 
 libhpcrun_io_lib = shared_module('hpcrun_io',
-  files('sample-sources/io-over.c'),
+  files('sample-sources/io-over.c'), hpctoolkit_config_h,
   dependencies: _d_srcs.dependencies() + _d_ddep,
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
@@ -574,7 +574,7 @@ summary('I/O Counters (hpcrun)', not is_disabler(libhpcrun_io_lib),
         section: 'Plugins', bool_yn: true)
 
 libhpcrun_memleak_lib = shared_module('hpcrun_memleak',
-  files('sample-sources/memleak-overrides.c'),
+  files('sample-sources/memleak-overrides.c'), hpctoolkit_config_h,
   dependencies: _d_srcs.dependencies() + _d_ddep,
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
@@ -582,7 +582,7 @@ summary('Memory Leak Detection (hpcrun)', not is_disabler(libhpcrun_memleak_lib)
         section: 'Plugins', bool_yn: true)
 
 libhpcrun_pthread_lib = shared_module('hpcrun_pthread',
-  files('sample-sources/pthread-blame-overrides.c'),
+  files('sample-sources/pthread-blame-overrides.c'), hpctoolkit_config_h,
   dependencies: _d_srcs.dependencies() + _d_ddep,
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
@@ -590,7 +590,7 @@ summary('PThread Blame Shifting (hpcrun)', not is_disabler(libhpcrun_pthread_lib
         section: 'Plugins', bool_yn: true)
 
 libhpcrun_gprof_lib = shared_module('hpcrun_gprof',
-  files('gprof.c'),
+  files('gprof.c'), hpctoolkit_config_h,
   dependencies: _d_srcs.dependencies() + _d_ddep,
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
@@ -598,7 +598,7 @@ summary('GProf Disabling Wrapper (hpcrun)', not is_disabler(libhpcrun_gprof_lib)
         section: 'Plugins', bool_yn: true)
 
 libhpcrun_opencl_lib = shared_module('hpcrun_opencl',
-  files('gpu/opencl/opencl-api-wrappers.c'),
+  files('gpu/opencl/opencl-api-wrappers.c'), hpctoolkit_config_h,
   dependencies: _d_srcs.dependencies() + _d_ddep
      + [dependency('opencl-headers', required: false, disabler: true)],
   install: true, install_dir: get_option('libdir') / meson.project_name(),
@@ -607,7 +607,7 @@ summary('OpenCL Wrappers (hpcrun)', not is_disabler(libhpcrun_opencl_lib),
         section: 'Plugins', bool_yn: true)
 
 libhpcrun_level0_lib = shared_module('hpcrun_level0',
-  files('gpu/level0/level0-api-wrappers.c'),
+  files('gpu/level0/level0-api-wrappers.c'), hpctoolkit_config_h,
   dependencies: _d_srcs.dependencies() + _d_ddep
     + [dependency('level0-headers', required: false, disabler: true)],
   install: true, install_dir: get_option('libdir') / meson.project_name(),
@@ -658,7 +658,7 @@ libhpcrun_static_lib = static_library('hpcrun_static', _s_srcs.sources(),
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
 libhpcrun_wrap_lib = static_library('hpcrun_wrap',
-  files('monitor-exts/openmp.c'),
+  files('monitor-exts/openmp.c'),  hpctoolkit_config_h,
   dependencies: _s_partial_ddeps,
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
@@ -701,7 +701,7 @@ if not is_disabler(libhpcrun_static_lib) and not is_disabler(libhpcrun_wrap_lib)
 endif
 
 libhpcrun_ga_wrap_lib = static_library('hpcrun_ga_wrap',
-  files('sample-sources/ga-overrides.c'),
+  files('sample-sources/ga-overrides.c'), hpctoolkit_config_h,
   dependencies: _s_partial_ddeps,
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
@@ -716,7 +716,7 @@ summary('Global Arrays (hpclink)', not is_disabler(libhpcrun_ga_wrap_lib),
         section: 'Plugins', bool_yn: true)
 
 libhpcrun_io_wrap_lib = static_library('hpcrun_io_wrap',
-  files('sample-sources/io-over.c'),
+  files('sample-sources/io-over.c'), hpctoolkit_config_h,
   dependencies: _s_partial_ddeps,
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
@@ -730,7 +730,7 @@ summary('I/O Counters (hpclink)', not is_disabler(libhpcrun_io_wrap_lib),
         section: 'Plugins', bool_yn: true)
 
 libhpcrun_memleak_wrap_lib = static_library('hpcrun_memleak_wrap',
-  files('sample-sources/memleak-overrides.c'),
+  files('sample-sources/memleak-overrides.c'), hpctoolkit_config_h,
   dependencies: _s_partial_ddeps,
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
@@ -744,7 +744,7 @@ summary('Memory Leak Detection (hpclink)', not is_disabler(libhpcrun_memleak_wra
         section: 'Plugins', bool_yn: true)
 
 libhpcrun_pthread_wrap_lib = static_library('hpcrun_pthread_wrap',
-  files('sample-sources/pthread-blame-overrides.c'),
+  files('sample-sources/pthread-blame-overrides.c'), hpctoolkit_config_h,
   dependencies: _s_partial_ddeps,
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
@@ -760,7 +760,7 @@ summary('PThread Blame Shifting (hpclink)', not is_disabler(libhpcrun_pthread_wr
         section: 'Plugins', bool_yn: true)
 
 libhpcrun_gprof_wrap_lib = static_library('hpcrun_gprof_wrap',
-  files('gprof.c'),
+  files('gprof.c'), hpctoolkit_config_h,
   dependencies: _s_partial_ddeps,
   install: true, install_dir: get_option('libdir') / meson.project_name(),
 )
