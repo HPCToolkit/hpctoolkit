@@ -590,7 +590,7 @@ install_data(files(
 
 # Compose a command to help overwrite bits with the Git version
 hpctoolkit_vcs = vcs_tag(input: files('meson/vcs.sed.in'), output: 'vcs.sed',
-  command: find_program(files('meson/vcs-query.sh')).path(),
+  command: find_program(files('meson/vcs-query.sh')).full_path(),
   replace_string: '@REAL_VCS_TAG@',
   fallback: 'unknown (failed to fetch Git revision)')
 hpctoolkit_vcs = [find_program('sed'), '-f', hpctoolkit_vcs]

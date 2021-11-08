@@ -181,7 +181,7 @@ hpctoolkit_config.set('NO_STD_CHEADERS', false ? 1 : false)
 hpctoolkit_config.set('OPT_HAVE_CUDA', _cuda_dep.found() ? 1 : false)
 
 # TODO: Figure out how to handle this properly.
-# It should be find_program('nvdisasm').path(), but that doesn't take into
+# It should be find_program('nvdisasm').full_path(), but that doesn't take into
 # account CUDA_HOME/PATH, and a run_command shim isn't cached properly...
 hpctoolkit_config.set_quoted('CUDA_INSTALL_PREFIX', '/nonexistant/')
 hpctoolkit_config.set_quoted('CUPTI_INSTALL_PREFIX', '/nonexistant/')
