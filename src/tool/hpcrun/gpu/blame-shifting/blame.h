@@ -11,8 +11,26 @@
 
 
 //******************************************************************************
+// type declarations
+//******************************************************************************
+
+typedef struct cct_node_linkedlist_t {
+  _Atomic (struct cct_node_linkedlist_t*) next;
+  cct_node_t *node;
+} cct_node_linkedlist_t;
+
+
+
+//******************************************************************************
 // interface operations
 //******************************************************************************
+
+void
+cct_list_node_free_helper
+(
+ cct_node_linkedlist_t *node
+);
+
 
 void
 gpu_idle_blame

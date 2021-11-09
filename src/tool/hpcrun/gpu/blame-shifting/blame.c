@@ -50,9 +50,13 @@ _Atomic(unsigned long) latest_kernel_end_time = { 0 }; // in nanoseconds
 
 static _Atomic(kernel_node_t*) completed_kernel_list_head = { NULL };
 static _Atomic(kernel_node_t*) incomplete_kernel_list_head = { NULL };
+static _Atomic(kernel_node_t*) incomplete_kernel_list_tail = { NULL };
 
 static queue_node_t *queue_node_free_list = NULL;
 static kernel_node_t *kernel_node_free_list = NULL;
+static cct_node_linkedlist_t *cct_list_node_free_list = NULL;
+
+static uint32_t cct_list_alloc_count = 0;
 
 __thread bool gpu_utilization_enabled = false;
 
@@ -123,6 +127,52 @@ kernel_node_free_helper
 }
 
 
+static cct_node_linkedlist_t*
+cct_list_node_alloc_helper
+(
+ cct_node_linkedlist_t **free_list
+)
+{
+  cct_list_alloc_count++;
+  cct_node_linkedlist_t *first = *free_list;
+
+  if (first) {
+    *free_list = atomic_load(&first->next);
+  } else {
+    first = (cct_node_linkedlist_t *) hpcrun_malloc_safe(sizeof(cct_node_linkedlist_t));
+  }
+  memset(first, 0, sizeof(cct_node_linkedlist_t));
+  printf("allocated \n", cct_list_alloc_count);
+  return first;
+}
+
+
+void
+cct_list_node_free_helper
+(
+ cct_node_linkedlist_t *node
+)
+{
+  cct_node_linkedlist_t **free_list = &cct_list_node_free_list;
+  cct_node_linkedlist_t *incoming_list_head = node;
+  cct_node_linkedlist_t *incoming_list_tail = node;
+  cct_node_linkedlist_t *next = atomic_load(&incoming_list_tail->next);
+
+  // goto end of incoming_list
+  while (next) {
+    incoming_list_tail = next;
+    next = atomic_load(&incoming_list_tail->next);
+  }
+
+  cct_node_linkedlist_t *old_list_head = *free_list;
+  // swap current head with incoming head
+  *free_list = incoming_list_head;
+
+  // incoming_list->end->next = old_head
+  atomic_store(&incoming_list_tail->next, old_list_head);
+}
+
+
 static void
 create_activity_object
 (
@@ -171,9 +221,13 @@ add_kernel_to_incomplete_list
 )
 {
   while (true) {
-    kernel_node_t *current_head = atomic_load(&incomplete_kernel_list_head);
-    atomic_store(&kernel_node->next, current_head);
-    if (atomic_compare_exchange_strong(&incomplete_kernel_list_head, &current_head, kernel_node)) {
+    kernel_node_t *current_tail = atomic_load(&incomplete_kernel_list_tail);
+    if (atomic_compare_exchange_strong(&incomplete_kernel_list_tail, &current_tail, kernel_node)) {
+      if (current_tail != NULL) {
+        atomic_store(&current_tail->next, kernel_node);
+      } else {
+        atomic_store(&incomplete_kernel_list_head, kernel_node);
+      }
       break;
     }
   }
@@ -318,28 +372,48 @@ accumulate_gpu_utilization_metrics_to_incomplete_kernels
 )
 {
   // this function should be run only for Intel programs (unless the used runtime supports PAPI with active/stall metrics)
-    cct_node_t* cct_array_of_incomplete_kernels[num_unfinished_kernels];
-    kernel_node_t *private_incomplete_kernel_head = atomic_load(&incomplete_kernel_list_head);
-    kernel_node_t *curr, *prev, *next;
-    curr = private_incomplete_kernel_head;
-    prev = NULL;
-    uint32_t index = 0;
+  int nodes_to_be_allocated = num_unfinished_kernels;
+  cct_node_linkedlist_t* curr_c, *cct_list_of_incomplete_kernels, *new_node;
+  cct_list_of_incomplete_kernels = cct_list_node_alloc_helper(&cct_list_node_free_list);
+  curr_c = cct_list_of_incomplete_kernels;
+  while (--nodes_to_be_allocated > 0) {
+    new_node = cct_list_node_alloc_helper(&cct_list_node_free_list);
+    atomic_store(&curr_c->next, new_node);
+    curr_c = new_node;
+  }
 
-    /* We iterate over the list of unfinished kernels. For all kernels, we:
-     * 1. add the cct_node for the kernel to an array of cct_nodes and accumulate the utilization metrics to that node
-     * 2. delete the entry from the list if marked for deletion (i.e. the kernel has completed)
-    */
-    while (curr) {
-      next = atomic_load(&curr->next);
-			cct_array_of_incomplete_kernels[index++] = curr->launcher_cct;
-      if (curr->marked_for_deletion && prev != NULL) {
+  // cct_node_t** cct_array_of_incomplete_kernels = (cct_node_t**) malloc(sizeof(cct_node_t*) * num_unfinished_kernels);  // this array needs to be freed
+  kernel_node_t *private_incomplete_kernel_head = atomic_load(&incomplete_kernel_list_head);
+  kernel_node_t *curr_k, *prev, *next;
+  curr_k = private_incomplete_kernel_head;
+  prev = NULL;
+
+  /* We iterate over the list of unfinished kernels. For all kernels, we:
+   * 1. add the cct_node for the kernel to an array of cct_nodes and accumulate the utilization metrics to that node
+   * 2. delete the entry from the list if marked for deletion (i.e. the kernel has completed)
+   */
+  curr_c = cct_list_of_incomplete_kernels;
+  while (curr_k) {
+    next = atomic_load(&curr_k->next);
+    if (curr_k->marked_for_deletion) {
+      if (prev != NULL) {
         atomic_store(&prev->next, next);
       } else {
-        prev = curr;
+        if (!atomic_compare_exchange_strong(&incomplete_kernel_list_head, &curr_k, next)) {
+          break;
+        }
       }
-      curr = next;
+      curr_k = next;
+      continue;
+    } else {
+      prev = curr_k;
     }
-    gpu_monitors_apply(cct_array_of_incomplete_kernels, num_unfinished_kernels, gpu_monitor_type_enter);
+    curr_c->node = curr_k->launcher_cct;
+    curr_c = atomic_load(&curr_c->next);
+    curr_k = next;
+  }
+  // gpu_monitors_apply(cct_array_of_incomplete_kernels, num_unfinished_kernels, gpu_monitor_type_enter);
+  gpu_monitors_apply(cct_list_of_incomplete_kernels, num_unfinished_kernels, gpu_monitor_type_enter);
 }
 
 

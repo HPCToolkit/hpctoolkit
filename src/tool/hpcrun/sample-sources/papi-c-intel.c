@@ -24,6 +24,7 @@
 #include <hpcrun/sample_event.h>
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_sources_all.h>
+#include <hpcrun/gpu/blame-shifting/blame.h>
 #include <hpcrun/gpu/gpu-activity.h>
 #include <sample-sources/common.h>
 #include <sample-sources/ss-obj-name.h>
@@ -153,7 +154,6 @@ papi_c_intel_teardown(void)
 {
   ETMSG(INTEL, "Started: teardown of intel PAPI datastructures");
   spinlock_lock(&setup_lock);
-  // free(metric_values);
   PAPI_cleanup_eventset(eventset);
   PAPI_destroy_eventset(&eventset);
   spinlock_unlock(&setup_lock);
@@ -177,18 +177,22 @@ attribute_gpu_utilization(cct_node_t *cct_node, long long *current_values, long 
 
 
 static long long *
-papi_c_intel_read(cct_node_t **cct_nodes, uint32_t num_ccts, long long *previous_values)
+papi_c_intel_read(cct_node_linkedlist_t *cct_nodes, uint32_t num_ccts, long long *previous_values)
 {
-  long long *metric_values = (long long *)hpcrun_malloc(numMetrics * sizeof(long long));
+  long long metric_values[numMetrics];
   int retval = PAPI_read(eventset, metric_values);
   if (retval!=PAPI_OK) {
     ETMSG(INTEL, "Error stopping:  %s\n", PAPI_strerror(retval));
     return NULL;
   }
   printf("%s: %lld, %s: %lld, %s: %lld\n", metric_name[0], metric_values[0], metric_name[1], metric_values[1], metric_name[2], metric_values[2]);
+
+  cct_node_linkedlist_t* curr = cct_nodes;
   for(int i=0; i<num_ccts; i++) {
-    attribute_gpu_utilization(cct_nodes[i], metric_values, previous_values);
+    attribute_gpu_utilization(curr->node, metric_values, previous_values);
+    curr = atomic_load(&curr->next);
   }
+  cct_list_node_free_helper(cct_nodes);
   return metric_values;
 }
 
