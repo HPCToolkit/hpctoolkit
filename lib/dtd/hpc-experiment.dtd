@@ -7,18 +7,6 @@
 	  version CDATA #REQUIRED>
 
   <!-- ****************************************************************** -->
-
-  <!-- Info/NV: flexible name-value pairs: (n)ame; (t)ype; (v)alue -->
-  <!ELEMENT Info (NV*)>
-  <!ATTLIST Info
-	    n CDATA #IMPLIED>
-  <!ELEMENT NV EMPTY>
-  <!ATTLIST NV
-	    n CDATA #REQUIRED
-	    t CDATA #IMPLIED
-	    v CDATA #REQUIRED>
-
-  <!-- ****************************************************************** -->
   <!-- Header								  -->
   <!-- ****************************************************************** -->
   <!ELEMENT Header (Info*)>
@@ -28,94 +16,41 @@
   <!-- ****************************************************************** -->
   <!-- Section Header							  -->
   <!-- ****************************************************************** -->
-  <!ELEMENT SecHeader (IdentifierNameTable?, MetricTable?, MetricDBTable?, TraceDBTable?, LoadModuleTable?, FileTable?, ProcedureTable?, Info*)>
+  <!ELEMENT SecHeader (IdentifierNameTable?, MetricTable?, TraceDB?, LoadModuleTable?, FileTable?, ProcedureTable?, Info*)>
 
     <!-- MetricTable: -->
     <!ELEMENT MetricTable (Metric)*>
 
-    <!-- Metric: (i)d; (n)ame -->
-    <!--   o: metric sequence order (hpcrun metric order) -->
-    <!--   md: metric description -->
-    <!--   mp: metric parent ID   -->
-    <!--   es: number of samples    (perf_events only) -->
-    <!--   em: event multiplexed    (perf_events only) -->
-    <!--   ep: average event period (perf_events only) -->
-    <!--   (v)alue-type: transient type of values -->
-    <!--   (t)ype: persistent type of metric      -->
-    <!--   show: metric visibility type. Possible values: -->
-    <!--        0: hidden -->
-    <!--        1: shown  -->
-    <!--        2: show inclusive metric only -->
-    <!--        3: show exclusive metric only -->
-    <!--        4: invisible, do not show at all -->
-    <!--   show-percent: whether to show the percent (1) or not (0)  -->
-    <!--   partner: the exclusive or inclusive partner ID of this metric -->
-    <!--   fmt: format; show; -->
-    <!ELEMENT Metric (MetricFormula*, Info?)>
+    <!-- Metric: -->
+    <!--   summary-i: numeric id used in summary profile -->
+    <!--   raw-i: numeric id used in other profiles (containing raw values) -->
+    <!--   name: (semi-unique) name of the measured metric -->
+    <!--   formula: formula applied to raw metric values before combination. -->
+    <!--       Single input variable `$$`. -->
+    <!--   combine: combination formula used to merge values from multiple -->
+    <!--       contexts/profiles. Possible values: -->
+    <!--           "sum": sum of raw input values -->
+    <!--           "min": minimum of raw input values -->
+    <!--           "max": maximum of raw input values -->
+    <!-- NOTE: The (name, formula, combine) triple is unique among all -->
+    <!-- sibling Metric tags -->
+    <!ELEMENT Metric EMPTY>
     <!ATTLIST Metric
-	      i            CDATA #REQUIRED
-	      o	           CDATA #IMPLIED
-	      n            CDATA #REQUIRED
-	      md           CDATA #IMPLIED
-	      mp           CDATA #IMPLIED
-	      es           CDATA #IMPLIED
-	      em           CDATA #IMPLIED
-	      ep           CDATA #IMPLIED
-	      v            (raw|final|derived-incr|derived) "raw"
-	      t            (inclusive|exclusive|nil) "nil"
-	      partner      CDATA #IMPLIED
-	      fmt          CDATA #IMPLIED
-	      show         (1|0|2|3|4) "1"
-	      show-percent (1|0) "1">
+	      summary-i    CDATA #REQUIRED
+	      raw-i        CDATA #REQUIRED
+	      name         CDATA #REQUIRED
+	      formula      CDATA "$$"
+	      combine      (sum|min|max) "sum">
 
-    <!-- MetricFormula represents derived metrics: (t)ype; (frm): formula -->
-    <!ELEMENT MetricFormula (Info?)>
-    <!ATTLIST MetricFormula
-	      t   (combine|finalize|view) "finalize"
-	      i   CDATA #IMPLIED
-	      frm CDATA #REQUIRED>
-
-    <!-- Metric data, used in sections: (n)ame [from Metric]; (v)alue -->
-    <!ELEMENT M EMPTY>
-    <!ATTLIST M
-	      n CDATA #REQUIRED
-	      v CDATA #REQUIRED>
-
-    <!-- MetricDBTable: -->
-    <!ELEMENT MetricDBTable (MetricDB)*>
-
-    <!-- MetricDB: (i)d; (n)ame -->
-    <!--   (t)ype: persistent type of metric -->
-    <!--   db-glob:        file glob describing files in metric db -->
-    <!--   db-id:          id within metric db -->
-    <!--   db-num-metrics: number of metrics in db -->
-    <!--   db-header-sz:   size (in bytes) of a db file header -->
-    <!ELEMENT MetricDB EMPTY>
-    <!ATTLIST MetricDB
-	      i              CDATA #REQUIRED
-	      n              CDATA #REQUIRED
-	      t              (inclusive|exclusive|nil) "nil"
-	      partner        CDATA #IMPLIED
-	      db-glob        CDATA #IMPLIED
-	      db-id          CDATA #IMPLIED
-	      db-num-metrics CDATA #IMPLIED
-	      db-header-sz   CDATA #IMPLIED>
-
-    <!-- TraceDBTable: -->
-    <!ELEMENT TraceDBTable (TraceDB)>
-
-    <!-- TraceDB: (i)d -->
+    <!-- TraceDB: -->
     <!--   u: unit time of the trace (ms, ns, ..) -->
     <!--   db-min-time: min beginning time stamp (global) -->
     <!--   db-max-time: max ending time stamp (global) -->
     <!ELEMENT TraceDB EMPTY>
     <!ATTLIST TraceDB
-	      i            CDATA #REQUIRED
-	      u            CDATA #IMPLIED
-	      db-glob      CDATA #IMPLIED
-	      db-min-time  CDATA #IMPLIED
-	      db-max-time  CDATA #IMPLIED
-	      db-header-sz CDATA #IMPLIED>
+	      u            CDATA #REQUIRED
+	      db-min-time  CDATA #REQUIRED
+	      db-max-time  CDATA #REQUIRED>
 
     <!-- LoadModuleTable assigns a short name to a load module -->
     <!ELEMENT LoadModuleTable (LoadModule)*>

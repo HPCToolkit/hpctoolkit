@@ -20,22 +20,30 @@ version: !!int 0
 inputs: !!seq
   - &in-perf-cycles-Ex
     # (Required) Name of the metric, as listed in experiment.xml.
-    metric: !!str perf::cycles::x::exclusive
+    metric: !!str perf::cycles [exclusive]
+    # (Optional) Formula applied to the metric before combination, as listed in
+    # experiment.xml. `$$` is the variable for the input raw metric value.
+    # If omitted, defaults to `$$` like in experiment.xml.
+    formula: !!str $$
+    # (Optional) Combination operation, as listed in experiment.xml. As per over
+    # there, one of 'sum', 'min' and 'max'.
+    # If omitted, defaults to 'sum'.
+    combine: !!str sum
 
   - &in-perf-cycles-Ix
-    metric: perf::cycles::x::inclusive
+    metric: perf::cycles [inclusive]
   - &in-perf-l1-miss-Ex
-    metric: perf::l1-cache-miss::x::exclusive
+    metric: perf::l1-cache-miss [exclusive]
   - &in-perf-l1-miss-Ix
-    metric: perf::l1-cache-miss::x::inclusive
+    metric: perf::l1-cache-miss [inclusive]
   - &in-perf-l2-miss-Ex
-    metric: perf::l2-cache-miss::x::exclusive
+    metric: perf::l2-cache-miss [exclusive]
   - &in-perf-l2-miss-Ix
-    metric: perf::l2-cache-miss::x::inclusive
+    metric: perf::l2-cache-miss [inclusive]
   - &in-perf-l3-miss-Ex
-    metric: perf::l3-cache-miss::x::exclusive
+    metric: perf::l3-cache-miss [exclusive]
   - &in-perf-l3-miss-Ix
-    metric: perf::l3-cache-miss::x::inclusive
+    metric: perf::l3-cache-miss [inclusive]
 
 # (Required) Sequence of all root taxonomic metrics. Order indicates the initial
 # order of the columns (left-to-right).

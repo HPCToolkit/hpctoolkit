@@ -593,7 +593,7 @@ void ExperimentXML4::write() {
   for(const auto& m: src.metrics().iterate()) of << m().userdata[ud].metricdb_tags;
   of << "</MetricDBTable>\n";
   if(tracedb != nullptr)
-    of << "<TraceDBTable>\n" << tracedb->exmlTag() << "</TraceDBTable>\n";
+    of << tracedb->exmlTag();
   of << "<LoadModuleTable>\n";
   // LoadModuleTable: from the Modules
   of << unknown_module.tag;
