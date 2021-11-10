@@ -240,7 +240,7 @@ public:
     } visibility;
 
     bool operator==(const Settings& o) const noexcept {
-      return name == o.name && description == o.description;
+      return name == o.name;
     }
   };
 
