@@ -20,7 +20,9 @@ version: !!int 0
 inputs: !!seq
   - &in-perf-cycles-Ex
     # (Required) Name of the metric, as listed in experiment.xml.
-    metric: !!str perf::cycles [exclusive]
+    metric: !!str perf::cycles
+    # (Required) Scope of the metric, as listed in experiment.xml.
+    scope: !!str exclusive
     # (Optional) Formula applied to the metric before combination, as listed in
     # experiment.xml. `$$` is the variable for the input raw metric value.
     # If omitted, defaults to `$$` like in experiment.xml.

@@ -24,21 +24,23 @@
     <!-- Metric: -->
     <!--   summary-i: numeric id used in summary profile -->
     <!--   raw-i: numeric id used in other profiles (containing raw values) -->
-    <!--   name: (semi-unique) name of the measured metric -->
+    <!--   name: (event?, unique) name of the measured metric -->
+    <!--   scope: scope of the metric value propagation. No semantic meaning -->
     <!--   formula: formula applied to raw metric values before combination. -->
     <!--       Single input variable `$$`. -->
     <!--   combine: combination formula used to merge values from multiple -->
     <!--       contexts/profiles. Possible values: -->
-    <!--           "sum": sum of raw input values -->
-    <!--           "min": minimum of raw input values -->
-    <!--           "max": maximum of raw input values -->
-    <!-- NOTE: The (name, formula, combine) triple is unique among all -->
+    <!--           "sum": sum of processed input values -->
+    <!--           "min": minimum of processed input values -->
+    <!--           "max": maximum of processed input values -->
+    <!-- NOTE: The (name, scope, formula, combine) tuple is unique among all -->
     <!-- sibling Metric tags -->
     <!ELEMENT Metric EMPTY>
     <!ATTLIST Metric
 	      summary-i    CDATA #REQUIRED
 	      raw-i        CDATA #REQUIRED
 	      name         CDATA #REQUIRED
+	      scope        CDATA #REQUIRED
 	      formula      CDATA "$$"
 	      combine      (sum|min|max) "sum">
 
