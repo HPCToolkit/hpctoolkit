@@ -49,14 +49,15 @@ static _Atomic(uint32_t) g_unfinished_kernels = { 0 };
 _Atomic(unsigned long) latest_kernel_end_time = { 0 }; // in nanoseconds
 
 static _Atomic(kernel_node_t*) completed_kernel_list_head = { NULL };
-static _Atomic(kernel_node_t*) incomplete_kernel_list_head = { NULL };
-static _Atomic(kernel_node_t*) incomplete_kernel_list_tail = { NULL };
+static kernel_node_t* incomplete_kernel_list_head = NULL;
+static kernel_node_t* incomplete_kernel_list_tail = NULL;
 
 static queue_node_t *queue_node_free_list = NULL;
 static kernel_node_t *kernel_node_free_list = NULL;
 static cct_node_linkedlist_t *cct_list_node_free_list = NULL;
 
 static uint32_t cct_list_alloc_count = 0;
+static spinlock_t kernel_list_lock = SPINLOCK_UNLOCKED;
 
 __thread bool gpu_utilization_enabled = false;
 
@@ -220,17 +221,15 @@ add_kernel_to_incomplete_list
  kernel_node_t *kernel_node
 )
 {
-  while (true) {
-    kernel_node_t *current_tail = atomic_load(&incomplete_kernel_list_tail);
-    if (atomic_compare_exchange_strong(&incomplete_kernel_list_tail, &current_tail, kernel_node)) {
-      if (current_tail != NULL) {
-        atomic_store(&current_tail->next, kernel_node);
-      } else {
-        atomic_store(&incomplete_kernel_list_head, kernel_node);
-      }
-      break;
-    }
+  spinlock_lock(&kernel_list_lock);
+  kernel_node_t *current_tail = incomplete_kernel_list_tail;
+  incomplete_kernel_list_tail = kernel_node;
+  if (current_tail != NULL) {
+    atomic_store(&current_tail->next, kernel_node);
+  } else {
+    incomplete_kernel_list_head = kernel_node;
   }
+  spinlock_unlock(&kernel_list_lock);
 }
 
 
@@ -383,9 +382,9 @@ accumulate_gpu_utilization_metrics_to_incomplete_kernels
   }
 
   // cct_node_t** cct_array_of_incomplete_kernels = (cct_node_t**) malloc(sizeof(cct_node_t*) * num_unfinished_kernels);  // this array needs to be freed
-  kernel_node_t *private_incomplete_kernel_head = atomic_load(&incomplete_kernel_list_head);
+  spinlock_lock(&kernel_list_lock);
   kernel_node_t *curr_k, *prev, *next;
-  curr_k = private_incomplete_kernel_head;
+  curr_k = incomplete_kernel_list_head;
   prev = NULL;
 
   /* We iterate over the list of unfinished kernels. For all kernels, we:
@@ -399,9 +398,7 @@ accumulate_gpu_utilization_metrics_to_incomplete_kernels
       if (prev != NULL) {
         atomic_store(&prev->next, next);
       } else {
-        if (!atomic_compare_exchange_strong(&incomplete_kernel_list_head, &curr_k, next)) {
-          break;
-        }
+        incomplete_kernel_list_head = next;
       }
       curr_k = next;
       continue;
@@ -412,6 +409,7 @@ accumulate_gpu_utilization_metrics_to_incomplete_kernels
     curr_c = atomic_load(&curr_c->next);
     curr_k = next;
   }
+  spinlock_unlock(&kernel_list_lock);
   // gpu_monitors_apply(cct_array_of_incomplete_kernels, num_unfinished_kernels, gpu_monitor_type_enter);
   gpu_monitors_apply(cct_list_of_incomplete_kernels, num_unfinished_kernels, gpu_monitor_type_enter);
 }
