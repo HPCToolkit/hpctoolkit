@@ -83,7 +83,7 @@ public:
 
   hpctoolkit::ExtensionClass requires() const noexcept override {
     using namespace hpctoolkit;
-    return ExtensionClass::identifier + ExtensionClass::mscopeIdentifiers;
+    return ExtensionClass::identifier;
   }
 
   hpctoolkit::util::WorkshareResult help() override;

@@ -122,24 +122,17 @@ void ExperimentXML4::udFile::incr(ExperimentXML4& exml) {
 // ud Metric bits
 
 ExperimentXML4::udMetric::udMetric(const Metric& m, ExperimentXML4& exml) {
-  if(!m.scopes().has(MetricScope::function) && !m.scopes().has(MetricScope::execution))
-    util::log::fatal{} << "Metric " << m.name() << " has neither function nor execution!";
-  const auto& ids = m.userdata[exml.src.mscopeIdentifiers()];
-
+  const auto& id = m.userdata[exml.src.identifier()];
   std::ostringstream ss;
-
-  for(size_t idx = 0; idx < m.partials().size(); idx++) {
-    const auto& partial = m.partials()[idx];
-    const std::string name = m.name() + ":PARTIAL:" + std::to_string(idx);
-
-    const auto f = [&](MetricScope ms, unsigned int id, unsigned int raw_id, const std::string& scope) {
+  for(const auto& part: m.partials()) {
+    const auto f = [&](MetricScope ms, const std::string& scope) {
       if(!m.scopes().has(ms)) return false;
-      ss << "<Metric summary-i=\"" << id << "\""
-                   " raw-i=\"" << raw_id << "\""
-                   " name=" << util::xmlquoted(name)
+      ss << "<Metric summary-i=\"" << id.getFor(part, ms) << "\""
+                   " raw-i=\"" << id.getFor(ms) << "\""
+                   " name=" << util::xmlquoted(m.name())
                 << " scope=" << util::xmlquoted(scope)
-                << " formula=" << util::xmlquoted(partial.accumulate());
-      switch(partial.combinator()) {
+                << " formula=" << util::xmlquoted(part.accumulate());
+      switch(part.combinator()) {
       case Statistic::combination_t::sum: ss << " combine=\"sum\""; break;
       case Statistic::combination_t::min: ss << " combine=\"min\""; break;
       case Statistic::combination_t::max: ss << " combine=\"max\""; break;
@@ -148,9 +141,9 @@ ExperimentXML4::udMetric::udMetric(const Metric& m, ExperimentXML4& exml) {
       return true;
     };
 
-    f(MetricScope::execution, (ids.execution << 8) + idx, ids.execution, "execution");
-    if(!f(MetricScope::function, (ids.function << 8) + idx, ids.function, "function"))
-      f(MetricScope::point, (ids.point << 8) + idx, ids.point, "point");
+    f(MetricScope::execution, "execution");
+    if(!f(MetricScope::function, "function"))
+      f(MetricScope::point, "point");
   }
 
   metric_tags = ss.str();

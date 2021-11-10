@@ -189,15 +189,10 @@ void IdPacker::notifyWavefront(DataClass ds) {
     for(const auto& ls: stripbuffers)
       ct.insert(ct.end(), ls.second.begin(), ls.second.end());
 
-    // Format: ... [met cnt] ([id] [p id] [ex id] [inc id] [name])...
+    // Format: ... [met cnt] ([id] [name])...
     pack(ct, (std::uint64_t)src.metrics().size());
     for(auto& m: src.metrics().citerate()) {
       pack(ct, (std::uint64_t)m().userdata[src.identifier()]);
-      const auto& ids = m().userdata[src.mscopeIdentifiers()];
-      const auto& sc = m().scopes();
-      pack(ct, (std::uint64_t)(sc.has(MetricScope::point) ? ids.point : -1));
-      pack(ct, (std::uint64_t)(sc.has(MetricScope::function) ? ids.function : -1));
-      pack(ct, (std::uint64_t)(sc.has(MetricScope::execution) ? ids.execution : -1));
       pack(ct, m().name());
     }
 
@@ -290,12 +285,8 @@ void IdUnpacker::unpack(ProfilePipeline::Source& sink) noexcept {
   cnt = ::unpack<std::uint64_t>(it);
   for(std::size_t i = 0; i < cnt; i++) {
     auto id = ::unpack<std::uint64_t>(it);
-    Metric::ScopedIdentifiers ids;
-    ids.point = ::unpack<std::uint64_t>(it);
-    ids.function = ::unpack<std::uint64_t>(it);
-    ids.execution = ::unpack<std::uint64_t>(it);
     auto name = ::unpack<std::string>(it);
-    metmap.insert({std::move(name), {id, ids}});
+    metmap.insert({std::move(name), id});
   }
 
   ctxtree.clear();
@@ -346,16 +337,9 @@ void IdUnpacker::Finalizer::context(const Context& c, unsigned int& id) noexcept
   }
 }
 
-void IdUnpacker::Finalizer::metric(const Metric& m, unsigned int& id) noexcept {
+void IdUnpacker::Finalizer::metric(const Metric& m, Metric::Identifier& id) noexcept {
   util::call_once(shared.once, [this]{ shared.unpack(sink); });
   auto it = shared.metmap.find(m.name());
   assert(it != shared.metmap.end() && "No data for Metric `m`!");
-  id = it->second.first;
-}
-
-void IdUnpacker::Finalizer::metric(const Metric& m, Metric::ScopedIdentifiers& ids) noexcept {
-  util::call_once(shared.once, [this]{ shared.unpack(sink); });
-  auto it = shared.metmap.find(m.name());
-  assert(it != shared.metmap.end() && "No data for Metric `m`!");
-  ids = it->second.second;
+  id = it->second;
 }

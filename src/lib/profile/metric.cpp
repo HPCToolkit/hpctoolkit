@@ -78,16 +78,6 @@ static double atomic_op(std::atomic<double>& a, const double v, Statistic::combi
   return old;
 }
 
-unsigned int Metric::ScopedIdentifiers::get(MetricScope s) const noexcept {
-  switch(s) {
-  case MetricScope::point: return point;
-  case MetricScope::function: return function;
-  case MetricScope::execution: return execution;
-  }
-  assert(false && "Invalid MetricScope value!");
-  std::abort();
-}
-
 ExtraStatistic::ExtraStatistic(Settings s)
   : u_settings(std::move(s)) {
   assert(!u_settings().formula.empty() && "ExtraStatistics must have a non-empty formula!");

@@ -63,7 +63,7 @@ public:
     return DataClass::references + DataClass::contexts + DataClass::attributes;
   }
   ExtensionClass requires() const noexcept override {
-    return ExtensionClass::identifier + ExtensionClass::mscopeIdentifiers;
+    return ExtensionClass::identifier;
   }
   DataClass wavefronts() const noexcept override {
     return DataClass::references + DataClass::contexts + DataClass::attributes;
@@ -111,13 +111,12 @@ public:
     ~Finalizer() = default;
 
     ExtensionClass provides() const noexcept override {
-      return ExtensionClass::identifier + ExtensionClass::mscopeIdentifiers;
+      return ExtensionClass::identifier;
     }
     ExtensionClass requires() const noexcept override { return {}; }
 
     void context(const Context&, unsigned int&) noexcept override;
-    void metric(const Metric&, unsigned int&) noexcept override;
-    void metric(const Metric&, Metric::ScopedIdentifiers&) noexcept override;
+    void metric(const Metric&, Metric::Identifier&) noexcept override;
 
   private:
     IdUnpacker& shared;
@@ -135,7 +134,7 @@ private:
   unsigned int globalid;
   std::unordered_map<unsigned int, std::unordered_map<Scope, std::vector<Scope>>> exmap;
 
-  std::unordered_map<std::string, std::pair<unsigned int, Metric::ScopedIdentifiers>> metmap;
+  std::unordered_map<std::string, unsigned int> metmap;
 };
 
 }

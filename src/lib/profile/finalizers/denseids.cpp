@@ -50,8 +50,7 @@ using namespace hpctoolkit;
 using namespace finalizers;
 
 DenseIds::DenseIds()
-  : mod_id(0), file_id(0), met_id(0), smet_id(0), stat_id(0), sstat_id(0),
-    ctx_id(0), t_id(0) {};
+  : mod_id(0), file_id(0), met_id(0), ctx_id(0), t_id(0) {};
 
 void DenseIds::module(const Module&, unsigned int& id) noexcept {
   id = mod_id.fetch_add(1, std::memory_order_relaxed);
@@ -61,16 +60,8 @@ void DenseIds::file(const File&, unsigned int& id) noexcept {
   id = file_id.fetch_add(1, std::memory_order_relaxed);
 }
 
-void DenseIds::metric(const Metric&, unsigned int& id) noexcept {
-  id = met_id.fetch_add(1, std::memory_order_relaxed);
-}
-
-void DenseIds::metric(const Metric& m, Metric::ScopedIdentifiers& ids) noexcept {
-  auto scopes = m.scopes();
-  auto id = smet_id.fetch_add(scopes.count(), std::memory_order_relaxed);
-  if(scopes.has(MetricScope::point)) ids.point = id++;
-  if(scopes.has(MetricScope::function)) ids.function = id++;
-  if(scopes.has(MetricScope::execution)) ids.execution = id++;
+void DenseIds::metric(const Metric& m, Metric::Identifier& id) noexcept {
+  id = met_id.fetch_add(m.partials().size() * m.scopes().count(), std::memory_order_relaxed);
 }
 
 void DenseIds::context(const Context&, unsigned int& id) noexcept {

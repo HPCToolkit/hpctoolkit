@@ -107,7 +107,6 @@ Settings& Settings::operator<<(ProfileFinalizer& f) {
   finalizers.all.emplace_back(f);
   if(pro.hasClassification()) finalizers.classification.emplace_back(f);
   if(pro.hasIdentifier()) finalizers.identifier.emplace_back(f);
-  if(pro.hasMScopeIdentifiers()) finalizers.mscopeIdentifiers.emplace_back(f);
   if(pro.hasResolvedPath()) finalizers.resolvedPath.emplace_back(f);
   return *this;
 }
@@ -156,19 +155,13 @@ ProfilePipeline::ProfilePipeline(Settings&& b, std::size_t team_sz)
       [this](unsigned int& id, const Module& m){
         for(ProfileFinalizer& fp: finalizers.identifier) fp.module(m, id);
       });
-    uds.identifier.metric = structs.metric.add_default<unsigned int>(
-      [this](unsigned int& id, const Metric& m){
+    uds.identifier.metric = structs.metric.add_initializer<Metric::Identifier>(
+      [this](Metric::Identifier& id, const Metric& m){
         for(ProfileFinalizer& fp: finalizers.identifier) fp.metric(m, id);
       });
     uds.identifier.thread = structs.thread.add_default<unsigned int>(
       [this](unsigned int& id, const Thread& t){
         for(ProfileFinalizer& fp: finalizers.identifier) fp.thread(t, id);
-      });
-  }
-  if(requested.hasMScopeIdentifiers()) {
-    uds.mscopeIdentifiers.metric = structs.metric.add_default<Metric::ScopedIdentifiers>(
-      [this](Metric::ScopedIdentifiers& ids, const Metric& m){
-        for(ProfileFinalizer& fp: finalizers.mscopeIdentifiers) fp.metric(m, ids);
       });
   }
   if(requested.hasResolvedPath()) {
@@ -492,11 +485,6 @@ const decltype(ProfilePipeline::Extensions::identifier)&
 Source::identifier() const {
   assert(extensionLimit.hasIdentifier() && "Source did not register for `identifier` emission!");
   return pipe->uds.identifier;
-}
-const decltype(ProfilePipeline::Extensions::mscopeIdentifiers)&
-Source::mscopeIdentifiers() const {
-  assert(extensionLimit.hasMScopeIdentifiers() && "Source did not register for `mscopeIdentifiers` emission!");
-  return pipe->uds.mscopeIdentifiers;
 }
 const decltype(ProfilePipeline::Extensions::resolvedPath)&
 Source::resolvedPath() const {
@@ -872,11 +860,6 @@ const decltype(ProfilePipeline::Extensions::identifier)&
 Sink::identifier() const {
   assert(extensionLimit.hasIdentifier() && "Sink did not register for `identifier` absorption!");
   return pipe->uds.identifier;
-}
-const decltype(ProfilePipeline::Extensions::mscopeIdentifiers)&
-Sink::mscopeIdentifiers() const {
-  assert(extensionLimit.hasMScopeIdentifiers() && "Sink did not register for `mscopeIdentifiers` absorption!");
-  return pipe->uds.mscopeIdentifiers;
 }
 const decltype(ProfilePipeline::Extensions::resolvedPath)&
 Sink::resolvedPath() const {

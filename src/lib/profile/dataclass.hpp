@@ -205,9 +205,8 @@ private:                                                           \
 }
   struct classification_c    CONTENTS(0);
   struct identifier_c        CONTENTS(1);
-  struct mscopeIdentifiers_c CONTENTS(2);
-  struct resolvedPath_c      CONTENTS(3);
-  std::bitset<4> mask;
+  struct resolvedPath_c      CONTENTS(2);
+  std::bitset<3> mask;
 #undef CONTENTS
 
 public:
@@ -215,8 +214,6 @@ public:
   static constexpr classification_c    classification    = {};
   /// Extends most data with unique numerical identifiers.
   static constexpr identifier_c        identifier        = {};
-  /// Extends Metrics with extra Scope-specific identifiers.
-  static constexpr mscopeIdentifiers_c mscopeIdentifiers = {};
   /// Extends Files and Modules with the real path in the current filesystem.
   static constexpr resolvedPath_c      resolvedPath      = {};
 
@@ -229,7 +226,6 @@ public:
   bool hasAny()               const noexcept { return mask.any(); }
   bool hasClassification()    const noexcept { return has(classification); }
   bool hasIdentifier()        const noexcept { return has(identifier); }
-  bool hasMScopeIdentifiers() const noexcept { return has(mscopeIdentifiers); }
   bool hasResolvedPath()      const noexcept { return has(resolvedPath); }
 
   // Query for whether there are any of such and so
@@ -261,8 +257,7 @@ public:
                                              const ExtensionClass& e) {
     os << '[';
     if(e.has(identifier)) os << 'i';
-    if(e.has(mscopeIdentifiers)) os << 'm';
-    if(e.anyOf(identifier | mscopeIdentifiers)
+    if(e.anyOf(identifier)
        && e.anyOf(classification | resolvedPath)) os << ' ';
     if(e.has(classification)) os << 'c';
     if(e.has(resolvedPath)) os << 'r';
@@ -279,7 +274,6 @@ namespace literals::extensions {
 using Class = ExtensionClass;
 static constexpr auto classification    = Class::classification;
 static constexpr auto identifier        = Class::identifier;
-static constexpr auto mscopeIdentifiers = Class::mscopeIdentifiers;
 static constexpr auto resolvedPath      = Class::resolvedPath;
 }
 }  // namespace hpctoolkit

@@ -89,13 +89,9 @@ public:
   // MT: Internally Synchronized
   virtual void file(const File&, unsigned int&) noexcept {};
 
-  /// Assign a (unique, dense) ID to the given Metric.
+  /// Assign a (unique, dense) series of IDs to the given Metric.
   // MT: Internally Synchronized
-  virtual void metric(const Metric&, unsigned int&) noexcept {};
-
-  /// Assign a set of (unique, dense) IDs to the given Metric.
-  // MT: Internally Synchronized
-  virtual void metric(const Metric&, Metric::ScopedIdentifiers&) noexcept {};
+  virtual void metric(const Metric&, Metric::Identifier&) noexcept {};
 
   /// Assign a (unique, dense) ID to the given Context.
   // MT: Internally Synchronized
