@@ -56,10 +56,15 @@
 
 #include <atomic>
 #include <bitset>
+#include <iosfwd>
 #include <functional>
 #include <optional>
 #include <variant>
 #include <vector>
+
+namespace YAML {
+class Emitter;
+}
 
 namespace hpctoolkit {
 
@@ -124,6 +129,10 @@ private:
   friend class Metric;
   Statistic(std::string, bool, formula_t, bool);
 };
+
+/// Standard stringification for Statistic::combination_t values
+std::ostream& operator<<(std::ostream&, Statistic::combination_t);
+YAML::Emitter& operator<<(YAML::Emitter&, Statistic::combination_t);
 
 /// A StatisticPartial is the "accumulate" and "combine" parts of a Statistic.
 /// There may be multiple Partials used for a Statistic, and multiple Statistics

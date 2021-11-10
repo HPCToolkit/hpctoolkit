@@ -74,12 +74,9 @@ public:
   DataClass wavefronts() const noexcept override { return accepts(); }
   ExtensionClass requires() const noexcept override { return {}; }
 
-  static std::string fullName(const Metric&, const StatisticPartial&, MetricScope);
-
 private:
   stdshim::filesystem::path dir;
 
-  std::string anchorName(const Metric&, const StatisticPartial&, MetricScope);
   void raw(std::ostream&);
   void standard(std::ostream&);
 };

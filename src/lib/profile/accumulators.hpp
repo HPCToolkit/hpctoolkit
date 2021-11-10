@@ -49,8 +49,13 @@
 
 #include <atomic>
 #include <bitset>
+#include <iosfwd>
 #include <optional>
 #include <vector>
+
+namespace YAML {
+class Emitter;
+}
 
 namespace hpctoolkit {
 
@@ -64,18 +69,22 @@ enum class MetricScope : size_t {
   /// exactly where the data arose, and is the smallest MetricScope.
   point,
 
-  /// Encapsulates the current Context and any decendants not connected by a
+  /// Encapsulates the current Context and any descendants not connected by a
   /// function-type Scope. This represents the cost of a function outside of
   /// any child function calls.
   /// Called "exclusive" in the Viewer.
   function,
 
-  /// Encapsulates the current Context and all decendants. This represents
+  /// Encapsulates the current Context and all descendants. This represents
   /// the entire execution spawned by a single source code construct, and is
   /// the largest MetricScope.
   /// Called "inclusive" in the Viewer.
   execution,
 };
+
+/// Standardized stringification for MetricScope constants.
+std::ostream& operator<<(std::ostream&, MetricScope);
+YAML::Emitter& operator<<(YAML::Emitter&, MetricScope);
 
 /// Bitset-like object used as a set of Scope values.
 class MetricScopeSet final : private std::bitset<3> {

@@ -94,24 +94,10 @@ static std::string sanitize(const std::string& s) {
   return ss.str();
 }
 
-std::string MetricsYAML::fullName(const Metric& m, const StatisticPartial& p, MetricScope s) {
+static std::string anchorName(const Metric& m, const StatisticPartial& p, MetricScope s) {
   std::ostringstream ss;
-  ss << m.name() << "::";
-  switch(p.combinator()) {
-  case Statistic::combination_t::sum: ss << "sum"; break;
-  case Statistic::combination_t::min: ss << "min"; break;
-  case Statistic::combination_t::max: ss << "max"; break;
-  }
-  ss << '(' << p.accumulate() << ")::";
-  switch(s) {
-  case MetricScope::point: ss << "point"; break;
-  case MetricScope::function: ss << "function"; break;
-  case MetricScope::execution: ss << "execution"; break;
-  }
+  ss << sanitize(m.name()) << '-' << p.combinator() << '-' << p.accumulate() << '-' << s;
   return ss.str();
-}
-std::string MetricsYAML::anchorName(const Metric& m, const StatisticPartial& p, MetricScope s) {
-  return sanitize(fullName(m, p, s));
 }
 
 // "Raw" version where all Metrics are output fairly verbatim
@@ -127,7 +113,10 @@ void MetricsYAML::raw(std::ostream& os) {
       if(!m.scopes().has(s)) continue;
       for(const auto& p: m.partials()) {
         out << Anchor(anchorName(m, p, s)) << BeginMap
-            << Key << "metric" << Value << fullName(m, p, s)
+            << Key << "metric" << Value << m.name()
+            << Key << "scope" << Value << s
+            << Key << "formula" << Value << p.accumulate()
+            << Key << "combine" << Value << p.combinator()
             << EndMap;
       }
     }

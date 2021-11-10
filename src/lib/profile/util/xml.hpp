@@ -51,11 +51,6 @@
 #include <string>
 
 namespace hpctoolkit::util {
-class xmlquoted;
-}
-std::ostream& operator<<(std::ostream&, const hpctoolkit::util::xmlquoted&);
-
-namespace hpctoolkit::util {
 
 /// Alternative to std::quoted for XML outputs.
 class xmlquoted {
@@ -63,12 +58,14 @@ public:
   xmlquoted(const std::string& s, bool q = true) : xmlquoted(std::string(s), q) {};
   xmlquoted(std::string&&, bool = true);
 
-  friend std::ostream& ::operator<<(std::ostream&, const xmlquoted&);
+  friend std::ostream& operator<<(std::ostream&, const xmlquoted&);
 
 private:
   std::string str;
   bool addquotes;
 };
+
+std::ostream& operator<<(std::ostream&, const xmlquoted&);
 
 }
 
