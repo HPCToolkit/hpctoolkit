@@ -178,15 +178,10 @@ void IdPacker::notifyWavefront(DataClass ds) {
     for(const auto& ls: stripbuffers)
       ct.insert(ct.end(), ls.second.begin(), ls.second.end());
 
-    // Format: ... [met cnt] ([id] [p id] [ex id] [inc id] [name])...
+    // Format: ... [met cnt] ([id] [name])...
     pack(ct, (std::uint64_t)src.metrics().size());
     for(auto& m: src.metrics().citerate()) {
-      pack(ct, (std::uint64_t)m().userdata[src.identifier()]);
-      const auto& ids = m().userdata[src.mscopeIdentifiers()];
-      const auto& sc = m().scopes();
-      pack(ct, (std::uint64_t)(sc.has(MetricScope::point) ? ids.point : -1));
-      pack(ct, (std::uint64_t)(sc.has(MetricScope::function) ? ids.function : -1));
-      pack(ct, (std::uint64_t)(sc.has(MetricScope::execution) ? ids.execution : -1));
+      pack(ct, (std::uint64_t)m().userdata[src.identifier()].base());
       pack(ct, m().name());
     }
 
@@ -279,12 +274,8 @@ void IdUnpacker::unpack() noexcept {
   cnt = ::unpack<std::uint64_t>(it);
   for(std::size_t i = 0; i < cnt; i++) {
     auto id = ::unpack<std::uint64_t>(it);
-    Metric::ScopedIdentifiers ids;
-    ids.point = ::unpack<std::uint64_t>(it);
-    ids.function = ::unpack<std::uint64_t>(it);
-    ids.execution = ::unpack<std::uint64_t>(it);
     auto name = ::unpack<std::string>(it);
-    metmap.insert({std::move(name), {id, ids}});
+    metmap.insert({std::move(name), id});
   }
 
   ctxtree.clear();
@@ -329,16 +320,9 @@ std::optional<unsigned int> IdUnpacker::identify(const Context& c) noexcept {
   }
 }
 
-std::optional<unsigned int> IdUnpacker::identify(const Metric& m) noexcept {
+std::optional<Metric::Identifier> IdUnpacker::identify(const Metric& m) noexcept {
   util::call_once(once, [this]{ unpack(); });
   auto it = metmap.find(m.name());
   assert(it != metmap.end() && "No data for Metric `m`!");
-  return it->second.first;
-}
-
-std::optional<Metric::ScopedIdentifiers> IdUnpacker::subidentify(const Metric& m) noexcept {
-  util::call_once(once, [this]{ unpack(); });
-  auto it = metmap.find(m.name());
-  assert(it != metmap.end() && "No data for Metric `m`!");
-  return it->second.second;
+  return Metric::Identifier(m, it->second);
 }

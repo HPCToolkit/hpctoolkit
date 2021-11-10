@@ -88,14 +88,9 @@ public:
   // MT: Internally Synchronized
   virtual std::optional<unsigned int> identify(const Module&) noexcept;
   virtual std::optional<unsigned int> identify(const File&) noexcept;
-  virtual std::optional<unsigned int> identify(const Metric&) noexcept;
+  virtual std::optional<Metric::Identifier> identify(const Metric&) noexcept;
   virtual std::optional<unsigned int> identify(const Context&) noexcept;
   virtual std::optional<unsigned int> identify(const Thread&) noexcept;
-
-  /// Generate a set of (unique, dense) IDs for the given Metric.
-  /// ExtensionClass: `mscopeIdentifiers`
-  // MT: Internally Synchronized
-  virtual std::optional<Metric::ScopedIdentifiers> subidentify(const Metric&) noexcept;
 
   /// Resolve the path for the given object.
   /// ExtensionClass: `resolvedPath`

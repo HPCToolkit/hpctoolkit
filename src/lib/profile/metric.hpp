@@ -157,12 +157,66 @@ class Metric final {
 public:
   using ud_t = util::ragged_vector<const Metric&>;
 
-  /// Set of identifiers unique to each Metric Scope that a Metric may have.
-  struct ScopedIdentifiers final {
-    unsigned int point;
-    unsigned int function;
-    unsigned int execution;
-    unsigned int get(MetricScope s) const noexcept;
+  /// Identifier used for a Metric. Provides enough "space" for unique ids for
+  /// every StatisticPartial and MetricScope.
+  class Identifier final {
+  public:
+    explicit Identifier(const Metric& metric) : metric(metric), value(-1) {};
+    Identifier(const Metric& metric, unsigned int v) : metric(metric), value(v) {};
+    ~Identifier() = default;
+
+    Identifier(Identifier&&) = default;
+    Identifier(const Identifier&) = default;
+    Identifier& operator=(Identifier&&) = default;
+    Identifier& operator=(const Identifier&) = default;
+
+    /// Get the base Metric this Identifier is designed for.
+    // MT: Safe (const)
+    const Metric& getMetric() const noexcept { return metric; }
+
+    /// Alter the base index of an Identifier. `value` must be chosen such
+    /// that no other Metric's Identifier has a base index within the range
+    ///     [value, value + metric.partials().size() * metric.scopes().count() )
+    // MT: Externally Synchronized
+    Identifier& operator=(unsigned int v) noexcept { value = v; return *this; }
+
+    /// Get the base index for this Identifier.
+    // MT: Safe (const)
+    unsigned int base() const noexcept { return value; }
+
+    /// Get an identifier unique for the Metric. May overlap with identifiers
+    /// for Partials or Scopes.
+    // MT: Safe (const)
+    unsigned int getFor() const noexcept { return value; }
+    operator unsigned int() const noexcept { return value; }
+
+    /// Get an identifier unique for a StatisticPartial. Will not overlap with
+    /// identifiers for other Metrics. May overlap with identifiers for
+    /// specific MetricScopes or whole Metrics.
+    // MT: Safe (const)
+    unsigned int getFor(const StatisticPartial& part) const noexcept {
+      return value + part.m_idx * metric.scopes().count();
+    }
+
+    /// Get an identifier unique for a StatisticPartial/MetricScope pair. Will
+    /// not overlap with identifiers for other Metrics. May overlap with the
+    /// identifiers for the whole StatisticPartial or Metric.
+    // MT: Safe (const)
+    unsigned int getFor(const StatisticPartial& part, MetricScope ms) const noexcept {
+      return value + part.m_idx * metric.scopes().count() + static_cast<int>(ms);
+    }
+
+    /// Get an identifier unique to the MetricScope. Will not overlap with
+    /// identifiers for other Metrics. May overlap with identifiers for
+    /// StatisticPartials or the whole Metric.
+    // MT: Safe (const)
+    unsigned int getFor(MetricScope ms) const noexcept {
+      return value + static_cast<int>(ms);
+    }
+
+  private:
+    const Metric& metric;
+    unsigned int value;
   };
 
   /// Structure to be used for creating new Metrics. Encapsulates a number of
