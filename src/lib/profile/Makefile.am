@@ -92,7 +92,7 @@ MYSOURCES = \
 	\
 	pipeline.cpp source.cpp context.cpp scope.cpp metric.cpp \
 	module.cpp attributes.cpp dataclass.cpp sink.cpp packedids.cpp \
-	accumulators.cpp \
+	accumulators.cpp expression.cpp \
 	\
 	sources/packed.cpp sources/hpcrun4.cpp \
 	\

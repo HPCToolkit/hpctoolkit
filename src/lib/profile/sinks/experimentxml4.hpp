@@ -85,6 +85,8 @@ public:
 
   void notifyPipeline() noexcept override;
 
+  static std::string accumulateFormulaString(const Expression&);
+
 private:
   stdshim::filesystem::path dir;
   std::ofstream of;

@@ -29,23 +29,30 @@ inputs: !!seq
     formula: !!str $$
     # (Optional) Combination operation, as listed in experiment.xml. As per over
     # there, one of 'sum', 'min' and 'max'.
-    # If omitted, defaults to 'sum'.
+    # If omitted, defaults to 'sum' like in experiment.xml.
     combine: !!str sum
 
   - &in-perf-cycles-Ix
-    metric: perf::cycles [inclusive]
+    metric: perf::cycles
+    scope: inclusive
   - &in-perf-l1-miss-Ex
-    metric: perf::l1-cache-miss [exclusive]
+    metric: perf::l1-cache-miss
+    scope: exclusive
   - &in-perf-l1-miss-Ix
-    metric: perf::l1-cache-miss [inclusive]
+    metric: perf::l1-cache-miss
+    scope: inclusive
   - &in-perf-l2-miss-Ex
-    metric: perf::l2-cache-miss [exclusive]
+    metric: perf::l2-cache-miss
+    scope: exclusive
   - &in-perf-l2-miss-Ix
-    metric: perf::l2-cache-miss [inclusive]
+    metric: perf::l2-cache-miss
+    scope: inclusive
   - &in-perf-l3-miss-Ex
-    metric: perf::l3-cache-miss [exclusive]
+    metric: perf::l3-cache-miss
+    scope: exclusive
   - &in-perf-l3-miss-Ix
-    metric: perf::l3-cache-miss [inclusive]
+    metric: perf::l3-cache-miss
+    scope: inclusive
 
 # (Required) Sequence of all root taxonomic metrics. Order indicates the initial
 # order of the columns (left-to-right).

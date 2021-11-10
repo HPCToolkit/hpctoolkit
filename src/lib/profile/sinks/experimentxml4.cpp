@@ -52,6 +52,7 @@
 #include <iomanip>
 #include <algorithm>
 #include <sstream>
+#include <stack>
 #include <limits>
 
 using namespace hpctoolkit;
@@ -121,6 +122,58 @@ void ExperimentXML4::udFile::incr(ExperimentXML4& exml) {
 
 // ud Metric bits
 
+std::string ExperimentXML4::accumulateFormulaString(const Expression& e) {
+  std::ostringstream ss;
+  std::stack<bool, std::vector<bool>> first;
+  first.push(true);
+  std::stack<std::string, std::vector<std::string>> infix;
+  infix.push("!!!");
+  e.citerate_all(
+    [&](double v){
+      if(!first.top()) ss << infix.top();
+      first.top() = false;
+      ss << v;
+    },
+    [&](Expression::uservalue_t){
+      if(!first.top()) ss << infix.top();
+      first.top() = false;
+      ss << "$$";
+    },
+    [&](const Expression& e) {
+      if(!first.top()) ss << infix.top();
+      first.top() = false;
+      std::string fix = "!!!";
+      switch(e.kind()) {
+      case Expression::Kind::constant:
+      case Expression::Kind::subexpression:
+      case Expression::Kind::variable:
+        std::abort();
+      case Expression::Kind::op_sum:  ss << '('; fix = "+"; break;
+      case Expression::Kind::op_sub:  ss << '('; fix = "-"; break;
+      case Expression::Kind::op_neg:  ss << "-("; break;
+      case Expression::Kind::op_prod: ss << '('; fix = "*"; break;
+      case Expression::Kind::op_div:  ss << '('; fix = "/"; break;
+      case Expression::Kind::op_pow:  ss << '('; fix = "^"; break;
+      case Expression::Kind::op_sqrt: ss << "sqrt("; break;
+      case Expression::Kind::op_log:  ss << "log("; fix = ","; break;
+      case Expression::Kind::op_ln:   ss << "ln(";break;
+      case Expression::Kind::op_min:  ss << "min("; fix = ","; break;
+      case Expression::Kind::op_max:  ss << "max("; fix = ","; break;
+      case Expression::Kind::op_floor: ss << "floor("; break;
+      case Expression::Kind::op_ceil: ss << "ceil("; break;
+      }
+      first.push(true);
+      infix.push(std::move(fix));
+    },
+    [&](const Expression&) {
+      first.pop();
+      infix.pop();
+      ss << ')';
+    }
+  );
+  return ss.str();
+}
+
 ExperimentXML4::udMetric::udMetric(const Metric& m, ExperimentXML4& exml) {
   const auto& id = m.userdata[exml.src.identifier()];
   std::ostringstream ss;
@@ -131,7 +184,7 @@ ExperimentXML4::udMetric::udMetric(const Metric& m, ExperimentXML4& exml) {
                    " raw-i=\"" << id.getFor(ms) << "\""
                    " name=" << util::xmlquoted(m.name())
                 << " scope=" << util::xmlquoted(scope)
-                << " formula=" << util::xmlquoted(part.accumulate());
+                << " formula=" << util::xmlquoted(accumulateFormulaString(part.accumulate()));
       switch(part.combinator()) {
       case Statistic::combination_t::sum: ss << " combine=\"sum\""; break;
       case Statistic::combination_t::min: ss << " combine=\"min\""; break;

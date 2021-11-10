@@ -46,6 +46,8 @@
 
 #include "metricsyaml.hpp"
 
+#include "experimentxml4.hpp"
+
 #include <yaml-cpp/yaml.h>
 
 #include <fstream>
@@ -96,8 +98,28 @@ static std::string sanitize(const std::string& s) {
 
 static std::string anchorName(const Metric& m, const StatisticPartial& p, MetricScope s) {
   std::ostringstream ss;
-  ss << sanitize(m.name()) << '-' << p.combinator() << '-' << p.accumulate() << '-' << s;
-  return ss.str();
+  ss << m.name() << '-' << p.combinator() << '-' << p.accumulate() << '-' << s;
+  return sanitize(ss.str());
+}
+
+// These need to be in the YAML namespace for ADL to work properly
+namespace YAML {
+static YAML::Emitter& operator<<(YAML::Emitter& e, const Statistic::combination_t c) {
+  switch(c) {
+  case Statistic::combination_t::sum: return e << "sum";
+  case Statistic::combination_t::min: return e << "min";
+  case Statistic::combination_t::max: return e << "max";
+  }
+  std::abort();
+}
+static YAML::Emitter& operator<<(YAML::Emitter& e, const MetricScope ms) {
+  switch(ms) {
+  case MetricScope::point: return e << "point";
+  case MetricScope::function: return e << "function";
+  case MetricScope::execution: return e << "execution";
+  }
+  std::abort();
+}
 }
 
 // "Raw" version where all Metrics are output fairly verbatim
@@ -115,7 +137,7 @@ void MetricsYAML::raw(std::ostream& os) {
         out << Anchor(anchorName(m, p, s)) << BeginMap
             << Key << "metric" << Value << m.name()
             << Key << "scope" << Value << s
-            << Key << "formula" << Value << p.accumulate()
+            << Key << "formula" << Value << ExperimentXML4::accumulateFormulaString(p.accumulate())
             << Key << "combine" << Value << p.combinator()
             << EndMap;
       }
@@ -138,24 +160,49 @@ void MetricsYAML::raw(std::ostream& os) {
         out << EndSeq;
 
         out << Key << "formula" << Value << BeginMap;
-        for(const auto sc: {MetricScope::point, MetricScope::function, MetricScope::execution}) {
-          if(!m.scopes().has(sc)) continue;
-          out << Key;
-          switch(sc) {
-          case MetricScope::point: out << "point"; break;
-          case MetricScope::function: out << "exclusive"; break;
-          case MetricScope::execution: out << "inclusive"; break;
-          }
-          out << Value << Flow << BeginSeq;
-          for(const auto& e: s.finalizeFormula()) {
-            if(const auto* piece = std::get_if<std::string>(&e)) {
-              out << *piece;
-            } else if(const auto* idx = std::get_if<size_t>(&e)) {
-              out << Alias(anchorName(m, m.partials()[*idx], sc));
-            } else std::abort();
-          }
-          out << EndSeq;
-        }
+        const auto f = [&](MetricScope ms, const std::string& key) {
+          if(!m.scopes().has(ms)) return false;
+          out << Key << key << Value << Flow;
+          s.finalizeFormula().citerate_all(
+            [&](double v){ out << v; },
+            [&](Expression::uservalue_t v){
+              out << Alias(anchorName(m, m.partials()[v], ms));
+            },
+            [&](const Expression& e){
+              out << BeginMap << Key;
+              switch(e.kind()) {
+              case Expression::Kind::constant:
+              case Expression::Kind::subexpression:
+              case Expression::Kind::variable:
+                std::abort();
+              case Expression::Kind::op_sum: out << "+"; break;
+              case Expression::Kind::op_sub:
+                if(e.op_args().size() == 1) out << "+";
+                else out << "-";
+                break;
+              case Expression::Kind::op_neg: out << "-"; break;
+              case Expression::Kind::op_prod: out << "*"; break;
+              case Expression::Kind::op_div: out << "/"; break;
+              case Expression::Kind::op_pow: out << "^"; break;
+              case Expression::Kind::op_sqrt: out << "sqrt"; break;
+              case Expression::Kind::op_log: out << "log"; break;
+              case Expression::Kind::op_ln: out << "ln"; break;
+              case Expression::Kind::op_min: out << "min"; break;
+              case Expression::Kind::op_max: out << "max"; break;
+              case Expression::Kind::op_floor: out << "floor"; break;
+              case Expression::Kind::op_ceil: out << "ceil"; break;
+              }
+              out << Value << BeginSeq;
+            },
+            [&](const Expression& e){
+              out << EndSeq << EndMap;
+            }
+          );
+          return true;
+        };
+        f(MetricScope::execution, "inclusive");
+        if(!f(MetricScope::function, "exclusive"))
+          f(MetricScope::point, "point");
         out << EndMap;
       }
       out << EndMap;

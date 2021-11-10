@@ -63,14 +63,6 @@ std::ostream& hpctoolkit::operator<<(std::ostream& os, MetricScope ms) {
   }
   std::abort();
 }
-YAML::Emitter& hpctoolkit::operator<<(YAML::Emitter& e, MetricScope ms) {
-  switch(ms) {
-  case MetricScope::point: return e << "point";
-  case MetricScope::function: return e << "function";
-  case MetricScope::execution: return e << "execution";
-  }
-  std::abort();
-}
 
 static double atomic_add(std::atomic<double>& a, const double v) noexcept {
   double old = a.load(std::memory_order_relaxed);
