@@ -121,180 +121,39 @@ void ExperimentXML4::udFile::incr(ExperimentXML4& exml) {
 
 // ud Metric bits
 
-static void combineFormula(std::ostream& os, unsigned int id,
-                           const StatisticPartial& p) {
-  os << "<MetricFormula t=\"combine\" frm=\"";
-  switch(p.combinator()) {
-  case Statistic::combination_t::sum: os << "sum"; break;
-  case Statistic::combination_t::min: os << "min"; break;
-  case Statistic::combination_t::max: os << "max"; break;
-  }
-  os << "($" << id << ", $" << id << ")\"/>\n";
-}
-
-static void finalizeFormula(std::ostream& os, const std::string& mode,
-                            unsigned int idbase, const Statistic& s) {
-  os << "<MetricFormula t=\"" << mode << "\" frm=\"";
-  for(const auto& e: s.finalizeFormula()) {
-    if(std::holds_alternative<size_t>(e))
-      os << "$" << (idbase + std::get<size_t>(e));
-    else if(std::holds_alternative<std::string>(e))
-      os << std::get<std::string>(e);
-  }
-  os << "\"/>\n";
-}
-
 ExperimentXML4::udMetric::udMetric(const Metric& m, ExperimentXML4& exml) {
   if(!m.scopes().has(MetricScope::function) && !m.scopes().has(MetricScope::execution))
     util::log::fatal{} << "Metric " << m.name() << " has neither function nor execution!";
-  if(m.partials().size() > 64 || m.statistics().size() > 64)
-    util::log::fatal{} << "Too many Statistics/Partials!";
   const auto& ids = m.userdata[exml.src.mscopeIdentifiers()];
-  maxId = (std::max(ids.execution, ids.function) << 8) + ((1<<8)-1);
 
-  {
-    std::ostringstream ss;
+  std::ostringstream ss;
 
-    // First pass: get all the Partials out there.
-    for(size_t idx = 0; idx < m.partials().size(); idx++) {
-      const auto& partial = m.partials()[idx];
-      const std::string name = m.name() + ":PARTIAL:" + std::to_string(idx);
+  for(size_t idx = 0; idx < m.partials().size(); idx++) {
+    const auto& partial = m.partials()[idx];
+    const std::string name = m.name() + ":PARTIAL:" + std::to_string(idx);
 
-      const auto f = [&](MetricScope ms, MetricScope p_ms,
-                         unsigned int id, unsigned int p_id,
-                         std::string suffix, std::string type) {
-        if(m.scopes().has(ms)) {
-          ss << "<Metric i=\"" << id << "\" o=\"" << id << "\" "
-                            "n=" << util::xmlquoted(m.scopes().has(p_ms) ? name+suffix : name) << " "
-                            "md=" << util::xmlquoted(m.description()) << " "
-                            "v=\"derived-incr\" "
-                            "t=\"" << type << "\" partner=\"" << p_id << "\" "
-                            "show=\"4\" show-percent=\"0\">\n";
-          combineFormula(ss, id, partial);
-          ss << "<Info><NV n=\"units\" v=\"events\"/></Info>\n"
-                "</Metric>\n";
-        } else {
-          ss << "<Metric i=\"" << id << "\" o=\"" << id << "\" "
-                        "n=" << util::xmlquoted(name+" INTERNAL") << " "
-                        "v=\"derived-incr\" "
-                        "t=\"" << type << "\" partner=\"" << p_id << "\" "
-                        "show=\"4\" show-percent=\"0\"/>\n";
-        }
-      };
+    const auto f = [&](MetricScope ms, unsigned int id, unsigned int raw_id, const std::string& scope) {
+      if(!m.scopes().has(ms)) return false;
+      ss << "<Metric summary-i=\"" << id << "\""
+                   " raw-i=\"" << raw_id << "\""
+                   " name=" << util::xmlquoted(name)
+                << " scope=" << util::xmlquoted(scope)
+                << " formula=" << util::xmlquoted(partial.accumulate());
+      switch(partial.combinator()) {
+      case Statistic::combination_t::sum: ss << " combine=\"sum\""; break;
+      case Statistic::combination_t::min: ss << " combine=\"min\""; break;
+      case Statistic::combination_t::max: ss << " combine=\"max\""; break;
+      }
+      ss << "/>\n";
+      return true;
+    };
 
-      const auto exec_id = m.scopes().has(MetricScope::execution)
-                           ? (ids.execution << 8) + idx
-                           : (ids.function << 8) + 64 + idx;
-      const auto func_id = m.scopes().has(MetricScope::function)
-                           ? (ids.function << 8) + idx
-                           : (ids.execution << 8) + 64 + idx;
-      f(MetricScope::execution, MetricScope::function, exec_id, func_id,
-        " (I)", "inclusive");
-      f(MetricScope::function, MetricScope::execution, func_id, exec_id,
-        " (E)", "exclusive");
-    }
-
-    // Second pass: handle all the Statistics.
-    for(size_t idx = 0; idx < m.statistics().size(); idx++) {
-      const auto& stat = m.statistics()[idx];
-      const std::string name = m.name() + ":" + stat.suffix();
-      const auto f = [&](MetricScope ms, MetricScope p_ms,
-                         unsigned int id, unsigned int p_id,
-                         unsigned int base, std::string suffix, std::string type) {
-        if(m.scopes().has(ms)) {
-          ss << "<Metric i=\"" << id << "\" o=\"" << id << "\" "
-                            "n=" << util::xmlquoted(m.scopes().has(p_ms) ? name+suffix : name) << " "
-                            "md=" << util::xmlquoted(m.description()) << " "
-                            "v=\"derived-incr\" "
-                            "t=\"" << type << "\" partner=\"" << p_id << "\" "
-                            "show=\"" << (stat.visibleByDefault() ? "1" : "0") << "\" "
-                            "show-percent=\"" << (stat.showPercent() ? "1" : "0") << "\">\n";
-          finalizeFormula(ss, "view", base, stat);
-          ss << "<Info><NV n=\"units\" v=\"events\"/></Info>\n"
-                "</Metric>\n";
-        } else {
-          ss << "<Metric i=\"" << id << "\" o=\"" << id << "\" "
-                        "n=" << util::xmlquoted(name+" INTERNAL") << " "
-                        "v=\"derived-incr\" "
-                        "t=\"" << type << "\" partner=\"" << p_id << "\" "
-                        "show=\"4\" show-percent=\"0\"/>\n";
-        }
-      };
-
-      const auto exec_id = m.scopes().has(MetricScope::execution)
-                           ? (ids.execution << 8) + 256-m.statistics().size() + idx
-                           : (ids.function << 8) + 256-m.statistics().size() + 64 + idx;
-      const auto func_id = m.scopes().has(MetricScope::function)
-                           ? (ids.function << 8) + 256-m.statistics().size() + idx
-                           : (ids.execution << 8) + 256-m.statistics().size() + 64 + idx;
-      f(MetricScope::execution, MetricScope::function, exec_id, func_id,
-        ids.execution << 8, " (I)", "inclusive");
-      f(MetricScope::function, MetricScope::execution, func_id, exec_id,
-        ids.function << 8, " (E)", "exclusive");
-    }
-
-    metric_tags = ss.str();
+    f(MetricScope::execution, (ids.execution << 8) + idx, ids.execution, "execution");
+    if(!f(MetricScope::function, (ids.function << 8) + idx, ids.function, "function"))
+      f(MetricScope::point, (ids.point << 8) + idx, ids.point, "point");
   }
 
-  std::ostringstream ss2;
-  const auto f = [&](MetricScope ms, MetricScope p_ms,
-                     unsigned int id, std::string suffix) {
-    if(!m.scopes().has(ms)) return;
-    ss2 << "<MetricDB i=\"" << id << "\""
-                    " n=" << util::xmlquoted(m.scopes().has(p_ms) ? m.name()+suffix : m.name())
-        << "/>\n";
-  };
-  f(MetricScope::execution, MetricScope::function, ids.execution, " (I)");
-  f(MetricScope::function, MetricScope::execution, ids.function, " (E)");
-  metricdb_tags = ss2.str();
-}
-
-std::string ExperimentXML4::eStatMetricTags(const ExtraStatistic& es, unsigned int& id) {
-  std::ostringstream ss;
-  const auto f = [&](MetricScope ms, MetricScope p_ms,
-                     unsigned int id, unsigned int p_id,
-                     std::string suffix, std::string type) {
-    if(es.scopes().has(ms)) {
-      ss << "<Metric i=\"" << id << "\" o=\"" << id << "\" "
-                        "n=" << util::xmlquoted(es.scopes().has(p_ms) ? es.name()+suffix : es.name()) << " "
-                        "md=" << util::xmlquoted(es.description()) << " "
-                        "v=\"derived-incr\" "
-                        "t=\"" << type << "\" partner=\"" << p_id << "\" "
-                        "show=\"" << (es.visibleByDefault() ? "1" : "0") << "\" "
-                        "show-percent=\"" << (es.showPercent() ? "1" : "0") << "\" ";
-      if(!es.format().empty())
-        ss << "fmt=" << util::xmlquoted(es.format()) << " ";
-      ss << ">\n"
-            "<MetricFormula t=\"view\" frm=\"";
-      for(const auto& e: es.formula()) {
-        if(std::holds_alternative<std::string>(e)) {
-          ss << std::get<std::string>(e);
-        } else {
-          const auto& mp = std::get<ExtraStatistic::MetricPartialRef>(e);
-          const auto& ids = mp.metric.userdata[src.mscopeIdentifiers()];
-          ss << "$" << ((ids.get(ms) << 8) + mp.partialIdx);
-        }
-      }
-      ss << "\"/>\n"
-            "<Info><NV n=\"units\" v=\"events\"/></Info>\n"
-            "</Metric>\n";
-    } else {
-      ss << "<Metric i=\"" << id << "\" o=\"" << id << "\" "
-                    "n=" << util::xmlquoted(es.name()+" INTERNAL") << " "
-                    "v=\"derived-incr\" "
-                    "t=\"" << type << "\" partner=\"" << p_id << "\" "
-                    "show=\"4\" show-percent=\"0\"/>\n";
-    }
-  };
-
-  const auto exec_id = ++id;
-  const auto func_id = ++id;
-  f(MetricScope::execution, MetricScope::function, exec_id, func_id,
-    " (I)", "inclusive");
-  f(MetricScope::function, MetricScope::execution, func_id, exec_id,
-    " (E)", "exclusive");
-
-  return ss.str();
+  metric_tags = ss.str();
 }
 
 // ud Context bits
@@ -566,7 +425,6 @@ void ExperimentXML4::write() {
   of << "<?xml version=\"1.0\"?>\n"
         "<HPCToolkitExperiment version=\"4.0\">\n"
         "<Header n=" << util::xmlquoted(name) << ">\n"
-        "<Info/>\n"
         "</Header>\n"
         "<SecCallPathProfile i=\"0\" n=" << util::xmlquoted(name) << ">\n"
         "<SecHeader>\n";
@@ -578,20 +436,10 @@ void ExperimentXML4::write() {
 
   // MetricTable: from the Metrics
   of << "<MetricTable>\n";
-  unsigned int id = 0;
-  for(const auto& m: src.metrics().iterate()) {
-    const auto& udm = m().userdata[ud];
-    of << udm.metric_tags;
-    id = std::max(id, udm.maxId);
-  }
-  for(const auto& es: src.extraStatistics().iterate()) {
-    of << eStatMetricTags(es, id);
-  }
+  for(const auto& m: src.metrics().iterate())
+    of << m().userdata[ud].metric_tags;
   of << "</MetricTable>\n";
 
-  of << "<MetricDBTable>\n";
-  for(const auto& m: src.metrics().iterate()) of << m().userdata[ud].metricdb_tags;
-  of << "</MetricDBTable>\n";
   if(tracedb != nullptr)
     of << tracedb->exmlTag();
   of << "<LoadModuleTable>\n";
@@ -624,7 +472,6 @@ void ExperimentXML4::write() {
   if(proc_partial_flag.query()) of << proc_partial_proc.tag;
   of << "</ProcedureTable>\n"
 
-        "<Info/>\n"
         "</SecHeader>\n";
 
   // Early check: the global Context must have id 0

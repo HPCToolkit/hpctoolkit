@@ -222,7 +222,6 @@ std::string HPCTraceDB2::exmlTag() {
       std::chrono::nanoseconds::zero(), std::chrono::nanoseconds::zero()));
   std::ostringstream ss;
   ss << "<TraceDB"
-        " i=\"0\""
         " db-min-time=\"" << min.count() << "\""
         " db-max-time=\"" << max.count() << "\""
         " u=\"1000000000\"/>\n";
