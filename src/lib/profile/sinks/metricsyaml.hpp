@@ -77,7 +77,6 @@ public:
 private:
   stdshim::filesystem::path dir;
 
-  void raw(std::ostream&);
   void standard(std::ostream&);
 };
 
