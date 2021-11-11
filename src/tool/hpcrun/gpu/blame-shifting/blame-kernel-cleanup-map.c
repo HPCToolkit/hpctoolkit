@@ -125,7 +125,7 @@ kernel_cleanup_map_insert
   spinlock_lock(&kernel_cleanup_map_lock);
   if (kernel_lookup(&kernel_cleanup_map_root, kernel_id)) {
     spinlock_unlock(&kernel_cleanup_map_lock);
-    assert(0);  // entry for a given key should be inserted only once
+    return;  // entry for a given key should be inserted only once
   } else {
     kernel_cleanup_map_entry_t *entry = kernel_node_new(kernel_id, data);
     kernel_insert(&kernel_cleanup_map_root, entry);
