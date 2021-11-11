@@ -18,7 +18,7 @@
 // Per GPU queue information
 typedef struct queue_node_t {
   // next pointer is used only for maintaining a list of free nodes
-  _Atomic (struct queue_node_t*) next;
+  struct queue_node_t* next;
 
   // if CPU is block for queue operations to complete, we use these 2 variables
   cct_node_t *cpu_idle_cct;

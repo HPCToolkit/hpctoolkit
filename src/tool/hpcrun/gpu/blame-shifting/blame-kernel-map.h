@@ -18,7 +18,6 @@
 typedef struct kernel_node_t {
   // we save the id for the kernel inside the node so that ids of processed kernel nodes can be returned on sync_epilogue
   uint64_t kernel_id;
-  bool marked_for_deletion;
 
   // start and end times of kernel_start and kernel_end
   unsigned long kernel_start_time;
@@ -29,7 +28,7 @@ typedef struct kernel_node_t {
 
   double cpu_idle_blame;
 
-  _Atomic (struct kernel_node_t*) next;
+  struct kernel_node_t* next;
 } kernel_node_t;
 
 

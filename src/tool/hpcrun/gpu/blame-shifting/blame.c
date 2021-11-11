@@ -48,7 +48,7 @@ static _Atomic(uint32_t) g_unfinished_kernels = { 0 };
 
 _Atomic(unsigned long) latest_kernel_end_time = { 0 }; // in nanoseconds
 
-static _Atomic(kernel_node_t*) completed_kernel_list_head = { NULL };
+static kernel_node_t* completed_kernel_list_head = NULL;
 static kernel_node_t* incomplete_kernel_list_head = NULL;
 static kernel_node_t* incomplete_kernel_list_tail = NULL;
 
@@ -57,7 +57,9 @@ static kernel_node_t *kernel_node_free_list = NULL;
 static cct_node_linkedlist_t *cct_list_node_free_list = NULL;
 
 static uint32_t cct_list_alloc_count = 0;
-static spinlock_t kernel_list_lock = SPINLOCK_UNLOCKED;
+static spinlock_t completed_kernel_list_lock = SPINLOCK_UNLOCKED;
+static spinlock_t incomplete_kernel_list_lock = SPINLOCK_UNLOCKED;
+static spinlock_t queue_node_lock = SPINLOCK_UNLOCKED;
 
 __thread bool gpu_utilization_enabled = false;
 
@@ -76,7 +78,7 @@ queue_node_alloc_helper
   queue_node_t *first = *free_list;
 
   if (first) {
-    *free_list = atomic_load(&first->next);
+    *free_list = first->next;
   } else {
     first = (queue_node_t *) hpcrun_malloc_safe(sizeof(queue_node_t));
   }
@@ -93,8 +95,10 @@ queue_node_free_helper
  queue_node_t *node
 )
 {
-  atomic_store(&node->next, *free_list);
+  spinlock_lock(&queue_node_lock);
+  node->next =  *free_list;
   *free_list = node;
+  spinlock_unlock(&queue_node_lock);
 }
 
 
@@ -107,7 +111,7 @@ kernel_node_alloc_helper
   kernel_node_t *first = *free_list;
 
   if (first) {
-    *free_list = atomic_load(&first->next);
+    *free_list = first->next;
   } else {
     first = (kernel_node_t *) hpcrun_malloc_safe(sizeof(kernel_node_t));
   }
@@ -123,7 +127,7 @@ kernel_node_free_helper
  kernel_node_t *node
 )
 {
-  atomic_store(&node->next, *free_list);
+  node->next = *free_list;
   *free_list = node;
 }
 
@@ -143,7 +147,6 @@ cct_list_node_alloc_helper
     first = (cct_node_linkedlist_t *) hpcrun_malloc_safe(sizeof(cct_node_linkedlist_t));
   }
   memset(first, 0, sizeof(cct_node_linkedlist_t));
-  printf("allocated \n", cct_list_alloc_count);
   return first;
 }
 
@@ -210,7 +213,7 @@ add_queue_node_to_splay_tree
 )
 {
   queue_node_t *node = queue_node_alloc_helper(&queue_node_free_list);
-  atomic_init(&node->next, NULL);
+  node->next = NULL;
   queue_map_insert(queue_id, node);
 }
 
@@ -221,15 +224,44 @@ add_kernel_to_incomplete_list
  kernel_node_t *kernel_node
 )
 {
-  spinlock_lock(&kernel_list_lock);
+  spinlock_lock(&incomplete_kernel_list_lock);
   kernel_node_t *current_tail = incomplete_kernel_list_tail;
   incomplete_kernel_list_tail = kernel_node;
   if (current_tail != NULL) {
-    atomic_store(&current_tail->next, kernel_node);
+    current_tail->next = kernel_node;
   } else {
     incomplete_kernel_list_head = kernel_node;
   }
-  spinlock_unlock(&kernel_list_lock);
+  spinlock_unlock(&incomplete_kernel_list_lock);
+}
+
+
+static void
+remove_kernel_from_incomplete_list
+(
+ kernel_node_t *kernel_node
+)
+{
+  spinlock_lock(&incomplete_kernel_list_lock);
+  kernel_node_t *curr = incomplete_kernel_list_head, *prev = NULL, *next = NULL;
+  while (curr) {
+    next = curr->next;
+    if (kernel_node == curr) {
+      if (prev) {
+        if (!next) {
+          incomplete_kernel_list_tail = NULL;
+        }
+        prev->next = next;
+      } else {
+        if (!next) {
+          incomplete_kernel_list_tail = NULL;
+        }
+        incomplete_kernel_list_head = next;
+      }
+    }
+    curr = curr->next;
+  }
+  spinlock_unlock(&incomplete_kernel_list_lock);
 }
 
 
@@ -244,8 +276,7 @@ create_and_insert_kernel_entry
   kernel_node_t *kernel_node = kernel_node_alloc_helper(&kernel_node_free_list);
   kernel_node->kernel_id = kernelexec_id;
   kernel_node->launcher_cct = launcher_cct;
-  kernel_node->marked_for_deletion = false;
-  atomic_init(&kernel_node->next, NULL);
+  kernel_node->next = NULL;
   kernel_map_insert(kernelexec_id, kernel_node);
 	add_kernel_to_incomplete_list(kernel_node);
 }
@@ -270,13 +301,10 @@ add_kernel_to_completed_list
  kernel_node_t *kernel_node
 )
 {
-  while (true) {
-    kernel_node_t *current_head = atomic_load(&completed_kernel_list_head);
-    atomic_store(&kernel_node->next, current_head);
-    if (atomic_compare_exchange_strong(&completed_kernel_list_head, &current_head, kernel_node)) {
-      break;
-    }
-  }
+  spinlock_lock(&completed_kernel_list_lock);
+  kernel_node->next = completed_kernel_list_head;
+  completed_kernel_list_head = kernel_node;
+  spinlock_unlock(&completed_kernel_list_lock);
 }
 
 
@@ -312,13 +340,17 @@ attributing_cpu_idle_cause_metric_at_sync_epilogue
 )
 {
 	kernel_id_t processed_ids = {0, NULL};
-  kernel_node_t *private_completed_kernel_head = atomic_load(&completed_kernel_list_head);
+  spinlock_lock(&completed_kernel_list_lock);
+  kernel_node_t *private_completed_kernel_head = completed_kernel_list_head;
   if (private_completed_kernel_head == NULL) {
     // no kernels to attribute idle blame, return
+    spinlock_unlock(&completed_kernel_list_lock);
     return processed_ids;
   }
   kernel_node_t *null_ptr = NULL;
-  if (atomic_compare_exchange_strong(&completed_kernel_list_head, &private_completed_kernel_head, null_ptr)) {
+  if (completed_kernel_list_head == private_completed_kernel_head) {
+    completed_kernel_list_head = null_ptr;
+    spinlock_unlock(&completed_kernel_list_lock);
     // exchange successful, proceed with metric attribution
 
     calculate_blame_for_active_kernels(private_completed_kernel_head, sync_start, sync_end);
@@ -326,12 +358,13 @@ attributing_cpu_idle_cause_metric_at_sync_epilogue
     kernel_node_t *next;
 		long length = 0;
     while (curr) {
-      next = atomic_load(&curr->next);
+      next = curr->next;
 			length++;
       curr = next;
     }
 
-    uint64_t *id = hpcrun_malloc_safe(sizeof(uint64_t) * length);  // how to free/reuse array data?
+    // uint64_t *id = hpcrun_malloc_safe(sizeof(uint64_t) * length);  // how to free/reuse array data?
+    uint64_t id[length];
     long i = 0;
     curr = private_completed_kernel_head;
 
@@ -339,7 +372,7 @@ attributing_cpu_idle_cause_metric_at_sync_epilogue
       gpu_blame_shift_t bs = {0, 0, curr->cpu_idle_blame};
       record_blame_shift_metrics(curr->launcher_cct, &bs);
 
-      next = atomic_load(&curr->next);
+      next = curr->next;
       kernel_map_delete(curr->kernel_id);
 			id[i++] = curr->kernel_id;
       kernel_node_free_helper(&kernel_node_free_list, curr);
@@ -348,6 +381,7 @@ attributing_cpu_idle_cause_metric_at_sync_epilogue
 		processed_ids.id = id;
 		processed_ids.length = length;
   } else {
+    spinlock_unlock(&completed_kernel_list_lock);
     // some other sync block could have attributed its idleless blame, return
   }
 	return processed_ids;
@@ -382,10 +416,9 @@ accumulate_gpu_utilization_metrics_to_incomplete_kernels
   }
 
   // cct_node_t** cct_array_of_incomplete_kernels = (cct_node_t**) malloc(sizeof(cct_node_t*) * num_unfinished_kernels);  // this array needs to be freed
-  spinlock_lock(&kernel_list_lock);
-  kernel_node_t *curr_k, *prev, *next;
+  spinlock_lock(&incomplete_kernel_list_lock);
+  kernel_node_t *curr_k;
   curr_k = incomplete_kernel_list_head;
-  prev = NULL;
 
   /* We iterate over the list of unfinished kernels. For all kernels, we:
    * 1. add the cct_node for the kernel to an array of cct_nodes and accumulate the utilization metrics to that node
@@ -393,23 +426,11 @@ accumulate_gpu_utilization_metrics_to_incomplete_kernels
    */
   curr_c = cct_list_of_incomplete_kernels;
   while (curr_k) {
-    next = atomic_load(&curr_k->next);
-    if (curr_k->marked_for_deletion) {
-      if (prev != NULL) {
-        atomic_store(&prev->next, next);
-      } else {
-        incomplete_kernel_list_head = next;
-      }
-      curr_k = next;
-      continue;
-    } else {
-      prev = curr_k;
-    }
     curr_c->node = curr_k->launcher_cct;
     curr_c = atomic_load(&curr_c->next);
-    curr_k = next;
+    curr_k = curr_k->next;
   }
-  spinlock_unlock(&kernel_list_lock);
+  spinlock_unlock(&incomplete_kernel_list_lock);
   // gpu_monitors_apply(cct_array_of_incomplete_kernels, num_unfinished_kernels, gpu_monitor_type_enter);
   gpu_monitors_apply(cct_list_of_incomplete_kernels, num_unfinished_kernels, gpu_monitor_type_enter);
 }
@@ -496,12 +517,12 @@ kernel_epilogue
 	kernel_node_t *kernel_node = kernel_map_entry_kernel_node_get(e_entry);
 	kernel_node->kernel_start_time = kernel_start;
 	kernel_node->kernel_end_time = kernel_end;
-  kernel_node->marked_for_deletion = true;
 
 	record_latest_kernel_end_time(kernel_node->kernel_end_time);
+  remove_kernel_from_incomplete_list(kernel_node);
+  kernel_node->next = NULL;
 	add_kernel_to_completed_list(kernel_node);
 	atomic_fetch_add(&g_unfinished_kernels, -1L);
-
   hpcrun_safe_exit();
 }
 

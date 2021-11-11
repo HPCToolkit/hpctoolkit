@@ -342,7 +342,7 @@ transform_kernel_nodes_to_sortable_nodes
     Node end_node = {curr->kernel_end_time, curr->kernel_id, 0, curr, NULL};
     push(&head, start_node);
     push(&head, end_node);
-    curr = atomic_load(&curr->next);
+    curr = curr->next;
   }
   return head;
 }
@@ -355,9 +355,11 @@ free_all_sortable_nodes
 )
 {
   Node *curr = head;
+  Node *next;
   while (curr) {
+    next = curr->next;
     node_free_helper(&node_free_list, curr);
-    curr = curr->next;	
+    curr = next;
   }
 }
 
@@ -376,7 +378,7 @@ calculate_blame_for_active_kernels
  unsigned long sync_end
 )
 {
-  // also input the sync times and add nodes	
+  // also input the sync times and add nodes
   Node *head = transform_kernel_nodes_to_sortable_nodes(kernel_list);
 
   Node sync_start_node = {sync_start, SYNC, 1, NULL, NULL};
