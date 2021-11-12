@@ -278,7 +278,7 @@ create_and_insert_kernel_entry
   kernel_node->launcher_cct = launcher_cct;
   kernel_node->next = NULL;
   kernel_map_insert(kernelexec_id, kernel_node);
-	add_kernel_to_incomplete_list(kernel_node);
+  add_kernel_to_incomplete_list(kernel_node);
 }
 
 
@@ -339,7 +339,7 @@ attributing_cpu_idle_cause_metric_at_sync_epilogue
  unsigned long sync_end
 )
 {
-	kernel_id_t processed_ids = {0, NULL};
+  kernel_id_t processed_ids = {0, NULL};
   spinlock_lock(&completed_kernel_list_lock);
   kernel_node_t *private_completed_kernel_head = completed_kernel_list_head;
   if (private_completed_kernel_head == NULL) {
@@ -356,35 +356,32 @@ attributing_cpu_idle_cause_metric_at_sync_epilogue
     calculate_blame_for_active_kernels(private_completed_kernel_head, sync_start, sync_end);
     kernel_node_t *curr = private_completed_kernel_head;
     kernel_node_t *next;
-		long length = 0;
+    long length = 0;
     while (curr) {
-      next = curr->next;
-			length++;
-      curr = next;
+      length++;
+      curr = curr->next;
     }
 
-    // uint64_t *id = hpcrun_malloc_safe(sizeof(uint64_t) * length);  // how to free/reuse array data?
-    uint64_t id[length];
+    uint64_t *id = hpcrun_malloc_safe(sizeof(uint64_t) * length);  // how to free/reuse array data?
     long i = 0;
     curr = private_completed_kernel_head;
-
     while (curr) {
       gpu_blame_shift_t bs = {0, 0, curr->cpu_idle_blame};
       record_blame_shift_metrics(curr->launcher_cct, &bs);
 
       next = curr->next;
       kernel_map_delete(curr->kernel_id);
-			id[i++] = curr->kernel_id;
+      id[i++] = curr->kernel_id;
       kernel_node_free_helper(&kernel_node_free_list, curr);
       curr = next;
     }
-		processed_ids.id = id;
-		processed_ids.length = length;
+    processed_ids.id = id;
+    processed_ids.length = length;
   } else {
     spinlock_unlock(&completed_kernel_list_lock);
     // some other sync block could have attributed its idleless blame, return
   }
-	return processed_ids;
+  return processed_ids;
 }
 
 
@@ -401,7 +398,7 @@ get_count_of_unfinished_kernels
 static void
 accumulate_gpu_utilization_metrics_to_incomplete_kernels
 (
-  uint32_t num_unfinished_kernels
+ uint32_t num_unfinished_kernels
 )
 {
   // this function should be run only for Intel programs (unless the used runtime supports PAPI with active/stall metrics)
@@ -514,15 +511,15 @@ kernel_epilogue
     hpcrun_safe_exit();
     return;
   }
-	kernel_node_t *kernel_node = kernel_map_entry_kernel_node_get(e_entry);
-	kernel_node->kernel_start_time = kernel_start;
-	kernel_node->kernel_end_time = kernel_end;
+  kernel_node_t *kernel_node = kernel_map_entry_kernel_node_get(e_entry);
+  kernel_node->kernel_start_time = kernel_start;
+  kernel_node->kernel_end_time = kernel_end;
 
-	record_latest_kernel_end_time(kernel_node->kernel_end_time);
+  record_latest_kernel_end_time(kernel_node->kernel_end_time);
   remove_kernel_from_incomplete_list(kernel_node);
   kernel_node->next = NULL;
-	add_kernel_to_completed_list(kernel_node);
-	atomic_fetch_add(&g_unfinished_kernels, -1L);
+  add_kernel_to_completed_list(kernel_node);
+  atomic_fetch_add(&g_unfinished_kernels, -1L);
   hpcrun_safe_exit();
 }
 
@@ -581,7 +578,7 @@ sync_epilogue
   atomic_fetch_add(&g_num_threads_at_sync, -1L);
 
   hpcrun_safe_exit();
-	return processed_ids;
+  return processed_ids;
 }
 
 
