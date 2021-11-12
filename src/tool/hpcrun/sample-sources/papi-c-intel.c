@@ -79,7 +79,7 @@ papi_c_intel_setup(void)
   eventset = PAPI_NULL;
   int retval=PAPI_library_init(PAPI_VER_CURRENT);
   if (retval!=PAPI_VER_CURRENT) {
-    fprintf(stderr,"Error initializing PAPI! %s\n", PAPI_strerror(retval));
+    ETMSG(INTEL, "Error initializing PAPI! %s\n", PAPI_strerror(retval));
     pthread_exit(NULL);
   }
   spinlock_unlock(&setup_lock);
@@ -94,7 +94,7 @@ papi_c_intel_get_event_set(int* ev_s)
   spinlock_lock(&setup_lock);
   int retval=PAPI_create_eventset(&eventset);
   if (retval!=PAPI_OK) {
-    fprintf(stderr,"Error creating eventset! %s\n", PAPI_strerror(retval));
+    ETMSG(INTEL, "Error creating eventset! %s\n", PAPI_strerror(retval));
   }
   spinlock_unlock(&setup_lock);
   ETMSG(INTEL, "Completed: create intel PAPI event set");
@@ -111,7 +111,7 @@ papi_c_intel_add_event(int ev_s, int ev)
   for (int i=0; i<numMetrics; i++) {
     retval=PAPI_add_named_event(eventset, metric_name[i]);
     if (retval!=PAPI_OK) {
-      fprintf(stderr,"Error adding %s: %s\n", metric_name[i], PAPI_strerror(retval));
+      ETMSG(INTEL, "Error adding %s: %s\n", metric_name[i], PAPI_strerror(retval));
     }
   }
   spinlock_unlock(&setup_lock);
@@ -128,7 +128,7 @@ papi_c_intel_start(void)
   PAPI_reset(eventset);
   int retval=PAPI_start(eventset);
   if (retval!=PAPI_OK) {
-    fprintf(stderr,"Error starting papi collection: %s\n", PAPI_strerror(retval));
+    ETMSG(INTEL, "Error starting papi collection: %s\n", PAPI_strerror(retval));
   }
   spinlock_unlock(&setup_lock);
   ETMSG(INTEL, "Completed: start PAPI collection");
@@ -142,7 +142,7 @@ papi_c_intel_stop(void)
   spinlock_lock(&setup_lock);
   int retval=PAPI_stop(eventset, NULL);
   if (retval!=PAPI_OK) {
-    fprintf(stderr,"Error stopping papi collection: %s\n", PAPI_strerror(retval));
+    ETMSG(INTEL, "Error stopping papi collection: %s\n", PAPI_strerror(retval));
   }
   spinlock_unlock(&setup_lock);
   ETMSG(INTEL, "Completed: stop PAPI collection");
