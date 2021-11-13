@@ -17,14 +17,15 @@
 //*****************************************************************************
 // interface operations
 //*****************************************************************************
-//
+
 typedef struct cupti_ip_norm_map_entry_s cupti_ip_norm_map_entry_t;
 
 typedef enum {
   CUPTI_IP_NORM_MAP_NOT_EXIST = 0,
   CUPTI_IP_NORM_MAP_EXIST = 1,
-  CUPTI_IP_NORM_MAP_DUPLICATE = 2,
-  CUPTI_IP_NORM_MAP_COUNT = 3,
+  CUPTI_IP_NORM_MAP_EXIST_OTHER_THREADS = 2,
+  CUPTI_IP_NORM_MAP_DUPLICATE = 3,
+  CUPTI_IP_NORM_MAP_COUNT = 4,
 } cupti_ip_norm_map_ret_t;
 
 
@@ -78,53 +79,41 @@ cupti_ip_norm_map_delete
 
 
 void
-cupti_ip_norm_map_merge
-(
- cupti_ip_norm_map_entry_t **root,
- uint32_t prev_range_id,
- uint32_t range_id,
- uint32_t num_threads,
- bool sampled
-);
-
-
-void
-cupti_ip_norm_map_merge_thread
-(
- uint32_t prev_range_id,
- uint32_t range_id,
- uint32_t num_threads,
- bool sampled
-);
-
-
-void
-cupti_ip_norm_map_count_increase
-(
- cupti_ip_norm_map_entry_t **root,
- ip_normalized_t ip_norm
-);
-
-
-void
-cupti_ip_norm_map_count_increase_thread
-(
- ip_normalized_t ip_norm
-);
-
-
-void
 cupti_ip_norm_map_clear
 (
- cupti_ip_norm_map_entry_t **root
+ cupti_ip_norm_map_entry_t **root,
+ bool clean_global
 );
 
 
 void
 cupti_ip_norm_map_clear_thread
 (
+ bool clean_global
+);
+
+
+void
+cupti_ip_norm_global_map_insert
+(
+ ip_normalized_t ip_norm,
+ cct_node_t *cct
+);
+
+
+void
+cupti_ip_norm_global_map_delete
+(
+ ip_normalized_t ip_norm,
+ cct_node_t *cct
+);
+
+
+void
+cupti_ip_norm_global_map_lookup
+(
+ ip_normalized_t ip_norm,
+ cct_node_t *cct
 );
 
 #endif
-
-

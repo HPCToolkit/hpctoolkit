@@ -3,13 +3,24 @@
 
 #include <stdbool.h>
 
-void cupti_range_thread_list_add(int thread_id);
+#include "cupti-cct-trie.h"
 
-void cupti_range_thread_list_advance_cur();
+void cupti_range_thread_list_add();
 
-bool cupti_range_thread_list_is_cur(int thread_id);
+typedef void (*cupti_range_thread_list_fn_t)
+(
+ int thread_id,
+ cupti_cct_trie_node_t *thread_trie_root,
+ cupti_cct_trie_node_t **thread_trie_logic_root,
+ cupti_cct_trie_node_t **thread_trie_cur,
+ void *args
+);
+
+void cupti_range_thread_list_apply(cupti_range_thread_list_fn_t fn, void *args);
 
 int cupti_range_thread_list_num_threads();
+
+int cupti_range_thread_id_get();
 
 void cupti_range_thread_list_clear();
 

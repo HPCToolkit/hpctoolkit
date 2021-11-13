@@ -6,16 +6,16 @@
 #include <hpcrun/messages/messages.h>
 #include <lib/prof-lean/splay-macros.h>
 
-#include "cuda-api.h"
 #include "cupti-range.h"
 #include "cupti-ip-norm-map.h"
 #include "cupti-range-thread-list.h"
 #include "../gpu-metrics.h"
+#include "../gpu-range.h"
 #include "../gpu-op-placeholders.h"
 
 struct cupti_cct_trie_node_s {
   cct_node_t *key;
-  int32_t range_id;
+  uint32_t range_id;
 
   struct cupti_cct_trie_node_s* parent;
   struct cupti_cct_trie_node_s* children;
@@ -24,13 +24,14 @@ struct cupti_cct_trie_node_s {
   struct cupti_cct_trie_node_s* right;
 };
 
-static __thread cupti_cct_trie_node_t *root = NULL;
+static __thread cupti_cct_trie_node_t *trie_root = NULL;
+static __thread cupti_cct_trie_node_t *trie_logic_root = NULL;
 static __thread cupti_cct_trie_node_t *free_list = NULL;
 static __thread cupti_cct_trie_node_t *trie_cur = NULL;
 
-/********
- * splay
- ********/
+//***********************************
+// splay
+//***********************************
 static bool cct_trie_cmp_lt(cct_node_t *left, cct_node_t *right) {
   return left < right;
 }
@@ -49,9 +50,9 @@ splay(cupti_cct_trie_node_t *node, cct_node_t *key)
   return node;
 }
 
-/********
- * allocator
- ********/
+//***********************************
+// allocator
+//***********************************
 
 static cupti_cct_trie_node_t *
 cupti_cct_trie_alloc_helper
@@ -74,7 +75,7 @@ cupti_cct_trie_alloc_helper
 }
 
 
-void
+static void
 cupti_cct_trie_free_helper
 (
  cupti_cct_trie_node_t **free_list, 
@@ -103,7 +104,7 @@ cct_trie_new
 )
 {
   cupti_cct_trie_node_t *trie_node = trie_alloc(&free_list);
-  trie_node->range_id = -1;
+  trie_node->range_id = GPU_RANGE_NULL;
   trie_node->key = key;
   trie_node->parent = parent;
   trie_node->children = NULL;
@@ -120,12 +121,16 @@ cct_trie_init
  void
 )
 {
-  if (root == NULL) {
-    root = cct_trie_new(NULL, NULL);
-    trie_cur = root;
+  if (trie_root == NULL) {
+    trie_root = cct_trie_new(NULL, NULL);
+    trie_logic_root = trie_root;
+    trie_cur = trie_root;
   }
 }
 
+//***********************************
+// interface
+//***********************************
 
 bool
 cupti_cct_trie_append
@@ -147,6 +152,7 @@ cupti_cct_trie_append
   cupti_cct_trie_node_t *new = cct_trie_new(trie_cur, cct);
   trie_cur->children = new;
   trie_cur = new;
+  // Only assign range_id when a node is created
   trie_cur->range_id = range_id;
 
   if (!found) {
@@ -170,79 +176,158 @@ cupti_cct_trie_unwind
 (
 )
 {
-  if (trie_cur != root) {
+  if (trie_cur != trie_root) {
     trie_cur = trie_cur->parent;
   }
 }
 
 
-void
-cupti_cct_trie_merge_thread
+static void
+cupti_cct_trie_merge
 (
- uint32_t num_threads,
- bool sampled
+ cupti_cct_trie_node_t *thread_trie_root,
+ cupti_cct_trie_node_t **thread_trie_logic_root_ptr,
+ cupti_cct_trie_node_t **thread_trie_cur_ptr,
+ uint32_t context_id,
+ uint32_t range_id,
+ bool logic
 )
 {
-  cupti_cct_trie_node_t *cur = trie_cur;
-
+  cupti_cct_trie_node_t *cur = *thread_trie_cur_ptr;
   ip_normalized_t kernel_ip = gpu_op_placeholder_ip(gpu_placeholder_type_kernel);
-  CUcontext context;
-  cuda_context_get(&context);
-	uint32_t context_id = ((hpctoolkit_cuctx_st_t *)context)->context_id;
 
-  while (cur != root) {
+  while (cur != *thread_trie_logic_root_ptr) {
     cct_node_t *kernel_ph = hpcrun_cct_insert_ip_norm(cur->key, kernel_ip);
     cct_node_t *kernel_ph_children = hpcrun_cct_children(kernel_ph);
-    cct_node_t *context = hpcrun_cct_insert_context(kernel_ph_children, context_id);
+    cct_node_t *context_node = hpcrun_cct_insert_context(kernel_ph_children, context_id);
 
-    cct_node_t *prev_range_node = hpcrun_cct_insert_range(context, cur->range_id);
+    cct_node_t *prev_range_node = NULL;
+    if (logic) {
+      prev_range_node = hpcrun_cct_insert_range(context_node, cur->range_id);
+    } else {
+      prev_range_node = hpcrun_cct_insert_range(context_node, range_id);
+    }
     
-    uint64_t kernel_count = num_threads;
-    uint64_t sampled_kernel_count = sampled ? kernel_count : 0;
-    gpu_metrics_attribute_kernel_count(prev_range_node, sampled_kernel_count, kernel_count);
+    uint64_t sampled_kernel_count = logic ? 0 : 1;
+    gpu_metrics_attribute_kernel_count(prev_range_node, sampled_kernel_count, 1);
 
     cur = cur->parent;
+  }
+
+  if (logic) {
+    *thread_trie_logic_root_ptr = *thread_trie_cur_ptr;
   }
 }
 
 
-int32_t
+static void
+cupti_cct_trie_merge_thread
+(
+ uint32_t context_id,
+ uint32_t range_id,
+ bool logic
+)
+{
+  cupti_cct_trie_merge(trie_root, &trie_logic_root, &trie_cur, context_id, range_id, logic);
+}
+
+
+typedef struct cct_trie_args_s {
+  uint32_t context_id;
+  uint32_t range_id;
+} cct_trie_args_t;
+
+
+void
+cct_trie_fn
+(
+ int thread_id,
+ cupti_cct_trie_node_t *thread_trie_root,
+ cupti_cct_trie_node_t **thread_trie_logic_root_ptr,
+ cupti_cct_trie_node_t **thread_trie_cur_ptr,
+ void *args
+)
+{
+  cct_trie_args_t *cct_trie_args = (cct_trie_args_t *)args;
+  uint32_t context_id = cct_trie_args->context_id;
+  uint32_t range_id = cct_trie_args->range_id;
+  if (thread_id != cupti_range_thread_id_get()) {
+    // The starter thread has been handled.
+    // Logic flush and update logic root for the rest threads
+    cupti_cct_trie_merge(thread_trie_root, thread_trie_logic_root_ptr, thread_trie_cur_ptr,
+      context_id, range_id, true);
+  }
+}
+
+
+uint32_t
 cupti_cct_trie_flush
 (
+ uint32_t context_id,
  uint32_t range_id,
- bool sampled,
- bool merge,
  bool logic
 )
 {
   cct_trie_init();
-  int32_t prev_range_id = trie_cur->range_id;
-  uint32_t num_threads = cupti_range_thread_list_num_threads();
+  uint32_t prev_range_id = trie_cur->range_id;
 
-  if (logic) {
-    // Traverse up and use original range_id to merge
-    cupti_cct_trie_merge_thread(num_threads, sampled);
-  } else {
-    // Unwind
-    trie_cur = root;
-    cupti_ip_norm_map_merge_thread(prev_range_id, range_id, num_threads, sampled);
+  // Traverse up and use original range_id to merge
+  cupti_cct_trie_merge_thread(context_id, range_id, logic);
+  if (!logic) {
+    // Unwind and reset
+    trie_logic_root = trie_root;
+    trie_cur = trie_root;
   }
+  
+  uint32_t num_threads = cupti_range_thread_list_num_threads();
+  if (num_threads > 1) {
+    cct_trie_args_t args = {
+      .context_id = context_id,
+      .range_id = range_id
+    }; 
+    cupti_range_thread_list_apply(cct_trie_fn, &args);
+  }
+
   return prev_range_id;
 }
 
 
-void
-cupti_cct_trie_cur_range_set
+cupti_cct_trie_node_t *
+cupti_cct_trie_root_get
 (
- uint32_t range_id
 )
 {
   cct_trie_init();
-  trie_cur->range_id = range_id;
+  return trie_root;
 }
+
+
+cupti_cct_trie_node_t **
+cupti_cct_trie_cur_ptr_get
+(
+)
+{
+  cct_trie_init();
+  return &trie_cur;
+}
+
+
+cupti_cct_trie_node_t **
+cupti_cct_trie_logic_root_ptr_get
+(
+)
+{
+  cct_trie_init();
+  return &trie_logic_root;
+}
+
+//**********************************************
+// Debuging
+//**********************************************
 
 static void
 cct_trie_walk(cupti_cct_trie_node_t* trie_node, int *num_nodes, int *single_path_nodes);
+
 
 static void
 cct_trie_walk_child(cupti_cct_trie_node_t* trie_node, int *num_nodes, int *single_path_nodes)
@@ -255,6 +340,7 @@ cct_trie_walk_child(cupti_cct_trie_node_t* trie_node, int *num_nodes, int *singl
   cct_trie_walk(trie_node, num_nodes, single_path_nodes);
 }
 
+
 static void
 cct_trie_walk(cupti_cct_trie_node_t* trie_node, int *num_nodes, int *single_path_nodes)
 {
@@ -266,6 +352,7 @@ cct_trie_walk(cupti_cct_trie_node_t* trie_node, int *num_nodes, int *single_path
   cct_trie_walk_child(trie_node->children, num_nodes, single_path_nodes);
 }
 
+
 void
 cupti_cct_trie_dump
 (
@@ -273,6 +360,6 @@ cupti_cct_trie_dump
 {
   int num_nodes = 0;
   int single_path_nodes = 0;
-  cct_trie_walk(root, &num_nodes, &single_path_nodes);
+  cct_trie_walk(trie_root, &num_nodes, &single_path_nodes);
   printf("num_nodes %d, single_path_nodes %d\n", num_nodes, single_path_nodes);
 }

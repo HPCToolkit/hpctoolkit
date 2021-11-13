@@ -19,8 +19,8 @@ static atomic_ullong lead_correlation_id = ATOMIC_VAR_INIT(0);
 static atomic_ullong correlation_id_done = ATOMIC_VAR_INIT(0);
 static atomic_uint range_id = ATOMIC_VAR_INIT(GPU_RANGE_DEFAULT_RANGE);
 
-static __thread uint64_t thread_correlation_id = GPU_RANGE_DEFAULT_RANGE;
-static __thread uint32_t thread_range_id = GPU_RANGE_DEFAULT_RANGE;
+static __thread uint64_t thread_correlation_id = 0;
+static __thread uint32_t thread_range_id = 0;
 
 static spinlock_t count_lock = SPINLOCK_UNLOCKED;
 

@@ -70,12 +70,14 @@ cupti_pc_sampling_disable2
 );
 
 
+// Bind pc sampling API functions
 int
 cupti_pc_sampling_bind
 (
 );
 
 
+// Collect the crc of a cubin
 uint64_t
 cupti_cubin_crc_get
 (
@@ -84,6 +86,7 @@ cupti_cubin_crc_get
 );
 
 
+// Collect and attribute samples to the default range
 void
 cupti_pc_sampling_correlation_context_collect
 (
@@ -92,6 +95,7 @@ cupti_pc_sampling_correlation_context_collect
 );
 
 
+// Collect and attribute samples to the given range and context
 void
 cupti_pc_sampling_range_context_collect
 (
@@ -100,6 +104,7 @@ cupti_pc_sampling_range_context_collect
 );
 
 
+// Collect and attribute samples to the current context
 void
 cupti_pc_sampling_range_collect
 (
@@ -107,6 +112,7 @@ cupti_pc_sampling_range_collect
 );
 
 
+// Free pc sampling buffers used by the given context
 void
 cupti_pc_sampling_free
 (
@@ -114,6 +120,7 @@ cupti_pc_sampling_free
 );
 
 
+// Start pc sampling of the given context
 void
 cupti_pc_sampling_start
 (
@@ -121,6 +128,7 @@ cupti_pc_sampling_start
 );
 
 
+// Stop pc sampling of the given context
 void
 cupti_pc_sampling_stop
 (
@@ -128,6 +136,7 @@ cupti_pc_sampling_stop
 );
 
 
+// Return whether pc sampling is turned on 
 bool
 cupti_pc_sampling_active
 (

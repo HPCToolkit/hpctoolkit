@@ -194,7 +194,6 @@ flush_alarm_handler(int sig, siginfo_t* siginfo, void* context)
 #include "cupti-subscribers.h"
 #include "cupti-pc-sampling-api.h"
 #include "cupti-unwind-map.h"
-#include "cupti-cct-trace.h"
 #include "cupti-cct-trie.h"
 #endif
 
@@ -2324,13 +2323,10 @@ cupti_device_flush(void *args, int how)
   printf("Total cct unwinds %lu, correct unwinds %lu, fast unwinds %lu, slow unwinds %lu, unique ccts %zu\n",
     total_unwinds, correct_unwinds, fast_unwinds, slow_unwinds, cupti_cct_analysis_map_size_get());
 
-  //cupti_cct_analysis_map_dump();
-
   printf("-----------------------------------------------------------------\n");
 
-  printf("CCT trace\n");
+  printf("CCT trie\n");
 
-  //cupti_cct_trace_dump();
   cupti_cct_trie_dump();
 #endif
 
@@ -2531,8 +2527,8 @@ cupti_device_shutdown(void *args, int how)
 #ifdef NEW_CUPTI
   if (cupti_range_mode_get() != CUPTI_RANGE_MODE_NONE) {
     // Collect pc samples for all contexts in a range
-    // XXX(Keren): Currently CUPTI does not support
-    // multiple contexts in the same range
+    // XXX(Keren): There might be some problems in some apps,
+    // since CUPTI does not support multiple contexts in the same range
     cupti_range_last();
 
     // Wait until operations are drained

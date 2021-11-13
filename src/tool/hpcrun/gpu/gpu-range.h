@@ -11,7 +11,8 @@
 #include "gpu-activity.h"
 #include "gpu-op-placeholders.h"
 
-#define GPU_RANGE_DEFAULT_RANGE 0
+#define GPU_RANGE_DEFAULT_RANGE 1
+#define GPU_RANGE_NULL 0
 
 // Range enter/exit callbacks
 typedef bool (*gpu_range_callback_t)

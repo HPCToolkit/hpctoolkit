@@ -207,11 +207,11 @@ dump_fn_helper
     ip3 = hpcrun_cct_addr(entry->p3)->ip_norm;
   }
   printf("%p, %p, %u, %p, %s, %zu, %zu, %zu, %zu, %zu, %zu, %zu, %zu, %zu, %zu, %zu, %p, %zu, %p, %zu, %p\n", 
-    entry->cct, entry->prev, entry->function_id.lm_id, entry->function_id.lm_ip,
+    (void *)entry->cct, (void *)entry->prev, entry->function_id.lm_id, (void *)entry->function_id.lm_ip,
     entry->function_name, entry->stack_length, entry->tool_depth, entry->api_depth,
     entry->grid_dim_x / entry->count, entry->grid_dim_y / entry->count, entry->grid_dim_z / entry->count,
     entry->block_dim_x / entry->count, entry->block_dim_y / entry->count, entry->block_dim_z / entry->count,
-    entry->count, ip1.lm_id, ip1.lm_ip, ip2.lm_id, ip2.lm_ip, ip3.lm_id, ip3.lm_ip);
+    entry->count, ip1.lm_id, (void *)ip1.lm_ip, ip2.lm_id, (void *)ip2.lm_ip, ip3.lm_id, (void *)ip3.lm_ip);
 }
 
 

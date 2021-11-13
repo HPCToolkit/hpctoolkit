@@ -12,18 +12,14 @@
 #include "cupti-api.h"
 #include "cupti-ip-norm-map.h"
 #include "cupti-pc-sampling-api.h"
-#include "cupti-cct-trace.h"
 #include "cupti-cct-trie.h"
 #include "cupti-range-thread-list.h"
 
 static cupti_range_mode_t cupti_range_mode = CUPTI_RANGE_MODE_NONE;
-static cupti_range_algorithm_t cupti_range_algorithm = CUPTI_RANGE_ALGORITHM_TRIE;
 
 static uint32_t cupti_range_interval = CUPTI_RANGE_DEFAULT_INTERVAL;
 static uint32_t cupti_range_sampling_period = CUPTI_RANGE_DEFAULT_SAMPLING_PERIOD;
-static uint32_t cupti_range_thread_retain_range = CUPTI_RANGE_THREAD_RETAIN_RANGE;
 
-static uint32_t cupti_retained_ranges = 0;
 #ifdef NEW_CUPTI_ANALYSIS
 static __thread int sampled_times = 0;
 #endif
@@ -45,9 +41,7 @@ cupti_range_kernel_count_increase
 (
  cct_node_t *kernel_ph,
  uint32_t context_id,
- uint32_t range_id,
- uint64_t sampled_count,
- uint64_t count
+ uint32_t range_id
 )
 {
   // Range processing
@@ -56,22 +50,28 @@ cupti_range_kernel_count_increase
   node = hpcrun_cct_insert_range(node, range_id);
 
   // Increase kernel count
-  gpu_metrics_attribute_kernel_count(node, sampled_count, count);
+  gpu_metrics_attribute_kernel_count(node, 1, 1);
 }
 
 
 static bool
 cupti_range_mode_even_is_enter
 (
- uint64_t correlation_id
+ CUcontext context,
+ cct_node_t *kernel_ph,
+ uint64_t correlation_id,
+ uint32_t range_id
 )
 {
+	uint32_t context_id = ((hpctoolkit_cuctx_st_t *)context)->context_id;
+  // Increase kernel count for postmortem apportion based on counts
+  cupti_range_kernel_count_increase(kernel_ph, context_id, range_id);
   return (GPU_CORRELATION_ID_UNMASK(correlation_id) % cupti_range_interval) == 0;
 }
 
 
 static bool
-cupti_range_mode_context_sensitive_is_sampled
+cupti_range_mode_is_sampled
 (
 )
 {
@@ -87,53 +87,39 @@ cupti_range_mode_context_sensitive_is_sampled
 static bool
 cupti_range_mode_context_sensitive_is_enter
 (
+ CUcontext context,
  cct_node_t *kernel_ph,
  uint64_t correlation_id,
- uint32_t context_id,
  uint32_t range_id
 )
 {
-  static __thread bool first_range = true;
+  static bool first_range = true;
 
-  thread_data_t *cur_td = hpcrun_safe_get_td();
-  core_profile_trace_data_t *cptd = &cur_td->core_profile_trace_data;
-  cupti_range_thread_list_add(cptd->id);
-  bool is_cur = cupti_range_thread_list_is_cur(cptd->id);
+	uint32_t context_id = ((hpctoolkit_cuctx_st_t *)context)->context_id;
 
-  cct_node_t *kernel_node = hpcrun_cct_children(kernel_ph);
-  ip_normalized_t kernel_ip = hpcrun_cct_addr(kernel_node)->ip_norm;
+  // Add the current thread to the list
+  cupti_range_thread_list_add();
+  int num_threads = cupti_range_thread_list_num_threads();
+
+  ip_normalized_t kernel_ip = hpcrun_cct_addr(hpcrun_cct_children(kernel_ph))->ip_norm;
   cct_node_t *api_node = hpcrun_cct_parent(kernel_ph);
-
-  CUcontext context;
-  cuda_context_get(&context);
   cupti_ip_norm_map_ret_t map_ret_type = cupti_ip_norm_map_lookup_thread(kernel_ip, api_node);
-  bool active = cupti_pc_sampling_active();
 
-  int32_t prev_range_id = -1;
+  bool active = cupti_pc_sampling_active();
+  int32_t prev_range_id = GPU_RANGE_NULL;
   if (map_ret_type == CUPTI_IP_NORM_MAP_DUPLICATE) {
     // Ranges must be divided
-    if (cupti_range_algorithm == CUPTI_RANGE_ALGORITHM_SEQUITUR) {
-      prev_range_id = cupti_cct_trace_flush(range_id, active, is_cur, false);
-    } else if (cupti_range_algorithm == CUPTI_RANGE_ALGORITHM_TRIE) {
-      prev_range_id = cupti_cct_trie_flush(range_id, active, is_cur, false);
-    }
-    if (is_cur) {
-      if (active) {
-        // If active, we encounter a new range and have to flush pc samples
-        // It is an early collection mode different than other modes
-        // The whole range is repeated with a previous range
-        cupti_pc_sampling_range_context_collect(prev_range_id, context);
-      }
-      cupti_retained_ranges++;
-      if (cupti_retained_ranges == cupti_range_thread_retain_range) {
-        cupti_retained_ranges = 0;
-        cupti_range_thread_list_advance_cur(); 
-        is_cur = cupti_range_thread_list_is_cur(cptd->id);
-      }
+    prev_range_id = cupti_cct_trie_flush(context_id, range_id, !active);
+    if (active) {
+      // If active, we encounter a new range and have to flush pc samples
+      // It is an early collection mode different than other modes
+      // The whole range is repeated with a previous range
+      cupti_pc_sampling_range_context_collect(prev_range_id, context);
     }
     // After flushing, we clean up ccts in the previous range
     range_id += 1;
-    cupti_ip_norm_map_clear_thread();
+    bool clean_global = num_threads > 1 ? true : false;
+    cupti_ip_norm_map_clear_thread(clean_global);
     cupti_ip_norm_map_insert_thread(kernel_ip, api_node);
     // Update active status
     active = cupti_pc_sampling_active();
@@ -142,39 +128,31 @@ cupti_range_mode_context_sensitive_is_enter
     cupti_ip_norm_map_insert_thread(kernel_ip, api_node);
   } else {
     // We've seen this node before
-    cupti_ip_norm_map_count_increase_thread(kernel_ip);
   }
-
   
-  bool repeated = false;
+  bool repeated = cupti_cct_trie_append(range_id, api_node);
   bool sampled = false;
   bool new_range = false;
   
-  if (cupti_range_algorithm == CUPTI_RANGE_ALGORITHM_SEQUITUR) {
-    repeated = cupti_cct_trace_append(range_id, api_node);
-  } else if (cupti_range_algorithm == CUPTI_RANGE_ALGORITHM_TRIE) {
-    repeated = cupti_cct_trie_append(range_id, api_node);
-  }
-  if (is_cur && !active) {
+  if (!active) {
     if (map_ret_type == CUPTI_IP_NORM_MAP_DUPLICATE) {
       // 1. abc | (a1)bc
+      // a1 conflicts a, it must be a new rnage
       new_range = true;
-      if (cupti_range_mode_context_sensitive_is_sampled()) {
+      if (cupti_range_mode_is_sampled()) {
         sampled = true;
       }
     } else if (!repeated) {
       // 2. abc | abc | d
+      // We haven't seen d before, though turning on sampling, it is not a new range
       sampled = true;
 
       if (!first_range && map_ret_type == CUPTI_IP_NORM_MAP_NOT_EXIST) {
         cupti_ip_norm_map_delete_thread(kernel_ip);
-        if (cupti_range_algorithm == CUPTI_RANGE_ALGORITHM_SEQUITUR) {
-          cupti_cct_trace_flush(range_id, active, is_cur, true);
-        } else if (cupti_range_algorithm == CUPTI_RANGE_ALGORITHM_TRIE) {
-          cupti_cct_trie_unwind();
-          cupti_cct_trie_flush(range_id, active, is_cur, true);
-          cupti_cct_trie_append(range_id, api_node);
-        }
+        // Flush does not affect the node just inserted, so we need to unwind it and reinsert it
+        cupti_cct_trie_unwind();
+        cupti_cct_trie_flush(context_id, range_id, !active);
+        cupti_cct_trie_append(range_id, api_node);
         cupti_ip_norm_map_insert_thread(kernel_ip, api_node);
       }
     } 
@@ -187,15 +165,20 @@ cupti_range_mode_context_sensitive_is_enter
     }
   }
 
-  if (sampled) {
-    cupti_range_thread_list_clear();
-  }
-
-  // The first range does not increase range_id
+  // We always turn on pc sampling for the first range.
+  // So the first range does not increase range_id
   if (first_range) {
     first_range = false;
     new_range = false;
   } 
+
+  // At least samples for this range has been attributed or recorded,
+  // So we can clean up threads encounterd in this range.
+  // In the next range, threads particpated in the previous ranges might
+  // not particpate.
+  if (new_range) {
+    cupti_range_thread_list_clear();
+  }
 
   return new_range;
 }
@@ -212,18 +195,15 @@ cupti_range_post_enter_callback
 
   CUcontext context;
   cuda_context_get(&context);
-	uint32_t context_id = ((hpctoolkit_cuctx_st_t *)context)->context_id;
   uint32_t range_id = gpu_range_id_get();
   cct_node_t *kernel_ph = (cct_node_t *)args;
 
   bool ret = false;
 
   if (cupti_range_mode == CUPTI_RANGE_MODE_EVEN) {
-    // Increase kernel count for postmortem apportion based on counts
-    cupti_range_kernel_count_increase(kernel_ph, context_id, range_id, 1, 1);
-    ret = cupti_range_mode_even_is_enter(correlation_id);
+    ret = cupti_range_mode_even_is_enter(context, kernel_ph, correlation_id, range_id);
   } else if (cupti_range_mode == CUPTI_RANGE_MODE_CONTEXT_SENSITIVE) {
-    ret = cupti_range_mode_context_sensitive_is_enter(kernel_ph, correlation_id, context_id, range_id);
+    ret = cupti_range_mode_context_sensitive_is_enter(context, kernel_ph, correlation_id, range_id);
   }
 
   // TODO(Keren): check if pc sampling buffer is full
@@ -246,6 +226,27 @@ cupti_range_pre_exit_callback
 }
 
 
+static void
+cupti_range_mode_even_is_exit
+(
+ uint64_t correlation_id,
+ CUcontext context
+)
+{
+  if (!gpu_range_is_lead()) {
+    return;
+  }
+
+  // Collect pc samples from all contexts
+  uint32_t range_id = gpu_range_id_get();
+  cupti_pc_sampling_range_context_collect(range_id, context);
+  if (cupti_range_mode_is_sampled()) {
+    // Restart pc sampling immediately if sampled
+    cupti_pc_sampling_start(context);
+  }
+}
+
+
 static bool
 cupti_range_post_exit_callback
 (
@@ -262,14 +263,7 @@ cupti_range_post_exit_callback
     // Collect pc samples from the current context
     cupti_pc_sampling_correlation_context_collect(cupti_kernel_ph_get(), context);
   } else if (cupti_range_mode == CUPTI_RANGE_MODE_EVEN) {
-    if (gpu_range_is_lead()) {
-      // Collect pc samples from all contexts
-      uint32_t range_id = gpu_range_id_get();
-
-      cupti_pc_sampling_range_context_collect(range_id, context);
-      // Restart pc sampling immediately
-      cupti_pc_sampling_start(context);
-    }
+    cupti_range_mode_even_is_exit(correlation_id, context);
   }
 
   return false;
@@ -302,7 +296,8 @@ cupti_range_config
   // We don't flush pc samples unless a kernel in the range is launched
   // by two different contexts.
   if (strcmp(mode_str, "EVEN") == 0) {
-    if (interval > CUPTI_RANGE_DEFAULT_INTERVAL) {
+    if (cupti_range_sampling_period != CUPTI_RANGE_DEFAULT_SAMPLING_PERIOD ||
+      interval > CUPTI_RANGE_DEFAULT_INTERVAL) {
       cupti_range_mode = CUPTI_RANGE_MODE_EVEN;
     } else {
       cupti_range_mode = CUPTI_RANGE_MODE_SERIAL;
@@ -318,7 +313,7 @@ cupti_range_config
       cupti_range_post_exit_callback);
   }
 
-  TMSG(CUPTI, "Enter cupti_range_config");
+  TMSG(CUPTI, "Exit cupti_range_config");
 }
 
 
@@ -354,38 +349,28 @@ cupti_range_sampling_period_get
 void
 cupti_range_last
 (
- void
 )
 {
-  thread_data_t *cur_td = hpcrun_safe_get_td();
-  core_profile_trace_data_t *cptd = &cur_td->core_profile_trace_data;
-  cupti_range_thread_list_add(cptd->id);
-  bool is_cur = cupti_range_thread_list_is_cur(cptd->id);
-  bool active = cupti_pc_sampling_active();
-
   CUcontext context;
   cuda_context_get(&context);
-  uint32_t range_id = gpu_range_id_get();
-  int32_t prev_range_id;
-  if (cupti_range_algorithm == CUPTI_RANGE_ALGORITHM_SEQUITUR) { 
-    prev_range_id = cupti_cct_trace_flush(range_id, active, is_cur, true);
-  } else if (cupti_range_algorithm == CUPTI_RANGE_ALGORITHM_TRIE) {
-    prev_range_id = cupti_cct_trie_flush(range_id, active, is_cur, true);
-  }
-  cupti_ip_norm_map_clear_thread();
+	uint32_t context_id = ((hpctoolkit_cuctx_st_t *)context)->context_id;
 
-  if (is_cur) {
-    if (active) {
-      // If active, we encounter a new range and have to flush pc samples
-      // It is an early collection mode different than other modes
-      if (prev_range_id != -1) {
-        // The whole range is repeated with a previous range
-        cupti_pc_sampling_range_context_collect(prev_range_id, context);
-      } else {
-        cupti_pc_sampling_range_context_collect(range_id, context);
-      }
+  bool active = cupti_pc_sampling_active();
+  uint32_t range_id = gpu_range_id_get();
+  int32_t prev_range_id = cupti_cct_trie_flush(context_id, range_id, active);
+
+  if (active) {
+    // If active, we encounter a new range and have to flush pc samples
+    // It is an early collection mode different than other modes
+    if (prev_range_id != GPU_RANGE_NULL) {
+      // The whole range is repeated with a previous range
+      cupti_pc_sampling_range_context_collect(prev_range_id, context);
+    } else {
+      // This is a new range
+      cupti_pc_sampling_range_context_collect(range_id, context);
     }
   }
+
 #ifdef NEW_CUPTI_ANALYSIS
   printf("sampled times %d\n", sampled_times);
 #endif
