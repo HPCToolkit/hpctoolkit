@@ -48,7 +48,7 @@
 #define HPCTOOLKIT_PROFILE_ATTRIBUTES_H
 
 #include "accumulators.hpp"
-#include "context-fwd.hpp"
+#include "scope.hpp"
 
 #include "util/ragged_vector.hpp"
 #include "util/ref_wrappers.hpp"
@@ -65,8 +65,8 @@
 namespace hpctoolkit {
 
 class Context;
-class SuperpositionedContext;
-class CollaborativeContext;
+class ContextReconstruction;
+class ContextFlowGraph;
 class Metric;
 
 /// Attributes unique to a particular thread within a profile. Whether this is
@@ -180,7 +180,7 @@ public:
     Thread& thread() noexcept { return m_thread; }
     const Thread& thread() const noexcept { return m_thread; }
 
-    // Movable, not copyable
+    // Movable, not copiable
     Temporary(const Temporary&) = delete;
     Temporary(Temporary&&) = default;
 
@@ -188,19 +188,18 @@ public:
     /// Returns `std::nullopt` if none is present.
     // MT: Safe (const), Unstable (before notifyThreadFinal)
     auto accumulatorsFor(const Context& c) const noexcept {
-      return data.find(c);
+      return c_data.find(c);
     }
 
     /// Reference to all of the Metric data on Thread.
     // MT: Safe (const), Unstable (before notifyThreadFinal)
-    const auto& accumulators() const noexcept { return data; }
+    const auto& accumulators() const noexcept { return c_data; }
 
   private:
     Thread& m_thread;
 
     friend class ProfilePipeline;
     Temporary(Thread& t) : m_thread(t) {};
-    bool contributesToCollab = false;
 
     // Bits needed for handling timepoints
     std::chrono::nanoseconds minTime = std::chrono::nanoseconds::max();
@@ -211,17 +210,35 @@ public:
       util::bounded_streaming_sort_buffer<Tp, util::compare_only_first<Tp>> sortBuf;
       std::vector<Tp> staging;
     };
-    TimepointsData<std::pair<std::chrono::nanoseconds, ContextRef::const_t>> ctxTpData;
+    TimepointsData<std::pair<std::chrono::nanoseconds,
+      std::reference_wrapper<const Context>>> ctxTpData;
     util::locked_unordered_map<util::reference_index<const Metric>,
       TimepointsData<std::pair<std::chrono::nanoseconds, double>>> metricTpData;
 
     friend class Metric;
     util::locked_unordered_map<util::reference_index<const Context>,
       util::locked_unordered_map<util::reference_index<const Metric>,
-        MetricAccumulator>> data;
-    util::locked_unordered_map<util::reference_index<const SuperpositionedContext>,
+        MetricAccumulator>> c_data;
+    util::locked_unordered_map<util::reference_index<const ContextReconstruction>,
       util::locked_unordered_map<util::reference_index<const Metric>,
-        MetricAccumulator>> sp_data;
+        MetricAccumulator>> r_data;
+
+    struct RGroup {
+      util::locked_unordered_map<util::reference_index<const Context>,
+        util::locked_unordered_map<util::reference_index<const Metric>,
+          MetricAccumulator>> c_data;
+      util::locked_unordered_map<util::reference_index<const ContextFlowGraph>,
+        util::locked_unordered_map<util::reference_index<const Metric>,
+          MetricAccumulator>> fg_data;
+
+      std::mutex lock;
+      std::unordered_map<Scope,
+        std::unordered_set<util::reference_index<Context>>> c_entries;
+      std::unordered_map<util::reference_index<ContextFlowGraph>,
+        std::unordered_set<util::reference_index<const ContextReconstruction>>>
+          fg_reconsts;
+    };
+    util::locked_unordered_map<uint64_t, RGroup> r_groups;
   };
 };
 

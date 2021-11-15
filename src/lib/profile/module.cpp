@@ -88,14 +88,14 @@ const Classification::LineScope* Classification::getLineScope(uint64_t pos) cons
   return &*it;
 }
 
-void Classification::Block::addRoute(std::vector<route_t> from) noexcept {
+void Classification::Block::addRoute(const Scope& entry, std::vector<route_t> from) noexcept {
   assert(parent == nullptr && "Attempt to add route to a non-root Block!");
-  if(from.empty()) return;
-  routes.emplace_front(std::move(from));
+  routes.emplace_front(entry, std::move(from));
   routeCnt += 1;
 }
 
-std::vector<std::vector<Scope>> Classification::getRoutes(uint64_t addr) const noexcept {
+std::vector<std::pair<Scope, std::vector<Scope>>>
+Classification::getRoutes(uint64_t addr) const noexcept {
   Block& b = *({
     auto it = ll_scopeblocks.find({addr, addr});
     if(it == ll_scopeblocks.end() || it->second == nullptr) {
@@ -105,20 +105,21 @@ std::vector<std::vector<Scope>> Classification::getRoutes(uint64_t addr) const n
     while(p->parent != nullptr) p = p->parent;
     p;
   });
-  std::vector<std::vector<Scope>> routes;
+  if(b.routeCnt == 0) return {};
+  std::vector<std::pair<Scope, std::vector<Scope>>> routes;
   routes.reserve(b.routeCnt);
   for(const auto& r: b.routes) {
-    routes.emplace_back();
-    for(const auto vhop: r) {
+    routes.push_back({r.first, {}});
+    for(const auto vhop: r.second) {
       if(std::holds_alternative<uint64_t>(vhop)) {
-        routes.back().push_back({mod, std::get<uint64_t>(vhop)});
+        routes.back().second.push_back({mod, std::get<uint64_t>(vhop)});
       } else if(std::holds_alternative<const Block*>(vhop)) {
         for(const Block* hop = std::get<const Block*>(vhop); hop != nullptr;
             hop = hop->parent)
-          routes.back().push_back(hop->scope);
+          routes.back().second.push_back(hop->scope);
       } else std::abort();  // unreachable
     }
-    routes.back().shrink_to_fit();
+    routes.back().second.shrink_to_fit();
   }
   return routes;
 }

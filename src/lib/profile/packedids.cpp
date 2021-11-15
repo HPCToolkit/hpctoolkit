@@ -72,101 +72,90 @@ void IdPacker::notifyPipeline() noexcept {
   udOnce = src.structs().context.add<ctxonce>(std::ref(*this));
 }
 
-void IdPacker::notifyContextExpansion(ContextRef::const_t from, Scope s, ContextRef::const_t to) {
-  if(auto fc = std::get_if<const Context>(from)) {
-    // Check that we haven't handled this particular expansion already
-    if(!fc->userdata[udOnce].seen.emplace(s).second) return;
-    stripcnt.fetch_add(1, std::memory_order_relaxed);
+void IdPacker::notifyContextExpansion(const Context& from, Scope s, const Context& to) {
+  // Check that we haven't handled this particular expansion already
+  if(!from.userdata[udOnce].seen.emplace(s).second) return;
+  stripcnt.fetch_add(1, std::memory_order_relaxed);
 
-    // Nab a pseudo-random buffer to fill with our data
-    auto hash = std::hash<const Context*>{}(&*fc) ^ std::hash<Scope>{}(s);
-    static_assert(std::numeric_limits<decltype(hash)>::radix == 2, "Non-binary architecture?");
-    unsigned char idx = hash & 0xff;
-    for(int i = 8; i < std::numeric_limits<decltype(hash)>::digits; i += 8)
-      idx ^= (hash >> i) & 0xff;
+  // Nab a pseudo-random buffer to fill with our data
+  auto hash = std::hash<const Context*>{}(&from) ^ std::hash<Scope>{}(s);
+  static_assert(std::numeric_limits<decltype(hash)>::radix == 2, "Non-binary architecture?");
+  unsigned char idx = hash & 0xff;
+  for(int i = 8; i < std::numeric_limits<decltype(hash)>::digits; i += 8)
+    idx ^= (hash >> i) & 0xff;
 
-    auto& buffer = stripbuffers[idx].second;
-    std::unique_lock<std::mutex> lock(stripbuffers[idx].first);
-    auto oldsz = buffer.size();
+  auto& buffer = stripbuffers[idx].second;
+  std::unique_lock<std::mutex> lock(stripbuffers[idx].first);
+  auto oldsz = buffer.size();
 
-    // Helper function to trace an expansion and record it
-    auto trace = [&](const Context& leaf) {
-      std::vector<std::reference_wrapper<const Context>> stack;
-      util::optional_ref<const Context> c;
-      for(c = leaf; c && c != fc; c = c->direct_parent())
-        stack.emplace_back(*c);
-      assert(c && "Found NULL while mapping expansion, is someone trying to be clever?");
+  // Helper function to trace an expansion and record it
+  auto trace = [&](const Context& leaf) {
+    std::vector<std::reference_wrapper<const Context>> stack;
+    util::optional_ref<const Context> c;
+    for(c = leaf; c && c != &from; c = c->direct_parent())
+      stack.emplace_back(*c);
+    assert(c && "Found NULL while mapping expansion, is someone trying to be clever?");
+    assert(!stack.empty() && "Context expansion did not actually expand?");
 
-      pack(buffer, (std::uint64_t)stack.size());
-      for(auto it = stack.crbegin(), ite = stack.crend(); it != ite; ++it) {
-        const Context& c = it->get();
-        switch(c.scope().type()) {
-        case Scope::Type::global:
-          assert(false && "Global Contexts shouldn't come out of expansion!");
-          std::abort();
-        case Scope::Type::unknown:
-        case Scope::Type::point:
-        case Scope::Type::placeholder:
-          buffer.emplace_back(0);
-          break;
-        case Scope::Type::function:
-        case Scope::Type::inlined_function:
-          buffer.emplace_back(1);
-          break;
-        case Scope::Type::loop:
-        case Scope::Type::line:
-          buffer.emplace_back(2);
-          break;
-        }
-        pack(buffer, (std::uint64_t)c.userdata[src.identifier()]);
+    pack(buffer, (std::uint64_t)stack.size());
+    for(auto it = stack.crbegin(), ite = stack.crend(); it != ite; ++it) {
+      const Context& c = it->get();
+      switch(c.scope().type()) {
+      case Scope::Type::global:
+        assert(false && "Global Contexts shouldn't come out of expansion!");
+        std::abort();
+      case Scope::Type::unknown:
+      case Scope::Type::point:
+      case Scope::Type::placeholder:
+        buffer.emplace_back(0);
+        break;
+      case Scope::Type::function:
+      case Scope::Type::inlined_function:
+        buffer.emplace_back(1);
+        break;
+      case Scope::Type::loop:
+      case Scope::Type::line:
+        buffer.emplace_back(2);
+        break;
       }
-    };
-
-    // Now we can write the entry for out friends to work with.
-    // Format: [parent id] (Scope)
-    auto cid = fc->userdata[src.identifier()];
-    pack(buffer, (std::uint64_t)cid);
-    switch(s.type()) {
-    case Scope::Type::point: {
-      // Format: [module id] [offset]
-      auto mo = s.point_data();
-      pack(buffer, (std::uint64_t)mo.first.userdata[src.identifier()]);
-      pack(buffer, (std::uint64_t)mo.second);
-      break;
+      pack(buffer, (std::uint64_t)c.userdata[src.identifier()]);
     }
-    case Scope::Type::placeholder:
-      // Format: [magic] [placeholder]
-      pack(buffer, (std::uint64_t)0xF3F2F1F0ULL << 32);
-      pack(buffer, (std::uint64_t)s.enumerated_data());
-      break;
-    case Scope::Type::unknown:
-      // Format: [magic]
-      pack(buffer, (std::uint64_t)0xF0F1F2F3ULL << 32);
-      break;
-    case Scope::Type::global:
-    case Scope::Type::function:
-    case Scope::Type::inlined_function:
-    case Scope::Type::loop:
-    case Scope::Type::line:
-      assert(false && "PackedIds can't handle non-point Contexts!");
-      std::abort();
-    }
+  };
 
-    if(auto tc = std::get_if<const Context>(to)) {
-      // Format: [cnt] ([type] [context id])...
-      trace(*tc);
-    } else if(auto tc = std::get_if<const SuperpositionedContext>(to)) {
-      // Format: [0] [cnt] ([cnt] ([type] [context id])...)...
-      pack(buffer, (std::uint64_t)0);
-      pack(buffer, (std::uint64_t)tc->targets().size());
-      for(const auto& t: tc->targets()) trace(std::get<Context>(t.target));
-    } else abort();  // unreachable
-
-    buffersize.fetch_add(buffer.size() - oldsz, std::memory_order_relaxed);
-  } else {
-    assert(false && "IdPacker does not support expansions starting at an improper Context!");
+  // Now we can write the entry for out friends to work with.
+  // Format: [parent id] (Scope)
+  auto cid = from.userdata[src.identifier()];
+  pack(buffer, (std::uint64_t)cid);
+  switch(s.type()) {
+  case Scope::Type::point: {
+    // Format: [module id] [offset]
+    auto mo = s.point_data();
+    pack(buffer, (std::uint64_t)mo.first.userdata[src.identifier()]);
+    pack(buffer, (std::uint64_t)mo.second);
+    break;
+  }
+  case Scope::Type::placeholder:
+    // Format: [magic] [placeholder]
+    pack(buffer, (std::uint64_t)0xF3F2F1F0ULL << 32);
+    pack(buffer, (std::uint64_t)s.enumerated_data());
+    break;
+  case Scope::Type::unknown:
+    // Format: [magic]
+    pack(buffer, (std::uint64_t)0xF0F1F2F3ULL << 32);
+    break;
+  case Scope::Type::global:
+  case Scope::Type::function:
+  case Scope::Type::inlined_function:
+  case Scope::Type::loop:
+  case Scope::Type::line:
+    assert(false && "PackedIds can't handle non-point Contexts!");
     std::abort();
   }
+
+  // Format: [cnt] ([type] [context id])...
+  trace(to);
+
+  buffersize.fetch_add(buffer.size() - oldsz, std::memory_order_relaxed);
 }
 
 void IdPacker::notifyWavefront(DataClass ds) {
@@ -301,23 +290,20 @@ void IdUnpacker::unpack(ProfilePipeline::Source& sink) noexcept {
   ctxtree.clear();
 }
 
-ContextRef IdUnpacker::Expander::context(ContextRef c, Scope& s) noexcept {
-  if(auto co = std::get_if<Context>(c)) {
-    util::call_once(shared.once, [this]{ shared.unpack(sink); });
-    bool first = true;
-    auto x = shared.exmap.find(co->userdata[sink.identifier()]);
-    assert(x != shared.exmap.end() && "Missing data for Context `co`!");
-    auto y = x->second.find(s);
-    assert(y != x->second.end() && "Missing data for Scope `s` from Context `co`!");
-    ContextRef r = *co;
-    for(const auto& next: y->second) {
-      if(!first) r = sink.context(r, s);
-      s = next;
-      first = false;
-    }
-    return r;
+Context& IdUnpacker::Expander::context(Context& c, Scope& s) noexcept {
+  util::call_once(shared.once, [this]{ shared.unpack(sink); });
+  bool first = true;
+  auto x = shared.exmap.find(c.userdata[sink.identifier()]);
+  assert(x != shared.exmap.end() && "Missing data for Context `co`!");
+  auto y = x->second.find(s);
+  assert(y != x->second.end() && "Missing data for Scope `s` from Context `co`!");
+  std::reference_wrapper<Context> cc = c;
+  for(const auto& next: y->second) {
+    if(!first) cc = sink.context(cc, s);
+    s = next;
+    first = false;
   }
-  return c;
+  return cc;
 }
 
 void IdUnpacker::Finalizer::context(const Context& c, unsigned int& id) noexcept {

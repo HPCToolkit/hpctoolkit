@@ -57,12 +57,12 @@
 #include <unordered_set>
 
 /// \file
-/// Helper header for writing managable "uniqable" objects. A commong trait
+/// Helper header for writing manageable "uniqable" objects. A common trait
 /// among managed objects is the concept that they need to be unique'd among a
 /// proper subset of their members, while others need to stay mutable for
 /// linking into a larger substrate. The STL structures impose an extra `const`
 /// to ensure the contents are (logically) accurate. Some approaches are:
-///  1. Use `const_cast`. Downside is that `operator=` becomes unusuable.
+///  1. Use `const_cast`. Downside is that `operator=` becomes unuseable.
 ///  2. Use `mutable`. Downside is that `const` is significantly weakened.
 ///  3. Use a `std::pair` underneath. Downside is a C++ type management mess.
 /// We take an alternative of approach 2, using templates and a runtime check

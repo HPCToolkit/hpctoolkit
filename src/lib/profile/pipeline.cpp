@@ -63,6 +63,24 @@ using Settings = ProfilePipeline::Settings;
 using Source = ProfilePipeline::Source;
 using Sink = ProfilePipeline::Sink;
 
+size_t ProfilePipeline::TupleHash::operator()(const std::vector<pms_id_t>& tuple) const noexcept {
+  size_t sponge = 0x15;
+  for(const auto& e: tuple) {
+    sponge ^= h_u16(IDTUPLE_GET_KIND(e.kind)) ^ h_u64(e.physical_index);
+    sponge <<= 1;
+  }
+  return sponge;
+}
+bool ProfilePipeline::TupleEqual::operator()(const std::vector<pms_id_t>& a, const std::vector<pms_id_t>& b) const noexcept {
+  if(a.size() != b.size()) return false;
+  for(size_t i = 0; i < a.size(); i++) {
+    if(IDTUPLE_GET_KIND(a[i].kind) != IDTUPLE_GET_KIND(b[i].kind)
+       || a[i].physical_index != b[i].physical_index)
+      return false;
+  }
+  return true;
+}
+
 detail::ProfilePipelineBase::SourceEntry::SourceEntry(ProfileSource& s)
   : source(s), up_source(nullptr) {};
 detail::ProfilePipelineBase::SourceEntry::SourceEntry(std::unique_ptr<ProfileSource>&& up)
@@ -207,7 +225,7 @@ ProfilePipeline::ProfilePipeline(Settings&& b, std::size_t team_sz)
     transformers[i].get().bindPipeline(Source(*this, DataClass::all(), ExtensionClass::all(), i));
 
   // Make sure the global Context is ready before letting any data in.
-  cct.reset(new Context(structs.context, Scope(*this)));
+  cct.reset(new Context(structs.context, std::nullopt, Scope(*this)));
   for(auto& s: sinks) {
     if(s.dataLimit.hasContexts()) s().notifyContext(*cct);
   }
@@ -235,19 +253,66 @@ ProfilePipeline::ProfilePipeline(Settings&& b, std::size_t team_sz)
   scheduledWaves &= scheduled;
 }
 
+void ProfilePipeline::complete(Thread::Temporary&& tt, std::optional<std::pair<std::chrono::nanoseconds, std::chrono::nanoseconds>>& localTimepointBounds) {
+  auto drain = [&](auto& tpd, auto type, auto notify) {
+    // Drain the remaining timepoints from the staging buffer first
+    if(!tpd.staging.empty()) {
+      if(tpd.unboundedDisorder) {
+        std::sort(tpd.staging.begin(), tpd.staging.end(),
+            util::compare_only_first<typename decltype(tpd.staging)::value_type>());
+      }
+      for(auto& s: sinks) {
+        if(!s.dataLimit.has(type)) continue;
+        notify(s(), tpd.staging);
+      }
+      tpd.staging.clear();
+    }
+    // Then drain the timepoints from the sorting buffer
+    if(!tpd.sortBuf.empty()) {
+      auto tps = std::move(tpd.sortBuf).sorted();
+      for(auto& s: sinks) {
+        if(!s.dataLimit.has(type)) continue;
+        notify(s(), tps);
+      }
+    }
+
+    // Update our thread-local timepoint min-max bounds
+    if(tt.minTime > std::chrono::nanoseconds::min()) {
+      if(localTimepointBounds) {
+        localTimepointBounds->first = std::min(localTimepointBounds->first, tt.minTime);
+        localTimepointBounds->second = std::max(localTimepointBounds->second, tt.maxTime);
+      } else
+        localTimepointBounds = {tt.minTime, tt.maxTime};
+    }
+  };
+  drain(tt.ctxTpData, DataClass::ctxTimepoints, [&](ProfileSink& s, const auto& tps){
+    s.notifyTimepoints(tt.thread(), tps);
+  });
+  for(auto& [m, tpd]: tt.metricTpData.iterate()) {
+    drain(tpd, DataClass::metricTimepoints, [&](ProfileSink& s, const auto& tps){
+      s.notifyTimepoints(tt.thread(), m, tps);
+    });
+  }
+
+  // Finish off the Thread's metrics and let the Sinks know
+  Metric::finalize(tt);
+  for(auto& s: sinks)
+    if(s.dataLimit.hasThreads()) s().notifyThreadFinal(tt);
+}
+
 void ProfilePipeline::run() {
 #if ENABLE_VG_ANNOTATIONS == 1
   char start_arc;
   char barrier_arc;
   char single_arc;
+  char barrier2_arc;
   char end_arc;
 #endif
 
   std::array<std::atomic<std::size_t>, 4> countdowns;
   for(auto& c: countdowns) c.store(sources.size(), std::memory_order_relaxed);
 
-  std::mutex delayedThreads_lock;
-  std::forward_list<Thread::Temporary> delayedThreads;
+  std::deque<std::reference_wrapper<Thread::Temporary>> allMergedThreads;
 
   ANNOTATE_HAPPENS_BEFORE(&start_arc);
   #pragma omp parallel num_threads(team_size)
@@ -344,65 +409,35 @@ void ProfilePipeline::run() {
         if(req.hasAny()) sources[i]().read(req);
       }
 
-      // Finalize all the Threads we can, stash the ones we can't for later
-      for(auto& tt: sl.threads) {
-        auto drain = [&](auto& tpd, auto type, auto notify) {
-          // Drain the remaining timepoints from the staging buffer first
-          if(!tpd.staging.empty()) {
-            if(tpd.unboundedDisorder) {
-              std::sort(tpd.staging.begin(), tpd.staging.end(),
-                  util::compare_only_first<typename decltype(tpd.staging)::value_type>());
-            }
-            for(auto& s: sinks) {
-              if(!s.dataLimit.has(type)) continue;
-              notify(s(), tpd.staging);
-            }
-            tpd.staging.clear();
-          }
-          // Then drain the timepoints from the sorting buffer
-          if(!tpd.sortBuf.empty()) {
-            auto tps = std::move(tpd.sortBuf).sorted();
-            for(auto& s: sinks) {
-              if(!s.dataLimit.has(type)) continue;
-              notify(s(), tps);
-            }
-          }
-
-          // Update our thread-local timepoint min-max bounds
-          if(tt.minTime > std::chrono::nanoseconds::min()) {
-            if(localTimepointBounds) {
-              localTimepointBounds->first = std::min(localTimepointBounds->first, tt.minTime);
-              localTimepointBounds->second = std::max(localTimepointBounds->second, tt.maxTime);
-            } else
-              localTimepointBounds = {tt.minTime, tt.maxTime};
-          }
-        };
-        drain(tt.ctxTpData, DataClass::ctxTimepoints, [&](ProfileSink& s, const auto& tps){
-          s.notifyTimepoints(tt.thread(), tps);
-        });
-        for(auto& [m, tpd]: tt.metricTpData.iterate()) {
-          drain(tpd, DataClass::metricTimepoints, [&](ProfileSink& s, const auto& tps){
-            s.notifyTimepoints(tt.thread(), m, tps);
-          });
-        }
-
-        // Finish off the Thread's metrics and let the Sinks know
-        Metric::prefinalize(tt);
-        if(tt.contributesToCollab) continue;
-        Metric::finalize(tt);
-        for(auto& s: sinks)
-          if(s.dataLimit.hasThreads()) s().notifyThreadFinal(tt);
-      }
-      sl.threads.remove_if([](const auto& t){ return !t.contributesToCollab; });
-      if(!sl.threads.empty()) {
-        std::unique_lock<std::mutex> l(delayedThreads_lock);
-        delayedThreads.splice_after(delayedThreads.before_begin(), std::move(sl.threads));
-      }
+      // Complete the threads unit to this Source in particular
+      for(auto& tt: sl.threads) complete(std::move(tt), localTimepointBounds);
 
       // Clean up the Source-local data.
       sl.threads.clear();
       assert(sl.thawedMetrics.empty() && "Source exited before freezing all of its referenced Metrics!");
       sl.thawedMetrics.clear();
+    }
+
+    // Make sure everything has been read before we handle the merged threads
+    ANNOTATE_HAPPENS_BEFORE(&barrier_arc);
+    #pragma omp barrier
+    ANNOTATE_HAPPENS_AFTER(&barrier_arc);
+
+    // One thread fills allMergedThreads from the mergedThreads map, all others
+    // wait for that to complete.
+    #pragma omp single
+    {
+      for(auto& mt: mergedThreads)
+        allMergedThreads.emplace_back(mt.second);
+
+      ANNOTATE_HAPPENS_BEFORE(&single_arc);
+    }
+    ANNOTATE_HAPPENS_AFTER(&single_arc);
+
+    // Handle all the Threads that were merged, same as for any other Thread
+    #pragma omp for schedule(dynamic) nowait
+    for(std::size_t i = 0; i < allMergedThreads.size(); ++i) {
+      complete(std::move(allMergedThreads[i].get()), localTimepointBounds);
     }
 
     // Update the main timepoint bounds with our thread-local data
@@ -415,26 +450,10 @@ void ProfilePipeline::run() {
         timepointBounds = localTimepointBounds;
     }
 
-    // Make sure everything has been read before we cross-distribute
-    ANNOTATE_HAPPENS_BEFORE(&barrier_arc);
+    // Make sure all the merged threads have been handled before continuing
+    ANNOTATE_HAPPENS_BEFORE(&barrier2_arc);
     #pragma omp barrier
-    ANNOTATE_HAPPENS_AFTER(&barrier_arc);
-
-    // One thread works hard to do the cross-Thread distributions and finish
-    // everything up. Its slow but it'll work for now
-    #pragma omp single
-    {
-      for(const auto& xc: collabs.iterate())
-        Metric::crossfinalize(xc.second.ctx);
-      for(auto& t: delayedThreads) {
-        Metric::finalize(t);
-        for(auto& s: sinks)
-          if(s.dataLimit.hasThreads()) s().notifyThreadFinal(t);
-      }
-      delayedThreads.clear();
-      ANNOTATE_HAPPENS_BEFORE(&single_arc);
-    }
-    ANNOTATE_HAPPENS_AFTER(&single_arc);
+    ANNOTATE_HAPPENS_AFTER(&barrier2_arc);
 
     // Clean up the Sources early, to save some serialized time later
     #pragma omp for schedule(dynamic) nowait
@@ -602,38 +621,17 @@ void Source::notifyContext(Context& c) {
   }
   c.userdata.initialize();
 }
-ContextRef Source::context(ContextRef p, const Scope& s, bool recurse) {
+Context& Source::context(Context& p, const Scope& s, bool recurse) {
   assert(limit().hasContexts() && "Source did not register for `contexts` emission!");
-  ContextRef res = p;
+  std::reference_wrapper<Context> res = p;
   Scope rs = s;
   for(std::size_t i = 0; i < pipe->transformers.size(); i++)
     if(recurse || i != tskip)
       res = pipe->transformers[i].get().context(res, rs);
 
-  auto newCtx = [&](ContextRef p, const Scope& s) -> ContextRef {
-    if(auto pcc = std::get_if<Context, const CollaboratorRoot>(p))
-      p = pcc->second->second->collaboration();
-    if(auto pc = std::get_if<CollaborativeContext>(p))
-      return *pc->ensure(rs, [this](Context& c){ notifyContext(c); }).second;
-    if(auto pc = std::get_if<CollaborativeSharedContext>(p))
-      return pc->ensure(rs, [this](Context& c){ notifyContext(c); });
-    if(auto pc = std::get_if<Context>(p)) {
-      auto x = pc->ensure(rs);
-      if(x.second) notifyContext(x.first);
-      return x.first;
-    }
-    assert(false && "Attempt to create a Context from an improper Context!");
-    std::abort();
-  };
-
-  if(std::holds_alternative<Context>(res)
-     || std::holds_alternative<Context, const CollaboratorRoot>(res)
-     || std::holds_alternative<CollaborativeContext>(res)
-     || std::holds_alternative<CollaborativeSharedContext>(res)) {
-    res = newCtx(res, rs);
-  } else if(auto rc = std::get_if<SuperpositionedContext>(res)) {
-    for(auto& t: rc->m_targets) t.target = newCtx(t.target, rs);
-  } else abort();  // unreachable
+  bool first;
+  std::tie(res, first) = res.get().ensure(rs);
+  if(first) notifyContext(res);
 
   if(tskip >= pipe->transformers.size())
     for(auto& ss: pipe->sinks)
@@ -641,76 +639,133 @@ ContextRef Source::context(ContextRef p, const Scope& s, bool recurse) {
   return res;
 }
 
-ContextRef Source::superposContext(ContextRef root, std::vector<SuperpositionedContext::Target> targets) {
+util::optional_ref<ContextFlowGraph> Source::contextFlowGraph(const Scope& s) {
   assert(limit().hasContexts() && "Source did not register for `contexts` emission!");
-  assert(std::holds_alternative<Context>(root) && "Attempt to root a Superposition on an improper Context!");
-  return std::get<Context>(root).superposition(std::move(targets));
+  std::pair<const util::uniqued<ContextFlowGraph>&, bool> x = pipe->cgraphs.emplace(s);
+  ContextFlowGraph& fg = x.first();
+  if(x.second) {
+    for(ProfileTransformer& t: pipe->transformers)
+      t.contextFlowGraph(fg, s);
+    fg.freeze([&](const Scope& ss){
+      assert(ss != s);
+      return contextFlowGraph(ss);
+    });
+  }
+  if(fg.empty()) return std::nullopt;
+  return fg;
 }
 
-CollaborativeContext& Source::collabContext(std::uint64_t ci, std::uint64_t ri) {
+ContextReconstruction& Source::contextReconstruction(ContextFlowGraph& g, Context& r) {
   assert(limit().hasContexts() && "Source did not register for `contexts` emission!");
-  return pipe->collabs[{ci, ri}].ctx;
-}
-ContextRef Source::collaborate(ContextRef target, CollaborativeContext& collab, Scope s) {
-  assert(limit().hasContexts() && "Source did not register for `contexts` emission!");
-  collab.addCollaboratorRoot(target, [this](Context& c){ notifyContext(c); });
-  auto& sroot = collab.ensure(s, [this](Context& c){ notifyContext(c); });
-  return {std::get<Context>(target), sroot};
+  assert(!g.empty() && "FlowGraph obtained when it shouldn't have been?");
+  auto x = r.reconsts_p->emplace(r, g);
+  ContextReconstruction& rc = x.first;
+  if(x.second) {
+    rc.instantiate(
+      [&](Context& c, const Scope& s) -> Context& {
+        return context(c, s, true);
+      }, [&](const Scope& s) -> ContextReconstruction& {
+        assert(s != g.scope());
+        auto fg = contextFlowGraph(s);
+        assert(fg);  // Just assert here, tested during ContextFlowGraph::freeze
+        return contextReconstruction(*fg, r);
+      });
+  }
+  return rc;
 }
 
-Source::AccumulatorsRef Source::accumulateTo(ContextRef c, Thread::Temporary& t) {
+void Source::addToReconstructionGroup(ContextFlowGraph& g, Thread::Temporary& t, uint64_t gid) {
+  auto& group = t.r_groups[gid];
+  std::unique_lock<std::mutex> l(group.lock);
+  auto [reconsts_it, first] = group.fg_reconsts.try_emplace(g);
+  if(!first) return;
+  auto& reconsts = reconsts_it->second;
+
+  // Instantitate Reconstructions at every root in the group that calls any of
+  // the Graph's entries.
+  for(const Scope& entry: g.entries()) {
+    auto roots_it = group.c_entries.find(entry);
+    if(roots_it != group.c_entries.end()) {
+      for(Context& r: roots_it->second)
+        reconsts.insert(contextReconstruction(g, r));
+    }
+  }
+}
+
+void Source::addToReconstructionGroup(Context& r, const Scope& entry, Thread::Temporary& t, uint64_t gid) {
+  auto& group = t.r_groups[gid];
+  std::unique_lock<std::mutex> l(group.lock);
+  auto [it, first] = group.c_entries[entry].insert(r);
+  if(!first) return;
+
+  // Instantiate Reconstructions below this new root for every FlowGraph that
+  // supports this entry point.
+  for(auto& [g, reconsts]: group.fg_reconsts) {
+    if(g->entries().count(entry) > 0)
+      reconsts.insert(contextReconstruction(g, r));
+  }
+}
+
+Source::AccumulatorsRef Source::accumulateTo(Thread::Temporary& t, Context& c) {
   assert(limit().hasMetrics() && "Source did not register for `metrics` emission!");
   assert(slocal->lastWave && "Attempt to emit metrics before requested!");
-  if(auto pc = std::get_if<Context>(c))
-    return t.data[*pc];
-  if(auto pc = std::get_if<SuperpositionedContext>(c))
-    return t.sp_data[*pc];
-  if(auto pcc = std::get_if<Context, const CollaboratorRoot>(c)) {
-    t.contributesToCollab = true;
-    return pcc->second->second->collaboration().data[pcc->second->first][{t, pcc->first}];
+  return AccumulatorsRef(t.c_data[c]);
+}
+
+Source::AccumulatorsRef Source::accumulateTo(Thread::Temporary& t, ContextReconstruction& cr) {
+  assert(limit().hasMetrics() && "Source did not register for `metrics` emission!");
+  assert(slocal->lastWave && "Attempt to emit metrics before requested!");
+  return AccumulatorsRef(t.r_data[cr]);
+}
+
+Source::AccumulatorsRef Source::accumulateTo(Thread::Temporary& t, uint64_t g, Context& c) {
+  assert(limit().hasMetrics() && "Source did not register for `metrics` emission!");
+  assert(slocal->lastWave && "Attempt to emit metrics before requested!");
+  return AccumulatorsRef(t.r_groups[g].c_data[c]);
+}
+
+Source::AccumulatorsRef Source::accumulateTo(Thread::Temporary& t, uint64_t g, ContextFlowGraph& cfg) {
+  assert(limit().hasMetrics() && "Source did not register for `metrics` emission!");
+  assert(slocal->lastWave && "Attempt to emit metrics before requested!");
+  auto& group = t.r_groups[g];
+#ifndef NDEBUG
+  {
+    std::unique_lock<std::mutex> l(group.lock);
+    assert(group.fg_reconsts.find(cfg) != group.fg_reconsts.end()
+           && "addToReconstructionGroup must be called before accumulateTo!");
   }
-  if(auto pc = std::get_if<CollaborativeSharedContext>(c)) {
-    t.contributesToCollab = true;
-    return pc->data;
-  }
-  abort();  // unreachable
+#endif
+  return AccumulatorsRef(group.fg_data[cfg]);
 }
 
 void Source::AccumulatorsRef::add(Metric& m, double v) {
   map[m].add(v);
 }
 
-Source::StatisticsRef Source::accumulateTo(ContextRef c) {
+Source::StatisticsRef Source::accumulateTo(Context& c) {
   assert(limit().hasMetrics() && "Source did not register for `metrics` emission!");
-  assert(std::holds_alternative<Context>(c) && "Statistics are only present on proper Contexts!");
-  return {c};
+  return StatisticsRef(c);
 }
 
-template<class T>
-void Source::StatisticsRef::add(T& ctx, Metric& m, const StatisticPartial& sp,
+void Source::StatisticsRef::add(Metric& m, const StatisticPartial& sp,
                                 MetricScope ms, double v) {
   auto& a = ctx.data.emplace(std::piecewise_construct,
                              std::forward_as_tuple(m),
                              std::forward_as_tuple(m)).first;
   a.get(sp).add(ms, v);
 }
-void Source::StatisticsRef::add(Metric& m, const StatisticPartial& sp,
-                                MetricScope ms, double v) {
-  if(auto pc = std::get_if<Context>(c)) add(*pc, m, sp, ms, v);
-  else abort();  // unreachable
-}
 
-Thread::Temporary& Source::thread(ThreadAttributes o) {
-  assert(limit().hasThreads() && "Source did not register for `threads` emission!");
-  assert(o.ok() && "Source did not fill out enough of the ThreadAttributes!");
+Thread& Source::newThread(ThreadAttributes o) {
   o.finalize(pipe->threadAttrFinalizeState);
   auto& t = *pipe->threads.emplace(new Thread(pipe->structs.thread, o)).first;
   for(auto& s: pipe->sinks) {
     if(s.dataLimit.hasThreads()) s().notifyThread(t);
   }
   t.userdata.initialize();
-  slocal->threads.emplace_front(Thread::Temporary(t));
-  auto& tt = slocal->threads.front();
+  return t;
+}
+
+Thread::Temporary& Source::setup(Thread::Temporary& tt) {
   tt.ctxTpData.staging.reserve(4096);
   if(tt.thread().attributes.ctxTimepointDisorder() > 0) {
     // We need K+1 to detect the case when it was >K-disordered
@@ -718,7 +773,34 @@ Thread::Temporary& Source::thread(ThreadAttributes o) {
     tt.ctxTpData.sortBuf = decltype(tt.ctxTpData.sortBuf)(
         tt.thread().attributes.ctxTimepointDisorder() + 2);
   }
-  return slocal->threads.front();
+  return tt;
+}
+
+Thread::Temporary& Source::thread(ThreadAttributes o) {
+  assert(limit().hasThreads() && "Source did not register for `threads` emission!");
+  assert(o.ok() && "Source did not fill out enough of the ThreadAttributes!");
+  auto& t = newThread(std::move(o));
+  slocal->threads.emplace_front(Thread::Temporary(t));
+  return setup(slocal->threads.front());
+}
+
+Thread::Temporary& Source::mergedThread(ThreadAttributes o) {
+  assert(limit().hasThreads() && "Source did not register for `threads` emission!");
+  assert(o.ok() && "Source did not fill out enough of the ThreadAttributes!");
+  {
+    std::shared_lock<std::shared_mutex> l(pipe->mergedThreadsLock);
+    auto it = pipe->mergedThreads.find(o.idTuple());
+    if(it != pipe->mergedThreads.end()) return it->second;
+  }
+  std::unique_lock<std::shared_mutex> l(pipe->mergedThreadsLock);
+  auto it = pipe->mergedThreads.find(o.idTuple());
+  if(it != pipe->mergedThreads.end()) return it->second;
+
+  // Now we are confident this is a new Thread, so create it
+  auto& t = newThread(std::move(o));
+  auto [x_tt, first] = pipe->mergedThreads.emplace(t.attributes.idTuple(), Thread::Temporary(t));
+  assert(first);
+  return setup(x_tt->second);
 }
 
 template<class Tp, class Rewind, class Notify, class Singleton>
@@ -785,7 +867,7 @@ Source::TimepointStatus Source::timepoint(Thread::Temporary& tt, Thread::Tempora
   return TimepointStatus::next;
 }
 
-Source::TimepointStatus Source::timepoint(Thread::Temporary& tt, ContextRef c, std::chrono::nanoseconds tm) {
+Source::TimepointStatus Source::timepoint(Thread::Temporary& tt, Context& c, std::chrono::nanoseconds tm) {
   assert(limit().hasCtxTimepoints() && "Source did not register for `ctxTimepoints` emission!");
   assert(slocal->lastWave && "Attempt to emit timepoints before requested!");
   return timepoint(tt, tt.ctxTpData, {tm, c}, DataClass::ctxTimepoints,

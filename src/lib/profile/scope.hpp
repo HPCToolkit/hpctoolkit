@@ -164,6 +164,11 @@ public:
   // Comparison, as usual
   bool operator==(const Scope& o) const noexcept;
   bool operator!=(const Scope& o) const noexcept { return !operator==(o); }
+  // Total ordering
+  bool operator<(const Scope& o) const noexcept;
+  bool operator<=(const Scope& o) const noexcept { return !operator>(o); }
+  bool operator>(const Scope& o) const noexcept { return o.operator<(*this); }
+  bool operator>=(const Scope& o) const noexcept { return !operator<(o); }
 
 private:
   Type ty;
@@ -175,6 +180,9 @@ private:
       bool operator==(const point_u& o) const {
         return m == o.m && offset == o.offset;
       }
+      bool operator<(const point_u& o) const {
+        return m != o.m ? m < o.m : offset < o.offset;
+      }
       operator std::pair<const Module&, uint64_t>() const {
         return {*m, offset};
       }
@@ -183,6 +191,9 @@ private:
       const Function* f;
       bool operator==(const function_u& o) const {
         return f == o.f;
+      }
+      bool operator<(const function_u& o) const {
+        return f < o.f;
       }
       operator const Function&() const {
         return *f;
@@ -194,6 +205,9 @@ private:
       bool operator==(const line_u& o) const {
         return s == o.s && l == o.l;
       }
+      bool operator<(const line_u& o) const {
+        return s != o.s ? s < o.s : l < o.l;
+      }
       operator std::pair<const File&, uint64_t>() const {
         return {*s, l};
       }
@@ -203,6 +217,9 @@ private:
       line_u line;
       bool operator==(const function_line_u& o) const {
         return function == o.function && line == o.line;
+      }
+      bool operator<(const function_line_u& o) const {
+        return !(function == o.function) ? function < o.function : line < o.line;
       }
     } function_line;
     uint64_t enumerated;
