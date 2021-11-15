@@ -66,7 +66,11 @@ public:
 
   /// Callback issued when a new Context is emitted into the Pipe.
   // MT: Internally Synchronized
-  virtual ContextRef context(ContextRef c, Scope&) noexcept { return c; }
+  virtual Context& context(Context& c, Scope&) noexcept { return c; }
+
+  /// Fill the given ContextFlowGraph with Templates, as one should.
+  // MT: Internally Synchronized
+  virtual void contextFlowGraph(ContextFlowGraph&, const Scope&) noexcept {};
 
   /// Append additional Statistics to the given Metric.
   // MT: Internally Synchronized
@@ -85,31 +89,21 @@ struct RouteExpansionTransformer : public ProfileTransformer {
   RouteExpansionTransformer() = default;
   ~RouteExpansionTransformer() = default;
 
-  ContextRef context(ContextRef cr, Scope& s) noexcept override {
-    if(!std::holds_alternative<SuperpositionedContext>(cr)) {
-      if(s.type() == Scope::Type::point) {
-        auto mo = s.point_data();
-        const auto& c = mo.first.userdata[sink.classification()];
-        auto routes = c.getRoutes(mo.second);
-        if(routes.empty()) return cr;
-        if(routes.size() == 1) {
-          for(const auto& s: routes.front()) cr = sink.context(cr, s);
-          return cr;
-        }
-
-        std::vector<SuperpositionedContext::Target> paths;
-        paths.reserve(routes.size());
-        for(const auto& r: routes) {
-          paths.push_back({{}, cr});
-          for(const auto& s: r) {
-            paths.back().target = sink.context(paths.back().target, s);
-            paths.back().route.emplace_back(sink.context(cr, s, true));
-          }
-        }
-        return sink.superposContext(cr, std::move(paths));
-      }
+  void contextFlowGraph(ContextFlowGraph& fg, const Scope& s) noexcept override {
+    if(s.type() == Scope::Type::point) {
+      auto mo = s.point_data();
+      const auto& c = mo.first.userdata[sink.classification()];
+      auto routes = c.getRoutes(mo.second);
+      if(routes.empty()) return;
+      fg.handler([](const Metric& m){
+        ContextFlowGraph::MetricHandling ret;
+        if(m.name() == "GINS") ret.interior = true;
+        else if(m.name() == "GKER:COUNT") ret.exterior = ret.exteriorLogical = true;
+        else if(m.name() == "GKER:SAMPLED_COUNT") ret.exterior = true;
+        return ret;
+      });
+      for(const auto& r: routes) fg.add({r.first, r.second});
     }
-    return cr;
   }
 };
 
@@ -118,11 +112,13 @@ struct ClassificationTransformer : public ProfileTransformer {
   ClassificationTransformer() = default;
   ~ClassificationTransformer() = default;
 
-  ContextRef context(ContextRef c, Scope& s) noexcept override {
+  Context& context(Context& c, Scope& s) noexcept override {
     if(s.type() == Scope::Type::point) {
       auto mo = s.point_data();
       const auto& cl = mo.first.userdata[sink.classification()];
-      for(const auto& s: cl.getScopes(mo.second)) c = sink.context(c, s);
+      std::reference_wrapper<Context> cc = c;
+      for(const auto& s: cl.getScopes(mo.second)) cc = sink.context(cc, s);
+      return cc;
     }
     return c;
   }

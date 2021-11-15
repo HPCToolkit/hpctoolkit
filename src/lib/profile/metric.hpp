@@ -279,16 +279,6 @@ private:
   // MT: Internally Synchronized
   bool freeze();
 
-  // Partially finalize the MetricAccumulators for a Thread, everything that can
-  // be done before crossfinalize.
-  // MT: Internally Synchronized
-  static void prefinalize(Thread::Temporary& t) noexcept;
-
-  // Partially finalize the MetricAccumulators referenced by a particular
-  // CollaborativeContext. Will affect the Accumulators for referenced Threads.
-  // MT: Internally Synchronized
-  static void crossfinalize(const CollaborativeContext&) noexcept;
-
   // Finalize the MetricAccumulators for a Thread.
   // MT: Internally Synchronized
   static void finalize(Thread::Temporary& t) noexcept;

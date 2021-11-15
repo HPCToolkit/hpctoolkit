@@ -105,7 +105,7 @@ public:
   ~OnceFlag() = default;
 
   /// Call the function, once. All caveats of std::call_once apply.
-  // MT: Internally Synchonized
+  // MT: Internally Synchronized
   template<class F, class... Args>
   void call(F&& f, Args&&... args) {
     call_detail(true, [&]{
@@ -115,7 +115,7 @@ public:
 
   /// Call the function, once. All caveats of std::call_once apply.
   /// Does not wait for the function to complete before returning.
-  // MT: Internally Synchonized, Unsafe (provides no synchronization)
+  // MT: Internally Synchronized, Unsafe (provides no synchronization)
   template<class F, class... Args>
   void call_nowait(F&& f, Args&&... args) {
     call_detail(false, [&]{
@@ -124,7 +124,7 @@ public:
   }
 
   /// Check whether this flag has been call()'d.
-  // MT: Internally Synchonized, Unstable
+  // MT: Internally Synchronized, Unstable
   bool query();
 
 private:

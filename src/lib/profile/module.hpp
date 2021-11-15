@@ -97,7 +97,7 @@ public:
     /// The offsets will be converted into call Scopes with the result of
     /// getScopes attached, while the Blocks will be inserted as-is.
     // MT: Externally Synchronized
-    void addRoute(std::vector<route_t>) noexcept;
+    void addRoute(const Scope&, std::vector<route_t>) noexcept;
 
     /// Get the Scope for this Block
     Scope getScope() const noexcept { return scope; }
@@ -107,7 +107,7 @@ public:
     Block* const parent;
     Scope const scope;
     std::size_t routeCnt = 0;
-    std::forward_list<std::vector<route_t>> routes;
+    std::forward_list<std::pair<Scope, std::vector<route_t>>> routes;
     Block(Scope s, Block* p = nullptr)
       : parent(p), scope(s) {};
     Block(Function& f, Block* p = nullptr)
@@ -128,9 +128,9 @@ public:
   /// Look up all the possible routes to the particular address.
   /// Scopes are ordered in order of forward control flow (i.e. callers appear
   /// before callees).
-  /// May be empty if there are no routes to the given address.
+  /// Will be empty only if there is no data on the routes for this address.
   // MT: Safe (const)
-  std::vector<std::vector<Scope>> getRoutes(uint64_t) const noexcept;
+  std::vector<std::pair<Scope, std::vector<Scope>>> getRoutes(uint64_t) const noexcept;
 
   /// The master table for Functions. These can be used to generate Scopes for
   /// various addScope and setScope.

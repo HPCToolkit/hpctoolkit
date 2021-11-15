@@ -183,7 +183,7 @@ std::vector<uint8_t>::const_iterator Packed::unpackReferences(iter_t it) noexcep
 }
 
 std::vector<uint8_t>::const_iterator Packed::unpackContexts(iter_t it) noexcept {
-  std::stack<ContextRef, std::vector<ContextRef>> tip;
+  std::stack<std::reference_wrapper<Context>, std::vector<std::reference_wrapper<Context>>> tip;
   // Format: <global> children... [sentinel]
   auto globalTy = unpack<std::uint64_t>(it);
   assert(globalTy == (std::uint64_t)Scope::Type::global && "Packed Contexts claim root is non-global?");
@@ -219,7 +219,7 @@ std::vector<uint8_t>::const_iterator Packed::unpackContexts(iter_t it) noexcept 
     default:
       assert(false && "Unrecognized Scope type while unpacking Contexts!");
     }
-    auto c = sink.context(tip.empty() ? sink.global() : (ContextRef)tip.top(), s);
+    auto& c = sink.context(tip.empty() ? sink.global() : tip.top().get(), s);
     tip.push(c);
   }
   return it;

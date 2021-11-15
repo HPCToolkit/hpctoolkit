@@ -330,31 +330,96 @@ public:
     void notifyContext(Context&);
 
   public:
-    /// Emit a new Context into the Pipeline, as a child of another.
+    /// Emit a new Context into the Pipeline as the child of another.
+    /// ProfileTransformers may inject additional Contexts between the parent
+    /// resulting child Context to provide additional (usually lexical) context.
+    ///
+    /// This method presupposes the single sequence of Contexts between the
+    /// parent and child can be derived statically from the Scope.
+    /// See contextReconstruction for a case when this is not possible.
     /// DataClass: `contexts`
     // MT: Externally Synchronized (this), Internally Synchronized
-    ContextRef context(ContextRef, const Scope&, bool recurse = false);
+    Context& context(Context&, const Scope&, bool recurse = false);
 
-    /// Emit a new SuperpositionedContext into the Pipeline.
+    /// Emit a new ContextReconstruction for the given ContextFlowGraph,
+    /// rooted at a particular Context.
+    ///
+    /// In summary, this handles the case where `graph.scope()` was executed
+    /// while `root` was calling an "entry" Scope, but the exact sequence of
+    /// zero or more calls used to get from `root` to `graph.scope()` are
+    /// unknown. In this case we do our best to reconstruct the missing calling
+    /// Contexts, and if we end up with multiple valid candidates we distribute
+    /// metric values based on the probability distribution of candidates.
+    /// See ContextReconstruction for more details on this process.
+    ///
+    /// Note that this is fundamentally different from
+    ///     `root` -> unknown -> `graph.scope()`
+    /// which represents the case where what `root` called is unknown. Here
+    /// we know what `root` called and need to reconstruct how that ended up
+    /// in `graph.scope()`.
+    ///
     /// DataClass: `contexts`
     // MT: Externally Synchronized (this), Internally Synchronized
-    ContextRef superposContext(ContextRef, std::vector<SuperpositionedContext::Target>);
+    ContextReconstruction& contextReconstruction(ContextFlowGraph& graph,
+                                                 Context& root);
 
-    /// Emit a new CollaborativeContext, identified by the given value.
+    /// Emit a ContextFlowGraph, generated statically from the given Scope.
+    ///
+    /// FlowGraphs are a generalization of ContextReconstructions where the
+    /// root Context is no longer known. Instead FlowGraphs are added to
+    /// "Reconstruction groups" along with root Contexts, metric values
+    /// attributed to the FlowGraph (and group) are redistributed to
+    /// reconstructed Contexts below any and/or all of the roots in the group.
+    /// When added root Contexts indicate which entry Scopes they call, the root
+    /// becomes a target for redistribution if the FlowGraph contains matching
+    /// entry Scopes.
+    /// See ContextFlowGraph for more details on this process.
+    ///
+    /// If there is no suitable binary analysis results for the given
+    /// Scope('s Module), std::nullopt is returned instead. The caller is
+    /// responsible for adapting accordingly.
+    ///
     /// DataClass: `contexts`
     // MT: Externally Synchronized (this), Internally Synchronized
-    CollaborativeContext& collabContext(std::uint64_t, std::uint64_t);
+    util::optional_ref<ContextFlowGraph> contextFlowGraph(const Scope&);
 
-    /// Mark the given ContextRef as a targeted root of a CollaborativeContext,
-    /// and return the appropriately marked ContextRef.
+    /// Include a ContextFlowGraph in the given Reconstruction group.
+    /// See contextFlowGraph for more details on what this means in practice.
+    ///
+    /// This function must be called before metric values can be attributed to
+    /// the FlowGraph in the given group.
+    ///
     /// DataClass: `contexts`
     // MT: Externally Synchronized (this), Internally Synchronized
-    ContextRef collaborate(ContextRef, CollaborativeContext&, Scope);
+    void addToReconstructionGroup(ContextFlowGraph&, Thread::Temporary&, uint64_t);
 
+    /// Include a Context as a root in the given Reconstruction group, which
+    /// may plausibly call the given entry Scope.
+    /// See contextFlowGraph for more details on what this means in practice.
+    /// DataClass: `contexts`
+    // MT: Externally Synchronized (this), Internally Synchronized
+    void addToReconstructionGroup(Context&, const Scope&, Thread::Temporary&, uint64_t);
+
+private:
+    // Helpers functions for creating and setting up new Threads
+    Thread& newThread(ThreadAttributes);
+    Thread::Temporary& setup(Thread::Temporary&);
+
+public:
     /// Emit a new Thread into the Pipeline.
     /// DataClass: `threads`
     // MT: Externally Synchronized (this), Internally Synchronized
     Thread::Temporary& thread(ThreadAttributes);
+
+    /// Emit a Thread into the Pipeline, with merging based on the idTuple.
+    /// Normally Threads are never merged, since doing so would require
+    /// Thread::Temporary data to have a lifetime over the whole process. This
+    /// method allows that restriction to be redacted. Use sparingly.
+    ///
+    /// TODO: Document the thread-safety properties of Thread::Temporary.
+    /// DataClass: `threads`
+    // MT: Externally Synchronized (this), Internally Synchronized
+    Thread::Temporary& mergedThread(ThreadAttributes);
 
     /// Return codes for timepoint-related functions
     enum class TimepointStatus {
@@ -375,7 +440,7 @@ public:
     /// Returns the expected next timepoint the caller should inject.
     /// DataClass: `ctxTimepoints`
     // MT: Externally Synchronized (this), Internally Synchronized
-    [[nodiscard]] TimepointStatus timepoint(Thread::Temporary&, ContextRef, std::chrono::nanoseconds);
+    [[nodiscard]] TimepointStatus timepoint(Thread::Temporary&, Context&, std::chrono::nanoseconds);
 
     /// Emit a Metric-value timepoint into the Pipeline.
     /// Returns the expected next timepoint the caller should inject.
@@ -395,14 +460,36 @@ public:
 
     private:
       friend class ProfilePipeline::Source;
-      decltype(Thread::Temporary::data)::mapped_type& map;
-      AccumulatorsRef(decltype(map)& m) : map(m) {};
+      decltype(Thread::Temporary::c_data)::mapped_type& map;
+      explicit AccumulatorsRef(decltype(map)& m) : map(m) {};
     };
 
-    /// Obtain a AccumulatorsRef for the given Thread and Context.
+    /// Attribute metric values to the given Thread and Context, by proxy
+    /// of the returned AccumulatorsRef.
     /// DataClass: `metrics`
     // MT: Externally Synchronized (this), Internally Synchronized
-    AccumulatorsRef accumulateTo(ContextRef c, Thread::Temporary& t);
+    AccumulatorsRef accumulateTo(Thread::Temporary&, Context&);
+
+    /// Attribute metric values to a ContextReconstruction. These values will be
+    /// redistributed back to the base Contexts, see ContextReconstruction.
+    /// DataClass: `metrics`
+    // MT: Externally Synchronized (this), Internally Synchronized
+    AccumulatorsRef accumulateTo(Thread::Temporary&, ContextReconstruction&);
+
+    /// Attribute metric values to a Context, as part of the given
+    /// Reconstruction group. These will be summed with the non-group values
+    /// but are more importantly used for FlowGraph redistribution.
+    /// DataClass: `metrics`
+    // MT: Externally Synchronized (this), Internally Synchronized
+    AccumulatorsRef accumulateTo(Thread::Temporary&, uint64_t group, Context&);
+
+    /// Attribute metric values to a ContextFlowGraph. These values will be
+    /// redistributed among the root Contexts included in the given
+    /// Reconstruction group.
+    /// DataClass: `metrics`
+    // MT: Externally Synchronized (this), Internally Synchronized
+    AccumulatorsRef accumulateTo(Thread::Temporary&, uint64_t group,
+                                 ContextFlowGraph&);
 
     /// Reference to the Statistic data for a particular Context.
     /// Allows for efficient emmission of multiple Statistics' data to one location.
@@ -415,18 +502,15 @@ public:
       void add(Metric& m, const StatisticPartial& sp, MetricScope ms, double v);
 
     private:
-      template<class T>
-      void add(T&, Metric&, const StatisticPartial&, MetricScope, double);
-
       friend class ProfilePipeline::Source;
-      ContextRef c;
-      StatisticsRef(ContextRef ctx) : c(ctx) {};
+      Context& ctx;
+      explicit StatisticsRef(Context& ctx) : ctx(ctx) {};
     };
 
     /// Obtain a StatisticsRef for the given Context.
     /// DataClass: `metrics`
     // MT: Externally Synchronized (this), Internally Synchronized
-    StatisticsRef accumulateTo(ContextRef c);
+    StatisticsRef accumulateTo(Context& c);
 
     // Disable copy-assignment, and allow move assignment.
     Source& operator=(const Source&) = delete;
@@ -504,6 +588,10 @@ public:
   };
 
 private:
+  // Finalize the data in a Thread::Temporary, and commit it to the Sinks
+  // MT: Externally Synchronized (tt, localTimepointBounds), Internally Synchronized (this)
+  void complete(Thread::Temporary&& tt, std::optional<std::pair<std::chrono::nanoseconds, std::chrono::nanoseconds>>& localTimepointBounds);
+
   // Scheduled data transfer. Minimal requested and available set.
   DataClass scheduled;
   // Scheduled early wavefronts. Minimal requested and available set.
@@ -552,15 +640,19 @@ private:
   util::locked_unordered_uniqued_set<Metric> mets;
   util::locked_unordered_uniqued_set<ExtraStatistic> estats;
   std::unique_ptr<Context> cct;
-  struct CollabHash {
-    std::hash<std::uint64_t> h_u64;
-    std::size_t operator()(const std::pair<uint64_t, uint64_t>& v) const noexcept {
-      return h_u64(v.first) ^ h_u64(v.second);
-    }
+  util::locked_unordered_uniqued_set<ContextFlowGraph> cgraphs;
+
+  struct TupleHash {
+    std::hash<uint16_t> h_u16;
+    std::hash<uint64_t> h_u64;
+    size_t operator()(const std::vector<pms_id_t>&) const noexcept;
   };
-  struct Collab { CollaborativeContext ctx; };
-  util::locked_unordered_map<std::pair<std::uint64_t, std::uint64_t>, Collab,
-                             stdshim::shared_mutex, CollabHash> collabs;
+  struct TupleEqual {
+    bool operator()(const std::vector<pms_id_t>&, const std::vector<pms_id_t>&) const noexcept;
+  };
+  std::shared_mutex mergedThreadsLock;
+  std::unordered_map<std::vector<pms_id_t>, Thread::Temporary,
+                     TupleHash, TupleEqual> mergedThreads;
 };
 
 }

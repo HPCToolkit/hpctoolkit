@@ -172,6 +172,25 @@ bool Scope::operator==(const Scope& o) const noexcept {
   std::abort();
 }
 
+bool Scope::operator<(const Scope& o) const noexcept {
+  if(ty != o.ty) return ty < o.ty;
+  switch(ty) {
+  case Type::unknown: return false;  // Always equal
+  case Type::global: return false;  // Always equal
+  case Type::point:
+    return data.point < o.data.point;
+  case Type::function: return data.function < o.data.function;
+  case Type::inlined_function: return data.function_line < o.data.function_line;
+  case Type::loop:
+  case Type::line:
+    return data.line < o.data.line;
+  case Type::placeholder:
+    return data.enumerated < o.data.enumerated;
+  }
+  assert(false && "Invalid ty while comparing Scopes!");
+  std::abort();
+}
+
 // Hashes
 static constexpr unsigned int bits = std::numeric_limits<std::size_t>::digits;
 static constexpr unsigned int mask = bits - 1;

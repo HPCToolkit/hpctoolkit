@@ -394,26 +394,18 @@ void StructFileParser::parse(ProfilePipeline::Source& sink, const Module& m,
   // Map out the possible routes from each top-level block. We assume all routes
   // present in the static CFG are possible.
   // TODO: Apply some SCC handling around here, and some general optimizations.
-  auto* unknown_block = c.addScope(Scope{});
   for(const auto x: funcs) {
     std::vector<Classification::Block::route_t> route;
     std::unordered_set<Classification::Block*> seen;
     std::function<void(Classification::Block*)> dfs = [&](Classification::Block* b) {
-      if(!seen.insert(b).second) {
-        // Terminate the route, we've looped on ourselves.
-        route.back() = unknown_block;
-        auto froute = route;
-        std::reverse(froute.begin(), froute.end());
-        x.second->addRoute(std::move(froute));
-        return;
-      }
+      // TODO: SCC is needed to handle loops properly. For now just skip 'em.
+      if(!seen.insert(b).second) return;
       auto range = rcfg.equal_range(b);
       if(range.first == range.second) {
         // Terminate the route, we have nowhere else to go
-        if(route.empty()) return;
         auto froute = route;
         std::reverse(froute.begin(), froute.end());
-        x.second->addRoute(std::move(froute));
+        x.second->addRoute({m, b->getScope().function_data().offset}, std::move(froute));
       } else {
         for(auto it = range.first; it != range.second; ++it) {
           const auto [from, addr] = it->second;

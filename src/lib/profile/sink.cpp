@@ -70,10 +70,12 @@ void ProfileSink::notifyFile(const File&) {};
 void ProfileSink::notifyMetric(const Metric&) {};
 void ProfileSink::notifyExtraStatistic(const ExtraStatistic&) {};
 void ProfileSink::notifyContext(const Context&) {};
-void ProfileSink::notifyContextExpansion(ContextRef::const_t, Scope, ContextRef::const_t) {};
+void ProfileSink::notifyContextExpansion(const Context&, Scope, const Context&) {};
 void ProfileSink::notifyThread(const Thread&) {};
-void ProfileSink::notifyTimepoints(const Thread& t, const std::vector<std::pair<std::chrono::nanoseconds, ContextRef::const_t>>&) {};
+void ProfileSink::notifyTimepoints(const Thread& t, const std::vector<
+  std::pair<std::chrono::nanoseconds, std::reference_wrapper<const Context>>>&) {};
 void ProfileSink::notifyCtxTimepointRewindStart(const Thread&) {};
-void ProfileSink::notifyTimepoints(const Thread& t, const Metric&, const std::vector<std::pair<std::chrono::nanoseconds, double>>&) {};
+void ProfileSink::notifyTimepoints(const Thread& t, const Metric&, const std::vector<
+  std::pair<std::chrono::nanoseconds, double>>&) {};
 void ProfileSink::notifyMetricTimepointRewindStart(const Thread&, const Metric&) {};
 void ProfileSink::notifyThreadFinal(const Thread::Temporary&) {};

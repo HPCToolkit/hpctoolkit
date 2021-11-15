@@ -70,7 +70,7 @@ public:
   }
 
   void notifyPipeline() noexcept override;
-  void notifyContextExpansion(ContextRef::const_t, Scope, ContextRef::const_t) override;
+  void notifyContextExpansion(const Context&, Scope, const Context&) override;
   void notifyWavefront(DataClass) override;
   void write() override {};
 
@@ -99,7 +99,7 @@ public:
     Expander(IdUnpacker& s) : shared(s) {};
     ~Expander() = default;
 
-    ContextRef context(ContextRef, Scope&) noexcept override;
+    Context& context(Context&, Scope&) noexcept override;
 
   private:
     IdUnpacker& shared;
