@@ -104,26 +104,34 @@ cupti_range_mode_context_sensitive_is_enter
   ip_normalized_t kernel_ip = hpcrun_cct_addr(hpcrun_cct_children(kernel_ph))->ip_norm;
   cct_node_t *api_node = hpcrun_cct_parent(kernel_ph);
   cupti_ip_norm_map_ret_t map_ret_type = cupti_ip_norm_map_lookup_thread(kernel_ip, api_node);
-
+  
+  cupti_ip_norm_map_ret_t global_map_ret_type = CUPTI_IP_NORM_MAP_COUNT;
   if (num_threads > 1) {
-    map_ret_type = cupti_ip_norm_global_map_lookup(kernel_ip, api_node);
+    global_map_ret_type = cupti_ip_norm_global_map_lookup(kernel_ip, api_node);
   }
 
   bool active = cupti_pc_sampling_active();
-  int32_t prev_range_id = GPU_RANGE_NULL;
-  if (map_ret_type == CUPTI_IP_NORM_MAP_DUPLICATE) {
-    // Ranges must be divided
-    prev_range_id = cupti_cct_trie_flush(context_id, range_id, !active);
+  uint32_t prev_range_id = GPU_RANGE_NULL;
+  if (map_ret_type == CUPTI_IP_NORM_MAP_DUPLICATE ||
+    global_map_ret_type == CUPTI_IP_NORM_MAP_DUPLICATE) {
+    // If active, we add a sampled kernel count; otherwise, we add a non-sampled kernel count
+    // If logic, we don't unwind the current path in the cct trie
+    bool logic = map_ret_type != CUPTI_IP_NORM_MAP_DUPLICATE;
+    prev_range_id = cupti_cct_trie_flush(context_id, range_id, active, logic);
     if (active) {
-      // If active, we encounter a new range and have to flush pc samples
+      // If active, we have to flush pc samples and attribute them to nodes with prev_range_id
       // It is an early collection mode different than other modes
       // The whole range is repeated with a previous range
       cupti_pc_sampling_range_context_collect(prev_range_id, context);
     }
-    // After flushing, we clean up ccts in the previous range
-    range_id += 1;
-    bool clear_global = num_threads > 1 ? true : false;
-    cupti_ip_norm_map_clear_thread(clear_global);
+    if (!logic) {
+      // After a real flushing,
+      // we clean up ccts in the previous range and start a new range
+      range_id += 1;
+      bool clear_global = num_threads > 1 ? true : false;
+      cupti_ip_norm_map_clear_thread(clear_global);
+    } 
+    // Add a new node
     cupti_ip_norm_map_insert_thread(kernel_ip, api_node);
     // Update active status
     active = cupti_pc_sampling_active();
@@ -159,7 +167,8 @@ cupti_range_mode_context_sensitive_is_enter
         cupti_ip_norm_map_delete_thread(kernel_ip);
         // Flush does not affect the node just inserted, so we need to unwind it and reinsert it
         cupti_cct_trie_unwind();
-        cupti_cct_trie_flush(context_id, range_id, !active);
+        // We are going to extend the path of the current trie, so don't unwind to the root
+        cupti_cct_trie_flush(context_id, range_id, active, false);
         cupti_cct_trie_append(range_id, api_node);
         cupti_ip_norm_map_insert_thread(kernel_ip, api_node);
       }
@@ -359,23 +368,31 @@ cupti_range_last
 (
 )
 {
+  if (cupti_range_mode == CUPTI_RANGE_MODE_SERIAL) {
+    return;
+  }
+
   CUcontext context;
   cuda_context_get(&context);
-	uint32_t context_id = ((hpctoolkit_cuctx_st_t *)context)->context_id;
-
-  bool active = cupti_pc_sampling_active();
   uint32_t range_id = gpu_range_id_get();
-  int32_t prev_range_id = cupti_cct_trie_flush(context_id, range_id, active);
 
-  if (active) {
-    // If active, we encounter a new range and have to flush pc samples
-    // It is an early collection mode different than other modes
-    if (prev_range_id != GPU_RANGE_NULL) {
-      // The whole range is repeated with a previous range
-      cupti_pc_sampling_range_context_collect(prev_range_id, context);
-    } else {
-      // This is a new range
-      cupti_pc_sampling_range_context_collect(range_id, context);
+  if (cupti_range_mode == CUPTI_RANGE_MODE_EVEN) {
+    cupti_pc_sampling_range_context_collect(range_id, context);
+  } else if (cupti_range_mode == CUPTI_RANGE_MODE_CONTEXT_SENSITIVE) {
+    uint32_t context_id = ((hpctoolkit_cuctx_st_t *)context)->context_id;
+    bool active = cupti_pc_sampling_active();
+    // No need to unwind to the root since this is the last flush call
+    uint32_t prev_range_id = cupti_cct_trie_flush(context_id, range_id, active, false);
+
+    if (active) {
+      // If active, we have to flush pc samples
+      if (prev_range_id != GPU_RANGE_NULL) {
+        // The whole range is repeated with a previous range
+        cupti_pc_sampling_range_context_collect(prev_range_id, context);
+      } else {
+        // This is a new range
+        cupti_pc_sampling_range_context_collect(range_id, context);
+      }
     }
   }
 

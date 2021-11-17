@@ -190,9 +190,12 @@ cupti_cct_trie_merge
  cupti_cct_trie_node_t **thread_trie_cur_ptr,
  uint32_t context_id,
  uint32_t range_id,
+ bool active,
  bool logic
 )
 {
+  uint32_t prev_range_id = (*thread_trie_cur_ptr)->range_id == GPU_RANGE_NULL ?
+    range_id : (*thread_trie_cur_ptr)->range_id;
   cupti_cct_trie_node_t *cur = *thread_trie_cur_ptr;
   ip_normalized_t kernel_ip = gpu_op_placeholder_ip(gpu_placeholder_type_kernel);
 
@@ -202,9 +205,9 @@ cupti_cct_trie_merge
     cct_node_t *context_node = hpcrun_cct_insert_context(kernel_ph_children, context_id);
 
     cct_node_t *prev_range_node = NULL;
-    prev_range_node = hpcrun_cct_insert_range(context_node, range_id);
+    prev_range_node = hpcrun_cct_insert_range(context_node, prev_range_id);
     
-    uint64_t sampled_kernel_count = logic ? 0 : 1;
+    uint64_t sampled_kernel_count = active ? 1 : 0;
     gpu_metrics_attribute_kernel_count(prev_range_node, sampled_kernel_count, 1);
 
     cur = cur->parent;
@@ -221,16 +224,19 @@ cupti_cct_trie_merge_thread
 (
  uint32_t context_id,
  uint32_t range_id,
+ bool active,
  bool logic
 )
 {
-  cupti_cct_trie_merge(trie_root, &trie_logic_root, &trie_cur, context_id, range_id, logic);
+  cupti_cct_trie_merge(trie_root, &trie_logic_root, &trie_cur, context_id, range_id, active, logic);
 }
 
 
 typedef struct cct_trie_args_s {
   uint32_t context_id;
   uint32_t range_id;
+  bool active;
+  bool logic;
 } cct_trie_args_t;
 
 
@@ -247,11 +253,13 @@ cct_trie_fn
   cct_trie_args_t *cct_trie_args = (cct_trie_args_t *)args;
   uint32_t context_id = cct_trie_args->context_id;
   uint32_t range_id = cct_trie_args->range_id;
+  bool active = cct_trie_args->active;
+  bool logic = cct_trie_args->logic;
   if (thread_id != cupti_range_thread_id_get()) {
     // The starter thread has been handled.
     // Logic flush and update logic root for the rest threads
     cupti_cct_trie_merge(thread_trie_root, thread_trie_logic_root_ptr, thread_trie_cur_ptr,
-      context_id, range_id, true);
+      context_id, range_id, active, logic);
   }
 }
 
@@ -261,28 +269,30 @@ cupti_cct_trie_flush
 (
  uint32_t context_id,
  uint32_t range_id,
+ bool active,
  bool logic
 )
 {
   cct_trie_init();
-  uint32_t prev_range_id = trie_cur->range_id;
-  if (prev_range_id != -1) {
-    range_id = prev_range_id;
-  }
+  uint32_t prev_range_id = trie_cur->range_id == GPU_RANGE_NULL ?
+    range_id : trie_cur->range_id;
+  printf("prev_range_id %u\n", prev_range_id);
 
   // Traverse up and use original range_id to merge
-  cupti_cct_trie_merge_thread(context_id, range_id, logic);
+  cupti_cct_trie_merge_thread(context_id, prev_range_id, active, logic);
   if (!logic) {
-    // Unwind and reset
-    trie_logic_root = trie_root;
     trie_cur = trie_root;
+    trie_logic_root = trie_root;
   }
   
   uint32_t num_threads = cupti_range_thread_list_num_threads();
   if (num_threads > 1) {
+    // Other threads haven't seen any duplicate nodes, so they are always logical unwinding
     cct_trie_args_t args = {
       .context_id = context_id,
-      .range_id = range_id
+      .range_id = prev_range_id,
+      .active = active,
+      .logic = false
     }; 
     cupti_range_thread_list_apply(cct_trie_fn, &args);
   }

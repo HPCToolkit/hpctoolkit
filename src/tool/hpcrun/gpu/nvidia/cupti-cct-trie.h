@@ -13,6 +13,8 @@
 
 #include <hpcrun/cct/cct.h>
 
+#define CUPTI_CCT_TRIE_UNWIND_ROOT 0
+
 typedef struct cupti_cct_trie_node_s cupti_cct_trie_node_t;
 
 // Append a cct to the trie.
@@ -32,6 +34,7 @@ cupti_cct_trie_flush
 (
  uint32_t context_id,
  uint32_t range_id,
+ bool active,
  bool logic
 );
 
@@ -53,7 +56,7 @@ cupti_cct_trie_logic_root_ptr_get
 (
 );
 
-// Unwind the trie one layer up
+// Unwind the trie for one layer
 void
 cupti_cct_trie_unwind
 (
