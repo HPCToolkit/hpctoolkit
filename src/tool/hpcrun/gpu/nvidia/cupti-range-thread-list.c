@@ -19,6 +19,7 @@ typedef struct cupti_range_thread {
 static cupti_range_thread_t *head = NULL;
 static cupti_range_thread_t *free_list = NULL;
 static int num_threads = 0;
+static int __thread cur_thread_id = -1;
 
 static cupti_range_thread_t *free_list_alloc() {
   cupti_range_thread_t *thread = NULL;
@@ -53,6 +54,7 @@ void cupti_range_thread_list_add() {
   thread_data_t *cur_td = hpcrun_safe_get_td();
   core_profile_trace_data_t *cptd = &cur_td->core_profile_trace_data;
   int thread_id = cptd->id;
+  cur_thread_id = cptd->id;
 
   if (head == NULL) {
     head = cupti_range_thread_list_alloc(thread_id);
@@ -103,6 +105,9 @@ int cupti_range_thread_list_num_threads() {
   return num_threads;
 }
 
+int cupti_range_thread_id_get() {
+  return cur_thread_id;
+}
 
 void cupti_range_thread_list_apply(cupti_range_thread_list_fn_t fn, void *args) {
   if (head == NULL) {

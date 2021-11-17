@@ -573,10 +573,10 @@ cupti_ip_norm_global_map_delete
  cct_node_t *cct
 )
 {
-  cupti_ip_norm_map_entry_t *entry = st_lookup(global_map_root, ip_norm);
+  cupti_ip_norm_map_entry_t *entry = st_lookup(&global_map_root, ip_norm);
 
   if (entry != NULL && cct == entry->cct) {
-    st_delete(global_map_root, ip_norm);
+    st_delete(&global_map_root, ip_norm);
   }
 }
 
@@ -588,13 +588,13 @@ cupti_ip_norm_global_map_insert
  cct_node_t *cct
 )
 {
-  cupti_ip_norm_map_entry_t *entry = st_lookup(global_map_root, ip_norm);
+  cupti_ip_norm_map_entry_t *entry = st_lookup(&global_map_root, ip_norm);
 
   if (entry == NULL) {
     entry = st_alloc(&free_list);
     entry->ip_norm = ip_norm;
     entry->cct = cct;
-    st_insert(global_map_root, entry);
+    st_insert(&global_map_root, entry);
   }
 
   TRACE_IP_NORM_MAP_MSG(CUPTI_CCT_TRACE, "Global IP norm map insert (lm_id: %d, lm_ip: %p, cct: %p)->(entry: %p)",
@@ -621,7 +621,10 @@ cross_thread_cct_compare
     }
   }
 
-  if (cct1 == NULL && cct2 == NULL) {
+  if (cct1 == NULL || cct2 == NULL) {
+    // XXX(Keren):
+    // We only compare the last few frames. This is a workaround for tools without OMPT,
+    // since we don't know the whole call stack when a worker thread is created by openmp
     return true;
   } else {
     return false;
@@ -629,14 +632,14 @@ cross_thread_cct_compare
 }
 
 
-void
+cupti_ip_norm_map_ret_t
 cupti_ip_norm_global_map_lookup
 (
  ip_normalized_t ip_norm,
  cct_node_t *cct
 )
 {
-  cupti_ip_norm_map_entry_t *result = st_lookup(global_map_root, ip_norm);
+  cupti_ip_norm_map_entry_t *result = st_lookup(&global_map_root, ip_norm);
 
   cupti_ip_norm_map_ret_t ret;
   if (result == NULL) {
@@ -651,4 +654,6 @@ cupti_ip_norm_global_map_lookup
 
   TRACE_IP_NORM_MAP_MSG(CUPTI_CCT_TRACE, "IP norm map lookup (lm_id: %d, lm_ip: %p, cct: %p)->(ret: %d)",
     ip_norm.lm_id, ip_norm.lm_ip, cct, ret);
+
+  return ret;
 }

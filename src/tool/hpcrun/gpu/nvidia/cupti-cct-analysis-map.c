@@ -194,9 +194,18 @@ dump_fn_helper
  void *args
 )
 {
-  ip_normalized_t ip1;
-  ip_normalized_t ip2;
-  ip_normalized_t ip3;
+  ip_normalized_t ip1 = {
+    .lm_id = 0,
+    .lm_ip = 0
+  };
+  ip_normalized_t ip2= {
+    .lm_id = 0,
+    .lm_ip = 0
+  };
+  ip_normalized_t ip3 = {
+    .lm_id = 0,
+    .lm_ip = 0
+  };
   if (entry->p1 != NULL) {
     ip1 = hpcrun_cct_addr(entry->p1)->ip_norm;
   }
@@ -206,7 +215,7 @@ dump_fn_helper
   if (entry->p3 != NULL) {
     ip3 = hpcrun_cct_addr(entry->p3)->ip_norm;
   }
-  printf("%p, %p, %u, %p, %s, %zu, %zu, %zu, %zu, %zu, %zu, %zu, %zu, %zu, %zu, %zu, %p, %zu, %p, %zu, %p\n", 
+  printf("%p, %p, %u, %p, %s, %zu, %zu, %zu, %zu, %zu, %zu, %zu, %zu, %zu, %zu, %d, %p, %d, %p, %d, %p\n", 
     (void *)entry->cct, (void *)entry->prev, entry->function_id.lm_id, (void *)entry->function_id.lm_ip,
     entry->function_name, entry->stack_length, entry->tool_depth, entry->api_depth,
     entry->grid_dim_x / entry->count, entry->grid_dim_y / entry->count, entry->grid_dim_z / entry->count,

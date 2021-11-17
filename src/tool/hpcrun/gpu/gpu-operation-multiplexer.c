@@ -43,6 +43,7 @@
 
 
 #include <hpcrun/control-knob.h>
+#include <hpcrun/main.h>
 #include <lib/prof-lean/stdatomic.h>
 #include <pthread.h>
 

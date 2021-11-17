@@ -105,6 +105,10 @@ cupti_range_mode_context_sensitive_is_enter
   cct_node_t *api_node = hpcrun_cct_parent(kernel_ph);
   cupti_ip_norm_map_ret_t map_ret_type = cupti_ip_norm_map_lookup_thread(kernel_ip, api_node);
 
+  if (num_threads > 1) {
+    map_ret_type = cupti_ip_norm_global_map_lookup(kernel_ip, api_node);
+  }
+
   bool active = cupti_pc_sampling_active();
   int32_t prev_range_id = GPU_RANGE_NULL;
   if (map_ret_type == CUPTI_IP_NORM_MAP_DUPLICATE) {
@@ -118,16 +122,20 @@ cupti_range_mode_context_sensitive_is_enter
     }
     // After flushing, we clean up ccts in the previous range
     range_id += 1;
-    bool clean_global = num_threads > 1 ? true : false;
-    cupti_ip_norm_map_clear_thread(clean_global);
+    bool clear_global = num_threads > 1 ? true : false;
+    cupti_ip_norm_map_clear_thread(clear_global);
     cupti_ip_norm_map_insert_thread(kernel_ip, api_node);
     // Update active status
     active = cupti_pc_sampling_active();
   } else if (map_ret_type == CUPTI_IP_NORM_MAP_NOT_EXIST) {
     // No such a node, insert it
     cupti_ip_norm_map_insert_thread(kernel_ip, api_node);
+
+    if (num_threads > 1) {
+      cupti_ip_norm_global_map_insert(kernel_ip, api_node);
+    }
   } else {
-    // We've seen this node before
+    // This thread has seen this node before
   }
   
   bool repeated = cupti_cct_trie_append(range_id, api_node);

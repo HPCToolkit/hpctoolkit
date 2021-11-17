@@ -109,7 +109,7 @@ cupti_ip_norm_global_map_delete
 );
 
 
-void
+cupti_ip_norm_map_ret_t
 cupti_ip_norm_global_map_lookup
 (
  ip_normalized_t ip_norm,
