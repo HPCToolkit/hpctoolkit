@@ -276,7 +276,6 @@ cupti_cct_trie_flush
   cct_trie_init();
   uint32_t prev_range_id = trie_cur->range_id == GPU_RANGE_NULL ?
     range_id : trie_cur->range_id;
-  printf("prev_range_id %u\n", prev_range_id);
 
   // Traverse up and use original range_id to merge
   cupti_cct_trie_merge_thread(context_id, prev_range_id, active, logic);

@@ -127,31 +127,34 @@ cupti_range_mode_context_sensitive_is_enter
     if (!logic) {
       // After a real flushing,
       // we clean up ccts in the previous range and start a new range
-      range_id += 1;
       bool clear_global = num_threads > 1 ? true : false;
       cupti_ip_norm_map_clear_thread(clear_global);
     } 
+    range_id += 1;
+  }
+
+  if (map_ret_type != CUPTI_IP_NORM_MAP_EXIST) {
     // Add a new node
-    cupti_ip_norm_map_insert_thread(kernel_ip, api_node);
-    // Update active status
-    active = cupti_pc_sampling_active();
-  } else if (map_ret_type == CUPTI_IP_NORM_MAP_NOT_EXIST) {
-    // No such a node, insert it
     cupti_ip_norm_map_insert_thread(kernel_ip, api_node);
 
     if (num_threads > 1) {
       cupti_ip_norm_global_map_insert(kernel_ip, api_node);
     }
-  } else {
-    // This thread has seen this node before
   }
-  
+  // else {
+  //  // This thread has seen this node before
+  // }
+
+  // Update active status
+  active = cupti_pc_sampling_active();
+ 
   bool repeated = cupti_cct_trie_append(range_id, api_node);
   bool sampled = false;
   bool new_range = false;
   
   if (!active) {
-    if (map_ret_type == CUPTI_IP_NORM_MAP_DUPLICATE) {
+    if (map_ret_type == CUPTI_IP_NORM_MAP_DUPLICATE ||
+      global_map_ret_type == CUPTI_IP_NORM_MAP_DUPLICATE) {
       // 1. abc | (a1)bc
       // a1 conflicts a, it must be a new rnage
       new_range = true;
