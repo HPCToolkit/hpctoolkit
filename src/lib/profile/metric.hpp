@@ -230,12 +230,12 @@ public:
   /// Obtain a pointer to the Statistic Accumulators for a particular Context.
   /// Returns `nullptr` if no Statistic data exists for the given Context.
   // MT: Safe (const), Unstable (before `metrics` wavefront)
-  const StatisticAccumulator* getFor(const Context& c) const noexcept;
+  util::optional_ref<const StatisticAccumulator> getFor(const Context& c) const noexcept;
 
   /// Obtain a pointer to the Thread-local Accumulator for a particular Context.
   /// Returns `nullptr` if no metric data exists for the given Context.
   // MT: Safe (const), Unstable (before notifyThreadFinal)
-  const MetricAccumulator* getFor(const Thread::Temporary&, const Context& c) const noexcept;
+  util::optional_ref<const MetricAccumulator> getFor(const Thread::Temporary&, const Context& c) const noexcept;
 
   Metric(Metric&& m);
 

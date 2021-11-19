@@ -185,9 +185,9 @@ public:
     Temporary(Temporary&&) = default;
 
     /// Reference to the Metric data for a particular Context in this Thread.
-    /// Returns `nullptr` if none is present.
+    /// Returns `std::nullopt` if none is present.
     // MT: Safe (const), Unstable (before notifyThreadFinal)
-    const auto* accumulatorsFor(const Context& c) const noexcept {
+    auto accumulatorsFor(const Context& c) const noexcept {
       return data.find(c);
     }
 

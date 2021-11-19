@@ -331,7 +331,7 @@ void StatisticAccumulator::Partial::validate() const noexcept {
   util::log::warning{} << "Returning a Statistic accumulator with no value!";
 }
 
-const StatisticAccumulator* Metric::getFor(const Context& c) const noexcept {
+util::optional_ref<const StatisticAccumulator> Metric::getFor(const Context& c) const noexcept {
   return c.data.find(*this);
 }
 
@@ -353,9 +353,9 @@ void MetricAccumulator::validate() const noexcept {
   util::log::warning{} << "Returning a Metric accumulator with no value!";
 }
 
-const MetricAccumulator* Metric::getFor(const Thread::Temporary& t, const Context& c) const noexcept {
-  auto* cd = t.data.find(c);
-  if(cd == nullptr) return nullptr;
+util::optional_ref<const MetricAccumulator> Metric::getFor(const Thread::Temporary& t, const Context& c) const noexcept {
+  auto cd = t.data.find(c);
+  if(!cd) return std::nullopt;
   return cd->find(*this);
 }
 
@@ -400,11 +400,11 @@ void Metric::prefinalize(Thread::Temporary& t) noexcept {
 
     // Helper function to determine the factoring Metric used for the given Context.
     auto findDistributor = [&](ContextRef c) -> util::optional_ref<const Metric> {
-      const decltype(t.data)::mapped_type* d = nullptr;
+      util::optional_ref<const decltype(t.data)::mapped_type> d;
       if(auto tc = std::get_if<Context>(c)) d = t.data.find(*tc);
       else if(auto tc = std::get_if<SuperpositionedContext>(c)) d = t.sp_data.find(*tc);
       else abort();  // unreachable
-      if(d == nullptr) return {};
+      if(!d) return {};
       util::optional_ref<const Metric> m;
       for(const auto& ma: d->citerate()) {
         const Metric& cm = ma.first;
@@ -537,8 +537,8 @@ void Metric::crossfinalize(const CollaborativeContext& cc) noexcept {
     // Pregenerate the factors to use when distributing across the targets
     // Also sum the metrics for the roots back into the Threads
     std::vector<std::pair<decltype(cc.data)::mapped_type::key_type, double>> local_tfactors;
-    const decltype(cc.data)::mapped_type* sdata = cc.data.find(sc.first);
-    if(sdata != nullptr) {
+    util::optional_ref<const decltype(cc.data)::mapped_type> sdata = cc.data.find(sc.first);
+    if(sdata) {
       local_tfactors.reserve(sdata->size());
       double total = 0;
       for(const auto& tcdata: sdata->citerate()) {
