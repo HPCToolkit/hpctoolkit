@@ -2313,6 +2313,8 @@ cupti_device_flush(void *args, int how)
   TMSG(CUPTI, "Exit CUPTI device flush");
 
 #ifdef NEW_CUPTI
+  cupti_range_thread_last();
+
   spinlock_lock(&print_lock);
 
 #ifdef PRINT_UNWIND_TIME

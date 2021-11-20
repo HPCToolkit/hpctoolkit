@@ -46,6 +46,13 @@ cupti_range_sampling_period_get
  void
 );
 
+// Called at thread finish callback to handle edge cases for the thread
+void
+cupti_range_thread_last
+(
+ void
+);
+
 // Called at process finish callback to get back pc samples for the last range
 void
 cupti_range_last

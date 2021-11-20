@@ -352,6 +352,20 @@ cupti_range_sampling_period_get
   return cupti_range_sampling_period;
 }
 
+
+void
+cupti_range_thread_last
+(
+)
+{
+  if (cupti_range_mode != CUPTI_RANGE_MODE_CONTEXT_SENSITIVE) {
+    return;
+  }
+
+  cupti_cct_trie_notification_process();
+}
+
+
 void
 cupti_range_last
 (
