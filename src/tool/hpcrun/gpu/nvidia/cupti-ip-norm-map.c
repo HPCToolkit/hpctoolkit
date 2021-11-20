@@ -436,11 +436,7 @@ clear_fn_helper
 )
 {
   if (visit_type == splay_postorder_visit) {
-    bool clear_global = (bool *)args;
-    if (clear_global) {
-      cupti_ip_norm_global_map_delete(entry->ip_norm, entry->cct);
-    }
-
+    cupti_ip_norm_global_map_delete(entry->ip_norm, entry->cct);
     st_free(&free_list, entry);
   }
 }
@@ -544,11 +540,10 @@ cupti_ip_norm_map_delete
 void
 cupti_ip_norm_map_clear
 (
- cupti_ip_norm_map_entry_t **root,
- bool clear_global
+ cupti_ip_norm_map_entry_t **root
 )
 {
-  st_forall((*root), splay_allorder, clear_fn_helper, &clear_global);
+  st_forall((*root), splay_allorder, clear_fn_helper, NULL);
   (*root) = NULL;
 }
 
@@ -556,10 +551,9 @@ cupti_ip_norm_map_clear
 void
 cupti_ip_norm_map_clear_thread
 (
- bool clear_global
 )
 {
-  cupti_ip_norm_map_clear(&local_map_root, clear_global);
+  cupti_ip_norm_map_clear(&local_map_root);
 }
 
 //*****************************************************
@@ -613,7 +607,17 @@ cross_thread_cct_compare
     ip_normalized_t ip_norm1 = hpcrun_cct_addr(cct1)->ip_norm;
     ip_normalized_t ip_norm2 = hpcrun_cct_addr(cct2)->ip_norm;
     
-    if (ip_norm1.lm_id != ip_norm2.lm_id || ip_norm1.lm_ip == ip_norm2.lm_ip) {
+    if (ip_norm1.lm_id == 0) {
+      cct1 = NULL;
+      break;
+    }
+
+    if (ip_norm2.lm_id == 0) {
+      cct2 = NULL;
+      break;
+    }
+    
+    if (ip_norm1.lm_id != ip_norm2.lm_id || ip_norm1.lm_ip != ip_norm2.lm_ip) {
       return false;
     } else {
       cct1 = hpcrun_cct_parent(cct1);

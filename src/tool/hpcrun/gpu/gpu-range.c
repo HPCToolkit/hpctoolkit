@@ -20,7 +20,7 @@ static atomic_ullong correlation_id_done = ATOMIC_VAR_INIT(0);
 static atomic_uint range_id = ATOMIC_VAR_INIT(GPU_RANGE_DEFAULT_RANGE);
 
 static __thread uint64_t thread_correlation_id = 0;
-static __thread uint32_t thread_range_id = 0;
+static __thread uint32_t thread_range_id = GPU_RANGE_DEFAULT_RANGE;
 
 static spinlock_t count_lock = SPINLOCK_UNLOCKED;
 
@@ -119,15 +119,19 @@ gpu_range_enter
 
   spinlock_lock(&count_lock);
 
+  // Early update of range_id
+  thread_range_id = atomic_load(&range_id);
+
   bool is_lead = gpu_range_post_enter_callback(thread_correlation_id, api_node);
   if (is_lead) {
     // The last call in this range
     atomic_store(&lead_correlation_id, thread_correlation_id);
 
     atomic_fetch_add(&range_id, 1);
-  }
 
-  thread_range_id = atomic_load(&range_id);
+    // In case myself update the range_id
+    thread_range_id = atomic_load(&range_id);
+  }
 
   return thread_range_id;
 }

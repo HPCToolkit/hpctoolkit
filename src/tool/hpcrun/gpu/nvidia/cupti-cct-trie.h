@@ -56,6 +56,12 @@ cupti_cct_trie_logic_root_ptr_get
 (
 );
 
+// Process pending notifications
+void
+cupti_cct_trie_notification_process
+(
+);
+
 // Unwind the trie for one layer
 void
 cupti_cct_trie_unwind

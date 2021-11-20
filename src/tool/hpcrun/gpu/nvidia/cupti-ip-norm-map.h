@@ -81,15 +81,13 @@ cupti_ip_norm_map_delete
 void
 cupti_ip_norm_map_clear
 (
- cupti_ip_norm_map_entry_t **root,
- bool clean_global
+ cupti_ip_norm_map_entry_t **root
 );
 
 
 void
 cupti_ip_norm_map_clear_thread
 (
- bool clean_global
 );
 
 
