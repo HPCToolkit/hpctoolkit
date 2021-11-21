@@ -575,7 +575,12 @@ void Metric::crossfinalize(const CollaborativeContext& cc) noexcept {
       }
       for(auto& tf: local_tfactors) tf.second.first /= total;
     }
-    const auto& tfactors = local_tfactors.empty() ? default_tfactors : local_tfactors;
+
+    // If not finding range indicators in CCTs, just skip these samples
+    if (local_tfactors.empty()) {
+      continue;
+    }
+    const auto& tfactors = local_tfactors;
 
     // Walk the SharedContext tree and sum the results back into the Threads
     using frame_t = std::reference_wrapper<CollaborativeSharedContext>;
