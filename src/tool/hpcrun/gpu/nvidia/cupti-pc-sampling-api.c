@@ -26,7 +26,7 @@
 #include "cupti-range.h"
 #include "cupti-pc-sampling-data.h"
 
-#define DEBUG 1
+#define DEBUG 0
 
 #define CUPTI_FN_NAME(f) DYN_FN_NAME(f)
 
