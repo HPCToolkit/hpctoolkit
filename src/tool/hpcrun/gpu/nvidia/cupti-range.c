@@ -118,7 +118,7 @@ cupti_range_mode_context_sensitive_is_enter
     // If logic, we don't unwind the current path in the cct trie
     bool logic = map_ret_type != CUPTI_IP_NORM_MAP_DUPLICATE;
     prev_range_id = cupti_cct_trie_flush(context_id, range_id, active, logic);
-    if (active && prev_range_id != GPU_RANGE_NULL) {
+    if (active) {
       // If active, we have to flush pc samples and attribute them to nodes with prev_range_id
       // It is an early collection mode different than other modes
       // The whole range is repeated with a previous range
@@ -387,7 +387,7 @@ cupti_range_last
     // No need to unwind to the root since this is the last flush call
     uint32_t prev_range_id = cupti_cct_trie_flush(context_id, range_id, active, false);
 
-    if (active && prev_range_id != GPU_RANGE_NULL) {
+    if (active) {
       // The whole range is repeated with a previous range
       cupti_pc_sampling_range_context_collect(prev_range_id, context);
     }

@@ -199,9 +199,7 @@ cct_trie_merge_thread
     cct_node_t *kernel_ph_children = hpcrun_cct_children(kernel_ph);
     cct_node_t *context_node = hpcrun_cct_insert_context(kernel_ph_children, context_id);
 
-    cct_node_t *prev_range_node = NULL;
-    prev_range_node = hpcrun_cct_insert_range(context_node, range_id);
-    
+    cct_node_t *prev_range_node = hpcrun_cct_insert_range(context_node, range_id);
     uint64_t sampled_kernel_count = active ? 1 : 0;
     gpu_metrics_attribute_kernel_count(prev_range_node, sampled_kernel_count, 1);
 
@@ -267,14 +265,6 @@ cupti_cct_trie_flush
   } else {
     // Current thread has made some progress
     prev_range_id = trie_cur->range_id;
-
-    if (prev_range_id == GPU_RANGE_NULL) {
-      if (trie_cur != trie_root) {
-        // Don't assign a range id to the root node
-        trie_cur->range_id = range_id;
-      }
-      prev_range_id = range_id;
-    }
 
     // Traverse up and use original range_id to merge
     cct_trie_merge_thread(context_id, prev_range_id, active, logic);
