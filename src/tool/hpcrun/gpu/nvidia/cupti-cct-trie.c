@@ -258,17 +258,10 @@ cupti_cct_trie_flush
 {
   cct_trie_init();
 
-  uint32_t prev_range_id = GPU_RANGE_NULL;
-  if (trie_logic_root == trie_cur) {
-    // Current thread hasn't made any progress
-    prev_range_id = range_id;
-  } else {
-    // Current thread has made some progress
-    prev_range_id = trie_cur->range_id;
+  uint32_t prev_range_id = trie_cur->range_id;
 
-    // Traverse up and use original range_id to merge
-    cct_trie_merge_thread(context_id, prev_range_id, active, logic);
-  }
+  // Traverse up and use original range_id to merge
+  cct_trie_merge_thread(context_id, prev_range_id, active, logic);
     
   // Notify the other threads
   cct_trie_args_t args = {

@@ -513,6 +513,7 @@ void Metric::crossfinalize(const CollaborativeContext& cc) noexcept {
   // distribute to, in the event that we have to fall back to flat distribution
   // Factor = <kernel_count, sampled_kernel_count>
   using Factor = std::pair<double, double>;
+  double EPS = 1e-4;
 
   // Process everything one top-level Scope at a time
   for(const auto& sc: cc.m_shadow) {
@@ -537,6 +538,11 @@ void Metric::crossfinalize(const CollaborativeContext& cc) noexcept {
           if(macc.first->name() == "GKER:SAMPLED_COUNT")
             factor.second = val;
         }
+        if (factor.second == 0.0) {
+          // This thread has not been sampled, 
+          // Add EPS just to avoid the 0-metric warning
+          factor.second = EPS;
+        }
         total += factor.first;
         sampled_total += factor.second;
         if(factor.first > 0) {
@@ -544,12 +550,12 @@ void Metric::crossfinalize(const CollaborativeContext& cc) noexcept {
         }
       }
       if (sampled_total == 0.0) {
-        std::cout << "here " << total << std::endl;
         // Sampling is not used, apportion based on GKER:COUNT
         for(auto& tf: local_tfactors) {
           tf.second.first /= total;
         }
       } else {
+        // apportion_rate = (total_kernels / sampled_kernels) * (thread_sampled_kernels / sampled_kernels)
         for(auto& tf: local_tfactors) {
           tf.second.first = (total / sampled_total) * (tf.second.second / sampled_total);
         }
