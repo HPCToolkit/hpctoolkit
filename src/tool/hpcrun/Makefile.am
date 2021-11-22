@@ -424,7 +424,9 @@ MY_BASE_FILES =				\
 	gpu/blame-shifting/blame-queue-map.c	\
 	gpu/blame-shifting/blame-kernel-map.c	\
 	gpu/blame-shifting/active-kernels-map.c \
-	gpu/blame-shifting/blame-kernel-cleanup-map.c
+	gpu/blame-shifting/blame-kernel-cleanup-map.c \
+	\
+	gpu/opencl/intel/papi/papi_metric_collector.c
 
 # 	gpu/gpu-api.c
 #	trampoline/common/trampoline.c

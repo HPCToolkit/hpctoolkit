@@ -48,6 +48,7 @@
 #include "common.h"
 
 #include <monitor.h> 
+#include <pthread.h>
 
 #include <hpcrun/device-finalizers.h>
 #include <hpcrun/gpu/gpu-trace.h>
@@ -55,6 +56,7 @@
 #include <hpcrun/gpu/gpu-trace.h>
 #include <hpcrun/gpu/opencl/opencl-api.h>
 #include <hpcrun/gpu/blame-shifting/blame.h>
+#include <hpcrun/gpu/opencl/intel/papi/papi_metric_collector.h>
 #include <hpcrun/thread_data.h>
 #include <hpcrun/trace.h>
 
@@ -89,6 +91,7 @@ static device_finalizer_fn_entry_t device_finalizer_shutdown;
 //******************************************************************************
 
 static char opencl_name[128];
+pthread_t threadId;
 
 
 
@@ -143,6 +146,8 @@ METHOD_FN(stop)
 static void
 METHOD_FN(shutdown)
 {
+  hpcrun_completed();
+  pthread_join(threadId, NULL);
   self->state = UNINIT;
 }
 
@@ -222,8 +227,9 @@ METHOD_FN(process_event_list, int lush_metrics)
     } else if (hpcrun_ev_is(opencl_name, ENABLE_OPENCL_BLAME_SHIFTING)) {
 			opencl_blame_shifting_enable();
 		} else if (hpcrun_ev_is(opencl_name, ENABLE_INTEL_GPU_UTILIZATION)) {
+      // papi metric collection for OpenCL
+      int err = pthread_create(&threadId, NULL, &papi_metric_callback, NULL);
       gpu_metrics_gpu_utilization_enable();
-			gpu_blame_gpu_utilization_enable();
 		}
 	}
 }

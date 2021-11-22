@@ -7,7 +7,7 @@
 
 #include <cct.h>
 #include <sample-sources/papi-c.h>
-#include <hpcrun/gpu/blame-shifting/blame.h>
+#include <hpcrun/gpu/opencl/intel/papi/papi_metric_collector.h>     // cct_node_linkedlist_t
 
 
 

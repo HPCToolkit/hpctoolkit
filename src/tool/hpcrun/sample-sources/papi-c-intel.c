@@ -24,7 +24,7 @@
 #include <hpcrun/sample_event.h>
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_sources_all.h>
-#include <hpcrun/gpu/blame-shifting/blame.h>
+#include <hpcrun/gpu/opencl/intel/papi/papi_metric_collector.h>     // cct_node_linkedlist_t
 #include <hpcrun/gpu/gpu-activity.h>
 #include <sample-sources/common.h>
 #include <sample-sources/ss-obj-name.h>
