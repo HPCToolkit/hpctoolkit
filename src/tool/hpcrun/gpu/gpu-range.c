@@ -223,3 +223,21 @@ gpu_range_exit_callbacks_register
   gpu_range_pre_exit_callback = pre_callback;
   gpu_range_post_exit_callback = post_callback;
 }
+
+
+void
+gpu_range_lock
+(
+)
+{
+  spinlock_lock(&count_lock);
+}
+
+
+void
+gpu_range_unlock
+(
+)
+{
+  spinlock_unlock(&count_lock);
+}

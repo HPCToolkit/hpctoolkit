@@ -103,4 +103,16 @@ gpu_range_exit_callbacks_register
  gpu_range_callback_t post_callback
 );
 
+// Explicit preventing threads entering ranges
+void
+gpu_range_lock
+(
+);
+
+// Explicit allowing threads entering ranges
+void
+gpu_range_unlock
+(
+);
+
 #endif  // gpu_range_h
