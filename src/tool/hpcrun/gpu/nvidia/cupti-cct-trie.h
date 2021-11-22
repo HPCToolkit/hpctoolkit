@@ -33,7 +33,6 @@ uint32_t
 cupti_cct_trie_flush
 (
  uint32_t context_id,
- uint32_t range_id,
  bool active,
  bool logic
 );

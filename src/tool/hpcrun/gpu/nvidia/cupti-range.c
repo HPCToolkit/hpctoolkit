@@ -117,7 +117,7 @@ cupti_range_mode_context_sensitive_is_enter
     // If active, we add a sampled kernel count; otherwise, we add a non-sampled kernel count
     // If logic, we don't unwind the current path in the cct trie
     bool logic = map_ret_type != CUPTI_IP_NORM_MAP_DUPLICATE;
-    prev_range_id = cupti_cct_trie_flush(context_id, range_id, active, logic);
+    prev_range_id = cupti_cct_trie_flush(context_id, active, logic);
     if (active) {
       // If active, we have to flush pc samples and attribute them to nodes with prev_range_id
       // It is an early collection mode different than other modes
@@ -166,7 +166,7 @@ cupti_range_mode_context_sensitive_is_enter
         // Flush does not affect the node just inserted, so we need to unwind it and reinsert it
         cupti_cct_trie_unwind();
         // We are going to extend the path of the current trie, so don't unwind to the root
-        cupti_cct_trie_flush(context_id, range_id, active, true);
+        cupti_cct_trie_flush(context_id, active, true);
         cupti_ip_norm_global_map_clear();
         cupti_cct_trie_append(next_range_id, api_node);
       }
