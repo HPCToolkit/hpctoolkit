@@ -114,4 +114,11 @@ cupti_ip_norm_global_map_lookup
  cct_node_t *cct
 );
 
+
+void
+cupti_ip_norm_global_map_clear
+(
+);
+
+
 #endif

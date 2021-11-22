@@ -130,6 +130,7 @@ cupti_range_mode_context_sensitive_is_enter
       // we clean up ccts in the previous range and start a new range
       cupti_ip_norm_map_clear_thread();
     } 
+    cupti_ip_norm_global_map_clear();
     next_range_id += 1;
   }
 
@@ -144,7 +145,8 @@ cupti_range_mode_context_sensitive_is_enter
   bool sampled = false;
   bool new_range = false;
 
-  printf("thread %d global %d local %d prev_range_id %d cur_range_id %d next_range_id %d active %d\n", cupti_range_thread_list_id_get(), global_map_ret_type, map_ret_type, prev_range_id, range_id, next_range_id, active);
+  // Debug
+  //printf("thread %d global %d local %d prev_range_id %d cur_range_id %d next_range_id %d active %d\n", cupti_range_thread_list_id_get(), global_map_ret_type, map_ret_type, prev_range_id, range_id, next_range_id, active);
   
   if (!active) {
     if (map_ret_type == CUPTI_IP_NORM_MAP_DUPLICATE ||
@@ -165,6 +167,7 @@ cupti_range_mode_context_sensitive_is_enter
         cupti_cct_trie_unwind();
         // We are going to extend the path of the current trie, so don't unwind to the root
         cupti_cct_trie_flush(context_id, range_id, active, true);
+        cupti_ip_norm_global_map_clear();
         cupti_cct_trie_append(next_range_id, api_node);
       }
     } 

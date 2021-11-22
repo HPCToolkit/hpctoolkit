@@ -436,7 +436,6 @@ clear_fn_helper
 )
 {
   if (visit_type == splay_postorder_visit) {
-    cupti_ip_norm_global_map_delete(entry->ip_norm, entry->cct);
     st_free(&free_list, entry);
   }
 }
@@ -660,4 +659,14 @@ cupti_ip_norm_global_map_lookup
     ip_norm.lm_id, ip_norm.lm_ip, cct, ret);
 
   return ret;
+}
+
+
+void
+cupti_ip_norm_global_map_clear
+(
+)
+{
+  st_forall(global_map_root, splay_allorder, clear_fn_helper, NULL);
+  global_map_root = NULL;
 }
