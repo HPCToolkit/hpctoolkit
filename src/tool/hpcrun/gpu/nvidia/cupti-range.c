@@ -161,13 +161,11 @@ cupti_range_mode_context_sensitive_is_enter
       sampled = true;
 
       if (!first_range && map_ret_type == CUPTI_IP_NORM_MAP_NOT_EXIST) {
-        cupti_ip_norm_map_delete_thread(kernel_ip);
         // Flush does not affect the node just inserted, so we need to unwind it and reinsert it
         cupti_cct_trie_unwind();
         // We are going to extend the path of the current trie, so don't unwind to the root
-        cupti_cct_trie_flush(context_id, range_id, active, false);
+        cupti_cct_trie_flush(context_id, range_id, active, true);
         cupti_cct_trie_append(next_range_id, api_node);
-        cupti_ip_norm_map_insert_thread(kernel_ip, api_node);
       }
     } 
       
@@ -362,7 +360,12 @@ cupti_range_thread_last
     return;
   }
 
+  gpu_range_lock();
+
   cupti_cct_trie_notification_process();
+  cupti_ip_norm_map_clear_thread();
+
+  gpu_range_unlock();
 }
 
 
@@ -385,7 +388,7 @@ cupti_range_last
     uint32_t context_id = ((hpctoolkit_cuctx_st_t *)context)->context_id;
     bool active = cupti_pc_sampling_active();
     // No need to unwind to the root since this is the last flush call
-    uint32_t prev_range_id = cupti_cct_trie_flush(context_id, range_id, active, false);
+    uint32_t prev_range_id = cupti_cct_trie_flush(context_id, range_id, active, true);
 
     if (active) {
       // The whole range is repeated with a previous range
