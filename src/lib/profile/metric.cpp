@@ -53,6 +53,7 @@
 #include <stack>
 #include <thread>
 #include <ostream>
+#include <iostream>
 
 using namespace hpctoolkit;
 
@@ -512,34 +513,6 @@ void Metric::crossfinalize(const CollaborativeContext& cc) noexcept {
   // distribute to, in the event that we have to fall back to flat distribution
   // Factor = <kernel_count, sampled_kernel_count>
   using Factor = std::pair<double, double>;
-  std::vector<std::pair<decltype(cc.data)::mapped_type::key_type, Factor>> default_tfactors;
-  {
-    std::unordered_set<decltype(cc.data)::mapped_type::key_type> targets;
-    double total = 0;
-    for(const auto& sdata: cc.data.citerate()) {
-      for(const auto& tcdata: sdata.second.citerate()) {
-        if(!targets.emplace(tcdata.first).second) continue;
-        Factor factor = {0.0, 0.0};
-        for(const auto& macc: tcdata.second.citerate()) {
-          if (macc.first->name() == "GKER:COUNT") {
-            factor.first = macc.second.point.load(std::memory_order_relaxed);
-          } else if (macc.first->name() == "GKER::SAMPLED_COUNT") {
-            factor.second = macc.second.point.load(std::memory_order_relaxed);
-          }
-        }
-        total += factor.first;
-        if(factor.first > 0) {
-          if(factor.second > 0) {
-            factor.second = factor.first / factor.second;
-          } else {
-            factor.second = 1.0;
-          }
-          default_tfactors.emplace_back(tcdata.first, factor);
-        }
-      }
-    }
-    for(auto& tcf: default_tfactors) tcf.second.first /= total;
-  }
 
   // Process everything one top-level Scope at a time
   for(const auto& sc: cc.m_shadow) {
@@ -550,6 +523,7 @@ void Metric::crossfinalize(const CollaborativeContext& cc) noexcept {
     if(sdata != nullptr) {
       local_tfactors.reserve(sdata->size());
       double total = 0;
+      double sampled_total = 0;
       for(const auto& tcdata: sdata->citerate()) {
         Thread::Temporary& tt = tcdata.first.first;
         const Context& c = tcdata.first.second;
@@ -564,16 +538,22 @@ void Metric::crossfinalize(const CollaborativeContext& cc) noexcept {
             factor.second = val;
         }
         total += factor.first;
+        sampled_total += factor.second;
         if(factor.first > 0) {
-          if(factor.second > 0) {
-            factor.second = factor.first / factor.second;
-          } else {
-            factor.second = 1.0;
-          }
           local_tfactors.emplace_back(tcdata.first, factor);
         }
       }
-      for(auto& tf: local_tfactors) tf.second.first /= total;
+      if (sampled_total == 0.0) {
+        std::cout << "here " << total << std::endl;
+        // Sampling is not used, apportion based on GKER:COUNT
+        for(auto& tf: local_tfactors) {
+          tf.second.first /= total;
+        }
+      } else {
+        for(auto& tf: local_tfactors) {
+          tf.second.first = (total / sampled_total) * (tf.second.second / sampled_total);
+        }
+      }
     }
 
     // If not finding range indicators in CCTs, just skip these samples
@@ -597,7 +577,7 @@ void Metric::crossfinalize(const CollaborativeContext& cc) noexcept {
           for(const auto& macc: shad.data.citerate()) {
             const Metric& m = macc.first;
             auto val = macc.second.point.load(std::memory_order_relaxed);
-            atomic_add(cdata[m].point, val * tf.second.first * tf.second.second);
+            atomic_add(cdata[m].point, val * tf.second.first);
           }
         }
       }
