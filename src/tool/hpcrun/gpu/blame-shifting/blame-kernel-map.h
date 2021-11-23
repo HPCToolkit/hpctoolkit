@@ -6,6 +6,7 @@
 //******************************************************************************
 
 #include <hpcrun/cct/cct.h>                   // cct_node_t
+#include <hpcrun/gpu/gpu-activity.h>          // gpu_activity_channel_t
 #include <lib/prof-lean/stdatomic.h>          // _Atomic
 
 
@@ -27,6 +28,8 @@ typedef struct kernel_node_t {
   cct_node_t *launcher_cct;
 
   double cpu_idle_blame;
+
+  gpu_activity_channel_t *activity_channel;
 
   struct kernel_node_t* next;
 } kernel_node_t;

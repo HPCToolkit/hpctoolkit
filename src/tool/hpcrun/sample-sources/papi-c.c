@@ -974,7 +974,8 @@ static void
 papi_monitor_enter(papi_component_info_t *ci, cct_node_t **cct_nodes, uint32_t num_unfinished_kernels)
 {
   // if sampling disabled explicitly for this thread, skip all processing
-  if (hpcrun_suppress_sample() || sample_filters_apply()) return;
+  // if (hpcrun_suppress_sample() || sample_filters_apply()) return;
+  if (sample_filters_apply()) return;
 
   ci->cct_nodes = cct_nodes;
 

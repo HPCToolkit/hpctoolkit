@@ -152,6 +152,7 @@ accumulate_gpu_utilization_metrics_to_incomplete_kernels
   curr_c = cct_list_of_incomplete_kernels;
   while (curr_k) {
     curr_c->node = curr_k->launcher_cct;
+    curr_c->activity_channel = curr_k->activity_channel;
     curr_c = atomic_load(&curr_c->next);
     curr_k = curr_k->next;
   }
