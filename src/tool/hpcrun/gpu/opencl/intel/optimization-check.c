@@ -47,7 +47,7 @@ create_activity_object
   ga->kind = GPU_ACTIVITY_INTEL_OPTIMIZATION;
   ga->cct_node = cct_node;
   ga->details.intel_optimization.intelOptKind = activity->intelOptKind;
-  ga->details.intel_optimization.val = 1; // metric values will be 1(bool)
+  ga->details.intel_optimization.val = 1; // metric values will be 1(bool/count)
 }
 
 
@@ -215,12 +215,14 @@ areKernelParamsAliased
   kp_node_t *kp_list = kernel_param_map_entry_kp_list_get(entry);
   bool aliased = checkIfMemoryRegionsOverlap(kp_list);
   
+  cct_node_t *cct_node = gpu_application_thread_correlation_callback(0);
+  intel_optimization_t i;
   if (!aliased) {
-    cct_node_t *cct_node = gpu_application_thread_correlation_callback(0);
-    intel_optimization_t i;
     i.intelOptKind = KERNEL_PARAMS_NOT_ALIASED;
-    record_intel_optimization_metrics(cct_node, &i);
+  } else {
+    i.intelOptKind = KERNEL_PARAMS_ALIASED;
   }
+  record_intel_optimization_metrics(cct_node, &i);
   // this check happens during kernel execution.
   // after a kernel is executed, new params could be added for the kernel
   // so we need to clear the previously set params

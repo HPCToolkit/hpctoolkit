@@ -405,14 +405,16 @@ typedef enum {
 
 // intel optimization metrics
 #define FORALL_INTEL_OPTIMIZATION(macro)					\
-    macro("INORDER_QUEUE",                INORDER_QUEUE,		\
-	  "inorder GPU queue/stream. try out-of-order execution to run kernels in parallel: bool")				\
-  macro("KERNEL_TO_MULTIPLE_QUEUES",                KERNEL_TO_MULTIPLE_QUEUES,		\
-	"kernel to multiple queues: bool")        \
-  macro("KERNEL_TO_MULTIPLE_QUEUES_MULTIPLE_CONTEXTS",                KERNEL_TO_MULTIPLE_QUEUES_MULTIPLE_CONTEXTS,		\
-	"kernel to multiple queues with different contexts. Each context will JIT the kernel: bool")        \
-  macro("KERNEL_PARAMS_NOT_ALIASED",                KERNEL_PARAMS_NOT_ALIASED,		\
-	"kernel params are not aliased. Add directive for optimization benefits: bool")        \
+    macro("INORDER_QUEUE:COUNT",                INORDER_QUEUE,		\
+	  "count of inorder GPU queues/streams (enable out-of-order execution to run kernels in parallel)")				\
+  macro("GKER_MULTIPLE_QUEUES:COUNT",                KERNEL_TO_MULTIPLE_QUEUES,		\
+	"count of kernel executions on multiple queues ")        \
+  macro("GKER_MULTIPLE_QUEUES_MULTIPLE_CONTEXTS:COUNT",                KERNEL_TO_MULTIPLE_QUEUES_MULTIPLE_CONTEXTS,		\
+	"count of kernel executions on multiple queues with different contexts (each context will JIT the kernel)")        \
+  macro("GKER_PARAMS_NOT_ALIASED:COUNT",                KERNEL_PARAMS_NOT_ALIASED,		\
+	"count of kernel invocations with non-aliased parameters (add directive for enabling code-reordering optimization)")        \
+  macro("GKER_PARAMS_ALIASED:COUNT",                KERNEL_PARAMS_ALIASED,		\
+	"count of kernel invocations with aliased parameters")        \
   macro("SINGLE_DEVICE_USE_AOT_COMPILATION",                SINGLE_DEVICE_USE_AOT_COMPILATION,		\
 	"since a single device is being used, use AOT for saving time JITing kernels: bool")        \
   macro("OUTPUT_OF_KERNEL_INPUT_TO_ANOTHER_KERNEL",                OUTPUT_OF_KERNEL_INPUT_TO_ANOTHER_KERNEL,		\
