@@ -230,7 +230,9 @@ gpu_range_lock
 (
 )
 {
-  spinlock_lock(&count_lock);
+  if (gpu_range_enabled()) {
+    spinlock_lock(&count_lock);
+  }
 }
 
 
@@ -239,5 +241,7 @@ gpu_range_unlock
 (
 )
 {
-  spinlock_unlock(&count_lock);
+  if (gpu_range_enabled()) {
+    spinlock_unlock(&count_lock);
+  }
 }
