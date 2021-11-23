@@ -550,11 +550,11 @@ add_pseudo_cct
     // this is the first parallel region add pseudo cct
     // which corresponds to the region as a child of thread root
     new = hpcrun_cct_insert_addr((hpcrun_get_thread_epoch()->csdata).thread_root,
-                                 &(ADDR2(UNRESOLVED, region_data->region_id)));
+                                 &(ADDR2(UNRESOLVED, region_data->region_id)), true);
   } else {
     // add cct as a child of a previous pseudo cct
     new = hpcrun_cct_insert_addr(region_stack[top_index - 1].notification->unresolved_cct,
-                                 &(ADDR2(UNRESOLVED, region_data->region_id)));
+                                 &(ADDR2(UNRESOLVED, region_data->region_id)), true);
   }
 
   return new;
@@ -660,7 +660,7 @@ register_to_all_regions
       // insert cct as child of the parent_cct
       new_cct =
               hpcrun_cct_insert_addr(parent_cct,
-                                     &(ADDR2(UNRESOLVED, current_el->notification->region_data->region_id)));
+                                     &(ADDR2(UNRESOLVED, current_el->notification->region_data->region_id)), true);
       // remebmer cct
       current_el->notification->unresolved_cct = new_cct;
 
@@ -686,7 +686,7 @@ hpcrun_cct_insert_path_return_leaf_tmp
     if (parent) {
       root = hpcrun_cct_insert_path_return_leaf_tmp(root, parent);
     }
-    return hpcrun_cct_insert_addr(root, hpcrun_cct_addr(path));
+    return hpcrun_cct_insert_addr(root, hpcrun_cct_addr(path), true);
 }
 
 // return one if a notification was processed
