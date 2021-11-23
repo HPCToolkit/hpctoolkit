@@ -1876,7 +1876,7 @@ void hpcrun_auditor_attach(const auditor_exports_t* exports, auditor_hooks_t* ho
   hooks->open = auditor_open;
   hooks->close = auditor_close;
   hooks->stable = auditor_stable;
-  hooks->cuLaunchKernel = auditor_cuLaunchKernel;
+  //hooks->cuLaunchKernel = auditor_cuLaunchKernel;
   //hooks->cuMemcpy = auditor_cuMemcpy;
   //hooks->cuMemcpyDtoH = auditor_cuMemcpyDtoH;
   //hooks->cuMemcpyDtoHAsync = auditor_cuMemcpyAsync;

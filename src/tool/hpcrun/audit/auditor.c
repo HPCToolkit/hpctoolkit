@@ -148,7 +148,7 @@ static void mainlib_connected(const char*);
 static auditor_exports_t exports = {
   .mainlib_connected = mainlib_connected,
   .pipe = pipe, .close = close, .waitpid = waitpid,
-  .clone = clone, .execve = execve, .cuLaunchKernel = NULL,
+  .clone = clone, .execve = execve, 
   .cuMemcpy = NULL, .cuMemcpyDtoD = NULL, .cuMemcpyDtoH = NULL,
   .cuMemcpyHtoD = NULL, .cuMemcpyDtoDAsync = NULL,
   .cuMemcpyDtoHAsync = NULL, .cuMemcpyHtoDAsync = NULL 
@@ -351,10 +351,10 @@ uintptr_t la_symbind64(Elf64_Sym *sym, unsigned int ndx,
                        unsigned int *flags, const char *symname) {
   if(*refcook != 0 && dl_runtime_resolver_ptr != 0)
     optimize_object_plt(state < state_connected ? (struct link_map*)*refcook : ((auditor_map_entry_t*)*refcook)->map);
-  if (strcmp(symname, "cuLaunchKernel") == 0) {
-    exports.cuLaunchKernel = sym->st_value;
-    return hooks.cuLaunchKernel;
-  }
+  //if (strcmp(symname, "cuLaunchKernel") == 0) {
+  //  exports.cuLaunchKernel = sym->st_value;
+  //  return hooks.cuLaunchKernel;
+  //}
   //else if (strcmp(symname, "cuMemcpy") == 0) {
   //  exports.cuMemcpy = sym->st_value;
   //  return hooks.cuMemcpy;
