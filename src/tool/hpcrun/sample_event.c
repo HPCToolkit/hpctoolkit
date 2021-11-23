@@ -295,7 +295,7 @@ hpcrun_sample_callpath(void* context, int metricId,
 
     TMSG(TRACE,"parent node = %p, &frm = %p", hpcrun_cct_parent(node), &frm);
     cct_node_t* func_proxy =
-      hpcrun_cct_insert_addr(hpcrun_cct_parent(node), &frm);
+      hpcrun_cct_insert_addr(hpcrun_cct_parent(node), &frm, false);
 
     ret.trace_node = func_proxy;
 

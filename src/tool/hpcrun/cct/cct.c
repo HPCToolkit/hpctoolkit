@@ -112,6 +112,10 @@ struct cct_node_t {
 
   bool is_leaf;
 
+  // If true, this cct was stitched here, there may be "missing"
+  // contexts between us and parent.
+  bool from_ununwindable;
+
   // ---------------------------------------------------------
   // tree structure
   // ---------------------------------------------------------
@@ -154,7 +158,7 @@ new_persistent_id()
 }
 
 static cct_node_t*
-cct_node_create(cct_addr_t* addr, cct_node_t* parent)
+cct_node_create(cct_addr_t* addr, bool ununwind, cct_node_t* parent)
 {
   size_t sz = sizeof(cct_node_t);
   cct_node_t *node;
@@ -183,6 +187,7 @@ cct_node_create(cct_addr_t* addr, cct_node_t* parent)
   node->right = NULL;
 
   node->is_leaf = false;
+  node->from_ununwindable = ununwind;
 
   return node;
 }
@@ -392,6 +397,7 @@ lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
 
   tmp->id = hpcrun_cct_persistent_id(node);
   tmp->id_parent = parent ? hpcrun_cct_persistent_id(parent) : 0;
+  tmp->from_ununwindable = node->from_ununwindable;
 
   //YUMENG: seems no need to inform new prof about being leaf
   // if no children, chg sign of id when written out
@@ -455,13 +461,13 @@ lwrite(cct_node_t* node, cct_op_arg_t arg, size_t level)
 cct_node_t*
 hpcrun_cct_new(void)
 {
-  return cct_node_create(&(ADDR(CCT_ROOT)), NULL);
+  return cct_node_create(&(ADDR(CCT_ROOT)), false, NULL);
 }
 
 cct_node_t*
 hpcrun_cct_new_partial(void)
 {
-  return cct_node_create(&(ADDR(PARTIAL_ROOT)), NULL);
+  return cct_node_create(&(ADDR(PARTIAL_ROOT)), false, NULL);
 }
 
 cct_node_t*
@@ -471,13 +477,13 @@ hpcrun_cct_new_special(void* addr)
 
   cct_addr_t tmp = NON_LUSH_ADDR_INI(tmp_ip.lm_id, tmp_ip.lm_ip);
 
-  return cct_node_create(&tmp, NULL);
+  return cct_node_create(&tmp, false, NULL);
 }
 
 cct_node_t*
 hpcrun_cct_top_new(uint16_t lmid, uintptr_t lmip)
 {
-  return cct_node_create(&(ADDR2(lmid, lmip)), NULL);
+  return cct_node_create(&(ADDR2(lmid, lmip)), false, NULL);
 }
 
 //
@@ -527,6 +533,12 @@ hpcrun_cct_is_leaf(cct_node_t* node)
   return node ? (node->is_leaf) || (!(node->children)) : false;
 }
 
+bool
+hpcrun_cct_from_ununwindable(cct_node_t* node)
+{
+  return node ? node->from_ununwindable : false;
+}
+
 //
 // NOTE: having no children is not exactly the same as being a leaf
 //       A leaf represents a full path. There might be full paths
@@ -559,14 +571,14 @@ hpcrun_cct_is_dummy(cct_node_t* node)
 //
 
 cct_node_t*
-hpcrun_cct_insert_ip_norm(cct_node_t* node, ip_normalized_t ip_norm)
+hpcrun_cct_insert_ip_norm(cct_node_t* node, ip_normalized_t ip_norm, bool ununwind)
 {
   cct_addr_t frm;
 
   memset(&frm, 0, sizeof(cct_addr_t));
   frm.ip_norm = ip_norm;
 
-  cct_node_t *child = hpcrun_cct_insert_addr(node, &frm);
+  cct_node_t *child = hpcrun_cct_insert_addr(node, &frm, ununwind);
 
   return child;
 }
@@ -580,7 +592,7 @@ hpcrun_cct_insert_ip_norm(cct_node_t* node, ip_normalized_t ip_norm)
 // and returned]
 //
 cct_node_t*
-hpcrun_cct_insert_addr(cct_node_t* node, cct_addr_t* frm)
+hpcrun_cct_insert_addr(cct_node_t* node, cct_addr_t* frm, bool ununwind)
 {
   if ( ! node)
     return NULL;
@@ -600,7 +612,7 @@ hpcrun_cct_insert_addr(cct_node_t* node, cct_addr_t* frm)
     return found;
   }
   //  cct_node_t* new = cct_node_create(frm->as_info, frm->ip_norm, frm->lip, node);
-  cct_node_t* new = cct_node_create(frm, node);
+  cct_node_t* new = cct_node_create(frm, ununwind, node);
 
   node->children = new;
   if (! found){
@@ -624,7 +636,7 @@ hpcrun_cct_insert_dummy(cct_node_t* node, uint16_t lm_ip)
 {
   ip_normalized_t ip = { .lm_id = HPCRUN_DUMMY_NODE, .lm_ip = lm_ip };
   cct_addr_t frm = { .ip_norm = ip };
-  cct_node_t *dummy = hpcrun_cct_insert_addr(node, &frm);
+  cct_node_t *dummy = hpcrun_cct_insert_addr(node, &frm, false);
   return dummy;
 }
 
@@ -656,7 +668,7 @@ hpcrun_cct_insert_path_return_leaf(cct_node_t *root, cct_node_t *path)
 {
   if(!path || ! path->parent) return root;
   root = hpcrun_cct_insert_path_return_leaf(root, path->parent);
-  return hpcrun_cct_insert_addr(root, &(path->addr));
+  return hpcrun_cct_insert_addr(root, &(path->addr), path->from_ununwindable);
 }
 
 // remove the sub-tree rooted at cct from it's parent
@@ -816,7 +828,7 @@ l_insert_path(cct_node_t* node, cct_op_arg_t arg, size_t level)
   if (cct_addr_eq(addr, &root)) return;
 
   cct_node_t** tree = (cct_node_t**) arg;
-  *tree = hpcrun_cct_insert_addr(*tree, addr);
+  *tree = hpcrun_cct_insert_addr(*tree, addr, node->from_ununwindable);
 }
 
 
@@ -1223,7 +1235,7 @@ hpcrun_cct_node_free(cct_node_t *cct){
 cct_node_t*
 hpcrun_cct_copy_just_addr(cct_node_t *cct)
 {
-  return cct ? cct_node_create(&cct->addr, NULL): NULL;
+  return cct ? cct_node_create(&cct->addr, cct->from_ununwindable, NULL): NULL;
 }
 
 void
