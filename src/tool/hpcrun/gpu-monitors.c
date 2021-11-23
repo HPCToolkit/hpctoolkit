@@ -6,7 +6,7 @@
 #include "hpcrun-malloc.h"
 
 
-static __thread gpu_monitor_node_t *gpu_monitor_list = NULL;
+static gpu_monitor_node_t *gpu_monitor_list = NULL;
 
 void
 gpu_monitor_register(	gpu_monitor_node_t node)

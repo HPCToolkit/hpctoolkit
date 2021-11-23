@@ -25,6 +25,7 @@
 #include <hpcrun/safe-sampling.h>
 #include <hpcrun/sample_sources_all.h>
 #include <hpcrun/gpu/opencl/intel/papi/papi_metric_collector.h>     // cct_node_linkedlist_t
+#include <hpcrun/gpu/gpu-operation-multiplexer.h>                   // gpu_operation_multiplexer_push
 #include <hpcrun/gpu/gpu-activity.h>
 #include <sample-sources/common.h>
 #include <sample-sources/ss-obj-name.h>
@@ -162,7 +163,13 @@ papi_c_intel_teardown(void)
 
 
 static void
-attribute_gpu_utilization(cct_node_t *cct_node, long long *current_values, long long *previous_values)
+attribute_gpu_utilization
+(
+  cct_node_t *cct_node,
+  gpu_activity_channel_t *activity_channel,
+  long long *current_values,
+  long long *previous_values
+)
 {
   gpu_activity_t ga;
   gpu_activity_t *ga_ptr = &ga;
@@ -172,7 +179,9 @@ attribute_gpu_utilization(cct_node_t *cct_node, long long *current_values, long 
   ga_ptr->details.gpu_utilization_info.active = current_values[ACTIVE_INDEX];
   ga_ptr->details.gpu_utilization_info.stalled = current_values[STALL_INDEX];
   ga_ptr->details.gpu_utilization_info.idle = 100 - (current_values[ACTIVE_INDEX] + current_values[STALL_INDEX]);
-  gpu_metrics_attribute(ga_ptr);
+  // gpu_metrics_attribute(ga_ptr);
+  cstack_ptr_set(&(ga_ptr->next), 0);
+  gpu_operation_multiplexer_push(activity_channel, NULL, ga_ptr);
 }
 
 
@@ -185,11 +194,11 @@ papi_c_intel_read(cct_node_linkedlist_t *cct_nodes, uint32_t num_ccts, long long
     ETMSG(INTEL, "Error stopping:  %s\n", PAPI_strerror(retval));
     return NULL;
   }
-  printf("%s: %lld, %s: %lld, %s: %lld\n", metric_name[0], metric_values[0], metric_name[1], metric_values[1], metric_name[2], metric_values[2]);
+  // printf("%s: %lld, %s: %lld, %s: %lld\n", metric_name[0], metric_values[0], metric_name[1], metric_values[1], metric_name[2], metric_values[2]);
 
   cct_node_linkedlist_t* curr = cct_nodes;
   for(int i=0; i<num_ccts; i++) {
-    attribute_gpu_utilization(curr->node, metric_values, previous_values);
+    attribute_gpu_utilization(curr->node, curr->activity_channel, metric_values, previous_values);
     curr = atomic_load(&curr->next);
   }
   cct_list_node_free_helper(cct_nodes);

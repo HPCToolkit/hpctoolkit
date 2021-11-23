@@ -6,6 +6,7 @@
 //******************************************************************************
 
 #include <hpcrun/cct/cct.h>                                             // cct_node_t
+#include <hpcrun/gpu/gpu-activity.h>                                    // gpu_activity_channel_t
 #include <hpcrun/gpu/blame-shifting/blame-kernel-map.h>                 // kernel_node_t
 
 
@@ -17,6 +18,7 @@
 typedef struct cct_node_linkedlist_t {
   _Atomic (struct cct_node_linkedlist_t*) next;
   cct_node_t *node;
+  gpu_activity_channel_t *activity_channel;
 } cct_node_linkedlist_t;
 
 
