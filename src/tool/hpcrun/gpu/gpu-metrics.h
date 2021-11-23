@@ -433,15 +433,18 @@ typedef enum {
 
 // gpu-utilization metrics
 #define FORALL_GPU_UTILIZATION(macro)					\
-  macro("GPU_ACT (%)",              GPU_ACT,		\
-	"\% of EU's in the GPU that are active")  \
-  macro("GPU_STL (%)",               GPU_STL,			\
-	"\% of EU's in the GPU that are stalled")			\
-  macro("GPU_IDLE (%)",              GPU_IDLE,		\
-	"\% of EU's in the GPU that are idle")    \
-  macro("GPU_UTIL_DENOMINATOR (%)",              GPU_UTIL_DENOMINATOR,		\
+  macro("GPU_ACT",              GPU_ACT,		"")  \
+  macro("GPU_STL",              GPU_STL,		"")	 \
+  macro("GPU_IDLE",             GPU_IDLE,		"")  \
+  macro("GPU_UTIL_DENOMINATOR",              GPU_UTIL_DENOMINATOR,		\
 	"this is a helper metric that increments the metric value by 100 for the corresponding CCT. This can be denominator to the above three \
-  to metrics to get the \% of GPU utilization")
+  to metrics to get the \% of GPU utilization")  \
+  macro("GPU_ACTIVE (%)",              GPU_ACT_PERCENT,		\
+	"The percentage of time in which the Execution Units were active")    \
+  macro("GPU_STALL (%)",              GPU_STL_PERCENT,		\
+	"The percentage of time in which the Execution Units were stalled")    \
+  macro("GPU_IDLE (%)",              GPU_IDLE_PERCENT,		\
+	"The percentage of time in which the Execution Units were idle")
 
 
 

@@ -201,6 +201,31 @@ name ## _metric_kind
   reg_metric->format  = FORMAT_DISPLAY_PERCENTAGE
 
 
+#define GPU_UTILIZATION_FORMULA() \
+  hpcrun_set_display(METRIC_ID(GPU_ACT), HPCRUN_FMT_METRIC_INVISIBLE); \
+  hpcrun_set_display(METRIC_ID(GPU_STL), HPCRUN_FMT_METRIC_INVISIBLE); \
+  hpcrun_set_display(METRIC_ID(GPU_IDLE), HPCRUN_FMT_METRIC_INVISIBLE); \
+  hpcrun_set_display(METRIC_ID(GPU_UTIL_DENOMINATOR), HPCRUN_FMT_METRIC_INVISIBLE); \
+  hpcrun_set_percent(METRIC_ID(GPU_ACT_PERCENT), 0); \
+  hpcrun_set_percent(METRIC_ID(GPU_STL_PERCENT), 0); \
+  hpcrun_set_percent(METRIC_ID(GPU_IDLE_PERCENT), 0); \
+  active_metric  = hpcrun_id2metric_linked(METRIC_ID(GPU_ACT_PERCENT)); \
+  stalled_metric  = hpcrun_id2metric_linked(METRIC_ID(GPU_STL_PERCENT)); \
+  idle_metric  = hpcrun_id2metric_linked(METRIC_ID(GPU_IDLE_PERCENT)); \
+  active_formula = hpcrun_malloc_safe(sizeof(char) * MAX_CHAR_FORMULA); \
+  stall_formula = hpcrun_malloc_safe(sizeof(char) * MAX_CHAR_FORMULA); \
+  idle_formula = hpcrun_malloc_safe(sizeof(char) * MAX_CHAR_FORMULA); \
+  sprintf(active_formula, "100*(#%d/#%d)", METRIC_ID(GPU_ACT), METRIC_ID(GPU_UTIL_DENOMINATOR)); \
+  sprintf(stall_formula, "100*(#%d/#%d)", METRIC_ID(GPU_STL), METRIC_ID(GPU_UTIL_DENOMINATOR)); \
+  sprintf(idle_formula, "100*(#%d/#%d)", METRIC_ID(GPU_IDLE), METRIC_ID(GPU_UTIL_DENOMINATOR)); \
+  active_metric->formula = active_formula; \
+  stalled_metric->formula = stall_formula; \
+  idle_metric->formula = idle_formula; \
+  active_metric->format  = FORMAT_DISPLAY_PERCENTAGE; \
+  stalled_metric->format  = FORMAT_DISPLAY_PERCENTAGE; \
+  idle_metric->format  = FORMAT_DISPLAY_PERCENTAGE
+
+
 
 //*****************************************************************************
 // local variables 
@@ -1032,4 +1057,8 @@ gpu_metrics_gpu_utilization_enable
   INITIALIZE_METRIC_KIND();
 
   FORALL_GPU_UTILIZATION(INITIALIZE_SCALAR_METRIC_INT)
+
+  metric_desc_t *active_metric, *stalled_metric, *idle_metric;
+  char *active_formula, *stall_formula, *idle_formula;
+  GPU_UTILIZATION_FORMULA();
 }
