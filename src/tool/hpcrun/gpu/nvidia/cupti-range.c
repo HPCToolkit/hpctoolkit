@@ -391,7 +391,7 @@ cupti_range_last
     uint32_t context_id = ((hpctoolkit_cuctx_st_t *)context)->context_id;
     bool active = cupti_pc_sampling_active();
     // No need to unwind to the root since this is the last flush call
-    uint32_t prev_range_id = cupti_cct_trie_flush(context_id, range_id, active, true);
+    uint32_t prev_range_id = cupti_cct_trie_flush(context_id, active, true);
 
     if (active) {
       // The whole range is repeated with a previous range
