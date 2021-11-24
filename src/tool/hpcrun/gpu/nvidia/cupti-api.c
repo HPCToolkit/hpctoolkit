@@ -1314,9 +1314,11 @@ cupti_driver_api_subscriber_callback_cuda
   const CUpti_CallbackData *cd = (const CUpti_CallbackData *)cb_info;
   if (!cupti_runtime_api_flag_get() && !ompt_runtime_status_get()) {
     if (cd->callbackSite == CUPTI_API_ENTER) {
+      gpu_range_lock();
       cupti_api_enter_callback_cuda(flags, cb_id, cb_info);
     } else {
       cupti_api_exit_callback_cuda(cb_id);
+      gpu_range_unlock();
     }
   } else if (cupti_runtime_api_flag_get()) {
     uint32_t range_id = gpu_range_id_get();
@@ -1391,6 +1393,7 @@ cupti_runtime_api_subscriber_callback_cuda
 {
   const CUpti_CallbackData *cd = (const CUpti_CallbackData *)cb_info;
   if (cd->callbackSite == CUPTI_API_ENTER) {
+    gpu_range_lock();
     // Enter a CUDA runtime api
     cupti_runtime_api_flag_set();
     cupti_api_enter_callback_cuda(flags, cb_id, cb_info);
@@ -1399,6 +1402,7 @@ cupti_runtime_api_subscriber_callback_cuda
     cupti_runtime_api_flag_unset();
     cupti_api_exit_callback_cuda(cb_id);
     cupti_runtime_correlation_id_set(CUPTI_CORRELATION_ID_NULL);
+    gpu_range_unlock();
   }
 }
 
@@ -2144,6 +2148,7 @@ cupti_callbacks_subscribe
   // With gpu=nvidia, monitoring all gpu activities
   cupti_subscribers_driver_kernel_callbacks_subscribe(1, cupti_subscriber);
   cupti_subscribers_runtime_kernel_callbacks_subscribe(1, cupti_subscriber);
+  cupti_subscribers_runtime_memcpy_callbacks_subscribe(1, cupti_subscriber);
   cupti_subscribers_resource_module_subscribe(1, cupti_subscriber);
   cupti_subscribers_resource_context_subscribe(1, cupti_subscriber);
 
@@ -2151,7 +2156,6 @@ cupti_callbacks_subscribe
     cupti_subscribers_driver_memcpy_htod_callbacks_subscribe(1, cupti_subscriber);
     cupti_subscribers_driver_memcpy_dtoh_callbacks_subscribe(1, cupti_subscriber);
     cupti_subscribers_driver_memcpy_callbacks_subscribe(1, cupti_subscriber);
-    cupti_subscribers_runtime_memcpy_callbacks_subscribe(1, cupti_subscriber);
     // XXX(Keren): timestamps for sync are captured on CPU
     //cupti_subscribers_driver_sync_callbacks_subscribe(1, cupti_subscriber);
     //cupti_subscribers_runtime_sync_callbacks_subscribe(1, cupti_subscriber);
@@ -2362,11 +2366,11 @@ cupti_device_flush(void *args, int how)
   printf("Total cct unwinds %lu, correct unwinds %lu, fast unwinds %lu, slow unwinds %lu, unique ccts %zu\n",
     total_unwinds, correct_unwinds, fast_unwinds, slow_unwinds, cupti_cct_analysis_map_size_get());
 
-  printf("-----------------------------------------------------------------\n");
+  //printf("-----------------------------------------------------------------\n");
 
-  printf("CCT trie\n");
+  //printf("CCT trie\n");
 
-  cupti_cct_trie_dump();
+  //cupti_cct_trie_dump();
 #endif
 
   spinlock_unlock(&print_lock);

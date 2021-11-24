@@ -15,13 +15,16 @@
 #include "cupti-cct-trie.h"
 #include "cupti-range-thread-list.h"
 
+#define DEBUG
+
 static cupti_range_mode_t cupti_range_mode = CUPTI_RANGE_MODE_NONE;
 
 static uint32_t cupti_range_interval = CUPTI_RANGE_DEFAULT_INTERVAL;
 static uint32_t cupti_range_sampling_period = CUPTI_RANGE_DEFAULT_SAMPLING_PERIOD;
 
-#ifdef NEW_CUPTI_ANALYSIS
-static __thread int sampled_times = 0;
+#ifdef DEBUG
+static uint64_t total_times = 0;
+static uint64_t sampled_times = 0;
 #endif
 
 static bool
@@ -173,7 +176,7 @@ cupti_range_mode_context_sensitive_is_enter
     } 
       
     if (sampled) {
-#ifdef NEW_CUPTI_ANALYSIS
+#ifdef DEBUG
       ++sampled_times;
 #endif
       cupti_pc_sampling_start(context);
@@ -186,6 +189,10 @@ cupti_range_mode_context_sensitive_is_enter
     first_range = false;
     new_range = false;
   } 
+
+#ifdef DEBUG
+  ++total_times;
+#endif
 
   return new_range;
 }
@@ -399,7 +406,7 @@ cupti_range_last
     }
   }
 
-#ifdef NEW_CUPTI_ANALYSIS
-  printf("sampled times %d\n", sampled_times);
+#ifdef DEBUG
+  printf("total_times %lu sampled_times %lu\n", total_times, sampled_times);
 #endif
 }

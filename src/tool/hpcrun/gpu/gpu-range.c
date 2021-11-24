@@ -4,6 +4,7 @@
 
 #include <lib/prof-lean/stdatomic.h>
 #include <lib/prof-lean/spinlock.h>
+#include <lib/prof-lean/pfq-rwlock.h>
 
 #include <hpcrun/cct/cct.h>
 #include <hpcrun/cct/cct_bundle.h>
@@ -117,7 +118,7 @@ gpu_range_enter
     return GPU_RANGE_DEFAULT_RANGE;
   }
 
-  spinlock_lock(&count_lock);
+  gpu_range_lock();
 
   // Early update of range_id
   thread_range_id = atomic_load(&range_id);
@@ -168,7 +169,7 @@ gpu_range_exit
     atomic_store(&lead_correlation_id, 0);
   } 
 
-  spinlock_unlock(&count_lock);
+  gpu_range_unlock();
 }
 
 bool
