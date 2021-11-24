@@ -15,7 +15,7 @@
 #include "cupti-cct-trie.h"
 #include "cupti-range-thread-list.h"
 
-#define DEBUG
+//#define DEBUG
 
 static cupti_range_mode_t cupti_range_mode = CUPTI_RANGE_MODE_NONE;
 

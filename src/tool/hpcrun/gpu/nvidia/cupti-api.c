@@ -1323,9 +1323,11 @@ cupti_driver_api_subscriber_callback_cuda
   } else if (cupti_runtime_api_flag_get()) {
     uint32_t range_id = gpu_range_id_get();
     if (cd->callbackSite == CUPTI_API_ENTER) {
+      gpu_range_lock();
       TMSG(CUPTI_TRACE, "Driver enter (cb_id = %u, range_id = %u)", cb_id, range_id);
     } else {
       TMSG(CUPTI_TRACE, "Driver exit (cb_id = %u, range_id = %u)", cb_id, range_id);
+      gpu_range_unlock();
     }
   }
 }
@@ -1393,7 +1395,6 @@ cupti_runtime_api_subscriber_callback_cuda
 {
   const CUpti_CallbackData *cd = (const CUpti_CallbackData *)cb_info;
   if (cd->callbackSite == CUPTI_API_ENTER) {
-    gpu_range_lock();
     // Enter a CUDA runtime api
     cupti_runtime_api_flag_set();
     cupti_api_enter_callback_cuda(flags, cb_id, cb_info);
@@ -1402,7 +1403,6 @@ cupti_runtime_api_subscriber_callback_cuda
     cupti_runtime_api_flag_unset();
     cupti_api_exit_callback_cuda(cb_id);
     cupti_runtime_correlation_id_set(CUPTI_CORRELATION_ID_NULL);
-    gpu_range_unlock();
   }
 }
 
@@ -2144,22 +2144,18 @@ cupti_callbacks_subscribe
                    (CUpti_CallbackFunc) cupti_subscriber_callback_cuda,
                    (void *) NULL));
 
-  // With gpu=nvidia,pc monitoring only kernel activities
-  // With gpu=nvidia, monitoring all gpu activities
   cupti_subscribers_driver_kernel_callbacks_subscribe(1, cupti_subscriber);
   cupti_subscribers_runtime_kernel_callbacks_subscribe(1, cupti_subscriber);
   cupti_subscribers_runtime_memcpy_callbacks_subscribe(1, cupti_subscriber);
   cupti_subscribers_resource_module_subscribe(1, cupti_subscriber);
   cupti_subscribers_resource_context_subscribe(1, cupti_subscriber);
+  cupti_subscribers_driver_memcpy_htod_callbacks_subscribe(1, cupti_subscriber);
+  cupti_subscribers_driver_memcpy_dtoh_callbacks_subscribe(1, cupti_subscriber);
+  cupti_subscribers_driver_memcpy_callbacks_subscribe(1, cupti_subscriber);
 
-  if (cupti_pc_sampling_frequency_get() == -1) {
-    cupti_subscribers_driver_memcpy_htod_callbacks_subscribe(1, cupti_subscriber);
-    cupti_subscribers_driver_memcpy_dtoh_callbacks_subscribe(1, cupti_subscriber);
-    cupti_subscribers_driver_memcpy_callbacks_subscribe(1, cupti_subscriber);
-    // XXX(Keren): timestamps for sync are captured on CPU
-    //cupti_subscribers_driver_sync_callbacks_subscribe(1, cupti_subscriber);
-    //cupti_subscribers_runtime_sync_callbacks_subscribe(1, cupti_subscriber);
-  }
+  // XXX(Keren): timestamps for sync are captured on CPU
+  //cupti_subscribers_driver_sync_callbacks_subscribe(1, cupti_subscriber);
+  //cupti_subscribers_runtime_sync_callbacks_subscribe(1, cupti_subscriber);
 }
 
 
