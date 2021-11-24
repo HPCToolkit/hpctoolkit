@@ -347,6 +347,8 @@ static cupti_load_callback_t cupti_unload_callback = 0;
 
 static CUpti_SubscriberHandle cupti_subscriber;
 
+static uint64_t CUPTI_CORRELATION_ID_NULL = 0;
+
 #ifdef NEW_CUPTI_ANALYSIS
 static uint64_t slow_unwinds = 0;
 static uint64_t fast_unwinds = 0;
@@ -1224,13 +1226,28 @@ cupti_api_enter_callback_cuda
 
   // A driver API cannot be implemented by other driver APIs, so we get an id
   // and unwind when the API is entered
-  uint64_t correlation_id = cupti_runtime_correlation_id_get();
-  if (correlation_id == 0) {
+  uint64_t correlation_id = CUPTI_CORRELATION_ID_NULL;
+  if (cupti_runtime_api_flag_get()) {
+    // runtime API RA
+    // driver API dA dB
+    correlation_id = cupti_runtime_correlation_id_get();
+    if (correlation_id == CUPTI_CORRELATION_ID_NULL) {
+      //  ---------RA--------
+      //    ---------dA
+      correlation_id = gpu_correlation_id();
+      cupti_runtime_correlation_id_set(correlation_id);
+      cupti_correlation_id_push(correlation_id);
+      TMSG(CUPTI_TRACE, "Runtime push externalId %lu (cb_id = %u, range_id = %u)", correlation_id, cb_id, range_id);
+    }
+    // else
+    //  ---------RA--------
+    //    -dA-      -dB-
+  } else {
+    // Without a runtime API
+    //    -dA-      -dB-
     correlation_id = gpu_correlation_id();
     cupti_correlation_id_push(correlation_id);
     TMSG(CUPTI_TRACE, "Driver push externalId %lu (cb_id = %u, range_id = %u)", correlation_id, cb_id, range_id);
-  } else {
-    TMSG(CUPTI_TRACE, "Runtime push externalId %lu (cb_id = %u, range_id = %u)", correlation_id, cb_id, range_id);
   }
   cupti_driver_correlation_id_set(correlation_id);
 
@@ -1261,12 +1278,26 @@ cupti_api_exit_callback_cuda
   uint64_t correlation_id = cupti_runtime_correlation_id_get();
   uint32_t range_id = gpu_range_id_get();
 
-  if (correlation_id == 0) { 
+  if (correlation_id == CUPTI_CORRELATION_ID_NULL) {
     correlation_id = cupti_correlation_id_pop();
-    TMSG(CUPTI_TRACE, "Driver pop externalId %lu (cb_id = %u, %u)", correlation_id, cb_id, range_id);
-  } else {
-    TMSG(CUPTI_TRACE, "Runtime pop externalId %lu (cb_id = %u, %u)", correlation_id, cb_id, range_id);
+    // Runtime API has not been set before, must be the exit of a driver API
+    TMSG(CUPTI_TRACE, "Driver pop externalId %lu (cb_id = %u, range_id = %u)", correlation_id, cb_id, range_id);
+  } else if (!cupti_runtime_api_flag_get()) {
+    /* cupti_runtime_api_flag_get() == false
+     * --------RA---------
+     *  -dA-               /|\
+     *                      |
+     */
+    correlation_id = cupti_correlation_id_pop();
+    TMSG(CUPTI_TRACE, "Runtime pop externalId %lu (cb_id = %u, range_id = %u)", correlation_id, cb_id, range_id);
   }
+  /* else
+   * --------RA---------
+   *  -dA-
+   *  /|\
+   *   |
+   * Still in a runtime API, don't pop this id
+   */
 }
 
 
@@ -1280,12 +1311,19 @@ cupti_driver_api_subscriber_callback_cuda
  const void *cb_info
 )
 {
+  const CUpti_CallbackData *cd = (const CUpti_CallbackData *)cb_info;
   if (!cupti_runtime_api_flag_get() && !ompt_runtime_status_get()) {
-    const CUpti_CallbackData *cd = (const CUpti_CallbackData *)cb_info;
     if (cd->callbackSite == CUPTI_API_ENTER) {
       cupti_api_enter_callback_cuda(flags, cb_id, cb_info);
     } else {
       cupti_api_exit_callback_cuda(cb_id);
+    }
+  } else if (cupti_runtime_api_flag_get()) {
+    uint32_t range_id = gpu_range_id_get();
+    if (cd->callbackSite == CUPTI_API_ENTER) {
+      TMSG(CUPTI_TRACE, "Driver enter (cb_id = %u, range_id = %u)", cb_id, range_id);
+    } else {
+      TMSG(CUPTI_TRACE, "Driver exit (cb_id = %u, range_id = %u)", cb_id, range_id);
     }
   }
 }
@@ -1360,6 +1398,7 @@ cupti_runtime_api_subscriber_callback_cuda
     // Exit an CUDA runtime api
     cupti_runtime_api_flag_unset();
     cupti_api_exit_callback_cuda(cb_id);
+    cupti_runtime_correlation_id_set(CUPTI_CORRELATION_ID_NULL);
   }
 }
 
@@ -1376,18 +1415,16 @@ cupti_runtime_api_subscriber_callback_cuda_kernel
   const CUpti_CallbackData *cd = (const CUpti_CallbackData *)cb_info;
   if (cd->callbackSite == CUPTI_API_ENTER) {
     // Enter a CUDA runtime api
-    // Runtime and driver APIs use different correlation ids.
     // For GPU kernels, we memoize a runtime API's correlation id and use it for its driver APIs
+    // XXX(Keren): Don't call cupti_api_enter/exit to unwind at a runtime kernel callback
     uint64_t correlation_id = gpu_correlation_id();
     cupti_correlation_id_push(correlation_id);
     cupti_runtime_correlation_id_set(correlation_id);
-
     cupti_runtime_api_flag_set();
   } else {
     // Exit an CUDA runtime api
     cupti_correlation_id_pop();
-    cupti_runtime_correlation_id_set(0);
-
+    cupti_runtime_correlation_id_set(CUPTI_CORRELATION_ID_NULL);
     cupti_runtime_api_flag_unset();
     cupti_kernel_ph_set(NULL);
     cupti_trace_ph_set(NULL);
@@ -1415,7 +1452,7 @@ cupti_subscriber_callback_cuda
 
     if (gpu_op_placeholder_flags_is_set(flags, gpu_placeholder_type_kernel)) {
       cupti_driver_api_subscriber_callback_cuda_kernel(flags, domain, cb_id, cb_info);
-    } else if (flags != 0) {
+    } else if (flags) {
       cupti_driver_api_subscriber_callback_cuda(flags, domain, cb_id, cb_info);
     }
   } else if (domain == CUPTI_CB_DOMAIN_RUNTIME_API) {
@@ -1423,7 +1460,7 @@ cupti_subscriber_callback_cuda
 
     if (gpu_op_placeholder_flags_is_set(flags, gpu_placeholder_type_kernel)) {
       cupti_runtime_api_subscriber_callback_cuda_kernel(flags, domain, cb_id, cb_info);
-    } else if (flags != 0) {
+    } else if (flags) {
       cupti_runtime_api_subscriber_callback_cuda(flags, domain, cb_id, cb_info);
     }
   }

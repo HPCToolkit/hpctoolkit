@@ -76,7 +76,9 @@
 
 #define FOREACH_DRIVER_MEMCPY_H2D(macro) \
   macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoD) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cu64MemcpyHtoD) \
   macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoDAsync) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cu64MemcpyHtoDAsync) \
   macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoD_v2) \
   macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoDAsync_v2) \
   macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyHtoD_v2_ptds) \
@@ -84,7 +86,9 @@
 
 #define FOREACH_DRIVER_MEMCPY_D2H(macro) \
   macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoH) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cu64MemcpyDtoH) \
   macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoHAsync) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cu64MemcpyDtoHAsync) \
   macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoH_v2) \
   macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoHAsync_v2) \
   macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyDtoH_v2_ptds) \
@@ -145,7 +149,16 @@
   macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpy2DAsync_v2_ptsz) \
   macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpy3DAsync_v2_ptsz) \
   macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpyPeerAsync_ptsz) \
-  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpy3DPeerAsync_ptsz)
+  macro(CUPTI_DRIVER_TRACE_CBID_cuMemcpy3DPeerAsync_ptsz) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cu64MemcpyDtoD) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cu64MemcpyDtoA) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cu64MemcpyAtoD) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cu64Memcpy3D) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cu64MemcpyDtoDAsync) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cu64Memcpy3DAsync) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cu64Memcpy2D) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cu64Memcpy2DUnaligned) \
+  macro(CUPTI_DRIVER_TRACE_CBID_cu64Memcpy2DAsync)
 
 #define FOREACH_DRIVER_SYNC(macro) \
   macro(CUPTI_DRIVER_TRACE_CBID_cuCtxSynchronize) \
