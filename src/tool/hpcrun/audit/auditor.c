@@ -148,8 +148,9 @@ static void mainlib_connected(const char*);
 static auditor_exports_t exports = {
   .mainlib_connected = mainlib_connected,
   .pipe = pipe, .close = close, .waitpid = waitpid,
-  .clone = clone, .execve = execve, 
-  .cuMemcpy = NULL, .cuMemcpyDtoD = NULL, .cuMemcpyDtoH = NULL,
+  .clone = clone, .execve = execve, .cuLaunchKernel = NULL,
+  .cuMemcpy = NULL, .cuMemcpyAsync = NULL,
+  .cuMemcpyDtoD = NULL, .cuMemcpyDtoH = NULL,
   .cuMemcpyHtoD = NULL, .cuMemcpyDtoDAsync = NULL,
   .cuMemcpyDtoHAsync = NULL, .cuMemcpyHtoDAsync = NULL 
 };
@@ -351,11 +352,23 @@ uintptr_t la_symbind64(Elf64_Sym *sym, unsigned int ndx,
                        unsigned int *flags, const char *symname) {
   if(*refcook != 0 && dl_runtime_resolver_ptr != 0)
     optimize_object_plt(state < state_connected ? (struct link_map*)*refcook : ((auditor_map_entry_t*)*refcook)->map);
-  //if (strcmp(symname, "cuLaunchKernel") == 0) {
+  //if (strcmp(symname, "cuMemcpyAsync") == 0) {
+  //  exports.cuMemcpyAsync = sym->st_value;
+  //  return hooks.cuMemcpyAsync;
+  //} else if (strcmp(symname, "cuMemcpyDtoDAsync") == 0) {
+  //  exports.cuMemcpyDtoDAsync = sym->st_value;
+  //  return hooks.cuMemcpyDtoDAsync;
+  //} else if (strcmp(symname, "cuMemcpyDtoHAsync") == 0) {
+  //  exports.cuMemcpyDtoHAsync = sym->st_value;
+  //  return hooks.cuMemcpyDtoHAsync;
+  //} else if (strcmp(symname, "cuMemcpyHtoDAsync") == 0) {
+  //  exports.cuMemcpyHtoDAsync = sym->st_value;
+  //  return hooks.cuMemcpyHtoDAsync;
+  //} 
+  // if (strcmp(symname, "cuLaunchKernel") == 0) {
   //  exports.cuLaunchKernel = sym->st_value;
   //  return hooks.cuLaunchKernel;
-  //}
-  //else if (strcmp(symname, "cuMemcpy") == 0) {
+  //}/else if (strcmp(symname, "cuMemcpy") == 0) {
   //  exports.cuMemcpy = sym->st_value;
   //  return hooks.cuMemcpy;
   //} else if (strcmp(symname, "cuMemcpyDtoD") == 0) {
