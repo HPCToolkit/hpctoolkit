@@ -1,5 +1,6 @@
 #include "gpu-range.h"
 
+#include <pthread.h>
 #include <unistd.h>
 
 #include <lib/prof-lean/stdatomic.h>
@@ -24,6 +25,7 @@ static __thread uint64_t thread_correlation_id = 0;
 static __thread uint32_t thread_range_id = GPU_RANGE_DEFAULT_RANGE;
 
 static spinlock_t count_lock = SPINLOCK_UNLOCKED;
+static pthread_mutex_t mutex_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static bool gpu_range_enable_status = false;
 
@@ -232,7 +234,7 @@ gpu_range_lock
 )
 {
   if (gpu_range_enabled()) {
-    spinlock_lock(&count_lock);
+    pthread_mutex_lock(&mutex_lock);
   }
 }
 
@@ -243,6 +245,6 @@ gpu_range_unlock
 )
 {
   if (gpu_range_enabled()) {
-    spinlock_unlock(&count_lock);
+    pthread_mutex_unlock(&mutex_lock);
   }
 }
