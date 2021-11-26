@@ -8,6 +8,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <omp.h>
 
 #include <set>
 #include <sstream>
@@ -70,22 +71,31 @@ dumpCubin
 static void
 splitFunctionName
 (
-  const std::unordered_map<std::string, std::vector<Symbol*> > &symbols_by_name,
-  const std::string& name,
-  std::string& symbol_name,
-  int& suffix
+ const std::unordered_map<std::string, std::vector<Symbol*> > &symbols_by_name,
+ const std::string& name,
+ std::unordered_map<std::string, int > &symbols_suffix_counter,
+ std::string& symbol_name,
+ int& suffix
 )
 {
   auto iter = symbols_by_name.find(name);
-  // If the function name can be found in the symbol table,
-  // then we assume it is a function name without a suffix
   symbol_name = name;
   suffix = 0;
   if (iter == symbols_by_name.end()) {
+    // If the function name cannot be found in the symbol table,
+    // then we assume it is a function name with a suffix
     auto pos = name.rfind("__");
     if (pos != std::string::npos) {
       suffix = stoi(name.substr(pos + 2));
       symbol_name = name.substr(0, pos);
+    }
+  } else if (iter->second.size() > 1) {
+    // If the function name has multiple matches,
+    // then we increase the suffix atomic
+    #pragma omp critical
+    {
+      suffix = symbols_suffix_counter[name];
+      ++symbols_suffix_counter[name];
     }
   }
 }
@@ -98,7 +108,6 @@ parseDotCFG
 (
  const std::string &search_path,
  const std::string &elf_filename,
- const std::string &dot_filename, 
  const std::string &cubin,
  int cuda_arch,
  Dyninst::SymtabAPI::Symtab *the_symtab,
@@ -138,37 +147,66 @@ parseDotCFG
   std::map< std::pair<std::string, int>, GPUParse::Function *> function_map;
   // cubin may have multiple symbols that share the same name
   std::unordered_map<std::string, std::vector<Symbol*> > symbols_by_name;
+  std::unordered_map<std::string, int > symbols_suffix_counter;
 
   for (auto *symbol : symbols) {
     if (symbol->getType() == Dyninst::SymtabAPI::Symbol::ST_FUNCTION) {
       symbols_by_name[symbol->getMangledName()].emplace_back(symbol);
+      symbols_suffix_counter[symbol->getMangledName()] = 0;
     }
   }
 
   // Test valid symbols
-  for (auto *symbol : symbols) {
-    if (symbol->getType() == Dyninst::SymtabAPI::Symbol::ST_FUNCTION) {
-      auto index = symbol->getIndex();
-      const std::string cmd = "nvdisasm -fun " +
-        std::to_string(index) + " -cfg -poff " + cubin + " > " + dot_filename;
-      if (system(cmd.c_str()) == 0) {
-        parsed_function_symbols.push_back(symbol);
-        // Only parse valid symbols
-        GPUParse::GraphReader graph_reader(dot_filename);
-        GPUParse::Graph graph;
-        std::vector<GPUParse::Function *> funcs;
-        graph_reader.read(graph);
-        cfg_parser.parse(graph, funcs);
-        // Local functions inside a global function cannot be independently parsed
-        for (auto *func : funcs) {
-          std::string symbol_name;
-          int nvdisasm_suffix;
-          splitFunctionName(symbols_by_name, func->name, symbol_name, nvdisasm_suffix);
-          function_map.emplace(std::make_pair(symbol_name, nvdisasm_suffix), func);
+  #pragma omp parallel shared(parsed_function_symbols, unparsable_function_symbols, symbols, \
+    function_map, symbols_by_name, symbols_suffix_counter)
+  { 
+    std::string dot_filename = cubin + std::to_string(omp_get_thread_num()) + ".dot"; 
+    std::vector<Symbol *> local_parsed_function_symbols;
+    std::vector<Symbol *> local_unparsable_function_symbols;
+    decltype(function_map) local_function_map;
+
+    #pragma omp for schedule(dynamic, 1)
+    for (size_t i = 0; i < symbols.size(); ++i) {
+      auto *symbol = symbols[i];
+      if (symbol->getType() == Dyninst::SymtabAPI::Symbol::ST_FUNCTION) {
+        auto index = symbol->getIndex();
+        const std::string cmd = "nvdisasm -fun " +
+          std::to_string(index) + " -cfg -poff " + cubin + " > " + dot_filename;
+        if (system(cmd.c_str()) == 0) {
+          local_parsed_function_symbols.push_back(symbol);
+          // Only parse valid symbols
+          GPUParse::GraphReader graph_reader(dot_filename);
+          GPUParse::Graph graph;
+          std::vector<GPUParse::Function *> funcs;
+          graph_reader.read(graph);
+          cfg_parser.parse(graph, funcs);
+          // Local functions inside a global function cannot be independently parsed
+          for (auto *func : funcs) {
+            std::string symbol_name;
+            int nvdisasm_suffix;
+            splitFunctionName(symbols_by_name, func->name, symbols_suffix_counter,
+              symbol_name, nvdisasm_suffix);
+            local_function_map.emplace(std::make_pair(symbol_name, nvdisasm_suffix), func);
+          }
+        } else {
+          local_unparsable_function_symbols.push_back(symbol);
+          std::cout << "WARNING: unable to parse function: " << symbol->getMangledName() << std::endl;
         }
-      } else {
+      }
+    }
+
+    unlink(dot_filename.c_str());
+
+    #pragma omp critical
+    {
+      for (auto &iter : local_function_map) {
+        function_map[iter.first] = iter.second;
+      }
+      for (auto *symbol : local_unparsable_function_symbols) {
         unparsable_function_symbols.push_back(symbol);
-        std::cout << "WARNING: unable to parse function: " << symbol->getMangledName() << std::endl;
+      }
+      for (auto *symbol : local_parsed_function_symbols) {
+        parsed_function_symbols.push_back(symbol);
       }
     }
   }
@@ -244,7 +282,7 @@ parseDotCFG
     parsed_func_symbol_map[function] = symbol;
   }
 
-  // Step4: add compensate blocks that only contains nop instructions
+  // Step 4: add compensate blocks that only contains nop instructions
   for (auto &iter : parsed_func_symbol_map) {
     auto symbol = iter.second;
     auto function = iter.first;
@@ -344,19 +382,17 @@ readCudaCFG
   if (compute_cfg) {
     std::string filename = getFilename();
     std::string cubin = filename;
-    std::string dot = filename + ".dot";
 
     dump_cubin_success = dumpCubin(cubin, elfFile);
     if (!dump_cubin_success) {
       std::cout << "WARNING: unable to write a cubin to the file system to analyze its CFG" << std::endl; 
     } else {
       std::vector<GPUParse::Function *> functions;
-      parseDotCFG(search_path, elfFile->getFileName(), dot, cubin, elfFile->getArch(), the_symtab, functions);
+      parseDotCFG(search_path, elfFile->getFileName(), cubin, elfFile->getArch(), the_symtab, functions);
       CFGFactory *cfg_fact = new GPUCFGFactory(functions);
       *code_src = new GPUCodeSource(functions, the_symtab); 
       *code_obj = new CodeObject(*code_src, cfg_fact);
       (*code_obj)->parse();
-      unlink(dot.c_str());
       unlink(cubin.c_str());
       return true;
     }
