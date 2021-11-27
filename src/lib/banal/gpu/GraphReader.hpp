@@ -11,23 +11,18 @@ namespace GPUParse {
 
 class GraphReader {
  public:
-  GraphReader(const std::string &file_name) : _file_name(file_name) {}
-
-  void read(Graph &graph);
+  static void read(const std::string &file_name, Graph &graph);
 
  private:
-  void read_vertices(
+  static void read_vertices(
     const boost::read_graphviz_detail::parser_result &result,
     std::unordered_map<std::string, size_t> &vertex_name_to_id,
     Graph &graph);
 
-  void read_edges(
+  static void read_edges(
     const boost::read_graphviz_detail::parser_result &result,
     std::unordered_map<std::string, size_t> &vertex_name_to_id,
     Graph &graph);
-
- private:
-  std::string _file_name;
 };
 
 }

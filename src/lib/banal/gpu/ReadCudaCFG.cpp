@@ -114,7 +114,6 @@ parseDotCFG
  std::vector<GPUParse::Function *> &functions
 ) 
 {
-  GPUParse::CudaCFGParser cfg_parser;
   // Step 1: parse all function symbols
   std::vector<Symbol *> symbols;
   the_symtab->getAllDefinedSymbols(symbols); // skipping undefined symbols
@@ -179,7 +178,7 @@ parseDotCFG
           GPUParse::Graph graph;
           std::vector<GPUParse::Function *> funcs;
           graph_reader.read(graph);
-          cfg_parser.parse(graph, funcs);
+          GPUParse::CudaCFGParser::parse(graph, funcs);
           // Local functions inside a global function cannot be independently parsed
           for (auto *func : funcs) {
             std::string symbol_name;
@@ -314,7 +313,7 @@ parseDotCFG
   }
 
   // Parse function calls
-  cfg_parser.parse_calls(functions);
+  GPUParse::CudaCFGParser::parse_calls(functions);
 
   // Debug final functions and blocks
   if (DEBUG_CFG_PARSE) {

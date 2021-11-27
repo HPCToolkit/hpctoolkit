@@ -7,9 +7,9 @@
 
 namespace GPUParse {
 
-void GraphReader::read(Graph &graph) {
+void GraphReader::read(const std::string &file_name, Graph &graph) {
   // Read dot graph
-  std::ifstream file(_file_name);
+  std::ifstream file(file_name);
   std::stringstream dotfile;
 
   dotfile << file.rdbuf();
