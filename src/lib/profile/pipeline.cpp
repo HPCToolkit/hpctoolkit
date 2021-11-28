@@ -253,7 +253,7 @@ ProfilePipeline::ProfilePipeline(Settings&& b, std::size_t team_sz)
   scheduledWaves &= scheduled;
 }
 
-void ProfilePipeline::complete(Thread::Temporary&& tt, std::optional<std::pair<std::chrono::nanoseconds, std::chrono::nanoseconds>>& localTimepointBounds) {
+void ProfilePipeline::complete(PerThreadTemporary&& tt, std::optional<std::pair<std::chrono::nanoseconds, std::chrono::nanoseconds>>& localTimepointBounds) {
   auto drain = [&](auto& tpd, auto type, auto notify) {
     // Drain the remaining timepoints from the staging buffer first
     if(!tpd.staging.empty()) {
@@ -295,7 +295,7 @@ void ProfilePipeline::complete(Thread::Temporary&& tt, std::optional<std::pair<s
   }
 
   // Finish off the Thread's metrics and let the Sinks know
-  Metric::finalize(tt);
+  tt.finalize();
   for(auto& s: sinks)
     if(s.dataLimit.hasThreads()) s().notifyThreadFinal(tt);
 }
@@ -312,7 +312,7 @@ void ProfilePipeline::run() {
   std::array<std::atomic<std::size_t>, 4> countdowns;
   for(auto& c: countdowns) c.store(sources.size(), std::memory_order_relaxed);
 
-  std::deque<std::reference_wrapper<Thread::Temporary>> allMergedThreads;
+  std::deque<std::reference_wrapper<PerThreadTemporary>> allMergedThreads;
 
   ANNOTATE_HAPPENS_BEFORE(&start_arc);
   #pragma omp parallel num_threads(team_size)
@@ -674,7 +674,7 @@ ContextReconstruction& Source::contextReconstruction(ContextFlowGraph& g, Contex
   return rc;
 }
 
-void Source::addToReconstructionGroup(ContextFlowGraph& g, Thread::Temporary& t, uint64_t gid) {
+void Source::addToReconstructionGroup(ContextFlowGraph& g, PerThreadTemporary& t, uint64_t gid) {
   auto& group = t.r_groups[gid];
   std::unique_lock<std::mutex> l(group.lock);
   auto [reconsts_it, first] = group.fg_reconsts.try_emplace(g);
@@ -692,7 +692,7 @@ void Source::addToReconstructionGroup(ContextFlowGraph& g, Thread::Temporary& t,
   }
 }
 
-void Source::addToReconstructionGroup(Context& r, const Scope& entry, Thread::Temporary& t, uint64_t gid) {
+void Source::addToReconstructionGroup(Context& r, const Scope& entry, PerThreadTemporary& t, uint64_t gid) {
   auto& group = t.r_groups[gid];
   std::unique_lock<std::mutex> l(group.lock);
   auto [it, first] = group.c_entries[entry].insert(r);
@@ -706,25 +706,25 @@ void Source::addToReconstructionGroup(Context& r, const Scope& entry, Thread::Te
   }
 }
 
-Source::AccumulatorsRef Source::accumulateTo(Thread::Temporary& t, Context& c) {
+Source::AccumulatorsRef Source::accumulateTo(PerThreadTemporary& t, Context& c) {
   assert(limit().hasMetrics() && "Source did not register for `metrics` emission!");
   assert(slocal->lastWave && "Attempt to emit metrics before requested!");
   return AccumulatorsRef(t.c_data[c]);
 }
 
-Source::AccumulatorsRef Source::accumulateTo(Thread::Temporary& t, ContextReconstruction& cr) {
+Source::AccumulatorsRef Source::accumulateTo(PerThreadTemporary& t, ContextReconstruction& cr) {
   assert(limit().hasMetrics() && "Source did not register for `metrics` emission!");
   assert(slocal->lastWave && "Attempt to emit metrics before requested!");
   return AccumulatorsRef(t.r_data[cr]);
 }
 
-Source::AccumulatorsRef Source::accumulateTo(Thread::Temporary& t, uint64_t g, Context& c) {
+Source::AccumulatorsRef Source::accumulateTo(PerThreadTemporary& t, uint64_t g, Context& c) {
   assert(limit().hasMetrics() && "Source did not register for `metrics` emission!");
   assert(slocal->lastWave && "Attempt to emit metrics before requested!");
   return AccumulatorsRef(t.r_groups[g].c_data[c]);
 }
 
-Source::AccumulatorsRef Source::accumulateTo(Thread::Temporary& t, uint64_t g, ContextFlowGraph& cfg) {
+Source::AccumulatorsRef Source::accumulateTo(PerThreadTemporary& t, uint64_t g, ContextFlowGraph& cfg) {
   assert(limit().hasMetrics() && "Source did not register for `metrics` emission!");
   assert(slocal->lastWave && "Attempt to emit metrics before requested!");
   auto& group = t.r_groups[g];
@@ -749,9 +749,9 @@ Source::StatisticsRef Source::accumulateTo(Context& c) {
 
 void Source::StatisticsRef::add(Metric& m, const StatisticPartial& sp,
                                 MetricScope ms, double v) {
-  auto& a = ctx.data.emplace(std::piecewise_construct,
-                             std::forward_as_tuple(m),
-                             std::forward_as_tuple(m)).first;
+  auto& a = ctx.m_data.stats.emplace(std::piecewise_construct,
+                                     std::forward_as_tuple(m),
+                                     std::forward_as_tuple(m)).first;
   a.get(sp).add(ms, v);
 }
 
@@ -765,7 +765,7 @@ Thread& Source::newThread(ThreadAttributes o) {
   return t;
 }
 
-Thread::Temporary& Source::setup(Thread::Temporary& tt) {
+PerThreadTemporary& Source::setup(PerThreadTemporary& tt) {
   tt.ctxTpData.staging.reserve(4096);
   if(tt.thread().attributes.ctxTimepointDisorder() > 0) {
     // We need K+1 to detect the case when it was >K-disordered
@@ -776,15 +776,15 @@ Thread::Temporary& Source::setup(Thread::Temporary& tt) {
   return tt;
 }
 
-Thread::Temporary& Source::thread(ThreadAttributes o) {
+PerThreadTemporary& Source::thread(ThreadAttributes o) {
   assert(limit().hasThreads() && "Source did not register for `threads` emission!");
   assert(o.ok() && "Source did not fill out enough of the ThreadAttributes!");
   auto& t = newThread(std::move(o));
-  slocal->threads.emplace_front(Thread::Temporary(t));
+  slocal->threads.emplace_front(PerThreadTemporary(t));
   return setup(slocal->threads.front());
 }
 
-Thread::Temporary& Source::mergedThread(ThreadAttributes o) {
+PerThreadTemporary& Source::mergedThread(ThreadAttributes o) {
   assert(limit().hasThreads() && "Source did not register for `threads` emission!");
   assert(o.ok() && "Source did not fill out enough of the ThreadAttributes!");
   {
@@ -798,13 +798,13 @@ Thread::Temporary& Source::mergedThread(ThreadAttributes o) {
 
   // Now we are confident this is a new Thread, so create it
   auto& t = newThread(std::move(o));
-  auto [x_tt, first] = pipe->mergedThreads.emplace(t.attributes.idTuple(), Thread::Temporary(t));
+  auto [x_tt, first] = pipe->mergedThreads.emplace(t.attributes.idTuple(), PerThreadTemporary(t));
   assert(first);
   return setup(x_tt->second);
 }
 
 template<class Tp, class Rewind, class Notify, class Singleton>
-Source::TimepointStatus Source::timepoint(Thread::Temporary& tt, Thread::Temporary::TimepointsData<Tp>& tpd,
+Source::TimepointStatus Source::timepoint(PerThreadTemporary& tt, PerThreadTemporary::TimepointsData<Tp>& tpd,
     Tp tp, Singleton type, const Rewind& rewind, const Notify& notify) {
   tt.minTime = std::min(tt.minTime, std::get<0>(tp));
   tt.maxTime = std::max(tt.maxTime, std::get<0>(tp));
@@ -867,7 +867,7 @@ Source::TimepointStatus Source::timepoint(Thread::Temporary& tt, Thread::Tempora
   return TimepointStatus::next;
 }
 
-Source::TimepointStatus Source::timepoint(Thread::Temporary& tt, Context& c, std::chrono::nanoseconds tm) {
+Source::TimepointStatus Source::timepoint(PerThreadTemporary& tt, Context& c, std::chrono::nanoseconds tm) {
   assert(limit().hasCtxTimepoints() && "Source did not register for `ctxTimepoints` emission!");
   assert(slocal->lastWave && "Attempt to emit timepoints before requested!");
   return timepoint(tt, tt.ctxTpData, {tm, c}, DataClass::ctxTimepoints,
@@ -875,7 +875,7 @@ Source::TimepointStatus Source::timepoint(Thread::Temporary& tt, Context& c, std
     [&](ProfileSink& s, const auto& tps) { s.notifyTimepoints(tt.thread(), tps); });
 }
 
-Source::TimepointStatus Source::timepoint(Thread::Temporary& tt, Metric& m, double v, std::chrono::nanoseconds tm) {
+Source::TimepointStatus Source::timepoint(PerThreadTemporary& tt, Metric& m, double v, std::chrono::nanoseconds tm) {
   assert(limit().hasMetricTimepoints() && "Source did not register for `ctxTimepoints` emission!");
   assert(slocal->lastWave && "Attempt to emit timepoints before requested!");
   auto x = tt.metricTpData.try_emplace(m);

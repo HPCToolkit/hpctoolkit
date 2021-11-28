@@ -87,7 +87,7 @@ private:
 
   // Tracefile setup and arrangements.
   bool setupTrace(unsigned int) noexcept;
-  Thread::Temporary* thread;
+  PerThreadTemporary* thread;
 
   // The actual file. Details for reading handled in prof-lean.
   hpcrun_sparse_file_t* file;
@@ -107,17 +107,17 @@ private:
       ContextReconstruction*,
       // Reference to an outlined range tree, GPU context node. Has no metrics.
       // First Context is the root, second is the entry-Context.
-      std::pair<const std::pair<Context*, Context*>*, Thread::Temporary*>,
+      std::pair<const std::pair<Context*, Context*>*, PerThreadTemporary*>,
       // Reference to an outlined range tree, range node. Has kernel metrics.
-      std::pair<const std::pair<const std::pair<Context*, Context*>*, Thread::Temporary*>*, uint64_t /* group id */>,
+      std::pair<const std::pair<const std::pair<Context*, Context*>*, PerThreadTemporary*>*, uint64_t /* group id */>,
       // Outlined range tree root. Has no metrics, never actually represented.
       int,
       // Outlined range tree, GPU context node. Has no metrics.
-      Thread::Temporary*,
+      PerThreadTemporary*,
       // Outlined range tree, range node. Has no metrics.
-      std::pair<Thread::Temporary*, uint64_t>,
+      std::pair<PerThreadTemporary*, uint64_t>,
       // Outlined range tree, sample node. Has instruction-level metrics.
-      std::pair<const std::pair<Thread::Temporary*, uint64_t>*, ContextFlowGraph*>
+      std::pair<const std::pair<PerThreadTemporary*, uint64_t>*, ContextFlowGraph*>
     >> nodes;
 
   // Path to the tracefile, and offset of the actual data blob.

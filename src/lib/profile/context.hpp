@@ -103,7 +103,7 @@ public:
 
   /// Access the Statistics data attributed to this Context
   // MT: Safe (const), Unstable (before `metrics` wavefront)
-  const auto& statistics() const noexcept { return data; }
+  const auto& data() const noexcept { return m_data; }
 
   /// Iterate over the Context sub-tree rooted at this Context. The given
   /// functions are called before and after every Context.
@@ -120,9 +120,8 @@ private:
   Context(ud_t::struct_t&, util::optional_ref<Context>, Scope);
   Context(Context&& c);
 
-  friend class Metric;
-  util::locked_unordered_map<util::reference_index<const Metric>,
-    StatisticAccumulator> data;
+  friend class PerThreadTemporary;
+  PerContextAccumulators m_data;
 
   friend class ProfilePipeline;
   /// Get the child Context for a given Scope, creating one if none exists.
@@ -211,7 +210,7 @@ private:
   /// Final Contexts metric values get re-attributed to. Indexed by Template.
   std::vector<std::reference_wrapper<Context>> m_finals;
 
-  friend class Metric;
+  friend class PerThreadTemporary;
   /// From the given data, calculate the exterior factors for each Template
   /// within the main FlowGraph, as instantiated here.
   // MT: Safe (const)
@@ -414,7 +413,7 @@ private:
   /// these are used to calculate the interior factors.
   std::unordered_map<Scope, ContextFlowGraph&> m_siblings;
 
-  friend class Metric;
+  friend class PerThreadTemporary;
   /// From the given data, calculate the exterior factors for each Template
   /// as instantiated within each Reconstruction.
   // MT: Safe (const)

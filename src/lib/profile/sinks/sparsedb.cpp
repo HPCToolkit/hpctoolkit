@@ -144,7 +144,7 @@ void SparseDB::notifyWavefront(DataClass d) noexcept {
 
 }
 
-void SparseDB::notifyThreadFinal(const Thread::Temporary& tt) {
+void SparseDB::notifyThreadFinal(const PerThreadTemporary& tt) {
   const auto& t = tt.thread();
   contextWavefront.wait();
 
@@ -266,7 +266,7 @@ void SparseDB::write()
 
     // Now stitch together each Context's results
     for(const Context& c: contexts) {
-      const auto& stats = c.statistics();
+      const auto& stats = c.data().statistics();
       if(stats.size() > 0) {
         cids.push_back(c.userdata[src.identifier()]);
         coffsets.push_back(values.size());
