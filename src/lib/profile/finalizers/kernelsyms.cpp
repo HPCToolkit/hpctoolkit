@@ -63,7 +63,26 @@ using namespace finalizers;
 KernelSymbols::KernelSymbols(stdshim::filesystem::path root)
   : root(std::move(root)) {}
 
-void KernelSymbols::module(const Module& m, Classification& c) noexcept {
+void KernelSymbols::notifyPipeline() noexcept {
+  ud = sink.structs().module.add_initializer<Classification>(
+    [this](Classification& c, const Module& m){
+      load(m, c);
+    });
+}
+
+util::optional_ref<Context> KernelSymbols::classify(Context& c, Scope& s) noexcept {
+  if(s.type() == Scope::Type::point) {
+    auto mo = s.point_data();
+    auto scopes = mo.first.userdata[ud].getScopes(mo.second);
+    if(scopes.empty()) return std::nullopt;
+    std::reference_wrapper<Context> cc = c;
+    for(const auto& s: scopes) cc = sink.context(cc, s);
+    return cc.get();
+  }
+  return std::nullopt;
+}
+
+void KernelSymbols::load(const Module& m, Classification& c) noexcept {
   // We only take action if the Module's path is relatively awkward
   if(m.path().has_root_path() || m.path().has_parent_path()) return;
   // Check for the <...> markers that this is a "special case"

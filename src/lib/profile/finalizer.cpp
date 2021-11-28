@@ -44,34 +44,50 @@
 //
 // ******************************************************* EndRiceCopyright *
 
-#ifndef HPCTOOLKIT_PROFILE_FINALIZERS_KERNELSYMS_H
-#define HPCTOOLKIT_PROFILE_FINALIZERS_KERNELSYMS_H
+#include "finalizer.hpp"
 
-#include "../finalizer.hpp"
+using namespace hpctoolkit;
 
-#include "../stdshim/filesystem.hpp"
-
-namespace hpctoolkit::finalizers {
-
-// Some Modules (in particular Linux kernels) don't have symbol tables in the
-// ELF format, instead they need to be pulled from
-class KernelSymbols final : public ProfileFinalizer {
-public:
-  // `path` is the path to the directory containing symbol listings
-  KernelSymbols(stdshim::filesystem::path path);
-
-  void notifyPipeline() noexcept override;
-  ExtensionClass provides() const noexcept override { return ExtensionClass::classification; }
-  ExtensionClass requires() const noexcept override { return {}; }
-
-  util::optional_ref<Context> classify(Context&, Scope&) noexcept override;
-
-private:
-  stdshim::filesystem::path root;
-  Module::ud_t::typed_member_t<Classification> ud;
-  void load(const Module&, Classification&) noexcept;
-};
-
+void ProfileFinalizer::bindPipeline(ProfilePipeline::Source&& se) noexcept {
+  sink = std::move(se);
+  notifyPipeline();
 }
 
-#endif  // HPCTOOLKIT_PROFILE_FINALIZERS_KERNELSYMS_H
+void ProfileFinalizer::notifyPipeline() noexcept {};
+
+std::optional<unsigned int> ProfileFinalizer::identify(const Module&) noexcept {
+  return std::nullopt;
+}
+std::optional<unsigned int> ProfileFinalizer::identify(const File&) noexcept {
+  return std::nullopt;
+}
+std::optional<unsigned int> ProfileFinalizer::identify(const Metric&) noexcept {
+  return std::nullopt;
+}
+std::optional<unsigned int> ProfileFinalizer::identify(const Context&) noexcept {
+  return std::nullopt;
+}
+std::optional<unsigned int> ProfileFinalizer::identify(const Thread&) noexcept {
+  return std::nullopt;
+}
+
+std::optional<Metric::ScopedIdentifiers> ProfileFinalizer::subidentify(const Metric&) noexcept {
+  return std::nullopt;
+}
+
+std::optional<stdshim::filesystem::path> ProfileFinalizer::resolvePath(const File&) noexcept {
+  return std::nullopt;
+}
+std::optional<stdshim::filesystem::path> ProfileFinalizer::resolvePath(const Module&) noexcept {
+  return std::nullopt;
+}
+
+util::optional_ref<Context> ProfileFinalizer::classify(Context&, Scope&) noexcept {
+  return std::nullopt;
+}
+
+bool ProfileFinalizer::resolve(ContextFlowGraph&) noexcept {
+  return false;
+}
+
+void ProfileFinalizer::appendStatistics(const Metric&, Metric::StatsAccess) noexcept {};

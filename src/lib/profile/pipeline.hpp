@@ -67,7 +67,6 @@ namespace hpctoolkit {
 
 class ProfileSource;
 class ProfileSink;
-class ProfileTransformer;
 class ProfileFinalizer;
 
 namespace detail {
@@ -101,9 +100,6 @@ protected:
   };
   std::vector<SourceEntry> sources;
 
-  // All the transformers. These don't register limits, so they can be together.
-  std::vector<std::reference_wrapper<ProfileTransformer>> transformers;
-
   // All the Sinks, with notes on which callbacks they should be triggered for.
   struct SinkEntry {
     SinkEntry(DataClass d, DataClass w, ExtensionClass e, ProfileSink& s)
@@ -136,6 +132,7 @@ protected:
     std::vector<std::reference_wrapper<ProfileFinalizer>> identifier;
     std::vector<std::reference_wrapper<ProfileFinalizer>> mscopeIdentifiers;
     std::vector<std::reference_wrapper<ProfileFinalizer>> resolvedPath;
+    std::vector<std::reference_wrapper<ProfileFinalizer>> statistics;
     std::vector<std::reference_wrapper<ProfileFinalizer>> all;
   } finalizers;
 
@@ -144,7 +141,6 @@ protected:
 
   // Storage for the unique_ptrs
   std::vector<std::unique_ptr<ProfileSink>> up_sinks;
-  std::vector<std::unique_ptr<ProfileTransformer>> up_transformers;
   std::vector<std::unique_ptr<ProfileFinalizer>> up_finalizers;
 };
 
@@ -173,11 +169,6 @@ public:
     // MT: Externally Synchronized
     Settings& operator<<(ProfileSink&);
     Settings& operator<<(std::unique_ptr<ProfileSink>&&);
-
-    /// Append a new Transformer to the future Pipeline, with optional ownership.
-    // MT: Externally Synchronized
-    Settings& operator<<(ProfileTransformer&);
-    Settings& operator<<(std::unique_ptr<ProfileTransformer>&&);
 
     /// Append a new Finalizer to the future Pipeline, with optional ownership.
     // MT: Externally Synchronized
@@ -211,8 +202,6 @@ public:
 
   /// Userdata registrations for the Extended data.
   struct Extensions {
-    Module::ud_t::typed_member_t<Classification> classification;
-
     struct {
       File::ud_t::typed_member_t<unsigned int> file;
       const auto& operator()(File::ud_t&) const noexcept { return file; }
@@ -265,9 +254,11 @@ public:
     Source(Source&&) = default;
     ~Source() = default;
 
+    /// Allow registration of custom userdata for Sources.
+    Structs& structs() { return pipe->structs; }
+
     /// Access the Extension userdata members.
     // MT: Safe (const)
-    const decltype(Extensions::classification)& classification() const;
     const decltype(Extensions::identifier)& identifier() const;
     const decltype(Extensions::mscopeIdentifiers)& mscopeIdentifiers() const;
     const decltype(Extensions::resolvedPath)& resolvedPath() const;
@@ -339,7 +330,7 @@ public:
     /// See contextReconstruction for a case when this is not possible.
     /// DataClass: `contexts`
     // MT: Externally Synchronized (this), Internally Synchronized
-    Context& context(Context&, const Scope&, bool recurse = false);
+    Context& context(Context&, const Scope&);
 
     /// Emit a new ContextReconstruction for the given ContextFlowGraph,
     /// rooted at a particular Context.
@@ -400,12 +391,12 @@ public:
     // MT: Externally Synchronized (this), Internally Synchronized
     void addToReconstructionGroup(Context&, const Scope&, PerThreadTemporary&, uint64_t);
 
-private:
+  private:
     // Helpers functions for creating and setting up new Threads
     Thread& newThread(ThreadAttributes);
     PerThreadTemporary& setup(PerThreadTemporary&);
 
-public:
+  public:
     /// Emit a new Thread into the Pipeline.
     /// DataClass: `threads`
     // MT: Externally Synchronized (this), Internally Synchronized
@@ -520,12 +511,11 @@ public:
     friend class ProfilePipeline;
     Source(ProfilePipeline&, const DataClass&, const ExtensionClass&);
     Source(ProfilePipeline&, const DataClass&, const ExtensionClass&, SourceLocal&);
-    Source(ProfilePipeline&, const DataClass&, const ExtensionClass&, std::size_t);
     ProfilePipeline* pipe;
     SourceLocal* slocal;
     DataClass dataLimit;
     ExtensionClass extensionLimit;
-    std::size_t tskip;
+    bool finalizeContexts;
   };
 
   /// Registration structure for a PipelineSink. All access to a Pipeline from
@@ -545,7 +535,6 @@ public:
     util::Once::Caller enterOrderedWrite();
 
     /// Access the Extensions available within the Pipeline.
-    const decltype(Extensions::classification)& classification() const;
     const decltype(Extensions::identifier)& identifier() const;
     const decltype(Extensions::mscopeIdentifiers)& mscopeIdentifiers() const;
     const decltype(Extensions::resolvedPath)& resolvedPath() const;

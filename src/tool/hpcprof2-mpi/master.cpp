@@ -58,7 +58,6 @@
 #include "lib/profile/sinks/sparsedb.hpp"
 #include "lib/profile/finalizers/denseids.hpp"
 #include "lib/profile/finalizers/directclassification.hpp"
-#include "lib/profile/transformer.hpp"
 #include "lib/profile/util/log.hpp"
 #include "lib/profile/mpi/all.hpp"
 
@@ -100,14 +99,9 @@ int rank0(ProfArgs&& args) {
   pipelineB << pr;
 
   // Insert the proper Finalizer for drawing data directly from the Modules.
+  // This is used as a fallback if the Structfiles aren't available.
   finalizers::DirectClassification dc(args.dwarfMaxSize);
   pipelineB << dc;
-
-  // Now that Modules will be Classified during Finalization, add a Transformer
-  // to expand the Contexts as they enter the Pipe.
-  RouteExpansionTransformer retrans;
-  ClassificationTransformer ctrans;
-  pipelineB << retrans << ctrans;
 
   // Ids for everything are pulled from the void. We call the shots here.
   finalizers::DenseIds dids;

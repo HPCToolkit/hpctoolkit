@@ -61,12 +61,14 @@ public:
     return ExtensionClass::identifier + ExtensionClass::mscopeIdentifiers;
   }
   ExtensionClass requires() const noexcept override { return {}; }
-  void module(const Module&, unsigned int& id) noexcept override;
-  void file(const File&, unsigned int& id) noexcept override;
-  void metric(const Metric&, unsigned int& ids) noexcept override;
-  void metric(const Metric&, Metric::ScopedIdentifiers& ids) noexcept override;
-  void context(const Context&, unsigned int& id) noexcept override;
-  void thread(const Thread&, unsigned int& id) noexcept override;
+
+  std::optional<unsigned int> identify(const Module&) noexcept override;
+  std::optional<unsigned int> identify(const File&) noexcept override;
+  std::optional<unsigned int> identify(const Metric&) noexcept override;
+  std::optional<unsigned int> identify(const Context&) noexcept override;
+  std::optional<unsigned int> identify(const Thread&) noexcept override;
+
+  std::optional<Metric::ScopedIdentifiers> subidentify(const Metric&) noexcept override;
 
 private:
   std::atomic<unsigned int> mod_id;

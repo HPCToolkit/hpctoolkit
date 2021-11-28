@@ -624,8 +624,8 @@ static std::pair<bool, fs::path> remove_prefix(const fs::path& path, const fs::p
   return {true, rem};
 }
 
-static fs::path search(const std::unordered_map<fs::path, fs::path>& prefixes,
-                       const fs::path& p) noexcept {
+static std::optional<fs::path> search(const std::unordered_map<fs::path, fs::path>& prefixes,
+                                      const fs::path& p) noexcept {
   std::error_code ec;
   for(const auto& ft: prefixes) {
     auto xp = remove_prefix(p, ft.first);
@@ -635,10 +635,10 @@ static fs::path search(const std::unordered_map<fs::path, fs::path>& prefixes,
     }
   }
   if(fs::is_regular_file(p, ec)) return p;  // If all else fails;
-  return fs::path();
+  return std::nullopt;
 }
 
-void ProfArgs::StatisticsExtender::metric(const Metric& m, Metric::StatsAccess mas) noexcept {
+void ProfArgs::StatisticsExtender::appendStatistics(const Metric& m, Metric::StatsAccess mas) noexcept {
   if(m.visibility() == Metric::Settings::visibility_t::invisible) return;
   Metric::Statistics s;
   s.sum = args.stats.sum;
@@ -650,25 +650,28 @@ void ProfArgs::StatisticsExtender::metric(const Metric& m, Metric::StatsAccess m
   mas.requestStatistics(std::move(s));
 }
 
-void ProfArgs::Prefixer::file(const File& f, stdshim::filesystem::path& p) noexcept {
-  p = search(args.prefixes, f.path());
+std::optional<fs::path> ProfArgs::Prefixer::resolvePath(const File& f) noexcept {
+  return search(args.prefixes, f.path());
 }
 
-void ProfArgs::Prefixer::module(const Module& m, stdshim::filesystem::path& p) noexcept {
-  p = search(args.prefixes, m.path());
+std::optional<fs::path> ProfArgs::Prefixer::resolvePath(const Module& m) noexcept {
+  return search(args.prefixes, m.path());
 }
 
-void ProfArgs::StructWarner::module(const Module& m, Classification& c) noexcept {
-  if(c.empty()) {
+util::optional_ref<Context> ProfArgs::StructWarner::classify(Context& c, Scope& s) noexcept {
+  if(s.type() == Scope::Type::point) {
     // Check if there any Structfiles might match this Module
+    const auto& m = s.point_data().first;
     const auto it = args.structheads.find(m.path().filename());
-    if(it == args.structheads.end()) return;
-    std::cerr << "WARNING: Struct file partial match on "
-              << m.path().filename().string() << ", did you forget a -R?\n"
-                 "Suggestions:\n";
-    for(const auto& pre: it->second) {
-      std::cerr << "  -R '" << m.path().parent_path().string()
-                            << "'='" << pre.string() << "'\n";
+    if(it != args.structheads.end()) {
+      std::cerr << "WARNING: Struct file partial match on "
+                << m.path().filename().string() << ", did you forget a -R?\n"
+                   "Suggestions:\n";
+      for(const auto& pre: it->second) {
+        std::cerr << "  -R '" << m.path().parent_path().string()
+                              << "'='" << pre.string() << "'\n";
+      }
     }
   }
+  return std::nullopt;
 }

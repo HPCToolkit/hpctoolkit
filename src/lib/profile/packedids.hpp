@@ -47,7 +47,6 @@
 #ifndef HPCTOOLKIT_PROFILE_PACKEDIDS_H
 #define HPCTOOLKIT_PROFILE_PACKEDIDS_H
 
-#include "transformer.hpp"
 #include "sink.hpp"
 #include "finalizer.hpp"
 #include "sources/packed.hpp"
@@ -89,42 +88,24 @@ private:
   std::array<std::pair<std::mutex, std::vector<uint8_t>>, 256> stripbuffers;
 };
 
-class IdUnpacker final {
+class IdUnpacker final : public ProfileFinalizer {
 public:
   IdUnpacker(std::vector<uint8_t>&&);
   ~IdUnpacker() = default;
 
-  class Expander final : public ProfileTransformer {
-  public:
-    Expander(IdUnpacker& s) : shared(s) {};
-    ~Expander() = default;
+  ExtensionClass provides() const noexcept override {
+    return ExtensionClass::identifier + ExtensionClass::mscopeIdentifiers + ExtensionClass::classification;
+  }
+  ExtensionClass requires() const noexcept override { return {}; }
 
-    Context& context(Context&, Scope&) noexcept override;
+  std::optional<unsigned int> identify(const Context&) noexcept override;
+  std::optional<unsigned int> identify(const Metric&) noexcept override;
+  std::optional<Metric::ScopedIdentifiers> subidentify(const Metric&) noexcept override;
 
-  private:
-    IdUnpacker& shared;
-  };
-
-  class Finalizer final : public ProfileFinalizer {
-  public:
-    Finalizer(IdUnpacker& s) : shared(s) {};
-    ~Finalizer() = default;
-
-    ExtensionClass provides() const noexcept override {
-      return ExtensionClass::identifier + ExtensionClass::mscopeIdentifiers;
-    }
-    ExtensionClass requires() const noexcept override { return {}; }
-
-    void context(const Context&, unsigned int&) noexcept override;
-    void metric(const Metric&, unsigned int&) noexcept override;
-    void metric(const Metric&, Metric::ScopedIdentifiers&) noexcept override;
-
-  private:
-    IdUnpacker& shared;
-  };
+  util::optional_ref<Context> classify(Context&, Scope&) noexcept override;
 
 private:
-  void unpack(ProfilePipeline::Source&) noexcept;
+  void unpack() noexcept;
   std::vector<uint8_t> ctxtree;
 
   std::once_flag once;

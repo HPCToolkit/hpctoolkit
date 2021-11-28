@@ -158,6 +158,44 @@ StructFile::~StructFile() {
     XMLPlatformUtils::Terminate();
 }
 
+void StructFile::notifyPipeline() noexcept {
+  ud = sink.structs().module.add_initializer<Classification>(
+    [this](Classification& c, const Module& m){
+      load(m, c);
+    });
+}
+
+util::optional_ref<Context> StructFile::classify(Context& c, Scope& s) noexcept {
+  if(s.type() == Scope::Type::point) {
+    auto mo = s.point_data();
+    auto scopes = mo.first.userdata[ud].getScopes(mo.second);
+    if(scopes.empty()) return std::nullopt;
+    std::reference_wrapper<Context> cc = c;
+    for(const auto& s: scopes) cc = sink.context(cc, s);
+    return cc.get();
+  }
+  return std::nullopt;
+}
+
+bool StructFile::resolve(ContextFlowGraph& fg) noexcept {
+  if(fg.scope().type() == Scope::Type::point) {
+    auto mo = fg.scope().point_data();
+    auto routes = mo.first.userdata[ud].getRoutes(mo.second);
+    if(!routes.empty()) {
+      fg.handler([](const Metric& m){
+        ContextFlowGraph::MetricHandling ret;
+        if(m.name() == "GINS") ret.interior = true;
+        else if(m.name() == "GKER:COUNT") ret.exterior = ret.exteriorLogical = true;
+        else if(m.name() == "GKER:SAMPLED_COUNT") ret.exterior = true;
+        return ret;
+      });
+      for(const auto& r: routes) fg.add({r.first, r.second});
+      return true;
+    }
+  }
+  return false;
+}
+
 std::vector<stdshim::filesystem::path> StructFile::forPaths() const {
   std::vector<stdshim::filesystem::path> out;
   out.reserve(lms.size());
@@ -165,7 +203,7 @@ std::vector<stdshim::filesystem::path> StructFile::forPaths() const {
   return out;
 }
 
-void StructFile::module(const Module& m, Classification& c) noexcept {
+void StructFile::load(const Module& m, Classification& c) noexcept {
   auto it = lms.find(m.path());
   if(it == lms.end()) it = lms.find(m.userdata[sink.resolvedPath()]);
   if(it == lms.end()) return;  // We got nothing

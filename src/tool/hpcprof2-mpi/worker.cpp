@@ -57,7 +57,6 @@
 #include "lib/profile/sinks/sparsedb.hpp"
 #include "lib/profile/finalizers/denseids.hpp"
 #include "lib/profile/finalizers/directclassification.hpp"
-#include "lib/profile/transformer.hpp"
 #include "lib/profile/util/log.hpp"
 #include "lib/profile/mpi/all.hpp"
 
@@ -143,26 +142,21 @@ int rankN(ProfArgs&& args) {
     ProfArgs::StatisticsExtender se(args);
     pipelineB2 << se;
 
-    // Most of the IDs can be pulled from the void, only the Context IDs
-    // need to be adjusted.
-    finalizers::DenseIds dids;
-    pipelineB2 << dids;
-
     // Get the actual Context ids from rank 0, and unpack them into our space.
+    // These are the only ids that need to be consistent across ranks.
     IdUnpacker unpacker(mpi::bcast<std::vector<uint8_t>>(0));
-    IdUnpacker::Expander eunpacker(unpacker);
-    IdUnpacker::Finalizer funpacker(unpacker);
-    pipelineB2 << eunpacker << funpacker;
+    pipelineB2 << unpacker;
 
-    // Adjust the Thread ids to be unique among the team.
+    // Thread ids can be gotten from the void, but we need to make sure they
+    // are unique across ranks. Otherwise bad things happen.
     struct ThreadIDAdjuster : public ProfileFinalizer {
-      ThreadIDAdjuster(std::size_t t) : threadIdOffset(t) {};
+      ThreadIDAdjuster(std::size_t t) : nextId((unsigned int)t) {};
       ExtensionClass provides() const noexcept override { return extensions::identifier; }
       ExtensionClass requires() const noexcept override { return {}; }
-      void thread(const Thread&, unsigned int& id) noexcept override {
-        id += threadIdOffset;
+      std::optional<unsigned int> identify(const Thread&) noexcept override {
+        return nextId.fetch_add(1, std::memory_order_relaxed);
       }
-      std::size_t threadIdOffset;
+      std::atomic<unsigned int> nextId;
     } tidfinal{threadIdOffset};
     pipelineB2 << tidfinal;
 

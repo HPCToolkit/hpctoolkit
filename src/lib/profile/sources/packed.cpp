@@ -225,8 +225,10 @@ std::vector<uint8_t>::const_iterator Packed::unpackContexts(iter_t it) noexcept 
   return it;
 }
 
-void Packed::ContextTracker::context(const Context& c, unsigned int& id) noexcept {
-  target.emplace(id, std::ref(const_cast<Context&>(c)));
+void Packed::ContextTracker::write() {};
+
+void Packed::ContextTracker::notifyContext(const Context& c) noexcept {
+  target.emplace(c.userdata[src.identifier()], std::ref(const_cast<Context&>(c)));
 }
 
 std::vector<uint8_t>::const_iterator Packed::unpackMetrics(iter_t it, const ctx_map_t& cs) noexcept {

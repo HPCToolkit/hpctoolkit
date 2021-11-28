@@ -48,7 +48,7 @@
 #define HPCTOOLKIT_PROFILE_SOURCES_PACKED_H
 
 #include "../source.hpp"
-#include "../finalizer.hpp"
+#include "../sink.hpp"
 #include "../util/locked_unordered.hpp"
 
 namespace hpctoolkit::sources {
@@ -87,20 +87,20 @@ protected:
   iter_t unpackMetrics(iter_t, const ctx_map_t&) noexcept;
 
 public:
-  /// Helper Finalizer to fill the identifier to Context table.
-  class ContextTracker : public ProfileFinalizer {
+  /// Helper Sink to fill the identifier to Context table.
+  class ContextTracker : public ProfileSink {
   public:
     ContextTracker(ctx_map_t& t) : target(t) {};
     ~ContextTracker() = default;
 
-    ExtensionClass provides() const noexcept override {
-      return ExtensionClass::identifier;
-    }
+    DataClass accepts() const noexcept override { return DataClass::contexts; }
     ExtensionClass requires() const noexcept override {
       return ExtensionClass::identifier;
     }
 
-    void context(const Context&, unsigned int&) noexcept override;
+    void write() override;
+
+    void notifyContext(const Context&) noexcept override;
 
   private:
     ctx_map_t& target;

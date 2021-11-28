@@ -219,7 +219,7 @@ IdUnpacker::IdUnpacker(std::vector<uint8_t>&& c) : ctxtree(std::move(c)) {
   globalid = ::unpack<std::uint64_t>(it);
 }
 
-void IdUnpacker::unpack(ProfilePipeline::Source& sink) noexcept {
+void IdUnpacker::unpack() noexcept {
   auto it = ctxtree.cbegin();
   ::unpack<std::uint64_t>(it);  // Skip over the global id
 
@@ -290,11 +290,11 @@ void IdUnpacker::unpack(ProfilePipeline::Source& sink) noexcept {
   ctxtree.clear();
 }
 
-Context& IdUnpacker::Expander::context(Context& c, Scope& s) noexcept {
-  util::call_once(shared.once, [this]{ shared.unpack(sink); });
+util::optional_ref<Context> IdUnpacker::classify(Context& c, Scope& s) noexcept {
+  util::call_once(once, [this]{ unpack(); });
   bool first = true;
-  auto x = shared.exmap.find(c.userdata[sink.identifier()]);
-  assert(x != shared.exmap.end() && "Missing data for Context `co`!");
+  auto x = exmap.find(c.userdata[sink.identifier()]);
+  assert(x != exmap.end() && "Missing data for Context `co`!");
   auto y = x->second.find(s);
   assert(y != x->second.end() && "Missing data for Scope `s` from Context `co`!");
   std::reference_wrapper<Context> cc = c;
@@ -303,28 +303,25 @@ Context& IdUnpacker::Expander::context(Context& c, Scope& s) noexcept {
     s = next;
     first = false;
   }
-  return cc;
+  return cc.get();
 }
 
-void IdUnpacker::Finalizer::context(const Context& c, unsigned int& id) noexcept {
+std::optional<unsigned int> IdUnpacker::identify(const Context& c) noexcept {
   switch(c.scope().type()) {
   case Scope::Type::global:
-    id = shared.globalid;
-    return;
+    return globalid;
   case Scope::Type::point: {
     auto mo = c.scope().point_data();
-    assert(&mo.first == shared.exmod && "point Scopes must reference the marker Module!");
-    id = mo.second;
-    return;
+    assert(&mo.first == exmod && "point Scopes must reference the marker Module!");
+    return mo.second;
   }
   case Scope::Type::inlined_function:
-    assert(&c.scope().function_data() == shared.exfunc.get() && "inlined_function Scopes must reference the marker Function!");
+    assert(&c.scope().function_data() == exfunc.get() && "inlined_function Scopes must reference the marker Function!");
     // fallthrough
   case Scope::Type::line: {
     auto fl = c.scope().line_data();
-    assert(&fl.first == shared.exfile && "line Scopes must reference the marker File!");
-    id = fl.second;
-    return;
+    assert(&fl.first == exfile && "line Scopes must reference the marker File!");
+    return fl.second;
   }
   default:
     assert(false && "Unhandled Scope in IdUnpacker");
@@ -332,16 +329,16 @@ void IdUnpacker::Finalizer::context(const Context& c, unsigned int& id) noexcept
   }
 }
 
-void IdUnpacker::Finalizer::metric(const Metric& m, unsigned int& id) noexcept {
-  util::call_once(shared.once, [this]{ shared.unpack(sink); });
-  auto it = shared.metmap.find(m.name());
-  assert(it != shared.metmap.end() && "No data for Metric `m`!");
-  id = it->second.first;
+std::optional<unsigned int> IdUnpacker::identify(const Metric& m) noexcept {
+  util::call_once(once, [this]{ unpack(); });
+  auto it = metmap.find(m.name());
+  assert(it != metmap.end() && "No data for Metric `m`!");
+  return it->second.first;
 }
 
-void IdUnpacker::Finalizer::metric(const Metric& m, Metric::ScopedIdentifiers& ids) noexcept {
-  util::call_once(shared.once, [this]{ shared.unpack(sink); });
-  auto it = shared.metmap.find(m.name());
-  assert(it != shared.metmap.end() && "No data for Metric `m`!");
-  ids = it->second.second;
+std::optional<Metric::ScopedIdentifiers> IdUnpacker::subidentify(const Metric& m) noexcept {
+  util::call_once(once, [this]{ unpack(); });
+  auto it = metmap.find(m.name());
+  assert(it != metmap.end() && "No data for Metric `m`!");
+  return it->second.second;
 }
