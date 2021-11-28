@@ -63,16 +63,21 @@ public:
   StructFile(stdshim::filesystem::path path);
   ~StructFile();
 
+  void notifyPipeline() noexcept override;
   ExtensionClass provides() const noexcept override {
     return ExtensionClass::classification;
   }
   ExtensionClass requires() const noexcept override { return {}; }
-  void module(const Module&, Classification&) noexcept override;
+
+  util::optional_ref<Context> classify(Context&, Scope&) noexcept override;
+  bool resolve(ContextFlowGraph&) noexcept override;
 
   std::vector<stdshim::filesystem::path> forPaths() const;
 
 private:
   stdshim::filesystem::path path;
+  Module::ud_t::typed_member_t<Classification> ud;
+  void load(const Module&, Classification&) noexcept;
 
   // Structfiles can have data on multiple load modules (LM tags), this maps
   // each binary path with the properly initialized Parser for that tag.

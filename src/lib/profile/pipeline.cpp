@@ -51,7 +51,6 @@
 #include "util/log.hpp"
 #include "source.hpp"
 #include "sink.hpp"
-#include "transformer.hpp"
 #include "finalizer.hpp"
 
 #include <iomanip>
@@ -123,26 +122,17 @@ Settings& Settings::operator<<(ProfileFinalizer& f) {
   assert(req - available == ExtensionClass() && "Finalizer requires unavailable extended data!");
   available += pro;
   finalizers.all.emplace_back(f);
-  if(pro.hasClassification()) finalizers.classification.emplace_back(f);
   if(pro.hasIdentifier()) finalizers.identifier.emplace_back(f);
   if(pro.hasMScopeIdentifiers()) finalizers.mscopeIdentifiers.emplace_back(f);
   if(pro.hasResolvedPath()) finalizers.resolvedPath.emplace_back(f);
+  if(pro.hasClassification()) finalizers.classification.emplace_back(f);
+  if(pro.hasStatistics()) finalizers.statistics.emplace_back(f);
   return *this;
 }
 Settings& Settings::operator<<(std::unique_ptr<ProfileFinalizer>&& fp) {
   if(!fp) return *this;
   up_finalizers.emplace_back(std::move(fp));
   return operator<<(*up_finalizers.back());
-}
-
-Settings& Settings::operator<<(ProfileTransformer& t) {
-  transformers.emplace_back(t);
-  return *this;
-}
-Settings& Settings::operator<<(std::unique_ptr<ProfileTransformer>&& tp) {
-  if(!tp) return *this;
-  up_transformers.emplace_back(std::move(tp));
-  return operator<<(*up_transformers.back());
 }
 
 ProfilePipeline::ProfilePipeline(Settings&& b, std::size_t team_sz)
@@ -155,48 +145,92 @@ ProfilePipeline::ProfilePipeline(Settings&& b, std::size_t team_sz)
     depChainComplete(false), sourceLocals(sources.size()), cct(nullptr) {
   using namespace literals::data;
   // Prep the Extensions first thing.
-  if(requested.hasClassification()) {
-    uds.classification = structs.module.add_initializer<Classification>(
-      [this](Classification& cl, const Module& m){
-        for(ProfileFinalizer& fp: finalizers.classification) fp.module(m, cl);
-      });
-  }
   if(requested.hasIdentifier()) {
     uds.identifier.file = structs.file.add_default<unsigned int>(
       [this](unsigned int& id, const File& f){
-        for(ProfileFinalizer& fp: finalizers.identifier) fp.file(f, id);
+        id = std::numeric_limits<unsigned int>::max();
+        for(ProfileFinalizer& fp: finalizers.identifier) {
+          if(auto v = fp.identify(f)) {
+            id = *v;
+            break;
+          }
+        }
       });
     uds.identifier.context = structs.context.add_default<unsigned int>(
       [this](unsigned int& id, const Context& c){
-        for(ProfileFinalizer& fp: finalizers.identifier) fp.context(c, id);
+        id = std::numeric_limits<unsigned int>::max();
+        for(ProfileFinalizer& fp: finalizers.identifier) {
+          if(auto v = fp.identify(c)) {
+            id = *v;
+            break;
+          }
+        }
       });
     uds.identifier.module = structs.module.add_default<unsigned int>(
       [this](unsigned int& id, const Module& m){
-        for(ProfileFinalizer& fp: finalizers.identifier) fp.module(m, id);
+        id = std::numeric_limits<unsigned int>::max();
+        for(ProfileFinalizer& fp: finalizers.identifier) {
+          if(auto v = fp.identify(m)) {
+            id = *v;
+            break;
+          }
+        }
       });
     uds.identifier.metric = structs.metric.add_default<unsigned int>(
       [this](unsigned int& id, const Metric& m){
-        for(ProfileFinalizer& fp: finalizers.identifier) fp.metric(m, id);
+        id = std::numeric_limits<unsigned int>::max();
+        for(ProfileFinalizer& fp: finalizers.identifier) {
+          if(auto v = fp.identify(m)) {
+            id = *v;
+            break;
+          }
+        }
       });
     uds.identifier.thread = structs.thread.add_default<unsigned int>(
       [this](unsigned int& id, const Thread& t){
-        for(ProfileFinalizer& fp: finalizers.identifier) fp.thread(t, id);
+        id = std::numeric_limits<unsigned int>::max();
+        for(ProfileFinalizer& fp: finalizers.identifier) {
+          if(auto v = fp.identify(t)) {
+            id = *v;
+            break;
+          }
+        }
       });
   }
   if(requested.hasMScopeIdentifiers()) {
     uds.mscopeIdentifiers.metric = structs.metric.add_default<Metric::ScopedIdentifiers>(
       [this](Metric::ScopedIdentifiers& ids, const Metric& m){
-        for(ProfileFinalizer& fp: finalizers.mscopeIdentifiers) fp.metric(m, ids);
+        ids.point = std::numeric_limits<unsigned int>::max();
+        ids.function = std::numeric_limits<unsigned int>::max();
+        ids.execution = std::numeric_limits<unsigned int>::max();
+        for(ProfileFinalizer& fp: finalizers.mscopeIdentifiers) {
+          if(auto v = fp.subidentify(m)) {
+            ids = *v;
+            break;
+          }
+        }
       });
   }
   if(requested.hasResolvedPath()) {
     uds.resolvedPath.file = structs.file.add_default<stdshim::filesystem::path>(
       [this](stdshim::filesystem::path& sp, const File& f){
-        for(ProfileFinalizer& fp: finalizers.resolvedPath) fp.file(f, sp);
+        for(ProfileFinalizer& fp: finalizers.resolvedPath) {
+          if(auto v = fp.resolvePath(f)) {
+            assert(!v->empty());
+            sp = *v;
+            break;
+          }
+        }
       });
     uds.resolvedPath.module = structs.module.add_default<stdshim::filesystem::path>(
       [this](stdshim::filesystem::path& sp, const Module& m){
-        for(ProfileFinalizer& fp: finalizers.resolvedPath) fp.module(m, sp);
+        for(ProfileFinalizer& fp: finalizers.resolvedPath) {
+          if(auto v = fp.resolvePath(m)) {
+            assert(!v->empty());
+            sp = *v;
+            break;
+          }
+        }
       });
   }
 
@@ -210,19 +244,17 @@ ProfilePipeline::ProfilePipeline(Settings&& b, std::size_t team_sz)
     assert((attributes + references + contexts + DataClass::threads).allOf(s.waveLimit)
            && "Early wavefronts requested for invalid dataclasses!");
   }
+  depChainComplete = true;
+
+  // Make sure the Finalizers are ready before anything gets emitted.
+  for(ProfileFinalizer& f: finalizers.all)
+    f.bindPipeline(Source(*this, DataClass::all(), ExtensionClass::all()));
+
   structs.file.freeze();
   structs.context.freeze();
   structs.module.freeze();
   structs.metric.freeze();
   structs.thread.freeze();
-  depChainComplete = true;
-
-  // Make sure the Finalizers and Transformers are ready before anything enters.
-  // Unlike Sources, we can bind these without worry of anything happening.
-  for(ProfileFinalizer& f: finalizers.all)
-    f.bindPipeline(Source(*this, DataClass::all(), ExtensionClass::all()));
-  for(std::size_t i = 0; i < transformers.size(); i++)
-    transformers[i].get().bindPipeline(Source(*this, DataClass::all(), ExtensionClass::all(), i));
 
   // Make sure the global Context is ready before letting any data in.
   cct.reset(new Context(structs.context, std::nullopt, Scope(*this)));
@@ -493,20 +525,17 @@ void ProfilePipeline::run() {
   ANNOTATE_HAPPENS_AFTER(&end_arc);
 }
 
-Source::Source() : pipe(nullptr), tskip(std::numeric_limits<std::size_t>::max()) {};
+Source::Source() : pipe(nullptr), finalizeContexts(false) {};
+
+// This signature is used for Finalizers, which don't have a SourceLocal.
 Source::Source(ProfilePipeline& p, const DataClass& ds, const ExtensionClass& es)
-  : Source(p, ds, es, std::numeric_limits<std::size_t>::max()) {};
+  : pipe(&p), slocal(nullptr), dataLimit(ds), extensionLimit(es),
+    finalizeContexts(false) {};
+// This signature is for Sources, which have a SourceLocal.
 Source::Source(ProfilePipeline& p, const DataClass& ds, const ExtensionClass& es, SourceLocal& sl)
   : pipe(&p), slocal(&sl), dataLimit(ds), extensionLimit(es),
-    tskip(std::numeric_limits<std::size_t>::max()) {};
-Source::Source(ProfilePipeline& p, const DataClass& ds, const ExtensionClass& es, std::size_t t)
-  : pipe(&p), slocal(nullptr), dataLimit(ds), extensionLimit(es), tskip(t) {};
+    finalizeContexts(true) {};
 
-const decltype(ProfilePipeline::Extensions::classification)&
-Source::classification() const {
-  assert(extensionLimit.hasClassification() && "Source did not register for `classification` emission!");
-  return pipe->uds.classification;
-}
 const decltype(ProfilePipeline::Extensions::identifier)&
 Source::identifier() const {
   assert(extensionLimit.hasIdentifier() && "Source did not register for `identifier` emission!");
@@ -588,8 +617,8 @@ Metric& Source::metric(Metric::Settings s) {
   assert(limit().hasAttributes() && "Source did not register for `attributes` emission!");
   auto x = pipe->mets.emplace(pipe->structs.metric, std::move(s));
   slocal->thawedMetrics.insert(&x.first());
-  for(ProfileTransformer& t: pipe->transformers)
-    t.metric(x.first(), x.first().statsAccess());
+  for(ProfileFinalizer& f: pipe->finalizers.statistics)
+    f.appendStatistics(x.first(), x.first().statsAccess());
   return x.first();
 }
 
@@ -621,21 +650,29 @@ void Source::notifyContext(Context& c) {
   }
   c.userdata.initialize();
 }
-Context& Source::context(Context& p, const Scope& s, bool recurse) {
+Context& Source::context(Context& p, const Scope& s) {
   assert(limit().hasContexts() && "Source did not register for `contexts` emission!");
   std::reference_wrapper<Context> res = p;
-  Scope rs = s;
-  for(std::size_t i = 0; i < pipe->transformers.size(); i++)
-    if(recurse || i != tskip)
-      res = pipe->transformers[i].get().context(res, rs);
+  Scope ss = s;
+  if(finalizeContexts) {
+    for(ProfileFinalizer& f: pipe->finalizers.classification) {
+      Scope rs = s;
+      auto r = f.classify(p, rs);
+      if(r) {
+        ss = rs;
+        res = *r;
+        break;
+      }
+    }
+  }
 
   bool first;
-  std::tie(res, first) = res.get().ensure(rs);
+  std::tie(res, first) = res.get().ensure(ss);
   if(first) notifyContext(res);
 
-  if(tskip >= pipe->transformers.size())
-    for(auto& ss: pipe->sinks)
-      ss().notifyContextExpansion(p, s, res);
+  if(finalizeContexts)
+    for(ProfileSink& sink: pipe->sinks)
+      sink.notifyContextExpansion(p, s, res);
   return res;
 }
 
@@ -644,8 +681,9 @@ util::optional_ref<ContextFlowGraph> Source::contextFlowGraph(const Scope& s) {
   std::pair<const util::uniqued<ContextFlowGraph>&, bool> x = pipe->cgraphs.emplace(s);
   ContextFlowGraph& fg = x.first();
   if(x.second) {
-    for(ProfileTransformer& t: pipe->transformers)
-      t.contextFlowGraph(fg, s);
+    for(ProfileFinalizer& f: pipe->finalizers.classification) {
+      if(f.resolve(fg)) break;
+    }
     fg.freeze([&](const Scope& ss){
       assert(ss != s);
       return contextFlowGraph(ss);
@@ -663,7 +701,7 @@ ContextReconstruction& Source::contextReconstruction(ContextFlowGraph& g, Contex
   if(x.second) {
     rc.instantiate(
       [&](Context& c, const Scope& s) -> Context& {
-        return context(c, s, true);
+        return context(c, s);
       }, [&](const Scope& s) -> ContextReconstruction& {
         assert(s != g.scope());
         auto fg = contextFlowGraph(s);
@@ -900,7 +938,7 @@ Source& Source::operator=(Source&& o) {
   slocal = o.slocal;
   dataLimit = o.dataLimit;
   extensionLimit = o.extensionLimit;
-  tskip = o.tskip;
+  finalizeContexts = o.finalizeContexts;
   return *this;
 }
 
@@ -925,7 +963,6 @@ void Sink::registerOrderedWrite() {
   assert(!pipe->depChainComplete && "Attempt to register a Sink for an ordered write chain after notifyPipeline!");
   if(!orderedWrite) {
     orderedWrite = true;
-    priorWriteDepOnce = pipe->sinkWriteDepChain;
     pipe->sinkWriteDepChain = idx;
   }
 }
@@ -945,11 +982,6 @@ util::Once::Caller Sink::enterOrderedWrite() {
   return pipe->sinks[idx].writeDepOnce.signal();
 }
 
-const decltype(ProfilePipeline::Extensions::classification)&
-Sink::classification() const {
-  assert(extensionLimit.hasClassification() && "Sink did not register for `classification` absorption!");
-  return pipe->uds.classification;
-}
 const decltype(ProfilePipeline::Extensions::identifier)&
 Sink::identifier() const {
   assert(extensionLimit.hasIdentifier() && "Sink did not register for `identifier` absorption!");

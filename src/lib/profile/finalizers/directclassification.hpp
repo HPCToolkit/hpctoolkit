@@ -59,12 +59,16 @@ public:
   // If dwarfThreshold == std::numeric_limits<uintmax_t>::max(), no limit.
   DirectClassification(uintmax_t dwarfThreshold);
 
+  void notifyPipeline() noexcept override;
   ExtensionClass provides() const noexcept override { return ExtensionClass::classification; }
   ExtensionClass requires() const noexcept override { return ExtensionClass::resolvedPath; }
-  void module(const Module&, Classification&) noexcept override;
+
+  util::optional_ref<Context> classify(Context&, Scope&) noexcept override;
 
 private:
   uintmax_t dwarfThreshold;
+  Module::ud_t::typed_member_t<Classification> ud;
+  void load(const Module&, Classification&) noexcept;
   bool fullDwarf(void* dw, const Module&, Classification&);
   bool symtab(void* elf, const Module&, Classification&);
 };

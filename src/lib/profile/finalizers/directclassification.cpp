@@ -73,6 +73,27 @@ DirectClassification::DirectClassification(uintmax_t dt)
   elf_version(EV_CURRENT);  // We always assume the current ELF version.
 }
 
+void DirectClassification::notifyPipeline() noexcept {
+  ud = sink.structs().module.add_initializer<Classification>(
+    [this](Classification& c, const Module& m){
+      load(m, c);
+    });
+}
+
+util::optional_ref<Context> DirectClassification::classify(Context& c, Scope& s) noexcept {
+  if(s.type() == Scope::Type::point) {
+    auto mo = s.point_data();
+    auto scopes = mo.first.userdata[ud].getScopes(mo.second);
+    if(scopes.empty()) {
+      return std::nullopt;
+    }
+    std::reference_wrapper<Context> cc = c;
+    for(const auto& s: scopes) cc = sink.context(cc, s);
+    return cc.get();
+  }
+  return std::nullopt;
+}
+
 // Search for an alternative debug file to load. Roughly copied from
 // dwarf_getalt, which is a rough copy of GDB's handling.
 static stdshim::filesystem::path altfile(const stdshim::filesystem::path& path, Elf* elf) {
@@ -128,7 +149,7 @@ static stdshim::filesystem::path altfile(const stdshim::filesystem::path& path, 
 #define HPC_ELF_C_READ ELF_C_READ
 #endif
 
-void DirectClassification::module(const Module& m, Classification& c) noexcept {
+void DirectClassification::load(const Module& m, Classification& c) noexcept {
   int fd = -1;
   const auto& rpath = m.userdata[sink.resolvedPath()];
   const auto& mpath = rpath.empty() ? m.path() : rpath;
