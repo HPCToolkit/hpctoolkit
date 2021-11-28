@@ -47,8 +47,14 @@
 #ifndef HPCTOOLKIT_PROFILE_ACCUMULATORS_H
 #define HPCTOOLKIT_PROFILE_ACCUMULATORS_H
 
+#include "scope.hpp"
+
+#include "util/locked_unordered.hpp"
+#include "util/streaming_sort.hpp"
+
 #include <atomic>
 #include <bitset>
+#include <chrono>
 #include <optional>
 #include <vector>
 
@@ -56,6 +62,10 @@ namespace hpctoolkit {
 
 class Metric;
 class StatisticPartial;
+class Thread;
+class Context;
+class ContextReconstruction;
+class ContextFlowGraph;
 
 /// Every Metric can have values at multiple Scopes pertaining to the subtree
 /// rooted at a particular Context with Metric data.
@@ -64,13 +74,13 @@ enum class MetricScope : size_t {
   /// exactly where the data arose, and is the smallest MetricScope.
   point,
 
-  /// Encapsulates the current Context and any decendants not connected by a
+  /// Encapsulates the current Context and any descendants not connected by a
   /// function-type Scope. This represents the cost of a function outside of
   /// any child function calls.
   /// Called "exclusive" in the Viewer.
   function,
 
-  /// Encapsulates the current Context and all decendants. This represents
+  /// Encapsulates the current Context and all descendants. This represents
   /// the entire execution spawned by a single source code construct, and is
   /// the largest MetricScope.
   /// Called "inclusive" in the Viewer.
@@ -125,10 +135,86 @@ public:
 private:
   void validate() const noexcept;
 
-  friend class Metric;
+  friend class PerThreadTemporary;
   std::atomic<double> point;
   double function;
   double execution;
+};
+
+/// Accumulators and other related fields local to a Thread.
+class PerThreadTemporary final {
+public:
+  // Access to the backing thread.
+  operator Thread&() noexcept { return m_thread; }
+  operator const Thread&() const noexcept { return m_thread; }
+  Thread& thread() noexcept { return m_thread; }
+  const Thread& thread() const noexcept { return m_thread; }
+
+  // Movable, not copiable
+  PerThreadTemporary(const PerThreadTemporary&) = delete;
+  PerThreadTemporary(PerThreadTemporary&&) = default;
+  PerThreadTemporary& operator=(const PerThreadTemporary&) = delete;
+  PerThreadTemporary& operator=(PerThreadTemporary&&) = delete;
+
+  /// Reference to the Metric data for a particular Context in this Thread.
+  /// Returns `std::nullopt` if none is present.
+  // MT: Safe (const), Unstable (before notifyThreadFinal)
+  auto accumulatorsFor(const Context& c) const noexcept {
+    return c_data.find(c);
+  }
+
+  /// Reference to all of the Metric data on Thread.
+  // MT: Safe (const), Unstable (before notifyThreadFinal)
+  const auto& accumulators() const noexcept { return c_data; }
+
+private:
+  Thread& m_thread;
+
+  friend class ProfilePipeline;
+  PerThreadTemporary(Thread& t) : m_thread(t) {};
+
+  // Finalize the MetricAccumulators for a Thread.
+  // MT: Internally Synchronized
+  void finalize() noexcept;
+
+  // Bits needed for handling timepoints
+  std::chrono::nanoseconds minTime = std::chrono::nanoseconds::max();
+  std::chrono::nanoseconds maxTime = std::chrono::nanoseconds::min();
+  template<class Tp>
+  struct TimepointsData {
+    bool unboundedDisorder = false;
+    util::bounded_streaming_sort_buffer<Tp, util::compare_only_first<Tp>> sortBuf;
+    std::vector<Tp> staging;
+  };
+  TimepointsData<std::pair<std::chrono::nanoseconds,
+    std::reference_wrapper<const Context>>> ctxTpData;
+  util::locked_unordered_map<util::reference_index<const Metric>,
+    TimepointsData<std::pair<std::chrono::nanoseconds, double>>> metricTpData;
+
+  friend class Metric;
+  util::locked_unordered_map<util::reference_index<const Context>,
+    util::locked_unordered_map<util::reference_index<const Metric>,
+      MetricAccumulator>> c_data;
+  util::locked_unordered_map<util::reference_index<const ContextReconstruction>,
+    util::locked_unordered_map<util::reference_index<const Metric>,
+      MetricAccumulator>> r_data;
+
+  struct RGroup {
+    util::locked_unordered_map<util::reference_index<const Context>,
+      util::locked_unordered_map<util::reference_index<const Metric>,
+        MetricAccumulator>> c_data;
+    util::locked_unordered_map<util::reference_index<const ContextFlowGraph>,
+      util::locked_unordered_map<util::reference_index<const Metric>,
+        MetricAccumulator>> fg_data;
+
+    std::mutex lock;
+    std::unordered_map<Scope,
+      std::unordered_set<util::reference_index<Context>>> c_entries;
+    std::unordered_map<util::reference_index<ContextFlowGraph>,
+      std::unordered_set<util::reference_index<const ContextReconstruction>>>
+        fg_reconsts;
+  };
+  util::locked_unordered_map<uint64_t, RGroup> r_groups;
 };
 
 /// Accumulator structure for the Statistics implicitly bound to a Context.
@@ -148,7 +234,7 @@ private:
     void validate() const noexcept;
 
     friend class StatisticAccumulator;
-    friend class Metric;
+    friend class PerThreadTemporary;
     std::atomic<double> point;
     std::atomic<double> function;
     std::atomic<double> execution;
@@ -214,10 +300,34 @@ public:
   PartialRef get(const StatisticPartial&) noexcept;
 
 private:
-  friend class Metric;
+  friend class PerThreadTemporary;
   std::vector<Partial> partials;
 };
 
-}
+/// Accumulators and related fields local to a Context. In particular, holds
+/// the statistics.
+class PerContextAccumulators final {
+public:
+  PerContextAccumulators() = default;
+  ~PerContextAccumulators() = default;
+
+  PerContextAccumulators(const PerContextAccumulators&) = delete;
+  PerContextAccumulators(PerContextAccumulators&&) = default;
+  PerContextAccumulators& operator=(const PerContextAccumulators&) = delete;
+  PerContextAccumulators& operator=(PerContextAccumulators&&) = delete;
+
+  /// Access the Statistics data attributed to this Context
+  // MT: Safe (const), Unstable (before `metrics` wavefront)
+  const auto& statistics() const noexcept { return stats; }
+
+private:
+  friend class PerThreadTemporary;
+  friend class Metric;
+  friend class ProfilePipeline;
+  util::locked_unordered_map<util::reference_index<const Metric>,
+    StatisticAccumulator> stats;
+};
+
+}  // namespace hpctoolkit
 
 #endif  // HPCTOOLKIT_PROFILE_ACCUMULATORS_H

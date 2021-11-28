@@ -442,7 +442,7 @@ bool Hpcrun4::realread(const DataClass& needed) try {
         // This is invalid, Reconstructions cannot have children. Yet.
         util::log::info{} << "Encountered invalid child of un-unwindable cct node";
         return false;
-      } else if(const auto* p_x = std::get_if<std::pair<const std::pair<Context*, Context*>*, Thread::Temporary*>>(&par)) {
+      } else if(const auto* p_x = std::get_if<std::pair<const std::pair<Context*, Context*>*, PerThreadTemporary*>>(&par)) {
         if(n.lm_id != HPCRUN_GPU_RANGE_NODE) {
           // Children of CONTEXT nodes must be RANGE nodes.
           util::log::info{} << "Encountered invalid non-GPU_RANGE child of GPU_CONTEXT node";
@@ -451,7 +451,7 @@ bool Hpcrun4::realread(const DataClass& needed) try {
         // Add this root to the proper reconstruction group
         sink.addToReconstructionGroup(*p_x->first->first, p_x->first->second->scope(), *p_x->second, n.lm_ip);
         nodes.emplace(id, std::make_pair(p_x, n.lm_ip));
-      } else if(std::holds_alternative<std::pair<const std::pair<const std::pair<Context*, Context*>*, Thread::Temporary*>*, uint64_t>>(par)) {
+      } else if(std::holds_alternative<std::pair<const std::pair<const std::pair<Context*, Context*>*, PerThreadTemporary*>*, uint64_t>>(par)) {
         // This is invalid, inline GPU_RANGE nodes cannot have children.
         util::log::info{} << "Encountered invalid child of inline GPU_RANGE node";
         return false;
@@ -462,14 +462,14 @@ bool Hpcrun4::realread(const DataClass& needed) try {
           return false;
         }
         nodes.emplace(id, &sink.mergedThread(outlineGpuContext(n.lm_ip)));
-      } else if(auto* pp_thread = std::get_if<Thread::Temporary*>(&par)) {
+      } else if(auto* pp_thread = std::get_if<PerThreadTemporary*>(&par)) {
         if(n.lm_id != HPCRUN_GPU_RANGE_NODE) {
           // Children of CONTEXT nodes must be RANGE nodes.
           util::log::info{} << "Encountered invalid non-GPU_RANGE child of GPU_CONTEXT node";
           return false;
         }
         nodes.emplace(id, std::make_pair(*pp_thread, n.lm_ip));
-      } else if(auto* p_x = std::get_if<std::pair<Thread::Temporary*, uint64_t>>(&par)) {
+      } else if(auto* p_x = std::get_if<std::pair<PerThreadTemporary*, uint64_t>>(&par)) {
         // Sample within an outlined range tree. Always represents a point Scope.
         auto mod_it = modules.find(n.lm_id);
         if(mod_it == modules.end()) {
@@ -490,7 +490,7 @@ bool Hpcrun4::realread(const DataClass& needed) try {
           auto& unk = sink.context(sink.global(), Scope());
           nodes.emplace(id, std::make_pair(&unk, &sink.context(unk, scope)));
         }
-      } else if(std::holds_alternative<std::pair<const std::pair<Thread::Temporary*, uint64_t>*, ContextFlowGraph*>>(par)) {
+      } else if(std::holds_alternative<std::pair<const std::pair<PerThreadTemporary*, uint64_t>*, ContextFlowGraph*>>(par)) {
         // This is invalid, outlined range-tree sample nodes cannot have children.
         util::log::info{} << "Encountered invalid child of outlined range sample node";
         return false;
@@ -523,9 +523,9 @@ bool Hpcrun4::realread(const DataClass& needed) try {
         } else if(auto* pp_reconst = std::get_if<ContextReconstruction*>(&node_it->second)) {
           return sink.accumulateTo(*thread, **pp_reconst);
         } else if(auto* p_x = std::get_if<std::pair<const std::pair<const std::pair<Context*, Context*>*,
-            Thread::Temporary*>*, uint64_t>>(&node_it->second)) {
+            PerThreadTemporary*>*, uint64_t>>(&node_it->second)) {
           return sink.accumulateTo(*p_x->first->second, p_x->second, *p_x->first->first->second);
-        } else if(auto* p_x = std::get_if<std::pair<const std::pair<Thread::Temporary*, uint64_t>*,
+        } else if(auto* p_x = std::get_if<std::pair<const std::pair<PerThreadTemporary*, uint64_t>*,
                                                     ContextFlowGraph*>>(&node_it->second)) {
           return sink.accumulateTo(*p_x->first->first, p_x->first->second, *p_x->second);
         }

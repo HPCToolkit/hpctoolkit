@@ -187,7 +187,7 @@ void HPCTraceDB2::notifyCtxTimepointRewindStart(const Thread& t) {
   ud.tmcntr = 0;
 }
 
-void HPCTraceDB2::notifyThreadFinal(const Thread::Temporary& tt) {
+void HPCTraceDB2::notifyThreadFinal(const PerThreadTemporary& tt) {
   auto& ud = tt.thread().userdata[uds.thread];
   if(ud.inst) {
     if(ud.cursor != ud.buffer.data())

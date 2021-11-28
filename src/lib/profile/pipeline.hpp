@@ -242,7 +242,7 @@ public:
 private:
   // Internal Source-local storage structure. Externally Synchronized.
   struct SourceLocal {
-    std::forward_list<Thread::Temporary> threads;
+    std::forward_list<PerThreadTemporary> threads;
     std::unordered_set<Metric*> thawedMetrics;
     bool lastWave = false;
 
@@ -391,35 +391,35 @@ public:
     ///
     /// DataClass: `contexts`
     // MT: Externally Synchronized (this), Internally Synchronized
-    void addToReconstructionGroup(ContextFlowGraph&, Thread::Temporary&, uint64_t);
+    void addToReconstructionGroup(ContextFlowGraph&, PerThreadTemporary&, uint64_t);
 
     /// Include a Context as a root in the given Reconstruction group, which
     /// may plausibly call the given entry Scope.
     /// See contextFlowGraph for more details on what this means in practice.
     /// DataClass: `contexts`
     // MT: Externally Synchronized (this), Internally Synchronized
-    void addToReconstructionGroup(Context&, const Scope&, Thread::Temporary&, uint64_t);
+    void addToReconstructionGroup(Context&, const Scope&, PerThreadTemporary&, uint64_t);
 
 private:
     // Helpers functions for creating and setting up new Threads
     Thread& newThread(ThreadAttributes);
-    Thread::Temporary& setup(Thread::Temporary&);
+    PerThreadTemporary& setup(PerThreadTemporary&);
 
 public:
     /// Emit a new Thread into the Pipeline.
     /// DataClass: `threads`
     // MT: Externally Synchronized (this), Internally Synchronized
-    Thread::Temporary& thread(ThreadAttributes);
+    PerThreadTemporary& thread(ThreadAttributes);
 
     /// Emit a Thread into the Pipeline, with merging based on the idTuple.
     /// Normally Threads are never merged, since doing so would require
-    /// Thread::Temporary data to have a lifetime over the whole process. This
+    /// PerThreadTemporary data to have a lifetime over the whole process. This
     /// method allows that restriction to be redacted. Use sparingly.
     ///
-    /// TODO: Document the thread-safety properties of Thread::Temporary.
+    /// TODO: Document the thread-safety properties of PerThreadTemporary.
     /// DataClass: `threads`
     // MT: Externally Synchronized (this), Internally Synchronized
-    Thread::Temporary& mergedThread(ThreadAttributes);
+    PerThreadTemporary& mergedThread(ThreadAttributes);
 
     /// Return codes for timepoint-related functions
     enum class TimepointStatus {
@@ -432,21 +432,21 @@ public:
   private:
     // Helper template to merge common code for all timepoint types
     template<class Tp, class Rw, class Nt, class Sg>
-    [[nodiscard]] TimepointStatus timepoint(Thread::Temporary&,
-        Thread::Temporary::TimepointsData<Tp>&, Tp, Sg, const Rw&, const Nt&);
+    [[nodiscard]] TimepointStatus timepoint(PerThreadTemporary&,
+        PerThreadTemporary::TimepointsData<Tp>&, Tp, Sg, const Rw&, const Nt&);
 
   public:
     /// Emit a Context-type timepoint into the Pipeline.
     /// Returns the expected next timepoint the caller should inject.
     /// DataClass: `ctxTimepoints`
     // MT: Externally Synchronized (this), Internally Synchronized
-    [[nodiscard]] TimepointStatus timepoint(Thread::Temporary&, Context&, std::chrono::nanoseconds);
+    [[nodiscard]] TimepointStatus timepoint(PerThreadTemporary&, Context&, std::chrono::nanoseconds);
 
     /// Emit a Metric-value timepoint into the Pipeline.
     /// Returns the expected next timepoint the caller should inject.
     /// DataClass: `metricTimepoints`
     // MT: Externally Synchronized (this), Internally Synchronized
-    [[nodiscard]] TimepointStatus timepoint(Thread::Temporary&, Metric&, double, std::chrono::nanoseconds);
+    [[nodiscard]] TimepointStatus timepoint(PerThreadTemporary&, Metric&, double, std::chrono::nanoseconds);
 
     /// Reference to the Thread-local metric data for a particular Context.
     /// Allows for efficient emmission of multiple Metrics' data to one location.
@@ -460,7 +460,7 @@ public:
 
     private:
       friend class ProfilePipeline::Source;
-      decltype(Thread::Temporary::c_data)::mapped_type& map;
+      decltype(PerThreadTemporary::c_data)::mapped_type& map;
       explicit AccumulatorsRef(decltype(map)& m) : map(m) {};
     };
 
@@ -468,27 +468,27 @@ public:
     /// of the returned AccumulatorsRef.
     /// DataClass: `metrics`
     // MT: Externally Synchronized (this), Internally Synchronized
-    AccumulatorsRef accumulateTo(Thread::Temporary&, Context&);
+    AccumulatorsRef accumulateTo(PerThreadTemporary&, Context&);
 
     /// Attribute metric values to a ContextReconstruction. These values will be
     /// redistributed back to the base Contexts, see ContextReconstruction.
     /// DataClass: `metrics`
     // MT: Externally Synchronized (this), Internally Synchronized
-    AccumulatorsRef accumulateTo(Thread::Temporary&, ContextReconstruction&);
+    AccumulatorsRef accumulateTo(PerThreadTemporary&, ContextReconstruction&);
 
     /// Attribute metric values to a Context, as part of the given
     /// Reconstruction group. These will be summed with the non-group values
     /// but are more importantly used for FlowGraph redistribution.
     /// DataClass: `metrics`
     // MT: Externally Synchronized (this), Internally Synchronized
-    AccumulatorsRef accumulateTo(Thread::Temporary&, uint64_t group, Context&);
+    AccumulatorsRef accumulateTo(PerThreadTemporary&, uint64_t group, Context&);
 
     /// Attribute metric values to a ContextFlowGraph. These values will be
     /// redistributed among the root Contexts included in the given
     /// Reconstruction group.
     /// DataClass: `metrics`
     // MT: Externally Synchronized (this), Internally Synchronized
-    AccumulatorsRef accumulateTo(Thread::Temporary&, uint64_t group,
+    AccumulatorsRef accumulateTo(PerThreadTemporary&, uint64_t group,
                                  ContextFlowGraph&);
 
     /// Reference to the Statistic data for a particular Context.
@@ -588,9 +588,9 @@ public:
   };
 
 private:
-  // Finalize the data in a Thread::Temporary, and commit it to the Sinks
+  // Finalize the data in a PerThreadTemporary, and commit it to the Sinks
   // MT: Externally Synchronized (tt, localTimepointBounds), Internally Synchronized (this)
-  void complete(Thread::Temporary&& tt, std::optional<std::pair<std::chrono::nanoseconds, std::chrono::nanoseconds>>& localTimepointBounds);
+  void complete(PerThreadTemporary&& tt, std::optional<std::pair<std::chrono::nanoseconds, std::chrono::nanoseconds>>& localTimepointBounds);
 
   // Scheduled data transfer. Minimal requested and available set.
   DataClass scheduled;
@@ -651,7 +651,7 @@ private:
     bool operator()(const std::vector<pms_id_t>&, const std::vector<pms_id_t>&) const noexcept;
   };
   std::shared_mutex mergedThreadsLock;
-  std::unordered_map<std::vector<pms_id_t>, Thread::Temporary,
+  std::unordered_map<std::vector<pms_id_t>, PerThreadTemporary,
                      TupleHash, TupleEqual> mergedThreads;
 };
 
