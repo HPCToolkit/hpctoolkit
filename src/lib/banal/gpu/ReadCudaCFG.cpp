@@ -100,6 +100,115 @@ splitFunctionName
   }
 }
 
+
+static void
+addCompensateBlocks
+(
+ int cuda_arch,
+ std::unordered_map<GPUParse::Function *, Symbol*> &parsed_func_symbol_map,
+ size_t &max_block_id
+)
+{
+  for (auto &iter : parsed_func_symbol_map) {
+    auto symbol = iter.second;
+    auto function = iter.first;
+    if (symbol->getSize() > 0) {
+      int len = GPUParse::get_cuda_inst_size(cuda_arch);
+      int function_size = function->blocks.back()->insts.back()->offset + len - function->address;
+      int symbol_size = symbol->getSize();
+      if (function_size < symbol_size) {
+        auto *block = new GPUParse::Block(max_block_id, ".L_" + std::to_string(max_block_id));
+        block->address = function_size + function->address;
+        block->begin_offset = GPUParse::get_cuda_inst_size(cuda_arch);
+        max_block_id++;
+        while (function_size < symbol_size) {
+          block->insts.push_back(new GPUParse::CudaInst(function_size + function->address, len));
+          function_size += len;
+        }
+        if (function->blocks.size() > 0) {
+          auto *last_block = function->blocks.back();
+          last_block->targets.push_back(
+            new GPUParse::Target(last_block->insts.back(), block, GPUParse::TargetType::DIRECT));
+        }
+        function->blocks.push_back(block);
+      }
+    }
+  }
+}
+
+
+static void
+relocateFunctions
+(
+ int cuda_arch,
+ std::unordered_map<GPUParse::Function *, Symbol*> &parsed_func_symbol_map
+)
+{
+  for (auto &iter : parsed_func_symbol_map) {
+    auto symbol = iter.second;
+    auto function = iter.first;
+    auto begin_offset = function->blocks[0]->begin_offset;
+    for (auto *block : function->blocks) {
+      for (auto *inst : block->insts) {
+        inst->offset = (inst->offset - begin_offset) + symbol->getOffset();
+        inst->size = GPUParse::get_cuda_inst_size(cuda_arch);
+      }
+      block->address = block->insts[0]->offset;
+    }
+    // Allow gaps between a function begining and the first block?
+    //function->blocks[0]->address = symbol->getOffset();
+    function->address = symbol->getOffset();
+  }
+}
+
+static void
+assignFunctionAndBlockIds
+(
+ std::vector<GPUParse::Function *> &functions,
+ size_t &max_function_id,
+ size_t &max_block_id
+)
+{
+  for (auto *function : functions) {
+    function->id = max_function_id++;
+    for (auto *block : function->blocks) {
+      block->id = max_block_id++;
+    }
+  }
+}
+
+
+static void
+addUnparsableFunctions
+(
+ int cuda_arch,
+ std::vector<GPUParse::Function *> &functions,
+ std::vector<Symbol *> &unparsable_function_symbols,
+ std::unordered_map<GPUParse::Function *, Symbol*> parsed_func_symbol_map,
+ size_t &max_function_id,
+ size_t &max_block_id
+)
+{
+  // For functions that cannot be parsed
+  for (auto *symbol : unparsable_function_symbols) {
+    auto function_name = symbol->getMangledName();
+    auto *function = new GPUParse::Function(max_function_id++, std::move(function_name));
+    function->address = symbol->getOffset();
+    auto block_name = symbol->getMangledName() + "_0";
+    auto *block = new GPUParse::Block(max_block_id++, std::move(block_name));
+    block->begin_offset = GPUParse::get_cuda_func_offset(cuda_arch);
+    block->address = symbol->getOffset() + block->begin_offset;
+    int len = GPUParse::get_cuda_inst_size(cuda_arch);
+    // Add dummy insts
+    for (size_t i = block->address; i < block->address + symbol->getSize(); i += len) {
+      block->insts.push_back(new GPUParse::CudaInst(i, len));
+    }
+    function->blocks.push_back(block);
+    functions.push_back(function);
+    parsed_func_symbol_map[function] = symbol;
+  }
+}
+
 // Iterate all the functions in the symbol table.
 // Parse the ones that can be dumped by nvdisasm in sequence;
 // construct a dummy block for others
@@ -223,97 +332,28 @@ parseDotCFG
   }
 
   // Step 2: Relocate functions
-  for (auto &iter : parsed_func_symbol_map) {
-    auto symbol = iter.second;
-    auto function = iter.first;
-    auto begin_offset = function->blocks[0]->begin_offset;
-    for (auto *block : function->blocks) {
-      for (auto *inst : block->insts) {
-        inst->offset = (inst->offset - begin_offset) + symbol->getOffset();
-        inst->size = GPUParse::get_cuda_inst_size(cuda_arch);
-      }
-      block->address = block->insts[0]->offset;
-    }
-    // Allow gaps between a function begining and the first block?
-    //function->blocks[0]->address = symbol->getOffset();
-    function->address = symbol->getOffset();
-  }
+  relocateFunctions(cuda_arch, parsed_func_symbol_map);
 
-  // Step 3: add unparsable functions
-  // Rename function and block ids
+  // Step 3: Assign function and block ids
   size_t max_block_id = 0;
   size_t max_function_id = 0;
-  for (auto *function : functions) {
-    function->id = max_function_id++;
-    for (auto *block : function->blocks) {
-      block->id = max_block_id++;
-    }
-  }
+  assignFunctionAndBlockIds(functions, max_function_id, max_block_id);
 
-  // For functions that cannot be parsed
-  for (auto *symbol : unparsable_function_symbols) {
-    auto function_name = symbol->getMangledName();
-    auto *function = new GPUParse::Function(max_function_id++, std::move(function_name));
-    function->address = symbol->getOffset();
-    auto block_name = symbol->getMangledName() + "_0";
-    auto *block = new GPUParse::Block(max_block_id++, std::move(block_name));
-    block->begin_offset = GPUParse::get_cuda_func_offset(cuda_arch);
-    block->address = symbol->getOffset() + block->begin_offset;
-    int len = GPUParse::get_cuda_inst_size(cuda_arch);
-    // Add dummy insts
-    for (size_t i = block->address; i < block->address + symbol->getSize(); i += len) {
-      block->insts.push_back(new GPUParse::CudaInst(i, len));
-    }
-    function->blocks.push_back(block);
-    functions.push_back(function);
-    parsed_func_symbol_map[function] = symbol;
-  }
+  // Step 4: Add unparsable functions
+  addUnparsableFunctions(cuda_arch, functions, unparsable_function_symbols,
+    parsed_func_symbol_map, max_function_id, max_block_id);
 
-  // Step 4: add compensate blocks that only contains nop instructions
-  for (auto &iter : parsed_func_symbol_map) {
-    auto symbol = iter.second;
-    auto function = iter.first;
-    if (symbol->getSize() > 0) {
-      int len = GPUParse::get_cuda_inst_size(cuda_arch);
-      int function_size = function->blocks.back()->insts.back()->offset + len - function->address;
-      int symbol_size = symbol->getSize();
-      if (function_size < symbol_size) {
-        auto *block = new GPUParse::Block(max_block_id, ".L_" + std::to_string(max_block_id));
-        block->address = function_size + function->address;
-        block->begin_offset = GPUParse::get_cuda_inst_size(cuda_arch);
-        max_block_id++;
-        while (function_size < symbol_size) {
-          block->insts.push_back(new GPUParse::CudaInst(function_size + function->address, len));
-          function_size += len;
-        }
-        if (function->blocks.size() > 0) {
-          auto *last_block = function->blocks.back();
-          last_block->targets.push_back(
-            new GPUParse::Target(last_block->insts.back(), block, GPUParse::TargetType::DIRECT));
-        }
-        function->blocks.push_back(block);
-      }
-    }
-  }
+  // Step 5: Add compensate blocks that only contains nop instructions
+  addCompensateBlocks(cuda_arch, parsed_func_symbol_map, max_block_id);
 
-  // Parse function calls
+  // Step 6:
+  // Parse function calls to link call instructions with unnested functions.
+  // nested functions can be parsed directly for individual global functions
+  // 
+  // XXX: nested functions are device functions inside global functions
   GPUParse::CudaCFGParser::parse_calls(functions);
 
-  //for (auto *function : functions) {
-  //  if (function->name.find("_ZN5amrex13launch_globalILi256EZNS_11ParallelForIiZNS_7BaseFabIdE16protected_divideILNS_5RunOnE0EEERS3_RKS3_RKNS_3BoxESB_iiiEUliiiiE_vEENSt9e") != std::string::npos) {
-  //    for (auto *block : function->blocks) {
-  //      std::cout << "block " << block->id << std::endl;
-  //      for (auto *inst : block->insts) {
-  //        std::cout << std::hex << inst->offset << std::dec << std::endl;
-  //      }
-  //      for (auto *target : block->targets) {
-  //        std::cout << "from " << block->id << " to " << target->block->id << std::endl;
-  //      }
-  //    }
-  //  }
-  //}
-
-  // Step 5: create a nvidia directory and dump dot files
+  // Step 7: create a nvidia directory and dump dot files
   if (DEBUG_CFG_PARSE) {
     if (parsed_function_symbols.size() > 0) {
       const std::string dot_dir = search_path + "/nvidia";
