@@ -72,7 +72,7 @@
 
 #define AMD_ROCM "gpu=amd"
 
-static device_finalizer_fn_entry_t device_finalizer_shutdown;
+static device_finalizer_fn_entry_t device_finalizer_flush;
 static device_finalizer_fn_entry_t device_trace_finalizer_shutdown;
 
 
@@ -164,22 +164,27 @@ METHOD_FN(finalize_event_list)
 #endif
 
 #if 0
-    // Fetch the event string for the sample source
-    // only one event is allowed
-    char* evlist = METHOD_CALL(self, get_event_str);
-    char* event = start_tok(evlist);
+  // Fetch the event string for the sample source
+  // only one event is allowed
+  char* evlist = METHOD_CALL(self, get_event_str);
+  char* event = start_tok(evlist);
 #endif
-    roctracer_init();
+  roctracer_init();
 
-    // Init records
-    gpu_trace_init();
+  // Register flush function to turn off roctracer and flush traces 
+  // NOTE: this is a registered as a flush callback because is MUST precede 
+  //       GPU trace finalization, which is registered as a shutdown callback
+  device_finalizer_flush.fn = roctracer_fini;
+  device_finalizer_register(device_finalizer_type_flush, 
+                            &device_finalizer_flush);
 
-    device_finalizer_shutdown.fn = roctracer_fini;
-    device_finalizer_register(device_finalizer_type_shutdown, &device_finalizer_shutdown);
+  // initialize gpu tracing 
+  gpu_trace_init();
 
-    // Register shutdown functions to write trace files
-    device_trace_finalizer_shutdown.fn = gpu_trace_fini;
-    device_finalizer_register(device_finalizer_type_shutdown, &device_trace_finalizer_shutdown);
+  // Register shutdown function to finalize gpu tracing and write trace files
+  device_trace_finalizer_shutdown.fn = gpu_trace_fini;
+  device_finalizer_register(device_finalizer_type_shutdown, 
+                            &device_trace_finalizer_shutdown);
 }
 
 
